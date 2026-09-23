@@ -2,204 +2,84 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 
 [DisallowMultipleComponent]
-[DefaultExecutionOrder(-200)]
+[DefaultExecutionOrder(0)]
 public sealed class PlayerLook : MonoBehaviour
 {
     [Header("References")]
-    [Tooltip("상하 회전을 담당하는 LookPivot (CameraPivot)")]
-    [SerializeField] private Transform pitchPivot;
+    [SerializeField] private Transform lookPivot;
 
-    [Header("Mouse Look")]
-    [SerializeField, Min(0f)] private float sensitivity = 0.1f;
-    [SerializeField, Range(0f, 89f)] private float pitchLimit = 89f;
-    [SerializeField] private bool invertY;
-    [SerializeField] private bool lockOnEnable = true;
+    [Header("Look Settings")]
+    [SerializeField, Range(0.01f, 1f)] private float sensitivity = 0.1f;
+    [SerializeField] private bool invertY = false;
+    [SerializeField] private float minPitch = -89f;
+    [SerializeField] private float maxPitch = 89f;
+
+    [Header("QA & Debugging")]
+    [Tooltip("ESC를 눌렀을 때 커서 잠금을 해제하고 입력을 일시 정지할지 여부")]
+    [SerializeField] private bool enableEscUnlock = true;
 
     private InputAction lookAction;
     private float yaw;
     private float pitch;
-    private bool lookEnabled = true;
-    private bool cursorCaptured;
-    private bool applicationPaused;
-    private int inputBlockedThroughFrame = -1;
-
-    public Quaternion YawRotation => Quaternion.Euler(0f, yaw, 0f);
-    public Transform PitchPivot => pitchPivot;
-    public float Pitch => pitch;
-
-    private bool InputAvailable =>
-        isActiveAndEnabled && lookEnabled &&
-        Application.isFocused && !applicationPaused &&
-        Time.timeScale > 0f && lookAction != null && lookAction.enabled;
-
-    public bool CanLook =>
-        InputAvailable && cursorCaptured &&
-        Cursor.lockState == CursorLockMode.Locked &&
-        Time.frameCount > inputBlockedThroughFrame;
 
     private void Awake()
     {
-        if (pitchPivot == null)
-        {
-            pitchPivot = transform.Find("LookPivot");
-            if (pitchPivot == null)
-                pitchPivot = transform.Find("CameraPivot");
-        }
-
-        if (pitchPivot == null || !pitchPivot.IsChildOf(transform))
-        {
-            Debug.LogError("[PlayerLook] Player 하위의 LookPivot(또는 CameraPivot)을 연결하세요.", this);
-            enabled = false;
-            return;
-        }
-
         var actions = InputSystem.actions;
-        lookAction = actions != null ? actions.FindAction("Player/Look", throwIfNotFound: false) : null;
+        if (actions != null)
+            lookAction = actions.FindAction("Player/Look", throwIfNotFound: false);
 
-        if (lookAction == null)
+        if (lookPivot == null)
         {
-            Debug.LogError("[PlayerLook] Project-wide Actions에 'Player/Look' 액션을 설정하세요.", this);
-            enabled = false;
+            lookPivot = transform.Find("CrouchPivot/BobPivot/LookPivot");
+            if (lookPivot == null) lookPivot = transform.Find("CrouchPivot/LookPivot");
+        }
+
+        yaw = transform.eulerAngles.y;
+        if (lookPivot != null)
+        {
+            pitch = lookPivot.localEulerAngles.x;
+            if (pitch > 180f) pitch -= 360f;
         }
     }
 
-    private void OnEnable()
+    private void Start()
     {
-        if (pitchPivot == null || lookAction == null)
-            return;
-
-        ReadCurrentRotation();
-        ApplyRotation();
-
-        if (lockOnEnable)
-            CaptureCursor();
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
     }
 
     private void Update()
     {
-        if (!InputAvailable)
+        // 1. ESC / 좌클릭을 통한 락/언락 처리
+        if (enableEscUnlock && Keyboard.current != null && Mouse.current != null)
         {
-            ReleaseCursor();
-            return;
+            if (Keyboard.current.escapeKey.wasPressedThisFrame)
+            {
+                Cursor.lockState = CursorLockMode.None;
+                Cursor.visible = true;
+            }
+            else if (Cursor.lockState == CursorLockMode.None && Mouse.current.leftButton.wasPressedThisFrame)
+            {
+                Cursor.lockState = CursorLockMode.Locked;
+                Cursor.visible = false;
+            }
         }
 
-#if UNITY_EDITOR
-        if (Keyboard.current?.escapeKey.wasPressedThisFrame == true)
-        {
-            ReleaseCursor();
-            return;
-        }
-#endif
-
-        if (!cursorCaptured || Cursor.lockState != CursorLockMode.Locked)
-        {
-            ReleaseCursor();
-            if (Mouse.current?.leftButton.wasPressedThisFrame == true)
-                CaptureCursor();
-            return;
-        }
-
-        if (!CanLook)
+        // 2. [가장 강력한 차단] 실제 커서가 잠겨있지 않다면(ESC 상태라면) 입력/회전 연산 무조건 무시!
+        if (Cursor.lockState != CursorLockMode.Locked || Time.timeScale <= 0f || !Application.isFocused)
             return;
 
-        Vector2 delta = lookAction.ReadValue<Vector2>();
+        Vector2 delta = Vector2.zero;
+        if (lookAction != null) delta = lookAction.ReadValue<Vector2>();
+        else if (Mouse.current != null) delta = Mouse.current.delta.ReadValue();
 
-        yaw = Mathf.Repeat(yaw + delta.x * sensitivity, 360f);
-        pitch = Mathf.Clamp(
-            pitch + delta.y * sensitivity * (invertY ? 1f : -1f),
-            -pitchLimit,
-            pitchLimit);
+        float mouseX = delta.x * sensitivity;
+        float mouseY = delta.y * sensitivity * (invertY ? 1f : -1f);
 
-        // Movement가 실행되기 전에 Player 루트 Yaw 회전 적용
+        yaw += mouseX;
         transform.rotation = Quaternion.Euler(0f, yaw, 0f);
-    }
 
-    private void LateUpdate()
-    {
-        // 카메라 피치 회전 적용
-        if (pitchPivot != null)
-            pitchPivot.localRotation = Quaternion.Euler(pitch, 0f, 0f);
-    }
-
-    public void SetLookEnabled(bool value)
-    {
-        if (value && !lookEnabled)
-            ReadCurrentRotation();
-
-        lookEnabled = value;
-
-        if (value)
-            CaptureCursor();
-        else
-            ReleaseCursor();
-    }
-
-    public void CaptureCursor()
-    {
-        if (!InputAvailable)
-            return;
-
-        if (cursorCaptured && Cursor.lockState == CursorLockMode.Locked)
-            return;
-
-        cursorCaptured = true;
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
-        inputBlockedThroughFrame = Time.frameCount + 1;
-    }
-
-    public void ReleaseCursor()
-    {
-        if (!cursorCaptured)
-            return;
-
-        cursorCaptured = false;
-        Cursor.lockState = CursorLockMode.None;
-        Cursor.visible = true;
-        inputBlockedThroughFrame = Time.frameCount + 1;
-    }
-
-    public void SetAngles(float yawDegrees, float pitchDegrees = 0f)
-    {
-        yaw = Mathf.Repeat(yawDegrees, 360f);
-        pitch = Mathf.Clamp(pitchDegrees, -pitchLimit, pitchLimit);
-        ApplyRotation();
-        inputBlockedThroughFrame = Time.frameCount + 1;
-    }
-
-    private void ReadCurrentRotation()
-    {
-        yaw = Mathf.Repeat(transform.eulerAngles.y, 360f);
-        if (pitchPivot != null)
-        {
-            pitch = Mathf.Clamp(
-                Mathf.DeltaAngle(0f, pitchPivot.localEulerAngles.x),
-                -pitchLimit, pitchLimit);
-        }
-    }
-
-    private void ApplyRotation()
-    {
-        transform.rotation = Quaternion.Euler(0f, yaw, 0f);
-        if (pitchPivot != null)
-            pitchPivot.localRotation = Quaternion.Euler(pitch, 0f, 0f);
-    }
-
-    private void OnApplicationFocus(bool hasFocus)
-    {
-        if (!hasFocus)
-            ReleaseCursor();
-    }
-
-    private void OnApplicationPause(bool paused)
-    {
-        applicationPaused = paused;
-        if (paused)
-            ReleaseCursor();
-    }
-
-    private void OnDisable()
-    {
-        ReleaseCursor();
+        pitch = Mathf.Clamp(pitch + mouseY, minPitch, maxPitch);
+        if (lookPivot != null) lookPivot.localRotation = Quaternion.Euler(pitch, 0f, 0f);
     }
 }
