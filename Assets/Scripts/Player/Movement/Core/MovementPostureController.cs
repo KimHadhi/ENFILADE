@@ -1,0 +1,235 @@
+using UnityEngine;
+using MovementState = PlayerMovement.MovementState;
+
+public enum MovementPosture { Standing, Crouching, Sliding, Prone, Supine }
+
+// Owns collider dimensions, clearance checks and the crouch camera pivot.
+public sealed class MovementPostureController
+{
+    private readonly PlayerMovement ctx;
+    internal bool airCrouching, airBodyTucked;
+    internal float airCrouchTop, airCameraOffset;
+    internal readonly float standingColliderHeight, standingColliderRadius, defaultStepOffset;
+    private readonly float baseCameraY;
+    private float currentOffset;
+    private float traversalCameraRecovery;
+
+    internal MovementPostureController(PlayerMovement context)
+    {
+        ctx = context;
+        var controller = ctx.Motor.controller;
+        standingColliderHeight = controller.height;
+        standingColliderRadius = controller.radius;
+        defaultStepOffset = controller.stepOffset;
+        controller.center = new Vector3(0f, standingColliderHeight * 0.5f, 0f);
+        if (ctx.crouchPivot == null) ctx.crouchPivot = ctx.transform.Find("CrouchPivot");
+        if (ctx.crouchPivot != null) baseCameraY = ctx.crouchPivot.localPosition.y;
+    }
+
+    internal void UpdateAirCrouch()
+    {
+        if (!ctx.StateMachine.Current.AllowsAutomaticPosture)
+        {
+            if (airCrouching || airBodyTucked) RebaseAirCrouchFeet();
+            return;
+        }
+        bool canDuck = ctx.CurrentState == MovementState.Standing || ctx.CurrentState == MovementState.Crouching;
+        bool compactMovement = ctx.IsDiving || ctx.IsSliding;
+        if (ctx.Motor.isGrounded || (!canDuck && !compactMovement))
+        {
+            if (airBodyTucked || airCrouching) RebaseAirCrouchFeet();
+            return;
+        }
+
+        bool crouchHeld = ctx.InputAvailable && ctx.Input.crouchAction != null && ctx.Input.crouchAction.IsPressed();
+        bool crouchJustPressed = ctx.InputAvailable && ctx.Input.crouchAction != null && ctx.Input.crouchAction.WasPressedThisFrame();
+        airCrouching = canDuck && (airCrouching || crouchHeld || crouchJustPressed);
+
+        if ((airCrouching || compactMovement) && !airBodyTucked)
+        {
+            airCrouchTop = ctx.Motor.controller.center.y + ctx.Motor.controller.height * 0.5f;
+            airCameraOffset = currentOffset;
+            airBodyTucked = true;
+        }
+    }
+
+    internal void RebaseAirCrouchFeet()
+    {
+        float feetOffset = ctx.Motor.controller.center.y - ctx.Motor.controller.height * 0.5f;
+        if (Mathf.Abs(feetOffset) > 0.0001f)
+        {
+            Vector3 shift = ctx.transform.TransformVector(Vector3.up * feetOffset);
+            ctx.transform.position += shift;
+            ctx.Motor.controller.center -= Vector3.up * feetOffset;
+            ctx.Motor.previousPosition += shift;
+            currentOffset -= feetOffset;
+            if (ctx.crouchPivot != null)
+            {
+                Vector3 position = ctx.crouchPivot.localPosition;
+                position.y -= feetOffset;
+                ctx.crouchPivot.localPosition = position;
+            }
+        }
+        airCrouching = false;
+        airBodyTucked = false;
+    }
+
+    public bool HasCeilingAbove(float targetHeightToCheck)
+    {
+        if (!airCrouching && ctx.Motor.controller.height >= targetHeightToCheck - 0.01f) return false;
+
+        float radius = Mathf.Min(standingColliderRadius, ctx.Motor.controller.radius) * 0.9f;
+        Vector3 feetPos = ctx.transform.position;
+
+        float currentTopY = ctx.Motor.controller.height;
+        float startSphereCenterY = currentTopY + radius * 0.2f;
+        float endSphereCenterY = targetHeightToCheck - radius;
+
+        if (endSphereCenterY <= startSphereCenterY)
+        {
+            return Physics.CheckSphere(feetPos + Vector3.up * (targetHeightToCheck - radius), radius, ctx.groundLayers, QueryTriggerInteraction.Ignore);
+        }
+
+        Vector3 bottomCenter = feetPos + Vector3.up * startSphereCenterY;
+        Vector3 topCenter = feetPos + Vector3.up * endSphereCenterY;
+
+        return Physics.CheckCapsule(bottomCenter, topCenter, radius, ctx.groundLayers, QueryTriggerInteraction.Ignore);
+    }
+
+    public bool HasCeilingAhead(Vector3 direction, float distance, float targetHeightToCheck)
+    {
+        if (direction.sqrMagnitude < 0.001f) return false;
+
+        float radius = Mathf.Min(standingColliderRadius, ctx.Motor.controller.radius) * 0.9f;
+        Vector3 aheadFeet = ctx.transform.position + direction.normalized * distance;
+
+        float currentTopY = ctx.Motor.controller.height;
+        float startSphereCenterY = currentTopY + radius * 0.2f;
+        float endSphereCenterY = targetHeightToCheck - radius;
+
+        if (endSphereCenterY <= startSphereCenterY)
+        {
+            return Physics.CheckSphere(aheadFeet + Vector3.up * (targetHeightToCheck - radius), radius, ctx.groundLayers, QueryTriggerInteraction.Ignore);
+        }
+
+        Vector3 bottomCenter = aheadFeet + Vector3.up * startSphereCenterY;
+        Vector3 topCenter = aheadFeet + Vector3.up * endSphereCenterY;
+
+        return Physics.CheckCapsule(bottomCenter, topCenter, radius, ctx.groundLayers, QueryTriggerInteraction.Ignore);
+    }
+
+    public bool HasVentCeilingAhead(Vector3 moveDir, float forwardDistance = 0.5f)
+    {
+        if (moveDir.sqrMagnitude < 0.001f) return false;
+
+        Vector3 checkOrigin = ctx.transform.position + moveDir.normalized * forwardDistance;
+        float maxAllowedRadius = ctx.proneColliderHeight * 0.45f;
+        float checkRadius = Mathf.Min(ctx.Motor.controller.radius * 0.6f, maxAllowedRadius);
+
+        float groundClearance = 0.05f;
+        float bottomY = checkRadius + groundClearance;
+
+        float proneTopY = Mathf.Max(bottomY, ctx.proneColliderHeight - checkRadius);
+        Vector3 proneBottomCenter = checkOrigin + Vector3.up * bottomY;
+        Vector3 proneTopCenter = checkOrigin + Vector3.up * proneTopY;
+
+        bool isProneBlocked = Physics.CheckCapsule(
+            proneBottomCenter,
+            proneTopCenter,
+            checkRadius,
+            ctx.groundLayers,
+            QueryTriggerInteraction.Ignore
+        );
+
+        if (isProneBlocked) return false;
+
+        float crouchTopY = ctx.crouchColliderHeight - checkRadius;
+        Vector3 crouchBottomCenter = checkOrigin + Vector3.up * Mathf.Max(bottomY, ctx.proneColliderHeight);
+        Vector3 crouchTopCenter = checkOrigin + Vector3.up * crouchTopY;
+
+        if (crouchTopY > ctx.proneColliderHeight)
+        {
+            return Physics.CheckCapsule(
+                crouchBottomCenter,
+                crouchTopCenter,
+                checkRadius,
+                ctx.groundLayers,
+                QueryTriggerInteraction.Ignore
+            );
+        }
+
+        return false;
+    }
+
+    public void UpdateHeightsAndTransform(float dt)
+    {
+        traversalCameraRecovery = ctx.StateMachine.Current is ObstacleTraversalState
+            ? 0.2f : Mathf.Max(0f, traversalCameraRecovery - dt);
+        float targetColliderHeight = standingColliderHeight;
+        float targetOffset = 0f;
+        switch (ctx.StateMachine.Current.Posture)
+        {
+            case MovementPosture.Crouching: targetColliderHeight = ctx.crouchColliderHeight; targetOffset = ctx.crouchOffset; break;
+            case MovementPosture.Sliding: targetColliderHeight = ctx.slideColliderHeight; targetOffset = ctx.slideOffset; break;
+            case MovementPosture.Prone: targetColliderHeight = ctx.proneColliderHeight; targetOffset = ctx.proneOffset; break;
+            case MovementPosture.Supine: targetColliderHeight = ctx.proneColliderHeight; targetOffset = ctx.supineOffset; break;
+        }
+
+        if (airCrouching) targetColliderHeight = ctx.crouchColliderHeight;
+        if (airBodyTucked)
+        {
+            targetColliderHeight = Mathf.Min(targetColliderHeight, airCrouchTop);
+            targetOffset = airCameraOffset;
+        }
+
+        float newHeight;
+        if (ctx.Motor.controller.height < targetColliderHeight && dt > 0f)
+        {
+            newHeight = Mathf.MoveTowards(ctx.Motor.controller.height, targetColliderHeight, dt * 8.0f);
+        }
+        else
+        {
+            newHeight = targetColliderHeight;
+        }
+
+        float targetRadius = Mathf.Min(standingColliderRadius, newHeight * 0.5f);
+
+        float centerY;
+        if (airBodyTucked)
+        {
+            centerY = airCrouchTop - newHeight * 0.5f;
+        }
+        else
+        {
+            centerY = newHeight * 0.5f;
+        }
+
+        Vector3 targetCenter = new Vector3(0f, centerY, 0f);
+        bool canStep = ctx.Motor.isGrounded && (ctx.CurrentState == MovementState.Standing ||
+                             ctx.CurrentState == MovementState.Crouching ||
+                             ctx.IsSliding);
+
+        float targetStep = canStep ? Mathf.Min(ctx.AbilitySettings.stepHeight, newHeight) : 0f;
+        if (!Mathf.Approximately(ctx.Motor.controller.height, newHeight) || !Mathf.Approximately(ctx.Motor.controller.radius, targetRadius) || ctx.Motor.controller.center != targetCenter)
+        {
+            ctx.Motor.controller.stepOffset = 0f;
+            if (targetRadius < ctx.Motor.controller.radius) ctx.Motor.controller.radius = targetRadius;
+            ctx.Motor.controller.height = newHeight;
+            ctx.Motor.controller.radius = targetRadius;
+            ctx.Motor.controller.center = targetCenter;
+        }
+        if (!Mathf.Approximately(ctx.Motor.controller.stepOffset, targetStep)) ctx.Motor.controller.stepOffset = targetStep;
+
+        if (ctx.crouchPivot != null)
+        {
+            bool isSlidingOrDiving = ctx.IsSliding || ctx.IsDiving;
+            float currentSharpness = isSlidingOrDiving ? ctx.slideTransitionSharpness : ctx.transitionSharpness;
+            if (traversalCameraRecovery > 0f) currentSharpness = Mathf.Min(currentSharpness, 6f);
+            float t = (dt > 0f) ? 1f - Mathf.Exp(-currentSharpness * dt) : 1f;
+            currentOffset = Mathf.Lerp(currentOffset, targetOffset, t);
+            Vector3 pos = ctx.crouchPivot.localPosition;
+            ctx.crouchPivot.localPosition = new Vector3(pos.x, baseCameraY + currentOffset, pos.z);
+        }
+    }
+
+}
