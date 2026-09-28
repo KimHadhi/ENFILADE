@@ -264,6 +264,54 @@
                     "isPartOfComposite": false
                 }
             ]
+        },
+        {
+          "name": "Combat",
+          "id": "4a11cef8-eddb-43b6-8234-33cf0def6d9f",
+          "actions": [
+            {
+              "name": "Fire",
+              "type": "Button",
+              "id": "3d65c4c5-afaf-4768-89b8-52ba660dff42",
+              "expectedControlType": "Button",
+              "processors": "",
+              "interactions": "",
+              "initialStateCheck": false
+            },
+            {
+              "name": "Reload",
+              "type": "Button",
+              "id": "917088d6-9fbb-4a9e-a90d-655d17ac4e32",
+              "expectedControlType": "Button",
+              "processors": "",
+              "interactions": "",
+              "initialStateCheck": false
+            }
+          ],
+          "bindings": [
+            {
+              "name": "",
+              "id": "cb36893e-80ea-4e88-b1f6-bc1688a3b081",
+              "path": "<Mouse>/leftButton",
+              "interactions": "",
+              "processors": "",
+              "groups": "",
+              "action": "Fire",
+              "isComposite": false,
+              "isPartOfComposite": false
+            },
+            {
+              "name": "",
+              "id": "71909848-68dc-4b40-95b2-ff2e08f017c8",
+              "path": "<Keyboard>/r",
+              "interactions": "",
+              "processors": "",
+              "groups": "",
+              "action": "Reload",
+              "isComposite": false,
+              "isPartOfComposite": false
+            }
+          ]
         }
     ],
     "controlSchemes": []

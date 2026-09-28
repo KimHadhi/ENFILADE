@@ -45,6 +45,9 @@ public static partial class MovementAbilityChecks
             RunReferenceChecks();
             RunDodgeChainChecks();
             RunCameraChecks();
+            RunParkourFacingChecks();
+            RunLowPassageChecks();
+            RunEvasiveDiveChecks();
         }
         finally { if (previous.IsValid()) SceneManager.SetActiveScene(previous); EditorSceneManager.CloseScene(test, true); }
         Debug.Log("MOVEMENT_ABILITY_CHECKS_PASSED: " + passed);

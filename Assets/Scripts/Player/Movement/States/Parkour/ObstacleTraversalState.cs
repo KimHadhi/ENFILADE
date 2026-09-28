@@ -26,6 +26,7 @@ public sealed class ObstacleTraversalState : MovementBaseState
         ctx.HorizontalVelocity = Vector3.zero; ctx.VerticalVelocity = 0f;
         ctx.Abilities.Traversal.Obstacle.Start = ctx.transform.position;
         var target = ctx.Abilities.Traversal.Obstacle;
+        ctx.Abilities.Traversal.RecordObstacle();
         reference = target.ReferenceMotion ? new ReferenceTraversal(ctx, target) : null;
         path = reference == null ? new TraversalPath(target, ctx.Abilities.Traversal.Detector, ctx.CrouchColliderHeight) : null;
         EntrySerial++;
@@ -44,7 +45,8 @@ public sealed class ObstacleTraversalState : MovementBaseState
             if (!reference.Complete) return;
             ctx.Abilities.Landing.SupportedByTraversal();
             ctx.Abilities.ReturnToLocomotion();
-            ctx.HorizontalVelocity = vault ? Vector3.ProjectOnPlane(ctx.transform.forward, Vector3.up).normalized * 5f : Vector3.zero;
+            // Looking back is allowed; it must not reverse the traversal's exit impulse.
+            ctx.HorizontalVelocity = vault ? Vector3.ProjectOnPlane(target.End - target.Start, Vector3.up).normalized * 5f : Vector3.zero;
             ctx.VerticalVelocity = 0f;
             return;
         }

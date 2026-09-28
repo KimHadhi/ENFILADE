@@ -9,15 +9,17 @@ public sealed class MovementActions
     public float CurrentSlideSpeed;
     public bool SlideBrakeArmed;
     public Vector3 DiveBodyForward = Vector3.forward;
+    public MovementDive Dive { get; }
     internal float sprintProgress, slideCooldownTimer, coyoteTimer, jumpBufferTimer;
 
-    internal MovementActions(PlayerMovement context) { ctx = context; }
+    internal MovementActions(PlayerMovement context) { ctx = context; Dive = new MovementDive(ctx); }
 
     internal void TickTimers(float dt)
     {
         coyoteTimer -= dt;
         jumpBufferTimer -= dt;
         slideCooldownTimer -= dt;
+        Dive.Tick(dt);
     }
 
     internal void Reset()
@@ -25,6 +27,7 @@ public sealed class MovementActions
         CurrentSlideSpeed = sprintProgress = 0f;
         coyoteTimer = jumpBufferTimer = slideCooldownTimer = 0f;
         SlideBrakeArmed = false;
+        Dive.Reset();
     }
 
     public void StartSlide(float currentSpeed, bool applyBoost = true)
@@ -55,31 +58,7 @@ public sealed class MovementActions
 
     public void LaunchDive(Vector2 input)
     {
-        Vector3 launchDir;
-        MovementState targetDiveState;
-
-        if (input.sqrMagnitude > 0.01f)
-        {
-            launchDir = (ctx.transform.right * input.x + ctx.transform.forward * input.y).normalized;
-            targetDiveState = (input.y < -0.2f) ? MovementState.SupineDiving : MovementState.Diving;
-        }
-        else
-        {
-            launchDir = ctx.transform.forward;
-            targetDiveState = MovementState.Diving;
-        }
-
-        DiveBodyForward = launchDir;
-
-        float launchSpeed = Mathf.Max(ctx.HorizontalVelocity.magnitude * ctx.diveMomentumRetention, ctx.groundDiveLaunchSpeed);
-        ctx.HorizontalVelocity = launchDir * launchSpeed;
-        ctx.VerticalVelocity = ctx.groundDiveVerticalPop;
-
-        ctx.Motor.jumpUngroundTimer = 0.15f;
-        ctx.Motor.isGrounded = false;
-        coyoteTimer = 0f;
-
-        ctx.ChangeState(targetDiveState);
+        Dive.TryLaunch(input, true);
     }
 
     internal void ProcessSprintRampUp(float dt, Vector2 input)

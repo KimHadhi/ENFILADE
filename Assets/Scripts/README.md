@@ -2,7 +2,7 @@
 
 게임 기능을 수정할 때는 아래 표에서 시작한다. 전체 이동 기능과 키 조작은 [이동 기능 안내](Docs/MovementGuide.md), 상태 전환 내부 구조는 [이동 상태 구조](Player/Movement/README.md)에 정리했다.
 
-배열 할당과 EntityReference 제안에 대한 확인 결과는 [성능 지적 검토](Docs/PerformanceReview.md)에 정리했다.
+무기 설정·추가·디버깅은 [전투 제작 안내](Docs/CombatFoundationGuide.md)에 정리했다. 배열 할당과 EntityReference 제안에 대한 확인 결과는 [성능 지적 검토](Docs/PerformanceReview.md)에 정리했다.
 
 ## 어디를 수정할까?
 
@@ -10,11 +10,16 @@
 | --- | --- |
 | 플레이어 공격·무기·콤보를 확장할 위치 | **Player/Combat/**. 현재 밀치기·태클은 [PlayerCombatActions.cs](Player/Combat/PlayerCombatActions.cs) |
 | 체력, 피격, 사망, 피해 중복 방지 | [PlayerDamageReceiver.cs](Player/Combat/PlayerDamageReceiver.cs) |
-| 칼·주먹 등 근접 공격의 접촉 판정 | [AttackHitbox.cs](Combat/AttackHitbox.cs) |
-| 총알의 즉시 명중 판정과 회피 경로 검사 | [AttackTrace.cs](Combat/AttackTrace.cs) |
-| 공격 ID·피해 종류·피해 받는 대상의 공통 규약 | [DamageHit.cs](Combat/DamageHit.cs) |
+| 총의 대미지·연사력·탄창·장전 시간 | **Assets/Combat/Weapons/**의 무기 asset. 필드 추가는 [WeaponData.cs](Combat/Weapons/Data/WeaponData.cs) |
+| 단발/연사 규칙·탄약 소모·장전 타이머 | [WeaponRuntime.cs](Combat/Weapons/Core/WeaponRuntime.cs) |
+| 실제 발사·조준 방향·발사 이벤트 | [WeaponController.cs](Player/Combat/Weapons/WeaponController.cs) |
+| 플레이어 사격/장전 입력 읽기 | [PlayerWeaponInput.cs](Player/Combat/Input/PlayerWeaponInput.cs), 키 배치는 Player.inputactions의 Combat 맵 |
+| 칼·주먹 등 근접 공격의 접촉 판정 | [AttackHitbox.cs](Combat/HitDetection/AttackHitbox.cs) |
+| 총알의 즉시 명중 판정과 회피 경로 검사 | [AttackTrace.cs](Combat/HitDetection/AttackTrace.cs) |
+| 공격 ID·피해 종류·피해 받는 대상의 공통 규약 | [DamageHit.cs](Combat/Damage/DamageHit.cs) |
 | 이동 시작점과 전체 프레임 순서 | [PlayerMovement.cs](Player/Movement/PlayerMovement.cs) |
 | 걷기·슬라이드·다이브 수치 | [PlayerMovement.Configuration.cs](Player/Movement/PlayerMovement.Configuration.cs), 실제 씬의 PlayerMovement 인스펙터 |
+| 순간 회피용 다이브의 추진·감속·회복 | [MovementDive.cs](Player/Movement/Actions/MovementDive.cs). 방향별 자세와 착지는 States/Diving에서 연결 |
 | 닷지·기울이기·파쿠르·낙하·밀치기 수치 | [MovementAbilitySettings.cs](Player/Movement/MovementAbilitySettings.cs), PlayerMovement의 Ability Settings |
 | 닷지 성공, 무적, 쿨타임 | [DodgeController.cs](Player/Movement/Dodge/DodgeController.cs) |
 | 스텝 경로를 스치는 공격도 회피로 인정 | [StepDodgeTrail.cs](Player/Movement/Dodge/StepDodgeTrail.cs) |
@@ -39,14 +44,25 @@ Scripts/
 │  │  ├─ Dodge/      회피, 성공 판정, 기울이기
 │  │  ├─ Parkour/    지형 탐지와 이동 경로
 │  │  └─ States/     행동별 실제 동작과 상태 전환
-│  ├─ Combat/         플레이어가 공격하고 피해를 받는 기능
+│  ├─ Combat/         플레이어 밀치기·태클, 체력·피격
+│  │  ├─ Input/      마우스/키보드를 사격 의도로 변환
+│  │  └─ Weapons/    조준과 발사 실행, 이벤트 발행
 │  └─ Camera/         조준 시점과 시각 효과
-├─ Combat/             플레이어·적이 함께 쓰는 공격/피해 판정
+├─ Combat/             플레이어·적이 함께 쓰는 전투 규칙
+│  ├─ Damage/         피해 데이터와 수신 인터페이스
+│  ├─ HitDetection/   Raycast/근접 접촉과 회피 판정
+│  └─ Weapons/
+│     ├─ Data/        무기 설정의 형식 (WeaponData)
+│     └─ Core/        장탄·타이머, 입력 의도의 규약
 ├─ World/              문, 스윙 바, 순간이동 장치
-├─ Debug/Movement/     이동 HUD, 연습용 공격기·표적
+├─ Debug/
+│  ├─ Movement/       이동 HUD, 연습용 공격기·표적
+│  └─ Combat/         탄창 HUD, 사격 표적
 └─ Docs/               기능·조작 설명
 
 Assets/Editor/Movement/ 이동 테스트와 연습 씬 생성 도구
+Assets/Editor/Combat/   전투 테스트, 테스트 씬 생성, 플레이어 설치 도구
+Assets/Combat/Weapons/  개별 무기의 실제 수치 asset (스크립트 아님)
 ```
 
 ## 전투를 추가할 때
@@ -57,7 +73,17 @@ Assets/Editor/Movement/ 이동 테스트와 연습 씬 생성 도구
 4. 몸의 위치는 `MovementMotor`, 마우스 조준은 `PlayerLook`, 화면 연출은 `PlayerCameraEffects`가 담당한다. 공격 연출에서 플레이어 위치나 조준 피치를 덮어쓰지 않는다.
 5. 체력·사망·회피 피드백은 `PlayerDamageReceiver.HitResolved` / `Died` 이벤트로 연결한다. 전투 연결 예시는 [이동 안내의 적 공격 연결](Docs/MovementGuide.md#적-공격-연결)을 참고한다.
 
-현재 PlayerCombatActions는 일반 C# 서비스이며, MovementAbilities가 생성·갱신한다. 무기·콤보 시스템은 아직 구현하지 않았다. 이 정리는 기존 밀치기/태클을 전투 폴더로 분리하고 다음 기능을 넣을 위치를 명확히 한 것이다.
+현재 PlayerCombatActions는 일반 C# 서비스이며, MovementAbilities가 생성·갱신한다. 총의 사격·재장전은 별도 WeaponController가 관리하므로 PlayerMovement에 무기 상태를 추가하지 않는다. 콤보·장비 교체·반동 연출은 다음 단계다.
+
+## 파일을 늘릴 때의 기준
+
+- **설정만 변경**: 씬 인스펙터나 무기 asset을 먼저 수정한다. 스크립트 기본값을 바꿔도 이미 저장된 씬/asset 값은 자동으로 바뀌지 않는다.
+- **플레이어의 입력·행동**: Player 아래 해당 기능에 둔다. 이동 가능한 상태와 발사 가능한 상태를 무조건 하나의 상태 머신으로 합치지 않는다.
+- **플레이어와 적이 공유하는 규칙**: Combat에 둔다. 여기서 마우스·키보드를 직접 읽지 않는다.
+- **표시/효과**: 카메라 또는 별도 표시 컴포넌트가 이벤트를 받게 한다. HUD에서 탄약을 빼거나 피해를 주지 않는다.
+- **검사용 기능**: Debug 또는 Editor에 둔다. 실제 게임 규칙이 테스트 HUD에 의존하지 않게 한다.
+
+새 기능을 만들 때는 입력 → 규칙 → 실행 → 표시 중 어느 책임인지 먼저 정한다. 한 파일이 둘 이상의 큰 책임을 맡기 시작하면 책임별로 분리한다. 파일이 짧다는 이유만으로 무조건 더 쪼개지는 않는다.
 
 ## 유지한 연결
 

@@ -16101,11 +16101,11 @@ MonoBehaviour:
   groundSnapDistance: 0.5
   slideJumpMinDuration: 0.1
   slideKickJumpHeight: 1.05
-  groundDiveLaunchSpeed: 8.5
-  groundDiveVerticalPop: 6.5
+  groundDiveLaunchSpeed: 11.5
+  groundDiveVerticalPop: 4.6
   divePopPerSpeed: 0.12
   maxAdditionalDivePop: 2.5
-  diveGravityScale: 0.72
+  diveGravityScale: 0.9
   diveMomentumRetention: 0.88
   diveAirResistance: 0.12
   diveSlideKickBoost: 3.8

@@ -21,6 +21,9 @@ public sealed class LedgeHangState : MovementBaseState
         if (!ctx.InputAvailable || ctx.Input.CrouchPressed) { Drop(); return; }
         bool forward = input.y > 0.1f;
         bool facing = ctx.Abilities.Traversal.FacingLedge();
+        // Looking away prepares a directional jump, never a delayed mantle.
+        if (facing) requestJump = false;
+        else requestMantle = false;
         if (ctx.Input.JumpPressed && !facing) { requestJump = true; requestMantle = false; }
         else requestMantle |= facing && (ctx.Input.JumpPressed || (forward && !forwardWasHeld));
         forwardWasHeld = forward;
@@ -41,7 +44,8 @@ public sealed class LedgeHangState : MovementBaseState
     {
         var traversal = ctx.Abilities.Traversal;
         if (traversal.Ledge.Surface == null) { Drop(); return; }
-        if (ctx.CurrentStateDuration >= ctx.AbilitySettings.ledgeCatchDuration && Mathf.Abs(ctx.CurrentInput.x) > 0.1f)
+        if (traversal.FacingLedge() && ctx.CurrentStateDuration >= ctx.AbilitySettings.ledgeCatchDuration
+            && Mathf.Abs(ctx.CurrentInput.x) > 0.1f)
         {
             Vector3 normal = traversal.Ledge.Surface.transform.TransformDirection(traversal.Ledge.LocalNormal);
             Vector3 right = Vector3.Cross(normal, Vector3.up).normalized;

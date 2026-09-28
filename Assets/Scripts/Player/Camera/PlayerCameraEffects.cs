@@ -53,6 +53,7 @@ public sealed class PlayerCameraEffects : MonoBehaviour
     private ObstacleTraversalState punchSource;
     private int punchSerial;
     private Vector2 traversalPunch, punchVelocity;
+    private float divePitch;
 
     private float bobPhase;
     private float currentBobWeight;
@@ -119,6 +120,7 @@ public sealed class PlayerCameraEffects : MonoBehaviour
         UpdateLandingImpact();
         UpdateVerticalL4DBob();
         UpdateTraversalPunch(Time.deltaTime);
+        UpdateDivePresentation(Time.deltaTime);
 
         float finalOffsetY = currentBobY + impactDisplacementY;
         verticalBobTarget.localPosition = new Vector3(initialBobTargetPos.x, initialBobTargetPos.y + finalOffsetY, initialBobTargetPos.z);
@@ -131,7 +133,7 @@ public sealed class PlayerCameraEffects : MonoBehaviour
 
     private void ApplyCameraRotation()
     {
-        effectsPivot.localRotation = Quaternion.Euler(traversalPunch.x, 0f,
+        effectsPivot.localRotation = Quaternion.Euler(traversalPunch.x + divePitch, 0f,
             currentTiltRoll + movement.LeanRoll + traversalPunch.y);
     }
 
@@ -157,6 +159,19 @@ public sealed class PlayerCameraEffects : MonoBehaviour
     {
         if (effectsPivot != null) effectsPivot.localRotation = Quaternion.identity;
         traversalPunch = punchVelocity = Vector2.zero;
+        divePitch = 0f;
+    }
+
+    private void UpdateDivePresentation(float dt)
+    {
+        // Small, additive launch cue. It never owns mouse aim or the player's yaw.
+        float target = 0f;
+        if (movement.IsDiving)
+        {
+            float forward = Vector3.Dot(movement.HorizontalVelocity.normalized, movement.transform.forward);
+            target = forward * 3f * movement.Actions.Dive.BurstWeight;
+        }
+        divePitch = Mathf.Lerp(divePitch, target, 1f - Mathf.Exp(-16f * Mathf.Max(0f, dt)));
     }
 
     private void UpdateDynamicFov()

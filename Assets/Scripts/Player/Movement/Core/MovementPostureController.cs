@@ -28,6 +28,13 @@ public sealed class MovementPostureController
 
     internal void UpdateAirCrouch()
     {
+        // A dive lowers the head toward a horizontal body pose. Air crouch alone
+        // tucks the feet up while retaining eye height; that made dives float high.
+        if (ctx.IsDiving)
+        {
+            if (airCrouching || airBodyTucked) RebaseAirCrouchFeet();
+            return;
+        }
         if (!ctx.StateMachine.Current.AllowsAutomaticPosture)
         {
             if (airCrouching || airBodyTucked) RebaseAirCrouchFeet();
@@ -76,6 +83,8 @@ public sealed class MovementPostureController
 
     public bool HasCeilingAbove(float targetHeightToCheck)
     {
+        if (Mathf.Approximately(targetHeightToCheck, ctx.crouchColliderHeight))
+            return CrouchBlockedAt(ctx.transform.position);
         if (!airCrouching && ctx.Motor.controller.height >= targetHeightToCheck - 0.01f) return false;
 
         float radius = Mathf.Min(standingColliderRadius, ctx.Motor.controller.radius) * 0.9f;
@@ -99,6 +108,8 @@ public sealed class MovementPostureController
     public bool HasCeilingAhead(Vector3 direction, float distance, float targetHeightToCheck)
     {
         if (direction.sqrMagnitude < 0.001f) return false;
+        if (Mathf.Approximately(targetHeightToCheck, ctx.crouchColliderHeight))
+            return CrouchBlockedAt(ctx.transform.position + direction.normalized * distance);
 
         float radius = Mathf.Min(standingColliderRadius, ctx.Motor.controller.radius) * 0.9f;
         Vector3 aheadFeet = ctx.transform.position + direction.normalized * distance;
@@ -121,44 +132,38 @@ public sealed class MovementPostureController
     public bool HasVentCeilingAhead(Vector3 moveDir, float forwardDistance = 0.5f)
     {
         if (moveDir.sqrMagnitude < 0.001f) return false;
+        Vector3 direction = moveDir.normalized;
+        float distance = Mathf.Max(0f, forwardDistance);
+        Vector3 feet = ctx.transform.position, ahead = feet + direction * distance;
+        // Use the destination posture's actual width, never the current (smaller) radius.
+        PostureCapsule(feet, ctx.proneColliderHeight, 0f, out Vector3 bottom, out Vector3 top, out float radius);
+        if (Physics.CheckCapsule(bottom, top, radius, ctx.groundLayers, QueryTriggerInteraction.Ignore)
+            || Physics.CheckCapsule(bottom + direction * distance, top + direction * distance, radius,
+                ctx.groundLayers, QueryTriggerInteraction.Ignore)
+            || Physics.CapsuleCast(bottom, top, radius, direction, distance,
+                ctx.groundLayers, QueryTriggerInteraction.Ignore)) return false;
 
-        Vector3 checkOrigin = ctx.transform.position + moveDir.normalized * forwardDistance;
-        float maxAllowedRadius = ctx.proneColliderHeight * 0.45f;
-        float checkRadius = Mathf.Min(ctx.Motor.controller.radius * 0.6f, maxAllowedRadius);
+        if (CrouchBlockedAt(feet) || CrouchBlockedAt(ahead)) return true;
+        // Include thin lintels between the two samples so early detection cannot skip them.
+        PostureCapsule(feet, ctx.crouchColliderHeight, ctx.crouchClearanceMargin, out bottom, out top, out radius);
+        return Physics.CapsuleCast(bottom, top, radius, direction, distance,
+            ctx.groundLayers, QueryTriggerInteraction.Ignore);
+    }
 
-        float groundClearance = 0.05f;
-        float bottomY = checkRadius + groundClearance;
+    private bool CrouchBlockedAt(Vector3 feet)
+    {
+        PostureCapsule(feet, ctx.crouchColliderHeight, ctx.crouchClearanceMargin,
+            out Vector3 bottom, out Vector3 top, out float radius);
+        return Physics.CheckCapsule(bottom, top, radius, ctx.groundLayers, QueryTriggerInteraction.Ignore);
+    }
 
-        float proneTopY = Mathf.Max(bottomY, ctx.proneColliderHeight - checkRadius);
-        Vector3 proneBottomCenter = checkOrigin + Vector3.up * bottomY;
-        Vector3 proneTopCenter = checkOrigin + Vector3.up * proneTopY;
-
-        bool isProneBlocked = Physics.CheckCapsule(
-            proneBottomCenter,
-            proneTopCenter,
-            checkRadius,
-            ctx.groundLayers,
-            QueryTriggerInteraction.Ignore
-        );
-
-        if (isProneBlocked) return false;
-
-        float crouchTopY = ctx.crouchColliderHeight - checkRadius;
-        Vector3 crouchBottomCenter = checkOrigin + Vector3.up * Mathf.Max(bottomY, ctx.proneColliderHeight);
-        Vector3 crouchTopCenter = checkOrigin + Vector3.up * crouchTopY;
-
-        if (crouchTopY > ctx.proneColliderHeight)
-        {
-            return Physics.CheckCapsule(
-                crouchBottomCenter,
-                crouchTopCenter,
-                checkRadius,
-                ctx.groundLayers,
-                QueryTriggerInteraction.Ignore
-            );
-        }
-
-        return false;
+    private void PostureCapsule(Vector3 feet, float height, float headroom,
+        out Vector3 bottom, out Vector3 top, out float radius)
+    {
+        radius = Mathf.Max(0.01f, Mathf.Min(standingColliderRadius, height * 0.5f) - 0.01f);
+        float bottomY = radius + 0.02f;
+        bottom = feet + Vector3.up * bottomY;
+        top = feet + Vector3.up * Mathf.Max(bottomY, height + headroom - radius);
     }
 
     public void UpdateHeightsAndTransform(float dt)

@@ -2,16 +2,16 @@ using UnityEngine;
 
 public sealed class DivingGroupState : MovementBaseState
 {
-    private const float DIVE_STEER_SHARPNESS = 1.2f;
-
     public DivingGroupState(PlayerMovement context, MovementBaseState parent) : base(context, parent) { }
 
     public override string Name => "Dive";
     public override MovementPosture Posture => MovementPosture.Prone;
     public override bool TryJump() => false;
+    public override void Enter() => ctx.Actions.Dive.BeginFlight();
 
     public override void OnLanding()
     {
+        ctx.Actions.Dive.Land();
         float speed = new Vector2(ctx.HorizontalVelocity.x, ctx.HorizontalVelocity.z).magnitude;
         bool supine = ctx.CurrentState == PlayerMovement.MovementState.SupineDiving;
         if (speed > ctx.SlideEndSpeed)
@@ -23,25 +23,13 @@ public sealed class DivingGroupState : MovementBaseState
 
     public override void UpdatePhysics(float dt)
     {
-        float currentAirSpeed = ctx.HorizontalVelocity.magnitude;
-        if (currentAirSpeed <= 0.01f) return;
+        ctx.Actions.Dive.UpdateFlight(dt);
+    }
 
-        currentAirSpeed = Mathf.Max(currentAirSpeed - (ctx.DiveAirResistance * dt), 0f);
-
-        Vector3 flightDir = ctx.HorizontalVelocity.normalized;
-        Vector2 input = ctx.CurrentInput;
-
-        if (Mathf.Abs(input.x) > 0.1f)
-        {
-            Vector3 camRight = ctx.transform.right;
-            camRight.y = 0f;
-            camRight.Normalize();
-
-            Vector3 steerDir = camRight * input.x;
-            flightDir = Vector3.Slerp(flightDir, (flightDir + steerDir * 0.3f).normalized, DIVE_STEER_SHARPNESS * dt);
-        }
-
-        ctx.HorizontalVelocity = flightDir * currentAirSpeed;
+    public override void UpdateLogic(float dt)
+    {
+        // The apex and a wall stop are still airborne. Only support ends a dive.
+        if (ctx.IsGrounded) OnLanding();
     }
 
     public override void ProcessInput(Vector2 input)
@@ -93,5 +81,8 @@ public sealed class DivingGroupState : MovementBaseState
                 return;
             }
         }
+        Vector3 normal = Vector3.ProjectOnPlane(hit.normal, Vector3.up).normalized;
+        if (Vector3.Dot(ctx.HorizontalVelocity, normal) < 0f)
+            ctx.HorizontalVelocity = Vector3.ProjectOnPlane(ctx.HorizontalVelocity, normal);
     }
 }

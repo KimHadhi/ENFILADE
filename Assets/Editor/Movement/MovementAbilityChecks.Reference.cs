@@ -132,13 +132,13 @@ public static partial class MovementAbilityChecks
                 Near(f.Player.GetComponentInChildren<Camera>().transform.position.y - f.P.transform.position.y,
                     eye, "No forced crouch camera dip", 0.002f);
             }
-            // Source uses the view direction at handoff, not the old approach velocity.
+            // Keep source pacing/speed, but prevent looking back from reversing the handoff.
             f.MoveInput(Vector2.zero); f.P.transform.rotation = Quaternion.Euler(0f, 20f, 0f);
             for (int i = 0; i < 30 && f.P.CurrentState == State.Vault; i++) f.Step(1f / 66.66f);
             Require(!f.P.IsParkour, "Reference traversal completes");
             // State handoff is observed after the next ordinary air-drag tick.
             Near(f.P.HorizontalVelocity.magnitude, 5f, "Reference 200 units/sec followed by ordinary drag", 0.5f);
-            Require(Vector3.Dot(f.P.HorizontalVelocity.normalized, f.P.transform.forward) > 0.99f, "Exit follows current view");
+            Require(Vector3.Dot(f.P.HorizontalVelocity.normalized, Vector3.forward) > 0.99f, "Exit follows traversal despite changed view");
         }
     }
     private static void ReferenceOntoMotion()

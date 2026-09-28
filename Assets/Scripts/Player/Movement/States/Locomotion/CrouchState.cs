@@ -23,11 +23,13 @@ public sealed class CrouchingState : MovementBaseState
             return;
         }
 
-        // 2. [환풍구 자동 포복] 완벽한 캡슐 볼륨 검사를 통해 환풍구 턱을 통과함
-        if (input.sqrMagnitude > 0.01f)
+        // 2. Lower the body before the entrance, only if the prone route is clear.
+        bool moving = input.sqrMagnitude > 0.01f;
+        if (ctx.IsGrounded && (moving || ctx.HasCeilingAbove(ctx.CrouchColliderHeight)))
         {
-            Vector3 moveDir = (ctx.transform.right * input.x + ctx.transform.forward * input.y).normalized;
-            if (ctx.HasVentCeilingAhead(moveDir, 0.45f)) // 조금 더 좁은 간격에서 정밀 스캔
+            Vector3 moveDir = moving
+                ? (ctx.transform.right * input.x + ctx.transform.forward * input.y).normalized : ctx.transform.forward;
+            if (ctx.HasVentCeilingAhead(moveDir, moving ? ctx.proneEntryLookAhead : 0f))
             {
                 ctx.ChangeState(PlayerMovement.MovementState.Proning);
                 return;

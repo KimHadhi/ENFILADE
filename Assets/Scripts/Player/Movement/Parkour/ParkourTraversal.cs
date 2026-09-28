@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 using State = PlayerMovement.MovementState;
 
 public sealed class ParkourTraversal
@@ -16,18 +17,28 @@ public sealed class ParkourTraversal
     private float wallBudget;
     private float wallLock, barLock, ledgeLock;
     private SwingBar lastBar;
+    // Turning around must not refresh the same obstacle's lift while airborne.
+    // Keep distinct obstacles available for legitimate parkour chains.
+    private readonly HashSet<Collider> traversedObstacles = new HashSet<Collider>();
     internal ParkourTraversal(PlayerMovement context)
     { ctx = context; Detector = new ParkourDetector(ctx); wallBudget = ctx.AbilitySettings.wallDuration; }
     internal void Tick(float dt)
     { wallLock = Mathf.Max(0f, wallLock - dt); barLock = Mathf.Max(0f, barLock - dt); ledgeLock = Mathf.Max(0f, ledgeLock - dt); }
-    internal void OnGrounded() { wallBudget = ctx.AbilitySettings.wallDuration; }
+    internal void OnGrounded()
+    {
+        wallBudget = ctx.AbilitySettings.wallDuration;
+        if (!ctx.IsParkour) traversedObstacles.Clear();
+    }
+    internal void RecordObstacle() { if (Obstacle.Surface != null) traversedObstacles.Add(Obstacle.Surface); }
     internal bool SpendWallTime(float dt) { wallBudget -= dt; return wallBudget > 0f; }
     internal bool CanGrab(SwingBar candidate) => barLock <= 0f || candidate != lastBar;
 
     internal bool TryObstacle(bool airborne = false)
     {
         if (ctx.CurrentInput.sqrMagnitude < 0.01f) return false;
-        if (!Detector.TryObstacle(ctx.Abilities.InputDirection(ctx.transform.forward), out Obstacle, airborne)) return false;
+        if (!Detector.TryObstacle(ctx.Abilities.InputDirection(ctx.transform.forward), out ObstacleTarget candidate, airborne)
+            || traversedObstacles.Contains(candidate.Surface)) return false;
+        Obstacle = candidate;
         ctx.ChangeState(Obstacle.IsVault ? State.Vault : State.Mantle);
         ctx.Actions.ClearJumpBuffer();
         return true;
@@ -138,5 +149,6 @@ public sealed class ParkourTraversal
         wallBudget = ctx.AbilitySettings.wallDuration;
         wallLock = barLock = ledgeLock = 0f; Bar = lastBar = null; Obstacle = default; Ledge = default; Wall = default;
         Angle = AngularSpeed = 0f; ReleaseVelocity = LedgeJumpVelocity = Vector3.zero;
+        traversedObstacles.Clear();
     }
 }

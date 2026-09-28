@@ -88,7 +88,7 @@ public sealed class ProneState : MovementBaseState
                 ? (ctx.transform.right * input.x + ctx.transform.forward * input.y).normalized
                 : ctx.transform.forward;
 
-            bool isStillHeadingIntoVent = hasMoveInput && ctx.HasVentCeilingAhead(moveDir, 0.45f);
+            bool isStillHeadingIntoVent = hasMoveInput && ctx.HasVentCeilingAhead(moveDir, ctx.proneEntryLookAhead);
 
             // 현재 위치 + 0.35m 앞쪽 여유 공간까지 모두 확보되었을 때만 Crouching으로 전이
             bool canSafelyRise = !ctx.HasCeilingAbove(ctx.CrouchColliderHeight)

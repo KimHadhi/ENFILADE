@@ -6,7 +6,7 @@
 
 현재 [PlayerCombatActions.HitForward](../Player/Combat/PlayerCombatActions.cs)는 `SphereCastAll`로 결과 배열을 만들고 거리순 정렬한다. 예전 클래스 이름은 MovementCombat이었다. 밀치기 1회보다 **태클 중 매 프레임 반복 호출**되는 부분이 먼저 살펴볼 대상이다.
 
-[MovementTrainingAttacker](../Debug/Movement/MovementTrainingAttacker.cs)는 지금 직접 RaycastAll을 호출하지 않는다. 대신 [AttackTrace.Raycast](../Combat/AttackTrace.cs)가 RaycastAll과 정렬을 실행하므로 할당 문제 자체는 남아 있다. 적이 많다는 사실만으로 GC 스파이크를 확정할 수는 없다. 공격 빈도·전체 할당량·대상 기기에서의 GC.Alloc과 프레임 시간을 확인해야 한다.
+[MovementTrainingAttacker](../Debug/Movement/MovementTrainingAttacker.cs)는 직접 RaycastAll을 호출하지 않고 [AttackTrace.Raycast](../Combat/HitDetection/AttackTrace.cs)를 사용한다. 9월 28일 검토 당시에는 이 공용 함수가 RaycastAll과 정렬을 실행했다. **9월 29일 전투 Phase 1에서 변경**: 일반 경로는 단일 Raycast, 공격자 자신의 충돌체를 건너뛰어야 할 때는 캐시 배열의 RaycastNonAlloc을 사용한다. 32칸이 가득 차면 누락된 벽을 찾기 위해 RaycastAll로 재검사하므로 모든 상황에서 무할당은 아니다. 사격 Debug.Log의 문자열 생성도 별도 할당이다. 적이 많다는 사실만으로 GC 스파이크를 확정할 수는 없다. 실제 공격 빈도·전체 할당량·대상 기기에서의 GC.Alloc과 프레임 시간을 확인해야 한다.
 
 미리 만든 결과 배열과 NonAlloc API를 쓰면 물리 질의 결과 배열의 반복 할당을 제거할 수 있다. 하지만 32칸이 가득 찬 경우의 정책도 필요하다. 결과 순서가 보장되지 않고, 버퍼가 가득 차면 가장 가까운 충돌이 누락될 수 있다. 반환된 일부 결과만 정렬해도 누락된 벽을 복구하지 못한다. [Unity RaycastNonAlloc 문서](https://docs.unity3d.com/6000.0/Documentation/ScriptReference/Physics.RaycastNonAlloc.html), [SphereCastNonAlloc 문서](https://docs.unity3d.com/6000.0/Documentation/ScriptReference/Physics.SphereCastNonAlloc.html).
 
