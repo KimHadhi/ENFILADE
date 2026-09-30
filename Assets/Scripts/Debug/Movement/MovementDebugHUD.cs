@@ -59,7 +59,7 @@ public sealed class MovementDebugHUD : MonoBehaviour
 
     private void OnGUI()
     {
-        if (playerMovement == null) return;
+        if (playerMovement == null || !playerMovement.IsInitialized) return;
 
         InitStyles();
 

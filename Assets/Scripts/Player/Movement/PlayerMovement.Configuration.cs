@@ -36,8 +36,8 @@ public sealed partial class PlayerMovement
     [SerializeField, Min(1f)] internal float slideMinStartSpeed = 5.3f;
     [SerializeField, Min(0f)] internal float slideKickBoost = 1.0f;
     [SerializeField, Min(0f)] internal float slideFriction = 4.2f;
-    [SerializeField, Min(0f)] internal float diveSlideFriction = 5.2f;
-    [SerializeField, Min(0f)] internal float supineSlideFriction = 5.6f;
+    [SerializeField, Min(0f)] internal float diveSlideFriction = 9f;
+    [SerializeField, Min(0f)] internal float supineSlideFriction = 9f;
     [SerializeField, Range(0.05f, 0.8f)] internal float airSlideFrictionMultiplier = 0.25f;
     [SerializeField, Min(0f)] internal float slopeSlideGravity = 28f;
     [SerializeField, Min(0f)] internal float slideEndSpeed = 1.5f;
@@ -53,10 +53,14 @@ public sealed partial class PlayerMovement
     [SerializeField, Min(0.2f)] internal float slideKickJumpHeight = 1.05f;
 
     [Header("Airborne & Ground Launch Dive")]
-    [Tooltip("다이브 시작 순간의 수평 속도. Burst Duration 이후 감속하므로 지속 이동 속도가 아닙니다.")]
+    [Tooltip("다이브 시작 순간의 수평 속도. 공중에서 점진적으로 감속하므로 지속 이동 속도가 아닙니다.")]
     [SerializeField, Min(5f)] internal float groundDiveLaunchSpeed = 11.5f;
     [Tooltip("지상 다이브 발사 시 상향 포물선 도약력")]
     [SerializeField, Min(1f)] internal float groundDiveVerticalPop = 4.6f;
+    [Tooltip("다이브 시작 후 기존 눈높이/몸 높이를 유지하는 시간. 먼저 위로 솟는 궤적을 보여 줍니다.")]
+    [SerializeField, Min(0f)] internal float divePoseDelay = 0.03f;
+    [Tooltip("도약 후 엎드린 높이까지 몸과 시점을 부드럽게 낮추는 시간. 수평 이동 속도와는 별개입니다.")]
+    [SerializeField, Min(0.05f)] internal float divePoseDuration = 0.5f;
     [SerializeField, Min(0f)] internal float divePopPerSpeed = 0.12f;
     [SerializeField, Min(0f)] internal float maxAdditionalDivePop = 2.5f;
 
@@ -64,10 +68,10 @@ public sealed partial class PlayerMovement
     [SerializeField, Range(0.5f, 1.2f)] internal float diveGravityScale = 0.9f;
     [SerializeField, Range(0.5f, 1.0f)] internal float diveMomentumRetention = 0.88f;
     [SerializeField, Min(0f)] internal float diveAirResistance = 0.12f;
-    [Tooltip("빠른 회피 추진력을 유지하는 짧은 구간. 이후 Carry Speed 쪽으로 감속합니다.")]
+    [Tooltip("공중 감속이 0에서 설정값까지 서서히 강해지는 시간. 이 시점에 급제동하지 않습니다.")]
     [SerializeField, Min(0.01f)] internal float diveBurstDuration = 0.1f;
     [SerializeField, Min(0f)] internal float diveCarrySpeed = 2.8f;
-    [SerializeField, Min(0.1f)] internal float diveBurstBraking = 8f;
+    [SerializeField, Min(0.1f)] internal float diveBurstBraking = 2.6f;
     [Tooltip("착지 직후 다이브 재발동을 막는 시간. 시점 조작은 계속 가능합니다.")]
     [SerializeField, Min(0f)] internal float diveLandingRecovery = 0.35f;
 

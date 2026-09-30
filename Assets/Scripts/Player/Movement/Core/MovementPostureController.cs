@@ -13,23 +13,32 @@ public sealed class MovementPostureController
     private readonly float baseCameraY;
     private float currentOffset;
     private float traversalCameraRecovery;
+    private float diveEntryOffset, diveEntryHeight;
+
+    internal void BeginDive()
+    {
+        // Preserve the actual entry pose, including an interrupted crouch or tucked air jump.
+        if (airCrouching || airBodyTucked) RebaseAirCrouchFeet();
+        diveEntryOffset = currentOffset;
+        diveEntryHeight = ctx.Motor.controller.height;
+    }
 
     internal MovementPostureController(PlayerMovement context)
     {
         ctx = context;
         var controller = ctx.Motor.controller;
-        standingColliderHeight = controller.height;
-        standingColliderRadius = controller.radius;
-        defaultStepOffset = controller.stepOffset;
-        controller.center = new Vector3(0f, standingColliderHeight * 0.5f, 0f);
+        standingColliderHeight = ctx.runtimeBodyDefaults.x;
+        standingColliderRadius = ctx.runtimeBodyDefaults.y;
+        defaultStepOffset = ctx.runtimeBodyDefaults.z;
+        controller.center = new Vector3(0f, controller.height * 0.5f, 0f);
         if (ctx.crouchPivot == null) ctx.crouchPivot = ctx.transform.Find("CrouchPivot");
-        if (ctx.crouchPivot != null) baseCameraY = ctx.crouchPivot.localPosition.y;
+        baseCameraY = ctx.runtimeBodyDefaults.w;
+        if (ctx.crouchPivot != null) currentOffset = ctx.crouchPivot.localPosition.y - baseCameraY;
     }
 
     internal void UpdateAirCrouch()
     {
-        // A dive lowers the head toward a horizontal body pose. Air crouch alone
-        // tucks the feet up while retaining eye height; that made dives float high.
+        // Dive owns a timed takeoff-to-prone pose. Air crouch must not override it.
         if (ctx.IsDiving)
         {
             if (airCrouching || airBodyTucked) RebaseAirCrouchFeet();
@@ -187,6 +196,15 @@ public sealed class MovementPostureController
             targetOffset = airCameraOffset;
         }
 
+        if (ctx.IsDiving)
+        {
+            float progress = ctx.Actions.Dive.PoseProgress;
+            targetColliderHeight = Mathf.Lerp(diveEntryHeight, targetColliderHeight, progress);
+            targetOffset = Mathf.Lerp(diveEntryOffset, targetOffset, progress);
+            // The camera stays inside the changing body under low roofs, including supine dives.
+            targetOffset = Mathf.Min(targetOffset, targetColliderHeight - 0.03f - baseCameraY);
+        }
+
         float newHeight;
         if (ctx.Motor.controller.height < targetColliderHeight && dt > 0f)
         {
@@ -230,7 +248,8 @@ public sealed class MovementPostureController
             bool isSlidingOrDiving = ctx.IsSliding || ctx.IsDiving;
             float currentSharpness = isSlidingOrDiving ? ctx.slideTransitionSharpness : ctx.transitionSharpness;
             if (traversalCameraRecovery > 0f) currentSharpness = Mathf.Min(currentSharpness, 6f);
-            float t = (dt > 0f) ? 1f - Mathf.Exp(-currentSharpness * dt) : 1f;
+            // Dive already has a smooth time curve; a second filter delays the landing pose.
+            float t = ctx.IsDiving || dt <= 0f ? 1f : 1f - Mathf.Exp(-currentSharpness * dt);
             currentOffset = Mathf.Lerp(currentOffset, targetOffset, t);
             Vector3 pos = ctx.crouchPivot.localPosition;
             ctx.crouchPivot.localPosition = new Vector3(pos.x, baseCameraY + currentOffset, pos.z);

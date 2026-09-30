@@ -48,7 +48,7 @@ public sealed class MovementAbilities
             continuingStep = false;
         }
         if ((CanUseGroundActions || continuingStep) && ctx.Input.DodgePressed &&
-            Dodge.TryStart(DodgeKind.Step, 0, ctx.AbilitySettings.stepInvulnerability, ctx.AbilitySettings.dodgeCooldown))
+            Dodge.TryStart(DodgeKind.Step, 0, ctx.AbilitySettings.stepInvulnerability, ctx.AbilitySettings.stepDodgeCooldown))
         {
             ActionDirection = InputDirection(-ctx.transform.forward);
             if (!continuingStep) ActionPosture = ctx.IsCrouching ? MovementPosture.Crouching : MovementPosture.Standing;

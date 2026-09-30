@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.Controls;
 
 public sealed class MovementInput
 {
@@ -14,6 +15,22 @@ public sealed class MovementInput
     public bool SprintHeld { get; private set; }
     public bool LeanPressed { get; private set; }
     public int LeanSide { get; private set; }
+    internal bool SprintButtonHeld
+    {
+        get
+        {
+            if (sprintAction == null || !sprintAction.enabled) return false;
+            if (sprintAction.IsPressed()) return true;
+            // Sprint is a held intent. A re-enabled Button action can wait for a new press
+            // even though its bound Shift/trigger is still down. Read the bound button in
+            // that case; never hard-code Shift or bypass a composite modifier binding.
+            foreach (var binding in sprintAction.bindings)
+                if (binding.isComposite) return false;
+            foreach (var control in sprintAction.controls)
+                if (control is ButtonControl button && button.isPressed) return true;
+            return false;
+        }
+    }
     internal MovementInput()
     {
         var actions = InputSystem.actions;
@@ -36,7 +53,7 @@ public sealed class MovementInput
         CrouchHeld = available && Held(crouchAction);
         DodgePressed = available && Pressed(dodgeAction);
         ShovePressed = available && Pressed(shoveAction);
-        SprintHeld = available && Held(sprintAction);
+        SprintHeld = available && SprintButtonHeld;
         LeanSide = available ? (Held(leanRightAction) ? 1 : 0) - (Held(leanLeftAction) ? 1 : 0) : 0;
         LeanPressed = available && LeanSide != 0 && (Pressed(leanLeftAction) || Pressed(leanRightAction));
     }

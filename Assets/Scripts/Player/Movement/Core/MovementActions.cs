@@ -63,11 +63,13 @@ public sealed class MovementActions
 
     internal void ProcessSprintRampUp(float dt, Vector2 input)
     {
-        bool sprintHeld = ctx.Input.sprintAction != null && ctx.Input.sprintAction.IsPressed();
-        bool canSprintState = ctx.CurrentState == MovementState.Standing;
+        bool sprintHeld = ctx.Input.SprintButtonHeld;
+        // A short step interrupts movement, not the held sprint intent or its acceleration.
+        bool canSprintState = ctx.CurrentState == MovementState.Standing ||
+            (ctx.CurrentState == MovementState.StepDodge && ctx.Abilities.ActionPosture == MovementPosture.Standing);
         bool wantsToSprint = ctx.InputAvailable && ctx.Motor.isGrounded && sprintHeld && input.y > 0.1f && canSprintState;
 
-        if (wantsToSprint) sprintProgress = Mathf.MoveTowards(sprintProgress, 1f, dt / ctx.sprintRampUpDuration);
+        if (wantsToSprint) sprintProgress = Mathf.MoveTowards(sprintProgress, 1f, dt / Mathf.Max(0.01f, ctx.sprintRampUpDuration));
         else if (!ctx.IsSliding)
         {
             sprintProgress = Mathf.MoveTowards(sprintProgress, 0f, dt / (ctx.sprintRampUpDuration * 1.5f));

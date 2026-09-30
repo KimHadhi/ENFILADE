@@ -40,6 +40,12 @@ public sealed partial class PlayerMovement : MonoBehaviour
     internal MovementStateMachine StateMachine { get; private set; }
     internal MovementAbilities Abilities { get; private set; }
     public PlayerDamageReceiver DamageReceiver { get; private set; }
+    public bool IsInitialized => Motor != null && Posture != null && Actions != null && Input != null
+        && Abilities != null && StateMachine != null && DamageReceiver != null;
+    // Native capsule/pivot dimensions can be crouched when Unity reloads scripts in Play Mode.
+    // Keep the original dimensions across that reload rather than treating them as standing.
+    [SerializeField, HideInInspector] private bool runtimeBodyCaptured;
+    [SerializeField, HideInInspector] internal Vector4 runtimeBodyDefaults;
     [SerializeField] private MovementAbilitySettings abilitySettings = new MovementAbilitySettings();
     public MovementAbilitySettings AbilitySettings => abilitySettings;
     public bool IsParkour => StateMachine != null && StateMachine.Current.ControlsTraversal;
@@ -123,9 +129,22 @@ public sealed partial class PlayerMovement : MonoBehaviour
     public InputAction JumpAction => Input.jumpAction;
 
 
-    private void Awake()
+    private void Awake() => EnsureInitialized();
+    private void OnEnable() { if (Application.isPlaying) EnsureInitialized(); }
+
+    internal bool EnsureInitialized()
     {
+        if (IsInitialized) return true;
         var controller = GetComponent<CharacterController>();
+        if (controller == null) return false;
+        if (crouchPivot == null) crouchPivot = transform.Find("CrouchPivot");
+        if (!runtimeBodyCaptured)
+        {
+            runtimeBodyDefaults = new Vector4(controller.height, controller.radius, controller.stepOffset,
+                crouchPivot != null ? crouchPivot.localPosition.y : 0f);
+            runtimeBodyCaptured = true;
+        }
+        Abilities?.Reset();
         groundLayers &= ~(1 << gameObject.layer);
         Input = new MovementInput();
         Motor = new MovementMotor(this, controller);
@@ -136,10 +155,14 @@ public sealed partial class PlayerMovement : MonoBehaviour
         if (DamageReceiver == null) DamageReceiver = gameObject.AddComponent<PlayerDamageReceiver>();
         DamageReceiver.Initialize(this);
         StateMachine = MovementStateMachine.Create(this);
+        if (controller.height < Posture.standingColliderHeight - 0.02f)
+            ChangeState(controller.height <= proneColliderHeight + 0.02f ? MovementState.Proning : MovementState.Crouching);
+        return true;
     }
 
     private void Update()
     {
+        if (!EnsureInitialized()) return;
         float dt = Time.deltaTime;
         if (dt <= 0f || !Application.isFocused || !DamageReceiver.IsAlive) return;
         Input.Sample(InputAvailable);
@@ -182,7 +205,7 @@ public sealed partial class PlayerMovement : MonoBehaviour
 
     public void ResetVelocity()
     {
-        if (Motor == null) return;
+        if (!IsInitialized) return;
         if (Posture.airBodyTucked || Posture.airCrouching) Posture.RebaseAirCrouchFeet();
         Motor.Reset();
         Actions.Reset();

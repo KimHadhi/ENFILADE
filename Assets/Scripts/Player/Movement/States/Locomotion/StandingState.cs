@@ -15,7 +15,7 @@ public sealed class StandingState : MovementBaseState
             (ctx.DiveAction != null && ctx.DiveAction.WasPressedThisFrame())
         );
 
-        bool sprintHeld = ctx.InputAvailable && ctx.SprintAction != null && ctx.SprintAction.IsPressed();
+        bool sprintHeld = ctx.InputAvailable && ctx.Input.SprintButtonHeld;
         float measuredSpeed = new Vector2(ctx.ActualVelocity.x, ctx.ActualVelocity.z).magnitude;
         bool isActuallySprinting = sprintHeld && input.y > 0.1f && (ctx.SprintProgress >= 0.7f) && (measuredSpeed >= ctx.SlideMinStartSpeed);
 

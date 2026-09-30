@@ -14,10 +14,11 @@ public sealed class MovementTrainingAttacker : MonoBehaviour
     private Renderer indicator;
     private MaterialPropertyBlock color;
     private void Awake() { indicator = GetComponent<Renderer>(); color = new MaterialPropertyBlock(); }
+    private void OnEnable() { Awake(); timer = 0f; preparing = false; }
     private void Update()
     {
         if (player == null) player = FindFirstObjectByType<PlayerMovement>();
-        if (player == null || !player.DamageReceiver.IsAlive || !player.InputAvailable) return;
+        if (player == null || !player.IsInitialized || !player.DamageReceiver.IsAlive || !player.InputAvailable) return;
         timer += Time.deltaTime;
         if (!preparing && timer >= interval && Vector3.Distance(transform.position, player.transform.position) <= range)
         { preparing = true; timer = 0f; aim = player.transform.position + Vector3.up; }

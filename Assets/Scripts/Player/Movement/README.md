@@ -5,6 +5,14 @@
 `PlayerMovement`는 Unity 생명주기와 외부 API를 연결하는 진입점이다. 카메라, HUD,
 텔레포트는 기존 `PlayerMovement.MovementState`, 속도 속성 및 `ResetVelocity()`를 그대로 사용한다.
 
+## 플레이 중 재컴파일
+
+Unity가 스크립트를 다시 로드하면 일반 C# 서비스(Motor, Posture, 상태 머신 등)는 사라질 수 있고 `Awake`는 다시 호출되지 않는다. `PlayerMovement.EnsureInitialized()`가 Awake/OnEnable에서 필요한 서비스를 한 번 구성하며, Update에도 복구 확인이 있다. 카메라·HUD·연습용 공격기는 `IsInitialized` 이후에 이동 데이터를 읽는다.
+
+재구성할 때 현재 웅크린 캡슐을 원래 서 있는 크기로 오인하지 않도록 기본 몸/눈높이를 별도로 보관한다. 체력과 무기 잔탄도 다시 로드할 때 보존한다. 진행 중이던 회피·파쿠르·장전은 취소하고 현재 들어갈 수 있는 일반 자세에서 재개한다. MaterialPropertyBlock 같은 직렬화되지 않는 표시 객체는 OnEnable에서 다시 만든다.
+
+새 런타임 서비스를 추가할 때 Awake에만 생성 코드를 두지 말고 이 복구 경로에도 포함한다. 편집기 검증용 `RuntimeReloadChecks.RunBatch`는 별도 배치 프로젝트에서 실제 Play Mode → 어셈블리 재로드 → 복구를 검사하며, 일반 편집기에서 실행하거나 사용자의 실행 중인 씬을 재로드하는 도구가 아니다.
+
 ## 런타임 상태 계층
 
 ```text

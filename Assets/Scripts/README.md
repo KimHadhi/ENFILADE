@@ -20,8 +20,11 @@
 | 이동 시작점과 전체 프레임 순서 | [PlayerMovement.cs](Player/Movement/PlayerMovement.cs) |
 | 걷기·슬라이드·다이브 수치 | [PlayerMovement.Configuration.cs](Player/Movement/PlayerMovement.Configuration.cs), 실제 씬의 PlayerMovement 인스펙터 |
 | 순간 회피용 다이브의 추진·감속·회복 | [MovementDive.cs](Player/Movement/Actions/MovementDive.cs). 방향별 자세와 착지는 States/Diving에서 연결 |
+| 다이브에서 먼저 솟았다가 엎드리는 몸/눈높이 | 인스펙터의 **Dive Pose Delay / Duration**, [MovementPostureController.cs](Player/Movement/Core/MovementPostureController.cs)의 BeginDive 및 높이 처리 |
 | 닷지·기울이기·파쿠르·낙하·밀치기 수치 | [MovementAbilitySettings.cs](Player/Movement/MovementAbilitySettings.cs), PlayerMovement의 Ability Settings |
 | 닷지 성공, 무적, 쿨타임 | [DodgeController.cs](Player/Movement/Dodge/DodgeController.cs) |
+| 스텝 닷지 기본 쿨타임·기울이기 폭/각도 | PlayerMovement의 Ability Settings에서 **Step Dodge Cooldown / Lean Offset / Lean Angle** |
+| Shift 유지 중 회피 후 달리기 연결 | [MovementActions.cs](Player/Movement/Core/MovementActions.cs)의 ProcessSprintRampUp, [GroundBurstState.cs](Player/Movement/States/Abilities/GroundBurstState.cs)의 Exit. 바인딩 유지 판정은 MovementInput.SprintButtonHeld |
 | 스텝 경로를 스치는 공격도 회피로 인정 | [StepDodgeTrail.cs](Player/Movement/Dodge/StepDodgeTrail.cs) |
 | Q/E 기울이기와 성공 후 횡이동 | [MovementLean.cs](Player/Movement/Dodge/MovementLean.cs) |
 | 바닥 접지·중력·충돌·경사면 밀착 | [MovementMotor.cs](Player/Movement/Core/MovementMotor.cs) |

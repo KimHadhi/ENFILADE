@@ -30,12 +30,15 @@ public sealed class WeaponController : MonoBehaviour
     private IWeaponInput input;
     private PlayerDamageReceiver health;
     private GameObject owner;
-    private bool initialized;
+    [NonSerialized] private bool initialized;
+    [SerializeField, HideInInspector] private int savedAmmo = -1;
+    [SerializeField, HideInInspector] private WeaponData savedAmmoData;
 
     private void Start() => Initialize();
+    private void OnEnable() { if (Application.isPlaying) Initialize(); }
     private void Initialize()
     {
-        if (initialized) return;
+        if (Runtime != null || initialized) return;
         initialized = true;
         var player = GetComponentInParent<PlayerMovement>();
         owner = player != null ? player.gameObject : gameObject;
@@ -51,7 +54,7 @@ public sealed class WeaponController : MonoBehaviour
             Debug.LogError("WeaponController needs WeaponData, an aim Camera/Transform and IWeaponInput on its object.", this);
             return;
         }
-        Runtime = new WeaponRuntime(weaponData);
+        Runtime = new WeaponRuntime(weaponData, savedAmmoData == weaponData && savedAmmo >= 0 ? savedAmmo : (int?)null);
     }
 
     private void Update()
@@ -84,5 +87,10 @@ public sealed class WeaponController : MonoBehaviour
         }
     }
 
-    private void OnDisable() => Runtime?.Interrupt();
+    private void OnDisable()
+    {
+        if (Runtime == null) return;
+        savedAmmo = Runtime.Ammo; savedAmmoData = Runtime.Data;
+        Runtime.Interrupt();
+    }
 }

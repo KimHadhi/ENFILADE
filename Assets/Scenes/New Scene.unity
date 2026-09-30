@@ -16086,8 +16086,8 @@ MonoBehaviour:
   slideMinStartSpeed: 5.3
   slideKickBoost: 1
   slideFriction: 4.2
-  diveSlideFriction: 5.2
-  supineSlideFriction: 5.6
+  diveSlideFriction: 9
+  supineSlideFriction: 9
   airSlideFrictionMultiplier: 0.25
   slopeSlideGravity: 28
   slideEndSpeed: 1.5
@@ -16130,10 +16130,11 @@ MonoBehaviour:
     stepDodgeRecognitionPadding: 0.12
     microInvulnerability: 0.16
     dodgeCooldown: 0.55
+    stepDodgeCooldown: 1
     microSuccessDistance: 0.3
     microSuccessDuration: 0.1
-    leanAngle: 14
-    leanOffset: 0.2
+    leanAngle: 24
+    leanOffset: 0.45
     leanSharpness: 18
     stepHeight: 0.3
     obstacleReach: 1.35

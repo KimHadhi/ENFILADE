@@ -8,7 +8,7 @@ public sealed class HeadFirstSlidingState : MovementBaseState
 
     public override void ProcessInput(Vector2 input)
     {
-        bool sprintHeld = ctx.InputAvailable && ctx.SprintAction != null && ctx.SprintAction.IsPressed();
+        bool sprintHeld = ctx.InputAvailable && ctx.Input.SprintButtonHeld;
         bool wantsSprintForward = sprintHeld && input.y > 0.1f;
         bool canCancelDiveSlide = ctx.CurrentStateDuration >= ctx.SlideCancelMinDuration && ctx.CurrentSlideSpeed <= ctx.DiveSlideCancelMaxSpeed;
 

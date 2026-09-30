@@ -11,11 +11,13 @@ public sealed class MovementLanding
     public float LastImpactSpeed { get; private set; }
     public float LastFallDistance { get; private set; }
     internal MovementLanding(PlayerMovement context) { ctx = context; }
+
     internal void Tick(float dt)
     {
         rollBuffer = Mathf.Max(0f, rollBuffer - dt);
         if (!ctx.IsGrounded && ctx.Input.CrouchPressed) rollBuffer = ctx.AbilitySettings.rollInputWindow;
     }
+
     internal void BeforeMove()
     {
         if (!ctx.IsGrounded && !ctx.IsParkour)
@@ -26,7 +28,9 @@ public sealed class MovementLanding
             impactSpeed = Mathf.Max(0f, -ctx.VerticalVelocity);
         }
     }
+
     internal void SupportedByTraversal() { impactSpeed = 0f; trackingFall = false; }
+
     internal bool OnLanding()
     {
         LastImpactSpeed = impactSpeed;
@@ -35,12 +39,15 @@ public sealed class MovementLanding
         impactSpeed = 0f;
         trackingFall = false;
         ctx.Abilities.Traversal.OnGrounded();
+
         float excess = LastImpactSpeed - ctx.AbilitySettings.safeFallSpeed;
         if (excess <= 0f || LastFallDistance <= ctx.AbilitySettings.safeFallDistance) { rollBuffer = 0f; return false; }
+
         Vector3 direction = ctx.Abilities.InputDirection(ctx.transform.forward);
         bool canRoll = !ctx.IsParkour && !ctx.IsDiving && !ctx.IsProning &&
             !ctx.HasCeilingAbove(ctx.CrouchColliderHeight) &&
             ctx.Abilities.Traversal.Detector.ClearCapsule(ctx.transform.position + direction * 0.6f, ctx.CrouchColliderHeight);
+
         if (rollBuffer > 0f && canRoll)
         {
             rollBuffer = 0f;
@@ -48,6 +55,10 @@ public sealed class MovementLanding
             ctx.ChangeState(PlayerMovement.MovementState.LandingRoll);
             ctx.Abilities.InputConsumed = true;
             ctx.Actions.ClearJumpBuffer();
+
+            // [카메라 연출 추가] 구르기 시작 시 피치(x축)를 강하게 앞으로 쏠리게 함
+            ctx.GetComponentInChildren<PlayerCameraEffects>()?.ApplyCameraImpulse(new Vector3(75f, 0f, 0f), 0f);
+
             return true;
         }
         rollBuffer = 0f;
@@ -56,5 +67,6 @@ public sealed class MovementLanding
             ctx.transform.position, Vector3.up));
         return !ctx.DamageReceiver.IsAlive;
     }
+
     internal void Reset() { impactSpeed = rollBuffer = LastImpactSpeed = LastFallDistance = 0f; trackingFall = false; }
 }

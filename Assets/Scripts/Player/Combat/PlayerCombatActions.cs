@@ -9,6 +9,7 @@ public sealed class PlayerCombatActions
     private long attackId;
     internal PlayerCombatActions(PlayerMovement context) { ctx = context; }
     internal void Tick(float dt) { cooldown = Mathf.Max(0f, cooldown - dt); }
+
     internal bool TryShove()
     {
         if (cooldown > 0f) return false;
@@ -23,6 +24,7 @@ public sealed class PlayerCombatActions
         else HitForward(false);
         return true;
     }
+
     internal void HitForward(bool tackle)
     {
         Vector3 direction = tackle ? ctx.Abilities.ActionDirection : ctx.transform.forward;
@@ -31,24 +33,54 @@ public sealed class PlayerCombatActions
         var hits = Physics.SphereCastAll(start, radius, direction, ctx.AbilitySettings.shoveReach,
             ctx.AbilitySettings.interactionLayers & ~(1 << ctx.gameObject.layer), QueryTriggerInteraction.Ignore);
         System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
+
         foreach (var hit in hits)
         {
-            // A solid wall blocks targets behind it. Multiple child colliders resolve to one receiver/body.
             var damage = hit.collider.GetComponentInParent<IDamageReceiver>();
             var shove = hit.collider.GetComponentInParent<IShoveReceiver>();
             var body = hit.rigidbody;
             var breakable = hit.collider.GetComponentInParent<IBreakable>();
             Object identity = damage as Object ?? shove as Object ?? (Object)body ?? hit.collider;
+
             if (!contacted.Add(identity)) break;
+
             Vector3 impulse = direction * ctx.AbilitySettings.shoveImpulse * (tackle ? 2f : 1f);
             damage?.ReceiveHit(new DamageHit(attackId, tackle ? ctx.AbilitySettings.tackleDamage : ctx.AbilitySettings.shoveDamage,
                 DamageKind.Attack, hit.point, direction, ctx.gameObject));
+
             if (shove != null) shove.ReceiveShove(impulse, hit.point);
             else if (body != null && !body.isKinematic) body.AddForceAtPosition(impulse, hit.point, ForceMode.Impulse);
+
             if (tackle && breakable != null && ctx.HorizontalVelocity.magnitude >= ctx.DoorBreakSpeedThreshold)
                 breakable.Break(hit.point, hit.normal, ctx.HorizontalVelocity.magnitude);
+
+            // [개선된 카메라 연출 및 히트 스톱]
+            if (tackle)
+            {
+                // 1. 단순 피치(위아래)뿐만 아니라 요(좌우), 롤(기울기)을 랜덤하게 섞어 거친 충돌 느낌 부여
+                ctx.GetComponentInChildren<PlayerCameraEffects>()?.ApplyCameraImpulse(
+                    new Vector3(-20f, Random.Range(-5f, 5f), Random.Range(-8f, 8f)), -20f);
+
+                // 2. 역경직(Hit Stop): 0.08초 동안 게임 속도를 10%로 줄여 타격감 극대화
+                // PlayerMovement(ctx)는 MonoBehaviour이므로 StartCoroutine을 호출할 수 있습니다.
+                ctx.StartCoroutine(HitStopRoutine(0.08f, 0.1f));
+            }
+
             break;
         }
     }
+
+    // 타격 순간 시간을 느리게 만드는 코루틴
+    private System.Collections.IEnumerator HitStopRoutine(float duration, float targetTimeScale)
+    {
+        float originalTimeScale = Time.timeScale;
+        Time.timeScale = targetTimeScale;
+
+        // 현실 시간(Realtime) 기준으로 대기하여, 느려진 Time.timeScale의 영향을 받지 않음
+        yield return new WaitForSecondsRealtime(duration);
+
+        Time.timeScale = originalTimeScale;
+    }
+
     internal void Reset() { cooldown = 0f; attackId = 0; contacted.Clear(); }
 }

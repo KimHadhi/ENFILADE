@@ -41,9 +41,7 @@ public sealed class ProneState : MovementBaseState
             (ctx.DiveAction != null && ctx.DiveAction.WasPressedThisFrame())
         );
 
-        bool sprintHeld = ctx.InputAvailable
-            && ctx.SprintAction != null
-            && ctx.SprintAction.IsPressed();
+        bool sprintHeld = ctx.InputAvailable && ctx.Input.SprintButtonHeld;
 
         bool sprintJustPressed = ctx.InputAvailable
             && ctx.SprintAction != null

@@ -9,13 +9,18 @@ public sealed class PlayerDamageReceiver : MonoBehaviour, IDamageReceiver
     private readonly HashSet<long> seen = new HashSet<long>();
     private readonly Queue<long> recent = new Queue<long>();
     private PlayerMovement movement;
-    public float Health { get; private set; }
+    [field: SerializeField, HideInInspector] public float Health { get; private set; }
+    [SerializeField, HideInInspector] private bool healthInitialized;
     public bool IsAlive => Health > 0f;
     public event Action<DamageHit, DamageResult> HitResolved;
     public event Action Died;
 
     internal void Initialize(PlayerMovement player)
-    { movement = player; Health = maximumHealth; seen.Clear(); recent.Clear(); }
+    {
+        movement = player;
+        if (!healthInitialized) { Health = maximumHealth; healthInitialized = true; }
+        seen.Clear(); recent.Clear();
+    }
 
     // Call only after a melee/projectile/hitscan attack actually intersects the player.
     public DamageResult ReceiveHit(DamageHit hit)

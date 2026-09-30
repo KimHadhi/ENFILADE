@@ -13,10 +13,10 @@ public sealed class WeaponRuntime
     private float cooldown;
     private bool wasHoldingFire;
 
-    public WeaponRuntime(WeaponData data)
+    public WeaponRuntime(WeaponData data, int? ammunition = null)
     {
         if (data == null) throw new ArgumentNullException(nameof(data));
-        Data = data; Ammo = data.MagazineSize;
+        Data = data; Ammo = Mathf.Clamp(ammunition ?? data.MagazineSize, 0, data.MagazineSize);
     }
 
     public int Tick(float dt, WeaponInputFrame input)

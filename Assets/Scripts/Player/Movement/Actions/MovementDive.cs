@@ -9,6 +9,15 @@ public sealed class MovementDive
     private float flightTime;
     public float RecoveryRemaining { get; private set; }
     public int EntrySerial { get; private set; }
+    internal float PoseProgress
+    {
+        get
+        {
+            float t = Mathf.Clamp01((flightTime - ctx.divePoseDelay) / Mathf.Max(0.05f, ctx.divePoseDuration));
+            // Zero slope at either end: takeoff, folding and landing share one continuous pose.
+            return t * t * t * (t * (t * 6f - 15f) + 10f);
+        }
+    }
     public float BurstWeight => ctx.IsDiving ? Mathf.Clamp01(1f - flightTime / Mathf.Max(0.01f, ctx.diveBurstDuration)) : 0f;
     internal MovementDive(PlayerMovement context) { ctx = context; }
 
@@ -39,6 +48,7 @@ public sealed class MovementDive
     internal void BeginFlight()
     {
         flightTime = 0f; usedInAir = true; EntrySerial++;
+        ctx.Posture.BeginDive();
     }
 
     internal void Land()
@@ -49,8 +59,13 @@ public sealed class MovementDive
 
     internal void UpdateFlight(float dt)
     {
-        float brakeTime = Mathf.Max(0f, flightTime + dt - Mathf.Max(flightTime, ctx.diveBurstDuration));
-        flightTime += Mathf.Max(0f, dt);
+        dt = Mathf.Max(0f, dt);
+        // Ramp drag in continuously instead of switching full braking on after the burst.
+        // Integrating the ramp keeps the result stable across frame rates.
+        float ramp = Mathf.Max(0.01f, ctx.diveBurstDuration);
+        float DragTime(float time) => time < ramp ? time * time / (2f * ramp) : time - ramp * 0.5f;
+        float brakeTime = DragTime(flightTime + dt) - DragTime(flightTime);
+        flightTime += dt;
         float speed = Mathf.Max(0f, ctx.HorizontalVelocity.magnitude - ctx.diveAirResistance * dt);
         if (speed <= 0.001f) { ctx.HorizontalVelocity = Vector3.zero; return; }
         Vector3 direction = ctx.HorizontalVelocity.normalized;
