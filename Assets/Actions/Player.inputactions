@@ -266,52 +266,132 @@
             ]
         },
         {
-          "name": "Combat",
-          "id": "4a11cef8-eddb-43b6-8234-33cf0def6d9f",
-          "actions": [
-            {
-              "name": "Fire",
-              "type": "Button",
-              "id": "3d65c4c5-afaf-4768-89b8-52ba660dff42",
-              "expectedControlType": "Button",
-              "processors": "",
-              "interactions": "",
-              "initialStateCheck": false
-            },
-            {
-              "name": "Reload",
-              "type": "Button",
-              "id": "917088d6-9fbb-4a9e-a90d-655d17ac4e32",
-              "expectedControlType": "Button",
-              "processors": "",
-              "interactions": "",
-              "initialStateCheck": false
-            }
-          ],
-          "bindings": [
-            {
-              "name": "",
-              "id": "cb36893e-80ea-4e88-b1f6-bc1688a3b081",
-              "path": "<Mouse>/leftButton",
-              "interactions": "",
-              "processors": "",
-              "groups": "",
-              "action": "Fire",
-              "isComposite": false,
-              "isPartOfComposite": false
-            },
-            {
-              "name": "",
-              "id": "71909848-68dc-4b40-95b2-ff2e08f017c8",
-              "path": "<Keyboard>/r",
-              "interactions": "",
-              "processors": "",
-              "groups": "",
-              "action": "Reload",
-              "isComposite": false,
-              "isPartOfComposite": false
-            }
-          ]
+            "name": "Combat",
+            "id": "4a11cef8-eddb-43b6-8234-33cf0def6d9f",
+            "actions": [
+                {
+                    "name": "Slot1",
+                    "type": "Button",
+                    "id": "9cb28a39-f489-4e2b-92b7-e2016bc01974",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "Slot2",
+                    "type": "Button",
+                    "id": "11438e0c-8c9e-4d41-88f9-f0f1548e33a4",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "Slot3",
+                    "type": "Button",
+                    "id": "d4b5175f-c41a-4421-9a8a-bd802e11280d",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "Fire",
+                    "type": "Button",
+                    "id": "3d65c4c5-afaf-4768-89b8-52ba660dff42",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "AltFire",
+                    "type": "Button",
+                    "id": "81b66415-f577-40f5-83f9-0cc7c8ddc23b",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "Reload",
+                    "type": "Button",
+                    "id": "917088d6-9fbb-4a9e-a90d-655d17ac4e32",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                }
+            ],
+            "bindings": [
+                {
+                    "name": "",
+                    "id": "cb36893e-80ea-4e88-b1f6-bc1688a3b081",
+                    "path": "<Mouse>/leftButton",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Fire",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "71909848-68dc-4b40-95b2-ff2e08f017c8",
+                    "path": "<Keyboard>/r",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Reload",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "d13225a9-8abd-409b-a7d5-dfed0d156599",
+                    "path": "<Keyboard>/1",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Slot1",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "b8a9e570-dead-43e7-bb69-895bd619abc7",
+                    "path": "<Keyboard>/2",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Slot2",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "4d75bcbc-3b4d-4444-b7e1-fdf2aa876964",
+                    "path": "<Keyboard>/3",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Slot3",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "f7ddf597-115e-4037-a608-a9ec453bda2f",
+                    "path": "<Mouse>/rightButton",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "AltFire",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                }
+            ]
         }
     ],
     "controlSchemes": []
