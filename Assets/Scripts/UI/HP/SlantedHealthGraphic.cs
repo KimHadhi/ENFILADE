@@ -28,7 +28,8 @@ public sealed class SlantedHealthGraphic : MaskableGraphic
         float span = rect.width - shear;
         if (blocks)
         {
-            int count = Mathf.Clamp((int)System.Math.Ceiling(maximum / step), 1, 20);
+            // Block count follows the configured HP threshold, not the compact tick limit.
+            int count = Mathf.Max(1, Mathf.CeilToInt((float)(maximum / step)));
             for (int i = 0; i < count; i++)
             {
                 double start = i * step;
