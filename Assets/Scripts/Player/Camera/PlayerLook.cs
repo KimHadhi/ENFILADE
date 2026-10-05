@@ -15,10 +15,6 @@ public sealed class PlayerLook : MonoBehaviour
     [SerializeField] private float minPitch = -89f;
     [SerializeField] private float maxPitch = 89f;
 
-    [Header("QA & Debugging")]
-    [Tooltip("ESC를 눌렀을 때 커서 잠금을 해제하고 입력을 일시 정지할지 여부")]
-    [SerializeField] private bool enableEscUnlock = true;
-
     private InputAction lookAction;
     private float yaw;
     private float pitch;
@@ -45,28 +41,14 @@ public sealed class PlayerLook : MonoBehaviour
 
     private void Start()
     {
+        // 게임 시작 시 기본 마우스 가둠
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
     }
 
     private void Update()
     {
-        // 1. ESC / 좌클릭을 통한 락/언락 처리
-        if (enableEscUnlock && Keyboard.current != null && Mouse.current != null)
-        {
-            if (Keyboard.current.escapeKey.wasPressedThisFrame)
-            {
-                Cursor.lockState = CursorLockMode.None;
-                Cursor.visible = true;
-            }
-            else if (Cursor.lockState == CursorLockMode.None && Mouse.current.leftButton.wasPressedThisFrame)
-            {
-                Cursor.lockState = CursorLockMode.Locked;
-                Cursor.visible = false;
-            }
-        }
-
-        // 2. [가장 강력한 차단] 실제 커서가 잠겨있지 않다면(ESC 상태라면) 입력/회전 연산 무조건 무시!
+        // 커서가 풀려있거나(채팅창/메뉴 활성화 상태), 일시정지 중이거나 창 포커스를 잃으면 카메라 회전 중단
         if (Cursor.lockState != CursorLockMode.Locked || Time.timeScale <= 0f || !Application.isFocused)
             return;
 

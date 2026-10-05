@@ -12531,6 +12531,7 @@ MonoBehaviour:
   fovMaxSpeed: 10
   enableMoveTilt: 1
   tiltAngle: 0.8
+  slideTiltMultiplier: 2.5
   tiltSharpness: 10
   enableDiveTilt: 1
   maxDiveRollAngle: 12
@@ -12544,6 +12545,8 @@ MonoBehaviour:
   landKickAmount: 0.06
   springStiffness: 260
   springDamping: 22
+  impulseStiffness: 150
+  impulseDamping: 18
 --- !u!43 &532147126
 Mesh:
   m_ObjectHideFlags: 0
@@ -16028,7 +16031,6 @@ MonoBehaviour:
   invertY: 0
   minPitch: -89
   maxPitch: 89
-  enableEscUnlock: 1
 --- !u!143 &1082263334
 CharacterController:
   m_ObjectHideFlags: 0
@@ -16066,8 +16068,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2c40aac8dfcfdd54584a8090c16dada8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerMovement
-  walkSpeed: 5.2
-  sprintSpeed: 8.4
+  walkSpeed: 3.8
+  sprintSpeed: 6.5
   crouchSpeed: 3
   proneSpeed: 1.6
   supineSpeed: 1.6
@@ -16079,6 +16081,8 @@ MonoBehaviour:
   proneOffset: -1.23
   supineOffset: -1.13
   crouchColliderHeight: 0.9
+  crouchClearanceMargin: 0.15
+  proneEntryLookAhead: 0.6
   slideColliderHeight: 0.6
   proneColliderHeight: 0.4
   transitionSharpness: 14
@@ -16103,11 +16107,17 @@ MonoBehaviour:
   slideKickJumpHeight: 1.05
   groundDiveLaunchSpeed: 11.5
   groundDiveVerticalPop: 4.6
+  divePoseDelay: 0.03
+  divePoseDuration: 0.5
   divePopPerSpeed: 0.12
   maxAdditionalDivePop: 2.5
   diveGravityScale: 0.9
   diveMomentumRetention: 0.88
   diveAirResistance: 0.12
+  diveBurstDuration: 0.1
+  diveCarrySpeed: 2.8
+  diveBurstBraking: 2.6
+  diveLandingRecovery: 0.35
   diveSlideKickBoost: 3.8
   maxLandingSlideSpeed: 10
   groundSharpness: 14
@@ -16123,6 +16133,8 @@ MonoBehaviour:
   groundLayers:
     serializedVersion: 2
     m_Bits: 4294967295
+  runtimeBodyCaptured: 0
+  runtimeBodyDefaults: {x: 0, y: 0, z: 0, w: 0}
   abilitySettings:
     stepDuration: 0.14
     stepDistance: 3.2
@@ -16148,16 +16160,16 @@ MonoBehaviour:
     ledgeReachAboveHands: 0.3
     ledgeCatchDuration: 0.14
     ledgeRegrabDelay: 0.4
-    ledgeJumpUpSpeed: 6.5
-    ledgeJumpSpeed: 8.5
-    ledgeJumpLookAngle: 42
-    airTraversalMaxFallSpeed: 8
     ledgeShimmySpeed: 1.8
+    airTraversalMaxFallSpeed: 8
+    ledgeJumpLookAngle: 42
+    ledgeJumpSpeed: 8.5
+    ledgeJumpUpSpeed: 6.5
     wallReach: 0.85
     wallDuration: 1.8
     wallClimbSpeed: 3.8
-    wallContactGrace: 0.1
     wallClimbFacingDot: 0.9
+    wallContactGrace: 0.1
     wallKickOutSpeed: 6
     wallKickUpSpeed: 6
     wallReattachDelay: 0.35
