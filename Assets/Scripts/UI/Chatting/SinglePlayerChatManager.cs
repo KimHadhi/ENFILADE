@@ -5,6 +5,7 @@ using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using TMPro;
 using UnityEngine.InputSystem;
+using System;
 
 public class SinglePlayerChatManager : MonoBehaviour
 {
@@ -18,10 +19,32 @@ public class SinglePlayerChatManager : MonoBehaviour
     [SerializeField] private RectTransform messageContainer;
     [SerializeField] private GameObject messagePrefab;
 
+    [Header("Input channel")]
+    [SerializeField] private ChatChannel inputChannel = ChatChannel.Note;
+    [SerializeField] private string playerDisplayName = "나";
+    [SerializeField] private Image channelAccent;
+    [SerializeField] private TMP_Text channelLabel;
+    [SerializeField] private ChatChannelIcon channelIcon;
+    [SerializeField] private Button channelButton;
+
     [Header("Settings")]
     [SerializeField] private float messageDisplayTime = 3f;
     [SerializeField] private float fadeDuration = 1f;
-    [SerializeField] private int maxMessages = 30;
+    [SerializeField, Min(1)] private int maxMessages = 300;
+
+    private readonly List<ChatEntry> history = new List<ChatEntry>();
+    private readonly ChatCommandRouter commands = new ChatCommandRouter();
+    private bool commandsReady;
+    private int lastClosedFrame = -1;
+    private CursorLockMode previousCursorLock;
+    private bool previousCursorVisible, playerMapEnabled, combatMapEnabled;
+    private readonly List<string> submittedInputs = new List<string>();
+    private int inputHistoryIndex;
+    private string pendingDraft = "";
+    public IReadOnlyList<ChatEntry> History => history.AsReadOnly();
+    public bool IsChatOpen => isChatOpen;
+    public event Action<ChatEntry> MessageAdded;
+    public ChatCommandRouter Commands { get { EnsureCommands(); return commands; } }
 
     private bool isChatOpen = false;
     private readonly List<ChatMessageItem> messageList = new List<ChatMessageItem>(32);
@@ -32,6 +55,7 @@ public class SinglePlayerChatManager : MonoBehaviour
 
     private void Awake()
     {
+        EnsureCommands();
         if (scrollRect != null)
         {
             scrollRectImage = scrollRect.GetComponent<Image>();
@@ -52,6 +76,15 @@ public class SinglePlayerChatManager : MonoBehaviour
     {
         CloseChat(sendText: false);
         chatInput.onSubmit.AddListener(OnInputSubmit);
+        if (channelButton != null) channelButton.onClick.AddListener(CycleInputChannel);
+        RefreshInputChannel();
+    }
+
+    private void OnDestroy()
+    {
+        if (isChatOpen) CloseChat(false);
+        if (chatInput != null) chatInput.onSubmit.RemoveListener(OnInputSubmit);
+        if (channelButton != null) channelButton.onClick.RemoveListener(CycleInputChannel);
     }
 
     private void Update()
@@ -60,16 +93,20 @@ public class SinglePlayerChatManager : MonoBehaviour
 
         if (Keyboard.current.enterKey.wasPressedThisFrame || Keyboard.current.numpadEnterKey.wasPressedThisFrame)
         {
-            if (!isChatOpen) OpenChat();
+            if (!isChatOpen && Time.frameCount != lastClosedFrame) OpenChat();
         }
-        else if (isChatOpen && Keyboard.current.escapeKey.wasPressedThisFrame)
+
+        if (isChatOpen && Keyboard.current.tabKey.wasPressedThisFrame) CycleInputChannel();
+        if (isChatOpen && Keyboard.current.upArrowKey.wasPressedThisFrame) RecallInput(-1);
+        if (isChatOpen && Keyboard.current.downArrowKey.wasPressedThisFrame) RecallInput(1);
+        if (isChatOpen && Keyboard.current.escapeKey.wasPressedThisFrame)
         {
             CloseChat(sendText: false);
         }
 
         if (isChatOpen && Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame)
         {
-            if (!EventSystem.current.IsPointerOverGameObject())
+            if (EventSystem.current != null && !EventSystem.current.IsPointerOverGameObject())
             {
                 CloseChat(sendText: false);
             }
@@ -78,6 +115,9 @@ public class SinglePlayerChatManager : MonoBehaviour
 
     public void OpenChat()
     {
+        if (isChatOpen || chatInput == null) return;
+        previousCursorLock = Cursor.lockState;
+        previousCursorVisible = Cursor.visible;
         isChatOpen = true;
 
         Cursor.lockState = CursorLockMode.None;
@@ -85,6 +125,8 @@ public class SinglePlayerChatManager : MonoBehaviour
 
         if (playerInput != null)
         {
+            playerMapEnabled = playerInput.actions.FindActionMap("Player")?.enabled ?? false;
+            combatMapEnabled = playerInput.actions.FindActionMap("Combat")?.enabled ?? false;
             playerInput.actions.FindActionMap("Player")?.Disable();
             playerInput.actions.FindActionMap("Combat")?.Disable();
         }
@@ -107,7 +149,9 @@ public class SinglePlayerChatManager : MonoBehaviour
         SetScrollbarVisible(true);
 
         chatInput.gameObject.SetActive(true);
-        chatInput.text = string.Empty;
+        inputHistoryIndex = submittedInputs.Count;
+        pendingDraft = chatInput.text;
+        RefreshInputChannel();
         chatInput.ActivateInputField();
 
         for (int i = 0; i < messageList.Count; i++)
@@ -123,15 +167,16 @@ public class SinglePlayerChatManager : MonoBehaviour
 
     public void CloseChat(bool sendText)
     {
+        bool wasOpen = isChatOpen;
         isChatOpen = false;
+        lastClosedFrame = Time.frameCount;
 
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
+        if (wasOpen) { Cursor.lockState = previousCursorLock; Cursor.visible = previousCursorVisible; }
 
-        if (playerInput != null)
+        if (wasOpen && playerInput != null)
         {
-            playerInput.actions.FindActionMap("Player")?.Enable();
-            playerInput.actions.FindActionMap("Combat")?.Enable();
+            if (playerMapEnabled) playerInput.actions.FindActionMap("Player")?.Enable();
+            if (combatMapEnabled) playerInput.actions.FindActionMap("Combat")?.Enable();
         }
 
         // 1. 전체 배경 끄기
@@ -151,8 +196,11 @@ public class SinglePlayerChatManager : MonoBehaviour
         // 3. 스크롤바 완전 투명화 및 클릭 차단
         SetScrollbarVisible(false);
 
-        chatInput.DeactivateInputField();
-        chatInput.gameObject.SetActive(false);
+        if (chatInput != null)
+        {
+            chatInput.DeactivateInputField();
+            chatInput.gameObject.SetActive(false);
+        }
 
         for (int i = 0; i < messageList.Count; i++)
         {
@@ -175,39 +223,128 @@ public class SinglePlayerChatManager : MonoBehaviour
 
     private void OnInputSubmit(string text)
     {
-        if (!string.IsNullOrWhiteSpace(text))
-        {
-            AddMessage($"<color=#55FF55>[T]</color> <color=#EEEEEE>Player:</color> {text}");
-        }
-
+        if (!isChatOpen) return;
+        SubmitText(text);
+        chatInput.text = string.Empty;
         CloseChat(sendText: true);
+    }
+
+    public void SubmitText(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return;
+        if (text.Length > 4000) text = text.Substring(0, 4000);
+        submittedInputs.Add(text);
+        if (submittedInputs.Count > 50) submittedInputs.RemoveAt(0);
+        if (inputChannel == ChatChannel.Console || text.TrimStart().StartsWith("/"))
+        {
+            AddMessage(ChatChannel.Console, playerDisplayName, text);
+            string result = Commands.Execute(text);
+            if (!string.IsNullOrEmpty(result)) AddMessage(ChatChannel.Console, "시스템", result);
+        }
+        else AddMessage(ChatChannel.Note, playerDisplayName, text);
+    }
+
+    public void AddDialogue(string speaker, string text) => AddMessage(ChatChannel.Dialogue, speaker, text);
+    public void AddDialogue(string speaker, string text, Color speakerColor) => AddEntry(new ChatEntry(ChatChannel.Dialogue, speaker, text, speakerColor));
+    public void AddBroadcast(string text) => AddMessage(ChatChannel.Broadcast, "시스템", text);
+    public void AddMessage(ChatChannel channel, string speaker, string text) => AddEntry(new ChatEntry(channel, speaker, text));
+
+    public void AddEntry(ChatEntry entry)
+    {
+        if (entry == null || string.IsNullOrWhiteSpace(entry.Body)) return;
+        history.Add(entry);
+        int capacity = Mathf.Max(1, maxMessages);
+        if (history.Count > capacity) history.RemoveRange(0, history.Count - capacity);
+        if (messagePrefab != null && messageContainer != null)
+        {
+            bool follow = !isChatOpen || scrollRect == null || scrollRect.verticalNormalizedPosition <= 0.03f;
+            var item = Instantiate(messagePrefab, messageContainer).GetComponent<ChatMessageItem>();
+            item.SetMessage(entry, messageDisplayTime, fadeDuration);
+            if (isChatOpen) item.SetActiveView(true);
+            messageList.Add(item);
+            while (messageList.Count > capacity)
+            {
+                if (messageList[0] != null) { messageList[0].gameObject.SetActive(false); Destroy(messageList[0].gameObject); }
+                messageList.RemoveAt(0);
+            }
+            if (follow) RequestScrollToBottom();
+        }
+        MessageAdded?.Invoke(entry);
     }
 
     public void AddMessage(string formattedMessage)
     {
-        GameObject newMsgObj = Instantiate(messagePrefab, messageContainer);
-        ChatMessageItem item = newMsgObj.GetComponent<ChatMessageItem>();
+        AddBroadcast(formattedMessage);
+    }
 
-        item.SetMessage(formattedMessage, messageDisplayTime, fadeDuration);
+    public void ClearHistory()
+    {
+        history.Clear();
+        foreach (var item in messageList)
+            if (item != null) { item.gameObject.SetActive(false); Destroy(item.gameObject); }
+        messageList.Clear();
+    }
 
-        if (isChatOpen)
+    public void SetInputChannel(ChatChannel channel)
+    {
+        inputChannel = channel == ChatChannel.Console ? ChatChannel.Console : ChatChannel.Note;
+        RefreshInputChannel();
+    }
+
+    public void CycleInputChannel()
+    {
+        SetInputChannel(inputChannel == ChatChannel.Note ? ChatChannel.Console : ChatChannel.Note);
+        if (isChatOpen && chatInput != null) chatInput.ActivateInputField();
+    }
+
+    public void RefreshInputChannel()
+    {
+        Color color = ChatStyle.ColorFor(inputChannel);
+        if (channelAccent != null) channelAccent.color = color;
+        if (channelLabel != null) { channelLabel.text = "[" + ChatStyle.Label(inputChannel) + "]"; channelLabel.color = color; }
+        if (channelIcon != null) { channelIcon.color = color; channelIcon.SetChannel(inputChannel); }
+        if (chatInput != null && chatInput.placeholder is TMP_Text placeholder)
+            placeholder.text = inputChannel == ChatChannel.Console ? "/help · 명령어 입력" : "메시지 입력 · Tab 전환";
+    }
+
+    private void RecallInput(int direction)
+    {
+        if (submittedInputs.Count == 0) return;
+        if (inputHistoryIndex == submittedInputs.Count) pendingDraft = chatInput.text;
+        inputHistoryIndex = Mathf.Clamp(inputHistoryIndex + direction, 0, submittedInputs.Count);
+        chatInput.text = inputHistoryIndex == submittedInputs.Count ? pendingDraft : submittedInputs[inputHistoryIndex];
+        chatInput.caretPosition = chatInput.text.Length;
+    }
+
+    private void EnsureCommands()
+    {
+        if (commandsReady) return;
+        commandsReady = true;
+        PlayerConsoleCommands.Register(commands, ResolveCommandPlayer);
+        commands.Register("help", "명령어 목록", _ => commands.Help());
+        commands.Register("clear", "현재 대화 기록 비우기", _ => { ClearHistory(); return null; });
+        commands.Register("echo", "입력한 내용 출력", text => text);
+        commands.Register("chat", "채팅 채널로 전환", _ => { SetInputChannel(ChatChannel.Note); return "채팅 채널로 전환했습니다."; });
+        commands.Register("console", "콘솔 채널로 전환", _ => { SetInputChannel(ChatChannel.Console); return "콘솔 채널로 전환했습니다."; });
+    }
+
+    private PlayerMovement ResolveCommandPlayer()
+    {
+        if (playerInput != null) return playerInput.GetComponentInParent<PlayerMovement>();
+        PlayerMovement local = null, any = null;
+        int locals = 0, count = 0;
+        foreach (var candidate in FindObjectsByType<PlayerMovement>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
         {
-            item.SetActiveView(true);
+            if (!candidate.isActiveAndEnabled) continue;
+            any = candidate; count++;
+            if (candidate.gameObject.scene == gameObject.scene) { local = candidate; locals++; }
         }
-
-        messageList.Add(item);
-
-        if (messageList.Count > maxMessages)
-        {
-            if (messageList[0] != null) Destroy(messageList[0].gameObject);
-            messageList.RemoveAt(0);
-        }
-
-        RequestScrollToBottom();
+        return locals == 1 ? local : locals == 0 && count == 1 ? any : null;
     }
 
     private void RequestScrollToBottom()
     {
+        if (!Application.isPlaying || !isActiveAndEnabled || messageContainer == null || scrollRect == null) return;
         if (scrollCoroutine != null)
         {
             StopCoroutine(scrollCoroutine);

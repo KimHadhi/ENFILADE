@@ -5,6 +5,7 @@ using TMPro;
 [DisallowMultipleComponent]
 public class ChatMessageItem : MonoBehaviour
 {
+    public ChatEntry Entry { get; private set; }
     private TextMeshProUGUI messageText;
     private Coroutine fadeCoroutine;
 
@@ -22,8 +23,15 @@ public class ChatMessageItem : MonoBehaviour
     }
 
     // 기존처럼 3개 인자 유지
+    public void SetMessage(ChatEntry entry, float displayTime = 3f, float fadeDuration = 1f)
+    {
+        SetMessage(ChatStyle.Format(entry), displayTime, fadeDuration);
+        Entry = entry;
+    }
+
     public void SetMessage(string formattedText, float displayTime = 3f, float fadeDuration = 1f)
     {
+        Entry = null;
         EnsureComponent();
 
         if (messageText != null)
@@ -32,7 +40,7 @@ public class ChatMessageItem : MonoBehaviour
             messageText.alpha = 1f;
         }
 
-        StartFadeCountdown(displayTime, fadeDuration);
+        if (Application.isPlaying && isActiveAndEnabled) StartFadeCountdown(displayTime, fadeDuration);
     }
 
     // 채팅창이 열려있을 땐 투명화 취소하고 100% 표시
@@ -56,6 +64,7 @@ public class ChatMessageItem : MonoBehaviour
     // 3초 대기 후 페이드아웃 실행
     public void StartFadeCountdown(float waitTime, float duration)
     {
+        if (!Application.isPlaying || !isActiveAndEnabled) return;
         if (fadeCoroutine != null)
         {
             StopCoroutine(fadeCoroutine);
@@ -65,12 +74,12 @@ public class ChatMessageItem : MonoBehaviour
 
     private IEnumerator FadeRoutine(float waitTime, float duration)
     {
-        yield return new WaitForSeconds(waitTime);
+        yield return new WaitForSecondsRealtime(Mathf.Max(0f, waitTime));
 
         float elapsed = 0f;
         while (elapsed < duration)
         {
-            elapsed += Time.deltaTime;
+            elapsed += Time.unscaledDeltaTime;
             if (messageText != null)
             {
                 messageText.alpha = Mathf.Lerp(1f, 0f, elapsed / duration);

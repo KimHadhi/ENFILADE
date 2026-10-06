@@ -40,8 +40,9 @@ public sealed partial class PlayerMovement : MonoBehaviour
     internal MovementStateMachine StateMachine { get; private set; }
     internal MovementAbilities Abilities { get; private set; }
     public PlayerDamageReceiver DamageReceiver { get; private set; }
+    public UltimateCharge Ultimate { get; private set; }
     public bool IsInitialized => Motor != null && Posture != null && Actions != null && Input != null
-        && Abilities != null && StateMachine != null && DamageReceiver != null;
+        && Abilities != null && StateMachine != null && DamageReceiver != null && Ultimate != null;
     // Native capsule/pivot dimensions can be crouched when Unity reloads scripts in Play Mode.
     // Keep the original dimensions across that reload rather than treating them as standing.
     [SerializeField, HideInInspector] private bool runtimeBodyCaptured;
@@ -154,6 +155,8 @@ public sealed partial class PlayerMovement : MonoBehaviour
         DamageReceiver = GetComponent<PlayerDamageReceiver>();
         if (DamageReceiver == null) DamageReceiver = gameObject.AddComponent<PlayerDamageReceiver>();
         DamageReceiver.Initialize(this);
+        Ultimate = GetComponent<UltimateCharge>();
+        if (Ultimate == null) Ultimate = gameObject.AddComponent<UltimateCharge>();
         StateMachine = MovementStateMachine.Create(this);
         if (controller.height < Posture.standingColliderHeight - 0.02f)
             ChangeState(controller.height <= proneColliderHeight + 0.02f ? MovementState.Proning : MovementState.Crouching);

@@ -5,8 +5,16 @@ using UnityEngine.UI;
 
 // Attach to HPBarRoot. Preserves your existing fonts and HPHealthBar placement.
 [DisallowMultipleComponent]
+[ExecuteAlways]
 public sealed class AdaptiveHealthHUD : MonoBehaviour
 {
+    [Header("Live player health")]
+    [Tooltip("During Play, read this player's PlayerDamageReceiver. Disable Auto Find Player and clear Player for standalone values. Edit mode uses the values below.")]
+    [SerializeField] private PlayerMovement player;
+    [Tooltip("When Player is empty, find a single active player in this scene, or a single player across loaded scenes. Multiple candidates require explicit assignment.")]
+    [SerializeField] private bool autoFindPlayer = true;
+    private float nextPlayerSearch;
+
     [Header("Existing hierarchy - found automatically by object name")]
     [SerializeField] private RectTransform hpHealthBar;
     [SerializeField] private Graphic hpText;
@@ -17,7 +25,7 @@ public sealed class AdaptiveHealthHUD : MonoBehaviour
     [SerializeField] private bool matchExistingBlocks = true;
     [SerializeField] private Vector2 barOffset = Vector2.zero;
 
-    [Header("Health - editable during Play")]
+    [Header("Health - live player values during Play, editable outside Play")]
     [SerializeField, Min(0)] private float currentHealth = 100f;
     [SerializeField, Min(0)] private float maxHealth = 100f;
     [SerializeField, Min(0)] private float extraShield = 0f;
@@ -33,6 +41,8 @@ public sealed class AdaptiveHealthHUD : MonoBehaviour
     [SerializeField, Range(0, 12)] private float slant = 4f;
 
     [Header("Shield - thin band above the main bar")]
+    [Tooltip("Minimum HP-equivalent scale for shield width, fill and overflow percentage.")]
+    [SerializeField, Min(100f)] private float minimumShieldScale = 100f;
     [SerializeField, Min(1)] private float shieldHeight = 3f;
     [SerializeField, Min(0)] private float shieldOffset = 3f;
     [Tooltip("Move only the shield bar horizontally. Positive = right, negative = left. Canvas units.")]
@@ -54,9 +64,17 @@ public sealed class AdaptiveHealthHUD : MonoBehaviour
     private Vector2 capturedOffset;
     private float capturedWidth, capturedHeight, capturedPitch, capturedFirstWidth;
     private bool dirty = true;
+    private string originalHPLabel, originalMaxLabel, originalShieldLabel;
+    private bool originalShieldVisible;
 
     private void Start()
     {
+        if (Application.IsPlaying(gameObject)) RefreshNow();
+    }
+
+    private void Initialize()
+    {
+        if (visualRoot != null) return;
         FindReferences();
         if (hpHealthBar == null || !IsLabel(hpText) || !IsLabel(maxHPText) || !IsLabel(shieldText))
         {
@@ -64,6 +82,10 @@ public sealed class AdaptiveHealthHUD : MonoBehaviour
             enabled = false;
             return;
         }
+        originalHPLabel = GetLabel(hpText);
+        originalMaxLabel = GetLabel(maxHPText);
+        originalShieldLabel = GetLabel(shieldText);
+        originalShieldVisible = shieldText.gameObject.activeSelf;
         foreach (LayoutGroup layout in hpHealthBar.GetComponents<LayoutGroup>())
         {
             barLayouts.Add(layout);
@@ -106,6 +128,7 @@ public sealed class AdaptiveHealthHUD : MonoBehaviour
 
     private void OnDisable()
     {
+        if (!Application.IsPlaying(gameObject)) { StopPreview(); return; }
         if (visualRoot == null) return;
         visualRoot.gameObject.SetActive(false);
         SetOriginalVisibility(true);
@@ -113,7 +136,61 @@ public sealed class AdaptiveHealthHUD : MonoBehaviour
     }
 
     private void OnValidate() { dirty = true; }
-    private void LateUpdate() { if (dirty) Refresh(); }
+    private void LateUpdate() { if (Application.IsPlaying(gameObject)) RefreshNow(); }
+
+    public PlayerMovement ResolvePlayer()
+    {
+        if (Application.IsPlaying(gameObject) && player == null && autoFindPlayer && Time.unscaledTime >= nextPlayerSearch)
+        {
+            nextPlayerSearch = Time.unscaledTime + 0.5f;
+            PlayerMovement local = null, any = null;
+            int localCount = 0, totalCount = 0;
+            foreach (var candidate in FindObjectsByType<PlayerMovement>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
+            {
+                if (!candidate.isActiveAndEnabled) continue;
+                any = candidate; totalCount++;
+                if (candidate.gameObject.scene == gameObject.scene) { local = candidate; localCount++; }
+            }
+            if (localCount == 1) player = local;
+            else if (localCount == 0 && totalCount == 1) player = any;
+        }
+        return player;
+    }
+
+    public void RefreshNow()
+    {
+        ResolvePlayer();
+        if (Application.IsPlaying(gameObject) && player != null)
+        {
+            // PlayerMovement can create the receiver at runtime; do not cache it before Awake.
+            PlayerDamageReceiver receiver = player.DamageReceiver;
+            if (receiver == null) receiver = player.GetComponent<PlayerDamageReceiver>();
+            if (receiver != null) SetValues(receiver.Health, receiver.MaximumHealth, receiver.Shield);
+        }
+        if (visualRoot == null) Initialize();
+        if (dirty) Refresh();
+    }
+
+    public void BindPlayer(PlayerMovement target) { player = target; nextPlayerSearch = 0f; dirty = true; }
+
+    public void StopPreview()
+    {
+        if (visualRoot == null) return;
+        SetOriginalVisibility(true);
+        SetLayoutEnabled(true);
+        SetLabel(hpText, originalHPLabel);
+        SetLabel(maxHPText, originalMaxLabel);
+        SetLabel(shieldText, originalShieldLabel);
+        if (shieldText != null) shieldText.gameObject.SetActive(originalShieldVisible);
+        if (Application.isPlaying) Destroy(visualRoot.gameObject);
+        else DestroyImmediate(visualRoot.gameObject);
+        visualRoot = null;
+        healthGraphic = shieldGraphic = null;
+        originalBlocks.Clear(); originalActive.Clear();
+        barLayouts.Clear(); layoutEnabled.Clear();
+        capturedLayout = false;
+        dirty = true;
+    }
 
     public void SetValues(float current, float maximum, float shield)
     {
@@ -151,6 +228,8 @@ public sealed class AdaptiveHealthHUD : MonoBehaviour
         // 300 is still blocks. Above it, retain exactly the width of the 300-HP row.
         float firstWidth = useCaptured ? capturedFirstWidth : pitch + shear;
         float width = (float)CalculateDisplayWidth(maximum, threshold, unit, pitch, firstWidth);
+        float shieldScale = Mathf.Max(maximum, Mathf.Max(100f, NonNegative(minimumShieldScale)));
+        float shieldWidth = (float)CalculateDisplayWidth(shieldScale, threshold, unit, pitch, firstWidth);
         bool compact = maximum > threshold;
         double step = compact ? NiceStep(System.Math.Max(unit, (double)maximum / sections)) : unit;
 
@@ -160,21 +239,32 @@ public sealed class AdaptiveHealthHUD : MonoBehaviour
         Place(healthGraphic.rectTransform, 0f, width, height);
         float shieldH = Mathf.Max(1f, NonNegative(shieldHeight)) * verticalScale;
         float shieldX = float.IsNaN(shieldXOffset) || float.IsInfinity(shieldXOffset) ? 0f : shieldXOffset;
-        Place(shieldGraphic.rectTransform, height + NonNegative(shieldOffset) * verticalScale, width, shieldH, shieldX);
+        Place(shieldGraphic.rectTransform, height + NonNegative(shieldOffset) * verticalScale, shieldWidth, shieldH, shieldX);
         healthGraphic.Configure(current, maximum, step, !compact, shear,
             NonNegative(blockGap) * horizontalScale, healthColor, emptyColor, tickColor);
-        shieldGraphic.Configure(Mathf.Min(shield, maximum), maximum,
-            System.Math.Max(1d, maximum), false, shear * shieldH / height,
+        shieldGraphic.Configure(Mathf.Min(shield, shieldScale), shieldScale,
+            shieldScale, false, shear * shieldH / height,
             0f, shieldColor, Color.clear, Color.clear);
-        shieldGraphic.gameObject.SetActive(shield > 0f && maximum > 0f);
+        shieldGraphic.gameObject.SetActive(shield > 0f);
 
         SetLabel(hpText, current.ToString("N0"));
         SetLabel(maxHPText, maximum.ToString("N0"));
-        SetLabel(shieldText, shield > maximum && maximum > 0f
-            ? $"+{shield:N0} ({(double)shield / maximum * 100d:N0}%)" : $"+{shield:N0}");
+        SetLabel(shieldText, shield > shieldScale
+            ? $"+{shield:N0} ({(double)shield / shieldScale * 100d:N0}%)" : $"+{shield:N0}");
         shieldText.gameObject.SetActive(shield > 0f);
         if (hpText.transform.parent is RectTransform textRoot)
-            LayoutRebuilder.MarkLayoutForRebuild(textRoot);
+        {
+            // The authored row positions children without controlling their widths.
+            // Resolve each label's new width BEFORE the row positions its centre pivot;
+            // otherwise a wider shield label grows leftward over the maximum HP label.
+            foreach (RectTransform child in textRoot)
+            {
+                if (!child.gameObject.activeInHierarchy) continue;
+                var fitter = child.GetComponent<ContentSizeFitter>();
+                if (fitter != null && fitter.isActiveAndEnabled) fitter.SetLayoutHorizontal();
+            }
+            LayoutRebuilder.ForceRebuildLayoutImmediate(textRoot);
+        }
     }
 
     private void CaptureExistingLayout()
@@ -257,6 +347,12 @@ public sealed class AdaptiveHealthHUD : MonoBehaviour
 
     private static bool IsLabel(Graphic target) { return target is TMP_Text || target is Text; }
 
+    private static string GetLabel(Graphic target)
+    {
+        if (target is TMP_Text tmp) return tmp.text;
+        return target is Text legacy ? legacy.text : string.Empty;
+    }
+
     private static void SetLabel(Graphic target, string value)
     {
         if (target is TMP_Text tmp) tmp.text = value;
@@ -278,6 +374,7 @@ public sealed class AdaptiveHealthHUD : MonoBehaviour
     private static RectTransform MakeRect(string objectName, Transform parent)
     {
         var rect = new GameObject(objectName, typeof(RectTransform)).GetComponent<RectTransform>();
+        if (!Application.isPlaying) rect.gameObject.hideFlags = HideFlags.HideAndDontSave;
         rect.SetParent(parent, false);
         rect.gameObject.layer = parent.gameObject.layer;
         rect.anchorMin = rect.anchorMax = rect.pivot = Vector2.zero;
@@ -306,8 +403,6 @@ public sealed class AdaptiveHealthHUD : MonoBehaviour
 
     private void OnDestroy()
     {
-        SetOriginalVisibility(true);
-        SetLayoutEnabled(true);
-        if (visualRoot != null) Destroy(visualRoot.gameObject);
+        StopPreview();
     }
 }

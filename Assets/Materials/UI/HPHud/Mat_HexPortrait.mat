@@ -34,8 +34,8 @@ Material:
     - _ColorMask: 15
     - _CornerRounding: 0.0175
     - _GapWidth: 0.01
-    - _GlowBloomSpread: 0.06
-    - _GlowIntensity: 10
+    - _GlowBloomSpread: 0.005
+    - _GlowIntensity: 1
     - _HexRadius: 0.3
     - _Stencil: 0
     - _StencilComp: 8
