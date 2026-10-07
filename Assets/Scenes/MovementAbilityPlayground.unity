@@ -3943,7 +3943,7 @@ MonoBehaviour:
   groundSnapDistance: 0.5
   slideJumpMinDuration: 0.1
   slideKickJumpHeight: 1.05
-  groundDiveLaunchSpeed: 11.5
+  groundDiveLaunchSpeed: 9
   groundDiveVerticalPop: 4.6
   divePoseDelay: 0.03
   divePoseDuration: 0.5
@@ -3953,9 +3953,9 @@ MonoBehaviour:
   diveMomentumRetention: 0.88
   diveAirResistance: 0.12
   diveBurstDuration: 0.1
-  diveCarrySpeed: 2.8
+  diveCarrySpeed: 2.2
   diveBurstBraking: 2.6
-  diveLandingRecovery: 0.35
+  diveLandingRecovery: 0.55
   diveSlideKickBoost: 3.8
   maxLandingSlideSpeed: 10
   groundSharpness: 14
@@ -3975,17 +3975,17 @@ MonoBehaviour:
   runtimeBodyDefaults: {x: 0, y: 0, z: 0, w: 0}
   abilitySettings:
     stepDuration: 0.14
-    stepDistance: 3.2
+    stepDistance: 2
     stepInvulnerability: 0.18
     stepDodgeRecognitionPadding: 0.12
     microInvulnerability: 0.16
     dodgeCooldown: 0.55
-    stepDodgeCooldown: 1
+    stepDodgeCooldown: 1.25
     microSuccessDistance: 0.3
     microSuccessDuration: 0.1
-    leanAngle: 24
-    leanOffset: 0.45
-    leanSharpness: 18
+    leanAngle: 10
+    leanOffset: 0.35
+    leanSharpness: 10
     stepHeight: 0.3
     obstacleReach: 1.35
     vaultMaxHeight: 1.15

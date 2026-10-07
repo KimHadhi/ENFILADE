@@ -29,7 +29,7 @@ public static partial class MovementAbilityChecks
             f.P.LaunchDive(input);
             Vector3 direction = new Vector3(input.x, 0f, input.y).normalized;
             Require(Vector3.Dot(f.P.HorizontalVelocity.normalized, direction) > 0.999f, "Dive follows chosen input");
-            Near(f.P.HorizontalVelocity.magnitude, 11.5f, "Initial burst speed");
+            Near(f.P.HorizontalVelocity.magnitude, 9f, "Initial burst speed");
             f.MoveInput(Vector2.zero); f.Step();
             Require(f.P.CurrentState == (input.y < -0.2f ? State.SupineDiving : State.Diving), "Backwards dive does not instantly flip forward");
             Require(!f.P.IsDodging, "Dive remains physical evasion, not shared dodge immunity");
@@ -41,7 +41,7 @@ public static partial class MovementAbilityChecks
         {
             f.P.LaunchDive(Vector2.up); f.MoveInput(Vector2.zero);
             for (int i = 0; i < 5; i++) f.Step();
-            Require(f.P.HorizontalVelocity.magnitude > 10f, "First tenth of a second keeps punch while braking ramps in");
+            Require(f.P.HorizontalVelocity.magnitude > 8f, "First tenth of a second keeps punch while braking ramps in");
             f.P.transform.rotation = Quaternion.Euler(0f, 180f, 0f);
             for (int i = 0; i < 15; i++) f.Step();
             Require(f.P.CurrentState == State.SupineDiving, "Free look can turn onto the back");
@@ -196,7 +196,7 @@ public static partial class MovementAbilityChecks
             f.MoveInput(Vector2.down);
             Require((bool)Call(Dive(f), "TryLaunch", Vector2.down, false), "First air dive is accepted");
             f.Step();
-            Require(f.P.CurrentState == State.SupineDiving && f.P.HorizontalVelocity.z < -10f,
+            Require(f.P.CurrentState == State.SupineDiving && f.P.HorizontalVelocity.z < -8f,
                 "Air Z uses the same directional burst and correct backward pose");
             f.P.ChangeState(State.Standing);
             Require(!(bool)Call(Dive(f), "TryLaunch", Vector2.up, false),

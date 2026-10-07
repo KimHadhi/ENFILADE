@@ -71,8 +71,10 @@ public sealed class MovementAbilities
     }
     internal void ReturnToLocomotion()
     {
+        // A blocked crouch capsule may be a side wall or a shoved body, not a low tunnel.
+        bool lowPassage = ctx.CurrentState != State.Tackle && ctx.HasVentCeilingAhead(ctx.transform.forward, 0f);
         ctx.ChangeState(ctx.HasCeilingAbove(ctx.StandingColliderHeight)
-            ? (ctx.HasCeilingAbove(ctx.CrouchColliderHeight) ? State.Proning : State.Crouching) : State.Standing);
+            ? (lowPassage ? State.Proning : State.Crouching) : State.Standing);
     }
     internal void Reset()
     {

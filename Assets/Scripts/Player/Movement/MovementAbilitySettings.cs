@@ -6,18 +6,18 @@ public sealed class MovementAbilitySettings
 {
     [Header("Dodge & Lean")]
     [Min(0.05f)] public float stepDuration = 0.14f;
-    [Min(0f)] public float stepDistance = 3.2f;
+    [Min(0f)] public float stepDistance = 2f;
     [Min(0f)] public float stepInvulnerability = 0.18f;
     [Range(0f, 0.3f)] public float stepDodgeRecognitionPadding = 0.12f;
     [Min(0f)] public float microInvulnerability = 0.16f;
     [Min(0f)] public float dodgeCooldown = 0.55f;
     [Tooltip("스텝 닷지 실패 시 다음 회피까지의 시간. 회피 성공 시 공통 쿨타임이 즉시 초기화됩니다.")]
-    [Min(0f)] public float stepDodgeCooldown = 1f;
+    [Min(0f)] public float stepDodgeCooldown = 1.25f;
     [Min(0f)] public float microSuccessDistance = 0.3f;
     [Min(0.02f)] public float microSuccessDuration = 0.1f;
-    [Range(0f, 30f)] public float leanAngle = 24f;
-    [Range(0f, 0.5f)] public float leanOffset = 0.45f;
-    [Min(1f)] public float leanSharpness = 18f;
+    [Range(0f, 30f)] public float leanAngle = 10f;
+    [Range(0f, 0.5f)] public float leanOffset = 0.35f;
+    [Min(1f)] public float leanSharpness = 10f;
 
     [Header("Step / Vault / Mantle")]
     [Range(0.05f, 0.5f)] public float stepHeight = 0.3f;

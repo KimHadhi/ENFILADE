@@ -37,6 +37,8 @@ public sealed class MovementDive
         // Negating it for an air back-dive made the next input tick flip upright.
         ctx.DiveBodyForward = direction;
         float speed = Mathf.Max(ctx.HorizontalVelocity.magnitude * ctx.diveMomentumRetention, ctx.groundDiveLaunchSpeed);
+        // Chaining from an impulse must not turn dive into a faster travel mode.
+        speed = Mathf.Min(speed, ctx.groundDiveLaunchSpeed * 1.1f);
         ctx.HorizontalVelocity = direction * speed;
         ctx.VerticalVelocity = fromGround ? ctx.groundDiveVerticalPop
             : Mathf.Max(ctx.VerticalVelocity, ctx.groundDiveVerticalPop * 0.35f);

@@ -47,6 +47,8 @@ public sealed class PlayerWeaponInput : MonoBehaviour, IWeaponInput
         return new WeaponInputFrame(fire.WasPressedThisFrame(), fire.IsPressed(), reload.WasPressedThisFrame());
     }
 
+    public void RequireTriggerRelease() { releaseRequired = true; }
+
     private void OnApplicationFocus(bool focused) { if (!focused) { acceptInputThisFrame = false; releaseRequired = true; } }
     private void OnDisable()
     {

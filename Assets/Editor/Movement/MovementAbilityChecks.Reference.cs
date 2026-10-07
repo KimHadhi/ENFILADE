@@ -73,7 +73,7 @@ public static partial class MovementAbilityChecks
             f.Box(new Vector3(0f, 0.45f, 1.2f), new Vector3(3f, 0.9f, 0.4f));
             f.MoveInput(Vector2.up); Input(f, "JumpPressed", true); f.Step();
             Require(f.P.CurrentState == State.Vault && f.P.HorizontalVelocity.magnitude > 1f, "Moving scripted vault");
-            Call(effects, "UpdateDynamicFov");
+            Call(effects, "UpdateDynamicFov", 1f / 60f);
             Near(camera.fieldOfView, initialFov, "Stationary approach must not receive scripted sprint FOV", 0.001f);
             Require(startY - pivot.localPosition.y < 0.1f, "First-frame camera crouch is eased rather than slammed");
         }
@@ -89,7 +89,7 @@ public static partial class MovementAbilityChecks
             int frames = Mathf.CeilToInt(f.P.AbilitySettings.stepDuration / dt);
             for (int i = 0; i < frames; i++) f.Step(dt);
             Near(Vector3.ProjectOnPlane(f.P.transform.position - start, Vector3.up).magnitude,
-                3.2f, "Dodge distance at dt=" + dt, 0.015f);
+                2f, "Dodge distance at dt=" + dt, 0.015f);
             Require(frames * dt < 0.18f, "Fast dodge completes travel under 180ms");
         }
         using (var f = new Fixture(true))

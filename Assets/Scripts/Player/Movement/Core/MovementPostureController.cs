@@ -140,23 +140,37 @@ public sealed class MovementPostureController
 
     public bool HasVentCeilingAhead(Vector3 moveDir, float forwardDistance = 0.5f)
     {
-        if (moveDir.sqrMagnitude < 0.001f) return false;
+        if (moveDir.sqrMagnitude < 0.001f || ctx.CurrentState == MovementState.Tackle) return false;
         Vector3 direction = moveDir.normalized;
         float distance = Mathf.Max(0f, forwardDistance);
-        Vector3 feet = ctx.transform.position, ahead = feet + direction * distance;
+        Vector3 feet = ctx.transform.position;
         // Use the destination posture's actual width, never the current (smaller) radius.
-        PostureCapsule(feet, ctx.proneColliderHeight, 0f, out Vector3 bottom, out Vector3 top, out float radius);
+        // Require a little clearance beyond the real prone capsule, not a narrower probe.
+        PostureCapsule(feet, ctx.proneColliderHeight + 0.04f, 0f, out Vector3 bottom, out Vector3 top, out float radius);
         if (Physics.CheckCapsule(bottom, top, radius, ctx.groundLayers, QueryTriggerInteraction.Ignore)
             || Physics.CheckCapsule(bottom + direction * distance, top + direction * distance, radius,
                 ctx.groundLayers, QueryTriggerInteraction.Ignore)
             || Physics.CapsuleCast(bottom, top, radius, direction, distance,
                 ctx.groundLayers, QueryTriggerInteraction.Ignore)) return false;
 
-        if (CrouchBlockedAt(feet) || CrouchBlockedAt(ahead)) return true;
-        // Include thin lintels between the two samples so early detection cannot skip them.
-        PostureCapsule(feet, ctx.crouchColliderHeight, ctx.crouchClearanceMargin, out bottom, out top, out radius);
-        return Physics.CapsuleCast(bottom, top, radius, direction, distance,
-            ctx.groundLayers, QueryTriggerInteraction.Ignore);
+        // Side walls also overlap a crouch capsule. Only a downward-facing overhead
+        // surface can justify automatic prone; a flying prop is never a tunnel.
+        float roofDistance = distance > 0f ? distance + Mathf.Max(0f, standingColliderRadius - 0.08f) : 0f;
+        int samples = Mathf.Max(1, Mathf.CeilToInt(roofDistance / 0.1f));
+        for (int i = 0; i <= samples; i++)
+            if (HasStaticLowRoof(feet + direction * (roofDistance * i / samples))) return true;
+        return false;
+    }
+
+    private bool HasStaticLowRoof(Vector3 feet)
+    {
+        const float probeRadius = 0.08f;
+        float startHeight = ctx.proneColliderHeight + probeRadius;
+        float reach = ctx.crouchColliderHeight + ctx.crouchClearanceMargin - startHeight - probeRadius;
+        return reach > 0f && Physics.SphereCast(feet + Vector3.up * startHeight, probeRadius,
+            Vector3.up, out RaycastHit hit, reach, ctx.groundLayers, QueryTriggerInteraction.Ignore)
+            && hit.normal.y < -0.65f && hit.rigidbody == null
+            && hit.collider.GetComponentInParent<IShoveReceiver>() == null;
     }
 
     private bool CrouchBlockedAt(Vector3 feet)

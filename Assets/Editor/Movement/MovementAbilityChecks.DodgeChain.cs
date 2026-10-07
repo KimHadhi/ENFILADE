@@ -56,7 +56,7 @@ public static partial class MovementAbilityChecks
         using (var f = new Fixture(true))
         {
             StartTravel(f);
-            var attack = TrailAttack(f, new Vector3(0.4f, 1f, -1.2f));
+            var attack = TrailAttack(f, new Vector3(0.4f, 1f, -0.5f));
             Require(Vector3.Distance(attack.transform.position, f.P.transform.position + Vector3.up) > 1f, "Melee misses the current body");
             int rewards = 0; f.P.DamageReceiver.HitResolved += (hit, result) => { if (result == DamageResult.Evaded) rewards++; };
             attack.BeginAttack(); attack.CheckDodgeTrails(); attack.CheckDodgeTrails();
@@ -74,11 +74,11 @@ public static partial class MovementAbilityChecks
             int activation = Dodge(f).Activation; Vector3 start = f.P.transform.position;
             f.MoveInput(Vector2.right); Input(f, "DodgePressed", true); f.Step();
             Require(Dodge(f).Activation == activation + 1 && f.P.CurrentState == State.StepDodge, "Successful Alt restarts during old step");
-            Require(f.P.transform.position.x > start.x + 0.4f, "New step uses new direction immediately");
+            Require(f.P.transform.position.x > start.x + 0.25f, "New step uses new direction immediately");
             attack.transform.position = start + Vector3.up; Physics.SyncTransforms(); attack.CheckDodgeTrails();
             Require(!Dodge(f).CanStart, "Same active swing cannot refund the new step");
             for (int i = 0; i < 6; i++) f.Step();
-            Near(f.P.transform.position.x - start.x, 3.2f, "Chained step travels the full configured distance", 0.02f);
+            Near(f.P.transform.position.x - start.x, 2f, "Chained step travels the full configured distance", 0.02f);
             f.Step(); Require(f.P.HorizontalVelocity.magnitude <= f.P.WalkSpeed * f.P.StrafeCompensation + 0.1f, "Burst speed is not retained as walking momentum: "
                 + f.P.HorizontalVelocity.magnitude + " walk=" + f.P.WalkSpeed + " state=" + f.P.CurrentState);
         }
@@ -120,7 +120,7 @@ public static partial class MovementAbilityChecks
             StartTravel(f, 1);
             Require(!Trail(f).IntersectsSegment(f.Origin + new Vector3(-1f, 1f, -2f),
                 f.Origin + new Vector3(1f, 1f, -2f)), "Requested destination behind wall is not part of actual trail");
-            f.Step(); f.Step();
+            f.Step(); f.Step(); f.Step();
             Require(!Trail(f).IsActive, "Wall cancellation removes the recognition trail");
         }
     }

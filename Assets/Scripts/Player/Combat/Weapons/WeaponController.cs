@@ -25,6 +25,7 @@ public sealed class WeaponController : MonoBehaviour
     [SerializeField] private bool logShots = true;
     [SerializeField] private bool drawRays = true;
     public WeaponRuntime Runtime { get; private set; }
+    public WeaponData EquippedData => Runtime != null ? Runtime.Data : null;
     public WeaponShot LastShot { get; private set; }
     public event Action<WeaponShot> ShotFired;
     private IWeaponInput input;
@@ -63,6 +64,18 @@ public sealed class WeaponController : MonoBehaviour
         if (health != null && !health.IsAlive) { Runtime.Interrupt(); return; }
         // Empty intent still lets an in-progress reload advance while the cursor is unlocked.
         ProcessFrame(Time.deltaTime, input.ReadInput());
+    }
+
+    /// <summary>Equip an existing slot runtime so switching never refills its magazine.</summary>
+    public void Equip(WeaponRuntime weapon)
+    {
+        Initialize();
+        Runtime?.Interrupt();
+        Runtime = weapon;
+        weaponData = weapon != null ? weapon.Data : null;
+        savedAmmoData = weaponData;
+        savedAmmo = weapon != null ? weapon.Ammo : -1;
+        if (input is PlayerWeaponInput playerInput) playerInput.RequireTriggerRelease();
     }
 
     internal void ProcessFrame(float dt, WeaponInputFrame frame)

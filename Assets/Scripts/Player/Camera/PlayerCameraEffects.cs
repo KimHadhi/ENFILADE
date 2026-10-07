@@ -191,10 +191,9 @@ public sealed class PlayerCameraEffects : MonoBehaviour
 
     private void ApplyLeanPosition()
     {
-        Vector3 local = targetCamera.localPosition;
-        local.x = baseCameraPosition.x;
-        Vector3 origin = targetCamera.parent.TransformPoint(local);
-        Vector3 offset = targetCamera.parent.TransformVector(Vector3.right * movement.LeanOffset);
+        Vector3 origin = targetCamera.parent.TransformPoint(baseCameraPosition);
+        // A lean peeks sideways without dragging the eye down as camera roll increases.
+        Vector3 offset = movement.transform.right * movement.LeanOffset;
         float distance = offset.magnitude;
         if (distance > 0.001f && Physics.SphereCast(origin, 0.1f, offset / distance, out RaycastHit hit,
             distance + 0.02f, movement.groundLayers, QueryTriggerInteraction.Ignore))

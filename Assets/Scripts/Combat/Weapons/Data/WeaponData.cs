@@ -6,6 +6,7 @@ public enum WeaponFireMode { SemiAutomatic, Automatic }
 public sealed class WeaponData : ScriptableObject
 {
     [SerializeField] private string displayName = "Foundation Rifle";
+    [SerializeField] private Sprite hudIcon;
     [SerializeField] private WeaponFireMode fireMode = WeaponFireMode.Automatic;
     [SerializeField, Min(0.01f)] private float damage = 20f;
     [SerializeField, Min(1f)] private float roundsPerMinute = 600f;
@@ -16,6 +17,7 @@ public sealed class WeaponData : ScriptableObject
     [SerializeField] private Vector2 recoilPerShot = new Vector2(1.2f, 0.4f);
 
     public string DisplayName => displayName;
+    public Sprite HudIcon => hudIcon;
     public WeaponFireMode FireMode => fireMode;
     public float Damage => Mathf.Max(0.01f, damage);
     public float ShotInterval => 60f / Mathf.Max(1f, roundsPerMinute);

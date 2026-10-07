@@ -49,6 +49,7 @@ public static partial class MovementAbilityChecks
             RunLowPassageChecks();
             RunEvasiveDiveChecks();
             RunContinuityChecks();
+            RunBalancePassageChecks();
         }
         finally { if (previous.IsValid()) SceneManager.SetActiveScene(previous); EditorSceneManager.CloseScene(test, true); }
         Debug.Log("MOVEMENT_ABILITY_CHECKS_PASSED: " + passed);
@@ -179,7 +180,7 @@ public static partial class MovementAbilityChecks
             Require(f.P.CurrentState == State.StepDodge && f.P.IsDodging, "Alt begins step dodge");
             for (int i = 0; i < 20; i++) f.Step();
             Require(f.P.CurrentState == State.Standing && !f.P.IsDodging, "Step ends cleanly");
-            Require(f.P.transform.position.z < f.Origin.z - 2.8f, "Extended step moves at least 2.8 metres");
+            Require(f.P.transform.position.z < f.Origin.z - 1.9f, "Short step still moves decisively");
         }
     }
     private static void Vault()
