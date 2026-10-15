@@ -36,7 +36,8 @@ public sealed class SlidingState : MovementBaseState
     {
         if (ctx.CurrentStateDuration < ctx.slideJumpMinDuration || ctx.HasCeilingAbove(ctx.StandingColliderHeight)) return false;
         Vector3 direction = new Vector3(ctx.SlideDirection.x, 0f, ctx.SlideDirection.z).normalized;
-        float speed = ctx.CurrentSlideSpeed;
+        if (direction.sqrMagnitude < 0.01f) direction = ctx.transform.forward;
+        float speed = Mathf.Max(ctx.slideJumpMinSpeed, ctx.CurrentSlideSpeed + ctx.slideJumpSpeedBonus);
         ctx.HorizontalVelocity = direction * speed;
         ctx.VerticalVelocity = Mathf.Sqrt(2f * ctx.slideKickJumpHeight * Mathf.Abs(ctx.gravity)) + ctx.GetSpeedScaledPop(speed);
         ctx.DiveBodyForward = direction;

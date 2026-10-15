@@ -3651,7 +3651,7 @@ Transform:
   m_GameObject: {fileID: 1762319652}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0.7071068, z: 0, w: 0.7071068}
-  m_LocalPosition: {x: 16.5, y: 1.0000001, z: 7}
+  m_LocalPosition: {x: 16.5, y: 1.25, z: 7}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -3893,7 +3893,6 @@ MonoBehaviour:
   invertY: 0
   minPitch: -89
   maxPitch: 89
-  enableEscUnlock: 1
 --- !u!114 &1866124190
 MonoBehaviour:
   m_ObjectHideFlags: 0
