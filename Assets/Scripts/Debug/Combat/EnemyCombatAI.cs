@@ -145,9 +145,10 @@ public sealed class EnemyCombatAI : MonoBehaviour
         if (indicator == null)
             return;
 
+        // 평소에는 회색, 공격 준비 중에는 노란색
         Color tint = isPreparing
             ? Color.yellow
-            : new Color(0.8f, 0.15f, 0.15f);
+            : new Color(0.5f, 0.5f, 0.5f);
 
         indicator.GetPropertyBlock(color);
         color.SetColor("_BaseColor", tint);

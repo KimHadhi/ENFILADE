@@ -153,8 +153,17 @@ public static class MovementRefactorChecks
         p.CurrentStateDuration = 0.2f;
         Require(Machine(p).Current.TryJump(), "Mature slide jump accepted");
         Require(p.CurrentState == State.Diving && p.IsDiving && !p.IsSliding, "Slide jumps into dive hierarchy");
-        Near(p.HorizontalVelocity.z, 8f, "Slide momentum retained");
-        Near(p.VerticalVelocity, Mathf.Sqrt(2f * 1.05f * 24f) + 0.96f, "Slide jump pop");
+        Near(p.HorizontalVelocity.z, 8.8f, "Slide momentum plus takeoff bonus");
+        Near(p.VerticalVelocity, Mathf.Sqrt(2f * 1.05f * 24f) + 1.056f, "Slide jump pop");
+        foreach (float speed in new[] { 0f, 0.5f, 1.5f, 2.2f })
+        {
+            p.ChangeState(State.Sliding);
+            p.SlideDirection = Vector3.forward;
+            p.CurrentSlideSpeed = speed;
+            p.CurrentStateDuration = 0.2f;
+            Require(Machine(p).Current.TryJump(), "Slow slide jump accepted");
+            Near(p.HorizontalVelocity.magnitude, 3f, "Slow slide gets minimum takeoff speed");
+        }
     }
 
     private static void CheckBlockedJumps(PlayerMovement p)
