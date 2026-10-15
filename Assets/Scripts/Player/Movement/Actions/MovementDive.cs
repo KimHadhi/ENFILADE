@@ -62,13 +62,16 @@ public sealed class MovementDive
     internal void UpdateFlight(float dt)
     {
         dt = Mathf.Max(0f, dt);
-        // Ramp drag in continuously instead of switching full braking on after the burst.
-        // Integrating the ramp keeps the result stable across frame rates.
+        // Preserve takeoff speed, then smoothly ramp drag. Integrate only the portion
+        // after the hold so crossing its boundary is independent of frame rate.
         float ramp = Mathf.Max(0.01f, ctx.diveBurstDuration);
         float DragTime(float time) => time < ramp ? time * time / (2f * ramp) : time - ramp * 0.5f;
-        float brakeTime = DragTime(flightTime + dt) - DragTime(flightTime);
+        float hold = Mathf.Max(0f, ctx.diveSpeedHoldDuration);
+        float start = Mathf.Max(0f, flightTime - hold);
+        float end = Mathf.Max(0f, flightTime + dt - hold);
+        float brakeTime = DragTime(end) - DragTime(start);
         flightTime += dt;
-        float speed = Mathf.Max(0f, ctx.HorizontalVelocity.magnitude - ctx.diveAirResistance * dt);
+        float speed = Mathf.Max(0f, ctx.HorizontalVelocity.magnitude - ctx.diveAirResistance * (end - start));
         if (speed <= 0.001f) { ctx.HorizontalVelocity = Vector3.zero; return; }
         Vector3 direction = ctx.HorizontalVelocity.normalized;
         // Looking around never redirects the impulse. Only a small explicit side correction is allowed.

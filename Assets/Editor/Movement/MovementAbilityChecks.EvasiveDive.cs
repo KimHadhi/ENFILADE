@@ -10,6 +10,7 @@ public static partial class MovementAbilityChecks
     {
         Check("evasive dive launches in eight directions and keeps backward body orientation", DiveDirections);
         Check("dive burst decays without being refreshed by free look or posture flips", DiveBurstDecay);
+        Check("dive holds speed before smoothly braking at every frame rate", DiveSpeedHold);
         Check("air apex and a stopped airborne body never end dive prematurely", DiveApex);
         Check("short dive distance and landing recovery agree at 30/60/120Hz", DiveDistance);
         Check("repeating dives loses a distance race to sprinting", DiveVersusSprint);
@@ -45,12 +46,34 @@ public static partial class MovementAbilityChecks
             f.P.transform.rotation = Quaternion.Euler(0f, 180f, 0f);
             for (int i = 0; i < 15; i++) f.Step();
             Require(f.P.CurrentState == State.SupineDiving, "Free look can turn onto the back");
-            Require(f.P.HorizontalVelocity.z > 0f && f.P.HorizontalVelocity.magnitude < 7f,
+            Require(f.P.HorizontalVelocity.z > 0f && f.P.HorizontalVelocity.magnitude < 8.5f,
                 "Looking back neither reverses nor replenishes burst");
             Require(!(bool)Call(Dive(f), "TryLaunch", Vector2.up, false), "No second impulse while in the air");
             f.P.ResetVelocity();
             Require((bool)Call(Dive(f), "TryLaunch", Vector2.up, false), "Reset removes old dive restrictions");
         }
+    }
+    private static void DiveSpeedHold()
+    {
+        float shortest = float.MaxValue, longest = 0f;
+        foreach (float dt in new[] { 1f / 30f, 1f / 60f, 1f / 120f })
+        using (var f = new Fixture())
+        {
+            f.P.LaunchDive(Vector2.up); f.MoveInput(Vector2.zero);
+            float time = 0f;
+            while (time + dt < 0.25f)
+            {
+                Call(Dive(f), "UpdateFlight", dt); time += dt;
+                Near(f.P.HorizontalVelocity.magnitude, 9f, "No horizontal drag in takeoff hold");
+            }
+            Call(Dive(f), "UpdateFlight", 0.25f - time);
+            Near(f.P.HorizontalVelocity.magnitude, 9f, "Hold boundary retains speed");
+            for (int i = 0; i < Mathf.RoundToInt(0.5f / dt); i++) Call(Dive(f), "UpdateFlight", dt);
+            float speed = f.P.HorizontalVelocity.magnitude;
+            Require(speed < 6f && speed > 2.2f, "Drag resumes after hold");
+            shortest = Mathf.Min(shortest, speed); longest = Mathf.Max(longest, speed);
+        }
+        Require(longest - shortest < 0.02f, "Hold and braking agree across frame rates");
     }
     private static void DiveApex()
     {
@@ -80,7 +103,7 @@ public static partial class MovementAbilityChecks
             Require(cooldown > 0.3f && !(bool)Call(Dive(f), "TryLaunch", Vector2.up, true), "Landing cannot immediately chain a fresh burst");
             while (time < 1.2f) { f.Step(dt); time += dt; }
             Debug.Log("DIVE_SETTLE: Hz=" + (1f / dt) + " distance=" + (f.P.transform.position.z - f.Origin.z) + " state=" + f.P.CurrentState);
-            Require(f.P.IsProning && f.P.transform.position.z - f.Origin.z < 5.9f, "The added landing carry still settles within a short total distance");
+            Require(f.P.IsProning && f.P.transform.position.z - f.Origin.z < 7f, "The takeoff hold still settles within the bounded dive envelope");
         }
         Require(longest - shortest < 0.35f, "Frame rate does not substantially change dodge range");
     }
@@ -114,7 +137,7 @@ public static partial class MovementAbilityChecks
             }
             float distance = f.P.transform.position.z - f.Origin.z;
             Debug.Log("DIVE_RACE: 6 seconds sprint=" + sprintDistance + " repeatedDive=" + distance + " launches=" + launches);
-            Require(launches >= 4 && distance < sprintDistance * 0.8f, "Even immediate get-up and repeated dive cannot outpace sprint");
+            Require(launches >= 4 && distance < sprintDistance * 0.8f, "Even with the takeoff hold, repeated dive must remain slower than sprint");
         }
     }
     private static void DiveCamera()

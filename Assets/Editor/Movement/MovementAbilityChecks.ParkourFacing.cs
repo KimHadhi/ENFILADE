@@ -8,6 +8,30 @@ public static partial class MovementAbilityChecks
         Check("turning during vault preserves exit direction and cannot repeat before landing", VaultTurnaround);
         Check("different obstacles remain chainable and reset clears traversal history", VaultDifferentObstacle);
         Check("looking away from ledge stops shimmy and prepares directional jump", LedgeLookAway);
+        Check("climbing yaw is limited around wall normal and released on exit", WallClimbLookLimit);
+    }
+
+    private static void WallClimbLookLimit()
+    {
+        using (var f = new Fixture())
+        {
+            var look = f.P.gameObject.AddComponent<PlayerLook>();
+            Set(look, "movement", f.P);
+            var traversal = Service(f.Abilities, "Traversal");
+            foreach (float center in new[] { 0f, 170f, -170f })
+            {
+                Vector3 facing = Quaternion.Euler(0f, center, 0f) * Vector3.forward;
+                Set(traversal, "Wall", new RaycastHit { normal = -facing });
+                f.P.ChangeState(State.WallClimb);
+                foreach (float delta in new[] { -150f, -31f, -15f, 0f, 15f, 31f, 150f })
+                {
+                    float actual = (float)Call(look, "ClampWallClimbYaw", center + delta);
+                    Near(Mathf.DeltaAngle(center, actual), Mathf.Clamp(delta, -30f, 30f), "Yaw clamps across angle wrap");
+                }
+                f.P.ChangeState(State.Standing);
+                Near((float)Call(look, "ClampWallClimbYaw", center + 150f), center + 150f, "Exit restores free look");
+            }
+        }
     }
 
     private static void FinishTurnedVault(Fixture f, float dt)

@@ -51,6 +51,10 @@ public sealed partial class PlayerMovement
     [SerializeField, Min(0.1f)] internal float groundSnapDistance = 0.5f;
     [SerializeField, Min(0.01f)] internal float slideJumpMinDuration = 0.1f;
     [SerializeField, Min(0.2f)] internal float slideKickJumpHeight = 1.05f;
+    [Tooltip("슬라이딩 점프의 최소 수평 발사 속도")]
+    [SerializeField, Min(0f)] internal float slideJumpMinSpeed = 3f;
+    [Tooltip("슬라이딩 점프 시 현재 수평 속도에 더하는 도약 보너스")]
+    [SerializeField, Min(0f)] internal float slideJumpSpeedBonus = 0.8f;
 
     [Header("Airborne & Ground Launch Dive")]
     [Tooltip("다이브 시작 순간의 수평 속도. 공중에서 점진적으로 감속하므로 지속 이동 속도가 아닙니다.")]
@@ -68,6 +72,8 @@ public sealed partial class PlayerMovement
     [SerializeField, Range(0.5f, 1.2f)] internal float diveGravityScale = 0.9f;
     [SerializeField, Range(0.5f, 1.0f)] internal float diveMomentumRetention = 0.88f;
     [SerializeField, Min(0f)] internal float diveAirResistance = 0.12f;
+    [Tooltip("다이브 도약 후 수평 속도를 유지하는 시간. 충돌과 착지는 정상 처리합니다.")]
+    [SerializeField, Range(0.2f, 0.5f)] internal float diveSpeedHoldDuration = 0.25f;
     [Tooltip("공중 감속이 0에서 설정값까지 서서히 강해지는 시간. 이 시점에 급제동하지 않습니다.")]
     [SerializeField, Min(0.01f)] internal float diveBurstDuration = 0.1f;
     [SerializeField, Min(0f)] internal float diveCarrySpeed = 2.2f;
