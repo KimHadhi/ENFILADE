@@ -23,7 +23,7 @@ public sealed class AdaptiveHealthHUD : MonoBehaviour
 
     [Header("Keep the scene's block placement and size")]
     [SerializeField] private bool matchExistingBlocks = true;
-    [SerializeField] private Vector2 barOffset = Vector2.zero;
+    [SerializeField] private Vector2 barOffset = new Vector2(0f, -2f);
 
     [Header("Health - live player values during Play, editable outside Play")]
     [SerializeField, Min(0)] private float currentHealth = 100f;
@@ -34,17 +34,18 @@ public sealed class AdaptiveHealthHUD : MonoBehaviour
     [SerializeField, Min(1)] private float healthPerBlock = 20f;
     [Tooltip("Maximum health up to and including this value uses separate blocks.")]
     [SerializeField, Min(1)] private float blockModeMaxHealth = 300f;
-    [SerializeField, Min(8)] private float blockWidth = 19f;
-    [SerializeField, Min(4)] private float barHeight = 20f;
+    [Tooltip("Horizontal pitch between blocks, in Canvas units.")]
+    [SerializeField, Min(8)] private float blockWidth = 32f;
+    [SerializeField, Min(4)] private float barHeight = 32f;
     [SerializeField, Range(2, 20)] private int maxVisibleSections = 10;
-    [SerializeField, Range(0, 10)] private float blockGap = 3f;
-    [SerializeField, Range(0, 12)] private float slant = 4f;
+    [SerializeField, Range(0, 10)] private float blockGap = 5.0526316f;
+    [SerializeField, Range(0, 12)] private float slant = 6.4f;
 
     [Header("Shield - thin band above the main bar")]
     [Tooltip("Minimum HP-equivalent scale for shield width, fill and overflow percentage.")]
     [SerializeField, Min(100f)] private float minimumShieldScale = 100f;
-    [SerializeField, Min(1)] private float shieldHeight = 3f;
-    [SerializeField, Min(0)] private float shieldOffset = 3f;
+    [SerializeField, Min(1)] private float shieldHeight = 4.8f;
+    [SerializeField, Min(0)] private float shieldOffset = 4.8f;
     [Tooltip("Move only the shield bar horizontally. Positive = right, negative = left. Canvas units.")]
     [SerializeField] private float shieldXOffset = 3f;
 
@@ -269,11 +270,27 @@ public sealed class AdaptiveHealthHUD : MonoBehaviour
 
     private void CaptureExistingLayout()
     {
+        capturedLayout = false;
+        if (!matchExistingBlocks) return;
+
         var bounds = new List<Rect>();
         var corners = new Vector3[4];
+        // Prefer visible blocks. Hidden authoring blocks still retain their rects
+        // and can supply the layout when every original block is disabled.
+        bool hasActiveRects = false;
         for (int i = 0; i < originalBlocks.Count; i++)
         {
-            if (!originalActive[i]) continue;
+            if (!originalActive[i] || originalBlocks[i] == null) continue;
+            RectTransform rect = originalBlocks[i].transform as RectTransform;
+            if (rect != null && rect.rect.width > 0f && rect.rect.height > 0f)
+            {
+                hasActiveRects = true;
+                break;
+            }
+        }
+        for (int i = 0; i < originalBlocks.Count; i++)
+        {
+            if (originalBlocks[i] == null || (hasActiveRects && !originalActive[i])) continue;
             RectTransform block = originalBlocks[i].transform as RectTransform;
             if (block == null || block.rect.width <= 0f || block.rect.height <= 0f) continue;
             block.GetWorldCorners(corners);
@@ -289,8 +306,7 @@ public sealed class AdaptiveHealthHUD : MonoBehaviour
         }
         if (bounds.Count == 0)
         {
-            if (matchExistingBlocks)
-                Debug.LogWarning("AdaptiveHealthHUD: no active HealthBlock rects to measure; using manual size settings.", this);
+            // A HUD without template blocks uses the Inspector's manual dimensions.
             return;
         }
         bounds.Sort((a, b) => a.xMin.CompareTo(b.xMin));

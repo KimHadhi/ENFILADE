@@ -8,6 +8,8 @@ public sealed class UltimatePortraitGlow : MonoBehaviour
 {
     [SerializeField] private UltimateCharge source;
     [SerializeField] private Graphic portrait;
+    [Tooltip("Persistent source material used to recover a missing portrait material.")]
+    [SerializeField] private Material portraitMaterial;
     [Header("Charging: empty to ready")]
     [SerializeField] private Vector2 spreadRange = new Vector2(0.005f, 0.04f);
     [SerializeField] private Vector2 intensityRange = new Vector2(0.65f, 2.2f);
@@ -21,8 +23,9 @@ public sealed class UltimatePortraitGlow : MonoBehaviour
     private static readonly int Spread = Shader.PropertyToID("_GlowBloomSpread");
     private static readonly int Intensity = Shader.PropertyToID("_GlowIntensity");
     private static readonly int GlowColor = Shader.PropertyToID("_GlowColor");
-    private Material originalMaterial, instance;
+    private UltimatePortraitMaterial materialEffect;
     private Graphic materialOwner;
+    private bool warnedInvalidMaterial;
     private float displayedProgress, heartbeatTime;
     private bool wasReady;
 
@@ -43,11 +46,7 @@ public sealed class UltimatePortraitGlow : MonoBehaviour
         float spread = Mathf.Max(0.0001f, Mathf.Lerp(spreadRange.x, spreadRange.y, displayedProgress));
         float intensity = Mathf.Max(0f, Mathf.Lerp(intensityRange.x, intensityRange.y, displayedProgress) + pulse * heartbeatIntensity);
         Color tint = Color.Lerp(emptyGlowColor, readyGlowColor, displayedProgress);
-        Apply(instance, spread, intensity, tint);
-        // A UI Mask can render a stencil copy rather than Graphic.material itself.
-        Material rendered = portrait.materialForRendering;
-        if (rendered != null && rendered != instance && rendered != originalMaterial)
-            Apply(rendered, spread, intensity, tint);
+        materialEffect.SetGlow(spread, intensity, tint);
     }
 
     internal static float Heartbeat(float time, float frequency)
@@ -60,32 +59,36 @@ public sealed class UltimatePortraitGlow : MonoBehaviour
 
     private bool EnsureMaterial()
     {
-        if (instance != null && (portrait != materialOwner || (portrait != null && portrait.material != instance))) ReleaseMaterial();
-        if (instance != null) return source != null && portrait != null;
+        if (portrait != materialOwner) ReleaseMaterial();
         if (source == null) source = GetComponent<UltimateCharge>();
-        if (source == null || portrait == null || portrait.material == null) return false;
-        originalMaterial = portrait.material;
-        if (!originalMaterial.HasProperty(Spread) || !originalMaterial.HasProperty(Intensity) || !originalMaterial.HasProperty(GlowColor))
+        if (source == null || portrait == null) return false;
+        // Graphic.material must always retain a persistent source, never a DontSave clone.
+        if (portrait.material == portrait.defaultMaterial && IsGlowMaterial(portraitMaterial))
+            portrait.material = portraitMaterial;
+        if (!IsGlowMaterial(portrait.material))
         {
-            Debug.LogError("UltimatePortraitGlow: portrait must use the HexGlowFrame material.", this);
-            enabled = false;
+            ReleaseMaterial();
+            if (!warnedInvalidMaterial)
+                Debug.LogWarning("UltimatePortraitGlow: assign a HexGlowFrame material to the portrait; glow will resume automatically when assigned.", this);
+            warnedInvalidMaterial = true;
             return false;
         }
-        instance = new Material(originalMaterial) { name = originalMaterial.name + " (Ultimate Runtime)", hideFlags = HideFlags.HideAndDontSave };
+        warnedInvalidMaterial = false;
+        if (materialEffect != null) return true;
         materialOwner = portrait;
-        portrait.material = instance;
+        materialEffect = portrait.gameObject.AddComponent<UltimatePortraitMaterial>();
+        materialEffect.hideFlags = HideFlags.HideAndDontSave;
+        portrait.SetMaterialDirty();
         displayedProgress = UltimateCharge.ResolveHUDSource(this, source).ReadinessRatio;
         heartbeatTime = 0f;
         wasReady = false;
         return true;
     }
 
-    private static void Apply(Material material, float spread, float intensity, Color tint)
+    private static bool IsGlowMaterial(Material material)
     {
-        if (!material.HasProperty(Spread)) return;
-        material.SetFloat(Spread, spread);
-        material.SetFloat(Intensity, intensity);
-        material.SetColor(GlowColor, tint);
+        return material != null && material.HasProperty(Spread)
+            && material.HasProperty(Intensity) && material.HasProperty(GlowColor);
     }
 
     private void OnDisable() { ReleaseMaterial(); }
@@ -95,11 +98,13 @@ public sealed class UltimatePortraitGlow : MonoBehaviour
 
     private void ReleaseMaterial()
     {
-        if (instance == null) return;
-        if (materialOwner != null && materialOwner.material == instance) materialOwner.material = originalMaterial;
-        if (Application.isPlaying) Destroy(instance); else DestroyImmediate(instance);
-        instance = null;
-        originalMaterial = null;
+        if (materialEffect != null)
+        {
+            materialEffect.enabled = false;
+            if (Application.isPlaying) Destroy(materialEffect); else DestroyImmediate(materialEffect);
+        }
+        if (materialOwner != null) materialOwner.SetMaterialDirty();
+        materialEffect = null;
         materialOwner = null;
     }
 }

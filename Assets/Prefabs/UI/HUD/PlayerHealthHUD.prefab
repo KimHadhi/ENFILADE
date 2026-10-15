@@ -377,6 +377,7 @@ MonoBehaviour:
   currentCharge: 0
   maximumCharge: 120
   requiredCharge: 100
+  chargePerEnemyHit: 3
 --- !u!114 &556986047822321307
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -412,8 +413,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::UltimatePortraitGlow
   source: {fileID: 7320072423880498245}
   portrait: {fileID: 2256162706080749619}
+  portraitMaterial: {fileID: 2100000, guid: 7c9ec84ba53e2a542bfc2373d55065ce, type: 2}
   spreadRange: {x: 0.005, y: 0.05}
-  intensityRange: {x: 0.65, y: 0.5}
+  intensityRange: {x: 0.65, y: 2.2}
   emptyGlowColor: {r: 1, g: 0.4481132, b: 0.5079563, a: 1}
   readyGlowColor: {r: 1, g: 0.015, b: 0.03, a: 1}
   transitionSeconds: 1
@@ -591,13 +593,14 @@ MonoBehaviour:
   extraShield: 0
   healthPerBlock: 20
   blockModeMaxHealth: 300
-  blockWidth: 19
-  barHeight: 20
+  blockWidth: 32
+  barHeight: 32
   maxVisibleSections: 10
-  blockGap: 3
-  slant: 4
-  shieldHeight: 3
-  shieldOffset: 3
+  blockGap: 5.0526314
+  slant: 6.4
+  minimumShieldScale: 100
+  shieldHeight: 4.8
+  shieldOffset: 4.8
   shieldXOffset: 3
   healthColor: {r: 1, g: 0.31, b: 0.47, a: 1}
   emptyColor: {r: 1, g: 0.31, b: 0.47, a: 0.18}

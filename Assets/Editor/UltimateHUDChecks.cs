@@ -186,24 +186,42 @@ public static class UltimateHUDChecks
         try
         {
             charge.SetValues(50f, 120f, 100f); glow.RefreshNow();
-            Require(portrait.material != shared, "Each portrait needs a private material");
+            Require(portrait.material == shared, "Serialized portrait reference must remain the source material");
+            Require(portrait.materialForRendering != shared, "Rendering uses a private material");
             Near(shared.GetFloat("_GlowIntensity"), 10f, "Shared asset must stay unchanged");
-            Near(portrait.material.GetFloat("_GlowBloomSpread"), 0.0225f, "Half charge expands the spread halfway");
+            Near(portrait.materialForRendering.GetFloat("_GlowBloomSpread"), 0.0225f, "Half charge expands the spread halfway");
             charge.SetValues(100f, 120f, 100f); glow.RefreshNow(0.12f / 1.1f);
-            float peak = portrait.material.GetFloat("_GlowIntensity");
+            float peak = portrait.materialForRendering.GetFloat("_GlowIntensity");
             Require(peak > 3.5f, "First heartbeat is visible at readiness");
             Near(portrait.materialForRendering.GetFloat("_GlowIntensity"), peak, "Stencil UI material also receives animation");
-            Color ready = portrait.material.GetColor("_GlowColor");
+            Color ready = portrait.materialForRendering.GetColor("_GlowColor");
             Require(ready.r > 0.99f && ready.g < 0.02f, "Ready color is saturated red");
             glow.RefreshNow(0.5f);
-            Require(portrait.material.GetFloat("_GlowIntensity") < peak - 1f, "Heartbeat returns to its valley");
+            Require(portrait.materialForRendering.GetFloat("_GlowIntensity") < peak - 1f, "Heartbeat returns to its valley");
             charge.TryConsume(); glow.RefreshNow(0.2f);
-            Near(portrait.material.GetFloat("_GlowIntensity"), 0.65f, "Spending removes readiness pulse");
+            Near(portrait.materialForRendering.GetFloat("_GlowIntensity"), 0.65f, "Spending removes readiness pulse");
             Call(glow, "ReleaseMaterial");
             Require(portrait.material == shared, "Disabling restores the authored material");
+            // Replacing or clearing a material must not permanently switch glow off.
+            portrait.material = null;
+            Set(glow, "warnedInvalidMaterial", true);
+            glow.RefreshNow();
+            Require(glow.enabled, "Missing material cannot disable automatic recovery");
+            portrait.material = shared;
+            glow.RefreshNow();
+            Near(portrait.materialForRendering.GetFloat("_GlowIntensity"), 0.65f, "Reassignment resumes glow");
+            Set(glow, "portraitMaterial", shared);
+            portrait.material = null;
+            glow.RefreshNow();
+            Require(portrait.material == shared, "Missing reference recovers from persistent fallback");
+            glow.enabled = false;
+            Require(portrait.material == shared, "Disable preserves material reference");
+            Require(portrait.GetComponent<UltimatePortraitMaterial>() == null, "Disable removes temporary renderer modifier");
         }
         finally { Call(glow, "ReleaseMaterial"); Object.DestroyImmediate(root.gameObject); Object.DestroyImmediate(shared); }
     }
+
+    public static void RunPortraitGlowChecks() { Glow(); }
 
     private static void PreviewLifecycle()
     {
