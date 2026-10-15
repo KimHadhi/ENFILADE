@@ -1,13 +1,13 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!21 &-5754834845130188032
+--- !u!21 &-1382620642039756727
 Material:
   serializedVersion: 8
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: SCDREAM8-BLACK Atlas Material
+  m_Name: SCDREAM9 Atlas Material
   m_Shader: {fileID: 4800000, guid: 68e6db2ebdc24f95958faec2be5558d6, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
@@ -36,7 +36,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MainTex:
-        m_Texture: {fileID: 4906421226137673331}
+        m_Texture: {fileID: 6073858849271400815}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _OutlineTex:
@@ -73,9 +73,9 @@ Material:
     - _OutlineWidth: 0
     - _PerspectiveFilter: 0.875
     - _Reflectivity: 10
-    - _ScaleRatioA: 0.9
-    - _ScaleRatioB: 0.73125
-    - _ScaleRatioC: 0.73125
+    - _ScaleRatioA: 1
+    - _ScaleRatioB: 1
+    - _ScaleRatioC: 1
     - _ScaleX: 1
     - _ScaleY: 1
     - _ShaderFlags: 0
@@ -119,19 +119,19 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 71c1514a6bd24e1e882cebbe1904ce04, type: 3}
-  m_Name: SCDREAM8-BLACK SDF
+  m_Name: SCDREAM9 SDF
   m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TMP_FontAsset
   m_Version: 1.1.0
   m_FaceInfo:
     m_FaceIndex: 0
     m_FamilyName: S-Core Dream
-    m_StyleName: 8 Heavy
+    m_StyleName: 9 Black
     m_PointSize: 90
     m_Scale: 1
     m_UnitsPerEM: 1000
     m_LineHeight: 107.46001
     m_AscentLine: 81
-    m_CapLine: 71
+    m_CapLine: 72
     m_MeanLine: 51
     m_Baseline: 0
     m_DescentLine: -22.59
@@ -144,11 +144,11 @@ MonoBehaviour:
     m_StrikethroughOffset: 20.4
     m_StrikethroughThickness: 4.5
     m_TabWidth: 27
-  m_Material: {fileID: -5754834845130188032}
-  m_SourceFontFileGUID: 759a841cedb50cb4f97ba87cf8ddd37d
+  m_Material: {fileID: -1382620642039756727}
+  m_SourceFontFileGUID: 3dcbf98bbd31aa9479e8ded0541991e8
   m_CreationSettings:
     sourceFontFileName: 
-    sourceFontFileGUID: 759a841cedb50cb4f97ba87cf8ddd37d
+    sourceFontFileGUID: 3dcbf98bbd31aa9479e8ded0541991e8
     faceIndex: 0
     pointSizeSamplingMode: 0
     pointSize: 90
@@ -165,14 +165,14 @@ MonoBehaviour:
     fontStyleModifier: 0
     renderMode: 4165
     includeFontFeatures: 0
-  m_SourceFontFile: {fileID: 12800000, guid: 759a841cedb50cb4f97ba87cf8ddd37d, type: 3}
+  m_SourceFontFile: {fileID: 12800000, guid: 3dcbf98bbd31aa9479e8ded0541991e8, type: 3}
   m_SourceFontFilePath: 
   m_AtlasPopulationMode: 1
   InternalDynamicOS: 0
   m_GlyphTable: []
   m_CharacterTable: []
   m_AtlasTextures:
-  - {fileID: 4906421226137673331}
+  - {fileID: 6073858849271400815}
   m_AtlasTextureIndex: 0
   m_IsMultiAtlasTexturesEnabled: 0
   m_GetFontFeatures: 1
@@ -250,13 +250,13 @@ MonoBehaviour:
     kerningPairs: []
   fallbackFontAssets: []
   atlas: {fileID: 0}
---- !u!28 &4906421226137673331
+--- !u!28 &6073858849271400815
 Texture2D:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: SCDREAM8-BLACK Atlas
+  m_Name: SCDREAM9 Atlas
   m_ImageContentsHash:
     serializedVersion: 2
     Hash: 00000000000000000000000000000000
@@ -290,7 +290,7 @@ Texture2D:
   m_ColorSpace: 1
   m_PlatformBlob: 
   image data: 1
-  _typelessdata: 00
+  _typelessdata: cd
   m_StreamData:
     serializedVersion: 2
     offset: 0

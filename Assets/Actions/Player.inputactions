@@ -7,6 +7,15 @@
             "id": "fe3b974a-ce80-43cc-9874-eb257b4af52a",
             "actions": [
                 {
+                    "name": "Interact",
+                    "type": "Button",
+                    "id": "5b87411f-37ea-4dd8-a08b-0c6b50d49333",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
                     "name": "Move",
                     "type": "Value",
                     "id": "b06014ca-7270-4be4-80b3-9b41515de10a",
@@ -98,6 +107,17 @@
                 }
             ],
             "bindings": [
+                {
+                    "name": "",
+                    "id": "4f26b946-38c1-442c-9137-7295e23b3a80",
+                    "path": "<Keyboard>/f",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Interact",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
                 {
                     "name": "2D Vector",
                     "id": "5a72bd5f-99f0-4fb2-878c-d2e7000bd5d5",

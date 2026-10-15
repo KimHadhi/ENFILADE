@@ -16,6 +16,16 @@ public sealed class UltimateCharge : MonoBehaviour
     [SerializeField, Min(0)] private float currentCharge;
     [SerializeField, Min(0)] private float maximumCharge = 120f;
     [SerializeField, Min(0)] private float requiredCharge = 100f;
+    [SerializeField, Min(0), Tooltip("Charge granted per accepted hit on a living enemy, including lethal hits.")]
+    private float chargePerEnemyHit = 3f;
+
+    public static void AwardEnemyHit(DamageHit hit)
+    {
+        if (hit.Kind != DamageKind.Attack || hit.Source == null) return;
+        var player = hit.Source.GetComponentInParent<PlayerMovement>();
+        if (player == null || player.Ultimate == null || player.DamageReceiver == null || !player.DamageReceiver.IsAlive) return;
+        player.Ultimate.AddCharge(player.Ultimate.chargePerEnemyHit);
+    }
 
     public float MaximumCharge => NonNegative(maximumCharge);
     public float RequiredCharge => NonNegative(requiredCharge);

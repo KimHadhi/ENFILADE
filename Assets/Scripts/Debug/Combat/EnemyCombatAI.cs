@@ -44,7 +44,7 @@ public sealed class EnemyCombatAI : MonoBehaviour
 
     private void Update()
     {
-        if (enemyHealth == null || !enemyHealth.IsAlive)
+        if (enemyHealth == null || !enemyHealth.IsAlive || enemyHealth.WavePaused)
             return;
 
         if (player == null)

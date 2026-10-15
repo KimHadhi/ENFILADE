@@ -321,6 +321,7 @@ public class SinglePlayerChatManager : MonoBehaviour
         if (commandsReady) return;
         commandsReady = true;
         PlayerConsoleCommands.Register(commands, ResolveCommandPlayer);
+        CombatTestCommands.Register(commands, this);
         commands.Register("help", "명령어 목록", _ => commands.Help());
         commands.Register("clear", "현재 대화 기록 비우기", _ => { ClearHistory(); return null; });
         commands.Register("echo", "입력한 내용 출력", text => text);

@@ -227,11 +227,14 @@ public sealed class WeaponImpactEffects : MonoBehaviour
             rotation);
 
         var main = effect.main;
+        main.stopAction = ParticleSystemStopAction.None;
+
+        // Play On Awake may already be running; duration requires a fully stopped system.
+        effect.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
 
         main.loop = false;
         main.duration = emissionDuration;
         main.startLifetime = particleLifetime;
-        main.stopAction = ParticleSystemStopAction.None;
 
         // 파티클이 시간이 지나면서 투명해지도록 설정
         var colorOverLifetime = effect.colorOverLifetime;

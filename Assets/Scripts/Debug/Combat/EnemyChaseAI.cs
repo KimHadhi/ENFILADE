@@ -27,6 +27,8 @@ public sealed class EnemyChaseAI : MonoBehaviour
 
     private void Update()
     {
+        if (agent == null || !agent.isActiveAndEnabled || !agent.isOnNavMesh) return;
+        if (enemyHealth != null && enemyHealth.WavePaused) { agent.isStopped = true; return; }
         if (enemyHealth != null && !enemyHealth.IsAlive)
         {
             agent.isStopped = true;
