@@ -11,6 +11,36 @@ public static partial class MovementAbilityChecks
         Check("step cooldown lasts 1.25 seconds unless a real evade refunds it", StepCooldown);
         Check("lean reveals more of the side without moving the player and clamps the final eye at walls", StrongLean);
         Check("dive drag has no abrupt onset and retains forward travel through descent", ContinuousDiveDrag);
+        Check("W gets up only after supine slide ends; supine A/D moves sideways", SupineControls);
+    }
+
+    private static void SupineControls()
+    {
+        foreach (State state in new[] { State.SupineSliding, State.Supine })
+        {
+            foreach (float side in new[] { -1f, 1f })
+            using (var f = new Fixture(true))
+            {
+                f.P.ChangeState(state);
+                f.P.SlideDirection = Vector3.back; f.P.CurrentSlideSpeed = 6f;
+                f.MoveInput(new Vector2(side, 0f)); f.Step();
+                Require(f.P.CurrentState == state && f.P.HorizontalVelocity.x * side > 0.01f,
+                    "A/D moves toward the viewed side without getting up");
+                f.MoveInput(Vector2.up); f.Step();
+                Require(f.P.CurrentState == (state == State.Supine ? State.Standing : State.SupineSliding),
+                    "W stands without Shift only in resting supine, never during sliding");
+            }
+            foreach (float roofHeight in new[] { 0.7f, 1.3f })
+            using (var f = new Fixture(true))
+            {
+                f.P.ChangeState(state); f.P.SlideDirection = Vector3.back; f.P.CurrentSlideSpeed = 6f;
+                f.P.UpdateHeightsAndTransform(0f);
+                f.Box(new Vector3(0f, roofHeight + 0.1f, 0f), new Vector3(4f, 0.2f, 4f));
+                f.MoveInput(Vector2.up); f.Machine.Current.ProcessInput(Vector2.up);
+                Require(f.P.CurrentState == (state == State.SupineSliding || roofHeight < 1f ? state : State.Crouching),
+                    "W cannot rise through ceiling and crouches if only crouch fits");
+            }
+        }
     }
 
     private static void SprintThroughStep()

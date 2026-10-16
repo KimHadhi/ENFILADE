@@ -8,8 +8,6 @@ public sealed class SupineSlidingState : MovementBaseState
 
     public override float SlideFriction => ctx.SupineSlideFriction;
 
-    // 💡 스마트 브레이크 시스템(IsBrakeInput)이 BaseState에서 알아서 카운터 스트레이프를 계산해주므로 오버라이드 삭제!
-
     public override void ProcessInput(Vector2 input)
     {
         if (ctx.CurrentSlideSpeed <= ctx.SlideEndSpeed)

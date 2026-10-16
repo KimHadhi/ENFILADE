@@ -8,14 +8,18 @@ public sealed class SupineState : MovementBaseState
 
     public override float LocomotionSpeed => ctx.SupineSpeed;
 
+    public override void ProcessInput(Vector2 input)
+    {
+        // Keep the same controls after the slide comes to rest.
+        if (input.y > 0.1f && ctx.IsGrounded && TryJump()) return;
+        base.ProcessInput(input);
+    }
+
     public override void UpdatePhysics(float dt)
     {
         Vector2 input = ctx.CurrentInput;
-        // 누운 자세는 오직 S(후진) 계열 입력만 물리 반영
-        if (input.y > -0.01f)
-        {
-            input = Vector2.zero;
-        }
+        // W is reserved for getting up. A/D and S move while supine.
+        input.y = Mathf.Min(input.y, 0f);
 
         float inputMagnitude = Mathf.Clamp01(input.magnitude);
         Vector3 inputDirection = (ctx.transform.right * input.x + ctx.transform.forward * input.y).normalized;

@@ -36,6 +36,9 @@ public sealed class WaveManager : MonoBehaviour
     public int AliveCount => aliveEnemies.Count;
     public float RemainingDelay => remainingDelay;
     public string LastError { get; private set; }
+    public int TotalEnemiesThisWave => totalEnemiesThisWave;
+    public int DefeatedEnemies => defeatedEnemies;
+    public event System.Action ObjectiveChanged;
     private readonly HashSet<EnemyHealth> aliveEnemies = new HashSet<EnemyHealth>();
     private int currentWave, totalEnemiesThisWave, defeatedEnemies, spawned;
     private float targetFillAmount, remainingDelay;
@@ -129,7 +132,7 @@ public sealed class WaveManager : MonoBehaviour
     }
 
     private void BeginCountdown()
-    { Phase=WavePhase.Countdown; remainingDelay=Mathf.Max(0,timeBetweenWaves); RefreshStatus(); }
+    { Phase=WavePhase.Countdown; remainingDelay=Mathf.Max(0,timeBetweenWaves); RefreshStatus(); UpdateObjectiveUI(); }
     private void RefreshStatus() => UpdateAssaultStatus(IsPaused ? "ASSAULT PAUSED" : Phase==WavePhase.Countdown
         ? $"{preparingMessage} {Mathf.CeilToInt(remainingDelay)}..." : activeMessage);
     private bool SpawnEnemy()
@@ -154,6 +157,7 @@ public sealed class WaveManager : MonoBehaviour
         if(objectiveText!=null) objectiveText.text=objectiveMessage;
         if(enemyCountText!=null) enemyCountText.text=$"{defeatedEnemies} / {totalEnemiesThisWave}";
         targetFillAmount=totalEnemiesThisWave>0 ? (float)defeatedEnemies/totalEnemiesThisWave : 0;
+        ObjectiveChanged?.Invoke();
     }
     private void UpdateAssaultStatus(string message) { if(assaultStatusText!=null) assaultStatusText.text=message; }
     private void OnDisable() { if(Application.isPlaying) AbortWaves(); }

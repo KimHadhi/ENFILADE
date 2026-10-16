@@ -43,6 +43,7 @@ public class SinglePlayerChatManager : MonoBehaviour
     private string pendingDraft = "";
     public IReadOnlyList<ChatEntry> History => history.AsReadOnly();
     public bool IsChatOpen => isChatOpen;
+    public bool BlocksMissionInputThisFrame => isChatOpen || Time.frameCount == lastClosedFrame;
     public event Action<ChatEntry> MessageAdded;
     public ChatCommandRouter Commands { get { EnsureCommands(); return commands; } }
 
@@ -52,6 +53,23 @@ public class SinglePlayerChatManager : MonoBehaviour
     private Coroutine scrollCoroutine;
     private Image scrollRectImage;
     private CanvasGroup scrollbarCanvasGroup;
+    private InputAction cycleChannelAction;
+    private bool ownsCycleChannelAction;
+
+    private void OnEnable()
+    {
+        var actions = playerInput != null ? playerInput.actions : InputSystem.actions;
+        cycleChannelAction = actions != null ? actions.FindAction("UI/CycleChatChannel", false) : null;
+        ownsCycleChannelAction = cycleChannelAction != null && !cycleChannelAction.enabled;
+        if (ownsCycleChannelAction) cycleChannelAction.Enable();
+    }
+
+    private void OnDisable()
+    {
+        if (isChatOpen) CloseChat(false);
+        if (ownsCycleChannelAction) cycleChannelAction?.Disable();
+        cycleChannelAction = null; ownsCycleChannelAction = false;
+    }
 
     private void Awake()
     {
@@ -89,6 +107,8 @@ public class SinglePlayerChatManager : MonoBehaviour
 
     private void Update()
     {
+        if (Application.isFocused && isChatOpen && cycleChannelAction != null && cycleChannelAction.WasPressedThisFrame())
+            CycleInputChannel();
         if (Keyboard.current == null) return;
 
         if (Keyboard.current.enterKey.wasPressedThisFrame || Keyboard.current.numpadEnterKey.wasPressedThisFrame)
@@ -96,7 +116,6 @@ public class SinglePlayerChatManager : MonoBehaviour
             if (!isChatOpen && Time.frameCount != lastClosedFrame) OpenChat();
         }
 
-        if (isChatOpen && Keyboard.current.tabKey.wasPressedThisFrame) CycleInputChannel();
         if (isChatOpen && Keyboard.current.upArrowKey.wasPressedThisFrame) RecallInput(-1);
         if (isChatOpen && Keyboard.current.downArrowKey.wasPressedThisFrame) RecallInput(1);
         if (isChatOpen && Keyboard.current.escapeKey.wasPressedThisFrame)
@@ -198,6 +217,12 @@ public class SinglePlayerChatManager : MonoBehaviour
 
         if (chatInput != null)
         {
+            // TMP can remain selected after hiding, especially after reactivation on channel change.
+            // Clear only this chat's selection, leaving other UI owners alone.
+            var events = EventSystem.current;
+            var selected = events != null ? events.currentSelectedGameObject : null;
+            if (selected != null && selected.transform.IsChildOf(chatInput.transform))
+                events.SetSelectedGameObject(null);
             chatInput.DeactivateInputField();
             chatInput.gameObject.SetActive(false);
         }

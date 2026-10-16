@@ -10,7 +10,7 @@
                     "name": "Interact",
                     "type": "Button",
                     "id": "5b87411f-37ea-4dd8-a08b-0c6b50d49333",
-                    "expectedControlType": "Button",
+                    "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
@@ -506,6 +506,24 @@
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
+                },
+                {
+                    "name": "OpenObjectiveBoard",
+                    "type": "Button",
+                    "id": "2db3f5b1-4f42-4207-8db5-24d5d164b696",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "CycleChatChannel",
+                    "type": "Button",
+                    "id": "07d459a7-67f7-4de9-9183-9c80a6579331",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
                 }
             ],
             "bindings": [
@@ -660,6 +678,28 @@
                     "processors": "",
                     "groups": "",
                     "action": "RightClick",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "c9dca8e5-1211-4574-b122-10098121b191",
+                    "path": "<Keyboard>/tab",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "OpenObjectiveBoard",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "c53f169c-a75d-4743-961b-5ffb71b4a04b",
+                    "path": "<Keyboard>/tab",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "CycleChatChannel",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }
