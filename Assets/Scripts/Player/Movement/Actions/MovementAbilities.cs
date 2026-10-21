@@ -59,7 +59,7 @@ public sealed class MovementAbilities
         }
         if (IsOrdinaryAirborne && Traversal.TryStartAirAction())
             return InputConsumed = true;
-        if (CanUseGroundActions && ctx.Input.ShovePressed && Combat.TryShove())
+        if (CanUseGroundActions && (ctx.MeleeCombat == null || !ctx.MeleeCombat.IsActive) && ctx.Input.ShovePressed && Combat.TryShove())
             return InputConsumed = true;
         return false;
     }

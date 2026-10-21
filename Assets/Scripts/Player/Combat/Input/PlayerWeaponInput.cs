@@ -8,7 +8,8 @@ public sealed class PlayerWeaponInput : MonoBehaviour, IWeaponInput
     [Tooltip("Optional. Uses the project's InputSystem.actions when empty; reads only the Combat action map.")]
     [SerializeField] private InputActionAsset inputActions;
     private InputActionMap ownedMap;
-    private InputAction fire, reload;
+    private InputAction fire, reload, guard, shove;
+    private bool meleeReleaseRequired = true;
     private bool acceptInputThisFrame, releaseRequired = true;
 
     private void OnEnable()
@@ -21,16 +22,18 @@ public sealed class PlayerWeaponInput : MonoBehaviour, IWeaponInput
         var map = asset != null ? asset.FindActionMap("Combat", false) : null;
         if (map == null) { Debug.LogError("PlayerWeaponInput needs Combat/Fire and Combat/Reload in the input asset.", this); return; }
         ownedMap = map.Clone(); fire = ownedMap.FindAction("Fire", false); reload = ownedMap.FindAction("Reload", false);
+        guard = ownedMap.FindAction("Guard", false);
+        shove = asset.FindAction("Player/Shove", false);
         if (fire == null || reload == null)
         { Debug.LogError("Combat input map is missing Fire or Reload.", this); ownedMap.Dispose(); ownedMap = null; return; }
-        ownedMap.Enable(); releaseRequired = true; acceptInputThisFrame = false;
+        ownedMap.Enable(); releaseRequired = meleeReleaseRequired = true; acceptInputThisFrame = false;
     }
 
     private void Update()
     {
         // Run before PlayerLook can relock the cursor with the very same mouse click.
         acceptInputThisFrame = Time.timeScale > 0f && Application.isFocused && Cursor.lockState == CursorLockMode.Locked;
-        if (!acceptInputThisFrame) releaseRequired = true;
+        if (!acceptInputThisFrame) releaseRequired = meleeReleaseRequired = true;
     }
 
     public WeaponInputFrame ReadInput()
@@ -47,12 +50,31 @@ public sealed class PlayerWeaponInput : MonoBehaviour, IWeaponInput
         return new WeaponInputFrame(fire.WasPressedThisFrame(), fire.IsPressed(), reload.WasPressedThisFrame());
     }
 
-    public void RequireTriggerRelease() { releaseRequired = true; }
+    public bool TryReadMeleeInput(out MeleeInputFrame frame)
+    {
+        frame = default;
+        var slots = GetComponent<PlayerWeaponSlots>();
+        // The Player map is disabled while chat is open; never let the cloned map bypass it.
+        bool available = isActiveAndEnabled && acceptInputThisFrame && slots != null && slots.CanReadInput
+            && fire != null && guard != null && Cursor.lockState == CursorLockMode.Locked;
+        if (!available) { meleeReleaseRequired = true; return false; }
+        if (meleeReleaseRequired)
+        {
+            if (!fire.IsPressed() && !guard.IsPressed() && (shove == null || !shove.IsPressed())) meleeReleaseRequired = false;
+            return false;
+        }
+        frame = new MeleeInputFrame(fire.WasPressedThisFrame(), fire.IsPressed(), fire.WasReleasedThisFrame(),
+            guard.WasPressedThisFrame(), guard.IsPressed(), shove != null && shove.WasPressedThisFrame(),
+            shove != null && shove.IsPressed(), shove != null && shove.WasReleasedThisFrame());
+        return true;
+    }
 
-    private void OnApplicationFocus(bool focused) { if (!focused) { acceptInputThisFrame = false; releaseRequired = true; } }
+    public void RequireTriggerRelease() { releaseRequired = meleeReleaseRequired = true; }
+
+    private void OnApplicationFocus(bool focused) { if (!focused) { acceptInputThisFrame = false; releaseRequired = meleeReleaseRequired = true; } }
     private void OnDisable()
     {
         ownedMap?.Disable(); ownedMap?.Dispose(); ownedMap = null; fire = reload = null;
-        acceptInputThisFrame = false; releaseRequired = true;
+        acceptInputThisFrame = false; releaseRequired = meleeReleaseRequired = true; guard = shove = null;
     }
 }

@@ -17,6 +17,13 @@ public sealed class MovementTrainingAttacker : MonoBehaviour
     private void OnEnable() { Awake(); timer = 0f; preparing = false; }
     private void Update()
     {
+        var target = GetComponent<MeleeCombatTarget>();
+        if (PlayerExecution.Suppresses(this) || (target != null && (target.IsStunned || !target.IsAvailable)))
+        {
+            preparing = false; timer = 0f;
+            if (indicator != null) { color.SetColor("_BaseColor", Color.gray); color.SetColor("_Color", Color.gray); indicator.SetPropertyBlock(color); }
+            return;
+        }
         if (player == null) player = FindFirstObjectByType<PlayerMovement>();
         if (player == null || !player.IsInitialized || !player.DamageReceiver.IsAlive || !player.InputAvailable) return;
         timer += Time.deltaTime;

@@ -23,7 +23,9 @@ public sealed class PlayerTestInteraction : MonoBehaviour
     private void Update()
     {
         Target=null;
-        bool available=player!=null && player.InputAvailable && (chat==null||!chat.IsChatOpen) && interact!=null && interact.enabled;
+        bool available=player!=null && player.InputAvailable && !player.CombatInputLocked
+            && (player.Execution == null || player.Execution.Candidate == null)
+            && (chat==null||!chat.IsChatOpen) && interact!=null && interact.enabled;
         if(available && view!=null && Physics.Raycast(view.transform.position,view.transform.forward,out RaycastHit hit,reach,~(1<<gameObject.layer),QueryTriggerInteraction.Ignore))
             Target=hit.collider.GetComponentInParent<ChatTestStation>();
         if(prompt!=null) { prompt.gameObject.SetActive(Target!=null); if(Target!=null) prompt.text=Target.Prompt; }

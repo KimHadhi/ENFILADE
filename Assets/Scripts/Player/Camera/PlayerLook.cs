@@ -52,7 +52,8 @@ public sealed class PlayerLook : MonoBehaviour
     private void Update()
     {
         // 커서가 풀려있거나(채팅창/메뉴 활성화 상태), 일시정지 중이거나 창 포커스를 잃으면 카메라 회전 중단
-        if (Cursor.lockState != CursorLockMode.Locked || Time.timeScale <= 0f || !Application.isFocused)
+        if (Cursor.lockState != CursorLockMode.Locked || Time.timeScale <= 0f || !Application.isFocused
+            || (movement != null && movement.CombatInputLocked))
             return;
 
         Vector2 delta = Vector2.zero;

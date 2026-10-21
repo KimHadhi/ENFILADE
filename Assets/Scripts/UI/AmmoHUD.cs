@@ -57,16 +57,14 @@ public class AmmoHUD : MonoBehaviour
         bool hasWeapon =
             weaponSlots != null &&
             slot >= 0 &&
-            slot < 3 &&
+            slot < PlayerWeaponSlots.SlotCount &&
             weaponSlots.GetWeapon(slot) != null;
 
         if (weaponIcon != null)
         {
-            weaponIcon.Kind = hasWeapon ? slot + 1 : 0;
-            weaponIcon.enabled = true;
-            weaponIcon.color = hasWeapon
-                ? Color.white
-                : new Color(1f, 1f, 1f, 0f);
+            weaponIcon.Kind = hasWeapon ? (weaponSlots.GetWeapon(slot).FireMode == WeaponFireMode.Automatic ? 1 : 2) : 0;
+            weaponIcon.enabled = weaponSlots != null && slot >= 0;
+            weaponIcon.color = hasWeapon ? Color.white : new Color(1f, 1f, 1f, .45f);
         }
 
         RefreshAmmo();
@@ -80,7 +78,7 @@ public class AmmoHUD : MonoBehaviour
 
         int slot = weaponSlots.SelectedSlot;
 
-        if (slot < 0 || slot >= 3)
+        if (slot < 0 || slot >= PlayerWeaponSlots.SlotCount)
         {
             ammoText.text = "";
             UpdateAmmoMarks(0, 0);
@@ -89,9 +87,9 @@ public class AmmoHUD : MonoBehaviour
 
         WeaponRuntime runtime = weaponSlots.GetRuntime(slot);
 
-        if (runtime == null || runtime.Data == null)
+        if (runtime == null || runtime.Data == null || runtime.Data.Category == WeaponCategory.Melee)
         {
-            ammoText.text = "";
+            ammoText.text = runtime == null ? "\u00b7" : runtime.Data.DisplayName;
             UpdateAmmoMarks(0, 0);
             return;
         }
@@ -129,7 +127,7 @@ public class AmmoHUD : MonoBehaviour
         {
             int slot = weaponSlots.SelectedSlot;
 
-            if (slot >= 0 && slot < 3)
+            if (slot >= 0 && slot < PlayerWeaponSlots.SlotCount)
                 runtime = weaponSlots.GetRuntime(slot);
         }
 

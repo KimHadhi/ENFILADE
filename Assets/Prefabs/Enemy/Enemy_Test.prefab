@@ -16,6 +16,7 @@ GameObject:
   - component: {fileID: 615692912711135238}
   - component: {fileID: 1246115433516515480}
   - component: {fileID: 2355707495554296876}
+  - component: {fileID: 8000000000000000000}
   m_Layer: 6
   m_Name: Enemy_Test
   m_TagString: Untagged
@@ -187,3 +188,18 @@ MonoBehaviour:
   hitLayers:
     serializedVersion: 2
     m_Bits: 4294967295
+--- !u!114 &8000000000000000000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6457885282582985274}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 63e5afa978d84905896fc49afc3b1d42, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::MeleeCombatTarget
+  maximumPosture: 100
+  postureRecovery: 15
+  recoveryDelay: 3

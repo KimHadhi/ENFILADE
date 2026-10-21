@@ -41,6 +41,9 @@ public sealed partial class PlayerMovement : MonoBehaviour
     internal MovementAbilities Abilities { get; private set; }
     public PlayerDamageReceiver DamageReceiver { get; private set; }
     public UltimateCharge Ultimate { get; private set; }
+    public PlayerMeleeCombat MeleeCombat { get; internal set; }
+    public PlayerExecution Execution { get; private set; }
+    public bool CombatInputLocked => (MeleeCombat != null && MeleeCombat.IsGuardBreaking) || (Execution != null && Execution.IsExecuting);
     public bool IsInitialized => Motor != null && Posture != null && Actions != null && Input != null
         && Abilities != null && StateMachine != null && DamageReceiver != null && Ultimate != null;
     // Native capsule/pivot dimensions can be crouched when Unity reloads scripts in Play Mode.
@@ -158,6 +161,8 @@ public sealed partial class PlayerMovement : MonoBehaviour
         Ultimate = GetComponent<UltimateCharge>();
         if (Ultimate == null) Ultimate = gameObject.AddComponent<UltimateCharge>();
         StateMachine = MovementStateMachine.Create(this);
+        Execution = GetComponent<PlayerExecution>();
+        if (Execution == null) Execution = gameObject.AddComponent<PlayerExecution>();
         if (controller.height < Posture.standingColliderHeight - 0.02f)
             ChangeState(controller.height <= proneColliderHeight + 0.02f ? MovementState.Proning : MovementState.Crouching);
         return true;
@@ -174,6 +179,15 @@ public sealed partial class PlayerMovement : MonoBehaviour
         Motor.TickTimers(dt);
         StateMachine.Duration += dt;
         Motor.CheckGroundedAndSlope();
+        if (CombatInputLocked)
+        {
+            Input.Sample(false);
+            HorizontalVelocity = Vector3.zero;
+            Motor.ApplyGravity(dt);
+            Posture.UpdateHeightsAndTransform(dt);
+            Motor.Move(dt);
+            return;
+        }
         Vector2 input = CurrentInput;
         Actions.ProcessSprintRampUp(dt, input);
         if (!Abilities.ProcessInput()) StateMachine.Current.ProcessInput(input);
@@ -208,6 +222,8 @@ public sealed partial class PlayerMovement : MonoBehaviour
 
     public void ResetVelocity()
     {
+        Execution?.Cancel();
+        MeleeCombat?.CancelAction();
         if (!IsInitialized) return;
         if (Posture.airBodyTucked || Posture.airCrouching) Posture.RebaseAirCrouchFeet();
         Motor.Reset();

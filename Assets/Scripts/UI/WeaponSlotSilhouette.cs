@@ -11,6 +11,13 @@ public sealed class WeaponSlotSilhouette : MaskableGraphic
     {
         mesh.Clear();
         if (kind == 0) { Quad(mesh,.40f,.47f,.60f,.50f); return; }
+        if (kind == 3)
+        {
+            Quad(mesh,.35f,.26f,.65f,.68f); Quad(mesh,.39f,.08f,.59f,.28f);
+            Quad(mesh,.29f,.32f,.38f,.54f);
+            for (int i = 0; i < 4; i++) Quad(mesh,.35f+i*.075f,.68f,.415f+i*.075f,.85f);
+            return;
+        }
         if (kind == 1)
         {
             Quad(mesh,.23f,.46f,.66f,.67f); Quad(mesh,.63f,.53f,.95f,.60f);

@@ -19,6 +19,7 @@ public sealed class EnemyCombatAI : MonoBehaviour
 
     private NavMeshAgent agent;
     private EnemyHealth enemyHealth;
+    private MeleeCombatTarget meleeTarget;
     private PlayerMovement player;
     private Renderer indicator;
     private MaterialPropertyBlock color;
@@ -33,6 +34,8 @@ public sealed class EnemyCombatAI : MonoBehaviour
     {
         agent = GetComponent<NavMeshAgent>();
         enemyHealth = GetComponent<EnemyHealth>();
+        meleeTarget = GetComponent<MeleeCombatTarget>();
+        if (meleeTarget == null) meleeTarget = gameObject.AddComponent<MeleeCombatTarget>();
         indicator = GetComponent<Renderer>();
         color = new MaterialPropertyBlock();
     }
@@ -44,6 +47,7 @@ public sealed class EnemyCombatAI : MonoBehaviour
 
     private void Update()
     {
+        if (PlayerExecution.Suppresses(this) || (meleeTarget != null && meleeTarget.IsStunned)) { CancelAttack(); return; }
         if (enemyHealth == null || !enemyHealth.IsAlive || enemyHealth.WavePaused)
             return;
 
@@ -102,6 +106,7 @@ public sealed class EnemyCombatAI : MonoBehaviour
 
     private void FireAttack()
     {
+        if (PlayerExecution.Suppresses(this) || (meleeTarget != null && meleeTarget.IsStunned)) { CancelAttack(); return; }
         preparing = false;
         timer = 0f;
         UpdateIndicator(false);
@@ -121,7 +126,7 @@ public sealed class EnemyCombatAI : MonoBehaviour
             DamageKind.Attack,
             lockedAim,
             direction,
-            gameObject
+            gameObject, true
         );
 
         AttackTrace.Raycast(
@@ -133,7 +138,7 @@ public sealed class EnemyCombatAI : MonoBehaviour
         );
     }
 
-    private void CancelAttack()
+    public void CancelAttack()
     {
         preparing = false;
         timer = 0f;

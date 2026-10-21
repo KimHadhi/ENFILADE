@@ -45,8 +45,10 @@ public sealed class PlayerCombatActions
             if (!contacted.Add(identity)) break;
 
             Vector3 impulse = direction * ctx.AbilitySettings.shoveImpulse * (tackle ? 2f : 1f);
-            damage?.ReceiveHit(new DamageHit(attackId, tackle ? ctx.AbilitySettings.tackleDamage : ctx.AbilitySettings.shoveDamage,
+            var result = damage?.ReceiveHit(new DamageHit(attackId, tackle ? ctx.AbilitySettings.tackleDamage : ctx.AbilitySettings.shoveDamage,
                 DamageKind.Attack, hit.point, direction, ctx.gameObject));
+            if (result == DamageResult.Damaged)
+                hit.collider.GetComponentInParent<MeleeCombatTarget>()?.ApplyPostureDamage(tackle ? 20f : 8f, 0.45f);
 
             if (shove != null) shove.ReceiveShove(impulse, hit.point);
             else if (body != null && !body.isKinematic) body.AddForceAtPosition(impulse, hit.point, ForceMode.Impulse);

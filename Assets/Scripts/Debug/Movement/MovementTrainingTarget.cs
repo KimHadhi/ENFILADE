@@ -2,10 +2,13 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>Optional playground receiver; production enemies can implement the same two interfaces.</summary>
-public sealed class MovementTrainingTarget : MonoBehaviour, IDamageReceiver, IShoveReceiver
+[RequireComponent(typeof(MeleeCombatTarget))]
+public sealed class MovementTrainingTarget : MonoBehaviour, IDamageReceiver, IShoveReceiver, ICombatVitals
 {
     public float Health { get; private set; } = 100f;
+    public float MaximumHealth => 100f;
     private readonly HashSet<long> attacks = new HashSet<long>();
+    private void Awake() { if (GetComponent<MeleeCombatTarget>() == null) gameObject.AddComponent<MeleeCombatTarget>(); }
     public DamageResult ReceiveHit(DamageHit hit)
     {
         if (!attacks.Add(hit.Id)) return DamageResult.Duplicate;

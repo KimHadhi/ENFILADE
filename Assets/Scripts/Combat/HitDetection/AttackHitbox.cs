@@ -39,6 +39,6 @@ public sealed class AttackHitbox : MonoBehaviour
         var receiver = other.GetComponentInParent<IDamageReceiver>();
         if (receiver == null || !contacted.Add(receiver)) return DamageResult.Ignored;
         return receiver.ReceiveHit(new DamageHit(attackId, damage, DamageKind.Attack,
-            other.ClosestPoint(transform.position), transform.forward, owner));
+            other.ClosestPoint(transform.position), transform.forward, owner, true));
     }
 }

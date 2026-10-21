@@ -14,8 +14,7 @@ public class WeaponVisibility : MonoBehaviour
         if (weaponSlots == null || gun == null)
             return;
 
-        // 선택된 슬롯이 없으면 총을 숨김
-        bool hasWeapon = weaponSlots.SelectedSlot >= 0;
+        bool hasWeapon = weaponSlots.SelectedWeapon != null && weaponSlots.SelectedWeapon.Category != WeaponCategory.Melee;
 
         if (gun.activeSelf != hasWeapon)
         {

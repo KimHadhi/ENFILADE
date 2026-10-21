@@ -33,10 +33,21 @@ public sealed class PlayerDamageReceiver : MonoBehaviour, IDamageReceiver
         if (!seen.Add(hit.Id)) return DamageResult.Duplicate;
         recent.Enqueue(hit.Id);
         if (recent.Count > 256) seen.Remove(recent.Dequeue());
+        if (movement != null && movement.Execution != null && movement.Execution.IsExecuting)
+        {
+            HitResolved?.Invoke(hit, DamageResult.Invulnerable);
+            return DamageResult.Invulnerable;
+        }
         if (hit.Kind == DamageKind.Attack && movement != null && movement.Abilities.Dodge.TryEvade())
         {
             HitResolved?.Invoke(hit, DamageResult.Evaded);
             return DamageResult.Evaded;
+        }
+        var melee = movement != null ? movement.MeleeCombat : null;
+        if (melee != null && melee.TryDefend(hit, out DamageResult defense))
+        {
+            HitResolved?.Invoke(hit, defense);
+            return defense;
         }
         float absorbed = Mathf.Min(Shield, hit.Amount);
         shield = Shield - absorbed;
@@ -81,6 +92,7 @@ public sealed class PlayerDamageReceiver : MonoBehaviour, IDamageReceiver
     // A miss can refund cooldown, but can never damage the real body.
     internal DamageResult ReceiveDodgeNearMiss(DamageHit hit)
     {
+        if (movement != null && movement.Execution != null && movement.Execution.IsExecuting) return DamageResult.Ignored;
         if (!isActiveAndEnabled || !IsAlive || hit.Amount <= 0f || hit.Id <= 0 || hit.Kind != DamageKind.Attack
             || movement == null || !movement.Abilities.StepTrail.IsActive) return DamageResult.Ignored;
         if (!seen.Add(hit.Id)) return DamageResult.Duplicate;

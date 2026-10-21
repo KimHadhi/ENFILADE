@@ -1579,6 +1579,7 @@ GameObject:
   - component: {fileID: 70309372}
   - component: {fileID: 70309371}
   - component: {fileID: 70309370}
+  - component: {fileID: 8000000000000000001}
   m_Layer: 0
   m_Name: Blocked target
   m_TagString: Untagged
@@ -20148,6 +20149,7 @@ GameObject:
   - component: {fileID: 742654445}
   - component: {fileID: 742654444}
   - component: {fileID: 742654443}
+  - component: {fileID: 8000000000000000000}
   m_Layer: 0
   m_Name: Target 10m
   m_TagString: Untagged
@@ -26813,6 +26815,7 @@ GameObject:
   - component: {fileID: 1275228342}
   - component: {fileID: 1275228341}
   - component: {fileID: 1275228340}
+  - component: {fileID: 8000000000000000002}
   m_Layer: 0
   m_Name: Target 5m
   m_TagString: Untagged
@@ -38221,3 +38224,48 @@ SceneRoots:
   - {fileID: 698998040}
   - {fileID: 1070401157}
   - {fileID: 995962609}
+--- !u!114 &8000000000000000000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 742654442}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 63e5afa978d84905896fc49afc3b1d42, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::MeleeCombatTarget
+  maximumPosture: 100
+  postureRecovery: 15
+  recoveryDelay: 3
+--- !u!114 &8000000000000000001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 70309369}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 63e5afa978d84905896fc49afc3b1d42, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::MeleeCombatTarget
+  maximumPosture: 100
+  postureRecovery: 15
+  recoveryDelay: 3
+--- !u!114 &8000000000000000002
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1275228339}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 63e5afa978d84905896fc49afc3b1d42, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::MeleeCombatTarget
+  maximumPosture: 100
+  postureRecovery: 15
+  recoveryDelay: 3

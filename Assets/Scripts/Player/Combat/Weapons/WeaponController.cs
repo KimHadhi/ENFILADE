@@ -98,10 +98,10 @@ public sealed class WeaponController : MonoBehaviour
             ? inputSource as IWeaponInput
             : GetComponent<IWeaponInput>();
 
-        if (weaponData == null || aimOrigin == null || input == null)
+        if (aimOrigin == null || input == null)
         {
             Debug.LogError(
-                "WeaponController needs WeaponData, an aim Camera/Transform and IWeaponInput on its object.",
+                "WeaponController needs an aim Camera/Transform and IWeaponInput on its object.",
                 this);
             return;
         }
@@ -111,6 +111,7 @@ public sealed class WeaponController : MonoBehaviour
             bulletTracerEffect.SetAimOrigin(aimOrigin);
         }
 
+        if (weaponData == null) return;
         Runtime = new WeaponRuntime(
             weaponData,
             savedAmmoData == weaponData && savedAmmo >= 0
@@ -129,7 +130,7 @@ public sealed class WeaponController : MonoBehaviour
             return;
         }
 
-        ProcessFrame(Time.deltaTime, input.ReadInput());
+        if (input != null) ProcessFrame(Time.deltaTime, input.ReadInput());
     }
 
     public void Equip(WeaponRuntime weapon)
@@ -148,7 +149,9 @@ public sealed class WeaponController : MonoBehaviour
 
     internal void ProcessFrame(float dt, WeaponInputFrame frame)
     {
-        if (Runtime == null ||
+        if (owner != null && owner.GetComponent<PlayerMovement>()?.CombatInputLocked == true)
+        { Runtime?.Interrupt(); return; }
+        if (Runtime == null || Runtime.Data.Category == WeaponCategory.Melee ||
             aimOrigin == null ||
             !isActiveAndEnabled ||
             (health != null && !health.IsAlive))

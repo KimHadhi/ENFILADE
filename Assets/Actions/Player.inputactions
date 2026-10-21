@@ -290,6 +290,15 @@
             "id": "4a11cef8-eddb-43b6-8234-33cf0def6d9f",
             "actions": [
                 {
+                  "name": "Guard",
+                  "type": "Button",
+                  "id": "e7467b2a-321d-421d-88ee-c1fdad020304",
+                  "expectedControlType": "Button",
+                  "processors": "",
+                  "interactions": "",
+                  "initialStateCheck": false
+                },
+                {
                     "name": "Slot1",
                     "type": "Button",
                     "id": "9cb28a39-f489-4e2b-92b7-e2016bc01974",
@@ -345,6 +354,17 @@
                 }
             ],
             "bindings": [
+                {
+                  "name": "",
+                  "id": "94437e72-fb53-41ed-af4e-1dc73927fcfa",
+                  "path": "<Mouse>/rightButton",
+                  "interactions": "",
+                  "processors": "",
+                  "groups": "",
+                  "action": "Guard",
+                  "isComposite": false,
+                  "isPartOfComposite": false
+                },
                 {
                     "name": "",
                     "id": "cb36893e-80ea-4e88-b1f6-bc1688a3b081",

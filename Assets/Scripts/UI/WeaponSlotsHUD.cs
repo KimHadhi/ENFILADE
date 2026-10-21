@@ -16,7 +16,7 @@ public sealed class WeaponSlotsHUD : MonoBehaviour
     }
     [SerializeField] private PlayerWeaponSlots source;
     [SerializeField] private CanvasGroup group;
-    [SerializeField] private SlotView[] slots = new SlotView[3];
+    [SerializeField] private SlotView[] slots = new SlotView[PlayerWeaponSlots.SlotCount];
     [SerializeField, Min(0)] private float visibleSeconds = 3f;
     [SerializeField, Min(0)] private float fadeSeconds = 1f;
     [SerializeField, Range(1,1.3f)] private float selectedScale = 1.12f;
@@ -25,10 +25,28 @@ public sealed class WeaponSlotsHUD : MonoBehaviour
     [SerializeField, Min(0)] private float rowGap = 10f;
     [SerializeField] private Color selectedColor = new Color(.58f,.95f,1f,1f);
     private PlayerWeaponSlots bound;
-    private readonly float[] emphasis = new float[3];
+    private readonly float[] emphasis = new float[PlayerWeaponSlots.SlotCount];
     private float lastActivity = float.NegativeInfinity, nextSearch;
 
-    private void OnEnable() { Bind(); }
+    private void OnEnable() { if (Application.isPlaying) UpgradeToFourSlots(); Bind(); }
+    public void UpgradeToFourSlots()
+    {
+        if (slots == null || slots.Length != 3 || slots[2]?.rect == null) return;
+        var original = slots[2];
+        var clone = Instantiate(original.rect.gameObject, original.rect.parent).GetComponent<RectTransform>();
+        clone.name = "Slot 4";
+        Array.Resize(ref slots, PlayerWeaponSlots.SlotCount);
+        slots[3] = new SlotView
+        {
+            rect = clone, background = clone.GetComponent<Image>(), outline = clone.GetComponent<Outline>(),
+            accent = clone.Find("Selection accent").GetComponent<Image>(),
+            icon = clone.Find("Weapon image").GetComponent<Image>(),
+            silhouette = clone.Find("Fallback silhouette").GetComponent<WeaponSlotSilhouette>(),
+            number = clone.Find("Slot number").GetComponent<TMP_Text>(),
+            weaponName = clone.Find("Weapon name").GetComponent<TMP_Text>()
+        };
+        slots[3].number.text = "4";
+    }
     private void OnDisable() { if (bound != null) bound.SlotActivity -= Reveal; bound = null; }
     private void Bind()
     {
@@ -51,22 +69,22 @@ public sealed class WeaponSlotsHUD : MonoBehaviour
     public void Refresh(float deltaTime)
     {
         Bind();
-        if (group == null || slots == null || slots.Length != 3) return;
+        if (group == null || slots == null || slots.Length != PlayerWeaponSlots.SlotCount) return;
         float age = Time.unscaledTime - lastActivity;
         group.alpha = age <= visibleSeconds ? 1f : fadeSeconds <= 0 ? 0f : 1f - Mathf.Clamp01((age-visibleSeconds)/fadeSeconds);
         group.blocksRaycasts = group.interactable = false;
         int selected = source != null ? source.SelectedSlot : -1;
-        float total = rowGap * 2f;
+        float total = rowGap * (PlayerWeaponSlots.SlotCount - 1);
         float blend = 1f - Mathf.Exp(-animationSpeed * Mathf.Max(0,deltaTime));
-        for (int i=0;i<3;i++)
+        for (int i=0;i<PlayerWeaponSlots.SlotCount;i++)
         {
             emphasis[i] = Mathf.Lerp(emphasis[i],i == selected ? 1f : 0f,blend);
             total += rowHeight * Mathf.Lerp(1f,selectedScale,emphasis[i]);
         }
         float top = total * .5f;
-        for (int i=0;i<3;i++)
+        for (int i=0;i<PlayerWeaponSlots.SlotCount;i++)
         {
-            var view = slots[i]; if (view.rect == null) continue;
+            var view = slots[i]; if (view == null || view.rect == null) continue;
             float e = emphasis[i], scale = Mathf.Lerp(1f,selectedScale,e), height = rowHeight * scale;
             view.rect.localScale = new Vector3(scale,scale,1);
             view.rect.anchoredPosition = new Vector2(0,top - height*.5f); top -= height+rowGap;
@@ -75,15 +93,17 @@ public sealed class WeaponSlotsHUD : MonoBehaviour
             view.accent.color = new Color(selectedColor.r,selectedColor.g,selectedColor.b,e);
             view.outline.effectColor = new Color(selectedColor.r,selectedColor.g,selectedColor.b,e*.65f);
             view.number.color = Color.Lerp(new Color(.7f,.77f,.8f,1f),selectedColor,e);
-            view.weaponName.text = data != null ? data.DisplayName : "";
-            view.weaponName.gameObject.SetActive(i == selected && data != null);
+            string category = i < 2 ? "RANGED" : i == 2 ? "MELEE" : "SPECIAL";
+            view.weaponName.text = category + (data != null && i == selected ? " / " + data.DisplayName : data == null ? " / \u00b7" : "");
+            view.weaponName.gameObject.SetActive(true);
+            view.number.text = (i + 1).ToString();
             bool image = data != null && data.HudIcon != null;
             view.icon.sprite = image ? data.HudIcon : null;
             view.icon.enabled = image;
             view.icon.color = Color.Lerp(new Color(.72f,.79f,.83f,1),selectedColor,e);
             view.silhouette.enabled = !image;
             view.silhouette.Kind = data == null ? 0 : data.FireMode == WeaponFireMode.Automatic ? 1 : 2;
-            view.silhouette.color = data == null ? new Color(.6f,.7f,.75f,.3f) : view.icon.color;
+            view.silhouette.color = data == null && i != selected ? new Color(.6f,.7f,.75f,.45f) : view.icon.color;
         }
     }
 }

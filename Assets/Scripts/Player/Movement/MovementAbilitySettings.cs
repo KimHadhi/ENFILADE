@@ -21,6 +21,8 @@ public sealed class MovementAbilitySettings
 
     [Header("Step / Vault / Mantle")]
     [Range(0.05f, 0.5f)] public float stepHeight = 0.3f;
+    [Tooltip("엎드리거나 누워서 이동할 때 넘을 수 있는 작은 단차 높이. 접지 중에만 적용됩니다.")]
+    [Range(0f, 0.1f)] public float proneStepHeight = 0.05f;
     [Min(0.1f)] public float obstacleReach = 1.35f;
     [Min(0.3f)] public float vaultMaxHeight = 1.15f;
     [Min(0.3f)] public float mantleMaxHeight = 2.1f;

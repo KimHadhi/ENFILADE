@@ -4,13 +4,14 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
 
-[DisallowMultipleComponent]
-public sealed class EnemyHealth : MonoBehaviour, IDamageReceiver
+[DisallowMultipleComponent, RequireComponent(typeof(MeleeCombatTarget))]
+public sealed class EnemyHealth : MonoBehaviour, IDamageReceiver, ICombatVitals
 {
     [SerializeField, Min(1f)]
     private float maximumHealth = 100f;
 
     public float Health { get; private set; }
+    public float MaximumHealth => Mathf.Max(1f, maximumHealth);
     public bool IsAlive => Health > 0f;
     public bool WavePaused { get; private set; }
     private readonly HashSet<long> seen = new HashSet<long>();
@@ -44,6 +45,7 @@ public sealed class EnemyHealth : MonoBehaviour, IDamageReceiver
     private void Awake()
     {
         Health = maximumHealth;
+        if (GetComponent<MeleeCombatTarget>() == null) gameObject.AddComponent<MeleeCombatTarget>();
     }
 
     public DamageResult ReceiveHit(DamageHit hit)

@@ -1,12 +1,14 @@
 using UnityEngine;
 
 public enum WeaponFireMode { SemiAutomatic, Automatic }
+public enum WeaponCategory { Ranged, Melee, Special }
 
 [CreateAssetMenu(fileName = "Weapon", menuName = "Morphang/Combat/Weapon Data")]
 public sealed class WeaponData : ScriptableObject
 {
     [SerializeField] private string displayName = "Foundation Rifle";
     [SerializeField] private Sprite hudIcon;
+    [SerializeField] private WeaponCategory category = WeaponCategory.Ranged;
     [SerializeField] private WeaponFireMode fireMode = WeaponFireMode.Automatic;
     [SerializeField, Min(0.01f)] private float damage = 20f;
     [SerializeField, Min(1f)] private float roundsPerMinute = 600f;
@@ -18,6 +20,7 @@ public sealed class WeaponData : ScriptableObject
 
     public string DisplayName => displayName;
     public Sprite HudIcon => hudIcon;
+    public WeaponCategory Category => category;
     public WeaponFireMode FireMode => fireMode;
     public float Damage => Mathf.Max(0.01f, damage);
     public float ShotInterval => 60f / Mathf.Max(1f, roundsPerMinute);

@@ -242,11 +242,15 @@ public sealed class MovementPostureController
         }
 
         Vector3 targetCenter = new Vector3(0f, centerY, 0f);
+        bool isCrawling = ctx.CurrentState == MovementState.Proning || ctx.CurrentState == MovementState.Supine;
         bool canStep = ctx.Motor.isGrounded && (ctx.CurrentState == MovementState.Standing ||
                              ctx.CurrentState == MovementState.Crouching ||
-                             ctx.IsSliding);
+                             ctx.IsSliding || isCrawling);
 
-        float targetStep = canStep ? Mathf.Min(ctx.AbilitySettings.stepHeight, newHeight) : 0f;
+        float stepHeight = isCrawling
+            ? Mathf.Clamp(ctx.AbilitySettings.proneStepHeight, 0f, ctx.AbilitySettings.stepHeight)
+            : ctx.AbilitySettings.stepHeight;
+        float targetStep = canStep ? Mathf.Min(stepHeight, newHeight) : 0f;
         if (!Mathf.Approximately(ctx.Motor.controller.height, newHeight) || !Mathf.Approximately(ctx.Motor.controller.radius, targetRadius) || ctx.Motor.controller.center != targetCenter)
         {
             ctx.Motor.controller.stepOffset = 0f;
