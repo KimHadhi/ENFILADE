@@ -7620,7 +7620,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0.87833357, g: 0.95, b: 0.5225, a: 1}
+  m_Color: {r: 0.8052248, g: 0.5225, b: 0.95, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -18866,7 +18866,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0.87833357, g: 0.95, b: 0.5225, a: 1}
+  m_Color: {r: 0.8052248, g: 0.5225, b: 0.95, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -22343,7 +22343,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 961842273}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 971c04e73ed0c77409f235c04b348c2c, type: 3}
   m_Name: 
@@ -22635,7 +22635,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 961842273}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 739b67cbd9c3b7040b8cf426914114b9, type: 3}
   m_Name: 
@@ -23283,7 +23283,7 @@ RectTransform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1021454239}
-  m_LocalRotation: {x: 0, y: 0, z: 0.95364034, w: -0.30094862}
+  m_LocalRotation: {x: 0, y: 0, z: 0.93921506, w: 0.34332943}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -25344,8 +25344,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: -252, y: -25.5}
-  m_SizeDelta: {x: 500, y: -251}
+  m_AnchoredPosition: {x: -252, y: 77.00004}
+  m_SizeDelta: {x: 500, y: -455.9999}
   m_Pivot: {x: 0, y: 0.5}
 --- !u!225 &1147025023
 CanvasGroup:
@@ -27621,7 +27621,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0.87833357, g: 0.95, b: 0.5225, a: 1}
+  m_Color: {r: 0.8052248, g: 0.5225, b: 0.95, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -32591,7 +32591,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0.87833357, g: 0.95, b: 0.5225, a: 1}
+  m_Color: {r: 0.8052248, g: 0.5225, b: 0.95, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -34520,7 +34520,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0.87833357, g: 0.95, b: 0.5225, a: 1}
+  m_Color: {r: 0.8052248, g: 0.5225, b: 0.95, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
