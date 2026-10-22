@@ -69,6 +69,7 @@ public sealed class MovementAbilitySettings
     [Min(0f)] public float rollSpeed = 5.5f;
 
     [Header("Crowd Shove")]
+    [Min(.02f)] public float shoveActiveTime = .2f;
     [Min(.1f)] public float shoveSweepReach = 2.2f;
     [Range(1f, 179f)] public float shoveSweepAngle = 120f;
     [Min(0f)] public float shovePushSpeed = 8f;

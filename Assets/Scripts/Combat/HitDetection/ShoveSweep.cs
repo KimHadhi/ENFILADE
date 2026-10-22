@@ -7,12 +7,55 @@ public static class ShoveSweep
     public static int Apply(PlayerMovement player, Transform aim, float damage, LayerMask layers)
     {
         if (player == null || aim == null || player.CombatInputLocked) return 0;
+        var attack = new Attack();
+        attack.Begin(player, aim, damage, layers, .001f);
+        return attack.HitCount;
+    }
+    public sealed class Attack
+    {
+        internal readonly HashSet<Object> contacted = new HashSet<Object>();
+        internal long attackId;
+        private readonly AimSweepWindow window;
+        private PlayerMovement player;
+        private Transform aim;
+        private float damage;
+        private LayerMask layers;
+        private ShoveImpactKind impact;
+        private bool soundPlayed;
+        public int HitCount { get; private set; }
+        public Attack() { window = new AimSweepWindow(Sample); }
+        public void Begin(PlayerMovement owner, Transform view, float damage, LayerMask layers, float duration)
+        {
+            Cancel(); player = owner; aim = view; this.damage = damage; this.layers = layers;
+            contacted.Clear(); attackId = DamageHit.NewAttackId(); HitCount = 0;
+            soundPlayed = false; impact = ShoveImpactKind.None;
+            player.GetComponent<PlayerShoveAudio>()?.Play(ShoveImpactKind.None);
+            window.Begin(aim, duration); PlayFeedback();
+        }
+        public void Tick(float dt) { window.Tick(dt, aim); PlayFeedback(); }
+        public void Cancel() { window.Cancel(); }
+        private void Sample(Vector3 origin, Vector3 forward)
+        {
+            if (player == null || player.CombatInputLocked) { Cancel(); return; }
+            HitCount += Apply(player, origin, forward, damage, layers, this, out var currentImpact);
+            if (currentImpact == ShoveImpactKind.Enemy || impact == ShoveImpactKind.None) impact = currentImpact;
+        }
+        private void PlayFeedback()
+        {
+            if (soundPlayed || impact == ShoveImpactKind.None || player == null) return;
+            var audio = player.GetComponent<PlayerShoveAudio>();
+            if (audio == null && Application.isPlaying) audio = player.gameObject.AddComponent<PlayerShoveAudio>();
+            audio?.Play(impact); soundPlayed = true;
+        }
+    }
+    private static int Apply(PlayerMovement player, Vector3 origin, Vector3 forward, float damage,
+        LayerMask layers, Attack attack, out ShoveImpactKind impact)
+    {
         var settings = player.AbilitySettings;
-        Vector3 origin = aim.position, forward = aim.forward;
         float reach = Mathf.Max(.1f, settings.shoveSweepReach);
         float cone = Mathf.Cos(Mathf.Clamp(settings.shoveSweepAngle, 1f, 179f) * .5f * Mathf.Deg2Rad);
-        long attackId = DamageHit.NewAttackId();
-        var contacted = new HashSet<Object>();
+        long attackId = attack.attackId;
+        var contacted = attack.contacted;
         int count = 0;
         bool hitEnemy = false, hitWorld = false;
         foreach (var collider in Physics.OverlapSphere(origin, reach, layers, QueryTriggerInteraction.Ignore))
@@ -53,13 +96,10 @@ public static class ShoveSweep
             count++;
             if (posture != null) hitEnemy = true;
         }
-        var impact = hitEnemy ? ShoveImpactKind.Enemy : hitWorld ? ShoveImpactKind.World : ShoveImpactKind.None;
-        var audio = player.GetComponent<PlayerShoveAudio>();
-        if (audio == null && Application.isPlaying && impact != ShoveImpactKind.None) audio = player.gameObject.AddComponent<PlayerShoveAudio>();
-        audio?.Play(impact);
+        impact = hitEnemy ? ShoveImpactKind.Enemy : hitWorld ? ShoveImpactKind.World : ShoveImpactKind.None;
         return count;
     }
-    private static bool TryGetContactPoint(Collider collider, Vector3 origin, Vector3 forward,
+    internal static bool TryGetContactPoint(Collider collider, Vector3 origin, Vector3 forward,
         float reach, float cone, out Vector3 point)
     {
         // Unity only supports ClosestPoint on these shapes, not terrain or concave level meshes.
@@ -84,7 +124,7 @@ public static class ShoveSweep
         point = hit.point;
         return true;
     }
-    private static bool HasSight(Transform owner, Collider candidate, Vector3 origin, Vector3 point, LayerMask layers)
+    internal static bool HasSight(Transform owner, Collider candidate, Vector3 origin, Vector3 point, LayerMask layers)
     {
         Vector3 delta = point - origin;
         if (delta.sqrMagnitude < .0001f) return true;

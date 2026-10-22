@@ -23,10 +23,15 @@ public sealed class WeaponSlotsHUD : MonoBehaviour
     [SerializeField, Min(1)] private float animationSpeed = 14f;
     [SerializeField, Min(1)] private float rowHeight = 88f;
     [SerializeField, Min(0)] private float rowGap = 10f;
+    [Header("Long weapon names")]
+    [SerializeField, Min(1f)] private float nameScrollSpeed = 32f;
+    [SerializeField, Min(0f)] private float nameScrollPause = .65f;
     [SerializeField] private Color selectedColor = new Color(.58f,.95f,1f,1f);
     private PlayerWeaponSlots bound;
     private readonly float[] emphasis = new float[PlayerWeaponSlots.SlotCount];
     private float lastActivity = float.NegativeInfinity, nextSearch;
+    private bool restartNames;
+    private readonly WeaponNameMarquee[] nameScrolls = new WeaponNameMarquee[PlayerWeaponSlots.SlotCount];
 
     private void OnEnable() { if (Application.isPlaying) UpgradeToFourSlots(); Bind(); }
     public void UpgradeToFourSlots()
@@ -43,7 +48,7 @@ public sealed class WeaponSlotsHUD : MonoBehaviour
             icon = clone.Find("Weapon image").GetComponent<Image>(),
             silhouette = clone.Find("Fallback silhouette").GetComponent<WeaponSlotSilhouette>(),
             number = clone.Find("Slot number").GetComponent<TMP_Text>(),
-            weaponName = clone.Find("Weapon name").GetComponent<TMP_Text>()
+            weaponName = Array.Find(clone.GetComponentsInChildren<TMP_Text>(true), text => text.name == "Weapon name")
         };
         slots[3].number.text = "4";
     }
@@ -63,7 +68,7 @@ public sealed class WeaponSlotsHUD : MonoBehaviour
         bound = source;
         if (bound != null) bound.SlotActivity += Reveal;
     }
-    public void Reveal() { lastActivity = Time.unscaledTime; if (group != null) group.alpha = 1f; }
+    public void Reveal() { lastActivity = Time.unscaledTime; restartNames = true; if (group != null) group.alpha = 1f; }
     private void LateUpdate() { Refresh(Time.unscaledDeltaTime); }
 
     public void Refresh(float deltaTime)
@@ -71,7 +76,7 @@ public sealed class WeaponSlotsHUD : MonoBehaviour
         Bind();
         if (group == null || slots == null || slots.Length != PlayerWeaponSlots.SlotCount) return;
         float age = Time.unscaledTime - lastActivity;
-        group.alpha = age <= visibleSeconds ? 1f : fadeSeconds <= 0 ? 0f : 1f - Mathf.Clamp01((age-visibleSeconds)/fadeSeconds);
+        float readableSeconds = visibleSeconds;
         group.blocksRaycasts = group.interactable = false;
         int selected = source != null ? source.SelectedSlot : -1;
         float total = rowGap * (PlayerWeaponSlots.SlotCount - 1);
@@ -94,8 +99,12 @@ public sealed class WeaponSlotsHUD : MonoBehaviour
             view.outline.effectColor = new Color(selectedColor.r,selectedColor.g,selectedColor.b,e*.65f);
             view.number.color = Color.Lerp(new Color(.7f,.77f,.8f,1f),selectedColor,e);
             string category = i < 2 ? "RANGED" : i == 2 ? "MELEE" : "SPECIAL";
-            view.weaponName.text = category + (data != null && i == selected ? " / " + data.DisplayName : data == null ? " / \u00b7" : "");
+            string label = category + (i == selected ? " / " + (data != null ? data.DisplayName : "Unarmed") : "");
             view.weaponName.gameObject.SetActive(true);
+            if (nameScrolls[i] == null)
+                nameScrolls[i] = view.weaponName.GetComponent<WeaponNameMarquee>() ?? view.weaponName.gameObject.AddComponent<WeaponNameMarquee>();
+            nameScrolls[i].Refresh(label, i == selected, deltaTime, nameScrollSpeed, nameScrollPause, restartNames);
+            if (i == selected) readableSeconds = Mathf.Max(readableSeconds, nameScrolls[i].ReadDuration);
             view.number.text = (i + 1).ToString();
             bool image = data != null && data.HudIcon != null;
             view.icon.sprite = image ? data.HudIcon : null;
@@ -105,5 +114,7 @@ public sealed class WeaponSlotsHUD : MonoBehaviour
             view.silhouette.Kind = data == null ? 0 : data.FireMode == WeaponFireMode.Automatic ? 1 : 2;
             view.silhouette.color = data == null && i != selected ? new Color(.6f,.7f,.75f,.45f) : view.icon.color;
         }
+        restartNames = false;
+        group.alpha = age <= readableSeconds ? 1f : fadeSeconds <= 0 ? 0f : 1f - Mathf.Clamp01((age-readableSeconds)/fadeSeconds);
     }
 }

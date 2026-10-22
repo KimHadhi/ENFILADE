@@ -7,8 +7,23 @@ public sealed class PlayerCombatActions
     private readonly HashSet<Object> contacted = new HashSet<Object>();
     private float cooldown;
     private long attackId;
+    private readonly ShoveSweep.Attack shoveSweep = new ShoveSweep.Attack();
     internal PlayerCombatActions(PlayerMovement context) { ctx = context; }
-    internal void Tick(float dt) { cooldown = Mathf.Max(0f, cooldown - dt); }
+    internal void Tick(float dt)
+    {
+        cooldown = Mathf.Max(0f, cooldown - dt);
+        SampleShove(dt);
+    }
+    internal void CancelShove() { shoveSweep.Cancel(); }
+    internal void SampleShove(float dt)
+    {
+        if (!ctx.InputAvailable || ctx.CombatInputLocked || ctx.IsParkour || ctx.IsDiving || ctx.IsSliding
+            || ctx.CurrentState == PlayerMovement.MovementState.StepDodge
+            || ctx.CurrentState == PlayerMovement.MovementState.Tackle
+            || ctx.CurrentState == PlayerMovement.MovementState.LandingRoll)
+        { CancelShove(); return; }
+        shoveSweep.Tick(dt);
+    }
 
     internal bool TryShove()
     {
@@ -30,8 +45,8 @@ public sealed class PlayerCombatActions
         if (!tackle)
         {
             var camera = ctx.GetComponentInChildren<Camera>();
-            ShoveSweep.Apply(ctx, camera != null ? camera.transform : ctx.transform, ctx.AbilitySettings.shoveDamage,
-                ctx.AbilitySettings.interactionLayers);
+            shoveSweep.Begin(ctx, camera != null ? camera.transform : ctx.transform, ctx.AbilitySettings.shoveDamage,
+                ctx.AbilitySettings.interactionLayers, ctx.AbilitySettings.shoveActiveTime);
             return;
         }
         Vector3 direction = tackle ? ctx.Abilities.ActionDirection : ctx.transform.forward;
@@ -91,5 +106,5 @@ public sealed class PlayerCombatActions
         Time.timeScale = originalTimeScale;
     }
 
-    internal void Reset() { cooldown = 0f; attackId = 0; contacted.Clear(); }
+    internal void Reset() { CancelShove(); cooldown = 0f; attackId = 0; contacted.Clear(); }
 }

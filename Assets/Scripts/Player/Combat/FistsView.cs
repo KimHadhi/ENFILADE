@@ -8,7 +8,9 @@ public sealed class FistsView : MonoBehaviour
     private PlayerMeleeCombat melee;
     private Transform root, left, right;
     private Material glove, cuff;
-    private float punchTime;
+    private float leftPunchTime, rightPunchTime;
+    private bool nextRight = true;
+    private const float PunchDuration = .18f;
     private void OnEnable()
     {
         if (!Application.isPlaying) return;
@@ -42,20 +44,35 @@ public sealed class FistsView : MonoBehaviour
         var renderer = part.GetComponent<MeshRenderer>(); renderer.sharedMaterial = material;
         renderer.shadowCastingMode = ShadowCastingMode.Off; renderer.receiveShadows = false;
     }
-    private void Punch(float charge) => punchTime = .25f;
+    private void Punch(float charge)
+    {
+        if (nextRight) rightPunchTime = PunchDuration;
+        else leftPunchTime = PunchDuration;
+        nextRight = !nextRight;
+    }
+    private static float PunchExtension(float remaining)
+    {
+        if (remaining <= 0f) return 0f;
+        float elapsed = PunchDuration - remaining;
+        return elapsed < .04f ? Mathf.SmoothStep(0f, 1f, elapsed / .04f)
+            : Mathf.SmoothStep(1f, 0f, (elapsed - .04f) / (PunchDuration - .04f));
+    }
     private void LateUpdate()
     {
         if (root == null || melee == null) return;
         root.gameObject.SetActive(melee.IsActive);
-        if (!melee.IsActive) { punchTime = 0f; return; }
-        punchTime = Mathf.Max(0f, punchTime - Time.deltaTime);
-        float punch = Mathf.Sin((1f - punchTime / .25f) * Mathf.PI);
+        if (!melee.IsActive) { leftPunchTime = rightPunchTime = 0f; nextRight = true; return; }
+        leftPunchTime = Mathf.Max(0f, leftPunchTime - Time.deltaTime);
+        rightPunchTime = Mathf.Max(0f, rightPunchTime - Time.deltaTime);
+        float leftPunch = PunchExtension(leftPunchTime), rightPunch = PunchExtension(rightPunchTime);
+        float leftCharge = nextRight ? 0f : melee.ChargeRatio, rightCharge = nextRight ? melee.ChargeRatio : 0f;
         float guard = melee.IsGuarding || melee.IsGuardBreaking ? 1f : 0f;
-        left.localPosition = Vector3.Lerp(new Vector3(-.22f, -.19f, .43f), new Vector3(-.12f, -.03f, .36f), guard);
-        right.localPosition = Vector3.Lerp(new Vector3(.22f, -.19f, .43f - melee.ChargeRatio * .10f), new Vector3(.12f, -.03f, .36f), guard)
-            + new Vector3(-punch * .1f, punch * .07f, punch * .25f);
-        right.localRotation = Quaternion.Euler(-melee.ChargeRatio * 15f, -punch * 20f, -10f);
-        left.localRotation = Quaternion.Euler(0f, 0f, 10f);
+        left.localPosition = Vector3.Lerp(new Vector3(-.22f, -.19f, .43f - leftCharge * .10f), new Vector3(-.12f, -.03f, .36f), guard)
+            + new Vector3(leftPunch * .1f, leftPunch * .07f, leftPunch * .25f);
+        right.localPosition = Vector3.Lerp(new Vector3(.22f, -.19f, .43f - rightCharge * .10f), new Vector3(.12f, -.03f, .36f), guard)
+            + new Vector3(-rightPunch * .1f, rightPunch * .07f, rightPunch * .25f);
+        right.localRotation = Quaternion.Euler(-rightCharge * 15f, -rightPunch * 20f, -10f);
+        left.localRotation = Quaternion.Euler(-leftCharge * 15f, leftPunch * 20f, 10f);
     }
     private void OnDestroy()
     {

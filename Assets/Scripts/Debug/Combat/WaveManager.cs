@@ -34,6 +34,7 @@ public sealed class WaveManager : MonoBehaviour
     public bool IsRunning => Phase != WavePhase.Idle;
     public int CurrentWave => currentWave;
     public int AliveCount => aliveEnemies.Count;
+    public EnemyHealth EnemyPrefab => enemyPrefab;
     public float RemainingDelay => remainingDelay;
     public string LastError { get; private set; }
     public int TotalEnemiesThisWave => totalEnemiesThisWave;

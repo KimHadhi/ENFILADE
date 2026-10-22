@@ -201,6 +201,10 @@ public sealed partial class PlayerMovement : MonoBehaviour
         Motor.Move(dt);
     }
 
+    private void LateUpdate()
+    {
+        if (Time.timeScale > 0f) Abilities?.Combat.SampleShove(0f);
+    }
     private void OnControllerColliderHit(ControllerColliderHit hit)
     {
         Motor?.RecordContact(hit);

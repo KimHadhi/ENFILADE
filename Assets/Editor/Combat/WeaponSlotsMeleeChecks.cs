@@ -27,6 +27,9 @@ public static class WeaponSlotsMeleeChecks
         {
             Slots(); Debug.Log("PASS FISTS: four empty selections, categories, pickup replacement and magazine preservation");
             ChargeAndCover(); Debug.Log("PASS FISTS: release-only charge scaling, cooldown and cover");
+            FistRush(); Debug.Log("PASS FIST RUSH: rapid confirmed hits at 30/60/120Hz, miss recovery and no held-input repeats");
+            MeleeDrag(); Debug.Log("PASS MELEE DRAG: interpolated rotation, target budgets, duplicate colliders, walls, expiry and cancellation");
+            ShoveDrag(); Debug.Log("PASS SHOVE DRAG: fists and armed sweeps follow the camera once per actor, one sound and slot cancellation");
             Defense(); Debug.Log("PASS FISTS: frontal parry/guard, rear and non-blockable damage, single parry reward");
             ShoveAndGuardBreak(); Debug.Log("PASS FISTS: V tap/hold, one target, action lock, approach and recovery");
             Cancellation(); Debug.Log("PASS FISTS: slot switch and cancellation discard held attacks");
@@ -43,7 +46,7 @@ public static class WeaponSlotsMeleeChecks
             ExecutionCrowd(); Debug.Log("PASS EXECUTION: crowd windup cancellation, attack suppression and release");
             var asset = AssetDatabase.LoadAssetAtPath<InputActionAsset>("Assets/Actions/Player.inputactions");
             Require(asset.FindAction("Combat/Guard") != null && asset.FindAction("Player/Shove") != null, "Defense and shove input actions exist");
-            Debug.Log("WEAPON_SLOTS_MELEE_CHECKS_PASSED: 17");
+            Debug.Log("WEAPON_SLOTS_MELEE_CHECKS_PASSED: 20");
         }
         finally { if (previous.IsValid()) SceneManager.SetActiveScene(previous); EditorSceneManager.CloseScene(test, true); }
     }
@@ -157,6 +160,152 @@ public static class WeaponSlotsMeleeChecks
             Require(target.Health == health, "Wall blocks fists");
         }
     }
+    private static void FistRush()
+    {
+        foreach (float dt in new[] { 1f / 30f, 1f / 60f, 1f / 120f })
+        using (var f = new Fixture())
+        {
+            var enemy = f.Target(1.2f);
+            float expectedDamage = Mathf.Lerp(10f, 28f, dt / .9f);
+            for (int i = 0; i < 6; i++)
+            {
+                f.Melee.ProcessFrame(dt, new MeleeInputFrame(attackPressed: true, attackHeld: true));
+                Require(f.Melee.IsCharging, "Confirmed punch allows the very next press");
+                f.Melee.ProcessFrame(dt, new MeleeInputFrame(attackReleased: true));
+            }
+            Require(Mathf.Abs(enemy.Health - (1000f - expectedDamage * 6)) < .02f, "Every rapid click delivers one punch");
+            float health = enemy.Health;
+            for (int i = 0; i < 30; i++) f.Melee.ProcessFrame(dt, new MeleeInputFrame(attackHeld: true));
+            Require(enemy.Health == health, "Holding without a fresh press/release does not auto-hit");
+        }
+        using (var f = new Fixture())
+        {
+            f.Melee.ProcessFrame(.01f, new MeleeInputFrame(attackPressed: true, attackHeld: true));
+            f.Melee.ProcessFrame(.01f, new MeleeInputFrame(attackReleased: true));
+            f.Melee.ProcessFrame(.01f, new MeleeInputFrame(attackPressed: true, attackHeld: true));
+            Require(!f.Melee.IsCharging, "A miss retains recovery until contact is confirmed");
+            var enemy = f.Target(0f, 1.2f);
+            f.Player.GetComponentInChildren<Camera>().transform.rotation = Quaternion.Euler(0, 90, 0);
+            f.Melee.ProcessFrame(.02f, default);
+            Require(enemy.Health < 1000f, "Turning a missed punch into a hit during its active window works");
+            f.Melee.ProcessFrame(.01f, new MeleeInputFrame(attackPressed: true, attackHeld: true));
+            Require(f.Melee.IsCharging, "Late contact also removes recovery immediately");
+        }
+    }
+    private static void MeleeDrag()
+    {
+        foreach (float dt in new[] { 1f / 30f, 1f / 60f, 1f / 120f })
+        using (var f = new Fixture())
+        {
+            var front = f.Target(1.2f); front.gameObject.AddComponent<SphereCollider>().radius = .25f;
+            var middle = f.Target(.85f, .85f); var last = f.Target(0f, 1.2f);
+            var aim = f.Player.GetComponentInChildren<Camera>().transform;
+            f.Melee.ProcessFrame(dt, new MeleeInputFrame(attackPressed: true, attackHeld: true));
+            f.Melee.ProcessFrame(dt, new MeleeInputFrame(attackReleased: true));
+            float health = front.Health;
+            aim.rotation = Quaternion.Euler(0, 90, 0); f.Melee.ProcessFrame(dt, default);
+            Require(front.Health == health && middle.Health < 1000f && last.Health == 1000f,
+                "Fist traces the intermediate arc and stops after its two-target budget");
+            aim.rotation = Quaternion.identity; f.Melee.ProcessFrame(dt, default);
+            Require(front.Health == health, "Returning over the same actor cannot hit it again");
+        }
+        using (var f = new Fixture())
+        {
+            var front = f.Target(1.2f); var middle = f.Target(.85f, .85f); var last = f.Target(0, 1.2f);
+            var aim = f.Player.GetComponentInChildren<Camera>().transform;
+            var sweep = new MeleeAttackSweep();
+            sweep.Begin(f.Movement, aim, 10, 0, 1.6f, .22f, .18f, 3, ~0);
+            aim.rotation = Quaternion.Euler(0, 90, 0); sweep.Tick(.03f);
+            Require(front.Health == 990 && middle.Health == 990 && last.Health == 990,
+                "Weapon-specific budget of three allows all three distinct targets");
+            sweep.Cancel(); aim.rotation = Quaternion.identity;
+            sweep.Begin(f.Movement, aim, 10, 0, 1.6f, .22f, .05f, 3, ~0);
+            aim.rotation = Quaternion.Euler(0, 90, 0); sweep.Tick(1f);
+            Require(front.Health == 980 && middle.Health == 990 && last.Health == 990,
+                "A long frame never sweeps the rotation occurring after the window expired");
+            sweep.Tick(.01f); Require(last.Health == 990, "Expired attack stays inactive");
+        }
+        using (var f = new Fixture())
+        {
+            var behind = f.Target(1.2f); var side = f.Target(0, 1.2f);
+            f.Box(new Vector3(0, 1, .5f), new Vector3(2, 2, .1f));
+            var aim = f.Player.GetComponentInChildren<Camera>().transform;
+            var sweep = new MeleeAttackSweep();
+            sweep.Begin(f.Movement, aim, 10, 0, 1.6f, .22f, .18f, 3, ~0);
+            aim.rotation = Quaternion.Euler(0, 90, 0); sweep.Tick(.02f);
+            Require(behind.Health == 1000 && side.Health == 1000, "Solid wall stops the entire swing regardless of penetration budget");
+        }
+        foreach (bool guard in new[] { false, true })
+        using (var f = new Fixture())
+        {
+            f.Target(1.2f); var side = f.Target(0, 1.2f);
+            f.Melee.ProcessFrame(.01f, new MeleeInputFrame(attackPressed: true, attackHeld: true));
+            f.Melee.ProcessFrame(.01f, new MeleeInputFrame(attackReleased: true));
+            if (guard) f.Melee.ProcessFrame(.01f, new MeleeInputFrame(guardPressed: true, guardHeld: true));
+            else f.Slots.SelectSlot(1);
+            f.Player.GetComponentInChildren<Camera>().transform.rotation = Quaternion.Euler(0, 90, 0);
+            f.Melee.ProcessFrame(.01f, guard ? new MeleeInputFrame(guardHeld: true) : default);
+            Require(side.Health == 1000, "Guard/slot switch cancels residual attack hits");
+        }
+        using (var f = new Fixture())
+        {
+            f.Target(1.2f); var side = f.Target(0, 1.2f);
+            f.Melee.ProcessFrame(.01f, new MeleeInputFrame(attackPressed: true, attackHeld: true));
+            f.Melee.ProcessFrame(.01f, new MeleeInputFrame(attackReleased: true));
+            f.Player.GetComponentInChildren<Camera>().transform.rotation = Quaternion.Euler(0, 90, 0);
+            Call(f.Melee, "LateUpdate");
+            Require(side.Health < 1000f, "The camera rotation after Update is sampled in the same rendered frame");
+        }
+        using (var f = new Fixture())
+        {
+            var rear = f.Target(-.35f); f.Target(1.2f);
+            f.Melee.ProcessFrame(.01f, new MeleeInputFrame(attackPressed: true, attackHeld: true));
+            f.Melee.ProcessFrame(.01f, new MeleeInputFrame(attackReleased: true));
+            Require(rear.Health == 1000, "An initial overlap behind the eye is not a forward punch");
+            f.Melee.CancelAction();
+            var side = f.Target(0, 1.2f);
+            f.Melee.ProcessFrame(.01f, new MeleeInputFrame(attackPressed: true, attackHeld: true));
+            f.Melee.ProcessFrame(.01f, new MeleeInputFrame(attackReleased: true));
+            f.Movement.ChangeState(PlayerMovement.MovementState.StepDodge);
+            f.Player.GetComponentInChildren<Camera>().transform.rotation = Quaternion.Euler(0, 90, 0);
+            Call(f.Melee, "LateUpdate");
+            Require(side.Health == 1000, "A dodge started during movement cancels hits before LateUpdate");
+        }
+    }
+    private static void ShoveDrag()
+    {
+        foreach (bool armed in new[] { false, true })
+        foreach (float dt in new[] { 1f / 30f, 1f / 60f, 1f / 120f })
+        using (var f = new Fixture())
+        {
+            if (armed) f.Slots.SelectSlot(-1);
+            var front = f.Target(1.4f); var middle = f.Target(0, 1.4f); var back = f.Target(-1.4f);
+            var aim = f.Player.GetComponentInChildren<Camera>().transform;
+            var audio = f.Player.AddComponent<PlayerShoveAudio>();
+            var abilities = typeof(PlayerMovement).GetProperty("Abilities", Any).GetValue(f.Movement);
+            var combat = typeof(MovementAbilities).GetProperty("Combat").GetValue(abilities);
+            if (armed) Call(combat, "TryShove");
+            else
+            {
+                f.Melee.ProcessFrame(dt, new MeleeInputFrame(shovePressed: true, shoveHeld: true));
+                f.Melee.ProcessFrame(dt, new MeleeInputFrame(shoveReleased: true));
+            }
+            var clip = audio.LastClip;
+            Require(front.Health < 1000 && middle.Health == 1000 && back.Health == 1000, "Only the initial front cone hits at startup");
+            aim.rotation = Quaternion.Euler(0, 170, 0);
+            if (armed) Call(combat, "Tick", dt); else f.Melee.ProcessFrame(dt, default);
+            float expected = armed ? 995f : 997f;
+            Require(front.Health == expected && middle.Health == expected && back.Health == expected,
+                $"Rotation sweeps every intervening direction once: armed={armed}, dt={dt}, HP={front.Health}/{middle.Health}/{back.Health}");
+            aim.rotation = Quaternion.identity;
+            if (armed) Call(combat, "Tick", dt); else f.Melee.ProcessFrame(dt, default);
+            Require(front.Health == expected && audio.LastClip == clip, "Repeated samples neither re-damage nor replay the hit cue");
+            f.Slots.SelectSlot(2);
+            var fresh = f.Target(1.2f);
+            if (armed) Call(combat, "Tick", dt); else f.Melee.ProcessFrame(dt, default);
+            Require(fresh.Health == 1000, "Slot switch cancels either shove route");
+        }
+    }
     private static void Defense()
     {
         using (var f = new Fixture())
@@ -192,6 +341,8 @@ public static class WeaponSlotsMeleeChecks
             f.Step(.6f);
             f.Step(.41f,new MeleeInputFrame(shovePressed:true,shoveHeld:true));
             Require(f.Melee.IsGuardBreaking && f.Movement.CombatInputLocked, "V hold reserves one target and locks caster");
+            Call(f.Melee, "LateUpdate");
+            Require(f.Melee.IsGuardBreaking, "Late camera sampling preserves the guard-break reservation");
             Require(!f.Slots.SelectSlot(1), "Cannot switch during guard break");
             for (int i = 0; i < 16; i++) f.Step(.05f);
             Require(!f.Melee.IsGuardBreaking && !f.Movement.CombatInputLocked, "Guard break unlocks on completion");
@@ -227,8 +378,10 @@ public static class WeaponSlotsMeleeChecks
             var rows = (WeaponSlotsHUD.SlotView[])typeof(WeaponSlotsHUD).GetField("slots",Any).GetValue(hud);
             Require(rows.Length == 4 && rows[3].number.text == "4", "Migration adds exactly one fourth row");
             f.Slots.SelectSlot(3); hud.Reveal(); hud.Refresh(1f);
-            Require(rows[3].weaponName.text == "SPECIAL / \u00b7" && rows[3].weaponName.gameObject.activeSelf && rows[3].silhouette.Kind == 0,
-                "Selected empty fourth slot retains category and a minimal empty symbol");
+            Require(rows[3].weaponName.text == "SPECIAL / unarmed" && rows[3].weaponName.gameObject.activeSelf && rows[3].silhouette.Kind == 0,
+                "Selected empty fourth slot uses unarmed while retaining its category");
+            Require(rows[0].weaponName.text == "RANGED" && rows[1].weaponName.text == "RANGED" && rows[2].weaponName.text == "MELEE",
+                "Unselected empty slots show only their category, without a dot or unarmed name");
             Require(rows[3].rect.localScale.x > 1.1f && rows[2].weaponName.gameObject.activeSelf, "Selection emphasizes fourth row while other categories remain visible");
             for (int i=0;i<3;i++) Require(rows[i].rect.anchoredPosition.y-rows[i+1].rect.anchoredPosition.y >
                 (rows[i].rect.rect.height*rows[i].rect.localScale.y+rows[i+1].rect.rect.height*rows[i+1].rect.localScale.y)*.5f,
@@ -236,6 +389,41 @@ public static class WeaponSlotsMeleeChecks
             f.Slots.ToggleSlot(3); hud.Refresh(1f);
             foreach (var row in rows) Require(row.weaponName.gameObject.activeSelf && row.rect.localScale.x < 1.01f,
                 "Deselection removes highlights but preserves slot types");
+            Require(rows[3].weaponName.text == "SPECIAL", "Holstering also hides the unarmed name");
+            foreach (string asset in new[] { "FoundationRifle", "FoundationPistol" })
+            {
+                var weapon = AssetDatabase.LoadAssetAtPath<WeaponData>("Assets/Combat/Weapons/" + asset + ".asset");
+                Require(weapon != null, "Existing weapon data for marquee check");
+                f.Slots.TrySetWeapon(0, weapon); f.Slots.SelectSlot(0); hud.Reveal(); hud.Refresh(0f);
+                var text = rows[0].weaponName;
+                var marquee = text.GetComponent<WeaponNameMarquee>();
+                Require(marquee != null && marquee.Overflow > 0f && text.text.Contains(weapon.DisplayName)
+                    && text.overflowMode == TMPro.TextOverflowModes.Overflow
+                    && text.transform.parent.GetComponent<UnityEngine.UI.RectMask2D>() != null,
+                    "Full weapon name is rendered in a clipped scrolling viewport: " + asset);
+                float start = text.rectTransform.anchoredPosition.x;
+                hud.Refresh(.3f); Require(Mathf.Abs(text.rectTransform.anchoredPosition.x - start) < .01f, "Pause before scrolling");
+                hud.Refresh(.65f); Require(text.rectTransform.anchoredPosition.x > start, "Long name first moves left to right");
+                hud.Refresh(marquee.Overflow / 32f);
+                Require(Mathf.Abs(text.rectTransform.anchoredPosition.x) < .01f, "The other end of the full name becomes readable");
+                Require(marquee.ReadDuration >= marquee.Overflow / 32f, "HUD remains readable for a complete scroll pass");
+                hud.Reveal(); hud.Refresh(0f);
+                Require(Mathf.Abs(text.rectTransform.anchoredPosition.x - start) < .01f, "Revealing a slot restarts the marquee");
+                f.Slots.SelectSlot(1); hud.Refresh(0f);
+                Require(text.text == "RANGED" && marquee.Overflow == 0f && text.rectTransform.anchoredPosition == Vector2.zero,
+                    "Deselecting removes the weapon name and resets its scrolling offset");
+            }
+            var shortName = Data(WeaponCategory.Ranged);
+            try
+            {
+                Set(shortName, "displayName", "Pistol"); f.Slots.TrySetWeapon(0, shortName); f.Slots.SelectSlot(0); hud.Refresh(0f);
+                var marquee = rows[0].weaponName.GetComponent<WeaponNameMarquee>();
+                Require(marquee.Overflow == 0f, "Names that fit remain stationary");
+                hud.Refresh(10f);
+                Require(rows[0].weaponName.rectTransform.anchoredPosition == Vector2.zero, "Short labels stay aligned after time passes");
+                Require(viewObject.GetComponentsInChildren<UnityEngine.UI.RectMask2D>(true).Length == 4, "Refresh creates exactly one viewport per slot");
+            }
+            finally { Object.DestroyImmediate(shortName); }
         }
     }
     private static void RangedShove()
@@ -546,6 +734,22 @@ public static class WeaponSlotsMeleeChecks
             var view = f.Player.GetComponentInChildren<Camera>(); view.transform.position = f.Origin + new Vector3(0,1,-4);
             var bars = target.gameObject.AddComponent<EnemyVitalsHUD>();
             bars.Refresh(view); Require(bars.IsVisible && bars.HealthRatio == 1f && bars.PostureRatio == 1f, "Living target shows full bars");
+            var ui = target.transform.Find("Combat UI");
+            Require(ui != null && ui.childCount == 2 && ui.Find("Enemy HP + Posture") != null && ui.Find("Body Stagger") != null,
+                "Both canvases are grouped under their enemy instead of scene roots");
+            var panel = (RectTransform)ui.Find("Enemy HP + Posture");
+            var corners = new Vector3[4]; panel.GetWorldCorners(corners);
+            float originalWidth = Vector3.Distance(view.WorldToScreenPoint(corners[0]), view.WorldToScreenPoint(corners[3]));
+            target.transform.localScale = new Vector3(1.7f, .8f, 1.4f);
+            target.transform.rotation = Quaternion.Euler(0, 35, 0);
+            Physics.SyncTransforms(); bars.Refresh(view); panel.GetWorldCorners(corners);
+            float scaledWidth = Vector3.Distance(view.WorldToScreenPoint(corners[0]), view.WorldToScreenPoint(corners[3]));
+            Require(Mathf.Abs(originalWidth - scaledWidth) < .2f && Vector3.Dot(panel.right, view.transform.right) > .999f,
+                "Parenting preserves billboard orientation and screen width on a scaled/rotated enemy");
+            target.gameObject.SetActive(false); Require(!ui.gameObject.activeInHierarchy, "Disabling an enemy also disables all of its UI");
+            target.gameObject.SetActive(true); bars.Refresh(view);
+            Require(target.transform.Find("Combat UI") == ui && ui.childCount == 2, "Re-enabling reuses the existing UI group");
+            target.transform.localScale = Vector3.one; target.transform.rotation = Quaternion.identity; Physics.SyncTransforms();
             target.ReceiveHit(new DamageHit(DamageHit.NewAttackId(),250f,DamageKind.Attack,Vector3.zero,Vector3.forward));
             posture.ApplyPostureDamage(40f); bars.Refresh(view);
             Require(Mathf.Abs(bars.HealthRatio-.75f)<.001f && Mathf.Abs(bars.PostureRatio-.6f)<.001f, "Both bars track their own resource");
@@ -556,6 +760,7 @@ public static class WeaponSlotsMeleeChecks
             view.transform.rotation = Quaternion.identity;
             target.ReceiveHit(new DamageHit(DamageHit.NewAttackId(),1000f,DamageKind.Attack,Vector3.zero,Vector3.forward));
             bars.Refresh(view); Require(!bars.IsVisible,"Dead target hides bars");
+            Object.DestroyImmediate(target.gameObject); Require(ui == null, "Destroying the enemy leaves no orphaned UI");
         }
     }
 }

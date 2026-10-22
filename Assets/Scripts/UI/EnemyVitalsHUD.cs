@@ -15,6 +15,7 @@ public sealed class EnemyVitalsHUD : MonoBehaviour
     private RectTransform panel, healthFill, postureFill, staggerPanel;
     private Image healthImage, postureImage;
     private RawImage staggerBadge;
+    private Transform uiRoot;
     public bool IsStaggerVisible => staggerPanel != null && staggerPanel.gameObject.activeSelf;
     private readonly RaycastHit[] occlusionHits = new RaycastHit[16];
     public float HealthRatio { get; private set; }
@@ -36,6 +37,9 @@ public sealed class EnemyVitalsHUD : MonoBehaviour
         if (!isActiveAndEnabled || view == null || vitals == null || posture == null || !posture.IsAvailable || HealthRatio <= 0f)
         { Hide(); return; }
         EnsurePanel();
+        // Keep the UI under its owner without inheriting the enemy's authored size.
+        Vector3 scale = transform.lossyScale;
+        uiRoot.localScale = new Vector3(InverseScale(scale.x), InverseScale(scale.y), InverseScale(scale.z));
         Bounds body = BodyBounds();
         PositionPanel(panel, view, new Vector3(body.center.x, body.max.y + headroom, body.center.z));
         SetFill(healthFill, healthImage, HealthRatio);
@@ -106,10 +110,12 @@ public sealed class EnemyVitalsHUD : MonoBehaviour
     private void EnsurePanel()
     {
         if (panel != null) return;
-        // Keep this root outside scaled enemy transforms; position follows collider bounds instead.
+        uiRoot = new GameObject("Combat UI").transform;
+        uiRoot.gameObject.hideFlags = HideFlags.DontSave;
+        uiRoot.SetParent(transform, false);
         var root = new GameObject("Enemy HP + Posture", typeof(RectTransform), typeof(Canvas));
         root.hideFlags = HideFlags.DontSave;
-        UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(root, gameObject.scene);
+        root.transform.SetParent(uiRoot, false);
         panel = root.GetComponent<RectTransform>(); panel.sizeDelta = new Vector2(width, 19f);
         var canvas = root.GetComponent<Canvas>(); canvas.renderMode = RenderMode.WorldSpace; canvas.sortingOrder = 20;
         var group = root.AddComponent<CanvasGroup>(); group.interactable = group.blocksRaycasts = false;
@@ -117,7 +123,7 @@ public sealed class EnemyVitalsHUD : MonoBehaviour
         postureFill = Bar("Posture", -4f, 5f, new Color(.95f, .68f, .22f), out postureImage);
         var staggerRoot = new GameObject("Body Stagger", typeof(RectTransform), typeof(Canvas), typeof(CanvasGroup));
         staggerRoot.hideFlags = HideFlags.DontSave;
-        UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(staggerRoot, gameObject.scene);
+        staggerRoot.transform.SetParent(uiRoot, false);
         staggerPanel = staggerRoot.GetComponent<RectTransform>();
         var staggerCanvas = staggerRoot.GetComponent<Canvas>(); staggerCanvas.renderMode = RenderMode.WorldSpace; staggerCanvas.sortingOrder = 21;
         var staggerGroup = staggerRoot.GetComponent<CanvasGroup>(); staggerGroup.interactable = staggerGroup.blocksRaycasts = false;
@@ -142,12 +148,12 @@ public sealed class EnemyVitalsHUD : MonoBehaviour
     }
     private static void SetFill(RectTransform rect, Image graphic, float ratio)
     { rect.anchorMax = new Vector2(ratio, 1f); graphic.enabled = ratio > 0f; }
+    private static float InverseScale(float value) => Mathf.Abs(value) > .0001f ? 1f / value : 1f;
     private void Hide()
     { if (panel != null) panel.gameObject.SetActive(false); if (staggerPanel != null) staggerPanel.gameObject.SetActive(false); }
     private void OnDisable() => Hide();
     private void OnDestroy()
     {
-        if (panel != null) { if (Application.isPlaying) Destroy(panel.gameObject); else DestroyImmediate(panel.gameObject); }
-        if (staggerPanel != null) { if (Application.isPlaying) Destroy(staggerPanel.gameObject); else DestroyImmediate(staggerPanel.gameObject); }
+        if (uiRoot != null) { if (Application.isPlaying) Destroy(uiRoot.gameObject); else DestroyImmediate(uiRoot.gameObject); }
     }
 }

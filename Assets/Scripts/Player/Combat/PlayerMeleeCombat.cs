@@ -11,6 +11,10 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
     [SerializeField] private Vector2 damage = new Vector2(10f, 28f);
     [SerializeField] private Vector2 postureDamage = new Vector2(10f, 30f);
     [SerializeField, Min(0f)] private float attackCooldown = 0.4f;
+    [Tooltip("적중하면 후딜 없이 다음 입력으로 연타. 빗나갔을 때만 Attack Cooldown 적용.")]
+    [SerializeField, Min(.02f)] private float attackActiveTime = .18f;
+    [Tooltip("한 번의 주먹 공격으로 맞힐 수 있는 서로 다른 대상 수.")]
+    [SerializeField, Min(1)] private int attackMaxTargets = 2;
     [SerializeField, Min(0f)] private float lungeDistance = 0.12f;
     [Header("Guard / Parry")]
     [SerializeField, Range(0.05f, 0.4f)] private float parryWindow = 0.18f;
@@ -35,10 +39,16 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
     private float chargeTime, shoveTime, cooldown, guardTime, parryCooldown, grabTime, grabRecoveryRemaining, lungeRemaining;
     private bool charging, shovePending, parryArmed, grabConnected;
     private Vector3 lungeDirection;
+    private readonly MeleeAttackSweep punchSweep = new MeleeAttackSweep();
+    private readonly ShoveSweep.Attack shoveSweep = new ShoveSweep.Attack();
     public bool IsGuarding { get; private set; }
     public bool IsCharging => charging;
     public float ChargeRatio => charging ? Mathf.Clamp01(chargeTime / fullChargeTime) : 0f;
     public bool IsGuardBreaking => target != null;
+    private bool MovementBlocksAttack => player.IsParkour || player.IsDiving || player.IsSliding
+        || player.CurrentState == PlayerMovement.MovementState.StepDodge
+        || player.CurrentState == PlayerMovement.MovementState.Tackle
+        || player.CurrentState == PlayerMovement.MovementState.LandingRoll;
     public bool IsActive => isActiveAndEnabled && slots != null && slots.UsesFists && player != null && player.IsInitialized && player.DamageReceiver.IsAlive;
     public event Action<float> Punched;
     public event Action<DamageResult> Defended;
@@ -66,14 +76,24 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
         if (input == null || !input.TryReadMeleeInput(out var frame)) { CancelAction(); return; }
         ProcessFrame(Time.deltaTime, frame);
     }
+    private void LateUpdate()
+    {
+        // PlayerLook updates after input processing. Include this frame's final camera rotation.
+        if (Time.timeScale <= 0f) return;
+        if (!IsActive || !player.InputAvailable || player.Execution?.IsExecuting == true) { CancelAction(); return; }
+        if (IsGuardBreaking) return;
+        if (MovementBlocksAttack) { CancelAction(); return; }
+        punchSweep.Tick(0f); shoveSweep.Tick(0f);
+    }
     public void ProcessFrame(float dt, MeleeInputFrame frame)
     {
-        if (!IsActive || dt <= 0f || player.Execution?.IsExecuting == true) return;
+        if (dt <= 0f) return;
+        if (!IsActive || player.Execution?.IsExecuting == true) { CancelAction(); return; }
         cooldown = Mathf.Max(0f, cooldown - dt); parryCooldown = Mathf.Max(0f, parryCooldown - dt);
         if (IsGuardBreaking) { TickGuardBreak(dt); return; }
-        if (player.IsParkour || player.IsDiving || player.IsSliding || player.CurrentState == PlayerMovement.MovementState.StepDodge
-            || player.CurrentState == PlayerMovement.MovementState.Tackle || player.CurrentState == PlayerMovement.MovementState.LandingRoll)
+        if (MovementBlocksAttack)
         { CancelAction(); return; }
+        punchSweep.Tick(dt); shoveSweep.Tick(dt);
         if (!player.IsGrounded) lungeRemaining = 0f;
         if (lungeRemaining > 0f)
         {
@@ -81,7 +101,7 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
             player.Motor.AddDisplacement(lungeDirection * (lungeDistance * slice / 0.1f));
         }
         if (frame.ShovePressed && cooldown <= 0f)
-        { shovePending = true; shoveTime = 0f; charging = false; IsGuarding = false; }
+        { punchSweep.Cancel(); shoveSweep.Cancel(); shovePending = true; shoveTime = 0f; charging = false; IsGuarding = false; }
         if (shovePending)
         {
             shoveTime += dt;
@@ -98,12 +118,14 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
         if (frame.GuardPressed && cooldown <= 0f)
         {
             IsGuarding = true; guardTime = 0f; charging = false;
+            punchSweep.Cancel(); shoveSweep.Cancel();
             parryArmed = parryCooldown <= 0f;
             if (parryArmed) parryCooldown = 0.35f;
         }
         IsGuarding &= frame.GuardHeld;
         if (IsGuarding) { guardTime += dt; return; }
-        if (frame.AttackPressed && cooldown <= 0f) { charging = true; chargeTime = 0f; }
+        if (frame.AttackPressed && cooldown <= 0f)
+        { punchSweep.Cancel(); shoveSweep.Cancel(); charging = true; chargeTime = 0f; }
         if (!charging) return;
         if (frame.AttackHeld) chargeTime = Mathf.Min(fullChargeTime, chargeTime + dt);
         if (frame.AttackReleased)
@@ -118,19 +140,14 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
     {
         lungeDirection = Vector3.ProjectOnPlane(aim.forward, Vector3.up).normalized;
         lungeRemaining = player.IsGrounded ? 0.1f : 0f;
-        if (FindContact(reach, out var hit, out var point))
-        {
-            var receiver = hit.GetComponentInParent<IDamageReceiver>();
-            float posture = Mathf.Lerp(postureDamage.x, postureDamage.y, charge);
-            var result = receiver?.ReceiveHit(new DamageHit(DamageHit.NewAttackId(), Mathf.Lerp(damage.x, damage.y, charge),
-                DamageKind.Attack, point, aim.forward, player.gameObject, true, posture));
-            if (result == DamageResult.Damaged) hit.GetComponentInParent<MeleeCombatTarget>()?.ApplyPostureDamage(posture);
-        }
+        punchSweep.Begin(player, aim, Mathf.Lerp(damage.x, damage.y, charge),
+            Mathf.Lerp(postureDamage.x, postureDamage.y, charge), reach, .22f, attackActiveTime,
+            attackMaxTargets, hitLayers, () => cooldown = 0f);
         Punched?.Invoke(charge);
     }
     private void Shove()
     {
-        ShoveSweep.Apply(player, aim, 3f, hitLayers);
+        shoveSweep.Begin(player, aim, 3f, hitLayers, player.AbilitySettings.shoveActiveTime);
     }
     public bool TryDefend(DamageHit hit, out DamageResult result)
     {
@@ -200,7 +217,7 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
         foreach (var overlap in Physics.OverlapSphere(aim.position, 0.22f, hitLayers, QueryTriggerInteraction.Ignore))
         {
             if (overlap.transform.IsChildOf(player.transform)) continue;
-            Vector3 closest = overlap.ClosestPoint(aim.position);
+            if (!ShoveSweep.TryGetContactPoint(overlap, aim.position, aim.forward, .22f, 0f, out var closest)) continue;
             if (Vector3.Dot(closest - aim.position, aim.forward) < -0.01f) continue;
             collider = overlap; point = closest; break;
         }
@@ -220,6 +237,7 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
     }
     public void CancelAction()
     {
+        punchSweep.Cancel(); shoveSweep.Cancel();
         if (target != null) target.Release(this);
         target = null; targetCollider = null;
         charging = shovePending = IsGuarding = parryArmed = false;

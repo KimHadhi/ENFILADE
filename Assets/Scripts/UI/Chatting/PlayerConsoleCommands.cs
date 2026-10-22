@@ -7,6 +7,12 @@ public static class PlayerConsoleCommands
 {
     public static void Register(ChatCommandRouter router, Func<PlayerMovement> resolvePlayer)
     {
+        router.Register("spawn", "바라보는 방향의 빈 공간에 적 한 마리 소환 (웨이브 집계 제외)", args => WithPlayer(resolvePlayer, p =>
+        {
+            if (!string.IsNullOrWhiteSpace(args)) return "사용법: /spawn — 적 한 마리를 소환합니다.";
+            if (!p.DamageReceiver.IsAlive) return "사망 상태입니다. /revive를 먼저 사용하세요.";
+            return ConsoleEnemySpawner.Spawn(p);
+        }));
         router.Register("heal", "[양] HP 회복. 생략하면 최대까지 회복", args => WithPlayer(resolvePlayer, p =>
         {
             float amount = p.DamageReceiver.MaximumHealth;

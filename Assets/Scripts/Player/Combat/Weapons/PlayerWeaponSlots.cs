@@ -113,6 +113,7 @@ public sealed class PlayerWeaponSlots : MonoBehaviour
         if (controller == null) controller = GetComponent<WeaponController>();
         if (melee == null) melee = GetComponent<PlayerMeleeCombat>();
         melee?.CancelAction();
+        player?.Abilities?.Combat.CancelShove();
         selectedSlot = index;
         controller.Equip(GetRuntime(index));
         SelectionChanged?.Invoke(index);
@@ -122,6 +123,7 @@ public sealed class PlayerWeaponSlots : MonoBehaviour
         for (int i = 0; i < SlotCount; i++)
             if (weapons[i] != null) { savedAmmo[i] = weapons[i].Ammo; savedData[i] = weapons[i].Data; }
         melee?.CancelAction();
+        player?.Abilities?.Combat.CancelShove();
         if (controller != null) controller.Equip(null);
     }
 }
