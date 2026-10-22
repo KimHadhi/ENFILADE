@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>A soft blood-red glow without an extra raster asset or material.</summary>
+[RequireComponent(typeof(CanvasRenderer))]
 public sealed class ExecutionPromptBackdrop : MaskableGraphic
 {
     protected override void OnPopulateMesh(VertexHelper vh)

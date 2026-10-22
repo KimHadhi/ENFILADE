@@ -27,6 +27,13 @@ public sealed class PlayerCombatActions
 
     internal void HitForward(bool tackle)
     {
+        if (!tackle)
+        {
+            var camera = ctx.GetComponentInChildren<Camera>();
+            ShoveSweep.Apply(ctx, camera != null ? camera.transform : ctx.transform, ctx.AbilitySettings.shoveDamage,
+                ctx.AbilitySettings.interactionLayers);
+            return;
+        }
         Vector3 direction = tackle ? ctx.Abilities.ActionDirection : ctx.transform.forward;
         Vector3 start = ctx.transform.position + Vector3.up * Mathf.Min(1f, ctx.Motor.controller.height * 0.65f);
         float radius = ctx.AbilitySettings.shoveRadius;

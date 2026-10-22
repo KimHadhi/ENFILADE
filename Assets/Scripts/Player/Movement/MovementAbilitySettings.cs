@@ -68,7 +68,13 @@ public sealed class MovementAbilitySettings
     [Min(0.05f)] public float rollDuration = 0.65f;
     [Min(0f)] public float rollSpeed = 5.5f;
 
-    [Header("Shove / Tackle")]
+    [Header("Crowd Shove")]
+    [Min(.1f)] public float shoveSweepReach = 2.2f;
+    [Range(1f, 179f)] public float shoveSweepAngle = 120f;
+    [Min(0f)] public float shovePushSpeed = 8f;
+    [Min(0f)] public float shoveStun = .85f;
+    [Min(0f)] public float shovePostureDamage = 8f;
+    [Header("Tackle / Armed Shove")]
     [Min(0.1f)] public float shoveReach = 1.5f;
     [Min(0.1f)] public float shoveRadius = 0.5f;
     [Min(0f)] public float shoveImpulse = 5f;

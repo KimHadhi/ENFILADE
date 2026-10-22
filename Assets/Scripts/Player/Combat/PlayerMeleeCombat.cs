@@ -130,15 +130,7 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
     }
     private void Shove()
     {
-        if (!FindContact(reach, out var hit, out var point)) return;
-        var result = hit.GetComponentInParent<IDamageReceiver>()?.ReceiveHit(new DamageHit(DamageHit.NewAttackId(), 3f,
-            DamageKind.Attack, point, aim.forward, player.gameObject, true, 8f));
-        if (result != DamageResult.Damaged) return;
-        hit.GetComponentInParent<MeleeCombatTarget>()?.ApplyPostureDamage(8f, 0.45f);
-        Vector3 impulse = Vector3.ProjectOnPlane(aim.forward, Vector3.up).normalized * 4f;
-        var shove = hit.GetComponentInParent<IShoveReceiver>();
-        if (shove != null) shove.ReceiveShove(impulse, point);
-        else if (hit.attachedRigidbody != null && !hit.attachedRigidbody.isKinematic) hit.attachedRigidbody.AddForce(impulse, ForceMode.Impulse);
+        ShoveSweep.Apply(player, aim, 3f, hitLayers);
     }
     public bool TryDefend(DamageHit hit, out DamageResult result)
     {

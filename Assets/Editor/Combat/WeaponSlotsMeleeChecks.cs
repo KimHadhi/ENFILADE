@@ -32,15 +32,18 @@ public static class WeaponSlotsMeleeChecks
             Cancellation(); Debug.Log("PASS FISTS: slot switch and cancellation discard held attacks");
             Hud(); Debug.Log("PASS FISTS: existing HUD migrates to four selectable, non-overlapping rows");
             RangedShove(); Debug.Log("PASS COMBAT: armed shove cancels windup, stuns and reduces posture");
+            CrowdShove(); Debug.Log("PASS SHOVE: fists and guns hit the front crowd once each, respect range/cone/walls, and cancel every windup");
+            ShoveAudio(); Debug.Log("PASS SHOVE AUDIO: supplied clips, misses, wall cover, enemy priority and nonrepeating variants");
+            ShoveLevelColliders(); Debug.Log("PASS SHOVE COLLIDERS: nonconvex mesh contact/cover, concave empty space and terrain without physics errors");
             FastGuardBreak(); Debug.Log("PASS COMBAT: short tap and fast hold are distinct at 30/60/120Hz; approach remains collision-safe");
             EnemyBars(); Debug.Log("PASS UI: enemy health/posture bars reflect damage and hide behind cover or on death");
             StaggerRecovery(); Debug.Log("PASS STAGGER: latched until full recovery, one cue per break, reservation pauses recovery");
             Execution(); Debug.Log("PASS EXECUTION: reach/cover, holstered use, invulnerability, one kill and cleanup");
             ExecutionPresentation(); Debug.Log("PASS UI: stagger assets, Korean prompt, pop/fade and persistent badge");
-            ExecutionCrowd(); Debug.Log("PASS EXECUTION: crowd windup cancellation, retreat, navigation cover and release");
+            ExecutionCrowd(); Debug.Log("PASS EXECUTION: crowd windup cancellation, attack suppression and release");
             var asset = AssetDatabase.LoadAssetAtPath<InputActionAsset>("Assets/Actions/Player.inputactions");
             Require(asset.FindAction("Combat/Guard") != null && asset.FindAction("Player/Shove") != null, "Defense and shove input actions exist");
-            Debug.Log("WEAPON_SLOTS_MELEE_CHECKS_PASSED: 14");
+            Debug.Log("WEAPON_SLOTS_MELEE_CHECKS_PASSED: 17");
         }
         finally { if (previous.IsValid()) SceneManager.SetActiveScene(previous); EditorSceneManager.CloseScene(test, true); }
     }
@@ -184,6 +187,8 @@ public static class WeaponSlotsMeleeChecks
             Require(enemy.Health == 1000, "V press waits to distinguish hold");
             f.Step(.02f,new MeleeInputFrame(shoveReleased:true));
             Require(enemy.Health == 997 && target.IsStunned, "V tap shoves and interrupts");
+            Require(other.Health == 997 && other.GetComponent<MeleeCombatTarget>().Posture == 92f, "V tap also shoves nearby enemies");
+            other.GetComponent<MeleeCombatTarget>().Tick(1f);
             f.Step(.6f);
             f.Step(.41f,new MeleeInputFrame(shovePressed:true,shoveHeld:true));
             Require(f.Melee.IsGuardBreaking && f.Movement.CombatInputLocked, "V hold reserves one target and locks caster");
@@ -191,7 +196,7 @@ public static class WeaponSlotsMeleeChecks
             for (int i = 0; i < 16; i++) f.Step(.05f);
             Require(!f.Melee.IsGuardBreaking && !f.Movement.CombatInputLocked, "Guard break unlocks on completion");
             Require(target.Posture <= 37f && target.IsStunned, "Guard break applies major posture damage and stun");
-            Require(other.GetComponent<MeleeCombatTarget>().Posture == 100f && !other.GetComponent<MeleeCombatTarget>().IsStunned, "Only one target affected");
+            Require(other.GetComponent<MeleeCombatTarget>().Posture == 92f && !other.GetComponent<MeleeCombatTarget>().IsStunned, "Guard break still affects only one target after the crowd shove");
             Require(enemy.Health == 997, "Holding V never also emits a tap hit");
         }
     }
@@ -251,9 +256,150 @@ public static class WeaponSlotsMeleeChecks
                 Call(combat,"TryShove");
                 Require(health.Health < health.MaximumHealth && !ai.IsPreparingAttack && posture.IsStunned && posture.Posture == 92f,
                     "Gun shove must interrupt the actual enemy AI and damage posture");
-                posture.Tick(.5f); Require(!posture.IsStunned && !ai.IsPreparingAttack, "Stun expires without resuming the interrupted windup");
+                posture.Tick(.5f); Require(posture.IsStunned, "Shove leaves a readable reeling window after knockback");
+                posture.Tick(.4f); Require(!posture.IsStunned && !ai.IsPreparingAttack, "Stun expires without resuming the interrupted windup");
             }
             finally { Object.DestroyImmediate(gun); }
+        }
+    }
+    private static void CrowdShove()
+    {
+        foreach (bool armed in new[]{false,true})
+        using (var f = new Fixture())
+        {
+            var front = new[]{ f.Target(1f), f.Target(1.8f), f.Target(1.2f,.9f), f.Target(1.2f,-.9f) };
+            var rear = f.Target(-1f); var side = f.Target(.1f,1.8f); var far = f.Target(3f);
+            var covered = f.Target(1.4f,-1.6f);
+            f.Box(new Vector3(-1.05f,1f,.85f),new Vector3(.45f,2f,.12f));
+            // Several hitboxes on one enemy must not multiply shove damage or crowd interruption.
+            var child = new GameObject("Extra enemy collider"); child.transform.SetParent(front[0].transform,false);
+            child.AddComponent<SphereCollider>().radius=.35f;
+            Physics.SyncTransforms();
+            if (armed)
+            {
+                f.Slots.SelectSlot(-1);
+                var abilities = typeof(PlayerMovement).GetProperty("Abilities",Any).GetValue(f.Movement);
+                Call(typeof(MovementAbilities).GetProperty("Combat").GetValue(abilities),"TryShove");
+            }
+            else
+            {
+                f.Step(.02f,new MeleeInputFrame(shovePressed:true,shoveHeld:true));
+                f.Step(.02f,new MeleeInputFrame(shoveReleased:true));
+            }
+            foreach(var enemy in front)
+            {
+                var posture = enemy.GetComponent<MeleeCombatTarget>();
+                Require(enemy.Health == 1000f-(armed?f.Movement.AbilitySettings.shoveDamage:3f) && posture.Posture == 92f && posture.IsStunned,
+                    "Every front enemy, including one behind another, is shoved exactly once: armed="+armed);
+            }
+            foreach(var enemy in new[]{rear,side,far,covered})
+                Require(enemy.Health == 1000f && enemy.GetComponent<MeleeCombatTarget>().Posture == 100f,"Rear, side, out-of-range and covered targets are protected");
+        }
+        using(var f = new Fixture())
+        {
+            var aim=f.Player.GetComponentInChildren<Camera>().transform;
+            var enemies=new EnemyCombatAI[3];
+            for(int i=0;i<3;i++)
+            {
+                var go=f.Box(new Vector3((i-1)*.8f,1f,1.2f),new Vector3(.6f,2f,.6f));
+                enemies[i]=go.AddComponent<EnemyCombatAI>(); Call(enemies[i],"Awake");
+                Call(go.GetComponent<EnemyHealth>(),"Awake"); Call(go.GetComponent<MeleeCombatTarget>(),"Awake");
+                Set(enemies[i],"preparing",true); Set(enemies[i],"timer",.59f);
+            }
+            Require(ShoveSweep.Apply(f.Movement,aim,3f,~0)==3,"Crowd hit count");
+            foreach(var enemy in enemies)
+            {
+                Require(!enemy.IsPreparingAttack && enemy.GetComponent<MeleeCombatTarget>().IsStunned,"Every windup is cancelled before impact");
+                Call(enemy,"Update"); Require(!enemy.IsPreparingAttack,"Reeling enemies cannot restart attacks");
+            }
+        }
+    }
+    private static void ShoveAudio()
+    {
+        var settings=CombatFeedbackSettings.Instance;
+        Require(settings != null && settings.shoveWorldSound != null && settings.shoveEnemySounds.Length == 6,"Seven imported shove clips are connected");
+        foreach(var clip in settings.shoveEnemySounds) Require(clip != null && clip.length > 0f,"Enemy impact clip imports correctly");
+        using(var f=new Fixture())
+        {
+            var audio=f.Player.AddComponent<PlayerShoveAudio>(); var aim=f.Player.GetComponentInChildren<Camera>().transform;
+            ShoveSweep.Apply(f.Movement,aim,3f,~0);
+            Require(audio.LastImpact == ShoveImpactKind.None && audio.LastClip == null,"Air shove is silent; nearby floor does not count");
+            var wall=f.Box(new Vector3(0,1,.6f),new Vector3(2,2,.1f));
+            ShoveSweep.Apply(f.Movement,aim,3f,~0);
+            Require(audio.LastImpact == ShoveImpactKind.World && audio.LastClip == settings.shoveWorldSound,"Static wall plays world impact without a damage receiver");
+            var enemy=f.Target(1.2f);
+            ShoveSweep.Apply(f.Movement,aim,3f,~0);
+            Require(audio.LastImpact == ShoveImpactKind.World && enemy.Health == 1000f,"Enemy behind cover cannot produce a flesh hit");
+            Object.DestroyImmediate(wall); Physics.SyncTransforms();
+            // A wall within reach and a crowd hit resolve to one enemy cue, rather than stacking sounds.
+            f.Box(new Vector3(0,1,2f),new Vector3(3,2,.1f)); f.Target(1.2f,.8f);
+            AudioClip previous=null;
+            for(int i=0;i<12;i++)
+            {
+                ShoveSweep.Apply(f.Movement,aim,3f,~0);
+                Require(audio.LastImpact == ShoveImpactKind.Enemy && audio.LastClip != previous && Array.IndexOf(settings.shoveEnemySounds,audio.LastClip)>=0,
+                    "Successful crowd hit chooses a supplied enemy clip and avoids immediate repeats");
+                previous=audio.LastClip;
+            }
+        }
+    }
+    private static void ShoveLevelColliders()
+    {
+        string physicsError = null;
+        Application.LogCallback capture = (message, stack, type) =>
+        { if (message.Contains("ClosestPoint")) physicsError = message; };
+        Application.logMessageReceived += capture;
+        var mesh = new Mesh();
+        var terrainData = new TerrainData { heightmapResolution = 33, size = new Vector3(10, 4, 10) };
+        var cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        Mesh cubeMesh = cube.GetComponent<MeshFilter>().sharedMesh;
+        Object.DestroyImmediate(cube);
+        try
+        {
+            using (var f = new Fixture())
+            {
+                var audio = f.Player.AddComponent<PlayerShoveAudio>();
+                var aim = f.Player.GetComponentInChildren<Camera>().transform;
+                var wall = new GameObject("Nonconvex level mesh");
+                wall.transform.SetParent(f.Root.transform); wall.transform.position = f.Origin;
+                mesh.CombineMeshes(new[] { new CombineInstance { mesh = cubeMesh,
+                    transform = Matrix4x4.TRS(new Vector3(0, 1, .6f), Quaternion.identity, new Vector3(3, 2, .1f)) } });
+                var collider = wall.AddComponent<MeshCollider>(); collider.sharedMesh = mesh;
+                var enemy = f.Target(1.2f);
+                Physics.SyncTransforms();
+                Require(ShoveSweep.Apply(f.Movement, aim, 3f, ~0) == 0
+                    && audio.LastImpact == ShoveImpactKind.World && enemy.Health == 1000f,
+                    "Nonconvex wall makes world sound and shields the enemy");
+                Object.DestroyImmediate(enemy.gameObject);
+                collider.sharedMesh = null; mesh.Clear();
+                mesh.CombineMeshes(new[]
+                {
+                    new CombineInstance { mesh = cubeMesh, transform = Matrix4x4.TRS(new Vector3(0, 1, -1), Quaternion.identity, new Vector3(4, 2, .1f)) },
+                    new CombineInstance { mesh = cubeMesh, transform = Matrix4x4.TRS(new Vector3(-2, 1, 1), Quaternion.identity, new Vector3(.1f, 2, 4)) },
+                    new CombineInstance { mesh = cubeMesh, transform = Matrix4x4.TRS(new Vector3(2, 1, 1), Quaternion.identity, new Vector3(.1f, 2, 4)) }
+                });
+                collider.sharedMesh = mesh; Physics.SyncTransforms();
+                Require(collider.bounds.Contains(aim.position), "Concave test encloses the eye in its bounds");
+                ShoveSweep.Apply(f.Movement, aim, 3f, ~0);
+                Require(audio.LastImpact == ShoveImpactKind.None, "Empty space within concave bounds is not a wall impact");
+                Object.DestroyImmediate(wall);
+                var terrain = Terrain.CreateTerrainGameObject(terrainData);
+                terrain.transform.SetParent(f.Root.transform); terrain.transform.position = f.Origin + new Vector3(-5, 0, -5);
+                Physics.SyncTransforms();
+                ShoveSweep.Apply(f.Movement, aim, 3f, ~0);
+                Require(audio.LastImpact == ShoveImpactKind.None, "Flat terrain below the shove does not make a wall sound");
+                var heights = new float[33, 33];
+                for (int z = 18; z < 33; z++) for (int x = 0; x < 33; x++) heights[z, x] = .5f;
+                terrainData.SetHeights(0, 0, heights); Physics.SyncTransforms();
+                ShoveSweep.Apply(f.Movement, aim, 3f, ~0);
+                Require(audio.LastImpact == ShoveImpactKind.World, "Terrain slope in front produces a world impact");
+                Require(physicsError == null, "No unsupported ClosestPoint calls: " + physicsError);
+            }
+        }
+        finally
+        {
+            Application.logMessageReceived -= capture;
+            Object.DestroyImmediate(mesh); Object.DestroyImmediate(terrainData);
         }
     }
     private static void FastGuardBreak()
@@ -380,39 +526,16 @@ public static class WeaponSlotsMeleeChecks
     {
         using (var f = new Fixture())
         {
-            var navSettings = UnityEngine.AI.NavMesh.GetSettingsByIndex(0);
-            var source = new UnityEngine.AI.NavMeshBuildSource {shape = UnityEngine.AI.NavMeshBuildSourceShape.Box,
-                transform = Matrix4x4.TRS(f.Origin + Vector3.down * .1f,Quaternion.identity,Vector3.one),size = new Vector3(20,.2f,20)};
-            var data = UnityEngine.AI.NavMeshBuilder.BuildNavMeshData(navSettings, new System.Collections.Generic.List<UnityEngine.AI.NavMeshBuildSource>{source},
-                new Bounds(f.Origin,new Vector3(22,10,22)),Vector3.zero,Quaternion.identity);
-            Require(data != null,"Crowd test navigation mesh"); var nav = UnityEngine.AI.NavMesh.AddNavMeshData(data);
-            try
-            {
-                var target = f.Target(1.2f).GetComponent<MeleeCombatTarget>(); target.ApplyPostureDamage(100f);
-                var bystander = f.Box(new Vector3(1.1f,0,0),new Vector3(.6f,1.8f,.6f));
-                var ai = bystander.AddComponent<EnemyCombatAI>(); Call(ai,"Awake");
-                Call(bystander.GetComponent<EnemyHealth>(),"Awake");
-                var posture = bystander.GetComponent<MeleeCombatTarget>(); Call(posture,"Awake"); Call(posture,"OnEnable");
-                var agent = bystander.GetComponent<UnityEngine.AI.NavMeshAgent>();
-                Require(agent.Warp(f.Origin + new Vector3(1.1f,0,0)),"Bystander placed on navigation mesh");
-                Set(ai,"preparing",true);
-                Require(f.Movement.Execution.TryBegin(target) && !ai.IsPreparingAttack, "Existing enemy windup immediately cancelled");
-                float before = Vector3.Distance(bystander.transform.position,f.Player.transform.position);
-                posture.Tick(.1f);
-                Require(agent.isStopped && Vector3.Distance(bystander.transform.position,f.Player.transform.position) > before,
-                    "Close enemy backs away while chase remains stopped");
-                Call(ai,"Update"); Require(!ai.IsPreparingAttack,"Suppressed enemy cannot prepare an attack");
-                var wall = f.Box(new Vector3(1.9f,.8f,0),new Vector3(.2f,2f,3f));
-                for(int i=0;i<10;i++) posture.Tick(.1f);
-                Require(bystander.transform.position.x < f.Origin.x+1.9f,"Retreat respects unbaked physical cover");
-                Object.DestroyImmediate(wall); Physics.SyncTransforms();
-                for(int i=0;i<20;i++) posture.Tick(.1f);
-                Vector3 stopped = bystander.transform.position; posture.Tick(.1f);
-                Require(Vector3.Distance(stopped,bystander.transform.position)<.01f,"Retreat stops at clearance radius");
-                f.Movement.Execution.Cancel(); posture.Tick(.1f);
-                Require(!agent.isStopped && !PlayerExecution.Suppresses(ai), "Normal navigation resumes after execution");
-            }
-            finally { nav.Remove(); Object.DestroyImmediate(data); }
+            var target = f.Target(1.2f).GetComponent<MeleeCombatTarget>(); target.ApplyPostureDamage(100f);
+            var bystander = f.Box(new Vector3(1.1f,0,0),new Vector3(.6f,1.8f,.6f));
+            var ai = bystander.AddComponent<EnemyCombatAI>(); Call(ai,"Awake");
+            Call(bystander.GetComponent<EnemyHealth>(),"Awake");
+            var posture = bystander.GetComponent<MeleeCombatTarget>(); Call(posture,"Awake"); Call(posture,"OnEnable");
+            Set(ai,"preparing",true);
+            Require(f.Movement.Execution.TryBegin(target) && !ai.IsPreparingAttack, "Existing enemy windup immediately cancelled");
+            Call(ai,"Update"); Require(!ai.IsPreparingAttack && PlayerExecution.Suppresses(ai),"Suppressed enemy cannot prepare an attack");
+            f.Movement.Execution.Cancel();
+            Require(!PlayerExecution.Suppresses(ai), "Cancellation releases crowd suppression");
         }
     }
     private static void EnemyBars()

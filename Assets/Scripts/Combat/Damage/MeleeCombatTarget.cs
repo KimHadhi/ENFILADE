@@ -29,6 +29,7 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver
     private static void ClearRegistry() => active.Clear();
     private float stunRemaining, recoveryRemaining, shoveRemaining;
     private Vector3 shoveVelocity;
+    private const float ShoveDuration = .32f;
     private PlayerMeleeCombat grabber;
     private PlayerExecution executor;
     private AudioSource staggerAudio;
@@ -48,6 +49,7 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver
     public void Tick(float dt)
     {
         if (dt <= 0f || !IsAvailable) return;
+        if (agent == null) agent = GetComponent<NavMeshAgent>();
         bool suppressed = PlayerExecution.Suppresses(this);
         if (suppressed)
         {
@@ -56,10 +58,12 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver
             if (!IsStunned) PlayerExecution.ActiveExecution.Retreat(agent, dt);
         }
         if (executor != null) return;
-        if (shoveRemaining > 0f && agent != null && agent.isActiveAndEnabled && agent.isOnNavMesh)
+        if (shoveRemaining > 0f)
         {
-            float slice = Mathf.Min(dt, shoveRemaining); shoveRemaining -= slice;
-            agent.Move(shoveVelocity * slice);
+            float slice = Mathf.Min(dt, shoveRemaining);
+            float strength = (shoveRemaining + shoveRemaining - slice) / (2f * ShoveDuration);
+            shoveRemaining -= slice;
+            MoveShove(shoveVelocity * (slice * strength));
         }
         stunRemaining = Mathf.Max(0f, stunRemaining - dt);
         float recoveryDt = Mathf.Max(0f, dt - recoveryRemaining);
@@ -119,7 +123,8 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver
     }
     private void PlayStaggerSound()
     {
-        var clip = CombatFeedbackSettings.Instance != null ? CombatFeedbackSettings.Instance.staggerSound : null;
+        var settings = CombatFeedbackSettings.Instance;
+        var clip = settings != null ? settings.staggerSound : null;
         if (!Application.isPlaying || clip == null) return;
         if (staggerAudio == null)
         {
@@ -127,7 +132,7 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver
             staggerAudio.spatialBlend = .85f; staggerAudio.minDistance = 2f; staggerAudio.maxDistance = 22f;
             staggerAudio.rolloffMode = AudioRolloffMode.Linear;
         }
-        staggerAudio.PlayOneShot(clip, .8f);
+        staggerAudio.PlayOneShot(clip, Mathf.Clamp01(settings.staggerSoundVolume));
     }
     public void ResetPosture()
     {
@@ -138,10 +143,26 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver
     }
     public void ReceiveShove(Vector3 impulse, Vector3 point)
     {
-        if (!IsAvailable) return;
+        if (!IsAvailable || executor != null) return;
+        if (agent == null) agent = GetComponent<NavMeshAgent>();
         var body = GetComponent<Rigidbody>();
-        if (body != null && !body.isKinematic) body.AddForceAtPosition(impulse, point, ForceMode.Impulse);
-        else { shoveVelocity = impulse; shoveRemaining = 0.15f; }
+        if (agent != null && agent.isActiveAndEnabled && agent.isOnNavMesh)
+        { shoveVelocity = Vector3.ProjectOnPlane(impulse, Vector3.up); shoveRemaining = ShoveDuration; StopAgent(); }
+        else if (body != null && !body.isKinematic) body.AddForceAtPosition(impulse, point, ForceMode.Impulse);
+    }
+    private void MoveShove(Vector3 displacement)
+    {
+        if (agent == null || !agent.isActiveAndEnabled || !agent.isOnNavMesh || displacement.sqrMagnitude < .000001f) return;
+        float distance = displacement.magnitude; Vector3 direction = displacement / distance;
+        if (NavMesh.Raycast(agent.nextPosition, agent.nextPosition + displacement, out var edge, agent.areaMask))
+            distance = Mathf.Min(distance, Mathf.Max(0f, Vector3.Distance(agent.nextPosition, edge.position) - .025f));
+        float radius = Mathf.Max(.1f, agent.radius);
+        Vector3 feet = agent.transform.position - Vector3.up * agent.baseOffset;
+        Vector3 bottom = feet + Vector3.up * (radius + .05f);
+        Vector3 top = feet + Vector3.up * Mathf.Max(radius + .05f, agent.height - radius);
+        foreach (var hit in Physics.CapsuleCastAll(bottom, top, radius, direction, distance + .025f, ~0, QueryTriggerInteraction.Ignore))
+            if (!hit.transform.IsChildOf(transform)) distance = Mathf.Min(distance, Mathf.Max(0f, hit.distance - .025f));
+        agent.Move(direction * distance);
     }
     private void StopAgent()
     {
@@ -156,5 +177,5 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver
         stoppedAgent = false;
     }
     private void OnDisable()
-    { active.Remove(this); if (executor != null) executor.Cancel(); executor = null; grabber = null; stunRemaining = 0f; RestoreAgent(); }
+    { active.Remove(this); if (executor != null) executor.Cancel(); executor = null; grabber = null; stunRemaining = shoveRemaining = 0f; RestoreAgent(); }
 }

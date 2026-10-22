@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>Compact head-height HP/posture bars for enemies and practice targets.</summary>
+/// <summary>Head-height HP/posture bars and a larger body-centred stagger cue.</summary>
 [DisallowMultipleComponent]
 public sealed class EnemyVitalsHUD : MonoBehaviour
 {
@@ -12,10 +12,10 @@ public sealed class EnemyVitalsHUD : MonoBehaviour
     private ICombatVitals vitals;
     private MeleeCombatTarget posture;
     private Collider[] bodyColliders;
-    private RectTransform panel, healthFill, postureFill;
+    private RectTransform panel, healthFill, postureFill, staggerPanel;
     private Image healthImage, postureImage;
     private RawImage staggerBadge;
-    public bool IsStaggerVisible => IsVisible && staggerBadge != null && staggerBadge.gameObject.activeSelf;
+    public bool IsStaggerVisible => staggerPanel != null && staggerPanel.gameObject.activeSelf;
     private readonly RaycastHit[] occlusionHits = new RaycastHit[16];
     public float HealthRatio { get; private set; }
     public float PostureRatio { get; private set; }
@@ -35,29 +35,45 @@ public sealed class EnemyVitalsHUD : MonoBehaviour
         PostureRatio = posture == null ? 0f : Mathf.Clamp01(posture.Posture / posture.MaximumPosture);
         if (!isActiveAndEnabled || view == null || vitals == null || posture == null || !posture.IsAvailable || HealthRatio <= 0f)
         { Hide(); return; }
-        Vector3 anchor = HeadAnchor();
-        Vector3 viewport = view.WorldToViewportPoint(anchor);
-        if (viewport.z <= 0f || viewport.x < 0f || viewport.x > 1f || viewport.y < 0f || viewport.y > 1f
-            || (anchor - view.transform.position).sqrMagnitude > maximumDistance * maximumDistance || IsOccluded(view, anchor))
-        { Hide(); return; }
         EnsurePanel();
-        panel.gameObject.SetActive(true);
-        panel.position = anchor;
-        panel.rotation = view.transform.rotation;
-        // Keep the same small screen footprint as enemies approach or move away.
-        float worldHeight = view.orthographic ? 2f * view.orthographicSize
-            : 2f * viewport.z * Mathf.Tan(view.fieldOfView * .5f * Mathf.Deg2Rad);
-        float uiScale = Mathf.Clamp(view.pixelHeight / 1080f, .75f, 1.5f);
-        panel.localScale = Vector3.one * (worldHeight / Mathf.Max(1, view.pixelHeight) * uiScale);
+        Bounds body = BodyBounds();
+        PositionPanel(panel, view, new Vector3(body.center.x, body.max.y + headroom, body.center.z));
         SetFill(healthFill, healthImage, HealthRatio);
         SetFill(postureFill, postureImage, PostureRatio);
         postureImage.color = posture.IsBroken ? new Color(1f, .28f, .20f)
             : posture.IsStunned ? new Color(1f, .91f, .52f) : new Color(.95f, .68f, .22f);
-        staggerBadge.gameObject.SetActive(posture.IsStaggered && staggerBadge.texture != null);
+        if (posture.IsStaggered && staggerBadge.texture != null)
+        {
+            // Project onto the body centre, but draw in front of its geometry instead of inside the mesh.
+            PositionPanel(staggerPanel, view, body.center, body.extents.magnitude + .05f, distanceScaled: true);
+            float imageWidth = CombatFeedbackSettings.Instance != null ? Mathf.Max(40f, CombatFeedbackSettings.Instance.staggerImageWidth) : 260f;
+            staggerBadge.rectTransform.sizeDelta = new Vector2(imageWidth, imageWidth * staggerBadge.texture.height / staggerBadge.texture.width);
+        }
+        else staggerPanel.gameObject.SetActive(false);
         float pop = 1f - Mathf.Pow(1f - Mathf.Clamp01(posture.StaggerAge / .24f), 3f);
         staggerBadge.rectTransform.localScale = Vector3.one * Mathf.Lerp(1.35f, 1f, pop);
     }
-    private Vector3 HeadAnchor()
+    private void PositionPanel(RectTransform target, Camera view, Vector3 anchor, float forwardOffset = 0f, bool distanceScaled = false)
+    {
+        Vector3 viewport = view.WorldToViewportPoint(anchor);
+        bool visible = viewport.z > 0f && viewport.x >= 0f && viewport.x <= 1f && viewport.y >= 0f && viewport.y <= 1f
+            && (anchor - view.transform.position).sqrMagnitude <= maximumDistance * maximumDistance && !IsOccluded(view, anchor);
+        target.gameObject.SetActive(visible);
+        if (!visible) return;
+        Vector3 toCamera = view.orthographic ? -view.transform.forward : (view.transform.position - anchor).normalized;
+        float depthPerUnit = Mathf.Max(.01f, -Vector3.Dot(toCamera, view.transform.forward));
+        float offset = Mathf.Min(forwardOffset, Mathf.Max(0f, (viewport.z - view.nearClipPlane - .05f) / depthPerUnit));
+        target.position = anchor + toCamera * offset;
+        target.rotation = view.transform.rotation;
+        float depth = view.WorldToViewportPoint(target.position).z;
+        float worldHeight = view.orthographic ? 2f * view.orthographicSize : 2f * depth * Mathf.Tan(view.fieldOfView * .5f * Mathf.Deg2Rad);
+        float uiScale = Mathf.Clamp(view.pixelHeight / 1080f, .75f, 1.5f);
+        // Stagger width is authored at 3 metres. Use the real body distance, not the
+        // forward-shifted canvas distance, so drawing in front of the mesh cannot distort scaling.
+        if (distanceScaled) uiScale *= Mathf.Min(2f, 3f / Mathf.Max(.01f, Vector3.Distance(view.transform.position, anchor)));
+        target.localScale = Vector3.one * (worldHeight / Mathf.Max(1, view.pixelHeight) * uiScale);
+    }
+    private Bounds BodyBounds()
     {
         bool found = false; Bounds bounds = default;
         foreach (var collider in bodyColliders)
@@ -66,8 +82,7 @@ public sealed class EnemyVitalsHUD : MonoBehaviour
             if (!found) { bounds = collider.bounds; found = true; }
             else bounds.Encapsulate(collider.bounds);
         }
-        return found ? new Vector3(bounds.center.x, bounds.max.y + headroom, bounds.center.z)
-            : transform.position + Vector3.up * (2f + headroom);
+        return found ? bounds : new Bounds(transform.position + Vector3.up, new Vector3(1f, 2f, 1f));
     }
     private bool IsOccluded(Camera view, Vector3 anchor)
     {
@@ -100,13 +115,16 @@ public sealed class EnemyVitalsHUD : MonoBehaviour
         var group = root.AddComponent<CanvasGroup>(); group.interactable = group.blocksRaycasts = false;
         healthFill = Bar("HP", 5f, 9f, new Color(.95f, .31f, .25f), out healthImage);
         postureFill = Bar("Posture", -4f, 5f, new Color(.95f, .68f, .22f), out postureImage);
+        var staggerRoot = new GameObject("Body Stagger", typeof(RectTransform), typeof(Canvas), typeof(CanvasGroup));
+        staggerRoot.hideFlags = HideFlags.DontSave;
+        UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(staggerRoot, gameObject.scene);
+        staggerPanel = staggerRoot.GetComponent<RectTransform>();
+        var staggerCanvas = staggerRoot.GetComponent<Canvas>(); staggerCanvas.renderMode = RenderMode.WorldSpace; staggerCanvas.sortingOrder = 21;
+        var staggerGroup = staggerRoot.GetComponent<CanvasGroup>(); staggerGroup.interactable = staggerGroup.blocksRaycasts = false;
         staggerBadge = new GameObject("Stagger", typeof(RectTransform), typeof(RawImage)).GetComponent<RawImage>();
-        staggerBadge.transform.SetParent(panel, false); staggerBadge.raycastTarget = false;
+        staggerBadge.transform.SetParent(staggerPanel, false); staggerBadge.raycastTarget = false;
         var settings = CombatFeedbackSettings.Instance;
         staggerBadge.texture = settings != null ? settings.staggerImage : null;
-        float aspect = staggerBadge.texture != null ? (float)staggerBadge.texture.width / staggerBadge.texture.height : 1.54f;
-        staggerBadge.rectTransform.sizeDelta = new Vector2(150f, 150f / aspect);
-        staggerBadge.rectTransform.anchoredPosition = new Vector2(0f, 22f + 75f / aspect);
     }
     private RectTransform Bar(string label, float y, float height, Color color, out Image fillImage)
     {
@@ -124,11 +142,12 @@ public sealed class EnemyVitalsHUD : MonoBehaviour
     }
     private static void SetFill(RectTransform rect, Image graphic, float ratio)
     { rect.anchorMax = new Vector2(ratio, 1f); graphic.enabled = ratio > 0f; }
-    private void Hide() { if (panel != null) panel.gameObject.SetActive(false); }
+    private void Hide()
+    { if (panel != null) panel.gameObject.SetActive(false); if (staggerPanel != null) staggerPanel.gameObject.SetActive(false); }
     private void OnDisable() => Hide();
     private void OnDestroy()
     {
-        if (panel == null) return;
-        if (Application.isPlaying) Destroy(panel.gameObject); else DestroyImmediate(panel.gameObject);
+        if (panel != null) { if (Application.isPlaying) Destroy(panel.gameObject); else DestroyImmediate(panel.gameObject); }
+        if (staggerPanel != null) { if (Application.isPlaying) Destroy(staggerPanel.gameObject); else DestroyImmediate(staggerPanel.gameObject); }
     }
 }
