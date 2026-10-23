@@ -55,6 +55,7 @@ public sealed class MovementMotor
 
     internal void Move(float dt)
     {
+        ctx.DodgePassThrough?.BeforeMove();
         ctx.Abilities.Landing.BeforeMove();
         lastMoveGroundNormal = Vector3.zero;
         if (hasTraversalPosition)
@@ -77,6 +78,7 @@ public sealed class MovementMotor
         hasTraversalPosition = hasRequestedMove = false; requestedMove = additionalMove = Vector3.zero;
         requestedPath.Clear();
         ctx.Abilities.StepTrail.RecordMovement();
+        ctx.DodgePassThrough?.AfterMove();
         if ((lastMoveFlags & CollisionFlags.Above) != 0 && VerticalVelocity > 0f) VerticalVelocity = 0f;
         if (dt > 0f)
         {

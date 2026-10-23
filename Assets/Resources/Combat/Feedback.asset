@@ -27,3 +27,7 @@ MonoBehaviour:
   shoveWorldSound: {fileID: 8300000, guid: c6e99b7ba4a042858afea6a9d18e6e7c, type: 3}
   shoveEnemyVolume: 0.3
   shoveWorldVolume: 0.3
+  blockSound: {fileID: 8300000, guid: 72ca7f9312f548b9b7b40ab40b48b2e7, type: 3}
+  enemyAttackStartSound: {fileID: 8300000, guid: c3c9d1035cb04ba8908bf2cbbcbd446b, type: 3}
+  perfectEvadeSound: {fileID: 8300000, guid: 9cabe8b869f240429c8bdb25000a3b45, type: 3}
+  parrySound: {fileID: 8300000, guid: 08120d276ee346659b07fae1636fe60f, type: 3}

@@ -99,6 +99,7 @@ public sealed class PlayerExecution : MonoBehaviour
     {
         if (!CanOffer || !Eligible(target, out _) || !target.TryReserveExecution(this)) return false;
         victim = target; elapsed = 0f; impacted = false; IsExecuting = true; ActiveExecution = this; Candidate = null;
+        player.PerfectDefense?.Cancel();
         player.MeleeCombat?.CancelAction();
         player.HorizontalVelocity = Vector3.zero;
         GetComponent<WeaponController>()?.Runtime?.Interrupt();

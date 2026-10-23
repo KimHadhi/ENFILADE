@@ -145,6 +145,7 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
             attackMaxTargets, hitLayers, () => cooldown = 0f);
         Punched?.Invoke(charge);
     }
+    public void ShowCounterPunch() => Punched?.Invoke(1f);
     private void Shove()
     {
         shoveSweep.Begin(player, aim, 3f, hitLayers, player.AbilitySettings.shoveActiveTime);

@@ -8,8 +8,11 @@ public sealed class EnemyCombatAI : MonoBehaviour
 {
     [Header("Attack Settings")]
     [SerializeField, Min(1f)] private float attackRange = 2f;
-    [SerializeField, Min(0.2f)] private float attackInterval = 2f;
-    [SerializeField, Min(0.05f)] private float windup = 0.6f;
+    [SerializeField, Min(0.2f)] private float attackInterval = .55f;
+    [Tooltip("Fallback windup when no attack-start clip is configured. Otherwise the clip length sets the impact time.")]
+    [SerializeField, Min(0.05f)] private float windup = .35f;
+    [Tooltip("Each combo part has its own cue. Only parrying the last part opens a perfect counter.")]
+    [SerializeField, Min(1)] private int comboHits = 1;
     [SerializeField, Min(0f)] private float damage = 10f;
 
     [Header("Aim Settings")]
@@ -27,6 +30,9 @@ public sealed class EnemyCombatAI : MonoBehaviour
     private float timer;
     private bool preparing;
     private Vector3 lockedAim;
+    private int comboIndex;
+    public float WindupDuration => CombatFeedbackSettings.Instance?.enemyAttackStartSound != null
+        ? Mathf.Max(.05f, CombatFeedbackSettings.Instance.enemyAttackStartSound.length) : windup;
 
     public bool IsPreparingAttack => preparing;
 
@@ -38,6 +44,7 @@ public sealed class EnemyCombatAI : MonoBehaviour
         if (meleeTarget == null) meleeTarget = gameObject.AddComponent<MeleeCombatTarget>();
         indicator = GetComponent<Renderer>();
         color = new MaterialPropertyBlock();
+        timer = attackInterval;
     }
 
     private void Start()
@@ -45,11 +52,13 @@ public sealed class EnemyCombatAI : MonoBehaviour
         player = FindFirstObjectByType<PlayerMovement>();
     }
 
-    private void Update()
+    private void Update() => Tick(Time.deltaTime);
+    public void Tick(float dt)
     {
+        if (dt <= 0f) return;
         if (PlayerExecution.Suppresses(this) || (meleeTarget != null && meleeTarget.IsStunned)) { CancelAttack(); return; }
         if (enemyHealth == null || !enemyHealth.IsAlive || enemyHealth.WavePaused)
-            return;
+            { CancelAttack(); return; }
 
         if (player == null)
         {
@@ -74,34 +83,36 @@ public sealed class EnemyCombatAI : MonoBehaviour
         {
             if (distance > attackRange)
             {
-                timer = 0f;
+                timer = attackInterval;
                 UpdateIndicator(false);
                 return;
             }
 
-            timer += Time.deltaTime;
+            timer += dt;
 
             if (timer >= attackInterval)
             {
-                preparing = true;
-                timer = 0f;
-
-                lockedAim = player.transform.position
-                    + Vector3.up * aimHeight;
-
-                UpdateIndicator(true);
+                comboIndex = 0;
+                BeginWindup();
             }
 
             return;
         }
 
         // 공격 준비 중에는 조준 위치를 변경하지 않는다.
-        timer += Time.deltaTime;
+        timer += dt;
 
-        if (timer < windup)
+        if (timer < WindupDuration)
             return;
 
         FireAttack();
+    }
+    private void BeginWindup()
+    {
+        preparing = true; timer = 0f;
+        lockedAim = player.transform.position + Vector3.up * aimHeight;
+        UpdateIndicator(true);
+        CombatCueAudio.Play(gameObject, CombatCue.EnemyAttackStart);
     }
 
     private void FireAttack()
@@ -126,22 +137,26 @@ public sealed class EnemyCombatAI : MonoBehaviour
             DamageKind.Attack,
             lockedAim,
             direction,
-            gameObject, true
+            gameObject, true, 0f, comboIndex >= Mathf.Max(1, comboHits) - 1
         );
 
-        AttackTrace.Raycast(
+        var result = AttackTrace.Raycast(
             hit,
             origin,
             direction,
             attackRange + rayStartOffset,
             hitLayers
         );
+        if (!hit.IsComboFinisher && result != DamageResult.Parried && meleeTarget?.IsStunned != true)
+        { comboIndex++; BeginWindup(); }
     }
 
     public void CancelAttack()
     {
         preparing = false;
         timer = 0f;
+        comboIndex = 0;
+        GetComponent<CombatCueAudio>()?.Stop();
         UpdateIndicator(false);
     }
 

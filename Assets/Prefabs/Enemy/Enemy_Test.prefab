@@ -19,7 +19,7 @@ GameObject:
   - component: {fileID: 8000000000000000000}
   m_Layer: 6
   m_Name: Enemy_Test
-  m_TagString: Untagged
+  m_TagString: Enemy
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -180,8 +180,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyCombatAI
   attackRange: 5
-  attackInterval: 1
-  windup: 1
+  attackInterval: 0.55
+  windup: 0.35
   damage: 10
   aimHeight: 1
   rayStartOffset: 0.4

@@ -31,6 +31,7 @@ public static class WeaponSlotsMeleeChecks
             MeleeDrag(); Debug.Log("PASS MELEE DRAG: interpolated rotation, target budgets, duplicate colliders, walls, expiry and cancellation");
             ShoveDrag(); Debug.Log("PASS SHOVE DRAG: fists and armed sweeps follow the camera once per actor, one sound and slot cancellation");
             Defense(); Debug.Log("PASS FISTS: frontal parry/guard, rear and non-blockable damage, single parry reward");
+            PerfectDefense(); Debug.Log("PASS PERFECT DEFENSE: imported cues, finisher metadata, one-use counter, walls, expiry and evade deduplication");
             ShoveAndGuardBreak(); Debug.Log("PASS FISTS: V tap/hold, one target, action lock, approach and recovery");
             Cancellation(); Debug.Log("PASS FISTS: slot switch and cancellation discard held attacks");
             Hud(); Debug.Log("PASS FISTS: existing HUD migrates to four selectable, non-overlapping rows");
@@ -46,7 +47,7 @@ public static class WeaponSlotsMeleeChecks
             ExecutionCrowd(); Debug.Log("PASS EXECUTION: crowd windup cancellation, attack suppression and release");
             var asset = AssetDatabase.LoadAssetAtPath<InputActionAsset>("Assets/Actions/Player.inputactions");
             Require(asset.FindAction("Combat/Guard") != null && asset.FindAction("Player/Shove") != null, "Defense and shove input actions exist");
-            Debug.Log("WEAPON_SLOTS_MELEE_CHECKS_PASSED: 20");
+            Debug.Log("WEAPON_SLOTS_MELEE_CHECKS_PASSED: 21");
         }
         finally { if (previous.IsValid()) SceneManager.SetActiveScene(previous); EditorSceneManager.CloseScene(test, true); }
     }
@@ -326,6 +327,57 @@ public static class WeaponSlotsMeleeChecks
             Require(f.Movement.DamageReceiver.ReceiveHit(Hit(true,DamageKind.Fall)) == DamageResult.Damaged, "Fall bypasses guard");
         }
     }
+    private static void PerfectDefense()
+    {
+        var settings = CombatFeedbackSettings.Instance;
+        Require(settings.blockSound != null && settings.parrySound != null && settings.perfectEvadeSound != null
+            && settings.enemyAttackStartSound != null && settings.enemyAttackStartSound.length > .8f
+            && settings.enemyAttackStartSound.length < 1f, "Four supplied clips import; attack cue is about 0.89 seconds");
+        using (var f = new Fixture())
+        {
+            var enemy = f.Target(1.2f);
+            f.Melee.ProcessFrame(.01f, new MeleeInputFrame(guardPressed:true, guardHeld:true));
+            var attack = new DamageHit(DamageHit.NewAttackId(), 10, DamageKind.Attack, f.Origin, Vector3.back, enemy.gameObject, true, 0, false);
+            var cc = f.Player.GetComponent<CharacterController>();
+            // CharacterController attack queries require native Play Mode; use the same body volume here.
+            var proxy = f.Player.AddComponent<BoxCollider>(); proxy.center = cc.center; proxy.size = new Vector3(.6f, cc.height, .6f);
+            Physics.SyncTransforms();
+            var traced = AttackTrace.Trace(attack, enemy.transform.position, (proxy.bounds.center - enemy.transform.position).normalized, 3);
+            var feedback = f.Movement.PerfectDefense;
+            Require(!feedback.CounterAvailable && f.Player.GetComponent<CombatCueAudio>()?.LastCue == CombatCue.Parry,
+                $"Intermediate parry: result={traced.Damage}, collider={traced.Hit.collider}, counter={feedback.CounterAvailable}, cue={f.Player.GetComponent<CombatCueAudio>()?.LastCue}");
+            f.Melee.ProcessFrame(.4f, default);
+            f.Melee.ProcessFrame(.01f, new MeleeInputFrame(guardPressed:true, guardHeld:true));
+            var final = new DamageHit(DamageHit.NewAttackId(), 10, DamageKind.Attack, f.Origin, Vector3.back, enemy.gameObject, true);
+            Require(f.Movement.DamageReceiver.ReceiveHit(final) == DamageResult.Parried && feedback.CounterAvailable, "Single/final attack parry opens counter");
+            Require(f.Movement.DamageReceiver.ReceiveHit(final) == DamageResult.Duplicate, "The same hit never opens/rewards twice");
+            float health = enemy.Health;
+            Require(feedback.TryCounter() && enemy.Health == health - settings.counterDamage && !feedback.CounterAvailable, "Counter hits immediately for heavy damage and consumes its opportunity");
+            Require(!feedback.TryCounter() && enemy.Health == health - settings.counterDamage, "Counter cannot be reused");
+            f.Melee.ProcessFrame(.4f, default); f.Melee.ProcessFrame(.01f, new MeleeInputFrame(guardPressed:true, guardHeld:true));
+            f.Melee.ProcessFrame(.25f, new MeleeInputFrame(guardHeld:true));
+            f.Movement.DamageReceiver.ReceiveHit(new DamageHit(DamageHit.NewAttackId(), 10, DamageKind.Attack, f.Origin, Vector3.back, enemy.gameObject, true));
+            Require(f.Player.GetComponent<CombatCueAudio>().LastCue == CombatCue.Block && !feedback.CounterAvailable, "Ordinary guard has its own cue and no counter");
+        }
+        using (var f = new Fixture())
+        {
+            var enemy = f.Target(1.2f);
+            var abilities = (MovementAbilities)typeof(PlayerMovement).GetProperty("Abilities", Any).GetValue(f.Movement);
+            abilities.Dodge.TryStart(DodgeKind.Step, 0, .2f, .4f);
+            DamageHit Hit() => new DamageHit(DamageHit.NewAttackId(), 10, DamageKind.Attack, f.Origin, Vector3.back, enemy.gameObject, true);
+            Require(f.Movement.DamageReceiver.ReceiveHit(Hit()) == DamageResult.Evaded && f.Movement.PerfectDefense.CounterAvailable, "Actual evasion opens a counter");
+            var audio = f.Player.GetComponent<CombatCueAudio>(); int cues = audio.PlayCount;
+            Require(audio.LastCue == CombatCue.PerfectEvade, "Successful evasion has its supplied cue");
+            f.Movement.PerfectDefense.Tick(.2f); float remaining = f.Movement.PerfectDefense.Remaining;
+            f.Movement.DamageReceiver.ReceiveHit(Hit());
+            Require(audio.PlayCount == cues && f.Movement.PerfectDefense.Remaining == remaining, "One dodge activation grants one cue/window despite multiple enemy hits");
+            var wall = f.Box(new Vector3(0,1,.5f), new Vector3(2,2,.1f));
+            Require(!f.Movement.PerfectDefense.TryCounter() && enemy.Health == 1000f, "Counter never damages through a wall");
+            Object.DestroyImmediate(wall); Physics.SyncTransforms();
+            f.Movement.PerfectDefense.Tick(2f);
+            Require(!f.Movement.PerfectDefense.TryCounter(), "Counter expires using real-time seconds");
+        }
+    }
     private static void ShoveAndGuardBreak()
     {
         using (var f = new Fixture())
@@ -378,7 +430,7 @@ public static class WeaponSlotsMeleeChecks
             var rows = (WeaponSlotsHUD.SlotView[])typeof(WeaponSlotsHUD).GetField("slots",Any).GetValue(hud);
             Require(rows.Length == 4 && rows[3].number.text == "4", "Migration adds exactly one fourth row");
             f.Slots.SelectSlot(3); hud.Reveal(); hud.Refresh(1f);
-            Require(rows[3].weaponName.text == "SPECIAL / unarmed" && rows[3].weaponName.gameObject.activeSelf && rows[3].silhouette.Kind == 0,
+            Require(rows[3].weaponName.text == "SPECIAL / Unarmed" && rows[3].weaponName.gameObject.activeSelf && rows[3].silhouette.Kind == 0,
                 "Selected empty fourth slot uses unarmed while retaining its category");
             Require(rows[0].weaponName.text == "RANGED" && rows[1].weaponName.text == "RANGED" && rows[2].weaponName.text == "MELEE",
                 "Unselected empty slots show only their category, without a dot or unarmed name");

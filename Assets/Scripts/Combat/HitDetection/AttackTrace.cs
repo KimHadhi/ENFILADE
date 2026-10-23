@@ -31,7 +31,7 @@ public static class AttackTrace
             var receiver = hit.collider.GetComponentInParent<IDamageReceiver>();
             if (receiver != null)
                 result = receiver.ReceiveHit(new DamageHit(attack.Id, attack.Amount, attack.Kind, hit.point, direction, attack.Source,
-                    attack.CanBeGuarded, attack.PostureDamage));
+                    attack.CanBeGuarded, attack.PostureDamage, attack.IsComboFinisher));
         }
         StepDodgeTrail.RecognizeAttackSegment(attack, origin, end);
         return new AttackTraceResult(hasHit, hit, end, result);

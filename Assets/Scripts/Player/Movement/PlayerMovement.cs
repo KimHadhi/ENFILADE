@@ -43,6 +43,8 @@ public sealed partial class PlayerMovement : MonoBehaviour
     public UltimateCharge Ultimate { get; private set; }
     public PlayerMeleeCombat MeleeCombat { get; internal set; }
     public PlayerExecution Execution { get; private set; }
+    public PlayerPerfectDefense PerfectDefense { get; private set; }
+    public DodgeEnemyPassThrough DodgePassThrough { get; private set; }
     public bool CombatInputLocked => (MeleeCombat != null && MeleeCombat.IsGuardBreaking) || (Execution != null && Execution.IsExecuting);
     public bool IsInitialized => Motor != null && Posture != null && Actions != null && Input != null
         && Abilities != null && StateMachine != null && DamageReceiver != null && Ultimate != null;
@@ -163,6 +165,9 @@ public sealed partial class PlayerMovement : MonoBehaviour
         StateMachine = MovementStateMachine.Create(this);
         Execution = GetComponent<PlayerExecution>();
         if (Execution == null) Execution = gameObject.AddComponent<PlayerExecution>();
+        PerfectDefense = GetComponent<PlayerPerfectDefense>() ?? gameObject.AddComponent<PlayerPerfectDefense>();
+        PerfectDefense.Initialize(this);
+        DodgePassThrough = GetComponent<DodgeEnemyPassThrough>() ?? gameObject.AddComponent<DodgeEnemyPassThrough>();
         if (controller.height < Posture.standingColliderHeight - 0.02f)
             ChangeState(controller.height <= proneColliderHeight + 0.02f ? MovementState.Proning : MovementState.Crouching);
         return true;
@@ -226,6 +231,7 @@ public sealed partial class PlayerMovement : MonoBehaviour
 
     public void ResetVelocity()
     {
+        PerfectDefense?.Cancel(); DodgePassThrough?.Finish();
         Execution?.Cancel();
         MeleeCombat?.CancelAction();
         if (!IsInitialized) return;

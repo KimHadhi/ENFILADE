@@ -71,6 +71,8 @@ public sealed class MovementAbilities
     }
     internal void ReturnToLocomotion()
     {
+        // Resolve an enemy overlap before choosing posture, so its body is not mistaken for a low ceiling.
+        if (ctx.CurrentState == State.StepDodge) ctx.DodgePassThrough?.Finish();
         // A blocked crouch capsule may be a side wall or a shoved body, not a low tunnel.
         bool lowPassage = ctx.CurrentState != State.Tackle && ctx.HasVentCeilingAhead(ctx.transform.forward, 0f);
         ctx.ChangeState(ctx.HasCeilingAbove(ctx.StandingColliderHeight)

@@ -86,24 +86,13 @@ public sealed class PlayerCombatActions
                     new Vector3(-20f, Random.Range(-5f, 5f), Random.Range(-8f, 8f)), -20f);
 
                 // 2. 역경직(Hit Stop): 0.08초 동안 게임 속도를 10%로 줄여 타격감 극대화
-                // PlayerMovement(ctx)는 MonoBehaviour이므로 StartCoroutine을 호출할 수 있습니다.
-                ctx.StartCoroutine(HitStopRoutine(0.08f, 0.1f));
+                // 완벽 방어 슬로모션과 시간 복구를 공유한다.
+                var timeEffects = ctx.GetComponent<CombatTimeEffects>() ?? ctx.gameObject.AddComponent<CombatTimeEffects>();
+                timeEffects.RequestSlowdown(ctx, .1f, .08f);
             }
 
             break;
         }
-    }
-
-    // 타격 순간 시간을 느리게 만드는 코루틴
-    private System.Collections.IEnumerator HitStopRoutine(float duration, float targetTimeScale)
-    {
-        float originalTimeScale = Time.timeScale;
-        Time.timeScale = targetTimeScale;
-
-        // 현실 시간(Realtime) 기준으로 대기하여, 느려진 Time.timeScale의 영향을 받지 않음
-        yield return new WaitForSecondsRealtime(duration);
-
-        Time.timeScale = originalTimeScale;
     }
 
     internal void Reset() { CancelShove(); cooldown = 0f; attackId = 0; contacted.Clear(); }

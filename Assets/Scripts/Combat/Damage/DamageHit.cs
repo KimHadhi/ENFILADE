@@ -16,10 +16,11 @@ public readonly struct DamageHit
     public readonly GameObject Source;
     public readonly bool CanBeGuarded;
     public readonly float PostureDamage;
+    public readonly bool IsComboFinisher;
     public DamageHit(long id, float amount, DamageKind kind, Vector3 point, Vector3 direction, GameObject source = null,
-        bool canBeGuarded = false, float postureDamage = 0f)
+        bool canBeGuarded = false, float postureDamage = 0f, bool isComboFinisher = true)
     { Id = id; Amount = amount; Kind = kind; Point = point; Direction = direction; Source = source;
-        CanBeGuarded = canBeGuarded; PostureDamage = postureDamage; }
+        CanBeGuarded = canBeGuarded; PostureDamage = postureDamage; IsComboFinisher = isComboFinisher; }
 }
 
 public interface IDamageReceiver { DamageResult ReceiveHit(DamageHit hit); }
