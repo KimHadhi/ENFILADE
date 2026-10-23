@@ -17,8 +17,11 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
     [SerializeField, Min(1)] private int attackMaxTargets = 2;
     [SerializeField, Min(0f)] private float lungeDistance = 0.12f;
     [Header("Guard / Parry")]
-    [SerializeField, Range(0.05f, 0.4f)] private float parryWindow = 0.18f;
-    [SerializeField, Range(30f, 180f)] private float guardAngle = 120f;
+    [Tooltip("패링/가드 성공 없이 연속 재입력했을 때의 단계별 패링 시간(게임 시간 초).")]
+    [SerializeField] private float[] parryWindowDurations = { .35f, .20f, .10f, .05f };
+    [SerializeField, Min(0f)] private float spamResetDelay = .8f;
+    [SerializeField, Min(0f)] private float guardInputBuffer = .12f;
+    [SerializeField, Range(30f, 180f)] private float guardAngle = 150f;
     [Header("V: Shove / Guard Break")]
     [SerializeField, Min(0.05f)] private float holdThreshold = 0.14f;
     [SerializeField, Min(0.1f)] private float guardBreakReach = 2.2f;
@@ -36,12 +39,17 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
     private Transform aim;
     private MeleeCombatTarget target;
     private Collider targetCollider;
-    private float chargeTime, shoveTime, cooldown, guardTime, parryCooldown, grabTime, grabRecoveryRemaining, lungeRemaining;
-    private bool charging, shovePending, parryArmed, grabConnected;
+    private float chargeTime, shoveTime, cooldown, grabTime, grabRecoveryRemaining, lungeRemaining;
+    private float parryRemaining, guardBufferRemaining, guardIdleTime;
+    private int spamCount;
+    private bool charging, shovePending, grabConnected, guardAttemptHeld, defenseConnected, pendingWhiff;
     private Vector3 lungeDirection;
     private readonly MeleeAttackSweep punchSweep = new MeleeAttackSweep();
     private readonly ShoveSweep.Attack shoveSweep = new ShoveSweep.Attack();
     public bool IsGuarding { get; private set; }
+    public bool IsParryActive => parryRemaining > 0f;
+    public int ParrySpamCount => spamCount;
+    public float ParryRemaining => parryRemaining;
     public bool IsCharging => charging;
     public float ChargeRatio => charging ? Mathf.Clamp01(chargeTime / fullChargeTime) : 0f;
     public bool IsGuardBreaking => target != null;
@@ -65,12 +73,11 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
     }
     private void Update()
     {
-        if (!IsActive || !player.InputAvailable) { CancelAction(); return; }
+        if (!IsActive || !player.InputAvailable) { CancelAction(); TickGuardInput(Time.deltaTime, default); return; }
         if (IsGuardBreaking)
         {
-            var playerInput = player.GetComponent<UnityEngine.InputSystem.PlayerInput>();
-            if (playerInput != null && playerInput.actions.FindActionMap("Player")?.enabled != true) CancelAction();
-            else TickGuardBreak(Time.deltaTime);
+            if (input != null && input.TryReadGuardBuffer(out var guardFrame)) ProcessFrame(Time.deltaTime, guardFrame);
+            else CancelAction();
             return;
         }
         if (input == null || !input.TryReadMeleeInput(out var frame)) { CancelAction(); return; }
@@ -82,17 +89,32 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
         if (Time.timeScale <= 0f) return;
         if (!IsActive || !player.InputAvailable || player.Execution?.IsExecuting == true) { CancelAction(); return; }
         if (IsGuardBreaking) return;
-        if (MovementBlocksAttack) { CancelAction(); return; }
+        if (MovementBlocksAttack) { SuspendActionsForMovement(); return; }
         punchSweep.Tick(0f); shoveSweep.Tick(0f);
     }
     public void ProcessFrame(float dt, MeleeInputFrame frame)
     {
         if (dt <= 0f) return;
         if (!IsActive || player.Execution?.IsExecuting == true) { CancelAction(); return; }
-        cooldown = Mathf.Max(0f, cooldown - dt); parryCooldown = Mathf.Max(0f, parryCooldown - dt);
-        if (IsGuardBreaking) { TickGuardBreak(dt); return; }
+        cooldown = Mathf.Max(0f, cooldown - dt);
+        TickGuardInput(dt, frame);
+        if (IsGuardBreaking)
+        {
+            float buffered = guardBufferRemaining;
+            TickGuardBreak(dt);
+            guardBufferRemaining = buffered;
+            return;
+        }
         if (MovementBlocksAttack)
-        { CancelAction(); return; }
+        { SuspendActionsForMovement(); return; }
+        // Guard has priority over charge, punch/shove active frames and their recovery.
+        if (guardBufferRemaining > 0f) BeginGuard(frame.GuardHeld);
+        else if (frame.GuardHeld && !IsGuarding)
+        {
+            // A long hold through an uninterruptible action resumes block, never a fresh parry.
+            CancelOffense(); IsGuarding = true; guardAttemptHeld = true; defenseConnected = false;
+        }
+        if (IsGuarding) return;
         punchSweep.Tick(dt); shoveSweep.Tick(dt);
         if (!player.IsGrounded) lungeRemaining = 0f;
         if (lungeRemaining > 0f)
@@ -101,7 +123,7 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
             player.Motor.AddDisplacement(lungeDirection * (lungeDistance * slice / 0.1f));
         }
         if (frame.ShovePressed && cooldown <= 0f)
-        { punchSweep.Cancel(); shoveSweep.Cancel(); shovePending = true; shoveTime = 0f; charging = false; IsGuarding = false; }
+        { punchSweep.Cancel(); shoveSweep.Cancel(); shovePending = true; shoveTime = 0f; charging = false; IsGuarding = false; parryRemaining = 0f; }
         if (shovePending)
         {
             shoveTime += dt;
@@ -115,17 +137,8 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
             else if (!frame.ShoveHeld) shovePending = false;
             return;
         }
-        if (frame.GuardPressed && cooldown <= 0f)
-        {
-            IsGuarding = true; guardTime = 0f; charging = false;
-            punchSweep.Cancel(); shoveSweep.Cancel();
-            parryArmed = parryCooldown <= 0f;
-            if (parryArmed) parryCooldown = 0.35f;
-        }
-        IsGuarding &= frame.GuardHeld;
-        if (IsGuarding) { guardTime += dt; return; }
         if (frame.AttackPressed && cooldown <= 0f)
-        { punchSweep.Cancel(); shoveSweep.Cancel(); charging = true; chargeTime = 0f; }
+        { punchSweep.Cancel(); shoveSweep.Cancel(); parryRemaining = 0f; charging = true; chargeTime = 0f; }
         if (!charging) return;
         if (frame.AttackHeld) chargeTime = Mathf.Min(fullChargeTime, chargeTime + dt);
         if (frame.AttackReleased)
@@ -136,6 +149,47 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
         }
         else if (!frame.AttackHeld) charging = false;
     }
+    private void TickGuardInput(float dt, MeleeInputFrame frame)
+    {
+        parryRemaining = Mathf.Max(0f, parryRemaining - dt);
+        guardBufferRemaining = Mathf.Max(0f, guardBufferRemaining - dt);
+        if (!frame.GuardHeld)
+        {
+            if (guardAttemptHeld)
+            {
+                if (!defenseConnected) pendingWhiff = true;
+                guardAttemptHeld = false; guardIdleTime = 0f;
+            }
+            else guardIdleTime += dt;
+            IsGuarding = false;
+            if (guardIdleTime >= Mathf.Max(0f, spamResetDelay)) ResetParrySpam();
+        }
+        else guardIdleTime = 0f;
+        if (frame.GuardPressed) guardBufferRemaining = Mathf.Max(.001f, guardInputBuffer);
+    }
+    private void BeginGuard(bool held)
+    {
+        int last = parryWindowDurations != null ? parryWindowDurations.Length - 1 : -1;
+        spamCount = Mathf.Clamp(spamCount + (pendingWhiff ? 1 : 0), 0, Mathf.Max(0, last));
+        float duration = last >= 0 ? parryWindowDurations[spamCount] : .35f;
+        parryRemaining = float.IsNaN(duration) || float.IsInfinity(duration) ? .35f : Mathf.Max(.001f, duration);
+        pendingWhiff = !held; defenseConnected = false; guardAttemptHeld = held;
+        IsGuarding = held; guardIdleTime = guardBufferRemaining = 0f;
+        CancelOffense(); cooldown = 0f;
+    }
+    private void CancelOffense()
+    {
+        punchSweep.Cancel(); shoveSweep.Cancel();
+        charging = shovePending = false; chargeTime = shoveTime = lungeRemaining = 0f;
+    }
+    private void SuspendActionsForMovement()
+    {
+        float buffered = guardBufferRemaining;
+        CancelAction();
+        guardBufferRemaining = buffered;
+    }
+    private void ResetParrySpam() { spamCount = 0; pendingWhiff = false; }
+    public void NotifyDamaged() { ResetParrySpam(); defenseConnected = true; }
     private void Punch(float charge)
     {
         lungeDirection = Vector3.ProjectOnPlane(aim.forward, Vector3.up).normalized;
@@ -153,16 +207,18 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
     public bool TryDefend(DamageHit hit, out DamageResult result)
     {
         result = DamageResult.Ignored;
-        if (!IsActive || !player.InputAvailable || !IsGuarding || IsGuardBreaking || hit.Kind != DamageKind.Attack || !hit.CanBeGuarded) return false;
+        if (!IsActive || !player.InputAvailable || (!IsGuarding && !IsParryActive) || IsGuardBreaking
+            || MovementBlocksAttack || hit.Kind != DamageKind.Attack || !hit.CanBeGuarded) return false;
         Vector3 incoming = hit.Source != null ? hit.Source.transform.position - player.transform.position : -hit.Direction;
         incoming = Vector3.ProjectOnPlane(incoming, Vector3.up).normalized;
         Vector3 facing = Vector3.ProjectOnPlane(aim.forward, Vector3.up).normalized;
         if (incoming.sqrMagnitude < 0.01f || Vector3.Dot(incoming, facing) < Mathf.Cos(guardAngle * 0.5f * Mathf.Deg2Rad)) return false;
-        bool parry = parryArmed && guardTime <= parryWindow;
+        bool parry = IsParryActive;
         result = parry ? DamageResult.Parried : DamageResult.Blocked;
+        ResetParrySpam(); defenseConnected = true;
         if (parry)
         {
-            parryArmed = false;
+            parryRemaining = 0f;
             hit.Source?.GetComponentInParent<MeleeCombatTarget>()?.ApplyPostureDamage(25f, 0.8f);
         }
         Defended?.Invoke(result); return true;
@@ -173,7 +229,7 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
         var candidate = hit.GetComponentInParent<MeleeCombatTarget>();
         if (candidate == null || !candidate.TryReserve(this)) return false;
         target = candidate; targetCollider = hit; grabTime = grabRecoveryRemaining = 0f; grabConnected = false;
-        IsGuarding = charging = false; lungeRemaining = 0f;
+        IsGuarding = charging = false; lungeRemaining = parryRemaining = 0f;
         player.HorizontalVelocity = Vector3.zero;
         player.Abilities.Dodge.CancelWindow(); player.Abilities.Lean.Reset();
         return true;
@@ -241,8 +297,9 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
         punchSweep.Cancel(); shoveSweep.Cancel();
         if (target != null) target.Release(this);
         target = null; targetCollider = null;
-        charging = shovePending = IsGuarding = parryArmed = false;
-        chargeTime = shoveTime = lungeRemaining = 0f;
+        if (guardAttemptHeld && !defenseConnected) pendingWhiff = true;
+        charging = shovePending = IsGuarding = guardAttemptHeld = false;
+        chargeTime = shoveTime = lungeRemaining = parryRemaining = guardBufferRemaining = 0f;
     }
     private void OnDisable() { CancelAction(); input?.RequireTriggerRelease(); }
 }

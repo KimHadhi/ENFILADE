@@ -16137,7 +16137,7 @@ MonoBehaviour:
   runtimeBodyDefaults: {x: 0, y: 0, z: 0, w: 0}
   abilitySettings:
     stepDuration: 0.14
-    stepDistance: 2
+    stepDistance: 2.6
     stepInvulnerability: 0.18
     stepDodgeRecognitionPadding: 0.12
     microInvulnerability: 0.16

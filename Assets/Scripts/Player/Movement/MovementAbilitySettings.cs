@@ -6,7 +6,10 @@ public sealed class MovementAbilitySettings
 {
     [Header("Dodge & Lean")]
     [Min(0.05f)] public float stepDuration = 0.14f;
-    [Min(0f)] public float stepDistance = 2f;
+    [Min(0f)] public float stepDistance = 2.6f;
+    [Tooltip("회피가 적 몸 안에서 끝나면 진행 방향의 안전한 출구를 찾는 탐색 거리.")]
+    [Min(0f)] public float dodgeExitAssistDistance = 1.6f;
+    [Min(.01f)] public float dodgeExitAssistTime = .2f;
     [Min(0f)] public float stepInvulnerability = 0.18f;
     [Range(0f, 0.3f)] public float stepDodgeRecognitionPadding = 0.12f;
     [Min(0f)] public float microInvulnerability = 0.16f;

@@ -10,6 +10,7 @@ public sealed class SlidingGroupState : MovementBaseState
     public override MovementPosture Posture => MovementPosture.Prone;
     public override bool TryJump() => false;
     public override void OnLanding() { }
+    public override void Enter() => ctx.Abilities.Combat.BeginSlideImpact();
 
     private bool IsBrakeInput(Vector2 input)
     {
@@ -74,6 +75,9 @@ public sealed class SlidingGroupState : MovementBaseState
         travel.Normalize();
         float impactDot = Vector3.Dot(travel, -wallNormal);
         if (impactDot <= 0.001f) return;
+
+        // All slide postures share one attack, including transitions after a bounce.
+        if (ctx.Abilities.Combat.HitSlide(hit.collider, hit.point, hit.normal, travel)) return;
 
         IBreakable breakable = hit.gameObject.GetComponent<IBreakable>();
         if (breakable != null && ctx.CurrentSlideSpeed >= ctx.DoorBreakSpeedThreshold)

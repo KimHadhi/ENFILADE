@@ -15,6 +15,15 @@ public sealed class PlayerCombatActions
         SampleShove(dt);
     }
     internal void CancelShove() { shoveSweep.Cancel(); }
+    internal void BeginSlideImpact() { contacted.Clear(); attackId = DamageHit.NewAttackId(); }
+    internal bool HitSlide(Collider collider, Vector3 point, Vector3 normal, Vector3 direction)
+    {
+        if (!ctx.IsSliding || ctx.CurrentSlideSpeed <= .1f || collider.transform.IsChildOf(ctx.transform)
+            || (ctx.AbilitySettings.interactionLayers.value & (1 << collider.gameObject.layer)) == 0
+            || collider.GetComponentInParent<IDamageReceiver>() == null) return false;
+        ApplyBodyImpact(collider, point, normal, direction);
+        return true;
+    }
     internal void SampleShove(float dt)
     {
         if (!ctx.InputAvailable || ctx.CombatInputLocked || ctx.IsParkour || ctx.IsDiving || ctx.IsSliding
@@ -49,7 +58,7 @@ public sealed class PlayerCombatActions
                 ctx.AbilitySettings.interactionLayers, ctx.AbilitySettings.shoveActiveTime);
             return;
         }
-        Vector3 direction = tackle ? ctx.Abilities.ActionDirection : ctx.transform.forward;
+        Vector3 direction = ctx.Abilities.ActionDirection;
         Vector3 start = ctx.transform.position + Vector3.up * Mathf.Min(1f, ctx.Motor.controller.height * 0.65f);
         float radius = ctx.AbilitySettings.shoveRadius;
         var hits = Physics.SphereCastAll(start, radius, direction, ctx.AbilitySettings.shoveReach,
@@ -58,42 +67,38 @@ public sealed class PlayerCombatActions
 
         foreach (var hit in hits)
         {
-            var damage = hit.collider.GetComponentInParent<IDamageReceiver>();
-            var shove = hit.collider.GetComponentInParent<IShoveReceiver>();
-            var body = hit.rigidbody;
-            var breakable = hit.collider.GetComponentInParent<IBreakable>();
-            Object identity = damage as Object ?? shove as Object ?? (Object)body ?? hit.collider;
-
-            if (!contacted.Add(identity)) break;
-
-            Vector3 impulse = direction * ctx.AbilitySettings.shoveImpulse * (tackle ? 2f : 1f);
-            var result = damage?.ReceiveHit(new DamageHit(attackId, tackle ? ctx.AbilitySettings.tackleDamage : ctx.AbilitySettings.shoveDamage,
-                DamageKind.Attack, hit.point, direction, ctx.gameObject));
-            if (result == DamageResult.Damaged)
-                hit.collider.GetComponentInParent<MeleeCombatTarget>()?.ApplyPostureDamage(tackle ? 20f : 8f, 0.45f);
-
-            if (shove != null) shove.ReceiveShove(impulse, hit.point);
-            else if (body != null && !body.isKinematic) body.AddForceAtPosition(impulse, hit.point, ForceMode.Impulse);
-
-            if (tackle && breakable != null && ctx.HorizontalVelocity.magnitude >= ctx.DoorBreakSpeedThreshold)
-                breakable.Break(hit.point, hit.normal, ctx.HorizontalVelocity.magnitude);
-
-            // [개선된 카메라 연출 및 히트 스톱]
-            if (tackle)
-            {
-                // 1. 단순 피치(위아래)뿐만 아니라 요(좌우), 롤(기울기)을 랜덤하게 섞어 거친 충돌 느낌 부여
-                ctx.GetComponentInChildren<PlayerCameraEffects>()?.ApplyCameraImpulse(
-                    new Vector3(-20f, Random.Range(-5f, 5f), Random.Range(-8f, 8f)), -20f);
-
-                // 2. 역경직(Hit Stop): 0.08초 동안 게임 속도를 10%로 줄여 타격감 극대화
-                // 완벽 방어 슬로모션과 시간 복구를 공유한다.
-                var timeEffects = ctx.GetComponent<CombatTimeEffects>() ?? ctx.gameObject.AddComponent<CombatTimeEffects>();
-                timeEffects.RequestSlowdown(ctx, .1f, .08f);
-            }
-
+            ApplyBodyImpact(hit.collider, hit.point, hit.normal, direction);
             break;
         }
     }
 
+    private void ApplyBodyImpact(Collider collider, Vector3 point, Vector3 normal, Vector3 direction)
+    {
+        var damage = collider.GetComponentInParent<IDamageReceiver>();
+        var shove = collider.GetComponentInParent<IShoveReceiver>();
+        var body = collider.attachedRigidbody;
+        var breakable = collider.GetComponentInParent<IBreakable>();
+        Object identity = damage as Object ?? shove as Object ?? (Object)body ?? collider;
+
+        if (!contacted.Add(identity)) return;
+
+        Vector3 impulse = direction * ctx.AbilitySettings.shoveImpulse * 2f;
+        var result = damage?.ReceiveHit(new DamageHit(attackId, ctx.AbilitySettings.tackleDamage,
+            DamageKind.Attack, point, direction, ctx.gameObject));
+        if (result == DamageResult.Damaged)
+            collider.GetComponentInParent<MeleeCombatTarget>()?.ApplyPostureDamage(20f, 0.45f);
+
+        if (shove != null) shove.ReceiveShove(impulse, point);
+        else if (body != null && !body.isKinematic) body.AddForceAtPosition(impulse, point, ForceMode.Impulse);
+
+        if (breakable != null && ctx.HorizontalVelocity.magnitude >= ctx.DoorBreakSpeedThreshold)
+            breakable.Break(point, normal, ctx.HorizontalVelocity.magnitude);
+
+        // Share the tackle impact feedback and time ownership with perfect defense.
+        ctx.GetComponentInChildren<PlayerCameraEffects>()?.ApplyCameraImpulse(
+            new Vector3(-20f, Random.Range(-5f, 5f), Random.Range(-8f, 8f)), -20f);
+        var timeEffects = ctx.GetComponent<CombatTimeEffects>() ?? ctx.gameObject.AddComponent<CombatTimeEffects>();
+        timeEffects.RequestSlowdown(ctx, .1f, .08f);
+    }
     internal void Reset() { CancelShove(); cooldown = 0f; attackId = 0; contacted.Clear(); }
 }

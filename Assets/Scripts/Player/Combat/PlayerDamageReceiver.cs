@@ -52,6 +52,7 @@ public sealed class PlayerDamageReceiver : MonoBehaviour, IDamageReceiver
         float absorbed = Mathf.Min(Shield, hit.Amount);
         shield = Shield - absorbed;
         Health = Mathf.Max(0f, Health - (hit.Amount - absorbed));
+        melee?.NotifyDamaged();
         HitResolved?.Invoke(hit, DamageResult.Damaged);
         if (!IsAlive) { movement?.ResetVelocity(); Died?.Invoke(); }
         return DamageResult.Damaged;

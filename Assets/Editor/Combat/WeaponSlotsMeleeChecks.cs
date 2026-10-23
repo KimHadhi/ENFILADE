@@ -31,6 +31,7 @@ public static class WeaponSlotsMeleeChecks
             MeleeDrag(); Debug.Log("PASS MELEE DRAG: interpolated rotation, target budgets, duplicate colliders, walls, expiry and cancellation");
             ShoveDrag(); Debug.Log("PASS SHOVE DRAG: fists and armed sweeps follow the camera once per actor, one sound and slot cancellation");
             Defense(); Debug.Log("PASS FISTS: frontal parry/guard, rear and non-blockable damage, single parry reward");
+            AdaptiveParry(); Debug.Log("PASS ADAPTIVE PARRY: spam levels, tap lifetime, success/hit/decay resets, guard continuity and input buffering");
             PerfectDefense(); Debug.Log("PASS PERFECT DEFENSE: imported cues, finisher metadata, one-use counter, walls, expiry and evade deduplication");
             ShoveAndGuardBreak(); Debug.Log("PASS FISTS: V tap/hold, one target, action lock, approach and recovery");
             Cancellation(); Debug.Log("PASS FISTS: slot switch and cancellation discard held attacks");
@@ -47,7 +48,7 @@ public static class WeaponSlotsMeleeChecks
             ExecutionCrowd(); Debug.Log("PASS EXECUTION: crowd windup cancellation, attack suppression and release");
             var asset = AssetDatabase.LoadAssetAtPath<InputActionAsset>("Assets/Actions/Player.inputactions");
             Require(asset.FindAction("Combat/Guard") != null && asset.FindAction("Player/Shove") != null, "Defense and shove input actions exist");
-            Debug.Log("WEAPON_SLOTS_MELEE_CHECKS_PASSED: 21");
+            Debug.Log("WEAPON_SLOTS_MELEE_CHECKS_PASSED: 22");
         }
         finally { if (previous.IsValid()) SceneManager.SetActiveScene(previous); EditorSceneManager.CloseScene(test, true); }
     }
@@ -327,6 +328,81 @@ public static class WeaponSlotsMeleeChecks
             Require(f.Movement.DamageReceiver.ReceiveHit(Hit(true,DamageKind.Fall)) == DamageResult.Damaged, "Fall bypasses guard");
         }
     }
+    private static void AdaptiveParry()
+    {
+        foreach (float dt in new[] { 1f / 30f, 1f / 60f, 1f / 120f })
+        using (var f = new Fixture())
+        {
+            var enemy = f.Target(1.2f);
+            DamageHit Hit(bool blockable = true) => new DamageHit(DamageHit.NewAttackId(), 5f, DamageKind.Attack,
+                f.Origin, Vector3.back, enemy.gameObject, blockable);
+            void Press() => f.Melee.ProcessFrame(dt, new MeleeInputFrame(guardPressed:true, guardHeld:true));
+            void Release() => f.Melee.ProcessFrame(dt, default);
+            float[] windows = { .35f, .20f, .10f, .05f, .05f, .05f };
+            for (int i = 0; i < windows.Length; i++)
+            {
+                Press();
+                Require(f.Melee.ParrySpamCount == Mathf.Min(i, 3)
+                    && Mathf.Abs(f.Melee.ParryRemaining - windows[i]) < .0001f && f.Melee.IsGuarding,
+                    "Each unconnected release/repress degrades once without locking guard: " + i + "/" + dt);
+                Release();
+                Require(!f.Melee.IsGuarding && f.Melee.IsParryActive, "A short tap retains its remaining window");
+            }
+            Press(); f.Melee.ProcessFrame(.06f, new MeleeInputFrame(guardHeld:true));
+            Require(f.Movement.DamageReceiver.ReceiveHit(Hit()) == DamageResult.Blocked && f.Melee.ParrySpamCount == 0,
+                "Spam still holds block; a real block instantly resets spam");
+            for (int i = 0; i < 4; i++)
+            {
+                Release(); Press();
+                Require(Mathf.Abs(f.Melee.ParryRemaining - .35f) < .0001f
+                    && f.Movement.DamageReceiver.ReceiveHit(Hit()) == DamageResult.Parried,
+                    "Rapid successful defense rhythms always receive the full parry window");
+            }
+            Release(); Press(); Release();
+            Require(f.Movement.DamageReceiver.ReceiveHit(Hit()) == DamageResult.Parried && f.Melee.ParrySpamCount == 0,
+                "Successful released tap clears its pending whiff");
+            Press(); Release(); Press(); Require(f.Melee.ParrySpamCount == 1, "Whiff increments on re-press");
+            Release(); f.Melee.ProcessFrame(.81f, default); Press();
+            Require(f.Melee.ParrySpamCount == 0 && Mathf.Abs(f.Melee.ParryRemaining - .35f) < .0001f, "Idle decay resets the next press");
+            Release(); Press();
+            Require(f.Movement.DamageReceiver.ReceiveHit(Hit(false)) == DamageResult.Damaged && f.Melee.ParrySpamCount == 0,
+                "Actual damage resets spam immediately");
+            Release(); Press();
+            Require(Mathf.Abs(f.Melee.ParryRemaining - .35f) < .0001f, "Damaged attempt cannot become a new pending whiff");
+            enemy.transform.position = f.Origin + Quaternion.Euler(0,70f,0) * Vector3.forward * 1.2f;
+            Require(f.Movement.DamageReceiver.ReceiveHit(Hit()) == DamageResult.Parried, "150-degree defense includes 70 degrees");
+            Release(); Press(); f.Melee.ProcessFrame(.36f, default);
+            Require(!f.Melee.TryDefend(Hit(), out _), "Released parry expires without leaving a phantom block");
+        }
+        using (var f = new Fixture())
+        {
+            f.Melee.ProcessFrame(.01f, new MeleeInputFrame(attackPressed:true, attackHeld:true));
+            f.Melee.ProcessFrame(.01f, new MeleeInputFrame(attackReleased:true));
+            var enemy = f.Target(1.2f);
+            f.Melee.ProcessFrame(.01f, new MeleeInputFrame(guardPressed:true, guardHeld:true));
+            f.Melee.ProcessFrame(.02f, new MeleeInputFrame(guardHeld:true));
+            Require(f.Melee.IsGuarding && f.Melee.IsParryActive && enemy.Health == 1000,
+                "Guard immediately cancels miss recovery and the outgoing active hitbox");
+            f.Melee.CancelAction();
+            f.Movement.ChangeState(PlayerMovement.MovementState.StepDodge);
+            f.Melee.ProcessFrame(.01f, new MeleeInputFrame(guardPressed:true));
+            Require(!f.Melee.IsParryActive, "Buffered defense cannot defend during an uninterruptible action");
+            f.Movement.ChangeState(PlayerMovement.MovementState.Standing);
+            f.Melee.ProcessFrame(.05f, default);
+            Require(f.Melee.IsParryActive, "A tap within 0.12 seconds of action end is preserved");
+            f.Melee.CancelAction(); f.Movement.ChangeState(PlayerMovement.MovementState.StepDodge);
+            f.Melee.ProcessFrame(.01f, new MeleeInputFrame(guardPressed:true));
+            f.Melee.ProcessFrame(.13f, default);
+            f.Movement.ChangeState(PlayerMovement.MovementState.Standing); f.Melee.ProcessFrame(.01f, default);
+            Require(!f.Melee.IsParryActive && !f.Melee.IsGuarding, "Expired buffered taps do not fire later");
+            f.Movement.ChangeState(PlayerMovement.MovementState.StepDodge);
+            f.Melee.ProcessFrame(.01f, new MeleeInputFrame(guardPressed:true, guardHeld:true));
+            f.Melee.ProcessFrame(.13f, new MeleeInputFrame(guardHeld:true));
+            f.Movement.ChangeState(PlayerMovement.MovementState.Standing);
+            f.Melee.ProcessFrame(.01f, new MeleeInputFrame(guardHeld:true));
+            Require(f.Melee.IsGuarding && !f.Melee.IsParryActive, "Long hold through an action resumes block, not free parry");
+        }
+    }
     private static void PerfectDefense()
     {
         var settings = CombatFeedbackSettings.Instance;
@@ -355,7 +431,7 @@ public static class WeaponSlotsMeleeChecks
             Require(feedback.TryCounter() && enemy.Health == health - settings.counterDamage && !feedback.CounterAvailable, "Counter hits immediately for heavy damage and consumes its opportunity");
             Require(!feedback.TryCounter() && enemy.Health == health - settings.counterDamage, "Counter cannot be reused");
             f.Melee.ProcessFrame(.4f, default); f.Melee.ProcessFrame(.01f, new MeleeInputFrame(guardPressed:true, guardHeld:true));
-            f.Melee.ProcessFrame(.25f, new MeleeInputFrame(guardHeld:true));
+            f.Melee.ProcessFrame(.36f, new MeleeInputFrame(guardHeld:true));
             f.Movement.DamageReceiver.ReceiveHit(new DamageHit(DamageHit.NewAttackId(), 10, DamageKind.Attack, f.Origin, Vector3.back, enemy.gameObject, true));
             Require(f.Player.GetComponent<CombatCueAudio>().LastCue == CombatCue.Block && !feedback.CounterAvailable, "Ordinary guard has its own cue and no counter");
         }
@@ -430,9 +506,12 @@ public static class WeaponSlotsMeleeChecks
             var rows = (WeaponSlotsHUD.SlotView[])typeof(WeaponSlotsHUD).GetField("slots",Any).GetValue(hud);
             Require(rows.Length == 4 && rows[3].number.text == "4", "Migration adds exactly one fourth row");
             f.Slots.SelectSlot(3); hud.Reveal(); hud.Refresh(1f);
-            Require(rows[3].weaponName.text == "SPECIAL / Unarmed" && rows[3].weaponName.gameObject.activeSelf && rows[3].silhouette.Kind == 0,
+            Require(rows[3].weaponName.text == "Unarmed" && rows[3].weaponName.GetComponent<WeaponNameMarquee>().CategoryLabel.text == "SPECIAL /"
+                && rows[3].weaponName.gameObject.activeSelf && rows[3].silhouette.Kind == 0,
                 "Selected empty fourth slot uses unarmed while retaining its category");
-            Require(rows[0].weaponName.text == "RANGED" && rows[1].weaponName.text == "RANGED" && rows[2].weaponName.text == "MELEE",
+            Require(rows[0].weaponName.text == "" && rows[0].weaponName.GetComponent<WeaponNameMarquee>().CategoryLabel.text == "RANGED"
+                && rows[1].weaponName.GetComponent<WeaponNameMarquee>().CategoryLabel.text == "RANGED"
+                && rows[2].weaponName.GetComponent<WeaponNameMarquee>().CategoryLabel.text == "MELEE",
                 "Unselected empty slots show only their category, without a dot or unarmed name");
             Require(rows[3].rect.localScale.x > 1.1f && rows[2].weaponName.gameObject.activeSelf, "Selection emphasizes fourth row while other categories remain visible");
             for (int i=0;i<3;i++) Require(rows[i].rect.anchoredPosition.y-rows[i+1].rect.anchoredPosition.y >
@@ -441,7 +520,8 @@ public static class WeaponSlotsMeleeChecks
             f.Slots.ToggleSlot(3); hud.Refresh(1f);
             foreach (var row in rows) Require(row.weaponName.gameObject.activeSelf && row.rect.localScale.x < 1.01f,
                 "Deselection removes highlights but preserves slot types");
-            Require(rows[3].weaponName.text == "SPECIAL", "Holstering also hides the unarmed name");
+            Require(rows[3].weaponName.text == "" && rows[3].weaponName.GetComponent<WeaponNameMarquee>().CategoryLabel.text == "SPECIAL",
+                "Holstering also hides the unarmed name");
             foreach (string asset in new[] { "FoundationRifle", "FoundationPistol" })
             {
                 var weapon = AssetDatabase.LoadAssetAtPath<WeaponData>("Assets/Combat/Weapons/" + asset + ".asset");
@@ -454,15 +534,21 @@ public static class WeaponSlotsMeleeChecks
                     && text.transform.parent.GetComponent<UnityEngine.UI.RectMask2D>() != null,
                     "Full weapon name is rendered in a clipped scrolling viewport: " + asset);
                 float start = text.rectTransform.anchoredPosition.x;
-                hud.Refresh(.3f); Require(Mathf.Abs(text.rectTransform.anchoredPosition.x - start) < .01f, "Pause before scrolling");
-                hud.Refresh(.65f); Require(text.rectTransform.anchoredPosition.x > start, "Long name first moves left to right");
-                hud.Refresh(marquee.Overflow / 32f);
+                Vector2 fixedType = marquee.CategoryLabel.rectTransform.anchoredPosition;
+                float travel = marquee.Overflow / 24f;
+                hud.Refresh(travel * .5f); Require(text.rectTransform.anchoredPosition.x > start, "Long name moves left to right");
+                hud.Refresh(travel * .5f);
                 Require(Mathf.Abs(text.rectTransform.anchoredPosition.x) < .01f, "The other end of the full name becomes readable");
-                Require(marquee.ReadDuration >= marquee.Overflow / 32f, "HUD remains readable for a complete scroll pass");
+                hud.Refresh(.99f); Require(Mathf.Abs(text.rectTransform.anchoredPosition.x) < .01f, "Hold at the right edge for one second");
+                hud.Refresh(.02f); Require(text.rectTransform.anchoredPosition.x < start + 1f,
+                    $"Restart at the left instead of scrolling backward: {asset}, x={text.rectTransform.anchoredPosition.x}, start={start}, overflow={marquee.Overflow}, travel={travel}, read={marquee.ReadDuration}");
+                Require(marquee.CategoryLabel.text == "RANGED /" && marquee.CategoryLabel.rectTransform.anchoredPosition == fixedType,
+                    "Slot category remains fixed while only the weapon name scrolls");
+                Require(marquee.ReadDuration >= travel + .99f, "HUD remains readable for a complete scroll and pause");
                 hud.Reveal(); hud.Refresh(0f);
                 Require(Mathf.Abs(text.rectTransform.anchoredPosition.x - start) < .01f, "Revealing a slot restarts the marquee");
                 f.Slots.SelectSlot(1); hud.Refresh(0f);
-                Require(text.text == "RANGED" && marquee.Overflow == 0f && text.rectTransform.anchoredPosition == Vector2.zero,
+                Require(text.text == "" && marquee.CategoryLabel.text == "RANGED" && marquee.Overflow == 0f && text.rectTransform.anchoredPosition == Vector2.zero,
                     "Deselecting removes the weapon name and resets its scrolling offset");
             }
             var shortName = Data(WeaponCategory.Ranged);

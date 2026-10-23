@@ -60,7 +60,8 @@ public static class PerfectDefensePlayChecks
         Require(Physics.GetIgnoreCollision(cc, sibling.GetComponent<Collider>()), "Pre-existing ignored pairs retain their original state");
         Physics.IgnoreCollision(cc, sibling.GetComponent<Collider>(), false);
         // Exercise the actual state + motor path, including ground and posture queries.
-        go.transform.position = origin + Vector3.up; Physics.SyncTransforms(); cc.Move(Vector3.down * .4f);
+        // Movement initialization uses a feet-based pivot (controller.center.y = height / 2).
+        go.transform.position = origin + Vector3.up; Physics.SyncTransforms(); cc.Move(Vector3.down * 1.2f);
         var motor = typeof(PlayerMovement).GetProperty("Motor", Any).GetValue(player);
         var abilities = (MovementAbilities)typeof(PlayerMovement).GetProperty("Abilities", Any).GetValue(player);
         typeof(MovementAbilities).GetField("ActionDirection", Any).SetValue(abilities, Vector3.forward);
@@ -83,6 +84,7 @@ public static class PerfectDefensePlayChecks
             out _, out float overlap) && overlap > .1f, "Fixture ends inside an enemy body");
         player.ChangeState(PlayerMovement.MovementState.Standing);
         Require(pass.IgnoredCount == 0 && !Physics.GetIgnoreCollision(cc, enemyBody), "Overlapping exit finds a safe position and restores collision");
+        Require(go.transform.position.z > origin.z + 1.7f, "Overlapping exit goes through the enemy instead of back to the entry side");
         Require(!Physics.ComputePenetration(cc, go.transform.position, go.transform.rotation, enemyBody, enemy.transform.position, enemy.transform.rotation,
             out _, out float remainingOverlap) || remainingOverlap <= cc.skinWidth + .025f, "Enemy overlap is resolved within controller skin tolerance");
         Require(go.transform.position.x < origin.x + .6f, "Overlap resolution never crosses the adjacent wall");
@@ -93,8 +95,102 @@ public static class PerfectDefensePlayChecks
         Require(go.transform.position.z < origin.z + 2.3f, "World collisions remain solid throughout a dodge");
         player.ChangeState(PlayerMovement.MovementState.Standing); pass.Finish();
         Object.DestroyImmediate(enemy); Object.DestroyImmediate(wall); Object.DestroyImmediate(forwardWall);
+        CheckDodgeFlow(player, origin);
+        CheckSlideImpact(player, origin);
         CheckTime(player);
         CheckEnemyAttack(player, origin);
+    }
+    private static void CheckDodgeFlow(PlayerMovement player, Vector3 origin)
+    {
+        var cc = player.GetComponent<CharacterController>();
+        var motor = (MovementMotor)typeof(PlayerMovement).GetProperty("Motor", Any).GetValue(player);
+        var abilities = (MovementAbilities)typeof(PlayerMovement).GetProperty("Abilities", Any).GetValue(player);
+        var machine = (MovementStateMachine)typeof(PlayerMovement).GetProperty("StateMachine", Any).GetValue(player);
+        var front = Box("Dodge crowd front", origin + new Vector3(0,1,2f), new Vector3(.8f,2,.8f)); front.tag="Enemy";
+        var rear = Box("Dodge crowd rear", origin + new Vector3(0,1,2.7f), new Vector3(.8f,2,.8f)); rear.tag="Enemy";
+        try
+        {
+            foreach (float realDt in new[] { 1f/30f, 1f/60f, 1f/120f })
+            {
+                player.ResetVelocity(); player.ChangeState(PlayerMovement.MovementState.Standing);
+                player.transform.position = origin + Vector3.up * .05f;
+                player.UpdateHeightsAndTransform(1f); Physics.SyncTransforms(); cc.Move(Vector3.down * .2f);
+                typeof(MovementMotor).GetMethod("CheckGroundedAndSlope",Any).Invoke(motor,null);
+                typeof(MovementAbilities).GetField("ActionDirection",Any).SetValue(abilities,Vector3.forward);
+                abilities.Dodge.TryStart(DodgeKind.Step,0,.18f,1.25f);
+                player.ChangeState(PlayerMovement.MovementState.StepDodge);
+                Time.timeScale=.08f;
+                bool acceleratedInside=false, reasserted=false;
+                for (int i=0; i<Mathf.CeilToInt(3f/realDt) && player.CurrentState==PlayerMovement.MovementState.StepDodge; i++)
+                {
+                    float dt=realDt*Time.timeScale;
+                    bool inside=player.DodgePassThrough.HasEnemyOverlap;
+                    Vector3 before=player.transform.position;
+                    abilities.Dodge.Tick(dt);
+                    machine.Current.UpdateLogic(dt); machine.Current.UpdatePhysics(dt);
+                    player.UpdateHeightsAndTransform(dt);
+                    if (i==2)
+                    {
+                        // Simulate a native collider rebuild invalidating one of our pairs.
+                        Physics.IgnoreCollision(cc,front.GetComponent<Collider>(),false);
+                    }
+                    typeof(MovementMotor).GetMethod("Move",Any).Invoke(motor,new object[]{dt});
+                    typeof(MovementMotor).GetMethod("CheckGroundedAndSlope",Any).Invoke(motor,null);
+                    float advance=player.transform.position.z-before.z;
+                    Require(advance>=-.001f, "Crowd traversal cannot bounce backward");
+                    if(i==0) Require(advance < .07f, "Slow motion remains active outside enemy bodies");
+                    if(i==2) reasserted=Physics.GetIgnoreCollision(cc,front.GetComponent<Collider>());
+                    if(inside && advance > player.AbilitySettings.stepDistance/player.AbilitySettings.stepDuration*dt*2f)
+                        acceleratedInside=true;
+                }
+                Require(acceleratedInside && reasserted, "Body overlap alone speeds up travel; rebuilt collision pairs are restored");
+                Require(player.CurrentState!=PlayerMovement.MovementState.StepDodge
+                    && player.transform.position.z>origin.z+3.44f && !player.DodgePassThrough.HasEnemyOverlap
+                    && player.DodgePassThrough.IgnoredCount==0,
+                    $"30/60/120Hz slow-motion crowd exit: {player.transform.position-origin}, {player.CurrentState}");
+                Require(Time.timeScale==.08f, "Dodge assist never changes world slow motion");
+                Time.timeScale=1f;
+            }
+        }
+        finally { Time.timeScale=1f; Object.DestroyImmediate(front); Object.DestroyImmediate(rear); }
+        Debug.Log("DODGE_FLOW_PLAY_CHECKS_PASSED");
+    }
+    private static void CheckSlideImpact(PlayerMovement player, Vector3 origin)
+    {
+        var body = player.GetComponent<CharacterController>();
+        var target = Box("Slide target", origin + new Vector3(0, 1, 1.2f), new Vector3(.8f, 2f, .8f));
+        var health = target.AddComponent<EnemyHealth>();
+        // Two colliders on one enemy must still produce just one impact.
+        var child = Box("Slide target child", target.transform.position, new Vector3(.6f, 1.8f, .85f));
+        child.transform.SetParent(target.transform);
+        foreach (var state in new[] { PlayerMovement.MovementState.Sliding,
+            PlayerMovement.MovementState.HeadFirstSliding, PlayerMovement.MovementState.SupineSliding })
+        {
+            player.ChangeState(PlayerMovement.MovementState.Standing);
+            player.transform.position = origin + Vector3.up * .05f;
+            player.ChangeState(state);
+            player.CurrentSlideSpeed = 8f; player.SlideDirection = Vector3.forward;
+            player.HorizontalVelocity = Vector3.forward * 8f;
+            player.UpdateHeightsAndTransform(1f);
+            Physics.SyncTransforms();
+            float before = health.Health;
+            body.Move(Vector3.forward * 1.5f);
+            Require(Mathf.Abs(health.Health - (before - player.AbilitySettings.tackleDamage)) < .01f,
+                "Native sliding contact deals tackle damage: " + state);
+            body.Move(Vector3.forward * .1f);
+            player.ChangeState(state == PlayerMovement.MovementState.SupineSliding
+                ? PlayerMovement.MovementState.HeadFirstSliding : PlayerMovement.MovementState.SupineSliding);
+            body.Move(Vector3.forward * .1f);
+            Require(Mathf.Abs(health.Health - (before - player.AbilitySettings.tackleDamage)) < .01f,
+                "Repeated contact and slide posture transitions cannot hit the same enemy twice");
+            Require(target.GetComponent<MeleeCombatTarget>().IsStunned, "Sliding interrupts the target like tackle");
+        }
+        player.ChangeState(PlayerMovement.MovementState.Standing);
+        player.UpdateHeightsAndTransform(1f);
+        player.HorizontalVelocity = Vector3.zero; player.VerticalVelocity = 0f;
+        player.GetComponent<CombatTimeEffects>().Release(player);
+        Object.DestroyImmediate(target);
+        Debug.Log("SLIDE_IMPACT_PLAY_CHECKS_PASSED");
     }
     private static void CheckTime(PlayerMovement player)
     {

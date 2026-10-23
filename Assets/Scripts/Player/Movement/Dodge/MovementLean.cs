@@ -30,7 +30,7 @@ public sealed class MovementLean
         if (!allowed) reactionTime = 0f;
         if (reactionTime > 0f)
         {
-            float slice = Mathf.Min(dt, reactionTime);
+            float slice = Mathf.Min(ctx.DodgePassThrough.MovementDelta(dt), reactionTime);
             reactionTime -= slice;
             ctx.Motor.AddDisplacement(reactionDirection * (ctx.AbilitySettings.microSuccessDistance * slice /
                 Mathf.Max(0.02f, ctx.AbilitySettings.microSuccessDuration)));

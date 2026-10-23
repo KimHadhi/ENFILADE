@@ -10,8 +10,13 @@ public sealed class DodgeEnemyPassThrough : MonoBehaviour
     private readonly HashSet<Collider> ignored = new HashSet<Collider>();
     private Vector3 lastSafe;
     private bool hasSafe;
+    private Vector3 travelDirection;
     public int IgnoredCount => ignored.Count;
     public bool IsResolving { get; private set; }
+    public bool HasEnemyOverlap => body != null && EnemyAt(transform.position);
+    // Only the intersecting part of a dodge ignores slow motion. Invulnerability still uses game time.
+    public float MovementDelta(float dt) => Time.timeScale > 0f && Time.timeScale < 1f && HasEnemyOverlap
+        ? Mathf.Min(.05f, dt / Time.timeScale) : dt;
     private void Awake() { player = GetComponent<PlayerMovement>(); body = GetComponent<CharacterController>(); }
     private bool Active => player != null && player.IsInitialized && player.DamageReceiver.IsAlive
         && (player.CurrentState == PlayerMovement.MovementState.StepDodge
@@ -21,12 +26,16 @@ public sealed class DodgeEnemyPassThrough : MonoBehaviour
         if (body == null) Awake();
         if (body == null || !body.enabled) return;
         if (!Active) { Finish(); return; }
+        travelDirection = player.CurrentState == PlayerMovement.MovementState.StepDodge
+            ? player.Abilities.ActionDirection : transform.right * player.Abilities.Dodge.LeanSide;
+        if (travelDirection.sqrMagnitude < .01f) travelDirection = transform.forward;
         if (ignored.Count == 0 && IsFree(transform.position)) { lastSafe = transform.position; hasSafe = true; }
         float range = Mathf.Max(5f, player.AbilitySettings.stepDistance + body.height + 1f);
         foreach (var collider in Physics.OverlapSphere(transform.position, range, ~0, QueryTriggerInteraction.Ignore))
         {
-            if (!IsEnemy(collider) || collider.transform.IsChildOf(transform) || ignored.Contains(collider)
-                || Physics.GetIgnoreCollision(body, collider)) continue;
+            if (!IsEnemy(collider) || collider.transform.IsChildOf(transform)) continue;
+            // Changing controller dimensions can invalidate native collision pairs. Reassert pairs we own.
+            if (!ignored.Contains(collider) && Physics.GetIgnoreCollision(body, collider)) continue;
             Physics.IgnoreCollision(body, collider, true); ignored.Add(collider);
         }
     }
@@ -40,6 +49,8 @@ public sealed class DodgeEnemyPassThrough : MonoBehaviour
         Vector3 current = transform.position;
         bool keepSupport = HasSupport(current);
         bool clear = IsFree(current);
+        if (!clear && TryGetForwardExit(out var exit))
+        { MoveClear(exit); clear = IsFree(transform.position); }
         if (!clear)
         {
             // Search locally, checking the complete path against walls, not just its endpoint.
@@ -68,12 +79,40 @@ public sealed class DodgeEnemyPassThrough : MonoBehaviour
         foreach (var collider in restored) ignored.Remove(collider);
         if (ignored.Count == 0) hasSafe = false;
     }
+    public bool TryGetForwardExit(out Vector3 exit)
+    {
+        Vector3 current = transform.position;
+        Vector3 forward = Vector3.ProjectOnPlane(travelDirection, Vector3.up).normalized;
+        if (forward.sqrMagnitude < .01f) forward = transform.forward;
+        bool support = HasSupport(current);
+        float reach = player.AbilitySettings.dodgeExitAssistDistance;
+        // Exhaust the forward path first; only choose a side exit if forward is obstructed.
+        for (int i = 0; i < 9; i++)
+        {
+            float angle = (i % 2 == 0 ? 1 : -1) * ((i + 1) / 2) * 22.5f;
+            Vector3 direction = Quaternion.AngleAxis(angle, Vector3.up) * forward;
+            for (float distance = .1f; distance <= reach + .001f; distance += .1f)
+            {
+                Vector3 candidate = current + direction * distance;
+                if (!IsFree(candidate) || (support && !HasSupport(candidate)) || !ClearWorldPath(current, candidate)) continue;
+                exit = candidate; return true;
+            }
+        }
+        exit = current; return false;
+    }
+    private bool EnemyAt(Vector3 position, Collider only = null)
+    {
+        Capsule(position, out var a, out var b, out _);
+        // Restore only beyond the full body plus clearance, not a skin-shrunken overlap volume.
+        var scale = transform.lossyScale;
+        float radius = body.radius * Mathf.Max(Mathf.Abs(scale.x), Mathf.Abs(scale.z)) + .04f;
+        foreach (var collider in Physics.OverlapCapsule(a, b, radius, ~0, QueryTriggerInteraction.Ignore))
+            if (!collider.transform.IsChildOf(transform) && IsEnemy(collider) && (only == null || collider == only)) return true;
+        return false;
+    }
     private bool OverlapsEnemy(Collider enemy)
     {
-        Capsule(transform.position, out var a, out var b, out float radius);
-        foreach (var collider in Physics.OverlapCapsule(a, b, radius, ~0, QueryTriggerInteraction.Ignore))
-            if (collider == enemy) return true;
-        return false;
+        return EnemyAt(transform.position, enemy);
     }
     private void MoveClear(Vector3 position)
     {
@@ -88,6 +127,7 @@ public sealed class DodgeEnemyPassThrough : MonoBehaviour
     }
     private bool IsFree(Vector3 position)
     {
+        if (EnemyAt(position)) return false;
         Capsule(position, out var a, out var b, out float radius);
         foreach (var collider in Physics.OverlapCapsule(a, b, radius, ~0, QueryTriggerInteraction.Ignore))
             if (!collider.transform.IsChildOf(transform)) return false;

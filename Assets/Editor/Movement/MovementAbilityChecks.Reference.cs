@@ -89,7 +89,7 @@ public static partial class MovementAbilityChecks
             int frames = Mathf.CeilToInt(f.P.AbilitySettings.stepDuration / dt);
             for (int i = 0; i < frames; i++) f.Step(dt);
             Near(Vector3.ProjectOnPlane(f.P.transform.position - start, Vector3.up).magnitude,
-                2f, "Dodge distance at dt=" + dt, 0.015f);
+                f.P.AbilitySettings.stepDistance, "Dodge distance at dt=" + dt, 0.015f);
             Require(frames * dt < 0.18f, "Fast dodge completes travel under 180ms");
         }
         using (var f = new Fixture(true))

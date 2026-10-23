@@ -24,8 +24,8 @@ public sealed class WeaponSlotsHUD : MonoBehaviour
     [SerializeField, Min(1)] private float rowHeight = 88f;
     [SerializeField, Min(0)] private float rowGap = 10f;
     [Header("Long weapon names")]
-    [SerializeField, Min(1f)] private float nameScrollSpeed = 32f;
-    [SerializeField, Min(0f)] private float nameScrollPause = .65f;
+    [SerializeField, Min(1f)] private float nameScrollSpeed = 24f;
+    [SerializeField, Min(0f)] private float nameScrollPause = 1f;
     [SerializeField] private Color selectedColor = new Color(.58f,.95f,1f,1f);
     private PlayerWeaponSlots bound;
     private readonly float[] emphasis = new float[PlayerWeaponSlots.SlotCount];
@@ -99,11 +99,11 @@ public sealed class WeaponSlotsHUD : MonoBehaviour
             view.outline.effectColor = new Color(selectedColor.r,selectedColor.g,selectedColor.b,e*.65f);
             view.number.color = Color.Lerp(new Color(.7f,.77f,.8f,1f),selectedColor,e);
             string category = i < 2 ? "RANGED" : i == 2 ? "MELEE" : "SPECIAL";
-            string label = category + (i == selected ? " / " + (data != null ? data.DisplayName : "Unarmed") : "");
+            string label = i == selected ? (data != null ? data.DisplayName : "Unarmed") : "";
             view.weaponName.gameObject.SetActive(true);
             if (nameScrolls[i] == null)
                 nameScrolls[i] = view.weaponName.GetComponent<WeaponNameMarquee>() ?? view.weaponName.gameObject.AddComponent<WeaponNameMarquee>();
-            nameScrolls[i].Refresh(label, i == selected, deltaTime, nameScrollSpeed, nameScrollPause, restartNames);
+            nameScrolls[i].Refresh(label, i == selected, deltaTime, nameScrollSpeed, nameScrollPause, restartNames, category);
             if (i == selected) readableSeconds = Mathf.Max(readableSeconds, nameScrolls[i].ReadDuration);
             view.number.text = (i + 1).ToString();
             bool image = data != null && data.HudIcon != null;

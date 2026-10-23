@@ -71,6 +71,19 @@ public sealed class PlayerWeaponInput : MonoBehaviour, IWeaponInput
 
     public void RequireTriggerRelease() { releaseRequired = meleeReleaseRequired = true; }
 
+    // A guard-break animation stays locked, but may remember a defensive press near its end.
+    public bool TryReadGuardBuffer(out MeleeInputFrame frame)
+    {
+        frame = default;
+        var movement = GetComponent<PlayerMovement>();
+        var playerInput = GetComponent<PlayerInput>();
+        if (!isActiveAndEnabled || !acceptInputThisFrame || guard == null || movement == null
+            || !movement.InputAvailable || movement.Execution?.IsExecuting == true
+            || (playerInput != null && playerInput.actions.FindActionMap("Player")?.enabled != true)) return false;
+        frame = new MeleeInputFrame(guardPressed: guard.WasPressedThisFrame(), guardHeld: guard.IsPressed());
+        return true;
+    }
+
     private void OnApplicationFocus(bool focused) { if (!focused) { acceptInputThisFrame = false; releaseRequired = meleeReleaseRequired = true; } }
     private void OnDisable()
     {

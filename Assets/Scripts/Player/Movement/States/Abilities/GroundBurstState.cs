@@ -8,6 +8,7 @@ public sealed class GroundBurstState : MovementBaseState
     private float initialSpeed;
     private float stepElapsed;
     private float stepExpectedAdvance;
+    private float exitElapsed;
     private Vector3 stepFrameStart;
     private bool interrupted;
     public GroundBurstState(PlayerMovement ctx, MovementBaseState parent, State kind) : base(ctx, parent) { this.kind = kind; }
@@ -15,12 +16,12 @@ public sealed class GroundBurstState : MovementBaseState
     public override MovementPosture Posture => kind == State.StepDodge ? ctx.Abilities.ActionPosture : MovementPosture.Crouching;
     private float Duration => kind == State.StepDodge ? ctx.AbilitySettings.stepDuration :
         kind == State.LandingRoll ? ctx.AbilitySettings.rollDuration : ctx.AbilitySettings.tackleDuration;
-    public override void Enter() { interrupted = false; stepElapsed = stepExpectedAdvance = 0f; initialSpeed = ctx.HorizontalVelocity.magnitude; ctx.Actions.ClearJumpBuffer(); }
+    public override void Enter() { interrupted = false; stepElapsed = stepExpectedAdvance = exitElapsed = 0f; initialSpeed = ctx.HorizontalVelocity.magnitude; ctx.Actions.ClearJumpBuffer(); }
     internal void RestartStep()
     {
         // Restart only after a confirmed success; do not retain the burst speed
         // as normal locomotion momentum, or cancel the newly opened window.
-        stepElapsed = stepExpectedAdvance = 0f;
+        stepElapsed = stepExpectedAdvance = exitElapsed = 0f;
         interrupted = false;
         ctx.StateMachine.Duration = 0f; ctx.Actions.ClearJumpBuffer();
     }
@@ -35,6 +36,8 @@ public sealed class GroundBurstState : MovementBaseState
             ctx.Abilities.ReturnToLocomotion(); return;
         }
         bool expired = kind == State.StepDodge ? stepElapsed >= Mathf.Max(0.05f, Duration) - 0.00001f : ctx.CurrentStateDuration >= Duration;
+        if (kind == State.StepDodge && expired && ctx.IsGrounded && ctx.DodgePassThrough.HasEnemyOverlap
+            && exitElapsed < ctx.AbilitySettings.dodgeExitAssistTime && ctx.DodgePassThrough.TryGetForwardExit(out _)) return;
         if (!ctx.IsGrounded || expired) ctx.Abilities.ReturnToLocomotion();
     }
     public override void UpdatePhysics(float dt)
@@ -46,7 +49,19 @@ public sealed class GroundBurstState : MovementBaseState
         if (kind == State.StepDodge)
         {
             float duration = Mathf.Max(0.05f, Duration);
-            float activeDt = Mathf.Min(Mathf.Max(0f, dt), duration - stepElapsed);
+            float movementDt = ctx.DodgePassThrough.MovementDelta(Mathf.Max(0f, dt));
+            if (stepElapsed >= duration - .00001f && ctx.DodgePassThrough.HasEnemyOverlap
+                && ctx.DodgePassThrough.TryGetForwardExit(out var exit))
+            {
+                // Finish through the body at normal speed, preserving wall collisions and floor support.
+                movementDt = Time.timeScale > 0f ? Mathf.Min(.05f, dt / Time.timeScale) : 0f;
+                exitElapsed += movementDt;
+                Vector3 move = Vector3.ClampMagnitude(exit - ctx.transform.position, speed * movementDt);
+                stepExpectedAdvance = 0f;
+                ctx.Motor.RequestDisplacement(move + Vector3.up * (ctx.VerticalVelocity * dt));
+                return;
+            }
+            float activeDt = Mathf.Min(movementDt, duration - stepElapsed);
             stepExpectedAdvance = speed * activeDt; stepFrameStart = ctx.transform.position;
             stepElapsed = Mathf.Min(duration, stepElapsed + activeDt);
             // Integrate the final partial frame, preserving distance at any frame rate.
