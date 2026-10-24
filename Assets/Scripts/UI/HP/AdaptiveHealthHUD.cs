@@ -68,6 +68,15 @@ public sealed class AdaptiveHealthHUD : MonoBehaviour
     private string originalHPLabel, originalMaxLabel, originalShieldLabel;
     private bool originalShieldVisible;
 
+    // Damage feedback (Play only): lost HP trails in a loss colour, then drains; heavy hits shake the bar.
+    // Colours, drain speed and shake strength: Resources/Combat/Feedback (Health loss).
+    private readonly HealthLossTrail lossTrail = new HealthLossTrail();
+    private float lastShield = float.NaN;
+    private Vector2 restingPosition;
+    private double healthStep;
+    private bool healthBlocks;
+    private float healthShear, healthGap;
+
     private void Start()
     {
         if (Application.IsPlaying(gameObject)) RefreshNow();
@@ -170,6 +179,36 @@ public sealed class AdaptiveHealthHUD : MonoBehaviour
         }
         if (visualRoot == null) Initialize();
         if (dirty) Refresh();
+        if (Application.IsPlaying(gameObject)) AnimateDamage(Time.unscaledDeltaTime);
+    }
+
+    private void AnimateDamage(float dt)
+    {
+        if (visualRoot == null || healthGraphic == null) return;
+        float shield = NonNegative(extraShield);
+        float shieldLoss = float.IsNaN(lastShield) ? 0f : Mathf.Max(0f, lastShield - shield);
+        lastShield = shield;
+        bool wasAnimating = lossTrail.IsAnimating;
+        float maximum = NonNegative(maxHealth);
+        lossTrail.Tick(Mathf.Min(NonNegative(currentHealth), maximum), maximum, dt,
+            CombatFeedbackSettings.InstanceOrDefaults.playerShakeMax, shieldLoss);
+        if (!wasAnimating && !lossTrail.IsAnimating) return;
+        // Per-frame path: only the health mesh and bar offset, not the full layout/label refresh.
+        ConfigureHealthGraphic();
+        visualRoot.anchoredPosition = restingPosition + lossTrail.ShakeOffset;
+    }
+
+    private void ConfigureHealthGraphic()
+    {
+        float maximum = NonNegative(maxHealth);
+        float current = Mathf.Min(NonNegative(currentHealth), maximum);
+        bool live = Application.IsPlaying(gameObject) && !float.IsNaN(lossTrail.Trail);
+        float trailing = live ? Mathf.Clamp(lossTrail.Trail, current, maximum) : current;
+        var feedback = CombatFeedbackSettings.InstanceOrDefaults;
+        healthGraphic.SetTrailDecoration(live && feedback.trailStripes, 10f, lossTrail.StripeScroll,
+            lossTrail.StripeColor, live && feedback.trailEdgeLine ? new Color(1f, 1f, 1f, .95f) : Color.clear);
+        healthGraphic.Configure(current, trailing, maximum, healthStep, healthBlocks, healthShear,
+            healthGap, healthColor, emptyColor, tickColor, live ? lossTrail.TrailColor : Color.clear);
     }
 
     public void BindPlayer(PlayerMovement target) { player = target; nextPlayerSearch = 0f; dirty = true; }
@@ -235,14 +274,16 @@ public sealed class AdaptiveHealthHUD : MonoBehaviour
         double step = compact ? NiceStep(System.Math.Max(unit, (double)maximum / sections)) : unit;
 
         // Use the original blocks' lower-left corner, not the parent rect's corner.
-        visualRoot.anchoredPosition = (useCaptured ? capturedOffset : Vector2.zero) + barOffset;
+        restingPosition = (useCaptured ? capturedOffset : Vector2.zero) + barOffset;
+        visualRoot.anchoredPosition = restingPosition + (Application.IsPlaying(gameObject) ? lossTrail.ShakeOffset : Vector2.zero);
         visualRoot.sizeDelta = new Vector2(width, height);
         Place(healthGraphic.rectTransform, 0f, width, height);
         float shieldH = Mathf.Max(1f, NonNegative(shieldHeight)) * verticalScale;
         float shieldX = float.IsNaN(shieldXOffset) || float.IsInfinity(shieldXOffset) ? 0f : shieldXOffset;
         Place(shieldGraphic.rectTransform, height + NonNegative(shieldOffset) * verticalScale, shieldWidth, shieldH, shieldX);
-        healthGraphic.Configure(current, maximum, step, !compact, shear,
-            NonNegative(blockGap) * horizontalScale, healthColor, emptyColor, tickColor);
+        healthStep = step; healthBlocks = !compact; healthShear = shear;
+        healthGap = NonNegative(blockGap) * horizontalScale;
+        ConfigureHealthGraphic();
         shieldGraphic.Configure(Mathf.Min(shield, shieldScale), shieldScale,
             shieldScale, false, shear * shieldH / height,
             0f, shieldColor, Color.clear, Color.clear);

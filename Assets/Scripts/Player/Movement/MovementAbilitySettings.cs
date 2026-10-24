@@ -10,14 +10,19 @@ public sealed class MovementAbilitySettings
     [Tooltip("회피가 적 몸 안에서 끝나면 진행 방향의 안전한 출구를 찾는 탐색 거리.")]
     [Min(0f)] public float dodgeExitAssistDistance = 1.6f;
     [Min(.01f)] public float dodgeExitAssistTime = .2f;
+    [Tooltip("입력부터 공격을 회피로 인정하는 게임 시간(초). 이동 종료 뒤에도 이 시간까지 인정합니다.")]
     [Min(0f)] public float stepInvulnerability = 0.18f;
     [Range(0f, 0.3f)] public float stepDodgeRecognitionPadding = 0.12f;
-    [Min(0f)] public float microInvulnerability = 0.16f;
+    [Tooltip("Q/E 입력 직후 공격을 회피로 인정하는 게임 시간(초). 짧을수록 기울이기 도중 뒤늦게 성공하는 경우가 줄어듭니다.")]
+    [Min(0f)] public float microInvulnerability = 0.08f;
     [Min(0f)] public float dodgeCooldown = 0.55f;
     [Tooltip("스텝 닷지 실패 시 다음 회피까지의 시간. 회피 성공 시 공통 쿨타임이 즉시 초기화됩니다.")]
     [Min(0f)] public float stepDodgeCooldown = 1.25f;
     [Min(0f)] public float microSuccessDistance = 0.3f;
+    [Tooltip("마이크로 닷지 성공 시 짧게 가속·감속하며 이동하는 실제 시간(초). 슬로모션에도 동일합니다.")]
     [Min(0.02f)] public float microSuccessDuration = 0.1f;
+    [Tooltip("마이크로 닷지 성공 시 현재 기울기에서 끝까지 빠르게 이어지는 실제 시간(초). 순간 이동하지 않습니다.")]
+    [Range(.02f, .2f)] public float microSuccessLeanDuration = .08f;
     [Range(0f, 30f)] public float leanAngle = 10f;
     [Range(0f, 0.5f)] public float leanOffset = 0.35f;
     [Min(1f)] public float leanSharpness = 10f;

@@ -17,12 +17,18 @@ public readonly struct DamageHit
     public readonly bool CanBeGuarded;
     public readonly float PostureDamage;
     public readonly bool IsComboFinisher;
+    /// <summary>Critical hit (currently: weapon headshots). Presentation only; Amount already includes any multiplier.</summary>
+    public readonly bool IsCritical;
+    /// <summary>Perfect-defense counter attack. Presentation only.</summary>
+    public readonly bool IsCounter;
     public DamageHit(long id, float amount, DamageKind kind, Vector3 point, Vector3 direction, GameObject source = null,
-        bool canBeGuarded = false, float postureDamage = 0f, bool isComboFinisher = true)
+        bool canBeGuarded = false, float postureDamage = 0f, bool isComboFinisher = true, bool isCritical = false, bool isCounter = false)
     { Id = id; Amount = amount; Kind = kind; Point = point; Direction = direction; Source = source;
-        CanBeGuarded = canBeGuarded; PostureDamage = postureDamage; IsComboFinisher = isComboFinisher; }
+        CanBeGuarded = canBeGuarded; PostureDamage = postureDamage; IsComboFinisher = isComboFinisher; IsCritical = isCritical; IsCounter = isCounter; }
 }
 
 public interface IDamageReceiver { DamageResult ReceiveHit(DamageHit hit); }
 public interface ICombatVitals { float Health { get; } float MaximumHealth { get; } }
+/// <summary>Optional name shown above an enemy's health bar. Without it the object name is used.</summary>
+public interface ICombatDisplayName { string DisplayName { get; } }
 public interface IShoveReceiver { void ReceiveShove(Vector3 impulse, Vector3 point); }

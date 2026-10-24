@@ -8,6 +8,7 @@ public class WeaponVisibility : MonoBehaviour
 
     [Header("총 모델")]
     [SerializeField] private GameObject gun;
+    public Transform GunRoot => gun != null ? gun.transform : null;
 
     private void Update()
     {

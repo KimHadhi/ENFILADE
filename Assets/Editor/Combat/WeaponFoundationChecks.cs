@@ -43,6 +43,8 @@ public static class WeaponFoundationChecks
     {
         var data = ScriptableObject.CreateInstance<WeaponData>();
         Set(data, "fireMode", mode); Set(data, "magazineSize", magazine); Set(data, "reloadDuration", 1f);
+        // These are trace/ownership tests; accuracy is covered separately with seeded spread samples.
+        Set(data, "hipSpread", 0f); Set(data, "bloomPerShot", 0f);
         return data;
     }
     private static readonly WeaponInputFrame Press = new WeaponInputFrame(true, true);

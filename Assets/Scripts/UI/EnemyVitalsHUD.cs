@@ -1,7 +1,12 @@
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>Head-height HP/posture bars and a larger body-centred stagger cue.</summary>
+/// <summary>
+/// Head-height name + &lt; HP &gt; bar with a thin posture bar, and a larger body-centred stagger cue.
+/// Lost health stays as a trail (yellow for small hits, orange at ~70%, red near total), then drains;
+/// heavy hits shake the bar. Colours and timing: Resources/Combat/Feedback.
+/// </summary>
 [DisallowMultipleComponent]
 public sealed class EnemyVitalsHUD : MonoBehaviour
 {
@@ -9,31 +14,48 @@ public sealed class EnemyVitalsHUD : MonoBehaviour
     [SerializeField, Min(0f)] private float headroom = 0.22f;
     [SerializeField, Min(40f)] private float width = 120f;
     [SerializeField] private LayerMask occlusionLayers = ~0;
+    private const float BarHeight = 8f, CapWidth = 7f, CapHeight = 14f, CapGap = 2f, CapStroke = 2.6f;
+    private const float StripePeriod = 6f, EdgeWidth = 1.5f;
+    private const float PostureHeight = 3f, PostureY = -9f, NameY = 17f, NameHeight = 16f;
     private ICombatVitals vitals;
     private MeleeCombatTarget posture;
     private Collider[] bodyColliders;
-    private RectTransform panel, healthFill, postureFill, staggerPanel;
-    private Image healthImage, postureImage;
+    private RectTransform panel, bars, healthTrack, healthFill, trailFill, postureFill, staggerPanel;
+    private Image healthImage, healthLostImage, trailImage, trailEdge, postureImage;
+    private RawImage trailStripes;
+    private ChevronGraphic leftCap, rightCap;
+    private TextMeshProUGUI nameLabel;
     private RawImage staggerBadge;
     private Transform uiRoot;
+    private readonly HealthLossTrail trail = new HealthLossTrail();
     public bool IsStaggerVisible => staggerPanel != null && staggerPanel.gameObject.activeSelf;
     private readonly RaycastHit[] occlusionHits = new RaycastHit[16];
     public float HealthRatio { get; private set; }
     public float PostureRatio { get; private set; }
     public bool IsVisible => panel != null && panel.gameObject.activeSelf;
+    /// <summary>Right edge of the draining loss trail, 0..1 (equals HealthRatio when idle).</summary>
+    public float TrailRatio { get; private set; }
+    public string DisplayName => nameLabel != null ? nameLabel.text : CombatDamageEvents.DisplayNameOf(this);
 
     private void OnEnable()
     {
         vitals = GetComponent<ICombatVitals>(); posture = GetComponent<MeleeCombatTarget>();
         bodyColliders = GetComponentsInChildren<Collider>();
+        if (nameLabel != null) nameLabel.text = CombatDamageEvents.DisplayNameOf(this);
     }
     private void LateUpdate() => Refresh(Camera.main);
 
     public void Refresh(Camera view)
     {
         if (vitals == null || posture == null) OnEnable();
-        HealthRatio = vitals == null ? 0f : Mathf.Clamp01(vitals.Health / Mathf.Max(1f, vitals.MaximumHealth));
+        float maximum = vitals == null ? 1f : Mathf.Max(1f, vitals.MaximumHealth);
+        float health = vitals == null ? 0f : Mathf.Max(0f, vitals.Health);
+        HealthRatio = Mathf.Clamp01(health / maximum);
         PostureRatio = posture == null ? 0f : Mathf.Clamp01(posture.Posture / posture.MaximumPosture);
+        var settings = CombatFeedbackSettings.InstanceOrDefaults;
+        // Keeps running while hidden so a bar that reappears shows the correct state.
+        trail.Tick(health, maximum, Time.unscaledDeltaTime, settings.enemyShakeMax);
+        TrailRatio = Mathf.Clamp01(trail.Trail / maximum);
         if (!isActiveAndEnabled || view == null || vitals == null || posture == null || !posture.IsAvailable || HealthRatio <= 0f)
         { Hide(); return; }
         EnsurePanel();
@@ -42,7 +64,29 @@ public sealed class EnemyVitalsHUD : MonoBehaviour
         uiRoot.localScale = new Vector3(InverseScale(scale.x), InverseScale(scale.y), InverseScale(scale.z));
         Bounds body = BodyBounds();
         PositionPanel(panel, view, new Vector3(body.center.x, body.max.y + headroom, body.center.z));
+        healthImage.color = leftCap.color = rightCap.color = settings.enemyHealthColor;
+        healthLostImage.color = settings.enemyHealthLostColor;
         SetFill(healthFill, healthImage, HealthRatio);
+        // Trail sits under the red fill, so only the part between current and trailing health shows.
+        // Light stripes + an edge line keep even an orange trail from reading as remaining (red) health.
+        bool showTrail = TrailRatio > HealthRatio;
+        SetFill(trailFill, trailImage, TrailRatio);
+        trailImage.enabled = showTrail;
+        trailImage.color = trail.TrailColor;
+        trailStripes.enabled = showTrail && settings.trailStripes;
+        if (trailStripes.enabled)
+        {
+            trailStripes.color = new Color(1f, 1f, 1f, settings.trailStripeLighten);
+            // Pattern anchored to the bar's left edge so it does not slide as the trail shortens; only the scroll moves it.
+            trailStripes.uvRect = new Rect(trail.StripeScroll / StripePeriod, 0f, width * TrailRatio / StripePeriod, BarHeight / StripePeriod);
+        }
+        trailEdge.enabled = showTrail && settings.trailEdgeLine;
+        if (trailEdge.enabled)
+        {
+            var edge = trailEdge.rectTransform;
+            edge.anchorMin = edge.anchorMax = new Vector2(HealthRatio, .5f);
+        }
+        bars.anchoredPosition = trail.ShakeOffset;
         SetFill(postureFill, postureImage, PostureRatio);
         postureImage.color = posture.IsBroken ? new Color(1f, .28f, .20f)
             : posture.IsStunned ? new Color(1f, .91f, .52f) : new Color(.95f, .68f, .22f);
@@ -57,6 +101,7 @@ public sealed class EnemyVitalsHUD : MonoBehaviour
         float pop = 1f - Mathf.Pow(1f - Mathf.Clamp01(posture.StaggerAge / .24f), 3f);
         staggerBadge.rectTransform.localScale = Vector3.one * Mathf.Lerp(1.35f, 1f, pop);
     }
+
     private void PositionPanel(RectTransform target, Camera view, Vector3 anchor, float forwardOffset = 0f, bool distanceScaled = false)
     {
         Vector3 viewport = view.WorldToViewportPoint(anchor);
@@ -110,17 +155,52 @@ public sealed class EnemyVitalsHUD : MonoBehaviour
     private void EnsurePanel()
     {
         if (panel != null) return;
+        var settings = CombatFeedbackSettings.InstanceOrDefaults;
         uiRoot = new GameObject("Combat UI").transform;
         uiRoot.gameObject.hideFlags = HideFlags.DontSave;
         uiRoot.SetParent(transform, false);
         var root = new GameObject("Enemy HP + Posture", typeof(RectTransform), typeof(Canvas));
         root.hideFlags = HideFlags.DontSave;
         root.transform.SetParent(uiRoot, false);
-        panel = root.GetComponent<RectTransform>(); panel.sizeDelta = new Vector2(width, 19f);
+        panel = root.GetComponent<RectTransform>();
+        panel.sizeDelta = new Vector2(width + 2f * (CapWidth + CapGap), NameY + NameHeight * .5f - (PostureY - PostureHeight * .5f));
         var canvas = root.GetComponent<Canvas>(); canvas.renderMode = RenderMode.WorldSpace; canvas.sortingOrder = 20;
         var group = root.AddComponent<CanvasGroup>(); group.interactable = group.blocksRaycasts = false;
-        healthFill = Bar("HP", 5f, 9f, new Color(.95f, .31f, .25f), out healthImage);
-        postureFill = Bar("Posture", -4f, 5f, new Color(.95f, .68f, .22f), out postureImage);
+
+        // Everything that shakes on a heavy hit. The panel itself stays on the billboard anchor.
+        bars = Rect("Bars", panel, 0f, 0f, 0f, 0f);
+
+        // Name above the bar.
+        nameLabel = Rect("Name", bars, 0f, NameY, width + 60f, NameHeight).gameObject.AddComponent<TextMeshProUGUI>();
+        var font = CombatUIAssets.ResolveFont(null);
+        if (font != null) nameLabel.font = font;
+        var outline = CombatUIAssets.Outlined(nameLabel.font, new Color(0f, 0f, 0f, .85f), .2f);
+        if (outline != null) nameLabel.fontSharedMaterial = outline;
+        nameLabel.fontSize = 13f; nameLabel.fontStyle = FontStyles.Bold; nameLabel.color = new Color(1f, .97f, .95f);
+        nameLabel.alignment = TextAlignmentOptions.Bottom; nameLabel.raycastTarget = false;
+        nameLabel.textWrappingMode = TextWrappingModes.NoWrap; nameLabel.overflowMode = TextOverflowModes.Ellipsis;
+        nameLabel.text = CombatDamageEvents.DisplayNameOf(this);
+
+        // < [ red | almost invisible grey ] >
+        healthTrack = Rect("HP", bars, 0f, 0f, width, BarHeight);
+        healthLostImage = healthTrack.gameObject.AddComponent<Image>(); healthLostImage.raycastTarget = false;
+        healthLostImage.color = settings.enemyHealthLostColor;
+        trailFill = Stretch("Loss trail", healthTrack);
+        trailImage = trailFill.gameObject.AddComponent<Image>(); trailImage.raycastTarget = false; trailImage.enabled = false;
+        trailStripes = Stretch("Stripes", trailFill).gameObject.AddComponent<RawImage>();
+        trailStripes.texture = CombatUIAssets.TrailStripes; trailStripes.raycastTarget = false; trailStripes.enabled = false;
+        healthFill = Stretch("Fill", healthTrack);
+        healthImage = healthFill.gameObject.AddComponent<Image>(); healthImage.raycastTarget = false;
+        healthImage.color = settings.enemyHealthColor;
+        trailEdge = Rect("Trail edge", healthTrack, 0f, 0f, EdgeWidth, BarHeight + 2f).gameObject.AddComponent<Image>();
+        trailEdge.color = new Color(1f, 1f, 1f, .95f); trailEdge.raycastTarget = false; trailEdge.enabled = false;
+        float capX = width * .5f + CapGap + CapWidth * .5f;
+        leftCap = Rect("HP Cap <", bars, -capX, 0f, CapWidth, CapHeight).gameObject.AddComponent<ChevronGraphic>();
+        leftCap.Configure(false, CapStroke); leftCap.color = settings.enemyHealthColor;
+        rightCap = Rect("HP Cap >", bars, capX, 0f, CapWidth, CapHeight).gameObject.AddComponent<ChevronGraphic>();
+        rightCap.Configure(true, CapStroke); rightCap.color = settings.enemyHealthColor;
+
+        postureFill = Bar("Posture", PostureY, PostureHeight, new Color(.95f, .68f, .22f), out postureImage);
         var staggerRoot = new GameObject("Body Stagger", typeof(RectTransform), typeof(Canvas), typeof(CanvasGroup));
         staggerRoot.hideFlags = HideFlags.DontSave;
         staggerRoot.transform.SetParent(uiRoot, false);
@@ -129,29 +209,36 @@ public sealed class EnemyVitalsHUD : MonoBehaviour
         var staggerGroup = staggerRoot.GetComponent<CanvasGroup>(); staggerGroup.interactable = staggerGroup.blocksRaycasts = false;
         staggerBadge = new GameObject("Stagger", typeof(RectTransform), typeof(RawImage)).GetComponent<RawImage>();
         staggerBadge.transform.SetParent(staggerPanel, false); staggerBadge.raycastTarget = false;
-        var settings = CombatFeedbackSettings.Instance;
-        staggerBadge.texture = settings != null ? settings.staggerImage : null;
+        var feedback = CombatFeedbackSettings.Instance;
+        staggerBadge.texture = feedback != null ? feedback.staggerImage : null;
     }
     private RectTransform Bar(string label, float y, float height, Color color, out Image fillImage)
     {
-        var track = new GameObject(label, typeof(RectTransform), typeof(Image)).GetComponent<RectTransform>();
-        track.SetParent(panel, false); track.sizeDelta = new Vector2(width, height); track.anchoredPosition = new Vector2(0f, y);
-        var background = track.GetComponent<Image>(); background.color = new Color(.025f, .035f, .05f, .92f); background.raycastTarget = false;
-        var inset = new GameObject("Inset", typeof(RectTransform)).GetComponent<RectTransform>();
-        inset.SetParent(track, false); inset.anchorMin = Vector2.zero; inset.anchorMax = Vector2.one;
-        inset.offsetMin = Vector2.one; inset.offsetMax = -Vector2.one;
-        var fill = new GameObject("Fill", typeof(RectTransform), typeof(Image)).GetComponent<RectTransform>();
-        fill.SetParent(inset, false); fill.anchorMin = Vector2.zero; fill.anchorMax = Vector2.one;
-        fill.offsetMin = fill.offsetMax = Vector2.zero;
-        fillImage = fill.GetComponent<Image>(); fillImage.color = color; fillImage.raycastTarget = false;
+        var track = Rect(label, bars, 0f, y, width, height);
+        var background = track.gameObject.AddComponent<Image>(); background.color = new Color(.025f, .035f, .05f, .6f); background.raycastTarget = false;
+        var fill = Stretch("Fill", track);
+        fillImage = fill.gameObject.AddComponent<Image>(); fillImage.color = color; fillImage.raycastTarget = false;
         return fill;
+    }
+    private static RectTransform Rect(string name, Transform parent, float x, float y, float w, float h)
+    {
+        var rect = new GameObject(name, typeof(RectTransform)).GetComponent<RectTransform>();
+        rect.SetParent(parent, false); rect.sizeDelta = new Vector2(w, h); rect.anchoredPosition = new Vector2(x, y);
+        return rect;
+    }
+    private static RectTransform Stretch(string name, Transform parent)
+    {
+        var rect = new GameObject(name, typeof(RectTransform)).GetComponent<RectTransform>();
+        rect.SetParent(parent, false); rect.anchorMin = Vector2.zero; rect.anchorMax = Vector2.one;
+        rect.offsetMin = rect.offsetMax = Vector2.zero;
+        return rect;
     }
     private static void SetFill(RectTransform rect, Image graphic, float ratio)
     { rect.anchorMax = new Vector2(ratio, 1f); graphic.enabled = ratio > 0f; }
     private static float InverseScale(float value) => Mathf.Abs(value) > .0001f ? 1f / value : 1f;
     private void Hide()
     { if (panel != null) panel.gameObject.SetActive(false); if (staggerPanel != null) staggerPanel.gameObject.SetActive(false); }
-    private void OnDisable() => Hide();
+    private void OnDisable() { Hide(); trail.Reset(float.NaN); if (bars != null) bars.anchoredPosition = Vector2.zero; }
     private void OnDestroy()
     {
         if (uiRoot != null) { if (Application.isPlaying) Destroy(uiRoot.gameObject); else DestroyImmediate(uiRoot.gameObject); }

@@ -534,17 +534,24 @@ public static class WeaponSlotsMeleeChecks
                     && text.transform.parent.GetComponent<UnityEngine.UI.RectMask2D>() != null,
                     "Full weapon name is rendered in a clipped scrolling viewport: " + asset);
                 float start = text.rectTransform.anchoredPosition.x;
+                Require(Mathf.Abs(start) < .01f, "Show the first letter of the weapon name initially");
                 Vector2 fixedType = marquee.CategoryLabel.rectTransform.anchoredPosition;
                 float travel = marquee.Overflow / 24f;
-                hud.Refresh(travel * .5f); Require(text.rectTransform.anchoredPosition.x > start, "Long name moves left to right");
+                hud.Refresh(.99f); Require(Mathf.Abs(text.rectTransform.anchoredPosition.x - start) < .01f, "Hold the first letters for one second initially");
+                hud.Refresh(.01f);
+                hud.Refresh(travel * .5f); Require(text.rectTransform.anchoredPosition.x < start, "Text moves left to reveal its later letters");
                 hud.Refresh(travel * .5f);
-                Require(Mathf.Abs(text.rectTransform.anchoredPosition.x) < .01f, "The other end of the full name becomes readable");
-                hud.Refresh(.99f); Require(Mathf.Abs(text.rectTransform.anchoredPosition.x) < .01f, "Hold at the right edge for one second");
-                hud.Refresh(.02f); Require(text.rectTransform.anchoredPosition.x < start + 1f,
-                    $"Restart at the left instead of scrolling backward: {asset}, x={text.rectTransform.anchoredPosition.x}, start={start}, overflow={marquee.Overflow}, travel={travel}, read={marquee.ReadDuration}");
+                Require(Mathf.Abs(text.rectTransform.anchoredPosition.x + marquee.Overflow) < .01f, "The final letters become readable");
+                hud.Refresh(.99f); Require(Mathf.Abs(text.rectTransform.anchoredPosition.x + marquee.Overflow) < .01f, "Hold the final letters for one second");
+                hud.Refresh(.02f); Require(Mathf.Abs(text.rectTransform.anchoredPosition.x - start) < 1f,
+                    $"Restart at the first letter instead of scrolling backward: {asset}");
+                hud.Refresh(.98f); Require(Mathf.Abs(text.rectTransform.anchoredPosition.x - start) < .01f,
+                    "Hold the first letters for one second on every repeat");
+                hud.Refresh(.02f); Require(text.rectTransform.anchoredPosition.x < start - .1f,
+                    "Scrolling resumes after the repeated start pause");
                 Require(marquee.CategoryLabel.text == "RANGED /" && marquee.CategoryLabel.rectTransform.anchoredPosition == fixedType,
                     "Slot category remains fixed while only the weapon name scrolls");
-                Require(marquee.ReadDuration >= travel + .99f, "HUD remains readable for a complete scroll and pause");
+                Require(marquee.ReadDuration >= travel + 1.99f, "HUD remains readable for a complete scroll and both pauses");
                 hud.Reveal(); hud.Refresh(0f);
                 Require(Mathf.Abs(text.rectTransform.anchoredPosition.x - start) < .01f, "Revealing a slot restarts the marquee");
                 f.Slots.SelectSlot(1); hud.Refresh(0f);

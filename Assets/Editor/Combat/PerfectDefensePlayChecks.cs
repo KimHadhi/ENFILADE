@@ -96,6 +96,7 @@ public static class PerfectDefensePlayChecks
         player.ChangeState(PlayerMovement.MovementState.Standing); pass.Finish();
         Object.DestroyImmediate(enemy); Object.DestroyImmediate(wall); Object.DestroyImmediate(forwardWall);
         CheckDodgeFlow(player, origin);
+        CheckMicroResponse(player, origin);
         CheckSlideImpact(player, origin);
         CheckTime(player);
         CheckEnemyAttack(player, origin);
@@ -154,6 +155,55 @@ public static class PerfectDefensePlayChecks
         }
         finally { Time.timeScale=1f; Object.DestroyImmediate(front); Object.DestroyImmediate(rear); }
         Debug.Log("DODGE_FLOW_PLAY_CHECKS_PASSED");
+    }
+    private static void CheckMicroResponse(PlayerMovement player, Vector3 origin)
+    {
+        var abilities = (MovementAbilities)typeof(PlayerMovement).GetProperty("Abilities", Any).GetValue(player);
+        var motor = (MovementMotor)typeof(PlayerMovement).GetProperty("Motor", Any).GetValue(player);
+        var body = player.GetComponent<CharacterController>();
+        var previousCursor = Cursor.lockState;
+        try
+        {
+            Cursor.lockState = CursorLockMode.Locked;
+            foreach (int side in new[] { -1, 1 })
+            {
+                player.PerfectDefense.Cancel(); player.ResetVelocity();
+                player.ChangeState(PlayerMovement.MovementState.Standing);
+                player.transform.position = origin + Vector3.up * .05f;
+                player.UpdateHeightsAndTransform(1f); Physics.SyncTransforms(); body.Move(Vector3.down * .2f);
+                typeof(MovementMotor).GetMethod("CheckGroundedAndSlope", Any).Invoke(motor, null);
+                Require(player.IsGrounded, "Native micro-dodge fixture is grounded");
+                abilities.Dodge.TryStart(DodgeKind.Micro, side, player.AbilitySettings.microInvulnerability, .55f);
+                float beforeLean = player.LeanRoll;
+                var result = player.DamageReceiver.ReceiveHit(new DamageHit(DamageHit.NewAttackId(), 10f, DamageKind.Attack,
+                    player.transform.position + player.transform.forward, -player.transform.forward));
+                Require(result == DamageResult.Evaded && Time.timeScale < .2f && player.PerfectDefense.CounterAvailable,
+                    "A confirmed micro dodge starts the real perfect-defense slowdown");
+                Require(Mathf.Abs(player.LeanRoll - beforeLean) < .001f,
+                    "A successful dodge never teleports the camera on the hit frame");
+                Vector3 start = player.transform.position;
+                for (int i = 0; i < 6; i++)
+                {
+                    float dt = Time.timeScale / 60f;
+                    abilities.Dodge.Tick(dt);
+                    // Batch mode cannot own OS input focus. Input/lean/pose arbitration is
+                    // covered by RunDodgeResponseChecks; here drive the same reaction/motor path.
+                    typeof(MovementLean).GetMethod("AdvanceReaction", Any).Invoke(abilities.Lean, new object[] { dt });
+                    typeof(MovementMotor).GetMethod("Move", Any).Invoke(motor, new object[] { dt });
+                    typeof(MovementMotor).GetMethod("CheckGroundedAndSlope", Any).Invoke(motor, null);
+                    if (i == 0)
+                        Require(Mathf.Abs(player.LeanRoll) > .01f && Mathf.Abs(player.LeanRoll) < player.AbilitySettings.leanAngle * .9f,
+                            "Success lean moves quickly but continuously during slow motion");
+                }
+                Require(Mathf.Abs(player.transform.position.x - start.x - side * player.AbilitySettings.microSuccessDistance) < .01f,
+                    "Actual controller completes the success step in 0.1 real seconds during slow motion");
+                Require(Time.timeScale < .2f, "The success step keeps the world slow");
+                Require(Mathf.Abs(player.LeanRoll + side * player.AbilitySettings.leanAngle) < .01f,
+                    "Successful lean finishes its short eased motion");
+            }
+        }
+        finally { player.PerfectDefense.Cancel(); player.ResetVelocity(); Cursor.lockState = previousCursor; }
+        Debug.Log("MICRO_RESPONSE_PLAY_CHECKS_PASSED");
     }
     private static void CheckSlideImpact(PlayerMovement player, Vector3 origin)
     {

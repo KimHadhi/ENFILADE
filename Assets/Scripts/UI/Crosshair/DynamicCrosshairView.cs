@@ -21,6 +21,8 @@ public class DynamicCrosshairView : MonoBehaviour
     private readonly List<Image> spawnedPartImages = new List<Image>();
 
     private float dynamicSpread = 0f;
+    private bool combatHidden;
+    private bool savedDotActive, savedPartsActive;
     private float currentContainerAngle = 0f;
     private static Sprite fallbackWhiteSprite;
 
@@ -172,7 +174,7 @@ public class DynamicCrosshairView : MonoBehaviour
         if (centerDot != null)
         {
             // dotSize가 0이면 점을 그리지 않도록 추가 처리 가능
-            bool isDotVisible = profile.showDot && profile.dotSize > 0;
+            bool isDotVisible = !combatHidden && profile.showDot && profile.dotSize > 0;
             centerDot.gameObject.SetActive(isDotVisible);
 
             if (isDotVisible)
@@ -208,7 +210,7 @@ public class DynamicCrosshairView : MonoBehaviour
             return;
         }
 
-        partsContainer.gameObject.SetActive(true);
+        partsContainer.gameObject.SetActive(!combatHidden);
 
         // 계층 구조에 있던 걸 다 가져와도 모자랄 때만 신규 생성
         while (spawnedPartRects.Count < profile.partCount)
@@ -260,6 +262,24 @@ public class DynamicCrosshairView : MonoBehaviour
         }
 
         UpdatePartOffsets();
+    }
+
+    // Temporary combat visibility must not overwrite the user's saved crosshair profile.
+    public void SetCombatHidden(bool hidden)
+    {
+        if (combatHidden == hidden) return;
+        if (hidden)
+        {
+            savedDotActive = centerDot != null && centerDot.gameObject.activeSelf;
+            savedPartsActive = partsContainer != null && partsContainer.gameObject.activeSelf;
+        }
+        combatHidden = hidden;
+        if (currentProfile != null) ApplyProfile(currentProfile);
+        else
+        {
+            if (centerDot != null) centerDot.gameObject.SetActive(!hidden && savedDotActive);
+            if (partsContainer != null) partsContainer.gameObject.SetActive(!hidden && savedPartsActive);
+        }
     }
 
     public void SetDynamicSpread(float spread)

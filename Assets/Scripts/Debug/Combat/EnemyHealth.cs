@@ -5,11 +5,15 @@ using UnityEngine;
 using UnityEngine.AI;
 
 [DisallowMultipleComponent, RequireComponent(typeof(MeleeCombatTarget))]
-public sealed class EnemyHealth : MonoBehaviour, IDamageReceiver, ICombatVitals
+public sealed class EnemyHealth : MonoBehaviour, IDamageReceiver, ICombatVitals, ICombatDisplayName
 {
     [SerializeField, Min(1f)]
     private float maximumHealth = 100f;
 
+    [Tooltip("체력 바 위에 표시할 이름. 비워두면 오브젝트 이름((Clone)/(Console) 제외)을 사용한다.")]
+    [SerializeField] private string displayName = "";
+
+    public string DisplayName => displayName;
     public float Health { get; private set; }
     public float MaximumHealth => Mathf.Max(1f, maximumHealth);
     public bool IsAlive => Health > 0f;
@@ -60,8 +64,11 @@ public sealed class EnemyHealth : MonoBehaviour, IDamageReceiver, ICombatVitals
         if (!seen.Add(hit.Id)) return DamageResult.Duplicate;
         recent.Enqueue(hit.Id);
         if (recent.Count > 256) seen.Remove(recent.Dequeue());
+        float before = Health;
         Health = Mathf.Max(0f, Health - hit.Amount);
         UltimateCharge.AwardEnemyHit(hit);
+        // Report before Die(): popups bind to this transform and keep its last position after Destroy.
+        CombatDamageEvents.Report(this, hit, before, Health, MaximumHealth);
 
         Debug.Log(
             $"[{name}] 피해: {hit.Amount}, 남은 체력: {Health}/{maximumHealth}",

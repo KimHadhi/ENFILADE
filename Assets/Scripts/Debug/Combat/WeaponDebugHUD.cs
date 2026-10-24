@@ -1,6 +1,6 @@
 using UnityEngine;
 
-/// <summary>Phase 1 verification only; no weapon model or animation is required.</summary>
+/// <summary>Compact prototype readout for magazine, reserve, aiming and reload state.</summary>
 public sealed class WeaponDebugHUD : MonoBehaviour
 {
     private WeaponController weapon;
@@ -15,11 +15,11 @@ public sealed class WeaponDebugHUD : MonoBehaviour
         if (weapon == null || weapon.Runtime == null) return;
 
         var state = weapon.Runtime;
-        string status = state.IsReloading ? $"Reloading {state.ReloadRemaining:0.0}s"
-            : state.Ammo == 0 ? "EMPTY - press R" : "Ready";
+        string status = state.IsReloading ? $"{(state.IsEmptyReload ? "Empty reload" : "Tactical reload")} {state.ReloadRemaining:0.0}s"
+            : weapon.IsHighReady ? "High ready" : state.Ammo == 0 ? "EMPTY - press R" : weapon.AimBlend > .5f ? "ADS" : "Ready";
 
         GUI.Box(new Rect(Screen.width - 330, 12, 318, 100),
             $"{state.Data.DisplayName} ({state.Data.FireMode})\n"
-            + $"Ammo {state.Ammo}/{state.Data.MagazineSize} | Reserve: unlimited\n{status}\nLMB: Fire    R: Reload");
+            + $"Ammo {state.Ammo}/{state.Data.MagazineSize} | Reserve: {state.ReserveAmmo}\n{status}\nLMB: Fire    RMB: Aim    R: Reload");
     }
 }

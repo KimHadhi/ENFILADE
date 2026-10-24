@@ -38,6 +38,8 @@ public sealed class PlayerWeaponInput : MonoBehaviour, IWeaponInput
 
     public WeaponInputFrame ReadInput()
     {
+        var slots = GetComponent<PlayerWeaponSlots>();
+        if (slots != null && !slots.CanReadInput) { releaseRequired = true; return default; }
         // Check again after PlayerLook.Update so Esc also blocks firing in the same frame.
         if (!isActiveAndEnabled || !acceptInputThisFrame || fire == null || reload == null
             || Time.timeScale <= 0f || !Application.isFocused || Cursor.lockState != CursorLockMode.Locked)
@@ -47,7 +49,7 @@ public sealed class PlayerWeaponInput : MonoBehaviour, IWeaponInput
             if (!fire.IsPressed()) releaseRequired = false;
             return default;
         }
-        return new WeaponInputFrame(fire.WasPressedThisFrame(), fire.IsPressed(), reload.WasPressedThisFrame());
+        return new WeaponInputFrame(fire.WasPressedThisFrame(), fire.IsPressed(), reload.WasPressedThisFrame(), guard != null && guard.IsPressed());
     }
 
     public bool TryReadMeleeInput(out MeleeInputFrame frame)

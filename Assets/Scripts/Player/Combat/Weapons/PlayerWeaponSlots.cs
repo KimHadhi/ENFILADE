@@ -14,6 +14,7 @@ public sealed class PlayerWeaponSlots : MonoBehaviour
     [SerializeField, HideInInspector] private int selectedSlot = -1;
     [SerializeField, HideInInspector] private bool selectionInitialized;
     [SerializeField, HideInInspector] private int[] savedAmmo = { -1, -1, -1, -1 };
+    [SerializeField, HideInInspector] private int[] savedReserve = { -1, -1, -1, -1 };
     [SerializeField, HideInInspector] private WeaponData[] savedData = new WeaponData[SlotCount];
     private readonly WeaponRuntime[] weapons = new WeaponRuntime[SlotCount];
     private WeaponController controller;
@@ -55,7 +56,8 @@ public sealed class PlayerWeaponSlots : MonoBehaviour
         var data = GetWeapon(index);
         if (data == null) return null;
         if (weapons[index] == null || weapons[index].Data != data)
-            weapons[index] = new WeaponRuntime(data, savedData[index] == data && savedAmmo[index] >= 0 ? savedAmmo[index] : (int?)null);
+            weapons[index] = new WeaponRuntime(data, savedData[index] == data && savedAmmo[index] >= 0 ? savedAmmo[index] : (int?)null,
+                savedData[index] == data && savedReserve[index] >= 0 ? savedReserve[index] : (int?)null);
         return weapons[index];
     }
     public bool CanReadInput => isActiveAndEnabled && player != null && player.InputAvailable && !player.CombatInputLocked
@@ -92,6 +94,7 @@ public sealed class PlayerWeaponSlots : MonoBehaviour
     {
         if (!IsCompatible(index, data) || (player != null && player.CombatInputLocked)) return false;
         weapons[index]?.Interrupt(); weapons[index] = null; savedAmmo[index] = -1; savedData[index] = null;
+        savedReserve[index] = -1;
         switch (index) { case 0: slot1 = data; break; case 1: slot2 = data; break; case 2: slot3 = data; break; case 3: slot4 = data; break; }
         if (index == selectedSlot) SetSelection(index);
         SlotActivity?.Invoke();
@@ -121,7 +124,7 @@ public sealed class PlayerWeaponSlots : MonoBehaviour
     private void OnDisable()
     {
         for (int i = 0; i < SlotCount; i++)
-            if (weapons[i] != null) { savedAmmo[i] = weapons[i].Ammo; savedData[i] = weapons[i].Data; }
+            if (weapons[i] != null) { savedAmmo[i] = weapons[i].Ammo; savedReserve[i] = weapons[i].ReserveAmmo; savedData[i] = weapons[i].Data; }
         melee?.CancelAction();
         player?.Abilities?.Combat.CancelShove();
         if (controller != null) controller.Equip(null);

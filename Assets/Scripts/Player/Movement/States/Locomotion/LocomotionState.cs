@@ -38,6 +38,8 @@ public sealed class LocomotionState : MovementBaseState
         float visualBoost = Mathf.Lerp(1f, ctx.StrafeCompensation, lateralWeight);
 
         float baseSpeed = ctx.StateMachine.Current.LocomotionSpeed * visualBoost;
+        var weapon = ctx.GetComponent<WeaponController>();
+        if (weapon != null) baseSpeed *= weapon.MovementMultiplier;
         Vector3 targetVelocity = inputDirection * (baseSpeed * inputMagnitude);
 
         if (ctx.IsGrounded)

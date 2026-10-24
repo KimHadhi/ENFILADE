@@ -16140,11 +16140,12 @@ MonoBehaviour:
     stepDistance: 2.6
     stepInvulnerability: 0.18
     stepDodgeRecognitionPadding: 0.12
-    microInvulnerability: 0.16
+    microInvulnerability: 0.08
     dodgeCooldown: 0.55
     stepDodgeCooldown: 1.25
     microSuccessDistance: 0.3
     microSuccessDuration: 0.1
+    microSuccessLeanDuration: 0.08
     leanAngle: 10
     leanOffset: 0.35
     leanSharpness: 10

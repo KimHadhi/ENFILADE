@@ -199,6 +199,7 @@ public sealed class PlayerCameraEffects : MonoBehaviour
             distance + 0.02f, movement.groundLayers, QueryTriggerInteraction.Ignore))
             offset *= Mathf.Clamp01((hit.distance - 0.02f) / distance);
         targetCamera.position = origin + offset;
+        movement.GetComponent<PlayerLeanHitboxes>()?.Sync(offset);
     }
 
     private void ApplyCameraRotation()
@@ -247,7 +248,7 @@ public sealed class PlayerCameraEffects : MonoBehaviour
 
     private void UpdateDynamicFov(float dt)
     {
-        if (!enableDynamicFov || cam == null) return;
+        if (cam == null) return;
 
         Vector3 hVel = movement.Velocity;
         hVel.y = 0f;
@@ -255,13 +256,25 @@ public sealed class PlayerCameraEffects : MonoBehaviour
             ? traversal.EntrySpeed : hVel.magnitude;
 
         float speedRatio = Mathf.InverseLerp(fovThresholdSpeed, fovMaxSpeed, currentSpeed);
-        float targetFov = baseFov + (speedRatio * maxFovBonus);
-
+        float targetFov = baseFov + (enableDynamicFov ? speedRatio * maxFovBonus : 0f);
         float t = 1f - Mathf.Exp(-fovSharpness * dt);
         currentFov = Mathf.Lerp(currentFov, targetFov, t);
 
-        // 이동 가속 FOV와 액션 임펄스(닷지 등) FOV 합성
-        cam.fieldOfView = currentFov + impulseFovDisplacement;
+        RefreshWeaponFov();
+    }
+
+    // WeaponController finalizes ADS/obstruction after the camera's lean pose. Recompose
+    // in that same frame without advancing the movement FOV or impulse springs twice.
+    public void RefreshWeaponFov()
+    {
+        if (cam == null || movement == null) return;
+        // ADS already has its own transition timer. Compose after smoothing movement FOV
+        // so a second smoothing pass cannot delay the zoom behind the weapon's sight pose.
+        var weapon = movement.GetComponent<WeaponController>();
+        float aim = weapon != null && weapon.EquippedData != null && !weapon.IsHighReady ? weapon.AimBlend : 0f;
+        float aimedFov = aim > 0f ? Mathf.Min(baseFov, weapon.EquippedData.AdsFov) : currentFov;
+        cam.fieldOfView = Mathf.Lerp(currentFov, aimedFov, aim)
+            + impulseFovDisplacement * Mathf.Lerp(1f, .25f, aim);
     }
 
     private void UpdateTilt(float dt)

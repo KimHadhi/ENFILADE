@@ -12,7 +12,9 @@ public sealed class MovementTrainingTarget : MonoBehaviour, IDamageReceiver, ISh
     public DamageResult ReceiveHit(DamageHit hit)
     {
         if (!attacks.Add(hit.Id)) return DamageResult.Duplicate;
+        float before = Health;
         Health = Mathf.Max(0f, Health - hit.Amount);
+        CombatDamageEvents.Report(this, hit, before, Health, MaximumHealth);
         if (attacks.Count > 256) attacks.Clear();
         return DamageResult.Damaged;
     }

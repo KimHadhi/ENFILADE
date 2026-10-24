@@ -36,6 +36,7 @@ public sealed class AttackHitbox : MonoBehaviour
     public DamageResult TryHit(Collider other)
     {
         if (attackId == 0 || other == null || (owner != null && other.transform.IsChildOf(owner.transform))) return DamageResult.Ignored;
+        if (PlayerLeanHitboxes.Replaces(other)) return DamageResult.Ignored;
         var receiver = other.GetComponentInParent<IDamageReceiver>();
         if (receiver == null || !contacted.Add(receiver)) return DamageResult.Ignored;
         return receiver.ReceiveHit(new DamageHit(attackId, damage, DamageKind.Attack,

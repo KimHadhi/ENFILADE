@@ -82,7 +82,7 @@ public sealed class PlayerPerfectDefense : MonoBehaviour
         GetComponent<PlayerWeaponInput>()?.RequireTriggerRelease();
         float posture = settings != null ? settings.counterPostureDamage : 60f;
         var result = targetReceiver.ReceiveHit(new DamageHit(DamageHit.NewAttackId(), settings != null ? settings.counterDamage : 80f,
-            DamageKind.Attack, point, delta.normalized, gameObject, false, posture));
+            DamageKind.Attack, point, delta.normalized, gameObject, false, posture, isCounter: true));
         if (result == DamageResult.Damaged) target.ApplyPostureDamage(posture, .65f);
         player.MeleeCombat?.ShowCounterPunch();
         return true;

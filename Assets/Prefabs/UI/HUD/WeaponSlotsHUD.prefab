@@ -1335,6 +1335,8 @@ MonoBehaviour:
   animationSpeed: 14
   rowHeight: 94.871796
   rowGap: 10
+  nameScrollSpeed: 24
+  nameScrollPause: 1
   selectedColor: {r: 0.58, g: 0.95, b: 1, a: 1}
 --- !u!1 &6798420896505621106
 GameObject:

@@ -22532,11 +22532,12 @@ MonoBehaviour:
     stepDistance: 2.6
     stepInvulnerability: 0.18
     stepDodgeRecognitionPadding: 0.12
-    microInvulnerability: 0.16
+    microInvulnerability: 0.08
     dodgeCooldown: 0.55
     stepDodgeCooldown: 1.25
     microSuccessDistance: 0.3
     microSuccessDuration: 0.1
+    microSuccessLeanDuration: 0.08
     leanAngle: 10
     leanOffset: 0.35
     leanSharpness: 10
@@ -34633,6 +34634,8 @@ MonoBehaviour:
   animationSpeed: 14
   rowHeight: 94.871796
   rowGap: 10
+  nameScrollSpeed: 24
+  nameScrollPause: 1
   selectedColor: {r: 0.58, g: 0.95, b: 1, a: 1}
 --- !u!225 &1805430653
 CanvasGroup:

@@ -20,3 +20,30 @@ MonoBehaviour:
   reloadDuration: 1.2
   range: 100
   recoilPerShot: {x: 1.2, y: 0.4}
+  recoilResponse: 22
+  recoilRetention: 0.2
+  weaponKickBack: 0.05
+  weaponKickUp: 2.8
+  weaponRecoilResponse: 26
+  adsWeaponKickMultiplier: 0.4
+  initialReserveAmmo: 48
+  emptyReloadDuration: 1.65
+  burstCount: 3
+  burstPause: 0.25
+  hipSpread: 0.8
+  adsSpread: 0.08
+  movingSpread: 0.65
+  airborneSpread: 1.5
+  bloomPerShot: 0.25
+  maxBloom: 2
+  bloomRecovery: 2.5
+  headshotMultiplier: 2
+  recoilPattern:
+  - {x: 1.8, y: 0.2}
+  - {x: 1.8, y: -0.2}
+  adsFov: 45
+  adsMoveMultiplier: 0.7
+  adsTransitionTime: 0.13
+  sightHeight: 0.035
+  aimFollowHalfLife: 0.045
+  adsAimFollowHalfLife: 0.02

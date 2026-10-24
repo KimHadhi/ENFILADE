@@ -32,11 +32,13 @@ public sealed class PlayerCombatActions
             || ctx.CurrentState == PlayerMovement.MovementState.LandingRoll)
         { CancelShove(); return; }
         shoveSweep.Tick(dt);
+        if (shoveSweep.HitCount > 0) ctx.GetComponent<WeaponController>()?.ConfirmShoveHit();
     }
 
     internal bool TryShove()
     {
         if (cooldown > 0f) return false;
+        ctx.GetComponent<WeaponController>()?.InterruptForSurvival(true);
         cooldown = ctx.AbilitySettings.shoveCooldown;
         contacted.Clear(); attackId = DamageHit.NewAttackId();
         if (ctx.Input.SprintHeld && ctx.CurrentInput.y > 0.1f &&
@@ -56,6 +58,7 @@ public sealed class PlayerCombatActions
             var camera = ctx.GetComponentInChildren<Camera>();
             shoveSweep.Begin(ctx, camera != null ? camera.transform : ctx.transform, ctx.AbilitySettings.shoveDamage,
                 ctx.AbilitySettings.interactionLayers, ctx.AbilitySettings.shoveActiveTime);
+            if (shoveSweep.HitCount > 0) ctx.GetComponent<WeaponController>()?.ConfirmShoveHit();
             return;
         }
         Vector3 direction = ctx.Abilities.ActionDirection;

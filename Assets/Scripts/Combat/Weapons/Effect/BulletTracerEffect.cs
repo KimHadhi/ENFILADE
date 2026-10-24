@@ -7,6 +7,7 @@ public sealed class BulletTracerEffect : MonoBehaviour
 {
     [Header("Bullet Tracer")]
     [SerializeField] private Transform muzzlePoint;
+    public Transform MuzzlePoint => muzzlePoint;
     [SerializeField] private LineRenderer tracerPrefab;
     [SerializeField, Min(0.01f)] private float tracerDuration = 0.12f;
     [SerializeField, Range(0f, 1f)] private float tracerTailLength = 0.35f;
@@ -47,14 +48,7 @@ public sealed class BulletTracerEffect : MonoBehaviour
         if (tracerPrefab == null)
             return;
 
-        Transform originTransform = muzzlePoint != null
-            ? muzzlePoint
-            : aimOrigin;
-
-        if (originTransform == null)
-            return;
-
-        Vector3 startPoint = originTransform.position;
+        Vector3 startPoint = shot.Origin;
 
         Vector3 endPoint =
             shot.Trace.HasHit && shot.Trace.Hit.collider != null

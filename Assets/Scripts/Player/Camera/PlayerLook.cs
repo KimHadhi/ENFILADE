@@ -20,6 +20,9 @@ public sealed class PlayerLook : MonoBehaviour
     private PlayerMovement movement;
     private float yaw;
     private float pitch;
+    private readonly RecoilSpring recoil = new RecoilSpring();
+    private Vector2 pendingClimb;
+    private float recoilResponse = 24f;
 
     private void Awake()
     {
@@ -65,11 +68,43 @@ public sealed class PlayerLook : MonoBehaviour
 
         yaw += mouseX;
         yaw = ClampWallClimbYaw(yaw);
-        transform.rotation = Quaternion.Euler(0f, yaw, 0f);
-
         pitch = Mathf.Clamp(pitch + mouseY, minPitch, maxPitch);
-        if (lookPivot != null) lookPivot.localRotation = Quaternion.Euler(pitch, 0f, 0f);
+        TickRecoil(Time.deltaTime);
     }
+
+    public void ApplyRecoil(Vector2 kick, WeaponData data = null)
+    {
+        recoilResponse = data != null ? data.RecoilResponse : 24f;
+        float retain = data != null ? data.RecoilRetention : .22f;
+        pendingClimb += kick * retain;
+        recoil.Kick(new Vector3(kick.x, kick.y, 0f) * (1f - retain), recoilResponse);
+    }
+
+    internal void TickRecoil(float dt)
+    {
+        if (dt <= 0f || float.IsNaN(dt) || float.IsInfinity(dt)) return;
+        // Retained climb also arrives smoothly; ordinary mouse input remains immediate.
+        Vector2 climb = pendingClimb * (1f - Mathf.Exp(-recoilResponse * dt));
+        pendingClimb -= climb;
+        yaw = ClampWallClimbYaw(yaw + climb.y);
+        pitch = Mathf.Clamp(pitch - climb.x, minPitch, maxPitch);
+        recoil.Tick(dt, recoilResponse);
+        ApplyLookPose();
+    }
+    private void ApplyLookPose()
+    {
+        transform.rotation = Quaternion.Euler(0f, ClampWallClimbYaw(yaw + recoil.Value.y), 0f);
+        if (lookPivot != null)
+            lookPivot.localRotation = Quaternion.Euler(Mathf.Clamp(pitch - recoil.Value.x, minPitch, maxPitch), 0f, 0f);
+    }
+    public void ClearRecoil()
+    {
+        // Keep the visible aim when holstering instead of snapping back or kicking the next weapon.
+        yaw = ClampWallClimbYaw(yaw + recoil.Value.y);
+        pitch = Mathf.Clamp(pitch - recoil.Value.x, minPitch, maxPitch);
+        pendingClimb = Vector2.zero; recoil.Reset();
+    }
+    private void OnDisable() => ClearRecoil();
 
     private float ClampWallClimbYaw(float candidate)
     {

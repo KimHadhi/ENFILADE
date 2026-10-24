@@ -2,7 +2,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>Keeps the slot type fixed; long weapon names scroll right, hold, then restart at the left.</summary>
+/// <summary>Keeps the type fixed; holds at the first and last letters before repeating the scroll.</summary>
 [DisallowMultipleComponent, RequireComponent(typeof(TextMeshProUGUI))]
 public sealed class WeaponNameMarquee : MonoBehaviour
 {
@@ -38,13 +38,13 @@ public sealed class WeaponNameMarquee : MonoBehaviour
         }
         elapsed = changed || restart ? 0f : elapsed + Mathf.Max(0f, dt);
         speed = Mathf.Max(1f, speed); pause = Mathf.Max(0f, pause);
-        ReadDuration = Overflow > 0f ? Overflow / speed + pause : 0f;
+        ReadDuration = Overflow > 0f ? Overflow / speed + pause * 2f : 0f;
         float offset = 0f;
         if (Overflow > 0f)
         {
             float travel = Overflow / speed;
-            float t = Mathf.Repeat(elapsed, travel + pause);
-            offset = t < travel ? -Overflow + t * speed : 0f;
+            float t = Mathf.Repeat(elapsed, travel + pause * 2f);
+            offset = -Mathf.Clamp(t - pause, 0f, travel) * speed;
         }
         label.rectTransform.anchoredPosition = new Vector2(offset, 0f);
     }

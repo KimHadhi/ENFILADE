@@ -13,6 +13,7 @@ public sealed class DodgeController
     public int Activation { get; private set; }
     public float CooldownRemaining => cooldown;
     public bool IsInvulnerable => remaining > 0f;
+    public bool HasSucceeded => successEmitted;
     public bool CanStart => cooldown <= 0f && (remaining <= 0f || successEmitted);
     public event Action<DodgeKind, int> Succeeded;
 
@@ -25,7 +26,9 @@ public sealed class DodgeController
         cooldown = Math.Max(remaining, reuseDelay);
 
         // [카메라 연출 추가] 닷지 발동 시 순간적인 FOV 펀치와 방향별 기울임
-        var camFx = UnityEngine.Object.FindAnyObjectByType<PlayerCameraEffects>();
+        // Q/E already moves and rolls the camera through MovementLean. Its defensive
+        // micro window must not also add the full step-dodge zoom/rotation impulse.
+        var camFx = kind == DodgeKind.Step ? UnityEngine.Object.FindAnyObjectByType<PlayerCameraEffects>() : null;
         if (camFx != null)
         {
             // side: -1(좌), 1(우), 0(후방)
