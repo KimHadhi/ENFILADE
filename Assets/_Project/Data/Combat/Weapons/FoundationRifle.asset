@@ -1,0 +1,55 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: faeb944eb3d42ea4fb476e0091f6f751, type: 3}
+  m_Name: FoundationRifle
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponData
+  displayName: Foundation Rifle
+  fireMode: 1
+  damage: 20
+  roundsPerMinute: 600
+  magazineSize: 30
+  reloadDuration: 1.5
+  range: 100
+  recoilPerShot: {x: 1.2, y: 0.4}
+  recoilResponse: 24
+  recoilRetention: 0.22
+  weaponKickBack: 0.035
+  weaponKickUp: 1.8
+  weaponRecoilResponse: 28
+  adsWeaponKickMultiplier: 0.45
+  initialReserveAmmo: 90
+  emptyReloadDuration: 2
+  burstCount: 3
+  burstPause: 0.22
+  hipSpread: 1.2
+  adsSpread: 0.12
+  movingSpread: 0.8
+  airborneSpread: 1.8
+  bloomPerShot: 0.18
+  maxBloom: 2.5
+  bloomRecovery: 2.2
+  headshotMultiplier: 2
+  recoilPattern:
+  - {x: 0.85, y: 0.1}
+  - {x: 1.0, y: 0.2}
+  - {x: 1.1, y: 0.35}
+  - {x: 1.2, y: -0.2}
+  - {x: 1.15, y: -0.35}
+  - {x: 1.0, y: 0.15}
+  adsFov: 40
+  adsMoveMultiplier: 0.6
+  adsTransitionTime: 0.16
+  sightHeight: 0.035
+  aimFollowHalfLife: 0.055
+  adsAimFollowHalfLife: 0.025
+  highReadyRaiseHalfLife: 0.045
+  highReadyLowerHalfLife: 0.055

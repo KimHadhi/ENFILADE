@@ -6,7 +6,7 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Scenes/CombatScene/CombatTestScene/CombatFoundation.unity
+    path: Assets/_Project/Scenes/Development/CombatFoundation.unity
     guid: 315aef190c4dc164d9445d2236923eea
   m_configObjects:
     com.unity.input.settings: {fileID: 11400000, guid: 45acb0f4ab3d2614f949bebd71289806, type: 2}

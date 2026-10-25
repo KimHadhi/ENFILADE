@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 799a0a007779d319a9d1d92cb498cbf9, type: 3}
+  m_Name: GunFeel
+  m_EditorClassIdentifier: Assembly-CSharp::GunFeelSettings
+  scoreFont: {fileID: 11400000, guid: 0d0973292e9d2284b9c7c326c8ed2fa5, type: 2}
+  killPulseOnExecution: 1
+  killPulseOnCounter: 1
+  killPulseOnGunKill: 0
+  killPulseOnOtherKill: 0
+  killExposure: 0.25
+  scoreOffset: {x: 130, y: -72}

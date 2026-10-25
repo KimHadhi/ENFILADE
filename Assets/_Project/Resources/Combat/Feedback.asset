@@ -1,0 +1,77 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a5c2ef63f7af4b5884fde0b8f88ec894, type: 3}
+  m_Name: Feedback
+  m_EditorClassIdentifier:
+  staggerImage: {fileID: 2800000, guid: c3ea78f2355e417f98886c8225f1e254, type: 3}
+  staggerSound: {fileID: 8300000, guid: 4d23329960cf4879b59e7152aec63eb3, type: 3}
+  staggerSoundVolume: 0.25
+  staggerImageWidth: 260
+  promptFont: {fileID: 11400000, guid: 111e9ac01bcd7fd40bf85568b2a38fa0, type: 2}
+  shoveEnemySounds:
+  - {fileID: 8300000, guid: f87f0ee748a449deb50f529e652c636f, type: 3}
+  - {fileID: 8300000, guid: 02626e77f9cb4006af6070a69fb0ac22, type: 3}
+  - {fileID: 8300000, guid: e54341ae7e764c5ba0694186312c1c49, type: 3}
+  - {fileID: 8300000, guid: d9a773a599fe4d06a63644f1f60ccdee, type: 3}
+  - {fileID: 8300000, guid: c6ec61e1981645b59271c244fdf447cd, type: 3}
+  - {fileID: 8300000, guid: 9e1972e56edb4758af672018a1f54574, type: 3}
+  shoveWorldSound: {fileID: 8300000, guid: c6e99b7ba4a042858afea6a9d18e6e7c, type: 3}
+  shoveEnemyVolume: 0.3
+  shoveWorldVolume: 0.3
+  headshotFeedback: 0
+  bodyshotFeedback: 0
+  impactBulletSounds:
+  - {fileID: 8300000, guid: 44cb09d86f5404f5abae20b408eeb531, type: 3}
+  - {fileID: 8300000, guid: b6ab56a827ca70594ea0c449cb4d757c, type: 3}
+  - {fileID: 8300000, guid: 8f4fbf2994090d34e9e9b4016c12c036, type: 3}
+  - {fileID: 8300000, guid: a96bd25ccb3ef8b803f48123d9286402, type: 3}
+  - {fileID: 8300000, guid: d6f41586b6aaae0ba935c446e87a2e9f, type: 3}
+  - {fileID: 8300000, guid: 718674845ded99597d8f6977a81c192b, type: 3}
+  - {fileID: 8300000, guid: 57fd47ae4064678a3ea48850f6ef0fd9, type: 3}
+  - {fileID: 8300000, guid: 96e22102d3f310a5f053e6870a03dcb2, type: 3}
+  impactPierceSounds:
+  - {fileID: 8300000, guid: 5ad8ccd1badbca4fdd3ec138c9de016a, type: 3}
+  - {fileID: 8300000, guid: fa49fbea159a10d1359a75e19e8b06e5, type: 3}
+  - {fileID: 8300000, guid: 36e0775f79214ecd25d5a27988623f52, type: 3}
+  - {fileID: 8300000, guid: 02bd78276409dfc53f7ccd19a722582c, type: 3}
+  fleshBreakSounds:
+  - {fileID: 8300000, guid: 50379cfbfbdd4eb95861a951f41417be, type: 3}
+  - {fileID: 8300000, guid: d00a2380472231893dcf640a8f9e19fa, type: 3}
+  - {fileID: 8300000, guid: 1869e9fc4787f8e59583f7531f97bdb8, type: 3}
+  fleshSplatSounds:
+  - {fileID: 8300000, guid: 8ff5e5eb9f6bc06d4d09d9ecd1826bc8, type: 3}
+  bodyThudSounds:
+  - {fileID: 8300000, guid: e7022f1935d52beb22930c9e76468745, type: 3}
+  - {fileID: 8300000, guid: 76506ff1dc53a30af7d406ef4898b944, type: 3}
+  - {fileID: 8300000, guid: 1943627023eb4a10f94ba31d678d8dcc, type: 3}
+  boneCrackSounds:
+  - {fileID: 8300000, guid: 2cd11d243fe361887a40f684f5be20d4, type: 3}
+  - {fileID: 8300000, guid: af147bc85c095d404dc8025beb56b5f3, type: 3}
+  - {fileID: 8300000, guid: d8f4c874b4e8851825d475a612b1b0bb, type: 3}
+  tackleSounds:
+  - {fileID: 8300000, guid: 14a2c8646885d765ed24858d1b3e72cd, type: 3}
+  punchSounds:
+  - {fileID: 8300000, guid: 4a00ed6c33f315a26dc594e321cdd6ff, type: 3}
+  - {fileID: 8300000, guid: 9ad1cb4e38e99ec820a009fb30923b28, type: 3}
+  - {fileID: 8300000, guid: aad0bfd441227584d8d40e9fada35b29, type: 3}
+  - {fileID: 8300000, guid: 11a36e068a043132e0ff3111804ab5a3, type: 3}
+  - {fileID: 8300000, guid: fcce662867fe25006b5e8096a4841e0a, type: 3}
+  - {fileID: 8300000, guid: 6421bda00f94d0228c124e24a9e92f3e, type: 3}
+  - {fileID: 8300000, guid: 30671966e057b523de35ac8064fca26d, type: 3}
+  - {fileID: 8300000, guid: 69c1cbbc7af0a349f529bb0c6d5431be, type: 3}
+  hitSoundVolume: 0.3
+  playerHitVolume: 0.3
+  hitSoundDistance: 10
+  blockSound: {fileID: 8300000, guid: 72ca7f9312f548b9b7b40ab40b48b2e7, type: 3}
+  enemyAttackStartSound: {fileID: 8300000, guid: c3c9d1035cb04ba8908bf2cbbcbd446b, type: 3}
+  perfectEvadeSound: {fileID: 8300000, guid: 9cabe8b869f240429c8bdb25000a3b45, type: 3}
+  parrySound: {fileID: 8300000, guid: 08120d276ee346659b07fae1636fe60f, type: 3}
