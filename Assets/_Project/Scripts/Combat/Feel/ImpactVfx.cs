@@ -3,7 +3,7 @@ using UnityEngine;
 /// <summary>
 /// Procedural impact matter: blood spray (mostly out of the exit side, some back toward the shooter), a blood mist puff,
 /// blood splats on the nearest floor/wall behind the target, and dust puffs for bodies hitting the ground.
-/// Headshots and kills spray harder. Pooled particle systems and decals; created on first use during Play.
+/// Headshots and kills spray harder. Particle systems and up to 32 decals are pooled; created on first use during Play.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class ImpactVfx : MonoBehaviour
@@ -17,11 +17,12 @@ public sealed class ImpactVfx : MonoBehaviour
     private readonly Color[] decalColor = new Color[DecalCount];
     private readonly RaycastHit[] hits = new RaycastHit[8];
     private MaterialPropertyBlock block;
+    private Transform decalRoot;
     private int nextDecal;
 
     private static ImpactVfx Get()
     {
-        if (instance == null) instance = new GameObject("Impact VFX").AddComponent<ImpactVfx>();
+        if (instance == null) instance = FeelAssets.CreateRuntimeRoot("Impact VFX").AddComponent<ImpactVfx>();
         return instance;
     }
 
@@ -125,8 +126,13 @@ public sealed class ImpactVfx : MonoBehaviour
         int slot = nextDecal; nextDecal = (nextDecal + 1) % DecalCount;
         if (decals[slot] == null)
         {
+            if (decalRoot == null)
+            {
+                decalRoot = new GameObject("Blood Decals (Pool)").transform;
+                decalRoot.SetParent(transform, false);
+            }
             var host = new GameObject("Blood Splat");
-            host.transform.SetParent(transform, false);
+            host.transform.SetParent(decalRoot, false);
             host.AddComponent<MeshFilter>().sharedMesh = FeelAssets.Quad;
             var renderer = host.AddComponent<MeshRenderer>();
             renderer.sharedMaterial = FeelAssets.Particle(FeelAssets.BloodSplat, false);

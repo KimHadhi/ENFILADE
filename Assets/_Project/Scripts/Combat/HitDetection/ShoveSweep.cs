@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-/// <summary>A single frontal shove hits each actor once. Other actors do not shield the crowd; solid cover does.</summary>
+/// <summary>A single frontal shove hits each actor once within its range and cone, ignoring intervening cover.</summary>
 public static class ShoveSweep
 {
     public static int Apply(PlayerMovement player, Transform aim, float damage, LayerMask layers)
@@ -72,7 +72,6 @@ public static class ShoveSweep
             // A collider overlapping the cast origin still needs to be in front of the player.
             Vector3 facingDelta = delta.sqrMagnitude > .0001f ? delta : collider.bounds.center - origin;
             if (facingDelta.sqrMagnitude > .0001f && Vector3.Dot(facingDelta.normalized, forward) < cone) continue;
-            if (!HasSight(player.transform, collider, origin, point, layers)) continue;
             // Static walls have no damage/shove receiver but still produce a contact sound.
             if (posture == null) hitWorld = true;
             if (identity == null) continue;
@@ -122,19 +121,6 @@ public static class ShoveSweep
         if (direction.sqrMagnitude < .0001f || Vector3.Dot(direction.normalized, forward) < cone) return false;
         if (!collider.Raycast(new Ray(origin, direction.normalized), out RaycastHit hit, reach)) return false;
         point = hit.point;
-        return true;
-    }
-    internal static bool HasSight(Transform owner, Collider candidate, Vector3 origin, Vector3 point, LayerMask layers)
-    {
-        Vector3 delta = point - origin;
-        if (delta.sqrMagnitude < .0001f) return true;
-        foreach (var hit in Physics.RaycastAll(origin, delta.normalized, delta.magnitude, layers, QueryTriggerInteraction.Ignore))
-        {
-            if (hit.collider == candidate || hit.transform.IsChildOf(owner)) continue;
-            if (hit.collider.GetComponentInParent<MeleeCombatTarget>() != null) continue;
-            if (candidate.attachedRigidbody != null && hit.rigidbody == candidate.attachedRigidbody) continue;
-            return false;
-        }
         return true;
     }
 }

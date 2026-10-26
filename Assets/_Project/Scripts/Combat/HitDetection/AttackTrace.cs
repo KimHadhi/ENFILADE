@@ -34,7 +34,8 @@ public static class AttackTrace
             headshot = headshotMultiplier > 1f && WeaponHitRegion.IsHead(hit);
             if (receiver != null)
                 result = receiver.ReceiveHit(new DamageHit(attack.Id, attack.Amount * (headshot ? headshotMultiplier : 1f), attack.Kind, hit.point, direction, attack.Source,
-                    attack.CanBeGuarded, attack.PostureDamage, attack.IsComboFinisher, attack.IsCritical || headshot, attack.IsCounter, attack.Method));
+                    attack.CanBeGuarded, attack.PostureDamage, attack.IsComboFinisher, attack.IsCritical || headshot, attack.IsCounter, attack.Method,
+                    attack.Origin ?? origin));
         }
         StepDodgeTrail.RecognizeAttackSegment(attack, origin, end);
         return new AttackTraceResult(hasHit, hit, end, result, headshot);

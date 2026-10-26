@@ -23,9 +23,10 @@ public static class UltimateHUDChecks
         passed = 0;
         try
         {
+            Check("player stats own capacity and cost; changes clamp charge and publish readiness", Stats);
             Check("charge thresholds, retained overflow, level-up and events", Resource);
             Check("zero capacity, impossible thresholds and invalid inputs", EdgeCases);
-            Check("authored left edge, dynamic capacity, arrow and width cap", Layout);
+            Check("authored left edge, capacity width, independent cost marker and width cap", Layout);
             Check("private portrait material, charging and heartbeat", Glow);
             Check("edit preview restores authored values before save and avoids double scaling", PreviewLifecycle);
             Check("health and shield update immediately and restore on disable", HealthLive);
@@ -78,6 +79,51 @@ public static class UltimateHUDChecks
     private static void Near(float actual, float expected, string message) => Require(Mathf.Abs(actual - expected) < 0.001f, message + ": " + actual + " expected " + expected);
     private static void Set(object target, string field, object value) => target.GetType().GetField(field, Any).SetValue(target, value);
     private static void Call(object target, string method) => target.GetType().GetMethod(method, Any).Invoke(target, null);
+
+    private static void Stats()
+    {
+        var charge = new GameObject("Player stats fixture").AddComponent<UltimateCharge>();
+        try
+        {
+            PlayerStats stats = charge.GetComponent<PlayerStats>();
+            Require(stats != null && stats == charge.Stats, "Resource uses the required player stats component");
+            Near(stats.UltimateCapacityPercent, 120f, "Default capacity is 120%");
+            Near(stats.UltimateCostPercent, 100f, "Default cast cost is 100%");
+            charge.SetCurrentCharge(120f);
+            Require(charge.TryConsume(), "Full default charge can cast");
+            Near(charge.CurrentCharge, 20f, "Default cast leaves 20% reserve");
+            int changes = 0, transitions = 0;
+            charge.Changed += () => changes++;
+            charge.ReadinessChanged += _ => transitions++;
+            stats.SetUltimateCost(20f);
+            Require(charge.IsReady && transitions == 1 && changes == 1, "Cost stat updates readiness immediately");
+            stats.SetUltimateCost(20f);
+            Require(changes == 1 && transitions == 1, "Unchanged stats do not duplicate resource events");
+            stats.SetUltimateLimits(120f, 70f);
+            charge.SetCurrentCharge(120f);
+            Require(charge.TryConsume(), "Reduced 70% cost can cast");
+            Near(charge.CurrentCharge, 50f, "Reduced cost leaves 50% reserve");
+            stats.SetUltimateCapacity(30f);
+            Near(charge.CurrentCharge, 30f, "Capacity stat clamps stored charge immediately");
+            stats.SetUltimateCapacity(120f);
+            Near(charge.CurrentCharge, 30f, "Increasing capacity does not restore discarded charge");
+            charge.enabled = false;
+            stats.SetUltimateCapacity(10f);
+            stats.SetUltimateCapacity(120f);
+            Near(charge.CurrentCharge, 10f, "Disabled resources also discard charge above a reduced capacity");
+            charge.enabled = true;
+            charge.SetCurrentCharge(30f);
+            var serialized = new SerializedObject(stats);
+            serialized.FindProperty("ultimateCostPercent").floatValue = 25f;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            Call(stats, "Update");
+            Require(charge.IsReady, "Inspector stat edits update readiness");
+            stats.SetUltimateLimits(float.NaN, float.PositiveInfinity);
+            Near(charge.CurrentCharge, 0f, "Invalid stat capacity clamps charge safely");
+            Require(!charge.IsReady, "Invalid zero capacity disables casting");
+        }
+        finally { Object.DestroyImmediate(charge.gameObject); }
+    }
 
     private static void Resource()
     {
@@ -144,7 +190,7 @@ public static class UltimateHUDChecks
         RectTransform marker = Rect("Arrow", root);
         marker.localPosition = new Vector3(70f, 10f, 0f);
         UltimateHUD view = root.gameObject.AddComponent<UltimateHUD>();
-        Set(view, "source", charge); Set(view, "bar", bar); Set(view, "minimumMarker", marker);
+        Set(view, "source", charge); Set(view, "bar", bar); Set(view, "readyThresholdMarker", marker);
         try
         {
             charge.SetValues(60f, 120f, 100f); view.RefreshNow();
@@ -153,13 +199,24 @@ public static class UltimateHUDChecks
             Near(marker.localPosition.y, 10f, "Arrow height is preserved");
             var fill = (RectTransform)barRect.Find("Ultimate Fill (Runtime)");
             Near(fill.anchorMax.x, 0.5f, "Fill ratio");
+            charge.SetLimits(120f, 200f); view.RefreshNow();
+            Near(barRect.rect.width, 120f, "Cost changes must not resize the capacity bar");
+            Require(!marker.gameObject.activeSelf, "Cost above capacity hides the threshold");
+            charge.SetLimits(120f, 70f); view.RefreshNow();
+            Near(barRect.rect.width, 120f, "Reduced cost preserves full capacity width");
+            Near(marker.localPosition.x, 100f, "70% cost moves the threshold to 70/120");
             charge.SetValues(80f, 240f, 70f); view.RefreshNow();
             Near(barRect.rect.width, 240f, "Capacity upgrade grows the bar");
             Near(barRect.localPosition.x + barRect.rect.xMin, 30f, "Bar's left edge cannot move");
-            Near(marker.localPosition.x, 100f, "Cost 70 moves the arrow left");
+            Near(marker.localPosition.x, 100f, "Threshold keeps the same charge distance before the width cap");
             charge.SetLimits(600f, 70f); view.RefreshNow();
+            Near(barRect.rect.width, 480f, "Width is capped for large capacity");
+            Near(marker.localPosition.x, 86f, "Threshold uses the capped bar's capacity ratio");
+            charge.SetLimits(600f, 700f); view.RefreshNow();
             Near(barRect.rect.width, 480f, "Width cap prevents unlimited HUD growth");
-            Near(marker.localPosition.x, 86f, "Arrow rescales when width is capped");
+            Require(!marker.gameObject.activeSelf, "Cost above capacity hides the marker");
+            charge.SetLimits(600f, 500f); view.RefreshNow();
+            Near(marker.localPosition.x, 430f, "Arrow rescales when width is capped");
             charge.SetValues(0f, 0f, 100f); view.RefreshNow();
             Require(!marker.gameObject.activeSelf, "Impossible threshold marker is hidden");
             Near(fill.anchorMax.x, 0f, "Zero capacity is empty");
@@ -236,7 +293,7 @@ public static class UltimateHUDChecks
         RectTransform marker = Rect("Preview Arrow", root);
         marker.localPosition = new Vector3(70f, 10f, 0f);
         var view = root.gameObject.AddComponent<UltimateHUD>();
-        Set(view, "source", charge); Set(view, "bar", bar); Set(view, "minimumMarker", marker);
+        Set(view, "source", charge); Set(view, "bar", bar); Set(view, "readyThresholdMarker", marker);
         try
         {
             charge.SetValues(80f, 240f, 70f);

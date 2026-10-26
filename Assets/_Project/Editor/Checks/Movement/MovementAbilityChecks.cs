@@ -46,6 +46,7 @@ public static partial class MovementAbilityChecks
             RunDodgeChainChecks();
             RunCameraChecks();
             RunParkourFacingChecks();
+            RunEnemySurfaceChecks();
             RunLowPassageChecks();
             RunEvasiveDiveChecks();
             RunContinuityChecks();

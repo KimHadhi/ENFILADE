@@ -181,7 +181,7 @@ public sealed class ParkourDetector
         float hands = ctx.StandingColliderHeight - 0.15f;
         if (!Physics.SphereCast(feet + Vector3.up * (hands - 0.45f), 0.1f, facing,
             out RaycastHit wall, ctx.AbilitySettings.ledgeReach, ctx.groundLayers, QueryTriggerInteraction.Ignore)
-            || IsBar(wall.collider) || Mathf.Abs(wall.normal.y) > 0.25f || Vector3.Dot(facing, -wall.normal) < 0.4f) return false;
+            || !WallDetector.CanUseSurface(wall.collider) || Mathf.Abs(wall.normal.y) > 0.25f || Vector3.Dot(facing, -wall.normal) < 0.4f) return false;
         Vector3 origin = wall.point - wall.normal * 0.08f;
         origin.y = feet.y + hands + ctx.AbilitySettings.ledgeReachAboveHands;
         if (!Physics.Raycast(origin, Vector3.down, out RaycastHit top,
@@ -198,7 +198,7 @@ public sealed class ParkourDetector
     public bool TryShimmy(LedgeTarget current, Vector3 displacement, out LedgeTarget next)
     {
         next = current;
-        if (current.Surface == null) return false;
+        if (!WallDetector.CanUseSurface(current.Surface)) return false;
         Transform support = current.Surface.transform;
         Vector3 normal = support.TransformDirection(current.LocalNormal);
         Vector3 feet = support.TransformPoint(current.LocalHang) + displacement;

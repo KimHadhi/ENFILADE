@@ -1,6 +1,6 @@
 # 이동·회피·파쿠르 안내
 
-[프로젝트 안내](../README.md) · [전투 안내](CombatFoundationGuide.md) · [이동 코드 구조](../Scripts/Player/Movement/README.md)
+[프로젝트 안내](../../../README.md) · [전투 안내](CombatFoundationGuide.md) · [이동 코드 구조](../Scripts/Player/Movement/README.md)
 
 현재 조작은 [Player.inputactions](../Input/Player.inputactions)를 기준으로 합니다. 아래 수치는 **코드 기본값**이며, 실제 플레이에는 씬의 PlayerMovement 인스펙터 값이 우선합니다. 기능을 시험할 때는 [CombatFoundation](../Scenes/Development/CombatFoundation.unity) 또는 [MovementAbilityPlayground](../Scenes/Development/MovementAbilityPlayground.unity)를 사용합니다.
 
@@ -101,6 +101,8 @@ Q/E 입력만으로 플레이어 몸이 옆으로 이동하지는 않습니다. 
 스텝 중과 마이크로 회피 판정 중에는 적의 몸을 통과할 수 있습니다. 종료 시 적과 겹쳐 있으면 벽·발판을 확인하며 안전한 출구를 찾습니다. 이 보정은 무적 시간을 늘리지 않습니다. Shift와 전진을 유지한 스텝이 정상적으로 끝나면 달리기를 이어갑니다.
 
 ## 파쿠르와 낙하
+
+적의 몸과 자식 콜라이더는 벽 오르기·렛지 매달리기의 지지면으로 사용하지 않습니다. 매달린 채 적 쪽으로 옆 이동하는 것도 막습니다. 적 머리 위를 넘거나 올라서는 짧은 장애물 통과는 기존 조건대로 유지합니다.
 
 | 상황 | 조작과 결과 |
 | --- | --- |

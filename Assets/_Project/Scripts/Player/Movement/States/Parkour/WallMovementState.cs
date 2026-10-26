@@ -14,6 +14,7 @@ public sealed class WallMovementState : MovementBaseState
     }
     public override void ProcessInput(Vector2 input)
     {
+        if (!WallDetector.CanUseSurface(ctx.Abilities.Traversal.Wall.collider)) { Drop(); return; }
         // Entry input commits to this action. Only a deliberate wall kick changes it.
         if (ctx.InputAvailable && ctx.Input.JumpPressed)
         {
@@ -24,7 +25,7 @@ public sealed class WallMovementState : MovementBaseState
     public override void UpdateLogic(float dt)
     {
         var traversal = ctx.Abilities.Traversal;
-        if (traversal.Wall.collider == null || !traversal.Wall.collider.enabled || !traversal.Wall.collider.gameObject.activeInHierarchy) { Drop(); return; }
+        if (!WallDetector.CanUseSurface(traversal.Wall.collider)) { Drop(); return; }
         if (traversal.TryCatchLedge(-traversal.Wall.normal)) return;
         if (!traversal.SpendWallTime(dt)) { Drop(); return; }
         if (!traversal.Detector.TryWall(-traversal.Wall.normal, out RaycastHit contact)

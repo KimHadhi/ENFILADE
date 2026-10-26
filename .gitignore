@@ -55,6 +55,7 @@ ExportedObj/
 *.unityproj
 *.sln
 *.slnx
+UpgradeLog*.htm
 *.suo
 *.tmp
 *.user
@@ -112,3 +113,6 @@ InitTestScene*.unity*
 
 # Auto-generated cache in Assets folder
 /[Aa]ssets/[Ss]ceneDependencyCache*
+
+# Local disposable validation projects and their logs
+/.validation/

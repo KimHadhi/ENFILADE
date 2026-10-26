@@ -4,8 +4,10 @@ using UnityEngine.AI;
 /// <summary>One-off combat testing enemies, independent from wave progress and cleanup.</summary>
 public static class ConsoleEnemySpawner
 {
-    public static string Spawn(PlayerMovement player)
+    public static string Spawn(PlayerMovement player, int count = 1)
     {
+        if (player == null) return "대상 플레이어를 찾지 못했습니다.";
+        if (count < 1) return "사용법: /spawn [수량] — 1 이상의 정수를 입력하세요.";
         EnemyHealth prefab = null;
         foreach (var wave in Object.FindObjectsByType<WaveManager>(FindObjectsInactive.Include, FindObjectsSortMode.None))
         {
@@ -14,7 +16,16 @@ public static class ConsoleEnemySpawner
             prefab = wave.EnemyPrefab;
         }
         if (prefab == null) return "소환할 적이 없습니다. 이 씬의 WaveManager에 Enemy Prefab을 연결하세요.";
-        return TrySpawn(player, prefab, out _, out string error) ? "적 한 마리를 소환했습니다. (웨이브 집계 제외)" : error;
+        int spawned = 0;
+        while (spawned < count)
+        {
+            // Newly created colliders must occupy their positions before choosing the next spawn.
+            Physics.SyncTransforms();
+            if (!TrySpawn(player, prefab, out _, out string error))
+                return spawned == 0 ? error : $"적 {spawned}/{count}마리를 소환했습니다. (웨이브 집계 제외) " + error;
+            spawned++;
+        }
+        return count == 1 ? "적 한 마리를 소환했습니다. (웨이브 집계 제외)" : $"적 {spawned}마리를 소환했습니다. (웨이브 집계 제외)";
     }
 
     public static bool TrySpawn(PlayerMovement player, EnemyHealth prefab, out EnemyHealth enemy, out string error)
@@ -32,7 +43,7 @@ public static class ConsoleEnemySpawner
         if (forward.sqrMagnitude < .01f) forward = player.transform.forward;
         float radius = Mathf.Max(.2f, agent.radius * Mathf.Max(Mathf.Abs(prefab.transform.lossyScale.x), Mathf.Abs(prefab.transform.lossyScale.z)));
         float height = Mathf.Max(radius * 2f, agent.height * Mathf.Abs(prefab.transform.lossyScale.y));
-        foreach (float distance in new[] { 3f, 4f, 5f })
+        foreach (float distance in new[] { 3f, 4f, 5f, 7f, 9f, 11f, 13f, 15f })
         foreach (float angle in new[] { 0f, -30f, 30f, -60f, 60f })
         {
             Vector3 desired = start.position + Quaternion.AngleAxis(angle, Vector3.up) * forward * distance;
@@ -48,15 +59,7 @@ public static class ConsoleEnemySpawner
             foreach (var obstruction in Physics.RaycastAll(eye, sight.normalized, sight.magnitude, ~0, QueryTriggerInteraction.Ignore))
                 if (!obstruction.transform.IsChildOf(player.transform)) { blocked = true; break; }
             if (blocked) continue;
-            Transform container = null;
-            foreach (var root in player.gameObject.scene.GetRootGameObjects())
-                if (root.name == "Console Enemies") { container = root.transform; break; }
-            if (container == null)
-            {
-                var root = new GameObject("Console Enemies");
-                UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(root, player.gameObject.scene);
-                container = root.transform;
-            }
+            var container = RuntimeSceneHierarchy.GetGroup(player.gameObject.scene, "ENEMIES", "Console");
             Vector3 facing = Vector3.ProjectOnPlane(player.transform.position - hit.position, Vector3.up);
             enemy = Object.Instantiate(prefab, hit.position + Vector3.up * agent.baseOffset,
                 Quaternion.LookRotation(facing.normalized), container);

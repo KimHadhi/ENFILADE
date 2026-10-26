@@ -81,4 +81,12 @@ public sealed class WeaponRuntime
     public void CancelBurst() { burstRemaining = 0; wasHoldingFire = false; }
     internal void RefundUnfiredShots(int count) { Ammo = Mathf.Min(Data.MagazineSize, Ammo + Mathf.Max(0, count)); CancelBurst(); }
     public void AddReserve(int amount) { if (amount > 0) ReserveAmmo = (int)Math.Min(int.MaxValue, (long)ReserveAmmo + amount); }
+
+    /// <summary>Fill the magazine and restore at least the starting reserve, preserving bonus ammunition.</summary>
+    public void RefillAmmo()
+    {
+        Interrupt();
+        Ammo = Data.MagazineSize;
+        ReserveAmmo = Mathf.Max(ReserveAmmo, Data.InitialReserveAmmo);
+    }
 }

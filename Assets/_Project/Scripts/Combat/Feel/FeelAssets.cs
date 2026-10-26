@@ -185,6 +185,18 @@ public static class FeelAssets
         }
     }
 
+    /// <summary>Scene-local feedback objects share EFFECTS folders and keep their world transforms.</summary>
+    public static GameObject CreateRuntimeRoot(string name, GameObject owner = null, string groupName = "World")
+    {
+        var host = new GameObject(name);
+        GroupRuntimeRoot(host, groupName, owner);
+        return host;
+    }
+
+    /// <summary>Group a newly created root under a scene category without adding an ancestor Canvas.</summary>
+    public static void GroupRuntimeRoot(GameObject host, string groupName, GameObject owner = null)
+        => RuntimeSceneHierarchy.Group(host, "EFFECTS", groupName, owner);
+
     /// <summary>
     /// World-space system driven only by Emit(EmitParams); it keeps playing with emission off so emitted particles simulate.
     /// Callers add size/colour-over-lifetime modules.

@@ -53,7 +53,7 @@ public sealed class FeelAudio : MonoBehaviour
 
     private static FeelAudio Get()
     {
-        if (instance == null) instance = new GameObject("Feel Audio").AddComponent<FeelAudio>();
+        if (instance == null) instance = FeelAssets.CreateRuntimeRoot("Feel Audio", groupName: "Audio").AddComponent<FeelAudio>();
         return instance;
     }
 

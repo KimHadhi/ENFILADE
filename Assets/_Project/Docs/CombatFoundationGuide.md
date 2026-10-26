@@ -1,6 +1,6 @@
 # 전투 제작 안내
 
-[프로젝트 안내](../README.md) · [전투 규칙과 확장 계획](WeaponSystemDesign.md) · [전투 코드 구조](../Scripts/Combat/README.md) · [검증 안내](ValidationGuide.md)
+[프로젝트 안내](../../../README.md) · [전투 규칙과 확장 계획](WeaponSystemDesign.md) · [전투 코드 구조](../Scripts/Combat/README.md) · [검증 안내](ValidationGuide.md)
 
 이 문서는 현재 전투 씬을 실행하고, 무기 수치와 표시를 수정하는 작업 순서다. 행동 간 우선순위와 이후 기획은 **전투 규칙과 확장 계획**에서 확인한다.
 
@@ -31,7 +31,28 @@
 - **탄약 경고**: `RELOAD`는 재장전 권장, `NO RESERVE`는 다음 장전용 예비탄 없음, `OUT OF AMMO`는 장탄·예비탄 모두 없음이다.
 - **적 표시**: HP와 체간이 줄어들며, 체간이 바닥나면 흐트러짐 표시와 조건에 따른 `[F] 처형하기` 안내가 나타난다.
 - **완벽 방어**: 완벽 회피 또는 연속기 마지막 타격 패링 후 `[LMB] 반격`이 뜬다. 이때 새 좌클릭은 일반 공격보다 반격을 먼저 실행한다.
+- **처치 점수**: 처치하면 크로스헤어 오른쪽 아래에 XP와 처치 사유가 뜬다. 처형으로 처치하면 `처형` 줄에 전술 단검과 베기 자국 아이콘(빨간색), 반격으로 처치하면 `반격` 줄에 되돌아오는 화살표 아이콘(반격 색)이 붙는다. 일반 처치·헤드샷 줄은 기존 해골·폭발 아이콘 그대로다.
 - **시험용 적**: 채팅에 `/spawn`, 콘솔 채널에 `spawn`을 입력한다. 소환한 적은 웨이브 진행에 포함되지 않는다. 명령 목록은 `/help`로 확인한다.
+
+### 채팅·목표판과 테스트 명령
+
+**Enter**로 채팅을 열고 메시지나 명령을 입력한 뒤 Enter로 제출한다. 채팅 중 **Tab**은 채널 전환, **Esc**는 닫기, 위·아래 화살표는 입력 기록이다. 채팅이 닫혀 있을 때 Tab은 목표판을 연다. 채팅 중에는 이동·전투 입력을 멈춘다.
+
+| 명령 | 용도 |
+| --- | --- |
+| `/help` | 현재 등록된 명령과 인자 확인 |
+| `/spawn`, `/spawn 5` | 생략하면 1마리, 수량을 붙이면 해당 수만큼 테스트 적 소환. 빈 공간이 부족하면 실제 소환 수를 알림. 웨이브 집계 제외 |
+| `/ammo` | 보유한 모든 총기의 탄창을 채우고 기본 예비탄까지 보충. 기본보다 많은 예비탄은 유지 |
+| `/wave start` | 대기 중인 웨이브 시작 |
+| `/wave stop`, `/wave resume` | 웨이브 일시정지 / 재개 |
+| `/wave abort`, `/wave status` | 웨이브 종료 / 상태 확인 |
+| `/stats`, `/heal`, `/revive` | 플레이어 상태 확인 / HP 회복 / 사망 복구·실드 초기화 |
+| `/hurt 20`, `/shield 50`, `/maxhp 200` | 피격·실드·최대 HP와 HUD 확인 |
+| `/hit 10 left`, `/hit 10 back` | 방향성 플레이어 피격·혈흔 비네트·쉐이크 시험. front/right/back/left 지원 |
+| `/ult 100`, `/ultuse` | 궁극기 게이지 충전·자원 소비 테스트. 무기 진화나 스킬은 실행하지 않음 |
+| `/ultmax 200`, `/ultcost 70` | 궁극기 최대 보유량을 200%, 1회 소비량을 70%로 각각 지정. 증가량이 아닌 지정한 값으로 설정 |
+
+위 명령은 실행 중인 테스트 상태를 바꾼다. 영구적인 밸런스 설정은 [설정·유지보수 안내](MaintenanceGuide.md)의 Inspector 위치에서 수정한다.
 
 ## 무엇을 바꿀지에 따른 수정 위치
 
@@ -43,6 +64,7 @@
 | 탄퍼짐, 조준 반동, ADS, 총 모델 추적·high-ready 반응 | `WeaponData`의 Accuracy / Recoil Feel / Aim Down Sights / Aim Tracking Feel / High-ready 항목 |
 | 무기별 총성, 화면 킥, 총구·탄피, 총알 체간 피해 | `WeaponData`의 Feel 및 Feel → Target Reaction 항목 |
 | 전체 타격감 켜기·끄기, 히트마커, 점수, 피격·처치 효과 | [GunFeel.asset](../Resources/Combat/GunFeel.asset) |
+| 플레이어 피격 아크·혈흔·쉐이크·25% 빈사 박동 | [PlayerDamageFeedback.asset](../Resources/Combat/PlayerDamageFeedback.asset), [피격 효과 안내](PlayerDamageFeedbackGuide.md) |
 | 방어·밀치기 소리, 반격, 흐트러짐 표시, 피해 팝업·HP 손실 표시 | [Feedback.asset](../Resources/Combat/Feedback.asset) |
 | 시작 무기와 시작 슬롯 | 플레이어의 `PlayerWeaponSlots` → Slot 1~4 / Starting Slot |
 | 주먹·가드·패링·V 홀드 | 플레이어의 `PlayerMeleeCombat` |
@@ -56,7 +78,7 @@
 
 ## 새 총 데이터 연결하기
 
-1. [무기 데이터 폴더](../Data/Combat/Weapons)에서 기존 asset을 복제하거나 **Create → Morphang → Combat → Weapon Data**를 선택한다.
+1. [무기 데이터 폴더](../Data/Combat/Weapons)에서 기존 asset을 복제하거나 **Create → ENFILADE → Combat → Weapon Data**를 선택한다.
 2. `Category`를 **Ranged**로 두고 Display Name, Fire Mode, Damage, Rounds Per Minute, Magazine Size를 설정한다.
 3. `Initial Reserve Ammo`, `Reload Duration`, `Empty Reload Duration`을 조절한다. RPM 600은 초당 10발이며 시간 단위는 초다.
 4. 현재 CombatFoundation에서는 **PlayerWeaponSlots의 Slot 1 또는 Slot 2**에 할당한다. Starting Slot은 0이면 해제, 1~4이면 해당 슬롯으로 시작한다.

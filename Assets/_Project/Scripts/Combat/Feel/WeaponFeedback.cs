@@ -261,7 +261,7 @@ public sealed class WeaponFeedback : MonoBehaviour
 
     private void EnsureParticles()
     {
-        if (effectsRoot == null) effectsRoot = new GameObject("Weapon Feel FX").transform;
+        if (effectsRoot == null) effectsRoot = FeelAssets.CreateRuntimeRoot("Weapon Feel FX", gameObject).transform;
         if (smoke == null)
         {
             smoke = FeelAssets.CreateEmitter("Muzzle Smoke", effectsRoot, FeelAssets.Particle(FeelAssets.SoftDot, false), 160, -.04f);
@@ -287,7 +287,7 @@ public sealed class WeaponFeedback : MonoBehaviour
     {
         Transform muzzle = weapon.MuzzlePoint;
         if (muzzle == null || view == null || !muzzle.gameObject.activeInHierarchy) return;
-        if (effectsRoot == null) effectsRoot = new GameObject("Weapon Feel FX").transform;
+        if (effectsRoot == null) effectsRoot = FeelAssets.CreateRuntimeRoot("Weapon Feel FX", gameObject).transform;
         Transform eye = view.transform;
         Vector3 forward = muzzle.forward, right = eye.right, up = eye.up;
         ref Casing casing = ref casings[nextCasing];

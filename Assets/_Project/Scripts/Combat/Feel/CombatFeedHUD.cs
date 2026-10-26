@@ -5,8 +5,8 @@ using UnityEngine.UI;
 
 /// <summary>
 /// Call of Duty (MW3)-style kill rewards. Right of the crosshair a "110 XP" number slams in on each kill, with the
-/// events listed beside it (☠ 처치, 헤드샷, 원거리 사격, 처형, 반격, 더블 킬 ...). The number accumulates over a kill
-/// streak and the group fades after a quiet spell. Only kills score, so sustained fire stays quiet.
+/// events listed beside it (☠ 처치, 헤드샷, 원거리 사격, 처형, 반격, 더블 킬 ...). 처형 and 반격 carry their own icon
+/// (knife with a slash trail, return arrow) in the line colour. The number accumulates over a kill streak and the group fades after a quiet spell. Only kills score, so sustained fire stays quiet.
 /// A rolling XP total and a kill feed sit at the top right. Created on first use during Play; GunFeel → Score.
 /// </summary>
 [DisallowMultipleComponent, DefaultExecutionOrder(470)]
@@ -21,8 +21,12 @@ public sealed class CombatFeedHUD : MonoBehaviour
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetScore() => TotalScore = 0;
 
-    private enum LineIcon { None, Skull, Headshot }
-    private sealed class Line { public RectTransform root; public TextMeshProUGUI label; public RawImage icon; public float age; public bool accent; }
+    private enum LineIcon { None, Skull, Headshot, Counter, Execution }
+    private sealed class Line
+    {
+        public RectTransform root; public TextMeshProUGUI label; public RawImage icon; public Shadow iconShadow;
+        public float age; public bool accent, tintIcon; public Color? tint;
+    }
     private sealed class KillRow
     {
         public RectTransform root; public CanvasGroup group; public Image accent;
@@ -71,8 +75,8 @@ public sealed class CombatFeedHUD : MonoBehaviour
             self.AddLine("처치", LineIcon.Skull, false);
             if (headshot) { gained += settings.headshotBonus; self.AddLine("헤드샷", LineIcon.Headshot, true); }
             if (bullet && distance >= settings.longRangeDistance) { gained += settings.longRangeBonus; self.AddLine("원거리 사격", LineIcon.None, false); }
-            if (execution) { gained += settings.executionBonus; self.AddLine("처형", LineIcon.None, true); }
-            if (counter) { gained += settings.counterBonus; self.AddLine("반격", LineIcon.None, true); }
+            if (execution) { gained += settings.executionBonus; self.AddLine("처형", LineIcon.Execution, true, KillRed); }
+            if (counter) { gained += settings.counterBonus; self.AddLine("반격", LineIcon.Counter, true, CombatFeedbackSettings.InstanceOrDefaults.counterColor); }
             if (self.multiKill >= 2)
             {
                 gained += settings.multiKillBonus * (self.multiKill - 1);
@@ -81,7 +85,8 @@ public sealed class CombatFeedHUD : MonoBehaviour
             TotalScore += gained;
             self.streakScore += gained;
             self.streakIdle = 0f; self.popAge = 0f; self.totalPop = 1f;
-            self.streakLabel.text = self.streakScore + "<size=62%><color=#" + ColorUtility.ToHtmlStringRGB(settings.scoreColor) + "> XP</color></size>";        }
+            self.streakLabel.text = self.streakScore + "<size=62%><color=#" + ColorUtility.ToHtmlStringRGB(settings.scoreColor) + "> XP</color></size>";
+        }
         if (settings.killFeed) self.AddKill(weapon, target, headshot);
     }
 
@@ -151,10 +156,12 @@ public sealed class CombatFeedHUD : MonoBehaviour
             float enter = 1f - Mathf.Pow(1f - Mathf.Clamp01(delayed / .12f), 3f);
             line.root.anchoredPosition = new Vector2((1f - enter) * -14f, -i * LineHeight + (lines.Count - 1) * LineHeight * .5f - 2f);
             line.root.localScale = Vector3.one * Mathf.Lerp(1.25f, 1f, enter);
-            Color color = Color.Lerp(Color.white, line.accent ? settings.scoreColor : Soft, Mathf.Clamp01(delayed / .12f));
+            Color color = Color.Lerp(Color.white, line.tint ?? (line.accent ? settings.scoreColor : Soft), Mathf.Clamp01(delayed / .12f));
             color.a = enter;
             line.label.color = color;
-            line.icon.color = new Color(1f, 1f, 1f, enter);
+            Color iconColor = line.tintIcon && line.tint.HasValue ? line.tint.Value : Color.white;
+            iconColor.a = enter;
+            line.icon.color = iconColor;
         }
 
         if (TotalScore > 0 && !totalRoot.gameObject.activeSelf) totalRoot.gameObject.SetActive(true);
@@ -190,7 +197,8 @@ public sealed class CombatFeedHUD : MonoBehaviour
         lines.Clear();
     }
 
-    private void AddLine(string text, LineIcon icon, bool accent)
+    /// <summary>tint overrides the accent colour: counters match the counter damage popup, executions read red.</summary>
+    private void AddLine(string text, LineIcon icon, bool accent, Color? tint = null)
     {
         if (lines.Count >= MaxLines) return;
         Line line;
@@ -202,17 +210,27 @@ public sealed class CombatFeedHUD : MonoBehaviour
             line.icon = FeelUI.Rect("Icon", line.root).gameObject.AddComponent<RawImage>();
             line.icon.raycastTarget = false;
             line.icon.rectTransform.sizeDelta = new Vector2(IconSize, IconSize);
+            // Tinted icons get a dark drop so the colour still reads over bright scenes (Linear washes thin colour out).
+            line.iconShadow = line.icon.gameObject.AddComponent<Shadow>();
+            line.iconShadow.effectColor = new Color(0f, 0f, 0f, .6f);
+            line.iconShadow.effectDistance = new Vector2(1.2f, -1.2f);
             line.label = FeelUI.ScoreLabel("Label", line.root, 17f, TextAlignmentOptions.Left);
             line.label.rectTransform.pivot = new Vector2(0f, .5f);
             line.label.rectTransform.sizeDelta = new Vector2(240f, LineHeight);
         }
         bool hasIcon = icon != LineIcon.None;
         line.icon.gameObject.SetActive(hasIcon);
-        if (hasIcon) line.icon.texture = icon == LineIcon.Skull ? CombatUIAssets.Skull : CombatUIAssets.CriticalBurst;
+        var counterIcon = CombatFeedbackSettings.InstanceOrDefaults.counterIcon;
+        if (hasIcon) line.icon.texture = icon == LineIcon.Skull ? CombatUIAssets.Skull
+            : icon == LineIcon.Counter ? (counterIcon != null ? counterIcon : CombatUIAssets.CounterArrow)
+            : icon == LineIcon.Execution ? CombatUIAssets.ExecutionKnife : CombatUIAssets.CriticalBurst;
+        // Counter / execution icons take the line tint (same as their damage popup); skull and headshot stay white.
+        line.tintIcon = icon == LineIcon.Counter || icon == LineIcon.Execution;
+        line.iconShadow.enabled = line.tintIcon;
         line.icon.rectTransform.anchoredPosition = new Vector2(IconSize * .5f, 0f);
         // Labels align in one column whether or not the line has an icon.
         line.label.rectTransform.anchoredPosition = new Vector2(IconSize + 6f, 0f);
-        line.label.text = text; line.accent = accent; line.age = 0f;
+        line.label.text = text; line.accent = accent; line.tint = tint; line.age = 0f;
         line.root.gameObject.SetActive(true);
         lines.Add(line);
     }

@@ -117,7 +117,8 @@ public sealed class HitMarkerHUD : MonoBehaviour
         {
             float angle = 45f + 90f * i;
             Vector2 direction = new Vector2(Mathf.Cos(angle * Mathf.Deg2Rad), Mathf.Sin(angle * Mathf.Deg2Rad));
-            Place(ticks[i], direction * (gap + length * .5f), new Vector2(length, thickness), angle, color);        }
+            Place(ticks[i], direction * (gap + length * .5f), new Vector2(length, thickness), angle, color);
+        }
 
         ring.enabled = kill;
         if (kill)

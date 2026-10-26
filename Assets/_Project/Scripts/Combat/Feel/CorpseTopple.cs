@@ -37,7 +37,7 @@ public sealed class CorpseTopple : MonoBehaviour
         float reach = Mathf.Abs(direction.x) * bounds.extents.x + Mathf.Abs(direction.z) * bounds.extents.z;
         Vector3 pivot = new Vector3(bounds.center.x, bounds.min.y, bounds.center.z) + direction * reach;
 
-        var root = new GameObject(target.name + " (Corpse)");
+        var root = FeelAssets.CreateRuntimeRoot(target.name + " (Corpse)", target.gameObject);
         root.transform.SetPositionAndRotation(pivot, Quaternion.identity);
         var block = new MaterialPropertyBlock();
         var overlay = HitFlashRenderer.OverlayMaterial;

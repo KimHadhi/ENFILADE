@@ -10,8 +10,8 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
     [SerializeField, Min(0.1f)] private float fullChargeTime = 0.9f;
     [SerializeField] private Vector2 damage = new Vector2(10f, 28f);
     [SerializeField] private Vector2 postureDamage = new Vector2(10f, 30f);
-    [SerializeField, Min(0f)] private float attackCooldown = 0.4f;
-    [Tooltip("적중하면 후딜 없이 다음 입력으로 연타. 빗나갔을 때만 Attack Cooldown 적용.")]
+    [SerializeField, Min(0f)] private float attackCooldown = 0.2f;
+    [Tooltip("적이나 벽에 적중하면 후딜 없이 다음 입력으로 연타. 허공에 빗나갔을 때만 Attack Cooldown 적용.")]
     [SerializeField, Min(.02f)] private float attackActiveTime = .18f;
     [Tooltip("한 번의 주먹 공격으로 맞힐 수 있는 서로 다른 대상 수.")]
     [SerializeField, Min(1)] private int attackMaxTargets = 2;
@@ -36,13 +36,14 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
     private PlayerMovement player;
     private PlayerWeaponSlots slots;
     private PlayerWeaponInput input;
+    private PlayerFistAudio fistAudio;
     private Transform aim;
     private MeleeCombatTarget target;
     private Collider targetCollider;
     private float chargeTime, shoveTime, cooldown, grabTime, grabRecoveryRemaining, lungeRemaining;
     private float parryRemaining, guardBufferRemaining, guardIdleTime;
     private int spamCount;
-    private bool charging, shovePending, grabConnected, guardAttemptHeld, defenseConnected, pendingWhiff;
+    private bool charging, shovePending, grabConnected, guardAttemptHeld, defenseConnected, pendingWhiff, punchLanded;
     private Vector3 lungeDirection;
     private readonly MeleeAttackSweep punchSweep = new MeleeAttackSweep();
     private readonly ShoveSweep.Attack shoveSweep = new ShoveSweep.Attack();
@@ -69,6 +70,8 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
         aim = camera != null ? camera.transform : transform;
         if (player != null) player.MeleeCombat = this;
         if (Application.isPlaying && camera != null && GetComponent<FistsView>() == null) gameObject.AddComponent<FistsView>();
+        fistAudio = GetComponent<PlayerFistAudio>();
+        if (fistAudio == null && Application.isPlaying) fistAudio = gameObject.AddComponent<PlayerFistAudio>();
         CancelAction();
     }
     private void Update()
@@ -194,12 +197,30 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
     {
         lungeDirection = Vector3.ProjectOnPlane(aim.forward, Vector3.up).normalized;
         lungeRemaining = player.IsGrounded ? 0.1f : 0f;
+        // Swing first: the sweep can land on its first sample inside Begin.
+        punchLanded = false; fistAudio?.PlaySwing();
         punchSweep.Begin(player, aim, Mathf.Lerp(damage.x, damage.y, charge),
             Mathf.Lerp(postureDamage.x, postureDamage.y, charge), reach, .22f, attackActiveTime,
-            attackMaxTargets, hitLayers, () => cooldown = 0f);
+            attackMaxTargets, hitLayers, OnPunchLanded, OnPunchWallHit);
         Punched?.Invoke(charge);
     }
-    public void ShowCounterPunch() => Punched?.Invoke(1f);
+    private void OnPunchLanded()
+    {
+        cooldown = 0f;
+        // One hit cue per punch, even when it lands on several targets.
+        if (!punchLanded) fistAudio?.PlayHit();
+        punchLanded = true;
+    }
+    private void OnPunchWallHit()
+    {
+        cooldown = 0f;
+        fistAudio?.PlayWallHit();
+    }
+    public void ShowCounterPunch(bool landed)
+    {
+        if (IsActive) { fistAudio?.PlaySwing(); if (landed) fistAudio?.PlayHit(); }
+        Punched?.Invoke(1f);
+    }
     private void Shove()
     {
         shoveSweep.Begin(player, aim, 3f, hitLayers, player.AbilitySettings.shoveActiveTime);

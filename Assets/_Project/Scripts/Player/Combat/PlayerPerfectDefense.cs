@@ -69,8 +69,6 @@ public sealed class PlayerPerfectDefense : MonoBehaviour
         if (collider == null) return false;
         Vector3 point = collider.bounds.center, delta = point - aim.position;
         if (delta.magnitude > (settings != null ? settings.counterReach : 4f)) return false;
-        foreach (var obstacle in Physics.RaycastAll(aim.position, delta.normalized, delta.magnitude, ~0, QueryTriggerInteraction.Ignore))
-            if (!obstacle.transform.IsChildOf(transform) && !obstacle.transform.IsChildOf(attacker.transform)) return false;
         var target = attacker; var targetReceiver = target.GetComponent<IDamageReceiver>();
         if (targetReceiver == null) return false;
         Cancel(); // Spend once before dispatching events or damage.
@@ -84,7 +82,7 @@ public sealed class PlayerPerfectDefense : MonoBehaviour
         var result = targetReceiver.ReceiveHit(new DamageHit(DamageHit.NewAttackId(), settings != null ? settings.counterDamage : 80f,
             DamageKind.Attack, point, delta.normalized, gameObject, false, posture, isCounter: true));
         if (result == DamageResult.Damaged) target.ApplyPostureDamage(posture, .65f);
-        player.MeleeCombat?.ShowCounterPunch();
+        player.MeleeCombat?.ShowCounterPunch(result == DamageResult.Damaged);
         return true;
     }
     public void Cancel() { remaining = 0f; attacker = null; timeEffects?.Release(this); }

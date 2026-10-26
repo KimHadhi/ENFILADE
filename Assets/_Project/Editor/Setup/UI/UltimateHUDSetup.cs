@@ -44,11 +44,12 @@ public static class UltimateHUDSetup
         if (!scene.IsValid() || !scene.isLoaded) throw new InvalidOperationException("Open CombatFoundation first.");
         GameObject host = Find(scene, "HPUltRoot");
         Image bar = Find(scene, "UltBar")?.GetComponent<Image>();
-        RectTransform marker = Find(scene, "UltMiniumIcon")?.GetComponent<RectTransform>();
+        RectTransform marker = Find(scene, "UltReadyThresholdIcon")?.GetComponent<RectTransform>();
+        if (marker == null) marker = Find(scene, "UltMiniumIcon")?.GetComponent<RectTransform>();
         if (marker == null) marker = Find(scene, "UltMinimumIcon")?.GetComponent<RectTransform>();
         Graphic portrait = Find(scene, "CharacterBackground")?.GetComponent<Graphic>();
         if (host == null || bar == null || marker == null || portrait == null)
-            throw new InvalidOperationException("Expected HPUltRoot, UltBar, UltMiniumIcon and CharacterBackground in CombatFoundation.");
+            throw new InvalidOperationException("Expected HPUltRoot, UltBar, UltReadyThresholdIcon and CharacterBackground in CombatFoundation.");
         Undo.SetCurrentGroupName("Connect ultimate HUD");
         UltimateCharge charge = host.GetComponent<UltimateCharge>();
         if (charge == null) charge = Undo.AddComponent<UltimateCharge>(host);
@@ -58,7 +59,8 @@ public static class UltimateHUDSetup
         if (glow == null) glow = Undo.AddComponent<UltimatePortraitGlow>(host);
         Assign(hud, "source", charge);
         Assign(hud, "bar", bar);
-        Assign(hud, "minimumMarker", marker);
+        if (marker.name != "UltReadyThresholdIcon") { Undo.RecordObject(marker.gameObject, "Rename ultimate threshold icon"); marker.name = "UltReadyThresholdIcon"; }
+        Assign(hud, "readyThresholdMarker", marker);
         Assign(glow, "source", charge);
         Assign(glow, "portrait", portrait);
         EditorSceneManager.MarkSceneDirty(scene);

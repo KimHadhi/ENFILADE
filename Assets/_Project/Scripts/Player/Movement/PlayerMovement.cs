@@ -40,6 +40,7 @@ public sealed partial class PlayerMovement : MonoBehaviour
     internal MovementStateMachine StateMachine { get; private set; }
     internal MovementAbilities Abilities { get; private set; }
     public PlayerDamageReceiver DamageReceiver { get; private set; }
+    public PlayerStats Stats { get; private set; }
     public UltimateCharge Ultimate { get; private set; }
     public PlayerMeleeCombat MeleeCombat { get; internal set; }
     public PlayerExecution Execution { get; private set; }
@@ -47,7 +48,7 @@ public sealed partial class PlayerMovement : MonoBehaviour
     public DodgeEnemyPassThrough DodgePassThrough { get; private set; }
     public bool CombatInputLocked => (MeleeCombat != null && MeleeCombat.IsGuardBreaking) || (Execution != null && Execution.IsExecuting);
     public bool IsInitialized => Motor != null && Posture != null && Actions != null && Input != null
-        && Abilities != null && StateMachine != null && DamageReceiver != null && Ultimate != null;
+        && Abilities != null && StateMachine != null && DamageReceiver != null && Stats != null && Ultimate != null;
     // Native capsule/pivot dimensions can be crouched when Unity reloads scripts in Play Mode.
     // Keep the original dimensions across that reload rather than treating them as standing.
     [SerializeField, HideInInspector] private bool runtimeBodyCaptured;
@@ -161,6 +162,8 @@ public sealed partial class PlayerMovement : MonoBehaviour
         DamageReceiver = GetComponent<PlayerDamageReceiver>();
         if (DamageReceiver == null) DamageReceiver = gameObject.AddComponent<PlayerDamageReceiver>();
         DamageReceiver.Initialize(this);
+        Stats = GetComponent<PlayerStats>();
+        if (Stats == null) Stats = gameObject.AddComponent<PlayerStats>();
         Ultimate = GetComponent<UltimateCharge>();
         if (Ultimate == null) Ultimate = gameObject.AddComponent<UltimateCharge>();
         StateMachine = MovementStateMachine.Create(this);

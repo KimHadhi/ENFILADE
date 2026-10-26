@@ -190,8 +190,9 @@ public sealed class DodgeEnemyPassThrough : MonoBehaviour
         float half = Mathf.Max(0f, body.height * Mathf.Abs(scale.y) * .5f - fullRadius);
         a = center - Vector3.up * half; b = center + Vector3.up * half;
     }
-    private static bool IsEnemy(Collider collider)
+    internal static bool IsEnemy(Collider collider)
     {
+        if (collider == null) return false;
         if (collider.GetComponentInParent<MeleeCombatTarget>() != null) return true;
         if (collider.GetComponentInParent<EnemyHealth>() != null) return true;
         for (var owner = collider.transform; owner != null; owner = owner.parent)

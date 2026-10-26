@@ -78,7 +78,7 @@ public sealed class ParkourTraversal
     }
     internal bool MantleFromLedge()
     {
-        if (Ledge.Surface == null) return false;
+        if (!WallDetector.CanUseSurface(Ledge.Surface)) return false;
         Transform support = Ledge.Surface.transform;
         if (!Detector.TryMantle(Ledge.Surface, support.TransformPoint(Ledge.LocalEdge),
             -support.TransformDirection(Ledge.LocalNormal), ctx.transform.position, out Obstacle)) return false;

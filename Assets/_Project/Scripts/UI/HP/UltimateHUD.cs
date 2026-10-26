@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 /// <summary>Uses the authored UltBar and arrow; never moves the icon or the HUD root.</summary>
@@ -8,8 +9,10 @@ public sealed class UltimateHUD : MonoBehaviour
 {
     [SerializeField] private UltimateCharge source;
     [SerializeField] private Image bar;
-    [SerializeField] private RectTransform minimumMarker;
+    [FormerlySerializedAs("minimumMarker")]
+    [SerializeField] private RectTransform readyThresholdMarker;
     [Header("Capacity and width")]
+    [FormerlySerializedAs("growWithRequiredCharge")]
     [SerializeField] private bool growWithCapacity = true;
     [SerializeField, Min(1)] private float referenceCapacity = 120f;
     [Tooltip("Maximum bar width in Canvas units. Zero means no width limit.")]
@@ -56,28 +59,28 @@ public sealed class UltimateHUD : MonoBehaviour
 
         // Existing marker Y, size, rotation and parent remain as authored.
         Vector3 point = rect.TransformPoint(new Vector3(Mathf.Lerp(rect.rect.xMin, rect.rect.xMax, charge.ThresholdRatio), 0f, 0f));
-        Vector3 local = minimumMarker.parent != null ? minimumMarker.parent.InverseTransformPoint(point) : point;
-        Vector3 markerPosition = minimumMarker.localPosition;
+        Vector3 local = readyThresholdMarker.parent != null ? readyThresholdMarker.parent.InverseTransformPoint(point) : point;
+        Vector3 markerPosition = readyThresholdMarker.localPosition;
         markerPosition.x = local.x;
-        minimumMarker.localPosition = markerPosition;
-        minimumMarker.gameObject.SetActive(capacity > 0f && charge.RequiredCharge <= capacity);
+        readyThresholdMarker.localPosition = markerPosition;
+        readyThresholdMarker.gameObject.SetActive(capacity > 0f && charge.RequiredCharge <= capacity);
     }
 
     private bool EnsureInitialized()
     {
-        if (initialized && (bar != initializedBar || minimumMarker != initializedMarker)) RestorePresentation();
-        if (initialized) return source != null && bar != null && minimumMarker != null && fill != null;
+        if (initialized && (bar != initializedBar || readyThresholdMarker != initializedMarker)) RestorePresentation();
+        if (initialized) return source != null && bar != null && readyThresholdMarker != null && fill != null;
         if (source == null) source = GetComponent<UltimateCharge>();
-        if (source == null || bar == null || minimumMarker == null) return false;
+        if (source == null || bar == null || readyThresholdMarker == null) return false;
         RectTransform rect = bar.rectTransform;
         initializedBar = bar;
-        initializedMarker = minimumMarker;
+        initializedMarker = readyThresholdMarker;
         originalSize = rect.sizeDelta;
         originalPosition = rect.anchoredPosition;
         referenceWidth = rect.rect.width;
         originalBarColor = bar.color;
-        originalMarkerPosition = minimumMarker.localPosition;
-        originalMarkerActive = minimumMarker.gameObject.activeSelf;
+        originalMarkerPosition = readyThresholdMarker.localPosition;
+        originalMarkerActive = readyThresholdMarker.gameObject.activeSelf;
         var child = new GameObject("Ultimate Fill (Runtime)", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
         if (!Application.isPlaying) child.hideFlags = HideFlags.HideAndDontSave;
         child.layer = bar.gameObject.layer;

@@ -3,7 +3,7 @@ using UnityEngine;
 public enum WeaponFireMode { SemiAutomatic, Automatic, Burst }
 public enum WeaponCategory { Ranged, Melee, Special }
 
-[CreateAssetMenu(fileName = "Weapon", menuName = "Morphang/Combat/Weapon Data")]
+[CreateAssetMenu(fileName = "Weapon", menuName = "ENFILADE/Combat/Weapon Data")]
 public sealed class WeaponData : ScriptableObject
 {
     [SerializeField] private string displayName = "Foundation Rifle";

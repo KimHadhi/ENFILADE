@@ -143,7 +143,8 @@ public sealed class WaveManager : MonoBehaviour
         {
             var point=spawnPoints[(i+offset)%spawnPoints.Length];
             if(point==null || !NavMesh.SamplePosition(point.position,out NavMeshHit navHit,2f,NavMesh.AllAreas)) continue;
-            var enemy=Instantiate(enemyPrefab,navHit.position,point.rotation);
+            var container = RuntimeSceneHierarchy.GetGroup(gameObject.scene, "ENEMIES", "Waves");
+            var enemy=Instantiate(enemyPrefab,navHit.position,point.rotation,container);
             aliveEnemies.Add(enemy); enemy.Died+=OnEnemyDied; return true;
         }
         return false;

@@ -26,8 +26,9 @@ public static class WeaponSlotsMeleeChecks
         try
         {
             Slots(); Debug.Log("PASS FISTS: four empty selections, categories, pickup replacement and magazine preservation");
-            ChargeAndCover(); Debug.Log("PASS FISTS: release-only charge scaling, cooldown and cover");
+            ChargeAndCover(); Debug.Log("PASS FISTS: release-only charge scaling and damage through cover");
             FistRush(); Debug.Log("PASS FIST RUSH: rapid confirmed hits at 30/60/120Hz, miss recovery and no held-input repeats");
+            FistWallHits(); Debug.Log("PASS FIST WALL: contact refunds recovery, one imported cue per punch, initial overlaps and faster misses");
             MeleeDrag(); Debug.Log("PASS MELEE DRAG: interpolated rotation, target budgets, duplicate colliders, walls, expiry and cancellation");
             ShoveDrag(); Debug.Log("PASS SHOVE DRAG: fists and armed sweeps follow the camera once per actor, one sound and slot cancellation");
             Defense(); Debug.Log("PASS FISTS: frontal parry/guard, rear and non-blockable damage, single parry reward");
@@ -37,8 +38,8 @@ public static class WeaponSlotsMeleeChecks
             Cancellation(); Debug.Log("PASS FISTS: slot switch and cancellation discard held attacks");
             Hud(); Debug.Log("PASS FISTS: existing HUD migrates to four selectable, non-overlapping rows");
             RangedShove(); Debug.Log("PASS COMBAT: armed shove cancels windup, stuns and reduces posture");
-            CrowdShove(); Debug.Log("PASS SHOVE: fists and guns hit the front crowd once each, respect range/cone/walls, and cancel every windup");
-            ShoveAudio(); Debug.Log("PASS SHOVE AUDIO: supplied clips, misses, wall cover, enemy priority and nonrepeating variants");
+            CrowdShove(); Debug.Log("PASS SHOVE: fists and guns hit the front crowd through walls once each, respect range/cone, and cancel every windup");
+            ShoveAudio(); Debug.Log("PASS SHOVE AUDIO: supplied clips, misses, wall contacts, enemy priority and nonrepeating variants");
             ShoveLevelColliders(); Debug.Log("PASS SHOVE COLLIDERS: nonconvex mesh contact/cover, concave empty space and terrain without physics errors");
             FastGuardBreak(); Debug.Log("PASS COMBAT: short tap and fast hold are distinct at 30/60/120Hz; approach remains collision-safe");
             EnemyBars(); Debug.Log("PASS UI: enemy health/posture bars reflect damage and hide behind cover or on death");
@@ -48,7 +49,7 @@ public static class WeaponSlotsMeleeChecks
             ExecutionCrowd(); Debug.Log("PASS EXECUTION: crowd windup cancellation, attack suppression and release");
             var asset = AssetDatabase.LoadAssetAtPath<InputActionAsset>("Assets/_Project/Input/Player.inputactions");
             Require(asset.FindAction("Combat/Guard") != null && asset.FindAction("Player/Shove") != null, "Defense and shove input actions exist");
-            Debug.Log("WEAPON_SLOTS_MELEE_CHECKS_PASSED: 22");
+            Debug.Log("WEAPON_SLOTS_MELEE_CHECKS_PASSED: 23");
         }
         finally { if (previous.IsValid()) SceneManager.SetActiveScene(previous); EditorSceneManager.CloseScene(test, true); }
     }
@@ -159,7 +160,7 @@ public static class WeaponSlotsMeleeChecks
             f.Melee.ProcessFrame(.5f,default);
             f.Melee.ProcessFrame(.01f,new MeleeInputFrame(attackPressed:true,attackHeld:true));
             f.Melee.ProcessFrame(.01f,new MeleeInputFrame(attackReleased:true));
-            Require(target.Health == health, "Wall blocks fists");
+            Require(target.Health < health, "Wall does not block fist damage within reach");
         }
     }
     private static void FistRush()
@@ -192,6 +193,59 @@ public static class WeaponSlotsMeleeChecks
             Require(enemy.Health < 1000f, "Turning a missed punch into a hit during its active window works");
             f.Melee.ProcessFrame(.01f, new MeleeInputFrame(attackPressed: true, attackHeld: true));
             Require(f.Melee.IsCharging, "Late contact also removes recovery immediately");
+        }
+    }
+    private static void FistWallHits()
+    {
+        var settings = CombatFeedbackSettings.Instance;
+        Require(settings != null && settings.fistWallSounds != null && settings.fistWallSounds.Length == 10,
+            "All ten supplied punch wall clips are connected");
+        foreach (var clip in settings.fistWallSounds)
+            Require(clip != null && clip.length > 0f, "Punch wall clip imports correctly");
+        foreach (float dt in new[] { 1f / 30f, 1f / 60f, 1f / 120f })
+        foreach (bool overlapping in new[] { false, true })
+        using (var f = new Fixture())
+        {
+            var audio = f.Player.AddComponent<PlayerFistAudio>(); Call(f.Melee, "OnEnable");
+            var wall = f.Box(new Vector3(0, 1, overlapping ? .05f : .6f), new Vector3(2, 2, .15f));
+            wall.AddComponent<BoxCollider>().size = new Vector3(2, 2, .15f); Physics.SyncTransforms();
+            f.Melee.ProcessFrame(dt, new MeleeInputFrame(attackPressed: true, attackHeld: true));
+            f.Melee.ProcessFrame(dt, new MeleeInputFrame(attackReleased: true));
+            Require(audio.LastSound == FistSound.WallHit && Array.IndexOf(settings.fistWallSounds, audio.LastClip) >= 0
+                && audio.PlayCount == 2, "Wall contact plays one swing and one supplied wall cue, including overlapping colliders");
+            var previous = audio.LastClip;
+            f.Melee.ProcessFrame(dt, default); Call(f.Melee, "LateUpdate");
+            Require(audio.PlayCount == 2, "Repeated samples and multiple wall colliders cannot replay the same swing's wall cue");
+            f.Melee.ProcessFrame(dt, new MeleeInputFrame(attackPressed: true, attackHeld: true));
+            Require(f.Melee.IsCharging, "Wall contact refunds recovery for the next click immediately");
+            f.Melee.ProcessFrame(dt, new MeleeInputFrame(attackReleased: true));
+            Require(audio.PlayCount == 4 && audio.LastSound == FistSound.WallHit && audio.LastClip != previous,
+                "The next wall punch plays its own cue without immediately repeating a variant");
+        }
+        using (var f = new Fixture())
+        {
+            var audio = f.Player.AddComponent<PlayerFistAudio>(); Call(f.Melee, "OnEnable");
+            f.Box(new Vector3(0, 1, 3f), new Vector3(2, 2, .1f));
+            f.Box(new Vector3(0, 1, -.5f), new Vector3(2, 2, .1f));
+            f.Melee.ProcessFrame(.01f, new MeleeInputFrame(attackPressed: true, attackHeld: true));
+            f.Melee.ProcessFrame(.01f, new MeleeInputFrame(attackReleased: true));
+            f.Melee.ProcessFrame(.15f, new MeleeInputFrame(attackPressed: true, attackHeld: true));
+            Require(!f.Melee.IsCharging && audio.PlayCount == 1 && audio.LastSound == FistSound.Swing,
+                "Air punches retain short recovery; rear and distant walls neither refund it nor play impact sounds");
+            f.Melee.ProcessFrame(.06f, new MeleeInputFrame(attackPressed: true, attackHeld: true));
+            Require(f.Melee.IsCharging, "A missed punch is ready again after 0.2 seconds instead of 0.4");
+        }
+        using (var f = new Fixture())
+        {
+            var audio = f.Player.AddComponent<PlayerFistAudio>(); Call(f.Melee, "OnEnable");
+            f.Box(new Vector3(1.2f, 1, 0), new Vector3(.1f, 2, 2));
+            f.Melee.ProcessFrame(.01f, new MeleeInputFrame(attackPressed: true, attackHeld: true));
+            f.Melee.ProcessFrame(.01f, new MeleeInputFrame(attackReleased: true));
+            f.Player.GetComponentInChildren<Camera>().transform.rotation = Quaternion.Euler(0, 90, 0);
+            f.Melee.ProcessFrame(.02f, default);
+            Require(audio.LastSound == FistSound.WallHit && audio.PlayCount == 2, "Turning into a wall during active frames also plays one wall cue");
+            f.Melee.ProcessFrame(.01f, new MeleeInputFrame(attackPressed: true, attackHeld: true));
+            Require(f.Melee.IsCharging, "Late wall contact also refunds miss recovery");
         }
     }
     private static void MeleeDrag()
@@ -233,9 +287,11 @@ public static class WeaponSlotsMeleeChecks
             f.Box(new Vector3(0, 1, .5f), new Vector3(2, 2, .1f));
             var aim = f.Player.GetComponentInChildren<Camera>().transform;
             var sweep = new MeleeAttackSweep();
-            sweep.Begin(f.Movement, aim, 10, 0, 1.6f, .22f, .18f, 3, ~0);
+            int wallHits = 0;
+            sweep.Begin(f.Movement, aim, 10, 0, 1.6f, .22f, .18f, 2, ~0, onWorldHit: () => wallHits++);
             aim.rotation = Quaternion.Euler(0, 90, 0); sweep.Tick(.02f);
-            Require(behind.Health == 1000 && side.Health == 1000, "Solid wall stops the entire swing regardless of penetration budget");
+            Require(behind.Health == 990 && side.Health == 990 && wallHits == 1,
+                "Wall contact reports once, consumes no target budget and does not stop damage or the remaining swing arc");
         }
         foreach (bool guard in new[] { false, true })
         using (var f = new Fixture())
@@ -406,9 +462,11 @@ public static class WeaponSlotsMeleeChecks
     private static void PerfectDefense()
     {
         var settings = CombatFeedbackSettings.Instance;
-        Require(settings.blockSound != null && settings.parrySound != null && settings.perfectEvadeSound != null
+        Require(settings.blockSounds?.Length == 4 && Array.TrueForAll(settings.blockSounds, clip => clip != null)
+            && settings.parrySounds?.Length == 6 && Array.TrueForAll(settings.parrySounds, clip => clip != null)
+            && settings.perfectEvadeSound != null
             && settings.enemyAttackStartSound != null && settings.enemyAttackStartSound.length > .8f
-            && settings.enemyAttackStartSound.length < 1f, "Four supplied clips import; attack cue is about 0.89 seconds");
+            && settings.enemyAttackStartSound.length < 1f, "Block/Parry variants and evade/attack cues import; attack cue is about 0.89 seconds");
         using (var f = new Fixture())
         {
             var enemy = f.Target(1.2f);
@@ -448,10 +506,22 @@ public static class WeaponSlotsMeleeChecks
             f.Movement.DamageReceiver.ReceiveHit(Hit());
             Require(audio.PlayCount == cues && f.Movement.PerfectDefense.Remaining == remaining, "One dodge activation grants one cue/window despite multiple enemy hits");
             var wall = f.Box(new Vector3(0,1,.5f), new Vector3(2,2,.1f));
-            Require(!f.Movement.PerfectDefense.TryCounter() && enemy.Health == 1000f, "Counter never damages through a wall");
+            Require(f.Movement.PerfectDefense.TryCounter() && enemy.Health == 920f, "Melee counter damages through cover within its range");
+            Require(!f.Movement.PerfectDefense.TryCounter(), "Counter through cover still spends the opportunity exactly once");
             Object.DestroyImmediate(wall); Physics.SyncTransforms();
             f.Movement.PerfectDefense.Tick(2f);
             Require(!f.Movement.PerfectDefense.TryCounter(), "Counter expires using real-time seconds");
+        }
+        using (var f = new Fixture())
+        {
+            var enemy = f.Target(1.2f);
+            var abilities = (MovementAbilities)typeof(PlayerMovement).GetProperty("Abilities", Any).GetValue(f.Movement);
+            abilities.Dodge.TryStart(DodgeKind.Step, 0, .2f, .4f);
+            f.Movement.DamageReceiver.ReceiveHit(new DamageHit(DamageHit.NewAttackId(), 10, DamageKind.Attack,
+                f.Origin, Vector3.back, enemy.gameObject, true));
+            Require(f.Movement.PerfectDefense.CounterAvailable, "Expiry fixture opens a real counter opportunity");
+            f.Movement.PerfectDefense.Tick(2f);
+            Require(!f.Movement.PerfectDefense.TryCounter() && enemy.Health == 1000f, "An unused counter expires without dealing damage");
         }
     }
     private static void ShoveAndGuardBreak()
@@ -625,8 +695,10 @@ public static class WeaponSlotsMeleeChecks
                 Require(enemy.Health == 1000f-(armed?f.Movement.AbilitySettings.shoveDamage:3f) && posture.Posture == 92f && posture.IsStunned,
                     "Every front enemy, including one behind another, is shoved exactly once: armed="+armed);
             }
-            foreach(var enemy in new[]{rear,side,far,covered})
-                Require(enemy.Health == 1000f && enemy.GetComponent<MeleeCombatTarget>().Posture == 100f,"Rear, side, out-of-range and covered targets are protected");
+            Require(covered.Health == 1000f-(armed?f.Movement.AbilitySettings.shoveDamage:3f)
+                && covered.GetComponent<MeleeCombatTarget>().Posture == 92f, "Cover does not block an otherwise in-range frontal shove");
+            foreach(var enemy in new[]{rear,side,far})
+                Require(enemy.Health == 1000f && enemy.GetComponent<MeleeCombatTarget>().Posture == 100f,"Rear, side and out-of-range targets are protected");
         }
         using(var f = new Fixture())
         {
@@ -662,7 +734,7 @@ public static class WeaponSlotsMeleeChecks
             Require(audio.LastImpact == ShoveImpactKind.World && audio.LastClip == settings.shoveWorldSound,"Static wall plays world impact without a damage receiver");
             var enemy=f.Target(1.2f);
             ShoveSweep.Apply(f.Movement,aim,3f,~0);
-            Require(audio.LastImpact == ShoveImpactKind.World && enemy.Health == 1000f,"Enemy behind cover cannot produce a flesh hit");
+            Require(audio.LastImpact == ShoveImpactKind.Enemy && enemy.Health == 997f,"Enemy behind cover takes damage and has priority over the wall cue");
             Object.DestroyImmediate(wall); Physics.SyncTransforms();
             // A wall within reach and a crowd hit resolve to one enemy cue, rather than stacking sounds.
             f.Box(new Vector3(0,1,2f),new Vector3(3,2,.1f)); f.Target(1.2f,.8f);
@@ -698,11 +770,13 @@ public static class WeaponSlotsMeleeChecks
                 mesh.CombineMeshes(new[] { new CombineInstance { mesh = cubeMesh,
                     transform = Matrix4x4.TRS(new Vector3(0, 1, .6f), Quaternion.identity, new Vector3(3, 2, .1f)) } });
                 var collider = wall.AddComponent<MeshCollider>(); collider.sharedMesh = mesh;
-                var enemy = f.Target(1.2f);
                 Physics.SyncTransforms();
                 Require(ShoveSweep.Apply(f.Movement, aim, 3f, ~0) == 0
-                    && audio.LastImpact == ShoveImpactKind.World && enemy.Health == 1000f,
-                    "Nonconvex wall makes world sound and shields the enemy");
+                    && audio.LastImpact == ShoveImpactKind.World, "Nonconvex wall makes world sound without a damage receiver");
+                var enemy = f.Target(1.2f);
+                Require(ShoveSweep.Apply(f.Movement, aim, 3f, ~0) == 1
+                    && audio.LastImpact == ShoveImpactKind.Enemy && enemy.Health == 997f,
+                    "Nonconvex wall does not block a nearby enemy or consume a target hit");
                 Object.DestroyImmediate(enemy.gameObject);
                 collider.sharedMesh = null; mesh.Clear();
                 mesh.CombineMeshes(new[]

@@ -11,11 +11,48 @@ public sealed class CombatFeedbackSettings : ScriptableObject
     [Min(40f), Tooltip("Stagger image width at 3 metres, in reference screen pixels before the opening pop. Closer grows up to 2x; farther shrinks with distance.")]
     public float staggerImageWidth = 260f;
     public TMP_FontAsset promptFont;
+    [Header("Executable heartbeat")]
+    [Range(0f, .4f), Tooltip("Stagger icon swell on each heartbeat (lub, then a smaller dub). 0 turns the pulse off.")]
+    public float heartbeatScale = .28f;
+    [Tooltip("Heartbeats per minute when the enemy becomes executable / just before posture fully recovers. Speeds up as the window closes.")]
+    public Vector2 heartbeatBpm = new Vector2(72f, 150f);
+    [Tooltip("Bloom and elliptical waves around the enemy HP bar while executable. Off-white so it never reads as red health. Alpha is the brightest heartbeat.")]
+    public Color executableGlowColor = new Color(.93f, .91f, .9f, .85f);
+    [Tooltip("Round glow behind the execution mark, pulsing with the heartbeat.")]
+    public Color executableMarkGlowColor = new Color(1f, .12f, .2f, .85f);
+    [Header("Executable palette (whole enemy bar re-dresses while executable)")]
+    [Tooltip("Remaining health fill. Bright crimson pink: clearly not the normal red, without going dull.")]
+    public Color executableHealthColor = new Color(.98f, .24f, .42f);
+    [Tooltip("Already lost part of the health track.")]
+    public Color executableHealthLostColor = new Color(.45f, .05f, .16f, .4f);
+    [Tooltip("Dark soft plate behind the bar, so the re-dressed bar stands out on any background.")]
+    public Color executablePlateColor = new Color(.06f, 0f, .03f, .8f);
+    [Tooltip("< > brackets and the posture bar (counts down the window as it refills).")]
+    public Color executableAccentColor = new Color(.95f, .93f, .92f);
+    [Tooltip("Enemy name above the bar.")]
+    public Color executableNameColor = new Color(1f, .5f, .6f);
+    [Range(0f, .5f), Tooltip("Enemy HP bar scale kick when the enemy becomes executable.")]
+    public float executableBarPunch = .22f;
+    [Min(.05f), Tooltip("White flash + light sweep across the HP bar at the moment of becoming executable.")]
+    public float executableFlashSeconds = .4f;
+    [Min(0f), Tooltip("How far the elliptical waves radiate out from the HP bar on each heartbeat, bar units (bar is 120 wide).")]
+    public float executableRippleReach = 36f;
     [Header("Shove Impacts")]
     public AudioClip[] shoveEnemySounds;
     public AudioClip shoveWorldSound;
     [Range(0f, 1f)] public float shoveEnemyVolume = .3f;
     [Range(0f, 1f)] public float shoveWorldVolume = .3f;
+    [Header("Player Attack - Punch")]
+    [Tooltip("One random clip on every punch, hit or miss.")]
+    [InspectorName("Punch Swing Sounds")]
+    public AudioClip[] fistSwingSounds;
+    [Tooltip("One random clip when a punch damages at least one target. Blocked or parried punches stay silent here.")]
+    [InspectorName("Punch Hit Sounds")]
+    public AudioClip[] fistHitSounds;
+    [InspectorName("Punch Wall Sounds")]
+    public AudioClip[] fistWallSounds;
+    [Range(0f, 1f)] public float fistSwingVolume = .3f, fistHitVolume = .3f;
+    [Range(0f, 1f), InspectorName("Punch Wall Volume")] public float fistWallVolume = .3f;
     [Header("Hit and kill sounds")]
     [Tooltip("Headshot hit and kill layers. Effects Only and Off both mute them; there are no hit effects yet.")]
     public HitFeedbackLevel headshotFeedback = HitFeedbackLevel.SoundAndEffects;
@@ -23,12 +60,18 @@ public sealed class CombatFeedbackSettings : ScriptableObject
     public HitFeedbackLevel bodyshotFeedback = HitFeedbackLevel.SoundAndEffects;
     [Tooltip("Player fall damage reuses Shove Enemy Sounds (same clips) with Tackle Sounds.")]
     public AudioClip[] impactBulletSounds, impactPierceSounds, fleshBreakSounds, fleshSplatSounds,
-        bodyThudSounds, boneCrackSounds, tackleSounds, punchSounds;
+        bodyThudSounds, boneCrackSounds, tackleSounds;
+    [InspectorName("Player Damage Sounds")]
+    public AudioClip[] punchSounds;
     [Range(0f, 1f)] public float hitSoundVolume = .3f, playerHitVolume = .3f;
     [Min(1f), Tooltip("Hits not dealt by the player play at the hit point and fade out by this distance, metres.")]
     public float hitSoundDistance = 10f;
     [Header("Defense and enemy attacks")]
-    public AudioClip blockSound, parrySound, enemyAttackStartSound, perfectEvadeSound;
+    [Tooltip("Ordinary blocks: Block clips only.")]
+    public AudioClip[] blockSounds;
+    [Tooltip("Ordinary parries, including combo finishers: Parry clips only. Hard/Hardest Parry are reserved for future explicitly stronger attacks.")]
+    public AudioClip[] parrySounds;
+    public AudioClip enemyAttackStartSound, perfectEvadeSound;
     [Range(0f, 1f)] public float blockVolume = .3f, parryVolume = .3f, enemyAttackVolume = .3f, perfectEvadeVolume = .3f;
     [Header("Perfect defense counter")]
     [Range(.01f, 1f)] public float perfectTimeScale = .08f;
@@ -138,6 +181,19 @@ public sealed class CombatFeedbackSettings : ScriptableObject
     public float trailStripeScroll = 14f;
     [Tooltip("Thin white line where remaining health ends while a trail is showing.")]
     public bool trailEdgeLine = true;
+    [Range(.5f, 8f), Tooltip("Edge line thickness at rest, bar units (bar is 120 wide, 8 tall). Sits mostly on the lost side so it reads as the boundary.")]
+    public float trailEdgeWidth = 3f;
+    [Header("Health edge hit pulse (enemy bar)")]
+    [Range(0f, 4f), Tooltip("On a hit the edge line snaps this much taller (1.6 = 2.6x), springs back with a small squash and settles. 0 turns the pulse off.")]
+    public float trailEdgePulseScale = 1.6f;
+    [Range(0f, 20f), Tooltip("On a hit the edge line also stretches this far to the right (into the lost part), bar units, then snaps back faster than the height.")]
+    public float trailEdgeHitStretch = 6f;
+    [Min(.05f), Tooltip("Time for the spring back to settle after the snap, seconds. Bigger = slower, floatier.")]
+    public float trailEdgeSettleSeconds = .5f;
+    [Tooltip("Edge line alpha: x = at rest, y = at the moment of the hit.")]
+    public Vector2 trailEdgeAlpha = new Vector2(.75f, 1f);
+    [Tooltip("Soft glow that blooms around the edge line on a hit and fades with the spring. Alpha is the peak; 0 turns it off.")]
+    public Color trailEdgeGlowColor = new Color(1f, .97f, .94f, .8f);
     [Min(0f), Tooltip("The trail starts white and settles into its loss colour over this time.")]
     public float trailFlashSeconds = .12f;
     [Min(0f), Tooltip("Seconds the lost part stays full before draining.")]

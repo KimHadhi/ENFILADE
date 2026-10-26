@@ -15,7 +15,15 @@ MonoBehaviour:
   scoreFont: {fileID: 11400000, guid: 0d0973292e9d2284b9c7c326c8ed2fa5, type: 2}
   killPulseOnExecution: 1
   killPulseOnCounter: 1
-  killPulseOnGunKill: 0
-  killPulseOnOtherKill: 0
+  killPulseOnGunKill: 1
+  killPulseOnOtherKill: 1
   killExposure: 0.25
+  gtaKillExposure: 0.12
+  gtaKillBloom: 0.8
+  gtaKillBloomThreshold: 1.1
+  gtaKillTint: {r: 0.98, g: 0.99, b: 1, a: 1}
+  gtaKillTemperature: -6
+  gtaKillSaturation: -3
+  gtaKillContrast: -3
+  gtaKillChromatic: 0.1
   scoreOffset: {x: 130, y: -72}

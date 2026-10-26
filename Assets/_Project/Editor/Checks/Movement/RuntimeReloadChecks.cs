@@ -52,6 +52,9 @@ public static class RuntimeReloadChecks
             var weapon = player.GetComponent<WeaponController>();
             if (phase == 1)
             {
+                var slots = player.GetComponent<PlayerWeaponSlots>();
+                Require(slots != null && slots.SelectSlot(0) && weapon.Runtime != null,
+                    "the holstered scene can explicitly equip its first weapon for the reload check");
                 player.DamageReceiver.ReceiveHit(new DamageHit(DamageHit.NewAttackId(), 20f, DamageKind.Fall, player.transform.position, Vector3.down));
                 player.ChangeState(PlayerMovement.MovementState.Crouching);
                 player.UpdateHeightsAndTransform(0f);

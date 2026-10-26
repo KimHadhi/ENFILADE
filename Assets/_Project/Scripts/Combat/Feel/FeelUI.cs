@@ -21,6 +21,7 @@ public static class FeelUI
     /// <summary>Overlay canvas scaled like the rest of the combat HUD (1920x1080 reference).</summary>
     public static void SetupOverlay(GameObject host, int order)
     {
+        FeelAssets.GroupRuntimeRoot(host, "Screen");
         var canvas = host.GetComponent<Canvas>(); canvas.renderMode = RenderMode.ScreenSpaceOverlay; canvas.sortingOrder = order;
         var scaler = host.GetComponent<CanvasScaler>(); scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         scaler.referenceResolution = new Vector2(1920f, 1080f); scaler.matchWidthOrHeight = .5f;

@@ -1,6 +1,6 @@
 # 이동 코드 구조
 
-[프로젝트 안내](../../../README.md) · [스크립트 길잡이](../../README.md) · [이동 조작·설정](../../../Docs/MovementGuide.md) · [검증 안내](../../../Docs/ValidationGuide.md)
+[프로젝트 안내](../../../../../README.md) · [스크립트 길잡이](../../README.md) · [이동 조작·설정](../../../Docs/MovementGuide.md) · [검증 안내](../../../Docs/ValidationGuide.md)
 
 이 문서는 이동 시스템을 수정할 때의 진입점과 유지해야 할 규칙을 설명합니다. 조작법과 기본 수치는 이동 안내에서 관리합니다.
 
@@ -111,6 +111,8 @@ Slide 내부의 자세 전환은 부모를 다시 진입하지 않으므로 같�
 기존 enum 숫자를 재배열하지 않습니다. 삭제된 WallRun의 값 15는 예약되어 있으며 이후 값은 유지해야 합니다. 직렬화된 필드의 이름·타입을 바꿀 때는 씬·프리팹 값을 어떻게 이전할지 먼저 정합니다. 파일 이동에는 해당 `.meta`를 함께 유지합니다.
 
 ## 검증
+
+벽·렛지의 지지면은 `WallDetector.CanUseSurface`에서 판별한다. 적의 `MeleeCombatTarget`·`EnemyHealth` 또는 상위 오브젝트의 Enemy 태그가 있으면 잡지 않으며, 진행 중인 상태도 이 규칙을 확인한다. 적 머리 통과를 유지하기 위해 일반 장애물·지면 검사와 이 지지면 판정을 구분한다. 관련 회귀 검사는 `MovementAbilityChecks.EnemySurfaces`에서 다룬다.
 
 상태 계층·설정 보존은 `MovementRefactorChecks`, 이동 동작은 `MovementAbilityChecks`와 분할 검사 파일에서 다룹니다. 저스트 슬라이드와 레그돌은 `SlideCombatPlayChecks`/`RagdollKnockdownChecks`, 실제 플레이 중 어셈블리 재로드는 `RuntimeReloadChecks`가 담당합니다.
 

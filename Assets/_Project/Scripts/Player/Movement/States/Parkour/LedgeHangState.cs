@@ -31,7 +31,7 @@ public sealed class LedgeHangState : MovementBaseState
     public override void UpdateLogic(float dt)
     {
         var ledge = ctx.Abilities.Traversal.Ledge;
-        if (ledge.Surface == null || !ledge.Surface.enabled || !ledge.Surface.gameObject.activeInHierarchy) { Drop(); return; }
+        if (!WallDetector.CanUseSurface(ledge.Surface)) { Drop(); return; }
         if (requestJump && ctx.CurrentStateDuration >= ctx.AbilitySettings.ledgeCatchDuration)
         { ctx.Abilities.Traversal.JumpFromLedge(); return; }
         if (requestMantle && ctx.CurrentStateDuration >= ctx.AbilitySettings.ledgeCatchDuration)
@@ -43,7 +43,7 @@ public sealed class LedgeHangState : MovementBaseState
     public override void UpdatePhysics(float dt)
     {
         var traversal = ctx.Abilities.Traversal;
-        if (traversal.Ledge.Surface == null) { Drop(); return; }
+        if (!WallDetector.CanUseSurface(traversal.Ledge.Surface)) { Drop(); return; }
         if (traversal.FacingLedge() && ctx.CurrentStateDuration >= ctx.AbilitySettings.ledgeCatchDuration
             && Mathf.Abs(ctx.CurrentInput.x) > 0.1f)
         {

@@ -12,10 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a5c2ef63f7af4b5884fde0b8f88ec894, type: 3}
   m_Name: Feedback
   m_EditorClassIdentifier:
-  staggerImage: {fileID: 2800000, guid: c3ea78f2355e417f98886c8225f1e254, type: 3}
-  staggerSound: {fileID: 8300000, guid: 4d23329960cf4879b59e7152aec63eb3, type: 3}
-  staggerSoundVolume: 0.25
-  staggerImageWidth: 260
+  staggerImage: {fileID: 2800000, guid: 87c0d939872941fa9c4fee05877d2080, type: 3}
+  staggerSound: {fileID: 8300000, guid: a3684731addf427190ef1506b7894df0, type: 3}
+  staggerSoundVolume: 0.8
+  staggerImageWidth: 200
   promptFont: {fileID: 11400000, guid: 111e9ac01bcd7fd40bf85568b2a38fa0, type: 2}
   shoveEnemySounds:
   - {fileID: 8300000, guid: f87f0ee748a449deb50f529e652c636f, type: 3}
@@ -27,6 +27,30 @@ MonoBehaviour:
   shoveWorldSound: {fileID: 8300000, guid: c6e99b7ba4a042858afea6a9d18e6e7c, type: 3}
   shoveEnemyVolume: 0.3
   shoveWorldVolume: 0.3
+  fistSwingSounds:
+  - {fileID: 8300000, guid: 4e37f5ae934d4da3b85977a6ab2100a4, type: 3}
+  - {fileID: 8300000, guid: ea9a20bd8d3c4adda5dfd40bb40f0bd9, type: 3}
+  - {fileID: 8300000, guid: dca13bc37c4044be8cd122c6b350eb98, type: 3}
+  fistHitSounds:
+  - {fileID: 8300000, guid: a4dcafb716e34ce384316eda4b282d71, type: 3}
+  - {fileID: 8300000, guid: 55e2d90c94324c36bbe83ddce3c3480c, type: 3}
+  - {fileID: 8300000, guid: 488ac2dbd0684396b33a2926d6917e8f, type: 3}
+  - {fileID: 8300000, guid: c3a183a6f4ae494d8b5c1f4a51aff849, type: 3}
+  - {fileID: 8300000, guid: 1a2217424bf5459d9d70ea434edaba63, type: 3}
+  fistWallSounds:
+  - {fileID: 8300000, guid: 036221fc3246400ab339808e72f3f75e, type: 3}
+  - {fileID: 8300000, guid: d4263f8a2d024156b535eddebf1d491a, type: 3}
+  - {fileID: 8300000, guid: 685bc91958a340d48475b635b8df2147, type: 3}
+  - {fileID: 8300000, guid: 1bde0d3ee0744e72a9579898bc0a5b18, type: 3}
+  - {fileID: 8300000, guid: cd3b8faf0ec84f22b00a0f9f09101f92, type: 3}
+  - {fileID: 8300000, guid: 4c454533aa834b8d964765367ea252e5, type: 3}
+  - {fileID: 8300000, guid: 330bf15b2b7e45f78bedf462166642ab, type: 3}
+  - {fileID: 8300000, guid: d2167af309194479a53550c3df901919, type: 3}
+  - {fileID: 8300000, guid: e0836a84deb34af8a3e5520d0659227f, type: 3}
+  - {fileID: 8300000, guid: fa658eb1c6694eb7a2c0fa3b2592d58c, type: 3}
+  fistWallVolume: 0.3
+  fistSwingVolume: 0.3
+  fistHitVolume: 0.3
   headshotFeedback: 0
   bodyshotFeedback: 0
   impactBulletSounds:
@@ -71,7 +95,17 @@ MonoBehaviour:
   hitSoundVolume: 0.3
   playerHitVolume: 0.3
   hitSoundDistance: 10
-  blockSound: {fileID: 8300000, guid: 72ca7f9312f548b9b7b40ab40b48b2e7, type: 3}
+  blockSounds:
+  - {fileID: 8300000, guid: 72ca7f9312f548b9b7b40ab40b48b2e7, type: 3}
+  - {fileID: 8300000, guid: a9af5d773c7245329b237a4d17ee02f9, type: 3}
+  - {fileID: 8300000, guid: b2d9ade9f7c14bbe9094e1f79eee40d1, type: 3}
+  - {fileID: 8300000, guid: 7f0f552cf552423b9be2a39404d866eb, type: 3}
   enemyAttackStartSound: {fileID: 8300000, guid: c3c9d1035cb04ba8908bf2cbbcbd446b, type: 3}
   perfectEvadeSound: {fileID: 8300000, guid: 9cabe8b869f240429c8bdb25000a3b45, type: 3}
-  parrySound: {fileID: 8300000, guid: 08120d276ee346659b07fae1636fe60f, type: 3}
+  parrySounds:
+  - {fileID: 8300000, guid: 08120d276ee346659b07fae1636fe60f, type: 3}
+  - {fileID: 8300000, guid: 34b062143c664b9c92458b3b0283e24c, type: 3}
+  - {fileID: 8300000, guid: e44f4e030f484a75ad2ed50b634b5faf, type: 3}
+  - {fileID: 8300000, guid: 449b2eb1b9f54414b7b00ce6afa96d54, type: 3}
+  - {fileID: 8300000, guid: 6dc3ce7e9e8446e6bc98f9e647071935, type: 3}
+  - {fileID: 8300000, guid: 03c4bee0a60b4c93aa763d3a01cc047b, type: 3}

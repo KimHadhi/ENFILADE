@@ -24,6 +24,13 @@ public static class PlayerConsoleChecks
 
     static PlayerConsoleChecks() { EditorApplication.update += Tick; }
 
+    public static void RunBatch()
+    {
+        if (!Application.isBatchMode) throw new InvalidOperationException("Run in an isolated batch project.");
+        EditorSceneManager.OpenScene("Assets/_Project/Scenes/Development/CombatFoundation.unity");
+        File.WriteAllText(Request, "Run player stat, console and live HUD checks.");
+    }
+
     private static void Tick()
     {
         if (EditorApplication.isCompiling || EditorApplication.isUpdating) return;
@@ -106,6 +113,8 @@ public static class PlayerConsoleChecks
                 CheckLabelSeparation();
                 Require(UltimateCharge.ResolveHUDSource(ult, null) == player.Ultimate,"HUD uses player resource");
                 Near(Field<Image>(ult,"fill").rectTransform.anchorMax.x,100f/120f,"Live ultimate fill");
+                CheckUltimateStatsAndLayout();
+                CheckAmmoCommand();
                 Require(fire.CurrentPhase == UltimateFireEffect.Phase.Starting || fire.CurrentPhase == UltimateFireEffect.Phase.Looping,"Ready fire starts");
                 fire.RefreshNow(20); Require(fire.CurrentPhase == UltimateFireEffect.Phase.Looping,"Fire loops");
                 Run("/ult 999"); Near(player.Ultimate.CurrentCharge,120,"Charge capacity clamp");
@@ -113,7 +122,7 @@ public static class PlayerConsoleChecks
                 fire.RefreshNow(0); Require(fire.CurrentPhase == UltimateFireEffect.Phase.Ending,"Use ends fire");
                 fire.RefreshNow(20); Require(fire.CurrentPhase == UltimateFireEffect.Phase.Hidden,"Fire hides after end");
                 Run("/ultuse"); Near(player.Ultimate.CurrentCharge,20,"Insufficient charge not consumed");
-                Run("/ultmax 80"); Near(player.Ultimate.MaximumCharge,200,"Increase ultimate capacity");
+                Run("/ultmax 200"); Near(player.Ultimate.MaximumCharge,200,"Set absolute ultimate capacity");
                 Run("/ultcost 70"); Run("/ultset 70"); Require(player.Ultimate.IsReady,"Lower cost readiness");
                 prefab = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Prefabs/UI/HUD/PlayerHealthHUD.prefab"));
                 break;
@@ -133,10 +142,10 @@ public static class PlayerConsoleChecks
                 Run("/hurt 1000"); Require(!player.DamageReceiver.IsAlive,"Lethal damage");
                 Run("/heal"); Near(player.DamageReceiver.Health,0,"Healing does not revive");
                 Run("/revive"); Near(player.DamageReceiver.Health,300,"Revive full HP"); Near(player.DamageReceiver.Shield,0,"Revive clears shield");
-                Require(Run("/stats").Contains("궁극기 35/200"),"Stats reflect gameplay state");
+                Require(Run("/stats").Contains("궁극기 35%/200%"),"Stats reflect gameplay state");
                 File.WriteAllText(Result,"PASS: native Play Mode; shield minimum 100 scale/width/percentage and non-overlapping label meshes; console submission/history, shield-first damage/overflow, healing, absolute/relative max HP with minimum 1, hurt rename, invalid arguments, death/revive, ultimate capacity/cost/consumption, live HP/ultimate HUD, Inspector edits, fire start/loop/end, portrait readiness and reusable HUD prefab. Editor HUD/fire regressions passed.");
                 Debug.Log("PLAYER_CONSOLE_CHECKS_PASSED");
-                Finish();
+                Finish(true);
                 break;
         }
     }
@@ -224,11 +233,70 @@ public static class PlayerConsoleChecks
         Require(output != null && !output.StartsWith("명령어 실행에 실패"), command);
         return output;
     }
-    private static void Finish()
+    private static void CheckUltimateStatsAndLayout()
+    {
+        Require(player.Stats != null && player.Stats == player.Ultimate.Stats, "Player stats are the gameplay stat source");
+        var bar = Field<Image>(ult, "bar").rectTransform;
+        var marker = Field<RectTransform>(ult, "readyThresholdMarker");
+        Require(marker.name == "UltReadyThresholdIcon", "Scene threshold icon has its descriptive name");
+        float initialWidth = bar.rect.width;
+        float leftEdge = bar.localPosition.x + bar.rect.xMin;
+        Run("/ultcost 70"); ult.RefreshNow();
+        Near(player.Stats.UltimateCostPercent, 70f, "Console edits the cost stat");
+        Near(bar.rect.width, initialWidth, "Cost command preserves the 120% bar width");
+        Vector3 threshold = marker.parent.InverseTransformPoint(bar.TransformPoint(new Vector3(Mathf.Lerp(bar.rect.xMin, bar.rect.xMax, 70f / 120f), 0f)));
+        Near(marker.localPosition.x, threshold.x, "Scene threshold marks 70/120 of the bar");
+        Run("/ultset 120"); Run("/ultuse");
+        Near(player.Ultimate.CurrentCharge, 50f, "70% cast leaves 50% reserve");
+        Run("/ultmax 1000"); ult.RefreshNow();
+        Near(player.Stats.UltimateCapacityPercent, 1000f, "ultmax assigns its argument as the absolute capacity");
+        Near(bar.rect.width, Field<float>(ult, "maximumBarWidth"), "Actual HUD obeys its maximum width");
+        Near(bar.localPosition.x + bar.rect.xMin, leftEdge, "Actual HUD's left edge stays fixed");
+        Near(Field<Image>(ult, "fill").rectTransform.anchorMax.x, 50f / 1000f, "Actual HUD uses capacity ratios above the width cap");
+        var serialized = new SerializedObject(player.Stats);
+        serialized.FindProperty("ultimateCostPercent").floatValue = 40f;
+        serialized.ApplyModifiedPropertiesWithoutUndo();
+        Require(player.Ultimate.IsReady, "Inspector cost stat changes gameplay readiness");
+        Run("/ultmax 20"); ult.RefreshNow();
+        Near(player.Ultimate.MaximumCharge, 20f, "ultmax 20 sets the maximum to 20 rather than adding 20");
+        Near(player.Ultimate.CurrentCharge, 20f, "Lowering the maximum clamps excess stored charge");
+        Near(player.Ultimate.RequiredCharge, 40f, "Capacity command preserves the independent cast cost");
+        Require(!player.Ultimate.IsReady && !marker.gameObject.activeSelf, "Capacity below the cost disables readiness and hides its marker");
+        Run("/ultmax 120");
+        Near(player.Ultimate.CurrentCharge, 20f, "Increasing the maximum does not grant charge");
+        player.Ultimate.SetValues(100f, 120f, 100f); ult.RefreshNow();
+    }
+
+    private static void CheckAmmoCommand()
+    {
+        var slots = player.GetComponentInChildren<PlayerWeaponSlots>(true);
+        Require(slots != null, "Actual scene has a weapon inventory");
+        var first = slots.GetRuntime(0);
+        var second = slots.GetRuntime(1);
+        Require(first != null && second != null, "Actual inventory has two guns");
+        int selection = slots.SelectedSlot;
+        while (first.Ammo > 0) first.Tick(1f, new WeaponInputFrame(true, true));
+        first.Tick(.01f, new WeaponInputFrame(false, false, true));
+        Require(first.IsReloading, "Ammo command fixture is reloading");
+        second.Tick(1f, new WeaponInputFrame(true, true));
+        second.AddReserve(999);
+        int bonusReserve = second.ReserveAmmo;
+        Require(Run("/ammo 10").StartsWith("사용법:"), "Ammo rejects unsupported arguments");
+        Require(first.Ammo == 0 && first.IsReloading, "Invalid ammo command leaves ammunition and reload unchanged");
+        Require(Run("/ammo").Contains("총기 2정"), "Ammo replenishes every carried gun even while holstered");
+        Require(first.Ammo == first.Data.MagazineSize && first.ReserveAmmo == first.Data.InitialReserveAmmo, "Ammo restores magazine and starting reserve");
+        Require(second.Ammo == second.Data.MagazineSize && second.ReserveAmmo == bonusReserve, "Ammo preserves reserve above the starting amount");
+        Require(!first.IsReloading && slots.SelectedSlot == selection, "Ammo cancels reload without changing selection");
+        first.Tick(10f, default);
+        Require(first.Ammo == first.Data.MagazineSize && first.ReserveAmmo == first.Data.InitialReserveAmmo, "Cancelled reload cannot transfer ammunition after replenishing");
+    }
+
+    private static void Finish(bool success = false)
     {
         SessionState.SetBool(Running,false);
         if (prefab != null) Object.Destroy(prefab);
         if (EditorApplication.isPlaying) EditorApplication.ExitPlaymode();
+        if (Application.isBatchMode) EditorApplication.Exit(success ? 0 : 1);
     }
     private static T Field<T>(object target,string name) => (T)target.GetType().GetField(name,BindingFlags.Instance|BindingFlags.NonPublic).GetValue(target);
     private static void Require(bool value,string message) { if (!value) throw new InvalidOperationException(message); }

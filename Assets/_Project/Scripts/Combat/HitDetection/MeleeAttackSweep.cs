@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-/// <summary>Reusable thrust/swing window. Target budget and reach are supplied by the current weapon.</summary>
+/// <summary>Reusable melee window. World surfaces report contact without blocking targets or consuming their budget.</summary>
 public sealed class MeleeAttackSweep
 {
     private readonly AimSweepWindow window;
@@ -15,16 +15,17 @@ public sealed class MeleeAttackSweep
     private int maxTargets, hitCount;
     private LayerMask layers;
     private long attackId;
-    private Action onDamage;
+    private Action onDamage, onWorldHit;
+    private bool worldHit;
     public bool IsActive => window.IsActive;
     public MeleeAttackSweep() { window = new AimSweepWindow(Sample); }
     public void Begin(PlayerMovement owner, Transform view, float damage, float posture, float reach,
-        float radius, float duration, int maxTargets, LayerMask layers, Action onDamage = null)
+        float radius, float duration, int maxTargets, LayerMask layers, Action onDamage = null, Action onWorldHit = null)
     {
         Cancel(); player = owner; aim = view; this.damage = damage; this.posture = posture;
         this.reach = Mathf.Max(.1f, reach); this.radius = Mathf.Max(.01f, radius);
-        this.maxTargets = Mathf.Max(1, maxTargets); this.layers = layers; this.onDamage = onDamage;
-        hitCount = 0; contacted.Clear(); attackId = DamageHit.NewAttackId();
+        this.maxTargets = Mathf.Max(1, maxTargets); this.layers = layers; this.onDamage = onDamage; this.onWorldHit = onWorldHit;
+        hitCount = 0; worldHit = false; contacted.Clear(); attackId = DamageHit.NewAttackId();
         window.Begin(aim, duration);
     }
     public void Tick(float dt) { window.Tick(dt, aim); }
@@ -54,9 +55,11 @@ public sealed class MeleeAttackSweep
             var receiver = collider.GetComponentInParent<IDamageReceiver>();
             var identity = receiver as UnityEngine.Object;
             if (identity != null && contacted.Contains(identity)) continue;
-            if (!ShoveSweep.HasSight(player.transform, collider, origin, contact.point, layers)) continue;
-            // Solid cover stops this swing. It cannot resume through the wall on a later frame.
-            if (receiver == null) { Cancel(); break; }
+            if (receiver == null)
+            {
+                if (!worldHit) { worldHit = true; onWorldHit?.Invoke(); }
+                continue;
+            }
             contacted.Add(identity);
             var result = receiver.ReceiveHit(new DamageHit(attackId, damage, DamageKind.Attack,
                 contact.point, forward, player.gameObject, true, posture));

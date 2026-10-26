@@ -3,6 +3,7 @@ using UnityEngine;
 
 /// <summary>Per-character ultimate resource. Ability code grants charge and calls TryConsume.</summary>
 [DisallowMultipleComponent]
+[RequireComponent(typeof(PlayerStats))]
 public sealed class UltimateCharge : MonoBehaviour
 {
     // HUD-local values remain useful outside Play; gameplay values belong to the player.
@@ -14,8 +15,6 @@ public sealed class UltimateCharge : MonoBehaviour
         return player != null && player.Ultimate != null ? player.Ultimate : authored;
     }
     [SerializeField, Min(0)] private float currentCharge;
-    [SerializeField, Min(0)] private float maximumCharge = 120f;
-    [SerializeField, Min(0)] private float requiredCharge = 100f;
     [SerializeField, Min(0), Tooltip("Charge granted per accepted hit on a living enemy, including lethal hits.")]
     private float chargePerEnemyHit = 3f;
 
@@ -27,8 +26,22 @@ public sealed class UltimateCharge : MonoBehaviour
         player.Ultimate.AddCharge(player.Ultimate.chargePerEnemyHit);
     }
 
-    public float MaximumCharge => NonNegative(maximumCharge);
-    public float RequiredCharge => NonNegative(requiredCharge);
+    private PlayerStats stats;
+    public PlayerStats Stats
+    {
+        get
+        {
+            if (stats == null)
+            {
+                // Repair already-loaded scene instances when this dependency is added by a script reload.
+                stats = GetComponent<PlayerStats>() ?? gameObject.AddComponent<PlayerStats>();
+                stats.Changed += Publish;
+            }
+            return stats;
+        }
+    }
+    public float MaximumCharge => Stats.UltimateCapacityPercent;
+    public float RequiredCharge => Stats.UltimateCostPercent;
     public float CurrentCharge => Mathf.Clamp(NonNegative(currentCharge), 0f, MaximumCharge);
     public bool IsReady => MaximumCharge > 0f && CurrentCharge >= RequiredCharge;
     public float FillRatio => MaximumCharge > 0f ? CurrentCharge / MaximumCharge : 0f;
@@ -40,39 +53,46 @@ public sealed class UltimateCharge : MonoBehaviour
     private bool dirty = true, published, previousReady;
     private float previousCurrent, previousMaximum, previousRequired;
 
-    private void OnEnable() { dirty = true; }
+    private void OnEnable() { dirty = true; _ = Stats; }
+    // Stat changes must still clamp stored charge while the player/resource is disabled.
+    private void OnDestroy() { if (stats != null) stats.Changed -= Publish; }
     private void OnValidate() { dirty = true; }
     private void Update() { if (dirty) Publish(); }
 
     public void SetValues(float current, float maximum, float required)
     {
-        maximumCharge = NonNegative(maximum);
-        requiredCharge = NonNegative(required);
-        currentCharge = Mathf.Clamp(NonNegative(current), 0f, maximumCharge);
+        currentCharge = NonNegative(current);
+        Stats.SetUltimateLimits(maximum, required);
         Publish();
     }
 
     /// <summary>Level-up changes preserve stored charge, clamping only if capacity shrinks.</summary>
     public void SetLimits(float maximum, float required) => SetValues(CurrentCharge, maximum, required);
 
+    public void SetCurrentCharge(float current)
+    {
+        currentCharge = NonNegative(current);
+        Publish();
+    }
+
     public void AddCharge(float amount)
     {
         double sum = (double)CurrentCharge + NonNegative(amount);
-        SetValues((float)Math.Min(sum, MaximumCharge), MaximumCharge, RequiredCharge);
+        SetCurrentCharge((float)Math.Min(sum, MaximumCharge));
     }
 
     /// <summary>Spend only the required amount. Overflow remains for the next cast.</summary>
     public bool TryConsume()
     {
         if (!IsReady) return false;
-        SetValues(CurrentCharge - RequiredCharge, MaximumCharge, RequiredCharge);
+        SetCurrentCharge(CurrentCharge - RequiredCharge);
         return true;
     }
 
     private void Publish()
     {
-        maximumCharge = MaximumCharge;
-        requiredCharge = RequiredCharge;
+        float maximumCharge = MaximumCharge;
+        float requiredCharge = RequiredCharge;
         currentCharge = CurrentCharge;
         dirty = false;
         bool ready = IsReady;

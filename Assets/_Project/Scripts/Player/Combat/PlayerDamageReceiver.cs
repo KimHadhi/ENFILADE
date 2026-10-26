@@ -24,6 +24,8 @@ public sealed class PlayerDamageReceiver : MonoBehaviour, IDamageReceiver
         if (!healthInitialized) { Health = MaximumHealth; healthInitialized = true; }
         else Health = Mathf.Clamp(Health, 0f, MaximumHealth);
         seen.Clear(); recent.Clear();
+        if (Application.isPlaying && GetComponent<PlayerDamageFeedback>() == null)
+            gameObject.AddComponent<PlayerDamageFeedback>();
     }
 
     // Call only after a melee/projectile/hitscan attack actually intersects the player.
@@ -60,7 +62,10 @@ public sealed class PlayerDamageReceiver : MonoBehaviour, IDamageReceiver
     }
 
     public void RestoreHealth()
-    { Health = MaximumHealth; shield = 0f; healthInitialized = true; seen.Clear(); recent.Clear(); movement?.ResetVelocity(); }
+    {
+        Health = MaximumHealth; shield = 0f; healthInitialized = true; seen.Clear(); recent.Clear(); movement?.ResetVelocity();
+        GetComponent<PlayerDamageFeedback>()?.Clear();
+    }
 
     public void SetShield(float amount) { shield = NonNegative(amount); }
     public void AddShield(float amount) { shield = (float)Math.Min(float.MaxValue, (double)Shield + NonNegative(amount)); }

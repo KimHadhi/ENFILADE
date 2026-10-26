@@ -47,10 +47,8 @@ public sealed class GunFeelSettings : ScriptableObject
     [Range(0f, 1f)] public float mechanicalVolume = .45f;
     [Range(0f, 1f), Tooltip("Magazine fraction at which the low-ammo tick starts. It rises in pitch and volume toward empty.")]
     public float lowAmmoFraction = .3f;
-    [Tooltip("Hit confirm tick for body and head hits alike; headshots already layer their own flesh/pierce impact (CombatHitAudio).")]
-    public AudioClip[] hitMarkerSounds;
     public AudioClip[] killSounds, headshotKillSounds;
-    [Range(0f, 1f)] public float hitMarkerVolume = .35f, killVolume = .6f;
+    [Range(0f, 1f)] public float killVolume = .6f;
 
     [Header("Hit markers (1920x1080 canvas units)")]
     public Color bodyHitColor = Color.white;
@@ -71,20 +69,56 @@ public sealed class GunFeelSettings : ScriptableObject
     public int markerFadeFrames = 1;
     [Range(0f, 1f)] public float markerFadeAlpha = .5f;
 
-    [Header("Kill screen effect (GTA-style pulse)")]
-    [Tooltip("Kills that get the screen pulse, hit-stop and camera thump. Off for ordinary gun kills so mowing down a crowd stays readable; " +
-        "rare, deliberate kills (execution, perfect-defense counter) keep the full impact.")]
+    [Header("Kill screen: which kills")]
+    [Tooltip("Executions and perfect-defense counters get the special kill screen (plus hit-stop and a camera thump).")]
     public bool killPulseOnExecution = true;
-    public bool killPulseOnCounter = true, killPulseOnGunKill, killPulseOnOtherKill;
+    public bool killPulseOnCounter = true;
+    [Tooltip("Every other player kill gets the GTA V-style kill screen. Turn gun kills off if mowing down a crowd gets too bright.")]
+    public bool killPulseOnGunKill = true, killPulseOnOtherKill = true;
+
+    [Header("Kill screen: GTA V style (ordinary kills)")]
+    [Min(.03f), Tooltip("Seconds the kill screen stays at full strength (including the 0.03 s snap-in).")]
+    public float gtaKillHoldSeconds = .5f;
+    [Min(.01f), Tooltip("Seconds it then takes to fade away.")]
+    public float gtaKillFadeSeconds = .25f;
+    [Range(0f, 3f), Tooltip("Overexposure, in stops. The post stack runs without tonemapping, so white walls clip fast: keep this low.")]
+    public float gtaKillExposure = .12f;
+    [Range(0f, 10f), Tooltip("Glow around bright areas (shirts, windows, floor reflections).")]
+    public float gtaKillBloom = .8f;
+    [Range(0f, 2f), Tooltip("Brightness above which things glow. Lower = more of the screen blooms.")]
+    public float gtaKillBloomThreshold = 1.1f;
+    public Color gtaKillBloomTint = new Color(.72f, .84f, 1f);
+    [Tooltip("Colour filter over the whole picture: the cool blue-white wash.")]
+    public Color gtaKillTint = new Color(.98f, .99f, 1f);
+    [Range(-100f, 0f), Tooltip("White balance. Negative = cooler / bluer.")]
+    public float gtaKillTemperature = -6f;
+    [Range(-100f, 0f)] public float gtaKillSaturation = -3f;
+    [Range(-100f, 100f), Tooltip("Slightly negative washes the picture out like the reference.")]
+    public float gtaKillContrast = -3f;
+    [Range(0f, 1f), Tooltip("Colour fringing toward the screen edges.")]
+    public float gtaKillChromatic = .1f;
+    [Range(1f, 2f), Tooltip("Headshot kills multiply the bloom by this much.")]
+    public float gtaHeadshotBoost = 1.2f;
+
+    [Header("Kill screen: special (execution / counter)")]
     [Range(-100f, 0f)] public float killSaturation = -60f;
     [Range(0f, 2f), Tooltip("Brightness pop. Bright scenes white out quickly; 0.25 reads clearly without blinding.")]
     public float killExposure = .25f;
     [Range(0f, 1f)] public float killVignette = .34f;
+    [Tooltip("Vignette colour per kind: executions bleed crimson, counters go cold steel.")]
+    public Color executionVignetteColor = new Color(.32f, .02f, .02f), counterVignetteColor = new Color(.03f, .1f, .24f);
     [Range(0f, 1f)] public float killChromatic = .45f;
     [Range(-1f, 0f)] public float killLensDistortion = -.14f;
-    [Range(1f, 2f), Tooltip("Executions and headshot kills multiply the pulse by this much.")]
+    [Range(0f, 3f), Tooltip("Soft glow on the brightest highlights so the frame flares on impact.")]
+    public float killBloom = 1.2f;
+    [Range(0f, .3f), Tooltip("Seconds the impact (lens squeeze and colour fringing) takes to snap back. The grade itself lingers longer.")]
+    public float killImpactSeconds = .14f;
+    [Range(0f, .3f), Tooltip("Seconds the special kill screen holds at full strength before its decay starts.")]
+    public float killPulseHoldSeconds = .1f;
+    [Range(1f, 2f), Tooltip("Executions and headshot counters multiply the pulse by this much.")]
     public float headshotKillBoost = 1.35f;
-    [Min(.05f)] public float killPulseSeconds = .5f;
+    [Min(.05f), Tooltip("Decay time of the special kill screen after its hold.")]
+    public float killPulseSeconds = .5f;
     [Range(.05f, 1f)] public float killHitStopScale = .18f;
     [Range(0f, .2f), Tooltip("Real-time hit-stop on a pulsed kill. 0 disables it.")]
     public float killHitStopSeconds = .035f;

@@ -78,7 +78,7 @@ public static partial class MovementAbilityChecks
             attack.transform.position = start + Vector3.up; Physics.SyncTransforms(); attack.CheckDodgeTrails();
             Require(!Dodge(f).CanStart, "Same active swing cannot refund the new step");
             for (int i = 0; i < 6; i++) f.Step();
-            Near(f.P.transform.position.x - start.x, 2f, "Chained step travels the full configured distance", 0.02f);
+            Near(f.P.transform.position.x - start.x, f.P.AbilitySettings.stepDistance, "Chained step travels the full configured distance", 0.02f);
             f.Step(); Require(f.P.HorizontalVelocity.magnitude <= f.P.WalkSpeed * f.P.StrafeCompensation + 0.1f, "Burst speed is not retained as walking momentum: "
                 + f.P.HorizontalVelocity.magnitude + " walk=" + f.P.WalkSpeed + " state=" + f.P.CurrentState);
         }

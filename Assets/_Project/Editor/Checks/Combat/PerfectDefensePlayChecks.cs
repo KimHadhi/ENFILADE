@@ -208,38 +208,43 @@ public static class PerfectDefensePlayChecks
     private static void CheckSlideImpact(PlayerMovement player, Vector3 origin)
     {
         var body = player.GetComponent<CharacterController>();
-        var target = Box("Slide target", origin + new Vector3(0, 1, 1.2f), new Vector3(.8f, 2f, .8f));
-        var health = target.AddComponent<EnemyHealth>();
-        // Two colliders on one enemy must still produce just one impact.
-        var child = Box("Slide target child", target.transform.position, new Vector3(.6f, 1.8f, .85f));
-        child.transform.SetParent(target.transform);
         foreach (var state in new[] { PlayerMovement.MovementState.Sliding,
             PlayerMovement.MovementState.HeadFirstSliding, PlayerMovement.MovementState.SupineSliding })
         {
-            player.ChangeState(PlayerMovement.MovementState.Standing);
-            player.transform.position = origin + Vector3.up * .05f;
-            player.ChangeState(state);
-            player.CurrentSlideSpeed = 8f; player.SlideDirection = Vector3.forward;
-            player.HorizontalVelocity = Vector3.forward * 8f;
-            player.UpdateHeightsAndTransform(1f);
-            Physics.SyncTransforms();
-            float before = health.Health;
-            body.Move(Vector3.forward * 1.5f);
-            Require(Mathf.Abs(health.Health - (before - player.AbilitySettings.slideDamage)) < .01f,
-                "Native sliding contact deals slide damage: " + state);
-            body.Move(Vector3.forward * .1f);
-            player.ChangeState(state == PlayerMovement.MovementState.SupineSliding
-                ? PlayerMovement.MovementState.HeadFirstSliding : PlayerMovement.MovementState.SupineSliding);
-            body.Move(Vector3.forward * .1f);
-            Require(Mathf.Abs(health.Health - (before - player.AbilitySettings.slideDamage)) < .01f,
-                "Repeated contact and slide posture transitions cannot hit the same enemy twice");
-            Require(target.GetComponent<MeleeCombatTarget>().IsKnockedDown, "Sliding knocks down a small target");
+            player.ResetVelocity();
+            // Each posture needs a fresh standing target: the previous hit changes its physics
+            // and keeps slide pass-through pairs ignored until the player has cleared the body.
+            var target = Box("Slide target", origin + new Vector3(0, 1, 1.2f), new Vector3(.8f, 2f, .8f));
+            var health = target.AddComponent<EnemyHealth>();
+            var child = Box("Slide target child", target.transform.position, new Vector3(.6f, 1.8f, .85f));
+            child.transform.SetParent(target.transform);
+            try
+            {
+                player.ChangeState(PlayerMovement.MovementState.Standing);
+                player.transform.position = origin + Vector3.up * .05f;
+                player.ChangeState(state);
+                player.CurrentSlideSpeed = 8f; player.SlideDirection = Vector3.forward;
+                player.HorizontalVelocity = Vector3.forward * 8f;
+                player.UpdateHeightsAndTransform(1f);
+                Physics.SyncTransforms();
+                float before = health.Health;
+                body.Move(Vector3.forward * 1.5f);
+                Require(Mathf.Abs(health.Health - (before - player.AbilitySettings.slideDamage)) < .01f,
+                    "Native sliding contact deals slide damage: " + state);
+                body.Move(Vector3.forward * .1f);
+                player.ChangeState(state == PlayerMovement.MovementState.SupineSliding
+                    ? PlayerMovement.MovementState.HeadFirstSliding : PlayerMovement.MovementState.SupineSliding);
+                body.Move(Vector3.forward * .1f);
+                Require(Mathf.Abs(health.Health - (before - player.AbilitySettings.slideDamage)) < .01f,
+                    "Repeated contact and slide posture transitions cannot hit the same enemy twice");
+                Require(target.GetComponent<MeleeCombatTarget>().IsKnockedDown, "Sliding knocks down a small target");
+            }
+            finally { player.ResetVelocity(); Object.DestroyImmediate(target); }
         }
         player.ChangeState(PlayerMovement.MovementState.Standing);
         player.UpdateHeightsAndTransform(1f);
         player.HorizontalVelocity = Vector3.zero; player.VerticalVelocity = 0f;
         player.GetComponent<CombatTimeEffects>().Release(player);
-        Object.DestroyImmediate(target);
         Debug.Log("SLIDE_IMPACT_PLAY_CHECKS_PASSED");
     }
     private static void CheckTime(PlayerMovement player)

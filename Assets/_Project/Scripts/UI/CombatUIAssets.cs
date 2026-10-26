@@ -8,7 +8,7 @@ using UnityEngine;
 /// </summary>
 public static class CombatUIAssets
 {
-    private static Texture2D criticalBurst, skull, glowTexture, stripes, counterArrow, slashLine, bladeSlash;
+    private static Texture2D criticalBurst, skull, glowTexture, stripes, counterArrow, executionKnife, slashLine, bladeSlash;
     private static Sprite glowSprite;
     private static readonly Dictionary<(TMP_FontAsset, Color, float), Material> outlined = new Dictionary<(TMP_FontAsset, Color, float), Material>();
 
@@ -17,6 +17,8 @@ public static class CombatUIAssets
     public static Texture2D Skull => skull != null ? skull : skull = Rasterize("Kill Skull (Runtime)", 64, SkullDistance);
     /// <summary>Counter-clockwise return arrow: a ring with a gap and an arrowhead.</summary>
     public static Texture2D CounterArrow => counterArrow != null ? counterArrow : counterArrow = Rasterize("Counter Arrow (Runtime)", 64, CounterShape);
+    /// <summary>Tactical knife tipped up-left with a crescent slash trail sweeping below it: the execution mark.</summary>
+    public static Texture2D ExecutionKnife => executionKnife != null ? executionKnife : executionKnife = Rasterize("Execution Knife (Runtime)", 64, ExecutionShape);
 
     /// <summary>Tapered sword-cut stroke along +x: needle-thin at both ends, thickest near the right (where the cut starts).</summary>
     public static Texture2D BladeSlash
@@ -183,16 +185,7 @@ public static class CombatUIAssets
         return points;
     }
     // Crossing test: -1 inside the star polygon, 1 outside.
-    private static float BurstCoverage(Vector2 p)
-    {
-        bool inside = false;
-        for (int i = 0, j = burst.Length - 1; i < burst.Length; j = i++)
-        {
-            Vector2 a = burst[i], b = burst[j];
-            if ((a.y > p.y) != (b.y > p.y) && p.x < (b.x - a.x) * (p.y - a.y) / (b.y - a.y) + a.x) inside = !inside;
-        }
-        return inside ? -1f : 1f;
-    }
+    private static float BurstCoverage(Vector2 p) => InPolygon(p, burst) ? -1f : 1f;
 
     private static float SkullDistance(Vector2 p)
     {
@@ -216,6 +209,53 @@ public static class CombatUIAssets
         Vector2 tip = centre + normal * radius;
         bool head = InTriangle(p, tip + tangent * .42f, tip + normal * .36f, tip - normal * .36f);
         return arc || head ? -1f : 1f;
+    }
+    // Execution knife outlines, y down (drafted as SVG). Blade: straight edge, curved belly to a clipped tip.
+    private static readonly Vector2[] knifeBlade = Concat(new[] { new Vector2(-.17f, .12f) },
+        Quadratic(new Vector2(-.17f, -.42f), new Vector2(-.15f, -.8f), new Vector2(.12f, -.98f)), new[] { new Vector2(.17f, -.68f), new Vector2(.17f, .12f) });
+    // Slash trail: crescent between two curves from near the tip down to the bottom, bulging lower-left.
+    private static readonly Vector2[] slashTrail = Concat(
+        Quadratic(new Vector2(-.86f, -.22f), new Vector2(-.82f, .98f), new Vector2(.42f, .9f)),
+        Quadratic(new Vector2(.42f, .9f), new Vector2(-.42f, .62f), new Vector2(-.86f, -.22f)));
+
+    private static float ExecutionShape(Vector2 p)
+    {
+        var q = new Vector2(p.x, -p.y);
+        if (InPolygon(q, slashTrail)) return -1f;
+        // Knife space: undo the -40° tilt about its offset centre.
+        Vector2 d = q - new Vector2(.18f, -.05f);
+        float cos = Mathf.Cos(40f * Mathf.Deg2Rad), sin = Mathf.Sin(40f * Mathf.Deg2Rad);
+        var k = new Vector2(d.x * cos - d.y * sin, d.x * sin + d.y * cos);
+        bool knife = InPolygon(k, knifeBlade) || RoundBox(k, new Vector2(0f, .165f), new Vector2(.3f, .065f), .04f) < 0f
+            || RoundBox(k, new Vector2(0f, .505f), new Vector2(.11f, .275f), .06f) < 0f
+            || RoundBox(k, new Vector2(0f, .81f), new Vector2(.14f, .05f), .04f) < 0f;
+        return knife ? -1f : 1f;
+    }
+    private static Vector2[] Quadratic(Vector2 a, Vector2 control, Vector2 b)
+    {
+        var points = new Vector2[13];
+        for (int i = 0; i < points.Length; i++)
+        {
+            float t = i / (points.Length - 1f);
+            points[i] = Vector2.Lerp(Vector2.Lerp(a, control, t), Vector2.Lerp(control, b, t), t);
+        }
+        return points;
+    }
+    private static Vector2[] Concat(params Vector2[][] runs)
+    {
+        var points = new List<Vector2>();
+        foreach (var run in runs) points.AddRange(run);
+        return points.ToArray();
+    }
+    private static bool InPolygon(Vector2 p, Vector2[] polygon)
+    {
+        bool inside = false;
+        for (int i = 0, j = polygon.Length - 1; i < polygon.Length; j = i++)
+        {
+            Vector2 a = polygon[i], b = polygon[j];
+            if ((a.y > p.y) != (b.y > p.y) && p.x < (b.x - a.x) * (p.y - a.y) / (b.y - a.y) + a.x) inside = !inside;
+        }
+        return inside;
     }
     private static bool InTriangle(Vector2 p, Vector2 a, Vector2 b, Vector2 c)
     {

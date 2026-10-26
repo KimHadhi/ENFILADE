@@ -81,7 +81,7 @@ public sealed class CombatHitAudio : MonoBehaviour
 
     private static CombatHitAudio Get()
     {
-        if (instance == null) instance = new GameObject("Combat Hit Audio").AddComponent<CombatHitAudio>();
+        if (instance == null) instance = FeelAssets.CreateRuntimeRoot("Combat Hit Audio", groupName: "Audio").AddComponent<CombatHitAudio>();
         return instance;
     }
 

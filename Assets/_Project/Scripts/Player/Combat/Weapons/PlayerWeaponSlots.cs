@@ -60,6 +60,18 @@ public sealed class PlayerWeaponSlots : MonoBehaviour
                 savedData[index] == data && savedReserve[index] >= 0 ? savedReserve[index] : (int?)null);
         return weapons[index];
     }
+    public int RefillAmmo()
+    {
+        int count = 0;
+        for (int i = 0; i < SlotCount; i++)
+        {
+            if (GetWeapon(i)?.Category != WeaponCategory.Ranged) continue;
+            GetRuntime(i).RefillAmmo();
+            count++;
+        }
+        if (count > 0) SlotActivity?.Invoke();
+        return count;
+    }
     public bool CanReadInput => isActiveAndEnabled && player != null && player.InputAvailable && !player.CombatInputLocked
         && (playerInput == null || playerInput.actions.FindActionMap("Player")?.enabled == true);
 

@@ -69,6 +69,22 @@ public static class GunFeelPlayChecks
 
     private static void Require(bool value, string message) { if (!value) throw new InvalidOperationException(message); }
 
+    private static void RequireFeedbackGroup(Component component, string groupName, int sortingOrder = -1)
+    {
+        Require(component != null, groupName + " feedback object was created");
+        var group = component.transform.parent;
+        Require(group != null && group.name == groupName
+            && group.parent != null && group.parent.name.Contains("EFFECTS"),
+            component.name + " is grouped under EFFECTS/" + groupName);
+        if (sortingOrder < 0) return;
+        var canvas = component.GetComponent<Canvas>();
+        var scaler = component.GetComponent<UnityEngine.UI.CanvasScaler>();
+        Require(canvas != null && canvas.isRootCanvas && canvas.renderMode == RenderMode.ScreenSpaceOverlay
+            && canvas.sortingOrder == sortingOrder && scaler != null
+            && scaler.referenceResolution == new Vector2(1920f, 1080f),
+            component.name + " preserves its independent overlay, draw order and reference size");
+    }
+
     private static IEnumerator<float> Steps()
     {
         Require(FeelAssets.OverlayShader != null && FeelAssets.OverlayShader.isSupported, "Hit flash overlay shader loads and is supported");
@@ -102,14 +118,29 @@ public static class GunFeelPlayChecks
         yield return .02f;
         var punch = view.GetComponent<CameraViewPunch>();
         Require(punch != null, "Shot adds a camera view punch");
-        Require(GameObject.Find("Feel Audio") != null, "Shot plays through FeelAudio");
-        Require(GameObject.Find("Weapon Feel FX") != null, "Shot spawns muzzle smoke / brass");
+        var audioRoot = GameObject.Find("Feel Audio");
+        var effectsRoot = GameObject.Find("Weapon Feel FX");
+        Require(audioRoot != null, "Shot plays through FeelAudio");
+        Require(effectsRoot != null, "Shot spawns muzzle smoke / brass");
+        RequireFeedbackGroup(audioRoot.GetComponent<FeelAudio>(), "Audio");
+        RequireFeedbackGroup(effectsRoot.transform, "World");
+        Require(audioRoot.transform.parent.parent == effectsRoot.transform.parent.parent
+            && audioRoot.transform.parent.parent.name.Contains("EFFECTS")
+            && audioRoot.scene == player.gameObject.scene && effectsRoot.scene == player.gameObject.scene,
+            "Audio and world effects share one EFFECTS category in the player's scene");
+        Require(effectsRoot.transform.parent.name == "World", "Weapon effects belong to EFFECTS/World");
+        Require(effectsRoot.transform.position == Vector3.zero && Vector3.Distance(effectsRoot.transform.lossyScale, Vector3.one) < .0001f,
+            "Grouping preserves the world-space origin and scale used by smoke and casings");
+        RequireFeedbackGroup(CombatHitAudio.Instance, "Audio");
+        RequireFeedbackGroup(DamagePopupManager.Instance, "Screen", 30);
+        RequireFeedbackGroup(Object.FindFirstObjectByType<HitMarkerHUD>(), "Screen", 26);
         Require(Object.FindFirstObjectByType<HitMarkerHUD>()?.LastKind == HitMarkerKind.Body, "Body hit shows the body marker");
         var flash = enemy.GetComponent<HitFlashRenderer>();
         Require(flash != null && flash.IsFlashing, "Body hit flashes the enemy");
         Require(reaction.enabled && reaction.SpeedMultiplier < 1f, "Bullet slows the enemy");
         Require(posture.Posture < postureBefore, "Bullet wears down posture");
         Require(GameObject.Find("Impact VFX") != null, "Body hit sprays blood");
+        RequireFeedbackGroup(Object.FindFirstObjectByType<ImpactVfx>(), "World");
         Require(CombatFeedHUD.TotalScore == 0, "Damage alone does not score (kills only)");
         Require(cameraData.renderPostProcessing == authoredPost, "Hits leave the camera's post-processing as authored (no grey tint)");
         yield return .5f;
@@ -139,15 +170,27 @@ public static class GunFeelPlayChecks
         yield return .02f;
         Require(Object.FindFirstObjectByType<HitMarkerHUD>().LastKind == HitMarkerKind.BodyKill, "Kill shows the red kill marker");
         Require(Object.FindFirstObjectByType<CorpseTopple>() != null, "Kill leaves a toppling corpse");
+        RequireFeedbackGroup(Object.FindFirstObjectByType<CorpseTopple>(), "World");
         var pulse = Object.FindFirstObjectByType<KillConfirmEffect>();
-        Require(pulse == null || pulse.Weight <= 0f, "An ordinary gun kill does not pulse the screen");
+        Require(pulse != null && pulse.Weight >= .99f && pulse.Current == KillScreen.Gta, "A gun kill shows the GTA kill screen at full strength");
+        RequireFeedbackGroup(pulse, "Screen");
         Require(CombatFeedHUD.TotalScore >= scoreBefore + GunFeelSettings.Instance.killScore, "Kill adds kill score");
         var feed = Object.FindFirstObjectByType<CombatFeedHUD>();
+        RequireFeedbackGroup(feed, "Screen", 27);
         Require(feed.StreakText.StartsWith(GunFeelSettings.Instance.killScore.ToString()) && feed.StreakText.Contains("XP"), "Kill shows '100 XP': " + feed.StreakText);
         var streak = (RectTransform)feed.transform.Find("Streak");
         Require(streak.anchoredPosition.x > 0f && streak.anchoredPosition.y < 0f, "Kill score sits lower right of the crosshair: " + streak.anchoredPosition);
-        Require(cameraData.renderPostProcessing == authoredPost, "A gun kill leaves the camera's post-processing as authored");
-        yield return 3.1f;
+        // The kill and its first render may already have consumed part of the hold (shader compilation/readback).
+        // Schedule against the effect's actual age instead of adding a second full delay after those frames.
+        float hold = GunFeelSettings.Instance.gtaKillHoldSeconds, fade = GunFeelSettings.Instance.gtaKillFadeSeconds;
+        yield return Mathf.Max(0f, hold * .6f - KillScreenAge(pulse));
+        Require(pulse.Weight >= .99f, "Kill screen holds at full strength for the hold time");
+        yield return Mathf.Max(0f, hold + fade * .5f - KillScreenAge(pulse));
+        Require(pulse.Weight > 0f && pulse.Weight < 1f, "Kill screen fades after the hold: " + pulse.Weight);
+        yield return Mathf.Max(0f, hold + fade + .1f - KillScreenAge(pulse));
+        Require(pulse.Weight <= 0f, "Kill screen is gone after hold + fade");
+        Require(cameraData.renderPostProcessing == authoredPost, "After a gun kill the camera's post-processing is back as authored");
+        yield return 2.3f;
         Require(Object.FindFirstObjectByType<CorpseTopple>() == null, "Corpse sinks away");
 
         // ---- hit marker rides the view punch
@@ -176,11 +219,10 @@ public static class GunFeelPlayChecks
         Require(second == null || !second.IsAlive, "Headshots kill the second enemy");
         yield return .02f;
         Require(Object.FindFirstObjectByType<HitMarkerHUD>().LastKind == HitMarkerKind.HeadKill, "Headshot kill shows the red kill marker");
-        pulse = Object.FindFirstObjectByType<KillConfirmEffect>();
-        Require(pulse == null || pulse.Weight <= 0f, "A headshot gun kill does not pulse the screen either");
+        Require(pulse.Weight > 0f && pulse.Current == KillScreen.Gta, "A headshot gun kill shows the GTA kill screen too");
         yield return 2.6f; // let the streak fade so the execution starts a new one
 
-        // ---- execution: the rare kill that keeps the full screen pulse
+        // ---- execution: the special kill screen, then the camera is handed back
         // PlayerExecution needs focused player input, which a batch run never has (its own checks cover the move itself),
         // so the execution's killing blow is delivered here exactly as PlayerExecution reports it.
         var victim = Spawn(player, prefab);
@@ -192,12 +234,67 @@ public static class GunFeelPlayChecks
         Require(victim == null || !victim.IsAlive, "Execution kills the victim");
         yield return .03f;
         pulse = Object.FindFirstObjectByType<KillConfirmEffect>();
-        Require(pulse != null && pulse.Weight > 0f, "Execution pulses the screen");
+        Require(pulse != null && pulse.Weight > 0f && pulse.Current == KillScreen.Execution, "Execution shows the special kill screen");
+        RequireFeedbackGroup(pulse, "Screen");
         Require(feed.StreakText.Contains("XP"), "Execution scores");
         yield return 1.2f;
         Require(pulse.Weight <= 0f, "Kill pulse ends");
         Require(cameraData.renderPostProcessing == authoredPost && !pulse.IsBorrowingPostProcessing,
             "After the pulse the camera's post-processing is back as authored");
+        foreach (float pause in BloodDecalPooling()) yield return pause;
+    }
+
+    private static float KillScreenAge(KillConfirmEffect effect)
+        => (float)typeof(KillConfirmEffect).GetField("age", Any).GetValue(effect);
+
+    private static IEnumerable<float> BloodDecalPooling()
+    {
+        Vector3 origin = new Vector3(2000f, 100f, 2000f);
+        var floor = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        floor.name = "Blood pooling floor";
+        floor.transform.position = origin - Vector3.up * .1f;
+        floor.transform.localScale = new Vector3(4f, .2f, 4f);
+        Physics.SyncTransforms();
+        try
+        {
+            // More hits than the limit must reuse visible decals rather than grow the hierarchy.
+            for (int i = 0; i < 64; i++) ImpactVfx.Blood(origin + Vector3.up, Vector3.forward, false, true, false, null);
+            yield return .05f;
+            var impact = Object.FindFirstObjectByType<ImpactVfx>();
+            var decals = (Transform[])typeof(ImpactVfx).GetField("decals", Any).GetValue(impact);
+            var ages = (float[])typeof(ImpactVfx).GetField("decalAge", Any).GetValue(impact);
+            var folder = impact.transform.Find("Blood Decals (Pool)");
+            Require(decals.Length == 32 && folder != null && folder.childCount == 32,
+                "64 blood events retain at most 32 decals inside their own folder");
+            foreach (var decal in decals) Require(decal != null && decal.gameObject.activeSelf, "Fresh blood decals are visible");
+            var original = (Transform[])decals.Clone();
+
+            // Advance past the authored lifetime and fade, including a manually disabled decal.
+            decals[0].gameObject.SetActive(false);
+            for (int i = 0; i < ages.Length; i++) ages[i] = GunFeelSettings.Instance.bloodDecalSeconds + 2f;
+            typeof(ImpactVfx).GetMethod("Update", Any).Invoke(impact, null);
+            yield return .05f;
+            Require(folder.childCount == 32, "Expired blood objects remain in the bounded reuse pool");
+            for (int i = 0; i < decals.Length; i++)
+                Require(decals[i] == original[i] && !decals[i].gameObject.activeSelf,
+                    "Expired decals are hidden without destroying their reusable objects");
+
+            ImpactVfx.Blood(origin + Vector3.up, Vector3.forward, false, false, false, null);
+            yield return .05f;
+            int visible = 0;
+            for (int i = 0; i < decals.Length; i++)
+            {
+                Require(decals[i] == original[i], "A new hit reuses the same decal objects without allocation");
+                if (decals[i].gameObject.activeSelf) visible++;
+            }
+            Require(folder.childCount == 32 && visible == 1, "A new hit reactivates one existing decal and does not grow the pool");
+            for (int i = 0; i < ages.Length; i++) ages[i] = GunFeelSettings.Instance.bloodDecalSeconds + 2f;
+            typeof(ImpactVfx).GetMethod("Update", Any).Invoke(impact, null);
+            yield return .05f;
+            foreach (var decal in decals) Require(!decal.gameObject.activeSelf, "Reused decals return to the inactive pool on expiry");
+            Debug.Log("BLOOD_DECAL_POOL_CHECKS_PASSED");
+        }
+        finally { Object.Destroy(floor); }
     }
 
     private static EnemyHealth Spawn(PlayerMovement player, EnemyHealth prefab)

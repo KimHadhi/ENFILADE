@@ -2,20 +2,18 @@ using UnityEngine;
 
 /// <summary>
 /// Routes each accepted hit (CombatDamageEvents) to the hit-feedback layers, in this order:
-/// target flash / blood / corpse (world) → hit marker + confirm sound → kill score and kill feed → kill pulse.
+/// target flash / blood / corpse (world) → hit marker + kill sound → kill score and kill feed → kill screen
+/// (special look for executions and counters, GTA V-style look for every other kill).
 /// Presentation only; gameplay reactions are called directly by the receivers (EnemyHitReaction).
 /// </summary>
 public static class GunFeelDirector
 {
-    private static float lastTick;
-    private static int lastConfirmFrame = -1;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     private static void Subscribe()
     {
         CombatDamageEvents.Damaged -= OnDamaged;
         CombatDamageEvents.Damaged += OnDamaged;
-        lastTick = -1f; lastConfirmFrame = -1;
     }
 
     private static void OnDamaged(CombatDamageReport report)
@@ -42,26 +40,19 @@ public static class GunFeelDirector
         if (!kill) return;
         float distance = hit.Point != Vector3.zero ? Vector3.Distance(hit.Source.transform.position, hit.Point) : 0f;
         CombatFeedHUD.Kill(WeaponName(hit), CombatDamageEvents.DisplayNameOf(report.Target), critical && bullet, execution, hit.IsCounter, bullet, distance);
-        if (pulse) KillConfirmEffect.Trigger(critical || execution);
+        if (pulse) KillConfirmEffect.Trigger(execution ? KillScreen.Execution : hit.IsCounter ? KillScreen.Counter : KillScreen.Gta,
+            critical || execution);
     }
 
     /// <summary>
-    /// UI confirm on top of the flesh sounds from CombatHitAudio: a soft tick for any hit (headshots are told apart by
-    /// their own pierce impact and the gold marker, not a ding), and a low thump for a kill.
+    /// UI confirm on top of the flesh sounds from CombatHitAudio: a low thump for a kill. Ordinary hits have no confirm
+    /// sound; the marker and the flesh impact carry them.
     /// </summary>
     private static void ConfirmSound(GunFeelSettings settings, bool kill, bool critical)
     {
-        // One confirm per frame (a shotgun or crowd shove reports many hits at once).
-        if (lastConfirmFrame == Time.frameCount && !kill) return;
-        lastConfirmFrame = Time.frameCount;
-        if (kill)
-            FeelAudio.Play(critical ? FeelSound.HeadshotKill : FeelSound.Kill, critical ? settings.headshotKillSounds : settings.killSounds,
-                settings.killVolume, Random.Range(.97f, 1.03f));
-        else if (Time.unscaledTime - lastTick > .04f)
-        {
-            lastTick = Time.unscaledTime;
-            FeelAudio.Play(FeelSound.HitMarker, settings.hitMarkerSounds, settings.hitMarkerVolume, Random.Range(.95f, 1.08f));
-        }
+        if (!kill) return;
+        FeelAudio.Play(critical ? FeelSound.HeadshotKill : FeelSound.Kill, critical ? settings.headshotKillSounds : settings.killSounds,
+            settings.killVolume, Random.Range(.97f, 1.03f));
     }
 
     private static string WeaponName(DamageHit hit)

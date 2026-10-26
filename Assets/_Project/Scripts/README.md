@@ -1,6 +1,6 @@
 # 스크립트 길잡이
 
-수정하려는 기능의 담당 파일부터 찾는다. 프로젝트 실행과 에셋 위치는 [프로젝트 안내](../README.md), 조작법은 [이동 안내](../Docs/MovementGuide.md), 검사 실행은 [검증 안내](../Docs/ValidationGuide.md)에 있다.
+수정하려는 기능의 담당 파일부터 찾는다. 프로젝트 실행과 에셋 위치는 [프로젝트 안내](../../../README.md), 조작법은 [이동 안내](../Docs/MovementGuide.md), 검사 실행은 [검증 안내](../Docs/ValidationGuide.md)에 있다.
 
 ## 어디를 수정할까?
 
@@ -19,6 +19,8 @@
 | 주먹·가드·패링·가드 브레이크 | [PlayerMeleeCombat](Player/Combat/PlayerMeleeCombat.cs) |
 | 완벽 방어·반격 / 처형 | [PlayerPerfectDefense](Player/Combat/PlayerPerfectDefense.cs), [PlayerExecution](Player/Combat/PlayerExecution.cs) |
 | 플레이어 HP·실드·피격·사망 | [PlayerDamageReceiver](Player/Combat/PlayerDamageReceiver.cs) |
+| 플레이어 궁극기 최대 보유량·소비량 스탯 / 현재 충전량 | [PlayerStats](Player/PlayerStats.cs), [UltimateCharge](UI/HP/UltimateCharge.cs) |
+| 피격 방향 아크·혈흔·쉐이크·빈사 박동 | [PlayerDamageFeedback](Player/Combat/PlayerDamageFeedback.cs), [설정](../Resources/Combat/PlayerDamageFeedback.asset), [사용 안내](../Docs/PlayerDamageFeedbackGuide.md) |
 | 무기별 수치 | [Data/Combat/Weapons](../Data/Combat/Weapons/), 형식은 [WeaponData](Combat/Weapons/Data/WeaponData.cs) |
 | 발사 간격·탄약·장전 타이머 | [WeaponRuntime](Combat/Weapons/Core/WeaponRuntime.cs) |
 | 발사·명중·조준 연결 / 총 모델 표현 | [WeaponController](Player/Combat/Weapons/WeaponController.cs), [WeaponPresentation](Player/Combat/Weapons/WeaponPresentation.cs) |
@@ -70,5 +72,6 @@
 Profiler에서 대표 상황의 CPU 시간과 `GC.Alloc`을 먼저 확인한다. API 이름만 보고 전체 공격이 무할당이라고 판단하지 않는다.
 
 - `AttackTrace`는 보통 단일 Raycast를 사용하고, 제외할 충돌체를 만나면 다중 결과를 검사한다. 버퍼가 꽉 차면 누락된 가까운 벽을 놓치지 않도록 전체 결과를 다시 조회한다. 최적화할 때 이 포화 상황과 공격자 제외 규칙을 유지한다.
-- `PlayerCombatActions`의 밀치기는 여러 적을 스칠 수 있다. 단일 타격 질의로 바꾸면 군중 밀치기와 벽 차폐가 달라질 수 있으므로, 배열 할당 개선과 타격 규칙 변경을 구분한다.
+- `ShoveSweep`의 밀치기는 여러 적을 스칠 수 있다. `PlayerCombatActions`의 태클은 가장 가까운 몸 접촉 하나를 처리한다. 단일 타격 질의로 바꾸면 군중 밀치기와 벽 차폐가 달라질 수 있으므로, 배열 할당 개선과 타격 규칙 변경을 구분한다.
+- `WeaponAimSolver`의 총구 주변 검사는 재사용 버퍼를 사용한다. 버퍼가 가득 찼고 자기 콜라이더만 발견됐다면 전체 조회로 엄폐 누락을 막는다. 일반 경로의 배열 할당은 줄였지만 전체 발사의 무할당이나 프레임 성능을 보장하는 수치는 아니다.
 - 수신자 캐시·풀링을 도입한다면 부모 콜라이더의 대상 식별, 재사용 시 참조 갱신, 중복 타격 방지를 함께 검사한다.

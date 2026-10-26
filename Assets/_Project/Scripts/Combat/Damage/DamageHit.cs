@@ -15,6 +15,8 @@ public readonly struct DamageHit
     public readonly float Amount;
     public readonly DamageKind Kind;
     public readonly Vector3 Point, Direction;
+    /// <summary>World-space attack origin (muzzle/launch position), captured when fired. Null for legacy/contact hits.</summary>
+    public readonly Vector3? Origin;
     public readonly GameObject Source;
     public readonly bool CanBeGuarded;
     public readonly float PostureDamage;
@@ -26,10 +28,10 @@ public readonly struct DamageHit
     public readonly DamageMethod Method;
     public DamageHit(long id, float amount, DamageKind kind, Vector3 point, Vector3 direction, GameObject source = null,
         bool canBeGuarded = false, float postureDamage = 0f, bool isComboFinisher = true, bool isCritical = false, bool isCounter = false,
-        DamageMethod method = DamageMethod.Other)
+        DamageMethod method = DamageMethod.Other, Vector3? origin = null)
     { Id = id; Amount = amount; Kind = kind; Point = point; Direction = direction; Source = source;
         CanBeGuarded = canBeGuarded; PostureDamage = postureDamage; IsComboFinisher = isComboFinisher; IsCritical = isCritical; IsCounter = isCounter;
-        Method = method; }
+        Method = method; Origin = origin; }
 }
 
 public interface IDamageReceiver { DamageResult ReceiveHit(DamageHit hit); }

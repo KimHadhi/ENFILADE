@@ -25,9 +25,9 @@ public static class RangedCombatChecks
         var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Additive);
         try
         {
-            ReloadAndReserve(); BurstTiming(); MuzzleAndCover(); HighReady(); Headshots(); AccuracyAndAds(); SurvivalCancel(); LeanVolumes(); RecoilTiming();
+            ReloadAndReserve(); BurstTiming(); MuzzleAndCover(); HighReady(); MuzzleOverlapSaturation(); Headshots(); AccuracyAndAds(); SurvivalCancel(); LeanVolumes(); RecoilTiming();
             WeaponAimFollowChecks.Run();
-            Debug.Log("RANGED_COMBAT_CHECKS_PASSED: 9 groups");
+            Debug.Log("RANGED_COMBAT_CHECKS_PASSED: 10 groups");
         }
         finally { if (previous.IsValid()) SceneManager.SetActiveScene(previous); EditorSceneManager.CloseScene(scene, true); }
     }
@@ -184,6 +184,36 @@ public static class RangedCombatChecks
             Require(!f.Gun.IsHighReady && f.Gun.AimBlend == 1f, "ADS resumes once its requested muzzle position clears");
         }
     }
+    private static void MuzzleOverlapSaturation()
+    {
+        using (var f = new Fixture())
+        {
+            Vector3 muzzle = f.Muzzle.position;
+            Vector3 target = muzzle + f.View.forward * 10f;
+            // All owner colliders must be ignored even when they fill the non-allocating buffer.
+            for (int i = 0; i < 40; i++)
+            {
+                var child = new GameObject("Owner muzzle collider");
+                child.transform.SetParent(f.Owner.transform);
+                child.transform.position = muzzle;
+                child.AddComponent<SphereCollider>().radius = .01f;
+            }
+            Physics.SyncTransforms();
+            Require(!WeaponAimSolver.IsObstructed(f.Owner, f.View, muzzle, target, ~0),
+                "A saturated overlap containing only the owner leaves the muzzle clear");
+            // The tiny off-axis obstacle overlaps the muzzle query without crossing its centre ray.
+            var wall = f.Box(muzzle - f.Origin + f.View.right * .035f, Vector3.one * .01f);
+            Require(WeaponAimSolver.IsObstructed(f.Owner, f.View, muzzle, target, ~0),
+                "An embedded obstacle cannot be omitted when the owner fills the overlap buffer");
+            Require(WeaponAimSolver.IsObstructed(null, f.View, muzzle, target, ~0),
+                "Without an owner every overlapping collider obstructs the muzzle");
+            Object.DestroyImmediate(wall);
+            Physics.SyncTransforms();
+            Require(!WeaponAimSolver.IsObstructed(f.Owner, f.View, muzzle, target, ~0),
+                "Removing cover restores a clear muzzle without stale query results");
+        }
+    }
+
     private static void Headshots()
     {
         using (var f = new Fixture())
