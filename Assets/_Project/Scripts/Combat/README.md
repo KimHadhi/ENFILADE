@@ -1,13 +1,61 @@
-# 공용 전투
+# 전투 코드 구조
 
-직접 무기를 추가하거나 문제를 찾는 순서는 [전투 제작 안내](../../Docs/CombatFoundationGuide.md)를 참고한다. 전체 폴더 지도는 [스크립트 길잡이](../README.md)에 있다.
+[스크립트 길잡이](../README.md) · [전투 제작 안내](../../Docs/CombatFoundationGuide.md) · [규칙과 확장 계획](../../Docs/WeaponSystemDesign.md) · [검증 안내](../../Docs/ValidationGuide.md)
 
-4슬롯·주먹 전투와 이후 획득/진화/궁극기 설계는 [무기 시스템 기획](../../Docs/WeaponSystemDesign.md)을 기준으로 한다.
+`Combat`에는 플레이어와 적이 공유하는 피해·판정·무기 상태·전투 효과를 둔다. 플레이어 입력과 행동은 `Player/Combat`, 적 체력과 AI는 `Enemies`에서 연결한다.
 
-- `Damage/`: 공격 ID, 피해량, 피해 종류, `IDamageReceiver` 계약.
-- `Feel/`: 타격감. 쏜 느낌(총성·총구·탄피·화면 킥), 맞힌 느낌(히트마커·혈흔·XP·킬로그·처형/반격 킬 이펙트), 맞은 느낌(피격 발광·쓰러짐, 총알 밀림·감속·헤드샷 공격 취소). 모두 실행 시 자동 연결되며 수치는 `Resources/Combat/GunFeel`.
-- `HitDetection/`: 실제로 무엇에 맞았는지 확인하고 피해/회피를 전달.
-- `Weapons/Data/`: 여러 무기가 공유할 설정 형식. 실제 무기별 수치는 `Assets/_Project/Data/Combat/Weapons`의 asset.
-- `Weapons/Core/`: 무기 한 자루의 탄약·장전·발사 간격과 입력 의도. 마우스/카메라를 직접 참조하지 않는다.
+## 폴더별 책임
 
-플레이어 전용 입력·발사 연결은 `Scripts/Player/Combat`, 표시와 연습 표적은 `Scripts/Debug/Combat`, 편집기 도구는 `Assets/_Project/Editor/Setup/Combat 및 Checks/Combat`에 둔다.
+| 위치 | 맡는 일 | 시작할 파일 |
+| --- | --- | --- |
+| `Damage/` | 공격 정보, 피해 수신 계약, 체간·기절·넘어짐, 피해 이벤트와 공통 피드백 | [DamageHit](Damage/DamageHit.cs), [MeleeCombatTarget](Damage/MeleeCombatTarget.cs), [CombatDamageEvents](Damage/CombatDamageEvents.cs) |
+| `HitDetection/` | 레이·근접 스윕·벽 차단·부위 판정 | [AttackTrace](HitDetection/AttackTrace.cs), [MeleeAttackSweep](HitDetection/MeleeAttackSweep.cs), [ShoveSweep](HitDetection/ShoveSweep.cs) |
+| `Weapons/Data/` | 무기 설정의 형식과 모델 표시 연결 | [WeaponData](Weapons/Data/WeaponData.cs), [WeaponVisibility](Weapons/Data/WeaponVisibility.cs) |
+| `Weapons/Core/` | 무기 한 자루의 탄약·발사·장전, 총구 조준 계산과 반동 스프링 | [WeaponRuntime](Weapons/Core/WeaponRuntime.cs), [WeaponAimSolver](Weapons/Core/WeaponAimSolver.cs), [RecoilSpring](Weapons/Core/RecoilSpring.cs) |
+| `Weapons/Effect/` | 기존 트레이서·탄착·피 효과 연결 | [BulletTracerEffect](Weapons/Effect/BulletTracerEffect.cs), [WeaponImpactEffects](Weapons/Effect/WeaponImpactEffects.cs) |
+| `Feel/` | 화면 킥·총성·히트마커·혈흔·점수·처치 효과, 총알 피격 반응 | [WeaponFeedback](Feel/WeaponFeedback.cs), [GunFeelDirector](Feel/GunFeelDirector.cs), [EnemyHitReaction](Feel/EnemyHitReaction.cs) |
+| `Waves/` | 웨이브 생성·처치 집계·진행 | [WaveManager](Waves/WaveManager.cs) |
+| `../Player/Combat/` | 플레이어 입력, 슬롯, 공격, 방어·반격·처형·슬라이드 접촉 | [PlayerWeaponSlots](../Player/Combat/Weapons/PlayerWeaponSlots.cs), [PlayerMeleeCombat](../Player/Combat/PlayerMeleeCombat.cs), [SlideCombat](../Player/Combat/SlideCombat.cs) |
+| `../Enemies/` | 실제 적 HP·사망·추적·공격 | [EnemyHealth](../Enemies/EnemyHealth.cs), [EnemyCombatAI](../Enemies/EnemyCombatAI.cs) |
+| `../UI/` | 탄약·슬롯·체력·체간·처형 안내 | [AmmoHUD](../UI/AmmoHUD.cs), [EnemyVitalsHUD](../UI/EnemyVitalsHUD.cs), [ExecutionHUD](../UI/ExecutionHUD.cs) |
+| `../Debug/Combat/` | 연습 표적·진단 HUD·시험용 소환 | [WeaponTrainingTarget](../Debug/Combat/WeaponTrainingTarget.cs), [ConsoleEnemySpawner](../Debug/Combat/ConsoleEnemySpawner.cs) |
+
+`Feel`의 대부분은 표시·소리지만 `EnemyHitReaction`은 적 이동과 공격을 바꾸는 게임 규칙이다. 이 컴포넌트를 화면 효과로만 취급해 제거하지 않는다.
+
+## 발사에서 피격까지
+
+```text
+PlayerWeaponInput → WeaponController
+                       ├─ WeaponRuntime: 발사 허용·탄약·장전
+                       ├─ WeaponAimSolver / AttackTrace: 총구·엄폐·명중
+                       │    └─ IDamageReceiver.ReceiveHit
+                       │         ├─ HP·사망 / 적 피격 반응
+                       │         └─ CombatDamageEvents → UI·소리·GunFeelDirector
+                       └─ ShotFired 등 이벤트 → 모델·총구·총성 효과
+```
+
+슬롯은 `PlayerWeaponSlots`가 `WeaponRuntime`을 보관하고, 선택할 때 `WeaponController.Equip`으로 연결한다. 컨트롤러가 탄약·발사 결과를 결정하며 HUD와 애니메이션은 결과를 표시한다.
+
+## 확장할 때 유지할 계약
+
+1. **공격 ID**: 총알 한 발·근접 공격 한 번마다 새 ID를 만들고, 같은 공격의 모든 히트박스·스윕 프레임은 ID를 공유한다. 대상 수 제한은 공격의 적중 목록에서, 수신 중복은 피해 수신자에서 처리한다.
+2. **피해 정보**: `Source`, `Method`, `IsCritical`, `IsCounter`, `IsComboFinisher`, `CanBeGuarded`를 보존한다. 방어·마지막 타격 패링·점수·소리는 이 정보에 의존한다. `IsCritical`은 이미 배율이 적용된 피해를 표시하는 정보이며 추가 피해 배율을 뜻하지 않는다.
+3. **사망 순서**: HP 감소와 피해 보고를 먼저 처리한 뒤 기존 `Died` 경로로 사망시킨다. 효과에서 적을 직접 제거하면 웨이브 집계와 처형 처리가 어긋난다.
+4. **적 행동 잠금**: 새 AI는 기절·흐트러짐·넘어짐과 `PlayerExecution.Suppresses`를 확인한다. 이동·공격 준비·NavMesh 복구가 각각 이 상태를 존중해야 한다.
+5. **몸 이동과 화면 표현**: 실제 이동은 이동 서비스가 담당한다. `WeaponPresentation`과 `CameraViewPunch`의 시각 보간을 히트스캔·벽 차단에 섞지 않는다.
+6. **시간 효과**: 히트스톱·반격 슬로모션은 [CombatTimeEffects](../Player/Combat/CombatTimeEffects.cs)로 요청·해제한다. 일시정지나 다른 효과의 시간 배율을 덮어쓰지 않는다.
+7. **무기 상태와 설정**: `WeaponData`는 공유 설정, `WeaponRuntime`은 개별 무기 상태다. 현재 장탄수·예비탄을 asset에 저장하지 않는다.
+
+살아 있는 적이 넘어지는 [EnemyKnockdownPresentation](Damage/EnemyKnockdownPresentation.cs)은 실제 Rigidbody·뼈대 레그돌과 복구를 처리한다. 처치 연출의 [CorpseTopple](Feel/CorpseTopple.cs)은 제거된 적을 대신하는 충돌체 없는 시각 사본이다.
+
+## 데이터와 도구 위치
+
+| 목적 | 위치 |
+| --- | --- |
+| 실제 무기 수치 | [Data/Combat/Weapons](../../Data/Combat/Weapons) |
+| 방어·반격·체간·피해 UI 설정 | [Resources/Combat/Feedback.asset](../../Resources/Combat/Feedback.asset) |
+| 총기 타격감·점수·피격 반응 설정 | [Resources/Combat/GunFeel.asset](../../Resources/Combat/GunFeel.asset) |
+| 씬·플레이어 설치 도구 | [Editor/Setup/Combat](../../Editor/Setup/Combat), [Editor/Setup/UI](../../Editor/Setup/UI) |
+| 전투 검사 | [Editor/Checks/Combat](../../Editor/Checks/Combat) |
+
+설정 로딩 키는 `Combat/Feedback`과 `Combat/GunFeel`이다. 에셋 경로를 정리할 때도 `Resources` 기준 키를 유지한다. 검사 실행 방식과 수정 영역별 검사 선택은 [검증 안내](../../Docs/ValidationGuide.md)를 따른다.

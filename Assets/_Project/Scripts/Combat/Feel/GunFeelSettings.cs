@@ -57,11 +57,19 @@ public sealed class GunFeelSettings : ScriptableObject
     public Color headHitColor = new Color(1f, .82f, .2f);
     public Color killColor = new Color(1f, .16f, .12f);
     public Color blockedColor = new Color(.62f, .66f, .72f);
-    [Min(1f)] public float markerLength = 11f;
-    [Min(.5f)] public float markerThickness = 2.6f;
-    [Min(0f)] public float markerGap = 9f;
-    [Min(.05f)] public float hitMarkerSeconds = .2f;
-    [Min(.05f)] public float killMarkerSeconds = .5f;
+    [Min(1f)] public float markerLength = 16.5f;
+    [Min(.5f)] public float markerThickness = 2.9f;
+    [Min(0f), Tooltip("Distance from the aim point to the inner end of each tick while the marker is at full size.")]
+    public float markerGap = 24f;
+    [Min(0f), Tooltip("Inner-end distance once the marker has shrunk (Back 4 Blood style: the ticks slide in, their length stays).")]
+    public float markerShrunkGap = 15.5f;
+    [Tooltip("Frames are counted at this rate, so the marker times the same at any real framerate.")]
+    [Min(1f)] public float markerFrameRate = 60f;
+    [Min(0)] public int markerHoldFrames = 7;
+    [Min(0)] public int markerShrinkFrames = 9;
+    [Min(0), Tooltip("Frames shown faded at the shrunk size right before the marker disappears.")]
+    public int markerFadeFrames = 1;
+    [Range(0f, 1f)] public float markerFadeAlpha = .5f;
 
     [Header("Kill screen effect (GTA-style pulse)")]
     [Tooltip("Kills that get the screen pulse, hit-stop and camera thump. Off for ordinary gun kills so mowing down a crowd stays readable; " +

@@ -175,7 +175,7 @@ public static class GunFeelPlayChecks
         }
         Require(second == null || !second.IsAlive, "Headshots kill the second enemy");
         yield return .02f;
-        Require(Object.FindFirstObjectByType<HitMarkerHUD>().LastKind == HitMarkerKind.HeadKill, "Headshot kill shows the crowned kill marker");
+        Require(Object.FindFirstObjectByType<HitMarkerHUD>().LastKind == HitMarkerKind.HeadKill, "Headshot kill shows the red kill marker");
         pulse = Object.FindFirstObjectByType<KillConfirmEffect>();
         Require(pulse == null || pulse.Weight <= 0f, "A headshot gun kill does not pulse the screen either");
         yield return 2.6f; // let the streak fade so the execution starts a new one

@@ -69,7 +69,7 @@ public sealed class CombatFeedHUD : MonoBehaviour
             self.ClearLines();
             int gained = settings.killScore;
             self.AddLine("처치", LineIcon.Skull, false);
-            if (headshot) { gained += settings.headshotBonus; self.AddLine("헤드샷", LineIcon.Headshot, false); }
+            if (headshot) { gained += settings.headshotBonus; self.AddLine("헤드샷", LineIcon.Headshot, true); }
             if (bullet && distance >= settings.longRangeDistance) { gained += settings.longRangeBonus; self.AddLine("원거리 사격", LineIcon.None, false); }
             if (execution) { gained += settings.executionBonus; self.AddLine("처형", LineIcon.None, true); }
             if (counter) { gained += settings.counterBonus; self.AddLine("반격", LineIcon.None, true); }
