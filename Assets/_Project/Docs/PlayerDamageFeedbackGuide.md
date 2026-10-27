@@ -48,11 +48,6 @@ CombatFoundation을 Play하고 Enter로 채팅을 연다.
 
 직접 접촉하는 기존 공격은 `Source.transform.position`을 피격 시 복사한다. `Source`와 `Origin`이 모두 없는 기존 공격은 역방향 광선 30m 지점을 대체 위치로 사용하므로, 정확한 이동 추적이 필요한 신규 공격은 반드시 `origin`을 지정한다.
 
-## 자동 검증
+## 직접 확인할 것
 
-```powershell
-& ./Tools/Test-ProjectStructure.ps1
-& ./Tools/Validate-Project.ps1 -Checks DamageFeedback,GunFeel,EditMode
-```
-
-[PlayerDamageFeedbackPlayChecks](../Editor/Checks/Combat/PlayerDamageFeedbackPlayChecks.cs)는 실제 씬에서 180도 회전·카메라 이동·공격자 삭제·다중 피격의 독립 페이드·좌/후방 혈흔 분포·실제 렌더링 화면의 중앙 확보와 왼쪽 테두리 착색·아크 소멸 후 혈흔 잔류·박동 사이 빈사 혈흔 유지·실드·25% 경계·회복·최대 HP 변경·일시정지·풀 상한·사망·비활성화·재활성화·실제 레이의 발사 좌표 전달을 검사한다. 검사 복사본의 루트에 좌측·다중·잔류·후방·빈사·연속 피격 화면 PNG를 남긴다.
+CombatFoundation에서 적에게 맞으면서 확인한다. 피격 방향 아크가 공격자를 따라가는지(맞은 뒤 180도 돌아도), 여러 방향에서 동시에 맞을 때 각각 따로 사라지는지, 화면 중앙이 가려지지 않는지, 체력 25% 아래에서 빈사 박동과 가장자리 혈흔이 유지되는지, 회복·사망·재시작 때 효과가 정리되는지 본다. 그 밖의 확인 순서는 [검증 안내](ValidationGuide.md)를 따른다.

@@ -53,12 +53,6 @@ public static class WeaponSlotsMeleeChecks
         }
         finally { if (previous.IsValid()) SceneManager.SetActiveScene(previous); EditorSceneManager.CloseScene(test, true); }
     }
-    public static void RunBatch()
-    {
-        Run();
-        WeaponFoundationChecks.Run();
-        MovementRefactorChecks.Run();
-    }
     private sealed class Fixture : IDisposable
     {
         public readonly GameObject Root, Player;

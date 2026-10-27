@@ -114,6 +114,6 @@ Slide 내부의 자세 전환은 부모를 다시 진입하지 않으므로 같�
 
 벽·렛지의 지지면은 `WallDetector.CanUseSurface`에서 판별한다. 적의 `MeleeCombatTarget`·`EnemyHealth` 또는 상위 오브젝트의 Enemy 태그가 있으면 잡지 않으며, 진행 중인 상태도 이 규칙을 확인한다. 적 머리 통과를 유지하기 위해 일반 장애물·지면 검사와 이 지지면 판정을 구분한다. 관련 회귀 검사는 `MovementAbilityChecks.EnemySurfaces`에서 다룬다.
 
-상태 계층·설정 보존은 `MovementRefactorChecks`, 이동 동작은 `MovementAbilityChecks`와 분할 검사 파일에서 다룹니다. 저스트 슬라이드와 레그돌은 `SlideCombatPlayChecks`/`RagdollKnockdownChecks`, 실제 플레이 중 어셈블리 재로드는 `RuntimeReloadChecks`가 담당합니다.
+상태 계층·설정 보존은 `MovementRefactorChecks`, 이동 동작은 `MovementAbilityChecks`와 분할 검사 파일, 레그돌은 `RagdollKnockdownChecks`에서 다룹니다. 저스트 슬라이드와 플레이 중 스크립트 재로드는 실제 플레이로 확인합니다.
 
-실행 메뉴와 격리 배치 프로젝트의 사용 조건은 [검증 안내](../../../Docs/ValidationGuide.md)를 따릅니다. 문서에 적힌 기본값만으로 실제 씬 설정이나 현재 검사 통과 여부를 대신하지 않습니다.
+실행 메뉴와 확인 항목은 [검증 안내](../../../Docs/ValidationGuide.md)를 따릅니다. 문서에 적힌 기본값만으로 실제 씬 설정이나 현재 검사 통과 여부를 대신하지 않습니다.

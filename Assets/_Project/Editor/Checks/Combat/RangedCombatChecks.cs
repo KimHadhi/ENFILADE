@@ -31,7 +31,6 @@ public static class RangedCombatChecks
         }
         finally { if (previous.IsValid()) SceneManager.SetActiveScene(previous); EditorSceneManager.CloseScene(scene, true); }
     }
-    public static void RunBatch() { WeaponSlotsMeleeChecks.RunBatch(); Run(); }
     private static void RecoilTiming()
     {
         var spring = new RecoilSpring(); spring.Kick(Vector3.right, 24f);

@@ -29,7 +29,6 @@
 | 수정할 코드 찾기 | [스크립트 길잡이](Assets/_Project/Scripts/README.md) |
 | 전투 또는 이동 코드 확장 | [전투 코드 구조](Assets/_Project/Scripts/Combat/README.md), [이동 코드 구조](Assets/_Project/Scripts/Player/Movement/README.md) |
 | 변경 사항 검사 | [검증 안내](Assets/_Project/Docs/ValidationGuide.md) |
-| 이번 정리 내용과 실제 검사 결과 확인 | [정리·검증 기록](Assets/_Project/Docs/MaintenanceReport.md) |
 
 ## 폴더 구성
 
@@ -45,15 +44,12 @@
 | `Assets/ThirdParty` | 외부 소총 모델·폰트·TextMesh Pro 원본 |
 | `Assets/ProBuilder Data`, `Assets/ProjectSettings` | 도구가 관리하는 데이터 |
 | `Packages`, `ProjectSettings` | 패키지 버전·잠금 정보 / Unity 프로젝트 설정 |
-| `Tools` | Unity 없이 구조 확인, 별도 복사본에서 Unity 검사 실행 |
+| `Tools` | Unity 없이 문서 링크·메타데이터 구조 확인 |
 
 ## 변경 후 확인하기
 
-프로젝트 루트에서 PowerShell로 실행한다. 첫 번째 명령은 문서 링크와 에셋 메타데이터를, 두 번째는 이동·전투·HUD 회귀 검사를 확인한다.
+CombatFoundation을 Play해 바꾼 기능을 직접 조작한다. 확인 항목과 선택적인 Unity 메뉴 검사는 [검증 안내](Assets/_Project/Docs/ValidationGuide.md)에 있다. 에셋을 옮기거나 문서를 고쳤다면 프로젝트 루트에서 링크·메타데이터를 확인한다.
 
 ```powershell
 & ./Tools/Test-ProjectStructure.ps1
-& ./Tools/Validate-Project.ps1
 ```
-
-물리·렌더링·재컴파일을 포함한 전체 검사는 `& ./Tools/Validate-Project.ps1 -All`이다. 검사기는 현재 파일을 `.validation` 아래 새 프로젝트로 복사하고, 원본에서 Unity를 실행하지 않는다. 결과와 로그는 각 실행 폴더에 남긴다. 초기 임포트에는 시간이 걸린다. 실행 옵션과 결과 해석은 [검증 안내](Assets/_Project/Docs/ValidationGuide.md)를 따른다.

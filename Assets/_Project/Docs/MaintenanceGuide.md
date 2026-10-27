@@ -69,10 +69,9 @@
 - `Resources/Combat/Feedback.asset`과 `GunFeel.asset`의 로드 키는 각각 `Combat/Feedback`, `Combat/GunFeel`이다. 경로를 바꿀 때는 코드의 키도 함께 바꾼다.
 - 외부 폰트·모델은 씬·재질·프리팹뿐 아니라 생성 도구와 문자열 로드에서도 사용한다. 참조와 라이선스를 확인한 뒤 정리한다.
 - 설치·생성 메뉴는 씬이나 프리팹을 저장할 수 있다. 변경을 저장하고 대상 씬을 확인한 뒤 실행한다. 단순 실행에는 설치 메뉴를 다시 누를 필요가 없다.
-- `.validation`은 검사 복사본·생성된 Library·로그다. 검사 프로세스가 모두 종료된 뒤 필요한 로그를 보관하고 실행 폴더를 삭제해도 된다. 반복 실행 시 공간을 사용한다.
 - 공유할 소스는 `Assets`와 `.meta`, `Packages`, `ProjectSettings`, `Tools`, 문서다. `Library`, `Temp`, `.vs`, 생성 솔루션·업그레이드 로그는 재생성 가능한 로컬 파일이다.
 
-문서 링크·메타데이터를 확인하려면 프로젝트 루트에서 `& ./Tools/Test-ProjectStructure.ps1`을 실행한다. 게임 기능 변경은 Unity 회귀 검사와 실제 씬 조작으로 확인한다.
+문서 링크·메타데이터를 확인하려면 프로젝트 루트에서 `& ./Tools/Test-ProjectStructure.ps1`을 실행한다. 게임 기능 변경은 실제 씬 조작으로 확인한다.
 
 ## 사운드를 추가하거나 교체하기
 
