@@ -130,7 +130,7 @@ public static class WeaponFoundationChecks
             Owner.transform.position = Origin; Owner.AddComponent<PlayerWeaponInput>();
             var camera = new GameObject("Aim"); camera.transform.SetParent(Owner.transform, false); camera.AddComponent<Camera>();
             Data = WeaponFoundationChecks.Data(); Gun = Owner.AddComponent<WeaponController>();
-            Set(Gun, "weaponData", Data); Set(Gun, "logShots", false); Call(Gun, "Initialize");
+            Set(Gun, "weaponData", Data); Call(Gun, "Initialize");
         }
         public GameObject Box(float z, Transform parent = null, bool trigger = false)
         {

@@ -82,7 +82,7 @@ public static class MissionHUDSetup
         Assign(hud, "missionBar", bar); Assign(hud, "title", title); Assign(hud, "counter", counter);
         Assign(hud, "counterRoot", counterRoot.gameObject); Assign(hud, "progress", fill); Assign(hud, "boardHint", hint);
 
-        var board = Box("MissionBoard", root, Vector2.zero, Vector2.up, new Vector2(-502, 100), new Vector2(-2, -151), new Color(.018f, .024f, .027f, .88f));
+        var board = Box("MissionBoard", root, Vector2.zero, Vector2.up, new Vector2(-502, 100), new Vector2(-2, -151), new Color(.018f, .024f, .027f, 1));
         board.pivot = new Vector2(0, .5f);
         var group = Undo.AddComponent<CanvasGroup>(board.gameObject); group.alpha = 0; group.blocksRaycasts = false; group.interactable = false;
         Box("Accent", board, Vector2.up, Vector2.one, Vector2.zero, new Vector2(0, 3), Mint);

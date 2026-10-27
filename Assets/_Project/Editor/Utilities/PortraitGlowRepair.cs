@@ -1,28 +1,14 @@
 using System;
-using System.IO;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
-[InitializeOnLoad]
 public static class PortraitGlowRepair
 {
-    private const string Request = "Library/PortraitGlowRepair.request";
-    private const string Result = "Library/PortraitGlowRepair.result.txt";
     private const string MaterialPath = "Assets/_Project/Art/Materials/UI/HPHud/Mat_HexPortrait.mat";
     private const string PrefabPath = "Assets/_Project/Prefabs/UI/HUD/PlayerHealthHUD.prefab";
-
-    static PortraitGlowRepair() { EditorApplication.update += Tick; }
-
-    private static void Tick()
-    {
-        if (EditorApplication.isCompiling || EditorApplication.isUpdating || EditorApplication.isPlayingOrWillChangePlaymode || !File.Exists(Request)) return;
-        File.Delete(Request);
-        try { Repair(); File.WriteAllText(Result, "PASS: charging, heartbeat, masked rendering, material reassignment/recovery, disable cleanup, scene and prefab persistent references."); }
-        catch (Exception e) { File.WriteAllText(Result, "FAIL: " + e); Debug.LogException(e); }
-    }
 
     [MenuItem("Tools/HUD/Repair Portrait Glow")]
     public static void Repair()

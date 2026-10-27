@@ -35,9 +35,9 @@ public static class RangedCombatPlayChecks
         var player = Object.FindFirstObjectByType<PlayerMovement>();
         var slots = player.GetComponent<PlayerWeaponSlots>(); var gun = player.GetComponent<WeaponController>();
         slots.SelectSlot(0);
-        var visibility = player.GetComponentInChildren<WeaponVisibility>(true);
-        Require(visibility != null && visibility.GunRoot != null, "Authored scene has a weapon presentation root");
-        visibility.GunRoot.gameObject.SetActive(true);
+        var gunRoot = (Transform)typeof(WeaponController).GetField("weaponRoot", Any).GetValue(gun);
+        Require(gunRoot != null, "Authored scene has a weapon presentation root");
+        gunRoot.gameObject.SetActive(true);
         var muzzle = (Transform)typeof(WeaponController).GetField("muzzlePoint", Any).GetValue(gun);
         var view = player.GetComponentInChildren<Camera>();
         var crosshair = Object.FindFirstObjectByType<DynamicCrosshairView>();

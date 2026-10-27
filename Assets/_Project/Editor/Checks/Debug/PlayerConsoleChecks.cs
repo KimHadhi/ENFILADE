@@ -39,7 +39,7 @@ public static class PlayerConsoleChecks
             if (!EditorApplication.isPlayingOrWillChangePlaymode && File.Exists(Request))
             {
                 File.Delete(Request);
-                Install();
+                RequireScenePlayer();
                 UltimateHUDChecks.Run();
                 UltimateFireSetup.Check();
                 SessionState.SetBool(Running, true);
@@ -59,24 +59,13 @@ public static class PlayerConsoleChecks
         }
     }
 
-    [MenuItem("Tools/HUD/Connect Player Ultimate")]
-    public static void Install()
+    // PlayerMovement adds UltimateCharge/PlayerStats at runtime (values from Tables/Player.csv); the HUD only needs the player.
+    private static void RequireScenePlayer()
     {
-        if (EditorApplication.isPlayingOrWillChangePlaymode) throw new InvalidOperationException("Exit Play first.");
         var view = Object.FindFirstObjectByType<AdaptiveHealthHUD>();
         Require(view != null, "Scene HP HUD");
-        var serialized = new SerializedObject(view);
-        var target = serialized.FindProperty("player").objectReferenceValue as PlayerMovement;
+        var target = new SerializedObject(view).FindProperty("player").objectReferenceValue as PlayerMovement;
         Require(target != null, "Explicit scene player");
-        if (target.GetComponent<UltimateCharge>() == null)
-        {
-            var authored = view.GetComponentInChildren<UltimateCharge>(true);
-            var charge = Undo.AddComponent<UltimateCharge>(target.gameObject);
-            if (authored != null) charge.SetValues(authored.CurrentCharge, authored.MaximumCharge, authored.RequiredCharge);
-            EditorUtility.SetDirty(charge);
-            EditorSceneManager.MarkSceneDirty(target.gameObject.scene);
-            Require(EditorSceneManager.SaveScene(target.gameObject.scene), "Save player resource");
-        }
     }
 
     private static void RunStep()

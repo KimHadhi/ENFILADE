@@ -6,6 +6,8 @@
 
 | 변경할 내용 | 시작할 파일·설정 |
 | --- | --- |
+| **체력·무기·주먹·처형·적·웨이브 밸런스 숫자** | [Resources/Tables](../Resources/Tables)의 CSV 표 (컴파일 불필요, [사용법](../Docs/MaintenanceGuide.md#밸런스-표-data-tables)) |
+| 표 읽기·적용 방식 | [GameTables](Data/GameTables.cs), [CsvTable](Data/CsvTable.cs), [TableFieldWriter](Data/TableFieldWriter.cs) |
 | 걷기·달리기·자세·슬라이드의 기본 수치 | 씬의 `PlayerMovement` Inspector, [Configuration](Player/Movement/PlayerMovement.Configuration.cs) |
 | 회피·파쿠르·낙하·저스트 슬라이드 수치 | `PlayerMovement → Ability Settings`, [MovementAbilitySettings](Player/Movement/MovementAbilitySettings.cs) |
 | 이동 상태 전환·처리 순서 | [PlayerMovement](Player/Movement/PlayerMovement.cs), [이동 코드 구조](Player/Movement/README.md) |
@@ -19,9 +21,10 @@
 | 주먹·가드·패링·가드 브레이크 | [PlayerMeleeCombat](Player/Combat/PlayerMeleeCombat.cs) |
 | 완벽 방어·반격 / 처형 | [PlayerPerfectDefense](Player/Combat/PlayerPerfectDefense.cs), [PlayerExecution](Player/Combat/PlayerExecution.cs) |
 | 플레이어 HP·실드·피격·사망 | [PlayerDamageReceiver](Player/Combat/PlayerDamageReceiver.cs) |
-| 플레이어 궁극기 최대 보유량·소비량 스탯 / 현재 충전량 | [PlayerStats](Player/PlayerStats.cs), [UltimateCharge](UI/HP/UltimateCharge.cs) |
+| 플레이어 궁극기 최대 보유량·소비량 스탯 / 현재 충전량 | [PlayerStats](Player/PlayerStats.cs), [UltimateCharge](UI/HP/UltimateCharge.cs) (Play 시작 때 `PlayerMovement`가 붙임) |
 | 피격 방향 아크·혈흔·쉐이크·빈사 박동 | [PlayerDamageFeedback](Player/Combat/PlayerDamageFeedback.cs), [설정](../Resources/Combat/PlayerDamageFeedback.asset), [사용 안내](../Docs/PlayerDamageFeedbackGuide.md) |
-| 무기별 수치 | [Data/Combat/Weapons](../Data/Combat/Weapons/), 형식은 [WeaponData](Combat/Weapons/Data/WeaponData.cs) |
+| 무기별 연출·사운드·반동 | [Data/Combat/Weapons](../Data/Combat/Weapons/), 형식은 [WeaponData](Combat/Weapons/Data/WeaponData.cs) |
+| 총구 화염·궤적 / 탄착·혈흔 프리팹 효과 | [MuzzleEffects](Combat/Weapons/Effect/MuzzleEffects.cs), [WeaponImpactEffects](Combat/Weapons/Effect/WeaponImpactEffects.cs), [EnemyBloodEffect](Combat/Weapons/Effect/EnemyBloodEffect.cs) |
 | 발사 간격·탄약·장전 타이머 | [WeaponRuntime](Combat/Weapons/Core/WeaponRuntime.cs) |
 | 발사·명중·조준 연결 / 총 모델 표현 | [WeaponController](Player/Combat/Weapons/WeaponController.cs), [WeaponPresentation](Player/Combat/Weapons/WeaponPresentation.cs) |
 | 장비 슬롯 / 사격 입력 | [PlayerWeaponSlots](Player/Combat/Weapons/PlayerWeaponSlots.cs), [PlayerWeaponInput](Player/Combat/Input/PlayerWeaponInput.cs) |
@@ -46,6 +49,7 @@
 | `Enemies`, `Combat/Waves` | 적의 생명주기·AI와 웨이브 진행 |
 | `UI` | 게임 상태를 읽어 표시하고 UI 입력을 전달 |
 | `World` | 파괴 가능한 문, 스윙 바, 텔레포트 등 월드 상호작용 |
+| `Data` | 밸런스 CSV 표를 읽어 컴포넌트·에셋 필드에 적용하고, 편집기에서 표 저장 시 다시 적용 |
 | `Debug` | 연습 표적·공격기·테스트 명령·디버그 HUD |
 | `../Editor` | 편집기에서만 실행할 생성·연결·검사 도구 |
 

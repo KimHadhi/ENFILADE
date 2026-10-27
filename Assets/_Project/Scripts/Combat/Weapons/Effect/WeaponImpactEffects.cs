@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>Sparks, dust and fading impact images where a shot from the parent WeaponController hits a non-enemy surface.</summary>
 [DisallowMultipleComponent]
 public sealed class WeaponImpactEffects : MonoBehaviour
 {
@@ -50,18 +51,17 @@ public sealed class WeaponImpactEffects : MonoBehaviour
     }
 
     private readonly List<ActiveImpactImage> activeImpactImages = new();
+    private WeaponController weapon;
+
+    private void OnEnable()
+    {
+        weapon = GetComponentInParent<WeaponController>();
+        if (weapon != null) weapon.ShotFired += ShowHitEffects;
+    }
 
     private void Update()
     {
         UpdateImpactImages();
-    }
-
-    /// <summary>
-    /// WeaponController가 전달한 발사 결과를 이용해 피격 효과를 생성합니다.
-    /// </summary>
-    public void Play(WeaponShot shot)
-    {
-        ShowHitEffects(shot);
     }
 
     // 적이 아닌 표면에 맞았을 때 효과 생성
@@ -266,6 +266,7 @@ public sealed class WeaponImpactEffects : MonoBehaviour
 
     private void OnDisable()
     {
+        if (weapon != null) weapon.ShotFired -= ShowHitEffects;
         ClearImpactImages();
     }
 

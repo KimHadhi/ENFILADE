@@ -3,9 +3,16 @@ using UnityEngine;
 public enum WeaponFireMode { SemiAutomatic, Automatic, Burst }
 public enum WeaponCategory { Ranged, Melee, Special }
 
+/// <summary>
+/// One weapon's numbers and presentation. Columns of Resources/Tables/Weapons.csv (row = this asset's name) overwrite
+/// the matching fields at runtime; the asset keeps references (icon, sounds) and anything the table leaves out.
+/// </summary>
 [CreateAssetMenu(fileName = "Weapon", menuName = "ENFILADE/Combat/Weapon Data")]
 public sealed class WeaponData : ScriptableObject
 {
+    public const string TableName = "Weapons";
+    public void BindTable() => GameTables.Bind(TableName, name, this);
+
     [SerializeField] private string displayName = "Foundation Rifle";
     [SerializeField] private Sprite hudIcon;
     [SerializeField] private WeaponCategory category = WeaponCategory.Ranged;

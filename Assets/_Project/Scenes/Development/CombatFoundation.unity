@@ -22331,17 +22331,9 @@ GameObject:
   - component: {fileID: 961842277}
   - component: {fileID: 961842276}
   - component: {fileID: 961842275}
-  - component: {fileID: 961842274}
-  - component: {fileID: 961842282}
   - component: {fileID: 961842283}
-  - component: {fileID: 961842284}
   - component: {fileID: 961842285}
-  - component: {fileID: 961842286}
-  - component: {fileID: 961842287}
-  - component: {fileID: 961842288}
-  - component: {fileID: 961842289}
   - component: {fileID: 961842290}
-  - component: {fileID: 902310001}
   m_Layer: 31
   m_Name: "\u2605Player - invisible weapon"
   m_TagString: Player
@@ -22349,18 +22341,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &961842274
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 961842273}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 971c04e73ed0c77409f235c04b348c2c, type: 3}
-  m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::WeaponDebugHUD
 --- !u!114 &961842275
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -22376,18 +22356,13 @@ MonoBehaviour:
   weaponData: {fileID: 11400000, guid: 23002ebab5eaea7478f88c9de57f8dbf, type: 2}
   inputSource: {fileID: 0}
   aimOrigin: {fileID: 1854760735}
-  muzzlePoint: {fileID: 0}
-  weaponRoot: {fileID: 0}
+  muzzlePoint: {fileID: 1456044960}
+  weaponRoot: {fileID: 1662544478}
   missedShoveRecovery: 0.25
   hitLayers:
     serializedVersion: 2
     m_Bits: 4294967295
-  logShots: 1
-  drawRays: 1
-  muzzleFlash: {fileID: 346062210}
-  bulletTracerEffect: {fileID: 961842286}
-  impactEffects: {fileID: 961842287}
-  enemyBloodEffect: {fileID: 961842288}
+  drawRays: 0
   savedAmmo: -1
   savedReserve: -1
   savedAmmoData: {fileID: 0}
@@ -22661,24 +22636,9 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1383488020}
+  - {fileID: 961842292}
   m_Father: {fileID: 698998040}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &961842282
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 961842273}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 739b67cbd9c3b7040b8cf426914114b9, type: 3}
-  m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::MovementDebugHUD
-  playerMovement: {fileID: 961842279}
-  fontSize: 15
-  position: {x: 20, y: 135}
-  minWidth: 260
 --- !u!114 &961842283
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -22709,34 +22669,6 @@ MonoBehaviour:
   m_DefaultActionMap: Player
   m_SplitScreenIndex: -1
   m_Camera: {fileID: 1854760737}
---- !u!114 &961842284
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 961842273}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 002f4dc7770c4a34784f380dca577b73, type: 3}
-  m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::UltimateCharge
-  currentCharge: 0
-  chargePerEnemyHit: 3
---- !u!114 &902310001
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 961842273}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 75b8df3fa1e54cc8901eb897b7b4e5a2, type: 3}
-  m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::PlayerStats
-  ultimateCapacityPercent: 120
-  ultimateCostPercent: 100
 --- !u!114 &961842285
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -22769,13 +22701,13 @@ MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 961842273}
+  m_GameObject: {fileID: 1456044959}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 55aa6fe99f1a9214088205d2b01fdd39, type: 3}
   m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::BulletTracerEffect
-  muzzlePoint: {fileID: 1456044960}
+  m_EditorClassIdentifier: Assembly-CSharp::MuzzleEffects
+  muzzleFlash: {fileID: 346062210}
   tracerPrefab: {fileID: 164924329569512729, guid: 3e16a4279f7025c4ebeae1bc9e1d3f38, type: 3}
   tracerDuration: 0.12
   tracerTailLength: 0.35
@@ -22785,7 +22717,7 @@ MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 961842273}
+  m_GameObject: {fileID: 961842291}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 38f6349d145011945b8ce3495725f61a, type: 3}
@@ -22810,7 +22742,7 @@ MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 961842273}
+  m_GameObject: {fileID: 961842291}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1799a97061e065f4b88b3e57c90ee859, type: 3}
@@ -22824,21 +22756,6 @@ MonoBehaviour:
   bloodMarkPrefab: {fileID: 7635742758582579712, guid: e1782328923af7d4e8bc35203faa00e4, type: 3}
   bloodMarkLifetime: 5
   surfaceOffset: 0.03
-  debugLogs: 1
---- !u!114 &961842289
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 961842273}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9fb18d80f5ef0af4d9f62fe1412346cc, type: 3}
-  m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::WeaponVisibility
-  weaponSlots: {fileID: 961842285}
-  gun: {fileID: 1662544477}
 --- !u!114 &961842290
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -22855,6 +22772,39 @@ MonoBehaviour:
   chat: {fileID: 1903369839}
   prompt: {fileID: 1693932415}
   reach: 3.5
+--- !u!1 &961842291
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 961842292}
+  - component: {fileID: 961842287}
+  - component: {fileID: 961842288}
+  m_Layer: 31
+  m_Name: Weapon Impact Effects
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &961842292
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 961842291}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 961842281}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &971939420
 GameObject:
   m_ObjectHideFlags: 0
@@ -25429,7 +25379,7 @@ MonoBehaviour:
   m_Name:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0.018, g: 0.024, b: 0.027, a: 0.88}
+  m_Color: {r: 0.018, g: 0.024, b: 0.027, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -30181,6 +30131,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1456044960}
+  - component: {fileID: 961842286}
   m_Layer: 0
   m_Name: MuzzlePoint
   m_TagString: Untagged

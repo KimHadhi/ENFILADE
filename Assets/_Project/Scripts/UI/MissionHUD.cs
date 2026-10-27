@@ -47,6 +47,20 @@ public sealed class MissionHUD : MonoBehaviour
     private bool ownsBoardAction;
     private float lastCanvasWidth;
 
+    private void Awake() => RaiseBoardAboveHud();
+
+    // Chat and HP are later siblings in the HUD canvas; a nested canvas lets the open board cover them without reparenting.
+    private void RaiseBoardAboveHud()
+    {
+        if (board == null) return;
+        var parentCanvas = GetComponentInParent<Canvas>();
+        int baseOrder = parentCanvas != null ? parentCanvas.rootCanvas.sortingOrder : 0;
+        var canvas = board.GetComponent<Canvas>();
+        if (canvas == null) canvas = board.gameObject.AddComponent<Canvas>();
+        canvas.overrideSorting = true;
+        canvas.sortingOrder = baseOrder + 1;
+    }
+
     private void OnEnable()
     {
         AnchorMissionBar();

@@ -1,18 +1,22 @@
-
 using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>
+/// Authored muzzle visuals for the parent WeaponController: a particle muzzle flash and a short bullet tracer from the
+/// muzzle to the hit point. Lives on the muzzle point, so it follows the gun model and hides with it.
+/// </summary>
 [DisallowMultipleComponent]
-public sealed class BulletTracerEffect : MonoBehaviour
+public sealed class MuzzleEffects : MonoBehaviour
 {
+    [Header("Muzzle Flash")]
+    [SerializeField] private ParticleSystem muzzleFlash;
+
     [Header("Bullet Tracer")]
-    [SerializeField] private Transform muzzlePoint;
-    public Transform MuzzlePoint => muzzlePoint;
     [SerializeField] private LineRenderer tracerPrefab;
     [SerializeField, Min(0.01f)] private float tracerDuration = 0.12f;
     [SerializeField, Range(0f, 1f)] private float tracerTailLength = 0.35f;
 
-    private Transform aimOrigin;
+    private WeaponController weapon;
 
     private sealed class ActiveTracer
     {
@@ -28,13 +32,19 @@ public sealed class BulletTracerEffect : MonoBehaviour
 
     private readonly List<ActiveTracer> activeTracers = new();
 
-    public void SetAimOrigin(Transform origin)
+    private void OnEnable()
     {
-        aimOrigin = origin;
+        weapon = GetComponentInParent<WeaponController>();
+        if (weapon != null) weapon.ShotFired += Play;
     }
 
-    public void Play(WeaponShot shot)
+    private void Play(WeaponShot shot)
     {
+        if (muzzleFlash != null)
+        {
+            muzzleFlash.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            muzzleFlash.Play();
+        }
         ShowBulletTracer(shot);
     }
 
@@ -130,6 +140,7 @@ public sealed class BulletTracerEffect : MonoBehaviour
 
     private void OnDisable()
     {
+        if (weapon != null) weapon.ShotFired -= Play;
         ClearTracers();
     }
 

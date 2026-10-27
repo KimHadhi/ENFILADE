@@ -33,7 +33,7 @@ public static class WeaponFoundationBuilder
             var camera = Child(look, "Camera", Vector3.zero).gameObject;
             camera.tag = "MainCamera"; camera.AddComponent<Camera>().nearClipPlane = 0.03f; camera.AddComponent<AudioListener>();
             player.AddComponent<PlayerMovement>(); player.AddComponent<PlayerLook>(); player.AddComponent<PlayerCameraEffects>();
-            Install(player, automatic); player.AddComponent<WeaponDebugHUD>();
+            Install(player, automatic);
             string path = AssetDatabase.GenerateUniqueAssetPath("Assets/_Project/Scenes/Development/CombatFoundation.unity");
             EditorSceneManager.SaveScene(scene, path); AssetDatabase.SaveAssets();
             Debug.Log("COMBAT_FOUNDATION_CREATED: " + path);

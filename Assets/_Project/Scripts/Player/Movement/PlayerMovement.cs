@@ -39,6 +39,8 @@ public sealed partial class PlayerMovement : MonoBehaviour
     internal MovementInput Input { get; private set; }
     internal MovementStateMachine StateMachine { get; private set; }
     internal MovementAbilities Abilities { get; private set; }
+    /// <summary>Resources/Tables/Player.csv: rows Vitals, Stats, Ultimate, Fists and Execution.</summary>
+    public const string TableName = "Player";
     public PlayerDamageReceiver DamageReceiver { get; private set; }
     public PlayerStats Stats { get; private set; }
     public UltimateCharge Ultimate { get; private set; }
@@ -159,16 +161,21 @@ public sealed partial class PlayerMovement : MonoBehaviour
         Posture = new MovementPostureController(this);
         Actions = new MovementActions(this);
         Abilities = new MovementAbilities(this);
+        // Combat components are composed here at runtime; their balance numbers come from Resources/Tables/Player.csv.
         DamageReceiver = GetComponent<PlayerDamageReceiver>();
         if (DamageReceiver == null) DamageReceiver = gameObject.AddComponent<PlayerDamageReceiver>();
+        GameTables.Bind(TableName, "Vitals", DamageReceiver);
         DamageReceiver.Initialize(this);
         Stats = GetComponent<PlayerStats>();
         if (Stats == null) Stats = gameObject.AddComponent<PlayerStats>();
+        GameTables.Bind(TableName, "Stats", Stats);
         Ultimate = GetComponent<UltimateCharge>();
         if (Ultimate == null) Ultimate = gameObject.AddComponent<UltimateCharge>();
+        GameTables.Bind(TableName, "Ultimate", Ultimate);
         StateMachine = MovementStateMachine.Create(this);
         Execution = GetComponent<PlayerExecution>();
         if (Execution == null) Execution = gameObject.AddComponent<PlayerExecution>();
+        GameTables.Bind(TableName, "Execution", Execution);
         PerfectDefense = GetComponent<PlayerPerfectDefense>() ?? gameObject.AddComponent<PlayerPerfectDefense>();
         PerfectDefense.Initialize(this);
         DodgePassThrough = GetComponent<DodgeEnemyPassThrough>() ?? gameObject.AddComponent<DodgeEnemyPassThrough>();

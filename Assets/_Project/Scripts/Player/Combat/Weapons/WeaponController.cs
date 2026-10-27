@@ -39,21 +39,15 @@ public sealed class WeaponController : MonoBehaviour
 
     [Tooltip("Camera used to choose the aim point. The actual shot starts at Muzzle Point.")]
     [SerializeField] private Transform aimOrigin;
+    [Tooltip("Shot origin. Empty uses the MuzzleEffects object under this player.")]
     [SerializeField] private Transform muzzlePoint;
+    [Tooltip("Gun model root: posed procedurally and hidden while no ranged weapon is equipped.")]
     [SerializeField] private Transform weaponRoot;
     [SerializeField, Min(0f)] private float missedShoveRecovery = .25f;
 
     [SerializeField] private LayerMask hitLayers = ~0;
-    [SerializeField] private bool logShots = true;
-    [SerializeField] private bool drawRays = true;
-
-    [Header("Muzzle Flash")]
-    [SerializeField] private ParticleSystem muzzleFlash;
-
-    [Header("Effect Components")]
-    [SerializeField] private BulletTracerEffect bulletTracerEffect;
-    [SerializeField] private WeaponImpactEffects impactEffects;
-    [SerializeField] private EnemyBloodEffect enemyBloodEffect;
+    [Tooltip("Scene view only: draw each shot ray for 0.2 seconds.")]
+    [SerializeField] private bool drawRays;
 
     public WeaponRuntime Runtime { get; private set; }
     public WeaponData EquippedData => Runtime != null ? Runtime.Data : null;
@@ -133,12 +127,7 @@ public sealed class WeaponController : MonoBehaviour
             return;
         }
 
-        if (bulletTracerEffect != null)
-        {
-            bulletTracerEffect.SetAimOrigin(aimOrigin);
-        }
-        if (muzzlePoint == null) muzzlePoint = bulletTracerEffect != null ? bulletTracerEffect.MuzzlePoint : null;
-        if (weaponRoot == null) weaponRoot = owner.GetComponentInChildren<WeaponVisibility>(true)?.GunRoot;
+        if (muzzlePoint == null) muzzlePoint = owner.GetComponentInChildren<MuzzleEffects>(true)?.transform;
         presentation = new WeaponPresentation(weaponRoot, muzzlePoint);
         viewCamera = aimOrigin.GetComponent<Camera>();
         cameraEffects = owner.GetComponentInChildren<PlayerCameraEffects>();
@@ -157,6 +146,7 @@ public sealed class WeaponController : MonoBehaviour
 
     private void LateUpdate()
     {
+        presentation?.SetVisible(Runtime != null && Runtime.Data.Category != WeaponCategory.Melee);
         if (Runtime == null) { ResetPresentation(); return; }
 
         if (health != null && !health.IsAlive)
@@ -244,14 +234,6 @@ public sealed class WeaponController : MonoBehaviour
         bool wasReloading = Runtime.IsReloading;
         int shots = Runtime.Tick(dt, frame);
 
-        if (logShots && wasReloading != Runtime.IsReloading)
-        {
-            Debug.Log(
-                Runtime.IsReloading
-                    ? "[Weapon] Reload started"
-                    : "[Weapon] Reload complete",
-                this);
-        }
         if (!wasReloading && Runtime.IsReloading) ReloadStarted?.Invoke(Runtime.IsEmptyReload);
         else if (wasReloading && !Runtime.IsReloading) ReloadCompleted?.Invoke();
         if (shots == 0 && frame.FirePressed && Runtime.Ammo == 0 && !Runtime.IsReloading) DryFired?.Invoke();
@@ -277,7 +259,6 @@ public sealed class WeaponController : MonoBehaviour
                 postureDamage: weaponData.PostureDamage,
                 method: DamageMethod.Bullet);
 
-            // 기존 레이캐스트 총알 판정 유지
             var trace = AttackTrace.Trace(
                 attack,
                 origin,
@@ -304,45 +285,7 @@ public sealed class WeaponController : MonoBehaviour
                     0.2f);
             }
 
-            if (logShots)
-            {
-                Debug.Log(
-                    $"[Weapon] {weaponData.DisplayName} shot={id} " +
-                    $"ammo={shot.AmmoAfterShot}/{weaponData.MagazineSize} " +
-                    $"hit={(trace.HasHit && trace.Hit.collider != null ? trace.Hit.collider.name : "miss")} " +
-                    $"result={trace.Damage}",
-                    this);
-            }
-
-            // 기존 총구 화염
-            if (muzzleFlash != null)
-            {
-                muzzleFlash.Stop(
-                    true,
-                    ParticleSystemStopBehavior.StopEmittingAndClear);
-
-                muzzleFlash.Play();
-            }
-
-            // 분리된 총알 궤적 컴포넌트
-            if (bulletTracerEffect != null)
-            {
-                bulletTracerEffect.Play(shot);
-            }
-
-            // 분리된 피격 효과 컴포넌트
-            if (impactEffects != null)
-            {
-                impactEffects.Play(shot);
-            }
-
-            // 적에게 맞았을 때 혈흔 효과
-            if (enemyBloodEffect != null)
-            {
-                enemyBloodEffect.Play(shot);
-            }
-
-            // 기존 발사 이벤트 유지
+            // Presentation (WeaponFeedback, MuzzleEffects, impact and blood effects) subscribes here.
             ShotFired?.Invoke(shot);
             bloom = Mathf.Min(weaponData.MaxBloom, bloom + weaponData.BloomPerShot);
             timeSinceShot = 0f;

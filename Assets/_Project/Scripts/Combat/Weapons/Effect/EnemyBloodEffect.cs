@@ -1,7 +1,7 @@
-
 using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>Prefab blood particles and a fading blood mark where a shot from the parent WeaponController hits an enemy.</summary>
 [DisallowMultipleComponent]
 public sealed class EnemyBloodEffect : MonoBehaviour
 {
@@ -17,8 +17,7 @@ public sealed class EnemyBloodEffect : MonoBehaviour
     [SerializeField, Min(0.1f)] private float bloodMarkLifetime = 5f;
     [SerializeField, Min(0f)] private float surfaceOffset = 0.03f;
 
-    [Header("Debug")]
-    [SerializeField] private bool debugLogs = true;
+    private WeaponController weapon;
 
     private sealed class ActiveBloodMark
     {
@@ -31,35 +30,27 @@ public sealed class EnemyBloodEffect : MonoBehaviour
 
     private readonly List<ActiveBloodMark> activeMarks = new();
 
-    public void Play(WeaponShot shot)
+    private void OnEnable()
+    {
+        weapon = GetComponentInParent<WeaponController>();
+        if (weapon != null) weapon.ShotFired += Play;
+    }
+
+    private void Play(WeaponShot shot)
     {
         if (!shot.Trace.HasHit || shot.Trace.Hit.collider == null)
-        {
-            Log("[Blood] 명중한 대상이 없습니다.");
             return;
-        }
 
         RaycastHit hit = shot.Trace.Hit;
 
-        Log($"[Blood] 피격 대상: {hit.collider.name}");
-
         if (!IsEnemy(hit.collider.transform))
-        {
-            Log("[Blood] 적 Layer 판정 실패");
             return;
-        }
 
         Vector3 normal = hit.normal.sqrMagnitude > 0.001f
             ? hit.normal.normalized
             : -shot.Direction.normalized;
 
         Vector3 position = hit.point + normal * surfaceOffset;
-
-        // Scene 창에서 피격 위치와 표면 방향 확인
-        Debug.DrawRay(hit.point, normal * 0.5f, Color.magenta, 3f);
-        Debug.DrawLine(hit.point, position, Color.green, 3f);
-
-        Log($"[Blood] 적 판정 성공 / 위치: {position}");
 
         // Particle System의 기본 분사 축은 로컬 Y축
         Quaternion particleRotation =
@@ -94,10 +85,7 @@ public sealed class EnemyBloodEffect : MonoBehaviour
         Quaternion rotation)
     {
         if (bloodParticlePrefab == null)
-        {
-            Log("[Blood] 오류: Blood Particle Prefab이 비어 있습니다.");
             return;
-        }
 
         ParticleSystem particles = Instantiate(
             bloodParticlePrefab,
@@ -105,8 +93,6 @@ public sealed class EnemyBloodEffect : MonoBehaviour
             rotation);
 
         particles.Play();
-
-        Log($"[Blood] 파티클 생성: {particles.name}");
 
         Destroy(
             particles.gameObject,
@@ -119,10 +105,7 @@ public sealed class EnemyBloodEffect : MonoBehaviour
         Quaternion rotation)
     {
         if (bloodMarkPrefab == null)
-        {
-            Log("[Blood] 오류: Blood Mark Prefab이 비어 있습니다.");
             return;
-        }
 
         if (hitTransform == null)
             return;
@@ -140,7 +123,7 @@ public sealed class EnemyBloodEffect : MonoBehaviour
 
         if (sprite == null)
         {
-            Log("[Blood] 오류: 혈흔 프리팹에 SpriteRenderer가 없습니다.");
+            Debug.LogWarning($"혈흔 프리팹 '{bloodMarkPrefab.name}'에 SpriteRenderer가 없습니다.", bloodMarkPrefab);
             Destroy(instance);
             return;
         }
@@ -155,8 +138,6 @@ public sealed class EnemyBloodEffect : MonoBehaviour
         };
 
         activeMarks.Add(mark);
-
-        Log($"[Blood] 혈흔 이미지 생성: {instance.name}");
     }
 
     private void Update()
@@ -193,14 +174,9 @@ public sealed class EnemyBloodEffect : MonoBehaviour
         }
     }
 
-    private void Log(string message)
-    {
-        if (debugLogs)
-            Debug.Log(message, this);
-    }
-
     private void OnDisable()
     {
+        if (weapon != null) weapon.ShotFired -= Play;
         ClearBloodMarks();
     }
 

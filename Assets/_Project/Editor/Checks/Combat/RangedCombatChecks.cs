@@ -113,7 +113,7 @@ public static class RangedCombatChecks
             Muzzle = new GameObject("Muzzle").transform; Muzzle.SetParent(Model, false); Muzzle.localPosition = new Vector3(.3f, -.18f, .8f);
             Data = ScriptableObject.CreateInstance<WeaponData>(); Set(Data, "hipSpread", 0f); Set(Data, "bloomPerShot", 0f);
             Gun = Owner.AddComponent<WeaponController>(); Set(Gun, "weaponData", Data); Set(Gun, "muzzlePoint", Muzzle);
-            Set(Gun, "weaponRoot", Model); Set(Gun, "logShots", false); Call(Gun, "Initialize");
+            Set(Gun, "weaponRoot", Model); Call(Gun, "Initialize");
         }
         public GameObject Box(Vector3 local, Vector3 size)
         {

@@ -7,7 +7,7 @@ public enum EnemyBodySize { Small, Medium, Large }
 
 /// <summary>Shared posture/stun contract for enemies and practice targets. AI must respect IsStunned.</summary>
 [DisallowMultipleComponent]
-public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver
+public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBound
 {
     [Header("Slide Reaction")]
     [SerializeField] private EnemyBodySize bodySize = EnemyBodySize.Small;
@@ -49,7 +49,16 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver
     private NavMeshAgent agent;
     private bool stoppedAgent, previousStopped;
 
-    private void Awake() { Posture = MaximumPosture; agent = GetComponent<NavMeshAgent>(); }
+    private float appliedMaximumPosture;
+
+    private void Awake() { Posture = appliedMaximumPosture = MaximumPosture; agent = GetComponent<NavMeshAgent>(); }
+
+    // Enemies.csv may change the maximum before or after Awake; keep the current posture fraction either way.
+    void ITableBound.OnTableApplied()
+    {
+        if (appliedMaximumPosture > 0f) Posture = Posture / appliedMaximumPosture * MaximumPosture;
+        appliedMaximumPosture = MaximumPosture;
+    }
     private void OnEnable() { active.Add(this); EnsureHUD(); }
     private void Start() => EnsureHUD();
     private void EnsureHUD()

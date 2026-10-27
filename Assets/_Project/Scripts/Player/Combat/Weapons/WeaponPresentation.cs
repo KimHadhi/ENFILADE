@@ -20,6 +20,10 @@ public sealed class WeaponPresentation
         if (root == null) return;
         hipPosition = root.localPosition; hipRotation = root.localRotation;
     }
+    public void SetVisible(bool visible)
+    {
+        if (root != null && root.gameObject.activeSelf != visible) root.gameObject.SetActive(visible);
+    }
     public void Reset()
     {
         readyBlend = adsBlend = 0f; hasAimDistance = hasPresentedPose = false; recoil.Reset();

@@ -20,6 +20,7 @@ public sealed class WeaponRuntime
     public WeaponRuntime(WeaponData data, int? ammunition = null, int? reserve = null)
     {
         if (data == null) throw new ArgumentNullException(nameof(data));
+        data.BindTable();
         Data = data; Ammo = Mathf.Clamp(ammunition ?? data.MagazineSize, 0, data.MagazineSize);
         ReserveAmmo = Mathf.Max(0, reserve ?? data.InitialReserveAmmo);
     }

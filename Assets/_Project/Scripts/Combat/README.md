@@ -10,9 +10,9 @@
 | --- | --- | --- |
 | `Damage/` | 공격 정보, 피해 수신 계약, 체간·기절·넘어짐, 피해 이벤트와 공통 피드백 | [DamageHit](Damage/DamageHit.cs), [MeleeCombatTarget](Damage/MeleeCombatTarget.cs), [CombatDamageEvents](Damage/CombatDamageEvents.cs) |
 | `HitDetection/` | 총기 레이·벽 차단, 벽을 무시하는 근접 스윕·부위 판정 | [AttackTrace](HitDetection/AttackTrace.cs), [MeleeAttackSweep](HitDetection/MeleeAttackSweep.cs), [ShoveSweep](HitDetection/ShoveSweep.cs) |
-| `Weapons/Data/` | 무기 설정의 형식과 모델 표시 연결 | [WeaponData](Weapons/Data/WeaponData.cs), [WeaponVisibility](Weapons/Data/WeaponVisibility.cs) |
+| `Weapons/Data/` | 무기 설정의 형식. 숫자는 `Tables/Weapons.csv`가 덮어씀 | [WeaponData](Weapons/Data/WeaponData.cs) |
 | `Weapons/Core/` | 무기 한 자루의 탄약·발사·장전, 총구 조준 계산과 반동 스프링 | [WeaponRuntime](Weapons/Core/WeaponRuntime.cs), [WeaponAimSolver](Weapons/Core/WeaponAimSolver.cs), [RecoilSpring](Weapons/Core/RecoilSpring.cs) |
-| `Weapons/Effect/` | 기존 트레이서·탄착·피 효과 연결 | [BulletTracerEffect](Weapons/Effect/BulletTracerEffect.cs), [WeaponImpactEffects](Weapons/Effect/WeaponImpactEffects.cs) |
+| `Weapons/Effect/` | 프리팹 기반 총구 화염·궤적(총구 오브젝트), 탄착·혈흔(Player의 `Weapon Impact Effects`). 각자 `ShotFired`를 구독 | [MuzzleEffects](Weapons/Effect/MuzzleEffects.cs), [WeaponImpactEffects](Weapons/Effect/WeaponImpactEffects.cs), [EnemyBloodEffect](Weapons/Effect/EnemyBloodEffect.cs) |
 | `Feel/` | 화면 킥·총성·히트마커·혈흔·점수·처치 효과, 총알 피격 반응 | [WeaponFeedback](Feel/WeaponFeedback.cs), [GunFeelDirector](Feel/GunFeelDirector.cs), [EnemyHitReaction](Feel/EnemyHitReaction.cs) |
 | `Waves/` | 웨이브 생성·처치 집계·진행 | [WaveManager](Waves/WaveManager.cs) |
 | `../Player/Combat/` | 플레이어 입력, 슬롯, 공격, 방어·반격·처형·슬라이드 접촉 | [PlayerWeaponSlots](../Player/Combat/Weapons/PlayerWeaponSlots.cs), [PlayerMeleeCombat](../Player/Combat/PlayerMeleeCombat.cs), [SlideCombat](../Player/Combat/SlideCombat.cs) |
@@ -65,10 +65,11 @@ PlayerWeaponInput → WeaponController
 
 | 목적 | 위치 |
 | --- | --- |
-| 실제 무기 수치 | [Data/Combat/Weapons](../../Data/Combat/Weapons) |
+| 무기·적·플레이어·웨이브 밸런스 숫자 | [Resources/Tables](../../Resources/Tables) ([사용법](../../Docs/MaintenanceGuide.md#밸런스-표-data-tables)) |
+| 무기 에셋(아이콘·사운드·반동 연출) | [Data/Combat/Weapons](../../Data/Combat/Weapons) |
 | 방어·반격·체간·피해 UI 설정 | [Resources/Combat/Feedback.asset](../../Resources/Combat/Feedback.asset) |
 | 총기 타격감·점수·피격 반응 설정 | [Resources/Combat/GunFeel.asset](../../Resources/Combat/GunFeel.asset) |
 | 씬·플레이어 설치 도구 | [Editor/Setup/Combat](../../Editor/Setup/Combat), [Editor/Setup/UI](../../Editor/Setup/UI) |
 | 전투 검사 | [Editor/Checks/Combat](../../Editor/Checks/Combat) |
 
-설정 로딩 키는 `Combat/Feedback`과 `Combat/GunFeel`이다. 에셋 경로를 정리할 때도 `Resources` 기준 키를 유지한다. 검사 실행 방식과 수정 영역별 검사 선택은 [검증 안내](../../Docs/ValidationGuide.md)를 따른다.
+설정 로딩 키는 `Combat/Feedback`, `Combat/GunFeel`, 표는 `Tables/<이름>`이다. 에셋 경로를 정리할 때도 `Resources` 기준 키를 유지한다. 검사 실행 방식과 수정 영역별 검사 선택은 [검증 안내](../../Docs/ValidationGuide.md)를 따른다.

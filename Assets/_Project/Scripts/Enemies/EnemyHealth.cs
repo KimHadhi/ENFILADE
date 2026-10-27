@@ -5,13 +5,19 @@ using UnityEngine;
 using UnityEngine.AI;
 
 [DisallowMultipleComponent, RequireComponent(typeof(MeleeCombatTarget))]
-public sealed class EnemyHealth : MonoBehaviour, IDamageReceiver, ICombatVitals, ICombatDisplayName
+public sealed class EnemyHealth : MonoBehaviour, IDamageReceiver, ICombatVitals, ICombatDisplayName, ITableBound
 {
+    /// <summary>Resources/Tables/Enemies.csv. A row covers EnemyHealth, EnemyCombatAI, MeleeCombatTarget and NavMeshAgent.</summary>
+    public const string TableName = "Enemies";
+
     [SerializeField, Min(1f)]
     private float maximumHealth = 100f;
 
     [Tooltip("체력 바 위에 표시할 이름. 비워두면 오브젝트 이름((Clone)/(Console) 제외)을 사용한다.")]
     [SerializeField] private string displayName = "";
+
+    [Tooltip("Enemies.csv의 행 id. 비워두면 오브젝트 이름((Clone)/(Console) 제외)을 사용한다.")]
+    [SerializeField] private string tableId = "";
 
     public string DisplayName => displayName;
     public float Health { get; private set; }
@@ -22,6 +28,7 @@ public sealed class EnemyHealth : MonoBehaviour, IDamageReceiver, ICombatVitals,
     private readonly Queue<long> recent = new Queue<long>();
     private NavMeshAgent pausedAgent;
     private EnemyHitReaction reaction;
+    private float appliedMaximum;
     private bool restorePosition, restoreRotation, restoreStopped;
 
     public void SetWavePaused(bool paused)
@@ -49,11 +56,14 @@ public sealed class EnemyHealth : MonoBehaviour, IDamageReceiver, ICombatVitals,
 
     private void Awake()
     {
-        Health = maximumHealth;
         if (GetComponent<MeleeCombatTarget>() == null) gameObject.AddComponent<MeleeCombatTarget>();
         // Bullet flinch (push, slow, interrupt) applies to existing prefabs without migration.
         reaction = GetComponent<EnemyHitReaction>();
         if (reaction == null) reaction = gameObject.AddComponent<EnemyHitReaction>();
+        GameTables.Bind(TableName, string.IsNullOrWhiteSpace(tableId) ? CombatDamageEvents.BaseName(gameObject) : tableId.Trim(),
+            this, GetComponent<EnemyCombatAI>(), GetComponent<MeleeCombatTarget>(), GetComponent<NavMeshAgent>(), reaction);
+        Health = MaximumHealth;
+        appliedMaximum = MaximumHealth;
     }
 
     public DamageResult ReceiveHit(DamageHit hit)
@@ -74,11 +84,6 @@ public sealed class EnemyHealth : MonoBehaviour, IDamageReceiver, ICombatVitals,
         // Report before Die(): popups bind to this transform and keep its last position after Destroy.
         CombatDamageEvents.Report(this, hit, before, Health, MaximumHealth);
 
-        Debug.Log(
-            $"[{name}] 피해: {hit.Amount}, 남은 체력: {Health}/{maximumHealth}",
-            this
-        );
-
         if (!IsAlive)
         {
             Die();
@@ -91,10 +96,15 @@ public sealed class EnemyHealth : MonoBehaviour, IDamageReceiver, ICombatVitals,
         return DamageResult.Damaged;
     }
 
+    // A live table edit keeps the same health fraction instead of healing or killing enemies mid-fight.
+    void ITableBound.OnTableApplied()
+    {
+        if (appliedMaximum > 0f && IsAlive) Health = Mathf.Max(.01f, Health / appliedMaximum * MaximumHealth);
+        appliedMaximum = MaximumHealth;
+    }
+
     private void Die()
     {
-        Debug.Log($"[{name}] 사망!", this);
-
         // 웨이브 관리자에게 처치 사실을 알린다.
         Died?.Invoke(this);
 

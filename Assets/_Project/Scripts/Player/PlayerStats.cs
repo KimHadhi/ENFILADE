@@ -3,7 +3,7 @@ using UnityEngine;
 
 /// <summary>Player stat values in percentage points: 120 capacity stores 1.2 default casts.</summary>
 [DisallowMultipleComponent]
-public sealed class PlayerStats : MonoBehaviour
+public sealed class PlayerStats : MonoBehaviour, ITableBound
 {
     [Header("Ultimate (%)")]
     [SerializeField, Min(0), Tooltip("Maximum stored ultimate charge. 120 means 120%.")]
@@ -20,6 +20,7 @@ public sealed class PlayerStats : MonoBehaviour
 
     private void OnEnable() { dirty = true; }
     private void OnValidate() { dirty = true; }
+    void ITableBound.OnTableApplied() => OnValidate();
     private void Update() { if (dirty) Publish(); }
 
     public void SetUltimateCapacity(float percent) => SetUltimateLimits(percent, UltimateCostPercent);

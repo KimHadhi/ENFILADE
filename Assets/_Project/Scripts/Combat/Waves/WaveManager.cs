@@ -6,6 +6,11 @@ using UnityEngine.UI;
 
 public sealed class WaveManager : MonoBehaviour
 {
+    /// <summary>Resources/Tables/Waves.csv: enemy counts and timing per wave set.</summary>
+    public const string TableName = "Waves";
+
+    [Tooltip("Waves.csv의 행 id. 맵마다 다른 웨이브 구성을 쓰려면 행을 추가하고 여기에 적는다.")]
+    [SerializeField] private string tableId = "Default";
     [Header("Enemy")]
     [SerializeField] private EnemyHealth enemyPrefab;
     [SerializeField] private Transform[] spawnPoints;
@@ -43,6 +48,8 @@ public sealed class WaveManager : MonoBehaviour
     private readonly HashSet<EnemyHealth> aliveEnemies = new HashSet<EnemyHealth>();
     private int currentWave, totalEnemiesThisWave, defeatedEnemies, spawned;
     private float targetFillAmount, remainingDelay;
+
+    private void Awake() => GameTables.Bind(TableName, tableId, this);
 
     private void Start()
     {

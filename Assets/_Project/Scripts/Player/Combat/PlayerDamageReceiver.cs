@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 [DisallowMultipleComponent]
-public sealed class PlayerDamageReceiver : MonoBehaviour, IDamageReceiver
+public sealed class PlayerDamageReceiver : MonoBehaviour, IDamageReceiver, ITableBound
 {
     [SerializeField, Min(1f)] private float maximumHealth = 100f;
     public float MaximumHealth => ValidMaximum(maximumHealth);
@@ -92,6 +92,8 @@ public sealed class PlayerDamageReceiver : MonoBehaviour, IDamageReceiver
         shield = NonNegative(shield);
         if (healthInitialized) Health = Mathf.Clamp(Health, 0f, maximumHealth);
     }
+
+    void ITableBound.OnTableApplied() => OnValidate();
 
     private static float ValidMaximum(float value) => float.IsNaN(value) || float.IsInfinity(value) ? 100f : Mathf.Max(1f, value);
 

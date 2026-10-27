@@ -39,6 +39,8 @@ public sealed class PlayerWeaponSlots : MonoBehaviour
         {
             melee = GetComponent<PlayerMeleeCombat>();
             if (melee == null) melee = gameObject.AddComponent<PlayerMeleeCombat>();
+            GameTables.Bind(PlayerMovement.TableName, "Fists", melee);
+            for (int i = 0; i < SlotCount; i++) RawWeapon(i)?.BindTable();
         }
         SetSelection(Mathf.Clamp(selectedSlot, -1, SlotCount - 1));
     }

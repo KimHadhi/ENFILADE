@@ -10,7 +10,7 @@ using UnityEngine.AI;
 /// Called by EnemyHealth after damage is applied. Tuning: GunFeel → Enemy hit reaction, per weapon Flinch Multiplier.
 /// </summary>
 [DisallowMultipleComponent]
-public sealed class EnemyHitReaction : MonoBehaviour
+public sealed class EnemyHitReaction : MonoBehaviour, ITableBound
 {
     private NavMeshAgent agent;
     private MeleeCombatTarget target;
@@ -27,6 +27,12 @@ public sealed class EnemyHitReaction : MonoBehaviour
         target = GetComponent<MeleeCombatTarget>();
         if (agent != null) baseSpeed = agent.speed;
         enabled = false;
+    }
+
+    // Enemies.csv may set agent speed; adopt it as the unslowed speed unless a flinch is scaling it right now.
+    void ITableBound.OnTableApplied()
+    {
+        if (agent != null && !enabled) baseSpeed = agent.speed;
     }
 
     /// <summary>applied = health actually removed by this hit.</summary>

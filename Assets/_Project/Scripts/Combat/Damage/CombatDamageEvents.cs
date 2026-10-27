@@ -49,6 +49,9 @@ public static class CombatDamageEvents
         if (target == null) return string.Empty;
         string authored = target.TryGetComponent(out ICombatDisplayName named) ? named.DisplayName : null;
         if (!string.IsNullOrWhiteSpace(authored)) return authored.Trim();
-        return SpawnSuffix.Replace(target.gameObject.name, string.Empty).Trim();
+        return BaseName(target.gameObject);
     }
+
+    /// <summary>Object name without the "(Clone)" / "(Console)" spawn suffix, i.e. the prefab's name.</summary>
+    public static string BaseName(GameObject target) => SpawnSuffix.Replace(target.name, string.Empty).Trim();
 }

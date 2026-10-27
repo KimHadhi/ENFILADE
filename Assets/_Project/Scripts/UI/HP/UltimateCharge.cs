@@ -4,7 +4,7 @@ using UnityEngine;
 /// <summary>Per-character ultimate resource. Ability code grants charge and calls TryConsume.</summary>
 [DisallowMultipleComponent]
 [RequireComponent(typeof(PlayerStats))]
-public sealed class UltimateCharge : MonoBehaviour
+public sealed class UltimateCharge : MonoBehaviour, ITableBound
 {
     // HUD-local values remain useful outside Play; gameplay values belong to the player.
     public static UltimateCharge ResolveHUDSource(Component view, UltimateCharge authored)
@@ -57,6 +57,7 @@ public sealed class UltimateCharge : MonoBehaviour
     // Stat changes must still clamp stored charge while the player/resource is disabled.
     private void OnDestroy() { if (stats != null) stats.Changed -= Publish; }
     private void OnValidate() { dirty = true; }
+    void ITableBound.OnTableApplied() => OnValidate();
     private void Update() { if (dirty) Publish(); }
 
     public void SetValues(float current, float maximum, float required)
