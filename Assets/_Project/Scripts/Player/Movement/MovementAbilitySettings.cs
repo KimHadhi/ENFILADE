@@ -103,5 +103,12 @@ public sealed class MovementAbilitySettings
     [Min(0.05f)] public float tackleDuration = 0.5f;
     [Min(0f)] public float tackleSpeed = 9f;
     [Min(0f)] public float tackleDamage = 20f;
+    [Header("Physics Props (prop mass decides the result)")]
+    [Tooltip("Force (N) the walking body leans on a PhysicsProp with. Light props reach walking speed at once; heavy ones creep.")]
+    [Min(0f)] public float propPushForce = 300f;
+    [Tooltip("Momentum (N·s) a V shove gives a PhysicsProp, up to Shove Push Speed. A tackle gives twice this.")]
+    [Min(0f)] public float propShoveImpulse = 60f;
+    [Tooltip("Body mass (kg) for slides, dives and tackles into a PhysicsProp. Much lighter props are kicked away and the move carries on; one that would take most of the speed stops the player like a wall.")]
+    [Min(1f)] public float propBodyMass = 70f;
     public LayerMask interactionLayers = ~0;
 }

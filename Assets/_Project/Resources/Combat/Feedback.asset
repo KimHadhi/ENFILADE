@@ -11,12 +11,24 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a5c2ef63f7af4b5884fde0b8f88ec894, type: 3}
   m_Name: Feedback
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   staggerImage: {fileID: 2800000, guid: 87c0d939872941fa9c4fee05877d2080, type: 3}
   staggerSound: {fileID: 8300000, guid: a3684731addf427190ef1506b7894df0, type: 3}
   staggerSoundVolume: 0.8
   staggerImageWidth: 200
   promptFont: {fileID: 11400000, guid: 111e9ac01bcd7fd40bf85568b2a38fa0, type: 2}
+  heartbeatScale: 0.28
+  heartbeatBpm: {x: 72, y: 150}
+  executableGlowColor: {r: 0.93, g: 0.91, b: 0.9, a: 0.85}
+  executableMarkGlowColor: {r: 1, g: 0.12, b: 0.2, a: 0.85}
+  executableHealthColor: {r: 0.98, g: 0.24, b: 0.42, a: 1}
+  executableHealthLostColor: {r: 0.45, g: 0.05, b: 0.16, a: 0.4}
+  executablePlateColor: {r: 0.06, g: 0, b: 0.03, a: 0.8}
+  executableAccentColor: {r: 0.95, g: 0.93, b: 0.92, a: 1}
+  executableNameColor: {r: 1, g: 0.5, b: 0.6, a: 1}
+  executableBarPunch: 0.22
+  executableFlashSeconds: 0.4
+  executableRippleReach: 36
   shoveEnemySounds:
   - {fileID: 8300000, guid: f87f0ee748a449deb50f529e652c636f, type: 3}
   - {fileID: 8300000, guid: 02626e77f9cb4006af6070a69fb0ac22, type: 3}
@@ -26,7 +38,7 @@ MonoBehaviour:
   - {fileID: 8300000, guid: 9e1972e56edb4758af672018a1f54574, type: 3}
   shoveWorldSound: {fileID: 8300000, guid: c6e99b7ba4a042858afea6a9d18e6e7c, type: 3}
   shoveEnemyVolume: 0.3
-  shoveWorldVolume: 0.3
+  shoveWorldVolume: 0.2
   fistSwingSounds:
   - {fileID: 8300000, guid: 4e37f5ae934d4da3b85977a6ab2100a4, type: 3}
   - {fileID: 8300000, guid: ea9a20bd8d3c4adda5dfd40bb40f0bd9, type: 3}
@@ -48,9 +60,9 @@ MonoBehaviour:
   - {fileID: 8300000, guid: d2167af309194479a53550c3df901919, type: 3}
   - {fileID: 8300000, guid: e0836a84deb34af8a3e5520d0659227f, type: 3}
   - {fileID: 8300000, guid: fa658eb1c6694eb7a2c0fa3b2592d58c, type: 3}
-  fistWallVolume: 0.3
   fistSwingVolume: 0.3
   fistHitVolume: 0.3
+  fistWallVolume: 0.3
   headshotFeedback: 0
   bodyshotFeedback: 0
   impactBulletSounds:
@@ -100,8 +112,6 @@ MonoBehaviour:
   - {fileID: 8300000, guid: a9af5d773c7245329b237a4d17ee02f9, type: 3}
   - {fileID: 8300000, guid: b2d9ade9f7c14bbe9094e1f79eee40d1, type: 3}
   - {fileID: 8300000, guid: 7f0f552cf552423b9be2a39404d866eb, type: 3}
-  enemyAttackStartSound: {fileID: 8300000, guid: c3c9d1035cb04ba8908bf2cbbcbd446b, type: 3}
-  perfectEvadeSound: {fileID: 8300000, guid: 9cabe8b869f240429c8bdb25000a3b45, type: 3}
   parrySounds:
   - {fileID: 8300000, guid: 08120d276ee346659b07fae1636fe60f, type: 3}
   - {fileID: 8300000, guid: 34b062143c664b9c92458b3b0283e24c, type: 3}
@@ -109,3 +119,83 @@ MonoBehaviour:
   - {fileID: 8300000, guid: 449b2eb1b9f54414b7b00ce6afa96d54, type: 3}
   - {fileID: 8300000, guid: 6dc3ce7e9e8446e6bc98f9e647071935, type: 3}
   - {fileID: 8300000, guid: 03c4bee0a60b4c93aa763d3a01cc047b, type: 3}
+  enemyAttackStartSound: {fileID: 8300000, guid: c3c9d1035cb04ba8908bf2cbbcbd446b, type: 3}
+  perfectEvadeSound: {fileID: 8300000, guid: 9cabe8b869f240429c8bdb25000a3b45, type: 3}
+  blockVolume: 0.3
+  parryVolume: 0.3
+  enemyAttackVolume: 0.3
+  perfectEvadeVolume: 0.3
+  perfectTimeScale: 0.08
+  counterWindowSeconds: 1
+  counterDamage: 80
+  counterPostureDamage: 60
+  counterReach: 4
+  perfectVignetteStrength: 0.8
+  damageFont: {fileID: 0}
+  criticalIcon: {fileID: 0}
+  killIcon: {fileID: 0}
+  counterIcon: {fileID: 0}
+  normalDamageColor: {r: 1, g: 1, b: 1, a: 1}
+  criticalColor: {r: 1, g: 0.84, b: 0.28, a: 1}
+  environmentDamageColor: {r: 0.62, g: 0.62, b: 0.64, a: 1}
+  counterColor: {r: 0.43, g: 0.84, b: 1, a: 1}
+  deathBlowColor: {r: 1, g: 0.55, b: 0.12, a: 1}
+  deathBlowShadowColor: {r: 0.75, g: 0.1, b: 0.06, a: 1}
+  counterSlashColor: {r: 1, g: 1, b: 1, a: 0.9}
+  counterSlashTint: 0.6
+  counterSlashThickness: 0.32
+  counterSlashAngle: 32
+  deathBlowSlashColor: {r: 1, g: 0.25, b: 0.18, a: 1}
+  deathBlowGlowColor: {r: 1, g: 0.08, b: 0.05, a: 0.9}
+  killIconColor: {r: 1, g: 0.95, b: 0.92, a: 1}
+  damageFontSize: 34
+  popDamageRange: {x: 5, y: 120}
+  popStartScale: {x: 1.6, y: 3}
+  popShrinkSeconds: 0.12
+  popupLifetime: 0.8
+  deathBlowLifetime: 1.25
+  popupFadeSeconds: 0.25
+  punchHoldSeconds: 0.035
+  punchShrinkSeconds: 0.09
+  punchSettleDip: 0.07
+  punchFlashSeconds: 0.07
+  punchStartBoost: 1.15
+  punchSettledScale: 1.12
+  deathBlowSettledScale: 1.5
+  deathBlowStartBoost: 1.25
+  deathBlowHoldSeconds: 0.08
+  deathBlowShake: 7
+  deathBlowShakeSeconds: 0.25
+  punchIconPopSeconds: 0.12
+  popupJitter: {x: 90, y: 48}
+  popupRise: 22
+  popupFullSizeDistance: 6
+  popupMinimumDistanceScale: 0.65
+  enemyHealthColor: {r: 0.93, g: 0.13, b: 0.11, a: 1}
+  enemyHealthLostColor: {r: 0.62, g: 0.62, b: 0.62, a: 0.12}
+  colorTrailByLossSize: 1
+  smallLossColor: {r: 1, g: 0.9, b: 0.2, a: 1}
+  largeLossColor: {r: 1, g: 0.57, b: 0.12, a: 1}
+  fullLossColor: {r: 1, g: 0.4, b: 0.1, a: 1}
+  largeLossFraction: 0.7
+  trailStripes: 1
+  trailStripeLighten: 0.35
+  trailStripeScroll: 14
+  trailEdgeLine: 1
+  trailEdgeWidth: 3
+  trailEdgePulseScale: 1.6
+  trailEdgeHitStretch: 6
+  trailEdgeSettleSeconds: 0.5
+  trailEdgeAlpha: {x: 0.75, y: 1}
+  trailEdgeGlowColor: {r: 1, g: 0.97, b: 0.94, a: 0.8}
+  trailFlashSeconds: 0.12
+  trailHoldSeconds: 0.15
+  trailDrainPerSecond: 0.6
+  trailDrainCatchUp: 4
+  enemyShakeMax: 14
+  enemyShakeSeconds: 0.32
+  enemyShakeFrequency: 18
+  enemyShakeDamping: 12
+  enemyShakeScalePunch: 0.07
+  playerShakeMax: 16
+  shakeSeconds: 0.35

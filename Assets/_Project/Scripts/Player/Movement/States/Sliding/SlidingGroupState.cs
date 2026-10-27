@@ -79,6 +79,12 @@ public sealed class SlidingGroupState : MovementBaseState
 
         // All slide postures share one attack, including transitions after a bounce.
         if (ctx.Abilities.Slide.Hit(hit.collider, hit.point, wallNormal, travel)) return;
+        if (ctx.Motor.TryKickProp(hit.collider, hit.point, out Vector3 kept))
+        {
+            ctx.HorizontalVelocity = kept;
+            ctx.CurrentSlideSpeed = kept.magnitude;
+            return;
+        }
 
         IBreakable breakable = hit.gameObject.GetComponent<IBreakable>();
         if (breakable != null && ctx.CurrentSlideSpeed >= ctx.DoorBreakSpeedThreshold)

@@ -81,6 +81,11 @@ public sealed class DivingGroupState : MovementBaseState
                 return;
             }
         }
+        if (ctx.Motor.TryKickProp(hit.collider, hit.point, out Vector3 kept))
+        {
+            ctx.HorizontalVelocity = kept;
+            return;
+        }
         Vector3 normal = Vector3.ProjectOnPlane(hit.normal, Vector3.up).normalized;
         if (Vector3.Dot(ctx.HorizontalVelocity, normal) < 0f)
             ctx.HorizontalVelocity = Vector3.ProjectOnPlane(ctx.HorizontalVelocity, normal);

@@ -93,6 +93,8 @@ public sealed class GroundBurstState : MovementBaseState
         if (hit.normal.y >= Mathf.Cos(ctx.SlopeLimit * Mathf.Deg2Rad)) return;
         if (Vector3.Dot(ctx.Abilities.ActionDirection, -hit.normal) < 0.55f) return;
         if (kind == State.Tackle && hit.collider.GetComponentInParent<IBreakable>() != null) return;
+        // A light physics prop is kicked away instead of ending the tackle or dodge.
+        if (ctx.Motor.TryKickProp(hit.collider, hit.point, out Vector3 kept)) { ctx.HorizontalVelocity = kept; return; }
         interrupted = true;
         if (kind == State.StepDodge) ctx.Abilities.Dodge.CancelWindow();
         ctx.HorizontalVelocity = Vector3.zero;

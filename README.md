@@ -25,6 +25,7 @@
 | 현재 전투 규칙과 이후 기획 확인 | [전투 규칙과 확장 계획](Assets/_Project/Docs/WeaponSystemDesign.md) |
 | 체력·무기·적·웨이브 밸런스 숫자 변경 (CSV 표, 컴파일 불필요) | [밸런스 표](Assets/_Project/Docs/MaintenanceGuide.md#밸런스-표-data-tables), [Resources/Tables](Assets/_Project/Resources/Tables) |
 | 설정 수치 변경·저장, 폴더 이름 변경 후 복구 | [설정·유지보수 안내](Assets/_Project/Docs/MaintenanceGuide.md) |
+| 3D 모델·텍스처 추가 (폴더 규칙, 자동 임포트 설정) | [3D 모델 추가하기](Assets/_Project/Docs/MaintenanceGuide.md#3d-모델-추가하기) |
 | 사운드 추가·교체, 공격·피격·벽 소리의 폴더와 연결 위치 | [사운드 관리](Assets/_Project/Docs/MaintenanceGuide.md#사운드를-추가하거나-교체하기) |
 | 수정할 코드 찾기 | [스크립트 길잡이](Assets/_Project/Scripts/README.md) |
 | 전투 또는 이동 코드 확장 | [전투 코드 구조](Assets/_Project/Scripts/Combat/README.md), [이동 코드 구조](Assets/_Project/Scripts/Player/Movement/README.md) |
@@ -39,7 +40,7 @@
 | `Assets/_Project/Data` | 무기 ScriptableObject와 UI 프로필 |
 | `Assets/_Project/Resources` | 실행 중 키로 로드하는 설정·셰이더, `Tables`의 밸런스 CSV 표 |
 | `Assets/_Project/Scenes`, `Prefabs` | 씬·NavMesh / 적·UI·이펙트 프리팹 |
-| `Assets/_Project/Art`, `Input`, `Settings` | 프로젝트 그래픽·오디오 / 입력 / 렌더링 설정 |
+| `Assets/_Project/Art`, `Input`, `Settings` | 프로젝트 3D 모델(`Art/Models`)·그래픽·오디오 / 입력 / 렌더링 설정 |
 | `Assets/_Project/Docs` | 조작·제작·구조·검증 문서 |
 | `Assets/ThirdParty` | 외부 소총 모델·폰트·TextMesh Pro 원본 |
 | `Assets/ProBuilder Data`, `Assets/ProjectSettings` | 도구가 관리하는 데이터 |

@@ -7,9 +7,11 @@ public sealed class WallDetector
     private static readonly float[] EntryAngles = { 0f, -30f, 30f, -60f, 60f, -90f, 90f };
     internal WallDetector(PlayerMovement context) { ctx = context; }
     // Enemy bodies can still support short obstacle/head traversals, but never climbing or hanging.
+    // Moving bodies (physics props, ragdolls) are never wall-run, hung from or vaulted: they would roll away mid-move.
     internal static bool CanUseSurface(Collider collider)
         => collider != null && collider.enabled && collider.gameObject.activeInHierarchy
-            && collider.GetComponentInParent<SwingBar>() == null && !DodgeEnemyPassThrough.IsEnemy(collider);
+            && collider.GetComponentInParent<SwingBar>() == null && !DodgeEnemyPassThrough.IsEnemy(collider)
+            && (collider.attachedRigidbody == null || collider.attachedRigidbody.isKinematic);
     public bool TryContact(Vector3 direction, out RaycastHit hit)
     {
         Vector3 feet = ctx.transform.position;

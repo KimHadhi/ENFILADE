@@ -92,6 +92,20 @@ public sealed class MovementMotor
         if (hit.normal.y > lastMoveGroundNormal.y) lastMoveGroundNormal = hit.normal;
     }
 
+    // A body slide, dive or tackle that runs into a physics prop kicks it ahead and keeps whatever momentum it did not
+    // hand over. A prop that would take most of the speed (or cannot move) returns false: the caller treats it as a wall.
+    internal bool TryKickProp(Collider collider, Vector3 point, out Vector3 keptVelocity)
+    {
+        keptVelocity = HorizontalVelocity;
+        var prop = PhysicsProp.Of(collider);
+        float speed = HorizontalVelocity.magnitude;
+        if (prop == null || speed < .1f) return false;
+        float kept = prop.Kick(HorizontalVelocity / speed, speed, ctx.AbilitySettings.propBodyMass, point);
+        if (kept < speed * .3f) return false;
+        keptVelocity = HorizontalVelocity * (kept / speed);
+        return true;
+    }
+
     internal void Reset()
     {
         HorizontalVelocity = Vector3.zero;

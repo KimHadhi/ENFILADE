@@ -85,6 +85,8 @@ public sealed class WeaponData : ScriptableObject
     [SerializeField, Min(0f)] private float postureDamage = 4f;
     [Tooltip("Scales bullet push, slow and the body-damage interrupt threshold of the enemy hit reaction.")]
     [SerializeField, Range(0f, 3f)] private float flinchMultiplier = 1f;
+    [Tooltip("Momentum (N·s) one bullet gives a PhysicsProp: 3 sends a 1 kg prop at 3 m/s and a 20 kg prop at 0.15 m/s.")]
+    [SerializeField, Min(0f)] private float propImpulse = 3f;
 
     public string DisplayName => displayName;
     public Sprite HudIcon => hudIcon;
@@ -134,6 +136,7 @@ public sealed class WeaponData : ScriptableObject
     public float FireVolume => Mathf.Clamp(fireVolume, 0f, 2f);
     public float PostureDamage => Mathf.Max(0f, postureDamage);
     public float FlinchMultiplier => Mathf.Clamp(flinchMultiplier, 0f, 3f);
+    public float PropImpulse => Mathf.Max(0f, propImpulse);
     public Vector2 RecoilAt(int index) => recoilPattern != null && recoilPattern.Length > 0
         ? recoilPattern[Mathf.Abs(index) % recoilPattern.Length] : recoilPerShot;
 }

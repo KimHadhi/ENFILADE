@@ -82,7 +82,10 @@ public sealed class PlayerCombatActions
         if (result == DamageResult.Damaged)
             collider.GetComponentInParent<MeleeCombatTarget>()?.ApplyPostureDamage(20f, 0.45f);
 
+        var prop = PhysicsProp.Of(collider);
         if (shove != null) shove.ReceiveShove(impulse, point);
+        else if (prop != null) prop.Push(direction * ctx.AbilitySettings.propShoveImpulse * 2f, point,
+            Mathf.Max(ctx.AbilitySettings.shovePushSpeed, ctx.HorizontalVelocity.magnitude));
         else if (body != null && !body.isKinematic) body.AddForceAtPosition(impulse, point, ForceMode.Impulse);
 
         if (breakable != null && ctx.HorizontalVelocity.magnitude >= ctx.DoorBreakSpeedThreshold)

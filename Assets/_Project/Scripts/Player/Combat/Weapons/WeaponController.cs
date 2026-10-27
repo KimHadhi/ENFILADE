@@ -275,6 +275,8 @@ public sealed class WeaponController : MonoBehaviour
                 Runtime.Ammo + shots - i - 1);
 
             LastShot = shot;
+            var prop = trace.HasHit ? PhysicsProp.Of(trace.Hit.collider) : null;
+            if (prop != null) prop.Push(direction.normalized * weaponData.PropImpulse, trace.Hit.point);
 
             if (drawRays)
             {
