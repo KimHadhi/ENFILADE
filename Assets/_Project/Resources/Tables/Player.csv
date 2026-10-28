@@ -39,6 +39,156 @@ Posture.slideOffset,-0.98,슬라이딩 눈높이 = 1.6 + 이 값(0.62m)
 Posture.proneColliderHeight,0.4,엎드린·누운 캡슐 높이(m)
 Posture.proneOffset,-1.23,엎드린 눈높이 = 1.6 + 이 값(0.37m)
 Posture.supineOffset,-1.25,누운 눈높이 = 1.6 + 이 값(0.35m)
+Posture.crouchClearanceMargin,0.15,웅크리기·자동 포복 판정에 더 필요한 머리 공간(m). 높이 1m 통로에서는 포복을 유지한다
+Posture.proneEntryLookAhead,0.6,웅크려 이동할 때 낮은 통로를 미리 확인하는 거리(m)
+Posture.transitionSharpness,14,자세가 바뀔 때 캡슐 높이·눈높이가 따라가는 빠르기
+Posture.slideTransitionSharpness,8.5,슬라이드·다이브 때 자세가 바뀌는 빠르기
+# 이동: 걷기·질주·점프 (Move 행 → PlayerMovement),,
+Move.walkSpeed,5.2,기본 이동 속도(m/s)
+Move.sprintSpeed,8.4,Shift 질주 속도(m/s)
+Move.crouchSpeed,3,웅크려 이동하는 속도(m/s)
+Move.proneSpeed,1.6,엎드려 기는 속도(m/s)
+Move.supineSpeed,1.6,누워서 이동하는 속도(m/s)
+Move.sprintRampUpDuration,0.1,Shift를 누르고 질주 속도에 이르는 시간(초)
+Move.strafeCompensation,1.15,옆으로 갈 때의 속도 배율. 옆걸음이 느려 보이지 않게
+Move.groundSharpness,14,지상에서 속도를 바꾸는 빠르기. 클수록 즉시 반응
+Move.airControlSharpness,5,공중에서 방향을 바꾸는 빠르기
+Move.jumpHeight,1.3,점프 높이(m)
+Move.gravity,-24,중력(m/s²). 음수이고 더 작을수록 빨리 떨어진다
+Move.coyoteTime,0.1,발판을 벗어난 뒤에도 점프를 받아 주는 시간(초)
+Move.jumpBufferTime,0.15,착지 직전에 누른 점프를 기억하는 시간(초)
+# 이동: 슬라이딩,,
+Move.slideMinStartSpeed,5.3,달리며 Ctrl로 슬라이드를 시작할 수 있는 최소 속도(m/s)
+Move.slideKickBoost,1,슬라이드 시작 때 더하는 속도(m/s)
+Move.slideFriction,4.2,슬라이드 감속(m/s²)
+Move.diveSlideFriction,9,머리부터 미끄러지기 감속(m/s²)
+Move.supineSlideFriction,9,누워 미끄러지기 감속(m/s²)
+Move.airSlideFrictionMultiplier,0.25,슬라이드 중 공중에 뜬 동안의 감속 배율
+Move.slopeSlideGravity,28,내리막에서 슬라이드가 빨라지는 정도(m/s²)
+Move.slideEndSpeed,1.5,이 속도 아래로 느려지면 슬라이드가 끝난다(m/s)
+Move.slideCancelMaxSpeed,5,슬라이드를 직접 멈출 수 있는 최대 속도(m/s)
+Move.diveSlideCancelMaxSpeed,2,머리부터 미끄러지기를 직접 멈출 수 있는 최대 속도(m/s)
+Move.slideCancelMinDuration,0.5,슬라이드 시작 후 멈출 수 있게 되기까지(초)
+Move.slideBrakeDeceleration,18,제동 입력 때의 감속(m/s²)
+Move.landingSlideMinSpeed,6.5,Ctrl을 누른 채 착지하면 슬라이드로 이어지는 최소 속도(m/s)
+Move.slideCooldown,0.4,슬라이드 재사용 대기(초)
+Move.slideSteerSharpness,4,슬라이드 중 A/D 조향 빠르기
+Move.groundSnapDistance,0.5,슬라이드 중 바닥에 붙여 두는 거리(m)
+Move.slideJumpMinDuration,0.1,슬라이드 시작 후 점프(다이브로 이어짐)가 가능해지기까지(초)
+Move.slideKickJumpHeight,1.05,슬라이드 점프 높이(m)
+Move.slideJumpMinSpeed,3,슬라이드 점프의 최소 수평 속도(m/s)
+Move.slideJumpSpeedBonus,0.8,슬라이드 점프 때 더하는 수평 속도(m/s)
+# 이동: 다이브·머리부터 미끄러지기,,
+Move.groundDiveLaunchSpeed,9,지상 다이브 시작 순간의 수평 속도(m/s). 공중에서 점점 줄어든다
+Move.groundDiveVerticalPop,4.6,지상 다이브의 위로 솟는 속도(m/s)
+Move.divePoseDelay,0.03,다이브 후 몸 높이를 그대로 두는 시간(초). 먼저 솟는 궤적을 보여 준다
+Move.divePoseDuration,0.5,엎드린 높이까지 몸과 시점을 낮추는 시간(초)
+Move.divePopPerSpeed,0.12,달리던 속도 1m/s당 더하는 위쪽 도약(m/s)
+Move.maxAdditionalDivePop,2.5,속도로 더하는 위쪽 도약의 최대치(m/s)
+Move.diveGravityScale,0.9,다이브 중 중력 배율
+Move.diveMomentumRetention,0.88,다이브 시작 때 달리던 속도를 남기는 비율. 시작 속도보다 느리면 시작 속도
+Move.diveAirResistance,0.12,다이브 공중 감속(m/s²)
+Move.diveSpeedHoldDuration,0.25,다이브 도약 후 수평 속도를 그대로 유지하는 시간(초)
+Move.diveBurstDuration,0.1,공중 감속이 0에서 설정값까지 서서히 강해지는 시간(초)
+Move.diveCarrySpeed,2.2,다이브 감속이 이 속도에서 멈춘다(m/s)
+Move.diveBurstBraking,2.6,다이브 공중 감속 세기
+Move.diveLandingRecovery,0.55,착지 직후 다이브를 다시 못 쓰는 시간(초). 시점 조작은 된다
+Move.diveSlideKickBoost,3.8,다이브 착지 후 머리부터 미끄러질 때 더하는 속도(m/s)
+Move.maxLandingSlideSpeed,10,착지 슬라이드 속도 상한(m/s). 이미 더 빠르면 그 속도를 유지
+# 이동: 충돌,,
+Move.doorBreakSpeedThreshold,6,이 속도 이상으로 부딪히면 문이 부서진다(m/s)
+Move.doorBreakSpeedRetention,0.85,문을 부수고 남는 속도 비율
+Move.wallBounceBounciness,0.5,슬라이드로 벽에 부딪혔을 때 튕겨 나오는 비율
+Move.supineBounceThreshold,7,튕겨 나온 속도가 이 이상이면 뒤로 누워 미끄러진다(m/s)
+# 능력: 회피·기울이기 (Ability 행 → PlayerMovement의 Ability Settings),,
+Ability.stepDuration,0.14,Alt 스텝 회피 이동 시간(초)
+Ability.stepDistance,2.6,스텝 회피 거리(m)
+Ability.dodgeExitAssistDistance,1.6,회피가 적 몸 안에서 끝나면 진행 방향의 출구를 찾는 거리(m)
+Ability.dodgeExitAssistTime,0.2,그 출구로 빠져나가는 데 허용하는 시간(초)
+Ability.stepInvulnerability,0.18,스텝 회피 입력부터 공격을 회피로 인정하는 시간(초)
+Ability.stepDodgeRecognitionPadding,0.12,스텝 회피 판정 때 몸 반경에 더하는 여유(m)
+Ability.microInvulnerability,0.08,Q/E 직후 공격을 회피로 인정하는 시간(초)
+Ability.dodgeCooldown,0.55,회피 공통 재사용 대기(초). 회피에 성공하면 바로 초기화
+Ability.stepDodgeCooldown,1.25,스텝 회피에 실패한 뒤 다음 회피까지(초)
+Ability.microSuccessDistance,0.3,Q/E 회피 성공 때 옆으로 비켜나는 거리(m)
+Ability.microSuccessDuration,0.1,그 이동에 걸리는 실제 시간(초). 슬로모션에도 같다
+Ability.microSuccessLeanDuration,0.08,회피 성공 때 끝까지 기우는 실제 시간(초)
+Ability.leanAngle,10,Q/E 기울이기 화면 기울기(도)
+Ability.leanOffset,0.35,Q/E 기울이기 옆 이동 거리(m)
+Ability.leanSharpness,10,기울이기 반응 빠르기
+# 능력: 턱·볼트·맨틀,,
+Ability.stepHeight,0.3,걸어서 넘는 턱 높이(m)
+Ability.proneStepHeight,0.05,엎드리거나 누워서 넘는 턱 높이(m)
+Ability.obstacleReach,1.35,볼트·맨틀할 장애물을 앞에서 찾는 거리(m)
+Ability.vaultMaxHeight,1.15,볼트(넘기) 최대 높이(m)
+Ability.mantleMaxHeight,2.1,맨틀(올라서기) 최대 높이(m)
+Ability.vaultMaxDepth,1.5,넘을 수 있는 장애물의 최대 두께(m)
+Ability.vaultReferenceLerp,0.1,볼트 경로를 따라가는 빠르기
+Ability.mantleReferenceLerp,0.075,맨틀 경로를 따라가는 빠르기
+Ability.slideMaxSlopeAngle,65,슬라이드 중 바닥으로 인정하는 최대 경사(도)
+# 능력: 렛지,,
+Ability.ledgeReach,1,렛지를 앞에서 찾는 거리(m)
+Ability.ledgeReachAboveHands,0.3,손 높이보다 위로 렛지를 찾는 높이(m)
+Ability.ledgeCatchDuration,0.14,렛지를 잡은 뒤 점프·올라가기가 가능해지기까지(초)
+Ability.ledgeRegrabDelay,0.4,렛지를 놓은 뒤 다시 잡을 수 있기까지(초)
+Ability.ledgeShimmySpeed,1.8,렛지 좌우 이동 속도(m/s)
+Ability.airTraversalMaxFallSpeed,8,이보다 빠르게 떨어지는 중에는 공중에서 렛지·벽을 잡지 않는다(m/s)
+Ability.ledgeJumpLookAngle,42,렛지에서 점프 방향을 시선으로 고를 때의 허용 각도(도)
+Ability.ledgeJumpSpeed,8.5,렛지 점프 수평 속도(m/s)
+Ability.ledgeJumpUpSpeed,6.5,렛지 점프 위쪽 속도(m/s)
+# 능력: 벽,,
+Ability.wallReach,0.85,벽을 찾는 거리(m)
+Ability.wallDuration,1.8,착지 전까지 벽 오르기에 쓸 수 있는 시간(초)
+Ability.wallClimbSpeed,3.8,벽 오르기 속도(m/s)
+Ability.wallClimbFacingDot,0.9,벽을 이만큼 정면으로 볼 때만 벽 오르기(1이면 정확히 정면)
+Ability.wallContactGrace,0.1,벽에서 잠깐 떨어져도 벽 동작을 유지하는 시간(초)
+Ability.wallKickOutSpeed,6,벽 차기 바깥쪽 속도(m/s)
+Ability.wallKickUpSpeed,6,벽 차기 위쪽 속도(m/s)
+Ability.wallReattachDelay,0.35,벽 차기 후 다시 벽에 붙기까지(초)
+# 능력: 봉·라체,,
+Ability.barGrabReach,1.1,봉을 잡는 거리(m)
+Ability.barCatchDuration,0.2,봉을 잡는 동작 시간(초)
+Ability.swingPumpAcceleration,4,흔들기를 키우는 세기
+Ability.swingMaxAngularSpeed,3.5,흔들기 최대 각속도(rad/s)
+Ability.lacheForwardBoost,2,봉을 놓을 때 앞으로 더하는 속도(m/s)
+Ability.lacheUpBoost,2,봉을 놓을 때 위로 더하는 속도(m/s)
+# 능력: 착지 구르기·낙하 피해,,
+Ability.safeFallSpeed,16,이보다 빠르게 착지하면 낙하 피해(m/s)
+Ability.safeFallDistance,4,이보다 높이 떨어져야 낙하 피해(m)
+Ability.fallDamagePerSpeed,4,safeFallSpeed를 넘은 1m/s당 피해
+Ability.rollInputWindow,0.22,착지 전에 Ctrl을 눌러 구르기로 받는 시간(초)
+Ability.rollDuration,0.65,착지 구르기 시간(초)
+Ability.rollSpeed,5.5,구르는 동안 앞으로 가는 속도(m/s)
+# 능력: 슬라이드 전투,,
+Ability.slideDamage,15,슬라이드로 적을 칠 때 피해
+Ability.slideBoostSpeed,1.5,저스트 슬라이드(Alt) 성공 때 더하는 속도(m/s)
+Ability.justSlideWindow,0.18,저스트 슬라이드 입력 허용 시간(초)
+Ability.slideBoostCooldown,0.55,저스트 슬라이드 재사용 대기(초)
+Ability.slideSmallSpeedRetention,0.9,저스트가 아닌 슬라이드로 적을 지나칠 때 남는 속도 비율
+Ability.slidePushImpulse,7,슬라이드로 적을 밀어내는 세기
+Ability.slidePushStun,0.45,슬라이드에 밀린 적의 경직(초)
+Ability.slideKnockdownDuration,1.2,슬라이드에 넘어진 적이 누워 있는 시간(초)
+# 능력: V 밀치기,,
+Ability.shoveActiveTime,0.2,V 밀치기 판정 시간(초)
+Ability.shoveSweepReach,2.2,V 밀치기 사거리(m)
+Ability.shoveSweepAngle,120,V 밀치기 범위 각도(도)
+Ability.shovePushSpeed,8,밀친 적이 밀려나는 속도(m/s)
+Ability.shoveStun,0.85,밀친 적의 경직(초)
+Ability.shovePostureDamage,8,V 밀치기 자세 피해
+Ability.shoveDamage,5,V 밀치기 피해
+Ability.shoveCooldown,0.5,V 밀치기·태클 재사용 대기(초)
+# 능력: 태클 (돌진 밀치기 단계에서 바뀐다),,
+Ability.shoveReach,1.5,태클의 몸 충돌 검사 거리(m)
+Ability.shoveRadius,0.5,태클의 몸 충돌 검사 반경(m)
+Ability.shoveImpulse,5,태클로 미는 세기(실제로는 2배)
+Ability.tackleMinSpeed,6,태클이 나가는 최소 달리기 속도(m/s)
+Ability.tackleDuration,0.5,태클 시간(초)
+Ability.tackleSpeed,9,태클 속도(m/s)
+Ability.tackleDamage,20,태클 피해
+# 능력: 물리 프랍,,
+Ability.propPushForce,300,걸으며 물리 프랍을 미는 힘(N). 가벼우면 바로 걷는 속도로 밀린다
+Ability.propShoveImpulse,60,V 밀치기가 물리 프랍에 주는 운동량(N·s). 태클은 2배
+Ability.propBodyMass,70,슬라이드·다이브·태클로 프랍에 부딪힐 때의 몸무게(kg)
 Body.idle,stand,몸 애니메이션 이름 (Art/Animations의 클립). 서 있기
 Body.walk,walkfwd,걷기
 Body.walkBack,walkback,뒤로 걷기

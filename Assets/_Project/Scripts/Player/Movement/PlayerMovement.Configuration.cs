@@ -1,6 +1,7 @@
 using UnityEngine;
 
-// Keep serialized field names on the original component so existing scenes/prefabs retain their values.
+// Resources/Tables/Player.csv sets these by field name (rows Posture and Move; AbilitySettings uses row Ability), so a
+// renamed field needs its table key renamed too. The table wins; inspector values only fill cells left empty.
 public sealed partial class PlayerMovement
 {
     [Header("Locomotion Speeds")]

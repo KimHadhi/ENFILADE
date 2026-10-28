@@ -57,8 +57,8 @@ public sealed class MovementPostureController
             return;
         }
 
-        bool crouchHeld = ctx.InputAvailable && ctx.Input.crouchAction != null && ctx.Input.crouchAction.IsPressed();
-        bool crouchJustPressed = ctx.InputAvailable && ctx.Input.crouchAction != null && ctx.Input.crouchAction.WasPressedThisFrame();
+        bool crouchHeld = ctx.Input.CrouchHeld;
+        bool crouchJustPressed = ctx.Input.CrouchPressed;
         airCrouching = canDuck && (airCrouching || crouchHeld || crouchJustPressed);
 
         if ((airCrouching || compactMovement) && !airBodyTucked)

@@ -396,7 +396,8 @@ public sealed class EnemyVitalsHUD : MonoBehaviour
         if (outline != null) nameLabel.fontSharedMaterial = outline;
         nameLabel.fontSize = 13f; nameLabel.fontStyle = FontStyles.Bold; nameLabel.color = NameColor;
         nameLabel.alignment = TextAlignmentOptions.Bottom; nameLabel.raycastTarget = false;
-        nameLabel.textWrappingMode = TextWrappingModes.NoWrap; nameLabel.overflowMode = TextOverflowModes.Ellipsis;
+        nameLabel.textWrappingMode = TextWrappingModes.NoWrap;
+        nameLabel.overflowMode = CombatUIAssets.ClippedOverflow(nameLabel);
         nameLabel.text = CombatDamageEvents.DisplayNameOf(this);
 
         // Executable glow sits behind the bar; the flash and sweep go on top of it (below).

@@ -11,7 +11,7 @@
 3. **1**로 소총, **2**로 피스톨을 선택한다. 현재 씬은 슬롯을 해제한 상태로 시작한다.
 4. **좌클릭**으로 발사하고 **우클릭 유지**로 정조준(ADS), **R**로 재장전한다.
 5. **3 또는 4**의 빈 슬롯을 선택하면 주먹을 사용한다. 선택한 숫자를 다시 누르면 무기와 주먹을 모두 내린다.
-6. **Esc**로 마우스를 해제한다. 이동·슬라이딩 조작은 [이동 안내](MovementGuide.md)를 참고한다.
+6. **Esc**로 일시정지하고 설정 메뉴를 연다(마우스도 풀린다). Esc나 "돌아가기"로 돌아온다. 이동·슬라이딩 조작은 [이동 안내](MovementGuide.md)를 참고한다.
 
 현재 씬에는 총 모델과 임시 절차적 자세·이펙트가 연결되어 있다. 손·탄창 교체와 무기별 정식 애니메이션은 후속 작업이다.
 
@@ -68,7 +68,7 @@
 | 방어·밀치기 소리, 반격, 흐트러짐 표시, 피해 팝업·HP 손실 표시 | [Feedback.asset](../Resources/Combat/Feedback.asset) |
 | 시작 무기와 시작 슬롯 | 플레이어의 `PlayerWeaponSlots` → Slot 1~4 / Starting Slot |
 | 주먹·가드·패링·V 홀드 | 플레이어의 `PlayerMeleeCombat` |
-| 밀치기·태클·슬라이딩 수치 | 플레이어의 `PlayerMovement` → Ability Settings |
+| 밀치기·태클·슬라이딩 수치 | [Player.csv](../Resources/Tables/Player.csv)의 `Ability` 행 |
 | 적 체력·AI·체간·몸 크기 | [적 프리팹](../Prefabs/Enemies)의 `EnemyHealth`, `EnemyCombatAI`, `MeleeCombatTarget` |
 | 사격·장전·가드 키 | [Player.inputactions](../Input/Player.inputactions)의 Combat 맵 |
 | 슬롯 숫자 키 | [PlayerWeaponSlots.Update](../Scripts/Player/Combat/Weapons/PlayerWeaponSlots.cs)의 직접 키보드 입력 |

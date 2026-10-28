@@ -9,8 +9,8 @@ public sealed class StandingState : MovementBaseState
 
     public override void ProcessInput(Vector2 input)
     {
-        bool crouchPressed = ctx.InputAvailable && ctx.CrouchAction != null && ctx.CrouchAction.IsPressed();
-        bool crouchJustPressed = ctx.InputAvailable && ctx.CrouchAction != null && ctx.CrouchAction.WasPressedThisFrame();
+        bool crouchPressed = ctx.Input.CrouchHeld;
+        bool crouchJustPressed = ctx.Input.CrouchPressed;
         bool diveJustPressed = ctx.InputAvailable && (
             (ctx.DiveAction != null && ctx.DiveAction.WasPressedThisFrame())
         );

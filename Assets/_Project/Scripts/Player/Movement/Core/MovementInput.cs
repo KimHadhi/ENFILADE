@@ -4,11 +4,15 @@ using UnityEngine.InputSystem.Controls;
 
 public sealed class MovementInput
 {
+    private readonly PlayerMovement ctx;
     internal readonly InputAction moveAction, sprintAction, jumpAction, crouchAction, diveAction;
     private readonly InputAction dodgeAction, leanLeftAction, leanRightAction, shoveAction;
+    private bool crouchLatched;
+    private int leanLatched;
     public bool JumpPressed { get; private set; }
     public bool JumpHeld { get; private set; }
     public bool CrouchPressed { get; private set; }
+    /// <summary>Crouch intent: the key held, or latched by a press when the crouch toggle setting is on.</summary>
     public bool CrouchHeld { get; private set; }
     public bool DodgePressed { get; private set; }
     public bool ShovePressed { get; private set; }
@@ -31,8 +35,9 @@ public sealed class MovementInput
             return false;
         }
     }
-    internal MovementInput()
+    internal MovementInput(PlayerMovement context)
     {
+        ctx = context;
         var actions = InputSystem.actions;
         if (actions == null) return;
         moveAction = actions.FindAction("Player/Move", false);
@@ -47,15 +52,37 @@ public sealed class MovementInput
     }
     internal void Sample(bool available)
     {
+        var settings = GameSettings.Current;
+        if (available) UpdateLatches(settings);
         JumpPressed = available && Pressed(jumpAction);
         JumpHeld = available && Held(jumpAction);
         CrouchPressed = available && Pressed(crouchAction);
-        CrouchHeld = available && Held(crouchAction);
+        CrouchHeld = available && (settings.crouchToggle ? crouchLatched : Held(crouchAction));
         DodgePressed = available && Pressed(dodgeAction);
         ShovePressed = available && Pressed(shoveAction);
         SprintHeld = available && SprintButtonHeld;
-        LeanSide = available ? (Held(leanRightAction) ? 1 : 0) - (Held(leanLeftAction) ? 1 : 0) : 0;
+        int heldSide = (Held(leanRightAction) ? 1 : 0) - (Held(leanLeftAction) ? 1 : 0);
+        LeanSide = available ? (settings.leanToggle ? leanLatched : heldSide) : 0;
         LeanPressed = available && LeanSide != 0 && (Pressed(leanLeftAction) || Pressed(leanRightAction));
+    }
+
+    // Toggle mode: a press latches, a second press releases. Leaving the crouch, slide or air-tuck states (dive, prone,
+    // parkour) or pressing sprint or jump releases a latched crouch, the way letting go of a held key would. Jump
+    // releases it before the jump runs, so a toggled crouch never turns into a tucked crouch-jump. A press in the air
+    // tucks the body and stays latched, so the landing stays crouched instead of standing straight back up.
+    private void UpdateLatches(GameSettings settings)
+    {
+        bool sprintPressed = Pressed(sprintAction);
+        bool crouchState = ctx.CurrentState == PlayerMovement.MovementState.Crouching || ctx.IsSliding
+            || ctx.IsAirCrouching;
+        if (!settings.crouchToggle || !crouchState || sprintPressed || Pressed(jumpAction)) crouchLatched = false;
+        if (settings.crouchToggle && Pressed(crouchAction)) crouchLatched = !crouchLatched;
+
+        bool leanState = ctx.CurrentState == PlayerMovement.MovementState.Standing
+            || ctx.CurrentState == PlayerMovement.MovementState.Crouching;
+        if (!settings.leanToggle || !leanState || sprintPressed) leanLatched = 0;
+        int pressedSide = (Pressed(leanRightAction) ? 1 : 0) - (Pressed(leanLeftAction) ? 1 : 0);
+        if (settings.leanToggle && pressedSide != 0) leanLatched = leanLatched == pressedSide ? 0 : pressedSide;
     }
     private static bool Held(InputAction action) => action != null && action.IsPressed();
     private static bool Pressed(InputAction action) => action != null && action.WasPressedThisFrame();

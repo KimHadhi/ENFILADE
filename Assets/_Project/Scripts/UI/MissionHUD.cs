@@ -47,7 +47,11 @@ public sealed class MissionHUD : MonoBehaviour
     private bool ownsBoardAction;
     private float lastCanvasWidth;
 
-    private void Awake() => RaiseBoardAboveHud();
+    private void Awake()
+    {
+        RaiseBoardAboveHud();
+        GameAudio.Bind(audioSource, AudioChannel.UI);
+    }
 
     // Chat and HP are later siblings in the HUD canvas; a nested canvas lets the open board cover them without reparenting.
     private void RaiseBoardAboveHud()

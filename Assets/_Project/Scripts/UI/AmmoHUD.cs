@@ -120,6 +120,7 @@ public sealed class AmmoHUD : MonoBehaviour
         silhouette.raycastTarget = false; silhouette.color = Muted;
         magazine = Label("Magazine", 16, 49, 110, 70, 64, Color.white);
         magazine.fontStyle = FontStyles.Bold;
+        magazine.overflowMode = CombatUIAssets.ClippedOverflow(magazine);
         magazine.enableAutoSizing = true; magazine.fontSizeMin = 32f; magazine.fontSizeMax = 64f;
         capacity = Label("Capacity", 126, 58, 65, 28, 19, Muted);
         Image("Divider", panel, 198, 58, 1, 48, new Color(.65f, .8f, .85f, .22f));
@@ -151,7 +152,7 @@ public sealed class AmmoHUD : MonoBehaviour
         text.font = font; text.fontSize = size; text.color = color; text.raycastTarget = false;
         text.alignment = TextAlignmentOptions.MidlineLeft;
         text.textWrappingMode = TextWrappingModes.NoWrap;
-        text.overflowMode = TextOverflowModes.Ellipsis;
+        text.overflowMode = CombatUIAssets.ClippedOverflow(text);
         return text;
     }
 }

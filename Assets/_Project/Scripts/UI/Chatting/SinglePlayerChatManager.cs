@@ -113,7 +113,7 @@ public class SinglePlayerChatManager : MonoBehaviour
 
         if (Keyboard.current.enterKey.wasPressedThisFrame || Keyboard.current.numpadEnterKey.wasPressedThisFrame)
         {
-            if (!isChatOpen && Time.frameCount != lastClosedFrame) OpenChat();
+            if (!isChatOpen && Time.frameCount != lastClosedFrame && !GamePause.IsPaused) OpenChat();
         }
 
         if (isChatOpen && Keyboard.current.upArrowKey.wasPressedThisFrame) RecallInput(-1);

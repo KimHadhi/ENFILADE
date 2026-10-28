@@ -23,8 +23,9 @@ public static class GameTables
     private sealed class Binding
     {
         public string Table, Id;
-        public Object[] Targets;
-        public bool IsAlive => Targets[0] != null;
+        public Object Owner;
+        public object[] Targets;
+        public bool IsAlive => Owner != null;
     }
 
     private static readonly Dictionary<string, CsvTable> loaded = new Dictionary<string, CsvTable>(StringComparer.OrdinalIgnoreCase);
@@ -49,10 +50,27 @@ public static class GameTables
     {
         var alive = targets.Where(t => t != null).ToArray();
         if (alive.Length == 0) return false;
-        bool applied = Apply(table, id ?? "", alive);
+        return Register(table, id, alive[0], alive);
+    }
+
+    /// <summary>
+    /// Apply the row to a plain [Serializable] settings object kept in a component's field (PlayerMovement's
+    /// AbilitySettings). The owner keeps the binding alive for later reloads.
+    /// </summary>
+    public static bool BindNested(string table, string id, Object owner, object settings)
+    {
+        if (owner == null || settings == null) return false;
+        return Register(table, id, owner, new[] { settings });
+    }
+
+    private static bool Register(string table, string id, Object owner, object[] targets)
+    {
+        id ??= "";
+        bool applied = Apply(table, id, owner, targets);
         if (bindings.Count >= pruneAt) { bindings.RemoveAll(b => !b.IsAlive); pruneAt = Mathf.Max(64, bindings.Count * 2); }
-        if (!bindings.Exists(b => b.Targets[0] == alive[0] && b.Table == table))
-            bindings.Add(new Binding { Table = table, Id = id ?? "", Targets = alive });
+        // One owner may hold several rows of one table (PlayerMovement: Posture, Move, Ability).
+        if (!bindings.Exists(b => b.Owner == owner && b.Table == table && string.Equals(b.Id, id, StringComparison.OrdinalIgnoreCase)))
+            bindings.Add(new Binding { Table = table, Id = id, Owner = owner, Targets = targets });
         return applied;
     }
 
@@ -68,11 +86,11 @@ public static class GameTables
     {
         loaded.Clear(); reported.Clear();
         bindings.RemoveAll(b => !b.IsAlive);
-        foreach (var binding in bindings.ToArray()) Apply(binding.Table, binding.Id, binding.Targets);
+        foreach (var binding in bindings.ToArray()) Apply(binding.Table, binding.Id, binding.Owner, binding.Targets);
         Reloaded?.Invoke();
     }
 
-    private static bool Apply(string table, string id, Object[] targets)
+    private static bool Apply(string table, string id, Object owner, object[] targets)
     {
         if (!TryGetRow(table, id, out var row)) return false;
         foreach (var cell in row)
@@ -83,12 +101,12 @@ public static class GameTables
                 var result = TableFieldWriter.TryWrite(target, cell.Key, cell.Value, out string error);
                 if (result == TableWrite.NotFound) continue;
                 known = true;
-                if (result == TableWrite.Invalid) Report($"{Describe(table, id)} '{cell.Key}' = '{cell.Value}': {error}.", target);
+                if (result == TableWrite.Invalid) Report($"{Describe(table, id)} '{cell.Key}' = '{cell.Value}': {error}.", owner);
                 break;
             }
             if (!known)
                 Report($"{Describe(table, id)} '{cell.Key}' 열과 같은 이름의 필드가 "
-                    + string.Join(", ", targets.Select(t => t.GetType().Name)) + "에 없습니다.", targets[0]);
+                    + string.Join(", ", targets.Select(t => t.GetType().Name)) + "에 없습니다.", owner);
         }
         foreach (var target in targets)
             if (target is ITableBound bound) bound.OnTableApplied();

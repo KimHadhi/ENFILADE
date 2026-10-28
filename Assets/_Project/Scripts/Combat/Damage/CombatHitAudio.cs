@@ -91,12 +91,14 @@ public sealed class CombatHitAudio : MonoBehaviour
         instance = this;
         flat = gameObject.AddComponent<AudioSource>();
         flat.playOnAwake = false; flat.spatialBlend = 0f;
+        GameAudio.Bind(flat, AudioChannel.Combat);
         for (int i = 0; i < voices.Length; i++)
         {
             var voice = new GameObject("Hit Voice " + i).AddComponent<AudioSource>();
             voice.transform.SetParent(transform, false);
             voice.playOnAwake = false; voice.spatialBlend = 1f;
             voice.rolloffMode = AudioRolloffMode.Linear; voice.minDistance = 2f;
+            GameAudio.Bind(voice, AudioChannel.Combat);
             voices[i] = voice;
         }
     }

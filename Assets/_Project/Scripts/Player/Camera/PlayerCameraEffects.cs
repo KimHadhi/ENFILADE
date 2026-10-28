@@ -89,7 +89,7 @@ public sealed class PlayerCameraEffects : MonoBehaviour
         if (cam == null) return;
         baseCameraPosition = targetCamera.localPosition;
 
-        baseFov = cam.fieldOfView;
+        baseFov = GameSettings.Current.VerticalFieldOfView;
         currentFov = baseFov;
 
         if (movement == null)
@@ -135,7 +135,7 @@ public sealed class PlayerCameraEffects : MonoBehaviour
         UpdateDivePresentation(dt);
         UpdateActionImpulses(dt);
 
-        float finalOffsetY = currentBobY + impactDisplacementY;
+        float finalOffsetY = (currentBobY + impactDisplacementY) * Shake;
         verticalBobTarget.localPosition = new Vector3(initialBobTargetPos.x, initialBobTargetPos.y + finalOffsetY, initialBobTargetPos.z);
 
         ApplyCameraRotation();
@@ -202,12 +202,16 @@ public sealed class PlayerCameraEffects : MonoBehaviour
         movement.GetComponent<PlayerLeanHitboxes>()?.Sync(offset);
     }
 
+    // The Esc menu's screen shake scales bob, landing, impacts, punches and movement tilt; Q/E lean is aiming, not shake.
+    private static float Shake => GameSettings.Current.screenShake;
+
     private void ApplyCameraRotation()
     {
+        float shake = Shake;
         effectsPivot.localRotation = Quaternion.Euler(
-            traversalPunch.x + divePitch + impulseRotDisplacement.x,
-            impulseRotDisplacement.y,
-            currentTiltRoll + movement.LeanRoll + traversalPunch.y + impulseRotDisplacement.z
+            (traversalPunch.x + divePitch + impulseRotDisplacement.x) * shake,
+            impulseRotDisplacement.y * shake,
+            (currentTiltRoll + traversalPunch.y + impulseRotDisplacement.z) * shake + movement.LeanRoll
         );
     }
 
@@ -250,6 +254,11 @@ public sealed class PlayerCameraEffects : MonoBehaviour
     {
         if (cam == null) return;
 
+        // The Esc menu's field of view is the base; the speed bonus and ADS zoom work from it. A change applies at
+        // once (also while paused, as a live preview) instead of easing in with the speed bonus.
+        float previousBase = baseFov;
+        baseFov = GameSettings.Current.VerticalFieldOfView;
+        currentFov += baseFov - previousBase;
         Vector3 hVel = movement.Velocity;
         hVel.y = 0f;
         float currentSpeed = movement.StateMachine.Current is ObstacleTraversalState traversal
@@ -274,7 +283,7 @@ public sealed class PlayerCameraEffects : MonoBehaviour
         float aim = weapon != null && weapon.EquippedData != null && !weapon.IsHighReady ? weapon.AimBlend : 0f;
         float aimedFov = aim > 0f ? Mathf.Min(baseFov, weapon.EquippedData.AdsFov) : currentFov;
         cam.fieldOfView = Mathf.Lerp(currentFov, aimedFov, aim)
-            + impulseFovDisplacement * Mathf.Lerp(1f, .25f, aim);
+            + impulseFovDisplacement * Shake * Mathf.Lerp(1f, .25f, aim);
     }
 
     private void UpdateTilt(float dt)

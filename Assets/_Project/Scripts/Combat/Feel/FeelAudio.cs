@@ -65,6 +65,7 @@ public sealed class FeelAudio : MonoBehaviour
         {
             flat[i] = gameObject.AddComponent<AudioSource>();
             flat[i].playOnAwake = false; flat[i].spatialBlend = 0f; flat[i].priority = 32;
+            GameAudio.Bind(flat[i], AudioChannel.Combat);
         }
         for (int i = 0; i < SpatialVoices; i++)
         {
@@ -72,6 +73,7 @@ public sealed class FeelAudio : MonoBehaviour
             voice.transform.SetParent(transform, false);
             voice.playOnAwake = false; voice.spatialBlend = 1f; voice.rolloffMode = AudioRolloffMode.Linear;
             voice.minDistance = 1.5f; voice.dopplerLevel = 0f;
+            GameAudio.Bind(voice, AudioChannel.Combat);
             spatial[i] = voice;
         }
     }

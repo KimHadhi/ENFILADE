@@ -168,6 +168,7 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
             staggerAudio = gameObject.AddComponent<AudioSource>(); staggerAudio.playOnAwake = false;
             staggerAudio.spatialBlend = .85f; staggerAudio.minDistance = 2f; staggerAudio.maxDistance = 22f;
             staggerAudio.rolloffMode = AudioRolloffMode.Linear;
+            GameAudio.Bind(staggerAudio, AudioChannel.Combat);
         }
         staggerAudio.PlayOneShot(clip, Mathf.Clamp01(settings.staggerSoundVolume));
     }

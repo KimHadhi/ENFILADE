@@ -29,7 +29,11 @@ public sealed class CombatCueAudio : MonoBehaviour
             default: clip = settings.enemyAttackStartSound; volume = settings.enemyAttackVolume; break;
         }
         if (clip == null) return;
-        if (source == null) { source = gameObject.AddComponent<AudioSource>(); source.playOnAwake = false; }
+        if (source == null)
+        {
+            source = gameObject.AddComponent<AudioSource>(); source.playOnAwake = false;
+            GameAudio.Bind(source, AudioChannel.Combat);
+        }
         source.spatialBlend = cue == CombatCue.EnemyAttackStart ? 1f : 0f;
         source.minDistance = 2f; source.maxDistance = 20f;
         source.rolloffMode = AudioRolloffMode.Linear;

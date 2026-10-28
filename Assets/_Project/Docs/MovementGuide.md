@@ -2,7 +2,7 @@
 
 [프로젝트 안내](../../../README.md) · [전투 안내](CombatFoundationGuide.md) · [이동 코드 구조](../Scripts/Player/Movement/README.md)
 
-현재 조작은 [Player.inputactions](../Input/Player.inputactions)를 기준으로 합니다. 아래 수치는 **코드 기본값**이며, 실제 플레이에는 씬의 PlayerMovement 인스펙터 값이 우선합니다. 기능을 시험할 때는 [CombatFoundation](../Scenes/Development/CombatFoundation.unity) 또는 [MovementAbilityPlayground](../Scenes/Development/MovementAbilityPlayground.unity)를 사용합니다.
+현재 조작은 [Player.inputactions](../Input/Player.inputactions)를 기준으로 합니다. 아래 수치는 [Player.csv](../Resources/Tables/Player.csv)의 기본값이며, 표를 고치면 바로 바뀝니다. 기능을 시험할 때는 [CombatFoundation](../Scenes/Development/CombatFoundation.unity) 또는 [MovementAbilityPlayground](../Scenes/Development/MovementAbilityPlayground.unity)를 사용합니다.
 
 ## 기본 조작
 
@@ -11,7 +11,7 @@
 | WASD / 마우스 | 이동 / 시점 조작 |
 | Shift + 전진 | 달리기 |
 | Space | 점프. 통과할 장애물이 있으면 Vault/Mantle 우선 |
-| Ctrl 유지 | 앉기. 공중에서는 몸을 접어 캡슐 높이 축소 |
+| Ctrl 유지 | 앉기. 공중에서는 몸을 접어 캡슐 높이 축소. Esc 설정에서 "눌러서 전환"으로 바꿀 수 있다(Q/E 기울이기도 같음) |
 | 서서 이동 중 Z | 입력 방향으로 다이브. 뒤 입력은 누운 다이브 |
 | 제자리 Z / 앉은 상태에서 Z | 포복 |
 | 포복·누운 상태에서 Space | 공간이 있으면 먼저 일어나기 |
@@ -129,8 +129,9 @@ Ctrl을 유지한 공중 이동은 자동 파쿠르 진입을 막습니다. 벽 
 
 | 바꿀 내용 | 위치 |
 | --- | --- |
-| 이동 속도·점프·캡슐 높이·슬라이딩 마찰·다이브 | PlayerMovement 인스펙터. 선언: [PlayerMovement.Configuration.cs](../Scripts/Player/Movement/PlayerMovement.Configuration.cs) |
-| 회피·파쿠르·낙하·저스트 슬라이드 | PlayerMovement → Ability Settings. 선언: [MovementAbilitySettings.cs](../Scripts/Player/Movement/MovementAbilitySettings.cs) |
+| 이동 속도·점프·중력·슬라이딩·다이브 | [Player.csv](../Resources/Tables/Player.csv)의 `Move` 행. 저장하면 Play 중에도 바로 적용된다. 선언: [PlayerMovement.Configuration.cs](../Scripts/Player/Movement/PlayerMovement.Configuration.cs) |
+| 캡슐 높이·눈높이·자세 전환 빠르기 | `Player.csv`의 `Posture` 행 |
+| 회피·기울이기·파쿠르·낙하·저스트 슬라이드·밀치기 | `Player.csv`의 `Ability` 행. 선언: [MovementAbilitySettings.cs](../Scripts/Player/Movement/MovementAbilitySettings.cs) |
 | 적 크기와 넘어짐 대상 | 적의 [MeleeCombatTarget](../Scripts/Combat/Damage/MeleeCombatTarget.cs) |
 | 키 배치 | [Player.inputactions](../Input/Player.inputactions)의 Player 맵 |
 | 카메라의 추가 흔들림·FOV·피치·롤 | [PlayerCameraEffects](../Scripts/Player/Camera/PlayerCameraEffects.cs) |

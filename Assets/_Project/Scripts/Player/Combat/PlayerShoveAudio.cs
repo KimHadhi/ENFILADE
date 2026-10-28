@@ -22,6 +22,7 @@ public sealed class PlayerShoveAudio : MonoBehaviour
         {
             source = gameObject.AddComponent<AudioSource>(); source.playOnAwake = false;
             source.spatialBlend = 0f;
+            GameAudio.Bind(source, AudioChannel.Combat);
         }
         float volume = impact == ShoveImpactKind.Enemy ? settings.shoveEnemyVolume : settings.shoveWorldVolume;
         source.PlayOneShot(LastClip, Mathf.Clamp01(volume));

@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 
+/// <summary>Dodge, lean, parkour, fall and shove numbers. Set from Resources/Tables/Player.csv, row Ability, by field name.</summary>
 [Serializable]
 public sealed class MovementAbilitySettings
 {

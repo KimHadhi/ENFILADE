@@ -29,13 +29,8 @@ public sealed class ProneState : MovementBaseState
             return;
         }
 
-        bool crouchPressed = ctx.InputAvailable
-            && ctx.CrouchAction != null
-            && ctx.CrouchAction.IsPressed();
-
-        bool crouchJustPressed = ctx.InputAvailable
-            && ctx.CrouchAction != null
-            && ctx.CrouchAction.WasPressedThisFrame();
+        bool crouchPressed = ctx.Input.CrouchHeld;
+        bool crouchJustPressed = ctx.Input.CrouchPressed;
 
         bool diveJustPressed = ctx.InputAvailable && (
             (ctx.DiveAction != null && ctx.DiveAction.WasPressedThisFrame())

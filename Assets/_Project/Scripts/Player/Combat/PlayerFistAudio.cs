@@ -38,6 +38,7 @@ public sealed class PlayerFistAudio : MonoBehaviour
         {
             source = gameObject.AddComponent<AudioSource>(); source.playOnAwake = false;
             source.spatialBlend = 0f;
+            GameAudio.Bind(source, AudioChannel.Combat);
         }
         source.PlayOneShot(clip, Mathf.Clamp01(volume));
     }

@@ -10,8 +10,8 @@ public sealed class PlayerLook : MonoBehaviour
     [SerializeField] private Transform lookPivot;
 
     [Header("Look Settings")]
+    [Tooltip("Base sensitivity. The Esc menu's sensitivity multiplies it; Y inversion is also an Esc menu setting.")]
     [SerializeField, Range(0.01f, 1f)] private float sensitivity = 0.1f;
-    [SerializeField] private bool invertY = false;
     [SerializeField] private float minPitch = -89f;
     [SerializeField] private float maxPitch = 89f;
     [SerializeField, Range(0f, 90f)] private float wallClimbYawLimit = 30f;
@@ -63,8 +63,10 @@ public sealed class PlayerLook : MonoBehaviour
         if (lookAction != null) delta = lookAction.ReadValue<Vector2>();
         else if (Mouse.current != null) delta = Mouse.current.delta.ReadValue();
 
-        float mouseX = delta.x * sensitivity;
-        float mouseY = delta.y * sensitivity * (invertY ? 1f : -1f);
+        var settings = GameSettings.Current;
+        float scale = sensitivity * settings.mouseSensitivity;
+        float mouseX = delta.x * scale;
+        float mouseY = delta.y * scale * (settings.invertY ? 1f : -1f);
 
         yaw += mouseX;
         yaw = ClampWallClimbYaw(yaw);

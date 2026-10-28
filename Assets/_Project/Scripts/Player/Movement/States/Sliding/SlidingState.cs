@@ -48,7 +48,7 @@ public sealed class SlidingState : MovementBaseState
 
     private void StopSlide()
     {
-        bool crouchPressed = ctx.InputAvailable && ctx.CrouchAction != null && ctx.CrouchAction.IsPressed();
+        bool crouchPressed = ctx.Input.CrouchHeld;
         bool sprintHeld = ctx.InputAvailable && ctx.SprintAction != null && ctx.SprintAction.IsPressed();
         bool wantsSprintForward = sprintHeld && ctx.CurrentInput.y > 0.1f;
 

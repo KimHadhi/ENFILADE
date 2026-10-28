@@ -134,6 +134,26 @@ public static class CombatUIAssets
         return material;
     }
 
+    /// <summary>
+    /// Ellipsis when TMP can find "…" for this text's font and style, otherwise Truncate. TMP would switch to Truncate
+    /// anyway, with a console warning per text: the Korean UI fonts have no ellipsis, and bold text in a font without a
+    /// bold typeface only searches fallbacks, never the regular glyphs. Call after setting the font and style.
+    /// </summary>
+    public static TextOverflowModes ClippedOverflow(TMP_Text text)
+    {
+        if (text == null || text.font == null) return TextOverflowModes.Truncate;
+        FontStyles style = text.fontStyle;
+        FontWeight weight = (style & FontStyles.Bold) == FontStyles.Bold ? FontWeight.Bold : text.fontWeight;
+        bool CanDraw(TMP_FontAsset font) => font != null
+            && TMP_FontAssetUtilities.GetCharacterFromFontAsset(0x2026, font, true, style, weight, out _) != null;
+        if (CanDraw(text.font) || CanDraw(TMP_Settings.defaultFontAsset)) return TextOverflowModes.Ellipsis;
+        var fallbacks = TMP_Settings.fallbackFontAssets;
+        if (fallbacks != null)
+            foreach (var font in fallbacks)
+                if (CanDraw(font)) return TextOverflowModes.Ellipsis;
+        return TextOverflowModes.Truncate;
+    }
+
     public static TMP_FontAsset ResolveFont(TMP_FontAsset preferred)
     {
         if (preferred != null) return preferred;

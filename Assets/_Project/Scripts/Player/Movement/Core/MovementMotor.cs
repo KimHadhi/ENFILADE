@@ -165,7 +165,7 @@ public sealed class MovementMotor
             ctx.Posture.RebaseAirCrouchFeet();
             if (wasAirCrouching && ctx.StateMachine.Current.AllowsAutomaticPosture && !ctx.IsDiving && !ctx.IsSliding)
             {
-                bool crouchHeld = ctx.InputAvailable && ctx.Input.crouchAction != null && ctx.Input.crouchAction.IsPressed();
+                bool crouchHeld = ctx.Input.CrouchHeld;
                 ctx.ChangeState(crouchHeld || ctx.HasCeilingAbove(ctx.Posture.standingColliderHeight)
                     ? MovementState.Crouching : MovementState.Standing);
             }

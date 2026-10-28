@@ -18,7 +18,7 @@ public sealed class LocomotionState : MovementBaseState
 
     public override void OnLanding()
     {
-        bool crouchHeld = ctx.InputAvailable && ctx.CrouchAction != null && ctx.CrouchAction.IsPressed();
+        bool crouchHeld = ctx.Input.CrouchHeld;
         float requiredSpeed = Mathf.Max(ctx.landingSlideMinSpeed, ctx.WalkSpeed * ctx.StrafeCompensation + 0.1f);
         float landingSpeed = new Vector2(ctx.HorizontalVelocity.x, ctx.HorizontalVelocity.z).magnitude;
         float measuredSpeed = new Vector2(ctx.ActualVelocity.x, ctx.ActualVelocity.z).magnitude;

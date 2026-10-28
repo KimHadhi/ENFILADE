@@ -47,7 +47,7 @@ public sealed class SlidingGroupState : MovementBaseState
             ctx.CurrentSlideSpeed -= (activeFriction + uphillResistance) * dt;
         }
 
-        bool crouchHeld = ctx.InputAvailable && ctx.CrouchAction != null && ctx.CrouchAction.IsPressed();
+        bool crouchHeld = ctx.Input.CrouchHeld;
         if (!crouchHeld) ctx.SlideBrakeArmed = true;
         bool wantsBrake = ctx.InputAvailable && ((ctx.SlideBrakeArmed && crouchHeld) || IsBrakeInput(input));
         if (ctx.IsGrounded && wantsBrake)

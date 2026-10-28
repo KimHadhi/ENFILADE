@@ -8,8 +8,8 @@
 | --- | --- |
 | **체력·무기·주먹·처형·적·웨이브 밸런스 숫자** | [Resources/Tables](../Resources/Tables)의 CSV 표 (컴파일 불필요, [사용법](../Docs/MaintenanceGuide.md#밸런스-표-data-tables)) |
 | 표 읽기·적용 방식 | [GameTables](Data/GameTables.cs), [CsvTable](Data/CsvTable.cs), [TableFieldWriter](Data/TableFieldWriter.cs) |
-| 걷기·달리기·자세·슬라이드의 기본 수치 | 씬의 `PlayerMovement` Inspector, [Configuration](Player/Movement/PlayerMovement.Configuration.cs) |
-| 회피·파쿠르·낙하·저스트 슬라이드 수치 | `PlayerMovement → Ability Settings`, [MovementAbilitySettings](Player/Movement/MovementAbilitySettings.cs) |
+| 걷기·달리기·점프·자세·슬라이드·다이브 수치 | [Player.csv](../Resources/Tables/Player.csv)의 `Move`·`Posture` 행, 필드 선언은 [Configuration](Player/Movement/PlayerMovement.Configuration.cs) |
+| 회피·파쿠르·낙하·저스트 슬라이드·밀치기 수치 | `Player.csv`의 `Ability` 행, 필드 선언은 [MovementAbilitySettings](Player/Movement/MovementAbilitySettings.cs) |
 | 이동 상태 전환·처리 순서 | [PlayerMovement](Player/Movement/PlayerMovement.cs), [이동 코드 구조](Player/Movement/README.md) |
 | 접지·경사·중력·실제 몸 이동 | [MovementMotor](Player/Movement/Core/MovementMotor.cs) |
 | 자세 높이·천장·환풍구·눈높이 | [MovementPostureController](Player/Movement/Core/MovementPostureController.cs) |
@@ -36,7 +36,9 @@
 | 시점 입력 / 이동 카메라 효과 | [PlayerLook](Player/Camera/PlayerLook.cs), [PlayerCameraEffects](Player/Camera/PlayerCameraEffects.cs) |
 | 탄약·무기 슬롯·적 체력 UI | [AmmoHUD](UI/AmmoHUD.cs), [WeaponSlotsHUD](UI/WeaponSlotsHUD.cs), [EnemyVitalsHUD](UI/EnemyVitalsHUD.cs) |
 | 체력·궁극기 UI / 목표·웨이브 UI | [UI/HP](UI/HP/), [MissionHUD](UI/MissionHUD.cs), [WaveMissionSource](UI/WaveMissionSource.cs) |
-| 채팅·테스트 명령 / 메뉴·설정 | [UI/Chatting](UI/Chatting/), [UI/MainMenu](UI/MainMenu/), [SettingsTabController](SettingsTabController.cs) |
+| 채팅·테스트 명령 | [UI/Chatting](UI/Chatting/) |
+| Esc 설정 메뉴·일시정지 / 저장되는 플레이어 설정 | [UI/Settings](UI/Settings/), [GamePause](Settings/GamePause.cs) / [GameSettings](Settings/GameSettings.cs) |
+| 소리 볼륨 채널(전투·이동·목소리·UI) | [GameAudio](Audio/GameAudio.cs) |
 
 ## 코드의 경계
 
@@ -51,6 +53,7 @@
 | `UI` | 게임 상태를 읽어 표시하고 UI 입력을 전달 |
 | `World` | 파괴 가능한 문, 스윙 바, 텔레포트, 물리 프랍([PhysicsProp](World/PhysicsProp.cs)) 등 월드 상호작용 |
 | `Data` | 밸런스 CSV 표를 읽어 컴포넌트·에셋 필드에 적용하고, 편집기에서 표 저장 시 다시 적용 |
+| `Settings`, `Audio` | 사용자별로 저장되는 설정(`settings.json`)과 일시정지, 소리 볼륨 채널 |
 | `Debug` | 연습 표적·공격기·테스트 명령·디버그 HUD |
 | `../Editor` | 편집기 전용 도구: 표 다시 읽기, 모델 임포트 규칙·물리 프랍, HUD 편집 미리보기, 폰트 저장 |
 
@@ -60,9 +63,9 @@
 
 ## 입력과 설정
 
-대부분의 키 바인딩은 [Player.inputactions](../Input/Player.inputactions)에 있다. 이동은 `MovementInput`, 사격은 `PlayerWeaponInput`, UI는 해당 UI 컴포넌트가 읽는다. **슬롯 1~4와 숫자패드 키는 현재 `PlayerWeaponSlots.Update()`에서 직접 읽으므로** 입력 에셋만 바꿔서는 재지정되지 않는다.
+대부분의 키 바인딩은 [Player.inputactions](../Input/Player.inputactions)에 있다. 이동은 `MovementInput`, 사격은 `PlayerWeaponInput`, UI는 해당 UI 컴포넌트가 읽는다. 앉기는 상태 코드에서 키를 직접 읽지 않고 `MovementInput.CrouchHeld`/`CrouchPressed`를 쓴다. 그래야 Esc 메뉴의 "눌러서 전환" 설정이 모든 상태에 적용된다. **슬롯 1~4와 숫자패드 키는 현재 `PlayerWeaponSlots.Update()`에서 직접 읽으므로** 입력 에셋만 바꿔서는 재지정되지 않는다.
 
-`PlayerMovement.Configuration.cs`는 별도 컴포넌트가 아니라 같은 `PlayerMovement` 클래스의 직렬화 필드다. `MovementAbilitySettings`는 그 안의 설정 데이터다. 저장된 씬·프리팹 값이 코드 초기값보다 우선하므로, 수치 문제를 조사할 때는 실제 사용 중인 인스펙터를 먼저 확인한다.
+`PlayerMovement.Configuration.cs`는 별도 컴포넌트가 아니라 같은 `PlayerMovement` 클래스의 직렬화 필드다. `MovementAbilitySettings`는 그 안의 설정 데이터다. 수치는 `Player.csv`(`Posture`·`Move`·`Ability` 행)가 필드 이름으로 덮어쓰므로, 표에 있는 값은 인스펙터에서 바꿔도 Play 때 표 값으로 돌아간다. 필드 이름을 바꾸면 표의 키도 같이 바꾼다. 컴포넌트 안에 든 설정 객체는 `GameTables.BindNested`로 연결한다.
 
 ## 기능을 추가할 때
 

@@ -39,7 +39,7 @@ public sealed class MovementActions
         Vector3 momentumDir = new Vector3(ctx.HorizontalVelocity.x, 0f, ctx.HorizontalVelocity.z).normalized;
         SlideDirection = momentumDir.sqrMagnitude > 0.01f ? momentumDir : (inputDir.sqrMagnitude > 0.01f ? inputDir : ctx.transform.forward);
         CurrentSlideSpeed = applyBoost ? Mathf.Max(currentSpeed, ctx.sprintSpeed) + ctx.slideKickBoost : currentSpeed;
-        SlideBrakeArmed = !(ctx.InputAvailable && ctx.Input.crouchAction != null && ctx.Input.crouchAction.IsPressed());
+        SlideBrakeArmed = !ctx.Input.CrouchHeld;
         slideCooldownTimer = ctx.slideCooldown;
     }
 
@@ -47,7 +47,7 @@ public sealed class MovementActions
     {
         ctx.ChangeState(slideState);
         sprintProgress = 0f;
-        SlideBrakeArmed = !(ctx.InputAvailable && ctx.Input.crouchAction != null && ctx.Input.crouchAction.IsPressed());
+        SlideBrakeArmed = !ctx.Input.CrouchHeld;
         Vector3 momentumDir = new Vector3(ctx.HorizontalVelocity.x, 0f, ctx.HorizontalVelocity.z).normalized;
         SlideDirection = momentumDir.sqrMagnitude > 0.01f ? momentumDir : fallbackDir;
         float boost = applyBoost ? ctx.diveSlideKickBoost : 0f;

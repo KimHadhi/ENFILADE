@@ -11,7 +11,7 @@ public sealed class CrouchingState : MovementBaseState
 
     public override void ProcessInput(Vector2 input)
     {
-        bool crouchPressed = ctx.InputAvailable && ctx.CrouchAction != null && ctx.CrouchAction.IsPressed();
+        bool crouchPressed = ctx.Input.CrouchHeld;
         bool diveJustPressed = ctx.InputAvailable && (
             (ctx.DiveAction != null && ctx.DiveAction.WasPressedThisFrame())
         );

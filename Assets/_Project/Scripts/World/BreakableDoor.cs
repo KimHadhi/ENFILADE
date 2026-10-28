@@ -17,7 +17,7 @@ public class BreakableDoor : MonoBehaviour, IBreakable
         // 1. 사운드 재생
         if (breakSound != null)
         {
-            AudioSource.PlayClipAtPoint(breakSound, hitPoint);
+            GameAudio.PlayAt(breakSound, hitPoint, AudioChannel.Combat);
         }
 
         // 2. 파편 프리팹 생성 (파편에 Rigidbody가 있다면 날아가는 효과)

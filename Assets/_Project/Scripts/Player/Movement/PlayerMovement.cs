@@ -133,7 +133,6 @@ public sealed partial class PlayerMovement : MonoBehaviour
     public float SlopeLimit => Motor.controller != null ? Motor.controller.slopeLimit : 45f;
     public float ControllerRadius => Motor.controller != null ? Motor.controller.radius : 0.5f;
 
-    public InputAction CrouchAction => Input.crouchAction;
     public InputAction SprintAction => Input.sprintAction;
     public InputAction DiveAction => Input.diveAction;
     public InputAction JumpAction => Input.jumpAction;
@@ -156,9 +155,12 @@ public sealed partial class PlayerMovement : MonoBehaviour
         }
         Abilities?.Reset();
         groundLayers &= ~(1 << gameObject.layer);
-        // Posture capsule heights and eye offsets (crouch, slide, prone, supine) come from Player.csv, row Posture.
+        // Player.csv owns the movement numbers: Posture (capsule heights, eye offsets), Move (speeds, jump, slide, dive)
+        // and Ability (dodge, lean, parkour, fall damage, shove). Inspector values only fill empty cells.
         GameTables.Bind(TableName, "Posture", this);
-        Input = new MovementInput();
+        GameTables.Bind(TableName, "Move", this);
+        GameTables.BindNested(TableName, "Ability", this, abilitySettings);
+        Input = new MovementInput(this);
         Motor = new MovementMotor(this, controller);
         Posture = new MovementPostureController(this);
         Actions = new MovementActions(this);
