@@ -1,6 +1,8 @@
 # Blender (headless): Source MDL animations -> one skeleton-only FBX (one take per animation) + clip list CSV.
 # usage: blender -b --factory-startup --python source_anims_to_fbx.py -- <anims.mdl> <out.fbx> <rig name>
-#        <comma names|*> [measure names|-] [yaw offset] [onto model.mdl]
+#        <comma names|*> [measure names|-] [yaw offset] [onto model.mdl] [clip name suffix]
+# The suffix ("_tp") renames the clips so a second set with the same clip names can sit beside the first one; the
+# player body finds clips by name and takes the first match.
 # SourceIO parses the MDL; actions are written here directly (SourceIO 5.5.2's own animation import stops on
 # some clips). A bone's pose basis is rest_rel⁻¹ · local, where local is the Source parent-space transform.
 #
@@ -21,7 +23,8 @@ args = sys.argv[sys.argv.index("--") + 1:]
 mdl_path, out_fbx, rig = os.path.abspath(args[0]), os.path.abspath(args[1]), args[2]
 wanted = None if args[3] == "*" else [n.strip() for n in args[3].split(",") if n.strip()]
 measure = [n.strip() for n in args[4].split(",")] if len(args) > 4 and args[4] != "-" else []
-onto_path = os.path.abspath(args[6]) if len(args) > 6 else None
+onto_path = os.path.abspath(args[6]) if len(args) > 6 and args[6] != "-" else None
+suffix = args[7] if len(args) > 7 else ""
 # Unity's Original root orientation keeps the clip basis. Source clips face +X, which needs a +90 degree import
 # offset to face Unity +Z; baked onto a model they face its toes (Blender -Y, Unity -Z), which needs 180.
 yaw_offset = float(args[5]) if len(args) > 5 else (180.0 if onto_path else 90.0)
@@ -138,7 +141,7 @@ for clip in order:
     desc = mdl.anim_descs[n]
     frames = int(data.shape[0])
     step = 30.0 / (desc.fps or 30.0)
-    act = bpy.data.actions.new(clip)
+    act = bpy.data.actions.new(clip + suffix)
     act.use_fake_user = True
     pos_all, rot_all = data["pos"], data["rot"]
     for bi, bone in enumerate(names):
@@ -168,7 +171,7 @@ for clip in order:
                     kp.interpolation = "LINEAR"
                 fc.update()
     loop = bool(int(desc.flags) & 1)
-    rows.append((clip, int(loop), 0, yaw_offset, frames, desc.fps))
+    rows.append((clip + suffix, int(loop), 0, yaw_offset, frames, desc.fps))
     print("ACTION", clip, frames, desc.fps, "loop" if loop else "once")
 
 # Unity builds the avatar of a skeleton-only FBX from the first take's first frame (there is no bind pose), so the
@@ -186,7 +189,7 @@ for bone in names:
 
 head = next((pb for pb in arm.pose.bones if pb.name.endswith("Bip01_Head1")), None)
 for clip in measure:
-    act = bpy.data.actions.get(clip)
+    act = bpy.data.actions.get(clip + suffix)
     if act is None or head is None:
         continue
     arm.animation_data.action = act

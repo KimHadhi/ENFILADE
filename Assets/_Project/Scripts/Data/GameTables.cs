@@ -74,6 +74,9 @@ public static class GameTables
         return applied;
     }
 
+    /// <summary>Every row id of a row table, for tables read as a list (Surfaces.csv).</summary>
+    public static IEnumerable<string> RowIds(string table) => Load(table)?.RowIds ?? Array.Empty<string>();
+
     public static bool TryGetRow(string table, string id, out IReadOnlyDictionary<string, string> row)
     {
         row = null;

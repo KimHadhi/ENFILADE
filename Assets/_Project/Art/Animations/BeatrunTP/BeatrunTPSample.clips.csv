@@ -1,0 +1,7 @@
+clip,loop,inPlace,yawOffset,#frames,#fps
+vaultover_tp,0,0,180.0,25,28.0
+hangheaveup_tp,0,0,180.0,46,30.0
+meroll_tp,0,0,180.0,38,30.0
+runfwd_tp,1,0,180.0,77,30.0
+stand_tp,1,0,180.0,61,30.0
+jumpcoilend_tp,0,0,180.0,18,30.0

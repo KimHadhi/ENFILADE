@@ -1,0 +1,170 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0513b63a8f85441499f8c22cf0761180, type: 3}
+  m_Name: Voice
+  m_EditorClassIdentifier: Assembly-CSharp::SoundBank
+  id: Voice
+  entries:
+  - key: Breath/MediumLongIn
+    clips:
+    - {fileID: 8300000, guid: bbf3e28a4118e2f41bdee1c51aa77bae, type: 3}
+    - {fileID: 8300000, guid: 7fae8f5d42da78544a714be4d6a2613a, type: 3}
+    - {fileID: 8300000, guid: a1202ffb3bcc01d4782c0fb0ae30e9f1, type: 3}
+    - {fileID: 8300000, guid: ac58001c4381f2143b5c6b98d2e6fed8, type: 3}
+    - {fileID: 8300000, guid: 23ca08137ac96244c8e37611aa13a62c, type: 3}
+    - {fileID: 8300000, guid: 70d2dde0d5363134fbfb6e8116507194, type: 3}
+    - {fileID: 8300000, guid: 712697b03b1e0604781b42ad4951ae72, type: 3}
+    - {fileID: 8300000, guid: 8545fb08d81da854ea74e1bbf58f5d83, type: 3}
+  - key: Breath/MediumLongOut
+    clips:
+    - {fileID: 8300000, guid: 7d0b1bb8bee571943bf67a107e487bc3, type: 3}
+    - {fileID: 8300000, guid: 794f09e89e41a5c4daf43dc2e08e2e30, type: 3}
+    - {fileID: 8300000, guid: 7363f26a40e0f444d976cc593abd13b1, type: 3}
+    - {fileID: 8300000, guid: 57eb3371e0225814f80fb17fa798037b, type: 3}
+    - {fileID: 8300000, guid: ee8244fcb0b1b7841ae96c4004655957, type: 3}
+    - {fileID: 8300000, guid: 9d90b8fe6025b854e926e60f3732d8f3, type: 3}
+    - {fileID: 8300000, guid: 34f9f46a6751f554995db67a7b0a1fd8, type: 3}
+    - {fileID: 8300000, guid: ce0a5576ad09043489abb6fe42588512, type: 3}
+  - key: Breath/MediumShortIn
+    clips:
+    - {fileID: 8300000, guid: 67430c26175b98743a290bcaa04ad9ac, type: 3}
+    - {fileID: 8300000, guid: 857483729220c3a47afe1a8b2b5473da, type: 3}
+    - {fileID: 8300000, guid: 303edce6033414349a2c71fb40cfde1a, type: 3}
+    - {fileID: 8300000, guid: a403f3aaee43a4541a84e97371860b7a, type: 3}
+    - {fileID: 8300000, guid: 26d40c7afb7304443ae0e08ff4db78d0, type: 3}
+    - {fileID: 8300000, guid: 7dd198f0992e32941a4a172417a86609, type: 3}
+    - {fileID: 8300000, guid: 566bd50c3ab4b0a40a0ba36045a62350, type: 3}
+    - {fileID: 8300000, guid: da7264edae381a141a111cdeb1a31a80, type: 3}
+  - key: Breath/MediumShortOut
+    clips:
+    - {fileID: 8300000, guid: a103e6f57ec813f49a8c9bb6c1a41cad, type: 3}
+    - {fileID: 8300000, guid: c72852eeb13f0dc49a65822a54723d1a, type: 3}
+    - {fileID: 8300000, guid: af3460377e9da814d8679e403657eb43, type: 3}
+    - {fileID: 8300000, guid: d1dfda3f024103a4a80f815c5dc8be0b, type: 3}
+    - {fileID: 8300000, guid: 4ed11516e9bb8594197f8ee35027be39, type: 3}
+    - {fileID: 8300000, guid: 627b075045708bb40a4c956c640f520a, type: 3}
+    - {fileID: 8300000, guid: 8900b314bfa7af14d85bc822c299f95c, type: 3}
+    - {fileID: 8300000, guid: e7d3166d7d0460447983a884aa40b5c0, type: 3}
+  - key: Breath/SoftLongIn
+    clips:
+    - {fileID: 8300000, guid: c58ee462ae3f25c488416ff1e706412b, type: 3}
+    - {fileID: 8300000, guid: 66a85d78e2b178b42a011cc11fb2e70e, type: 3}
+    - {fileID: 8300000, guid: 924cf30a9c8ebbe4593d12f35166d2c0, type: 3}
+    - {fileID: 8300000, guid: 39b89f35917ea1a41b13ade3cfc2df22, type: 3}
+    - {fileID: 8300000, guid: cbd5736b0092bd8418702e27b0b9f1ad, type: 3}
+    - {fileID: 8300000, guid: b8dbb121dbb289742a01383772b00855, type: 3}
+  - key: Breath/SoftLongOut
+    clips:
+    - {fileID: 8300000, guid: 739b84c1a29549e4aaf9a982d9b4a820, type: 3}
+    - {fileID: 8300000, guid: d10a96da8c8b09244bf9ae18c96611d6, type: 3}
+    - {fileID: 8300000, guid: 7e05036057644dd4eb2001d56a3684b7, type: 3}
+    - {fileID: 8300000, guid: 896ba47bd8a2f174ca5aeda12f2b52b2, type: 3}
+    - {fileID: 8300000, guid: cd038cb4a218756449a073222d24f929, type: 3}
+    - {fileID: 8300000, guid: 2107f141c3252984fbe898cc4c9537ba, type: 3}
+  - key: Breath/SoftShortIn
+    clips:
+    - {fileID: 8300000, guid: 248b424d6d3329b40b4d946ce52c2fed, type: 3}
+    - {fileID: 8300000, guid: a4e1114f6176d5c4db96d08a4fb7bc18, type: 3}
+    - {fileID: 8300000, guid: 9916077441c88124aaf04a0836a72338, type: 3}
+    - {fileID: 8300000, guid: 1494c603bf201d449a7a38cc1ba7939b, type: 3}
+    - {fileID: 8300000, guid: 7f31b5d67579cb945a18aaa206b23e9d, type: 3}
+    - {fileID: 8300000, guid: 205350ef149d2ad48a5894e592c74159, type: 3}
+    - {fileID: 8300000, guid: 4c004d92532a56a4ab00e17f2654bd0e, type: 3}
+    - {fileID: 8300000, guid: 7424388c6544daa499611ded2bb32deb, type: 3}
+  - key: Breath/SoftShortOut
+    clips:
+    - {fileID: 8300000, guid: 685bf7951c48dc24cab65c77154090b4, type: 3}
+    - {fileID: 8300000, guid: 92cf3b7415ce4714b83d23cdb2eb83ee, type: 3}
+    - {fileID: 8300000, guid: bf4e6c62556a7734b8c0e4f18b0fd6ab, type: 3}
+    - {fileID: 8300000, guid: 11cfdf40e646b634b868f61af0aed9b2, type: 3}
+    - {fileID: 8300000, guid: b828efdee0421f44baf1efc4162836b3, type: 3}
+    - {fileID: 8300000, guid: 5460b70f13d975a458f6ed89d46ce719, type: 3}
+    - {fileID: 8300000, guid: 30ac958ef00d4ab4bbf6461d776754aa, type: 3}
+    - {fileID: 8300000, guid: 71653430ddcfbb448838cc56e3a745fd, type: 3}
+  - key: Impact
+    clips:
+    - {fileID: 8300000, guid: 5d569e6cc0bf0284592e6c889523934d, type: 3}
+    - {fileID: 8300000, guid: a1a6211670cf93e47bde4c94147bed09, type: 3}
+    - {fileID: 8300000, guid: 74944eee468c27940ac7ccd991c1a713, type: 3}
+    - {fileID: 8300000, guid: 18c85ffff063bbb4eac3f237b478d32b, type: 3}
+    - {fileID: 8300000, guid: 725f2bb1db6772f41af0e66e7c6f84ed, type: 3}
+    - {fileID: 8300000, guid: 272c7aa6b28b2a74a8ff6915bd837bee, type: 3}
+    - {fileID: 8300000, guid: 2c5a66fda1c1cda4fadacc3cf1ff7f1d, type: 3}
+    - {fileID: 8300000, guid: a7b8c85cf5de7b14eb046a9d5d7ef145, type: 3}
+    - {fileID: 8300000, guid: 86864d900ed546a49970a4be7713ad5a, type: 3}
+    - {fileID: 8300000, guid: cb2783a78ab7bc740a9cadea2ccb0707, type: 3}
+    - {fileID: 8300000, guid: 3520c4c0fc11841469f6d5c9a9c604ee, type: 3}
+    - {fileID: 8300000, guid: 1732257d4214fd54994826ce68288a62, type: 3}
+    - {fileID: 8300000, guid: 543c764facdfd6b42a84c3875506e5af, type: 3}
+    - {fileID: 8300000, guid: f222258ae1794bf4c9ce0f2d1a08349f, type: 3}
+  - key: ImpactHard
+    clips:
+    - {fileID: 8300000, guid: 5e4af1ac78c4bd44c92e7c17bcc639e0, type: 3}
+    - {fileID: 8300000, guid: c1101ab301a070f458021150c10b4560, type: 3}
+    - {fileID: 8300000, guid: 8db7dbccc8b3b854e94971d1c284bf84, type: 3}
+    - {fileID: 8300000, guid: 637050aa9a1d1ad48a9da89ad8eb14e1, type: 3}
+    - {fileID: 8300000, guid: ea049a56bedccfa45acab3f5df5eb0bb, type: 3}
+    - {fileID: 8300000, guid: ecb56eb2c84484c479e0eb8c52f055e7, type: 3}
+    - {fileID: 8300000, guid: 1b9bdeb003870064fa438c61af2b1537, type: 3}
+    - {fileID: 8300000, guid: 1227c9cf7f00dc346b0ad0866b7169c5, type: 3}
+    - {fileID: 8300000, guid: 5b10e0d2fd24d98499c7aaa9ffef1c51, type: 3}
+    - {fileID: 8300000, guid: 786c57feb9a38a8458957d124abaae60, type: 3}
+    - {fileID: 8300000, guid: fa1ad842d0b5c1f4c889c49e8ba835cb, type: 3}
+    - {fileID: 8300000, guid: 6057a811468562a428e7cf337a3ac4f7, type: 3}
+    - {fileID: 8300000, guid: 6a0d3c840e2203749a6852b77e7f9dd8, type: 3}
+    - {fileID: 8300000, guid: ac5e4a08184410e4498c74be90bdef1d, type: 3}
+  - key: ImpactSoft
+    clips:
+    - {fileID: 8300000, guid: a9bdc3248a8fa7b449e94f38c455f77b, type: 3}
+    - {fileID: 8300000, guid: 0ce2d6b631e45cf48ae4fd7ea87f4555, type: 3}
+    - {fileID: 8300000, guid: 839bc185eb789bd4e95138db6a465f01, type: 3}
+    - {fileID: 8300000, guid: 32ddebe6516a2054a990890162d10d8b, type: 3}
+    - {fileID: 8300000, guid: 25c31af0d802e3648b8ad1f401c19e9d, type: 3}
+    - {fileID: 8300000, guid: 8611d3e87127aa34c99b8fc6eaddfc56, type: 3}
+    - {fileID: 8300000, guid: ed8a3f1f7ce661246834d57bf440bb72, type: 3}
+    - {fileID: 8300000, guid: 984b927164d4a514f956e5eff0cfe227, type: 3}
+    - {fileID: 8300000, guid: 41c5ef26e920a004f9ef6e0fe0e12aa9, type: 3}
+    - {fileID: 8300000, guid: db8c462c45566f84da981a0fe1b310da, type: 3}
+    - {fileID: 8300000, guid: fc2170e086ba78f4787b879d417cae05, type: 3}
+    - {fileID: 8300000, guid: f65073617188b8f418e53e8a4c7d9038, type: 3}
+    - {fileID: 8300000, guid: 05b628f17dc846a4db239abc311fbdfb, type: 3}
+    - {fileID: 8300000, guid: d5985b1dff774cf44b8589d27f5676c1, type: 3}
+  - key: StrainHard
+    clips:
+    - {fileID: 8300000, guid: 8a3acebb0228a264ebadb2a1474f022b, type: 3}
+    - {fileID: 8300000, guid: 4a379dcb05290824f9a1234b9f91c79d, type: 3}
+    - {fileID: 8300000, guid: 6033a87cd36550645be1b049f9058aeb, type: 3}
+    - {fileID: 8300000, guid: 6d0a9d1bb7850434d98df432a4d3f72a, type: 3}
+    - {fileID: 8300000, guid: d36f688f3530f2440b609c8e22278952, type: 3}
+    - {fileID: 8300000, guid: b96e89998031aef4589ec8ca50382b1c, type: 3}
+    - {fileID: 8300000, guid: 5fc10b4d6f61f7841842b6719d10ff9b, type: 3}
+    - {fileID: 8300000, guid: 82f98ff746f75e2418976cef5fb50c11, type: 3}
+  - key: StrainMedium
+    clips:
+    - {fileID: 8300000, guid: f6ee168317a2ecb4f8ed092cf6cc1664, type: 3}
+    - {fileID: 8300000, guid: 48d43a56951eedd46824258dc1d4d8bd, type: 3}
+    - {fileID: 8300000, guid: 139267ed375f44c45a09892c20cc7bff, type: 3}
+    - {fileID: 8300000, guid: 78ddb0446fe02ad4d9f77c39e4ce64b0, type: 3}
+    - {fileID: 8300000, guid: 6abb365981f20e44cb2babd45fe7b913, type: 3}
+    - {fileID: 8300000, guid: 443c6c0359142134ba1dea9777cff826, type: 3}
+    - {fileID: 8300000, guid: bd422eefe9b39e242a626e2c1ddfaa20, type: 3}
+    - {fileID: 8300000, guid: a37fd236dc8838a4cb54faf4ac1fe488, type: 3}
+  - key: StrainSoft
+    clips:
+    - {fileID: 8300000, guid: e631a4509f87f35498a5cf87f4159d3e, type: 3}
+    - {fileID: 8300000, guid: e1330d67c17e51c498d61696cfacc121, type: 3}
+    - {fileID: 8300000, guid: da0cf9c04fe819e4c8652f64ac1126f4, type: 3}
+    - {fileID: 8300000, guid: 55be1b72760c2ce4487338f848222a3d, type: 3}
+    - {fileID: 8300000, guid: 901934dd19b1d2c4c92e266c3e3d3153, type: 3}
+    - {fileID: 8300000, guid: bcac9d198c982284ab59f15d813f56ee, type: 3}
+    - {fileID: 8300000, guid: 55c171bcde7a2cb49aaafcba043fb8bf, type: 3}
+    - {fileID: 8300000, guid: 36bddabcb9b6c2b4a9add3e4dd04f5fc, type: 3}

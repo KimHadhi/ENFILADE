@@ -1,0 +1,24 @@
+﻿id,parent,keywords,#note
+Concrete,,concrete;cement;asphalt;plaster;brick;sidewalk,기본 표면. 아무 키워드도 맞지 않으면 콘크리트
+ConcreteGrit,Concrete,grit;rubble;debris,부스러기 깔린 콘크리트
+ConcreteDirt,Concrete,dirtyconcrete;dustyconcrete,먼지 낀 콘크리트
+Stone,Concrete,stone;rock;cobble,돌 (착지는 FEAR 소리 / 나머지는 콘크리트)
+Marble,,marble;polished;granite,대리석·광택 바닥
+Tile,Marble,tile;ceramic,타일 (착지는 FEAR 소리 / 나머지는 대리석)
+Glass,,glass;window,유리
+Metal,,metal;steel;iron;aluminium;aluminum,금속
+MetalBox,Metal,container;metalbox,컨테이너·금속 상자
+Duct,Metal,duct;vent,환풍구·덕트
+Gantry,Metal,gantry;grate;grating;catwalk,철망 발판·통로
+MetalCrane,Metal,crane;girder,크레인·철골
+MetalPipe,Metal,pipe;pole;railing,파이프·봉·난간
+Wood,,wood;timber,나무
+WoodPanel,Wood,woodpanel;plywood,나무 판
+WoodPlank,Wood,plank;woodfloor;deck,나무 널빤지·마루
+Gravel,,gravel;pebble,자갈
+Dirt,Gravel,dirt;mud;soil,흙 (착지·슬라이드는 FEAR 소리 / 나머지는 자갈)
+Grass,Dirt,grass;lawn;moss,풀 (착지는 FEAR 소리 / 나머지는 흙→자갈)
+Sand,Gravel,sand,모래 (슬라이드는 FEAR 소리 / 나머지는 자갈)
+Water,,water;puddle,얕은 물
+Tarp,,tarp;canvas;tent,방수포·천막
+Carpet,Tarp,carpet;rug;fabric,카펫

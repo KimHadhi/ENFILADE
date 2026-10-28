@@ -1,0 +1,182 @@
+﻿id,volume,pitchMin,pitchMax,#note
+Movement/Bar/Grab,0.75,0.9,1.1,Beatrun Handsteps.MetalPipeGrab
+Movement/Bar/LetGo,0.5,0.9,1.1,Beatrun Handsteps.MetalPipeLetGo
+Movement/Bar/Release,1,0.8,1,Beatrun Handsteps.MetalPipeRelease
+Movement/Bar/Swing,0.75,0.9,1.1,Beatrun Handsteps.MetalPipeSwing
+Movement/Body/Bump,1,0.9,1.1,Beatrun Bump.Concrete
+Movement/Cloth/BodyRoll,1,0.9,1.1,Beatrun Cloth.BodyRoll
+Movement/Cloth/BodyRollSwish,1,0.9,1.1,Beatrun Cloth.BodyRollSwish
+Movement/Cloth/Fall,0.75,0.9,1.1,Beatrun Cloth.Fall
+Movement/Cloth/FallShortHard,1,0.9,1.1,Beatrun Cloth.FallShortHard
+Movement/Cloth/FallShortMedium,1,0.9,1.1,Beatrun Cloth.FallShortMedium
+Movement/Cloth/FallShortMediumLong,1,0.9,1.1,Beatrun Cloth.FallShortMediumLong
+Movement/Cloth/MovementRun,1,0.9,1.1,Beatrun Cloth.MovementRun
+Movement/Cloth/MovementSneak,1,0.9,1.1,Beatrun Cloth.MovementSneak
+Movement/Cloth/MovementWalk,1,0.9,1.1,Beatrun Cloth.MovementWalk
+Movement/Cloth/Roll,1,0.9,1.1,Beatrun Cloth.Roll
+Movement/Cloth/RollCloth,1,0.9,1.1,Beatrun Cloth.RollCloth
+Movement/Cloth/RollLand,1,0.9,1.1,Beatrun Cloth.RollLand
+Movement/Cloth/SideStep,1,0.9,1.1,Beatrun Cloth.SideStep
+Movement/Cloth/SprintRustle,1,0.95,1.05,FEAR 질주 옷 스침
+Movement/Cloth/Swing,0.75,0.9,1.1,Beatrun Cloth.Swing
+Movement/Cloth/VaultSwish,1,0.9,1.1,Beatrun Cloth.VaultSwish
+Movement/Door/Barge,1,0.9,1.1,Beatrun Door.Barge
+Movement/Fall/Death,1,0.95,1.05,Beatrun DeathFall
+Movement/Fall/Heartbeat,1,1,1,Beatrun 큰 낙하 심장 박동
+Movement/Fall/Static,1,1,1,Beatrun 큰 낙하 지지직
+Movement/Fence/Climb,1,0.95,1.05,Beatrun FenceClimb
+Movement/Fence/ClimbEnd,0.5,0.95,1.05,Beatrun FenceClimbEnd
+Movement/Fence/Vault,1,0.95,1.05,Beatrun Handsteps.FenceVault
+Movement/HandHard/Concrete,1,0.9,1.1,Beatrun Handsteps.ConcreteHard
+Movement/HandHard/Duct,1,0.9,1.1,Beatrun Handsteps.DuctHard
+Movement/HandHard/Glass,1,0.9,1.1,Beatrun Handsteps.GlassHard
+Movement/HandHard/MetalPipe,1,0.9,1.1,Beatrun Handsteps.MetalPipeHard
+Movement/HandRelease/Concrete,0.5,0.9,1.1,Beatrun Handsteps.ConcreteRelease
+Movement/HandSoft/Concrete,1,0.9,1.1,Beatrun Handsteps.ConcreteSoft
+Movement/HandSoft/Duct,1,0.9,1.1,Beatrun Handsteps.DuctSoft
+Movement/HandSoft/Glass,1,0.9,1.1,Beatrun Handsteps.GlassSoft
+Movement/HandSoft/Metal,0.45,0.9,1.05,Beatrun Handsteps.MetalSoft
+Movement/Ladder/Hand,1,0.9,1.1,Beatrun Handsteps.Ladder
+Movement/Ladder/Land,1,0.9,1.1,Beatrun Land.Ladder
+Movement/Ladder/Release,1,0.9,1.1,Beatrun Release.Ladder
+Movement/Ladder/Slide,1,0.9,1.1,Beatrun Slide.Ladder
+Movement/Ladder/SlideHands,1,0.9,1.1,Beatrun Slide.LadderHands
+Movement/Ladder/Step,1,0.9,1.1,Beatrun Footsteps.LadderMedium
+Movement/Ladder/StepHeavy,1,0.9,1.1,Beatrun Footsteps.LadderHeavy
+Movement/Land/Carpet,1,0.95,1.05,FEAR 카펫 착지
+Movement/Land/Concrete,1,0.9,1.1,Beatrun Land.Concrete
+Movement/Land/Dirt,1,0.95,1.05,FEAR 흙 착지
+Movement/Land/Duct,1,0.9,1.1,Beatrun Land.Duct
+Movement/Land/Glass,1,0.9,1.1,Beatrun Land.Glass
+Movement/Land/Grass,1,0.95,1.05,FEAR 풀 착지
+Movement/Land/Gravel,1,0.9,1.1,Beatrun Land.Gravel
+Movement/Land/Marble,1,0.9,1.1,Beatrun Land.Marble
+Movement/Land/Metal,1,0.9,1.1,Beatrun Land.Metal
+Movement/Land/MetalCrane,1,0.9,1.1,Beatrun Land.MetalCrane
+Movement/Land/Stone,1,0.95,1.05,FEAR 돌 착지
+Movement/Land/Tarp,1,0.9,1.1,Beatrun Land.Tarp
+Movement/Land/Tile,1,0.95,1.05,FEAR 타일 착지
+Movement/Land/Water,1,0.9,1.1,Beatrun Land.Water
+Movement/Land/Wood,1,0.9,1.1,Beatrun Land.Wood
+Movement/LandHard,1,0.95,1.05,Dynamic Landing 세게 착지
+Movement/LandHeavy,1,0.95,1.05,Dynamic Landing 크게 착지
+Movement/Lean,1,0.95,1.05,FEAR 기울이기 옷 소리
+Movement/Ledge/Reach,1,0.95,1.05,FEAR 렛지에 손 뻗기
+Movement/Prone/Down,1,0.95,1.05,FEAR 엎드리기
+Movement/Prone/Up,1,0.95,1.05,FEAR 일어나기
+Movement/Push,1,0.95,1.05,Dynamic Landing 밀치기 접촉
+Movement/Release/Carpet,0.25,0.9,1.1,Beatrun Release.Carpet
+Movement/Release/Concrete,1,0.9,1.1,Beatrun Release.Concrete
+Movement/Release/ConcreteGrit,1,0.9,1.1,Beatrun Release.ConcreteGrit
+Movement/Release/Duct,1,0.9,1.1,Beatrun Release.Duct
+Movement/Release/Gantry,1,1,1,Beatrun Release.Gantry
+Movement/Release/Glass,1,0.9,1.1,Beatrun Release.Glass
+Movement/Release/Gravel,1,0.9,1.1,Beatrun Release.Gravel
+Movement/Release/Marble,0.25,0.9,1.1,Beatrun Release.Marble
+Movement/Release/Metal,0.3,0.9,1.1,Beatrun Release.Metal
+Movement/Release/MetalBox,1,0.9,1.1,Beatrun Release.MetalBox
+Movement/Release/MetalCrane,1,0.9,1.1,Beatrun Release.MetalCrane
+Movement/Release/Tarp,1,0.9,1.1,Beatrun Release.Tarp
+Movement/Release/Water,1,0.9,1.1,Beatrun Release.Water
+Movement/Release/Wood,1,0.9,1.1,Beatrun Release.Wood
+Movement/Release/WoodPanel,1,0.9,1.1,Beatrun Release.WoodPanel
+Movement/Release/WoodPlank,1,0.9,1.1,Beatrun Release.WoodPlank
+Movement/Ringout/Duct,0.5,0.95,1.05,Beatrun Duct.Ringout
+Movement/Ringout/Metal,0.5,0.9,1.1,Beatrun Metal.Ringout
+Movement/Roll/In,1,0.95,1.05,Dynamic Landing 구르기 0.25초 뒤
+Movement/Roll/Start,1,0.95,1.05,Dynamic Landing 구르기 시작
+Movement/Run/Carpet,0.25,0.9,1.1,Beatrun Footsteps.Carpet
+Movement/Run/Concrete,1,0.9,1.1,Beatrun Footsteps.Concrete
+Movement/Run/ConcreteGrit,1,0.9,1.1,Beatrun Footsteps.ConcreteGrit
+Movement/Run/Duct,1,0.9,1.1,Beatrun Footsteps.Duct
+Movement/Run/Gantry,0.5,0.9,1.1,Beatrun Footsteps.Gantry
+Movement/Run/Glass,1,0.9,1.1,Beatrun Footsteps.Glass
+Movement/Run/Gravel,0.25,0.9,1.1,Beatrun Footsteps.Gravel
+Movement/Run/Marble,1,0.9,1.1,Beatrun Footsteps.Marble
+Movement/Run/Metal,1,0.9,1.1,Beatrun Footsteps.Metal
+Movement/Run/MetalBox,1,0.9,1.1,Beatrun Footsteps.MetalBox
+Movement/Run/MetalCrane,1,0.9,1.1,Beatrun Footsteps.MetalCrane
+Movement/Run/MetalPipe,1,0.9,1.1,Beatrun Footsteps.MetalPipe
+Movement/Run/Tarp,1,0.9,1.1,Beatrun Footsteps.Tarp
+Movement/Run/Water,0.25,0.9,1.1,Beatrun Footsteps.Water
+Movement/Run/Wood,1,0.9,1.1,Beatrun Footsteps.Wood
+Movement/Run/WoodPanel,1,0.9,1.1,Beatrun Footsteps.WoodPanel
+Movement/Run/WoodPlank,1,0.9,1.1,Beatrun Footsteps.WoodPlank
+Movement/Slide/Concrete,1,0.9,1.1,Beatrun Slide.Concrete
+Movement/Slide/Dirt,1,0.95,1.05,FEAR 흙 슬라이드
+Movement/Slide/Duct,1,0.9,1.1,Beatrun Slide.Duct
+Movement/Slide/Gantry,1,0.9,1.1,Beatrun Slide.Gantry
+Movement/Slide/Glass,1,1,1,Beatrun Slide.Glass
+Movement/Slide/Gravel,1,0.9,1.1,Beatrun Slide.Gravel
+Movement/Slide/Marble,1,0.9,1.1,Beatrun Slide.Marble
+Movement/Slide/Metal,1,0.9,1.1,Beatrun Slide.Metal
+Movement/Slide/Sand,1,0.95,1.05,FEAR 모래 슬라이드
+Movement/Slide/Tarp,1,1,1,Beatrun Slide.Tarp
+Movement/Slide/Wood,1,0.9,1.1,Beatrun Slide.Wood
+Movement/SlideLoop/Concrete,1,1,1,Beatrun Slide.ConcreteLoop
+Movement/SlideLoop/Duct,1,1,1,Beatrun Slide.DuctLoop
+Movement/SlideLoop/Gantry,1,1,1,Beatrun Slide.GantryLoop
+Movement/SlideLoop/Glass,1,1,1,Beatrun Slide.GlassLoop
+Movement/SlideLoop/Gravel,1,1,1,Beatrun Slide.GravelLoop
+Movement/SlideLoop/Marble,1,1,1,Beatrun Slide.MarbleLoop
+Movement/SlideLoop/Metal,1,1,1,Beatrun Slide.MetalLoop
+Movement/SlideLoop/Tarp,1,1,1,Beatrun Slide.TarpLoop
+Movement/SlideLoop/Water,1,1,1,Beatrun Slide.WaterLoop
+Movement/SlideLoop/Wood,1,1,1,Beatrun Slide.WoodLoop
+Movement/Sneak/Carpet,1,0.9,1.1,Beatrun Sneak.Carpet
+Movement/Sneak/Concrete,0.5,0.9,1.1,Beatrun Sneak.Concrete
+Movement/Sneak/ConcreteDirt,0.5,0.9,1.1,Beatrun Sneak.ConcreteDirt
+Movement/Sneak/Duct,1,0.9,1.1,Beatrun Sneak.Duct
+Movement/Sneak/Gantry,0.4,0.9,1.1,Beatrun Sneak.Gantry
+Movement/Sneak/Glass,1,0.9,1.1,Beatrun Sneak.Glass
+Movement/Sneak/Marble,0.75,0.9,1.1,Beatrun Sneak.Marble
+Movement/Sneak/Metal,1,0.9,1.1,Beatrun Sneak.Metal
+Movement/Sneak/MetalBox,1,0.9,1.1,Beatrun Sneak.MetalBox
+Movement/Sneak/MetalCrane,1,0.9,1.1,Beatrun Sneak.MetalCrane
+Movement/Sneak/Tarp,0.75,0.9,1.1,Beatrun Sneak.Tarp
+Movement/Sneak/Water,1,0.9,1.1,Beatrun Sneak.Water
+Movement/Sneak/Wood,0.5,0.9,1.1,Beatrun Sneak.Wood
+Movement/Sneak/WoodPlank,0.5,0.9,1.1,Beatrun Sneak.WoodPlank
+Movement/Vault,0.75,0.9,1.1,Beatrun Vault
+Movement/Walk/Carpet,1,0.9,1.1,Beatrun Walk.Carpet
+Movement/Walk/Concrete,0.75,0.9,1.1,Beatrun Walk.Concrete
+Movement/Walk/ConcreteDirt,0.5,0.9,1.1,Beatrun Walk.ConcreteDirt
+Movement/Walk/ConcreteGrit,0.5,0.9,1.1,Beatrun Walk.ConcreteGrit
+Movement/Walk/Duct,1,0.9,1.1,Beatrun Walk.Duct
+Movement/Walk/Gantry,0.4,0.9,1.1,Beatrun Walk.Gantry
+Movement/Walk/Glass,0.75,0.9,1.1,Beatrun Walk.Glass
+Movement/Walk/Gravel,0.5,0.9,1.1,Beatrun Walk.Gravel
+Movement/Walk/Marble,0.85,0.9,1.1,Beatrun Walk.Marble
+Movement/Walk/Metal,0.75,0.9,1.1,Beatrun Walk.Metal
+Movement/Walk/MetalBox,0.75,0.9,1.1,Beatrun Walk.MetalBox
+Movement/Walk/MetalCrane,1,0.9,1.1,Beatrun Walk.MetalCrane
+Movement/Walk/Tarp,1,0.9,1.1,Beatrun Walk.Tarp
+Movement/Walk/Wood,0.75,0.9,1.1,Beatrun Walk.Wood
+Movement/Walk/WoodPanel,0.75,0.9,1.1,Beatrun Walk.WoodPanel
+Movement/Walk/WoodPlank,0.75,0.9,1.1,Beatrun Walk.WoodPlank
+Movement/WallRelease/Concrete,1,0.9,1.1,Beatrun WallrunRelease.Concrete
+Movement/WallStep/Concrete,1,0.9,1.1,Beatrun Wallrun.Concrete
+Movement/WallStep/ConcreteGrit,1,0.9,1.1,Beatrun Wallrun.ConcreteGrit
+Movement/WallStep/Duct,1,0.9,1.1,Beatrun Wallrun.Duct
+Movement/WallStep/Glass,1,0.9,1.1,Beatrun WallRun.Glass
+Movement/WallStep/Metal,1,0.9,1.1,Beatrun WallRun.Metal
+Movement/WallStep/Wood,1,0.9,1.1,Beatrun WallRun.Wood
+Movement/Wind/Cloth,1,1,1,Beatrun 옷 바람
+Movement/Wind/Run,1,1,1,Beatrun 빠를 때 바람
+Movement/Zipline/End,1,1,1,Beatrun ZiplineEnd
+Movement/Zipline/Loop,1,1,1,Beatrun ZiplineLoop
+Movement/Zipline/Start,1,1,1,Beatrun ZiplineStart
+Voice/Breath/MediumLongIn,0.75,0.95,1.05,Beatrun Faith.Breath.MediumLongIn
+Voice/Breath/MediumLongOut,0.75,0.95,1.05,Beatrun Faith.Breath.MediumLongOut
+Voice/Breath/MediumShortIn,0.75,0.95,1.05,Beatrun Faith.Breath.MediumShortIn
+Voice/Breath/MediumShortOut,0.75,0.95,1.05,Beatrun Faith.Breath.MediumShortOut
+Voice/Breath/SoftLongIn,0.75,0.95,1.05,Beatrun Faith.Breath.SoftLongIn
+Voice/Breath/SoftLongOut,0.75,0.95,1.05,Beatrun Faith.Breath.SoftLongOut
+Voice/Breath/SoftShortIn,0.75,0.95,1.05,Beatrun Faith.Breath.SoftShortIn
+Voice/Breath/SoftShortOut,0.75,0.95,1.05,Beatrun Faith.Breath.SoftShortOut
+Voice/Impact,1,0.95,1.05,Beatrun Faith.Impact
+Voice/ImpactHard,1,0.95,1.05,Beatrun Faith.ImpactHard
+Voice/ImpactSoft,1,0.95,1.05,Beatrun Faith.ImpactSoft
+Voice/StrainHard,1,0.95,1,Beatrun Faith.StrainHard
+Voice/StrainMedium,1,0.9,1.05,Beatrun Faith.StrainMedium
+Voice/StrainSoft,1,0.9,1.05,Beatrun Faith.StrainSoft
