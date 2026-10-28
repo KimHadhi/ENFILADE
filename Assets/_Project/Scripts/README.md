@@ -20,6 +20,7 @@
 | 밀치기·태클 | [PlayerCombatActions](Player/Combat/PlayerCombatActions.cs) |
 | 주먹·가드·패링·가드 브레이크 | [PlayerMeleeCombat](Player/Combat/PlayerMeleeCombat.cs) |
 | 완벽 방어·반격 / 처형 | [PlayerPerfectDefense](Player/Combat/PlayerPerfectDefense.cs), [PlayerExecution](Player/Combat/PlayerExecution.cs) |
+| 보이는 몸(진짜 1인칭)·상태별 애니메이션·F5 뒤에서 보기 | [PlayerBody](Player/Body/PlayerBody.cs), [PlayerBodyProfile](Player/Body/PlayerBodyProfile.cs), [사용 안내](../Docs/MaintenanceGuide.md#플레이어-몸-진짜-1인칭) |
 | 플레이어 HP·실드·피격·사망 | [PlayerDamageReceiver](Player/Combat/PlayerDamageReceiver.cs) |
 | 플레이어 궁극기 최대 보유량·소비량 스탯 / 현재 충전량 | [PlayerStats](Player/PlayerStats.cs), [UltimateCharge](UI/HP/UltimateCharge.cs) (Play 시작 때 `PlayerMovement`가 붙임) |
 | 피격 방향 아크·혈흔·쉐이크·빈사 박동 | [PlayerDamageFeedback](Player/Combat/PlayerDamageFeedback.cs), [설정](../Resources/Combat/PlayerDamageFeedback.asset), [사용 안내](../Docs/PlayerDamageFeedbackGuide.md) |
@@ -51,7 +52,7 @@
 | `World` | 파괴 가능한 문, 스윙 바, 텔레포트, 물리 프랍([PhysicsProp](World/PhysicsProp.cs)) 등 월드 상호작용 |
 | `Data` | 밸런스 CSV 표를 읽어 컴포넌트·에셋 필드에 적용하고, 편집기에서 표 저장 시 다시 적용 |
 | `Debug` | 연습 표적·공격기·테스트 명령·디버그 HUD |
-| `../Editor` | 편집기에서만 실행할 생성·연결·검사 도구 |
+| `../Editor` | 편집기 전용 도구: 표 다시 읽기, 모델 임포트 규칙·물리 프랍, HUD 편집 미리보기, 폰트 저장 |
 
 이동의 진입점은 `PlayerMovement`다. 프레임마다 입력·상태·물리 서비스를 연결하고, 외부 기능에는 `CurrentState`, `Velocity`, `ResetVelocity()` 같은 API를 제공한다. 내부 상태 전환과 재컴파일 복구는 [이동 코드 구조](Player/Movement/README.md)를 참고한다.
 
@@ -69,7 +70,7 @@
 2. 실제 위치 변경은 이동 서비스에 연결하고, HUD·표시 코드에서 HP·탄약·플레이어 위치를 직접 바꾸지 않는다.
 3. 한 공격의 여러 콜라이더는 같은 `DamageHit.Id`를 사용한다. 새 공격에는 새 ID를 발급한다.
 4. 비활성화·사망·상태 취소·스크립트 재로드에서 입력, 충돌 무시, 시간 효과, 임시 표시가 정리되는지 확인한다.
-5. 변경한 기능에 맞는 기존 검사를 [검증 안내](../Docs/ValidationGuide.md)에서 선택한다. 새 규칙은 실제 실패 조건을 검증하는 사례로 추가한다.
+5. 변경한 기능을 [검증 안내](../Docs/ValidationGuide.md)의 항목대로 실제 플레이로 확인한다.
 
 ## 성능을 살필 때
 

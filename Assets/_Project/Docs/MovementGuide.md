@@ -135,4 +135,4 @@ Ctrl을 유지한 공중 이동은 자동 파쿠르 진입을 막습니다. 벽 
 | 키 배치 | [Player.inputactions](../Input/Player.inputactions)의 Player 맵 |
 | 카메라의 추가 흔들림·FOV·피치·롤 | [PlayerCameraEffects](../Scripts/Player/Camera/PlayerCameraEffects.cs) |
 
-설정 변경 뒤에는 평지·경사·낮은 천장·벽 접촉을 함께 확인합니다. 저스트 슬라이드는 소형/중형/대형 각각에서 일반 접촉과 0.18초 안의 접촉을 비교하고, 벽 반응과 레그돌 기립도 확인합니다. 자동 검사 종류와 실행 조건은 [검증 안내](ValidationGuide.md)에 모았습니다.
+설정 변경 뒤에는 평지·경사·낮은 천장·벽 접촉을 함께 확인합니다. 저스트 슬라이드는 소형/중형/대형 각각에서 일반 접촉과 0.18초 안의 접촉을 비교하고, 벽 반응과 레그돌 기립도 확인합니다. 그 밖의 확인 항목은 [검증 안내](ValidationGuide.md)에 모았습니다.

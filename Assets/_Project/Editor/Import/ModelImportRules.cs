@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using UnityEditor;
@@ -11,10 +12,15 @@ using UnityEngine;
 /// no rig or animation for Props/Environment. Materials stay embedded as URP Lit; a texture next to the model (or in
 /// its Textures folder) named after the material or the model is assigned automatically — "tetopear.png",
 /// "TetoPear_BaseColor.png", "TetoPear_Normal.png". Adding such a texture later reimports the model.
+/// Characters get a humanoid avatar. Files under Art/Animations are humanoid clips; a "&lt;file&gt;.clips.csv" beside one
+/// (columns clip, loop, inPlace, yawOffset) names its clips, marks loops and keeps the authored root unless inPlace is 1.
+/// yawOffset corrects the source clip's forward axis in degrees without discarding its authored turns.
 /// </summary>
 internal sealed class ModelImportRules : AssetPostprocessor
 {
     public const string ModelsFolder = "Assets/_Project/Art/Models/";
+    public const string AnimationsFolder = "Assets/_Project/Art/Animations/";
+    private const string CharactersCategory = "Characters/";
     private static readonly string[] StaticCategories = { "Props/", "Environment/" };
     private static readonly string[] ImageExtensions = { ".png", ".tga", ".jpg", ".jpeg", ".psd", ".tif", ".tiff", ".exr" };
     private static readonly string[] BaseSuffixes = { "", "_basecolor", "_albedo", "_diffuse", "_color", "_basemap", "_d" };
@@ -25,21 +31,31 @@ internal sealed class ModelImportRules : AssetPostprocessor
     public override int GetPostprocessOrder() => 10;
 
     private static bool IsProjectModel(string path) => path.StartsWith(ModelsFolder, StringComparison.OrdinalIgnoreCase);
+    private static bool IsAnimationFile(string path) => path.StartsWith(AnimationsFolder, StringComparison.OrdinalIgnoreCase);
     private static bool IsImage(string path) => ImageExtensions.Contains(Path.GetExtension(path).ToLowerInvariant());
 
     private void OnPreprocessModel()
     {
-        if (IsProjectModel(assetPath) && assetImporter.importSettingsMissing) Apply((ModelImporter)assetImporter);
+        if ((IsProjectModel(assetPath) || IsAnimationFile(assetPath)) && assetImporter.importSettingsMissing)
+            Apply((ModelImporter)assetImporter);
     }
 
     private static void Apply(ModelImporter model)
     {
-        model.preserveHierarchy = true;
         model.bakeAxisConversion = true;
         model.importCameras = false;
         model.importLights = false;
         model.isReadable = false;
         model.meshCompression = ModelImporterMeshCompression.Off;
+        if (IsAnimationFile(model.assetPath))
+        {
+            model.materialImportMode = ModelImporterMaterialImportMode.None;
+            model.animationType = ModelImporterAnimationType.Human;
+            model.avatarSetup = ModelImporterAvatarSetup.CreateFromThisModel;
+            model.importAnimation = true;
+            return;
+        }
+        model.preserveHierarchy = true;
         model.materialImportMode = ModelImporterMaterialImportMode.ImportViaMaterialDescription;
         model.materialLocation = ModelImporterMaterialLocation.InPrefab;
         string category = model.assetPath.Substring(ModelsFolder.Length);
@@ -48,7 +64,47 @@ internal sealed class ModelImportRules : AssetPostprocessor
             model.animationType = ModelImporterAnimationType.None;
             model.importAnimation = false;
         }
+        else if (category.StartsWith(CharactersCategory, StringComparison.OrdinalIgnoreCase))
+        {
+            // Humanoid, so clips from Art/Animations retarget onto any character.
+            model.animationType = ModelImporterAnimationType.Human;
+            model.avatarSetup = ModelImporterAvatarSetup.CreateFromThisModel;
+            model.importAnimation = false;
+        }
     }
+
+    // Clip names, loops and root handling come from the "<file>.clips.csv" beside an animation file, on every import.
+    private void OnPreprocessAnimation()
+    {
+        if (!IsAnimationFile(assetPath)) return;
+        string listPath = Path.ChangeExtension(assetPath, null) + ".clips.csv";
+        if (!File.Exists(listPath)) return;
+        context.DependsOnSourceAsset(listPath);
+        var list = CsvTable.Parse(File.ReadAllText(listPath), Path.GetFileName(listPath));
+        var importer = (ModelImporter)assetImporter;
+        var clips = importer.defaultClipAnimations;
+        foreach (var clip in clips)
+        {
+            int bar = clip.takeName.LastIndexOf('|');
+            clip.name = bar >= 0 ? clip.takeName.Substring(bar + 1) : clip.takeName;
+            list.TryGetRow(clip.name, out var row);
+            clip.loopTime = Flag(row, "loop");
+            // Height and facing stay as authored. Travel stays too, so feet keep their place, unless inPlace = 1.
+            clip.lockRootRotation = clip.keepOriginalOrientation = true;
+            // Source clips can use a different forward axis from their humanoid rest pose.
+            // Correct the clip basis while keeping its authored turns and body motion.
+            clip.rotationOffset = row != null && row.TryGetValue("yawOffset", out string yaw)
+                && float.TryParse(yaw, NumberStyles.Float, CultureInfo.InvariantCulture, out float degrees)
+                && !float.IsNaN(degrees) && !float.IsInfinity(degrees) ? degrees : 0f;
+            clip.lockRootHeightY = clip.keepOriginalPositionY = true;
+            clip.lockRootPositionXZ = !Flag(row, "inPlace");
+            clip.keepOriginalPositionXZ = true;
+        }
+        importer.clipAnimations = clips;
+    }
+
+    private static bool Flag(System.Collections.Generic.IReadOnlyDictionary<string, string> row, string column)
+        => row != null && row.TryGetValue(column, out string value) && value.Trim() == "1";
 
     private void OnPreprocessTexture()
     {
@@ -112,10 +168,10 @@ internal sealed class ModelImportRules : AssetPostprocessor
     {
         var paths = Selection.assetGUIDs.Select(AssetDatabase.GUIDToAssetPath)
             .SelectMany(p => AssetDatabase.IsValidFolder(p) ? AssetDatabase.FindAssets("t:Model", new[] { p }).Select(AssetDatabase.GUIDToAssetPath) : new[] { p })
-            .Where(IsProjectModel).Distinct().ToArray();
+            .Where(p => IsProjectModel(p) || IsAnimationFile(p)).Distinct().ToArray();
         if (paths.Length == 0)
         {
-            EditorUtility.DisplayDialog("Reapply Import Rules", "Art/Models 아래의 모델이나 폴더를 선택하세요.", "OK");
+            EditorUtility.DisplayDialog("Reapply Import Rules", "Art/Models 또는 Art/Animations 아래의 모델이나 폴더를 선택하세요.", "OK");
             return;
         }
         foreach (string path in paths)

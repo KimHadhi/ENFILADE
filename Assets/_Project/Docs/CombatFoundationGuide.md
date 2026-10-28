@@ -96,11 +96,9 @@
 
 ## 다른 씬에 연결하기
 
-- **기본 총기만 설치**: Play를 종료하고 `PlayerMovement` 오브젝트를 선택한 뒤 **Tools → Combat → Add Foundation Weapon To Selected Player**를 실행한다. 입력·총기 컴포넌트와 기본 데이터 연결을 추가하고 씬을 저장한다.
-- **4슬롯과 HUD 설치**: 플레이어와 기존 채팅 Canvas가 있는 씬에서 **Tools → HUD → Install Weapon Slots**를 실행한다. 이 도구는 씬과 재사용 HUD 프리팹을 저장하므로 설정 변경으로 취급한다.
-- **별도 기본 시험장 생성**: **Tools → Combat → Create Foundation Test Scene**은 Development 폴더에 새 이름의 간단한 테스트 씬을 만든다. 현재 CombatFoundation의 전체 UI·적·모델 구성을 복제하는 도구는 아니다.
+CombatFoundation의 `★Player` 오브젝트와 HUD Canvas를 복사해 붙여 넣거나 프리팹으로 만들어 쓴다. 전투·체력·궁극기 컴포넌트는 Play 시작 때 `PlayerMovement`가 붙이고 수치는 [밸런스 표](MaintenanceGuide.md#밸런스-표-data-tables)에서 가져오므로, 플레이어에 직접 둘 컴포넌트는 이동·시점·입력·무기·슬롯뿐이다.
 
-`WeaponController`의 선택 참조는 비워두면 기존 계층에서 찾는다. Input Source는 같은 오브젝트의 `IWeaponInput`, Aim Origin은 플레이어 카메라, Weapon Root와 Muzzle Point는 기존 모델·트레이서 연결을 사용한다. 다른 계층의 모델이나 카메라를 쓰면 직접 할당한다. Hit Layers에는 적과 벽을 모두 포함해야 한다.
+`WeaponController`의 선택 참조는 비워두면 기존 계층에서 찾는다. Input Source는 같은 오브젝트의 `IWeaponInput`, Aim Origin은 플레이어 카메라, Muzzle Point는 하위의 `MuzzleEffects` 위치를 쓴다. Weapon Root(총 모델)는 직접 할당하며, 장비가 없거나 근접일 때 이 오브젝트를 숨긴다. Hit Layers에는 적과 벽을 모두 포함해야 한다.
 
 ## 문제를 찾는 순서
 
@@ -116,4 +114,4 @@
 
 `Log Shots`와 `Draw Rays`는 `WeaponController`의 진단 옵션이다. 빨간 레이는 고체에 명중했다는 뜻이며 피해 성공을 보장하지 않는다. 피해 결과의 `Evaded`는 회피, `Duplicate`는 같은 공격 ID의 중복 수신이다.
 
-변경 후 실행할 검사와 실제 플레이 확인 항목은 [검증 안내](ValidationGuide.md)를 따른다. 자동 검사가 통과해도 조작감·모델 자세·화면 가독성은 실제 씬에서 확인한다.
+변경 후 확인할 항목은 [검증 안내](ValidationGuide.md)를 따른다. 조작감·모델 자세·화면 가독성은 실제 씬에서 확인한다.

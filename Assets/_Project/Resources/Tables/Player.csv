@@ -32,3 +32,60 @@ Execution.clearance,2.6,처형 중 주변 적을 이 거리 밖으로 물린다(
 Execution.retreatSpeed,2.8,주변 적이 물러나는 속도(m/s)
 Execution.healthRestored,10,처형 성공 시 회복하는 체력
 Execution.ammoRestoredFraction,0.2,처형 성공 시 총기별 예비 탄약 회복(탄창 크기 대비 비율)
+Posture.crouchColliderHeight,0.9,웅크린 캡슐 높이(m). 이보다 낮은 틈은 웅크려도 못 지나간다
+Posture.crouchOffset,-0.8,웅크린 눈높이 = 서 있는 눈높이(1.6) + 이 값. 0.8m로 캡슐 꼭대기보다 낮게 둔다
+Posture.slideColliderHeight,0.6,슬라이딩 캡슐 높이(m)
+Posture.slideOffset,-0.98,슬라이딩 눈높이 = 1.6 + 이 값(0.62m)
+Posture.proneColliderHeight,0.4,엎드린·누운 캡슐 높이(m)
+Posture.proneOffset,-1.23,엎드린 눈높이 = 1.6 + 이 값(0.37m)
+Posture.supineOffset,-1.25,누운 눈높이 = 1.6 + 이 값(0.35m)
+Body.idle,stand,몸 애니메이션 이름 (Art/Animations의 클립). 서 있기
+Body.walk,walkfwd,걷기
+Body.walkBack,walkback,뒤로 걷기
+Body.run,runfwd,달리기
+Body.runBack,runbwd,뒤로 달리기
+Body.sprint,sprintfwd,전력질주
+Body.crouchIdle,crouchstill,웅크려 서 있기
+Body.crouchWalk,crouchfwd,웅크려 걷기
+Body.crouchBack,crouchbwd,웅크려 뒤로 걷기
+Body.jump,jumpfast,점프 도약
+Body.air,jumpidle,공중
+Body.fall,fallinguncontrolled,빠른 낙하
+Body.land,land,세게 착지(제자리)
+Body.landMoving,runland,세게 착지(이동 중)
+Body.slideStart,slidestart,슬라이딩 시작
+Body.slide,slideloop,슬라이딩
+Body.slideEnd,slideend,슬라이딩 끝
+Body.diveStart,divestart,다이브 시작
+Body.dive,diveidle,다이브 공중
+Body.bellySlideStart,diveslidestart,머리부터 슬라이딩 시작
+Body.bellySlide,diveslideidle,머리부터 슬라이딩
+Body.bellySlideEnd,diveslideend,머리부터 슬라이딩 끝
+Body.prone,diveslideidle,엎드림(전용 애니메이션이 생길 때까지 머리부터 슬라이딩 자세)
+Body.supine,meslideloop,누운 자세(등을 대고 미끄러지는 자세)
+Body.supineSlideStart,meslidestart,누워서 미끄러지기 시작
+Body.supineSlide,meslideloop,누워서 미끄러지기
+Body.supineSlideEnd,meslideend,누워서 미끄러지기 끝
+Body.roll,meroll,착지 구르기
+Body.dodgeLeft,dodgejumpleft,왼쪽 회피
+Body.dodgeRight,dodgejumpright,오른쪽 회피
+Body.tackle,bargein,태클
+Body.vault,vaultover,넘기
+Body.mantle,climb1,올라서기
+Body.wallClimb,wallrunvertical,벽 오르기
+Body.wallKick,jumpwrleft,벽 차고 뛰기
+Body.barSwing,swing,봉 매달려 흔들기
+Body.barRelease,swingjumpoff,봉에서 뛰어내리기
+Body.ledgeHang,hang,난간 매달리기
+Body.ledgeJump,hangheaveup,난간에서 올라가기
+Body.death,diestand,사망
+Body.blendTime,0.15,애니메이션 사이 전환 시간(초)
+Body.walkClipSpeed,1.5,걷기 애니메이션 기준 속도(m/s). 실제 속도에 맞춰 재생 속도를 조절
+Body.runClipSpeed,4,달리기 애니메이션 기준 속도(m/s)
+Body.sprintClipSpeed,8,전력질주 애니메이션 기준 속도(m/s)
+Body.crouchClipSpeed,2,웅크려 걷기 애니메이션 기준 속도(m/s)
+Body.maxStrafeYaw,60,옆·뒤로 움직일 때 몸(다리)이 이동 방향으로 도는 최대 각도
+Body.backOffset,0.12,머리를 카메라 뒤에 두는 거리(m). 내려다볼 때 목 안쪽이 보이지 않게
+Body.headFollowTime,0.25,자세가 바뀔 때 머리를 카메라 밑으로 맞추는 속도(초). 달리기 흔들림보다 느리게
+Body.hardLandingSpeed,9,이보다 빠르게 떨어지면 착지 애니메이션(m/s)
+Body.thirdPersonOffset,0.35;0.2;-2.4,F5 뒤에서 보기 카메라 위치(오른쪽;위;앞)

@@ -39,7 +39,7 @@ public sealed partial class PlayerMovement : MonoBehaviour
     internal MovementInput Input { get; private set; }
     internal MovementStateMachine StateMachine { get; private set; }
     internal MovementAbilities Abilities { get; private set; }
-    /// <summary>Resources/Tables/Player.csv: rows Vitals, Stats, Ultimate, Fists and Execution.</summary>
+    /// <summary>Resources/Tables/Player.csv: rows Posture, Vitals, Stats, Ultimate, Fists, Execution and Body.</summary>
     public const string TableName = "Player";
     public PlayerDamageReceiver DamageReceiver { get; private set; }
     public PlayerStats Stats { get; private set; }
@@ -156,6 +156,8 @@ public sealed partial class PlayerMovement : MonoBehaviour
         }
         Abilities?.Reset();
         groundLayers &= ~(1 << gameObject.layer);
+        // Posture capsule heights and eye offsets (crouch, slide, prone, supine) come from Player.csv, row Posture.
+        GameTables.Bind(TableName, "Posture", this);
         Input = new MovementInput();
         Motor = new MovementMotor(this, controller);
         Posture = new MovementPostureController(this);
@@ -180,6 +182,9 @@ public sealed partial class PlayerMovement : MonoBehaviour
         PerfectDefense.Initialize(this);
         DodgePassThrough = GetComponent<DodgeEnemyPassThrough>() ?? gameObject.AddComponent<DodgeEnemyPassThrough>();
         if (GetComponent<PlayerLeanHitboxes>() == null) gameObject.AddComponent<PlayerLeanHitboxes>();
+        // The visible body (true first person) appears once Resources/Characters/PlayerBody names a character.
+        if (Application.isPlaying && GetComponent<PlayerBody>() == null && PlayerBodyProfile.Load() != null)
+            GameTables.Bind(TableName, "Body", gameObject.AddComponent<PlayerBody>());
         if (controller.height < Posture.standingColliderHeight - 0.02f)
             ChangeState(controller.height <= proneColliderHeight + 0.02f ? MovementState.Proning : MovementState.Crouching);
         return true;

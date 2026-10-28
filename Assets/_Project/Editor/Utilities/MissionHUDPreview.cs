@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.IO;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -28,30 +27,6 @@ public static class MissionHUDPreview
         EditorSceneManager.sceneSaving += BeforeSave;
         EditorSceneManager.sceneClosing += (scene, removing) => Stop();
         Undo.undoRedoPerformed += Stop;
-        EditorApplication.update += ProcessRequest;
-    }
-
-    private static void ProcessRequest()
-    {
-        const string request = "Library/MissionHudPreview.request";
-        if (!File.Exists(request) || EditorApplication.isCompiling || EditorApplication.isUpdating || EditorApplication.isPlayingOrWillChangePlaymode) return;
-        File.Delete(request);
-        MissionHUDPreviewWindow.Open();
-        var hud = FindHUD();
-        if (hud != null) { Show(hud, true, true); Selection.activeGameObject = hud.gameObject; }
-        File.WriteAllText("Library/MissionHudPreview.result.txt", hud != null ? "PASS: board and alert revealed for editing. Scene not saved." : "FAILED: no MissionHUD in loaded scenes.");
-    }
-
-    public static MissionHUD FindHUD()
-    {
-        if (Selection.activeGameObject != null)
-        {
-            var selected = Selection.activeGameObject.GetComponentInParent<MissionHUD>(true);
-            if (selected != null) return selected;
-        }
-        foreach (var hud in Object.FindObjectsByType<MissionHUD>(FindObjectsInactive.Include, FindObjectsSortMode.None))
-            if (hud.gameObject.scene.IsValid() && hud.gameObject.scene.isLoaded && !EditorSceneManager.IsPreviewScene(hud.gameObject.scene)) return hud;
-        return null;
     }
 
     public static void Show(MissionHUD hud, bool board, bool alert)
@@ -105,27 +80,22 @@ public static class MissionHUDPreview
     }
 }
 
-public sealed class MissionHUDPreviewWindow : EditorWindow
+/// <summary>
+/// MissionHUD Inspector: reveals the hidden board and alert without Play so their Image, TextMeshPro and RectTransform
+/// children can be edited. Saving, Play or a script reload only undo the temporary reveal; design edits stay.
+/// </summary>
+[CustomEditor(typeof(MissionHUD))]
+public sealed class MissionHUDInspector : Editor
 {
-    [SerializeField] private MissionHUD hud;
-
-    [MenuItem("Tools/HUD/Mission HUD Preview")]
-    public static void Open()
+    public override void OnInspectorGUI()
     {
-        var window = GetWindow<MissionHUDPreviewWindow>("Mission HUD Preview");
-        window.minSize = new Vector2(360, 255);
-        window.hud = MissionHUDPreview.FindHUD();
-        window.Show();
-    }
-    private void OnGUI()
-    {
-        EditorGUILayout.LabelField("미션 HUD 편집 미리보기", EditorStyles.boldLabel);
-        hud = (MissionHUD)EditorGUILayout.ObjectField("대상 HUD", hud, typeof(MissionHUD), true);
-        EditorGUILayout.HelpBox("숨겨진 보드와 알림을 실행 없이 펼쳐서 편집합니다. 하위 오브젝트의 Image·TextMeshPro·RectTransform을 수정하세요. 저장·실행·스크립트 재컴파일 시 임시 표시만 해제되며, 디자인 수정은 유지됩니다.", MessageType.Info);
-        DrawControls(hud);
+        EditorGUILayout.LabelField("편집 미리보기", EditorStyles.boldLabel);
+        DrawControls((MissionHUD)target);
+        EditorGUILayout.Space();
+        DrawDefaultInspector();
     }
 
-    public static void DrawControls(MissionHUD target)
+    private static void DrawControls(MissionHUD target)
     {
         using (new EditorGUI.DisabledScope(target == null || EditorApplication.isPlayingOrWillChangePlaymode))
         {
@@ -144,17 +114,5 @@ public sealed class MissionHUDPreviewWindow : EditorWindow
         }
         using (new EditorGUI.DisabledScope(!MissionHUDPreview.IsPreviewing))
             if (GUILayout.Button("미리보기 종료")) MissionHUDPreview.Stop();
-    }
-}
-
-[CustomEditor(typeof(MissionHUD))]
-public sealed class MissionHUDInspector : Editor
-{
-    public override void OnInspectorGUI()
-    {
-        EditorGUILayout.LabelField("편집 미리보기", EditorStyles.boldLabel);
-        MissionHUDPreviewWindow.DrawControls((MissionHUD)target);
-        EditorGUILayout.Space();
-        DrawDefaultInspector();
     }
 }

@@ -8,7 +8,7 @@
 
 | 표 | 내용 | 행(row) |
 | --- | --- | --- |
-| [Player.csv](../Resources/Tables/Player.csv) | 최대 체력, 궁극기 보유량·소비량·충전량, 주먹·패링·가드 브레이크, 처형 | `Vitals` `Stats` `Ultimate` `Fists` `Execution` |
+| [Player.csv](../Resources/Tables/Player.csv) | 자세별 캡슐·눈높이, 최대 체력, 궁극기 보유량·소비량·충전량, 주먹·패링·가드 브레이크, 처형, 몸 애니메이션 | `Posture` `Vitals` `Stats` `Ultimate` `Fists` `Execution` `Body` |
 | [Weapons.csv](../Resources/Tables/Weapons.csv) | 총 피해·RPM·장탄·예비탄·장전·탄퍼짐·헤드샷·ADS | `WeaponData` 에셋 이름 (`FoundationRifle` …) |
 | [Enemies.csv](../Resources/Tables/Enemies.csv) | 적 체력·공격·자세(체간)·이동 속도 | 적 프리팹 이름 (`Enemy_Test`) |
 | [Waves.csv](../Resources/Tables/Waves.csv) | 웨이브 적 수·증가량·대기·등장 간격 | `WaveManager`의 `Table Id` (기본 `Default`) |
@@ -67,8 +67,8 @@
 
 - 에셋 이동은 Unity Project 창에서 한다. 파일 도구로 옮긴다면 원래 `.meta`를 함께 옮겨 GUID를 보존한다. 씬·프리팹 연결은 GUID에 의존한다.
 - `Resources/Combat/Feedback.asset`과 `GunFeel.asset`의 로드 키는 각각 `Combat/Feedback`, `Combat/GunFeel`이다. 경로를 바꿀 때는 코드의 키도 함께 바꾼다.
-- 외부 폰트·모델은 씬·재질·프리팹뿐 아니라 생성 도구와 문자열 로드에서도 사용한다. 참조와 라이선스를 확인한 뒤 정리한다.
-- 설치·생성 메뉴는 씬이나 프리팹을 저장할 수 있다. 변경을 저장하고 대상 씬을 확인한 뒤 실행한다. 단순 실행에는 설치 메뉴를 다시 누를 필요가 없다.
+- 외부 폰트·모델은 씬·재질·프리팹뿐 아니라 문자열 로드에서도 사용한다. 참조와 라이선스를 확인한 뒤 정리한다.
+- `Tools` 메뉴에는 `Data Tables`(표 폴더 열기·다시 읽기), `Models`(임포트 규칙 재적용·물리 프랍 만들기), `TextMeshPro`(Dynamic 폰트 정리·저장)만 둔다. HUD는 씬과 프리팹에서 직접 편집하며, 숨겨진 목표판은 `MissionHUD` Inspector의 편집 미리보기 버튼으로 펼친다.
 - 공유할 소스는 `Assets`와 `.meta`, `Packages`, `ProjectSettings`, `Tools`, 문서다. `Library`, `Temp`, `.vs`, 생성 솔루션·업그레이드 로그는 재생성 가능한 로컬 파일이다.
 
 문서 링크·메타데이터를 확인하려면 프로젝트 루트에서 `& ./Tools/Test-ProjectStructure.ps1`을 실행한다. 게임 기능 변경은 실제 씬 조작으로 확인한다.
@@ -145,6 +145,26 @@ Art/Models/
 움직이는 물체에는 오목한 메시 충돌체를 쓸 수 없어서 볼록 껍질(convex, 최대 255면)로 감싼다. 배·공·상자처럼 거의 볼록한 모양은 이것으로 충분하다. 도넛·의자처럼 크게 오목한 모양은 자식 오브젝트에 Box·Sphere·Capsule 충돌체를 여러 개 나눠 붙이고 `MeshCollider`를 지운다. 움직이지 않는 벽·지형은 `Rigidbody` 없이 convex를 끈 `MeshCollider`를 쓰면 모양 그대로 충돌한다.
 
 물체마다 바꿀 값은 루트 `Rigidbody → Mass` 하나다. 밀기 세기는 모든 물체에 공통이며 위 표의 위치에서 바꾼다. 프리팹이 이미 있으면 도구는 덮어쓰지 않는다.
+
+## 플레이어 몸 (진짜 1인칭)
+
+플레이어는 보이는 몸을 가진다. 카메라는 지금처럼 코드가 움직이고(머리 흔들림·기울기 포함), 몸은 그 아래에서 이동 상태에 맞는 애니메이션을 재생한다. 1인칭에서는 머리·머리카락이 그림자만 남고, 내려다보면 몸통·다리가 보인다. **F5**는 뒤에서 몸을 보는 확인용 시점이다.
+
+| 구성 | 위치 |
+| --- | --- |
+| 캐릭터 | [Art/Models/Characters/Hiro](../Art/Models/Characters/Hiro) (휴머노이드). 서 있는 눈높이가 카메라(1.6m)에 맞게 자동으로 크기가 정해진다 |
+| 애니메이션 | [Art/Animations/Beatrun](../Art/Animations/Beatrun)의 78개 클립. 휴머노이드라 어떤 캐릭터에도 옮겨 붙는다 |
+| 연결 | `Resources/Characters/PlayerBody` 프로필(모델 + 클립 목록). 임포트할 때 자동으로 만들어지고 클립 목록도 자동 갱신된다 |
+| 상태별 클립·연출 수치 | [Player.csv](../Resources/Tables/Player.csv)의 `Body` 행 (예: `Body.slide,slideloop`) |
+| 자세별 캡슐·눈높이 | `Player.csv`의 `Posture` 행. 웅크림 0.8m, 슬라이딩 0.62m, 엎드림 0.37m, 누움 0.35m. 눈이 캡슐 꼭대기를 넘지 않게 맞췄다 |
+| 동작 코드 | [PlayerBody](../Scripts/Player/Body/PlayerBody.cs). Play 시작 때 `PlayerMovement`가 붙인다 |
+
+- **캐릭터 바꾸기**: 새 모델을 `Art/Models/Characters/<이름>/`에 넣고, `PlayerBody` 프로필의 `Model`을 바꾼다. 1인칭에서 숨길 부분은 프로필의 `First Person Shadow Only`에 렌더러 이름으로 적는다(기본 `Head`, `Hair`).
+- **애니메이션 추가**: 휴머노이드 FBX를 `Art/Animations/<묶음>/`에 넣고 옆에 `<파일이름>.clips.csv`(열 `clip`, `loop`, `inPlace`, `yawOffset`)를 둔다. `loop`가 1이면 반복, `inPlace`가 1이면 클립 안의 이동을 버리고 제자리에서 재생한다. 기본은 원래 위치 그대로다. `yawOffset`은 클립의 앞 방향 보정 각도(도, 기본 0)다. Source 클립을 그대로 변환하면 옆을 향하므로 **90**, 아래처럼 캐릭터 뼈대에 구워 넣은 클립(지금의 Beatrun)은 모델과 같이 Unity -Z를 향하므로 **180**이다(변환 스크립트가 알맞은 값을 써 준다). 구르기·좌우 회피처럼 애니메이션에 들어 있는 회전은 유지한다. 수정 후 반영되지 않으면 해당 FBX를 우클릭해 **Reimport**한다.
+- **Source(GMod·L4D2) 모델 변환**: [Tools/Blender](../../../Tools/Blender)의 스크립트를 SourceIO 애드온이 있는 Blender로 실행한다. 모델은 `source_model_to_fbx.py`, 애니메이션은 `source_anims_to_fbx.py`. 애니메이션은 마지막 인자로 플레이어 모델의 MDL을 주면 그 모델의 뼈대(뼈 길이·기본자세)에 직접 구워 낸다. 서로 다른 뼈대 사이의 휴머노이드 리타깃이 없어져 발이 꺾이거나 몸이 뒤로 빠지지 않는다. 예: `blender -b --factory-startup --python source_anims_to_fbx.py -- new_climbanim.mdl BeatrunBody.fbx BeatrunBody * - 180 survivor_gambler.mdl`
+- **재질(lilToon)**: Hiro는 [lilToon](https://github.com/lilxyzw/lilToon) 2.4.1(`Packages/jp.lilxyzw.liltoon`, MIT) 셰이더를 쓴다. 재질은 [Hiro/Materials](../Art/Models/Characters/Hiro/Materials)에 따로 있어 Inspector의 lilToon 화면에서 그림자 색·림라이트·광택을 바로 조정한다. 새 캐릭터는 모델 Inspector → Materials → **Extract Materials** 후 셰이더를 `lilToon`으로 바꾼다.
+- **머리 맞추기**: 자세마다 클립 속 머리 위치가 다르므로(누워 미끄러지면 머리가 발 뒤쪽에 있다) 몸은 머리가 카메라 바로 뒤에 오도록 천천히 따라 움직인다(`Body.headFollowTime`).
+- 누운 자세·누워 미끄러지기는 Beatrun의 `meslide` 계열을 쓴다. 엎드림은 전용 애니메이션이 없어 머리부터 슬라이딩 자세를 임시로 쓰고, 총·주먹은 기존 1인칭 모델이 따로 그린다.
 
 ## 실행 중 생성되는 분류와 혈흔 풀
 
