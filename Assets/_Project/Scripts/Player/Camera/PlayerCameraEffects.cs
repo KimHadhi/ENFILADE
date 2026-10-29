@@ -55,6 +55,10 @@ public sealed class PlayerCameraEffects : MonoBehaviour
     private float currentTiltRoll;
     private Vector3 baseCameraPosition;
     private Transform effectsPivot;
+    private PlayerBody body;
+    internal Vector3 CameraLocalHome => baseCameraPosition;
+    internal Vector3 CameraAnchorPosition => targetCamera.parent.TransformPoint(baseCameraPosition);
+    internal Vector3 LeanDisplacement { get; private set; }
     private ObstacleTraversalState punchSource;
     private int punchSerial;
     private Vector2 traversalPunch, punchVelocity;
@@ -125,6 +129,7 @@ public sealed class PlayerCameraEffects : MonoBehaviour
             return;
 
         float dt = Time.deltaTime;
+        if (GamePause.IsPaused || dt <= 0f) return;
 
         UpdateCollisionImpacts();
         UpdateDynamicFov(dt);
@@ -198,7 +203,11 @@ public sealed class PlayerCameraEffects : MonoBehaviour
         if (distance > 0.001f && Physics.SphereCast(origin, 0.1f, offset / distance, out RaycastHit hit,
             distance + 0.02f, movement.groundLayers, QueryTriggerInteraction.Ignore))
             offset *= Mathf.Clamp01((hit.distance - 0.02f) / distance);
-        targetCamera.position = origin + offset;
+        LeanDisplacement = offset;
+        if (body == null) body = movement.GetComponent<PlayerBody>();
+        // The visible body composes the final eye view after these effects. Without a body, keep the pivot camera.
+        if (body == null || !body.isActiveAndEnabled || body.BodyAnimator == null || body.View != targetCamera)
+            targetCamera.position = origin + offset;
         movement.GetComponent<PlayerLeanHitboxes>()?.Sync(offset);
     }
 

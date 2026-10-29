@@ -66,6 +66,11 @@ public sealed class WeaponController : MonoBehaviour
     public event Action ReloadCompleted;
     public Transform MuzzlePoint => muzzlePoint;
     public Transform AimOrigin => aimOrigin;
+    /// <summary>The posed gun model root; the body's hands hold it at the weapon's grip points.</summary>
+    public Transform WeaponRoot => weaponRoot;
+    /// <summary>A ranged weapon is out and its model is shown.</summary>
+    public bool ShowsWeapon => weaponRoot != null && weaponRoot.gameObject.activeInHierarchy
+        && Runtime != null && Runtime.Data.Category != WeaponCategory.Melee;
 
     private IWeaponInput input;
     private PlayerDamageReceiver health;

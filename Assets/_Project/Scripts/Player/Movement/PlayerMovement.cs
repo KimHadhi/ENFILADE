@@ -186,7 +186,11 @@ public sealed partial class PlayerMovement : MonoBehaviour
         if (GetComponent<PlayerLeanHitboxes>() == null) gameObject.AddComponent<PlayerLeanHitboxes>();
         // The visible body (true first person) appears once Resources/Characters/PlayerBody names a character.
         if (Application.isPlaying && GetComponent<PlayerBody>() == null && PlayerBodyProfile.Load() != null)
+        {
             GameTables.Bind(TableName, "Body", gameObject.AddComponent<PlayerBody>());
+            // Its hands hold the gun, the fists and ledges.
+            GameTables.Bind(TableName, "Hands", gameObject.AddComponent<PlayerBodyHands>());
+        }
         if (controller.height < Posture.standingColliderHeight - 0.02f)
             ChangeState(controller.height <= proneColliderHeight + 0.02f ? MovementState.Proning : MovementState.Crouching);
         return true;

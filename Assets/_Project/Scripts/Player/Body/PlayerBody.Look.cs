@@ -35,8 +35,10 @@ public sealed partial class PlayerBody
     private readonly List<Transform> spine = new List<Transform>();
     private Transform lookPivot, neck;
     private Camera viewCamera;
+    private PlayerCameraEffects cameraEffects;
+    private Vector3 restForward;
     private Vector3 eyeLocal;
-    private float eyeViewWeight, bendWeight, twistWeight, baseNearClip;
+    private float eyeViewWeight, bendWeight, twistWeight, readyWeight, baseNearClip;
     private float slideLookPitch, slideLookTwist;
     private Vector3 slideBodyOffset, slideWorldOffset;
     private bool slideBodyAnchored;
@@ -54,12 +56,20 @@ public sealed partial class PlayerBody
             foreach (var bone in new[] { HumanBodyBones.Spine, HumanBodyBones.Chest, HumanBodyBones.UpperChest })
                 if (animator.GetBoneTransform(bone) is Transform found) spine.Add(found);
         neck = animator.isHuman ? animator.GetBoneTransform(HumanBodyBones.Neck) : null;
-        eyeViewWeight = bendWeight = twistWeight = 0f;
+        eyeViewWeight = 1f - AimBlend();
+        bendWeight = twistWeight = 0f;
         slideLookPitch = slideLookTwist = 0f;
         slideBodyAnchored = false;
         if (head == null) return;
-        Vector3 eye = EyesAtRest() + body.up * eyeAdjust.x + body.forward * (eyeAdjust.y + eyeViewAhead);
+        // Imported avatars need not face their prefab's +Z (Hiro faces -Z in its rest pose).
+        var leftArm = animator.GetBoneTransform(HumanBodyBones.LeftUpperArm);
+        var rightArm = animator.GetBoneTransform(HumanBodyBones.RightUpperArm);
+        restForward = leftArm != null && rightArm != null
+            ? Vector3.Cross(rightArm.position - leftArm.position, body.up).normalized : body.forward;
+        if (restForward.sqrMagnitude < .001f) restForward = body.forward;
+        Vector3 eye = EyesAtRest() + body.up * eyeAdjust.x + restForward * (eyeAdjust.y + eyeViewAhead);
         eyeLocal = head.InverseTransformPoint(eye);
+        SetUpClearance();
     }
 
     // The avatar's eye bones when they sit like eyes (ahead of and above the head bone, an eye-width apart);
@@ -72,10 +82,12 @@ public sealed partial class PlayerBody
         {
             Vector3 middle = (left.position + right.position) * .5f, fromHead = middle - head.position;
             float apart = Vector3.Distance(left.position, right.position);
-            float up = Vector3.Dot(fromHead, body.up), ahead = Vector3.Dot(fromHead, body.forward);
-            if (apart > .03f && apart < .12f && up > -.02f && up < .2f && ahead > .02f && ahead < .2f) return middle;
+            float up = Vector3.Dot(fromHead, body.up), ahead = Vector3.Dot(fromHead, restForward);
+            // Allow stylised heads instead of rejecting a correctly mapped pair for exceeding human eye width.
+            if (apart > .015f && apart < player.runtimeBodyDefaults.w * .2f
+                && up > -.05f && up < .25f && ahead > .01f && ahead < .25f) return middle;
         }
-        return new Vector3(head.position.x, body.position.y + player.runtimeBodyDefaults.w, head.position.z) + body.forward * backOffset;
+        return new Vector3(head.position.x, body.position.y + player.runtimeBodyDefaults.w, head.position.z) + restForward * backOffset;
     }
 
     private void Look(float dt)
@@ -85,6 +97,8 @@ public sealed partial class PlayerBody
         bool upright = !dead && transition == null && (state == MovementState.Standing || state == MovementState.Crouching);
         bool sliding = !dead && state == MovementState.Sliding;
         bendWeight = Mathf.MoveTowards(bendWeight, upright || sliding ? 1f : 0f, dt / blendTime);
+        // With the gun raised against a wall only the neck and head look down; the shoulders hold the gun up.
+        readyWeight = Mathf.MoveTowards(readyWeight, weapons != null && weapons.IsHighReady && weapons.ShowsWeapon ? 1f : 0f, dt / blendTime);
         twistWeight = Mathf.MoveTowards(twistWeight, upright || sliding ? 1f : 0f, dt / blendTime);
 
         float pitch = lookPivot != null ? Mathf.DeltaAngle(0f, lookPivot.localEulerAngles.x) : 0f;
@@ -104,21 +118,23 @@ public sealed partial class PlayerBody
         }
         else { slideLookPitch = pitch; slideLookTwist = twist; }
         Vector3 eyeBefore = head.TransformPoint(eyeLocal);
-        BendAndTwist(pitch * bendWeight, twist * twistWeight);
+        BendWithClearance(pitch * bendWeight, twist * twistWeight);
         if (thirdPerson || view == null) return;
         Vector3 eye = head.TransformPoint(eyeLocal);
         // The Q/E lean has already moved the camera off its pivot; the eyes keep that offset.
-        Vector3 lean = view.parent != null ? view.position - view.parent.TransformPoint(viewHome) : Vector3.zero;
-        PlaceCamera(Vector3.Lerp(view.position + eye - eyeBefore, eye + lean, eyeViewWeight));
+        Vector3 lean = cameraEffects != null ? cameraEffects.LeanDisplacement : transform.right * player.LeanOffset;
+        Vector3 anchor = cameraEffects != null ? cameraEffects.CameraAnchorPosition
+            : view.parent != null ? view.parent.TransformPoint(viewHome) : transform.position + Vector3.up * player.runtimeBodyDefaults.w;
+        PlaceCamera(Vector3.Lerp(anchor + lean + eye - eyeBefore, eye + lean, eyeViewWeight));
     }
 
     // The spine takes its share of the pitch, then neck and head the rest, so the head ends up looking where the
     // camera looks. The twist turns the chest, neck and head back from the hips toward the view.
-    private void BendAndTwist(float pitch, float twist)
+    private void BendAndTwist(float pitch, float twist, float spineScale = 1f)
     {
         if (Mathf.Abs(pitch) < .01f && Mathf.Abs(twist) < .01f) return;
         Vector3 right = transform.right, up = transform.up;
-        float share = pitch > 0f ? spineBendDown : spineBendUp;
+        float share = (pitch > 0f ? spineBendDown : spineBendUp) * (1f - readyWeight) * spineScale;
         int count = Mathf.Max(1, spine.Count);
         foreach (var bone in spine) Turn(bone, pitch * share / count, twist * .6f / count);
         float rest = pitch * (1f - share);
@@ -136,7 +152,7 @@ public sealed partial class PlayerBody
     private void FaceSlide()
     {
         Vector3 direction = Vector3.ProjectOnPlane(player.SlideDirection, Vector3.up);
-        if (direction.sqrMagnitude > .0001f) legYaw = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg;
+        if (direction.sqrMagnitude > .0001f) legYaw = SlideFacing(direction, transform.eulerAngles.y);
         Quaternion frame = Quaternion.Euler(0f, legYaw, 0f);
         if (!slideBodyAnchored)
         {
@@ -147,6 +163,16 @@ public sealed partial class PlayerBody
         targetYaw = Mathf.DeltaAngle(transform.eulerAngles.y, legYaw);
         legsPlanted = true;
         turning = 0;
+    }
+
+    /// <summary>
+    /// The way a slide faces (degrees): along its travel, or against it when the slide carries the player backwards
+    /// (a wall bounce, a backward entry), so neither the view nor the legs swing round; the body slides back instead.
+    /// </summary>
+    public static float SlideFacing(Vector3 slideDirection, float lookYaw)
+    {
+        float heading = Mathf.Atan2(slideDirection.x, slideDirection.z) * Mathf.Rad2Deg;
+        return Mathf.Abs(Mathf.DeltaAngle(heading, lookYaw)) > 90f ? heading + 180f : heading;
     }
 
     private void PlaceBody()
@@ -165,16 +191,10 @@ public sealed partial class PlayerBody
         body.localPosition = headAlignment;
     }
 
-    // Moves the camera only as far as the world lets it, so the eyes never put it inside a wall.
+    // The pose clears the wall first; this stable capsule-to-eye sweep is the final guard for any remaining contact.
     private void PlaceCamera(Vector3 target)
     {
-        Vector3 from = view.position, move = target - from;
-        float distance = move.magnitude;
-        if (distance < .0005f) return;
-        if (Physics.SphereCast(from, .1f, move / distance, out RaycastHit hit, distance + .02f, player.groundLayers,
-                QueryTriggerInteraction.Ignore))
-            target = from + move / distance * Mathf.Max(0f, hit.distance - .02f);
-        view.position = target;
+        view.position = clearance.Resolve(SafeCameraAnchor(), target, CameraRadius(), player.groundLayers, transform);
     }
 
     private float AimBlend()

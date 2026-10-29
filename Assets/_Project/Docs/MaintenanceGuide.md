@@ -9,7 +9,7 @@
 | 표 | 내용 | 행(row) |
 | --- | --- | --- |
 | [Player.csv](../Resources/Tables/Player.csv) | 자세별 캡슐·눈높이, 이동·점프·슬라이드·다이브, 회피·파쿠르·낙하·밀치기, 최대 체력, 궁극기 보유량·소비량·충전량, 주먹·패링·가드 브레이크, 처형, 몸 애니메이션 | `Posture` `Move` `Ability` `Vitals` `Stats` `Ultimate` `Fists` `Execution` `Body` |
-| [Weapons.csv](../Resources/Tables/Weapons.csv) | 총 피해·RPM·장탄·예비탄·장전·탄퍼짐·헤드샷·ADS | `WeaponData` 에셋 이름 (`FoundationRifle` …) |
+| [Weapons.csv](../Resources/Tables/Weapons.csv) | 총 피해·RPM·장탄·예비탄·장전·탄퍼짐·헤드샷·ADS, 몸의 손이 잡는 위치 | `WeaponData` 에셋 이름 (`FoundationRifle` …) |
 | [Enemies.csv](../Resources/Tables/Enemies.csv) | 적 체력·공격·자세(체간)·이동 속도 | 적 프리팹 이름 (`Enemy_Test`) |
 | [Waves.csv](../Resources/Tables/Waves.csv) | 웨이브 적 수·증가량·대기·등장 간격 | `WaveManager`의 `Table Id` (기본 `Default`) |
 
@@ -216,20 +216,30 @@ Art/Models/
   - 올라서기: 매달린 데서 올라가면 높이와 관계없이 `ledgeClimbUp`. `mantleFromGround`가 켜져 있을 때 땅에서 올라서면 높이에 따라 `stepUp`, `mantleLow`, `mantleMid`, `mantle`.
   - 난간: 잡는 순간(`ledgeCatch`)과 좌우 이동(`ledgeShimmyLeft/Right`).
   - 벽: 벽 오르기 시작(`wallClimbStart`), 튀는 방향별 벽 차기(`wallKick`/`wallKickRight`).
-  - 총: `armedClips`를 켜면 소총·권총을 들었을 때 해당 클립의 총 든 버전(`rifleSuffix`·`pistolSuffix`)을 쓴다. 이 클립들은 Source가 손을 총에 고정해 주는 것을 전제로 만들어서, 손 IK(5단계)가 생기기 전에는 팔이 꼬이므로 꺼 둔다.
+  - 총: `armedClips`를 켜면 소총·권총을 들었을 때 해당 클립의 총 든 버전(`rifleSuffix`·`pistolSuffix`)을 쓴다. 이 클립들은 Source가 손을 총에 고정해 주는 것을 전제로 만들었다. 지금은 손을 몸의 손 IK가 총에 놓으므로 켜 볼 수 있지만, 아직 확인하지 않아 꺼 두었다.
 - **재질(lilToon)**: Hiro는 [lilToon](https://github.com/lilxyzw/lilToon) 2.4.1(`Packages/jp.lilxyzw.liltoon`, MIT) 셰이더를 쓴다. 재질은 [Hiro/Materials](../Art/Models/Characters/Hiro/Materials)에 따로 있어 Inspector의 lilToon 화면에서 그림자 색·림라이트·광택을 바로 조정한다. 새 캐릭터는 모델 Inspector → Materials → **Extract Materials** 후 셰이더를 `lilToon`으로 바꾼다.
-- **머리 맞추기**: 자세마다 클립 속 머리 위치가 다르므로(누워 미끄러지면 머리가 발 뒤쪽에 있다) 몸은 머리가 카메라 바로 뒤에 오도록 천천히 따라 움직인다(`Body.headFollowTime`). 매달려 있을 때만 손이 몸을 잡고 있어서 멈춘다.
+- **머리 맞추기**: 자세마다 클립 속 머리 위치가 다르므로(누워 미끄러지면 머리가 발 뒤쪽에 있다) 몸은 머리가 카메라 기준점 바로 뒤에 오도록 천천히 따라 움직인다(`Body.headFollowTime`). 매달릴 때는 손이 몸을 지지하고, 일반 슬라이딩 중에는 진행 방향 기준 위치를 유지한다.
 - **눈 시점과 시선**([PlayerBody.Look](../Scripts/Player/Body/PlayerBody.Look.cs)):
-  - 카메라는 모든 상태에서 몸의 눈(`eyeViewAhead`만큼 앞)에 있다. 걸음의 흔들림, 착지·구르기의 꺼짐은 모두 애니메이션에서 온다. 조준은 마우스 그대로이고, Q/E 기울이기만큼 옆으로 옮겨 간다. 정조준하면 `eyeViewTime` 동안 예전 고정 위치로 옮겨 가서 조준이 흔들리지 않는다. 머리가 벽 안으로 들어가면 카메라는 벽 앞에서 멈춘다.
-  - 눈 위치는 캐릭터 아바타의 눈 뼈(LeftEye·RightEye)다. 눈처럼 놓여 있지 않으면 크기 맞춤으로 추정한다. 어긋나면 `Body.eyeAdjust`(위;앞)로 옮긴다.
+  - 카메라는 몸의 눈에서 `eyeViewAhead`만큼 앞에 놓인다. 걸음의 흔들림, 착지·구르기의 꺼짐은 애니메이션에서 온다. 조준은 마우스 그대로이고, Q/E 기울이기의 충돌 검사된 이동량을 더한다. 정조준하면 `eyeViewTime` 동안 고정 조준 위치로 옮겨 가서 조준이 흔들리지 않는다.
+  - 눈 위치는 아바타에 연결된 LeftEye·RightEye의 중점이다. 눈 사이 간격은 캐릭터 크기에 비례해 검사하므로 Hiro처럼 눈이 넓게 배치된 캐릭터도 실제 눈 뼈(`pd.013`·`pd.014`)를 쓴다. 모델 기본 자세의 앞 방향은 양팔 뼈로 구한다. Hiro의 기본 자세가 모델 -Z를 향해도 눈과 `eyeViewAhead`·`eyeAdjust`를 해부학적 앞 방향으로 계산해 머리 로컬 좌표에 저장한다. 눈 뼈가 없거나 적합하지 않으면 같은 앞 방향과 카메라 높이로 추정한다. 위치를 조정하려면 Play 중 `Body.eyeAdjust`(위;앞)를 고친다.
+  - 벽 근처에서는 먼저 원하는 상체 자세의 머리·눈 여유 공간을 검사한다([PlayerBody.Clearance](../Scripts/Player/Body/PlayerBody.Clearance.cs)). 허리를 굽히면 얼굴이 벽에 닿는 경우, 닿지 않는 허리 굽힘 범위를 찾아 남은 시선 각도를 목·머리에 나눠 준다. 그 뒤에도 남는 충돌은 플레이어 캡슐 안의 일정한 기준점에서 눈까지 카메라 부피를 쓸어 검사한다([CameraClearance](../Scripts/Player/Camera/CameraClearance.cs)). 이 부피는 시야각·화면 비율·근거리 평면의 모서리까지 고려한다. 머리가 벽과 겹치는 순간마다 검사 시작점을 바꾸거나 뒤로 밀리는 양을 단순 보간하지 않는다.
   - 몸은 머리가 카메라 기준점 바로 뒤에 오도록 계속 따라오므로(`headFollowTime`), 카메라는 플레이어 위치에서 옆으로 멀리 벗어나지 않는다.
   - 위아래를 보면 허리(`spineBendDown`·`spineBendUp` 비율)·목·머리가 나눠 굽고, 머리는 카메라가 보는 곳을 본다.
   - 골반이 시선과 다른 쪽을 보면 가슴·목·머리가 시선 쪽으로 비틀린다. 제자리에서 다리를 디딘 채일 때와 전력질주로 골반이 돌 때도 적용한다.
-  - 일반 슬라이딩 중 하체는 플레이어 캡슐에 대한 위치와 월드 진행 방향(`SlideDirection`)을 유지한다. 시선만 돌려서는 다리 위치·방향이 달라지지 않으며, 실제 이동·조향을 따라간다. 허리·가슴·목·머리만 시선을 부드럽게 따라간다. 좌우는 `Body.slideTurnLimit`(기본 각 75°), 위아래는 `Body.slidePitchLimits`(기본 위 40°·아래 55°)로 제한하며, 상체와 카메라가 같은 범위를 쓴다. 뒤로 슬라이딩을 시작하거나 벽에서 튕겨 기존 시선이 새 범위를 벗어나면 그 범위 안으로 서서히 돌아온다.
-  - 몸은 카메라 효과 다음, 무기 전에 움직인다(실행 순서 250). 그래서 총알과 총은 눈 위치에서 나간다.
+  - 일반 슬라이딩 중 하체는 플레이어 캡슐에 대한 위치와 월드 진행 방향(`SlideDirection`)을 유지한다. 시선만 돌려서는 다리 위치·방향이 달라지지 않으며, 실제 이동·조향을 따라간다. 허리·가슴·목·머리만 시선을 부드럽게 따라간다. 좌우는 `Body.slideTurnLimit`(기본 각 75°), 위아래는 `Body.slidePitchLimits`(기본 위 40°·아래 55°)로 제한하며, 상체와 카메라가 같은 범위를 쓴다. 미끄러지는 방향이 시선의 반대쪽(벽에 튕겨 뒤로 밀림, 뒤로 슬라이딩 시작)이면 시선과 다리는 그대로이고 몸이 뒤로 미끄러진다. 옆으로 튕겨 기존 시선이 새 범위를 벗어나면 그 범위 안으로 서서히 돌아온다.
+  - 카메라 효과는 흔들림·기울이기와 기준 위치를 계산하고, 몸 코드가 그다음에 눈 시점의 최종 위치를 한 번 정한다(실행 순서 250). 기울이기 이동량을 직접 전달하므로 지난 프레임의 눈 시점이 다시 이동량으로 더해지지 않는다. 무기는 이후에 처리되어 총과 총알이 확정된 시점을 기준으로 동작한다.
+  - Esc로 일시정지하면 카메라 효과와 몸 자세 갱신을 함께 멈추어 마지막 눈 시점을 유지한다. 메뉴를 여는 순간 고정 카메라 위치로 바뀌거나, 재개하면서 눈에서 다시 멀어지지 않는다.
 - **제자리 돌기**: 서 있을 때 시선만 돌리면 다리는 그 자리에 있고 상체만 비튼다. `turnStartAngle`(60°)을 넘으면 `turnLeft`/`turnRight` 클립으로 발을 옮기며 돈다(`turnSpeed`). 돌기 클립은 `inPlaceYaw`로 회전을 빼고 발걸음만 쓴다. 이 임계각에 따른 다리 돌기는 슬라이딩 중에는 실행하지 않는다.
 - **내 머리카락 보기**(Esc 설정, 기본 켬): 켜면 머리·머리카락(`First Person Shadow Only`에 적힌 렌더러)을 그린다. 카메라가 그 안에 있는 부분은 근거리 클리핑(`Body.headNearClip`, 0.05m)으로 잘린다.
-- 누운 자세·누워 미끄러지기는 Beatrun의 `meslide` 계열을 쓴다. 엎드림은 전용 애니메이션이 없어 머리부터 슬라이딩 자세를 임시로 쓴다. 총·주먹은 아직 기존 1인칭 모델이 따로 그린다. 몸의 손에 쥐게 하는 작업은 계획의 5단계다.
+- 누운 자세·누워 미끄러지기는 Beatrun의 `meslide` 계열을 쓴다. 엎드림은 전용 애니메이션이 없어 머리부터 슬라이딩 자세를 임시로 쓴다.
+- **몸의 손**([PlayerBodyHands](../Scripts/Player/Body/PlayerBodyHands.cs), [ArmIK](../Scripts/Player/Body/ArmIK.cs), `Player.csv`의 `Hands` 행): 클립이 팔 자세를 잡은 뒤, 팔을 굽혀 손목을 목표에 놓는다. 팔꿈치는 자연스러운 쪽으로 향하고, 손이 닿지 않으면 어깨가 그쪽으로 돈다(`shoulderReach`). 손 방향은 캐릭터의 손가락 뼈로 잰 "손가락 방향·손바닥 방향"으로 정하므로 캐릭터를 바꿔도 맞는다.
+  - 총: 무기 모델 기준의 손목 위치·손가락 방향·손바닥 방향을 [Weapons.csv](../Resources/Tables/Weapons.csv)의 `rightGrip*`(방아쇠 손)·`leftGrip*`(받치는 손)에서 읽는다. 총 자세(지향·정조준·벽에 막혀 든 자세·반동·장전)는 지금처럼 카메라 기준 코드가 정하고 손이 따라간다. 지향 자세는 `holdOffset`만큼 몸 쪽으로 당겨서 팔이 닿게 했다(Hiro의 팔 길이는 약 0.51m). 벽에 막혀 총을 든 자세(하이레디)는 시선의 좌우만 따른다. 그래서 내려다보면 고개만 숙이고 총과 상체는 든 채로 있다.
+  - 손은 무기 코드 다음(실행 순서 320)에 놓이므로 총보다 늦게 따라오지 않는다. 넘기·올라서기·매달리기·벽 동작·구르기·봉 동작 중에는 손이 총을 놓는다.
+  - 주먹: [FistsView](../Scripts/Player/Combat/FistsView.cs)가 카메라 아래에 막기·충전·주먹 위치만 정하고, 몸의 손이 그 자리로 간다. 예전 상자 장갑은 없앴다.
+  - 난간: 매달리면 두 손이 몸 정면의 난간 모서리 양쪽(`ledgeHandSpacing`)을 잡는다.
+  - 넘기·올라서기: 손이 장애물 윗면 아래로 들어가면 윗면 위(`palmHeight`)로 올린다.
+  - F5 뒤에서 보기에서는 총·주먹 위치를 눈 위치 기준으로 옮겨서 손이 뒤쪽 카메라로 뻗지 않는다.
+  - 지금 장면의 총(`SK_AR_01`)은 재질을 비워 둬서 보이지 않는다. 보이게 하려면 그 오브젝트의 Inspector에서 재질 오버라이드를 Revert한다. 그 상태에서 손 위치를 맞추면 된다. 권총 모델은 아직 없어서 권총도 같은 총 위치를 쓴다.
 
 ## 실행 중 생성되는 분류와 혈흔 풀
 

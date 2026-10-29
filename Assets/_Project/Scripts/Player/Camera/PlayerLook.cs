@@ -117,10 +117,11 @@ public sealed class PlayerLook : MonoBehaviour
             if (direction.sqrMagnitude < .0001f) return candidate;
             if (body == null) body = GetComponent<PlayerBody>();
             float limit = body != null ? body.SlideLookYawLimit : 75f;
-            float slideHeading = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg;
+            // A slide carrying the player backwards (wall bounce, backward entry) keeps facing the view.
+            float slideHeading = PlayerBody.SlideFacing(direction, transform.eulerAngles.y);
             float clamped = slideHeading + Mathf.Clamp(Mathf.DeltaAngle(slideHeading, candidate), -limit, limit);
-            // Backwards entries and wall bounces can put the existing view outside the new arc. Bring it
-            // back smoothly; ordinary mouse look stops at the limit without ever rotating the slide.
+            // A sideways bounce can still put the existing view outside the new arc. Bring it back smoothly;
+            // ordinary mouse look stops at the limit without ever rotating the slide.
             if (Mathf.Abs(Mathf.DeltaAngle(slideHeading, transform.eulerAngles.y)) > limit + .01f)
                 return Mathf.MoveTowardsAngle(transform.eulerAngles.y, clamped, 360f * Time.deltaTime);
             return clamped;

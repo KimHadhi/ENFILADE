@@ -67,6 +67,15 @@ public sealed class WeaponData : ScriptableObject
     [SerializeField, Range(.01f, .2f)] private float highReadyRaiseHalfLife = .045f;
     [Tooltip("Seconds to halve the visual distance back to the firing pose.")]
     [SerializeField, Range(.01f, .2f)] private float highReadyLowerHalfLife = .055f;
+    [Header("Body hands (weapon-root space, m)")]
+    [Tooltip("Moves the hip pose (camera space) so the body's arms reach the grips.")]
+    [SerializeField] private Vector3 holdOffset = new Vector3(-.08f, .03f, -.36f);
+    [Tooltip("Trigger-hand wrist on the grip, then the way its fingers point and the way its palm faces.")]
+    [SerializeField] private Vector3 rightGrip = new Vector3(.27f, -.29f, .365f), rightGripFingers = new Vector3(-.25f, -.85f, .45f),
+        rightGripPalm = new Vector3(-1f, 0f, 0f);
+    [Tooltip("Support-hand wrist under the handguard, then the way its fingers point and the way its palm faces.")]
+    [SerializeField] private Vector3 leftGrip = new Vector3(.26f, -.285f, .7f), leftGripFingers = new Vector3(.5f, 0f, .85f),
+        leftGripPalm = new Vector3(0f, 1f, 0f);
     [Header("Feel (presentation; aim recoil stays above)")]
     [Tooltip("Visual-only camera kick per shot, degrees: x = up, y = random left/right, z = random roll. Bullets still go to the crosshair.")]
     [SerializeField] private Vector3 viewPunch = new Vector3(.75f, .3f, .9f);
@@ -123,6 +132,13 @@ public sealed class WeaponData : ScriptableObject
     public float AimFollowHalfLife => Mathf.Clamp(aimFollowHalfLife, 0f, .3f);
     public float AdsAimFollowHalfLife => Mathf.Clamp(adsAimFollowHalfLife, 0f, .3f);
     public Vector3 HighReadyOffset => highReadyOffset;
+    public Vector3 HoldOffset => holdOffset;
+    public Vector3 RightGrip => rightGrip;
+    public Vector3 RightGripFingers => rightGripFingers;
+    public Vector3 RightGripPalm => rightGripPalm;
+    public Vector3 LeftGrip => leftGrip;
+    public Vector3 LeftGripFingers => leftGripFingers;
+    public Vector3 LeftGripPalm => leftGripPalm;
     public float HighReadyPitch => Mathf.Clamp(highReadyPitch, 30f, 85f);
     public float HighReadyRaiseHalfLife => Mathf.Clamp(highReadyRaiseHalfLife, .01f, .2f);
     public float HighReadyLowerHalfLife => Mathf.Clamp(highReadyLowerHalfLife, .01f, .2f);

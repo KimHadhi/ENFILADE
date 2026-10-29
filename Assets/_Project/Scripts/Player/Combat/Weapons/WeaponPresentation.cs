@@ -41,7 +41,8 @@ public sealed class WeaponPresentation
         if (root == null || muzzle == null) return muzzle != null ? muzzle.position : view.position;
         // Prepare may be called several times for cover probes. Capture once, without advancing animation.
         if (!hasPresentedPose) RememberPose(view);
-        root.localPosition = hipPosition; root.localRotation = hipRotation;
+        // The hold offset brings the gun within reach of the body's arms.
+        root.localPosition = hipPosition + data.HoldOffset; root.localRotation = hipRotation;
         Vector3 localMuzzle = view.InverseTransformPoint(muzzle.position);
         Vector3 sightCorrection = view.TransformVector(new Vector3(-localMuzzle.x, -localMuzzle.y - data.SightHeight, 0f));
         root.position += sightCorrection * ads;
@@ -73,8 +74,11 @@ public sealed class WeaponPresentation
         if (obstructed)
         {
             hasAimDistance = false;
-            root.rotation = view.rotation * Quaternion.Euler(-runtime.Data.HighReadyPitch, 0f, 8f);
-            root.position += view.TransformVector(runtime.Data.HighReadyOffset);
+            // Raised in the level frame: looking down tilts the head, the raised gun stays up.
+            Quaternion level = Level(view);
+            Vector3 hip = Quaternion.Inverse(view.rotation) * (root.position - view.position);
+            root.SetPositionAndRotation(view.position + level * (hip + runtime.Data.HighReadyOffset),
+                level * Quaternion.Euler(-runtime.Data.HighReadyPitch, 0f, 8f));
         }
         float recoilWeight = obstructed ? 0f : (runtime.IsReloading ? .25f : 1f);
         float kickBack = recoil.Value.x * Mathf.Lerp(1f, runtime.Data.AdsWeaponKickMultiplier, adsBlend) * recoilWeight;
@@ -100,19 +104,30 @@ public sealed class WeaponPresentation
         }
         if (hasPresentedPose && (obstructed || readyBlend > 0f))
         {
-            Vector3 position = Vector3.Lerp(presentedPosition, view.InverseTransformPoint(root.position), poseBlend);
-            Quaternion rotation = Quaternion.Slerp(presentedRotation, Quaternion.Inverse(view.rotation) * root.rotation, poseBlend);
-            root.SetPositionAndRotation(view.TransformPoint(position), view.rotation * rotation);
+            Quaternion level = Level(view), toLevel = Quaternion.Inverse(level);
+            Vector3 position = Vector3.Lerp(presentedPosition, toLevel * (root.position - view.position), poseBlend);
+            Quaternion rotation = Quaternion.Slerp(presentedRotation, toLevel * root.rotation, poseBlend);
+            root.SetPositionAndRotation(view.position + level * position, level * rotation);
         }
         RememberPose(view);
         return obstructed || IsHighReady;
     }
 
+    // Kept in the level frame so a raised gun blending in or out holds still while the view pitches.
     private void RememberPose(Transform view)
     {
-        presentedPosition = view.InverseTransformPoint(root.position);
-        presentedRotation = Quaternion.Inverse(view.rotation) * root.rotation;
+        Quaternion toLevel = Quaternion.Inverse(Level(view));
+        presentedPosition = toLevel * (root.position - view.position);
+        presentedRotation = toLevel * root.rotation;
         hasPresentedPose = true;
+    }
+
+    // The view turned only by its yaw (no pitch or roll).
+    private static Quaternion Level(Transform view)
+    {
+        Vector3 forward = Vector3.ProjectOnPlane(view.forward, Vector3.up);
+        if (forward.sqrMagnitude < 1e-4f) forward = Vector3.ProjectOnPlane(view.up, Vector3.up);
+        return Quaternion.LookRotation(forward.normalized, Vector3.up);
     }
 
     private Vector3 FollowAimPoint(Transform view, Vector3 target, WeaponData data, float dt)

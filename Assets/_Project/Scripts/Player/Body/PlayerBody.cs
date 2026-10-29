@@ -78,6 +78,12 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     private bool started, grounded, jumped, dead, thirdPerson, rebuild, playingOut;
 
     public bool IsThirdPerson => thirdPerson;
+    internal Animator BodyAnimator => animator;
+    internal Transform View => view;
+    internal bool IsDead => dead;
+    internal Vector2 LedgeGrip => ledgeGrip;
+    /// <summary>Where the eyes are this frame, after the spine has bent with the view.</summary>
+    internal Vector3 EyePosition => head != null ? head.TransformPoint(eyeLocal) : transform.position;
 
     private void Start() { started = true; Build(); }
     private void OnEnable() { if (started) rebuild = true; }
@@ -96,7 +102,8 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         if (player == null || profile == null) { enabled = false; return; }
         var camera = GetComponentInChildren<Camera>();
         view = camera != null ? camera.transform : null;
-        if (view != null) viewHome = view.localPosition;
+        cameraEffects = GetComponent<PlayerCameraEffects>();
+        if (view != null) viewHome = cameraEffects != null ? cameraEffects.CameraLocalHome : view.localPosition;
 
         body = Instantiate(profile.Model, transform, false).transform;
         body.name = "Body (" + profile.Model.name + ")";
@@ -159,7 +166,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         if (body != null) Destroy(body.gameObject);
         body = head = leftHand = rightHand = null;
         animator = null;
-        if (thirdPerson && view != null) view.localPosition = viewHome;
+        if (view != null) view.localPosition = viewHome;
         thirdPerson = false;
     }
 
@@ -210,7 +217,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         if (rebuild) Build();
         if (!graph.IsValid() || player == null) return;
         float dt = Time.deltaTime;
-        if (dt <= 0f) return;
+        if (GamePause.IsPaused || dt <= 0f) return;
         var keyboard = Keyboard.current;
         if (keyboard != null && keyboard.f5Key.wasPressedThisFrame)
         {
@@ -234,6 +241,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
 
     private void LateUpdate()
     {
+        if (GamePause.IsPaused || Time.deltaTime <= 0f) return;
         if (body != null)
         {
             // Hanging, the hands hold the body in place instead of the head following the camera. FollowHead aims at
@@ -454,7 +462,6 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     private void ApplyView()
     {
         ApplyHeadVisibility();
-        if (!thirdPerson && view != null) view.localPosition = viewHome;
     }
 
     private void PlaceViewBehind()
