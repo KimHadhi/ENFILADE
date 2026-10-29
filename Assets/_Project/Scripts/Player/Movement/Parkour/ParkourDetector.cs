@@ -6,6 +6,8 @@ public struct ObstacleTarget
     public Vector3 Start, RaisedStart, RaisedEnd, End;
     public bool IsVault;
     public bool ReferenceMotion;
+    /// <summary>Top of the obstacle above the feet when it was found (m); the body picks its vault or mantle clip by it.</summary>
+    public float Height;
     public bool HasApproach;
     public Vector3 Approach;
 }
@@ -130,10 +132,10 @@ public sealed class ParkourDetector
                     // Vault2: chest32 + forward70, independent of approach speed.
                     Vector3 referenceEnd = feet + Vector3.up * (32f * TraversalTiming.SourceUnitScale)
                         + direction * (70f * TraversalTiming.SourceUnitScale);
-                    if (ReferenceTarget(front.collider, feet, referenceEnd, true, out target)) return true;
+                    if (ReferenceTarget(front.collider, feet, referenceEnd, true, out target)) { target.Height = height; return true; }
                     // Larger Unity obstacles retain their measured clearance destination,
                     // but use the same straight interpolation, never a lift-first curve.
-                    if (ReferenceTarget(front.collider, feet, raisedEnd, true, out target)) return true;
+                    if (ReferenceTarget(front.collider, feet, raisedEnd, true, out target)) { target.Height = height; return true; }
                 }
             }
         }
@@ -144,7 +146,11 @@ public sealed class ParkourDetector
             treadProbe.y = top.point.y + 0.2f;
             if (Physics.Raycast(treadProbe, Vector3.down, out RaycastHit tread, 0.4f, ctx.groundLayers,
                 QueryTriggerInteraction.Ignore) && tread.collider == front.collider
-                && ReferenceTarget(front.collider, feet, tread.point + Vector3.up * (16f * TraversalTiming.SourceUnitScale), false, out target)) return true;
+                && ReferenceTarget(front.collider, feet, tread.point + Vector3.up * (16f * TraversalTiming.SourceUnitScale), false, out target))
+            {
+                target.Height = height;
+                return true;
+            }
         }
         return TryMantle(front.collider, top.point, -front.normal, feet, out target);
     }
@@ -165,7 +171,7 @@ public sealed class ParkourDetector
             Vector3 end = tread.point + Vector3.up * 0.1f;
             if (!ClearPath(raised, end, ctx.CrouchColliderHeight) || !ClearCapsule(end, ctx.StandingColliderHeight)) continue;
             target = new ObstacleTarget { Surface = surface, Start = feet, RaisedStart = raised,
-                RaisedEnd = end, End = end, IsVault = false };
+                RaisedEnd = end, End = end, IsVault = false, Height = edge.y - feet.y };
             return true;
         }
         return false;
@@ -230,7 +236,7 @@ public sealed class ParkourDetector
             || !ClearPath(approach, raised, ctx.CrouchColliderHeight)
             || !ClearPath(raised, end, ctx.CrouchColliderHeight)) return false;
         target = new ObstacleTarget { Surface = top.collider, Start = feet, HasApproach = true, Approach = approach,
-            RaisedStart = raised, RaisedEnd = end, End = end };
+            RaisedStart = raised, RaisedEnd = end, End = end, Height = end.y - feet.y };
         return true;
     }
     public bool TryWall(Vector3 direction, out RaycastHit hit)

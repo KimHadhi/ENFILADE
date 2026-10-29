@@ -1,8 +1,11 @@
 # Blender (headless): Source MDL animations -> one skeleton-only FBX (one take per animation) + clip list CSV.
 # usage: blender -b --factory-startup --python source_anims_to_fbx.py -- <anims.mdl> <out.fbx> <rig name>
 #        <comma names|*> [measure names|-] [yaw offset] [onto model.mdl] [clip name suffix]
+# A name "alias=sequence@side:forward" bakes one cell of a blended sequence under its own name (crouchleft=crouchfwd@-1:0).
 # The suffix ("_tp") renames the clips so a second set with the same clip names can sit beside the first one; the
-# player body finds clips by name and takes the first match.
+# player body finds clips by name and takes the first match. Blended sequences give one clip (their forward or
+# neutral cell), Bip01_Spine4's turn is folded into Spine2 because Unity's humanoid has no slot for it, and finger
+# turns are carried into the model's own finger axes.
 # SourceIO parses the MDL; actions are written here directly (SourceIO 5.5.2's own animation import stops on
 # some clips). A bone's pose basis is rest_rel⁻¹ · local, where local is the Source parent-space transform.
 #
@@ -106,6 +109,28 @@ if onto_path:
     print("ONTO", os.path.basename(onto_path), "facing_deg", round(math.degrees(turn), 1),
           "root_scale", round(root_scale, 3))
 
+# A model's finger bones can point their local axes differently from the clip skeleton's (Hiro's are up to 167° off),
+# so a finger rotation copied as-is bends sideways, and even the clip's rest pose comes out twisted. Fingers instead
+# take the clip's turn away from its own rest pose, carried into the model finger's axes and applied to the model's
+# rest pose: local = model rest · K⁻¹ · clip rest⁻¹ · clip local · K, with K = clip rest⁻¹ · model rest in model space
+# (both reference poses face the same way). A finger at its rest pose in the clip lands exactly on the model's rest.
+# Every other bone shares the Source axis convention and is copied as-is.
+correction = {}
+if onto_path:
+    def rest_world(model):
+        out = []
+        for bone in model.bones:
+            local = quat(bone.quat)
+            out.append(local if bone.parent_id == -1 else out[bone.parent_id] @ local)
+        return out
+
+    source_rest, model_rest = rest_world(mdl), rest_world(skeleton)
+    for bi, name in enumerate(names):
+        si = source_index.get(name)
+        if si is not None and "Finger" in name:
+            k = source_rest[si].inverted() @ model_rest[bi]
+            correction[bi] = (quat(skeleton.bones[bi].quat) @ k.inverted() @ quat(mdl.bones[si].quat).inverted(), k)
+
 for pb in arm.pose.bones:
     pb.rotation_mode = "QUATERNION"
 if not arm.animation_data:
@@ -115,6 +140,61 @@ order = wanted if wanted else [d.name.lstrip("@") for d in mdl.anim_descs]
 index = {}
 for n, desc in enumerate(mdl.anim_descs):
     index.setdefault(desc.name.lstrip("@"), n)
+
+# A blended sequence lists one animation per grid cell under its own name, so "first animation of that name" is an
+# arbitrary corner. Beatrun's third-person set blends movement direction (pose parameters 7 = sideways, 6 = forward,
+# keys -1/0/1, idle in the centre) and turns the whole body toward it: take the cell for the clip's own direction.
+# Other grids (hang yaw/pitch, swing) take the cell where every parameter is 0.
+MOVE_PARAMS = (7, 6)
+DIRECTIONS = {"runbwd": (0, -1), "walkback": (0, -1), "crouchbwd": (0, -1),
+              "dodgejumpleft": (-1, 0), "dodgejumpright": (1, 0)}
+# A name "crouchleft=crouchfwd@-1:0" bakes that cell of a blended sequence as its own clip (sideways, forward keys).
+aliases = {}
+for n in list(order):
+    if "=" in n:
+        alias, spec = n.split("=", 1)
+        source, cell = spec.split("@", 1)
+        aliases[alias] = (source, tuple(float(v) for v in cell.split(":")))
+        order[order.index(n)] = alias
+
+
+def grid_dims(count, keys, start, end):
+    for n0 in range(1, len(keys)):
+        n1 = len(keys) - n0
+        if n0 * n1 == count and all(start[0] - 1e-3 <= k <= end[0] + 1e-3 for k in keys[:n0]) \
+                and all(start[1] - 1e-3 <= k <= end[1] + 1e-3 for k in keys[n0:]):
+            return n0, n1
+    return None
+
+
+def nearest(values, target):
+    return min(range(len(values)), key=lambda i: abs(values[i] - target))
+
+
+sequences = {}
+for seq in getattr(mdl, "sequences", []):
+    cells = list(seq.anim_desc_indices)
+    keys = [float(k) for k in seq.pose_keys]
+    dims = grid_dims(len(cells), keys, tuple(seq.param_start), tuple(seq.param_end)) if len(cells) > 1 else (1, 1)
+    if dims is None:
+        continue
+    n0, n1 = dims
+    k0, k1 = (keys[:n0], keys[n0:]) if len(cells) > 1 else ([0.0], [0.0])
+    want = DIRECTIONS.get(seq.name, (0, 1)) if tuple(seq.param_offset) == MOVE_PARAMS and n0 == n1 == 3 else (0, 0)
+    sequences[seq.name] = (cells[nearest(k0, want[0]) * n1 + nearest(k1, want[1])], bool(int(seq.flags) & 1))
+    for alias, (source, cell) in aliases.items():
+        if source == seq.name:
+            sequences[alias] = (cells[nearest(k0, cell[0]) * n1 + nearest(k1, cell[1])], bool(int(seq.flags) & 1))
+
+# Unity's humanoid has three spine slots (Spine, Chest, UpperChest = Bip01_Spine, Spine1, Spine2). Bip01_Spine4 sits
+# between UpperChest and the neck, so its rotation would be dropped on import. Fold it into Spine2 instead: Spine2
+# takes Spine4's turn and Spine4 stays at rest, so the neck, head and arms keep their orientation.
+fold_into = next((i for i, n in enumerate(names) if n.endswith("Bip01_Spine2")), None)
+fold_from = next((i for i, n in enumerate(names) if n.endswith("Bip01_Spine4")), None)
+if fold_into is None or fold_from is None:
+    fold_into = fold_from = None
+else:
+    fold_rest = rest_rel_inv[fold_from].inverted().to_quaternion().inverted()
 
 
 def local_transform(bi, pos_all, rot_all, fr):
@@ -128,28 +208,48 @@ def local_transform(bi, pos_all, rot_all, fr):
         return Matrix.Translation(Vector(p) * SCALE) @ quat(r).to_matrix().to_4x4()
     if bone.parent_id == -1:
         return facing @ Matrix.Translation(Vector(p) * SCALE * root_scale) @ quat(r).to_matrix().to_4x4()
-    return Matrix.Translation(Vector(bone.position) * SCALE) @ quat(r).to_matrix().to_4x4()
+    rot = quat(r)
+    if bi in correction:
+        before, after = correction[bi]
+        rot = before @ rot @ after
+    return Matrix.Translation(Vector(bone.position) * SCALE) @ rot.to_matrix().to_4x4()
+
+
+def folded(local, pos_all, rot_all, fr):
+    """Spine2's transform carrying Spine4's turn as well (see fold_into above)."""
+    upper = local_transform(fold_from, pos_all, rot_all, fr)
+    if upper is None:
+        return local
+    turn = local.to_quaternion() @ upper.to_quaternion() @ fold_rest
+    return Matrix.Translation(local.to_translation()) @ turn.to_matrix().to_4x4()
 
 
 rows = []
 for clip in order:
-    n = index.get(clip)
+    n, seq_loop = sequences.get(clip, (index.get(clip), None))
     data = mdl.animations[n] if n is not None and n < len(mdl.animations) else None
     if data is None:
         print("SKIP", clip, "missing")
         continue
     desc = mdl.anim_descs[n]
     frames = int(data.shape[0])
+    if frames < 2:
+        print("SKIP", clip, "single frame")  # Unity imports a one-frame take as an empty clip
+        continue
     step = 30.0 / (desc.fps or 30.0)
     act = bpy.data.actions.new(clip + suffix)
     act.use_fake_user = True
     pos_all, rot_all = data["pos"], data["rot"]
     for bi, bone in enumerate(names):
+        if bi == fold_from:
+            continue
         locs, quats, prev = [], [], None
         for fr in range(frames):
             local = local_transform(bi, pos_all, rot_all, fr)
             if local is None:
                 break
+            if bi == fold_into:
+                local = folded(local, pos_all, rot_all, fr)
             loc, q, _ = (rest_rel_inv[bi] @ local).decompose()
             if prev is not None and prev.dot(q) < 0:
                 q.negate()
@@ -170,7 +270,7 @@ for clip in order:
                 for kp in fc.keyframe_points:
                     kp.interpolation = "LINEAR"
                 fc.update()
-    loop = bool(int(desc.flags) & 1)
+    loop = seq_loop if seq_loop is not None else bool(int(desc.flags) & 1)
     rows.append((clip + suffix, int(loop), 0, yaw_offset, frames, desc.fps))
     print("ACTION", clip, frames, desc.fps, "loop" if loop else "once")
 
@@ -214,8 +314,10 @@ arm.select_set(True)
 bpy.context.view_layer.objects.active = arm
 bpy.ops.export_scene.fbx(filepath=out_fbx, use_selection=True, object_types={"ARMATURE"},
                          apply_scale_options="FBX_SCALE_ALL", axis_forward="-Z", axis_up="Y", add_leaf_bones=False,
-                         use_armature_deform_only=False, bake_anim=True, bake_anim_use_all_bones=True,
-                         bake_anim_use_nla_strips=False, bake_anim_use_all_actions=True,
+                         use_armature_deform_only=False, bake_anim=True,
+                         # Every bone keyed on every frame. Skipping "unanimated" bones drops channels that hold a
+                         # constant non-rest pose, and thinning keys bends limbs mid-clip; Unity thins on import.
+                         bake_anim_use_all_bones=True, bake_anim_use_nla_strips=False, bake_anim_use_all_actions=True,
                          bake_anim_force_startend_keying=True, bake_anim_step=1.0, bake_anim_simplify_factor=0.0)
 with open(os.path.splitext(out_fbx)[0] + ".clips.csv", "w", newline="", encoding="utf-8") as fh:
     w = csv.writer(fh)

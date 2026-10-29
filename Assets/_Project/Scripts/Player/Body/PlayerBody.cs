@@ -14,31 +14,32 @@ using MovementState = PlayerMovement.MovementState;
 /// Presentation only: it never moves the player. Clip names and feel come from Tables/Player.csv, row Body.
 /// </summary>
 [DisallowMultipleComponent, DefaultExecutionOrder(450)]
-public sealed class PlayerBody : MonoBehaviour, ITableBound
+public sealed partial class PlayerBody : MonoBehaviour, ITableBound
 {
     [Header("Clips (names in the PlayerBody profile)")]
-    [SerializeField] private string idle = "stand";
-    [SerializeField] private string walk = "walkfwd", walkBack = "walkback";
-    [SerializeField] private string run = "runfwd", runBack = "runbwd", sprint = "sprintfwd";
+    [SerializeField] private string idle = "mx_idle";
+    [SerializeField] private string walk = "mx_walk", walkBack = "mx_walk_back";
+    [SerializeField] private string run = "mx_run", runBack = "mx_run_back", sprint = "sprintfwd";
     [SerializeField] private string crouchIdle = "crouchstill", crouchWalk = "crouchfwd", crouchBack = "crouchbwd";
-    [SerializeField] private string jump = "jumpfast", air = "jumpidle", fall = "fallinguncontrolled";
-    [SerializeField] private string land = "land", landMoving = "runland";
+    [SerializeField] private string jump = "jumpfast", air = "jumpidle", fall = "mx_fall";
+    [SerializeField] private string land = "mx_fall_land", landMoving = "runland";
     [SerializeField] private string slideStart = "slidestart", slide = "slideloop", slideEnd = "slideend";
     [SerializeField] private string diveStart = "divestart", dive = "diveidle";
     [SerializeField] private string bellySlideStart = "diveslidestart", bellySlide = "diveslideidle", bellySlideEnd = "diveslideend";
     [SerializeField] private string supineSlideStart = "meslidestart", supineSlide = "meslideloop", supineSlideEnd = "meslideend";
-    [SerializeField] private string prone = "diveslideidle", supine = "meslideloop", roll = "meroll";
+    [SerializeField] private string prone = "diveslideidle", supine = "meslideloop", roll = "mx_fall_roll";
     [SerializeField] private string dodgeLeft = "dodgejumpleft", dodgeRight = "dodgejumpright", tackle = "bargein";
-    [SerializeField] private string vault = "vaultover", mantle = "climb1", wallClimb = "wallrunvertical", wallKick = "jumpwrleft";
-    [SerializeField] private string barSwing = "swing", barRelease = "swingjumpoff", ledgeHang = "hang", ledgeJump = "hangheaveup";
+    [SerializeField] private string vault = "mx_vault_one_hand", mantle = "climb1", wallClimb = "wallrunvertical", wallKick = "jumpwrleft";
+    [SerializeField] private string barSwing = "swing", barRelease = "swingjumpoff", ledgeHang = "mx_ledge_hang_wall", ledgeJump = "hangheaveup";
     [SerializeField] private string death = "diestand";
 
     [Header("Feel")]
     [SerializeField, Min(.01f), Tooltip("Crossfade between clips (s).")]
     private float blendTime = .15f;
-    [SerializeField, Min(.1f), Tooltip("Ground speed each locomotion clip was authored for (m/s); playback scales around it.")]
-    private float walkClipSpeed = 1.5f, runClipSpeed = 4f, sprintClipSpeed = 8f, crouchClipSpeed = 2f;
-    [SerializeField, Range(0f, 90f), Tooltip("How far the body turns toward a strafe or backpedal direction (degrees).")]
+    [SerializeField, Min(.1f), Tooltip("Ground speed where each gait plays at its natural cadence (m/s); tune to the player's movement speeds.")]
+    private float walkClipSpeed = 1.7f, runClipSpeed = 5.2f, sprintClipSpeed = 8.4f, crouchClipSpeed = 3f;
+    [SerializeField, Range(0f, 90f), Tooltip("How far the hips turn toward the heading while sprinting (degrees). "
+        + "Walk, run and crouch have side and back clips and keep facing the camera.")]
     private float maxStrafeYaw = 60f;
     [SerializeField, Min(0f), Tooltip("The head sits this far behind the camera so looking down never shows the inside of the neck (m).")]
     private float backOffset = .12f;
@@ -73,7 +74,7 @@ public sealed class PlayerBody : MonoBehaviour, ITableBound
     private Vector3 viewHome;
     private string dodgeClip;
     private float transitionLeft, stateTime, airTime, fallSpeed, phase, yaw, yawVelocity, targetYaw;
-    private bool started, grounded, jumped, dead, thirdPerson, rebuild;
+    private bool started, grounded, jumped, dead, thirdPerson, rebuild, playingOut;
 
     public bool IsThirdPerson => thirdPerson;
 
@@ -124,17 +125,16 @@ public sealed class PlayerBody : MonoBehaviour, ITableBound
                      prone, supine, roll, dodgeLeft, dodgeRight, tackle,
                      vault, mantle, wallClimb, wallKick, barSwing, barRelease, ledgeHang, ledgeJump, death })
             AddChannel(clip, 0f);
-        AddChannel(walk, walkClipSpeed);
-        AddChannel(walkBack, walkClipSpeed);
-        AddChannel(run, runClipSpeed);
-        AddChannel(runBack, runClipSpeed);
-        AddChannel(sprint, sprintClipSpeed);
-        AddChannel(crouchWalk, crouchClipSpeed);
-        AddChannel(crouchBack, crouchClipSpeed);
+        foreach (string clip in VariantClips) AddChannel(clip, 0f);
+        AddArmedChannels();
+        AddLocomotionChannels();
+        leftHand = animator.isHuman ? animator.GetBoneTransform(HumanBodyBones.LeftHand) : null;
+        rightHand = animator.isHuman ? animator.GetBoneTransform(HumanBodyBones.RightHand) : null;
 
         state = player.CurrentState;
         grounded = player.IsGrounded;
-        stateTime = airTime = fallSpeed = 0f;
+        stateTime = airTime = fallSpeed = gripWeight = 0f;
+        jumpClip = jump; obstacleClip = vault; wallKickClip = wallKick; tucked = false;
         var rest = Find(idle);
         if (rest != null) rest.Weight = rest.Target = 1f;
         graph.Play();
@@ -149,7 +149,7 @@ public sealed class PlayerBody : MonoBehaviour, ITableBound
         headParts.Clear();
         transition = null;
         if (body != null) Destroy(body.gameObject);
-        body = head = null;
+        body = head = leftHand = rightHand = null;
         animator = null;
         if (thirdPerson && view != null) view.localPosition = viewHome;
         thirdPerson = false;
@@ -194,7 +194,8 @@ public sealed class PlayerBody : MonoBehaviour, ITableBound
         byName[clipName] = channel;
     }
 
-    private Channel Find(string clipName) => !string.IsNullOrEmpty(clipName) && byName.TryGetValue(clipName, out var c) ? c : null;
+    // With a gun out, the gun-holding version of the clip when there is one.
+    private Channel Find(string clipName) => !string.IsNullOrEmpty(clipName) && byName.TryGetValue(Armed(clipName), out var c) ? c : null;
 
     private void Update()
     {
@@ -219,7 +220,12 @@ public sealed class PlayerBody : MonoBehaviour, ITableBound
 
     private void LateUpdate()
     {
-        if (body != null) FollowHead(Time.deltaTime);
+        if (body != null)
+        {
+            // Hanging, the hands hold the body in place instead of the head following the camera.
+            if (gripWeight <= 0f) FollowHead(Time.deltaTime);
+            GripLedge(Time.deltaTime);
+        }
         if (thirdPerson) PlaceViewBehind();
     }
 
@@ -255,13 +261,16 @@ public sealed class PlayerBody : MonoBehaviour, ITableBound
         airTime = onGround ? 0f : airTime + dt;
         if (!onGround) fallSpeed = Mathf.Min(fallSpeed, player.VerticalVelocity);
 
-        // Landing and slide exits play out on the feet unless the player is already moving off.
+        // Landing and slide exits play out on the feet unless the player is already moving off; a vault plays on to
+        // its touchdown whatever the feet are doing.
         if (transition != null)
         {
             transitionLeft -= dt;
-            bool onFeet = onGround && (state == MovementState.Standing || state == MovementState.Crouching);
+            bool onFeet = onGround && (state == MovementState.Standing || state == MovementState.Crouching
+                || state == MovementState.Proning);
             bool movingOff = transitionLeft < transition.Length - .25f && HorizontalSpeed() > walkClipSpeed;
-            if (transitionLeft > blendTime && onFeet && !movingOff)
+            bool hold = playingOut ? state == MovementState.Standing || state == MovementState.Crouching : onFeet && !movingOff;
+            if (transitionLeft > blendTime && hold)
             {
                 transition.Target = 1f;
                 return;
@@ -274,8 +283,7 @@ public sealed class PlayerBody : MonoBehaviour, ITableBound
             case MovementState.Standing:
             case MovementState.Crouching:
                 if (onGround) Locomotion(state == MovementState.Crouching, dt);
-                else if (jumped && airTime < (Find(jump)?.Length ?? 0f)) Want(jump);
-                else Want(player.VerticalVelocity < -hardLandingSpeed * .6f ? fall : air);
+                else AirPose();
                 break;
             case MovementState.Sliding: Sequence(slideStart, slide); break;
             case MovementState.SupineSliding: Sequence(supineSlideStart, supineSlide); break;
@@ -285,16 +293,16 @@ public sealed class PlayerBody : MonoBehaviour, ITableBound
             case MovementState.Proning: Want(prone); break;
             case MovementState.Supine: Want(supine); break;
             case MovementState.StepDodge: Want(dodgeClip); break;
-            case MovementState.LandingRoll: Want(roll); break;
+            case MovementState.LandingRoll: Drive(roll, stateTime / Mathf.Max(.05f, player.AbilitySettings.rollDuration)); break;
             case MovementState.Tackle: Want(tackle); break;
-            case MovementState.Vault: Want(vault); break;
-            case MovementState.Mantle: Want(mantle); break;
-            case MovementState.WallClimb: Want(wallClimb); break;
-            case MovementState.WallKick: Want(wallKick); break;
+            case MovementState.Vault: Want(obstacleClip); break;
+            case MovementState.Mantle: Drive(obstacleClip, player.Abilities.Traversal.ObstacleProgress); break;
+            case MovementState.WallClimb: Sequence(wallClimbStart, wallClimb); break;
+            case MovementState.WallKick: Want(wallKickClip); break;
             case MovementState.BarGrab:
             case MovementState.BarSwing: Want(barSwing); break;
             case MovementState.LacheRelease: Want(barRelease); break;
-            case MovementState.LedgeHang: Want(ledgeHang); break;
+            case MovementState.LedgeHang: LedgePose(); break;
             case MovementState.LedgeJump: Want(ledgeJump); break;
             default: Want(idle); break;
         }
@@ -303,12 +311,12 @@ public sealed class PlayerBody : MonoBehaviour, ITableBound
     // One-shot clips start from their first frame when their state begins.
     private void Enter(MovementState from, MovementState to, bool onGround)
     {
-        if (onGround && (to == MovementState.Standing || to == MovementState.Crouching))
+        if (onGround && (to == MovementState.Standing || to == MovementState.Crouching || to == MovementState.Proning))
         {
-            if (from == MovementState.Sliding) PlayTransition(slideEnd);
-            else if (from == MovementState.SupineSliding) PlayTransition(supineSlideEnd);
-            else if (from == MovementState.HeadFirstSliding) PlayTransition(bellySlideEnd);
+            string exit = SlideEndFor(from, to);
+            if (exit != null) PlayTransition(exit);
         }
+        if (from == MovementState.Vault && (to == MovementState.Standing || to == MovementState.Crouching)) PlayOutVault();
         switch (to)
         {
             case MovementState.Sliding: Restart(Find(slideStart)); break;
@@ -320,11 +328,18 @@ public sealed class PlayerBody : MonoBehaviour, ITableBound
                 dodgeClip = Vector3.Dot(player.Abilities.ActionDirection, transform.right) < 0f ? dodgeLeft : dodgeRight;
                 Restart(Find(dodgeClip));
                 break;
-            case MovementState.LandingRoll: Restart(Find(roll)); break;
             case MovementState.Tackle: Restart(Find(tackle)); break;
-            case MovementState.Vault: Restart(Find(vault)); break;
-            case MovementState.Mantle: Restart(Find(mantle)); break;
-            case MovementState.WallKick: Restart(Find(wallKick)); break;
+            case MovementState.Vault:
+            case MovementState.Mantle:
+                obstacleClip = ObstacleClip(to == MovementState.Vault, from == MovementState.LedgeHang);
+                if (to == MovementState.Vault) StartVault();
+                break;
+            case MovementState.WallClimb: Restart(Find(wallClimbStart)); break;
+            case MovementState.WallKick:
+                wallKickClip = WallKickFor();
+                Restart(Find(wallKickClip));
+                break;
+            case MovementState.LedgeHang: Restart(Find(ledgeCatch)); break;
             case MovementState.LacheRelease: Restart(Find(barRelease)); break;
             case MovementState.LedgeJump: Restart(Find(ledgeJump)); break;
         }
@@ -332,58 +347,25 @@ public sealed class PlayerBody : MonoBehaviour, ITableBound
 
     private void Touch(bool onGround)
     {
+        bool wasTucked = tucked;
+        tucked = false;
         if (!onGround)
         {
             jumped = player.VerticalVelocity > 1f;
             fallSpeed = 0f;
-            if (jumped) Restart(Find(jump));
+            if (jumped)
+            {
+                jumpClip = JumpFor(HorizontalSpeed());
+                Restart(Find(jumpClip));
+            }
             return;
         }
-        if (fallSpeed < -hardLandingSpeed && (state == MovementState.Standing || state == MovementState.Crouching))
-            PlayTransition(HorizontalSpeed() > walkClipSpeed ? landMoving : land);
+        if (state == MovementState.Standing || state == MovementState.Crouching)
+        {
+            string landing = LandingFor(state == MovementState.Crouching, -fallSpeed, wasTucked);
+            if (landing != null) PlayTransition(landing);
+        }
         fallSpeed = 0f;
-    }
-
-    private void Locomotion(bool crouched, float dt)
-    {
-        Vector3 local = transform.InverseTransformDirection(player.ActualVelocity);
-        local.y = 0f;
-        float speed = local.magnitude;
-        bool backward = speed > .3f && local.z < -.3f * speed;
-        if (speed > .3f)
-        {
-            // Legs face the direction of travel within limits, like a strafing person turning their hips.
-            float heading = Mathf.Atan2(local.x, local.z) * Mathf.Rad2Deg;
-            targetYaw = Mathf.Clamp(backward ? Mathf.DeltaAngle(180f, heading) : heading, -maxStrafeYaw, maxStrafeYaw);
-        }
-        if (crouched)
-        {
-            float moving = Mathf.Clamp01(speed / (crouchClipSpeed * .5f));
-            Mix(crouchIdle, 1f - moving);
-            Mix(backward ? crouchBack : crouchWalk, moving);
-        }
-        else
-        {
-            float toWalk = Mathf.Clamp01(speed / walkClipSpeed);
-            float toRun = Mathf.Clamp01((speed - walkClipSpeed) / Mathf.Max(.01f, runClipSpeed - walkClipSpeed));
-            float toSprint = Mathf.Clamp01((speed - runClipSpeed) / Mathf.Max(.01f, sprintClipSpeed - runClipSpeed));
-            Mix(idle, 1f - toWalk);
-            Mix(backward ? walkBack : walk, toWalk * (1f - toRun));
-            Mix(backward ? runBack : run, toRun * (1f - toSprint));
-            Mix(backward ? runBack : sprint, toSprint);
-        }
-
-        float weight = 0f, length = 0f, authored = 0f;
-        foreach (var channel in channels)
-        {
-            if (!channel.Synced || channel.Target <= 0f) continue;
-            weight += channel.Target;
-            length += channel.Target * channel.Length;
-            authored += channel.Target * channel.AuthoredSpeed;
-        }
-        if (weight <= 0f) return;
-        float rate = Mathf.Clamp(speed / Mathf.Max(.1f, authored / weight), .6f, 1.6f);
-        phase = Mathf.Repeat(phase + dt * rate / (length / weight), 1f);
     }
 
     private void Blend(float dt)
@@ -428,13 +410,26 @@ public sealed class PlayerBody : MonoBehaviour, ITableBound
         Restart(channel);
         transition = channel;
         transitionLeft = channel.Length;
+        playingOut = false;
     }
 
     private static void Restart(Channel channel)
     {
         if (channel == null || channel.Synced) return;
+        channel.Playable.SetSpeed(1);
         channel.Playable.SetTime(0);
         channel.Playable.SetDone(false);
+    }
+
+    // A one-shot clip held at the share of its length the movement has reached (a vault's progress), so the body
+    // takes exactly as long as the move.
+    private void Drive(string clipName, float share)
+    {
+        var channel = Find(clipName);
+        if (channel == null || channel.Synced) { Want(clipName); return; }
+        channel.Playable.SetSpeed(0);
+        channel.Playable.SetTime(Mathf.Clamp01(share) * channel.Length);
+        channel.Target = 1f;
     }
 
     private float HorizontalSpeed() => new Vector2(player.ActualVelocity.x, player.ActualVelocity.z).magnitude;

@@ -5,7 +5,7 @@ public sealed class ObstacleTraversalState : MovementBaseState
 {
     private readonly bool vault;
     private float blockedTime;
-    private float progress;
+    private float progress, elapsed, duration;
     private bool finished;
     private Vector3 finishPosition;
     private TraversalPath path;
@@ -21,14 +21,17 @@ public sealed class ObstacleTraversalState : MovementBaseState
     public override MovementPosture Posture => UsesReferenceMotion ? MovementPosture.Standing : MovementPosture.Crouching;
     public override void Enter()
     {
-        blockedTime = progress = 0f; finished = false;
+        blockedTime = progress = elapsed = 0f; finished = false;
         entryVelocity = ctx.HorizontalVelocity;
         ctx.HorizontalVelocity = Vector3.zero; ctx.VerticalVelocity = 0f;
         ctx.Abilities.Traversal.Obstacle.Start = ctx.transform.position;
         var target = ctx.Abilities.Traversal.Obstacle;
         ctx.Abilities.Traversal.RecordObstacle();
-        reference = target.ReferenceMotion ? new ReferenceTraversal(ctx, target) : null;
-        path = reference == null ? new TraversalPath(target, ctx.Abilities.Traversal.Detector, ctx.CrouchColliderHeight) : null;
+        ctx.Abilities.Traversal.ObstacleProgress = 0f;
+        path = target.ReferenceMotion ? null : new TraversalPath(target, ctx.Abilities.Traversal.Detector, ctx.CrouchColliderHeight);
+        float route = path != null ? path.Length : Vector3.Distance(target.Start, target.End);
+        duration = Mathf.Max(0.05f, TraversalTiming.Duration(ctx.AbilitySettings, target, route, entryVelocity.magnitude, ctx.WalkSpeed));
+        reference = target.ReferenceMotion ? new ReferenceTraversal(ctx, target, duration) : null;
         EntrySerial++;
     }
     public override void ProcessInput(Vector2 input)
@@ -66,10 +69,11 @@ public sealed class ObstacleTraversalState : MovementBaseState
         if (reference != null)
         {
             if (!reference.Advance(dt)) Abort();
+            else ctx.Abilities.Traversal.ObstacleProgress = reference.TimeShare;
             return;
         }
-        float referenceLerp = vault ? ctx.AbilitySettings.vaultReferenceLerp : ctx.AbilitySettings.mantleReferenceLerp;
-        float to = TraversalTiming.Advance(progress, referenceLerp, dt);
+        float nextElapsed = elapsed + dt;
+        float to = TraversalTiming.Progress(nextElapsed / duration, vault);
         ctx.HorizontalVelocity = Vector3.zero; ctx.VerticalVelocity = 0f;
         float from = progress;
         var target = ctx.Abilities.Traversal.Obstacle;
@@ -97,6 +101,8 @@ public sealed class ObstacleTraversalState : MovementBaseState
         }
         blockedTime = 0f;
         progress = to;
+        elapsed = nextElapsed;
+        ctx.Abilities.Traversal.ObstacleProgress = Mathf.Clamp01(elapsed / duration);
         finished = complete;
         finishPosition = destination;
         Vector3 velocity = (destination - ctx.transform.position) / Mathf.Max(dt, 0.001f);

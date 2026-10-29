@@ -14,6 +14,8 @@ public sealed class ParkourTraversal
     internal float Angle, AngularSpeed;
     internal Vector3 ReleaseVelocity;
     internal Vector3 LedgeJumpVelocity;
+    /// <summary>Share of the current vault or mantle's time that has passed (0–1); the body plays its clip in step.</summary>
+    public float ObstacleProgress { get; internal set; }
     private float wallBudget;
     private float wallLock, barLock, ledgeLock;
     private SwingBar lastBar;
@@ -38,6 +40,8 @@ public sealed class ParkourTraversal
         if (ctx.CurrentInput.sqrMagnitude < 0.01f) return false;
         if (!Detector.TryObstacle(ctx.Abilities.InputDirection(ctx.transform.forward), out ObstacleTarget candidate, airborne)
             || traversedObstacles.Contains(candidate.Surface)) return false;
+        // Climbing onto something goes through the ledge hang unless direct mantles are on; only vaults start here.
+        if (!candidate.IsVault && !ctx.AbilitySettings.mantleFromGround) return false;
         Obstacle = candidate;
         ctx.ChangeState(Obstacle.IsVault ? State.Vault : State.Mantle);
         ctx.Actions.ClearJumpBuffer();

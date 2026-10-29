@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: f9e5a136158e6dd4099af4ad49e8655e
+guid: e6406b9c08fa8cb47be6c164c1430b53
 ModelImporter:
   serializedVersion: 24300
   internalIDToNameTable: []
@@ -18,21 +18,7 @@ ModelImporter:
     removeConstantScaleCurves: 0
     motionNodeName: 
     animationImportErrors: 
-    animationImportWarnings: "\nClip 'BeatrunTPSample|jumpcoilend_tp' has import
-      animation warnings that might lower retargeting quality:\nNote: Activate translation
-      DOF on avatar to improve retargeting quality.\n\t'ValveBiped.Bip01_Spine4'
-      is inbetween humanoid transforms and has rotation animation that will be discarded.\n\nClip
-      'BeatrunTPSample|meroll_tp' has import animation warnings that might lower
-      retargeting quality:\nNote: Activate translation DOF on avatar to improve retargeting
-      quality.\n\t'ValveBiped.Bip01_Spine4' is inbetween humanoid transforms and
-      has rotation animation that will be discarded.\n\nClip 'BeatrunTPSample|runfwd_tp'
-      has import animation warnings that might lower retargeting quality:\nNote:
-      Activate translation DOF on avatar to improve retargeting quality.\n\t'ValveBiped.Bip01_Spine4'
-      is inbetween humanoid transforms and has rotation animation that will be discarded.\n\nClip
-      'BeatrunTPSample|vaultover_tp' has import animation warnings that might lower
-      retargeting quality:\nNote: Activate translation DOF on avatar to improve retargeting
-      quality.\n\t'ValveBiped.Bip01_Spine4' is inbetween humanoid transforms and
-      has rotation animation that will be discarded.\n"
+    animationImportWarnings: 
     animationRetargetingWarnings: 
     animationDoRetargetingWarnings: 0
     importAnimatedCustomProperties: 0
@@ -47,8 +33,8 @@ ModelImporter:
     clipAnimations:
     - serializedVersion: 16
       name: _rest
-      takeName: BeatrunTPSample|_rest
-      internalID: 2723449056417986938
+      takeName: BeatrunCrouch|_rest
+      internalID: -8668425313005665439
       firstFrame: 0
       lastFrame: 1
       wrapMode: 0
@@ -75,98 +61,11 @@ ModelImporter:
       maskSource: {instanceID: 0}
       additiveReferencePoseFrame: 0
     - serializedVersion: 16
-      name: hangheaveup_tp
-      takeName: BeatrunTPSample|hangheaveup_tp
-      internalID: 8987925004523620400
+      name: crouchleft
+      takeName: BeatrunCrouch|crouchleft
+      internalID: 5415046527786949226
       firstFrame: 0
-      lastFrame: 45
-      wrapMode: 0
-      orientationOffsetY: 180
-      level: 0
-      cycleOffset: 0
-      loop: 0
-      hasAdditiveReferencePose: 0
-      loopTime: 0
-      loopBlend: 0
-      loopBlendOrientation: 1
-      loopBlendPositionY: 1
-      loopBlendPositionXZ: 1
-      keepOriginalOrientation: 1
-      keepOriginalPositionY: 1
-      keepOriginalPositionXZ: 1
-      heightFromFeet: 0
-      mirror: 0
-      bodyMask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000
-      curves: []
-      events: []
-      transformMask: []
-      maskType: 3
-      maskSource: {instanceID: 0}
-      additiveReferencePoseFrame: 0
-    - serializedVersion: 16
-      name: jumpcoilend_tp
-      takeName: BeatrunTPSample|jumpcoilend_tp
-      internalID: 664893605581982211
-      firstFrame: 0
-      lastFrame: 17
-      wrapMode: 0
-      orientationOffsetY: 180
-      level: 0
-      cycleOffset: 0
-      loop: 0
-      hasAdditiveReferencePose: 0
-      loopTime: 0
-      loopBlend: 0
-      loopBlendOrientation: 1
-      loopBlendPositionY: 1
-      loopBlendPositionXZ: 1
-      keepOriginalOrientation: 1
-      keepOriginalPositionY: 1
-      keepOriginalPositionXZ: 1
-      heightFromFeet: 0
-      mirror: 0
-      bodyMask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000
-      curves: []
-      events: []
-      transformMask: []
-      maskType: 3
-      maskSource: {instanceID: 0}
-      additiveReferencePoseFrame: 0
-    - serializedVersion: 16
-      name: meroll_tp
-      takeName: BeatrunTPSample|meroll_tp
-      internalID: -1375241115269448031
-      firstFrame: 0
-      lastFrame: 37
-      wrapMode: 0
-      orientationOffsetY: 180
-      level: 0
-      cycleOffset: 0
-      loop: 0
-      hasAdditiveReferencePose: 0
-      loopTime: 0
-      loopBlend: 0
-      loopBlendOrientation: 1
-      loopBlendPositionY: 1
-      loopBlendPositionXZ: 1
-      keepOriginalOrientation: 1
-      keepOriginalPositionY: 1
-      keepOriginalPositionXZ: 1
-      heightFromFeet: 0
-      mirror: 0
-      bodyMask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000
-      curves: []
-      events: []
-      transformMask: []
-      maskType: 3
-      maskSource: {instanceID: 0}
-      additiveReferencePoseFrame: 0
-    - serializedVersion: 16
-      name: runfwd_tp
-      takeName: BeatrunTPSample|runfwd_tp
-      internalID: 103837603355501275
-      firstFrame: 0
-      lastFrame: 76
+      lastFrame: 39
       wrapMode: 0
       orientationOffsetY: 180
       level: 0
@@ -191,11 +90,11 @@ ModelImporter:
       maskSource: {instanceID: 0}
       additiveReferencePoseFrame: 0
     - serializedVersion: 16
-      name: stand_tp
-      takeName: BeatrunTPSample|stand_tp
-      internalID: -6686493625842453551
+      name: crouchright
+      takeName: BeatrunCrouch|crouchright
+      internalID: -4961956978906915426
       firstFrame: 0
-      lastFrame: 60
+      lastFrame: 39
       wrapMode: 0
       orientationOffsetY: 180
       level: 0
@@ -203,35 +102,6 @@ ModelImporter:
       loop: 0
       hasAdditiveReferencePose: 0
       loopTime: 1
-      loopBlend: 0
-      loopBlendOrientation: 1
-      loopBlendPositionY: 1
-      loopBlendPositionXZ: 1
-      keepOriginalOrientation: 1
-      keepOriginalPositionY: 1
-      keepOriginalPositionXZ: 1
-      heightFromFeet: 0
-      mirror: 0
-      bodyMask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000
-      curves: []
-      events: []
-      transformMask: []
-      maskType: 3
-      maskSource: {instanceID: 0}
-      additiveReferencePoseFrame: 0
-    - serializedVersion: 16
-      name: vaultover_tp
-      takeName: BeatrunTPSample|vaultover_tp
-      internalID: 1695091320218841756
-      firstFrame: 0
-      lastFrame: 26
-      wrapMode: 0
-      orientationOffsetY: 180
-      level: 0
-      cycleOffset: 0
-      loop: 0
-      hasAdditiveReferencePose: 0
-      loopTime: 0
       loopBlend: 0
       loopBlendOrientation: 1
       loopBlendPositionY: 1
@@ -742,13 +612,13 @@ ModelImporter:
         length: 0
         modified: 0
     skeleton:
-    - name: BeatrunTPSample(Clone)
+    - name: BeatrunCrouch(Clone)
       parentName: 
       position: {x: 0, y: 0, z: 0}
       rotation: {x: 0.7071068, y: 0, z: 0, w: 0.7071067}
       scale: {x: 1, y: 1, z: 1}
     - name: ValveBiped.Bip01_Pelvis
-      parentName: BeatrunTPSample(Clone)
+      parentName: BeatrunCrouch(Clone)
       position: {x: 0, y: -0.027472368, z: -0.673418}
       rotation: {x: -0, y: -0.7071063, z: 0.70710725, w: 0}
       scale: {x: 1, y: 1, z: 1}

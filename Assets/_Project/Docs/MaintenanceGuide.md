@@ -185,19 +185,41 @@ Art/Models/
 | 구성 | 위치 |
 | --- | --- |
 | 캐릭터 | [Art/Models/Characters/Hiro](../Art/Models/Characters/Hiro) (휴머노이드). 서 있는 눈높이가 카메라(1.6m)에 맞게 자동으로 크기가 정해진다 |
-| 애니메이션 | [Art/Animations/Beatrun](../Art/Animations/Beatrun)의 78개 클립. 휴머노이드라 어떤 캐릭터에도 옮겨 붙는다 |
+| 애니메이션 | [Art/Animations/Mixamo](../Art/Animations/Mixamo)의 26개 클립(서기·걷기·달리기 8방향, 넘기, 난간, 낙하·착지·구르기, 일어나기). [Art/Animations/Beatrun](../Art/Animations/Beatrun)의 173개 + 웅크려 옆걸음 2개(슬라이딩·다이브·웅크리기·벽·봉 등, 소총·권총 버전 포함). 휴머노이드라 어떤 캐릭터에도 옮겨 붙는다 |
 | 연결 | `Resources/Characters/PlayerBody` 프로필(모델 + 클립 목록). 임포트할 때 자동으로 만들어지고 클립 목록도 자동 갱신된다 |
 | 상태별 클립·연출 수치 | [Player.csv](../Resources/Tables/Player.csv)의 `Body` 행 (예: `Body.slide,slideloop`) |
 | 자세별 캡슐·눈높이 | `Player.csv`의 `Posture` 행. 웅크림 0.8m, 슬라이딩 0.62m, 엎드림 0.37m, 누움 0.35m. 눈이 캡슐 꼭대기를 넘지 않게 맞췄다 |
 | 동작 코드 | [PlayerBody](../Scripts/Player/Body/PlayerBody.cs). Play 시작 때 `PlayerMovement`가 붙인다 |
 
 - **캐릭터 바꾸기**: 새 모델을 `Art/Models/Characters/<이름>/`에 넣고, `PlayerBody` 프로필의 `Model`을 바꾼다. 1인칭에서 숨길 부분은 프로필의 `First Person Shadow Only`에 렌더러 이름으로 적는다(기본 `Head`, `Hair`).
-- **애니메이션 추가**: 휴머노이드 FBX를 `Art/Animations/<묶음>/`에 넣고 옆에 `<파일이름>.clips.csv`(열 `clip`, `loop`, `inPlace`, `yawOffset`)를 둔다. `loop`가 1이면 반복, `inPlace`가 1이면 클립 안의 이동을 버리고 제자리에서 재생한다. 기본은 원래 위치 그대로다. `yawOffset`은 클립의 앞 방향 보정 각도(도, 기본 0)다. Source 클립을 그대로 변환하면 옆을 향하므로 **90**, 아래처럼 캐릭터 뼈대에 구워 넣은 클립(지금의 Beatrun)은 모델과 같이 Unity -Z를 향하므로 **180**이다(변환 스크립트가 알맞은 값을 써 준다). 구르기·좌우 회피처럼 애니메이션에 들어 있는 회전은 유지한다. 수정 후 반영되지 않으면 해당 FBX를 우클릭해 **Reimport**한다.
+- **애니메이션 추가**: 휴머노이드 FBX를 `Art/Animations/<묶음>/`에 넣고 옆에 `<파일이름>.clips.csv`를 둔다. 클립 하나짜리 파일이 많은 폴더(Mixamo)는 폴더 이름의 표 하나(`Mixamo/Mixamo.clips.csv`)에 모은다. Mixamo는 모든 클립 이름이 `mixamo.com`이라 파일 이름이 클립 이름이 된다. 열: `loop`가 1이면 반복, `inPlace`가 1이면 클립 안의 앞뒤·옆 이동을 버리고 제자리에서 재생, `inPlaceY`가 1이면 오르내림도 버린다(넘기·올라가기처럼 플레이어 경로가 몸을 옮기는 클립). 기본은 원래 위치 그대로다. `cycleOffset`은 반복 클립이 시작하는 지점(0~1)으로, 섞이는 이동 클립들이 같은 순간에 왼발을 딛게 맞춘다. `from`·`to`는 첫 프레임부터 센 프레임 번호로 그 구간만 쓴다(착지는 발이 닿는 프레임부터). `yawOffset`은 클립의 앞 방향 보정 각도(도, 기본 0)다. Source 클립을 그대로 변환하면 옆을 향하므로 **90**, 아래처럼 캐릭터 뼈대에 구워 넣은 클립(지금의 Beatrun)은 모델과 같이 Unity -Z를 향하므로 **180**이다(변환 스크립트가 알맞은 값을 써 준다). 현재 Hiro 아바타에서는 Mixamo 기본값 0이 카메라 반대인 -Z를 향하므로 `Mixamo.clips.csv`의 `yawOffset`도 **180**으로 둔다. 이미 +Z를 향하는 Beatrun의 기존 **180**은 유지한다. 구르기·좌우 회피처럼 애니메이션에 들어 있는 회전은 유지한다. 수정 후 반영되지 않으면 해당 FBX를 우클릭해 **Reimport**한다.
 - **Source(GMod·L4D2) 모델 변환**: [Tools/Blender](../../../Tools/Blender)의 스크립트를 SourceIO 애드온이 있는 Blender로 실행한다. 모델은 `source_model_to_fbx.py`, 애니메이션은 `source_anims_to_fbx.py`. 애니메이션은 마지막 인자로 플레이어 모델의 MDL을 주면 그 모델의 뼈대(뼈 길이·기본자세)에 직접 구워 낸다. 서로 다른 뼈대 사이의 휴머노이드 리타깃이 없어져 발이 꺾이거나 몸이 뒤로 빠지지 않는다. 예: `blender -b --factory-startup --python source_anims_to_fbx.py -- new_climbanim.mdl BeatrunBody.fbx BeatrunBody * - 180 survivor_gambler.mdl`. Hiro의 뼈대 MDL은 [Tools/Blender/Source/Hiro](../../../Tools/Blender/Source/Hiro)에 있다. 맨 끝에 접미사(`_tp`)를 주면 클립 이름 뒤에 붙는다. 같은 이름의 클립 묶음을 나란히 두고 비교할 때 쓴다. 몸은 같은 이름이 여러 개면 경로 순서상 첫 번째를 쓴다.
-- **들어 있는 애니메이션 묶음**: [Beatrun](../Art/Animations/Beatrun)은 지금 쓰는 1인칭 세트다. [BeatrunTP](../Art/Animations/BeatrunTP)는 3인칭 여성 세트에서 비교용으로 뽑은 6개다(`vaultover_tp`, `hangheaveup_tp`, `meroll_tp`, `runfwd_tp`, `stand_tp`, `jumpcoilend_tp`). [Mixamo](../Art/Animations/Mixamo)는 크게 착지할 때 쓸 클립이다(`wos_mma_hardlanding`, `wos_mma_standup_front01`, `wos_mma_standup_back01`, `wos_mma_roll`, `wos_mma_kipup`). `Player.csv`의 `Body` 행에서 클립 이름을 바꾸면 Play 중에도 몸이 다시 만들어진다.
+  - **블렌드 시퀀스**: 3인칭 세트의 이동 클립(`runfwd`, `walkfwd`, `crouchfwd`, 회피 등)은 이동 방향 3×3 블렌드이고, 가운데 칸이 서 있기다. 칸마다 몸 전체가 이동 방향으로 돈다. 변환 스크립트는 클립 이름에 맞는 칸을 고른다. 앞 이동은 앞 칸, `runbwd`·`walkback`·`crouchbwd`는 뒤 칸, `dodgejumpleft/right`는 옆 칸이고, 나머지 블렌드(매달리기·흔들기)는 모든 값이 0인 칸이다. 다른 칸을 따로 굽으려면 이름을 `새이름=시퀀스@옆:앞`으로 준다. 웅크려 옆걸음(`BeatrunCrouch.fbx`)은 `crouchleft=crouchfwd@-1:0,crouchright=crouchfwd@1:0`으로 구웠다. `sprintfwd` 원본은 2초에 같은 보행 주기가 네 번 들어 있다. 다른 이동 클립과 한 주기로 섞도록 `BeatrunBody.clips.csv`에서 `from=0`, `to=15`, `cycleOffset=0`으로 잘라 0.5초 한 주기만 쓴다(30fps). 전체를 다시 구우면 표가 새로 써지므로 이 세 값을 복원한다.
+  - **Spine4**: Source 뼈대에는 척추가 4개(`Spine`, `Spine1`, `Spine2`, `Spine4`)지만 Unity 휴머노이드에는 3자리뿐이다. 그래서 변환할 때 `Spine4`의 회전을 `Spine2`에 합쳐 굽는다. 임포트 때 "in between humanoid transforms … discarded" 경고가 나면 이 처리가 빠진 것이다.
+  - **손가락**: Hiro의 손가락 뼈 축은 Beatrun 뼈대와 최대 167° 달라서, 회전을 그대로 옮기면 손가락이 옆·뒤로 꺾인다. 변환할 때 클립 손가락이 자기 기본 자세에서 움직인 만큼을 Hiro 손가락 축으로 옮겨서 Hiro 기본 자세에 더한다. 클립이 기본 자세면 Hiro도 정확히 기본 자세다.
+  - 모든 뼈를 매 프레임 키로 굽는다(173개, 약 170MB). 움직이지 않는 뼈를 빼거나 키를 줄이면 일정한 자세를 유지하는 뼈가 기본 자세로 튀거나 중간에 꺾여서 쓰지 않는다. 한 프레임짜리 포즈와 레이어 클립은 Unity에서 빈 클립이 되므로 넣지 않는다.
+- **들어 있는 애니메이션 묶음**: [Beatrun](../Art/Animations/Beatrun)은 Beatrun 3인칭 여성 세트(`tp_climbanim_f.mdl`)를 Hiro 뼈대에 구운 173개 클립이다. 벽 달리기 4개는 쓰지 않아 뺐다. 소총·권총 버전은 `_ar2`·`_pistol`이 붙는다(누워 미끄러지기, 다이브, 머리부터 미끄러지기, 공중 코일 등). [Mixamo](../Art/Animations/Mixamo)는 mixamo.com에서 X Bot 기준으로 받은 클립(스킨 없음, 30fps)이다. 걷기·달리기·옆걸음·뒷걸음은 제자리 버전이다. 클립마다 실제 속도·길이·발 딛는 시점은 `Mixamo.clips.csv`의 메모에 있다. 웅크리기는 Beatrun을 쓴다. Mixamo 웅크려 걷기는 눈높이가 약 1.2m라 웅크린 카메라(0.8m)와 맞지 않는다. `(아직 안 씀)` 표시 클립(제자리 돌기, 달리며 구르기, 일어나기 3종)은 4단계·10단계에서 쓴다. `Player.csv`의 `Body` 행에서 클립 이름을 바꾸면 Play 중에도 몸이 다시 만들어진다.
+- **8방향 이동**([PlayerBody.Locomotion](../Scripts/Player/Body/PlayerBody.Locomotion.cs)): 걷기·달리기·웅크려 걷기는 앞·오른쪽·뒤·왼쪽 클립을 이동 방향으로 섞는다(대각선은 양옆 두 개). 몸은 항상 카메라 쪽을 본다. 모든 반복 클립은 한 보행 주기를 공유해서 섞여도 발이 엇갈리지 않는다. 전력질주 클립은 `SprintProgress`가 올라간 상태에서 앞으로 이동할 때만 쓴다. 일반 이동·뒷걸음·옆걸음에는 전력질주 클립을 섞지 않는다.
+- **이동 재생 속도**: `Body.runClipSpeed=5.2`, `Body.sprintClipSpeed=8.4`, `Body.crouchClipSpeed=3`은 각각 `Move.walkSpeed`, `Move.sprintSpeed`, `Move.crouchSpeed`에 맞춘 기준값(m/s)이다. 빠른 기본 이동 때문에 평소에도 질주 자세가 섞이거나 웅크리기가 1.5배로 재생되지 않게 한다. 이동 애니메이션의 재생 배율은 0.65~1.1로 제한한다. 이동 속도를 바꾸면 이 기준값도 함께 조정한다.
+- **파쿠르 시간**:
+  - 넘기: 도움닫기 속도를 그대로 유지하며 지나간다. 걷기 속도보다 느려지지는 않는다. 넘기 클립은 자기 속도(`Body.vaultClipSpeed`)로 재생된다. 몸이 먼저 넘어가면 클립은 발이 닿는 지점(`vaultLandShare`)까지 이어서 재생된 뒤 달리기로 넘어간다.
+  - 올라서기: 매달린 난간에서 W·Space로만 된다. 장애물 앞에서는 넘기만 하고, 넘을 수 없으면 점프해서 난간을 잡는다. `Ability.mantleFromGround`를 true로 하면 예전처럼 땅·공중에서 바로 올라선다. 올라서기는 묵직하게 `Ability.mantleDuration` + 높이 1m마다 `mantleDurationPerMeter`가 걸리고, 클립이 그 진행도에 맞춰 재생된다.
+  - 넘기는 진행의 75%, 올라서기는 80%에서 손을 놓고 이동으로 돌아간다.
+  - 구르기는 `Ability.rollDuration` 동안 구르기 클립 전체가 재생된다.
+- **난간 잡기**([PlayerBody.Grip](../Scripts/Player/Body/PlayerBody.Grip.cs)): 매달려 있는 동안 몸은 어디를 보든 벽을 향한다. 클립이 자세를 잡은 뒤에는 손목이 난간 윗면(`Body.ledgeGrip`)에 오도록 몸 전체를 옮긴다. 손은 그 자리에 있고 몸이 그 아래에 매달리므로 캐릭터나 클립이 바뀌어도 손이 허공을 잡지 않는다. 좌우 이동 클립은 실제 이동 속도에 맞춰 빨라진다(`shimmyClipSpeed`).
+- **상황별 클립**([PlayerBody.Variants](../Scripts/Player/Body/PlayerBody.Variants.cs)): 같은 상태라도 상황에 맞는 클립을 고른다. 모두 `Body` 행에서 이름과 기준값을 바꾼다.
+  - 점프: 도움닫기 속도에 따라 제자리(`jumpStill`), 걷기(`jumpSlow`), 달리기(`jump`).
+  - 공중에서 Ctrl: 무릎을 접는 `airTuck`(Beatrun 코일).
+  - 착지: 낙하 속도가 `severeLandingSpeed`(16m/s, 낙하 피해가 시작되는 속도)를 넘으면 손과 무릎을 짚는 `landSevere`. 약 3m(`hardLandingSpeed` 12m/s)를 넘으면 무릎을 깊게 굽히는 `land`, 달리는 중이면 `landMoving`, 웅크린 채면 서지 않는 `landCrouch`. 그보다 낮을 때 공중에서 무릎을 접었으면 다리를 펴는 `coilLand`/`coilLandCrouch`, 아니면 착지 동작 없이 바로 이어진다.
+  - 슬라이드 끝: 웅크림·엎드림으로 이어지는 끝 동작.
+  - 넘기: 장애물 높이에 따라 한 손 `vault`, 1m 넘으면 두 손 `vaultHigh`.
+  - 올라서기: 매달린 데서 올라가면 높이와 관계없이 `ledgeClimbUp`. `mantleFromGround`가 켜져 있을 때 땅에서 올라서면 높이에 따라 `stepUp`, `mantleLow`, `mantleMid`, `mantle`.
+  - 난간: 잡는 순간(`ledgeCatch`)과 좌우 이동(`ledgeShimmyLeft/Right`).
+  - 벽: 벽 오르기 시작(`wallClimbStart`), 튀는 방향별 벽 차기(`wallKick`/`wallKickRight`).
+  - 총: `armedClips`를 켜면 소총·권총을 들었을 때 해당 클립의 총 든 버전(`rifleSuffix`·`pistolSuffix`)을 쓴다. 이 클립들은 Source가 손을 총에 고정해 주는 것을 전제로 만들어서, 손 IK(5단계)가 생기기 전에는 팔이 꼬이므로 꺼 둔다.
 - **재질(lilToon)**: Hiro는 [lilToon](https://github.com/lilxyzw/lilToon) 2.4.1(`Packages/jp.lilxyzw.liltoon`, MIT) 셰이더를 쓴다. 재질은 [Hiro/Materials](../Art/Models/Characters/Hiro/Materials)에 따로 있어 Inspector의 lilToon 화면에서 그림자 색·림라이트·광택을 바로 조정한다. 새 캐릭터는 모델 Inspector → Materials → **Extract Materials** 후 셰이더를 `lilToon`으로 바꾼다.
 - **머리 맞추기**: 자세마다 클립 속 머리 위치가 다르므로(누워 미끄러지면 머리가 발 뒤쪽에 있다) 몸은 머리가 카메라 바로 뒤에 오도록 천천히 따라 움직인다(`Body.headFollowTime`).
-- 누운 자세·누워 미끄러지기는 Beatrun의 `meslide` 계열을 쓴다. 엎드림은 전용 애니메이션이 없어 머리부터 슬라이딩 자세를 임시로 쓰고, 총·주먹은 기존 1인칭 모델이 따로 그린다.
+- 누운 자세·누워 미끄러지기는 Beatrun의 `meslide` 계열을 쓴다. 엎드림은 전용 애니메이션이 없어 머리부터 슬라이딩 자세를 임시로 쓴다. 총·주먹은 아직 기존 1인칭 모델이 따로 그린다. 몸의 손에 쥐게 하는 작업은 계획의 5단계다.
 
 ## 실행 중 생성되는 분류와 혈흔 풀
 

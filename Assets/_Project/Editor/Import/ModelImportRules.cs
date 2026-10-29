@@ -12,8 +12,9 @@ using UnityEngine;
 /// no rig or animation for Props/Environment. Materials stay embedded as URP Lit; a texture next to the model (or in
 /// its Textures folder) named after the material or the model is assigned automatically — "tetopear.png",
 /// "TetoPear_BaseColor.png", "TetoPear_Normal.png". Adding such a texture later reimports the model.
-/// Characters get a humanoid avatar. Files under Art/Animations are humanoid clips; a "&lt;file&gt;.clips.csv" beside one
-/// (columns clip, loop, inPlace, yawOffset) names its clips, marks loops and keeps the authored root unless inPlace is 1.
+/// Characters get a humanoid avatar. Files under Art/Animations are humanoid clips; a "&lt;file&gt;.clips.csv" beside one,
+/// or "&lt;folder&gt;.clips.csv" for a folder of one-clip files (columns clip, loop, inPlace, inPlaceY, yawOffset,
+/// cycleOffset, from, to), names its clips, marks loops and keeps the authored root unless inPlace / inPlaceY is 1.
 /// yawOffset corrects the source clip's forward axis in degrees without discarding its authored turns.
 /// </summary>
 internal sealed class ModelImportRules : AssetPostprocessor
@@ -73,12 +74,18 @@ internal sealed class ModelImportRules : AssetPostprocessor
         }
     }
 
-    // Clip names, loops and root handling come from the "<file>.clips.csv" beside an animation file, on every import.
+    // Clip names, loops and root handling come from the "<file>.clips.csv" beside an animation file, or from the
+    // folder's "<folder>.clips.csv" for a folder of one-clip files (Mixamo), on every import.
     private void OnPreprocessAnimation()
     {
         if (!IsAnimationFile(assetPath)) return;
         string listPath = Path.ChangeExtension(assetPath, null) + ".clips.csv";
-        if (!File.Exists(listPath)) return;
+        if (!File.Exists(listPath))
+        {
+            string folder = Path.GetDirectoryName(assetPath).Replace('\\', '/');
+            listPath = folder + "/" + Path.GetFileName(folder) + ".clips.csv";
+            if (!File.Exists(listPath)) return;
+        }
         context.DependsOnSourceAsset(listPath);
         var list = CsvTable.Parse(File.ReadAllText(listPath), Path.GetFileName(listPath));
         var importer = (ModelImporter)assetImporter;
@@ -87,24 +94,39 @@ internal sealed class ModelImportRules : AssetPostprocessor
         {
             int bar = clip.takeName.LastIndexOf('|');
             clip.name = bar >= 0 ? clip.takeName.Substring(bar + 1) : clip.takeName;
+            // Mixamo names every take "mixamo.com"; a file of one such take is named after the file instead.
+            if (clips.Length == 1 && clip.name == GenericMixamoTake) clip.name = Path.GetFileNameWithoutExtension(assetPath);
             list.TryGetRow(clip.name, out var row);
             clip.loopTime = Flag(row, "loop");
-            // Height and facing stay as authored. Travel stays too, so feet keep their place, unless inPlace = 1.
+            // Height and facing stay as authored. Travel stays too, so feet keep their place, unless inPlace = 1;
+            // inPlaceY = 1 drops the rise and fall as well, for clips the player's own path carries over an obstacle.
             clip.lockRootRotation = clip.keepOriginalOrientation = true;
             // Source clips can use a different forward axis from their humanoid rest pose.
             // Correct the clip basis while keeping its authored turns and body motion.
-            clip.rotationOffset = row != null && row.TryGetValue("yawOffset", out string yaw)
-                && float.TryParse(yaw, NumberStyles.Float, CultureInfo.InvariantCulture, out float degrees)
-                && !float.IsNaN(degrees) && !float.IsInfinity(degrees) ? degrees : 0f;
-            clip.lockRootHeightY = clip.keepOriginalPositionY = true;
+            clip.rotationOffset = Number(row, "yawOffset");
+            clip.lockRootHeightY = !Flag(row, "inPlaceY");
+            clip.keepOriginalPositionY = true;
             clip.lockRootPositionXZ = !Flag(row, "inPlace");
             clip.keepOriginalPositionXZ = true;
+            // Which share of a loop it starts at, so cycles that blend together put down the same foot first.
+            clip.cycleOffset = Number(row, "cycleOffset");
+            // from/to keep only those frames, counted from the clip's first one (a landing starts at touchdown).
+            float first = clip.firstFrame, from = Number(row, "from"), to = Number(row, "to");
+            if (from > 0f) clip.firstFrame = Mathf.Min(first + from, clip.lastFrame - 1f);
+            if (to > from) clip.lastFrame = Mathf.Min(first + to, clip.lastFrame);
         }
         importer.clipAnimations = clips;
     }
 
+    private const string GenericMixamoTake = "mixamo.com";
+
     private static bool Flag(System.Collections.Generic.IReadOnlyDictionary<string, string> row, string column)
         => row != null && row.TryGetValue(column, out string value) && value.Trim() == "1";
+
+    private static float Number(System.Collections.Generic.IReadOnlyDictionary<string, string> row, string column)
+        => row != null && row.TryGetValue(column, out string text)
+            && float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out float value)
+            && !float.IsNaN(value) && !float.IsInfinity(value) ? value : 0f;
 
     private void OnPreprocessTexture()
     {

@@ -36,8 +36,11 @@ public sealed class MovementAbilitySettings
     [Min(0.3f)] public float vaultMaxHeight = 1.15f;
     [Min(0.3f)] public float mantleMaxHeight = 2.1f;
     [Min(0.2f)] public float vaultMaxDepth = 1.5f;
-    [Range(0.01f, 0.2f)] public float vaultReferenceLerp = 0.1f;
-    [Range(0.01f, 0.2f)] public float mantleReferenceLerp = 0.075f;
+    [Tooltip("올라서기에 걸리는 시간(초) = 이 값 + 높이 1m마다 mantleDurationPerMeter.")]
+    [Min(0.1f)] public float mantleDuration = 0.45f;
+    [Min(0f)] public float mantleDurationPerMeter = 0.3f;
+    [Tooltip("땅이나 공중에서 장애물에 바로 올라서기. 끄면 올라서기는 난간에 매달린 뒤에만 되고, 장애물 앞에서는 넘기만 한다.")]
+    public bool mantleFromGround;
     [Range(45f, 75f)] public float slideMaxSlopeAngle = 65f;
 
     [Header("Ledge Hang")]

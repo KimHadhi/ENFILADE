@@ -123,15 +123,16 @@ Ability.obstacleReach,1.35,볼트·맨틀할 장애물을 앞에서 찾는 거�
 Ability.vaultMaxHeight,1.15,볼트(넘기) 최대 높이(m)
 Ability.mantleMaxHeight,2.1,맨틀(올라서기) 최대 높이(m)
 Ability.vaultMaxDepth,1.5,넘을 수 있는 장애물의 최대 두께(m)
-Ability.vaultReferenceLerp,0.1,볼트 경로를 따라가는 빠르기
-Ability.mantleReferenceLerp,0.075,맨틀 경로를 따라가는 빠르기
+Ability.mantleDuration,0.45,올라서기에 걸리는 시간(초) = 이 값 + 높이 1m마다 mantleDurationPerMeter
+Ability.mantleDurationPerMeter,0.3,올라서기 높이 1m마다 늘어나는 시간(초)
+Ability.mantleFromGround,false,땅이나 공중에서 장애물에 바로 올라서기. false면 올라서기는 난간에 매달린 뒤 W·Space로만 되고 장애물 앞에서는 넘기만 한다
 Ability.slideMaxSlopeAngle,65,슬라이드 중 바닥으로 인정하는 최대 경사(도)
 # 능력: 렛지,,
 Ability.ledgeReach,1,렛지를 앞에서 찾는 거리(m)
 Ability.ledgeReachAboveHands,0.3,손 높이보다 위로 렛지를 찾는 높이(m)
 Ability.ledgeCatchDuration,0.14,렛지를 잡은 뒤 점프·올라가기가 가능해지기까지(초)
 Ability.ledgeRegrabDelay,0.4,렛지를 놓은 뒤 다시 잡을 수 있기까지(초)
-Ability.ledgeShimmySpeed,1.8,렛지 좌우 이동 속도(m/s)
+Ability.ledgeShimmySpeed,1,렛지 좌우 이동 속도(m/s)
 Ability.airTraversalMaxFallSpeed,8,이보다 빠르게 떨어지는 중에는 공중에서 렛지·벽을 잡지 않는다(m/s)
 Ability.ledgeJumpLookAngle,42,렛지에서 점프 방향을 시선으로 고를 때의 허용 각도(도)
 Ability.ledgeJumpSpeed,8.5,렛지 점프 수평 속도(m/s)
@@ -157,8 +158,8 @@ Ability.safeFallSpeed,16,이보다 빠르게 착지하면 낙하 피해(m/s)
 Ability.safeFallDistance,4,이보다 높이 떨어져야 낙하 피해(m)
 Ability.fallDamagePerSpeed,4,safeFallSpeed를 넘은 1m/s당 피해
 Ability.rollInputWindow,0.22,착지 전에 Ctrl을 눌러 구르기로 받는 시간(초)
-Ability.rollDuration,0.65,착지 구르기 시간(초)
-Ability.rollSpeed,5.5,구르는 동안 앞으로 가는 속도(m/s)
+Ability.rollDuration,1,착지 구르기 시간(초). 구르기 애니메이션이 이 시간에 맞춰 재생된다
+Ability.rollSpeed,4,구르는 동안 앞으로 가는 속도(m/s)
 # 능력: 슬라이드 전투,,
 Ability.slideDamage,15,슬라이드로 적을 칠 때 피해
 Ability.slideBoostSpeed,1.5,저스트 슬라이드(Alt) 성공 때 더하는 속도(m/s)
@@ -189,19 +190,25 @@ Ability.tackleDamage,20,태클 피해
 Ability.propPushForce,300,걸으며 물리 프랍을 미는 힘(N). 가벼우면 바로 걷는 속도로 밀린다
 Ability.propShoveImpulse,60,V 밀치기가 물리 프랍에 주는 운동량(N·s). 태클은 2배
 Ability.propBodyMass,70,슬라이드·다이브·태클로 프랍에 부딪힐 때의 몸무게(kg)
-Body.idle,stand_tp,몸 애니메이션 이름 (Art/Animations의 클립). 서 있기
-Body.walk,walkfwd,걷기
-Body.walkBack,walkback,뒤로 걷기
-Body.run,runfwd,달리기
-Body.runBack,runbwd,뒤로 달리기
+Body.idle,mx_idle,몸 애니메이션 이름 (Art/Animations의 클립). 서 있기
+Body.walk,mx_walk,걷기 (앞)
+Body.walkRight,mx_strafe_walk_right,오른쪽으로 걷기. 대각선은 두 방향을 섞는다
+Body.walkLeft,mx_strafe_walk_left,왼쪽으로 걷기
+Body.walkBack,mx_walk_back,뒤로 걷기
+Body.run,mx_run,달리기 (앞)
+Body.runRight,mx_strafe_run_right,오른쪽으로 달리기
+Body.runLeft,mx_strafe_run_left,왼쪽으로 달리기
+Body.runBack,mx_run_back,뒤로 달리기
 Body.sprint,sprintfwd,전력질주
 Body.crouchIdle,crouchstill,웅크려 서 있기
-Body.crouchWalk,crouchfwd,웅크려 걷기
+Body.crouchWalk,crouchfwd,웅크려 걷기 (앞)
+Body.crouchRight,crouchright,웅크려 오른쪽으로 걷기
+Body.crouchLeft,crouchleft,웅크려 왼쪽으로 걷기
 Body.crouchBack,crouchbwd,웅크려 뒤로 걷기
 Body.jump,jumpfast,점프 도약
 Body.air,jumpidle,공중
-Body.fall,fallinguncontrolled,빠른 낙하
-Body.land,land,세게 착지(제자리)
+Body.fall,mx_fall,빠른 낙하
+Body.land,mx_fall_land,세게 착지(제자리): 무릎을 깊게 굽힌다
 Body.landMoving,runland,세게 착지(이동 중)
 Body.slideStart,slidestart,슬라이딩 시작
 Body.slide,slideloop,슬라이딩
@@ -216,26 +223,60 @@ Body.supine,meslideloop,누운 자세(등을 대고 미끄러지는 자세)
 Body.supineSlideStart,meslidestart,누워서 미끄러지기 시작
 Body.supineSlide,meslideloop,누워서 미끄러지기
 Body.supineSlideEnd,meslideend,누워서 미끄러지기 끝
-Body.roll,meroll_tp,착지 구르기
+Body.roll,mx_fall_roll,착지 구르기. Ability.rollDuration 동안 재생
 Body.dodgeLeft,dodgejumpleft,왼쪽 회피
 Body.dodgeRight,dodgejumpright,오른쪽 회피
 Body.tackle,bargein,태클
-Body.vault,vaultover_tp,넘기
+Body.vault,mx_vault_one_hand,한 손 짚고 넘기. 넘는 동안 진행도에 맞춰 재생
 Body.mantle,climb1,올라서기
 Body.wallClimb,wallrunvertical,벽 오르기
 Body.wallKick,jumpwrleft,벽 차고 뛰기
 Body.barSwing,swing,봉 매달려 흔들기
 Body.barRelease,swingjumpoff,봉에서 뛰어내리기
-Body.ledgeHang,hang,난간 매달리기
-Body.ledgeJump,hangheaveup_tp,난간에서 올라가기
+Body.ledgeHang,mx_ledge_hang_wall,난간 매달리기
+Body.ledgeJump,hangheaveup,난간에서 올라가기
 Body.death,diestand,사망
+Body.jumpStill,jumpstill,제자리 점프 (도움닫기 속도가 jumpStillSpeed 미만)
+Body.jumpSlow,jumpslow,걸으며 점프 (jumpFastSpeed 미만). 그보다 빠르면 Body.jump
+Body.airTuck,jumpcoil,공중에서 Ctrl로 무릎을 접은 자세 (Beatrun 코일)
+Body.landCrouch,landcrouch,웅크린 채 세게 착지 (서지 않고 웅크린 채 끝남)
+Body.landSevere,mx_hard_landing,아주 세게 착지: 손과 무릎을 짚는다 (severeLandingSpeed 초과)
+Body.coilLand,jumpcoilend,공중에서 무릎을 접었다가 가볍게 착지할 때 다리를 펴는 동작
+Body.coilLandCrouch,jumpcoilendcrouch,같은 착지를 웅크린 채로
+Body.supineSlideEndCrouch,meslideendcrouch,누워 미끄러지다 웅크리며 끝내기
+Body.supineSlideEndProne,meslideendprone,누워 미끄러지다 엎드리며 끝내기
+Body.bellySlideEndCrouch,diveslideendcrouch,머리부터 미끄러지다 웅크리며 끝내기
+Body.vaultHigh,mx_vault_two_hands,높은 장애물 두 손 짚고 넘기
+Body.stepUp,stepuprightleg,낮은 턱 올라서기 (mantleStepHeight 미만)
+Body.mantleLow,vaultonto,손 짚고 올라서기 (mantleLowHeight 미만)
+Body.mantleMid,vaultontohigh,높게 손 짚고 올라서기 (mantleMidHeight 미만). 그보다 높으면 Body.mantle
+Body.ledgeClimbUp,mx_ledge_climb_up,매달린 데서 올라가기 (높이와 관계없이)
+Body.ledgeCatch,mx_ledge_catch_air,난간을 잡는 순간 (그다음 Body.ledgeHang)
+Body.ledgeShimmyLeft,mx_ledge_shimmy_left,난간에서 왼쪽으로 이동
+Body.ledgeShimmyRight,mx_ledge_shimmy_right,난간에서 오른쪽으로 이동
+Body.wallClimbStart,wallrunverticalstart,벽 오르기 시작 (그다음 Body.wallClimb)
+Body.wallKickRight,jumpwrright,벽 차기 - 몸이 왼쪽으로 튈 때. 오른쪽으로 튀면 Body.wallKick
+Body.armedClips,false,총 든 동작 사용. 손 IK가 생기기 전까지는 팔이 꼬여서 끔(5단계에서 켬)
+Body.rifleSuffix,_ar2,소총을 들었을 때 붙는 클립 이름 끝. 그 클립이 있으면 총 든 동작으로 (meslideloop → meslideloop_ar2)
+Body.pistolSuffix,_pistol,권총을 들었을 때 붙는 클립 이름 끝
+Body.jumpStillSpeed,1,이보다 느리게 뛰면 제자리 점프(m/s)
+Body.jumpFastSpeed,4,이보다 빠르게 뛰면 달리며 점프(m/s)
+Body.vaultHighHeight,1,이보다 높은 장애물은 높은 넘기(m)
+Body.mantleStepHeight,0.7,이보다 낮으면 턱 올라서기(m)
+Body.mantleLowHeight,1.1,이보다 낮으면 손 짚고 올라서기(m)
+Body.mantleMidHeight,1.6,이보다 낮으면 높게 손 짚고 올라서기 / 이상이면 기어오르기(m)
+Body.severeLandingSpeed,16,이보다 빠르게 떨어지면 손과 무릎을 짚고 착지(m/s). 낙하 피해가 시작되는 속도와 같다
+Body.shimmyClipSpeed,0.5,난간 좌우 이동 애니메이션의 기준 속도(m/s). 실제 속도에 맞춰 재생 속도를 조절
+Body.vaultClipSpeed,1.3,넘기 애니메이션 재생 속도. 넘기는 도움닫기 속도를 유지해서 애니메이션보다 먼저 끝나고, 남은 동작은 발이 닿을 때까지 이어서 재생한다
+Body.vaultLandShare,0.72,넘기 애니메이션에서 발이 땅에 닿는 지점(0~1). 여기서 달리기로 넘어간다
 Body.blendTime,0.15,애니메이션 사이 전환 시간(초)
-Body.walkClipSpeed,1.5,걷기 애니메이션 기준 속도(m/s). 실제 속도에 맞춰 재생 속도를 조절
-Body.runClipSpeed,4,달리기 애니메이션 기준 속도(m/s)
-Body.sprintClipSpeed,8,전력질주 애니메이션 기준 속도(m/s)
-Body.crouchClipSpeed,2,웅크려 걷기 애니메이션 기준 속도(m/s)
-Body.maxStrafeYaw,60,옆·뒤로 움직일 때 몸(다리)이 이동 방향으로 도는 최대 각도
+Body.walkClipSpeed,1.7,걷기를 원래 박자로 재생하는 이동 속도(m/s). 재생 배율은 0.65~1.1로 제한
+Body.runClipSpeed,5.2,달리기를 원래 박자로 재생하는 이동 속도(m/s). Move.walkSpeed와 맞춘다
+Body.sprintClipSpeed,8.4,전력질주를 원래 박자로 재생하는 이동 속도(m/s). Move.sprintSpeed와 맞춘다
+Body.crouchClipSpeed,3,웅크려 걷기를 원래 박자로 재생하는 이동 속도(m/s). Move.crouchSpeed와 맞춘다
+Body.maxStrafeYaw,60,전력질주 중 옆으로 움직일 때 골반이 이동 방향으로 도는 최대 각도. 걷기·달리기·웅크리기는 옆·뒤 애니메이션이 있어 카메라 쪽을 본다
 Body.backOffset,0.12,머리를 카메라 뒤에 두는 거리(m). 내려다볼 때 목 안쪽이 보이지 않게
 Body.headFollowTime,0.25,자세가 바뀔 때 머리를 카메라 밑으로 맞추는 속도(초). 달리기 흔들림보다 느리게
-Body.hardLandingSpeed,9,이보다 빠르게 떨어지면 착지 애니메이션(m/s)
+Body.hardLandingSpeed,12,이보다 빠르게 떨어지면 무릎을 깊게 굽혀 착지(m/s). 12m/s는 약 3m 낙하
 Body.thirdPersonOffset,0.35;0.2;-2.4,F5 뒤에서 보기 카메라 위치(오른쪽;위;앞)
+Body.ledgeGrip,0.05;0.05,매달릴 때 손목 위치: 난간 윗면보다 위(m);벽면에서 안쪽(m)

@@ -1,30 +1,33 @@
 using UnityEngine;
 
-/// <summary>The supplied vmanip_vault root motion and handoff, in metres.</summary>
+/// <summary>The supplied vmanip_vault route and handoff, in metres, paced by TraversalTiming.</summary>
 public sealed class ReferenceTraversal
 {
     private readonly PlayerMovement ctx;
     private readonly ObstacleTarget target;
     private readonly ParkourDetector detector;
+    private readonly float duration;
     private Vector3 lastClearPosition;
-    private float progress;
+    private float progress, elapsed;
     private bool finishing;
     private float finishTime;
     private const float FinishDuration = 0.12f;
     private Vector3 finishStart, finishVelocity, lastVelocity;
     public bool Complete { get; private set; }
+    public float TimeShare => Mathf.Clamp01(elapsed / duration);
 
-    internal ReferenceTraversal(PlayerMovement context, ObstacleTarget obstacle)
+    internal ReferenceTraversal(PlayerMovement context, ObstacleTarget obstacle, float seconds)
     {
         ctx = context; target = obstacle; detector = ctx.Abilities.Traversal.Detector;
         lastClearPosition = obstacle.Start;
+        duration = Mathf.Max(0.05f, seconds);
     }
 
     internal bool Advance(float dt)
     {
         if (target.Surface == null || !target.Surface.enabled || !target.Surface.gameObject.activeInHierarchy) return false;
-        float rate = target.IsVault ? ctx.AbilitySettings.vaultReferenceLerp : ctx.AbilitySettings.mantleReferenceLerp;
-        float next = TraversalTiming.Advance(progress, rate, dt);
+        float nextElapsed = elapsed + Mathf.Max(0f, dt);
+        float next = TraversalTiming.Progress(nextElapsed / duration, target.IsVault);
         Vector3 position = Vector3.Lerp(target.Start, target.End, next);
         bool finish = progress >= TraversalTiming.EndProgress(target.IsVault)
             || (position - target.End).sqrMagnitude < TraversalTiming.EndDistanceSquared;
@@ -48,7 +51,7 @@ public sealed class ReferenceTraversal
         }
         if (!detector.ClearReferencePath(ctx.transform.position, position, target.Surface)
             || (finish && !detector.ClearReferenceExit(position))) return false;
-        progress = next; Complete = finish;
+        progress = next; elapsed = nextElapsed; Complete = finish;
         if (detector.ClearReferenceExit(position)) lastClearPosition = position;
         Vector3 velocity = (position - ctx.transform.position) / Mathf.Max(dt, 0.001f);
         lastVelocity = velocity;

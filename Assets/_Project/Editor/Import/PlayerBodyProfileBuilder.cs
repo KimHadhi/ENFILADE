@@ -21,7 +21,20 @@ internal sealed class PlayerBodyProfileBuilder : AssetPostprocessor
             p.EndsWith(".fbx", StringComparison.OrdinalIgnoreCase)
             && (p.StartsWith(CharactersFolder + "/", StringComparison.OrdinalIgnoreCase)
                 || p.StartsWith(ModelImportRules.AnimationsFolder, StringComparison.OrdinalIgnoreCase)));
-        if (!relevant || queued) return;
+        if (relevant) Queue();
+    }
+
+    // Animations imported together with a script change can lose their queued refresh to the domain reload that
+    // follows, so check again whenever the editor loads (not on entering Play, where nothing was imported).
+    [InitializeOnLoadMethod]
+    private static void RefreshOnLoad()
+    {
+        if (!EditorApplication.isPlayingOrWillChangePlaymode) Queue();
+    }
+
+    private static void Queue()
+    {
+        if (queued) return;
         queued = true;
         EditorApplication.delayCall += Refresh;
     }
