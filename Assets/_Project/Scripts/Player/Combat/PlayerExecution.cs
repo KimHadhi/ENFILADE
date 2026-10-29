@@ -51,7 +51,7 @@ public sealed class PlayerExecution : MonoBehaviour
     private bool CanOffer => isActiveAndEnabled && player != null && player.IsInitialized && player.InputAvailable
         && !player.CombatInputLocked && !player.IsParkour && !player.IsSliding && !player.IsDiving
         && player.CurrentState != PlayerMovement.MovementState.StepDodge
-        && player.CurrentState != PlayerMovement.MovementState.Tackle
+        && player.CurrentState != PlayerMovement.MovementState.DashPush
         && player.CurrentState != PlayerMovement.MovementState.LandingRoll
         && (ActiveExecution == null || !ActiveExecution.IsExecuting);
     private void Update()

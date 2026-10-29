@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Rendering.Universal;
 
 [DisallowMultipleComponent]
 [DefaultExecutionOrder(200)]
@@ -56,6 +57,7 @@ public sealed class PlayerCameraEffects : MonoBehaviour
     private Vector3 baseCameraPosition;
     private Transform effectsPivot;
     private PlayerBody body;
+    private PlayerMovementPunch movementPunch;
     internal Vector3 CameraLocalHome => baseCameraPosition;
     internal Vector3 CameraAnchorPosition => targetCamera.parent.TransformPoint(baseCameraPosition);
     internal Vector3 LeanDisplacement { get; private set; }
@@ -91,6 +93,8 @@ public sealed class PlayerCameraEffects : MonoBehaviour
 
         cam = targetCamera.GetComponent<Camera>();
         if (cam == null) return;
+        // The player's view renders URP post-processing: the pipeline profile's grade, and volumes such as a long fall's warp.
+        cam.GetUniversalAdditionalCameraData().renderPostProcessing = true;
         baseCameraPosition = targetCamera.localPosition;
 
         baseFov = GameSettings.Current.VerticalFieldOfView;
@@ -217,10 +221,12 @@ public sealed class PlayerCameraEffects : MonoBehaviour
     private void ApplyCameraRotation()
     {
         float shake = Shake;
+        if (movementPunch == null) movementPunch = movement.GetComponent<PlayerMovementPunch>();
+        Vector3 steps = movementPunch != null && movementPunch.isActiveAndEnabled ? movementPunch.Angles : Vector3.zero;
         effectsPivot.localRotation = Quaternion.Euler(
-            (traversalPunch.x + divePitch + impulseRotDisplacement.x) * shake,
-            impulseRotDisplacement.y * shake,
-            (currentTiltRoll + traversalPunch.y + impulseRotDisplacement.z) * shake + movement.LeanRoll
+            (traversalPunch.x + divePitch + impulseRotDisplacement.x + steps.x) * shake,
+            (impulseRotDisplacement.y + steps.y) * shake,
+            (currentTiltRoll + traversalPunch.y + impulseRotDisplacement.z + steps.z) * shake + movement.LeanRoll
         );
     }
 

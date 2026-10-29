@@ -92,7 +92,7 @@ public sealed class MovementMotor
         if (hit.normal.y > lastMoveGroundNormal.y) lastMoveGroundNormal = hit.normal;
     }
 
-    // A body slide, dive or tackle that runs into a physics prop kicks it ahead and keeps whatever momentum it did not
+    // A body slide, dive or dash push that runs into a physics prop kicks it ahead and keeps whatever momentum it did not
     // hand over. A prop that would take most of the speed (or cannot move) returns false: the caller treats it as a wall.
     internal bool TryKickProp(Collider collider, Vector3 point, out Vector3 keptVelocity)
     {
@@ -289,8 +289,11 @@ public sealed class MovementMotor
         if (!ctx.IsSliding || !isGrounded || VerticalVelocity > 0f || jumpUngroundTimer > 0f)
         {
             slideSupported = false;
+            bool onGround = isGrounded && VerticalVelocity <= 0f && jumpUngroundTimer <= 0f;
             ctx.Abilities.Slide.BeforeMove(HorizontalVelocity * dt);
-            return controller.Move((HorizontalVelocity + Vector3.up * VerticalVelocity) * dt);
+            CollisionFlags moved = controller.Move((HorizontalVelocity + Vector3.up * VerticalVelocity) * dt);
+            if (onGround && (moved & CollisionFlags.Below) == 0) moved |= StickToGround();
+            return moved;
         }
 
         // Advance horizontally first, then settle the whole capsule onto support.
@@ -327,6 +330,22 @@ public sealed class MovementMotor
             }
         }
         return flags;
+    }
+
+    // Running down stairs or a slope, the capsule follows the ground down instead of flying off each step and landing
+    // again a moment later. Only a drop within a step's height; a real ledge is a fall.
+    private CollisionFlags StickToGround()
+    {
+        Vector3 bottomSphere = ctx.transform.TransformPoint(controller.center
+            - Vector3.up * (controller.height * 0.5f - controller.radius));
+        float radius = WorldControllerRadius;
+        float lift = Mathf.Max(0.15f, radius + WorldSkinWidth * 2f);
+        float reach = Mathf.Max(0.1f, ctx.Posture.defaultStepOffset * Mathf.Abs(ctx.transform.lossyScale.y)) + 0.05f;
+        if (!Physics.SphereCast(bottomSphere + Vector3.up * lift, radius, Vector3.down, out RaycastHit hit,
+                lift + reach, ctx.groundLayers, QueryTriggerInteraction.Ignore)
+            || !TryGetSupportNormal(hit, out _)) return CollisionFlags.None;
+        float drop = Mathf.Clamp(hit.distance - lift, 0f, reach);
+        return controller.Move(Vector3.down * (drop + Mathf.Max(0.015f, WorldSkinWidth)));
     }
 
     private bool TrySnapSlidingToGround(out CollisionFlags flags)

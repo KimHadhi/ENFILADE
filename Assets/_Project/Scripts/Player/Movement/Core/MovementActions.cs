@@ -10,9 +10,10 @@ public sealed class MovementActions
     public bool SlideBrakeArmed;
     public Vector3 DiveBodyForward = Vector3.forward;
     public MovementDive Dive { get; }
+    public MovementMomentum Momentum { get; }
     internal float sprintProgress, slideCooldownTimer, coyoteTimer, jumpBufferTimer;
 
-    internal MovementActions(PlayerMovement context) { ctx = context; Dive = new MovementDive(ctx); }
+    internal MovementActions(PlayerMovement context) { ctx = context; Dive = new MovementDive(ctx); Momentum = new MovementMomentum(ctx); }
 
     internal void TickTimers(float dt)
     {
@@ -28,6 +29,7 @@ public sealed class MovementActions
         coyoteTimer = jumpBufferTimer = slideCooldownTimer = 0f;
         SlideBrakeArmed = false;
         Dive.Reset();
+        Momentum.Reset();
     }
 
     public void StartSlide(float currentSpeed, bool applyBoost = true)

@@ -2,7 +2,7 @@ using UnityEngine;
 
 /// <summary>
 /// A free physics object (fruit, crate, debris). Its Rigidbody mass alone decides how it reacts: walking leans on it
-/// with a force, V shove, tackle and bullets hit it with momentum (N·s), so a light prop flies and a heavy one barely
+/// with a force, V shove and bullets hit it with momentum (N·s), so a light prop flies and a heavy one barely
 /// moves. A push never makes it faster than what pushed it. Parkour ignores it, so the player never hangs from
 /// something that rolls away. Built from a model with Tools → Models → Create Physics Prop Prefab.
 /// </summary>

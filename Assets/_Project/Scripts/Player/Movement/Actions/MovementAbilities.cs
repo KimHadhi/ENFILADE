@@ -64,7 +64,10 @@ public sealed class MovementAbilities
         }
         if (IsOrdinaryAirborne && Traversal.TryStartAirAction())
             return InputConsumed = true;
-        if (CanUseGroundActions && (ctx.MeleeCombat == null || !ctx.MeleeCombat.IsActive) && ctx.Input.ShovePressed && Combat.TryShove())
+        // Running, V is the dash push with a gun or fists. Otherwise the fists own V (shove, guard break), and with a
+        // gun it is the crowd shove. PlayerMeleeCombat runs first and drops its pending shove once the dash is under way.
+        bool fists = ctx.MeleeCombat != null && ctx.MeleeCombat.IsActive;
+        if (CanUseGroundActions && ctx.Input.ShovePressed && (Combat.TryDashPush() || (!fists && Combat.TryShove())))
             return InputConsumed = true;
         return false;
     }
@@ -79,7 +82,7 @@ public sealed class MovementAbilities
         // Resolve an enemy overlap before choosing posture, so its body is not mistaken for a low ceiling.
         if (ctx.CurrentState == State.StepDodge) ctx.DodgePassThrough?.Finish();
         // A blocked crouch capsule may be a side wall or a shoved body, not a low tunnel.
-        bool lowPassage = ctx.CurrentState != State.Tackle && ctx.HasVentCeilingAhead(ctx.transform.forward, 0f);
+        bool lowPassage = ctx.CurrentState != State.DashPush && ctx.HasVentCeilingAhead(ctx.transform.forward, 0f);
         ctx.ChangeState(ctx.HasCeilingAbove(ctx.StandingColliderHeight)
             ? (lowPassage ? State.Proning : State.Crouching) : State.Standing);
     }

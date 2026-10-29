@@ -57,7 +57,7 @@ public sealed partial class PlayerBody
             float toSprint = Mathf.Clamp01((speed - runClipSpeed) / Mathf.Max(.01f, sprintClipSpeed - runClipSpeed));
             // Speed alone can come from strafing, moving backwards or carried momentum. The sprint clip only
             // has a forward stride, so blend it in with the movement system's actual forward sprint intent.
-            toSprint *= player.SprintProgress * Mathf.Clamp01(local.z / Mathf.Max(.01f, speed));
+            toSprint *= player.RunIntent * Mathf.Clamp01(local.z / Mathf.Max(.01f, speed));
             var stepping = TurnOnTheSpot(speed < .3f, dt);
             if (stepping != null) stepping.Target += 1f - toWalk;
             else Mix(idle, 1f - toWalk);

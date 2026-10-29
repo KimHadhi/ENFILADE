@@ -22,7 +22,7 @@
 | 좌클릭 | 단발·점사·연사 등 무기 설정에 따라 발사 | 누르면 차징, 놓으면 주먹 공격 |
 | 우클릭 | 정조준 유지 | 가드, 새 입력 직후 패링 판정 |
 | R | 수동 재장전 | 사용하지 않음 |
-| V | 밀치기, 전방 달리기 조건을 만족하면 별도 태클 | 짧게 눌렀다 놓으면 밀치기, 길게 누르면 한 명에게 가드 브레이크 |
+| V | 밀치기. 시선 쪽으로 달리며 누르면 돌진 밀치기 | 짧게 눌렀다 놓으면 밀치기, 길게 누르면 한 명에게 가드 브레이크. 시선 쪽으로 달리며 누르면 돌진 밀치기 |
 | 1 / 2 / 3 / 4 | 원거리 / 원거리 / 근접 / 특수 슬롯 선택·해제 | 동일 |
 | F | 가까운 흐트러진 적에게 처형 표시가 뜨면 처형 | 동일. 슬롯을 해제한 상태에서도 가능 |
 | Q / E | 기울이기·마이크로 회피, ADS와 함께 사용 가능 | 기울이기·마이크로 회피 |
@@ -68,7 +68,7 @@
 | 방어·밀치기 소리, 반격, 흐트러짐 표시, 피해 팝업·HP 손실 표시 | [Feedback.asset](../Resources/Combat/Feedback.asset) |
 | 시작 무기와 시작 슬롯 | 플레이어의 `PlayerWeaponSlots` → Slot 1~4 / Starting Slot |
 | 주먹·가드·패링·V 홀드 | 플레이어의 `PlayerMeleeCombat` |
-| 밀치기·태클·슬라이딩 수치 | [Player.csv](../Resources/Tables/Player.csv)의 `Ability` 행 |
+| 밀치기·돌진 밀치기·슬라이딩 수치 | [Player.csv](../Resources/Tables/Player.csv)의 `Ability` 행 |
 | 적 체력·AI·체간·몸 크기 | [적 프리팹](../Prefabs/Enemies)의 `EnemyHealth`, `EnemyCombatAI`, `MeleeCombatTarget` |
 | 사격·장전·가드 키 | [Player.inputactions](../Input/Player.inputactions)의 Combat 맵 |
 | 슬롯 숫자 키 | [PlayerWeaponSlots.Update](../Scripts/Player/Combat/Weapons/PlayerWeaponSlots.cs)의 직접 키보드 입력 |

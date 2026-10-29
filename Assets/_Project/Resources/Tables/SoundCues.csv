@@ -32,9 +32,11 @@ BellySlideStart,Movement/Cloth/FallShortMedium; Movement/Slide/{surface} *0.5,12
 SlideEnd,Movement/Cloth/MovementSneak,4,슬라이드 끝
 Dive,Movement/Release/{surface}; Movement/Cloth/BodyRollSwish; Voice/StrainSoft,10,다이브
 Dodge,Movement/Run/{surface}; Movement/Cloth/SideStep; Voice/StrainSoft,8,스텝 회피 (Beatrun side step)
-Tackle,Movement/Run/{surface}; Movement/Cloth/SideStep; Voice/StrainMedium,12,태클
+DashPush,Movement/Run/{surface}; Movement/Cloth/SideStep; Voice/StrainMedium,12,돌진 밀치기 시작
+DashPushHit,Movement/Push; Movement/Cloth/FallShortMedium *0.6,16,돌진 밀치기가 적에 부딪힘 (Dynamic Landing push1-4)
 ProneDown,Movement/Prone/Down,4,엎드리기
 ProneUp,Movement/Prone/Up,4,엎드렸다 일어나기
 Crouch,Movement/Cloth/MovementSneak *0.5,2,웅크리기
 Stand,Movement/Cloth/MovementSneak *0.5,2,웅크렸다 일어서기
 Lean,Movement/Lean,2,Q/E 기울이기
+FallHeartbeat,Movement/Fall/Heartbeat,0,큰 낙하 심장 박동 한 번 (머릿속에서). 박자와 크기는 Player.csv FallAudio

@@ -1,7 +1,7 @@
 using UnityEngine;
 using State = PlayerMovement.MovementState;
 
-/// <summary>Finite ground movement shared by step dodge, landing roll and tackle.</summary>
+/// <summary>Finite ground movement shared by step dodge, landing roll and dash push.</summary>
 public sealed class GroundBurstState : MovementBaseState
 {
     private readonly State kind;
@@ -13,9 +13,11 @@ public sealed class GroundBurstState : MovementBaseState
     private bool interrupted;
     public GroundBurstState(PlayerMovement ctx, MovementBaseState parent, State kind) : base(ctx, parent) { this.kind = kind; }
     public override string Name => kind.ToString();
-    public override MovementPosture Posture => kind == State.StepDodge ? ctx.Abilities.ActionPosture : MovementPosture.Crouching;
+    // A dash push stays upright, so a run that carries on after it never dips the body.
+    public override MovementPosture Posture => kind == State.StepDodge ? ctx.Abilities.ActionPosture :
+        kind == State.DashPush ? MovementPosture.Standing : MovementPosture.Crouching;
     private float Duration => kind == State.StepDodge ? ctx.AbilitySettings.stepDuration :
-        kind == State.LandingRoll ? ctx.AbilitySettings.rollDuration : ctx.AbilitySettings.tackleDuration;
+        kind == State.LandingRoll ? ctx.AbilitySettings.rollDuration : ctx.AbilitySettings.dashPushDuration;
     public override void Enter() { interrupted = false; stepElapsed = stepExpectedAdvance = exitElapsed = 0f; initialSpeed = ctx.HorizontalVelocity.magnitude; ctx.Actions.ClearJumpBuffer(); }
     internal void RestartStep()
     {
@@ -27,6 +29,13 @@ public sealed class GroundBurstState : MovementBaseState
     }
     public override void UpdateLogic(float dt)
     {
+        // A dash push stops dead on the first body it meets, before this frame's move.
+        if (kind == State.DashPush && ctx.Abilities.Combat.DashInto(ctx.Abilities.Combat.DashSpeed * dt))
+        {
+            interrupted = true;
+            ctx.HorizontalVelocity = Vector3.zero;
+            ctx.Abilities.ReturnToLocomotion(); return;
+        }
         if (kind == State.StepDodge && stepExpectedAdvance > 0f
             && (ctx.Motor.lastMoveFlags & CollisionFlags.Sides) != 0
             && Vector3.Dot(ctx.transform.position - stepFrameStart, ctx.Abilities.ActionDirection) < stepExpectedAdvance - 0.025f)
@@ -42,8 +51,9 @@ public sealed class GroundBurstState : MovementBaseState
     }
     public override void UpdatePhysics(float dt)
     {
+        // A landing roll keeps the speed it landed with.
         float speed = kind == State.StepDodge ? ctx.AbilitySettings.stepDistance / Mathf.Max(0.05f, Duration) :
-            kind == State.LandingRoll ? ctx.AbilitySettings.rollSpeed : ctx.AbilitySettings.tackleSpeed;
+            kind == State.LandingRoll ? Mathf.Max(ctx.AbilitySettings.rollSpeed, initialSpeed) : ctx.Abilities.Combat.DashSpeed;
         ctx.HorizontalVelocity = ctx.Abilities.ActionDirection * speed;
         if (ctx.IsGrounded) ctx.VerticalVelocity = -2f;
         if (kind == State.StepDodge)
@@ -67,11 +77,11 @@ public sealed class GroundBurstState : MovementBaseState
             // Integrate the final partial frame, preserving distance at any frame rate.
             ctx.Motor.RequestDisplacement(ctx.HorizontalVelocity * activeDt + Vector3.up * (ctx.VerticalVelocity * dt));
         }
-        if (kind == State.Tackle) ctx.Abilities.Combat.HitForward(true);
     }
     public override void Exit()
     {
         if (kind == State.StepDodge) ctx.DodgePassThrough?.Finish();
+        if (kind == State.DashPush) ctx.Abilities.Combat.EndDashPush();
         ctx.HorizontalVelocity = Vector3.ClampMagnitude(ctx.HorizontalVelocity, Mathf.Max(initialSpeed, ctx.WalkSpeed));
         bool completedStep = kind == State.StepDodge && !interrupted && stepElapsed >= Mathf.Max(0.05f, Duration) - 0.00001f;
         bool sprintHeld = ctx.InputAvailable && ctx.Input.SprintButtonHeld;
@@ -80,7 +90,7 @@ public sealed class GroundBurstState : MovementBaseState
             && !ctx.HasCeilingAbove(ctx.StandingColliderHeight))
         {
             // Resume the held running direction, not the side/back direction of the dodge.
-            float speed = Mathf.Lerp(ctx.WalkSpeed, ctx.SprintSpeed, ctx.SprintProgress);
+            float speed = Mathf.Max(ctx.RunSpeed, Mathf.Lerp(ctx.WalkSpeed, ctx.SprintSpeed, ctx.SprintProgress));
             ctx.HorizontalVelocity = ctx.Abilities.InputDirection(ctx.transform.forward) * speed;
         }
         // Normal completion keeps the independently timed shared dodge window.
@@ -92,8 +102,8 @@ public sealed class GroundBurstState : MovementBaseState
         if (ctx.DodgePassThrough?.IsResolving == true) return;
         if (hit.normal.y >= Mathf.Cos(ctx.SlopeLimit * Mathf.Deg2Rad)) return;
         if (Vector3.Dot(ctx.Abilities.ActionDirection, -hit.normal) < 0.55f) return;
-        if (kind == State.Tackle && hit.collider.GetComponentInParent<IBreakable>() != null) return;
-        // A light physics prop is kicked away instead of ending the tackle or dodge.
+        if (kind == State.DashPush && hit.collider.GetComponentInParent<IBreakable>() != null) return;
+        // A light physics prop is kicked away instead of ending the dash or dodge.
         if (ctx.Motor.TryKickProp(hit.collider, hit.point, out Vector3 kept)) { ctx.HorizontalVelocity = kept; return; }
         interrupted = true;
         if (kind == State.StepDodge) ctx.Abilities.Dodge.CancelWindow();

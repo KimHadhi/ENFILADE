@@ -29,7 +29,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     [SerializeField] private string bellySlideStart = "diveslidestart", bellySlide = "diveslideidle", bellySlideEnd = "diveslideend";
     [SerializeField] private string supineSlideStart = "meslidestart", supineSlide = "meslideloop", supineSlideEnd = "meslideend";
     [SerializeField] private string prone = "diveslideidle", supine = "meslideloop", roll = "mx_fall_roll";
-    [SerializeField] private string dodgeLeft = "dodgejumpleft", dodgeRight = "dodgejumpright", tackle = "bargein";
+    [SerializeField] private string dodgeLeft = "dodgejumpleft", dodgeRight = "dodgejumpright", dashPush = "bargein";
     [SerializeField] private string vault = "mx_vault_one_hand", mantle = "climb1", wallClimb = "wallrunvertical", wallKick = "jumpwrleft";
     [SerializeField] private string barSwing = "swing", barRelease = "swingjumpoff", ledgeHang = "mx_ledge_hang_wall", ledgeJump = "hangheaveup";
     [SerializeField] private string death = "diestand";
@@ -78,6 +78,8 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     private bool started, grounded, jumped, dead, thirdPerson, rebuild, playingOut;
 
     public bool IsThirdPerson => thirdPerson;
+    /// <summary>The barge clip is playing: a dash push under way, or one that stopped on someone playing out.</summary>
+    public bool PlaysDashPush => state == MovementState.DashPush || (transition != null && transition == Find(dashPush));
     internal Animator BodyAnimator => animator;
     internal Transform View => view;
     internal bool IsDead => dead;
@@ -135,7 +137,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         AnimationPlayableOutput.Create(graph, "Body", animator).SetSourcePlayable(mixer);
         foreach (string clip in new[] { idle, crouchIdle, jump, air, fall, land, landMoving, slideStart, slide, slideEnd,
                      diveStart, dive, bellySlideStart, bellySlide, bellySlideEnd, supineSlideStart, supineSlide, supineSlideEnd,
-                     prone, supine, roll, dodgeLeft, dodgeRight, tackle,
+                     prone, supine, roll, dodgeLeft, dodgeRight, dashPush,
                      vault, mantle, wallClimb, wallKick, barSwing, barRelease, ledgeHang, ledgeJump, death })
             AddChannel(clip, 0f);
         foreach (string clip in VariantClips) AddChannel(clip, 0f);
@@ -147,7 +149,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         state = player.CurrentState;
         grounded = player.IsGrounded;
         stateTime = airTime = fallSpeed = gripWeight = 0f;
-        jumpClip = jump; obstacleClip = vault; wallKickClip = wallKick; tucked = false;
+        jumpClip = jump; obstacleClip = vault; wallKickClip = wallKick; tucked = flailing = false;
         var rest = Find(idle);
         if (rest != null) rest.Weight = rest.Target = 1f;
         graph.Play();
@@ -323,7 +325,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
             case MovementState.Supine: Want(supine); break;
             case MovementState.StepDodge: Want(dodgeClip); break;
             case MovementState.LandingRoll: Drive(roll, stateTime / Mathf.Max(.05f, player.AbilitySettings.rollDuration)); break;
-            case MovementState.Tackle: Want(tackle); break;
+            case MovementState.DashPush: Want(dashPush); break;
             case MovementState.Vault: Want(obstacleClip); break;
             case MovementState.Mantle: Drive(obstacleClip, player.Abilities.Traversal.ObstacleProgress); break;
             case MovementState.WallClimb: Sequence(wallClimbStart, wallClimb); break;
@@ -346,6 +348,8 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
             if (exit != null) PlayTransition(exit);
         }
         if (from == MovementState.Vault && (to == MovementState.Standing || to == MovementState.Crouching)) PlayOutVault();
+        if (from == MovementState.DashPush && onGround && (to == MovementState.Standing || to == MovementState.Crouching))
+            PlayOn(dashPush);
         switch (to)
         {
             case MovementState.Sliding: Restart(Find(slideStart)); break;
@@ -357,7 +361,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
                 dodgeClip = Vector3.Dot(player.Abilities.ActionDirection, transform.right) < 0f ? dodgeLeft : dodgeRight;
                 Restart(Find(dodgeClip));
                 break;
-            case MovementState.Tackle: Restart(Find(tackle)); break;
+            case MovementState.DashPush: Restart(Find(dashPush)); break;
             case MovementState.Vault:
             case MovementState.Mantle:
                 obstacleClip = ObstacleClip(to == MovementState.Vault, from == MovementState.LedgeHang);
@@ -377,7 +381,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     private void Touch(bool onGround)
     {
         bool wasTucked = tucked;
-        tucked = false;
+        tucked = flailing = false;
         if (!onGround)
         {
             jumped = player.VerticalVelocity > 1f;
@@ -439,6 +443,19 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         Restart(channel);
         transition = channel;
         transitionLeft = channel.Length;
+        playingOut = false;
+    }
+
+    // A one-shot clip carries on from where it is as a landing-like transition: the barge recovers on the spot when a
+    // dash push stops on someone, and gives way at once to a run that carries on.
+    private void PlayOn(string clipName)
+    {
+        var channel = Find(clipName);
+        if (channel == null || channel.Synced) return;
+        float left = channel.Length - (float)channel.Playable.GetTime();
+        if (left <= blendTime) return;
+        transition = channel;
+        transitionLeft = left;
         playingOut = false;
     }
 

@@ -5,7 +5,7 @@ public sealed class StandingState : MovementBaseState
 {
     public StandingState(PlayerMovement context, MovementBaseState parent) : base(context, parent) { }
 
-    public override float LocomotionSpeed => Mathf.Lerp(ctx.WalkSpeed, ctx.SprintSpeed, ctx.SprintProgress);
+    public override float LocomotionSpeed => ctx.Actions.Momentum.SpeedFor(ctx.CurrentInput);
 
     public override void ProcessInput(Vector2 input)
     {
@@ -15,9 +15,9 @@ public sealed class StandingState : MovementBaseState
             (ctx.DiveAction != null && ctx.DiveAction.WasPressedThisFrame())
         );
 
-        bool sprintHeld = ctx.InputAvailable && ctx.Input.SprintButtonHeld;
         float measuredSpeed = new Vector2(ctx.ActualVelocity.x, ctx.ActualVelocity.z).magnitude;
-        bool isActuallySprinting = sprintHeld && input.y > 0.1f && (ctx.SprintProgress >= 0.7f) && (measuredSpeed >= ctx.SlideMinStartSpeed);
+        // Shift gets there in a moment; W alone once the run has built up enough speed.
+        bool isActuallySprinting = input.y > 0.1f && measuredSpeed >= ctx.SlideMinStartSpeed;
 
         // 1. Z(다이브) 입력 처리 (지상 런칭 & 공중 점프 다이브 분기 통합)
         if (diveJustPressed)

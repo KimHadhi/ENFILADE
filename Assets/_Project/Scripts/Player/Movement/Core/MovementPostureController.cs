@@ -59,7 +59,8 @@ public sealed class MovementPostureController
 
         bool crouchHeld = ctx.Input.CrouchHeld;
         bool crouchJustPressed = ctx.Input.CrouchPressed;
-        airCrouching = canDuck && (airCrouching || crouchHeld || crouchJustPressed);
+        // In a long fall Ctrl only readies the landing roll (MovementLanding); the legs come out of a tuck and flail.
+        airCrouching = canDuck && !ctx.IsBigFall && (airCrouching || crouchHeld || crouchJustPressed);
 
         if ((airCrouching || compactMovement) && !airBodyTucked)
         {
@@ -140,7 +141,7 @@ public sealed class MovementPostureController
 
     public bool HasVentCeilingAhead(Vector3 moveDir, float forwardDistance = 0.5f)
     {
-        if (moveDir.sqrMagnitude < 0.001f || ctx.CurrentState == MovementState.Tackle) return false;
+        if (moveDir.sqrMagnitude < 0.001f || ctx.CurrentState == MovementState.DashPush) return false;
         Vector3 direction = moveDir.normalized;
         float distance = Mathf.Max(0f, forwardDistance);
         Vector3 feet = ctx.transform.position;

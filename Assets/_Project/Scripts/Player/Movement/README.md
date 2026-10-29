@@ -24,7 +24,7 @@
 | [Parkour/](Parkour/) | 장애물·벽·렛지·봉 탐지와 이동 경로 |
 | [States/](States/) | 자세·행동별 입력, 전환, 물리 정책 |
 | [../Combat/SlideCombat.cs](../Combat/SlideCombat.cs) | 슬라이딩의 적 접촉·가속·저스트 판정 |
-| [../Combat/PlayerCombatActions.cs](../Combat/PlayerCombatActions.cs) | 밀치기·태클 공격. 태클의 몸 이동은 States/Abilities에서 처리 |
+| [../Combat/PlayerCombatActions.cs](../Combat/PlayerCombatActions.cs) | 몸의 V: 돌진 밀치기(총·주먹)와 총을 든 군중 밀치기. 돌진의 몸 이동은 States/Abilities에서 처리 |
 | [../Camera/PlayerCameraEffects.cs](../Camera/PlayerCameraEffects.cs) | 이동 상태에 따른 카메라 연출 |
 
 Configuration은 같은 `PlayerMovement` 컴포넌트의 partial 선언입니다. 별도 컴포넌트나 제거 가능한 설정 사본이 아닙니다. HUD·카메라·텔레포트 등은 `CurrentState`, `Velocity`, `IsInitialized`, `ResetVelocity()` 같은 외부 API를 사용합니다.
@@ -61,7 +61,7 @@ Movement
 │  └─ SupineDiving
 ├─ Evasion → StepDodge
 ├─ Recovery → LandingRoll
-├─ Assault → Tackle
+├─ Assault → DashPush
 └─ Parkour
    ├─ Obstacle → Vault, Mantle, LedgeHang, LedgeJump
    ├─ Wall → WallClimb, WallKick
@@ -78,7 +78,7 @@ Movement
 
 ## 슬라이딩 공격과 회피의 연결
 
-슬라이딩의 공통 마찰·조향·제동·접촉은 `SlidingGroupState`가 처리하고, 말단은 마찰값과 자세별 벽 반응을 정합니다. 일반 벽 반응과 태클 공격은 저스트 슬라이딩과 별도로 유지합니다.
+슬라이딩의 공통 마찰·조향·제동·접촉은 `SlidingGroupState`가 처리하고, 말단은 마찰값과 자세별 벽 반응을 정합니다. 일반 벽 반응과 돌진 밀치기는 저스트 슬라이딩과 별도로 유지합니다.
 
 1. Slide 부모 진입에서 `SlideCombat.Begin()`이 공격 ID와 접촉 기록을 새로 만듭니다.
 2. `MovementAbilities.ProcessInput()`은 슬라이딩 중 새 Alt 입력을 가속으로 먼저 처리합니다.

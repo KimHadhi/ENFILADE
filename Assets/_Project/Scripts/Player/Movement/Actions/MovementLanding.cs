@@ -10,6 +10,12 @@ public sealed class MovementLanding
     private float highestFeetY;
     public float LastImpactSpeed { get; private set; }
     public float LastFallDistance { get; private set; }
+    /// <summary>
+    /// This fall is a long one: falling faster than bigFallMinSpeed with at least bigFallHeight between the top of the
+    /// fall and the ground below (or no ground in reach). A jump across a gap never counts. Ends on touching down,
+    /// catching hold or diving.
+    /// </summary>
+    public bool IsBigFall { get; private set; }
     internal MovementLanding(PlayerMovement context) { ctx = context; }
 
     internal void Tick(float dt)
@@ -26,10 +32,23 @@ public sealed class MovementLanding
             if (!trackingFall) { highestFeetY = feetY; trackingFall = true; }
             highestFeetY = Mathf.Max(highestFeetY, feetY);
             impactSpeed = Mathf.Max(0f, -ctx.VerticalVelocity);
+            WatchBigFall(feetY);
         }
+        else IsBigFall = false;
     }
 
-    internal void SupportedByTraversal() { impactSpeed = 0f; trackingFall = false; }
+    private void WatchBigFall(float feetY)
+    {
+        var settings = ctx.AbilitySettings;
+        if (ctx.IsDiving) { IsBigFall = false; return; }
+        if (IsBigFall || -ctx.VerticalVelocity < settings.bigFallMinSpeed) return;
+        float left = settings.bigFallHeight - (highestFeetY - feetY);
+        Vector3 feet = ctx.transform.position;
+        feet.y = feetY + .05f;
+        IsBigFall = left <= 0f || !Physics.Raycast(feet, Vector3.down, left + .05f, ctx.groundLayers, QueryTriggerInteraction.Ignore);
+    }
+
+    internal void SupportedByTraversal() { impactSpeed = 0f; trackingFall = false; IsBigFall = false; }
 
     internal bool OnLanding()
     {
@@ -37,7 +56,7 @@ public sealed class MovementLanding
         float feetY = ctx.transform.TransformPoint(ctx.Motor.controller.center - Vector3.up * ctx.Motor.controller.height * 0.5f).y;
         LastFallDistance = trackingFall ? Mathf.Max(0f, highestFeetY - feetY) : 0f;
         impactSpeed = 0f;
-        trackingFall = false;
+        trackingFall = IsBigFall = false;
         ctx.Abilities.Traversal.OnGrounded();
 
         float excess = LastImpactSpeed - ctx.AbilitySettings.safeFallSpeed;
@@ -68,5 +87,5 @@ public sealed class MovementLanding
         return !ctx.DamageReceiver.IsAlive;
     }
 
-    internal void Reset() { impactSpeed = rollBuffer = LastImpactSpeed = LastFallDistance = 0f; trackingFall = false; }
+    internal void Reset() { impactSpeed = rollBuffer = LastImpactSpeed = LastFallDistance = 0f; trackingFall = IsBigFall = false; }
 }

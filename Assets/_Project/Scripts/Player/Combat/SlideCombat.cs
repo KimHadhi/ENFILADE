@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-/// <summary>Slide contact rules, independent of tackle and dodge invulnerability.</summary>
+/// <summary>Slide contact rules, independent of the dash push and dodge invulnerability.</summary>
 public sealed class SlideCombat
 {
     private readonly PlayerMovement ctx;

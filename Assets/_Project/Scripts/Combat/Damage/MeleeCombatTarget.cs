@@ -35,7 +35,7 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
     public static IEnumerable<MeleeCombatTarget> Active => active;
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ClearRegistry() => active.Clear();
-    private float stunRemaining, recoveryRemaining, shoveRemaining;
+    private float stunRemaining, recoveryRemaining, shoveRemaining, shoveDuration = ShoveDuration, bargeKnockdown;
     private Vector3 shoveVelocity;
     private const float ShoveDuration = .32f;
     [Header("Shove Chain")]
@@ -75,7 +75,7 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
         bool suppressed = PlayerExecution.Suppresses(this);
         if (suppressed)
         {
-            shoveRemaining = 0f;
+            shoveRemaining = bargeKnockdown = 0f;
             StopAgent();
             if (!IsStunned) PlayerExecution.ActiveExecution.Retreat(agent, dt);
         }
@@ -85,10 +85,15 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
         if (shoveRemaining > 0f)
         {
             float slice = Mathf.Min(dt, shoveRemaining);
-            float strength = (shoveRemaining + shoveRemaining - slice) / (2f * ShoveDuration);
+            float strength = (shoveRemaining + shoveRemaining - slice) / (2f * shoveDuration);
             shoveRemaining -= slice;
             MoveShove(shoveVelocity * (slice * strength), shoveVelocity.magnitude * strength);
-            if (shoveRemaining <= 0f) shoveChain = null;
+            if (shoveRemaining <= 0f)
+            {
+                shoveChain = null;
+                // A barge throw ends on the ground.
+                if (bargeKnockdown > 0f) KnockDown(shoveVelocity, bargeKnockdown);
+            }
         }
         stunRemaining = Mathf.Max(0f, stunRemaining - dt);
         float recoveryDt = Mathf.Max(0f, dt - recoveryRemaining);
@@ -128,16 +133,28 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
     {
         if (!IsAvailable || executor != null) return;
         knockdownRemaining = Mathf.Max(knockdownRemaining, duration);
-        shoveRemaining = 0f; shoveChain = null;
+        shoveRemaining = bargeKnockdown = 0f; shoveChain = null;
         Interrupt(duration);
         if (knockdownPresentation == null) knockdownPresentation = new EnemyKnockdownPresentation(transform);
         knockdownPresentation.Fall(direction);
+    }
+    /// <summary>
+    /// A dash push: thrown along the ground at this velocity, slowing to a stop over throwTime and shoving whoever it
+    /// runs into like a shove does, then knocked down for knockdownTime. Without a navmesh agent it falls at once.
+    /// </summary>
+    public void Barge(Vector3 velocity, float throwTime, float knockdownTime)
+    {
+        if (!IsAvailable || executor != null) return;
+        if (!StartShove(velocity, new HashSet<MeleeCombatTarget> { this }, Mathf.Max(.05f, throwTime)))
+        { KnockDown(velocity, knockdownTime); return; }
+        bargeKnockdown = Mathf.Max(.1f, knockdownTime);
+        Interrupt(shoveDuration);
     }
     public bool TryReserve(PlayerMeleeCombat owner)
     {
         if (!IsAvailable || owner == null || grabber != null || executor != null) return false;
         knockdownPresentation?.Reset(); knockdownRemaining = 0f;
-        grabber = owner; StopAgent(); GetComponent<EnemyCombatAI>()?.CancelAttack(); Interrupted?.Invoke(); return true;
+        grabber = owner; bargeKnockdown = 0f; StopAgent(); GetComponent<EnemyCombatAI>()?.CancelAttack(); Interrupted?.Invoke(); return true;
     }
     public void Release(PlayerMeleeCombat owner)
     {
@@ -149,7 +166,7 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
     {
         if (owner == null || !CanExecute) return false;
         knockdownPresentation?.Reset(); knockdownRemaining = 0f;
-        executor = owner; shoveRemaining = 0f; StopAgent();
+        executor = owner; shoveRemaining = bargeKnockdown = 0f; StopAgent();
         GetComponent<EnemyCombatAI>()?.CancelAttack(); Interrupted?.Invoke(); return true;
     }
     public void ReleaseExecution(PlayerExecution owner)
@@ -176,7 +193,7 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
     {
         knockdownRemaining = 0f; knockdownPresentation?.Reset();
         Posture = MaximumPosture; IsStaggered = false; StaggerAge = 0f;
-        stunRemaining = recoveryRemaining = shoveRemaining = 0f;
+        stunRemaining = recoveryRemaining = shoveRemaining = bargeKnockdown = 0f;
         shoveChain = null;
         if (executor != null) executor.Cancel();
         grabber = null; RestoreAgent();
@@ -187,12 +204,18 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
     }
     private void ReceiveShove(Vector3 impulse, Vector3 point, HashSet<MeleeCombatTarget> chain)
     {
-        if (!IsAvailable || executor != null) return;
-        if (agent == null) agent = GetComponent<NavMeshAgent>();
+        if (!IsAvailable || executor != null || StartShove(impulse, chain, ShoveDuration)) return;
         var body = GetComponent<Rigidbody>();
-        if (agent != null && agent.isActiveAndEnabled && agent.isOnNavMesh)
-        { shoveVelocity = Vector3.ProjectOnPlane(impulse, Vector3.up); shoveRemaining = ShoveDuration; shoveChain = chain; StopAgent(); }
-        else if (body != null && !body.isKinematic) body.AddForceAtPosition(impulse, point, ForceMode.Impulse);
+        if (body != null && !body.isKinematic) body.AddForceAtPosition(impulse, point, ForceMode.Impulse);
+    }
+    // Slides the agent along the navmesh at this velocity, slowing to a stop over duration; false without an agent.
+    private bool StartShove(Vector3 velocity, HashSet<MeleeCombatTarget> chain, float duration)
+    {
+        if (agent == null) agent = GetComponent<NavMeshAgent>();
+        if (agent == null || !agent.isActiveAndEnabled || !agent.isOnNavMesh) return false;
+        shoveVelocity = Vector3.ProjectOnPlane(velocity, Vector3.up);
+        shoveRemaining = shoveDuration = duration; shoveChain = chain; StopAgent();
+        return true;
     }
     private void MoveShove(Vector3 displacement, float speed)
     {
@@ -231,7 +254,7 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
             if (!obstruction.transform.IsChildOf(transform) && !obstruction.transform.IsChildOf(other.transform)) return;
         shoveChain.Add(other);
         // Existing stronger shoves keep their momentum and chain ownership.
-        if (other.shoveRemaining > 0f && other.shoveVelocity.magnitude * other.shoveRemaining / ShoveDuration >= transferredSpeed) return;
+        if (other.shoveRemaining > 0f && other.shoveVelocity.magnitude * other.shoveRemaining / other.shoveDuration >= transferredSpeed) return;
         other.ReceiveShove(direction * transferredSpeed, center, shoveChain);
         other.Interrupt(Mathf.Max(ShoveDuration, chainStun));
     }
@@ -248,5 +271,5 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
         stoppedAgent = false;
     }
     private void OnDisable()
-    { active.Remove(this); if (executor != null) executor.Cancel(); executor = null; grabber = null; shoveChain = null; stunRemaining = shoveRemaining = knockdownRemaining = 0f; knockdownPresentation?.Reset(); RestoreAgent(); }
+    { active.Remove(this); if (executor != null) executor.Cancel(); executor = null; grabber = null; shoveChain = null; stunRemaining = shoveRemaining = knockdownRemaining = bargeKnockdown = 0f; knockdownPresentation?.Reset(); RestoreAgent(); }
 }

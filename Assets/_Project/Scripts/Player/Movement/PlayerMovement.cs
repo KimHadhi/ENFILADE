@@ -20,7 +20,7 @@ public sealed partial class PlayerMovement : MonoBehaviour
         Supine,
         StepDodge,
         LandingRoll,
-        Tackle,
+        DashPush,
         Vault,
         Mantle,
         WallClimb,
@@ -78,6 +78,8 @@ public sealed partial class PlayerMovement : MonoBehaviour
     public event Action<float> Landed;
     /// <summary>A jump left the ground. Wall kicks, ledge jumps and bar releases are states of their own.</summary>
     public event Action Jumped;
+    /// <summary>A dash push met someone, at this point, and stopped there.</summary>
+    public event Action<Vector3> DashPushHit;
 
     public MovementState CurrentState => StateMachine != null ? StateMachine.CurrentState : MovementState.Standing;
     public MovementState PreviousState => StateMachine != null ? StateMachine.PreviousState : MovementState.Standing;
@@ -138,6 +140,14 @@ public sealed partial class PlayerMovement : MonoBehaviour
 
     public Vector3 GroundNormal => Motor.groundNormal;
     public float SprintProgress { get => Actions.sprintProgress; set => Actions.sprintProgress = value; }
+    /// <summary>The built-up run speed (m/s), see MovementMomentum.</summary>
+    public float RunSpeed => Actions != null ? Actions.Momentum.Speed : walkSpeed;
+    /// <summary>The fastest a forward run builds to (m/s).</summary>
+    public float TopRunSpeed => Mathf.Max(topSpeed, sprintSpeed);
+    /// <summary>0–1: how much the player runs forward on purpose (Shift, or W building a run).</summary>
+    public float RunIntent => Actions == null ? 0f : Mathf.Max(SprintProgress, Actions.Momentum.Driving ? 1f : 0f);
+    /// <summary>The fall is a long one (Ability.bigFallHeight): wind, heartbeat, screen warp and flailing.</summary>
+    public bool IsBigFall => Abilities != null && Abilities.Landing.IsBigFall;
     public float SlopeLimit => Motor.controller != null ? Motor.controller.slopeLimit : 45f;
     public float ControllerRadius => Motor.controller != null ? Motor.controller.radius : 0.5f;
 
@@ -208,6 +218,14 @@ public sealed partial class PlayerMovement : MonoBehaviour
             GameTables.Bind(TableName, "Sounds", gameObject.AddComponent<CharacterSounds>());
             GameTables.Bind(TableName, "MovementAudio", gameObject.AddComponent<PlayerMovementAudio>());
             GameTables.Bind(TableName, "Breathing", gameObject.AddComponent<PlayerBreathing>());
+            GameTables.Bind(TableName, "Wind", gameObject.AddComponent<PlayerWindAudio>());
+            GameTables.Bind(TableName, "FallAudio", gameObject.AddComponent<PlayerFallAudio>());
+        }
+        // Movement feel on the camera: step, jump and landing punches, and a long fall's screen warp.
+        if (Application.isPlaying && GetComponent<PlayerMovementPunch>() == null)
+        {
+            GameTables.Bind(TableName, "Punch", gameObject.AddComponent<PlayerMovementPunch>());
+            GameTables.Bind(TableName, "FallScreen", gameObject.AddComponent<PlayerFallScreen>());
         }
         if (controller.height < Posture.standingColliderHeight - 0.02f)
             ChangeState(controller.height <= proneColliderHeight + 0.02f ? MovementState.Proning : MovementState.Crouching);
@@ -228,6 +246,7 @@ public sealed partial class PlayerMovement : MonoBehaviour
         if (CombatInputLocked)
         {
             Input.Sample(false);
+            Actions.Momentum.Tick(dt, Vector2.zero);
             HorizontalVelocity = Vector3.zero;
             Motor.ApplyGravity(dt);
             Posture.UpdateHeightsAndTransform(dt);
@@ -236,6 +255,7 @@ public sealed partial class PlayerMovement : MonoBehaviour
         }
         Vector2 input = CurrentInput;
         Actions.ProcessSprintRampUp(dt, input);
+        Actions.Momentum.Tick(dt, input);
         if (!Abilities.ProcessInput()) StateMachine.Current.ProcessInput(input);
         StateMachine.Current.UpdateLogic(dt);
         Actions.ProcessJump();
@@ -264,6 +284,7 @@ public sealed partial class PlayerMovement : MonoBehaviour
     private void RaiseStateChanged(MovementState from, MovementState to) => StateChanged?.Invoke(from, to);
     internal void RaiseLanded(float impactSpeed) => Landed?.Invoke(impactSpeed);
     internal void RaiseJumped() => Jumped?.Invoke();
+    internal void RaiseDashPushHit(Vector3 point) => DashPushHit?.Invoke(point);
     public void StartSlide(float speed, bool applyBoost = true) => Actions.StartSlide(speed, applyBoost);
     public void StartLandingSlide(MovementState state, float speed, Vector3 fallback, bool applyBoost) => Actions.StartLandingSlide(state, speed, fallback, applyBoost);
     public void LaunchDive(Vector2 input) => Actions.LaunchDive(input);

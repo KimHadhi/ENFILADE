@@ -3,9 +3,9 @@ using MovementState = PlayerMovement.MovementState;
 
 /// <summary>
 /// The sounds of the player's actions, after Beatrun's: jumps, landings by how hard they hit, rolls, vaults, mantles,
-/// ledge catches and climbs, wall climbs and kicks, bars, slides with their scrape, dives, dodges, prone, crouch and
-/// lean. Listens to PlayerMovement's events and fires cues of Tables/SoundCues on the surface involved (the ground,
-/// the obstacle, the ledge, the wall); what each cue plays is tuned there.
+/// ledge catches and climbs, wall climbs and kicks, bars, slides with their scrape, dives, dodges, dash pushes and the
+/// bodies they hit, prone, crouch and lean. Listens to PlayerMovement's events and fires cues of Tables/SoundCues on
+/// the surface involved (the ground, the obstacle, the ledge, the wall); what each cue plays is tuned there.
 /// Footsteps are PlayerFootsteps', breathing PlayerBreathing's. Numbers: Player.csv row MovementAudio.
 /// </summary>
 [DisallowMultipleComponent]
@@ -66,6 +66,7 @@ public sealed class PlayerMovementAudio : MonoBehaviour
         player.StateChanged += OnStateChanged;
         player.Landed += OnLanded;
         player.Jumped += OnJumped;
+        player.DashPushHit += OnDashPushHit;
         lastPosition = transform.position;
     }
 
@@ -76,6 +77,7 @@ public sealed class PlayerMovementAudio : MonoBehaviour
             player.StateChanged -= OnStateChanged;
             player.Landed -= OnLanded;
             player.Jumped -= OnJumped;
+            player.DashPushHit -= OnDashPushHit;
         }
         slideLoop?.Stop();
     }
@@ -146,7 +148,7 @@ public sealed class PlayerMovementAudio : MonoBehaviour
             case MovementState.SupineDiving: Cue("Dive", Ground()); break;
             case MovementState.StepDodge: Cue("Dodge", Ground()); break;
             case MovementState.LandingRoll: Cue("Roll", Ground()); break;
-            case MovementState.Tackle: Cue("Tackle", Ground()); break;
+            case MovementState.DashPush: Cue("DashPush", Ground()); break;
             case MovementState.Vault: Cue("Vault", Surfaces.Of(traversal.Obstacle.Surface), true); break;
             case MovementState.Mantle:
                 Cue(from == MovementState.LedgeHang ? "LedgeClimb" : "Mantle", Surfaces.Of(traversal.Obstacle.Surface), true);
@@ -180,6 +182,8 @@ public sealed class PlayerMovementAudio : MonoBehaviour
     }
 
     private void OnJumped() => Cue("Jump", Ground());
+
+    private void OnDashPushHit(Vector3 point) => Cue("DashPushHit", Ground());
 
     private void StartSlide(MovementState state)
     {

@@ -8,7 +8,7 @@
 
 | 표 | 내용 | 행(row) |
 | --- | --- | --- |
-| [Player.csv](../Resources/Tables/Player.csv) | 자세별 캡슐·눈높이, 이동·점프·슬라이드·다이브, 회피·파쿠르·낙하·밀치기, 최대 체력, 궁극기 보유량·소비량·충전량, 주먹·패링·가드 브레이크, 처형, 몸 애니메이션, 발소리·동작 소리·숨소리 | `Posture` `Move` `Ability` `Vitals` `Stats` `Ultimate` `Fists` `Execution` `Body` `Hands` `Sounds` `Footsteps` `MovementAudio` `Breathing` |
+| [Player.csv](../Resources/Tables/Player.csv) | 자세별 캡슐·눈높이, 이동·점프·슬라이드·다이브, 회피·파쿠르·낙하·밀치기, 최대 체력, 궁극기 보유량·소비량·충전량, 주먹·패링·가드 브레이크, 처형, 몸 애니메이션, 이동 펀치·큰 낙하 화면, 발소리·동작 소리·숨소리·바람·큰 낙하 소리 | `Posture` `Move` `Ability` `Vitals` `Stats` `Ultimate` `Fists` `Execution` `Body` `Hands` `Punch` `FallScreen` `Sounds` `Footsteps` `MovementAudio` `Breathing` `Wind` `FallAudio` |
 | [SoundCues.csv](../Resources/Tables/SoundCues.csv) | 동작마다 나는 소리 묶음(볼트·착지·발소리…)과 적에게 들리는 거리 | 큐 이름 (`Vault`, `Land`, `StepRun` …) |
 | [Weapons.csv](../Resources/Tables/Weapons.csv) | 총 피해·RPM·장탄·예비탄·장전·탄퍼짐·헤드샷·ADS, 몸의 손이 잡는 위치 | `WeaponData` 에셋 이름 (`FoundationRifle` …) |
 | [Enemies.csv](../Resources/Tables/Enemies.csv) | 적 체력·공격·자세(체간)·이동 속도 | 적 프리팹 이름 (`Enemy_Test`) |
@@ -129,6 +129,8 @@
 
 주먹은 적이나 벽에 닿으면 후딜을 즉시 해제하며, 허공 후딜 기본값은 **0.2초**다. 벽 소리는 한 공격당 한 번만 재생한다. 주먹·공통 근접 스윕·밀치기·반격은 사거리 안에서 벽의 가림을 무시한다. 총기 명중은 벽에 막히며, 실제 몸 이동·V 홀드 접근·처형의 충돌과 가림 검사는 각각 유지한다. 자세한 규칙은 [전투 규칙](WeaponSystemDesign.md)을 따른다.
 
+**돌진 밀치기**([PlayerCombatActions](../Scripts/Player/Combat/PlayerCombatActions.cs), Player.csv `Ability.dashPush*` 행, Dynamic Landing의 Push): 총을 들었든 빈손이든 시선 쪽으로 `dashPushMinSpeed`(5m/s) 이상 달리며 V를 누르면 `dashPushDuration`(0.25초) 동안 그때 속도의 `dashPushSpeedScale`(2)배로 돌진한다. 몸 앞 `dashPushReach`(0.5m)에 처음 들어온 적에게 피해·체간 피해(각 20)를 주고 그 자리에서 멈춘다. 쌓인 달리기 속도도 출발 속도로 깎인다. 맞은 적은 돌진 속도로 밀려 날아가며 `dashPushThrowTime`(0.5초)에 걸쳐 느려지고(그동안 부딪힌 적에게 밀치기 연쇄가 넘어간다), 끝에서 넘어져 `dashPushKnockdownDuration`(1.5초) 동안 누워 있다([MeleeCombatTarget](../Scripts/Combat/Damage/MeleeCombatTarget.cs)`.Barge`). 큰 적(`Large`)이나 막아 낸 적은 군중 밀치기처럼 밀리기만 한다. 벽 너머의 적은 맞지 않고, 가벼운 프랍은 몸으로 차 내며, 문은 `doorBreakSpeedThreshold` 이상이면 부순다. 빗나가면 원래 달리기 속도로 이어 간다. 끝난 뒤 `dashPushCooldown`(1초) 동안 V는 평소의 V다. 몸은 `Body.dashPush`(bargein)를 재생하고, 적에게 멈추면 그 클립을 끝까지 재생한다. 소리는 `DashPush`(시작)·`DashPushHit`(Dynamic Landing push1-4) 큐다. 달리지 않을 때의 V(총: 군중 밀치기, 빈손: 탭 밀치기·홀드 가드 브레이크)는 그대로다. 가드 브레이크로 다가가는 중에는 돌진하지 않는다.
+
 ## 3D 모델 추가하기
 
 모델 하나당 폴더 하나를 [Art/Models](../Art/Models) 아래 분류 폴더에 만든다. 이름에는 공백 대신 PascalCase를 쓴다.
@@ -173,11 +175,11 @@ Art/Models/
 | 밀기 | 세기 (설정 위치) | 최고 속도 | 1kg 물체 | 20kg 물체 |
 | --- | --- | --- | --- | --- |
 | 걷기 | 300N으로 기댐 (`Player.csv`의 `Ability.propPushForce`) | 걷는 속도 | 바로 걷는 속도 | 서서히 밀림 |
-| V 밀치기 / 태클 | 60 N·s / 120 N·s (`Prop Shove Impulse`) | 8m/s (`Shove Push Speed`) | 8m/s | 3m/s |
+| V 밀치기 | 60 N·s (`Prop Shove Impulse`) | 8m/s (`Shove Push Speed`) | 8m/s | 3m/s |
 | 총알 1발 | 소총 3·권총 4 N·s ([Weapons.csv](../Resources/Tables/Weapons.csv) `propImpulse`) | 12m/s | 3·4m/s | 0.15·0.2m/s |
-| 슬라이딩·다이브·태클로 부딪힘 | 몸무게 70kg과 함께 밀려 나감 (`Prop Body Mass`) | 플레이어 속도 | 플레이어 속도로 밀려 나가고 플레이어는 거의 그대로 | 둘 다 플레이어 속도의 78%로 진행 |
+| 슬라이딩·다이브·돌진 밀치기로 부딪힘 | 몸무게 70kg과 함께 밀려 나감 (`Prop Body Mass`) | 플레이어 속도 | 플레이어 속도로 밀려 나가고 플레이어는 거의 그대로 | 둘 다 플레이어 속도의 78%로 진행 |
 
-슬라이딩·다이브·태클로 부딪히면 물체와 플레이어가 한 속도(몸무게 ÷ 둘의 질량 합 × 플레이어 속도)로 함께 나아간다. 물체가 튕겨 나가며 더 빨라지지는 않는다. 그 속도가 원래의 30% 아래가 되는 물체(플레이어 몸무게의 약 2.3배, 160kg 이상)는 지금처럼 벽으로 취급해 튕기거나 멈춘다.
+슬라이딩·다이브·돌진 밀치기로 부딪히면 물체와 플레이어가 한 속도(몸무게 ÷ 둘의 질량 합 × 플레이어 속도)로 함께 나아간다. 물체가 튕겨 나가며 더 빨라지지는 않는다. 그 속도가 원래의 30% 아래가 되는 물체(플레이어 몸무게의 약 2.3배, 160kg 이상)는 지금처럼 벽으로 취급해 튕기거나 멈춘다.
 
 움직이는 물체에는 오목한 메시 충돌체를 쓸 수 없어서 볼록 껍질(convex, 최대 255면)로 감싼다. 배·공·상자처럼 거의 볼록한 모양은 이것으로 충분하다. 도넛·의자처럼 크게 오목한 모양은 자식 오브젝트에 Box·Sphere·Capsule 충돌체를 여러 개 나눠 붙이고 `MeshCollider`를 지운다. 움직이지 않는 벽·지형은 `Rigidbody` 없이 convex를 끈 `MeshCollider`를 쓰면 모양 그대로 충돌한다.
 
@@ -204,17 +206,18 @@ Art/Models/
   - **손가락**: Hiro의 손가락 뼈 축은 Beatrun 뼈대와 최대 167° 달라서, 회전을 그대로 옮기면 손가락이 옆·뒤로 꺾인다. 변환할 때 클립 손가락이 자기 기본 자세에서 움직인 만큼을 Hiro 손가락 축으로 옮겨서 Hiro 기본 자세에 더한다. 클립이 기본 자세면 Hiro도 정확히 기본 자세다.
   - 모든 뼈를 매 프레임 키로 굽는다(173개, 약 170MB). 움직이지 않는 뼈를 빼거나 키를 줄이면 일정한 자세를 유지하는 뼈가 기본 자세로 튀거나 중간에 꺾여서 쓰지 않는다. 한 프레임짜리 포즈와 레이어 클립은 Unity에서 빈 클립이 되므로 넣지 않는다.
 - **들어 있는 애니메이션 묶음**: [Beatrun](../Art/Animations/Beatrun)은 Beatrun 3인칭 여성 세트(`tp_climbanim_f.mdl`)를 Hiro 뼈대에 구운 173개 클립이다. 벽 달리기 4개는 쓰지 않아 뺐다. 소총·권총 버전은 `_ar2`·`_pistol`이 붙는다(누워 미끄러지기, 다이브, 머리부터 미끄러지기, 공중 코일 등). [Mixamo](../Art/Animations/Mixamo)는 mixamo.com에서 X Bot 기준으로 받은 클립(스킨 없음, 30fps)이다. 리타깃 기준 자세는 같은 X Bot을 T자 자세·스킨 포함·FBX Binary로 받은 `Mixamo.tpose.fbx`다(클립 파일과 같은 FBX 2019 형식, 같은 `mixamorig:` 뼈 66개). 걷기·달리기·옆걸음·뒷걸음은 제자리 버전이다. 클립마다 실제 속도·길이·발 딛는 시점은 `Mixamo.clips.csv`의 메모에 있다. 웅크리기는 Beatrun을 쓴다. Mixamo 웅크려 걷기는 눈높이가 약 1.2m라 웅크린 카메라(0.8m)와 맞지 않는다. `(아직 안 씀)` 표시 클립(제자리 돌기, 달리며 구르기, 일어나기 3종)은 4단계·10단계에서 쓴다. `Player.csv`의 `Body` 행에서 클립 이름을 바꾸면 Play 중에도 몸이 다시 만들어진다.
-- **8방향 이동**([PlayerBody.Locomotion](../Scripts/Player/Body/PlayerBody.Locomotion.cs)): 걷기·달리기·웅크려 걷기는 앞·오른쪽·뒤·왼쪽 클립을 이동 방향으로 섞는다(대각선은 양옆 두 개). 몸은 항상 카메라 쪽을 본다. 모든 반복 클립은 한 보행 주기를 공유해서 섞여도 발이 엇갈리지 않는다. 전력질주 클립은 `SprintProgress`가 올라간 상태에서 앞으로 이동할 때만 쓴다. 일반 이동·뒷걸음·옆걸음에는 전력질주 클립을 섞지 않는다.
+- **8방향 이동**([PlayerBody.Locomotion](../Scripts/Player/Body/PlayerBody.Locomotion.cs)): 걷기·달리기·웅크려 걷기는 앞·오른쪽·뒤·왼쪽 클립을 이동 방향으로 섞는다(대각선은 양옆 두 개). 몸은 항상 카메라 쪽을 본다. 모든 반복 클립은 한 보행 주기를 공유해서 섞여도 발이 엇갈리지 않는다. 전력질주 클립은 일부러 앞으로 달릴 때(`RunIntent`: Shift, 또는 W로 속도가 쌓이는 중) 그 속도에 이르면 쓴다. 일반 이동·뒷걸음·옆걸음에는 전력질주 클립을 섞지 않는다.
 - **이동 재생 속도**: `Body.runClipSpeed=5.2`, `Body.sprintClipSpeed=8.4`, `Body.crouchClipSpeed=3`은 각각 `Move.walkSpeed`, `Move.sprintSpeed`, `Move.crouchSpeed`에 맞춘 기준값(m/s)이다. 빠른 기본 이동 때문에 평소에도 질주 자세가 섞이거나 웅크리기가 1.5배로 재생되지 않게 한다. 이동 애니메이션의 재생 배율은 0.65~1.1로 제한한다. 이동 속도를 바꾸면 이 기준값도 함께 조정한다.
 - **파쿠르 시간**:
   - 넘기: 도움닫기 속도를 그대로 유지하며 지나간다. 걷기 속도보다 느려지지는 않는다. 넘기 클립은 자기 속도(`Body.vaultClipSpeed`)로 재생된다. 몸이 먼저 넘어가면 클립은 발이 닿는 지점(`vaultLandShare`)까지 이어서 재생된 뒤 달리기로 넘어간다.
   - 올라서기: 매달린 난간에서 W·Space로만 된다. 장애물 앞에서는 넘기만 하고, 넘을 수 없으면 점프해서 난간을 잡는다. `Ability.mantleFromGround`를 true로 하면 예전처럼 땅·공중에서 바로 올라선다. 올라서기는 묵직하게 `Ability.mantleDuration` + 높이 1m마다 `mantleDurationPerMeter`가 걸리고, 클립이 그 진행도에 맞춰 재생된다.
   - 넘기는 진행의 75%, 올라서기는 80%에서 손을 놓고 이동으로 돌아간다.
-  - 구르기는 `Ability.rollDuration` 동안 구르기 클립 전체가 재생된다.
+  - 구르기는 `Ability.rollDuration` 동안 구르기 클립 전체가 재생된다. 착지 전 `rollInputWindow`(0.5초) 안에 Ctrl을 누르면 구르고, 착지할 때의 속도를 그대로 가져간다(가장 느려도 `rollSpeed`).
 - **난간 잡기**([PlayerBody.Grip](../Scripts/Player/Body/PlayerBody.Grip.cs)): 매달려 있는 동안 몸은 어디를 보든 벽을 향한다. 클립이 자세를 잡은 뒤에는 손목이 난간 윗면(`Body.ledgeGrip`)에 오도록 몸 전체를 옮긴다. 손은 그 자리에 있고 몸이 그 아래에 매달리므로 캐릭터나 클립이 바뀌어도 손이 허공을 잡지 않는다. 좌우 이동 클립은 실제 이동 속도에 맞춰 빨라진다(`shimmyClipSpeed`).
 - **상황별 클립**([PlayerBody.Variants](../Scripts/Player/Body/PlayerBody.Variants.cs)): 같은 상태라도 상황에 맞는 클립을 고른다. 모두 `Body` 행에서 이름과 기준값을 바꾼다.
   - 점프: 도움닫기 속도에 따라 제자리(`jumpStill`), 걷기(`jumpSlow`), 달리기(`jump`).
   - 공중에서 Ctrl: 무릎을 접는 `airTuck`(Beatrun 코일).
+  - 큰 낙하(`Ability.bigFallHeight`): 팔다리를 허우적거리는 `fallFlail`(Beatrun `fallinguncontrolled`). 큰 낙하 중 Ctrl은 착지 구르기만 준비하고 무릎을 접지 않는다. 이미 접고 있었으면 다리를 편다.
   - 착지: 낙하 속도가 `severeLandingSpeed`(16m/s, 낙하 피해가 시작되는 속도)를 넘으면 손과 무릎을 짚는 `landSevere`. 약 3m(`hardLandingSpeed` 12m/s)를 넘으면 무릎을 깊게 굽히는 `land`, 달리는 중이면 `landMoving`, 웅크린 채면 서지 않는 `landCrouch`. 그보다 낮을 때 공중에서 무릎을 접었으면 다리를 펴는 `coilLand`/`coilLandCrouch`, 아니면 착지 동작 없이 바로 이어진다.
   - 슬라이드 끝: 웅크림·엎드림으로 이어지는 끝 동작.
   - 넘기: 장애물 높이에 따라 한 손 `vault`, 1m 넘으면 두 손 `vaultHigh`. `vaultChainTime`(1.5초) 안에 다시 넘으면 직전과 다른 쪽을 쓴다. 같은 클립은 자기 자신과 섞일 수 없어서 첫 프레임으로 튀기 때문이다.
@@ -250,6 +253,20 @@ Art/Models/
   - 실행 중 Scene 뷰에서 플레이어를 선택하면 발마다 찾은 땅(초록 선)과 발목 목표(노란 구)가 보인다.
   - 팔·발 IK는 같은 두 뼈 계산([TwoBoneIK](../Scripts/Player/Body/TwoBoneIK.cs))을 쓴다.
   - **발목 제한**([AnkleLimit](../Scripts/Player/Body/AnkleLimit.cs)): 모든 상태에서 발이 정강이 축으로 돌아간 각도(`Body.maxAnkleTurn`)와 옆으로 꺾인 각도(`Body.maxAnkleRoll`)를 Hiro 기본 자세 기준으로 자른다. 발끝을 위아래로 젖히는 것은 자르지 않는다. 리타깃이 잘못된 클립이나 섞인 클립, 다리 IK 때문에 발목이 꼬여도 실제 발목이 가능한 범위 안에 머문다.
+
+## 이동 감각 (속도 쌓기·시점 펀치·큰 낙하)
+
+Beatrun의 손맛을 옮긴 부분이다. 수치는 모두 [Player.csv](../Resources/Tables/Player.csv)에 있고 Play 중에도 바로 반영된다.
+
+- **속도 쌓기**([MovementMomentum](../Scripts/Player/Movement/Actions/MovementMomentum.cs), `Move` 행): 달리기는 `runStartSpeed`(3.8m/s)에서 출발한다. W만 누르면 `walkBuildTime`(1초)에 걷기 속도 5.2, `sprintBuildTime`(3.5초)에 질주 속도 8.4에 이르고, 그 뒤 `topBuildTime`(2초)에 걸쳐 `topSpeed` 9.5까지 쌓인다. Shift는 0.1초 만에 8.4가 되고 거기서부터 쌓인다. 옆·뒤로는 걷기 속도까지만 간다. 앞으로 달리기를 멈추면 빠지고(`momentumFalloff`), 시선을 `turnCutRate`보다 빠르게 돌리면 돈 각도만큼(`turnCutPerDegree`), 벽에 막히면 실제 속도로, 발로 세게 착지하면(`hardLandingSpeed`) 출발 속도로 깎인다. 공중에서는 유지된다. 슬라이드·구르기·넘기 등에서 서기로 돌아오면 그때 실제로 움직이던 속도에서 이어 간다. 회피와 빗나간 돌진 밀치기는 하던 달리기를 그대로 두고, 적에 부딪혀 멈춘 돌진 밀치기는 출발 속도로 깎는다. 슬라이드는 Shift든 W만이든 `slideMinStartSpeed`를 넘으면 된다. 디버그 HUD의 `run`이 지금 쌓인 속도다.
+- **계단·경사 내려가기**([MovementMotor](../Scripts/Player/Movement/Core/MovementMotor.cs)): 땅에 있던 캡슐이 이동 후 발밑을 잃으면, 캡슐 스텝 높이(0.3m)+0.05m 안의 걸을 수 있는 땅으로 바로 내려붙는다. 빠르게 계단을 내려가도 칸마다 공중에 떴다 착지하지 않는다(착지 소리·펀치가 칸마다 나지 않는다). 그보다 높은 턱은 그대로 떨어진다.
+- **시점 펀치**([PlayerMovementPunch](../Scripts/Player/Camera/PlayerMovementPunch.cs), `Punch` 행): Source 엔진의 펀치 스프링(65·9·20)에 Beatrun 값을 그대로 옮겼다. 발이 땅에 닿을 때마다(`PlayerFootsteps.Stepped`) 살짝 끄덕이고 디딘 발 쪽으로 기울어서 좌우가 번갈아 바뀐다. 빠를수록 덜 기울고, 속도가 쌓이는 중에는 더 세다. 총을 들면 줄어든다. 앞으로 달리며 점프하면 시점이 들리고, 착지하면 낙하 속도에 비례해 끄덕임:기울기 2:1로 숙여진다. 웅크린 걸음과 구르기 착지는 펀치가 없다(구르기는 자기 연출이 있다). Esc 메뉴 **화면 흔들림**이 곱해진다.
+- **바람**([PlayerWindAudio](../Scripts/Player/Audio/PlayerWindAudio.cs), `Wind` 행): `Movement/Wind/Run`·`Wind/Cloth`가 이동 속도(떨어지는 속도 포함)에 따라 커진다. 최고 달리기 속도에서는 작게, 큰 낙하에서는 크게 들린다.
+- **큰 낙하**: 낙하 꼭대기부터 아래 땅까지 `Ability.bigFallHeight`(8.5m)를 넘고 `bigFallMinSpeed`(9m/s)보다 빠르게 떨어지면 큰 낙하다([MovementLanding](../Scripts/Player/Movement/Actions/MovementLanding.cs)). 땅이 멀면 떨어지기 시작하자마자 들어가고, 틈을 건너뛰는 점프는 해당되지 않는다. 착지·난간 잡기·다이브에서 끝난다. 마우스 조작은 막지 않는다.
+  - 소리([PlayerFallAudio](../Scripts/Player/Audio/PlayerFallAudio.cs), `FallAudio` 행): 지지직 바람(`Fall/Static`)이 반복되고, 0.5초 뒤부터 심장이 뛴다. 박동마다 조금씩 커지고 빨리 떨어질수록 빨라진다. 박동 한 번은 [SoundCues.csv](../Resources/Tables/SoundCues.csv)의 `FallHeartbeat`다.
+  - 화면([PlayerFallScreen](../Scripts/Player/Camera/PlayerFallScreen.cs), `FallScreen` 행): 가장자리만 렌즈처럼 휘고(숨 쉬듯 줄었다 늘었다), 색이 번지고, 어두워진다. 가운데는 그대로다. `rampTime`(2초)에 걸쳐 들어오고 착지하면 `clearTime`에 사라진다.
+  - 몸: `Body.fallFlail`로 허우적거린다(위 **상황별 클립**).
+- **후처리**: 플레이어 카메라는 URP 후처리를 켠다([PlayerCameraEffects](../Scripts/Player/Camera/PlayerCameraEffects.cs)가 시작할 때 켬). 그래서 파이프라인 볼륨 프로필 [SampleSceneProfile](../Settings/Rendering/SampleSceneProfile.asset)(Neutral 톤매핑, Bloom 0.25, 비네트 0.2)이 항상 적용된다. 화면 색감을 바꾸려면 이 프로필을 고친다. 큰 낙하 효과는 [Resources/Rendering/FallWarp](../Resources/Rendering/FallWarp.asset) 볼륨 프로필을 실행 중에 복사해 우선순위 100의 전역 볼륨으로 쓴다. 이 에셋이 프로젝트에 있어야 빌드에서 렌즈 왜곡·색수차 셰이더가 빠지지 않는다(URP의 쓰지 않는 후처리 변형 제거). 세기는 에셋이 아니라 `FallScreen` 행에서 바꾼다.
 
 ## 실행 중 생성되는 분류와 혈흔 풀
 

@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-/// <summary>Shared ownership for counter slowdown and tackle hit-stop; never unpauses the game.</summary>
+/// <summary>Shared ownership for counter slowdown and dash push hit-stop; never unpauses the game.</summary>
 [DisallowMultipleComponent]
 public sealed class CombatTimeEffects : MonoBehaviour
 {

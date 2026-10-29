@@ -70,7 +70,7 @@ public sealed class MovementDebugHUD : MonoBehaviour
 
         Vector3 vel = playerMovement.ActualVelocity;
         float hSpeed = new Vector3(vel.x, 0f, vel.z).magnitude;
-        string speedText = $"Speed: {hSpeed:F2} m/s";
+        string speedText = $"Speed: {hSpeed:F2} m/s (run {playerMovement.RunSpeed:F1})";
 
         string groundText = playerMovement.IsGrounded ? "Ground: YES" : "Ground: AIRBORNE";
 
@@ -146,7 +146,7 @@ public sealed class MovementDebugHUD : MonoBehaviour
             // --- Abilities / Action (강렬한 레드 / 코랄 계열) ---
             PlayerMovement.MovementState.StepDodge => new Color(0.4f, 1.0f, 0.9f), // 청록
             PlayerMovement.MovementState.LandingRoll => new Color(0.8f, 1.0f, 0.4f), // 옐로우그린
-            PlayerMovement.MovementState.Tackle => new Color(1.0f, 0.3f, 0.3f), // 레드
+            PlayerMovement.MovementState.DashPush => new Color(1.0f, 0.3f, 0.3f), // 레드
 
             _ => Color.white
         };

@@ -17,6 +17,7 @@ public sealed class FistsView : MonoBehaviour
     public Transform LeftFist => left;
     public Transform RightFist => right;
     public bool IsActive => root != null && melee != null && melee.IsActive;
+    public bool IsPunching => leftPunchTime > 0f || rightPunchTime > 0f;
 
     private void OnEnable()
     {

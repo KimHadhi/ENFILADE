@@ -3,7 +3,7 @@ using UnityEngine.Playables;
 using MovementState = PlayerMovement.MovementState;
 
 /// <summary>
-/// Which clip of a family fits the moment: jumps by run-up speed, the mid-air knee tuck, vaults and mantles by
+/// Which clip of a family fits the moment: jumps by run-up speed, the mid-air knee tuck, a long fall's flailing, vaults and mantles by
 /// obstacle height, landings by impact, crouched landings and slide exits, the ledge catch and shimmy, the wall kick's
 /// side, and the gun-holding version of a clip while a rifle or pistol is out. Names and thresholds come from
 /// Player.csv, row Body.
@@ -14,6 +14,8 @@ public sealed partial class PlayerBody
     [SerializeField] private string jumpStill = "jumpstill", jumpSlow = "jumpslow", airTuck = "jumpcoil";
     [SerializeField] private string landCrouch = "landcrouch", coilLand = "jumpcoilend", coilLandCrouch = "jumpcoilendcrouch";
     [SerializeField] private string landSevere = "mx_hard_landing";
+    [SerializeField, Tooltip("A long fall (Ability.bigFallHeight): arms and legs flail until touchdown, Ctrl or not.")]
+    private string fallFlail = "fallinguncontrolled";
     [SerializeField] private string supineSlideEndCrouch = "meslideendcrouch", supineSlideEndProne = "meslideendprone";
     [SerializeField] private string bellySlideEndCrouch = "diveslideendcrouch";
     [SerializeField] private string vaultHigh = "mx_vault_two_hands";
@@ -50,11 +52,11 @@ public sealed partial class PlayerBody
 
     private WeaponController weapons;
     private string jumpClip, obstacleClip, wallKickClip;
-    private bool tucked;
+    private bool tucked, flailing;
 
     private string[] VariantClips => new[]
     {
-        jumpStill, jumpSlow, airTuck, landCrouch, coilLand, coilLandCrouch, landSevere, supineSlideEndCrouch, supineSlideEndProne,
+        jumpStill, jumpSlow, airTuck, landCrouch, coilLand, coilLandCrouch, landSevere, fallFlail, supineSlideEndCrouch, supineSlideEndProne,
         bellySlideEndCrouch, vaultHigh, stepUp, mantleLow, mantleMid, ledgeClimbUp, ledgeCatch, ledgeShimmyLeft, ledgeShimmyRight,
         wallClimbStart, wallKickRight
     };
@@ -143,9 +145,14 @@ public sealed partial class PlayerBody
         }
     }
 
+    // A long fall flails to the end: Ctrl in it only readies the landing roll and never tucks.
     private void AirPose()
     {
-        if (player.IsAirCrouching)
+        bool flail = player.IsBigFall;
+        if (flail && !flailing) Restart(Find(fallFlail));
+        flailing = flail;
+        if (flail) Want(fallFlail);
+        else if (player.IsAirCrouching)
         {
             if (!tucked) Restart(Find(airTuck));
             tucked = true;

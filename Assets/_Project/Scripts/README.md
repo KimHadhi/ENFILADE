@@ -17,7 +17,7 @@
 | Vault·맨틀·렛지·벽·봉 | [Parkour](Player/Movement/Parkour/) |
 | 슬라이딩의 적 접촉·저스트 판정 | [SlideCombat](Player/Combat/SlideCombat.cs) |
 | 적의 넘어짐·레그돌·복구 | [EnemyKnockdownPresentation](Combat/Damage/EnemyKnockdownPresentation.cs) |
-| 밀치기·태클 | [PlayerCombatActions](Player/Combat/PlayerCombatActions.cs) |
+| 밀치기·돌진 밀치기 | [PlayerCombatActions](Player/Combat/PlayerCombatActions.cs) |
 | 주먹·가드·패링·가드 브레이크 | [PlayerMeleeCombat](Player/Combat/PlayerMeleeCombat.cs) |
 | 완벽 방어·반격 / 처형 | [PlayerPerfectDefense](Player/Combat/PlayerPerfectDefense.cs), [PlayerExecution](Player/Combat/PlayerExecution.cs) |
 | 보이는 몸(진짜 1인칭)·상태별 애니메이션·F5 뒤에서 보기 | [PlayerBody](Player/Body/PlayerBody.cs), [PlayerBodyProfile](Player/Body/PlayerBodyProfile.cs), [사용 안내](../Docs/MaintenanceGuide.md#플레이어-몸-진짜-1인칭) |
@@ -80,6 +80,6 @@
 Profiler에서 대표 상황의 CPU 시간과 `GC.Alloc`을 먼저 확인한다. API 이름만 보고 전체 공격이 무할당이라고 판단하지 않는다.
 
 - `AttackTrace`는 보통 단일 Raycast를 사용하고, 제외할 충돌체를 만나면 다중 결과를 검사한다. 버퍼가 꽉 차면 누락된 가까운 벽을 놓치지 않도록 전체 결과를 다시 조회한다. 최적화할 때 이 포화 상황과 공격자 제외 규칙을 유지한다.
-- `ShoveSweep`의 밀치기는 여러 적을 스칠 수 있다. `PlayerCombatActions`의 태클은 가장 가까운 몸 접촉 하나를 처리한다. 단일 타격 질의로 바꾸면 군중 밀치기와 벽 차폐가 달라질 수 있으므로, 배열 할당 개선과 타격 규칙 변경을 구분한다.
+- `ShoveSweep`의 밀치기는 여러 적을 스칠 수 있다. `PlayerCombatActions`의 돌진 밀치기는 벽에 가리지 않은 가장 가까운 적 하나만 처리한다. 단일 타격 질의로 바꾸면 군중 밀치기와 벽 차폐가 달라질 수 있으므로, 배열 할당 개선과 타격 규칙 변경을 구분한다.
 - `WeaponAimSolver`의 총구 주변 검사는 재사용 버퍼를 사용한다. 버퍼가 가득 찼고 자기 콜라이더만 발견됐다면 전체 조회로 엄폐 누락을 막는다. 일반 경로의 배열 할당은 줄였지만 전체 발사의 무할당이나 프레임 성능을 보장하는 수치는 아니다.
 - 수신자 캐시·풀링을 도입한다면 부모 콜라이더의 대상 식별, 재사용 시 참조 갱신, 중복 타격 방지를 함께 검사한다.

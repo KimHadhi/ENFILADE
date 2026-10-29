@@ -4,7 +4,7 @@ using MovementState = PlayerMovement.MovementState;
 /// <summary>
 /// Puts the body's own hands where they belong after the clip has posed the arms:
 /// - on the held gun's grips (grip points per weapon in Weapons.csv), wherever the camera-driven gun pose puts it;
-/// - on the fist targets while fists are out (FistsView);
+/// - on the fist targets while fists are out (FistsView), except running forward or barging, where the clip swings them;
 /// - on the ledge edge, a hand either side, while hanging;
 /// - on top of a vaulted or mantled obstacle, never through it.
 /// Parkour states take the hands off the gun. Runs after the weapon has posed itself, so the hands never trail it.
@@ -21,9 +21,15 @@ public sealed class PlayerBodyHands : MonoBehaviour
     private float ledgeHandSpacing = .36f;
     [SerializeField, Min(0f), Tooltip("Wrist height above an obstacle's top when a hand rests on it during a vault or mantle (m).")]
     private float palmHeight = .04f;
+    [SerializeField, Min(0f), Tooltip("Running forward faster than this, empty hands swing with the run clip instead of holding the fists up (m/s).")]
+    private float fistsRunSpeed = 3f;
+    [SerializeField, Min(0f), Tooltip("After a punch, a charge, a guard or a guard break the fists stay up this long, running or not (s).")]
+    private float fistsReadyTime = 1.5f;
 
     private enum Hold { Gun, Fists, Ledge }
     private const int HoldCount = 3;
+    // Moving at least this share of the speed along the body's facing counts as running forward.
+    private const float RunAlignment = .7f;
 
     private PlayerMovement player;
     private PlayerBody body;
@@ -32,6 +38,7 @@ public sealed class PlayerBodyHands : MonoBehaviour
     private Animator boundAnimator;
     private ArmIK left, right;
     private readonly float[] weights = new float[HoldCount];
+    private float fistsReady;
 
     private void Awake()
     {
@@ -58,7 +65,7 @@ public sealed class PlayerBodyHands : MonoBehaviour
         var state = player.CurrentState;
         bool alive = !body.IsDead, armed = alive && HoldsWeapons(state);
         Ease(Hold.Gun, armed && weapons != null && weapons.ShowsWeapon && weapons.EquippedData != null, dt);
-        Ease(Hold.Fists, armed && fists != null && fists.IsActive, dt);
+        Ease(Hold.Fists, armed && fists != null && fists.IsActive && FistsUp(dt), dt);
         Ease(Hold.Ledge, alive && state == MovementState.LedgeHang && player.Abilities.Traversal.Ledge.Surface != null, dt);
 
         Place(right, false);
@@ -88,6 +95,21 @@ public sealed class PlayerBodyHands : MonoBehaviour
             default:
                 return true;
         }
+    }
+
+    // Empty hands follow the clip while running forward or barging (the dash push and its play-out). A fist move puts
+    // them up at once and keeps them there for a moment.
+    private bool FistsUp(float dt)
+    {
+        var melee = player.MeleeCombat;
+        fistsReady = Mathf.Max(0f, fistsReady - dt);
+        if (fists.IsPunching || (melee != null && (melee.IsCharging || melee.IsGuarding || melee.IsParryActive || melee.IsGuardBreaking)))
+            fistsReady = fistsReadyTime;
+        if (fistsReady > 0f) return true;
+        if (body.PlaysDashPush) return false;
+        Vector3 run = Vector3.ProjectOnPlane(player.ActualVelocity, Vector3.up);
+        float speed = run.magnitude;
+        return speed < fistsRunSpeed || Vector3.Dot(run, transform.forward) < speed * RunAlignment;
     }
 
     // Mixes the holds by weight, so a change of hold slides the hand across instead of snapping it.
