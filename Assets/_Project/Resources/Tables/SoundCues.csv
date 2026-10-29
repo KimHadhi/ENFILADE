@@ -1,0 +1,40 @@
+﻿id,sounds,noise,#note
+StepSneak,Movement/Sneak/{surface}; Movement/Cloth/MovementSneak,2,웅크려 걷는 한 걸음 (Beatrun Sneak + 옷). {surface}는 발밑 표면
+StepWalk,Movement/Walk/{surface}; Movement/Cloth/MovementWalk,6,걷는 한 걸음 (Footsteps.runSpeed보다 느릴 때)
+StepRun,Movement/Run/{surface}; Movement/Cloth/MovementRun *0.22,12,뛰는 한 걸음. 옷은 발 디딤 뒤의 작은 질감
+StepRelease,Movement/Release/{surface} *0.3,4,빠르게 달리며 발을 뗄 때 작게 바닥을 차는 소리
+Jump,Movement/Release/{surface}; Movement/Cloth/MovementWalk,6,점프 도약
+LandSoft,Movement/Walk/{surface}; Movement/Cloth/MovementWalk,5,낮은 턱에서 내려서기
+Land,Movement/Land/{surface}; Movement/Run/{surface}; Movement/Cloth/MovementRun,12,착지 (Beatrun: 착지 + 발소리 + 옷)
+LandHard,Movement/Land/{surface}; Movement/LandHard; Movement/Cloth/FallShortHard; Movement/Cloth/FallShortMedium; Voice/Impact +0.1,18,세게 착지 (Beatrun hardland + Dynamic Landing)
+LandHeavy,Movement/Land/{surface}; Movement/LandHeavy; Movement/Cloth/FallShortHard; Movement/Cloth/Fall; Voice/ImpactHard +0.1,24,크게 착지
+Roll,Movement/Land/{surface}; Movement/Cloth/RollLand; Movement/Cloth/RollCloth; Movement/Cloth/Roll +0.15; Movement/Cloth/BodyRoll +0.15; Movement/Cloth/BodyRollSwish +0.15; Movement/Cloth/MovementWalk +0.3,12,착지 구르기 (Beatrun safety roll)
+Vault,Movement/HandHard/{surface}; Movement/Cloth/VaultSwish +0.1; Movement/Vault +0.1; Voice/StrainSoft +0.1,10,볼트 (Beatrun: 손 짚고 0.1초 뒤 옷·볼트·힘 주는 소리). {surface}는 장애물 표면
+Vault/Gantry,Movement/HandHard/{surface}; Movement/Fence/Vault; Movement/Cloth/VaultSwish +0.1; Movement/Vault +0.1; Voice/StrainSoft +0.1,12,철망·철제 발판 넘기 (표면별 큐 예시)
+VaultLand,Movement/Land/{surface}; Movement/Run/{surface}; Movement/Cloth/MovementRun,10,볼트 뒤 착지
+Mantle,Movement/HandHard/{surface}; Movement/Cloth/VaultSwish +0.1; Voice/StrainMedium +0.1,8,땅·봉에서 바로 올라서기
+MantleLand,Movement/Walk/{surface},5,올라선 뒤 발 딛기
+LedgeCatch,Movement/HandHard/{surface}; Movement/Ledge/Reach; Movement/Cloth/FallShortMedium; Movement/Body/Bump +0.05; Movement/HandSoft/{surface} +0.15,10,렛지 잡기 (Beatrun climb). {surface}는 렛지 표면
+LedgeCatchHard,Movement/HandHard/{surface}; Movement/Ledge/Reach; Movement/Cloth/FallShortMedium; Movement/Body/Bump +0.05; Movement/HandSoft/{surface} +0.15; Voice/Impact +0.1,12,빠르게 떨어지다 렛지 잡기
+Shimmy,Movement/HandSoft/{surface} *0.6,3,렛지에서 옆으로 갈 때 손
+LedgeClimb,Movement/HandSoft/{surface}; Voice/StrainSoft; Movement/Walk/{surface} +0.35,6,렛지에서 올라가기 (Beatrun heave up)
+LedgeJump,Movement/HandRelease/{surface}; Movement/Cloth/VaultSwish; Voice/StrainSoft,8,렛지에서 뛰어 떠나기
+LedgeDrop,Movement/HandRelease/{surface},4,렛지 놓고 떨어지기
+WallClimb,Movement/WallStep/{surface}; Movement/Cloth/MovementRun; Voice/StrainSoft,10,벽 오르기 시작. {surface}는 벽 표면
+WallStep,Movement/WallStep/{surface}; Movement/Cloth/MovementRun *0.6,8,벽을 디디며 오르기 (MovementAudio.wallStepInterval마다)
+WallKick,Movement/WallStep/{surface}; Movement/WallRelease/{surface}; Movement/Cloth/VaultSwish; Voice/StrainSoft,10,벽 차기
+BarGrab,Movement/Bar/Grab; Movement/HandHard/MetalPipe; Movement/Cloth/SideStep,10,봉 잡기 (Beatrun swing bar)
+BarSwing,Movement/Bar/Swing; Movement/Cloth/Swing,8,봉 아래를 지나며 흔들기
+BarRelease,Movement/Bar/Release; Movement/Cloth/VaultSwish; Voice/StrainSoft,10,봉에서 뛰어 날기
+BarLetGo,Movement/Bar/LetGo,5,봉 놓기
+SlideStart,Movement/Cloth/FallShortMedium; Movement/HandSoft/{surface}; Movement/Slide/{surface} *0.5,12,슬라이드 시작. 긁는 소리는 SlideLoop가 이어서 반복
+BellySlideStart,Movement/Cloth/FallShortMedium; Movement/Slide/{surface} *0.5,12,엎드려·누워 미끄러지기 시작
+SlideEnd,Movement/Cloth/MovementSneak,4,슬라이드 끝
+Dive,Movement/Release/{surface}; Movement/Cloth/BodyRollSwish; Voice/StrainSoft,10,다이브
+Dodge,Movement/Run/{surface}; Movement/Cloth/SideStep; Voice/StrainSoft,8,스텝 회피 (Beatrun side step)
+Tackle,Movement/Run/{surface}; Movement/Cloth/SideStep; Voice/StrainMedium,12,태클
+ProneDown,Movement/Prone/Down,4,엎드리기
+ProneUp,Movement/Prone/Up,4,엎드렸다 일어나기
+Crouch,Movement/Cloth/MovementSneak *0.5,2,웅크리기
+Stand,Movement/Cloth/MovementSneak *0.5,2,웅크렸다 일어서기
+Lean,Movement/Lean,2,Q/E 기울이기

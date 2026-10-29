@@ -16,9 +16,27 @@ using MovementState = PlayerMovement.MovementState;
 ///   of the rest pose (AnkleLimit), so no clip can twist a foot.
 /// The ground-following part is on while standing or crouching on the ground, landings included, before the eyes place the camera, so the view
 /// dips with the hips. Presentation only: nothing here moves the player.
+/// The feet after the IK are read by PlayerFootsteps (TryReadFeet), so steps sound when a foot really comes down.
 /// </summary>
 public sealed partial class PlayerBody
 {
+    /// <summary>One foot after this frame's leg IK, for footstep sounds.</summary>
+    internal readonly struct FootReading
+    {
+        /// <summary>The ankle (the foot bone) in world space.</summary>
+        public readonly Vector3 Ankle;
+        /// <summary>World height of the ground under the foot (m).</summary>
+        public readonly float Ground;
+        /// <summary>What that ground is; null when nothing was found and the capsule's floor stood in.</summary>
+        public readonly Collider Surface;
+
+        public FootReading(Vector3 ankle, float ground, Collider surface) { Ankle = ankle; Ground = ground; Surface = surface; }
+
+        /// <summary>How far the ankle is above the ground under it (m).</summary>
+        public float Height => Ankle.y - Ground;
+        public Vector3 GroundPoint => new Vector3(Ankle.x, Ground, Ankle.z);
+    }
+
     [Header("Feet on the ground")]
     [SerializeField, Min(0f), Tooltip("Furthest the hips drop to let a foot reach lower ground (m).")]
     private float maxHipDrop = .3f;
@@ -41,23 +59,38 @@ public sealed partial class PlayerBody
         public Vector3 Heel, Tip;
         /// <summary>Smoothed world height of the ground under the foot (m).</summary>
         public float Ground;
+        /// <summary>The collider under the foot, or null when the capsule's floor stood in.</summary>
+        public Collider Surface;
         public Vector3 Normal = Vector3.up, Target;
     }
 
     private Leg leftLeg, rightLeg;
-    private float hipFloor, lastFloor, feetWeight;
-    private bool feetSettled;
+    private float hipFloor, lastFloor, feetWeight, restAnkleHeight;
+    private bool feetSettled, feetOnGround;
+
+    /// <summary>The ankles' height above the floor in the character's rest pose (m); 0 without legs.</summary>
+    internal float RestAnkleHeight => restAnkleHeight;
+
+    /// <summary>The feet after this frame's leg IK. False unless they stand on the ground (standing or crouching).</summary>
+    internal bool TryReadFeet(out FootReading left, out FootReading right)
+    {
+        bool reading = feetOnGround && leftLeg != null && rightLeg != null && body != null;
+        left = reading ? new FootReading(leftLeg.Foot.position, leftLeg.Ground, leftLeg.Surface) : default;
+        right = reading ? new FootReading(rightLeg.Foot.position, rightLeg.Ground, rightLeg.Surface) : default;
+        return reading;
+    }
 
     private void SetUpFeet()
     {
         leftLeg = MakeLeg(true);
         rightLeg = MakeLeg(false);
-        feetWeight = 0f;
-        feetSettled = false;
+        feetWeight = restAnkleHeight = 0f;
+        feetSettled = feetOnGround = false;
         if (leftLeg == null || rightLeg == null) return;
         Vector3 hips = rightLeg.Upper.position - leftLeg.Upper.position;
         leftLeg.Ankle = AnkleLimit.Create(leftLeg.Foot, hips);
         rightLeg.Ankle = AnkleLimit.Create(rightLeg.Foot, hips);
+        restAnkleHeight = Mathf.Max(0f, (leftLeg.Foot.position.y + rightLeg.Foot.position.y) * .5f - body.position.y);
     }
 
     private Leg MakeLeg(bool left)
@@ -101,6 +134,7 @@ public sealed partial class PlayerBody
     {
         bool onFeet = !dead && player.IsGrounded && !playingOut
             && (state == MovementState.Standing || state == MovementState.Crouching);
+        feetOnGround = onFeet;
         feetWeight = Mathf.MoveTowards(feetWeight, onFeet ? 1f : 0f, dt / blendTime);
         float floor = transform.position.y, clipFloor = body.position.y;
         if (feetWeight <= 0f)
@@ -140,12 +174,14 @@ public sealed partial class PlayerBody
     {
         float ground = floor;
         Vector3 normal = Vector3.up;
+        Collider surface = null;
         bool found = false;
         Sample(leg.Foot.TransformPoint(leg.Heel));
         Sample(leg.Foot.position);
         Sample(leg.Foot.TransformPoint(leg.Tip));
         leg.Ground = ground > leg.Ground ? ground : Mathf.Lerp(leg.Ground, ground, follow);
         leg.Normal = Vector3.Slerp(leg.Normal, normal, follow);
+        leg.Surface = surface;
 
         void Sample(Vector3 point)
         {
@@ -155,6 +191,7 @@ public sealed partial class PlayerBody
             {
                 ground = hit.point.y;
                 normal = hit.normal;
+                surface = hit.collider;
                 found = true;
             }
         }

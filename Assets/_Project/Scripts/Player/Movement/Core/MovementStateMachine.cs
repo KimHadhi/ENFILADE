@@ -16,6 +16,8 @@ public sealed class MovementStateMachine
     public MovementState CurrentState { get; private set; }
     public MovementState PreviousState { get; private set; }
     public float Duration { get; set; }
+    /// <summary>(from, to), raised once the new state has entered.</summary>
+    public event Action<MovementState, MovementState> Changed;
 
     public MovementStateMachine(IReadOnlyDictionary<MovementState, MovementBaseState> states, MovementState initial)
     {
@@ -95,6 +97,7 @@ public sealed class MovementStateMachine
             enterPath.Clear();
             transitioning = false;
         }
+        Changed?.Invoke(PreviousState, CurrentState);
     }
 
     private static MovementBaseState FindCommonAncestor(MovementBaseState from, MovementBaseState to)

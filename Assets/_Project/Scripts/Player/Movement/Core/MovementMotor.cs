@@ -175,6 +175,7 @@ public sealed class MovementMotor
         {
             landedThisFrame = true;
             if (!ctx.Abilities.Landing.OnLanding()) ctx.StateMachine.Current.OnLanding();
+            ctx.RaiseLanded(ctx.Abilities.Landing.LastImpactSpeed);
         }
     }
 

@@ -97,6 +97,7 @@ public sealed class MovementActions
     {
         ctx.VerticalVelocity = Mathf.Sqrt(2f * height * Mathf.Abs(ctx.gravity));
         LeaveGround();
+        ctx.RaiseJumped();
     }
 
     public float GetSpeedScaledPop(float speed) => Mathf.Min(Mathf.Max(0f, speed) * ctx.divePopPerSpeed, ctx.maxAdditionalDivePop);

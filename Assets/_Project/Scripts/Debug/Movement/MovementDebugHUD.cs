@@ -10,6 +10,7 @@ public sealed class MovementDebugHUD : MonoBehaviour
     [SerializeField] private Vector2 position = new Vector2(20f, 20f);
     [SerializeField] private float minWidth = 260f;
 
+    private PlayerFootsteps footsteps;
     private GUIStyle labelStyle;
     private GUIStyle titleStyle;
     private GUIStyle boxStyle;
@@ -105,6 +106,8 @@ public sealed class MovementDebugHUD : MonoBehaviour
         {
             GUILayout.Label($"Health: {playerMovement.DamageReceiver.Health:F0} | Dodge: {(playerMovement.IsDodging ? "ACTIVE" : "READY / COOLDOWN")}", labelStyle);
         }
+        if (footsteps == null) footsteps = playerMovement.GetComponent<PlayerFootsteps>();
+        if (footsteps != null) GUILayout.Label($"Surface: {footsteps.LastSurface}", labelStyle);
 
         GUILayout.EndVertical();
         GUILayout.EndArea();

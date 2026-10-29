@@ -164,6 +164,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         byName.Clear();
         headParts.Clear();
         transition = null;
+        playingOut = false;
         if (body != null) Destroy(body.gameObject);
         body = head = leftHand = rightHand = null;
         animator = null;
@@ -303,6 +304,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
                 return;
             }
             transition = null;
+            playingOut = false;
         }
 
         switch (state)

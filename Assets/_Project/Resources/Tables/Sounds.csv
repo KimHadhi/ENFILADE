@@ -102,17 +102,17 @@ Movement/Run/Water,0.25,0.9,1.1,Beatrun Footsteps.Water
 Movement/Run/Wood,1,0.9,1.1,Beatrun Footsteps.Wood
 Movement/Run/WoodPanel,1,0.9,1.1,Beatrun Footsteps.WoodPanel
 Movement/Run/WoodPlank,1,0.9,1.1,Beatrun Footsteps.WoodPlank
-Movement/Slide/Concrete,1,0.9,1.1,Beatrun Slide.Concrete
+Movement/Slide/Concrete,1,0.8,0.85,Beatrun Slide.Concrete (슬라이드 시작은 Beatrun처럼 낮게)
 Movement/Slide/Dirt,1,0.95,1.05,FEAR 흙 슬라이드
-Movement/Slide/Duct,1,0.9,1.1,Beatrun Slide.Duct
-Movement/Slide/Gantry,1,0.9,1.1,Beatrun Slide.Gantry
-Movement/Slide/Glass,1,1,1,Beatrun Slide.Glass
-Movement/Slide/Gravel,1,0.9,1.1,Beatrun Slide.Gravel
-Movement/Slide/Marble,1,0.9,1.1,Beatrun Slide.Marble
-Movement/Slide/Metal,1,0.9,1.1,Beatrun Slide.Metal
+Movement/Slide/Duct,1,0.8,0.85,Beatrun Slide.Duct (슬라이드 시작은 Beatrun처럼 낮게)
+Movement/Slide/Gantry,1,0.8,0.85,Beatrun Slide.Gantry (슬라이드 시작은 Beatrun처럼 낮게)
+Movement/Slide/Glass,1,0.8,0.85,Beatrun Slide.Glass (슬라이드 시작은 Beatrun처럼 낮게)
+Movement/Slide/Gravel,1,0.8,0.85,Beatrun Slide.Gravel (슬라이드 시작은 Beatrun처럼 낮게)
+Movement/Slide/Marble,1,0.8,0.85,Beatrun Slide.Marble (슬라이드 시작은 Beatrun처럼 낮게)
+Movement/Slide/Metal,1,0.8,0.85,Beatrun Slide.Metal (슬라이드 시작은 Beatrun처럼 낮게)
 Movement/Slide/Sand,1,0.95,1.05,FEAR 모래 슬라이드
-Movement/Slide/Tarp,1,1,1,Beatrun Slide.Tarp
-Movement/Slide/Wood,1,0.9,1.1,Beatrun Slide.Wood
+Movement/Slide/Tarp,1,0.8,0.85,Beatrun Slide.Tarp (슬라이드 시작은 Beatrun처럼 낮게)
+Movement/Slide/Wood,1,0.8,0.85,Beatrun Slide.Wood (슬라이드 시작은 Beatrun처럼 낮게)
 Movement/SlideLoop/Concrete,1,1,1,Beatrun Slide.ConcreteLoop
 Movement/SlideLoop/Duct,1,1,1,Beatrun Slide.DuctLoop
 Movement/SlideLoop/Gantry,1,1,1,Beatrun Slide.GantryLoop

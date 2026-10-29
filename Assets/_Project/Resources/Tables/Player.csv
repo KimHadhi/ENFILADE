@@ -304,3 +304,45 @@ Hands.blendTime,0.15,손이 총·주먹·난간·자유 사이를 옮겨 가는 
 Hands.shoulderReach,15,손이 닿지 않을 때 어깨가 그쪽으로 도는 최대 각도(도)
 Hands.ledgeHandSpacing,0.36,난간을 잡은 두 손 사이 거리(m)
 Hands.palmHeight,0.04,넘기·올라서기 때 장애물 윗면을 짚은 손목 높이(m)
+# 소리: 몸·목소리가 나는 곳 (Sounds 행 → CharacterSounds),,
+Sounds.bodyVoices,8,동시에 겹쳐 날 수 있는 몸 소리(발·손·옷) 수
+Sounds.bodySpatialBlend,1,몸 소리의 3D 정도. 1이면 발·손 등 소리가 난 자리에서 들리고 0이면 평면
+Sounds.voiceSpatialBlend,0,목소리의 3D 정도. 내 숨소리는 머릿속에서 들리도록 0
+Sounds.fullVolumeDistance,2,이 거리 안에서는 소리가 줄지 않는다(m)
+Sounds.maxDistance,40,소리가 다 사라지는 거리(m)
+Sounds.mouthHeight,1.6,발에서 입까지 높이(m)
+Sounds.mouthFadeTime,0.06,입이 하던 소리(숨)를 신음에 넘겨줄 때 줄어드는 시간(초). 두 소리가 겹치지 않는다
+# 소리: 발소리 (Footsteps 행 → PlayerFootsteps. 몸의 발이 실제로 땅에 닿을 때 한 걸음),,
+Footsteps.liftHeight,0.04,자기 직전 접지 높이와 반대 지지 발보다 이만큼 올라가면 발을 든 것(m). 골반 들썩임은 제외
+Footsteps.contactHeight,0.02,든 발이 디딘 높이에서 이 안으로 내려오면 한 걸음(m)
+Footsteps.settleHeight,0.08,직전 접지 높이에서 이 안에서 하강 후 반등해도 한 걸음(m). 높이가 바뀐 완전한 발 구름도 접지로 인정
+Footsteps.minStepInterval,0.1,한 발이 다시 걸음 소리를 내기까지 최소 시간(초)
+Footsteps.runSpeed,3,이보다 느리면 걷는 발소리(StepWalk) 빠르면 뛰는 발소리(StepRun)(m/s). 웅크리면 StepSneak
+Footsteps.releaseSpeed,3,이보다 빠르게 발을 떼면 바닥을 차는 소리(StepRelease)(m/s)
+Footsteps.calibrateTime,0.5,이만큼 가만히 서 있으면 양발의 접지 높이를 각각 다시 잰다(초). 이동 중에도 직전 접지를 추적
+# 소리: 동작 (MovementAudio 행 → PlayerMovementAudio. 어떤 소리가 나는지는 Tables/SoundCues),,
+MovementAudio.landMinSpeed,1.5,이보다 살살 닿으면 착지 소리 없이 발소리만(m/s)
+MovementAudio.landSoftSpeed,4,이보다 느리면 가벼운 착지(LandSoft) 빠르면 착지(Land)(m/s)
+MovementAudio.landHardSpeed,12,이보다 빠르면 세게 착지(LandHard)(m/s). 약 3m 낙하. Body.hardLandingSpeed와 맞춘다
+MovementAudio.landHeavySpeed,16,이보다 빠르면 크게 착지(LandHeavy)(m/s). Body.severeLandingSpeed와 맞춘다
+MovementAudio.traversalLandWindow,1,볼트·올라서기가 끝나고 이 안에 닿으면 그 마무리 소리(VaultLand·MantleLand)(초)
+MovementAudio.ledgeCatchHardSpeed,4.75,이보다 빠르게 떨어지다 렛지를 잡으면 신음(LedgeCatchHard)(m/s)
+MovementAudio.shimmyInterval,0.4,렛지에서 옆으로 갈 때 손 소리 간격(초)
+MovementAudio.wallStepInterval,0.3,벽을 뛰어오를 때 발 소리 간격(초)
+MovementAudio.barSwingSpeed,1,봉 아래를 이보다 빠르게 지나면 휙 소리(BarSwing)(rad/s)
+MovementAudio.slideLoopVolume,0.4,슬라이드 긁는 소리 크기(slideLoudSpeed일 때)
+MovementAudio.slideLoudSpeed,8.4,긁는 소리가 가장 커지는 슬라이드 속도(m/s)
+MovementAudio.slideFadeTime,0.15,긁는 소리가 커지고 사라지는 시간(초)
+MovementAudio.leanSoundShare,0.5,Q/E 기울이기가 이 비율만큼 기울면 옷 소리
+# 소리: 숨 (Breathing 행 → PlayerBreathing. Beatrun 숨소리),,
+Breathing.exertSpeed,1.9,땅에서 이보다 빠르거나 매달리고 오르는 중이면 숨이 찬다(m/s)
+Breathing.quickSpeed,3.8,이보다 빠르면 짧고 빠른 숨(m/s)
+Breathing.stressGain,13,힘쓸 때 초당 쌓이는 숨참
+Breathing.stressRecovery,16.5,땅에서 쉴 때 초당 가라앉는 숨참
+Breathing.stressRange,-50;150,숨참 최저;최고. 최저까지 쉬면 숨소리가 멎는다
+Breathing.heavyStress,50,이보다 숨차면 보통 숨(Medium) 아니면 약한 숨(Soft)
+Breathing.quickInterval,0.5,빠른 숨 간격(초). 숨찰수록 이 값에 가깝다
+Breathing.quickIntervalSlack,0.25,덜 숨찰 때 빠른 숨 간격에 더하는 시간(초)
+Breathing.slowInterval,1.25,느린 숨 간격(초)
+Breathing.afterVoicePause,0.3,신음이 끝나고 다음 숨까지(초)
+Breathing.breathNoise,1.5,숨소리가 적에게 들리는 거리(m)

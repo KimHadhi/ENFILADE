@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -70,6 +71,13 @@ public sealed partial class PlayerMovement : MonoBehaviour
     public Vector3 DiveBodyForward { get => Actions.DiveBodyForward; set => Actions.DiveBodyForward = value; }
     public string CurrentStatePath => StateMachine != null ? StateMachine.Current.Path : "Uninitialized";
     public bool IsSlideGroundSnap => Motor.IsSlideGroundSnap;
+
+    /// <summary>The movement state changed (from, to); raised once the new state has entered.</summary>
+    public event Action<MovementState, MovementState> StateChanged;
+    /// <summary>The player touched down, with the fall speed at impact (m/s). Raised after the landing became a roll, a slide or a step.</summary>
+    public event Action<float> Landed;
+    /// <summary>A jump left the ground. Wall kicks, ledge jumps and bar releases are states of their own.</summary>
+    public event Action Jumped;
 
     public MovementState CurrentState => StateMachine != null ? StateMachine.CurrentState : MovementState.Standing;
     public MovementState PreviousState => StateMachine != null ? StateMachine.PreviousState : MovementState.Standing;
@@ -177,6 +185,7 @@ public sealed partial class PlayerMovement : MonoBehaviour
         if (Ultimate == null) Ultimate = gameObject.AddComponent<UltimateCharge>();
         GameTables.Bind(TableName, "Ultimate", Ultimate);
         StateMachine = MovementStateMachine.Create(this);
+        StateMachine.Changed += RaiseStateChanged;
         Execution = GetComponent<PlayerExecution>();
         if (Execution == null) Execution = gameObject.AddComponent<PlayerExecution>();
         GameTables.Bind(TableName, "Execution", Execution);
@@ -190,6 +199,15 @@ public sealed partial class PlayerMovement : MonoBehaviour
             GameTables.Bind(TableName, "Body", gameObject.AddComponent<PlayerBody>());
             // Its hands hold the gun, the fists and ledges.
             GameTables.Bind(TableName, "Hands", gameObject.AddComponent<PlayerBodyHands>());
+            // Its feet make the footsteps.
+            GameTables.Bind(TableName, "Footsteps", gameObject.AddComponent<PlayerFootsteps>());
+        }
+        // Movement sounds: the voices they come out of, action sounds from the movement events, and breathing.
+        if (Application.isPlaying && GetComponent<CharacterSounds>() == null)
+        {
+            GameTables.Bind(TableName, "Sounds", gameObject.AddComponent<CharacterSounds>());
+            GameTables.Bind(TableName, "MovementAudio", gameObject.AddComponent<PlayerMovementAudio>());
+            GameTables.Bind(TableName, "Breathing", gameObject.AddComponent<PlayerBreathing>());
         }
         if (controller.height < Posture.standingColliderHeight - 0.02f)
             ChangeState(controller.height <= proneColliderHeight + 0.02f ? MovementState.Proning : MovementState.Crouching);
@@ -243,6 +261,9 @@ public sealed partial class PlayerMovement : MonoBehaviour
     }
 
     public void ChangeState(MovementState state) => StateMachine.ChangeState(state);
+    private void RaiseStateChanged(MovementState from, MovementState to) => StateChanged?.Invoke(from, to);
+    internal void RaiseLanded(float impactSpeed) => Landed?.Invoke(impactSpeed);
+    internal void RaiseJumped() => Jumped?.Invoke();
     public void StartSlide(float speed, bool applyBoost = true) => Actions.StartSlide(speed, applyBoost);
     public void StartLandingSlide(MovementState state, float speed, Vector3 fallback, bool applyBoost) => Actions.StartLandingSlide(state, speed, fallback, applyBoost);
     public void LaunchDive(Vector2 input) => Actions.LaunchDive(input);
