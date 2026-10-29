@@ -57,7 +57,7 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
     private bool MovementBlocksAttack => player.IsParkour || player.IsDiving || player.IsSliding
         || player.CurrentState == PlayerMovement.MovementState.StepDodge
         || player.CurrentState == PlayerMovement.MovementState.DashPush
-        || player.CurrentState == PlayerMovement.MovementState.LandingRoll;
+        || player.IsLandingRecovery;
     public bool IsActive => isActiveAndEnabled && slots != null && slots.UsesFists && player != null && player.IsInitialized && player.DamageReceiver.IsAlive;
     public event Action<float> Punched;
     public event Action<DamageResult> Defended;

@@ -52,7 +52,7 @@ public sealed class PlayerExecution : MonoBehaviour
         && !player.CombatInputLocked && !player.IsParkour && !player.IsSliding && !player.IsDiving
         && player.CurrentState != PlayerMovement.MovementState.StepDodge
         && player.CurrentState != PlayerMovement.MovementState.DashPush
-        && player.CurrentState != PlayerMovement.MovementState.LandingRoll
+        && !player.IsLandingRecovery
         && (ActiveExecution == null || !ActiveExecution.IsExecuting);
     private void Update()
     {

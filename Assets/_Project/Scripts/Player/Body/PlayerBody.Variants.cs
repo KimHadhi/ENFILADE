@@ -4,16 +4,22 @@ using MovementState = PlayerMovement.MovementState;
 
 /// <summary>
 /// Which clip of a family fits the moment: jumps by run-up speed, the mid-air knee tuck, a long fall's flailing, vaults and mantles by
-/// obstacle height, landings by impact, crouched landings and slide exits, the ledge catch and shimmy, the wall kick's
-/// side, and the gun-holding version of a clip while a rifle or pistol is out. Names and thresholds come from
-/// Player.csv, row Body.
+/// obstacle height, landings by how hard they were (MovementLanding's tier), the way a heavy landing goes down, a fast
+/// or slow landing roll, crouched landings and slide exits, the ledge catch and shimmy, the wall kick's side, and the
+/// gun-holding version of a clip while a rifle or pistol is out. Names and thresholds come from Player.csv, row Body.
 /// </summary>
 public sealed partial class PlayerBody
 {
     [Header("Clip variants")]
     [SerializeField] private string jumpStill = "jumpstill", jumpSlow = "jumpslow", airTuck = "jumpcoil";
     [SerializeField] private string landCrouch = "landcrouch", coilLand = "jumpcoilend", coilLandCrouch = "jumpcoilendcrouch";
-    [SerializeField] private string landSevere = "mx_hard_landing";
+    [SerializeField, Tooltip("Down after a heavy landing and up again: onto hands and knees, flat on the face (a huge "
+        + "fall), onto the back (moving backwards, or thrown by a blow). Each plays over the time the player stays down.")]
+    private string heavyLand = "mx_hard_landing", heavyLandFaceDown = "mx_get_up", heavyLandBack = "mx_stand_up_back";
+    [SerializeField, Tooltip("Landing roll when the landing carries the player faster than rollFastSpeed.")]
+    private string rollFast = "mx_sprint_roll";
+    [SerializeField, Min(0f), Tooltip("A landing roll faster than this (m/s) dives into rollFast instead of the roll.")]
+    private float rollFastSpeed = 6.5f;
     [SerializeField, Tooltip("A long fall (Ability.bigFallHeight): arms and legs flail until touchdown, Ctrl or not.")]
     private string fallFlail = "fallinguncontrolled";
     [SerializeField] private string supineSlideEndCrouch = "meslideendcrouch", supineSlideEndProne = "meslideendprone";
@@ -35,8 +41,6 @@ public sealed partial class PlayerBody
     private float vaultHighHeight = 1f;
     [SerializeField, Min(0f), Tooltip("Mantle heights (m): below the first a step up, below the second a low step onto it, below the third a high one, above it a full climb.")]
     private float mantleStepHeight = .7f, mantleLowHeight = 1.1f, mantleMidHeight = 1.6f;
-    [SerializeField, Min(0f), Tooltip("Falls faster than this land on hands and knees (m/s), whether moving or not.")]
-    private float severeLandingSpeed = 16f;
     [SerializeField, Min(.1f), Tooltip("Sideways speed the ledge shimmy clips were authored for (m/s).")]
     private float shimmyClipSpeed = .5f;
     [SerializeField, Min(.1f), Tooltip("Playback speed of the vault clips. A vault keeps the run-up speed and is over "
@@ -51,12 +55,13 @@ public sealed partial class PlayerBody
     private float lastVaultAt = float.NegativeInfinity;
 
     private WeaponController weapons;
-    private string jumpClip, obstacleClip, wallKickClip;
+    private string jumpClip, obstacleClip, wallKickClip, rollClip, downClip;
     private bool tucked, flailing;
 
     private string[] VariantClips => new[]
     {
-        jumpStill, jumpSlow, airTuck, landCrouch, coilLand, coilLandCrouch, landSevere, fallFlail, supineSlideEndCrouch, supineSlideEndProne,
+        jumpStill, jumpSlow, airTuck, landCrouch, coilLand, coilLandCrouch, heavyLand, heavyLandFaceDown, heavyLandBack, rollFast,
+        fallFlail, supineSlideEndCrouch, supineSlideEndProne,
         bellySlideEndCrouch, vaultHigh, stepUp, mantleLow, mantleMid, ledgeClimbUp, ledgeCatch, ledgeShimmyLeft, ledgeShimmyRight,
         wallClimbStart, wallKickRight
     };
@@ -121,15 +126,32 @@ public sealed partial class PlayerBody
     // A kick that throws the body to its right leaves a wall on its left, and the other way round.
     private string WallKickFor() => Vector3.Dot(player.HorizontalVelocity, transform.right) >= 0f ? wallKick : wallKickRight;
 
-    // By impact speed: a severe fall lands on hands and knees, a hard one sinks deep into the knees (or runs it off when
-    // moving; crouched ones end crouched instead of standing up and ducking again). A softer landing after a mid-air
-    // tuck just straightens the legs, as Beatrun pairs its coil with the coil end. Plain jumps blend on.
-    private string LandingFor(bool crouched, float impact, bool wasTucked)
+    // By MovementLanding's tier: a hard landing sinks deep into the knees (crouched ones end crouched instead of
+    // standing up and ducking again); a heavy one has its own state. A light landing after a mid-air tuck just
+    // straightens the legs, as Beatrun pairs its coil with the coil end. Plain jumps blend on.
+    private string LandingFor(bool crouched, bool wasTucked)
     {
-        if (impact > severeLandingSpeed) return crouched ? landCrouch : landSevere;
-        if (impact > hardLandingSpeed) return crouched ? landCrouch : HorizontalSpeed() > walkClipSpeed ? landMoving : land;
+        if (player.LastLandingTier != MovementLanding.Tier.Light) return crouched ? landCrouch : land;
         if (wasTucked) return crouched ? coilLandCrouch : coilLand;
         return null;
+    }
+
+    // A landing that carries the player on fast dives into the running roll.
+    private string RollFor() => new Vector2(player.HorizontalVelocity.x, player.HorizontalVelocity.z).magnitude > rollFastSpeed ? rollFast : roll;
+
+    private string DownClip(MovementLanding.Pose pose) =>
+        pose == MovementLanding.Pose.Back ? heavyLandBack : pose == MovementLanding.Pose.FaceDown ? heavyLandFaceDown : heavyLand;
+
+    // Down after a heavy landing: the clip keeps pace with the time until the player is up, and the body keeps facing
+    // the way it went down while the view turns.
+    private void DownPose()
+    {
+        var landing = player.Abilities.Landing;
+        Drive(downClip, stateTime / Mathf.Max(.05f, landing.HeavyDuration));
+        legYaw = landing.HeavyYaw;
+        targetYaw = Mathf.DeltaAngle(transform.eulerAngles.y, legYaw);
+        legsPlanted = true;
+        turning = 0;
     }
 
     private string SlideEndFor(MovementState from, MovementState to)
@@ -159,7 +181,7 @@ public sealed partial class PlayerBody
             Want(airTuck);
         }
         else if (jumped && airTime < (Find(jumpClip)?.Length ?? 0f)) Want(jumpClip);
-        else Want(player.VerticalVelocity < -hardLandingSpeed * .6f ? fall : air);
+        else Want(player.VerticalVelocity < -fallClipSpeed ? fall : air);
     }
 
     // Catch the ledge and hang facing the wall wherever the player looks; shimmy, at the pace of the sideways

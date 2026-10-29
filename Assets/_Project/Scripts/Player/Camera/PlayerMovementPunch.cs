@@ -6,7 +6,8 @@ using MovementState = PlayerMovement.MovementState;
 /// - Each footstep nods the view a little and rolls it toward the foot coming down, so the roll alternates. Steps roll
 ///   less the faster the run, and kick harder while the run is still building speed. A gun in the hands steadies the
 ///   nod, and the roll too unless sprinting with Shift. Crouched steps don't punch.
-/// - A jump while moving forward tips the view up. A landing nods it down and rolls it, 2:1, by the fall speed.
+/// - A jump while moving forward tips the view up. A landing nods it down and rolls it, 2:1, by the fall speed; a hard
+///   or heavy landing adds Beatrun's hard-land jolt.
 /// PlayerCameraEffects adds Angles to the camera with its other effects, scaled by the Esc menu's screen shake.
 /// Numbers: Player.csv row Punch.
 /// </summary>
@@ -44,6 +45,9 @@ public sealed class PlayerMovementPunch : MonoBehaviour
     private float landingPerSpeed = .09f;
     [SerializeField, Min(0f), Tooltip("Gentler touchdowns don't punch (m/s).")]
     private float landMinSpeed = 1.5f;
+    [SerializeField, Tooltip("A hard or heavy landing (MovementLanding's tier) kicks this on top: nod (down); turn (right); "
+        + "roll in degrees. Beatrun's hard land: 10, 2, 5.")]
+    private Vector3 hardLandPunch = new Vector3(10f, 2f, 5f);
 
     // Source clamps the punch short of turning the view over.
     private const float MaxAngle = 89f, RestEnergy = 1e-6f;
@@ -123,12 +127,14 @@ public sealed class PlayerMovementPunch : MonoBehaviour
         Kick(new Vector3(jumpPitch, 0f, 0f));
     }
 
-    // A landing roll pitches the view on its own.
+    // A landing roll pitches the view on its own. A hard or heavy one jolts it on top of the usual landing punch.
     private void OnLanded(float impact)
     {
         if (impact < landMinSpeed || player.CurrentState == MovementState.LandingRoll) return;
         float scale = impact * landingPerSpeed;
         Kick(new Vector3(landPunch.x, 0f, landPunch.y * side) * scale);
+        if (player.LastLandingTier != MovementLanding.Tier.Light)
+            Kick(new Vector3(hardLandPunch.x, hardLandPunch.y, hardLandPunch.z * side));
         side = -side;
     }
 

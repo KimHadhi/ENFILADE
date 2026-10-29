@@ -2,7 +2,8 @@ using UnityEngine;
 using MovementState = PlayerMovement.MovementState;
 
 /// <summary>
-/// The sounds of the player's actions, after Beatrun's: jumps, landings by how hard they hit, rolls, vaults, mantles,
+/// The sounds of the player's actions, after Beatrun's: jumps, landings by how hard they hit (and getting up after a
+/// heavy one), rolls, vaults, mantles,
 /// ledge catches and climbs, wall climbs and kicks, bars, slides with their scrape, dives, dodges, dash pushes and the
 /// bodies they hit, prone, crouch and lean. Listens to PlayerMovement's events and fires cues of Tables/SoundCues on
 /// the surface involved (the ground, the obstacle, the ledge, the wall); what each cue plays is tuned there.
@@ -14,14 +15,13 @@ public sealed class PlayerMovementAudio : MonoBehaviour
     [Header("Landings")]
     [SerializeField, Min(0f), Tooltip("Gentler touchdowns make no landing sound; the footsteps cover them (m/s).")]
     private float landMinSpeed = 1.5f;
-    [SerializeField, Min(0f), Tooltip("Touchdowns below this fall speed are soft (LandSoft), faster ones a full Land (m/s).")]
+    [SerializeField, Min(0f), Tooltip("Touchdowns below this fall speed are soft (LandSoft), faster ones a full Land (m/s). "
+        + "Hard and heavy landings (MovementLanding's tier) sound as LandHard and LandHeavy.")]
     private float landSoftSpeed = 4f;
-    [SerializeField, Min(0f), Tooltip("Falls faster than this land hard (LandHard) (m/s). 12 m/s is about a 3 m drop.")]
-    private float landHardSpeed = 12f;
-    [SerializeField, Min(0f), Tooltip("Falls faster than this land heavily (LandHeavy) (m/s).")]
-    private float landHeavySpeed = 16f;
     [SerializeField, Min(0f), Tooltip("Touching down this soon after a vault or a mantle sounds as its end (VaultLand, MantleLand) (s).")]
     private float traversalLandWindow = 1f;
+    [SerializeField, Range(0f, 1f), Tooltip("Share of a heavy landing's time down at which the player starts getting up (GetUp).")]
+    private float getUpShare = .5f;
 
     [Header("Parkour")]
     [SerializeField, Min(0f), Tooltip("Catching a ledge while falling faster than this grunts (LedgeCatchHard) (m/s).")]
@@ -104,6 +104,11 @@ public sealed class PlayerMovementAudio : MonoBehaviour
                     Cue("BarSwing", null, true);
                 lastBarAngle = traversal.Angle;
                 break;
+            case MovementState.HeavyLanding:
+                // Once, as the body pushes itself up off the ground.
+                float upAt = getUpShare * player.Abilities.Landing.HeavyDuration;
+                if (player.CurrentStateDuration >= upAt && player.CurrentStateDuration - dt < upAt) Cue("GetUp", Ground());
+                break;
         }
         if (player.IsSliding) KeepSliding(dt);
         slideLoop?.Tick(dt);
@@ -171,8 +176,9 @@ public sealed class PlayerMovementAudio : MonoBehaviour
         // A landing roll has its own sound (Roll).
         if (player.CurrentState == MovementState.LandingRoll) return;
         string cue;
-        if (impact >= landHeavySpeed) cue = "LandHeavy";
-        else if (impact >= landHardSpeed) cue = "LandHard";
+        var tier = player.LastLandingTier;
+        if (tier == MovementLanding.Tier.Heavy) cue = "LandHeavy";
+        else if (tier == MovementLanding.Tier.Hard) cue = "LandHard";
         else if (recentTraversal != null && Time.time - traversalEndedAt <= traversalLandWindow) cue = recentTraversal;
         else if (impact >= landSoftSpeed) cue = "Land";
         else if (impact >= landMinSpeed) cue = "LandSoft";

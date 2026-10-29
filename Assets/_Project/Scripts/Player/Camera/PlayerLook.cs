@@ -118,13 +118,13 @@ public sealed class PlayerLook : MonoBehaviour
             if (body == null) body = GetComponent<PlayerBody>();
             float limit = body != null ? body.SlideLookYawLimit : 75f;
             // A slide carrying the player backwards (wall bounce, backward entry) keeps facing the view.
-            float slideHeading = PlayerBody.SlideFacing(direction, transform.eulerAngles.y);
-            float clamped = slideHeading + Mathf.Clamp(Mathf.DeltaAngle(slideHeading, candidate), -limit, limit);
-            // A sideways bounce can still put the existing view outside the new arc. Bring it back smoothly;
-            // ordinary mouse look stops at the limit without ever rotating the slide.
-            if (Mathf.Abs(Mathf.DeltaAngle(slideHeading, transform.eulerAngles.y)) > limit + .01f)
-                return Mathf.MoveTowardsAngle(transform.eulerAngles.y, clamped, 360f * Time.deltaTime);
-            return clamped;
+            return WithinArc(PlayerBody.SlideFacing(direction, transform.eulerAngles.y), limit, candidate);
+        }
+        if (movement != null && movement.CurrentState == PlayerMovement.MovementState.HeavyLanding && movement.Abilities != null)
+        {
+            // Down on the ground the head turns only so far from the way the body faces.
+            if (body == null) body = GetComponent<PlayerBody>();
+            return WithinArc(movement.Abilities.Landing.HeavyYaw, body != null ? body.HeavyLandingLookYawLimit : 90f, candidate);
         }
         if (movement == null || movement.CurrentState != PlayerMovement.MovementState.WallClimb
             || movement.Abilities == null) return candidate;
@@ -132,6 +132,16 @@ public sealed class PlayerLook : MonoBehaviour
         if (facing.sqrMagnitude < 0.001f) return candidate;
         float center = Mathf.Atan2(facing.x, facing.z) * Mathf.Rad2Deg;
         return center + Mathf.Clamp(Mathf.DeltaAngle(center, candidate), -wallClimbYawLimit, wallClimbYawLimit);
+    }
+
+    // Ordinary mouse look stops at the arc's edge without ever turning what the arc follows. A view already outside it
+    // (a sideways slide bounce, a blow from behind) is brought back smoothly.
+    private float WithinArc(float center, float limit, float candidate)
+    {
+        float clamped = center + Mathf.Clamp(Mathf.DeltaAngle(center, candidate), -limit, limit);
+        if (Mathf.Abs(Mathf.DeltaAngle(center, transform.eulerAngles.y)) > limit + .01f)
+            return Mathf.MoveTowardsAngle(transform.eulerAngles.y, clamped, 360f * Time.deltaTime);
+        return clamped;
     }
 
     private float ClampLookPitch(float candidate)

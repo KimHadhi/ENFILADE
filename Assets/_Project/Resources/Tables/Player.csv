@@ -66,7 +66,6 @@ Move.topBuildTime,2,sprintSpeed에서 topSpeed까지 쌓이는 시간(초). W만
 Move.turnCutRate,90,달리다 시선을 이보다 빠르게 돌리면 쌓인 속도가 깎인다(도/초)
 Move.turnCutPerDegree,0.025,그렇게 돈 1도마다 깎이는 속도(m/s). 90도를 휙 돌면 약 2.3m/s
 Move.momentumFalloff,20,앞으로 달리기를 멈추면 쌓인 속도가 빠지는 빠르기(m/s²). 벽에 막히면 실제 속도로 바로 깎인다
-Move.hardLandingSpeed,12,이보다 세게 발로 착지하면 쌓인 속도가 출발 속도로(m/s). 구르기·착지 슬라이드는 유지. Body.hardLandingSpeed와 맞춘다
 # 이동: 슬라이딩,,
 Move.slideMinStartSpeed,5.3,달리며 Ctrl로 슬라이드를 시작할 수 있는 최소 속도(m/s). Shift든 W만이든 이 속도면 된다
 Move.slideKickBoost,1,슬라이드 시작 때 더하는 속도(m/s)
@@ -163,11 +162,21 @@ Ability.swingPumpAcceleration,4,흔들기를 키우는 세기
 Ability.swingMaxAngularSpeed,3.5,흔들기 최대 각속도(rad/s)
 Ability.lacheForwardBoost,2,봉을 놓을 때 앞으로 더하는 속도(m/s)
 Ability.lacheUpBoost,2,봉을 놓을 때 위로 더하는 속도(m/s)
-# 능력: 착지 구르기·낙하 피해,,
-Ability.safeFallSpeed,16,이보다 빠르게 착지하면 낙하 피해(m/s)
+# 능력: 착지 단계·구르기·낙하 피해 (MovementLanding. 디버그 HUD의 Last landing),,
+Ability.hardLandingSpeed,12,이보다 세게 발로 착지하면 세게 착지(Beatrun): 쌓인 속도가 출발 속도로 깎이고 잠깐 느려지며 질주 금지(m/s). 12m/s는 약 3m 낙하
+Ability.hardLandingRecoverTime,1,세게 착지한 뒤 원래 이동 속도로 돌아오기까지(초)
+Ability.hardLandingMoveScale,0.1,세게 착지한 직후 이동 속도 배율. hardLandingRecoverTime에 걸쳐 1로 돌아온다
+Ability.hardLandingNoSprintTime,0.5,세게 착지한 뒤 Shift나 W 달리기로 속도를 쌓지 못하는 시간(초)
+Ability.safeFallSpeed,16,이보다 빠르게(그리고 safeFallDistance보다 높이) 떨어지면 낙하 피해와 크게 착지(Dynamic Landing): 쓰러졌다 일어날 때까지 조작 불가(m/s). 약 5.3m
 Ability.safeFallDistance,4,이보다 높이 떨어져야 낙하 피해(m)
 Ability.fallDamagePerSpeed,4,safeFallSpeed를 넘은 1m/s당 피해
-Ability.rollInputWindow,0.5,착지 전에 Ctrl을 눌러 구르기로 받는 시간(초)
+Ability.faceDownLandingSpeed,26,크게 착지할 때 이보다 빠르면 손과 무릎 대신 엎어진다(m/s). 약 14m. 피해 40
+Ability.backLandingMinSpeed,0.4,크게 착지할 때 시선 반대쪽으로 이보다 빠르게 움직이고 있었으면 등으로 떨어진다(m/s)
+Ability.heavyLandingTime,1.6,손과 무릎을 짚었다 일어나기까지 조작 불가(초). Body.heavyLand가 이 시간에 맞춰 재생된다
+Ability.faceDownLandingTime,1.5,엎어졌다 일어나기까지(초). Body.heavyLandFaceDown
+Ability.backLandingTime,2.8,등으로 떨어졌다 일어나기까지(초). Body.heavyLandBack. 넉백(PlayerMovement.KnockBack)도 이것
+Ability.heavyLandingBraking,10,크게 착지해 바닥을 미끄러지는 속도가 줄어드는 빠르기(초당 비율)
+Ability.rollInputWindow,0.5,세게·크게 착지하기 전 이 시간 안에 Ctrl을 누르면 구른다(초). 피해·감속 없이 속도 유지
 Ability.rollDuration,1,착지 구르기 시간(초). 구르기 애니메이션이 이 시간에 맞춰 재생된다
 Ability.rollSpeed,4,구르는 동안 가장 느린 속도(m/s). 착지 속도가 더 빠르면 그 속도를 유지
 Ability.bigFallHeight,8.5,낙하 꼭대기부터 아래 땅까지 이보다 높으면 큰 낙하: 바람·심장 박동·화면 일그러짐·허우적(m)
@@ -225,8 +234,7 @@ Body.jump,jumpfast,점프 도약
 Body.air,jumpidle,공중
 Body.fall,mx_fall,빠른 낙하
 Body.fallFlail,fallinguncontrolled,큰 낙하(Ability.bigFallHeight) 동안 허우적거리기. 이때 Ctrl은 착지 구르기만 준비하고 웅크리지 않는다
-Body.land,mx_fall_land,세게 착지(제자리): 무릎을 깊게 굽힌다
-Body.landMoving,runland,세게 착지(이동 중)
+Body.land,mx_fall_land,세게 착지(Ability.hardLandingSpeed 이상): 무릎을 깊게 굽힌다
 Body.slideStart,slidestart,슬라이딩 시작
 Body.slide,slideloop,슬라이딩
 Body.slideEnd,slideend,슬라이딩 끝
@@ -241,6 +249,8 @@ Body.supineSlideStart,meslidestart,누워서 미끄러지기 시작
 Body.supineSlide,meslideloop,누워서 미끄러지기
 Body.supineSlideEnd,meslideend,누워서 미끄러지기 끝
 Body.roll,mx_fall_roll,착지 구르기. Ability.rollDuration 동안 재생
+Body.rollFast,mx_sprint_roll,rollFastSpeed보다 빠르게 착지해 구를 때의 달리며 구르기
+Body.rollFastSpeed,6.5,이보다 빠르게 구르면 rollFast(m/s)
 Body.dodgeLeft,dodgejumpleft,왼쪽 회피
 Body.dodgeRight,dodgejumpright,오른쪽 회피
 Body.dashPush,bargein,돌진 밀치기. 적에 부딪혀 멈추면 끝까지 재생
@@ -257,7 +267,9 @@ Body.jumpStill,jumpstill,제자리 점프 (도움닫기 속도가 jumpStillSpeed
 Body.jumpSlow,jumpslow,걸으며 점프 (jumpFastSpeed 미만). 그보다 빠르면 Body.jump
 Body.airTuck,jumpcoil,공중에서 Ctrl로 무릎을 접은 자세 (Beatrun 코일)
 Body.landCrouch,landcrouch,웅크린 채 세게 착지 (서지 않고 웅크린 채 끝남)
-Body.landSevere,mx_hard_landing,아주 세게 착지: 손과 무릎을 짚는다 (severeLandingSpeed 초과)
+Body.heavyLand,mx_hard_landing,크게 착지: 손과 무릎을 짚었다 일어난다. Ability.heavyLandingTime 동안 재생
+Body.heavyLandFaceDown,mx_get_up,아주 크게 착지(Ability.faceDownLandingSpeed): 엎어졌다 일어난다
+Body.heavyLandBack,mx_stand_up_back,뒤로 움직이며 크게 착지하거나 넉백: 등으로 떨어졌다 일어난다
 Body.coilLand,jumpcoilend,공중에서 무릎을 접었다가 가볍게 착지할 때 다리를 펴는 동작
 Body.coilLandCrouch,jumpcoilendcrouch,같은 착지를 웅크린 채로
 Body.supineSlideEndCrouch,meslideendcrouch,누워 미끄러지다 웅크리며 끝내기
@@ -282,7 +294,6 @@ Body.vaultHighHeight,1,이보다 높은 장애물은 높은 넘기(m)
 Body.mantleStepHeight,0.7,이보다 낮으면 턱 올라서기(m)
 Body.mantleLowHeight,1.1,이보다 낮으면 손 짚고 올라서기(m)
 Body.mantleMidHeight,1.6,이보다 낮으면 높게 손 짚고 올라서기 / 이상이면 기어오르기(m)
-Body.severeLandingSpeed,16,이보다 빠르게 떨어지면 손과 무릎을 짚고 착지(m/s). 낙하 피해가 시작되는 속도와 같다
 Body.shimmyClipSpeed,0.5,난간 좌우 이동 애니메이션의 기준 속도(m/s). 실제 속도에 맞춰 재생 속도를 조절
 Body.vaultClipSpeed,1.3,넘기 애니메이션 재생 속도. 넘기는 도움닫기 속도를 유지해서 애니메이션보다 먼저 끝나고, 남은 동작은 발이 닿을 때까지 이어서 재생한다
 Body.vaultLandShare,0.72,넘기 애니메이션에서 발이 땅에 닿는 지점(0~1). 여기서 달리기로 넘어간다
@@ -294,7 +305,7 @@ Body.crouchClipSpeed,3,웅크려 걷기를 원래 박자로 재생하는 이동 
 Body.maxStrafeYaw,60,전력질주 중 옆으로 움직일 때 골반이 이동 방향으로 도는 최대 각도. 걷기·달리기·웅크리기는 옆·뒤 애니메이션이 있어 카메라 쪽을 본다
 Body.backOffset,0.12,머리를 카메라 뒤에 두는 거리(m). 내려다볼 때 목 안쪽이 보이지 않게
 Body.headFollowTime,0.25,자세가 바뀔 때 머리를 카메라 밑으로 맞추는 속도(초). 달리기 흔들림보다 느리게
-Body.hardLandingSpeed,12,이보다 빠르게 떨어지면 무릎을 깊게 굽혀 착지(m/s). 12m/s는 약 3m 낙하
+Body.fallClipSpeed,7.2,이보다 빠르게 떨어지면 빠른 낙하 애니메이션(fall)(m/s)
 Body.thirdPersonOffset,0.35;0.2;-2.4,F5 뒤에서 보기 카메라 위치(오른쪽;위;앞)
 Body.ledgeGrip,0.05;0.05,매달릴 때 손목 위치: 난간 윗면보다 위(m);벽면에서 안쪽(m)
 Body.turnStartAngle,60,서 있을 때 시선이 다리에서 이만큼 돌아가면 발을 옮겨 돈다(도). 그 전까지는 다리는 그대로, 상체만 비튼다
@@ -308,6 +319,7 @@ Body.eyeAdjust,0;0,캐릭터의 눈 위치가 어긋날 때 옮기는 값: 위(m
 Body.headNearClip,0.05,내 머리카락 보기를 켰을 때 카메라에서 이보다 가까운 것은 잘라 낸다(m)
 Body.slideTurnLimit,75,슬라이딩 시선의 좌우 제한 각도(도). 하체는 이동 방향에 고정하고 상체만 시선을 따른다
 Body.slidePitchLimits,40;55,슬라이딩 시선의 위;아래 제한 각도(도). 상체와 카메라가 같은 범위를 쓴다
+Body.heavyLandingTurnLimit,90,크게 착지해 쓰러져 있는 동안 몸이 향한 쪽에서 좌우로 돌아볼 수 있는 각도(도). 더 돌면 카메라가 자기 머리를 뚫어 본다
 Body.vaultChainTime,1.5,넘기를 이 시간(초) 안에 다시 하면 다른 넘기 동작을 쓴다. 같은 동작이 연달아 나오면 처음 프레임으로 튀어서
 Body.maxHipDrop,0.3,발이 낮은 땅(내려가는 계단·경사)에 닿도록 골반을 내리는 최대 거리(m). 눈과 카메라도 같이 내려간다
 Body.footReach,0.5,발마다 캡슐 바닥 위아래로 땅을 찾는 거리(m)
@@ -335,6 +347,7 @@ Punch.jumpMinSpeed,1.9,이보다 느린 점프는 시점이 들리지 않는다(
 Punch.landPunch,3;1.5,착지 펀치: 끄덕(도);기울기(도). landingPerSpeed × 낙하 속도를 곱한다
 Punch.landingPerSpeed,0.09,낙하 속도 1m/s당 착지 펀치 배율. 1.3m 점프 착지는 약 8m/s
 Punch.landMinSpeed,1.5,이보다 살살 닿으면 착지 펀치 없음(m/s)
+Punch.hardLandPunch,10;2;5,세게·크게 착지하면 착지 펀치에 더하는 펀치: 끄덕(도);오른쪽으로 돌기(도);기울기(도). Beatrun hardland 값
 # 카메라: 큰 낙하 화면 (FallScreen 행 → PlayerFallScreen. 후처리 볼륨 Resources/Rendering/FallWarp),,
 FallScreen.lensDistortion,0.15,가장자리 렌즈 휨(최대). 양수는 볼록 음수는 오목
 FallScreen.chromaticAberration,0.3,가장자리 색 번짐(최대)
@@ -361,10 +374,9 @@ Footsteps.releaseSpeed,3,이보다 빠르게 발을 떼면 바닥을 차는 소�
 Footsteps.calibrateTime,0.5,이만큼 가만히 서 있으면 양발의 접지 높이를 각각 다시 잰다(초). 이동 중에도 직전 접지를 추적
 # 소리: 동작 (MovementAudio 행 → PlayerMovementAudio. 어떤 소리가 나는지는 Tables/SoundCues),,
 MovementAudio.landMinSpeed,1.5,이보다 살살 닿으면 착지 소리 없이 발소리만(m/s)
-MovementAudio.landSoftSpeed,4,이보다 느리면 가벼운 착지(LandSoft) 빠르면 착지(Land)(m/s)
-MovementAudio.landHardSpeed,12,이보다 빠르면 세게 착지(LandHard)(m/s). 약 3m 낙하. Body.hardLandingSpeed와 맞춘다
-MovementAudio.landHeavySpeed,16,이보다 빠르면 크게 착지(LandHeavy)(m/s). Body.severeLandingSpeed와 맞춘다
+MovementAudio.landSoftSpeed,4,이보다 느리면 가벼운 착지(LandSoft) 빠르면 착지(Land)(m/s). 세게·크게 착지(Ability.hardLandingSpeed·safeFallSpeed)는 LandHard·LandHeavy
 MovementAudio.traversalLandWindow,1,볼트·올라서기가 끝나고 이 안에 닿으면 그 마무리 소리(VaultLand·MantleLand)(초)
+MovementAudio.getUpShare,0.5,크게 착지해 쓰러져 있는 시간 중 이 비율에서 일어나는 소리(GetUp)
 MovementAudio.ledgeCatchHardSpeed,4.75,이보다 빠르게 떨어지다 렛지를 잡으면 신음(LedgeCatchHard)(m/s)
 MovementAudio.shimmyInterval,0.4,렛지에서 옆으로 갈 때 손 소리 간격(초)
 MovementAudio.wallStepInterval,0.3,벽을 뛰어오를 때 발 소리 간격(초)

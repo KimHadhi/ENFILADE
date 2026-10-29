@@ -207,7 +207,7 @@ public sealed class WeaponController : MonoBehaviour
         timeSinceShot += dt;
         if (timeSinceShot > .35f) recoilIndex = 0;
         bool bodyAction = movement != null && (movement.IsParkour || movement.CurrentState == PlayerMovement.MovementState.DashPush
-            || movement.CurrentState == PlayerMovement.MovementState.LandingRoll);
+            || movement.IsLandingRecovery);
         if (survivalInterrupted || bodyAction || stepDodging || shoveRecovery > 0f)
             frame = new WeaponInputFrame(frame.FirePressed, frame.FireHeld, false, frame.AimHeld);
         survivalInterrupted = false;

@@ -40,6 +40,8 @@ public sealed class LocomotionState : MovementBaseState
         float baseSpeed = ctx.StateMachine.Current.LocomotionSpeed * visualBoost;
         var weapon = ctx.GetComponent<WeaponController>();
         if (weapon != null) baseSpeed *= weapon.MovementMultiplier;
+        // Getting over a hard landing, the legs give only part of the usual speed.
+        if (ctx.IsGrounded) baseSpeed *= ctx.Abilities.Landing.RecoveryScale;
         Vector3 targetVelocity = inputDirection * (baseSpeed * inputMagnitude);
 
         if (ctx.IsGrounded)
@@ -53,7 +55,7 @@ public sealed class LocomotionState : MovementBaseState
                 ctx.HorizontalVelocity = Vector3.zero;
             }
         }
-        else
+        else if (!ctx.Abilities.Landing.IsKnockedBack) // A blow's throw flies on untouched.
         {
             // 공중: 점프로 얻은 고속 모멘텀 보존 및 공중 제어(Air Control)
             float currentAirSpeed = ctx.HorizontalVelocity.magnitude;

@@ -8,6 +8,7 @@ LandSoft,Movement/Walk/{surface}; Movement/Cloth/MovementWalk,5,낮은 턱에서
 Land,Movement/Land/{surface}; Movement/Run/{surface}; Movement/Cloth/MovementRun,12,착지 (Beatrun: 착지 + 발소리 + 옷)
 LandHard,Movement/Land/{surface}; Movement/LandHard; Movement/Cloth/FallShortHard; Movement/Cloth/FallShortMedium; Voice/Impact +0.1,18,세게 착지 (Beatrun hardland + Dynamic Landing)
 LandHeavy,Movement/Land/{surface}; Movement/LandHeavy; Movement/Cloth/FallShortHard; Movement/Cloth/Fall; Voice/ImpactHard +0.1,24,크게 착지
+GetUp,Movement/Cloth/MovementRun; Movement/Cloth/FallShortMedium *0.5; Voice/StrainSoft +0.15,6,크게 착지해 쓰러졌다가 일어나기 (옷 + 힘주는 숨)
 Roll,Movement/Land/{surface}; Movement/Cloth/RollLand; Movement/Cloth/RollCloth; Movement/Cloth/Roll +0.15; Movement/Cloth/BodyRoll +0.15; Movement/Cloth/BodyRollSwish +0.15; Movement/Cloth/MovementWalk +0.3,12,착지 구르기 (Beatrun safety roll)
 Vault,Movement/HandHard/{surface}; Movement/Cloth/VaultSwish +0.1; Movement/Vault +0.1; Voice/StrainSoft +0.1,10,볼트 (Beatrun: 손 짚고 0.1초 뒤 옷·볼트·힘 주는 소리). {surface}는 장애물 표면
 Vault/Gantry,Movement/HandHard/{surface}; Movement/Fence/Vault; Movement/Cloth/VaultSwish +0.1; Movement/Vault +0.1; Voice/StrainSoft +0.1,12,철망·철제 발판 넘기 (표면별 큐 예시)

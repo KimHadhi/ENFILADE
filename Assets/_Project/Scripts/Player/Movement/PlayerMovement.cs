@@ -30,7 +30,8 @@ public sealed partial class PlayerMovement : MonoBehaviour
         BarSwing,
         LacheRelease,
         LedgeHang,
-        LedgeJump
+        LedgeJump,
+        HeavyLanding
     }
 
 
@@ -74,7 +75,8 @@ public sealed partial class PlayerMovement : MonoBehaviour
 
     /// <summary>The movement state changed (from, to); raised once the new state has entered.</summary>
     public event Action<MovementState, MovementState> StateChanged;
-    /// <summary>The player touched down, with the fall speed at impact (m/s). Raised after the landing became a roll, a slide or a step.</summary>
+    /// <summary>The player touched down, with the fall speed at impact (m/s). Raised after the landing became a roll, a
+    /// heavy landing, a slide or a step; LastLandingTier says how hard it was.</summary>
     public event Action<float> Landed;
     /// <summary>A jump left the ground. Wall kicks, ledge jumps and bar releases are states of their own.</summary>
     public event Action Jumped;
@@ -94,7 +96,13 @@ public sealed partial class PlayerMovement : MonoBehaviour
     public bool IsProning => StateMachine != null && StateMachine.IsIn<ProneState>();
     public Vector3 Velocity => HorizontalVelocity + Vector3.up * VerticalVelocity;
     public Vector3 ActualVelocity => Motor.actualVelocity;
-    public Vector2 CurrentInput => InputAvailable && Input != null ? Input.Move : Vector2.zero;
+    public Vector2 CurrentInput => InputAvailable && !ControlLocked && Input != null ? Input.Move : Vector2.zero;
+    /// <summary>Down after a heavy landing or thrown by a blow: movement keys and buttons do nothing (the view still turns).</summary>
+    public bool ControlLocked => Abilities != null && Abilities.Landing.LocksControl;
+    /// <summary>A landing roll or a heavy landing has the body busy: no attacks or aiming.</summary>
+    public bool IsLandingRecovery => CurrentState == MovementState.LandingRoll || CurrentState == MovementState.HeavyLanding;
+    /// <summary>How hard the last touchdown was: Light, Hard (from Ability.hardLandingSpeed) or Heavy (it hurt, or a blow).</summary>
+    public MovementLanding.Tier LastLandingTier => Abilities != null ? Abilities.Landing.LastTier : MovementLanding.Tier.Light;
     public bool InputAvailable => isActiveAndEnabled && Time.timeScale > 0f
         && (DamageReceiver == null || DamageReceiver.IsAlive)
         && (!Application.isPlaying || (Application.isFocused && Cursor.lockState == CursorLockMode.Locked));
@@ -237,7 +245,7 @@ public sealed partial class PlayerMovement : MonoBehaviour
         if (!EnsureInitialized()) return;
         float dt = Time.deltaTime;
         if (dt <= 0f || !Application.isFocused || !DamageReceiver.IsAlive) return;
-        Input.Sample(InputAvailable);
+        Input.Sample(InputAvailable && !ControlLocked);
         Abilities.BeginFrame(dt);
         Actions.TickTimers(dt);
         Motor.TickTimers(dt);
@@ -281,6 +289,15 @@ public sealed partial class PlayerMovement : MonoBehaviour
     }
 
     public void ChangeState(MovementState state) => StateMachine.ChangeState(state);
+    /// <summary>
+    /// Throws the player at this velocity (meant for big enemies' blows; aim it upward). Without control until they
+    /// land, they go down on their back facing where the blow came from and get up again (Ability.backLandingTime).
+    /// The fall itself hurts only by the usual fall damage rule. A throw that does not lift them goes down at once.
+    /// </summary>
+    public void KnockBack(Vector3 velocity)
+    {
+        if (EnsureInitialized() && DamageReceiver.IsAlive) Abilities.Landing.KnockBack(velocity);
+    }
     private void RaiseStateChanged(MovementState from, MovementState to) => StateChanged?.Invoke(from, to);
     internal void RaiseLanded(float impactSpeed) => Landed?.Invoke(impactSpeed);
     internal void RaiseJumped() => Jumped?.Invoke();

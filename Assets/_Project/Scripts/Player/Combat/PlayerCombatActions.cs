@@ -37,7 +37,7 @@ public sealed class PlayerCombatActions
         if (!ctx.InputAvailable || ctx.CombatInputLocked || ctx.IsParkour || ctx.IsDiving || ctx.IsSliding
             || ctx.CurrentState == State.StepDodge
             || ctx.CurrentState == State.DashPush
-            || ctx.CurrentState == State.LandingRoll)
+            || ctx.IsLandingRecovery)
         { CancelShove(); return; }
         shoveSweep.Tick(dt);
         if (shoveSweep.HitCount > 0) ctx.GetComponent<WeaponController>()?.ConfirmShoveHit();

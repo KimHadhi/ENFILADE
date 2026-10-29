@@ -69,7 +69,8 @@ public sealed class MovementActions
         // A short step interrupts movement, not the held sprint intent or its acceleration.
         bool canSprintState = ctx.CurrentState == MovementState.Standing ||
             (ctx.CurrentState == MovementState.StepDodge && ctx.Abilities.ActionPosture == MovementPosture.Standing);
-        bool wantsToSprint = ctx.InputAvailable && ctx.Motor.isGrounded && sprintHeld && input.y > 0.1f && canSprintState;
+        bool wantsToSprint = ctx.InputAvailable && ctx.Motor.isGrounded && sprintHeld && input.y > 0.1f && canSprintState
+            && !ctx.Abilities.Landing.SprintBlocked;
 
         if (wantsToSprint) sprintProgress = Mathf.MoveTowards(sprintProgress, 1f, dt / Mathf.Max(0.01f, ctx.sprintRampUpDuration));
         else if (!ctx.IsSliding)

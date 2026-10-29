@@ -35,8 +35,8 @@ ModelImporter:
       name: mx_stand_up_back
       takeName: mixamo.com
       internalID: -203655887218126122
-      firstFrame: 0
-      lastFrame: 248
+      firstFrame: 44
+      lastFrame: 184
       wrapMode: 0
       orientationOffsetY: 180
       level: 0

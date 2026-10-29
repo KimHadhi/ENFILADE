@@ -72,14 +72,33 @@ public sealed class MovementAbilitySettings
     [Min(0f)] public float lacheForwardBoost = 2f;
     [Min(0f)] public float lacheUpBoost = 2f;
 
-    [Header("Landing Roll & Fall Damage")]
+    [Header("Landing Tiers, Roll & Fall Damage (MovementLanding)")]
+    [Tooltip("Landing on the feet faster than this is a hard landing (m/s, 12 is about 3 m): the run stops, the player "
+        + "slows down and cannot sprint for a moment. Ctrl just before touchdown rolls instead.")]
+    [Min(0f)] public float hardLandingSpeed = 12f;
+    [Tooltip("Seconds a hard landing takes to get back to full ground speed.")]
+    [Min(0f)] public float hardLandingRecoverTime = 1f;
+    [Tooltip("Share of the ground speed right after a hard landing; it eases back to 1 over hardLandingRecoverTime.")]
+    [Range(0f, 1f)] public float hardLandingMoveScale = .1f;
+    [Tooltip("Seconds after a hard landing before Shift or a W run can build speed again.")]
+    [Min(0f)] public float hardLandingNoSprintTime = .5f;
+    [Tooltip("Landing faster than this after falling farther than safeFallDistance hurts and is a heavy landing: the "
+        + "player goes down and gets up again without control.")]
     [Min(0f)] public float safeFallSpeed = 16f;
     [Min(0f)] public float safeFallDistance = 4f;
     [Min(0f)] public float fallDamagePerSpeed = 4f;
+    [Tooltip("A heavy landing faster than this falls flat on the face instead of onto hands and knees (m/s).")]
+    [Min(0f)] public float faceDownLandingSpeed = 26f;
+    [Tooltip("A heavy landing moving backwards faster than this (against the view) falls onto the back (m/s).")]
+    [Min(0f)] public float backLandingMinSpeed = .4f;
+    [Tooltip("Seconds a heavy landing keeps the player down: onto hands and knees, onto the face, onto the back.")]
+    [Min(.1f)] public float heavyLandingTime = 1.6f, faceDownLandingTime = 1.5f, backLandingTime = 2.8f;
+    [Tooltip("How quickly a heavy landing's skid along the ground dies away (share of the speed per second).")]
+    [Min(0f)] public float heavyLandingBraking = 10f;
     [Min(0.01f)] public float rollInputWindow = 0.5f;
-    [Min(0.05f)] public float rollDuration = 0.65f;
+    [Min(0.05f)] public float rollDuration = 1f;
     [Tooltip("Slowest a landing roll moves (m/s); a faster landing keeps its speed.")]
-    [Min(0f)] public float rollSpeed = 5.5f;
+    [Min(0f)] public float rollSpeed = 4f;
 
     [Header("Big Fall")]
     [Tooltip("A fall this long from its top to the ground below is a big one: wind, heartbeat, screen warp, flailing (m).")]

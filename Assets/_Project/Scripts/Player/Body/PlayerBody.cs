@@ -23,7 +23,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     [SerializeField] private string run = "mx_run", runBack = "mx_run_back", sprint = "sprintfwd";
     [SerializeField] private string crouchIdle = "crouchstill", crouchWalk = "crouchfwd", crouchBack = "crouchbwd";
     [SerializeField] private string jump = "jumpfast", air = "jumpidle", fall = "mx_fall";
-    [SerializeField] private string land = "mx_fall_land", landMoving = "runland";
+    [SerializeField] private string land = "mx_fall_land";
     [SerializeField] private string slideStart = "slidestart", slide = "slideloop", slideEnd = "slideend";
     [SerializeField] private string diveStart = "divestart", dive = "diveidle";
     [SerializeField] private string bellySlideStart = "diveslidestart", bellySlide = "diveslideidle", bellySlideEnd = "diveslideend";
@@ -46,8 +46,8 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     private float backOffset = .12f;
     [SerializeField, Min(.01f), Tooltip("How quickly the body slides to keep its head under the camera (s). Slower than a stride, so running sway stays.")]
     private float headFollowTime = .25f;
-    [SerializeField, Min(0f), Tooltip("Falls faster than this end in a landing clip (m/s).")]
-    private float hardLandingSpeed = 9f;
+    [SerializeField, Min(0f), Tooltip("Falling faster than this plays the fast-fall clip (m/s).")]
+    private float fallClipSpeed = 7.2f;
     [SerializeField, Tooltip("F5 view from behind, in look-pivot space (m).")]
     private Vector3 thirdPersonOffset = new Vector3(.35f, .2f, -2.4f);
 
@@ -74,7 +74,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     private MovementState state;
     private Vector3 viewHome;
     private string dodgeClip;
-    private float transitionLeft, stateTime, airTime, fallSpeed, phase, yaw, yawVelocity, targetYaw;
+    private float transitionLeft, stateTime, airTime, phase, yaw, yawVelocity, targetYaw;
     private bool started, grounded, jumped, dead, thirdPerson, rebuild, playingOut;
 
     public bool IsThirdPerson => thirdPerson;
@@ -135,7 +135,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         graph.SetTimeUpdateMode(DirectorUpdateMode.GameTime);
         mixer = AnimationMixerPlayable.Create(graph, 0);
         AnimationPlayableOutput.Create(graph, "Body", animator).SetSourcePlayable(mixer);
-        foreach (string clip in new[] { idle, crouchIdle, jump, air, fall, land, landMoving, slideStart, slide, slideEnd,
+        foreach (string clip in new[] { idle, crouchIdle, jump, air, fall, land, slideStart, slide, slideEnd,
                      diveStart, dive, bellySlideStart, bellySlide, bellySlideEnd, supineSlideStart, supineSlide, supineSlideEnd,
                      prone, supine, roll, dodgeLeft, dodgeRight, dashPush,
                      vault, mantle, wallClimb, wallKick, barSwing, barRelease, ledgeHang, ledgeJump, death })
@@ -148,8 +148,8 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
 
         state = player.CurrentState;
         grounded = player.IsGrounded;
-        stateTime = airTime = fallSpeed = gripWeight = 0f;
-        jumpClip = jump; obstacleClip = vault; wallKickClip = wallKick; tucked = flailing = false;
+        stateTime = airTime = gripWeight = 0f;
+        jumpClip = jump; obstacleClip = vault; wallKickClip = wallKick; rollClip = roll; downClip = heavyLand; tucked = flailing = false;
         var rest = Find(idle);
         if (rest != null) rest.Weight = rest.Target = 1f;
         graph.Play();
@@ -289,7 +289,6 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         if (onGround != grounded) { Touch(onGround); grounded = onGround; }
         stateTime += dt;
         airTime = onGround ? 0f : airTime + dt;
-        if (!onGround) fallSpeed = Mathf.Min(fallSpeed, player.VerticalVelocity);
 
         // Landing and slide exits play out on the feet unless the player is already moving off; a vault plays on to
         // its touchdown whatever the feet are doing.
@@ -324,7 +323,8 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
             case MovementState.Proning: Want(prone); break;
             case MovementState.Supine: Want(supine); break;
             case MovementState.StepDodge: Want(dodgeClip); break;
-            case MovementState.LandingRoll: Drive(roll, stateTime / Mathf.Max(.05f, player.AbilitySettings.rollDuration)); break;
+            case MovementState.LandingRoll: Drive(rollClip, stateTime / Mathf.Max(.05f, player.AbilitySettings.rollDuration)); break;
+            case MovementState.HeavyLanding: DownPose(); break;
             case MovementState.DashPush: Want(dashPush); break;
             case MovementState.Vault: Want(obstacleClip); break;
             case MovementState.Mantle: Drive(obstacleClip, player.Abilities.Traversal.ObstacleProgress); break;
@@ -361,6 +361,8 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
                 dodgeClip = Vector3.Dot(player.Abilities.ActionDirection, transform.right) < 0f ? dodgeLeft : dodgeRight;
                 Restart(Find(dodgeClip));
                 break;
+            case MovementState.LandingRoll: rollClip = RollFor(); break;
+            case MovementState.HeavyLanding: downClip = DownClip(player.Abilities.Landing.HeavyPose); break;
             case MovementState.DashPush: Restart(Find(dashPush)); break;
             case MovementState.Vault:
             case MovementState.Mantle:
@@ -385,7 +387,6 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         if (!onGround)
         {
             jumped = player.VerticalVelocity > 1f;
-            fallSpeed = 0f;
             if (jumped)
             {
                 jumpClip = JumpFor(HorizontalSpeed());
@@ -395,10 +396,9 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         }
         if (state == MovementState.Standing || state == MovementState.Crouching)
         {
-            string landing = LandingFor(state == MovementState.Crouching, -fallSpeed, wasTucked);
+            string landing = LandingFor(state == MovementState.Crouching, wasTucked);
             if (landing != null) PlayTransition(landing);
         }
-        fallSpeed = 0f;
     }
 
     private void Blend(float dt)

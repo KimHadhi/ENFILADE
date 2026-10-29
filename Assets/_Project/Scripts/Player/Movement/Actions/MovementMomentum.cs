@@ -55,6 +55,8 @@ public sealed class MovementMomentum
         lastYaw = yaw;
         hasYaw = true;
         if (dt <= 0f || ctx.CurrentState != MovementState.Standing || !ctx.Motor.isGrounded) return;
+        // Getting over a hard landing: nothing builds yet.
+        if (ctx.Abilities.Landing.SprintBlocked) return;
 
         bool moving = input.sqrMagnitude > .01f;
         if (input.y > ForwardInput)
@@ -95,11 +97,12 @@ public sealed class MovementMomentum
         Speed = Mathf.Clamp(new Vector2(actual.x, actual.z).magnitude, Start, Top);
     }
 
-    // A roll or a landing slide carries the speed on; landing hard on the feet stops the run.
+    // A roll or a landing slide carries the speed on; a hard or heavy landing on the feet stops the run.
     private void OnLanded(float impact)
     {
         var state = ctx.CurrentState;
-        if (impact >= ctx.hardLandingSpeed && (state == MovementState.Standing || state == MovementState.Crouching))
+        if (ctx.LastLandingTier != MovementLanding.Tier.Light
+            && (state == MovementState.Standing || state == MovementState.Crouching || state == MovementState.HeavyLanding))
             Speed = Start;
     }
 }

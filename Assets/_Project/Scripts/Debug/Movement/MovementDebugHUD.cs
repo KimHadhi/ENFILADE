@@ -108,6 +108,11 @@ public sealed class MovementDebugHUD : MonoBehaviour
         }
         if (footsteps == null) footsteps = playerMovement.GetComponent<PlayerFootsteps>();
         if (footsteps != null) GUILayout.Label($"Surface: {footsteps.LastSurface}", labelStyle);
+        if (playerMovement.Abilities != null)
+        {
+            var landing = playerMovement.Abilities.Landing;
+            GUILayout.Label($"Last landing: {landing.LastTier} {landing.LastImpactSpeed:F1} m/s, {landing.LastFallDistance:F1} m", labelStyle);
+        }
 
         GUILayout.EndVertical();
         GUILayout.EndArea();
@@ -146,6 +151,7 @@ public sealed class MovementDebugHUD : MonoBehaviour
             // --- Abilities / Action (강렬한 레드 / 코랄 계열) ---
             PlayerMovement.MovementState.StepDodge => new Color(0.4f, 1.0f, 0.9f), // 청록
             PlayerMovement.MovementState.LandingRoll => new Color(0.8f, 1.0f, 0.4f), // 옐로우그린
+            PlayerMovement.MovementState.HeavyLanding => new Color(0.75f, 0.45f, 0.2f), // 갈색
             PlayerMovement.MovementState.DashPush => new Color(1.0f, 0.3f, 0.3f), // 레드
 
             _ => Color.white

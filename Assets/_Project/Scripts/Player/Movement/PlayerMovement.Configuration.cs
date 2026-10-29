@@ -27,8 +27,6 @@ public sealed partial class PlayerMovement
     [SerializeField, Min(0f)] internal float turnCutPerDegree = 0.025f;
     [Tooltip("How fast the built speed falls once the player stops running forward (m/s²).")]
     [SerializeField, Min(0f)] internal float momentumFalloff = 20f;
-    [Tooltip("Landing on the feet faster than this stops the run (m/s). Rolls and landing slides keep it.")]
-    [SerializeField, Min(0f)] internal float hardLandingSpeed = 12f;
 
     [Header("FOV & Visual Compensation")]
     [SerializeField, Range(1f, 1.3f)] internal float strafeCompensation = 1.15f;

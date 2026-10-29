@@ -28,8 +28,12 @@ public sealed partial class PlayerBody
     private float slideTurnLimit = 75f;
     [SerializeField, Tooltip("Sliding look pitch limits in degrees: up, down. Shared with the camera to keep the torso and view together.")]
     private Vector2 slidePitchLimits = new Vector2(40f, 55f);
+    [SerializeField, Range(0f, 180f), Tooltip("Down after a heavy landing, look limit either side of the way the body faces "
+        + "(degrees). The camera rides the eyes, so looking farther round would look through the own head.")]
+    private float heavyLandingTurnLimit = 90f;
 
     public float SlideLookYawLimit => Mathf.Clamp(slideTurnLimit, 0f, 90f);
+    public float HeavyLandingLookYawLimit => Mathf.Clamp(heavyLandingTurnLimit, 0f, 180f);
     public Vector2 SlideLookPitchLimits => new Vector2(Mathf.Clamp(slidePitchLimits.x, 0f, 85f), Mathf.Clamp(slidePitchLimits.y, 0f, 85f));
 
     private readonly List<Transform> spine = new List<Transform>();

@@ -88,6 +88,7 @@ public sealed class PlayerBodyHands : MonoBehaviour
             case MovementState.WallClimb:
             case MovementState.WallKick:
             case MovementState.LandingRoll:
+            case MovementState.HeavyLanding:
             case MovementState.BarGrab:
             case MovementState.BarSwing:
             case MovementState.LacheRelease:
