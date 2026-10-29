@@ -10,10 +10,11 @@ using MovementState = PlayerMovement.MovementState;
 /// <summary>
 /// The player's own visible body for true first person. The PlayerBody profile's character stands under the
 /// code-driven camera, scaled so its eyes meet the camera, and plays clips chosen from the movement state.
-/// Head and hair only cast shadows in first person; F5 toggles a view from behind to check the body.
+/// Its eyes also carry the camera (PlayerBody.Look); F5 toggles a view from behind to check the body.
 /// Presentation only: it never moves the player. Clip names and feel come from Tables/Player.csv, row Body.
+/// Runs after the camera effects and before the weapons, so shots and the gun start from where the eyes are.
 /// </summary>
-[DisallowMultipleComponent, DefaultExecutionOrder(450)]
+[DisallowMultipleComponent, DefaultExecutionOrder(250)]
 public sealed partial class PlayerBody : MonoBehaviour, ITableBound
 {
     [Header("Clips (names in the PlayerBody profile)")]
@@ -113,8 +114,12 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
                 if (string.Equals(renderer.name, part, StringComparison.OrdinalIgnoreCase)) headParts.Add(renderer);
         }
         body.localScale = Vector3.one * FitScale();
+        legYaw = transform.eulerAngles.y;
         head = animator.isHuman ? animator.GetBoneTransform(HumanBodyBones.Head) : null;
         headAlignment = new Vector3(0f, 0f, -backOffset);
+        body.localPosition = headAlignment;
+        SetUpLook();
+        GameSettings.Changed += ApplyView;
 
         graph = PlayableGraph.Create(name + " body");
         graph.SetTimeUpdateMode(DirectorUpdateMode.GameTime);
@@ -143,6 +148,9 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
 
     private void Teardown()
     {
+        GameSettings.Changed -= ApplyView;
+        if (viewCamera != null) viewCamera.nearClipPlane = baseNearClip;
+        viewCamera = null;
         if (graph.IsValid()) graph.Destroy();
         channels.Clear();
         byName.Clear();
@@ -211,20 +219,29 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         }
         foreach (var channel in channels) channel.Target = 0f;
         targetYaw = 0f;
+        legsPlanted = false;
         ChoosePose(dt);
         Blend(dt);
-        yaw = Mathf.SmoothDampAngle(yaw, targetYaw, ref yawVelocity, .12f);
-        body.localPosition = headAlignment;
+        if (legsPlanted) { yaw = targetYaw; yawVelocity = 0f; }
+        else
+        {
+            yaw = Mathf.SmoothDampAngle(yaw, targetYaw, ref yawVelocity, .12f);
+            legYaw = transform.eulerAngles.y + yaw;
+        }
         body.localRotation = Quaternion.Euler(0f, yaw, 0f);
+        PlaceBody();
     }
 
     private void LateUpdate()
     {
         if (body != null)
         {
-            // Hanging, the hands hold the body in place instead of the head following the camera.
-            if (gripWeight <= 0f) FollowHead(Time.deltaTime);
+            // Hanging, the hands hold the body in place instead of the head following the camera. FollowHead aims at
+            // the camera's pivot, not the camera, so it keeps running while the camera rides the eyes: the camera
+            // stays over the capsule and takes the head's dips and quick sway.
+            if (gripWeight <= 0f && !slideBodyAnchored) FollowHead(Time.deltaTime);
             GripLedge(Time.deltaTime);
+            Look(Time.deltaTime);
         }
         if (thirdPerson) PlaceViewBehind();
     }
@@ -285,7 +302,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
                 if (onGround) Locomotion(state == MovementState.Crouching, dt);
                 else AirPose();
                 break;
-            case MovementState.Sliding: Sequence(slideStart, slide); break;
+            case MovementState.Sliding: Sequence(slideStart, slide); FaceSlide(); break;
             case MovementState.SupineSliding: Sequence(supineSlideStart, supineSlide); break;
             case MovementState.HeadFirstSliding: Sequence(bellySlideStart, bellySlide); break;
             case MovementState.Diving:
@@ -436,9 +453,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
 
     private void ApplyView()
     {
-        var mode = thirdPerson ? ShadowCastingMode.On : ShadowCastingMode.ShadowsOnly;
-        foreach (var part in headParts)
-            if (part != null) part.shadowCastingMode = mode;
+        ApplyHeadVisibility();
         if (!thirdPerson && view != null) view.localPosition = viewHome;
     }
 

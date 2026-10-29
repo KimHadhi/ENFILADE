@@ -204,6 +204,8 @@ Body.crouchIdle,crouchstill,웅크려 서 있기
 Body.crouchWalk,crouchfwd,웅크려 걷기 (앞)
 Body.crouchRight,crouchright,웅크려 오른쪽으로 걷기
 Body.crouchLeft,crouchleft,웅크려 왼쪽으로 걷기
+Body.turnLeft,mx_turn_left,제자리에서 왼쪽으로 발을 옮기며 돌기 (도는 각도는 몸이 직접)
+Body.turnRight,mx_turn_right,제자리에서 오른쪽으로 발을 옮기며 돌기
 Body.crouchBack,crouchbwd,웅크려 뒤로 걷기
 Body.jump,jumpfast,점프 도약
 Body.air,jumpidle,공중
@@ -280,3 +282,15 @@ Body.headFollowTime,0.25,자세가 바뀔 때 머리를 카메라 밑으로 맞�
 Body.hardLandingSpeed,12,이보다 빠르게 떨어지면 무릎을 깊게 굽혀 착지(m/s). 12m/s는 약 3m 낙하
 Body.thirdPersonOffset,0.35;0.2;-2.4,F5 뒤에서 보기 카메라 위치(오른쪽;위;앞)
 Body.ledgeGrip,0.05;0.05,매달릴 때 손목 위치: 난간 윗면보다 위(m);벽면에서 안쪽(m)
+Body.turnStartAngle,60,서 있을 때 시선이 다리에서 이만큼 돌아가면 발을 옮겨 돈다(도). 그 전까지는 다리는 그대로, 상체만 비튼다
+Body.turnSpeed,150,발을 옮겨 시선 쪽으로 도는 빠르기(도/초)
+Body.turnClipSpeed,1.5,제자리 돌기 애니메이션 재생 속도
+Body.spineBendDown,0.45,내려다볼 때 시선 각도 중 허리가 맡는 비율. 나머지는 목·머리가 맡는다
+Body.spineBendUp,0.2,올려다볼 때 허리가 맡는 비율
+Body.eyeViewTime,0.15,정조준할 때 카메라가 눈에서 고정 위치로 옮겨 가는 시간(초). 풀면 같은 시간에 눈으로 돌아온다
+Body.eyeViewAhead,0.02,카메라를 눈보다 이만큼 앞에 둔다(m). 카메라는 항상 눈을 따라간다
+Body.eyeAdjust,0;0,캐릭터의 눈 위치가 어긋날 때 옮기는 값: 위(m);앞(m). 얼굴 안쪽이 보이면 앞을 늘리고, 눈보다 높거나 낮게 보이면 위를 조절
+Body.headNearClip,0.05,내 머리카락 보기를 켰을 때 카메라에서 이보다 가까운 것은 잘라 낸다(m)
+Body.slideTurnLimit,75,슬라이딩 시선의 좌우 제한 각도(도). 하체는 이동 방향에 고정하고 상체만 시선을 따른다
+Body.slidePitchLimits,40;55,슬라이딩 시선의 위;아래 제한 각도(도). 상체와 카메라가 같은 범위를 쓴다
+Body.vaultChainTime,1.5,넘기를 이 시간(초) 안에 다시 하면 다른 넘기 동작을 쓴다. 같은 동작이 연달아 나오면 처음 프레임으로 튀어서

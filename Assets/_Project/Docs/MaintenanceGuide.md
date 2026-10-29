@@ -180,7 +180,7 @@ Art/Models/
 
 ## 플레이어 몸 (진짜 1인칭)
 
-플레이어는 보이는 몸을 가진다. 카메라는 지금처럼 코드가 움직이고(머리 흔들림·기울기 포함), 몸은 그 아래에서 이동 상태에 맞는 애니메이션을 재생한다. 1인칭에서는 머리·머리카락이 그림자만 남고, 내려다보면 몸통·다리가 보인다. **F5**는 뒤에서 몸을 보는 확인용 시점이다.
+플레이어는 보이는 몸을 가진다. 몸은 이동 상태에 맞는 애니메이션을 재생하고, 카메라는 항상 몸의 눈에 붙어 있다(Beatrun Eye View처럼, 아래 **눈 시점**). 회전·기울기·충격 흔들림은 코드가 더한다. 내려다보면 허리·목이 같이 굽어 몸통·다리가 보인다. 머리·머리카락은 Esc 설정 **내 머리카락 보기**를 켜면 보이고, 끄면 그림자만 남는다. **F5**는 뒤에서 몸을 보는 확인용 시점이다.
 
 | 구성 | 위치 |
 | --- | --- |
@@ -192,7 +192,7 @@ Art/Models/
 | 동작 코드 | [PlayerBody](../Scripts/Player/Body/PlayerBody.cs). Play 시작 때 `PlayerMovement`가 붙인다 |
 
 - **캐릭터 바꾸기**: 새 모델을 `Art/Models/Characters/<이름>/`에 넣고, `PlayerBody` 프로필의 `Model`을 바꾼다. 1인칭에서 숨길 부분은 프로필의 `First Person Shadow Only`에 렌더러 이름으로 적는다(기본 `Head`, `Hair`).
-- **애니메이션 추가**: 휴머노이드 FBX를 `Art/Animations/<묶음>/`에 넣고 옆에 `<파일이름>.clips.csv`를 둔다. 클립 하나짜리 파일이 많은 폴더(Mixamo)는 폴더 이름의 표 하나(`Mixamo/Mixamo.clips.csv`)에 모은다. Mixamo는 모든 클립 이름이 `mixamo.com`이라 파일 이름이 클립 이름이 된다. 열: `loop`가 1이면 반복, `inPlace`가 1이면 클립 안의 앞뒤·옆 이동을 버리고 제자리에서 재생, `inPlaceY`가 1이면 오르내림도 버린다(넘기·올라가기처럼 플레이어 경로가 몸을 옮기는 클립). 기본은 원래 위치 그대로다. `cycleOffset`은 반복 클립이 시작하는 지점(0~1)으로, 섞이는 이동 클립들이 같은 순간에 왼발을 딛게 맞춘다. `from`·`to`는 첫 프레임부터 센 프레임 번호로 그 구간만 쓴다(착지는 발이 닿는 프레임부터). `yawOffset`은 클립의 앞 방향 보정 각도(도, 기본 0)다. Source 클립을 그대로 변환하면 옆을 향하므로 **90**, 아래처럼 캐릭터 뼈대에 구워 넣은 클립(지금의 Beatrun)은 모델과 같이 Unity -Z를 향하므로 **180**이다(변환 스크립트가 알맞은 값을 써 준다). 현재 Hiro 아바타에서는 Mixamo 기본값 0이 카메라 반대인 -Z를 향하므로 `Mixamo.clips.csv`의 `yawOffset`도 **180**으로 둔다. 이미 +Z를 향하는 Beatrun의 기존 **180**은 유지한다. 구르기·좌우 회피처럼 애니메이션에 들어 있는 회전은 유지한다. 수정 후 반영되지 않으면 해당 FBX를 우클릭해 **Reimport**한다.
+- **애니메이션 추가**: 휴머노이드 FBX를 `Art/Animations/<묶음>/`에 넣고 옆에 `<파일이름>.clips.csv`를 둔다. 클립 하나짜리 파일이 많은 폴더(Mixamo)는 폴더 이름의 표 하나(`Mixamo/Mixamo.clips.csv`)에 모은다. Mixamo는 모든 클립 이름이 `mixamo.com`이라 파일 이름이 클립 이름이 된다. 열: `loop`가 1이면 반복, `inPlace`가 1이면 클립 안의 앞뒤·옆 이동을 버리고 제자리에서 재생, `inPlaceY`가 1이면 오르내림도 버린다(넘기·올라가기처럼 플레이어 경로가 몸을 옮기는 클립). 기본은 원래 위치 그대로다. `cycleOffset`은 반복 클립이 시작하는 지점(0~1)으로, 섞이는 이동 클립들이 같은 순간에 왼발을 딛게 맞춘다. `from`·`to`는 첫 프레임부터 센 프레임 번호로 그 구간만 쓴다(착지는 발이 닿는 프레임부터). `inPlaceYaw`가 1이면 클립 안의 회전을 버린다(몸이 직접 도는 제자리 돌기). `yawOffset`은 클립의 앞 방향 보정 각도(도, 기본 0)다. Source 클립을 그대로 변환하면 옆을 향하므로 **90**, 아래처럼 캐릭터 뼈대에 구워 넣은 클립(지금의 Beatrun)은 모델과 같이 Unity -Z를 향하므로 **180**이다(변환 스크립트가 알맞은 값을 써 준다). 현재 Hiro 아바타에서는 Mixamo 기본값 0이 카메라 반대인 -Z를 향하므로 `Mixamo.clips.csv`의 `yawOffset`도 **180**으로 둔다. 이미 +Z를 향하는 Beatrun의 기존 **180**은 유지한다. 구르기·좌우 회피처럼 애니메이션에 들어 있는 회전은 유지한다. 수정 후 반영되지 않으면 해당 FBX를 우클릭해 **Reimport**한다.
 - **Source(GMod·L4D2) 모델 변환**: [Tools/Blender](../../../Tools/Blender)의 스크립트를 SourceIO 애드온이 있는 Blender로 실행한다. 모델은 `source_model_to_fbx.py`, 애니메이션은 `source_anims_to_fbx.py`. 애니메이션은 마지막 인자로 플레이어 모델의 MDL을 주면 그 모델의 뼈대(뼈 길이·기본자세)에 직접 구워 낸다. 서로 다른 뼈대 사이의 휴머노이드 리타깃이 없어져 발이 꺾이거나 몸이 뒤로 빠지지 않는다. 예: `blender -b --factory-startup --python source_anims_to_fbx.py -- new_climbanim.mdl BeatrunBody.fbx BeatrunBody * - 180 survivor_gambler.mdl`. Hiro의 뼈대 MDL은 [Tools/Blender/Source/Hiro](../../../Tools/Blender/Source/Hiro)에 있다. 맨 끝에 접미사(`_tp`)를 주면 클립 이름 뒤에 붙는다. 같은 이름의 클립 묶음을 나란히 두고 비교할 때 쓴다. 몸은 같은 이름이 여러 개면 경로 순서상 첫 번째를 쓴다.
   - **블렌드 시퀀스**: 3인칭 세트의 이동 클립(`runfwd`, `walkfwd`, `crouchfwd`, 회피 등)은 이동 방향 3×3 블렌드이고, 가운데 칸이 서 있기다. 칸마다 몸 전체가 이동 방향으로 돈다. 변환 스크립트는 클립 이름에 맞는 칸을 고른다. 앞 이동은 앞 칸, `runbwd`·`walkback`·`crouchbwd`는 뒤 칸, `dodgejumpleft/right`는 옆 칸이고, 나머지 블렌드(매달리기·흔들기)는 모든 값이 0인 칸이다. 다른 칸을 따로 굽으려면 이름을 `새이름=시퀀스@옆:앞`으로 준다. 웅크려 옆걸음(`BeatrunCrouch.fbx`)은 `crouchleft=crouchfwd@-1:0,crouchright=crouchfwd@1:0`으로 구웠다. `sprintfwd` 원본은 2초에 같은 보행 주기가 네 번 들어 있다. 다른 이동 클립과 한 주기로 섞도록 `BeatrunBody.clips.csv`에서 `from=0`, `to=15`, `cycleOffset=0`으로 잘라 0.5초 한 주기만 쓴다(30fps). 전체를 다시 구우면 표가 새로 써지므로 이 세 값을 복원한다.
   - **Spine4**: Source 뼈대에는 척추가 4개(`Spine`, `Spine1`, `Spine2`, `Spine4`)지만 Unity 휴머노이드에는 3자리뿐이다. 그래서 변환할 때 `Spine4`의 회전을 `Spine2`에 합쳐 굽는다. 임포트 때 "in between humanoid transforms … discarded" 경고가 나면 이 처리가 빠진 것이다.
@@ -212,13 +212,23 @@ Art/Models/
   - 공중에서 Ctrl: 무릎을 접는 `airTuck`(Beatrun 코일).
   - 착지: 낙하 속도가 `severeLandingSpeed`(16m/s, 낙하 피해가 시작되는 속도)를 넘으면 손과 무릎을 짚는 `landSevere`. 약 3m(`hardLandingSpeed` 12m/s)를 넘으면 무릎을 깊게 굽히는 `land`, 달리는 중이면 `landMoving`, 웅크린 채면 서지 않는 `landCrouch`. 그보다 낮을 때 공중에서 무릎을 접었으면 다리를 펴는 `coilLand`/`coilLandCrouch`, 아니면 착지 동작 없이 바로 이어진다.
   - 슬라이드 끝: 웅크림·엎드림으로 이어지는 끝 동작.
-  - 넘기: 장애물 높이에 따라 한 손 `vault`, 1m 넘으면 두 손 `vaultHigh`.
+  - 넘기: 장애물 높이에 따라 한 손 `vault`, 1m 넘으면 두 손 `vaultHigh`. `vaultChainTime`(1.5초) 안에 다시 넘으면 직전과 다른 쪽을 쓴다. 같은 클립은 자기 자신과 섞일 수 없어서 첫 프레임으로 튀기 때문이다.
   - 올라서기: 매달린 데서 올라가면 높이와 관계없이 `ledgeClimbUp`. `mantleFromGround`가 켜져 있을 때 땅에서 올라서면 높이에 따라 `stepUp`, `mantleLow`, `mantleMid`, `mantle`.
   - 난간: 잡는 순간(`ledgeCatch`)과 좌우 이동(`ledgeShimmyLeft/Right`).
   - 벽: 벽 오르기 시작(`wallClimbStart`), 튀는 방향별 벽 차기(`wallKick`/`wallKickRight`).
   - 총: `armedClips`를 켜면 소총·권총을 들었을 때 해당 클립의 총 든 버전(`rifleSuffix`·`pistolSuffix`)을 쓴다. 이 클립들은 Source가 손을 총에 고정해 주는 것을 전제로 만들어서, 손 IK(5단계)가 생기기 전에는 팔이 꼬이므로 꺼 둔다.
 - **재질(lilToon)**: Hiro는 [lilToon](https://github.com/lilxyzw/lilToon) 2.4.1(`Packages/jp.lilxyzw.liltoon`, MIT) 셰이더를 쓴다. 재질은 [Hiro/Materials](../Art/Models/Characters/Hiro/Materials)에 따로 있어 Inspector의 lilToon 화면에서 그림자 색·림라이트·광택을 바로 조정한다. 새 캐릭터는 모델 Inspector → Materials → **Extract Materials** 후 셰이더를 `lilToon`으로 바꾼다.
-- **머리 맞추기**: 자세마다 클립 속 머리 위치가 다르므로(누워 미끄러지면 머리가 발 뒤쪽에 있다) 몸은 머리가 카메라 바로 뒤에 오도록 천천히 따라 움직인다(`Body.headFollowTime`).
+- **머리 맞추기**: 자세마다 클립 속 머리 위치가 다르므로(누워 미끄러지면 머리가 발 뒤쪽에 있다) 몸은 머리가 카메라 바로 뒤에 오도록 천천히 따라 움직인다(`Body.headFollowTime`). 매달려 있을 때만 손이 몸을 잡고 있어서 멈춘다.
+- **눈 시점과 시선**([PlayerBody.Look](../Scripts/Player/Body/PlayerBody.Look.cs)):
+  - 카메라는 모든 상태에서 몸의 눈(`eyeViewAhead`만큼 앞)에 있다. 걸음의 흔들림, 착지·구르기의 꺼짐은 모두 애니메이션에서 온다. 조준은 마우스 그대로이고, Q/E 기울이기만큼 옆으로 옮겨 간다. 정조준하면 `eyeViewTime` 동안 예전 고정 위치로 옮겨 가서 조준이 흔들리지 않는다. 머리가 벽 안으로 들어가면 카메라는 벽 앞에서 멈춘다.
+  - 눈 위치는 캐릭터 아바타의 눈 뼈(LeftEye·RightEye)다. 눈처럼 놓여 있지 않으면 크기 맞춤으로 추정한다. 어긋나면 `Body.eyeAdjust`(위;앞)로 옮긴다.
+  - 몸은 머리가 카메라 기준점 바로 뒤에 오도록 계속 따라오므로(`headFollowTime`), 카메라는 플레이어 위치에서 옆으로 멀리 벗어나지 않는다.
+  - 위아래를 보면 허리(`spineBendDown`·`spineBendUp` 비율)·목·머리가 나눠 굽고, 머리는 카메라가 보는 곳을 본다.
+  - 골반이 시선과 다른 쪽을 보면 가슴·목·머리가 시선 쪽으로 비틀린다. 제자리에서 다리를 디딘 채일 때와 전력질주로 골반이 돌 때도 적용한다.
+  - 일반 슬라이딩 중 하체는 플레이어 캡슐에 대한 위치와 월드 진행 방향(`SlideDirection`)을 유지한다. 시선만 돌려서는 다리 위치·방향이 달라지지 않으며, 실제 이동·조향을 따라간다. 허리·가슴·목·머리만 시선을 부드럽게 따라간다. 좌우는 `Body.slideTurnLimit`(기본 각 75°), 위아래는 `Body.slidePitchLimits`(기본 위 40°·아래 55°)로 제한하며, 상체와 카메라가 같은 범위를 쓴다. 뒤로 슬라이딩을 시작하거나 벽에서 튕겨 기존 시선이 새 범위를 벗어나면 그 범위 안으로 서서히 돌아온다.
+  - 몸은 카메라 효과 다음, 무기 전에 움직인다(실행 순서 250). 그래서 총알과 총은 눈 위치에서 나간다.
+- **제자리 돌기**: 서 있을 때 시선만 돌리면 다리는 그 자리에 있고 상체만 비튼다. `turnStartAngle`(60°)을 넘으면 `turnLeft`/`turnRight` 클립으로 발을 옮기며 돈다(`turnSpeed`). 돌기 클립은 `inPlaceYaw`로 회전을 빼고 발걸음만 쓴다. 이 임계각에 따른 다리 돌기는 슬라이딩 중에는 실행하지 않는다.
+- **내 머리카락 보기**(Esc 설정, 기본 켬): 켜면 머리·머리카락(`First Person Shadow Only`에 적힌 렌더러)을 그린다. 카메라가 그 안에 있는 부분은 근거리 클리핑(`Body.headNearClip`, 0.05m)으로 잘린다.
 - 누운 자세·누워 미끄러지기는 Beatrun의 `meslide` 계열을 쓴다. 엎드림은 전용 애니메이션이 없어 머리부터 슬라이딩 자세를 임시로 쓴다. 총·주먹은 아직 기존 1인칭 모델이 따로 그린다. 몸의 손에 쥐게 하는 작업은 계획의 5단계다.
 
 ## 실행 중 생성되는 분류와 혈흔 풀

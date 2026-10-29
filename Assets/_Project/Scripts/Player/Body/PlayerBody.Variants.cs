@@ -42,6 +42,11 @@ public sealed partial class PlayerBody
     private float vaultClipSpeed = 1.3f;
     [SerializeField, Range(.1f, 1f), Tooltip("Share of a vault clip at which its feet touch down; the body runs on from there.")]
     private float vaultLandShare = .72f;
+    [SerializeField, Min(0f), Tooltip("A vault this soon after the last one (s) takes the other vault clip: one clip cannot "
+        + "crossfade into itself, so a repeat would snap back to its first frame.")]
+    private float vaultChainTime = 1.5f;
+    private string lastVault;
+    private float lastVaultAt = float.NegativeInfinity;
 
     private WeaponController weapons;
     private string jumpClip, obstacleClip, wallKickClip;
@@ -75,11 +80,18 @@ public sealed partial class PlayerBody
 
     private string JumpFor(float speed) => speed < jumpStillSpeed ? jumpStill : speed < jumpFastSpeed ? jumpSlow : jump;
 
-    // Climbing up from a hang starts from the hanging pose, whatever the height.
+    // A quick second vault takes the other vault clip; climbing up from a hang starts from the hanging pose, whatever the height.
     private string ObstacleClip(bool isVault, bool fromHang)
     {
         float height = player.Abilities.Traversal.Obstacle.Height;
-        if (isVault) return height > vaultHighHeight ? vaultHigh : vault;
+        if (isVault)
+        {
+            string clip = height > vaultHighHeight ? vaultHigh : vault;
+            if (clip == lastVault && Time.time - lastVaultAt < vaultChainTime) clip = clip == vault ? vaultHigh : vault;
+            lastVault = clip;
+            lastVaultAt = Time.time;
+            return clip;
+        }
         if (fromHang) return ledgeClimbUp;
         return height < mantleStepHeight ? stepUp : height < mantleLowHeight ? mantleLow : height < mantleMidHeight ? mantleMid : mantle;
     }

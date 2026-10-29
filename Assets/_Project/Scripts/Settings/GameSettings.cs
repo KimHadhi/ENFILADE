@@ -19,6 +19,8 @@ public sealed class GameSettings
     public float screenShake = 1f;
     [Tooltip("Horizontal field of view in degrees, measured at 16:9. Wider screens see more at the sides.")]
     public float fieldOfView = 90f;
+    [Tooltip("Show the player's own hair and head in first person, cut only where the camera sits inside them.")]
+    public bool showOwnHead = true;
 
     public const float MinSensitivity = .2f, MaxSensitivity = 3f, MinFieldOfView = 70f, MaxFieldOfView = 120f;
 

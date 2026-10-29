@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Playables;
 
 /// <summary>
 /// Ground locomotion that keeps the body facing the camera: walk, run and crouch each blend a forward, right, back and
@@ -12,12 +13,29 @@ public sealed partial class PlayerBody
     [SerializeField] private string runLeft = "mx_strafe_run_left", runRight = "mx_strafe_run_right";
     [SerializeField] private string crouchLeft = "crouchleft", crouchRight = "crouchright";
 
+    [Header("Turning on the spot")]
+    [SerializeField] private string turnLeft = "mx_turn_left", turnRight = "mx_turn_right";
+    [SerializeField, Range(10f, 120f), Tooltip("Standing still, the legs stay planted until the view has turned this far "
+        + "from them (degrees); the chest twists toward the view meanwhile. Then the legs step round.")]
+    private float turnStartAngle = 60f;
+    [SerializeField, Min(10f), Tooltip("How fast the legs step round to the view (degrees per second).")]
+    private float turnSpeed = 150f;
+    [SerializeField, Min(.1f), Tooltip("Playback speed of the turn clips while the legs step round.")]
+    private float turnClipSpeed = 1.5f;
+
+    private float legYaw;
+    private int turning;
+    private bool legsPlanted;
+
     private void AddLocomotionChannels()
     {
         foreach (string clip in new[] { walk, walkRight, walkBack, walkLeft }) AddChannel(clip, walkClipSpeed);
         foreach (string clip in new[] { run, runRight, runBack, runLeft }) AddChannel(clip, runClipSpeed);
         AddChannel(sprint, sprintClipSpeed);
         foreach (string clip in new[] { crouchWalk, crouchRight, crouchBack, crouchLeft }) AddChannel(clip, crouchClipSpeed);
+        AddChannel(turnLeft, 0f);
+        AddChannel(turnRight, 0f);
+        turning = 0;
     }
 
     private void Locomotion(bool crouched, float dt)
@@ -40,11 +58,13 @@ public sealed partial class PlayerBody
             // Speed alone can come from strafing, moving backwards or carried momentum. The sprint clip only
             // has a forward stride, so blend it in with the movement system's actual forward sprint intent.
             toSprint *= player.SprintProgress * Mathf.Clamp01(local.z / Mathf.Max(.01f, speed));
-            Mix(idle, 1f - toWalk);
+            var stepping = TurnOnTheSpot(speed < .3f, dt);
+            if (stepping != null) stepping.Target += 1f - toWalk;
+            else Mix(idle, 1f - toWalk);
             Directions(heading, toWalk * (1f - toRun), walk, walkRight, walkBack, walkLeft);
             Directions(heading, toRun * (1f - toSprint), run, runRight, runBack, runLeft);
             Mix(sprint, toSprint);
-            targetYaw = Mathf.Clamp(heading, -maxStrafeYaw, maxStrafeYaw) * toSprint;
+            if (!legsPlanted) targetYaw = Mathf.Clamp(heading, -maxStrafeYaw, maxStrafeYaw) * toSprint;
         }
 
         float weight = 0f, length = 0f, authored = 0f;
@@ -59,6 +79,37 @@ public sealed partial class PlayerBody
         // Fast gameplay movement should lengthen the apparent stride, not turn the feet into a fast shuffle.
         float rate = Mathf.Clamp(speed / Mathf.Max(.1f, authored / weight), .65f, 1.1f);
         phase = Mathf.Repeat(phase + dt * rate / (length / weight), 1f);
+    }
+
+    // Standing still, the legs keep their place while the view turns and step round once it has turned far enough
+    // (the spine twists the chest toward the view meanwhile). Returns the turn clip while stepping.
+    private Channel TurnOnTheSpot(bool still, float dt)
+    {
+        if (!still) { turning = 0; return null; }
+        float look = transform.eulerAngles.y, limit = turnStartAngle + 30f;
+        float offset = Mathf.Clamp(Mathf.DeltaAngle(look, legYaw), -limit, limit);
+        if (turning == 0 && Mathf.Abs(offset) > turnStartAngle)
+        {
+            // Legs left behind on the left step round to the right, and the other way round.
+            turning = offset < 0f ? 1 : -1;
+            Restart(Find(turning > 0 ? turnRight : turnLeft));
+        }
+        Channel clip = null;
+        if (turning != 0)
+        {
+            offset = Mathf.MoveTowards(offset, 0f, turnSpeed * dt);
+            clip = Find(turning > 0 ? turnRight : turnLeft);
+            if (clip != null)
+            {
+                if (clip.Playable.GetTime() >= clip.Length) clip.Playable.SetTime(0);
+                clip.Playable.SetSpeed(turnClipSpeed);
+            }
+            if (Mathf.Abs(offset) < 1f) turning = 0;
+        }
+        legYaw = look + offset;
+        targetYaw = offset;
+        legsPlanted = true;
+        return clip;
     }
 
     // Shares the weight between the two direction clips either side of the heading (0° forward, 90° right).

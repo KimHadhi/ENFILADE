@@ -13,8 +13,9 @@ using UnityEngine;
 /// its Textures folder) named after the material or the model is assigned automatically — "tetopear.png",
 /// "TetoPear_BaseColor.png", "TetoPear_Normal.png". Adding such a texture later reimports the model.
 /// Characters get a humanoid avatar. Files under Art/Animations are humanoid clips; a "&lt;file&gt;.clips.csv" beside one,
-/// or "&lt;folder&gt;.clips.csv" for a folder of one-clip files (columns clip, loop, inPlace, inPlaceY, yawOffset,
-/// cycleOffset, from, to), names its clips, marks loops and keeps the authored root unless inPlace / inPlaceY is 1.
+/// or "&lt;folder&gt;.clips.csv" for a folder of one-clip files (columns clip, loop, inPlace, inPlaceY, inPlaceYaw,
+/// yawOffset, cycleOffset, from, to), names its clips, marks loops and keeps the authored root unless an inPlace
+/// column is 1.
 /// yawOffset corrects the source clip's forward axis in degrees without discarding its authored turns.
 /// </summary>
 internal sealed class ModelImportRules : AssetPostprocessor
@@ -99,8 +100,10 @@ internal sealed class ModelImportRules : AssetPostprocessor
             list.TryGetRow(clip.name, out var row);
             clip.loopTime = Flag(row, "loop");
             // Height and facing stay as authored. Travel stays too, so feet keep their place, unless inPlace = 1;
-            // inPlaceY = 1 drops the rise and fall as well, for clips the player's own path carries over an obstacle.
-            clip.lockRootRotation = clip.keepOriginalOrientation = true;
+            // inPlaceY = 1 drops the rise and fall as well, for clips the player's own path carries over an obstacle,
+            // and inPlaceYaw = 1 drops the turn, for turn-on-the-spot clips whose turn the body makes itself.
+            clip.lockRootRotation = !Flag(row, "inPlaceYaw");
+            clip.keepOriginalOrientation = true;
             // Source clips can use a different forward axis from their humanoid rest pose.
             // Correct the clip basis while keeping its authored turns and body motion.
             clip.rotationOffset = Number(row, "yawOffset");

@@ -64,6 +64,7 @@ public sealed class SettingsMenuView
         Slider("시야각", GameSettings.MinFieldOfView, GameSettings.MaxFieldOfView, s.fieldOfView,
             v => s.fieldOfView = Mathf.Round(v), v => Mathf.RoundToInt(v) + "°");
         Volume("화면 흔들림", s.screenShake, v => s.screenShake = v);
+        Choice("내 머리카락 보기", OffOn, s.showOwnHead ? 1 : 0, i => s.showOwnHead = i == 1);
 
         var buttons = W.Rect("Buttons", panel);
         var row = buttons.gameObject.AddComponent<HorizontalLayoutGroup>();
