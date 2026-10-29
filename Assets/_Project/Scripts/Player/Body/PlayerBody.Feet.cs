@@ -1,0 +1,200 @@
+using UnityEngine;
+using MovementState = PlayerMovement.MovementState;
+
+/// <summary>
+/// Plants the feet on the real ground, the way GMod's IK Foot addon does.
+/// - Each foot looks for the ground under its heel, ankle and toes and stands on the highest, so no part of it sinks
+///   into a step.
+/// - Where one stands lower than the capsule's floor (a step down, a slope), the hips drop so it can reach; the other
+///   knee bends to meet higher ground. Knees bend about the clip's own knee axis and the leg never turns about its
+///   length, so the ankle does not twist (GMod's IK Foot only ever bends thigh and calf on their pitch axis).
+/// - Each foot moves by the height of the ground under it, so the clip's own stride and foot lift stay as they are.
+/// - Ground and hip heights are kept in world space, so the capsule popping up or down a step never drags a foot
+///   through it. Higher ground is taken at once; lower ground and the hips settle over footSettleTime.
+/// - Planted feet tilt to the slope.
+/// - In every state, each ankle's turn about the shin and roll to the side are held within maxAnkleTurn / maxAnkleRoll
+///   of the rest pose (AnkleLimit), so no clip can twist a foot.
+/// The ground-following part is on while standing or crouching on the ground, landings included, before the eyes place the camera, so the view
+/// dips with the hips. Presentation only: nothing here moves the player.
+/// </summary>
+public sealed partial class PlayerBody
+{
+    [Header("Feet on the ground")]
+    [SerializeField, Min(0f), Tooltip("Furthest the hips drop to let a foot reach lower ground (m).")]
+    private float maxHipDrop = .3f;
+    [SerializeField, Min(.05f), Tooltip("How far above and below the capsule's floor each foot looks for ground (m).")]
+    private float footReach = .5f;
+    [SerializeField, Min(.01f), Tooltip("How quickly the hips and feet settle onto lower ground (s). Higher ground is taken at once.")]
+    private float footSettleTime = .08f;
+    [SerializeField, Range(0f, 60f), Tooltip("Most a planted foot tilts to match a slope (degrees).")]
+    private float maxFootTilt = 30f;
+    [SerializeField, Range(0f, 180f), Tooltip("Most a foot turns about the shin, either way, in any clip (degrees).")]
+    private float maxAnkleTurn = 20f;
+    [SerializeField, Range(0f, 180f), Tooltip("Most a foot rolls onto its side, either way, in any clip (degrees).")]
+    private float maxAnkleRoll = 25f;
+
+    private sealed class Leg
+    {
+        public Transform Upper, Lower, Foot;
+        public AnkleLimit Ankle;
+        /// <summary>Heel and toe tip in the foot bone's space; only their place over the ground is used.</summary>
+        public Vector3 Heel, Tip;
+        /// <summary>Smoothed world height of the ground under the foot (m).</summary>
+        public float Ground;
+        public Vector3 Normal = Vector3.up, Target;
+    }
+
+    private Leg leftLeg, rightLeg;
+    private float hipFloor, lastFloor, feetWeight;
+    private bool feetSettled;
+
+    private void SetUpFeet()
+    {
+        leftLeg = MakeLeg(true);
+        rightLeg = MakeLeg(false);
+        feetWeight = 0f;
+        feetSettled = false;
+        if (leftLeg == null || rightLeg == null) return;
+        Vector3 hips = rightLeg.Upper.position - leftLeg.Upper.position;
+        leftLeg.Ankle = AnkleLimit.Create(leftLeg.Foot, hips);
+        rightLeg.Ankle = AnkleLimit.Create(rightLeg.Foot, hips);
+    }
+
+    private Leg MakeLeg(bool left)
+    {
+        if (!animator.isHuman) return null;
+        Transform Bone(HumanBodyBones l, HumanBodyBones r) => animator.GetBoneTransform(left ? l : r);
+        var upper = Bone(HumanBodyBones.LeftUpperLeg, HumanBodyBones.RightUpperLeg);
+        var lower = Bone(HumanBodyBones.LeftLowerLeg, HumanBodyBones.RightLowerLeg);
+        var foot = Bone(HumanBodyBones.LeftFoot, HumanBodyBones.RightFoot);
+        if (upper == null || lower == null || foot == null) return null;
+        // Measured in the rest pose: the ball of the foot is the toe joint, or about twice the ankle's height ahead.
+        var toes = Bone(HumanBodyBones.LeftToes, HumanBodyBones.RightToes);
+        Vector3 ankle = foot.position, forward = restForward.sqrMagnitude > .5f ? restForward : body.forward;
+        Vector3 ball = toes != null ? toes.position : ankle + forward * 2f * Mathf.Max(.04f, ankle.y - body.position.y);
+        Vector3 along = Vector3.ProjectOnPlane(ball - ankle, Vector3.up);
+        if (along.sqrMagnitude < 1e-4f) along = Vector3.ProjectOnPlane(forward, Vector3.up).normalized * .12f;
+        return new Leg
+        {
+            Upper = upper, Lower = lower, Foot = foot,
+            Heel = foot.InverseTransformPoint(ankle - along * .35f), Tip = foot.InverseTransformPoint(ankle + along * 1.4f)
+        };
+    }
+
+    private void PlantFeet(float dt)
+    {
+        if (leftLeg == null || rightLeg == null) return;
+        // In every state, whatever the clip or the IK does, an ankle stays within what a real one can do: held once
+        // so a planted foot is levelled from a sane foot, and again after the legs have bent.
+        HoldAnkles();
+        StandOnGround(dt);
+        HoldAnkles();
+    }
+
+    private void HoldAnkles()
+    {
+        leftLeg.Ankle?.Apply(maxAnkleTurn, maxAnkleRoll);
+        rightLeg.Ankle?.Apply(maxAnkleTurn, maxAnkleRoll);
+    }
+
+    private void StandOnGround(float dt)
+    {
+        bool onFeet = !dead && player.IsGrounded && !playingOut
+            && (state == MovementState.Standing || state == MovementState.Crouching);
+        feetWeight = Mathf.MoveTowards(feetWeight, onFeet ? 1f : 0f, dt / blendTime);
+        float floor = transform.position.y, clipFloor = body.position.y;
+        if (feetWeight <= 0f)
+        {
+            feetSettled = false;
+            return;
+        }
+        if (onFeet)
+        {
+            float follow = feetSettled ? 1f - Mathf.Exp(-dt / footSettleTime) : 1f;
+            Probe(leftLeg, floor, follow);
+            Probe(rightLeg, floor, follow);
+            // The hips carry the body's floor down to the lower foot's ground, within maxHipDrop under the capsule.
+            float lowest = Mathf.Clamp(Mathf.Min(leftLeg.Ground, rightLeg.Ground), floor - maxHipDrop, floor);
+            hipFloor = Mathf.Clamp(Mathf.Lerp(hipFloor, lowest, follow), floor - maxHipDrop, floor);
+            feetSettled = true;
+        }
+        else
+        {
+            // Leaving the ground: hold the last heights relative to the capsule while the weight fades.
+            float moved = floor - lastFloor;
+            hipFloor += moved;
+            leftLeg.Ground += moved;
+            rightLeg.Ground += moved;
+        }
+        lastFloor = floor;
+
+        float leftLift = leftLeg.Foot.position.y - clipFloor, rightLift = rightLeg.Foot.position.y - clipFloor;
+        float lowerLift = Mathf.Min(leftLift, rightLift);
+        body.position += Vector3.up * ((hipFloor - clipFloor) * feetWeight);
+        Vector3 hips = (rightLeg.Upper.position - leftLeg.Upper.position).normalized;
+        Place(leftLeg, leftLift, leftLift - lowerLift, hips);
+        Place(rightLeg, rightLift, rightLift - lowerLift, hips);
+    }
+
+    private void Probe(Leg leg, float floor, float follow)
+    {
+        float ground = floor;
+        Vector3 normal = Vector3.up;
+        bool found = false;
+        Sample(leg.Foot.TransformPoint(leg.Heel));
+        Sample(leg.Foot.position);
+        Sample(leg.Foot.TransformPoint(leg.Tip));
+        leg.Ground = ground > leg.Ground ? ground : Mathf.Lerp(leg.Ground, ground, follow);
+        leg.Normal = Vector3.Slerp(leg.Normal, normal, follow);
+
+        void Sample(Vector3 point)
+        {
+            if (Physics.Raycast(new Vector3(point.x, floor + footReach, point.z), Vector3.down, out RaycastHit hit, footReach * 2f,
+                    player.groundLayers, QueryTriggerInteraction.Ignore)
+                && hit.normal.y > .5f && (!found || hit.point.y > ground))
+            {
+                ground = hit.point.y;
+                normal = hit.normal;
+                found = true;
+            }
+        }
+    }
+
+    // lift: how high the clip holds this ankle above its own floor. above: how far over the clip's lower foot.
+    // hips: from the left hip joint to the right one.
+    private void Place(Leg leg, float lift, float above, Vector3 hips)
+    {
+        Vector3 foot = leg.Foot.position;
+        Quaternion rotation = leg.Foot.rotation;
+        leg.Target = new Vector3(foot.x, Mathf.Lerp(foot.y, leg.Ground + lift, feetWeight), foot.z);
+        // The knee bends about the clip's own knee axis. A nearly straight leg has no clear axis, so it bends
+        // forward about the hips' sideways line instead (a clip knee bent slightly backward counts as straight).
+        Vector3 thigh = leg.Lower.position - leg.Upper.position, shin = foot - leg.Lower.position;
+        Vector3 own = Vector3.Cross(thigh, shin), straight = Vector3.ProjectOnPlane(hips, thigh).normalized;
+        float bent = Mathf.Clamp01(own.magnitude / Mathf.Max(1e-6f, thigh.magnitude * shin.magnitude) / .26f);
+        if (Vector3.Dot(own, straight) < 0f && bent < 1f) bent = 0f;
+        TwoBoneIK.Reach(leg.Upper, leg.Lower, leg.Foot, leg.Target, Vector3.Lerp(straight, own.normalized, bent));
+        // A foot on the ground lies along the slope; a swinging one keeps the clip's angle.
+        float planted = (1f - Mathf.Clamp01(above / .1f)) * feetWeight;
+        Quaternion tilt = Quaternion.RotateTowards(Quaternion.identity, Quaternion.FromToRotation(Vector3.up, leg.Normal), maxFootTilt);
+        leg.Foot.rotation = Quaternion.Slerp(rotation, tilt * rotation, planted);
+    }
+
+    // Select the player in the Scene view: the line is the ground each foot found, the sphere where its ankle goes.
+    private void OnDrawGizmosSelected()
+    {
+        if (!Application.isPlaying || feetWeight <= 0f) return;
+        Draw(leftLeg);
+        Draw(rightLeg);
+
+        void Draw(Leg leg)
+        {
+            if (leg == null || leg.Foot == null) return;
+            Vector3 heel = leg.Foot.TransformPoint(leg.Heel), tip = leg.Foot.TransformPoint(leg.Tip);
+            Gizmos.color = Color.green;
+            Gizmos.DrawLine(new Vector3(heel.x, leg.Ground, heel.z), new Vector3(tip.x, leg.Ground, tip.z));
+            Gizmos.color = Color.yellow;
+            Gizmos.DrawWireSphere(leg.Target, .03f);
+        }
+    }
+}

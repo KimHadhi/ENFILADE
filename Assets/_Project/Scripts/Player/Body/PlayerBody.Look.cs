@@ -156,7 +156,8 @@ public sealed partial class PlayerBody
         Quaternion frame = Quaternion.Euler(0f, legYaw, 0f);
         if (!slideBodyAnchored)
         {
-            slideBodyOffset = Quaternion.Inverse(frame) * (body.position - transform.position);
+            // From where PlaceBody puts the body, not where last frame left it: the feet may have lowered the hips.
+            slideBodyOffset = Quaternion.Inverse(frame) * transform.TransformVector(headAlignment);
             slideBodyAnchored = true;
         }
         slideWorldOffset = frame * slideBodyOffset;

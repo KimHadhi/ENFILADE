@@ -126,6 +126,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         headAlignment = new Vector3(0f, 0f, -backOffset);
         body.localPosition = headAlignment;
         SetUpLook();
+        SetUpFeet();
         GameSettings.Changed += ApplyView;
 
         graph = PlayableGraph.Create(name + " body");
@@ -249,6 +250,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
             // stays over the capsule and takes the head's dips and quick sway.
             if (gripWeight <= 0f && !slideBodyAnchored) FollowHead(Time.deltaTime);
             GripLedge(Time.deltaTime);
+            PlantFeet(Time.deltaTime);
             Look(Time.deltaTime);
         }
         if (thirdPerson) PlaceViewBehind();

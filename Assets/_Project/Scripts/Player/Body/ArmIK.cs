@@ -64,29 +64,7 @@ internal sealed class ArmIK
             }
         }
 
-        Vector3 a = upper.position, b = lower.position, c = hand.position;
-        Vector3 ab = b - a, bc = c - b, ac = c - a, at = target - a;
-        float abLength = ab.magnitude, bcLength = bc.magnitude;
-        float atLength = Mathf.Clamp(at.magnitude, .001f, (abLength + bcLength) * .9999f);
-        float oldElbow = TriangleAngle(ac.magnitude, abLength, bcLength);
-        float newElbow = TriangleAngle(atLength, abLength, bcLength);
-        Vector3 axisElbow = Vector3.Cross(ab, bc);
-        if (axisElbow.sqrMagnitude < 1e-8f) axisElbow = Vector3.Cross(hint - a, bc);
-        if (axisElbow.sqrMagnitude < 1e-8f) axisElbow = Vector3.Cross(at, Vector3.up);
-        if (axisElbow.sqrMagnitude > 1e-8f)
-            lower.rotation = Quaternion.AngleAxis((oldElbow - newElbow) * Mathf.Rad2Deg, axisElbow.normalized) * lower.rotation;
-        upper.rotation = Quaternion.FromToRotation(hand.position - a, at) * upper.rotation;
-
-        // Swing the elbow round the shoulder-wrist line toward the hint.
-        Vector3 line = (hand.position - a).normalized;
-        Vector3 elbow = Vector3.ProjectOnPlane(lower.position - a, line), toward = Vector3.ProjectOnPlane(hint - a, line);
-        if (elbow.sqrMagnitude > 1e-6f && toward.sqrMagnitude > 1e-6f)
-            upper.rotation = Quaternion.FromToRotation(elbow, toward) * upper.rotation;
-
+        TwoBoneIK.Solve(upper, lower, hand, target, hint);
         hand.rotation = Quaternion.Slerp(hand.rotation, rotation, weight * rotationWeight);
     }
-
-    // The angle (radians) between sides b and c of a triangle whose third side is a.
-    private static float TriangleAngle(float a, float b, float c)
-        => Mathf.Acos(Mathf.Clamp((b * b + c * c - a * a) / Mathf.Max(1e-6f, 2f * b * c), -1f, 1f));
 }

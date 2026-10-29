@@ -17,6 +17,8 @@ using UnityEngine;
 /// yawOffset, cycleOffset, from, to), names its clips, marks loops and keeps the authored root unless an inPlace
 /// column is 1.
 /// yawOffset corrects the source clip's forward axis in degrees without discarding its authored turns.
+/// A folder may also hold "&lt;folder&gt;.tpose.fbx", the clips' character in its T-pose with its mesh (Mixamo: the character
+/// downloaded "T-Pose", with skin). Every other file there then copies that avatar.
 /// </summary>
 internal sealed class ModelImportRules : AssetPostprocessor
 {
@@ -40,6 +42,36 @@ internal sealed class ModelImportRules : AssetPostprocessor
     {
         if ((IsProjectModel(assetPath) || IsAnimationFile(assetPath)) && assetImporter.importSettingsMissing)
             Apply((ModelImporter)assetImporter);
+        if (IsAnimationFile(assetPath)) ShareTPose((ModelImporter)assetImporter);
+    }
+
+    private const string TPoseSuffix = ".tpose.fbx";
+
+    private static string FolderTPose(string path)
+    {
+        string folder = Path.GetDirectoryName(path).Replace('\\', '/');
+        string tpose = folder + "/" + Path.GetFileName(folder) + TPoseSuffix;
+        return File.Exists(tpose) ? tpose : null;
+    }
+
+    // A file downloaded without skin has no T-pose, so an avatar made from it takes its first frame as the rest pose,
+    // and every clip retargets off by however that frame's knees and feet were bent and turned (Mixamo feet came out
+    // rolled half a turn). With the folder's T-pose beside them, all its files share that one true avatar.
+    private void ShareTPose(ModelImporter model)
+    {
+        string tpose = FolderTPose(assetPath);
+        if (tpose == null) return;
+        if (string.Equals(tpose, assetPath, StringComparison.OrdinalIgnoreCase))
+        {
+            model.importAnimation = false;
+            return;
+        }
+        context.DependsOnArtifact(tpose);
+        var avatar = AssetDatabase.LoadAssetAtPath<Avatar>(tpose);
+        if (avatar == null || !avatar.isHuman) return;
+        if (model.avatarSetup == ModelImporterAvatarSetup.CopyFromOther && model.sourceAvatar == avatar) return;
+        model.avatarSetup = ModelImporterAvatarSetup.CopyFromOther;
+        model.sourceAvatar = avatar;
     }
 
     private static void Apply(ModelImporter model)
@@ -177,6 +209,19 @@ internal sealed class ModelImportRules : AssetPostprocessor
     // A texture added or renamed after its model: reimport models in that asset folder that still lack a base map.
     private static void OnPostprocessAllAssets(string[] imported, string[] deleted, string[] moved, string[] movedFrom)
     {
+        // A T-pose just added: the clips beside it were imported with their own avatars, so give them its avatar now.
+        foreach (string tpose in imported.Concat(moved).Where(p => IsAnimationFile(p) && p.EndsWith(TPoseSuffix, StringComparison.OrdinalIgnoreCase)))
+        {
+            var avatar = AssetDatabase.LoadAssetAtPath<Avatar>(tpose);
+            if (avatar == null) continue;
+            foreach (string guid in AssetDatabase.FindAssets("t:Model", new[] { Path.GetDirectoryName(tpose).Replace('\\', '/') }))
+            {
+                string clip = AssetDatabase.GUIDToAssetPath(guid);
+                if (clip != tpose && AssetImporter.GetAtPath(clip) is ModelImporter model && model.sourceAvatar != avatar)
+                    AssetDatabase.ImportAsset(clip);
+            }
+        }
+
         var folders = imported.Concat(moved).Where(p => IsProjectModel(p) && IsImage(p)).Select(AssetFolder).Distinct();
         foreach (string folder in folders)
             foreach (string guid in AssetDatabase.FindAssets("t:Model", new[] { folder }))

@@ -85,10 +85,15 @@ internal sealed class CameraClearance
         for (int i = 0; i < count; i++)
         {
             Collider collider = overlaps[i];
-            if (External(collider, owner) && (collider.ClosestPoint(point) - point).sqrMagnitude <= squared) return true;
+            if (External(collider, owner) && (!HasClosestPoint(collider) || (collider.ClosestPoint(point) - point).sqrMagnitude <= squared)) return true;
         }
         return false;
     }
+
+    // Collider.ClosestPoint only supports these; for the rest (a non-convex mesh such as ProBuilder stairs, terrain)
+    // the overlap query's own exact answer stands.
+    private static bool HasClosestPoint(Collider collider)
+        => collider is BoxCollider || collider is SphereCollider || collider is CapsuleCollider || collider is MeshCollider { convex: true };
 
     private static bool External(Collider collider, Transform owner)
         => collider != null && !collider.isTrigger && (owner == null || !collider.transform.IsChildOf(owner));
