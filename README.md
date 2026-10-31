@@ -1,6 +1,6 @@
 # ENFILADE
 
-이동·파쿠르와 원거리·근접 전투를 개발하는 Unity 1인칭 액션 프로젝트다. **Unity 6000.3.12f1**을 사용한다. 실제 버전은 [ProjectVersion.txt](ProjectSettings/ProjectVersion.txt), 패키지는 [manifest.json](Packages/manifest.json)과 [packages-lock.json](Packages/packages-lock.json)이 기준이다.
+이동·파쿠르와 원거리·근접 전투를 개발하는 Unity 1인칭 액션 프로젝트다. **Unity 6000.3.27f1**을 사용한다. 실제 버전은 [ProjectVersion.txt](ProjectSettings/ProjectVersion.txt), 패키지는 [manifest.json](Packages/manifest.json)과 [packages-lock.json](Packages/packages-lock.json)이 기준이다.
 
 ## 바로 실행하기
 
@@ -12,8 +12,8 @@
 
 | 씬 | 용도 |
 | --- | --- |
-| [CombatFoundation](Assets/_Project/Scenes/Development/CombatFoundation.unity) | 무기·적·HUD 통합 개발 씬. 현재 빌드에 등록된 유일한 씬 |
-| [MovementAbilityPlayground](Assets/_Project/Scenes/Development/MovementAbilityPlayground.unity) | 이동·파쿠르 시험장. 표면별 발소리 판, 사다리, 집라인, 평균대가 있다 |
+| [CombatFoundation](Assets/_Project/Scenes/Development/CombatFoundation.unity) | 무기·적·HUD 통합 개발 씬. 빌드의 첫 씬 |
+| [MovementAbilityPlayground](Assets/_Project/Scenes/Development/MovementAbilityPlayground.unity) | 이동·파쿠르 시험장. 표면별 발소리 판, 사다리, 집라인, 평균대가 있다. 채팅의 `/map 씬이름`으로 두 씬을 오간다 |
 
 메인 메뉴는 새 컨셉으로 다시 만들 예정이라 지금은 없다.
 

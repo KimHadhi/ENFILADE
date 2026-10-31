@@ -3,8 +3,9 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
-using TMPro;
+using UnityEngine.SceneManagement;
 using UnityEngine.InputSystem;
+using TMPro;
 using System;
 
 public class SinglePlayerChatManager : MonoBehaviour
@@ -352,6 +353,7 @@ public class SinglePlayerChatManager : MonoBehaviour
         commands.Register("echo", "입력한 내용 출력", text => text);
         commands.Register("chat", "채팅 채널로 전환", _ => { SetInputChannel(ChatChannel.Note); return "채팅 채널로 전환했습니다."; });
         commands.Register("console", "콘솔 채널로 전환", _ => { SetInputChannel(ChatChannel.Console); return "콘솔 채널로 전환했습니다."; });
+        commands.Register("map", "씬 이름 — 해당 씬으로 이동", SceneConsoleCommands.LoadMap);
     }
 
     private PlayerMovement ResolveCommandPlayer()
@@ -387,5 +389,22 @@ public class SinglePlayerChatManager : MonoBehaviour
 
         scrollRect.verticalNormalizedPosition = 0f;
         scrollCoroutine = null;
+    }
+    public static class SceneConsoleCommands
+    {
+        public static string LoadMap(string args)
+        {
+            string sceneName = args.Trim();
+
+            if (string.IsNullOrWhiteSpace(sceneName))
+                return "사용법: /map 씬이름";
+
+            if (!Application.CanStreamedLevelBeLoaded(sceneName))
+                return $"씬을 찾을 수 없습니다: {sceneName}";
+
+            SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Single);
+
+            return $"씬 이동 중: {sceneName}";
+        }
     }
 }
