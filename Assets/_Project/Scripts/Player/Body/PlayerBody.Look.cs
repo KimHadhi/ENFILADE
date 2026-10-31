@@ -98,7 +98,8 @@ public sealed partial class PlayerBody
     {
         if (head == null || dt <= 0f) return;
         eyeViewWeight = Mathf.MoveTowards(eyeViewWeight, dead ? 0f : 1f - AimBlend(), dt / eyeViewTime);
-        bool upright = !dead && transition == null && (state == MovementState.Standing || state == MovementState.Crouching);
+        bool upright = !dead && transition == null
+            && (state == MovementState.Standing || state == MovementState.Crouching || state == MovementState.Balance);
         bool sliding = !dead && state == MovementState.Sliding;
         bendWeight = Mathf.MoveTowards(bendWeight, upright || sliding ? 1f : 0f, dt / blendTime);
         // With the gun raised against a wall only the neck and head look down; the shoulders hold the gun up.

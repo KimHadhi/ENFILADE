@@ -14,7 +14,8 @@ using MovementState = PlayerMovement.MovementState;
 /// - Planted feet tilt to the slope.
 /// - In every state, each ankle's turn about the shin and roll to the side are held within maxAnkleTurn / maxAnkleRoll
 ///   of the rest pose (AnkleLimit), so no clip can twist a foot.
-/// The ground-following part is on while standing or crouching on the ground, landings included, before the eyes place the camera, so the view
+/// The ground-following part is on while standing or crouching on the ground, and while supported by a balance beam,
+/// landings included, before the eyes place the camera, so the view
 /// dips with the hips. Presentation only: nothing here moves the player.
 /// The feet after the IK are read by PlayerFootsteps (TryReadFeet), so steps sound when a foot really comes down.
 /// </summary>
@@ -61,7 +62,8 @@ public sealed partial class PlayerBody
         public float Ground;
         /// <summary>The collider under the foot, or null when the capsule's floor stood in.</summary>
         public Collider Surface;
-        public Vector3 Normal = Vector3.up, Target;
+        public Vector3 Normal = Vector3.up, Target, BeamPoint;
+        public bool OnBeam;
     }
 
     private Leg leftLeg, rightLeg;
@@ -71,7 +73,7 @@ public sealed partial class PlayerBody
     /// <summary>The ankles' height above the floor in the character's rest pose (m); 0 without legs.</summary>
     internal float RestAnkleHeight => restAnkleHeight;
 
-    /// <summary>The feet after this frame's leg IK. False unless they stand on the ground (standing or crouching).</summary>
+    /// <summary>The feet after this frame's leg IK, on the ground or supported by a balance beam.</summary>
     internal bool TryReadFeet(out FootReading left, out FootReading right)
     {
         bool reading = feetOnGround && leftLeg != null && rightLeg != null && body != null;
@@ -132,11 +134,14 @@ public sealed partial class PlayerBody
 
     private void StandOnGround(float dt)
     {
-        bool onFeet = !dead && player.IsGrounded && !playingOut
-            && (state == MovementState.Standing || state == MovementState.Crouching);
+        var fixtures = player.Abilities.Fixtures;
+        var beam = fixtures.BalanceActive && fixtures.Beam != null && fixtures.Beam.isActiveAndEnabled ? fixtures.Beam : null;
+        bool onFeet = !dead && !playingOut && (beam != null || (player.IsGrounded
+            && (state == MovementState.Standing || state == MovementState.Crouching)));
         feetOnGround = onFeet;
         feetWeight = Mathf.MoveTowards(feetWeight, onFeet ? 1f : 0f, dt / blendTime);
-        float floor = transform.position.y, clipFloor = body.position.y;
+        float floor = beam != null ? beam.PointAt(beam.DistanceOf(transform.position)).y : transform.position.y;
+        float clipFloor = body.position.y;
         if (feetWeight <= 0f)
         {
             feetSettled = false;
@@ -145,8 +150,8 @@ public sealed partial class PlayerBody
         if (onFeet)
         {
             float follow = feetSettled ? 1f - Mathf.Exp(-dt / footSettleTime) : 1f;
-            Probe(leftLeg, floor, follow);
-            Probe(rightLeg, floor, follow);
+            Probe(leftLeg, floor, follow, beam);
+            Probe(rightLeg, floor, follow, beam);
             // The hips carry the body's floor down to the lower foot's ground, within maxHipDrop under the capsule.
             float lowest = Mathf.Clamp(Mathf.Min(leftLeg.Ground, rightLeg.Ground), floor - maxHipDrop, floor);
             hipFloor = Mathf.Clamp(Mathf.Lerp(hipFloor, lowest, follow), floor - maxHipDrop, floor);
@@ -170,8 +175,23 @@ public sealed partial class PlayerBody
         Place(rightLeg, rightLift, rightLift - lowerLift, hips);
     }
 
-    private void Probe(Leg leg, float floor, float follow)
+    private void Probe(Leg leg, float floor, float follow, BalanceBeam beam)
     {
+        leg.OnBeam = beam != null && beam.Surface is BoxCollider;
+        if (leg.OnBeam)
+        {
+            var box = (BoxCollider)beam.Surface;
+            Vector3 local = box.transform.InverseTransformPoint(leg.Foot.position);
+            // Keep even a wide running stride on the top face while preserving the clip's vertical foot lift.
+            local.x = Mathf.Clamp(local.x, box.center.x - box.size.x * .45f, box.center.x + box.size.x * .45f);
+            local.z = Mathf.Clamp(local.z, box.center.z - box.size.z * .5f, box.center.z + box.size.z * .5f);
+            local.y = box.center.y + box.size.y * .5f;
+            leg.BeamPoint = box.transform.TransformPoint(local);
+            leg.Ground = leg.BeamPoint.y;
+            leg.Normal = box.transform.up;
+            leg.Surface = box;
+            return;
+        }
         float ground = floor;
         Vector3 normal = Vector3.up;
         Collider surface = null;
@@ -204,6 +224,11 @@ public sealed partial class PlayerBody
         Vector3 foot = leg.Foot.position;
         Quaternion rotation = leg.Foot.rotation;
         leg.Target = new Vector3(foot.x, Mathf.Lerp(foot.y, leg.Ground + lift, feetWeight), foot.z);
+        if (leg.OnBeam && feetOnGround)
+        {
+            leg.Target.x = Mathf.Lerp(foot.x, leg.BeamPoint.x, feetWeight);
+            leg.Target.z = Mathf.Lerp(foot.z, leg.BeamPoint.z, feetWeight);
+        }
         // The knee bends about the clip's own knee axis. A nearly straight leg has no clear axis, so it bends
         // forward about the hips' sideways line instead (a clip knee bent slightly backward counts as straight).
         Vector3 thigh = leg.Lower.position - leg.Upper.position, shin = foot - leg.Lower.position;

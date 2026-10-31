@@ -141,6 +141,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
                      vault, mantle, wallClimb, wallKick, barSwing, barRelease, ledgeHang, ledgeJump, death })
             AddChannel(clip, 0f);
         foreach (string clip in VariantClips) AddChannel(clip, 0f);
+        foreach (string clip in FixtureClips) AddChannel(clip, 0f);
         AddArmedChannels();
         AddLocomotionChannels();
         leftHand = animator.isHuman ? animator.GetBoneTransform(HumanBodyBones.LeftHand) : null;
@@ -239,7 +240,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
             yaw = Mathf.SmoothDampAngle(yaw, targetYaw, ref yawVelocity, .12f);
             legYaw = transform.eulerAngles.y + yaw;
         }
-        body.localRotation = Quaternion.Euler(0f, yaw, 0f);
+        body.localRotation = Quaternion.Euler(0f, yaw, 0f) * BalanceLean(dt);
         PlaceBody();
     }
 
@@ -251,10 +252,12 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
             // Hanging, the hands hold the body in place instead of the head following the camera. FollowHead aims at
             // the camera's pivot, not the camera, so it keeps running while the camera rides the eyes: the camera
             // stays over the capsule and takes the head's dips and quick sway.
-            if (gripWeight <= 0f && !slideBodyAnchored) FollowHead(Time.deltaTime);
-            GripLedge(Time.deltaTime);
+            if (state == MovementState.Balance) CentreOverFeet(Time.deltaTime);
+            else if (gripWeight <= 0f && !slideBodyAnchored) FollowHead(Time.deltaTime);
+            Grip(Time.deltaTime);
             PlantFeet(Time.deltaTime);
             Look(Time.deltaTime);
+            PublishBalanceCycle();
         }
         if (thirdPerson) PlaceViewBehind();
     }
@@ -335,6 +338,10 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
             case MovementState.LacheRelease: Want(barRelease); break;
             case MovementState.LedgeHang: LedgePose(); break;
             case MovementState.LedgeJump: Want(ledgeJump); break;
+            case MovementState.Ladder: LadderPose(); break;
+            case MovementState.Zipline: ZiplinePose(); break;
+            case MovementState.Balance: BalancePose(); break;
+            case MovementState.BalanceFall: Want(balanceFallClip); break;
             default: Want(idle); break;
         }
     }
@@ -366,7 +373,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
             case MovementState.DashPush: Restart(Find(dashPush)); break;
             case MovementState.Vault:
             case MovementState.Mantle:
-                obstacleClip = ObstacleClip(to == MovementState.Vault, from == MovementState.LedgeHang);
+                obstacleClip = from == MovementState.Ladder ? LadderExitClip() : ObstacleClip(to == MovementState.Vault, from == MovementState.LedgeHang);
                 if (to == MovementState.Vault) StartVault();
                 break;
             case MovementState.WallClimb: Restart(Find(wallClimbStart)); break;
@@ -377,6 +384,9 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
             case MovementState.LedgeHang: Restart(Find(ledgeCatch)); break;
             case MovementState.LacheRelease: Restart(Find(barRelease)); break;
             case MovementState.LedgeJump: Restart(Find(ledgeJump)); break;
+            case MovementState.Ladder: StartLadder(); break;
+            case MovementState.Zipline: Restart(Find(ziplineStart)); break;
+            case MovementState.BalanceFall: StartBalanceFall(); break;
         }
     }
 

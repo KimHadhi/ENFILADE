@@ -92,6 +92,10 @@ public sealed class PlayerBodyHands : MonoBehaviour
             case MovementState.BarGrab:
             case MovementState.BarSwing:
             case MovementState.LacheRelease:
+            case MovementState.Ladder:
+            case MovementState.Zipline:
+            case MovementState.Balance:
+            case MovementState.BalanceFall:
                 return false;
             default:
                 return true;

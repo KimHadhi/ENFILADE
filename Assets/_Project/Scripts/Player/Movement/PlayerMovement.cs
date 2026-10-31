@@ -31,7 +31,11 @@ public sealed partial class PlayerMovement : MonoBehaviour
         LacheRelease,
         LedgeHang,
         LedgeJump,
-        HeavyLanding
+        HeavyLanding,
+        Ladder,
+        Zipline,
+        Balance,
+        BalanceFall
     }
 
 
@@ -61,7 +65,7 @@ public sealed partial class PlayerMovement : MonoBehaviour
     public MovementAbilitySettings AbilitySettings => abilitySettings;
     public bool IsParkour => StateMachine != null && StateMachine.Current.ControlsTraversal;
     public bool IsDodging => Abilities != null && Abilities.Dodge.IsInvulnerable;
-    public float LeanRoll => Abilities != null ? Abilities.Lean.Roll : 0f;
+    public float LeanRoll => Abilities != null ? Abilities.Lean.Roll + Abilities.Fixtures.BalanceRoll : 0f;
     public float LeanOffset => Abilities != null ? Abilities.Lean.Offset : 0f;
 
     public Vector3 HorizontalVelocity { get => Motor.HorizontalVelocity; set => Motor.HorizontalVelocity = value; }
@@ -82,6 +86,16 @@ public sealed partial class PlayerMovement : MonoBehaviour
     public event Action Jumped;
     /// <summary>A dash push met someone, at this point, and stopped there.</summary>
     public event Action<Vector3> DashPushHit;
+    /// <summary>One rung up a ladder, by the hand going up (true for the left).</summary>
+    public event Action<bool> LadderStepped;
+    /// <summary>A slide down a ladder stopped on the ladder, not at its foot.</summary>
+    public event Action LadderSlideStopped;
+    /// <summary>A note on a balance beam was played or missed.</summary>
+    public event Action<BalanceJudgement> BalanceBeat;
+    /// <summary>A fresh balance key edge, for immediate feedback even before the foot lands.</summary>
+    public event Action<int> BalanceKeyPressed;
+    /// <summary>A visible foot landed on a balance beam, after foot IK.</summary>
+    public event Action BalanceStep;
 
     public MovementState CurrentState => StateMachine != null ? StateMachine.CurrentState : MovementState.Standing;
     public MovementState PreviousState => StateMachine != null ? StateMachine.PreviousState : MovementState.Standing;
@@ -96,7 +110,17 @@ public sealed partial class PlayerMovement : MonoBehaviour
     public bool IsProning => StateMachine != null && StateMachine.IsIn<ProneState>();
     public Vector3 Velocity => HorizontalVelocity + Vector3.up * VerticalVelocity;
     public Vector3 ActualVelocity => Motor.actualVelocity;
-    public Vector2 CurrentInput => InputAvailable && !ControlLocked && Input != null ? Input.Move : Vector2.zero;
+    public Vector2 CurrentInput
+    {
+        get
+        {
+            if (!InputAvailable || ControlLocked || Input == null) return Vector2.zero;
+            Vector2 move = Input.Move;
+            // On a beam, A/D are rhythm buttons. They must not steer or drive the ordinary camera tilt.
+            if (Abilities != null && Abilities.Fixtures.BalanceActive) move.x = 0f;
+            return move;
+        }
+    }
     /// <summary>Down after a heavy landing or thrown by a blow: movement keys and buttons do nothing (the view still turns).</summary>
     public bool ControlLocked => Abilities != null && Abilities.Landing.LocksControl;
     /// <summary>A landing roll or a heavy landing has the body busy: no attacks or aiming.</summary>
@@ -228,12 +252,14 @@ public sealed partial class PlayerMovement : MonoBehaviour
             GameTables.Bind(TableName, "Breathing", gameObject.AddComponent<PlayerBreathing>());
             GameTables.Bind(TableName, "Wind", gameObject.AddComponent<PlayerWindAudio>());
             GameTables.Bind(TableName, "FallAudio", gameObject.AddComponent<PlayerFallAudio>());
+            GameTables.Bind(TableName, "FixtureAudio", gameObject.AddComponent<PlayerFixtureAudio>());
         }
-        // Movement feel on the camera: step, jump and landing punches, and a long fall's screen warp.
+        // Movement feel on the camera: step, jump and landing punches, a long fall's screen warp, and the beam's gauge.
         if (Application.isPlaying && GetComponent<PlayerMovementPunch>() == null)
         {
             GameTables.Bind(TableName, "Punch", gameObject.AddComponent<PlayerMovementPunch>());
             GameTables.Bind(TableName, "FallScreen", gameObject.AddComponent<PlayerFallScreen>());
+            GameTables.Bind(TableName, "BalanceGauge", gameObject.AddComponent<BalanceGaugeHUD>());
         }
         if (controller.height < Posture.standingColliderHeight - 0.02f)
             ChangeState(controller.height <= proneColliderHeight + 0.02f ? MovementState.Proning : MovementState.Crouching);
@@ -302,6 +328,11 @@ public sealed partial class PlayerMovement : MonoBehaviour
     internal void RaiseLanded(float impactSpeed) => Landed?.Invoke(impactSpeed);
     internal void RaiseJumped() => Jumped?.Invoke();
     internal void RaiseDashPushHit(Vector3 point) => DashPushHit?.Invoke(point);
+    internal void RaiseLadderStepped(bool leftHand) => LadderStepped?.Invoke(leftHand);
+    internal void RaiseLadderSlideStopped() => LadderSlideStopped?.Invoke();
+    internal void RaiseBalanceBeat(BalanceJudgement judgement) => BalanceBeat?.Invoke(judgement);
+    internal void RaiseBalanceKeyPressed(int side) => BalanceKeyPressed?.Invoke(side);
+    internal void RaiseBalanceStep() => BalanceStep?.Invoke();
     public void StartSlide(float speed, bool applyBoost = true) => Actions.StartSlide(speed, applyBoost);
     public void StartLandingSlide(MovementState state, float speed, Vector3 fallback, bool applyBoost) => Actions.StartLandingSlide(state, speed, fallback, applyBoost);
     public void LaunchDive(Vector2 input) => Actions.LaunchDive(input);

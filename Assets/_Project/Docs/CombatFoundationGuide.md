@@ -13,7 +13,7 @@
 5. **3 또는 4**의 빈 슬롯을 선택하면 주먹을 사용한다. 선택한 숫자를 다시 누르면 무기와 주먹을 모두 내린다.
 6. **Esc**로 일시정지하고 설정 메뉴를 연다(마우스도 풀린다). Esc나 "돌아가기"로 돌아온다. 이동·슬라이딩 조작은 [이동 안내](MovementGuide.md)를 참고한다.
 
-현재 씬에는 총 모델과 임시 절차적 자세·이펙트가 연결되어 있다. 손·탄창 교체와 무기별 정식 애니메이션은 후속 작업이다.
+총의 자세는 절차적으로 정하고 [몸의 손](PlayerBodyGuide.md#몸의-손)이 그 총을 잡는다. 지금 씬의 총 모델은 재질을 비워 보이지 않는다. 탄창 교체와 무기별 정식 애니메이션은 후속 작업이다.
 
 ## 조작과 화면 확인
 
@@ -52,24 +52,25 @@
 | `/ult 100`, `/ultuse` | 궁극기 게이지 충전·자원 소비 테스트. 무기 진화나 스킬은 실행하지 않음 |
 | `/ultmax 200`, `/ultcost 70` | 궁극기 최대 보유량을 200%, 1회 소비량을 70%로 각각 지정. 증가량이 아닌 지정한 값으로 설정 |
 
-위 명령은 실행 중인 테스트 상태를 바꾼다. 영구적인 밸런스 설정은 [설정·유지보수 안내](MaintenanceGuide.md)의 Inspector 위치에서 수정한다.
+위 명령은 실행 중인 테스트 상태를 바꾼다. 영구적인 밸런스 설정은 [설정·유지보수 안내](MaintenanceGuide.md)의 표와 Inspector 위치에서 수정한다.
 
 ## 무엇을 바꿀지에 따른 수정 위치
 
-수치는 **코드의 기본값보다 씬·프리팹·설정 asset에 저장된 값이 우선**한다. 영구적으로 조정할 때는 Play를 종료한 뒤 수정한다.
+숫자는 **[밸런스 표](MaintenanceGuide.md#밸런스-표-data-tables)가 가장 우선**한다. 표는 저장하면 Play 중에도 바로 반영된다. 표에 없는 값은 코드의 기본값보다 씬·프리팹·설정 asset에 저장된 값이 우선하므로, Play를 종료한 뒤 수정한다.
 
 | 바꾸려는 것 | 수정 위치 |
 | --- | --- |
-| 피해량, 발사 방식, RPM, 탄창·예비탄, 장전 시간 | [무기 데이터 폴더](../Data/Combat/Weapons) → 해당 `WeaponData` |
-| 탄퍼짐, 조준 반동, ADS, 총 모델 추적·high-ready 반응 | `WeaponData`의 Accuracy / Recoil Feel / Aim Down Sights / Aim Tracking Feel / High-ready 항목 |
+| 피해량, 발사 방식, RPM, 탄창·예비탄, 장전 시간, 탄퍼짐, ADS 배율, 몸의 손이 잡는 위치 | [Weapons.csv](../Resources/Tables/Weapons.csv)의 해당 무기 행 |
+| 조준 반동, 총 모델 추적·high-ready 반응, 무기 사운드·아이콘 | [무기 데이터 폴더](../Data/Combat/Weapons) → 해당 `WeaponData`의 Recoil Feel / Aim Tracking Feel / High-ready 항목 |
 | 무기별 총성, 화면 킥, 총구·탄피, 총알 체간 피해 | `WeaponData`의 Feel 및 Feel → Target Reaction 항목 |
 | 전체 타격감 켜기·끄기, 히트마커, 점수, 피격·처치 효과 | [GunFeel.asset](../Resources/Combat/GunFeel.asset) |
 | 플레이어 피격 아크·혈흔·쉐이크·25% 빈사 박동 | [PlayerDamageFeedback.asset](../Resources/Combat/PlayerDamageFeedback.asset), [피격 효과 안내](PlayerDamageFeedbackGuide.md) |
 | 방어·밀치기 소리, 반격, 흐트러짐 표시, 피해 팝업·HP 손실 표시 | [Feedback.asset](../Resources/Combat/Feedback.asset) |
 | 시작 무기와 시작 슬롯 | 플레이어의 `PlayerWeaponSlots` → Slot 1~4 / Starting Slot |
-| 주먹·가드·패링·V 홀드 | 플레이어의 `PlayerMeleeCombat` |
-| 밀치기·돌진 밀치기·슬라이딩 수치 | [Player.csv](../Resources/Tables/Player.csv)의 `Ability` 행 |
-| 적 체력·AI·체간·몸 크기 | [적 프리팹](../Prefabs/Enemies)의 `EnemyHealth`, `EnemyCombatAI`, `MeleeCombatTarget` |
+| 주먹·가드·패링·V 홀드 | [Player.csv](../Resources/Tables/Player.csv)의 `Fists` 행 |
+| 밀치기·돌진 밀치기·슬라이딩 수치 | `Player.csv`의 `Ability` 행 |
+| 적 체력·공격·체간·이동 속도 | [Enemies.csv](../Resources/Tables/Enemies.csv) |
+| 적의 몸 크기·밀치기 연쇄 | [적 프리팹](../Prefabs/Enemies)의 `MeleeCombatTarget` |
 | 사격·장전·가드 키 | [Player.inputactions](../Input/Player.inputactions)의 Combat 맵 |
 | 슬롯 숫자 키 | [PlayerWeaponSlots.Update](../Scripts/Player/Combat/Weapons/PlayerWeaponSlots.cs)의 직접 키보드 입력 |
 | 탄약 UI의 위치·크기·색 | 씬의 `AmmoHUD` → Screen Margin / Hud Scale / Colors |
@@ -78,16 +79,16 @@
 
 ## 새 총 데이터 연결하기
 
-1. [무기 데이터 폴더](../Data/Combat/Weapons)에서 기존 asset을 복제하거나 **Create → ENFILADE → Combat → Weapon Data**를 선택한다.
-2. `Category`를 **Ranged**로 두고 Display Name, Fire Mode, Damage, Rounds Per Minute, Magazine Size를 설정한다.
-3. `Initial Reserve Ammo`, `Reload Duration`, `Empty Reload Duration`을 조절한다. RPM 600은 초당 10발이며 시간 단위는 초다.
+1. [무기 데이터 폴더](../Data/Combat/Weapons)에서 기존 asset을 복제하거나 **Create → ENFILADE → Combat → Weapon Data**를 선택한다. `Category`는 **Ranged**로 둔다.
+2. [Weapons.csv](../Resources/Tables/Weapons.csv)에 asset과 같은 이름의 행을 추가하고 `displayName`, `fireMode`, `damage`, `roundsPerMinute`, `magazineSize`를 적는다.
+3. `initialReserveAmmo`, `reloadDuration`, `emptyReloadDuration`을 조절한다. RPM 600은 초당 10발이며 시간 단위는 초다. 몸의 손이 잡을 위치(`rightGrip*`, `leftGrip*`, `holdOffset`)도 모델에 맞춘다.
 4. 현재 CombatFoundation에서는 **PlayerWeaponSlots의 Slot 1 또는 Slot 2**에 할당한다. Starting Slot은 0이면 해제, 1~4이면 해당 슬롯으로 시작한다.
 5. 모델을 바꾸면 `WeaponController`의 Weapon Root / Muzzle Point를 확인한다. 실제 총구의 로컬 **+Z**가 발사 방향이며 Sight Height는 모델별로 조절한다.
 6. 단발·점사·연사, 장전 취소, 슬롯 전환 후 탄약 보존, 벽 앞 사격 차단을 확인한다.
 
 `WeaponController`의 Weapon Data를 직접 할당하는 방식은 슬롯 관리자가 없는 단일 무기 테스트용이다. 슬롯 관리자가 있으면 선택한 슬롯의 데이터와 런타임이 컨트롤러에 연결된다. 새 근접·특수 무기는 Category만 바꿔 완성되지 않으며, 유형별 공격 구현과 모델 연결이 추가로 필요하다.
 
-현재 저장된 예제 데이터는 다음과 같다. 이 표는 코드 기본값이 아니라 해당 asset의 설정이다.
+현재 예제 무기는 다음과 같다. 값은 `Weapons.csv` 기준이다.
 
 | 데이터 | 방식 | HP 피해 | RPM | 탄창 / 예비탄 | 잔탄 있는 장전 / 빈 탄창 장전 |
 | --- | --- | ---: | ---: | ---: | ---: |
@@ -109,7 +110,7 @@ CombatFoundation의 `★Player` 오브젝트와 HUD Canvas를 복사해 붙여 �
 | 벽 근처에서 총이 올라감 | 정상적인 총구 안전 장치인지 확인. 모델의 총구 위치·+Z 방향과 Hit Layers 검사 |
 | 발사했지만 HP가 안 줄어듦 | `Log Shots`의 hit / result 확인. 엄폐, 사거리, 수신자, 회피, 사망 상태 순서로 추적 |
 | 재장전이 안 됨 | 탄창이 이미 가득 찼는지, 예비탄이 있는지, 회피·밀치기·슬롯 전환이 장전을 취소했는지 확인 |
-| 설정을 바꿨는데 반영되지 않음 | 수정한 asset이 실제 슬롯에 연결됐는지, 씬·프리팹에 다른 값이 저장됐는지 확인 |
+| 설정을 바꿨는데 반영되지 않음 | 표에 같은 값이 있으면 표가 이긴다. 표에 없다면 수정한 asset이 실제 슬롯에 연결됐는지, 씬·프리팹에 다른 값이 저장됐는지 확인 |
 | 효과만 약하거나 없음 | GunFeel의 Master Switches와 해당 무기의 Feel 설정, Feedback의 음량·참조 확인 |
 
 `Log Shots`와 `Draw Rays`는 `WeaponController`의 진단 옵션이다. 빨간 레이는 고체에 명중했다는 뜻이며 피해 성공을 보장하지 않는다. 피해 결과의 `Evaded`는 회피, `Duplicate`는 같은 공격 ID의 중복 수신이다.

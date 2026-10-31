@@ -2,7 +2,7 @@
 
 [프로젝트 안내](../../../README.md) · [설정·제작 방법](CombatFoundationGuide.md) · [전투 코드 구조](../Scripts/Combat/README.md) · [검증 안내](ValidationGuide.md)
 
-현재 구현된 전투 규칙과 후속 기획을 구분해 정리한다. 아래 수치는 별도 표기가 없으면 **코드 기본값**이며, 실제 플레이에서는 씬·프리팹·설정 asset의 Inspector 값이 우선한다.
+현재 구현된 전투 규칙과 후속 기획을 구분해 정리한다. 아래 수치는 별도 표기가 없으면 기본값이다. 실제 플레이에서는 [밸런스 표](MaintenanceGuide.md#밸런스-표-data-tables)의 값이 우선하고, 표에 없는 값은 씬·프리팹·설정 asset의 Inspector 값이 우선한다.
 
 ## 1. 슬롯과 무기 상태
 
@@ -58,7 +58,7 @@
 
 ## 3. 주먹·밀치기·돌진 밀치기
 
-빈 슬롯을 선택한 상태에서 주먹 전투를 사용한다. 기본 주먹 모델은 절차적 임시 표현이며 정식 모델·애니메이션은 후속 작업이다.
+빈 슬롯을 선택한 상태에서 주먹 전투를 사용한다. 주먹은 [몸의 손](PlayerBodyGuide.md#몸의-손)이 `FistsView`가 정한 위치로 뻗는 절차적 동작이며, 몸 클립으로 치는 펀치는 후속 작업이다.
 
 | 행동 | 현재 동작 | 주요 기본값 |
 | --- | --- | --- |
@@ -75,6 +75,8 @@
 주먹이 벽에 닿으면 한 공격당 벽 소리를 한 번 재생하고 후딜을 즉시 해제한다. `Combat/Player/Attack/Punch/Wall`의 10개 클립은 `Feedback`의 `Punch Wall Sounds`에 연결되어 있고, 직전에 재생한 클립을 피해서 고른다. 적 타격 소리와 벽 타격 소리는 각각 한 번만 재생한다.
 
 V 홀드는 단일 대상 기술이다. 접근·타격·회복 중에는 이동·시점·공격·방어·회피·슬롯 변경을 잠근다. 벽, 대상 소멸, 접지 상실, 채팅·포커스 상실 등으로 취소되며, 홀드 후 놓을 때 탭 밀치기를 추가하지 않는다.
+
+**돌진 밀치기**([PlayerCombatActions](../Scripts/Player/Combat/PlayerCombatActions.cs), Player.csv `Ability.dashPush*` 행, Dynamic Landing의 Push): 총을 들었든 빈손이든 시선 쪽으로 `dashPushMinSpeed`(5m/s) 이상 달리며 V를 누르면 `dashPushDuration`(0.25초) 동안 그때 속도의 `dashPushSpeedScale`(2)배로 돌진한다. 몸 앞 `dashPushReach`(0.5m)에 처음 들어온 적에게 피해·체간 피해(각 20)를 주고 그 자리에서 멈춘다. 쌓인 달리기 속도도 출발 속도로 깎인다. 맞은 적은 돌진 속도로 밀려 날아가며 `dashPushThrowTime`(0.5초)에 걸쳐 느려지고(그동안 부딪힌 적에게 밀치기 연쇄가 넘어간다), 끝에서 넘어져 `dashPushKnockdownDuration`(1.5초) 동안 누워 있다([MeleeCombatTarget](../Scripts/Combat/Damage/MeleeCombatTarget.cs)`.Barge`). 큰 적(`Large`)이나 막아 낸 적은 군중 밀치기처럼 밀리기만 한다. 벽 너머의 적은 맞지 않고, 가벼운 프랍은 몸으로 차 내며, 문은 `doorBreakSpeedThreshold` 이상이면 부순다. 빗나가면 원래 달리기 속도로 이어 간다. 끝난 뒤 `dashPushCooldown`(1초) 동안 V는 평소의 V다. 몸은 `Body.dashPush`(bargein)를 재생하고, 적에게 멈추면 그 클립을 끝까지 재생한다. 소리는 `DashPush`(시작)·`DashPushHit`(Dynamic Landing push1-4) 큐다. 달리지 않을 때의 V(총: 군중 밀치기, 빈손: 탭 밀치기·홀드 가드 브레이크)는 그대로다. 가드 브레이크로 다가가는 중에는 돌진하지 않는다.
 
 밀치기 소리는 첫 접촉에 한 번 재생한다. 적 접촉을 벽 소리보다 우선하고, 적중하지 않은 허공에서는 소리가 없다. 슬라이딩 접촉은 `SlideCombat`이 독립적으로 처리한다. **저스트 슬라이드와 몸 크기별 반응·실제 레그돌은 [이동 안내](MovementGuide.md)를 따른다.**
 

@@ -40,6 +40,7 @@ public sealed class MovementStateMachine
         var obstacle = new AbilityGroupState(ctx, parkour, "Obstacle", false);
         var wall = new AbilityGroupState(ctx, parkour, "Wall", false);
         var swing = new AbilityGroupState(ctx, parkour, "Swing", false);
+        var fixture = new AbilityGroupState(ctx, parkour, "Fixture", false);
         return new MovementStateMachine(new Dictionary<MovementState, MovementBaseState>
         {
             { MovementState.Standing, new StandingState(ctx, locomotion) },
@@ -63,7 +64,11 @@ public sealed class MovementStateMachine
             { MovementState.WallKick, new WallKickState(ctx, wall) },
             { MovementState.BarGrab, new BarGrabState(ctx, swing) },
             { MovementState.BarSwing, new BarSwingState(ctx, swing) },
-            { MovementState.LacheRelease, new LacheReleaseState(ctx, swing) }
+            { MovementState.LacheRelease, new LacheReleaseState(ctx, swing) },
+            { MovementState.Ladder, new LadderState(ctx, fixture) },
+            { MovementState.Zipline, new ZiplineState(ctx, fixture) },
+            { MovementState.Balance, new BalanceState(ctx, fixture) },
+            { MovementState.BalanceFall, new BalanceFallState(ctx, fixture) }
         }, MovementState.Standing);
     }
 

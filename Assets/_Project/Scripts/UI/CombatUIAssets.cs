@@ -9,7 +9,7 @@ using UnityEngine;
 public static class CombatUIAssets
 {
     private static Texture2D criticalBurst, skull, glowTexture, stripes, counterArrow, executionKnife, slashLine, bladeSlash;
-    private static Sprite glowSprite;
+    private static Sprite glowSprite, discSprite, ringSprite;
     private static readonly Dictionary<(TMP_FontAsset, Color, float), Material> outlined = new Dictionary<(TMP_FontAsset, Color, float), Material>();
 
     /// <summary>Eight-point burst: long cardinal tips, shorter diagonals.</summary>
@@ -88,6 +88,21 @@ public static class CombatUIAssets
             stripes.SetPixels32(pixels); stripes.Apply(false, true);
             return stripes;
         }
+    }
+
+    /// <summary>A filled circle.</summary>
+    public static Sprite Disc => discSprite != null ? discSprite : discSprite = RoundSprite("Disc (Runtime)", p => p.magnitude - .96f);
+
+    /// <summary>A thin ring reaching the sprite's edge.</summary>
+    public static Sprite Ring => ringSprite != null ? ringSprite : ringSprite = RoundSprite("Ring (Runtime)", p => Mathf.Abs(p.magnitude - .92f) - .05f);
+
+    private static Sprite RoundSprite(string name, Shape shape)
+    {
+        const int size = 128;
+        var sprite = Sprite.Create(Rasterize(name, size, shape), new Rect(0, 0, size, size), new Vector2(.5f, .5f));
+        sprite.name = name;
+        sprite.hideFlags = HideFlags.HideAndDontSave;
+        return sprite;
     }
 
     /// <summary>Gaussian glow sliced horizontally, so any number width gets the same soft radius.</summary>

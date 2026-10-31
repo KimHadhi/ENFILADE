@@ -70,6 +70,7 @@ public sealed class PlayerLook : MonoBehaviour
         float mouseY = delta.y * scale * (settings.invertY ? 1f : -1f);
 
         yaw += mouseX;
+        if (movement != null && movement.Abilities != null) yaw += movement.Abilities.Fixtures.TakeLookTurn();
         yaw = ClampLookYaw(yaw);
         pitch = ClampLookPitch(pitch + mouseY);
         TickRecoil(Time.deltaTime);
@@ -125,6 +126,12 @@ public sealed class PlayerLook : MonoBehaviour
             // Down on the ground the head turns only so far from the way the body faces.
             if (body == null) body = GetComponent<PlayerBody>();
             return WithinArc(movement.Abilities.Landing.HeavyYaw, body != null ? body.HeavyLandingLookYawLimit : 90f, candidate);
+        }
+        if (movement != null && movement.Abilities != null && movement.Abilities.Fixtures.TryLookCentre(out float fixtureYaw))
+        {
+            // On a ladder, a cable or a beam the body faces its way; the head turns only so far from that.
+            if (body == null) body = GetComponent<PlayerBody>();
+            return WithinArc(fixtureYaw, body != null ? body.FixtureLookYawLimit : 90f, candidate);
         }
         if (movement == null || movement.CurrentState != PlayerMovement.MovementState.WallClimb
             || movement.Abilities == null) return candidate;

@@ -41,7 +41,7 @@ public sealed class LocomotionState : MovementBaseState
         var weapon = ctx.GetComponent<WeaponController>();
         if (weapon != null) baseSpeed *= weapon.MovementMultiplier;
         // Getting over a hard landing, the legs give only part of the usual speed.
-        if (ctx.IsGrounded) baseSpeed *= ctx.Abilities.Landing.RecoveryScale;
+        if (ctx.IsGrounded) baseSpeed = ctx.Abilities.Fixtures.LimitOnBeam(baseSpeed * ctx.Abilities.Landing.RecoveryScale);
         Vector3 targetVelocity = inputDirection * (baseSpeed * inputMagnitude);
 
         if (ctx.IsGrounded)
@@ -49,6 +49,7 @@ public sealed class LocomotionState : MovementBaseState
             // 지상: 지면 마찰 및 목표 속도로 가속 보간
             float t = 1f - Mathf.Exp(-ctx.GroundSharpness * dt);
             ctx.HorizontalVelocity = Vector3.Lerp(ctx.HorizontalVelocity, targetVelocity, t);
+            if (ctx.Abilities.Fixtures.Run.IsActive) ctx.HorizontalVelocity = ctx.Abilities.Fixtures.Run.AlongBeam(ctx.HorizontalVelocity);
 
             if (ctx.HorizontalVelocity.sqrMagnitude < 0.0001f)
             {

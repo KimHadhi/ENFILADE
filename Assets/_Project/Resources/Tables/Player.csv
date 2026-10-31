@@ -162,6 +162,61 @@ Ability.swingPumpAcceleration,4,흔들기를 키우는 세기
 Ability.swingMaxAngularSpeed,3.5,흔들기 최대 각속도(rad/s)
 Ability.lacheForwardBoost,2,봉을 놓을 때 앞으로 더하는 속도(m/s)
 Ability.lacheUpBoost,2,봉을 놓을 때 위로 더하는 속도(m/s)
+Ability.ladderReach,0.9,가로대 면에서 이만큼 안이면 사다리를 잡는다(m)
+Ability.ladderSideReach,0.2,난간 옆으로 이만큼까지 사다리를 잡는다(m)
+Ability.ladderFacingAngle,30,사다리를 정면에서 이 각도 안으로 봐야 잡는다(도)
+Ability.ladderStandOff,0.27,사다리에 붙었을 때 몸 중심이 가로대 면에서 떨어진 거리(m)
+Ability.ladderEnterTime,0.5,땅에서 사다리에 오르는 시간(초). 이 뒤에 첫 칸을 오른다
+Ability.ladderCatchTime,0.2,공중에서 잡은 사다리로 끌려가는 시간(초)
+Ability.ladderCatchDelay,0.75,공중에서 잡은 뒤 첫 칸을 오르기까지(초)
+Ability.ladderRungHeight,0.39,한 칸 높이(m)
+Ability.ladderRungTime,0.25,한 칸 올라가는 데 걸리는 시간(초)
+Ability.ladderRungInterval,0.35,한 칸에서 다음 칸까지 간격(초)
+Ability.ladderSlideSpeed,8.5,S로 미끄러져 내려오는 속도(m/s)
+Ability.ladderTopGap,1.875,발이 난간 꼭대기보다 이만큼 아래까지 오르고 거기서 위로 넘어간다(m)
+Ability.ladderExitReach,0.875,꼭대기에서 몸보다 이만큼 안쪽에서 디딜 바닥을 찾는다(m)
+Ability.ladderExitProbeHeight,2.5,바닥을 찾기 시작하는 높이. 발 위로 이만큼(m)
+Ability.ladderExitDuration,1.5,꼭대기로 넘어가는 시간(초)
+Ability.ladderDropSpeed,2,Ctrl로 놓을 때 사다리에서 멀어지는 속도(m/s)
+Ability.ladderRegrabDelay,0.4,놓은 뒤 다시 잡을 수 있기까지(초)
+Ability.ziplineReach,0.8,줄이 옆으로 이만큼 안에 있으면 잡는다(m)
+Ability.ziplineReachHeight,1.44;3.6,줄을 잡는 높이: 발 위로 최저;최고(m)
+Ability.ziplineHangLength,1.875,매달린 발이 줄보다 이만큼 아래(m)
+Ability.ziplineCatchTime,0.2,줄 밑으로 끌려가는 시간(초)
+Ability.ziplineMaxSpeed,18.75,집라인 최고 속도(m/s). 처음엔 도움닫기 속도로 출발
+Ability.ziplineAcceleration,6.25,집라인 가속(m/s²). 기울기와 상관없음 (Beatrun)
+Ability.ziplineReleaseShare,0.75,놓을 때 남는 속도 비율
+Ability.ziplineRegrabDelay,0.75,놓은 뒤 줄이 다시 잡히기까지(초)
+Ability.balanceMinSpeed,1.2,이보다 느리게 올라서면 평균대 걷기가 시작되지 않는다(m/s)
+Ability.balanceEntryBraking,10,평균대 걷기로 들어올 때 속도가 줄어드는 빠르기(초당 비율). 10이면 5m/s가 약 0.5m 밀린 뒤 멈춘다
+Ability.balanceRunSpeed,6,Shift를 누르거나 이 속도 이상으로 올라서면 평균대 위를 그대로 달린다(m/s). 이 절반 아래로 느려지면 달리기가 끝난다
+Ability.balanceRunBeat,0.28,달리기 진입 유예 계산용 예상 발 간격(초). 실제 판정 간격은 달리는 발 접지를 따른다
+Ability.balanceRunLeadBeats,1,달려서 올라선 뒤 실제 발 접지 판정을 시작하기까지 유예 박자 수
+Ability.balanceRunPerfectWindow,0.035,달릴 때 노트 순간 앞뒤로 이 안에 누르면 PERFECT(초)
+Ability.balanceRunGoodWindow,0.08,달릴 때 노트 순간 앞뒤로 이 안에 누르면 GOOD(초)
+Ability.balanceRunSlipLimit,2,달릴 때 이 횟수째 MISS에 떨어진다
+Ability.balanceCrouchSpeed,1,평균대 위에서 앉아 가는 최고 속도(m/s). 안 떨어지는 대신 걷는 리듬보다 느리게 둔다
+Ability.balanceReach,0.3,평균대 가운데에서 옆으로 이만큼 안이어야 시작(m)
+Ability.balanceStepHeight,0.25,평균대 윗면에서 위아래로 이만큼 안이어야 시작(m)
+Ability.balanceEnterMargin,0.75,평균대 끝에서 이만큼 들어와야 시작(m). balanceEndMargin보다 크게
+Ability.balanceEndMargin,0.05,평균대 끝까지 이만큼 남으면 일반 걷기로 돌아간다(m). W 없이 건너므로 끝까지 가서 내려선다
+Ability.balanceTurnSpeed,480,평균대에서 S로 뒤도는 빠르기(도/초). 도는 동안 걷지 못한다. 480이면 약 0.4초
+Ability.balanceStepLength,0.8,박자 한 번에 걷는 거리(m). 박자와 함께 걷는 속도를 정한다. 걷기 클립은 0.8쯤에 맞는다
+Ability.balanceBeatTime,0.6,걸을 때 처음 목표 발 간격(초). 실제 발 접지 순간이 판정 기준이다
+Ability.balanceQuickestBeat,0.4,걸을 때 가장 빠른 목표 발 간격(초)
+Ability.balanceLeadBeats,2,올라선 뒤나 뒤돈 뒤 판정을 시작하기까지 유예 박자 수
+Ability.balancePerfectWindow,0.05,노트 순간 앞뒤로 이 안에 누르면 PERFECT(초)
+Ability.balanceGoodWindow,0.13,노트 순간 앞뒤로 이 안에 누르면 GOOD(초)
+Ability.balanceHitRange,0.25,발 접지 전 입력을 저장하는 시간(초). 너무 이른 입력 뒤에도 새 정상 입력을 모두 받는다
+Ability.balanceApproachBeats,1.5,다음 발 접지 이만큼 박자 전부터 링을 미리 보여준다. 걷기 약 0.9초·달리기 약 0.4초이며 실제 접지가 PERFECT 기준이다
+Ability.balanceTempoStep,0.015,맞출 때마다 걷기 목표 발 간격이 줄어드는 정도(초). 놓치거나 뒤돌면 처음으로 돌아간다
+Ability.balanceTempoResponse,0.2,이동과 발동작이 목표 박자로 부드럽게 바뀌는 시간(초)
+Ability.balanceSlipLimit,3,놓칠 수 있는 노트 수. 이 횟수째에 떨어진다
+Ability.balanceSlipRecovery,4,이만큼 맞추면 놓친 횟수가 하나 줄어든다
+Ability.balanceViewRoll,2,흔들림 끝에서 시점이 기우는 각도(도). 흔들림이 늘 끝까지 가서 크게 하면 멀미가 난다
+Ability.balanceFallSpeed,4,떨어질 때 옆으로 튕겨 나가는 속도(m/s)
+Ability.balanceFallTime,0.3,옆으로 튕겨 나가는 시간(초). 그 뒤는 일반 낙하
+Ability.balanceRegrabDelay,1,떨어진 뒤 다시 평균대 걷기가 시작되기까지(초)
 # 능력: 착지 단계·구르기·낙하 피해 (MovementLanding. 디버그 HUD의 Last landing),,
 Ability.hardLandingSpeed,12,이보다 세게 발로 착지하면 세게 착지(Beatrun): 쌓인 속도가 출발 속도로 깎이고 잠깐 느려지며 질주 금지(m/s). 12m/s는 약 3m 낙하
 Ability.hardLandingRecoverTime,1,세게 착지한 뒤 원래 이동 속도로 돌아오기까지(초)
@@ -285,7 +340,7 @@ Body.ledgeShimmyLeft,mx_ledge_shimmy_left,난간에서 왼쪽으로 이동
 Body.ledgeShimmyRight,mx_ledge_shimmy_right,난간에서 오른쪽으로 이동
 Body.wallClimbStart,wallrunverticalstart,벽 오르기 시작 (그다음 Body.wallClimb)
 Body.wallKickRight,jumpwrright,벽 차기 - 몸이 왼쪽으로 튈 때. 오른쪽으로 튀면 Body.wallKick
-Body.armedClips,false,총 든 동작 사용. 손 IK가 생기기 전까지는 팔이 꼬여서 끔(5단계에서 켬)
+Body.armedClips,false,총 든 동작 사용. 손 IK가 총을 잡으므로 켜 볼 수 있지만 아직 확인하지 않아 끔
 Body.rifleSuffix,_ar2,소총을 들었을 때 붙는 클립 이름 끝. 그 클립이 있으면 총 든 동작으로 (meslideloop → meslideloop_ar2)
 Body.pistolSuffix,_pistol,권총을 들었을 때 붙는 클립 이름 끝
 Body.jumpStillSpeed,1,이보다 느리게 뛰면 제자리 점프(m/s)
@@ -320,7 +375,23 @@ Body.headNearClip,0.05,내 머리카락 보기를 켰을 때 카메라에서 이
 Body.slideTurnLimit,75,슬라이딩 시선의 좌우 제한 각도(도). 하체는 이동 방향에 고정하고 상체만 시선을 따른다
 Body.slidePitchLimits,40;55,슬라이딩 시선의 위;아래 제한 각도(도). 상체와 카메라가 같은 범위를 쓴다
 Body.heavyLandingTurnLimit,90,크게 착지해 쓰러져 있는 동안 몸이 향한 쪽에서 좌우로 돌아볼 수 있는 각도(도). 더 돌면 카메라가 자기 머리를 뚫어 본다
-Body.vaultChainTime,1.5,넘기를 이 시간(초) 안에 다시 하면 다른 넘기 동작을 쓴다. 같은 동작이 연달아 나오면 처음 프레임으로 튀어서
+Body.fixtureTurnLimit,90,사다리·집라인·평균대에서 몸이 향한 쪽에서 좌우로 돌아볼 수 있는 각도(도)
+Body.ladderEnter,ladderenterbottom,땅에서 사다리에 오르기
+Body.ladderCatch,ladderclimbhangstart,공중에서 사다리 잡기
+Body.ladderLeft,ladderclimbuplefthand,왼손을 올리며 한 칸
+Body.ladderRight,ladderclimbuprighthand,오른손을 올리며 한 칸
+Body.ladderStillLeft,ladderclimbuplefthandstill,왼손이 위인 채로 멈춤
+Body.ladderStillRight,ladderclimbuprighthandstill,오른손이 위인 채로 멈춤
+Body.ladderDown,ladderclimbdownfast,사다리 미끄러져 내려오기
+Body.ladderExitLeft,ladderexittoplefthand,꼭대기로 넘어가기 - 왼손이 마지막으로 올라갔을 때
+Body.ladderExitRight,ladderexittoprighthand,꼭대기로 넘어가기 - 오른손이 마지막으로 올라갔을 때
+Body.ziplineStart,ziplinestart,집라인 잡기
+Body.zipline,zipline,집라인 타기
+Body.balanceWalk,walkbalancefwd,평균대 걷기
+Body.balanceStill,walkbalancestill,평균대에 서 있기
+Body.balanceFallLeft,walkbalancefalloffleft,평균대에서 왼쪽으로 떨어지기
+Body.balanceFallRight,walkbalancefalloffright,평균대에서 오른쪽으로 떨어지기
+Body.balanceLean,3,떨어지기 직전 몸 전체가 기우는 각도(도). 카메라가 눈을 따라가서 1도마다 시점이 옆으로 약 3cm 움직인다. 크게 하면 멀미가 난다Body.vaultChainTime,1.5,넘기를 이 시간(초) 안에 다시 하면 다른 넘기 동작을 쓴다. 같은 동작이 연달아 나오면 처음 프레임으로 튀어서
 Body.maxHipDrop,0.3,발이 낮은 땅(내려가는 계단·경사)에 닿도록 골반을 내리는 최대 거리(m). 눈과 카메라도 같이 내려간다
 Body.footReach,0.5,발마다 캡슐 바닥 위아래로 땅을 찾는 거리(m)
 Body.footSettleTime,0.08,골반과 발이 낮아진 땅으로 내려가 맞춰지는 시간(초). 높아진 땅에는 바로 올라선다
@@ -348,6 +419,9 @@ Punch.landPunch,3;1.5,착지 펀치: 끄덕(도);기울기(도). landingPerSpeed
 Punch.landingPerSpeed,0.09,낙하 속도 1m/s당 착지 펀치 배율. 1.3m 점프 착지는 약 8m/s
 Punch.landMinSpeed,1.5,이보다 살살 닿으면 착지 펀치 없음(m/s)
 Punch.hardLandPunch,10;2;5,세게·크게 착지하면 착지 펀치에 더하는 펀치: 끄덕(도);오른쪽으로 돌기(도);기울기(도). Beatrun hardland 값
+Punch.ladderStepRoll,1.5,사다리 한 칸마다 시점이 기우는 각도(도). 올리는 손에 따라 좌우가 바뀐다
+Punch.ladderCatchPunch,15;5;-15,공중에서 사다리를 잡을 때 펀치: 끄덕(도);오른쪽으로 돌기(도);기울기(도). Beatrun 값
+Punch.ladderSlideStopNod,5,사다리를 미끄러져 내려오다 멈출 때 끄덕이는 각도(도)
 # 카메라: 큰 낙하 화면 (FallScreen 행 → PlayerFallScreen. 후처리 볼륨 Resources/Rendering/FallWarp),,
 FallScreen.lensDistortion,0.15,가장자리 렌즈 휨(최대). 양수는 볼록 음수는 오목
 FallScreen.chromaticAberration,0.3,가장자리 색 번짐(최대)
@@ -412,3 +486,17 @@ FallAudio.heartbeatInterval,0.5;0.3,심장 박동 간격(초): 처음;heartbeatF
 FallAudio.heartbeatFastSpeed,40,이만큼 빠르게 떨어지면 심장이 가장 빨리 뛴다(m/s)
 FallAudio.heartbeatVolume,0.3,첫 박동 크기
 FallAudio.heartbeatVolumeStep,0.05,박동마다 커지는 크기 (최대 1)
+FixtureAudio.ladderSlideVolume,0.8,사다리를 미끄러져 내려오는 긁는 소리 크기
+FixtureAudio.ziplineVolume,0.3,집라인 줄 소리 크기 (ziplineLoudSpeed일 때)
+FixtureAudio.ziplineLoudSpeed,12,줄 소리가 가장 커지는 속도(m/s)
+FixtureAudio.fadeTime,0.1,긁는 소리·줄 소리가 커지고 사라지는 시간(초)
+BalanceGauge.circleSize,76,평균대 노트 원 지름(1080p 기준 픽셀)
+BalanceGauge.gap,70,A 원과 D 원 사이 간격(1080p 기준 픽셀)
+BalanceGauge.approachScale,2.4,줄어드는 원이 시작하는 크기(노트 원의 몇 배)
+BalanceGauge.restOpacity,0.45,다음 차례가 아닌 원의 불투명도(다음 차례 원 대비)
+BalanceGauge.height,-150,노트 원 높이. 화면 가운데에서(1080p 기준 픽셀). 음수가 아래
+BalanceGauge.opacity,0.95,노트 불투명도
+BalanceGauge.fadeTime,0.12,노트가 나타나고 사라지는 시간(초)
+BalanceGauge.flashStrength,0.65,키 입력·판정 때 색이 반응하는 정도. 판정 원의 크기와 위치는 고정한다
+BalanceGauge.flashTime,0.12,키 입력·판정의 색 반응 지속 시간(초)
+BalanceGauge.judgementTime,0.5,PERFECT!·GOOD·MISS가 떠 있는 시간(초)

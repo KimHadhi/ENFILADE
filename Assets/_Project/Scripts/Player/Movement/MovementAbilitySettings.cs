@@ -72,6 +72,99 @@ public sealed class MovementAbilitySettings
     [Min(0f)] public float lacheForwardBoost = 2f;
     [Min(0f)] public float lacheUpBoost = 2f;
 
+    [Header("Ladder (MovementFixtures, LadderState)")]
+    [Tooltip("Farthest out from the rungs a ladder can be taken hold of (m).")]
+    [Min(0f)] public float ladderReach = .9f;
+    [Tooltip("How far beyond its rails a ladder can be taken hold of (m).")]
+    [Min(0f)] public float ladderSideReach = .2f;
+    [Tooltip("The view must be within this of facing the ladder (degrees).")]
+    [Range(1f, 90f)] public float ladderFacingAngle = 30f;
+    [Tooltip("Where the body stands on a ladder, out from the plane of its rungs (m).")]
+    [Min(0f)] public float ladderStandOff = .27f;
+    [Tooltip("Seconds stepping onto a ladder from the ground takes, before the first rung.")]
+    [Min(.01f)] public float ladderEnterTime = .5f;
+    [Tooltip("Seconds being pulled onto a ladder caught in the air takes; seconds before the first rung after one.")]
+    [Min(.01f)] public float ladderCatchTime = .2f, ladderCatchDelay = .75f;
+    [Tooltip("Height of one rung (m); seconds moving up it; seconds from one rung to the next.")]
+    [Min(.01f)] public float ladderRungHeight = .39f, ladderRungTime = .25f, ladderRungInterval = .35f;
+    [Tooltip("Speed of the slide down with S (m/s).")]
+    [Min(.1f)] public float ladderSlideSpeed = 8.5f;
+    [Tooltip("The feet stop this far below the top of the rails; from there the player climbs off (m).")]
+    [Min(0f)] public float ladderTopGap = 1.875f;
+    [Tooltip("Where the climb off the top looks for a floor: this far in from the body, down from this far above the feet (m).")]
+    [Min(0f)] public float ladderExitReach = .875f, ladderExitProbeHeight = 2.5f;
+    [Tooltip("Seconds the climb off the top takes.")]
+    [Min(.1f)] public float ladderExitDuration = 1.5f;
+    [Tooltip("Speed the player leaves a ladder with on letting go (m/s).")]
+    [Min(0f)] public float ladderDropSpeed = 2f;
+    [Tooltip("Seconds after letting go before a ladder can be taken hold of again.")]
+    [Min(0f)] public float ladderRegrabDelay = .4f;
+
+    [Header("Zipline (MovementFixtures, ZiplineState)")]
+    [Tooltip("The cable catches the player within this distance sideways (m).")]
+    [Min(0f)] public float ziplineReach = .8f;
+    [Tooltip("...and this far above their feet: lowest; highest (m).")]
+    public Vector2 ziplineReachHeight = new Vector2(1.44f, 3.6f);
+    [Tooltip("The feet hang this far below the cable (m).")]
+    [Min(0f)] public float ziplineHangLength = 1.875f;
+    [Tooltip("Seconds being pulled in under the cable takes.")]
+    [Min(.01f)] public float ziplineCatchTime = .2f;
+    [Tooltip("Top speed of the ride (m/s); how fast it builds (m/s²). The ride starts at the speed of the run-up.")]
+    [Min(0f)] public float ziplineMaxSpeed = 18.75f, ziplineAcceleration = 6.25f;
+    [Tooltip("Share of the ride's speed kept on letting go.")]
+    [Range(0f, 1f)] public float ziplineReleaseShare = .75f;
+    [Tooltip("Seconds after letting go before a cable catches the player again.")]
+    [Min(0f)] public float ziplineRegrabDelay = .75f;
+
+    [Header("Balance Beam (MovementFixtures, BalanceState)")]
+    [Tooltip("Slower than this, stepping onto a beam doesn't start the balance walk (m/s).")]
+    [Min(0f)] public float balanceMinSpeed = 1.2f;
+    [Tooltip("How quickly the speed coming onto the walk dies away (share of the speed per second). 10 stops 5 m/s in about .5 m.")]
+    [Min(.1f)] public float balanceEntryBraking = 10f;
+    [Tooltip("Arriving with Shift or at least this fast (m/s), the player keeps running along the beam with the notes on top. Slowing to half of it ends the run.")]
+    [Min(0f)] public float balanceRunSpeed = 6f;
+    [Tooltip("Running entry grace: estimated step interval times lead beats. Notes themselves follow actual foot contacts.")]
+    [Min(.1f)] public float balanceRunBeat = .28f, balanceRunLeadBeats = 1f;
+    [Tooltip("Running, a press within this of the note's moment is Perfect; within this is Good (s).")]
+    [Min(.01f)] public float balanceRunPerfectWindow = .035f, balanceRunGoodWindow = .08f;
+    [Tooltip("Running, the miss that reaches this number falls off.")]
+    [Min(1)] public int balanceRunSlipLimit = 2;
+    [Tooltip("Top speed crouching along a beam (m/s). Safe, so keep it slower than the rhythm walk.")]
+    [Min(.1f)] public float balanceCrouchSpeed = 1f;
+    [Tooltip("The balance walk starts within this far of the beam's middle sideways; and this far up or down (m).")]
+    [Min(0f)] public float balanceReach = .3f, balanceStepHeight = .25f;
+    [Tooltip("Starts this far in from the ends; hands back to walking this far from them (m). Keep the first larger. "
+        + "Nothing carries the player on after the beam, so the second is small enough to end on what lies beyond it.")]
+    [Min(0f)] public float balanceEnterMargin = .75f, balanceEndMargin = .05f;
+    [Tooltip("How fast turning round on a beam goes (degrees per second).")]
+    [Min(1f)] public float balanceTurnSpeed = 480f;
+    [Tooltip("How far the walk goes on each beat (m). With the beat it sets the walking speed; the walk clip suits about .8.")]
+    [Min(.05f)] public float balanceStepLength = .8f;
+    [Tooltip("Desired average footstep interval walking, at first; at its quickest. Actual foot contacts set the judgement times.")]
+    [Min(.1f)] public float balanceBeatTime = .6f, balanceQuickestBeat = .4f;
+    [Tooltip("How much each hit shortens the beat (s). A miss or turning round goes back to balanceBeatTime.")]
+    [Min(0f)] public float balanceTempoStep = .015f;
+    [Tooltip("Seconds for walking movement and animation to ease toward a changed tempo. A key press never snaps the pace.")]
+    [Min(.01f)] public float balanceTempoResponse = .2f;
+    [Tooltip("Entry grace in walking beats, after stepping on or turning round. Actual contacts after this grace become notes.")]
+    [Min(.5f)] public float balanceLeadBeats = 2f;
+    [Tooltip("A press within this of the note's moment is Perfect; within this is Good (s).")]
+    [Min(.01f)] public float balancePerfectWindow = .05f, balanceGoodWindow = .13f;
+    [Tooltip("Seconds of recent key presses to retain before a foot lands. An early attempt never blocks a later correct one.")]
+    [Min(.01f)] public float balanceHitRange = .25f;
+    [Tooltip("How many footsteps ahead a ring appears. 1.5 gives about .9 seconds walking and .4 seconds running. Actual contact still owns Perfect.")]
+    [Range(.5f, 2f)] public float balanceApproachBeats = 1.5f;
+    [Tooltip("Notes that may be missed: the miss that reaches this number falls off.")]
+    [Min(1)] public int balanceSlipLimit = 3;
+    [Tooltip("This many hits take one miss back.")]
+    [Min(1)] public int balanceSlipRecovery = 4;
+    [Tooltip("Scale of the small continuous foot-cycle view roll (degrees). Pressing a key never changes it.")]
+    [Min(0f)] public float balanceViewRoll = 2f;
+    [Tooltip("Speed off the side of the beam on falling (m/s); seconds it lasts before an ordinary fall.")]
+    [Min(0f)] public float balanceFallSpeed = 4f, balanceFallTime = .3f;
+    [Tooltip("Seconds after falling off before a beam can be walked again.")]
+    [Min(0f)] public float balanceRegrabDelay = 1f;
+
     [Header("Landing Tiers, Roll & Fall Damage (MovementLanding)")]
     [Tooltip("Landing on the feet faster than this is a hard landing (m/s, 12 is about 3 m): the run stops, the player "
         + "slows down and cannot sprint for a moment. Ctrl just before touchdown rolls instead.")]

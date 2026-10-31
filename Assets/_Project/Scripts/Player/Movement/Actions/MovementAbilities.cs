@@ -9,6 +9,7 @@ public sealed class MovementAbilities
     public MovementLean Lean { get; }
     public StepDodgeTrail StepTrail { get; }
     public ParkourTraversal Traversal { get; }
+    public MovementFixtures Fixtures { get; }
     public MovementLanding Landing { get; }
     public PlayerCombatActions Combat { get; }
     public SlideCombat Slide { get; }
@@ -26,6 +27,7 @@ public sealed class MovementAbilities
         Lean = new MovementLean(ctx);
         StepTrail = new StepDodgeTrail(ctx);
         Traversal = new ParkourTraversal(ctx);
+        Fixtures = new MovementFixtures(ctx);
         Landing = new MovementLanding(ctx);
         Combat = new PlayerCombatActions(ctx);
         Slide = new SlideCombat(ctx);
@@ -37,6 +39,7 @@ public sealed class MovementAbilities
         Dodge.Tick(dt);
         StepTrail.Tick();
         Traversal.Tick(dt);
+        Fixtures.Tick(dt);
         Combat.Tick(dt);
         Slide.Tick(dt);
         Landing.Tick(dt);
@@ -62,6 +65,8 @@ public sealed class MovementAbilities
             StepTrail.Begin();
             return InputConsumed = true;
         }
+        if (Fixtures.TryStart())
+            return InputConsumed = true;
         if (IsOrdinaryAirborne && Traversal.TryStartAirAction())
             return InputConsumed = true;
         // Running, V is the dash push with a gun or fists. Otherwise the fists own V (shove, guard break), and with a
@@ -88,7 +93,7 @@ public sealed class MovementAbilities
     }
     internal void Reset()
     {
-        Dodge.Reset(); StepTrail.Clear(); Lean.Reset(); Traversal.Reset(); Landing.Reset(); Combat.Reset(); Slide.Reset();
+        Dodge.Reset(); StepTrail.Clear(); Lean.Reset(); Traversal.Reset(); Fixtures.Reset(); Landing.Reset(); Combat.Reset(); Slide.Reset();
         InputConsumed = false;
     }
 }

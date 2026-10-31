@@ -1,6 +1,6 @@
 # 이동·회피·파쿠르 안내
 
-[프로젝트 안내](../../../README.md) · [전투 안내](CombatFoundationGuide.md) · [이동 코드 구조](../Scripts/Player/Movement/README.md)
+[프로젝트 안내](../../../README.md) · [전투 안내](CombatFoundationGuide.md) · [플레이어 몸](PlayerBodyGuide.md) · [이동 코드 구조](../Scripts/Player/Movement/README.md)
 
 현재 조작은 [Player.inputactions](../Input/Player.inputactions)를 기준으로 합니다. 아래 수치는 [Player.csv](../Resources/Tables/Player.csv)의 기본값이며, 표를 고치면 바로 바뀝니다. 기능을 시험할 때는 [CombatFoundation](../Scenes/Development/CombatFoundation.unity) 또는 [MovementAbilityPlayground](../Scenes/Development/MovementAbilityPlayground.unity)를 사용합니다.
 
@@ -9,8 +9,8 @@
 | 입력 | 동작 |
 | --- | --- |
 | WASD / 마우스 | 이동 / 시점 조작 |
-| Shift + 전진 | 달리기 |
-| Space | 점프. 통과할 장애물이 있으면 Vault/Mantle 우선 |
+| 전진 / Shift + 전진 | W만 눌러도 속도가 쌓여 달리기가 된다. Shift는 곧바로 질주 속도로 올린다 |
+| Space | 점프. 이동 중 앞에 넘을 수 있는 장애물이 있으면 Vault 우선 |
 | Ctrl 유지 | 앉기. 공중에서는 몸을 접어 캡슐 높이 축소. Esc 설정에서 "눌러서 전환"으로 바꿀 수 있다(Q/E 기울이기도 같음) |
 | 서서 이동 중 Z | 입력 방향으로 다이브. 뒤 입력은 누운 다이브 |
 | 제자리 Z / 앉은 상태에서 Z | 포복 |
@@ -21,11 +21,12 @@
 | 슬라이딩 중 Alt | 가속과 저스트 슬라이드 판정 시작 |
 | 지상에서 Alt + 방향 | 스텝 회피. 방향 입력이 없으면 뒤로 회피 |
 | 지상에서 Q / E | 좌우 기울이기와 짧은 마이크로 회피 |
-| 위험한 착지 직전 Ctrl 새로 누르기 | 조건을 만족하면 낙하 구르기 |
+| 달리는 중 V | 돌진 밀치기. 처음 만난 적을 날려 넘어뜨린다 |
+| 세게 착지하기 전 0.5초 안에 Ctrl | 구르기. 피해와 감속 없이 속도를 이어 간다 |
 
 Alt는 좌우 Alt 모두 연결되어 있습니다. F 상호작용과 V 전투 동작은 [전투 안내](CombatFoundationGuide.md)에서 다룹니다.
 
-걷기·달리기는 기본 5.2 / 8.4m/s, 앉기는 3m/s, 포복·누운 이동은 1.6m/s입니다. 점프 높이는 1.3m이며, 발판을 벗어난 직후 0.1초와 착지 직전 입력 0.15초를 보정합니다.
+달리기는 3.8m/s에서 출발해 속도가 쌓입니다. W만 누르면 1초에 5.2m/s, 3.5초에 8.4m/s가 되고, Shift는 곧바로 8.4m/s가 됩니다. 최고는 9.5m/s입니다(자세한 규칙은 [속도 쌓기](#속도-쌓기)). 앉기는 3m/s, 포복·누운 이동은 1.6m/s입니다. 점프 높이는 1.3m이며, 발판을 벗어난 직후 0.1초와 착지 직전 입력 0.15초를 보정합니다.
 
 낮은 고정 천장 앞에서 앉아 이동하면, 포복 캡슐과 진입 경로가 비어 있을 때 자동으로 엎드립니다. 몸 전체가 통로를 빠져나오기 전에는 일어서지 않습니다. 정지한 누운 자세에서는 A/D와 S로 이동하고, W로 기상을 시도합니다. 누운 슬라이딩 중 W는 기상 입력으로 사용하지 않습니다.
 
@@ -33,7 +34,7 @@ Alt는 좌우 Alt 모두 연결되어 있습니다. F 상호작용과 V 전투 �
 
 ### 진입·조향·종료
 
-달리기와 전진을 유지한 채 Ctrl을 새로 누릅니다. 실제 이동 속도가 기본 5.3m/s 이상이어야 하므로, 벽에 막힌 채 달리기 키만 누르면 시작하지 않습니다.
+전진을 유지한 채 달리다가 Ctrl을 새로 누릅니다. 실제 이동 속도가 기본 5.3m/s(`Move.slideMinStartSpeed`) 이상이면 시작하므로 Shift는 없어도 되고, 벽에 막힌 채 달리기 키만 누르면 시작하지 않습니다.
 
 A/D로 제한적으로 조향할 수 있습니다. 반대 방향을 입력하거나 Ctrl을 놓았다가 다시 누르면 제동합니다. 내리막은 가속하고 오르막은 감속하며, 기본 최대 슬라이딩 경사는 65도입니다. 감속 후에는 입력과 머리 공간에 맞춰 서기·앉기·포복으로 전환합니다.
 
@@ -70,23 +71,23 @@ A/D로 제한적으로 조향할 수 있습니다. 반대 방향을 입력하거
 
 기본 수평 발사 속도는 9m/s입니다. 시작 0.25초 동안 속도를 유지한 뒤 부드럽게 감속하며, 착지하면 남은 운동량으로 머리부터·누운 슬라이딩에 연결됩니다. 착지 직후 0.55초 동안 새 다이브를 제한합니다. 다이브 자체에는 회피 무적이나 성공 보상이 없으며, 실제 몸의 이동·높이 변화로 공격을 피합니다.
 
-상승과 엎드리는 느낌을 조절할 때는 PlayerMovement의 다음 항목부터 확인합니다.
+상승과 엎드리는 느낌을 조절할 때는 `Player.csv`의 다음 `Move` 행부터 확인합니다.
 
-| 항목 | 조절하는 내용 |
+| 행 | 조절하는 내용 |
 | --- | --- |
-| Ground Dive Launch Speed / Vertical Pop | 수평 추진과 실제 상승력 |
-| Dive Pose Delay / Duration | 몸과 눈높이가 낮아지기 시작하는 시점 / 걸리는 시간 |
-| Dive Speed Hold Duration / Burst Duration / Burst Braking | 추진 유지 시간과 이후 감속 |
-| Dive Landing Recovery | 착지 후 재발동 대기 |
-| Dive Slide Friction / Supine Slide Friction | 착지 뒤 미끄러짐의 감속 |
+| `groundDiveLaunchSpeed` / `groundDiveVerticalPop` | 수평 추진과 실제 상승력 |
+| `divePoseDelay` / `divePoseDuration` | 몸과 눈높이가 낮아지기 시작하는 시점 / 걸리는 시간 |
+| `diveSpeedHoldDuration` / `diveBurstDuration` / `diveBurstBraking` | 추진 유지 시간과 이후 감속 |
+| `diveLandingRecovery` | 착지 후 재발동 대기 |
+| `diveSlideFriction` / `supineSlideFriction` | 착지 뒤 미끄러짐의 감속 |
 
-시점의 상승 느낌만 바꾸려면 Pose 값을 먼저 조정합니다. Vertical Pop은 체공 시간과 이동거리까지 바꿉니다. 충분한 속도로 `IBreakable` 문에 부딪힌 슬라이딩·다이브는 문을 부수고 일부 속력을 유지할 수 있습니다.
+시점의 상승 느낌만 바꾸려면 `divePose*` 값을 먼저 조정합니다. `groundDiveVerticalPop`은 체공 시간과 이동거리까지 바꿉니다. 충분한 속도로 `IBreakable` 문에 부딪힌 슬라이딩·다이브는 문을 부수고 일부 속력을 유지할 수 있습니다.
 
 ## 스텝 회피와 기울이기
 
 일반 회피는 지상 서기·앉기에서 시작합니다. 슬라이딩의 Alt는 앞에서 설명한 저스트 슬라이드 가속으로 처리합니다.
 
-| 기능 | 코드 기본값과 규칙 |
+| 기능 | 기본값과 규칙 |
 | --- | --- |
 | Alt 스텝 | 2.6m / 0.14초 이동. 공격 회피 판정은 처음 0.18초 |
 | Q/E 마이크로 회피 | 입력 직후 0.08초 판정. 키 유지로 기울인 자세 유지 가능 |
@@ -106,8 +107,9 @@ Q/E 입력만으로 플레이어 몸이 옆으로 이동하지는 않습니다. 
 
 | 상황 | 조작과 결과 |
 | --- | --- |
-| 지상의 낮은 장애물 | 이동 + Space로 Vault/Mantle. 경로가 막히면 일반 점프 |
-| 공중의 장애물 | W로 접근하면 낮은 장애물 통과를 시도. 떨어지며 렛지에 접근하면 자동 잡기 |
+| 지상의 낮은 장애물 | 이동 + Space로 Vault. 넘을 수 없거나 경로가 막히면 일반 점프 |
+| 공중의 장애물 | W로 접근하면 낮은 장애물 넘기를 시도. 떨어지며 렛지에 접근하면 자동 잡기 |
+| 높은 곳에 올라서기 | 점프해서 렛지를 잡은 뒤 올라간다. 땅에서 바로 올라서는 Mantle은 기본으로 꺼져 있다(`Ability.mantleFromGround`) |
 | 렛지를 잡고 대기 | 벽을 본 상태에서 W를 놓았다가 다시 누르거나 Space로 올라가기 |
 | 렛지 좌우 이동 | 벽을 향해 A/D. 가장자리 끝이나 막힌 옆 공간에서는 정지 |
 | 렛지에서 방향 점프 | 벽 정면에서 기본 42도 넘게 시선을 돌린 뒤 Space |
@@ -119,19 +121,139 @@ Q/E 입력만으로 플레이어 몸이 옆으로 이동하지는 않습니다. 
 | 봉에서 도약 | 방향 입력 + Space로 스윙 운동량을 이어서 도약 |
 | 봉 위에 올라가기 | 방향 입력 없이 Space. 지지 콜라이더와 위쪽 공간 필요 |
 | 봉에서 내려오기 | Ctrl로 도약 보너스 없이 손 놓기 |
-| 위험한 착지 | 착지 전 0.22초 이내 Ctrl 새 입력과 구를 공간이 있으면 구르며 해당 낙하 피해 취소 |
+| 사다리 잡기 | 사다리를 정면(30도 안)으로 보고 W로 다가가기. 공중에서도 W를 누르고 있으면 잡는다. 총·주먹은 잠시 놓는다 |
+| 사다리 타기 | W로 한 칸씩 오르고 S로 빠르게 미끄러져 내려오기. 땅에 닿으면 저절로 내려선다. Ctrl로 손 놓기 |
+| 사다리 꼭대기 | 끝까지 오르면 디딜 바닥이 있을 때 저절로 넘어간다 |
+| 집라인 | 공중에서 줄이 손에 닿으면 저절로 잡는다(발 위 1.44~3.6m, 옆으로 0.8m). 도움닫기 속도로 출발해 기울기와 상관없이 18.75m/s까지 빨라진다. Ctrl이나 줄 끝에서 손을 놓으면 속도의 75%를 안고 날아간다 |
+| 평균대 | 빔을 따라 올라서면 걷기 박자가 시작된다. 실제 발이 닿을 때 왼발은 A, 오른발은 D. 자세한 내용은 [평균대](#평균대) |
+| 세게 착지 | 착지 전 `Ability.rollInputWindow`(0.5초) 안에 Ctrl을 누르고 구를 공간이 있으면 구른다. 낙하 피해와 감속이 없다 |
 
 Ctrl을 유지한 공중 이동은 자동 파쿠르 진입을 막습니다. 벽 오르기에 이미 진입한 뒤에는 W/Space를 놓거나 시선을 돌려도 즉시 취소되지 않습니다. 기본 벽 사용 시간은 공중에서 합계 1.8초이며, 다른 벽에 붙어도 새로 충전되지 않습니다. 정상 접지에서 회복합니다. 벽이 사라지거나 접촉·시간이 끝나면 이탈하고, 렛지에 도달하면 매달린 채 기다립니다. 벽을 옆으로 달리는 월 런은 구현되어 있지 않습니다.
 
-낙하 피해는 기본적으로 충돌 직전 하강 속도 16m/s와 낙하 거리 4m를 모두 넘었을 때 발생합니다. 일반 회피 무적으로는 막지 못합니다. 다이브·포복·파쿠르 중이거나 기립·진행 공간이 부족하면 착지 구르기를 시작할 수 없습니다.
+낙하 피해와 착지 뒤의 동작은 [착지 단계](#착지-단계)에서 다룹니다. 낙하 피해는 일반 회피 무적으로는 막지 못합니다. 구르기는 발로 착지할 때만 됩니다. 다이브·포복·파쿠르 중이거나 기립·진행 공간이 부족하면 시작할 수 없습니다.
+
+## 이동 감각
+
+Beatrun의 손맛을 옮긴 부분입니다. 수치는 모두 [Player.csv](../Resources/Tables/Player.csv)에 있고 Play 중에도 바로 반영됩니다.
+
+### 속도 쌓기
+
+[MovementMomentum](../Scripts/Player/Movement/Actions/MovementMomentum.cs)이 맡고 수치는 `Move` 행입니다. 디버그 HUD의 `run`이 지금 쌓인 속도입니다.
+
+| 입력 | 속도 변화 |
+| --- | --- |
+| W만 | `runStartSpeed` 3.8m/s에서 출발. `walkBuildTime` 1초에 걷기 속도 5.2, `sprintBuildTime` 3.5초에 질주 속도 8.4, 그 뒤 `topBuildTime` 2초에 걸쳐 `topSpeed` 9.5 |
+| Shift + W | 0.1초 만에 8.4. 거기서부터 9.5까지 쌓인다 |
+| 옆·뒤 | 걷기 속도까지만 |
+
+쌓인 속도는 다음 경우에 줄어듭니다.
+
+- 앞으로 달리기를 멈추면 `momentumFalloff`로 빠집니다.
+- 시선을 `turnCutRate`보다 빠르게 돌리면 돈 각도만큼(`turnCutPerDegree`) 깎입니다.
+- 벽에 막히면 실제 속도로 깎입니다.
+- 발로 세게·크게 착지하거나, 적에 부딪혀 돌진 밀치기가 멈추면 출발 속도로 깎입니다.
+
+공중에서는 유지됩니다. 슬라이드·구르기·넘기 등에서 서기로 돌아오면 그때 실제로 움직이던 속도에서 이어 갑니다. 회피와 빗나간 돌진 밀치기는 하던 달리기를 그대로 둡니다.
+
+### 계단·경사 내려가기
+
+[MovementMotor](../Scripts/Player/Movement/Core/MovementMotor.cs)는 땅에 있던 캡슐이 이동 후 발밑을 잃으면, 캡슐 스텝 높이(0.3m)+0.05m 안의 걸을 수 있는 땅으로 바로 내려붙입니다. 빠르게 계단을 내려가도 칸마다 공중에 떴다 착지하지 않으므로 착지 소리와 펀치가 칸마다 나지 않습니다. 그보다 높은 턱은 그대로 떨어집니다.
+
+### 착지 단계
+
+[MovementLanding](../Scripts/Player/Movement/Actions/MovementLanding.cs)이 단계를 정하고 수치는 `Ability` 행입니다. 디버그 HUD의 `Last landing`에 마지막 착지의 단계·속도·높이가 나옵니다. 중력 24에서 12m/s는 약 3m, 16m/s는 약 5.3m, 26m/s는 약 14m 낙하입니다.
+
+| 단계 | 조건 | 결과 |
+| --- | --- | --- |
+| 가볍게 | `hardLandingSpeed` 12m/s 미만 | 몸·소리·펀치만 낙하 속도에 맞춰진다 |
+| 세게 (Beatrun) | 12m/s 이상으로 발로 착지 | 쌓인 속도가 출발 속도로 깎이고, 이동 속도가 `hardLandingMoveScale`(0.1)배에서 `hardLandingRecoverTime`(1초)에 걸쳐 돌아온다. `hardLandingNoSprintTime`(0.5초) 동안 달려서 속도를 쌓지 못한다. 점프·회피는 된다. 소리는 `LandHard` |
+| 크게 (Dynamic Landing) | `safeFallSpeed` 16m/s 초과 + `safeFallDistance` 4m 초과 | 넘은 1m/s당 `fallDamagePerSpeed`의 낙하 피해 뒤 `HeavyLanding` 상태로 쓰러졌다 일어난다. 그동안 시선만 돌고 이동·점프·공격·조준은 안 된다. 미끄러지던 속도는 `heavyLandingBraking`으로 금방 멈춘다. 소리는 `LandHeavy`, 일어날 때 `GetUp`(`MovementAudio.getUpShare`) |
+
+크게 착지할 때의 자세는 움직임으로 정해집니다.
+
+| 자세 | 조건 | 시간 |
+| --- | --- | --- |
+| 등으로 | 시선 반대쪽으로 `backLandingMinSpeed`(0.4m/s) 넘게 움직이는 중 | `backLandingTime` 2.8초 |
+| 엎어짐 | `faceDownLandingSpeed`(26m/s)보다 빠름 | `faceDownLandingTime` 1.5초 |
+| 손과 무릎 | 그 밖의 경우 | `heavyLandingTime` 1.6초 |
+
+- **착지 슬라이드**: Ctrl을 누른 채 빠르게 착지해 슬라이드가 되면 세게 착지의 감속이 없습니다.
+- **구르기**: 세게·크게 착지하기 전 `rollInputWindow`(0.5초) 안에 Ctrl을 누르면 구릅니다. 피해·감속 없이 속도를 그대로 가져갑니다. 앞이 막혔거나 천장이 낮으면 구르지 못합니다.
+- **넉백 훅**: `PlayerMovement.KnockBack(velocity)`는 큰 적의 일격용이며 위쪽 성분을 넣어 씁니다. 날아가는 동안 조작이 안 되고, 착지하면 다치지 않았어도 맞은 쪽을 보고 등으로 쓰러졌다 일어납니다. 낙하 피해는 평소 규칙대로만 받습니다. 땅에서 위로 띄우지 않는 넉백은 그 자리에서 쓰러집니다.
+
+### 시점 펀치
+
+[PlayerMovementPunch](../Scripts/Player/Camera/PlayerMovementPunch.cs)가 맡고 수치는 `Punch` 행입니다. Source 엔진의 펀치 스프링(65·9·20)에 Beatrun 값을 그대로 옮겼습니다.
+
+- 발이 땅에 닿을 때마다(`PlayerFootsteps.Stepped`) 살짝 끄덕이고 디딘 발 쪽으로 기울어서 좌우가 번갈아 바뀝니다. 빠를수록 덜 기울고, 속도가 쌓이는 중에는 더 세며, 총을 들면 줄어듭니다.
+- 앞으로 달리며 점프하면 시점이 들리고, 착지하면 낙하 속도에 비례해 끄덕임:기울기 2:1로 숙여집니다.
+- 세게·크게 착지하면 Beatrun hardland 펀치(`hardLandPunch` 10;2;5)가 더해집니다.
+- 웅크린 걸음과 구르기 착지는 펀치가 없습니다. 구르기는 자기 연출이 있습니다.
+
+Esc 메뉴 **화면 흔들림**이 곱해집니다.
+
+### 바람
+
+[PlayerWindAudio](../Scripts/Player/Audio/PlayerWindAudio.cs)가 맡고 수치는 `Wind` 행입니다. `Movement/Wind/Run`·`Wind/Cloth`가 이동 속도(떨어지는 속도 포함)에 따라 커집니다. 최고 달리기 속도에서는 작게, 큰 낙하에서는 크게 들립니다.
+
+### 큰 낙하
+
+낙하 꼭대기부터 아래 땅까지 `Ability.bigFallHeight`(8.5m)를 넘고 `bigFallMinSpeed`(9m/s)보다 빠르게 떨어지면 큰 낙하입니다. 땅이 멀면 떨어지기 시작하자마자 들어가고, 틈을 건너뛰는 점프는 해당되지 않습니다. 착지·난간 잡기·다이브에서 끝납니다. 마우스 조작은 막지 않습니다.
+
+- **소리**([PlayerFallAudio](../Scripts/Player/Audio/PlayerFallAudio.cs), `FallAudio` 행): 지지직 바람(`Fall/Static`)이 반복되고, 0.5초 뒤부터 심장이 뜁니다. 박동마다 조금씩 커지고 빨리 떨어질수록 빨라집니다. 박동 한 번은 [SoundCues.csv](../Resources/Tables/SoundCues.csv)의 `FallHeartbeat`입니다.
+- **화면**([PlayerFallScreen](../Scripts/Player/Camera/PlayerFallScreen.cs), `FallScreen` 행): 가장자리만 렌즈처럼 휘고(숨 쉬듯 줄었다 늘었다), 색이 번지고, 어두워집니다. 가운데는 그대로입니다. `rampTime`(2초)에 걸쳐 들어오고 착지하면 `clearTime`에 사라집니다.
+- **몸**: `Body.fallFlail`로 허우적거립니다. 큰 낙하 중 Ctrl은 착지 구르기만 준비합니다.
+
+## 사다리·집라인·평균대
+
+Beatrun의 `br_ladder`·`br_zipline`·`br_balance`를 옮긴 월드 오브젝트입니다. 조작은 위 [파쿠르와 낙하](#파쿠르와-낙하) 표에 있습니다. 수치는 `Player.csv`의 `Ability.ladder*`·`Ability.zipline*`·`Ability.balance*` 행, 클립은 `Body` 행, 소리는 `FixtureAudio` 행과 [SoundCues.csv](../Resources/Tables/SoundCues.csv)의 `Ladder*`·`Zipline*`·`Balance*` 큐입니다. 시험장은 [MovementAbilityPlayground](../Scenes/Development/MovementAbilityPlayground.unity)의 `Ladder`(`Roll drop platform` 앞면), `Zipline`(그 플랫폼 위에서 점프), `Balance beam`입니다.
+
+사다리·집라인과 평균대 걷기는 파쿠르 상태라 그동안 총과 주먹을 쓸 수 없습니다. 평균대를 달릴 때만 일반 달리기 상태이므로 총을 쓸 수 있습니다.
+
+### 씬에 넣기
+
+| 넣을 것 | 방법 |
+| --- | --- |
+| 사다리 | 빈 오브젝트에 [Ladder](../Scripts/World/Ladder.cs)를 붙여 사다리 발치, 가로대 면에 놓는다. 로컬 Z는 오르는 사람 쪽(벽 바깥)이다. `height`는 지붕보다 조금 더 높게 둔다(발은 꼭대기 1.875m 아래까지 오르고 거기서 지붕으로 넘어간다). 가로대 면을 벽에서 0.15m쯤 띄운다. 콜라이더는 없어도 된다 |
+| 집라인 | 빈 오브젝트에 [Zipline](../Scripts/World/Zipline.cs)을 붙여 줄 시작점에 놓고 `end`에 끝점을 적는다. 발이 줄 1.875m 아래에 매달리므로 끝점은 땅에서 그보다 높게 둔다. 놓을 때 빠른 속도로 날아가니 끝점 앞에 공간을 둔다. 양방향은 `twoWay` |
+| 평균대 | 길게 늘인 큐브(BoxCollider 포함)에 [BalanceBeam](../Scripts/World/BalanceBeam.cs)을 붙인다. 로컬 Z가 길이 방향이고 BoxCollider 윗면 가운데를 걷는다. 끝에서 0.75m 들어온 곳부터 시작하고, 끝까지 걸어가 내려선다 |
+
+사다리와 집라인은 자식에 렌더러가 없으면 Play 때 `barMaterial`로 막대를 그립니다([FixtureBars](../Scripts/World/FixtureBars.cs)). 모델을 자식으로 넣으면 막대는 생기지 않습니다. 씬 뷰에서는 기즈모(사다리 노랑, 줄 하늘색, 평균대 초록)로 보입니다.
+
+### 평균대
+
+건너는 방법은 세 가지입니다. 빠를수록 판정이 엄격합니다.
+
+| 방법 | 들어가는 법 | 속도 | 판정 |
+| --- | --- | --- | --- |
+| 앉아서 | 앉은 채 빔 위로 이동 | `balanceCrouchSpeed` 1m/s | 없음 |
+| 걷기 | 1.2m/s 이상으로 빔을 따라 올라선다. W 없이 저절로 걷는다 | 약 1.3m/s에서 맞출수록 2m/s까지 | PERFECT ±0.05초, GOOD ±0.13초. 세 번째 MISS에 떨어진다 |
+| 달리기 | W를 누른 채 Shift를 쓰거나 6m/s 이상으로 올라선다 | 하던 달리기 그대로 | PERFECT ±0.035초, GOOD ±0.08초. 두 번째 MISS에 떨어진다 |
+
+포복·슬라이딩·점프로 지나가면 판정이 없습니다.
+
+**키**: 실제 발이 빔에 닿는 순간 왼발은 A, 오른발은 D를 누릅니다. 아래를 내려다보며 발에 맞춰도 되고, 조준점 아래의 원을 봐도 됩니다. 걷기의 발소리도 그 순간 납니다.
+
+**원**: 왼쪽 파란 원이 A, 오른쪽 분홍 원이 D입니다. 링이 다음 발 디딤을 1.5박자 전부터 예고하며(걷기 약 0.9초, 달리기 약 0.4초) 줄어들다가, 실제로 발이 닿는 순간 원과 겹칩니다. 늦으면 원 안쪽으로 지나갑니다. 키를 누르면 해당 원의 색만 바로 반응하고, 원의 크기와 카메라는 판정 때문에 튀지 않습니다.
+
+**판정**: 조금 일찍 누른 입력도 접지 순간과 비교합니다. 왼발과 오른발 입력을 따로 받으므로, 너무 이르거나 반대 키를 눌러도 벌을 받지 않고 그 뒤의 정상 입력이 그대로 인정됩니다. 그 발의 판정 시간 안에 맞는 입력이 없을 때만 MISS입니다.
+
+**속도와 회복**: 걷기는 맞출수록 발동작과 이동이 빨라지고, MISS면 처음 속도로 돌아갑니다. 네 번 맞추면(`balanceSlipRecovery`) MISS가 하나 줄어듭니다. 남은 MISS는 원 아래 점으로 보입니다.
+
+**시작과 끝**: 올라선 직후나 뒤돈 직후에는 짧은 유예가 있고(걷기 2박자, 달리기 1박자), 충분히 예고되지 않은 첫 발은 판정하지 않습니다. 걷는 중 S는 뒤돌기, Ctrl은 옆으로 내려오기입니다. 달리는 중 A/D는 옆으로 움직이지 않습니다. W를 놓거나 3m/s(`balanceRunSpeed`의 절반) 아래로 느려지면 달리기가 끝나고, 계속 나아가면 걷기로 이어집니다.
+
+표시 수치는 `BalanceGauge` 행, 동작 구조는 [이동 코드 구조](../Scripts/Player/Movement/README.md#평균대-판정)에 있습니다.
 
 ## 설정을 바꿀 위치
 
 | 바꿀 내용 | 위치 |
 | --- | --- |
-| 이동 속도·점프·중력·슬라이딩·다이브 | [Player.csv](../Resources/Tables/Player.csv)의 `Move` 행. 저장하면 Play 중에도 바로 적용된다. 선언: [PlayerMovement.Configuration.cs](../Scripts/Player/Movement/PlayerMovement.Configuration.cs) |
+| 이동 속도·속도 쌓기·점프·중력·슬라이딩·다이브 | [Player.csv](../Resources/Tables/Player.csv)의 `Move` 행. 저장하면 Play 중에도 바로 적용된다. 선언: [PlayerMovement.Configuration.cs](../Scripts/Player/Movement/PlayerMovement.Configuration.cs) |
 | 캡슐 높이·눈높이·자세 전환 빠르기 | `Player.csv`의 `Posture` 행 |
-| 회피·기울이기·파쿠르·낙하·저스트 슬라이드·밀치기 | `Player.csv`의 `Ability` 행. 선언: [MovementAbilitySettings.cs](../Scripts/Player/Movement/MovementAbilitySettings.cs) |
+| 회피·기울이기·파쿠르·착지·저스트 슬라이드·밀치기·사다리·집라인·평균대 | `Player.csv`의 `Ability` 행. 선언: [MovementAbilitySettings.cs](../Scripts/Player/Movement/MovementAbilitySettings.cs) |
+| 시점 펀치 / 큰 낙하 화면 / 평균대 표시 | `Player.csv`의 `Punch` / `FallScreen` / `BalanceGauge` 행 |
+| 몸 애니메이션·손·발 | `Player.csv`의 `Body`·`Hands` 행, [플레이어 몸](PlayerBodyGuide.md) |
+| 이동 소리 | [소리 관리](MaintenanceGuide.md#이동목소리-소리-폴더가-곧-목록) |
 | 적 크기와 넘어짐 대상 | 적의 [MeleeCombatTarget](../Scripts/Combat/Damage/MeleeCombatTarget.cs) |
 | 키 배치 | [Player.inputactions](../Input/Player.inputactions)의 Player 맵 |
 | 카메라의 추가 흔들림·FOV·피치·롤 | [PlayerCameraEffects](../Scripts/Player/Camera/PlayerCameraEffects.cs) |

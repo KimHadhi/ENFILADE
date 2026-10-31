@@ -26,6 +26,9 @@ public sealed partial class PlayerBody
     private float legYaw;
     private int turning;
     private bool legsPlanted;
+    private Channel beamRunChannel;
+    private int beamRunEntry = -1;
+    private float beamRunRate, beamRunTime;
 
     private void AddLocomotionChannels()
     {
@@ -36,10 +39,20 @@ public sealed partial class PlayerBody
         AddChannel(turnLeft, 0f);
         AddChannel(turnRight, 0f);
         turning = 0;
+        beamRunChannel = null;
+        beamRunEntry = -1;
+        beamRunTime = beamRunRate = 0f;
     }
 
     private void Locomotion(bool crouched, float dt)
     {
+        if (!crouched && player.Abilities.Fixtures.Run.IsActive)
+        {
+            BeamRunPose(dt);
+            return;
+        }
+        beamRunChannel = null;
+        beamRunEntry = -1;
         Vector3 local = transform.InverseTransformDirection(player.ActualVelocity);
         local.y = 0f;
         float speed = local.magnitude;
@@ -79,6 +92,34 @@ public sealed partial class PlayerBody
         // Fast gameplay movement should lengthen the apparent stride, not turn the feet into a fast shuffle.
         float rate = Mathf.Clamp(speed / Mathf.Max(.1f, authored / weight), .65f, 1.1f);
         phase = Mathf.Repeat(phase + dt * rate / (length / weight), 1f);
+    }
+
+    // A beam fixes the body's travel direction. Changing the view or blending to a different gait must not move
+    // a footfall that its ring has already announced. Keep one forward channel until this beam run ends.
+    private void BeamRunPose(float dt)
+    {
+        var fixtures = player.Abilities.Fixtures;
+        float speed = HorizontalSpeed();
+        if (beamRunEntry != fixtures.Run.EntrySerial || beamRunChannel == null)
+        {
+            var running = Find(run);
+            var sprinting = Find(sprint);
+            bool useSprint = running == null || (sprinting != null && (sprinting.Weight > running.Weight
+                || (sprinting.Weight + running.Weight <= .001f && speed >= (runClipSpeed + sprintClipSpeed) * .5f)));
+            beamRunChannel = useSprint ? sprinting : running;
+            beamRunEntry = fixtures.Run.EntrySerial;
+            beamRunTime = 0f;
+            beamRunRate = beamRunChannel != null ? Mathf.Clamp(speed / Mathf.Max(.1f, beamRunChannel.AuthoredSpeed), .65f, 1.1f) : 1f;
+        }
+        targetYaw = Mathf.DeltaAngle(transform.eulerAngles.y, MovementFixtures.YawOf(fixtures.BalanceFacing));
+        legsPlanted = true;
+        turning = 0;
+        if (beamRunChannel == null) { Want(run); return; }
+        beamRunTime += dt;
+        beamRunChannel.Target = 1f;
+        float targetRate = Mathf.Clamp(speed / Mathf.Max(.1f, beamRunChannel.AuthoredSpeed), .65f, 1.1f);
+        beamRunRate = Mathf.Lerp(beamRunRate, targetRate, 1f - Mathf.Exp(-dt / Mathf.Max(.01f, blendTime)));
+        phase = Mathf.Repeat(phase + dt * beamRunRate / beamRunChannel.Length, 1f);
     }
 
     // Standing still, the legs keep their place while the view turns and step round once it has turned far enough

@@ -6,21 +6,26 @@
 
 | 변경할 내용 | 시작할 파일·설정 |
 | --- | --- |
-| **체력·무기·주먹·처형·적·웨이브 밸런스 숫자** | [Resources/Tables](../Resources/Tables)의 CSV 표 (컴파일 불필요, [사용법](../Docs/MaintenanceGuide.md#밸런스-표-data-tables)) |
+| **체력·무기·주먹·처형·적·웨이브·이동·몸·소리 숫자** | [Resources/Tables](../Resources/Tables)의 CSV 표 (컴파일 불필요, [사용법](../Docs/MaintenanceGuide.md#밸런스-표-data-tables)) |
 | 표 읽기·적용 방식 | [GameTables](Data/GameTables.cs), [CsvTable](Data/CsvTable.cs), [TableFieldWriter](Data/TableFieldWriter.cs) |
 | 걷기·달리기·점프·자세·슬라이드·다이브 수치 | [Player.csv](../Resources/Tables/Player.csv)의 `Move`·`Posture` 행, 필드 선언은 [Configuration](Player/Movement/PlayerMovement.Configuration.cs) |
-| 회피·파쿠르·낙하·저스트 슬라이드·밀치기 수치 | `Player.csv`의 `Ability` 행, 필드 선언은 [MovementAbilitySettings](Player/Movement/MovementAbilitySettings.cs) |
+| 회피·파쿠르·착지·저스트 슬라이드·밀치기·사다리·집라인·평균대 수치 | `Player.csv`의 `Ability` 행, 필드 선언은 [MovementAbilitySettings](Player/Movement/MovementAbilitySettings.cs) |
 | 이동 상태 전환·처리 순서 | [PlayerMovement](Player/Movement/PlayerMovement.cs), [이동 코드 구조](Player/Movement/README.md) |
 | 접지·경사·중력·실제 몸 이동 | [MovementMotor](Player/Movement/Core/MovementMotor.cs) |
 | 자세 높이·천장·환풍구·눈높이 | [MovementPostureController](Player/Movement/Core/MovementPostureController.cs) |
+| 달리며 쌓이는 속도 | [MovementMomentum](Player/Movement/Actions/MovementMomentum.cs) |
+| 착지 단계·구르기·큰 낙하·넉백 | [MovementLanding](Player/Movement/Actions/MovementLanding.cs), [HeavyLanding 상태](Player/Movement/States/) |
 | 스텝 회피·기울이기·적 통과 | [Dodge](Player/Movement/Dodge/), [MovementAbilities](Player/Movement/Actions/MovementAbilities.cs) |
-| Vault·맨틀·렛지·벽·봉 | [Parkour](Player/Movement/Parkour/) |
+| Vault·맨틀·렛지·벽·봉·사다리·집라인·평균대 | [Parkour](Player/Movement/Parkour/), [States/Parkour](Player/Movement/States/Parkour/) |
+| 씬에 놓는 사다리·집라인·평균대 | [Ladder](World/Ladder.cs), [Zipline](World/Zipline.cs), [BalanceBeam](World/BalanceBeam.cs), [사용 안내](../Docs/MovementGuide.md#사다리집라인평균대) |
 | 슬라이딩의 적 접촉·저스트 판정 | [SlideCombat](Player/Combat/SlideCombat.cs) |
 | 적의 넘어짐·레그돌·복구 | [EnemyKnockdownPresentation](Combat/Damage/EnemyKnockdownPresentation.cs) |
 | 밀치기·돌진 밀치기 | [PlayerCombatActions](Player/Combat/PlayerCombatActions.cs) |
 | 주먹·가드·패링·가드 브레이크 | [PlayerMeleeCombat](Player/Combat/PlayerMeleeCombat.cs) |
 | 완벽 방어·반격 / 처형 | [PlayerPerfectDefense](Player/Combat/PlayerPerfectDefense.cs), [PlayerExecution](Player/Combat/PlayerExecution.cs) |
-| 보이는 몸(진짜 1인칭)·상태별 애니메이션·F5 뒤에서 보기 | [PlayerBody](Player/Body/PlayerBody.cs), [PlayerBodyProfile](Player/Body/PlayerBodyProfile.cs), [사용 안내](../Docs/MaintenanceGuide.md#플레이어-몸-진짜-1인칭) |
+| 보이는 몸(진짜 1인칭)·상태별 애니메이션·F5 뒤에서 보기 | [PlayerBody](Player/Body/PlayerBody.cs), [PlayerBodyProfile](Player/Body/PlayerBodyProfile.cs), [사용 안내](../Docs/PlayerBodyGuide.md) |
+| 눈 시점·시선 따라 허리·머리 굽히기·카메라 벽 판정 | [PlayerBody.Look](Player/Body/PlayerBody.Look.cs), [PlayerBody.Clearance](Player/Body/PlayerBody.Clearance.cs), [CameraClearance](Player/Camera/CameraClearance.cs) |
+| 손으로 총·주먹·난간 잡기 / 발 IK·발목 제한 | [PlayerBodyHands](Player/Body/PlayerBodyHands.cs), [ArmIK](Player/Body/ArmIK.cs) / [PlayerBody.Feet](Player/Body/PlayerBody.Feet.cs), [AnkleLimit](Player/Body/AnkleLimit.cs) |
 | 플레이어 HP·실드·피격·사망 | [PlayerDamageReceiver](Player/Combat/PlayerDamageReceiver.cs) |
 | 플레이어 궁극기 최대 보유량·소비량 스탯 / 현재 충전량 | [PlayerStats](Player/PlayerStats.cs), [UltimateCharge](UI/HP/UltimateCharge.cs) (Play 시작 때 `PlayerMovement`가 붙임) |
 | 피격 방향 아크·혈흔·쉐이크·빈사 박동 | [PlayerDamageFeedback](Player/Combat/PlayerDamageFeedback.cs), [설정](../Resources/Combat/PlayerDamageFeedback.asset), [사용 안내](../Docs/PlayerDamageFeedbackGuide.md) |
@@ -33,12 +38,16 @@
 | 적 체력·추적·공격 / 웨이브 | [Enemies](Enemies/), [WaveManager](Combat/Waves/WaveManager.cs) |
 | 총성·피격·히트마커·처치 피드백 | [Combat/Feel](Combat/Feel/), [GunFeel.asset](../Resources/Combat/GunFeel.asset), 무기 데이터의 `Feel` |
 | 완벽 방어·흐트러짐·처형의 표시·사운드 | [Feedback.asset](../Resources/Combat/Feedback.asset) |
-| 시점 입력 / 이동 카메라 효과 | [PlayerLook](Player/Camera/PlayerLook.cs), [PlayerCameraEffects](Player/Camera/PlayerCameraEffects.cs) |
+| 시점 입력 / 이동 카메라 효과 / 시점 펀치 / 큰 낙하 화면 | [PlayerLook](Player/Camera/PlayerLook.cs), [PlayerCameraEffects](Player/Camera/PlayerCameraEffects.cs), [PlayerMovementPunch](Player/Camera/PlayerMovementPunch.cs), [PlayerFallScreen](Player/Camera/PlayerFallScreen.cs) |
 | 탄약·무기 슬롯·적 체력 UI | [AmmoHUD](UI/AmmoHUD.cs), [WeaponSlotsHUD](UI/WeaponSlotsHUD.cs), [EnemyVitalsHUD](UI/EnemyVitalsHUD.cs) |
+| 평균대 판정 원 | [BalanceGaugeHUD](UI/BalanceGaugeHUD.cs) |
 | 체력·궁극기 UI / 목표·웨이브 UI | [UI/HP](UI/HP/), [MissionHUD](UI/MissionHUD.cs), [WaveMissionSource](UI/WaveMissionSource.cs) |
 | 채팅·테스트 명령 | [UI/Chatting](UI/Chatting/) |
 | Esc 설정 메뉴·일시정지 / 저장되는 플레이어 설정 | [UI/Settings](UI/Settings/), [GamePause](Settings/GamePause.cs) / [GameSettings](Settings/GameSettings.cs) |
 | 소리 볼륨 채널(전투·이동·목소리·UI) | [GameAudio](Audio/GameAudio.cs) |
+| 발소리 / 동작 소리 / 숨·바람·큰 낙하·사다리류 소리 | [PlayerFootsteps](Player/Audio/PlayerFootsteps.cs), [PlayerMovementAudio](Player/Audio/PlayerMovementAudio.cs), [Player/Audio](Player/Audio/) |
+| 동작마다 나는 소리의 구성 / 소리 묶음·표면·재생 | [SoundCues.csv](../Resources/Tables/SoundCues.csv) / [SoundBank](Audio/SoundBank.cs), [Surfaces](Audio/Surfaces.cs), [SoundCues](Audio/SoundCues.cs), [CharacterSounds](Audio/CharacterSounds.cs), [사용 안내](../Docs/MaintenanceGuide.md#이동목소리-소리-폴더가-곧-목록) |
+| 적이 들을 소음 이벤트 | [Noise](World/Noise.cs) (아직 듣는 적은 없다) |
 
 ## 코드의 경계
 
@@ -46,20 +55,46 @@
 | --- | --- |
 | `Player/Movement` | 입력을 이동 의도로 해석하고 상태·자세·물리 이동을 실행 |
 | `Player/Combat` | 플레이어의 공격·방어·장비 선택과 행동 간 취소·잠금 |
-| `Player/Camera` | 시점 입력과 이동에 따른 카메라 효과 |
+| `Player/Camera` | 시점 입력과 이동에 따른 카메라 효과, 시점 펀치, 큰 낙하 화면, 카메라 벽 판정 |
+| `Player/Body` | 보이는 몸: 클립 재생, 눈 시점, 손·발 IK. 이동 상태를 읽어 표현한다 |
+| `Player/Audio` | 이동 이벤트와 발 접지를 듣고 소리를 낸다 |
 | `Combat/Damage`, `HitDetection`, `Weapons` | 플레이어·적이 공유하는 피해 규약, 접촉 판정, 무기 데이터·시간 규칙 |
 | `Combat/Feel` | 전투 결과에 대한 표시·소리와 적의 총격 피격 반응 |
 | `Enemies`, `Combat/Waves` | 적의 생명주기·AI와 웨이브 진행 |
 | `UI` | 게임 상태를 읽어 표시하고 UI 입력을 전달 |
-| `World` | 파괴 가능한 문, 스윙 바, 텔레포트, 물리 프랍([PhysicsProp](World/PhysicsProp.cs)) 등 월드 상호작용 |
+| `World` | 파괴 가능한 문, 스윙 바, 사다리, 집라인, 평균대, 텔레포트, 물리 프랍([PhysicsProp](World/PhysicsProp.cs)), 표면 종류, 소음 등 월드 상호작용 |
 | `Data` | 밸런스 CSV 표를 읽어 컴포넌트·에셋 필드에 적용하고, 편집기에서 표 저장 시 다시 적용 |
-| `Settings`, `Audio` | 사용자별로 저장되는 설정(`settings.json`)과 일시정지, 소리 볼륨 채널 |
+| `Settings` | 사용자별로 저장되는 설정(`settings.json`)과 일시정지 |
+| `Audio` | 소리 볼륨 채널, 소리 묶음·큐·표면, 캐릭터의 몸과 입에서 나는 소리 |
 | `Debug` | 연습 표적·공격기·테스트 명령·디버그 HUD |
-| `../Editor` | 편집기 전용 도구: 표 다시 읽기, 모델 임포트 규칙·물리 프랍, HUD 편집 미리보기, 폰트 저장 |
+| `../Editor` | 편집기 전용 도구: 표 다시 읽기, 모델 임포트 규칙·물리 프랍, 소리 묶음·몸 프로필 자동 생성, HUD 편집 미리보기, 폰트 저장 |
 
 이동의 진입점은 `PlayerMovement`다. 프레임마다 입력·상태·물리 서비스를 연결하고, 외부 기능에는 `CurrentState`, `Velocity`, `ResetVelocity()` 같은 API를 제공한다. 내부 상태 전환과 재컴파일 복구는 [이동 코드 구조](Player/Movement/README.md)를 참고한다.
 
 전투는 **입력 → 공격 규칙 → 접촉·피해 → 반응·표시** 순서로 읽으면 된다. 예를 들어 총은 `PlayerWeaponInput → WeaponController / WeaponRuntime → AttackTrace → IDamageReceiver`로 이어진다. 피해를 받은 대상의 처리에서 발생한 전투 이벤트는 `GunFeelDirector`가 표시·소리로 연결한다. 새 무기나 적을 추가하는 순서는 [전투 코드 구조](Combat/README.md)에 있다.
+
+## 플레이어에 붙는 것과 실행 순서
+
+씬의 플레이어에는 이동·시점·입력·무기·슬롯만 둔다. 나머지는 Play 시작 때 `PlayerMovement.EnsureInitialized`가 붙이고 `Player.csv`의 같은 이름 행과 연결한다. 몸은 `Resources/Characters/PlayerBody` 프로필에 캐릭터가 있을 때만 붙는다.
+
+| 행 | 컴포넌트 |
+| --- | --- |
+| `Body`, `Hands`, `Footsteps` | [PlayerBody](Player/Body/PlayerBody.cs), [PlayerBodyHands](Player/Body/PlayerBodyHands.cs), [PlayerFootsteps](Player/Audio/PlayerFootsteps.cs) |
+| `Sounds`, `MovementAudio`, `Breathing`, `Wind`, `FallAudio`, `FixtureAudio` | [CharacterSounds](Audio/CharacterSounds.cs), [PlayerMovementAudio](Player/Audio/PlayerMovementAudio.cs), [PlayerBreathing](Player/Audio/PlayerBreathing.cs), [PlayerWindAudio](Player/Audio/PlayerWindAudio.cs), [PlayerFallAudio](Player/Audio/PlayerFallAudio.cs), [PlayerFixtureAudio](Player/Audio/PlayerFixtureAudio.cs) |
+| `Punch`, `FallScreen`, `BalanceGauge` | [PlayerMovementPunch](Player/Camera/PlayerMovementPunch.cs), [PlayerFallScreen](Player/Camera/PlayerFallScreen.cs), [BalanceGaugeHUD](UI/BalanceGaugeHUD.cs) |
+
+한 프레임 안의 순서는 `DefaultExecutionOrder`로 고정되어 있다. 앞 단계의 결과를 뒤 단계가 읽으므로 순서를 바꾸면 카메라·손이 한 프레임 늦는다.
+
+| 순서 | 컴포넌트 | 하는 일 |
+| ---: | --- | --- |
+| -100 | `PlayerMovement` | 입력·상태·실제 이동 |
+| 0 | `PlayerLook` | 시선 |
+| 200 | `PlayerCameraEffects` | 흔들림·기울이기와 카메라 기준 위치 |
+| 250 | `PlayerBody` | 몸 자세, 발 IK, 눈 시점으로 카메라 최종 위치 확정 |
+| 260 | `PlayerFootsteps` | IK가 끝난 발로 접지 판단 |
+| 270 | `BalanceGaugeHUD` | 그 프레임의 평균대 판정 표시 |
+| 300 | `WeaponController` | 확정된 카메라로 조준·발사 |
+| 320 | `PlayerBodyHands` | 확정된 총·주먹 위치로 손 놓기 |
 
 ## 입력과 설정
 

@@ -156,7 +156,8 @@ public sealed class PlayerMovementAudio : MonoBehaviour
             case MovementState.DashPush: Cue("DashPush", Ground()); break;
             case MovementState.Vault: Cue("Vault", Surfaces.Of(traversal.Obstacle.Surface), true); break;
             case MovementState.Mantle:
-                Cue(from == MovementState.LedgeHang ? "LedgeClimb" : "Mantle", Surfaces.Of(traversal.Obstacle.Surface), true);
+                Cue(from == MovementState.Ladder ? "LadderExit" : from == MovementState.LedgeHang ? "LedgeClimb" : "Mantle",
+                    Surfaces.Of(traversal.Obstacle.Surface), true);
                 break;
             case MovementState.LedgeHang:
                 Cue(fallSpeed > ledgeCatchHardSpeed ? "LedgeCatchHard" : "LedgeCatch", Surfaces.Of(traversal.Ledge.Surface), true);

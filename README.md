@@ -8,12 +8,12 @@
 2. 지정된 Unity 버전으로 열고 패키지 복원·임포트·컴파일을 기다린다.
 3. [CombatFoundation](Assets/_Project/Scenes/Development/CombatFoundation.unity)을 열고 Play한다. Game 창을 클릭해 마우스를 잠근 뒤 버튼을 놓았다 다시 누른다.
 4. **1**은 소총, **2**는 피스톨, **3/4**의 빈 슬롯은 주먹이다. 같은 슬롯 키를 다시 누르면 장비를 내린다. 시작 시에는 장비를 들고 있지 않다.
-5. WASD 이동, Shift 달리기, Space 점프, Ctrl 앉기·슬라이드, Z 다이브·포복, Alt 회피, Q/E 기울이기, V 밀치기, F 처형. 좌클릭 공격, 우클릭 ADS·가드, R 장전, **Esc 일시정지·설정**(볼륨·감도·앉기/기울이기 전환·시야각·화면 흔들림, [설정 안내](Assets/_Project/Docs/MaintenanceGuide.md#플레이어-설정-esc-메뉴)).
+5. WASD 이동, Shift 달리기, Space 점프, Ctrl 앉기·슬라이드, Z 다이브·포복, Alt 회피, Q/E 기울이기, V 밀치기(달리는 중이면 돌진 밀치기), F 처형. 좌클릭 공격, 우클릭 ADS·가드, R 장전, F5 뒤에서 몸 보기, **Esc 일시정지·설정**(볼륨·감도·상하 반전·앉기/기울이기 전환·시야각·화면 흔들림·내 머리카락 보기, [설정 안내](Assets/_Project/Docs/MaintenanceGuide.md#플레이어-설정-esc-메뉴)).
 
 | 씬 | 용도 |
 | --- | --- |
 | [CombatFoundation](Assets/_Project/Scenes/Development/CombatFoundation.unity) | 무기·적·HUD 통합 개발 씬. 현재 빌드에 등록된 유일한 씬 |
-| [MovementAbilityPlayground](Assets/_Project/Scenes/Development/MovementAbilityPlayground.unity) | 이동·파쿠르 시험장 |
+| [MovementAbilityPlayground](Assets/_Project/Scenes/Development/MovementAbilityPlayground.unity) | 이동·파쿠르 시험장. 표면별 발소리 판, 사다리, 집라인, 평균대가 있다 |
 
 메인 메뉴는 새 컨셉으로 다시 만들 예정이라 지금은 없다.
 
@@ -21,14 +21,15 @@
 
 | 하려는 일 | 안내 |
 | --- | --- |
-| 이동·슬라이드·다이브·회피·파쿠르 조작 | [이동 안내](Assets/_Project/Docs/MovementGuide.md) |
+| 이동·슬라이드·다이브·회피·파쿠르 조작, 착지 단계, 사다리·집라인·평균대 | [이동 안내](Assets/_Project/Docs/MovementGuide.md) |
 | 무기·적·전투 UI를 만들거나 수정 | [전투 제작 안내](Assets/_Project/Docs/CombatFoundationGuide.md) |
 | 현재 전투 규칙과 이후 기획 확인 | [전투 규칙과 확장 계획](Assets/_Project/Docs/WeaponSystemDesign.md) |
-| 체력·무기·적·웨이브 밸런스 숫자 변경 (CSV 표, 컴파일 불필요) | [밸런스 표](Assets/_Project/Docs/MaintenanceGuide.md#밸런스-표-data-tables), [Resources/Tables](Assets/_Project/Resources/Tables) |
+| 체력·무기·적·웨이브·이동·몸·소리 숫자 변경 (CSV 표, 컴파일 불필요) | [밸런스 표](Assets/_Project/Docs/MaintenanceGuide.md#밸런스-표-data-tables), [Resources/Tables](Assets/_Project/Resources/Tables) |
 | 설정 수치 변경·저장, 폴더 이름 변경 후 복구 | [설정·유지보수 안내](Assets/_Project/Docs/MaintenanceGuide.md) |
 | 3D 모델·텍스처 추가 (폴더 규칙, 자동 임포트 설정) | [3D 모델 추가하기](Assets/_Project/Docs/MaintenanceGuide.md#3d-모델-추가하기) |
-| 플레이어 몸(진짜 1인칭)·캐릭터 교체·애니메이션 추가 | [플레이어 몸](Assets/_Project/Docs/MaintenanceGuide.md#플레이어-몸-진짜-1인칭) |
-| 사운드 추가·교체, 공격·피격·벽 소리의 폴더와 연결 위치 | [사운드 관리](Assets/_Project/Docs/MaintenanceGuide.md#사운드를-추가하거나-교체하기) |
+| 플레이어 몸(진짜 1인칭)·눈 시점·손발 IK·캐릭터 교체·애니메이션 추가 | [플레이어 몸](Assets/_Project/Docs/PlayerBodyGuide.md) |
+| 사운드 추가·교체, 전투·이동·목소리 소리의 폴더와 연결 위치 | [사운드 관리](Assets/_Project/Docs/MaintenanceGuide.md#사운드를-추가하거나-교체하기) |
+| GMod 애드온에서 옮긴 것과 남은 일 | [애드온 이식 기록](Assets/_Project/Docs/AddonPortNotes.md) |
 | 수정할 코드 찾기 | [스크립트 길잡이](Assets/_Project/Scripts/README.md) |
 | 전투 또는 이동 코드 확장 | [전투 코드 구조](Assets/_Project/Scripts/Combat/README.md), [이동 코드 구조](Assets/_Project/Scripts/Player/Movement/README.md) |
 | 변경 사항 검사 | [검증 안내](Assets/_Project/Docs/ValidationGuide.md) |
@@ -38,9 +39,9 @@
 | 위치 | 내용 |
 | --- | --- |
 | `Assets/_Project/Scripts` | 게임 로직·UI·디버그 코드 |
-| `Assets/_Project/Editor` | 편집 전용 도구: 표 다시 읽기, 모델 임포트 규칙·물리 프랍, HUD 편집 미리보기, 폰트 저장 |
+| `Assets/_Project/Editor` | 편집 전용 도구: 표 다시 읽기, 모델 임포트 규칙·물리 프랍, 소리 묶음·몸 프로필 자동 생성, HUD 편집 미리보기, 폰트 저장 |
 | `Assets/_Project/Data` | 무기 ScriptableObject와 UI 프로필 |
-| `Assets/_Project/Resources` | 실행 중 키로 로드하는 설정·셰이더, `Tables`의 밸런스 CSV 표 |
+| `Assets/_Project/Resources` | 실행 중 키로 로드하는 설정·셰이더·소리 묶음·몸 프로필·볼륨 프로필, `Tables`의 CSV 표 |
 | `Assets/_Project/Scenes`, `Prefabs` | 씬·NavMesh / 적·UI·이펙트 프리팹 |
 | `Assets/_Project/Art`, `Input`, `Settings` | 프로젝트 3D 모델(`Art/Models`)·애니메이션(`Art/Animations`)·그래픽·오디오 / 입력 / 렌더링 설정 |
 | `Assets/_Project/Docs` | 조작·제작·구조·검증 문서 |

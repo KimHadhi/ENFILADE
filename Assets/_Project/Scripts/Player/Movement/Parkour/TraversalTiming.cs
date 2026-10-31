@@ -9,8 +9,8 @@ public static class TraversalTiming
 {
     public const float SourceUnitScale = 0.025f;
     public static float Duration(MovementAbilitySettings settings, ObstacleTarget target, float routeLength, float entrySpeed, float walkSpeed)
-        => target.IsVault
-            ? routeLength / Mathf.Max(0.1f, entrySpeed, walkSpeed)
+        => target.Duration > 0f ? target.Duration
+            : target.IsVault ? routeLength / Mathf.Max(0.1f, entrySpeed, walkSpeed)
             : settings.mantleDuration + settings.mantleDurationPerMeter * Mathf.Max(0f, target.Height);
     /// <summary>Share of the route covered once this share of the time has passed.</summary>
     public static float Progress(float time, bool vault) => vault ? Mathf.Clamp01(time) : Mathf.SmoothStep(0f, 1f, time);

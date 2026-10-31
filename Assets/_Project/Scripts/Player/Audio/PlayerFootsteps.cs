@@ -6,7 +6,7 @@ using MovementState = PlayerMovement.MovementState;
 /// Footsteps from the body's own feet, the way GMod's Anim-Based Footsteps does it: a foot that has lifted clear of
 /// the ground and comes back down is one step. Steps therefore land exactly when a foot does, at any speed, while
 /// turning on the spot or shuffling out of a landing.
-/// - Reads the feet after the leg IK (PlayerBody), each against the ground under it, while standing or crouching.
+/// - Reads the feet after the leg IK (PlayerBody), each against the ground under it, standing, crouching or on a beam.
 /// - Each foot measures its own last contact. A fresh upward excursion above the supporting foot arms it; returning
 ///   near that contact or passing the bottom of a full swing lands it. This survives different clip heights and
 ///   skipped minima at low fps.
@@ -73,7 +73,7 @@ public sealed class PlayerFootsteps : MonoBehaviour
     private CharacterSounds sounds;
     private Foot left, right;
     private float stillTime;
-    private bool tracking;
+    private bool tracking, trackingBeam;
 
     private void Awake()
     {
@@ -95,11 +95,15 @@ public sealed class PlayerFootsteps : MonoBehaviour
         }
         // Both ankles rise with the pelvis, especially in crouch clips. Only the higher foot can lift off.
         float supportHeight = Mathf.Min(leftFoot.Height, rightFoot.Height);
-        if (!tracking)
+        bool onBeam = player.Abilities.Fixtures.BalanceActive;
+        if (!tracking || onBeam != trackingBeam)
         {
             // Touching down or coming out of a vault: the feet start planted, the landing has its own sound.
             left = new Foot(leftFoot.Height);
             right = new Foot(rightFoot.Height);
+            // An initially raised foot has not planted at its starting height. Both beam feet share this flat support.
+            if (onBeam) left.Low = right.Low = Mathf.Min(supportHeight, body.RestAnkleHeight);
+            trackingBeam = onBeam;
             tracking = true;
             return;
         }
@@ -151,7 +155,10 @@ public sealed class PlayerFootsteps : MonoBehaviour
         string cue = player.CurrentState == MovementState.Crouching ? "StepSneak" : speed < runSpeed ? "StepWalk" : "StepRun";
         Vector3 point = reading.GroundPoint;
         LastSurface = surface;
-        Sounds()?.Play(cue, point, surface);
+        var fixtures = player.Abilities.Fixtures;
+        // Walking beams use the fixture's step cue; running retains its ordinary footstep sound.
+        if (player.CurrentState != MovementState.Balance) Sounds()?.Play(cue, point, surface);
+        if (fixtures.BalanceActive) fixtures.BalanceFootDown(isLeft);
         Stepped?.Invoke(new Step(isLeft, point, surface, speed));
     }
 

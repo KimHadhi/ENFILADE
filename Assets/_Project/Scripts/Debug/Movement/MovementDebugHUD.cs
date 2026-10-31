@@ -147,6 +147,10 @@ public sealed class MovementDebugHUD : MonoBehaviour
             PlayerMovement.MovementState.Mantle => new Color(0.4f, 0.9f, 1.0f),
             PlayerMovement.MovementState.WallClimb => new Color(0.8f, 0.4f, 1.0f), // 퍼플
             PlayerMovement.MovementState.WallKick => new Color(1.0f, 0.4f, 0.9f),
+            PlayerMovement.MovementState.Ladder => new Color(0.9f, 0.8f, 0.4f),
+            PlayerMovement.MovementState.Zipline => new Color(0.4f, 0.7f, 1.0f),
+            PlayerMovement.MovementState.Balance => new Color(0.7f, 1.0f, 0.5f),
+            PlayerMovement.MovementState.BalanceFall => new Color(1.0f, 0.6f, 0.4f),
 
             // --- Abilities / Action (강렬한 레드 / 코랄 계열) ---
             PlayerMovement.MovementState.StepDodge => new Color(0.4f, 1.0f, 0.9f), // 청록

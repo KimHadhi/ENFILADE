@@ -28,6 +28,18 @@ BarGrab,Movement/Bar/Grab; Movement/HandHard/MetalPipe; Movement/Cloth/SideStep,
 BarSwing,Movement/Bar/Swing; Movement/Cloth/Swing,8,봉 아래를 지나며 흔들기
 BarRelease,Movement/Bar/Release; Movement/Cloth/VaultSwish; Voice/StrainSoft,10,봉에서 뛰어 날기
 BarLetGo,Movement/Bar/LetGo,5,봉 놓기
+LadderEnter,Movement/Cloth/MovementSneak +0.12; Movement/Ladder/Hand +0.14; Movement/Ladder/Hand +0.29; Movement/Ladder/Step +0.35; Movement/Cloth/MovementSneak +0.41; Movement/Ladder/Step +0.47,8,땅에서 사다리에 오르기 (Beatrun ladderenterbottom)
+LadderCatch,Movement/Cloth/MovementRun; Movement/HandHard/MetalPipe +0.03; Voice/Impact +0.08; Movement/Ladder/Land +0.1; Movement/Ladder/Land +0.2; Movement/Cloth/MovementSneak +0.3,12,공중에서 사다리 잡기 (Beatrun ladderclimbhangstart)
+LadderStep,Movement/Ladder/Release; Movement/Cloth/MovementSneak +0.04; Movement/Ladder/Step +0.05; Movement/Ladder/Hand +0.07,6,사다리 한 칸 (Beatrun ladderclimbup)
+LadderExit,Movement/Cloth/MovementWalk +0.08; Movement/Ladder/Hand +0.15; Movement/Ladder/Hand +0.23; Movement/Cloth/VaultSwish +0.38; Movement/Cloth/MovementSneak +0.54; Movement/Ladder/Release +0.69; Movement/Bar/Release +0.73; Movement/Ladder/Release +0.77; Movement/Cloth/MovementSneak +0.92,8,꼭대기로 넘어가기 (Beatrun ladderexittop)
+LadderLetGo,Movement/Ladder/Release,4,사다리 놓기
+ZiplineStart,Movement/Zipline/Start *0.4; Movement/Bar/Grab *0.6; Movement/HandHard/MetalPipe *0.6,10,집라인 잡기 (줄 소리는 PlayerFixtureAudio가 반복)
+ZiplineEnd,Movement/Zipline/End *0.4; Movement/Bar/Release *0.6; Movement/Bar/LetGo *0.6,8,집라인 놓기
+BalancePerfect,Movement/HandHard/MetalPipe *0.7; Movement/Ringout/Metal *0.5,2,평균대 노트 PERFECT
+BalanceGood,Movement/HandHard/MetalPipe *0.4,2,평균대 노트 GOOD
+BalanceStep,Movement/Walk/{surface}; Movement/Cloth/MovementSneak *0.6,4,평균대 한 걸음. 박자마다 난다. {surface}는 평균대 표면
+BalanceStumble,Movement/Run/{surface} *0.6; Movement/Cloth/FallShortMedium *0.6; Voice/StrainSoft,6,평균대 박자 실패
+BalanceFall,Movement/Cloth/FallShortMedium; Movement/Release/{surface}; Voice/StrainSoft,8,평균대에서 떨어지기
 SlideStart,Movement/Cloth/FallShortMedium; Movement/HandSoft/{surface}; Movement/Slide/{surface} *0.5,12,슬라이드 시작. 긁는 소리는 SlideLoop가 이어서 반복
 BellySlideStart,Movement/Cloth/FallShortMedium; Movement/Slide/{surface} *0.5,12,엎드려·누워 미끄러지기 시작
 SlideEnd,Movement/Cloth/MovementSneak,4,슬라이드 끝

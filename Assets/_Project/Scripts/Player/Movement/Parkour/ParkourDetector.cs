@@ -8,6 +8,8 @@ public struct ObstacleTarget
     public bool ReferenceMotion;
     /// <summary>Top of the obstacle above the feet when it was found (m); the body picks its vault or mantle clip by it.</summary>
     public float Height;
+    /// <summary>Seconds the move takes, when it sets its own (off the top of a ladder); otherwise TraversalTiming decides.</summary>
+    public float Duration;
     public bool HasApproach;
     public Vector3 Approach;
 }
