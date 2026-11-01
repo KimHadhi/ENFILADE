@@ -1,0 +1,3 @@
+﻿id,value
+#설명 (pingDivisor = 실제 핑을 이 값으로 나눠 표시. 1이면 실제 핑),값
+pingDivisor,3

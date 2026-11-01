@@ -96,7 +96,7 @@ public sealed class ServerBrowserView
         var row = W.Rect(room.id, list);
         W.Size(row, height: RowHeight);
         var image = W.Fill(row, room.id == chosen ? Selected : W.Surface);
-        string ping = room.ping < 0 ? "-" : room.internet ? $"약 {room.ping} ms" : room.ping + " ms";
+        string ping = room.ping < 0 ? "-" : PingDisplay.Shown(room.ping) + " ms";
         AddColumns(row, room.title, MapTable.DisplayName(room.map), room.internet ? "인터넷" : "LAN",
             $"{room.players}/{room.maxPlayers}", ping, W.Text);
         var button = row.gameObject.AddComponent<Button>();
