@@ -27,9 +27,10 @@ public sealed class GameSettings
     public string lastMap = "";
     [Tooltip("Address last typed on the main menu to join a room.")]
     public string lastAddress = GameSession.DefaultAddress;
-    [Tooltip("Room title and size last used when making a room.")]
+    [Tooltip("Room title, size and reach last used when making a room.")]
     public string roomTitle = "";
     public int maxPlayers = 4;
+    public bool roomOnInternet = true;
 
     public const float MinSensitivity = .2f, MaxSensitivity = 3f, MinFieldOfView = 70f, MaxFieldOfView = 120f;
 

@@ -3,15 +3,16 @@ using System.Linq;
 using UnityEngine;
 using W = SettingsWidgets;
 
-/// <summary>The window for making a room: its title and how many can join. The map comes from the main menu.</summary>
+/// <summary>The window for making a room: its title, how many can join and who can find it. The map comes from the main menu.</summary>
 public sealed class CreateRoomView
 {
     private const int TitleLimit = 32;
     private static readonly int[] Sizes = { 2, 4, 6, 8, 10 };
+    private static readonly string[] Reaches = { "인터넷", "같은 네트워크(LAN)" };
     private readonly RectTransform shade, panel;
-    private readonly Action<string, int> create;
+    private readonly Action<string, int, bool> create;
 
-    public CreateRoomView(Transform canvas, Action<string, int> create)
+    public CreateRoomView(Transform canvas, Action<string, int, bool> create)
     {
         this.create = create;
         panel = W.Window(canvas, "Create Room", 700f, out shade);
@@ -28,6 +29,7 @@ public sealed class CreateRoomView
         W.Size(W.Label(panel, "방 만들기", 36f, W.Text), height: 54f);
         W.TextInput(W.Row(panel, "방 제목"), settings.roomTitle, title => settings.roomTitle = title).characterLimit = TitleLimit;
         W.Choice(W.Row(panel, "최대 인원"), Sizes.Select(n => n + "명").ToArray(), size, i => settings.maxPlayers = Sizes[i]);
+        W.Choice(W.Row(panel, "공개 범위"), Reaches, settings.roomOnInternet ? 0 : 1, i => settings.roomOnInternet = i == 0);
         W.Size(W.Label(panel, "맵: " + MapTable.DisplayName(map), 20f, W.Muted), height: 34f);
         var buttons = W.ButtonRow(panel);
         W.ActionButton(buttons, "취소", false, Hide);
@@ -44,6 +46,6 @@ public sealed class CreateRoomView
         if (settings.roomTitle.Length == 0) settings.roomTitle = Environment.UserName + "의 방";
         settings.maxPlayers = Sizes.Contains(settings.maxPlayers) ? settings.maxPlayers : 4;
         Hide();
-        create(settings.roomTitle, settings.maxPlayers);
+        create(settings.roomTitle, settings.maxPlayers, settings.roomOnInternet);
     }
 }

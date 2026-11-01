@@ -18,6 +18,7 @@ public sealed class LanRoomFinder : IRoomList
     private float nextAsk;
 
     public IEnumerable<RoomInfo> Rooms => rooms.Values;
+    public string Problem => "";
 
     public LanRoomFinder()
     {

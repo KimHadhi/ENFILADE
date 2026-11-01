@@ -133,9 +133,9 @@ public sealed class MainMenuScreen : MonoBehaviour
         if (maps.Length > 0 && !GameSession.IsOnline) createRoom.Show(GameSettings.Current.lastMap);
     }
 
-    private void StartHost(string title, int maxPlayers)
+    private void StartHost(string title, int maxPlayers, bool internet)
     {
         GameSettings.Save();
-        GameSession.Host(GameSettings.Current.lastMap, title, maxPlayers);
+        GameSession.Host(GameSettings.Current.lastMap, title, maxPlayers, internet);
     }
 }

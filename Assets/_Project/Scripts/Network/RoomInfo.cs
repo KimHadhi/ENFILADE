@@ -9,9 +9,10 @@ public sealed class RoomInfo
     public string id;
     public string title, map;
     public int players, maxPlayers;
-    /// <summary>Where to join: an address on the LAN.</summary>
+    /// <summary>Where to join a LAN room. An internet room is joined by its id.</summary>
     [NonSerialized] public string address;
-    /// <summary>Round trip in ms, or below zero when it can't be measured before joining.</summary>
+    [NonSerialized] public bool internet;
+    /// <summary>Round trip in ms, estimated for an internet room, or below zero when unknown.</summary>
     [NonSerialized] public int ping = -1;
     [NonSerialized] public float lastSeen;
 }
@@ -20,6 +21,8 @@ public sealed class RoomInfo
 public interface IRoomList : IDisposable
 {
     IEnumerable<RoomInfo> Rooms { get; }
+    /// <summary>Why the list may be missing rooms, or empty when it's fine.</summary>
+    string Problem { get; }
     void Tick();
     void Refresh();
 }

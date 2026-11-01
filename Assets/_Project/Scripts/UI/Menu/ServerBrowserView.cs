@@ -5,10 +5,10 @@ using UnityEngine;
 using UnityEngine.UI;
 using W = SettingsWidgets;
 
-/// <summary>The server list: rooms with their map, players and ping. Pick one, or join by address.</summary>
+/// <summary>The server list: internet and LAN rooms with their map, players and ping. Pick one, or join by address.</summary>
 public sealed class ServerBrowserView
 {
-    private const float MapWidth = 220f, PlayersWidth = 90f, PingWidth = 110f, RowHeight = 40f, DoubleClick = .35f;
+    private const float MapWidth = 220f, ReachWidth = 80f, PlayersWidth = 90f, PingWidth = 110f, RowHeight = 40f, DoubleClick = .35f;
     private static readonly Color Selected = new Color(.95f, .63f, .27f, .28f);
     private readonly RectTransform shade, panel, list;
     private readonly TextMeshProUGUI empty, status, joinLabel;
@@ -22,7 +22,7 @@ public sealed class ServerBrowserView
     {
         panel = W.Window(canvas, "Server Browser", 1120f, out shade);
         W.Size(W.Label(panel, "서버 찾기", 36f, W.Text), height: 54f);
-        AddColumns(W.Rect("Header", panel), "방 제목", "맵", "인원", "핑", W.Muted);
+        AddColumns(W.Rect("Header", panel), "방 제목", "맵", "연결", "인원", "핑", W.Muted);
 
         list = W.Rect("Rooms", panel);
         W.Size(list, height: RowHeight * 8f);
@@ -50,7 +50,7 @@ public sealed class ServerBrowserView
 
     public void Open()
     {
-        rooms = new LanRoomFinder();
+        rooms = new CombinedRoomList(new InternetRoomFinder(), new LanRoomFinder());
         chosen = null; shown = "";
         Rebuild();
         shade.gameObject.SetActive(true);
@@ -75,7 +75,7 @@ public sealed class ServerBrowserView
         rooms.Tick();
         string now = string.Join("|", rooms.Rooms.Select(Describe));
         if (now != shown) { shown = now; Rebuild(); }
-        status.text = GameSession.Status;
+        status.text = GameSession.Status.Length > 0 ? GameSession.Status : rooms.Problem;
         joinLabel.text = GameSession.IsOnline ? "접속 취소" : "참가";
     }
 
@@ -96,8 +96,9 @@ public sealed class ServerBrowserView
         var row = W.Rect(room.id, list);
         W.Size(row, height: RowHeight);
         var image = W.Fill(row, room.id == chosen ? Selected : W.Surface);
-        AddColumns(row, room.title, MapTable.DisplayName(room.map), $"{room.players}/{room.maxPlayers}",
-            room.ping >= 0 ? room.ping + " ms" : "-", W.Text);
+        string ping = room.ping < 0 ? "-" : room.internet ? $"약 {room.ping} ms" : room.ping + " ms";
+        AddColumns(row, room.title, MapTable.DisplayName(room.map), room.internet ? "인터넷" : "LAN",
+            $"{room.players}/{room.maxPlayers}", ping, W.Text);
         var button = row.gameObject.AddComponent<Button>();
         button.targetGraphic = image;
         button.onClick.AddListener(() => Choose(room));
@@ -116,12 +117,13 @@ public sealed class ServerBrowserView
     {
         if (GameSession.IsOnline) { GameSession.Leave(); return; }
         var room = rooms?.Rooms.FirstOrDefault(found => found.id == chosen);
+        if (room != null && room.internet) { GameSession.JoinInternet(room); return; }
         if (room != null) GameSettings.Current.lastAddress = room.address;
         GameSession.Join(GameSettings.Current.lastAddress);
         if (GameSession.IsOnline) GameSettings.Save();
     }
 
-    private static void AddColumns(RectTransform row, string title, string map, string players, string ping, Color color)
+    private static void AddColumns(RectTransform row, string title, string map, string reach, string players, string ping, Color color)
     {
         var layout = row.gameObject.AddComponent<HorizontalLayoutGroup>();
         layout.spacing = 12f; layout.padding = new RectOffset(12, 12, 0, 0);
@@ -132,6 +134,7 @@ public sealed class ServerBrowserView
         W.Size(row, height: RowHeight).flexibleHeight = 0f;
         W.Size(W.Label(row, title, 20f, color), flexibleWidth: 1f);
         W.Size(W.Label(row, map, 20f, color), width: MapWidth);
+        W.Size(W.Label(row, reach, 20f, color), width: ReachWidth);
         W.Size(W.Label(row, players, 20f, color), width: PlayersWidth);
         W.Size(W.Label(row, ping, 20f, color), width: PingWidth);
     }
