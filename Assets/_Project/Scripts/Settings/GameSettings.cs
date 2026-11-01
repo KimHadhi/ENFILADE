@@ -23,6 +23,8 @@ public sealed class GameSettings
     public bool showOwnHead = true;
     [Tooltip("Player skin ID from the PlayerBody profile. Empty uses the profile's default character.")]
     public string characterSkin = "";
+    [Tooltip("The name other players see. Empty uses this PC's user name.")]
+    public string nickname = "";
     [Tooltip("Scene name of the map last chosen on the main menu (Resources/Tables/Maps.csv).")]
     public string lastMap = "";
     [Tooltip("Address last typed on the main menu to join a room.")]
@@ -34,6 +36,8 @@ public sealed class GameSettings
 
     public const float MinSensitivity = .2f, MaxSensitivity = 3f, MinFieldOfView = 70f, MaxFieldOfView = 120f;
 
+    /// <summary>The name this player goes by.</summary>
+    public string DisplayName => string.IsNullOrWhiteSpace(nickname) ? Environment.UserName : nickname.Trim();
     /// <summary>The camera's vertical field of view for <see cref="fieldOfView"/>.</summary>
     public float VerticalFieldOfView => Camera.HorizontalToVerticalFieldOfView(fieldOfView, 16f / 9f);
     private const string FileName = "settings.json";

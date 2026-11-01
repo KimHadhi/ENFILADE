@@ -19,6 +19,7 @@ public sealed class MainMenuScreen : MonoBehaviour
     private TMP_Text status;
     private CreateRoomView createRoom;
     private ServerBrowserView browser;
+    private ProfileView profile;
 
     public static bool IsOpen { get; private set; }
 
@@ -81,6 +82,7 @@ public sealed class MainMenuScreen : MonoBehaviour
         MenuButton(column, "혼자 하기", true, StartSolo);
         MenuButton(column, "방 만들기", false, OpenCreateRoom);
         MenuButton(column, "서버 찾기", false, () => browser.Open());
+        MenuButton(column, "프로필", false, () => profile.Show());
         MenuButton(column, "설정", false, SettingsMenu.OpenFromMainMenu);
         MenuButton(column, "게임 종료", false, SettingsMenu.QuitGame);
         W.Size(W.Rect("Gap", column), height: 12f);
@@ -89,6 +91,7 @@ public sealed class MainMenuScreen : MonoBehaviour
 
         createRoom = new CreateRoomView(canvas, StartHost);
         browser = new ServerBrowserView(canvas);
+        profile = new ProfileView(canvas);
     }
 
     private void AddMapChoice(Transform column)

@@ -23,8 +23,8 @@ public sealed class CreateRoomView
     {
         for (int i = panel.childCount - 1; i >= 0; i--) UnityEngine.Object.Destroy(panel.GetChild(i).gameObject);
         var settings = GameSettings.Current;
-        if (string.IsNullOrWhiteSpace(settings.roomTitle)) settings.roomTitle = Environment.UserName + "의 방";
-        int size = Mathf.Max(0, Array.IndexOf(Sizes, settings.maxPlayers));
+        if (string.IsNullOrWhiteSpace(settings.roomTitle)) settings.roomTitle = settings.DisplayName + "의 방";
+        int size =Mathf.Max(0, Array.IndexOf(Sizes, settings.maxPlayers));
 
         W.Size(W.Label(panel, "방 만들기", 36f, W.Text), height: 54f);
         W.TextInput(W.Row(panel, "방 제목"), settings.roomTitle, title => settings.roomTitle = title).characterLimit = TitleLimit;
@@ -43,7 +43,7 @@ public sealed class CreateRoomView
     {
         var settings = GameSettings.Current;
         settings.roomTitle = settings.roomTitle.Trim();
-        if (settings.roomTitle.Length == 0) settings.roomTitle = Environment.UserName + "의 방";
+        if (settings.roomTitle.Length == 0) settings.roomTitle = settings.DisplayName + "의 방";
         settings.maxPlayers = Sizes.Contains(settings.maxPlayers) ? settings.maxPlayers : 4;
         Hide();
         create(settings.roomTitle, settings.maxPlayers, settings.roomOnInternet);

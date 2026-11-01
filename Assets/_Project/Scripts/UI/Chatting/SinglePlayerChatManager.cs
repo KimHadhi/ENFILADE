@@ -22,7 +22,6 @@ public class SinglePlayerChatManager : MonoBehaviour
 
     [Header("Input channel")]
     [SerializeField] private ChatChannel inputChannel = ChatChannel.Note;
-    [SerializeField] private string playerDisplayName = "나";
     [SerializeField] private Image channelAccent;
     [SerializeField] private TMP_Text channelLabel;
     [SerializeField] private ChatChannelIcon channelIcon;
@@ -69,6 +68,7 @@ public class SinglePlayerChatManager : MonoBehaviour
 
     private void OnEnable()
     {
+        PlayerChat.Heard += OnHeard;
         var actions = Controls != null ? Controls.actions : InputSystem.actions;
         cycleChannelAction = actions != null ? actions.FindAction("UI/CycleChatChannel", false) : null;
         ownsCycleChannelAction = cycleChannelAction != null && !cycleChannelAction.enabled;
@@ -77,6 +77,7 @@ public class SinglePlayerChatManager : MonoBehaviour
 
     private void OnDisable()
     {
+        PlayerChat.Heard -= OnHeard;
         if (isChatOpen) CloseChat(false);
         if (ownsCycleChannelAction) cycleChannelAction?.Disable();
         cycleChannelAction = null; ownsCycleChannelAction = false;
@@ -271,14 +272,19 @@ public class SinglePlayerChatManager : MonoBehaviour
         if (text.Length > 4000) text = text.Substring(0, 4000);
         submittedInputs.Add(text);
         if (submittedInputs.Count > 50) submittedInputs.RemoveAt(0);
+        string speaker = GameSettings.Current.DisplayName;
         if (inputChannel == ChatChannel.Console || text.TrimStart().StartsWith("/"))
         {
-            AddMessage(ChatChannel.Console, playerDisplayName, text);
+            AddMessage(ChatChannel.Console, speaker, text);
             string result = Commands.Execute(text);
             if (!string.IsNullOrEmpty(result)) AddMessage(ChatChannel.Console, "시스템", result);
+            return;
         }
-        else AddMessage(ChatChannel.Note, playerDisplayName, text);
+        AddMessage(ChatChannel.Note, speaker, text);
+        if (PlayerRoster.Local != null && PlayerRoster.Local.TryGetComponent(out PlayerChat chat)) chat.Say(text);
     }
+
+    private void OnHeard(string speaker, string text) => AddMessage(ChatChannel.Note, speaker, text);
 
     public void AddDialogue(string speaker, string text) => AddMessage(ChatChannel.Dialogue, speaker, text);
     public void AddDialogue(string speaker, string text, Color speakerColor) => AddEntry(new ChatEntry(ChatChannel.Dialogue, speaker, text, speakerColor));
