@@ -6,7 +6,7 @@ using MovementState = PlayerMovement.MovementState;
 /// Footsteps from the body's own feet, the way GMod's Anim-Based Footsteps does it: a foot that has lifted clear of
 /// the ground and comes back down is one step. Steps therefore land exactly when a foot does, at any speed, while
 /// turning on the spot or shuffling out of a landing.
-/// - Reads the feet after the leg IK (PlayerBody), each against the ground under it, standing, crouching or on a beam.
+/// - Reads the feet after the leg IK (PlayerBody), each against the ground under it, standing or crouching.
 /// - Each foot measures its own last contact. A fresh upward excursion above the supporting foot arms it; returning
 ///   near that contact or passing the bottom of a full swing lands it. This survives different clip heights and
 ///   skipped minima at low fps.
@@ -54,14 +54,15 @@ public sealed class PlayerFootsteps : MonoBehaviour
 
     private struct Foot
     {
-        public bool Lifted, Descending;
+        public bool Lifted, Descending, Supported;
         public float Height, Low, Peak, Trough, Cooldown;
 
-        public Foot(float height)
+        public Foot(float height, bool supported = true)
         {
             Height = Low = Peak = Trough = height;
             Cooldown = 0f;
             Lifted = Descending = false;
+            Supported = supported;
         }
     }
 
@@ -73,7 +74,7 @@ public sealed class PlayerFootsteps : MonoBehaviour
     private CharacterSounds sounds;
     private Foot left, right;
     private float stillTime;
-    private bool tracking, trackingBeam;
+    private bool tracking;
 
     private void Awake()
     {
@@ -87,27 +88,25 @@ public sealed class PlayerFootsteps : MonoBehaviour
     {
         float dt = Time.deltaTime;
         if (GamePause.IsPaused || dt <= 0f || player == null || body == null) return;
-        if (!body.TryReadFeet(out var leftFoot, out var rightFoot))
+        if (!body.TryReadFeet(out var leftFoot, out var rightFoot) || (!leftFoot.HasSupport && !rightFoot.HasSupport))
         {
             tracking = false;
             stillTime = 0f;
             return;
         }
         // Both ankles rise with the pelvis, especially in crouch clips. Only the higher foot can lift off.
-        float supportHeight = Mathf.Min(leftFoot.Height, rightFoot.Height);
-        bool onBeam = player.Abilities.Fixtures.BalanceActive;
-        if (!tracking || onBeam != trackingBeam)
+        float supportHeight = leftFoot.HasSupport && rightFoot.HasSupport ? Mathf.Min(leftFoot.Height, rightFoot.Height)
+            : leftFoot.HasSupport ? leftFoot.Height : rightFoot.Height;
+        if (!tracking)
         {
             // Touching down or coming out of a vault: the feet start planted, the landing has its own sound.
-            left = new Foot(leftFoot.Height);
-            right = new Foot(rightFoot.Height);
-            // An initially raised foot has not planted at its starting height. Both beam feet share this flat support.
-            if (onBeam) left.Low = right.Low = Mathf.Min(supportHeight, body.RestAnkleHeight);
-            trackingBeam = onBeam;
+            left = new Foot(leftFoot.Height, leftFoot.HasSupport);
+            right = new Foot(rightFoot.Height, rightFoot.HasSupport);
             tracking = true;
             return;
         }
-        Calibrate(leftFoot.Height, rightFoot.Height, dt);
+        if (leftFoot.HasSupport && rightFoot.HasSupport) Calibrate(leftFoot.Height, rightFoot.Height, dt);
+        else stillTime = 0f;
         Track(ref left, leftFoot, true, dt, supportHeight);
         Track(ref right, rightFoot, false, dt, supportHeight);
     }
@@ -115,6 +114,13 @@ public sealed class PlayerFootsteps : MonoBehaviour
     private void Track(ref Foot foot, in PlayerBody.FootReading reading, bool isLeft, float dt, float supportHeight)
     {
         float height = reading.Height;
+        if (!reading.HasSupport || !foot.Supported)
+        {
+            // Losing a tread cancels a pending step. Finding it again starts planted,
+            // so an unsupported foot cannot sound a step or a scuff in mid-air.
+            foot = new Foot(height, reading.HasSupport);
+            return;
+        }
         foot.Height = height;
         foot.Cooldown -= dt;
         if (!foot.Lifted)
@@ -155,10 +161,7 @@ public sealed class PlayerFootsteps : MonoBehaviour
         string cue = player.CurrentState == MovementState.Crouching ? "StepSneak" : speed < runSpeed ? "StepWalk" : "StepRun";
         Vector3 point = reading.GroundPoint;
         LastSurface = surface;
-        var fixtures = player.Abilities.Fixtures;
-        // Walking beams use the fixture's step cue; running retains its ordinary footstep sound.
-        if (player.CurrentState != MovementState.Balance) Sounds()?.Play(cue, point, surface);
-        if (fixtures.BalanceActive) fixtures.BalanceFootDown(isLeft);
+        Sounds()?.Play(cue, point, surface);
         Stepped?.Invoke(new Step(isLeft, point, surface, speed));
     }
 

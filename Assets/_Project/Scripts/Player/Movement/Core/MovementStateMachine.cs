@@ -66,9 +66,7 @@ public sealed class MovementStateMachine
             { MovementState.BarSwing, new BarSwingState(ctx, swing) },
             { MovementState.LacheRelease, new LacheReleaseState(ctx, swing) },
             { MovementState.Ladder, new LadderState(ctx, fixture) },
-            { MovementState.Zipline, new ZiplineState(ctx, fixture) },
-            { MovementState.Balance, new BalanceState(ctx, fixture) },
-            { MovementState.BalanceFall, new BalanceFallState(ctx, fixture) }
+            { MovementState.Zipline, new ZiplineState(ctx, fixture) }
         }, MovementState.Standing);
     }
 

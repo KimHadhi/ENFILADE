@@ -250,6 +250,8 @@ public sealed class CharacterSounds : MonoBehaviour, ITableBound
         }
         var settings = bank.SettingsOf(key);
         var voice = FreeVoice();
+        // The player is being switched off (leaving Play): its sources are already disabled.
+        if (!voice.Source.isActiveAndEnabled) return 0f;
         // Stealing a busy voice must end its old shot before its pitch and position change.
         voice.Source.Stop();
         voice.Source.transform.position = point;

@@ -37,7 +37,7 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
     private static void ClearRegistry() => active.Clear();
     private float stunRemaining, recoveryRemaining, shoveRemaining, shoveDuration = ShoveDuration, bargeKnockdown;
     private Vector3 shoveVelocity;
-    private const float ShoveDuration = .32f;
+    private const float ShoveDuration = .32f, KnockdownSoundDelay = .22f;
     [Header("Shove Chain")]
     [SerializeField, Range(0f, 1f)] private float chainTransfer = .8f;
     [SerializeField, Min(.1f)] private float minimumChainSpeed = 1.2f;
@@ -45,7 +45,7 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
     private HashSet<MeleeCombatTarget> shoveChain;
     private PlayerMeleeCombat grabber;
     private PlayerExecution executor;
-    private AudioSource staggerAudio;
+    private AudioSource bodyAudio;
     private NavMeshAgent agent;
     private bool stoppedAgent, previousStopped;
 
@@ -66,6 +66,7 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
         // Runtime attachment also covers existing scenes/prefabs without requiring asset migration.
         if (Application.isPlaying && GetComponent<ICombatVitals>() != null && GetComponent<EnemyVitalsHUD>() == null)
             gameObject.AddComponent<EnemyVitalsHUD>();
+        if (Application.isPlaying && GetComponent<ExecutableHighlight>() == null) gameObject.AddComponent<ExecutableHighlight>();
     }
     private void Update() => Tick(Time.deltaTime);
     public void Tick(float dt)
@@ -132,6 +133,8 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
     public void KnockDown(Vector3 direction, float duration)
     {
         if (!IsAvailable || executor != null) return;
+        // Repeated knockdowns only extend the timer; the body hits the ground once, a moment after it starts to fall.
+        if (!IsKnockedDown) Invoke(nameof(PlayKnockdownSound), KnockdownSoundDelay);
         knockdownRemaining = Mathf.Max(knockdownRemaining, duration);
         shoveRemaining = bargeKnockdown = 0f; shoveChain = null;
         Interrupt(duration);
@@ -178,16 +181,26 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
     private void PlayStaggerSound()
     {
         var settings = CombatFeedbackSettings.Instance;
-        var clip = settings != null ? settings.staggerSound : null;
+        if (settings != null) PlayBodySound(settings.staggerSound, settings.staggerSoundVolume);
+    }
+    private void PlayKnockdownSound()
+    {
+        var settings = CombatFeedbackSettings.Instance;
+        var clips = settings != null ? settings.knockdownSounds : null;
+        if (clips == null || clips.Length == 0) return;
+        PlayBodySound(clips[UnityEngine.Random.Range(0, clips.Length)], settings.knockdownVolume);
+    }
+    private void PlayBodySound(AudioClip clip, float volume)
+    {
         if (!Application.isPlaying || clip == null) return;
-        if (staggerAudio == null)
+        if (bodyAudio == null)
         {
-            staggerAudio = gameObject.AddComponent<AudioSource>(); staggerAudio.playOnAwake = false;
-            staggerAudio.spatialBlend = .85f; staggerAudio.minDistance = 2f; staggerAudio.maxDistance = 22f;
-            staggerAudio.rolloffMode = AudioRolloffMode.Linear;
-            GameAudio.Bind(staggerAudio, AudioChannel.Combat);
+            bodyAudio = gameObject.AddComponent<AudioSource>(); bodyAudio.playOnAwake = false;
+            bodyAudio.spatialBlend = .85f; bodyAudio.minDistance = 2f; bodyAudio.maxDistance = 22f;
+            bodyAudio.rolloffMode = AudioRolloffMode.Linear;
+            GameAudio.Bind(bodyAudio, AudioChannel.Combat);
         }
-        staggerAudio.PlayOneShot(clip, Mathf.Clamp01(settings.staggerSoundVolume));
+        bodyAudio.PlayOneShot(clip, Mathf.Clamp01(volume));
     }
     public void ResetPosture()
     {
@@ -271,5 +284,5 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
         stoppedAgent = false;
     }
     private void OnDisable()
-    { active.Remove(this); if (executor != null) executor.Cancel(); executor = null; grabber = null; shoveChain = null; stunRemaining = shoveRemaining = knockdownRemaining = bargeKnockdown = 0f; knockdownPresentation?.Reset(); RestoreAgent(); }
+    { active.Remove(this); CancelInvoke(nameof(PlayKnockdownSound)); if (executor != null) executor.Cancel(); executor = null; grabber = null; shoveChain = null; stunRemaining = shoveRemaining = knockdownRemaining = bargeKnockdown = 0f; knockdownPresentation?.Reset(); RestoreAgent(); }
 }

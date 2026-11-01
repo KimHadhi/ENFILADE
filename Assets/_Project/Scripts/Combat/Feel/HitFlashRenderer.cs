@@ -4,9 +4,11 @@ using UnityEngine;
 /// <summary>
 /// "I got hit" look for any damaged target: the whole body flashes red (Minecraft-style), the silhouette gets a red rim,
 /// and the exact hit spot glows hot and cools down (up to four spots at once). A kill flash turns the body white.
+/// A mark holds a faint tint and an outline for as long as it is set; ExecutableHighlight sets it.
 /// Works by appending one overlay material (Hidden/Morphang/HitFlashOverlay) to the target's mesh renderers while the
 /// flash runs and removing it afterwards, so idle enemies cost nothing and their own materials are never modified.
-/// Added on demand; timing and colours in GunFeel → Enemy hit flash.
+/// An extra material only draws a mesh's last submesh, so a multi-material model is covered in part.
+/// Added on demand; timing and colours in GunFeel → Enemy hit flash, the mark's in Feedback → Executable body.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class HitFlashRenderer : MonoBehaviour
@@ -17,7 +19,8 @@ public sealed class HitFlashRenderer : MonoBehaviour
     private static Material overlay;
     private static readonly int TintColorId = Shader.PropertyToID("_TintColor"), TintId = Shader.PropertyToID("_Tint"),
         RimColorId = Shader.PropertyToID("_RimColor"), RimId = Shader.PropertyToID("_Rim"), GlowColorId = Shader.PropertyToID("_GlowColor"),
-        RadiusId = Shader.PropertyToID("_HitRadius"), WhiteId = Shader.PropertyToID("_White");
+        RadiusId = Shader.PropertyToID("_HitRadius"), WhiteId = Shader.PropertyToID("_White"),
+        OutlineColorId = Shader.PropertyToID("_OutlineColor"), OutlineWidthId = Shader.PropertyToID("_OutlineWidth");
     private static readonly int[] HitIds = { Shader.PropertyToID("_Hit0"), Shader.PropertyToID("_Hit1"), Shader.PropertyToID("_Hit2"), Shader.PropertyToID("_Hit3") };
 
     private readonly Spot[] spots = new Spot[4];
@@ -25,7 +28,7 @@ public sealed class HitFlashRenderer : MonoBehaviour
     private readonly List<Material> scratch = new List<Material>();
     private MaterialPropertyBlock block;
     private int nextSpot;
-    private float tintAge = 99f, tintStrength, whiteAge = 99f, whiteSeconds = .12f;
+    private float tintAge = 99f, tintStrength, whiteAge = 99f, whiteSeconds = .12f, mark;
 
     public static Material OverlayMaterial
     {
@@ -67,6 +70,21 @@ public sealed class HitFlashRenderer : MonoBehaviour
     {
         whiteAge = 0f; whiteSeconds = Mathf.Max(.02f, seconds);
         Flash(point, true);
+    }
+
+    /// <summary>White-hot body flash with no damage tint: a struck weapon, not a wound.</summary>
+    public void WhiteFlash(float seconds)
+    {
+        if (!GunFeelSettings.Instance.hitFlash) return;
+        whiteAge = 0f; whiteSeconds = Mathf.Max(.02f, seconds);
+        Attach();
+    }
+
+    /// <summary>Holds the mark's tint and outline at this strength; 0 lets them go.</summary>
+    public void SetMark(float amount)
+    {
+        mark = Mathf.Clamp01(amount);
+        if (mark > 0f) Attach();
     }
 
     private bool Near(Vector3 point)
@@ -131,11 +149,16 @@ public sealed class HitFlashRenderer : MonoBehaviour
             spots[i].age += dt;
             if (spots[i].strength > 0f && spots[i].age < settings.hitGlowSeconds) glowing = true;
         }
-        if (tint <= .001f && white <= 0f && !glowing) { Detach(); enabled = false; return; }
+        if (tint <= .001f && white <= 0f && !glowing && mark <= 0f) { Detach(); enabled = false; return; }
 
+        var feedback = CombatFeedbackSettings.InstanceOrDefaults;
+        // The stronger tint shows, so a hit on a marked body still flashes.
+        bool marked = mark * feedback.executableBodyTint.a > tint * settings.hitTintColor.a;
         block.Clear();
-        block.SetColor(TintColorId, settings.hitTintColor);
-        block.SetFloat(TintId, tint);
+        block.SetColor(TintColorId, marked ? feedback.executableBodyTint : settings.hitTintColor);
+        block.SetFloat(TintId, marked ? mark : tint);
+        block.SetColor(OutlineColorId, feedback.executableOutlineColor);
+        block.SetFloat(OutlineWidthId, feedback.executableOutlineWidth * mark);
         block.SetColor(RimColorId, settings.hitRimColor);
         block.SetFloat(RimId, Mathf.Clamp01(tint * 1.2f));
         block.SetColor(GlowColorId, settings.hitGlowColor);

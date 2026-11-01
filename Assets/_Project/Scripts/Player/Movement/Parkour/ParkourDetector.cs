@@ -3,6 +3,8 @@ using UnityEngine;
 public struct ObstacleTarget
 {
     public Collider Surface;
+    /// <summary>The ladder this mantle climbs off; other vaults and mantles leave it null.</summary>
+    public Ladder ExitLadder;
     public Vector3 Start, RaisedStart, RaisedEnd, End;
     public bool IsVault;
     public bool ReferenceMotion;

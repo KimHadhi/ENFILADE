@@ -12,7 +12,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8e3b58b926d9dd9094b0477fbc38c007, type: 3}
   m_Name: PlayerBody
   m_EditorClassIdentifier: Assembly-CSharp::PlayerBodyProfile
-  model: {fileID: 919132149155446097, guid: be2a3fbba9a297c4483cd2d4f6626345, type: 3}
+  model: {fileID: 5848309325868017323, guid: b9d8df3d4910546409ab7425d2ffebc9, type: 3}
+  skins:
+  - id: kazusa-band
+    displayName: "\uCE74\uC988\uC0AC (\uBC34\uB4DC)"
+    model: {fileID: 5848309325868017323, guid: b9d8df3d4910546409ab7425d2ffebc9, type: 3}
+    ledgeHandSpacingScale: 1
+    ledgePalmInsetScale: 1
+  - id: hiro
+    displayName: "\uD788\uB85C"
+    model: {fileID: 919132149155446097, guid: be2a3fbba9a297c4483cd2d4f6626345, type: 3}
+    ledgeHandSpacingScale: 1
+    ledgePalmInsetScale: 1
   clips:
   - {fileID: -9136827924120628530, guid: 52f62d2e1e04c7f43a7250543de8c224, type: 3}
   - {fileID: -9131831495037978367, guid: 52f62d2e1e04c7f43a7250543de8c224, type: 3}
@@ -217,6 +228,26 @@ MonoBehaviour:
   - {fileID: -203655887218126122, guid: ac2ca70f6ecebdd42870cc25da647d9e, type: 3}
   - {fileID: -203655887218126122, guid: 452cd71260e4b9444bbf4451b687427e, type: 3}
   - {fileID: -203655887218126122, guid: 0bc74c54df77ee34f8f66693fcb6db17, type: 3}
+  - {fileID: 1114951161932271536, guid: 11795eeb6a2cf0448b7c7a20b6b12e7d, type: 3}
+  - {fileID: -178218012507272871, guid: 266d89a31cb71d74fa1a99906ab68146, type: 3}
+  - {fileID: 7942681995710460012, guid: 1125c98ed78de484c967cc6306a098da, type: 3}
+  - {fileID: -1673191467887905759, guid: b6daa6e17c405b34787206231fd1b1e3, type: 3}
+  - {fileID: 8334168980824544780, guid: 0d550452d9333e145929333f7670b45e, type: 3}
+  - {fileID: -4475222012127541284, guid: 39fd99b3c1c551d4ab0f46c79e3ec11e, type: 3}
+  - {fileID: -314914852939813860, guid: 696ff5929aba3de43bd0ea6db7ac158b, type: 3}
+  - {fileID: 4932660947560090299, guid: 6e3777633fade654181fb6342e993cab, type: 3}
+  - {fileID: -490380126931868264, guid: 6df79adca5238f54990d5143fde4ab72, type: 3}
+  - {fileID: -1419514793687529215, guid: 091cfcc03e2469c4a9162d734b9ae7c8, type: 3}
+  - {fileID: 8861341159520604271, guid: 6b7c1394016a1404b9028a72219b59aa, type: 3}
+  - {fileID: -4358562960293135344, guid: 57617eb80bda6a0438294d327c8dcb48, type: 3}
+  - {fileID: -3611445666361265731, guid: 92e35638a21117a4980120c6d4d6c236, type: 3}
+  - {fileID: -5269410336219025184, guid: ce75db4171859df44970b23d4b236903, type: 3}
+  - {fileID: -5400972257812136986, guid: f87f9c80abf70164c9da8eb3222bcee9, type: 3}
+  - {fileID: 3689102640700220694, guid: 961fa2b57300be74180dc14c7a211b35, type: 3}
+  - {fileID: -1603143025297403620, guid: 7a81e331edb82764e82108ff5281fb8e, type: 3}
+  - {fileID: 5079482526247711115, guid: 973e4821f57d4cc4db2923516a2f070b, type: 3}
+  - {fileID: 8936896419517804031, guid: 2cfb5ec8ed59c8f4c95467d8387c91f5, type: 3}
   firstPersonShadowOnly:
   - Head
   - Hair
+  - HeadAccessories

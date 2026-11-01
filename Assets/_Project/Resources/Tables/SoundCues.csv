@@ -35,18 +35,13 @@ LadderExit,Movement/Cloth/MovementWalk +0.08; Movement/Ladder/Hand +0.15; Moveme
 LadderLetGo,Movement/Ladder/Release,4,사다리 놓기
 ZiplineStart,Movement/Zipline/Start *0.4; Movement/Bar/Grab *0.6; Movement/HandHard/MetalPipe *0.6,10,집라인 잡기 (줄 소리는 PlayerFixtureAudio가 반복)
 ZiplineEnd,Movement/Zipline/End *0.4; Movement/Bar/Release *0.6; Movement/Bar/LetGo *0.6,8,집라인 놓기
-BalancePerfect,Movement/HandHard/MetalPipe *0.7; Movement/Ringout/Metal *0.5,2,평균대 노트 PERFECT
-BalanceGood,Movement/HandHard/MetalPipe *0.4,2,평균대 노트 GOOD
-BalanceStep,Movement/Walk/{surface}; Movement/Cloth/MovementSneak *0.6,4,평균대 한 걸음. 박자마다 난다. {surface}는 평균대 표면
-BalanceStumble,Movement/Run/{surface} *0.6; Movement/Cloth/FallShortMedium *0.6; Voice/StrainSoft,6,평균대 박자 실패
-BalanceFall,Movement/Cloth/FallShortMedium; Movement/Release/{surface}; Voice/StrainSoft,8,평균대에서 떨어지기
 SlideStart,Movement/Cloth/FallShortMedium; Movement/HandSoft/{surface}; Movement/Slide/{surface} *0.5,12,슬라이드 시작. 긁는 소리는 SlideLoop가 이어서 반복
 BellySlideStart,Movement/Cloth/FallShortMedium; Movement/Slide/{surface} *0.5,12,엎드려·누워 미끄러지기 시작
 SlideEnd,Movement/Cloth/MovementSneak,4,슬라이드 끝
 Dive,Movement/Release/{surface}; Movement/Cloth/BodyRollSwish; Voice/StrainSoft,10,다이브
 Dodge,Movement/Run/{surface}; Movement/Cloth/SideStep; Voice/StrainSoft,8,스텝 회피 (Beatrun side step)
 DashPush,Movement/Run/{surface}; Movement/Cloth/SideStep; Voice/StrainMedium,12,돌진 밀치기 시작
-DashPushHit,Movement/Push; Movement/Cloth/FallShortMedium *0.6,16,돌진 밀치기가 적에 부딪힘 (Dynamic Landing push1-4)
+DashPushHit,Movement/PushHard *0.3; Movement/Cloth/FallShortMedium *0.6,16,돌진 밀치기가 적에 부딪힘 (BOOM Violent Combat)
 ProneDown,Movement/Prone/Down,4,엎드리기
 ProneUp,Movement/Prone/Up,4,엎드렸다 일어나기
 Crouch,Movement/Cloth/MovementSneak *0.5,2,웅크리기

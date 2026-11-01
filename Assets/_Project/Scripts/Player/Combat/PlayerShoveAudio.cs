@@ -25,6 +25,7 @@ public sealed class PlayerShoveAudio : MonoBehaviour
             GameAudio.Bind(source, AudioChannel.Combat);
         }
         float volume = impact == ShoveImpactKind.Enemy ? settings.shoveEnemyVolume : settings.shoveWorldVolume;
+        source.pitch = 1f + Random.Range(-settings.hitPitchVariance, settings.hitPitchVariance);
         source.PlayOneShot(LastClip, Mathf.Clamp01(volume));
     }
     private AudioClip PickEnemyClip(AudioClip[] clips)

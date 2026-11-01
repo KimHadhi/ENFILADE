@@ -1,0 +1,20 @@
+clip,loop,inPlace,inPlaceY,inPlaceYaw,yawOffset,cycleOffset,from,to,#frames,#note
+W1_Stand_Aim_Idle_IPC,1,1,0,0,180,0,,,61,권총 겨누고 서 있기. 소총도 Rifle 팩을 내보내기 전까지 이 세트를 쓴다
+W1_Walk_Aim_F_Loop_IPC,1,1,0,0,180,0.743,,,36,겨누고 걷기 앞. cycleOffset은 왼발을 딛는 순간
+W1_Walk_Aim_R_Loop_IPC,1,1,0,0,180,0.8,,,36,겨누고 걷기 오른쪽
+W1_Walk_Aim_B_Loop_IPC,1,1,0,0,180,0.829,,,36,겨누고 걷기 뒤
+W1_Walk_Aim_L_Loop_IPC,1,1,0,0,180,0.714,,,36,겨누고 걷기 왼쪽
+W1_Jog_Aim_F_Loop_IPC,1,1,0,0,180,0.81,,,22,겨누고 달리기 앞
+W1_Jog_Aim_R_Loop_IPC,1,1,0,0,180,0.81,,,22,겨누고 달리기 오른쪽
+W1_Jog_Aim_B_Loop_IPC,1,1,0,0,180,0.905,,,22,겨누고 달리기 뒤
+W1_Jog_Aim_L_Loop_IPC,1,1,0,0,180,0.81,,,22,겨누고 달리기 왼쪽
+W1_Run_F_Loop_IPC,1,1,0,0,180,0.833,,,19,총 들고 전력질주
+LDR_I400_Ascd_LU_Loop_IP,0,1,0,0,180,0,0,21,43,왼손을 올리며 한 칸. 두 칸짜리 반복의 앞 절반(가로대 간격 400mm)
+LDR_I400_Ascd_RU_Loop_IP,0,1,0,0,180,0,0,21,43,오른손을 올리며 한 칸
+LDR_I400_Ascd_LU_Idle_IP,1,1,0,0,180,0,,,181,오른손이 위인 채로 멈춤 (LU는 왼발이 위)
+LDR_I400_Ascd_RU_Idle_IP,1,1,0,0,180,0,,,181,왼손이 위인 채로 멈춤
+Punch_M3_Idle,1,1,0,0,180,0,,,49,주먹을 쥔 손가락 자세로만 쓴다
+Punch_M3_Left_Jab,0,1,0,0,180,0,9,26,33,왼손 잽. 14프레임에 다 뻗는다
+Punch_M3_Right_Cross,0,1,0,0,180,0,4,22,27,오른손 크로스. 8프레임에 다 뻗는다
+Punch_M3_Left_Hook,0,1,0,0,180,0,13,32,34,차징한 왼손 훅. 18프레임에 닿는다
+Punch_M3_Right_Uppercut,0,1,0,0,180,0,17,36,40,차징한 오른손 어퍼컷. 24프레임에 닿는다

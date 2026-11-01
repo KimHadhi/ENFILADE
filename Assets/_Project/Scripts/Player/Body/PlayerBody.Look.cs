@@ -97,9 +97,13 @@ public sealed partial class PlayerBody
     private void Look(float dt)
     {
         if (head == null || dt <= 0f) return;
-        eyeViewWeight = Mathf.MoveTowards(eyeViewWeight, dead ? 0f : 1f - AimBlend(), dt / eyeViewTime);
+        float onEyes = (1f - AimBlend()) * (1f - punchEyeSteady * punchWeight);
+        // Rung and slide clips put the head at different heights. A steady ladder view prevents repeated
+        // up/down taps from turning that retargeted head offset into a camera lurch.
+        if (state == MovementState.Ladder) onEyes = 0f;
+        eyeViewWeight = Mathf.MoveTowards(eyeViewWeight, dead ? 0f : onEyes, dt / eyeViewTime);
         bool upright = !dead && transition == null
-            && (state == MovementState.Standing || state == MovementState.Crouching || state == MovementState.Balance);
+            && (state == MovementState.Standing || state == MovementState.Crouching);
         bool sliding = !dead && state == MovementState.Sliding;
         bendWeight = Mathf.MoveTowards(bendWeight, upright || sliding ? 1f : 0f, dt / blendTime);
         // With the gun raised against a wall only the neck and head look down; the shoulders hold the gun up.

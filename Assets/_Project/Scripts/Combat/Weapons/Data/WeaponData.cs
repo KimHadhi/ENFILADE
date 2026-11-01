@@ -15,6 +15,8 @@ public sealed class WeaponData : ScriptableObject
 
     [SerializeField] private string displayName = "Foundation Rifle";
     [SerializeField] private Sprite hudIcon;
+    [Tooltip("Crosshair while this weapon is in hand. Empty: melee weapons use Feedback's Melee Crosshair, the rest the scene's own.")]
+    [SerializeField] private CrosshairProfile crosshairProfile;
     [SerializeField] private WeaponCategory category = WeaponCategory.Ranged;
     [SerializeField] private WeaponFireMode fireMode = WeaponFireMode.Automatic;
     [SerializeField, Min(0.01f)] private float damage = 20f;
@@ -99,6 +101,7 @@ public sealed class WeaponData : ScriptableObject
 
     public string DisplayName => displayName;
     public Sprite HudIcon => hudIcon;
+    public CrosshairProfile CrosshairProfile => crosshairProfile;
     public WeaponCategory Category => category;
     public WeaponFireMode FireMode => fireMode;
     public float Damage => Mathf.Max(0.01f, damage);

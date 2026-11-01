@@ -15,6 +15,9 @@ public sealed class CameraViewPunch : MonoBehaviour
     private readonly RecoilSpring rotation = new RecoilSpring();
     private readonly RecoilSpring fov = new RecoilSpring();
     private readonly RecoilSpring damageRotation = new RecoilSpring();
+    private readonly RecoilSpring impactRotation = new RecoilSpring();
+    private readonly RecoilSpring impactFov = new RecoilSpring();
+    private const float ImpactResponse = 30f;
     private Camera view;
     private float trauma, noiseTime, seed;
     private Quaternion steadyRotation;
@@ -54,6 +57,15 @@ public sealed class CameraViewPunch : MonoBehaviour
         trauma = Mathf.Clamp01(trauma + addTrauma);
     }
 
+    /// <summary>Same as Punch but on real time, so the knock lands inside a hit stop instead of after it.</summary>
+    public void ImpactPunch(Vector3 degrees, float fovDegrees = 0f, float addTrauma = 0f)
+    {
+        if (!GunFeelSettings.Instance.viewPunch) return;
+        impactRotation.Kick(degrees, ImpactResponse);
+        impactFov.Kick(new Vector3(fovDegrees, 0f, 0f), ImpactResponse * .7f);
+        trauma = Mathf.Clamp01(trauma + addTrauma);
+    }
+
     /// <summary>Separate incoming-damage channel, so clearing damage feedback cannot cancel weapon recoil.</summary>
     public void DamagePunch(Vector3 degrees, float addTrauma)
     {
@@ -77,6 +89,9 @@ public sealed class CameraViewPunch : MonoBehaviour
         float dt = Time.deltaTime, response = settings.viewPunchResponse;
         rotation.Tick(dt, response);
         fov.Tick(dt, response * .7f);
+        float impactDt = Time.timeScale > 0f ? Time.unscaledDeltaTime : 0f;
+        impactRotation.Tick(impactDt, ImpactResponse);
+        impactFov.Tick(impactDt, ImpactResponse * .7f);
         trauma = Mathf.MoveTowards(trauma, 0f, settings.shakeRecovery * dt);
         noiseTime += dt * settings.shakeFrequency;
 
@@ -86,8 +101,8 @@ public sealed class CameraViewPunch : MonoBehaviour
             Mathf.PerlinNoise(seed, noiseTime) - .5f,
             Mathf.PerlinNoise(seed + 31.7f, noiseTime) - .5f,
             Mathf.PerlinNoise(seed + 63.1f, noiseTime) - .5f) * (2f * shake);
-        Vector3 kick = rotation.Value;
-        Vector3 euler = new Vector3(-kick.x, kick.y, kick.z) + new Vector3(noise.x, noise.y, noise.z * 1.4f);
+        Vector3 kick = rotation.Value + impactRotation.Value;
+        Vector3 euler =new Vector3(-kick.x, kick.y, kick.z) + new Vector3(noise.x, noise.y, noise.z * 1.4f);
         appliedGunRotation = Quaternion.Euler(euler);
         var damageSettings = PlayerDamageFeedbackSettings.Instance;
         if (!damageSettings.cameraShake) { damageRotation.Reset(); damageTrauma = 0f; }
@@ -101,11 +116,12 @@ public sealed class CameraViewPunch : MonoBehaviour
             Mathf.PerlinNoise(seed + 90f, damageNoiseTime) - .5f,
             Mathf.PerlinNoise(seed + 120f, damageNoiseTime) - .5f,
             Mathf.PerlinNoise(seed + 150f, damageNoiseTime) - .5f) * (2f * damageShake);
-        if (euler.sqrMagnitude < 1e-8f && Mathf.Abs(fov.Value.x) < 1e-4f) return;
+        float fovKick = fov.Value.x + impactFov.Value.x;
+        if (euler.sqrMagnitude < 1e-8f && Mathf.Abs(fovKick) < 1e-4f) return;
 
         steadyRotation = transform.localRotation;
         transform.localRotation = steadyRotation * Quaternion.Euler(euler);
-        appliedFov = view != null ? fov.Value.x : 0f;
+        appliedFov = view != null ? fovKick : 0f;
         if (view != null) view.fieldOfView += appliedFov;
         applied = true;
     }
@@ -124,6 +140,7 @@ public sealed class CameraViewPunch : MonoBehaviour
     {
         Restore();
         rotation.Reset(); fov.Reset(); trauma = 0f;
+        impactRotation.Reset(); impactFov.Reset();
         damageRotation.Reset(); damageTrauma = damageNoiseTime = 0f;
     }
 }

@@ -65,6 +65,7 @@ public sealed class SlideCombat
             settings.slideDamage, DamageKind.Attack, point, direction, ctx.gameObject));
         if (result == DamageResult.Damaged)
         {
+            (ctx.GetComponent<PlayerShoveAudio>() ?? ctx.gameObject.AddComponent<PlayerShoveAudio>()).Play(ShoveImpactKind.Enemy);
             if (target.BodySize == EnemyBodySize.Small || (perfect && target.BodySize == EnemyBodySize.Medium))
                 target.KnockDown(direction, settings.slideKnockdownDuration);
             else if (!perfect && target.BodySize == EnemyBodySize.Medium)

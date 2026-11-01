@@ -9,15 +9,22 @@ internal sealed class ArmIK
 {
     private readonly Transform shoulder, upper, lower, hand;
     private readonly Quaternion handFromFrame;
+    private readonly HandGrip grip;
 
     public Transform Hand => hand;
     public Transform Upper => upper;
+    public float PalmLength { get; }
+    public float PalmDepth => grip.PalmDepth;
+    public float HalfPalmWidth => grip.HalfWidth;
+    public Vector3 PalmPosition => hand.TransformPoint(grip.PalmLocal);
     public float Reach => Vector3.Distance(upper.position, lower.position) + Vector3.Distance(lower.position, hand.position);
 
-    private ArmIK(Transform shoulder, Transform upper, Transform lower, Transform hand, Quaternion handFromFrame)
+    private ArmIK(Transform shoulder, Transform upper, Transform lower, Transform hand, Quaternion handFromFrame, float palmLength, HandGrip grip)
     {
         this.shoulder = shoulder; this.upper = upper; this.lower = lower; this.hand = hand;
         this.handFromFrame = handFromFrame;
+        PalmLength = palmLength;
+        this.grip = grip;
     }
 
     public static ArmIK Create(Animator animator, bool left)
@@ -37,11 +44,28 @@ internal sealed class ArmIK
         Vector3 palm = Vector3.Cross(fingers, thumbSide) * (left ? -1f : 1f);
         var frame = Quaternion.LookRotation(fingers, palm);
         return new ArmIK(Bone(HumanBodyBones.LeftShoulder, HumanBodyBones.RightShoulder), upper, lower, hand,
-            Quaternion.Inverse(frame) * hand.rotation);
+            Quaternion.Inverse(frame) * hand.rotation, Mathf.Clamp(fingers.magnitude, .03f, .15f), HandGrip.Create(animator, left, fingers.normalized, palm.normalized));
     }
 
     /// <summary>Hand rotation whose fingers point along <paramref name="fingers"/> and whose palm faces <paramref name="palm"/>.</summary>
     public Quaternion HandRotation(Vector3 fingers, Vector3 palm) => Quaternion.LookRotation(fingers, palm) * handFromFrame;
+
+    public Vector3 WristAtPalm(Vector3 palm, Quaternion rotation)
+        => palm - rotation * Vector3.Scale(grip.PalmLocal, hand.lossyScale);
+
+    public void PrepareBarGrip(float halfThickness, float palmClearance, float clearance)
+        => grip.PrepareBar(halfThickness, palmClearance, clearance);
+
+    public void GripBar(float halfThickness, float palmClearance, float clearance, float weight, float curl, float sectionAngle = 0f)
+        => grip.Bar(halfThickness, palmClearance, clearance, weight, curl, sectionAngle);
+
+    public void ClearLedgeSkin() => grip.ClearLedgeSkin();
+
+    public void GripLedge(Collider surface, Vector3 fingers, Vector3 palm, Vector3 palmPosition, float clearance, float weight)
+    {
+        Quaternion rotation = HandRotation(fingers, palm);
+        grip.Ledge(surface, fingers, palm, WristAtPalm(palmPosition, rotation), rotation, clearance, weight);
+    }
 
     /// <summary>
     /// Bends the arm toward the wrist target. Out of reach, the shoulder turns toward it by up to

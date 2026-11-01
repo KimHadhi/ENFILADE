@@ -106,6 +106,7 @@ public sealed class PlayerExecution : MonoBehaviour
         player.PerfectDefense?.Cancel();
         player.MeleeCombat?.CancelAction();
         player.HorizontalVelocity = Vector3.zero;
+        CombatCueAudio.Play(gameObject, CombatCue.Grab);
         GetComponent<WeaponController>()?.Runtime?.Interrupt();
         GetComponent<PlayerWeaponInput>()?.RequireTriggerRelease();
         // Cancel windups immediately; newly spawned enemies also consult Suppresses in their own update.

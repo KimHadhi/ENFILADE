@@ -9,5 +9,6 @@
 - [스크립트 길잡이](Scripts/README.md)
 - [검증 방법](Docs/ValidationGuide.md)
 - [애드온 이식 기록](Docs/AddonPortNotes.md)
+- [외부 에셋 출처](Docs/AssetSources.md)
 
 이 파일은 Unity Project 창에서 루트 안내를 찾기 위한 진입점이다.

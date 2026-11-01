@@ -2,8 +2,8 @@ using UnityEngine;
 using MovementState = PlayerMovement.MovementState;
 
 /// <summary>
-/// The sounds of the world's ladders, ziplines and balance beams, after Beatrun's: taking hold, each rung, the slide
-/// down a ladder with its scrape, the ride's hum, letting go, and each note and step on a beam. The climb off a ladder's top is a
+/// The sounds of the world's ladders and ziplines, after Beatrun's: taking hold, each rung, the slide
+/// down a ladder with its scrape, the ride's hum, and letting go. The climb off a ladder's top is a
 /// mantle and sounds in PlayerMovementAudio. What each cue plays is tuned in Tables/SoundCues. Numbers: Player.csv row
 /// FixtureAudio.
 /// </summary>
@@ -36,8 +36,6 @@ public sealed class PlayerFixtureAudio : MonoBehaviour
         if (player == null) return;
         player.StateChanged += OnStateChanged;
         player.LadderStepped += OnLadderStepped;
-        player.BalanceBeat += OnBalanceBeat;
-        player.BalanceStep += OnBalanceStep;
     }
 
     private void OnDisable()
@@ -46,8 +44,6 @@ public sealed class PlayerFixtureAudio : MonoBehaviour
         {
             player.StateChanged -= OnStateChanged;
             player.LadderStepped -= OnLadderStepped;
-            player.BalanceBeat -= OnBalanceBeat;
-            player.BalanceStep -= OnBalanceStep;
         }
         rideLoop?.Stop();
         if (slideLoops != null) foreach (var loop in slideLoops) loop?.Stop();
@@ -81,29 +77,10 @@ public sealed class PlayerFixtureAudio : MonoBehaviour
                 Cue("ZiplineStart", null, true);
                 StartRide();
                 break;
-            case MovementState.BalanceFall: Cue("BalanceFall", Surfaces.Of(fixtures.Beam != null ? fixtures.Beam.Surface : null)); break;
         }
     }
 
     private void OnLadderStepped(bool leftHand) => Cue("LadderStep", null, true);
-
-    private void OnBalanceBeat(BalanceJudgement judgement)
-    {
-        string cue = judgement == BalanceJudgement.Perfect ? "BalancePerfect" : judgement == BalanceJudgement.Good ? "BalanceGood" : "BalanceStumble";
-        Cue(cue, BeamSurface());
-    }
-
-    // Both modes report actual contacts; walking uses this cue, running keeps its ordinary footstep cue.
-    private void OnBalanceStep()
-    {
-        if (player.CurrentState == MovementState.Balance) Cue("BalanceStep", BeamSurface());
-    }
-
-    private string BeamSurface()
-    {
-        var beam = player.Abilities.Fixtures.Beam;
-        return Surfaces.Of(beam != null ? beam.Surface : null);
-    }
 
     private void StartRide()
     {

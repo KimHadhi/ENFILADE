@@ -13,7 +13,7 @@
 | 씬 | 용도 |
 | --- | --- |
 | [CombatFoundation](Assets/_Project/Scenes/Development/CombatFoundation.unity) | 무기·적·HUD 통합 개발 씬. 빌드의 첫 씬 |
-| [MovementAbilityPlayground](Assets/_Project/Scenes/Development/MovementAbilityPlayground.unity) | 이동·파쿠르 시험장. 표면별 발소리 판, 사다리, 집라인, 평균대가 있다. 채팅의 `/map 씬이름`으로 두 씬을 오간다 |
+| [MovementAbilityPlayground](Assets/_Project/Scenes/Development/MovementAbilityPlayground.unity) | 이동·파쿠르 시험장. 표면별 발소리 판, 사다리, 집라인이 있다. 채팅의 `/map 씬이름`으로 두 씬을 오간다 |
 
 메인 메뉴는 새 컨셉으로 다시 만들 예정이라 지금은 없다.
 
@@ -21,7 +21,7 @@
 
 | 하려는 일 | 안내 |
 | --- | --- |
-| 이동·슬라이드·다이브·회피·파쿠르 조작, 착지 단계, 사다리·집라인·평균대 | [이동 안내](Assets/_Project/Docs/MovementGuide.md) |
+| 이동·슬라이드·다이브·회피·파쿠르 조작, 착지 단계, 사다리·집라인 | [이동 안내](Assets/_Project/Docs/MovementGuide.md) |
 | 무기·적·전투 UI를 만들거나 수정 | [전투 제작 안내](Assets/_Project/Docs/CombatFoundationGuide.md) |
 | 현재 전투 규칙과 이후 기획 확인 | [전투 규칙과 확장 계획](Assets/_Project/Docs/WeaponSystemDesign.md) |
 | 체력·무기·적·웨이브·이동·몸·소리 숫자 변경 (CSV 표, 컴파일 불필요) | [밸런스 표](Assets/_Project/Docs/MaintenanceGuide.md#밸런스-표-data-tables), [Resources/Tables](Assets/_Project/Resources/Tables) |
@@ -30,6 +30,7 @@
 | 플레이어 몸(진짜 1인칭)·눈 시점·손발 IK·캐릭터 교체·애니메이션 추가 | [플레이어 몸](Assets/_Project/Docs/PlayerBodyGuide.md) |
 | 사운드 추가·교체, 전투·이동·목소리 소리의 폴더와 연결 위치 | [사운드 관리](Assets/_Project/Docs/MaintenanceGuide.md#사운드를-추가하거나-교체하기) |
 | GMod 애드온에서 옮긴 것과 남은 일 | [애드온 이식 기록](Assets/_Project/Docs/AddonPortNotes.md) |
+| 외부 에셋의 출처, 나중에 뺄 에셋 확인 | [외부 에셋 출처](Assets/_Project/Docs/AssetSources.md) |
 | 수정할 코드 찾기 | [스크립트 길잡이](Assets/_Project/Scripts/README.md) |
 | 전투 또는 이동 코드 확장 | [전투 코드 구조](Assets/_Project/Scripts/Combat/README.md), [이동 코드 구조](Assets/_Project/Scripts/Player/Movement/README.md) |
 | 변경 사항 검사 | [검증 안내](Assets/_Project/Docs/ValidationGuide.md) |

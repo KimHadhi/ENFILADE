@@ -12,7 +12,7 @@
 | --- | --- |
 | [PlayerMovement.cs](PlayerMovement.cs) | 초기화, 프레임 처리 순서, 외부 속성·메서드 |
 | [PlayerMovement.Configuration.cs](PlayerMovement.Configuration.cs) | 이동·자세·슬라이드·다이브 설정 선언. 값은 `Player.csv`의 `Move`·`Posture` 행 |
-| [MovementAbilitySettings.cs](MovementAbilitySettings.cs) | 회피·파쿠르·착지·슬라이딩 공격·밀치기·사다리·집라인·평균대 설정 선언. 값은 `Player.csv`의 `Ability` 행 |
+| [MovementAbilitySettings.cs](MovementAbilitySettings.cs) | 회피·파쿠르·착지·슬라이딩 공격·밀치기·사다리·집라인 설정 선언. 값은 `Player.csv`의 `Ability` 행 |
 | [Core/MovementInput.cs](Core/MovementInput.cs) | Input System 액션 샘플링 |
 | [Core/MovementStateMachine.cs](Core/MovementStateMachine.cs) | 상태 등록, 활성 경로, 공통 조상 기준 전환 |
 | [Core/MovementMotor.cs](Core/MovementMotor.cs) | 속도·접지·경사·중력·CharacterController 이동 |
@@ -22,7 +22,7 @@
 | [Actions/MovementDive.cs](Actions/MovementDive.cs) / [MovementLanding.cs](Actions/MovementLanding.cs) | 다이브 비행 / 착지 단계·구르기·낙하 피해·큰 낙하·넉백 |
 | [Actions/MovementMomentum.cs](Actions/MovementMomentum.cs) | 달리며 쌓이는 속도 |
 | [Dodge/](Dodge/) | 공통 회피 창, 경로 성공 판정, 기울이기, 적 통과 |
-| [Parkour/](Parkour/) | 장애물·벽·렛지·봉 탐지와 이동 경로, 사다리·집라인·평균대 잡기([MovementFixtures](Parkour/MovementFixtures.cs))와 평균대 판정([BalanceRhythm](Parkour/BalanceRhythm.cs), [BeamRun](Parkour/BeamRun.cs)) |
+| [Parkour/](Parkour/) | 장애물·벽·렛지·봉 탐지와 이동 경로, 사다리·집라인 잡기([MovementFixtures](Parkour/MovementFixtures.cs)) |
 | [States/](States/) | 자세·행동별 입력, 전환, 물리 정책 |
 | [../Combat/SlideCombat.cs](../Combat/SlideCombat.cs) | 슬라이딩의 적 접촉·가속·저스트 판정 |
 | [../Combat/PlayerCombatActions.cs](../Combat/PlayerCombatActions.cs) | 몸의 V: 돌진 밀치기(총·주먹)와 총을 든 군중 밀치기. 돌진의 몸 이동은 States/Abilities에서 처리 |
@@ -42,9 +42,6 @@ Configuration은 같은 `PlayerMovement` 컴포넌트의 partial 선언입니다
 | `DashPushHit(point)` | 돌진 밀치기가 적에게 멈춤 | 동작 소리 |
 | `LadderStepped(leftHand)` | 사다리 한 칸 | 사다리류 소리, 시점 펀치 |
 | `LadderSlideStopped` | 사다리를 미끄러지다 멈춤 | 시점 펀치 |
-| `BalanceKeyPressed(side)` | 평균대 키 입력 | 판정 원 |
-| `BalanceBeat(judgement)` | 평균대 판정 결과 | 판정 원, 사다리류 소리 |
-| `BalanceStep` | 평균대 위 실제 발 접지 | 사다리류 소리 |
 | `PlayerFootsteps.Stepped(step)` | 몸의 발이 땅에 닿음 | 시점 펀치 |
 
 ## 프레임 흐름
@@ -84,7 +81,7 @@ Movement
    ├─ Obstacle → Vault, Mantle, LedgeHang, LedgeJump
    ├─ Wall → WallClimb, WallKick
    ├─ Swing → BarGrab, BarSwing, LacheRelease
-   └─ Fixture → Ladder, Zipline, Balance, BalanceFall
+   └─ Fixture → Ladder, Zipline
 ```
 
 전환 시 공통 조상 아래의 기존 경로만 종료하고 새 경로를 진입합니다. Standing → Crouching은 Locomotion을 유지하고, Diving → HeadFirstSliding은 Dive를 종료한 뒤 Slide에 진입합니다.
@@ -117,26 +114,6 @@ Slide 내부의 자세 전환은 부모를 다시 진입하지 않으므로 같�
 
 땅이나 공중에서 찾은 장애물 가운데 넘기가 아닌 것은 `Ability.mantleFromGround`가 켜져 있을 때만 시작합니다. 기본은 렛지에 매달린 뒤 `MantleFromLedge`로 올라서는 경로입니다.
 
-## 평균대 판정
-
-`MovementFixtures.TryBeam`이 올라서는 방식을 고릅니다. 걷기는 `BalanceState`(Fixture 상태), 달리기는 `BeamRun`(Standing 상태를 유지하는 서비스)이 맡고, 둘 다 `BalanceRhythm`을 `BalanceDifficulty` 수치만 달리해 씁니다. 앉아서 가는 것은 일반 Crouching에 `LimitOnBeam` 속도 제한만 겁니다.
-
-판정은 별도의 노트 시계 없이 몸의 실제 발 디딤으로 만듭니다.
-
-1. [PlayerBody.Fixtures](../Body/PlayerBody.Fixtures.cs)가 재생 중인 걷기 클립의 위상을 `ObserveBalanceCycle`로 보냅니다.
-2. [PlayerBody.Feet](../Body/PlayerBody.Feet.cs)가 발을 빔 윗면에 놓고, IK 뒤 [PlayerFootsteps](../Audio/PlayerFootsteps.cs)가 접지를 감지해 `BalanceFootDown`을 부릅니다.
-3. `BalanceRhythm.Contact`가 그 순간을 판정 시각으로 삼고, 같은 발의 다음 접지를 한 주기 뒤로 예고합니다. 링(`BalanceLeftRing`, `BalanceRightRing`)은 이 예고까지 남은 위상에서 계산합니다.
-4. 입력은 `Press`가 발별로 저장합니다. `Resolve`는 판정 시각 앞뒤 `GoodWindow` 안에서 가장 가까운 입력을 고릅니다. 저장 시간은 `balanceHitRange`이며, 그 안의 맞는 입력이 끝내 없을 때만 Miss입니다.
-5. 결과는 `BalanceBeat`로 나갑니다. Miss 수가 `SlipLimit`에 닿으면 `BalanceFall`로 전환하고, 실패한 발 쪽으로 떨어집니다.
-
-유지할 규칙은 다음과 같습니다.
-
-- 입력은 링·몸 위상·카메라를 바꾸지 않습니다. 키 입력은 `BalanceKeyPressed`로 원의 색만 바꾸고, 판정 시 문구와 색만 바뀝니다. 이미 보여 준 예고를 짧게 만들거나 늦추지 않습니다.
-- 충분히 예고되지 않은 접지(유예 중이거나 링이 0.2초 미만 보인 경우)는 판정하지 않습니다.
-- 걷기 속도와 애니메이션은 같은 `BalanceBeatTime`을 쓰며, `balanceTempoResponse`로 목표 간격을 부드럽게 따라갑니다. `Balance` 값은 몸의 작은 흔들림일 뿐이고 입력이나 판정에 따라 변하지 않습니다.
-- 달리기는 진입 때의 전방 달리기·전력질주 동작 하나를 유지하고 재생률만 실제 속도에 맞춥니다. 시선이나 달리기 의도로 동작이 바뀌면 예고한 접지 시점이 밀리기 때문입니다.
-- A/D는 판정 입력입니다. 평균대 위에서는 일반 조향이나 카메라 기울기에 쓰지 않습니다.
-
 ## 재초기화와 상태 보존
 
 `EnsureInitialized()`는 Awake·OnEnable과 Update에서 필요한 서비스를 준비합니다. 새 서비스를 Awake에서만 생성하면 플레이 중 어셈블리 재로드 이후 복구되지 않을 수 있습니다. 외부 컴포넌트는 이동 데이터에 접근하기 전에 `IsInitialized`를 확인합니다.
@@ -153,7 +130,7 @@ Slide 내부의 자세 전환은 부모를 다시 진입하지 않으므로 같�
 4. 입력 우선순위와 점프 버퍼 소비, 종료·취소·리셋·재초기화를 함께 확인합니다.
 5. 상태별 캡슐·눈높이, 벽·천장·경사 접촉, 카메라/HUD의 새 상태 처리를 검증합니다.
 
-기존 enum 숫자를 재배열하지 않습니다. 삭제된 WallRun의 값 15는 예약되어 있으며 이후 값은 유지해야 합니다. 직렬화된 필드의 이름·타입을 바꿀 때는 씬·프리팹 값을 어떻게 이전할지 먼저 정합니다. 파일 이동에는 해당 `.meta`를 함께 유지합니다.
+기존 enum 숫자를 재배열하지 않습니다. 삭제된 상태 값 15와 25·26은 예약되어 있으며 기존 값은 유지해야 합니다. 직렬화된 필드의 이름·타입을 바꿀 때는 씬·프리팹 값을 어떻게 이전할지 먼저 정합니다. 파일 이동에는 해당 `.meta`를 함께 유지합니다.
 
 ## 검증
 

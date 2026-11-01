@@ -19,6 +19,11 @@ public class CrosshairProfile : ScriptableObject
     public Vector2 partSize = new Vector2(10f, 20f);
     public float baseGap = 12f;
 
+    [Header("외곽선")]
+    [Min(0f), Tooltip("점과 부품에 두르는 선 두께(px). 0이면 끈다. 배경과 색이 비슷해도 보이게 한다.")]
+    public float outlineWidth = 0f;
+    public Color outlineColor = new Color(0f, 0f, 0f, .6f);
+
     [Header("특수 효과 (회전)")]
     public bool isRotating = false;
     public float rotationSpeed = 90f;

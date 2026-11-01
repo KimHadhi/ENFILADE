@@ -1,0 +1,11 @@
+{
+  "description": "Opaque band T-shirt: omit the covered core torso to prevent skin clipping when bending. Keep the collar, waist edge, arms and legs.",
+  "bodyMasks": [
+    {
+      "name": "Band shirt core torso",
+      "mesh": "Body",
+      "min": [-0.145, -0.2, 1.035],
+      "max": [0.145, 0.2, 1.225]
+    }
+  ]
+}

@@ -1,13 +1,18 @@
 using UnityEngine;
 
-public enum FistSound { None, Swing, Hit, WallHit }
+public enum FistSound { None, Swing, Hit, HeavyHit, WallHit }
 
-/// <summary>Fist swing, enemy hit and wall contact cues. Clips live in Resources/Combat/Feedback.</summary>
+/// <summary>
+/// Fist swing, enemy hit and wall contact cues. Clips live in Resources/Combat/Feedback. The swing has its own voice: a
+/// contact pulls it down, so the hit lands clean instead of inside a whoosh.
+/// </summary>
 [DisallowMultipleComponent]
 public sealed class PlayerFistAudio : MonoBehaviour
 {
-    private AudioSource source;
-    private AudioClip previousSwing, previousHit, previousWall;
+    // How much of the swing is left once the punch has landed.
+    private const float SwingUnderHit = .3f;
+    private AudioSource swingVoice, hitVoice;
+    private AudioClip previousSwing, previousHit, previousHeavy, previousWall;
     public FistSound LastSound { get; private set; }
     public AudioClip LastClip { get; private set; }
     public int PlayCount { get; private set; }
@@ -24,6 +29,12 @@ public sealed class PlayerFistAudio : MonoBehaviour
         Emit(FistSound.Hit, settings != null ? Pick(settings.fistHitSounds, ref previousHit) : null,
             settings != null ? settings.fistHitVolume : 0f);
     }
+    public void PlayHeavyHit()
+    {
+        var settings = CombatFeedbackSettings.Instance;
+        Emit(FistSound.HeavyHit, settings != null ? Pick(settings.fistHeavyHitSounds, ref previousHeavy) : null,
+            settings != null ? settings.fistHeavyHitVolume : 0f);
+    }
     public void PlayWallHit()
     {
         var settings = CombatFeedbackSettings.Instance;
@@ -34,13 +45,25 @@ public sealed class PlayerFistAudio : MonoBehaviour
     {
         LastSound = sound; LastClip = clip; PlayCount++;
         if (clip == null || !isActiveAndEnabled || !Application.isPlaying) return;
-        if (source == null)
+        if (sound == FistSound.Swing)
         {
-            source = gameObject.AddComponent<AudioSource>(); source.playOnAwake = false;
-            source.spatialBlend = 0f;
-            GameAudio.Bind(source, AudioChannel.Combat);
+            if (swingVoice == null) swingVoice = NewVoice();
+            GameAudio.SetGain(swingVoice, 1f);
+            swingVoice.PlayOneShot(clip, Mathf.Clamp01(volume));
+            return;
         }
-        source.PlayOneShot(clip, Mathf.Clamp01(volume));
+        if (hitVoice == null) hitVoice = NewVoice();
+        if (swingVoice != null) GameAudio.SetGain(swingVoice, SwingUnderHit);
+        float variance = CombatFeedbackSettings.InstanceOrDefaults.hitPitchVariance;
+        hitVoice.pitch = 1f + Random.Range(-variance, variance);
+        hitVoice.PlayOneShot(clip, Mathf.Clamp01(volume));
+    }
+    private AudioSource NewVoice()
+    {
+        var source = gameObject.AddComponent<AudioSource>();
+        source.playOnAwake = false; source.spatialBlend = 0f;
+        GameAudio.Bind(source, AudioChannel.Combat);
+        return source;
     }
     /// <summary>Random clip that differs from the previous pick whenever an alternative exists.</summary>
     private static AudioClip Pick(AudioClip[] clips, ref AudioClip previous)
@@ -59,5 +82,9 @@ public sealed class PlayerFistAudio : MonoBehaviour
             if (clip != null && clip != previous && choice-- == 0) return previous = clip;
         return previous = fallback;
     }
-    private void OnDisable() { if (source != null) source.Stop(); }
+    private void OnDisable()
+    {
+        if (swingVoice != null) swingVoice.Stop();
+        if (hitVoice != null) hitVoice.Stop();
+    }
 }

@@ -10,7 +10,6 @@ using MovementState = PlayerMovement.MovementState;
 ///   or heavy landing adds Beatrun's hard-land jolt.
 /// - Each ladder rung rolls the view toward the hand going up. Catching a ladder in the air jolts it, and stopping a
 ///   slide down one nods it.
-/// - Balance beam timing uses a steady view; its input judgments never inject a camera punch.
 /// PlayerCameraEffects adds Angles to the camera with its other effects, scaled by the Esc menu's screen shake.
 /// Numbers: Player.csv row Punch.
 /// </summary>
@@ -58,7 +57,7 @@ public sealed class PlayerMovementPunch : MonoBehaviour
     [SerializeField, Tooltip("Catching a ladder in the air kicks this: nod (down); turn (right); roll in degrees. Beatrun's: 15, 5, -15.")]
     private Vector3 ladderCatchPunch = new Vector3(15f, 5f, -15f);
     [SerializeField, Tooltip("Stopping a slide down a ladder nods the view by this (degrees).")]
-    private float ladderSlideStopNod = 5f;
+    private float ladderSlideStopNod = 0f;
 
     // Source clamps the punch short of turning the view over.
     private const float MaxAngle = 89f, RestEnergy = 1e-6f;
@@ -123,7 +122,7 @@ public sealed class PlayerMovementPunch : MonoBehaviour
     private void OnStepped(PlayerFootsteps.Step step)
     {
         side = step.Left ? 1f : -1f;
-        if (player.CurrentState == MovementState.Crouching || player.Abilities.Fixtures.BalanceActive) return;
+        if (player.CurrentState == MovementState.Crouching) return;
         float top = player.TopRunSpeed;
         float share = Mathf.Clamp01(step.Speed / Mathf.Max(.1f, top));
         float strength = player.RunSpeed < top - .25f ? stepStrength.x : stepStrength.y;

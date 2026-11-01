@@ -4,6 +4,12 @@ using UnityEngine;
 [DisallowMultipleComponent, DefaultExecutionOrder(-180)]
 public sealed class PlayerPerfectDefense : MonoBehaviour
 {
+    [SerializeField, Tooltip("Parries open the counter window. Off until the counter skill exists; perfect evades always open it.")]
+    private bool parryOpensCounter;
+    [SerializeField, Range(.01f, 1f), Tooltip("Time scale at the moment a parry breaks the attacker's posture.")]
+    private float postureBreakTimeScale = .3f;
+    [SerializeField, Min(0f), Tooltip("That slow motion, real seconds. Starting the execution ends it at once. 0 turns it off.")]
+    private float postureBreakSlowSeconds = .35f;
     private PlayerMovement player;
     private PlayerDamageReceiver receiver;
     private CombatTimeEffects timeEffects;
@@ -23,11 +29,21 @@ public sealed class PlayerPerfectDefense : MonoBehaviour
     private void OnEnable() { var owner = GetComponent<PlayerMovement>(); if (owner?.DamageReceiver != null) Initialize(owner); }
     private void OnResolved(DamageHit hit, DamageResult result)
     {
-        if (result == DamageResult.Blocked) { CombatCueAudio.Play(gameObject, CombatCue.Block); return; }
+        if (result == DamageResult.Blocked)
+        {
+            float variance = CombatFeedbackSettings.InstanceOrDefaults.hitPitchVariance;
+            CombatCueAudio.Play(gameObject, CombatCue.Block, 1f + Random.Range(-variance, variance));
+            return;
+        }
         if (result == DamageResult.Parried)
         {
-            CombatCueAudio.Play(gameObject, CombatCue.Parry);
-            if (hit.IsComboFinisher) OpenCounter(hit);
+            var target = hit.Source != null ? hit.Source.GetComponentInParent<MeleeCombatTarget>() : null;
+            // A parry that breaks posture reads as the counter: the slow motion leads into the execution.
+            if (target != null && target.CanExecute)
+            {
+                if (postureBreakSlowSeconds > 0f) timeEffects.RequestSlowdown(this, postureBreakTimeScale, postureBreakSlowSeconds);
+            }
+            else if (parryOpensCounter && hit.IsComboFinisher) OpenCounter(hit);
         }
         else if (result == DamageResult.Evaded && rewardedDodge != player.Abilities.Dodge.Activation)
         {

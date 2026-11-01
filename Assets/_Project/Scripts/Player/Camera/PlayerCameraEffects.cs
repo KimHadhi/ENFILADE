@@ -71,7 +71,6 @@ public sealed class PlayerCameraEffects : MonoBehaviour
     private float currentBobY;
 
     private bool wasGroundedLastFrame = true;
-    private float lastFallSpeed;
     private float lastHorizontalSpeed;
     private float impactDisplacementY;
     private float impactVelocityY;
@@ -372,20 +371,12 @@ public sealed class PlayerCameraEffects : MonoBehaviour
 
     private void UpdateLandingImpact(float dt)
     {
-        if (movement.IsParkour) lastFallSpeed = 0f;
         bool isGrounded = movement.IsGrounded;
-        float currentVerticalVel = movement.Velocity.y;
-
-        if (!movement.IsParkour && !isGrounded && currentVerticalVel < 0f)
+        float impactSpeed = movement.Abilities.Landing.LastImpactSpeed;
+        if (isGrounded && !wasGroundedLastFrame && movement.LandedThisFrame && impactSpeed > 4.5f)
         {
-            lastFallSpeed = Mathf.Abs(currentVerticalVel);
-        }
-
-        if (isGrounded && !wasGroundedLastFrame && lastFallSpeed > 4.5f)
-        {
-            float impactForce = Mathf.Clamp(lastFallSpeed / 18f, 0.2f, 1f) * landKickAmount;
+            float impactForce = Mathf.Clamp(impactSpeed / 18f, 0.2f, 1f) * landKickAmount;
             impactVelocityY -= impactForce * 40f;
-            lastFallSpeed = 0f;
         }
         wasGroundedLastFrame = isGrounded;
 

@@ -12,13 +12,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a5c2ef63f7af4b5884fde0b8f88ec894, type: 3}
   m_Name: Feedback
   m_EditorClassIdentifier: 
+  meleeCrosshair: {fileID: 11400000, guid: 060f183fc5ec46718d6ccf9d6d53bcf4, type: 2}
   staggerImage: {fileID: 2800000, guid: 87c0d939872941fa9c4fee05877d2080, type: 3}
   staggerSound: {fileID: 8300000, guid: a3684731addf427190ef1506b7894df0, type: 3}
   staggerSoundVolume: 0.8
   staggerImageWidth: 200
   promptFont: {fileID: 11400000, guid: 111e9ac01bcd7fd40bf85568b2a38fa0, type: 2}
   heartbeatScale: 0.28
-  heartbeatBpm: {x: 72, y: 150}
+  heartbeatStrength: 0.35
+  heartbeatBpm: {x: 56, y: 96}
   executableGlowColor: {r: 0.93, g: 0.91, b: 0.9, a: 0.85}
   executableMarkGlowColor: {r: 1, g: 0.12, b: 0.2, a: 0.85}
   executableHealthColor: {r: 0.98, g: 0.24, b: 0.42, a: 1}
@@ -28,27 +30,41 @@ MonoBehaviour:
   executableNameColor: {r: 1, g: 0.5, b: 0.6, a: 1}
   executableBarPunch: 0.22
   executableFlashSeconds: 0.4
-  executableRippleReach: 36
+  executableRippleReach: 18
   shoveEnemySounds:
-  - {fileID: 8300000, guid: f87f0ee748a449deb50f529e652c636f, type: 3}
-  - {fileID: 8300000, guid: 02626e77f9cb4006af6070a69fb0ac22, type: 3}
-  - {fileID: 8300000, guid: e54341ae7e764c5ba0694186312c1c49, type: 3}
-  - {fileID: 8300000, guid: d9a773a599fe4d06a63644f1f60ccdee, type: 3}
-  - {fileID: 8300000, guid: c6ec61e1981645b59271c244fdf447cd, type: 3}
-  - {fileID: 8300000, guid: 9e1972e56edb4758af672018a1f54574, type: 3}
+  - {fileID: 8300000, guid: bd0fad7b11ad4159b132b8ccbd1f65d1, type: 3}
+  - {fileID: 8300000, guid: f1347e7a2bdd4311957b1b4feab4f4ea, type: 3}
+  - {fileID: 8300000, guid: 80b2524246f04a7dae83be2fcc1af7e9, type: 3}
+  - {fileID: 8300000, guid: a2d922d7f31f438ba38b75185e0f1b59, type: 3}
+  - {fileID: 8300000, guid: 7b9abeb9b71c422fa16fd0732db750b7, type: 3}
+  - {fileID: 8300000, guid: c5285e18e66b465f8a84055094109680, type: 3}
+  - {fileID: 8300000, guid: 13506dcce239477a814a387a698566da, type: 3}
+  - {fileID: 8300000, guid: fd41e02f6cd149b0ba70acb0442eb2d7, type: 3}
   shoveWorldSound: {fileID: 8300000, guid: c6e99b7ba4a042858afea6a9d18e6e7c, type: 3}
-  shoveEnemyVolume: 0.3
+  shoveEnemyVolume: 0.26
   shoveWorldVolume: 0.2
   fistSwingSounds:
-  - {fileID: 8300000, guid: 4e37f5ae934d4da3b85977a6ab2100a4, type: 3}
-  - {fileID: 8300000, guid: ea9a20bd8d3c4adda5dfd40bb40f0bd9, type: 3}
-  - {fileID: 8300000, guid: dca13bc37c4044be8cd122c6b350eb98, type: 3}
+  - {fileID: 8300000, guid: ccf81d81d83e4c04b4fd9dd407bafe72, type: 3}
+  - {fileID: 8300000, guid: 6dbe77097b394f1392d5b2d7a3603d17, type: 3}
+  - {fileID: 8300000, guid: bb6b669651164d35a3cfacd88978d117, type: 3}
+  - {fileID: 8300000, guid: 9da2520c3af34a288e416edd737443da, type: 3}
+  - {fileID: 8300000, guid: d2cb7b261e244e8d9a4eaceeab51f69d, type: 3}
+  - {fileID: 8300000, guid: 914544a2a4dc48be850df262e97c3883, type: 3}
+  - {fileID: 8300000, guid: 2118ec1bca18482ea1df89fc0d87471b, type: 3}
+  - {fileID: 8300000, guid: ffab1db5d50846a48371b52b258567ac, type: 3}
+  - {fileID: 8300000, guid: f059f68223da45218a94bf2ade21d423, type: 3}
+  - {fileID: 8300000, guid: a3473f5da6a4400a8b0be06b6941119c, type: 3}
   fistHitSounds:
-  - {fileID: 8300000, guid: a4dcafb716e34ce384316eda4b282d71, type: 3}
-  - {fileID: 8300000, guid: 55e2d90c94324c36bbe83ddce3c3480c, type: 3}
-  - {fileID: 8300000, guid: 488ac2dbd0684396b33a2926d6917e8f, type: 3}
-  - {fileID: 8300000, guid: c3a183a6f4ae494d8b5c1f4a51aff849, type: 3}
-  - {fileID: 8300000, guid: 1a2217424bf5459d9d70ea434edaba63, type: 3}
+  - {fileID: 8300000, guid: fb6ae62f686d46fd85a43ce63ae3bd35, type: 3}
+  - {fileID: 8300000, guid: 6645927109ec495ba97846b19c01632c, type: 3}
+  - {fileID: 8300000, guid: eaa9a5ecb9824d32b1e94d25805635c4, type: 3}
+  - {fileID: 8300000, guid: 638fab23321542c694929d7d7f6a28cf, type: 3}
+  - {fileID: 8300000, guid: 88997b3436154716bb2d271428d67ad5, type: 3}
+  - {fileID: 8300000, guid: 1d1b30bc06d54affa52e67689407395b, type: 3}
+  - {fileID: 8300000, guid: 08f59a9cf8c14ea09bf1825a950db3cb, type: 3}
+  - {fileID: 8300000, guid: e3221f522691459e9c6ac6897718c858, type: 3}
+  - {fileID: 8300000, guid: 025e539acdb041409948d2d933f40d94, type: 3}
+  - {fileID: 8300000, guid: 5518c687a6a0406494d34237861ad9aa, type: 3}
   fistWallSounds:
   - {fileID: 8300000, guid: 036221fc3246400ab339808e72f3f75e, type: 3}
   - {fileID: 8300000, guid: d4263f8a2d024156b535eddebf1d491a, type: 3}
@@ -60,8 +76,8 @@ MonoBehaviour:
   - {fileID: 8300000, guid: d2167af309194479a53550c3df901919, type: 3}
   - {fileID: 8300000, guid: e0836a84deb34af8a3e5520d0659227f, type: 3}
   - {fileID: 8300000, guid: fa658eb1c6694eb7a2c0fa3b2592d58c, type: 3}
-  fistSwingVolume: 0.3
-  fistHitVolume: 0.3
+  fistSwingVolume: 0.16
+  fistHitVolume: 0.34
   fistWallVolume: 0.3
   headshotFeedback: 0
   bodyshotFeedback: 0
@@ -94,35 +110,93 @@ MonoBehaviour:
   - {fileID: 8300000, guid: af147bc85c095d404dc8025beb56b5f3, type: 3}
   - {fileID: 8300000, guid: d8f4c874b4e8851825d475a612b1b0bb, type: 3}
   tackleSounds:
-  - {fileID: 8300000, guid: 14a2c8646885d765ed24858d1b3e72cd, type: 3}
+  - {fileID: 8300000, guid: b4a2aa4bafdb43fb99e59e8c1a9fd50f, type: 3}
+  - {fileID: 8300000, guid: 573abc8cc6f94239b734bfacb2441c0f, type: 3}
+  - {fileID: 8300000, guid: c7d4fd4073594e5d9662730432b336b6, type: 3}
+  - {fileID: 8300000, guid: 199e6ce1e14b4e6a81952fbbdbc9f4ad, type: 3}
+  - {fileID: 8300000, guid: a8c269eb6497488bad61b2023dd026af, type: 3}
+  - {fileID: 8300000, guid: 263145e09ddb4ea9b493dd8e94b97a02, type: 3}
+  - {fileID: 8300000, guid: 8e22cc5327dd4a32871bf5cb875a93b7, type: 3}
   punchSounds:
-  - {fileID: 8300000, guid: 4a00ed6c33f315a26dc594e321cdd6ff, type: 3}
-  - {fileID: 8300000, guid: 9ad1cb4e38e99ec820a009fb30923b28, type: 3}
-  - {fileID: 8300000, guid: aad0bfd441227584d8d40e9fada35b29, type: 3}
-  - {fileID: 8300000, guid: 11a36e068a043132e0ff3111804ab5a3, type: 3}
-  - {fileID: 8300000, guid: fcce662867fe25006b5e8096a4841e0a, type: 3}
-  - {fileID: 8300000, guid: 6421bda00f94d0228c124e24a9e92f3e, type: 3}
-  - {fileID: 8300000, guid: 30671966e057b523de35ac8064fca26d, type: 3}
-  - {fileID: 8300000, guid: 69c1cbbc7af0a349f529bb0c6d5431be, type: 3}
+  - {fileID: 8300000, guid: b85e63d86231449a8047e595996b663c, type: 3}
+  - {fileID: 8300000, guid: fe48ba32dde04c64ba86dbeb34214a1a, type: 3}
+  - {fileID: 8300000, guid: 4a65e1dd8f2b4fb7bf1a275f2e9f8afd, type: 3}
+  - {fileID: 8300000, guid: 57b05e2fb6a248f19c5624dab5c67f62, type: 3}
+  - {fileID: 8300000, guid: 6e294ab119c24153b87e0a8e4c083954, type: 3}
+  - {fileID: 8300000, guid: c17913b46e3f47cfbe06e3a05e9b4d50, type: 3}
+  - {fileID: 8300000, guid: cba68064d1464ddaace7271b4072115f, type: 3}
+  - {fileID: 8300000, guid: 763f85dee0734df39fed8c3705e6cef7, type: 3}
   hitSoundVolume: 0.3
   playerHitVolume: 0.3
   hitSoundDistance: 10
   blockSounds:
-  - {fileID: 8300000, guid: 72ca7f9312f548b9b7b40ab40b48b2e7, type: 3}
-  - {fileID: 8300000, guid: a9af5d773c7245329b237a4d17ee02f9, type: 3}
-  - {fileID: 8300000, guid: b2d9ade9f7c14bbe9094e1f79eee40d1, type: 3}
-  - {fileID: 8300000, guid: 7f0f552cf552423b9be2a39404d866eb, type: 3}
+  - {fileID: 8300000, guid: 126c5d6df9634a4ca4cb10fc50cb5ef0, type: 3}
+  - {fileID: 8300000, guid: 0e7294367d0b46cc8443217eb0156aef, type: 3}
+  - {fileID: 8300000, guid: dc8a6e369df043c9be5530fd7d31d5fb, type: 3}
+  - {fileID: 8300000, guid: 59e88de4737949b5abdc4b766d712466, type: 3}
+  - {fileID: 8300000, guid: 15b2649b2c034a41a510ace4fc45f17f, type: 3}
+  - {fileID: 8300000, guid: cc7a00efbb5148a58ab264530f469b72, type: 3}
   parrySounds:
-  - {fileID: 8300000, guid: 08120d276ee346659b07fae1636fe60f, type: 3}
-  - {fileID: 8300000, guid: 34b062143c664b9c92458b3b0283e24c, type: 3}
-  - {fileID: 8300000, guid: e44f4e030f484a75ad2ed50b634b5faf, type: 3}
-  - {fileID: 8300000, guid: 449b2eb1b9f54414b7b00ce6afa96d54, type: 3}
-  - {fileID: 8300000, guid: 6dc3ce7e9e8446e6bc98f9e647071935, type: 3}
-  - {fileID: 8300000, guid: 03c4bee0a60b4c93aa763d3a01cc047b, type: 3}
+  - {fileID: 8300000, guid: 4d94471f8a1c44928706f7301ab0a361, type: 3}
+  - {fileID: 8300000, guid: 585c417ed4c840fa99ace90a3f83fe45, type: 3}
+  - {fileID: 8300000, guid: 070b14fa7e814a738c8054e41b8d43d0, type: 3}
+  - {fileID: 8300000, guid: 74f84699bff64903ae0e291e3ea462a1, type: 3}
+  - {fileID: 8300000, guid: 24a50f6ba107441bbd1a3144176cc056, type: 3}
+  - {fileID: 8300000, guid: 49601dfb05ae4a33aab613330baf3c56, type: 3}
+  - {fileID: 8300000, guid: 8a363077fcdf426488fbdb26c564750a, type: 3}
+  - {fileID: 8300000, guid: c1c8f0fdd05e4c9c96ed3450527bd6ba, type: 3}
+  - {fileID: 8300000, guid: 35fefe1a04f54b60b95f7abc808dca37, type: 3}
+  - {fileID: 8300000, guid: c1b3f46e2e9142569a85a4ac3489d153, type: 3}
+  parryBreakSounds:
+  - {fileID: 8300000, guid: 22919249ec3b437f8bd9203f497d90a2, type: 3}
+  - {fileID: 8300000, guid: 613f34401b0c4bf8ba5a8692194cb8fd, type: 3}
+  - {fileID: 8300000, guid: e7155035423c4b4da62c7639f051e480, type: 3}
+  - {fileID: 8300000, guid: 596cb87d7b7d4cf794a88963c393e2b4, type: 3}
+  fistHeavyHitSounds:
+  - {fileID: 8300000, guid: 61e3cfe90f9247aba327c0117ed6b4e8, type: 3}
+  - {fileID: 8300000, guid: c26324661079410b864125e4e3c8574c, type: 3}
+  - {fileID: 8300000, guid: 76c3df78352e4bfa8083d276487c5337, type: 3}
+  - {fileID: 8300000, guid: 632d772b8dfe48eabd9b22d009271bfe, type: 3}
+  - {fileID: 8300000, guid: 75cf730a098e4b61bacb6464db59df24, type: 3}
+  - {fileID: 8300000, guid: 6327187624014e5ba912da2ec40d6f06, type: 3}
+  - {fileID: 8300000, guid: 080c5d190ade4ccd89199851c0c7d9dc, type: 3}
+  - {fileID: 8300000, guid: bc16792ef31f402487479ebda09a4d82, type: 3}
+  closeKillSounds:
+  - {fileID: 8300000, guid: ea8c2de9373e45cbb842194724274216, type: 3}
+  - {fileID: 8300000, guid: 25e0d1acfcb843cc9fc8e2e235b1fa26, type: 3}
+  - {fileID: 8300000, guid: df255e434d024c3f9b7f5209b6edfa98, type: 3}
+  - {fileID: 8300000, guid: 37736c6e4c88429b92a86c5cf7e80813, type: 3}
+  - {fileID: 8300000, guid: e3e9e9de7ef5441b84dce4a2adbff2fe, type: 3}
+  - {fileID: 8300000, guid: 390ac48ec93142749de01a2531f8a8e8, type: 3}
+  knockdownSounds:
+  - {fileID: 8300000, guid: b4a2aa4bafdb43fb99e59e8c1a9fd50f, type: 3}
+  - {fileID: 8300000, guid: 573abc8cc6f94239b734bfacb2441c0f, type: 3}
+  - {fileID: 8300000, guid: c7d4fd4073594e5d9662730432b336b6, type: 3}
+  - {fileID: 8300000, guid: 199e6ce1e14b4e6a81952fbbdbc9f4ad, type: 3}
+  - {fileID: 8300000, guid: a8c269eb6497488bad61b2023dd026af, type: 3}
+  - {fileID: 8300000, guid: 263145e09ddb4ea9b493dd8e94b97a02, type: 3}
+  - {fileID: 8300000, guid: 8e22cc5327dd4a32871bf5cb875a93b7, type: 3}
+  grabSounds:
+  - {fileID: 8300000, guid: 0b787eb562b945068f89b60373e43064, type: 3}
+  - {fileID: 8300000, guid: fbfea2017ac143ffa6c98c3b72fc5284, type: 3}
+  - {fileID: 8300000, guid: d72e59e4284e43dabefb579afaf8c5ac, type: 3}
+  - {fileID: 8300000, guid: fcbc6c9a3e364f83bf682dd2a9e4c1c5, type: 3}
+  - {fileID: 8300000, guid: c218f868528e4b03b078cf887192eddd, type: 3}
+  - {fileID: 8300000, guid: 313981c1fd4e4222b540c54df340f175, type: 3}
+  parryHitEffect: {fileID: 4748681987041982144, guid: f1bbb0f3fbfd4a00be8760001a76761f, type: 3}
+  parrySparkleEffect: {fileID: 8771972552311404799, guid: 59448a1b6d4a4513a7783e2406bf3312, type: 3}
+  parryBreakInkEffect: {fileID: 4748681987041982144, guid: 14efef9d10ba43009554c557b0f3b197, type: 3}
+  parryBreakSlashEffect: {fileID: 4748681987041982144, guid: 8c2c9545d17745978249b71df5f33772, type: 3}
   enemyAttackStartSound: {fileID: 8300000, guid: c3c9d1035cb04ba8908bf2cbbcbd446b, type: 3}
   perfectEvadeSound: {fileID: 8300000, guid: 9cabe8b869f240429c8bdb25000a3b45, type: 3}
-  blockVolume: 0.3
-  parryVolume: 0.3
+  blockVolume: 0.33
+  hitPitchVariance: 0.035
+  fistHeavyHitVolume: 0.39
+  closeKillVolume: 0.45
+  knockdownVolume: 0.36
+  grabVolume: 0.15
+  parryVolume: 0.41
+  parryBreakVolume: 0.85
   enemyAttackVolume: 0.3
   perfectEvadeVolume: 0.3
   perfectTimeScale: 0.08

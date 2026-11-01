@@ -618,6 +618,13 @@ MonoBehaviour:
     - {fileID: 8300000, guid: 1027444d9761e9142b0ca50f31c5e5d8, type: 3}
     - {fileID: 8300000, guid: fc48f4de5bdf0c64aaa0f9162f27b7ef, type: 3}
     - {fileID: 8300000, guid: 7a51c3979c9a0ae4c8bc599672b405e5, type: 3}
+  - key: PushHard
+    clips:
+    - {fileID: 8300000, guid: 9c9a064bcd004aca99ca8f07d1fd6232, type: 3}
+    - {fileID: 8300000, guid: 01b7ce0b11e44cad90d64f887978bea4, type: 3}
+    - {fileID: 8300000, guid: 7c2f1ca8be1d40159340bed2df70b10a, type: 3}
+    - {fileID: 8300000, guid: 7baa0e8f9e0e43558b6e1e0f715ab638, type: 3}
+    - {fileID: 8300000, guid: e3e9b6a5050f4418bb088366e40c85cc, type: 3}
   - key: Release/Carpet
     clips:
     - {fileID: 8300000, guid: 60c9c90416ec6064aa4b8cda6df76d30, type: 3}

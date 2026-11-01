@@ -139,8 +139,8 @@ public sealed class EnemyVitalsHUD : MonoBehaviour
         if (!staggerEcho.enabled) return;
         float grow = 1f - (1f - t) * (1f - t);
         staggerEcho.rectTransform.sizeDelta = badge.sizeDelta;
-        staggerEcho.rectTransform.localScale = badge.localScale * Mathf.Lerp(1f, 1.75f, grow);
-        staggerEcho.color = new Color(1f, 1f, 1f, .75f * (1f - t) * (1f - t));
+        staggerEcho.rectTransform.localScale = badge.localScale * Mathf.Lerp(1f, 1f + .75f * settings.heartbeatStrength, grow);
+        staggerEcho.color = new Color(1f, 1f, 1f, .75f * settings.heartbeatStrength * (1f - t) * (1f - t));
     }
     /// <summary>Soft ring, so a stretched copy reads as an elliptical shock wave rather than a box.</summary>
     private static Texture2D RadialRing
@@ -199,7 +199,7 @@ public sealed class EnemyVitalsHUD : MonoBehaviour
         heartPhase = Mathf.Repeat(heartPhase + dt * Mathf.Max(1f, bpm) / 60f, 1f);
         // A new beat starts when the phase wraps (and at the moment of becoming executable).
         if (executableAge <= 0f || heartPhase < previous) beatAge = 0f; else beatAge += dt;
-        Heartbeat = HeartbeatShape(heartPhase);
+        Heartbeat = HeartbeatShape(heartPhase) * settings.heartbeatStrength;
     }
     /// <summary>"Lub-dub": a full beat at phase 0, a smaller one shortly after, then rest.</summary>
     private static float HeartbeatShape(float phase)
@@ -248,7 +248,7 @@ public sealed class EnemyVitalsHUD : MonoBehaviour
         {
             float reach = settings.executableRippleReach * (1f - (1f - ripple) * (1f - ripple));
             Color ring = settings.executableGlowColor;
-            ring.a *= .9f * (1f - ripple) * (1f - ripple);
+            ring.a *= .9f * settings.heartbeatStrength * (1f - ripple) * (1f - ripple);
             executableRipple.color = ring;
             executableRipple.rectTransform.sizeDelta = new Vector2(width * 1.35f + 2f * reach, GlowHeight * 1.4f + 1.6f * reach);
         }
@@ -258,7 +258,7 @@ public sealed class EnemyVitalsHUD : MonoBehaviour
         if (executableRippleHot.enabled)
         {
             float reach = .6f * settings.executableRippleReach * (1f - (1f - flare) * (1f - flare));
-            executableRippleHot.color = new Color(1f, 1f, 1f, (1f - flare) * (1f - flare));
+            executableRippleHot.color = new Color(1f, 1f, 1f, settings.heartbeatStrength * (1f - flare) * (1f - flare));
             executableRippleHot.rectTransform.sizeDelta = new Vector2(width * 1.2f + 2f * reach, GlowHeight + 1.6f * reach);
         }
         executableFlash.enabled = executable && t < 1f;

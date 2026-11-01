@@ -20,6 +20,7 @@ public class DynamicCrosshairView : MonoBehaviour
     private readonly List<RectTransform> spawnedPartRects = new List<RectTransform>();
     private readonly List<Image> spawnedPartImages = new List<Image>();
 
+    private CrosshairProfile baseProfile;
     private float dynamicSpread = 0f;
     private float fireKick;
     private bool combatHidden;
@@ -82,6 +83,13 @@ public class DynamicCrosshairView : MonoBehaviour
         UpdatePartOffsets();
     }
 
+    /// <summary>Shows this profile until the next call; null goes back to the one set on this view.</summary>
+    public void UseProfile(CrosshairProfile profile)
+    {
+        if (baseProfile == null) baseProfile = currentProfile;
+        ApplyProfile(profile != null ? profile : baseProfile);
+    }
+
     private void UpdateRainbowColor()
     {
         float hue = Mathf.Repeat(Time.time * currentProfile.rainbowSpeed, 1f);
@@ -121,6 +129,20 @@ public class DynamicCrosshairView : MonoBehaviour
         {
             profile.OnProfileChanged -= HandleProfileChanged;
         }
+    }
+
+    private static void ApplyOutline(Graphic graphic, CrosshairProfile profile)
+    {
+        var outline = graphic.GetComponent<Outline>();
+        bool wanted = profile.outlineWidth > 0f;
+        if (outline == null)
+        {
+            if (!wanted) return;
+            outline = graphic.gameObject.AddComponent<Outline>();
+        }
+        outline.enabled = wanted;
+        outline.effectColor = profile.outlineColor;
+        outline.effectDistance = new Vector2(profile.outlineWidth, profile.outlineWidth);
     }
 
     private void HandleProfileChanged()
@@ -211,6 +233,7 @@ public class DynamicCrosshairView : MonoBehaviour
                 dotRect.localScale = Vector3.one;
 
                 centerDot.color = profile.color;
+                ApplyOutline(centerDot, profile);
             }
         }
 
@@ -265,6 +288,7 @@ public class DynamicCrosshairView : MonoBehaviour
                 img.sprite = partSpriteToUse;
                 img.type = Image.Type.Simple;
                 img.color = profile.color;
+                ApplyOutline(img, profile);
 
                 float angle = (360f / profile.partCount) * i + profile.baseAngleOffset;
                 // 위아래가 반전되던 문제 수정 (-angle + 180f)

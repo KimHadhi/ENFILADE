@@ -1,21 +1,21 @@
 using UnityEngine;
 
-public enum CombatCue { Block, Parry, EnemyAttackStart, PerfectEvade }
+public enum CombatCue { Block, Parry, ParryBreak, Grab, EnemyAttackStart, PerfectEvade }
 
 [DisallowMultipleComponent]
 public sealed class CombatCueAudio : MonoBehaviour
 {
     private AudioSource source;
-    private AudioClip previousBlock, previousParry;
+    private AudioClip previousBlock, previousParry, previousParryBreak, previousGrab;
     private bool paused;
     public CombatCue LastCue { get; private set; }
     public int PlayCount { get; private set; }
-    public static CombatCueAudio Play(GameObject owner, CombatCue cue)
+    public static CombatCueAudio Play(GameObject owner, CombatCue cue, float pitch = 1f)
     {
         var audio = owner.GetComponent<CombatCueAudio>() ?? owner.AddComponent<CombatCueAudio>();
-        audio.Emit(cue); return audio;
+        audio.Emit(cue, pitch); return audio;
     }
-    private void Emit(CombatCue cue)
+    private void Emit(CombatCue cue, float pitch)
     {
         LastCue = cue; PlayCount++;
         var settings = CombatFeedbackSettings.Instance;
@@ -25,6 +25,8 @@ public sealed class CombatCueAudio : MonoBehaviour
         {
             case CombatCue.Block: clip = Pick(settings.blockSounds, ref previousBlock); volume = settings.blockVolume; break;
             case CombatCue.Parry: clip = Pick(settings.parrySounds, ref previousParry); volume = settings.parryVolume; break;
+            case CombatCue.ParryBreak: clip = Pick(settings.parryBreakSounds, ref previousParryBreak); volume = settings.parryBreakVolume; break;
+            case CombatCue.Grab: clip = Pick(settings.grabSounds, ref previousGrab); volume = settings.grabVolume; break;
             case CombatCue.PerfectEvade: clip = settings.perfectEvadeSound; volume = settings.perfectEvadeVolume; break;
             default: clip = settings.enemyAttackStartSound; volume = settings.enemyAttackVolume; break;
         }
@@ -37,6 +39,7 @@ public sealed class CombatCueAudio : MonoBehaviour
         source.spatialBlend = cue == CombatCue.EnemyAttackStart ? 1f : 0f;
         source.minDistance = 2f; source.maxDistance = 20f;
         source.rolloffMode = AudioRolloffMode.Linear;
+        source.pitch = pitch;
         source.PlayOneShot(clip, Mathf.Clamp01(volume));
     }
     // Avoid repeating the same variant when another non-null clip is available.

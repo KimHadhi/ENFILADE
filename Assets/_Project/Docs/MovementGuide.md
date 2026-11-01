@@ -125,7 +125,6 @@ Q/E 입력만으로 플레이어 몸이 옆으로 이동하지는 않습니다. 
 | 사다리 타기 | W로 한 칸씩 오르고 S로 빠르게 미끄러져 내려오기. 땅에 닿으면 저절로 내려선다. Ctrl로 손 놓기 |
 | 사다리 꼭대기 | 끝까지 오르면 디딜 바닥이 있을 때 저절로 넘어간다 |
 | 집라인 | 공중에서 줄이 손에 닿으면 저절로 잡는다(발 위 1.44~3.6m, 옆으로 0.8m). 도움닫기 속도로 출발해 기울기와 상관없이 18.75m/s까지 빨라진다. Ctrl이나 줄 끝에서 손을 놓으면 속도의 75%를 안고 날아간다 |
-| 평균대 | 빔을 따라 올라서면 걷기 박자가 시작된다. 실제 발이 닿을 때 왼발은 A, 오른발은 D. 자세한 내용은 [평균대](#평균대) |
 | 세게 착지 | 착지 전 `Ability.rollInputWindow`(0.5초) 안에 Ctrl을 누르고 구를 공간이 있으면 구른다. 낙하 피해와 감속이 없다 |
 
 Ctrl을 유지한 공중 이동은 자동 파쿠르 진입을 막습니다. 벽 오르기에 이미 진입한 뒤에는 W/Space를 놓거나 시선을 돌려도 즉시 취소되지 않습니다. 기본 벽 사용 시간은 공중에서 합계 1.8초이며, 다른 벽에 붙어도 새로 충전되지 않습니다. 정상 접지에서 회복합니다. 벽이 사라지거나 접촉·시간이 끝나면 이탈하고, 렛지에 도달하면 매달린 채 기다립니다. 벽을 옆으로 달리는 월 런은 구현되어 있지 않습니다.
@@ -159,7 +158,15 @@ Beatrun의 손맛을 옮긴 부분입니다. 수치는 모두 [Player.csv](../Re
 
 [MovementMotor](../Scripts/Player/Movement/Core/MovementMotor.cs)는 땅에 있던 캡슐이 이동 후 발밑을 잃으면, 캡슐 스텝 높이(0.3m)+0.05m 안의 걸을 수 있는 땅으로 바로 내려붙입니다. 빠르게 계단을 내려가도 칸마다 공중에 떴다 착지하지 않으므로 착지 소리와 펀치가 칸마다 나지 않습니다. 그보다 높은 턱은 그대로 떨어집니다.
 
+### 가장자리의 접지
+
+기존 캡슐의 접촉과 걸침을 유지합니다. 중심 바로 아래의 바닥을 의무로 요구하거나 가장자리에서 플레이어를 바깥으로 밀지 않습니다. 계단 내려붙이기와 슬라이딩도 기존 캡슐 검사를 사용합니다.
+
+발의 수평 위치는 걷는 애니메이션을 따릅니다. 발 IK는 경사·계단의 높이와 기울기만 보정하고, 발밑을 놓치면 마지막 보정의 영향이 `Body.footSettleTime`에 걸쳐 풀립니다. 지지가 없는 발은 발소리를 내지 않습니다.
+
 ### 착지 단계
+
+낙하 속도는 실제 캡슐 하강 거리로 계산한 속도를 상한으로 삼습니다. 턱·벽에 걸려 내려가지 못한 시간은 충격으로 쌓이지 않습니다. 공중 자세 변경에 따른 캡슐 기준점 보정도 낙하 거리에서 제외합니다. 몸의 빠른 낙하 자세·큰 낙하 연출·착지 소리·카메라 충격은 이 판정을 공유합니다. 실제 높은 낙하와 명시적인 아래 방향 넉백의 충격은 유지하며, 봉·집라인 이탈 때 이미 아래로 움직이던 속도도 반영합니다.
 
 [MovementLanding](../Scripts/Player/Movement/Actions/MovementLanding.cs)이 단계를 정하고 수치는 `Ability` 행입니다. 디버그 HUD의 `Last landing`에 마지막 착지의 단계·속도·높이가 나옵니다. 중력 24에서 12m/s는 약 3m, 16m/s는 약 5.3m, 26m/s는 약 14m 낙하입니다.
 
@@ -204,11 +211,11 @@ Esc 메뉴 **화면 흔들림**이 곱해집니다.
 - **화면**([PlayerFallScreen](../Scripts/Player/Camera/PlayerFallScreen.cs), `FallScreen` 행): 가장자리만 렌즈처럼 휘고(숨 쉬듯 줄었다 늘었다), 색이 번지고, 어두워집니다. 가운데는 그대로입니다. `rampTime`(2초)에 걸쳐 들어오고 착지하면 `clearTime`에 사라집니다.
 - **몸**: `Body.fallFlail`로 허우적거립니다. 큰 낙하 중 Ctrl은 착지 구르기만 준비합니다.
 
-## 사다리·집라인·평균대
+## 사다리·집라인
 
-Beatrun의 `br_ladder`·`br_zipline`·`br_balance`를 옮긴 월드 오브젝트입니다. 조작은 위 [파쿠르와 낙하](#파쿠르와-낙하) 표에 있습니다. 수치는 `Player.csv`의 `Ability.ladder*`·`Ability.zipline*`·`Ability.balance*` 행, 클립은 `Body` 행, 소리는 `FixtureAudio` 행과 [SoundCues.csv](../Resources/Tables/SoundCues.csv)의 `Ladder*`·`Zipline*`·`Balance*` 큐입니다. 시험장은 [MovementAbilityPlayground](../Scenes/Development/MovementAbilityPlayground.unity)의 `Ladder`(`Roll drop platform` 앞면), `Zipline`(그 플랫폼 위에서 점프), `Balance beam`입니다.
+Beatrun의 `br_ladder`·`br_zipline`을 옮긴 월드 오브젝트입니다. 조작은 위 [파쿠르와 낙하](#파쿠르와-낙하) 표에 있습니다. 수치는 `Player.csv`의 `Ability.ladder*`·`Ability.zipline*` 행, 클립은 `Body` 행, 소리는 `FixtureAudio` 행과 [SoundCues.csv](../Resources/Tables/SoundCues.csv)의 `Ladder*`·`Zipline*` 큐입니다. 시험장은 [MovementAbilityPlayground](../Scenes/Development/MovementAbilityPlayground.unity)의 `Ladder`(`Roll drop platform` 앞면), `Zipline`(그 플랫폼 위에서 점프)입니다.
 
-사다리·집라인과 평균대 걷기는 파쿠르 상태라 그동안 총과 주먹을 쓸 수 없습니다. 평균대를 달릴 때만 일반 달리기 상태이므로 총을 쓸 수 있습니다.
+사다리·집라인은 파쿠르 상태라 그동안 총과 주먹을 쓸 수 없습니다.
 
 ### 씬에 넣기
 
@@ -216,33 +223,8 @@ Beatrun의 `br_ladder`·`br_zipline`·`br_balance`를 옮긴 월드 오브젝트
 | --- | --- |
 | 사다리 | 빈 오브젝트에 [Ladder](../Scripts/World/Ladder.cs)를 붙여 사다리 발치, 가로대 면에 놓는다. 로컬 Z는 오르는 사람 쪽(벽 바깥)이다. `height`는 지붕보다 조금 더 높게 둔다(발은 꼭대기 1.875m 아래까지 오르고 거기서 지붕으로 넘어간다). 가로대 면을 벽에서 0.15m쯤 띄운다. 콜라이더는 없어도 된다 |
 | 집라인 | 빈 오브젝트에 [Zipline](../Scripts/World/Zipline.cs)을 붙여 줄 시작점에 놓고 `end`에 끝점을 적는다. 발이 줄 1.875m 아래에 매달리므로 끝점은 땅에서 그보다 높게 둔다. 놓을 때 빠른 속도로 날아가니 끝점 앞에 공간을 둔다. 양방향은 `twoWay` |
-| 평균대 | 길게 늘인 큐브(BoxCollider 포함)에 [BalanceBeam](../Scripts/World/BalanceBeam.cs)을 붙인다. 로컬 Z가 길이 방향이고 BoxCollider 윗면 가운데를 걷는다. 끝에서 0.75m 들어온 곳부터 시작하고, 끝까지 걸어가 내려선다 |
 
-사다리와 집라인은 자식에 렌더러가 없으면 Play 때 `barMaterial`로 막대를 그립니다([FixtureBars](../Scripts/World/FixtureBars.cs)). 모델을 자식으로 넣으면 막대는 생기지 않습니다. 씬 뷰에서는 기즈모(사다리 노랑, 줄 하늘색, 평균대 초록)로 보입니다.
-
-### 평균대
-
-건너는 방법은 세 가지입니다. 빠를수록 판정이 엄격합니다.
-
-| 방법 | 들어가는 법 | 속도 | 판정 |
-| --- | --- | --- | --- |
-| 앉아서 | 앉은 채 빔 위로 이동 | `balanceCrouchSpeed` 1m/s | 없음 |
-| 걷기 | 1.2m/s 이상으로 빔을 따라 올라선다. W 없이 저절로 걷는다 | 약 1.3m/s에서 맞출수록 2m/s까지 | PERFECT ±0.05초, GOOD ±0.13초. 세 번째 MISS에 떨어진다 |
-| 달리기 | W를 누른 채 Shift를 쓰거나 6m/s 이상으로 올라선다 | 하던 달리기 그대로 | PERFECT ±0.035초, GOOD ±0.08초. 두 번째 MISS에 떨어진다 |
-
-포복·슬라이딩·점프로 지나가면 판정이 없습니다.
-
-**키**: 실제 발이 빔에 닿는 순간 왼발은 A, 오른발은 D를 누릅니다. 아래를 내려다보며 발에 맞춰도 되고, 조준점 아래의 원을 봐도 됩니다. 걷기의 발소리도 그 순간 납니다.
-
-**원**: 왼쪽 파란 원이 A, 오른쪽 분홍 원이 D입니다. 링이 다음 발 디딤을 1.5박자 전부터 예고하며(걷기 약 0.9초, 달리기 약 0.4초) 줄어들다가, 실제로 발이 닿는 순간 원과 겹칩니다. 늦으면 원 안쪽으로 지나갑니다. 키를 누르면 해당 원의 색만 바로 반응하고, 원의 크기와 카메라는 판정 때문에 튀지 않습니다.
-
-**판정**: 조금 일찍 누른 입력도 접지 순간과 비교합니다. 왼발과 오른발 입력을 따로 받으므로, 너무 이르거나 반대 키를 눌러도 벌을 받지 않고 그 뒤의 정상 입력이 그대로 인정됩니다. 그 발의 판정 시간 안에 맞는 입력이 없을 때만 MISS입니다.
-
-**속도와 회복**: 걷기는 맞출수록 발동작과 이동이 빨라지고, MISS면 처음 속도로 돌아갑니다. 네 번 맞추면(`balanceSlipRecovery`) MISS가 하나 줄어듭니다. 남은 MISS는 원 아래 점으로 보입니다.
-
-**시작과 끝**: 올라선 직후나 뒤돈 직후에는 짧은 유예가 있고(걷기 2박자, 달리기 1박자), 충분히 예고되지 않은 첫 발은 판정하지 않습니다. 걷는 중 S는 뒤돌기, Ctrl은 옆으로 내려오기입니다. 달리는 중 A/D는 옆으로 움직이지 않습니다. W를 놓거나 3m/s(`balanceRunSpeed`의 절반) 아래로 느려지면 달리기가 끝나고, 계속 나아가면 걷기로 이어집니다.
-
-표시 수치는 `BalanceGauge` 행, 동작 구조는 [이동 코드 구조](../Scripts/Player/Movement/README.md#평균대-판정)에 있습니다.
+사다리와 집라인은 자식에 렌더러가 없으면 Play 때 `barMaterial`로 막대를 그립니다([FixtureBars](../Scripts/World/FixtureBars.cs)). 모델을 자식으로 넣으면 막대는 생기지 않습니다. 씬 뷰에서는 기즈모(사다리 노랑, 줄 하늘색)로 보입니다.
 
 ## 설정을 바꿀 위치
 
@@ -250,8 +232,8 @@ Beatrun의 `br_ladder`·`br_zipline`·`br_balance`를 옮긴 월드 오브젝트
 | --- | --- |
 | 이동 속도·속도 쌓기·점프·중력·슬라이딩·다이브 | [Player.csv](../Resources/Tables/Player.csv)의 `Move` 행. 저장하면 Play 중에도 바로 적용된다. 선언: [PlayerMovement.Configuration.cs](../Scripts/Player/Movement/PlayerMovement.Configuration.cs) |
 | 캡슐 높이·눈높이·자세 전환 빠르기 | `Player.csv`의 `Posture` 행 |
-| 회피·기울이기·파쿠르·착지·저스트 슬라이드·밀치기·사다리·집라인·평균대 | `Player.csv`의 `Ability` 행. 선언: [MovementAbilitySettings.cs](../Scripts/Player/Movement/MovementAbilitySettings.cs) |
-| 시점 펀치 / 큰 낙하 화면 / 평균대 표시 | `Player.csv`의 `Punch` / `FallScreen` / `BalanceGauge` 행 |
+| 회피·기울이기·파쿠르·착지·저스트 슬라이드·밀치기·사다리·집라인 | `Player.csv`의 `Ability` 행. 선언: [MovementAbilitySettings.cs](../Scripts/Player/Movement/MovementAbilitySettings.cs) |
+| 시점 펀치 / 큰 낙하 화면 | `Player.csv`의 `Punch` / `FallScreen` 행 |
 | 몸 애니메이션·손·발 | `Player.csv`의 `Body`·`Hands` 행, [플레이어 몸](PlayerBodyGuide.md) |
 | 이동 소리 | [소리 관리](MaintenanceGuide.md#이동목소리-소리-폴더가-곧-목록) |
 | 적 크기와 넘어짐 대상 | 적의 [MeleeCombatTarget](../Scripts/Combat/Damage/MeleeCombatTarget.cs) |

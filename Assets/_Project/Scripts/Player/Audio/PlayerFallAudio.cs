@@ -66,7 +66,7 @@ public sealed class PlayerFallAudio : MonoBehaviour
     // In the head: the beat plays where the camera is.
     private void Beat()
     {
-        float fall = Mathf.Max(0f, -player.VerticalVelocity);
+        float fall = player.FallSpeed;
         float speed = Mathf.InverseLerp(player.AbilitySettings.bigFallMinSpeed, heartbeatFastSpeed, fall);
         nextBeat = Time.time + Mathf.Lerp(heartbeatInterval.x, heartbeatInterval.y, speed);
         if (head == null)

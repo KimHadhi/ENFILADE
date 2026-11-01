@@ -16,6 +16,8 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
     [Tooltip("한 번의 주먹 공격으로 맞힐 수 있는 서로 다른 대상 수.")]
     [SerializeField, Min(1)] private int attackMaxTargets = 2;
     [SerializeField, Min(0f)] private float lungeDistance = 0.12f;
+    [SerializeField, Range(0f, 1f), Tooltip("Punches charged at least this far land with the heavy hit sound.")]
+    private float heavyPunchCharge = .6f;
     [Header("Guard / Parry")]
     [Tooltip("패링/가드 성공 없이 연속 재입력했을 때의 단계별 패링 시간(게임 시간 초).")]
     [SerializeField] private float[] parryWindowDurations = { .35f, .20f, .10f, .05f };
@@ -40,7 +42,7 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
     private Transform aim;
     private MeleeCombatTarget target;
     private Collider targetCollider;
-    private float chargeTime, shoveTime, cooldown, grabTime, grabRecoveryRemaining, lungeRemaining;
+    private float chargeTime, shoveTime, cooldown, grabTime, grabRecoveryRemaining, lungeRemaining, punchCharge;
     private float parryRemaining, guardBufferRemaining, guardIdleTime;
     private int spamCount;
     private bool charging, shovePending, grabConnected, guardAttemptHeld, defenseConnected, pendingWhiff, punchLanded;
@@ -60,7 +62,6 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
         || player.IsLandingRecovery;
     public bool IsActive => isActiveAndEnabled && slots != null && slots.UsesFists && player != null && player.IsInitialized && player.DamageReceiver.IsAlive;
     public event Action<float> Punched;
-    public event Action<DamageResult> Defended;
 
     private void OnEnable()
     {
@@ -198,7 +199,7 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
         lungeDirection = Vector3.ProjectOnPlane(aim.forward, Vector3.up).normalized;
         lungeRemaining = player.IsGrounded ? 0.1f : 0f;
         // Swing first: the sweep can land on its first sample inside Begin.
-        punchLanded = false; fistAudio?.PlaySwing();
+        punchLanded = false; punchCharge = charge; fistAudio?.PlaySwing();
         punchSweep.Begin(player, aim, Mathf.Lerp(damage.x, damage.y, charge),
             Mathf.Lerp(postureDamage.x, postureDamage.y, charge), reach, .22f, attackActiveTime,
             attackMaxTargets, hitLayers, OnPunchLanded, OnPunchWallHit);
@@ -208,7 +209,11 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
     {
         cooldown = 0f;
         // One hit cue per punch, even when it lands on several targets.
-        if (!punchLanded) fistAudio?.PlayHit();
+        if (!punchLanded)
+        {
+            if (punchCharge >= heavyPunchCharge) fistAudio?.PlayHeavyHit();
+            else fistAudio?.PlayHit();
+        }
         punchLanded = true;
     }
     private void OnPunchWallHit()
@@ -218,7 +223,7 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
     }
     public void ShowCounterPunch(bool landed)
     {
-        if (IsActive) { fistAudio?.PlaySwing(); if (landed) fistAudio?.PlayHit(); }
+        if (IsActive) { fistAudio?.PlaySwing(); if (landed) fistAudio?.PlayHeavyHit(); }
         Punched?.Invoke(1f);
     }
     private void Shove()
@@ -242,7 +247,7 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
             parryRemaining = 0f;
             hit.Source?.GetComponentInParent<MeleeCombatTarget>()?.ApplyPostureDamage(25f, 0.8f);
         }
-        Defended?.Invoke(result); return true;
+        return true;
     }
     private bool TryStartGuardBreak()
     {
@@ -253,6 +258,7 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
         IsGuarding = charging = false; lungeRemaining = parryRemaining = 0f;
         player.HorizontalVelocity = Vector3.zero;
         player.Abilities.Dodge.CancelWindow(); player.Abilities.Lean.Reset();
+        CombatCueAudio.Play(gameObject, CombatCue.Grab);
         return true;
     }
     private void TickGuardBreak(float dt)
@@ -277,6 +283,7 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
             grabConnected = true;
             grabRecoveryRemaining = guardBreakRecovery;
             target.ApplyPostureDamage(guardBreakPostureDamage, guardBreakStun);
+            fistAudio?.PlayHeavyHit();
         }
         else if (grabTime >= guardBreakApproachTimeout) CancelAction();
         else if (delta.magnitude > 0.65f)

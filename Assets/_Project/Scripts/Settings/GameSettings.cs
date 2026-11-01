@@ -21,6 +21,8 @@ public sealed class GameSettings
     public float fieldOfView = 90f;
     [Tooltip("Show the player's own hair and head in first person, cut only where the camera sits inside them.")]
     public bool showOwnHead = true;
+    [Tooltip("Player skin ID from the PlayerBody profile. Empty uses the profile's default character.")]
+    public string characterSkin = "";
 
     public const float MinSensitivity = .2f, MaxSensitivity = 3f, MinFieldOfView = 70f, MaxFieldOfView = 120f;
 

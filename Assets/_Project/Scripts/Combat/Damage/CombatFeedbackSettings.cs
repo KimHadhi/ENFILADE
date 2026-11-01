@@ -11,15 +11,29 @@ public sealed class CombatFeedbackSettings : ScriptableObject
     [Min(40f), Tooltip("Stagger image width at 3 metres, in reference screen pixels before the opening pop. Closer grows up to 2x; farther shrinks with distance.")]
     public float staggerImageWidth = 260f;
     public TMP_FontAsset promptFont;
+    [Header("Crosshair")]
+    [Tooltip("Fists and melee weapons without a Crosshair Profile of their own.")]
+    public CrosshairProfile meleeCrosshair;
     [Header("Executable heartbeat")]
     [Range(0f, .4f), Tooltip("Stagger icon swell on each heartbeat (lub, then a smaller dub). 0 turns the pulse off.")]
     public float heartbeatScale = .28f;
+    [Range(0f, 1f), Tooltip("Master strength of everything that beats: swell, glow, echo and the HP bar's ripples. 0 keeps the mark still.")]
+    public float heartbeatStrength = .35f;
     [Tooltip("Heartbeats per minute when the enemy becomes executable / just before posture fully recovers. Speeds up as the window closes.")]
     public Vector2 heartbeatBpm = new Vector2(72f, 150f);
     [Tooltip("Bloom and elliptical waves around the enemy HP bar while executable. Off-white so it never reads as red health. Alpha is the brightest heartbeat.")]
     public Color executableGlowColor = new Color(.93f, .91f, .9f, .85f);
     [Tooltip("Round glow behind the execution mark, pulsing with the heartbeat.")]
     public Color executableMarkGlowColor = new Color(1f, .12f, .2f, .85f);
+    [Header("Executable body (the enemy itself while executable)")]
+    [Tooltip("Faint tint over the whole body. Alpha is its strength.")]
+    public Color executableBodyTint = new Color(1f, .06f, .1f, .3f);
+    [ColorUsage(false, true), Tooltip("Outline around the body. Above 1 it catches the bloom.")]
+    public Color executableOutlineColor = new Color(1.6f, .07f, .12f, 1f);
+    [Min(0f), Tooltip("Outline width, pixels at 1080p. 0 turns it off.")]
+    public float executableOutlineWidth = 3f;
+    [Min(.01f), Tooltip("Tint and outline coming in and going out (real seconds).")]
+    public float executableBodyFade = .12f;
     [Header("Executable palette (whole enemy bar re-dresses while executable)")]
     [Tooltip("Remaining health fill. Bright crimson pink: clearly not the normal red, without going dull.")]
     public Color executableHealthColor = new Color(.98f, .24f, .42f);
@@ -49,30 +63,50 @@ public sealed class CombatFeedbackSettings : ScriptableObject
     [Tooltip("One random clip when a punch damages at least one target. Blocked or parried punches stay silent here.")]
     [InspectorName("Punch Hit Sounds")]
     public AudioClip[] fistHitSounds;
+    [Tooltip("Charged punches, counters and the guard break's blow.")]
+    [InspectorName("Punch Heavy Hit Sounds")]
+    public AudioClip[] fistHeavyHitSounds;
     [InspectorName("Punch Wall Sounds")]
     public AudioClip[] fistWallSounds;
-    [Range(0f, 1f)] public float fistSwingVolume = .3f, fistHitVolume = .3f;
+    [Tooltip("Taking hold of an enemy: the guard break closing in, the start of an execution.")]
+    public AudioClip[] grabSounds;
+    [Range(0f, 1f)] public float fistSwingVolume = .3f, fistHitVolume = .3f, fistHeavyHitVolume = .48f, grabVolume = .34f;
     [Range(0f, 1f), InspectorName("Punch Wall Volume")] public float fistWallVolume = .3f;
     [Header("Hit and kill sounds")]
     [Tooltip("Headshot hit and kill layers. Effects Only and Off both mute them; there are no hit effects yet.")]
     public HitFeedbackLevel headshotFeedback = HitFeedbackLevel.SoundAndEffects;
     [Tooltip("Body hit, body kill and shove/melee kill layers.")]
     public HitFeedbackLevel bodyshotFeedback = HitFeedbackLevel.SoundAndEffects;
-    [Tooltip("Player fall damage reuses Shove Enemy Sounds (same clips) with Tackle Sounds.")]
+    [Tooltip("Tackle Sounds also play for player fall damage.")]
     public AudioClip[] impactBulletSounds, impactPierceSounds, fleshBreakSounds, fleshSplatSounds,
         bodyThudSounds, boneCrackSounds, tackleSounds;
+    [Tooltip("A kill by shove, fist or execution.")]
+    public AudioClip[] closeKillSounds;
+    [Tooltip("An enemy hitting the ground, at the enemy.")]
+    public AudioClip[] knockdownSounds;
+    [Range(0f, 1f)] public float closeKillVolume = .5f, knockdownVolume = .42f;
     [InspectorName("Player Damage Sounds")]
     public AudioClip[] punchSounds;
     [Range(0f, 1f)] public float hitSoundVolume = .3f, playerHitVolume = .3f;
     [Min(1f), Tooltip("Hits not dealt by the player play at the hit point and fade out by this distance, metres.")]
     public float hitSoundDistance = 10f;
+    [Range(0f, .15f), Tooltip("Hits vary their pitch by up to this share, so repeats never sound machine-made.")]
+    public float hitPitchVariance = .035f;
     [Header("Defense and enemy attacks")]
     [Tooltip("Ordinary blocks: Block clips only.")]
     public AudioClip[] blockSounds;
-    [Tooltip("Ordinary parries, including combo finishers: Parry clips only. Hard/Hardest Parry are reserved for future explicitly stronger attacks.")]
+    [Tooltip("Fist parries. The metal Parry clips wait for the katana.")]
     public AudioClip[] parrySounds;
+    [Tooltip("A parry that breaks the attacker's posture.")]
+    public AudioClip[] parryBreakSounds;
+    [Tooltip("Particle prefab played at the contact point of every parry, any pack's. Empty plays none.")]
+    public GameObject parryHitEffect;
+    [Tooltip("Played with the hit effect on every parry: the orange stars that fly off it.")]
+    public GameObject parrySparkleEffect;
+    [Tooltip("Added when a parry breaks posture: the execution icon's look, a red slash over black ink.")]
+    public GameObject parryBreakInkEffect, parryBreakSlashEffect;
     public AudioClip enemyAttackStartSound, perfectEvadeSound;
-    [Range(0f, 1f)] public float blockVolume = .3f, parryVolume = .3f, enemyAttackVolume = .3f, perfectEvadeVolume = .3f;
+    [Range(0f, 1f)] public float blockVolume = .3f, parryVolume = .42f, parryBreakVolume = .5f, enemyAttackVolume = .3f, perfectEvadeVolume = .3f;
     [Header("Perfect defense counter")]
     [Range(.01f, 1f)] public float perfectTimeScale = .08f;
     [Min(.1f)] public float counterWindowSeconds = 1f;

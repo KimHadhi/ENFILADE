@@ -97,9 +97,31 @@ V 홀드는 단일 대상 기술이다. 접근·타격·회복 중에는 이동�
 - 짧게 눌렀다 놓아도 남은 패링 창은 유지한다. 버튼을 계속 누르면 패링 창이 끝난 뒤 일반 가드로 이어진다.
 - 방어는 주먹 차징·공격·밀치기 후딜을 취소한다. 회피·가드 브레이크 등 독점 행동이 끝날 때까지 오래 홀드한 입력은 일반 가드로 복귀하며 새 패링으로 처리하지 않는다.
 
+### 패링 성공 표현
+
+일반 패링에는 슬로모션을 걸지 않는다. 효과를 한 번에 터뜨리지 않고 시간차로 쌓아 화려하되 깔끔하게 보이게 한다. 주먹 패링에는 금속음이나 번개처럼 주먹과 어긋나는 표현을 쓰지 않는다. [ParryFeedback](../Scripts/Player/Combat/ParryFeedback.cs)이 `HitResolved`의 `Parried`를 듣고 한 순간에 맞춰 아래를 실행한다. 수치는 Player.csv의 `Parry` 행이다.
+
+| 층 | 동작 | 위치 |
+| --- | --- | --- |
+| 손 | 공격자 반대쪽 손이 0.04초에 화면을 가로질러 뻗고, 히트스톱 동안 멈췄다가 빠르게 풀린다 | [FistsView](../Scripts/Player/Combat/FistsView.cs) `Deflect` |
+| 시간·화면 | 0.07초 히트스톱, 실제 시간으로 들어가는 화면 충격과 줌, 밝기·색수차·렌즈 펄스 | `CombatTimeEffects`, `CameraViewPunch.ImpactPunch`, `KillConfirmEffect.Parry` |
+| 빛 | 플레어 → 타격 이펙트와 주황 별(0.01초) → 불꽃(0.06초) → 잔불(0.12초). 타격 이펙트와 별은 Feedback의 `Parry Hit Effect`, `Parry Sparkle Effect` 프리팹이고 비우면 나오지 않는다. 어느 팩의 프리팹이든 넣어 볼 수 있으며, 프리팹에 붙은 소리는 재생되지 않는다 | [ParryVfx](../Scripts/Combat/Feel/ParryVfx.cs), `Prefabs/Effects/Parry` |
+| 적 | 몸이 하얗게 번쩍이고, 뒤로 밀리며 휘청이다 멈춘다 | `HitFlashRenderer.WhiteFlash`, `MeleeCombatTarget.ReceiveShove`, [EnemyParryRecoil](../Scripts/Combat/Feel/EnemyParryRecoil.cs) |
+| 소리 | 타격 지점이 재생 시작 직후에 오도록 자른 무술 타격음 | `CombatCueAudio`, `Parry Sounds`, `Parry Break Sounds` |
+
+3초 안에 이어지는 패링은 최대 4단계까지 음이 1.5반음씩 오르고 효과가 커진다. 패링으로 체간을 무너뜨리면 효과와 충격이 가장 커지고, 화면 색이 빠지며 십자 플레어와 붉은 잔불이 나오고, `Parry Break Sounds`가 재생된다. 타격 이펙트 위로 처형 아이콘과 같은 모양인 검은 먹(`Parry Break Ink Effect`, 0.02초)과 붉은 베기(`Parry Break Slash Effect`, 0.035초)가 겹친다. 베기가 분홍으로 씻기지 않도록 `Parry.breakSaturation`은 -40 안쪽으로 둔다. 이때 기본 0.35초 동안 0.3배속이 되어 처형으로 이어지는 순간을 강조한다. 처형을 시작하면 바로 끝나며, 값은 Player.csv의 `Defense` 행이다.
+
+처형할 수 있는 적은 몸 전체에 옅은 붉은 기운이 돌고 붉은 외곽선이 생긴다. [ExecutableHighlight](../Scripts/Combat/Feel/ExecutableHighlight.cs)가 `CanExecute`를 보고 켜며, 그리기는 `HitFlashRenderer`의 오버레이가 맡는다. 색과 두께는 Feedback의 `Executable Body`다.
+
+### 패링 타이밍
+
+적의 타격은 예고음이 시작되고 Enemies.csv의 `windup`초 뒤에 들어온다. 소리 길이와는 무관하다. 패링 창은 키를 누른 순간부터 `Fists.parryWindowDurations`의 첫 값(0.35초)만큼 열린다. 따라서 타격보다 최대 0.35초 먼저 누를 수 있다.
+
+타격을 예고음 끝에 맞추면 안 된다. 현재 예고음은 0.89초 길이지만 0.1~0.33초에 가장 크고 이후 사그라든다. 플레이어는 큰 소리를 듣고 0.2~0.3초에 누르므로, 타격이 소리 끝에 오면 창이 먼저 닫혀 "일찍 누른" 느낌이 든다. 그래서 `windup`은 소리가 꺾이는 0.45초로 둔다. 공격 주기는 `attackInterval + windup`이므로 `windup`을 바꿀 때 `attackInterval`도 함께 맞춘다.
+
 ### 완벽 회피와 반격
 
-실제 공격을 회피 무적 또는 회피 궤적 검사로 피하면 완벽 회피가 성립한다. 패링은 `DamageHit.IsComboFinisher`가 표시된 **연속기의 마지막 타격**일 때 반격 기회를 연다. 단일 공격도 마지막 타격으로 취급한다.
+실제 공격을 회피 무적 또는 회피 궤적 검사로 피하면 완벽 회피가 성립한다. 패링의 반격 창은 `Defense.parryOpensCounter`로 켜며, 반격 스킬이 생기기 전에는 꺼 둔다. 켜면 `DamageHit.IsComboFinisher`가 표시된 **연속기의 마지막 타격**을 패링할 때 반격 기회를 연다. 단일 공격도 마지막 타격으로 취급한다.
 
 기본 효과는 실제 시간 1초의 반격 창, 0.08배속, 푸른 비네트와 `[LMB] 반격`이다. 새 좌클릭으로 공격자에게 한 번 반격하며 기본 HP 피해 80·체간 피해 60·사거리 4m를 적용한다. 이 근접 반격도 사거리 안에서는 벽이나 다른 몸체의 가림을 무시한다.
 
@@ -135,6 +157,16 @@ HP·체간 바, 흐트러짐 표시와 처형 안내는 기존 적·프리팹에
 | 명중 | `GunFeelDirector`, 히트마커·확인음·혈흔·피해 팝업 | 받아들여진 피해 보고에서 표시 생성 |
 | 처치 | 점수·킬로그·선택적 화면 펄스·시각 사본 쓰러짐 | 사망과 웨이브 집계는 원래 피해 수신자가 처리 |
 | 적 반응 | `EnemyHitReaction`의 밀림·감속·공격 취소·기절 | 실제 게임 규칙이므로 화면 효과와 별도로 조절 |
+
+### 크로스헤어
+
+손에 든 것에 따라 프로필이 바뀐다. [WeaponCrosshairSelector](../Scripts/UI/Crosshair/WeaponCrosshairSelector.cs)가 무기 선택을 듣고 고른다.
+
+1. 무기의 `Crosshair Profile`
+2. 비어 있고 주먹이나 근접 무기면 Feedback의 `Melee Crosshair`
+3. 그 외에는 씬의 크로스헤어에 지정된 프로필
+
+근접은 조준이 중요하지 않으므로 가운데가 이어진 14픽셀 붉은 X 하나만 쓴다. X 전체가 그림 한 장이고 프로필의 점 자리에 들어가며(`dotSize` 7은 14픽셀), 부품은 쓰지 않는다. 부품을 모아 X를 만들면 가운데에서 외곽선이 서로를 가린다. X 끝이 반경 10픽셀 안쪽이라 반경 15.5픽셀까지 들어오는 히트마커와 겹치지 않는다.
 
 ### 히트마커와 점수
 

@@ -2,20 +2,16 @@ using UnityEngine;
 using State = PlayerMovement.MovementState;
 
 /// <summary>
-/// The world's ladders, ziplines and balance beams, after Beatrun: takes hold of one when the player meets it, and
-/// keeps what the body and the sounds need to know while on it. LadderState, ZiplineState and BalanceState do the moving.
+/// The world's ladders and ziplines, after Beatrun: takes hold of one when the player meets it, and
+/// keeps what the body and the sounds need to know while on it. LadderState and ZiplineState do the moving.
 /// - A ladder takes W, facing it, within reach, on the ground or in the air.
 /// - A zipline catches the player in the air, once the cable is within the hands' reach.
-/// - A beam is crossed three ways. Stepping along it starts the rhythm walk; arriving at a run keeps running with the
-///   same notes on top (BeamRun); crouching is safe and slowest (LimitOnBeam).
 /// Numbers come from Player.csv, row Ability.
 /// </summary>
 public sealed class MovementFixtures
 {
     private readonly PlayerMovement ctx;
-    private float ladderLock, ziplineLock, balanceLock, turnLeft, lookTurn;
-    private Vector3 turnTo;
-    private BalanceRhythm balanceRhythm;
+    private float ladderLock, ziplineLock;
 
     public Ladder Ladder { get; private set; }
     /// <summary>The ladder was caught in the air rather than stepped onto from the ground.</summary>
@@ -24,6 +20,9 @@ public sealed class MovementFixtures
     public bool LadderLeftHand { get; private set; }
     /// <summary>Rungs climbed since taking hold; the body restarts its clip when it changes.</summary>
     public int LadderSteps { get; private set; }
+    /// <summary>Actual movement progress of the current rung, shared with the hand IK.</summary>
+    public float LadderStepProgress { get; internal set; }
+    public bool LadderStepBlocked { get; internal set; }
     public bool LadderSliding { get; internal set; }
 
     public Zipline Zipline { get; private set; }
@@ -34,57 +33,7 @@ public sealed class MovementFixtures
     public float ZiplineFraction { get; internal set; }
     public float ZiplineSpeed { get; internal set; }
 
-    public BalanceBeam Beam { get; private set; }
-    /// <summary>Which way along the beam the player faces, level.</summary>
-    public Vector3 BalanceFacing { get; private set; }
-    /// <summary>How the body sways to the beat: -100 full left, 100 full right of the way they face.</summary>
-    public float Balance { get; internal set; }
-    /// <summary>Side of the failed foot placement, separate from the continuous visual sway.</summary>
-    public int BalanceFallSide { get; internal set; } = 1;
-    /// <summary>Desired average walking footstep interval. Hits shorten the continuous clip's pace; contacts own timing.</summary>
-    public float BalanceBeatTime { get; internal set; }
-    /// <summary>Walking speed along the beam at this tempo: one step a beat (m/s).</summary>
-    public float BalanceSpeed => ctx.AbilitySettings.balanceStepLength / Mathf.Max(.05f, BalanceBeatTime);
-    /// <summary>The foot awaiting input or previewing its next contact: -1 left, 1 right, 0 before calibration.</summary>
-    public int BalanceNoteSide { get; internal set; }
-    /// <summary>Each ring's approach: 1 before it starts, 0 exactly at Perfect, negative when late and inside the circle.</summary>
-    public float BalanceLeftRing { get; internal set; }
-    public float BalanceRightRing { get; internal set; }
-    /// <summary>Notes missed on this beam and not yet made up for; at BalanceSlipLimit the player falls.</summary>
-    public int BalanceSlips { get; internal set; }
-    public int BalanceSlipLimit { get; internal set; }
-    /// <summary>Roll of the view from the tilt (degrees), with the same sign as MovementLean.Roll.</summary>
-    public float BalanceRoll => BalanceActive ? -Balance * .01f * ctx.AbilitySettings.balanceViewRoll : 0f;
-    /// <summary>The notes are on: walking a beam, or running along one.</summary>
-    public bool BalanceActive => ctx.CurrentState == State.Balance || Run.IsActive;
-    public BeamRun Run { get; }
-
-    internal void BeginBalanceRhythm(BalanceRhythm rhythm) => balanceRhythm = rhythm;
-    internal void EndBalanceRhythm(BalanceRhythm rhythm)
-    {
-        if (balanceRhythm == rhythm) balanceRhythm = null;
-    }
-
-    /// <summary>Called by PlayerFootsteps after the visible foot lands on the beam.</summary>
-    internal void BalanceFootDown(bool left)
-    {
-        if (!BalanceActive || BalanceTurning || balanceRhythm == null) return;
-        ctx.RaiseBalanceStep();
-        if (!balanceRhythm.Contact(left ? -1 : 1)) return;
-        Run.End();
-        ctx.ChangeState(State.BalanceFall);
-    }
-
-    internal void ObserveBalanceCycle(float phase)
-    {
-        if (BalanceActive && !BalanceTurning) balanceRhythm?.ObserveCycle(phase);
-    }
-
-    internal MovementFixtures(PlayerMovement context)
-    {
-        ctx = context;
-        Run = new BeamRun(ctx);
-    }
+    internal MovementFixtures(PlayerMovement context) => ctx = context;
 
     /// <summary>The way a horizontal direction points (world yaw, degrees).</summary>
     public static float YawOf(Vector3 direction) => Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg;
@@ -93,8 +42,6 @@ public sealed class MovementFixtures
     {
         ladderLock = Mathf.Max(0f, ladderLock - dt);
         ziplineLock = Mathf.Max(0f, ziplineLock - dt);
-        balanceLock = Mathf.Max(0f, balanceLock - dt);
-        Run.Tick(dt);
     }
 
     internal bool TryStart()
@@ -102,26 +49,7 @@ public sealed class MovementFixtures
         bool ground = ctx.Abilities.CanUseGroundActions, air = ctx.Abilities.IsOrdinaryAirborne;
         if ((!ground && !air) || ctx.ControlLocked || ctx.Input.CrouchHeld) return false;
         if (TryLadder()) return true;
-        if (air) return TryZipline();
-        return ctx.CurrentState == State.Standing && !Run.IsActive && TryBeam();
-    }
-
-    /// <summary>A crouched walk's speed, held down while on a beam.</summary>
-    internal float LimitOnBeam(float speed)
-        => ctx.CurrentState == State.Crouching && IsOnBeam() ? Mathf.Min(speed, ctx.AbilitySettings.balanceCrouchSpeed) : speed;
-
-    private bool IsOnBeam()
-    {
-        var settings = ctx.AbilitySettings;
-        Vector3 feet = ctx.transform.position;
-        foreach (var candidate in BalanceBeam.Active)
-        {
-            float distance = candidate.DistanceOf(feet);
-            if (distance < 0f || distance > candidate.Length) continue;
-            Vector3 offset = feet - candidate.PointAt(distance);
-            if (Mathf.Abs(offset.y) <= settings.balanceStepHeight && new Vector2(offset.x, offset.z).magnitude <= settings.balanceReach) return true;
-        }
-        return false;
+        return air && TryZipline();
     }
 
     /// <summary>The way the view stays around while on a fixture (world yaw, degrees).</summary>
@@ -132,10 +60,7 @@ public sealed class MovementFixtures
         {
             case State.Ladder when Ladder != null: yaw = Ladder.ClimberYaw; return true;
             case State.Zipline: yaw = YawOf(ZiplineDirection); return true;
-            case State.Balance: yaw = YawOf(BalanceFacing); return true;
-            default:
-                yaw = YawOf(BalanceFacing);
-                return Run.IsActive;
+            default: return false;
         }
     }
 
@@ -159,6 +84,8 @@ public sealed class MovementFixtures
             LadderCaught = !ctx.IsGrounded;
             LadderLeftHand = !LadderCaught;
             LadderSteps = 0;
+            LadderStepProgress = 0f;
+            LadderStepBlocked = false;
             ctx.ChangeState(State.Ladder);
             return true;
         }
@@ -179,6 +106,8 @@ public sealed class MovementFixtures
     {
         LadderLeftHand = !LadderLeftHand;
         LadderSteps++;
+        LadderStepProgress = 0f;
+        LadderStepBlocked = false;
         ctx.RaiseLadderStepped(LadderLeftHand);
     }
 
@@ -197,7 +126,7 @@ public sealed class MovementFixtures
         raised.y = end.y;
         if (!detector.ClearPath(feet, raised, ctx.CrouchColliderHeight) || !detector.ClearPath(raised, end, ctx.CrouchColliderHeight)
             || !detector.ClearCapsule(end, ctx.StandingColliderHeight)) return false;
-        ctx.Abilities.Traversal.Obstacle = new ObstacleTarget { Surface = floor.collider, Start = feet, RaisedStart = raised,
+        ctx.Abilities.Traversal.Obstacle = new ObstacleTarget { Surface = floor.collider, ExitLadder = Ladder, Start = feet, RaisedStart = raised,
             RaisedEnd = end, End = end, Height = end.y - feet.y, Duration = settings.ladderExitDuration };
         ctx.ChangeState(State.Mantle);
         ctx.Actions.ClearJumpBuffer();
@@ -236,74 +165,14 @@ public sealed class MovementFixtures
 
     internal void LockZipline() => ziplineLock = ctx.AbilitySettings.ziplineRegrabDelay;
 
-    private bool TryBeam()
-    {
-        if (balanceLock > 0f) return false;
-        var settings = ctx.AbilitySettings;
-        Vector3 feet = ctx.transform.position, travel = Vector3.ProjectOnPlane(ctx.ActualVelocity, Vector3.up);
-        if (travel.magnitude < settings.balanceMinSpeed) return false;
-        foreach (var candidate in BalanceBeam.Active)
-        {
-            float distance = candidate.DistanceOf(feet);
-            if (distance < settings.balanceEnterMargin || distance > candidate.Length - settings.balanceEnterMargin) continue;
-            Vector3 offset = feet - candidate.PointAt(distance);
-            if (Mathf.Abs(offset.y) > settings.balanceStepHeight || new Vector2(offset.x, offset.z).magnitude > settings.balanceReach) continue;
-            Vector3 along = Vector3.ProjectOnPlane(candidate.Along, Vector3.up).normalized;
-            float heading = Vector3.Dot(travel.normalized, along);
-            // Crossing it sideways is not walking it.
-            if (Mathf.Abs(heading) < .5f) continue;
-            Beam = candidate;
-            BalanceFacing = heading >= 0f ? along : -along;
-            bool running = ctx.Input.Move.y > .1f && (ctx.Input.SprintHeld || travel.magnitude >= settings.balanceRunSpeed);
-            if (running) { Run.Begin(); return false; }
-            ctx.ChangeState(State.Balance);
-            return true;
-        }
-        return false;
-    }
-
-    /// <summary>The player is turning round on the beam and doesn't walk meanwhile.</summary>
-    public bool BalanceTurning => turnLeft > 0f;
-
-    internal void TurnAround()
-    {
-        if (BalanceTurning) return;
-        turnTo = -BalanceFacing;
-        turnLeft = 180f;
-    }
-
-    internal void TickBalanceTurn(float dt)
-    {
-        if (!BalanceTurning) return;
-        float step = Mathf.Min(turnLeft, ctx.AbilitySettings.balanceTurnSpeed * dt);
-        turnLeft -= step;
-        lookTurn += step;
-        BalanceFacing = BalanceTurning ? Quaternion.AngleAxis(step, Vector3.up) * BalanceFacing : turnTo;
-    }
-
-    internal void EndBalanceTurn() => turnLeft = lookTurn = 0f;
-
-    /// <summary>Degrees the view turns with the body since last asked (turning round on a beam).</summary>
-    public float TakeLookTurn()
-    {
-        float turn = lookTurn;
-        lookTurn = 0f;
-        return turn;
-    }
-
-    internal void LockBalance() => balanceLock = ctx.AbilitySettings.balanceRegrabDelay;
-
     internal void Reset()
     {
-        Run.End();
-        balanceRhythm = null;
-        ladderLock = ziplineLock = balanceLock = turnLeft = lookTurn = 0f;
+        ladderLock = ziplineLock = 0f;
         Ladder = null;
         Zipline = null;
-        Beam = null;
         LadderSteps = 0;
+        LadderStepProgress = 0f;
+        LadderStepBlocked = false;
         LadderSliding = false;
-        Balance = 0f;
-        BalanceSlips = 0;
     }
 }

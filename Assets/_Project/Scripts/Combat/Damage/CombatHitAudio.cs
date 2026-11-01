@@ -13,7 +13,7 @@ public enum HitFeedbackLevel { SoundAndEffects, EffectsOnly, Off }
 [DisallowMultipleComponent]
 public sealed class CombatHitAudio : MonoBehaviour
 {
-    private enum Layer { ImpactBullet, ImpactPierce, FleshBreak, FleshSplat, BodyThud, BoneCrack, Tackle, Punch, MeleeHit }
+    private enum Layer { ImpactBullet, ImpactPierce, FleshBreak, FleshSplat, BodyThud, BoneCrack, Tackle, Punch, CloseKill }
 
     // Seconds after the hit. Every event starts with a layer at 0: unlike L4D2 there is no engine hit sound to lead,
     // and impact_bullet already peaks ~0.1 s into the clip, so the reference script's 0.095-0.295 s delays felt late.
@@ -22,10 +22,10 @@ public sealed class CombatHitAudio : MonoBehaviour
         BodyHit = { (Layer.BodyThud, 0f) },
         HeadshotKill = { (Layer.FleshBreak, 0f), (Layer.ImpactPierce, 0f), (Layer.ImpactBullet, .03f), (Layer.BoneCrack, .1f) },
         BodyshotKill = { (Layer.BodyThud, 0f), (Layer.ImpactBullet, 0f) },
-        CloseKill = { (Layer.FleshSplat, 0f), (Layer.BoneCrack, 0f) },
+        CloseKill = { (Layer.CloseKill, 0f), (Layer.FleshSplat, 0f) },
         SkeetBonus = { (Layer.Tackle, 0f) },
         PlayerHit = { (Layer.Punch, 0f) },
-        PlayerFall = { (Layer.MeleeHit, 0f), (Layer.Tackle, 0f) };
+        PlayerFall = { (Layer.Tackle, 0f) };
 
     private const int SpatialVoices = 8;
     private struct Pending { public Layer layer; public float remaining, volume; public bool spatial; public Vector3 point; }
@@ -68,7 +68,7 @@ public sealed class CombatHitAudio : MonoBehaviour
         // Skeet: killed during its attack wind-up, like a hunter shot out of a pounce.
         bool skeet = kill && report.Target.TryGetComponent(out EnemyCombatAI ai) && ai.IsPreparingAttack;
         bool byPlayer = hit.Source != null && hit.Source.GetComponentInParent<PlayerMovement>() != null;
-        Get().Queue(sound, skeet, !byPlayer, hit.Point, settings.hitSoundVolume);
+        Get().Queue(sound, skeet, !byPlayer, hit.Point, sound == HitSound.CloseKill ? settings.closeKillVolume : settings.hitSoundVolume);
     }
 
     /// <summary>Called by PlayerDamageReceiver after a hit actually lands on the player.</summary>
@@ -144,7 +144,12 @@ public sealed class CombatHitAudio : MonoBehaviour
         var clip = settings != null ? Pick(item.layer, Clips(settings, item.layer)) : null;
         if (clip == null) return;
         float volume = Mathf.Clamp01(item.volume);
-        if (!item.spatial) { flat.PlayOneShot(clip, volume); return; }
+        if (!item.spatial)
+        {
+            flat.pitch = 1f + Random.Range(-settings.hitPitchVariance, settings.hitPitchVariance);
+            flat.PlayOneShot(clip, volume);
+            return;
+        }
         var voice = voices[nextVoice];
         nextVoice = (nextVoice + 1) % voices.Length;
         voice.transform.position = item.point;
@@ -179,7 +184,7 @@ public sealed class CombatHitAudio : MonoBehaviour
             case Layer.BoneCrack: return settings.boneCrackSounds;
             case Layer.Tackle: return settings.tackleSounds;
             case Layer.Punch: return settings.punchSounds;
-            default: return settings.shoveEnemySounds;
+            default: return settings.closeKillSounds;
         }
     }
 

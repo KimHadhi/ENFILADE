@@ -55,7 +55,7 @@ PlayerWeaponInput → WeaponController
 | 분류 | 오브젝트와 역할 |
 | --- | --- |
 | `EFFECTS → Audio` | `Feel Audio`(총성·장전·확인음), `Combat Hit Audio`(피격·처치음) |
-| `EFFECTS → World` | `Weapon Feel FX`(총구 연기·불꽃·탄피), `Impact VFX`(혈액·먼지·바닥 혈흔), 처치 후 사라지는 시체 연출 |
+| `EFFECTS → World` | `Weapon Feel FX`(총구 연기·불꽃·탄피), `Impact VFX`(혈액·먼지·바닥 혈흔), `Parry VFX`(패링 불꽃·섬광), 처치 후 사라지는 시체 연출 |
 | `EFFECTS → Screen` | `Damage Popups`(피해 숫자), `Hit Markers`(명중 표시), `Combat Feed`(점수·처치 피드), `Kill Confirm Effect`(처치 화면: 일반 처치는 GTA V식 밝아짐·블룸·옅은 푸른 틴트·약한 색수차 0.5초 유지 후 0.25초 페이드, 처형·반격은 특수 펄스) |
 | `ENEMIES → Console` / `Waves` | 콘솔에서 소환한 적 / 웨이브가 관리하는 적 |
 

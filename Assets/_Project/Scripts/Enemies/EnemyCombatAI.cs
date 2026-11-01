@@ -8,9 +8,9 @@ public sealed class EnemyCombatAI : MonoBehaviour
 {
     [Header("Attack Settings")]
     [SerializeField, Min(1f)] private float attackRange = 2f;
-    [SerializeField, Min(0.2f)] private float attackInterval = .55f;
-    [Tooltip("Fallback windup when no attack-start clip is configured. Otherwise the clip length sets the impact time.")]
-    [SerializeField, Min(0.05f)] private float windup = .35f;
+    [SerializeField, Min(0.2f)] private float attackInterval = 1f;
+    [Tooltip("Seconds from the attack cue to the hit. Keep the hit just past the cue's loudest part: that is when players press.")]
+    [SerializeField, Min(0.05f)] private float windup = .45f;
     [Tooltip("Each combo part has its own cue. Only parrying the last part opens a perfect counter.")]
     [SerializeField, Min(1)] private int comboHits = 1;
     [SerializeField, Min(0f)] private float damage = 10f;
@@ -31,8 +31,6 @@ public sealed class EnemyCombatAI : MonoBehaviour
     private bool preparing;
     private Vector3 lockedAim;
     private int comboIndex;
-    public float WindupDuration => CombatFeedbackSettings.Instance?.enemyAttackStartSound != null
-        ? Mathf.Max(.05f, CombatFeedbackSettings.Instance.enemyAttackStartSound.length) : windup;
 
     public bool IsPreparingAttack => preparing;
 
@@ -102,7 +100,7 @@ public sealed class EnemyCombatAI : MonoBehaviour
         // 공격 준비 중에는 조준 위치를 변경하지 않는다.
         timer += dt;
 
-        if (timer < WindupDuration)
+        if (timer < windup)
             return;
 
         FireAttack();

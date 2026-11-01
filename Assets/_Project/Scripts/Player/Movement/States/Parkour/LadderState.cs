@@ -59,7 +59,14 @@ public sealed class LadderState : MovementBaseState
         progress = Mathf.Min(1f, progress + dt / Mathf.Max(.01f, moveTime));
         Vector3 next = Vector3.Lerp(from, to, progress);
         // Something overhead stops the climb; the hands stay where they are.
-        if (!detector.ClearPath(here, next, ctx.StandingColliderHeight)) { from = to = here; progress = 1f; return; }
+        if (!detector.ClearPath(here, next, ctx.StandingColliderHeight))
+        {
+            from = to = here;
+            progress = 1f;
+            fixtures.LadderStepBlocked = true;
+            return;
+        }
+        fixtures.LadderStepProgress = progress;
         ctx.Motor.RequestDisplacement(next - here);
     }
     private bool HasGroundBelow(Vector3 feet)

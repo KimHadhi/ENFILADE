@@ -11,10 +11,20 @@ public enum KillScreen
     Execution,
     /// <summary>Perfect-defense counter: the special pulse with a cold steel vignette.</summary>
     Counter,
+    /// <summary>Not a kill: a parry's short screen pulse (ParryFeedback), on the same volume.</summary>
+    Parry,
+}
+
+/// <summary>One parry's screen pulse. Flash, Lens and the fringing peak spike on contact and snap back.</summary>
+public struct ParryScreenLook
+{
+    public float Flash, Chromatic, Lens, Saturation, Contrast, Bloom, Vignette, Hold, Fade;
+    public Color Filter, VignetteColor;
 }
 
 /// <summary>
-/// Kill screens, two looks on one runtime volume. Tuning and which kills get which: GunFeel → Kill screen.
+/// Kill screens, two looks on one runtime volume, which a parry's short pulse also borrows. Tuning and which kills get
+/// which: GunFeel → Kill screen.
 ///
 /// GTA V style (ordinary kills): the picture lifts for a moment — slightly brighter, highlights glowing (bloom), a
 /// faint cool blue-white wash and light chromatic fringing — holds for 0.5 s, then fades over 0.25 s. No blur: the
@@ -42,7 +52,7 @@ public sealed class KillConfirmEffect : MonoBehaviour
     private ChromaticAberration chromatic;
     private LensDistortion lens;
     private float age = 99f, hold = .5f, fade = .25f, rise;
-    private float impactSeconds, baseExposure, baseChromatic, baseLens;
+    private float impactSeconds, impactFlash = ImpactFlash, baseExposure, baseChromatic, baseLens;
     private bool special;
     private UniversalAdditionalCameraData borrowed;
 
@@ -69,6 +79,32 @@ public sealed class KillConfirmEffect : MonoBehaviour
         if (view != null)
             CameraViewPunch.For(view)?.Punch(new Vector3(-.35f, Random.Range(-.25f, .25f), Random.Range(-1.2f, 1.2f)) * (heavy ? 1.3f : 1f),
                 heavy ? -1.6f : -1.1f, heavy ? .3f : .22f);
+    }
+
+    /// <summary>A parry's screen pulse. It never cuts a kill's special screen short.</summary>
+    public static void Parry(in ParryScreenLook look)
+    {
+        if (!Application.isPlaying || !GunFeelSettings.Instance.killScreenEffect) return;
+        var self = Get();
+        if (self.special && self.Weight > 0f && self.Current != KillScreen.Parry) return;
+        self.color.saturation.value = look.Saturation;
+        self.color.contrast.value = look.Contrast;
+        self.color.colorFilter.value = look.Filter;
+        self.balance.temperature.value = 0f;
+        self.bloom.intensity.value = look.Bloom;
+        self.bloom.threshold.value = .95f;
+        self.bloom.scatter.value = .7f;
+        self.bloom.tint.value = new Color(1f, .9f, .74f);
+        self.vignette.intensity.value = Mathf.Clamp01(look.Vignette);
+        self.vignette.color.value = look.VignetteColor;
+        self.baseExposure = 0f;
+        self.baseChromatic = Mathf.Clamp01(look.Chromatic);
+        self.baseLens = Mathf.Clamp(look.Lens, -1f, 0f);
+        self.impactFlash = look.Flash;
+        self.impactSeconds = .1f;
+        self.hold = Attack + Mathf.Max(0f, look.Hold);
+        self.fade = Mathf.Max(.05f, look.Fade);
+        self.Begin(KillScreen.Parry);
     }
 
     private static KillConfirmEffect Get()
@@ -159,6 +195,7 @@ public sealed class KillConfirmEffect : MonoBehaviour
         baseChromatic = settings.gtaKillChromatic;
         baseLens = 0f;
         impactSeconds = 0f;
+        impactFlash = ImpactFlash;
         hold = Mathf.Max(Attack, settings.gtaKillHoldSeconds);
         fade = Mathf.Max(.01f, settings.gtaKillFadeSeconds);
         Begin(KillScreen.Gta);
@@ -184,6 +221,7 @@ public sealed class KillConfirmEffect : MonoBehaviour
         baseChromatic = Mathf.Clamp01(settings.killChromatic * boost);
         baseLens = Mathf.Clamp(settings.killLensDistortion * boost, -1f, 0f);
         impactSeconds = settings.killImpactSeconds;
+        impactFlash = ImpactFlash;
         hold = Attack + settings.killPulseHoldSeconds;
         fade = Mathf.Max(.05f, settings.killPulseSeconds * (heavy ? 1.15f : 1f));
         Begin(kind);
@@ -246,7 +284,7 @@ public sealed class KillConfirmEffect : MonoBehaviour
         // Special impact: the lens squeeze, hard fringing and a bright flash spike on the hit and snap back quickly,
         // leaving the grade and vignette to linger.
         float impact = impactSeconds > 0f ? 1f - Mathf.SmoothStep(0f, 1f, age / impactSeconds) : 0f;
-        color.postExposure.value = baseExposure + ImpactFlash * impact;
+        color.postExposure.value = baseExposure + impactFlash * impact;
         chromatic.intensity.value = special ? Mathf.Clamp01(baseChromatic * (.45f + .75f * impact)) : baseChromatic;
         lens.intensity.value = baseLens * (.2f + .8f * impact);
 

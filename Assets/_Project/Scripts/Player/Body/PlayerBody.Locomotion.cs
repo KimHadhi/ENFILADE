@@ -5,6 +5,7 @@ using UnityEngine.Playables;
 /// Ground locomotion that keeps the body facing the camera: walk, run and crouch each blend a forward, right, back and
 /// left clip by the direction of travel (diagonals mix the two either side), and every cycle shares one phase so the
 /// feet stay in step. Sprint has only a forward clip, so the hips turn toward the heading as it takes over.
+/// With a gun out, standing moves take that gun's set; crouching keeps its clips, whose eyes fit the crouched camera.
 /// </summary>
 public sealed partial class PlayerBody
 {
@@ -12,6 +13,9 @@ public sealed partial class PlayerBody
     [SerializeField] private string walkLeft = "mx_strafe_walk_left", walkRight = "mx_strafe_walk_right";
     [SerializeField] private string runLeft = "mx_strafe_run_left", runRight = "mx_strafe_run_right";
     [SerializeField] private string crouchLeft = "crouchleft", crouchRight = "crouchright";
+    [SerializeField, Tooltip("Standing moves with that gun out, in this order: idle; walk forward, right, back, left; run forward, "
+        + "right, back, left; sprint. A set with a clip missing leaves the plain moves in place.")]
+    private string[] rifleMoves = GunMoves, pistolMoves = GunMoves;
 
     [Header("Turning on the spot")]
     [SerializeField] private string turnLeft = "mx_turn_left", turnRight = "mx_turn_right";
@@ -23,36 +27,48 @@ public sealed partial class PlayerBody
     [SerializeField, Min(.1f), Tooltip("Playback speed of the turn clips while the legs step round.")]
     private float turnClipSpeed = 1.5f;
 
+    private static readonly string[] GunMoves =
+    {
+        "W1_Stand_Aim_Idle_IPC", "W1_Walk_Aim_F_Loop_IPC", "W1_Walk_Aim_R_Loop_IPC", "W1_Walk_Aim_B_Loop_IPC", "W1_Walk_Aim_L_Loop_IPC",
+        "W1_Jog_Aim_F_Loop_IPC", "W1_Jog_Aim_R_Loop_IPC", "W1_Jog_Aim_B_Loop_IPC", "W1_Jog_Aim_L_Loop_IPC", "W1_Run_F_Loop_IPC"
+    };
+
+    private string[] plainMoves, rifleSet, pistolSet;
     private float legYaw;
     private int turning;
     private bool legsPlanted;
-    private Channel beamRunChannel;
-    private int beamRunEntry = -1;
-    private float beamRunRate, beamRunTime;
-
     private void AddLocomotionChannels()
     {
-        foreach (string clip in new[] { walk, walkRight, walkBack, walkLeft }) AddChannel(clip, walkClipSpeed);
-        foreach (string clip in new[] { run, runRight, runBack, runLeft }) AddChannel(clip, runClipSpeed);
-        AddChannel(sprint, sprintClipSpeed);
+        plainMoves = new[] { idle, walk, walkRight, walkBack, walkLeft, run, runRight, runBack, runLeft, sprint };
+        rifleSet = AddMoves(rifleMoves);
+        pistolSet = AddMoves(pistolMoves);
+        AddMoves(plainMoves);
         foreach (string clip in new[] { crouchWalk, crouchRight, crouchBack, crouchLeft }) AddChannel(clip, crouchClipSpeed);
         AddChannel(turnLeft, 0f);
         AddChannel(turnRight, 0f);
         turning = 0;
-        beamRunChannel = null;
-        beamRunEntry = -1;
-        beamRunTime = beamRunRate = 0f;
+    }
+
+    private string[] AddMoves(string[] moves)
+    {
+        if (moves == null || moves.Length != plainMoves.Length) return plainMoves;
+        for (int i = 0; i < moves.Length; i++)
+            AddChannel(moves[i], i == 0 ? 0f : i <= 4 ? walkClipSpeed : i <= 8 ? runClipSpeed : sprintClipSpeed);
+        foreach (string clip in moves)
+            if (!byName.ContainsKey(clip)) return plainMoves;
+        return moves;
+    }
+
+    private string[] MovesInHand()
+    {
+        if (weapons == null) weapons = player.GetComponent<WeaponController>();
+        var gun = weapons != null && weapons.ShowsWeapon ? weapons.EquippedData : null;
+        if (gun == null) return plainMoves;
+        return gun.SoundProfile == GunSoundProfile.Pistol ? pistolSet : rifleSet;
     }
 
     private void Locomotion(bool crouched, float dt)
     {
-        if (!crouched && player.Abilities.Fixtures.Run.IsActive)
-        {
-            BeamRunPose(dt);
-            return;
-        }
-        beamRunChannel = null;
-        beamRunEntry = -1;
         Vector3 local = transform.InverseTransformDirection(player.ActualVelocity);
         local.y = 0f;
         float speed = local.magnitude;
@@ -71,12 +87,13 @@ public sealed partial class PlayerBody
             // Speed alone can come from strafing, moving backwards or carried momentum. The sprint clip only
             // has a forward stride, so blend it in with the movement system's actual forward sprint intent.
             toSprint *= player.RunIntent * Mathf.Clamp01(local.z / Mathf.Max(.01f, speed));
+            var moves = MovesInHand();
             var stepping = TurnOnTheSpot(speed < .3f, dt);
             if (stepping != null) stepping.Target += 1f - toWalk;
-            else Mix(idle, 1f - toWalk);
-            Directions(heading, toWalk * (1f - toRun), walk, walkRight, walkBack, walkLeft);
-            Directions(heading, toRun * (1f - toSprint), run, runRight, runBack, runLeft);
-            Mix(sprint, toSprint);
+            else Mix(moves[0], 1f - toWalk);
+            Directions(heading, toWalk * (1f - toRun), moves[1], moves[2], moves[3], moves[4]);
+            Directions(heading, toRun * (1f - toSprint), moves[5], moves[6], moves[7], moves[8]);
+            Mix(moves[9], toSprint);
             if (!legsPlanted) targetYaw = Mathf.Clamp(heading, -maxStrafeYaw, maxStrafeYaw) * toSprint;
         }
 
@@ -92,34 +109,6 @@ public sealed partial class PlayerBody
         // Fast gameplay movement should lengthen the apparent stride, not turn the feet into a fast shuffle.
         float rate = Mathf.Clamp(speed / Mathf.Max(.1f, authored / weight), .65f, 1.1f);
         phase = Mathf.Repeat(phase + dt * rate / (length / weight), 1f);
-    }
-
-    // A beam fixes the body's travel direction. Changing the view or blending to a different gait must not move
-    // a footfall that its ring has already announced. Keep one forward channel until this beam run ends.
-    private void BeamRunPose(float dt)
-    {
-        var fixtures = player.Abilities.Fixtures;
-        float speed = HorizontalSpeed();
-        if (beamRunEntry != fixtures.Run.EntrySerial || beamRunChannel == null)
-        {
-            var running = Find(run);
-            var sprinting = Find(sprint);
-            bool useSprint = running == null || (sprinting != null && (sprinting.Weight > running.Weight
-                || (sprinting.Weight + running.Weight <= .001f && speed >= (runClipSpeed + sprintClipSpeed) * .5f)));
-            beamRunChannel = useSprint ? sprinting : running;
-            beamRunEntry = fixtures.Run.EntrySerial;
-            beamRunTime = 0f;
-            beamRunRate = beamRunChannel != null ? Mathf.Clamp(speed / Mathf.Max(.1f, beamRunChannel.AuthoredSpeed), .65f, 1.1f) : 1f;
-        }
-        targetYaw = Mathf.DeltaAngle(transform.eulerAngles.y, MovementFixtures.YawOf(fixtures.BalanceFacing));
-        legsPlanted = true;
-        turning = 0;
-        if (beamRunChannel == null) { Want(run); return; }
-        beamRunTime += dt;
-        beamRunChannel.Target = 1f;
-        float targetRate = Mathf.Clamp(speed / Mathf.Max(.1f, beamRunChannel.AuthoredSpeed), .65f, 1.1f);
-        beamRunRate = Mathf.Lerp(beamRunRate, targetRate, 1f - Mathf.Exp(-dt / Mathf.Max(.01f, blendTime)));
-        phase = Mathf.Repeat(phase + dt * beamRunRate / beamRunChannel.Length, 1f);
     }
 
     // Standing still, the legs keep their place while the view turns and step round once it has turned far enough

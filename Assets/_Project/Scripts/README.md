@@ -9,15 +9,15 @@
 | **체력·무기·주먹·처형·적·웨이브·이동·몸·소리 숫자** | [Resources/Tables](../Resources/Tables)의 CSV 표 (컴파일 불필요, [사용법](../Docs/MaintenanceGuide.md#밸런스-표-data-tables)) |
 | 표 읽기·적용 방식 | [GameTables](Data/GameTables.cs), [CsvTable](Data/CsvTable.cs), [TableFieldWriter](Data/TableFieldWriter.cs) |
 | 걷기·달리기·점프·자세·슬라이드·다이브 수치 | [Player.csv](../Resources/Tables/Player.csv)의 `Move`·`Posture` 행, 필드 선언은 [Configuration](Player/Movement/PlayerMovement.Configuration.cs) |
-| 회피·파쿠르·착지·저스트 슬라이드·밀치기·사다리·집라인·평균대 수치 | `Player.csv`의 `Ability` 행, 필드 선언은 [MovementAbilitySettings](Player/Movement/MovementAbilitySettings.cs) |
+| 회피·파쿠르·착지·저스트 슬라이드·밀치기·사다리·집라인 수치 | `Player.csv`의 `Ability` 행, 필드 선언은 [MovementAbilitySettings](Player/Movement/MovementAbilitySettings.cs) |
 | 이동 상태 전환·처리 순서 | [PlayerMovement](Player/Movement/PlayerMovement.cs), [이동 코드 구조](Player/Movement/README.md) |
 | 접지·경사·중력·실제 몸 이동 | [MovementMotor](Player/Movement/Core/MovementMotor.cs) |
 | 자세 높이·천장·환풍구·눈높이 | [MovementPostureController](Player/Movement/Core/MovementPostureController.cs) |
 | 달리며 쌓이는 속도 | [MovementMomentum](Player/Movement/Actions/MovementMomentum.cs) |
 | 착지 단계·구르기·큰 낙하·넉백 | [MovementLanding](Player/Movement/Actions/MovementLanding.cs), [HeavyLanding 상태](Player/Movement/States/) |
 | 스텝 회피·기울이기·적 통과 | [Dodge](Player/Movement/Dodge/), [MovementAbilities](Player/Movement/Actions/MovementAbilities.cs) |
-| Vault·맨틀·렛지·벽·봉·사다리·집라인·평균대 | [Parkour](Player/Movement/Parkour/), [States/Parkour](Player/Movement/States/Parkour/) |
-| 씬에 놓는 사다리·집라인·평균대 | [Ladder](World/Ladder.cs), [Zipline](World/Zipline.cs), [BalanceBeam](World/BalanceBeam.cs), [사용 안내](../Docs/MovementGuide.md#사다리집라인평균대) |
+| Vault·맨틀·렛지·벽·봉·사다리·집라인 | [Parkour](Player/Movement/Parkour/), [States/Parkour](Player/Movement/States/Parkour/) |
+| 씬에 놓는 사다리·집라인 | [Ladder](World/Ladder.cs), [Zipline](World/Zipline.cs), [사용 안내](../Docs/MovementGuide.md#사다리집라인) |
 | 슬라이딩의 적 접촉·저스트 판정 | [SlideCombat](Player/Combat/SlideCombat.cs) |
 | 적의 넘어짐·레그돌·복구 | [EnemyKnockdownPresentation](Combat/Damage/EnemyKnockdownPresentation.cs) |
 | 밀치기·돌진 밀치기 | [PlayerCombatActions](Player/Combat/PlayerCombatActions.cs) |
@@ -40,7 +40,6 @@
 | 완벽 방어·흐트러짐·처형의 표시·사운드 | [Feedback.asset](../Resources/Combat/Feedback.asset) |
 | 시점 입력 / 이동 카메라 효과 / 시점 펀치 / 큰 낙하 화면 | [PlayerLook](Player/Camera/PlayerLook.cs), [PlayerCameraEffects](Player/Camera/PlayerCameraEffects.cs), [PlayerMovementPunch](Player/Camera/PlayerMovementPunch.cs), [PlayerFallScreen](Player/Camera/PlayerFallScreen.cs) |
 | 탄약·무기 슬롯·적 체력 UI | [AmmoHUD](UI/AmmoHUD.cs), [WeaponSlotsHUD](UI/WeaponSlotsHUD.cs), [EnemyVitalsHUD](UI/EnemyVitalsHUD.cs) |
-| 평균대 판정 원 | [BalanceGaugeHUD](UI/BalanceGaugeHUD.cs) |
 | 체력·궁극기 UI / 목표·웨이브 UI | [UI/HP](UI/HP/), [MissionHUD](UI/MissionHUD.cs), [WaveMissionSource](UI/WaveMissionSource.cs) |
 | 채팅·테스트 명령 | [UI/Chatting](UI/Chatting/) |
 | Esc 설정 메뉴·일시정지 / 저장되는 플레이어 설정 | [UI/Settings](UI/Settings/), [GamePause](Settings/GamePause.cs) / [GameSettings](Settings/GameSettings.cs) |
@@ -62,7 +61,7 @@
 | `Combat/Feel` | 전투 결과에 대한 표시·소리와 적의 총격 피격 반응 |
 | `Enemies`, `Combat/Waves` | 적의 생명주기·AI와 웨이브 진행 |
 | `UI` | 게임 상태를 읽어 표시하고 UI 입력을 전달 |
-| `World` | 파괴 가능한 문, 스윙 바, 사다리, 집라인, 평균대, 텔레포트, 물리 프랍([PhysicsProp](World/PhysicsProp.cs)), 표면 종류, 소음 등 월드 상호작용 |
+| `World` | 파괴 가능한 문, 스윙 바, 사다리, 집라인, 텔레포트, 물리 프랍([PhysicsProp](World/PhysicsProp.cs)), 표면 종류, 소음 등 월드 상호작용 |
 | `Data` | 밸런스 CSV 표를 읽어 컴포넌트·에셋 필드에 적용하고, 편집기에서 표 저장 시 다시 적용 |
 | `Settings` | 사용자별로 저장되는 설정(`settings.json`)과 일시정지 |
 | `Audio` | 소리 볼륨 채널, 소리 묶음·큐·표면, 캐릭터의 몸과 입에서 나는 소리 |
@@ -81,7 +80,7 @@
 | --- | --- |
 | `Body`, `Hands`, `Footsteps` | [PlayerBody](Player/Body/PlayerBody.cs), [PlayerBodyHands](Player/Body/PlayerBodyHands.cs), [PlayerFootsteps](Player/Audio/PlayerFootsteps.cs) |
 | `Sounds`, `MovementAudio`, `Breathing`, `Wind`, `FallAudio`, `FixtureAudio` | [CharacterSounds](Audio/CharacterSounds.cs), [PlayerMovementAudio](Player/Audio/PlayerMovementAudio.cs), [PlayerBreathing](Player/Audio/PlayerBreathing.cs), [PlayerWindAudio](Player/Audio/PlayerWindAudio.cs), [PlayerFallAudio](Player/Audio/PlayerFallAudio.cs), [PlayerFixtureAudio](Player/Audio/PlayerFixtureAudio.cs) |
-| `Punch`, `FallScreen`, `BalanceGauge` | [PlayerMovementPunch](Player/Camera/PlayerMovementPunch.cs), [PlayerFallScreen](Player/Camera/PlayerFallScreen.cs), [BalanceGaugeHUD](UI/BalanceGaugeHUD.cs) |
+| `Punch`, `FallScreen` | [PlayerMovementPunch](Player/Camera/PlayerMovementPunch.cs), [PlayerFallScreen](Player/Camera/PlayerFallScreen.cs) |
 
 한 프레임 안의 순서는 `DefaultExecutionOrder`로 고정되어 있다. 앞 단계의 결과를 뒤 단계가 읽으므로 순서를 바꾸면 카메라·손이 한 프레임 늦는다.
 
@@ -92,7 +91,6 @@
 | 200 | `PlayerCameraEffects` | 흔들림·기울이기와 카메라 기준 위치 |
 | 250 | `PlayerBody` | 몸 자세, 발 IK, 눈 시점으로 카메라 최종 위치 확정 |
 | 260 | `PlayerFootsteps` | IK가 끝난 발로 접지 판단 |
-| 270 | `BalanceGaugeHUD` | 그 프레임의 평균대 판정 표시 |
 | 300 | `WeaponController` | 확정된 카메라로 조준·발사 |
 | 320 | `PlayerBodyHands` | 확정된 총·주먹 위치로 손 놓기 |
 

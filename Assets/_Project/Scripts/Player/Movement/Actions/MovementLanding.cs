@@ -25,10 +25,12 @@ public sealed class MovementLanding
     private float rollBuffer;
     private float impactSpeed;
     private bool trackingFall;
-    private float highestFeetY;
+    private float fallDistance, fallSpeedSquared, pendingDownwardSpeed;
     private float recoverLeft, noSprintLeft, knockYaw;
     public float LastImpactSpeed { get; private set; }
     public float LastFallDistance { get; private set; }
+    /// <summary>Downward speed justified by real controller travel, for fall poses, sounds and impacts (m/s).</summary>
+    public float FallSpeed => trackingFall ? impactSpeed : 0f;
     /// <summary>How hard the last touchdown was.</summary>
     public Tier LastTier { get; private set; }
     /// <summary>How the heavy landing under way goes down.</summary>
@@ -85,15 +87,58 @@ public sealed class MovementLanding
 
     internal void BeforeMove()
     {
-        if (!ctx.IsGrounded && !ctx.IsParkour)
+        if (ctx.IsGrounded || ctx.IsParkour)
         {
-            float feetY = FeetY;
-            if (!trackingFall) { highestFeetY = feetY; trackingFall = true; }
-            highestFeetY = Mathf.Max(highestFeetY, feetY);
-            impactSpeed = Mathf.Max(0f, -ctx.VerticalVelocity);
-            WatchBigFall(feetY);
+            ClearFall();
+            return;
         }
-        else IsBigFall = false;
+        if (trackingFall) return;
+        trackingFall = true;
+        fallDistance = impactSpeed = 0f;
+        // A bar/zipline release can already be moving down. Carry only the part
+        // proven by the preceding movement, plus explicit downward knockback.
+        float inheritedSpeed = Mathf.Min(Mathf.Max(0f, -ctx.VerticalVelocity), Mathf.Max(0f, -ctx.ActualVelocity.y));
+        float startSpeed = Mathf.Max(pendingDownwardSpeed, inheritedSpeed);
+        fallSpeedSquared = startSpeed * startSpeed;
+        pendingDownwardSpeed = 0f;
+    }
+
+    // Integrate fall energy over distance actually travelled, not time spent airborne.
+    // The final frame can be stopped by the floor: its travelled distance contributes
+    // without replacing the impact speed with a near-zero movement sample.
+    internal void AfterMove(float dt, float movedY)
+    {
+        if (!trackingFall || dt <= 0f || ctx.IsParkour) return;
+        fallDistance = Mathf.Max(0f, fallDistance - movedY);
+        if (ctx.VerticalVelocity > 0f)
+        {
+            fallSpeedSquared = impactSpeed = 0f;
+            IsBigFall = false;
+            return;
+        }
+        float gravity = Mathf.Abs(ctx.gravity * (ctx.IsDiving ? ctx.diveGravityScale : 1f));
+        fallSpeedSquared = Mathf.Max(0f, fallSpeedSquared - 2f * gravity * movedY);
+        float requestedSpeed = Mathf.Max(0f, -ctx.VerticalVelocity);
+        float drop = Mathf.Max(0f, -movedY);
+        bool touchedFloor = ctx.Motor.controller.isGrounded || (ctx.Motor.lastMoveFlags & CollisionFlags.Below) != 0;
+        if (!touchedFloor && requestedSpeed * dt > 0.001f && drop < requestedSpeed * dt * 0.25f)
+        {
+            // A rim or wall is arresting the fall. Do not bank gravity while stuck,
+            // and start the remaining fall here rather than at an old apex.
+            float travelledSpeed = drop / dt;
+            fallSpeedSquared = Mathf.Min(fallSpeedSquared, travelledSpeed * travelledSpeed);
+            fallDistance = drop;
+            IsBigFall = false;
+        }
+        impactSpeed = Mathf.Min(requestedSpeed, Mathf.Sqrt(fallSpeedSquared));
+        if (touchedFloor) IsBigFall = false;
+        else WatchBigFall(FeetY);
+    }
+
+    private void ClearFall()
+    {
+        impactSpeed = fallDistance = fallSpeedSquared = pendingDownwardSpeed = 0f;
+        trackingFall = IsBigFall = false;
     }
 
     private float FeetY => ctx.transform.TransformPoint(ctx.Motor.controller.center - Vector3.up * ctx.Motor.controller.height * 0.5f).y;
@@ -102,22 +147,21 @@ public sealed class MovementLanding
     {
         var settings = ctx.AbilitySettings;
         if (ctx.IsDiving) { IsBigFall = false; return; }
-        if (IsBigFall || -ctx.VerticalVelocity < settings.bigFallMinSpeed) return;
-        float left = settings.bigFallHeight - (highestFeetY - feetY);
+        if (IsBigFall || impactSpeed < settings.bigFallMinSpeed) return;
+        float left = settings.bigFallHeight - fallDistance;
         Vector3 feet = ctx.transform.position;
         feet.y = feetY + .05f;
         IsBigFall = left <= 0f || !Physics.Raycast(feet, Vector3.down, left + .05f, ctx.groundLayers, QueryTriggerInteraction.Ignore);
     }
 
-    internal void SupportedByTraversal() { impactSpeed = 0f; trackingFall = false; IsBigFall = IsKnockedBack = false; }
+    internal void SupportedByTraversal() { ClearFall(); IsKnockedBack = false; }
 
     internal bool OnLanding()
     {
         var settings = ctx.AbilitySettings;
         LastImpactSpeed = impactSpeed;
-        LastFallDistance = trackingFall ? Mathf.Max(0f, highestFeetY - FeetY) : 0f;
-        impactSpeed = 0f;
-        trackingFall = IsBigFall = false;
+        LastFallDistance = trackingFall ? fallDistance : 0f;
+        ClearFall();
         bool knocked = IsKnockedBack;
         IsKnockedBack = false;
         ctx.Abilities.Traversal.OnGrounded();
@@ -202,13 +246,16 @@ public sealed class MovementLanding
         ctx.VerticalVelocity = velocity.y;
         ctx.Actions.LeaveGround();
         trackingFall = false;
+        // An explicit downward launch carries real momentum even over a short drop.
+        pendingDownwardSpeed = Mathf.Max(0f, -velocity.y);
         IsKnockedBack = true;
     }
 
     internal void Reset()
     {
-        impactSpeed = rollBuffer = LastImpactSpeed = LastFallDistance = recoverLeft = noSprintLeft = 0f;
-        trackingFall = IsBigFall = IsKnockedBack = false;
+        ClearFall();
+        rollBuffer = LastImpactSpeed = LastFallDistance = recoverLeft = noSprintLeft = 0f;
+        IsKnockedBack = false;
         LastTier = Tier.Light;
     }
 }

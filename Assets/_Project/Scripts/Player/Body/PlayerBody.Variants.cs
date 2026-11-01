@@ -181,7 +181,7 @@ public sealed partial class PlayerBody
             Want(airTuck);
         }
         else if (jumped && airTime < (Find(jumpClip)?.Length ?? 0f)) Want(jumpClip);
-        else Want(player.VerticalVelocity < -fallClipSpeed ? fall : air);
+        else Want(player.FallSpeed > fallClipSpeed ? fall : air);
     }
 
     // Catch the ledge and hang facing the wall wherever the player looks; shimmy, at the pace of the sideways

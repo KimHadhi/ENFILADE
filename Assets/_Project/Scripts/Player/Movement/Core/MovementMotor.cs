@@ -57,6 +57,7 @@ public sealed class MovementMotor
     {
         ctx.DodgePassThrough?.BeforeMove();
         ctx.Abilities.Landing.BeforeMove();
+        float startY = ctx.transform.position.y;
         lastMoveGroundNormal = Vector3.zero;
         if (hasTraversalPosition)
         {
@@ -78,6 +79,8 @@ public sealed class MovementMotor
         hasTraversalPosition = hasRequestedMove = false; requestedMove = additionalMove = Vector3.zero;
         requestedPath.Clear();
         ctx.Abilities.StepTrail.RecordMovement();
+        // Measure controller travel after posture rebasing, before dodge exit corrections.
+        ctx.Abilities.Landing.AfterMove(dt, ctx.transform.position.y - startY);
         ctx.DodgePassThrough?.AfterMove();
         if ((lastMoveFlags & CollisionFlags.Above) != 0 && VerticalVelocity > 0f) VerticalVelocity = 0f;
         if (dt > 0f)

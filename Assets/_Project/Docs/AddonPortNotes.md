@@ -8,7 +8,7 @@ GMod 애드온(`F:\Addons`, 저장소 밖)의 이동·애니메이션·소리를
 
 | 애드온 | 옮긴 것 | 지금 위치 |
 | --- | --- | --- |
-| Beatrun Community Edition | 사다리·집라인·평균대, 시점 펀치 값, 세게 착지, 숨소리 모델, 동작 소리와 재생 순서 | [Parkour](../Scripts/Player/Movement/Parkour), [PlayerMovementPunch](../Scripts/Player/Camera/PlayerMovementPunch.cs), [MovementLanding](../Scripts/Player/Movement/Actions/MovementLanding.cs), [PlayerBreathing](../Scripts/Player/Audio/PlayerBreathing.cs), [SoundCues.csv](../Resources/Tables/SoundCues.csv) |
+| Beatrun Community Edition | 사다리·집라인, 시점 펀치 값, 세게 착지, 숨소리 모델, 동작 소리와 재생 순서 | [Parkour](../Scripts/Player/Movement/Parkour), [PlayerMovementPunch](../Scripts/Player/Camera/PlayerMovementPunch.cs), [MovementLanding](../Scripts/Player/Movement/Actions/MovementLanding.cs), [PlayerBreathing](../Scripts/Player/Audio/PlayerBreathing.cs), [SoundCues.csv](../Resources/Tables/SoundCues.csv) |
 | Beatrun Actual Thirdperson animations | 여성 3인칭 세트(`tp_climbanim_f`)를 Hiro 뼈대에 구운 클립 | [Art/Animations/Beatrun](../Art/Animations/Beatrun) |
 | Eye View Attachment for Beatrun | 카메라를 몸의 눈에 붙이기 | [PlayerBody.Look](../Scripts/Player/Body/PlayerBody.Look.cs) |
 | 2026 IK Foot (High FPS Version) | 발 IK | [PlayerBody.Feet](../Scripts/Player/Body/PlayerBody.Feet.cs) |
@@ -20,7 +20,7 @@ GMod 애드온(`F:\Addons`, 저장소 밖)의 이동·애니메이션·소리를
 | Advanced Stealth | 소리만 보관. 잠입·분대 AI는 별도 계획이 필요하다 | `Art/Audio/Library/AdvancedStealth` |
 | Beatrun addon compatibility layer, Landing Anim-Fix | 옮기지 않았다. GMod 안에서 동작하는 Lua 패치다 | 없음 |
 
-소리의 표면별 출처는 [사운드 관리](MaintenanceGuide.md#이동목소리-소리-폴더가-곧-목록)에 있다.
+소리의 표면별 출처는 [사운드 관리](MaintenanceGuide.md#이동목소리-소리-폴더가-곧-목록)에, 프로젝트 전체의 에셋 출처는 [외부 에셋 출처](AssetSources.md)에 있다.
 
 ## 단위
 
@@ -31,10 +31,8 @@ Source 단위는 **1 = 0.025m**로 환산했다. Beatrun의 수치를 옮길 때
 | 부분 | ENFILADE | 이유 |
 | --- | --- | --- |
 | 시간 | 넘기·올라서기·구르기는 애니메이션이 자연스러운 시간을 쓴다 | Dying Light처럼 묵직한 파쿠르를 원한다 |
-| 눈 시점 | 정조준을 빼고 모든 상태에서 카메라가 눈을 따른다 | 안정성보다 몰입을 택했다 |
+| 눈 시점 | 정조준·사다리를 빼고 카메라가 눈을 따른다. 사다리는 상하 전환 중 기준 눈높이를 유지한다 | 사다리의 클립 전환이 화면을 밀지 않게 했다 |
 | 올라서기 | 렛지에 매달린 뒤에만 올라선다(`Ability.mantleFromGround`로 되돌릴 수 있다) | 넘기를 원할 때 올라서는 경우가 생겼다 |
-| 평균대 | 드리프트와 A/D 균형 대신 실제 발 디딤에 키를 맞추는 판정이다. 앉기·걷기·달리기로 속도와 위험을 고른다 | 원래 방식은 한쪽 키만 눌러도 건널 수 있어 긴장이 없었다 |
-| 평균대 조작 | S로 뒤돌고, 시선은 좌우 `Body.fixtureTurnLimit`까지 돈다 | Beatrun은 우클릭으로 돌고 시선을 잠근다 |
 | 월 런 | 넣지 않았다 | 벽 달리기 클립 4개도 변환에서 뺐다 |
 
 ## 아직 남은 일

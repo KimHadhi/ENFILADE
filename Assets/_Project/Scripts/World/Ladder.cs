@@ -9,7 +9,7 @@ using UnityEngine;
 [DisallowMultipleComponent]
 public sealed class Ladder : MonoBehaviour
 {
-    private const float RungSpacing = .39f, BarThickness = .05f;
+    public const float RungSpacing = .39f, BarThickness = .05f;
     private static readonly HashSet<Ladder> active = new HashSet<Ladder>();
     public static IEnumerable<Ladder> Active => active;
     [SerializeField, Min(.5f), Tooltip("From the foot to the top of the rails (m). Take it a little past the roof it leads to.")]
@@ -20,6 +20,14 @@ public sealed class Ladder : MonoBehaviour
     private Material barMaterial;
     public float Height => height;
     public float Width => width;
+    /// <summary>Number of real rungs, excluding the foot and the open ends of the rails.</summary>
+    public int RungCount => Mathf.Max(1, Mathf.CeilToInt(height / RungSpacing) - 1);
+    public int NearestRung(Vector3 point)
+        => Mathf.Clamp(Mathf.RoundToInt(Vector3.Dot(point - transform.position, transform.up) / RungSpacing), 1, RungCount);
+    /// <summary>A point along a real rung; across is measured from its centre in world metres.</summary>
+    public Vector3 RungPoint(int rung, float across)
+        => transform.position + transform.up * (Mathf.Clamp(rung, 1, RungCount) * RungSpacing)
+            + transform.right * Mathf.Clamp(across, -width * .5f, width * .5f);
     public Vector3 Outward => Vector3.ProjectOnPlane(transform.forward, Vector3.up).normalized;
     /// <summary>The way a climber faces (world yaw, degrees).</summary>
     public float ClimberYaw => MovementFixtures.YawOf(-Outward);
@@ -31,8 +39,8 @@ public sealed class Ladder : MonoBehaviour
         Vector3 up = transform.up * height, side = transform.right * width * .5f, foot = transform.position;
         FixtureBars.Add(transform, foot - side, foot - side + up, BarThickness, barMaterial);
         FixtureBars.Add(transform, foot + side, foot + side + up, BarThickness, barMaterial);
-        for (float y = RungSpacing; y < height; y += RungSpacing)
-            FixtureBars.Add(transform, foot - side + transform.up * y, foot + side + transform.up * y, BarThickness, barMaterial);
+        for (int rung = 1; rung <= RungCount; rung++)
+            FixtureBars.Add(transform, RungPoint(rung, -width * .5f), RungPoint(rung, width * .5f), BarThickness, barMaterial);
     }
     private void OnDrawGizmos()
     {

@@ -13,6 +13,7 @@ public static class GameAudio
 {
     private struct Bound { public AudioSource source; public AudioChannel channel; public float gain; }
     private static readonly List<Bound> bound = new List<Bound>();
+    private static readonly float[] duck = { 1f, 1f, 1f, 1f };
     private static bool listening;
 
     public static float Volume(AudioChannel channel)
@@ -33,7 +34,7 @@ public static class GameAudio
         Listen();
         bound.RemoveAll(item => item.source == null || item.source == source);
         bound.Add(new Bound { source = source, channel = channel, gain = 1f });
-        source.volume = Volume(channel);
+        source.volume = Volume(channel) * duck[(int)channel];
         // Menu sounds keep playing while the pause menu pauses the listener.
         source.ignoreListenerPause = channel == AudioChannel.UI;
     }
@@ -48,9 +49,18 @@ public static class GameAudio
             var item = bound[i];
             item.gain = gain;
             bound[i] = item;
-            source.volume = Volume(item.channel) * gain;
+            source.volume = Volume(item.channel) * gain * duck[(int)item.channel];
             return;
         }
+    }
+
+    /// <summary>Holds a whole channel down for a moment, so a big hit stands out (0–1, 1 is no ducking).</summary>
+    public static void SetDuck(AudioChannel channel, float level)
+    {
+        level = Mathf.Clamp01(level);
+        if (Mathf.Approximately(duck[(int)channel], level)) return;
+        duck[(int)channel] = level;
+        Refresh();
     }
 
     /// <summary>A one-shot 3D sound at a world point, in place of AudioSource.PlayClipAtPoint.</summary>
@@ -78,7 +88,7 @@ public static class GameAudio
     {
         AudioListener.volume = GameSettings.Current.masterVolume;
         bound.RemoveAll(item => item.source == null);
-        foreach (var item in bound) item.source.volume = Volume(item.channel) * item.gain;
+        foreach (var item in bound) item.source.volume = Volume(item.channel) * item.gain * duck[(int)item.channel];
     }
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -86,6 +96,7 @@ public static class GameAudio
     {
         bound.Clear();
         listening = false;
+        for (int i = 0; i < duck.Length; i++) duck[i] = 1f;
     }
 
     // Master volume applies from the first frame, even before any source binds.

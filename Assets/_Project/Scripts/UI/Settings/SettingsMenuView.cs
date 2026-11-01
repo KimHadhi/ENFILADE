@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -65,6 +66,14 @@ public sealed class SettingsMenuView
             v => s.fieldOfView = Mathf.Round(v), v => Mathf.RoundToInt(v) + "°");
         Volume("화면 흔들림", s.screenShake, v => s.screenShake = v);
         Choice("내 머리카락 보기", OffOn, s.showOwnHead ? 1 : 0, i => s.showOwnHead = i == 1);
+        var bodyProfile = PlayerBodyProfile.Load();
+        var skins = bodyProfile?.Skins.Where(skin => skin != null && skin.Model != null).ToArray();
+        if (skins != null && skins.Length > 1)
+        {
+            int selected = Array.FindIndex(skins, skin => skin.Model == bodyProfile.Model);
+            Choice("캐릭터 스킨", skins.Select(skin => skin.DisplayName).ToArray(), Mathf.Max(0, selected),
+                i => s.characterSkin = skins[i].Id);
+        }
 
         var buttons = W.Rect("Buttons", panel);
         var row = buttons.gameObject.AddComponent<HorizontalLayoutGroup>();

@@ -113,7 +113,7 @@ public sealed class PlayerMovementAudio : MonoBehaviour
         if (player.IsSliding) KeepSliding(dt);
         slideLoop?.Tick(dt);
         Lean();
-        fallSpeed = Mathf.Max(0f, -player.VerticalVelocity);
+        fallSpeed = player.FallSpeed;
         wasGrounded = player.IsGrounded;
         lastPosition = transform.position;
     }

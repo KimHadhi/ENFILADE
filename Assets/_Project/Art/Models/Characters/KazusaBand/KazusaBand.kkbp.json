@@ -1,0 +1,486 @@
+{
+  "name": "KazusaBand",
+  "source": "KazusaSFW.blend",
+  "humanoid": [
+    {
+      "human": "Hips",
+      "bone": "Hips"
+    },
+    {
+      "human": "Spine",
+      "bone": "Spine"
+    },
+    {
+      "human": "Chest",
+      "bone": "Chest"
+    },
+    {
+      "human": "UpperChest",
+      "bone": "Upper Chest"
+    },
+    {
+      "human": "Neck",
+      "bone": "Neck"
+    },
+    {
+      "human": "Head",
+      "bone": "HeadBone"
+    },
+    {
+      "human": "LeftShoulder",
+      "bone": "Left shoulder"
+    },
+    {
+      "human": "LeftUpperArm",
+      "bone": "Left arm"
+    },
+    {
+      "human": "LeftLowerArm",
+      "bone": "Left elbow"
+    },
+    {
+      "human": "LeftHand",
+      "bone": "Left wrist"
+    },
+    {
+      "human": "LeftUpperLeg",
+      "bone": "Left leg"
+    },
+    {
+      "human": "LeftLowerLeg",
+      "bone": "Left knee"
+    },
+    {
+      "human": "LeftFoot",
+      "bone": "Left ankle"
+    },
+    {
+      "human": "LeftToes",
+      "bone": "Left toe"
+    },
+    {
+      "human": "LeftEye",
+      "bone": "cf_J_Eye_rz_L"
+    },
+    {
+      "human": "Left Thumb Proximal",
+      "bone": "Thumb0_L"
+    },
+    {
+      "human": "Left Thumb Intermediate",
+      "bone": "Thumb1_L"
+    },
+    {
+      "human": "Left Thumb Distal",
+      "bone": "Thumb2_L"
+    },
+    {
+      "human": "Left Index Proximal",
+      "bone": "IndexFinger1_L"
+    },
+    {
+      "human": "Left Index Intermediate",
+      "bone": "IndexFinger2_L"
+    },
+    {
+      "human": "Left Index Distal",
+      "bone": "IndexFinger3_L"
+    },
+    {
+      "human": "Left Middle Proximal",
+      "bone": "MiddleFinger1_L"
+    },
+    {
+      "human": "Left Middle Intermediate",
+      "bone": "MiddleFinger2_L"
+    },
+    {
+      "human": "Left Middle Distal",
+      "bone": "MiddleFinger3_L"
+    },
+    {
+      "human": "Left Ring Proximal",
+      "bone": "RingFinger1_L"
+    },
+    {
+      "human": "Left Ring Intermediate",
+      "bone": "RingFinger2_L"
+    },
+    {
+      "human": "Left Ring Distal",
+      "bone": "RingFinger3_L"
+    },
+    {
+      "human": "Left Little Proximal",
+      "bone": "LittleFinger1_L"
+    },
+    {
+      "human": "Left Little Intermediate",
+      "bone": "LittleFinger2_L"
+    },
+    {
+      "human": "Left Little Distal",
+      "bone": "LittleFinger3_L"
+    },
+    {
+      "human": "RightShoulder",
+      "bone": "Right shoulder"
+    },
+    {
+      "human": "RightUpperArm",
+      "bone": "Right arm"
+    },
+    {
+      "human": "RightLowerArm",
+      "bone": "Right elbow"
+    },
+    {
+      "human": "RightHand",
+      "bone": "Right wrist"
+    },
+    {
+      "human": "RightUpperLeg",
+      "bone": "Right leg"
+    },
+    {
+      "human": "RightLowerLeg",
+      "bone": "Right knee"
+    },
+    {
+      "human": "RightFoot",
+      "bone": "Right ankle"
+    },
+    {
+      "human": "RightToes",
+      "bone": "Right toe"
+    },
+    {
+      "human": "RightEye",
+      "bone": "cf_J_Eye_rz_R"
+    },
+    {
+      "human": "Right Thumb Proximal",
+      "bone": "Thumb0_R"
+    },
+    {
+      "human": "Right Thumb Intermediate",
+      "bone": "Thumb1_R"
+    },
+    {
+      "human": "Right Thumb Distal",
+      "bone": "Thumb2_R"
+    },
+    {
+      "human": "Right Index Proximal",
+      "bone": "IndexFinger1_R"
+    },
+    {
+      "human": "Right Index Intermediate",
+      "bone": "IndexFinger2_R"
+    },
+    {
+      "human": "Right Index Distal",
+      "bone": "IndexFinger3_R"
+    },
+    {
+      "human": "Right Middle Proximal",
+      "bone": "MiddleFinger1_R"
+    },
+    {
+      "human": "Right Middle Intermediate",
+      "bone": "MiddleFinger2_R"
+    },
+    {
+      "human": "Right Middle Distal",
+      "bone": "MiddleFinger3_R"
+    },
+    {
+      "human": "Right Ring Proximal",
+      "bone": "RingFinger1_R"
+    },
+    {
+      "human": "Right Ring Intermediate",
+      "bone": "RingFinger2_R"
+    },
+    {
+      "human": "Right Ring Distal",
+      "bone": "RingFinger3_R"
+    },
+    {
+      "human": "Right Little Proximal",
+      "bone": "LittleFinger1_R"
+    },
+    {
+      "human": "Right Little Intermediate",
+      "bone": "LittleFinger2_R"
+    },
+    {
+      "human": "Right Little Distal",
+      "bone": "LittleFinger3_R"
+    }
+  ],
+  "originalBones": 1067,
+  "exportedBones": 371,
+  "materials": [
+    {
+      "name": "Gag00_Kazusa_band",
+      "baseColor": "",
+      "shadow": "",
+      "cutout": false
+    },
+    {
+      "name": "Gag01_Kazusa_band",
+      "baseColor": "",
+      "shadow": "",
+      "cutout": false
+    },
+    {
+      "name": "Gag02_Kazusa_band",
+      "baseColor": "",
+      "shadow": "",
+      "cutout": false
+    },
+    {
+      "name": "Kazusa_Band_body1_11240",
+      "baseColor": "Textures/Kazusa_Band_body1_11240_BaseColor.png",
+      "shadow": "Textures/Kazusa_Band_body1_11240_Shadow.png",
+      "cutout": false
+    },
+    {
+      "name": "Kazusa_Band_body1_11320",
+      "baseColor": "Textures/Kazusa_Band_body1_11320_BaseColor.png",
+      "shadow": "Textures/Kazusa_Band_body1_11320_Shadow.png",
+      "cutout": false
+    },
+    {
+      "name": "Kazusa_Band_body2_11320",
+      "baseColor": "Textures/Kazusa_Band_body2_11320_BaseColor.png",
+      "shadow": "Textures/Kazusa_Band_body2_11320_Shadow.png",
+      "cutout": false
+    },
+    {
+      "name": "Kazusa_Band_body2_11530",
+      "baseColor": "Textures/Kazusa_Band_body2_11530_BaseColor.png",
+      "shadow": "Textures/Kazusa_Band_body2_11530_Shadow.png",
+      "cutout": false
+    },
+    {
+      "name": "Kazusa_Band_body2_11590",
+      "baseColor": "Textures/Kazusa_Band_body2_11590_BaseColor.png",
+      "shadow": "Textures/Kazusa_Band_body2_11590_Shadow.png",
+      "cutout": false
+    },
+    {
+      "name": "Kazusa_Band_socks_11590",
+      "baseColor": "Textures/Kazusa_Band_socks_11590_BaseColor.png",
+      "shadow": "Textures/Kazusa_Band_socks_11590_Shadow.png",
+      "cutout": true
+    },
+    {
+      "name": "Tears_Kazusa_band",
+      "baseColor": "",
+      "shadow": "",
+      "cutout": false
+    },
+    {
+      "name": "band_B_hair_3720",
+      "baseColor": "Textures/band_B_hair_3720_BaseColor.png",
+      "shadow": "Textures/band_B_hair_3720_Shadow.png",
+      "cutout": true
+    },
+    {
+      "name": "band_F_hair_4230",
+      "baseColor": "Textures/band_F_hair_4230_BaseColor.png",
+      "shadow": "Textures/band_F_hair_4230_Shadow.png",
+      "cutout": false
+    },
+    {
+      "name": "band_body1_3720",
+      "baseColor": "Textures/band_body1_3720_BaseColor.png",
+      "shadow": "Textures/band_body1_3720_Shadow.png",
+      "cutout": false
+    },
+    {
+      "name": "band_body1_4740",
+      "baseColor": "Textures/band_body1_4740_BaseColor.png",
+      "shadow": "Textures/band_body1_4740_Shadow.png",
+      "cutout": false
+    },
+    {
+      "name": "band_body1_5250",
+      "baseColor": "Textures/band_body1_5250_BaseColor.png",
+      "shadow": "Textures/band_body1_5250_Shadow.png",
+      "cutout": false
+    },
+    {
+      "name": "band_body1_5760",
+      "baseColor": "Textures/band_body1_5760_BaseColor.png",
+      "shadow": "Textures/band_body1_5760_Shadow.png",
+      "cutout": false
+    },
+    {
+      "name": "band_body1_6270",
+      "baseColor": "Textures/band_body1_6270_BaseColor.png",
+      "shadow": "Textures/band_body1_6270_Shadow.png",
+      "cutout": false
+    },
+    {
+      "name": "cf_m_body",
+      "baseColor": "Textures/cf_m_body_BaseColor.png",
+      "shadow": "Textures/cf_m_body_Shadow.png",
+      "cutout": false
+    },
+    {
+      "name": "cf_m_eyeline_00_up",
+      "baseColor": "Textures/cf_m_eyeline_00_up_BaseColor.png",
+      "shadow": "Textures/cf_m_eyeline_00_up_Shadow.png",
+      "cutout": true
+    },
+    {
+      "name": "cf_m_eyeline_down",
+      "baseColor": "Textures/cf_m_eyeline_down_BaseColor.png",
+      "shadow": "Textures/cf_m_eyeline_down_Shadow.png",
+      "cutout": true
+    },
+    {
+      "name": "cf_m_eyeline_kage",
+      "baseColor": "Textures/cf_m_eyeline_kage_BaseColor.png",
+      "shadow": "Textures/cf_m_eyeline_kage_Shadow.png",
+      "cutout": true
+    },
+    {
+      "name": "cf_m_face_00",
+      "baseColor": "Textures/cf_m_face_00_BaseColor.png",
+      "shadow": "Textures/cf_m_face_00_Shadow.png",
+      "cutout": false
+    },
+    {
+      "name": "cf_m_hitomi_00_cf_Ohitomi_L02",
+      "baseColor": "Textures/cf_m_hitomi_00_cf_Ohitomi_L02_BaseColor.png",
+      "shadow": "Textures/cf_m_hitomi_00_cf_Ohitomi_L02_Shadow.png",
+      "cutout": true
+    },
+    {
+      "name": "cf_m_hitomi_00_cf_Ohitomi_R02",
+      "baseColor": "Textures/cf_m_hitomi_00_cf_Ohitomi_R02_BaseColor.png",
+      "shadow": "Textures/cf_m_hitomi_00_cf_Ohitomi_R02_Shadow.png",
+      "cutout": true
+    },
+    {
+      "name": "cf_m_mayuge_00",
+      "baseColor": "Textures/cf_m_mayuge_00_BaseColor.png",
+      "shadow": "Textures/cf_m_mayuge_00_Shadow.png",
+      "cutout": true
+    },
+    {
+      "name": "cf_m_noseline_00",
+      "baseColor": "Textures/cf_m_noseline_00_BaseColor.png",
+      "shadow": "Textures/cf_m_noseline_00_Shadow.png",
+      "cutout": true
+    },
+    {
+      "name": "cf_m_shoes_roafer01_11710",
+      "baseColor": "Textures/cf_m_shoes_roafer01_11710_BaseColor.png",
+      "shadow": "Textures/cf_m_shoes_roafer01_11710_Shadow.png",
+      "cutout": false
+    },
+    {
+      "name": "cf_m_shorts_01_11440",
+      "baseColor": "Textures/cf_m_shorts_01_11440_BaseColor.png",
+      "shadow": "Textures/cf_m_shorts_01_11440_Shadow.png",
+      "cutout": true
+    },
+    {
+      "name": "cf_m_sirome_00",
+      "baseColor": "Textures/cf_m_sirome_00_BaseColor.png",
+      "shadow": "Textures/cf_m_sirome_00_Shadow.png",
+      "cutout": false
+    },
+    {
+      "name": "cf_m_tang",
+      "baseColor": "Textures/cf_m_tang_BaseColor.png",
+      "shadow": "Textures/cf_m_tang_Shadow.png",
+      "cutout": false
+    },
+    {
+      "name": "cf_m_tang_001",
+      "baseColor": "Textures/cf_m_tang_001_BaseColor.png",
+      "shadow": "Textures/cf_m_tang_001_Shadow.png",
+      "cutout": false
+    },
+    {
+      "name": "cf_m_tooth",
+      "baseColor": "Textures/cf_m_tooth_BaseColor.png",
+      "shadow": "Textures/cf_m_tooth_Shadow.png",
+      "cutout": false
+    }
+  ],
+  "disabledMeshes": [
+    "GagEyes",
+    "Tears",
+    "RiggedTongue"
+  ],
+  "firstPersonShadowOnly": [
+    "Head",
+    "Hair",
+    "HeadAccessories"
+  ],
+  "meshes": [
+    {
+      "name": "Head",
+      "vertices": 4871,
+      "shapeKeys": 148
+    },
+    {
+      "name": "Body",
+      "vertices": 5700,
+      "shapeKeys": 148
+    },
+    {
+      "name": "Hair",
+      "vertices": 7138,
+      "shapeKeys": 1
+    },
+    {
+      "name": "HeadAccessories",
+      "vertices": 618,
+      "shapeKeys": 0
+    },
+    {
+      "name": "Outfit",
+      "vertices": 10180,
+      "shapeKeys": 0
+    },
+    {
+      "name": "GagEyes",
+      "vertices": 720,
+      "shapeKeys": 680
+    },
+    {
+      "name": "Tears",
+      "vertices": 1162,
+      "shapeKeys": 680
+    },
+    {
+      "name": "RiggedTongue",
+      "vertices": 246,
+      "shapeKeys": 535
+    }
+  ],
+  "bodyCoverage": [
+    {
+      "name": "Band shirt core torso",
+      "removedFaces": 2616,
+      "min": [
+        -0.145,
+        -0.2,
+        1.035
+      ],
+      "max": [
+        0.145,
+        0.2,
+        1.225
+      ]
+    }
+  ]
+}

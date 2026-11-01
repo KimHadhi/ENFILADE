@@ -8,7 +8,7 @@
 
 | 표 | 내용 | 행(row) |
 | --- | --- | --- |
-| [Player.csv](../Resources/Tables/Player.csv) | 자세별 캡슐·눈높이, 이동·속도 쌓기·점프·슬라이드·다이브, 회피·파쿠르·착지·밀치기·사다리·집라인·평균대, 최대 체력, 궁극기 보유량·소비량·충전량, 주먹·패링·가드 브레이크, 처형, 몸 애니메이션·손, 이동 펀치·큰 낙하 화면·평균대 표시, 발소리·동작 소리·숨소리·바람·큰 낙하 소리 | `Posture` `Move` `Ability` `Vitals` `Stats` `Ultimate` `Fists` `Execution` `Body` `Hands` `Punch` `FallScreen` `Sounds` `Footsteps` `MovementAudio` `Breathing` `Wind` `FallAudio` `FixtureAudio` `BalanceGauge` |
+| [Player.csv](../Resources/Tables/Player.csv) | 자세별 캡슐·눈높이, 이동·속도 쌓기·점프·슬라이드·다이브, 회피·파쿠르·착지·밀치기·사다리·집라인, 최대 체력, 궁극기 보유량·소비량·충전량, 주먹·패링·가드 브레이크, 처형, 몸 애니메이션·손, 이동 펀치·큰 낙하 화면, 발소리·동작 소리·숨소리·바람·큰 낙하 소리 | `Posture` `Move` `Ability` `Vitals` `Stats` `Ultimate` `Fists` `Defense` `Parry` `Execution` `Body` `Hands` `Punch` `FallScreen` `Sounds` `Footsteps` `MovementAudio` `Breathing` `Wind` `FallAudio` `FixtureAudio` |
 | [SoundCues.csv](../Resources/Tables/SoundCues.csv) | 동작마다 나는 소리 묶음(볼트·착지·발소리…)과 적에게 들리는 거리 | 큐 이름 (`Vault`, `Land`, `StepRun` …) |
 | [Sounds.csv](../Resources/Tables/Sounds.csv) | 소리 묶음 폴더별 볼륨·피치 | `<묶음>/<폴더>` (`Movement/Bar/Grab` …) |
 | [Surfaces.csv](../Resources/Tables/Surfaces.csv) | 표면 종류의 부모와 찾을 키워드 | 표면 이름 (`Concrete` …) |
@@ -84,6 +84,7 @@
 | 소리 | 전체, 전투, 이동, 목소리, UI 볼륨 |
 | 조작 | 마우스 감도(×0.2~3, `PlayerLook`의 기본 감도에 곱함), 상하 반전, 앉기·기울이기를 "누르는 동안" 또는 "눌러서 전환" |
 | 화면 | 시야각(16:9 화면 기준 가로 70~120°, 기본 90°. 세로 약 59°로 이전 기본 60°와 거의 같다. 더 넓은 화면은 옆이 더 보인다. 달릴 때의 시야 넓힘과 ADS 줌은 이 값에서 계산한다), 화면 흔들림: 걸음 흔들림, 착지, 충격, 볼트 펀치, 이동·다이브 기울임에 곱한다. Q/E 기울이기와 총 반동은 영향을 받지 않는다 |
+| 캐릭터 | 화면 분류의 `캐릭터 스킨`에서 카즈사(밴드)·히로를 즉시 전환한다. 선택은 메뉴를 닫을 때 저장되며 기본 캐릭터는 카즈사다. `내 머리카락 보기`는 선택한 스킨에도 적용된다 |
 
 - **저장 위치**: 사용자별 `Application.persistentDataPath/settings.json`이다. Windows에서는 보통 `%USERPROFILE%\AppData\LocalLow\<회사>\<제품>\settings.json`이다. 파일을 지우면 기본값으로 돌아간다. 밸런스 숫자는 CSV 표, 플레이어 취향은 이 파일에 둔다.
 - **앉기 전환**: 한 번 누르면 앉고, 다시 누르면 선다. Shift나 점프를 누르거나, 다이브·포복·파쿠르로 앉기·슬라이드 상태를 벗어나면 자동으로 풀린다. 키를 놓은 것과 같다. 그래서 전환 모드의 점프는 서서 하는 점프이고, 몸을 접는 앉아 점프는 Ctrl을 누른 채 점프할 때만 나온다. 점프 중에 누르면 공중에서 몸을 접고, 앉은 채로 착지한다. 달리며 누르면 슬라이드하고, 끝나면 앉은 채로 남는다. 전환 모드에서 슬라이드 감속은 S 키로 한다.
@@ -97,14 +98,26 @@
 
 | 폴더 | 재생 상황 | Feedback 설정 |
 | --- | --- | --- |
-| `Player/Attack/Punch/Swing` | 주먹을 휘두를 때 | `Punch Swing Sounds` |
-| `Player/Attack/Punch/Hit` | 내 주먹이 적에게 피해를 줬을 때 | `Punch Hit Sounds` |
+| `BOOM/Swing` | 주먹을 휘두를 때 | `Punch Swing Sounds` |
+| `BOOM/Hit` | 내 주먹이 적에게 피해를 줬을 때 | `Punch Hit Sounds` |
+| `BOOM/HeavyHit` | 충전 주먹·반격·가드 브레이크 타격 | `Punch Heavy Hit Sounds` |
 | `Player/Attack/Punch/Wall` | 주먹이 벽·지형에 닿았을 때 | `Punch Wall Sounds`, `Punch Wall Volume` |
-| `Player/Damage/Hit` | 플레이어가 낙하 이외의 피해를 받았을 때 | `Player Damage Sounds` |
-| `Shove` | 밀치기의 적·월드 접촉, 낙하 피해 레이어 | `Shove Enemy Sounds`, `Shove World Sound` |
-| `Hitfullness` | 총기 명중·처치·근접 처치·낙하 등에 겹치는 타격 레이어 | `Impact Bullet Sounds` 등 각 레이어 |
-| `Defense/Block`, `Defense/Parry` | 가드·패링 성공 | `Block Sounds`, `Parry Sounds` |
-| `Defense/ReservedStrongParries` | 향후 강공격용 보관 클립 | 현재 일반 패링에 연결하지 않음 |
+| `BOOM/Hurt` | 플레이어가 낙하 이외의 피해를 받았을 때 | `Player Damage Sounds` |
+| `BOOM/Shove` | 밀치기·슬라이딩의 적 접촉 | `Shove Enemy Sounds` |
+| `Shove` | 밀치기의 월드 접촉 | `Shove World Sound` |
+| `BOOM/Kill` | 주먹·밀치기·처형 처치 | `Close Kill Sounds` |
+| `BOOM/Fall` | 플레이어 낙하 피해, 적이 쓰러질 때 | `Tackle Sounds`, `Knockdown Sounds` |
+| `BOOM/Grab` | 가드 브레이크로 다가갈 때, 처형 시작 | `Grab Sounds` |
+| `BOOM/Block` | 가드 성공 | `Block Sounds` |
+| `BOOM/Parry`, `BOOM/ParryBreak` | 주먹 패링, 체간을 무너뜨린 패링 | `Parry Sounds`, `Parry Break Sounds` |
+| `Hitfullness` | 총기 명중·처치 등에 겹치는 타격 레이어 | `Impact Bullet Sounds` 등 각 레이어 |
+| `Defense/Parry` | 금속 패링음. 카타나용 보관 클립 | 현재 연결하지 않음 |
+| `Defense/ReservedStrongParries` | 향후 강공격용 보관 클립 | 현재 연결하지 않음 |
+| `Player/Attack/Punch/Hit`·`Swing`, `Player/Damage/Hit`, `Defense/Block` | BOOM으로 바꾸기 전의 클립 | 현재 연결하지 않음 |
+
+`BOOM` 폴더와 돌진 밀치기의 `Movement/PushHard`는 유료 BOOM Library Violent Combat의 소리를 타격 지점부터 잘라 낸 것이다. 한 번에 두 번 맞는 듯한 클립은 뺐고, 폴더 안의 음량은 약 3dB 안으로 맞췄다. 1인 라이선스이고 음원 공유 형태의 재배포가 금지되므로, 저장소는 비공개로 유지한다. `Resources/Combat/Parry`의 `ParryFlare`는 [Kenney Particle Pack](https://kenney.nl/assets/particle-pack)이고 CC0다.
+
+패링 이펙트는 유료 Vefects Combat Flipbook VFX URP로 만든다. `Assets/Vefects` 원본은 고치지 않고, `Prefabs/Effects/Parry`의 프리팹과 `Art/Materials/Parry`의 머티리얼을 복사본으로 둔다. 색은 이 머티리얼의 `R`(밝은 몸통), `G`(어두운 속살), `B`, `Outline`에서 고친다. 복사본은 팩의 텍스처와 셰이더를 쓰므로 `Assets/Vefects`의 `VFX/Hit/Textures`와 `Shared`는 지우면 안 된다. 원본 프리팹에는 반복 재생되는 `AudioSource`가 붙어 있어서 복사본에서 뺐고, `ParryVfx`도 슬롯에 넣은 프리팹의 소리를 끈다. 주황 별인 `VFX_Parry_Sparkle`은 Cartoon FX Remaster의 `CFXR3 Hit Light B (Air)`에서 고리 두 층을 뺀 복사본이다. 머티리얼과 스크립트는 팩의 것을 쓰므로 `Assets/JMO Assets`도 지우면 안 된다.
 
 기존 클립을 이동하거나 이름을 바꿀 때는 `.meta`도 함께 이동해 GUID를 유지한다. 새 클립은 Unity 임포트가 끝난 뒤 배열에 추가하며, `Missing` 항목이나 남은 옛 경로의 `.meta`가 없는지 확인한다. 각 배열은 직전에 재생한 클립을 피해서 고르므로 원하는 변형들을 같은 배열에 넣으면 된다.
 
