@@ -48,6 +48,7 @@ public sealed class AmmoHUD : MonoBehaviour
         var root = (RectTransform)transform;
         root.anchoredPosition = new Vector2(-screenMargin.x, screenMargin.y);
         root.localScale = Vector3.one * hudScale;
+        if (weaponSlots == null && PlayerRoster.Local != null) weaponSlots = PlayerRoster.Local.GetComponent<PlayerWeaponSlots>();
         var runtime = weaponSlots != null && weaponSlots.isActiveAndEnabled
             ? weaponSlots.GetRuntime(weaponSlots.SelectedSlot) : null;
         if (health == null && weaponSlots != null) health = weaponSlots.GetComponent<PlayerDamageReceiver>();

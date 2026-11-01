@@ -1,3 +1,4 @@
+using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -18,6 +19,10 @@ public sealed class PlayerTestInteraction : MonoBehaviour
     {
         player=GetComponent<PlayerMovement>(); input=GetComponent<PlayerInput>();
         if(view==null) view=GetComponentInChildren<Camera>();
+        // The player is a prefab, so it finds the chat and the prompt on this scene's HUD.
+        if(chat==null) chat=FindAnyObjectByType<SinglePlayerChatManager>();
+        if(prompt==null && chat!=null)
+            prompt=Array.Find(chat.transform.root.GetComponentsInChildren<TMP_Text>(true),text=>text.name=="InteractionPrompt");
         interact=(input!=null ? input.actions : InputSystem.actions)?.FindAction("Player/Interact",false);
     }
     private void Update()

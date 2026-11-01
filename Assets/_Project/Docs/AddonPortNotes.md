@@ -22,6 +22,25 @@ GMod 애드온(`F:\Addons`, 저장소 밖)의 이동·애니메이션·소리를
 
 소리의 표면별 출처는 [사운드 관리](MaintenanceGuide.md#이동목소리-소리-폴더가-곧-목록)에, 프로젝트 전체의 에셋 출처는 [외부 에셋 출처](AssetSources.md)에 있다.
 
+## 워크숍 에셋을 들여올 때
+
+1. 어떤 애드온을 쓸지는 [워크숍 애드온 이식표](https://claude.ai/artifact/TjkB8PvDvQ1dnhJr27FEbz)에서 고른다.
+2. [Tools/Workshop/workshop.py](../../../Tools/Workshop/workshop.py)의 `extract`로 애드온을 프로젝트 밖 `F:\GameProject\_WorkshopImport\<워크숍 번호>`에 푼다. 받은 파일의 실행 파일은 실행하지 않는다.
+3. 필요한 파일만 변환해서 아래 표의 위치에 넣는다. Source 모델과 애니메이션은 [Tools/Blender](../../../Tools/Blender)의 변환 스크립트를 쓴다.
+4. 같은 작업에서 [외부 에셋 출처](AssetSources.md)에 워크숍 번호와 함께 한 줄을 추가한다.
+
+| 종류 | 위치 |
+| --- | --- |
+| 캐릭터 모델 | `Art/Models/Characters/<이름>` |
+| 적 모델 | `Art/Models/Enemies/<이름>` |
+| 무기 모델 | `Art/Models/Weapons/<이름>` |
+| 애니메이션 | `Art/Animations/<묶음>`. 폴더 표는 `<묶음>.clips.csv`. 좀비는 `Zombie` |
+| 총 소리 | `Art/Audio/Weapons/<무기>` |
+| 적 소리 | `Art/Audio/Enemies/<적>/<상태>` |
+| 근접·타격 소리 | `Art/Audio/Combat/<용도>` |
+| 이펙트 | `Prefabs/Effects/<용도>`, 재질은 `Art/Materials/<용도>` |
+| 스토어 팩처럼 통째로 받는 에셋 | `Assets/ThirdParty/<팩 이름>` |
+
 ## 단위
 
 Source 단위는 **1 = 0.025m**로 환산했다. Beatrun의 수치를 옮길 때 이 값을 쓴다. 예를 들어 사다리 한 칸은 0.39m, 사다리 미끄럼은 8.5m/s, 집라인 최고 속도는 18.75m/s, 집라인 매달림은 1.875m다.
@@ -42,8 +61,7 @@ Source 단위는 **1 = 0.025m**로 환산했다. Beatrun의 수치를 옮길 때
 - **렛지에서 뒤돌아보기**: 매달린 채 시선을 오른쪽으로 크게 돌리면 왼손은 잡고 오른손과 머리만 돌아야 한다. 반대쪽도 같다.
 - **총 든 동작 클립**: `Body.armedClips`를 켜서 확인한다. 손 IK가 생겨서 가능해졌지만 아직 시험하지 않았다.
 - **사다리·줄의 손 IK**: 지금은 클립과 `PlayerBody.Grip`의 위치 맞춤뿐이다. 클립의 손이 어긋나 보이면 추가한다.
-- **총 모델**: 지금 씬의 총은 재질을 비워 보이지 않고, 권총 모델은 없다.
+- **총 모델**: 지금 플레이어 프리팹의 총은 재질을 비워 보이지 않고, 권총 모델은 없다.
 - **중력**: 24다. 20도 시험해 볼 만하다.
 - **소음을 듣는 적**: `Noise` 이벤트는 나가지만 듣는 AI가 없다.
-- **공개 빌드 전**: 옮겨 온 소리는 교체가 필요할 수 있다.
-- **멀티플레이**: 바꾼다면 Esc 메뉴가 게임을 멈추지 않게 한다.
+- **멀티플레이**: 혼자일 때만 Esc 메뉴가 게임을 멈추게 한다.

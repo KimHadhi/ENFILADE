@@ -26,7 +26,7 @@
 | 보이는 몸(진짜 1인칭)·상태별 애니메이션·F5 뒤에서 보기 | [PlayerBody](Player/Body/PlayerBody.cs), [PlayerBodyProfile](Player/Body/PlayerBodyProfile.cs), [사용 안내](../Docs/PlayerBodyGuide.md) |
 | 눈 시점·시선 따라 허리·머리 굽히기·카메라 벽 판정 | [PlayerBody.Look](Player/Body/PlayerBody.Look.cs), [PlayerBody.Clearance](Player/Body/PlayerBody.Clearance.cs), [CameraClearance](Player/Camera/CameraClearance.cs) |
 | 손으로 총·주먹·난간 잡기 / 발 IK·발목 제한 | [PlayerBodyHands](Player/Body/PlayerBodyHands.cs), [ArmIK](Player/Body/ArmIK.cs) / [PlayerBody.Feet](Player/Body/PlayerBody.Feet.cs), [AnkleLimit](Player/Body/AnkleLimit.cs) |
-| 플레이어 목록·내 캐릭터 찾기 / 멀티 구조 시험용 더미 | [PlayerRoster](Player/PlayerRoster.cs) / [ConsoleDummyPlayers](Debug/Combat/ConsoleDummyPlayers.cs) |
+| 플레이어 생성 위치 / 플레이어 목록·내 캐릭터 찾기 / 멀티 구조 시험용 더미 | [PlayerSpawnPoint](Player/PlayerSpawnPoint.cs) / [PlayerRoster](Player/PlayerRoster.cs) / [ConsoleDummyPlayers](Debug/Combat/ConsoleDummyPlayers.cs) |
 | 플레이어 HP·실드·피격·사망 | [PlayerDamageReceiver](Player/Combat/PlayerDamageReceiver.cs) |
 | 플레이어 궁극기 최대 보유량·소비량 스탯 / 현재 충전량 | [PlayerStats](Player/PlayerStats.cs), [UltimateCharge](UI/HP/UltimateCharge.cs) (Play 시작 때 `PlayerMovement`가 붙임) |
 | 피격 방향 아크·혈흔·쉐이크·빈사 박동 | [PlayerDamageFeedback](Player/Combat/PlayerDamageFeedback.cs), [설정](../Resources/Combat/PlayerDamageFeedback.asset), [사용 안내](../Docs/PlayerDamageFeedbackGuide.md) |

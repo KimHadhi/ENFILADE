@@ -57,9 +57,19 @@ public class SinglePlayerChatManager : MonoBehaviour
     private InputAction cycleChannelAction;
     private bool ownsCycleChannelAction;
 
+    // The player is spawned at runtime, so the link is made once there is one.
+    private PlayerInput Controls
+    {
+        get
+        {
+            if (playerInput == null && PlayerRoster.Local != null) playerInput = PlayerRoster.Local.GetComponent<PlayerInput>();
+            return playerInput;
+        }
+    }
+
     private void OnEnable()
     {
-        var actions = playerInput != null ? playerInput.actions : InputSystem.actions;
+        var actions = Controls != null ? Controls.actions : InputSystem.actions;
         cycleChannelAction = actions != null ? actions.FindAction("UI/CycleChatChannel", false) : null;
         ownsCycleChannelAction = cycleChannelAction != null && !cycleChannelAction.enabled;
         if (ownsCycleChannelAction) cycleChannelAction.Enable();
@@ -143,7 +153,7 @@ public class SinglePlayerChatManager : MonoBehaviour
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
 
-        if (playerInput != null)
+        if (Controls != null)
         {
             playerMapEnabled = playerInput.actions.FindActionMap("Player")?.enabled ?? false;
             combatMapEnabled = playerInput.actions.FindActionMap("Combat")?.enabled ?? false;
@@ -356,10 +366,7 @@ public class SinglePlayerChatManager : MonoBehaviour
         commands.Register("map", "씬 이름 — 해당 씬으로 이동", SceneConsoleCommands.LoadMap);
     }
 
-    private PlayerMovement ResolveCommandPlayer()
-    {
-        return playerInput != null ? playerInput.GetComponentInParent<PlayerMovement>() : PlayerRoster.Local;
-    }
+    private PlayerMovement ResolveCommandPlayer() => PlayerRoster.Local;
 
     private void RequestScrollToBottom()
     {

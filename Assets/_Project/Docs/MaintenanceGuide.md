@@ -51,7 +51,9 @@
 
 플레이어의 `PlayerDamageReceiver`, `PlayerStats`, `UltimateCharge`, `PlayerMeleeCombat`, `PlayerExecution`은 씬에 두지 않고 `PlayerMovement`·`PlayerWeaponSlots`가 Play 시작 때 붙인다. 이 컴포넌트의 수치는 `Player.csv`에서 바꾼다. HUD 프리팹의 `PlayerStats`/`UltimateCharge`는 편집 화면 미리보기용이다.
 
-플레이어는 여러 명일 수 있다. 플레이어가 필요한 코드는 씬을 검색하지 말고 [PlayerRoster](../Scripts/Player/PlayerRoster.cs)를 쓴다. 화면과 입력은 `Local`, 적은 `Nearest`다. `PlayerMovement.IsLocal`이 거짓인 플레이어는 이 PC가 조종하지 않는 캐릭터로, 입력·카메라·청취자·화면 효과 없이 몸과 주변에 들리는 소리만 남는다. 다른 플레이어는 `Resources/Characters/Player.prefab`으로 만든다. ★Player를 바꾼 뒤에는 씬을 연 상태에서 `Tools > Player > Save Player Prefab`을 다시 실행한다.
+플레이어는 여러 명일 수 있다. 플레이어가 필요한 코드는 씬을 검색하지 말고 [PlayerRoster](../Scripts/Player/PlayerRoster.cs)를 쓴다. 화면과 입력은 `Local`, 적은 `Nearest`다. `PlayerMovement.IsLocal`이 거짓인 플레이어는 이 PC가 조종하지 않는 캐릭터로, 입력·카메라·청취자·화면 효과 없이 몸과 주변에 들리는 소리만 남는다.
+
+플레이어는 씬에 놓지 않는다. 씬의 [PlayerSpawnPoint](../Scripts/Player/PlayerSpawnPoint.cs)가 게임 시작 때 `Resources/Characters/Player.prefab`을 만들고, 더미도 같은 프리팹을 쓴다. 플레이어의 컴포넌트나 총 위치를 고칠 때는 이 프리팹을 연다. HUD는 모든 씬이 `Prefabs/UI/HUD/GameHUD.prefab` 하나를 쓴다. 프리팹은 씬의 물건을 가리킬 수 없으므로 플레이어와 HUD는 실행 중에 서로를 찾는다.
 
 궁극기 스탯의 기본값은 **최대 보유량 120%, 1회 소비량 100%**다. 120%에서 사용하면 20%가 남고, 소비량을 70%로 바꾸면 50%가 남는다. 현재 충전량은 `UltimateCharge`, 최대 보유량과 소비량은 `PlayerStats`가 관리한다. 최대 보유량 변경은 현재 충전량을 유지하며, 최대치가 줄어들 때만 초과분을 잘라낸다. 소비량이 최대 보유량보다 크면 사용할 수 없다.
 

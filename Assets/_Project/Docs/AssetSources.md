@@ -34,10 +34,10 @@ Hiro 모델(`Art/Models/Characters/Hiro`)은 허락을 받은 캐릭터라 교�
 | `Art/Audio/Combat/BOOM`, `Art/Audio/Movement/PushHard` | 88개, 13MB | BOOM Library Violent Combat(구매) | 1인 라이선스, 음원 공유 형태의 재배포 금지 |
 | `Art/Animations/MocapOnline` | 21개, 36MB | MoCap Online(구매) | AI 학습이나 새 에셋 생성에 쓰지 않는다 |
 | `Art/Animations/Mixamo` | 28개, 13MB | mixamo.com, X Bot | |
-| `Assets/Vefects/Combat Flipbook VFX URP` | 688개, 328MB | Vefects(구매) | 재색 사본이 `Prefabs/Effects/Parry`, `Art/Materials/Parry`에 있다 |
-| `Assets/JMO Assets/Cartoon FX Remaster` | 483개, 35MB | Cartoon FX Remaster Free | |
+| `Assets/ThirdParty/Vefects/Combat Flipbook VFX URP` | 688개, 328MB | Vefects(구매) | 재색 사본이 `Prefabs/Effects/Parry`, `Art/Materials/Parry`에 있다 |
+| `Assets/ThirdParty/JMO Assets/Cartoon FX Remaster` | 483개, 35MB | Cartoon FX Remaster Free | |
 | `Resources/Combat/Parry`의 `ParryFlare` | 1개 | Kenney Particle Pack(CC0) | |
-| `Assets/MagicaCloth2` | 328개, 146MB | Magica Cloth 2 | `Example (Can be deleted)` 143MB는 예제라 git에서 제외했고 지워도 된다 |
+| `Assets/ThirdParty/MagicaCloth2` | 328개, 146MB | Magica Cloth 2 | `Example (Can be deleted)` 143MB는 예제라 git에서 제외했고 지워도 된다 |
 | `Assets/ThirdParty/TextMeshPro` | 37개, 4MB | Unity TextMeshPro 기본 리소스 | |
 | `Assets/ThirdParty/KoreanFonts` | 54개, 37MB | Pretendard, 에스코어 드림, 페이퍼로지, KOTRA 볼드, 사천항공체 | 무료 배포 폰트로 보이며 라이선스 파일은 없다 |
 
@@ -55,7 +55,7 @@ Hiro 모델(`Art/Models/Characters/Hiro`)은 허락을 받은 캐릭터라 교�
 | `Art/Sprites/UI/HUD` | 56개, 2MB | HUD 이미지. 직접 만든 것인지 기록이 없다 |
 | `Art/Models/Props/TetoPear` | FBX 1개 | 물리 프롭 시험용. 커밋 0.6.3에 추가 |
 | `Assets/ThirdParty/InfimaGames/LowPolyShooterPack` | 16개, 1MB | 씬의 소총 `SK_AR_01`. 구매 기록이 없다 |
-| `Assets/DAVFX/Realistic Impacts Pack` | 266개, 473MB | 착탄 이펙트 팩. 구매 기록이 없다 |
+| `Assets/ThirdParty/DAVFX/Realistic Impacts Pack` | 266개, 473MB | 착탄 이펙트 팩. 구매 기록이 없다 |
 
 ## 아직 들어오지 않은 후보
 

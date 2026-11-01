@@ -128,7 +128,7 @@ public static class PlayerConsoleCommands
         if (!Application.isPlaying) return "이 명령어는 Play 중에 사용할 수 있습니다.";
         var player = resolve();
         if (player == null || player.DamageReceiver == null || player.Stats == null || player.Ultimate == null)
-            return "대상 플레이어를 찾지 못했습니다. ChatManager의 Player Input 연결을 확인하세요.";
+            return "대상 플레이어를 찾지 못했습니다.";
         return command(player);
     }
 

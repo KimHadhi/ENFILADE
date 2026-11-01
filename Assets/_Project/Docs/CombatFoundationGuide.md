@@ -44,7 +44,7 @@
 | `/help` | 현재 등록된 명령과 인자 확인 |
 | `/map 씬이름` | 빌드에 등록된 씬으로 이동. 예: `/map MovementAbilityPlayground` |
 | `/spawn`, `/spawn 5` | 생략하면 1마리, 수량을 붙이면 해당 수만큼 테스트 적 소환. 빈 공간이 부족하면 실제 소환 수를 알림. 웨이브 집계 제외 |
-| `/dummy`, `/dummy 3`, `/dummy clear` | 네트워크 없이 멀티 구조를 시험할 더미 플레이어 소환·제거. 먼저 `Tools > Player > Save Player Prefab`을 실행 |
+| `/dummy`, `/dummy 3`, `/dummy clear` | 네트워크 없이 멀티 구조를 시험할 더미 플레이어 소환·제거 |
 | `/ammo` | 보유한 모든 총기의 탄창을 채우고 기본 예비탄까지 보충. 기본보다 많은 예비탄은 유지 |
 | `/wave start` | 대기 중인 웨이브 시작 |
 | `/wave stop`, `/wave resume` | 웨이브 일시정지 / 재개 |
@@ -100,7 +100,7 @@
 
 ## 다른 씬에 연결하기
 
-CombatFoundation의 `★Player` 오브젝트와 HUD Canvas를 복사해 붙여 넣거나 프리팹으로 만들어 쓴다. 전투·체력·궁극기 컴포넌트는 Play 시작 때 `PlayerMovement`가 붙이고 수치는 [밸런스 표](MaintenanceGuide.md#밸런스-표-data-tables)에서 가져오므로, 플레이어에 직접 둘 컴포넌트는 이동·시점·입력·무기·슬롯뿐이다.
+새 씬에는 플레이어를 놓지 않는다. 시작 위치에 `PlayerSpawnPoint` 컴포넌트를 가진 오브젝트를 두고 `Prefabs/UI/HUD/GameHUD` 프리팹을 넣는다. EventSystem도 필요하다. 전투·체력·궁극기 컴포넌트는 Play 시작 때 `PlayerMovement`가 붙이고 수치는 [밸런스 표](MaintenanceGuide.md#밸런스-표-data-tables)에서 가져오므로, 플레이어 프리팹에 직접 둘 컴포넌트는 이동·시점·입력·무기·슬롯뿐이다.
 
 `WeaponController`의 선택 참조는 비워두면 기존 계층에서 찾는다. Input Source는 같은 오브젝트의 `IWeaponInput`, Aim Origin은 플레이어 카메라, Muzzle Point는 하위의 `MuzzleEffects` 위치를 쓴다. Weapon Root(총 모델)는 직접 할당하며, 장비가 없거나 근접일 때 이 오브젝트를 숨긴다. Hit Layers에는 적과 벽을 모두 포함해야 한다.
 

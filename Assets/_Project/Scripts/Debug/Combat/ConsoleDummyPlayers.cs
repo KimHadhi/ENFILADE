@@ -7,7 +7,6 @@ using UnityEngine;
 /// </summary>
 public static class ConsoleDummyPlayers
 {
-    private const string PrefabPath = "Characters/Player";
     private static readonly List<GameObject> dummies = new List<GameObject>();
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -15,8 +14,8 @@ public static class ConsoleDummyPlayers
 
     public static string Spawn(PlayerMovement player, int count)
     {
-        var prefab = Resources.Load<GameObject>(PrefabPath);
-        if (prefab == null) return "플레이어 프리팹이 없습니다. Play를 끄고 Tools > Player > Save Player Prefab을 먼저 실행하세요.";
+        var prefab = Resources.Load<GameObject>(PlayerSpawnPoint.PrefabPath);
+        if (prefab == null) return "플레이어 프리팹이 없습니다. Resources/Characters/Player.prefab을 확인하세요.";
         for (int spawned = 0; spawned < count; spawned++)
         {
             // Newly created colliders must occupy their positions before choosing the next spot.
