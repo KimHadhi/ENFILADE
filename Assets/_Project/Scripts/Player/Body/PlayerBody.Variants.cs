@@ -193,7 +193,7 @@ public sealed partial class PlayerBody
         inward = Vector3.ProjectOnPlane(inward, Vector3.up);
         if (inward.sqrMagnitude > .01f) targetYaw = Vector3.SignedAngle(transform.forward, inward, Vector3.up);
         float side = Vector3.Dot(player.ActualVelocity, Vector3.Cross(Vector3.up, inward.normalized));
-        if (Mathf.Abs(player.CurrentInput.x) > .1f && Mathf.Abs(side) > .1f)
+        if ((player.IsNetworkDriven || Mathf.Abs(player.CurrentInput.x) > .1f) && Mathf.Abs(side) > .1f)
         {
             string shimmy = side < 0f ? ledgeShimmyLeft : ledgeShimmyRight;
             Repeat(shimmy);

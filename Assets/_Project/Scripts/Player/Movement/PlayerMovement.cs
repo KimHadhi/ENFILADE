@@ -44,11 +44,12 @@ public sealed partial class PlayerMovement : MonoBehaviour
     internal MovementInput Input { get; private set; }
     internal MovementStateMachine StateMachine { get; private set; }
     internal MovementAbilities Abilities { get; private set; }
+    internal MovementMirror Mirror { get; private set; }
     /// <summary>Resources/Tables/Player.csv: rows Posture, Vitals, Stats, Ultimate, Fists, Execution and Body.</summary>
     public const string TableName = "Player";
     /// <summary>This PC plays this character. A remote one reads no input and puts nothing on this screen.</summary>
     public bool IsLocal { get; private set; } = true;
-    /// <summary>A remote character the network moves. Its own movement keeps only the ground check.</summary>
+    /// <summary>A remote character the network moves and poses (MovementMirror). Its own movement runs nothing but its posture.</summary>
     public bool IsNetworkDriven { get; private set; }
     public PlayerDamageReceiver DamageReceiver { get; private set; }
     public PlayerStats Stats { get; private set; }
@@ -222,6 +223,7 @@ public sealed partial class PlayerMovement : MonoBehaviour
         Posture = new MovementPostureController(this);
         Actions = new MovementActions(this);
         Abilities = new MovementAbilities(this);
+        Mirror = new MovementMirror(this);
         // Combat components are composed here at runtime; their balance numbers come from Resources/Tables/Player.csv.
         DamageReceiver = GetComponent<PlayerDamageReceiver>();
         if (DamageReceiver == null) DamageReceiver = gameObject.AddComponent<PlayerDamageReceiver>();
@@ -277,7 +279,7 @@ public sealed partial class PlayerMovement : MonoBehaviour
     private void Update()
     {
         if (!EnsureInitialized()) return;
-        if (IsNetworkDriven) { Motor.CheckGroundedAndSlope(); return; }
+        if (IsNetworkDriven) { Posture.UpdateHeightsAndTransform(Time.deltaTime); return; }
         float dt = Time.deltaTime;
         if (dt <= 0f || !Application.isFocused || !DamageReceiver.IsAlive) return;
         Input.Sample(InputAvailable && !ControlLocked);
@@ -357,6 +359,7 @@ public sealed partial class PlayerMovement : MonoBehaviour
         Execution?.Cancel();
         MeleeCombat?.CancelAction();
         if (!IsInitialized) return;
+        if (IsNetworkDriven) { StateMachine.Mirror(MovementState.Standing); return; }
         if (Posture.airBodyTucked || Posture.airCrouching) Posture.RebaseAirCrouchFeet();
         Motor.Reset();
         Actions.Reset();

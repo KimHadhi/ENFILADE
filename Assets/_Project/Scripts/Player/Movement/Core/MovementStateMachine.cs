@@ -104,6 +104,17 @@ public sealed class MovementStateMachine
         Changed?.Invoke(PreviousState, CurrentState);
     }
 
+    /// <summary>Shows a state this character is in on another PC: nothing of it runs here, the change is only announced.</summary>
+    internal void Mirror(MovementState next)
+    {
+        if (!states.TryGetValue(next, out MovementBaseState target) || ReferenceEquals(Current, target)) return;
+        PreviousState = CurrentState;
+        CurrentState = next;
+        Current = target;
+        Duration = 0f;
+        Changed?.Invoke(PreviousState, CurrentState);
+    }
+
     private static MovementBaseState FindCommonAncestor(MovementBaseState from, MovementBaseState to)
     {
         for (var a = from; a != null; a = a.Parent)

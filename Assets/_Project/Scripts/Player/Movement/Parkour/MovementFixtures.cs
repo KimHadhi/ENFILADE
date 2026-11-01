@@ -165,6 +165,26 @@ public sealed class MovementFixtures
 
     internal void LockZipline() => ziplineLock = ctx.AbilitySettings.ziplineRegrabDelay;
 
+    /// <summary>Shows the ladder this character is on, on another PC.</summary>
+    internal void MirrorLadder(Ladder ladder, bool caught, bool leftHand, int steps, float stepProgress, bool blocked, bool sliding)
+    {
+        Ladder = ladder;
+        LadderCaught = caught;
+        LadderLeftHand = leftHand;
+        LadderSteps = steps;
+        LadderStepProgress = stepProgress;
+        LadderStepBlocked = blocked;
+        LadderSliding = sliding;
+    }
+
+    /// <summary>Shows the cable this character rides, on another PC.</summary>
+    internal void MirrorZipline(Vector3 from, Vector3 direction, float speed)
+    {
+        ZiplineFrom = from;
+        ZiplineDirection = direction;
+        ZiplineSpeed = speed;
+    }
+
     internal void Reset()
     {
         ladderLock = ziplineLock = 0f;

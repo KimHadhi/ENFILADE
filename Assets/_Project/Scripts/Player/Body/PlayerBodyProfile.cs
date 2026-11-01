@@ -39,19 +39,8 @@ public sealed class PlayerBodyProfile : ScriptableObject
     [Tooltip("Renderers that only cast shadows in first person, because the camera sits inside the head.")]
     [SerializeField] private string[] firstPersonShadowOnly = { "Head", "Hair", "HeadAccessories" };
 
-    public Skin CurrentSkin
-    {
-        get
-        {
-            foreach (var skin in skins)
-                if (skin != null && skin.Model != null && string.Equals(skin.Id, GameSettings.Current.characterSkin, StringComparison.Ordinal))
-                    return skin;
-            foreach (var skin in skins)
-                if (skin != null && skin.Model == model) return skin;
-            return null;
-        }
-    }
-    public GameObject Model => CurrentSkin?.Model ?? model;
+    public Skin CurrentSkin => SkinOf(GameSettings.Current.characterSkin);
+    public GameObject Model => ModelOf(CurrentSkin);
     public IReadOnlyList<Skin> Skins => skins;
     public IReadOnlyList<AnimationClip> Clips => clips;
     public IReadOnlyList<string> FirstPersonShadowOnly => firstPersonShadowOnly;
@@ -61,6 +50,18 @@ public sealed class PlayerBodyProfile : ScriptableObject
         var profile = Resources.Load<PlayerBodyProfile>(ResourcePath);
         return profile != null && profile.model != null ? profile : null;
     }
+
+    /// <summary>The skin with this id, or the default character's when none matches.</summary>
+    public Skin SkinOf(string id)
+    {
+        foreach (var skin in skins)
+            if (skin != null && skin.Model != null && string.Equals(skin.Id, id, StringComparison.Ordinal)) return skin;
+        foreach (var skin in skins)
+            if (skin != null && skin.Model == model) return skin;
+        return null;
+    }
+
+    public GameObject ModelOf(Skin skin) => skin?.Model ?? model;
 
     public AnimationClip Find(string clipName)
     {

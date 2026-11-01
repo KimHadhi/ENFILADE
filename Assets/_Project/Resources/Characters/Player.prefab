@@ -148,6 +148,7 @@ GameObject:
   - component: {fileID: 4447755016514736994}
   - component: {fileID: 6789087714059669909}
   - component: {fileID: 6643819708340796070}
+  - component: {fileID: 7381924650173628419}
   m_Layer: 31
   m_Name: Player
   m_TagString: Player
@@ -648,6 +649,19 @@ MonoBehaviour:
   SwitchTransformSpaceWhenParented: 0
   Interpolate: 1
   SlerpPosition: 0
+--- !u!114 &7381924650173628419
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4995124463041406552}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 45802038ec7846f69606ff44e4b9aff6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerNetworkPose
+  ShowTopMostFoldoutHeaderGroup: 1
 --- !u!1 &5662278275230450362
 GameObject:
   m_ObjectHideFlags: 0

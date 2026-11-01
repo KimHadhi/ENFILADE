@@ -10,6 +10,8 @@ public sealed class MovementLean
     private int reactionSide, reactionActivation;
     public float Roll => -lean * ctx.AbilitySettings.leanAngle;
     public float Offset => lean * ctx.AbilitySettings.leanOffset;
+    /// <summary>How far the lean has gone, -1 to 1. Carried to the other PCs as it is.</summary>
+    internal float Share { get => lean; set => lean = value; }
     internal MovementLean(PlayerMovement context) { ctx = context; }
 
     internal void Tick(float dt)

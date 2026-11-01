@@ -251,6 +251,17 @@ public sealed class MovementLanding
         IsKnockedBack = true;
     }
 
+    /// <summary>Shows how this character is falling and landing on another PC.</summary>
+    internal void Mirror(Tier tier, Pose pose, float heavyYaw, bool bigFall, float fallSpeed)
+    {
+        LastTier = tier;
+        HeavyPose = pose;
+        HeavyYaw = heavyYaw;
+        IsBigFall = bigFall;
+        impactSpeed = fallSpeed;
+        trackingFall = fallSpeed > 0f;
+    }
+
     internal void Reset()
     {
         ClearFall();

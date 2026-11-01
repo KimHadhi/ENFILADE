@@ -67,6 +67,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     private PlayerBodyProfile profile;
     private GameObject loadedModel;
     private PlayerBodyProfile.Skin loadedSkin;
+    private string shownSkin;
     private Transform body, view, head;
     private Animator animator;
     private Vector3 headAlignment;
@@ -88,6 +89,16 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     internal Vector2 LedgeGrip => ledgeGrip;
     /// <summary>Where the eyes are this frame, after the spine has bent with the view.</summary>
     internal Vector3 EyePosition => head != null ? head.TransformPoint(eyeLocal) : transform.position;
+    internal PlayerBodyProfile.Skin Skin => loadedSkin;
+    // A copy of someone else wears what they chose, whatever this PC's own setting says.
+    private PlayerBodyProfile.Skin ChosenSkin => shownSkin != null ? profile.SkinOf(shownSkin) : profile.CurrentSkin;
+
+    /// <summary>Wears the skin the player of this copy chose on their own PC.</summary>
+    internal void ShowSkin(string id)
+    {
+        shownSkin = id;
+        rebuild = started;
+    }
 
     private void Start() { started = true; Build(); }
     private void OnEnable() { if (started) rebuild = true; }
@@ -111,14 +122,14 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         cameraEffects = GetComponent<PlayerCameraEffects>();
         if (view != null) viewHome = cameraEffects != null ? cameraEffects.CameraLocalHome : view.localPosition;
 
-        loadedModel = profile.Model;
-        loadedSkin = profile.CurrentSkin;
+        loadedSkin = ChosenSkin;
+        loadedModel = profile.ModelOf(loadedSkin);
         body = Instantiate(loadedModel, transform, false).transform;
         body.name = "Body (" + loadedModel.name + ")";
         animator = body.GetComponentInChildren<Animator>();
         if (animator == null) animator = body.gameObject.AddComponent<Animator>();
         if (animator.avatar == null || !animator.avatar.isHuman)
-            Report(profile.Model.name + " has no humanoid avatar; set Rig → Animation Type to Humanoid.");
+            Report(loadedModel.name + " has no humanoid avatar; set Rig → Animation Type to Humanoid.");
         animator.runtimeAnimatorController = null;
         animator.applyRootMotion = false;
         animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
@@ -517,7 +528,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
 
     private void OnSettingsChanged()
     {
-        if (profile != null && (profile.Model != loadedModel || profile.CurrentSkin != loadedSkin)) rebuild = true;
+        if (profile != null && ChosenSkin != loadedSkin) rebuild = true;
         ApplyView();
     }
 

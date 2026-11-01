@@ -61,7 +61,7 @@ public sealed partial class PlayerBodyHands : MonoBehaviour
     internal void BindAnimator(Animator animator)
     {
         boundAnimator = animator;
-        gripSkin = PlayerBodyProfile.Load()?.CurrentSkin;
+        gripSkin = body != null ? body.Skin : null;
         left = ArmIK.Create(animator, true);
         right = ArmIK.Create(animator, false);
         left?.PrepareBarGrip(Ladder.BarThickness * .5f, ladderPalmClearance, fingerSurfaceClearance);

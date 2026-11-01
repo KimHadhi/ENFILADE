@@ -211,7 +211,8 @@ public sealed class MovementPostureController
             targetOffset = airCameraOffset;
         }
 
-        if (ctx.IsDiving)
+        // A copy on another PC runs no dive, so it has no flight to take this pose from.
+        if (ctx.IsDiving && !ctx.IsNetworkDriven)
         {
             float progress = ctx.Actions.Dive.PoseProgress;
             targetColliderHeight = Mathf.Lerp(diveEntryHeight, targetColliderHeight, progress);

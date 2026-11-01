@@ -22,7 +22,7 @@ public sealed class CharacterSounds : MonoBehaviour, ITableBound
     private int bodyVoices = 8;
     [SerializeField, Range(0f, 1f), Tooltip("How 3D the body sounds are: 1 places feet, hands and cloth where they happen, 0 plays them flat.")]
     private float bodySpatialBlend = 1f;
-    [SerializeField, Range(0f, 1f), Tooltip("How 3D the voice is. The player hears their own breathing flat (0).")]
+    [SerializeField, Range(0f, 1f), Tooltip("How 3D the voice is. The player hears their own breathing flat (0); someone else's always comes from their mouth.")]
     private float voiceSpatialBlend = 0f;
     [SerializeField, Min(.1f), Tooltip("Sounds keep their full volume within this distance (m).")]
     private float fullVolumeDistance = 2f;
@@ -284,7 +284,8 @@ public sealed class CharacterSounds : MonoBehaviour, ITableBound
         voices.SetParent(transform, false);
         for (int i = 0; i < bodyVoices; i++)
             body.Add(new Voice { Source = NewSource("Body " + (i + 1), voices, AudioChannel.Movement, bodySpatialBlend) });
-        mouth = NewSource("Mouth", voices, AudioChannel.Voice, voiceSpatialBlend);
+        bool someoneElse = TryGetComponent(out PlayerMovement player) && !player.IsLocal;
+        mouth = NewSource("Mouth", voices, AudioChannel.Voice, someoneElse ? 1f : voiceSpatialBlend);
         mouth.transform.localPosition = Vector3.up * mouthHeight;
         queued = default;
         mouthLevel = mouthFadeRate = 0f;
