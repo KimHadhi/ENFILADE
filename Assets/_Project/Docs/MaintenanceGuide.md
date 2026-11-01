@@ -56,7 +56,7 @@
 
 플레이어는 씬에 놓지 않는다. 씬의 [PlayerSpawnPoint](../Scripts/Player/PlayerSpawnPoint.cs)가 게임 시작 때 `Resources/Characters/Player.prefab`을 만들고, 더미도 같은 프리팹을 쓴다. 플레이어의 컴포넌트나 총 위치를 고칠 때는 이 프리팹을 연다. HUD는 모든 씬이 `Prefabs/UI/HUD/GameHUD.prefab` 하나를 쓴다. 프리팹은 씬의 물건을 가리킬 수 없으므로 플레이어와 HUD는 실행 중에 서로를 찾는다.
 
-방은 [GameSession](../Scripts/Network/GameSession.cs)이 맡는다. 만든 사람의 PC가 호스트이고, 친구는 주소로 접속한다(포트 7777). 혼자 하기에서는 GameSession이 만들어지지 않으므로 네트워크가 전혀 돌지 않는다. 내 이동은 내 PC가 계산해 보내고, 남의 캐릭터는 `PlayerMovement.IsNetworkDriven`으로 표시되어 받은 위치를 따른다.
+방은 [GameSession](../Scripts/Network/GameSession.cs)이 맡는다. 만든 사람의 PC가 호스트이고, 친구는 서버 찾기의 목록이나 주소로 접속한다(게임 포트 7777). LAN 목록은 호스트의 [LanRoomBeacon](../Scripts/Network/LanRoomBeacon.cs)이 UDP 7778에서 묻는 쪽의 [LanRoomFinder](../Scripts/Network/LanRoomFinder.cs)에게 방 정보를 답하는 방식이다. 목록 화면은 `IRoomList`만 보므로 다른 방 찾기 방식을 더해도 화면은 그대로다. 혼자 하기에서는 GameSession이 만들어지지 않으므로 네트워크가 전혀 돌지 않는다. 내 이동은 내 PC가 계산해 보내고, 남의 캐릭터는 `PlayerMovement.IsNetworkDriven`으로 표시되어 받은 위치를 따른다.
 
 궁극기 스탯의 기본값은 **최대 보유량 120%, 1회 소비량 100%**다. 120%에서 사용하면 20%가 남고, 소비량을 70%로 바꾸면 50%가 남는다. 현재 충전량은 `UltimateCharge`, 최대 보유량과 소비량은 `PlayerStats`가 관리한다. 최대 보유량 변경은 현재 충전량을 유지하며, 최대치가 줄어들 때만 초과분을 잘라낸다. 소비량이 최대 보유량보다 크면 사용할 수 없다.
 

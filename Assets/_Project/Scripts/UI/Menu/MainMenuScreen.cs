@@ -7,17 +7,18 @@ using UnityEngine.UI;
 using W = SettingsWidgets;
 
 /// <summary>
-/// The title screen: choose a map and a character, then play alone, make a room or join one.
+/// The title screen: choose a map and a character, then play alone, make a room or find one.
 /// Pressing Play in a level skips this screen, so levels can still be tested directly.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class MainMenuScreen : MonoBehaviour
 {
     public const string SceneName = "MainMenu";
-    private const string MapsTable = "Maps";
     private string[] maps = Array.Empty<string>();
     private MainMenuPreview preview;
-    private TMP_Text status, joinLabel;
+    private TMP_Text status;
+    private CreateRoomView createRoom;
+    private ServerBrowserView browser;
 
     public static bool IsOpen { get; private set; }
 
@@ -36,7 +37,7 @@ public sealed class MainMenuScreen : MonoBehaviour
 
     private void Start()
     {
-        maps = GameTables.RowIds(MapsTable).Where(id => Application.CanStreamedLevelBeLoaded(id)).ToArray();
+        maps = MapTable.Playable();
         Build();
         preview.Show();
     }
@@ -44,10 +45,14 @@ public sealed class MainMenuScreen : MonoBehaviour
     private void Update()
     {
         if (status != null && status.text != GameSession.Status) status.text = GameSession.Status;
-        if (joinLabel != null) joinLabel.text = GameSession.IsOnline ? "접속 취소" : "참가하기";
+        browser?.Tick();
     }
 
-    private void OnDestroy() => IsOpen = false;
+    private void OnDestroy()
+    {
+        IsOpen = false;
+        browser?.StopSearching();
+    }
 
     private void Build()
     {
@@ -74,32 +79,23 @@ public sealed class MainMenuScreen : MonoBehaviour
         AddSkinChoice(column);
         W.Size(W.Rect("Gap", column), height: 20f);
         MenuButton(column, "혼자 하기", true, StartSolo);
-        MenuButton(column, "방 만들기", false, StartHost);
-        AddJoinRow(column);
+        MenuButton(column, "방 만들기", false, OpenCreateRoom);
+        MenuButton(column, "서버 찾기", false, () => browser.Open());
         MenuButton(column, "설정", false, SettingsMenu.OpenFromMainMenu);
         MenuButton(column, "게임 종료", false, SettingsMenu.QuitGame);
         W.Size(W.Rect("Gap", column), height: 12f);
-        string here = string.Join(" / ", GameSession.LocalAddresses());
-        W.Size(W.Label(column, $"이 PC 주소: {here}  (포트 {GameSession.Port})", 18f, W.Muted), height: 26f);
         status = W.Label(column, GameSession.Status, 19f, W.Accent);
         W.Size(status, height: 28f);
-    }
 
-    private void AddJoinRow(Transform column)
-    {
-        var settings = GameSettings.Current;
-        if (GameSession.ParseAddress(settings.lastAddress) == null) settings.lastAddress = GameSession.DefaultAddress;
-        W.TextInput(W.Row(column, "접속 주소"), settings.lastAddress, address => settings.lastAddress = address);
-        var join = W.ActionButton(column, "참가하기", false, ToggleJoin);
-        W.Size(join, height: 54f);
-        joinLabel = join.GetComponentInChildren<TMP_Text>();
+        createRoom = new CreateRoomView(canvas, StartHost);
+        browser = new ServerBrowserView(canvas);
     }
 
     private void AddMapChoice(Transform column)
     {
         if (maps.Length == 0) return;
         var settings = GameSettings.Current;
-        var names = maps.Select(MapName).ToArray();
+        var names = maps.Select(MapTable.DisplayName).ToArray();
         int selected = Mathf.Max(0, Array.IndexOf(maps, settings.lastMap));
         settings.lastMap = maps[selected];
         W.Choice(W.Row(column, "맵"), names, selected, i => settings.lastMap = maps[i]);
@@ -120,9 +116,6 @@ public sealed class MainMenuScreen : MonoBehaviour
         });
     }
 
-    private static string MapName(string id) =>
-        GameTables.TryGetRow(MapsTable, id, out var row) && row.TryGetValue("displayName", out string name) ? name : id;
-
     private static void MenuButton(Transform column, string text, bool primary, Action clicked)
     {
         W.Size(W.ActionButton(column, text, primary, clicked), height: 54f);
@@ -135,17 +128,14 @@ public sealed class MainMenuScreen : MonoBehaviour
         SceneManager.LoadScene(GameSettings.Current.lastMap);
     }
 
-    private void StartHost()
+    private void OpenCreateRoom()
     {
-        if (maps.Length == 0) return;
-        GameSettings.Save();
-        GameSession.Host(GameSettings.Current.lastMap);
+        if (maps.Length > 0 && !GameSession.IsOnline) createRoom.Show(GameSettings.Current.lastMap);
     }
 
-    private void ToggleJoin()
+    private void StartHost(string title, int maxPlayers)
     {
-        if (GameSession.IsOnline) { GameSession.Leave(); return; }
-        GameSession.Join(GameSettings.Current.lastAddress);
-        if (GameSession.IsOnline) GameSettings.Save();
+        GameSettings.Save();
+        GameSession.Host(GameSettings.Current.lastMap, title, maxPlayers);
     }
 }

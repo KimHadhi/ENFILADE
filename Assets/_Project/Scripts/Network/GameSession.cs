@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -21,11 +22,16 @@ public sealed class GameSession : MonoBehaviour, INetworkPrefabInstanceHandler
     private const float SpawnSpacing = 1.5f;
     // The transport tries once a second, so this is how long a failed join takes.
     private const int ConnectAttempts = 10;
+    // How long a silent connection lasts when a PC crashes or loses its network, without any goodbye.
+    private const int SilenceLimitMs = 10000;
     private static GameSession current;
     private NetworkManager network;
     private UnityTransport transport;
     private GameObject playerPrefab;
-    private int spawned;
+    private int spawned, maxPlayers;
+    private bool wasConnected, ending;
+    private string roomTitle, roomMap;
+    private readonly string roomId = Guid.NewGuid().ToString("N");
 
     public static bool IsOnline => current != null;
     /// <summary>What the main menu shows about the room: joining, or why the last one ended.</summary>
@@ -50,12 +56,22 @@ public sealed class GameSession : MonoBehaviour, INetworkPrefabInstanceHandler
         return parts.Length == 4 && parts.All(part => byte.TryParse(part, NumberStyles.None, CultureInfo.InvariantCulture, out _)) ? text : null;
     }
 
-    public static void Host(string map)
+    /// <summary>The room this PC hosts, as the server list shows it, or null once it is closing.</summary>
+    public static RoomInfo DescribeRoom() => current == null || current.ending ? null : new RoomInfo
+    {
+        id = current.roomId, title = current.roomTitle, map = current.roomMap,
+        players = current.network.ConnectedClients.Count, maxPlayers = current.maxPlayers
+    };
+
+    public static void Host(string map, string title, int maxPlayers)
     {
         if (IsOnline) return;
         var session = Create();
-        session.transport.SetConnectionData("127.0.0.1", Port, "0.0.0.0");
+        session.roomMap = map; session.roomTitle = title; session.maxPlayers = maxPlayers;
+        session.network.ConnectionApprovalCallback = session.Approve;
+        session.transport.SetConnectionData(DefaultAddress, Port, "0.0.0.0");
         if (!session.network.StartHost()) { session.End("방을 만들지 못했습니다. 포트 " + Port + "을 다른 프로그램이 쓰고 있는지 확인하세요."); return; }
+        session.gameObject.AddComponent<LanRoomBeacon>();
         session.network.SceneManager.OnLoadEventCompleted += session.OnMapLoaded;
         session.network.SceneManager.OnSynchronizeComplete += session.SpawnPlayer;
         session.network.SceneManager.LoadScene(map, LoadSceneMode.Single);
@@ -70,6 +86,7 @@ public sealed class GameSession : MonoBehaviour, INetworkPrefabInstanceHandler
         Status = address + "에 접속하는 중입니다...";
         session.transport.MaxConnectAttempts = ConnectAttempts;
         session.transport.SetConnectionData(address, Port);
+        session.network.OnClientConnectedCallback += _ => session.wasConnected = true;
         session.network.OnClientDisconnectCallback += session.OnDisconnected;
         if (!session.network.StartClient()) session.End("접속을 시작하지 못했습니다. 주소를 확인하세요.");
     }
@@ -83,8 +100,9 @@ public sealed class GameSession : MonoBehaviour, INetworkPrefabInstanceHandler
         host.SetActive(false);
         var session = host.AddComponent<GameSession>();
         session.transport = host.AddComponent<UnityTransport>();
+        session.transport.DisconnectTimeoutMS = SilenceLimitMs;
         session.network = host.AddComponent<NetworkManager>();
-        session.network.NetworkConfig = new NetworkConfig { NetworkTransport = session.transport };
+        session.network.NetworkConfig = new NetworkConfig { NetworkTransport = session.transport, ConnectionApproval = true };
         session.playerPrefab = PlayerFactory.Prefab;
         host.SetActive(true);
         session.network.AddNetworkPrefab(session.playerPrefab);
@@ -92,6 +110,12 @@ public sealed class GameSession : MonoBehaviour, INetworkPrefabInstanceHandler
         current = session;
         Status = "";
         return session;
+    }
+
+    private void Approve(NetworkManager.ConnectionApprovalRequest request, NetworkManager.ConnectionApprovalResponse response)
+    {
+        response.Approved = network.ConnectedClients.Count < maxPlayers;
+        response.Reason = response.Approved ? string.Empty : "방이 가득 찼습니다.";
     }
 
     private void OnMapLoaded(string scene, LoadSceneMode mode, List<ulong> completed, List<ulong> timedOut)
@@ -122,15 +146,25 @@ public sealed class GameSession : MonoBehaviour, INetworkPrefabInstanceHandler
     private void OnDisconnected(ulong client)
     {
         string reason = network.DisconnectReason;
-        End(string.IsNullOrEmpty(reason) ? "연결이 끊겼습니다. 주소와 방이 열려 있는지 확인하세요." : reason);
+        if (string.IsNullOrEmpty(reason))
+            reason = wasConnected ? "호스트가 방을 닫았거나 연결이 끊겼습니다." : "접속하지 못했습니다. 주소와 방이 열려 있는지 확인하세요.";
+        End(reason);
     }
 
     private void End(string message)
     {
-        if (current != this) return;
-        current = null;
+        if (current != this || ending) return;
+        ending = true;
         Status = message;
         network.Shutdown();
+        StartCoroutine(FinishEnding());
+    }
+
+    // The goodbye to the others goes out when the shutdown runs, so nothing is destroyed before it has.
+    private IEnumerator FinishEnding()
+    {
+        yield return new WaitWhile(() => network.ShutdownInProgress);
+        current = null;
         Destroy(gameObject);
         if (SceneManager.GetActiveScene().name != MainMenuScreen.SceneName) SceneManager.LoadScene(MainMenuScreen.SceneName);
     }

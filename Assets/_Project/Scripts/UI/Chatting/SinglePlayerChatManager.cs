@@ -400,6 +400,9 @@ public class SinglePlayerChatManager : MonoBehaviour
             if (!Application.CanStreamedLevelBeLoaded(sceneName))
                 return $"씬을 찾을 수 없습니다: {sceneName}";
 
+            if (GameSession.IsOnline)
+                return "방에 있는 동안에는 맵을 바꿀 수 없습니다.";
+
             SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Single);
 
             return $"씬 이동 중: {sceneName}";

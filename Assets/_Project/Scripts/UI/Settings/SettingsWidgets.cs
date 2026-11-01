@@ -122,6 +122,38 @@ public static class SettingsWidgets
         Select(selected);
     }
 
+    /// <summary>A dark centred window sized to what it holds, hidden until shown, over a dimmed screen.</summary>
+    public static RectTransform Window(Transform canvas, string name, float width, out RectTransform shade)
+    {
+        shade = Rect(name, canvas);
+        Stretch(shade);
+        Fill(shade, new Color(0f, 0f, 0f, .62f));
+        var panel = Rect("Panel", shade);
+        panel.anchorMin = panel.anchorMax = panel.pivot = new Vector2(.5f, .5f);
+        panel.sizeDelta = new Vector2(width, 0f);
+        Fill(panel, new Color(.06f, .07f, .09f, .96f));
+        var layout = panel.gameObject.AddComponent<VerticalLayoutGroup>();
+        layout.padding = new RectOffset(44, 44, 36, 36);
+        layout.spacing = 10f;
+        layout.childControlWidth = layout.childControlHeight = true;
+        layout.childForceExpandWidth = true; layout.childForceExpandHeight = false;
+        panel.gameObject.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+        shade.gameObject.SetActive(false);
+        return panel;
+    }
+
+    /// <summary>A row of buttons aligned to the right.</summary>
+    public static RectTransform ButtonRow(Transform parent)
+    {
+        var buttons = Rect("Buttons", parent);
+        var row = buttons.gameObject.AddComponent<HorizontalLayoutGroup>();
+        row.spacing = 12f; row.childAlignment = TextAnchor.MiddleRight;
+        row.childControlWidth = row.childControlHeight = true;
+        row.childForceExpandWidth = row.childForceExpandHeight = false;
+        row.padding = new RectOffset(0, 0, 14, 0);
+        return buttons;
+    }
+
     public static TMP_InputField TextInput(Transform parent, string value, Action<string> changed)
     {
         var root = Rect("Input", parent);
