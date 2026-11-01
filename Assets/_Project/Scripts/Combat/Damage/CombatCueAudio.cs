@@ -60,7 +60,8 @@ public sealed class CombatCueAudio : MonoBehaviour
             if (clip != null && clip != previous && choice-- == 0) return previous = clip;
         return previous = fallback;
     }
-    public void Stop() { if (source != null) source.Stop(); }
+    /// <summary>Cuts an attack's cue short. A stunned enemy calls this every frame, so a parry's cue on it must ring out.</summary>
+    public void Stop() { if (source != null && LastCue == CombatCue.EnemyAttackStart) source.Stop(); }
     private void Update()
     {
         if (source == null || LastCue != CombatCue.EnemyAttackStart) return;
