@@ -3,8 +3,8 @@ using Unity.Netcode;
 using UnityEngine;
 
 /// <summary>
-/// Carries a player's pose and skin to the other PCs. The owner writes them; every other PC plays them back on its copy
-/// through MovementMirror, ahead of PlayerMovement. Alone it never spawns and does nothing.
+/// Carries a player's pose, health and skin to the other PCs. The owner writes them; every other PC plays them back on
+/// its copy through MovementMirror, ahead of PlayerMovement. Alone it never spawns and does nothing.
 /// </summary>
 [DisallowMultipleComponent, DefaultExecutionOrder(-110)]
 public sealed class PlayerNetworkPose : NetworkBehaviour
@@ -16,6 +16,8 @@ public sealed class PlayerNetworkPose : NetworkBehaviour
         NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     private readonly NetworkVariable<FixedString64Bytes> skin = new NetworkVariable<FixedString64Bytes>(default,
         NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+    private readonly NetworkVariable<float> health = new NetworkVariable<float>(default,
+        NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     private PlayerMovement movement;
 
     public override void OnNetworkSpawn()
@@ -24,18 +26,22 @@ public sealed class PlayerNetworkPose : NetworkBehaviour
         pose.SetUpdateTraits(new NetworkVariableUpdateTraits { MinSecondsBetweenUpdates = SendInterval });
         if (IsOwner)
         {
+            health.Value = movement.DamageReceiver.Health;
             GameSettings.Changed += SendSkin;
             SendSkin();
             return;
         }
         skin.OnValueChanged += OnSkinChanged;
+        health.OnValueChanged += OnHealthChanged;
         ShowSkin();
+        if (health.Value > 0f) movement.DamageReceiver.ShowHealth(health.Value);
     }
 
     public override void OnNetworkDespawn()
     {
         GameSettings.Changed -= SendSkin;
         skin.OnValueChanged -= OnSkinChanged;
+        health.OnValueChanged -= OnHealthChanged;
     }
 
     private void Update()
@@ -45,8 +51,12 @@ public sealed class PlayerNetworkPose : NetworkBehaviour
 
     private void LateUpdate()
     {
-        if (IsSpawned && IsOwner) pose.Value = movement.Mirror.Capture();
+        if (!IsSpawned || !IsOwner) return;
+        pose.Value = movement.Mirror.Capture();
+        health.Value = movement.DamageReceiver.Health;
     }
+
+    private void OnHealthChanged(float previous, float current) => movement.DamageReceiver.ShowHealth(current);
 
     private void SendSkin() => skin.Value = GameSettings.Current.characterSkin;
 

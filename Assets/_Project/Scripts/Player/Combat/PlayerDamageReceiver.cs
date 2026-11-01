@@ -63,6 +63,9 @@ public sealed class PlayerDamageReceiver : MonoBehaviour, IDamageReceiver, ITabl
         return DamageResult.Damaged;
     }
 
+    /// <summary>On someone else's copy: the health their own PC reports.</summary>
+    internal void ShowHealth(float health) => Health = Mathf.Clamp(health, 0f, MaximumHealth);
+
     public void RestoreHealth()
     {
         Health = MaximumHealth; shield = 0f; healthInitialized = true; seen.Clear(); recent.Clear(); movement?.ResetVelocity();

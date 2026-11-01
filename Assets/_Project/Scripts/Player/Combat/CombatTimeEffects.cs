@@ -11,7 +11,8 @@ public sealed class CombatTimeEffects : MonoBehaviour
     private bool ownsTime;
     public void RequestSlowdown(Object owner, float scale, float seconds)
     {
-        if (!Application.isPlaying || Time.timeScale <= 0f) return;
+        // In a room this would slow one PC against the others, so the room keeps its time.
+        if (!Application.isPlaying || Time.timeScale <= 0f || GameSession.IsOnline) return;
         if (!ownsTime) { baseline = Time.timeScale; fixedBaseline = Time.fixedDeltaTime; applied = baseline; ownsTime = true; }
         requests.RemoveAll(item => item.owner == owner);
         requests.Add(new Request { owner = owner, scale = Mathf.Clamp(scale, .01f, 1f), remaining = Mathf.Max(.01f, seconds) });

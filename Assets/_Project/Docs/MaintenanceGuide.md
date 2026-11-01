@@ -60,6 +60,8 @@
 
 적은 호스트가 돌린다. 적 프리팹은 [Resources/Enemies](../Resources/Enemies)에 두며, 이 폴더의 네트워크 프리팹은 모든 PC에 자동으로 등록된다. 다른 PC의 적은 [EnemyNetwork](../Scripts/Network/EnemyNetwork.cs)가 AI와 NavMesh를 끈 복사본이고, 호스트의 위치와 체력만 보여 준다. 쏜 사람의 PC가 자기 복사본에서 명중을 판정해 효과를 바로 보여 주고 호스트에 알리면, 호스트가 진짜 체력을 깎고 다른 PC에 알린다. 웨이브는 호스트만 진행하고, 씬의 `WaveManager`가 네트워크 오브젝트가 아니므로 표시는 [WaveSync](../Scripts/Network/WaveSync.cs)가 메시지로 보낸다. `CombatDamageReport.ByOtherPlayer`인 타격은 세상에는 보이지만 히트 마커, 점수, 킬 화면은 쏜 사람에게만 나온다.
 
+적의 공격은 호스트가 시작을 알리고 맞을 사람의 PC가 판정한다. `EnemyCombatAI.ShowWindup`이 그 PC에서 예고 시간을 직접 세므로 예고음과 타격의 간격이 혼자 할 때와 같고, 패리와 회피도 입력 지연 없이 판정된다. 패리나 주먹이 적에게 주는 체간 피해, 경직, 밀림은 `MeleeCombatTarget`이 복사본에 바로 적용하면서 호스트에도 보낸다. 플레이어 체력은 각자의 PC가 진짜이고, 다른 PC에는 `PlayerNetworkPose`로 알린다.
+
 궁극기 스탯의 기본값은 **최대 보유량 120%, 1회 소비량 100%**다. 120%에서 사용하면 20%가 남고, 소비량을 70%로 바꾸면 50%가 남는다. 현재 충전량은 `UltimateCharge`, 최대 보유량과 소비량은 `PlayerStats`가 관리한다. 최대 보유량 변경은 현재 충전량을 유지하며, 최대치가 줄어들 때만 초과분을 잘라낸다. 소비량이 최대 보유량보다 크면 사용할 수 없다.
 
 `UltimateHUD`의 전체 바 길이는 최대 보유량에 비례한다. 기본 120%에서 배치한 폭을 유지하며 `Maximum Bar Width`(기본 480 Canvas 단위)를 넘으면 폭을 고정하고 충전량·사용 기준점을 비율로 표시한다. `UltReadyThresholdIcon`은 전체 바의 **소비량 ÷ 최대 보유량** 지점을 가리킨다. 소비량만 바꾸면 전체 바 길이는 유지된다. `/ultmax 200`은 최대 보유량을 200%로, `/ultcost 70`은 1회 소비량을 70%로 지정한다. `/ultmax 20`은 20%를 더하는 것이 아니라 최대 보유량을 20%로 설정한다. 이 명령은 Play 중 테스트 상태만 바꾼다.

@@ -47,11 +47,14 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
     private PlayerExecution executor;
     private AudioSource bodyAudio;
     private NavMeshAgent agent;
+    private EnemyNetwork network;
     private bool stoppedAgent, previousStopped;
 
     private float appliedMaximumPosture;
+    // On a copy these also reach the host: the copy reacts at once, the host's enemy is the one that really stops.
+    private bool IsCopy => network != null && network.IsCopy;
 
-    private void Awake() { Posture = appliedMaximumPosture = MaximumPosture; agent = GetComponent<NavMeshAgent>(); }
+    private void Awake() { Posture = appliedMaximumPosture = MaximumPosture; agent = GetComponent<NavMeshAgent>(); network = GetComponent<EnemyNetwork>(); }
 
     // Enemies.csv may change the maximum before or after Awake; keep the current posture fraction either way.
     void ITableBound.OnTableApplied()
@@ -114,6 +117,7 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
     {
         // Further hits cannot restart the recovery clock or repeatedly trigger the stagger cue.
         if (!IsAvailable || IsStaggered) return;
+        if (IsCopy) network.SendPosture(amount, stun, interrupt);
         Posture = Mathf.Max(0f, Posture - Mathf.Max(0f, amount));
         recoveryRemaining = recoveryDelay;
         if (Posture <= 0f)
@@ -121,9 +125,14 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
             IsStaggered = true; StaggerAge = 0f; recoveryRemaining = staggerRecoveryDelay;
             PlayStaggerSound(); Staggered?.Invoke();
         }
-        if (interrupt || IsStaggered) Interrupt(stun);
+        if (interrupt || IsStaggered) InterruptHere(stun);
     }
     public void Interrupt(float duration)
+    {
+        if (IsAvailable && IsCopy) network.SendInterrupt(duration);
+        InterruptHere(duration);
+    }
+    private void InterruptHere(float duration)
     {
         if (!IsAvailable) return;
         stunRemaining = Mathf.Max(stunRemaining, duration);
@@ -214,6 +223,7 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
     }
     public void ReceiveShove(Vector3 impulse, Vector3 point)
     {
+        if (IsCopy) { network.SendShove(impulse, point); return; }
         ReceiveShove(impulse, point, new HashSet<MeleeCombatTarget> { this });
     }
     private void ReceiveShove(Vector3 impulse, Vector3 point, HashSet<MeleeCombatTarget> chain)

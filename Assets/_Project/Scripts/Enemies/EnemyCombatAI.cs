@@ -24,12 +24,13 @@ public sealed class EnemyCombatAI : MonoBehaviour
     private EnemyHealth enemyHealth;
     private MeleeCombatTarget meleeTarget;
     private EnemyTargeting targeting;
+    private EnemyNetwork network;
     private PlayerMovement player;
     private Renderer indicator;
     private MaterialPropertyBlock color;
 
     private float timer;
-    private bool preparing;
+    private bool preparing, aimedHere;
     private Vector3 lockedAim;
     private int comboIndex;
 
@@ -43,6 +44,7 @@ public sealed class EnemyCombatAI : MonoBehaviour
         if (meleeTarget == null) meleeTarget = gameObject.AddComponent<MeleeCombatTarget>();
         targeting = GetComponent<EnemyTargeting>();
         if (targeting == null) targeting = gameObject.AddComponent<EnemyTargeting>();
+        network = GetComponent<EnemyNetwork>();
         indicator = GetComponent<Renderer>();
         color = new MaterialPropertyBlock();
         timer = attackInterval;
@@ -52,6 +54,7 @@ public sealed class EnemyCombatAI : MonoBehaviour
     public void Tick(float dt)
     {
         if (dt <= 0f) return;
+        if (network != null && network.IsCopy) { TickCopy(dt); return; }
         if (PlayerExecution.Suppresses(this) || (meleeTarget != null && meleeTarget.IsStunned)) { CancelAttack(); return; }
         if (enemyHealth == null || !enemyHealth.IsAlive || enemyHealth.WavePaused)
             { CancelAttack(); return; }
@@ -102,6 +105,7 @@ public sealed class EnemyCombatAI : MonoBehaviour
         lockedAim = player.transform.position + Vector3.up * aimHeight;
         UpdateIndicator(true);
         CombatCueAudio.Play(gameObject, CombatCue.EnemyAttackStart);
+        if (network != null) network.AnnounceWindup(player, comboIndex);
     }
 
     private void FireAttack()
@@ -111,11 +115,20 @@ public sealed class EnemyCombatAI : MonoBehaviour
         timer = 0f;
         UpdateIndicator(false);
 
+        bool finisher = comboIndex >= Mathf.Max(1, comboHits) - 1;
+        // Aimed at someone on another PC, the swing lands there. A parry comes back as a stun, which ends the combo.
+        var result = player.IsNetworkDriven ? DamageResult.Ignored : Strike();
+        if (!finisher && result != DamageResult.Parried && meleeTarget?.IsStunned != true)
+        { comboIndex++; BeginWindup(); }
+    }
+
+    private DamageResult Strike()
+    {
         Vector3 origin = transform.position;
         Vector3 direction = (lockedAim - origin).normalized;
 
         if (direction.sqrMagnitude < 0.0001f)
-            return;
+            return DamageResult.Ignored;
 
         // 적 자신의 충돌체 안에서 광선이 시작되는 것을 줄인다.
         origin += direction * rayStartOffset;
@@ -129,19 +142,44 @@ public sealed class EnemyCombatAI : MonoBehaviour
             gameObject, true, 0f, comboIndex >= Mathf.Max(1, comboHits) - 1
         );
 
-        var result = AttackTrace.Raycast(
+        return AttackTrace.Raycast(
             hit,
             origin,
             direction,
             attackRange + rayStartOffset,
             hitLayers
         );
-        if (!hit.IsComboFinisher && result != DamageResult.Parried && meleeTarget?.IsStunned != true)
-        { comboIndex++; BeginWindup(); }
+    }
+
+    /// <summary>
+    /// On a copy: the host's enemy began an attack. Aimed at this PC's player, the windup is timed here, so the cue and
+    /// the hit stay as far apart as they are alone and the parry window doesn't move with the connection.
+    /// </summary>
+    internal void ShowWindup(bool atThisPlayer, int combo)
+    {
+        preparing = true; timer = 0f; comboIndex = combo;
+        var mine = atThisPlayer ? PlayerRoster.Local : null;
+        aimedHere = mine != null;
+        if (aimedHere) lockedAim = mine.transform.position + Vector3.up * aimHeight;
+        UpdateIndicator(true);
+        CombatCueAudio.Play(gameObject, CombatCue.EnemyAttackStart);
+    }
+
+    private void TickCopy(float dt)
+    {
+        if (!preparing) return;
+        if (enemyHealth == null || !enemyHealth.IsAlive) { CancelAttack(); return; }
+        timer += dt;
+        if (timer < windup) return;
+        preparing = false;
+        timer = 0f;
+        UpdateIndicator(false);
+        if (aimedHere) Strike();
     }
 
     public void CancelAttack()
     {
+        if (preparing && network != null) network.AnnounceCancel();
         preparing = false;
         timer = 0f;
         comboIndex = 0;

@@ -5,13 +5,16 @@ using UnityEngine.AI;
 /// <summary>
 /// An enemy in a room. The host runs it; on every other PC it is a copy that shows the host's position and health. A
 /// player's PC judges their own hits on its copy, shows them at once and tells the host, whose health is the true one.
-/// Alone it never spawns and does nothing.
+/// The same goes for its attacks: the victim's PC times the swing and judges the parry, and what that does to the enemy
+/// comes back here. Alone it never spawns and does nothing.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class EnemyNetwork : NetworkBehaviour
 {
     private readonly NetworkVariable<float> health = new NetworkVariable<float>();
     private EnemyHealth enemy;
+    private EnemyCombatAI combat;
+    private MeleeCombatTarget target;
 
     /// <summary>This PC only shows the enemy; the host runs it.</summary>
     public bool IsCopy => IsSpawned && !IsServer;
@@ -25,13 +28,14 @@ public sealed class EnemyNetwork : NetworkBehaviour
     public override void OnNetworkSpawn()
     {
         enemy = GetComponent<EnemyHealth>();
+        combat = GetComponent<EnemyCombatAI>();
+        target = GetComponent<MeleeCombatTarget>();
         if (IsServer)
         {
             health.Value = enemy.Health;
             return;
         }
         if (TryGetComponent(out EnemyChaseAI chase)) chase.enabled = false;
-        if (TryGetComponent(out EnemyCombatAI combat)) combat.enabled = false;
         if (TryGetComponent(out NavMeshAgent agent)) agent.enabled = false;
         health.OnValueChanged += OnHealthChanged;
         enemy.ShowHealth(health.Value);
@@ -63,6 +67,39 @@ public sealed class EnemyNetwork : NetworkBehaviour
         foreach (var part in GetComponentsInChildren<Renderer>()) part.enabled = false;
         foreach (var part in GetComponentsInChildren<Collider>()) part.enabled = false;
     }
+
+    /// <summary>The host's enemy began an attack on this player.</summary>
+    internal void AnnounceWindup(PlayerMovement victim, int combo)
+    {
+        if (!IsSpawned) return;
+        ulong client = victim.TryGetComponent(out NetworkObject player) ? player.OwnerClientId : NetworkManager.ServerClientId;
+        WindupRpc(client, combo);
+    }
+
+    internal void AnnounceCancel()
+    {
+        if (IsSpawned && IsServer) CancelRpc();
+    }
+
+    /// <summary>A parry, a punch or a shove on this PC's copy reaches the enemy that really moves and fights.</summary>
+    internal void SendPosture(float amount, float stun, bool interrupt) => PostureRpc(amount, stun, interrupt);
+    internal void SendInterrupt(float duration) => InterruptRpc(duration);
+    internal void SendShove(Vector3 impulse, Vector3 point) => ShoveRpc(impulse, point);
+
+    [Rpc(SendTo.NotServer)]
+    private void WindupRpc(ulong victim, int combo) => combat.ShowWindup(victim == NetworkManager.LocalClientId, combo);
+
+    [Rpc(SendTo.NotServer)]
+    private void CancelRpc() => combat.CancelAttack();
+
+    [Rpc(SendTo.Server)]
+    private void PostureRpc(float amount, float stun, bool interrupt) => target.ApplyPostureDamage(amount, stun, interrupt);
+
+    [Rpc(SendTo.Server)]
+    private void InterruptRpc(float duration) => target.Interrupt(duration);
+
+    [Rpc(SendTo.Server)]
+    private void ShoveRpc(Vector3 impulse, Vector3 point) => target.ReceiveShove(impulse, point);
 
     [Rpc(SendTo.Server)]
     private void HitRpc(EnemyHitMessage message, RpcParams rpc = default) => enemy.ReceiveHit(message.ToHit(PlayerOf(rpc.Receive.SenderClientId)));
