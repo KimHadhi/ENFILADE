@@ -5,6 +5,8 @@ using UnityEngine;
 [DisallowMultipleComponent]
 public sealed class PlayerDamageReceiver : MonoBehaviour, IDamageReceiver, ITableBound
 {
+    // The health bar rounds, so anything it would show as 0 is 0. Nobody stands there at "0" on a leftover sliver.
+    private const float LeastHealth = .5f;
     [SerializeField, Min(1f)] private float maximumHealth = 100f;
     public float MaximumHealth => ValidMaximum(maximumHealth);
     [SerializeField, Min(0f)] private float shield;
@@ -15,6 +17,8 @@ public sealed class PlayerDamageReceiver : MonoBehaviour, IDamageReceiver, ITabl
     [field: SerializeField, HideInInspector] public float Health { get; private set; }
     [SerializeField, HideInInspector] private bool healthInitialized;
     public bool IsAlive => Health > 0f;
+    /// <summary>On the ground, crawling and waiting to be got up (PlayerLife). Their health is then what they have left down there.</summary>
+    public bool IsDowned { get; private set; }
     public event Action<DamageHit, DamageResult> HitResolved;
     public event Action Died;
 
@@ -53,22 +57,72 @@ public sealed class PlayerDamageReceiver : MonoBehaviour, IDamageReceiver, ITabl
             HitResolved?.Invoke(hit, defense);
             return defense;
         }
-        float absorbed = Mathf.Min(Shield, hit.Amount);
+        float absorbed = hit.IsFatal ? 0f : Mathf.Min(Shield, hit.Amount);
         shield = Shield - absorbed;
-        Health = Mathf.Max(0f, Health - (hit.Amount - absorbed));
+        LoseHealth(hit.IsFatal ? Health : hit.Amount - absorbed);
         melee?.NotifyDamaged();
         HitResolved?.Invoke(hit, DamageResult.Damaged);
         if (movement == null || movement.IsLocal) CombatHitAudio.PlayPlayerHit(hit);
-        if (!IsAlive) { movement?.ResetVelocity(); Died?.Invoke(); }
+        if (!IsAlive && (hit.IsFatal || !TryGetComponent(out PlayerLife life) || !life.TryGoDown())) Die();
         return DamageResult.Damaged;
+    }
+
+    private void LoseHealth(float amount)
+    {
+        Health -= amount;
+        if (Health < LeastHealth) Health = 0f;
+    }
+
+    private void Die()
+    {
+        // Someone who dies on the ground stays lying there.
+        bool wasDowned = IsDowned;
+        SetDowned(false);
+        if (!wasDowned) movement?.ResetVelocity();
+        Died?.Invoke();
+    }
+
+    private void SetDowned(bool downed)
+    {
+        IsDowned = downed;
+        if (TryGetComponent(out PlayerWeaponSlots slots)) slots.HoldSidearm(downed);
+    }
+
+    /// <summary>Health ran out with someone still standing: they go down with this much left.</summary>
+    internal void GoDown(float downedHealth)
+    {
+        Health = downedHealth;
+        SetDowned(true);
+        movement?.ResetVelocity();
+        GetComponent<PlayerDamageFeedback>()?.Clear();
+    }
+
+    /// <summary>Time on the ground wears them down.</summary>
+    internal void Bleed(float amount)
+    {
+        if (!IsDowned) return;
+        LoseHealth(amount);
+        if (!IsAlive) Die();
+    }
+
+    /// <summary>Someone got them up, with this much health.</summary>
+    internal void GetUp(float health)
+    {
+        Health = Mathf.Clamp(health, 1f, MaximumHealth);
+        SetDowned(false);
+        movement?.Abilities.ReturnToLocomotion();
     }
 
     /// <summary>On someone else's copy: the health their own PC reports.</summary>
     internal void ShowHealth(float health) => Health = Mathf.Clamp(health, 0f, MaximumHealth);
+    /// <summary>On someone else's copy: whether they are down, as their own PC reports.</summary>
+    internal void ShowDowned(bool downed) => IsDowned = downed;
 
     public void RestoreHealth()
     {
-        Health = MaximumHealth; shield = 0f; healthInitialized = true; seen.Clear(); recent.Clear(); movement?.ResetVelocity();
+        Health = MaximumHealth; shield = 0f; healthInitialized = true; seen.Clear(); recent.Clear();
+        SetDowned(false);
+        movement?.ResetVelocity();
         GetComponent<PlayerDamageFeedback>()?.Clear();
     }
 

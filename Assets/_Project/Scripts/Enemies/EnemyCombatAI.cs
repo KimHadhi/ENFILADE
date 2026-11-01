@@ -14,6 +14,8 @@ public sealed class EnemyCombatAI : MonoBehaviour
     [Tooltip("Each combo part has its own cue. Only parrying the last part opens a perfect counter.")]
     [SerializeField, Min(1)] private int comboHits = 1;
     [SerializeField, Min(0f)] private float damage = 10f;
+    [Tooltip("A landed hit kills outright, with no going down first. A dodge or parry still beats it.")]
+    [SerializeField] private bool fatalHit;
 
     [Header("Aim Settings")]
     [SerializeField] private float aimHeight = 1f;
@@ -139,7 +141,7 @@ public sealed class EnemyCombatAI : MonoBehaviour
             DamageKind.Attack,
             lockedAim,
             direction,
-            gameObject, true, 0f, comboIndex >= Mathf.Max(1, comboHits) - 1
+            gameObject, true, 0f, comboIndex >= Mathf.Max(1, comboHits) - 1, isFatal: fatalHit
         );
 
         return AttackTrace.Raycast(

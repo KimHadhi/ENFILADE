@@ -26,12 +26,14 @@ public readonly struct DamageHit
     /// <summary>Perfect-defense counter attack. Presentation only.</summary>
     public readonly bool IsCounter;
     public readonly DamageMethod Method;
+    /// <summary>On a player: kills where it lands, whatever health and shield are left, with no going down first. A dodge or parry still beats it.</summary>
+    public readonly bool IsFatal;
     public DamageHit(long id, float amount, DamageKind kind, Vector3 point, Vector3 direction, GameObject source = null,
         bool canBeGuarded = false, float postureDamage = 0f, bool isComboFinisher = true, bool isCritical = false, bool isCounter = false,
-        DamageMethod method = DamageMethod.Other, Vector3? origin = null)
+        DamageMethod method = DamageMethod.Other, Vector3? origin = null, bool isFatal = false)
     { Id = id; Amount = amount; Kind = kind; Point = point; Direction = direction; Source = source;
         CanBeGuarded = canBeGuarded; PostureDamage = postureDamage; IsComboFinisher = isComboFinisher; IsCritical = isCritical; IsCounter = isCounter;
-        Method = method; Origin = origin; }
+        Method = method; Origin = origin; IsFatal = isFatal; }
 }
 
 public interface IDamageReceiver { DamageResult ReceiveHit(DamageHit hit); }

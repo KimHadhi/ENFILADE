@@ -99,6 +99,9 @@ public sealed partial class PlayerMovement : MonoBehaviour
     public MovementState PreviousState => StateMachine != null ? StateMachine.PreviousState : MovementState.Standing;
     public float CurrentStateDuration { get => StateMachine.Duration; set => StateMachine.Duration = value; }
     public bool IsGrounded => Motor.isGrounded;
+    /// <summary>On the ground, crawling and waiting to be got up (PlayerLife). Prone, and the prone controls for getting up do nothing.</summary>
+    public bool IsDowned => DamageReceiver != null && DamageReceiver.IsDowned;
+    public bool IsDead => DamageReceiver != null && !DamageReceiver.IsAlive;
     public bool LandedThisFrame => Motor.landedThisFrame;
     public bool IsSliding => StateMachine != null && StateMachine.IsIn<SlidingGroupState>();
     public bool IsJustSliding => Abilities != null && Abilities.Slide.IsJustSlide;
@@ -262,6 +265,14 @@ public sealed partial class PlayerMovement : MonoBehaviour
             GameTables.Bind(TableName, "MovementAudio", gameObject.AddComponent<PlayerMovementAudio>());
             GameTables.Bind(TableName, "FixtureAudio", gameObject.AddComponent<PlayerFixtureAudio>());
         }
+        // Going down, getting up, dying and the team wipe are decided on the PC that plays this character.
+        if (Application.isPlaying && IsLocal && GetComponent<PlayerLife>() == null)
+        {
+            GameTables.Bind(PlayerLife.TableName, PlayerLife.TableRow, gameObject.AddComponent<PlayerLife>(), gameObject.AddComponent<PlayerRevive>());
+            gameObject.AddComponent<PlayerLifeHUD>();
+        }
+        if (Application.isPlaying && GetComponent<PlayerRagdoll>() == null)
+            GameTables.Bind(PlayerRagdoll.TableName, PlayerRagdoll.TableRow, gameObject.AddComponent<PlayerRagdoll>());
         // What only the player feels: breathing, wind and fall sounds, then the camera's punches and a long fall's warp.
         if (Application.isPlaying && IsLocal && GetComponent<PlayerMovementPunch>() == null)
         {
@@ -281,14 +292,15 @@ public sealed partial class PlayerMovement : MonoBehaviour
         if (!EnsureInitialized()) return;
         if (IsNetworkDriven) { Posture.UpdateHeightsAndTransform(Time.deltaTime); return; }
         float dt = Time.deltaTime;
-        if (dt <= 0f || !Application.isFocused || !DamageReceiver.IsAlive) return;
+        if (dt <= 0f || !Application.isFocused) return;
         Input.Sample(InputAvailable && !ControlLocked);
         Abilities.BeginFrame(dt);
         Actions.TickTimers(dt);
         Motor.TickTimers(dt);
         StateMachine.Duration += dt;
         Motor.CheckGroundedAndSlope();
-        if (CombatInputLocked || !IsLocal)
+        // The dead still fall, so nobody's body hangs in the air.
+        if (CombatInputLocked || !IsLocal || !DamageReceiver.IsAlive)
         {
             Input.Sample(false);
             Actions.Momentum.Tick(dt, Vector2.zero);
@@ -326,6 +338,15 @@ public sealed partial class PlayerMovement : MonoBehaviour
     }
 
     public void ChangeState(MovementState state) => StateMachine.ChangeState(state);
+    /// <summary>Puts the player at this point, as a spawn does.</summary>
+    internal void MoveTo(Vector3 position)
+    {
+        var controller = Motor.controller;
+        controller.enabled = false;
+        transform.position = position;
+        controller.enabled = true;
+        ResetVelocity();
+    }
     /// <summary>
     /// Throws the player at this velocity (meant for big enemies' blows; aim it upward). Without control until they
     /// land, they go down on their back facing where the blow came from and get up again (Ability.backLandingTime).
@@ -363,7 +384,8 @@ public sealed partial class PlayerMovement : MonoBehaviour
         if (Posture.airBodyTucked || Posture.airCrouching) Posture.RebaseAirCrouchFeet();
         Motor.Reset();
         Actions.Reset();
-        if (!HasCeilingAbove(StandingColliderHeight)) ChangeState(MovementState.Standing);
+        if (IsDowned) ChangeState(MovementState.Proning);
+        else if (!HasCeilingAbove(StandingColliderHeight)) ChangeState(MovementState.Standing);
         else if (!HasCeilingAbove(CrouchColliderHeight)) ChangeState(MovementState.Crouching);
         else ChangeState(MovementState.Proning);
         Abilities?.Reset();

@@ -12,7 +12,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
     private struct Stance : INetworkSerializeByMemcpy
     {
         public sbyte Slot;
-        public bool Aiming, Guarding, Reloading, EmptyReload;
+        public bool Aiming, Guarding, Reloading, EmptyReload, Downed;
     }
 
     private const float AimingShare = .5f;
@@ -24,9 +24,16 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
     private PlayerFistAudio fists;
     private PlayerShoveAudio shoves;
     private PlayerExecution execution;
+    private PlayerDamageReceiver receiver;
+
+    /// <summary>Someone on this PC finished getting this copy's player up: their own PC does it.</summary>
+    public void Revive() => ReviveRpc();
+    /// <summary>The host saw nobody left standing.</summary>
+    internal void AnnounceWipe() => WipeRpc();
 
     public override void OnNetworkSpawn()
     {
+        receiver = GetComponent<PlayerDamageReceiver>();
         slots = GetComponent<PlayerWeaponSlots>();
         weapon = GetComponent<WeaponController>();
         melee = GetComponent<PlayerMeleeCombat>();
@@ -63,7 +70,8 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
         stance.Value = new Stance
         {
             Slot = (sbyte)slots.SelectedSlot, Aiming = weapon.AimBlend > AimingShare, Guarding = melee.IsGuarding || melee.IsParryActive,
-            Reloading = gun != null && gun.IsReloading, EmptyReload = gun != null && gun.IsReloading && gun.IsEmptyReload
+            Reloading = gun != null && gun.IsReloading, EmptyReload = gun != null && gun.IsReloading && gun.IsEmptyReload,
+            Downed = receiver.IsDowned
         };
     }
 
@@ -75,6 +83,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
         weapon.ShowAiming(now.Aiming);
         weapon.ShowReload(now.Reloading, now.EmptyReload);
         melee.ShowGuard(now.Guarding);
+        receiver.ShowDowned(now.Downed);
     }
 
     private void OnShot(WeaponShot shot) => ShotRpc(shot.Origin, shot.Direction);
@@ -97,4 +106,17 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
 
     [Rpc(SendTo.NotMe)]
     private void ExecutionStartedRpc() => CombatCueAudio.Play(gameObject, CombatCue.Grab, 1f, true);
+
+    [Rpc(SendTo.Owner)]
+    private void ReviveRpc()
+    {
+        if (TryGetComponent(out PlayerLife life)) life.Revived();
+    }
+
+    [Rpc(SendTo.Everyone)]
+    private void WipeRpc()
+    {
+        var mine = PlayerRoster.Local;
+        if (mine != null && mine.TryGetComponent(out PlayerLife life)) life.BeginWipe();
+    }
 }

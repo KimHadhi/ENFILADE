@@ -56,6 +56,16 @@ public static class PlayerConsoleCommands
             var result = p.DamageReceiver.ReceiveHit(new DamageHit(DamageHit.NewAttackId(),amount,DamageKind.Fall,p.transform.position,Vector3.zero));
             return (result == DamageResult.Ignored ? "피해가 적용되지 않았습니다. " : "") + Status(p);
         }));
+        router.Register("fatal", "[front/right/back/left] — 쓰러짐 없이 즉사. 방향을 주면 그쪽에서 맞아 시체가 밀려난다", args => WithPlayer(resolvePlayer, p =>
+        {
+            string side = args.Trim();
+            var camera = p.GetComponentInChildren<Camera>();
+            Vector3 axis = Vector3.zero;
+            if (side.Length > 0 && (camera == null || !TryHitSide(side, camera.transform, out axis))) return Usage("fatal [front/right/back/left]");
+            var result = p.DamageReceiver.ReceiveHit(new DamageHit(DamageHit.NewAttackId(), p.DamageReceiver.MaximumHealth,
+                side.Length > 0 ? DamageKind.Attack : DamageKind.Fall, p.transform.position + Vector3.up, -axis, isFatal: true));
+            return (result == DamageResult.Ignored ? "피해가 적용되지 않았습니다. " : "") + Status(p);
+        }));
         router.Register("hit", "양 [front/right/back/left] — 방향성 피격 연출 시험 (기본 front)", args => WithPlayer(resolvePlayer, p =>
         {
             string[] parts = args.Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
@@ -63,15 +73,8 @@ public static class PlayerConsoleCommands
                 return Usage("hit 양 [front/right/back/left]");
             var camera = p.GetComponentInChildren<Camera>();
             if (camera == null) return "플레이어 카메라를 찾지 못했습니다.";
-            Vector3 axis;
-            switch (parts.Length > 1 ? parts[1].ToLowerInvariant() : "front")
-            {
-                case "front": axis = camera.transform.forward; break;
-                case "right": axis = camera.transform.right; break;
-                case "back": axis = -camera.transform.forward; break;
-                case "left": axis = -camera.transform.right; break;
-                default: return "사용법: /hit 양 [front/right/back/left]";
-            }
+            if (!TryHitSide(parts.Length > 1 ? parts[1] : "front", camera.transform, out Vector3 axis))
+                return "사용법: /hit 양 [front/right/back/left]";
             Vector3 origin = camera.transform.position + axis * 15f;
             var result = p.DamageReceiver.ReceiveHit(new DamageHit(DamageHit.NewAttackId(), amount, DamageKind.Attack,
                 camera.transform.position, -axis, origin: origin));
@@ -138,6 +141,17 @@ public static class PlayerConsoleCommands
             && !float.IsNaN(amount) && !float.IsInfinity(amount) && amount >= 0f;
     }
     private static string Usage(string syntax) => "사용법: /" + syntax + " · 0 이상의 숫자를 입력하세요 (소수점: .).";
+    private static bool TryHitSide(string side, Transform view, out Vector3 axis)
+    {
+        switch (side.ToLowerInvariant())
+        {
+            case "front": axis = view.forward; return true;
+            case "right": axis = view.right; return true;
+            case "back": axis = -view.forward; return true;
+            case "left": axis = -view.right; return true;
+            default: axis = Vector3.zero; return false;
+        }
+    }
     private static string Number(float value) => value.ToString("0.##",CultureInfo.InvariantCulture);
     private static string Status(PlayerMovement p) => $"HP {Number(p.DamageReceiver.Health)}/{Number(p.DamageReceiver.MaximumHealth)} · 쉴드 {Number(p.DamageReceiver.Shield)} · 궁극기 {Number(p.Ultimate.CurrentCharge)}%/{Number(p.Ultimate.MaximumCharge)}% (1회 소비 {Number(p.Ultimate.RequiredCharge)}%)";
 }

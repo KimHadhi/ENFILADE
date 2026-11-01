@@ -34,6 +34,8 @@
 | 방 만들기·참가·네트워크 스폰 / 서버 목록 | [GameSession](Network/GameSession.cs) / [ServerBrowserView](UI/Menu/ServerBrowserView.cs), [IRoomList·RoomInfo](Network/RoomInfo.cs), [CombinedRoomList](Network/CombinedRoomList.cs), [LanRoomFinder](Network/LanRoomFinder.cs), [LanRoomBeacon](Network/LanRoomBeacon.cs), [InternetRoomFinder](Network/InternetRoomFinder.cs), [InternetRoom](Network/InternetRoom.cs), [OnlineServices](Network/OnlineServices.cs), 화면에 보이는 핑 [PingDisplay](Network/PingDisplay.cs) ([Network.csv](../Resources/Tables/Network.csv)) |
 | 플레이어 생성 / 시작 위치 / 목록·내 캐릭터 찾기 / 멀티 구조 시험용 더미 | [PlayerFactory](Player/PlayerFactory.cs) / [PlayerSpawnPoint](Player/PlayerSpawnPoint.cs) / [PlayerRoster](Player/PlayerRoster.cs) / [ConsoleDummyPlayers](Debug/Combat/ConsoleDummyPlayers.cs) |
 | 플레이어 HP·실드·피격·사망 | [PlayerDamageReceiver](Player/Combat/PlayerDamageReceiver.cs) |
+| 쓰러짐·부활·복귀·전멸 | [PlayerLife](Player/Combat/PlayerLife.cs), [PlayerRevive](Player/Combat/PlayerRevive.cs), [PlayerLifeHUD](UI/PlayerLifeHUD.cs), [Downed.csv](../Resources/Tables/Downed.csv) |
+| 죽은 몸의 레그돌 | [PlayerRagdoll](Player/Body/PlayerRagdoll.cs), [RagdollCorpse](Combat/Feel/RagdollCorpse.cs), [PlayerNetworkCorpse](Network/PlayerNetworkCorpse.cs), [Ragdoll.csv](../Resources/Tables/Ragdoll.csv) |
 | 플레이어 궁극기 최대 보유량·소비량 스탯 / 현재 충전량 | [PlayerStats](Player/PlayerStats.cs), [UltimateCharge](UI/HP/UltimateCharge.cs) (Play 시작 때 `PlayerMovement`가 붙임) |
 | 피격 방향 아크·혈흔·쉐이크·빈사 박동 | [PlayerDamageFeedback](Player/Combat/PlayerDamageFeedback.cs), [설정](../Resources/Combat/PlayerDamageFeedback.asset), [사용 안내](../Docs/PlayerDamageFeedbackGuide.md) |
 | 무기별 연출·사운드·반동 | [Data/Combat/Weapons](../Data/Combat/Weapons/), 형식은 [WeaponData](Combat/Weapons/Data/WeaponData.cs) |

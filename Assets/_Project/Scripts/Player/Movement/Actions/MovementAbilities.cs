@@ -84,6 +84,8 @@ public sealed class MovementAbilities
     }
     internal void ReturnToLocomotion()
     {
+        // Thrown or dropped while downed, they land back on the ground.
+        if (ctx.IsDowned) { ctx.ChangeState(State.Proning); return; }
         // Resolve an enemy overlap before choosing posture, so its body is not mistaken for a low ceiling.
         if (ctx.CurrentState == State.StepDodge) ctx.DodgePassThrough?.Finish();
         // A blocked crouch capsule may be a side wall or a shoved body, not a low tunnel.

@@ -58,7 +58,7 @@ public sealed class PlayerExecution : MonoBehaviour
         interact = (input != null ? input.actions : InputSystem.actions)?.FindAction("Player/Interact", false);
     }
     private bool CanOffer => isActiveAndEnabled && player != null && player.IsInitialized && player.InputAvailable
-        && !player.CombatInputLocked && !player.IsParkour && !player.IsSliding && !player.IsDiving
+        && !player.CombatInputLocked && !player.IsParkour && !player.IsSliding && !player.IsDiving && !player.IsDowned
         && player.CurrentState != PlayerMovement.MovementState.StepDodge
         && player.CurrentState != PlayerMovement.MovementState.DashPush
         && !player.IsLandingRecovery && !IsExecuting;

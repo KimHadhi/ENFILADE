@@ -34,7 +34,7 @@ public sealed partial class PlayerBody
         return transform.TransformPoint(local);
     }
 
-    private float CameraRadius()
+    internal float CameraRadius()
     {
         if (viewCamera == null) return .05f;
         // Protect the near plane's corners as well as the optical centre, including a wide field of view.

@@ -56,7 +56,7 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
     public bool IsCharging => charging;
     public float ChargeRatio => charging ? Mathf.Clamp01(chargeTime / fullChargeTime) : 0f;
     public bool IsGuardBreaking => target != null;
-    private bool MovementBlocksAttack => player.IsParkour || player.IsDiving || player.IsSliding
+    private bool MovementBlocksAttack => player.IsParkour || player.IsDiving || player.IsSliding || player.IsDowned
         || player.CurrentState == PlayerMovement.MovementState.StepDodge
         || player.CurrentState == PlayerMovement.MovementState.DashPush
         || player.IsLandingRecovery;

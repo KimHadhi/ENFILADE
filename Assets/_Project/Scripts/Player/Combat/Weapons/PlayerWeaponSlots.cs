@@ -21,6 +21,8 @@ public sealed class PlayerWeaponSlots : MonoBehaviour
     private PlayerMovement player;
     private PlayerInput playerInput;
     private PlayerMeleeCombat melee;
+    private bool sidearmOnly;
+    private int slotBeforeSidearm;
     public int SelectedSlot => selectedSlot;
     public WeaponData SelectedWeapon => GetWeapon(selectedSlot);
     public bool UsesFists => isActiveAndEnabled && selectedSlot >= 0 && SelectedWeapon == null;
@@ -88,9 +90,25 @@ public sealed class PlayerWeaponSlots : MonoBehaviour
         else if (keyboard.digit3Key.wasPressedThisFrame || keyboard.numpad3Key.wasPressedThisFrame) HandleSlotInput(2);
         else if (keyboard.digit4Key.wasPressedThisFrame || keyboard.numpad4Key.wasPressedThisFrame) HandleSlotInput(3);
     }
+    /// <summary>Someone downed holds only their pistol and can't change it. With no pistol, their hands stay empty. Afterwards they go back to what they held.</summary>
+    internal void HoldSidearm(bool hold)
+    {
+        if (hold == sidearmOnly) return;
+        sidearmOnly = hold;
+        if (!hold) { SetSelection(slotBeforeSidearm); return; }
+        slotBeforeSidearm = selectedSlot;
+        for (int i = 0; i < SlotCount; i++)
+        {
+            var data = GetWeapon(i);
+            if (data == null || data.Category != WeaponCategory.Ranged || data.SoundProfile != GunSoundProfile.Pistol) continue;
+            SetSelection(i);
+            return;
+        }
+        SetSelection(-1);
+    }
     public bool HandleSlotInput(int index)
     {
-        if (!CanReadInput || index < 0 || index >= SlotCount) return false;
+        if (!CanReadInput || sidearmOnly || index < 0 || index >= SlotCount) return false;
         return SelectSlot(selectedSlot == index ? -1 : index);
     }
     public void ToggleSlot(int index)

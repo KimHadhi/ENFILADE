@@ -64,6 +64,8 @@
 
 다른 플레이어의 복사본에도 `WeaponController`와 손 IK가 그대로 있다. [PlayerNetworkCombat](../Scripts/Network/PlayerNetworkCombat.cs)이 고른 무기, 조준, 재장전, 가드를 보내고 사격, 주먹, 주먹 소리는 일어날 때마다 알린다. 복사본은 `ShowShot` 등으로 총구 화염, 궤적, 탄착, 소리를 자기 화면에 재현할 뿐 데미지는 주지 않는다. 내 무기와 주먹 소리는 2D, 남의 것은 3D로 난다.
 
+체력이 0이 되면 [PlayerLife](../Scripts/Player/Combat/PlayerLife.cs)가 정한다. 서 있는 동료가 있으면 쓰러져서 권총만 들고 기어 다니고, 쓰러짐 체력이 시간과 피격으로 줄어든다. 동료가 옆에서 F를 누르고 있으면 일어난다([PlayerRevive](../Scripts/Player/Combat/PlayerRevive.cs)). 다 줄면 죽고 스폰 지점에서 돌아온다. 웨이브가 진행 중이면 다음 웨이브에, 아니면 `respawnSeconds` 뒤에 돌아온다. 서 있는 사람이 없으면 호스트가 전멸을 알리고, 모두 스폰 지점으로 돌아와 1웨이브부터 다시 한다. 혼자 하면 체력 0이 곧 전멸이다. 수치는 [Downed.csv](../Resources/Tables/Downed.csv)에 있다. 즉사 공격(`DamageHit.IsFatal`, 적은 [Enemies.csv](../Resources/Tables/Enemies.csv)의 `fatalHit`)은 남은 체력과 쉴드, 쓰러짐을 건너뛰고 바로 죽인다. 회피와 패링은 그대로 통한다. [PlayerRagdoll](../Scripts/Player/Body/PlayerRagdoll.cs)은 몸이 만들어질 때 복제본 [RagdollCorpse](../Scripts/Combat/Feel/RagdollCorpse.cs)를 미리 만들어 숨겨 둔다. 싸움 도중 모델을 복제하면 끊기기 때문이다. 죽으면 그 시체를 꺼내 죽은 자세를 입히고, 진짜 몸은 복귀할 때까지 숨긴다. 시체 물리는 죽은 사람의 PC가 계산하고 [PlayerNetworkCorpse](../Scripts/Network/PlayerNetworkCorpse.cs)가 자세를 보내, 모든 PC에서 같은 모습이 된다. 그 사람의 카메라는 시체의 눈에 붙는다. 시체는 `IDamageReceiver`라서 총알, 주먹, 밀치기가 모두 같은 경로로 시체를 민다. 수치는 [Ragdoll.csv](../Resources/Tables/Ragdoll.csv)에 있다.
+
 채팅은 [PlayerChat](../Scripts/Network/PlayerChat.cs)이 호스트를 거쳐 다른 PC로 보낸다. `/` 명령어와 콘솔 채널은 공유되지 않는다. 표시 이름은 메인 메뉴 프로필에서 정하는 `GameSettings.DisplayName`이며, 비어 있으면 PC 사용자 이름을 쓴다.
 
 궁극기 스탯의 기본값은 **최대 보유량 120%, 1회 소비량 100%**다. 120%에서 사용하면 20%가 남고, 소비량을 70%로 바꾸면 50%가 남는다. 현재 충전량은 `UltimateCharge`, 최대 보유량과 소비량은 `PlayerStats`가 관리한다. 최대 보유량 변경은 현재 충전량을 유지하며, 최대치가 줄어들 때만 초과분을 잘라낸다. 소비량이 최대 보유량보다 크면 사용할 수 없다.

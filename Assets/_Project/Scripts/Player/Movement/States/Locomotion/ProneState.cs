@@ -10,7 +10,7 @@ public sealed class ProneState : MovementBaseState
 
     public override bool TryJump()
     {
-        if (ctx.HasCeilingAbove(ctx.CrouchColliderHeight)) return false;
+        if (ctx.IsDowned || ctx.HasCeilingAbove(ctx.CrouchColliderHeight)) return false;
         ctx.ChangeState(ctx.HasCeilingAbove(ctx.StandingColliderHeight)
             ? PlayerMovement.MovementState.Crouching : PlayerMovement.MovementState.Standing);
         return true;
@@ -18,6 +18,8 @@ public sealed class ProneState : MovementBaseState
 
     public override void ProcessInput(Vector2 input)
     {
+        // Someone downed crawls, and only a friend gets them up.
+        if (ctx.IsDowned) return;
         // 포복 중 실제로 떨어지기 시작하면 다이빙으로 복귀
         if (!ctx.IsGrounded && ctx.ActualVelocity.y < -0.15f)
         {

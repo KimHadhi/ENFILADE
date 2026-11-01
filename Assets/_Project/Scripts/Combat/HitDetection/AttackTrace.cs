@@ -35,7 +35,7 @@ public static class AttackTrace
             if (receiver != null)
                 result = receiver.ReceiveHit(new DamageHit(attack.Id, attack.Amount * (headshot ? headshotMultiplier : 1f), attack.Kind, hit.point, direction, attack.Source,
                     attack.CanBeGuarded, attack.PostureDamage, attack.IsComboFinisher, attack.IsCritical || headshot, attack.IsCounter, attack.Method,
-                    attack.Origin ?? origin));
+                    attack.Origin ?? origin, attack.IsFatal));
         }
         StepDodgeTrail.RecognizeAttackSegment(attack, origin, end);
         return new AttackTraceResult(hasHit, hit, end, result, headshot);
@@ -43,8 +43,15 @@ public static class AttackTrace
 
     private static bool IsOwner(RaycastHit hit, GameObject owner)
         => owner != null && hit.collider.transform.IsChildOf(owner.transform);
+    // The dead lie in their corpse; the capsule they left behind must not stop a shot on its way to it.
+    private static bool IsDeadPlayer(RaycastHit hit)
+    {
+        var player = hit.collider.GetComponentInParent<PlayerMovement>();
+        return player != null && player.IsDead;
+    }
     private static bool ShouldSkip(RaycastHit hit, GameObject owner)
         => IsOwner(hit, owner) || PlayerLeanHitboxes.Replaces(hit.collider)
+            || IsDeadPlayer(hit)
             || (hit.collider.isTrigger && (hit.collider.GetComponent<PlayerCombatHitbox>() == null
                 || hit.collider.GetComponentInParent<PlayerLeanHitboxes>()?.UsesSplitBody != true));
 

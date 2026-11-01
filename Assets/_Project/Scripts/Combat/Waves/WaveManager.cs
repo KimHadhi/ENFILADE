@@ -56,6 +56,8 @@ public sealed class WaveManager : MonoBehaviour
     public Status CurrentStatus => new Status { Phase = Phase, Paused = IsPaused, Wave = currentWave, Defeated = defeatedEnemies,
         Total = totalEnemiesThisWave, SecondsLeft = Mathf.CeilToInt(remainingDelay) };
     public event System.Action ObjectiveChanged;
+    /// <summary>A new wave began, here or on the host. The dead come back with it.</summary>
+    public event System.Action WaveStarted;
     private readonly HashSet<EnemyHealth> aliveEnemies = new HashSet<EnemyHealth>();
     private int currentWave, totalEnemiesThisWave, defeatedEnemies, spawned;
     private float targetFillAmount, remainingDelay;
@@ -72,7 +74,9 @@ public sealed class WaveManager : MonoBehaviour
     /// <summary>In a room, the host's waves as the other PCs see them.</summary>
     internal void ShowHostStatus(in Status status)
     {
+        bool newWave = status.Wave > currentWave;
         Phase = status.Phase; IsPaused = status.Paused; currentWave = status.Wave;
+        if (newWave) WaveStarted?.Invoke();
         defeatedEnemies = status.Defeated; totalEnemiesThisWave = status.Total; remainingDelay = status.SecondsLeft;
         UpdateObjectiveUI();
         if (IsRunning) RefreshStatus();
@@ -129,6 +133,13 @@ public sealed class WaveManager : MonoBehaviour
     // Preserve the existing public stop entry point as a complete stop.
     public void StopWaves() => AbortWaves();
 
+    /// <summary>After a wipe: the enemies go, and it all starts again from the first wave.</summary>
+    public void RestartFromFirst()
+    {
+        AbortWaves();
+        StartWaves();
+    }
+
     private void Update()
     {
         if (IsPaused) return;
@@ -141,6 +152,7 @@ public sealed class WaveManager : MonoBehaviour
             currentWave++; defeatedEnemies = spawned = 0;
             totalEnemiesThisWave = (int)System.Math.Min(10000L,System.Math.Max(1,initialEnemies)+(long)(currentWave-1)*System.Math.Max(0,extraEnemiesPerWave));
             Phase = WavePhase.Spawning; remainingDelay = 0; UpdateObjectiveUI(); RefreshStatus();
+            WaveStarted?.Invoke();
         }
         if (Phase == WavePhase.Spawning)
         {
