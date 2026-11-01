@@ -24,7 +24,7 @@ public sealed class PlayerDamageReceiver : MonoBehaviour, IDamageReceiver, ITabl
         if (!healthInitialized) { Health = MaximumHealth; healthInitialized = true; }
         else Health = Mathf.Clamp(Health, 0f, MaximumHealth);
         seen.Clear(); recent.Clear();
-        if (Application.isPlaying && GetComponent<PlayerDamageFeedback>() == null)
+        if (Application.isPlaying && player.IsLocal && GetComponent<PlayerDamageFeedback>() == null)
             gameObject.AddComponent<PlayerDamageFeedback>();
     }
 
@@ -56,7 +56,7 @@ public sealed class PlayerDamageReceiver : MonoBehaviour, IDamageReceiver, ITabl
         Health = Mathf.Max(0f, Health - (hit.Amount - absorbed));
         melee?.NotifyDamaged();
         HitResolved?.Invoke(hit, DamageResult.Damaged);
-        CombatHitAudio.PlayPlayerHit(hit);
+        if (movement == null || movement.IsLocal) CombatHitAudio.PlayPlayerHit(hit);
         if (!IsAlive) { movement?.ResetVelocity(); Died?.Invoke(); }
         return DamageResult.Damaged;
     }

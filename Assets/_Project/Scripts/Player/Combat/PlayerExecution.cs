@@ -1,9 +1,10 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.InputSystem;
 
-/// <summary>Single-player deathblow transaction. Animation can subscribe to Started/Impact/Ended.</summary>
+/// <summary>One player's deathblow transaction. Animation can subscribe to Started/Impact/Ended.</summary>
 [DisallowMultipleComponent, DefaultExecutionOrder(-160)]
 public sealed class PlayerExecution : MonoBehaviour
 {
@@ -27,21 +28,29 @@ public sealed class PlayerExecution : MonoBehaviour
     public bool IsExecuting { get; private set; }
     public MeleeCombatTarget Candidate { get; private set; }
     public MeleeCombatTarget Victim => victim;
-    public static PlayerExecution ActiveExecution { get; private set; }
+    private static readonly List<PlayerExecution> executing = new List<PlayerExecution>();
     public event Action<MeleeCombatTarget> Started;
     public event Action<MeleeCombatTarget> Impact;
     public event Action Ended;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-    private static void ClearActive() => ActiveExecution = null;
-    public static bool Suppresses(Component enemy) => ActiveExecution != null && ActiveExecution.IsExecuting
-        && enemy != null && enemy.gameObject.scene == ActiveExecution.gameObject.scene;
+    private static void ClearActive() => executing.Clear();
+    /// <summary>The running execution that holds this enemy back: one by the player it is after, in its scene.</summary>
+    public static PlayerExecution SuppressorOf(Component enemy)
+    {
+        if (executing.Count == 0 || enemy == null) return null;
+        var after = enemy.TryGetComponent(out EnemyTargeting targeting) ? targeting.Player : null;
+        foreach (var execution in executing)
+            if (enemy.gameObject.scene == execution.gameObject.scene && (after == null || after == execution.player)) return execution;
+        return null;
+    }
+    public static bool Suppresses(Component enemy) => SuppressorOf(enemy) != null;
 
     private void OnEnable()
     {
         player = GetComponent<PlayerMovement>();
         var camera = GetComponentInChildren<Camera>(); aim = camera != null ? camera.transform : transform;
-        if (Application.isPlaying && GetComponent<ExecutionHUD>() == null) gameObject.AddComponent<ExecutionHUD>();
+        if (Application.isPlaying && player?.IsLocal != false && GetComponent<ExecutionHUD>() == null) gameObject.AddComponent<ExecutionHUD>();
     }
     private void Start()
     {
@@ -52,8 +61,7 @@ public sealed class PlayerExecution : MonoBehaviour
         && !player.CombatInputLocked && !player.IsParkour && !player.IsSliding && !player.IsDiving
         && player.CurrentState != PlayerMovement.MovementState.StepDodge
         && player.CurrentState != PlayerMovement.MovementState.DashPush
-        && !player.IsLandingRecovery
-        && (ActiveExecution == null || !ActiveExecution.IsExecuting);
+        && !player.IsLandingRecovery && !IsExecuting;
     private void Update()
     {
         if (IsExecuting)
@@ -102,7 +110,7 @@ public sealed class PlayerExecution : MonoBehaviour
     public bool TryBegin(MeleeCombatTarget target)
     {
         if (!CanOffer || !Eligible(target, out _) || !target.TryReserveExecution(this)) return false;
-        victim = target; elapsed = 0f; impacted = false; IsExecuting = true; ActiveExecution = this; Candidate = null;
+        victim = target; elapsed = 0f; impacted = false; IsExecuting = true; executing.Add(this); Candidate = null;
         player.PerfectDefense?.Cancel();
         player.MeleeCombat?.CancelAction();
         player.HorizontalVelocity = Vector3.zero;
@@ -154,7 +162,7 @@ public sealed class PlayerExecution : MonoBehaviour
     public void Cancel()
     {
         bool wasExecuting = IsExecuting; IsExecuting = false; Candidate = null;
-        if (ActiveExecution == this) ActiveExecution = null;
+        executing.Remove(this);
         if (victim != null) victim.ReleaseExecution(this);
         victim = null;
         if (!wasExecuting) return;

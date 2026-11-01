@@ -16,12 +16,6 @@ public sealed class MovementDebugHUD : MonoBehaviour
     private GUIStyle boxStyle;
     private Texture2D backgroundTexture;
 
-    private void Awake()
-    {
-        if (playerMovement == null)
-            playerMovement = FindFirstObjectByType<PlayerMovement>();
-    }
-
     private void InitStyles()
     {
         if (labelStyle != null) return;
@@ -60,6 +54,7 @@ public sealed class MovementDebugHUD : MonoBehaviour
 
     private void OnGUI()
     {
+        if (playerMovement == null) playerMovement = PlayerRoster.Local;
         if (playerMovement == null || !playerMovement.IsInitialized) return;
 
         InitStyles();

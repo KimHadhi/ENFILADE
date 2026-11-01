@@ -136,7 +136,7 @@ public sealed class WeaponController : MonoBehaviour
         presentation = new WeaponPresentation(weaponRoot, muzzlePoint);
         viewCamera = aimOrigin.GetComponent<Camera>();
         cameraEffects = owner.GetComponentInChildren<PlayerCameraEffects>();
-        crosshair = FindFirstObjectByType<DynamicCrosshairView>();
+        crosshair = movement?.IsLocal != false ? FindFirstObjectByType<DynamicCrosshairView>() : null;
         dodgeActivation = movement?.Abilities?.Dodge.Activation ?? 0;
         // Shot/reload presentation (sound, muzzle, brass, camera kick) subscribes to this controller's events.
         if (Application.isPlaying && GetComponent<WeaponFeedback>() == null) gameObject.AddComponent<WeaponFeedback>();

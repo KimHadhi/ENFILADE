@@ -51,6 +51,8 @@
 
 플레이어의 `PlayerDamageReceiver`, `PlayerStats`, `UltimateCharge`, `PlayerMeleeCombat`, `PlayerExecution`은 씬에 두지 않고 `PlayerMovement`·`PlayerWeaponSlots`가 Play 시작 때 붙인다. 이 컴포넌트의 수치는 `Player.csv`에서 바꾼다. HUD 프리팹의 `PlayerStats`/`UltimateCharge`는 편집 화면 미리보기용이다.
 
+플레이어는 여러 명일 수 있다. 플레이어가 필요한 코드는 씬을 검색하지 말고 [PlayerRoster](../Scripts/Player/PlayerRoster.cs)를 쓴다. 화면과 입력은 `Local`, 적은 `Nearest`다. `PlayerMovement.IsLocal`이 거짓인 플레이어는 이 PC가 조종하지 않는 캐릭터로, 입력·카메라·청취자·화면 효과 없이 몸과 주변에 들리는 소리만 남는다. 다른 플레이어는 `Resources/Characters/Player.prefab`으로 만든다. ★Player를 바꾼 뒤에는 씬을 연 상태에서 `Tools > Player > Save Player Prefab`을 다시 실행한다.
+
 궁극기 스탯의 기본값은 **최대 보유량 120%, 1회 소비량 100%**다. 120%에서 사용하면 20%가 남고, 소비량을 70%로 바꾸면 50%가 남는다. 현재 충전량은 `UltimateCharge`, 최대 보유량과 소비량은 `PlayerStats`가 관리한다. 최대 보유량 변경은 현재 충전량을 유지하며, 최대치가 줄어들 때만 초과분을 잘라낸다. 소비량이 최대 보유량보다 크면 사용할 수 없다.
 
 `UltimateHUD`의 전체 바 길이는 최대 보유량에 비례한다. 기본 120%에서 배치한 폭을 유지하며 `Maximum Bar Width`(기본 480 Canvas 단위)를 넘으면 폭을 고정하고 충전량·사용 기준점을 비율로 표시한다. `UltReadyThresholdIcon`은 전체 바의 **소비량 ÷ 최대 보유량** 지점을 가리킨다. 소비량만 바꾸면 전체 바 길이는 유지된다. `/ultmax 200`은 최대 보유량을 200%로, `/ultcost 70`은 1회 소비량을 70%로 지정한다. `/ultmax 20`은 20%를 더하는 것이 아니라 최대 보유량을 20%로 설정한다. 이 명령은 Play 중 테스트 상태만 바꾼다.

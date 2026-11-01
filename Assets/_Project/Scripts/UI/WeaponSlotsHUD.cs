@@ -29,7 +29,7 @@ public sealed class WeaponSlotsHUD : MonoBehaviour
     [SerializeField] private Color selectedColor = new Color(.58f,.95f,1f,1f);
     private PlayerWeaponSlots bound;
     private readonly float[] emphasis = new float[PlayerWeaponSlots.SlotCount];
-    private float lastActivity = float.NegativeInfinity, nextSearch;
+    private float lastActivity = float.NegativeInfinity;
     private bool restartNames;
     private readonly WeaponNameMarquee[] nameScrolls = new WeaponNameMarquee[PlayerWeaponSlots.SlotCount];
 
@@ -55,14 +55,7 @@ public sealed class WeaponSlotsHUD : MonoBehaviour
     private void OnDisable() { if (bound != null) bound.SlotActivity -= Reveal; bound = null; }
     private void Bind()
     {
-        if (source == null && Time.unscaledTime >= nextSearch)
-        {
-            nextSearch = Time.unscaledTime + .5f;
-            PlayerWeaponSlots candidate = null; int count = 0;
-            foreach (var item in FindObjectsByType<PlayerWeaponSlots>(FindObjectsInactive.Exclude,FindObjectsSortMode.None))
-                if (item.gameObject.scene == gameObject.scene) { candidate = item; count++; }
-            if (count == 1) source = candidate;
-        }
+        if (source == null && PlayerRoster.Local != null) source = PlayerRoster.Local.GetComponent<PlayerWeaponSlots>();
         if (bound == source) return;
         if (bound != null) bound.SlotActivity -= Reveal;
         bound = source;

@@ -295,7 +295,7 @@ public sealed class KillConfirmEffect : MonoBehaviour
     {
         float seconds = heavy ? settings.headshotKillHitStopSeconds : settings.killHitStopSeconds;
         if (seconds <= 0f) return;
-        var player = FindFirstObjectByType<PlayerMovement>();
+        var player = PlayerRoster.Local;
         if (player == null) return;
         var time = player.GetComponent<CombatTimeEffects>();
         if (time == null) time = player.gameObject.AddComponent<CombatTimeEffects>();

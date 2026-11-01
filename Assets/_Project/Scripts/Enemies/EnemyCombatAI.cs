@@ -23,6 +23,7 @@ public sealed class EnemyCombatAI : MonoBehaviour
     private NavMeshAgent agent;
     private EnemyHealth enemyHealth;
     private MeleeCombatTarget meleeTarget;
+    private EnemyTargeting targeting;
     private PlayerMovement player;
     private Renderer indicator;
     private MaterialPropertyBlock color;
@@ -40,14 +41,11 @@ public sealed class EnemyCombatAI : MonoBehaviour
         enemyHealth = GetComponent<EnemyHealth>();
         meleeTarget = GetComponent<MeleeCombatTarget>();
         if (meleeTarget == null) meleeTarget = gameObject.AddComponent<MeleeCombatTarget>();
+        targeting = GetComponent<EnemyTargeting>();
+        if (targeting == null) targeting = gameObject.AddComponent<EnemyTargeting>();
         indicator = GetComponent<Renderer>();
         color = new MaterialPropertyBlock();
         timer = attackInterval;
-    }
-
-    private void Start()
-    {
-        player = FindFirstObjectByType<PlayerMovement>();
     }
 
     private void Update() => Tick(Time.deltaTime);
@@ -58,15 +56,8 @@ public sealed class EnemyCombatAI : MonoBehaviour
         if (enemyHealth == null || !enemyHealth.IsAlive || enemyHealth.WavePaused)
             { CancelAttack(); return; }
 
-        if (player == null)
-        {
-            player = FindFirstObjectByType<PlayerMovement>();
-            return;
-        }
-
-        if (!player.IsInitialized ||
-            !player.DamageReceiver.IsAlive ||
-            !agent.isOnNavMesh)
+        player = targeting.Player;
+        if (player == null || !agent.isOnNavMesh)
         {
             CancelAttack();
             return;

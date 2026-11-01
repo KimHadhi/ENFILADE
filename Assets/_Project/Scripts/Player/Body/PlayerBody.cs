@@ -244,7 +244,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         float dt = Time.deltaTime;
         if (GamePause.IsPaused || dt <= 0f) return;
         var keyboard = Keyboard.current;
-        if (keyboard != null && keyboard.f5Key.wasPressedThisFrame)
+        if (keyboard != null && player.IsLocal && keyboard.f5Key.wasPressedThisFrame)
         {
             thirdPerson = !thirdPerson;
             ApplyView();

@@ -24,7 +24,7 @@ public sealed class PlayerPerfectDefense : MonoBehaviour
         player = owner; receiver = owner.DamageReceiver;
         receiver.HitResolved += OnResolved;
         timeEffects = GetComponent<CombatTimeEffects>() ?? gameObject.AddComponent<CombatTimeEffects>();
-        if (Application.isPlaying && GetComponent<PerfectDefenseHUD>() == null) gameObject.AddComponent<PerfectDefenseHUD>();
+        if (Application.isPlaying && owner.IsLocal && GetComponent<PerfectDefenseHUD>() == null) gameObject.AddComponent<PerfectDefenseHUD>();
     }
     private void OnEnable() { var owner = GetComponent<PlayerMovement>(); if (owner?.DamageReceiver != null) Initialize(owner); }
     private void OnResolved(DamageHit hit, DamageResult result)

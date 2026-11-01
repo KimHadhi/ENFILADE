@@ -358,16 +358,7 @@ public class SinglePlayerChatManager : MonoBehaviour
 
     private PlayerMovement ResolveCommandPlayer()
     {
-        if (playerInput != null) return playerInput.GetComponentInParent<PlayerMovement>();
-        PlayerMovement local = null, any = null;
-        int locals = 0, count = 0;
-        foreach (var candidate in FindObjectsByType<PlayerMovement>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
-        {
-            if (!candidate.isActiveAndEnabled) continue;
-            any = candidate; count++;
-            if (candidate.gameObject.scene == gameObject.scene) { local = candidate; locals++; }
-        }
-        return locals == 1 ? local : locals == 0 && count == 1 ? any : null;
+        return playerInput != null ? playerInput.GetComponentInParent<PlayerMovement>() : PlayerRoster.Local;
     }
 
     private void RequestScrollToBottom()

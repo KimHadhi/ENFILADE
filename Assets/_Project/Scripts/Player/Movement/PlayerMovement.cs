@@ -46,6 +46,8 @@ public sealed partial class PlayerMovement : MonoBehaviour
     internal MovementAbilities Abilities { get; private set; }
     /// <summary>Resources/Tables/Player.csv: rows Posture, Vitals, Stats, Ultimate, Fists, Execution and Body.</summary>
     public const string TableName = "Player";
+    /// <summary>This PC plays this character. A remote one reads no input and puts nothing on this screen.</summary>
+    public bool IsLocal { get; private set; } = true;
     public PlayerDamageReceiver DamageReceiver { get; private set; }
     public PlayerStats Stats { get; private set; }
     public UltimateCharge Ultimate { get; private set; }
@@ -110,7 +112,7 @@ public sealed partial class PlayerMovement : MonoBehaviour
     public bool IsLandingRecovery => CurrentState == MovementState.LandingRoll || CurrentState == MovementState.HeavyLanding;
     /// <summary>How hard the last touchdown was: Light, Hard (from Ability.hardLandingSpeed) or Heavy (it hurt, or a blow).</summary>
     public MovementLanding.Tier LastLandingTier => Abilities != null ? Abilities.Landing.LastTier : MovementLanding.Tier.Light;
-    public bool InputAvailable => isActiveAndEnabled && Time.timeScale > 0f
+    public bool InputAvailable => IsLocal && isActiveAndEnabled && Time.timeScale > 0f
         && (DamageReceiver == null || DamageReceiver.IsAlive)
         && (!Application.isPlaying || (Application.isFocused && Cursor.lockState == CursorLockMode.Locked));
 
@@ -174,7 +176,24 @@ public sealed partial class PlayerMovement : MonoBehaviour
 
 
     private void Awake() => EnsureInitialized();
-    private void OnEnable() { if (Application.isPlaying) EnsureInitialized(); }
+    private void OnEnable()
+    {
+        if (!Application.isPlaying) return;
+        EnsureInitialized();
+        PlayerRoster.Add(this);
+    }
+
+    /// <summary>
+    /// Makes this copy someone else's character on this PC: no input, camera, listener or screen effects, just the body
+    /// and its sounds. Call it before the copy first activates, so its screen-only parts are never added.
+    /// </summary>
+    public void MakeRemote()
+    {
+        IsLocal = false;
+        foreach (var part in GetComponentsInChildren<Behaviour>(true))
+            if (part is Camera || part is AudioListener || part is PlayerLook || part is PlayerCameraEffects
+                || part is PlayerInput || part is PlayerTestInteraction) part.enabled = false;
+    }
 
     internal bool EnsureInitialized()
     {
@@ -219,7 +238,7 @@ public sealed partial class PlayerMovement : MonoBehaviour
         PerfectDefense = GetComponent<PlayerPerfectDefense>() ?? gameObject.AddComponent<PlayerPerfectDefense>();
         GameTables.Bind(TableName, "Defense", PerfectDefense);
         PerfectDefense.Initialize(this);
-        if (Application.isPlaying && GetComponent<ParryFeedback>() == null) GameTables.Bind(TableName, "Parry", gameObject.AddComponent<ParryFeedback>());
+        if (Application.isPlaying && IsLocal && GetComponent<ParryFeedback>() == null) GameTables.Bind(TableName, "Parry", gameObject.AddComponent<ParryFeedback>());
         DodgePassThrough =GetComponent<DodgeEnemyPassThrough>() ?? gameObject.AddComponent<DodgeEnemyPassThrough>();
         if (GetComponent<PlayerLeanHitboxes>() == null) gameObject.AddComponent<PlayerLeanHitboxes>();
         // The visible body (true first person) appears once Resources/Characters/PlayerBody names a character.
@@ -231,19 +250,19 @@ public sealed partial class PlayerMovement : MonoBehaviour
             // Its feet make the footsteps.
             GameTables.Bind(TableName, "Footsteps", gameObject.AddComponent<PlayerFootsteps>());
         }
-        // Movement sounds: the voices they come out of, action sounds from the movement events, and breathing.
+        // Movement sounds anyone nearby hears: the voices they come out of and action sounds from the movement events.
         if (Application.isPlaying && GetComponent<CharacterSounds>() == null)
         {
             GameTables.Bind(TableName, "Sounds", gameObject.AddComponent<CharacterSounds>());
             GameTables.Bind(TableName, "MovementAudio", gameObject.AddComponent<PlayerMovementAudio>());
+            GameTables.Bind(TableName, "FixtureAudio", gameObject.AddComponent<PlayerFixtureAudio>());
+        }
+        // What only the player feels: breathing, wind and fall sounds, then the camera's punches and a long fall's warp.
+        if (Application.isPlaying && IsLocal && GetComponent<PlayerMovementPunch>() == null)
+        {
             GameTables.Bind(TableName, "Breathing", gameObject.AddComponent<PlayerBreathing>());
             GameTables.Bind(TableName, "Wind", gameObject.AddComponent<PlayerWindAudio>());
             GameTables.Bind(TableName, "FallAudio", gameObject.AddComponent<PlayerFallAudio>());
-            GameTables.Bind(TableName, "FixtureAudio", gameObject.AddComponent<PlayerFixtureAudio>());
-        }
-        // Movement feel on the camera: step, jump and landing punches, and a long fall's screen warp.
-        if (Application.isPlaying && GetComponent<PlayerMovementPunch>() == null)
-        {
             GameTables.Bind(TableName, "Punch", gameObject.AddComponent<PlayerMovementPunch>());
             GameTables.Bind(TableName, "FallScreen", gameObject.AddComponent<PlayerFallScreen>());
         }
@@ -263,7 +282,7 @@ public sealed partial class PlayerMovement : MonoBehaviour
         Motor.TickTimers(dt);
         StateMachine.Duration += dt;
         Motor.CheckGroundedAndSlope();
-        if (CombatInputLocked)
+        if (CombatInputLocked || !IsLocal)
         {
             Input.Sample(false);
             Actions.Momentum.Tick(dt, Vector2.zero);
@@ -343,5 +362,9 @@ public sealed partial class PlayerMovement : MonoBehaviour
         Abilities?.Reset();
     }
 
-    private void OnDisable() => ResetVelocity();
+    private void OnDisable()
+    {
+        PlayerRoster.Remove(this);
+        ResetVelocity();
+    }
 }

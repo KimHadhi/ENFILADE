@@ -26,6 +26,7 @@
 | 보이는 몸(진짜 1인칭)·상태별 애니메이션·F5 뒤에서 보기 | [PlayerBody](Player/Body/PlayerBody.cs), [PlayerBodyProfile](Player/Body/PlayerBodyProfile.cs), [사용 안내](../Docs/PlayerBodyGuide.md) |
 | 눈 시점·시선 따라 허리·머리 굽히기·카메라 벽 판정 | [PlayerBody.Look](Player/Body/PlayerBody.Look.cs), [PlayerBody.Clearance](Player/Body/PlayerBody.Clearance.cs), [CameraClearance](Player/Camera/CameraClearance.cs) |
 | 손으로 총·주먹·난간 잡기 / 발 IK·발목 제한 | [PlayerBodyHands](Player/Body/PlayerBodyHands.cs), [ArmIK](Player/Body/ArmIK.cs) / [PlayerBody.Feet](Player/Body/PlayerBody.Feet.cs), [AnkleLimit](Player/Body/AnkleLimit.cs) |
+| 플레이어 목록·내 캐릭터 찾기 / 멀티 구조 시험용 더미 | [PlayerRoster](Player/PlayerRoster.cs) / [ConsoleDummyPlayers](Debug/Combat/ConsoleDummyPlayers.cs) |
 | 플레이어 HP·실드·피격·사망 | [PlayerDamageReceiver](Player/Combat/PlayerDamageReceiver.cs) |
 | 플레이어 궁극기 최대 보유량·소비량 스탯 / 현재 충전량 | [PlayerStats](Player/PlayerStats.cs), [UltimateCharge](UI/HP/UltimateCharge.cs) (Play 시작 때 `PlayerMovement`가 붙임) |
 | 피격 방향 아크·혈흔·쉐이크·빈사 박동 | [PlayerDamageFeedback](Player/Combat/PlayerDamageFeedback.cs), [설정](../Resources/Combat/PlayerDamageFeedback.asset), [사용 안내](../Docs/PlayerDamageFeedbackGuide.md) |
@@ -35,7 +36,7 @@
 | 발사·명중·조준 연결 / 총 모델 표현 | [WeaponController](Player/Combat/Weapons/WeaponController.cs), [WeaponPresentation](Player/Combat/Weapons/WeaponPresentation.cs) |
 | 장비 슬롯 / 사격 입력 | [PlayerWeaponSlots](Player/Combat/Weapons/PlayerWeaponSlots.cs), [PlayerWeaponInput](Player/Combat/Input/PlayerWeaponInput.cs) |
 | 피해 공통 규약·중복 타격 / 레이 판정 | [DamageHit](Combat/Damage/DamageHit.cs), [AttackTrace](Combat/HitDetection/AttackTrace.cs), [AttackHitbox](Combat/HitDetection/AttackHitbox.cs) |
-| 적 체력·추적·공격 / 웨이브 | [Enemies](Enemies/), [WaveManager](Combat/Waves/WaveManager.cs) |
+| 적 체력·추적·공격·노릴 플레이어 고르기 / 웨이브 | [Enemies](Enemies/), [EnemyTargeting](Enemies/EnemyTargeting.cs), [WaveManager](Combat/Waves/WaveManager.cs) |
 | 총성·피격·히트마커·처치 피드백 | [Combat/Feel](Combat/Feel/), [GunFeel.asset](../Resources/Combat/GunFeel.asset), 무기 데이터의 `Feel` |
 | 완벽 방어·흐트러짐·처형의 표시·사운드 | [Feedback.asset](../Resources/Combat/Feedback.asset) |
 | 시점 입력 / 이동 카메라 효과 / 시점 펀치 / 큰 낙하 화면 | [PlayerLook](Player/Camera/PlayerLook.cs), [PlayerCameraEffects](Player/Camera/PlayerCameraEffects.cs), [PlayerMovementPunch](Player/Camera/PlayerMovementPunch.cs), [PlayerFallScreen](Player/Camera/PlayerFallScreen.cs) |

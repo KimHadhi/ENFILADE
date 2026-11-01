@@ -8,7 +8,7 @@ public sealed class EnemyChaseAI : MonoBehaviour
     [SerializeField] private float updateInterval = 0.15f;
 
     private NavMeshAgent agent;
-    private PlayerMovement player;
+    private EnemyTargeting targeting;
     private EnemyHealth enemyHealth;
     private EnemyCombatAI combatAI;
     private float updateTimer;
@@ -18,11 +18,8 @@ public sealed class EnemyChaseAI : MonoBehaviour
         agent = GetComponent<NavMeshAgent>();
         enemyHealth = GetComponent<EnemyHealth>();
         combatAI = GetComponent<EnemyCombatAI>();
-    }
-
-    private void Start()
-    {
-        player = FindFirstObjectByType<PlayerMovement>();
+        targeting = GetComponent<EnemyTargeting>();
+        if (targeting == null) targeting = gameObject.AddComponent<EnemyTargeting>();
     }
 
     private void Update()
@@ -36,15 +33,8 @@ public sealed class EnemyChaseAI : MonoBehaviour
             return;
         }
 
-        if (player == null)
-        {
-            player = FindFirstObjectByType<PlayerMovement>();
-            return;
-        }
-
-        if (!player.IsInitialized ||
-            !player.DamageReceiver.IsAlive ||
-            !agent.isOnNavMesh)
+        var player = targeting.Player;
+        if (player == null || !agent.isOnNavMesh)
         {
             agent.isStopped = true;
             return;

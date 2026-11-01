@@ -44,6 +44,7 @@
 | `/help` | 현재 등록된 명령과 인자 확인 |
 | `/map 씬이름` | 빌드에 등록된 씬으로 이동. 예: `/map MovementAbilityPlayground` |
 | `/spawn`, `/spawn 5` | 생략하면 1마리, 수량을 붙이면 해당 수만큼 테스트 적 소환. 빈 공간이 부족하면 실제 소환 수를 알림. 웨이브 집계 제외 |
+| `/dummy`, `/dummy 3`, `/dummy clear` | 네트워크 없이 멀티 구조를 시험할 더미 플레이어 소환·제거. 먼저 `Tools > Player > Save Player Prefab`을 실행 |
 | `/ammo` | 보유한 모든 총기의 탄창을 채우고 기본 예비탄까지 보충. 기본보다 많은 예비탄은 유지 |
 | `/wave start` | 대기 중인 웨이브 시작 |
 | `/wave stop`, `/wave resume` | 웨이브 일시정지 / 재개 |

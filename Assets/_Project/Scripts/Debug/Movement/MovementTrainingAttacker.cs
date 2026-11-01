@@ -24,7 +24,7 @@ public sealed class MovementTrainingAttacker : MonoBehaviour
             if (indicator != null) { color.SetColor("_BaseColor", Color.gray); color.SetColor("_Color", Color.gray); indicator.SetPropertyBlock(color); }
             return;
         }
-        if (player == null) player = FindFirstObjectByType<PlayerMovement>();
+        if (player == null) player = PlayerRoster.Local;
         if (player == null || !player.IsInitialized || !player.DamageReceiver.IsAlive || !player.InputAvailable) return;
         timer += Time.deltaTime;
         if (!preparing && timer >= interval && Vector3.Distance(transform.position, player.transform.position) <= range)

@@ -13,7 +13,6 @@ public sealed class AdaptiveHealthHUD : MonoBehaviour
     [SerializeField] private PlayerMovement player;
     [Tooltip("When Player is empty, find a single active player in this scene, or a single player across loaded scenes. Multiple candidates require explicit assignment.")]
     [SerializeField] private bool autoFindPlayer = true;
-    private float nextPlayerSearch;
 
     [Header("Existing hierarchy - found automatically by object name")]
     [SerializeField] private RectTransform hpHealthBar;
@@ -150,20 +149,7 @@ public sealed class AdaptiveHealthHUD : MonoBehaviour
 
     public PlayerMovement ResolvePlayer()
     {
-        if (Application.IsPlaying(gameObject) && player == null && autoFindPlayer && Time.unscaledTime >= nextPlayerSearch)
-        {
-            nextPlayerSearch = Time.unscaledTime + 0.5f;
-            PlayerMovement local = null, any = null;
-            int localCount = 0, totalCount = 0;
-            foreach (var candidate in FindObjectsByType<PlayerMovement>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
-            {
-                if (!candidate.isActiveAndEnabled) continue;
-                any = candidate; totalCount++;
-                if (candidate.gameObject.scene == gameObject.scene) { local = candidate; localCount++; }
-            }
-            if (localCount == 1) player = local;
-            else if (localCount == 0 && totalCount == 1) player = any;
-        }
+        if (Application.IsPlaying(gameObject) && player == null && autoFindPlayer) player = PlayerRoster.Local;
         return player;
     }
 
@@ -211,7 +197,7 @@ public sealed class AdaptiveHealthHUD : MonoBehaviour
             healthGap, healthColor, emptyColor, tickColor, live ? lossTrail.TrailColor : Color.clear);
     }
 
-    public void BindPlayer(PlayerMovement target) { player = target; nextPlayerSearch = 0f; dirty = true; }
+    public void BindPlayer(PlayerMovement target) { player = target; dirty = true; }
 
     public void StopPreview()
     {

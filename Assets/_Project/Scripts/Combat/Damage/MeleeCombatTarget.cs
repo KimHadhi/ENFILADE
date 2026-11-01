@@ -73,12 +73,13 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
     {
         if (dt <= 0f || !IsAvailable) return;
         if (agent == null) agent = GetComponent<NavMeshAgent>();
-        bool suppressed = PlayerExecution.Suppresses(this);
+        var suppressor = PlayerExecution.SuppressorOf(this);
+        bool suppressed = suppressor != null;
         if (suppressed)
         {
             shoveRemaining = bargeKnockdown = 0f;
             StopAgent();
-            if (!IsStunned) PlayerExecution.ActiveExecution.Retreat(agent, dt);
+            if (!IsStunned) suppressor.Retreat(agent, dt);
         }
         if (executor != null) return;
         knockdownRemaining = Mathf.Max(0f, knockdownRemaining - dt);

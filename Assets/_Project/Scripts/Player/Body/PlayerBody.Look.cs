@@ -47,7 +47,7 @@ public sealed partial class PlayerBody
     private Vector3 slideBodyOffset, slideWorldOffset;
     private bool slideBodyAnchored;
 
-    private bool ShowsOwnHead => thirdPerson || GameSettings.Current.showOwnHead;
+    private bool ShowsOwnHead => thirdPerson || !player.IsLocal || GameSettings.Current.showOwnHead;
 
     private void SetUpLook()
     {

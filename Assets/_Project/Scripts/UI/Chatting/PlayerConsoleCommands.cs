@@ -15,6 +15,15 @@ public static class PlayerConsoleCommands
             if (!p.DamageReceiver.IsAlive) return "사망 상태입니다. /revive를 먼저 사용하세요.";
             return ConsoleEnemySpawner.Spawn(p, count);
         }));
+        router.Register("dummy", "[수량] 또는 clear — 멀티 구조 시험용 더미 플레이어 소환·제거", args => WithPlayer(resolvePlayer, p =>
+        {
+            string text = args.Trim();
+            if (text.Equals("clear", StringComparison.OrdinalIgnoreCase)) return ConsoleDummyPlayers.Clear();
+            int count = 1;
+            if (text.Length > 0 && (!int.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out count) || count < 1))
+                return "사용법: /dummy [수량] 또는 /dummy clear";
+            return ConsoleDummyPlayers.Spawn(p, count);
+        }));
         router.Register("ammo", "보유한 모든 총기의 탄창과 기본 예비탄 보충", args => WithPlayer(resolvePlayer, p =>
         {
             if (!string.IsNullOrWhiteSpace(args)) return "사용법: /ammo — 보유한 모든 총기의 탄약을 보충합니다.";
