@@ -155,14 +155,7 @@ public sealed class ParryFeedback : MonoBehaviour
         float knock = broken ? 1.5f : 1f;
         punch?.ImpactPunch(new Vector3(cameraKick.x, -sign * cameraKick.y, -sign * cameraKick.z) * knock, cameraFov * knock, cameraTrauma * knock);
         KillConfirmEffect.Parry(broken ? BreakLook() : ContactLook());
-        ParryVfx.Play(new ParryBurst
-        {
-            Point = contact, Right = view.right, Up = view.up,
-            Spray = (toAttacker * .35f + view.right * (sign * .8f) + view.up * .5f).normalized,
-            Scale = vfxScale * growth, FlareBrightness = flareBrightness, HitEffectScale = hitEffectScale, SparkleEffectScale = sparkleEffectScale,
-            BreakEffectScale = breakEffectScale, Break = broken,
-            Sparks = Mathf.RoundToInt(sparkCount * growth), Embers = Mathf.RoundToInt(emberCount * growth)
-        });
+        Burst(contact, (toAttacker * .35f + view.right * (sign * .8f) + view.up * .5f).normalized, growth, broken);
         if (target != null) Reel(target, toAttacker, contact, broken);
 
         float stop = broken ? breakHitStopSeconds : hitStopSeconds;
@@ -173,6 +166,13 @@ public sealed class ParryFeedback : MonoBehaviour
         }
         if (broken) chain = 0;
     }
+    private void Burst(Vector3 point, Vector3 spray, float growth, bool broken) => ParryVfx.Play(new ParryBurst
+    {
+        Point = point, Right = view.right, Up = view.up, Spray = spray,
+        Scale = vfxScale * growth, FlareBrightness = flareBrightness, HitEffectScale = hitEffectScale, SparkleEffectScale = sparkleEffectScale,
+        BreakEffectScale = breakEffectScale, Break = broken,
+        Sparks = Mathf.RoundToInt(sparkCount * growth), Embers = Mathf.RoundToInt(emberCount * growth)
+    });
     private void Reel(MeleeCombatTarget target, Vector3 toAttacker, Vector3 contact, bool broken)
     {
         if (enemyFlashSeconds > 0f) HitFlashRenderer.For(target)?.WhiteFlash(enemyFlashSeconds);
@@ -180,6 +180,19 @@ public sealed class ParryFeedback : MonoBehaviour
         if (away.sqrMagnitude < .0001f) return;
         away.Normalize();
         target.ReceiveShove(away * (broken ? breakPushSpeed : enemyPushSpeed), contact);
+        EnemyParryRecoil.For(target)?.Kick(away, broken ? breakLeanDegrees : enemyLeanDegrees, broken ? breakLeanSeconds : enemyLeanSeconds);
+        if (target.TryGetComponent(out EnemyNetwork network)) network.ShareParry(contact, away, broken);
+    }
+    /// <summary>
+    /// Someone else's parry, seen from here: the burst where it happened, its sound from there and the attacker reeling.
+    /// The hand, the knock in the view and the screen pulse belong to whoever parried.
+    /// </summary>
+    internal void ShowOtherParry(MeleeCombatTarget target, Vector3 contact, Vector3 away, bool broken)
+    {
+        if (view == null || target == null) return;
+        Burst(contact, (away * .35f + Vector3.up * .5f).normalized, broken ? breakBoost : 1f, broken);
+        CombatCueAudio.Play(target.gameObject, broken ? CombatCue.ParryBreak : CombatCue.Parry, 1f, true);
+        if (enemyFlashSeconds > 0f) HitFlashRenderer.For(target)?.WhiteFlash(enemyFlashSeconds);
         EnemyParryRecoil.For(target)?.Kick(away, broken ? breakLeanDegrees : enemyLeanDegrees, broken ? breakLeanSeconds : enemyLeanSeconds);
     }
     private ParryScreenLook ContactLook() => new ParryScreenLook

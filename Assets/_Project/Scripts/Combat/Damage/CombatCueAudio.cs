@@ -10,12 +10,13 @@ public sealed class CombatCueAudio : MonoBehaviour
     private bool paused;
     public CombatCue LastCue { get; private set; }
     public int PlayCount { get; private set; }
-    public static CombatCueAudio Play(GameObject owner, CombatCue cue, float pitch = 1f)
+    /// <summary>inWorld plays it where the owner is, for a cue that isn't happening to this PC's player.</summary>
+    public static CombatCueAudio Play(GameObject owner, CombatCue cue, float pitch = 1f, bool inWorld = false)
     {
         var audio = owner.GetComponent<CombatCueAudio>() ?? owner.AddComponent<CombatCueAudio>();
-        audio.Emit(cue, pitch); return audio;
+        audio.Emit(cue, pitch, inWorld); return audio;
     }
-    private void Emit(CombatCue cue, float pitch)
+    private void Emit(CombatCue cue, float pitch, bool inWorld)
     {
         LastCue = cue; PlayCount++;
         var settings = CombatFeedbackSettings.Instance;
@@ -36,7 +37,7 @@ public sealed class CombatCueAudio : MonoBehaviour
             source = gameObject.AddComponent<AudioSource>(); source.playOnAwake = false;
             GameAudio.Bind(source, AudioChannel.Combat);
         }
-        source.spatialBlend = cue == CombatCue.EnemyAttackStart ? 1f : 0f;
+        source.spatialBlend = cue == CombatCue.EnemyAttackStart || inWorld ? 1f : 0f;
         source.minDistance = 2f; source.maxDistance = 20f;
         source.rolloffMode = AudioRolloffMode.Linear;
         source.pitch = pitch;

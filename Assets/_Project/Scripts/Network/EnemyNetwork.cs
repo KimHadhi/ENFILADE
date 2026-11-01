@@ -81,6 +81,12 @@ public sealed class EnemyNetwork : NetworkBehaviour
         if (IsSpawned && IsServer) CancelRpc();
     }
 
+    /// <summary>This PC's player parried this enemy: everyone else sees it happen.</summary>
+    internal void ShareParry(Vector3 contact, Vector3 away, bool broken)
+    {
+        if (IsSpawned) ParryRpc(contact, away, broken);
+    }
+
     /// <summary>A parry, a punch or a shove on this PC's copy reaches the enemy that really moves and fights.</summary>
     internal void SendPosture(float amount, float stun, bool interrupt) => PostureRpc(amount, stun, interrupt);
     internal void SendInterrupt(float duration) => InterruptRpc(duration);
@@ -91,6 +97,13 @@ public sealed class EnemyNetwork : NetworkBehaviour
 
     [Rpc(SendTo.NotServer)]
     private void CancelRpc() => combat.CancelAttack();
+
+    [Rpc(SendTo.NotMe)]
+    private void ParryRpc(Vector3 contact, Vector3 away, bool broken)
+    {
+        var mine = PlayerRoster.Local;
+        if (mine != null && mine.TryGetComponent(out ParryFeedback feedback)) feedback.ShowOtherParry(target, contact, away, broken);
+    }
 
     [Rpc(SendTo.Server)]
     private void PostureRpc(float amount, float stun, bool interrupt) => target.ApplyPostureDamage(amount, stun, interrupt);
