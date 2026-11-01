@@ -12,7 +12,11 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
     [Header("Slide Reaction")]
     [SerializeField] private EnemyBodySize bodySize = EnemyBodySize.Small;
     public EnemyBodySize BodySize => bodySize;
-    public bool IsKnockedDown => knockdownRemaining > 0f || knockdownPresentation?.IsActive == true;
+    public bool IsKnockedDown => knockdownRemaining > 0f || knockdownPresentation?.IsActive == true || shownDown;
+    /// <summary>Someone is holding it: a guard break or an execution under way.</summary>
+    public bool IsHeld => grabber != null || executor != null;
+    /// <summary>The way it was last knocked down.</summary>
+    public Vector3 FallDirection { get; private set; }
     private float knockdownRemaining;
     private EnemyKnockdownPresentation knockdownPresentation;
     [SerializeField, Min(1f)] private float maximumPosture = 100f;
@@ -25,7 +29,7 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
     public bool IsStaggered { get; private set; }
     public bool IsBroken => IsStaggered;
     public bool IsStunned => IsKnockedDown || IsStaggered || stunRemaining > 0f || shoveRemaining > 0f || grabber != null || executor != null;
-    public bool CanExecute => IsAvailable && IsStaggered && grabber == null && executor == null && GetComponent<IDamageReceiver>() != null;
+    public bool CanExecute => IsAvailable && IsStaggered && !IsHeld && !shownHeld && GetComponent<IDamageReceiver>() != null;
     public bool IsAvailable => isActiveAndEnabled && (GetComponent<ICombatVitals>() == null || GetComponent<ICombatVitals>().Health > 0f) && (GetComponent<EnemyHealth>() == null ||
         (GetComponent<EnemyHealth>().IsAlive && !GetComponent<EnemyHealth>().WavePaused));
     public event Action Interrupted;
@@ -38,6 +42,9 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
     private float stunRemaining, recoveryRemaining, shoveRemaining, shoveDuration = ShoveDuration, bargeKnockdown;
     private Vector3 shoveVelocity;
     private const float ShoveDuration = .32f, KnockdownSoundDelay = .22f;
+    // How long a guard break holds the host's enemy while it closes in, and how long a copy trusts what this PC just did
+    // to it over the host's reports, which were sent before the host heard (s).
+    private const float GrabHold = .4f, PredictionHold = .3f;
     [Header("Shove Chain")]
     [SerializeField, Range(0f, 1f)] private float chainTransfer = .8f;
     [SerializeField, Min(.1f)] private float minimumChainSpeed = 1.2f;
@@ -48,9 +55,9 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
     private AudioSource bodyAudio;
     private NavMeshAgent agent;
     private EnemyNetwork network;
-    private bool stoppedAgent, previousStopped;
+    private bool stoppedAgent, previousStopped, shownHeld, shownDown;
 
-    private float appliedMaximumPosture;
+    private float appliedMaximumPosture, predictedUntil;
     // On a copy these also reach the host: the copy reacts at once, the host's enemy is the one that really stops.
     private bool IsCopy => network != null && network.IsCopy;
 
@@ -101,6 +108,8 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
             }
         }
         stunRemaining = Mathf.Max(0f, stunRemaining - dt);
+        // A copy's posture comes from the host, recovery included.
+        if (IsCopy) { if (IsStaggered) StaggerAge += dt; return; }
         float recoveryDt = Mathf.Max(0f, dt - recoveryRemaining);
         recoveryRemaining = Mathf.Max(0f, recoveryRemaining - dt);
         if (IsStaggered)
@@ -117,7 +126,7 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
     {
         // Further hits cannot restart the recovery clock or repeatedly trigger the stagger cue.
         if (!IsAvailable || IsStaggered) return;
-        if (IsCopy) network.SendPosture(amount, stun, interrupt);
+        if (IsCopy) { network.SendPosture(amount, stun, interrupt); predictedUntil = Time.time + PredictionHold; }
         Posture = Mathf.Max(0f, Posture - Mathf.Max(0f, amount));
         recoveryRemaining = recoveryDelay;
         if (Posture <= 0f)
@@ -143,6 +152,8 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
     public void KnockDown(Vector3 direction, float duration)
     {
         if (!IsAvailable || executor != null) return;
+        if (IsCopy) { network.SendKnockDown(direction, duration); return; }
+        FallDirection = direction;
         // Repeated knockdowns only extend the timer; the body hits the ground once, a moment after it starts to fall.
         if (!IsKnockedDown) Invoke(nameof(PlayKnockdownSound), KnockdownSoundDelay);
         knockdownRemaining = Mathf.Max(knockdownRemaining, duration);
@@ -158,6 +169,7 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
     public void Barge(Vector3 velocity, float throwTime, float knockdownTime)
     {
         if (!IsAvailable || executor != null) return;
+        if (IsCopy) { network.SendBarge(velocity, throwTime, knockdownTime); return; }
         if (!StartShove(velocity, new HashSet<MeleeCombatTarget> { this }, Mathf.Max(.05f, throwTime)))
         { KnockDown(velocity, knockdownTime); return; }
         bargeKnockdown = Mathf.Max(.1f, knockdownTime);
@@ -167,7 +179,9 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
     {
         if (!IsAvailable || owner == null || grabber != null || executor != null) return false;
         knockdownPresentation?.Reset(); knockdownRemaining = 0f;
-        grabber = owner; bargeKnockdown = 0f; StopAgent(); GetComponent<EnemyCombatAI>()?.CancelAttack(); Interrupted?.Invoke(); return true;
+        grabber = owner; bargeKnockdown = 0f; StopAgent(); GetComponent<EnemyCombatAI>()?.CancelAttack(); Interrupted?.Invoke();
+        if (IsCopy) network.SendInterrupt(GrabHold);
+        return true;
     }
     public void Release(PlayerMeleeCombat owner)
     {
@@ -180,13 +194,44 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
         if (owner == null || !CanExecute) return false;
         knockdownPresentation?.Reset(); knockdownRemaining = 0f;
         executor = owner; shoveRemaining = bargeKnockdown = 0f; StopAgent();
-        GetComponent<EnemyCombatAI>()?.CancelAttack(); Interrupted?.Invoke(); return true;
+        GetComponent<EnemyCombatAI>()?.CancelAttack(); Interrupted?.Invoke();
+        // The execution starts at once; the host says no if someone else got there first.
+        if (IsCopy) network.AskExecution();
+        return true;
     }
     public void ReleaseExecution(PlayerExecution owner)
     {
         if (executor != owner) return;
         executor = null;
+        if (IsCopy) network.EndExecution();
         if (!IsStunned && !PlayerExecution.Suppresses(this)) RestoreAgent();
+    }
+    /// <summary>On a copy: someone else got to this execution first.</summary>
+    internal void DenyExecution()
+    {
+        if (executor != null) executor.Cancel();
+    }
+    /// <summary>
+    /// On a copy: how the host's enemy stands. What this PC just did to it stays for a moment, because a report sent
+    /// before the host heard about it would undo it.
+    /// </summary>
+    internal void ShowCondition(float posture, bool staggered, bool held, bool down, Vector3 fall)
+    {
+        shownHeld = held;
+        if (down != shownDown)
+        {
+            shownDown = down;
+            if (down) Invoke(nameof(PlayKnockdownSound), KnockdownSoundDelay);
+            EnemyParryRecoil.For(this)?.Lie(fall, down);
+        }
+        if (Time.time < predictedUntil) return;
+        Posture = posture;
+        if (staggered == IsStaggered) return;
+        IsStaggered = staggered;
+        if (!staggered) return;
+        StaggerAge = 0f;
+        PlayStaggerSound();
+        Staggered?.Invoke();
     }
     private void PlayStaggerSound()
     {

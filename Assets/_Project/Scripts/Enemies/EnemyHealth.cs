@@ -81,7 +81,8 @@ public sealed class EnemyHealth : MonoBehaviour, IDamageReceiver, ICombatVitals,
         recent.Enqueue(hit.Id);
         if (recent.Count > 256) seen.Remove(recent.Dequeue());
         float before = Health;
-        Health = Mathf.Max(0f, Health - hit.Amount);
+        // An execution takes whatever is left, which on the host may be more than the copy it was judged on.
+        Health = hit.Kind == DamageKind.Execution ? 0f : Mathf.Max(0f, Health - hit.Amount);
         UltimateCharge.AwardEnemyHit(hit);
         // A copy shows the hit now and leaves the rest to the host, whose enemy is the true one.
         bool copy = network != null && network.IsCopy;

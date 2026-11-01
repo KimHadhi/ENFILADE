@@ -62,8 +62,19 @@ public sealed class PlayerExecution : MonoBehaviour
         && player.CurrentState != PlayerMovement.MovementState.StepDodge
         && player.CurrentState != PlayerMovement.MovementState.DashPush
         && !player.IsLandingRecovery && !IsExecuting;
+    /// <summary>
+    /// On the host's copy of someone executing on their own PC: the enemy is held for them, and the others back away from
+    /// this body as they would from the host's own.
+    /// </summary>
+    internal void ShowExecuting(MeleeCombatTarget target)
+    {
+        victim = target; IsExecuting = true; executing.Add(this);
+        foreach (var enemy in MeleeCombatTarget.Active)
+            if (enemy != null && Suppresses(enemy)) enemy.GetComponent<EnemyCombatAI>()?.CancelAttack();
+    }
     private void Update()
     {
+        if (player != null && player.IsNetworkDriven) return;
         if (IsExecuting)
         {
             // Pause retains the transaction, but opening chat, death, or focus loss cancels it.
@@ -188,5 +199,5 @@ public sealed class PlayerExecution : MonoBehaviour
         agent.transform.rotation = Quaternion.LookRotation(-away, Vector3.up);
     }
     private void OnDisable() => Cancel();
-    private void OnApplicationFocus(bool focused) { if (!focused) Cancel(); }
+    private void OnApplicationFocus(bool focused) { if (!focused && (player == null || player.IsLocal)) Cancel(); }
 }

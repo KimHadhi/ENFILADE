@@ -60,7 +60,7 @@
 
 적은 호스트가 돌린다. 적 프리팹은 [Resources/Enemies](../Resources/Enemies)에 두며, 이 폴더의 네트워크 프리팹은 모든 PC에 자동으로 등록된다. 다른 PC의 적은 [EnemyNetwork](../Scripts/Network/EnemyNetwork.cs)가 AI와 NavMesh를 끈 복사본이고, 호스트의 위치와 체력만 보여 준다. 쏜 사람의 PC가 자기 복사본에서 명중을 판정해 효과를 바로 보여 주고 호스트에 알리면, 호스트가 진짜 체력을 깎고 다른 PC에 알린다. 웨이브는 호스트만 진행하고, 씬의 `WaveManager`가 네트워크 오브젝트가 아니므로 표시는 [WaveSync](../Scripts/Network/WaveSync.cs)가 메시지로 보낸다. `CombatDamageReport.ByOtherPlayer`인 타격은 세상에는 보이지만 히트 마커, 점수, 킬 화면은 쏜 사람에게만 나온다.
 
-적의 공격은 호스트가 시작을 알리고 맞을 사람의 PC가 판정한다. `EnemyCombatAI.ShowWindup`이 그 PC에서 예고 시간을 직접 세므로 예고음과 타격의 간격이 혼자 할 때와 같고, 패리와 회피도 입력 지연 없이 판정된다. 패리나 주먹이 적에게 주는 체간 피해, 경직, 밀림은 `MeleeCombatTarget`이 복사본에 바로 적용하면서 호스트에도 보낸다. 플레이어 체력은 각자의 PC가 진짜이고, 다른 PC에는 `PlayerNetworkPose`로 알린다.
+적의 공격은 호스트가 시작을 알리고 맞을 사람의 PC가 판정한다. `EnemyCombatAI.ShowWindup`이 그 PC에서 예고 시간을 직접 세므로 예고음과 타격의 간격이 혼자 할 때와 같고, 패리와 회피도 입력 지연 없이 판정된다. 패리나 주먹이 적에게 주는 체간 피해, 경직, 밀림은 `MeleeCombatTarget`이 복사본에 바로 적용하면서 호스트에도 보낸다. 체간, 경직, 잡힘, 쓰러짐의 기준은 호스트이고 `EnemyNetwork`가 0.1초 간격으로 복사본에 알린다. 복사본은 방금 자기가 한 일을 잠깐 유지해서, 호스트가 듣기 전에 보낸 값에 되돌려지지 않게 한다. 처형은 내 PC에서 바로 시작하고 호스트가 예약을 확인하며, 다른 사람이 먼저 잡았으면 늦은 쪽이 취소된다. 호스트는 처형 중인 사람의 복사본을 `ShowExecuting`으로 표시해 주변 적을 물러나게 한다. 넘어짐은 호스트의 물리가 위치를 만들고, 복사본은 `EnemyParryRecoil.Lie`로 쓰러진 모습만 입힌다. 플레이어 체력은 각자의 PC가 진짜이고, 다른 PC에는 `PlayerNetworkPose`로 알린다.
 
 다른 플레이어의 복사본에도 `WeaponController`와 손 IK가 그대로 있다. [PlayerNetworkCombat](../Scripts/Network/PlayerNetworkCombat.cs)이 고른 무기, 조준, 재장전, 가드를 보내고 사격, 주먹, 주먹 소리는 일어날 때마다 알린다. 복사본은 `ShowShot` 등으로 총구 화염, 궤적, 탄착, 소리를 자기 화면에 재현할 뿐 데미지는 주지 않는다. 내 무기와 주먹 소리는 2D, 남의 것은 3D로 난다.
 

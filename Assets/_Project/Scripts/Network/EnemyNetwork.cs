@@ -11,7 +11,17 @@ using UnityEngine.AI;
 [DisallowMultipleComponent]
 public sealed class EnemyNetwork : NetworkBehaviour
 {
+    /// <summary>How the host's enemy stands, beyond its health.</summary>
+    private struct Condition : INetworkSerializeByMemcpy
+    {
+        public Vector3 Fall;
+        public float Posture;
+        public bool Staggered, Held, Down;
+    }
+
+    private const float ConditionInterval = .1f;
     private readonly NetworkVariable<float> health = new NetworkVariable<float>();
+    private readonly NetworkVariable<Condition> condition = new NetworkVariable<Condition>();
     private EnemyHealth enemy;
     private EnemyCombatAI combat;
     private MeleeCombatTarget target;
@@ -30,25 +40,44 @@ public sealed class EnemyNetwork : NetworkBehaviour
         enemy = GetComponent<EnemyHealth>();
         combat = GetComponent<EnemyCombatAI>();
         target = GetComponent<MeleeCombatTarget>();
+        condition.SetUpdateTraits(new NetworkVariableUpdateTraits { MinSecondsBetweenUpdates = ConditionInterval });
         if (IsServer)
         {
             health.Value = enemy.Health;
+            condition.Value = ReadCondition();
             return;
         }
         if (TryGetComponent(out EnemyChaseAI chase)) chase.enabled = false;
         if (TryGetComponent(out NavMeshAgent agent)) agent.enabled = false;
         health.OnValueChanged += OnHealthChanged;
+        condition.OnValueChanged += OnConditionChanged;
         enemy.ShowHealth(health.Value);
+        Show(condition.Value);
     }
 
-    public override void OnNetworkDespawn() => health.OnValueChanged -= OnHealthChanged;
+    public override void OnNetworkDespawn()
+    {
+        health.OnValueChanged -= OnHealthChanged;
+        condition.OnValueChanged -= OnConditionChanged;
+    }
 
     private void Update()
     {
-        if (IsSpawned && IsServer) health.Value = enemy.Health;
+        if (!IsSpawned || !IsServer) return;
+        health.Value = enemy.Health;
+        condition.Value = ReadCondition();
     }
 
+    // Whole points of posture, so recovering doesn't send a report every few frames.
+    private Condition ReadCondition() => new Condition
+    {
+        Fall = target.FallDirection, Posture = Mathf.Round(target.Posture), Staggered = target.IsStaggered, Held = target.IsHeld,
+        Down = target.IsKnockedDown
+    };
+
     private void OnHealthChanged(float previous, float current) => enemy.ShowHealth(current);
+    private void OnConditionChanged(Condition previous, Condition current) => Show(current);
+    private void Show(in Condition now) => target.ShowCondition(now.Posture, now.Staggered, now.Held, now.Down, now.Fall);
 
     /// <summary>This PC's player hit its copy: the host applies it for real.</summary>
     internal void SendHit(in DamageHit hit) => HitRpc(new EnemyHitMessage(hit));
@@ -97,6 +126,12 @@ public sealed class EnemyNetwork : NetworkBehaviour
     internal void SendPosture(float amount, float stun, bool interrupt) => PostureRpc(amount, stun, interrupt);
     internal void SendInterrupt(float duration) => InterruptRpc(duration);
     internal void SendShove(Vector3 impulse, Vector3 point) => ShoveRpc(impulse, point);
+    internal void SendKnockDown(Vector3 direction, float duration) => KnockDownRpc(direction, duration);
+    internal void SendBarge(Vector3 velocity, float throwTime, float knockdownTime) => BargeRpc(velocity, throwTime, knockdownTime);
+
+    /// <summary>This PC's player started an execution on its copy: the host holds the enemy for them, if nobody else has it.</summary>
+    internal void AskExecution() => ExecutionRpc();
+    internal void EndExecution() => ExecutionEndedRpc();
 
     [Rpc(SendTo.NotServer)]
     private void WindupRpc(ulong victim, int combo) => combat.ShowWindup(victim == NetworkManager.LocalClientId, combo);
@@ -122,6 +157,35 @@ public sealed class EnemyNetwork : NetworkBehaviour
 
     [Rpc(SendTo.Server)]
     private void ShoveRpc(Vector3 impulse, Vector3 point) => target.ReceiveShove(impulse, point);
+
+    [Rpc(SendTo.Server)]
+    private void KnockDownRpc(Vector3 direction, float duration) => target.KnockDown(direction, duration);
+
+    [Rpc(SendTo.Server)]
+    private void BargeRpc(Vector3 velocity, float throwTime, float knockdownTime) => target.Barge(velocity, throwTime, knockdownTime);
+
+    [Rpc(SendTo.Server)]
+    private void ExecutionRpc(RpcParams rpc = default)
+    {
+        ulong client = rpc.Receive.SenderClientId;
+        var player = PlayerOf(client);
+        var execution = player != null ? player.GetComponent<PlayerExecution>() : null;
+        if (execution != null && target.TryReserveExecution(execution)) execution.ShowExecuting(target);
+        else ExecutionDeniedRpc(client);
+    }
+
+    [Rpc(SendTo.Server)]
+    private void ExecutionEndedRpc(RpcParams rpc = default)
+    {
+        var player = PlayerOf(rpc.Receive.SenderClientId);
+        if (player != null && player.TryGetComponent(out PlayerExecution execution)) execution.Cancel();
+    }
+
+    [Rpc(SendTo.NotServer)]
+    private void ExecutionDeniedRpc(ulong client)
+    {
+        if (client == NetworkManager.LocalClientId) target.DenyExecution();
+    }
 
     [Rpc(SendTo.Server)]
     private void HitRpc(EnemyHitMessage message, RpcParams rpc = default) => enemy.ReceiveHit(message.ToHit(PlayerOf(rpc.Receive.SenderClientId)));

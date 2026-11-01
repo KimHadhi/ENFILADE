@@ -6,10 +6,13 @@ public enum ShoveImpactKind { None, Enemy, World }
 [DisallowMultipleComponent]
 public sealed class PlayerShoveAudio : MonoBehaviour
 {
+    private const float OthersReach = 25f;
     private AudioSource source;
     private AudioClip previousEnemyClip;
     public ShoveImpactKind LastImpact { get; private set; }
     public AudioClip LastClip { get; private set; }
+    /// <summary>A shove's impact sounded on this player, for the other PCs to play too.</summary>
+    public event System.Action<ShoveImpactKind> Played;
 
     public void Play(ShoveImpactKind impact)
     {
@@ -18,10 +21,14 @@ public sealed class PlayerShoveAudio : MonoBehaviour
         if (impact == ShoveImpactKind.None || settings == null || !isActiveAndEnabled) return;
         LastClip = impact == ShoveImpactKind.Enemy ? PickEnemyClip(settings.shoveEnemySounds) : settings.shoveWorldSound;
         if (LastClip == null || !Application.isPlaying) return;
+        Played?.Invoke(impact);
         if (source == null)
         {
             source = gameObject.AddComponent<AudioSource>(); source.playOnAwake = false;
-            source.spatialBlend = 0f;
+            // One's own shove sounds flat; someone else's comes from where they stand.
+            bool someoneElse = TryGetComponent(out PlayerMovement player) && !player.IsLocal;
+            source.spatialBlend = someoneElse ? 1f : 0f;
+            source.rolloffMode = AudioRolloffMode.Linear; source.minDistance = 2f; source.maxDistance = OthersReach;
             GameAudio.Bind(source, AudioChannel.Combat);
         }
         float volume = impact == ShoveImpactKind.Enemy ? settings.shoveEnemyVolume : settings.shoveWorldVolume;
