@@ -25,6 +25,8 @@ public sealed class GameSettings
     public string characterSkin = "";
     [Tooltip("Scene name of the map last chosen on the main menu (Resources/Tables/Maps.csv).")]
     public string lastMap = "";
+    [Tooltip("Address last typed on the main menu to join a room.")]
+    public string lastAddress = GameSession.DefaultAddress;
 
     public const float MinSensitivity = .2f, MaxSensitivity = 3f, MinFieldOfView = 70f, MaxFieldOfView = 120f;
 

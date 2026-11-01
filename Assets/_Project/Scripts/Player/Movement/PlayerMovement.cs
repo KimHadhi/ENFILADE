@@ -48,6 +48,8 @@ public sealed partial class PlayerMovement : MonoBehaviour
     public const string TableName = "Player";
     /// <summary>This PC plays this character. A remote one reads no input and puts nothing on this screen.</summary>
     public bool IsLocal { get; private set; } = true;
+    /// <summary>A remote character the network moves. Its own movement keeps only the ground check.</summary>
+    public bool IsNetworkDriven { get; private set; }
     public PlayerDamageReceiver DamageReceiver { get; private set; }
     public PlayerStats Stats { get; private set; }
     public UltimateCharge Ultimate { get; private set; }
@@ -187,9 +189,10 @@ public sealed partial class PlayerMovement : MonoBehaviour
     /// Makes this copy someone else's character on this PC: no input, camera, listener or screen effects, just the body
     /// and its sounds. Call it before the copy first activates, so its screen-only parts are never added.
     /// </summary>
-    public void MakeRemote()
+    public void MakeRemote(bool networkDriven = false)
     {
         IsLocal = false;
+        IsNetworkDriven = networkDriven;
         foreach (var part in GetComponentsInChildren<Behaviour>(true))
             if (part is Camera || part is AudioListener || part is PlayerLook || part is PlayerCameraEffects
                 || part is PlayerInput || part is PlayerTestInteraction) part.enabled = false;
@@ -274,6 +277,7 @@ public sealed partial class PlayerMovement : MonoBehaviour
     private void Update()
     {
         if (!EnsureInitialized()) return;
+        if (IsNetworkDriven) { Motor.CheckGroundedAndSlope(); return; }
         float dt = Time.deltaTime;
         if (dt <= 0f || !Application.isFocused || !DamageReceiver.IsAlive) return;
         Input.Sample(InputAvailable && !ControlLocked);

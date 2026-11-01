@@ -122,6 +122,25 @@ public static class SettingsWidgets
         Select(selected);
     }
 
+    public static TMP_InputField TextInput(Transform parent, string value, Action<string> changed)
+    {
+        var root = Rect("Input", parent);
+        Size(root, height: 34f, flexibleWidth: 1f);
+        var image = Fill(root, Surface);
+        var viewport = Rect("Viewport", root);
+        Stretch(viewport);
+        viewport.offsetMin = new Vector2(10f, 0f); viewport.offsetMax = new Vector2(-10f, 0f);
+        viewport.gameObject.AddComponent<RectMask2D>();
+        var text = Label(viewport, string.Empty, 19f, Text);
+        Stretch(text.rectTransform);
+        var input = root.gameObject.AddComponent<TMP_InputField>();
+        input.textViewport = viewport; input.textComponent = text; input.targetGraphic = image;
+        input.fontAsset = text.font; input.pointSize = text.fontSize;
+        input.SetTextWithoutNotify(value);
+        input.onValueChanged.AddListener(v => changed(v));
+        return input;
+    }
+
     public static Button ActionButton(Transform parent, string text, bool primary, Action clicked)
     {
         var rect = Rect(text, parent);

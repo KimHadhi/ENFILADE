@@ -57,7 +57,7 @@ public sealed class SettingsMenu : MonoBehaviour
     private void Open()
     {
         IsOpen = true;
-        if (!MainMenuScreen.IsOpen) GamePause.Set(true);
+        if (!MainMenuScreen.IsOpen && !GameSession.IsOnline) GamePause.Set(true);
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
         EnsureEventSystem();
@@ -80,7 +80,8 @@ public sealed class SettingsMenu : MonoBehaviour
     private void LeaveToMainMenu()
     {
         Close();
-        SceneManager.LoadScene(MainMenuScreen.SceneName);
+        if (GameSession.IsOnline) GameSession.Leave();
+        else SceneManager.LoadScene(MainMenuScreen.SceneName);
     }
 
     public static void QuitGame()

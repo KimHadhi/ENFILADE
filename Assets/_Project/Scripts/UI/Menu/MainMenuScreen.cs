@@ -7,7 +7,7 @@ using UnityEngine.UI;
 using W = SettingsWidgets;
 
 /// <summary>
-/// The title screen: choose a map and a character, then start. Hosting and joining open with the network work.
+/// The title screen: choose a map and a character, then play alone, make a room or join one.
 /// Pressing Play in a level skips this screen, so levels can still be tested directly.
 /// </summary>
 [DisallowMultipleComponent]
@@ -17,6 +17,7 @@ public sealed class MainMenuScreen : MonoBehaviour
     private const string MapsTable = "Maps";
     private string[] maps = Array.Empty<string>();
     private MainMenuPreview preview;
+    private TMP_Text status, joinLabel;
 
     public static bool IsOpen { get; private set; }
 
@@ -38,6 +39,12 @@ public sealed class MainMenuScreen : MonoBehaviour
         maps = GameTables.RowIds(MapsTable).Where(id => Application.CanStreamedLevelBeLoaded(id)).ToArray();
         Build();
         preview.Show();
+    }
+
+    private void Update()
+    {
+        if (status != null && status.text != GameSession.Status) status.text = GameSession.Status;
+        if (joinLabel != null) joinLabel.text = GameSession.IsOnline ? "접속 취소" : "참가하기";
     }
 
     private void OnDestroy() => IsOpen = false;
@@ -67,10 +74,25 @@ public sealed class MainMenuScreen : MonoBehaviour
         AddSkinChoice(column);
         W.Size(W.Rect("Gap", column), height: 20f);
         MenuButton(column, "혼자 하기", true, StartSolo);
-        MenuButton(column, "방 만들기 (준비 중)", false, null);
-        MenuButton(column, "참가하기 (준비 중)", false, null);
+        MenuButton(column, "방 만들기", false, StartHost);
+        AddJoinRow(column);
         MenuButton(column, "설정", false, SettingsMenu.OpenFromMainMenu);
         MenuButton(column, "게임 종료", false, SettingsMenu.QuitGame);
+        W.Size(W.Rect("Gap", column), height: 12f);
+        string here = string.Join(" / ", GameSession.LocalAddresses());
+        W.Size(W.Label(column, $"이 PC 주소: {here}  (포트 {GameSession.Port})", 18f, W.Muted), height: 26f);
+        status = W.Label(column, GameSession.Status, 19f, W.Accent);
+        W.Size(status, height: 28f);
+    }
+
+    private void AddJoinRow(Transform column)
+    {
+        var settings = GameSettings.Current;
+        if (GameSession.ParseAddress(settings.lastAddress) == null) settings.lastAddress = GameSession.DefaultAddress;
+        W.TextInput(W.Row(column, "접속 주소"), settings.lastAddress, address => settings.lastAddress = address);
+        var join = W.ActionButton(column, "참가하기", false, ToggleJoin);
+        W.Size(join, height: 54f);
+        joinLabel = join.GetComponentInChildren<TMP_Text>();
     }
 
     private void AddMapChoice(Transform column)
@@ -103,15 +125,27 @@ public sealed class MainMenuScreen : MonoBehaviour
 
     private static void MenuButton(Transform column, string text, bool primary, Action clicked)
     {
-        var button = W.ActionButton(column, text, primary, clicked ?? (() => { }));
-        W.Size(button, height: 54f);
-        button.interactable = clicked != null;
+        W.Size(W.ActionButton(column, text, primary, clicked), height: 54f);
     }
 
     private void StartSolo()
     {
-        if (maps.Length == 0) return;
+        if (maps.Length == 0 || GameSession.IsOnline) return;
         GameSettings.Save();
         SceneManager.LoadScene(GameSettings.Current.lastMap);
+    }
+
+    private void StartHost()
+    {
+        if (maps.Length == 0) return;
+        GameSettings.Save();
+        GameSession.Host(GameSettings.Current.lastMap);
+    }
+
+    private void ToggleJoin()
+    {
+        if (GameSession.IsOnline) { GameSession.Leave(); return; }
+        GameSession.Join(GameSettings.Current.lastAddress);
+        if (GameSession.IsOnline) GameSettings.Save();
     }
 }

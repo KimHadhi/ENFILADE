@@ -14,15 +14,14 @@ public static class ConsoleDummyPlayers
 
     public static string Spawn(PlayerMovement player, int count)
     {
-        var prefab = Resources.Load<GameObject>(PlayerSpawnPoint.PrefabPath);
-        if (prefab == null) return "플레이어 프리팹이 없습니다. Resources/Characters/Player.prefab을 확인하세요.";
+        if (PlayerFactory.Prefab == null) return "플레이어 프리팹이 없습니다. Resources/Characters/Player.prefab을 확인하세요.";
         for (int spawned = 0; spawned < count; spawned++)
         {
             // Newly created colliders must occupy their positions before choosing the next spot.
             Physics.SyncTransforms();
             if (!TryFindSpot(player, out Vector3 spot))
                 return spawned == 0 ? "앞쪽에 더미를 놓을 빈 공간이 없습니다." : $"더미 {spawned}/{count}명을 소환했습니다. 앞쪽 공간이 부족합니다.";
-            SpawnAt(player, prefab, spot);
+            SpawnAt(player, spot);
         }
         return $"더미 플레이어 {count}명을 소환했습니다. 제거: /dummy clear";
     }
@@ -36,17 +35,12 @@ public static class ConsoleDummyPlayers
         return removed > 0 ? $"더미 {removed}명을 제거했습니다." : "제거할 더미가 없습니다.";
     }
 
-    private static void SpawnAt(PlayerMovement player, GameObject prefab, Vector3 spot)
+    private static void SpawnAt(PlayerMovement player, Vector3 spot)
     {
-        // The copy must learn it is remote before it activates: it may not add screen effects or claim the mouse.
-        var holder = new GameObject("Dummy Holder");
-        holder.SetActive(false);
         Vector3 facing = Vector3.ProjectOnPlane(player.transform.position - spot, Vector3.up);
-        var dummy = Object.Instantiate(prefab, spot, Quaternion.LookRotation(facing.normalized), holder.transform);
+        var group = RuntimeSceneHierarchy.GetGroup(player.gameObject.scene, "PLAYERS", "Dummies");
+        var dummy = PlayerFactory.CreateRemote(spot, Quaternion.LookRotation(facing.normalized), group, false);
         dummy.name = "Dummy Player " + (dummies.Count + 1);
-        dummy.GetComponent<PlayerMovement>().MakeRemote();
-        dummy.transform.SetParent(RuntimeSceneHierarchy.GetGroup(player.gameObject.scene, "PLAYERS", "Dummies"), true);
-        Object.Destroy(holder);
         dummies.Add(dummy);
     }
 
