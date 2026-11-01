@@ -62,6 +62,8 @@
 
 적의 공격은 호스트가 시작을 알리고 맞을 사람의 PC가 판정한다. `EnemyCombatAI.ShowWindup`이 그 PC에서 예고 시간을 직접 세므로 예고음과 타격의 간격이 혼자 할 때와 같고, 패리와 회피도 입력 지연 없이 판정된다. 패리나 주먹이 적에게 주는 체간 피해, 경직, 밀림은 `MeleeCombatTarget`이 복사본에 바로 적용하면서 호스트에도 보낸다. 플레이어 체력은 각자의 PC가 진짜이고, 다른 PC에는 `PlayerNetworkPose`로 알린다.
 
+다른 플레이어의 복사본에도 `WeaponController`와 손 IK가 그대로 있다. [PlayerNetworkCombat](../Scripts/Network/PlayerNetworkCombat.cs)이 고른 무기, 조준, 재장전, 가드를 보내고 사격, 주먹, 주먹 소리는 일어날 때마다 알린다. 복사본은 `ShowShot` 등으로 총구 화염, 궤적, 탄착, 소리를 자기 화면에 재현할 뿐 데미지는 주지 않는다. 내 무기와 주먹 소리는 2D, 남의 것은 3D로 난다.
+
 채팅은 [PlayerChat](../Scripts/Network/PlayerChat.cs)이 호스트를 거쳐 다른 PC로 보낸다. `/` 명령어와 콘솔 채널은 공유되지 않는다. 표시 이름은 메인 메뉴 프로필에서 정하는 `GameSettings.DisplayName`이며, 비어 있으면 PC 사용자 이름을 쓴다.
 
 궁극기 스탯의 기본값은 **최대 보유량 120%, 1회 소비량 100%**다. 120%에서 사용하면 20%가 남고, 소비량을 70%로 바꾸면 50%가 남는다. 현재 충전량은 `UltimateCharge`, 최대 보유량과 소비량은 `PlayerStats`가 관리한다. 최대 보유량 변경은 현재 충전량을 유지하며, 최대치가 줄어들 때만 초과분을 잘라낸다. 소비량이 최대 보유량보다 크면 사용할 수 없다.

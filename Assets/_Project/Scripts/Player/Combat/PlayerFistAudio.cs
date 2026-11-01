@@ -10,12 +10,25 @@ public enum FistSound { None, Swing, Hit, HeavyHit, WallHit }
 public sealed class PlayerFistAudio : MonoBehaviour
 {
     // How much of the swing is left once the punch has landed.
-    private const float SwingUnderHit = .3f;
+    private const float SwingUnderHit = .3f, OthersReach = 25f;
     private AudioSource swingVoice, hitVoice;
     private AudioClip previousSwing, previousHit, previousHeavy, previousWall;
     public FistSound LastSound { get; private set; }
     public AudioClip LastClip { get; private set; }
     public int PlayCount { get; private set; }
+    /// <summary>A fist sound started on this player, for the other PCs to play too.</summary>
+    public event System.Action<FistSound> Played;
+
+    public void Play(FistSound sound)
+    {
+        switch (sound)
+        {
+            case FistSound.Swing: PlaySwing(); break;
+            case FistSound.Hit: PlayHit(); break;
+            case FistSound.HeavyHit: PlayHeavyHit(); break;
+            case FistSound.WallHit: PlayWallHit(); break;
+        }
+    }
 
     public void PlaySwing()
     {
@@ -45,6 +58,7 @@ public sealed class PlayerFistAudio : MonoBehaviour
     {
         LastSound = sound; LastClip = clip; PlayCount++;
         if (clip == null || !isActiveAndEnabled || !Application.isPlaying) return;
+        Played?.Invoke(sound);
         if (sound == FistSound.Swing)
         {
             if (swingVoice == null) swingVoice = NewVoice();
@@ -61,7 +75,10 @@ public sealed class PlayerFistAudio : MonoBehaviour
     private AudioSource NewVoice()
     {
         var source = gameObject.AddComponent<AudioSource>();
-        source.playOnAwake = false; source.spatialBlend = 0f;
+        // One's own fists sound flat; someone else's come from where they stand.
+        bool someoneElse = TryGetComponent(out PlayerMovement player) && !player.IsLocal;
+        source.playOnAwake = false; source.spatialBlend = someoneElse ? 1f : 0f;
+        source.rolloffMode = AudioRolloffMode.Linear; source.minDistance = 2f; source.maxDistance = OthersReach;
         GameAudio.Bind(source, AudioChannel.Combat);
         return source;
     }

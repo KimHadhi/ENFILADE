@@ -79,6 +79,13 @@ public sealed class WeaponRuntime
         cooldown = Mathf.Max(0f, cooldown); wasHoldingFire = false;
         burstRemaining = 0;
     }
+    /// <summary>On someone else's copy: their reload, for the gun's pose. Their ammunition is counted on their own PC.</summary>
+    public void ShowReload(bool empty)
+    {
+        IsEmptyReload = empty;
+        IsReloading = true;
+        ReloadDuration = ReloadRemaining = empty ? Data.EmptyReloadDuration : Data.ReloadDuration;
+    }
     public void CancelBurst() { burstRemaining = 0; wasHoldingFire = false; }
     internal void RefundUnfiredShots(int count) { Ammo = Mathf.Min(Data.MagazineSize, Ammo + Mathf.Max(0, count)); CancelBurst(); }
     public void AddReserve(int amount) { if (amount > 0) ReserveAmmo = (int)Math.Min(int.MaxValue, (long)ReserveAmmo + amount); }

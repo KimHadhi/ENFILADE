@@ -87,6 +87,12 @@ public sealed class EnemyNetwork : NetworkBehaviour
         if (IsSpawned) ParryRpc(contact, away, broken);
     }
 
+    /// <summary>This PC's player blocked this enemy: everyone else hears it.</summary>
+    internal void ShareBlock()
+    {
+        if (IsSpawned) BlockRpc();
+    }
+
     /// <summary>A parry, a punch or a shove on this PC's copy reaches the enemy that really moves and fights.</summary>
     internal void SendPosture(float amount, float stun, bool interrupt) => PostureRpc(amount, stun, interrupt);
     internal void SendInterrupt(float duration) => InterruptRpc(duration);
@@ -97,6 +103,9 @@ public sealed class EnemyNetwork : NetworkBehaviour
 
     [Rpc(SendTo.NotServer)]
     private void CancelRpc() => combat.CancelAttack();
+
+    [Rpc(SendTo.NotMe)]
+    private void BlockRpc() => CombatCueAudio.Play(gameObject, CombatCue.Block, 1f, true);
 
     [Rpc(SendTo.NotMe)]
     private void ParryRpc(Vector3 contact, Vector3 away, bool broken)

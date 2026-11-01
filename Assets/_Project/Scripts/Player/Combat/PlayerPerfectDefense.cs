@@ -33,6 +33,7 @@ public sealed class PlayerPerfectDefense : MonoBehaviour
         {
             float variance = CombatFeedbackSettings.InstanceOrDefaults.hitPitchVariance;
             CombatCueAudio.Play(gameObject, CombatCue.Block, 1f + Random.Range(-variance, variance));
+            if (hit.Source != null && hit.Source.TryGetComponent(out EnemyNetwork network)) network.ShareBlock();
             return;
         }
         if (result == DamageResult.Parried)

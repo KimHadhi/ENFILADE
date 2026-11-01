@@ -10,6 +10,8 @@ using UnityEngine;
 public sealed class WeaponFeedback : MonoBehaviour
 {
     private const int CasingCount = 24;
+    // How far someone else's gun carries (m); its mechanical sounds carry FeelAudio's usual distance.
+    private const float ShotReach = 60f, MechanicalReach = 14f;
     private static readonly Color Brass = new Color(.86f, .64f, .27f);
 
     private struct Casing
@@ -35,6 +37,15 @@ public sealed class WeaponFeedback : MonoBehaviour
     private readonly Casing[] casings = new Casing[CasingCount];
     private int nextCasing;
     private bool trackingReload, magInPlayed, boltPlayed, emptyReload;
+
+    private bool IsMine => movement == null || movement.IsLocal;
+
+    // One's own gun sounds flat; someone else's comes from where they stand.
+    private void Sound(FeelSound sound, AudioClip[] clips, float volume, float pitch, float reach = MechanicalReach)
+    {
+        if (IsMine) FeelAudio.Play(sound, clips, volume, pitch);
+        else FeelAudio.PlayAt(sound, clips, transform.position + Vector3.up, volume, pitch, reach);
+    }
 
     private void Awake()
     {
@@ -81,11 +92,12 @@ public sealed class WeaponFeedback : MonoBehaviour
         float ads = weapon.AimBlend;
 
         if (settings.gunSounds)
-            FeelAudio.Play(FeelAudio.ShotFor(data.SoundProfile), data.FireSounds, settings.gunshotVolume * data.FireVolume,
-                1f + Random.Range(-1f, 1f) * settings.gunshotPitchJitter);
-        AmmoCue(shot.AmmoAfterShot, data, settings);
+            Sound(FeelAudio.ShotFor(data.SoundProfile), data.FireSounds, settings.gunshotVolume * data.FireVolume,
+                1f + Random.Range(-1f, 1f) * settings.gunshotPitchJitter, ShotReach);
+        if (IsMine) AmmoCue(shot.AmmoAfterShot, data, settings);
         if (settings.muzzleEffects) Muzzle(data, settings);
         if (settings.shellCasings && data.EjectShells) Eject();
+        if (!IsMine) return;
 
         if (punch != null)
         {
@@ -133,7 +145,7 @@ public sealed class WeaponFeedback : MonoBehaviour
     {
         var settings = GunFeelSettings.Instance;
         trackingReload = true; magInPlayed = boltPlayed = false; emptyReload = empty;
-        if (settings.gunSounds) FeelAudio.Play(FeelSound.MagOut, settings.magOutSounds, settings.mechanicalVolume, Random.Range(.97f, 1.03f));
+        if (settings.gunSounds) Sound(FeelSound.MagOut, settings.magOutSounds, settings.mechanicalVolume, Random.Range(.97f, 1.03f));
     }
 
     private void OnReloadCompleted() => trackingReload = false;
@@ -148,12 +160,12 @@ public sealed class WeaponFeedback : MonoBehaviour
         if (!magInPlayed && progress >= (emptyReload ? .5f : .62f))
         {
             magInPlayed = true;
-            if (settings.gunSounds) FeelAudio.Play(FeelSound.MagIn, settings.magInSounds, settings.mechanicalVolume, Random.Range(.97f, 1.03f));
+            if (settings.gunSounds) Sound(FeelSound.MagIn, settings.magInSounds, settings.mechanicalVolume, Random.Range(.97f, 1.03f));
         }
         if (emptyReload && !boltPlayed && progress >= .86f)
         {
             boltPlayed = true;
-            if (settings.gunSounds) FeelAudio.Play(FeelSound.Bolt, settings.boltSounds, settings.mechanicalVolume, Random.Range(.97f, 1.03f));
+            if (settings.gunSounds) Sound(FeelSound.Bolt, settings.boltSounds, settings.mechanicalVolume, Random.Range(.97f, 1.03f));
         }
     }
 
@@ -370,7 +382,7 @@ public sealed class WeaponFeedback : MonoBehaviour
     {
         if (view == null && weapon != null && weapon.AimOrigin != null) view = weapon.AimOrigin.GetComponent<Camera>();
         if (view == null) view = Camera.main;
-        if (punch == null && view != null) punch = CameraViewPunch.For(view);
+        if (punch == null && view != null && IsMine) punch = CameraViewPunch.For(view);
     }
 
     private static float Safe(float value) => Mathf.Abs(value) < .0001f ? 1f : value;

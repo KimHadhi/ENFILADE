@@ -83,7 +83,7 @@ public sealed class WeaponController : MonoBehaviour
     private PlayerCameraEffects cameraEffects;
     private float bloom, timeSinceShot, shoveRecovery;
     private int recoilIndex, dodgeActivation;
-    private bool survivalInterrupted;
+    private bool survivalInterrupted, shownAiming;
 
     [NonSerialized] private bool initialized;
 
@@ -163,7 +163,34 @@ public sealed class WeaponController : MonoBehaviour
 
         var slots = GetComponent<PlayerWeaponSlots>();
         if (slots != null && !slots.CanReadInput) Runtime.CancelBurst();
-        if (input != null) ProcessFrame(Time.deltaTime, input.ReadInput());
+        if (input == null) return;
+        ProcessFrame(Time.deltaTime, movement != null && movement.IsNetworkDriven ? new WeaponInputFrame(false, false, false, shownAiming) : input.ReadInput());
+    }
+
+    /// <summary>On someone else's copy: they raised or lowered their sights.</summary>
+    internal void ShowAiming(bool aiming) => shownAiming = aiming;
+
+    /// <summary>On someone else's copy: their reload began, or stopped.</summary>
+    internal void ShowReload(bool reloading, bool empty)
+    {
+        if (Runtime == null || reloading == Runtime.IsReloading) return;
+        if (!reloading) { Runtime.Interrupt(); return; }
+        Runtime.ShowReload(empty);
+        ReloadStarted?.Invoke(empty);
+    }
+
+    /// <summary>
+    /// On someone else's copy: they fired. The muzzle, the tracer, the sound and the bullet's mark happen here, the same
+    /// way as for this PC's own shots; their PC already judged the hit.
+    /// </summary>
+    internal void ShowShot(Vector3 origin, Vector3 direction)
+    {
+        if (Runtime == null || weaponData == null) return;
+        bool landed = AttackTrace.FirstExternalHit(owner, origin, direction, weaponData.Range, hitLayers, out RaycastHit hit);
+        var trace = new AttackTraceResult(landed, hit, landed ? hit.point : origin + direction * weaponData.Range, DamageResult.Ignored);
+        LastShot = new WeaponShot(DamageHit.NewAttackId(), muzzlePoint != null ? muzzlePoint.position : origin, direction, trace, Vector2.zero, Runtime.Ammo);
+        ShotFired?.Invoke(LastShot);
+        presentation?.OnShot(weaponData, Vector2.zero);
     }
 
     public void Equip(WeaponRuntime weapon)

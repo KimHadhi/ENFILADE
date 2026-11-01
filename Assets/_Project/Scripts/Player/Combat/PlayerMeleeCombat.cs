@@ -75,8 +75,13 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
         if (fistAudio == null && Application.isPlaying) fistAudio = gameObject.AddComponent<PlayerFistAudio>();
         CancelAction();
     }
+    /// <summary>On someone else's copy: their guard went up or down.</summary>
+    internal void ShowGuard(bool guarding) => IsGuarding = guarding;
+    /// <summary>On someone else's copy: their punch left. Their PC judged what it hit.</summary>
+    internal void ShowPunch(float charge) => Punched?.Invoke(charge);
     private void Update()
     {
+        if (player != null && player.IsNetworkDriven) return;
         if (!IsActive || !player.InputAvailable) { CancelAction(); TickGuardInput(Time.deltaTime, default); return; }
         if (IsGuardBreaking)
         {
@@ -90,7 +95,7 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
     private void LateUpdate()
     {
         // PlayerLook updates after input processing. Include this frame's final camera rotation.
-        if (Time.timeScale <= 0f) return;
+        if (Time.timeScale <= 0f || (player != null && player.IsNetworkDriven)) return;
         if (!IsActive || !player.InputAvailable || player.Execution?.IsExecuting == true) { CancelAction(); return; }
         if (IsGuardBreaking) return;
         if (MovementBlocksAttack) { SuspendActionsForMovement(); return; }
