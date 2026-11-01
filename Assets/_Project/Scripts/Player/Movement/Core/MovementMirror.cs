@@ -10,7 +10,8 @@ using State = PlayerMovement.MovementState;
 /// </summary>
 public sealed class MovementMirror
 {
-    private const float FollowRate = 20f, LedgeProbe = .1f, LadderMatch = .01f;
+    // LookRate only smooths the steps between two poses: high enough that it adds no lag of its own, and it never overshoots.
+    private const float FollowRate = 20f, LookRate = 45f, LedgeProbe = .1f, LadderMatch = .01f;
 
     private readonly PlayerMovement ctx;
     private readonly Transform lookPivot;
@@ -41,7 +42,7 @@ public sealed class MovementMirror
             State = (byte)ctx.CurrentState, LandingTier = (byte)landing.LastTier, HeavyPose = (byte)landing.HeavyPose,
             Jumps = jumps, Landings = landings, DashHits = dashHits, LadderSteps = (byte)fixtures.LadderSteps,
             Velocity = ctx.ActualVelocity, RunIntent = ctx.RunIntent, FallSpeed = ctx.FallSpeed, LandImpact = landImpact,
-            Lean = abilities.Lean.Share,
+            Lean = abilities.Lean.Share, Yaw = ctx.transform.eulerAngles.y,
             Pitch = lookPivot != null ? Mathf.DeltaAngle(0f, lookPivot.localEulerAngles.x) : 0f
         };
         var marks = Marks.None;
@@ -108,9 +109,11 @@ public sealed class MovementMirror
         ctx.StateMachine.Mirror(state);
         ctx.StateMachine.Duration += dt;
         motor.isGrounded = Has(pose, Marks.Grounded);
+        float look = 1f - Mathf.Exp(-LookRate * dt);
+        ctx.transform.rotation = Quaternion.Euler(0f, Mathf.LerpAngle(ctx.transform.eulerAngles.y, pose.Yaw, look), 0f);
         if (lookPivot != null)
         {
-            pitch = Mathf.Lerp(pitch, pose.Pitch, follow);
+            pitch = Mathf.Lerp(pitch, pose.Pitch, look);
             lookPivot.localRotation = Quaternion.Euler(pitch, 0f, 0f);
         }
         RaiseEvents(pose);

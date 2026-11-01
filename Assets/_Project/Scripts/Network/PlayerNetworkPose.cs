@@ -9,8 +9,8 @@ using UnityEngine;
 [DisallowMultipleComponent, DefaultExecutionOrder(-110)]
 public sealed class PlayerNetworkPose : NetworkBehaviour
 {
-    // The pose is what animates the copy, and the eye can't tell more than this many updates a second apart.
-    private const float SendInterval = .05f;
+    // Every network tick (30 a second): this carries where the player looks, and a turn has to read as it happens.
+    private const float SendInterval = .03f;
 
     private readonly NetworkVariable<PlayerPose> pose = new NetworkVariable<PlayerPose>(default,
         NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);

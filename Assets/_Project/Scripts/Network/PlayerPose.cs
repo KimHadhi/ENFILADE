@@ -21,7 +21,9 @@ public struct PlayerPose : INetworkSerializeByMemcpy
     public Vector3 Direction;
     /// <summary>What the state holds: a ledge's edge, a ladder's foot, the start of a cable.</summary>
     public Vector3 Anchor;
-    public float Pitch, Lean, RunIntent, FallSpeed, LandImpact;
+    /// <summary>Where they look. It travels here, not through NetworkTransform, whose buffer makes a turn arrive late and trail off.</summary>
+    public float Yaw, Pitch;
+    public float Lean, RunIntent, FallSpeed, LandImpact;
     /// <summary>The state's own numbers, see MovementMirror.</summary>
     public float Detail, Extent;
     public byte State, LandingTier, HeavyPose, LadderSteps;
