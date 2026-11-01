@@ -27,6 +27,8 @@ public sealed class GameSession : MonoBehaviour, INetworkPrefabInstanceHandler
     private const int ConnectAttempts = 10;
     // How long a silent connection lasts when a PC crashes or loses its network, without any goodbye.
     private const int SilenceLimitMs = 10000;
+    // Every enemy lives here, so all PCs know the same network prefabs before the first one spawns.
+    private const string EnemyPrefabs = "Enemies";
     private static GameSession current;
     private NetworkManager network;
     private CountingTransport transport;
@@ -40,6 +42,8 @@ public sealed class GameSession : MonoBehaviour, INetworkPrefabInstanceHandler
     public static bool IsOnline => current != null;
     /// <summary>The room's network, or null outside a room.</summary>
     public static NetworkManager Network => current != null ? current.network : null;
+    /// <summary>In someone else's room, where the host runs the enemies and the waves.</summary>
+    public static bool IsGuest => current != null && !current.network.IsServer;
     /// <summary>What the main menu shows about the room: joining, or why the last one ended.</summary>
     public static string Status { get; private set; } = "";
 
@@ -115,6 +119,7 @@ public sealed class GameSession : MonoBehaviour, INetworkPrefabInstanceHandler
         host.SetActive(true);
         session.network.AddNetworkPrefab(session.playerPrefab);
         session.network.PrefabHandler.AddHandler(session.playerPrefab, session);
+        foreach (var enemy in Resources.LoadAll<NetworkObject>(EnemyPrefabs)) session.network.AddNetworkPrefab(enemy.gameObject);
         current = session;
         Status = "";
         return session;

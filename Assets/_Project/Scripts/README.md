@@ -26,6 +26,7 @@
 | 보이는 몸(진짜 1인칭)·상태별 애니메이션·F5 뒤에서 보기 | [PlayerBody](Player/Body/PlayerBody.cs), [PlayerBodyProfile](Player/Body/PlayerBodyProfile.cs), [사용 안내](../Docs/PlayerBodyGuide.md) |
 | 눈 시점·시선 따라 허리·머리 굽히기·카메라 벽 판정 | [PlayerBody.Look](Player/Body/PlayerBody.Look.cs), [PlayerBody.Clearance](Player/Body/PlayerBody.Clearance.cs), [CameraClearance](Player/Camera/CameraClearance.cs) |
 | 손으로 총·주먹·난간 잡기 / 발 IK·발목 제한 | [PlayerBodyHands](Player/Body/PlayerBodyHands.cs), [ArmIK](Player/Body/ArmIK.cs) / [PlayerBody.Feet](Player/Body/PlayerBody.Feet.cs), [AnkleLimit](Player/Body/AnkleLimit.cs) |
+| 적·웨이브 공유 (호스트가 진행) | [EnemyNetwork](Network/EnemyNetwork.cs), [EnemyHitMessage](Network/EnemyHitMessage.cs), [WaveSync](Network/WaveSync.cs) |
 | 실제 핑·전송량 측정 (`/net`) | [NetworkStatsHUD](Network/NetworkStatsHUD.cs), [CountingTransport](Network/CountingTransport.cs) |
 | 상대 캐릭터의 몸·소리·스킨 동기화 | [PlayerNetworkPose](Network/PlayerNetworkPose.cs), [PlayerPose](Network/PlayerPose.cs), [MovementMirror](Player/Movement/Core/MovementMirror.cs) |
 | 방 만들기·참가·네트워크 스폰 / 서버 목록 | [GameSession](Network/GameSession.cs) / [ServerBrowserView](UI/Menu/ServerBrowserView.cs), [IRoomList·RoomInfo](Network/RoomInfo.cs), [CombinedRoomList](Network/CombinedRoomList.cs), [LanRoomFinder](Network/LanRoomFinder.cs), [LanRoomBeacon](Network/LanRoomBeacon.cs), [InternetRoomFinder](Network/InternetRoomFinder.cs), [InternetRoom](Network/InternetRoom.cs), [OnlineServices](Network/OnlineServices.cs), 화면에 보이는 핑 [PingDisplay](Network/PingDisplay.cs) ([Network.csv](../Resources/Tables/Network.csv)) |

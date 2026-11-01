@@ -10,6 +10,7 @@ public static class CombatTestCommands
             if(action!="start"&&action!="stop"&&action!="pause"&&action!="resume"&&action!="abort"&&action!="status")
                 return "사용법: /wave start | stop (일시정지) | resume (재개) | abort (적 정리 후 초기화) | status";
             if(!Application.isPlaying) return "Play 중에 사용할 수 있습니다.";
+            if(GameSession.IsGuest&&action!="status") return "웨이브는 호스트만 조작할 수 있습니다.";
             WaveManager wave=null; int count=0;
             foreach(var candidate in Object.FindObjectsByType<WaveManager>(FindObjectsInactive.Exclude,FindObjectsSortMode.None))
                 if(candidate.gameObject.scene==chat.gameObject.scene && candidate.isActiveAndEnabled) {wave=candidate;count++;}

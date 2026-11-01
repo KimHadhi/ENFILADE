@@ -36,7 +36,7 @@
 | 바닥으로 인정할 레이어 | 씬의 `PlayerMovement → Ground Layers`, `Ability Settings → Interaction Layers` | 해당 플레이어 |
 | 무기 반동·조준 추적·화면 흔들림·사운드·아이콘 | [Data/Combat/Weapons](../Data/Combat/Weapons)의 해당 `WeaponData` | 그 데이터를 사용하는 모든 무기 |
 | 시작 무기·선택 슬롯 | 플레이어의 `PlayerWeaponSlots` | 해당 플레이어 |
-| 적 크기·밀치기 연쇄 | [적 프리팹](../Prefabs/Enemies)의 `MeleeCombatTarget` | 프리팹 인스턴스. 씬의 Override 확인 |
+| 적 크기·밀치기 연쇄 | [적 프리팹](../Resources/Enemies)의 `MeleeCombatTarget` | 프리팹 인스턴스. 씬의 Override 확인 |
 | 총성·히트마커·피격·처치·점수 효과 | [GunFeel.asset](../Resources/Combat/GunFeel.asset), 무기별 `Feel` | 공통 효과 / 개별 무기 |
 | 주먹·벽 타격음·방어·반격·처형·피해 팝업 | [Feedback.asset](../Resources/Combat/Feedback.asset) | 공통 전투 피드백 |
 | 총구 화염·궤적·탄착·혈흔 프리팹 | Player의 `Gun/…/MuzzlePoint → MuzzleEffects`, `Weapon Impact Effects` | 해당 플레이어 |
@@ -57,6 +57,8 @@
 플레이어는 씬에 놓지 않는다. 씬의 [PlayerSpawnPoint](../Scripts/Player/PlayerSpawnPoint.cs)가 게임 시작 때 `Resources/Characters/Player.prefab`을 만들고, 더미도 같은 프리팹을 쓴다. 플레이어의 컴포넌트나 총 위치를 고칠 때는 이 프리팹을 연다. HUD는 모든 씬이 `Prefabs/UI/HUD/GameHUD.prefab` 하나를 쓴다. 프리팹은 씬의 물건을 가리킬 수 없으므로 플레이어와 HUD는 실행 중에 서로를 찾는다.
 
 방은 [GameSession](../Scripts/Network/GameSession.cs)이 맡는다. 만든 사람의 PC가 호스트이고, 친구는 서버 찾기의 목록이나 주소로 접속한다. 방은 만들 때 고른 대로 인터넷이나 LAN 중 하나로만 열린다. LAN 방은 게임 포트 7777을 쓰고, 호스트의 [LanRoomBeacon](../Scripts/Network/LanRoomBeacon.cs)이 UDP 7778에서 묻는 쪽의 [LanRoomFinder](../Scripts/Network/LanRoomFinder.cs)에게 방 정보를 답한다. 인터넷 방은 [InternetRoom](../Scripts/Network/InternetRoom.cs)이 Unity Lobby에 올리고 Relay로 연결하며, [InternetRoomFinder](../Scripts/Network/InternetRoomFinder.cs)가 목록을 읽는다. 플레이어는 [OnlineServices](../Scripts/Network/OnlineServices.cs)의 익명 로그인을 쓰므로 Unity 계정이 없어도 된다. Relay는 호스트를 가리므로 인터넷 방의 핑은 내 PC와 호스트가 각각 Relay 지역까지 잰 왕복 시간을 더한 추정값이다. 화면의 핑은 [PingDisplay](../Scripts/Network/PingDisplay.cs)가 [Network.csv](../Resources/Tables/Network.csv)의 `pingDivisor`로 나눈 값이라 실제보다 일부러 작다. 지연을 측정할 때는 나누기 전 값을 쓴다. 콘솔의 `/net`이 방의 실제 핑, 초당 전송량, 프레임을 [NetworkStatsHUD](../Scripts/Network/NetworkStatsHUD.cs)로 보여 주고, 다시 입력하면 끄면서 전체 결과를 출력한다. 전송량은 [CountingTransport](../Scripts/Network/CountingTransport.cs)가 세는 게임 데이터로, 패킷 헤더는 포함하지 않는다. 목록 화면은 `IRoomList`만 보므로 다른 방 찾기 방식을 더해도 화면은 그대로다. 혼자 하기에서는 GameSession이 만들어지지 않으므로 네트워크가 전혀 돌지 않는다. 내 이동은 내 PC가 계산해 보내고, 남의 캐릭터는 `PlayerMovement.IsNetworkDriven`으로 표시되어 받은 위치를 따른다. 몸과 소리는 [PlayerNetworkPose](../Scripts/Network/PlayerNetworkPose.cs)가 초당 최대 20번 보내는 [PlayerPose](../Scripts/Network/PlayerPose.cs)로 맞춘다. 받는 쪽의 [MovementMirror](../Scripts/Player/Movement/Core/MovementMirror.cs)가 이 값을 이동 상태에 그대로 써 넣으므로, 상태 코드는 돌지 않아도 `PlayerBody`, 손 IK, 발소리가 평소처럼 읽는다. 몸이 새 이동 값을 읽게 되면 `PlayerPose`와 `MovementMirror`에도 더해야 상대에게 보인다. 스킨은 같은 컴포넌트가 따로 보낸다.
+
+적은 호스트가 돌린다. 적 프리팹은 [Resources/Enemies](../Resources/Enemies)에 두며, 이 폴더의 네트워크 프리팹은 모든 PC에 자동으로 등록된다. 다른 PC의 적은 [EnemyNetwork](../Scripts/Network/EnemyNetwork.cs)가 AI와 NavMesh를 끈 복사본이고, 호스트의 위치와 체력만 보여 준다. 쏜 사람의 PC가 자기 복사본에서 명중을 판정해 효과를 바로 보여 주고 호스트에 알리면, 호스트가 진짜 체력을 깎고 다른 PC에 알린다. 웨이브는 호스트만 진행하고, 씬의 `WaveManager`가 네트워크 오브젝트가 아니므로 표시는 [WaveSync](../Scripts/Network/WaveSync.cs)가 메시지로 보낸다. `CombatDamageReport.ByOtherPlayer`인 타격은 세상에는 보이지만 히트 마커, 점수, 킬 화면은 쏜 사람에게만 나온다.
 
 궁극기 스탯의 기본값은 **최대 보유량 120%, 1회 소비량 100%**다. 120%에서 사용하면 20%가 남고, 소비량을 70%로 바꾸면 50%가 남는다. 현재 충전량은 `UltimateCharge`, 최대 보유량과 소비량은 `PlayerStats`가 관리한다. 최대 보유량 변경은 현재 충전량을 유지하며, 최대치가 줄어들 때만 초과분을 잘라낸다. 소비량이 최대 보유량보다 크면 사용할 수 없다.
 

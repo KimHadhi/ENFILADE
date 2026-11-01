@@ -31,6 +31,8 @@ public sealed class PlayerDamageReceiver : MonoBehaviour, IDamageReceiver, ITabl
     // Call only after a melee/projectile/hitscan attack actually intersects the player.
     public DamageResult ReceiveHit(DamageHit hit)
     {
+        // Someone else's copy: their health and their parry are decided on their own PC.
+        if (movement != null && movement.IsNetworkDriven) return DamageResult.Ignored;
         if (!isActiveAndEnabled || !IsAlive || hit.Amount <= 0f || float.IsNaN(hit.Amount) || float.IsInfinity(hit.Amount) || hit.Id <= 0) return DamageResult.Ignored;
         if (!seen.Add(hit.Id)) return DamageResult.Duplicate;
         recent.Enqueue(hit.Id);

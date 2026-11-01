@@ -8,6 +8,7 @@ public static class ConsoleEnemySpawner
     {
         if (player == null) return "대상 플레이어를 찾지 못했습니다.";
         if (count < 1) return "사용법: /spawn [수량] — 1 이상의 정수를 입력하세요.";
+        if (GameSession.IsGuest) return "적은 호스트만 소환할 수 있습니다.";
         EnemyHealth prefab = null;
         foreach (var wave in Object.FindObjectsByType<WaveManager>(FindObjectsInactive.Include, FindObjectsSortMode.None))
         {
@@ -64,6 +65,7 @@ public static class ConsoleEnemySpawner
             enemy = Object.Instantiate(prefab, hit.position + Vector3.up * agent.baseOffset,
                 Quaternion.LookRotation(facing.normalized), container);
             enemy.name = prefab.name + " (Console)";
+            EnemyNetwork.SpawnInRoom(enemy);
             error = null;
             return true;
         }

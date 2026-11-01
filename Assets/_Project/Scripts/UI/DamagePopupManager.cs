@@ -47,7 +47,7 @@ public sealed class DamagePopupManager : MonoBehaviour
 
     private static void OnDamaged(CombatDamageReport report)
     {
-        if (!Application.isPlaying || report.Target == null) return;
+        if (!Application.isPlaying || report.Target == null || report.ByOtherPlayer) return;
         if (instance == null)
         {
             var root = new GameObject("Damage Popups", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler));

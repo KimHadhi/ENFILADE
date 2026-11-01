@@ -34,6 +34,15 @@ public sealed class WaveManager : MonoBehaviour
     [SerializeField] private string objectiveMessage = "Eliminate the enemy";
 
     public enum WavePhase { Idle, Countdown, Spawning, Combat }
+    /// <summary>What the screen shows about the waves, which the host sends to the other PCs (WaveSync).</summary>
+    public struct Status : Unity.Netcode.INetworkSerializeByMemcpy, System.IEquatable<Status>
+    {
+        public WavePhase Phase;
+        public bool Paused;
+        public int Wave, Defeated, Total, SecondsLeft;
+        public bool Equals(Status other) => Phase == other.Phase && Paused == other.Paused && Wave == other.Wave
+            && Defeated == other.Defeated && Total == other.Total && SecondsLeft == other.SecondsLeft;
+    }
     public WavePhase Phase { get; private set; }
     public bool IsPaused { get; private set; }
     public bool IsRunning => Phase != WavePhase.Idle;
@@ -44,6 +53,8 @@ public sealed class WaveManager : MonoBehaviour
     public string LastError { get; private set; }
     public int TotalEnemiesThisWave => totalEnemiesThisWave;
     public int DefeatedEnemies => defeatedEnemies;
+    public Status CurrentStatus => new Status { Phase = Phase, Paused = IsPaused, Wave = currentWave, Defeated = defeatedEnemies,
+        Total = totalEnemiesThisWave, SecondsLeft = Mathf.CeilToInt(remainingDelay) };
     public event System.Action ObjectiveChanged;
     private readonly HashSet<EnemyHealth> aliveEnemies = new HashSet<EnemyHealth>();
     private int currentWave, totalEnemiesThisWave, defeatedEnemies, spawned;
@@ -54,13 +65,25 @@ public sealed class WaveManager : MonoBehaviour
     private void Start()
     {
         if (!IsRunning) { UpdateObjectiveUI(); UpdateAssaultStatus("ASSAULT STANDBY"); }
+        if (GameSession.IsOnline) gameObject.AddComponent<WaveSync>();
         if (autoStart) StartWaves();
+    }
+
+    /// <summary>In a room, the host's waves as the other PCs see them.</summary>
+    internal void ShowHostStatus(in Status status)
+    {
+        Phase = status.Phase; IsPaused = status.Paused; currentWave = status.Wave;
+        defeatedEnemies = status.Defeated; totalEnemiesThisWave = status.Total; remainingDelay = status.SecondsLeft;
+        UpdateObjectiveUI();
+        if (IsRunning) RefreshStatus();
+        else UpdateAssaultStatus("ASSAULT STANDBY");
     }
 
     public bool StartWaves()
     {
         if (!isActiveAndEnabled || IsRunning) return false;
         LastError = null;
+        if (GameSession.IsGuest) { LastError = "웨이브는 호스트만 시작할 수 있습니다."; return false; }
         if (enemyPrefab == null || spawnPoints == null || System.Array.Find(spawnPoints, p => p != null) == null)
         { LastError = "Enemy Prefab과 Spawn Points 연결을 확인하세요."; return false; }
         currentWave = totalEnemiesThisWave = defeatedEnemies = spawned = 0;
@@ -110,7 +133,7 @@ public sealed class WaveManager : MonoBehaviour
     {
         if (IsPaused) return;
         if (progressBar != null) progressBar.fillAmount = Mathf.MoveTowards(progressBar.fillAmount,targetFillAmount,fillSpeed*Time.deltaTime);
-        if (!IsRunning || Time.deltaTime <= 0) return;
+        if (!IsRunning || Time.deltaTime <= 0 || GameSession.IsGuest) return;
         if (Phase == WavePhase.Countdown)
         {
             remainingDelay = Mathf.Max(0,remainingDelay-Time.deltaTime); RefreshStatus();
@@ -152,6 +175,7 @@ public sealed class WaveManager : MonoBehaviour
             if(point==null || !NavMesh.SamplePosition(point.position,out NavMeshHit navHit,2f,NavMesh.AllAreas)) continue;
             var container = RuntimeSceneHierarchy.GetGroup(gameObject.scene, "ENEMIES", "Waves");
             var enemy=Instantiate(enemyPrefab,navHit.position,point.rotation,container);
+            EnemyNetwork.SpawnInRoom(enemy);
             aliveEnemies.Add(enemy); enemy.Died+=OnEnemyDied; return true;
         }
         return false;

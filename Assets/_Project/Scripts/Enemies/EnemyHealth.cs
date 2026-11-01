@@ -28,6 +28,7 @@ public sealed class EnemyHealth : MonoBehaviour, IDamageReceiver, ICombatVitals,
     private readonly Queue<long> recent = new Queue<long>();
     private NavMeshAgent pausedAgent;
     private EnemyHitReaction reaction;
+    private EnemyNetwork network;
     private float appliedMaximum;
     private bool restorePosition, restoreRotation, restoreStopped;
 
@@ -60,6 +61,7 @@ public sealed class EnemyHealth : MonoBehaviour, IDamageReceiver, ICombatVitals,
         // Bullet flinch (push, slow, interrupt) applies to existing prefabs without migration.
         reaction = GetComponent<EnemyHitReaction>();
         if (reaction == null) reaction = gameObject.AddComponent<EnemyHitReaction>();
+        network = GetComponent<EnemyNetwork>();
         GameTables.Bind(TableName, string.IsNullOrWhiteSpace(tableId) ? CombatDamageEvents.BaseName(gameObject) : tableId.Trim(),
             this, GetComponent<EnemyCombatAI>(), GetComponent<MeleeCombatTarget>(), GetComponent<NavMeshAgent>(), reaction);
         Health = MaximumHealth;
@@ -81,6 +83,10 @@ public sealed class EnemyHealth : MonoBehaviour, IDamageReceiver, ICombatVitals,
         float before = Health;
         Health = Mathf.Max(0f, Health - hit.Amount);
         UltimateCharge.AwardEnemyHit(hit);
+        // A copy shows the hit now and leaves the rest to the host, whose enemy is the true one.
+        bool copy = network != null && network.IsCopy;
+        if (copy) network.SendHit(hit);
+        else if (network != null) network.AnnounceHit(hit, before, Health);
         // Report before Die(): popups bind to this transform and keep its last position after Destroy.
         CombatDamageEvents.Report(this, hit, before, Health, MaximumHealth);
 
@@ -88,12 +94,25 @@ public sealed class EnemyHealth : MonoBehaviour, IDamageReceiver, ICombatVitals,
         {
             Die();
         }
-        else if (reaction != null)
+        else if (reaction != null && !copy)
         {
             reaction.OnHit(hit, before - Health, MaximumHealth);
         }
 
         return DamageResult.Damaged;
+    }
+
+    /// <summary>On a copy: the health the host says. A kill this PC already judged stays a kill.</summary>
+    internal void ShowHealth(float health)
+    {
+        if (IsAlive) Health = Mathf.Min(health, MaximumHealth);
+    }
+
+    /// <summary>On a copy: someone else's hit, as the host took it.</summary>
+    internal void ShowHit(DamageHit hit, float before, float after)
+    {
+        ShowHealth(after);
+        CombatDamageEvents.Report(this, hit, before, after, MaximumHealth);
     }
 
     // A live table edit keeps the same health fraction instead of healing or killing enemies mid-fight.
@@ -108,6 +127,7 @@ public sealed class EnemyHealth : MonoBehaviour, IDamageReceiver, ICombatVitals,
         // 웨이브 관리자에게 처치 사실을 알린다.
         Died?.Invoke(this);
 
-        Destroy(gameObject);
+        if (network != null && network.IsCopy) network.HideUntilRemoved();
+        else Destroy(gameObject);
     }
 }

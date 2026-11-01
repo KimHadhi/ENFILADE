@@ -21,7 +21,7 @@ public static class GunFeelDirector
         if (!Application.isPlaying || report.Target == null) return;
         var settings = GunFeelSettings.Instance;
         var hit = report.Hit;
-        bool byPlayer = hit.Kind != DamageKind.Fall && hit.Source != null && hit.Source.GetComponentInParent<PlayerMovement>() != null;
+        bool byPlayer = hit.Kind != DamageKind.Fall && hit.Source != null && hit.Source.GetComponentInParent<PlayerMovement>() != null && !report.ByOtherPlayer;
         bool kill = report.IsKillingBlow, critical = report.IsCritical, bullet = hit.Method == DamageMethod.Bullet;
         bool execution = hit.Kind == DamageKind.Execution;
 

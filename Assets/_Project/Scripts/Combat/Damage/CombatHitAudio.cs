@@ -67,7 +67,7 @@ public sealed class CombatHitAudio : MonoBehaviour
         if (level != HitFeedbackLevel.SoundAndEffects) return;
         // Skeet: killed during its attack wind-up, like a hunter shot out of a pounce.
         bool skeet = kill && report.Target.TryGetComponent(out EnemyCombatAI ai) && ai.IsPreparingAttack;
-        bool byPlayer = hit.Source != null && hit.Source.GetComponentInParent<PlayerMovement>() != null;
+        bool byPlayer = hit.Source != null && hit.Source.GetComponentInParent<PlayerMovement>() != null && !report.ByOtherPlayer;
         Get().Queue(sound, skeet, !byPlayer, hit.Point, sound == HitSound.CloseKill ? settings.closeKillVolume : settings.hitSoundVolume);
     }
 

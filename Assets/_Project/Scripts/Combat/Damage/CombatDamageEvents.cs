@@ -15,6 +15,8 @@ public readonly struct CombatDamageReport
     public bool IsCritical => Hit.IsCritical;
     /// <summary>Death blow: this hit took the target from alive to zero health (executions included).</summary>
     public bool IsKillingBlow => HealthBefore > 0f && HealthAfter <= 0f;
+    /// <summary>Another player landed it. The world shows it here, but the markers and the score are theirs.</summary>
+    public bool ByOtherPlayer => Hit.Source != null && Hit.Source.GetComponentInParent<PlayerMovement>() is PlayerMovement player && !player.IsLocal;
 }
 
 /// <summary>

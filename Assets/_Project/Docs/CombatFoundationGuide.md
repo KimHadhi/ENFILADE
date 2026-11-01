@@ -73,7 +73,7 @@
 | 주먹·가드·패링·V 홀드 | [Player.csv](../Resources/Tables/Player.csv)의 `Fists` 행 |
 | 밀치기·돌진 밀치기·슬라이딩 수치 | `Player.csv`의 `Ability` 행 |
 | 적 체력·공격·체간·이동 속도 | [Enemies.csv](../Resources/Tables/Enemies.csv) |
-| 적의 몸 크기·밀치기 연쇄 | [적 프리팹](../Prefabs/Enemies)의 `MeleeCombatTarget` |
+| 적의 몸 크기·밀치기 연쇄 | [적 프리팹](../Resources/Enemies)의 `MeleeCombatTarget` |
 | 사격·장전·가드 키 | [Player.inputactions](../Input/Player.inputactions)의 Combat 맵 |
 | 슬롯 숫자 키 | [PlayerWeaponSlots.Update](../Scripts/Player/Combat/Weapons/PlayerWeaponSlots.cs)의 직접 키보드 입력 |
 | 탄약 UI의 위치·크기·색 | 씬의 `AmmoHUD` → Screen Margin / Hud Scale / Colors |
