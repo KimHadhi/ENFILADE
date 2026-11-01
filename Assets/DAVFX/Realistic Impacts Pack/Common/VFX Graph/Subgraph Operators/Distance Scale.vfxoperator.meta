@@ -1,0 +1,22 @@
+fileFormatVersion: 2
+guid: 5da042abd4f3b5249944b66dc750d779
+VisualEffectImporter:
+  externalObjects: {}
+  serializedVersion: 1
+  template:
+    name: 
+    category: 
+    description: 
+    icon: {instanceID: 0}
+    thumbnail: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 368222
+  packageName: Realistic Impacts Pack
+  packageVersion: 2.0.1
+  assetPath: Assets/DAVFX/Realistic Impacts Pack/Common/VFX Graph/Subgraph Operators/Distance
+    Scale.vfxoperator
+  uploadId: 997534

@@ -113,3 +113,7 @@ InitTestScene*.unity*
 
 # Auto-generated cache in Assets folder
 /[Aa]ssets/[Ss]ceneDependencyCache*
+
+# MagicaCloth2's sample scenes are not part of the game
+/[Aa]ssets/MagicaCloth2/Example (Can be deleted)/
+/[Aa]ssets/MagicaCloth2/Example (Can be deleted).meta

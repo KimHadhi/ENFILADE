@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: f82c6f2a0c230fc4aaef10ab470dbbc3
+ScriptedImporter:
+  internalIDToNameTable: []
+  externalObjects: {}
+  serializedVersion: 2
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+  script: {fileID: 11500000, guid: 625f186215c104763be7675aa2d941aa, type: 3}
+AssetOrigin:
+  serializedVersion: 1
+  productId: 368222
+  packageName: Realistic Impacts Pack
+  packageVersion: 2.0.1
+  assetPath: Assets/DAVFX/Realistic Impacts Pack/URP/Shaders/Shader Graph/Small Particles
+    Shader URP VFX Graph.shadergraph
+  uploadId: 997534

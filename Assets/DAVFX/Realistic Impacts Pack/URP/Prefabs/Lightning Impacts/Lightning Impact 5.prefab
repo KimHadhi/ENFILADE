@@ -1,0 +1,636 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &6740175208890957064
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1379591796048355254}
+  - component: {fileID: 5212715956243518260}
+  - component: {fileID: 9196498489550051851}
+  - component: {fileID: 6729791199544284059}
+  m_Layer: 0
+  m_Name: Lightning Impact 5
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1379591796048355254
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6740175208890957064}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 3.959, y: -0.6901413, z: -0.42687678}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!2083052967 &5212715956243518260
+VisualEffect:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6740175208890957064}
+  m_Enabled: 1
+  m_Asset: {fileID: 8926484042661614526, guid: da01b4cbeb22baa4aa8c1ded62f8e95d, type: 3}
+  m_InitialEventName: OnPlay
+  m_InitialEventNameOverriden: 0
+  m_StartSeed: 0
+  m_ResetSeedOnPlay: 1
+  m_AllowInstancing: 1
+  m_ResourceVersion: 1
+  m_PropertySheet:
+    m_Float:
+      m_Array:
+      - m_Value: 1
+        m_Name: Lightnings Alpha
+        m_Overridden: 1
+      - m_Value: 0.08
+        m_Name: Heat Distortion Amount
+        m_Overridden: 1
+      - m_Value: 5
+        m_Name: Heat Distortion Size
+        m_Overridden: 1
+      - m_Value: 0.4
+        m_Name: Heat Distortion Lifetime
+        m_Overridden: 1
+      - m_Value: 0.16
+        m_Name: Blur Lifetime
+        m_Overridden: 1
+      - m_Value: 4
+        m_Name: Blur Size
+        m_Overridden: 1
+      - m_Value: 0.305
+        m_Name: Flash Lifetime
+        m_Overridden: 1
+      - m_Value: 1.25
+        m_Name: Flash Scale Multiplier
+        m_Overridden: 1
+      - m_Value: 2
+        m_Name: Smoke Scale Multiplier
+        m_Overridden: 1
+      - m_Value: 1
+        m_Name: Sparks Velocity Multiplier
+        m_Overridden: 1
+      - m_Value: 0.069
+        m_Name: Spark Trails Velocity Angle
+        m_Overridden: 1
+      - m_Value: 4
+        m_Name: Small Sparks Amount Multiplier
+        m_Overridden: 1
+      - m_Value: 1
+        m_Name: Sparks Gravity Multiplier
+        m_Overridden: 1
+      - m_Value: 0.212
+        m_Name: Sparks Velocity Angle
+        m_Overridden: 1
+      - m_Value: 1.1
+        m_Name: Smoke Alpha Contrast
+        m_Overridden: 1
+      - m_Value: 0.92
+        m_Name: Smoke Contrast
+        m_Overridden: 1
+      - m_Value: 0.8
+        m_Name: Smoke Alpha
+        m_Overridden: 1
+      - m_Value: 0.8
+        m_Name: Smoke Lifetime Multiplier
+        m_Overridden: 1
+      - m_Value: 3
+        m_Name: Sparks Noise Multiplier
+        m_Overridden: 1
+      - m_Value: 0.1
+        m_Name: Flash Emissive Intensity
+        m_Overridden: 1
+      - m_Value: 1.4
+        m_Name: Sparks Lifetime Multiplier
+        m_Overridden: 1
+      - m_Value: 2
+        m_Name: Collision Sparks Amount Multiplier
+        m_Overridden: 1
+      - m_Value: 0.4
+        m_Name: Smoke Depth Fade
+        m_Overridden: 1
+      - m_Value: 1
+        m_Name: Lightnings Duration
+        m_Overridden: 1
+      - m_Value: 0.3
+        m_Name: Lightnings Emissive
+        m_Overridden: 1
+    m_Vector2f:
+      m_Array:
+      - m_Value: {x: 10, y: 30}
+        m_Name: Spark Trails Initial Velocity Min Max
+        m_Overridden: 1
+      - m_Value: {x: 35, y: 300}
+        m_Name: Sparks Amount Min Max
+        m_Overridden: 1
+      - m_Value: {x: 7, y: 7}
+        m_Name: Smoke Impact Texture Rows and Columns
+        m_Overridden: 1
+      - m_Value: {x: 7, y: 14}
+        m_Name: Smoke Impact Scale
+        m_Overridden: 1
+      - m_Value: {x: 0.7, y: 1}
+        m_Name: Smoke Impact Lifetime Min Max
+        m_Overridden: 1
+      - m_Value: {x: 1, y: 1}
+        m_Name: Sparks Non Uniform Scale Multiplier
+        m_Overridden: 1
+      - m_Value: {x: 1, y: 2}
+        m_Name: Lightnings Initial Burst Amount Min Max
+        m_Overridden: 1
+      - m_Value: {x: 0.03, y: 0.06}
+        m_Name: Lightnings Periodic Burst Delay Min Max
+        m_Overridden: 1
+      - m_Value: {x: 2, y: 3}
+        m_Name: Lightnings Periodic Burst Amount Min Max
+        m_Overridden: 1
+    m_Vector3f:
+      m_Array:
+      - m_Value: {x: 0.8, y: 0.8, z: 0.8}
+        m_Name: Lightnings Scale Multiplier
+        m_Overridden: 1
+    m_Vector4f:
+      m_Array: []
+    m_Uint:
+      m_Array: []
+    m_Int:
+      m_Array: []
+    m_Matrix4x4f:
+      m_Array: []
+    m_AnimationCurve:
+      m_Array:
+      - m_Value:
+          serializedVersion: 2
+          m_Curve:
+          - serializedVersion: 3
+            time: 0
+            value: 0
+            inSlope: 0.25052392
+            outSlope: 0.25052392
+            tangentMode: 0
+            weightedMode: 0
+            inWeight: 0
+            outWeight: 0.07331731
+          - serializedVersion: 3
+            time: 1
+            value: 1
+            inSlope: 0.7961875
+            outSlope: 0.7961875
+            tangentMode: 0
+            weightedMode: 0
+            inWeight: 0
+            outWeight: 0
+          m_PreInfinity: 2
+          m_PostInfinity: 2
+          m_RotationOrder: 4
+        m_Name: Reveal Curve
+        m_Overridden: 0
+      - m_Value:
+          serializedVersion: 2
+          m_Curve:
+          - serializedVersion: 3
+            time: -0.001043018
+            value: 1.9924009
+            inSlope: -3.6134708
+            outSlope: -3.6134708
+            tangentMode: 0
+            weightedMode: 0
+            inWeight: 0
+            outWeight: 0.05352798
+          - serializedVersion: 3
+            time: 1
+            value: 0
+            inSlope: -0.11450931
+            outSlope: -0.11450931
+            tangentMode: 0
+            weightedMode: 0
+            inWeight: 0
+            outWeight: 0
+          m_PreInfinity: 2
+          m_PostInfinity: 2
+          m_RotationOrder: 4
+        m_Name: Color Gradient Offset Curve
+        m_Overridden: 0
+      - m_Value:
+          serializedVersion: 2
+          m_Curve:
+          - serializedVersion: 3
+            time: 0.5
+            value: 0
+            inSlope: 1.0279456
+            outSlope: 1.0279456
+            tangentMode: 0
+            weightedMode: 0
+            inWeight: 0
+            outWeight: 0.069711566
+          - serializedVersion: 3
+            time: 1
+            value: 1
+            inSlope: 1.521459
+            outSlope: 1.521459
+            tangentMode: 0
+            weightedMode: 0
+            inWeight: 0
+            outWeight: 0
+          m_PreInfinity: 2
+          m_PostInfinity: 2
+          m_RotationOrder: 4
+        m_Name: Alpha Erosion Curve
+        m_Overridden: 0
+      - m_Value:
+          serializedVersion: 2
+          m_Curve:
+          - serializedVersion: 3
+            time: 0
+            value: 1
+            inSlope: -27.877033
+            outSlope: -27.877033
+            tangentMode: 0
+            weightedMode: 0
+            inWeight: 0
+            outWeight: 0.0576923
+          - serializedVersion: 3
+            time: 0.15
+            value: -0.004333496
+            inSlope: -0.080044724
+            outSlope: -0.080044724
+            tangentMode: 0
+            weightedMode: 0
+            inWeight: 0
+            outWeight: 0
+          m_PreInfinity: 2
+          m_PostInfinity: 2
+          m_RotationOrder: 4
+        m_Name: Gradient Dissolve Curve
+        m_Overridden: 0
+      - m_Value:
+          serializedVersion: 2
+          m_Curve:
+          - serializedVersion: 3
+            time: 0
+            value: 0
+            inSlope: 2.0399625
+            outSlope: 2.0399625
+            tangentMode: 0
+            weightedMode: 0
+            inWeight: 0
+            outWeight: 0.06610577
+          - serializedVersion: 3
+            time: 1
+            value: 1
+            inSlope: 0.9241005
+            outSlope: 0.9241005
+            tangentMode: 0
+            weightedMode: 0
+            inWeight: 0.07331735
+            outWeight: 0
+          m_PreInfinity: 2
+          m_PostInfinity: 2
+          m_RotationOrder: 4
+        m_Name: Smoke Animation Curve
+        m_Overridden: 1
+      - m_Value:
+          serializedVersion: 2
+          m_Curve:
+          - serializedVersion: 3
+            time: 0
+            value: 1.0021667
+            inSlope: -5.239326
+            outSlope: -5.239326
+            tangentMode: 0
+            weightedMode: 0
+            inWeight: 0
+            outWeight: 0.07967755
+          - serializedVersion: 3
+            time: 0.30169678
+            value: 0
+            inSlope: -0.080044724
+            outSlope: -0.080044724
+            tangentMode: 0
+            weightedMode: 0
+            inWeight: 0
+            outWeight: 0
+          m_PreInfinity: 2
+          m_PostInfinity: 2
+          m_RotationOrder: 4
+        m_Name: Lightnings Gradient Dissolve Curve
+        m_Overridden: 1
+      - m_Value:
+          serializedVersion: 2
+          m_Curve:
+          - serializedVersion: 3
+            time: 0.5
+            value: 0
+            inSlope: 5.19436
+            outSlope: 5.19436
+            tangentMode: 0
+            weightedMode: 0
+            inWeight: 0
+            outWeight: 0.048076868
+          - serializedVersion: 3
+            time: 1
+            value: 1
+            inSlope: 0.77828676
+            outSlope: 0.77828676
+            tangentMode: 0
+            weightedMode: 0
+            inWeight: 0.078125
+            outWeight: 0
+          m_PreInfinity: 2
+          m_PostInfinity: 2
+          m_RotationOrder: 4
+        m_Name: Lightnings Alpha Erosion Curve
+        m_Overridden: 1
+      - m_Value:
+          serializedVersion: 2
+          m_Curve:
+          - serializedVersion: 3
+            time: 0
+            value: 0
+            inSlope: 0.42254126
+            outSlope: 0.42254126
+            tangentMode: 0
+            weightedMode: 0
+            inWeight: 0
+            outWeight: 0.074519224
+          - serializedVersion: 3
+            time: 1
+            value: 1
+            inSlope: 0.7961875
+            outSlope: 0.7961875
+            tangentMode: 0
+            weightedMode: 0
+            inWeight: 0
+            outWeight: 0
+          m_PreInfinity: 2
+          m_PostInfinity: 2
+          m_RotationOrder: 4
+        m_Name: Lightnings Reveal Curve
+        m_Overridden: 1
+    m_Gradient:
+      m_Array:
+      - m_Value:
+          serializedVersion: 2
+          key0: {r: 214.83922, g: 260.53015, b: 383.49805, a: 1}
+          key1: {r: 154.41331, g: 142.68738, b: 251.21019, a: 1}
+          key2: {r: 1.4980392, g: 0.3276157, b: 0, a: 1}
+          key3: {r: 0.7490197, g: 0.16380769, b: 0, a: 0}
+          key4: {r: 0, g: 0, b: 0, a: 0}
+          key5: {r: 0, g: 0, b: 0, a: 0}
+          key6: {r: 0, g: 0, b: 0, a: 0}
+          key7: {r: 0, g: 0, b: 0, a: 0}
+          ctime0: 7430
+          ctime1: 38536
+          ctime2: 43211
+          ctime3: 65535
+          ctime4: 0
+          ctime5: 0
+          ctime6: 0
+          ctime7: 0
+          atime0: 0
+          atime1: 65535
+          atime2: 54020
+          atime3: 65535
+          atime4: 0
+          atime5: 0
+          atime6: 0
+          atime7: 0
+          m_Mode: 0
+          m_ColorSpace: 1
+          m_NumColorKeys: 2
+          m_NumAlphaKeys: 2
+        m_Name: Sparks Color Over Life
+        m_Overridden: 1
+      - m_Value:
+          serializedVersion: 2
+          key0: {r: 213.60841, g: 271.85623, b: 383.49805, a: 1}
+          key1: {r: 9.650828, g: 8.917958, b: 15.700631, a: 1}
+          key2: {r: 11.984314, g: 5.5202823, b: 0, a: 0}
+          key3: {r: 1, g: 0.42817274, b: 0, a: 0}
+          key4: {r: 0, g: 0, b: 0, a: 0}
+          key5: {r: 0, g: 0, b: 0, a: 0}
+          key6: {r: 0, g: 0, b: 0, a: 0}
+          key7: {r: 0, g: 0, b: 0, a: 0}
+          ctime0: 0
+          ctime1: 34106
+          ctime2: 19929
+          ctime3: 65535
+          ctime4: 0
+          ctime5: 0
+          ctime6: 0
+          ctime7: 0
+          atime0: 0
+          atime1: 65535
+          atime2: 65535
+          atime3: 0
+          atime4: 0
+          atime5: 0
+          atime6: 0
+          atime7: 0
+          m_Mode: 0
+          m_ColorSpace: -1
+          m_NumColorKeys: 2
+          m_NumAlphaKeys: 2
+        m_Name: Flash Color Over Life
+        m_Overridden: 1
+      - m_Value:
+          serializedVersion: 2
+          key0: {r: 213.60841, g: 271.85623, b: 383.49805, a: 1}
+          key1: {r: 2.412707, g: 2.2294896, b: 3.9251578, a: 1}
+          key2: {r: 0, g: 0, b: 0, a: 0}
+          key3: {r: 0, g: 0, b: 0, a: 0}
+          key4: {r: 0, g: 0, b: 0, a: 0}
+          key5: {r: 0, g: 0, b: 0, a: 0}
+          key6: {r: 0, g: 0, b: 0, a: 0}
+          key7: {r: 0, g: 0, b: 0, a: 0}
+          ctime0: 0
+          ctime1: 3369
+          ctime2: 65535
+          ctime3: 0
+          ctime4: 0
+          ctime5: 0
+          ctime6: 0
+          ctime7: 0
+          atime0: 0
+          atime1: 65535
+          atime2: 65535
+          atime3: 0
+          atime4: 0
+          atime5: 0
+          atime6: 0
+          atime7: 0
+          m_Mode: 0
+          m_ColorSpace: 1
+          m_NumColorKeys: 3
+          m_NumAlphaKeys: 2
+        m_Name: Decals Emissive Color Over Life
+        m_Overridden: 0
+      - m_Value:
+          serializedVersion: 2
+          key0: {r: 3.7471085, g: 4.4703407, b: 5.858311, a: 0.92156863}
+          key1: {r: 1.5533298, g: 1.7103577, b: 1.9648324, a: 0.8627451}
+          key2: {r: 0.5698112, g: 0.5698112, b: 0.5698112, a: 0.58431375}
+          key3: {r: 0, g: 0, b: 0, a: 0}
+          key4: {r: 0, g: 0, b: 0, a: 0}
+          key5: {r: 0, g: 0, b: 0, a: 0}
+          key6: {r: 0, g: 0, b: 0, a: 0}
+          key7: {r: 0, g: 0, b: 0, a: 0}
+          ctime0: 0
+          ctime1: 24968
+          ctime2: 65535
+          ctime3: 0
+          ctime4: 0
+          ctime5: 0
+          ctime6: 0
+          ctime7: 0
+          atime0: 287
+          atime1: 7090
+          atime2: 17821
+          atime3: 65535
+          atime4: 0
+          atime5: 0
+          atime6: 0
+          atime7: 0
+          m_Mode: 0
+          m_ColorSpace: 1
+          m_NumColorKeys: 3
+          m_NumAlphaKeys: 4
+        m_Name: Smoke Color Over Life
+        m_Overridden: 1
+      - m_Value:
+          serializedVersion: 2
+          key0: {r: 0.7546386, g: 0.83087116, b: 0.9924528, a: 0.92156863}
+          key1: {r: 0.76699996, g: 0.76699996, b: 0.76699996, a: 0.8627451}
+          key2: {r: 0, g: 0, b: 0, a: 0}
+          key3: {r: 0, g: 0, b: 0, a: 0}
+          key4: {r: 0, g: 0, b: 0, a: 0}
+          key5: {r: 0, g: 0, b: 0, a: 0}
+          key6: {r: 0, g: 0, b: 0, a: 0}
+          key7: {r: 0, g: 0, b: 0, a: 0}
+          ctime0: 0
+          ctime1: 65483
+          ctime2: 0
+          ctime3: 0
+          ctime4: 0
+          ctime5: 0
+          ctime6: 0
+          ctime7: 0
+          atime0: 0
+          atime1: 33233
+          atime2: 65535
+          atime3: 0
+          atime4: 0
+          atime5: 0
+          atime6: 0
+          atime7: 0
+          m_Mode: 0
+          m_ColorSpace: 1
+          m_NumColorKeys: 2
+          m_NumAlphaKeys: 3
+        m_Name: Smoke Small Color Over Life
+        m_Overridden: 1
+    m_NamedObject:
+      m_Array:
+      - m_Value: {fileID: -5523277661179574252, guid: 269ef579c3cf62c4abc9174ca82ea312, type: 3}
+        m_Name: Lightnings Mesh
+        m_Overridden: 1
+      - m_Value: {fileID: -5523277661179574252, guid: 269ef579c3cf62c4abc9174ca82ea312, type: 3}
+        m_Name: Lightnings Secondary Mesh
+        m_Overridden: 1
+      - m_Value: {fileID: 2800000, guid: 6842f55cb83162d448975beb5d5493fb, type: 3}
+        m_Name: Smoke Impact Texture
+        m_Overridden: 1
+    m_Bool:
+      m_Array:
+      - m_Value: 0
+        m_Name: Use Smoke Impact
+        m_Overridden: 1
+      - m_Value: 1
+        m_Name: Use Spark Trails
+        m_Overridden: 1
+      - m_Value: 1
+        m_Name: Use Blur
+        m_Overridden: 1
+      - m_Value: 1
+        m_Name: Use Heat Distortion
+        m_Overridden: 1
+      - m_Value: 1
+        m_Name: Lightnings Radial Orientation
+        m_Overridden: 1
+      - m_Value: 1
+        m_Name: Use Burst Smoke
+        m_Overridden: 1
+--- !u!73398921 &9196498489550051851
+VFXRenderer:
+  serializedVersion: 1
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6740175208890957064}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 0
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 0
+  m_LightProbeUsage: 0
+  m_ReflectionProbeUsage: 0
+  m_RayTracingMode: 0
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+--- !u!114 &6729791199544284059
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6740175208890957064}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a988f4ff86f4f284096de1b2656f2bcd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  lightBurstPrefab: {fileID: 4275936888961235196, guid: 293343a8da2a9ac4b8df3737339b1209, type: 3}
+  localYOffset: 0.15
+  maxLifetime: 1.5
+  hideCloneInHierarchy: 1
+  overrideLightColor: 1
+  lightColor: {r: 0.72156864, g: 0.808389, b: 1, a: 1}
+  lightIntensityScale: 13

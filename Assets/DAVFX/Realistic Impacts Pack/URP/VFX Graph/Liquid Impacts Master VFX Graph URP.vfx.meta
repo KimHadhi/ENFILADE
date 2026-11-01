@@ -1,0 +1,22 @@
+fileFormatVersion: 2
+guid: 2ef00e6062ce6aa4da18c34320ffb43c
+VisualEffectImporter:
+  externalObjects: {}
+  serializedVersion: 1
+  template:
+    name: 
+    category: 
+    description: 
+    icon: {instanceID: 0}
+    thumbnail: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 368222
+  packageName: Realistic Impacts Pack
+  packageVersion: 2.0.1
+  assetPath: Assets/DAVFX/Realistic Impacts Pack/URP/VFX Graph/Liquid Impacts Master
+    VFX Graph URP.vfx
+  uploadId: 997534

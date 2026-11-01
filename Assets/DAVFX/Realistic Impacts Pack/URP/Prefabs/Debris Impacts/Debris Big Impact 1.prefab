@@ -1,0 +1,688 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &3509237413433849827
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 382731640030896657}
+  - component: {fileID: 3659152947105846947}
+  - component: {fileID: 2289353269439667176}
+  - component: {fileID: 7364097152962034238}
+  m_Layer: 0
+  m_Name: Debris Big Impact 1
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &382731640030896657
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3509237413433849827}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0.7071068, z: 0, w: 0.7071068}
+  m_LocalPosition: {x: 5.043, y: -3, z: 8.753}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 90, z: 0}
+--- !u!2083052967 &3659152947105846947
+VisualEffect:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3509237413433849827}
+  m_Enabled: 1
+  m_Asset: {fileID: 8926484042661614526, guid: 8aca6150a06b60142aa724223d51a12c, type: 3}
+  m_InitialEventName: OnPlay
+  m_InitialEventNameOverriden: 0
+  m_StartSeed: 0
+  m_ResetSeedOnPlay: 1
+  m_AllowInstancing: 1
+  m_ResourceVersion: 1
+  m_PropertySheet:
+    m_Float:
+      m_Array:
+      - m_Value: 1.5
+        m_Name: Smoke Lifetime Multiplier
+        m_Overridden: 1
+      - m_Value: 0.13
+        m_Name: Alpha Contrast
+        m_Overridden: 0
+      - m_Value: 0.5
+        m_Name: Explosion Lifetime
+        m_Overridden: 1
+      - m_Value: 0.39
+        m_Name: Scale Multiplier
+        m_Overridden: 1
+      - m_Value: 1
+        m_Name: Alpha
+        m_Overridden: 0
+      - m_Value: 0.09
+        m_Name: Heat Distortion Amount
+        m_Overridden: 1
+      - m_Value: 0.15
+        m_Name: Smoke Turbulence Intensity
+        m_Overridden: 1
+      - m_Value: 0.249
+        m_Name: Smoke Alpha
+        m_Overridden: 1
+      - m_Value: 0.3
+        m_Name: Smoke Depth Fade
+        m_Overridden: 1
+      - m_Value: 1
+        m_Name: General Lifetime
+        m_Overridden: 0
+      - m_Value: 1.5
+        m_Name: Sparks Scale Multiplier
+        m_Overridden: 1
+      - m_Value: 0.55
+        m_Name: Debris Scale Multiplier
+        m_Overridden: 0
+      - m_Value: 0.11
+        m_Name: Flash Lifetime
+        m_Overridden: 1
+      - m_Value: 0.25
+        m_Name: Smoke Velocity Multiplier
+        m_Overridden: 0
+      - m_Value: 1.5
+        m_Name: Smoke Scale Multiplier
+        m_Overridden: 1
+      - m_Value: 0.75
+        m_Name: Gravity Multiplier
+        m_Overridden: 1
+      - m_Value: 1.3
+        m_Name: Smoke Impact Lifetime Multiplier
+        m_Overridden: 0
+      - m_Value: 0.6
+        m_Name: Smoke Impact Alpha
+        m_Overridden: 1
+      - m_Value: 0.9
+        m_Name: Smoke Impact Scale Multiplier
+        m_Overridden: 0
+      - m_Value: 2
+        m_Name: Collision Sparks Amount Multiplier
+        m_Overridden: 1
+      - m_Value: 0.2
+        m_Name: Flash Scale Multiplier
+        m_Overridden: 1
+      - m_Value: 1
+        m_Name: Debris Lifetime Multiplier
+        m_Overridden: 1
+      - m_Value: 0.9
+        m_Name: Dust Alpha
+        m_Overridden: 1
+      - m_Value: 1
+        m_Name: Dust Gravity Multiplier
+        m_Overridden: 1
+      - m_Value: 0
+        m_Name: Hue
+        m_Overridden: 0
+      - m_Value: 1
+        m_Name: Saturation
+        m_Overridden: 0
+      - m_Value: 1
+        m_Name: Emissive
+        m_Overridden: 0
+      - m_Value: 1
+        m_Name: Decals Normal Intensity
+        m_Overridden: 0
+      - m_Value: 1
+        m_Name: Decals Size
+        m_Overridden: 0
+      - m_Value: 7
+        m_Name: Small Sparks Amount Multiplier
+        m_Overridden: 1
+      - m_Value: 0.3
+        m_Name: Debris 2D Scale Multiplier
+        m_Overridden: 1
+      - m_Value: 0.9
+        m_Name: Debris 3D Scale Multiplier
+        m_Overridden: 1
+      - m_Value: 0.7
+        m_Name: Debris Velocity Angle
+        m_Overridden: 1
+      - m_Value: 0.93
+        m_Name: Sparks Velocity Angle
+        m_Overridden: 1
+      - m_Value: 0.16
+        m_Name: Heat Distortion Lifetime
+        m_Overridden: 1
+      - m_Value: 1
+        m_Name: Sparks Lifetime Multiplier
+        m_Overridden: 1
+      - m_Value: 0.8
+        m_Name: Smoke Impact Contrast
+        m_Overridden: 1
+    m_Vector2f:
+      m_Array:
+      - m_Value: {x: 8, y: 8}
+        m_Name: Smoke Texture Rows and Columns
+        m_Overridden: 1
+      - m_Value: {x: 8, y: 8}
+        m_Name: Explosion Texture Rows and Columns
+        m_Overridden: 1
+      - m_Value: {x: 0, y: 0.3}
+        m_Name: Pivot Offset
+        m_Overridden: 1
+      - m_Value: {x: 2, y: 2}
+        m_Name: Sparks Texture Rows and Columns
+        m_Overridden: 1
+      - m_Value: {x: 40, y: 120}
+        m_Name: Debris Amount Min Max
+        m_Overridden: 1
+      - m_Value: {x: 200, y: 500}
+        m_Name: Sparks Amount Min Max
+        m_Overridden: 1
+      - m_Value: {x: 2, y: 3}
+        m_Name: Smoke Amount Min Max
+        m_Overridden: 1
+      - m_Value: {x: 2.32, y: 4.16}
+        m_Name: Smoke Drag Min Max
+        m_Overridden: 1
+      - m_Value: {x: 1, y: 5}
+        m_Name: Debris Initial Velocity Min Max
+        m_Overridden: 1
+      - m_Value: {x: 1, y: 1.45}
+        m_Name: Smoke Impact Lifetime Min Max
+        m_Overridden: 1
+      - m_Value: {x: 1.3, y: 0.3}
+        m_Name: Sparks Non Uniform Scale Multiplier
+        m_Overridden: 1
+      - m_Value: {x: 0.4, y: 0.7}
+        m_Name: Dust Lifetime Min Max
+        m_Overridden: 0
+      - m_Value: {x: 0.7, y: 1.55}
+        m_Name: Dust Scale Min Max
+        m_Overridden: 1
+      - m_Value: {x: 5.5, y: 11}
+        m_Name: Smoke Impact Scale
+        m_Overridden: 1
+      - m_Value: {x: 1, y: 2}
+        m_Name: Dust Initial Velocity Min Max
+        m_Overridden: 1
+      - m_Value: {x: -0.1, y: -0.22}
+        m_Name: Smoke Impact Pivot Offset
+        m_Overridden: 1
+      - m_Value: {x: 7, y: 7}
+        m_Name: Smoke Impact Texture Rows and Columns
+        m_Overridden: 1
+      - m_Value: {x: -20, y: 20}
+        m_Name: Smoke Rotation Velocity
+        m_Overridden: 1
+      - m_Value: {x: 50, y: 200}
+        m_Name: Debris 2D Amount Min Max
+        m_Overridden: 1
+      - m_Value: {x: 25, y: 50}
+        m_Name: Debris 3D Amount Min Max
+        m_Overridden: 1
+      - m_Value: {x: 1, y: 1}
+        m_Name: Upward Smoke Impact Scale Multiplier
+        m_Overridden: 1
+      - m_Value: {x: 0, y: -0.025}
+        m_Name: Upward Smoke Impact Pivot Offset
+        m_Overridden: 1
+      - m_Value: {x: -1, y: -4}
+        m_Name: Dust Gravity Min Max
+        m_Overridden: 1
+      - m_Value: {x: 5, y: 15}
+        m_Name: Dust Amount Min Max
+        m_Overridden: 1
+      - m_Value: {x: 50, y: 350}
+        m_Name: Spark Trails Amount Min Max
+        m_Overridden: 1
+    m_Vector3f:
+      m_Array:
+      - m_Value: {x: 0.3, y: 1, z: 0.3}
+        m_Name: Smoke Local Space Force Multiplier
+        m_Overridden: 1
+      - m_Value: {x: 0.3, y: 0.1, z: 0}
+        m_Name: Smoke Wind Intensity
+        m_Overridden: 1
+    m_Vector4f:
+      m_Array:
+      - m_Value: {x: 0.4509804, y: 0.3848366, z: 0.3517647, w: 1}
+        m_Name: Debris Color
+        m_Overridden: 1
+      - m_Value: {x: 0.27, y: 0.20301788, z: 0.15957001, w: 1}
+        m_Name: Dust Color
+        m_Overridden: 1
+      - m_Value: {x: 0.1254902, y: 0.08955437, z: 0.069019616, w: 1}
+        m_Name: Decals Base Color
+        m_Overridden: 1
+      - m_Value: {x: 0.21, y: 0.18576923, z: 0.17230769, w: 1}
+        m_Name: Debris 2D Color
+        m_Overridden: 1
+      - m_Value: {x: 0.21200001, y: 0.17631684, z: 0.16162378, w: 1}
+        m_Name: Debris 3D Color
+        m_Overridden: 1
+    m_Uint:
+      m_Array: []
+    m_Int:
+      m_Array: []
+    m_Matrix4x4f:
+      m_Array: []
+    m_AnimationCurve:
+      m_Array:
+      - m_Value:
+          serializedVersion: 2
+          m_Curve:
+          - serializedVersion: 3
+            time: 0
+            value: 0
+            inSlope: 0.311592
+            outSlope: 0.311592
+            tangentMode: 0
+            weightedMode: 0
+            inWeight: 0
+            outWeight: 0.07828283
+          - serializedVersion: 3
+            time: 0.9974811
+            value: 0.35523117
+            inSlope: 0.8790824
+            outSlope: 0.8790824
+            tangentMode: 0
+            weightedMode: 0
+            inWeight: 0
+            outWeight: 0
+          m_PreInfinity: 2
+          m_PostInfinity: 2
+          m_RotationOrder: 4
+        m_Name: Explosion Animation Curve
+        m_Overridden: 1
+      - m_Value:
+          serializedVersion: 2
+          m_Curve:
+          - serializedVersion: 3
+            time: 0
+            value: 1.2
+            inSlope: 0.33683023
+            outSlope: 0.33683023
+            tangentMode: 0
+            weightedMode: 0
+            inWeight: 0
+            outWeight: 0.07317052
+          - serializedVersion: 3
+            time: 1
+            value: 1.7
+            inSlope: 0.7144036
+            outSlope: 0.7144036
+            tangentMode: 0
+            weightedMode: 0
+            inWeight: 0
+            outWeight: 0
+          m_PreInfinity: 2
+          m_PostInfinity: 2
+          m_RotationOrder: 4
+        m_Name: Smoke Contrast Curve
+        m_Overridden: 1
+      - m_Value:
+          serializedVersion: 2
+          m_Curve:
+          - serializedVersion: 3
+            time: 0
+            value: 0
+            inSlope: 1.9164857
+            outSlope: 1.9164857
+            tangentMode: 0
+            weightedMode: 0
+            inWeight: 0
+            outWeight: 0.053750005
+          - serializedVersion: 3
+            time: 1
+            value: 1
+            inSlope: 0.48897287
+            outSlope: 0.48897287
+            tangentMode: 0
+            weightedMode: 0
+            inWeight: 0.05445546
+            outWeight: 0
+          m_PreInfinity: 2
+          m_PostInfinity: 2
+          m_RotationOrder: 4
+        m_Name: Smoke Animation Curve
+        m_Overridden: 1
+      - m_Value:
+          serializedVersion: 2
+          m_Curve:
+          - serializedVersion: 3
+            time: 0
+            value: 0
+            inSlope: 1.3722644
+            outSlope: 1.3722644
+            tangentMode: 0
+            weightedMode: 0
+            inWeight: 0
+            outWeight: 0.06864276
+          - serializedVersion: 3
+            time: 1
+            value: 1
+            inSlope: 0.91484356
+            outSlope: 0.91484356
+            tangentMode: 0
+            weightedMode: 0
+            inWeight: 0.068642676
+            outWeight: 0
+          m_PreInfinity: 2
+          m_PostInfinity: 2
+          m_RotationOrder: 4
+        m_Name: Smoke Impact Animation Curve
+        m_Overridden: 1
+    m_Gradient:
+      m_Array:
+      - m_Value:
+          serializedVersion: 2
+          key0: {r: 8.128024, g: 4.6240587, b: 1.5361966, a: 0.92156863}
+          key1: {r: 0.736, g: 0.63594294, b: 0.596896, a: 0.9031155}
+          key2: {r: 0.61006284, g: 0.5503431, b: 0.52373314, a: 0.8235294}
+          key3: {r: 0.5660378, g: 0.5660378, b: 0.5660378, a: 0}
+          key4: {r: 0, g: 0, b: 0, a: 0}
+          key5: {r: 0, g: 0, b: 0, a: 0}
+          key6: {r: 0, g: 0, b: 0, a: 0}
+          key7: {r: 0, g: 0, b: 0, a: 0}
+          ctime0: 0
+          ctime1: 1109
+          ctime2: 65535
+          ctime3: 65248
+          ctime4: 0
+          ctime5: 0
+          ctime6: 0
+          ctime7: 0
+          atime0: 287
+          atime1: 15616
+          atime2: 51029
+          atime3: 65535
+          atime4: 65535
+          atime5: 0
+          atime6: 0
+          atime7: 0
+          m_Mode: 0
+          m_ColorSpace: 1
+          m_NumColorKeys: 3
+          m_NumAlphaKeys: 4
+        m_Name: Smoke Color Over Life
+        m_Overridden: 1
+      - m_Value:
+          serializedVersion: 2
+          key0: {r: 63.999992, g: 29.64022, b: 2.496002, a: 1}
+          key1: {r: 0.5, g: 0.45490196, b: 0.4372549, a: 0.72156864}
+          key2: {r: 0.35, g: 0.3176923, b: 0.29794872, a: 0}
+          key3: {r: 0.72327036, g: 0.72327036, b: 0.72327036, a: 0}
+          key4: {r: 0, g: 0, b: 0, a: 0}
+          key5: {r: 0, g: 0, b: 0, a: 0}
+          key6: {r: 0, g: 0, b: 0, a: 0}
+          key7: {r: 0, g: 0, b: 0, a: 0}
+          ctime0: 0
+          ctime1: 973
+          ctime2: 59306
+          ctime3: 65535
+          ctime4: 0
+          ctime5: 0
+          ctime6: 0
+          ctime7: 0
+          atime0: 41523
+          atime1: 52582
+          atime2: 65535
+          atime3: 0
+          atime4: 0
+          atime5: 0
+          atime6: 0
+          atime7: 0
+          m_Mode: 0
+          m_ColorSpace: 1
+          m_NumColorKeys: 3
+          m_NumAlphaKeys: 3
+        m_Name: Smoke Impact Color Over Life
+        m_Overridden: 1
+      - m_Value:
+          serializedVersion: 2
+          key0: {r: 31.999996, g: 10.430636, b: 0.31999967, a: 1}
+          key1: {r: 0, g: 0, b: 0, a: 0.62352943}
+          key2: {r: 0, g: 0, b: 0, a: 0}
+          key3: {r: 0, g: 0, b: 0, a: 0}
+          key4: {r: 0, g: 0, b: 0, a: 0}
+          key5: {r: 0, g: 0, b: 0, a: 0}
+          key6: {r: 0, g: 0, b: 0, a: 0}
+          key7: {r: 0, g: 0, b: 0, a: 0}
+          ctime0: 0
+          ctime1: 655
+          ctime2: 5291
+          ctime3: 0
+          ctime4: 0
+          ctime5: 0
+          ctime6: 0
+          ctime7: 0
+          atime0: 12551
+          atime1: 47427
+          atime2: 65535
+          atime3: 0
+          atime4: 0
+          atime5: 0
+          atime6: 0
+          atime7: 0
+          m_Mode: 0
+          m_ColorSpace: 1
+          m_NumColorKeys: 2
+          m_NumAlphaKeys: 3
+        m_Name: Decals Emissive Color Over Life
+        m_Overridden: 1
+      - m_Value:
+          serializedVersion: 2
+          key0: {r: 383.49805, g: 209.25655, b: 19.174908, a: 0}
+          key1: {r: 191.74902, g: 97.100235, b: 6.02353, a: 1}
+          key2: {r: 95.87451, g: 44.68957, b: 0.9587442, a: 1}
+          key3: {r: 1.9999999, g: 0.8563454, b: 0, a: 0}
+          key4: {r: 0, g: 0, b: 0, a: 0}
+          key5: {r: 0, g: 0, b: 0, a: 0}
+          key6: {r: 0, g: 0, b: 0, a: 0}
+          key7: {r: 0, g: 0, b: 0, a: 0}
+          ctime0: 0
+          ctime1: 4181
+          ctime2: 17578
+          ctime3: 65535
+          ctime4: 0
+          ctime5: 0
+          ctime6: 0
+          ctime7: 0
+          atime0: 0
+          atime1: 2082
+          atime2: 11093
+          atime3: 65535
+          atime4: 0
+          atime5: 0
+          atime6: 0
+          atime7: 0
+          m_Mode: 0
+          m_ColorSpace: 1
+          m_NumColorKeys: 4
+          m_NumAlphaKeys: 4
+        m_Name: Flash Color Over Life
+        m_Overridden: 1
+      - m_Value:
+          serializedVersion: 2
+          key0: {r: 0.03, g: 0.023076924, b: 0.020769231, a: 0}
+          key1: {r: 0.03, g: 0.023076924, b: 0.020769231, a: 1}
+          key2: {r: 1.4980392, g: 0.3276157, b: 0, a: 1}
+          key3: {r: 0.7490197, g: 0.16380769, b: 0, a: 0}
+          key4: {r: 0, g: 0, b: 0, a: 0}
+          key5: {r: 0, g: 0, b: 0, a: 0}
+          key6: {r: 0, g: 0, b: 0, a: 0}
+          key7: {r: 0, g: 0, b: 0, a: 0}
+          ctime0: 0
+          ctime1: 65535
+          ctime2: 43211
+          ctime3: 65535
+          ctime4: 0
+          ctime5: 0
+          ctime6: 0
+          ctime7: 0
+          atime0: 0
+          atime1: 939
+          atime2: 58452
+          atime3: 65535
+          atime4: 0
+          atime5: 0
+          atime6: 0
+          atime7: 0
+          m_Mode: 0
+          m_ColorSpace: 1
+          m_NumColorKeys: 2
+          m_NumAlphaKeys: 4
+        m_Name: Sparks Color Over Life
+        m_Overridden: 1
+    m_NamedObject:
+      m_Array:
+      - m_Value: {fileID: 2800000, guid: 4c8ac48b73a7954409c353b6160524e2, type: 3}
+        m_Name: Smoke Texture
+        m_Overridden: 1
+      - m_Value: {fileID: 2800000, guid: 08b561fa06e6c394ab6cf27c2b02a567, type: 3}
+        m_Name: Smoke Stretched Texture
+        m_Overridden: 1
+      - m_Value: {fileID: 2800000, guid: b39df761e4a80cd4585095bf70e025bf, type: 3}
+        m_Name: Debris Texture
+        m_Overridden: 1
+      - m_Value: {fileID: 2800000, guid: 235ed7a2c0ad93c48b59d82cedcba472, type: 3}
+        m_Name: Smoke Secondary Texture
+        m_Overridden: 0
+      - m_Value: {fileID: 2800000, guid: 9345984c62dddf546923c82a525847d3, type: 3}
+        m_Name: Sparks Texture
+        m_Overridden: 1
+      - m_Value: {fileID: 2800000, guid: 6842f55cb83162d448975beb5d5493fb, type: 3}
+        m_Name: Smoke Impact Texture
+        m_Overridden: 1
+      - m_Value: {fileID: 2800000, guid: 6d579ae931e4c9544bfa12fbe840af0f, type: 3}
+        m_Name: Dust Texture
+        m_Overridden: 1
+      - m_Value: {fileID: -8801010303575167165, guid: e3868437e95481e488f274eb59261ec6, type: 3}
+        m_Name: Debris First Mesh
+        m_Overridden: 1
+      - m_Value: {fileID: 2933903987100726395, guid: 674571c85dc0e444bb2597403e6af588, type: 3}
+        m_Name: Debris Second Mesh
+        m_Overridden: 1
+      - m_Value: {fileID: 2800000, guid: 66e3ff98363fe0a4e98cf6e432f26478, type: 3}
+        m_Name: Debris 3D Color Texture
+        m_Overridden: 1
+      - m_Value: {fileID: 2800000, guid: 94aed21df625dba469823e8b0845563d, type: 3}
+        m_Name: Debris 3D Normal Texture
+        m_Overridden: 1
+      - m_Value: {fileID: 2800000, guid: 1a08d525581d5eb4082b66de9a02e9bd, type: 3}
+        m_Name: Debris 2D Texture
+        m_Overridden: 1
+    m_Bool:
+      m_Array:
+      - m_Value: 1
+        m_Name: Use Smoke
+        m_Overridden: 1
+      - m_Value: 1
+        m_Name: Use Sparks
+        m_Overridden: 1
+      - m_Value: 0
+        m_Name: Use Mesh Debris
+        m_Overridden: 1
+      - m_Value: 0
+        m_Name: Use Stretched Smoke
+        m_Overridden: 1
+      - m_Value: 0
+        m_Name: Use Stretched Burst Smoke
+        m_Overridden: 1
+      - m_Value: 1
+        m_Name: Use Heat Distortion
+        m_Overridden: 1
+      - m_Value: 1
+        m_Name: Use Dust
+        m_Overridden: 1
+      - m_Value: 1
+        m_Name: Use Pulsing Sparks
+        m_Overridden: 1
+      - m_Value: 1
+        m_Name: Use Burst Smoke
+        m_Overridden: 1
+      - m_Value: 1
+        m_Name: Use Smoke Impact
+        m_Overridden: 1
+      - m_Value: 0
+        m_Name: Use Flash
+        m_Overridden: 1
+      - m_Value: 1
+        m_Name: Use Debris 3D
+        m_Overridden: 1
+      - m_Value: 1
+        m_Name: Use Debris 2D
+        m_Overridden: 1
+      - m_Value: 1
+        m_Name: Use Spark Trails
+        m_Overridden: 1
+      - m_Value: 1
+        m_Name: Use Debris Collision
+        m_Overridden: 1
+--- !u!73398921 &2289353269439667176
+VFXRenderer:
+  serializedVersion: 1
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3509237413433849827}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 0
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 0
+  m_LightProbeUsage: 0
+  m_ReflectionProbeUsage: 0
+  m_RayTracingMode: 0
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_RenderingLayerMask: 257
+  m_RendererPriority: 0
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+--- !u!114 &7364097152962034238
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3509237413433849827}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a988f4ff86f4f284096de1b2656f2bcd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  lightBurstPrefab: {fileID: 4275936888961235196, guid: 293343a8da2a9ac4b8df3737339b1209, type: 3}
+  localYOffset: 0.15
+  maxLifetime: 1
+  hideCloneInHierarchy: 1
+  overrideLightColor: 0
+  lightColor: {r: 1, g: 1, b: 1, a: 1}
+  lightIntensityScale: 1

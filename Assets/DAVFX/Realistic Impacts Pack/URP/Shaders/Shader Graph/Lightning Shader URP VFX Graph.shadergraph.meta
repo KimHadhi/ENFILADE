@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: ddab082202630264d8d54e7000c39ae0
+ScriptedImporter:
+  internalIDToNameTable: []
+  externalObjects: {}
+  serializedVersion: 2
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+  script: {fileID: 11500000, guid: 625f186215c104763be7675aa2d941aa, type: 3}
+AssetOrigin:
+  serializedVersion: 1
+  productId: 368222
+  packageName: Realistic Impacts Pack
+  packageVersion: 2.0.1
+  assetPath: Assets/DAVFX/Realistic Impacts Pack/URP/Shaders/Shader Graph/Lightning
+    Shader URP VFX Graph.shadergraph
+  uploadId: 997534

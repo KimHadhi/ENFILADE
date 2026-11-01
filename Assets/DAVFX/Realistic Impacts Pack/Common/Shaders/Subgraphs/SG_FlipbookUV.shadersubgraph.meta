@@ -1,0 +1,17 @@
+fileFormatVersion: 2
+guid: f3b0cb38abf61d444943693b40e30f70
+ScriptedImporter:
+  internalIDToNameTable: []
+  externalObjects: {}
+  serializedVersion: 2
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+  script: {fileID: 11500000, guid: 60072b568d64c40a485e0fc55012dc9f, type: 3}
+AssetOrigin:
+  serializedVersion: 1
+  productId: 368222
+  packageName: Realistic Impacts Pack
+  packageVersion: 2.0.1
+  assetPath: Assets/DAVFX/Realistic Impacts Pack/Common/Shaders/Subgraphs/SG_FlipbookUV.shadersubgraph
+  uploadId: 997534

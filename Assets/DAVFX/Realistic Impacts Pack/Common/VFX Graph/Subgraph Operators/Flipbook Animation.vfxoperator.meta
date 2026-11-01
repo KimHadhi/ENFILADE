@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 771e0c53bd85eea43b433d438774abe3
+VisualEffectImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 368222
+  packageName: Realistic Impacts Pack
+  packageVersion: 2.0.1
+  assetPath: Assets/DAVFX/Realistic Impacts Pack/Common/VFX Graph/Subgraph Operators/Flipbook
+    Animation.vfxoperator
+  uploadId: 997534

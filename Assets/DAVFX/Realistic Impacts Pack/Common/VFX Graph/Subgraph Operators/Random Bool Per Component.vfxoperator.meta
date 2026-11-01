@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 77d4228626af17144a91936f8e6f62e5
+VisualEffectImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 368222
+  packageName: Realistic Impacts Pack
+  packageVersion: 2.0.1
+  assetPath: Assets/DAVFX/Realistic Impacts Pack/Common/VFX Graph/Subgraph Operators/Random
+    Bool Per Component.vfxoperator
+  uploadId: 997534

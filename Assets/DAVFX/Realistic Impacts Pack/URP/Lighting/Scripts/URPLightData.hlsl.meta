@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 61fa5ee2e0febbf4891df7fbcd89f8c0
+ShaderIncludeImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 368222
+  packageName: Realistic Impacts Pack
+  packageVersion: 2.0.1
+  assetPath: Assets/DAVFX/Realistic Impacts Pack/URP/Lighting/Scripts/URPLightData.hlsl
+  uploadId: 997534

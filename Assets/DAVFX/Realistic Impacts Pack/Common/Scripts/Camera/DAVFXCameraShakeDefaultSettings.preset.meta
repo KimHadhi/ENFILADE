@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 5dca8b4c4f3286940860853664355baa
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2655988077585873504
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 368222
+  packageName: Realistic Impacts Pack
+  packageVersion: 2.0.1
+  assetPath: Assets/DAVFX/Realistic Impacts Pack/Common/Scripts/Camera/DAVFXCameraShakeDefaultSettings.preset
+  uploadId: 997534

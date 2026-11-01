@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 3bbcb406e88301b47b3775c7e0f64d6f
+VisualEffectImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 368222
+  packageName: Realistic Impacts Pack
+  packageVersion: 2.0.1
+  assetPath: Assets/DAVFX/Realistic Impacts Pack/Common/VFX Graph/Subgraph Operators/Random
+    Overlapped Position.vfxoperator
+  uploadId: 997534
