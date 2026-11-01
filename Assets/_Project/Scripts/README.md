@@ -43,6 +43,7 @@
 | 탄약·무기 슬롯·적 체력 UI | [AmmoHUD](UI/AmmoHUD.cs), [WeaponSlotsHUD](UI/WeaponSlotsHUD.cs), [EnemyVitalsHUD](UI/EnemyVitalsHUD.cs) |
 | 체력·궁극기 UI / 목표·웨이브 UI | [UI/HP](UI/HP/), [MissionHUD](UI/MissionHUD.cs), [WaveMissionSource](UI/WaveMissionSource.cs) |
 | 채팅·테스트 명령 | [UI/Chatting](UI/Chatting/) |
+| 메인 메뉴·캐릭터 미리보기 | [MainMenuScreen](UI/Menu/MainMenuScreen.cs), [MainMenuPreview](UI/Menu/MainMenuPreview.cs) |
 | Esc 설정 메뉴·일시정지 / 저장되는 플레이어 설정 | [UI/Settings](UI/Settings/), [GamePause](Settings/GamePause.cs) / [GameSettings](Settings/GameSettings.cs) |
 | 소리 볼륨 채널(전투·이동·목소리·UI) | [GameAudio](Audio/GameAudio.cs) |
 | 발소리 / 동작 소리 / 숨·바람·큰 낙하·사다리류 소리 | [PlayerFootsteps](Player/Audio/PlayerFootsteps.cs), [PlayerMovementAudio](Player/Audio/PlayerMovementAudio.cs), [Player/Audio](Player/Audio/) |

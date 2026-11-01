@@ -15,6 +15,7 @@
 | [Weapons.csv](../Resources/Tables/Weapons.csv) | 총 피해·RPM·장탄·예비탄·장전·탄퍼짐·헤드샷·ADS, 몸의 손이 잡는 위치 | `WeaponData` 에셋 이름 (`FoundationRifle` …) |
 | [Enemies.csv](../Resources/Tables/Enemies.csv) | 적 체력·공격·자세(체간)·이동 속도 | 적 프리팹 이름 (`Enemy_Test`) |
 | [Waves.csv](../Resources/Tables/Waves.csv) | 웨이브 적 수·증가량·대기·등장 간격 | `WaveManager`의 `Table Id` (기본 `Default`) |
+| [Maps.csv](../Resources/Tables/Maps.csv) | 메인 메뉴에서 고를 맵과 보이는 이름. 빌드 설정에 등록된 씬만 나온다 | 씬 이름 (`CombatFoundation` …) |
 
 - **열 이름 = 인스펙터 필드 이름**이다(인스펙터 표시 이름이 `Attack Range`면 열은 `attackRange`). 표에 열을 추가하면 그 필드도 표가 관리한다. 적 표의 `speed`처럼 `NavMeshAgent`의 공개 속성도 쓸 수 있다.
 - 표에 있는 칸이 인스펙터 값보다 우선한다. **빈칸이거나 열이 없으면 인스펙터 값**을 그대로 쓴다. 표에 행이 없는 오브젝트(테스트 표적 등)는 영향을 받지 않는다.

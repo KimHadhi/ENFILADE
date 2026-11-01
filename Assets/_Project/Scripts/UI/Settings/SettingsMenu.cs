@@ -2,15 +2,18 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.UI;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 /// <summary>
 /// The Esc menu. Esc pauses the game, frees the cursor and shows the settings; Esc or "돌아가기" resumes and saves.
+/// On the main menu it is only the settings panel: there is nothing to pause, and the cursor stays free.
 /// One instance is created per run and survives scene loads. Esc that closes the chat does not open it.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class SettingsMenu : MonoBehaviour
 {
+    private static SettingsMenu instance;
     private SettingsMenuView view;
     private SinglePlayerChatManager chat;
     public static bool IsOpen { get; private set; }
@@ -21,8 +24,11 @@ public sealed class SettingsMenu : MonoBehaviour
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetStatics() => IsOpen = false;
 
+    public static void OpenFromMainMenu() { if (instance != null) instance.Open(); }
+
     private void Awake()
     {
+        instance = this;
         var canvas = gameObject.AddComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
         canvas.sortingOrder = 1000;
@@ -31,7 +37,7 @@ public sealed class SettingsMenu : MonoBehaviour
         scaler.referenceResolution = new Vector2(1920f, 1080f);
         scaler.matchWidthOrHeight = .5f;
         gameObject.AddComponent<GraphicRaycaster>();
-        view = new SettingsMenuView(transform, Close, Quit);
+        view = new SettingsMenuView(transform, Close, LeaveToMainMenu, QuitGame);
     }
 
     private void Update()
@@ -51,7 +57,7 @@ public sealed class SettingsMenu : MonoBehaviour
     private void Open()
     {
         IsOpen = true;
-        GamePause.Set(true);
+        if (!MainMenuScreen.IsOpen) GamePause.Set(true);
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
         EnsureEventSystem();
@@ -65,12 +71,19 @@ public sealed class SettingsMenu : MonoBehaviour
         view.Show(false);
         if (EventSystem.current != null) EventSystem.current.SetSelectedGameObject(null);
         GameSettings.Save();
+        if (MainMenuScreen.IsOpen) return;
         GamePause.Set(false);
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
     }
 
-    private void Quit()
+    private void LeaveToMainMenu()
+    {
+        Close();
+        SceneManager.LoadScene(MainMenuScreen.SceneName);
+    }
+
+    public static void QuitGame()
     {
         GameSettings.Save();
 #if UNITY_EDITOR
@@ -81,7 +94,7 @@ public sealed class SettingsMenu : MonoBehaviour
     }
 
     // Scenes without UI (the movement playground) have no EventSystem; add one to that scene only.
-    private static void EnsureEventSystem()
+    public static void EnsureEventSystem()
     {
         if (EventSystem.current != null) return;
         var system = new GameObject("EventSystem", typeof(EventSystem));

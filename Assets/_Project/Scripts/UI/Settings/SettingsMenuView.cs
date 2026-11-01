@@ -11,12 +11,13 @@ public sealed class SettingsMenuView
     private static readonly string[] OffOn = { "끔", "켬" };
     private static readonly string[] HoldToggle = { "누르는 동안", "눌러서 전환" };
     private readonly RectTransform root;
-    private readonly Action resume, quit;
+    private const float ButtonWidth = 156f;
+    private readonly Action resume, leave, quit;
     private RectTransform panel;
 
-    public SettingsMenuView(Transform canvas, Action resume, Action quit)
+    public SettingsMenuView(Transform canvas, Action resume, Action leave, Action quit)
     {
-        this.resume = resume; this.quit = quit;
+        this.resume = resume; this.leave = leave; this.quit = quit;
         root = W.Rect("Settings", canvas);
         W.Stretch(root);
         W.Fill(root, new Color(0f, 0f, 0f, .62f));
@@ -68,7 +69,7 @@ public sealed class SettingsMenuView
         Choice("내 머리카락 보기", OffOn, s.showOwnHead ? 1 : 0, i => s.showOwnHead = i == 1);
         var bodyProfile = PlayerBodyProfile.Load();
         var skins = bodyProfile?.Skins.Where(skin => skin != null && skin.Model != null).ToArray();
-        if (skins != null && skins.Length > 1)
+        if (skins != null && skins.Length > 1 && !MainMenuScreen.IsOpen)
         {
             int selected = Array.FindIndex(skins, skin => skin.Model == bodyProfile.Model);
             Choice("캐릭터 스킨", skins.Select(skin => skin.DisplayName).ToArray(), Mathf.Max(0, selected),
@@ -81,9 +82,10 @@ public sealed class SettingsMenuView
         row.childControlWidth = row.childControlHeight = true;
         row.childForceExpandWidth = row.childForceExpandHeight = false;
         row.padding = new RectOffset(0, 0, 20, 0);
-        W.ActionButton(buttons, "기본값", false, () => { GameSettings.ResetToDefaults(); Build(); });
-        W.ActionButton(buttons, "게임 종료", false, quit);
-        W.ActionButton(buttons, "돌아가기", true, resume);
+        W.Size(W.ActionButton(buttons, "기본값", false, () => { GameSettings.ResetToDefaults(); Build(); }), ButtonWidth, 48f);
+        if (!MainMenuScreen.IsOpen) W.Size(W.ActionButton(buttons, "메인 메뉴", false, leave), ButtonWidth, 48f);
+        W.Size(W.ActionButton(buttons, "게임 종료", false, quit), ButtonWidth, 48f);
+        W.Size(W.ActionButton(buttons, "돌아가기", true, resume), ButtonWidth, 48f);
     }
 
     private void Header(string text)

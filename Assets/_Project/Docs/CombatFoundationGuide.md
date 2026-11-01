@@ -100,6 +100,8 @@
 
 ## 다른 씬에 연결하기
 
+게임은 [Scenes/MainMenu](../Scenes/MainMenu.unity)에서 시작한다. 맵 씬에서 Play를 눌러도 메뉴 없이 바로 시험할 수 있다. 새 맵은 빌드 설정에 추가하고 [Maps.csv](../Resources/Tables/Maps.csv)에 한 줄을 넣으면 메뉴에 나온다.
+
 새 씬에는 플레이어를 놓지 않는다. 시작 위치에 `PlayerSpawnPoint` 컴포넌트를 가진 오브젝트를 두고 `Prefabs/UI/HUD/GameHUD` 프리팹을 넣는다. EventSystem도 필요하다. 전투·체력·궁극기 컴포넌트는 Play 시작 때 `PlayerMovement`가 붙이고 수치는 [밸런스 표](MaintenanceGuide.md#밸런스-표-data-tables)에서 가져오므로, 플레이어 프리팹에 직접 둘 컴포넌트는 이동·시점·입력·무기·슬롯뿐이다.
 
 `WeaponController`의 선택 참조는 비워두면 기존 계층에서 찾는다. Input Source는 같은 오브젝트의 `IWeaponInput`, Aim Origin은 플레이어 카메라, Muzzle Point는 하위의 `MuzzleEffects` 위치를 쓴다. Weapon Root(총 모델)는 직접 할당하며, 장비가 없거나 근접일 때 이 오브젝트를 숨긴다. Hit Layers에는 적과 벽을 모두 포함해야 한다.

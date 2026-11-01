@@ -1,0 +1,4 @@
+﻿id,displayName
+#설명 (id = 씬 이름),메인 메뉴에 보일 이름
+CombatFoundation,전투 시험장
+MovementAbilityPlayground,이동 시험장

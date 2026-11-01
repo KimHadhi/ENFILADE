@@ -23,6 +23,8 @@ public sealed class GameSettings
     public bool showOwnHead = true;
     [Tooltip("Player skin ID from the PlayerBody profile. Empty uses the profile's default character.")]
     public string characterSkin = "";
+    [Tooltip("Scene name of the map last chosen on the main menu (Resources/Tables/Maps.csv).")]
+    public string lastMap = "";
 
     public const float MinSensitivity = .2f, MaxSensitivity = 3f, MinFieldOfView = 70f, MaxFieldOfView = 120f;
 
