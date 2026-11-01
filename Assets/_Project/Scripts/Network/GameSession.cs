@@ -29,7 +29,7 @@ public sealed class GameSession : MonoBehaviour, INetworkPrefabInstanceHandler
     private const int SilenceLimitMs = 10000;
     private static GameSession current;
     private NetworkManager network;
-    private UnityTransport transport;
+    private CountingTransport transport;
     private InternetRoom internetRoom;
     private GameObject playerPrefab;
     private int spawned, maxPlayers;
@@ -38,6 +38,8 @@ public sealed class GameSession : MonoBehaviour, INetworkPrefabInstanceHandler
     private readonly string roomId = Guid.NewGuid().ToString("N");
 
     public static bool IsOnline => current != null;
+    /// <summary>The room's network, or null outside a room.</summary>
+    public static NetworkManager Network => current != null ? current.network : null;
     /// <summary>What the main menu shows about the room: joining, or why the last one ended.</summary>
     public static string Status { get; private set; } = "";
 
@@ -105,7 +107,7 @@ public sealed class GameSession : MonoBehaviour, INetworkPrefabInstanceHandler
         var host = new GameObject("Game Session");
         host.SetActive(false);
         var session = host.AddComponent<GameSession>();
-        session.transport = host.AddComponent<UnityTransport>();
+        session.transport = host.AddComponent<CountingTransport>();
         session.transport.DisconnectTimeoutMS = SilenceLimitMs;
         session.network = host.AddComponent<NetworkManager>();
         session.network.NetworkConfig = new NetworkConfig { NetworkTransport = session.transport, ConnectionApproval = true };

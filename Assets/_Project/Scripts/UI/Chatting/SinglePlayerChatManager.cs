@@ -364,6 +364,7 @@ public class SinglePlayerChatManager : MonoBehaviour
         commands.Register("chat", "채팅 채널로 전환", _ => { SetInputChannel(ChatChannel.Note); return "채팅 채널로 전환했습니다."; });
         commands.Register("console", "콘솔 채널로 전환", _ => { SetInputChannel(ChatChannel.Console); return "콘솔 채널로 전환했습니다."; });
         commands.Register("map", "씬 이름 — 해당 씬으로 이동", SceneConsoleCommands.LoadMap);
+        commands.Register("net", "방의 실제 핑·전송량·프레임 측정 켜기, 다시 입력하면 끄고 결과 출력", _ => NetworkStatsHUD.Toggle());
     }
 
     private PlayerMovement ResolveCommandPlayer() => PlayerRoster.Local;
