@@ -8,6 +8,9 @@ using UnityEngine;
 /// </summary>
 public static class CombatUIAssets
 {
+    // The skull's share of the neon texture, and how far past its outline the light reaches, in the texture's -1 to 1 space.
+    private const float NeonFit = .6f, NeonReach = .4f, NeonInside = .05f;
+    private static Texture2D skullNeon;
     private static Texture2D criticalBurst, skull, glowTexture, stripes, counterArrow, executionKnife, slashLine, bladeSlash;
     private static Sprite glowSprite, discSprite, ringSprite;
     private static readonly Dictionary<(TMP_FontAsset, Color, float), Material> outlined = new Dictionary<(TMP_FontAsset, Color, float), Material>();
@@ -15,6 +18,10 @@ public static class CombatUIAssets
     /// <summary>Eight-point burst: long cardinal tips, shorter diagonals.</summary>
     public static Texture2D CriticalBurst => criticalBurst != null ? criticalBurst : criticalBurst = Rasterize("Critical Burst (Runtime)", 64, BurstCoverage);
     public static Texture2D Skull => skull != null ? skull : skull = Rasterize("Kill Skull (Runtime)", 64, SkullDistance);
+    /// <summary>How much larger than the skull to draw SkullNeon so the two line up.</summary>
+    public const float SkullNeonScale = 1f / NeonFit;
+    /// <summary>Light along the skull's outline: brightest at the edge, gone within a short reach, nothing inside its shape.</summary>
+    public static Texture2D SkullNeon => skullNeon != null ? skullNeon : skullNeon = RasterizeSkullNeon(128);
     /// <summary>Counter-clockwise return arrow: a ring with a gap and an arrowhead.</summary>
     public static Texture2D CounterArrow => counterArrow != null ? counterArrow : counterArrow = Rasterize("Counter Arrow (Runtime)", 64, CounterShape);
     /// <summary>Tactical knife tipped up-left with a crescent slash trail sweeping below it: the execution mark.</summary>
@@ -222,9 +229,30 @@ public static class CombatUIAssets
     // Crossing test: -1 inside the star polygon, 1 outside.
     private static float BurstCoverage(Vector2 p) => InPolygon(p, burst) ? -1f : 1f;
 
+    // Measured from the head alone, so the sockets stay dark and only the outline lights up.
+    private static Texture2D RasterizeSkullNeon(int size)
+    {
+        var texture = NewTexture("Skull Neon (Runtime)", size, size, true);
+        var pixels = new Color32[size * size];
+        for (int y = 0; y < size; y++)
+        for (int x = 0; x < size; x++)
+        {
+            var p = new Vector2((x + .5f) / size * 2f - 1f, (y + .5f) / size * 2f - 1f);
+            float distance = SkullHead(p / NeonFit) * NeonFit;
+            float falloff = Mathf.Clamp01(1f - Mathf.Max(0f, distance) / NeonReach);
+            float light = falloff * falloff * Mathf.Clamp01((distance + NeonInside) / NeonInside);
+            pixels[y * size + x] = new Color32(255, 255, 255, (byte)(light * 255f));
+        }
+        texture.SetPixels32(pixels); texture.Apply(true, true);
+        return texture;
+    }
+
+    private static float SkullHead(Vector2 p)
+        => Mathf.Min(Circle(p, new Vector2(0f, .2f), .72f), RoundBox(p, new Vector2(0f, -.42f), new Vector2(.42f, .3f), .14f));
+
     private static float SkullDistance(Vector2 p)
     {
-        float head = Mathf.Min(Circle(p, new Vector2(0f, .2f), .72f), RoundBox(p, new Vector2(0f, -.42f), new Vector2(.42f, .3f), .14f));
+        float head = SkullHead(p);
         float notches = Mathf.Min(Circle(p, new Vector2(-.58f, -.3f), .16f), Circle(p, new Vector2(.58f, -.3f), .16f));
         float eyes = Mathf.Min(Circle(p, new Vector2(-.29f, .1f), .21f), Circle(p, new Vector2(.29f, .1f), .21f));
         float nose = RoundBox(p, new Vector2(0f, -.19f), new Vector2(.065f, .085f), .03f);

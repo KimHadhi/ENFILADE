@@ -102,6 +102,10 @@ public sealed partial class PlayerMovement : MonoBehaviour
     /// <summary>On the ground, crawling and waiting to be got up (PlayerLife). Prone, and the prone controls for getting up do nothing.</summary>
     public bool IsDowned => DamageReceiver != null && DamageReceiver.IsDowned;
     public bool IsDead => DamageReceiver != null && !DamageReceiver.IsAlive;
+    /// <summary>This player's frame time: in a room, slow motion runs on them alone (CombatTimeEffects).</summary>
+    public float DeltaTime => Time.deltaTime * (TimeEffects != null ? TimeEffects.Pace : 1f);
+    private CombatTimeEffects TimeEffects => timeEffects != null ? timeEffects : timeEffects = GetComponent<CombatTimeEffects>();
+    private CombatTimeEffects timeEffects;
     public bool LandedThisFrame => Motor.landedThisFrame;
     public bool IsSliding => StateMachine != null && StateMachine.IsIn<SlidingGroupState>();
     public bool IsJustSliding => Abilities != null && Abilities.Slide.IsJustSlide;
@@ -270,9 +274,14 @@ public sealed partial class PlayerMovement : MonoBehaviour
         {
             GameTables.Bind(PlayerLife.TableName, PlayerLife.TableRow, gameObject.AddComponent<PlayerLife>(), gameObject.AddComponent<PlayerRevive>());
             gameObject.AddComponent<PlayerLifeHUD>();
+            gameObject.AddComponent<TeammateMarkerHUD>();
+            gameObject.AddComponent<ScoreboardHUD>();
         }
         if (Application.isPlaying && GetComponent<PlayerRagdoll>() == null)
             GameTables.Bind(PlayerRagdoll.TableName, PlayerRagdoll.TableRow, gameObject.AddComponent<PlayerRagdoll>());
+        if (Application.isPlaying && GetComponent<PlayerTally>() == null) gameObject.AddComponent<PlayerTally>();
+        if (Application.isPlaying && IsNetworkDriven && GetComponent<DownedAura>() == null)
+            GameTables.Bind(DownedAura.TableName, DownedAura.TableRow, gameObject.AddComponent<DownedAura>());
         // What only the player feels: breathing, wind and fall sounds, then the camera's punches and a long fall's warp.
         if (Application.isPlaying && IsLocal && GetComponent<PlayerMovementPunch>() == null)
         {
@@ -291,7 +300,7 @@ public sealed partial class PlayerMovement : MonoBehaviour
     {
         if (!EnsureInitialized()) return;
         if (IsNetworkDriven) { Posture.UpdateHeightsAndTransform(Time.deltaTime); return; }
-        float dt = Time.deltaTime;
+        float dt = DeltaTime;
         if (dt <= 0f || !Application.isFocused) return;
         Input.Sample(InputAvailable && !ControlLocked);
         Abilities.BeginFrame(dt);

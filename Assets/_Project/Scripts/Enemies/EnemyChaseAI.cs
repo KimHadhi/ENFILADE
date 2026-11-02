@@ -11,11 +11,13 @@ public sealed class EnemyChaseAI : MonoBehaviour
     private EnemyTargeting targeting;
     private EnemyHealth enemyHealth;
     private EnemyCombatAI combatAI;
-    private float updateTimer;
+    private EnemyNetwork network;
+    private float updateTimer, appliedPace = 1f;
 
     private void Awake()
     {
         agent = GetComponent<NavMeshAgent>();
+        network = GetComponent<EnemyNetwork>();
         enemyHealth = GetComponent<EnemyHealth>();
         combatAI = GetComponent<EnemyCombatAI>();
         targeting = GetComponent<EnemyTargeting>();
@@ -25,6 +27,8 @@ public sealed class EnemyChaseAI : MonoBehaviour
     private void Update()
     {
         if (agent == null || !agent.isActiveAndEnabled || !agent.isOnNavMesh) return;
+        float pace = network != null ? network.Pace : 1f;
+        if (!Mathf.Approximately(pace, appliedPace)) { agent.speed *= pace / appliedPace; appliedPace = pace; }
         if (PlayerExecution.Suppresses(this) || (enemyHealth != null && enemyHealth.WavePaused) || GetComponent<MeleeCombatTarget>()?.IsStunned == true)
         { agent.isStopped = true; return; }
         if (enemyHealth != null && !enemyHealth.IsAlive)

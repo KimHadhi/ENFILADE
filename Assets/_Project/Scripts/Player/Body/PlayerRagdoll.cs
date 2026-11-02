@@ -144,6 +144,7 @@ public sealed class PlayerRagdoll : MonoBehaviour
     private void OnCorpseStruck(DamageHit hit)
     {
         if (hit.Direction.sqrMagnitude < .0001f) return;
+        ImpactVfx.Blood(hit.Point, hit.Direction, false, false, hit.Method == DamageMethod.Bullet, corpse);
         Vector3 impulse = hit.Direction.normalized * Mathf.Max(leastPush, hit.Amount * pushPerDamage);
         if (!player.IsNetworkDriven) TakePush(hit.Point, impulse);
         else if (TryGetComponent(out PlayerNetworkCorpse network)) network.Push(hit.Point, impulse);

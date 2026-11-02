@@ -9,6 +9,7 @@ using UnityEngine;
 public sealed class FistsView : MonoBehaviour
 {
     private PlayerMeleeCombat melee;
+    private PlayerMovement player;
     private Transform root, left, right;
     private float leftPunchTime, rightPunchTime, guardPose;
     private float deflectElapsed, deflectSeconds, deflectAttack, deflectHold;
@@ -32,7 +33,8 @@ public sealed class FistsView : MonoBehaviour
     {
         if (!Application.isPlaying) return;
         melee = GetComponent<PlayerMeleeCombat>();
-        var camera = GetComponentInParent<PlayerMovement>()?.GetComponentInChildren<Camera>();
+        player = GetComponentInParent<PlayerMovement>();
+        var camera = player != null ? player.GetComponentInChildren<Camera>() : null;
         if (melee == null || camera == null) return;
         melee.Punched -= Punch; melee.Punched += Punch;
         if (root != null) return;
@@ -87,8 +89,9 @@ public sealed class FistsView : MonoBehaviour
     {
         if (root == null || melee == null) return;
         if (!melee.IsActive) { leftPunchTime = rightPunchTime = guardPose = 0f; deflectElapsed = deflectSeconds; nextRight = true; return; }
-        leftPunchTime = Mathf.Max(0f, leftPunchTime - Time.deltaTime);
-        rightPunchTime = Mathf.Max(0f, rightPunchTime - Time.deltaTime);
+        float dt = player != null ? player.DeltaTime : Time.deltaTime;
+        leftPunchTime = Mathf.Max(0f, leftPunchTime - dt);
+        rightPunchTime = Mathf.Max(0f, rightPunchTime - dt);
         if (Time.timeScale > 0f) deflectElapsed = Mathf.Min(deflectElapsed + Time.unscaledDeltaTime, deflectSeconds);
         float leftPunch = PunchExtension(leftPunchTime), rightPunch = PunchExtension(rightPunchTime);
         float leftCharge = nextRight ? 0f : melee.ChargeRatio, rightCharge = nextRight ? melee.ChargeRatio : 0f;

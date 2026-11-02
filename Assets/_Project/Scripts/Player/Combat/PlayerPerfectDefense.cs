@@ -42,7 +42,7 @@ public sealed class PlayerPerfectDefense : MonoBehaviour
             // A parry that breaks posture reads as the counter: the slow motion leads into the execution.
             if (target != null && target.CanExecute)
             {
-                if (postureBreakSlowSeconds > 0f) timeEffects.RequestSlowdown(this, postureBreakTimeScale, postureBreakSlowSeconds);
+                if (postureBreakSlowSeconds > 0f) timeEffects.RequestSlowdown(this, postureBreakTimeScale, postureBreakSlowSeconds, target);
             }
             else if (parryOpensCounter && hit.IsComboFinisher) OpenCounter(hit);
         }
@@ -58,7 +58,7 @@ public sealed class PlayerPerfectDefense : MonoBehaviour
         attacker = hit.Source != null ? hit.Source.GetComponentInParent<MeleeCombatTarget>() : null;
         var settings = CombatFeedbackSettings.Instance;
         remaining = settings != null ? settings.counterWindowSeconds : 1f;
-        timeEffects.RequestSlowdown(this, settings != null ? settings.perfectTimeScale : .08f, remaining);
+        timeEffects.RequestSlowdown(this, settings != null ? settings.perfectTimeScale : .08f, remaining, attacker);
     }
     private void Update()
     {

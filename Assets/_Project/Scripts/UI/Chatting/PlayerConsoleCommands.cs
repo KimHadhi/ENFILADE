@@ -66,6 +66,12 @@ public static class PlayerConsoleCommands
                 side.Length > 0 ? DamageKind.Attack : DamageKind.Fall, p.transform.position + Vector3.up, -axis, isFatal: true));
             return (result == DamageResult.Ignored ? "피해가 적용되지 않았습니다. " : "") + Status(p);
         }));
+        router.Register("streak", "값 — 연속 처치 수 지정 (다음 처치부터 킬 피드에 반영)", args => WithPlayer(resolvePlayer, p =>
+        {
+            if (!Amount(args, out float amount) || !p.TryGetComponent(out PlayerTally tally)) return Usage("streak 값");
+            tally.SetStreak(Mathf.RoundToInt(amount));
+            return "연속 처치 " + tally.Streak;
+        }));
         router.Register("hit", "양 [front/right/back/left] — 방향성 피격 연출 시험 (기본 front)", args => WithPlayer(resolvePlayer, p =>
         {
             string[] parts = args.Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);

@@ -13,8 +13,7 @@ public static class MissionHUDPreview
         public RectTransform Rect;
         public CanvasGroup Group;
         public bool Active;
-        public float Alpha, X;
-        public bool MovesX;
+        public float Alpha;
     }
     private static readonly Dictionary<int, State> states = new Dictionary<int, State>();
     public static bool IsPreviewing => states.Count > 0;
@@ -29,31 +28,24 @@ public static class MissionHUDPreview
         Undo.undoRedoPerformed += Stop;
     }
 
-    public static void Show(MissionHUD hud, bool board, bool alert)
+    public static void Show(MissionHUD hud)
     {
         if (hud == null || EditorApplication.isPlayingOrWillChangePlaymode || EditorUtility.IsPersistent(hud)) return;
-        var so = new SerializedObject(hud);
-        if (board) Reveal(so, "board", "boardGroup", true);
-        if (alert) Reveal(so, "alert", "alertGroup", false);
+        Reveal(new SerializedObject(hud), "alert", "alertGroup");
         Canvas.ForceUpdateCanvases();
         UnityEditorInternal.InternalEditorUtility.RepaintAllViews();
     }
 
-    private static void Reveal(SerializedObject hud, string rectField, string groupField, bool move)
+    private static void Reveal(SerializedObject hud, string rectField, string groupField)
     {
         var rect = hud.FindProperty(rectField).objectReferenceValue as RectTransform;
         var group = hud.FindProperty(groupField).objectReferenceValue as CanvasGroup;
         if (rect == null || group == null) return;
         int id = rect.GetInstanceID();
-        if (!states.ContainsKey(id)) states.Add(id, new State
-        {
-            Rect = rect, Group = group, Active = rect.gameObject.activeSelf,
-            Alpha = group.alpha, X = rect.anchoredPosition.x, MovesX = move
-        });
+        if (!states.ContainsKey(id)) states.Add(id, new State { Rect = rect, Group = group, Active = rect.gameObject.activeSelf, Alpha = group.alpha });
         // Only the properties used to hide the UI are temporary. Images, text and child layout stay editable.
         rect.gameObject.SetActive(true);
         group.alpha = 1;
-        if (move) rect.anchoredPosition = new Vector2(24, rect.anchoredPosition.y);
     }
 
     public static void Stop()
@@ -61,7 +53,6 @@ public static class MissionHUDPreview
         foreach (var state in states.Values)
         {
             if (state.Rect == null) continue;
-            if (state.MovesX) state.Rect.anchoredPosition = new Vector2(state.X, state.Rect.anchoredPosition.y);
             if (state.Group != null) state.Group.alpha = state.Alpha;
             state.Rect.gameObject.SetActive(state.Active);
         }
@@ -81,8 +72,8 @@ public static class MissionHUDPreview
 }
 
 /// <summary>
-/// MissionHUD Inspector: reveals the hidden board and alert without Play so their Image, TextMeshPro and RectTransform
-/// children can be edited. Saving, Play or a script reload only undo the temporary reveal; design edits stay.
+/// MissionHUD Inspector: reveals the hidden alert without Play so its Image, TextMeshPro and RectTransform children can
+/// be edited. Saving, Play or a script reload only undo the temporary reveal; design edits stay.
 /// </summary>
 [CustomEditor(typeof(MissionHUD))]
 public sealed class MissionHUDInspector : Editor
@@ -99,17 +90,11 @@ public sealed class MissionHUDInspector : Editor
     {
         using (new EditorGUI.DisabledScope(target == null || EditorApplication.isPlayingOrWillChangePlaymode))
         {
-            if (GUILayout.Button("모두 표시", GUILayout.Height(28))) MissionHUDPreview.Show(target, true, true);
-            using (new EditorGUILayout.HorizontalScope())
-            {
-                if (GUILayout.Button("미션 보드 표시")) MissionHUDPreview.Show(target, true, false);
-                if (GUILayout.Button("중앙 알림 표시")) MissionHUDPreview.Show(target, false, true);
-            }
+            if (GUILayout.Button("중앙 알림 표시", GUILayout.Height(28))) MissionHUDPreview.Show(target);
             using (new EditorGUILayout.HorizontalScope())
             {
                 if (GUILayout.Button("미션바 선택")) MissionHUDPreview.Select(target, "missionBar");
-                if (GUILayout.Button("보드 선택")) { MissionHUDPreview.Show(target, true, false); MissionHUDPreview.Select(target, "board"); }
-                if (GUILayout.Button("알림 선택")) { MissionHUDPreview.Show(target, false, true); MissionHUDPreview.Select(target, "alert"); }
+                if (GUILayout.Button("알림 선택")) { MissionHUDPreview.Show(target); MissionHUDPreview.Select(target, "alert"); }
             }
         }
         using (new EditorGUI.DisabledScope(!MissionHUDPreview.IsPreviewing))

@@ -79,6 +79,14 @@ public sealed class CombatHitAudio : MonoBehaviour
         Get().Queue(hit.Kind == DamageKind.Fall ? HitSound.PlayerFall : HitSound.PlayerHit, false, false, hit.Point, settings.playerHitVolume);
     }
 
+    /// <summary>Another player took a hit: heard where they stand, and quieter with distance.</summary>
+    public static void PlayOtherPlayerHit(Vector3 point, bool fall)
+    {
+        var settings = CombatFeedbackSettings.Instance;
+        if (!Application.isPlaying || settings == null) return;
+        Get().Queue(fall ? HitSound.PlayerFall : HitSound.PlayerHit, false, true, point, settings.playerHitVolume);
+    }
+
     private static CombatHitAudio Get()
     {
         if (instance == null) instance = FeelAssets.CreateRuntimeRoot("Combat Hit Audio", groupName: "Audio").AddComponent<CombatHitAudio>();

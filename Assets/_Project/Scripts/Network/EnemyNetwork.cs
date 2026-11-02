@@ -25,9 +25,12 @@ public sealed class EnemyNetwork : NetworkBehaviour
     private EnemyHealth enemy;
     private EnemyCombatAI combat;
     private MeleeCombatTarget target;
+    private float pace = 1f, paceLeft;
 
     /// <summary>This PC only shows the enemy; the host runs it.</summary>
     public bool IsCopy => IsSpawned && !IsServer;
+    /// <summary>How fast this enemy's time runs. Slow motion in a room covers it and the player it fights, on every PC.</summary>
+    public float Pace => paceLeft > 0f ? pace : 1f;
 
     /// <summary>Puts a new enemy into the room, if there is one. Call it on the host, right after making the enemy.</summary>
     public static void SpawnInRoom(EnemyHealth enemy)
@@ -63,6 +66,7 @@ public sealed class EnemyNetwork : NetworkBehaviour
 
     private void Update()
     {
+        paceLeft = Mathf.Max(0f, paceLeft - Time.unscaledDeltaTime);
         if (!IsSpawned || !IsServer) return;
         health.Value = enemy.Health;
         condition.Value = ReadCondition();
@@ -122,6 +126,12 @@ public sealed class EnemyNetwork : NetworkBehaviour
         if (IsSpawned) BlockRpc();
     }
 
+    /// <summary>Slows this enemy's time on every PC, or ends that with a scale of 1.</summary>
+    internal void ShareSlow(float scale, float seconds)
+    {
+        if (IsSpawned) SlowRpc(scale, seconds);
+    }
+
     /// <summary>A parry, a punch or a shove on this PC's copy reaches the enemy that really moves and fights.</summary>
     internal void SendPosture(float amount, float stun, bool interrupt) => PostureRpc(amount, stun, interrupt);
     internal void SendInterrupt(float duration) => InterruptRpc(duration);
@@ -132,6 +142,13 @@ public sealed class EnemyNetwork : NetworkBehaviour
     /// <summary>This PC's player started an execution on its copy: the host holds the enemy for them, if nobody else has it.</summary>
     internal void AskExecution() => ExecutionRpc();
     internal void EndExecution() => ExecutionEndedRpc();
+
+    [Rpc(SendTo.Everyone)]
+    private void SlowRpc(float scale, float seconds)
+    {
+        pace = scale;
+        paceLeft = seconds;
+    }
 
     [Rpc(SendTo.NotServer)]
     private void WindupRpc(ulong victim, int combo) => combat.ShowWindup(victim == NetworkManager.LocalClientId, combo);

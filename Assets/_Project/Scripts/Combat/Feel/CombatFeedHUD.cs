@@ -13,13 +13,15 @@ using UnityEngine.UI;
 public sealed class CombatFeedHUD : MonoBehaviour
 {
     private const int MaxLines = 4, MaxKills = 5;
-    private const float KillLifetime = 5f, LineHeight = 25f, KillRowHeight = 32f, FadeSeconds = .3f, IconSize = 17f;
+    private const string TableName = "KillFeed", TableRow = "Default";
+    private const float KillLifetime = 5f, LineHeight = 25f, FadeSeconds = .3f, IconSize = 17f;
     private static readonly Color Soft = new Color(.86f, .88f, .92f), KillRed = new Color(1f, .2f, .14f), Number = new Color(1f, .96f, .86f);
     private static CombatFeedHUD instance;
 
     public static long TotalScore { get; private set; }
+    /// <summary>A new run starts from nothing, whatever the last room earned.</summary>
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-    private static void ResetScore() => TotalScore = 0;
+    public static void ResetScore() => TotalScore = 0;
 
     private enum LineIcon { None, Skull, Headshot, Counter, Execution }
     private sealed class Line
@@ -27,19 +29,15 @@ public sealed class CombatFeedHUD : MonoBehaviour
         public RectTransform root; public TextMeshProUGUI label; public RawImage icon; public Shadow iconShadow;
         public float age; public bool accent, tintIcon; public Color? tint;
     }
-    private sealed class KillRow
-    {
-        public RectTransform root; public CanvasGroup group; public Image accent;
-        public TextMeshProUGUI weapon, target; public RawImage icon; public float age, y;
-    }
 
     private RectTransform streakRoot, linesRoot, totalRoot, feedRoot;
     private TextMeshProUGUI streakLabel, totalLabel;
     private CanvasGroup streakGroup;
     private readonly List<Line> lines = new List<Line>();
     private readonly Stack<Line> spareLines = new Stack<Line>();
-    private readonly List<KillRow> kills = new List<KillRow>();
-    private readonly Stack<KillRow> spareKills = new Stack<KillRow>();
+    private readonly List<KillFeedRow> kills = new List<KillFeedRow>();
+    private readonly Stack<KillFeedRow> spareKills = new Stack<KillFeedRow>();
+    private readonly KillFeedLook look = new KillFeedLook();
     private int streakScore, multiKill;
     private bool fresh;
     private float streakIdle = 99f, popAge = 99f, totalShown, totalPop, lastKillTime = -99f;
@@ -56,8 +54,8 @@ public sealed class CombatFeedHUD : MonoBehaviour
         return instance;
     }
 
-    /// <summary>distance: shooter to hit point, metres (0 when unknown); gun kills past Long Range Distance earn a bonus.</summary>
-    public static void Kill(string weapon, string target, bool headshot, bool execution, bool counter, bool bullet, float distance)
+    /// <summary>distance: shooter to hit point, metres (0 when unknown); gun kills past Long Range Distance earn a bonus. feedRow is false when the host will send the row.</summary>
+    public static void Kill(string weapon, string target, bool headshot, bool execution, bool counter, bool bullet, float distance, bool feedRow)
     {
         if (!Application.isPlaying) return;
         var settings = GunFeelSettings.Instance;
@@ -87,8 +85,34 @@ public sealed class CombatFeedHUD : MonoBehaviour
             self.streakIdle = 0f; self.popAge = 0f; self.totalPop = 1f;
             self.streakLabel.text = self.streakScore + "<size=62%><color=#" + ColorUtility.ToHtmlStringRGB(settings.scoreColor) + "> XP</color></size>";
         }
-        if (settings.killFeed) self.AddKill(weapon, target, headshot);
+        if (feedRow && settings.killFeed) self.AddKill(Credit(PlayerRoster.Local, weapon), target, headshot, true, StreakOf(PlayerRoster.Local));
     }
+
+    /// <summary>A kill in a room, as the host counted it, in the feed only: the score is the killer's own.</summary>
+    public static void PlayerKill(PlayerMovement who, string weapon, string target, bool headshot, int streak)
+    {
+        if (Application.isPlaying && GunFeelSettings.Instance.killFeed) Get().AddKill(Credit(who, weapon), target, headshot, who.IsLocal, streak);
+    }
+
+    /// <summary>What just happened to a player, for the whole team to read.</summary>
+    public static void Notice(PlayerMovement who, string what, bool grave)
+    {
+        if (!Application.isPlaying || !GunFeelSettings.Instance.killFeed) return;
+        var settings = GunFeelSettings.Instance;
+        Get().AddRow(NameOf(who), grave ? CombatUIAssets.Skull : null, Color.white, what, grave ? KillRed : settings.scoreColor, false, 0);
+    }
+
+    private static int StreakOf(PlayerMovement who) => who != null && who.TryGetComponent(out PlayerTally tally) ? tally.Streak : 0;
+
+    /// <summary>How long a kill keeps a streak alive: the score's double-kill window with some grace on top (s).</summary>
+    public static float StreakWindow => GunFeelSettings.Instance.multiKillWindow + Get().look.streakGrace;
+
+    // Alone there's only one name it could be.
+    private static string Credit(PlayerMovement who, string weapon)
+        => GameSession.IsOnline && who != null ? NameOf(who) + "  " + weapon : weapon;
+
+    private static string NameOf(PlayerMovement who)
+        => who.TryGetComponent(out PlayerTally tally) ? "<color=#" + ColorUtility.ToHtmlStringRGB(tally.Color) + ">" + tally.DisplayName + "</color>" : who.name;
 
     private static string MultiKillName(int count)
         => count == 2 ? "더블 킬" : count == 3 ? "트리플 킬" : count == 4 ? "쿼드 킬" : "연속 처치 x" + count;
@@ -98,6 +122,7 @@ public sealed class CombatFeedHUD : MonoBehaviour
         if (instance != null && instance != this) { Destroy(gameObject); return; }
         instance = this;
         FeelUI.SetupOverlay(gameObject, 27);
+        GameTables.BindNested(TableName, TableRow, this, look);
 
         streakRoot = FeelUI.Rect("Streak", transform);
         streakGroup = streakRoot.gameObject.AddComponent<CanvasGroup>();
@@ -173,22 +198,11 @@ public sealed class CombatFeedHUD : MonoBehaviour
 
         for (int i = kills.Count - 1; i >= 0; i--)
         {
-            var row = kills[i];
-            row.age += dt;
-            if (row.age >= KillLifetime) { row.root.gameObject.SetActive(false); spareKills.Push(row); kills.RemoveAt(i); }
+            if (kills[i].Age + dt < KillLifetime) continue;
+            kills[i].Hide(); spareKills.Push(kills[i]); kills.RemoveAt(i);
         }
         for (int i = 0; i < kills.Count; i++)
-        {
-            var row = kills[i];
-            float targetY = -(kills.Count - 1 - i) * (KillRowHeight + 5f);
-            row.y = Mathf.Lerp(row.y, targetY, 1f - Mathf.Exp(-18f * dt));
-            float enter = 1f - Mathf.Pow(1f - Mathf.Clamp01(row.age / .18f), 3f);
-            row.root.anchoredPosition = new Vector2((1f - enter) * 80f, row.y);
-            row.group.alpha = enter * Mathf.Clamp01((KillLifetime - row.age) / .4f);
-            // The accent bar flares wide on arrival.
-            float flash = 1f - Mathf.Clamp01(row.age / .25f);
-            row.accent.rectTransform.localScale = new Vector3(1f + flash * 1.5f, 1f, 1f);
-        }
+            kills[i].Tick(dt, -(kills.Count - 1 - i) * (KillFeedRow.Height + 5f), KillLifetime);
     }
 
     private void ClearLines()
@@ -235,63 +249,21 @@ public sealed class CombatFeedHUD : MonoBehaviour
         lines.Add(line);
     }
 
-    private void AddKill(string weapon, string target, bool headshot)
+    private void AddKill(string weapon, string target, bool headshot, bool mine, int streak)
+    {
+        var settings = GunFeelSettings.Instance;
+        AddRow(weapon, headshot ? CombatUIAssets.CriticalBurst : CombatUIAssets.Skull, headshot ? settings.scoreColor : Color.white,
+            target, headshot ? settings.scoreColor : KillRed, mine, streak);
+    }
+
+    private void AddRow(string left, Texture icon, Color iconColor, string right, Color accent, bool mine, int streak)
     {
         if (kills.Count >= MaxKills)
         {
-            var oldest = kills[0]; kills.RemoveAt(0);
-            oldest.root.gameObject.SetActive(false); spareKills.Push(oldest);
+            kills[0].Hide(); spareKills.Push(kills[0]); kills.RemoveAt(0);
         }
-        var settings = GunFeelSettings.Instance;
-        var row = spareKills.Count > 0 ? spareKills.Pop() : BuildRow();
-        row.weapon.text = weapon;
-        row.target.text = target;
-        row.icon.texture = headshot ? CombatUIAssets.CriticalBurst : CombatUIAssets.Skull;
-        row.icon.color = headshot ? settings.scoreColor : Color.white;
-        row.accent.color = headshot ? settings.scoreColor : KillRed;
-
-        // Right-aligned: [weapon] [icon] [target] with the accent bar at the far right.
-        const float pad = 12f, icon = 18f, gap = 8f, accent = 4f;
-        float targetWidth = row.target.GetPreferredValues(target).x, weaponWidth = row.weapon.GetPreferredValues(weapon).x;
-        float width = pad + weaponWidth + gap + icon + gap + targetWidth + pad + accent;
-        row.root.sizeDelta = new Vector2(width, KillRowHeight);
-        float x = -accent - pad;
-        Place(row.target.rectTransform, x - targetWidth * .5f, targetWidth + 4f); x -= targetWidth + gap;
-        Place(row.icon.rectTransform, x - icon * .5f, icon, icon); x -= icon + gap;
-        Place(row.weapon.rectTransform, x - weaponWidth * .5f, weaponWidth + 4f);
-        row.age = 0f; row.y = 0f;
-        row.root.gameObject.SetActive(true);
+        var row = spareKills.Count > 0 ? spareKills.Pop() : new KillFeedRow(feedRoot);
+        row.Show(left, icon, iconColor, right, accent, mine, streak, look);
         kills.Add(row);
-    }
-
-    private KillRow BuildRow()
-    {
-        var row = new KillRow();
-        row.root = FeelUI.Rect("Kill", feedRoot);
-        row.root.anchorMin = row.root.anchorMax = row.root.pivot = Vector2.one;
-        row.group = row.root.gameObject.AddComponent<CanvasGroup>();
-        row.group.interactable = row.group.blocksRaycasts = false;
-        var background = row.root.gameObject.AddComponent<Image>();
-        background.color = new Color(.04f, .04f, .06f, .5f); background.raycastTarget = false;
-        row.accent = FeelUI.Rect("Accent", row.root).gameObject.AddComponent<Image>();
-        var accentRect = row.accent.rectTransform;
-        accentRect.anchorMin = new Vector2(1f, 0f); accentRect.anchorMax = Vector2.one; accentRect.pivot = new Vector2(1f, .5f);
-        accentRect.sizeDelta = new Vector2(4f, 0f); accentRect.anchoredPosition = Vector2.zero;
-        row.accent.raycastTarget = false;
-        row.weapon = FeelUI.ScoreLabel("Weapon", row.root, 15f, TextAlignmentOptions.Center);
-        row.weapon.color = Soft;
-        row.icon = FeelUI.Rect("Icon", row.root).gameObject.AddComponent<RawImage>();
-        row.icon.raycastTarget = false;
-        row.target = FeelUI.ScoreLabel("Target", row.root, 17f, TextAlignmentOptions.Center);
-        row.target.color = Color.white;
-        foreach (var rect in new[] { row.weapon.rectTransform, row.icon.rectTransform, row.target.rectTransform })
-            rect.anchorMin = rect.anchorMax = new Vector2(1f, .5f);
-        return row;
-    }
-
-    private static void Place(RectTransform rect, float x, float width, float height = KillRowHeight)
-    {
-        rect.anchoredPosition = new Vector2(x, 0f);
-        rect.sizeDelta = new Vector2(width, height);
     }
 }

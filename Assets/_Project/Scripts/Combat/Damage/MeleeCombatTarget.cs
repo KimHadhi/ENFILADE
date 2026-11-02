@@ -78,7 +78,7 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
             gameObject.AddComponent<EnemyVitalsHUD>();
         if (Application.isPlaying && GetComponent<ExecutableHighlight>() == null) gameObject.AddComponent<ExecutableHighlight>();
     }
-    private void Update() => Tick(Time.deltaTime);
+    private void Update() => Tick(Time.deltaTime * (network != null ? network.Pace : 1f));
     public void Tick(float dt)
     {
         if (dt <= 0f || !IsAvailable) return;

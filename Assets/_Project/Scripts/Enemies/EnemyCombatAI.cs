@@ -52,7 +52,7 @@ public sealed class EnemyCombatAI : MonoBehaviour
         timer = attackInterval;
     }
 
-    private void Update() => Tick(Time.deltaTime);
+    private void Update() => Tick(Time.deltaTime * (network != null ? network.Pace : 1f));
     public void Tick(float dt)
     {
         if (dt <= 0f) return;

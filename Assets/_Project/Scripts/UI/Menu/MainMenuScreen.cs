@@ -30,6 +30,7 @@ public sealed class MainMenuScreen : MonoBehaviour
     {
         IsOpen = true;
         Time.timeScale = 1f;
+        CombatFeedHUD.ResetScore();
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
         SettingsMenu.EnsureEventSystem();

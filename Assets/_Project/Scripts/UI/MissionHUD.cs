@@ -1,15 +1,17 @@
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
-using UnityEngine.EventSystems;
-using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
+/// <summary>The objective always on screen, and the alert when it changes. The full list is on the Tab screen (ObjectiveLogPanel).</summary>
 public sealed class MissionHUD : MonoBehaviour
 {
-    [Header("Mission / input")]
+    private const string TabHint = "목표·점수판";
+    // How far the bar slides off as the Tab screen's list takes its place (px at 1080p).
+    private const float MakeWay = 24f;
+
+    [Header("Mission")]
     [SerializeField] private MissionTracker tracker;
-    [SerializeField] private PlayerInput playerInput;
-    [SerializeField] private SinglePlayerChatManager chat;
     [Header("Persistent mission bar")]
     [SerializeField] private RectTransform missionBar;
     [SerializeField] private TMP_Text title;
@@ -17,13 +19,6 @@ public sealed class MissionHUD : MonoBehaviour
     [SerializeField] private GameObject counterRoot;
     [SerializeField] private Image progress;
     [SerializeField] private TMP_Text boardHint;
-    [Header("Mission board")]
-    [SerializeField] private RectTransform board;
-    [SerializeField] private CanvasGroup boardGroup;
-    [SerializeField] private TMP_Text boardTitle;
-    [SerializeField] private TMP_Text boardDescription;
-    [SerializeField] private TMP_Text boardCounter;
-    [SerializeField, Min(.05f)] private float boardSlideDuration = .22f;
     [Header("New objective alert")]
     [SerializeField] private RectTransform alert;
     [SerializeField] private CanvasGroup alertGroup;
@@ -39,89 +34,50 @@ public sealed class MissionHUD : MonoBehaviour
     [SerializeField] private AudioClip alertSound;
     [SerializeField, Range(0, 1)] private float alertVolume = .45f;
 
-    public bool IsBoardOpen { get; private set; }
     public bool IsAlertPlaying => alertClock >= 0;
     public float AlertDuration => openDuration + emphasisDuration + closeDuration;
-    private float boardAmount, alertClock = -1, alertWidth, targetProgress;
-    private InputAction boardAction;
-    private bool ownsBoardAction;
+    private float alertClock = -1, alertWidth, targetProgress;
     private float lastCanvasWidth;
 
-    private void Awake()
-    {
-        RaiseBoardAboveHud();
-        GameAudio.Bind(audioSource, AudioChannel.UI);
-    }
+    private struct Part { public RectTransform Rect; public CanvasGroup Group; public Vector2 Home; }
+    private readonly List<Part> parts = new List<Part>();
 
-    // Chat and HP are later siblings in the HUD canvas; a nested canvas lets the open board cover them without reparenting.
-    private void RaiseBoardAboveHud()
+    private void Awake() => GameAudio.Bind(audioSource, AudioChannel.UI);
+
+    // Everything here but the alert stands where the Tab screen's list will: the bar, its key chip, its hint.
+    private void FindParts()
     {
-        if (board == null) return;
-        var parentCanvas = GetComponentInParent<Canvas>();
-        int baseOrder = parentCanvas != null ? parentCanvas.rootCanvas.sortingOrder : 0;
-        var canvas = board.GetComponent<Canvas>();
-        if (canvas == null) canvas = board.gameObject.AddComponent<Canvas>();
-        canvas.overrideSorting = true;
-        canvas.sortingOrder = baseOrder + 1;
+        parts.Clear();
+        foreach (Transform child in transform)
+        {
+            if (child == alert || !(child is RectTransform rect)) continue;
+            var group = child.GetComponent<CanvasGroup>();
+            if (group == null) group = child.gameObject.AddComponent<CanvasGroup>();
+            parts.Add(new Part { Rect = rect, Group = group, Home = rect.anchoredPosition });
+        }
     }
 
     private void OnEnable()
     {
         AnchorMissionBar();
+        FindParts();
         ApplyProgress(0);
+        if (boardHint != null) boardHint.text = TabHint;
         if (tracker != null) tracker.Changed += Refresh;
-        var actions = playerInput != null ? playerInput.actions : InputSystem.actions;
-        boardAction = actions != null ? actions.FindAction("UI/OpenObjectiveBoard", false) : null;
-        ownsBoardAction = boardAction != null && !boardAction.enabled;
-        if (ownsBoardAction) boardAction.Enable();
-        SetBoardOpen(false); boardAmount = 0; ApplyBoard(); HideAlert();
+        HideAlert();
         Refresh(tracker != null ? tracker.Current : null, false);
     }
     private void OnDisable()
     {
-        if (ownsBoardAction) boardAction?.Disable();
-        boardAction = null; ownsBoardAction = false;
         if (tracker != null) tracker.Changed -= Refresh;
-        IsBoardOpen = false; boardAmount = 0; ApplyBoard(); HideAlert();
+        HideAlert();
         if (audioSource != null) audioSource.Stop();
-    }
-    private void OnApplicationFocus(bool focused) { if (!focused) SetBoardOpen(false); }
-
-    // Resolve shortcuts after chat and the EventSystem have processed this frame's input.
-    private void LateUpdate()
-    {
-        ProcessBoardInput();
-    }
-
-    private void ProcessBoardInput()
-    {
-        bool typing = chat != null && chat.BlocksMissionInputThisFrame;
-        typing |= HasFocusedTextInput();
-        var keyboard = Keyboard.current;
-        if (typing || Time.timeScale <= 0 || !Application.isFocused) SetBoardOpen(false);
-        else
-        {
-            bool pressed = boardAction != null && boardAction.enabled && boardAction.WasPressedThisFrame();
-            if (pressed) SetBoardOpen(!IsBoardOpen);
-            if (keyboard != null && keyboard.escapeKey.wasPressedThisFrame) SetBoardOpen(false);
-        }
-    }
-
-    private static bool HasFocusedTextInput()
-    {
-        var selected = EventSystem.current != null ? EventSystem.current.currentSelectedGameObject : null;
-        if (selected == null || !selected.activeInHierarchy) return false;
-        var tmp = selected.GetComponent<TMP_InputField>();
-        if (tmp != null) return tmp.isActiveAndEnabled && tmp.isFocused;
-        var legacy = selected.GetComponent<InputField>();
-        return legacy != null && legacy.isActiveAndEnabled && legacy.isFocused;
     }
 
     private void Update()
     {
         float dt = Time.unscaledDeltaTime;
-        boardAmount = Mathf.MoveTowards(boardAmount, IsBoardOpen ? 1 : 0, dt / Mathf.Max(.05f, boardSlideDuration));
-        ApplyBoard();
+        MakeWayForTabScreen();
         if (progress != null) ApplyProgress(Mathf.MoveTowards(progress.fillAmount, targetProgress, dt * 1.8f));
         if (alertClock >= 0)
         {
@@ -137,20 +93,18 @@ public sealed class MissionHUD : MonoBehaviour
         }
     }
 
-    public void SetBoardOpen(bool open)
+    // The bar leaves as the Tab screen's list arrives.
+    private void MakeWayForTabScreen()
     {
-        IsBoardOpen = open;
-        if (boardHint != null) boardHint.text = open ? "미션 보드 닫기" : "미션 정보";
+        float away = Mathf.SmoothStep(0f, 1f, ScoreboardHUD.Openness);
+        var slide = new Vector2(-MakeWay * away, 0f);
+        foreach (var part in parts)
+        {
+            part.Group.alpha = 1f - away;
+            part.Rect.anchoredPosition = part.Home + slide;
+        }
     }
-    private void ApplyBoard()
-    {
-        if (board == null || boardGroup == null) return;
-        float t = Mathf.SmoothStep(0, 1, boardAmount);
-        board.anchoredPosition = new Vector2(Mathf.Lerp(-board.rect.width - 2, 24, t), board.anchoredPosition.y);
-        boardGroup.alpha = t;
-        // Read-only overlay: it does not take cursor ownership from movement or chat.
-        boardGroup.interactable = false; boardGroup.blocksRaycasts = false;
-    }
+
     private float CanvasWidth() => (transform as RectTransform).rect.width;
 
     private void AnchorMissionBar()
@@ -194,9 +148,6 @@ public sealed class MissionHUD : MonoBehaviour
         float width = Mathf.Clamp(title.GetPreferredValues(title.text).x + 84 + counterWidth, 320, maxWidth);
         missionBar.sizeDelta = new Vector2(width, 48);
         title.rectTransform.offsetMax = new Vector2(-counterWidth - 16, -4);
-        boardTitle.text = title.text;
-        boardDescription.text = objective != null ? objective.Description : "새로운 목표가 등록되면 이곳에서 상세 정보를 확인할 수 있습니다.";
-        boardCounter.text = numeric ? "진행도   " + objective.ProgressText : "";
         if (objective == null) HideAlert();
         else if (announce) ShowAlert(objective.Title);
     }

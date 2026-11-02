@@ -164,7 +164,7 @@ public sealed class WeaponController : MonoBehaviour
         var slots = GetComponent<PlayerWeaponSlots>();
         if (slots != null && !slots.CanReadInput) Runtime.CancelBurst();
         if (input == null) return;
-        ProcessFrame(Time.deltaTime, movement != null && movement.IsNetworkDriven ? new WeaponInputFrame(false, false, false, shownAiming) : input.ReadInput());
+        ProcessFrame(movement != null ? movement.DeltaTime : Time.deltaTime, movement != null && movement.IsNetworkDriven ? new WeaponInputFrame(false, false, false, shownAiming) : input.ReadInput());
     }
 
     /// <summary>On someone else's copy: they raised or lowered their sights.</summary>

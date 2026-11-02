@@ -73,8 +73,8 @@ public sealed class WeaponImpactEffects : MonoBehaviour
         RaycastHit hit = shot.Trace.Hit;
         Collider hitCollider = hit.collider;
 
-        // 적과 적의 부모는 제외
-        if (IsEnemy(hitCollider.transform))
+        // 적과 적의 부모는 제외. 시체도 벽이 아니라 몸이다
+        if (IsEnemy(hitCollider.transform) || hitCollider.GetComponentInParent<RagdollCorpse>() != null)
             return;
 
         Vector3 position = hit.point + hit.normal * hitEffectOffset;

@@ -35,6 +35,10 @@
 | 플레이어 생성 / 시작 위치 / 목록·내 캐릭터 찾기 / 멀티 구조 시험용 더미 | [PlayerFactory](Player/PlayerFactory.cs) / [PlayerSpawnPoint](Player/PlayerSpawnPoint.cs) / [PlayerRoster](Player/PlayerRoster.cs) / [ConsoleDummyPlayers](Debug/Combat/ConsoleDummyPlayers.cs) |
 | 플레이어 HP·실드·피격·사망 | [PlayerDamageReceiver](Player/Combat/PlayerDamageReceiver.cs) |
 | 쓰러짐·부활·복귀·전멸 | [PlayerLife](Player/Combat/PlayerLife.cs), [PlayerRevive](Player/Combat/PlayerRevive.cs), [PlayerLifeHUD](UI/PlayerLifeHUD.cs), [Downed.csv](../Resources/Tables/Downed.csv) |
+| 킬 피드 (내 처치 강조, 연속 처치) | [CombatFeedHUD](Combat/Feel/CombatFeedHUD.cs), [KillFeedRow](UI/KillFeedRow.cs), [StreakBadge](UI/StreakBadge.cs), [KillFeed.csv](../Resources/Tables/KillFeed.csv) |
+| 슬로 모션 (혼자: 세상 전체, 방: 본인과 상대만) | [CombatTimeEffects](Player/Combat/CombatTimeEffects.cs), `EnemyNetwork.Pace` |
+| 쓰러진 동료 표시 | [DownedAura](Combat/Feel/DownedAura.cs), [TeammateMarkerHUD](UI/TeammateMarkerHUD.cs), [DownedAura.csv](../Resources/Tables/DownedAura.csv) |
+| Tab 화면 (점수판과 목표 목록) | [ScoreboardHUD](UI/ScoreboardHUD.cs), [ObjectiveLogPanel](UI/ObjectiveLogPanel.cs), [PlayerTally](Player/Combat/PlayerTally.cs), [PlayerNetworkScore](Network/PlayerNetworkScore.cs) |
 | 죽은 몸의 레그돌 | [PlayerRagdoll](Player/Body/PlayerRagdoll.cs), [RagdollCorpse](Combat/Feel/RagdollCorpse.cs), [PlayerNetworkCorpse](Network/PlayerNetworkCorpse.cs), [Ragdoll.csv](../Resources/Tables/Ragdoll.csv) |
 | 플레이어 궁극기 최대 보유량·소비량 스탯 / 현재 충전량 | [PlayerStats](Player/PlayerStats.cs), [UltimateCharge](UI/HP/UltimateCharge.cs) (Play 시작 때 `PlayerMovement`가 붙임) |
 | 피격 방향 아크·혈흔·쉐이크·빈사 박동 | [PlayerDamageFeedback](Player/Combat/PlayerDamageFeedback.cs), [설정](../Resources/Combat/PlayerDamageFeedback.asset), [사용 안내](../Docs/PlayerDamageFeedbackGuide.md) |

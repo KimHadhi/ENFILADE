@@ -16,6 +16,9 @@ public sealed class EnemyParryRecoil : MonoBehaviour
     private float degrees, seconds = 1f, age = 1f, lying, lyingTarget;
     private Quaternion steady;
     private bool applied;
+    private EnemyNetwork network;
+
+    private void Awake() => network = GetComponent<EnemyNetwork>();
 
     public static EnemyParryRecoil For(Component target)
     {
@@ -42,8 +45,9 @@ public sealed class EnemyParryRecoil : MonoBehaviour
     private void Update() => Restore();
     private void LateUpdate()
     {
-        age += Time.deltaTime;
-        lying = Mathf.MoveTowards(lying, lyingTarget, FallSpeed * Time.deltaTime);
+        float dt = Time.deltaTime * (network != null ? network.Pace : 1f);
+        age += dt;
+        lying = Mathf.MoveTowards(lying, lyingTarget, FallSpeed * dt);
         float progress = age / seconds;
         float lean = progress < 1f ? Lean(progress) * degrees : 0f;
         if (progress >= 1f && lying <= 0f && lyingTarget <= 0f) { enabled = false; return; }

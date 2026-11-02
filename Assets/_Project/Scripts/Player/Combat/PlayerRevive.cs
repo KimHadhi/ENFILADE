@@ -20,6 +20,8 @@ public sealed class PlayerRevive : MonoBehaviour
     public PlayerMovement Candidate { get; private set; }
     /// <summary>How far along getting them up is (0-1).</summary>
     public float Progress { get; private set; }
+    /// <summary>How long getting someone up takes from start to finish (s).</summary>
+    public float Seconds => reviveSeconds;
 
     private void Awake() => player = GetComponent<PlayerMovement>();
 

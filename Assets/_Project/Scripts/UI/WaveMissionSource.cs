@@ -38,7 +38,7 @@ public sealed class WaveMissionSource : MonoBehaviour
         string id = "wave.combat." + waves.CurrentWave;
         if (ownedId == id) tracker.SetProgress(id, waves.DefeatedEnemies, waves.TotalEnemiesThisWave);
         else Set(new MissionObjective(id, combatTitle, combatDescription, MissionProgressDisplay.Count,
-            waves.DefeatedEnemies, waves.TotalEnemiesThisWave));
+            waves.DefeatedEnemies, waves.TotalEnemiesThisWave, waves.CurrentWave + "웨이브 격퇴"));
     }
     private void Set(MissionObjective objective)
     {

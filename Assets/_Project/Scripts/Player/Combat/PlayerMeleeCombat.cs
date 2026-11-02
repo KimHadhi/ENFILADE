@@ -82,15 +82,15 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
     private void Update()
     {
         if (player != null && player.IsNetworkDriven) return;
-        if (!IsActive || !player.InputAvailable) { CancelAction(); TickGuardInput(Time.deltaTime, default); return; }
+        if (!IsActive || !player.InputAvailable) { CancelAction(); TickGuardInput(player.DeltaTime, default); return; }
         if (IsGuardBreaking)
         {
-            if (input != null && input.TryReadGuardBuffer(out var guardFrame)) ProcessFrame(Time.deltaTime, guardFrame);
+            if (input != null && input.TryReadGuardBuffer(out var guardFrame)) ProcessFrame(player.DeltaTime, guardFrame);
             else CancelAction();
             return;
         }
         if (input == null || !input.TryReadMeleeInput(out var frame)) { CancelAction(); return; }
-        ProcessFrame(Time.deltaTime, frame);
+        ProcessFrame(player.DeltaTime, frame);
     }
     private void LateUpdate()
     {

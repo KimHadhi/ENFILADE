@@ -6,6 +6,7 @@ public enum CombatCue { Block, Parry, ParryBreak, Grab, EnemyAttackStart, Perfec
 public sealed class CombatCueAudio : MonoBehaviour
 {
     private AudioSource source;
+    private EnemyNetwork network;
     private AudioClip previousBlock, previousParry, previousParryBreak, previousGrab;
     private bool paused;
     public CombatCue LastCue { get; private set; }
@@ -67,7 +68,9 @@ public sealed class CombatCueAudio : MonoBehaviour
         if (source == null || LastCue != CombatCue.EnemyAttackStart) return;
         if (Time.timeScale <= 0f) { if (!paused) source.Pause(); paused = true; return; }
         if (paused) { source.UnPause(); paused = false; }
-        source.pitch = Mathf.Clamp(Time.timeScale, .01f, 3f);
+        // The cue tells when the blow lands, so it keeps the attacker's time whichever way that was slowed.
+        if (network == null) TryGetComponent(out network);
+        source.pitch = Mathf.Clamp(Time.timeScale * (network != null ? network.Pace : 1f), .01f, 3f);
     }
     private void OnDisable() => Stop();
 }

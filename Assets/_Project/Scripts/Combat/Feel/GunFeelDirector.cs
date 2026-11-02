@@ -31,6 +31,10 @@ public static class GunFeelDirector
         if (!kill || !enemy) HitFlashRenderer.For(report.Target)?.Flash(hit.Point, critical);
         if (enemy && hit.Kind != DamageKind.Fall && (bullet || kill)) ImpactVfx.Blood(hit.Point, hit.Direction, critical, kill, bullet, report.Target);
         if (enemy && kill) CorpseTopple.Spawn(report.Target, hit, critical);
+        // A shared enemy's death is the host's to call, so one count and one feed row reach every PC, whoever saw it first.
+        bool shared = kill && report.Target.TryGetComponent(out EnemyNetwork network) && network.IsSpawned;
+        if (shared && hit.Source != null && hit.Source.GetComponentInParent<PlayerNetworkScore>() is PlayerNetworkScore score)
+            score.AnnounceKill(WeaponName(hit), CombatDamageEvents.DisplayNameOf(report.Target), critical && bullet);
         if (!byPlayer) return;
 
         HitMarkerHUD.Show(kill ? (critical ? HitMarkerKind.HeadKill : HitMarkerKind.BodyKill) : critical ? HitMarkerKind.Head : HitMarkerKind.Body);
@@ -39,7 +43,12 @@ public static class GunFeelDirector
             : bullet ? settings.killPulseOnGunKill : settings.killPulseOnOtherKill;
         if (!kill) return;
         float distance = hit.Point != Vector3.zero ? Vector3.Distance(hit.Source.transform.position, hit.Point) : 0f;
-        CombatFeedHUD.Kill(WeaponName(hit), CombatDamageEvents.DisplayNameOf(report.Target), critical && bullet, execution, hit.IsCounter, bullet, distance);
+        if (PlayerRoster.Local != null && PlayerRoster.Local.TryGetComponent(out PlayerTally tally))
+        {
+            tally.CountKill(execution);
+            if (!shared) tally.CountStreak();
+        }
+        CombatFeedHUD.Kill(WeaponName(hit), CombatDamageEvents.DisplayNameOf(report.Target), critical && bullet, execution, hit.IsCounter, bullet, distance, !shared);
         if (pulse) KillConfirmEffect.Trigger(execution ? KillScreen.Execution : hit.IsCounter ? KillScreen.Counter : KillScreen.Gta,
             critical || execution);
     }
