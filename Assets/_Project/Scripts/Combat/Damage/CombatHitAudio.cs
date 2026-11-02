@@ -93,6 +93,11 @@ public sealed class CombatHitAudio : MonoBehaviour
         return instance;
     }
 
+    public static void Prepare()
+    {
+        if (Application.isPlaying) Get();
+    }
+
     private void Awake()
     {
         if (instance != null && instance != this) { Destroy(gameObject); return; }

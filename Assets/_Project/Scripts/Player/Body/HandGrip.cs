@@ -82,6 +82,8 @@ internal sealed class HandGrip
     private readonly bool left;
     private HandSkinCorrection normals;
     private readonly Finger[] fingers;
+    private readonly Finger thumb;
+    private readonly Quaternion[] relaxedThumb = new Quaternion[3];
     private readonly Vector3 forwardInHand, palmInHand;
     private readonly Quaternion[] barPose, ledgePose, displayedLedgePose;
     private bool barCached, ledgeCached;
@@ -105,6 +107,46 @@ internal sealed class HandGrip
         barPose = new Quaternion[fingers.Length * 3];
         ledgePose = new Quaternion[fingers.Length * 3];
         displayedLedgePose = new Quaternion[fingers.Length * 3];
+        thumb = System.Array.Find(fingers, finger => finger.Thumb);
+        if (thumb != null) System.Array.Copy(thumb.Rest, relaxedThumb, 3);
+    }
+
+    /// <summary>
+    /// The thumb at ease, measured from this hand at rest: turned under the palm about the line of the fingers until it sits
+    /// <paramref name="underPalm"/> degrees out of the palm's plane, with its outer joints bent <paramref name="bend"/> degrees
+    /// toward the palm. A thumb the model already holds further under stays there. Clips can't be trusted with this: retargeting
+    /// carries a thumb from one character's rest pose to another's, and it comes out standing off the hand.
+    /// </summary>
+    public void PrepareThumb(float underPalm, float bend)
+    {
+        if (thumb == null) return;
+        Vector3 forward = hand.TransformDirection(forwardInHand), palm = hand.TransformDirection(palmInHand);
+        Transform root = thumb.Bones[0];
+        Vector3 apart = Vector3.ProjectOnPlane(thumb.Bones[1].position - root.position, forward);
+        Vector3 side = Vector3.ProjectOnPlane(apart, palm);
+        if (side.sqrMagnitude < 1e-8f) return;
+        Vector3 axis = Vector3.Cross(side, palm).normalized;
+        float turn = underPalm - Vector3.SignedAngle(side, apart, axis);
+        if (turn > 0f) root.rotation = Quaternion.AngleAxis(turn, axis) * root.rotation;
+        Vector3 centre = hand.TransformPoint(PalmLocal);
+        for (int i = 1; i < 3; i++)
+        {
+            var bone = thumb.Bones[i];
+            Vector3 hinge = Vector3.Cross(bone.TransformDirection(thumb.Axes[i]), centre - bone.position);
+            if (hinge.sqrMagnitude > 1e-10f) bone.rotation = Quaternion.AngleAxis(bend, hinge.normalized) * bone.rotation;
+        }
+        for (int i = 0; i < 3; i++)
+        {
+            relaxedThumb[i] = thumb.Bones[i].localRotation;
+            thumb.Bones[i].localRotation = thumb.Rest[i];
+        }
+    }
+
+    public void RelaxThumb(float weight)
+    {
+        if (thumb == null || weight <= 0f) return;
+        for (int i = 0; i < 3; i++)
+            thumb.Bones[i].localRotation = Quaternion.Slerp(thumb.Bones[i].localRotation, relaxedThumb[i], weight);
     }
 
     public static HandGrip Create(Animator animator, bool left, Vector3 forward, Vector3 palm)
@@ -367,9 +409,13 @@ internal sealed class HandGrip
             bool ledgeThumb = finger.Thumb && contact.IsLedge;
             if (ledgeThumb)
             {
-                // Keep the model's relaxed thumb, including its spread and joint bends.
-                // Only make a small clearance adjustment when the real surface touches it.
+                // The thumb at ease, opened back toward the model's own only as far as the real surface asks.
                 // An infinite "above the ledge" plane must not turn a free thumb into a thumbs-up pose.
+                for (float back = 0f; back <= 1f; back += .25f)
+                {
+                    for (int i = 0; i < 3; i++) finger.Bones[i].localRotation = Quaternion.Slerp(relaxedThumb[i], finger.Rest[i], back);
+                    if (SkinClear()) break;
+                }
                 if (!SkinClear())
                 {
                     var root = finger.Bones[0];

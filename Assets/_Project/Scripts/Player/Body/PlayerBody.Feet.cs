@@ -57,6 +57,8 @@ public sealed partial class PlayerBody
     {
         public Transform Upper, Lower, Foot;
         public AnkleLimit Ankle;
+        /// <summary>The ankle's height above the sole, measured in the rest pose (m).</summary>
+        public float Sole;
         /// <summary>Heel and toe tip in the foot bone's space; only their place over the ground is used.</summary>
         public Vector3 Heel, Tip;
         /// <summary>Smoothed world height of the ground under the foot (m).</summary>
@@ -108,7 +110,7 @@ public sealed partial class PlayerBody
         if (along.sqrMagnitude < 1e-4f) along = Vector3.ProjectOnPlane(forward, Vector3.up).normalized * .12f;
         return new Leg
         {
-            Upper = upper, Lower = lower, Foot = foot,
+            Upper = upper, Lower = lower, Foot = foot, Sole = ankle.y - body.position.y,
             Heel = foot.InverseTransformPoint(ankle - along * .35f), Tip = foot.InverseTransformPoint(ankle + along * 1.4f)
         };
     }
@@ -131,7 +133,7 @@ public sealed partial class PlayerBody
 
     private void StandOnGround(float dt)
     {
-        bool onFeet = !dead && !playingOut && player.IsGrounded
+        bool onFeet = !dead && !playingOut && !heaving && player.IsGrounded
             && (state == MovementState.Standing || state == MovementState.Crouching);
         feetOnGround = onFeet;
         feetWeight = Mathf.MoveTowards(feetWeight, onFeet ? 1f : 0f, dt / blendTime);

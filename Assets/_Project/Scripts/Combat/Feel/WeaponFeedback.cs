@@ -54,6 +54,14 @@ public sealed class WeaponFeedback : MonoBehaviour
         block = new MaterialPropertyBlock();
     }
 
+    // What the first shot would otherwise stop to build. This runs while the map loads.
+    private void Start()
+    {
+        EnsureParticles();
+        BuildFlash();
+        for (int i = 0; i < CasingCount; i++) BuildCasing(ref casings[i]);
+    }
+
     private void OnEnable()
     {
         if (weapon == null) weapon = GetComponent<WeaponController>();
@@ -244,24 +252,27 @@ public sealed class WeaponFeedback : MonoBehaviour
 
     private void EnsureFlash(Transform muzzle)
     {
-        if (flash == null)
-        {
-            var host = new GameObject("Feel Muzzle Flash");
-            flash = host.transform;
-            host.AddComponent<MeshFilter>().sharedMesh = FeelAssets.MuzzleFlash;
-            flashRenderer = host.AddComponent<MeshRenderer>();
-            flashRenderer.sharedMaterials = new[] { FeelAssets.Particle(FeelAssets.FlashStar, true), FeelAssets.Particle(FeelAssets.FlashSpike, true) };
-            flashRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            flashRenderer.receiveShadows = false;
-            var light = new GameObject("Feel Muzzle Light");
-            light.transform.SetParent(flash, false);
-            light.transform.localPosition = new Vector3(0f, 0f, .4f);
-            flashLight = light.AddComponent<Light>();
-            flashLight.type = LightType.Point;
-            flashLight.shadows = LightShadows.None;
-            flashLight.enabled = false;
-        }
+        if (flash == null) BuildFlash();
         if (flashParent != muzzle) { flash.SetParent(muzzle, false); flashParent = muzzle; }
+    }
+
+    private void BuildFlash()
+    {
+        var host = new GameObject("Feel Muzzle Flash");
+        host.SetActive(false);
+        flash = host.transform;
+        host.AddComponent<MeshFilter>().sharedMesh = FeelAssets.MuzzleFlash;
+        flashRenderer = host.AddComponent<MeshRenderer>();
+        flashRenderer.sharedMaterials = new[] { FeelAssets.Particle(FeelAssets.FlashStar, true), FeelAssets.Particle(FeelAssets.FlashSpike, true) };
+        flashRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        flashRenderer.receiveShadows = false;
+        var light = new GameObject("Feel Muzzle Light");
+        light.transform.SetParent(flash, false);
+        light.transform.localPosition = new Vector3(0f, 0f, .4f);
+        flashLight = light.AddComponent<Light>();
+        flashLight.type = LightType.Point;
+        flashLight.shadows = LightShadows.None;
+        flashLight.enabled = false;
     }
 
     private void HideFlash()
@@ -304,17 +315,7 @@ public sealed class WeaponFeedback : MonoBehaviour
         Vector3 forward = muzzle.forward, right = eye.right, up = eye.up;
         ref Casing casing = ref casings[nextCasing];
         nextCasing = (nextCasing + 1) % CasingCount;
-        if (casing.transform == null)
-        {
-            var host = new GameObject("Casing");
-            host.transform.SetParent(effectsRoot, false);
-            host.AddComponent<MeshFilter>().sharedMesh = FeelAssets.Casing;
-            var renderer = host.AddComponent<MeshRenderer>();
-            renderer.sharedMaterial = FeelAssets.Particle(Texture2D.whiteTexture, false);
-            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            block.Clear(); block.SetColor("_Color", Brass); renderer.SetPropertyBlock(block);
-            casing.transform = host.transform;
-        }
+        if (casing.transform == null) BuildCasing(ref casing);
         Vector3 port = muzzle.position - forward * .26f + right * .028f + up * .012f;
         casing.transform.SetPositionAndRotation(port, Quaternion.LookRotation(right, up));
         casing.transform.localScale = Vector3.one;
@@ -324,6 +325,19 @@ public sealed class WeaponFeedback : MonoBehaviour
         casing.age = casing.rest = 0f; casing.bounces = 0;
         casing.active = true; casing.resting = false;
         casing.transform.gameObject.SetActive(true);
+    }
+
+    private void BuildCasing(ref Casing casing)
+    {
+        var host = new GameObject("Casing");
+        host.SetActive(false);
+        host.transform.SetParent(effectsRoot, false);
+        host.AddComponent<MeshFilter>().sharedMesh = FeelAssets.Casing;
+        var renderer = host.AddComponent<MeshRenderer>();
+        renderer.sharedMaterial = FeelAssets.Particle(Texture2D.whiteTexture, false);
+        renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        block.Clear(); block.SetColor("_Color", Brass); renderer.SetPropertyBlock(block);
+        casing.transform = host.transform;
     }
 
     private void UpdateCasings(float dt)

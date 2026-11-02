@@ -48,12 +48,15 @@ public sealed class DamagePopupManager : MonoBehaviour
     private static void OnDamaged(CombatDamageReport report)
     {
         if (!Application.isPlaying || report.Target == null || report.ByOtherPlayer) return;
-        if (instance == null)
-        {
-            var root = new GameObject("Damage Popups", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler));
-            instance = root.AddComponent<DamagePopupManager>();
-        }
+        Prepare();
         instance.Show(report);
+    }
+
+    public static void Prepare()
+    {
+        if (!Application.isPlaying || instance != null) return;
+        var root = new GameObject("Damage Popups", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler));
+        instance = root.AddComponent<DamagePopupManager>();
     }
 
     private void Awake()

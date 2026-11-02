@@ -13,6 +13,7 @@ internal sealed class ArmIK
 
     public Transform Hand => hand;
     public Transform Upper => upper;
+    public Vector3 Elbow => lower.position;
     public float PalmLength { get; }
     public float PalmDepth => grip.PalmDepth;
     public float HalfPalmWidth => grip.HalfWidth;
@@ -59,6 +60,10 @@ internal sealed class ArmIK
     public void GripBar(float halfThickness, float palmClearance, float clearance, float weight, float curl, float sectionAngle = 0f)
         => grip.Bar(halfThickness, palmClearance, clearance, weight, curl, sectionAngle);
 
+    public void PrepareThumb(float underPalm, float bend) => grip.PrepareThumb(underPalm, bend);
+
+    public void RelaxThumb(float weight) => grip.RelaxThumb(weight);
+
     public void ClearLedgeSkin() => grip.ClearLedgeSkin();
 
     public void GripLedge(Collider surface, Vector3 fingers, Vector3 palm, Vector3 palmPosition, float clearance, float weight)
@@ -69,7 +74,8 @@ internal sealed class ArmIK
 
     /// <summary>
     /// Bends the arm toward the wrist target. Out of reach, the shoulder turns toward it by up to
-    /// <paramref name="shoulderAngle"/> degrees, then the arm straightens.
+    /// <paramref name="shoulderAngle"/> degrees, then the arm straightens. The elbow comes round to the hint with the
+    /// weight, like everything else, so a hold fading in or out never flips it.
     /// </summary>
     public void Solve(Vector3 target, Quaternion rotation, Vector3 hint, float weight, float rotationWeight, float shoulderAngle)
     {
@@ -88,7 +94,7 @@ internal sealed class ArmIK
             }
         }
 
-        TwoBoneIK.Solve(upper, lower, hand, target, hint);
+        TwoBoneIK.Solve(upper, lower, hand, target, hint, weight);
         hand.rotation = Quaternion.Slerp(hand.rotation, rotation, weight * rotationWeight);
     }
 }

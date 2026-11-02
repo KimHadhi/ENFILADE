@@ -1,0 +1,13 @@
+﻿id,presets,copies,scale,lightness,hole,holeSize,#note
+#설명,DAVFX 프리셋 이름(;로 구분). ImpactLibrary에 있어야 한다,프리셋마다 미리 만들어 둘 복사본 수. 연사에서 이펙트가 튀면 늘린다,크기 배율. 원본은 약 1m,피 밝기. 프리셋 기본값은 1~1.87이고 비우면 그 값을 쓴다,총알 구멍 머티리얼. 비우면 구멍이 없다,구멍 크기(m),
+BloodBody,Blood Impact 7; Blood Impact 8; Blood Impact 9; Blood Impact 10,3,0.7,6,,,몸통 명중. 7~11번이 피 전용 플립북
+BloodHead,Blood Impact 9; Blood Impact 10; Blood Impact 11,3,0.95,6.5,,,헤드샷
+BloodKill,Blood Impact 1; Blood Impact 2; Blood Impact 11,2,1.2,6,,,처치. 1~6번은 양이 많은 범용 스플래시이고 6번은 특히 크다
+BloodMelee,Blood Impact 8; Blood Impact 10,3,0.55,6,,,주먹 등 총알이 아닌 타격. 동료가 맞을 때와 시체를 칠 때도 쓴다
+Concrete,Dust Impact 1; Dust Impact 3; Dust Impact 6; Dust Impact 7,5,0.45,,M_BulletHole_Dust,0.22,기본값. Surfaces.csv에서 행이 없는 표면은 부모를 거쳐 여기로 온다
+Metal,Sparks Impact 1; Sparks Impact 2; Sparks Impact 11; Sparks Impact 16,4,0.45,,M_BulletHole,0.13,금속 전체
+Wood,Wood Impact 1; Wood Impact 2; Wood Impact 5,3,0.45,,M_BulletHole,0.14,나무 전체
+Gravel,Dirt Impact 1; Dirt Impact 3; Dirt Impact 5,3,0.5,,M_BulletHole_Dust,0.2,자갈·흙·모래
+Grass,Leaves Impact 2; Leaves Impact 3,2,0.45,,,,잔디
+Glass,Glass Impact 1; Glass Impact 3,2,0.45,,,,유리
+Water,Water Impact 2; Water Impact 3,2,0.5,,,,물

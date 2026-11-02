@@ -26,6 +26,7 @@ public sealed class WallMovementState : MovementBaseState
     {
         var traversal = ctx.Abilities.Traversal;
         if (!WallDetector.CanUseSurface(traversal.Wall.collider)) { Drop(); return; }
+        if (ctx.CurrentInput.y > 0.1f && (traversal.TryVault(false) || traversal.TryVault(true))) return;
         if (traversal.TryCatchLedge(-traversal.Wall.normal)) return;
         if (!traversal.SpendWallTime(dt)) { Drop(); return; }
         if (!traversal.Detector.TryWall(-traversal.Wall.normal, out RaycastHit contact)

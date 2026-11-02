@@ -17,7 +17,7 @@ public sealed class GroundBurstState : MovementBaseState
     public override MovementPosture Posture => kind == State.StepDodge ? ctx.Abilities.ActionPosture :
         kind == State.DashPush ? MovementPosture.Standing : MovementPosture.Crouching;
     private float Duration => kind == State.StepDodge ? ctx.AbilitySettings.stepDuration :
-        kind == State.LandingRoll ? ctx.AbilitySettings.rollDuration : ctx.AbilitySettings.dashPushDuration;
+        kind == State.LandingRoll ? ctx.Abilities.Landing.RollTime : ctx.AbilitySettings.dashPushDuration;
     public override void Enter() { interrupted = false; stepElapsed = stepExpectedAdvance = exitElapsed = 0f; initialSpeed = ctx.HorizontalVelocity.magnitude; ctx.Actions.ClearJumpBuffer(); }
     internal void RestartStep()
     {
@@ -51,9 +51,10 @@ public sealed class GroundBurstState : MovementBaseState
     }
     public override void UpdatePhysics(float dt)
     {
-        // A landing roll keeps the speed it landed with.
+        // A landing roll keeps the speed it landed with; a landing on the spot stops dead.
         float speed = kind == State.StepDodge ? ctx.AbilitySettings.stepDistance / Mathf.Max(0.05f, Duration) :
-            kind == State.LandingRoll ? Mathf.Max(ctx.AbilitySettings.rollSpeed, initialSpeed) : ctx.Abilities.Combat.DashSpeed;
+            kind != State.LandingRoll ? ctx.Abilities.Combat.DashSpeed :
+            ctx.Abilities.Landing.LandsInPlace ? 0f : Mathf.Max(ctx.AbilitySettings.rollSpeed, initialSpeed);
         ctx.HorizontalVelocity = ctx.Abilities.ActionDirection * speed;
         if (ctx.IsGrounded) ctx.VerticalVelocity = -2f;
         if (kind == State.StepDodge)

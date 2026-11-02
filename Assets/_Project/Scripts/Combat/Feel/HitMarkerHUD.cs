@@ -27,12 +27,15 @@ public sealed class HitMarkerHUD : MonoBehaviour
     public static void Show(HitMarkerKind kind)
     {
         if (!Application.isPlaying || !GunFeelSettings.Instance.hitMarkers) return;
-        if (instance == null)
-        {
-            var host = new GameObject("Hit Markers", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler));
-            instance = host.AddComponent<HitMarkerHUD>();
-        }
+        Prepare();
         instance.Trigger(kind);
+    }
+
+    public static void Prepare()
+    {
+        if (!Application.isPlaying || instance != null) return;
+        var host = new GameObject("Hit Markers", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler));
+        instance = host.AddComponent<HitMarkerHUD>();
     }
 
     private static bool IsKill(HitMarkerKind kind) => kind == HitMarkerKind.BodyKill || kind == HitMarkerKind.HeadKill;

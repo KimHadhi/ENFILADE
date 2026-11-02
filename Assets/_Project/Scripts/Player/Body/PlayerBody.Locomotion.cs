@@ -105,6 +105,7 @@ public sealed partial class PlayerBody
             length += channel.Target * channel.Length;
             authored += channel.Target * channel.AuthoredSpeed;
         }
+        if (player.IsNetworkDriven) FollowStep(dt);
         if (weight <= 0f) return;
         // Fast gameplay movement should lengthen the apparent stride, not turn the feet into a fast shuffle.
         float rate = Mathf.Clamp(speed / Mathf.Max(.1f, authored / weight), .65f, 1.1f);

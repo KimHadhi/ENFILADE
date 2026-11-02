@@ -12,6 +12,7 @@ using State = PlayerMovement.MovementState;
 ///   damage, which bypasses dodge i-frames, then the HeavyLanding state takes the player down and up again without
 ///   control: onto hands and knees, flat on the face from a huge fall, or onto the back when moving backwards.
 /// - Ctrl within rollInputWindow before a hard or heavy touchdown rolls instead: no damage, no slowdown, speed kept.
+///   Slower than rollLandSpeed, or pulling back, it lands on the spot for rollLandTime instead, as Beatrun's safety roll does.
 /// - KnockBack throws the player; they land heavily on their back facing the blow, hurt or not.
 /// Also tracks the big fall (wind, heartbeat, warp, flailing).
 /// </summary>
@@ -60,6 +61,10 @@ public sealed class MovementLanding
     }
     /// <summary>Shift and a W run cannot build speed yet after a hard landing.</summary>
     public bool SprintBlocked => noSprintLeft > 0f;
+    /// <summary>This landing roll stays where it came down.</summary>
+    public bool LandsInPlace { get; internal set; }
+    /// <summary>How long the landing roll under way lasts (s).</summary>
+    public float RollTime => LandsInPlace ? ctx.AbilitySettings.rollLandTime : ctx.AbilitySettings.rollDuration;
     /// <summary>Thrown by a blow and not down yet.</summary>
     public bool IsKnockedBack { get; private set; }
     /// <summary>The player has no control: thrown by a blow, or down after a heavy landing.</summary>
@@ -190,16 +195,18 @@ public sealed class MovementLanding
     private bool TryRoll()
     {
         Vector3 direction = ctx.Abilities.InputDirection(ctx.transform.forward);
-        if (ctx.HasCeilingAbove(ctx.CrouchColliderHeight) ||
-            !ctx.Abilities.Traversal.Detector.ClearCapsule(ctx.transform.position + direction * 0.6f, ctx.CrouchColliderHeight))
+        bool inPlace = ctx.HorizontalVelocity.magnitude < ctx.AbilitySettings.rollLandSpeed || ctx.CurrentInput.y < -0.1f;
+        if (ctx.HasCeilingAbove(ctx.CrouchColliderHeight) || (!inPlace
+            && !ctx.Abilities.Traversal.Detector.ClearCapsule(ctx.transform.position + direction * 0.6f, ctx.CrouchColliderHeight)))
             return false;
+        LandsInPlace = inPlace;
         ctx.Abilities.ActionDirection = direction;
         ctx.ChangeState(State.LandingRoll);
         ctx.Abilities.InputConsumed = true;
         ctx.Actions.ClearJumpBuffer();
 
         // [카메라 연출 추가] 구르기 시작 시 피치(x축)를 강하게 앞으로 쏠리게 함
-        ctx.GetComponentInChildren<PlayerCameraEffects>()?.ApplyCameraImpulse(new Vector3(75f, 0f, 0f), 0f);
+        if (!inPlace) ctx.GetComponentInChildren<PlayerCameraEffects>()?.ApplyCameraImpulse(new Vector3(75f, 0f, 0f), 0f);
 
         return true;
     }

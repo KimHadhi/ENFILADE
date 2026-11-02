@@ -9,6 +9,10 @@ public sealed class MovementPostureController
     private readonly PlayerMovement ctx;
     internal bool airCrouching, airBodyTucked;
     internal float airCrouchTop, airCameraOffset;
+    internal float mirroredTuck, tuckRebase;
+    /// <summary>How far an air crouch has drawn the capsule's bottom up above the feet transform (m).</summary>
+    internal float AirTuck => ctx.IsNetworkDriven ? mirroredTuck
+        : Mathf.Max(0f, ctx.Motor.controller.center.y - ctx.Motor.controller.height * 0.5f);
     internal readonly float standingColliderHeight, standingColliderRadius, defaultStepOffset;
     private readonly float baseCameraY;
     private float currentOffset;
@@ -77,6 +81,7 @@ public sealed class MovementPostureController
         {
             Vector3 shift = ctx.transform.TransformVector(Vector3.up * feetOffset);
             ctx.transform.position += shift;
+            tuckRebase += feetOffset;
             ctx.Motor.controller.center -= Vector3.up * feetOffset;
             ctx.Motor.previousPosition += shift;
             currentOffset -= feetOffset;

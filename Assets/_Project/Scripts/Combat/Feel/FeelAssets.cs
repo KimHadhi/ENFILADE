@@ -48,6 +48,17 @@ public static class FeelAssets
         return material;
     }
 
+    /// <summary>Generates every procedural mesh and texture and returns the materials that shots and hits draw with.</summary>
+    public static Material[] CombatMaterials()
+    {
+        _ = Quad; _ = MuzzleFlash; _ = Casing; _ = Ring;
+        return new[]
+        {
+            Particle(SoftDot, false), Particle(SoftDot, true), Particle(FlashStar, true), Particle(FlashSpike, true),
+            Particle(BloodSplat, false), Particle(Texture2D.whiteTexture, false)
+        };
+    }
+
     public static Texture2D SoftDot => softDot != null ? softDot : softDot = Generate("Feel Soft Dot", 64, 64, (u, v) =>
     {
         float r = Mathf.Clamp01(Mathf.Sqrt(u * u + v * v));

@@ -23,10 +23,12 @@ public struct PlayerPose : INetworkSerializeByMemcpy
     public Vector3 Anchor;
     /// <summary>Where they look. It travels here, not through NetworkTransform, whose buffer makes a turn arrive late and trail off.</summary>
     public float Yaw, Pitch;
-    public float Lean, RunIntent, FallSpeed, LandImpact;
+    public float Lean, RunIntent, FallSpeed, LandImpact, Tuck;
     /// <summary>The state's own numbers, see MovementMirror.</summary>
     public float Detail, Extent;
-    public byte State, LandingTier, HeavyPose, LadderSteps;
+    public byte State, LandingTier, HeavyPose, LadderSteps, Vault;
     public byte Jumps, Landings, DashHits;
+    /// <summary>Where the stride is, so the legs step in time on every PC.</summary>
+    public byte Step;
     public Marks Flags;
 }

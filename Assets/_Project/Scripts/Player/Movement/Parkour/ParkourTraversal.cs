@@ -35,14 +35,22 @@ public sealed class ParkourTraversal
     internal bool SpendWallTime(float dt) { wallBudget -= dt; return wallBudget > 0f; }
     internal bool CanGrab(SwingBar candidate) => barLock <= 0f || candidate != lastBar;
 
-    internal bool TryObstacle(bool airborne = false)
+    // Airborne, or at a wall with high = true. The move looks where the player looks, as Beatrun's do.
+    internal bool TryVault(bool high)
     {
-        if (ctx.CurrentInput.sqrMagnitude < 0.01f) return false;
-        if (!Detector.TryObstacle(ctx.Abilities.InputDirection(ctx.transform.forward), out ObstacleTarget candidate, airborne)
-            || traversedObstacles.Contains(candidate.Surface)) return false;
-        // Climbing onto something goes through the ledge hang unless direct mantles are on; only vaults start here.
-        if (!candidate.IsVault && !ctx.AbilitySettings.mantleFromGround) return false;
+        Vector3 forward = ctx.transform.forward;
+        ObstacleTarget candidate;
+        bool found = high ? Detector.Vaults.TryHigh(forward, ctx.VerticalVelocity, out candidate)
+            : Detector.Vaults.TryAir(forward, out candidate);
+        if (!found || traversedObstacles.Contains(candidate.Surface)) return false;
         Obstacle = candidate;
+        Ledge = default;
+        if (candidate.EdgeNormal != Vector3.zero)
+        {
+            Transform support = candidate.Surface.transform;
+            Ledge = new LedgeTarget { Surface = candidate.Surface, LocalEdge = support.InverseTransformPoint(candidate.Edge),
+                LocalNormal = support.InverseTransformDirection(candidate.EdgeNormal), LocalHang = support.InverseTransformPoint(ctx.transform.position) };
+        }
         ctx.ChangeState(Obstacle.IsVault ? State.Vault : State.Mantle);
         ctx.Actions.ClearJumpBuffer();
         return true;
@@ -60,10 +68,10 @@ public sealed class ParkourTraversal
             return true;
         }
         if (ctx.CurrentInput.y > 0.1f && ctx.VerticalVelocity >= -ctx.AbilitySettings.airTraversalMaxFallSpeed
-            && ledgeLock <= 0f && TryObstacle(true)) return true;
+            && ledgeLock <= 0f && (TryVault(false) || TryVault(true))) return true;
         if (ctx.VerticalVelocity <= 0f && TryCatchLedge()) return true;
         if (wallBudget <= 0f || wallLock > 0f || ctx.CurrentInput.y <= 0.1f || !ctx.Input.JumpHeld) return false;
-        if (!Detector.TryWallEntry(out Wall)) return false;
+        if (!Detector.TryWallEntry(out Wall) || VaultComing()) return false;
         float facing = Vector3.Dot(ctx.transform.forward, -Wall.normal);
         float alongSpeed = Vector3.ProjectOnPlane(ctx.HorizontalVelocity, Wall.normal).magnitude;
         bool travellingAlongWall = alongSpeed > Mathf.Max(2f, ctx.HorizontalVelocity.magnitude * 0.6f);
@@ -73,6 +81,14 @@ public sealed class ParkourTraversal
             return true;
         }
         return false;
+    }
+    // A top this jump will clear in a moment is a vault on its way, not a wall to climb.
+    private bool VaultComing()
+    {
+        if (ctx.VerticalVelocity <= 0f) return false;
+        float rise = ctx.VerticalVelocity * ctx.VerticalVelocity / (2f * Mathf.Abs(ctx.gravity));
+        return Detector.Vaults.TryLaterInJump(ctx.transform.forward, rise, out ObstacleTarget vault)
+            && !traversedObstacles.Contains(vault.Surface);
     }
     internal bool TryCatchLedge(Vector3? facing = null)
     {
@@ -84,8 +100,13 @@ public sealed class ParkourTraversal
     {
         if (!WallDetector.CanUseSurface(Ledge.Surface)) return false;
         Transform support = Ledge.Surface.transform;
-        if (!Detector.TryMantle(Ledge.Surface, support.TransformPoint(Ledge.LocalEdge),
-            -support.TransformDirection(Ledge.LocalNormal), ctx.transform.position, out Obstacle)) return false;
+        Vector3 edge = support.TransformPoint(Ledge.LocalEdge), feet = ctx.transform.position;
+        Vector3 inward = Vector3.ProjectOnPlane(-support.TransformDirection(Ledge.LocalNormal), Vector3.up).normalized;
+        Vector3 along = Vector3.Cross(Vector3.up, inward);
+        edge += along * Vector3.Dot(feet - edge, along);
+        if (!Detector.TryHeave(Ledge.Surface, edge, inward, feet, out Obstacle)) return false;
+        // The hands stay where they gripped; a shimmy may have left the stored edge point behind.
+        Ledge.LocalEdge = support.InverseTransformPoint(edge);
         ctx.ChangeState(State.Mantle);
         ctx.Actions.ClearJumpBuffer();
         return true;

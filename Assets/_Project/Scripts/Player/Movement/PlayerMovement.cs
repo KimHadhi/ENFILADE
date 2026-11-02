@@ -103,7 +103,9 @@ public sealed partial class PlayerMovement : MonoBehaviour
     public bool IsDowned => DamageReceiver != null && DamageReceiver.IsDowned;
     public bool IsDead => DamageReceiver != null && !DamageReceiver.IsAlive;
     /// <summary>This player's frame time: in a room, slow motion runs on them alone (CombatTimeEffects).</summary>
-    public float DeltaTime => Time.deltaTime * (TimeEffects != null ? TimeEffects.Pace : 1f);
+    public float DeltaTime => Time.deltaTime * Pace;
+    /// <summary>How fast this player's own time runs: below 1 only in a room's slow motion.</summary>
+    public float Pace => TimeEffects != null ? TimeEffects.Pace : 1f;
     private CombatTimeEffects TimeEffects => timeEffects != null ? timeEffects : timeEffects = GetComponent<CombatTimeEffects>();
     private CombatTimeEffects timeEffects;
     public bool LandedThisFrame => Motor.landedThisFrame;
@@ -112,6 +114,15 @@ public sealed partial class PlayerMovement : MonoBehaviour
     public bool IsDiving => StateMachine != null && StateMachine.IsIn<DivingGroupState>();
     public bool IsCrouching => CurrentState == MovementState.Crouching;
     public bool IsAirCrouching => Posture.airCrouching;
+    /// <summary>How far an air crouch has drawn the capsule's bottom up above the feet (m).</summary>
+    public float AirTuck => Posture.AirTuck;
+    /// <summary>How far landing has moved the feet up to the capsule since the last call (m).</summary>
+    internal float TakeTuckRebase()
+    {
+        float shift = Posture.tuckRebase;
+        Posture.tuckRebase = 0f;
+        return shift;
+    }
     public bool IsProning => StateMachine != null && StateMachine.IsIn<ProneState>();
     public Vector3 Velocity => HorizontalVelocity + Vector3.up * VerticalVelocity;
     public Vector3 ActualVelocity => Motor.actualVelocity;
@@ -162,6 +173,8 @@ public sealed partial class PlayerMovement : MonoBehaviour
     public float AirborneTimer => Motor.airborneTimer;
 
     public float StandingColliderHeight => Posture.standingColliderHeight;
+    /// <summary>One Beatrun unit on this player: its 72-unit hull fitted to the standing capsule, so ported distances keep their share of the body (m).</summary>
+    public float HullUnit => StandingColliderHeight / 72f;
     public float CrouchColliderHeight => crouchColliderHeight;
     public float ProneColliderHeight => proneColliderHeight;
 
@@ -261,6 +274,9 @@ public sealed partial class PlayerMovement : MonoBehaviour
             GameTables.Bind(TableName, "Hands", gameObject.AddComponent<PlayerBodyHands>());
             // Its feet make the footsteps.
             GameTables.Bind(TableName, "Footsteps", gameObject.AddComponent<PlayerFootsteps>());
+            // Its skirt, coat and hair hang free.
+            GameTables.Bind(PlayerBodyCloth.TableName, PlayerBodyCloth.TableRow,
+                gameObject.AddComponent<PlayerBodyCloth>(), gameObject.AddComponent<PlayerBodyClothColliders>());
         }
         // Movement sounds anyone nearby hears: the voices they come out of and action sounds from the movement events.
         if (Application.isPlaying && GetComponent<CharacterSounds>() == null)

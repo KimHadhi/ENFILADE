@@ -21,9 +21,11 @@ public sealed partial class PlayerBodyHands
         Transform support = ledge.Surface.transform;
         Vector3 outward = Vector3.ProjectOnPlane(support.TransformDirection(ledge.LocalNormal), Vector3.up).normalized;
         Vector3 along = Vector3.Cross(Vector3.up, -outward), edge = support.TransformPoint(ledge.LocalEdge);
-        Vector3 centre = edge + along * Vector3.Dot(transform.position - edge, along);
+        // Climbing, the edge point is already the one in front of the body, and the hands must not slide with it.
+        Vector3 centre = player.CurrentState != PlayerMovement.MovementState.LedgeHang ? edge
+            : edge + along * Vector3.Dot(transform.position - edge, along);
         Vector3 side = along * (isLeft ? -1f : 1f);
-        float across = ledgeHandSpacing * (gripSkin?.LedgeHandSpacingScale ?? 1f) * .5f;
+        float across = ledgeHandSpacing * shoulderSpan * (gripSkin?.LedgeHandSpacingScale ?? 1f) * .5f;
         // The palm rests just inside the edge; the wrist is placed from the measured palm centre, not guessed.
         float inset = arm.PalmLength * ledgePalmInset * (gripSkin?.LedgePalmInsetScale ?? 1f);
         for (int attempt = 0; attempt < 5; attempt++, across *= .7f)
@@ -45,24 +47,28 @@ public sealed partial class PlayerBodyHands
         if (!FindLedgeContact(arm, isLeft, out var contact)) return false;
         rotation = arm.HandRotation(contact.Fingers, -contact.Normal);
         position = arm.WristAtPalm(contact.Palm, rotation);
-        hint = arm.Upper.position + contact.Side * .3f - contact.Normal * .1f;
+        // Looking away, the look clip already has the elbow somewhere an arm can go from that way round.
+        hint = Vector3.Lerp(arm.Upper.position + contact.Side * .3f - contact.Normal * .1f, arm.Elbow, body.HangTurn);
         return true;
     }
 
-    // The body's ledge alignment uses the same contacts as the final hand IK, before the eye camera is placed.
-    internal bool TryLedgeWrists(out Vector3 centre)
+    // The body's ledge alignment uses the same contacts as the final hand IK, before the eye camera is placed. A hand that
+    // has let go no longer counts: the body hangs from the other. centre is where the wrists belong, held where they are.
+    internal bool TryLedgeWrists(out Vector3 centre, out Vector3 held)
     {
-        centre = Vector3.zero;
+        centre = held = Vector3.zero;
         if (left == null || right == null
             || !LedgeHandTarget(left, true, out Vector3 l, out _, out _)
             || !LedgeHandTarget(right, false, out Vector3 r, out _, out _)) return false;
-        centre = (l + r) * .5f;
+        float leftShare = Mathf.Max(edgeShares[0], .001f), rightShare = Mathf.Max(edgeShares[1], .001f), total = leftShare + rightShare;
+        centre = (l * leftShare + r * rightShare) / total;
+        held = (left.Hand.position * leftShare + right.Hand.position * rightShare) / total;
         return true;
     }
 
     private void CurlLedgeFingers(ArmIK arm, bool isLeft)
     {
-        float weight = weights[(int)Hold.Ledge];
+        float weight = weights[(int)Hold.Ledge] * edgeShares[isLeft ? 0 : 1];
         if (weight <= 0f || !FindLedgeContact(arm, isLeft, out var contact)) return;
         arm.GripLedge(contact.Surface, contact.Fingers, -contact.Normal, contact.Palm, fingerSurfaceClearance, weight);
     }

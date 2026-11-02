@@ -28,10 +28,9 @@ public sealed class ObstacleTraversalState : MovementBaseState
         var target = ctx.Abilities.Traversal.Obstacle;
         ctx.Abilities.Traversal.RecordObstacle();
         ctx.Abilities.Traversal.ObstacleProgress = 0f;
-        path = target.ReferenceMotion ? null : new TraversalPath(target, ctx.Abilities.Traversal.Detector, ctx.CrouchColliderHeight);
-        float route = path != null ? path.Length : Vector3.Distance(target.Start, target.End);
-        duration = Mathf.Max(0.05f, TraversalTiming.Duration(ctx.AbilitySettings, target, route, entryVelocity.magnitude, ctx.WalkSpeed));
-        reference = target.ReferenceMotion ? new ReferenceTraversal(ctx, target, duration) : null;
+        reference = target.ReferenceMotion ? new ReferenceTraversal(ctx, target, entryVelocity.magnitude) : null;
+        path = reference != null ? null : new TraversalPath(target, ctx.Abilities.Traversal.Detector, ctx.CrouchColliderHeight);
+        duration = Mathf.Max(0.05f, TraversalTiming.Duration(ctx.AbilitySettings, target));
         EntrySerial++;
     }
     public override void ProcessInput(Vector2 input)
@@ -48,45 +47,50 @@ public sealed class ObstacleTraversalState : MovementBaseState
             if (!reference.Complete) return;
             ctx.Abilities.Landing.SupportedByTraversal();
             ctx.Abilities.ReturnToLocomotion();
-            // Looking back is allowed; it must not reverse the traversal's exit impulse.
-            ctx.HorizontalVelocity = vault ? Vector3.ProjectOnPlane(target.End - target.Start, Vector3.up).normalized * 5f : Vector3.zero;
-            ctx.VerticalVelocity = 0f;
+            Leave(target.Kind);
             return;
         }
-        Vector3 across = Vector3.ProjectOnPlane(target.End - target.Start, Vector3.up);
         if (finished)
         {
             if (Vector3.Distance(ctx.transform.position, finishPosition) > 0.15f) { Abort(); return; }
             ctx.Abilities.Landing.SupportedByTraversal();
             ctx.Abilities.ReturnToLocomotion();
-            Vector3 forward = across.normalized;
-            ctx.HorizontalVelocity = vault ? forward * Mathf.Max(entryVelocity.magnitude, ctx.WalkSpeed) : entryVelocity;
-            ctx.VerticalVelocity = vault ? 0f : -2f;
+            ctx.HorizontalVelocity = entryVelocity;
+            ctx.VerticalVelocity = -2f;
         }
+    }
+    // Forward is the way the player looks now, so looking round in a vault steers what comes after it.
+    private void Leave(VaultKind kind)
+    {
+        float unit = ctx.HullUnit, entry = entryVelocity.magnitude / unit;
+        Vector3 forward = ctx.transform.forward;
+        ctx.HorizontalVelocity = forward * (VaultMotion.ExitSpeed(kind, entry) * unit);
+        ctx.VerticalVelocity = 0f;
+        if (!ctx.Input.JumpHeld || !VaultMotion.CanSpring(kind)) return;
+        ctx.Actions.Jump(VaultMotion.SpringHeight * unit);
+        ctx.HorizontalVelocity = forward * (VaultMotion.SpringSpeed(entry) * unit);
     }
     public override void UpdatePhysics(float dt)
     {
         if (reference != null)
         {
             if (!reference.Advance(dt)) Abort();
-            else ctx.Abilities.Traversal.ObstacleProgress = reference.TimeShare;
+            else ctx.Abilities.Traversal.ObstacleProgress = reference.Progress;
             return;
         }
         float nextElapsed = elapsed + dt;
-        float to = TraversalTiming.Progress(nextElapsed / duration, vault);
+        float to = TraversalTiming.Progress(nextElapsed / duration);
         ctx.HorizontalVelocity = Vector3.zero; ctx.VerticalVelocity = 0f;
         float from = progress;
         var target = ctx.Abilities.Traversal.Obstacle;
         Vector3 candidate = path.Evaluate(to);
         // Original exit conditions. Keep checking the body before handing control
         // back; unlike MOVETYPE_NOCLIP, this controller must not end inside a wall.
-        bool wantsExit = progress >= TraversalTiming.EndProgress(vault)
+        bool wantsExit = progress >= TraversalTiming.EndProgress
             || (candidate - target.End).sqrMagnitude < TraversalTiming.EndDistanceSquared;
-        bool safeExit = vault
-            ? ctx.Abilities.Traversal.Detector.ClearCapsule(candidate, ctx.StandingColliderHeight)
-            : Mathf.Abs(candidate.y - target.End.y) < 0.08f
-                && ctx.Abilities.Traversal.Detector.ClearCapsule(candidate, ctx.StandingColliderHeight)
-                && ctx.Abilities.Traversal.Detector.HasTread(candidate, target.Surface);
+        bool safeExit = Mathf.Abs(candidate.y - target.End.y) < 0.08f
+            && ctx.Abilities.Traversal.Detector.ClearCapsule(candidate, ctx.StandingColliderHeight)
+            && ctx.Abilities.Traversal.Detector.HasTread(candidate, target.Surface);
         bool complete = wantsExit && safeExit;
         if (to > 0.995f) { to = 1f; complete = true; }
         int slices = Mathf.Max(1, Mathf.CeilToInt((to - from) * path.Length / 0.06f));
