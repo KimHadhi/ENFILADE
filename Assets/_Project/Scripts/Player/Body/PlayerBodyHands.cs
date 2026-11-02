@@ -66,6 +66,14 @@ public sealed partial class PlayerBodyHands : MonoBehaviour
         right = ArmIK.Create(animator, false);
         left?.PrepareBarGrip(Ladder.BarThickness * .5f, ladderPalmClearance, fingerSurfaceClearance);
         right?.PrepareBarGrip(Ladder.BarThickness * .5f, ladderPalmClearance, fingerSurfaceClearance);
+        LetGo();
+    }
+
+    /// <summary>Takes the hands off whatever they hold.</summary>
+    internal void LetGo()
+    {
+        left?.ClearLedgeSkin();
+        right?.ClearLedgeSkin();
         System.Array.Clear(weights, 0, HoldCount);
         heldLadder = null;
         wasOnLadder = ladderTopExit = false;
@@ -80,7 +88,7 @@ public sealed partial class PlayerBodyHands : MonoBehaviour
         var animator = body.BodyAnimator;
         if (animator != boundAnimator)
             BindAnimator(animator);
-        if (left == null || right == null) return;
+        if (left == null || right == null || body.IsLimp) return;
         left.ClearLedgeSkin();
         right.ClearLedgeSkin();
         if (weapons == null) weapons = GetComponent<WeaponController>();

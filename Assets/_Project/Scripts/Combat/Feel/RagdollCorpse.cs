@@ -3,12 +3,14 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// A limp copy of a humanoid body. Copying a character in the middle of a fight would hitch, so it is made once up front
-/// and stowed unseen; dying only lays it out in the live model's pose and look. Whoever dies hides the original, so
-/// nothing here can leave a living body broken. Simulated, it runs physics and can be pushed; otherwise it follows the
-/// pose another PC's corpse reports (Capture, Follow), so every PC shows one body. The joints are made in the neutral
-/// pose: limits are measured from the pose a joint is made in, and these should be a body's, not whatever pose it died
-/// in. Twist limits read as Unity's ragdoll wizard does: negative bends a knee, an elbow or a nod forward.
+/// A limp doll for a humanoid body: one rigid part for each main bone, with no skin or skeleton of its own. Building one
+/// in the middle of a fight would hitch, so it is made once up front and stowed, switched off. Dying lays it over the live
+/// body, which then takes the doll's turns every frame (PoseBody). Physics never writes a real bone, so nothing here can
+/// leave a living body broken, and whatever the body wears goes on working. Simulated, the doll runs physics and can be
+/// pushed; otherwise it follows the pose another PC's corpse reports (Capture, Follow), so every PC shows one body. The
+/// joints are made in the neutral pose: limits are measured from the pose a joint is made in, and these should be a
+/// body's, not whatever pose it died in. Twist limits read as Unity's ragdoll wizard does: negative bends a knee, an elbow
+/// or a nod forward.
 /// </summary>
 public sealed class RagdollCorpse : MonoBehaviour, IDamageReceiver
 {
@@ -19,18 +21,21 @@ public sealed class RagdollCorpse : MonoBehaviour, IDamageReceiver
     private const int SolverSteps = 12;
 
     private readonly List<Rigidbody> parts = new List<Rigidbody>();
+    // The real bone each part turns, by the part's place in the list.
+    private readonly List<Transform> bones = new List<Transform>();
     private readonly List<Collider> shapes = new List<Collider>();
-    private Transform[] liveBones, bones;
-    private Renderer[] liveLooks, looks;
+    private Transform[] measured, real;
     private Rigidbody chest;
     private int layer;
     private LayerMask passes;
+    private bool simulated;
 
+    /// <summary>The real head, which is where the eyes are.</summary>
     public Transform Head { get; private set; }
     /// <summary>Bullets, blows and shoves that reach it. It takes no damage; whoever laid it decides how far they push it.</summary>
     public event Action<DamageHit> Struck;
 
-    /// <summary>Makes a corpse of this live model and stows it. It touches only what's in solid; its shapes sit on this layer.</summary>
+    /// <summary>Makes a doll of this live model and stows it. It touches only what's in solid; its shapes sit on this layer.</summary>
     public static RagdollCorpse Prepare(Animator live, int layer, LayerMask solid)
     {
         if (live == null || !live.isHuman) return null;
@@ -44,27 +49,19 @@ public sealed class RagdollCorpse : MonoBehaviour, IDamageReceiver
         var corpse = root.AddComponent<RagdollCorpse>();
         corpse.layer = layer;
         corpse.passes = ~solid;
-        corpse.liveBones = live.GetComponentsInChildren<Transform>(true);
-        corpse.bones = model.GetComponentsInChildren<Transform>(true);
-        corpse.liveLooks = live.GetComponentsInChildren<Renderer>(true);
-        corpse.looks = model.GetComponentsInChildren<Renderer>(true);
         root.SetActive(true);
-        corpse.Build(live);
+        corpse.Build(live, model.transform);
+        // The copy was only there to measure the neutral pose on, away from the real bones.
+        DestroyImmediate(model);
         corpse.Stow();
         return corpse;
     }
 
-    /// <summary>Takes the live model's pose and look at this moment. Simulated, it drops; otherwise it waits to follow.</summary>
+    /// <summary>Takes the live body's pose at this moment. Simulated, it drops; otherwise it waits to follow.</summary>
     public void Lay(bool simulated)
     {
-        bones[0].SetPositionAndRotation(liveBones[0].position, liveBones[0].rotation);
-        for (int i = 1; i < bones.Length; i++)
-            if (liveBones[i] != null) bones[i].SetLocalPositionAndRotation(liveBones[i].localPosition, liveBones[i].localRotation);
-        for (int i = 0; i < looks.Length; i++)
-        {
-            looks[i].enabled = true;
-            if (liveLooks[i] != null) looks[i].shadowCastingMode = liveLooks[i].shadowCastingMode;
-        }
+        this.simulated = simulated;
+        for (int i = 0; i < parts.Count; i++) parts[i].transform.SetPositionAndRotation(bones[i].position, bones[i].rotation);
         foreach (var shape in shapes) shape.enabled = true;
         Physics.SyncTransforms();
         foreach (var part in parts)
@@ -74,18 +71,33 @@ public sealed class RagdollCorpse : MonoBehaviour, IDamageReceiver
         }
     }
 
-    /// <summary>Out of sight and out of the world until the next death. The joints stay as made.</summary>
+    /// <summary>
+    /// Turns the real body to this doll. Parents come first in the list, so children land true, and the bones keep their
+    /// lengths however far the joints stretch. Following another PC there is no physics to place the parts, so the bones
+    /// do, and blows land where the body is seen.
+    /// </summary>
+    public void PoseBody()
+    {
+        bones[0].position = parts[0].transform.position;
+        for (int i = 0; i < parts.Count; i++)
+        {
+            bones[i].rotation = parts[i].transform.rotation;
+            if (!simulated && i > 0) parts[i].transform.position = bones[i].position;
+        }
+    }
+
+    /// <summary>Out of the world until the next death. The joints stay as made.</summary>
     public void Stow()
     {
         foreach (var part in parts)
         {
+            part.interpolation = RigidbodyInterpolation.None;
             if (part.isKinematic) continue;
             part.linearVelocity = Vector3.zero;
             part.angularVelocity = Vector3.zero;
             part.isKinematic = true;
         }
         foreach (var shape in shapes) shape.enabled = false;
-        foreach (var look in looks) look.enabled = false;
     }
 
     DamageResult IDamageReceiver.ReceiveHit(DamageHit hit)
@@ -149,7 +161,7 @@ public sealed class RagdollCorpse : MonoBehaviour, IDamageReceiver
         return pose;
     }
 
-    /// <summary>Moves toward the pose the simulating PC reported. Parents come first in the list, so children land true.</summary>
+    /// <summary>Moves toward the pose the simulating PC reported.</summary>
     public void Follow(CorpsePose pose, float dt)
     {
         float blend = 1f - Mathf.Exp(-FollowRate * dt);
@@ -157,19 +169,21 @@ public sealed class RagdollCorpse : MonoBehaviour, IDamageReceiver
         hips.position = Vector3.Lerp(hips.position, pose.Hips, blend);
         for (int i = 0; i < parts.Count && i < pose.Parts; i++)
         {
-            var bone = parts[i].transform;
-            bone.rotation = Quaternion.Slerp(bone.rotation, pose.Rotation(i), blend);
+            var part = parts[i].transform;
+            part.rotation = Quaternion.Slerp(part.rotation, pose.Rotation(i), blend);
         }
     }
 
-    private void Build(Animator live)
+    private void Build(Animator live, Transform model)
     {
+        measured = model.GetComponentsInChildren<Transform>(true);
+        real = live.GetComponentsInChildren<Transform>(true);
         Transform Bone(HumanBodyBones id)
         {
-            int index = Array.IndexOf(liveBones, live.GetBoneTransform(id));
-            return index >= 0 ? bones[index] : null;
+            int index = Array.IndexOf(real, live.GetBoneTransform(id));
+            return index >= 0 ? measured[index] : null;
         }
-        ToNeutralPose(live.avatar, bones[0]);
+        ToNeutralPose(live.avatar, model);
 
         Transform hips = Bone(HumanBodyBones.Hips), spine = Bone(HumanBodyBones.Spine), head = Bone(HumanBodyBones.Head);
         Transform upperBody = Bone(HumanBodyBones.Chest) ?? spine, neck = Bone(HumanBodyBones.Neck) ?? head;
@@ -198,7 +212,8 @@ public sealed class RagdollCorpse : MonoBehaviour, IDamageReceiver
         // Seen from above, the two arms swing forward in opposite senses.
         Arm(leftArm, leftElbow, Bone(HumanBodyBones.LeftHand), up);
         Arm(rightArm, rightElbow, Bone(HumanBodyBones.RightHand), -up);
-        Head = head;
+        Head = live.GetBoneTransform(HumanBodyBones.Head);
+        measured = real = null;
 
         void Leg(Transform thigh, Transform knee, Transform foot)
         {
@@ -236,9 +251,13 @@ public sealed class RagdollCorpse : MonoBehaviour, IDamageReceiver
         return part;
     }
 
+    // Lined up with its bone, so the two share a turn however the rig rolls its bones.
     private Rigidbody Part(Transform bone, float mass)
     {
-        var part = bone.gameObject.AddComponent<Rigidbody>();
+        var part = new GameObject(bone.name, typeof(Rigidbody)).GetComponent<Rigidbody>();
+        part.gameObject.layer = layer;
+        part.transform.SetParent(transform, false);
+        part.transform.SetPositionAndRotation(bone.position, bone.rotation);
         part.isKinematic = true;
         part.mass = mass;
         part.angularDamping = Limp;
@@ -247,18 +266,18 @@ public sealed class RagdollCorpse : MonoBehaviour, IDamageReceiver
         part.maxDepenetrationVelocity = Unsticking;
         part.excludeLayers = passes;
         parts.Add(part);
+        bones.Add(real[Array.IndexOf(measured, bone)]);
         return part;
     }
 
     private void Ball(Rigidbody part, Vector3 centre, float radius)
-        => Shape<SphereCollider>(part, centre, Quaternion.identity).radius = radius / part.transform.lossyScale.x;
+        => Shape<SphereCollider>(part, centre, Quaternion.identity).radius = radius;
 
     private void Capsule(Rigidbody part, Vector3 start, Vector3 end, float radius)
     {
         var capsule = Shape<CapsuleCollider>(part, (start + end) * .5f, Quaternion.FromToRotation(Vector3.up, end - start));
-        float scale = part.transform.lossyScale.x;
-        capsule.radius = radius / scale;
-        capsule.height = (Vector3.Distance(start, end) + radius * 2f) / scale;
+        capsule.radius = radius;
+        capsule.height = Vector3.Distance(start, end) + radius * 2f;
     }
 
     // A child of its own, because rigs roll their bones every way and a collider only lines up with its object's axes.

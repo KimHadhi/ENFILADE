@@ -64,7 +64,7 @@ public sealed class DownedAura : MonoBehaviour
         material.SetFloat(WidthId, outlineWidth * Mathf.Lerp(.4f, 1f, near));
     }
 
-    // Parented to the player, not the model: the bones drive them, and the ragdoll copies the model.
+    // Parented to the player, not the model: the bones drive them.
     private void Build()
     {
         var animator = body != null ? body.BodyAnimator : null;

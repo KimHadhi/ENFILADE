@@ -308,7 +308,7 @@ public sealed partial class PlayerMovement : MonoBehaviour
         Motor.TickTimers(dt);
         StateMachine.Duration += dt;
         Motor.CheckGroundedAndSlope();
-        // The dead still fall, so nobody's body hangs in the air.
+        // The dead still fall, unless PlayerRagdoll has switched their capsule off.
         if (CombatInputLocked || !IsLocal || !DamageReceiver.IsAlive)
         {
             Input.Sample(false);
@@ -316,7 +316,7 @@ public sealed partial class PlayerMovement : MonoBehaviour
             HorizontalVelocity = Vector3.zero;
             Motor.ApplyGravity(dt);
             Posture.UpdateHeightsAndTransform(dt);
-            Motor.Move(dt);
+            if (Motor.controller.enabled) Motor.Move(dt);
             return;
         }
         Vector2 input = CurrentInput;

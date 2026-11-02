@@ -260,6 +260,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
             thirdPerson = !thirdPerson;
             ApplyView();
         }
+        if (StaysLimp()) return;
         foreach (var channel in channels) channel.Target = 0f;
         targetYaw = 0f;
         legsPlanted = false;
@@ -279,7 +280,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     private void LateUpdate()
     {
         if (GamePause.IsPaused || Time.deltaTime <= 0f) return;
-        if (body != null)
+        if (body != null && !limp)
         {
             // Hanging, the hands hold the body in place instead of the head following the camera. FollowHead aims at
             // the camera's pivot, not the camera, so it keeps running while the camera rides the eyes: the camera
