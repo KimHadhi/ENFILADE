@@ -1,37 +1,43 @@
 using UnityEngine;
 
-/// <summary>The supplied vmanip_vault route and handoff, in metres, paced by TraversalTiming.</summary>
+/// <summary>Carries the player in a straight line from Start to End at Beatrun's pace (VaultMotion), through the obstacle only.</summary>
 public sealed class ReferenceTraversal
 {
     private readonly PlayerMovement ctx;
     private readonly ObstacleTarget target;
     private readonly ParkourDetector detector;
-    private readonly float duration;
+    private readonly float entryUnits;
     private Vector3 lastClearPosition;
-    private float progress, elapsed;
+    private float lerp, clock;
     private bool finishing;
     private float finishTime;
     private const float FinishDuration = 0.12f;
     private Vector3 finishStart, finishVelocity, lastVelocity;
     public bool Complete { get; private set; }
-    public float TimeShare => Mathf.Clamp01(elapsed / duration);
+    public float Progress => lerp;
 
-    internal ReferenceTraversal(PlayerMovement context, ObstacleTarget obstacle, float seconds)
+    internal ReferenceTraversal(PlayerMovement context, ObstacleTarget obstacle, float entrySpeed)
     {
         ctx = context; target = obstacle; detector = ctx.Abilities.Traversal.Detector;
         lastClearPosition = obstacle.Start;
-        duration = Mathf.Max(0.05f, seconds);
+        entryUnits = entrySpeed / ctx.HullUnit;
     }
 
     internal bool Advance(float dt)
     {
         if (target.Surface == null || !target.Surface.enabled || !target.Surface.gameObject.activeInHierarchy) return false;
-        float nextElapsed = elapsed + Mathf.Max(0f, dt);
-        float next = TraversalTiming.Progress(nextElapsed / duration, target.IsVault);
-        Vector3 position = Vector3.Lerp(target.Start, target.End, next);
-        bool finish = progress >= TraversalTiming.EndProgress(target.IsVault)
-            || (position - target.End).sqrMagnitude < TraversalTiming.EndDistanceSquared;
-        if (!finishing && finish && !detector.ClearReferenceExit(position))
+        float next = VaultMotion.Step(target.Kind, lerp, Mathf.Max(0f, dt), entryUnits, ctx.AbilitySettings);
+        clock += Mathf.Max(0f, dt);
+        // The high moves start at the wall, whatever the jump left of the distance to it.
+        Vector3 from = target.HasApproach ? Vector3.Lerp(target.Start, target.Approach, clock / VaultMotion.ApproachTime) : target.Start;
+        Vector3 position = Vector3.Lerp(from, target.End, next);
+        bool clear = detector.ClearReferenceExit(position);
+        // Beatrun leaves when its hull touches nothing, which its width makes true only past the obstacle. A narrower body
+        // can touch nothing just before reaching it, so the rest of the way must be open too, for a body of any size.
+        bool past = clear && VaultMotion.MayLeave(target.Kind, next)
+            && detector.ClearPath(position, target.End, ctx.StandingColliderHeight);
+        bool finish = VaultMotion.Arrived(target.Kind, next) || past;
+        if (!finishing && finish && !clear)
         {
             finishing = true; finishTime = 0f;
             finishStart = ctx.transform.position; finishVelocity = lastVelocity;
@@ -42,8 +48,8 @@ public sealed class ReferenceTraversal
             // with continuous position/velocity instead of teleporting the view.
             finishTime = Mathf.Min(FinishDuration, finishTime + Mathf.Max(0f, dt));
             float t = finishTime / FinishDuration, t2 = t * t, t3 = t2 * t;
-            Vector3 exitVelocity = target.IsVault
-                ? Vector3.ProjectOnPlane(target.End - target.Start, Vector3.up).normalized * 5f : Vector3.zero;
+            Vector3 exitVelocity = Vector3.ProjectOnPlane(target.End - target.Start, Vector3.up).normalized
+                * (VaultMotion.ExitSpeed(target.Kind, entryUnits) * ctx.HullUnit);
             position = finishStart + (-2f * t3 + 3f * t2) * (target.End - finishStart)
                 + (t3 - 2f * t2 + t) * FinishDuration * finishVelocity
                 + (t3 - t2) * FinishDuration * exitVelocity;
@@ -51,7 +57,7 @@ public sealed class ReferenceTraversal
         }
         if (!detector.ClearReferencePath(ctx.transform.position, position, target.Surface)
             || (finish && !detector.ClearReferenceExit(position))) return false;
-        progress = next; elapsed = nextElapsed; Complete = finish;
+        lerp = next; Complete = finish;
         if (detector.ClearReferenceExit(position)) lastClearPosition = position;
         Vector3 velocity = (position - ctx.transform.position) / Mathf.Max(dt, 0.001f);
         lastVelocity = velocity;

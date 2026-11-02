@@ -7,7 +7,8 @@ using MovementState = PlayerMovement.MovementState;
 /// - on the fist targets while fists are out (FistsView), except running forward or barging, where the clip swings them;
 /// - on the ledge edge, a hand either side, while hanging;
 /// - on real ladder rungs, keeping one hand planted while the other reaches above it;
-/// - on top of a vaulted or mantled obstacle, never through it.
+/// - on the edge of what the player vaults or climbs while the arm can reach it (PlayerBodyHands.Edge), and on top of it, never through it;
+/// - with the thumb at ease, measured from the character's own hand, unless it is a fist or on a gun.
 /// Parkour states take the hands off the gun. Runs after the weapon has posed itself, so the hands never trail it.
 /// Numbers come from Tables/Player.csv, row Hands.
 /// </summary>
@@ -18,19 +19,23 @@ public sealed partial class PlayerBodyHands : MonoBehaviour
     private float blendTime = .15f;
     [SerializeField, Range(0f, 30f), Tooltip("How far the shoulder turns toward a hold that is out of the arm's reach (degrees).")]
     private float shoulderReach = 15f;
-    [SerializeField, Min(0f), Tooltip("Distance between the hands along a ledge (m).")]
-    private float ledgeHandSpacing = .36f;
-    [SerializeField, Min(0f), Tooltip("Wrist height above an obstacle's top when a hand rests on it during a vault or mantle (m).")]
-    private float palmHeight = .04f;
+    [SerializeField, Min(0f), Tooltip("Distance between the hands along a ledge, as a share of the character's shoulder width.")]
+    private float ledgeHandSpacing = 1f;
     [SerializeField, Min(0f), Tooltip("Running forward faster than this, empty hands swing with the run clip instead of holding the fists up (m/s).")]
     private float fistsRunSpeed = 3f;
     [SerializeField, Min(0f), Tooltip("After a punch, a charge, a guard or a guard break the fists stay up this long, running or not (s).")]
     private float fistsReadyTime = 1.5f;
     [SerializeField, Min(0f), Tooltip("Skin clearance at a ledge or bar, after measuring the character's finger pads (m).")]
     private float fingerSurfaceClearance = .001f;
+    [SerializeField, Range(0f, 90f), Tooltip("How far out of the palm's plane a thumb at ease sits, turned under the palm (degrees).")]
+    private float thumbUnderPalm = 55f;
+    [SerializeField, Range(0f, 60f), Tooltip("How far each outer thumb joint bends toward the palm at ease (degrees).")]
+    private float thumbBend = 20f;
 
     private enum Hold { Gun, Fists, Ledge, Ladder }
     private const int HoldCount = 4;
+    // How quickly a hand comes up onto a top, in arm lengths per second. Eased, since a top can appear under a wrist all at once.
+    private const float RestLiftSpeed = 6f;
     // Moving at least this share of the speed along the body's facing counts as running forward.
     private const float RunAlignment = .7f;
 
@@ -41,6 +46,7 @@ public sealed partial class PlayerBodyHands : MonoBehaviour
     private Animator boundAnimator;
     private ArmIK left, right;
     private readonly float[] weights = new float[HoldCount];
+    private readonly float[] restLifts = new float[2];
     private float fistsReady;
 
     /// <summary>How far the hands have gone up as fists (0-1).</summary>
@@ -64,8 +70,11 @@ public sealed partial class PlayerBodyHands : MonoBehaviour
         gripSkin = body != null ? body.Skin : null;
         left = ArmIK.Create(animator, true);
         right = ArmIK.Create(animator, false);
+        shoulderSpan = left != null && right != null ? Vector3.Distance(left.Upper.position, right.Upper.position) : 0f;
         left?.PrepareBarGrip(Ladder.BarThickness * .5f, ladderPalmClearance, fingerSurfaceClearance);
         right?.PrepareBarGrip(Ladder.BarThickness * .5f, ladderPalmClearance, fingerSurfaceClearance);
+        left?.PrepareThumb(thumbUnderPalm, thumbBend);
+        right?.PrepareThumb(thumbUnderPalm, thumbBend);
         LetGo();
     }
 
@@ -75,6 +84,7 @@ public sealed partial class PlayerBodyHands : MonoBehaviour
         left?.ClearLedgeSkin();
         right?.ClearLedgeSkin();
         System.Array.Clear(weights, 0, HoldCount);
+        ResetEdge();
         heldLadder = null;
         wasOnLadder = ladderTopExit = false;
         wasSliding = false;
@@ -102,7 +112,8 @@ public sealed partial class PlayerBodyHands : MonoBehaviour
         bool alive = !body.IsDead, armed = alive && HoldsWeapons(state);
         Ease(Hold.Gun, armed && weapons != null && weapons.ShowsWeapon && weapons.EquippedData != null, dt);
         Ease(Hold.Fists, armed && fists != null && fists.IsActive && FistsUp(dt), dt);
-        Ease(Hold.Ledge, alive && state == MovementState.LedgeHang && player.Abilities.Traversal.Ledge.Surface != null, dt);
+        TrackEdgeHands(state);
+        Ease(Hold.Ledge, alive && WantsEdge(state), dt);
         bool onLadder = alive && state == MovementState.Ladder && player.Abilities.Fixtures.Ladder != null
             && player.Abilities.Fixtures.Ladder.isActiveAndEnabled;
         var exitLadder = player.Abilities.Traversal.Obstacle.ExitLadder;
@@ -112,11 +123,14 @@ public sealed partial class PlayerBodyHands : MonoBehaviour
 
         Place(right, false);
         Place(left, true);
+        float open = 1f - Mathf.Max(weights[(int)Hold.Gun], weights[(int)Hold.Fists]);
+        left.RelaxThumb(open);
+        right.RelaxThumb(open);
         CurlLedgeFingers(left, true);
         CurlLedgeFingers(right, false);
         CurlLadderFingers(left, true);
         CurlLadderFingers(right, false);
-        if (alive && (state == MovementState.Vault || state == MovementState.Mantle)) RestOnObstacle();
+        if (alive && Climbing(state)) RestOnObstacle(dt);
     }
 
     private void Ease(Hold hold, bool on, float dt)
@@ -173,6 +187,8 @@ public sealed partial class PlayerBodyHands : MonoBehaviour
             if ((Hold)i == Hold.Ladder) weight *= LadderHandWeight(isLeft);
             if ((Hold)i == Hold.Fists) weight *= 1f - body.PunchArmShare(isLeft);
             if (weight <= 0f || !Target((Hold)i, arm, isLeft, out Vector3 p, out Quaternion r, out Vector3 h)) continue;
+            if ((Hold)i == Hold.Ledge) weight *= EdgeShare(arm, isLeft, p);
+            if (weight <= 0f) continue;
             total += weight;
             position += p * weight;
             hint += h * weight;
@@ -227,8 +243,8 @@ public sealed partial class PlayerBodyHands : MonoBehaviour
         return body.IsThirdPerson && view != null ? body.EyePosition - view.position : Vector3.zero;
     }
 
-    // A hand that would sink into the obstacle's top rests on it instead.
-    private void RestOnObstacle()
+    // A hand that would sink into the obstacle's top rests on it instead, its elbow staying where the clip has it.
+    private void RestOnObstacle(float dt)
     {
         var surface = player.Abilities.Traversal.Obstacle.Surface;
         if (surface == null) return;
@@ -240,10 +256,12 @@ public sealed partial class PlayerBodyHands : MonoBehaviour
             // The floor correction must not pull a supporting hand off its ladder rung during the top exit.
             if (weights[(int)Hold.Ladder] * LadderHandWeight(isLeft) > .001f) return;
             Vector3 wrist = arm.Hand.position;
-            if (!surface.Raycast(new Ray(wrist + Vector3.up * .5f, Vector3.down), out RaycastHit top, .6f)) return;
-            float lift = top.point.y + palmHeight - wrist.y;
-            if (lift > 0f)
-                arm.Solve(wrist + Vector3.up * lift, arm.Hand.rotation, wrist - transform.up * .3f + transform.forward * .1f, 1f, 0f, shoulderReach);
+            float lift = !surface.Raycast(new Ray(wrist + Vector3.up * .5f, Vector3.down), out RaycastHit top, .6f) ? 0f
+                : Mathf.Max(0f, top.point.y + arm.PalmDepth + fingerSurfaceClearance - wrist.y);
+            int hand = isLeft ? 0 : 1;
+            restLifts[hand] = Mathf.MoveTowards(restLifts[hand], lift, RestLiftSpeed * arm.Reach * dt);
+            if (restLifts[hand] > 0f)
+                arm.Solve(wrist + Vector3.up * restLifts[hand], arm.Hand.rotation, arm.Elbow, 1f, 0f, shoulderReach);
         }
     }
 }

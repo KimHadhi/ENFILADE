@@ -39,7 +39,8 @@
 | 적 크기·밀치기 연쇄 | [적 프리팹](../Resources/Enemies)의 `MeleeCombatTarget` | 프리팹 인스턴스. 씬의 Override 확인 |
 | 총성·히트마커·피격·처치·점수 효과 | [GunFeel.asset](../Resources/Combat/GunFeel.asset), 무기별 `Feel` | 공통 효과 / 개별 무기 |
 | 주먹·벽 타격음·방어·반격·처형·피해 팝업 | [Feedback.asset](../Resources/Combat/Feedback.asset) | 공통 전투 피드백 |
-| 총구 화염·궤적·탄착·혈흔 프리팹 | Player의 `Gun/…/MuzzlePoint → MuzzleEffects`, `Weapon Impact Effects` | 해당 플레이어 |
+| 총구 화염·궤적, 적 몸의 상처 자국 | Player의 `Gun/…/MuzzlePoint → MuzzleEffects`, `Enemy Blood Effect` | 해당 플레이어 |
+| 피 스플래시, 표면별 착탄, 총알 구멍 | [ImpactEffects.csv](../Resources/Tables/ImpactEffects.csv), 구멍 유지 시간은 [GunFeel.asset](../Resources/Combat/GunFeel.asset)의 `Bullet Hole Seconds` | 공통 전투 피드백 |
 | 이동·공격·UI 입력 | [Player.inputactions](../Input/Player.inputactions) | 입력 액션 사용 기능 |
 | 슬롯 1~4 입력 | [PlayerWeaponSlots](../Scripts/Player/Combat/Weapons/PlayerWeaponSlots.cs)의 직접 키보드 처리 | 숫자열·숫자패드 슬롯 선택 |
 
@@ -68,7 +69,9 @@
 
 슬로 모션은 혼자 하면 `Time.timeScale`로 세상 전체를 늦춘다. 방에서는 호스트의 시간을 늦추면 적 전체가 느려지므로, 고스트 오브 쓰시마 전설 모드처럼 그 플레이어와 상대 적만 느려진다. 플레이어 쪽은 [CombatTimeEffects](../Scripts/Player/Combat/CombatTimeEffects.cs)의 `Pace`가 `PlayerMovement.DeltaTime`과 몸 애니메이션 속도를 정하고, 적 쪽은 `EnemyNetwork.Pace`가 모든 PC에서 공격, 이동, 체간 시간을 늦춘다. 짧은 히트스톱은 네트워크 지연보다 짧아서 본인에게만 걸린다.
 
-쓰러진 동료는 [DownedAura](../Scripts/Combat/Feel/DownedAura.cs)가 벽 너머로도 보이게 빛내고, [TeammateMarkerHUD](../Scripts/UI/TeammateMarkerHUD.cs)가 이름과 거리, 남은 시간을 표시한다. 수치는 [DownedAura.csv](../Resources/Tables/DownedAura.csv)에 있다. 킬 피드의 줄은 [KillFeedRow](../Scripts/UI/KillFeedRow.cs)이고, 내 처치는 금빛으로 구별된다. 왼쪽의 [StreakBadge](../Scripts/UI/StreakBadge.cs)는 연속 처치를 로마 숫자와 불꽃으로 보여 주고, XXV를 넘으면 파란 눈 해골로 바뀐다. 연속 처치 판정은 점수 팝업의 `multiKillWindow`에 `streakGrace`를 더한 시간 안에 다음 처치를 해야 이어진다. 방에서는 호스트가 적의 실제 죽음을 한 번만 세어 그 숫자와 줄을 모든 PC에 보내므로(`PlayerNetworkScore.AnnounceKill`) 어느 PC에서나 같게 보인다. 불꽃은 `FeedFlame` 셰이더가 그리며 수치는 [KillFeed.csv](../Resources/Tables/KillFeed.csv)에 있다. Tab 점수판은 [ScoreboardHUD](../Scripts/UI/ScoreboardHUD.cs)이고, 숫자는 [PlayerTally](../Scripts/Player/Combat/PlayerTally.cs)에 모이며 [PlayerNetworkScore](../Scripts/Network/PlayerNetworkScore.cs)가 다른 PC로 보낸다.
+치마, 겉옷, 머리카락은 그 캐릭터를 플레이하는 PC가 [PlayerBodyCloth](../Scripts/Player/Body/PlayerBodyCloth.cs)에서 계산하고, [PlayerNetworkCloth](../Scripts/Network/PlayerNetworkCloth.cs)가 움직이는 뼈의 위치를 [ClothPose](../Scripts/Network/ClothPose.cs)로 보낸다. 다른 PC의 복사본은 Magica Cloth를 돌리지 않고 받은 위치를 따라가며(`ClothBones.Follow`), 회전은 위치로 다시 계산하므로 뼈 하나에 3바이트만 쓴다. 신뢰성 없는 전송이라 잃어버린 자세는 다시 보내지 않고, 천이 멈춰 있으면 1초에 한 번만 보낸다. 통신량은 `/net`으로 본다. 치마는 주인 PC의 다리에 맞춰 계산되므로 다른 PC의 다리도 같은 박자여야 뚫리지 않는다. 그래서 걷기·달리기 박자를 `PlayerPose.Step`으로 함께 맞춘다. 콜라이더는 계산하는 PC에만 있다. 시체는 진짜 몸이 쓰러진 것이라 천도 그대로 계속 움직인다.
+
+쓰러진 동료는 [DownedAura](../Scripts/Combat/Feel/DownedAura.cs)가 벽 너머로도 보이게 빛내고, [TeammateMarkerHUD](../Scripts/UI/TeammateMarkerHUD.cs)가 이름과 거리, 남은 시간을 표시한다. 수치는 [DownedAura.csv](../Resources/Tables/DownedAura.csv)에 있다. 킬 피드의 줄은 [KillFeedRow](../Scripts/UI/KillFeedRow.cs)이고, 내 처치는 금빛으로 구별된다. 왼쪽의 [StreakBadge](../Scripts/UI/StreakBadge.cs)는 연속 처치를 로마 숫자와 불꽃으로 보여 주고, XXV를 넘으면 파란 눈 해골로 바뀐다. 연속 처치 판정은 점수 팝업의 `multiKillWindow`에 `streakGrace`를 더한 시간 안에 다음 처치를 해야 이어진다. 방에서는 호스트가 적의 실제 죽음을 한 번만 세어 그 숫자와 줄을 모든 PC에 보내므로(`PlayerNetworkScore.AnnounceKill`) 어느 PC에서나 같게 보인다. 불꽃은 `FeedFlame` 셰이더가 그리며 수치는 [KillFeed.csv](../Resources/Tables/KillFeed.csv)에 있다. 숫자는 TMP의 Bold 대신 재질의 `FaceDilate`로 굵기를 내고 그림자를 좁게 잡는다. Bold와 넓은 그림자를 함께 쓰면 글자 상자가 폰트 아틀라스 속 글자 자리 밖까지 늘어나, 옆에 놓인 글자 조각이 숫자 주위에 점과 선으로 묻어난다. Tab 점수판은 [ScoreboardHUD](../Scripts/UI/ScoreboardHUD.cs)이고, 숫자는 [PlayerTally](../Scripts/Player/Combat/PlayerTally.cs)에 모이며 [PlayerNetworkScore](../Scripts/Network/PlayerNetworkScore.cs)가 다른 PC로 보낸다.
 
 채팅은 [PlayerChat](../Scripts/Network/PlayerChat.cs)이 호스트를 거쳐 다른 PC로 보낸다. `/` 명령어와 콘솔 채널은 공유되지 않는다. 표시 이름은 메인 메뉴 프로필에서 정하는 `GameSettings.DisplayName`이며, 비어 있으면 PC 사용자 이름을 쓴다.
 
@@ -226,5 +229,9 @@ Art/Models/
 Play 중 효과가 필요하면 `EFFECTS → Audio / World / Screen`을 자동으로 만들고 소리·월드 효과·화면 표시를 모은다. 콘솔 소환 적은 `ENEMIES → Console`, 웨이브 적은 `ENEMIES → Waves`에 생성된다. 수동으로 빈 오브젝트를 미리 만들 필요는 없다. 스크립트 변경 후에는 Play를 종료하고 다시 시작해 생성 위치를 확인한다.
 
 `EFFECTS → World → Impact VFX → Blood Decals (Pool)`의 회색 혈흔은 다음 타격에 재사용할 대기 오브젝트다. 풀은 **최대 32개**로 제한되며 무한히 증가하지 않는다. 비활성 혈흔은 표시하지 않고 수명 업데이트도 건너뛴다. 반복 생성·삭제 부하를 줄이기 위해 풀을 유지한다. 화면에 남는 시간은 [GunFeel.asset](../Resources/Combat/GunFeel.asset)의 `Blood Decal Seconds`로 조절한다. 이 시간이 지나면 1.2초 동안 흐려진 뒤 풀로 돌아간다.
+
+`EFFECTS → World → Impact Pool`은 DAVFX 이펙트를 미리 만들어 둔 대기열이다. 전투 중 생성이 없도록 맵을 불러올 때 [CombatWarmup](../Scripts/Combat/Feel/CombatWarmup.cs)에서 한 번 만들고, 복사본은 땅속 5000m에서 켜진 채 기다린다. VFX Graph는 처음 그릴 때 약 0.5초 멈추므로, 맵이 뜨는 동안 모든 복사본을 시야 끝에서 한 번씩 재생해 그 멈춤을 맵 시작으로 옮긴다. 첫 타격에 처음 만들어지는 시스템을 새로 넣으면 `CombatWarmup`에도 추가한다. 어떤 프리셋을 어떤 크기와 밝기로 쓸지는 [ImpactEffects.csv](../Resources/Tables/ImpactEffects.csv)에서 고치며, Play 중에 저장해도 바로 반영된다. 복사본을 다 쓰면 가장 오래된 것을 다시 쓰므로, 끊기거나 이펙트가 튀어 보이면 `copies`를 늘린다. 표에 적는 프리셋은 [ImpactLibrary](../Resources/Combat/ImpactLibrary.asset)에 있어야 한다. 프리셋 생김새는 DAVFX의 `URP/Demo Scene`에서 볼 수 있다. 이펙트 재생에는 `com.unity.visualeffectgraph` 패키지가 필요하다.
+
+벽 착탄은 맞은 표면의 행을 쓰고, 그 표면의 행이 없으면 [Surfaces.csv](../Resources/Tables/Surfaces.csv)의 부모를 따라 올라가 마지막에 `Concrete`를 쓴다. 풀의 복사본은 다음 착탄으로 옮겨 가므로, 팩 이펙트에 포함된 데칼과 빛 폭발(`VFXLightBurstCompanion`)은 끈다. 총알 구멍은 `EFFECTS → World → Bullet Holes`의 데칼 64개를 돌려 쓰며, PC_Renderer의 Decal 기능이 있어야 보인다. Decal은 Screen Space 방식이라 다른 머티리얼에 셰이더 변형을 더하지 않는다. `Prefabs/Effects/Weapons`의 `Impact_*` 프리팹과 `Art/Sprites/Weapons`의 `Impact_Wall_*`은 연결을 끊은 옛 착탄 자료다.
 
 적의 분류와 웨이브 집계는 별개다. 웨이브 일시정지·중단은 해당 WaveManager가 추적하는 적에게만 적용하며 콘솔 적은 그대로 유지한다.

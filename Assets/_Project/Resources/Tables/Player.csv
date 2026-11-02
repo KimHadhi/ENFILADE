@@ -176,13 +176,11 @@ Ability.leanSharpness,10,기울이기 반응 빠르기
 # 능력: 턱·볼트·맨틀,,
 Ability.stepHeight,0.3,걸어서 넘는 턱 높이(m)
 Ability.proneStepHeight,0.05,엎드리거나 누워서 넘는 턱 높이(m)
-Ability.obstacleReach,1.35,볼트·맨틀할 장애물을 앞에서 찾는 거리(m)
-Ability.vaultMaxHeight,1.15,볼트(넘기) 최대 높이(m)
-Ability.mantleMaxHeight,2.1,맨틀(올라서기) 최대 높이(m)
-Ability.vaultMaxDepth,1.5,넘을 수 있는 장애물의 최대 두께(m)
-Ability.mantleDuration,0.45,올라서기에 걸리는 시간(초) = 이 값 + 높이 1m마다 mantleDurationPerMeter
-Ability.mantleDurationPerMeter,0.3,올라서기 높이 1m마다 늘어나는 시간(초)
-Ability.mantleFromGround,false,땅이나 공중에서 장애물에 바로 올라서기. false면 올라서기는 난간에 매달린 뒤 W·Space로만 되고 장애물 앞에서는 넘기만 한다
+Ability.mantleDuration,0.45,바·사다리 꼭대기처럼 경로를 따로 쓰는 올라서기의 시간(초) = 이 값 + 높이 1m마다 mantleDurationPerMeter
+Ability.vaultRate,1,넘기 세 종류의 이동 속도 배율. 1이면 Beatrun 원본
+Ability.mountRate,1,바로 올라타기와 높은 올라서기의 이동 속도 배율. 1이면 Beatrun 원본
+Ability.heaveRate,1,매달린 뒤 올라가기의 이동 속도 배율. 1이면 Beatrun 원본(약 0.93초)
+Ability.mantleDurationPerMeter,0.3,경로를 따로 쓰는 올라서기가 높이 1m마다 늘어나는 시간(초)
 Ability.slideMaxSlopeAngle,65,슬라이드 중 바닥으로 인정하는 최대 경사(도)
 # 능력: 렛지,,
 Ability.ledgeReach,1,렛지를 앞에서 찾는 거리(m)
@@ -190,7 +188,7 @@ Ability.ledgeReachAboveHands,0.3,손 높이보다 위로 렛지를 찾는 높이
 Ability.ledgeCatchDuration,0.14,렛지를 잡은 뒤 점프·올라가기가 가능해지기까지(초)
 Ability.ledgeRegrabDelay,0.4,렛지를 놓은 뒤 다시 잡을 수 있기까지(초)
 Ability.ledgeShimmySpeed,1,렛지 좌우 이동 속도(m/s)
-Ability.airTraversalMaxFallSpeed,8,이보다 빠르게 떨어지는 중에는 공중에서 렛지·벽을 잡지 않는다(m/s)
+Ability.airTraversalMaxFallSpeed,8.75,이보다 빠르게 떨어지는 중에는 공중에서 렛지·벽을 잡지 않는다(m/s)
 Ability.ledgeJumpLookAngle,42,렛지에서 점프 방향을 시선으로 고를 때의 허용 각도(도)
 Ability.ledgeJumpSpeed,8.5,렛지 점프 수평 속도(m/s)
 Ability.ledgeJumpUpSpeed,6.5,렛지 점프 위쪽 속도(m/s)
@@ -252,6 +250,8 @@ Ability.heavyLandingBraking,10,크게 착지해 바닥을 미끄러지는 속도
 Ability.rollInputWindow,0.5,세게·크게 착지하기 전 이 시간 안에 Ctrl을 누르면 구른다(초). 피해·감속 없이 속도 유지
 Ability.rollDuration,1,착지 구르기 시간(초). 구르기 애니메이션이 이 시간에 맞춰 재생된다
 Ability.rollSpeed,4,구르는 동안 가장 느린 속도(m/s). 착지 속도가 더 빠르면 그 속도를 유지
+Ability.rollLandSpeed,5,수평 속도가 이보다 느리거나 S를 누르고 있으면 구르지 않고 제자리에 착지한다(m/s). Beatrun의 200단위/초
+Ability.rollLandTime,0.6,제자리 착지로 멈춰 있는 시간(초)
 Ability.bigFallHeight,8.5,낙하 꼭대기부터 아래 땅까지 이보다 높으면 큰 낙하: 바람·심장 박동·화면 일그러짐·허우적(m)
 Ability.bigFallMinSpeed,9,이보다 빠르게 떨어져야 큰 낙하가 될 수 있다(m/s). 틈 건너뛰기는 해당 없음
 # 능력: 슬라이드 전투,,
@@ -321,20 +321,19 @@ Body.supine,meslideloop,누운 자세(등을 대고 미끄러지는 자세)
 Body.supineSlideStart,meslidestart,누워서 미끄러지기 시작
 Body.supineSlide,meslideloop,누워서 미끄러지기
 Body.supineSlideEnd,meslideend,누워서 미끄러지기 끝
-Body.roll,mx_fall_roll,착지 구르기. Ability.rollDuration 동안 재생
-Body.rollFast,mx_sprint_roll,rollFastSpeed보다 빠르게 착지해 구를 때의 달리며 구르기
-Body.rollFastSpeed,6.5,이보다 빠르게 구르면 rollFast(m/s)
+Body.roll,mx_sprint_roll,착지 구르기. Ability.rollDuration 동안 재생. 끝까지 발을 내디디며 달려 나간다
+Body.rollLand,land,구르기 대신 제자리에 착지할 때(Ability.rollLandSpeed). 낮은 천장 아래에서는 Body.landCrouch
 Body.dodgeLeft,dodgejumpleft,왼쪽 회피
 Body.dodgeRight,dodgejumpright,오른쪽 회피
 Body.dashPush,bargein,돌진 밀치기. 적에 부딪혀 멈추면 끝까지 재생
-Body.vault,mx_vault_one_hand,한 손 짚고 넘기. 넘는 동안 진행도에 맞춰 재생
+Body.vault,vaultover,보통 넘기
 Body.mantle,climb1,올라서기
 Body.wallClimb,wallrunvertical,벽 오르기
 Body.wallKick,jumpwrleft,벽 차고 뛰기
 Body.barSwing,swing,봉 매달려 흔들기
 Body.barRelease,swingjumpoff,봉에서 뛰어내리기
 Body.ledgeHang,mx_ledge_hang_wall,난간 매달리기
-Body.ledgeJump,hangheaveup,난간에서 올라가기
+Body.ledgeJump,jumpfast,난간에서 뛰어오르기
 Body.death,diestand,사망
 Body.jumpStill,jumpstill,제자리 점프 (도움닫기 속도가 jumpStillSpeed 미만)
 Body.jumpSlow,jumpslow,걸으며 점프 (jumpFastSpeed 미만). 그보다 빠르면 Body.jump
@@ -348,14 +347,18 @@ Body.coilLandCrouch,jumpcoilendcrouch,같은 착지를 웅크린 채로
 Body.supineSlideEndCrouch,meslideendcrouch,누워 미끄러지다 웅크리며 끝내기
 Body.supineSlideEndProne,meslideendprone,누워 미끄러지다 엎드리며 끝내기
 Body.bellySlideEndCrouch,diveslideendcrouch,머리부터 미끄러지다 웅크리며 끝내기
-Body.vaultHigh,mx_vault_two_hands,높은 장애물 두 손 짚고 넘기
-Body.stepUp,stepuprightleg,낮은 턱 올라서기 (mantleStepHeight 미만)
-Body.mantleLow,vaultonto,손 짚고 올라서기 (mantleLowHeight 미만)
-Body.mantleMid,vaultontohigh,높게 손 짚고 올라서기 (mantleMidHeight 미만). 그보다 높으면 Body.mantle
-Body.ledgeClimbUp,mx_ledge_climb_up,매달린 데서 올라가기 (높이와 관계없이)
+Body.vaultHigh,vaultoverhigh,머리 높이의 얇은 벽 넘기
+Body.vaultKong,vaultkong,긴 넘기
+Body.springboard,springboardleftleg,넘기 끝에 점프를 누르고 있으면 튀어 오르기
+Body.stepUp,stepuprightleg,낮은 턱 디뎌 오르기
+Body.mantleLow,vaultonto,손 짚고 올라타기
+Body.mantleMid,vaultontohigh,높게 손 짚고 올라서기
+Body.ledgeClimbUp,mx_ledge_climb_up,매달린 데서 올라가기. 이동·높이를 남긴 클립을 쓴다. 손이 짚은 자리에서 몸이 클립대로 올라간다
+Body.heaveStandTime,0.35,매달린 데서 올라간 뒤 웅크린 자세에서 일어서는 시간(초)
 Body.ledgeCatch,mx_ledge_catch_air,난간을 잡는 순간 (그다음 Body.ledgeHang)
 Body.ledgeShimmyLeft,mx_ledge_shimmy_left,난간에서 왼쪽으로 이동
 Body.ledgeShimmyRight,mx_ledge_shimmy_right,난간에서 오른쪽으로 이동
+Body.hangPose,hangpose,매달려 돌아보는 자세 클립 이름의 앞부분
 Body.wallClimbStart,wallrunverticalstart,벽 오르기 시작 (그다음 Body.wallClimb)
 Body.wallKickRight,jumpwrright,벽 차기 - 몸이 왼쪽으로 튈 때. 오른쪽으로 튀면 Body.wallKick
 Body.armedClips,false,총 든 동작 사용. 손 IK가 총을 잡으므로 켜 볼 수 있지만 아직 확인하지 않아 끔
@@ -375,13 +378,12 @@ Body.punchBlendOut,0.12,주먹질 클립이 팔을 주먹 위치로 돌려주는
 Body.punchEyeSteady,0.5,주먹질로 머리가 앞으로 나갈 때 카메라를 눈에서 고정 위치 쪽으로 옮기는 비율(0~1). 0이면 머리를 그대로 따라간다
 Body.jumpStillSpeed,1,이보다 느리게 뛰면 제자리 점프(m/s)
 Body.jumpFastSpeed,4,이보다 빠르게 뛰면 달리며 점프(m/s)
-Body.vaultHighHeight,1,이보다 높은 장애물은 높은 넘기(m)
 Body.mantleStepHeight,0.7,이보다 낮으면 턱 올라서기(m)
 Body.mantleLowHeight,1.1,이보다 낮으면 손 짚고 올라서기(m)
 Body.mantleMidHeight,1.6,이보다 낮으면 높게 손 짚고 올라서기 / 이상이면 기어오르기(m)
 Body.shimmyClipSpeed,0.5,난간 좌우 이동 애니메이션의 기준 속도(m/s). 실제 속도에 맞춰 재생 속도를 조절
-Body.vaultClipSpeed,1.3,넘기 애니메이션 재생 속도. 넘기는 도움닫기 속도를 유지해서 애니메이션보다 먼저 끝나고, 남은 동작은 발이 닿을 때까지 이어서 재생한다
-Body.vaultLandShare,0.72,넘기 애니메이션에서 발이 땅에 닿는 지점(0~1). 여기서 달리기로 넘어간다
+Body.vaultClipSpeed,1,넘기·올라서기 애니메이션 재생 속도. 몸이 먼저 넘어가고 클립은 발이 땅에 닿아 움직일 때까지 이어진다
+Body.ontoClipSpeed,1.15,낮은 장애물에 올라타는 애니메이션 재생 속도
 Body.blendTime,0.15,애니메이션 사이 전환 시간(초)
 Body.walkClipSpeed,1.7,걷기를 원래 박자로 재생하는 이동 속도(m/s). 재생 배율은 0.65~1.1로 제한
 Body.runClipSpeed,5.2,달리기를 원래 박자로 재생하는 이동 속도(m/s). Move.walkSpeed와 맞춘다
@@ -398,7 +400,10 @@ Body.turnSpeed,150,발을 옮겨 시선 쪽으로 도는 빠르기(도/초)
 Body.turnClipSpeed,1.5,제자리 돌기 애니메이션 재생 속도
 Body.spineBendDown,0.45,내려다볼 때 시선 각도 중 허리가 맡는 비율. 나머지는 목·머리가 맡는다
 Body.spineBendUp,0.2,올려다볼 때 허리가 맡는 비율
-Body.eyeViewTime,0.15,정조준할 때 카메라가 눈에서 고정 위치로 옮겨 가는 시간(초). 풀면 같은 시간에 눈으로 돌아온다
+Body.eyeViewTime,0.15,눈 위치와 고정 조준·사다리 위치 사이의 전환 시간(초). 마우스 회전에는 영향 없음
+Body.animationViewStrength,0.65,선택된 행동의 머리 움직임을 카메라에 반영하는 비율. 0이면 카메라 방향은 마우스만 사용
+Body.animationViewLimits,18;12;10,강도 적용 전 카메라에 더할 애니메이션의 위아래;좌우;기울기 제한 각도(도)
+Body.animationViewTime,0.1,카메라에 더할 애니메이션 회전만 부드럽게 잇는 응답 시간(초). 마우스 입력은 즉시 반영
 Body.eyeViewAhead,0.02,카메라를 눈보다 이만큼 앞에 둔다(m). 카메라는 항상 눈을 따라간다
 Body.eyeAdjust,0;0,캐릭터의 눈 위치가 어긋날 때 옮기는 값: 위(m);앞(m). 얼굴 안쪽이 보이면 앞을 늘리고, 눈보다 높거나 낮게 보이면 위를 조절
 Body.headNearClip,0.05,내 머리카락 보기를 켰을 때 카메라에서 이보다 가까운 것은 잘라 낸다(m)
@@ -406,6 +411,7 @@ Body.slideTurnLimit,75,슬라이딩 시선의 좌우 제한 각도(도). 하체�
 Body.slidePitchLimits,40;55,슬라이딩 시선의 위;아래 제한 각도(도). 상체와 카메라가 같은 범위를 쓴다
 Body.heavyLandingTurnLimit,90,크게 착지해 쓰러져 있는 동안 몸이 향한 쪽에서 좌우로 돌아볼 수 있는 각도(도). 더 돌면 카메라가 자기 머리를 뚫어 본다
 Body.fixtureTurnLimit,90,사다리·집라인에서 몸이 향한 쪽에서 좌우로 돌아볼 수 있는 각도(도)
+Body.hangTurnLimit,175,난간에 매달려 벽에서 좌우로 돌아볼 수 있는 각도(도). 180을 넘으면 돌아본 자세가 반대쪽으로 뒤집힌다
 Body.ladderEnter,ladderenterbottom,땅에서 사다리에 오르기
 Body.ladderCatch,ladderclimbhangstart,공중에서 사다리 잡기
 Body.ladderLeft,LDR_I400_Ascd_LU_Loop_IP,왼손을 올리며 한 칸. 이전 값은 ladderclimbuplefthand
@@ -419,6 +425,7 @@ Body.ladderExitRight,ladderexittoprighthand,꼭대기로 넘어가기 - 오른�
 Body.ziplineStart,ziplinestart,집라인 잡기
 Body.zipline,zipline,집라인 타기
 Body.vaultChainTime,1.5,넘기를 이 시간(초) 안에 다시 하면 다른 넘기 동작을 쓴다. 같은 동작이 연달아 나오면 처음 프레임으로 튀어서
+Body.tuckFollowSpeed,8,공중 웅크리기에서 발이 캡슐 아래로 내려가지 않게 몸이 따라 올라가는 속도(m/s)
 Body.maxHipDrop,0.3,발이 낮은 땅(내려가는 계단·경사)에 닿도록 골반을 내리는 최대 거리(m). 눈과 카메라도 같이 내려간다
 Body.footReach,0.5,발마다 캡슐 바닥 위아래로 땅을 찾는 거리(m)
 Body.footSettleTime,0.08,골반과 발이 낮아진 땅으로 내려가 맞춰지는 시간(초). 높아진 땅에는 바로 올라선다
@@ -427,12 +434,18 @@ Body.maxAnkleTurn,20,어떤 동작에서든 발이 정강이 축으로 돌아가
 Body.maxAnkleRoll,25,어떤 동작에서든 발이 옆으로 꺾이는 최대 각도(도)
 Hands.blendTime,0.15,손이 총·주먹·난간·사다리·자유 사이를 옮겨 가는 시간(초)
 Hands.shoulderReach,15,손이 닿지 않을 때 어깨가 그쪽으로 도는 최대 각도(도)
-Hands.ledgeHandSpacing,0.36,난간을 잡은 두 손 사이 거리(m)
+Hands.ledgeHandSpacing,1,난간을 잡은 두 손 사이 거리. 캐릭터의 어깨 너비에 곱하는 배율
 Hands.ledgePalmInset,0.15,렛지 손바닥 중심을 모서리 안쪽에 놓는 깊이(손바닥 길이 비율)
-Hands.palmHeight,0.04,넘기·올라서기 때 장애물 윗면을 짚은 손목 높이(m)
+Hands.edgeCatch,1,넘기·올라서기에서 애니메이션의 손이 모서리 자리에 가장 가까워졌을 때 이 거리 안이면 짚는다. 그 캐릭터의 팔 길이에 대한 비율
+Hands.edgeEase,0.1,손이 모서리에 닿거나 떨어지는 시간(초)
+Hands.edgeArmUse,0.95,짚은 팔을 이만큼 펴면 그 뒤로는 몸이 팔 길이 안에 머문다. 그 캐릭터의 팔 길이에 대한 비율
+Hands.edgeHoldBack,0.6;1.8,짚은 손 때문에 몸이 캡슐보다 뒤처지는 거리(팔 길이 배). 첫 값부터 놓아주기 시작해 둘째 값에서 다 놓는다
+Hands.edgeCatchUp,3,손을 놓은 뒤 몸이 캡슐을 따라잡는 속도(초당 팔 길이 배)
 Hands.fistsRunSpeed,3,빈손으로 이보다 빠르게 앞으로 달리면 주먹을 내리고 달리기 클립대로 팔을 흔든다(m/s). 돌진 밀치기 중에도 클립대로
 Hands.fistsReadyTime,1.5,주먹질·차징·가드·가드 브레이크 뒤 달려도 주먹을 이만큼 올리고 있는 시간(초)
 Hands.fingerSurfaceClearance,0.001,실제 손가락 두께를 반영한 뒤 표면에 남기는 여유(m). 사다리·렛지·엄지에 공통 적용
+Hands.thumbUnderPalm,55,편하게 둔 엄지가 손바닥 면에서 손바닥 쪽으로 내려간 각도(도). 주먹·총을 빼고 클립 대신 이 자세를 쓴다
+Hands.thumbBend,20,편하게 둔 엄지의 바깥 두 마디가 손바닥 쪽으로 굽는 각도(도)
 Hands.ladderHandSpacing,0.32,사다리를 잡는 두 손의 좌우 간격(m). 좁은 사다리는 가로대 안쪽으로 제한
 Hands.ladderReachArc,0.08,다음 가로대로 옮기는 손이 사다리 앞쪽으로 떨어지는 거리(m)
 Hands.ladderPalmClearance,0.0015,실제 손바닥 두께를 반영한 뒤 사다리 가로대 앞면에 남기는 여유(m)

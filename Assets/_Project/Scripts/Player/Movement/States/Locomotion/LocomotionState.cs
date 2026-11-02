@@ -8,7 +8,6 @@ public sealed class LocomotionState : MovementBaseState
 
     public override bool TryJump()
     {
-        if (ctx.Abilities.Traversal.TryObstacle()) return true;
         if (ctx.HasCeilingAbove(ctx.StandingColliderHeight)) return false;
         if (ctx.CurrentState == PlayerMovement.MovementState.Crouching)
             ctx.ChangeState(PlayerMovement.MovementState.Standing);

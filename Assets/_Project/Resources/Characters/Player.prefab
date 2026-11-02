@@ -153,6 +153,7 @@ GameObject:
   - component: {fileID: 7381924650173628421}
   - component: {fileID: 7381924650173628422}
   - component: {fileID: 7381924650173628423}
+  - component: {fileID: 7381924650173628424}
   m_Layer: 31
   m_Name: Player
   m_TagString: Player
@@ -5657,16 +5658,6 @@ MonoBehaviour:
   enemyLayers:
     serializedVersion: 2
     m_Bits: 64
-  wallSparksPrefab: {fileID: 1647771039987182768, guid: 1b64ad18a45ed4b41a9a239e209c4bc0, type: 3}
-  wallDustPrefab: {fileID: 8952460879873567202, guid: 365f3e14501340d469560a977ea44083, type: 3}
-  fireImagePrefab: {fileID: 258839039686575730, guid: 0560cdf678b234d48b195c8d2060f75b, type: 3}
-  dustImagePrefab: {fileID: 6326434395050456711, guid: 27f7eeeca681c3440b3714a24879b272, type: 3}
-  dustImagePrefab2: {fileID: 9165185963500927719, guid: 2edc71092b6cc0445bc11cb04356a6a0, type: 3}
-  fireImageLifetime: 0.25
-  dustImageLifetime: 1
-  hitEffectOffset: 0.015
-  sparksLifetime: 0.2
-  dustLifetime: 1.2
 --- !u!114 &4392870124415571233
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5682,7 +5673,7 @@ MonoBehaviour:
   enemyLayers:
     serializedVersion: 2
     m_Bits: 64
-  bloodParticlePrefab: {fileID: 4372907656119239933, guid: cd786853fdf81cb4e8cf128607045d81, type: 3}
+  bloodParticlePrefab: {fileID: 0}
   particleCleanupTime: 3
   bloodMarkPrefab: {fileID: 7635742758582579712, guid: e1782328923af7d4e8bc35203faa00e4, type: 3}
   bloodMarkLifetime: 5
@@ -5969,4 +5960,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c979314978eb4b7bac7105cdd3bd4d79, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerNetworkScore
+  ShowTopMostFoldoutHeaderGroup: 1
+--- !u!114 &7381924650173628424
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4995124463041406552}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 051c5efe88f44fe9a1b16f0c37fdb5db, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerNetworkCloth
   ShowTopMostFoldoutHeaderGroup: 1

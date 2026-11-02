@@ -1,0 +1,13 @@
+clip,loop,inPlace,yawOffset,#frames,#fps
+hangpose_l180_up,1,0,180.0,2,30.0
+hangpose_l90_up,1,0,180.0,2,30.0
+hangpose_r90_up,1,0,180.0,2,30.0
+hangpose_r180_up,1,0,180.0,2,30.0
+hangpose_l180_mid,1,0,180.0,2,30.0
+hangpose_l90_mid,1,0,180.0,2,30.0
+hangpose_r90_mid,1,0,180.0,2,30.0
+hangpose_r180_mid,1,0,180.0,2,30.0
+hangpose_l180_down,1,0,180.0,2,30.0
+hangpose_l90_down,1,0,180.0,2,30.0
+hangpose_r90_down,1,0,180.0,2,30.0
+hangpose_r180_down,1,0,180.0,2,30.0

@@ -28,9 +28,9 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     [SerializeField] private string diveStart = "divestart", dive = "diveidle";
     [SerializeField] private string bellySlideStart = "diveslidestart", bellySlide = "diveslideidle", bellySlideEnd = "diveslideend";
     [SerializeField] private string supineSlideStart = "meslidestart", supineSlide = "meslideloop", supineSlideEnd = "meslideend";
-    [SerializeField] private string prone = "diveslideidle", supine = "meslideloop", roll = "mx_fall_roll";
+    [SerializeField] private string prone = "diveslideidle", supine = "meslideloop", roll = "mx_sprint_roll";
     [SerializeField] private string dodgeLeft = "dodgejumpleft", dodgeRight = "dodgejumpright", dashPush = "bargein";
-    [SerializeField] private string vault = "mx_vault_one_hand", mantle = "climb1", wallClimb = "wallrunvertical", wallKick = "jumpwrleft";
+    [SerializeField] private string vault = "vaultover", mantle = "climb1", wallClimb = "wallrunvertical", wallKick = "jumpwrleft";
     [SerializeField] private string barSwing = "swing", barRelease = "swingjumpoff", ledgeHang = "mx_ledge_hang_wall", ledgeJump = "hangheaveup";
     [SerializeField] private string death = "diestand";
 
@@ -68,7 +68,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     private GameObject loadedModel;
     private PlayerBodyProfile.Skin loadedSkin;
     private string shownSkin;
-    private Transform body, view, head;
+    private Transform body, view, head, hips;
     private Animator animator;
     private Vector3 headAlignment;
     private PlayableGraph graph;
@@ -78,7 +78,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     private Vector3 viewHome;
     private string dodgeClip;
     private float transitionLeft, stateTime, airTime, phase, yaw, yawVelocity, targetYaw;
-    private bool started, grounded, jumped, dead, thirdPerson, rebuild, playingOut;
+    private bool started, grounded, jumped, dead, thirdPerson, rebuild, playingOut, springing;
 
     public bool IsThirdPerson => thirdPerson;
     /// <summary>The barge clip is playing: a dash push under way, or one that stopped on someone playing out.</summary>
@@ -160,15 +160,20 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
                      vault, mantle, wallClimb, wallKick, barSwing, barRelease, ledgeHang, ledgeJump, death })
             AddChannel(clip, 0f);
         foreach (string clip in VariantClips) AddChannel(clip, 0f);
+        AddHangChannels();
         foreach (string clip in FixtureClips) AddChannel(clip, 0f);
         AddArmedChannels();
         AddLocomotionChannels();
+        SetUpAnimationViewChannels();
         leftHand = animator.isHuman ? animator.GetBoneTransform(HumanBodyBones.LeftHand) : null;
         rightHand = animator.isHuman ? animator.GetBoneTransform(HumanBodyBones.RightHand) : null;
 
         state = player.CurrentState;
         grounded = player.IsGrounded;
-        stateTime = airTime = gripWeight = 0f;
+        stateTime = airTime = gripWeight = standBlendLeft = 0f;
+        heaving = false;
+        heaveClip = null;
+        hips = animator.isHuman ? animator.GetBoneTransform(HumanBodyBones.Hips) : null;
         jumpClip = jump; obstacleClip = vault; wallKickClip = wallKick; rollClip = roll; downClip = heavyLand; tucked = flailing = false;
         var rest = Find(idle);
         if (rest != null) rest.Weight = rest.Target = 1f;
@@ -189,11 +194,11 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         transition = null;
         playingOut = false;
         if (body != null) Destroy(body.gameObject);
-        body = head = leftHand = rightHand = null;
+        body = head = hips = leftHand = rightHand = null;
         loadedModel = null;
         loadedSkin = null;
         animator = null;
-        if (view != null) view.localPosition = viewHome;
+        if (view != null) { view.localPosition = viewHome; view.localRotation = viewRotationHome; }
         thirdPerson = false;
     }
 
@@ -285,9 +290,11 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
             // Hanging, the hands hold the body in place instead of the head following the camera. FollowHead aims at
             // the camera's pivot, not the camera, so it keeps running while the camera rides the eyes: the camera
             // stays over the capsule and takes the head's dips and quick sway.
-            if (gripWeight <= 0f && !slideBodyAnchored) FollowHead(Time.deltaTime);
+            if (gripWeight <= 0f && !slideBodyAnchored && !ClipCarriesBody) FollowHead(Time.deltaTime);
             Grip(Time.deltaTime);
+            LiftTuckedFeet(Time.deltaTime);
             PlantFeet(Time.deltaTime);
+            KeepLegsOffWall();
             Look(Time.deltaTime);
         }
         if (thirdPerson) PlaceViewBehind();
@@ -332,7 +339,8 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
             bool onFeet = onGround && (state == MovementState.Standing || state == MovementState.Crouching
                 || state == MovementState.Proning);
             bool movingOff = transitionLeft < transition.Length - .25f && HorizontalSpeed() > walkClipSpeed;
-            bool hold = playingOut ? state == MovementState.Standing || state == MovementState.Crouching : onFeet && !movingOff;
+            bool upright = state == MovementState.Standing || state == MovementState.Crouching;
+            bool hold = playingOut ? upright && (!onGround || !movingOff) : onFeet && !movingOff;
             if (transitionLeft > blendTime && hold)
             {
                 transition.Target = 1f;
@@ -357,14 +365,19 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
             case MovementState.Proning: Want(prone); break;
             case MovementState.Supine: Want(supine); break;
             case MovementState.StepDodge: Want(dodgeClip); break;
-            case MovementState.LandingRoll: Drive(rollClip, stateTime / Mathf.Max(.05f, player.AbilitySettings.rollDuration)); break;
+            case MovementState.LandingRoll:
+                // A roll lasts as long as the move; a landing on the spot plays at its own pace and outlasts it.
+                if (player.Abilities.Landing.LandsInPlace) Want(rollClip);
+                else Drive(rollClip, stateTime / Mathf.Max(.05f, player.AbilitySettings.rollDuration));
+                break;
             case MovementState.HeavyLanding: DownPose(); break;
             case MovementState.DashPush: Want(dashPush); break;
-            case MovementState.Vault: Want(obstacleClip); break;
+            case MovementState.Vault: ObstaclePose(); break;
             case MovementState.Mantle:
                 var exitLadder = player.Abilities.Traversal.Obstacle.ExitLadder;
                 if (exitLadder != null) targetYaw = Mathf.DeltaAngle(transform.eulerAngles.y, exitLadder.ClimberYaw);
-                Drive(obstacleClip, player.Abilities.Traversal.ObstacleProgress);
+                if (player.Abilities.Traversal.Obstacle.Kind == VaultKind.None) Drive(obstacleClip, player.Abilities.Traversal.ObstacleProgress);
+                else ObstaclePose();
                 break;
             case MovementState.WallClimb: Sequence(wallClimbStart, wallClimb); break;
             case MovementState.WallKick: Want(wallKickClip); break;
@@ -387,9 +400,13 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
             string exit = SlideEndFor(from, to);
             if (exit != null) PlayTransition(exit);
         }
-        if (from == MovementState.Vault && (to == MovementState.Standing || to == MovementState.Crouching)) PlayOutVault();
+        if ((from == MovementState.Vault || from == MovementState.Mantle) && (to == MovementState.Standing || to == MovementState.Crouching))
+            PlayOutObstacle();
+        if (heaving && from == MovementState.Mantle) standBlendLeft = heaveStandTime;
         if (from == MovementState.DashPush && onGround && (to == MovementState.Standing || to == MovementState.Crouching))
             PlayOn(dashPush);
+        if (from == MovementState.LandingRoll && onGround && (to == MovementState.Standing || to == MovementState.Crouching))
+            PlayOn(rollClip);
         switch (to)
         {
             case MovementState.Sliding: Restart(Find(slideStart)); break;
@@ -401,20 +418,26 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
                 dodgeClip = Vector3.Dot(player.Abilities.ActionDirection, transform.right) < 0f ? dodgeLeft : dodgeRight;
                 Restart(Find(dodgeClip));
                 break;
-            case MovementState.LandingRoll: rollClip = RollFor(); break;
+            case MovementState.LandingRoll:
+                rollClip = RollFor();
+                Restart(Find(rollClip));
+                break;
             case MovementState.HeavyLanding: downClip = DownClip(player.Abilities.Landing.HeavyPose); break;
             case MovementState.DashPush: Restart(Find(dashPush)); break;
             case MovementState.Vault:
             case MovementState.Mantle:
-                obstacleClip = from == MovementState.Ladder ? LadderExitClip() : ObstacleClip(to == MovementState.Vault, from == MovementState.LedgeHang);
-                if (to == MovementState.Vault) StartVault();
+                obstacleClip = from == MovementState.Ladder ? LadderExitClip() : ObstacleClip();
+                StartObstacleClip();
                 break;
             case MovementState.WallClimb: Restart(Find(wallClimbStart)); break;
             case MovementState.WallKick:
                 wallKickClip = WallKickFor();
                 Restart(Find(wallKickClip));
                 break;
-            case MovementState.LedgeHang: Restart(Find(ledgeCatch)); break;
+            case MovementState.LedgeHang:
+                Restart(Find(ledgeCatch));
+                hangYaw = 0f;
+                break;
             case MovementState.LacheRelease: Restart(Find(barRelease)); break;
             case MovementState.LedgeJump: Restart(Find(ledgeJump)); break;
             case MovementState.Ladder: StartLadder(); break;
@@ -426,6 +449,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     {
         bool wasTucked = tucked;
         tucked = flailing = false;
+        if (onGround && springing) { transition = null; playingOut = springing = false; }
         if (!onGround)
         {
             jumped = player.VerticalVelocity > 1f;
@@ -440,12 +464,14 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         {
             string landing = LandingFor(state == MovementState.Crouching, wasTucked);
             if (landing != null) PlayTransition(landing);
+            else if (wasTucked && state == MovementState.Standing) SettleFromTuck();
         }
     }
 
     private void Blend(float dt)
     {
-        float step = dt / blendTime, total = 0f;
+        float step = dt / (standBlendLeft > 0f ? heaveStandTime : blendTime), total = 0f;
+        standBlendLeft -= dt;
         foreach (var channel in channels)
         {
             channel.Weight = Mathf.MoveTowards(channel.Weight, channel.Target, step);
@@ -536,6 +562,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     private void PlaceViewBehind()
     {
         if (view == null || view.parent == null) return;
+        view.localRotation = viewRotationHome;
         Transform pivot = view.parent;
         Vector3 origin = pivot.position, wanted = pivot.TransformPoint(thirdPersonOffset), offset = wanted - origin;
         float distance = offset.magnitude;

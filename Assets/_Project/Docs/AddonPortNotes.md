@@ -8,7 +8,7 @@ GMod 애드온(`F:\Addons`, 저장소 밖)의 이동·애니메이션·소리를
 
 | 애드온 | 옮긴 것 | 지금 위치 |
 | --- | --- | --- |
-| Beatrun Community Edition | 사다리·집라인, 시점 펀치 값, 세게 착지, 숨소리 모델, 동작 소리와 재생 순서 | [Parkour](../Scripts/Player/Movement/Parkour), [PlayerMovementPunch](../Scripts/Player/Camera/PlayerMovementPunch.cs), [MovementLanding](../Scripts/Player/Movement/Actions/MovementLanding.cs), [PlayerBreathing](../Scripts/Player/Audio/PlayerBreathing.cs), [SoundCues.csv](../Resources/Tables/SoundCues.csv) |
+| Beatrun Community Edition | 넘기·올라서기 판정과 이동식, 사다리·집라인, 시점 펀치 값, 세게 착지, 숨소리 모델, 동작 소리와 재생 순서 | [BeatrunVault](../Scripts/Player/Movement/Parkour/BeatrunVault.cs), [VaultMotion](../Scripts/Player/Movement/Parkour/VaultMotion.cs), [Parkour](../Scripts/Player/Movement/Parkour), [PlayerMovementPunch](../Scripts/Player/Camera/PlayerMovementPunch.cs), [MovementLanding](../Scripts/Player/Movement/Actions/MovementLanding.cs), [PlayerBreathing](../Scripts/Player/Audio/PlayerBreathing.cs), [SoundCues.csv](../Resources/Tables/SoundCues.csv) |
 | Beatrun Actual Thirdperson animations | 여성 3인칭 세트(`tp_climbanim_f`)를 Hiro 뼈대에 구운 클립 | [Art/Animations/Beatrun](../Art/Animations/Beatrun) |
 | Eye View Attachment for Beatrun | 카메라를 몸의 눈에 붙이기 | [PlayerBody.Look](../Scripts/Player/Body/PlayerBody.Look.cs) |
 | 2026 IK Foot (High FPS Version) | 발 IK | [PlayerBody.Feet](../Scripts/Player/Body/PlayerBody.Feet.cs) |
@@ -51,14 +51,24 @@ Source 단위는 **1 = 0.025m**로 환산했다. Beatrun의 수치를 옮길 때
 | --- | --- | --- |
 | 시간 | 넘기·올라서기·구르기는 애니메이션이 자연스러운 시간을 쓴다 | Dying Light처럼 묵직한 파쿠르를 원한다 |
 | 눈 시점 | 정조준·사다리를 빼고 카메라가 눈을 따른다. 사다리는 상하 전환 중 기준 눈높이를 유지한다 | 사다리의 클립 전환이 화면을 밀지 않게 했다 |
-| 올라서기 | 렛지에 매달린 뒤에만 올라선다(`Ability.mantleFromGround`로 되돌릴 수 있다) | 넘기를 원할 때 올라서는 경우가 생겼다 |
+| 손 | 넘기·높은 올라서기 때 손을 실제 모서리에 짚고, 몸은 그 손이 닿는 범위에 머물다 캡슐을 따라잡는다 | 원본은 손 고정이 없다. 판단은 캐릭터마다 실제 팔 길이로 해서 수치를 따로 넣지 않는다 |
+| 매달린 뒤 올라가기의 몸 | 캡슐의 경로와 시간은 원본이지만 보이는 몸은 `hangheaveup` 대신 이동을 남긴 `mx_ledge_climb_up`을 쓴다. 손을 짚은 동안 몸은 손에 붙어 올라간다 | `hangheaveup`은 몸이 캡슐보다 최대 0.66m 벽 반대쪽으로 처지고 손도 0.3초쯤 윗면에서 떠서, 1인칭으로 내려다보면 벽 앞 허공에 떠서 허공을 짚는다 |
+| 엄지 | 잡지 않은 손의 엄지는 클립 대신 캐릭터의 손에서 잰 편한 자세를 쓴다 | 리타깃을 거친 엄지가 손에서 벌어져 나온다 |
+| 몸 크기 | 원본의 77·64 같은 거리를 `HullUnit`으로 캡슐 키에 맞춘다. 캐릭터별 높이 설정은 없다 | Actual Thirdperson은 모델마다 높이 프리셋을 저장하지만, 여기서는 손 위치를 재서 몸을 맞춘다 |
+| 장애물 지정 | `ParkourObstacle`로 물체별 넘기·올라타기를 고정할 수 있다 | 자동 판단이 맵 의도와 다를 때를 위한 추가 기능이다 |
+| 적 위로 넘기 | 넘을 수 있다 | 원본은 NPC를 넘지 않지만 기존 동작을 유지했다 |
+| 렛지 매달림 | 판정 범위, 위치, 벽을 볼 때의 클립은 기존 것을 쓰고 손을 `Grip`으로 맞춘다. 돌아보기와 올라가기는 원본이다. 돌아볼 때는 몸이 자리를 지키고 남은 손을 IK로 모서리에 놓는다 | 원본은 손이 모서리 77단위 위치에 맞도록 클립과 높이를 맞춰 두었다. 캐릭터마다 다른 팔을 맞추려고 손을 재서 맞춘다. 돌아보기 자세의 손은 몸에 가까워서 그 손에 몸을 맞추면 벽을 뚫는다 |
+| 끝 지점 정리 | 끝점에 끼면 0.12초에 걸쳐 빠져나온다 | 원본은 순간이동한다. 눈 시점에서 화면이 튀지 않게 했다 |
+| 일찍 끝내기 | 몸이 아무것도 안 닿아도 끝점까지 남은 길이 비어 있어야 끝낸다 | 원본 규칙은 폭 넓은 몸에서만 맞는다. 좁은 캡슐은 장애물 바로 앞에서 끝나 넘지 못했다 |
+| 벽 오르기와 넘기 | 이 점프로 곧 넘거나 올라설 수 있는 장애물이면 벽 오르기를 시작하지 않고, 벽을 오르는 중에도 넘기를 시도한다 | 원본은 벽 오르기가 먼저 시작될 수 있어 윗면이 높은 장애물을 넘기 어렵다 |
+| 높은 올라서기의 윗면 찾기 | 70단위 앞에 윗면이 없으면 몸이 올라설 수 있는 곳까지 당겨서 찾는다 | 원본은 깊이 약 1.3m보다 얕은 윗면을 놓치고 매달리기로 넘어간다 |
+| 높은 동작의 출발 | 캡슐이 0.2초 동안 벽 앞 자리로 간다 | 원본은 캡슐을 순간이동하고 몸만 보간한다. 바닥이 막으면 높이는 유지하고 거리만 좁힌다 |
 | 월 런 | 넣지 않았다 | 벽 달리기 클립 4개도 변환에서 뺐다 |
 
 ## 아직 남은 일
 
 - **총과 손만 세상 위에 그리기**: 총이 벽을 뚫어 보이지 않게 한다. 손이 몸 메시의 일부라서 메시를 나눠야 한다. 몸 전체를 위에 그리면 발이 바닥 위로 비치고, 별도 무기 카메라는 쓰지 않기로 했다.
 - **몸 클립 펀치**: 주먹이 지금은 손 IK로만 뻗는다. `punchleft`·`punchright`·`punchmid`·발차기 클립을 섞는다.
-- **렛지에서 뒤돌아보기**: 매달린 채 시선을 오른쪽으로 크게 돌리면 왼손은 잡고 오른손과 머리만 돌아야 한다. 반대쪽도 같다.
 - **총 든 동작 클립**: `Body.armedClips`를 켜서 확인한다. 손 IK가 생겨서 가능해졌지만 아직 시험하지 않았다.
 - **사다리·줄의 손 IK**: 지금은 클립과 `PlayerBody.Grip`의 위치 맞춤뿐이다. 클립의 손이 어긋나 보이면 추가한다.
 - **총 모델**: 지금 플레이어 프리팹의 총은 재질을 비워 보이지 않고, 권총 모델은 없다.

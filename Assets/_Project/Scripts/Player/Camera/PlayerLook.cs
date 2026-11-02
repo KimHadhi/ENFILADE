@@ -126,6 +126,15 @@ public sealed class PlayerLook : MonoBehaviour
             if (body == null) body = GetComponent<PlayerBody>();
             return WithinArc(movement.Abilities.Landing.HeavyYaw, body != null ? body.HeavyLandingLookYawLimit : 90f, candidate);
         }
+        if (movement != null && movement.CurrentState == PlayerMovement.MovementState.LedgeHang && movement.Abilities != null
+            && movement.Abilities.Traversal.Ledge.Surface != null)
+        {
+            // The hang's look clips turn the body after the view up to here, on either side of the wall.
+            var ledge = movement.Abilities.Traversal.Ledge;
+            Vector3 inward = -ledge.Surface.transform.TransformDirection(ledge.LocalNormal);
+            if (body == null) body = GetComponent<PlayerBody>();
+            return WithinArc(Mathf.Atan2(inward.x, inward.z) * Mathf.Rad2Deg, body != null ? body.HangLookYawLimit : 175f, candidate);
+        }
         if (movement != null && movement.Abilities != null && movement.Abilities.Fixtures.TryLookCentre(out float fixtureYaw))
         {
             // On a ladder or a cable the body faces its way; the head turns only so far from that.
@@ -141,12 +150,14 @@ public sealed class PlayerLook : MonoBehaviour
     }
 
     // Ordinary mouse look stops at the arc's edge without ever turning what the arc follows. A view already outside it
-    // (a sideways slide bounce, a blow from behind) is brought back smoothly.
+    // (a sideways slide bounce, a blow from behind) is brought back smoothly. Measured from where the view is now, so a
+    // quick flick past 180 degrees from the centre can't come round on the arc's other side.
     private float WithinArc(float center, float limit, float candidate)
     {
-        float clamped = center + Mathf.Clamp(Mathf.DeltaAngle(center, candidate), -limit, limit);
-        if (Mathf.Abs(Mathf.DeltaAngle(center, transform.eulerAngles.y)) > limit + .01f)
-            return Mathf.MoveTowardsAngle(transform.eulerAngles.y, clamped, 360f * Time.deltaTime);
+        float now = transform.eulerAngles.y, from = Mathf.DeltaAngle(center, now);
+        float clamped = center + Mathf.Clamp(from + Mathf.DeltaAngle(now, candidate), -limit, limit);
+        if (Mathf.Abs(from) > limit + .01f)
+            return Mathf.MoveTowardsAngle(now, clamped, 360f * Time.deltaTime);
         return clamped;
     }
 

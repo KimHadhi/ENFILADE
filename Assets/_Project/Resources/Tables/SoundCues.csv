@@ -5,6 +5,7 @@ StepRun,Movement/Run/{surface}; Movement/Cloth/MovementRun *0.22,12,뛰는 한 �
 StepRelease,Movement/Release/{surface} *0.3,4,빠르게 달리며 발을 뗄 때 작게 바닥을 차는 소리
 Jump,Movement/Release/{surface}; Movement/Cloth/MovementWalk,6,점프 도약
 LandSoft,Movement/Walk/{surface}; Movement/Cloth/MovementWalk,5,낮은 턱에서 내려서기
+LandInPlace,Movement/Land/{surface}; Movement/Cloth/FallShortMedium; Movement/Cloth/MovementRun; Movement/Cloth/MovementWalk +0.3,12,구르기 대신 제자리 착지 (Beatrun safetyroll의 land)
 Land,Movement/Land/{surface}; Movement/Run/{surface}; Movement/Cloth/MovementRun,12,착지 (Beatrun: 착지 + 발소리 + 옷)
 LandHard,Movement/Land/{surface}; Movement/LandHard; Movement/Cloth/FallShortHard; Movement/Cloth/FallShortMedium; Voice/Impact +0.1,18,세게 착지 (Beatrun hardland + Dynamic Landing)
 LandHeavy,Movement/Land/{surface}; Movement/LandHeavy; Movement/Cloth/FallShortHard; Movement/Cloth/Fall; Voice/ImpactHard +0.1,24,크게 착지

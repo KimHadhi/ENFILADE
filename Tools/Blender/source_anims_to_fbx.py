@@ -149,6 +149,8 @@ MOVE_PARAMS = (7, 6)
 DIRECTIONS = {"runbwd": (0, -1), "walkback": (0, -1), "crouchbwd": (0, -1),
               "dodgejumpleft": (-1, 0), "dodgejumpright": (1, 0)}
 # A name "crouchleft=crouchfwd@-1:0" bakes that cell of a blended sequence as its own clip (sideways, forward keys).
+# Cells run through the first parameter fastest. The square movement grids are read with their axes the other way
+# round, which is how "sideways, forward" above came to name them; a grid of any other shape is read as stored.
 aliases = {}
 for n in list(order):
     if "=" in n:
@@ -184,7 +186,9 @@ for seq in getattr(mdl, "sequences", []):
     sequences[seq.name] = (cells[nearest(k0, want[0]) * n1 + nearest(k1, want[1])], bool(int(seq.flags) & 1))
     for alias, (source, cell) in aliases.items():
         if source == seq.name:
-            sequences[alias] = (cells[nearest(k0, cell[0]) * n1 + nearest(k1, cell[1])], bool(int(seq.flags) & 1))
+            first, second = nearest(k0, cell[0]), nearest(k1, cell[1])
+            at = first * n1 + second if n0 == n1 else first + second * n0
+            sequences[alias] = (cells[at], bool(int(seq.flags) & 1))
 
 # Unity's humanoid has three spine slots (Spine, Chest, UpperChest = Bip01_Spine, Spine1, Spine2). Bip01_Spine4 sits
 # between UpperChest and the neck, so its rotation would be dropped on import. Fold it into Spine2 instead: Spine2
@@ -233,9 +237,12 @@ for clip in order:
         continue
     desc = mdl.anim_descs[n]
     frames = int(data.shape[0])
-    if frames < 2:
-        print("SKIP", clip, "single frame")  # Unity imports a one-frame take as an empty clip
+    # Unity imports a one-frame take as an empty clip. A named pose cell is keyed twice, so it arrives as a held pose.
+    held = frames < 2 and clip in aliases
+    if frames < 2 and not held:
+        print("SKIP", clip, "single frame")
         continue
+    keys = 2 if held else frames
     step = 30.0 / (desc.fps or 30.0)
     act = bpy.data.actions.new(clip + suffix)
     act.use_fake_user = True
@@ -258,21 +265,22 @@ for clip in order:
             quats.append(q)
         if not locs:
             continue
+        locs, quats = locs * (keys // len(locs)), quats * (keys // len(quats))
         base = f'pose.bones["{bone}"]'
         for prop, values, size in (("location", locs, 3), ("rotation_quaternion", quats, 4)):
             for i in range(size):
                 fc = act.fcurves.new(f"{base}.{prop}", index=i, action_group=bone)
-                fc.keyframe_points.add(frames)
+                fc.keyframe_points.add(keys)
                 co = []
-                for fr in range(frames):
+                for fr in range(keys):
                     co += (fr * step, values[fr][i])
                 fc.keyframe_points.foreach_set("co", co)
                 for kp in fc.keyframe_points:
                     kp.interpolation = "LINEAR"
                 fc.update()
     loop = seq_loop if seq_loop is not None else bool(int(desc.flags) & 1)
-    rows.append((clip + suffix, int(loop), 0, yaw_offset, frames, desc.fps))
-    print("ACTION", clip, frames, desc.fps, "loop" if loop else "once")
+    rows.append((clip + suffix, int(loop), 0, yaw_offset, keys, desc.fps))
+    print("ACTION", clip, keys, desc.fps, "loop" if loop else "once")
 
 # Unity builds the avatar of a skeleton-only FBX from the first take's first frame (there is no bind pose), so the
 # first take is the rest pose. Actions export in name order; "_rest" sorts before every clip.

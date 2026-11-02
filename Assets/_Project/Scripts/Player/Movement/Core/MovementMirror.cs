@@ -20,6 +20,10 @@ public sealed class MovementMirror
     private float pitch, landImpact;
     private byte jumps, landings, dashHits;
     private bool applied;
+    private PlayerBody body;
+
+    // Asked for late: the body is added after this.
+    private PlayerBody Body => body != null ? body : body = ctx.GetComponent<PlayerBody>();
 
     internal MovementMirror(PlayerMovement context)
     {
@@ -45,6 +49,8 @@ public sealed class MovementMirror
             Lean = abilities.Lean.Share, Yaw = ctx.transform.eulerAngles.y,
             Pitch = lookPivot != null ? Mathf.DeltaAngle(0f, lookPivot.localEulerAngles.x) : 0f
         };
+        pose.Tuck = ctx.Posture.AirTuck;
+        if (Body != null) pose.Step = Body.Step;
         var marks = Marks.None;
         if (ctx.IsGrounded) marks |= Marks.Grounded;
         if (ctx.IsAirCrouching) marks |= Marks.AirCrouching;
@@ -56,18 +62,16 @@ public sealed class MovementMirror
             case State.SupineSliding: pose.Direction = ctx.SlideDirection; break;
             case State.StepDodge: pose.Direction = abilities.ActionDirection; break;
             case State.HeavyLanding: pose.Detail = landing.HeavyYaw; break;
+            case State.LandingRoll: pose.Detail = landing.LandsInPlace ? 1f : 0f; break;
             case State.Vault:
             case State.Mantle:
                 pose.Detail = traversal.ObstacleProgress;
                 pose.Extent = traversal.Obstacle.Height;
+                pose.Vault = (byte)traversal.Obstacle.Kind;
                 if (traversal.Obstacle.ExitLadder != null) marks |= Marks.LeavesLadder;
+                if (traversal.Obstacle.Kind != VaultKind.None) WriteLedge(ref pose, traversal.Ledge);
                 break;
-            case State.LedgeHang:
-                var ledge = traversal.Ledge;
-                if (ledge.Surface == null) break;
-                pose.Anchor = ledge.Surface.transform.TransformPoint(ledge.LocalEdge);
-                pose.Direction = ledge.Surface.transform.TransformDirection(ledge.LocalNormal);
-                break;
+            case State.LedgeHang: WriteLedge(ref pose, traversal.Ledge); break;
             case State.BarSwing:
                 pose.Detail = traversal.Angle;
                 pose.Extent = traversal.AngularSpeed;
@@ -90,6 +94,13 @@ public sealed class MovementMirror
         return pose;
     }
 
+    private static void WriteLedge(ref PlayerPose pose, in LedgeTarget ledge)
+    {
+        if (ledge.Surface == null) return;
+        pose.Anchor = ledge.Surface.transform.TransformPoint(ledge.LocalEdge);
+        pose.Direction = ledge.Surface.transform.TransformDirection(ledge.LocalNormal);
+    }
+
     internal void Apply(in PlayerPose pose, float dt)
     {
         var state = (State)pose.State;
@@ -101,6 +112,8 @@ public sealed class MovementMirror
         motor.VerticalVelocity = pose.Velocity.y;
         ctx.Actions.sprintProgress = pose.RunIntent;
         ctx.Posture.airCrouching = Has(pose, Marks.AirCrouching);
+        ctx.Posture.mirroredTuck = pose.Tuck;
+        if (Body != null) Body.Step = pose.Step;
         abilities.Lean.Share = Mathf.Lerp(abilities.Lean.Share, pose.Lean, follow);
         abilities.Landing.Mirror((MovementLanding.Tier)pose.LandingTier, (MovementLanding.Pose)pose.HeavyPose,
             state == State.HeavyLanding ? pose.Detail : abilities.Landing.HeavyYaw, Has(pose, Marks.BigFall), pose.FallSpeed);
@@ -130,11 +143,14 @@ public sealed class MovementMirror
             case State.HeadFirstSliding:
             case State.SupineSliding: ctx.SlideDirection = pose.Direction; break;
             case State.StepDodge: abilities.ActionDirection = pose.Direction; break;
+            case State.LandingRoll: abilities.Landing.LandsInPlace = pose.Detail > .5f; break;
             case State.Vault:
             case State.Mantle:
                 traversal.ObstacleProgress = pose.Detail;
                 traversal.Obstacle.Height = pose.Extent;
+                traversal.Obstacle.Kind = (VaultKind)pose.Vault;
                 traversal.Obstacle.ExitLadder = Has(pose, Marks.LeavesLadder) ? fixtures.Ladder : null;
+                if (pose.Direction != Vector3.zero) MirrorLedge(pose);
                 break;
             case State.LedgeHang: MirrorLedge(pose); break;
             case State.BarSwing:

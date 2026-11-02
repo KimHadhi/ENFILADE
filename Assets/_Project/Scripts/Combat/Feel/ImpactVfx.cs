@@ -1,14 +1,16 @@
 using UnityEngine;
 
 /// <summary>
-/// Procedural impact matter: blood spray (mostly out of the exit side, some back toward the shooter), a blood mist puff,
-/// blood splats on the nearest floor/wall behind the target, and dust puffs for bodies hitting the ground.
-/// Headshots and kills spray harder. Particle systems and up to 32 decals are pooled; created on first use during Play.
+/// Impact matter: a pack blood splash back toward the shooter (ImpactPool, or a procedural mist puff without it), droplets
+/// mostly out of the exit side, blood splats on the nearest floor/wall behind the target, and dust puffs for bodies hitting
+/// the ground. Headshots and kills spray harder. Particle systems and up to 32 decals are pooled; created on first use during Play.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class ImpactVfx : MonoBehaviour
 {
     private const int DecalCount = 32;
+    // Off the body toward the shooter, so a camera-facing splash isn't cut by the body it leaves.
+    private const float SplashLift = .05f;
     private static ImpactVfx instance;
     private ParticleSystem droplets, mist, dust;
     private readonly Transform[] decals = new Transform[DecalCount];
@@ -24,6 +26,11 @@ public sealed class ImpactVfx : MonoBehaviour
     {
         if (instance == null) instance = FeelAssets.CreateRuntimeRoot("Impact VFX").AddComponent<ImpactVfx>();
         return instance;
+    }
+
+    public static void Prepare()
+    {
+        if (Application.isPlaying) Get();
     }
 
     private void Awake()
@@ -74,6 +81,8 @@ public sealed class ImpactVfx : MonoBehaviour
         var settings = GunFeelSettings.Instance;
         if (direction.sqrMagnitude < .0001f) direction = Camera.main != null ? Camera.main.transform.forward : Vector3.forward;
         direction.Normalize();
+        string splash = kill ? "BloodKill" : critical ? "BloodHead" : bullet ? "BloodBody" : "BloodMelee";
+        bool splashed = ImpactPool.Play(splash, point - direction * SplashLift, -direction);
         int count = kill ? settings.killDroplets : critical ? settings.headDroplets : settings.bodyDroplets;
         if (!bullet) count = Mathf.RoundToInt(count * .6f);
         float force = (critical ? 1.35f : 1f) * (kill ? 1.25f : 1f);
@@ -91,7 +100,7 @@ public sealed class ImpactVfx : MonoBehaviour
             emit.startColor = Shade(settings.bloodColor, Random.Range(.75f, 1.15f));
             droplets.Emit(emit, 1);
         }
-        int puffs = kill ? 5 : critical ? 4 : 2;
+        int puffs = splashed ? 0 : kill ? 5 : critical ? 4 : 2;
         for (int i = 0; i < puffs; i++)
         {
             emit.position = point + Random.insideUnitSphere * .04f;

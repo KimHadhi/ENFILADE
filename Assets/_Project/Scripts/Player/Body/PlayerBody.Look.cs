@@ -4,8 +4,8 @@ using MovementState = PlayerMovement.MovementState;
 
 /// <summary>
 /// Where the head and eyes go.
-/// - The camera rides the eyes in every state, the way Beatrun's Eye View does; aim stays with the mouse. Aiming
-///   down sights steadies it back at the camera pivot. The Q/E lean still moves it sideways.
+/// - The mouse leads the head's gaze; selected action clips add a bounded rotation shared by head and camera.
+///   The camera rides the corrected eyes. Aiming down sights steadies it; Q/E still moves it sideways.
 /// - Looking up or down bends the spine and neck with the view.
 /// - When the hips face away from the view, the chest twists back toward it: planted legs, a sprint's hip turn,
 ///   or legs following a slide.
@@ -73,6 +73,7 @@ public sealed partial class PlayerBody
         if (restForward.sqrMagnitude < .001f) restForward = body.forward;
         Vector3 eye = EyesAtRest() + body.up * eyeAdjust.x + restForward * (eyeAdjust.y + eyeViewAhead);
         eyeLocal = head.InverseTransformPoint(eye);
+        SetUpGaze();
         SetUpClearance();
     }
 
@@ -97,6 +98,7 @@ public sealed partial class PlayerBody
     private void Look(float dt)
     {
         if (head == null || dt <= 0f) return;
+        UpdateGaze(dt);
         float onEyes = (1f - AimBlend()) * (1f - punchEyeSteady * punchWeight);
         // Rung and slide clips put the head at different heights. A steady ladder view prevents repeated
         // up/down taps from turning that retargeted head offset into a camera lurch.
@@ -134,6 +136,7 @@ public sealed partial class PlayerBody
         Vector3 lean = cameraEffects != null ? cameraEffects.LeanDisplacement : transform.right * player.LeanOffset;
         Vector3 anchor = cameraEffects != null ? cameraEffects.CameraAnchorPosition
             : view.parent != null ? view.parent.TransformPoint(viewHome) : transform.position + Vector3.up * player.runtimeBodyDefaults.w;
+        ApplyGazeToCamera();
         PlaceCamera(Vector3.Lerp(anchor + lean + eye - eyeBefore, eye + lean, eyeViewWeight));
     }
 
@@ -141,7 +144,6 @@ public sealed partial class PlayerBody
     // camera looks. The twist turns the chest, neck and head back from the hips toward the view.
     private void BendAndTwist(float pitch, float twist, float spineScale = 1f)
     {
-        if (Mathf.Abs(pitch) < .01f && Mathf.Abs(twist) < .01f) return;
         Vector3 right = transform.right, up = transform.up;
         float share = (pitch > 0f ? spineBendDown : spineBendUp) * (1f - readyWeight) * spineScale;
         int count = Mathf.Max(1, spine.Count);
@@ -149,6 +151,17 @@ public sealed partial class PlayerBody
         float rest = pitch * (1f - share);
         Turn(neck, rest * .3f, twist * .2f);
         Turn(head, rest * .7f, twist * .2f);
+        // Resolve the absolute gaze even with no mouse pitch/twist. Otherwise a turn clip's authored nod
+        // survives after the player stops looking. Every clearance candidate must use this final eye pose.
+        if (!dead)
+        {
+            // Let committed actions carry the anatomical head with the body. Keeping the head world-upright
+            // through a somersault would twist the neck; only the camera's share is comfort-limited.
+            Quaternion target = Quaternion.Slerp(gazeRotation * Quaternion.Inverse(headToGaze), head.rotation, headAnimationWeight);
+            if (neck != null)
+                neck.rotation = Quaternion.Slerp(Quaternion.identity, target * Quaternion.Inverse(head.rotation), .3f) * neck.rotation;
+            head.rotation = target;
+        }
 
         void Turn(Transform bone, float bend, float turn)
         {

@@ -152,7 +152,7 @@ public sealed class PlayerMovementAudio : MonoBehaviour
             case MovementState.Diving:
             case MovementState.SupineDiving: Cue("Dive", Ground()); break;
             case MovementState.StepDodge: Cue("Dodge", Ground()); break;
-            case MovementState.LandingRoll: Cue("Roll", Ground()); break;
+            case MovementState.LandingRoll: Cue(player.Abilities.Landing.LandsInPlace ? "LandInPlace" : "Roll", Ground()); break;
             case MovementState.DashPush: Cue("DashPush", Ground()); break;
             case MovementState.Vault: Cue("Vault", Surfaces.Of(traversal.Obstacle.Surface), true); break;
             case MovementState.Mantle:

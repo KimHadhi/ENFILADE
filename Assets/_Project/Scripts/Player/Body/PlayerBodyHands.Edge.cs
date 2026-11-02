@@ -1,0 +1,146 @@
+using UnityEngine;
+using MovementState = PlayerMovement.MovementState;
+
+/// <summary>
+/// Hands on the edge of what the player vaults or climbs. Nothing here is per clip or per character: a hand plants where the
+/// clip brings it closest to its place on the edge, then stays put while the body keeps within its arm's reach. The capsule
+/// doesn't wait for it, so the further ahead it draws the less the body holds back (EdgeHoldBack), and once the arm runs out
+/// the hand comes off for good and the clip carries on. A step up brings no hand near, so none plants; a one-handed vault
+/// plants one. Climbing from a hang the hands carry the body instead (PlayerBody.Heave). Hanging, the look clips take one
+/// hand away, and that hand lets go.
+/// </summary>
+public sealed partial class PlayerBodyHands
+{
+    [SerializeField, Range(0f, 2f), Tooltip("A climbing hand plants at its closest to its place on the edge, if that is within this share of the arm's length.")]
+    private float edgeCatch = 1f;
+    [SerializeField, Min(.01f), Tooltip("How long a hand takes to settle on the edge or come off it (s).")]
+    private float edgeEase = .1f;
+    [SerializeField, Range(.5f, 1f), Tooltip("A planted arm stretches to this share of its length; past that the body stays back for it.")]
+    private float edgeArmUse = .95f;
+    [SerializeField, Tooltip("How far behind the capsule the body stays for planted hands, in arm lengths: it starts giving up at the first and has given up at the second.")]
+    private Vector2 edgeHoldBack = new Vector2(.6f, 1.8f);
+    [SerializeField, Min(.1f), Tooltip("How quickly the body catches the capsule up once the hands have let go (arm lengths per second).")]
+    private float edgeCatchUp = 3f;
+
+    // Holding back has to keep up with the capsule, whose quickest moves cover several arm lengths a second.
+    private const float HoldBackFollow = 20f;
+    // Below this the body has begun giving up on the hands, so an arm at full stretch is one that has run out.
+    private const float StillWaiting = .98f;
+
+    private enum EdgeHand { Waiting, Planted, Gone }
+    private readonly EdgeHand[] edgeHands = new EdgeHand[2];
+    private readonly float[] edgeShares = new float[2], edgeAway = new float[2];
+    private MovementState edgeState;
+    private Vector3 edgeHeld;
+    private float edgeWaits = 1f, shoulderSpan;
+
+    private static bool Climbing(MovementState state) => state == MovementState.Vault || state == MovementState.Mantle;
+    // The quick vaults lift the feet over the top on their own arc, which holding the body back would drag through it.
+    private static bool ClearsTop(VaultKind kind) => kind == VaultKind.Over || kind == VaultKind.Kong;
+
+    private void ResetEdge()
+    {
+        edgeState = player.CurrentState;
+        edgeHeld = Vector3.zero;
+        edgeWaits = 1f;
+        for (int hand = 0; hand < 2; hand++)
+        {
+            edgeHands[hand] = EdgeHand.Waiting;
+            edgeShares[hand] = restLifts[hand] = 0f;
+        }
+    }
+
+    // Off a hang both hands are already there; any other move starts with them free. Leaving the edge any other way, a hand
+    // keeps its share while Hold.Ledge fades, so it never swings back on the way out.
+    private void TrackEdgeHands(MovementState state)
+    {
+        if (state == edgeState) return;
+        bool hung = state == MovementState.LedgeHang || edgeState == MovementState.LedgeHang;
+        edgeState = state;
+        restLifts[0] = restLifts[1] = 0f;
+        if (state != MovementState.LedgeHang && !Climbing(state)) return;
+        for (int hand = 0; hand < 2; hand++)
+        {
+            edgeHands[hand] = hung ? EdgeHand.Planted : EdgeHand.Waiting;
+            edgeAway[hand] = float.PositiveInfinity;
+        }
+    }
+
+    private bool WantsEdge(MovementState state)
+    {
+        var traversal = player.Abilities.Traversal;
+        if (traversal.Ledge.Surface == null) return false;
+        if (state == MovementState.LedgeHang) return true;
+        return Climbing(state) && traversal.Obstacle.Kind != VaultKind.None
+            && (edgeHands[0] != EdgeHand.Gone || edgeHands[1] != EdgeHand.Gone);
+    }
+
+    // The share of this hand's weight the edge may take this frame. arm.Hand still sits where the clip put it.
+    private float EdgeShare(ArmIK arm, bool isLeft, Vector3 wrist)
+    {
+        int hand = isLeft ? 0 : 1;
+        var state = player.CurrentState;
+        float wanted = edgeShares[hand];
+        if (state == MovementState.LedgeHang) wanted = 1f - body.HangLetGo(isLeft);
+        else if (Climbing(state))
+        {
+            var kind = player.Abilities.Traversal.Obstacle.Kind;
+            float reach = Mathf.Max(.01f, arm.Reach), away = Vector3.Distance(arm.Hand.position, wrist);
+            float stretch = Vector3.Distance(arm.Upper.position, wrist) / reach;
+            // Within what the body can make up by holding back, the hand goes down as soon as it stops getting closer.
+            float spare = ClearsTop(kind) ? 1f : edgeArmUse + edgeHoldBack.x;
+            if (edgeHands[hand] == EdgeHand.Waiting && stretch <= spare && away <= edgeCatch * reach && away >= edgeAway[hand])
+                edgeHands[hand] = EdgeHand.Planted;
+            edgeAway[hand] = away;
+            bool ranOut = kind == VaultKind.Heave ? body.HeaveHandsFree : stretch >= 1f && (ClearsTop(kind) || edgeWaits < StillWaiting);
+            if (edgeHands[hand] == EdgeHand.Planted && ranOut) edgeHands[hand] = EdgeHand.Gone;
+            wanted = edgeHands[hand] == EdgeHand.Planted ? 1f : 0f;
+        }
+        return edgeShares[hand] = Mathf.MoveTowards(edgeShares[hand], wanted, Time.deltaTime / edgeEase);
+    }
+
+    /// <summary>How far the clip has straightened the arms over the hands, as a share of their length; none with the shoulders below them.</summary>
+    internal float ArmPress()
+    {
+        if (left == null || right == null) return 0f;
+        if (left.Upper.position.y + right.Upper.position.y <= left.Hand.position.y + right.Hand.position.y) return 0f;
+        return (Vector3.Distance(left.Upper.position, left.Hand.position) / Mathf.Max(.01f, left.Reach)
+            + Vector3.Distance(right.Upper.position, right.Hand.position) / Mathf.Max(.01f, right.Reach)) * .5f;
+    }
+
+    /// <summary>
+    /// How far the body stays behind where the clip and capsule put it, so that arms on the edge still reach: the least move
+    /// that brings each planted shoulder within its arm's length. Called before the eye camera is placed. A hang looking away
+    /// keeps its place at the wall (PlayerBody.Grip) and takes only this.
+    /// </summary>
+    internal Vector3 EdgeHoldBack(float dt)
+    {
+        var kind = player.Abilities.Traversal.Obstacle.Kind;
+        bool climbing = Climbing(player.CurrentState) && kind != VaultKind.None && kind != VaultKind.Heave && !ClearsTop(kind);
+        float turn = body.HangTurn, arm = left != null ? left.Reach : 0f, total = 0f, most = 0f;
+        Vector3 need = Vector3.zero;
+        edgeWaits = 1f;
+        if (left != null && right != null && !body.IsDead && (climbing || turn > 0f))
+        {
+            Add(left, true);
+            Add(right, false);
+            // Takes its full size only as the hands finish settling, so a plant doesn't jerk the body and the view.
+            if (total > 0f) need *= most / total;
+            if (climbing) edgeWaits = 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(edgeHoldBack.x * arm, edgeHoldBack.y * arm, need.magnitude));
+            need *= climbing ? edgeWaits : turn;
+        }
+        float speed = need.sqrMagnitude > edgeHeld.sqrMagnitude ? HoldBackFollow : edgeCatchUp;
+        return edgeHeld = Vector3.MoveTowards(edgeHeld, need, speed * arm * dt);
+
+        void Add(ArmIK limb, bool isLeft)
+        {
+            float share = edgeShares[isLeft ? 0 : 1];
+            if (share <= 0f || !LedgeHandTarget(limb, isLeft, out Vector3 wrist, out _, out _)) return;
+            Vector3 reach = wrist - limb.Upper.position;
+            float distance = reach.magnitude, limit = limb.Reach * edgeArmUse;
+            if (distance > limit) need += reach * ((distance - limit) / distance * share);
+            total += share;
+            most = Mathf.Max(most, share);
+        }
+    }
+}

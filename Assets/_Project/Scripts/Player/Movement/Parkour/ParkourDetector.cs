@@ -1,14 +1,20 @@
 using UnityEngine;
 
+/// <summary>Beatrun's moves, each with its own clip and pace. None is a route of our own: a bar, a ladder's top.</summary>
+public enum VaultKind : byte { None, StepUp, Onto, Over, Kong, OverHigh, OntoHigh, Heave }
+
 public struct ObstacleTarget
 {
     public Collider Surface;
+    public VaultKind Kind;
+    /// <summary>Where hands can rest: the near top edge and its outward side. A zero normal means none was found.</summary>
+    public Vector3 Edge, EdgeNormal;
     /// <summary>The ladder this mantle climbs off; other vaults and mantles leave it null.</summary>
     public Ladder ExitLadder;
     public Vector3 Start, RaisedStart, RaisedEnd, End;
     public bool IsVault;
     public bool ReferenceMotion;
-    /// <summary>Top of the obstacle above the feet when it was found (m); the body picks its vault or mantle clip by it.</summary>
+    /// <summary>Top of the obstacle above the feet when it was found (m), for the moves that have no VaultKind.</summary>
     public float Height;
     /// <summary>Seconds the move takes, when it sets its own (off the top of a ladder); otherwise TraversalTiming decides.</summary>
     public float Duration;
@@ -29,7 +35,8 @@ public sealed class ParkourDetector
     private readonly WallDetector walls;
     private readonly Collider[] traversalOverlaps = new Collider[32];
     private readonly RaycastHit[] traversalHits = new RaycastHit[32];
-    internal ParkourDetector(PlayerMovement context) { ctx = context; walls = new WallDetector(ctx); }
+    internal BeatrunVault Vaults { get; }
+    internal ParkourDetector(PlayerMovement context) { ctx = context; walls = new WallDetector(ctx); Vaults = new BeatrunVault(ctx, this); }
     private static bool IsBar(Collider collider) => collider != null && collider.GetComponentInParent<SwingBar>() != null;
     private float Radius(float height) => Mathf.Max(0.05f, Mathf.Min(ctx.ControllerRadius, height * 0.5f) - 0.025f);
     private void Capsule(Vector3 feet, float height, out Vector3 bottom, out Vector3 top, out float radius)
@@ -80,7 +87,7 @@ public sealed class ParkourDetector
         for (int i = 0; i < count; i++) if (traversalHits[i].collider != surface) return false;
         return true;
     }
-    private bool ClearReferenceCapsule(Vector3 feet, Collider surface)
+    internal bool ClearReferenceCapsule(Vector3 feet, Collider surface)
     {
         Capsule(feet, ctx.StandingColliderHeight, out Vector3 a, out Vector3 b, out float r);
         int count = Physics.OverlapCapsuleNonAlloc(a, b, r, traversalOverlaps, ctx.groundLayers, QueryTriggerInteraction.Ignore);
@@ -89,74 +96,29 @@ public sealed class ParkourDetector
         return true;
     }
 
-    private bool ReferenceTarget(Collider surface, Vector3 feet, Vector3 end, bool vault, out ObstacleTarget target)
+    internal bool ReferenceTarget(Collider surface, Vector3 feet, Vector3 end, bool vault, out ObstacleTarget target)
     {
         target = default;
         if (!ClearReferenceExit(end) || !ClearReferencePath(feet, end, surface)) return false;
         target = new ObstacleTarget { Surface = surface, Start = feet, End = end, IsVault = vault, ReferenceMotion = true };
         return true;
     }
-    public bool TryObstacle(Vector3 direction, out ObstacleTarget target, bool airborne = false)
+    // climb.lua's heave: straight from the hang to the top, feet four units past the edge, or as far in as the capsule fits.
+    // Under a ceiling too low to go straight, the crouched route of TryMantle.
+    public bool TryHeave(Collider surface, Vector3 edge, Vector3 inward, Vector3 feet, out ObstacleTarget target)
     {
-        target = default;
-        direction = Vector3.ProjectOnPlane(direction, Vector3.up).normalized;
-        if (direction.sqrMagnitude < 0.01f) return false;
-        var settings = ctx.AbilitySettings;
-        Vector3 feet = ctx.transform.position;
-        if (!Physics.SphereCast(feet + Vector3.up * (airborne ? 0.16f : settings.stepHeight + 0.18f), 0.12f, direction,
-            out RaycastHit front, settings.obstacleReach, ctx.groundLayers, QueryTriggerInteraction.Ignore)
-            || IsBar(front.collider) || Mathf.Abs(front.normal.y) > 0.45f || Vector3.Dot(direction, -front.normal) < 0.4f) return false;
-        Vector3 topOrigin = front.point + direction * 0.12f;
-        topOrigin.y = feet.y + settings.mantleMaxHeight + 0.15f;
-        if (!Physics.Raycast(topOrigin, Vector3.down, out RaycastHit top,
-            settings.mantleMaxHeight + 0.15f, ctx.groundLayers, QueryTriggerInteraction.Ignore)
-            || top.normal.y < Mathf.Cos(ctx.SlopeLimit * Mathf.Deg2Rad) || top.collider != front.collider) return false;
-        float height = top.point.y - feet.y;
-        if (height <= (airborne ? 0.05f : settings.stepHeight + 0.03f) || height > settings.mantleMaxHeight) return false;
-        if (airborne && height > settings.vaultMaxHeight && !ctx.Input.JumpPressed) return false;
-
-        Vector3 raisedStart = feet; raisedStart.y = top.point.y + 0.07f;
-        float bodyHeight = ctx.CrouchColliderHeight;
-        if (!ClearPath(feet, raisedStart, bodyHeight)) return false;
-        if (height <= settings.vaultMaxHeight)
+        for (float depth = 4f * ctx.HullUnit; depth <= ctx.ControllerRadius + 0.5f; depth += 0.1f)
         {
-            for (float depth = 0.3f; depth <= settings.vaultMaxDepth + ctx.ControllerRadius; depth += 0.15f)
-            {
-                Vector3 probe = top.point + direction * depth + Vector3.up * 0.2f;
-                float landingDepth = height + (airborne ? ctx.AbilitySettings.safeFallDistance + 0.4f : 0.8f);
-                if (!Physics.Raycast(probe, Vector3.down, out RaycastHit landing, landingDepth,
-                    ctx.groundLayers, QueryTriggerInteraction.Ignore) || landing.point.y > top.point.y - 0.15f
-                    || landing.normal.y < Mathf.Cos(ctx.SlopeLimit * Mathf.Deg2Rad)) continue;
-                Vector3 end = landing.point + Vector3.up * 0.04f;
-                Vector3 raisedEnd = end; raisedEnd.y = raisedStart.y;
-                if (ClearPath(raisedStart, raisedEnd, bodyHeight) && ClearPath(raisedEnd, end, bodyHeight))
-                {
-                    // End above the far edge, then hand back normal air movement.
-                    // Landing is physics, not a scripted descent to the sampled floor.
-                    // Vault2: chest32 + forward70, independent of approach speed.
-                    Vector3 referenceEnd = feet + Vector3.up * (32f * TraversalTiming.SourceUnitScale)
-                        + direction * (70f * TraversalTiming.SourceUnitScale);
-                    if (ReferenceTarget(front.collider, feet, referenceEnd, true, out target)) { target.Height = height; return true; }
-                    // Larger Unity obstacles retain their measured clearance destination,
-                    // but use the same straight interpolation, never a lift-first curve.
-                    if (ReferenceTarget(front.collider, feet, raisedEnd, true, out target)) { target.Height = height; return true; }
-                }
-            }
+            Vector3 probe = edge + inward * depth + Vector3.up * 0.2f;
+            if (!Physics.Raycast(probe, Vector3.down, out RaycastHit tread, 0.35f, ctx.groundLayers, QueryTriggerInteraction.Ignore)
+                || tread.collider != surface || tread.normal.y < Mathf.Cos(ctx.SlopeLimit * Mathf.Deg2Rad)) continue;
+            if (!ReferenceTarget(surface, feet, tread.point + Vector3.up * 0.02f, false, out target)) continue;
+            target.Kind = VaultKind.Heave;
+            return true;
         }
-        if (height <= settings.vaultMaxHeight)
-        {
-            // Vault1: land on the tread with the reference's 16-unit vertical margin.
-            Vector3 treadProbe = feet + direction * (50f * TraversalTiming.SourceUnitScale);
-            treadProbe.y = top.point.y + 0.2f;
-            if (Physics.Raycast(treadProbe, Vector3.down, out RaycastHit tread, 0.4f, ctx.groundLayers,
-                QueryTriggerInteraction.Ignore) && tread.collider == front.collider
-                && ReferenceTarget(front.collider, feet, tread.point + Vector3.up * (16f * TraversalTiming.SourceUnitScale), false, out target))
-            {
-                target.Height = height;
-                return true;
-            }
-        }
-        return TryMantle(front.collider, top.point, -front.normal, feet, out target);
+        if (!TryMantle(surface, edge, inward, feet, out target)) return false;
+        target.Kind = VaultKind.Heave;
+        return true;
     }
 
     // Sample inward from the edge instead of requiring a full capsule radius of

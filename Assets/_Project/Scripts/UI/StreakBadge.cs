@@ -39,7 +39,7 @@ public sealed class StreakBadge
     private static readonly Vector2 Eye = new Vector2(.29f, .1f);
     private static readonly Color Bone = new Color(.86f, .94f, 1f);
     private static readonly int TrailId = Shader.PropertyToID("_Trail");
-    private static Material oneFlame, trailOfFire;
+    private static Material oneFlame, trailOfFire, numeralShade;
 
     private readonly RectTransform root;
     private readonly RawImage flame, neon, skull, eyeGlow, eyeFlame;
@@ -74,7 +74,10 @@ public sealed class StreakBadge
         eyeFlame.rectTransform.sizeDelta = new Vector2(20f, 40f);
         eyeFlame.rectTransform.anchoredPosition = eye - new Vector2(0f, 5f);
         numeral = FeelUI.ScoreLabel("Numeral", root, 22f, TextAlignmentOptions.Center);
-        numeral.fontStyle = FontStyles.Bold | FontStyles.Italic;
+        numeral.fontStyle = FontStyles.Italic;
+        // Bold's weight comes from the material; its spacing is kept here.
+        if (numeral.font != null) numeral.characterSpacing = numeral.font.boldSpacing;
+        numeral.fontSharedMaterial = NumeralMaterial(numeral.fontSharedMaterial);
         numeral.color = Color.white;
     }
 
@@ -106,6 +109,26 @@ public sealed class StreakBadge
         material.SetFloat(TrailId, trail ? 1f : 0f);
         if (trail) trailOfFire = material; else oneFlame = material;
         return material;
+    }
+
+    /// <summary>
+    /// The score labels' shadow, tighter, on a face as heavy as bold. Faux bold and the wide shadow stretched each glyph's box
+    /// past the room it has in the font atlas, so the box's edge picked up the strokes packed beside it: specks around the
+    /// numeral and a dark line over it, plain on the fire. A dilated face is padded for, where bold is not.
+    /// </summary>
+    private static Material NumeralMaterial(Material shadowed)
+    {
+        if (numeralShade != null) return numeralShade;
+        if (shadowed == null || !shadowed.HasProperty(ShaderUtilities.ID_FaceDilate)) return shadowed;
+        numeralShade = new Material(shadowed) { name = shadowed.name + " Numeral", hideFlags = HideFlags.HideAndDontSave };
+        float bold = (numeralShade.GetFloat(ShaderUtilities.ID_WeightBold) - numeralShade.GetFloat(ShaderUtilities.ID_WeightNormal)) / 4f;
+        numeralShade.SetFloat(ShaderUtilities.ID_FaceDilate, bold);
+        numeralShade.SetColor(ShaderUtilities.ID_UnderlayColor, new Color(0f, 0f, 0f, .75f));
+        numeralShade.SetFloat(ShaderUtilities.ID_UnderlayOffsetX, .2f);
+        numeralShade.SetFloat(ShaderUtilities.ID_UnderlayOffsetY, -.26f);
+        numeralShade.SetFloat(ShaderUtilities.ID_UnderlayDilate, .05f);
+        numeralShade.SetFloat(ShaderUtilities.ID_UnderlaySoftness, .35f);
+        return numeralShade;
     }
 
     /// <summary>streak 0 shows nothing.</summary>

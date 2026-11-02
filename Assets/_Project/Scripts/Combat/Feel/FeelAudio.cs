@@ -57,6 +57,14 @@ public sealed class FeelAudio : MonoBehaviour
         return instance;
     }
 
+    /// <summary>Builds the voices and every synthesized sound, which the first shot would otherwise stop to make.</summary>
+    public static void Prepare()
+    {
+        if (!Application.isPlaying) return;
+        Get();
+        foreach (FeelSound sound in Enum.GetValues(typeof(FeelSound))) Synthesized(sound);
+    }
+
     private void Awake()
     {
         if (instance != null && instance != this) { Destroy(gameObject); return; }

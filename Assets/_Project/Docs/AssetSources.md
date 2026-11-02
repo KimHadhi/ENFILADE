@@ -35,9 +35,10 @@ Hiro 모델(`Art/Models/Characters/Hiro`)은 허락을 받은 캐릭터라 교�
 | `Art/Animations/MocapOnline` | 21개, 36MB | MoCap Online(구매) | AI 학습이나 새 에셋 생성에 쓰지 않는다 |
 | `Art/Animations/Mixamo` | 28개, 13MB | mixamo.com, X Bot | |
 | `Assets/ThirdParty/Vefects/Combat Flipbook VFX URP` | 688개, 328MB | Vefects(구매) | 재색 사본이 `Prefabs/Effects/Parry`, `Art/Materials/Parry`에 있다 |
+| `Assets/ThirdParty/DAVFX/Realistic Impacts Pack` | 266개, 473MB | DAVFX(구매) | VFX Graph 패키지가 있어야 재생된다. `Resources/Combat/ImpactLibrary`가 프리팹을, `Art/Materials/Impacts`가 총알 구멍 텍스처를 직접 가리킨다 |
 | `Assets/ThirdParty/JMO Assets/Cartoon FX Remaster` | 483개, 35MB | Cartoon FX Remaster Free | |
 | `Resources/Combat/Parry`의 `ParryFlare` | 1개 | Kenney Particle Pack(CC0) | |
-| `Assets/ThirdParty/MagicaCloth2` | 328개, 146MB | Magica Cloth 2 | `Example (Can be deleted)` 143MB는 예제라 git에서 제외했고 지워도 된다 |
+| `Assets/ThirdParty/MagicaCloth2` | 328개, 146MB | Magica Cloth 2 | `Example (Can be deleted)` 143MB는 예제라 git에서 제외했고 지워도 된다. `Resources/Cloth`의 프리셋은 `Res/Preset`의 사본이다 |
 | `Assets/ThirdParty/TextMeshPro` | 37개, 4MB | Unity TextMeshPro 기본 리소스 | |
 | `Assets/ThirdParty/KoreanFonts` | 54개, 37MB | Pretendard, 에스코어 드림, 페이퍼로지, KOTRA 볼드, 사천항공체 | 무료 배포 폰트로 보이며 라이선스 파일은 없다 |
 
@@ -51,11 +52,10 @@ Hiro 모델(`Art/Models/Characters/Hiro`)은 허락을 받은 캐릭터라 교�
 | `Art/Audio/Combat/Defense` | 16개, 1MB | 가드·패링·공격 예고 소리. 커밋 0.5.0에 추가 |
 | `Art/Audio/Combat/Player` | 28개, 2MB | BOOM으로 바꾸기 전의 주먹·피격 소리. 현재 연결하지 않은 클립이 있다 |
 | `Art/Audio/UI/MissionObjective.wav` | 1개 | 임무 알림 소리 |
-| `Art/Sprites/Weapons` | 7개, 5MB | 피, 총구 섬광, 벽 착탄 텍스처. 커밋 0.5.0에 추가 |
+| `Art/Sprites/Weapons` | 7개, 5MB | 피, 총구 섬광, 벽 착탄 텍스처. 커밋 0.5.0에 추가. 벽 착탄은 DAVFX로 바꾸어 지금은 연결하지 않았다 |
 | `Art/Sprites/UI/HUD` | 56개, 2MB | HUD 이미지. 직접 만든 것인지 기록이 없다 |
 | `Art/Models/Props/TetoPear` | FBX 1개 | 물리 프롭 시험용. 커밋 0.6.3에 추가 |
 | `Assets/ThirdParty/InfimaGames/LowPolyShooterPack` | 16개, 1MB | 씬의 소총 `SK_AR_01`. 구매 기록이 없다 |
-| `Assets/ThirdParty/DAVFX/Realistic Impacts Pack` | 266개, 473MB | 착탄 이펙트 팩. 구매 기록이 없다 |
 
 ## 아직 들어오지 않은 후보
 

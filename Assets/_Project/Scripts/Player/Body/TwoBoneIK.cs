@@ -7,8 +7,8 @@ using UnityEngine;
 /// </summary>
 internal static class TwoBoneIK
 {
-    /// <summary>Bends in the limb's current plane, then turns the middle joint (elbow) round toward a hint.</summary>
-    public static void Solve(Transform upper, Transform lower, Transform end, Vector3 target, Vector3 hint)
+    /// <summary>Bends in the limb's current plane, then turns the middle joint (elbow) round toward a hint, <paramref name="swing"/> of the way.</summary>
+    public static void Solve(Transform upper, Transform lower, Transform end, Vector3 target, Vector3 hint, float swing = 1f)
     {
         Vector3 a = upper.position, bc = end.position - lower.position;
         Vector3 hinge = Vector3.Cross(lower.position - a, bc);
@@ -20,7 +20,7 @@ internal static class TwoBoneIK
         Vector3 line = (end.position - a).normalized;
         Vector3 middle = Vector3.ProjectOnPlane(lower.position - a, line), toward = Vector3.ProjectOnPlane(hint - a, line);
         if (middle.sqrMagnitude > 1e-6f && toward.sqrMagnitude > 1e-6f)
-            upper.rotation = Quaternion.FromToRotation(middle, toward) * upper.rotation;
+            upper.rotation = Quaternion.AngleAxis(Vector3.SignedAngle(middle, toward, line) * swing, line) * upper.rotation;
     }
 
     /// <summary>

@@ -5,7 +5,7 @@ using MovementState = PlayerMovement.MovementState;
 /// <summary>
 /// Which clip of a family fits the moment: jumps by run-up speed, the mid-air knee tuck, a long fall's flailing, vaults and mantles by
 /// obstacle height, landings by how hard they were (MovementLanding's tier), the way a heavy landing goes down, a fast
-/// or slow landing roll, crouched landings and slide exits, the ledge catch and shimmy, the wall kick's side, and the
+/// landing roll or a landing on the spot, crouched landings and slide exits, the ledge catch and shimmy, the wall kick's side, and the
 /// gun-holding version of a clip while a rifle or pistol is out. Names and thresholds come from Player.csv, row Body.
 /// </summary>
 public sealed partial class PlayerBody
@@ -16,15 +16,13 @@ public sealed partial class PlayerBody
     [SerializeField, Tooltip("Down after a heavy landing and up again: onto hands and knees, flat on the face (a huge "
         + "fall), onto the back (moving backwards, or thrown by a blow). Each plays over the time the player stays down.")]
     private string heavyLand = "mx_hard_landing", heavyLandFaceDown = "mx_get_up", heavyLandBack = "mx_stand_up_back";
-    [SerializeField, Tooltip("Landing roll when the landing carries the player faster than rollFastSpeed.")]
-    private string rollFast = "mx_sprint_roll";
-    [SerializeField, Min(0f), Tooltip("A landing roll faster than this (m/s) dives into rollFast instead of the roll.")]
-    private float rollFastSpeed = 6.5f;
+    [SerializeField, Tooltip("A landing too slow to roll on stays where it came down (Ability.rollLandSpeed), or crouched under a low ceiling.")]
+    private string rollLand = "land";
     [SerializeField, Tooltip("A long fall (Ability.bigFallHeight): arms and legs flail until touchdown, Ctrl or not.")]
     private string fallFlail = "fallinguncontrolled";
     [SerializeField] private string supineSlideEndCrouch = "meslideendcrouch", supineSlideEndProne = "meslideendprone";
     [SerializeField] private string bellySlideEndCrouch = "diveslideendcrouch";
-    [SerializeField] private string vaultHigh = "mx_vault_two_hands";
+    [SerializeField] private string vaultHigh = "vaultoverhigh", vaultKong = "vaultkong", springboard = "springboardleftleg";
     [SerializeField] private string stepUp = "stepuprightleg", mantleLow = "vaultonto", mantleMid = "vaultontohigh";
     [SerializeField] private string ledgeClimbUp = "mx_ledge_climb_up";
     [SerializeField] private string ledgeCatch = "mx_ledge_catch_air";
@@ -37,17 +35,15 @@ public sealed partial class PlayerBody
     private string rifleSuffix = "_ar2", pistolSuffix = "_pistol";
     [SerializeField, Min(0f), Tooltip("Run-up speed (m/s): below the first a jump is a standing jump, above the second a running jump.")]
     private float jumpStillSpeed = 1f, jumpFastSpeed = 4f;
-    [SerializeField, Min(0f), Tooltip("Obstacle height above the feet (m) from which the higher vault plays.")]
-    private float vaultHighHeight = 1f;
-    [SerializeField, Min(0f), Tooltip("Mantle heights (m): below the first a step up, below the second a low step onto it, below the third a high one, above it a full climb.")]
+    [SerializeField, Min(0f), Tooltip("For a mantle off a bar, which has no move of its own (m): below the first a step up, below the second a low step onto it, below the third a high one, above it a full climb.")]
     private float mantleStepHeight = .7f, mantleLowHeight = 1.1f, mantleMidHeight = 1.6f;
     [SerializeField, Min(.1f), Tooltip("Sideways speed the ledge shimmy clips were authored for (m/s).")]
     private float shimmyClipSpeed = .5f;
-    [SerializeField, Min(.1f), Tooltip("Playback speed of the vault clips. A vault keeps the run-up speed and is over "
-        + "before its clip, which then plays on to touchdown.")]
-    private float vaultClipSpeed = 1.3f;
-    [SerializeField, Range(.1f, 1f), Tooltip("Share of a vault clip at which its feet touch down; the body runs on from there.")]
-    private float vaultLandShare = .72f;
+    [SerializeField, Min(.1f), Tooltip("Playback speed of the vault and climb clips. The player is over before the clip is, "
+        + "and it plays on until the feet are down and moving.")]
+    private float vaultClipSpeed = 1f;
+    [SerializeField, Min(.1f), Tooltip("Playback speed of the climb onto a low obstacle.")]
+    private float ontoClipSpeed = 1.15f;
     [SerializeField, Min(0f), Tooltip("A vault this soon after the last one (s) takes the other vault clip: one clip cannot "
         + "crossfade into itself, so a repeat would snap back to its first frame.")]
     private float vaultChainTime = 1.5f;
@@ -56,13 +52,14 @@ public sealed partial class PlayerBody
 
     private WeaponController weapons;
     private string jumpClip, obstacleClip, wallKickClip, rollClip, downClip;
+    private float obstacleYaw;
     private bool tucked, flailing;
 
     private string[] VariantClips => new[]
     {
-        jumpStill, jumpSlow, airTuck, landCrouch, coilLand, coilLandCrouch, heavyLand, heavyLandFaceDown, heavyLandBack, rollFast,
+        jumpStill, jumpSlow, airTuck, landCrouch, coilLand, coilLandCrouch, heavyLand, heavyLandFaceDown, heavyLandBack, rollLand,
         fallFlail, supineSlideEndCrouch, supineSlideEndProne,
-        bellySlideEndCrouch, vaultHigh, stepUp, mantleLow, mantleMid, ledgeClimbUp, ledgeCatch, ledgeShimmyLeft, ledgeShimmyRight,
+        bellySlideEndCrouch, vaultHigh, vaultKong, springboard, stepUp, mantleLow, mantleMid, ledgeClimbUp, ledgeCatch, ledgeShimmyLeft, ledgeShimmyRight,
         wallClimbStart, wallKickRight
     };
 
@@ -87,39 +84,88 @@ public sealed partial class PlayerBody
 
     private string JumpFor(float speed) => speed < jumpStillSpeed ? jumpStill : speed < jumpFastSpeed ? jumpSlow : jump;
 
-    // A quick second vault takes the other vault clip; climbing up from a hang starts from the hanging pose, whatever the height.
-    private string ObstacleClip(bool isVault, bool fromHang)
+    private string ObstacleClip()
     {
-        float height = player.Abilities.Traversal.Obstacle.Height;
-        if (isVault)
+        var obstacle = player.Abilities.Traversal.Obstacle;
+        switch (obstacle.Kind)
         {
-            string clip = height > vaultHighHeight ? vaultHigh : vault;
-            if (clip == lastVault && Time.time - lastVaultAt < vaultChainTime) clip = clip == vault ? vaultHigh : vault;
-            lastVault = clip;
-            lastVaultAt = Time.time;
-            return clip;
+            case VaultKind.StepUp: return stepUp;
+            case VaultKind.Onto: return mantleLow;
+            case VaultKind.OntoHigh: return mantleMid;
+            case VaultKind.Heave: return ledgeClimbUp;
+            case VaultKind.Over: return Vaulting(vault, vaultKong);
+            case VaultKind.Kong: return Vaulting(vaultKong, vault);
+            case VaultKind.OverHigh: return Vaulting(vaultHigh, vault);
         }
-        if (fromHang) return ledgeClimbUp;
+        float height = obstacle.Height;
         return height < mantleStepHeight ? stepUp : height < mantleLowHeight ? mantleLow : height < mantleMidHeight ? mantleMid : mantle;
     }
 
-    private void StartVault()
+    // A quick second vault takes another clip.
+    private string Vaulting(string clip, string other)
     {
-        var channel = Find(obstacleClip);
-        if (channel == null) return;
-        Restart(channel);
-        channel.Playable.SetSpeed(vaultClipSpeed);
+        if (clip == lastVault && Time.time - lastVaultAt < vaultChainTime) clip = other;
+        lastVault = clip;
+        lastVaultAt = Time.time;
+        return clip;
     }
 
-    // The player is over the obstacle before the clip is: it plays on to its touchdown, then the body runs on.
-    private void PlayOutVault()
+    private float ObstacleClipSpeed => player.Abilities.Traversal.Obstacle.Kind == VaultKind.Onto ? ontoClipSpeed : vaultClipSpeed;
+
+    // Clips of the moves without a VaultKind follow the route's progress instead.
+    private void StartObstacleClip()
+    {
+        var traversal = player.Abilities.Traversal;
+        var channel = Find(obstacleClip);
+        if (channel == null || traversal.Obstacle.Kind == VaultKind.None) return;
+        Restart(channel);
+        channel.Playable.SetSpeed(ObstacleClipSpeed);
+        obstacleYaw = transform.eulerAngles.y;
+        if (traversal.Obstacle.Kind != VaultKind.Heave) return;
+        StartHeave();
+        if (traversal.Ledge.Surface == null) return;
+        Vector3 inward = -traversal.Ledge.Surface.transform.TransformDirection(traversal.Ledge.LocalNormal);
+        obstacleYaw = Mathf.Atan2(inward.x, inward.z) * Mathf.Rad2Deg;
+    }
+
+    // The move keeps the way it started: looking round turns the head, not the climb.
+    private void ObstaclePose()
+    {
+        legYaw = obstacleYaw;
+        targetYaw = Mathf.DeltaAngle(transform.eulerAngles.y, obstacleYaw);
+        legsPlanted = true;
+        turning = 0;
+        var traversal = player.Abilities.Traversal;
+        if (traversal.Obstacle.Kind == VaultKind.Heave) Drive(obstacleClip, traversal.ObstacleProgress);
+        else Want(obstacleClip);
+    }
+
+    // In one of these moves the model stays on the capsule, as in GMod: easing the head back would pull the hands off.
+    private bool ClipCarriesBody => playingOut || heaving || (!dead && (state == MovementState.Vault || state == MovementState.Mantle)
+        && player.Abilities.Traversal.Obstacle.Kind != VaultKind.None);
+
+    // The player is over before the clip is: it plays on until the feet are down and moving, or a spring takes over.
+    private void PlayOutObstacle()
     {
         var channel = Find(obstacleClip);
-        if (channel == null || channel.Synced) return;
-        float left = (vaultLandShare * channel.Length - (float)channel.Playable.GetTime()) / vaultClipSpeed;
-        if (left <= blendTime) return;
+        var traversal = player.Abilities.Traversal;
+        if (channel == null || channel.Synced || traversal.Obstacle.Kind == VaultKind.None) return;
+        // A move cut short never got over: carrying on with its clip would show a vault that isn't happening.
+        if (traversal.ObstacleProgress < VaultMotion.EarliestLeave) return;
+        if (player.VerticalVelocity > 1f && Find(springboard) is Channel spring)
+        {
+            Restart(spring);
+            channel = spring;
+            transitionLeft = spring.Length;
+            springing = true;
+        }
+        else
+        {
+            float left = (channel.Length - (float)channel.Playable.GetTime()) / ObstacleClipSpeed;
+            if (left <= blendTime) return;
+            transitionLeft = left;
+        }
         transition = channel;
-        transitionLeft = left;
         playingOut = true;
     }
 
@@ -127,17 +173,30 @@ public sealed partial class PlayerBody
     private string WallKickFor() => Vector3.Dot(player.HorizontalVelocity, transform.right) >= 0f ? wallKick : wallKickRight;
 
     // By MovementLanding's tier: a hard landing sinks deep into the knees (crouched ones end crouched instead of
-    // standing up and ducking again); a heavy one has its own state. A light landing after a mid-air tuck just
-    // straightens the legs, as Beatrun pairs its coil with the coil end. Plain jumps blend on.
+    // standing up and ducking again); a heavy one has its own state. A light landing after a mid-air tuck runs out of it
+    // with Beatrun's coil end, whose legs stride, so only on the move; dropping straight down, see SettleFromTuck. Plain
+    // jumps blend on.
     private string LandingFor(bool crouched, bool wasTucked)
     {
         if (player.LastLandingTier != MovementLanding.Tier.Light) return crouched ? landCrouch : land;
-        if (wasTucked) return crouched ? coilLandCrouch : coilLand;
+        if (wasTucked && HorizontalSpeed() > walkClipSpeed) return crouched ? coilLandCrouch : coilLand;
         return null;
     }
 
-    // A landing that carries the player on fast dives into the running roll.
-    private string RollFor() => new Vector2(player.HorizontalVelocity.x, player.HorizontalVelocity.z).magnitude > rollFastSpeed ? rollFast : roll;
+    // Down from a tuck on the spot, the knees stay bent a moment on planted feet before the body stands up. The crouch
+    // holds the head about where the tuck had it, so nothing jumps at the camera.
+    private void SettleFromTuck()
+    {
+        var channel = Find(crouchIdle);
+        if (channel == null || channel.Synced) return;
+        transition = channel;
+        transitionLeft = blendTime * 3f;
+        playingOut = false;
+    }
+
+    // As Beatrun's safety roll picks them.
+    private string RollFor() => !player.Abilities.Landing.LandsInPlace ? roll
+        : player.HasCeilingAbove(player.StandingColliderHeight) ? landCrouch : rollLand;
 
     private string DownClip(MovementLanding.Pose pose) =>
         pose == MovementLanding.Pose.Back ? heavyLandBack : pose == MovementLanding.Pose.FaceDown ? heavyLandFaceDown : heavyLand;
@@ -198,8 +257,10 @@ public sealed partial class PlayerBody
             string shimmy = side < 0f ? ledgeShimmyLeft : ledgeShimmyRight;
             Repeat(shimmy);
             Find(shimmy)?.Playable.SetSpeed(Mathf.Clamp(Mathf.Abs(side) / shimmyClipSpeed, .5f, 2.5f));
+            FaceWall(Time.deltaTime);
         }
-        else Sequence(ledgeCatch, ledgeHang);
+        else if (Find(ledgeCatch) is Channel catching && stateTime < catching.Length - blendTime) Want(ledgeCatch);
+        else HangLook(inward.normalized, Time.deltaTime);
     }
 
     // Keep a one-shot clip going round while it is wanted.

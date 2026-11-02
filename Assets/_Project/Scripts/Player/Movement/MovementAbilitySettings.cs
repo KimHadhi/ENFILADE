@@ -32,15 +32,15 @@ public sealed class MovementAbilitySettings
     [Range(0.05f, 0.5f)] public float stepHeight = 0.3f;
     [Tooltip("엎드리거나 누워서 이동할 때 넘을 수 있는 작은 단차 높이. 접지 중에만 적용됩니다.")]
     [Range(0f, 0.1f)] public float proneStepHeight = 0.05f;
-    [Min(0.1f)] public float obstacleReach = 1.35f;
-    [Min(0.3f)] public float vaultMaxHeight = 1.15f;
-    [Min(0.3f)] public float mantleMaxHeight = 2.1f;
-    [Min(0.2f)] public float vaultMaxDepth = 1.5f;
-    [Tooltip("올라서기에 걸리는 시간(초) = 이 값 + 높이 1m마다 mantleDurationPerMeter.")]
+    [Tooltip("넘기 세 종류의 이동 속도 배율. 1이면 Beatrun 원본.")]
+    [Min(0.1f)] public float vaultRate = 1f;
+    [Tooltip("바로 올라타기와 높은 올라서기의 이동 속도 배율. 1이면 Beatrun 원본.")]
+    [Min(0.1f)] public float mountRate = 1f;
+    [Tooltip("매달린 뒤 올라가기의 이동 속도 배율. 1이면 Beatrun 원본(약 0.93초).")]
+    [Min(0.1f)] public float heaveRate = 1f;
+    [Tooltip("바·사다리 꼭대기처럼 경로를 따로 쓰는 올라서기의 시간(초) = 이 값 + 높이 1m마다 mantleDurationPerMeter.")]
     [Min(0.1f)] public float mantleDuration = 0.45f;
     [Min(0f)] public float mantleDurationPerMeter = 0.3f;
-    [Tooltip("땅이나 공중에서 장애물에 바로 올라서기. 끄면 올라서기는 난간에 매달린 뒤에만 되고, 장애물 앞에서는 넘기만 한다.")]
-    public bool mantleFromGround;
     [Range(45f, 75f)] public float slideMaxSlopeAngle = 65f;
 
     [Header("Ledge Hang")]
@@ -49,7 +49,7 @@ public sealed class MovementAbilitySettings
     [Min(0.05f)] public float ledgeCatchDuration = 0.14f;
     [Min(0.1f)] public float ledgeRegrabDelay = 0.4f;
     [Min(0f)] public float ledgeShimmySpeed = 1.8f;
-    [Min(0f)] public float airTraversalMaxFallSpeed = 8f;
+    [Min(0f)] public float airTraversalMaxFallSpeed = 8.75f;
     [Range(1f, 89f)] public float ledgeJumpLookAngle = 42f;
     [Min(0f)] public float ledgeJumpSpeed = 8.5f;
     [Min(0f)] public float ledgeJumpUpSpeed = 6.5f;
@@ -143,6 +143,10 @@ public sealed class MovementAbilitySettings
     [Min(0.05f)] public float rollDuration = 1f;
     [Tooltip("Slowest a landing roll moves (m/s); a faster landing keeps its speed.")]
     [Min(0f)] public float rollSpeed = 4f;
+    [Tooltip("Slower than this across the ground (m/s), or pulling back, Beatrun's safety roll lands on the spot instead of rolling.")]
+    [Min(0f)] public float rollLandSpeed = 5f;
+    [Tooltip("Seconds a landing on the spot holds the player there.")]
+    [Min(0.05f)] public float rollLandTime = 0.6f;
 
     [Header("Big Fall")]
     [Tooltip("A fall this long from its top to the ground below is a big one: wind, heartbeat, screen warp, flailing (m).")]

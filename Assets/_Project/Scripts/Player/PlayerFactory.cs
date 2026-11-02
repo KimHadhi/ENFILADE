@@ -14,6 +14,8 @@ public static class PlayerFactory
 
     public static GameObject CreateLocal(Vector3 position, Quaternion rotation, Transform parent = null)
     {
+        // Runs while the map loads, in a room as well as alone.
+        CombatWarmup.Prepare();
         var prefab = Prefab;
         var player = Object.Instantiate(prefab, position, rotation, parent);
         player.name = prefab.name;
