@@ -5,8 +5,10 @@ using UnityEngine.Rendering.Universal;
 /// <summary>
 /// One's own screen at low health: the colour drains toward grey as health falls, and every hit that lands brings it
 /// back for a moment with a red cast, so a hit still reads when the edges are already full of blood. It sits over the
-/// kill screen and lets only part of it through (killShowThrough), so a kill still pulses but never brings the full
-/// colour back and passes for being healthy again. Takes a PostProcessLoan only while it shows. Tuning: Tables/LowHealth.
+/// kill screen, so a kill never brings the colour back and passes for being healthy again (killShowThrough lets a share
+/// through; 0 by default). The kill screen reads <see cref="Drain"/> and speaks through what this grade leaves alone
+/// instead: flash, lens punch, fringing, contrast and glow. Takes a PostProcessLoan only while it shows.
+/// Tuning: Tables/LowHealth.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class LowHealthGrade : MonoBehaviour
@@ -14,6 +16,12 @@ public sealed class LowHealthGrade : MonoBehaviour
     public const string TableName = "LowHealth", TableRow = "Default";
     // Over the kill screen (200). The weight is how drained the screen is, so what lies under it shows through in step.
     private const float Priority = 200.5f;
+
+    /// <summary>How drained the local player's screen is right now: 0 healthy, 1 fully grey.</summary>
+    public static float Drain { get; private set; }
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetStatics() => Drain = 0f;
 
     [SerializeField, Range(0f, 1f), Tooltip("Health share where the colour starts to drain.")]
     private float greyFrom = .35f;
@@ -25,8 +33,9 @@ public sealed class LowHealthGrade : MonoBehaviour
     private float flashSeconds = .35f;
     [SerializeField, Tooltip("Colour filter at the peak of a hit, as strong as the drain is.")]
     private Color flashColor = new Color(1f, .48f, .48f);
-    [SerializeField, Range(0f, 1f), Tooltip("Share of a kill screen's look let through at its peak (1 shows it as when healthy).")]
-    private float killShowThrough = .4f;
+    [SerializeField, Range(0f, 1f), Tooltip("Share of a kill screen's colour let through at its peak (1 shows it as when healthy). " +
+        "Above 0 the colour comes back for a moment, which reads as healing.")]
+    private float killShowThrough;
 
     private PlayerDamageReceiver receiver;
     private Volume volume;
@@ -58,6 +67,7 @@ public sealed class LowHealthGrade : MonoBehaviour
     {
         if (receiver != null) receiver.HitResolved -= OnHit;
         grey = flash = 0f;
+        Drain = 0f;
         Show(false);
     }
 
@@ -75,6 +85,7 @@ public sealed class LowHealthGrade : MonoBehaviour
         float share = receiver.Health / Mathf.Max(1f, receiver.MaximumHealth);
         float target = receiver.IsAlive ? 1f - Mathf.InverseLerp(greyFull, Mathf.Max(greyFull + .01f, greyFrom), share) : 0f;
         grey = Mathf.MoveTowards(grey, target, dt * 2f);
+        Drain = grey;
         flash = Mathf.Max(0f, flash - dt / flashSeconds);
         bool showing = grey > .001f;
         Show(showing);

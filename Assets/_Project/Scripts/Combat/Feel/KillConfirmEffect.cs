@@ -28,7 +28,9 @@ public struct ParryScreenLook
 ///
 /// Ordinary kills: the picture lifts for a moment — slightly brighter, highlights glowing (bloom), a
 /// faint cool blue-white wash and light chromatic fringing — holds for 0.5 s, then fades over 0.25 s. No blur: the
-/// frame must stay readable mid-fight.
+/// frame must stay readable mid-fight. At low health LowHealthGrade keeps the colour drained, since colour coming back
+/// reads as healing, so the same kill adds a white flash and a lens punch that snap back, harder fringing, crisp
+/// contrast and a bigger glow, in step with how drained the screen is (GunFeel → Kill screen: ordinary kills at low health).
 ///
 /// Special (executions and counters): a heavier, rarer pulse — desaturated, contrasty grade with a coloured vignette
 /// (crimson / steel), an impact that squeezes the lens, fringes hard and flashes bright then snaps back within ~0.14 s
@@ -163,22 +165,25 @@ public sealed class KillConfirmEffect : MonoBehaviour
         // An ordinary kill never cuts a running execution / counter screen short.
         if (special && Weight > 0f) return;
         float boost = headshot ? settings.ordinaryKillHeadshotBoost : 1f;
+        // At low health the grade keeps the colour drained, so the kill speaks through what it leaves alone: a white
+        // flash and a lens punch that snap back, harder fringing, a crisp contrast and a bigger glow.
+        float drained = LowHealthGrade.Drain;
         color.saturation.value = settings.ordinaryKillSaturation;
-        color.contrast.value = settings.ordinaryKillContrast;
+        color.contrast.value = Mathf.Lerp(settings.ordinaryKillContrast, settings.drainedKillContrast, drained);
         color.colorFilter.value = settings.ordinaryKillTint;
         balance.temperature.value = settings.ordinaryKillTemperature;
-        bloom.intensity.value = settings.ordinaryKillBloom * boost;
+        bloom.intensity.value = settings.ordinaryKillBloom * boost * Mathf.Lerp(1f, settings.drainedKillBloomScale, drained);
         bloom.threshold.value = settings.ordinaryKillBloomThreshold;
         // Tight scatter: only the brightest edges glow instead of a haze over every lit wall.
         bloom.scatter.value = .65f;
         bloom.tint.value = settings.ordinaryKillBloomTint;
         vignette.intensity.value = 0f;
-        // Exposure, fringing and lens stay flat for the whole ordinary kill screen (no impact snap).
+        // When healthy, exposure, fringing and lens stay flat for the whole ordinary kill screen (no impact snap).
         baseExposure = settings.ordinaryKillExposure;
-        baseChromatic = settings.ordinaryKillChromatic;
-        baseLens = 0f;
-        impactSeconds = 0f;
-        impactFlash = ImpactFlash;
+        baseChromatic = Mathf.Lerp(settings.ordinaryKillChromatic, settings.drainedKillChromatic, drained);
+        baseLens = settings.drainedKillLens * drained;
+        impactSeconds = drained > .01f ? settings.drainedKillImpactSeconds : 0f;
+        impactFlash = settings.drainedKillFlash * drained;
         hold = Mathf.Max(Attack, settings.ordinaryKillHoldSeconds);
         fade = Mathf.Max(.01f, settings.ordinaryKillFadeSeconds);
         Begin(KillScreen.Ordinary);
@@ -255,7 +260,7 @@ public sealed class KillConfirmEffect : MonoBehaviour
         // leaving the grade and vignette to linger.
         float impact = impactSeconds > 0f ? 1f - Mathf.SmoothStep(0f, 1f, age / impactSeconds) : 0f;
         color.postExposure.value = baseExposure + impactFlash * impact;
-        chromatic.intensity.value = special ? Mathf.Clamp01(baseChromatic * (.45f + .75f * impact)) : baseChromatic;
+        chromatic.intensity.value = impactSeconds > 0f ? Mathf.Clamp01(baseChromatic * (.45f + .75f * impact)) : baseChromatic;
         lens.intensity.value = baseLens * (.2f + .8f * impact);
 
         if (age >= hold + fade) EndPulse();

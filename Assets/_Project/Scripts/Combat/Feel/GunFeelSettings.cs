@@ -82,8 +82,18 @@ public sealed class GunFeelSettings : ScriptableObject
     public float markerSmallScale = .85f;
     public float markerLargeScale = 1.25f;
     [Range(.05f, 1f)] public float markerFullDamage = .5f;
-    [Min(0f), Tooltip("Headshots draw each tick as two parallel lines this far apart (px).")]
-    public float headTwinSpacing = 3.4f;
+    [Tooltip("Headshot ticks are this much thicker and longer than a body hit's, so the gold reads at a glance.")]
+    public float headThickness = 1.5f, headLength = 1.15f;
+    [Min(0f), Tooltip("Ray length of the glint that flashes at the aim point on a headshot (px), long enough to reach past the " +
+        "crosshair's own lines. 0 turns it off.")]
+    public float headGlintSize = 22f;
+    [Tooltip("Degrees the glint turns while it fades, so its rays sweep off the crosshair's lines.")]
+    public float headGlintTurn = 25f;
+    [Min(.15f), Tooltip("How long the glint shows: it snaps open, holds for a beat, then shrinks away over the last half.")]
+    public float headGlintSeconds = .45f;
+    [Range(0f, 1f), Tooltip("Of the hits landed in one frame (a shotgun's pellets), at least this share must be headshots for the " +
+        "headshot marker and sound, as in Overwatch. A single hit always counts.")]
+    public float headshotHitShare = .3f;
     [Tooltip("The posture break marker: a ring and four shards bursting out from the aim point.")]
     public Color breakColor = new Color(1f, .52f, .14f);
     [Min(.05f)] public float breakSeconds = .4f;
@@ -118,6 +128,21 @@ public sealed class GunFeelSettings : ScriptableObject
     [FormerlySerializedAs("gtaKillChromatic")] public float ordinaryKillChromatic = .1f;
     [Range(1f, 2f), Tooltip("Headshot kills multiply the bloom by this much.")]
     [FormerlySerializedAs("gtaHeadshotBoost")] public float ordinaryKillHeadshotBoost = 1.2f;
+
+    [Header("Kill screen: ordinary kills at low health")]
+    [Range(0f, 2f), Tooltip("At low health the colour stays drained (LowHealthGrade), because colour coming back reads as healing. " +
+        "The kill shows through what the grade leaves alone instead. These are the values at full drain; a partly drained screen " +
+        "gets that share. A white flash, in stops, that snaps back over Drained Kill Impact Seconds.")]
+    public float drainedKillFlash = .45f;
+    [Range(.05f, .4f)] public float drainedKillImpactSeconds = .18f;
+    [Range(-1f, 0f), Tooltip("Lens squeeze on the kill, snapping back with the flash.")]
+    public float drainedKillLens = -.16f;
+    [Range(0f, 1f), Tooltip("Colour fringing, spiking with the flash.")]
+    public float drainedKillChromatic = .4f;
+    [Range(-100f, 100f), Tooltip("Contrast while it shows: a crisp, struck grey instead of a washed one.")]
+    public float drainedKillContrast = 18f;
+    [Range(1f, 3f), Tooltip("The kill's glow is multiplied by this much.")]
+    public float drainedKillBloomScale = 1.6f;
 
     [Header("Kill screen: special (execution / counter)")]
     [Range(-100f, 0f)] public float killSaturation = -60f;

@@ -8,7 +8,7 @@ using UnityEngine;
 /// </summary>
 public static class FeelAssets
 {
-    private static Texture2D softDot, flashStar, flashSpike, bloodSplat, ring;
+    private static Texture2D softDot, flashStar, flashSpike, bloodSplat, ring, glint;
     private static Mesh muzzleMesh, casingMesh, quad;
     private static Shader particleShader, overlayShader;
     private static readonly Color32 White = new Color32(255, 255, 255, 255);
@@ -114,6 +114,18 @@ public static class FeelAssets
         float r = Mathf.Sqrt(u * u + v * v);
         return Mathf.Clamp01(1f - Mathf.Abs(r - .82f) / .12f);
     });
+
+    /// <summary>
+    /// A four-point glint for a clean hit: a solid core disc and four sharp diamond rays to the edges. Crisp rather than
+    /// soft, so it still reads drawn over a thick crosshair.
+    /// </summary>
+    public static Texture2D Glint => glint != null ? glint : glint = Generate("Feel Glint", 128, 128, (u, v) =>
+    {
+        float core = Mathf.Clamp01((.2f - Mathf.Sqrt(u * u + v * v)) * 24f);
+        return Mathf.Max(core, Mathf.Max(GlintRay(u, v), GlintRay(v, u)));
+    });
+
+    private static float GlintRay(float along, float across) => Mathf.Clamp01((.14f * (1f - Mathf.Abs(along)) - Mathf.Abs(across)) * 32f);
 
     /// <summary>Unit quad in the XY plane facing -Z (double-sided material).</summary>
     public static Mesh Quad
