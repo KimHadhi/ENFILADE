@@ -1,4 +1,3 @@
-using MagicaCloth2;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -20,16 +19,20 @@ public sealed class PlayerNetworkCloth : NetworkBehaviour
     public override void OnNetworkSpawn()
     {
         cloth = GetComponent<PlayerBodyCloth>();
-        if (IsOwner) MagicaManager.OnPostSimulation += Send;
+        if (IsOwner && cloth != null) cloth.Simulated += Send;
     }
 
-    public override void OnNetworkDespawn() => MagicaManager.OnPostSimulation -= Send;
+    public override void OnNetworkDespawn()
+    {
+        if (cloth != null) cloth.Simulated -= Send;
+    }
 
-    // Right after the simulation, while the bones still hold its result: the next frame starts by putting them back.
+    // Right after the simulation, while the bones still hold its result and before the arms press the skirts: every PC
+    // presses its copy with the arms it shows. The next frame starts by putting the bones back.
     private void Send()
     {
         float since = Time.unscaledTime - sentAt;
-        if (cloth == null || since < cloth.SendInterval) return;
+        if (since < cloth.SendInterval) return;
         var pose = default(ClothPose);
         cloth.Capture(ref pose);
         if (pose.Count == 0 || (pose.Matches(ref sent) && since < RestInterval)) return;

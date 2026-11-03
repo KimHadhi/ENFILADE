@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0513b63a8f85441499f8c22cf0761180, type: 3}
+  m_Name: Bullets
+  m_EditorClassIdentifier: Assembly-CSharp::SoundBank
+  id: Bullets
+  entries:
+  - key: Ricochet
+    clips:
+    - {fileID: 8300000, guid: eca3fac180654e0fb3aa47415dc6eb20, type: 3}
+    - {fileID: 8300000, guid: 6d129f45f9164081aa9c2a0004d434ce, type: 3}
+    - {fileID: 8300000, guid: 5b41f9e1fa624cfcb62a70a53395891a, type: 3}
+    - {fileID: 8300000, guid: f33ea8c3f27b466cbdd60151c4080265, type: 3}
+    - {fileID: 8300000, guid: d15f351a602748a78d9e35b1ded2aab3, type: 3}

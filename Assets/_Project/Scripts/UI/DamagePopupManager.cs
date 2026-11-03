@@ -7,7 +7,8 @@ using UnityEngine.UI;
 /// Damage numbers for enemies and practice targets. Created on the first hit during Play; no scene setup.
 /// Each number follows the transform it hit (knockback, shove, flight). If that object is destroyed,
 /// for example by a death blow, the number finishes at the last position instead of vanishing with it.
-/// Tuning lives in Resources/Combat/Feedback (Damage popups).
+/// A ring around the crosshair stays clear of them, so the aim point never disappears under its own hits.
+/// Tuning lives in Resources/Combat/Feedback (Damage popups); the clear ring in Hud.csv's Damage row.
 /// </summary>
 // Runs after CameraViewPunch (10000) so numbers stay on their targets in the kicked view.
 [DisallowMultipleComponent, DefaultExecutionOrder(10010)]
@@ -17,6 +18,9 @@ public sealed class DamagePopupManager : MonoBehaviour
     private static DamagePopupManager instance;
     public static DamagePopupManager Instance => instance;
     public int ActiveCount => active.Count;
+
+    [Tooltip("Ring around the crosshair kept clear of damage numbers (px at 1080p, from the screen's centre). Hud.csv's Damage row.")]
+    [SerializeField, Min(0f)] private float clearRadius = 90f;
 
     private RectTransform canvasRect;
     private readonly List<Popup> active = new List<Popup>();
@@ -68,6 +72,7 @@ public sealed class DamagePopupManager : MonoBehaviour
         var scaler = GetComponent<CanvasScaler>(); scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         scaler.referenceResolution = new Vector2(1920f, 1080f); scaler.matchWidthOrHeight = .5f;
         canvasRect = (RectTransform)transform;
+        GameTables.Bind(HudCamera.TableName, "Damage", this);
     }
 
     private void OnDestroy() { if (instance == this) instance = null; }
@@ -215,14 +220,14 @@ public sealed class DamagePopupManager : MonoBehaviour
         RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, screen, null, out Vector2 local);
         float life = Mathf.Clamp01(popup.age / popup.lifetime);
         float rise = settings.popupRise * (1f - (1f - life) * (1f - life));
-        popup.root.anchoredPosition = local + popup.jitter + Vector2.up * rise;
+        Vector2 at = local + popup.jitter + Vector2.up * rise;
         if (popup.deathBlow && popup.age < settings.deathBlowShakeSeconds)
         {
             // Finishing blow rattles on impact and settles.
             float decay = 1f - popup.age / settings.deathBlowShakeSeconds;
-            popup.root.anchoredPosition += new Vector2(Mathf.Sin(popup.age * 97f), Mathf.Cos(popup.age * 71f))
-                * (settings.deathBlowShake * decay * decay);
+            at += new Vector2(Mathf.Sin(popup.age * 97f), Mathf.Cos(popup.age * 71f)) * (settings.deathBlowShake * decay * decay);
         }
+        popup.root.anchoredPosition = ClearOfCrosshair(at, popup.jitter.x);
 
         // Big on the first frame, then a fast ease-out back to normal size.
         float pop;
@@ -279,6 +284,15 @@ public sealed class DamagePopupManager : MonoBehaviour
 
     private static bool IsFromPlayer(DamageHit hit)
         => hit.Kind != DamageKind.Fall && hit.Source != null && hit.Source.GetComponentInParent<PlayerMovement>() != null;
+
+    // A number lands where the bullet hit, which is where the crosshair is; one inside the ring around the crosshair
+    // moves out to the ring's edge, the way it was going, or up toward its own side when it sits right on the centre.
+    private Vector2 ClearOfCrosshair(Vector2 at, float side)
+    {
+        if (clearRadius <= 0f || at.sqrMagnitude >= clearRadius * clearRadius) return at;
+        var lean = new Vector2(side < 0f ? -.85f : .85f, .53f);
+        return (at + lean * 6f).normalized * clearRadius;
+    }
 
     private Vector3 AnchorPoint(CombatDamageReport report)
     {

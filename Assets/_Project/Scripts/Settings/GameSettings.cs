@@ -19,6 +19,8 @@ public sealed class GameSettings
     public float screenShake = 1f;
     [Tooltip("How much the HUD trails the look when turning (HudCamera). 0 keeps it still.")]
     public float hudSway = .5f;
+    [Tooltip("Show the glass boards with their grid that the HUD's two sides stand on (HudBoard). Off by default.")]
+    public bool hudBoards;
     [Tooltip("Horizontal field of view in degrees, measured at 16:9. Wider screens see more at the sides.")]
     public float fieldOfView = 90f;
     [Tooltip("Show the player's own hair and head in first person, cut only where the camera sits inside them.")]

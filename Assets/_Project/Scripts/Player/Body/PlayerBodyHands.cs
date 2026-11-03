@@ -9,7 +9,6 @@ using MovementState = PlayerMovement.MovementState;
 /// - on real ladder rungs, keeping one hand planted while the other reaches above it;
 /// - round a swing bar, as the body swings with it (PlayerBodyHands.Bar);
 /// - on the edge of what the player vaults or climbs while the arm can reach it (PlayerBodyHands.Edge), and on top of it, never through it;
-/// - on a skirt, never inside it, when the clip lets an empty hand hang where the skirt is (PlayerBodyHands.Skirt);
 /// - with the thumb at ease, measured from the character's own hand, unless it is a fist or on a gun.
 /// Parkour states take the hands off the gun, except as TraversalHands says: a vault or a waist-high climb keeps it in
 /// the right hand while the left plants, a step up keeps both on it, and the rest put it away (WeaponController).
@@ -51,10 +50,14 @@ public sealed partial class PlayerBodyHands : MonoBehaviour
     private ArmIK left, right;
     private readonly float[] weights = new float[HoldCount];
     private readonly float[] restLifts = new float[2];
+    private readonly float[] holding = new float[2];
     private float fistsReady, leftOffGun;
 
     /// <summary>How far the hands have gone up as fists (0-1).</summary>
     internal float FistsWeight => weights[(int)Hold.Fists];
+
+    /// <summary>How much of a hand something holds this frame (0-1): the gun, the fists, a ledge, a rung or a bar.</summary>
+    internal float Holding(bool isLeft) => holding[isLeft ? 0 : 1];
 
     private void Awake()
     {
@@ -88,7 +91,6 @@ public sealed partial class PlayerBodyHands : MonoBehaviour
         left?.ClearLedgeSkin();
         right?.ClearLedgeSkin();
         System.Array.Clear(weights, 0, HoldCount);
-        System.Array.Clear(skirtPushes, 0, skirtPushes.Length);
         ResetEdge();
         heldLadder = null;
         wasOnLadder = ladderTopExit = false;
@@ -144,7 +146,6 @@ public sealed partial class PlayerBodyHands : MonoBehaviour
         CurlBarFingers(left);
         CurlBarFingers(right);
         if (alive && Climbing(state)) RestOnObstacle(dt);
-        if (alive) RestOnSkirt(dt);
     }
 
     private void Ease(Hold hold, bool on, float dt)
@@ -211,7 +212,7 @@ public sealed partial class PlayerBodyHands : MonoBehaviour
             hint += h * weight;
             rotation = total <= weight ? r : Quaternion.Slerp(rotation, r, weight / total);
         }
-        heldShares[isLeft ? 0 : 1] = Mathf.Clamp01(total);
+        holding[isLeft ? 0 : 1] = Mathf.Clamp01(total);
         if (total <= 0f) return;
         arm.Solve(position / total, rotation, hint / total, Mathf.Clamp01(total), 1f, shoulderReach);
     }

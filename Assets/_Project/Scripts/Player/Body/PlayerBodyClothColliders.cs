@@ -6,15 +6,45 @@ using UnityEngine;
 /// <summary>
 /// What cloth can't pass through. Magica Cloth doesn't see Unity's colliders, so these are its own, measured from the
 /// avatar as the body is made, so any humanoid gets them in its own size. They stop cloth and nothing else: combat never
-/// reads them. Only the PC that simulates the cloth makes them. Numbers: Tables/ClothBody.
-/// Arms push a skirt only outward: the skirt's backstop has the last word, so a hand can't press it into the legs, where
-/// it would catch the way a raised thigh once caught the front of one.
+/// reads them. The PC that simulates the cloth makes them. A copy makes the legs only when a pressed skirt has no measured
+/// skin to stop at (BodySurface), to know where they are; nothing collides with them there. Numbers: Tables/ClothBody.
+/// The arms aren't colliders. A collider pushes cloth out of itself every way, so a hand the clip puts inside a skirt
+/// would swell it like a fist in a bag. They press skirts in once the cloth has moved instead (SkirtPress), measured here
+/// the same way.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class PlayerBodyClothColliders : MonoBehaviour
 {
     private const string Legs = "legs", Arms = "arms", Head = "head";
     private const char ShapeSeparator = '|';
+
+    /// <summary>One bone of an arm as a skirt meets it: a rounded rod from one joint to the next.</summary>
+    internal readonly struct ArmBone
+    {
+        private readonly Transform from, to;
+        private readonly float start, end;
+
+        /// <summary>Which arm it is part of: 0 left, 1 right.</summary>
+        internal int Side { get; }
+
+        internal ArmBone(Transform from, Transform to, float start, float end, int side)
+        {
+            this.from = from;
+            this.to = to;
+            this.start = start;
+            this.end = end;
+            Side = side;
+        }
+
+        /// <summary>The point of the bone's middle line nearest to a point, and how thick the arm is there (metres).</summary>
+        internal Vector3 Nearest(Vector3 point, out float radius)
+        {
+            Vector3 origin = from.position, line = to.position - origin;
+            float along = line.sqrMagnitude > 0f ? Mathf.Clamp01(Vector3.Dot(point - origin, line) / line.sqrMagnitude) : 0f;
+            radius = Mathf.Lerp(start, end, along);
+            return origin + line * along;
+        }
+    }
 
     [Header("Legs")]
     [SerializeField, Range(0f, 1f), Tooltip("Thigh radius at the hip and at the knee, as a share of its length.")]
@@ -24,12 +54,12 @@ public sealed class PlayerBodyClothColliders : MonoBehaviour
     [SerializeField, Range(0f, 2f), Tooltip("Pelvis radius, as a share of the distance between the hip joints.")]
     private float pelvis = .7f;
 
-    [Header("Arms")]
+    [Header("Arms, pressing a skirt")]
     [SerializeField, Range(0f, 1f), Tooltip("Upper arm radius at the shoulder and at the elbow, as a share of its length.")]
     private float upperArmStart = .14f, upperArmEnd = .11f;
     [SerializeField, Range(0f, 1f), Tooltip("Forearm radius at the elbow and at the wrist, as a share of its length.")]
     private float forearmStart = .12f, forearmEnd = .1f;
-    [SerializeField, Range(0f, 2f), Tooltip("Palm radius, as a share of the distance from the wrist to the middle finger's knuckle.")]
+    [SerializeField, Range(0f, 2f), Tooltip("Hand radius, as a share of the distance from the wrist to the middle finger's knuckle. The hand runs on to the finger's middle joint.")]
     private float palm = .45f;
 
     [Header("Upper body")]
@@ -42,34 +72,59 @@ public sealed class PlayerBodyClothColliders : MonoBehaviour
 
     private readonly Dictionary<string, List<ColliderComponent>> made =
         new Dictionary<string, List<ColliderComponent>>(StringComparer.OrdinalIgnoreCase);
+    private ArmBone[] arms;
     private CharacterController capsule;
     private PlayerMovement player;
     private Animator madeFor;
     private MagicaPlaneCollider floor;
 
-    /// <summary>
-    /// The shapes a part of the cloth touches on this body ("legs|arms"), each set made the first time it is asked for,
-    /// so two parts that touch the legs share one set.
-    /// </summary>
-    internal List<ColliderComponent> For(Animator animator, string shapes)
+    /// <summary>Whether a part's shapes ("legs|arms") let the arms press it.</summary>
+    internal static bool PressedByArms(string shapes)
     {
-        if (animator != madeFor) { made.Clear(); madeFor = animator; }
-        var found = new List<ColliderComponent>();
-        foreach (string shape in shapes.Split(ShapeSeparator)) found.AddRange(Set(animator, shape.Trim()));
-        return found;
+        foreach (string shape in shapes.Split(ShapeSeparator))
+            if (string.Equals(shape.Trim(), Arms, StringComparison.OrdinalIgnoreCase)) return true;
+        return false;
     }
 
     /// <summary>
-    /// How far a point is from the nearest surface, among these shapes, that a cloth rests against. The arms don't count:
-    /// they move and are meant to push it. Nor does the floor, which is off while standing. Infinity when nothing counts.
+    /// The colliders a part of the cloth touches on this body ("legs|arms"), each set made the first time it is asked
+    /// for, so two parts that touch the legs share one set. The arms make none: they press instead.
+    /// </summary>
+    internal List<ColliderComponent> For(Animator animator, string shapes)
+    {
+        Use(animator);
+        var found = new List<ColliderComponent>();
+        foreach (string shape in shapes.Split(ShapeSeparator))
+        {
+            string name = shape.Trim();
+            if (!string.Equals(name, Arms, StringComparison.OrdinalIgnoreCase)) found.AddRange(Set(animator, name));
+        }
+        return found;
+    }
+
+    /// <summary>Both arms' bones, upper arm to fingers, as they press a skirt.</summary>
+    internal ArmBone[] ArmBones(Animator animator)
+    {
+        Use(animator);
+        if (arms != null) return arms;
+        var list = new List<ArmBone>();
+        Arm(animator, HumanBodyBones.LeftUpperArm, HumanBodyBones.LeftLowerArm, HumanBodyBones.LeftHand,
+            HumanBodyBones.LeftMiddleProximal, HumanBodyBones.LeftMiddleIntermediate, 0, list);
+        Arm(animator, HumanBodyBones.RightUpperArm, HumanBodyBones.RightLowerArm, HumanBodyBones.RightHand,
+            HumanBodyBones.RightMiddleProximal, HumanBodyBones.RightMiddleIntermediate, 1, list);
+        return arms = list.ToArray();
+    }
+
+    /// <summary>
+    /// How far a point is from the nearest surface, among these colliders, that a cloth rests against. The floor doesn't
+    /// count: it is off while standing. Infinity when nothing counts.
     /// </summary>
     internal float Room(Vector3 point, List<ColliderComponent> shapes)
     {
-        made.TryGetValue(Arms, out var arms);
         float least = float.PositiveInfinity;
         foreach (var shape in shapes)
         {
-            if (shape == null || shape is MagicaPlaneCollider || (arms != null && arms.Contains(shape))) continue;
+            if (shape == null || shape is MagicaPlaneCollider) continue;
             float scale = Mathf.Abs(shape.GetScale());
             Vector3 size = shape.GetSize() * scale, start = shape.transform.TransformPoint(shape.center);
             if (shape is MagicaCapsuleCollider)
@@ -84,12 +139,20 @@ public sealed class PlayerBodyClothColliders : MonoBehaviour
         return least;
     }
 
+    // Everything made is for one body: a new one starts over, the old one's colliders gone with it.
+    private void Use(Animator animator)
+    {
+        if (animator == madeFor) return;
+        made.Clear();
+        arms = null;
+        madeFor = animator;
+    }
+
     private List<ColliderComponent> Set(Animator animator, string shape)
     {
         if (made.TryGetValue(shape, out var set)) return set;
         set = new List<ColliderComponent>();
         if (string.Equals(shape, Legs, StringComparison.OrdinalIgnoreCase)) MakeLegs(animator, set);
-        else if (string.Equals(shape, Arms, StringComparison.OrdinalIgnoreCase)) MakeArms(animator, set);
         else if (string.Equals(shape, Head, StringComparison.OrdinalIgnoreCase)) MakeHead(animator, set);
         return made[shape] = set;
     }
@@ -107,23 +170,25 @@ public sealed class PlayerBodyClothColliders : MonoBehaviour
         into.Add(MakeFloor());
     }
 
-    private void MakeArms(Animator animator, List<ColliderComponent> into)
-    {
-        Arm(animator, HumanBodyBones.LeftUpperArm, HumanBodyBones.LeftLowerArm, HumanBodyBones.LeftHand, HumanBodyBones.LeftMiddleProximal, into);
-        Arm(animator, HumanBodyBones.RightUpperArm, HumanBodyBones.RightLowerArm, HumanBodyBones.RightHand, HumanBodyBones.RightMiddleProximal, into);
-    }
-
     private void Arm(Animator animator, HumanBodyBones upper, HumanBodyBones lower, HumanBodyBones hand, HumanBodyBones knuckle,
-        List<ColliderComponent> into)
+        HumanBodyBones fingerMiddle, int side, List<ArmBone> into)
     {
         Transform shoulder = animator.GetBoneTransform(upper), elbow = animator.GetBoneTransform(lower);
         Transform wrist = animator.GetBoneTransform(hand), finger = animator.GetBoneTransform(knuckle);
-        Limb(shoulder, elbow, upperArmStart, upperArmEnd, into);
-        Limb(elbow, wrist, forearmStart, forearmEnd, into);
-        // A rig without finger bones keeps its forearm and loses only the palm.
+        if (shoulder == null || elbow == null || wrist == null) return;
+        Span(shoulder, elbow, upperArmStart, upperArmEnd, side, into);
+        Span(elbow, wrist, forearmStart, forearmEnd, side, into);
+        // A rig without finger bones keeps its forearm and loses only the hand. A hand hanging down reaches a skirt with
+        // its fingers, so it runs past the knuckles; a fist curls that joint back in.
         if (finger == null) return;
         float width = Vector3.Distance(wrist.position, finger.position) * palm;
-        Capsule(wrist, finger, width, width, into);
+        into.Add(new ArmBone(wrist, animator.GetBoneTransform(fingerMiddle) ?? finger, width, width, side));
+    }
+
+    private static void Span(Transform from, Transform to, float start, float end, int side, List<ArmBone> into)
+    {
+        float length = Vector3.Distance(from.position, to.position);
+        into.Add(new ArmBone(from, to, length * start, length * end, side));
     }
 
     private void MakeHead(Animator animator, List<ColliderComponent> into)
@@ -153,8 +218,23 @@ public sealed class PlayerBodyClothColliders : MonoBehaviour
     private void LateUpdate()
     {
         if (floor == null) return;
+        if (player.IsDead && FloorUnderBody()) return;
         floor.enabled = LowOnTheGround;
-        floor.transform.position = new Vector3(transform.position.x, capsule.bounds.min.y, transform.position.z);
+        floor.transform.SetPositionAndRotation(new Vector3(transform.position.x, capsule.bounds.min.y, transform.position.z), transform.rotation);
+    }
+
+    // A corpse lies wherever it fell or was knocked to, while the capsule stays where the player died, so the floor goes
+    // on the ground under the body's hips, along its slope. Bodies are on the players' layer, which isn't ground, so the
+    // ray finds the ground under it rather than the body itself.
+    private bool FloorUnderBody()
+    {
+        const float above = .25f, below = 2f;
+        Transform hips = madeFor != null ? madeFor.GetBoneTransform(HumanBodyBones.Hips) : null;
+        if (hips == null || !Physics.Raycast(hips.position + Vector3.up * above, Vector3.down, out RaycastHit ground, above + below,
+                player.groundLayers, QueryTriggerInteraction.Ignore)) return false;
+        floor.enabled = true;
+        floor.transform.SetPositionAndRotation(ground.point, Quaternion.FromToRotation(Vector3.up, ground.normal));
+        return true;
     }
 
     // Standing, cloth doesn't reach the floor. Going over something, the capsule's bottom is a plane in the air, and a plane

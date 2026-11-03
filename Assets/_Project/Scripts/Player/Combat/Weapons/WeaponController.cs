@@ -7,6 +7,8 @@ public readonly struct WeaponShot
     public readonly long AttackId;
     public readonly Vector3 Origin, Direction;
     public readonly AttackTraceResult Trace;
+    /// <summary>Where the bullet went on after its first hit, through or off it (AttackTrace.Bullet); null when it stopped.</summary>
+    public readonly BulletLeg[] Later;
     public readonly Vector2 Recoil;
     public readonly int AmmoAfterShot;
 
@@ -16,12 +18,14 @@ public readonly struct WeaponShot
         Vector3 direction,
         AttackTraceResult trace,
         Vector2 recoil,
-        int ammo)
+        int ammo,
+        BulletLeg[] later = null)
     {
         AttackId = id;
         Origin = origin;
         Direction = direction;
         Trace = trace;
+        Later = later;
         Recoil = recoil;
         AmmoAfterShot = ammo;
     }
@@ -205,9 +209,10 @@ public sealed class WeaponController : MonoBehaviour
     internal void ShowShot(Vector3 origin, Vector3 direction)
     {
         if (Runtime == null || weaponData == null) return;
-        bool landed = AttackTrace.FirstExternalHit(owner, origin, direction, weaponData.Range, hitLayers, out RaycastHit hit);
-        var trace = new AttackTraceResult(landed, hit, landed ? hit.point : origin + direction * weaponData.Range, DamageResult.Ignored);
-        LastShot = new WeaponShot(DamageHit.NewAttackId(), muzzlePoint != null ? muzzlePoint.position : origin, direction, trace, Vector2.zero, Runtime.Ammo);
+        // The same path their PC drew, walls passed and ricochets included: the randomness comes from the shot itself.
+        var look = new DamageHit(0, 0f, DamageKind.Attack, origin, direction, owner, method: DamageMethod.Bullet);
+        var trace = AttackTrace.Bullet(look, origin, direction, weaponData.Range, hitLayers, 1f, weaponData.Penetration, false, out BulletLeg[] later);
+        LastShot = new WeaponShot(DamageHit.NewAttackId(), muzzlePoint != null ? muzzlePoint.position : origin, direction, trace, Vector2.zero, Runtime.Ammo, later);
         ShotFired?.Invoke(LastShot);
         presentation?.OnShot(weaponData, Vector2.zero);
     }
@@ -313,12 +318,12 @@ public sealed class WeaponController : MonoBehaviour
                 postureDamage: weaponData.PostureDamage,
                 method: DamageMethod.Bullet);
 
-            var trace = AttackTrace.Trace(
+            var trace = AttackTrace.Bullet(
                 attack,
                 origin,
                 direction,
                 weaponData.Range,
-                hitLayers, weaponData.HeadshotMultiplier);
+                hitLayers, weaponData.HeadshotMultiplier, weaponData.Penetration, true, out BulletLeg[] later);
 
             var shot = new WeaponShot(
                 id,
@@ -326,11 +331,13 @@ public sealed class WeaponController : MonoBehaviour
                 direction,
                 trace,
                 recoil,
-                Runtime.Ammo + shots - i - 1);
+                Runtime.Ammo + shots - i - 1,
+                later);
 
             LastShot = shot;
-            var prop = trace.HasHit ? PhysicsProp.Of(trace.Hit.collider) : null;
-            if (prop != null) prop.Push(direction.normalized * weaponData.PropImpulse, trace.Hit.point);
+            PushProp(trace, direction, 1f);
+            if (later != null)
+                foreach (var leg in later) PushProp(leg.Trace, leg.Onward.Direction, leg.Share);
 
             if (drawRays)
             {
@@ -351,6 +358,13 @@ public sealed class WeaponController : MonoBehaviour
         }
         UpdateCrosshair();
         cameraEffects?.RefreshWeaponFov();
+    }
+
+    // A loose prop the bullet struck takes the share of the push the bullet still carried.
+    private void PushProp(in AttackTraceResult trace, Vector3 direction, float share)
+    {
+        var prop = trace.HasHit ? PhysicsProp.Of(trace.Hit.collider) : null;
+        if (prop != null) prop.Push(direction.normalized * (weaponData.PropImpulse * share), trace.Hit.point);
     }
 
     // The crosshair's ray. In the F5 view it starts level with the eyes, so nothing between the camera and the player

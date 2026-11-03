@@ -62,8 +62,12 @@ public sealed class CsvTable
 
     private static bool IsHeader(string cell, string expected) => string.Equals(cell.Trim(), expected, StringComparison.OrdinalIgnoreCase);
 
-    // RFC 4180: comma separators, quoted cells with "" escapes and line breaks. Excel's UTF-8 byte order mark is ignored.
-    private static List<List<string>> ReadRecords(string text)
+    /// <summary>
+    /// Every record of a CSV text, cells as written, '#' columns and rows included (the inspector shows Surfaces.csv's
+    /// notes). RFC 4180: comma separators, quoted cells with "" escapes and line breaks. Excel's UTF-8 byte order mark is
+    /// ignored.
+    /// </summary>
+    public static List<List<string>> ReadRecords(string text)
     {
         var records = new List<List<string>>();
         var record = new List<string>();

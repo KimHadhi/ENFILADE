@@ -20,6 +20,7 @@
 | `Art/Audio/Library/ThrowingKnife` | 43개, 6MB | [MW] Quick Throwing Knife(3650480912). 폴더 이름으로 보아 Far Cry 4 추출본으로 추정 |
 | `Art/Audio/Library/AdvancedStealth` | 2개, 1MB | Advanced Stealth(3827056860) |
 | `Art/Audio/Combat/Shove` | 7개, 0.4MB | 파일 이름(`rifle_swing_hit_infected`)으로 보아 L4D2 게임 소리로 추정 |
+| `Art/Audio/Bullets/Ricochet` | 5개, 1MB | [ArcCW] Arctic's Customizable Weapons (Base)(워크숍 2131057232)의 `ricochet01`~`05` 도탄 소리. 원래 출처는 기록이 없다(2026-11-04 추가) |
 | `Art/Models/Characters/KazusaBand` | 91개, 108MB | 블루 아카이브의 카즈사. `KazusaBand.kkbp.json`으로 보아 코이카츠 모델 변환본으로 추정. 어디서 받았는지 기록이 없다 |
 | `Art/Models/Characters/Sil` | 11개, 17MB | VRChat 아바타 패키지 sil_ess_1_2(`.blend`, `.unitypackage`). 어디서 받았는지 기록이 없다. 모델은 [sil_model_to_fbx.py](../../../Tools/Blender/sil_model_to_fbx.py)로 변환했고 재질과 텍스처는 패키지 원본이다. 셰이더 `WES_soft_mod3`은 GrabPass만 URP의 Opaque Texture로 바꿨다 |
 | `Tools/Blender/Source/Hiro` | 저장소 안, Assets 밖 | 클립을 구울 때 쓰는 Hiro 뼈대 MDL(워크숍 3744034369) |

@@ -153,7 +153,8 @@ public sealed class CombatFeedHUD : MonoBehaviour
 
         totalRoot = FeelUI.Rect("Total", side);
         totalRoot.anchorMin = totalRoot.anchorMax = totalRoot.pivot = Vector2.one;
-        totalRoot.anchoredPosition = new Vector2(-36f, -28f);
+        // Both sit inside the right board (HudBoard), clear of its edges, where the HUD prototype put them.
+        totalRoot.anchoredPosition = new Vector2(-70f, -58f);
         totalRoot.sizeDelta = new Vector2(320f, 40f);
         var caption = FeelUI.ScoreLabel("Caption", totalRoot, 13f, TextAlignmentOptions.Right);
         caption.rectTransform.anchoredPosition = new Vector2(0f, 13f);
@@ -167,7 +168,7 @@ public sealed class CombatFeedHUD : MonoBehaviour
 
         feedRoot = FeelUI.Rect("Kill Feed", side);
         feedRoot.anchorMin = feedRoot.anchorMax = feedRoot.pivot = Vector2.one;
-        feedRoot.anchoredPosition = new Vector2(-36f, -80f);
+        feedRoot.anchoredPosition = new Vector2(-70f, -112f);
     }
 
     private void OnDestroy() { if (instance == this) instance = null; }
@@ -222,10 +223,12 @@ public sealed class CombatFeedHUD : MonoBehaviour
             if (kills[i].Age + dt < KillLifetime) continue;
             kills[i].Hide(); spareKills.Push(kills[i]); kills.RemoveAt(i);
         }
-        for (int i = 0; i < kills.Count; i++)
+        // Newest first, each row below the room the ones above it take now, so the newest's bigger card never overlaps.
+        float below = 0f;
+        for (int i = kills.Count - 1; i >= 0; i--)
         {
-            int rank = kills.Count - 1 - i;
-            kills[i].Tick(dt, -rank * (KillFeedRow.Height + 5f), KillLifetime, rank);
+            kills[i].Tick(dt, -below, KillLifetime, kills.Count - 1 - i);
+            below += kills[i].Extent + 5f;
         }
     }
 

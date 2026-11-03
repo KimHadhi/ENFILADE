@@ -25,7 +25,7 @@ public sealed class AmmoHUD : MonoBehaviour
     [SerializeField] private Color panelColor = new Color(.025f, .045f, .065f, .85f);
 
     private static readonly Color Muted = new Color(.59f, .67f, .71f);
-    private RectTransform panel, fill;
+    private RectTransform panel, fill, canvasRect;
     private CanvasGroup group;
     private TMP_Text magazine, capacity, reserve, status, mode;
     private Image progress, edge, background;
@@ -46,7 +46,9 @@ public sealed class AmmoHUD : MonoBehaviour
     {
         if (!EnsureView()) return;
         var root = (RectTransform)transform;
-        root.anchoredPosition = new Vector2(-screenMargin.x, screenMargin.y);
+        // Its group is centred on the canvas, so the bottom-right corner is half the canvas away.
+        Vector2 half = canvasRect.rect.size * .5f;
+        root.anchoredPosition = new Vector2(half.x - screenMargin.x, -half.y + screenMargin.y);
         root.localScale = Vector3.one * hudScale;
         if (weaponSlots == null && PlayerRoster.Local != null) weaponSlots = PlayerRoster.Local.GetComponent<PlayerWeaponSlots>();
         var runtime = weaponSlots != null && weaponSlots.isActiveAndEnabled
@@ -106,9 +108,10 @@ public sealed class AmmoHUD : MonoBehaviour
         foreach (Transform child in transform) child.gameObject.SetActive(false);
         var oldBackground = GetComponent<Image>();
         if (oldBackground != null) { oldBackground.enabled = false; oldBackground.raycastTarget = false; }
-        // The legacy RIGHT container has a fixed 100px size; anchor directly to its canvas for all aspect ratios.
-        root.SetParent(canvas.transform, false);
-        root.anchorMin = root.anchorMax = new Vector2(1f, 0f);
+        // The legacy RIGHT container has a fixed 100px size, so the display finds the screen's corner from the canvas's
+        // own size (RefreshNow) and stays in RIGHT, standing on the HUD's right side (HudPlane, HudBoard) with the rest.
+        canvasRect = (RectTransform)canvas.rootCanvas.transform;
+        root.anchorMin = root.anchorMax = new Vector2(.5f, .5f);
         root.pivot = new Vector2(1f, 0f); root.sizeDelta = new Vector2(300f, 150f);
         panel = Rect("Ammo display", root, 0, 0, 300, 150);
         group = panel.gameObject.AddComponent<CanvasGroup>();

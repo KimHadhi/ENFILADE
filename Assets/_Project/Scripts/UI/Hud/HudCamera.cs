@@ -20,11 +20,11 @@ public sealed class HudCamera : MonoBehaviour
     [System.Serializable]
     public sealed class Look
     {
-        [Tooltip("Vertical field of view of the HUD camera (°). Keep it narrow: a wide lens turns a plane's near side to face " +
-            "the eye and stretches it sideways, where a narrow one with a steep yaw narrows it with depth like a wall running forward.")]
-        public float fov = 32f;
+        [Tooltip("Vertical field of view of the HUD camera (°). Wider deepens a turned plane but stretches its near side " +
+            "sideways; narrower with a steep yaw squeezes its text. The boards (HudBoard) are what show the plane.")]
+        public float fov = 45f;
         [Tooltip("How far the left and right planes turn away at their inner edge (°).")]
-        public float yaw = 64f;
+        public float yaw = 20f;
         [Tooltip("Both planes lean back at the top by this much (°).")]
         public float pitch;
         [Tooltip("Sway per degree per second of camera turning: the HUD trails the look by this much.")]

@@ -5,7 +5,9 @@ using UnityEngine.UI;
 /// <summary>
 /// One line of the kill feed. Your own kills glow gold from the killer's end and a sheen crosses them as they arrive, so
 /// they read as yours at a glance, and the far end stays free to say body shot or headshot. Everyone's kills carry the
-/// killer's streak at the left. Made once and reused.
+/// killer's streak at the left. The newest row is the feed's main course: a quarter bigger, a light card with dark ink
+/// and its icon in the kill's colour, a gap under it; it turns back into an ordinary row when a newer one arrives.
+/// Made once and reused.
 /// </summary>
 public sealed class KillFeedRow
 {
@@ -22,11 +24,16 @@ public sealed class KillFeedRow
     private readonly StreakBadge streak;
     // Each new row tilts the other way from the last, so two quick kills read as two slips.
     private static float nextRoll = 1f;
-    private float y, lead, roll, weight = 1f, shade = 1f;
+    private float y, lead, roll, weight = 1f, shade = 1f, painted = -1f;
     private bool sheening;
     private KillFeedLook look;
+    // The row's own colours and the newest row's, between which Paint blends.
+    private Color plateLeft, heroLeft, leftInk, iconInk, heroIcon;
 
     public float Age { get; private set; }
+
+    /// <summary>The height the row takes in the list now: the newest row's growth and the gap under it included.</summary>
+    public float Extent => look == null ? Height : Height * (1f + look.leadScale * lead) + look.heroGap * lead;
 
     public KillFeedRow(Transform feed)
     {
@@ -60,15 +67,19 @@ public sealed class KillFeedRow
         nextRoll = -nextRoll;
         lead = 0f;
         left.text = leftText;
-        left.color = mine ? Color.white : new Color(.86f, .88f, .92f);
+        leftInk = mine ? Color.white : new Color(.86f, .88f, .92f);
         right.text = rightText;
         icon.gameObject.SetActive(iconTexture != null);
         icon.texture = iconTexture;
-        icon.color = iconColor;
+        iconInk = iconColor;
+        // On the light card the icon takes the kill's colour, deep enough to read on it.
+        heroIcon = new Color(accentColor.r * .78f, accentColor.g * .78f, accentColor.b * .78f, 1f);
         accent.color = accentColor;
         Color warm = GunFeelSettings.Instance.scoreColor;
-        warm.a = look.ownPlateStrength;
-        plate.Paint(mine ? warm : Dark, Dark);
+        plateLeft = mine ? new Color(warm.r, warm.g, warm.b, look.ownPlateStrength) : Dark;
+        heroLeft = mine ? Color.Lerp(look.heroPlate, new Color(warm.r, warm.g, warm.b, look.heroPlate.a), look.heroOwnWash) : look.heroPlate;
+        painted = -1f;
+        Paint(0f);
         plate.Sheen(-1f, Color.clear);
         sheening = mine;
         streak.Show(streakCount, look);
@@ -89,9 +100,9 @@ public sealed class KillFeedRow
 
     /// <summary>
     /// Ages the row, eases it toward its place in the list and fades it out at the end of its life. rank is 0 for the
-    /// newest row, 1 for the one below it, and so on. The newest leans a touch toward the player, stands a little off
-    /// and a little larger, and keeps a wider end bar; it arrives leaning further and settles, and gives all that back
-    /// once a newer row arrives. Each older row is a step dimmer, so the newest reads first.
+    /// newest row, 1 for the one below it, and so on. The newest grows into its light card, leans a touch toward the
+    /// player, stands a little off and keeps a wider end bar; it arrives leaning further and settles, and gives all that
+    /// back once a newer row arrives. Each older row is a step dimmer.
     /// </summary>
     public void Tick(float dt, float targetY, float lifetime, int rank)
     {
@@ -99,6 +110,7 @@ public sealed class KillFeedRow
         y = Mathf.Lerp(y, targetY, 1f - Mathf.Exp(-18f * dt));
         float enter = 1f - Mathf.Pow(1f - Mathf.Clamp01(Age / .18f), 3f);
         lead = Mathf.Lerp(lead, rank == 0 ? 1f : 0f, 1f - Mathf.Exp(-12f * dt));
+        Paint(lead);
         float settle = Mathf.Pow(1f - Mathf.Clamp01(Age / .3f), 3f);
         float yaw = look != null ? look.leadYaw * weight * lead + 4f * settle : 0f;
         float lift = look != null ? look.leadLift * weight * lead + 18f * settle : 0f;
@@ -117,6 +129,17 @@ public sealed class KillFeedRow
         float through = Age / SheenSeconds;
         if (through >= 1f) { sheening = false; plate.Sheen(-1f, Color.clear); return; }
         plate.Sheen(1.2f * through - .1f, Light);
+    }
+
+    // From the row's own colours (0) to the newest row's light card with dark ink (1).
+    private void Paint(float hero)
+    {
+        if (look == null || Mathf.Abs(hero - painted) < .002f) return;
+        painted = hero;
+        plate.Paint(Color.Lerp(plateLeft, heroLeft, hero), Color.Lerp(Dark, look.heroPlate, hero));
+        left.color = Color.Lerp(leftInk, look.heroInk, hero);
+        right.color = Color.Lerp(Color.white, look.heroInk, hero);
+        icon.color = Color.Lerp(iconInk, heroIcon, hero);
     }
 
     private static void Place(RectTransform rect, float x, float width, float height)

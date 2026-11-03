@@ -58,13 +58,17 @@ public sealed class MuzzleEffects : MonoBehaviour
         if (tracerPrefab == null)
             return;
 
-        Vector3 startPoint = shot.Origin;
+        ShowTracer(shot.Origin, EndOf(shot.Trace));
+        // A bullet that went on through or off something (AttackTrace.Bullet) streaks on from there.
+        if (shot.Later != null)
+            foreach (var leg in shot.Later) ShowTracer(leg.Onward.From, EndOf(leg.Trace));
+    }
 
-        Vector3 endPoint =
-            shot.Trace.HasHit && shot.Trace.Hit.collider != null
-                ? shot.Trace.Hit.point
-                : shot.Trace.End;
+    private static Vector3 EndOf(in AttackTraceResult trace)
+        => trace.HasHit && trace.Hit.collider != null ? trace.Hit.point : trace.End;
 
+    private void ShowTracer(Vector3 startPoint, Vector3 endPoint)
+    {
         if ((endPoint - startPoint).sqrMagnitude < 0.0001f)
             return;
 

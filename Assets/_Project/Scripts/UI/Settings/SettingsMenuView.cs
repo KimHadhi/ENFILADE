@@ -106,6 +106,7 @@ public sealed class SettingsMenuView
             v => s.fieldOfView = Mathf.Round(v), v => Mathf.RoundToInt(v) + "°");
         rows.Volume("화면 흔들림", s.screenShake, v => s.screenShake = v);
         rows.Volume("HUD 흔들림", s.hudSway, v => s.hudSway = v);
+        rows.Choice("HUD 그리드 배경", OffOn, s.hudBoards ? 1 : 0, i => s.hudBoards = i == 1);
         rows.Choice("내 머리카락 보기", OffOn, s.showOwnHead ? 1 : 0, i => s.showOwnHead = i == 1);
         var bodyProfile = PlayerBodyProfile.Load();
         var skins = bodyProfile?.Skins.Where(skin => skin != null && skin.Model != null).ToArray();

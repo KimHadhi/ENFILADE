@@ -2,8 +2,9 @@ using UnityEngine;
 
 /// <summary>
 /// Sets GameHUD up for depth when Play starts: draws its canvas through HudCamera, turns LEFT and RIGHT into the two
-/// sides of a curved screen, lifts what must stay flat off those sides (the new-objective alert in the top centre), and
-/// gives each element named in HudTilt.csv its own lean. MIDDLE (wave banner, crosshair, prompts) stays flat.
+/// sides of a curved screen and stands each on a visible glass board (HudBoard), lifts what must stay flat off those
+/// sides (the new-objective alert in the top centre), and gives each element named in HudTilt.csv its own lean. MIDDLE
+/// (wave banner, crosshair, prompts) stays flat.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class HudRig : MonoBehaviour
@@ -26,8 +27,8 @@ public sealed class HudRig : MonoBehaviour
         }
         var left = Find(all, LeftName);
         var right = Find(all, RightName);
-        if (left != null) HudPlane.Attach(left, HudPlane.Side.Left);
-        if (right != null) HudPlane.Attach(right, HudPlane.Side.Right);
+        if (left != null) { HudPlane.Attach(left, HudPlane.Side.Left); HudBoard.Add(left, HudPlane.Side.Left); }
+        if (right != null) { HudPlane.Attach(right, HudPlane.Side.Right); HudBoard.Add(right, HudPlane.Side.Right); }
         foreach (string id in GameTables.RowIds(HudTilt.TableName))
         {
             var element = Find(all, id);

@@ -40,6 +40,9 @@ public sealed class WeaponData : ScriptableObject
     [SerializeField, Min(0f)] private float maxBloom = 2.5f;
     [SerializeField, Min(0f)] private float bloomRecovery = 2.2f;
     [SerializeField, Min(1f)] private float headshotMultiplier = 2f;
+    [Tooltip("How far a bullet pushes through what it hits, in ArcCW's millimetres (BulletPenetration): Horde's M4A1 is 10, " +
+        "its G17 4. 0 stops at the first hit.")]
+    [SerializeField, Min(0f)] private float penetration;
     [Tooltip("Repeats while firing; an empty array uses Recoil Per Shot.")]
     [SerializeField] private Vector2[] recoilPattern = new Vector2[0];
     [Header("Recoil feel")]
@@ -80,6 +83,9 @@ public sealed class WeaponData : ScriptableObject
     [Tooltip("Support-hand wrist under the handguard, then the way its fingers point and the way its palm faces.")]
     [SerializeField] private Vector3 leftGrip = new Vector3(.26f, -.285f, .7f), leftGripFingers = new Vector3(.5f, 0f, .85f),
         leftGripPalm = new Vector3(0f, 1f, 0f);
+    [Tooltip("Right side of the handguard's rail, where a laser sight mounts (weapon-root space, m). Zero: measured from " +
+        "the gun, on its right surface at the bore's height a little ahead of the support hand. The score popup hangs just above it.")]
+    [SerializeField] private Vector3 sideRail;
     [Header("Feel (presentation; aim recoil stays above)")]
     [Tooltip("Visual-only camera kick per shot, degrees: x = up, y = random left/right, z = random roll. Bullets still go to the crosshair.")]
     [SerializeField] private Vector3 viewPunch = new Vector3(.75f, .3f, .9f);
@@ -130,6 +136,7 @@ public sealed class WeaponData : ScriptableObject
     public float MaxBloom => Mathf.Max(0f, maxBloom);
     public float BloomRecovery => Mathf.Max(0f, bloomRecovery);
     public float HeadshotMultiplier => Mathf.Max(1f, headshotMultiplier);
+    public float Penetration => Mathf.Max(0f, penetration);
     public float AdsFov => Mathf.Clamp(adsFov, 20f, 100f);
     public float AdsMoveMultiplier => Mathf.Clamp(adsMoveMultiplier, .1f, 1f);
     public float AdsTransitionTime => Mathf.Max(.01f, adsTransitionTime);
@@ -144,6 +151,8 @@ public sealed class WeaponData : ScriptableObject
     public Vector3 LeftGrip => leftGrip;
     public Vector3 LeftGripFingers => leftGripFingers;
     public Vector3 LeftGripPalm => leftGripPalm;
+    /// <summary>The handguard's right-side rail mount (weapon-root space), or zero when the gun should be measured.</summary>
+    public Vector3 SideRail => sideRail;
     public float HighReadyPitch => Mathf.Clamp(highReadyPitch, 30f, 85f);
     public float HighReadyRaiseHalfLife => Mathf.Clamp(highReadyRaiseHalfLife, .01f, .2f);
     public float HighReadyLowerHalfLife => Mathf.Clamp(highReadyLowerHalfLife, .01f, .2f);

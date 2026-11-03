@@ -31,7 +31,15 @@ public sealed class KillFeedLook
     [Tooltip("Extra share of the lean and lift for a headshot, a burning streak or a grave notice.")]
     public float leadEmphasis = .6f;
     [Tooltip("How much bigger the newest row stands (share).")]
-    public float leadScale = .05f;
+    public float leadScale = .25f;
+    [Tooltip("Extra room under the newest row, so it stands apart from the list (px).")]
+    public float heroGap = 6f;
+    [Tooltip("The newest row's card: light, so it reads first against the dark and gold rows below it.")]
+    public Color heroPlate = new Color(1f, .965f, .918f, .94f);
+    [Tooltip("The text on that card.")]
+    public Color heroInk = new Color(.09f, .07f, .055f);
+    [Tooltip("For your own kills, how much of the gold the card's left end keeps (0-1).")]
+    public float heroOwnWash = .45f;
     [Tooltip("How much wider the newest row's end bar is (share of its width).")]
     public float leadAccent = 1f;
     [Tooltip("Opacity each older row loses per step below the newest.")]

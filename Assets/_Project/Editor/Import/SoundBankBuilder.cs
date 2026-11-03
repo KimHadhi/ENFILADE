@@ -17,6 +17,7 @@ internal sealed class SoundBankBuilder : AssetPostprocessor
         ("Movement", "Assets/_Project/Art/Audio/Movement"),
         ("Voice", "Assets/_Project/Art/Audio/Voice/Hiro"),
         ("HitConfirm", "Assets/_Project/Art/Audio/HitConfirm"),
+        ("Bullets", "Assets/_Project/Art/Audio/Bullets"),
     };
     private static bool queued;
 

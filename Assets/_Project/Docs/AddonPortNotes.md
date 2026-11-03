@@ -18,6 +18,7 @@ GMod 애드온(`F:\Addons`, 저장소 밖)의 이동·애니메이션·소리를
 | [wOS] DynaBase, Mixamo 확장 | 착지 클립을 시험했다. 지금은 mixamo.com에서 직접 받은 클립으로 바꿔서 남아 있지 않다 | [Art/Animations/Mixamo](../Art/Animations/Mixamo) |
 | [MW] Quick Throwing Knife | 소리만 보관. 기능은 이후 전투 작업에서 다룬다 | `Art/Audio/Library/ThrowingKnife` |
 | Advanced Stealth | 소리만 보관. 잠입·분대 AI는 별도 계획이 필요하다 | `Art/Audio/Library/AdvancedStealth` |
+| [ArcCW] Arctic's Customizable Weapons (Base) (워크숍 2131057232, Horde가 쓰는 무기 베이스) | 총알 관통과 도탄(`DoPenetration`, `GetRicochetChance`, `PenTable`), 총마다 관통력은 Horde의 ArcCW 무기 수치(M4A1 10, G17 4), 도탄 소리 | [BulletPenetration](../Scripts/Combat/HitDetection/BulletPenetration.cs), [AttackTrace](../Scripts/Combat/HitDetection/AttackTrace.cs), [Weapons.csv](../Resources/Tables/Weapons.csv), [Surfaces.csv](../Resources/Tables/Surfaces.csv), `Art/Audio/Bullets/Ricochet` |
 | Beatrun addon compatibility layer, Landing Anim-Fix | 옮기지 않았다. GMod 안에서 동작하는 Lua 패치다 | 없음 |
 
 소리의 표면별 출처는 [사운드 관리](MaintenanceGuide.md#이동목소리-소리-폴더가-곧-목록)에, 프로젝트 전체의 에셋 출처는 [외부 에셋 출처](AssetSources.md)에 있다.

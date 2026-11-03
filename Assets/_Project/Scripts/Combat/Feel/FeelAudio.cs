@@ -51,9 +51,14 @@ public sealed class FeelAudio : MonoBehaviour
     public static void PlayAt(FeelSound sound, AudioClip[] overrides, Vector3 point, float volume, float pitch = 1f, float maxDistance = 14f)
     {
         if (!Application.isPlaying || volume <= 0f) return;
+        PlayClipAt(Get().Pick(sound, overrides), point, volume, pitch, maxDistance);
+    }
+
+    /// <summary>3D sound of one given clip at a world point, such as a sound bank's pick, on the same voices as PlayAt.</summary>
+    public static void PlayClipAt(AudioClip clip, Vector3 point, float volume, float pitch = 1f, float maxDistance = 14f)
+    {
+        if (!Application.isPlaying || clip == null || volume <= 0f) return;
         var self = Get();
-        var clip = self.Pick(sound, overrides);
-        if (clip == null) return;
         var voice = self.spatial[self.nextSpatial];
         self.nextSpatial = (self.nextSpatial + 1) % SpatialVoices;
         voice.transform.position = point;

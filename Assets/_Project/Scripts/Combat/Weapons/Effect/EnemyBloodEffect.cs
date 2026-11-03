@@ -38,17 +38,31 @@ public sealed class EnemyBloodEffect : MonoBehaviour
 
     private void Play(WeaponShot shot)
     {
-        if (!shot.Trace.HasHit || shot.Trace.Hit.collider == null)
-            return;
+        Bleed(shot.Trace, shot.Direction);
+        if (shot.Later == null) return;
+        // A bullet that went on (AttackTrace.Bullet) bleeds every enemy it hit after the first, and comes out of the far
+        // side of each one it went through.
+        foreach (var leg in shot.Later)
+        {
+            var onward = leg.Onward;
+            if (onward.HasExit && onward.Exit.collider != null) Bleed(onward.Exit, onward.Direction);
+            Bleed(leg.Trace, onward.Direction);
+        }
+    }
 
-        RaycastHit hit = shot.Trace.Hit;
+    private void Bleed(in AttackTraceResult trace, Vector3 direction)
+    {
+        if (trace.HasHit) Bleed(trace.Hit, direction);
+    }
 
-        if (!IsEnemy(hit.collider.transform))
+    private void Bleed(in RaycastHit hit, Vector3 direction)
+    {
+        if (hit.collider == null || !IsEnemy(hit.collider.transform))
             return;
 
         Vector3 normal = hit.normal.sqrMagnitude > 0.001f
             ? hit.normal.normalized
-            : -shot.Direction.normalized;
+            : -direction.normalized;
 
         Vector3 position = hit.point + normal * surfaceOffset;
 

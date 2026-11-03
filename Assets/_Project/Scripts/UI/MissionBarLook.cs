@@ -4,17 +4,16 @@ using UnityEngine.UI;
 
 /// <summary>
 /// How the objective bar looks (Hud.csv's Mission row); MissionHUD decides what it says. The sections stand on one line
-/// and rise to their own heights: the ! tab tallest, the count box next, the objective text lowest, with a small
-/// OBJECTIVE label in the step above the text. That line is the progress, one segment per target while they fit, and
-/// the segment that just filled flashes. The count box carries the strip's dark on past its end, edged in the tab's
+/// and rise to their own heights: the ! tab tallest, the count box next, the objective text lowest. That line is the
+/// progress, one segment per target while they fit, and the segment that just filled flashes. The count box carries the strip's dark on past its end, edged in the tab's
 /// orange, its number big and the total small beside it, and the number punches when it moves. One palette: the tab's
 /// orange, the strip's dark, white.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class MissionBarLook : MonoBehaviour, ITableBound
 {
-    private const string LabelText = "OBJECTIVE", LabelName = "Objective Label", LineName = "Progress Line";
-    private const float TitlePad = 12f, EdgeWidth = 3f, Tail = 18f, SegmentGap = 2f, LabelSpacing = 14f;
+    private const string LineName = "Progress Line";
+    private const float TitlePad = 12f, EdgeWidth = 3f, Tail = 18f, SegmentGap = 2f;
     private const float FillSpeed = 1.8f, FlashSeconds = .45f, PunchSeconds = .28f;
 
     [Tooltip("The ! tab, the tallest section, rising from the bar's bottom line (px at 1080p).")]
@@ -23,8 +22,8 @@ public sealed class MissionBarLook : MonoBehaviour, ITableBound
     [SerializeField, Min(16)] private float barHeight = 36f;
     [Tooltip("Height of the count box, between the other two (px).")]
     [SerializeField, Min(16)] private float counterHeight = 43f;
-    [SerializeField, Min(6)] private float symbolSize = 38f, titleSize = 19f, counterSize = 24f, labelSize = 11f;
-    [Tooltip("The bar's one colour: the ! tab, the count box's edge, the label and the done part of the line.")]
+    [SerializeField, Min(6)] private float symbolSize = 38f, titleSize = 19f, counterSize = 24f;
+    [Tooltip("The bar's one colour: the ! tab, the count box's edge and the done part of the line.")]
     [SerializeField] private Color accent = new Color(.937f, .522f, .259f);
     [Tooltip("The line's undone part: the accent darkened to this share.")]
     [SerializeField, Range(0f, 1f)] private float trackShade = .32f;
@@ -40,7 +39,6 @@ public sealed class MissionBarLook : MonoBehaviour, ITableBound
     private Image strip, counterBox, edge;
     private Graphic tab;
     private TMP_Text title, counter, symbol;
-    private TextMeshProUGUI label;
     private GameObject counterRoot;
     private MissionLineGraphic line;
     private string shownId;
@@ -63,17 +61,6 @@ public sealed class MissionBarLook : MonoBehaviour, ITableBound
         // The thin track that sat inside the strip gives way to the line under the whole bar.
         if (oldProgress != null) oldProgress.transform.parent.gameObject.SetActive(false);
         line = Part<MissionLineGraphic>(LineName);
-        var found = bar.Find(LabelName);
-        label = found != null ? found.GetComponent<TextMeshProUGUI>() : null;
-        if (label == null)
-        {
-            label = FeelUI.ScoreLabel(LabelName, bar, labelSize, TextAlignmentOptions.BottomLeft);
-            label.gameObject.layer = bar.gameObject.layer;
-        }
-        // The shadow's material lives only while the game runs; a bar baked into the prefab (Tools > HUD) keeps the
-        // font's own, and gets the shadow back in Play.
-        if (Application.isPlaying) FeelUI.ShadowScore(label);
-        else if (label.font != null) label.fontSharedMaterial = label.font.material;
         var font = GunFeelSettings.Instance.scoreFont;
         if (font != null) counter.font = font;
         // The count's big number and small total are tags; the prefab's text had them switched off.
@@ -186,18 +173,6 @@ public sealed class MissionBarLook : MonoBehaviour, ITableBound
                 edge.color = accent;
             }
         }
-
-        // The label sits in the step between the tab's top and the strip's, when the step has room for it.
-        var labelRect = label.rectTransform;
-        labelRect.anchorMin = labelRect.anchorMax = Vector2.up;
-        labelRect.pivot = Vector2.zero;
-        labelRect.anchoredPosition = new Vector2(titleLeft, 3f);
-        labelRect.sizeDelta = new Vector2(Mathf.Max(0f, width - titleLeft), labelSize * 1.5f);
-        label.text = LabelText;
-        label.fontSize = labelSize;
-        label.characterSpacing = LabelSpacing;
-        label.color = accent;
-        label.gameObject.SetActive(badgeSize.y - barHeight >= labelSize);
 
         // The line under the strip and the count box, with its tail past them.
         var lineRect = line.rectTransform;

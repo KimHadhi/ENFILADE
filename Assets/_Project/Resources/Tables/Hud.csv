@@ -1,7 +1,20 @@
 ﻿key,value,note
-Camera.fov,56,HUD를 비추는 카메라의 세로 시야각(°). 클수록 좌우 면이 앞으로 뻗은 벽처럼 깊어진다
-Planes.yaw,32,좌우 HUD 면이 화면 가운데 쪽으로 멀어지는 각도(°). 화면 바깥 모서리가 축이다
+Camera.fov,45,HUD를 비추는 카메라의 세로 시야각(°). 넓히면 기운 면이 더 깊어지지만 바깥쪽이 가로로 늘어나고 좁히고 각도를 키우면 글자가 눌린다
+Planes.yaw,20,좌우 HUD 면이 화면 가운데 쪽으로 멀어지는 각도(°). 화면 바깥 모서리가 축이다
 Planes.pitch,0,두 면의 위쪽이 뒤로 젖혀지는 각도(°)
+Board.show,1,좌우 HUD가 서 있는 유리판(그리드 배경)을 쓸 수 있는지(1/0). 실제로 보일지는 설정의 HUD 그리드 배경이 정한다(기본 끔)
+Board.width,560,판의 너비(px. 바깥 모서리부터)
+Board.margin,30,화면 가장자리와 위아래에서 판까지의 여백(px)
+Board.behind,14,판이 그 위 HUD보다 뒤에 있는 거리(px). HUD가 판 앞에 살짝 떠 있다
+Board.fillOuter,0.32,판 바깥 모서리 쪽 유리의 어둡기(0~1)
+Board.fillInner,0.05,판 안쪽 모서리 쪽 유리의 어둡기(0~1). 화면 가운데를 가리지 않게 옅게
+Board.gridStep,64,판 격자 간격(px)
+Board.gridAlpha,0.07,판 격자 불투명도(0~1)
+Board.lineAlpha,0.62,판 바깥 모서리 테두리 불투명도(0~1)
+Board.innerLineAlpha,0.34,판 안쪽 모서리 테두리 불투명도(0~1)
+Board.tickStep,32,판 위아래 테두리를 따라 찍히는 눈금 간격(px). 안쪽으로 갈수록 촘촘해 보여 깊이가 읽힌다
+Board.tickAlpha,0.5,눈금 불투명도(0~1)
+Board.accent,#EF8542,판 바깥 모서리의 탭과 바깥 모서리 꺾쇠 색
 Sway.lag,0.012,시선이 1초에 1° 돌 때 HUD가 뒤처지는 각도(°). 설정의 HUD 흔들림이 곱해진다
 Sway.max,2.5,흔들림으로 HUD가 옆으로 도는 최대 각도(°)
 Sway.pitchMax,1.5,흔들림으로 HUD가 위아래로 도는 최대 각도(°)
@@ -19,16 +32,17 @@ Mission.counterHeight,43,남은 수 칸의 높이(px). 중간 높이. 글자 칸
 Mission.symbolSize,38,느낌표 글자 크기
 Mission.titleSize,19,목표 글자 크기
 Mission.counterSize,24,남은 수의 큰 숫자 크기. 전체 수(/ 17)는 이것의 68%로 흐리게
-Mission.labelSize,11,느낌표 칸 옆 계단에 놓이는 OBJECTIVE 글자 크기. 계단(느낌표 높이 - 글자 칸 높이)보다 크면 숨는다
 Mission.accent,#EF8542,미션 바의 한 가지 강조색: 느낌표 칸, 남은 수 칸 왼쪽 선, OBJECTIVE, 진행 선의 채워진 부분
 Mission.trackShade,0.32,진행 선의 아직 안 채운 부분: 강조색을 이 비율로 어둡게
 Mission.lineHeight,3,세 칸이 올라선 진행 선의 두께(px)
 Mission.lineGap,2,진행 선과 그 위 칸들 사이 틈(px)
 Mission.mostSegments,30,목표 수가 이 이하면 진행 선을 한 칸씩 나눈다. 넘으면 이어진 선
 Mission.punch,0.22,남은 수가 바뀔 때 숫자가 잠깐 커지는 정도(비율)
-Popup.gripOffset,0.05;0.09,총 앞쪽 왼손 손잡이에서 점수 팝업 왼쪽 아래 모서리까지(m. 화면 기준 오른쪽;위)
+Popup.railOffset,0.02;0.08,총 핸드가드 오른쪽 레일(레이저사이트 다는 곳)에서 점수 팝업 왼쪽 아래 모서리까지(m. 화면 기준 오른쪽;위). 위로 띄워야 총에 가리지 않는다
 Popup.lean,14,점수 팝업이 도는 각도(°). +면 오른쪽 끝이 플레이어 쪽으로 온다
 Popup.aimScale,0.82,조준 중 점수 팝업 크기(평소의 비율)
 Popup.aimAlpha,0.82,조준 중 점수 팝업 불투명도(0~1). 1이면 그대로
 Popup.follow,30,점수 팝업이 총을 따라잡는 빠르기(1/초). 클수록 딱 붙는다
 Popup.room,240;150,화면 오른쪽과 위에 남겨 둘 팝업 자리(px). 팝업이 화면 밖으로 나가지 않게
+Popup.edge,40;40,화면 왼쪽과 아래에 남겨 둘 여백(px). 장전으로 총이 화면 밖으로 내려가도 점수 팝업은 이 안에서 기다린다
+Damage.clearRadius,90,조준선 둘레에 데미지 숫자를 띄우지 않는 원의 반지름(px. 화면 가운데부터). 이 안에 뜰 숫자는 원의 가장자리로 밀려난다. 0이면 끈다

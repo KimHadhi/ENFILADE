@@ -184,3 +184,4 @@ Voice/ImpactSoft,1,0.95,1.05,Beatrun Faith.ImpactSoft
 Voice/StrainHard,1,0.95,1,Beatrun Faith.StrainHard
 Voice/StrainMedium,1,0.9,1.05,Beatrun Faith.StrainMedium
 Voice/StrainSoft,1,0.9,1.05,Beatrun Faith.StrainSoft
+Bullets/Ricochet,0.7,1,1,총알이 비스듬히 맞고 튕길 때(도탄). ArcCW 베이스(워크숍 2131057232) ricochet01~05. ArcCW처럼 높낮이 변화 없이 다섯 개 중에서 고른다

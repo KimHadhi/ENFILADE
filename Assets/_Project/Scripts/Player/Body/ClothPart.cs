@@ -24,13 +24,19 @@ public sealed class ClothPart
     public float stiffness = .2f, angleLimit = 60f, friction = .05f, teleportDistance = 2f;
     /// <summary>
     /// How thick the cloth is where it collides, as a share of the part's length. Magica collides only along the lines
-    /// between bones, so a skirt of many layers needs this to meet a hand where it shows. Zero keeps the preset's.
+    /// between bones, so a skirt of many layers needs this to meet a leg where it shows. The arms' press takes it as how
+    /// far the skirt's outside lies from its bones. Zero keeps the preset's.
     /// </summary>
     public float thickness;
     /// <summary>How far a bone can leave its place, as a share of the part's length. Zero leaves it free.</summary>
     public float reach;
     /// <summary>How far in from its place a bone can go, as a share of the part's length. Below zero leaves it free.</summary>
     public float backstop = -1f;
+    /// <summary>
+    /// How far in the arms can press a ring the shapes let them touch, as a share of its length (SkirtPress). Below zero
+    /// only the legs stop them; zero, they pass through it.
+    /// </summary>
+    public float press = -1f;
 
     /// <summary>The bones the part hangs from, in the table's order: a ring runs through them in turn.</summary>
     internal List<Transform> FindRoots(Dictionary<string, Transform> bones, string model)
