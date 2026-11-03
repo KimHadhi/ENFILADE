@@ -34,10 +34,16 @@ public class CrosshairProfile : ScriptableObject
     [Header("색상")]
     public Color color = Color.white;     // 무지개가 꺼져 있을 때 사용할 기본 색상
 
+    /// <summary>
+    /// 런타임에 값을 바꾼 뒤 호출하면 구독 중인 크로스헤어 뷰가 즉시 다시 그려진다.
+    /// (예: 설정 메뉴의 조준선 슬라이더)
+    /// </summary>
+    public void NotifyChanged() => OnProfileChanged?.Invoke();
+
 #if UNITY_EDITOR
     private void OnValidate()
     {
-        OnProfileChanged?.Invoke();
+        NotifyChanged();
     }
 #endif
 }
