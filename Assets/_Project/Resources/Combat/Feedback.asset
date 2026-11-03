@@ -223,9 +223,9 @@ MonoBehaviour:
   deathBlowSlashColor: {r: 1, g: 0.25, b: 0.18, a: 1}
   deathBlowGlowColor: {r: 1, g: 0.08, b: 0.05, a: 0.9}
   killIconColor: {r: 1, g: 0.95, b: 0.92, a: 1}
-  damageFontSize: 34
+  damageFontSize: 28
   popDamageRange: {x: 5, y: 120}
-  popStartScale: {x: 1.6, y: 3}
+  popStartScale: {x: 1.15, y: 1.45}
   popShrinkSeconds: 0.12
   popupLifetime: 0.8
   deathBlowLifetime: 1.25
@@ -242,7 +242,6 @@ MonoBehaviour:
   deathBlowShake: 7
   deathBlowShakeSeconds: 0.25
   punchIconPopSeconds: 0.12
-  popupJitter: {x: 90, y: 48}
   popupRise: 22
   popupFullSizeDistance: 6
   popupMinimumDistanceScale: 0.65

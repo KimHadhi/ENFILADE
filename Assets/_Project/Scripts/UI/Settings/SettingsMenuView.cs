@@ -11,6 +11,8 @@ public sealed class SettingsMenuView
     private const int CrosshairTab = 3;
     private static readonly string[] OffOn = { "끔", "켬" };
     private static readonly string[] HoldToggle = { "누르는 동안", "눌러서 전환" };
+    // In DamageNumberMode's order.
+    private static readonly string[] DamageNumberNames = { "끔", "합산", "낱개" };
     private static readonly string[] FrameLimitNames =
         GameSettings.FrameLimits.Select(limit => limit > 0 ? limit.ToString() : "무제한").ToArray();
     private static int tab; // reopening shows the last tab
@@ -107,6 +109,7 @@ public sealed class SettingsMenuView
         rows.Volume("화면 흔들림", s.screenShake, v => s.screenShake = v);
         rows.Volume("HUD 흔들림", s.hudSway, v => s.hudSway = v);
         rows.Choice("HUD 그리드 배경", OffOn, s.hudBoards ? 1 : 0, i => s.hudBoards = i == 1);
+        rows.Choice("데미지 숫자", DamageNumberNames, (int)s.damageNumbers, i => s.damageNumbers = (DamageNumberMode)i);
         rows.Choice("내 머리카락 보기", OffOn, s.showOwnHead ? 1 : 0, i => s.showOwnHead = i == 1);
         var bodyProfile = PlayerBodyProfile.Load();
         var skins = bodyProfile?.Skins.Where(skin => skin != null && skin.Model != null).ToArray();

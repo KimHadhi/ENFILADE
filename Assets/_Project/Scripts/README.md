@@ -56,6 +56,7 @@
 | 완벽 방어·흐트러짐·처형의 표시·사운드 | [Feedback.asset](../Resources/Combat/Feedback.asset) |
 | 시점 입력 / 이동 카메라 효과 / 시점 펀치 / 큰 낙하 화면 | [PlayerLook](Player/Camera/PlayerLook.cs), [PlayerCameraEffects](Player/Camera/PlayerCameraEffects.cs), [PlayerMovementPunch](Player/Camera/PlayerMovementPunch.cs), [PlayerFallScreen](Player/Camera/PlayerFallScreen.cs) |
 | 탄약·무기 슬롯·적 체력 UI | [AmmoHUD](UI/AmmoHUD.cs), [WeaponSlotsHUD](UI/WeaponSlotsHUD.cs), [EnemyVitalsHUD](UI/EnemyVitalsHUD.cs) |
+| 데미지 숫자 (적 몸 옆에 서는 합산·낱개 숫자, 설정 → 화면 → 데미지 숫자) | [DamagePopupManager](UI/DamagePopupManager.cs) (받기·묶기·쌓기), [DamageNumber](UI/DamageNumber.cs) (숫자 하나의 모양과 움직임), [DamageNumberAnchor](UI/DamageNumberAnchor.cs) (몸 옆 자리와 방향), [DamageNumberLayout](UI/DamageNumberLayout.cs) ([Hud.csv](../Resources/Tables/Hud.csv) Damage), [Feedback.asset](../Resources/Combat/Feedback.asset)의 Damage popups (색·글꼴·움직임) |
 | 체력·궁극기 UI / 목표·웨이브 UI | [UI/HP](UI/HP/), [MissionHUD](UI/MissionHUD.cs) (내용·알림), [MissionBarLook](UI/MissionBarLook.cs) (미션 바 모양, Hud.csv Mission), [MissionLineGraphic](UI/MissionLineGraphic.cs) (진행 선), [WaveMissionSource](UI/WaveMissionSource.cs) |
 | 3D HUD (UI 카메라, 좌우로 기운 면, 요소별 기울기, 시선 흔들림) | [HudCamera](UI/Hud/HudCamera.cs), [HudPlane](UI/Hud/HudPlane.cs), [HudTilt](UI/Hud/HudTilt.cs), [HudRig](UI/Hud/HudRig.cs) (GameHUD에 붙음), [HudBoard](UI/Hud/HudBoard.cs) (좌우 면이 서 있는 유리판, Hud.csv Board), [HudInstaller](../Editor/Utilities/HudInstaller.cs) (Tools → HUD), [Hud.csv](../Resources/Tables/Hud.csv), [HudTilt.csv](../Resources/Tables/HudTilt.csv) |
 | 채팅·테스트 명령 | [UI/Chatting](UI/Chatting/) |

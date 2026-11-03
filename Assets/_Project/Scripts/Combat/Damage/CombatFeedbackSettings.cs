@@ -152,15 +152,18 @@ public sealed class CombatFeedbackSettings : ScriptableObject
     public Color deathBlowGlowColor = new Color(1f, .08f, .05f, .9f);
     public Color killIconColor = new Color(1f, .95f, .92f);
     [Min(8f), Tooltip("Settled number size, 1920x1080 canvas units.")]
-    public float damageFontSize = 34f;
-    [Tooltip("Damage mapped to the smallest / largest opening pop.")]
+    public float damageFontSize = 28f;
+    [Tooltip("Damage mapped to the smallest / largest pop.")]
     public Vector2 popDamageRange = new Vector2(5f, 120f);
-    [Tooltip("Opening scale for small / large damage. The number shrinks from this to 1.")]
-    public Vector2 popStartScale = new Vector2(1.6f, 3f);
+    [Tooltip("Pop on each hit for small / large damage. The number grows away from its target to this and eases back to 1.")]
+    public Vector2 popStartScale = new Vector2(1.15f, 1.45f);
     [Min(.01f)] public float popShrinkSeconds = .12f;
-    [Min(.1f)] public float popupLifetime = .8f;
-    [Min(.1f)] public float deathBlowLifetime = 1.25f;
-    [Min(.01f)] public float popupFadeSeconds = .25f;
+    [Min(.1f), Tooltip("Seconds a number stays after its last hit before it leaves (rises and fades).")]
+    public float popupLifetime = .8f;
+    [Min(.1f), Tooltip("The same for a number that took the finishing blow.")]
+    public float deathBlowLifetime = 1.25f;
+    [Min(.01f), Tooltip("Seconds a leaving number takes to rise and fade.")]
+    public float popupFadeSeconds = .25f;
     [Header("Punch (critical, counter and finishing blow)")]
     [Min(0f), Tooltip("The number freezes at its largest size for this long before shrinking (a tiny hit-stop).")]
     public float punchHoldSeconds = .035f;
@@ -185,9 +188,7 @@ public sealed class CombatFeedbackSettings : ScriptableObject
     [Min(.01f), Tooltip("Icons pop in (scale + small twist) a beat after the number.")]
     public float punchIconPopSeconds = .12f;
 
-    [Tooltip("Random offset around the hit point: x = ± horizontal (biased outward, away from the centre), y = vertical reach (from -half to +full), canvas units. Finishing blows use half.")]
-    public Vector2 popupJitter = new Vector2(90f, 48f);
-    [Tooltip("Upward drift over the lifetime, canvas units. The popup still follows its target.")]
+    [Tooltip("How far a leaving number rises, canvas units. Where numbers stand is Hud.csv's Damage row.")]
     public float popupRise = 22f;
     [Min(.1f), Tooltip("Numbers keep full size up to this distance and shrink beyond it.")]
     public float popupFullSizeDistance = 6f;

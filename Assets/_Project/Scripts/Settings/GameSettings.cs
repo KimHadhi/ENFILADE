@@ -2,6 +2,9 @@ using System;
 using System.IO;
 using UnityEngine;
 
+/// <summary>How damage numbers show: none, one running total per target, or one number per hit.</summary>
+public enum DamageNumberMode { Off, Stacked, Each }
+
 /// <summary>
 /// Player preferences: volume, controls, screen, frame rate and crosshairs. Saved per user in settings.json under
 /// Application.persistentDataPath and changed in the Esc menu. Balance numbers stay in Resources/Tables.
@@ -21,6 +24,8 @@ public sealed class GameSettings
     public float hudSway = .5f;
     [Tooltip("Show the glass boards with their grid that the HUD's two sides stand on (HudBoard). Off by default.")]
     public bool hudBoards;
+    [Tooltip("Damage numbers: none, one running total per target (default), or one number per hit (DamagePopupManager).")]
+    public DamageNumberMode damageNumbers = DamageNumberMode.Stacked;
     [Tooltip("Horizontal field of view in degrees, measured at 16:9. Wider screens see more at the sides.")]
     public float fieldOfView = 90f;
     [Tooltip("Show the player's own hair and head in first person, cut only where the camera sits inside them.")]
@@ -109,6 +114,7 @@ public sealed class GameSettings
         mouseSensitivity = Mathf.Clamp(mouseSensitivity, MinSensitivity, MaxSensitivity);
         screenShake = Mathf.Clamp01(screenShake);
         hudSway = Mathf.Clamp01(hudSway);
+        if (damageNumbers < DamageNumberMode.Off || damageNumbers > DamageNumberMode.Each) damageNumbers = DamageNumberMode.Stacked;
         fieldOfView = Mathf.Clamp(fieldOfView, MinFieldOfView, MaxFieldOfView);
         frameLimit = Mathf.Max(0, frameLimit);
         (gunCrosshair ??= CrosshairSettings.Default(CrosshairKind.Gun)).Clamp();
