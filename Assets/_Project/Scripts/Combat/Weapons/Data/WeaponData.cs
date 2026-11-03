@@ -62,13 +62,15 @@ public sealed class WeaponData : ScriptableObject
     [SerializeField, Range(0f, .3f)] private float aimFollowHalfLife = .055f;
     [Tooltip("Faster sight convergence while aiming. Zero restores instant ADS tracking.")]
     [SerializeField, Range(0f, .3f)] private float adsAimFollowHalfLife = .025f;
-    [Header("High-ready pose (camera space)")]
-    [SerializeField] private Vector3 highReadyOffset = new Vector3(-.12f, -.32f, .32f);
-    [SerializeField, Range(30f, 85f)] private float highReadyPitch = 65f;
+    [Header("High-ready pose (level view space; Weapons.csv)")]
+    [Tooltip("Where the gun goes against a wall, added to the hip pose: right, up, forward (m). Kept close to the chest so the body's arms hold it naturally.")]
+    [SerializeField] private Vector3 highReadyOffset = new Vector3(-.1f, -.26f, .12f);
+    [Tooltip("How far the muzzle tips up against a wall (degrees). 45: the stock low at the chest, the muzzle up at a slant.")]
+    [SerializeField, Range(30f, 85f)] private float highReadyPitch = 45f;
     [Tooltip("Seconds to halve the visual distance to high ready. Cover and ADS blocking remain immediate.")]
-    [SerializeField, Range(.01f, .2f)] private float highReadyRaiseHalfLife = .045f;
+    [SerializeField, Range(.01f, .2f)] private float highReadyRaiseHalfLife = .07f;
     [Tooltip("Seconds to halve the visual distance back to the firing pose.")]
-    [SerializeField, Range(.01f, .2f)] private float highReadyLowerHalfLife = .055f;
+    [SerializeField, Range(.01f, .2f)] private float highReadyLowerHalfLife = .09f;
     [Header("Body hands (weapon-root space, m)")]
     [Tooltip("Moves the hip pose (camera space) so the body's arms reach the grips.")]
     [SerializeField] private Vector3 holdOffset = new Vector3(-.08f, .03f, -.36f);

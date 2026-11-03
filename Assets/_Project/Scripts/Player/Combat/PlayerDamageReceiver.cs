@@ -30,6 +30,8 @@ public sealed class PlayerDamageReceiver : MonoBehaviour, IDamageReceiver, ITabl
         seen.Clear(); recent.Clear();
         if (Application.isPlaying && player.IsLocal && GetComponent<PlayerDamageFeedback>() == null)
             gameObject.AddComponent<PlayerDamageFeedback>();
+        if (Application.isPlaying && player.IsLocal && GetComponent<LowHealthGrade>() == null)
+            gameObject.AddComponent<LowHealthGrade>();
     }
 
     // Call only after a melee/projectile/hitscan attack actually intersects the player.
@@ -50,6 +52,12 @@ public sealed class PlayerDamageReceiver : MonoBehaviour, IDamageReceiver, ITabl
         {
             HitResolved?.Invoke(hit, DamageResult.Evaded);
             return DamageResult.Evaded;
+        }
+        // After the dodge, so a perfect evade still counts while countering.
+        if (movement != null && movement.PerfectDefense != null && movement.PerfectDefense.Shields)
+        {
+            HitResolved?.Invoke(hit, DamageResult.Invulnerable);
+            return DamageResult.Invulnerable;
         }
         var melee = movement != null ? movement.MeleeCombat : null;
         if (melee != null && melee.TryDefend(hit, out DamageResult defense))

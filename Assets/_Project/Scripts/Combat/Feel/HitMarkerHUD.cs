@@ -5,30 +5,44 @@ public enum HitMarkerKind { Body, Head, BodyKill, HeadKill, Blocked }
 
 /// <summary>
 /// Crosshair hit confirmation. Four diagonal ticks around the centre:
-/// body hit = white; headshot = gold, same size; any kill (body or head) = red with a shock ring;
-/// no effect (guard/parry/invulnerable) = thin grey.
+/// body hit = white; headshot = gold, each tick drawn as two parallel lines; any kill (body or head) = red with a shock
+/// ring; no effect (guard/parry/invulnerable) = thin grey. Body and head markers grow with the share of health the hit took.
 /// Back 4 Blood timing, in frames at GunFeel's marker frame rate: the marker holds wide (7), the ticks slide in to the
-/// shrunk gap (9), show faded for one frame and vanish; every new hit restarts it wide. It is drawn at the steady aim
-/// point projected through the kicked camera, so it jumps with the view punch and settles back with it (runs after CameraViewPunch). Created on first use during Play; colours and sizes in GunFeel.
+/// shrunk gap (9), show faded for one frame and vanish; every new hit restarts it wide, a little bigger at first and
+/// popping back, so each hit of a burst reads on its own. A posture break adds its own burst on top: an orange ring and
+/// four shards flying out (<see cref="ShowBreak"/>). All of it is drawn at the steady aim point projected through the
+/// kicked camera, so it jumps with the view punch and settles back with it (runs after CameraViewPunch). Created on first
+/// use during Play; colours and sizes in GunFeel. The sounds that go with it: <see cref="HitConfirm"/>.
 /// </summary>
 [DisallowMultipleComponent, DefaultExecutionOrder(10010)]
 public sealed class HitMarkerHUD : MonoBehaviour
 {
     private static HitMarkerHUD instance;
-    private readonly Image[] ticks = new Image[4];
-    private RectTransform root;
-    private RawImage ring;
+    private readonly Image[] ticks = new Image[4], twins = new Image[4], shards = new Image[4];
+    private RectTransform root, breakRoot;
+    private RawImage ring, breakRing;
     private HitMarkerKind kind;
-    private float age = 99f, lifetime = .2f;
+    private float age = 99f, lifetime = .2f, scale = 1f, breakAge = 99f;
 
     public HitMarkerKind LastKind => kind;
     private bool IsShowing => age < lifetime;
 
-    public static void Show(HitMarkerKind kind)
+    /// <summary>share: the part of the target's health the hit took, which sizes body and head markers.</summary>
+    public static void Show(HitMarkerKind kind, float share = 1f)
     {
         if (!Application.isPlaying || !GunFeelSettings.Instance.hitMarkers) return;
         Prepare();
-        instance.Trigger(kind);
+        instance.Trigger(kind, share);
+    }
+
+    /// <summary>The player's hit broke the target's posture.</summary>
+    public static void ShowBreak()
+    {
+        if (!Application.isPlaying || !GunFeelSettings.Instance.hitMarkers) return;
+        Prepare();
+        instance.breakAge = 0f;
+        instance.breakRoot.gameObject.SetActive(true);
+        instance.LayoutBreak(GunFeelSettings.Instance);
     }
 
     public static void Prepare()
@@ -48,13 +62,23 @@ public sealed class HitMarkerHUD : MonoBehaviour
         root = FeelUI.Rect("Marker", transform);
         ring = FeelUI.Rect("Ring", root).gameObject.AddComponent<RawImage>();
         ring.texture = FeelAssets.Ring; ring.raycastTarget = false;
-        for (int i = 0; i < 4; i++) ticks[i] = Tick("Tick " + i);
+        for (int i = 0; i < 4; i++)
+        {
+            ticks[i] = Tick("Tick " + i, root);
+            twins[i] = Tick("Twin " + i, root);
+        }
         root.gameObject.SetActive(false);
+
+        breakRoot = FeelUI.Rect("Break", transform);
+        breakRing = FeelUI.Rect("Ring", breakRoot).gameObject.AddComponent<RawImage>();
+        breakRing.texture = FeelAssets.Ring; breakRing.raycastTarget = false;
+        for (int i = 0; i < 4; i++) shards[i] = Tick("Shard " + i, breakRoot);
+        breakRoot.gameObject.SetActive(false);
     }
 
-    private Image Tick(string name)
+    private static Image Tick(string name, Transform parent)
     {
-        var image = FeelUI.Rect(name, root).gameObject.AddComponent<Image>();
+        var image = FeelUI.Rect(name, parent).gameObject.AddComponent<Image>();
         image.raycastTarget = false;
         // A soft dark edge keeps white markers readable on bright walls and skies.
         var outline = image.gameObject.AddComponent<Outline>();
@@ -64,12 +88,14 @@ public sealed class HitMarkerHUD : MonoBehaviour
 
     private void OnDestroy() { if (instance == this) instance = null; }
 
-    private void Trigger(HitMarkerKind next)
+    private void Trigger(HitMarkerKind next, float share)
     {
         // A fresh kill marker is not overwritten by the next body hit of the same burst.
         if (IsShowing && IsKill(kind) && !IsKill(next) && age < .18f) return;
         kind = next; age = 0f;
         var settings = GunFeelSettings.Instance;
+        scale = IsKill(next) || next == HitMarkerKind.Blocked ? 1f
+            : Mathf.Lerp(settings.markerSmallScale, settings.markerLargeScale, Mathf.Clamp01(share / settings.markerFullDamage));
         int frames = Mathf.Max(1, settings.markerHoldFrames + settings.markerShrinkFrames + settings.markerFadeFrames);
         lifetime = frames / settings.markerFrameRate;
         root.gameObject.SetActive(true);
@@ -78,49 +104,63 @@ public sealed class HitMarkerHUD : MonoBehaviour
 
     private void LateUpdate()
     {
-        if (!root.gameObject.activeSelf) return;
-        age += Time.unscaledDeltaTime;
-        if (age >= lifetime) { root.gameObject.SetActive(false); return; }
-        Layout(GunFeelSettings.Instance);
+        var settings = GunFeelSettings.Instance;
+        if (root.gameObject.activeSelf)
+        {
+            age += Time.unscaledDeltaTime;
+            if (age >= lifetime) root.gameObject.SetActive(false);
+            else Layout(settings);
+        }
+        if (breakRoot.gameObject.activeSelf)
+        {
+            breakAge += Time.unscaledDeltaTime;
+            if (breakAge >= settings.breakSeconds) breakRoot.gameObject.SetActive(false);
+            else LayoutBreak(settings);
+        }
     }
 
     /// <summary>Screen position of the steady aim as seen through the punched camera; centre when there is no punch.</summary>
-    private void Follow()
+    private Vector2 AimPoint()
     {
         var view = Camera.main;
         var punch = view != null ? view.GetComponent<CameraViewPunch>() : null;
-        Vector2 position = Vector2.zero;
         if (punch != null && punch.isActiveAndEnabled)
         {
             Vector3 screen = view.WorldToScreenPoint(view.transform.position + punch.SteadyForward * 20f);
             if (screen.z > 0f && RectTransformUtility.ScreenPointToLocalPointInRectangle((RectTransform)transform, screen, null, out Vector2 local))
-                position = local;
+                return local;
         }
-        root.anchoredPosition = position;
+        return Vector2.zero;
     }
 
     private void Layout(GunFeelSettings settings)
     {
         bool kill = IsKill(kind), head = kind == HitMarkerKind.Head || kind == HitMarkerKind.HeadKill, blocked = kind == HitMarkerKind.Blocked;
-        Follow();
+        root.anchoredPosition = AimPoint();
         // Hold wide, slide the ticks in, one faded frame at the shrunk size, gone.
         float frame = age * settings.markerFrameRate;
         int hold = settings.markerHoldFrames, shrinkFrames = settings.markerShrinkFrames;
         float shrink = shrinkFrames > 0 ? Mathf.Clamp01((frame - hold) / shrinkFrames) : frame >= hold ? 1f : 0f;
         float alpha = frame >= hold + shrinkFrames ? settings.markerFadeAlpha : 1f;
-        // Body and head hits share one size and differ only in colour.
-        float length = settings.markerLength * (kill ? 1.45f : blocked ? .8f : 1f);
-        float thickness = settings.markerThickness * (kill ? 1.5f : blocked ? .75f : 1f);
-        float gap = Mathf.Lerp(settings.markerGap, settings.markerShrunkGap, Smooth(shrink));
+        // A little bigger at first, popping back, so every hit of a burst reads as its own.
+        float pop = 1f + settings.markerPop * (1f - Smooth(Mathf.Clamp01(age / settings.markerPopSeconds)));
+        // Body and head hits share one shape and differ in colour, the headshot's twin lines and the damage size.
+        float length = settings.markerLength * (kill ? 1.45f : blocked ? .8f : 1f) * scale * pop;
+        float thickness = settings.markerThickness * (kill ? 1.5f : blocked ? .75f : head ? .75f : 1f);
+        float gap = Mathf.Lerp(settings.markerGap, settings.markerShrunkGap, Smooth(shrink)) * pop;
         Color color = kill ? settings.killColor : head ? settings.headHitColor : blocked ? settings.blockedColor : settings.bodyHitColor;
         if (!blocked) color = Color.Lerp(Color.white, color, Mathf.Clamp01(age / .05f)); // white-hot first frame
         color.a *= alpha;
 
+        float spacing = head ? settings.headTwinSpacing * .5f : 0f;
         for (int i = 0; i < 4; i++)
         {
             float angle = 45f + 90f * i;
             Vector2 direction = new Vector2(Mathf.Cos(angle * Mathf.Deg2Rad), Mathf.Sin(angle * Mathf.Deg2Rad));
-            Place(ticks[i], direction * (gap + length * .5f), new Vector2(length, thickness), angle, color);
+            Vector2 centre = direction * (gap + length * .5f), side = new Vector2(-direction.y, direction.x) * spacing;
+            Place(ticks[i], centre - side, new Vector2(length, thickness), angle, color);
+            twins[i].enabled = head;
+            if (head) Place(twins[i], centre + side, new Vector2(length, thickness), angle, color);
         }
 
         ring.enabled = kill;
@@ -132,6 +172,32 @@ public sealed class HitMarkerHUD : MonoBehaviour
             Color ringColor = settings.killColor;
             ringColor.a = .85f * (1f - wave);
             ring.color = ringColor;
+        }
+    }
+
+    // The posture break: an orange ring bursting out and four shards on the axes flying off, white-hot for a moment.
+    private void LayoutBreak(GunFeelSettings settings)
+    {
+        breakRoot.anchoredPosition = AimPoint();
+        float t = Mathf.Clamp01(breakAge / settings.breakSeconds);
+        float burst = 1f - (1f - t) * (1f - t) * (1f - t), fade = 1f - t;
+        Color color = Color.Lerp(Color.white, settings.breakColor, Mathf.Clamp01(breakAge / .05f));
+        float reach = settings.markerGap + settings.markerLength;
+        float ringSize = Mathf.Lerp(settings.markerShrunkGap * 2f, reach * 2.6f, burst);
+        breakRing.rectTransform.sizeDelta = new Vector2(ringSize, ringSize);
+        Color ringColor = color;
+        ringColor.a = .9f * fade * fade;
+        breakRing.color = ringColor;
+
+        float distance = Mathf.Lerp(settings.markerGap * .8f, reach * 1.15f, burst);
+        float length = settings.markerLength * .7f * (1f - .4f * t), thickness = settings.markerThickness * 1.2f;
+        Color shardColor = color;
+        shardColor.a = fade;
+        for (int i = 0; i < 4; i++)
+        {
+            float angle = 90f * i;
+            Vector2 direction = new Vector2(Mathf.Cos(angle * Mathf.Deg2Rad), Mathf.Sin(angle * Mathf.Deg2Rad));
+            Place(shards[i], direction * (distance + length * .5f), new Vector2(length, thickness), angle, shardColor);
         }
     }
 

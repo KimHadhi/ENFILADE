@@ -42,7 +42,7 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
     private Transform aim;
     private MeleeCombatTarget target;
     private Collider targetCollider;
-    private float chargeTime, shoveTime, cooldown, grabTime, grabRecoveryRemaining, lungeRemaining, punchCharge;
+    private float chargeTime, shoveTime, cooldown, shoveRest, grabTime, grabRecoveryRemaining, lungeRemaining, punchCharge;
     private float parryRemaining, guardBufferRemaining, guardIdleTime;
     private int spamCount;
     private bool charging, shovePending, grabConnected, guardAttemptHeld, defenseConnected, pendingWhiff, punchLanded;
@@ -68,7 +68,8 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
         player = GetComponentInParent<PlayerMovement>();
         slots = GetComponent<PlayerWeaponSlots>(); input = GetComponent<PlayerWeaponInput>();
         var camera = player != null ? player.GetComponentInChildren<Camera>() : null;
-        aim = camera != null ? camera.transform : transform;
+        // Punches start from the eyes, which stay with the body in the F5 view.
+        aim = camera != null ? PlayerView.EyesOf(player) : transform;
         if (player != null) player.MeleeCombat = this;
         if (Application.isPlaying && camera != null && GetComponent<FistsView>() == null) gameObject.AddComponent<FistsView>();
         fistAudio = GetComponent<PlayerFistAudio>();
@@ -106,6 +107,7 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
         if (dt <= 0f) return;
         if (!IsActive || player.Execution?.IsExecuting == true) { CancelAction(); return; }
         cooldown = Mathf.Max(0f, cooldown - dt);
+        shoveRest = Mathf.Max(0f, shoveRest - dt);
         TickGuardInput(dt, frame);
         if (IsGuardBreaking)
         {
@@ -142,7 +144,15 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
                 TryStartGuardBreak(); // Holding never also emits the tap shove on release.
             }
             else if (frame.ShoveReleased)
-            { shovePending = false; Shove(); cooldown = 0.55f; }
+            {
+                // Fatigue only slows the next shove; punches keep their own cooldown.
+                shovePending = false;
+                if (shoveRest <= 0f)
+                {
+                    Shove(); cooldown = 0.55f;
+                    shoveRest = player.Abilities.Combat.Fatigue.Spend(cooldown, player.AbilitySettings);
+                }
+            }
             else if (!frame.ShoveHeld) shovePending = false;
             return;
         }

@@ -12,6 +12,8 @@ public sealed class CombatFeedbackSettings : ScriptableObject
     public float staggerImageWidth = 260f;
     public TMP_FontAsset promptFont;
     [Header("Crosshair")]
+    [Tooltip("Guns without a Crosshair Profile of their own. Its line sprite is the '기본 그림' line shape in the settings.")]
+    public CrosshairProfile gunCrosshair;
     [Tooltip("Fists and melee weapons without a Crosshair Profile of their own.")]
     public CrosshairProfile meleeCrosshair;
     [Header("Executable heartbeat")]

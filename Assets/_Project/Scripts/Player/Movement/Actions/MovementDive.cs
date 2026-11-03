@@ -30,6 +30,9 @@ public sealed class MovementDive
     internal bool TryLaunch(Vector2 input, bool fromGround)
     {
         if (ctx.IsDiving || RecoveryRemaining > 0f || (!fromGround && usedInAir)) return false;
+        // As in Beatrun, where a dive needs the crouch jump and that needs a fall slower than 350 units/s: no diving
+        // out of a fast fall, nor out of a big fall's flailing.
+        if (!fromGround && (ctx.IsBigFall || -ctx.VerticalVelocity > ctx.airDiveMaxFallSpeed)) return false;
         Vector3 direction = ctx.transform.right * input.x + ctx.transform.forward * input.y;
         direction = Vector3.ProjectOnPlane(direction.sqrMagnitude > 0.01f ? direction : ctx.transform.forward, Vector3.up).normalized;
         bool backward = Vector3.Dot(direction, ctx.transform.forward) < -0.2f;

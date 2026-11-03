@@ -1,6 +1,6 @@
 // Unlit texture * vertex colour * _Color for procedural shot and hit effects (muzzle flash, smoke, blood, brass).
 // FeelAssets sets _SrcBlend/_DstBlend: SrcAlpha/One for light, SrcAlpha/OneMinusSrcAlpha for matter.
-Shader "Hidden/Morphang/FeelParticle"
+Shader "Hidden/ENFILADE/FeelParticle"
 {
     Properties
     {

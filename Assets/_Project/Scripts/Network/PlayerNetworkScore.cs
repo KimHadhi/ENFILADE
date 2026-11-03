@@ -73,7 +73,11 @@ public sealed class PlayerNetworkScore : NetworkBehaviour
 
     [Rpc(SendTo.Everyone)]
     private void KillRpc(FixedString64Bytes weapon, FixedString64Bytes target, bool headshot, int streak)
-        => CombatFeedHUD.PlayerKill(GetComponent<PlayerMovement>(), weapon.ToString(), target.ToString(), headshot, streak);
+    {
+        CombatFeedHUD.PlayerKill(GetComponent<PlayerMovement>(), weapon.ToString(), target.ToString(), headshot, streak);
+        // Every PC hears of this kill, so the first skull of a streak slows the whole room (item 18).
+        if (streak == CombatFeedHUD.SkullStreak) SkullSlowMotion.Begin();
+    }
 
     [Rpc(SendTo.Server)]
     private void StreakRpc(int streak) => tally.SetStreak(streak);

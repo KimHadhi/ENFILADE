@@ -27,6 +27,13 @@ public static class FeelUI
         scaler.referenceResolution = new Vector2(1920f, 1080f); scaler.matchWidthOrHeight = .5f;
     }
 
+    /// <summary>Like SetupOverlay, but drawn through HudCamera so a HudPlane in it turns in depth.</summary>
+    public static void SetupHud(GameObject host, int order)
+    {
+        SetupOverlay(host, order);
+        HudCamera.Adopt(host.GetComponent<Canvas>());
+    }
+
     /// <summary>Bold outlined label in the project's Korean prompt font.</summary>
     public static TextMeshProUGUI Label(string name, Transform parent, float size, TextAlignmentOptions alignment)
     {
@@ -42,9 +49,15 @@ public static class FeelUI
     {
         var font = GunFeelSettings.Instance.scoreFont;
         var text = Create(name, parent, size, alignment, font != null ? font : CombatUIAssets.ResolveFont(null));
+        ShadowScore(text);
+        return text;
+    }
+
+    /// <summary>ScoreLabel's soft drop shadow, for a label that already exists (one a prefab kept).</summary>
+    public static void ShadowScore(TMP_Text text)
+    {
         var material = Shadowed(text.font);
         if (material != null) text.fontSharedMaterial = material;
-        return text;
     }
 
     private static TextMeshProUGUI Create(string name, Transform parent, float size, TextAlignmentOptions alignment, TMP_FontAsset font)

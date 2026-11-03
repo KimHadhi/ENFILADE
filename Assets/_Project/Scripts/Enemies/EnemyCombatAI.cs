@@ -8,6 +8,8 @@ public sealed class EnemyCombatAI : MonoBehaviour
 {
     [Header("Attack Settings")]
     [SerializeField, Min(1f)] private float attackRange = 2f;
+    [Tooltip("Where the chase stops, as a share of attackRange, so a stopped enemy is always close enough to swing.")]
+    [SerializeField, Range(.3f, 1f)] private float approachShare = .8f;
     [SerializeField, Min(0.2f)] private float attackInterval = 1f;
     [Tooltip("Seconds from the attack cue to the hit. Keep the hit just past the cue's loudest part: that is when players press.")]
     [SerializeField, Min(0.05f)] private float windup = .45f;
@@ -37,6 +39,7 @@ public sealed class EnemyCombatAI : MonoBehaviour
     private int comboIndex;
 
     public bool IsPreparingAttack => preparing;
+    public float ApproachDistance => attackRange * approachShare;
 
     private void Awake()
     {
@@ -68,8 +71,10 @@ public sealed class EnemyCombatAI : MonoBehaviour
             return;
         }
 
+        // Feet to feet: the agent floats baseOffset above the mesh, and counting that height kept an enemy stopped at
+        // attackRange from ever being in range.
         float distance = Vector3.Distance(
-            transform.position,
+            transform.position - Vector3.up * agent.baseOffset,
             player.transform.position
         );
 

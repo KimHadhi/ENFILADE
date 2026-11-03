@@ -10,7 +10,8 @@ using MovementState = PlayerMovement.MovementState;
 /// - Each foot measures its own last contact. A fresh upward excursion above the supporting foot arms it; returning
 ///   near that contact or passing the bottom of a full swing lands it. This survives different clip heights and
 ///   skipped minima at low fps.
-/// - Standing still remeasures both contacts. Each foot steps at most once per minStepInterval.
+/// - Standing still remeasures both contacts. Each foot steps at most once per minStepInterval, and the two together at
+///   most once per minStepGap, so quick W taps that only twitch the legs can't patter.
 /// - Plays the Step cues of Tables/SoundCues on the ground's surface: StepSneak crouched, StepWalk, StepRun when
 ///   faster; a foot lifting off at speed scuffs (StepRelease). Landings themselves sound from PlayerMovementAudio, so
 ///   the feet start out planted when they touch down.
@@ -27,6 +28,9 @@ public sealed class PlayerFootsteps : MonoBehaviour
     private float settleHeight = .08f;
     [SerializeField, Min(0f), Tooltip("Shortest time between two steps of one foot (s).")]
     private float minStepInterval = .1f;
+    [SerializeField, Min(0f), Tooltip("Shortest time between two steps of either foot (s); a foot coming down sooner lands "
+        + "without a sound. No gait steps this fast; quick W taps would.")]
+    private float minStepGap = .2f;
     [SerializeField, Min(0f), Tooltip("Steps below this ground speed are walking steps, faster ones running steps (m/s). Crouched steps sneak.")]
     private float runSpeed = 3f;
     [SerializeField, Min(0f), Tooltip("A foot lifting off at this ground speed or faster scuffs the ground (m/s).")]
@@ -73,7 +77,7 @@ public sealed class PlayerFootsteps : MonoBehaviour
     private PlayerBody body;
     private CharacterSounds sounds;
     private Foot left, right;
-    private float stillTime;
+    private float stillTime, lastStepAt = float.NegativeInfinity;
     private bool tracking;
 
     private void Awake()
@@ -151,6 +155,8 @@ public sealed class PlayerFootsteps : MonoBehaviour
         foot.Descending = false;
         foot.Low = foot.Trough;
         foot.Cooldown = minStepInterval;
+        if (Time.time - lastStepAt < minStepGap) return;
+        lastStepAt = Time.time;
         Land(reading, isLeft);
     }
 

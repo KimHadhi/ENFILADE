@@ -39,7 +39,8 @@ public sealed class FistsView : MonoBehaviour
         melee.Punched -= Punch; melee.Punched += Punch;
         if (root != null) return;
         root = new GameObject("Fists").transform;
-        root.SetParent(camera.transform, false);
+        // On the eyes, not the camera: the F5 view moves the camera behind the player.
+        root.SetParent(PlayerView.EyesOf(player), false);
         left = new GameObject("Left fist").transform; left.SetParent(root, false);
         right = new GameObject("Right fist").transform; right.SetParent(root, false);
     }

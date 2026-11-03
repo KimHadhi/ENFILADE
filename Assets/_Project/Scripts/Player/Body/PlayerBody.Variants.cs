@@ -21,6 +21,11 @@ public sealed partial class PlayerBody
     [SerializeField, Tooltip("A long fall (Ability.bigFallHeight): arms and legs flail until touchdown, Ctrl or not.")]
     private string fallFlail = "fallinguncontrolled";
     [SerializeField] private string supineSlideEndCrouch = "meslideendcrouch", supineSlideEndProne = "meslideendprone";
+    [SerializeField, Tooltip("Lying on the back as Beatrun's jump turn does: coming down onto it from a dive, and getting up "
+        + "from it standing (with a gun out, its gun version) or under a low ceiling crouched. A slide ends onto it with "
+        + "supineSlideEndProne, legs up first.")]
+    private string supineLand = "jumpturnland", supineGetUp = "jumpturnlandstand", supineGetUpGun = "jumpturnlandstandgun",
+        supineGetUpCrouch = "jumpturnlandcrouch";
     [SerializeField] private string bellySlideEndCrouch = "diveslideendcrouch";
     [SerializeField] private string vaultHigh = "vaultoverhigh", vaultKong = "vaultkong", springboard = "springboardleftleg";
     [SerializeField] private string stepUp = "stepuprightleg", mantleLow = "vaultonto", mantleMid = "vaultontohigh";
@@ -58,7 +63,7 @@ public sealed partial class PlayerBody
     private string[] VariantClips => new[]
     {
         jumpStill, jumpSlow, airTuck, landCrouch, coilLand, coilLandCrouch, heavyLand, heavyLandFaceDown, heavyLandBack, rollLand,
-        fallFlail, supineSlideEndCrouch, supineSlideEndProne,
+        fallFlail, supineSlideEndCrouch, supineSlideEndProne, supineLand, supineGetUp, supineGetUpGun, supineGetUpCrouch,
         bellySlideEndCrouch, vaultHigh, vaultKong, springboard, stepUp, mantleLow, mantleMid, ledgeClimbUp, ledgeCatch, ledgeShimmyLeft, ledgeShimmyRight,
         wallClimbStart, wallKickRight
     };
@@ -80,6 +85,16 @@ public sealed partial class PlayerBody
         if (gun == null) return clipName;
         string armed = clipName + (gun.SoundProfile == GunSoundProfile.Pistol ? pistolSuffix : rifleSuffix);
         return byName.ContainsKey(armed) ? armed : clipName;
+    }
+
+    // A gun is out in the hands (not put away for a move, not fists).
+    private bool HoldsGun
+    {
+        get
+        {
+            if (weapons == null) weapons = player.GetComponent<WeaponController>();
+            return weapons != null && weapons.ShowsWeapon && weapons.EquippedData != null;
+        }
     }
 
     private string JumpFor(float speed) => speed < jumpStillSpeed ? jumpStill : speed < jumpFastSpeed ? jumpSlow : jump;
@@ -215,8 +230,18 @@ public sealed partial class PlayerBody
 
     private string SlideEndFor(MovementState from, MovementState to)
     {
+        // A slide that came down from a dive on the back is lying already: it stays down, or gets up as from lying.
+        if (from == MovementState.SupineSliding && slidesOnBack) from = MovementState.Supine;
+        // Beatrun's jump turn on the ground: down onto the back legs first, and up again with jumpturnlandstand.
+        if (to == MovementState.Supine)
+            return from == MovementState.Sliding || from == MovementState.SupineSliding ? supineSlideEndProne
+                : from == MovementState.SupineDiving ? supineLand : null;
         switch (from)
         {
+            // Beatrun's DoJumpTurnStand: holding a weapon it stands up with jumpturnlandstandgun.
+            case MovementState.Supine:
+                return to == MovementState.Standing ? (HoldsGun ? supineGetUpGun : supineGetUp)
+                    : to == MovementState.Crouching ? supineGetUpCrouch : null;
             case MovementState.Sliding: return to == MovementState.Proning ? null : slideEnd;
             case MovementState.SupineSliding:
                 return to == MovementState.Proning ? supineSlideEndProne : to == MovementState.Crouching ? supineSlideEndCrouch : supineSlideEnd;

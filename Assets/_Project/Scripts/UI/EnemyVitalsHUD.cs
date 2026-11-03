@@ -331,7 +331,9 @@ public sealed class EnemyVitalsHUD : MonoBehaviour
         float depthPerUnit = Mathf.Max(.01f, -Vector3.Dot(toCamera, view.transform.forward));
         float offset = Mathf.Min(forwardOffset, Mathf.Max(0f, (viewport.z - view.nearClipPlane - .05f) / depthPerUnit));
         target.position = anchor + toCamera * offset;
-        target.rotation = view.transform.rotation;
+        // Upright: the view's roll is a Q/E lean, and the bars shouldn't lean with it.
+        Vector3 forward = view.transform.forward;
+        target.rotation = Mathf.Abs(forward.y) < .99f ? Quaternion.LookRotation(forward, Vector3.up) : view.transform.rotation;
         float depth = view.WorldToViewportPoint(target.position).z;
         float worldHeight = view.orthographic ? 2f * view.orthographicSize : 2f * depth * Mathf.Tan(view.fieldOfView * .5f * Mathf.Deg2Rad);
         float uiScale = Mathf.Clamp(view.pixelHeight / 1080f, .75f, 1.5f);

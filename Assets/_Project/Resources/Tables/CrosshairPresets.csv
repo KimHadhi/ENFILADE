@@ -1,0 +1,14 @@
+﻿id,dotSize,roundDot,lineCount,lineLength,lineThickness,gap,angle,spinning,spin
+#설명,가운데 점 크기. 화면에는 2배 픽셀로 그린다. 0이면 점 없음,true면 동그란 점,점 둘레의 선 개수. 0이면 선 없음,선 길이(px),선 두께(px),가운데에서 선 안쪽 끝까지의 간격(px),전체를 돌리는 각도(°). 45면 +가 x가 된다,true면 계속 돈다,초당 회전 각도(°). spinning이 true일 때만 쓴다
+십자+점,1,false,4,8,2,4,0,false,
+십자,0,false,4,7,2,3,0,false,
+작은 십자,0,false,4,4,2,2,0,false,
+붙은 십자,0,false,4,6,2,0,0,false,
+넓은 십자,1,false,4,12,2,10,0,false,
+굵은 십자,0,false,4,8,4,5,0,false,
+점,2,true,0,,,,,false,
+큰 점,3,false,0,,,,,false,
+X자,1,false,4,6,2,4,45,false,
+세 갈래,1,false,3,7,2,4,180,false,
+고리,1,false,8,3,2,9,0,false,
+빙글,1,false,3,6,2,5,0,true,120

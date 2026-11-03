@@ -9,9 +9,11 @@ using W = SettingsWidgets;
 public sealed class ServerBrowserView
 {
     private const float MapWidth = 220f, ReachWidth = 80f, PlayersWidth = 90f, PingWidth = 110f, RowHeight = 40f, DoubleClick = .35f;
+    private const string NoRooms = "찾은 방이 없습니다. 방이 열려 있는지 확인하세요.", Looking = "방을 찾는 중입니다...";
     private static readonly Color Selected = new Color(.95f, .63f, .27f, .28f);
     private readonly RectTransform shade, panel, list;
     private readonly TextMeshProUGUI empty, status, joinLabel;
+    private readonly BusySpinner spinner;
     private IRoomList rooms;
     private string shown = "", chosen;
     private float chosenAt;
@@ -21,7 +23,12 @@ public sealed class ServerBrowserView
     public ServerBrowserView(Transform canvas)
     {
         panel = W.Window(canvas, "Server Browser", 1120f, out shade);
-        W.Size(W.Label(panel, "서버 찾기", 36f, W.Text), height: 54f);
+        var title = W.Label(panel, "서버 찾기", 36f, W.Text);
+        W.Size(title, height: 54f);
+        // At the far end of the title row while a look is out.
+        spinner = new BusySpinner(title.transform, 26f, W.Accent);
+        spinner.Rect.anchorMin = spinner.Rect.anchorMax = new Vector2(1f, .5f);
+        spinner.Rect.anchoredPosition = new Vector2(-24f, 0f);
         AddColumns(W.Rect("Header", panel), "방 제목", "맵", "연결", "인원", "핑", W.Muted);
 
         list = W.Rect("Rooms", panel);
@@ -32,7 +39,7 @@ public sealed class ServerBrowserView
         layout.childForceExpandWidth = true; layout.childForceExpandHeight = false;
         layout.childAlignment = TextAnchor.UpperLeft;
 
-        empty = W.Label(panel, "찾은 방이 없습니다. 방이 열려 있는지 확인하세요.", 19f, W.Muted);
+        empty = W.Label(panel, NoRooms, 19f, W.Muted);
         W.Size(empty, height: 30f);
 
         var settings = GameSettings.Current;
@@ -76,6 +83,10 @@ public sealed class ServerBrowserView
         string now = string.Join("|", rooms.Rooms.Select(Describe));
         if (now != shown) { shown = now; Rebuild(); }
         status.text = GameSession.Status.Length > 0 ? GameSession.Status : rooms.Problem;
+        bool looking = rooms.Searching;
+        spinner.Show(looking);
+        spinner.Tick(Time.unscaledTime);
+        empty.text = looking ? Looking : NoRooms;
         joinLabel.text = GameSession.IsOnline ? "접속 취소" : "참가";
     }
 

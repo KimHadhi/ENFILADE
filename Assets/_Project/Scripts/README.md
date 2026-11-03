@@ -11,54 +11,58 @@
 | 걷기·달리기·점프·자세·슬라이드·다이브 수치 | [Player.csv](../Resources/Tables/Player.csv)의 `Move`·`Posture` 행, 필드 선언은 [Configuration](Player/Movement/PlayerMovement.Configuration.cs) |
 | 회피·파쿠르·착지·저스트 슬라이드·밀치기·사다리·집라인 수치 | `Player.csv`의 `Ability` 행, 필드 선언은 [MovementAbilitySettings](Player/Movement/MovementAbilitySettings.cs) |
 | 이동 상태 전환·처리 순서 | [PlayerMovement](Player/Movement/PlayerMovement.cs), [이동 코드 구조](Player/Movement/README.md) |
-| 접지·경사·중력·실제 몸 이동 | [MovementMotor](Player/Movement/Core/MovementMotor.cs) |
+| 접지·경사·중력·실제 몸 이동 / 다른 플레이어 위에 서면 그 사람과 함께 움직이기(`Ride`) | [MovementMotor](Player/Movement/Core/MovementMotor.cs) |
 | 자세 높이·천장·환풍구·눈높이 | [MovementPostureController](Player/Movement/Core/MovementPostureController.cs) |
 | 달리며 쌓이는 속도 | [MovementMomentum](Player/Movement/Actions/MovementMomentum.cs) |
 | 착지 단계·구르기·큰 낙하·넉백 | [MovementLanding](Player/Movement/Actions/MovementLanding.cs), [HeavyLanding 상태](Player/Movement/States/) |
 | 스텝 회피·기울이기·적 통과 | [Dodge](Player/Movement/Dodge/), [MovementAbilities](Player/Movement/Actions/MovementAbilities.cs) |
-| Vault·맨틀·렛지·벽·봉·사다리·집라인 | [Parkour](Player/Movement/Parkour/), [States/Parkour](Player/Movement/States/Parkour/) |
+| Vault·맨틀·렛지·벽·봉·사다리·집라인 / 동작마다 총을 든 손(구르기·크게 착지 포함, 장전 중에는 손을 짚는 넘기·올라서기를 하지 않음) | [Parkour](Player/Movement/Parkour/), [States/Parkour](Player/Movement/States/Parkour/) / [TraversalHands](Player/Movement/Parkour/TraversalHands.cs) |
 | 씬에 놓는 사다리·집라인 | [Ladder](World/Ladder.cs), [Zipline](World/Zipline.cs), [사용 안내](../Docs/MovementGuide.md#사다리집라인) |
+| 부서지는 문 (모든 PC에서 함께 부서짐, 서 있는 동안만 적의 길을 막음) | [BreakableDoor](World/BreakableDoor.cs), [DoorBreaks](World/DoorBreaks.cs), 길찾기 다시 굽기: Tools > World > 문 길찾기 다시 굽기 ([DoorNavMeshBaker](../Editor/Utilities/DoorNavMeshBaker.cs)) |
 | 슬라이딩의 적 접촉·저스트 판정 | [SlideCombat](Player/Combat/SlideCombat.cs) |
 | 적의 넘어짐·레그돌·복구 | [EnemyKnockdownPresentation](Combat/Damage/EnemyKnockdownPresentation.cs) |
-| 밀치기·돌진 밀치기 | [PlayerCombatActions](Player/Combat/PlayerCombatActions.cs) |
+| 밀치기·돌진 밀치기 / 밀치기 피로 | [PlayerCombatActions](Player/Combat/PlayerCombatActions.cs) / [ShoveFatigue](Player/Combat/ShoveFatigue.cs), [ShoveFatigueHUD](UI/ShoveFatigueHUD.cs) |
 | 주먹·가드·패링·가드 브레이크 | [PlayerMeleeCombat](Player/Combat/PlayerMeleeCombat.cs) |
 | 완벽 방어·반격 / 처형 | [PlayerPerfectDefense](Player/Combat/PlayerPerfectDefense.cs), [PlayerExecution](Player/Combat/PlayerExecution.cs) |
-| 보이는 몸(진짜 1인칭)·상태별 애니메이션·F5 뒤에서 보기 | [PlayerBody](Player/Body/PlayerBody.cs), [PlayerBodyProfile](Player/Body/PlayerBodyProfile.cs), [사용 안내](../Docs/PlayerBodyGuide.md) |
-| 눈 시점·시선 따라 허리·머리 굽히기·카메라 벽 판정 | [PlayerBody.Look](Player/Body/PlayerBody.Look.cs), [PlayerBody.Clearance](Player/Body/PlayerBody.Clearance.cs), [CameraClearance](Player/Camera/CameraClearance.cs) |
-| 손으로 총·주먹·난간 잡기 / 발 IK·발목 제한 | [PlayerBodyHands](Player/Body/PlayerBodyHands.cs), [ArmIK](Player/Body/ArmIK.cs) / [PlayerBody.Feet](Player/Body/PlayerBody.Feet.cs), [AnkleLimit](Player/Body/AnkleLimit.cs) |
+| 보이는 몸(진짜 1인칭)·상태별 애니메이션·F5 뒤에서 보기 / 연속 점프의 착지 | [PlayerBody](Player/Body/PlayerBody.cs), [PlayerBodyProfile](Player/Body/PlayerBodyProfile.cs), [사용 안내](../Docs/PlayerBodyGuide.md) / [PlayerBody.Hop](Player/Body/PlayerBody.Hop.cs) |
+| 눈 시점·시선 따라 허리·머리 굽히기·Q/E 몸 기울이기(골반 옮기기·옆으로 휘기)·공중에서 등을 대고 나는 몸·카메라 벽 판정 / F5에서도 총·주먹이 따르는 눈 시점 | [PlayerBody.Look](Player/Body/PlayerBody.Look.cs), [PlayerBody.Clearance](Player/Body/PlayerBody.Clearance.cs), [CameraClearance](Player/Camera/CameraClearance.cs) / [PlayerView](Player/Camera/PlayerView.cs) |
+| 손으로 총·주먹·난간 잡기 / 봉에 매달려 몸째 흔들리기·봉 잡는 손 / 발 IK·발목 제한 | [PlayerBodyHands](Player/Body/PlayerBodyHands.cs), [ArmIK](Player/Body/ArmIK.cs) / [PlayerBody.Bar](Player/Body/PlayerBody.Bar.cs), [PlayerBodyHands.Bar](Player/Body/PlayerBodyHands.Bar.cs) / [PlayerBody.Feet](Player/Body/PlayerBody.Feet.cs), [AnkleLimit](Player/Body/AnkleLimit.cs) |
 | 적·웨이브 공유 (호스트가 진행) | [EnemyNetwork](Network/EnemyNetwork.cs), [EnemyHitMessage](Network/EnemyHitMessage.cs), [WaveSync](Network/WaveSync.cs) |
 | 친구의 무기·사격·주먹 표시 | [PlayerNetworkCombat](Network/PlayerNetworkCombat.cs) |
 | 방 채팅 / 닉네임 | [PlayerChat](Network/PlayerChat.cs) / [ProfileView](UI/Menu/ProfileView.cs) |
 | 실제 핑·전송량 측정 (`/net`) | [NetworkStatsHUD](Network/NetworkStatsHUD.cs), [CountingTransport](Network/CountingTransport.cs) |
 | 상대 캐릭터의 몸·소리·스킨 동기화 | [PlayerNetworkPose](Network/PlayerNetworkPose.cs), [PlayerPose](Network/PlayerPose.cs), [MovementMirror](Player/Movement/Core/MovementMirror.cs) |
-| 방 만들기·참가·네트워크 스폰 / 서버 목록 | [GameSession](Network/GameSession.cs) / [ServerBrowserView](UI/Menu/ServerBrowserView.cs), [IRoomList·RoomInfo](Network/RoomInfo.cs), [CombinedRoomList](Network/CombinedRoomList.cs), [LanRoomFinder](Network/LanRoomFinder.cs), [LanRoomBeacon](Network/LanRoomBeacon.cs), [InternetRoomFinder](Network/InternetRoomFinder.cs), [InternetRoom](Network/InternetRoom.cs), [OnlineServices](Network/OnlineServices.cs), 화면에 보이는 핑 [PingDisplay](Network/PingDisplay.cs) ([Network.csv](../Resources/Tables/Network.csv)) |
+| 방 만들기·참가·네트워크 스폰 / 서버 목록 | [GameSession](Network/GameSession.cs) / [ServerBrowserView](UI/Menu/ServerBrowserView.cs), [BusySpinner](UI/Menu/BusySpinner.cs), [IRoomList·RoomInfo](Network/RoomInfo.cs), [CombinedRoomList](Network/CombinedRoomList.cs), [LanRoomFinder](Network/LanRoomFinder.cs), [LanRoomBeacon](Network/LanRoomBeacon.cs), [InternetRoomFinder](Network/InternetRoomFinder.cs), [InternetRoom](Network/InternetRoom.cs), [OnlineServices](Network/OnlineServices.cs), 화면에 보이는 핑 [PingDisplay](Network/PingDisplay.cs) ([Network.csv](../Resources/Tables/Network.csv)) |
 | 플레이어 생성 / 시작 위치 / 목록·내 캐릭터 찾기 / 멀티 구조 시험용 더미 | [PlayerFactory](Player/PlayerFactory.cs) / [PlayerSpawnPoint](Player/PlayerSpawnPoint.cs) / [PlayerRoster](Player/PlayerRoster.cs) / [ConsoleDummyPlayers](Debug/Combat/ConsoleDummyPlayers.cs) |
 | 플레이어 HP·실드·피격·사망 | [PlayerDamageReceiver](Player/Combat/PlayerDamageReceiver.cs) |
 | 쓰러짐·부활·복귀·전멸 | [PlayerLife](Player/Combat/PlayerLife.cs), [PlayerRevive](Player/Combat/PlayerRevive.cs), [PlayerLifeHUD](UI/PlayerLifeHUD.cs), [Downed.csv](../Resources/Tables/Downed.csv) |
 | 킬 피드 (내 처치 강조, 연속 처치) | [CombatFeedHUD](Combat/Feel/CombatFeedHUD.cs), [KillFeedRow](UI/KillFeedRow.cs), [StreakBadge](UI/StreakBadge.cs), [KillFeed.csv](../Resources/Tables/KillFeed.csv) |
-| 슬로 모션 (혼자: 세상 전체, 방: 본인과 상대만) | [CombatTimeEffects](Player/Combat/CombatTimeEffects.cs), `EnemyNetwork.Pace` |
-| 쓰러진 동료 표시 | [DownedAura](Combat/Feel/DownedAura.cs), [TeammateMarkerHUD](UI/TeammateMarkerHUD.cs), [DownedAura.csv](../Resources/Tables/DownedAura.csv) |
+| 슬로 모션 (혼자: 세상 전체, 방: 본인과 상대만) / 연속 처치가 처음 해골이 될 때 방 전체 슬로 모션 | [CombatTimeEffects](Player/Combat/CombatTimeEffects.cs), `EnemyNetwork.Pace` / [SkullSlowMotion](Combat/Feel/SkullSlowMotion.cs), [SkullSlowMotion.csv](../Resources/Tables/SkullSlowMotion.csv) |
+| 쓰러진 동료 표시·동료 체력 | [DownedAura](Combat/Feel/DownedAura.cs), [TeammateMarkerHUD](UI/TeammateMarkerHUD.cs), [TeamHealthPanel](UI/TeamHealthPanel.cs), [HealthSegments](UI/HealthSegments.cs), [DownedAura.csv](../Resources/Tables/DownedAura.csv) |
 | Tab 화면 (점수판과 목표 목록) | [ScoreboardHUD](UI/ScoreboardHUD.cs), [ObjectiveLogPanel](UI/ObjectiveLogPanel.cs), [PlayerTally](Player/Combat/PlayerTally.cs), [PlayerNetworkScore](Network/PlayerNetworkScore.cs) |
 | 죽은 몸의 레그돌 | [PlayerRagdoll](Player/Body/PlayerRagdoll.cs), [RagdollCorpse](Combat/Feel/RagdollCorpse.cs), [PlayerBody.Limp](Player/Body/PlayerBody.Limp.cs), [PlayerNetworkCorpse](Network/PlayerNetworkCorpse.cs), [Ragdoll.csv](../Resources/Tables/Ragdoll.csv) |
 | 치마·겉옷·머리카락의 천 시뮬레이션과 공유 | [PlayerBodyCloth](Player/Body/PlayerBodyCloth.cs), [ClothPart](Player/Body/ClothPart.cs), [ClothBones](Player/Body/ClothBones.cs), [PlayerBodyClothColliders](Player/Body/PlayerBodyClothColliders.cs), [PlayerNetworkCloth](Network/PlayerNetworkCloth.cs), [ClothPose](Network/ClothPose.cs), [Cloth.csv](../Resources/Tables/Cloth.csv), [ClothBody.csv](../Resources/Tables/ClothBody.csv) |
 | 플레이어 궁극기 최대 보유량·소비량 스탯 / 현재 충전량 | [PlayerStats](Player/PlayerStats.cs), [UltimateCharge](UI/HP/UltimateCharge.cs) (Play 시작 때 `PlayerMovement`가 붙임) |
-| 피격 방향 아크·혈흔·쉐이크·빈사 박동 | [PlayerDamageFeedback](Player/Combat/PlayerDamageFeedback.cs), [설정](../Resources/Combat/PlayerDamageFeedback.asset), [사용 안내](../Docs/PlayerDamageFeedbackGuide.md) |
+| 피격 방향 아크·혈흔·쉐이크·빈사 박동·저체력 흑백 | [PlayerDamageFeedback](Player/Combat/PlayerDamageFeedback.cs), [LowHealthGrade](Player/Combat/LowHealthGrade.cs) ([LowHealth.csv](../Resources/Tables/LowHealth.csv)), [설정](../Resources/Combat/PlayerDamageFeedback.asset), [사용 안내](../Docs/PlayerDamageFeedbackGuide.md) |
 | 무기별 연출·사운드·반동 | [Data/Combat/Weapons](../Data/Combat/Weapons/), 형식은 [WeaponData](Combat/Weapons/Data/WeaponData.cs) |
 | 총구 화염·궤적 / 탄착·혈흔 프리팹 효과 | [MuzzleEffects](Combat/Weapons/Effect/MuzzleEffects.cs), [WeaponImpactEffects](Combat/Weapons/Effect/WeaponImpactEffects.cs), [EnemyBloodEffect](Combat/Weapons/Effect/EnemyBloodEffect.cs) |
 | 발사 간격·탄약·장전 타이머 | [WeaponRuntime](Combat/Weapons/Core/WeaponRuntime.cs) |
 | 발사·명중·조준 연결 / 총 모델 표현 | [WeaponController](Player/Combat/Weapons/WeaponController.cs), [WeaponPresentation](Player/Combat/Weapons/WeaponPresentation.cs) |
 | 장비 슬롯 / 사격 입력 | [PlayerWeaponSlots](Player/Combat/Weapons/PlayerWeaponSlots.cs), [PlayerWeaponInput](Player/Combat/Input/PlayerWeaponInput.cs) |
 | 피해 공통 규약·중복 타격 / 레이 판정 | [DamageHit](Combat/Damage/DamageHit.cs), [AttackTrace](Combat/HitDetection/AttackTrace.cs), [AttackHitbox](Combat/HitDetection/AttackHitbox.cs) |
-| 적 체력·추적·공격·노릴 플레이어 고르기 / 웨이브 | [Enemies](Enemies/), [EnemyTargeting](Enemies/EnemyTargeting.cs), [WaveManager](Combat/Waves/WaveManager.cs) |
-| 총성·피격·히트마커·처치 피드백 | [Combat/Feel](Combat/Feel/), [GunFeel.asset](../Resources/Combat/GunFeel.asset), 무기 데이터의 `Feel` |
+| 적 체력·추적·공격·노릴 플레이어 고르기 / 웨이브 / 웨이브 끝 무렵 남은 적 벽 너머 표시 | [Enemies](Enemies/), [EnemyTargeting](Enemies/EnemyTargeting.cs), [WaveManager](Combat/Waves/WaveManager.cs) / [EnemyReveal](Combat/Waves/EnemyReveal.cs) ([Waves.csv](../Resources/Tables/Waves.csv)의 `revealRemaining`·`revealColor`) |
+| 총성·피격·히트마커·처치 피드백 / 후처리 빌려 쓰기 | [Combat/Feel](Combat/Feel/), [PostProcessLoan](Combat/Feel/PostProcessLoan.cs), [GunFeel.asset](../Resources/Combat/GunFeel.asset), 무기 데이터의 `Feel` |
+| 히트마커 모양과 확인음(틱·헤드샷·처치·체간 붕괴) | [HitMarkerHUD](Combat/Feel/HitMarkerHUD.cs), [HitConfirm](Combat/Feel/HitConfirm.cs), [Art/Audio/HitConfirm](../Art/Audio/HitConfirm), [Sounds.csv](../Resources/Tables/Sounds.csv)의 `HitConfirm/…` 행 |
 | 완벽 방어·흐트러짐·처형의 표시·사운드 | [Feedback.asset](../Resources/Combat/Feedback.asset) |
 | 시점 입력 / 이동 카메라 효과 / 시점 펀치 / 큰 낙하 화면 | [PlayerLook](Player/Camera/PlayerLook.cs), [PlayerCameraEffects](Player/Camera/PlayerCameraEffects.cs), [PlayerMovementPunch](Player/Camera/PlayerMovementPunch.cs), [PlayerFallScreen](Player/Camera/PlayerFallScreen.cs) |
 | 탄약·무기 슬롯·적 체력 UI | [AmmoHUD](UI/AmmoHUD.cs), [WeaponSlotsHUD](UI/WeaponSlotsHUD.cs), [EnemyVitalsHUD](UI/EnemyVitalsHUD.cs) |
-| 체력·궁극기 UI / 목표·웨이브 UI | [UI/HP](UI/HP/), [MissionHUD](UI/MissionHUD.cs), [WaveMissionSource](UI/WaveMissionSource.cs) |
+| 체력·궁극기 UI / 목표·웨이브 UI | [UI/HP](UI/HP/), [MissionHUD](UI/MissionHUD.cs) (내용·알림), [MissionBarLook](UI/MissionBarLook.cs) (미션 바 모양, Hud.csv Mission), [MissionLineGraphic](UI/MissionLineGraphic.cs) (진행 선), [WaveMissionSource](UI/WaveMissionSource.cs) |
+| 3D HUD (UI 카메라, 좌우로 기운 면, 요소별 기울기, 시선 흔들림) | [HudCamera](UI/Hud/HudCamera.cs), [HudPlane](UI/Hud/HudPlane.cs), [HudTilt](UI/Hud/HudTilt.cs), [HudRig](UI/Hud/HudRig.cs) (GameHUD에 붙음), [HudInstaller](../Editor/Utilities/HudInstaller.cs) (Tools → HUD), [Hud.csv](../Resources/Tables/Hud.csv), [HudTilt.csv](../Resources/Tables/HudTilt.csv) |
 | 채팅·테스트 명령 | [UI/Chatting](UI/Chatting/) |
 | 메인 메뉴·캐릭터 미리보기 | [MainMenuScreen](UI/Menu/MainMenuScreen.cs), [MainMenuPreview](UI/Menu/MainMenuPreview.cs) |
 | Esc 설정 메뉴·일시정지 / 저장되는 플레이어 설정 | [UI/Settings](UI/Settings/), [GamePause](Settings/GamePause.cs) / [GameSettings](Settings/GameSettings.cs) |
-| 소리 볼륨 채널(전투·이동·목소리·UI) | [GameAudio](Audio/GameAudio.cs) |
+| 크로스헤어 꾸미기·프리셋·공유 코드 | [CrosshairSettingsView](UI/Settings/CrosshairSettingsView.cs), [CrosshairPresetGallery](UI/Settings/CrosshairPresetGallery.cs), [CrosshairCode](Settings/CrosshairCode.cs), [CrosshairPresets.csv](../Resources/Tables/CrosshairPresets.csv) |
+| 소리 볼륨 채널(전투·이동·목소리·UI) / 연타가 동시 재생 한도를 넘지 않게 | [GameAudio](Audio/GameAudio.cs) / [VoiceRing](Audio/VoiceRing.cs) |
 | 발소리 / 동작 소리 / 숨·바람·큰 낙하·사다리류 소리 | [PlayerFootsteps](Player/Audio/PlayerFootsteps.cs), [PlayerMovementAudio](Player/Audio/PlayerMovementAudio.cs), [Player/Audio](Player/Audio/) |
 | 동작마다 나는 소리의 구성 / 소리 묶음·표면·재생 | [SoundCues.csv](../Resources/Tables/SoundCues.csv) / [SoundBank](Audio/SoundBank.cs), [Surfaces](Audio/Surfaces.cs), [SoundCues](Audio/SoundCues.cs), [CharacterSounds](Audio/CharacterSounds.cs), [사용 안내](../Docs/MaintenanceGuide.md#이동목소리-소리-폴더가-곧-목록) |
 | 적이 들을 소음 이벤트 | [Noise](World/Noise.cs) (아직 듣는 적은 없다) |
@@ -104,9 +108,9 @@
 | -100 | `PlayerMovement` | 입력·상태·실제 이동 |
 | 0 | `PlayerLook` | 시선 |
 | 200 | `PlayerCameraEffects` | 흔들림·기울이기와 카메라 기준 위치 |
-| 250 | `PlayerBody` | 몸 자세, 발 IK, 눈 시점으로 카메라 최종 위치 확정 |
+| 250 | `PlayerBody` | 몸 자세, 발 IK, 눈 시점으로 카메라 최종 위치 확정(F5면 그 뒤 카메라만 뒤로) |
 | 260 | `PlayerFootsteps` | IK가 끝난 발로 접지 판단 |
-| 300 | `WeaponController` | 확정된 카메라로 조준·발사 |
+| 300 | `WeaponController` | 확정된 눈 시점(`PlayerView`)으로 총 자세, 카메라 조준선으로 발사 방향 |
 | 320 | `PlayerBodyHands` | 확정된 총·주먹 위치로 손 놓기 |
 
 ## 입력과 설정

@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 
 /// <summary>
 /// Global tuning for shot feel, hit feedback and enemy hit reactions. Per-weapon kick and sound live in WeaponData (Feel).
@@ -47,8 +48,13 @@ public sealed class GunFeelSettings : ScriptableObject
     [Range(0f, 1f)] public float mechanicalVolume = .45f;
     [Range(0f, 1f), Tooltip("Magazine fraction at which the low-ammo tick starts. It rises in pitch and volume toward empty.")]
     public float lowAmmoFraction = .3f;
+    [Tooltip("Only used while the HitConfirm sound bank (Art/Audio/HitConfirm) is missing; empty = synthesized.")]
     public AudioClip[] killSounds, headshotKillSounds;
     [Range(0f, 1f)] public float killVolume = .6f;
+    [Range(0f, .1f), Tooltip("Each kill inside the kill feed's streak window raises the kill confirm's pitch by this much.")]
+    public float killStreakPitchStep = .025f;
+    [Min(0), Tooltip("Kills after which the kill confirm stops climbing.")]
+    public int killStreakSteps = 10;
 
     [Header("Hit markers (1920x1080 canvas units)")]
     public Color bodyHitColor = Color.white;
@@ -68,37 +74,50 @@ public sealed class GunFeelSettings : ScriptableObject
     [Min(0), Tooltip("Frames shown faded at the shrunk size right before the marker disappears.")]
     public int markerFadeFrames = 1;
     [Range(0f, 1f)] public float markerFadeAlpha = .5f;
+    [Range(0f, 1f), Tooltip("A fresh marker starts this much bigger and settles over Marker Pop Seconds, so each hit of a burst reads on its own.")]
+    public float markerPop = .3f;
+    [Min(.01f)] public float markerPopSeconds = .07f;
+    [Tooltip("Body and head markers sized by the share of the target's health the hit took: a graze at the small size, " +
+        "Marker Full Damage or more at the large one. Kills and blocked hits keep their own size.")]
+    public float markerSmallScale = .85f;
+    public float markerLargeScale = 1.25f;
+    [Range(.05f, 1f)] public float markerFullDamage = .5f;
+    [Min(0f), Tooltip("Headshots draw each tick as two parallel lines this far apart (px).")]
+    public float headTwinSpacing = 3.4f;
+    [Tooltip("The posture break marker: a ring and four shards bursting out from the aim point.")]
+    public Color breakColor = new Color(1f, .52f, .14f);
+    [Min(.05f)] public float breakSeconds = .4f;
 
     [Header("Kill screen: which kills")]
     [Tooltip("Executions and perfect-defense counters get the special kill screen (plus hit-stop and a camera thump).")]
     public bool killPulseOnExecution = true;
     public bool killPulseOnCounter = true;
-    [Tooltip("Every other player kill gets the GTA V-style kill screen. Turn gun kills off if mowing down a crowd gets too bright.")]
+    [Tooltip("Every other player kill gets the ordinary kill screen (brightened, glowing, cool frame). Turn gun kills off if mowing down a crowd gets too bright.")]
     public bool killPulseOnGunKill = true, killPulseOnOtherKill = true;
 
-    [Header("Kill screen: GTA V style (ordinary kills)")]
+    [Header("Kill screen: ordinary kills (brightened, glowing, cool frame)")]
     [Min(.03f), Tooltip("Seconds the kill screen stays at full strength (including the 0.03 s snap-in).")]
-    public float gtaKillHoldSeconds = .5f;
+    [FormerlySerializedAs("gtaKillHoldSeconds")] public float ordinaryKillHoldSeconds = .5f;
     [Min(.01f), Tooltip("Seconds it then takes to fade away.")]
-    public float gtaKillFadeSeconds = .25f;
+    [FormerlySerializedAs("gtaKillFadeSeconds")] public float ordinaryKillFadeSeconds = .25f;
     [Range(0f, 3f), Tooltip("Overexposure, in stops. The post stack runs without tonemapping, so white walls clip fast: keep this low.")]
-    public float gtaKillExposure = .12f;
+    [FormerlySerializedAs("gtaKillExposure")] public float ordinaryKillExposure = .12f;
     [Range(0f, 10f), Tooltip("Glow around bright areas (shirts, windows, floor reflections).")]
-    public float gtaKillBloom = .8f;
+    [FormerlySerializedAs("gtaKillBloom")] public float ordinaryKillBloom = .8f;
     [Range(0f, 2f), Tooltip("Brightness above which things glow. Lower = more of the screen blooms.")]
-    public float gtaKillBloomThreshold = 1.1f;
-    public Color gtaKillBloomTint = new Color(.72f, .84f, 1f);
+    [FormerlySerializedAs("gtaKillBloomThreshold")] public float ordinaryKillBloomThreshold = 1.1f;
+    [FormerlySerializedAs("gtaKillBloomTint")] public Color ordinaryKillBloomTint = new Color(.72f, .84f, 1f);
     [Tooltip("Colour filter over the whole picture: the cool blue-white wash.")]
-    public Color gtaKillTint = new Color(.98f, .99f, 1f);
+    [FormerlySerializedAs("gtaKillTint")] public Color ordinaryKillTint = new Color(.98f, .99f, 1f);
     [Range(-100f, 0f), Tooltip("White balance. Negative = cooler / bluer.")]
-    public float gtaKillTemperature = -6f;
-    [Range(-100f, 0f)] public float gtaKillSaturation = -3f;
-    [Range(-100f, 100f), Tooltip("Slightly negative washes the picture out like the reference.")]
-    public float gtaKillContrast = -3f;
+    [FormerlySerializedAs("gtaKillTemperature")] public float ordinaryKillTemperature = -6f;
+    [Range(-100f, 0f), FormerlySerializedAs("gtaKillSaturation")] public float ordinaryKillSaturation = -3f;
+    [Range(-100f, 100f), Tooltip("Slightly negative washes the picture out.")]
+    [FormerlySerializedAs("gtaKillContrast")] public float ordinaryKillContrast = -3f;
     [Range(0f, 1f), Tooltip("Colour fringing toward the screen edges.")]
-    public float gtaKillChromatic = .1f;
+    [FormerlySerializedAs("gtaKillChromatic")] public float ordinaryKillChromatic = .1f;
     [Range(1f, 2f), Tooltip("Headshot kills multiply the bloom by this much.")]
-    public float gtaHeadshotBoost = 1.2f;
+    [FormerlySerializedAs("gtaHeadshotBoost")] public float ordinaryKillHeadshotBoost = 1.2f;
 
     [Header("Kill screen: special (execution / counter)")]
     [Range(-100f, 0f)] public float killSaturation = -60f;

@@ -11,8 +11,8 @@ public static class CombatUIAssets
     // The skull's share of the neon texture, and how far past its outline the light reaches, in the texture's -1 to 1 space.
     private const float NeonFit = .6f, NeonReach = .4f, NeonInside = .05f;
     private static Texture2D skullNeon;
-    private static Texture2D criticalBurst, skull, glowTexture, stripes, counterArrow, executionKnife, slashLine, bladeSlash;
-    private static Sprite glowSprite, discSprite, ringSprite;
+    private static Texture2D criticalBurst, skull, glowTexture, stripes, counterArrow, executionKnife, slashLine, bladeSlash, shoveHand;
+    private static Sprite glowSprite, discSprite, ringSprite, hexagonSprite;
     private static readonly Dictionary<(TMP_FontAsset, Color, float), Material> outlined = new Dictionary<(TMP_FontAsset, Color, float), Material>();
 
     /// <summary>Eight-point burst: long cardinal tips, shorter diagonals.</summary>
@@ -26,6 +26,8 @@ public static class CombatUIAssets
     public static Texture2D CounterArrow => counterArrow != null ? counterArrow : counterArrow = Rasterize("Counter Arrow (Runtime)", 64, CounterShape);
     /// <summary>Tactical knife tipped up-left with a crescent slash trail sweeping below it: the execution mark.</summary>
     public static Texture2D ExecutionKnife => executionKnife != null ? executionKnife : executionKnife = Rasterize("Execution Knife (Runtime)", 64, ExecutionShape);
+    /// <summary>An open palm pushing out, fingers up and the thumb out to the side: the shove.</summary>
+    public static Texture2D ShoveHand => shoveHand != null ? shoveHand : shoveHand = Rasterize("Shove Hand (Runtime)", 64, ShoveHandShape);
 
     /// <summary>Tapered sword-cut stroke along +x: needle-thin at both ends, thickest near the right (where the cut starts).</summary>
     public static Texture2D BladeSlash
@@ -102,6 +104,10 @@ public static class CombatUIAssets
 
     /// <summary>A thin ring reaching the sprite's edge.</summary>
     public static Sprite Ring => ringSprite != null ? ringSprite : ringSprite = RoundSprite("Ring (Runtime)", p => Mathf.Abs(p.magnitude - .92f) - .05f);
+
+    /// <summary>A pointy-top hexagon filling the square; it is regular when drawn about 7:8 wide to tall.</summary>
+    public static Sprite Hexagon => hexagonSprite != null ? hexagonSprite
+        : hexagonSprite = RoundSprite("Hexagon (Runtime)", p => Mathf.Max(Mathf.Abs(p.x) - .96f, Mathf.Abs(p.y) + .5f * Mathf.Abs(p.x) - .96f));
 
     private static Sprite RoundSprite(string name, Shape shape)
     {
@@ -293,6 +299,24 @@ public static class CombatUIAssets
             || RoundBox(k, new Vector2(0f, .505f), new Vector2(.11f, .275f), .06f) < 0f
             || RoundBox(k, new Vector2(0f, .81f), new Vector2(.14f, .05f), .04f) < 0f;
         return knife ? -1f : 1f;
+    }
+    private static float ShoveHandShape(Vector2 p)
+    {
+        float hand = RoundBox(p, new Vector2(.06f, -.42f), new Vector2(.4f, .38f), .2f);
+        // Index to little finger, the middle one longest; the thumb leans out from the palm's lower side.
+        float[] tops = { .58f, .76f, .7f, .48f };
+        for (int i = 0; i < tops.Length; i++)
+        {
+            float x = -.24f + i * .2f, bottom = -.2f;
+            hand = Mathf.Min(hand, RoundBox(p, new Vector2(x, (tops[i] + bottom) * .5f), new Vector2(.085f, (tops[i] - bottom) * .5f), .085f));
+        }
+        return Mathf.Min(hand, Capsule(p, new Vector2(-.3f, -.5f), new Vector2(-.68f, -.06f), .11f));
+    }
+    private static float Capsule(Vector2 p, Vector2 a, Vector2 b, float radius)
+    {
+        Vector2 ab = b - a;
+        float t = Mathf.Clamp01(Vector2.Dot(p - a, ab) / ab.sqrMagnitude);
+        return (p - (a + ab * t)).magnitude - radius;
     }
     private static Vector2[] Quadratic(Vector2 a, Vector2 control, Vector2 b)
     {

@@ -97,6 +97,8 @@ public sealed partial class PlayerMovement
     [SerializeField, Min(0.1f)] internal float diveBurstBraking = 2.6f;
     [Tooltip("착지 직후 다이브 재발동을 막는 시간. 시점 조작은 계속 가능합니다.")]
     [SerializeField, Min(0f)] internal float diveLandingRecovery = 0.55f;
+    [Tooltip("공중 다이브는 이보다 느리게 떨어질 때만 된다(m/s). Beatrun은 350단위/초. 큰 낙하 중에는 언제나 안 된다.")]
+    [SerializeField, Min(0f)] internal float airDiveMaxFallSpeed = 8.75f;
 
     [Header("Head-First Slide")]
     [SerializeField, Min(0f)] internal float diveSlideKickBoost = 3.8f;

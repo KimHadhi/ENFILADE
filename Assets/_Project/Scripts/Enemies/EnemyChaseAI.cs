@@ -51,6 +51,7 @@ public sealed class EnemyChaseAI : MonoBehaviour
         }
 
         agent.isStopped = false;
+        if (combatAI != null) agent.stoppingDistance = combatAI.ApproachDistance;
         updateTimer -= Time.deltaTime;
 
         if (updateTimer <= 0f)

@@ -21,6 +21,7 @@
 | `Art/Audio/Library/AdvancedStealth` | 2개, 1MB | Advanced Stealth(3827056860) |
 | `Art/Audio/Combat/Shove` | 7개, 0.4MB | 파일 이름(`rifle_swing_hit_infected`)으로 보아 L4D2 게임 소리로 추정 |
 | `Art/Models/Characters/KazusaBand` | 91개, 108MB | 블루 아카이브의 카즈사. `KazusaBand.kkbp.json`으로 보아 코이카츠 모델 변환본으로 추정. 어디서 받았는지 기록이 없다 |
+| `Art/Models/Characters/Sil` | 11개, 17MB | VRChat 아바타 패키지 sil_ess_1_2(`.blend`, `.unitypackage`). 어디서 받았는지 기록이 없다. 모델은 [sil_model_to_fbx.py](../../../Tools/Blender/sil_model_to_fbx.py)로 변환했고 재질과 텍스처는 패키지 원본이다. 셰이더 `WES_soft_mod3`은 GrabPass만 URP의 Opaque Texture로 바꿨다 |
 | `Tools/Blender/Source/Hiro` | 저장소 안, Assets 밖 | 클립을 구울 때 쓰는 Hiro 뼈대 MDL(워크숍 3744034369) |
 
 Hiro 모델(`Art/Models/Characters/Hiro`)은 허락을 받은 캐릭터라 교체 대상이 아니다.
@@ -38,7 +39,12 @@ Hiro 모델(`Art/Models/Characters/Hiro`)은 허락을 받은 캐릭터라 교�
 | `Assets/ThirdParty/DAVFX/Realistic Impacts Pack` | 266개, 473MB | DAVFX(구매) | VFX Graph 패키지가 있어야 재생된다. `Resources/Combat/ImpactLibrary`가 프리팹을, `Art/Materials/Impacts`가 총알 구멍 텍스처를 직접 가리킨다 |
 | `Assets/ThirdParty/JMO Assets/Cartoon FX Remaster` | 483개, 35MB | Cartoon FX Remaster Free | |
 | `Resources/Combat/Parry`의 `ParryFlare` | 1개 | Kenney Particle Pack(CC0) | |
+| `Art/Audio/HitConfirm/Body` | 1개 | Kenney Interface Sounds(CC0, OpenGameArt)의 `tick_002` | 2026-11-04 추가 |
+| `Art/Audio/HitConfirm/Head`, `Art/Audio/HitConfirm/Kill`의 `wood_hit_08` | 3개 | rubberduck의 100 CC0 metal and wood SFX(CC0, OpenGameArt): `hammer_03`, `metal_hit_05`, `wood_hit_08` | 2026-11-04 추가 |
+| `Art/Audio/HitConfirm/Kill`의 `bfh1_hit_08` | 1개 | rubberduck의 75 CC0 breaking / falling / hit sfx(CC0, OpenGameArt) | 2026-11-04 추가 |
+| `Art/Audio/HitConfirm/Kill`의 `qubodupImpactStone` | 1개 | qubodup의 Impact(CC0, OpenGameArt) | 2026-11-04 추가 |
 | `Assets/ThirdParty/MagicaCloth2` | 328개, 146MB | Magica Cloth 2 | `Example (Can be deleted)` 143MB는 예제라 git에서 제외했고 지워도 된다. `Resources/Cloth`의 프리셋은 `Res/Preset`의 사본이다 |
+| `Assets/_PoiyomiShaders` | 1201개, 118MB | Poiyomi Toon Shader 10.0.28 URP판(github.com/poiyomi/PoiyomiToonShader) | 실의 뼈대 재질(`ess01`)이 쓴다. Poiyomi가 정한 경로라 `ThirdParty` 밖에 둔다 |
 | `Assets/ThirdParty/TextMeshPro` | 37개, 4MB | Unity TextMeshPro 기본 리소스 | |
 | `Assets/ThirdParty/KoreanFonts` | 54개, 37MB | Pretendard, 에스코어 드림, 페이퍼로지, KOTRA 볼드, 사천항공체 | 무료 배포 폰트로 보이며 라이선스 파일은 없다 |
 
@@ -48,7 +54,7 @@ Hiro 모델(`Art/Models/Characters/Hiro`)은 허락을 받은 캐릭터라 교�
 
 | 위치 | 파일 | 아는 것 |
 | --- | --- | --- |
-| `Art/Audio/Combat/Hitfullness` | 23개, 3MB | 총기 명중·처치에 겹치는 타격 소리. 커밋 0.6.0에 추가 |
+| `Art/Audio/Combat/Hitfullness`, `Art/Audio/HitConfirm/Break` | 23개, 3MB | 총기 명중·처치에 겹치는 타격 소리. 커밋 0.6.0에 추가. 2026-11-04에 `bone_crack` 3개를 체간 붕괴 소리로 `HitConfirm/Break`에 옮겼다 |
 | `Art/Audio/Combat/Defense` | 16개, 1MB | 가드·패링·공격 예고 소리. 커밋 0.5.0에 추가 |
 | `Art/Audio/Combat/Player` | 28개, 2MB | BOOM으로 바꾸기 전의 주먹·피격 소리. 현재 연결하지 않은 클립이 있다 |
 | `Art/Audio/UI/MissionObjective.wav` | 1개 | 임무 알림 소리 |

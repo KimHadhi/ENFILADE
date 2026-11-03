@@ -3,7 +3,7 @@ using System.IO;
 using UnityEngine;
 
 /// <summary>
-/// Player preferences: volume, controls and screen shake. Saved per user in settings.json under
+/// Player preferences: volume, controls, screen, frame rate and crosshairs. Saved per user in settings.json under
 /// Application.persistentDataPath and changed in the Esc menu. Balance numbers stay in Resources/Tables.
 /// </summary>
 [Serializable]
@@ -17,10 +17,22 @@ public sealed class GameSettings
     public bool crouchToggle, leanToggle;
     [Tooltip("Scales head bob, landing, impacts and movement tilt. Lean and weapon recoil are not affected.")]
     public float screenShake = 1f;
+    [Tooltip("How much the HUD trails the look when turning (HudCamera). 0 keeps it still.")]
+    public float hudSway = .5f;
     [Tooltip("Horizontal field of view in degrees, measured at 16:9. Wider screens see more at the sides.")]
     public float fieldOfView = 90f;
     [Tooltip("Show the player's own hair and head in first person, cut only where the camera sits inside them.")]
     public bool showOwnHead = true;
+    [Tooltip("Frames per second cap, one of FrameLimits. 0 is unlimited. Ignored while vSync is on.")]
+    public int frameLimit;
+    [Tooltip("Wait for the monitor's refresh before showing a frame. Overrides frameLimit.")]
+    public bool vSync;
+    [Tooltip("The crosshair keeps one shape: weapon spread (moving, jumping, each gun's own) and shot kicks never open it. " +
+        "Applies to the designed and the player's crosshair alike.")]
+    public bool steadyCrosshair = true;
+    [Tooltip("The crosshair for guns, and for fists and melee weapons. Each keeps the designed one until the player draws their own.")]
+    public CrosshairSettings gunCrosshair = CrosshairSettings.Default(CrosshairKind.Gun),
+        meleeCrosshair = CrosshairSettings.Default(CrosshairKind.Melee);
     [Tooltip("Player skin ID from the PlayerBody profile. Empty uses the profile's default character.")]
     public string characterSkin = "";
     [Tooltip("The name other players see. Empty uses this PC's user name.")]
@@ -35,6 +47,8 @@ public sealed class GameSettings
     public bool roomOnInternet = true;
 
     public const float MinSensitivity = .2f, MaxSensitivity = 3f, MinFieldOfView = 70f, MaxFieldOfView = 120f;
+    /// <summary>Frame caps offered in the menu; 0 is unlimited.</summary>
+    public static readonly int[] FrameLimits = { 0, 30, 60, 120, 144, 165, 240 };
 
     /// <summary>The name this player goes by.</summary>
     public string DisplayName => string.IsNullOrWhiteSpace(nickname) ? Environment.UserName : nickname.Trim();
@@ -92,7 +106,11 @@ public sealed class GameSettings
         uiVolume = Mathf.Clamp01(uiVolume);
         mouseSensitivity = Mathf.Clamp(mouseSensitivity, MinSensitivity, MaxSensitivity);
         screenShake = Mathf.Clamp01(screenShake);
+        hudSway = Mathf.Clamp01(hudSway);
         fieldOfView = Mathf.Clamp(fieldOfView, MinFieldOfView, MaxFieldOfView);
+        frameLimit = Mathf.Max(0, frameLimit);
+        (gunCrosshair ??= CrosshairSettings.Default(CrosshairKind.Gun)).Clamp();
+        (meleeCrosshair ??= CrosshairSettings.Default(CrosshairKind.Melee)).Clamp();
     }
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]

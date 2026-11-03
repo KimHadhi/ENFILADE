@@ -1,4 +1,8 @@
 ﻿id,volume,pitchMin,pitchMax,#note
+HitConfirm/Body,0.45,0.96,1.04,명중마다 나는 마른 틱. Kenney Interface Sounds tick_002 (CC0)
+HitConfirm/Break,0.85,0.95,1.05,체간이 깨질 때 나는 뼈 부러지는 소리. Hitfullness bone_crack
+HitConfirm/Head,0.6,1,1.06,헤드샷 때 틱 위에 겹치는 금속음. rubberduck 100 CC0 metal and wood SFX hammer_03·metal_hit_05
+HitConfirm/Kill,0.75,0.96,1,처치 타격음. 연속 처치마다 조금씩 높아진다(GunFeel). rubberduck bfh1_hit_08·wood_hit_08 (CC0)·qubodup Impact Stone (CC0)
 Movement/Bar/Grab,0.75,0.9,1.1,Beatrun Handsteps.MetalPipeGrab
 Movement/Bar/LetGo,0.5,0.9,1.1,Beatrun Handsteps.MetalPipeLetGo
 Movement/Bar/Release,1,0.8,1,Beatrun Handsteps.MetalPipeRelease

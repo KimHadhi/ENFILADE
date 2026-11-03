@@ -11,10 +11,13 @@ public sealed class ProneState : MovementBaseState
     public override bool TryJump()
     {
         if (ctx.IsDowned || ctx.HasCeilingAbove(ctx.CrouchColliderHeight)) return false;
-        ctx.ChangeState(ctx.HasCeilingAbove(ctx.StandingColliderHeight)
-            ? PlayerMovement.MovementState.Crouching : PlayerMovement.MovementState.Standing);
+        ctx.ChangeState(RiseTo());
         return true;
     }
+
+    // Getting up keeps a held crouch.
+    private PlayerMovement.MovementState RiseTo() => ctx.Input.CrouchHeld || ctx.HasCeilingAbove(ctx.StandingColliderHeight)
+        ? PlayerMovement.MovementState.Crouching : PlayerMovement.MovementState.Standing;
 
     public override void ProcessInput(Vector2 input)
     {
@@ -23,11 +26,11 @@ public sealed class ProneState : MovementBaseState
         // 포복 중 실제로 떨어지기 시작하면 다이빙으로 복귀
         if (!ctx.IsGrounded && ctx.ActualVelocity.y < -0.15f)
         {
-            ctx.ChangeState(
-                ctx.CurrentState == PlayerMovement.MovementState.Supine
-                    ? PlayerMovement.MovementState.SupineDiving
-                    : PlayerMovement.MovementState.Diving
-            );
+            bool onBack = ctx.CurrentState == PlayerMovement.MovementState.Supine;
+            // The dive goes the way the body lies, so one on the back faces the view as the body did (PlayerLook, PlayerBody).
+            Vector3 facing = Vector3.ProjectOnPlane(ctx.transform.forward, Vector3.up).normalized;
+            ctx.DiveBodyForward = onBack ? -facing : facing;
+            ctx.ChangeState(onBack ? PlayerMovement.MovementState.SupineDiving : PlayerMovement.MovementState.Diving);
             return;
         }
 
@@ -48,8 +51,8 @@ public sealed class ProneState : MovementBaseState
         bool wantsFastGetUp =
             (sprintHeld && hasMoveInput) || (sprintJustPressed && hasMoveInput);
 
-        // 1. 달리기 기상 캔슬
-        if (wantsFastGetUp && !ctx.HasCeilingAbove(ctx.StandingColliderHeight))
+        // 1. 달리기 기상 캔슬. 앉기를 누르고 있으면 3번이 앉기로 일으킨다
+        if (wantsFastGetUp && !crouchPressed && !ctx.HasCeilingAbove(ctx.StandingColliderHeight))
         {
             ctx.SprintProgress = Mathf.Max(ctx.SprintProgress, 0.6f);
 
@@ -67,12 +70,7 @@ public sealed class ProneState : MovementBaseState
         if ((crouchJustPressed || diveJustPressed)
             && !ctx.HasCeilingAbove(ctx.CrouchColliderHeight))
         {
-            ctx.ChangeState(
-                crouchJustPressed || crouchPressed
-                    || ctx.HasCeilingAbove(ctx.StandingColliderHeight)
-                    ? PlayerMovement.MovementState.Crouching
-                    : PlayerMovement.MovementState.Standing
-            );
+            ctx.ChangeState(crouchJustPressed ? PlayerMovement.MovementState.Crouching : RiseTo());
             return;
         }
 

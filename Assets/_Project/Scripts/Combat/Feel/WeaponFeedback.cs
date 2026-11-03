@@ -115,7 +115,7 @@ public sealed class WeaponFeedback : MonoBehaviour
                 p.z * Random.Range(.55f, 1f) * (Random.value < .5f ? -1f : 1f));
             punch.Punch(kick * scale, data.ViewPunchFov * scale, data.ShakeTrauma * scale);
         }
-        if (crosshair == null) crosshair = FindFirstObjectByType<DynamicCrosshairView>();
+        if (crosshair == null) crosshair = DynamicCrosshairView.FindHud();
         crosshair?.Kick(4f + data.ViewPunch.x * 4f);
 
         // A bullet that reached a receiver but did nothing (guard, parry, invulnerability) gets its own grey marker.
@@ -145,7 +145,7 @@ public sealed class WeaponFeedback : MonoBehaviour
     {
         var settings = GunFeelSettings.Instance;
         if (settings.gunSounds) FeelAudio.Play(FeelSound.DryFire, settings.dryFireSounds, settings.mechanicalVolume, Random.Range(.96f, 1.04f));
-        if (crosshair == null) crosshair = FindFirstObjectByType<DynamicCrosshairView>();
+        if (crosshair == null) crosshair = DynamicCrosshairView.FindHud();
         crosshair?.Kick(2f);
     }
 

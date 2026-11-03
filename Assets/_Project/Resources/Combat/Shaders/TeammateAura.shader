@@ -1,6 +1,6 @@
 // Drawn over a downed teammate so anyone can find them: a soft glow on the body and a bright outline, seen through walls.
 // The body marks its silhouette in the stencil, so the outline only shows past it. Properties are driven by DownedAura.
-Shader "Hidden/Morphang/TeammateAura"
+Shader "Hidden/ENFILADE/TeammateAura"
 {
     Properties
     {

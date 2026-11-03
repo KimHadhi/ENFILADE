@@ -9,15 +9,20 @@ public static class WeaponAimSolver
         => AttackTrace.FirstExternalHit(owner, view.position, view.forward, range, layers, out var hit)
             ? hit.point : view.position + view.forward * range;
 
-    public static bool IsObstructed(GameObject owner, Transform view, Vector3 muzzle, Vector3 target, int layers)
+    /// <summary>
+    /// margin asks for that much more room (m) round the muzzle and ahead of it: a gun already raised comes down only once
+    /// it is clear by that much, so a pose at the very edge doesn't flick it up and down.
+    /// </summary>
+    public static bool IsObstructed(GameObject owner, Transform view, Vector3 muzzle, Vector3 target, int layers, float margin = 0f)
     {
         Vector3 toTarget = target - muzzle;
         // Never rotate toward the player's face or over-converge against an extremely close wall.
-        if (Vector3.Dot(toTarget, view.forward) < .12f || Vector3.Angle(view.forward, toTarget) > 65f) return true;
+        if (Vector3.Dot(toTarget, view.forward) < .12f + margin || Vector3.Angle(view.forward, toTarget) > 65f) return true;
         Vector3 barrel = muzzle - view.position;
         if (barrel.sqrMagnitude > .0001f && AttackTrace.FirstExternalHit(owner, view.position,
-            barrel.normalized, barrel.magnitude + .035f, layers, out _)) return true;
-        int count = Physics.OverlapSphereNonAlloc(muzzle, .045f, muzzleOverlaps, layers, QueryTriggerInteraction.Ignore);
+            barrel.normalized, barrel.magnitude + .035f + margin, layers, out _)) return true;
+        float radius = .045f + margin;
+        int count = Physics.OverlapSphereNonAlloc(muzzle, radius, muzzleOverlaps, layers, QueryTriggerInteraction.Ignore);
         bool obstructed = false;
         for (int i = 0; i < count; i++)
         {
@@ -29,10 +34,10 @@ public static class WeaponAimSolver
         if (count == muzzleOverlaps.Length)
         {
             // A full buffer may contain only the owner's colliders and omit an embedded wall.
-            foreach (var collider in Physics.OverlapSphere(muzzle, .045f, layers, QueryTriggerInteraction.Ignore))
+            foreach (var collider in Physics.OverlapSphere(muzzle, radius, layers, QueryTriggerInteraction.Ignore))
                 if (owner == null || !collider.transform.IsChildOf(owner.transform)) return true;
         }
-        return AttackTrace.FirstExternalHit(owner, muzzle, toTarget.normalized, .12f, layers, out _);
+        return AttackTrace.FirstExternalHit(owner, muzzle, toTarget.normalized, .12f + margin, layers, out _);
     }
 
     public static Vector3 SpreadDirection(Vector3 direction, float degrees, Vector2 disk)

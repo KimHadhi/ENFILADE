@@ -55,7 +55,7 @@ public sealed class PlayerCameraEffects : MonoBehaviour
     private Vector3 initialBobTargetPos;
     private float currentTiltRoll;
     private Vector3 baseCameraPosition;
-    private Transform effectsPivot;
+    private Transform effectsPivot, eyes;
     private PlayerBody body;
     private PlayerMovementPunch movementPunch;
     internal Vector3 CameraLocalHome => baseCameraPosition;
@@ -138,7 +138,7 @@ public sealed class PlayerCameraEffects : MonoBehaviour
         UpdateDynamicFov(dt);
         UpdateTilt(dt);
         UpdateLandingImpact(dt);
-        UpdateVerticalL4DBob(dt);
+        UpdateVerticalStepBob(dt);
         UpdateTraversalPunch(dt);
         UpdateDivePresentation(dt);
         UpdateActionImpulses(dt);
@@ -148,6 +148,9 @@ public sealed class PlayerCameraEffects : MonoBehaviour
 
         ApplyCameraRotation();
         ApplyLeanPosition();
+        // Without a visible body this is the camera's final pose; PlayerBody moves the eyes again when it places it.
+        if (eyes == null) eyes = PlayerView.EyesOf(movement);
+        PlayerView.Follow(eyes, targetCamera);
     }
 
     /// <summary>
@@ -232,7 +235,7 @@ public sealed class PlayerCameraEffects : MonoBehaviour
     private void UpdateTraversalPunch(float dt)
     {
         var traversal = movement.StateMachine.Current as ObstacleTraversalState;
-        if (traversal != null && traversal.UsesReferenceMotion
+        if (traversal != null && traversal.MovesInStraightLine
             && (punchSource != traversal || punchSerial != traversal.EntrySerial))
         {
             punchSource = traversal; punchSerial = traversal.EntrySerial;
@@ -333,7 +336,7 @@ public sealed class PlayerCameraEffects : MonoBehaviour
         }
     }
 
-    private void UpdateVerticalL4DBob(float dt)
+    private void UpdateVerticalStepBob(float dt)
     {
         if (!enableHeadbob || movement.IsDiving || movement.IsSliding || movement.IsParkour)
         {

@@ -147,6 +147,13 @@ public sealed class MovementAbilitySettings
     [Min(0f)] public float rollLandSpeed = 5f;
     [Tooltip("Seconds a landing on the spot holds the player there.")]
     [Min(0.05f)] public float rollLandTime = 0.6f;
+    [Tooltip("Share of the fall damage a landing on the spot still takes: with no run to roll into, the legs take it. A big fall can't be rolled at all, as in Beatrun.")]
+    [Range(0f, 1f)] public float rollInPlaceDamageShare = .5f;
+    [Tooltip("Seconds a landing on the spot that hurt holds the player there, the legs getting over it before they walk.")]
+    [Min(0.05f)] public float rollLandHurtTime = 1f;
+    [Tooltip("Seconds getting up off the back keeps the player from moving off while the body gets up, as Beatrun's "
+        + "JumpTurnRecovery does. The hands stay free: shooting, aiming, the shove and the fists work.")]
+    [Min(0f)] public float supineRiseTime = 1f;
 
     [Header("Big Fall")]
     [Tooltip("A fall this long from its top to the ground below is a big one: wind, heartbeat, screen warp, flailing (m).")]
@@ -173,6 +180,14 @@ public sealed class MovementAbilitySettings
     [Min(0f)] public float shovePostureDamage = 8f;
     [Min(0f)] public float shoveDamage = 5f;
     [Min(0.05f)] public float shoveCooldown = 0.5f;
+    [Tooltip("Shove fatigue (L4D2): from this shove in a row, gun or fists, the wait before the next one grows.")]
+    [Min(1)] public int shoveFatigueStart = 4;
+    [Tooltip("At this shove in a row the wait reaches shoveFatigueInterval, and stays there while the spam goes on.")]
+    [Min(1)] public int shoveFatigueMost = 7;
+    [Tooltip("The longest wait between shoves (s).")]
+    [Min(0f)] public float shoveFatigueInterval = 1.2f;
+    [Tooltip("Each this long without a shove (s) takes one shove off the count.")]
+    [Min(.05f)] public float shoveFatigueRecovery = 1f;
     [Header("Dash Push (running + V)")]
     [Tooltip("Running at least this fast (m/s), along the view, turns V into a dash push.")]
     [Min(0f)] public float dashPushMinSpeed = 5f;
@@ -182,6 +197,10 @@ public sealed class MovementAbilitySettings
     [Min(1f)] public float dashPushSpeedScale = 2f;
     [Tooltip("Time after a dash ends before the next one (s). V meanwhile does what it does standing (crowd shove, or the fists' shove and guard break).")]
     [Min(0f)] public float dashPushCooldown = 1f;
+    [Tooltip("A dash push counts as this many shoves toward shove fatigue, which the shoves share.")]
+    [Min(0f)] public float dashPushFatigueCost = 2f;
+    [Tooltip("Longest wait before the next dash once shove fatigue is at its most (s); fresh, it is dashPushCooldown.")]
+    [Min(0f)] public float dashPushFatigueCooldown = 4f;
     [Tooltip("The dash meets someone this far ahead of the body (m).")]
     [Min(0f)] public float dashPushReach = .5f;
     [Min(0f)] public float dashPushDamage = 20f;

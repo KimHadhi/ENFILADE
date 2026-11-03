@@ -15,12 +15,18 @@ public sealed class InternetRoomFinder : IRoomList
     private List<RoomInfo> rooms = new List<RoomInfo>();
     private Dictionary<string, int> regions;
     private float nextAsk;
-    private bool asking, closed;
+    private bool asking, closed, answered, wanted;
 
     public IEnumerable<RoomInfo> Rooms => rooms;
     public string Problem { get; private set; } = "";
+    // The background asks every few seconds don't count; the first one and a refresh do.
+    public bool Searching => !answered || wanted;
 
-    public void Refresh() => nextAsk = Mathf.Min(nextAsk, Time.unscaledTime + QuickestAsk);
+    public void Refresh()
+    {
+        nextAsk = Mathf.Min(nextAsk, Time.unscaledTime + QuickestAsk);
+        wanted = true;
+    }
 
     public void Tick()
     {
@@ -32,6 +38,7 @@ public sealed class InternetRoomFinder : IRoomList
     private async void Ask()
     {
         asking = true;
+        bool asked = wanted;
         try
         {
             await OnlineServices.SignIn();
@@ -51,6 +58,8 @@ public sealed class InternetRoomFinder : IRoomList
         finally
         {
             asking = false;
+            answered = true;
+            if (asked) wanted = false;
             nextAsk = Time.unscaledTime + AskInterval;
         }
     }

@@ -5,8 +5,8 @@ using UnityEngine.Rendering.Universal;
 /// <summary>Which kill screen a kill gets.</summary>
 public enum KillScreen
 {
-    /// <summary>Every ordinary kill: GTA V-style brightened, glowing, cool frame.</summary>
-    Gta,
+    /// <summary>Every ordinary kill: a brightened, glowing, cool frame.</summary>
+    Ordinary,
     /// <summary>Execution: the special pulse with a crimson vignette.</summary>
     Execution,
     /// <summary>Perfect-defense counter: the special pulse with a cold steel vignette.</summary>
@@ -26,7 +26,7 @@ public struct ParryScreenLook
 /// Kill screens, two looks on one runtime volume, which a parry's short pulse also borrows. Tuning and which kills get
 /// which: GunFeel → Kill screen.
 ///
-/// GTA V style (ordinary kills): the picture lifts for a moment — slightly brighter, highlights glowing (bloom), a
+/// Ordinary kills: the picture lifts for a moment — slightly brighter, highlights glowing (bloom), a
 /// faint cool blue-white wash and light chromatic fringing — holds for 0.5 s, then fades over 0.25 s. No blur: the
 /// frame must stay readable mid-fight.
 ///
@@ -44,7 +44,7 @@ public sealed class KillConfirmEffect : MonoBehaviour
 {
     private const float Attack = .03f, ImpactFlash = .35f;
     private static KillConfirmEffect instance;
-    private Volume volume, neutral;
+    private Volume volume;
     private ColorAdjustments color;
     private WhiteBalance balance;
     private Bloom bloom;
@@ -54,13 +54,14 @@ public sealed class KillConfirmEffect : MonoBehaviour
     private float age = 99f, hold = .5f, fade = .25f, rise;
     private float impactSeconds, impactFlash = ImpactFlash, baseExposure, baseChromatic, baseLens;
     private bool special;
-    private UniversalAdditionalCameraData borrowed;
 
     public float Weight => volume != null && volume.enabled ? volume.weight : 0f;
+    /// <summary>How strongly a kill (or parry) screen shows right now, 0 when none plays.</summary>
+    public static float Showing => instance != null ? instance.Weight : 0f;
     /// <summary>The look currently playing (meaningful only while Weight > 0).</summary>
     public KillScreen Current { get; private set; }
     /// <summary>True only while an effect runs on a camera whose post-processing was borrowed for it.</summary>
-    public bool IsBorrowingPostProcessing => borrowed != null;
+    public bool IsBorrowingPostProcessing => PostProcessLoan.Holds(this);
 
     /// <summary>heavy = headshot kills and executions.</summary>
     public static void Trigger(KillScreen kind, bool heavy)
@@ -68,9 +69,9 @@ public sealed class KillConfirmEffect : MonoBehaviour
         if (!Application.isPlaying) return;
         var settings = GunFeelSettings.Instance;
         var self = Get();
-        if (kind == KillScreen.Gta)
+        if (kind == KillScreen.Ordinary)
         {
-            if (settings.killScreenEffect) self.PulseGta(heavy, settings);
+            if (settings.killScreenEffect) self.PulseOrdinary(heavy, settings);
             return;
         }
         if (settings.killScreenEffect) self.PulseSpecial(kind, heavy, settings);
@@ -139,23 +140,6 @@ public sealed class KillConfirmEffect : MonoBehaviour
         lens.scale.value = 1f;
         volume.sharedProfile = profile;
         volume.enabled = false;
-
-        // Every URP effect at its neutral default, overriding the default volume profile while post-processing is borrowed.
-        var host = new GameObject("Neutral Post");
-        host.transform.SetParent(transform, false);
-        neutral = host.AddComponent<Volume>();
-        neutral.isGlobal = true;
-        neutral.priority = 199f;
-        neutral.weight = 1f;
-        var baseline = NewProfile("Kill Confirm Neutral (Runtime)");
-        baseline.Add<Tonemapping>(true); baseline.Add<Bloom>(true); baseline.Add<FilmGrain>(true); baseline.Add<MotionBlur>(true);
-        baseline.Add<PaniniProjection>(true); baseline.Add<ScreenSpaceLensFlare>(true); baseline.Add<DepthOfField>(true);
-        baseline.Add<ColorAdjustments>(true); baseline.Add<Vignette>(true); baseline.Add<ChromaticAberration>(true);
-        baseline.Add<LensDistortion>(true); baseline.Add<WhiteBalance>(true); baseline.Add<LiftGammaGain>(true);
-        baseline.Add<SplitToning>(true); baseline.Add<ShadowsMidtonesHighlights>(true); baseline.Add<ColorCurves>(true);
-        baseline.Add<ColorLookup>(true); baseline.Add<ChannelMixer>(true);
-        neutral.sharedProfile = baseline;
-        neutral.enabled = false;
     }
 
     private static VolumeProfile NewProfile(string name)
@@ -172,33 +156,32 @@ public sealed class KillConfirmEffect : MonoBehaviour
     {
         if (instance == this) instance = null;
         if (volume != null && volume.sharedProfile != null) Destroy(volume.sharedProfile);
-        if (neutral != null && neutral.sharedProfile != null) Destroy(neutral.sharedProfile);
     }
 
-    private void PulseGta(bool headshot, GunFeelSettings settings)
+    private void PulseOrdinary(bool headshot, GunFeelSettings settings)
     {
         // An ordinary kill never cuts a running execution / counter screen short.
         if (special && Weight > 0f) return;
-        float boost = headshot ? settings.gtaHeadshotBoost : 1f;
-        color.saturation.value = settings.gtaKillSaturation;
-        color.contrast.value = settings.gtaKillContrast;
-        color.colorFilter.value = settings.gtaKillTint;
-        balance.temperature.value = settings.gtaKillTemperature;
-        bloom.intensity.value = settings.gtaKillBloom * boost;
-        bloom.threshold.value = settings.gtaKillBloomThreshold;
+        float boost = headshot ? settings.ordinaryKillHeadshotBoost : 1f;
+        color.saturation.value = settings.ordinaryKillSaturation;
+        color.contrast.value = settings.ordinaryKillContrast;
+        color.colorFilter.value = settings.ordinaryKillTint;
+        balance.temperature.value = settings.ordinaryKillTemperature;
+        bloom.intensity.value = settings.ordinaryKillBloom * boost;
+        bloom.threshold.value = settings.ordinaryKillBloomThreshold;
         // Tight scatter: only the brightest edges glow instead of a haze over every lit wall.
         bloom.scatter.value = .65f;
-        bloom.tint.value = settings.gtaKillBloomTint;
+        bloom.tint.value = settings.ordinaryKillBloomTint;
         vignette.intensity.value = 0f;
-        // Exposure, fringing and lens stay flat for the whole GTA screen (no impact snap).
-        baseExposure = settings.gtaKillExposure;
-        baseChromatic = settings.gtaKillChromatic;
+        // Exposure, fringing and lens stay flat for the whole ordinary kill screen (no impact snap).
+        baseExposure = settings.ordinaryKillExposure;
+        baseChromatic = settings.ordinaryKillChromatic;
         baseLens = 0f;
         impactSeconds = 0f;
         impactFlash = ImpactFlash;
-        hold = Mathf.Max(Attack, settings.gtaKillHoldSeconds);
-        fade = Mathf.Max(.01f, settings.gtaKillFadeSeconds);
-        Begin(KillScreen.Gta);
+        hold = Mathf.Max(Attack, settings.ordinaryKillHoldSeconds);
+        fade = Mathf.Max(.01f, settings.ordinaryKillFadeSeconds);
+        Begin(KillScreen.Ordinary);
     }
 
     private void PulseSpecial(KillScreen kind, bool heavy, GunFeelSettings settings)
@@ -229,33 +212,20 @@ public sealed class KillConfirmEffect : MonoBehaviour
 
     private void Begin(KillScreen kind)
     {
-        BorrowCamera();
+        PostProcessLoan.Take(this);
         // A kill during an earlier screen rises from where that one is instead of dropping to zero first.
         rise = Weight;
-        special = kind != KillScreen.Gta;
+        special = kind != KillScreen.Ordinary;
         Current = kind;
         age = 0f;
         volume.enabled = true;
         Apply();
     }
 
-    private void BorrowCamera()
-    {
-        if (borrowed != null) return;
-        var view = Camera.main;
-        var data = view != null ? view.GetUniversalAdditionalCameraData() : null;
-        if (data == null || data.renderPostProcessing) return; // already post-processed: keep its own look
-        data.renderPostProcessing = true;
-        borrowed = data;
-        neutral.enabled = true;
-    }
-
     private void EndPulse()
     {
         if (volume != null) { volume.weight = 0f; volume.enabled = false; }
-        if (neutral != null) neutral.enabled = false;
-        if (borrowed != null) borrowed.renderPostProcessing = false;
-        borrowed = null;
+        PostProcessLoan.Return(this);
         special = false;
     }
 
@@ -269,7 +239,7 @@ public sealed class KillConfirmEffect : MonoBehaviour
 
     private void Apply()
     {
-        // Snap in over Attack, hold at full strength until Hold, then fade. The GTA screen eases out smoothly; the
+        // Snap in over Attack, hold at full strength until Hold, then fade. The ordinary kill screen eases out smoothly; the
         // special one decays quadratically like a struck bell.
         float weight;
         if (age < Attack) weight = Mathf.Lerp(rise, 1f, age / Attack);

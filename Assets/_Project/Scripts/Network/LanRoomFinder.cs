@@ -11,21 +11,23 @@ using UnityEngine;
 /// <summary>Asks the local network which rooms exist and times the answers, which gives a true ping.</summary>
 public sealed class LanRoomFinder : IRoomList
 {
-    private const float AskInterval = 2f, ForgetAfter = 5f;
+    // Answers on a local network come back within milliseconds; this long after asking, the list is the answer.
+    private const float AskInterval = 2f, ForgetAfter = 5f, AnswerWait = 1f;
     private readonly Dictionary<string, RoomInfo> rooms = new Dictionary<string, RoomInfo>();
     private readonly Stopwatch sinceAsked = new Stopwatch();
     private readonly UdpClient socket;
-    private float nextAsk;
+    private float nextAsk, searchUntil = float.MaxValue;
 
     public IEnumerable<RoomInfo> Rooms => rooms.Values;
     public string Problem => "";
+    public bool Searching => Time.unscaledTime < searchUntil;
 
     public LanRoomFinder()
     {
         socket = new UdpClient(new IPEndPoint(IPAddress.Any, 0)) { EnableBroadcast = true };
     }
 
-    public void Refresh() => nextAsk = 0f;
+    public void Refresh() { nextAsk = 0f; searchUntil = float.MaxValue; }
 
     public void Tick()
     {
@@ -38,6 +40,7 @@ public sealed class LanRoomFinder : IRoomList
     private void Ask()
     {
         nextAsk = Time.unscaledTime + AskInterval;
+        if (searchUntil == float.MaxValue) searchUntil = Time.unscaledTime + AnswerWait;
         byte[] question = Encoding.ASCII.GetBytes(LanRoomBeacon.Question);
         sinceAsked.Restart();
         foreach (var target in Targets())

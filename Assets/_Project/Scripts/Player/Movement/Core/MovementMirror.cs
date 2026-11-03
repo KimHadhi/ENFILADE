@@ -11,7 +11,7 @@ using State = PlayerMovement.MovementState;
 public sealed class MovementMirror
 {
     // LookRate only smooths the steps between two poses: high enough that it adds no lag of its own, and it never overshoots.
-    private const float FollowRate = 20f, LookRate = 45f, LedgeProbe = .1f, LadderMatch = .01f;
+    private const float FollowRate = 20f, LookRate = 45f, LedgeProbe = .1f, LadderMatch = .01f, BarProbe = .5f;
 
     private readonly PlayerMovement ctx;
     private readonly Transform lookPivot;
@@ -60,6 +60,9 @@ public sealed class MovementMirror
             case State.Sliding:
             case State.HeadFirstSliding:
             case State.SupineSliding: pose.Direction = ctx.SlideDirection; break;
+            // The way the dive flies: a dive on the back faces back along it.
+            case State.Diving:
+            case State.SupineDiving: pose.Direction = ctx.DiveBodyForward; break;
             case State.StepDodge: pose.Direction = abilities.ActionDirection; break;
             case State.HeavyLanding: pose.Detail = landing.HeavyYaw; break;
             case State.LandingRoll: pose.Detail = landing.LandsInPlace ? 1f : 0f; break;
@@ -72,7 +75,9 @@ public sealed class MovementMirror
                 if (traversal.Obstacle.Kind != VaultKind.None) WriteLedge(ref pose, traversal.Ledge);
                 break;
             case State.LedgeHang: WriteLedge(ref pose, traversal.Ledge); break;
+            case State.BarGrab:
             case State.BarSwing:
+                if (traversal.Bar != null) pose.Anchor = traversal.Bar.transform.TransformPoint(traversal.LocalGrip);
                 pose.Detail = traversal.Angle;
                 pose.Extent = traversal.AngularSpeed;
                 break;
@@ -142,6 +147,8 @@ public sealed class MovementMirror
             case State.Sliding:
             case State.HeadFirstSliding:
             case State.SupineSliding: ctx.SlideDirection = pose.Direction; break;
+            case State.Diving:
+            case State.SupineDiving: ctx.DiveBodyForward = pose.Direction; break;
             case State.StepDodge: abilities.ActionDirection = pose.Direction; break;
             case State.LandingRoll: abilities.Landing.LandsInPlace = pose.Detail > .5f; break;
             case State.Vault:
@@ -153,9 +160,11 @@ public sealed class MovementMirror
                 if (pose.Direction != Vector3.zero) MirrorLedge(pose);
                 break;
             case State.LedgeHang: MirrorLedge(pose); break;
+            case State.BarGrab:
             case State.BarSwing:
                 traversal.Angle = pose.Detail;
                 traversal.AngularSpeed = pose.Extent;
+                MirrorBar(pose.Anchor);
                 break;
             case State.Ladder:
                 if (pose.LadderSteps != 0 && pose.LadderSteps != fixtures.LadderSteps) ctx.RaiseLadderStepped(Has(pose, Marks.LadderLeftHand));
@@ -164,6 +173,21 @@ public sealed class MovementMirror
                 break;
             case State.Zipline: fixtures.MirrorZipline(pose.Anchor, pose.Direction, pose.Extent); break;
         }
+    }
+
+    // The hands hold the bar itself, and a bar can't travel either: this PC finds its own at the same grip.
+    private void MirrorBar(Vector3 grip)
+    {
+        var traversal = ctx.Abilities.Traversal;
+        SwingBar nearest = null;
+        float best = BarProbe * BarProbe;
+        foreach (var bar in SwingBar.ActiveBars)
+        {
+            float distance = (bar.ClosestGrip(grip) - grip).sqrMagnitude;
+            if (distance < best) { best = distance; nearest = bar; }
+        }
+        traversal.Bar = nearest;
+        if (nearest != null) traversal.LocalGrip = nearest.transform.InverseTransformPoint(grip);
     }
 
     // The hands read the ledge from its collider, and a collider can't travel, so this PC finds its own at the same edge.

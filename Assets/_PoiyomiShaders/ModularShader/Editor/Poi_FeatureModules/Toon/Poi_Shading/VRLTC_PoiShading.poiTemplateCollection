@@ -1,0 +1,433 @@
+#T#PoiShadingProperties
+//ifex _ShadingEnabled==0
+[HideInInspector] m_start_PoiShading (" Shadows--{reference_property:_ShadingEnabled,button_help:{text:Tutorial,action:{type:URL,data:https://www.poiyomi.com/shading/main},hover:Documentation}}", Float) = 0
+[HideInInspector][ThryToggle(VIGNETTE_MASKED)]_ShadingEnabled ("Enable Shading", Float) = 1
+[DoNotAnimate][KeywordEnum(TextureRamp, Multilayer Math, Wrapped, Skin, ShadeMap, Flat, Realistic, Cloth, SDF)] _LightingMode ("Lighting Type", Float) = 5
+
+#TI# "Modes/Flat.poiTemplateCollection" Info
+#TI# "Modes/Cloth.poiTemplateCollection" Info
+#TI# "Modes/SDF.poiTemplateCollection" Info
+
+_LightingShadowColor ("Shadow Tint--{condition_showS:(_LightingMode!=4 && _LightingMode!=1 && _LightingMode!=5 && _LightingMode!=7 && _LightingMode!=9)}", Color) = (1, 1, 1)
+
+#TI# "Modes/TextureRamp.poiTemplateCollection" Properties
+
+#TI# "Modes/MultilayerMath.poiTemplateCollection" Properties
+
+#TI# "Modes/Wrapped.poiTemplateCollection" Properties
+
+// Shade Maps
+#TI# "Modes/ShadeMap.poiTemplateCollection" Properties
+
+// Skin Shading
+#TI# "Modes/Skin.poiTemplateCollection" Properties
+
+#TI# "Modes/Flat.poiTemplateCollection" Properties
+
+#TI# "Modes/Cloth.poiTemplateCollection" Properties
+
+#TI# "Modes/SDF.poiTemplateCollection" Properties
+
+// Generic
+_ShadowStrength ("Shadow Strength--{condition_showS:(_LightingMode<=4 || _LightingMode==6 || _LightingMode==8)}", Range(0, 1)) = 1
+_LightingIgnoreAmbientColor ("Ignore Indirect Shadow Color--{condition_showS:(_LightingMode<=1 || _LightingMode==3 || _LightingMode==8)}", Range(0, 1)) = 1
+
+// Additive
+[Space(15)]
+[HideInInspector] s_start_ShadingAddPass ("Add Pass (Point & Spot Lights)--{persistent_expand:true,default_expand:false}", Float) = 0
+[ThryWideEnum(Realistic, 0, Toon, 1, Same as Base Pass, 3)] _LightingAdditiveType ("Lighting Type", Int) = 3
+_LightingAdditiveGradientStart ("Gradient Start--{condition_showS:(_LightingAdditiveType==1)}", Range(0, 1)) = 0
+_LightingAdditiveGradientEnd ("Gradient End--{condition_showS:(_LightingAdditiveType==1)}", Range(0, 1)) = .5
+[HideInInspector] s_end_ShadingAddPass ("Add Pass", Float) = 0
+
+// Global Masks stay outside the _ShadingEnabled==0 region: PoiShadingGlobalMasks() also runs with shading off.
+//endex
+[HideInInspector] s_start_ShadingGlobalMask ("Global Masks--{persistent_expand:true,default_expand:false}", Float) = 0
+[ThryWideEnum(Off, 0, 1R, 1, 1G, 2, 1B, 3, 1A, 4, 2R, 5, 2G, 6, 2B, 7, 2A, 8, 3R, 9, 3G, 10, 3B, 11, 3A, 12, 4R, 13, 4G, 14, 4B, 15, 4A, 16)] _ShadingRampedLightMapApplyGlobalMaskIndex ("LightMap to Global Mask--{reference_property:_ShadingRampedLightMapApplyGlobalMaskBlendType}", Int) = 0
+_ShadingRampedLightMapApplyGlobalMaskStrength ("Mask Strength--{condition_showS:(_ShadingRampedLightMapApplyGlobalMaskIndex>0)}", Range(0, 3)) = 1
+[ThryHideInInspector][ThryWideEnum(Add, 7, Subtract, 1, Multiply, 2, Divide, 3, Min, 4, Max, 5, Average, 6, Replace, 0)] _ShadingRampedLightMapApplyGlobalMaskBlendType ("Blending", Int) = 2
+[ThryWideEnum(Off, 0, 1R, 1, 1G, 2, 1B, 3, 1A, 4, 2R, 5, 2G, 6, 2B, 7, 2A, 8, 3R, 9, 3G, 10, 3B, 11, 3A, 12, 4R, 13, 4G, 14, 4B, 15, 4A, 16)] _ShadingRampedLightMapInverseApplyGlobalMaskIndex ("Inversed LightMap to Global Mask--{reference_property:_ShadingRampedLightMapInverseApplyGlobalMaskBlendType}", Int) = 0
+_ShadingRampedLightMapInverseApplyGlobalMaskStrength ("Inversed Mask Strength--{condition_showS:(_ShadingRampedLightMapInverseApplyGlobalMaskIndex>0)}", Range(0, 3)) = 1
+[ThryHideInInspector][ThryWideEnum(Add, 7, Subtract, 1, Multiply, 2, Divide, 3, Min, 4, Max, 5, Average, 6, Replace, 0)] _ShadingRampedLightMapInverseApplyGlobalMaskBlendType ("Blending", Int) = 2
+[HideInInspector] s_end_ShadingGlobalMask ("Global Masks", Float) = 0
+//ifex _ShadingEnabled==0
+
+[HideInInspector] m_end_PoiShading ("Shading", Float) = 0
+//endex
+
+
+#T#PoiShadingKeywords
+//ifex _ShadingEnabled==0
+#pragma shader_feature_local_fragment VIGNETTE_MASKED
+#pragma shader_feature_local_fragment _LIGHTINGMODE_TEXTURERAMP _LIGHTINGMODE_MULTILAYER_MATH _LIGHTINGMODE_SHADEMAP _LIGHTINGMODE_REALISTIC _LIGHTINGMODE_WRAPPED _LIGHTINGMODE_SKIN _LIGHTINGMODE_FLAT _LIGHTINGMODE_CLOTH _LIGHTINGMODE_SDF
+//#pragma shader_feature_local PROP_MULTILAYERMATHBLURMAP
+//#pragma shader_feature_local PROP_SHADOWCOLORTEX
+//#pragma shader_feature_local PROP_SHADOW2NDCOLORTEX
+//#pragma shader_feature_local PROP_SHADOW3RDCOLORTEX
+//#pragma shader_feature_local PROP_SHADOWSTRENGTHMASK
+//#pragma shader_feature_local PROP_SHADOWBORDERMASK
+//endex
+
+#T#PoiShadingVariablesExposed
+float _ShadingRampedLightMapApplyGlobalMaskIndex;
+half _ShadingRampedLightMapApplyGlobalMaskStrength;
+float _ShadingRampedLightMapApplyGlobalMaskBlendType;
+
+float _ShadingRampedLightMapInverseApplyGlobalMaskIndex;
+half _ShadingRampedLightMapInverseApplyGlobalMaskStrength;
+float _ShadingRampedLightMapInverseApplyGlobalMaskBlendType;
+
+//ifex _ShadingEnabled==0
+half _ShadowStrength;
+half _LightingIgnoreAmbientColor;
+half3 _LightingShadowColor;
+
+// Toon Lighting
+#TI# "Modes/TextureRamp.poiTemplateCollection" VariablesExposed
+
+#TI# "Modes/Wrapped.poiTemplateCollection" Variables
+
+#TI# "Modes/ShadeMap.poiTemplateCollection" VariablesExposed
+
+#TI# "Modes/Skin.poiTemplateCollection" VariablesExposed
+
+#TI# "Modes/MultilayerMath.poiTemplateCollection" VariablesExposed
+
+#TI# "Modes/Flat.poiTemplateCollection" Variables
+
+#TI# "Modes/Cloth.poiTemplateCollection" VariablesExposed
+
+#TI# "Modes/SDF.poiTemplateCollection" VariablesExposed
+
+// Additive
+float _LightingAdditiveType;
+float _LightingAdditiveGradientStart;
+float _LightingAdditiveGradientEnd;
+//endex
+
+#T#PoiShadingVariables
+//ifex _ShadingEnabled==0
+#TI# "Modes/TextureRamp.poiTemplateCollection" Variables
+#TI# "Modes/ShadeMap.poiTemplateCollection" Variables
+#TI# "Modes/Skin.poiTemplateCollection" Variables
+#TI# "Modes/MultilayerMath.poiTemplateCollection" Variables
+#TI# "Modes/Cloth.poiTemplateCollection" Variables
+#TI# "Modes/SDF.poiTemplateCollection" Variables
+//endex
+
+#T#PoiShadingFunction
+void PoiShadingGlobalMasks(inout PoiMods poiMods, in PoiLight poiLight)
+{
+	// URP additional lights and vertex lights are shaded in the base pass; only the main light writes the mask
+	#if POI_PIPE == POI_URP || !defined(POI_PASS_ADD)
+		if (poiLight.isAdditive) return;
+	#endif
+	if (_ShadingRampedLightMapApplyGlobalMaskIndex > 0)
+	{
+		applyToGlobalMask(poiMods, _ShadingRampedLightMapApplyGlobalMaskIndex - 1, _ShadingRampedLightMapApplyGlobalMaskBlendType, saturate(poiMax(poiLight.rampedLightMap * _ShadingRampedLightMapApplyGlobalMaskStrength)));
+	}
+	if (_ShadingRampedLightMapInverseApplyGlobalMaskIndex > 0)
+	{
+		applyToGlobalMask(poiMods, _ShadingRampedLightMapInverseApplyGlobalMaskIndex - 1, _ShadingRampedLightMapInverseApplyGlobalMaskBlendType, (1 - saturate(poiMax(poiLight.rampedLightMap * _ShadingRampedLightMapInverseApplyGlobalMaskStrength))));
+	}
+}
+
+//ifex _ShadingEnabled==0
+#ifdef VIGNETTE_MASKED
+
+#TI# "Modes/Cloth.poiTemplateCollection" Helpers
+
+#TI# "Modes/Wrapped.poiTemplateCollection" Helpers
+
+#TI# "Modes/ShadeMap.poiTemplateCollection" Helpers
+
+#TI# "Modes/Realistic.poiTemplateCollection" Helpers
+
+	float GetRemapMinValue(float scale, float offset)
+	{
+		return clamp(-offset / scale, -0.01f, 1.01f); // Remap min
+
+	}
+	float GetRemapMaxValue(float scale, float offset)
+	{
+		return clamp((1.0f - offset) / scale, -0.01f, 1.01f); // Remap Max
+
+	}
+
+	#if POI_PIPE == POI_URP
+		void PoiAdditionalLightCopy(inout PoiLight poiLight, in PoiLight mainLight, in Light additionalLight, uint lightType, float detailShadow)
+		{
+			PoiInitStruct(PoiLight, poiLight);
+			poiLight.lightType = lightType;
+			poiLight.unityLight = additionalLight;
+			poiLight.detailShadow = detailShadow;
+			poiLight.toonShadowMask = mainLight.toonShadowMask;
+			poiLight.occlusion = mainLight.occlusion;
+			poiLight.brdfData = mainLight.brdfData;
+			poiLight.brdfDataClearCoat = mainLight.brdfDataClearCoat;
+			poiLight.lightingMinLightBrightness = mainLight.lightingMinLightBrightness;
+			poiLight.lightingCapEnabled = mainLight.lightingCapEnabled;
+			poiLight.lightingMonochromatic = mainLight.lightingMonochromatic;
+		}
+	#endif
+	
+	void PoiCalculateShading(inout PoiLight poiLight, inout PoiFragData poiFragData, inout PoiMods poiMods, in PoiMesh poiMesh, in PoiCam poiCam)
+	{
+		half3 litColor = poiLight.directColor * poiLight.lightCookie;
+		half3 passthroughColor = poiLight.indirectColor * poiLight.lightCookie;
+		// Additive lights use Passthrough as their ambient but follow the same Ignore Indirect Shadow Color as the main light
+		half3 ambientColor = poiLight.isAdditive ? passthroughColor : poiLight.indirectColor;
+		half ignoreAmbientColor = _LightingIgnoreAmbientColor;
+
+		#if (POI_PIPE == POI_BIRP && defined(POI_PASS_ADD)) || (POI_PIPE == POI_URP)
+			if (poiLight.isAdditive)
+			{
+				// The Cloth block that removes metallic diffuse only runs for the main light
+				#if POI_PIPE == POI_BIRP && defined(_LIGHTINGMODE_CLOTH)
+					poiFragData.baseColor.xyz *= 1 - PoiClothMetallic(PoiClothMapSample(poiMesh), poiMods);
+				#endif
+				// Realistic
+				if (_LightingAdditiveType == 0)
+				{
+					poiLight.rampedLightMap = poiLight.nDotLSaturated;
+					poiLight.rampedLightMap *= saturate(poiLight.attenDistance);
+					#if POI_PIPE == POI_BIRP
+						poiLight.finalLighting = litColor * poiLight.nDotLSaturated * poiLight.detailShadow * poiLight.attenShadowsStrength;
+					#elif POI_PIPE == POI_URP
+						poiLight.finalLighting = LightingPhysicallyBased(poiLight.brdfData, poiLight.brdfDataClearCoat, litColor, poiLight.direction, poiLight.detailShadow * poiLight.attenShadowsStrength, poiMesh.normals[1], poiCam.eyeViewDir, 1.0, false);
+					#endif
+					poiLight.finalLighting = max(poiLight.finalLighting, passthroughColor);
+					return;
+				}
+				// Toon
+				if (_LightingAdditiveType == 1)
+				{
+					float2 ToonAddGradient = float2(_LightingAdditiveGradientStart, _LightingAdditiveGradientEnd);
+
+					if (ToonAddGradient.x == ToonAddGradient.y) ToonAddGradient.y += 0.0001;
+
+					poiLight.rampedLightMap = smoothstep(ToonAddGradient.y, ToonAddGradient.x, 1 - poiLight.nDotLNormalized);
+					poiLight.rampedLightMap *= saturate(poiLight.attenDistance);
+					poiLight.finalLighting = lerp(litColor * poiLight.detailShadow * poiLight.attenShadowsStrength, passthroughColor,
+						smoothstep(ToonAddGradient.x, ToonAddGradient.y, 1 - poiLight.nDotLNormalized));
+					return;
+				}
+			}
+		#endif
+		
+		half shadowStrength = _ShadowStrength * poiLight.toonShadowMask.r;
+
+		#ifdef POI_PASS_OUTLINE
+			shadowStrength = lerp(0, shadowStrength, _OutlineShadowStrength);
+		#endif
+
+		// These blocks shouldn't need ifex, they should be removed on lock when their keywords aren't present
+
+#TI# "Modes/Flat.poiTemplateCollection" Block
+
+#TI# "Modes/TextureRamp.poiTemplateCollection" Block
+
+#TI# "Modes/MultilayerMath.poiTemplateCollection" Block
+
+#TI# "Modes/ShadeMap.poiTemplateCollection" Block
+
+#TI# "Modes/Realistic.poiTemplateCollection" Block
+
+#TI# "Modes/Cloth.poiTemplateCollection" Block
+
+#TI# "Modes/Wrapped.poiTemplateCollection" Block
+
+#TI# "Modes/Skin.poiTemplateCollection" Block
+
+#TI# "Modes/SDF.poiTemplateCollection" Block
+
+		#if POI_PIPE == POI_BIRP
+			// Same as Base Pass shades vertex lights like pixel lights after the main light (see PoiVertexLightSetup)
+			if (poiFragData.toggleVertexLights && _LightingAdditiveType != 3 && !poiLight.isAdditive)
+			{
+				#if defined(VERTEXLIGHT_ON)
+					float3 vertexLighting = float3(0, 0, 0);
+					for (int index = 0; index < 4; index++)
+					{
+						float lightingMode = _LightingAdditiveType;
+						//UNITY_BRANCH
+						if (lightingMode == 0)
+						{
+							half3 vertexLight = poiLight.vColor[index] * poiLight.vSaturatedDotNL[index] * poiLight.detailShadow; // Realistic
+							vertexLighting = _AddBlendOp == 4 ? max(vertexLighting, vertexLight) : vertexLighting + vertexLight;
+						}
+						//UNITY_BRANCH
+						// Toon
+						if (lightingMode == 1)
+						{
+							float2 ToonAddGradient = float2(_LightingAdditiveGradientStart, _LightingAdditiveGradientEnd);
+							if (ToonAddGradient.x == ToonAddGradient.y) ToonAddGradient.y += 0.0001;
+							half3 vertexLight = lerp(poiLight.vColor[index] * poiLight.detailShadow, poiLight.vColor[index] * _LightingAdditivePassthrough, smoothstep(ToonAddGradient.x, ToonAddGradient.y, 1 - (.5 * poiLight.vDotNL[index] + .5)));
+							vertexLighting = _AddBlendOp == 4 ? max(vertexLighting, vertexLight) : vertexLighting + vertexLight;
+						}
+					}
+					poiLight.finalLighting = _AddBlendOp == 4 ? max(poiLight.finalLighting, vertexLighting) : poiLight.finalLighting + vertexLighting;
+				#endif
+			}
+		#endif
+
+		poiLight.rampedLightMap *= saturate(poiLight.attenDistance);
+		PoiShadingGlobalMasks(poiMods, poiLight);
+	}
+#endif
+//endex
+
+#T#PoiCalculateShadingFunctionCall
+//ifex _ShadingEnabled==0
+bool skipShading = false;
+
+#if defined(POI_PASS_OUTLINE)
+	if (_OutlineLit < 0.5) skipShading = true;
+#endif
+
+#if defined(VIGNETTE_MASKED) && !defined(POI_PASS_META)
+if (!skipShading)
+{
+	PoiCalculateShading(poiLight, poiFragData, poiMods, poiMesh, poiCam);
+	#if POI_PIPE == POI_BIRP && defined(VERTEXLIGHT_ON) && !defined(_LIGHTINGMODE_PBR)
+		if (poiFragData.toggleVertexLights && _LightingAdditiveType == 3)
+		{
+			[unroll] for (uint poiVertexIndex = 0; poiVertexIndex < 4; poiVertexIndex++)
+			{
+				PoiLight poiVertexLight;
+				PoiVertexLightSetup(poiVertexLight, poiLight, poiVertexIndex, poiMesh, poiCam, poiDetailShadowAdditional);
+				PoiCalculateShading(poiVertexLight, poiFragData, poiMods, poiMesh, poiCam);
+				// Pixel lights blend over the base pass with the add pass's Blend Op, Max by default
+				if (_AddBlendOp == 4)
+				{
+					poiLight.finalLighting = max(poiLight.finalLighting, poiVertexLight.finalLighting);
+					poiLight.finalLightAdd = max(poiLight.finalLightAdd, poiVertexLight.finalLightAdd);
+				}
+				else
+				{
+					poiLight.finalLighting += poiVertexLight.finalLighting;
+					poiLight.finalLightAdd += poiVertexLight.finalLightAdd;
+				}
+			}
+		}
+	#endif
+	PoiLightingNoLoopModules(poiLight, poiFragData, poiMesh, poiCam, poiMods);
+	#K#BASE_SHADING_HOOK
+	PoiLightingDependantModules(poiLight, poiFragData, mochieBRDFData, poiMesh, poiCam, poiMods);
+
+	// URP Lighting loop here
+	#if defined(_ADDITIONAL_LIGHTS)
+		// Forward+ loop
+		#if USE_CLUSTER_LIGHT_LOOP
+		uint poiForwardPlusLightCount = 0;
+		UNITY_LOOP for (uint lightIndex = 0; lightIndex < min(URP_FP_DIRECTIONAL_LIGHTS_COUNT, POI_MAX_VISIBLE_LIGHTS); lightIndex++)
+		{
+			CLUSTER_LIGHT_LOOP_SUBTRACTIVE_LIGHT_CHECK
+			++poiForwardPlusLightCount;
+			Light additionalLight = PoiGetAdditionalLight(lightIndex, inputData, poiBakedShadowMask, poiLight.aoFactor);
+			#ifdef _LIGHT_LAYERS
+				if (!IsMatchingLightLayer(additionalLight.layerMask, poiMeshRenderingLayers)) continue;
+			#endif
+			PoiLight poiLightAdd;
+			PoiAdditionalLightCopy(poiLightAdd, poiLight, additionalLight, POI_DIRECTIONAL, poiDetailShadowAdditional);
+			poiShadingParams.lightIndex = lightIndex;
+			// Else the main light's debug color is re-added per light
+			poiShadingParams.debugColor = 0;
+			PoiLightDataSetupAdd(poiLightAdd, poiFragData, poiMesh, poiCam, poiMods, i, poiShadingParams);
+			poiLightOut.totalLightMap = saturate(poiLightOut.totalLightMap + poiLightAdd.lightMap * saturate(poiLightAdd.attenDistance));
+			if (poiShadingParams.exitCode != 0) continue;
+			PoiCalculateShading(poiLightAdd, poiFragData, poiMods, poiMesh, poiCam);
+			poiLightOut.totalRampedLightMap = poiLightOut.totalRampedLightMap + poiLightAdd.rampedLightMap - poiLightOut.totalRampedLightMap * poiLightAdd.rampedLightMap;
+			PoiLightingDependantModules(poiLightAdd, poiFragData, mochieBRDFData, poiMesh, poiCam, poiMods);
+			poiLightOut.totalLighting += poiLightAdd.finalLighting;
+			poiLightOut.totalLightAdd += poiLightAdd.finalLightAdd;
+			if (_LightDataDebugEnabled >= 0.5) poiFragData.finalColor += poiShadingParams.debugColor;
+		}
+		#endif
+
+		uint pixelLightCount = GetAdditionalLightsCount();
+		LIGHT_LOOP_BEGIN(pixelLightCount)
+			#if USE_CLUSTER_LIGHT_LOOP
+				if (poiForwardPlusLightCount >= POI_MAX_VISIBLE_LIGHTS) break;
+				++poiForwardPlusLightCount;
+			#endif
+			Light additionalLight = PoiGetAdditionalLight(lightIndex, inputData, poiBakedShadowMask, poiLight.aoFactor);
+			#ifdef _LIGHT_LAYERS
+				if (!IsMatchingLightLayer(additionalLight.layerMask, poiMeshRenderingLayers)) continue;
+			#endif
+			PoiLight poiLightAdd;
+			#if USE_CLUSTER_LIGHT_LOOP
+				uint poiAddLightType = POI_POINT_SPOT;
+			#else
+				uint poiAddLightType = _AdditionalLightsPosition[GetPerObjectLightIndex(lightIndex)].w == 0 ? POI_DIRECTIONAL : POI_POINT_SPOT;
+			#endif
+			PoiAdditionalLightCopy(poiLightAdd, poiLight, additionalLight, poiAddLightType, poiDetailShadowAdditional);
+			poiShadingParams.lightIndex = lightIndex;
+			poiShadingParams.debugColor = 0;
+			PoiLightDataSetupAdd(poiLightAdd, poiFragData, poiMesh, poiCam, poiMods, i, poiShadingParams);
+			poiLightOut.totalLightMap = saturate(poiLightOut.totalLightMap + poiLightAdd.lightMap * saturate(poiLightAdd.attenDistance));
+			if (poiShadingParams.exitCode != 0) continue;
+			PoiCalculateShading(poiLightAdd, poiFragData, poiMods, poiMesh, poiCam);
+			poiLightOut.totalRampedLightMap = poiLightOut.totalRampedLightMap + poiLightAdd.rampedLightMap - poiLightOut.totalRampedLightMap * poiLightAdd.rampedLightMap;
+			PoiLightingDependantModules(poiLightAdd, poiFragData, mochieBRDFData, poiMesh, poiCam, poiMods);
+			poiLightOut.totalLighting += poiLightAdd.finalLighting;
+			poiLightOut.totalLightAdd += poiLightAdd.finalLightAdd;
+			if (_LightDataDebugEnabled >= 0.5) poiFragData.finalColor += poiShadingParams.debugColor;
+		LIGHT_LOOP_END
+	#endif
+
+	if (_LightDataDebugEnabled >= 0.5) return float4(poiFragData.finalColor, 1.0);
+}
+else
+{
+	poiLight.finalLighting = 1;
+	poiLight.rampedLightMap = 1;
+	poiLight.lightMap = 1;
+	PoiLightingNoLoopModules(poiLight, poiFragData, poiMesh, poiCam, poiMods);
+	#K#BASE_SHADING_HOOK
+}
+#else
+	//endex
+	poiLight.finalLighting = 1;
+	poiLight.rampedLightMap = poiEdgeNonLinear(poiLight.nDotL, 0.1, .1);
+	poiLight.lightMap = poiLight.nDotLNormalized;
+	// Unlit/meta effects run below, after global masks, exactly once (also when locked).
+	//ifex _ShadingEnabled==0
+#endif
+
+poiLight.directLuminance = dot(poiLight.directColor, float3(0.299, 0.587, 0.114));
+poiLight.indirectLuminance = dot(poiLight.indirectColor, float3(0.299, 0.587, 0.114));
+poiLight.finalLuminance = dot(poiLight.finalLighting, float3(0.299, 0.587, 0.114));
+
+#ifdef POI_GRABPASS
+	poiLight.finalLighting = max(poiLight.finalLighting, 0.0001);
+#endif
+//endex
+
+#if !defined(VIGNETTE_MASKED) || defined(POI_PASS_META)
+PoiShadingGlobalMasks(poiMods, poiLight);
+PoiLightingNoLoopModules(poiLight, poiFragData, poiMesh, poiCam, poiMods);
+#K#BASE_SHADING_HOOK
+PoiLightingDependantModules(poiLight, poiFragData, mochieBRDFData, poiMesh, poiCam, poiMods);
+#endif
+
+#T#PoiShadeMapFunctionCall
+#TI# "Modes/ShadeMap.poiTemplateCollection" Call
+
+#T#PoiApplyShadingFunctionCall
+#if POI_PIPE == POI_URP
+	poiLight.finalLighting += poiLightOut.totalLighting;
+#endif
+poiFragData.finalColor = poiFragData.baseColor * poiLight.finalLighting;
+
+#T#PoiApplyAdditiveLighting
+#if POI_PIPE == POI_URP
+	poiLight.finalLightAdd += poiLightOut.totalLightAdd;
+#endif
+poiFragData.finalColor += poiLight.finalLightAdd;
+
+#T#PoiApplyAdditiveLightMap
+#if POI_PIPE == POI_URP
+	poiLight.lightMap = saturate(poiLightOut.totalLightMap + poiLight.lightMap);
+	poiLight.rampedLightMap = poiLight.rampedLightMap + poiLightOut.totalRampedLightMap - poiLight.rampedLightMap * poiLightOut.totalRampedLightMap;
+#endif

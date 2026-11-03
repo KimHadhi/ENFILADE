@@ -8505,6 +8505,7 @@ GameObject:
   - component: {fileID: 1320661224608464338}
   - component: {fileID: 6727985666754896724}
   - component: {fileID: 5005105380956750914}
+  - component: {fileID: 4917260553912840371}
   m_Layer: 5
   m_Name: GameHUD
   m_TagString: Untagged
@@ -10782,6 +10783,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7241243520202132051}
+  - component: {fileID: 2241306529877604716}
   - component: {fileID: 5918496967216548767}
   m_Layer: 5
   m_Name: ObjectiveBadge
@@ -10810,6 +10812,14 @@ RectTransform:
   m_AnchoredPosition: {x: 24.5, y: 0}
   m_SizeDelta: {x: 49, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!222 &2241306529877604716
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8818101701143464989}
+  m_CullTransparentMesh: 1
 --- !u!114 &5918496967216548767
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -11999,3 +12009,15 @@ MonoBehaviour:
   m_EffectColor: {r: 0, g: 0, b: 0, a: 0}
   m_EffectDistance: {x: 1, y: -1}
   m_UseGraphicAlpha: 1
+--- !u!114 &4917260553912840371
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7235437485533594296}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: efb7101f73d0400c9a49cc3f4ed11321, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 

@@ -34,11 +34,17 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
         (GetComponent<EnemyHealth>().IsAlive && !GetComponent<EnemyHealth>().WavePaused));
     public event Action Interrupted;
     public event Action Staggered;
+    /// <summary>Any target's posture broke, for presentation that watches every enemy (the break hit marker).</summary>
+    public static event Action<MeleeCombatTarget> AnyStaggered;
     public float StaggerAge { get; private set; }
     private static readonly HashSet<MeleeCombatTarget> active = new HashSet<MeleeCombatTarget>();
     public static IEnumerable<MeleeCombatTarget> Active => active;
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-    private static void ClearRegistry() => active.Clear();
+    private static void ClearRegistry()
+    {
+        active.Clear();
+        AnyStaggered = null;
+    }
     private float stunRemaining, recoveryRemaining, shoveRemaining, shoveDuration = ShoveDuration, bargeKnockdown;
     private Vector3 shoveVelocity;
     private const float ShoveDuration = .32f, KnockdownSoundDelay = .22f;
@@ -132,7 +138,7 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
         if (Posture <= 0f)
         {
             IsStaggered = true; StaggerAge = 0f; recoveryRemaining = staggerRecoveryDelay;
-            PlayStaggerSound(); Staggered?.Invoke();
+            PlayStaggerSound(); Staggered?.Invoke(); AnyStaggered?.Invoke(this);
         }
         if (interrupt || IsStaggered) InterruptHere(stun);
     }
@@ -232,6 +238,7 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
         StaggerAge = 0f;
         PlayStaggerSound();
         Staggered?.Invoke();
+        AnyStaggered?.Invoke(this);
     }
     private void PlayStaggerSound()
     {

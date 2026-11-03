@@ -4,7 +4,9 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "NewCrosshairProfile", menuName = "Crosshair/Profile")]
 public class CrosshairProfile : ScriptableObject
 {
+#pragma warning disable CS0067 // only OnValidate raises it, and builds leave that out
     public event Action OnProfileChanged;
+#pragma warning restore CS0067
 
     [Header("중앙 점(Dot)")]
     public bool showDot = true;

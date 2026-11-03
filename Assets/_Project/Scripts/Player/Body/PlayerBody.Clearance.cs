@@ -43,11 +43,15 @@ public sealed partial class PlayerBody
             * Mathf.Sqrt(1f + halfHeight * halfHeight * (1f + viewCamera.aspect * viewCamera.aspect)));
     }
 
+    // Walls keep the camera out, enemies don't: sliding past or under one would otherwise pull the camera back to its
+    // anchor inside one's own body, and a slide passes right through them.
+    private LayerMask CameraBlockers => player.groundLayers & ~LayerMask.GetMask("Enemy");
+
     private bool LookPoseIsClear(Vector3 anchor, float radius)
     {
-        Vector3 lean = cameraEffects != null ? cameraEffects.LeanDisplacement : transform.right * player.LeanOffset;
-        return clearance.IsClear(anchor, head.position, Mathf.Max(.09f, radius), player.groundLayers, transform)
-            && clearance.IsClear(anchor, EyePosition + lean, radius, player.groundLayers, transform);
+        Vector3 lean = (cameraEffects != null ? cameraEffects.LeanDisplacement : transform.right * player.LeanOffset) - leanShift;
+        return clearance.IsClear(anchor, head.position, Mathf.Max(.09f, radius), CameraBlockers, transform)
+            && clearance.IsClear(anchor, EyePosition + lean, radius, CameraBlockers, transform);
     }
 
     // Keep the requested gaze, but use less torso lean when that would push the face into geometry. The neck and

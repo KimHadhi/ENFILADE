@@ -56,6 +56,11 @@ public sealed class SlidingState : MovementBaseState
         {
             ctx.ChangeState(PlayerMovement.MovementState.Proning);
         }
+        else if (ctx.Input.AimHeld && ctx.CurrentInput.y <= 0.1f)
+        {
+            // Beatrun's slide end (meslideendprone): aiming and not pressing forward, it ends lying on the back.
+            ctx.ChangeState(PlayerMovement.MovementState.Supine);
+        }
         else if ((wantsSprintForward || !crouchPressed) && !ctx.HasCeilingAbove(ctx.StandingColliderHeight))
         {
             ctx.ChangeState(PlayerMovement.MovementState.Standing);

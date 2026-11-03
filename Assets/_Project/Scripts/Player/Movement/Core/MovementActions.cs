@@ -11,7 +11,9 @@ public sealed class MovementActions
     public Vector3 DiveBodyForward = Vector3.forward;
     public MovementDive Dive { get; }
     public MovementMomentum Momentum { get; }
-    internal float sprintProgress, slideCooldownTimer, coyoteTimer, jumpBufferTimer;
+    internal float sprintProgress, slideCooldownTimer, coyoteTimer, jumpBufferTimer, riseTimer;
+    /// <summary>Getting up off the back: every key waits until the body is up (Ability.supineRiseTime).</summary>
+    public bool IsRising => riseTimer > 0f;
 
     internal MovementActions(PlayerMovement context) { ctx = context; Dive = new MovementDive(ctx); Momentum = new MovementMomentum(ctx); }
 
@@ -20,13 +22,14 @@ public sealed class MovementActions
         coyoteTimer -= dt;
         jumpBufferTimer -= dt;
         slideCooldownTimer -= dt;
+        riseTimer -= dt;
         Dive.Tick(dt);
     }
 
     internal void Reset()
     {
         CurrentSlideSpeed = sprintProgress = 0f;
-        coyoteTimer = jumpBufferTimer = slideCooldownTimer = 0f;
+        coyoteTimer = jumpBufferTimer = slideCooldownTimer = riseTimer = 0f;
         SlideBrakeArmed = false;
         Dive.Reset();
         Momentum.Reset();

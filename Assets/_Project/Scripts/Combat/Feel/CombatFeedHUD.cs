@@ -4,8 +4,9 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// Call of Duty (MW3)-style kill rewards. Right of the crosshair a "110 XP" number slams in on each kill, with the
-/// events listed beside it (☠ 처치, 헤드샷, 원거리 사격, 처형, 반격, 더블 킬 ...). 처형 and 반격 carry their own icon
+/// Call of Duty (MW3)-style kill rewards. A "110 XP" number slams in on each kill over the events that earned it
+/// (☠ 처치, 헤드샷, 원거리 사격, 처형, 반격, 더블 킬 ...), hung off the top right of the gun like Dead Space's ammo count
+/// (GunScoreAnchor) so the middle of the screen stays clear. 처형 and 반격 carry their own icon
 /// (knife with a slash trail, return arrow) in the line colour. The number accumulates over a kill streak and the group fades after a quiet spell. Only kills score, so sustained fire stays quiet.
 /// A rolling XP total and a kill feed sit at the top right. Created on first use during Play; GunFeel → Score.
 /// </summary>
@@ -32,6 +33,7 @@ public sealed class CombatFeedHUD : MonoBehaviour
 
     private RectTransform streakRoot, linesRoot, totalRoot, feedRoot;
     private TextMeshProUGUI streakLabel, totalLabel;
+    private Image streakBracket;
     private CanvasGroup streakGroup;
     private readonly List<Line> lines = new List<Line>();
     private readonly Stack<Line> spareLines = new Stack<Line>();
@@ -61,7 +63,8 @@ public sealed class CombatFeedHUD : MonoBehaviour
         var settings = GunFeelSettings.Instance;
         var self = Get();
         float now = Time.unscaledTime;
-        self.multiKill = now - self.lastKillTime <= settings.multiKillWindow ? self.multiKill + 1 : 1;
+        // The kill feed's window, so the popup's multi kill and the feed's numeral count the same kills.
+        self.multiKill = now - self.lastKillTime <= StreakWindow ? self.multiKill + 1 : 1;
         self.lastKillTime = now;
         if (settings.scoreFeed)
         {
@@ -99,13 +102,16 @@ public sealed class CombatFeedHUD : MonoBehaviour
     {
         if (!Application.isPlaying || !GunFeelSettings.Instance.killFeed) return;
         var settings = GunFeelSettings.Instance;
-        Get().AddRow(NameOf(who), grave ? CombatUIAssets.Skull : null, Color.white, what, grave ? KillRed : settings.scoreColor, false, 0);
+        Get().AddRow(NameOf(who), grave ? CombatUIAssets.Skull : null, Color.white, what, grave ? KillRed : settings.scoreColor, false, 0, grave);
     }
 
     private static int StreakOf(PlayerMovement who) => who != null && who.TryGetComponent(out PlayerTally tally) ? tally.Streak : 0;
 
     /// <summary>How long a kill keeps a streak alive: the score's double-kill window with some grace on top (s).</summary>
     public static float StreakWindow => GunFeelSettings.Instance.multiKillWindow + Get().look.streakGrace;
+
+    /// <summary>The streak whose kill first shows the blue-eyed skull instead of a numeral.</summary>
+    public static int SkullStreak => Get().look.mostNumeral + 1;
 
     // Alone there's only one name it could be.
     private static string Credit(PlayerMovement who, string weapon)
@@ -121,22 +127,31 @@ public sealed class CombatFeedHUD : MonoBehaviour
     {
         if (instance != null && instance != this) { Destroy(gameObject); return; }
         instance = this;
-        FeelUI.SetupOverlay(gameObject, 27);
+        FeelUI.SetupHud(gameObject, 27);
         GameTables.BindNested(TableName, TableRow, this, look);
+        // The total and the feed sit on the HUD's right plane with the ammo; the streak hangs off the top right of
+        // whatever is in the player's hands (GunScoreAnchor).
+        var side = HudPlane.Create("Right Plane", transform, HudPlane.Side.Right);
+        var hold = FeelUI.Rect("Gun Hold", transform);
+        gameObject.AddComponent<GunScoreAnchor>().Hold(hold);
 
-        streakRoot = FeelUI.Rect("Streak", transform);
+        streakRoot = FeelUI.Rect("Streak", hold);
         streakGroup = streakRoot.gameObject.AddComponent<CanvasGroup>();
         streakGroup.interactable = streakGroup.blocksRaycasts = false;
         streakGroup.alpha = 0f;
-        // Number right-aligned so it grows leftward; the event list starts just right of it.
-        streakLabel = FeelUI.ScoreLabel("Streak Score", streakRoot, 30f, TextAlignmentOptions.Right);
-        streakLabel.rectTransform.pivot = new Vector2(1f, .5f);
+        // A small panel growing up and right from the corner it hangs on: the events stacked from the bottom, the
+        // number on top, a thin bracket down the left side.
+        streakBracket = FeelUI.Rect("Bracket", streakRoot).gameObject.AddComponent<Image>();
+        streakBracket.raycastTarget = false;
+        streakBracket.rectTransform.pivot = Vector2.zero;
+        streakBracket.rectTransform.anchoredPosition = new Vector2(-8f, -LineHeight * .5f);
+        streakLabel = FeelUI.ScoreLabel("Streak Score", streakRoot, 30f, TextAlignmentOptions.BottomLeft);
+        streakLabel.rectTransform.pivot = Vector2.zero;
         streakLabel.rectTransform.sizeDelta = new Vector2(220f, 40f);
         streakLabel.color = Number;
         linesRoot = FeelUI.Rect("Lines", streakRoot);
-        linesRoot.anchoredPosition = new Vector2(16f, 0f);
 
-        totalRoot = FeelUI.Rect("Total", transform);
+        totalRoot = FeelUI.Rect("Total", side);
         totalRoot.anchorMin = totalRoot.anchorMax = totalRoot.pivot = Vector2.one;
         totalRoot.anchoredPosition = new Vector2(-36f, -28f);
         totalRoot.sizeDelta = new Vector2(320f, 40f);
@@ -150,7 +165,7 @@ public sealed class CombatFeedHUD : MonoBehaviour
         totalLabel.rectTransform.anchoredPosition = new Vector2(160f, -8f);
         totalRoot.gameObject.SetActive(false);
 
-        feedRoot = FeelUI.Rect("Kill Feed", transform);
+        feedRoot = FeelUI.Rect("Kill Feed", side);
         feedRoot.anchorMin = feedRoot.anchorMax = feedRoot.pivot = Vector2.one;
         feedRoot.anchoredPosition = new Vector2(-36f, -80f);
     }
@@ -166,7 +181,13 @@ public sealed class CombatFeedHUD : MonoBehaviour
         // A new streak slams in from far larger; each later kill punches the number again. Fades upward when quiet.
         float fadeT = Mathf.Clamp01((streakIdle - settings.scoreStreakSeconds) / FadeSeconds);
         streakGroup.alpha = streakScore > 0 ? Mathf.Clamp01(popAge / .04f + (fresh ? 0f : 1f)) * (1f - fadeT) : 0f;
-        streakRoot.anchoredPosition = settings.scoreOffset + new Vector2(0f, fadeT * 10f);
+        streakRoot.anchoredPosition = new Vector2(0f, fadeT * 10f);
+        float stack = lines.Count * LineHeight;
+        streakLabel.rectTransform.anchoredPosition = new Vector2(0f, stack - LineHeight * .5f + 2f);
+        streakBracket.rectTransform.sizeDelta = new Vector2(2f, stack + 40f);
+        Color bracket = settings.scoreColor;
+        bracket.a = .85f;
+        streakBracket.color = bracket;
         float pop = 1f - Mathf.Pow(1f - Mathf.Clamp01(popAge / .13f), 3f);
         streakLabel.rectTransform.localScale = Vector3.one * Mathf.Lerp(fresh ? 1.9f : 1.35f, 1f, pop);
         streakLabel.color = Color.Lerp(Color.white, Number, Mathf.Clamp01(popAge / .1f));
@@ -179,7 +200,7 @@ public sealed class CombatFeedHUD : MonoBehaviour
             // Events tick in one after another, each sliding from the left.
             float delayed = line.age - i * .05f;
             float enter = 1f - Mathf.Pow(1f - Mathf.Clamp01(delayed / .12f), 3f);
-            line.root.anchoredPosition = new Vector2((1f - enter) * -14f, -i * LineHeight + (lines.Count - 1) * LineHeight * .5f - 2f);
+            line.root.anchoredPosition = new Vector2((1f - enter) * -14f, (lines.Count - 1 - i) * LineHeight);
             line.root.localScale = Vector3.one * Mathf.Lerp(1.25f, 1f, enter);
             Color color = Color.Lerp(Color.white, line.tint ?? (line.accent ? settings.scoreColor : Soft), Mathf.Clamp01(delayed / .12f));
             color.a = enter;
@@ -202,7 +223,10 @@ public sealed class CombatFeedHUD : MonoBehaviour
             kills[i].Hide(); spareKills.Push(kills[i]); kills.RemoveAt(i);
         }
         for (int i = 0; i < kills.Count; i++)
-            kills[i].Tick(dt, -(kills.Count - 1 - i) * (KillFeedRow.Height + 5f), KillLifetime);
+        {
+            int rank = kills.Count - 1 - i;
+            kills[i].Tick(dt, -rank * (KillFeedRow.Height + 5f), KillLifetime, rank);
+        }
     }
 
     private void ClearLines()
@@ -253,17 +277,17 @@ public sealed class CombatFeedHUD : MonoBehaviour
     {
         var settings = GunFeelSettings.Instance;
         AddRow(weapon, headshot ? CombatUIAssets.CriticalBurst : CombatUIAssets.Skull, headshot ? settings.scoreColor : Color.white,
-            target, headshot ? settings.scoreColor : KillRed, mine, streak);
+            target, headshot ? settings.scoreColor : KillRed, mine, streak, headshot);
     }
 
-    private void AddRow(string left, Texture icon, Color iconColor, string right, Color accent, bool mine, int streak)
+    private void AddRow(string left, Texture icon, Color iconColor, string right, Color accent, bool mine, int streak, bool emphatic)
     {
         if (kills.Count >= MaxKills)
         {
             kills[0].Hide(); spareKills.Push(kills[0]); kills.RemoveAt(0);
         }
         var row = spareKills.Count > 0 ? spareKills.Pop() : new KillFeedRow(feedRoot);
-        row.Show(left, icon, iconColor, right, accent, mine, streak, look);
+        row.Show(left, icon, iconColor, right, accent, mine, streak, look, emphatic);
         kills.Add(row);
     }
 }

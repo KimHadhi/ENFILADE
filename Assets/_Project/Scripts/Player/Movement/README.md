@@ -112,7 +112,7 @@ Slide 내부의 자세 전환은 부모를 다시 진입하지 않으므로 같�
 
 벽·렛지의 지지면은 `WallDetector.CanUseSurface`에서 판별합니다. 적의 `MeleeCombatTarget`·`EnemyHealth` 또는 상위 오브젝트의 Enemy 태그가 있거나, 움직이는 물체(비키네마틱 Rigidbody)이면 잡지 않으며, 진행 중인 상태도 이 규칙을 확인합니다. 적 머리 통과를 유지하기 위해 일반 장애물·지면 검사와 이 지지면 판정을 구분합니다.
 
-넘기와 올라서기는 Beatrun의 `vaulting.lua`와 `climb.lua`를 검사 순서까지 옮긴 [BeatrunVault](Parkour/BeatrunVault.cs)가 고릅니다. 장애물에 종류를 표시하지 않고 윗면 너머를 봅니다. 공중에서 W를 누르면 보통 넘기(2.5m 앞이 비었는지), 긴 넘기(3.75m 앞이 비고 아래에 바닥이 있는지), 올라타기 순서로 시도하고, 벽 앞에서는 얇은 벽 넘기, 높은 올라서기, 렛지 잡기 순서로 시도합니다. 원본 거리는 72단위 몸 크기 기준이라 `PlayerMovement.HullUnit`으로 캡슐 키에 맞춥니다. 위 거리는 표준 캡슐 기준이고, 캡슐이 달라지면 함께 달라집니다. 자동 판단이 맵과 맞지 않는 물체에는 [ParkourObstacle](../../World/ParkourObstacle.cs)을 붙여 넘기 전용이나 올라타기 전용으로 지정합니다.
+넘기와 올라서기는 Beatrun의 `vaulting.lua`와 `climb.lua`를 검사 순서까지 옮긴 [VaultFinder](Parkour/VaultFinder.cs)가 고릅니다. 장애물에 종류를 표시하지 않고 윗면 너머를 봅니다. 공중에서 W를 누르면 보통 넘기(2.5m 앞이 비었는지), 긴 넘기(3.75m 앞이 비고 아래에 바닥이 있는지), 올라타기 순서로 시도하고, 벽 앞에서는 얇은 벽 넘기, 높은 올라서기, 렛지 잡기 순서로 시도합니다. 원본 거리는 72단위 몸 크기 기준이라 `PlayerMovement.HullUnit`으로 캡슐 키에 맞춥니다. 위 거리는 표준 캡슐 기준이고, 캡슐이 달라지면 함께 달라집니다. 자동 판단이 맵과 맞지 않는 물체에는 [ParkourObstacle](../../World/ParkourObstacle.cs)을 붙여 넘기 전용이나 올라타기 전용으로 지정합니다.
 
 ## 재초기화와 상태 보존
 

@@ -11,7 +11,9 @@ public sealed class PlayerFistAudio : MonoBehaviour
 {
     // How much of the swing is left once the punch has landed.
     private const float SwingUnderHit = .3f, OthersReach = 25f;
-    private AudioSource swingVoice, hitVoice;
+    // Two swings and four hits at most, so an autoclicker can't use up the real voices (VoiceRing).
+    private const int SwingVoices = 2, HitVoices = 4;
+    private VoiceRing swingVoices, hitVoices;
     private AudioClip previousSwing, previousHit, previousHeavy, previousWall;
     public FistSound LastSound { get; private set; }
     public AudioClip LastClip { get; private set; }
@@ -61,16 +63,24 @@ public sealed class PlayerFistAudio : MonoBehaviour
         Played?.Invoke(sound);
         if (sound == FistSound.Swing)
         {
-            if (swingVoice == null) swingVoice = NewVoice();
-            GameAudio.SetGain(swingVoice, 1f);
-            swingVoice.PlayOneShot(clip, Mathf.Clamp01(volume));
+            if (swingVoices == null) swingVoices = NewRing(SwingVoices);
+            var swing = swingVoices.Take();
+            GameAudio.SetGain(swing, 1f);
+            swing.PlayOneShot(clip, Mathf.Clamp01(volume));
             return;
         }
-        if (hitVoice == null) hitVoice = NewVoice();
-        if (swingVoice != null) GameAudio.SetGain(swingVoice, SwingUnderHit);
+        if (hitVoices == null) hitVoices = NewRing(HitVoices);
+        swingVoices?.ForEach(swing => GameAudio.SetGain(swing, SwingUnderHit));
         float variance = CombatFeedbackSettings.InstanceOrDefaults.hitPitchVariance;
-        hitVoice.pitch = 1f + Random.Range(-variance, variance);
-        hitVoice.PlayOneShot(clip, Mathf.Clamp01(volume));
+        var hit = hitVoices.Take();
+        hit.pitch = 1f + Random.Range(-variance, variance);
+        hit.PlayOneShot(clip, Mathf.Clamp01(volume));
+    }
+    private VoiceRing NewRing(int count)
+    {
+        var sources = new AudioSource[count];
+        for (int i = 0; i < count; i++) sources[i] = NewVoice();
+        return new VoiceRing(sources);
     }
     private AudioSource NewVoice()
     {
@@ -101,7 +111,7 @@ public sealed class PlayerFistAudio : MonoBehaviour
     }
     private void OnDisable()
     {
-        if (swingVoice != null) swingVoice.Stop();
-        if (hitVoice != null) hitVoice.Stop();
+        swingVoices?.Stop();
+        hitVoices?.Stop();
     }
 }

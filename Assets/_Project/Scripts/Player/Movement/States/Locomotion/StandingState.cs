@@ -11,9 +11,7 @@ public sealed class StandingState : MovementBaseState
     {
         bool crouchPressed = ctx.Input.CrouchHeld;
         bool crouchJustPressed = ctx.Input.CrouchPressed;
-        bool diveJustPressed = ctx.InputAvailable && (
-            (ctx.DiveAction != null && ctx.DiveAction.WasPressedThisFrame())
-        );
+        bool diveJustPressed = ctx.Input.DivePressed;
 
         float measuredSpeed = new Vector2(ctx.ActualVelocity.x, ctx.ActualVelocity.z).magnitude;
         // Shift gets there in a moment; W alone once the run has built up enough speed.

@@ -10,6 +10,7 @@ public sealed class CombinedRoomList : IRoomList
 
     public IEnumerable<RoomInfo> Rooms => lists.SelectMany(list => list.Rooms);
     public string Problem => lists.Select(list => list.Problem).FirstOrDefault(problem => !string.IsNullOrEmpty(problem)) ?? "";
+    public bool Searching => lists.Any(list => list.Searching);
 
     public void Tick() { foreach (var list in lists) list.Tick(); }
     public void Refresh() { foreach (var list in lists) list.Refresh(); }

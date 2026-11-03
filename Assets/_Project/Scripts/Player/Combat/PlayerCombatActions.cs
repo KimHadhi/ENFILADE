@@ -23,12 +23,15 @@ public sealed class PlayerCombatActions
 
     /// <summary>The speed of the dash under way (m/s).</summary>
     public float DashSpeed { get; private set; }
+    /// <summary>Shared by the crowd shove and the fists' tap shove.</summary>
+    public ShoveFatigue Fatigue { get; } = new ShoveFatigue();
 
     internal PlayerCombatActions(PlayerMovement context) { ctx = context; }
     internal void Tick(float dt)
     {
         cooldown = Mathf.Max(0f, cooldown - dt);
         dashCooldown = Mathf.Max(0f, dashCooldown - dt);
+        Fatigue.Tick(dt, ctx.AbilitySettings);
         SampleShove(dt);
     }
     internal void CancelShove() { shoveSweep.Cancel(); }
@@ -47,9 +50,9 @@ public sealed class PlayerCombatActions
     {
         if (cooldown > 0f) return false;
         ctx.GetComponent<WeaponController>()?.InterruptForSurvival(true);
-        cooldown = ctx.AbilitySettings.shoveCooldown;
-        var camera = ctx.GetComponentInChildren<Camera>();
-        shoveSweep.Begin(ctx, camera != null ? camera.transform : ctx.transform, ctx.AbilitySettings.shoveDamage,
+        cooldown = Fatigue.Spend(ctx.AbilitySettings.shoveCooldown, ctx.AbilitySettings);
+        // From the eyes, which stay with the body in the F5 view.
+        shoveSweep.Begin(ctx, PlayerView.EyesOf(ctx), ctx.AbilitySettings.shoveDamage,
             ctx.AbilitySettings.interactionLayers, ctx.AbilitySettings.shoveActiveTime);
         if (shoveSweep.HitCount > 0) ctx.GetComponent<WeaponController>()?.ConfirmShoveHit();
         return true;
@@ -71,7 +74,7 @@ public sealed class PlayerCombatActions
         return true;
     }
 
-    internal void EndDashPush() { dashCooldown = ctx.AbilitySettings.dashPushCooldown; }
+    internal void EndDashPush() { dashCooldown = Fatigue.SpendDash(ctx.AbilitySettings); }
 
     /// <summary>
     /// Sweeps the body ahead by this frame's step plus the reach, nearest first. Light props are left to the body to
@@ -150,5 +153,5 @@ public sealed class PlayerCombatActions
         timeEffects.RequestSlowdown(ctx, .1f, .08f);
         ctx.RaiseDashPushHit(point);
     }
-    internal void Reset() { CancelShove(); cooldown = dashCooldown = DashSpeed = 0f; attackId = 0; contacted.Clear(); }
+    internal void Reset() { CancelShove(); cooldown = dashCooldown = DashSpeed = 0f; attackId = 0; contacted.Clear(); Fatigue.Reset(); }
 }

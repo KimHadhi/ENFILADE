@@ -10,15 +10,15 @@ public sealed class ObstacleTraversalState : MovementBaseState
     private Vector3 finishPosition;
     private TraversalPath path;
     private Vector3 entryVelocity;
-    private ReferenceTraversal reference;
-    public bool UsesReferenceMotion => reference != null;
+    private StraightLineTraversal straightLine;
+    public bool MovesInStraightLine => straightLine != null;
     public bool IsVault => vault;
     public int EntrySerial { get; private set; }
     public float EntrySpeed => entryVelocity.magnitude;
     private readonly List<Vector3> framePath = new List<Vector3>();
     public ObstacleTraversalState(PlayerMovement ctx, MovementBaseState parent, bool vault) : base(ctx, parent) { this.vault = vault; }
     public override string Name => vault ? "Vault" : "Mantle";
-    public override MovementPosture Posture => UsesReferenceMotion ? MovementPosture.Standing : MovementPosture.Crouching;
+    public override MovementPosture Posture => MovesInStraightLine ? MovementPosture.Standing : MovementPosture.Crouching;
     public override void Enter()
     {
         blockedTime = progress = elapsed = 0f; finished = false;
@@ -28,8 +28,8 @@ public sealed class ObstacleTraversalState : MovementBaseState
         var target = ctx.Abilities.Traversal.Obstacle;
         ctx.Abilities.Traversal.RecordObstacle();
         ctx.Abilities.Traversal.ObstacleProgress = 0f;
-        reference = target.ReferenceMotion ? new ReferenceTraversal(ctx, target, entryVelocity.magnitude) : null;
-        path = reference != null ? null : new TraversalPath(target, ctx.Abilities.Traversal.Detector, ctx.CrouchColliderHeight);
+        straightLine = target.StraightLine ? new StraightLineTraversal(ctx, target, entryVelocity.magnitude) : null;
+        path = straightLine != null ? null : new TraversalPath(target, ctx.Abilities.Traversal.Detector, ctx.CrouchColliderHeight);
         duration = Mathf.Max(0.05f, TraversalTiming.Duration(ctx.AbilitySettings, target));
         EntrySerial++;
     }
@@ -42,9 +42,9 @@ public sealed class ObstacleTraversalState : MovementBaseState
         var traversal = ctx.Abilities.Traversal;
         var target = traversal.Obstacle;
         if (target.Surface == null) { Abort(); return; }
-        if (reference != null)
+        if (straightLine != null)
         {
-            if (!reference.Complete) return;
+            if (!straightLine.Complete) return;
             ctx.Abilities.Landing.SupportedByTraversal();
             ctx.Abilities.ReturnToLocomotion();
             Leave(target.Kind);
@@ -72,10 +72,10 @@ public sealed class ObstacleTraversalState : MovementBaseState
     }
     public override void UpdatePhysics(float dt)
     {
-        if (reference != null)
+        if (straightLine != null)
         {
-            if (!reference.Advance(dt)) Abort();
-            else ctx.Abilities.Traversal.ObstacleProgress = reference.Progress;
+            if (!straightLine.Advance(dt)) Abort();
+            else ctx.Abilities.Traversal.ObstacleProgress = straightLine.Progress;
             return;
         }
         float nextElapsed = elapsed + dt;
@@ -118,10 +118,10 @@ public sealed class ObstacleTraversalState : MovementBaseState
     {
         // Held W must not immediately turn a blocked vault into a wall action
         // or another automatic grab before the body has recovered.
-        if (reference != null) ctx.Abilities.Traversal.LockLedge();
+        if (straightLine != null) ctx.Abilities.Traversal.LockLedge();
         ctx.Abilities.ReturnToLocomotion();
         ctx.HorizontalVelocity = entryVelocity;
         ctx.VerticalVelocity = Mathf.Min(ctx.VerticalVelocity, 0f);
     }
-    public override void Exit() { reference?.Exit(); }
+    public override void Exit() { straightLine?.Exit(); }
 }

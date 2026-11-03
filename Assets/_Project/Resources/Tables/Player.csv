@@ -28,6 +28,7 @@ Fists.guardBreakPostureDamage,55,가드 브레이크 자세 피해
 Defense.parryOpensCounter,false,패링이 반격 창을 연다. 반격 스킬이 생기기 전에는 끈다(완벽 회피의 반격은 그대로)
 Defense.postureBreakTimeScale,0.3,패링으로 체간을 무너뜨린 순간의 시간 배율
 Defense.postureBreakSlowSeconds,0.35,그 슬로모션 길이(실제 초). 처형을 시작하면 바로 끝난다. 0이면 끈다
+Defense.counterGuardSeconds,0.5,반격한 뒤 무적 시간(실제 초). 반격 창이 열린 동안에도 무적이고, 회피 판정은 무적보다 먼저 본다
 Parry.handSweepSeconds,0.34,패링 때 손 동작 전체 시간: 뻗기+멈춤+돌아오기(실제 초)
 Parry.handSweepAttack,0.04,손이 화면을 가로질러 뻗는 시간(실제 초)
 Parry.handSweepHold,0.075,뻗은 자세로 멈추는 시간(실제 초). 히트스톱과 맞물린다
@@ -92,30 +93,30 @@ Posture.proneEntryLookAhead,0.6,웅크려 이동할 때 낮은 통로를 미리 
 Posture.transitionSharpness,14,자세가 바뀔 때 캡슐 높이·눈높이가 따라가는 빠르기
 Posture.slideTransitionSharpness,8.5,슬라이드·다이브 때 자세가 바뀌는 빠르기
 # 이동: 걷기·질주·점프 (Move 행 → PlayerMovement),,
-Move.walkSpeed,5.2,걷기 속도(m/s). 옆·뒤로 갈 때는 이 속도까지만
-Move.sprintSpeed,8.4,질주 속도(m/s). Shift는 바로, W만은 sprintBuildTime에 이른다
-Move.crouchSpeed,3,웅크려 이동하는 속도(m/s)
+Move.walkSpeed,4.9,걷기 속도(m/s). 0.7.28에 살짝 묵직하게 5.2에서 낮춤. 옆·뒤로 갈 때는 이 속도까지만
+Move.sprintSpeed,7.9,질주 속도(m/s). Shift는 바로, W만은 sprintBuildTime에 이른다
+Move.crouchSpeed,2.8,웅크려 이동하는 속도(m/s)
 Move.proneSpeed,1.6,엎드려 기는 속도(m/s)
 Move.supineSpeed,1.6,누워서 이동하는 속도(m/s)
 Move.sprintRampUpDuration,0.1,Shift를 누르고 질주 속도에 이르는 시간(초)
 Move.strafeCompensation,1.15,옆으로 갈 때의 속도 배율. 옆걸음이 느려 보이지 않게
-Move.groundSharpness,14,지상에서 속도를 바꾸는 빠르기. 클수록 즉시 반응
+Move.groundSharpness,10,지상에서 속도를 바꾸는 빠르기. 클수록 즉시 반응. 낮을수록 출발·정지가 묵직하다(0.7.28에 14에서 낮춤)
 Move.airControlSharpness,5,공중에서 방향을 바꾸는 빠르기
 Move.jumpHeight,1.3,점프 높이(m)
 Move.gravity,-24,중력(m/s²). 음수이고 더 작을수록 빨리 떨어진다
 Move.coyoteTime,0.1,발판을 벗어난 뒤에도 점프를 받아 주는 시간(초)
 Move.jumpBufferTime,0.15,착지 직전에 누른 점프를 기억하는 시간(초)
 # 이동: 모멘텀 (달릴수록 붙는 속도 → MovementMomentum. 디버그 HUD의 run 값),,
-Move.runStartSpeed,3.8,출발 속도(m/s). 어느 방향이든 이 속도로 시작해 쌓인다. walkSpeed와 같게 하면 바로 걷기 속도
+Move.runStartSpeed,3.6,출발 속도(m/s). 어느 방향이든 이 속도로 시작해 쌓인다. walkSpeed와 같게 하면 바로 걷기 속도
 Move.walkBuildTime,1,W만 누르고 출발해 walkSpeed에 이르는 시간(초)
 Move.sprintBuildTime,3.5,W만 누르고 출발해 sprintSpeed에 이르는 시간(초). Shift는 sprintRampUpDuration 만에 이른다
-Move.topSpeed,9.5,앞으로 달리며 쌓이는 최고 속도(m/s). 옆·뒤로는 walkSpeed까지만
+Move.topSpeed,8.9,앞으로 달리며 쌓이는 최고 속도(m/s). 옆·뒤로는 walkSpeed까지만
 Move.topBuildTime,2,sprintSpeed에서 topSpeed까지 쌓이는 시간(초). W만이든 Shift든 같다
 Move.turnCutRate,90,달리다 시선을 이보다 빠르게 돌리면 쌓인 속도가 깎인다(도/초)
 Move.turnCutPerDegree,0.025,그렇게 돈 1도마다 깎이는 속도(m/s). 90도를 휙 돌면 약 2.3m/s
 Move.momentumFalloff,20,앞으로 달리기를 멈추면 쌓인 속도가 빠지는 빠르기(m/s²). 벽에 막히면 실제 속도로 바로 깎인다
 # 이동: 슬라이딩,,
-Move.slideMinStartSpeed,5.3,달리며 Ctrl로 슬라이드를 시작할 수 있는 최소 속도(m/s). Shift든 W만이든 이 속도면 된다
+Move.slideMinStartSpeed,5,달리며 Ctrl로 슬라이드를 시작할 수 있는 최소 속도(m/s). Shift든 W만이든 이 속도면 된다
 Move.slideKickBoost,1,슬라이드 시작 때 더하는 속도(m/s)
 Move.slideFriction,4.2,슬라이드 감속(m/s²)
 Move.diveSlideFriction,9,머리부터 미끄러지기 감속(m/s²)
@@ -150,6 +151,7 @@ Move.diveBurstDuration,0.1,공중 감속이 0에서 설정값까지 서서히 �
 Move.diveCarrySpeed,2.2,다이브 감속이 이 속도에서 멈춘다(m/s)
 Move.diveBurstBraking,2.6,다이브 공중 감속 세기
 Move.diveLandingRecovery,0.55,착지 직후 다이브를 다시 못 쓰는 시간(초). 시점 조작은 된다
+Move.airDiveMaxFallSpeed,8.75,공중 다이브는 이보다 느리게 떨어질 때만 된다(m/s). Beatrun의 350단위/초(다이브에 필요한 웅크린 점프의 한계). 큰 낙하로 허우적거리는 중에는 언제나 안 된다
 Move.diveSlideKickBoost,3.8,다이브 착지 후 머리부터 미끄러질 때 더하는 속도(m/s)
 Move.maxLandingSlideSpeed,10,착지 슬라이드 속도 상한(m/s). 이미 더 빠르면 그 속도를 유지
 # 이동: 충돌,,
@@ -252,6 +254,9 @@ Ability.rollDuration,1,착지 구르기 시간(초). 구르기 애니메이션�
 Ability.rollSpeed,4,구르는 동안 가장 느린 속도(m/s). 착지 속도가 더 빠르면 그 속도를 유지
 Ability.rollLandSpeed,5,수평 속도가 이보다 느리거나 S를 누르고 있으면 구르지 않고 제자리에 착지한다(m/s). Beatrun의 200단위/초
 Ability.rollLandTime,0.6,제자리 착지로 멈춰 있는 시간(초)
+Ability.rollInPlaceDamageShare,0.5,제자리 착지(속도 없이 Ctrl)가 그래도 받는 낙하 피해 비율. 큰 낙하(바람 소리·허우적거림)가 시작된 낙하는 구르기 자체가 안 된다(Beatrun과 같음)
+Ability.rollLandHurtTime,1,다칠 만큼 높은 곳에서 제자리 착지했을 때 멈춰 있는 시간(초). 다치지 않으면 rollLandTime
+Ability.supineRiseTime,1,누운 자세에서 일어나는 동안 이동(걷기·점프·회피·다이브·기울이기)을 못 하는 시간(초). 일어나는 동작을 끝까지 보여 준다(Beatrun의 JumpTurnRecovery 1초). 사격·조준·밀치기·주먹은 된다
 Ability.bigFallHeight,8.5,낙하 꼭대기부터 아래 땅까지 이보다 높으면 큰 낙하: 바람·심장 박동·화면 일그러짐·허우적(m)
 Ability.bigFallMinSpeed,9,이보다 빠르게 떨어져야 큰 낙하가 될 수 있다(m/s). 틈 건너뛰기는 해당 없음
 # 능력: 슬라이드 전투,,
@@ -272,11 +277,17 @@ Ability.shoveStun,0.85,밀친 적의 경직(초)
 Ability.shovePostureDamage,8,V 밀치기 자세 피해
 Ability.shoveDamage,5,V 밀치기 피해
 Ability.shoveCooldown,0.5,V 밀치기 재사용 대기(초)
+Ability.shoveFatigueStart,4,밀치기 피로(L4D2): 총·주먹 밀치기를 연속 이 번째부터 다음 밀치기까지 대기가 길어진다
+Ability.shoveFatigueMost,7,연속 이 번째에 대기가 가장 길어지고, 계속 밀치는 동안 그대로다
+Ability.shoveFatigueInterval,1.2,가장 긴 밀치기 대기(초)
+Ability.shoveFatigueRecovery,1,밀치지 않고 이만큼(초) 지날 때마다 연속 횟수가 하나 준다
 # 능력: 돌진 밀치기 (총·주먹 모두 달리며 V. Dynamic Landing Push),,
-Ability.dashPushMinSpeed,5,이 속도(m/s) 이상으로 시선 쪽으로 달릴 때 V가 돌진 밀치기가 된다
+Ability.dashPushMinSpeed,4.7,이 속도(m/s) 이상으로 시선 쪽으로 달릴 때 V가 돌진 밀치기가 된다
 Ability.dashPushDuration,0.25,돌진 시간(초). 누군가에 부딪히면 그 자리에서 멈춘다
 Ability.dashPushSpeedScale,2,돌진 속도 = 시작 속도 × 이 값
 Ability.dashPushCooldown,1,돌진이 끝난 뒤 다음 돌진까지(초). 그동안 V는 평소대로(총: 군중 밀치기. 빈손: 밀치기·가드 브레이크)
+Ability.dashPushFatigueCost,2,돌진 한 번이 밀치기 피로에서 밀치기 몇 번으로 치는지. 밀치기와 같은 피로를 쓴다
+Ability.dashPushFatigueCooldown,4,밀치기 피로가 가장 클 때 다음 돌진까지(초). 피로가 없으면 dashPushCooldown
 Ability.dashPushReach,0.5,몸 앞 이 거리(m)에 들어온 적에 부딪힌다
 Ability.dashPushDamage,20,돌진 밀치기 피해
 Ability.dashPushPostureDamage,20,돌진 밀치기 자세 피해
@@ -313,16 +324,19 @@ Body.slide,slideloop,슬라이딩
 Body.slideEnd,slideend,슬라이딩 끝
 Body.diveStart,divestart,다이브 시작
 Body.dive,diveidle,다이브 공중
+Body.supineDiveStart,jumpturnfly,등을 대고 하는 다이브의 시작. Beatrun의 점프 턴처럼 공중에서 뒤로 눕는다
+Body.supineDive,jumpturnflyidle,등을 대고 하는 다이브의 공중 자세. 앞 다이브에서 돌아눕거나 누운 채 떨어지면 시작 동작 없이 바로 이 자세
 Body.bellySlideStart,diveslidestart,머리부터 슬라이딩 시작
 Body.bellySlide,diveslideidle,머리부터 슬라이딩
 Body.bellySlideEnd,diveslideend,머리부터 슬라이딩 끝
 Body.prone,diveslideidle,엎드림(전용 애니메이션이 생길 때까지 머리부터 슬라이딩 자세)
-Body.supine,meslideloop,누운 자세(등을 대고 미끄러지는 자세)
+Body.supine,jumpturnlandidle,누운 자세. Beatrun의 점프 턴처럼 등을 대고 누워 둘러본다
 Body.supineSlideStart,meslidestart,누워서 미끄러지기 시작
 Body.supineSlide,meslideloop,누워서 미끄러지기
 Body.supineSlideEnd,meslideend,누워서 미끄러지기 끝
 Body.roll,mx_sprint_roll,착지 구르기. Ability.rollDuration 동안 재생. 끝까지 발을 내디디며 달려 나간다
 Body.rollLand,land,구르기 대신 제자리에 착지할 때(Ability.rollLandSpeed). 낮은 천장 아래에서는 Body.landCrouch
+Body.touchdown,land,점프를 연달아 할 때 땅에 닿는 순간 무릎이 받는 동작. 바로 다시 뛰어도 Body.touchdownSeconds 동안 보인다
 Body.dodgeLeft,dodgejumpleft,왼쪽 회피
 Body.dodgeRight,dodgejumpright,오른쪽 회피
 Body.dashPush,bargein,돌진 밀치기. 적에 부딪혀 멈추면 끝까지 재생
@@ -345,7 +359,11 @@ Body.heavyLandBack,mx_stand_up_back,뒤로 움직이며 크게 착지하거나 �
 Body.coilLand,jumpcoilend,공중에서 무릎을 접었다가 가볍게 착지할 때 다리를 펴는 동작
 Body.coilLandCrouch,jumpcoilendcrouch,같은 착지를 웅크린 채로
 Body.supineSlideEndCrouch,meslideendcrouch,누워 미끄러지다 웅크리며 끝내기
-Body.supineSlideEndProne,meslideendprone,누워 미끄러지다 엎드리며 끝내기
+Body.supineSlideEndProne,meslideendprone,슬라이드가 누운 자세로 끝날 때(조준을 누른 채 W 없이). 다리를 들었다가 눕는다(Beatrun)
+Body.supineLand,jumpturnland,누운 다이브가 느리게 내려앉아 누울 때
+Body.supineGetUp,jumpturnlandstand,누운 자세에서 일어설 때. 일어나는 동안은 Ability.supineRiseTime만큼 움직일 수 없다
+Body.supineGetUpGun,jumpturnlandstandgun,총을 든 채 누운 자세에서 일어설 때(Beatrun과 같음)
+Body.supineGetUpCrouch,jumpturnlandcrouch,누운 자세에서 낮은 천장 아래로 웅크리며 일어날 때
 Body.bellySlideEndCrouch,diveslideendcrouch,머리부터 미끄러지다 웅크리며 끝내기
 Body.vaultHigh,vaultoverhigh,머리 높이의 얇은 벽 넘기
 Body.vaultKong,vaultkong,긴 넘기
@@ -385,10 +403,11 @@ Body.shimmyClipSpeed,0.5,난간 좌우 이동 애니메이션의 기준 속도(m
 Body.vaultClipSpeed,1,넘기·올라서기 애니메이션 재생 속도. 몸이 먼저 넘어가고 클립은 발이 땅에 닿아 움직일 때까지 이어진다
 Body.ontoClipSpeed,1.15,낮은 장애물에 올라타는 애니메이션 재생 속도
 Body.blendTime,0.15,애니메이션 사이 전환 시간(초)
+Body.touchdownSeconds,0.12,땅에 닿자마자 다시 뛰었을 때 착지 동작을 보여 주는 시간(초). 그 뒤 점프 동작이 비행 시간에 맞춰 이어진다
 Body.walkClipSpeed,1.7,걷기를 원래 박자로 재생하는 이동 속도(m/s). 재생 배율은 0.65~1.1로 제한
-Body.runClipSpeed,5.2,달리기를 원래 박자로 재생하는 이동 속도(m/s). Move.walkSpeed와 맞춘다
-Body.sprintClipSpeed,8.4,전력질주를 원래 박자로 재생하는 이동 속도(m/s). Move.sprintSpeed와 맞춘다
-Body.crouchClipSpeed,3,웅크려 걷기를 원래 박자로 재생하는 이동 속도(m/s). Move.crouchSpeed와 맞춘다
+Body.runClipSpeed,4.9,달리기를 원래 박자로 재생하는 이동 속도(m/s). Move.walkSpeed와 맞춘다
+Body.sprintClipSpeed,7.9,전력질주를 원래 박자로 재생하는 이동 속도(m/s). Move.sprintSpeed와 맞춘다
+Body.crouchClipSpeed,2.8,웅크려 걷기를 원래 박자로 재생하는 이동 속도(m/s). Move.crouchSpeed와 맞춘다
 Body.maxStrafeYaw,60,전력질주 중 옆으로 움직일 때 골반이 이동 방향으로 도는 최대 각도. 걷기·달리기·웅크리기는 옆·뒤 애니메이션이 있어 카메라 쪽을 본다
 Body.backOffset,0.12,머리를 카메라 뒤에 두는 거리(m). 내려다볼 때 목 안쪽이 보이지 않게
 Body.headFollowTime,0.25,자세가 바뀔 때 머리를 카메라 밑으로 맞추는 속도(초). 달리기 흔들림보다 느리게
@@ -410,6 +429,11 @@ Body.headNearClip,0.05,내 머리카락 보기를 켰을 때 카메라에서 이
 Body.slideTurnLimit,75,슬라이딩 시선의 좌우 제한 각도(도). 하체는 이동 방향에 고정하고 상체만 시선을 따른다
 Body.slidePitchLimits,40;55,슬라이딩 시선의 위;아래 제한 각도(도). 상체와 카메라가 같은 범위를 쓴다
 Body.heavyLandingTurnLimit,90,크게 착지해 쓰러져 있는 동안 몸이 향한 쪽에서 좌우로 돌아볼 수 있는 각도(도). 더 돌면 카메라가 자기 머리를 뚫어 본다
+Body.barTurnLimit,45,봉에 매달려 몸이 향한 쪽에서 좌우로 돌아볼 수 있는 각도(도). Beatrun의 봉과 같은 45
+Body.barReleaseTime,0.3,봉을 놓은 뒤 흔들리며 기울었던 몸이 똑바로 서는 시간(초)
+Body.supineDiveTurnLimit,75,공중에서 누운 다이브로 바꾼 뒤 등이 향한 쪽에서 좌우로 돌아볼 수 있는 각도(도). Beatrun의 점프 턴과 같은 75. 일반 다이브로 되돌아가지 않는다
+Body.leanSpineBend,20,Q/E 기울이기를 끝까지 했을 때 척추가 허리부터 옆으로 휘는 각도(도). 머리는 화면 기울기(Ability.leanAngle)만큼만 기울고 나머지는 목이 되돌린다
+Body.leanHipShift,0.08,Q/E 기울이기를 끝까지 했을 때 골반이 기우는 쪽 발로 옮겨 가는 거리(m). 발은 디딘 자리에 그대로 둔다. 엿보는 거리의 나머지는 카메라가 메운다. 다른 사람 화면에서도 기운다
 Body.fixtureTurnLimit,90,사다리·집라인에서 몸이 향한 쪽에서 좌우로 돌아볼 수 있는 각도(도)
 Body.hangTurnLimit,175,난간에 매달려 벽에서 좌우로 돌아볼 수 있는 각도(도). 180을 넘으면 돌아본 자세가 반대쪽으로 뒤집힌다
 Body.ladderEnter,ladderenterbottom,땅에서 사다리에 오르기

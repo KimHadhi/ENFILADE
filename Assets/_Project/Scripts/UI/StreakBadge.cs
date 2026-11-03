@@ -22,6 +22,22 @@ public sealed class KillFeedLook
         new Color(1f, .85f, .48f), new Color(1f, .95f, .82f), new Color(.56f, .84f, 1f)
     };
     public Color blueColor = new Color(.31f, .61f, 1f);
+    [Tooltip("How far the newest row turns toward the player beyond the other rows (°).")]
+    public float leadYaw = 2.5f;
+    [Tooltip("The newest row's tilt within the screen (°), to the other side on each kill.")]
+    public float leadRoll = .7f;
+    [Tooltip("How far the newest row stands off the others toward the player (px).")]
+    public float leadLift = 8f;
+    [Tooltip("Extra share of the lean and lift for a headshot, a burning streak or a grave notice.")]
+    public float leadEmphasis = .6f;
+    [Tooltip("How much bigger the newest row stands (share).")]
+    public float leadScale = .05f;
+    [Tooltip("How much wider the newest row's end bar is (share of its width).")]
+    public float leadAccent = 1f;
+    [Tooltip("Opacity each older row loses per step below the newest.")]
+    public float olderFade = .13f;
+    [Tooltip("The least opacity an older row keeps from that.")]
+    public float olderFloor = .55f;
 }
 
 /// <summary>
@@ -42,6 +58,7 @@ public sealed class StreakBadge
     private static Material oneFlame, trailOfFire, numeralShade;
 
     private readonly RectTransform root;
+    private readonly KillRowPlate plate;
     private readonly RawImage flame, neon, skull, eyeGlow, eyeFlame;
     private readonly TextMeshProUGUI numeral;
     private readonly float seed = UnityEngine.Random.value * 40f;
@@ -51,6 +68,7 @@ public sealed class StreakBadge
     public StreakBadge(Transform row)
     {
         root = FeelUI.Rect("Streak", row);
+        plate = row.GetComponent<KillRowPlate>();
         root.anchorMin = root.anchorMax = new Vector2(0f, .5f);
         root.pivot = new Vector2(1f, .5f);
         root.anchoredPosition = new Vector2(-6f, 0f);
@@ -136,6 +154,7 @@ public sealed class StreakBadge
     {
         root.gameObject.SetActive(streak > 0);
         flame.gameObject.SetActive(false);
+        if (plate != null) plate.Burn(0f);
         burning = streak > look.mostNumeral;
         if (streak <= 0) return;
         foreach (var part in new Graphic[] { neon, skull, eyeGlow, eyeFlame }) part.gameObject.SetActive(burning);
@@ -154,6 +173,8 @@ public sealed class StreakBadge
         // How long it runs travels in the uv: the row's fade is on the vertex alpha, and the fire must fade with it.
         float length = Mathf.Lerp(look.flameShortest, look.flameLongest, Mathf.Pow(climb, look.flameGrowth));
         flame.uvRect = new Rect(Mathf.Floor(seed), Mathf.Round(length), 1f, 1f);
+        // How far FeedFlame's burn cools along the row: its 60 + full * 0.35.
+        if (plate != null) plate.Burn(60f + Mathf.Round(length) * .35f);
     }
 
     private static Color FireColor(float climb, KillFeedLook look)

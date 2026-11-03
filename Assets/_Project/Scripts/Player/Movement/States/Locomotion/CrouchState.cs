@@ -12,9 +12,7 @@ public sealed class CrouchingState : MovementBaseState
     public override void ProcessInput(Vector2 input)
     {
         bool crouchPressed = ctx.Input.CrouchHeld;
-        bool diveJustPressed = ctx.InputAvailable && (
-            (ctx.DiveAction != null && ctx.DiveAction.WasPressedThisFrame())
-        );
+        bool diveJustPressed = ctx.Input.DivePressed;
 
         // 1. 앉은 상태에서 Z를 누르면 즉시 포복 자세로 진입
         if (diveJustPressed && ctx.IsGrounded)

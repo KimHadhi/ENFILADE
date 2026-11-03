@@ -2,11 +2,12 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// The dead fall as a ragdoll, carrying the speed they had and thrown the way the last blow came from. What falls is the
-/// real body, so its face and cloth go on as they were: it goes limp and takes each frame's pose from a doll, which is
-/// made as soon as the body exists and waits switched off, so a death in a fight doesn't hitch. Their own PC runs the
-/// physics and the others follow it (PlayerNetworkCorpse), so every PC shows the same body. This PC's own player watches
-/// through its eyes, which is why this runs after PlayerBody has placed the camera. Numbers: Tables/Ragdoll.
+/// The dead fall as a ragdoll: each limb carries on as it was moving, the last blow throws the body its way, and the
+/// muscles give out over a moment rather than all at once (RagdollCorpse). What falls is the real body, so its face and
+/// cloth go on as they were: it goes limp and takes each frame's pose from a doll, which is made as soon as the body
+/// exists and waits switched off, so a death in a fight doesn't hitch. Their own PC runs the physics and the others follow
+/// it (PlayerNetworkCorpse), so every PC shows the same body. This PC's own player watches through its eyes, which is why
+/// this runs after PlayerBody has placed the camera. Numbers: Tables/Ragdoll.
 /// </summary>
 [DisallowMultipleComponent, DefaultExecutionOrder(1000)]
 public sealed class PlayerRagdoll : MonoBehaviour
@@ -15,6 +16,8 @@ public sealed class PlayerRagdoll : MonoBehaviour
     private const string Enemies = "Enemy";
     // A blow this recent is the one that killed them. Above the head, the camera's sweep starts clear of what it lies on.
     private const float KillingBlowAge = .3f, SweepHeight = .3f, WalkerReach = .45f;
+    // How often a corpse tells every standing capsule again to pass through it (s).
+    private const float PassThroughEvery = .25f;
 
     [SerializeField, Min(0f), Tooltip("Momentum a hit gives the corpse per point of damage (N·s).")]
     private float pushPerDamage = 1f;
@@ -24,6 +27,16 @@ public sealed class PlayerRagdoll : MonoBehaviour
     private float mostPushSpeed = 5f;
     [SerializeField, Min(0f), Tooltip("Momentum the killing blow gives the upper body (N·s).")]
     private float deathPush = 45f;
+    [SerializeField, Min(0f), Tooltip("How hard the muscles hold the pose the body died in, as how quickly they pull it back (Hz).")]
+    private float muscleHold = 6f;
+    [SerializeField, Min(0f), Tooltip("How long the muscles take to give out (s). 0 drops the body limp at once.")]
+    private float muscleSeconds = .4f;
+    [SerializeField, Min(0f), Tooltip("What stays in the joints once the muscles have gone, slowing every swing (1/s).")]
+    private float jointFriction = 1.5f;
+    [SerializeField, Min(0f), Tooltip("Fastest a limb carries on moving against the body as it falls (m/s).")]
+    private float mostLimbSpeed = 6f;
+    [SerializeField, Min(0f), Tooltip("Fastest a limb carries on turning as it falls (rad/s).")]
+    private float mostLimbSpin = 15f;
 
     private readonly List<Renderer> hidden = new List<Renderer>();
     private PlayerMovement player;
@@ -37,7 +50,7 @@ public sealed class PlayerRagdoll : MonoBehaviour
     private Quaternion gaze, viewHome;
     private LayerMask solid;
     private DamageHit lastHit;
-    private float lastHitTime = float.NegativeInfinity, cameraRadius;
+    private float lastHitTime = float.NegativeInfinity, cameraRadius, nextPassThrough;
     private int partsSeen;
     private bool fell;
 
@@ -84,9 +97,11 @@ public sealed class PlayerRagdoll : MonoBehaviour
         if (!player.IsInitialized) return;
         if (!player.IsDead)
         {
-            if (fell) { Clear(); PassThroughTheFallen(); }
+            if (fell) Clear();
             Prepare();
             carried = player.ActualVelocity;
+            // Only a PC that would run the fall needs to know how the limbs were moving.
+            if (corpse != null && !player.IsNetworkDriven) corpse.Track();
             return;
         }
         // A skin that changes while they are dead brings a new body, which falls from where it stands.
@@ -94,14 +109,17 @@ public sealed class PlayerRagdoll : MonoBehaviour
         if (corpse == null || Model == null) return;
         corpse.PoseBody();
         HideAllButBody();
+        if (Time.time >= nextPassThrough) PassEveryoneThrough();
         if (view != null) RideTheEyes();
     }
 
-    // A spawn switches the capsule off and on, which forgets the corpses it walked through.
-    private void PassThroughTheFallen()
+    // Every standing capsule passes through the corpse. A capsule switched off and on forgets that (a spawn, a teleport
+    // pad), and someone may join while it lies there, so it is said again every so often.
+    private void PassEveryoneThrough()
     {
+        nextPassThrough = Time.time + PassThroughEvery;
         foreach (var someone in PlayerRoster.All)
-            if (someone.TryGetComponent(out PlayerRagdoll other) && other.Corpse != null) other.Corpse.PassThrough(capsule);
+            if (someone.TryGetComponent(out CharacterController other) && other.enabled) corpse.PassThrough(other);
     }
 
     // Weapons and the like stay out of sight, and one that turns up while they are dead changes the hierarchy's size.
@@ -131,17 +149,17 @@ public sealed class PlayerRagdoll : MonoBehaviour
         fell = true;
         Prepare();
         if (corpse == null) return;
-        corpse.Lay(!player.IsNetworkDriven);
+        corpse.Lay(!player.IsNetworkDriven, muscleSeconds);
         body.GoLimp();
         partsSeen = 0;
-        foreach (var someone in PlayerRoster.All)
-            if (someone.TryGetComponent(out CharacterController other) && other.enabled) corpse.PassThrough(other);
+        PassEveryoneThrough();
         // The capsule stays behind unseen, and nobody should bump into it. The flag doesn't stop a walking character, so
         // it goes off altogether, except on their own PC, where only they could walk into it and their movement needs it.
         capsule.detectCollisions = false;
         capsule.enabled = player.IsLocal;
         if (player.IsNetworkDriven) return;
-        corpse.Launch(carried);
+        corpse.Launch(carried, mostLimbSpeed, mostLimbSpin);
+        corpse.Brace(muscleHold, muscleSeconds, jointFriction);
         if (Time.time - lastHitTime < KillingBlowAge && lastHit.Direction.sqrMagnitude > .0001f)
             corpse.Knock(lastHit.Direction.normalized * deathPush);
         if (!player.IsLocal || view != null || body.IsThirdPerson || body.View == null) return;

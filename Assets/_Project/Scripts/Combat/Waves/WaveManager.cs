@@ -32,6 +32,11 @@ public sealed class WaveManager : MonoBehaviour
     [SerializeField, Min(.1f)] private float fillSpeed = 1.5f;
     [Header("Objective")]
     [SerializeField] private string objectiveMessage = "Eliminate the enemy";
+    [Header("Last enemies")]
+    [Tooltip("웨이브 중 남은 적이 이 수 이하가 되면 벽 너머로 보인다(EnemyReveal). 0이면 끈다.")]
+    [SerializeField, Min(0)] private int revealRemaining = 5;
+    [Tooltip("벽 너머로 보이는 적의 색. 알파가 진하기다.")]
+    [SerializeField] private Color revealColor = new Color(1f, .2f, .15f, .63f);
 
     public enum WavePhase { Idle, Countdown, Spawning, Combat }
     /// <summary>What the screen shows about the waves, which the host sends to the other PCs (WaveSync).</summary>
@@ -55,6 +60,16 @@ public sealed class WaveManager : MonoBehaviour
     public int DefeatedEnemies => defeatedEnemies;
     public Status CurrentStatus => new Status { Phase = Phase, Paused = IsPaused, Wave = currentWave, Defeated = defeatedEnemies,
         Total = totalEnemiesThisWave, SecondsLeft = Mathf.CeilToInt(remainingDelay) };
+    /// <summary>A wave is under way with few enough enemies left to show them through walls (EnemyReveal).</summary>
+    public bool RevealsRemaining
+    {
+        get
+        {
+            int left = totalEnemiesThisWave - defeatedEnemies;
+            return (Phase == WavePhase.Spawning || Phase == WavePhase.Combat) && !IsPaused && left > 0 && left <= revealRemaining;
+        }
+    }
+    public Color RevealColor => revealColor;
     public event System.Action ObjectiveChanged;
     /// <summary>A new wave began, here or on the host. The dead come back with it.</summary>
     public event System.Action WaveStarted;
@@ -68,6 +83,7 @@ public sealed class WaveManager : MonoBehaviour
     {
         if (!IsRunning) { UpdateObjectiveUI(); UpdateAssaultStatus("ASSAULT STANDBY"); }
         if (GameSession.IsOnline) gameObject.AddComponent<WaveSync>();
+        gameObject.AddComponent<EnemyReveal>();
         if (autoStart) StartWaves();
     }
 

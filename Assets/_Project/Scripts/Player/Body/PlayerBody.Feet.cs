@@ -61,6 +61,8 @@ public sealed partial class PlayerBody
         public float Sole;
         /// <summary>Heel and toe tip in the foot bone's space; only their place over the ground is used.</summary>
         public Vector3 Heel, Tip;
+        /// <summary>The sole under the heel and under the toe tip, in the foot bone's space (on the floor in the rest pose).</summary>
+        public Vector3 HeelSole, TipSole;
         /// <summary>Smoothed world height of the ground under the foot (m).</summary>
         public float Ground;
         /// <summary>The collider under the foot, or null when it has no support.</summary>
@@ -108,10 +110,19 @@ public sealed partial class PlayerBody
         Vector3 ball = toes != null ? toes.position : ankle + forward * 2f * Mathf.Max(.04f, ankle.y - body.position.y);
         Vector3 along = Vector3.ProjectOnPlane(ball - ankle, Vector3.up);
         if (along.sqrMagnitude < 1e-4f) along = Vector3.ProjectOnPlane(forward, Vector3.up).normalized * .12f;
+        // The toe tip reaches as far as the toe bones do (some rigs end in a toe-end bone), past the ball either way.
+        float ballDistance = along.magnitude, tipDistance = ballDistance * 1.4f;
+        if (toes != null)
+            foreach (var bone in toes.GetComponentsInChildren<Transform>())
+                tipDistance = Mathf.Max(tipDistance, Vector3.Dot(bone.position - ankle, along / ballDistance));
+        tipDistance = Mathf.Min(tipDistance, ballDistance * 2.5f);
+        Vector3 floor = Vector3.down * (ankle.y - body.position.y);
         return new Leg
         {
             Upper = upper, Lower = lower, Foot = foot, Sole = ankle.y - body.position.y,
-            Heel = foot.InverseTransformPoint(ankle - along * .35f), Tip = foot.InverseTransformPoint(ankle + along * 1.4f)
+            Heel = foot.InverseTransformPoint(ankle - along * .35f), Tip = foot.InverseTransformPoint(ankle + along * 1.4f),
+            HeelSole = foot.InverseTransformPoint(ankle - along * .35f + floor),
+            TipSole = foot.InverseTransformPoint(ankle + along / ballDistance * tipDistance + floor)
         };
     }
 
@@ -166,12 +177,24 @@ public sealed partial class PlayerBody
         }
         lastFloor = floor;
 
-        float leftLift = leftLeg.Foot.position.y - clipFloor, rightLift = rightLeg.Foot.position.y - clipFloor;
+        // A clip made for other proportions can put a foot through the floor: a deep crouch holds the ankle lower than the
+        // sole lets it stand, and pointing the toes down drives a longer foot's toe tip in. No part of the sole comes
+        // below the ground; the ankle stands that much higher, and the knee bends for it.
+        float leftLift = Mathf.Max(leftLeg.Foot.position.y - clipFloor, SoleDepth(leftLeg));
+        float rightLift = Mathf.Max(rightLeg.Foot.position.y - clipFloor, SoleDepth(rightLeg));
         float lowerLift = Mathf.Min(leftLift, rightLift);
         body.position += Vector3.up * ((hipFloor - clipFloor) * feetWeight);
         Vector3 hips = (rightLeg.Upper.position - leftLeg.Upper.position).normalized;
         Place(leftLeg, leftLift, leftLift - lowerLift, hips);
         Place(rightLeg, rightLift, rightLift - lowerLift, hips);
+    }
+
+    // How high the ankle has to stand for the heel and the toe tip to stay on or above the ground, the foot turned as the
+    // clip has it. Flat as in the rest pose, it is the ankle's own height over the sole.
+    private static float SoleDepth(Leg leg)
+    {
+        float ankle = leg.Foot.position.y;
+        return Mathf.Max(leg.Sole, ankle - leg.Foot.TransformPoint(leg.HeelSole).y, ankle - leg.Foot.TransformPoint(leg.TipSole).y);
     }
 
     private void Probe(Leg leg, float floor, float follow, float dt)
@@ -222,7 +245,9 @@ public sealed partial class PlayerBody
             return;
         }
         Quaternion rotation = leg.Foot.rotation;
-        leg.Target = new Vector3(foot.x, Mathf.Lerp(foot.y, leg.Ground + lift, weight), foot.z);
+        // A Q/E lean has moved the hips over (LeanHips); the feet stay where they stood.
+        Vector3 stand = foot - hipLean * weight;
+        leg.Target = new Vector3(stand.x, Mathf.Lerp(foot.y, leg.Ground + lift, weight), stand.z);
         // The knee bends about the clip's own knee axis. A nearly straight leg has no clear axis, so it bends
         // forward about the hips' sideways line instead (a clip knee bent slightly backward counts as straight).
         Vector3 thigh = leg.Lower.position - leg.Upper.position, shin = foot - leg.Lower.position;

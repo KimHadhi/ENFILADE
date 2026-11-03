@@ -49,7 +49,7 @@ public sealed class PlayerExecution : MonoBehaviour
     private void OnEnable()
     {
         player = GetComponent<PlayerMovement>();
-        var camera = GetComponentInChildren<Camera>(); aim = camera != null ? camera.transform : transform;
+        var camera = GetComponentInChildren<Camera>(); aim = camera != null ? PlayerView.EyesOf(this) : transform;
         if (Application.isPlaying && player?.IsLocal != false && GetComponent<ExecutionHUD>() == null) gameObject.AddComponent<ExecutionHUD>();
     }
     private void Start()

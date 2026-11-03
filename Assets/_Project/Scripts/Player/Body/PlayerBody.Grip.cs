@@ -9,6 +9,8 @@ using MovementState = PlayerMovement.MovementState;
 ///   The arm reaches the ledge instead, and the body moves only for what it can't (PlayerBodyHands.EdgeHoldBack).
 /// - On a ladder, shoulders stay centred at climbing distance; PlayerBodyHands pins each hand to its rung.
 /// - On a zipline, onto the cable; the ride carries the body along it.
+/// - On a swing bar, onto the bar after PlayerBody.Bar has turned the body with the swing; PlayerBodyHands closes each hand
+///   round it.
 /// </summary>
 public sealed partial class PlayerBody
 {
@@ -24,9 +26,10 @@ public sealed partial class PlayerBody
     private void Grip(float dt)
     {
         bool holding = !dead && (state == MovementState.LedgeHang || state == MovementState.Ladder || state == MovementState.Zipline
-            || HeavePressing);
+            || HeavePressing || OnBar);
         gripWeight = Mathf.MoveTowards(gripWeight, holding ? 1f : 0f, dt / blendTime);
         if (leftHand == null || rightHand == null) return;
+        SwingWithBar(dt);
         Vector3 placed = body.position;
         if (gripWeight > 0f)
         {
@@ -83,6 +86,11 @@ public sealed partial class PlayerBody
                 break;
             case MovementState.Zipline:
                 gripOffset = Vector3.ProjectOnPlane(fixtures.ZiplineFrom - hands, fixtures.ZiplineDirection);
+                break;
+            case MovementState.BarGrab:
+            case MovementState.BarSwing:
+                var barHands = GetComponent<PlayerBodyHands>();
+                if (barHands != null && barHands.TryBarWrists(out Vector3 wrists, out Vector3 heldWrists)) gripOffset = wrists - heldWrists;
                 break;
         }
     }

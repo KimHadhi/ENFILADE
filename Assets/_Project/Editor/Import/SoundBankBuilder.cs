@@ -16,8 +16,17 @@ internal sealed class SoundBankBuilder : AssetPostprocessor
     {
         ("Movement", "Assets/_Project/Art/Audio/Movement"),
         ("Voice", "Assets/_Project/Art/Audio/Voice/Hiro"),
+        ("HitConfirm", "Assets/_Project/Art/Audio/HitConfirm"),
     };
     private static bool queued;
+
+    // A bank added to the list after its sounds were imported has no asset yet; make it once the editor has loaded.
+    [InitializeOnLoadMethod]
+    private static void BuildMissing() => EditorApplication.delayCall += () =>
+    {
+        if (Banks.Any(b => AssetDatabase.IsValidFolder(b.Folder) && AssetDatabase.LoadAssetAtPath<SoundBank>(OutputFolder + "/" + b.Id + ".asset") == null))
+            Refresh();
+    };
 
     private static void OnPostprocessAllAssets(string[] imported, string[] deleted, string[] moved, string[] movedFrom)
     {

@@ -3,7 +3,10 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>The objective always on screen, and the alert when it changes. The full list is on the Tab screen (ObjectiveLogPanel).</summary>
+/// <summary>
+/// The objective always on screen, and the alert when it changes. The full list is on the Tab screen (ObjectiveLogPanel).
+/// What the bar says is decided here; how it looks is MissionBarLook's (Hud.csv's Mission row).
+/// </summary>
 public sealed class MissionHUD : MonoBehaviour
 {
     private const string TabHint = "목표·점수판";
@@ -36,13 +39,36 @@ public sealed class MissionHUD : MonoBehaviour
 
     public bool IsAlertPlaying => alertClock >= 0;
     public float AlertDuration => openDuration + emphasisDuration + closeDuration;
-    private float alertClock = -1, alertWidth, targetProgress;
+    private float alertClock = -1, alertWidth;
     private float lastCanvasWidth;
+    private MissionBarLook look;
 
     private struct Part { public RectTransform Rect; public CanvasGroup Group; public Vector2 Home; }
     private readonly List<Part> parts = new List<Part>();
 
-    private void Awake() => GameAudio.Bind(audioSource, AudioChannel.UI);
+    private void Awake()
+    {
+        GameAudio.Bind(audioSource, AudioChannel.UI);
+        Look();
+    }
+
+    /// <summary>
+    /// Editor (Tools > HUD): lays the bar out from Hud.csv with its sample texts and the count showing, so the prefab
+    /// looks in the editor the way it will in Play.
+    /// </summary>
+    public void LayOutForEditor()
+    {
+        if (Look() != null) look.LayOutForEditor(CanvasWidth());
+    }
+
+    // The bar's look, found on the bar or added to it, and handed the bar's parts.
+    private MissionBarLook Look()
+    {
+        if (look != null || missionBar == null || title == null || counter == null || counterRoot == null) return look;
+        if (!missionBar.TryGetComponent(out look)) look = missionBar.gameObject.AddComponent<MissionBarLook>();
+        look.Init(title, counter, counterRoot, progress);
+        return look;
+    }
 
     // Everything here but the alert stands where the Tab screen's list will: the bar, its key chip, its hint.
     private void FindParts()
@@ -59,9 +85,7 @@ public sealed class MissionHUD : MonoBehaviour
 
     private void OnEnable()
     {
-        AnchorMissionBar();
         FindParts();
-        ApplyProgress(0);
         if (boardHint != null) boardHint.text = TabHint;
         if (tracker != null) tracker.Changed += Refresh;
         HideAlert();
@@ -78,7 +102,6 @@ public sealed class MissionHUD : MonoBehaviour
     {
         float dt = Time.unscaledDeltaTime;
         MakeWayForTabScreen();
-        if (progress != null) ApplyProgress(Mathf.MoveTowards(progress.fillAmount, targetProgress, dt * 1.8f));
         if (alertClock >= 0)
         {
             alertClock += dt;
@@ -107,47 +130,11 @@ public sealed class MissionHUD : MonoBehaviour
 
     private float CanvasWidth() => (transform as RectTransform).rect.width;
 
-    private void AnchorMissionBar()
-    {
-        if (missionBar == null) return;
-        // Preserve the authored left edge, then grow only toward the right as titles change.
-        float left = missionBar.anchoredPosition.x - missionBar.rect.width * missionBar.pivot.x;
-        missionBar.pivot = new Vector2(0, missionBar.pivot.y);
-        missionBar.anchoredPosition = new Vector2(left, missionBar.anchoredPosition.y);
-    }
-
-    private void ApplyProgress(float value)
-    {
-        if (progress == null) return;
-        progress.fillAmount = Mathf.Clamp01(value);
-        // A plain rectangle avoids the transparent/rounded padding of the built-in UI sprite.
-        progress.sprite = null;
-        progress.type = Image.Type.Simple;
-        var rect = progress.rectTransform;
-        rect.anchorMin = Vector2.zero;
-        rect.anchorMax = new Vector2(progress.fillAmount, 1);
-        rect.offsetMin = rect.offsetMax = Vector2.zero;
-    }
-
     private void Refresh(MissionObjective objective, bool announce)
     {
         if (title == null) return;
-        bool numeric = objective != null && objective.Display != MissionProgressDisplay.None;
         title.text = objective != null ? objective.Title : "목표 대기 중";
-        counterRoot.SetActive(numeric);
-        counter.text = numeric ? objective.ProgressText : "";
-        targetProgress = numeric ? objective.Progress : 0;
-        progress.transform.parent.gameObject.SetActive(numeric);
-        float counterWidth = numeric ? Mathf.Max(100, counter.GetPreferredValues(counter.text).x + 28) : 0;
-        var counterRect = (RectTransform)counterRoot.transform;
-        counterRect.anchorMin = Vector2.right;
-        counterRect.anchorMax = Vector2.one;
-        counterRect.offsetMin = new Vector2(-counterWidth, 0);
-        counterRect.offsetMax = Vector2.zero;
-        float maxWidth = Mathf.Min(690, Mathf.Max(300, CanvasWidth() - 84));
-        float width = Mathf.Clamp(title.GetPreferredValues(title.text).x + 84 + counterWidth, 320, maxWidth);
-        missionBar.sizeDelta = new Vector2(width, 48);
-        title.rectTransform.offsetMax = new Vector2(-counterWidth - 16, -4);
+        if (Look() != null) look.Show(objective, CanvasWidth());
         if (objective == null) HideAlert();
         else if (announce) ShowAlert(objective.Title);
     }

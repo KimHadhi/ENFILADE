@@ -81,7 +81,19 @@ public sealed class WeaponController : MonoBehaviour
     private DynamicCrosshairView crosshair;
     private Camera viewCamera;
     private PlayerCameraEffects cameraEffects;
-    private float bloom, timeSinceShot, shoveRecovery;
+    private Transform eyes;
+    // The gun is posed from the eyes; the shot goes where the camera's ray (the crosshair) meets something.
+    private Transform PoseView => eyes != null ? eyes : aimOrigin;
+    // A move that needs both hands puts the gun away until this long after it ends (s), so a wall kick or a ledge jump
+    // that lasts a frame doesn't flash it back.
+    private const float BareHandsLinger = .25f;
+    // A raised gun comes down only once its lowered pose is this clear of what raised it (m), so breathing and sway at
+    // the edge don't flick it up and down.
+    private const float RaisedClearance = .04f;
+    // ...and stays up at least this long after it clears (s): walking, the head bobs across the edge with every step.
+    private const float RaisedHold = .5f;
+    private float raisedHoldLeft;
+    private float bloom, timeSinceShot, shoveRecovery, bareHandsLeft;
     private int recoilIndex, dodgeActivation;
     private bool survivalInterrupted, shownAiming;
 
@@ -133,10 +145,14 @@ public sealed class WeaponController : MonoBehaviour
         }
 
         if (muzzlePoint == null) muzzlePoint = owner.GetComponentInChildren<MuzzleEffects>(true)?.transform;
+        // The gun rides the eyes, which the camera leaves behind in the F5 view, so it stays in the body's hands.
+        eyes = Application.isPlaying && movement != null ? PlayerView.EyesOf(movement) : null;
+        if (eyes == aimOrigin) eyes = null;
+        if (eyes != null && weaponRoot != null && weaponRoot.parent == aimOrigin) weaponRoot.SetParent(eyes, false);
         presentation = new WeaponPresentation(weaponRoot, muzzlePoint);
         viewCamera = aimOrigin.GetComponent<Camera>();
         cameraEffects = owner.GetComponentInChildren<PlayerCameraEffects>();
-        crosshair = movement?.IsLocal != false ? FindFirstObjectByType<DynamicCrosshairView>() : null;
+        crosshair = movement?.IsLocal != false ? DynamicCrosshairView.FindHud() : null;
         dodgeActivation = movement?.Abilities?.Dodge.Activation ?? 0;
         // Shot/reload presentation (sound, muzzle, brass, camera kick) subscribes to this controller's events.
         if (Application.isPlaying && GetComponent<WeaponFeedback>() == null) gameObject.AddComponent<WeaponFeedback>();
@@ -151,7 +167,10 @@ public sealed class WeaponController : MonoBehaviour
 
     private void LateUpdate()
     {
-        presentation?.SetVisible(Runtime != null && Runtime.Data.Category != WeaponCategory.Melee);
+        bool bare = TraversalHands.For(movement) == TraversalHandUse.Bare;
+        if (bare && bareHandsLeft <= 0f) Runtime?.Interrupt();
+        bareHandsLeft = bare ? BareHandsLinger : Mathf.Max(0f, bareHandsLeft - Time.deltaTime);
+        presentation?.SetVisible(Runtime != null && Runtime.Data.Category != WeaponCategory.Melee && bareHandsLeft <= 0f);
         if (Runtime == null) { ResetPresentation(); return; }
 
         if (health != null && !health.IsAlive)
@@ -233,28 +252,31 @@ public sealed class WeaponController : MonoBehaviour
         bloom = Mathf.MoveTowards(bloom, 0f, weaponData.BloomRecovery * dt);
         timeSinceShot += dt;
         if (timeSinceShot > .35f) recoilIndex = 0;
-        bool bodyAction = movement != null && (movement.IsParkour || movement.CurrentState == PlayerMovement.MovementState.DashPush
-            || movement.IsLandingRecovery);
+        bool bodyAction = bareHandsLeft > 0f || (movement != null && (movement.IsParkour
+            || movement.CurrentState == PlayerMovement.MovementState.DashPush || movement.IsLandingRecovery));
         if (survivalInterrupted || bodyAction || stepDodging || shoveRecovery > 0f)
             frame = new WeaponInputFrame(frame.FirePressed, frame.FireHeld, false, frame.AimHeld);
         survivalInterrupted = false;
         bool aiming = frame.AimHeld && !Runtime.IsReloading && !bodyAction && shoveRecovery <= 0f
             && !stepDodging && !frame.ReloadPressed;
         float nextAim = Mathf.MoveTowards(AimBlend, aiming ? 1f : 0f, dt / weaponData.AdsTransitionTime);
-        Vector3 target = WeaponAimSolver.AimPoint(owner, aimOrigin, weaponData.Range, hitLayers);
+        Vector3 target = AimTarget(weaponData.Range);
         // Probe the requested sight position even while high ready suppresses ADS. Otherwise
         // a clear hip pose and blocked ADS pose can alternate, causing zoom/ready flicker.
-        Vector3 nominalMuzzle = presentation != null ? presentation.Prepare(aimOrigin, weaponData, aiming ? 1f : nextAim) : aimOrigin.position;
-        bool blocked = WeaponAimSolver.IsObstructed(owner, aimOrigin, nominalMuzzle, target, hitLayers);
+        Vector3 nominalMuzzle = presentation != null ? presentation.Prepare(PoseView, weaponData, aiming ? 1f : nextAim) : PoseView.position;
+        float margin = IsHighReady ? RaisedClearance : 0f;
+        bool blocked = WeaponAimSolver.IsObstructed(owner, PoseView, nominalMuzzle, target, hitLayers, margin);
         AimBlend = blocked || presentation?.IsHighReady == true ? 0f : nextAim;
         if (presentation != null)
         {
-            nominalMuzzle = presentation.Prepare(aimOrigin, weaponData, AimBlend);
-            blocked |= WeaponAimSolver.IsObstructed(owner, aimOrigin, nominalMuzzle, target, hitLayers);
+            nominalMuzzle = presentation.Prepare(PoseView, weaponData, AimBlend);
+            blocked |= WeaponAimSolver.IsObstructed(owner, PoseView, nominalMuzzle, target, hitLayers, margin);
             if (blocked && AimBlend > 0f)
-            { AimBlend = 0f; presentation.Prepare(aimOrigin, weaponData, 0f); }
+            { AimBlend = 0f; presentation.Prepare(PoseView, weaponData, 0f); }
         }
-        IsHighReady = presentation != null ? presentation.Pose(owner, aimOrigin, target, blocked, Runtime, dt, hitLayers) : blocked;
+        if (blocked) raisedHoldLeft = RaisedHold;
+        else if (IsHighReady && raisedHoldLeft > 0f) { raisedHoldLeft -= dt; blocked = true; }
+        IsHighReady = presentation != null ? presentation.Pose(owner, PoseView, target, blocked, Runtime, dt, hitLayers) : blocked;
         if (IsHighReady) AimBlend = 0f;
         bool cannotFire = IsHighReady || shoveRecovery > 0f || bodyAction;
         if (cannotFire) Runtime.CancelBurst();
@@ -274,9 +296,9 @@ public sealed class WeaponController : MonoBehaviour
         {
             long id = DamageHit.NewAttackId();
 
-            Vector3 origin = muzzlePoint != null ? muzzlePoint.position : aimOrigin.position;
-            target = WeaponAimSolver.AimPoint(owner, aimOrigin, weaponData.Range, hitLayers);
-            if (WeaponAimSolver.IsObstructed(owner, aimOrigin, origin, target, hitLayers))
+            Vector3 origin = muzzlePoint != null ? muzzlePoint.position : PoseView.position;
+            target = AimTarget(weaponData.Range);
+            if (WeaponAimSolver.IsObstructed(owner, PoseView, origin, target, hitLayers))
             { Runtime.RefundUnfiredShots(shots - i); IsHighReady = true; AimBlend = 0f; break; }
             Vector3 direction = WeaponAimSolver.SpreadDirection((target - origin).normalized, CurrentSpread, UnityEngine.Random.insideUnitCircle);
             Vector2 recoil = weaponData.RecoilAt(recoilIndex++) * Mathf.Lerp(1f, .65f, AimBlend);
@@ -331,6 +353,16 @@ public sealed class WeaponController : MonoBehaviour
         cameraEffects?.RefreshWeaponFov();
     }
 
+    // The crosshair's ray. In the F5 view it starts level with the eyes, so nothing between the camera and the player
+    // catches it; in first person the eyes are the camera.
+    private Vector3 AimTarget(float range)
+    {
+        Vector3 start = aimOrigin.position, forward = aimOrigin.forward;
+        if (eyes != null) start += forward * Mathf.Max(0f, Vector3.Dot(eyes.position - start, forward));
+        return AttackTrace.FirstExternalHit(owner, start, forward, range, hitLayers, out RaycastHit hit)
+            ? hit.point : start + forward * range;
+    }
+
     public void InterruptForSurvival(bool shove = false)
     {
         Runtime?.Interrupt(); AimBlend = 0f;
@@ -358,7 +390,7 @@ public sealed class WeaponController : MonoBehaviour
     }
     private void ResetPresentation()
     {
-        AimBlend = bloom = shoveRecovery = CurrentSpread = 0f; recoilIndex = 0; IsHighReady = false;
+        AimBlend = bloom = shoveRecovery = CurrentSpread = raisedHoldLeft = 0f; recoilIndex = 0; IsHighReady = false;
         presentation?.Reset(); crosshair?.SetDynamicSpread(0f);
         crosshair?.SetCombatHidden(false);
         cameraEffects?.RefreshWeaponFov();

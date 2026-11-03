@@ -1,7 +1,7 @@
 // Drawn as an extra material over an enemy's own mesh while it reacts to a hit or is marked.
 // Whole-body tint (Minecraft-style red), a red rim, up to four glowing hit spots, a white kill flash, and an outline.
 // Premultiplied output: tint and flash cover, glow adds light. Properties are driven by HitFlashRenderer.
-Shader "Hidden/Morphang/HitFlashOverlay"
+Shader "Hidden/ENFILADE/HitFlashOverlay"
 {
     Properties
     {

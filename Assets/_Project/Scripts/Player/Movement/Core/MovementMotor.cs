@@ -21,6 +21,10 @@ public sealed class MovementMotor
     private Vector3 requestedMove, additionalMove;
     private readonly List<Vector3> requestedPath = new List<Vector3>();
     private bool slideSupported;
+    private PlayerMovement carrierCandidate;
+    private Vector3 carrierPosition;
+    /// <summary>Someone this player stood on in the last move: their moves carry it (Ride).</summary>
+    internal PlayerMovement Carrier { get; private set; }
     internal float SupportAngle => ctx.IsSliding ? Mathf.Max(controller.slopeLimit, ctx.AbilitySettings.slideMaxSlopeAngle) : controller.slopeLimit;
     internal void RequestDisplacement(Vector3 displacement) { requestedPath.Clear(); hasRequestedMove = true; requestedMove = displacement; }
     internal void RequestPath(List<Vector3> positions)
@@ -59,6 +63,7 @@ public sealed class MovementMotor
         ctx.Abilities.Landing.BeforeMove();
         float startY = ctx.transform.position.y;
         lastMoveGroundNormal = Vector3.zero;
+        carrierCandidate = null;
         if (hasTraversalPosition)
         {
             ctx.transform.position = traversalPosition;
@@ -83,6 +88,8 @@ public sealed class MovementMotor
         ctx.Abilities.Landing.AfterMove(dt, ctx.transform.position.y - startY);
         ctx.DodgePassThrough?.AfterMove();
         if ((lastMoveFlags & CollisionFlags.Above) != 0 && VerticalVelocity > 0f) VerticalVelocity = 0f;
+        Carrier = (lastMoveFlags & CollisionFlags.Below) != 0 ? carrierCandidate : null;
+        if (Carrier != null) carrierPosition = Carrier.transform.position;
         if (dt > 0f)
         {
             actualVelocity = (ctx.transform.position - previousPosition) / dt;
@@ -93,6 +100,27 @@ public sealed class MovementMotor
     internal void RecordContact(ControllerColliderHit hit)
     {
         if (hit.normal.y > lastMoveGroundNormal.y) lastMoveGroundNormal = hit.normal;
+        if (hit.normal.y >= Mathf.Cos(SupportAngle * Mathf.Deg2Rad) && hit.collider.GetComponentInParent<PlayerMovement>() is PlayerMovement someone
+            && someone != ctx) carrierCandidate = someone;
+    }
+
+    /// <summary>
+    /// Standing on someone, their moves carry this player as a moving floor would. Without it their jump came up into this
+    /// capsule, and the controller's way out of the overlap could be down through them. Called after every Update, once
+    /// the network has moved them; the carry is left out of this player's own velocity, so it neither walks nor lands.
+    /// </summary>
+    internal void Ride()
+    {
+        var carrier = Carrier;
+        if (carrier == null) return;
+        if (!carrier.isActiveAndEnabled || carrier.IsDead || !controller.enabled) { Carrier = null; return; }
+        Vector3 moved = carrier.transform.position - carrierPosition;
+        carrierPosition = carrier.transform.position;
+        // A spawn or a teleport pad moves them too far in one go to be carried.
+        if (moved.sqrMagnitude < 1e-8f || moved.sqrMagnitude > 1f) return;
+        Vector3 before = ctx.transform.position;
+        controller.Move(moved);
+        previousPosition += ctx.transform.position - before;
     }
 
     // A body slide, dive or dash push that runs into a physics prop kicks it ahead and keeps whatever momentum it did not
@@ -115,6 +143,7 @@ public sealed class MovementMotor
         VerticalVelocity = 0f;
         jumpUngroundTimer = airborneTimer = 0f;
         actualVelocity = Vector3.zero;
+        Carrier = carrierCandidate = null;
         lastMoveFlags = CollisionFlags.None;
         lastMoveGroundNormal = groundNormal = Vector3.up;
         isGrounded = landedThisFrame = false;

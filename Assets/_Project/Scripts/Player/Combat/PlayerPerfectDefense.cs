@@ -10,13 +10,17 @@ public sealed class PlayerPerfectDefense : MonoBehaviour
     private float postureBreakTimeScale = .3f;
     [SerializeField, Min(0f), Tooltip("That slow motion, real seconds. Starting the execution ends it at once. 0 turns it off.")]
     private float postureBreakSlowSeconds = .35f;
+    [SerializeField, Min(0f), Tooltip("Real seconds of invulnerability after a counter. The open counter window is invulnerable too; a dodge is still judged first.")]
+    private float counterGuardSeconds = .5f;
     private PlayerMovement player;
     private PlayerDamageReceiver receiver;
     private CombatTimeEffects timeEffects;
     private MeleeCombatTarget attacker;
-    private float remaining;
+    private float remaining, guard;
     private int rewardedDodge = -1;
     public bool CounterAvailable => remaining > 0f;
+    /// <summary>Waiting to counter or just countered: hits pass through.</summary>
+    public bool Shields => CounterAvailable || guard > 0f;
     public float Remaining => remaining;
     public void Initialize(PlayerMovement owner)
     {
@@ -63,13 +67,15 @@ public sealed class PlayerPerfectDefense : MonoBehaviour
     private void Update()
     {
         if (Time.timeScale <= 0f) return;
-        if (player == null || !player.InputAvailable || player.CombatInputLocked || player.IsParkour || player.IsDiving) { Cancel(); return; }
+        if (player == null || !player.InputAvailable || player.CombatInputLocked || player.IsParkour || player.IsDiving)
+        { Cancel(); guard = Mathf.Max(0f, guard - Time.unscaledDeltaTime); return; }
         var input = GetComponent<PlayerWeaponInput>();
         if (input != null && input.TryReadMeleeInput(out var frame) && frame.AttackPressed) TryCounter();
         Tick(Time.unscaledDeltaTime);
     }
     public void Tick(float realDeltaTime)
     {
+        guard = Mathf.Max(0f, guard - Mathf.Max(0f, realDeltaTime));
         if (!CounterAvailable) return;
         if (player == null || !player.DamageReceiver.IsAlive || player.Execution?.IsExecuting == true
             || (attacker != null && !attacker.IsAvailable)) { Cancel(); return; }
@@ -81,7 +87,7 @@ public sealed class PlayerPerfectDefense : MonoBehaviour
         if (Time.timeScale <= 0f || !CounterAvailable || attacker == null || !attacker.IsAvailable || player.CombatInputLocked
             || player.IsParkour || player.IsDiving || !player.DamageReceiver.IsAlive) return false;
         var settings = CombatFeedbackSettings.Instance;
-        var camera = GetComponentInChildren<Camera>(); Transform aim = camera != null ? camera.transform : transform;
+        var camera = GetComponentInChildren<Camera>(); Transform aim = camera != null ? PlayerView.EyesOf(this) : transform;
         var collider = attacker.GetComponentInChildren<Collider>();
         if (collider == null) return false;
         Vector3 point = collider.bounds.center, delta = point - aim.position;
@@ -89,6 +95,7 @@ public sealed class PlayerPerfectDefense : MonoBehaviour
         var target = attacker; var targetReceiver = target.GetComponent<IDamageReceiver>();
         if (targetReceiver == null) return false;
         Cancel(); // Spend once before dispatching events or damage.
+        guard = counterGuardSeconds;
         player.MeleeCombat?.CancelAction(); player.Abilities.Combat.CancelShove();
         player.Abilities.Dodge.CancelWindow();
         if (player.CurrentState == PlayerMovement.MovementState.StepDodge) player.Abilities.ReturnToLocomotion();

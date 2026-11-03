@@ -27,16 +27,15 @@ public sealed class CombatHitAudio : MonoBehaviour
         PlayerHit = { (Layer.Punch, 0f) },
         PlayerFall = { (Layer.Tackle, 0f) };
 
-    private const int SpatialVoices = 8;
+    // A kill stacks up to four layers, so the flat ring holds a few kills before the oldest tail is cut.
+    private const int SpatialVoices = 8, FlatVoices = 10;
     private struct Pending { public Layer layer; public float remaining, volume; public bool spatial; public Vector3 point; }
 
     private static CombatHitAudio instance;
     public static CombatHitAudio Instance => instance;
     private readonly List<Pending> pending = new List<Pending>();
     private readonly Dictionary<Layer, AudioClip> previous = new Dictionary<Layer, AudioClip>();
-    private readonly AudioSource[] voices = new AudioSource[SpatialVoices];
-    private AudioSource flat;
-    private int nextVoice;
+    private VoiceRing flat, voices;
     public HitSound LastSound { get; private set; }
     public int PlayCount { get; private set; }
     public int PendingCount => pending.Count;
@@ -102,18 +101,26 @@ public sealed class CombatHitAudio : MonoBehaviour
     {
         if (instance != null && instance != this) { Destroy(gameObject); return; }
         instance = this;
-        flat = gameObject.AddComponent<AudioSource>();
-        flat.playOnAwake = false; flat.spatialBlend = 0f;
-        GameAudio.Bind(flat, AudioChannel.Combat);
-        for (int i = 0; i < voices.Length; i++)
+        var flatSources = new AudioSource[FlatVoices];
+        for (int i = 0; i < flatSources.Length; i++)
+        {
+            var source = gameObject.AddComponent<AudioSource>();
+            source.playOnAwake = false; source.spatialBlend = 0f;
+            GameAudio.Bind(source, AudioChannel.Combat);
+            flatSources[i] = source;
+        }
+        flat = new VoiceRing(flatSources);
+        var spatialSources = new AudioSource[SpatialVoices];
+        for (int i = 0; i < spatialSources.Length; i++)
         {
             var voice = new GameObject("Hit Voice " + i).AddComponent<AudioSource>();
             voice.transform.SetParent(transform, false);
             voice.playOnAwake = false; voice.spatialBlend = 1f;
             voice.rolloffMode = AudioRolloffMode.Linear; voice.minDistance = 2f;
             GameAudio.Bind(voice, AudioChannel.Combat);
-            voices[i] = voice;
+            spatialSources[i] = voice;
         }
+        voices = new VoiceRing(spatialSources);
     }
 
     private void OnDestroy() { if (instance == this) instance = null; }
@@ -121,8 +128,8 @@ public sealed class CombatHitAudio : MonoBehaviour
     private void OnDisable()
     {
         pending.Clear();
-        if (flat != null) flat.Stop();
-        foreach (var voice in voices) if (voice != null) voice.Stop();
+        flat?.Stop();
+        voices?.Stop();
     }
 
     private void Queue(HitSound sound, bool skeet, bool spatial, Vector3 point, float volume)
@@ -159,12 +166,12 @@ public sealed class CombatHitAudio : MonoBehaviour
         float volume = Mathf.Clamp01(item.volume);
         if (!item.spatial)
         {
-            flat.pitch = 1f + Random.Range(-settings.hitPitchVariance, settings.hitPitchVariance);
-            flat.PlayOneShot(clip, volume);
+            var source = flat.Take();
+            source.pitch = 1f + Random.Range(-settings.hitPitchVariance, settings.hitPitchVariance);
+            source.PlayOneShot(clip, volume);
             return;
         }
-        var voice = voices[nextVoice];
-        nextVoice = (nextVoice + 1) % voices.Length;
+        var voice = voices.Take();
         voice.transform.position = item.point;
         voice.maxDistance = Mathf.Max(voice.minDistance + .1f, settings.hitSoundDistance);
         voice.PlayOneShot(clip, volume);

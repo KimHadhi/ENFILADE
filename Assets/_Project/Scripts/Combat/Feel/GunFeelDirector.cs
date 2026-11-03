@@ -2,8 +2,8 @@ using UnityEngine;
 
 /// <summary>
 /// Routes each accepted hit (CombatDamageEvents) to the hit-feedback layers, in this order:
-/// target flash / blood / corpse (world) → hit marker + kill sound → kill score and kill feed → kill screen
-/// (special look for executions and counters, GTA V-style look for every other kill).
+/// target flash / blood / corpse (world) → hit marker + confirm sounds (HitConfirm) → kill score and kill feed → kill screen
+/// (special look for executions and counters, a brightened, glowing look for every other kill).
 /// Presentation only; gameplay reactions are called directly by the receivers (EnemyHitReaction).
 /// </summary>
 public static class GunFeelDirector
@@ -37,8 +37,7 @@ public static class GunFeelDirector
             score.AnnounceKill(WeaponName(hit), CombatDamageEvents.DisplayNameOf(report.Target), critical && bullet);
         if (!byPlayer) return;
 
-        HitMarkerHUD.Show(kill ? (critical ? HitMarkerKind.HeadKill : HitMarkerKind.BodyKill) : critical ? HitMarkerKind.Head : HitMarkerKind.Body);
-        ConfirmSound(settings, kill, critical);
+        HitConfirm.Landed(report);
         bool pulse = execution ? settings.killPulseOnExecution : hit.IsCounter ? settings.killPulseOnCounter
             : bullet ? settings.killPulseOnGunKill : settings.killPulseOnOtherKill;
         if (!kill) return;
@@ -46,22 +45,15 @@ public static class GunFeelDirector
         if (PlayerRoster.Local != null && PlayerRoster.Local.TryGetComponent(out PlayerTally tally))
         {
             tally.CountKill(execution);
-            if (!shared) tally.CountStreak();
+            if (!shared)
+            {
+                tally.CountStreak();
+                if (tally.Streak == CombatFeedHUD.SkullStreak) SkullSlowMotion.Begin();
+            }
         }
         CombatFeedHUD.Kill(WeaponName(hit), CombatDamageEvents.DisplayNameOf(report.Target), critical && bullet, execution, hit.IsCounter, bullet, distance, !shared);
-        if (pulse) KillConfirmEffect.Trigger(execution ? KillScreen.Execution : hit.IsCounter ? KillScreen.Counter : KillScreen.Gta,
+        if (pulse) KillConfirmEffect.Trigger(execution ? KillScreen.Execution : hit.IsCounter ? KillScreen.Counter : KillScreen.Ordinary,
             critical || execution);
-    }
-
-    /// <summary>
-    /// UI confirm on top of the flesh sounds from CombatHitAudio: a low thump for a kill. Ordinary hits have no confirm
-    /// sound; the marker and the flesh impact carry them.
-    /// </summary>
-    private static void ConfirmSound(GunFeelSettings settings, bool kill, bool critical)
-    {
-        if (!kill) return;
-        FeelAudio.Play(critical ? FeelSound.HeadshotKill : FeelSound.Kill, critical ? settings.headshotKillSounds : settings.killSounds,
-            settings.killVolume, Random.Range(.97f, 1.03f));
     }
 
     private static string WeaponName(DamageHit hit)

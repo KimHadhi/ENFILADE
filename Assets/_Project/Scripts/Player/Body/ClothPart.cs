@@ -16,10 +16,17 @@ public sealed class ClothPart
 
     public string skin = "", roots = "", preset = "", shapes = "";
     public bool ring;
+    /// <summary>A soft lump that springs back to its place, rather than cloth that hangs (Magica's BoneSpring).</summary>
+    public bool spring;
     public float rootTurn, tipLength, tipSpread;
     public float gravity = 5f, damping = .1f, worldInertia = 1f, localInertia = 1f, speedLimit = 5f, centrifugal;
     public float windPower = .2f, movingWind, windSync = .7f;
     public float stiffness = .2f, angleLimit = 60f, friction = .05f, teleportDistance = 2f;
+    /// <summary>
+    /// How thick the cloth is where it collides, as a share of the part's length. Magica collides only along the lines
+    /// between bones, so a skirt of many layers needs this to meet a hand where it shows. Zero keeps the preset's.
+    /// </summary>
+    public float thickness;
     /// <summary>How far a bone can leave its place, as a share of the part's length. Zero leaves it free.</summary>
     public float reach;
     /// <summary>How far in from its place a bone can go, as a share of the part's length. Below zero leaves it free.</summary>
@@ -56,7 +63,7 @@ public sealed class ClothPart
     }
 
     /// <summary>Starts the simulation on these bones. Living under the model, it goes when the body does.</summary>
-    internal MagicaCloth Wear(Transform model, string id, List<Transform> bones, List<ColliderComponent> colliders, float length)
+    internal MagicaCloth Wear(Transform model, string id, List<Transform> bones, List<ColliderComponent> colliders, ClothBones shape)
     {
         var holder = new GameObject("Cloth (" + id + ")");
         holder.transform.SetParent(model, false);
@@ -65,7 +72,7 @@ public sealed class ClothPart
         var settings = Resources.Load<TextAsset>(PresetFolder + "/" + preset);
         if (settings != null) data.ImportJson(settings.text);
         else Debug.LogWarning($"[Cloth] Resources/{PresetFolder}/{preset}.json 파일이 없습니다.");
-        data.clothType = ClothProcess.ClothType.BoneCloth;
+        data.clothType = spring ? ClothProcess.ClothType.BoneSpring : ClothProcess.ClothType.BoneCloth;
         data.rootBones.AddRange(bones);
         data.connectionMode = ring ? RenderSetupData.BoneConnectionMode.SequentialLoopMesh : RenderSetupData.BoneConnectionMode.Line;
         data.updateMode = ClothUpdateMode.Normal;
@@ -77,14 +84,17 @@ public sealed class ClothPart
         data.colliderCollisionConstraint.colliderList.AddRange(colliders);
         // The backstop keeps each bone out of the way the part's own middle lies: "in" has to mean toward the body.
         if (backstop >= 0f) data.normalAlignmentSetting.alignmentMode = NormalAlignmentSettings.AlignmentMode.BoundingBoxCenter;
-        Apply(data, length);
+        Apply(data, shape);
         cloth.BuildAndRun();
         return cloth;
     }
 
     /// <summary>Writes the table's numbers over the preset's, keeping the curves that spread them along a bone chain.</summary>
-    internal void Apply(ClothSerializeData data, float length)
+    internal void Apply(ClothSerializeData data, ClothBones shape)
     {
+        float length = shape.Length;
+        var thick = shape.Thickness(thickness * length);
+        if (thick != null) data.radius.SetValue(thickness * length, thick);
         data.rootRotation = rootTurn;
         data.gravity = gravity;
         data.damping.value = damping;

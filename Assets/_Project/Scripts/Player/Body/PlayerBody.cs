@@ -26,9 +26,12 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     [SerializeField] private string land = "mx_fall_land";
     [SerializeField] private string slideStart = "slidestart", slide = "slideloop", slideEnd = "slideend";
     [SerializeField] private string diveStart = "divestart", dive = "diveidle";
+    [SerializeField, Tooltip("A dive on the back, as Beatrun's jump turn: lying back in the air, then its loop. Turned over "
+        + "from a front dive, or off an edge while lying, the body is already down and goes straight to the loop.")]
+    private string supineDiveStart = "jumpturnfly", supineDive = "jumpturnflyidle";
     [SerializeField] private string bellySlideStart = "diveslidestart", bellySlide = "diveslideidle", bellySlideEnd = "diveslideend";
     [SerializeField] private string supineSlideStart = "meslidestart", supineSlide = "meslideloop", supineSlideEnd = "meslideend";
-    [SerializeField] private string prone = "diveslideidle", supine = "meslideloop", roll = "mx_sprint_roll";
+    [SerializeField] private string prone = "diveslideidle", supine = "jumpturnlandidle", roll = "mx_sprint_roll";
     [SerializeField] private string dodgeLeft = "dodgejumpleft", dodgeRight = "dodgejumpright", dashPush = "bargein";
     [SerializeField] private string vault = "vaultover", mantle = "climb1", wallClimb = "wallrunvertical", wallKick = "jumpwrleft";
     [SerializeField] private string barSwing = "swing", barRelease = "swingjumpoff", ledgeHang = "mx_ledge_hang_wall", ledgeJump = "hangheaveup";
@@ -79,6 +82,9 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     private string dodgeClip;
     private float transitionLeft, stateTime, airTime, phase, yaw, yawVelocity, targetYaw;
     private bool started, grounded, jumped, dead, thirdPerson, rebuild, playingOut, springing;
+    private bool supineDiveAtOnce, slidesOnBack;
+    private Vector3 lastHeadInBody;
+    private int lastHeadFrame = -1;
 
     public bool IsThirdPerson => thirdPerson;
     /// <summary>The barge clip is playing: a dash push under way, or one that stopped on someone playing out.</summary>
@@ -155,13 +161,15 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         mixer = AnimationMixerPlayable.Create(graph, 0);
         AnimationPlayableOutput.Create(graph, "Body", animator).SetSourcePlayable(BuildLayers());
         foreach (string clip in new[] { idle, crouchIdle, jump, air, fall, land, slideStart, slide, slideEnd,
-                     diveStart, dive, bellySlideStart, bellySlide, bellySlideEnd, supineSlideStart, supineSlide, supineSlideEnd,
+                     diveStart, dive, supineDiveStart, supineDive, bellySlideStart, bellySlide, bellySlideEnd,
+                     supineSlideStart, supineSlide, supineSlideEnd,
                      prone, supine, roll, dodgeLeft, dodgeRight, dashPush,
                      vault, mantle, wallClimb, wallKick, barSwing, barRelease, ledgeHang, ledgeJump, death })
             AddChannel(clip, 0f);
         foreach (string clip in VariantClips) AddChannel(clip, 0f);
         AddHangChannels();
         foreach (string clip in FixtureClips) AddChannel(clip, 0f);
+        BindHops();
         AddArmedChannels();
         AddLocomotionChannels();
         SetUpAnimationViewChannels();
@@ -184,6 +192,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     private void Teardown()
     {
         GameSettings.Changed -= OnSettingsChanged;
+        UnbindHops();
         if (viewCamera != null) viewCamera.nearClipPlane = baseNearClip;
         viewCamera = null;
         if (graph.IsValid()) graph.Destroy();
@@ -258,7 +267,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         if (rebuild) Build();
         if (!graph.IsValid() || player == null) return;
         float dt = Time.deltaTime;
-        if (GamePause.IsPaused || dt <= 0f) return;
+        if (HoldsForPause() || dt <= 0f) return;
         var keyboard = Keyboard.current;
         if (keyboard != null && player.IsLocal && keyboard.f5Key.wasPressedThisFrame)
         {
@@ -290,9 +299,11 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
             // Hanging, the hands hold the body in place instead of the head following the camera. FollowHead aims at
             // the camera's pivot, not the camera, so it keeps running while the camera rides the eyes: the camera
             // stays over the capsule and takes the head's dips and quick sway.
+            HoldHeadPlace();
             if (gripWeight <= 0f && !slideBodyAnchored && !ClipCarriesBody) FollowHead(Time.deltaTime);
             Grip(Time.deltaTime);
             LiftTuckedFeet(Time.deltaTime);
+            LeanHips();
             PlantFeet(Time.deltaTime);
             KeepLegsOffWall();
             Look(Time.deltaTime);
@@ -310,6 +321,26 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         error.y = 0f;
         headAlignment += error * (1f - Mathf.Exp(-dt / headFollowTime));
         headAlignment = Vector3.ClampMagnitude(headAlignment, 1.5f);
+    }
+
+    // Lying back from a slide or a dive, Beatrun's clips carry the whole body on ahead: meslideendprone moves it about
+    // 0.9 m, starting from a slide pose that sits that much further back than our slide's. Beatrun's camera isn't on the
+    // head; ours is, so through those clips the head keeps its place over the ground instead. The view only goes down,
+    // and the legs stretch out ahead of it.
+    private void HoldHeadPlace()
+    {
+        if (head == null) return;
+        Vector3 inBody = body.InverseTransformPoint(head.position);
+        bool hold = !dead && transition != null && (transition == Find(supineSlideEndProne) || transition == Find(supineLand));
+        if (hold && lastHeadFrame == Time.frameCount - 1)
+        {
+            Vector3 drift = transform.InverseTransformVector(body.TransformVector(inBody - lastHeadInBody));
+            drift.y = 0f;
+            headAlignment -= drift;
+            body.localPosition -= drift;
+        }
+        lastHeadInBody = inBody;
+        lastHeadFrame = Time.frameCount;
     }
 
     private void ChoosePose(float dt)
@@ -330,6 +361,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         if (onGround != grounded) { Touch(onGround); grounded = onGround; }
         stateTime += dt;
         airTime = onGround ? 0f : airTime + dt;
+        TickHops(dt);
 
         // Landing and slide exits play out on the feet unless the player is already moving off; a vault plays on to
         // its touchdown whatever the feet are doing.
@@ -337,7 +369,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         {
             transitionLeft -= dt;
             bool onFeet = onGround && (state == MovementState.Standing || state == MovementState.Crouching
-                || state == MovementState.Proning);
+                || state == MovementState.Proning || state == MovementState.Supine);
             bool movingOff = transitionLeft < transition.Length - .25f && HorizontalSpeed() > walkClipSpeed;
             bool upright = state == MovementState.Standing || state == MovementState.Crouching;
             bool hold = playingOut ? upright && (!onGround || !movingOff) : onFeet && !movingOff;
@@ -355,13 +387,20 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
             case MovementState.Standing:
             case MovementState.Crouching:
                 if (onGround) Locomotion(state == MovementState.Crouching, dt);
+                else if (ShowsTouchdown) Want(touchdown);
                 else AirPose();
                 break;
             case MovementState.Sliding: Sequence(slideStart, slide); FaceSlide(); break;
-            case MovementState.SupineSliding: Sequence(supineSlideStart, supineSlide); break;
+            case MovementState.SupineSliding:
+                if (slidesOnBack) Sequence(supineLand, supine);
+                else Sequence(supineSlideStart, supineSlide);
+                break;
             case MovementState.HeadFirstSliding: Sequence(bellySlideStart, bellySlide); break;
-            case MovementState.Diving:
-            case MovementState.SupineDiving: Sequence(diveStart, dive); break;
+            case MovementState.Diving: Sequence(diveStart, dive); break;
+            case MovementState.SupineDiving:
+                Sequence(supineDiveAtOnce ? null : supineDiveStart, supineDive);
+                FaceBack(dt);
+                break;
             case MovementState.Proning: Want(prone); break;
             case MovementState.Supine: Want(supine); break;
             case MovementState.StepDodge: Want(dodgeClip); break;
@@ -382,7 +421,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
             case MovementState.WallClimb: Sequence(wallClimbStart, wallClimb); break;
             case MovementState.WallKick: Want(wallKickClip); break;
             case MovementState.BarGrab:
-            case MovementState.BarSwing: Want(barSwing); break;
+            case MovementState.BarSwing: BarPose(dt); break;
             case MovementState.LacheRelease: Want(barRelease); break;
             case MovementState.LedgeHang: LedgePose(); break;
             case MovementState.LedgeJump: Want(ledgeJump); break;
@@ -395,7 +434,8 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     // One-shot clips start from their first frame when their state begins.
     private void Enter(MovementState from, MovementState to, bool onGround)
     {
-        if (onGround && (to == MovementState.Standing || to == MovementState.Crouching || to == MovementState.Proning))
+        if (onGround && (to == MovementState.Standing || to == MovementState.Crouching || to == MovementState.Proning
+            || to == MovementState.Supine))
         {
             string exit = SlideEndFor(from, to);
             if (exit != null) PlayTransition(exit);
@@ -410,10 +450,18 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         switch (to)
         {
             case MovementState.Sliding: Restart(Find(slideStart)); break;
-            case MovementState.SupineSliding: Restart(Find(supineSlideStart)); break;
+            case MovementState.SupineSliding:
+                // Down from a dive on the back still sliding: Beatrun lands its jump turn with jumpturnland at any speed.
+                slidesOnBack = from == MovementState.SupineDiving;
+                Restart(Find(slidesOnBack ? supineLand : supineSlideStart));
+                break;
             case MovementState.HeadFirstSliding: Restart(Find(bellySlideStart)); break;
-            case MovementState.Diving:
-            case MovementState.SupineDiving: Restart(Find(diveStart)); break;
+            case MovementState.Diving: Restart(Find(diveStart)); break;
+            case MovementState.SupineDiving:
+                // Turned over from a front dive, or off an edge while lying, the body is already down.
+                supineDiveAtOnce = from == MovementState.Diving || from == MovementState.Supine;
+                if (!supineDiveAtOnce) Restart(Find(supineDiveStart));
+                break;
             case MovementState.StepDodge:
                 dodgeClip = Vector3.Dot(player.Abilities.ActionDirection, transform.right) < 0f ? dodgeLeft : dodgeRight;
                 Restart(Find(dodgeClip));
@@ -452,8 +500,9 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         if (onGround && springing) { transition = null; playingOut = springing = false; }
         if (!onGround)
         {
-            jumped = player.VerticalVelocity > 1f;
-            if (jumped)
+            // A jump starts its clip in TickHops; anything else that throws the body up starts it here.
+            jumped = jumpQueued || jumpPending || player.VerticalVelocity > 1f;
+            if (jumped && !jumpQueued && !jumpPending)
             {
                 jumpClip = JumpFor(HorizontalSpeed());
                 Restart(Find(jumpClip));

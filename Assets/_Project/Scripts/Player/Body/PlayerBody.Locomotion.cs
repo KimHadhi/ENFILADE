@@ -26,6 +26,9 @@ public sealed partial class PlayerBody
     private float turnSpeed = 150f;
     [SerializeField, Min(.1f), Tooltip("Playback speed of the turn clips while the legs step round.")]
     private float turnClipSpeed = 1.5f;
+    [SerializeField, Min(0f), Tooltip("How quickly the legs follow a change in the way and speed of travel (s). Quick A/D or "
+        + "W taps even out instead of flipping the stride from one side to the other.")]
+    private float strideFollowTime = .12f;
 
     private static readonly string[] GunMoves =
     {
@@ -35,6 +38,7 @@ public sealed partial class PlayerBody
 
     private string[] plainMoves, rifleSet, pistolSet;
     private float legYaw;
+    private Vector3 stride;
     private int turning;
     private bool legsPlanted;
     private void AddLocomotionChannels()
@@ -69,7 +73,10 @@ public sealed partial class PlayerBody
 
     private void Locomotion(bool crouched, float dt)
     {
-        Vector3 local = transform.InverseTransformDirection(player.ActualVelocity);
+        // Followed in the world, so turning the view doesn't drag the legs behind it.
+        Vector3 travel = Vector3.ProjectOnPlane(player.ActualVelocity, Vector3.up);
+        stride = Vector3.Lerp(stride, travel, strideFollowTime > 0f ? 1f - Mathf.Exp(-dt / strideFollowTime) : 1f);
+        Vector3 local = transform.InverseTransformDirection(stride);
         local.y = 0f;
         float speed = local.magnitude;
         float heading = speed > .3f ? Mathf.Atan2(local.x, local.z) * Mathf.Rad2Deg : 0f;

@@ -59,6 +59,16 @@ public sealed partial class PlayerMovement : MonoBehaviour
     public PlayerPerfectDefense PerfectDefense { get; private set; }
     public DodgeEnemyPassThrough DodgePassThrough { get; private set; }
     public bool CombatInputLocked => (MeleeCombat != null && MeleeCombat.IsGuardBreaking) || (Execution != null && Execution.IsExecuting);
+    private WeaponController weapons;
+    /// <summary>A reload has both hands on the gun, so a move that needs a hand on an obstacle waits for it to finish.</summary>
+    public bool HandsOnReload
+    {
+        get
+        {
+            if (weapons == null) weapons = GetComponent<WeaponController>();
+            return weapons != null && weapons.Runtime != null && weapons.Runtime.IsReloading;
+        }
+    }
     public bool IsInitialized => Motor != null && Posture != null && Actions != null && Input != null
         && Abilities != null && StateMachine != null && DamageReceiver != null && Stats != null && Ultimate != null;
     // Native capsule/pivot dimensions can be crouched when Unity reloads scripts in Play Mode.
@@ -126,9 +136,12 @@ public sealed partial class PlayerMovement : MonoBehaviour
     public bool IsProning => StateMachine != null && StateMachine.IsIn<ProneState>();
     public Vector3 Velocity => HorizontalVelocity + Vector3.up * VerticalVelocity;
     public Vector3 ActualVelocity => Motor.actualVelocity;
-    public Vector2 CurrentInput => InputAvailable && !ControlLocked && Input != null ? Input.Move : Vector2.zero;
+    public Vector2 CurrentInput => InputAvailable && !ControlLocked && !IsGettingUp && Input != null ? Input.Move : Vector2.zero;
     /// <summary>Down after a heavy landing or thrown by a blow: movement keys and buttons do nothing (the view still turns).</summary>
     public bool ControlLocked => Abilities != null && Abilities.Landing.LocksControl;
+    /// <summary>Getting up off the back (Ability.supineRiseTime): the body can't move off until it is up; the hands stay free
+    /// for the gun, the shove and the fists.</summary>
+    public bool IsGettingUp => Actions != null && Actions.IsRising;
     /// <summary>A landing roll or a heavy landing has the body busy: no attacks or aiming.</summary>
     public bool IsLandingRecovery => CurrentState == MovementState.LandingRoll || CurrentState == MovementState.HeavyLanding;
     /// <summary>How hard the last touchdown was: Light, Hard (from Ability.hardLandingSpeed) or Heavy (it hurt, or a blow).</summary>
@@ -291,7 +304,9 @@ public sealed partial class PlayerMovement : MonoBehaviour
             GameTables.Bind(PlayerLife.TableName, PlayerLife.TableRow, gameObject.AddComponent<PlayerLife>(), gameObject.AddComponent<PlayerRevive>());
             gameObject.AddComponent<PlayerLifeHUD>();
             gameObject.AddComponent<TeammateMarkerHUD>();
+            gameObject.AddComponent<TeamHealthPanel>();
             gameObject.AddComponent<ScoreboardHUD>();
+            gameObject.AddComponent<ShoveFatigueHUD>();
         }
         if (Application.isPlaying && GetComponent<PlayerRagdoll>() == null)
             GameTables.Bind(PlayerRagdoll.TableName, PlayerRagdoll.TableRow, gameObject.AddComponent<PlayerRagdoll>());
@@ -318,7 +333,7 @@ public sealed partial class PlayerMovement : MonoBehaviour
         if (IsNetworkDriven) { Posture.UpdateHeightsAndTransform(Time.deltaTime); return; }
         float dt = DeltaTime;
         if (dt <= 0f || !Application.isFocused) return;
-        Input.Sample(InputAvailable && !ControlLocked);
+        Input.Sample(InputAvailable && !ControlLocked, !IsGettingUp);
         Abilities.BeginFrame(dt);
         Actions.TickTimers(dt);
         Motor.TickTimers(dt);
@@ -351,6 +366,8 @@ public sealed partial class PlayerMovement : MonoBehaviour
 
     private void LateUpdate()
     {
+        // Every Update has run, the network's moves of the others included: ride on whoever is underfoot.
+        if (IsInitialized && !IsNetworkDriven && Time.deltaTime > 0f) Motor.Ride();
         if (Time.timeScale > 0f) Abilities?.Combat.SampleShove(0f);
     }
     private void OnControllerColliderHit(ControllerColliderHit hit)
@@ -381,7 +398,14 @@ public sealed partial class PlayerMovement : MonoBehaviour
     {
         if (EnsureInitialized() && DamageReceiver.IsAlive) Abilities.Landing.KnockBack(velocity);
     }
-    private void RaiseStateChanged(MovementState from, MovementState to) => StateChanged?.Invoke(from, to);
+    private void RaiseStateChanged(MovementState from, MovementState to)
+    {
+        // Up off the back, Beatrun holds the player for a second while the body gets up (quickturn.lua, JumpTurnRecovery).
+        // Here only moving off waits; the hands are free.
+        if (from == MovementState.Supine && (to == MovementState.Standing || to == MovementState.Crouching) && !IsNetworkDriven)
+            Actions.riseTimer = AbilitySettings.supineRiseTime;
+        StateChanged?.Invoke(from, to);
+    }
     internal void RaiseLanded(float impactSpeed) => Landed?.Invoke(impactSpeed);
     internal void RaiseJumped() => Jumped?.Invoke();
     internal void RaiseDashPushHit(Vector3 point) => DashPushHit?.Invoke(point);
@@ -413,6 +437,8 @@ public sealed partial class PlayerMovement : MonoBehaviour
         else if (!HasCeilingAbove(StandingColliderHeight)) ChangeState(MovementState.Standing);
         else if (!HasCeilingAbove(CrouchColliderHeight)) ChangeState(MovementState.Crouching);
         else ChangeState(MovementState.Proning);
+        // Put back on the feet, not getting up off the back.
+        Actions.riseTimer = 0f;
         Abilities?.Reset();
     }
 

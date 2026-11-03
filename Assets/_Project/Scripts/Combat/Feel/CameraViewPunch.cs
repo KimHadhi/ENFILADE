@@ -4,7 +4,7 @@ using UnityEngine;
 /// Visual-only camera kick and trauma shake for shots, kills and impacts. The offset is added to the camera after
 /// every gameplay LateUpdate and removed again at the start of the next frame (CameraViewPunchRestore), so aiming,
 /// hitscan, cover probes and the weapon pose always use the steady view: bullets go to the crosshair, the world kicks.
-/// The gun is a child of the camera and kicks with it. Hit markers and damage numbers run after this (order 10010) and
+/// The gun rides the eye view (PlayerView), which takes the same kick in first person. Hit markers and damage numbers run after this (order 10010) and
 /// ride the kick too, like Call of Duty: the marker jumps with the view and settles back as the punch recovers.
 /// Added on demand by WeaponFeedback.
 /// </summary>
@@ -20,8 +20,10 @@ public sealed class CameraViewPunch : MonoBehaviour
     private const float ImpactResponse = 30f;
     private Camera view;
     private float trauma, noiseTime, seed;
-    private Quaternion steadyRotation;
+    private Quaternion steadyRotation, steadyEyes;
     private Quaternion appliedGunRotation;
+    private Transform eyes;
+    private bool eyesSought, eyesKicked;
     private float appliedFov;
     private bool applied;
     private float damageTrauma, damageNoiseTime;
@@ -120,10 +122,23 @@ public sealed class CameraViewPunch : MonoBehaviour
         if (euler.sqrMagnitude < 1e-8f && Mathf.Abs(fovKick) < 1e-4f) return;
 
         steadyRotation = transform.localRotation;
+        Quaternion before = transform.rotation;
         transform.localRotation = steadyRotation * Quaternion.Euler(euler);
+        KickEyes(transform.rotation * Quaternion.Inverse(before));
         appliedFov = view != null ? fovKick : 0f;
         if (view != null) view.fieldOfView += appliedFov;
         applied = true;
+    }
+
+    // The gun rides the player's eye view (PlayerView). In first person that is where the camera is, so it takes the
+    // same kick and the gun kicks with the view as before; in the F5 view the camera is elsewhere and the gun stays put.
+    private void KickEyes(Quaternion kick)
+    {
+        if (!eyesSought) { eyes = GetComponentInParent<PlayerMovement>() != null ? PlayerView.EyesOf(this) : null; eyesSought = true; }
+        if (eyes == null || eyes == transform || (eyes.position - transform.position).sqrMagnitude > 1e-4f) return;
+        steadyEyes = eyes.rotation;
+        eyes.rotation = kick * steadyEyes;
+        eyesKicked = true;
     }
 
     /// <summary>Put the steady view back. Called before any gameplay reads the camera.</summary>
@@ -132,6 +147,7 @@ public sealed class CameraViewPunch : MonoBehaviour
         if (!applied) return;
         applied = false;
         transform.localRotation = steadyRotation;
+        if (eyesKicked) { eyes.rotation = steadyEyes; eyesKicked = false; }
         if (view != null) view.fieldOfView -= appliedFov;
         appliedFov = 0f;
     }

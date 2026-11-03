@@ -55,6 +55,13 @@ public sealed class EnemyHealth : MonoBehaviour, IDamageReceiver, ICombatVitals,
 
     public event Action<EnemyHealth> Died;
 
+    private static readonly List<EnemyHealth> living = new List<EnemyHealth>();
+    /// <summary>Every enemy switched on in the scene, on this PC (the host's or a copy), dead ones included until they go.</summary>
+    public static IReadOnlyList<EnemyHealth> Living => living;
+
+    private void OnEnable() => living.Add(this);
+    private void OnDisable() => living.Remove(this);
+
     private void Awake()
     {
         if (GetComponent<MeleeCombatTarget>() == null) gameObject.AddComponent<MeleeCombatTarget>();

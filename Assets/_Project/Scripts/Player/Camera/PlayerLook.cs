@@ -120,6 +120,23 @@ public sealed class PlayerLook : MonoBehaviour
             // A slide carrying the player backwards (wall bounce, backward entry) keeps facing the view.
             return WithinArc(PlayerBody.SlideFacing(direction, transform.eulerAngles.y), limit, candidate);
         }
+        if (movement != null && movement.CurrentState == PlayerMovement.MovementState.SupineDiving && !movement.IsGrounded)
+        {
+            // Turned onto the back in the air, the view stays around the way the back faces (Beatrun's jump turn).
+            Vector3 back = Vector3.ProjectOnPlane(-movement.DiveBodyForward, Vector3.up);
+            if (back.sqrMagnitude < .0001f) return candidate;
+            if (body == null) body = GetComponent<PlayerBody>();
+            return WithinArc(Mathf.Atan2(back.x, back.z) * Mathf.Rad2Deg, body != null ? body.SupineDiveLookYawLimit : 75f, candidate);
+        }
+        if (movement != null && (movement.CurrentState == PlayerMovement.MovementState.BarGrab
+            || movement.CurrentState == PlayerMovement.MovementState.BarSwing)
+            && movement.Abilities != null && movement.Abilities.Traversal.Bar != null)
+        {
+            // On a swing bar the body faces along the swing; the head turns only so far from that (Beatrun's swing: 45).
+            Vector3 barFacing = PlayerBody.BarFacingFor(movement.Abilities.Traversal.Bar, transform.forward);
+            if (body == null) body = GetComponent<PlayerBody>();
+            return WithinArc(Mathf.Atan2(barFacing.x, barFacing.z) * Mathf.Rad2Deg, body != null ? body.BarLookYawLimit : 45f, candidate);
+        }
         if (movement != null && movement.CurrentState == PlayerMovement.MovementState.HeavyLanding && movement.Abilities != null)
         {
             // Down on the ground the head turns only so far from the way the body faces.

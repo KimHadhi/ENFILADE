@@ -23,6 +23,8 @@ public interface IRoomList : IDisposable
     IEnumerable<RoomInfo> Rooms { get; }
     /// <summary>Why the list may be missing rooms, or empty when it's fine.</summary>
     string Problem { get; }
+    /// <summary>A first look or an asked-for refresh is still out, so an empty list may not be the answer yet.</summary>
+    bool Searching { get; }
     void Tick();
     void Refresh();
 }

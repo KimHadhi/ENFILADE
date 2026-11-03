@@ -42,7 +42,17 @@ public sealed class ParkourTraversal
         ObstacleTarget candidate;
         bool found = high ? Detector.Vaults.TryHigh(forward, ctx.VerticalVelocity, out candidate)
             : Detector.Vaults.TryAir(forward, out candidate);
-        if (!found || traversedObstacles.Contains(candidate.Surface)) return false;
+        if (!found || traversedObstacles.Contains(candidate.Surface) || WaitsForReload(candidate)) return false;
+        Begin(candidate);
+        return true;
+    }
+
+    // A reload has both hands on the gun: a vault or a climb that puts a hand on the obstacle waits for it to finish. A step
+    // up needs no hand, so a reload doesn't leave the player stuck at a low ledge.
+    private bool WaitsForReload(in ObstacleTarget candidate) => candidate.Kind != VaultKind.StepUp && ctx.HandsOnReload;
+
+    private void Begin(in ObstacleTarget candidate)
+    {
         Obstacle = candidate;
         Ledge = default;
         if (candidate.EdgeNormal != Vector3.zero)
@@ -53,7 +63,6 @@ public sealed class ParkourTraversal
         }
         ctx.ChangeState(Obstacle.IsVault ? State.Vault : State.Mantle);
         ctx.Actions.ClearJumpBuffer();
-        return true;
     }
     internal bool TryStartAirAction()
     {
@@ -93,7 +102,20 @@ public sealed class ParkourTraversal
     internal bool TryCatchLedge(Vector3? facing = null)
     {
         if (ledgeLock > 0f || !Detector.TryLedge(facing ?? ctx.transform.forward, out Ledge)) return false;
+        // As Beatrun's ClimbingCheck: holding W, a caught ledge is climbed straight over or onto when there's room, and
+        // only hung from when there isn't.
+        if (ctx.CurrentInput.y > 0.1f && ClimbCaughtLedge()) return true;
         ctx.ChangeState(State.LedgeHang);
+        return true;
+    }
+
+    private bool ClimbCaughtLedge()
+    {
+        if (Ledge.Surface == null) return false;
+        Vector3 edge = Ledge.Surface.transform.TransformPoint(Ledge.LocalEdge);
+        if (!Detector.Vaults.TryHighBelow(edge, ctx.transform.forward, ctx.VerticalVelocity, out ObstacleTarget candidate)
+            || traversedObstacles.Contains(candidate.Surface) || WaitsForReload(candidate)) return false;
+        Begin(candidate);
         return true;
     }
     internal bool MantleFromLedge()

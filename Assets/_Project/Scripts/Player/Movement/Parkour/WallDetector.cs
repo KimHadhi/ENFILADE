@@ -16,18 +16,23 @@ public sealed class WallDetector
     {
         Vector3 feet = ctx.transform.position;
         return Physics.CapsuleCast(feet + Vector3.up * 0.45f,
-            feet + Vector3.up * (ctx.StandingColliderHeight * 0.85f), 0.14f,
+            feet + Vector3.up * (ctx.StandingColliderHeight * 0.85f), CastRadius,
             direction.normalized, out hit, ctx.AbilitySettings.wallReach, ctx.groundLayers, QueryTriggerInteraction.Ignore)
             && Mathf.Abs(hit.normal.y) < 0.25f && CanUseSurface(hit.collider);
     }
+    // Beatrun's vertical wall run starts only with the wall within 25 units of the eyes, about 9 beyond its hull, so the
+    // hands meet it; wallReach keeps hold of a wall once on it.
+    private const float EntryUnits = 25f, CastRadius = .14f;
+
     public bool TryEntry(out RaycastHit best)
     {
         best = default;
         float bestScore = float.NegativeInfinity;
+        float entry = EntryUnits * ctx.HullUnit - CastRadius;
         foreach (float angle in EntryAngles)
         {
             Vector3 direction = Quaternion.AngleAxis(angle, Vector3.up) * ctx.transform.forward;
-            if (!TryContact(direction, out RaycastHit hit)) continue;
+            if (!TryContact(direction, out RaycastHit hit) || hit.distance > entry) continue;
             float facing = Vector3.Dot(ctx.transform.forward, -hit.normal);
             if (facing < ctx.AbilitySettings.wallClimbFacingDot) continue;
             float score = -hit.distance + facing * 0.15f;

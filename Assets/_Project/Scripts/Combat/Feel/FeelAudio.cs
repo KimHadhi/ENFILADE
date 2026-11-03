@@ -36,6 +36,17 @@ public sealed class FeelAudio : MonoBehaviour
         voice.PlayOneShot(clip, Mathf.Clamp01(volume));
     }
 
+    /// <summary>2D sound of one given clip, such as a sound bank's pick, on the same voices as Play.</summary>
+    public static void PlayClip(AudioClip clip, float volume, float pitch = 1f)
+    {
+        if (!Application.isPlaying || clip == null || volume <= 0f) return;
+        var self = Get();
+        var voice = self.flat[self.nextFlat];
+        self.nextFlat = (self.nextFlat + 1) % FlatVoices;
+        voice.pitch = Mathf.Clamp(pitch, .25f, 3f);
+        voice.PlayOneShot(clip, Mathf.Clamp01(volume));
+    }
+
     /// <summary>3D sound at a world point (bodies landing).</summary>
     public static void PlayAt(FeelSound sound, AudioClip[] overrides, Vector3 point, float volume, float pitch = 1f, float maxDistance = 14f)
     {

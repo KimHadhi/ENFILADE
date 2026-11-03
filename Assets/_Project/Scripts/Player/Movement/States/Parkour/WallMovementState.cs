@@ -43,7 +43,8 @@ public sealed class WallMovementState : MovementBaseState
     {
         var traversal = ctx.Abilities.Traversal;
         Vector3 normal = traversal.Wall.normal;
-        ctx.HorizontalVelocity = -normal * 0.5f;
+        // Into the wall at Beatrun's 50 units/s, so the hands are on it within a moment.
+        ctx.HorizontalVelocity = -normal * (50f * ctx.HullUnit);
         ctx.VerticalVelocity = ctx.AbilitySettings.wallClimbSpeed;
     }
     public override void Exit() => ctx.Abilities.Traversal.LockWall();

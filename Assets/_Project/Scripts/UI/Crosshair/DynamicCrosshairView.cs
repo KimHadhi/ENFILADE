@@ -26,7 +26,43 @@ public class DynamicCrosshairView : MonoBehaviour
     private bool combatHidden;
     private bool savedDotActive, savedPartsActive;
     private float currentContainerAngle = 0f;
+    private bool isPreview;
     private static Sprite fallbackWhiteSprite;
+
+    /// <summary>Spin and rainbow on real time, so they keep moving while the game is paused (the settings preview).</summary>
+    public bool UnscaledTime { get; set; }
+
+    /// <summary>Ignores weapon spread and shot kicks, so the parts never move: the player's steady crosshair setting.</summary>
+    public bool HoldShape
+    {
+        get => holdShape;
+        set
+        {
+            if (holdShape == value) return;
+            holdShape = value;
+            fireKick = 0f;
+            UpdatePartOffsets();
+        }
+    }
+    private bool holdShape;
+
+    /// <summary>The HUD crosshair in the scene. The settings preview never counts.</summary>
+    public static DynamicCrosshairView FindHud()
+    {
+        foreach (var view in FindObjectsByType<DynamicCrosshairView>(FindObjectsSortMode.None))
+            if (!view.isPreview) return view;
+        return null;
+    }
+
+    /// <summary>Wires a crosshair built in code for the settings preview. The template is copied for each part.</summary>
+    public void ConfigurePreview(Image dot, RectTransform parts, GameObject partTemplate)
+    {
+        centerDot = dot;
+        partsContainer = parts;
+        partPrefab = partTemplate;
+        isPreview = true;
+        UnscaledTime = true;
+    }
 
     private void Awake()
     {
@@ -57,7 +93,7 @@ public class DynamicCrosshairView : MonoBehaviour
     {
         if (currentProfile != null && currentProfile.isRotating && partsContainer != null)
         {
-            currentContainerAngle += currentProfile.rotationSpeed * Time.deltaTime;
+            currentContainerAngle += currentProfile.rotationSpeed * (UnscaledTime ? Time.unscaledDeltaTime : Time.deltaTime);
             currentContainerAngle %= 360f;
             partsContainer.localEulerAngles = new Vector3(0f, 0f, currentContainerAngle);
         }
@@ -79,6 +115,7 @@ public class DynamicCrosshairView : MonoBehaviour
     /// <summary>Momentary extra gap per shot, in canvas pixels. Presentation only.</summary>
     public void Kick(float pixels)
     {
+        if (holdShape) return;
         fireKick = Mathf.Min(fireKick + Mathf.Max(0f, pixels), 26f);
         UpdatePartOffsets();
     }
@@ -92,12 +129,13 @@ public class DynamicCrosshairView : MonoBehaviour
 
     private void UpdateRainbowColor()
     {
-        float hue = Mathf.Repeat(Time.time * currentProfile.rainbowSpeed, 1f);
+        float hue = Mathf.Repeat((UnscaledTime ? Time.unscaledTime : Time.time) * currentProfile.rainbowSpeed, 1f);
         Color pastelColor = Color.HSVToRGB(
             hue,
             currentProfile.rainbowSaturation,
             currentProfile.rainbowBrightness
         );
+        pastelColor.a = currentProfile.color.a; // 무지개여도 프로필의 불투명도는 지킨다
 
         if (centerDot != null && currentProfile.showDot)
         {
@@ -131,18 +169,26 @@ public class DynamicCrosshairView : MonoBehaviour
         }
     }
 
-    private static void ApplyOutline(Graphic graphic, CrosshairProfile profile)
+    // Bars and discs get an even border; a sprite with a shape of its own keeps Unity's shifted copies, which follow it.
+    private static void ApplyOutline(Image image, CrosshairProfile profile)
     {
-        var outline = graphic.GetComponent<Outline>();
         bool wanted = profile.outlineWidth > 0f;
-        if (outline == null)
+        bool plain = image.sprite == fallbackWhiteSprite || CrosshairShapes.IsCircle(image.sprite);
+        var border = image.GetComponent<CrosshairOutline>();
+        var shifted = image.GetComponent<Outline>();
+        if (wanted && plain && border == null) border = image.gameObject.AddComponent<CrosshairOutline>();
+        if (wanted && !plain && shifted == null) shifted = image.gameObject.AddComponent<Outline>();
+        if (border != null)
         {
-            if (!wanted) return;
-            outline = graphic.gameObject.AddComponent<Outline>();
+            border.enabled = wanted && plain;
+            border.Set(profile.outlineWidth, profile.outlineColor);
         }
-        outline.enabled = wanted;
-        outline.effectColor = profile.outlineColor;
-        outline.effectDistance = new Vector2(profile.outlineWidth, profile.outlineWidth);
+        if (shifted != null)
+        {
+            shifted.enabled = wanted && !plain;
+            shifted.effectColor = profile.outlineColor;
+            shifted.effectDistance = new Vector2(profile.outlineWidth, profile.outlineWidth);
+        }
     }
 
     private void HandleProfileChanged()
@@ -332,7 +378,8 @@ public class DynamicCrosshairView : MonoBehaviour
     {
         if (currentProfile == null || !currentProfile.showParts || spawnedPartRects == null) return;
 
-        float totalGap = currentProfile.baseGap + dynamicSpread + fireKick;
+        // 모양 고정 중에는 퍼짐(점프·이동·무기별)과 사격 반동을 무시해 항상 같은 간격을 유지한다
+        float totalGap = currentProfile.baseGap + (holdShape ? 0f : dynamicSpread + fireKick);
 
         for (int i = 0; i < currentProfile.partCount; i++)
         {

@@ -31,11 +31,23 @@ public static class SettingsWidgets
         rect.offsetMin = rect.offsetMax = Vector2.zero;
     }
 
-    public static LayoutElement Size(Component target, float width = -1f, float height = -1f, float flexibleWidth = -1f)
+    public static LayoutElement Size(Component target, float width = -1f, float height = -1f, float flexibleWidth = -1f,
+        float flexibleHeight = -1f)
     {
         if (!target.TryGetComponent(out LayoutElement layout)) layout = target.gameObject.AddComponent<LayoutElement>();
-        layout.preferredWidth = width; layout.preferredHeight = height; layout.flexibleWidth = flexibleWidth;
+        layout.preferredWidth = width; layout.preferredHeight = height;
+        layout.flexibleWidth = flexibleWidth; layout.flexibleHeight = flexibleHeight;
         return layout;
+    }
+
+    /// <summary>Takes every child out of the layout now and destroys it at the end of the frame.</summary>
+    public static void Clear(Transform parent)
+    {
+        foreach (Transform child in parent)
+        {
+            child.gameObject.SetActive(false);
+            UnityEngine.Object.Destroy(child.gameObject);
+        }
     }
 
     public static TextMeshProUGUI Label(Transform parent, string text, float size, Color color,
@@ -57,12 +69,13 @@ public static class SettingsWidgets
         layout.spacing = 16f; layout.childAlignment = TextAnchor.MiddleLeft;
         layout.childControlWidth = layout.childControlHeight = true;
         layout.childForceExpandWidth = false; layout.childForceExpandHeight = true;
-        Size(row, height: 40f);
+        Size(row, height: 40f, flexibleHeight: 0f); // a force-expanding group would claim spare height otherwise
         Size(Label(row, name, 22f, Text), width: 210f);
         return row;
     }
 
-    public static Slider Slider(Transform parent, float min, float max, float value, Action<float> changed)
+    public static Slider Slider(Transform parent, float min, float max, float value, Action<float> changed,
+        bool wholeNumbers = false)
     {
         var root = Rect("Slider", parent);
         Size(root, height: 28f, flexibleWidth: 1f);
@@ -82,17 +95,18 @@ public static class SettingsWidgets
         handle.sizeDelta = new Vector2(14f, 0f);
         var slider = root.gameObject.AddComponent<Slider>();
         slider.fillRect = fill; slider.handleRect = handle; slider.targetGraphic = Fill(handle, Text);
-        slider.minValue = min; slider.maxValue = max;
+        // Range and rounding go first: changing them later re-sets the value and calls the listener.
+        slider.minValue = min; slider.maxValue = max; slider.wholeNumbers = wholeNumbers;
         slider.SetValueWithoutNotify(value);
         slider.onValueChanged.AddListener(v => changed(v));
         return slider;
     }
 
     /// <summary>Side-by-side options; the chosen one is filled with the accent colour.</summary>
-    public static void Choice(Transform parent, string[] options, int selected, Action<int> changed)
+    public static RectTransform Choice(Transform parent, string[] options, int selected, Action<int> changed)
     {
         var root = Rect("Choice", parent);
-        Size(root, height: 34f, flexibleWidth: 1f);
+        Size(root, height: 34f, flexibleWidth: 1f, flexibleHeight: 0f);
         var layout = root.gameObject.AddComponent<HorizontalLayoutGroup>();
         layout.spacing = 6f;
         layout.childControlWidth = layout.childControlHeight = true;
@@ -120,6 +134,48 @@ public static class SettingsWidgets
             button.onClick.AddListener(() => { Select(index); changed(index); });
         }
         Select(selected);
+        return root;
+    }
+
+    /// <summary>A vertical scroll view taking the rest of its layout parent. Rows go into the returned content.</summary>
+    public static RectTransform ScrollArea(Transform parent)
+    {
+        var root = Rect("Scroll", parent);
+        Size(root, flexibleWidth: 1f, flexibleHeight: 1f);
+        var viewport = Rect("Viewport", root);
+        Stretch(viewport);
+        viewport.offsetMax = new Vector2(-16f, 0f); // room for the bar
+        viewport.gameObject.AddComponent<RectMask2D>();
+        Fill(viewport, Color.clear); // the wheel also works between rows
+        var content = Rect("Content", viewport);
+        content.anchorMin = new Vector2(0f, 1f); content.anchorMax = Vector2.one; content.pivot = new Vector2(.5f, 1f);
+        content.sizeDelta = Vector2.zero;
+        var layout = content.gameObject.AddComponent<VerticalLayoutGroup>();
+        layout.spacing = 8f;
+        layout.childControlWidth = layout.childControlHeight = true;
+        layout.childForceExpandWidth = true; layout.childForceExpandHeight = false;
+        content.gameObject.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+        var bar = Rect("Scrollbar", root);
+        bar.anchorMin = new Vector2(1f, 0f); bar.anchorMax = Vector2.one; bar.pivot = new Vector2(1f, .5f);
+        bar.sizeDelta = new Vector2(6f, 0f);
+        Fill(bar, Track);
+        var slidingArea = Rect("Sliding Area", bar);
+        Stretch(slidingArea);
+        var handle = Rect("Handle", slidingArea);
+        handle.sizeDelta = Vector2.zero;
+        var scrollbar = bar.gameObject.AddComponent<Scrollbar>();
+        scrollbar.handleRect = handle; scrollbar.targetGraphic = Fill(handle, Muted);
+        scrollbar.direction = Scrollbar.Direction.BottomToTop;
+
+        var scroll = root.gameObject.AddComponent<ScrollRect>();
+        scroll.viewport = viewport; scroll.content = content;
+        scroll.horizontal = false; scroll.inertia = false;
+        scroll.movementType = ScrollRect.MovementType.Clamped;
+        scroll.scrollSensitivity = 40f;
+        scroll.verticalScrollbar = scrollbar;
+        scroll.verticalScrollbarVisibility = ScrollRect.ScrollbarVisibility.AutoHide;
+        return content;
     }
 
     /// <summary>A dark centred window sized to what it holds, hidden until shown, over a dimmed screen.</summary>

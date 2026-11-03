@@ -11,6 +11,13 @@ internal sealed class ClothBones
 {
     // A bone right on its root has nowhere to go, but dividing by its reach still has to work.
     private const float LeastReach = .001f;
+    // The share of its room a bone's cloth may fill.
+    private const float RoomShare = .9f;
+    /// <summary>
+    /// The thinnest cloth gets (metres): the presets' own, which pushed a little at rest where a skirt hugs the hips and
+    /// still looked right there.
+    /// </summary>
+    internal const float LeastThickness = .02f;
 
     private struct Bone
     {
@@ -24,6 +31,10 @@ internal sealed class ClothBones
         public float Reach;
         /// <summary>How much of the turn toward its neighbour it takes: all of it, unless it is a root.</summary>
         public float Turn;
+        /// <summary>Its depth as Magica Cloth measures it: path length up to the root over the longest one, 1 at the far end.</summary>
+        public float Depth;
+        /// <summary>How far it hung from what it rests against when the part was made (metres).</summary>
+        public float Room;
     }
 
     private readonly Transform anchor;
@@ -42,14 +53,59 @@ internal sealed class ClothBones
         var list = new List<Bone>();
         foreach (var root in roots) Add(root, -1, list.Count, list);
         bones = list.ToArray();
-        float longest = 0f;
+        float longest = 0f, deepest = 0f;
         for (int i = 0; i < bones.Length; i++)
         {
             if (bones[i].Moves) Moving++;
             bones[i].RestAim = Aim(i, true);
+            bones[i].Room = float.PositiveInfinity;
             longest = Mathf.Max(longest, bones[i].Reach);
+            for (int at = i; bones[at].Moves; at = bones[at].Up) bones[i].Depth += Vector3.Distance(bones[at].Rest, bones[bones[at].Up].Rest);
+            deepest = Mathf.Max(deepest, bones[i].Depth);
         }
+        for (int i = 0; i < bones.Length; i++) bones[i].Depth = deepest > 0f ? bones[i].Depth / deepest : 0f;
         Length = longest * Mathf.Abs(anchor.lossyScale.x);
+    }
+
+    /// <summary>Notes how far each free bone hangs, as the part is made, from what it rests against.</summary>
+    internal void MeasureRoom(System.Func<Vector3, float> room)
+    {
+        for (int i = 0; i < bones.Length; i++)
+            if (bones[i].Moves) bones[i].Room = room(bones[i].Transform.position);
+    }
+
+    /// <summary>
+    /// How thick the cloth is down the part, for Magica's particle radius: what was wanted (metres), but at each depth no
+    /// more than the room its bones had when the part was made, so the legs don't push it out of shape before anything has
+    /// moved, and never thinner than the presets made it. The curve runs 0..1 of what was wanted. Null when nothing was.
+    /// </summary>
+    internal AnimationCurve Thickness(float wanted)
+    {
+        if (wanted <= 0f) return null;
+        var least = new SortedDictionary<float, float>();
+        for (int i = 0; i < bones.Length; i++)
+        {
+            if (!bones[i].Moves) continue;
+            float depth = Mathf.Round(bones[i].Depth * 100f) / 100f;
+            float thick = Mathf.Clamp(bones[i].Room * RoomShare, Mathf.Min(LeastThickness, wanted), wanted) / wanted;
+            least[depth] = least.TryGetValue(depth, out float before) ? Mathf.Min(before, thick) : thick;
+        }
+        if (least.Count == 0) return null;
+        var keys = new List<Keyframe>();
+        foreach (var pair in least)
+        {
+            if (keys.Count == 0 && pair.Key > 0f) keys.Add(new Keyframe(0f, pair.Value));
+            keys.Add(new Keyframe(pair.Key, pair.Value));
+        }
+        // Straight lines between the depths, as the bones between them are.
+        for (int i = 0; i < keys.Count; i++)
+        {
+            var key = keys[i];
+            key.inTangent = i > 0 ? (key.value - keys[i - 1].value) / (key.time - keys[i - 1].time) : 0f;
+            key.outTangent = i + 1 < keys.Count ? (keys[i + 1].value - key.value) / (keys[i + 1].time - key.time) : 0f;
+            keys[i] = key;
+        }
+        return new AnimationCurve(keys.ToArray());
     }
 
     private void Add(Transform bone, int up, int root, List<Bone> list)

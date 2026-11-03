@@ -1,0 +1,34 @@
+﻿key,value,note
+Camera.fov,56,HUD를 비추는 카메라의 세로 시야각(°). 클수록 좌우 면이 앞으로 뻗은 벽처럼 깊어진다
+Planes.yaw,32,좌우 HUD 면이 화면 가운데 쪽으로 멀어지는 각도(°). 화면 바깥 모서리가 축이다
+Planes.pitch,0,두 면의 위쪽이 뒤로 젖혀지는 각도(°)
+Sway.lag,0.012,시선이 1초에 1° 돌 때 HUD가 뒤처지는 각도(°). 설정의 HUD 흔들림이 곱해진다
+Sway.max,2.5,흔들림으로 HUD가 옆으로 도는 최대 각도(°)
+Sway.pitchMax,1.5,흔들림으로 HUD가 위아래로 도는 최대 각도(°)
+Sway.follow,9,흔들림이 시선을 따라잡는 빠르기(1/초). 클수록 뻣뻣하다
+Sway.shift,6,흔들림 1°마다 HUD가 미끄러지는 거리(px. 1080p 기준)
+Team.limit,3,아군 패널에 보이는 최대 팀원 수. 이보다 많으면 패널을 숨기고 머리 위 체력만 남긴다
+Team.left,74,아군 카드 왼쪽 끝 위치(px. 화면 왼쪽부터)
+Team.bottom,292,가장 아래 아군 카드의 아래 끝(px. 화면 아래부터). 내 체력 블록 바로 위
+Team.yaw,8,가장 아래 카드가 면보다 더 기우는 각도(°). +면 오른쪽이 멀어진다
+Team.fan,2.5,위 카드로 갈수록 한 장마다 더 기우는 각도(°)
+Team.roll,1.5,카드가 화면 안에서 도는 각도(°). +면 오른쪽이 올라간다
+Mission.badgeSize,50;54,느낌표 칸의 너비;높이(px). 가장 높은 칸. 글자 칸과 같은 아랫선에서 위로만 솟는다
+Mission.barHeight,36,목표 글자 칸의 높이(px). 가장 낮은 칸. 이 칸의 아랫선에 세 칸이 같이 선다
+Mission.counterHeight,43,남은 수 칸의 높이(px). 중간 높이. 글자 칸 끝에 이어 붙는다
+Mission.symbolSize,38,느낌표 글자 크기
+Mission.titleSize,19,목표 글자 크기
+Mission.counterSize,24,남은 수의 큰 숫자 크기. 전체 수(/ 17)는 이것의 68%로 흐리게
+Mission.labelSize,11,느낌표 칸 옆 계단에 놓이는 OBJECTIVE 글자 크기. 계단(느낌표 높이 - 글자 칸 높이)보다 크면 숨는다
+Mission.accent,#EF8542,미션 바의 한 가지 강조색: 느낌표 칸, 남은 수 칸 왼쪽 선, OBJECTIVE, 진행 선의 채워진 부분
+Mission.trackShade,0.32,진행 선의 아직 안 채운 부분: 강조색을 이 비율로 어둡게
+Mission.lineHeight,3,세 칸이 올라선 진행 선의 두께(px)
+Mission.lineGap,2,진행 선과 그 위 칸들 사이 틈(px)
+Mission.mostSegments,30,목표 수가 이 이하면 진행 선을 한 칸씩 나눈다. 넘으면 이어진 선
+Mission.punch,0.22,남은 수가 바뀔 때 숫자가 잠깐 커지는 정도(비율)
+Popup.gripOffset,0.05;0.09,총 앞쪽 왼손 손잡이에서 점수 팝업 왼쪽 아래 모서리까지(m. 화면 기준 오른쪽;위)
+Popup.lean,14,점수 팝업이 도는 각도(°). +면 오른쪽 끝이 플레이어 쪽으로 온다
+Popup.aimScale,0.82,조준 중 점수 팝업 크기(평소의 비율)
+Popup.aimAlpha,0.82,조준 중 점수 팝업 불투명도(0~1). 1이면 그대로
+Popup.follow,30,점수 팝업이 총을 따라잡는 빠르기(1/초). 클수록 딱 붙는다
+Popup.room,240;150,화면 오른쪽과 위에 남겨 둘 팝업 자리(px). 팝업이 화면 밖으로 나가지 않게

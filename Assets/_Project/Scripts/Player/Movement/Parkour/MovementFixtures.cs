@@ -47,7 +47,7 @@ public sealed class MovementFixtures
     internal bool TryStart()
     {
         bool ground = ctx.Abilities.CanUseGroundActions, air = ctx.Abilities.IsOrdinaryAirborne;
-        if ((!ground && !air) || ctx.ControlLocked || ctx.Input.CrouchHeld) return false;
+        if ((!ground && !air) || ctx.ControlLocked || ctx.IsGettingUp || ctx.Input.CrouchHeld) return false;
         if (TryLadder()) return true;
         return air && TryZipline();
     }

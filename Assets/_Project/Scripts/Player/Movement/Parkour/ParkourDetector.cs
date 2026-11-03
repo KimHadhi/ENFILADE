@@ -13,7 +13,8 @@ public struct ObstacleTarget
     public Ladder ExitLadder;
     public Vector3 Start, RaisedStart, RaisedEnd, End;
     public bool IsVault;
-    public bool ReferenceMotion;
+    /// <summary>Carried over in a straight line (StraightLineTraversal), not along a rounded TraversalPath.</summary>
+    public bool StraightLine;
     /// <summary>Top of the obstacle above the feet when it was found (m), for the moves that have no VaultKind.</summary>
     public float Height;
     /// <summary>Seconds the move takes, when it sets its own (off the top of a ladder); otherwise TraversalTiming decides.</summary>
@@ -35,8 +36,8 @@ public sealed class ParkourDetector
     private readonly WallDetector walls;
     private readonly Collider[] traversalOverlaps = new Collider[32];
     private readonly RaycastHit[] traversalHits = new RaycastHit[32];
-    internal BeatrunVault Vaults { get; }
-    internal ParkourDetector(PlayerMovement context) { ctx = context; walls = new WallDetector(ctx); Vaults = new BeatrunVault(ctx, this); }
+    internal VaultFinder Vaults { get; }
+    internal ParkourDetector(PlayerMovement context) { ctx = context; walls = new WallDetector(ctx); Vaults = new VaultFinder(ctx, this); }
     private static bool IsBar(Collider collider) => collider != null && collider.GetComponentInParent<SwingBar>() != null;
     private float Radius(float height) => Mathf.Max(0.05f, Mathf.Min(ctx.ControllerRadius, height * 0.5f) - 0.025f);
     private void Capsule(Vector3 feet, float height, out Vector3 bottom, out Vector3 top, out float radius)
@@ -50,7 +51,7 @@ public sealed class ParkourDetector
         Capsule(feet, height, out Vector3 a, out Vector3 b, out float r);
         return !Physics.CheckCapsule(a, b, r, ctx.groundLayers, QueryTriggerInteraction.Ignore);
     }
-    public bool ClearReferenceExit(Vector3 feet)
+    public bool ClearStraightExit(Vector3 feet)
     {
         // Recovery must fit the actual controller, including its contact margin;
         // the slightly smaller query hull used for route planning is insufficient.
@@ -75,9 +76,9 @@ public sealed class ParkourDetector
 
     // Source temporarily uses NOCLIP. Exempt only the selected obstacle here;
     // the standing body must still fit past every other collider along the line.
-    public bool ClearReferencePath(Vector3 start, Vector3 end, Collider surface)
+    public bool ClearStraightPath(Vector3 start, Vector3 end, Collider surface)
     {
-        if (!ClearReferenceCapsule(start, surface) || !ClearReferenceCapsule(end, surface)) return false;
+        if (!ClearStraightCapsule(start, surface) || !ClearStraightCapsule(end, surface)) return false;
         Vector3 delta = end - start;
         if (delta.sqrMagnitude < 0.000001f) return true;
         Capsule(start, ctx.StandingColliderHeight, out Vector3 a, out Vector3 b, out float r);
@@ -87,7 +88,7 @@ public sealed class ParkourDetector
         for (int i = 0; i < count; i++) if (traversalHits[i].collider != surface) return false;
         return true;
     }
-    internal bool ClearReferenceCapsule(Vector3 feet, Collider surface)
+    internal bool ClearStraightCapsule(Vector3 feet, Collider surface)
     {
         Capsule(feet, ctx.StandingColliderHeight, out Vector3 a, out Vector3 b, out float r);
         int count = Physics.OverlapCapsuleNonAlloc(a, b, r, traversalOverlaps, ctx.groundLayers, QueryTriggerInteraction.Ignore);
@@ -96,11 +97,11 @@ public sealed class ParkourDetector
         return true;
     }
 
-    internal bool ReferenceTarget(Collider surface, Vector3 feet, Vector3 end, bool vault, out ObstacleTarget target)
+    internal bool StraightTarget(Collider surface, Vector3 feet, Vector3 end, bool vault, out ObstacleTarget target)
     {
         target = default;
-        if (!ClearReferenceExit(end) || !ClearReferencePath(feet, end, surface)) return false;
-        target = new ObstacleTarget { Surface = surface, Start = feet, End = end, IsVault = vault, ReferenceMotion = true };
+        if (!ClearStraightExit(end) || !ClearStraightPath(feet, end, surface)) return false;
+        target = new ObstacleTarget { Surface = surface, Start = feet, End = end, IsVault = vault, StraightLine = true };
         return true;
     }
     // climb.lua's heave: straight from the hang to the top, feet four units past the edge, or as far in as the capsule fits.
@@ -112,7 +113,7 @@ public sealed class ParkourDetector
             Vector3 probe = edge + inward * depth + Vector3.up * 0.2f;
             if (!Physics.Raycast(probe, Vector3.down, out RaycastHit tread, 0.35f, ctx.groundLayers, QueryTriggerInteraction.Ignore)
                 || tread.collider != surface || tread.normal.y < Mathf.Cos(ctx.SlopeLimit * Mathf.Deg2Rad)) continue;
-            if (!ReferenceTarget(surface, feet, tread.point + Vector3.up * 0.02f, false, out target)) continue;
+            if (!StraightTarget(surface, feet, tread.point + Vector3.up * 0.02f, false, out target)) continue;
             target.Kind = VaultKind.Heave;
             return true;
         }

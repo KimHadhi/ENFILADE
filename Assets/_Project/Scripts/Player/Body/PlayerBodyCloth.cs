@@ -19,12 +19,16 @@ public sealed class PlayerBodyCloth : MonoBehaviour
         public ClothPart Part;
         public MagicaCloth Cloth;
         public ClothBones Bones;
+        /// <summary>A ring's rest shape, which empty hands rest on. Null for anything that isn't a ring.</summary>
+        public SkirtShell Shell;
     }
 
     [SerializeField, Min(.01f), Tooltip("Seconds between the cloth poses sent to the other PCs.")]
     private float sendInterval = .066f;
     [SerializeField, Min(1f), Tooltip("How quickly a copy's cloth closes on the last pose it got (per second).")]
     private float followRate = 20f;
+    [SerializeField, Range(0f, 1f), Tooltip("How far into a skirt's thickness an empty hand resting on it sinks: 0 on its outside, 1 down to its bones.")]
+    private float handSink = .3f;
 
     private readonly Dictionary<string, ClothPart> parts = new Dictionary<string, ClothPart>(StringComparer.OrdinalIgnoreCase);
     private readonly List<Worn> worn = new List<Worn>();
@@ -71,9 +75,14 @@ public sealed class PlayerBodyCloth : MonoBehaviour
             part.AddTips(roots, -animator.transform.up);
             // Read before the simulation first moves them.
             var free = new ClothBones(roots, part.rootTurn);
-            var cloth = player.IsNetworkDriven ? null
-                : part.Wear(animator.transform, id, roots, colliders.For(animator, part.shapes), free.Length);
-            worn.Add(new Worn { Part = part, Cloth = cloth, Bones = free });
+            MagicaCloth cloth = null;
+            if (!player.IsNetworkDriven)
+            {
+                var touching = colliders.For(animator, part.shapes);
+                free.MeasureRoom(point => colliders.Room(point, touching));
+                cloth = part.Wear(animator.transform, id, roots, touching, free);
+            }
+            worn.Add(new Worn { Part = part, Cloth = cloth, Bones = free, Shell = part.ring ? new SkirtShell(roots) : null });
         }
     }
 
@@ -92,9 +101,28 @@ public sealed class PlayerBodyCloth : MonoBehaviour
         foreach (var item in worn)
         {
             if (item.Cloth == null) continue;
-            item.Part.Apply(item.Cloth.SerializeData, item.Bones.Length);
+            item.Part.Apply(item.Cloth.SerializeData, item.Bones);
             item.Cloth.SetParameterChange();
         }
+    }
+
+    /// <summary>
+    /// How far an empty hand at this point, this thick itself (metres), must move to rest on the skirts it has sunk into
+    /// rather than inside them (world). The skirt counts as thick as its table says, less the share the hand sinks in, so
+    /// the hand presses its outer layers a little: it stays outside the bones, and the cloth gives way inward instead of
+    /// swelling round it. Zero when the hand is clear.
+    /// </summary>
+    internal Vector3 OutOfSkirts(Vector3 point, float clearance)
+    {
+        Vector3 most = Vector3.zero;
+        foreach (var item in worn)
+        {
+            if (item.Shell == null) continue;
+            float thick = Mathf.Max(item.Part.thickness * item.Bones.Length, ClothBones.LeastThickness) * (1f - handSink);
+            Vector3 push = item.Shell.Out(point, clearance + thick);
+            if (push.sqrMagnitude > most.sqrMagnitude) most = push;
+        }
+        return most;
     }
 
     /// <summary>Everything this body's cloth is doing right now, for the other PCs.</summary>

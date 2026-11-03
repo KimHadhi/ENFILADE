@@ -5,7 +5,7 @@ using UnityEngine;
 /// "I got hit" look for any damaged target: the whole body flashes red (Minecraft-style), the silhouette gets a red rim,
 /// and the exact hit spot glows hot and cools down (up to four spots at once). A kill flash turns the body white.
 /// A mark holds a faint tint and an outline for as long as it is set; ExecutableHighlight sets it.
-/// Works by appending one overlay material (Hidden/Morphang/HitFlashOverlay) to the target's mesh renderers while the
+/// Works by appending one overlay material (Hidden/ENFILADE/HitFlashOverlay) to the target's mesh renderers while the
 /// flash runs and removing it afterwards, so idle enemies cost nothing and their own materials are never modified.
 /// An extra material only draws a mesh's last submesh, so a multi-material model is covered in part.
 /// Added on demand; timing and colours in GunFeel → Enemy hit flash, the mark's in Feedback → Executable body.

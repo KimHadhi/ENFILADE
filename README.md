@@ -27,6 +27,7 @@
 | 체력·무기·적·웨이브·이동·몸·소리 숫자 변경 (CSV 표, 컴파일 불필요) | [밸런스 표](Assets/_Project/Docs/MaintenanceGuide.md#밸런스-표-data-tables), [Resources/Tables](Assets/_Project/Resources/Tables) |
 | 설정 수치 변경·저장, 폴더 이름 변경 후 복구 | [설정·유지보수 안내](Assets/_Project/Docs/MaintenanceGuide.md) |
 | 3D 모델·텍스처 추가 (폴더 규칙, 자동 임포트 설정) | [3D 모델 추가하기](Assets/_Project/Docs/MaintenanceGuide.md#3d-모델-추가하기) |
+| 맵의 하늘·해와 달·조명 기구·안개·반사·간접광 굽기, 공통 화면 설정 | [조명 안내](Assets/_Project/Docs/LightingGuide.md) |
 | 플레이어 몸(진짜 1인칭)·눈 시점·손발 IK·캐릭터 교체·애니메이션 추가 | [플레이어 몸](Assets/_Project/Docs/PlayerBodyGuide.md) |
 | 사운드 추가·교체, 전투·이동·목소리 소리의 폴더와 연결 위치 | [사운드 관리](Assets/_Project/Docs/MaintenanceGuide.md#사운드를-추가하거나-교체하기) |
 | GMod 애드온에서 옮긴 것과 남은 일 | [애드온 이식 기록](Assets/_Project/Docs/AddonPortNotes.md) |

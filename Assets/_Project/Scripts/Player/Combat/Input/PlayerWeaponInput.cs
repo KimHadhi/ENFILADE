@@ -73,6 +73,9 @@ public sealed class PlayerWeaponInput : MonoBehaviour, IWeaponInput
 
     public void RequireTriggerRelease() { releaseRequired = meleeReleaseRequired = true; }
 
+    /// <summary>The aim/guard button is held, for moves that read it (a slide ends lying on the back).</summary>
+    public bool GuardHeld => isActiveAndEnabled && acceptInputThisFrame && guard != null && guard.IsPressed();
+
     // A guard-break animation stays locked, but may remember a defensive press near its end.
     public bool TryReadGuardBuffer(out MeleeInputFrame frame)
     {
