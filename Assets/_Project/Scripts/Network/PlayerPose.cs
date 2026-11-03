@@ -10,10 +10,10 @@ using UnityEngine;
 public struct PlayerPose : INetworkSerializeByMemcpy
 {
     [Flags]
-    public enum Marks : byte
+    public enum Marks : ushort
     {
         None = 0, Grounded = 1, AirCrouching = 2, BigFall = 4, LadderCaught = 8, LadderLeftHand = 16, LadderSliding = 32,
-        LadderBlocked = 64, LeavesLadder = 128
+        LadderBlocked = 64, LeavesLadder = 128, BareHanded = 256
     }
 
     public Vector3 Velocity;

@@ -68,9 +68,10 @@ public sealed class CombatCueAudio : MonoBehaviour
         if (source == null || LastCue != CombatCue.EnemyAttackStart) return;
         if (Time.timeScale <= 0f) { if (!paused) source.Pause(); paused = true; return; }
         if (paused) { source.UnPause(); paused = false; }
-        // The cue tells when the blow lands, so it keeps the attacker's time whichever way that was slowed.
+        // The cue tells when the blow lands, so it keeps the attacker's time whichever way that was slowed. A slowed game
+        // also lowers every world sound (GameAudio.WorldPitch), which already counts that time, so it is taken back out.
         if (network == null) TryGetComponent(out network);
-        source.pitch = Mathf.Clamp(Time.timeScale * (network != null ? network.Pace : 1f), .01f, 3f);
+        source.pitch = Mathf.Clamp(Time.timeScale * (network != null ? network.Pace : 1f) / GameAudio.WorldPitch, .01f, 3f);
     }
     private void OnDisable() => Stop();
 }

@@ -16,7 +16,7 @@
 | 달리며 쌓이는 속도 | [MovementMomentum](Player/Movement/Actions/MovementMomentum.cs) |
 | 착지 단계·구르기·큰 낙하·넉백 | [MovementLanding](Player/Movement/Actions/MovementLanding.cs), [HeavyLanding 상태](Player/Movement/States/) |
 | 스텝 회피·기울이기·적 통과 | [Dodge](Player/Movement/Dodge/), [MovementAbilities](Player/Movement/Actions/MovementAbilities.cs) |
-| Vault·맨틀·렛지·벽·봉·사다리·집라인 / 동작마다 총을 든 손(구르기·크게 착지 포함, 장전 중에는 손을 짚는 넘기·올라서기를 하지 않음) | [Parkour](Player/Movement/Parkour/), [States/Parkour](Player/Movement/States/Parkour/) / [TraversalHands](Player/Movement/Parkour/TraversalHands.cs) |
+| Vault·맨틀·렛지·벽·봉·사다리·집라인 / 동작마다 총을 든 손(구르기, 크게 착지, 장전 중에 시작한 넘기는 총을 넣음) | [Parkour](Player/Movement/Parkour/), [States/Parkour](Player/Movement/States/Parkour/) / [TraversalHands](Player/Movement/Parkour/TraversalHands.cs) |
 | 씬에 놓는 사다리·집라인 | [Ladder](World/Ladder.cs), [Zipline](World/Zipline.cs), [사용 안내](../Docs/MovementGuide.md#사다리집라인) |
 | 부서지는 문 (모든 PC에서 함께 부서짐, 서 있는 동안만 적의 길을 막음) | [BreakableDoor](World/BreakableDoor.cs), [DoorBreaks](World/DoorBreaks.cs), 길찾기 다시 굽기: Tools > World > 문 길찾기 다시 굽기 ([DoorNavMeshBaker](../Editor/Utilities/DoorNavMeshBaker.cs)) |
 | 슬라이딩의 적 접촉·저스트 판정 | [SlideCombat](Player/Combat/SlideCombat.cs) |
@@ -37,7 +37,7 @@
 | 플레이어 HP·실드·피격·사망 | [PlayerDamageReceiver](Player/Combat/PlayerDamageReceiver.cs) |
 | 쓰러짐·부활·복귀·전멸 | [PlayerLife](Player/Combat/PlayerLife.cs), [PlayerRevive](Player/Combat/PlayerRevive.cs), [PlayerLifeHUD](UI/PlayerLifeHUD.cs), [Downed.csv](../Resources/Tables/Downed.csv) |
 | 킬 피드 (내 처치 강조, 연속 처치) | [CombatFeedHUD](Combat/Feel/CombatFeedHUD.cs), [KillFeedRow](UI/KillFeedRow.cs), [StreakBadge](UI/StreakBadge.cs), [KillFeed.csv](../Resources/Tables/KillFeed.csv) |
-| 슬로 모션 (혼자: 세상 전체, 방: 본인과 상대만) / 연속 처치가 처음 해골이 될 때 방 전체 슬로 모션 | [CombatTimeEffects](Player/Combat/CombatTimeEffects.cs), `EnemyNetwork.Pace` / [SkullSlowMotion](Combat/Feel/SkullSlowMotion.cs), [SkullSlowMotion.csv](../Resources/Tables/SkullSlowMotion.csv) |
+| 슬로 모션 (혼자: 세상 전체, 방: 본인과 상대만) / 연속 처치가 처음 해골이 될 때 방 전체 슬로 모션과 그동안의 화면(색, 가장자리, 모션 블러)과 소리(낮은 음, 먹먹함) / 느려져도 VFX Graph 이펙트가 매 프레임 움직이게 | [CombatTimeEffects](Player/Combat/CombatTimeEffects.cs), `EnemyNetwork.Pace` / [SkullSlowMotion](Combat/Feel/SkullSlowMotion.cs), [SlowMotionLook](Combat/Feel/SlowMotionLook.cs), [SlowMotionSound](Combat/Feel/SlowMotionSound.cs), [SkullSlowMotion.csv](../Resources/Tables/SkullSlowMotion.csv) / [VfxTimeStep](Combat/Feel/VfxTimeStep.cs) |
 | 쓰러진 동료 표시·동료 체력 | [DownedAura](Combat/Feel/DownedAura.cs), [TeammateMarkerHUD](UI/TeammateMarkerHUD.cs), [TeamHealthPanel](UI/TeamHealthPanel.cs), [HealthSegments](UI/HealthSegments.cs), [DownedAura.csv](../Resources/Tables/DownedAura.csv) |
 | Tab 화면 (점수판과 목표 목록) | [ScoreboardHUD](UI/ScoreboardHUD.cs), [ObjectiveLogPanel](UI/ObjectiveLogPanel.cs), [PlayerTally](Player/Combat/PlayerTally.cs), [PlayerNetworkScore](Network/PlayerNetworkScore.cs) |
 | 죽은 몸의 레그돌 | [PlayerRagdoll](Player/Body/PlayerRagdoll.cs), [RagdollCorpse](Combat/Feel/RagdollCorpse.cs), [PlayerBody.Limp](Player/Body/PlayerBody.Limp.cs), [PlayerNetworkCorpse](Network/PlayerNetworkCorpse.cs), [Ragdoll.csv](../Resources/Tables/Ragdoll.csv) |

@@ -72,6 +72,7 @@ public sealed class MovementMirror
                 pose.Extent = traversal.Obstacle.Height;
                 pose.Vault = (byte)traversal.Obstacle.Kind;
                 if (traversal.Obstacle.ExitLadder != null) marks |= Marks.LeavesLadder;
+                if (traversal.Obstacle.BareHanded) marks |= Marks.BareHanded;
                 if (traversal.Obstacle.Kind != VaultKind.None) WriteLedge(ref pose, traversal.Ledge);
                 break;
             case State.LedgeHang: WriteLedge(ref pose, traversal.Ledge); break;
@@ -157,6 +158,7 @@ public sealed class MovementMirror
                 traversal.Obstacle.Height = pose.Extent;
                 traversal.Obstacle.Kind = (VaultKind)pose.Vault;
                 traversal.Obstacle.ExitLadder = Has(pose, Marks.LeavesLadder) ? fixtures.Ladder : null;
+                traversal.Obstacle.BareHanded = Has(pose, Marks.BareHanded);
                 if (pose.Direction != Vector3.zero) MirrorLedge(pose);
                 break;
             case State.LedgeHang: MirrorLedge(pose); break;

@@ -5,7 +5,9 @@ using UnityEngine;
 /// moment. In a room every PC slows as the host's word of that kill reaches it (PlayerNetworkScore.KillRpc), so the world
 /// stays one; alone, as the kill counts (GunFeelDirector). It runs on real time: it eases down to `scale`, holds, and eases
 /// back up. Esc's pause still stops the game, and the counter slowdown and hit stops give way while it runs
-/// (CombatTimeEffects lets an outside time scale take over). Numbers: Tables/SkullSlowMotion.
+/// (CombatTimeEffects lets an outside time scale take over). The screen (SlowMotionLook) and the sound (SlowMotionSound)
+/// follow Depth, and VfxTimeStep keeps the effects moving every frame. Numbers: Tables/SkullSlowMotion, one row for all
+/// three.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class SkullSlowMotion : MonoBehaviour
@@ -20,14 +22,20 @@ public sealed class SkullSlowMotion : MonoBehaviour
     private static SkullSlowMotion instance;
     private float age = -1f, fixedBaseline = .02f;
 
+    /// <summary>How slowed the game is now: 0 at normal speed, 1 at the slowest.</summary>
+    public static float Depth { get; private set; }
+    /// <summary>Real seconds since the slowdown began; below 0 while none runs.</summary>
+    public static float Age => instance != null ? instance.age : -1f;
+
     /// <summary>A streak's first skull: slows the game, from the start again if it is already slowed.</summary>
     public static void Begin()
     {
         if (!Application.isPlaying) return;
         if (instance == null)
         {
-            instance = new GameObject("Skull Slow Motion").AddComponent<SkullSlowMotion>();
-            GameTables.Bind(TableName, TableRow, instance);
+            var host = new GameObject("Skull Slow Motion");
+            instance = host.AddComponent<SkullSlowMotion>();
+            GameTables.Bind(TableName, TableRow, instance, host.AddComponent<SlowMotionLook>(), host.AddComponent<SlowMotionSound>());
         }
         // Read under any slowdown already running: CombatTimeEffects scales the physics step with the time scale.
         if (instance.age < 0f && Time.timeScale > 0f) instance.fixedBaseline = Time.fixedDeltaTime / Time.timeScale;
@@ -41,14 +49,15 @@ public sealed class SkullSlowMotion : MonoBehaviour
         float rise = age - easeIn - hold;
         if (rise >= easeOut) { Stop(); return; }
         float slowed = age < easeIn ? age / Mathf.Max(.001f, easeIn) : rise <= 0f ? 1f : 1f - rise / Mathf.Max(.001f, easeOut);
-        float now = Mathf.Lerp(1f, scale, Mathf.SmoothStep(0f, 1f, slowed));
+        Depth = Mathf.SmoothStep(0f, 1f, slowed);
+        float now = Mathf.Lerp(1f, scale, Depth);
         Time.timeScale = now;
         Time.fixedDeltaTime = fixedBaseline * now;
     }
 
     private void Stop()
     {
-        age = -1f;
+        age = -1f; Depth = 0f;
         if (Time.timeScale > 0f) Time.timeScale = 1f;
         Time.fixedDeltaTime = fixedBaseline;
     }

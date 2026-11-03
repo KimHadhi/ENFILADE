@@ -42,18 +42,17 @@ public sealed class ParkourTraversal
         ObstacleTarget candidate;
         bool found = high ? Detector.Vaults.TryHigh(forward, ctx.VerticalVelocity, out candidate)
             : Detector.Vaults.TryAir(forward, out candidate);
-        if (!found || traversedObstacles.Contains(candidate.Surface) || WaitsForReload(candidate)) return false;
+        if (!found || traversedObstacles.Contains(candidate.Surface)) return false;
         Begin(candidate);
         return true;
     }
 
-    // A reload has both hands on the gun: a vault or a climb that puts a hand on the obstacle waits for it to finish. A step
-    // up needs no hand, so a reload doesn't leave the player stuck at a low ledge.
-    private bool WaitsForReload(in ObstacleTarget candidate) => candidate.Kind != VaultKind.StepUp && ctx.HandsOnReload;
-
     private void Begin(in ObstacleTarget candidate)
     {
         Obstacle = candidate;
+        // A reload has both hands on the gun. A move that puts a hand on the obstacle still goes: the gun is put away for it,
+        // as for a roll, and the reload stops. A step up needs no hand, so the reload carries on.
+        Obstacle.BareHanded = candidate.Kind != VaultKind.StepUp && ctx.HandsOnReload;
         Ledge = default;
         if (candidate.EdgeNormal != Vector3.zero)
         {
@@ -114,7 +113,7 @@ public sealed class ParkourTraversal
         if (Ledge.Surface == null) return false;
         Vector3 edge = Ledge.Surface.transform.TransformPoint(Ledge.LocalEdge);
         if (!Detector.Vaults.TryHighBelow(edge, ctx.transform.forward, ctx.VerticalVelocity, out ObstacleTarget candidate)
-            || traversedObstacles.Contains(candidate.Surface) || WaitsForReload(candidate)) return false;
+            || traversedObstacles.Contains(candidate.Surface)) return false;
         Begin(candidate);
         return true;
     }

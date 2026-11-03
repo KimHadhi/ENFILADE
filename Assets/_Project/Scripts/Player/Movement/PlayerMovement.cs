@@ -60,7 +60,7 @@ public sealed partial class PlayerMovement : MonoBehaviour
     public DodgeEnemyPassThrough DodgePassThrough { get; private set; }
     public bool CombatInputLocked => (MeleeCombat != null && MeleeCombat.IsGuardBreaking) || (Execution != null && Execution.IsExecuting);
     private WeaponController weapons;
-    /// <summary>A reload has both hands on the gun, so a move that needs a hand on an obstacle waits for it to finish.</summary>
+    /// <summary>A reload has both hands on the gun, so a vault begun during one puts the gun away and stops it (ParkourTraversal).</summary>
     public bool HandsOnReload
     {
         get

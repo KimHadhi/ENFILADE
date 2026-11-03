@@ -11,10 +11,14 @@ public enum AudioChannel { Combat, Movement, Voice, UI }
 /// </summary>
 public static class GameAudio
 {
-    private struct Bound { public AudioSource source; public AudioChannel channel; public float gain; }
+    // ownPitch is the pitch the source's owner gave it; setPitch is what FollowWorldPitch last wrote over it.
+    private struct Bound { public AudioSource source; public AudioChannel channel; public float gain, ownPitch, setPitch; }
     private static readonly List<Bound> bound = new List<Bound>();
     private static readonly float[] duck = { 1f, 1f, 1f, 1f };
     private static bool listening;
+
+    /// <summary>Share of their own pitch every world sound plays at (1 is normal); see FollowWorldPitch.</summary>
+    public static float WorldPitch { get; private set; } = 1f;
 
     public static float Volume(AudioChannel channel)
     {
@@ -33,10 +37,32 @@ public static class GameAudio
         if (source == null) return;
         Listen();
         bound.RemoveAll(item => item.source == null || item.source == source);
-        bound.Add(new Bound { source = source, channel = channel, gain = 1f });
+        bound.Add(new Bound { source = source, channel = channel, gain = 1f, ownPitch = source.pitch, setPitch = source.pitch });
         source.volume = Volume(channel) * duck[(int)channel];
-        // Menu sounds keep playing while the pause menu pauses the listener.
-        source.ignoreListenerPause = channel == AudioChannel.UI;
+        // Menu sounds keep playing while the pause menu pauses the listener, and stay clear of its filters (a slowdown's
+        // muffling, SlowMotionSound).
+        source.ignoreListenerPause = source.bypassListenerEffects = channel == AudioChannel.UI;
+    }
+
+    /// <summary>
+    /// Plays every world sound (all channels but UI) at this share of its own pitch, for a slowed game; 1 hands every
+    /// source its own pitch back. Owners keep setting their pitch as they like (a random spread per shot): call this every
+    /// frame while it isn't 1, and a pitch changed since the last call counts as the source's own.
+    /// </summary>
+    public static void FollowWorldPitch(float share)
+    {
+        share = Mathf.Clamp(share, .1f, 1f);
+        if (Mathf.Approximately(share, 1f) && Mathf.Approximately(WorldPitch, 1f)) return;
+        WorldPitch = Mathf.Approximately(share, 1f) ? 1f : share;
+        for (int i = bound.Count - 1; i >= 0; i--)
+        {
+            var item = bound[i];
+            if (item.source == null) { bound.RemoveAt(i); continue; }
+            if (item.channel == AudioChannel.UI) continue;
+            if (!Mathf.Approximately(item.source.pitch, item.setPitch)) item.ownPitch = item.source.pitch;
+            item.source.pitch = item.setPitch = item.ownPitch * WorldPitch;
+            bound[i] = item;
+        }
     }
 
     /// <summary>A bound source's own level under its channel volume (0–1), for loops that fade in and out.</summary>
@@ -96,6 +122,7 @@ public static class GameAudio
     {
         bound.Clear();
         listening = false;
+        WorldPitch = 1f;
         for (int i = 0; i < duck.Length; i++) duck[i] = 1f;
     }
 

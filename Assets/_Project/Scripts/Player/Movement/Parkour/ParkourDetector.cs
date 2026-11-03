@@ -15,6 +15,8 @@ public struct ObstacleTarget
     public bool IsVault;
     /// <summary>Carried over in a straight line (StraightLineTraversal), not along a rounded TraversalPath.</summary>
     public bool StraightLine;
+    /// <summary>Begun during a reload: both hands were on the gun, so it is put away for the move (TraversalHands).</summary>
+    public bool BareHanded;
     /// <summary>Top of the obstacle above the feet when it was found (m), for the moves that have no VaultKind.</summary>
     public float Height;
     /// <summary>Seconds the move takes, when it sets its own (off the top of a ladder); otherwise TraversalTiming decides.</summary>
