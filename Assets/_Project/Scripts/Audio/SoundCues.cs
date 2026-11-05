@@ -63,6 +63,9 @@ public static class SoundCues
         return null;
     }
 
+    /// <summary>The row with exactly this id; false, and no warning, when there is none (the caller has a fallback).</summary>
+    public static bool TryFind(string id, out Cue cue) => Load().TryGetValue(id ?? "", out cue);
+
     private static Dictionary<string, Cue> Load()
     {
         if (cues != null) return cues;

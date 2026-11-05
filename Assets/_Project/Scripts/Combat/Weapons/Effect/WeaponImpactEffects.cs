@@ -2,14 +2,16 @@ using UnityEngine;
 
 /// <summary>
 /// The surface's impact effect and bullet hole where a shot from the parent WeaponController hits anything but a body.
-/// A bullet that went on (AttackTrace.Bullet) also leaves a hole on the far side of each wall it came through, an impact
-/// wherever it hit next, and ArcCW's ricochet sound where it glanced off.
+/// A bullet that went on (AttackTrace.Bullet) also bursts out of the far side of each wall it came through, bigger than
+/// where it went in and thrown along its way (ImpactPool.PlayExit), tears through it with the material's sound, makes an
+/// impact wherever it hit next, and plays ArcCW's ricochet sound where it glanced off.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class WeaponImpactEffects : MonoBehaviour
 {
-    // Sound bank Bullets, Art/Audio/Bullets/Ricochet; volume and pitch in Sounds.csv (Bullets/Ricochet).
-    private const string BulletBank = "Bullets", RicochetKey = "Ricochet";
+    // Sound bank Bullets: Art/Audio/Bullets/Ricochet, and Art/Audio/Bullets/Penetrate/<surface> for going through, found
+    // along the surface's fallbacks; volume and pitch in Sounds.csv (Bullets/...). No clips there: no sound.
+    private const string BulletBank = "Bullets", RicochetKey = "Ricochet", PenetrateEvent = "Penetrate";
     // ArcCW plays it at Source's default 75 dB, heard across a street.
     private const float RicochetReach = 30f;
 
@@ -37,15 +39,29 @@ public sealed class WeaponImpactEffects : MonoBehaviour
     {
         ShowSurface(shot.Trace);
         if (shot.Later == null) return;
+        var entered = shot.Trace;
         foreach (var leg in shot.Later)
         {
             var onward = leg.Onward;
+            if (onward.Ricochet) Ricochet(onward.From);
+            else if (leg.Through != null && !IsBody(leg.Through) && entered.HasHit) Penetrate(leg.Through, entered.Hit.point);
             // A body's far side bleeds instead (EnemyBloodEffect).
             if (onward.HasExit && onward.Exit.collider != null && !IsBody(onward.Exit.collider))
-                ImpactPool.PlaySurface(onward.Exit.collider, onward.Exit.point, onward.Exit.normal);
-            if (onward.Ricochet) Ricochet(onward.From);
+                ImpactPool.PlayExit(onward.Exit.collider, onward.Exit.point, onward.Exit.normal, onward.Direction);
             ShowSurface(leg.Trace);
+            entered = leg.Trace;
         }
+    }
+
+    // Tearing through: the material's sound where the bullet went in.
+    private static void Penetrate(Collider through, Vector3 point)
+    {
+        if (bullets == null) bullets = SoundBank.Load(BulletBank);
+        if (bullets == null) return;
+        string key = bullets.Find(PenetrateEvent, Surfaces.Of(through), out _);
+        if (key == null) return;
+        var sound = bullets.SettingsOf(key);
+        FeelAudio.PlayClipAt(bullets.Pick(key), point, sound.Volume, sound.RandomPitch(), RicochetReach);
     }
 
     private void ShowSurface(in AttackTraceResult trace)

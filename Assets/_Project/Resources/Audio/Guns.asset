@@ -1,0 +1,128 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0513b63a8f85441499f8c22cf0761180, type: 3}
+  m_Name: Guns
+  m_EditorClassIdentifier: Assembly-CSharp::SoundBank
+  id: Guns
+  entries:
+  - key: DryFire
+    clips:
+    - {fileID: 8300000, guid: 0b13aa6da0a148ceb37f7f62b3d7393b, type: 3}
+  - key: Heavy/Bolt
+    clips:
+    - {fileID: 8300000, guid: 65c69681c65b42dfb2ddc86db7ab7731, type: 3}
+  - key: Heavy/LastRound
+    clips:
+    - {fileID: 8300000, guid: 0a5c610e65e446cda68a4b7530e35e85, type: 3}
+  - key: Heavy/LowAmmo
+    clips:
+    - {fileID: 8300000, guid: c9514903a2604c5892cb9cede5a9c1c7, type: 3}
+  - key: Heavy/MagIn
+    clips:
+    - {fileID: 8300000, guid: 073b524b8a6442369a99c7a26c9d1921, type: 3}
+    - {fileID: 8300000, guid: 765de4b145244273bd514c30b0c2b61c, type: 3}
+  - key: Heavy/Shot
+    clips:
+    - {fileID: 8300000, guid: ff8ff056faa5405f93fc33a6da2e733e, type: 3}
+  - key: LowAmmoClick
+    clips:
+    - {fileID: 8300000, guid: 76d4f23486fa426b823b2550445bbb52, type: 3}
+  - key: Pistol/DryFire
+    clips:
+    - {fileID: 8300000, guid: c52ac6de4e6141e58daf11dc73f36d44, type: 3}
+  - key: Pistol/LastRound
+    clips:
+    - {fileID: 8300000, guid: 95126b57b3d2450f9d26fd09a705c554, type: 3}
+  - key: Pistol/LowAmmo
+    clips:
+    - {fileID: 8300000, guid: 1001e2bc5b8048419a2e267f5029aa3a, type: 3}
+  - key: Pistol/MagIn
+    clips:
+    - {fileID: 8300000, guid: 19308b1e65a046c2af93a8c3df14d376, type: 3}
+  - key: Pistol/MagOut
+    clips:
+    - {fileID: 8300000, guid: 22db89a1e5344e00a54b1f2db1fe58bc, type: 3}
+  - key: Pistol/Shot
+    clips:
+    - {fileID: 8300000, guid: 627a1af25c934ec1a887caa20dae5804, type: 3}
+  - key: Pistol/SlideBack
+    clips:
+    - {fileID: 8300000, guid: c8647325f665491690c56a61d4f24f13, type: 3}
+  - key: Pistol/SlideForward
+    clips:
+    - {fileID: 8300000, guid: a0cb50c9411b4f378e27ae86f5e3676f, type: 3}
+  - key: Reverb/Heavy/IndoorsClose
+    clips:
+    - {fileID: 8300000, guid: 6ebf37a2c473493e9a1317a5fdb5757c, type: 3}
+  - key: Reverb/Heavy/IndoorsDistant
+    clips:
+    - {fileID: 8300000, guid: 3dca9400c845448dabbefa4bc48a77f3, type: 3}
+  - key: Reverb/Heavy/OutdoorsClose
+    clips:
+    - {fileID: 8300000, guid: 7933b5abf15c4cf88407575836721468, type: 3}
+  - key: Reverb/Magnum/IndoorsClose
+    clips:
+    - {fileID: 8300000, guid: 684ab34bf5e44d678b85b71f6a21550d, type: 3}
+  - key: Reverb/Magnum/IndoorsDistant
+    clips:
+    - {fileID: 8300000, guid: 537c0b0a584a4c1bbef6c7bfbb649a4d, type: 3}
+  - key: Reverb/Magnum/OutdoorsClose
+    clips:
+    - {fileID: 8300000, guid: 6fa0d2fb7f3849a8a3b3de8995ec8fc8, type: 3}
+  - key: Reverb/Pistol/IndoorsClose
+    clips:
+    - {fileID: 8300000, guid: 93ca1621470044aaa34fe6e96da5c935, type: 3}
+  - key: Reverb/Pistol/IndoorsDistant
+    clips:
+    - {fileID: 8300000, guid: 67a461ef8b4b45f1beba6efafc48b70c, type: 3}
+  - key: Reverb/Pistol/OutdoorsClose
+    clips:
+    - {fileID: 8300000, guid: fa8fb17cfbd14943b72e244536cf4caf, type: 3}
+  - key: Reverb/Rifle/IndoorsClose
+    clips:
+    - {fileID: 8300000, guid: 3a24a64e7e1348ceae3bfa615b86a6c3, type: 3}
+  - key: Reverb/Rifle/IndoorsDistant
+    clips:
+    - {fileID: 8300000, guid: d66ad9db4b7241ff94201e9e9691bb07, type: 3}
+  - key: Reverb/Rifle/OutdoorsClose
+    clips:
+    - {fileID: 8300000, guid: 60c846d93b014d408a768351a276bb76, type: 3}
+  - key: Reverb/Smg/IndoorsClose
+    clips:
+    - {fileID: 8300000, guid: 6042ecc8eeea40bca653254c9832c693, type: 3}
+  - key: Reverb/Smg/IndoorsDistant
+    clips:
+    - {fileID: 8300000, guid: 7dfbc6482c584ba996540a195208199e, type: 3}
+  - key: Reverb/Smg/OutdoorsClose
+    clips:
+    - {fileID: 8300000, guid: e5cbb88e629d42499598a8a51129aac2, type: 3}
+  - key: Rifle/LastRound
+    clips:
+    - {fileID: 8300000, guid: b334f704d9b548cf88cdd2dc45d4e0b4, type: 3}
+  - key: Rifle/LowAmmo
+    clips:
+    - {fileID: 8300000, guid: c6056c3982604f79bb36b143a2733427, type: 3}
+  - key: Rifle/MagIn
+    clips:
+    - {fileID: 8300000, guid: 3408f160b02e44e3b893e386dc191a7a, type: 3}
+  - key: Rifle/MagOut
+    clips:
+    - {fileID: 8300000, guid: 899886d309c044d3ada6bdaec0dfa219, type: 3}
+  - key: Rifle/Shot
+    clips:
+    - {fileID: 8300000, guid: 9dd5874ae5c64b40a569f2567a684351, type: 3}
+  - key: Rifle/SlideBack
+    clips:
+    - {fileID: 8300000, guid: 178a0d28d5b24800aa869049e3722397, type: 3}
+  - key: Rifle/SlideForward
+    clips:
+    - {fileID: 8300000, guid: 3aecf104adcc4662830728324a4e27d1, type: 3}

@@ -15,6 +15,7 @@ public sealed class LedgeHangState : MovementBaseState
         ctx.HorizontalVelocity = Vector3.zero; ctx.VerticalVelocity = 0f;
         ctx.Actions.ClearJumpBuffer();
         ctx.Abilities.Landing.SupportedByTraversal();
+        ctx.Abilities.Traversal.ForgetWallClimbs();
     }
     public override void ProcessInput(Vector2 input)
     {

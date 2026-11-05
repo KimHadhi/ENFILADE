@@ -4,7 +4,11 @@ using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.InputSystem;
 
-/// <summary>One player's deathblow transaction. Animation can subscribe to Started/Impact/Ended.</summary>
+/// <summary>
+/// One player's deathblow transaction. F executes a broken enemy within reach; with the fists out the attack button
+/// does too, from further off, dashing in first, as Sekiro's deathblow sits on the attack button. Animation can
+/// subscribe to Started/Impact/Ended.
+/// </summary>
 [DisallowMultipleComponent, DefaultExecutionOrder(-160)]
 public sealed class PlayerExecution : MonoBehaviour
 {
@@ -14,6 +18,17 @@ public sealed class PlayerExecution : MonoBehaviour
     [SerializeField, Min(0f)] private float impactTime = .35f;
     [SerializeField, Min(0f)] private float clearance = 2.6f;
     [SerializeField, Min(0f)] private float retreatSpeed = 2.8f;
+    [Header("Deathblow on the attack button")]
+    [SerializeField, Min(.2f), Tooltip("With the fists out, a left click executes a broken enemy this close (m), dashing in from beyond reach.")]
+    private float deathblowReach = 4f;
+    [SerializeField, Min(1f), Tooltip("Speed of that dash (m/s).")]
+    private float dashSpeed = 14f;
+    [SerializeField, Min(.05f), Tooltip("The dash stops closing in after this long (s), and the execution goes on from there.")]
+    private float dashTimeout = .35f;
+    [SerializeField, Min(.1f), Tooltip("The dash ends this far from the enemy's body (m), close enough to take hold.")]
+    private float dashStopDistance = .65f;
+    // The host's copy of someone executing on their own PC waits this much past the execution for word that it ended.
+    private const float RemoteGrace = 2f;
     [Header("Execution Rewards")]
     [SerializeField, Min(0f)] private float healthRestored = 10f;
     [SerializeField, Range(0f, 1f), Tooltip("Reserve ammunition restored per ranged weapon, as a fraction of its magazine size.")]
@@ -21,12 +36,18 @@ public sealed class PlayerExecution : MonoBehaviour
     private PlayerMovement player;
     private Transform aim;
     private InputAction interact;
+    private PlayerWeaponInput buttons;
     private MeleeCombatTarget victim;
-    private float elapsed;
-    private bool impacted;
+    private float elapsed, approachTime;
+    private bool impacted, approaching;
     private readonly RaycastHit[] sightHits = new RaycastHit[32];
     public bool IsExecuting { get; private set; }
+    /// <summary>The enemy F would execute now.</summary>
     public MeleeCombatTarget Candidate { get; private set; }
+    /// <summary>The enemy a left click would execute now (fists out), dashing in if it is beyond reach; null otherwise.</summary>
+    public MeleeCombatTarget DeathblowCandidate { get; private set; }
+    /// <summary>Dashing in to the enemy before the execution proper starts.</summary>
+    public bool IsDashing => IsExecuting && approaching;
     public MeleeCombatTarget Victim => victim;
     private static readonly List<PlayerExecution> executing = new List<PlayerExecution>();
     public event Action<MeleeCombatTarget> Started;
@@ -56,6 +77,7 @@ public sealed class PlayerExecution : MonoBehaviour
     {
         var input = GetComponent<PlayerInput>();
         interact = (input != null ? input.actions : InputSystem.actions)?.FindAction("Player/Interact", false);
+        buttons = GetComponent<PlayerWeaponInput>();
     }
     private bool CanOffer => isActiveAndEnabled && player != null && player.IsInitialized && player.InputAvailable
         && !player.CombatInputLocked && !player.IsParkour && !player.IsSliding && !player.IsDiving && !player.IsDowned
@@ -68,13 +90,21 @@ public sealed class PlayerExecution : MonoBehaviour
     /// </summary>
     internal void ShowExecuting(MeleeCombatTarget target)
     {
-        victim = target; IsExecuting = true; executing.Add(this);
+        // An end that never arrived must not leave the last enemy held, or this player listed twice.
+        if (victim != null && victim != target) victim.ReleaseExecution(this);
+        victim = target; IsExecuting = true; elapsed = 0f; impacted = false;
+        executing.Remove(this); executing.Add(this);
         foreach (var enemy in MeleeCombatTarget.Active)
             if (enemy != null && Suppresses(enemy)) enemy.GetComponent<EnemyCombatAI>()?.CancelAttack();
     }
     private void Update()
     {
-        if (player != null && player.IsNetworkDriven) return;
+        if (player != null && player.IsNetworkDriven)
+        {
+            // Their PC says when it ends; should that word be lost, the hold lets go on its own.
+            if (IsExecuting && (elapsed += Time.deltaTime) > duration + RemoteGrace) Cancel();
+            return;
+        }
         if (IsExecuting)
         {
             // Pause retains the transaction, but opening chat, death, or focus loss cancels it.
@@ -83,29 +113,36 @@ public sealed class PlayerExecution : MonoBehaviour
             Tick(Time.deltaTime); return;
         }
         Candidate = interact != null && interact.enabled ? FindCandidate() : null;
-        if (Candidate != null && interact.WasPressedThisFrame()) TryBegin(Candidate);
+        if (Candidate != null && interact.WasPressedThisFrame()) { TryBegin(Candidate); return; }
+        // Before the fists read the same click (PlayerMeleeCombat runs after this): a broken enemy takes the deathblow
+        // instead of a punch. A counter, which reads it earlier still, has already claimed the click if it was open.
+        var fists = player != null ? player.MeleeCombat : null;
+        DeathblowCandidate = fists != null && fists.IsActive ? FindCandidate(deathblowReach) : null;
+        if (DeathblowCandidate != null && buttons != null && buttons.TryReadMeleeInput(out var frame) && frame.AttackPressed)
+            TryBegin(DeathblowCandidate, deathblowReach);
     }
-    public MeleeCombatTarget FindCandidate()
+    public MeleeCombatTarget FindCandidate() => FindCandidate(reach);
+    private MeleeCombatTarget FindCandidate(float within)
     {
         if (!CanOffer || aim == null) return null;
         MeleeCombatTarget best = null; float bestScore = float.NegativeInfinity;
         foreach (var target in MeleeCombatTarget.Active)
         {
-            if (!Eligible(target, out Vector3 point)) continue;
+            if (!Eligible(target, within, out Vector3 point)) continue;
             Vector3 direction = point - aim.position;
             float score = Vector3.Dot(aim.forward, direction.normalized) * 4f - direction.magnitude * .1f;
             if (score > bestScore) { best = target; bestScore = score; }
         }
         return best;
     }
-    private bool Eligible(MeleeCombatTarget target, out Vector3 point)
+    private bool Eligible(MeleeCombatTarget target, float within, out Vector3 point)
     {
         point = default;
         if (target == null || !target.CanExecute || target.gameObject.scene != gameObject.scene || target.transform.IsChildOf(transform)) return false;
         var body = target.GetComponentInChildren<Collider>();
         if (body == null || !body.enabled || body.isTrigger) return false;
         point = body.bounds.center;
-        if (Vector3.Distance(aim.position, body.ClosestPoint(aim.position)) > reach) return false;
+        if (Vector3.Distance(aim.position, body.ClosestPoint(aim.position)) > within) return false;
         Vector3 delta = point - aim.position;
         if (Vector3.Dot(aim.forward, delta.normalized) < Mathf.Cos(aimAngle * Mathf.Deg2Rad)) return false;
         int count = Physics.RaycastNonAlloc(aim.position, delta.normalized, sightHits, delta.magnitude, ~0, QueryTriggerInteraction.Ignore);
@@ -118,11 +155,19 @@ public sealed class PlayerExecution : MonoBehaviour
         }
         return true;
     }
-    public bool TryBegin(MeleeCombatTarget target)
+    public bool TryBegin(MeleeCombatTarget target) => TryBegin(target, reach);
+    /// <summary>Executes target if it is within this distance; beyond reach the player dashes in to it first.</summary>
+    public bool TryBegin(MeleeCombatTarget target, float within)
     {
-        if (!CanOffer || !Eligible(target, out _) || !target.TryReserveExecution(this)) return false;
-        victim = target; elapsed = 0f; impacted = false; IsExecuting = true; executing.Add(this); Candidate = null;
+        if (!CanOffer || !Eligible(target, within, out _) || !target.TryReserveExecution(this)) return false;
+        victim = target; elapsed = approachTime = 0f; impacted = false; IsExecuting = true; Candidate = DeathblowCandidate = null;
+        approaching = Gap(target, out _) > dashStopDistance && within > reach;
+        executing.Remove(this); executing.Add(this);
         player.PerfectDefense?.Cancel();
+        // Pressed during the parry's hit stop: the deathblow goes now, not once time lets go.
+        var timeEffects = GetComponent<CombatTimeEffects>();
+        var parry = GetComponent<ParryFeedback>();
+        if (timeEffects != null && parry != null) timeEffects.Release(parry);
         player.MeleeCombat?.CancelAction();
         player.HorizontalVelocity = Vector3.zero;
         CombatCueAudio.Play(gameObject, CombatCue.Grab);
@@ -138,6 +183,19 @@ public sealed class PlayerExecution : MonoBehaviour
         if (!IsExecuting || dt <= 0f) return;
         if (player == null || !player.isActiveAndEnabled || !player.DamageReceiver.IsAlive) { Cancel(); return; }
         if (!impacted && (victim == null || !victim.IsAvailable)) { Cancel(); return; }
+        if (approaching)
+        {
+            // Into the enemy, along the ground; the capsule's own collisions stop it at anything in the way, and then
+            // the timeout lets the execution go on from where it stands.
+            approachTime += dt;
+            float gap = Gap(victim, out Vector3 toward);
+            if (gap > dashStopDistance && approachTime < dashTimeout)
+            {
+                player.Motor.AddDisplacement(toward * Mathf.Min(gap - dashStopDistance, dashSpeed * dt));
+                return;
+            }
+            approaching = false;
+        }
         elapsed += dt;
         if (!impacted && elapsed >= Mathf.Min(impactTime, duration))
         {
@@ -154,6 +212,8 @@ public sealed class PlayerExecution : MonoBehaviour
         }
         if (elapsed >= duration) Cancel();
     }
+    private float Gap(MeleeCombatTarget target, out Vector3 toward)
+        => BodyGap.Across(player, target != null ? target.GetComponentInChildren<Collider>() : null, out toward);
     private void GrantRewards()
     {
         player.DamageReceiver.Heal(healthRestored);
@@ -172,8 +232,8 @@ public sealed class PlayerExecution : MonoBehaviour
     }
     public void Cancel()
     {
-        bool wasExecuting = IsExecuting; IsExecuting = false; Candidate = null;
-        executing.Remove(this);
+        bool wasExecuting = IsExecuting; IsExecuting = approaching = false; Candidate = DeathblowCandidate = null;
+        while (executing.Remove(this)) { }
         if (victim != null) victim.ReleaseExecution(this);
         victim = null;
         if (!wasExecuting) return;

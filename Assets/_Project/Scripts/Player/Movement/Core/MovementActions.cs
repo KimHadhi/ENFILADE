@@ -84,9 +84,21 @@ public sealed class MovementActions
 
     internal void ProcessJump()
     {
-        if (ctx.Abilities.InputConsumed || !ctx.StateMachine.Current.AllowsBufferedJump) { jumpBufferTimer = 0f; return; }
+        if (ctx.Abilities.InputConsumed || !ctx.StateMachine.Current.AllowsBufferedJump)
+        {
+            jumpBufferTimer = 0f;
+            ctx.Abilities.Traversal.StopSurge();
+            return;
+        }
         if (ctx.InputAvailable && ctx.Input.JumpPressed) jumpBufferTimer = ctx.jumpBufferTime;
         if (jumpBufferTimer <= 0f || coyoteTimer <= 0f) return;
+        // Running at a low obstacle, the press becomes the vault: begun at once in reach, or after the run surges there, the
+        // press kept meanwhile (ParkourTraversal.SurgesToVault).
+        if (ctx.Abilities.Traversal.SurgesToVault(ctx.DeltaTime))
+        {
+            if (ctx.Abilities.Traversal.SurgeVelocity != Vector3.zero) jumpBufferTimer = Mathf.Max(jumpBufferTimer, ctx.DeltaTime * 2f);
+            return;
+        }
         if (ctx.StateMachine.Current.TryJump()) jumpBufferTimer = 0f;
     }
 

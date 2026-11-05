@@ -58,7 +58,13 @@ public sealed class PlayerNetworkPose : NetworkBehaviour
 
     private void OnHealthChanged(float previous, float current) => movement.DamageReceiver.ShowHealth(current);
 
-    private void SendSkin() => skin.Value = GameSettings.Current.characterSkin;
+    // The skin and its colour set in one string (PlayerBodyProfile.LookId); a build without colour sets reads the skin only.
+    private void SendSkin()
+    {
+        var settings = GameSettings.Current;
+        string look = PlayerBodyProfile.LookId(settings.characterSkin, settings.characterVariant);
+        if (skin.Value.ToString() != look) skin.Value = look;
+    }
 
     private void OnSkinChanged(FixedString64Bytes previous, FixedString64Bytes current) => ShowSkin();
 

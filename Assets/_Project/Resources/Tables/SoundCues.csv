@@ -40,7 +40,7 @@ SlideStart,Movement/Cloth/FallShortMedium; Movement/HandSoft/{surface}; Movement
 BellySlideStart,Movement/Cloth/FallShortMedium; Movement/Slide/{surface} *0.5,12,엎드려·누워 미끄러지기 시작
 SlideEnd,Movement/Cloth/MovementSneak,4,슬라이드 끝
 Dive,Movement/Release/{surface}; Movement/Cloth/BodyRollSwish; Voice/StrainSoft,10,다이브
-Dodge,Movement/Run/{surface}; Movement/Cloth/SideStep; Voice/StrainSoft,8,스텝 회피 (Beatrun side step)
+Dodge,Movement/Run/{surface}; Movement/Dodge/Wind; Movement/Dodge/Cloth; Voice/StrainSoft,8,스텝 회피: 발 + 바람(BOOM Dash) + 옷(BOOM Kimono) + 숨. 옷은 Beatrun SideStep에서 Kimono로 바꿨다
 DashPush,Movement/Run/{surface}; Movement/Cloth/SideStep; Voice/StrainMedium,12,돌진 밀치기 시작
 DashPushHit,Movement/PushHard *0.3; Movement/Cloth/FallShortMedium *0.6,16,돌진 밀치기가 적에 부딪힘 (BOOM Violent Combat)
 ProneDown,Movement/Prone/Down,4,엎드리기
@@ -49,3 +49,9 @@ Crouch,Movement/Cloth/MovementSneak *0.5,2,웅크리기
 Stand,Movement/Cloth/MovementSneak *0.5,2,웅크렸다 일어서기
 Lean,Movement/Lean,2,Q/E 기울이기
 FallHeartbeat,Movement/Fall/Heartbeat,0,큰 낙하 심장 박동 한 번 (머릿속에서). 박자와 크기는 Player.csv FallAudio
+GunBolt/Rifle,Guns/Rifle/SlideBack; Guns/Rifle/SlideForward +0.25,0,빈 탄창 장전 끝의 노리쇠: 장전손잡이를 당기고 0.25초 뒤 놓는다. FeelAudio가 내고 noise는 쓰지 않는다. Gun<소리>/<총> 행이 있으면 Guns 뱅크보다 먼저 쓴다
+GunBolt/Pistol,Guns/Pistol/SlideBack; Guns/Pistol/SlideForward +0.2,0,빈 탄창 장전 끝의 권총 슬라이드: 당기고 0.2초 뒤 놓는다. FeelAudio가 낸다
+DodgePerfect,Movement/Dodge/Perfect,0,완벽 회피(공격이 회피 중에 지나간 순간. 스텝 회피와 Q/E 미세 회피 둘 다)에 겹치는 바람(BOOM Phantom Wind). 원래의 완벽 회피 소리(Feedback의 Perfect Evade)는 그대로 난다
+GunLowAmmoClick/Rifle,Guns/LowAmmoClick *5.56 +0.05,0,잔탄 경고 딸깍. CS2처럼 총소리 0.05초 뒤에 낸다. AmmoCue가 넘기는 0.45(mechanicalVolume)에 5.56을 곱해 클립의 2.5배로 낸다: CS2는 이 소리를 총소리(1.0~1.1)보다 큰 1.5로 내는데 우리 총소리는 CS2 것보다 5dB쯤 커서 큰 방에서 연사해도 묻히지 않게 더 키웠다(1이 넘으면 FeelAudio가 클립보다 크게 낸다. 최대 4). FeelAudio가 낸다
+GunLowAmmoClick/Pistol,Guns/LowAmmoClick *5.56 +0.05,0,잔탄 경고 딸깍(권총). 위와 같다
+GunLowAmmoClick/Heavy,Guns/LowAmmoClick *5.56 +0.05,0,잔탄 경고 딸깍(샷건). 위와 같다

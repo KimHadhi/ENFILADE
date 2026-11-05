@@ -102,15 +102,31 @@ public sealed class ParkourDetector
     internal bool StraightTarget(Collider surface, Vector3 feet, Vector3 end, bool vault, out ObstacleTarget target)
     {
         target = default;
-        if (!ClearStraightExit(end) || !ClearStraightPath(feet, end, surface)) return false;
+        if (!ClearStraightExit(end) || (vault && !BodyClearOf(surface, end)) || !ClearStraightPath(feet, end, surface)) return false;
         target = new ObstacleTarget { Surface = surface, Start = feet, End = end, IsVault = vault, StraightLine = true };
+        return true;
+    }
+
+    /// <summary>
+    /// The body standing at <paramref name="feet"/> keeps clear of this one obstacle, bottom and all, as Beatrun's hull
+    /// test at vaultpos and its "touches nothing" leave do. The other straight-move tests lift their capsule off the floor
+    /// (Capsule, ClearStraightExit), and a vault's end sits 35 units up, a few centimetres under a waist-high rail's top: a
+    /// vault from the far edge of its reach ended with the body's back still over the rail, the player stood on its edge
+    /// for a moment and dropped off it, and the vault looked cut short (user's videos, 2026-11-06).
+    /// </summary>
+    internal bool BodyClearOf(Collider surface, Vector3 feet)
+    {
+        float r = ctx.ControllerRadius + ctx.Motor.controller.skinWidth;
+        Vector3 a = feet + Vector3.up * r, b = feet + Vector3.up * Mathf.Max(r, ctx.StandingColliderHeight - r);
+        int count = Physics.OverlapCapsuleNonAlloc(a, b, r, traversalOverlaps, ctx.groundLayers, QueryTriggerInteraction.Ignore);
+        for (int i = 0; i < count; i++) if (traversalOverlaps[i] == surface) return false;
         return true;
     }
     // climb.lua's heave: straight from the hang to the top, feet four units past the edge, or as far in as the capsule fits.
     // Under a ceiling too low to go straight, the crouched route of TryMantle.
     public bool TryHeave(Collider surface, Vector3 edge, Vector3 inward, Vector3 feet, out ObstacleTarget target)
     {
-        for (float depth = 4f * ctx.HullUnit; depth <= ctx.ControllerRadius + 0.5f; depth += 0.1f)
+        for (float depth = 4f * ctx.HeightUnit; depth <= ctx.ControllerRadius + 0.5f; depth += 0.1f)
         {
             Vector3 probe = edge + inward * depth + Vector3.up * 0.2f;
             if (!Physics.Raycast(probe, Vector3.down, out RaycastHit tread, 0.35f, ctx.groundLayers, QueryTriggerInteraction.Ignore)

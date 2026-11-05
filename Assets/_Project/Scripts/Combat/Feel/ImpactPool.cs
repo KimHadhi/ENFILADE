@@ -21,7 +21,13 @@ public sealed class ImpactPool : MonoBehaviour
     private static ImpactPool instance;
 
     private sealed class Preset { public readonly List<VisualEffect> Copies = new List<VisualEffect>(); public int Next; }
-    private sealed class Row { public List<Preset> Presets; public float Scale, Lightness, HoleSize; public Material Hole; public int Last = -1; }
+    private sealed class Row
+    {
+        public List<Preset> Presets, ExitPresets;
+        public float Scale, Lightness, HoleSize, ExitScale = 1f;
+        public Material Hole;
+        public int Last = -1, LastExit = -1;
+    }
 
     private readonly Dictionary<string, Preset> presets = new Dictionary<string, Preset>(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, Row> rows = new Dictionary<string, Row>(StringComparer.OrdinalIgnoreCase);
@@ -55,6 +61,36 @@ public sealed class ImpactPool : MonoBehaviour
             if (row.Hole != null) BulletHoles.Place(row.Hole, row.HoleSize, point, normal);
             return;
         }
+    }
+
+    /// <summary>
+    /// The far side of something a bullet went through: the surface's row again, its exitScale bigger and thrown out
+    /// halfway between the face and the bullet's way on, with the row's exitPresets (debris) on top and a hole as much
+    /// bigger, the way a wall spalls where a round leaves it.
+    /// </summary>
+    public static void PlayExit(Collider surface, Vector3 point, Vector3 normal, Vector3 direction)
+    {
+        if (!Application.isPlaying) return;
+        Prepare();
+        Vector3 up = Vector3.Slerp(normal.normalized, direction.normalized, .5f);
+        foreach (string id in Surfaces.Fallbacks(Surfaces.Of(surface)))
+        {
+            if (!instance.rows.TryGetValue(id, out var row) || row.Presets.Count == 0) continue;
+            instance.Spawn(row, row.Presets, ref row.Last, point, up, row.ExitScale);
+            if (row.ExitPresets.Count > 0) instance.Spawn(row, row.ExitPresets, ref row.LastExit, point, up, row.ExitScale);
+            if (row.Hole != null) BulletHoles.Place(row.Hole, row.HoleSize * row.ExitScale, point, normal);
+            return;
+        }
+    }
+
+    /// <summary>Plays the row's effect at point leaving along `up`, `scale` times its usual size. False when the row has none.</summary>
+    public static bool Play(string id, Vector3 point, Vector3 up, float scale)
+    {
+        if (!Application.isPlaying) return false;
+        Prepare();
+        if (!instance.rows.TryGetValue(id, out var row) || row.Presets.Count == 0) return false;
+        instance.Spawn(row, row.Presets, ref row.Last, point, up, scale);
+        return true;
     }
 
     private void Awake()
@@ -124,7 +160,9 @@ public sealed class ImpactPool : MonoBehaviour
             float scale = float.TryParse(Cell(cells, "scale"), NumberStyles.Float, CultureInfo.InvariantCulture, out float size) ? size : 1f;
             float.TryParse(Cell(cells, "lightness"), NumberStyles.Float, CultureInfo.InvariantCulture, out float lightness);
             float.TryParse(Cell(cells, "holeSize"), NumberStyles.Float, CultureInfo.InvariantCulture, out float holeSize);
-            var row = new Row { Presets = new List<Preset>(), Scale = scale, Lightness = lightness, HoleSize = holeSize };
+            float exitScale = float.TryParse(Cell(cells, "exitScale"), NumberStyles.Float, CultureInfo.InvariantCulture, out float exit) ? exit : 1f;
+            var row = new Row { Presets = new List<Preset>(), ExitPresets = new List<Preset>(), Scale = scale, Lightness = lightness,
+                HoleSize = holeSize, ExitScale = Mathf.Max(.1f, exitScale) };
             string hole = Cell(cells, "hole").Trim();
             if (hole.Length > 0)
             {
@@ -135,6 +173,11 @@ public sealed class ImpactPool : MonoBehaviour
             {
                 var preset = name.Trim().Length > 0 ? Ensure(name.Trim(), Mathf.Max(1, copies)) : null;
                 if (preset != null) row.Presets.Add(preset);
+            }
+            foreach (string name in Cell(cells, "exitPresets").Split(';'))
+            {
+                var preset = name.Trim().Length > 0 ? Ensure(name.Trim(), Mathf.Max(1, copies)) : null;
+                if (preset != null) row.ExitPresets.Add(preset);
             }
             rows[id] = row;
         }
@@ -170,17 +213,23 @@ public sealed class ImpactPool : MonoBehaviour
     private bool Spawn(string id, Vector3 point, Vector3 up)
     {
         if (!rows.TryGetValue(id, out var row) || row.Presets.Count == 0) return false;
-        int pick = UnityEngine.Random.Range(0, row.Presets.Count);
-        if (pick == row.Last) pick = (pick + 1) % row.Presets.Count;
-        row.Last = pick;
-        var preset = row.Presets[pick];
+        Spawn(row, row.Presets, ref row.Last, point, up, 1f);
+        return true;
+    }
+
+    // One of the presets, never the one played last when there is a choice, at the row's scale times `scale`.
+    private void Spawn(Row row, List<Preset> presets, ref int last, Vector3 point, Vector3 up, float scale)
+    {
+        int pick = UnityEngine.Random.Range(0, presets.Count);
+        if (pick == last) pick = (pick + 1) % presets.Count;
+        last = pick;
+        var preset = presets[pick];
         var effect = preset.Copies[preset.Next];
         preset.Next = (preset.Next + 1) % preset.Copies.Count;
         // The pack's own tester stands its effects on the surface like this: local Y out along the normal.
         effect.transform.SetPositionAndRotation(point, Quaternion.FromToRotation(Vector3.up, up));
-        effect.transform.localScale = Vector3.one * row.Scale;
+        effect.transform.localScale = Vector3.one * (row.Scale * scale);
         if (row.Lightness > 0f && effect.HasFloat(LightnessId)) effect.SetFloat(LightnessId, row.Lightness);
         effect.Play();
-        return true;
     }
 }

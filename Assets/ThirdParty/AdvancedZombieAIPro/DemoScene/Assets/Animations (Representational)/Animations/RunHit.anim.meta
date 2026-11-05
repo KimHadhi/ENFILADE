@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: ed0cab24b120fd84fbaa8e83e5885b88
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 7400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 276087
+  packageName: Advanced Zombie AI
+  packageVersion: 1.0.2
+  assetPath: Assets/Advanced Zombie AI/Animations (Representational)/RunHit.anim
+  uploadId: 684220

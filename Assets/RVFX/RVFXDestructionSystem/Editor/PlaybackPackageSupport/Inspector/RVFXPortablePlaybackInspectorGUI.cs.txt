@@ -1,0 +1,156 @@
+// Generated from Source/Editor/Full. Do not edit this template directly.
+#if UNITY_EDITOR
+using System.Collections.Generic;
+using UnityEditor;
+using UnityEngine;
+
+namespace RVFX.DestructionSystem
+{
+    // Small, code-authored icons. No font glyphs or version-dependent Unity icons.
+    [InitializeOnLoad]
+    internal static class RVFXPortablePlaybackInspectorGUI
+    {
+        internal enum Icon { First, Previous, Play, Pause, Next, Last, Reset }
+        private static readonly Dictionary<Icon, Texture2D> Icons = new Dictionary<Icon, Texture2D>();
+        private static readonly List<Texture2D> Textures = new List<Texture2D>();
+        private static bool _dark;
+        private static GUIStyle _card;
+        internal static GUIStyle Card { get { EnsureStyles(); return _card; } }
+        internal static GUIStyle Title, Section, Muted, Right, ButtonLabel, Button, Logo, Slider, Thumb;
+        internal static readonly Color Accent = new Color(0.22f, 0.57f, 0.78f);
+
+        static RVFXPortablePlaybackInspectorGUI()
+        {
+            AssemblyReloadEvents.beforeAssemblyReload += Clear;
+            EditorApplication.quitting += Clear;
+        }
+
+        internal static void EnsureStyles()
+        {
+            if (_card != null && _dark == EditorGUIUtility.isProSkin) return;
+            Clear();
+            _dark = EditorGUIUtility.isProSkin;
+            _card = new GUIStyle
+            {
+                padding = new RectOffset(10, 10, 8, 8),
+                margin = new RectOffset(0, 0, 3, 4),
+                normal = { background = Solid(_dark ? new Color(.19f, .20f, .21f) : new Color(.76f, .77f, .78f)) }
+            };
+            Title = new GUIStyle(EditorStyles.boldLabel) { fontSize = 15 };
+            Section = new GUIStyle(EditorStyles.miniBoldLabel) { fontSize = 11 };
+            Muted = new GUIStyle(EditorStyles.miniLabel)
+            {
+                clipping = TextClipping.Clip,
+                normal = { textColor = _dark ? new Color(.65f, .69f, .72f) : new Color(.29f, .32f, .35f) }
+            };
+            Right = new GUIStyle(Muted) { alignment = TextAnchor.MiddleRight };
+            ButtonLabel = new GUIStyle(EditorStyles.label) { alignment = TextAnchor.MiddleCenter, fontSize = 11 };
+            Button = new GUIStyle(EditorStyles.miniButton) { fixedHeight = 0 };
+            Logo = new GUIStyle(EditorStyles.boldLabel) { alignment = TextAnchor.MiddleCenter, fontSize = 11 };
+            Slider = new GUIStyle
+            {
+                fixedHeight = 14,
+                padding = new RectOffset(),
+                margin = new RectOffset()
+            };
+            Thumb = new GUIStyle
+            {
+                fixedWidth = 8, fixedHeight = 14,
+                normal = { background = Solid(Accent) },
+                hover = { background = Solid(Accent * 1.15f) },
+                active = { background = Solid(Accent) }
+            };
+        }
+
+        internal static bool IconButton(Rect rect, Icon icon, string text, string tooltip, bool accent = false)
+        {
+            EnsureStyles();
+            Color old = GUI.backgroundColor;
+            if (accent) GUI.backgroundColor = new Color(.35f, .70f, 1f);
+            bool clicked = GUI.Button(rect, new GUIContent("", tooltip), Button);
+            GUI.backgroundColor = old;
+            float textWidth = string.IsNullOrEmpty(text) ? 0 : ButtonLabel.CalcSize(new GUIContent(text)).x;
+            float contentWidth = 14 + (textWidth > 0 ? 5 + textWidth : 0);
+            float x = rect.center.x - contentWidth * .5f;
+            Color tint = GUI.color;
+            GUI.color = new Color(1, 1, 1, GUI.enabled ? 1 : .35f);
+            GUI.DrawTexture(new Rect(x, rect.center.y - 7, 14, 14), GetIcon(icon));
+            GUI.color = tint;
+            if (textWidth > 0) GUI.Label(new Rect(x + 19, rect.y, textWidth, rect.height), text, ButtonLabel);
+            return clicked;
+        }
+
+        internal static Texture2D GetIcon(Icon icon)
+        {
+            if (Icons.TryGetValue(icon, out Texture2D texture) && texture != null) return texture;
+            const int size = 56;
+            var pixels = new Color[size * size];
+            for (int y = 0; y < size; y++)
+            for (int x = 0; x < size; x++)
+            {
+                float coverage = 0;
+                for (int sy = 0; sy < 2; sy++)
+                for (int sx = 0; sx < 2; sx++)
+                    if (Inside(icon, new Vector2((x + (sx + .5f) * .5f) * 16 / size,
+                        16 - (y + (sy + .5f) * .5f) * 16 / size))) coverage += .25f;
+                pixels[y * size + x] = new Color(.90f, .94f, .97f, coverage);
+            }
+            texture = new Texture2D(size, size, TextureFormat.RGBA32, false)
+            {
+                name = "RVFX Playback " + icon,
+                hideFlags = HideFlags.HideAndDontSave,
+                filterMode = FilterMode.Bilinear,
+                wrapMode = TextureWrapMode.Clamp
+            };
+            texture.SetPixels(pixels);
+            texture.Apply(false, true);
+            Icons.Add(icon, texture);
+            return texture;
+        }
+
+        private static bool Inside(Icon icon, Vector2 p)
+        {
+            switch (icon)
+            {
+                case Icon.Play: return Triangle(p, new Vector2(5, 3), new Vector2(13, 8), new Vector2(5, 13));
+                case Icon.Pause: return new Rect(4, 3, 2.5f, 10).Contains(p) || new Rect(9.5f, 3, 2.5f, 10).Contains(p);
+                case Icon.First:
+                case Icon.Previous:
+                    return Triangle(p, new Vector2(11, 3), new Vector2(5, 8), new Vector2(11, 13)) ||
+                        (icon == Icon.First && new Rect(2, 3, 1.6f, 10).Contains(p));
+                case Icon.Last:
+                case Icon.Next:
+                    return Triangle(p, new Vector2(5, 3), new Vector2(11, 8), new Vector2(5, 13)) ||
+                        (icon == Icon.Last && new Rect(12.4f, 3, 1.6f, 10).Contains(p));
+                default:
+                    float distance = Vector2.Distance(p, new Vector2(8, 8));
+                    bool arc = distance >= 4.3f && distance <= 5.8f && !(p.x < 5 && p.y < 6);
+                    return arc || Triangle(p, new Vector2(2, 1.5f), new Vector2(2, 7), new Vector2(7, 6));
+            }
+        }
+
+        private static bool Triangle(Vector2 p, Vector2 a, Vector2 b, Vector2 c)
+        {
+            float d1 = Cross(p - a, b - a), d2 = Cross(p - b, c - b), d3 = Cross(p - c, a - c);
+            return !((d1 < 0 || d2 < 0 || d3 < 0) && (d1 > 0 || d2 > 0 || d3 > 0));
+        }
+        private static float Cross(Vector2 a, Vector2 b) => a.x * b.y - a.y * b.x;
+        private static Texture2D Solid(Color color)
+        {
+            var texture = new Texture2D(1, 1) { hideFlags = HideFlags.HideAndDontSave };
+            texture.SetPixel(0, 0, color);
+            texture.Apply(false, true);
+            Textures.Add(texture);
+            return texture;
+        }
+        private static void Clear()
+        {
+            foreach (Texture2D texture in Icons.Values) if (texture != null) Object.DestroyImmediate(texture);
+            foreach (Texture2D texture in Textures) if (texture != null) Object.DestroyImmediate(texture);
+            Icons.Clear();
+            Textures.Clear();
+            _card = null;
+        }
+    }
+}
+#endif

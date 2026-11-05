@@ -1,0 +1,5 @@
+{
+  "name": "RVFX.DestructionSystem.Editor.PlaybackSupport",
+  "includePlatforms": ["Editor"],
+  "autoReferenced": true
+}

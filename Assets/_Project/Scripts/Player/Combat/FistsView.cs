@@ -1,7 +1,7 @@
 using UnityEngine;
 
 /// <summary>
-/// Where the fists go while fists are out: a guard, a charged wind-up and alternating punches, posed under the
+/// Where the fists go while fists are out: a guard, a charged wind-up, alternating punches and the counter's back elbow, posed under the
 /// camera. Nothing is drawn here; the body's own hands follow these points (PlayerBodyHands). Each fist's forward is
 /// where the knuckles point and its up is the back of the hand.
 /// </summary>
@@ -14,8 +14,11 @@ public sealed class FistsView : MonoBehaviour
     private float leftPunchTime, rightPunchTime, guardPose;
     private float deflectElapsed, deflectSeconds, deflectAttack, deflectHold;
     private Vector3 deflectSweep;
-    private bool nextRight = true, deflectLeftHand;
+    private bool nextRight = true, deflectLeftHand, elbowRight;
+    private float elbowElapsed = -1f;
     private const float PunchDuration = .18f;
+    // The back elbow: driven back, held at the contact, brought round again (real seconds).
+    private const float ElbowDrive = .07f, ElbowHold = .08f, ElbowBack = .17f;
     // The guard goes up at once; it comes down over this long.
     private const float GuardLowerTime = .14f;
     // The sweep shoots past its pose and settles into it during the hold.
@@ -24,7 +27,13 @@ public sealed class FistsView : MonoBehaviour
     public Transform LeftFist => left;
     public Transform RightFist => right;
     public bool IsActive => root != null && melee != null && melee.IsActive;
-    public bool IsPunching => leftPunchTime > 0f || rightPunchTime > 0f;
+    /// <summary>
+    /// A strike is under way: a punch, the counter's dash-in with the next fist drawn all the way back, or its back elbow.
+    /// The body's hands come up for it at once, running or not (PlayerBodyHands): the elbow has no arm clip, so without
+    /// them it would be posed here and never seen.
+    /// </summary>
+    public bool IsPunching => leftPunchTime > 0f || rightPunchTime > 0f || elbowElapsed >= 0f || Countering;
+    private bool Countering => player != null && player.PerfectDefense != null && player.PerfectDefense.IsCountering;
     private bool IsDeflecting => deflectElapsed < deflectSeconds;
     /// <summary>A punch left: with the right hand or not, and how charged it was (0-1).</summary>
     public event System.Action<bool, float> Thrown;
@@ -37,6 +46,7 @@ public sealed class FistsView : MonoBehaviour
         var camera = player != null ? player.GetComponentInChildren<Camera>() : null;
         if (melee == null || camera == null) return;
         melee.Punched -= Punch; melee.Punched += Punch;
+        melee.Elbowed -= Elbow; melee.Elbowed += Elbow;
         if (root != null) return;
         root = new GameObject("Fists").transform;
         // On the eyes, not the camera: the F5 view moves the camera behind the player.
@@ -51,6 +61,25 @@ public sealed class FistsView : MonoBehaviour
         else leftPunchTime = PunchDuration;
         nextRight = !nextRight;
         Thrown?.Invoke(right, charge);
+    }
+    // The fist on the attacker's side pulls back beside the chest, past the eyes, so the arm drives its elbow behind.
+    private void Elbow(int side) { elbowRight = side >= 0; elbowElapsed = 0f; leftPunchTime = rightPunchTime = 0f; }
+    private float ElbowAmount()
+    {
+        if (elbowElapsed < 0f) return 0f;
+        if (elbowElapsed < ElbowDrive) { float rest = 1f - elbowElapsed / ElbowDrive; return 1f - rest * rest * rest; }
+        if (elbowElapsed < ElbowDrive + ElbowHold) return 1f;
+        return 1f - Mathf.SmoothStep(0f, 1f, (elbowElapsed - ElbowDrive - ElbowHold) / ElbowBack);
+    }
+    private void ApplyElbow()
+    {
+        float amount = ElbowAmount();
+        if (amount <= 0f) return;
+        Transform driving = elbowRight ? right : left, other = elbowRight ? left : right;
+        float across = elbowRight ? 1f : -1f;
+        driving.localPosition = Vector3.Lerp(driving.localPosition, new Vector3(across * .26f, -.16f, -.04f), amount);
+        driving.localRotation *= Quaternion.Euler(-70f * amount, across * 25f * amount, 0f);
+        other.localPosition += new Vector3(across * .03f, .02f, -.03f) * amount;
     }
     /// <summary>
     /// A parry: the far hand snaps across the view to the attacker's side, holds the pose and lets go. side is the
@@ -89,13 +118,20 @@ public sealed class FistsView : MonoBehaviour
     private void LateUpdate()
     {
         if (root == null || melee == null) return;
-        if (!melee.IsActive) { leftPunchTime = rightPunchTime = guardPose = 0f; deflectElapsed = deflectSeconds; nextRight = true; return; }
+        if (!melee.IsActive) { leftPunchTime = rightPunchTime = guardPose = 0f; deflectElapsed = deflectSeconds; elbowElapsed = -1f; nextRight = true; return; }
+        if (elbowElapsed >= 0f && Time.timeScale > 0f)
+        {
+            elbowElapsed += Time.unscaledDeltaTime;
+            if (elbowElapsed > ElbowDrive + ElbowHold + ElbowBack) elbowElapsed = -1f;
+        }
         float dt = player != null ? player.DeltaTime : Time.deltaTime;
         leftPunchTime = Mathf.Max(0f, leftPunchTime - dt);
         rightPunchTime = Mathf.Max(0f, rightPunchTime - dt);
         if (Time.timeScale > 0f) deflectElapsed = Mathf.Min(deflectElapsed + Time.unscaledDeltaTime, deflectSeconds);
         float leftPunch = PunchExtension(leftPunchTime), rightPunch = PunchExtension(rightPunchTime);
-        float leftCharge = nextRight ? 0f : melee.ChargeRatio, rightCharge = nextRight ? melee.ChargeRatio : 0f;
+        // Dashing in to counter, the next fist is drawn all the way back.
+        float charge = Countering ? 1f : melee.ChargeRatio;
+        float leftCharge = nextRight ? 0f : charge, rightCharge = nextRight ? charge : 0f;
         bool guarding = melee.IsGuarding || melee.IsParryActive || melee.IsGuardBreaking || IsDeflecting;
         guardPose = guarding ? 1f : Mathf.MoveTowards(guardPose, 0f, Time.unscaledDeltaTime / GuardLowerTime);
         left.localPosition = Vector3.Lerp(new Vector3(-.2f, -.2f, .32f - leftCharge * .1f), new Vector3(-.1f, -.06f, .26f), guardPose)
@@ -105,6 +141,7 @@ public sealed class FistsView : MonoBehaviour
         right.localRotation = Quaternion.Euler(-rightCharge * 15f, -rightPunch * 20f, -10f);
         left.localRotation = Quaternion.Euler(-leftCharge * 15f, leftPunch * 20f, 10f);
         ApplyDeflect();
+        ApplyElbow();
     }
     // The sweeping hand crosses the view, knuckles leading; the other pulls back to balance it.
     private void ApplyDeflect()
@@ -119,11 +156,11 @@ public sealed class FistsView : MonoBehaviour
     }
     private void OnDestroy()
     {
-        if (melee != null) melee.Punched -= Punch;
+        if (melee != null) { melee.Punched -= Punch; melee.Elbowed -= Elbow; }
         if (root != null) Destroy(root.gameObject);
     }
     private void OnDisable()
     {
-        if (melee != null) melee.Punched -= Punch;
+        if (melee != null) { melee.Punched -= Punch; melee.Elbowed -= Elbow; }
     }
 }

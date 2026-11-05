@@ -32,6 +32,9 @@ public sealed class PlayerDamageReceiver : MonoBehaviour, IDamageReceiver, ITabl
             gameObject.AddComponent<PlayerDamageFeedback>();
         if (Application.isPlaying && player.IsLocal && GetComponent<LowHealthGrade>() == null)
             gameObject.AddComponent<LowHealthGrade>();
+        // An enemy throws off whoever stands on its head; the rider's own PC moves them, so only there.
+        if (Application.isPlaying && player.IsLocal && GetComponent<HeadStandShakeOff>() == null)
+            GameTables.Bind(PlayerMovement.TableName, "HeadStand", gameObject.AddComponent<HeadStandShakeOff>());
     }
 
     // Call only after a melee/projectile/hitscan attack actually intersects the player.

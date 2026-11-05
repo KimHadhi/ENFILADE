@@ -31,12 +31,7 @@ public sealed class SkullSlowMotion : MonoBehaviour
     public static void Begin()
     {
         if (!Application.isPlaying) return;
-        if (instance == null)
-        {
-            var host = new GameObject("Skull Slow Motion");
-            instance = host.AddComponent<SkullSlowMotion>();
-            GameTables.Bind(TableName, TableRow, instance, host.AddComponent<SlowMotionLook>(), host.AddComponent<SlowMotionSound>());
-        }
+        Ensure();
         // Read under any slowdown already running: CombatTimeEffects scales the physics step with the time scale.
         if (instance.age < 0f && Time.timeScale > 0f) instance.fixedBaseline = Time.fixedDeltaTime / Time.timeScale;
         instance.age = 0f;
@@ -53,6 +48,21 @@ public sealed class SkullSlowMotion : MonoBehaviour
         float now = Mathf.Lerp(1f, scale, Depth);
         Time.timeScale = now;
         Time.fixedDeltaTime = fixedBaseline * now;
+    }
+
+    /// <summary>Makes the slowdown's screen and sound before the first skull, so its first frame builds nothing (CombatWarmup).
+    /// Both stay idle until Begin.</summary>
+    public static void Prepare()
+    {
+        if (Application.isPlaying) Ensure();
+    }
+
+    private static void Ensure()
+    {
+        if (instance != null) return;
+        var host = new GameObject("Skull Slow Motion");
+        instance = host.AddComponent<SkullSlowMotion>();
+        GameTables.Bind(TableName, TableRow, instance, host.AddComponent<SlowMotionLook>(), host.AddComponent<SlowMotionSound>());
     }
 
     private void Stop()

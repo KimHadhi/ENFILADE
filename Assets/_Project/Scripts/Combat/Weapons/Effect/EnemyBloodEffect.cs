@@ -45,7 +45,12 @@ public sealed class EnemyBloodEffect : MonoBehaviour
         foreach (var leg in shot.Later)
         {
             var onward = leg.Onward;
-            if (onward.HasExit && onward.Exit.collider != null) Bleed(onward.Exit, onward.Direction);
+            if (onward.HasExit && onward.Exit.collider != null)
+            {
+                Bleed(onward.Exit, onward.Direction);
+                // Blood bursts out of the back along the bullet, so a round through a body reads at a glance.
+                if (IsEnemy(onward.Exit.collider.transform)) ImpactVfx.ExitWound(onward.Exit.point, onward.Direction, onward.Exit.collider);
+            }
             Bleed(leg.Trace, onward.Direction);
         }
     }

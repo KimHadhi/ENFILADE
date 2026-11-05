@@ -16,10 +16,11 @@ public sealed class MainMenuScreen : MonoBehaviour
     public const string SceneName = "MainMenu";
     private string[] maps = Array.Empty<string>();
     private MainMenuPreview preview;
-    private TMP_Text status;
+    private TMP_Text status, look;
     private CreateRoomView createRoom;
     private ServerBrowserView browser;
     private ProfileView profile;
+    private CharacterScreenView character;
 
     public static bool IsOpen { get; private set; }
 
@@ -35,6 +36,7 @@ public sealed class MainMenuScreen : MonoBehaviour
         Cursor.visible = true;
         SettingsMenu.EnsureEventSystem();
         preview = gameObject.AddComponent<MainMenuPreview>();
+        gameObject.AddComponent<SkinPortraits>(); // under the preview's light, for both character screens
     }
 
     private void Start()
@@ -42,6 +44,7 @@ public sealed class MainMenuScreen : MonoBehaviour
         maps = MapTable.Playable();
         Build();
         preview.Show();
+        GameSettings.Changed += ShowLook; // the Esc menu's character tab can change it too
     }
 
     private void Update()
@@ -53,6 +56,7 @@ public sealed class MainMenuScreen : MonoBehaviour
     private void OnDestroy()
     {
         IsOpen = false;
+        GameSettings.Changed -= ShowLook;
         browser?.StopSearching();
     }
 
@@ -78,7 +82,7 @@ public sealed class MainMenuScreen : MonoBehaviour
 
         W.Size(W.Label(column, "ENFILADE", 84f, W.Text), height: 124f);
         AddMapChoice(column);
-        AddSkinChoice(column);
+        AddCharacterButton(column);
         W.Size(W.Rect("Gap", column), height: 20f);
         MenuButton(column, "혼자 하기", true, StartSolo);
         MenuButton(column, "방 만들기", false, OpenCreateRoom);
@@ -93,6 +97,7 @@ public sealed class MainMenuScreen : MonoBehaviour
         createRoom = new CreateRoomView(canvas, StartHost);
         browser = new ServerBrowserView(canvas);
         profile = new ProfileView(canvas);
+        character = new CharacterScreenView(canvas, column, ShowLook);
     }
 
     private void AddMapChoice(Transform column)
@@ -105,19 +110,26 @@ public sealed class MainMenuScreen : MonoBehaviour
         W.Choice(W.Row(column, "맵"), names, selected, i => settings.lastMap = maps[i]);
     }
 
-    private void AddSkinChoice(Transform column)
+    // The worn look on a button that opens the character screen; shown when there is anything to choose.
+    private void AddCharacterButton(Transform column)
     {
         var profile = PlayerBodyProfile.Load();
         var skins = profile?.Skins.Where(skin => skin != null && skin.Model != null).ToArray();
-        if (skins == null || skins.Length < 2) return;
-        int selected = Mathf.Max(0, Array.FindIndex(skins, skin => skin.Model == profile.Model));
-        W.Choice(W.Row(column, "캐릭터"), skins.Select(skin => skin.DisplayName).ToArray(), selected, i =>
-        {
-            GameSettings.Current.characterSkin = skins[i].Id;
-            GameSettings.Apply();
-            GameSettings.Save();
-            preview.Show();
-        });
+        if (skins == null || skins.Length == 0) return;
+        if (skins.Length < 2 && skins[0].Variants.Count < 2) return;
+        var button = W.ActionButton(W.Row(column, "캐릭터"), "", false, () => character.Show());
+        W.Size(button, flexibleWidth: 1f);
+        look = button.GetComponentInChildren<TMP_Text>();
+        ShowLook();
+    }
+
+    private void ShowLook()
+    {
+        var profile = PlayerBodyProfile.Load();
+        var skin = profile?.CurrentSkin;
+        if (look == null || skin == null) return;
+        var variant = profile.CurrentVariant;
+        look.text = variant != null ? skin.DisplayName + " · " + variant.DisplayName : skin.DisplayName;
     }
 
     private static void MenuButton(Transform column, string text, bool primary, Action clicked)

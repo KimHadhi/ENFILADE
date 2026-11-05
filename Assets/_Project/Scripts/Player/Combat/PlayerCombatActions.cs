@@ -8,7 +8,8 @@ using State = PlayerMovement.MovementState;
 /// The body's V. Running, with a gun or fists, it is the dash push, after Dynamic Landing: the body is thrown ahead at
 /// twice the run for a moment, and the first enemy it meets is thrown along the ground (shoving whoever that one runs
 /// into) and knocked down. The dash stops there, and its own cooldown starts when it ends, hit or miss. Otherwise, with
-/// a gun out, V is the crowd shove (ShoveSweep); the fists' V is PlayerMeleeCombat's.
+/// a gun out, V is the crowd shove (ShoveSweep), lunging at someone just out of reach when standing still, and while the
+/// gun reloads it is a kick that leaves the reload alone (ShoveMoves); the fists' V is PlayerMeleeCombat's.
 /// </summary>
 public sealed class PlayerCombatActions
 {
@@ -49,14 +50,25 @@ public sealed class PlayerCombatActions
     internal bool TryShove()
     {
         if (cooldown > 0f) return false;
-        ctx.GetComponent<WeaponController>()?.InterruptForSurvival(true);
+        var weapon = ctx.GetComponent<WeaponController>();
+        // Both hands are on the reload: the foot does the shoving, and the reload goes on.
+        if (Reloading(weapon))
+        {
+            if (!ShoveMoves.For(ctx).TryKick()) return false;
+            cooldown = Fatigue.Spend(ctx.AbilitySettings.shoveCooldown, ctx.AbilitySettings);
+            return true;
+        }
+        weapon?.InterruptForSurvival(true);
         cooldown = Fatigue.Spend(ctx.AbilitySettings.shoveCooldown, ctx.AbilitySettings);
         // From the eyes, which stay with the body in the F5 view.
-        shoveSweep.Begin(ctx, PlayerView.EyesOf(ctx), ctx.AbilitySettings.shoveDamage,
+        var eyes = PlayerView.EyesOf(ctx);
+        shoveSweep.Begin(ctx, eyes, ctx.AbilitySettings.shoveDamage,
             ctx.AbilitySettings.interactionLayers, ctx.AbilitySettings.shoveActiveTime);
-        if (shoveSweep.HitCount > 0) ctx.GetComponent<WeaponController>()?.ConfirmShoveHit();
+        ShoveMoves.For(ctx).Lunge(eyes, ctx.AbilitySettings.shoveSweepReach, ctx.AbilitySettings.interactionLayers);
+        if (shoveSweep.HitCount > 0) weapon?.ConfirmShoveHit();
         return true;
     }
+    private static bool Reloading(WeaponController weapon) => weapon != null && weapon.Runtime != null && weapon.Runtime.IsReloading;
 
     internal bool TryDashPush()
     {
@@ -66,6 +78,8 @@ public sealed class PlayerCombatActions
         float speed = run.magnitude;
         if (dashCooldown > 0f || ctx.CurrentState != State.Standing || ctx.CurrentInput.y <= .1f
             || speed < Mathf.Max(.1f, settings.dashPushMinSpeed) || Vector3.Dot(run, forward) < speed * RunAlignment) return false;
+        // Reloading, even on the run, V is the kick that keeps the reload (TryShove).
+        if (Reloading(ctx.GetComponent<WeaponController>())) return false;
         ctx.GetComponent<WeaponController>()?.InterruptForSurvival();
         contacted.Clear(); attackId = DamageHit.NewAttackId();
         DashSpeed = speed * settings.dashPushSpeedScale;

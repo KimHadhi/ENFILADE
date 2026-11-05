@@ -2,15 +2,20 @@ using UnityEngine;
 using UnityEngine.Animations;
 using UnityEngine.Playables;
 
-/// <summary>The chosen character standing beside the title menu in its idle pose, with the camera and light it needs.</summary>
+/// <summary>
+/// The chosen character standing beside the title menu in its idle pose, with the camera and light it needs.
+/// Follows the saved skin and colour set: another colour set swaps materials on the same model.
+/// </summary>
 [DisallowMultipleComponent]
 public sealed class MainMenuPreview : MonoBehaviour
 {
-    private const string IdleClip = "mx_idle";
+    public const string IdleClip = "mx_idle";
     private const float FieldOfView = 26f, ScreenFill = .86f, SideShift = .42f;
     private static readonly Color Background = new Color(.055f, .06f, .075f);
     private Camera view;
     private GameObject model;
+    private PlayerBodyProfile.Skin shownSkin;
+    private SkinVariant wornVariant;
     private PlayableGraph graph;
 
     private void Awake()
@@ -28,6 +33,7 @@ public sealed class MainMenuPreview : MonoBehaviour
         sun.intensity = 1.2f;
         RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
         RenderSettings.ambientLight = new Color(.5f, .5f, .55f);
+        GameSettings.Changed += Follow;
     }
 
     /// <summary>Stands the current skin in front of the camera, replacing the last one.</summary>
@@ -36,7 +42,10 @@ public sealed class MainMenuPreview : MonoBehaviour
         Clear();
         var profile = PlayerBodyProfile.Load();
         if (profile == null) return;
+        shownSkin = profile.CurrentSkin;
         model = Instantiate(profile.Model, transform);
+        wornVariant = profile.CurrentVariant;
+        SkinVariant.Wear(model, null, wornVariant);
         var bounds = new Bounds(model.transform.position, Vector3.zero);
         foreach (var renderer in model.GetComponentsInChildren<Renderer>())
         {
@@ -60,11 +69,29 @@ public sealed class MainMenuPreview : MonoBehaviour
         view.transform.rotation = Quaternion.LookRotation(Vector3.back);
     }
 
+    // A new skin stands a new model; a new colour set of the same skin dresses the one standing.
+    private void Follow()
+    {
+        var profile = PlayerBodyProfile.Load();
+        if (profile == null || model == null) return;
+        if (profile.CurrentSkin != shownSkin) { Show(); return; }
+        var next = profile.CurrentVariant;
+        SkinVariant.Wear(model, wornVariant, next);
+        wornVariant = next;
+    }
+
     private void Clear()
     {
         if (graph.IsValid()) graph.Destroy();
         if (model != null) Destroy(model);
+        model = null;
+        shownSkin = null;
+        wornVariant = null;
     }
 
-    private void OnDestroy() => Clear();
+    private void OnDestroy()
+    {
+        GameSettings.Changed -= Follow;
+        Clear();
+    }
 }

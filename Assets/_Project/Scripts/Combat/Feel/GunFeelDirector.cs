@@ -51,7 +51,8 @@ public static class GunFeelDirector
                 if (tally.Streak == CombatFeedHUD.SkullStreak) SkullSlowMotion.Begin();
             }
         }
-        CombatFeedHUD.Kill(WeaponName(hit), CombatDamageEvents.DisplayNameOf(report.Target), critical && bullet, execution, hit.IsCounter, bullet, distance, !shared);
+        CombatFeedHUD.Kill(WeaponName(hit), CombatDamageEvents.DisplayNameOf(report.Target), critical && bullet, execution, hit.IsCounter, bullet, distance, !shared,
+            hit.Pierced);
         if (pulse) KillConfirmEffect.Trigger(execution ? KillScreen.Execution : hit.IsCounter ? KillScreen.Counter : KillScreen.Ordinary,
             critical || execution);
     }

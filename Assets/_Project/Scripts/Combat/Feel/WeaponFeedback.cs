@@ -1,8 +1,8 @@
 using UnityEngine;
 
 /// <summary>
-/// "I fired" layer for one WeaponController: shot sound, muzzle flash with light/smoke/sparks, ejected brass,
-/// visual camera kick and crosshair kick, plus dry-fire, low-ammo and reload sounds. Presentation only: it reads
+/// "I fired" layer for one WeaponController: shot sound, ejected brass, visual camera kick and crosshair kick, plus
+/// dry-fire, low-ammo and reload sounds. The muzzle's flame is MuzzleFlash's and its light MuzzleLight's. Presentation only: it reads
 /// the controller's events and never changes ammunition, timing or aim. Added automatically by WeaponController.
 /// Global tuning: Resources/Combat/GunFeel. Per-weapon kick and sound: WeaponData → Feel.
 /// </summary>
@@ -28,24 +28,28 @@ public sealed class WeaponFeedback : MonoBehaviour
     private DynamicCrosshairView crosshair;
     private Camera view;
     private CameraViewPunch punch;
-    private Transform effectsRoot, flash, flashParent;
-    private MeshRenderer flashRenderer;
-    private Light flashLight;
+    private Transform effectsRoot;
     private MaterialPropertyBlock block;
-    private ParticleSystem smoke, sparks;
-    private float flashRemaining, flashDuration, flashIntensity;
     private readonly Casing[] casings = new Casing[CasingCount];
     private int nextCasing;
-    private bool trackingReload, magInPlayed, boltPlayed, emptyReload;
+    private bool trackingReload, magOutPlayed, magInPlayed, boltBackPlayed, boltPlayed, emptyReload;
+    // A reload shown by KINEMATION's clip (GunRig) is timed by that clip's own moments; magInLead and boltLead start those
+    // hits early by where their clips are loudest.
+    private bool timedReload;
+    private ReloadMoments.Moments moments;
+    private float magInLead, boltLead;
 
     private bool IsMine => movement == null || movement.IsLocal;
 
-    // One's own gun sounds flat; someone else's comes from where they stand.
-    private void Sound(FeelSound sound, AudioClip[] clips, float volume, float pitch, float reach = MechanicalReach)
+    // One's own gun sounds flat; someone else's comes from where they stand. gun picks that gun's own mechanical sounds
+    // (Art/Audio/Guns/<gun>/...).
+    private void Sound(FeelSound sound, AudioClip[] clips, float volume, float pitch, float reach = MechanicalReach, GunSoundProfile? gun = null)
     {
-        if (IsMine) FeelAudio.Play(sound, clips, volume, pitch);
-        else FeelAudio.PlayAt(sound, clips, transform.position + Vector3.up, volume, pitch, reach);
+        if (IsMine) FeelAudio.Play(sound, clips, volume, pitch, gun);
+        else FeelAudio.PlayAt(sound, clips, transform.position + Vector3.up, volume, pitch, reach, gun);
     }
+
+    private GunSoundProfile? Gun => weapon != null && weapon.EquippedData != null ? weapon.EquippedData.SoundProfile : (GunSoundProfile?)null;
 
     private void Awake()
     {
@@ -57,8 +61,8 @@ public sealed class WeaponFeedback : MonoBehaviour
     // What the first shot would otherwise stop to build. This runs while the map loads.
     private void Start()
     {
-        EnsureParticles();
-        BuildFlash();
+        // The brass lives under this root.
+        if (effectsRoot == null) effectsRoot = FeelAssets.CreateRuntimeRoot("Weapon Feel FX", gameObject).transform;
         for (int i = 0; i < CasingCount; i++) BuildCasing(ref casings[i]);
     }
 
@@ -81,14 +85,12 @@ public sealed class WeaponFeedback : MonoBehaviour
             weapon.ReloadStarted -= OnReloadStarted;
             weapon.ReloadCompleted -= OnReloadCompleted;
         }
-        HideFlash();
         trackingReload = false;
     }
 
     private void OnDestroy()
     {
         if (effectsRoot != null) Destroy(effectsRoot.gameObject);
-        if (flash != null) Destroy(flash.gameObject);
     }
 
     private void OnShot(WeaponShot shot)
@@ -103,7 +105,6 @@ public sealed class WeaponFeedback : MonoBehaviour
             Sound(FeelAudio.ShotFor(data.SoundProfile), data.FireSounds, settings.gunshotVolume * data.FireVolume,
                 1f + Random.Range(-1f, 1f) * settings.gunshotPitchJitter, ShotReach);
         if (IsMine) AmmoCue(shot.AmmoAfterShot, data, settings);
-        if (settings.muzzleEffects) Muzzle(data, settings);
         if (settings.shellCasings && data.EjectShells) Eject();
         if (!IsMine) return;
 
@@ -124,27 +125,40 @@ public sealed class WeaponFeedback : MonoBehaviour
             HitMarkerHUD.Show(HitMarkerKind.Blocked);
     }
 
-    /// <summary>Last round: an empty click. Low magazine: a rising metallic tick, louder toward empty.</summary>
+    /// <summary>
+    /// The low-ammo warning, heard by the shooter alone: TFA Base's EmitLowAmmoSound (shared.lua) with its autodetection's
+    /// limits (autodetection.lua). A shot that leaves the magazine under a third full (LowAmmoSoundThreshold 0.33) plays
+    /// the gun's warning, louder the emptier it gets (RequiredVolume: 1 − share ÷ 0.33, on the gunshot's level); the shot
+    /// that empties it plays the gun's last-round sound instead. With the warning comes CS2's click (the user's pick D,
+    /// 2026-11-06: TFA's warnings and CS2's click together; SoundCues GunLowAmmoClick/&lt;gun&gt; times and sizes it).
+    /// TFA gives magazines of four or fewer no warnings; those keep this project's empty click on their last round.
+    /// </summary>
     private static void AmmoCue(int remaining, WeaponData data, GunFeelSettings settings)
     {
         if (!settings.gunSounds) return;
-        if (remaining <= 0)
+        int magazine = data.MagazineSize;
+        if (magazine <= settings.lowAmmoSmallMagazine)
         {
-            FeelAudio.Play(FeelSound.DryFire, settings.dryFireSounds, settings.mechanicalVolume * .8f, 1.25f);
+            if (remaining <= 0) FeelAudio.Play(FeelSound.DryFire, settings.dryFireSounds, settings.mechanicalVolume * .8f, 1.25f);
             return;
         }
-        if (data.MagazineSize < 4) return;
-        float fraction = remaining / (float)data.MagazineSize;
-        if (fraction > settings.lowAmmoFraction) return;
-        float urgency = 1f - fraction / Mathf.Max(.01f, settings.lowAmmoFraction);
-        FeelAudio.Play(FeelSound.LowAmmo, settings.lowAmmoSounds, settings.mechanicalVolume * Mathf.Lerp(.3f, .9f, urgency),
-            Mathf.Lerp(1f, 1.35f, urgency));
+        float share = remaining / (float)magazine;
+        if (share >= settings.lowAmmoFraction) return;
+        float swell = 1f - share / Mathf.Max(settings.lowAmmoFraction, .01f);
+        GunSoundProfile gun = data.SoundProfile;
+        if (remaining <= 0)
+        {
+            FeelAudio.Play(FeelSound.LastRound, settings.lastRoundSounds, settings.gunshotVolume * swell, 1f, gun);
+            return;
+        }
+        FeelAudio.Play(FeelSound.LowAmmo, settings.lowAmmoSounds, settings.gunshotVolume * swell, 1f, gun);
+        FeelAudio.Play(FeelSound.LowAmmoClick, settings.lowAmmoClickSounds, settings.mechanicalVolume, 1f, gun);
     }
 
     private void OnDryFire()
     {
         var settings = GunFeelSettings.Instance;
-        if (settings.gunSounds) FeelAudio.Play(FeelSound.DryFire, settings.dryFireSounds, settings.mechanicalVolume, Random.Range(.96f, 1.04f));
+        if (settings.gunSounds) FeelAudio.Play(FeelSound.DryFire, settings.dryFireSounds, settings.mechanicalVolume, Random.Range(.96f, 1.04f), Gun);
         if (crosshair == null) crosshair = DynamicCrosshairView.FindHud();
         crosshair?.Kick(2f);
     }
@@ -152,8 +166,17 @@ public sealed class WeaponFeedback : MonoBehaviour
     private void OnReloadStarted(bool empty)
     {
         var settings = GunFeelSettings.Instance;
-        trackingReload = true; magInPlayed = boltPlayed = false; emptyReload = empty;
-        if (settings.gunSounds) Sound(FeelSound.MagOut, settings.magOutSounds, settings.mechanicalVolume, Random.Range(.97f, 1.03f));
+        trackingReload = true; magOutPlayed = magInPlayed = boltBackPlayed = boltPlayed = false; emptyReload = empty;
+        var data = weapon != null ? weapon.EquippedData : null;
+        timedReload = data != null && GunRig.Holding(weapon) != null && ReloadMoments.TryGet(data, empty, out moments);
+        if (timedReload)
+        {
+            magInLead = FeelAudio.PeakTime(FeelSound.MagIn, settings.magInSounds, data.SoundProfile);
+            boltLead = FeelAudio.PeakTime(FeelSound.SlideForward, null, data.SoundProfile);
+            return;
+        }
+        magOutPlayed = true;
+        if (settings.gunSounds) Sound(FeelSound.MagOut, settings.magOutSounds, settings.mechanicalVolume, Random.Range(.97f, 1.03f), MechanicalReach, Gun);
     }
 
     private void OnReloadCompleted() => trackingReload = false;
@@ -164,144 +187,43 @@ public sealed class WeaponFeedback : MonoBehaviour
         var runtime = weapon != null ? weapon.Runtime : null;
         if (runtime == null || !runtime.IsReloading) { trackingReload = false; return; }
         var settings = GunFeelSettings.Instance;
-        float progress = 1f - runtime.ReloadRemaining / Mathf.Max(.01f, runtime.ReloadDuration);
+        float duration = Mathf.Max(.01f, runtime.ReloadDuration);
+        float progress = 1f - runtime.ReloadRemaining / duration;
+        if (timedReload)
+        {
+            // Each sound when the clip moves its part: the magazine leaving and seating, the bolt or slide pulled and let go.
+            Due(ref magOutPlayed, moments.MagOut, 0f, progress, duration, FeelSound.MagOut, settings.magOutSounds, settings);
+            Due(ref magInPlayed, moments.MagIn, magInLead, progress, duration, FeelSound.MagIn, settings.magInSounds, settings);
+            Due(ref boltBackPlayed, moments.BoltBack, 0f, progress, duration, FeelSound.SlideBack, null, settings);
+            Due(ref boltPlayed, moments.BoltForward, boltLead, progress, duration, FeelSound.SlideForward, null, settings);
+            return;
+        }
         if (!magInPlayed && progress >= (emptyReload ? .5f : .62f))
         {
             magInPlayed = true;
-            if (settings.gunSounds) Sound(FeelSound.MagIn, settings.magInSounds, settings.mechanicalVolume, Random.Range(.97f, 1.03f));
+            if (settings.gunSounds) Sound(FeelSound.MagIn, settings.magInSounds, settings.mechanicalVolume, Random.Range(.97f, 1.03f), MechanicalReach, Gun);
         }
         if (emptyReload && !boltPlayed && progress >= .86f)
         {
             boltPlayed = true;
-            if (settings.gunSounds) Sound(FeelSound.Bolt, settings.boltSounds, settings.mechanicalVolume, Random.Range(.97f, 1.03f));
+            if (settings.gunSounds) Sound(FeelSound.Bolt, settings.boltSounds, settings.mechanicalVolume, Random.Range(.97f, 1.03f), MechanicalReach, Gun);
         }
+    }
+
+    // Plays a timed reload's sound once the reload reaches its share, lead seconds early; a share of -1 never comes.
+    private void Due(ref bool played, float share, float lead, float progress, float duration, FeelSound sound, AudioClip[] clips,
+        GunFeelSettings settings)
+    {
+        if (played || share < 0f || progress < share - lead / duration) return;
+        played = true;
+        if (settings.gunSounds) Sound(sound, clips, settings.mechanicalVolume, Random.Range(.97f, 1.03f), MechanicalReach, Gun);
     }
 
     private void Update()
     {
         float dt = Time.deltaTime;
-        if (flashRemaining > 0f)
-        {
-            flashRemaining -= dt;
-            float life = Mathf.Clamp01(flashRemaining / Mathf.Max(.001f, flashDuration));
-            if (flashLight != null) flashLight.intensity = flashIntensity * life * life;
-            if (flashRenderer != null)
-            {
-                // Full brightness for the first half, then a quick fade: reads as one bright frame, not a blink.
-                Color color = GunFeelSettings.Instance.muzzleFlashColor;
-                color.a = Mathf.Clamp01(life * 2f);
-                block.SetColor("_Color", color);
-                flashRenderer.SetPropertyBlock(block);
-            }
-            if (flashRemaining <= 0f) HideFlash();
-        }
         UpdateCasings(dt);
         UpdateReload();
-    }
-
-    // ---------------------------------------------------------------- muzzle
-
-    private void Muzzle(WeaponData data, GunFeelSettings settings)
-    {
-        Transform muzzle = weapon.MuzzlePoint;
-        if (muzzle == null || data.MuzzleFlashScale <= 0f || !muzzle.gameObject.activeInHierarchy) return;
-        EnsureFlash(muzzle);
-        float size = data.MuzzleFlashScale * Random.Range(.8f, 1.15f);
-        Vector3 world = new Vector3(.13f, .13f, .2f * Random.Range(.75f, 1.3f)) * size;
-        Vector3 parentScale = muzzle.lossyScale;
-        flash.localPosition = Vector3.zero;
-        flash.localRotation = Quaternion.AngleAxis(Random.Range(0f, 360f), Vector3.forward);
-        flash.localScale = new Vector3(world.x / Safe(parentScale.x), world.y / Safe(parentScale.y), world.z / Safe(parentScale.z));
-        flash.gameObject.SetActive(true);
-        flashDuration = flashRemaining = settings.muzzleFlashSeconds;
-        flashIntensity = settings.muzzleLightIntensity * size;
-        flashLight.color = settings.muzzleFlashColor;
-        flashLight.range = settings.muzzleLightRange;
-        flashLight.intensity = flashIntensity;
-        flashLight.enabled = flashIntensity > 0f;
-        block.SetColor("_Color", settings.muzzleFlashColor);
-        flashRenderer.SetPropertyBlock(block);
-
-        EnsureParticles();
-        Vector3 origin = muzzle.position, forward = muzzle.forward;
-        Vector3 carry = movement != null ? movement.ActualVelocity * .6f : Vector3.zero;
-        var emit = new ParticleSystem.EmitParams();
-        int puffs = Random.Range(2, 4);
-        for (int i = 0; i < puffs; i++)
-        {
-            emit.position = origin + forward * Random.Range(.02f, .08f);
-            emit.velocity = forward * Random.Range(.5f, 1.3f) + Random.insideUnitSphere * .18f + Vector3.up * .12f + carry;
-            emit.startSize = Random.Range(.05f, .09f) * data.MuzzleFlashScale;
-            emit.startLifetime = Random.Range(.6f, 1.05f);
-            emit.startColor = new Color(.78f, .78f, .76f, settings.muzzleSmokeAlpha);
-            emit.rotation = Random.Range(0f, 360f);
-            smoke.Emit(emit, 1);
-        }
-        int count = Random.Range(3, 7);
-        for (int i = 0; i < count; i++)
-        {
-            emit.position = origin;
-            emit.velocity = (forward + Random.insideUnitSphere * .28f).normalized * Random.Range(5f, 11f) + carry;
-            emit.startSize = Random.Range(.008f, .016f);
-            emit.startLifetime = Random.Range(.04f, .1f);
-            emit.startColor = Color.Lerp(settings.muzzleFlashColor, Color.white, .4f);
-            emit.rotation = 0f;
-            sparks.Emit(emit, 1);
-        }
-    }
-
-    private void EnsureFlash(Transform muzzle)
-    {
-        if (flash == null) BuildFlash();
-        if (flashParent != muzzle) { flash.SetParent(muzzle, false); flashParent = muzzle; }
-    }
-
-    private void BuildFlash()
-    {
-        var host = new GameObject("Feel Muzzle Flash");
-        host.SetActive(false);
-        flash = host.transform;
-        host.AddComponent<MeshFilter>().sharedMesh = FeelAssets.MuzzleFlash;
-        flashRenderer = host.AddComponent<MeshRenderer>();
-        flashRenderer.sharedMaterials = new[] { FeelAssets.Particle(FeelAssets.FlashStar, true), FeelAssets.Particle(FeelAssets.FlashSpike, true) };
-        flashRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-        flashRenderer.receiveShadows = false;
-        var light = new GameObject("Feel Muzzle Light");
-        light.transform.SetParent(flash, false);
-        light.transform.localPosition = new Vector3(0f, 0f, .4f);
-        flashLight = light.AddComponent<Light>();
-        flashLight.type = LightType.Point;
-        flashLight.shadows = LightShadows.None;
-        flashLight.enabled = false;
-    }
-
-    private void HideFlash()
-    {
-        flashRemaining = 0f;
-        if (flash != null) flash.gameObject.SetActive(false);
-        if (flashLight != null) flashLight.enabled = false;
-    }
-
-    private void EnsureParticles()
-    {
-        if (effectsRoot == null) effectsRoot = FeelAssets.CreateRuntimeRoot("Weapon Feel FX", gameObject).transform;
-        if (smoke == null)
-        {
-            smoke = FeelAssets.CreateEmitter("Muzzle Smoke", effectsRoot, FeelAssets.Particle(FeelAssets.SoftDot, false), 160, -.04f);
-            var size = smoke.sizeOverLifetime; size.enabled = true;
-            size.size = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.EaseInOut(0f, 1f, 1f, 4.5f));
-            var color = smoke.colorOverLifetime; color.enabled = true;
-            color.color = FeelAssets.Fade(Color.white, new Color(1f, 1f, 1f, 0f));
-            var drag = smoke.limitVelocityOverLifetime; drag.enabled = true; drag.drag = 2.4f; drag.multiplyDragByParticleSize = false;
-            var rotation = smoke.rotationOverLifetime; rotation.enabled = true; rotation.z = new ParticleSystem.MinMaxCurve(-.8f, .8f);
-        }
-        if (sparks == null)
-        {
-            sparks = FeelAssets.CreateEmitter("Muzzle Sparks", effectsRoot, FeelAssets.Particle(FeelAssets.SoftDot, true), 120, .4f,
-                ParticleSystemRenderMode.Stretch);
-            var renderer = sparks.GetComponent<ParticleSystemRenderer>();
-            renderer.velocityScale = .025f; renderer.lengthScale = 1f;
-        }
     }
 
     // ---------------------------------------------------------------- brass
@@ -398,6 +320,4 @@ public sealed class WeaponFeedback : MonoBehaviour
         if (view == null) view = Camera.main;
         if (punch == null && view != null && IsMine) punch = CameraViewPunch.For(view);
     }
-
-    private static float Safe(float value) => Mathf.Abs(value) < .0001f ? 1f : value;
 }

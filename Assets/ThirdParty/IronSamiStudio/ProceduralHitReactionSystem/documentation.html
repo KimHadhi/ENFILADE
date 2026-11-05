@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Procedural Hit Reactions v1.1 – Documentation</title>
+
+    <style>
+        body{font-family:system-ui,Segoe UI,Helvetica,Arial,sans-serif;line-height:1.6;margin:0;padding:0 2rem;background:#fafafa;color:#222}
+        header{background:#111;color:#fff;padding:2rem 0;margin-bottom:2rem;text-align:center}
+        h1{margin:0;font-size:2rem;letter-spacing:.5px}
+        h2{color:#0057cc;border-bottom:1px solid #e0e0e0;padding-bottom:.3rem;margin-top:2.5rem}
+        pre{background:#282c34;color:#e9e9e9;padding:1rem;border-radius:.5rem;overflow:auto}
+        code{font-family:Consolas,monaco,monospace;font-size:.95em}
+        table{border-collapse:collapse;width:100%;margin:1rem 0;font-size:.9rem}
+        th,td{border:1px solid #ddd;padding:.5rem;text-align:left}
+        th{background:#f3f6f9}
+        .tip{background:#e8f5e9;border-left:4px solid #43a047;padding:.7rem 1rem;margin:1rem 0}
+        ul{margin:0 0 1rem 1.2rem}
+        li{margin:.35rem 0}
+        a{color:#0057cc;text-decoration:none}
+        a:hover{text-decoration:underline}
+        kbd{background:#eee;border:1px solid #bbb;border-radius:3px;padding:0 .25em;font-size:.9em}
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Procedural Hit Reactions v1.1<br><small>Documentation & Changelog</small></h1>
+</header>
+
+<h2>1. Overview</h2>
+<p><strong>Procedural Hit Reactions</strong> enables any humanoid, creature, or prop to flinch and recoil dynamically without manual animation. A lightweight runtime layer reads hit direction and blends additive pose offsets onto your Animator, delivering realistic reactions with minimal overhead.</p>
+
+<div class="tip">
+<strong>Full Documentation & Tutorials:</strong><br>
+<a href="https://ironsami-studio.gitbook.io/proceduralhitreactions" target="_blank">https://ironsami-studio.gitbook.io/proceduralhitreactions</a><br><br>
+<strong>Join our Discord:</strong><br>
+<a href="https://discord.com/invite/MapKXwNeDz" target="_blank">https://discord.com/invite/MapKXwNeDz</a>
+</div>
+
+<h2>2. Files</h2>
+<ul>
+    <li><code>BodyPartReactor.cs</code> – assigns bone, profile, and per-bone multipliers.</li>
+    <li><code>HitReactionController.cs</code> – collects reactors and exposes <code>React()</code>.</li>
+    <li><code>ReactionProfile.cs</code> – defines timing, strength, blend behavior, hit acceptance, axis locks, follow-through.</li>
+    <li><code>HitReactionTrigger.cs</code> – attach to any projectile or weapon to forward collisions.</li>
+    <li><code>FPSController.cs</code> – simple shooter controller for testing.</li>
+    <li><em>Demo</em> – example scenes, prefabs, and pre-made profiles.</li>
+</ul>
+
+<h2>3. Getting Started</h2>
+<ol>
+    <li>Add <code>HitReactionController</code> to the root GameObject with your <code>Animator</code>.</li>
+    <li>Add an Override layer (weight=1) in your Animator Controller; no clips needed.</li>
+    <li>For each bone you want to react (e.g., Chest, Head):
+        <ul>
+            <li>Add <code>BodyPartReactor</code>.</li>
+            <li>Add a <code>Collider</code> and <code>Rigidbody</code> (kinematic or not).</li>
+            <li>Under the <code>Profile</code> header, <strong>Create New Profile</strong> or assign an existing one.</li>
+        </ul>
+    </li>
+    <li>Drag each reactor into the <code>reactors</code> list on the <code>HitReactionController</code>.</li>
+    <li>Optionally trigger hits manually:
+<pre><code class="language-csharp">hitReactionController.React("Chest", hitDir, hitPoint);</code></pre>
+    </li>
+</ol>
+
+<h2>4. HitReactionTrigger Setup</h2>
+<p>To automatically route hits:</p>
+<ul>
+    <li>Add <code>HitReactionTrigger</code> to your projectile or weapon prefab.</li>
+    <li>Set <code>reactLayers</code> to ignore environment layers.</li>
+    <li>On collision, the trigger finds the correct <code>BodyPartReactor</code> and calls <code>React()</code>.</li>
+</ul>
+
+<pre><code class="language-csharp">// Example:
+var rocket = Instantiate(rocketPrefab, muzzle.position, muzzle.rotation);
+rocket.GetComponent<HitReactionTrigger>().reactLayers = LayerMask.GetMask("Characters");
+</code></pre>
+
+<h2>5. ReactionProfiles (Fully Updated)</h2>
+<p>All main reaction settings now live in <code>ReactionProfile</code> for maximum reuse.</p>
+<table>
+<thead><tr><th>Category</th><th>Property</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td rowspan="3">Timing</td><td><code>reactionDuration</code></td><td>Length of hit effect (sec).</td></tr>
+<tr><td><code>blendInSpeed</code></td><td>Speed from 0→1 weight.</td></tr>
+<tr><td><code>blendOutSpeed</code></td><td>Speed from weight→0.</td></tr>
+<tr><td>Blend Curve</td><td><code>blendCurve</code></td><td>Shape of weight over time.</td></tr>
+<tr><td rowspan="4">Rotation</td><td><code>useRotation</code></td><td>Enable rotation offsets.</td></tr>
+<tr><td><code>rotationStrength</code></td><td>Max random swing per axis.</td></tr>
+<tr><td><code>rotationMode</code></td><td>RandomOnly, DirectionOnly, RandomAndDirection.</td></tr>
+<tr><td><code>directionRotationMultiplier</code></td><td>Mix factor (0=random,1=direction).</td></tr>
+<tr><td rowspan="4">Translation</td><td><code>useTranslation</code></td><td>Enable position offsets.</td></tr>
+<tr><td><code>translationStrength</code></td><td>Max random movement per axis.</td></tr>
+<tr><td><code>translationMode</code></td><td>RandomOnly, DirectionOnly, RandomAndDirection.</td></tr>
+<tr><td><code>directionTranslationMultiplier</code></td><td>Units along hit direction.</td></tr>
+<tr><td>Hit Behaviour</td><td><code>useContactPointDirection</code></td><td>Use contact point vector.</td></tr>
+<tr><td></td><td><code>useLocalHitDirection</code></td><td>Convert hit vector to bone’s local space.</td></tr>
+<tr><td></td><td><code>autoInvertBackHits</code></td><td>Flip vector for back hits.</td></tr>
+<tr><td rowspan="5">Blend Behaviour</td><td><code>additive</code></td><td>Add offsets or replace pose.</td></tr>
+<tr><td><code>blendResetMode</code></td><td>HardReset or ScaledCarryOver.</td></tr>
+<tr><td><code>carryOverScale</code></td><td>Fraction to preserve on reset.</td></tr>
+<tr><td><code>slowBlendFactor</code></td><td>Factor on blendIn (0=off).</td></tr>
+<tr><td><code>offsetsFromCurrentPose</code></td><td>Use current pose as baseline.</td></tr>
+<tr><td>Hit Acceptance</td><td><code>hitAcceptance</code></td><td>IgnoreWhileActive or RestartTimer.</td></tr>
+<tr><td rowspan="2">Axis Locks</td><td><code>rotationAxisMask</code></td><td>Enable/lock per axis (1=allow).</td></tr>
+<tr><td><code>translationAxisMask</code></td><td>Enable/lock per axis.</td></tr>
+</tbody>
+</table>
+
+<h2>6. BodyPartReactor Options</h2>
+<table>
+<thead><tr><th>Section</th><th>Action</th></tr></thead>
+<tbody>
+<tr><td>Profile</td><td>Assign or <strong>Create New Profile</strong> button generates a new asset.</td></tr>
+<tr><td>Migration</td><td><strong>Migrate Legacy Settings</strong> button migrates v1.0 fields into the profile.</td></tr>
+<tr><td>Per-Bone Multipliers</td><td><code>intensityMultiplier</code>, <code>durationMultiplier</code> scale strength/duration.</td></tr>
+</tbody>
+</table>
+
+<h2>7. FollowObjects (New)</h2>
+<p>Define a list of objects to follow this bone’s reaction. Each <code>FollowObject</code> has:</p>
+<ul>
+    <li><code>transform</code> – reference to the object.</li>
+    <li><code>rotWeight</code> – rotation follow strength (0–1).</li>
+    <li><code>posWeight</code> – position follow strength (0–1).</li>
+</ul>
+
+<h2>8. Demo Scene</h2>
+<div class="tip">
+<strong>Tip:</strong> Open the Demo scene, press <kbd>Play</kbd>, use <kbd>W A S D</kbd> to move and left-click to shoot and observe reactions.
+</div>
+
+<h2>9. Extending & Best Practices</h2>
+<ul>
+    <li>Create multiple profiles for varied hit types (light, heavy, explosive).</li>
+    <li>Chain <code>FollowObjects</code> logically (e.g., gear, hair).</li>
+    <li>Combine with animation events for coordinated effects.</li>
+
+<h2>Changelog</h2>
+<table>
+<thead><tr><th>Version</th><th>Date</th><th>Highlights</th></tr></thead>
+<tbody>
+<tr><td>1.1</td><td>May 2025</td><td>Full ReactionProfile overhaul; FollowObjects; Inspector create &amp; migrate buttons.</td></tr>
+<tr><td>1.0</td><td>Initial Release</td><td>Basic procedural hit reactions system.</td></tr>
+</tbody>
+</table>
+
+<footer style="margin:3rem 0 2rem;text-align:center;font-size:.8rem;color:#666">
+    © 2025 Iron Sami Studio — All rights reserved.
+</footer>
+
+</body>
+</html>

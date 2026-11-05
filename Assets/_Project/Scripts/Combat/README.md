@@ -12,7 +12,7 @@
 | `HitDetection/` | 총기 레이·벽 차단, 벽을 무시하는 근접 스윕·부위 판정 | [AttackTrace](HitDetection/AttackTrace.cs), [MeleeAttackSweep](HitDetection/MeleeAttackSweep.cs), [ShoveSweep](HitDetection/ShoveSweep.cs) |
 | `Weapons/Data/` | 무기 설정의 형식. 숫자는 `Tables/Weapons.csv`가 덮어씀 | [WeaponData](Weapons/Data/WeaponData.cs) |
 | `Weapons/Core/` | 무기 한 자루의 탄약·발사·장전, 총구 조준 계산과 반동 스프링 | [WeaponRuntime](Weapons/Core/WeaponRuntime.cs), [WeaponAimSolver](Weapons/Core/WeaponAimSolver.cs), [RecoilSpring](Weapons/Core/RecoilSpring.cs) |
-| `Weapons/Effect/` | 프리팹 기반 총구 화염·궤적(총구 오브젝트), 탄착·혈흔(Player의 `Weapon Impact Effects`). 각자 `ShotFired`를 구독 | [MuzzleEffects](Weapons/Effect/MuzzleEffects.cs), [WeaponImpactEffects](Weapons/Effect/WeaponImpactEffects.cs), [EnemyBloodEffect](Weapons/Effect/EnemyBloodEffect.cs) |
+| `Weapons/Effect/` | 총알 궤적(총구 오브젝트), 총구 화염(`MuzzleFlash`)과 조명(`MuzzleLight`, 둘 다 WeaponController가 붙임), 탄착·혈흔(Player의 `Weapon Impact Effects`). 각자 `ShotFired`를 구독 | [MuzzleEffects](Weapons/Effect/MuzzleEffects.cs), [WeaponImpactEffects](Weapons/Effect/WeaponImpactEffects.cs), [EnemyBloodEffect](Weapons/Effect/EnemyBloodEffect.cs) |
 | `Feel/` | 화면 킥·총성·히트마커·혈흔·점수·처치 효과, 총알 피격 반응 | [WeaponFeedback](Feel/WeaponFeedback.cs), [GunFeelDirector](Feel/GunFeelDirector.cs), [EnemyHitReaction](Feel/EnemyHitReaction.cs) |
 | `Waves/` | 웨이브 생성·처치 집계·진행 | [WaveManager](Waves/WaveManager.cs) |
 | `../Player/Combat/` | 플레이어 입력, 슬롯, 공격, 방어·반격·처형·슬라이드 접촉 | [PlayerWeaponSlots](../Player/Combat/Weapons/PlayerWeaponSlots.cs), [PlayerMeleeCombat](../Player/Combat/PlayerMeleeCombat.cs), [SlideCombat](../Player/Combat/SlideCombat.cs) |
@@ -55,7 +55,7 @@ PlayerWeaponInput → WeaponController
 | 분류 | 오브젝트와 역할 |
 | --- | --- |
 | `EFFECTS → Audio` | `Feel Audio`(총성·장전·확인음), `Combat Hit Audio`(피격·처치음) |
-| `EFFECTS → World` | `Weapon Feel FX`(총구 연기·불꽃·탄피), `Impact VFX`(혈액·먼지·바닥 혈흔), `Parry VFX`(패링 불꽃·섬광), 처치 후 사라지는 시체 연출 |
+| `EFFECTS → World` | `Weapon Feel FX`(탄피), `Impact VFX`(혈액·먼지·바닥 혈흔), `Parry VFX`(패링 불꽃·섬광), 처치 후 사라지는 시체 연출 |
 | `EFFECTS → Screen` | `Damage Popups`(피해 숫자), `Hit Markers`(명중 표시), `Combat Feed`(점수·처치 피드), `Kill Confirm Effect`(처치 화면: 일반 처치는 GTA V식 밝아짐·블룸·옅은 푸른 틴트·약한 색수차 0.5초 유지 후 0.25초 페이드, 처형·반격은 특수 펄스) |
 | `ENEMIES → Console` / `Waves` | 콘솔에서 소환한 적 / 웨이브가 관리하는 적 |
 

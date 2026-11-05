@@ -39,10 +39,29 @@ public static class GameAudio
         bound.RemoveAll(item => item.source == null || item.source == source);
         bound.Add(new Bound { source = source, channel = channel, gain = 1f, ownPitch = source.pitch, setPitch = source.pitch });
         source.volume = Volume(channel) * duck[(int)channel];
+        // No Doppler anywhere: Unity takes how fast a source and the listener move from each frame of game time, so
+        // whatever keeps moving in real time while the game is slowed (a dodge passing through an enemy during a perfect
+        // evade's slow motion) reads as hundreds of m/s and bends the pitch of every 3D sound around it.
+        source.dopplerLevel = 0f;
         // Menu sounds keep playing while the pause menu pauses the listener, and stay clear of its filters (a slowdown's
-        // muffling, SlowMotionSound).
+        // muffling, SlowMotionSound) and of the rooms' reverb (ReverbArea).
         source.ignoreListenerPause = source.bypassListenerEffects = channel == AudioChannel.UI;
+        if (channel == AudioChannel.UI) source.bypassReverbZones = true;
     }
+
+    /// <summary>The ears of this PC: the player camera's AudioListener, else any; null between scenes.</summary>
+    public static AudioListener Listener
+    {
+        get
+        {
+            if (listener != null && listener.isActiveAndEnabled) return listener;
+            var view = Camera.main;
+            listener = view != null && view.TryGetComponent(out AudioListener onView) ? onView : Object.FindAnyObjectByType<AudioListener>();
+            return listener;
+        }
+    }
+
+    private static AudioListener listener;
 
     /// <summary>
     /// Plays every world sound (all channels but UI) at this share of its own pitch, for a slowed game; 1 hands every
@@ -122,6 +141,7 @@ public static class GameAudio
     {
         bound.Clear();
         listening = false;
+        listener = null;
         WorldPitch = 1f;
         for (int i = 0; i < duck.Length; i++) duck[i] = 1f;
     }

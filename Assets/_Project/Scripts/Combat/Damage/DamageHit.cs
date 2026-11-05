@@ -28,12 +28,14 @@ public readonly struct DamageHit
     public readonly DamageMethod Method;
     /// <summary>On a player: kills where it lands, whatever health and shield are left, with no going down first. A dodge or parry still beats it.</summary>
     public readonly bool IsFatal;
+    /// <summary>A bullet that reached this target after going through or glancing off something on the way (AttackTrace). Presentation and score only.</summary>
+    public readonly bool Pierced;
     public DamageHit(long id, float amount, DamageKind kind, Vector3 point, Vector3 direction, GameObject source = null,
         bool canBeGuarded = false, float postureDamage = 0f, bool isComboFinisher = true, bool isCritical = false, bool isCounter = false,
-        DamageMethod method = DamageMethod.Other, Vector3? origin = null, bool isFatal = false)
+        DamageMethod method = DamageMethod.Other, Vector3? origin = null, bool isFatal = false, bool pierced = false)
     { Id = id; Amount = amount; Kind = kind; Point = point; Direction = direction; Source = source;
         CanBeGuarded = canBeGuarded; PostureDamage = postureDamage; IsComboFinisher = isComboFinisher; IsCritical = isCritical; IsCounter = isCounter;
-        Method = method; Origin = origin; IsFatal = isFatal; }
+        Method = method; Origin = origin; IsFatal = isFatal; Pierced = pierced; }
 }
 
 public interface IDamageReceiver { DamageResult ReceiveHit(DamageHit hit); }

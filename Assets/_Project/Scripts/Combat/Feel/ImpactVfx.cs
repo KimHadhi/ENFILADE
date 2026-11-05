@@ -76,6 +76,35 @@ public sealed class ImpactVfx : MonoBehaviour
         Get().Puff(point, scale);
     }
 
+    /// <summary>
+    /// Where a bullet came out of a body it went through: the BloodExit row (ImpactEffects.csv) thrown out along the
+    /// bullet, droplets after it, and a splat on whatever stands behind. direction is the bullet's way on.
+    /// </summary>
+    public static void ExitWound(Vector3 point, Vector3 direction, Component target)
+    {
+        if (!Application.isPlaying || !GunFeelSettings.Instance.proceduralBlood || point == Vector3.zero) return;
+        Get().Burst(point, direction, target);
+    }
+
+    private void Burst(Vector3 point, Vector3 direction, Component target)
+    {
+        var settings = GunFeelSettings.Instance;
+        if (direction.sqrMagnitude < .0001f) return;
+        direction.Normalize();
+        ImpactPool.Play("BloodExit", point + direction * SplashLift, direction);
+        var emit = new ParticleSystem.EmitParams();
+        for (int i = 0; i < settings.bodyDroplets; i++)
+        {
+            emit.position = point + Random.insideUnitSphere * .03f;
+            emit.velocity = Cone(direction, 22f) * Random.Range(1.8f, 5.2f) + Vector3.up * Random.Range(0f, 1f);
+            emit.startSize = Random.Range(.012f, .034f);
+            emit.startLifetime = Random.Range(.35f, .75f);
+            emit.startColor = Shade(settings.bloodColor, Random.Range(.75f, 1.15f));
+            droplets.Emit(emit, 1);
+        }
+        Splat(point + direction * .05f, direction, 3.5f, target != null ? target.transform : null, .45f);
+    }
+
     private void Spray(Vector3 point, Vector3 direction, bool critical, bool kill, bool bullet, Component target)
     {
         var settings = GunFeelSettings.Instance;

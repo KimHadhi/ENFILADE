@@ -81,7 +81,7 @@ public sealed class WeaponController : MonoBehaviour
     private GameObject owner;
     private PlayerMovement movement;
     private PlayerLook look;
-    private WeaponPresentation presentation;
+    private IWeaponPose presentation;
     private DynamicCrosshairView crosshair;
     private Camera viewCamera;
     private PlayerCameraEffects cameraEffects;
@@ -97,6 +97,11 @@ public sealed class WeaponController : MonoBehaviour
     // ...and stays up at least this long after it clears (s): walking, the head bobs across the edge with every step.
     private const float RaisedHold = .5f;
     private float raisedHoldLeft;
+    // The aim alone (mouse and recoil climb), for the sway's turn; the eyes also carry the camera's own shakes.
+    private Transform lookFrame;
+    private readonly WeaponSway sway = new WeaponSway();
+    // How long an empty magazine has waited with the gun ready to fire (s), for the automatic reload.
+    private float emptyReady;
     private float bloom, timeSinceShot, shoveRecovery, bareHandsLeft;
     private int recoilIndex, dodgeActivation;
     private bool survivalInterrupted, shownAiming;
@@ -153,13 +158,21 @@ public sealed class WeaponController : MonoBehaviour
         eyes = Application.isPlaying && movement != null ? PlayerView.EyesOf(movement) : null;
         if (eyes == aimOrigin) eyes = null;
         if (eyes != null && weaponRoot != null && weaponRoot.parent == aimOrigin) weaponRoot.SetParent(eyes, false);
-        presentation = new WeaponPresentation(weaponRoot, muzzlePoint);
+        if (movement != null)
+        {
+            lookFrame = movement.transform.Find("CrouchPivot/BobPivot/LookPivot");
+            if (lookFrame == null) lookFrame = movement.transform.Find("CrouchPivot/LookPivot");
+        }
+        // KINEMATION's arms rig poses the gun where it has one (GunRig); otherwise the procedural placeholder does.
+        presentation = GunRig.Attach(this, weaponRoot, muzzlePoint) ?? new WeaponPresentation(weaponRoot, muzzlePoint);
         viewCamera = aimOrigin.GetComponent<Camera>();
         cameraEffects = owner.GetComponentInChildren<PlayerCameraEffects>();
         crosshair = movement?.IsLocal != false ? DynamicCrosshairView.FindHud() : null;
         dodgeActivation = movement?.Abilities?.Dodge.Activation ?? 0;
         // Shot/reload presentation (sound, muzzle, brass, camera kick) subscribes to this controller's events.
         if (Application.isPlaying && GetComponent<WeaponFeedback>() == null) gameObject.AddComponent<WeaponFeedback>();
+        if (Application.isPlaying && GetComponent<MuzzleLight>() == null) gameObject.AddComponent<MuzzleLight>();
+        if (Application.isPlaying && GetComponent<MuzzleFlash>() == null) gameObject.AddComponent<MuzzleFlash>();
 
         if (weaponData == null) return;
         Runtime = new WeaponRuntime(
@@ -259,6 +272,8 @@ public sealed class WeaponController : MonoBehaviour
         if (timeSinceShot > .35f) recoilIndex = 0;
         bool bodyAction = bareHandsLeft > 0f || (movement != null && (movement.IsParkour
             || movement.CurrentState == PlayerMovement.MovementState.DashPush || movement.IsLandingRecovery));
+        // Asked for like an R press, so whatever holds a reload back now holds this one back until it lets go.
+        if (AutoReloadDue(dt)) frame = new WeaponInputFrame(frame.FirePressed, frame.FireHeld, true, frame.AimHeld);
         if (survivalInterrupted || bodyAction || stepDodging || shoveRecovery > 0f)
             frame = new WeaponInputFrame(frame.FirePressed, frame.FireHeld, false, frame.AimHeld);
         survivalInterrupted = false;
@@ -306,7 +321,8 @@ public sealed class WeaponController : MonoBehaviour
             if (WeaponAimSolver.IsObstructed(owner, PoseView, origin, target, hitLayers))
             { Runtime.RefundUnfiredShots(shots - i); IsHighReady = true; AimBlend = 0f; break; }
             Vector3 direction = WeaponAimSolver.SpreadDirection((target - origin).normalized, CurrentSpread, UnityEngine.Random.insideUnitCircle);
-            Vector2 recoil = weaponData.RecoilAt(recoilIndex++) * Mathf.Lerp(1f, .65f, AimBlend);
+            Vector2 recoil = weaponData.RecoilAt(recoilIndex++) * Mathf.Lerp(1f, .65f, AimBlend)
+                * (Crouched ? weaponData.CrouchRecoil : 1f);
 
             var attack = new DamageHit(
                 id,
@@ -356,9 +372,42 @@ public sealed class WeaponController : MonoBehaviour
             presentation?.OnShot(weaponData, recoil);
             UpdateSpread();
         }
+        Sway(dt, aiming);
         UpdateCrosshair();
         cameraEffects?.RefreshWeaponFov();
     }
+
+    // ArcCW's automatic reload (arccw_automaticreload): an empty magazine with rounds in reserve reloads 0.2 s after the
+    // gun could fire again. Someone else's copy reloads when their PC says so.
+    private bool AutoReloadDue(float dt)
+    {
+        bool waiting = weaponData.AutoReloadDelay >= 0f && (movement == null || !movement.IsNetworkDriven)
+            && Runtime.Ammo == 0 && Runtime.ReserveAmmo > 0 && !Runtime.IsReloading && Runtime.CooldownRemaining <= 0f;
+        emptyReady = waiting ? emptyReady + dt : 0f;
+        return waiting && emptyReady > weaponData.AutoReloadDelay;
+    }
+
+    // The sway, last: this frame's shots and cover checks have used the plain pose. Only one's own gun sways; someone
+    // else's turns arrive in network steps, which it would only jolt about.
+    private void Sway(float dt, bool aiming)
+    {
+        if (presentation == null || !ShowsWeapon || (movement != null && (!movement.IsLocal || movement.IsNetworkDriven)))
+        {
+            // Put away, it starts fresh when it comes back instead of catching up on every turn made meanwhile.
+            sway.Reset();
+            return;
+        }
+        Transform view = PoseView;
+        var input = new SwayInput(view.rotation, lookFrame != null ? lookFrame.rotation : view.rotation,
+            movement != null ? movement.ActualVelocity : Vector3.zero, movement == null || movement.IsGrounded,
+            movement != null && movement.IsProning, movement != null && movement.IsSliding, aiming, 1f - AimBlend,
+            movement != null ? movement.WalkSpeed : float.PositiveInfinity, weaponData.LookSway, weaponData.MoveSway);
+        sway.Advance(dt, input, out Vector3 offset, out Quaternion turn);
+        presentation.ApplySway(view, offset, turn);
+    }
+
+    // ArcCW's crouch rule: on the ground and crouched.
+    private bool Crouched => movement != null && movement.IsGrounded && movement.IsCrouching;
 
     // A loose prop the bullet struck takes the share of the push the bullet still carried.
     private void PushProp(in AttackTraceResult trace, Vector3 direction, float share)
@@ -390,8 +439,9 @@ public sealed class WeaponController : MonoBehaviour
     {
         float moving = movement == null ? 0f : Mathf.Clamp01(new Vector2(movement.ActualVelocity.x, movement.ActualVelocity.z).magnitude / Mathf.Max(.1f, movement.WalkSpeed));
         float air = movement != null && !movement.IsGrounded ? weaponData.AirborneSpread : 0f;
-        CurrentSpread = Mathf.Lerp(weaponData.HipSpread, weaponData.AdsSpread, AimBlend)
-            + (bloom + moving * weaponData.MovingSpread + air) * Mathf.Lerp(1f, .25f, AimBlend);
+        CurrentSpread = (Mathf.Lerp(weaponData.HipSpread, weaponData.AdsSpread, AimBlend)
+            + (bloom + moving * weaponData.MovingSpread + air) * Mathf.Lerp(1f, .25f, AimBlend))
+            * (Crouched ? weaponData.CrouchSpread : 1f);
     }
     private void UpdateCrosshair()
     {
@@ -404,8 +454,8 @@ public sealed class WeaponController : MonoBehaviour
     }
     private void ResetPresentation()
     {
-        AimBlend = bloom = shoveRecovery = CurrentSpread = raisedHoldLeft = 0f; recoilIndex = 0; IsHighReady = false;
-        presentation?.Reset(); crosshair?.SetDynamicSpread(0f);
+        AimBlend = bloom = shoveRecovery = CurrentSpread = raisedHoldLeft = emptyReady = 0f; recoilIndex = 0; IsHighReady = false;
+        presentation?.Reset(); sway.Reset(); crosshair?.SetDynamicSpread(0f);
         crosshair?.SetCombatHidden(false);
         cameraEffects?.RefreshWeaponFov();
     }

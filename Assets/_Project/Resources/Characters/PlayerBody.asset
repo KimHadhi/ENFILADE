@@ -19,16 +19,43 @@ MonoBehaviour:
     model: {fileID: 5848309325868017323, guid: b9d8df3d4910546409ab7425d2ffebc9, type: 3}
     ledgeHandSpacingScale: 1
     ledgePalmInsetScale: 1
+    variants: []
   - id: hiro
     displayName: "\uD788\uB85C"
     model: {fileID: 919132149155446097, guid: be2a3fbba9a297c4483cd2d4f6626345, type: 3}
     ledgeHandSpacingScale: 1
     ledgePalmInsetScale: 1
+    variants: []
   - id: sil
     displayName: "실"
     model: {fileID: 919132149155446097, guid: 9f13e8940fdb4406832dea65d72fc41b, type: 3}
     ledgeHandSpacingScale: 1
     ledgePalmInsetScale: 1
+    variants:
+    - id: 01
+      displayName: "01 검정 · 주홍"
+      swaps: []
+    - id: 02
+      displayName: "02 흰색 · 주황"
+      swaps:
+      - from: {fileID: 2100000, guid: d5850fe58346ec34483d7321207b74ec, type: 2}
+        to: {fileID: 2100000, guid: 2697b520359920f4da6dbc5186537cc1, type: 2}
+      - from: {fileID: 2100000, guid: b02bb88b3a82b3b4497f0c5fd14b4e2a, type: 2}
+        to: {fileID: 2100000, guid: f0a07fc09086e5045b639a16372946d6, type: 2}
+    - id: 03
+      displayName: "03 검정 · 파랑"
+      swaps:
+      - from: {fileID: 2100000, guid: d5850fe58346ec34483d7321207b74ec, type: 2}
+        to: {fileID: 2100000, guid: 8019c4f3d33feac41897418772aacc68, type: 2}
+      - from: {fileID: 2100000, guid: b02bb88b3a82b3b4497f0c5fd14b4e2a, type: 2}
+        to: {fileID: 2100000, guid: 402ab5b4c82cba14fb4197e0ddce4e93, type: 2}
+    - id: 04
+      displayName: "04 검정 · 연두"
+      swaps:
+      - from: {fileID: 2100000, guid: d5850fe58346ec34483d7321207b74ec, type: 2}
+        to: {fileID: 2100000, guid: d46c3897a6b79a44b9339dec933904ba, type: 2}
+      - from: {fileID: 2100000, guid: b02bb88b3a82b3b4497f0c5fd14b4e2a, type: 2}
+        to: {fileID: 2100000, guid: c8100639e47d49d40a69d7bdda1bcbb1, type: 2}
   clips:
   - {fileID: -9136827924120628530, guid: 52f62d2e1e04c7f43a7250543de8c224, type: 3}
   - {fileID: -9131831495037978367, guid: 52f62d2e1e04c7f43a7250543de8c224, type: 3}

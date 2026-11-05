@@ -1,7 +1,11 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-/// <summary>Ignores only player/enemy body pairs. World collision and attack queries stay enabled.</summary>
+/// <summary>
+/// Ignores only player/enemy body pairs. World collision and attack queries stay enabled. Only the step dodge (Alt) and
+/// a slide pass through bodies: a Q/E micro dodge leans and slips the head but never moves the body, so it keeps every
+/// collision, and nothing pushes it out sideways when its window ends.
+/// </summary>
 [DisallowMultipleComponent]
 public sealed class DodgeEnemyPassThrough : MonoBehaviour
 {
@@ -19,8 +23,7 @@ public sealed class DodgeEnemyPassThrough : MonoBehaviour
         ? Mathf.Min(.05f, dt / Time.timeScale) : dt;
     private void Awake() { player = GetComponent<PlayerMovement>(); body = GetComponent<CharacterController>(); }
     private bool Active => player != null && player.IsInitialized && player.DamageReceiver.IsAlive
-        && (player.CurrentState == PlayerMovement.MovementState.StepDodge
-            || (player.Abilities.Dodge.Kind == DodgeKind.Micro && player.Abilities.Dodge.IsInvulnerable));
+        && player.CurrentState == PlayerMovement.MovementState.StepDodge;
     internal void IgnoreSlideTarget(MeleeCombatTarget target, Vector3 direction)
     {
         travelDirection = direction;
@@ -44,8 +47,7 @@ public sealed class DodgeEnemyPassThrough : MonoBehaviour
             return;
         }
         if (!Active) { Finish(); return; }
-        travelDirection = player.CurrentState == PlayerMovement.MovementState.StepDodge
-            ? player.Abilities.ActionDirection : transform.right * player.Abilities.Dodge.LeanSide;
+        travelDirection = player.Abilities.ActionDirection;
         if (travelDirection.sqrMagnitude < .01f) travelDirection = transform.forward;
         if (ignored.Count == 0 && IsFree(transform.position)) { lastSafe = transform.position; hasSafe = true; }
         float range = Mathf.Max(5f, player.AbilitySettings.stepDistance + body.height + 1f);

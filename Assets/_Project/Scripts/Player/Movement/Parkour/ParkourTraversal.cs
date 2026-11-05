@@ -16,23 +16,73 @@ public sealed class ParkourTraversal
     internal Vector3 LedgeJumpVelocity;
     /// <summary>Share of the current vault or mantle's time that has passed (0–1); the body plays its clip in step.</summary>
     public float ObstacleProgress { get; internal set; }
-    private float wallBudget;
     private float wallLock, barLock, ledgeLock;
+    // The wall climbs of this time in the air, as Beatrun counts them: how many came one after another, when the last is
+    // planned to end (on this clock), and which way its wall faces, since the same wall isn't climbed twice before the
+    // ground or a ledge.
+    private int wallClimbs;
+    private float clock, wallClimbEnds = float.NegativeInfinity;
+    private Vector3 climbedWall;
     private SwingBar lastBar;
+    // A jump off the ground while it rises, for the low vaults (VaultFinder.TryAir): the height the feet left from, and the
+    // time since in Beatrun's terms, the first airborne frame counting as its first tick.
+    private float groundY, sinceJump = float.PositiveInfinity;
+    private bool wasGrounded;
+    // A surge toward a vault (SurgesToVault): its ground velocity, the time it may still take, and how many spots along
+    // the run are looked at for where the vault catches. Below SurgeLeast (m/s) the player isn't running at anything.
+    private Vector3 surge;
+    private float surgeLeft, surgeFrom;
+    private const int SurgeSamples = 8;
+    private const float SurgeLeast = 2f, SurgeSpare = .1f;
+    /// <summary>A surge toward a vault under way: the ground velocity LocomotionState keeps; zero when there is none.</summary>
+    internal Vector3 SurgeVelocity => surgeLeft > 0f ? surge : Vector3.zero;
+    internal void StopSurge() => surgeLeft = 0f;
     // Turning around must not refresh the same obstacle's lift while airborne.
     // Keep distinct obstacles available for legitimate parkour chains.
     private readonly HashSet<Collider> traversedObstacles = new HashSet<Collider>();
-    internal ParkourTraversal(PlayerMovement context)
-    { ctx = context; Detector = new ParkourDetector(ctx); wallBudget = ctx.AbilitySettings.wallDuration; }
+    internal ParkourTraversal(PlayerMovement context) { ctx = context; Detector = new ParkourDetector(ctx); }
     internal void Tick(float dt)
-    { wallLock = Mathf.Max(0f, wallLock - dt); barLock = Mathf.Max(0f, barLock - dt); ledgeLock = Mathf.Max(0f, ledgeLock - dt); }
+    {
+        clock += dt;
+        wallLock = Mathf.Max(0f, wallLock - dt); barLock = Mathf.Max(0f, barLock - dt); ledgeLock = Mathf.Max(0f, ledgeLock - dt);
+        bool grounded = ctx.IsGrounded, jumping = ctx.VerticalVelocity > 0f
+            && (ctx.CurrentState == State.Standing || ctx.CurrentState == State.Crouching);
+        if (grounded) groundY = ctx.transform.position.y;
+        sinceJump = grounded || !jumping ? float.PositiveInfinity : wasGrounded ? VaultFinder.Tick : sinceJump + dt;
+        wasGrounded = grounded;
+        // A surge is a run on the ground: off it, or into any other move, it is over.
+        if (!grounded || ctx.CurrentState != State.Standing) StopSurge();
+    }
     internal void OnGrounded()
     {
-        wallBudget = ctx.AbilitySettings.wallDuration;
+        ForgetWallClimbs();
         if (!ctx.IsParkour) traversedObstacles.Clear();
     }
+    /// <summary>On the ground or holding a ledge, the next wall climb is a first one again, on any wall.</summary>
+    internal void ForgetWallClimbs() { wallClimbs = 0; climbedWall = Vector3.zero; }
     internal void RecordObstacle() { if (Obstacle.Surface != null) traversedObstacles.Add(Obstacle.Surface); }
-    internal bool SpendWallTime(float dt) { wallBudget -= dt; return wallBudget > 0f; }
+
+    /// <summary>
+    /// Starts a climb up Wall and returns how long it lasts (s), from how it began (WallClimbPace). The chain counts it,
+    /// and its wall is the one that can't be climbed again before the ground or a ledge.
+    /// </summary>
+    internal float BeginWallClimb()
+    {
+        float u = ctx.HeightUnit;
+        float share = WallClimbPace.RiseShare(ctx.VerticalVelocity / u);
+        if (clock - wallClimbEnds < WallClimbPace.ChainSeconds) share = WallClimbPace.ChainShare(wallClimbs);
+        else wallClimbs = 0;
+        float duration = ctx.AbilitySettings.wallClimbTime * share * WallClimbPace.SpeedShare(ctx.HorizontalVelocity.magnitude / u);
+        wallClimbs++;
+        wallClimbEnds = clock + duration;
+        climbedWall = Wall.normal;
+        return duration;
+    }
+
+    // Beatrun compares the walls' normals axis by axis, a quarter apart at most (IsEqualTol).
+    private bool ClimbedBefore(Vector3 normal)
+        => climbedWall != Vector3.zero && Mathf.Abs(normal.x - climbedWall.x) <= .25f
+            && Mathf.Abs(normal.y - climbedWall.y) <= .25f && Mathf.Abs(normal.z - climbedWall.z) <= .25f;
     internal bool CanGrab(SwingBar candidate) => barLock <= 0f || candidate != lastBar;
 
     // Airborne, or at a wall with high = true. The move looks where the player looks, as Beatrun's do.
@@ -40,8 +90,8 @@ public sealed class ParkourTraversal
     {
         Vector3 forward = ctx.transform.forward;
         ObstacleTarget candidate;
-        bool found = high ? Detector.Vaults.TryHigh(forward, ctx.VerticalVelocity, out candidate)
-            : Detector.Vaults.TryAir(forward, out candidate);
+        bool found = high ? Detector.Vaults.TryHigh(forward, ctx.VerticalVelocity, ctx.CurrentState == State.WallClimb, out candidate)
+            : Detector.Vaults.TryAir(forward, sinceJump, groundY, out candidate);
         if (!found || traversedObstacles.Contains(candidate.Surface)) return false;
         Begin(candidate);
         return true;
@@ -49,6 +99,8 @@ public sealed class ParkourTraversal
 
     private void Begin(in ObstacleTarget candidate)
     {
+        // A wall climb that ends in a vault or a climb onto the top ends its chain too (Beatrun clears the run's time).
+        if (ctx.CurrentState == State.WallClimb) wallClimbEnds = float.NegativeInfinity;
         Obstacle = candidate;
         // A reload has both hands on the gun. A move that puts a hand on the obstacle still goes: the gun is put away for it,
         // as for a roll, and the reload stops. A step up needs no hand, so the reload carries on.
@@ -78,8 +130,10 @@ public sealed class ParkourTraversal
         if (ctx.CurrentInput.y > 0.1f && ctx.VerticalVelocity >= -ctx.AbilitySettings.airTraversalMaxFallSpeed
             && ledgeLock <= 0f && (TryVault(false) || TryVault(true))) return true;
         if (ctx.VerticalVelocity <= 0f && TryCatchLedge()) return true;
-        if (wallBudget <= 0f || wallLock > 0f || ctx.CurrentInput.y <= 0.1f || !ctx.Input.JumpHeld) return false;
-        if (!Detector.TryWallEntry(out Wall) || VaultComing()) return false;
+        // A wall climb starts only on the way up or at the top of a jump, never falling (WallClimbPace).
+        if (wallLock > 0f || ctx.CurrentInput.y <= 0.1f || !ctx.Input.JumpHeld
+            || !WallClimbPace.CanStart(ctx.VerticalVelocity / ctx.HeightUnit)) return false;
+        if (!Detector.TryWallEntry(out Wall) || ClimbedBefore(Wall.normal) || VaultComing()) return false;
         float facing = Vector3.Dot(ctx.transform.forward, -Wall.normal);
         float alongSpeed = Vector3.ProjectOnPlane(ctx.HorizontalVelocity, Wall.normal).magnitude;
         bool travellingAlongWall = alongSpeed > Mathf.Max(2f, ctx.HorizontalVelocity.magnitude * 0.6f);
@@ -90,6 +144,76 @@ public sealed class ParkourTraversal
         }
         return false;
     }
+    /// <summary>
+    /// Running at a low obstacle with W held, a jump pressed before the vault can catch it (Beatrun's comes only from a jump
+    /// within about 1.2 m of the near face; an earlier one sailed over) surges instead: the run speeds up to
+    /// Ability.vaultSurgeSpeed along the ground to where the vault catches the obstacle (VaultFinder.CatchesLow), with a
+    /// camera push, and the vault starts right there. Up to Ability.vaultSurgeDistance short of that spot. True when the
+    /// press was taken: a surge under way (the jump held back) or a vault begun. Not in Beatrun: the user asked to vault
+    /// what is ahead of a running jump quickly, with speed rather than a teleport, without timing it (2026-11-06).
+    /// </summary>
+    internal bool SurgesToVault(float dt)
+    {
+        var settings = ctx.AbilitySettings;
+        Vector3 run = Vector3.ProjectOnPlane(ctx.HorizontalVelocity, Vector3.up);
+        if (!ctx.IsGrounded || ctx.CurrentState != State.Standing || ctx.CurrentInput.y <= 0.1f || ledgeLock > 0f
+            || settings.vaultSurgeDistance <= 0f)
+        {
+            StopSurge();
+            return false;
+        }
+        bool surging = surgeLeft > 0f;
+        Vector3 forward = ctx.transform.forward, feet = ctx.transform.position, way = (surging ? surge : run).normalized;
+        float speed = surging ? surge.magnitude : run.magnitude;
+        // Close enough: the vault starts here and now, from the ground. Left to the next frame's first look, a frame a little
+        // longer or shorter could carry a body at surge speed past the rail's narrow band (about 0.65 m), and the move came
+        // out a kong vault or a bare jump at 11 m/s. It goes at the pace the player was running at: entered at the surge's
+        // speed, it ran and left at that speed and its clip was cut short, which looked fast-forwarded (user, 2026-11-06).
+        if (way.sqrMagnitude > .5f && Detector.Vaults.CatchesLow(feet, forward, out ObstacleTarget vault)
+            && !traversedObstacles.Contains(vault.Surface))
+        {
+            if (surging) ctx.HorizontalVelocity = way * surgeFrom;
+            StopSurge();
+            Begin(vault);
+            return true;
+        }
+        if (surging)
+        {
+            // The surge ran out without the vault catching (the obstacle turned out out of reach): the jump goes as a jump.
+            surgeLeft -= dt;
+            return surgeLeft > 0f;
+        }
+        if (speed < SurgeLeast) return false;
+        float gap = GapToVault(feet, way, forward, settings.vaultSurgeDistance);
+        if (gap <= 0f) return false;
+        surgeFrom = speed;
+        speed = Mathf.Max(settings.vaultSurgeSpeed, speed);
+        surge = way * speed;
+        surgeLeft = gap / speed + SurgeSpare;
+        // The push sells the burst: the view dips forward a little and widens, and the speed widens it further on its own.
+        ctx.GetComponentInChildren<PlayerCameraEffects>()?.ApplyCameraImpulse(
+            new Vector3(settings.vaultSurgeKick.x, 0f, 0f), settings.vaultSurgeKick.y);
+        return true;
+    }
+
+    // How far along the run (m) the feet go before a jump from there would be vaulted, looking up to reach beyond where the
+    // body is now, and no further than it gets before it meets something (the obstacle itself). Zero when nothing is.
+    private float GapToVault(Vector3 feet, Vector3 way, Vector3 forward, float reach)
+    {
+        var controller = ctx.Motor.controller;
+        float radius = controller.radius, half = Mathf.Max(0f, controller.height * .5f - radius);
+        Vector3 centre = ctx.transform.TransformPoint(controller.center), lift = Vector3.up * controller.stepOffset;
+        if (Physics.CapsuleCast(centre + Vector3.up * half, centre - Vector3.up * half + lift, radius - .01f, way,
+                out RaycastHit blocked, reach, ctx.groundLayers, QueryTriggerInteraction.Ignore))
+            reach = blocked.distance;
+        for (int step = 1; step <= SurgeSamples; step++)
+        {
+            float along = reach * step / SurgeSamples;
+            if (Detector.Vaults.CatchesLow(feet + way * along, forward, out _)) return along;
+        }
+        return 0f;
+    }
+
     // A top this jump will clear in a moment is a vault on its way, not a wall to climb.
     private bool VaultComing()
     {
@@ -112,8 +236,8 @@ public sealed class ParkourTraversal
     {
         if (Ledge.Surface == null) return false;
         Vector3 edge = Ledge.Surface.transform.TransformPoint(Ledge.LocalEdge);
-        if (!Detector.Vaults.TryHighBelow(edge, ctx.transform.forward, ctx.VerticalVelocity, out ObstacleTarget candidate)
-            || traversedObstacles.Contains(candidate.Surface)) return false;
+        if (!Detector.Vaults.TryHighBelow(edge, ctx.transform.forward, ctx.VerticalVelocity, ctx.CurrentState == State.WallClimb,
+                out ObstacleTarget candidate) || traversedObstacles.Contains(candidate.Surface)) return false;
         Begin(candidate);
         return true;
     }
@@ -138,6 +262,21 @@ public sealed class ParkourTraversal
         Vector3 inward = -Ledge.Surface.transform.TransformDirection(Ledge.LocalNormal);
         return Vector3.Dot(Vector3.ProjectOnPlane(ctx.transform.forward, Vector3.up).normalized, inward)
             >= Mathf.Cos(ctx.AbilitySettings.ledgeJumpLookAngle * Mathf.Deg2Rad);
+    }
+    /// <summary>
+    /// The way the current mantle climbs, flat: into the wall from a hang, else over the edge the hands rest on, else from
+    /// where it began to where it ends. Zero when there is no telling.
+    /// </summary>
+    public Vector3 MantleFacing
+    {
+        get
+        {
+            Vector3 way = Obstacle.Kind == VaultKind.Heave && Ledge.Surface != null
+                ? -Ledge.Surface.transform.TransformDirection(Ledge.LocalNormal)
+                : Obstacle.EdgeNormal != Vector3.zero ? -Obstacle.EdgeNormal : Obstacle.End - Obstacle.Start;
+            way = Vector3.ProjectOnPlane(way, Vector3.up);
+            return way.sqrMagnitude > .0001f ? way.normalized : Vector3.zero;
+        }
     }
     internal void JumpFromLedge()
     {
@@ -192,7 +331,11 @@ public sealed class ParkourTraversal
     }
     internal void Reset()
     {
-        wallBudget = ctx.AbilitySettings.wallDuration;
+        ForgetWallClimbs();
+        wallClimbEnds = float.NegativeInfinity;
+        sinceJump = float.PositiveInfinity;
+        wasGrounded = false;
+        StopSurge();
         wallLock = barLock = ledgeLock = 0f; Bar = lastBar = null; Obstacle = default; Ledge = default; Wall = default;
         Angle = AngularSpeed = 0f; ReleaseVelocity = LedgeJumpVelocity = Vector3.zero;
         traversedObstacles.Clear();

@@ -2,15 +2,14 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// Authored muzzle visuals for the parent WeaponController: a particle muzzle flash and a short bullet tracer from the
-/// muzzle to the hit point. Lives on the muzzle point, so it follows the gun model and hides with it.
+/// The bullet's tracer for the parent WeaponController: a short streak from the muzzle to the hit point, and on along
+/// each stretch the bullet went on through or off something. Lives on the muzzle point, so it follows the gun model and
+/// hides with it. The flame is MuzzleFlash's; the particle flash this used to play (the MuzzleFlash object under the muzzle
+/// in Player.prefab) no longer plays.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class MuzzleEffects : MonoBehaviour
 {
-    [Header("Muzzle Flash")]
-    [SerializeField] private ParticleSystem muzzleFlash;
-
     [Header("Bullet Tracer")]
     [SerializeField] private LineRenderer tracerPrefab;
     [SerializeField, Min(0.01f)] private float tracerDuration = 0.12f;
@@ -38,15 +37,7 @@ public sealed class MuzzleEffects : MonoBehaviour
         if (weapon != null) weapon.ShotFired += Play;
     }
 
-    private void Play(WeaponShot shot)
-    {
-        if (muzzleFlash != null)
-        {
-            muzzleFlash.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
-            muzzleFlash.Play();
-        }
-        ShowBulletTracer(shot);
-    }
+    private void Play(WeaponShot shot) => ShowBulletTracer(shot);
 
     private void Update()
     {

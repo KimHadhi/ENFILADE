@@ -3,7 +3,8 @@ using UnityEngine;
 /// <summary>
 /// How the game sounds while SkullSlowMotion slows it: every world sound drops in pitch and the whole mix goes muffled,
 /// both following how slowed the game is; menu and HUD sounds (the UI channel) stay as they are. The muffling is a
-/// low-pass filter on the audio listener, switched on only while the game is slowed. Numbers: Tables/SkullSlowMotion.
+/// low-pass filter on the audio listener, put there switched off as soon as the listener is there and switched on only
+/// while the game is slowed. Numbers: Tables/SkullSlowMotion.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class SlowMotionSound : MonoBehaviour
@@ -20,6 +21,9 @@ public sealed class SlowMotionSound : MonoBehaviour
 
     private void LateUpdate()
     {
+        // Added as the game slows, the filter would change the audio chain that very moment, which can click; so it goes on
+        // ahead, switched off. A respawn or a scene change brings a new listener.
+        if (muffle == null) muffle = Attach(Camera.main);
         float depth = SkullSlowMotion.Depth;
         bool now = depth > .001f;
         if (!now && !slowed) return;
@@ -34,6 +38,19 @@ public sealed class SlowMotionSound : MonoBehaviour
         slowed = false;
         GameAudio.FollowWorldPitch(1f);
         Muffle(0f);
+    }
+
+    // The filter on the view's listener, made open and switched off.
+    private static AudioLowPassFilter Attach(Camera view)
+    {
+        var listener = view != null && view.TryGetComponent(out AudioListener own) ? own : null;
+        if (listener == null) return null;
+        if (listener.TryGetComponent(out AudioLowPassFilter filter)) return filter;
+        filter = listener.gameObject.AddComponent<AudioLowPassFilter>();
+        filter.cutoffFrequency = OpenCutoff;
+        filter.lowpassResonanceQ = 1f;
+        filter.enabled = false;
+        return filter;
     }
 
     private void Muffle(float depth)

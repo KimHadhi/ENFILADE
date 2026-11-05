@@ -1,0 +1,562 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 875874723, guid: fc03235d1c7dcf3d270f026b14aa238d, type: 3}
+  m_Name: RVFX Rig Defaults
+  m_EditorClassIdentifier: 
+  _profileVersion: 2
+  _overriddenProperties:
+  - _fractureTarget._fractureSettings.sourceGeometry
+  - _constraintRule._glueStrength
+  - _fractureTarget._fractureSettings.brick.gap
+  - _runtimeSettings.secondaryFracture.childConstraints.contactDistance
+  - _runtimeSettings.secondaryFracture.childConstraints.breakForce
+  - _runtimeSettings.secondaryFracture.childConstraints.maxLinksPerPiece
+  - _runtimeSettings.secondaryFracture.childConstraints.damageDurability
+  - _runtimeSettings.secondaryFracture.childConstraints.enabled
+  - _runtimeSettings.secondaryFracture.enabled
+  _fractureGroup:
+    ResultSceneHidden: 0
+    _hasConstraintGraphNode: 0
+    _constraintGraphPosition: {x: 0, y: 0}
+    _constraintGraphNodeRemoved: 0
+    _anchorGraphNodeRemoved: 0
+    _hasAnchorGraphNode: 0
+    _anchorGraphPosition: {x: 0, y: 0}
+    _groupId: 69da4066c4004d39836e223cc50aa5c3
+    _displayName: Group
+    _isDefaultGroup: 0
+    _sourceRoot: {fileID: 0}
+    _fractureRoot: {fileID: 0}
+    _fractureSettings:
+      mode: 0
+      sourceGeometry: 2
+      quality: 1
+      calculation: 0
+      pieceCount: 24
+      useRandomSeed: 0
+      seed: -847581763
+      minimumTriangleCount: 4
+      centerPivotToPiece: 1
+      interiorUvScale: 1
+      woodSplinter:
+        axis: 0
+        useCustomDirection: 0
+        localDirection: {x: 0, y: 1, z: 0}
+        stretch: 1.5
+      brick:
+        layoutMode: 0
+        divisions: {x: 4, y: 2, z: 1}
+        brickSize: {x: 0.5, y: 0.25, z: 0.5}
+        gap: 0.02
+        rowStagger: 0
+        offset: {x: 0, y: 0, z: 0}
+        rotation: {x: 0, y: 0, z: 0}
+      glass:
+        impactFocus: 0.6666667
+        irregularity: 0.55
+        useImpactPoint: 0
+        impactPoint: {x: 0, y: 0, z: 0}
+        planeMode: 0
+        planeRotation: {x: 0, y: 0, z: 0}
+      impact:
+        direction: 0
+        radius: 0.22
+        depth: 0.65
+        spread: 0.55
+        useImpactPoint: 0
+        impactPoint: {x: 0, y: 0, z: 0}
+        useSurfaceNormal: 0
+        surfaceNormal: {x: 0, y: 0, z: 1}
+      slice:
+        iterations: 6
+        direction: 4
+        customDirection: {x: 0, y: 1, z: 0}
+        angleVariation: 35
+        offsetVariation: 0.2
+        useCustomPoint: 0
+        point: {x: 0, y: 0, z: 0}
+      hollowShell:
+        thickness: 0.1
+        placement: 0
+        detail: 0
+    _interiorMaterial: {fileID: 0}
+    _interiorUvScale: 1
+    _targetSettingsMigrated: 0
+    _targetConfigs: []
+    _generatedPieceCount: 0
+    _lastBuildMessage: 
+  _fractureTarget:
+    SeparationOriginal: {fileID: 0}
+    SeparationRemainder: {fileID: 0}
+    SeparationParts: []
+    SeparationPartCandidates: 
+    SourceOnly: 0
+    SourceProcessed: 0
+    SourceProcessType: 0
+    SeparationMode: 0
+    SeparationSplitDisconnected: 0
+    SeparationIncludeAlpha: 0
+    SeparationColorTolerance: 0
+    SeparationLayoutSignature: 
+    ProcessingSource: {fileID: 0}
+    ImportedFrom: {fileID: 0}
+    ResultSceneHidden: 0
+    SourceVisibility: 0
+    SourceSolidColor: 0
+    SourceColor: {r: 0.35, g: 0.65, b: 0.8, a: 1}
+    PartDisplay: []
+    _targetId: 
+    _sourceObject: {fileID: 0}
+    _sourceSnapshotGuid: 
+    _sourceSnapshotLocalId: 0
+    _sourceDisplayName: 
+    _sourceLocalPosition: {x: 0, y: 0, z: 0}
+    _sourceLocalRotation: {x: 0, y: 0, z: 0, w: 1}
+    _sourceLocalScale: {x: 1, y: 1, z: 1}
+    _sourceLocalScaleAtBuild: {x: 1, y: 1, z: 1}
+    _hasSourceLocalScaleAtBuild: 0
+    _sourceDetached: 0
+    _fractureSettings:
+      mode: 0
+      sourceGeometry: 2
+      quality: 1
+      calculation: 0
+      pieceCount: 24
+      useRandomSeed: 0
+      seed: 866870867
+      minimumTriangleCount: 4
+      centerPivotToPiece: 1
+      interiorUvScale: 1
+      woodSplinter:
+        axis: 0
+        useCustomDirection: 0
+        localDirection: {x: 0, y: 1, z: 0}
+        stretch: 1.5
+      brick:
+        layoutMode: 0
+        divisions: {x: 4, y: 2, z: 1}
+        brickSize: {x: 0.5, y: 0.25, z: 0.5}
+        gap: 0.001
+        rowStagger: 0
+        offset: {x: 0, y: 0, z: 0}
+        rotation: {x: 0, y: 0, z: 0}
+      glass:
+        impactFocus: 0.6666667
+        irregularity: 0.55
+        useImpactPoint: 0
+        impactPoint: {x: 0, y: 0, z: 0}
+        planeMode: 0
+        planeRotation: {x: 0, y: 0, z: 0}
+      impact:
+        direction: 0
+        radius: 0.22
+        depth: 0.65
+        spread: 0.55
+        useImpactPoint: 0
+        impactPoint: {x: 0, y: 0, z: 0}
+        useSurfaceNormal: 0
+        surfaceNormal: {x: 0, y: 0, z: 1}
+      slice:
+        iterations: 6
+        direction: 4
+        customDirection: {x: 0, y: 1, z: 0}
+        angleVariation: 35
+        offsetVariation: 0.2
+        useCustomPoint: 0
+        point: {x: 0, y: 0, z: 0}
+      hollowShell:
+        thickness: 0.1
+        placement: 0
+        detail: 0
+    _baseOperationName: 
+    _interiorMaterial: {fileID: 0}
+    _interiorUvScale: 1
+    _generatedRoot: {fileID: 0}
+    _generatedPieceCount: 0
+    _lastBuildMessage: 
+    _refinements: []
+    _hasUnresolvedBuildFailure: 0
+    _physicalProperties:
+      _totalMass: 1
+      _distribution: 0
+      _bounciness: 0
+      _friction: 0.6
+      _linearDamping: 0.05
+      _angularDamping: 0.1
+      _gravityScale: 1
+      _maxAngularSpeed: 25
+      _collisionDetection: 0
+      _massVariation: 0.1
+      _usesSourceMassByDefault: 0
+  _fractureRefinement:
+    _operationId: fbf56b9187214e27b5bb764d3a9017e1
+    _displayName: 
+    _targetPieceIds: 
+    _fractureSettings:
+      mode: 0
+      sourceGeometry: 2
+      quality: 1
+      calculation: 0
+      pieceCount: 6
+      useRandomSeed: 0
+      seed: -341007270
+      minimumTriangleCount: 1
+      centerPivotToPiece: 1
+      interiorUvScale: 1
+      woodSplinter:
+        axis: 0
+        useCustomDirection: 0
+        localDirection: {x: 0, y: 1, z: 0}
+        stretch: 1.5
+      brick:
+        layoutMode: 0
+        divisions: {x: 4, y: 2, z: 1}
+        brickSize: {x: 0.5, y: 0.25, z: 0.5}
+        gap: 0.02
+        rowStagger: 0
+        offset: {x: 0, y: 0, z: 0}
+        rotation: {x: 0, y: 0, z: 0}
+      glass:
+        impactFocus: 0.6666667
+        irregularity: 0.55
+        useImpactPoint: 0
+        impactPoint: {x: 0, y: 0, z: 0}
+        planeMode: 0
+        planeRotation: {x: 0, y: 0, z: 0}
+      impact:
+        direction: 0
+        radius: 0.22
+        depth: 0.65
+        spread: 0.55
+        useImpactPoint: 0
+        impactPoint: {x: 0, y: 0, z: 0}
+        useSurfaceNormal: 0
+        surfaceNormal: {x: 0, y: 0, z: 1}
+      slice:
+        iterations: 6
+        direction: 4
+        customDirection: {x: 0, y: 1, z: 0}
+        angleVariation: 35
+        offsetVariation: 0.2
+        useCustomPoint: 0
+        point: {x: 0, y: 0, z: 0}
+      hollowShell:
+        thickness: 0.1
+        placement: 0
+        detail: 0
+    _interiorMaterial: {fileID: 0}
+    _interiorUvScale: 1
+    _createdPieceCount: 0
+    _finalLeafPieceCount: 0
+    _maxFractureLevel: 0
+    _lastBuildMessage: 
+  _constraintRule:
+    _ruleId: b6c65e4645e74e538c7491c35472a3c3
+    _displayName: Internal Glue
+    _enabled: 1
+    _scope: 0
+    _groupAId: 
+    _groupBId: 
+    _hasGraphPosition: 0
+    _graphPosition: {x: 0, y: 0}
+    _pattern: 0
+    _contactDistance: 0.04
+    _maxLinksPerPiece: 6
+    _glueStrength: 3
+    _breakFromDamage: 1
+    _damageDurability: -1
+    _damageCascade: 0
+    _damageRetained: 0.5
+    _maximumDamageHops: 2
+    _minimumCascadeDamage: 0.1
+    _approximateChunkCount: 4
+    _boundaryVariation: 0.35
+    _seed: 12345
+    _useRandomSeed: 0
+    _noiseDefaultsInitialized: 0
+    _insideChunkStrength: 8000
+    _chunkBoundaryStrength: 1500
+    _insideChunkDamageDurability: -1
+    _chunkBoundaryDamageDurability: -1
+    _generatedConstraintCount: 0
+    _generatedChunkCount: 0
+    _isDirty: 1
+    _buildVersion: 0
+    _lastBuildMessage: Not built yet.
+  _anchorVolume:
+    _targetGroupId: 
+    _disconnected: 0
+    _hasGraphPosition: 0
+    _graphPosition: {x: 0, y: 0}
+    _anchorId: 33239b43b7e24e4fa2f5e773c60e0697
+    _displayName: Anchor
+    _localPosition: {x: 0, y: 0, z: 0}
+    _localEulerAngles: {x: 0, y: 0, z: 0}
+    _size: {x: 1, y: 1, z: 1}
+  _simulationSettings:
+    _graphNodes: []
+    _gravityScale: 1
+    _glueBackend: 0
+    _forces: []
+    _colliders: []
+  _simulationForce:
+    _targets:
+      _allGroups: 1
+      _groupIds: []
+    _interactionId: 33db0e5a58354efeba6dd76dbc1a9e0b
+    _displayName: Explosion 1
+    _enabled: 1
+    _time: 0.25
+    _type: 0
+    _localPosition: {x: 0, y: 0, z: 0}
+    _localDirection: {x: 0, y: 0, z: 1}
+    _strength: 12
+    _radius: 3
+    _upwardModifier: 0.35
+    _damage: 0
+  _simulationCollider:
+    _targets:
+      _allGroups: 1
+      _groupIds: []
+    _interactionId: eb95e27373314a8992f4b2d3c29955ba
+    _displayName: Projectile 1
+    _enabled: 1
+    _time: 0
+    _shape: 0
+    _localPosition: {x: 0, y: 1, z: -5}
+    _localEulerAngles: {x: 0, y: 0, z: 0}
+    _size: {x: 1, y: 1, z: 1}
+    _mass: 2
+    _localVelocity: {x: 0, y: 0, z: 10}
+    _localAngularVelocity: {x: 0, y: 0, z: 0}
+    _useGravity: 0
+    _impactMultiplier: 1
+    _impactRadius: 0.75
+  _effectBinding:
+    enabled: 1
+    eventType: 1
+    prefab: {fileID: 0}
+    scaleMultiplier: 1
+    positionOffset: {x: 0, y: 0, z: 0}
+    alignToSurface: 1
+    parentToActor: 0
+    destroyAfterSeconds: 5
+    cooldown: 0.05
+    spawnChance: 1
+    maximumAlive: 16
+    overrideSpawnControls: 1
+    minimumDistance: 0
+    eventControls:
+      minimumImpact: 0
+      mergeWindow: 0
+      mergeDistance: 0
+  _runtimeSettings:
+    initialState: 1
+    activationMode: 0
+    useGravityWhenActivated: 1
+    autoDeactivation:
+      enabled: 1
+      settleTime: 2
+      linearVelocityThreshold: 0.08
+      angularVelocityThreshold: 0.1
+    collisionImpact:
+      enabled: 1
+      minimumRelativeSpeed: 1
+      impulseMultiplier: 1
+      damageMultiplier: 0.25
+      propagationRadius: 1.5
+      routeDamageThroughGlue: 1
+      armingDelay: 0.1
+      pieceCooldown: 0.05
+    structuralSupport:
+      enabled: 0
+      regions: []
+    piecePhysics:
+      properties:
+        _totalMass: 1
+        _distribution: 0
+        _bounciness: 0
+        _friction: 0.6
+        _linearDamping: 0.05
+        _angularDamping: 0.1
+        _gravityScale: 1
+        _maxAngularSpeed: 25
+        _collisionDetection: 0
+        _massVariation: 0.1
+        _usesSourceMassByDefault: 1
+    constraints:
+      enabled: 0
+      pattern: 0
+      contactDistance: 0.08
+      maxLinksPerPiece: 8
+      breakForce: 5000
+      breakTorque: 3250
+      automaticBreakTorque: 1
+      breakFromDamage: 1
+      damageDurability: 5000
+      damageCascade: 0
+      damageRetained: 0.5
+      maximumDamageHops: 2
+      minimumCascadeDamage: 0.1
+      approximateChunkCount: 8
+      seed: 12345
+      insideChunkStrengthMultiplier: 1.5
+      chunkBoundaryStrengthMultiplier: 0.35
+    secondaryFracture:
+      enabled: 0
+      useAccurateFallback: 0
+      fractureSettings:
+        mode: 0
+        sourceGeometry: 2
+        quality: 0
+        calculation: 0
+        pieceCount: 24
+        useRandomSeed: 0
+        seed: 12345
+        minimumTriangleCount: 4
+        centerPivotToPiece: 1
+        interiorUvScale: 1
+        woodSplinter:
+          axis: 0
+          useCustomDirection: 0
+          localDirection: {x: 0, y: 1, z: 0}
+          stretch: 8
+        brick:
+          layoutMode: 0
+          divisions: {x: 4, y: 2, z: 1}
+          brickSize: {x: 0.5, y: 0.25, z: 0.5}
+          gap: 0.02
+          rowStagger: 0
+          offset: {x: 0, y: 0, z: 0}
+          rotation: {x: 0, y: 0, z: 0}
+        glass:
+          impactFocus: 0.6666667
+          irregularity: 0.55
+          useImpactPoint: 0
+          impactPoint: {x: 0, y: 0, z: 0}
+          planeMode: 0
+          planeRotation: {x: 0, y: 0, z: 0}
+        impact:
+          direction: 0
+          radius: 0.22
+          depth: 0.65
+          spread: 0.55
+          useImpactPoint: 0
+          impactPoint: {x: 0, y: 0, z: 0}
+          useSurfaceNormal: 0
+          surfaceNormal: {x: 0, y: 0, z: 1}
+        slice:
+          iterations: 6
+          direction: 4
+          customDirection: {x: 0, y: 1, z: 0}
+          angleVariation: 35
+          offsetVariation: 0.2
+          useCustomPoint: 0
+          point: {x: 0, y: 0, z: 0}
+        hollowShell:
+          thickness: 0.1
+          placement: 0
+          detail: 0
+      piecePhysics:
+        properties:
+          _totalMass: 1
+          _distribution: 0
+          _bounciness: 0
+          _friction: 0.6
+          _linearDamping: 0.05
+          _angularDamping: 0.1
+          _gravityScale: 1
+          _maxAngularSpeed: 25
+          _collisionDetection: 0
+          _massVariation: 0.1
+          _usesSourceMassByDefault: 1
+      damageThreshold: 25
+      maximumDepth: 1
+      minimumPieceSize: 0.05
+      maximumTotalPieces: 128
+      childConstraints:
+        enabled: 0
+        pattern: 0
+        contactDistance: 0.08
+        maxLinksPerPiece: 2
+        breakForce: 10
+        breakTorque: 3250
+        automaticBreakTorque: 1
+        breakFromDamage: 1
+        damageDurability: 10
+        damageCascade: 0
+        damageRetained: 0.5
+        maximumDamageHops: 2
+        minimumCascadeDamage: 0.1
+        approximateChunkCount: 8
+        seed: 12345
+        insideChunkStrengthMultiplier: 1.5
+        chunkBoundaryStrengthMultiplier: 0.35
+    damagePropagation:
+      enabled: 0
+      falloffPerHop: 0.5
+      maximumHops: 2
+      minimumDamage: 0.1
+  _vatExportSettings:
+    _outputFolder: Assets/RVFX/Generated/BakedDestruction
+    _outputName: DestructionRig_BakedDestruction
+    _playbackPivotMode: 0
+    _customPivotWorldPosition: {x: 0, y: 0, z: 0}
+    _customPivotInitialized: 0
+    _fps: 30
+    _baseBakeMode: 0
+    _adaptiveLandingSurfaces: []
+    _adaptiveTargetHeight: 0
+    _duration: 4
+    _dropHeight: 5
+    _renderPipelineTarget: 0
+    _includeMeshDebris: 0
+    _meshDebrisMeshes: []
+    _meshDebrisMinImpulse: 2
+    _meshDebrisMinPerImpact: 12
+    _meshDebrisMaxPerImpact: 32
+    _meshDebrisMaxLive: 4096
+    _debrisPointBurstDefaultsVersion: 1
+    _meshDebrisImpactCooldown: 0.04
+    _meshDebrisLifetime: 4
+    _meshDebrisKeepUntilBakeEnd: 0
+    _meshDebrisRadius: 0.035
+    _meshDebrisMass: 0.02
+    _meshDebrisScaleMin: 0.75
+    _meshDebrisScaleMax: 1.35
+    _meshDebrisSpeedMin: 1.5
+    _meshDebrisSpeedMax: 4
+    _meshDebrisScatter: 45
+    _meshDebrisInheritVelocity: 0.65
+    _meshDebrisVelocityVariation: 0.2
+    _meshDebrisUpwardBias: 0
+    _meshDebrisCollisions: 1
+    _meshDebrisBounciness: 0.2
+    _meshDebrisFriction: 0.35
+    _meshDebrisLinearDrag: 0.15
+    _meshDebrisAngularDrag: 2
+    _debrisPointDragDefaultsVersion: 1
+    _lastPackageFolder: 
+  _packageExportSettings:
+    _outputFolder: Assets/RVFX/Generated/RigPackages
+    _outputName: DestructionRig_RuntimeRig
+    _startBehavior: 0
+    _includeSimulationForces: 1
+    _includeSimulationColliders: 1
+    _playInteractionsOnStart: 0
+    _includeRuntimeReset: 1
+    _resetWhenDisabled: 0
+    _lastPackageFolder: 
+    _lastPrefabPath: 
+  _initializeRuntimeActorOnAwake: 0
+  _showFractureOnPlay: 1
+  _enableSupportSolverWhenAnchorsExist: 1

@@ -1,0 +1,55 @@
+// Generated from Source/Editor/Full. Do not edit this template directly.
+#if UNITY_EDITOR
+using System.Collections.Generic;
+using UnityEditor;
+using UnityEngine;
+
+namespace RVFX.DestructionSystem
+{
+    internal sealed partial class RVFXPortablePlaybackEditor
+    {
+        internal static List<ParticleSystem> FindEffectScalingWarnings(RVFXPieceTransformPlayback playback)
+        {
+            var result = new List<ParticleSystem>();
+            if (!playback.TryValidatePlaybackTransform(out _) ||
+                Mathf.Abs(RVFXPlaybackTransformValidation.WorldScale(playback.transform) - 1) <= RVFXPlaybackTransformValidation.Tolerance)
+                return result;
+            var data = playback.playbackEffects;
+            if (data == null) return result;
+            var seen = new HashSet<GameObject>();
+            void Inspect(RVFXDestructionEffectBinding binding)
+            {
+                if (binding == null || !binding.enabled || binding.prefab == null || !seen.Add(binding.prefab)) return;
+                foreach (var ps in binding.prefab.GetComponentsInChildren<ParticleSystem>(true))
+                    if (ps.main.scalingMode != ParticleSystemScalingMode.Hierarchy) result.Add(ps);
+            }
+            if (data.filterVersion > 0)
+            {
+                if (data.filters != null) foreach (var filter in data.filters)
+                    if (filter != null && filter.enabled && filter.effects != null)
+                        foreach (var binding in filter.effects) Inspect(binding);
+            }
+            else if (data.bindings != null) foreach (var binding in data.bindings) Inspect(binding);
+            return result;
+        }
+
+        private void DrawTransformValidation(RVFXPieceTransformPlayback playback)
+        {
+            if (!playback.TryValidatePlaybackTransform(out string error))
+                EditorGUILayout.HelpBox(error + "\nPlayback and scrubbing are blocked until the Transform is valid.", MessageType.Error);
+            var warnings = FindEffectScalingWarnings(playback);
+            if (warnings.Count == 0) return;
+            var message = new System.Text.StringBuilder("Effect scaling mismatch. Set Scaling Mode to Hierarchy on the following Particle Systems so they scale with Playback (including nested children):");
+            foreach (var ps in warnings)
+                message.Append("\n• ").Append(AnimationUtility.CalculateTransformPath(ps.transform, null)).Append(" — ").Append(ps.main.scalingMode);
+            message.Append("\nPlayback is allowed. Keep Local/Shape only if independent effect sizing is intentional.");
+            EditorGUILayout.HelpBox(message.ToString(), MessageType.Warning);
+            if (GUILayout.Button("Select Particle System"))
+            {
+                Selection.activeObject = warnings[0];
+                EditorGUIUtility.PingObject(warnings[0]);
+            }
+        }
+    }
+}
+#endif

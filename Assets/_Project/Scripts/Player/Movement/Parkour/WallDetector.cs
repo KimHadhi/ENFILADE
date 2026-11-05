@@ -28,7 +28,7 @@ public sealed class WallDetector
     {
         best = default;
         float bestScore = float.NegativeInfinity;
-        float entry = EntryUnits * ctx.HullUnit - CastRadius;
+        float entry = EntryUnits * ctx.HeightUnit - CastRadius;
         foreach (float angle in EntryAngles)
         {
             Vector3 direction = Quaternion.AngleAxis(angle, Vector3.up) * ctx.transform.forward;

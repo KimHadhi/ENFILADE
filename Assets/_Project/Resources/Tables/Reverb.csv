@@ -1,0 +1,12 @@
+﻿key,value,note
+Gun.rayLength,50.8,총소리 잔향: 쏜 사람 발밑에서 9방향(위·앞뒤좌우·위쪽 대각 4)으로 방을 재는 광선의 길이(m). 원본 Accurate Gun Reverb(워크숍 3629393613)의 2000유닛
+Gun.outdoorHeight,12.7,위쪽 광선이 이보다 멀리 가면 실외로 본다(m). 원본 500유닛. 원본도 하늘을 알 방법이 없어 이렇게 어림한다
+Gun.closeSize,3.81,방 크기가 이보다 작으면 좁은 실내 꼬리(IndoorsClose)(m). 원본 150유닛. 방 크기는 9방향 거리를 정렬해 양끝 2개씩 버린 5개의 합을 7로 나눈 값(원본 그대로)이라 실제 평균의 5/7이다
+Gun.distantSize,7.62,이보다 작으면 넓은 실내 꼬리(IndoorsDistant). 크면 실외는 실외 꼬리(OutdoorsClose)이고 실내는 아주 큰 실내(모든 총이 Heavy의 IndoorsDistant)(m). 원본 300유닛
+Gun.cellSize,2,이 크기의 칸 안에서 쏜 총은 처음 잰 값을 같이 쓴다(m). 원본은 길찾기 영역마다 기억하지만 유니티는 영역 번호가 없어 칸으로 대신한다
+Gun.floorSearch,3,쏜 자리에서 이만큼 아래까지 발밑 바닥을 찾는다(m). 원본은 발(origin)에서 잰다
+Gun.footLift,0.05,광선이 바닥에서 이만큼 위에서 출발한다(m)
+Gun.ownVoices,8,내 총의 꼬리가 동시에 날 수 있는 수. 넘치면 가장 오래된 꼬리가 끊긴다(Source 엔진도 채널이 차면 이렇게 끊는다). 바꾸면 다음 맵부터
+Gun.otherVoices,8,다른 사람 총의 꼬리가 동시에 날 수 있는 수. 바꾸면 다음 맵부터
+Gun.volume,1,총소리 대비 꼬리 크기. 꼬리마다의 크기는 Sounds.csv의 Guns/Reverb/... 행
+Area.fadeTime,0.5,구역 리버브(ReverbArea): 다른 구역으로 들어가거나 나올 때 리버브가 바뀌는 시간(초). 0이면 바로 바뀐다

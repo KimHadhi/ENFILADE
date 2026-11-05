@@ -20,15 +20,30 @@ public sealed class PlayerBodyProfile : ScriptableObject
         private float ledgeHandSpacingScale = 1f;
         [SerializeField, Range(0f, 2f), Tooltip("Scales how far the measured palm rests inside a ledge edge for this character.")]
         private float ledgePalmInsetScale = 1f;
+        [SerializeField, Tooltip("Colour sets offered on the character screen; the first is the default. " +
+            "Empty: the model as imported is the only look.")]
+        private SkinVariant[] variants = Array.Empty<SkinVariant>();
 
         public string Id => id;
         public string DisplayName => string.IsNullOrEmpty(displayName) ? id : displayName;
         public GameObject Model => model;
         public float LedgeHandSpacingScale => Mathf.Clamp(ledgeHandSpacingScale, .5f, 1.5f);
         public float LedgePalmInsetScale => Mathf.Clamp(ledgePalmInsetScale, 0f, 2f);
+        public IReadOnlyList<SkinVariant> Variants => variants ?? Array.Empty<SkinVariant>();
+
+        /// <summary>The colour set with this id, else the first; null when the skin has none.</summary>
+        public SkinVariant VariantOf(string variantId)
+        {
+            if (variants == null || variants.Length == 0) return null;
+            foreach (var variant in variants)
+                if (variant != null && string.Equals(variant.Id, variantId, StringComparison.Ordinal)) return variant;
+            return variants[0];
+        }
     }
 
     public const string ResourcePath = "Characters/PlayerBody";
+    // Joins the skin and its colour set in what other players receive. Neither id may contain it.
+    private const char LookSeparator = '#';
 
     [Tooltip("Humanoid character model from Art/Models/Characters.")]
     [SerializeField] private GameObject model;
@@ -40,6 +55,8 @@ public sealed class PlayerBodyProfile : ScriptableObject
     [SerializeField] private string[] firstPersonShadowOnly = { "Head", "Hair", "HeadAccessories" };
 
     public Skin CurrentSkin => SkinOf(GameSettings.Current.characterSkin);
+    /// <summary>The colour set this PC wears on <see cref="CurrentSkin"/>; null when it has none.</summary>
+    public SkinVariant CurrentVariant => CurrentSkin?.VariantOf(GameSettings.Current.characterVariant);
     public GameObject Model => ModelOf(CurrentSkin);
     public IReadOnlyList<Skin> Skins => skins;
     public IReadOnlyList<AnimationClip> Clips => clips;
@@ -62,6 +79,19 @@ public sealed class PlayerBodyProfile : ScriptableObject
     }
 
     public GameObject ModelOf(Skin skin) => skin?.Model ?? model;
+
+    /// <summary>A skin and its colour set as one string, "skin#variant", or the skin alone when there is no colour set.</summary>
+    public static string LookId(string skinId, string variantId) =>
+        string.IsNullOrEmpty(variantId) ? skinId ?? "" : (skinId ?? "") + LookSeparator + variantId;
+
+    /// <summary>Splits what <see cref="LookId"/> made. A plain skin id, as older builds send, has no colour set.</summary>
+    public static void SplitLook(string look, out string skinId, out string variantId)
+    {
+        look ??= "";
+        int split = look.IndexOf(LookSeparator);
+        skinId = split < 0 ? look : look.Substring(0, split);
+        variantId = split < 0 ? "" : look.Substring(split + 1);
+    }
 
     public AnimationClip Find(string clipName)
     {

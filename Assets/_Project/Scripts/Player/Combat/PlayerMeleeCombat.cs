@@ -19,11 +19,16 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
     [SerializeField, Range(0f, 1f), Tooltip("Punches charged at least this far land with the heavy hit sound.")]
     private float heavyPunchCharge = .6f;
     [Header("Guard / Parry")]
-    [Tooltip("패링/가드 성공 없이 연속 재입력했을 때의 단계별 패링 시간(게임 시간 초).")]
-    [SerializeField] private float[] parryWindowDurations = { .35f, .20f, .10f, .05f };
-    [SerializeField, Min(0f)] private float spamResetDelay = .8f;
+    [Tooltip("Parry window per press, game seconds (Sekiro's deflect: 12 frames, then shorter each time the guard is let go and pressed again soon, down to 4 frames and then none). 0 means that press only guards.")]
+    [SerializeField] private float[] parryWindowDurations = { .2f, .133f, .067f, 0f };
+    [SerializeField, Min(0f), Tooltip("Guard left alone this long (s) gives the full window back, as a parry or a blocked hit does (Sekiro: 30 frames).")]
+    private float spamResetDelay = .5f;
     [SerializeField, Min(0f)] private float guardInputBuffer = .12f;
     [SerializeField, Range(30f, 180f)] private float guardAngle = 150f;
+    [SerializeField, Range(0f, 1f), Tooltip("Holding the guard up, the legs go at most this share of the walk speed, so guarding all the time costs something.")]
+    private float guardMoveShare = .5f;
+    [SerializeField, Min(0f), Tooltip("After a parry's hit stop the feet stay planted this much longer (real s). Punching, guarding and dodging still work.")]
+    private float parryRootSeconds = .15f;
     [Header("V: Shove / Guard Break")]
     [SerializeField, Min(0.05f)] private float holdThreshold = 0.14f;
     [SerializeField, Min(0.1f)] private float guardBreakReach = 2.2f;
@@ -43,8 +48,9 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
     private MeleeCombatTarget target;
     private Collider targetCollider;
     private float chargeTime, shoveTime, cooldown, shoveRest, grabTime, grabRecoveryRemaining, lungeRemaining, punchCharge;
-    private float parryRemaining, guardBufferRemaining, guardIdleTime;
+    private float parryRemaining, guardBufferRemaining, guardIdleTime, rootUntil = float.NegativeInfinity;
     private int spamCount;
+    private ParryFeedback parryFeedback;
     private bool charging, shovePending, grabConnected, guardAttemptHeld, defenseConnected, pendingWhiff, punchLanded;
     private Vector3 lungeDirection;
     private readonly MeleeAttackSweep punchSweep = new MeleeAttackSweep();
@@ -61,7 +67,20 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
         || player.CurrentState == PlayerMovement.MovementState.DashPush
         || player.IsLandingRecovery;
     public bool IsActive => isActiveAndEnabled && slots != null && slots.UsesFists && player != null && player.IsInitialized && player.DamageReceiver.IsAlive;
+    /// <summary>The feet are planted after a parry (real time): the legs give no speed, the hands are free.</summary>
+    public bool IsRooted => IsActive && Time.unscaledTime < rootUntil;
     public event Action<float> Punched;
+
+    /// <summary>
+    /// The speed the legs may go with the hands doing what they are doing (LocomotionState asks): nothing while rooted
+    /// after a parry, a slow walk with the guard held up (as Sekiro's guard walk), otherwise speed as it is.
+    /// </summary>
+    public float LimitMoveSpeed(float speed)
+    {
+        if (!IsActive) return speed;
+        if (IsRooted) return 0f;
+        return IsGuarding ? Mathf.Min(speed, player.WalkSpeed * guardMoveShare) : speed;
+    }
 
     private void OnEnable()
     {
@@ -74,6 +93,7 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
         if (Application.isPlaying && camera != null && GetComponent<FistsView>() == null) gameObject.AddComponent<FistsView>();
         fistAudio = GetComponent<PlayerFistAudio>();
         if (fistAudio == null && Application.isPlaying) fistAudio = gameObject.AddComponent<PlayerFistAudio>();
+        if (fistAudio != null) fistAudio.Prepare();
         CancelAction();
     }
     /// <summary>On someone else's copy: their guard went up or down.</summary>
@@ -190,8 +210,9 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
     {
         int last = parryWindowDurations != null ? parryWindowDurations.Length - 1 : -1;
         spamCount = Mathf.Clamp(spamCount + (pendingWhiff ? 1 : 0), 0, Mathf.Max(0, last));
-        float duration = last >= 0 ? parryWindowDurations[spamCount] : .35f;
-        parryRemaining = float.IsNaN(duration) || float.IsInfinity(duration) ? .35f : Mathf.Max(.001f, duration);
+        float duration = last >= 0 ? parryWindowDurations[spamCount] : .2f;
+        // A window of 0 is Sekiro's mashing floor: that press only guards.
+        parryRemaining = float.IsNaN(duration) || float.IsInfinity(duration) ? .2f : Mathf.Max(0f, duration);
         pendingWhiff = !held; defenseConnected = false; guardAttemptHeld = held;
         IsGuarding = held; guardIdleTime = guardBufferRemaining = 0f;
         CancelOffense(); cooldown = 0f;
@@ -241,9 +262,18 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
         if (IsActive) { fistAudio?.PlaySwing(); if (landed) fistAudio?.PlayHeavyHit(); }
         Punched?.Invoke(1f);
     }
+    /// <summary>The counter's back elbow, driven back on the attacker's side (+1 right): the fist pulls back past the shoulder.</summary>
+    public event Action<int> Elbowed;
+    public void ShowCounterElbow(bool landed, int side)
+    {
+        if (IsActive) { fistAudio?.PlaySwing(); if (landed) fistAudio?.PlayHeavyHit(); }
+        Elbowed?.Invoke(side);
+    }
     private void Shove()
     {
         shoveSweep.Begin(player, aim, 3f, hitLayers, player.AbilitySettings.shoveActiveTime);
+        // Standing still, it lunges at someone just out of reach, as the gun's shove does (ShoveMoves).
+        ShoveMoves.For(player).Lunge(aim, player.AbilitySettings.shoveSweepReach, hitLayers);
     }
     public bool TryDefend(DamageHit hit, out DamageResult result)
     {
@@ -260,7 +290,13 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
         if (parry)
         {
             parryRemaining = 0f;
-            hit.Source?.GetComponentInParent<MeleeCombatTarget>()?.ApplyPostureDamage(25f, 0.8f);
+            var attacker = hit.Source != null ? hit.Source.GetComponentInParent<MeleeCombatTarget>() : null;
+            attacker?.ApplyPostureDamage(25f, 0.8f);
+            // The deflect plants the feet: the hit stop holds everything, then the legs stay put a moment longer.
+            if (parryFeedback == null) parryFeedback = GetComponent<ParryFeedback>();
+            float stop = parryFeedback != null ? parryFeedback.HitStopFor(attacker != null && attacker.IsStaggered) : 0f;
+            rootUntil = Time.unscaledTime + stop + parryRootSeconds;
+            player.HorizontalVelocity = Vector3.zero;
         }
         return true;
     }

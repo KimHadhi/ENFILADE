@@ -8,15 +8,18 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: ess01
-  m_Shader: {fileID: 4800000, guid: d9aa87b37d4dff541a1a1b2b5f42319a, type: 3}
+  m_Shader: {fileID: 4800000, guid: 35aeffddfdb15804da57d757337013cd, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
   m_InvalidKeywords:
+  - MOCHIE_PBR
+  - POI_SUBSURFACESCATTERING
+  - PROP_LIGHTINGSHADOWMASKS
   - VIGNETTE_MASKED
   - _EMISSION
   - _GLOSSYREFLECTIONS_OFF
-  - _LIGHTINGMODE_TEXTURERAMP
+  - _LIGHTINGMODE_SHADEMAP
   - _RIM2STYLE_POIYOMI
   - _RIMSTYLE_POIYOMI
   - _STOCHASTICMODE_DELIOT_HEITZ
@@ -27,13 +30,12 @@ Material:
   m_CustomRenderQueue: 2010
   stringTagMap:
     AllLockedGUIDS: b02bb88b3a82b3b4497f0c5fd14b4e2a
-    OriginalKeywords: VIGNETTE_MASKED _EMISSION _GLOSSYREFLECTIONS_OFF _LIGHTINGMODE_TEXTURERAMP
-      _RIM2STYLE_POIYOMI _RIMSTYLE_POIYOMI _STOCHASTICMODE_DELIOT_HEITZ _STYLIZEDREFLECTIONMODE_UNITYCHAN
+    OriginalKeywords: MOCHIE_PBR POI_SUBSURFACESCATTERING PROP_LIGHTINGSHADOWMASKS
+      VIGNETTE_MASKED _EMISSION _GLOSSYREFLECTIONS_OFF _LIGHTINGMODE_SHADEMAP _RIM2STYLE_POIYOMI
+      _RIMSTYLE_POIYOMI _STOCHASTICMODE_DELIOT_HEITZ _STYLIZEDREFLECTIONMODE_UNITYCHAN
     OriginalShader: .poiyomi/Poiyomi Toon URP
     OriginalShaderGUID: 63f1a49520e88be41888c86298e53c28
     RenderType: Opaque
-    _stripped_tex__1st_ShadeMap: e054f838c2921fb4b9b537d119f25af1
-    _stripped_tex__2nd_ShadeMap: e054f838c2921fb4b9b537d119f25af1
     _stripped_tex__GlitterMask: 69e96cda57b72ec449008a8378e21893
     _stripped_tex__MainColorAdjustTexture: 69e96cda57b72ec449008a8378e21893
     thry_locked_rename_suffix: ess01
@@ -42,6 +44,14 @@ Material:
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs:
+    - _1st_ShadeMap:
+        m_Texture: {fileID: 2800000, guid: e054f838c2921fb4b9b537d119f25af1, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _2nd_ShadeMap:
+        m_Texture: {fileID: 2800000, guid: e054f838c2921fb4b9b537d119f25af1, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     - _ALDecalColorMask:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
@@ -319,7 +329,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _LightingShadowMasks:
-        m_Texture: {fileID: 0}
+        m_Texture: {fileID: 2800000, guid: e7853ac9b2ccfcb4887f3e66623aae08, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _LookAtMask:
@@ -395,7 +405,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MochieMetallicMaps:
-        m_Texture: {fileID: 0}
+        m_Texture: {fileID: 2800000, guid: 1679d2f784d98c434944666a1d4c95ed, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MochieReflCube:
@@ -1657,7 +1667,7 @@ Material:
     - _EmissionScrollingVertexColor1: 0
     - _EmissionScrollingVertexColor2: 0
     - _EmissionScrollingVertexColor3: 0
-    - _EmissionStrength: 1
+    - _EmissionStrength: 2.5
     - _EmissionStrength1: 0
     - _EmissionStrength2: 0
     - _EmissionStrength3: 0
@@ -2280,13 +2290,13 @@ Material:
     - _LightingAdditiveGradientStart: 0
     - _LightingAdditiveLimit: 1
     - _LightingAdditiveLimitIntensity: 0
-    - _LightingAdditiveLimited: 1
+    - _LightingAdditiveLimited: 0
     - _LightingAdditiveMaxIntensity: 1
     - _LightingAdditiveMonochromatic: 0
     - _LightingAdditivePassthrough: 0.5
     - _LightingAdditiveType: 1
     - _LightingCap: 1
-    - _LightingCapEnabled: 1
+    - _LightingCapEnabled: 0
     - _LightingCapLuminance: 0
     - _LightingCastedShadows: 0
     - _LightingCleanCastedShadows: 0
@@ -2312,14 +2322,14 @@ Material:
     - _LightingHSLIntensity: 1
     - _LightingIgnoreAmbientColor: 0
     - _LightingIndirectColorMode: 1
-    - _LightingIndirectUsesNormals: 0
+    - _LightingIndirectUsesNormals: 1
     - _LightingLightVolumesNormalBias: 0
     - _LightingLightVolumesSpecular: 1
     - _LightingMapMode: 0
     - _LightingMinLightBrightness: 0
     - _LightingMinShadowBrightnessRatio: 0
     - _LightingMirrorVertexLightingEnabled: 1
-    - _LightingMode: 0
+    - _LightingMode: 4
     - _LightingMonochromatic: 0
     - _LightingMulitlayerNonLinear: 1
     - _LightingOnlyUnityShadows: 0
@@ -2651,7 +2661,7 @@ Material:
     - _MirrorTextureEnabled: 0
     - _MirrorTextureForceEnabled: 0
     - _MirrorTextureUV: 0
-    - _MochieBRDF: 0
+    - _MochieBRDF: 1
     - _MochieForceFallback: 0
     - _MochieGSAAEnabled: 1
     - _MochieLitFallback: 1
@@ -2665,14 +2675,14 @@ Material:
     - _MochieMetallicMapsStochastic: 0
     - _MochieMetallicMapsUV: 0
     - _MochieMetallicMasksUV: 0
-    - _MochieMetallicMultiplier: 0
+    - _MochieMetallicMultiplier: 0.58
     - _MochieReflectionMaskInvert: 0
     - _MochieReflectionStrength: 1
     - _MochieReflectionStrengthGlobalMask: 0
     - _MochieReflectionStrengthGlobalMaskBlendType: 2
     - _MochieReflectionTintThemeIndex: 0
     - _MochieRoughnessMapInvert: 0
-    - _MochieRoughnessMultiplier: 1
+    - _MochieRoughnessMultiplier: 0.53
     - _MochieRoughnessMultiplier2: 1
     - _MochieSmoothnessGlobalMask: 0
     - _MochieSmoothnessGlobalMaskBlendType: 2
@@ -3136,8 +3146,8 @@ Material:
     - _RimBaseColorMix: 0
     - _RimBiasIntensity: 0
     - _RimBlendMode: 1
-    - _RimBlendStrength: 1
-    - _RimBlur: 0.65
+    - _RimBlendStrength: 0.72
+    - _RimBlur: 1
     - _RimBorder: 0.5
     - _RimBrighten: 0
     - _RimBrightness: 1
@@ -3178,20 +3188,20 @@ Material:
     - _RimMaskUV: 0
     - _RimNormalStrength: 1
     - _RimPoi2BlendMode: 0
-    - _RimPoiBlendMode: 0
+    - _RimPoiBlendMode: 1
     - _RimPower: 1
     - _RimShadowMask: 0.5
     - _RimShadowMaskInvert: 0
     - _RimShadowMaskRampType: 0
-    - _RimShadowMaskStrength: 1
-    - _RimShadowToggle: 0
-    - _RimShadowWidth: 0
+    - _RimShadowMaskStrength: 0
+    - _RimShadowToggle: 1
+    - _RimShadowWidth: 0.08
     - _RimSharpness: 0
     - _RimStrength: 0
     - _RimStyle: 0
     - _RimTexUV: 0
     - _RimVRParallaxStrength: 1
-    - _RimWidth: 0.628
+    - _RimWidth: 0.2763
     - _RimWidthNoiseStrength: 0.1
     - _RimWidthNoiseTextureUV: 0
     - _RoughnessAnisotropy: 1
@@ -3204,15 +3214,15 @@ Material:
     - _SSSDistortion: 1
     - _SSSGlobalMaskBlendType: 2
     - _SSSGlobalMaskIndex: 0
-    - _SSSLightColorMix: 0
+    - _SSSLightColorMix: 1
     - _SSSPower: 5
     - _SSSSCale: 0.25
-    - _SSSShadowStrength: 0.25
-    - _SSSSpread: 2
-    - _SSSStrength: 0.5
+    - _SSSShadowStrength: 0
+    - _SSSSpread: 5
+    - _SSSStrength: 0.25
     - _SSSThicknessMapChannel: 0
     - _SSSThicknessMapUV: 0
-    - _SSSThicknessMod: 0
+    - _SSSThicknessMod: -1
     - _SampleWorld: 0
     - _Saturation: 0
     - _ScrollingEmission: 0
@@ -3383,7 +3393,7 @@ Material:
     - _StylizedSpecularInvertMask: 0
     - _StylizedSpecularNormalStrength: 1
     - _StylizedSpecularStrength: 1
-    - _SubsurfaceScattering: 0
+    - _SubsurfaceScattering: 1
     - _TextBevelEnabled: 0
     - _TextBevelLightAngle: 135
     - _TextBevelStrength: 1

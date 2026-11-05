@@ -7,7 +7,8 @@ using MovementState = PlayerMovement.MovementState;
 /// doesn't wait for it, so the further ahead it draws the less the body holds back (EdgeHoldBack), and once the arm runs out
 /// the hand comes off for good and the clip carries on. A step up brings no hand near, so none plants; a one-handed vault
 /// plants one. Climbing from a hang the hands carry the body instead (PlayerBody.Heave). Hanging, the look clips take one
-/// hand away, and that hand lets go.
+/// hand away, and that hand lets go. Over a high wall a hand that has pushed off stays no higher than the top it left
+/// until the clip has played out (KeepPushedHandsDown). The high moves reach for the edge from their start (ReachesAhead).
 /// </summary>
 public sealed partial class PlayerBodyHands
 {
@@ -15,6 +16,9 @@ public sealed partial class PlayerBodyHands
     private float edgeCatch = 1f;
     [SerializeField, Min(.01f), Tooltip("How long a hand takes to settle on the edge or come off it (s).")]
     private float edgeEase = .1f;
+    [SerializeField, Min(.01f), Tooltip("As a high vault or a high climb begins, how long a hand takes to reach for its place on the edge (s), "
+        + "instead of following its clip, whose hands start over the head. About the capsule's own way to the wall.")]
+    private float edgeReach = .2f;
     [SerializeField, Range(.5f, 1f), Tooltip("A planted arm stretches to this share of its length; past that the body stays back for it.")]
     private float edgeArmUse = .95f;
     [SerializeField, Tooltip("How far behind the capsule the body stays for planted hands, in arm lengths: it starts giving up at the first and has given up at the second.")]
@@ -30,6 +34,10 @@ public sealed partial class PlayerBodyHands
     private enum EdgeHand { Waiting, Planted, Gone }
     private readonly EdgeHand[] edgeHands = new EdgeHand[2];
     private readonly float[] edgeShares = new float[2], edgeAway = new float[2];
+    // Per hand: how far the fingers close on the edge. A hand still reaching for it keeps the clip's fingers.
+    private readonly float[] edgeContacts = new float[2];
+    // Per hand: the wrist height where it pushed off a high wall (infinite when it hasn't), and how far it is held down.
+    private readonly float[] pushedFrom = { float.PositiveInfinity, float.PositiveInfinity }, pushDrops = new float[2];
     private MovementState edgeState;
     private Vector3 edgeHeld;
     private float edgeWaits = 1f, shoulderSpan;
@@ -37,6 +45,14 @@ public sealed partial class PlayerBodyHands
     private static bool Climbing(MovementState state) => state == MovementState.Vault || state == MovementState.Mantle;
     // The quick vaults lift the feet over the top on their own arc, which holding the body back would drag through it.
     private static bool ClearsTop(VaultKind kind) => kind == VaultKind.Over || kind == VaultKind.Kong;
+    // The high vault over a wall: the body is held back for planted hands, so they let go late, with the body already well
+    // over the top, and its clip then throws the hand that pushed off up past the face, where a thin wall leaves nothing to
+    // press. Measured on vaultoverhigh: the right hand leaves the top a third of the way in and rises to head height.
+    private static bool PushesOver(MovementState state, VaultKind kind) => state == MovementState.Vault && !ClearsTop(kind);
+    // The high moves first take the capsule to the wall (ObstacleTarget.Approach), and both their clips start with the hands
+    // over the head and bring them down onto the top only later (measured on vaultoverhigh and vaultontohigh), so the hands
+    // reached up into the air above and beyond the top before they met it. Here they reach for their place from the start.
+    private static bool ReachesAhead(VaultKind kind) => kind == VaultKind.OverHigh || kind == VaultKind.OntoHigh;
 
     private void ResetEdge()
     {
@@ -46,7 +62,8 @@ public sealed partial class PlayerBodyHands
         for (int hand = 0; hand < 2; hand++)
         {
             edgeHands[hand] = EdgeHand.Waiting;
-            edgeShares[hand] = restLifts[hand] = 0f;
+            edgeShares[hand] = edgeContacts[hand] = restLifts[hand] = pushDrops[hand] = 0f;
+            pushedFrom[hand] = float.PositiveInfinity;
         }
     }
 
@@ -62,7 +79,7 @@ public sealed partial class PlayerBodyHands
         for (int hand = 0; hand < 2; hand++)
         {
             edgeHands[hand] = hung ? EdgeHand.Planted : EdgeHand.Waiting;
-            edgeAway[hand] = float.PositiveInfinity;
+            edgeAway[hand] = pushedFrom[hand] = float.PositiveInfinity;
         }
     }
 
@@ -80,7 +97,8 @@ public sealed partial class PlayerBodyHands
     {
         int hand = isLeft ? 0 : 1;
         var state = player.CurrentState;
-        float wanted = edgeShares[hand];
+        float wanted = edgeShares[hand], ease = edgeEase;
+        bool reaching = false;
         if (state == MovementState.LedgeHang) wanted = 1f - body.HangLetGo(isLeft);
         else if (Climbing(state))
         {
@@ -91,12 +109,54 @@ public sealed partial class PlayerBodyHands
             float spare = ClearsTop(kind) ? 1f : edgeArmUse + edgeHoldBack.x;
             if (edgeHands[hand] == EdgeHand.Waiting && stretch <= spare && away <= edgeCatch * reach && away >= edgeAway[hand])
                 edgeHands[hand] = EdgeHand.Planted;
+            // Reaching ahead (ReachesAhead), the hand is on its way already, and it holds once it is there and the arm can take it.
+            reaching = edgeHands[hand] == EdgeHand.Waiting && ReachesAhead(kind);
+            if (reaching && edgeShares[hand] >= 1f && stretch <= 1f)
+            {
+                edgeHands[hand] = EdgeHand.Planted;
+                reaching = false;
+            }
+            if (reaching) ease = edgeReach;
             edgeAway[hand] = away;
             bool ranOut = kind == VaultKind.Heave ? body.HeaveHandsFree : stretch >= 1f && (ClearsTop(kind) || edgeWaits < StillWaiting);
-            if (edgeHands[hand] == EdgeHand.Planted && ranOut) edgeHands[hand] = EdgeHand.Gone;
-            wanted = edgeHands[hand] == EdgeHand.Planted ? 1f : 0f;
+            if (edgeHands[hand] == EdgeHand.Planted && ranOut)
+            {
+                edgeHands[hand] = EdgeHand.Gone;
+                if (PushesOver(state, kind)) pushedFrom[hand] = wrist.y;
+            }
+            wanted = edgeHands[hand] == EdgeHand.Planted || reaching ? 1f : 0f;
         }
-        return edgeShares[hand] = Mathf.MoveTowards(edgeShares[hand], wanted, Time.deltaTime / edgeEase);
+        float share = edgeShares[hand] = Mathf.MoveTowards(edgeShares[hand], wanted, Time.deltaTime / ease);
+        // The fingers close on the edge once the hand is there; reaching for it, they stay as the clip has them.
+        bool onEdge = !Climbing(state) || edgeHands[hand] != EdgeHand.Waiting;
+        edgeContacts[hand] = Mathf.MoveTowards(edgeContacts[hand], onEdge ? share : 0f, Time.deltaTime / edgeEase);
+        return share;
+    }
+
+    /// <summary>
+    /// A hand that pushed off a high wall (PushesOver) stays no higher than the top it left while the vault and its clip's
+    /// play-out last, instead of rising into the air ahead of the face. It is held down just as far as the clip lifts it, so
+    /// nothing jumps, and let go eased afterwards. A hand on the gun, the fists, a rung or a bar is left alone.
+    /// Not in Beatrun, whose clip lifts that hand the same way; the user saw it press on air (2026-11-06).
+    /// </summary>
+    private void KeepPushedHandsDown(float dt)
+    {
+        bool over = !body.IsDead && (player.CurrentState == MovementState.Vault || body.PlaysOutObstacle);
+        Lower(left, true);
+        Lower(right, false);
+
+        void Lower(ArmIK arm, bool isLeft)
+        {
+            int hand = isLeft ? 0 : 1;
+            if (!over) pushedFrom[hand] = float.PositiveInfinity;
+            bool held = weights[(int)Hold.Gun] * (isLeft ? 1f - leftOffGun : 1f) > .001f || weights[(int)Hold.Fists] > .001f
+                || weights[(int)Hold.Ladder] > .001f || weights[(int)Hold.Bar] > .001f;
+            pushDrops[hand] = !held && !float.IsPositiveInfinity(pushedFrom[hand])
+                ? Mathf.Max(0f, arm.Hand.position.y - pushedFrom[hand])
+                : Mathf.MoveTowards(pushDrops[hand], 0f, RestLiftSpeed * arm.Reach * dt);
+            if (pushDrops[hand] > 0f)
+                arm.Solve(arm.Hand.position + Vector3.down * pushDrops[hand], arm.Hand.rotation, arm.Elbow, 1f, 0f, shoulderReach);
+        }
     }
 
     /// <summary>How far the clip has straightened the arms over the hands, as a share of their length; none with the shoulders below them.</summary>
@@ -134,8 +194,10 @@ public sealed partial class PlayerBodyHands
 
         void Add(ArmIK limb, bool isLeft)
         {
+            // A hand still reaching for the edge holds nothing back yet: the body goes on to the wall.
             float share = edgeShares[isLeft ? 0 : 1];
-            if (share <= 0f || !LedgeHandTarget(limb, isLeft, out Vector3 wrist, out _, out _)) return;
+            if (share <= 0f || edgeHands[isLeft ? 0 : 1] == EdgeHand.Waiting
+                || !LedgeHandTarget(limb, isLeft, out Vector3 wrist, out _, out _)) return;
             Vector3 reach = wrist - limb.Upper.position;
             float distance = reach.magnitude, limit = limb.Reach * edgeArmUse;
             if (distance > limit) need += reach * ((distance - limit) / distance * share);

@@ -11,8 +11,10 @@
 | [Player.csv](../Resources/Tables/Player.csv) | 자세별 캡슐·눈높이, 이동·속도 쌓기·점프·슬라이드·다이브, 회피·파쿠르·착지·밀치기·사다리·집라인, 최대 체력, 궁극기 보유량·소비량·충전량, 주먹·패링·가드 브레이크, 처형, 몸 애니메이션·손, 이동 펀치·큰 낙하 화면, 발소리·동작 소리·숨소리·바람·큰 낙하 소리 | `Posture` `Move` `Ability` `Vitals` `Stats` `Ultimate` `Fists` `Defense` `Parry` `Execution` `Body` `Hands` `Punch` `FallScreen` `Sounds` `Footsteps` `MovementAudio` `Breathing` `Wind` `FallAudio` `FixtureAudio` |
 | [SoundCues.csv](../Resources/Tables/SoundCues.csv) | 동작마다 나는 소리 묶음(볼트·착지·발소리…)과 적에게 들리는 거리 | 큐 이름 (`Vault`, `Land`, `StepRun` …) |
 | [Sounds.csv](../Resources/Tables/Sounds.csv) | 소리 묶음 폴더별 볼륨·피치 | `<묶음>/<폴더>` (`Movement/Bar/Grab` …) |
+| [Reverb.csv](../Resources/Tables/Reverb.csv) | 총소리 잔향: 방을 재는 광선 길이, 실내·실외와 방 크기 기준, 동시에 나는 꼬리 수. 구역 리버브가 바뀌는 시간 | `Gun.필드`, `Area.필드` |
 | [Surfaces.csv](../Resources/Tables/Surfaces.csv) | 표면 종류의 부모와 찾을 키워드 | 표면 이름 (`Concrete` …) |
-| [Weapons.csv](../Resources/Tables/Weapons.csv) | 총 피해·RPM·장탄·예비탄·장전·탄퍼짐·헤드샷·ADS, 몸의 손이 잡는 위치 | `WeaponData` 에셋 이름 (`FoundationRifle` …) |
+| [Weapons.csv](../Resources/Tables/Weapons.csv) | 총 피해·RPM·장탄·예비탄·장전·자동 장전·탄퍼짐·앉아 쏘기·헤드샷·ADS·흔들림, 몸의 손이 잡는 위치 | `WeaponData` 에셋 이름 (`MX16A4` …) |
+| [GunRig.csv](../Resources/Tables/GunRig.csv) | 총을 KINEMATION 팔 리그로 들지, 짧은 팔에 맞춰 총을 몸 쪽으로 옮기는 정도와 빠르기, 총 모양에서 총구를 재는 깊이 | `Rig` |
 | [Enemies.csv](../Resources/Tables/Enemies.csv) | 적 체력·공격·자세(체간)·이동 속도 | 적 프리팹 이름 (`Enemy_Test`) |
 | [Waves.csv](../Resources/Tables/Waves.csv) | 웨이브 적 수·증가량·대기·등장 간격 | `WaveManager`의 `Table Id` (기본 `Default`) |
 | [Maps.csv](../Resources/Tables/Maps.csv) | 메인 메뉴에서 고를 맵과 보이는 이름. 빌드 설정에 등록된 씬만 나온다 | 씬 이름 (`CombatFoundation` …) |
@@ -108,7 +110,7 @@
 | 소리 | 전체, 전투, 이동, 목소리, UI 볼륨 |
 | 조작 | 마우스 감도(×0.2~3, `PlayerLook`의 기본 감도에 곱함), 상하 반전, 앉기·기울이기를 "누르는 동안" 또는 "눌러서 전환" |
 | 화면 | 시야각(16:9 화면 기준 가로 70~120°, 기본 90°. 세로 약 59°로 이전 기본 60°와 거의 같다. 더 넓은 화면은 옆이 더 보인다. 달릴 때의 시야 넓힘과 ADS 줌은 이 값에서 계산한다), 화면 흔들림: 걸음 흔들림, 착지, 충격, 볼트 펀치, 이동·다이브 기울임에 곱한다. Q/E 기울이기와 총 반동은 영향을 받지 않는다 |
-| 캐릭터 | 화면 분류의 `캐릭터 스킨`에서 카즈사(밴드)·히로를 즉시 전환한다. 선택은 메뉴를 닫을 때 저장되며 기본 캐릭터는 카즈사다. `내 머리카락 보기`는 선택한 스킨에도 적용된다 |
+| 캐릭터 | 캐릭터 카드(카즈사(밴드)·히로·실)와 고른 캐릭터의 색 카드에서 즉시 바꾼다. 오른쪽 큰 사진이 고른 모습이다. 메인 메뉴의 `캐릭터` 버튼도 같은 화면을 연다. 선택은 메뉴를 닫을 때 저장되며 기본 캐릭터는 카즈사다. 화면 분류의 `내 머리카락 보기`는 선택한 스킨에도 적용된다. 자세한 것은 [몸 안내](PlayerBodyGuide.md) |
 
 - **저장 위치**: 사용자별 `Application.persistentDataPath/settings.json`이다. Windows에서는 보통 `%USERPROFILE%\AppData\LocalLow\<회사>\<제품>\settings.json`이다. 파일을 지우면 기본값으로 돌아간다. 밸런스 숫자는 CSV 표, 플레이어 취향은 이 파일에 둔다.
 - **앉기 전환**: 한 번 누르면 앉고, 다시 누르면 선다. Shift나 점프를 누르거나, 다이브·포복·파쿠르로 앉기·슬라이드 상태를 벗어나면 자동으로 풀린다. 키를 놓은 것과 같다. 그래서 전환 모드의 점프는 서서 하는 점프이고, 몸을 접는 앉아 점프는 Ctrl을 누른 채 점프할 때만 나온다. 점프 중에 누르면 공중에서 몸을 접고, 앉은 채로 착지한다. 달리며 누르면 슬라이드하고, 끝나면 앉은 채로 남는다. 전환 모드에서 슬라이드 감속은 S 키로 한다.
@@ -139,7 +141,7 @@
 | `Defense/ReservedStrongParries` | 향후 강공격용 보관 클립 | 현재 연결하지 않음 |
 | `Player/Attack/Punch/Hit`·`Swing`, `Player/Damage/Hit`, `Defense/Block` | BOOM으로 바꾸기 전의 클립 | 현재 연결하지 않음 |
 
-`BOOM` 폴더와 돌진 밀치기의 `Movement/PushHard`는 유료 BOOM Library Violent Combat의 소리를 타격 지점부터 잘라 낸 것이다. 한 번에 두 번 맞는 듯한 클립은 뺐고, 폴더 안의 음량은 약 3dB 안으로 맞췄다. 1인 라이선스이고 음원 공유 형태의 재배포가 금지되므로, 저장소는 비공개로 유지한다. `Resources/Combat/Parry`의 `ParryFlare`는 [Kenney Particle Pack](https://kenney.nl/assets/particle-pack)이고 CC0다.
+`BOOM` 폴더와 돌진 밀치기의 `Movement/PushHard`는 유료 BOOM Library Violent Combat의 소리를 타격 지점부터 잘라 낸 것이다. 한 번에 두 번 맞는 듯한 클립은 뺐고, 폴더 안의 음량은 약 3dB 안으로 맞췄다. 회피의 `Movement/Dodge`(`Wind` 바람은 WHOOSH Dash, `Cloth` 옷은 Kimono, `Perfect` 완벽 회피는 Phantom Wind)는 같은 팩의 WHOOSH 파일에 든 변형 6개씩을 하나씩 잘라 낸 것이고, 바람과 옷은 앞쪽에 천천히 부풀어 오르는 부분(0.1~0.2초)을 잘라 0.14초짜리 회피 안에 가장 커지게 했다(가장 큰 곳의 −12dB 지점 20ms 앞에서 자른다), SoundCues.csv의 `Dodge`·`DodgePerfect`가 낸다. 1인 라이선스이고 음원 공유 형태의 재배포가 금지되므로, 저장소는 비공개로 유지한다. `Resources/Combat/Parry`의 `ParryFlare`는 [Kenney Particle Pack](https://kenney.nl/assets/particle-pack)이고 CC0다.
 
 패링 이펙트는 유료 Vefects Combat Flipbook VFX URP로 만든다. `Assets/Vefects` 원본은 고치지 않고, `Prefabs/Effects/Parry`의 프리팹과 `Art/Materials/Parry`의 머티리얼을 복사본으로 둔다. 색은 이 머티리얼의 `R`(밝은 몸통), `G`(어두운 속살), `B`, `Outline`에서 고친다. 복사본은 팩의 텍스처와 셰이더를 쓰므로 `Assets/Vefects`의 `VFX/Hit/Textures`와 `Shared`는 지우면 안 된다. 원본 프리팹에는 반복 재생되는 `AudioSource`가 붙어 있어서 복사본에서 뺐고, `ParryVfx`도 슬롯에 넣은 프리팹의 소리를 끈다. 주황 별인 `VFX_Parry_Sparkle`은 Cartoon FX Remaster의 `CFXR3 Hit Light B (Air)`에서 고리 두 층을 뺀 복사본이다. 머티리얼과 스크립트는 팩의 것을 쓰므로 `Assets/JMO Assets`도 지우면 안 된다.
 
@@ -154,9 +156,12 @@
 | [Art/Audio/Movement](../Art/Audio/Movement) | `Movement` | `<행동>/<표면>/`: `Run`·`Walk`·`Sneak`·`Release`(발 떼기)·`Land`·`Slide`·`SlideLoop`·`WallStep`·`HandSoft`·`HandHard`·`HandRelease`·`Ringout` 아래에 `Concrete`·`Metal`·`Duct`·`Wood`·`Glass`… 표면이 없는 소리는 `<행동>/` 또는 `<행동>/<종류>/`: `Cloth/VaultSwish`, `Roll/Start`, `Ladder/Step`, `Bar/Grab`, `Fall/Heartbeat`, `LandHard`, `Push`, `Prone/Down`, `Lean`… |
 | [Art/Audio/Voice/Hiro](../Art/Audio/Voice/Hiro) | `Voice` | 숨소리 `Breath/SoftShortIn`…, 힘쓰는 소리 `StrainSoft/Medium/Hard`, 충격음 `ImpactSoft/Impact/ImpactHard`. 캐릭터 목소리를 바꾸면 이 폴더 내용만 갈아 끼운다 |
 | [Art/Audio/HitConfirm](../Art/Audio/HitConfirm) | `HitConfirm` | 히트마커와 함께 나는 확인음. `Body`(명중마다), `Head`(헤드샷 때 겹침), `Kill`(처치), `Break`(체간 붕괴). 폴더 안 파일 중 하나를 무작위로 고른다 |
+| [Art/Audio/Guns](../Art/Audio/Guns) | `Guns` | 총소리. `<총>/<소리>`이고 총은 무기 데이터의 Sound Profile(`Pistol`·`Rifle`·`Heavy`), 소리는 `Shot`·`MagOut`·`MagIn`·`SlideBack`·`SlideForward`·`Bolt`·`DryFire`·`LowAmmo`·`LastRound`다. 총 이름 없이 둔 `DryFire`는 그 소리가 없는 총이 같이 쓴다. 잔탄 경고는 세 겹이다. 탄창이 3분의 1 아래로 남은 발마다 그 총의 `LowAmmo`가 빌수록 커지며 나고, 탄창을 비우는 발에는 그 대신 `LastRound`가 난다(TFA Base 규칙, WeaponFeedback.AmmoCue). 모든 총이 같이 쓰는 딸깍 `LowAmmoClick`은 SoundCues.csv의 `GunLowAmmoClick/<총>` 행이 CS2처럼 총소리 0.05초 뒤에 클립의 2.5배로 낸다(표의 볼륨이 1을 넘으면 FeelAudio가 클립보다 크게 낸다. 최대 4). 장전 끝의 노리쇠는 SoundCues.csv의 `GunBolt/<총>` 행이 당기고 놓는 소리를 시간차로 낸다. KINEMATION 총(GunRig)을 들었을 때는 장전 소리를 그 장전 동작에서 잰 순간에 낸다. 탄창이 빠지기 시작할 때 `MagOut`, 끼워질 때 `MagIn`, 노리쇠나 슬라이드가 걸쇠에서 풀려 앞으로 갈 때 `SlideForward`다(당겼다 놓는 동작이면 `SlideBack`도 낸다). 부딪는 소리는 클립에서 가장 큰 순간이 동작의 순간에 오도록 일찍 시작한다([ReloadMoments](../Scripts/Audio/ReloadMoments.cs)). 무기 데이터나 GunFeel의 소리 칸에 클립을 넣으면 그쪽이 먼저고, 둘 다 비면 합성음이다([FeelAudio](../Scripts/Combat/Feel/FeelAudio.cs)). `Reverb/<총>/<방>`은 쏜 자리의 방에 맞춰 겹치는 잔향 꼬리다([GunReverb](../Scripts/Audio/GunReverb.cs), 수치는 Reverb.csv) |
 | [Art/Audio/Library](../Art/Audio/Library) | 없음 | 아직 쓰지 않는 보관 소리(Beatrun 나머지, FEAR 손전등·문, 투척 칼, 잠입). 어디에서도 참조하지 않으므로 빌드 크기에 들어가지 않는다. 쓰려면 위 폴더로 옮긴다 |
 
 - **볼륨·피치**: [Sounds.csv](../Resources/Tables/Sounds.csv)의 `<묶음>/<폴더>` 행(예: `Movement/Walk/Concrete`). Beatrun 원본 값으로 채워져 있다. 행이 없으면 볼륨 1, 피치 1이다.
+- **가져오기 설정**: 클립마다 Preload Audio Data와 Load In Background를 켠다. 맵을 불러올 때 [CombatWarmup](../Scripts/Combat/Feel/CombatWarmup.cs)이 묶음을 불러오면 그 데이터를 뒤에서 미리 읽어 둔다. 꺼 두면 처음 재생할 때 메인 스레드에서 읽느라 프레임이 7~89ms 멈췄다. 2026-11-06에 꺼져 있던 1,634개를 켰고, 메모리는 약 79MB 더 쓴다. 새 클립도 둘 다 켠다.
+- **도플러**: 쓰지 않는다. [GameAudio.Bind](../Scripts/Audio/GameAudio.cs)가 모든 소리에서 끈다. 유니티는 소리의 속도를 게임 시간으로 재므로, 슬로 모션 중에 실제 시간으로 움직이는 것(완벽 회피 중 적을 지나가는 회피)은 엄청나게 빠르다고 보고 둘레 3D 소리의 높이를 튀게 했다.
 - **표면**: 표면은 발소리, 충돌 이펙트, 총알이 뚫고 나가는 정도(`penetration`)를 정한다. 물체에 [SurfaceType](../Scripts/World/SurfaceType.cs) 컴포넌트를 붙이고 Inspector의 목록에서 고르면 그 값을 쓴다. 목록은 Surfaces.csv의 줄과 설명(`#note`)이라, 표에 줄을 더하면 바로 목록에 생긴다([SurfaceNameDrawer](../Editor/Data/SurfaceNameDrawer.cs)). 없으면 [Surfaces.csv](../Resources/Tables/Surfaces.csv)의 키워드를 물리 재질·렌더 재질·오브젝트 이름에서 찾는다(가장 긴 키워드가 이김). 아무것도 맞지 않으면 `Concrete`다.
 - **표면이 없는 소리**: 표마다 `parent`가 있어서 소리가 없는 표면은 부모로 넘어간다. `Duct` → `Metal` → `Concrete` 순서다. 예를 들어 `Grass`는 착지 소리만 따로 있고, 발소리는 `Dirt` → `Gravel` 소리를 쓴다.
 - 출처: Beatrun(미러스 엣지 원본), Dynamic Landing(`LandHard`·`LandHeavy`·`Roll`·`Push`), FEAR-like SFX(`Land/Dirt·Grass·Stone·Tile·Carpet`, `Slide/Dirt·Sand`, `Prone`, `Ledge/Reach`, `Lean`, `Cloth/SprintRustle`). 공개 빌드 전에는 교체가 필요할 수 있다.
@@ -166,6 +171,17 @@
 - **넘기 뒤 발소리 복귀**: 볼트의 남은 애니메이션을 재생하는 동안만 발 접지를 잠시 읽지 않는다. 마무리가 끝나거나 다른 자세로 중단되면 `playingOut`을 해제해 보행 접지와 발소리가 다시 이어진다.
 
 **볼륨 채널**: 모든 소리는 `전투`·`이동`·`목소리`·`UI` 채널 중 하나에 속하고, Esc 메뉴의 볼륨을 따른다. 새 `AudioSource`를 만들면 [GameAudio](../Scripts/Audio/GameAudio.cs)`.Bind(source, AudioChannel.…)`로 한 번 연결한다. 소리마다 크기를 바꿀 때는 `source.volume`을 쓰지 않고 `PlayOneShot(clip, 볼륨)`의 볼륨 값을 쓴다. 커졌다 작아지는 반복 소리(슬라이드 긁는 소리)는 `GameAudio.SetGain`으로 크기를 정한다. 월드 한 지점에서 한 번 나는 소리는 `AudioSource.PlayClipAtPoint` 대신 `GameAudio.PlayAt`을 쓴다. 전체 볼륨은 `AudioListener.volume`이다.
+
+### 구역 리버브 (맵마다 놓기)
+
+방·복도·터널처럼 소리가 울리는 곳에는 [ReverbArea](../Scripts/Audio/ReverbArea.cs)를 놓는다. 내 귀(카메라)가 상자 안에 있는 동안 들리는 소리(발소리·숨·적·재장전·도탄)에 Unity의 리버브 프리셋이 걸린다. 총소리와 그 잔향 꼬리, 히트마커·처치 확인음, UI에는 걸리지 않는다. 총은 [GunReverb](../Scripts/Audio/GunReverb.cs)가 쏜 자리의 방을 재서 따로 울린다. 상자 밖에는 리버브가 없다.
+
+1. Hierarchy에서 `GameObject → Audio → Reverb Area`를 고른다. 씬 화면 가운데에 파란 상자가 생긴다.
+2. 오브젝트를 옮기고 돌려 공간에 맞춘 뒤, 씬 화면에서 상자 면의 점을 끌어 크기를 맞춘다. Inspector의 `Center`·`Size`로도 된다.
+3. `Preset`을 고른다. 작은 방 `Room`, 타일 방 `Bathroom`, 돌로 된 방 `Stoneroom`, 복도 `Hallway`, 돌 복도 `StoneCorridor`, 하수관 `SewerPipe`, 동굴 `Cave`, 큰 홀 `Hangar`·`Arena`, 주차장 `ParkingLot`, 골목 `Alley`, 도시 거리 `City`, 들판 `Plain`. `Off`는 큰 구역 안의 한 곳(작은 부스 등)을 울리지 않게 한다.
+4. 상자가 겹치면 `Priority`가 높은 쪽, 같으면 작은 상자가 이긴다. 그래서 맵 전체를 덮는 큰 상자(`City` 등)를 깔고 그 안에 방 상자를 놓으면 방 안에서는 방이 이긴다.
+5. `Strength`를 낮추면 프리셋이 덜 들린다. 구역을 드나들 때 바뀌는 시간은 [Reverb.csv](../Resources/Tables/Reverb.csv)의 `Area.fadeTime`이다.
+6. 씬을 저장한다.
 
 ## 3D 모델 추가하기
 
@@ -231,7 +247,7 @@ Play 중 효과가 필요하면 `EFFECTS → Audio / World / Screen`을 자동�
 
 `EFFECTS → World → Impact VFX → Blood Decals (Pool)`의 회색 혈흔은 다음 타격에 재사용할 대기 오브젝트다. 풀은 **최대 32개**로 제한되며 무한히 증가하지 않는다. 비활성 혈흔은 표시하지 않고 수명 업데이트도 건너뛴다. 반복 생성·삭제 부하를 줄이기 위해 풀을 유지한다. 화면에 남는 시간은 [GunFeel.asset](../Resources/Combat/GunFeel.asset)의 `Blood Decal Seconds`로 조절한다. 이 시간이 지나면 1.2초 동안 흐려진 뒤 풀로 돌아간다.
 
-`EFFECTS → World → Impact Pool`은 DAVFX 이펙트를 미리 만들어 둔 대기열이다. 전투 중 생성이 없도록 맵을 불러올 때 [CombatWarmup](../Scripts/Combat/Feel/CombatWarmup.cs)에서 한 번 만들고, 복사본은 땅속 5000m에서 켜진 채 기다린다. VFX Graph는 처음 그릴 때 약 0.5초 멈추므로, 맵이 뜨는 동안 모든 복사본을 시야 끝에서 한 번씩 재생해 그 멈춤을 맵 시작으로 옮긴다. 첫 타격에 처음 만들어지는 시스템을 새로 넣으면 `CombatWarmup`에도 추가한다. 어떤 프리셋을 어떤 크기와 밝기로 쓸지는 [ImpactEffects.csv](../Resources/Tables/ImpactEffects.csv)에서 고치며, Play 중에 저장해도 바로 반영된다. 복사본을 다 쓰면 가장 오래된 것을 다시 쓰므로, 끊기거나 이펙트가 튀어 보이면 `copies`를 늘린다. 표에 적는 프리셋은 [ImpactLibrary](../Resources/Combat/ImpactLibrary.asset)에 있어야 한다. 프리셋 생김새는 DAVFX의 `URP/Demo Scene`에서 볼 수 있다. 이펙트 재생에는 `com.unity.visualeffectgraph` 패키지가 필요하다.
+`EFFECTS → World → Impact Pool`은 DAVFX 이펙트를 미리 만들어 둔 대기열이다. 전투 중 생성이 없도록 맵을 불러올 때 [CombatWarmup](../Scripts/Combat/Feel/CombatWarmup.cs)에서 한 번 만들고, 복사본은 땅속 5000m에서 켜진 채 기다린다. VFX Graph는 처음 그릴 때 약 0.5초 멈추므로, 맵이 뜨는 동안 모든 복사본을 시야 끝에서 한 번씩 재생해 그 멈춤을 맵 시작으로 옮긴다. 첫 타격에 처음 만들어지는 시스템을 새로 넣으면 `CombatWarmup`에도 추가한다. 킬 화면, 낮은 체력, 슬로 모션이 쓰는 후처리 효과 조합도 플레이어 카메라가 생기자마자 눈에 안 보이는 세기로 한 프레임씩 그려 셰이더를 미리 만든다([PostProcessWarmup](../Scripts/Combat/Feel/PostProcessWarmup.cs)). 효과를 새로 섞는 화면 효과를 만들면 그 조합을 여기에 더한다. 손의 엄지 피부 보정이 쓰는 몸 메시 복사본도 첫 렛지가 아니라 몸을 만들 때 만든다(`HandSkinCorrection.CopyAhead`). 소리 묶음(`Resources/Audio`의 Movement, Voice, HitConfirm, Bullets)은 처음 쓰일 때 담긴 클립을 한꺼번에 불러오므로 `CombatWarmup`에서 미리 불러 둔다. 숨소리가 힘쓸 때만 나게 된 뒤로는 Voice의 첫 사용이 첫 회피나 반격이었다. 새 소리 묶음을 만들면 `CombatWarmup`의 `SoundBanks` 목록에 더한다. 어떤 프리셋을 어떤 크기와 밝기로 쓸지는 [ImpactEffects.csv](../Resources/Tables/ImpactEffects.csv)에서 고치며, Play 중에 저장해도 바로 반영된다. 복사본을 다 쓰면 가장 오래된 것을 다시 쓰므로, 끊기거나 이펙트가 튀어 보이면 `copies`를 늘린다. 표에 적는 프리셋은 [ImpactLibrary](../Resources/Combat/ImpactLibrary.asset)에 있어야 한다. 프리셋 생김새는 DAVFX의 `URP/Demo Scene`에서 볼 수 있다. 이펙트 재생에는 `com.unity.visualeffectgraph` 패키지가 필요하다.
 
 벽 착탄은 맞은 표면의 행을 쓰고, 그 표면의 행이 없으면 [Surfaces.csv](../Resources/Tables/Surfaces.csv)의 부모를 따라 올라가 마지막에 `Concrete`를 쓴다. 풀의 복사본은 다음 착탄으로 옮겨 가므로, 팩 이펙트에 포함된 데칼과 빛 폭발(`VFXLightBurstCompanion`)은 끈다. 총알 구멍은 `EFFECTS → World → Bullet Holes`의 데칼 64개를 돌려 쓰며, PC_Renderer의 Decal 기능이 있어야 보인다. Decal은 Screen Space 방식이라 다른 머티리얼에 셰이더 변형을 더하지 않는다. `Prefabs/Effects/Weapons`의 `Impact_*` 프리팹과 `Art/Sprites/Weapons`의 `Impact_Wall_*`은 연결을 끊은 옛 착탄 자료다.
 

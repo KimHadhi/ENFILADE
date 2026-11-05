@@ -114,7 +114,6 @@ public sealed class CombatFeedbackSettings : ScriptableObject
     [Min(.1f)] public float counterWindowSeconds = 1f;
     [Min(1f)] public float counterDamage = 80f;
     [Min(0f)] public float counterPostureDamage = 60f;
-    [Min(.1f)] public float counterReach = 4f;
     [Range(0f, 1f)] public float perfectVignetteStrength = .8f;
 
     [Header("Damage popups")]

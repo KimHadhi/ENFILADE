@@ -8,6 +8,8 @@ public sealed class EnemyCombatAI : MonoBehaviour
 {
     [Header("Attack Settings")]
     [SerializeField, Min(1f)] private float attackRange = 2f;
+    [Tooltip("How far above its own head it reaches (m), for someone standing on another enemy's head within attackRange across.")]
+    [SerializeField, Min(0f)] private float reachAbove = .5f;
     [Tooltip("Where the chase stops, as a share of attackRange, so a stopped enemy is always close enough to swing.")]
     [SerializeField, Range(.3f, 1f)] private float approachShare = .8f;
     [SerializeField, Min(0.2f)] private float attackInterval = 1f;
@@ -71,16 +73,9 @@ public sealed class EnemyCombatAI : MonoBehaviour
             return;
         }
 
-        // Feet to feet: the agent floats baseOffset above the mesh, and counting that height kept an enemy stopped at
-        // attackRange from ever being in range.
-        float distance = Vector3.Distance(
-            transform.position - Vector3.up * agent.baseOffset,
-            player.transform.position
-        );
-
         if (!preparing)
         {
-            if (distance > attackRange)
+            if (!InReach(player))
             {
                 timer = attackInterval;
                 UpdateIndicator(false);
@@ -106,6 +101,19 @@ public sealed class EnemyCombatAI : MonoBehaviour
 
         FireAttack();
     }
+    /// <summary>
+    /// Feet to feet, since the agent floats baseOffset above the mesh and counting that height kept an enemy stopped at
+    /// attackRange from ever being in range. Someone standing on another enemy's head is reached from below while within
+    /// attackRange across and no higher than this one's head plus reachAbove; ledges keep the plain rule. Never its own
+    /// rider: that one gets thrown off instead (HeadStandShakeOff).
+    /// </summary>
+    private bool InReach(PlayerMovement target)
+    {
+        Vector3 delta = target.transform.position - (transform.position - Vector3.up * agent.baseOffset);
+        if (delta.magnitude <= attackRange) return !EnemyHead.Carries(this, target);
+        return delta.y > 0f && delta.y <= agent.height + reachAbove && new Vector2(delta.x, delta.z).magnitude <= attackRange
+            && !EnemyHead.Carries(this, target) && EnemyHead.OnAnyHead(target);
+    }
     private void BeginWindup()
     {
         preparing = true; timer = 0f;
@@ -117,7 +125,9 @@ public sealed class EnemyCombatAI : MonoBehaviour
 
     private void FireAttack()
     {
-        if (PlayerExecution.Suppresses(this) || (meleeTarget != null && meleeTarget.IsStunned)) { CancelAttack(); return; }
+        // Someone who got up on its head meanwhile isn't swung at; they're thrown off instead (HeadStandShakeOff).
+        if (PlayerExecution.Suppresses(this) || (meleeTarget != null && meleeTarget.IsStunned) || EnemyHead.Carries(this, player))
+        { CancelAttack(); return; }
         preparing = false;
         timer = 0f;
         UpdateIndicator(false);
@@ -139,6 +149,9 @@ public sealed class EnemyCombatAI : MonoBehaviour
 
         // 적 자신의 충돌체 안에서 광선이 시작되는 것을 줄인다.
         origin += direction * rayStartOffset;
+        // Up on a neighbour's head the aim point is further than attackRange; the arm reaches up to it, no further.
+        float reach = Mathf.Max(attackRange + rayStartOffset,
+            Mathf.Min(Vector3.Distance(origin, lockedAim) + rayStartOffset, attackRange + reachAbove + rayStartOffset));
 
         DamageHit hit = new DamageHit(
             DamageHit.NewAttackId(),
@@ -153,7 +166,7 @@ public sealed class EnemyCombatAI : MonoBehaviour
             hit,
             origin,
             direction,
-            attackRange + rayStartOffset,
+            reach,
             hitLayers
         );
     }
@@ -181,7 +194,8 @@ public sealed class EnemyCombatAI : MonoBehaviour
         preparing = false;
         timer = 0f;
         UpdateIndicator(false);
-        if (aimedHere) Strike();
+        // The host can't see a rider land in time; this PC can, and doesn't swing at its own rider either.
+        if (aimedHere && !EnemyHead.Carries(this, PlayerRoster.Local)) Strike();
     }
 
     public void CancelAttack()

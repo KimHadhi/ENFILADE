@@ -1,0 +1,2411 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &1372128298705350790
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6805296316889709080}
+  - component: {fileID: 7156751963827376940}
+  m_Layer: 0
+  m_Name: IK weapon_bone_r
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &6805296316889709080
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1372128298705350790}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1803786678166059467}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &7156751963827376940
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1372128298705350790}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cbe919ff69184effbe2693461919094f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  target: {fileID: 529923929447615309}
+  updateMode: 0
+  applyBlending: 1
+--- !u!1 &1523382663946307217
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7112720023827144448}
+  m_Layer: 0
+  m_Name: IK foot_l
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7112720023827144448
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1523382663946307217}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 8934612743404537216}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1865819816092870039
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5091467764620795624}
+  m_Layer: 0
+  m_Name: IK hand_l
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5091467764620795624
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1865819816092870039}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1816800956753299811}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &3056143081776423060
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4451203207131082213}
+  m_Layer: 0
+  m_Name: IK foot_r
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4451203207131082213
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3056143081776423060}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 8934612743404537216}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &4269909066328180886
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7481553494828345136}
+  m_Layer: 0
+  m_Name: CameraSocket
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7481553494828345136
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4269909066328180886}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0.5057255, y: -0.49420828, z: 0.5057256, w: 0.49420798}
+  m_LocalPosition: {x: -0.1183522, y: -0.022502527, z: 0.011999707}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 6455628488012232798}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &4690248277705154521
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2817575224982449138}
+  m_Layer: 0
+  m_Name: IK hand_r
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2817575224982449138
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4690248277705154521}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1816800956753299811}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &5282463846954247235
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3034098846557255615}
+  m_Layer: 0
+  m_Name: camera_bone
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3034098846557255615
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5282463846954247235}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 8934612743404537216}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &5622961244205833814
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5198508536225816386}
+  - component: {fileID: 3339297082517499513}
+  m_Layer: 0
+  m_Name: IK weapon_bone_aim
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5198508536225816386
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5622961244205833814}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 6455628488012232798}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &3339297082517499513
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5622961244205833814}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cbe919ff69184effbe2693461919094f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  target: {fileID: 529923929447615309}
+  updateMode: 1
+  applyBlending: 0
+--- !u!1 &6550516757971886721
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1816800956753299811}
+  - component: {fileID: 29595580814883257}
+  m_Layer: 0
+  m_Name: IK weapon_bone
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1816800956753299811
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6550516757971886721}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 2817575224982449138}
+  - {fileID: 5091467764620795624}
+  m_Father: {fileID: 6455628488012232798}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &29595580814883257
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6550516757971886721}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cbe919ff69184effbe2693461919094f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  target: {fileID: 529923929447615309}
+  updateMode: 0
+  applyBlending: 0
+--- !u!1 &8563391568118966953
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5259723137396686425}
+  m_Layer: 0
+  m_Name: ik_hand_gun_additive
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5259723137396686425
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8563391568118966953}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 8934612743404537216}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1001 &5074621978976037375
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: -8679921383154817045, guid: 405129f43f2032e4bbed300529635549,
+        type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 405129f43f2032e4bbed300529635549,
+        type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 405129f43f2032e4bbed300529635549,
+        type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 405129f43f2032e4bbed300529635549,
+        type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 405129f43f2032e4bbed300529635549,
+        type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 405129f43f2032e4bbed300529635549,
+        type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 405129f43f2032e4bbed300529635549,
+        type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 405129f43f2032e4bbed300529635549,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 405129f43f2032e4bbed300529635549,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 405129f43f2032e4bbed300529635549,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -643793720788819389, guid: 405129f43f2032e4bbed300529635549,
+        type: 3}
+      propertyPath: m_UpdateWhenOffscreen
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -643793720788819389, guid: 405129f43f2032e4bbed300529635549,
+        type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 82029639593b9f447b557c933bc304ea, type: 2}
+    - target: {fileID: 919132149155446097, guid: 405129f43f2032e4bbed300529635549,
+        type: 3}
+      propertyPath: m_Name
+      value: SK_Arms_Mono_Skeleton
+      objectReference: {fileID: 0}
+    - target: {fileID: 2594905638231780816, guid: 405129f43f2032e4bbed300529635549,
+        type: 3}
+      propertyPath: m_UpdateWhenOffscreen
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2594905638231780816, guid: 405129f43f2032e4bbed300529635549,
+        type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: eaeaac2f76eafad42a01d27171bf83e7, type: 2}
+    - target: {fileID: 3944914171396787563, guid: 405129f43f2032e4bbed300529635549,
+        type: 3}
+      propertyPath: m_UpdateWhenOffscreen
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3944914171396787563, guid: 405129f43f2032e4bbed300529635549,
+        type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: dab46109a9626f9409d5048c10318913, type: 2}
+    - target: {fileID: 5866666021909216657, guid: 405129f43f2032e4bbed300529635549,
+        type: 3}
+      propertyPath: m_Controller
+      value: 
+      objectReference: {fileID: 22100000, guid: 560239e98653ca44a96a10377d58aded,
+        type: 2}
+    - target: {fileID: 5866666021909216657, guid: 405129f43f2032e4bbed300529635549,
+        type: 3}
+      propertyPath: m_CullingMode
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects:
+    - targetCorrespondingSourceObject: {fileID: 4436805663696350335, guid: 405129f43f2032e4bbed300529635549,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5259723137396686425}
+    - targetCorrespondingSourceObject: {fileID: 4436805663696350335, guid: 405129f43f2032e4bbed300529635549,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 3034098846557255615}
+    - targetCorrespondingSourceObject: {fileID: 4436805663696350335, guid: 405129f43f2032e4bbed300529635549,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 4451203207131082213}
+    - targetCorrespondingSourceObject: {fileID: 4436805663696350335, guid: 405129f43f2032e4bbed300529635549,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7112720023827144448}
+    - targetCorrespondingSourceObject: {fileID: -2349476437193732044, guid: 405129f43f2032e4bbed300529635549,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6805296316889709080}
+    - targetCorrespondingSourceObject: {fileID: 2304244481032835489, guid: 405129f43f2032e4bbed300529635549,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1816800956753299811}
+    - targetCorrespondingSourceObject: {fileID: 2304244481032835489, guid: 405129f43f2032e4bbed300529635549,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5198508536225816386}
+    - targetCorrespondingSourceObject: {fileID: 2304244481032835489, guid: 405129f43f2032e4bbed300529635549,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7481553494828345136}
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 405129f43f2032e4bbed300529635549,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 3710285015502477776}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 405129f43f2032e4bbed300529635549,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1790266112867878288}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 405129f43f2032e4bbed300529635549,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 139052800784006781}
+    - targetCorrespondingSourceObject: {fileID: -5151492872390713093, guid: 405129f43f2032e4bbed300529635549,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 551001727138257332}
+  m_SourcePrefab: {fileID: 100100000, guid: 405129f43f2032e4bbed300529635549, type: 3}
+--- !u!4 &63663476578699361 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -4139229902515576418, guid: 405129f43f2032e4bbed300529635549,
+    type: 3}
+  m_PrefabInstance: {fileID: 5074621978976037375}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &100878371366685143 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -4104246466315984856, guid: 405129f43f2032e4bbed300529635549,
+    type: 3}
+  m_PrefabInstance: {fileID: 5074621978976037375}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &124574525610429373 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 5176393074398667330, guid: 405129f43f2032e4bbed300529635549,
+    type: 3}
+  m_PrefabInstance: {fileID: 5074621978976037375}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &217981341967697718 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 5002022737546604233, guid: 405129f43f2032e4bbed300529635549,
+    type: 3}
+  m_PrefabInstance: {fileID: 5074621978976037375}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &268484114142225199 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 5032056993465617104, guid: 405129f43f2032e4bbed300529635549,
+    type: 3}
+  m_PrefabInstance: {fileID: 5074621978976037375}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &472542470221686317 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 4675408295691341778, guid: 405129f43f2032e4bbed300529635549,
+    type: 3}
+  m_PrefabInstance: {fileID: 5074621978976037375}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &529923929447615309 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 4698950735507088050, guid: 405129f43f2032e4bbed300529635549,
+    type: 3}
+  m_PrefabInstance: {fileID: 5074621978976037375}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &755537327842546823 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -3742323065286296200, guid: 405129f43f2032e4bbed300529635549,
+    type: 3}
+  m_PrefabInstance: {fileID: 5074621978976037375}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &856864684027095576 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 5586887060247184359, guid: 405129f43f2032e4bbed300529635549,
+    type: 3}
+  m_PrefabInstance: {fileID: 5074621978976037375}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &859185614003422661 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -3638665445968614342, guid: 405129f43f2032e4bbed300529635549,
+    type: 3}
+  m_PrefabInstance: {fileID: 5074621978976037375}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &952876556113279963 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 5428493279323509284, guid: 405129f43f2032e4bbed300529635549,
+    type: 3}
+  m_PrefabInstance: {fileID: 5074621978976037375}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &995647146619800694 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 5457678853577516425, guid: 405129f43f2032e4bbed300529635549,
+    type: 3}
+  m_PrefabInstance: {fileID: 5074621978976037375}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &1012019294122991874 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -4006013569806415619, guid: 405129f43f2032e4bbed300529635549,
+    type: 3}
+  m_PrefabInstance: {fileID: 5074621978976037375}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &1034958544378101117 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -4021639023445879678, guid: 405129f43f2032e4bbed300529635549,
+    type: 3}
+  m_PrefabInstance: {fileID: 5074621978976037375}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &1163267632900716887 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 6217338522995527848, guid: 405129f43f2032e4bbed300529635549,
+    type: 3}
+  m_PrefabInstance: {fileID: 5074621978976037375}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &1318661862761108906 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 6061983877138398293, guid: 405129f43f2032e4bbed300529635549,
+    type: 3}
+  m_PrefabInstance: {fileID: 5074621978976037375}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &1343268367637248490 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 6109294226540384277, guid: 405129f43f2032e4bbed300529635549,
+    type: 3}
+  m_PrefabInstance: {fileID: 5074621978976037375}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &1425916188884159152 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -3051906773068094641, guid: 405129f43f2032e4bbed300529635549,
+    type: 3}
+  m_PrefabInstance: {fileID: 5074621978976037375}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &1612165197362693645 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -3444371385876697102, guid: 405129f43f2032e4bbed300529635549,
+    type: 3}
+  m_PrefabInstance: {fileID: 5074621978976037375}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &1803786678166059467 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -2349476437193732044, guid: 405129f43f2032e4bbed300529635549,
+    type: 3}
+  m_PrefabInstance: {fileID: 5074621978976037375}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &1823501401701961974 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 6855267054193146121, guid: 405129f43f2032e4bbed300529635549,
+    type: 3}
+  m_PrefabInstance: {fileID: 5074621978976037375}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &2018230339439471570 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -2707054796494011859, guid: 405129f43f2032e4bbed300529635549,
+    type: 3}
+  m_PrefabInstance: {fileID: 5074621978976037375}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &2286723756850184395 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -2751489462226573004, guid: 405129f43f2032e4bbed300529635549,
+    type: 3}
+  m_PrefabInstance: {fileID: 5074621978976037375}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &2419959063096080472 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -1731134603892780633, guid: 405129f43f2032e4bbed300529635549,
+    type: 3}
+  m_PrefabInstance: {fileID: 5074621978976037375}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &2556642238575200031 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -1938894886215782688, guid: 405129f43f2032e4bbed300529635549,
+    type: 3}
+  m_PrefabInstance: {fileID: 5074621978976037375}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &2843302589945785398 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -2226505094681393719, guid: 405129f43f2032e4bbed300529635549,
+    type: 3}
+  m_PrefabInstance: {fileID: 5074621978976037375}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &2914967409948711116 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 7933273983621067059, guid: 405129f43f2032e4bbed300529635549,
+    type: 3}
+  m_PrefabInstance: {fileID: 5074621978976037375}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &2944305475910019888 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -1247237651839647025, guid: 405129f43f2032e4bbed300529635549,
+    type: 3}
+  m_PrefabInstance: {fileID: 5074621978976037375}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &3069447438420182064 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -1372344567285338673, guid: 405129f43f2032e4bbed300529635549,
+    type: 3}
+  m_PrefabInstance: {fileID: 5074621978976037375}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &3075490450471158332 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 7837102865397132227, guid: 405129f43f2032e4bbed300529635549,
+    type: 3}
+  m_PrefabInstance: {fileID: 5074621978976037375}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &3369604344790000327 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 7543406788328262456, guid: 405129f43f2032e4bbed300529635549,
+    type: 3}
+  m_PrefabInstance: {fileID: 5074621978976037375}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &3772646452188355684 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -993171020270357093, guid: 405129f43f2032e4bbed300529635549,
+    type: 3}
+  m_PrefabInstance: {fileID: 5074621978976037375}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &3815423678251540140 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 8259520711292204883, guid: 405129f43f2032e4bbed300529635549,
+    type: 3}
+  m_PrefabInstance: {fileID: 5074621978976037375}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &3837356854396829539 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -923894916219005284, guid: 405129f43f2032e4bbed300529635549,
+    type: 3}
+  m_PrefabInstance: {fileID: 5074621978976037375}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &3840557563930416840 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 8295853766884900663, guid: 405129f43f2032e4bbed300529635549,
+    type: 3}
+  m_PrefabInstance: {fileID: 5074621978976037375}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &4726534949514100084 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 573271838507930763, guid: 405129f43f2032e4bbed300529635549,
+    type: 3}
+  m_PrefabInstance: {fileID: 5074621978976037375}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &4888846519126945064 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 410955443556762839, guid: 405129f43f2032e4bbed300529635549,
+    type: 3}
+  m_PrefabInstance: {fileID: 5074621978976037375}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &4906663527355692716 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 178830854379216723, guid: 405129f43f2032e4bbed300529635549,
+    type: 3}
+  m_PrefabInstance: {fileID: 5074621978976037375}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &4947752045201665320 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -9023701236474149673, guid: 405129f43f2032e4bbed300529635549,
+    type: 3}
+  m_PrefabInstance: {fileID: 5074621978976037375}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &4965793583936861323 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -9041355335218373260, guid: 405129f43f2032e4bbed300529635549,
+    type: 3}
+  m_PrefabInstance: {fileID: 5074621978976037375}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &5140352770866661457 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 88557215932375470, guid: 405129f43f2032e4bbed300529635549,
+    type: 3}
+  m_PrefabInstance: {fileID: 5074621978976037375}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &5381172755629380782 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 405129f43f2032e4bbed300529635549,
+    type: 3}
+  m_PrefabInstance: {fileID: 5074621978976037375}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &3710285015502477776
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5381172755629380782}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7405c9c2574a434e8c3a5e3610359e68, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  animationSettings: {fileID: 0}
+--- !u!114 &1790266112867878288
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5381172755629380782}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 60311a22a5a8487d8be3e3fbe6e655ed, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  globalWeight: 1
+  proceduralSettings: {fileID: 0}
+  showModifierGizmos: 1
+--- !u!114 &139052800784006781
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5381172755629380782}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 20ef972d6aa4464f800c4a5e5ce93fd9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  globalWeight: 1
+  layeredBlends:
+  - layer:
+      chainName: Spine
+      elementChain:
+      - name: spine_01
+        index: 9
+        depth: 0
+      - name: spine_02
+        index: 10
+        depth: 0
+      - name: spine_03
+        index: 11
+        depth: 0
+      - name: neck_01
+        index: 55
+        depth: 0
+      - name: head
+        index: 56
+        depth: 0
+    baseWeight:
+      objectType: 
+      propertyPath: 
+      defaultValue: 0
+      isBound: 0
+      friendlyObjectType: LayeredBlendingComponent
+    additiveWeight:
+      objectType: 
+      propertyPath: 
+      defaultValue: 0
+      isBound: 0
+      friendlyObjectType: LayeredBlendingComponent
+    localWeight:
+      objectType: 
+      propertyPath: 
+      defaultValue: 1
+      isBound: 0
+      friendlyObjectType: LayeredBlendingComponent
+  - layer:
+      chainName: RightArm
+      elementChain:
+      - name: clavicle_r
+        index: 33
+        depth: 5
+      - name: upperarm_r
+        index: 34
+        depth: 6
+      - name: lowerarm_r
+        index: 35
+        depth: 7
+      - name: hand_r
+        index: 36
+        depth: 8
+      - name: lowerarm_twist_01_r
+        index: 52
+        depth: 8
+      - name: upperarm_twist_01_r
+        index: 53
+        depth: 7
+    baseWeight:
+      objectType: 
+      propertyPath: 
+      defaultValue: 0
+      isBound: 0
+      friendlyObjectType: LayeredBlendingComponent
+    additiveWeight:
+      objectType: 
+      propertyPath: 
+      defaultValue: 0
+      isBound: 0
+      friendlyObjectType: LayeredBlendingComponent
+    localWeight:
+      objectType: 
+      propertyPath: 
+      defaultValue: 1
+      isBound: 0
+      friendlyObjectType: LayeredBlendingComponent
+  - layer:
+      chainName: LeftArm
+      elementChain:
+      - name: clavicle_l
+        index: 12
+        depth: 5
+      - name: upperarm_l
+        index: 13
+        depth: 6
+      - name: lowerarm_l
+        index: 14
+        depth: 7
+      - name: hand_l
+        index: 15
+        depth: 8
+      - name: lowerarm_twist_01_l
+        index: 31
+        depth: 8
+      - name: upperarm_twist_01_l
+        index: 32
+        depth: 7
+    baseWeight:
+      objectType: 
+      propertyPath: 
+      defaultValue: 0
+      isBound: 0
+      friendlyObjectType: LayeredBlendingComponent
+    additiveWeight:
+      objectType: 
+      propertyPath: 
+      defaultValue: 0
+      isBound: 0
+      friendlyObjectType: LayeredBlendingComponent
+    localWeight:
+      objectType: 
+      propertyPath: 
+      defaultValue: 1
+      isBound: 0
+      friendlyObjectType: LayeredBlendingComponent
+  - layer:
+      chainName: Fingers
+      elementChain:
+      - name: index_01_l
+        index: 16
+        depth: 0
+      - name: index_02_l
+        index: 17
+        depth: 0
+      - name: index_03_l
+        index: 18
+        depth: 0
+      - name: middle_01_l
+        index: 19
+        depth: 0
+      - name: middle_02_l
+        index: 20
+        depth: 0
+      - name: middle_03_l
+        index: 21
+        depth: 0
+      - name: pinky_01_l
+        index: 22
+        depth: 0
+      - name: pinky_02_l
+        index: 23
+        depth: 0
+      - name: pinky_03_l
+        index: 24
+        depth: 0
+      - name: ring_01_l
+        index: 25
+        depth: 0
+      - name: ring_02_l
+        index: 26
+        depth: 0
+      - name: ring_03_l
+        index: 27
+        depth: 0
+      - name: thumb_01_l
+        index: 28
+        depth: 0
+      - name: thumb_02_l
+        index: 29
+        depth: 0
+      - name: thumb_03_l
+        index: 30
+        depth: 0
+      - name: index_01_r
+        index: 37
+        depth: 0
+      - name: index_02_r
+        index: 38
+        depth: 0
+      - name: index_03_r
+        index: 39
+        depth: 0
+      - name: middle_01_r
+        index: 40
+        depth: 0
+      - name: middle_02_r
+        index: 41
+        depth: 0
+      - name: middle_03_r
+        index: 42
+        depth: 0
+      - name: pinky_01_r
+        index: 43
+        depth: 0
+      - name: pinky_02_r
+        index: 44
+        depth: 0
+      - name: pinky_03_r
+        index: 45
+        depth: 0
+      - name: ring_01_r
+        index: 46
+        depth: 0
+      - name: ring_02_r
+        index: 47
+        depth: 0
+      - name: ring_03_r
+        index: 48
+        depth: 0
+      - name: thumb_01_r
+        index: 49
+        depth: 0
+      - name: thumb_02_r
+        index: 50
+        depth: 0
+      - name: thumb_03_r
+        index: 51
+        depth: 0
+      - name: IK weapon_bone_r
+        index: 52
+        depth: 0
+      - name: IK weapon_bone_aim
+        index: 60
+        depth: 0
+    baseWeight:
+      objectType: 
+      propertyPath: 
+      defaultValue: 0
+      isBound: 0
+      friendlyObjectType: LayeredBlendingComponent
+    additiveWeight:
+      objectType: 
+      propertyPath: 
+      defaultValue: 0
+      isBound: 0
+      friendlyObjectType: LayeredBlendingComponent
+    localWeight:
+      objectType: 
+      propertyPath: 
+      defaultValue: 1
+      isBound: 0
+      friendlyObjectType: LayeredBlendingComponent
+  - layer:
+      chainName: WeaponBone
+      elementChain:
+      - name: index_01_r
+        index: 37
+        depth: 0
+      - name: index_02_r
+        index: 38
+        depth: 0
+      - name: index_03_r
+        index: 39
+        depth: 0
+      - name: middle_01_r
+        index: 40
+        depth: 0
+      - name: middle_02_r
+        index: 41
+        depth: 0
+      - name: middle_03_r
+        index: 42
+        depth: 0
+      - name: pinky_01_r
+        index: 43
+        depth: 0
+      - name: pinky_02_r
+        index: 44
+        depth: 0
+      - name: pinky_03_r
+        index: 45
+        depth: 0
+      - name: ring_01_r
+        index: 46
+        depth: 0
+      - name: ring_02_r
+        index: 47
+        depth: 0
+      - name: ring_03_r
+        index: 48
+        depth: 0
+      - name: thumb_01_r
+        index: 49
+        depth: 0
+      - name: thumb_02_r
+        index: 50
+        depth: 0
+      - name: thumb_03_r
+        index: 51
+        depth: 0
+      - name: IK weapon_bone_r
+        index: 52
+        depth: 0
+      - name: IK weapon_bone
+        index: 57
+        depth: 0
+      - name: IK weapon_bone_aim
+        index: 60
+        depth: 0
+    baseWeight:
+      objectType: 
+      propertyPath: 
+      defaultValue: 0
+      isBound: 0
+      friendlyObjectType: LayeredBlendingComponent
+    additiveWeight:
+      objectType: 
+      propertyPath: 
+      defaultValue: 0
+      isBound: 0
+      friendlyObjectType: LayeredBlendingComponent
+    localWeight:
+      objectType: 
+      propertyPath: 
+      defaultValue: 1
+      isBound: 0
+      friendlyObjectType: LayeredBlendingComponent
+  - layer:
+      chainName: WeaponBoneAdditive
+      elementChain:
+      - name: ik_hand_gun_additive
+        index: 74
+        depth: 0
+    baseWeight:
+      objectType: 
+      propertyPath: 
+      defaultValue: 1
+      isBound: 0
+      friendlyObjectType: LayeredBlendingComponent
+    additiveWeight:
+      objectType: 
+      propertyPath: 
+      defaultValue: 1
+      isBound: 0
+      friendlyObjectType: LayeredBlendingComponent
+    localWeight:
+      objectType: 
+      propertyPath: 
+      defaultValue: 0
+      isBound: 0
+      friendlyObjectType: LayeredBlendingComponent
+  alwaysAnimatePoses: 1
+  linkAnimatorParameters: 1
+  applyRootMotion: 1
+  overlayParameters: []
+  Layering_LowerBody:
+    baseWeight: 0
+    additiveWeight: 0
+    localWeight: 0
+  Layering_Spine:
+    baseWeight: 0
+    additiveWeight: 0
+    localWeight: 0
+  Layering_Head:
+    baseWeight: 0
+    additiveWeight: 0
+    localWeight: 0
+  Layering_Arm_R:
+    baseWeight: 0
+    additiveWeight: 0
+    localWeight: 0
+  Layering_Arm_L:
+    baseWeight: 0
+    additiveWeight: 0
+    localWeight: 0
+  Layering_Fingers:
+    baseWeight: 0
+    additiveWeight: 0
+    localWeight: 0
+  Mask_Procedural_Animation:
+    value: 0
+  Weapon_Bone_Weight:
+    value: 0
+  Mask_Look_Rotation:
+    value: 0
+  Mask_Attach_Hand:
+    value: 0
+  Enable_HandR_IK:
+    value: 0
+  Enable_HandL_IK:
+    value: 0
+  Enable_FootR_IK:
+    value: 0
+  Enable_FootL_IK:
+    value: 0
+  Interaction_HandR_IK:
+    value: 0
+  Interaction_HandL_IK:
+    value: 0
+  Traversal_Weight:
+    value: 0
+--- !u!4 &5487869733661171806 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -8483521933420508767, guid: 405129f43f2032e4bbed300529635549,
+    type: 3}
+  m_PrefabInstance: {fileID: 5074621978976037375}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &5510620632167816776 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -8496879035693090889, guid: 405129f43f2032e4bbed300529635549,
+    type: 3}
+  m_PrefabInstance: {fileID: 5074621978976037375}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &5676907940774550425 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -8600537747511856538, guid: 405129f43f2032e4bbed300529635549,
+    type: 3}
+  m_PrefabInstance: {fileID: 5074621978976037375}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &6243200529229926333 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -8013909246233647550, guid: 405129f43f2032e4bbed300529635549,
+    type: 3}
+  m_PrefabInstance: {fileID: 5074621978976037375}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &6375692733114119501 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2168394226173205682, guid: 405129f43f2032e4bbed300529635549,
+    type: 3}
+  m_PrefabInstance: {fileID: 5074621978976037375}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &6455628488012232798 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2304244481032835489, guid: 405129f43f2032e4bbed300529635549,
+    type: 3}
+  m_PrefabInstance: {fileID: 5074621978976037375}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &6655688606083338221 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 1887408791301383698, guid: 405129f43f2032e4bbed300529635549,
+    type: 3}
+  m_PrefabInstance: {fileID: 5074621978976037375}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &6744938347130401894 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -7208441673433506407, guid: 405129f43f2032e4bbed300529635549,
+    type: 3}
+  m_PrefabInstance: {fileID: 5074621978976037375}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &6914034161325519719 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 1846256759547140760, guid: 405129f43f2032e4bbed300529635549,
+    type: 3}
+  m_PrefabInstance: {fileID: 5074621978976037375}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &6924145714813203765 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2772858486331694282, guid: 405129f43f2032e4bbed300529635549,
+    type: 3}
+  m_PrefabInstance: {fileID: 5074621978976037375}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &6933949445759857074 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -6460700065973807027, guid: 405129f43f2032e4bbed300529635549,
+    type: 3}
+  m_PrefabInstance: {fileID: 5074621978976037375}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &6972713504783180987 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2785652501832666436, guid: 405129f43f2032e4bbed300529635549,
+    type: 3}
+  m_PrefabInstance: {fileID: 5074621978976037375}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &6972963782409886213 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -6437794168517086214, guid: 405129f43f2032e4bbed300529635549,
+    type: 3}
+  m_PrefabInstance: {fileID: 5074621978976037375}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &7001985764894074977 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -6394934201113919074, guid: 405129f43f2032e4bbed300529635549,
+    type: 3}
+  m_PrefabInstance: {fileID: 5074621978976037375}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &7148600610447547350 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -6532396849450683863, guid: 405129f43f2032e4bbed300529635549,
+    type: 3}
+  m_PrefabInstance: {fileID: 5074621978976037375}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &7332638085232649639 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -6652257894256653224, guid: 405129f43f2032e4bbed300529635549,
+    type: 3}
+  m_PrefabInstance: {fileID: 5074621978976037375}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &7543936239851984601 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -5846270692196909274, guid: 405129f43f2032e4bbed300529635549,
+    type: 3}
+  m_PrefabInstance: {fileID: 5074621978976037375}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &7935177254295169414 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -6308482710477979527, guid: 405129f43f2032e4bbed300529635549,
+    type: 3}
+  m_PrefabInstance: {fileID: 5074621978976037375}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &8015531766334513305 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2976965535574247782, guid: 405129f43f2032e4bbed300529635549,
+    type: 3}
+  m_PrefabInstance: {fileID: 5074621978976037375}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &8376767101699741072 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -5607847394290140049, guid: 405129f43f2032e4bbed300529635549,
+    type: 3}
+  m_PrefabInstance: {fileID: 5074621978976037375}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &8554199401595702164 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -5703190155486485909, guid: 405129f43f2032e4bbed300529635549,
+    type: 3}
+  m_PrefabInstance: {fileID: 5074621978976037375}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &8705474168183436443 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 4520667811460685156, guid: 405129f43f2032e4bbed300529635549,
+    type: 3}
+  m_PrefabInstance: {fileID: 5074621978976037375}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &8821324819292350794 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 4325436833983905973, guid: 405129f43f2032e4bbed300529635549,
+    type: 3}
+  m_PrefabInstance: {fileID: 5074621978976037375}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &8934612743404537216 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 4436805663696350335, guid: 405129f43f2032e4bbed300529635549,
+    type: 3}
+  m_PrefabInstance: {fileID: 5074621978976037375}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &9015984924580431749 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -4939433630546694534, guid: 405129f43f2032e4bbed300529635549,
+    type: 3}
+  m_PrefabInstance: {fileID: 5074621978976037375}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &9033864066252183651 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 4265496315168895388, guid: 405129f43f2032e4bbed300529635549,
+    type: 3}
+  m_PrefabInstance: {fileID: 5074621978976037375}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &9095600223911778991 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -5163731036337065136, guid: 405129f43f2032e4bbed300529635549,
+    type: 3}
+  m_PrefabInstance: {fileID: 5074621978976037375}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &9146412042934044932 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: -5151492872390713093, guid: 405129f43f2032e4bbed300529635549,
+    type: 3}
+  m_PrefabInstance: {fileID: 5074621978976037375}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &551001727138257332
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9146412042934044932}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9ea4e6e0e6604595bf46d06cc6cca03a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  skeleton:
+  - transform: {fileID: 8934612743404537216}
+    rigElement:
+      name: root
+      index: 0
+      depth: 0
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 472542470221686317}
+    rigElement:
+      name: ik_foot_root
+      index: 1
+      depth: 1
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 952876556113279963}
+    rigElement:
+      name: ik_foot_l
+      index: 2
+      depth: 2
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 4947752045201665320}
+    rigElement:
+      name: ik_foot_r
+      index: 3
+      depth: 2
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 9095600223911778991}
+    rigElement:
+      name: ik_hand_root
+      index: 4
+      depth: 1
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 529923929447615309}
+    rigElement:
+      name: ik_hand_gun
+      index: 5
+      depth: 2
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 3369604344790000327}
+    rigElement:
+      name: ik_hand_l
+      index: 6
+      depth: 3
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 859185614003422661}
+    rigElement:
+      name: ik_hand_r
+      index: 7
+      depth: 3
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 6375692733114119501}
+    rigElement:
+      name: pelvis
+      index: 8
+      depth: 1
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 6914034161325519719}
+    rigElement:
+      name: spine_01
+      index: 9
+      depth: 2
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 6243200529229926333}
+    rigElement:
+      name: spine_02
+      index: 10
+      depth: 3
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 2018230339439471570}
+    rigElement:
+      name: spine_03
+      index: 11
+      depth: 4
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 5510620632167816776}
+    rigElement:
+      name: clavicle_l
+      index: 12
+      depth: 5
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 7001985764894074977}
+    rigElement:
+      name: upperarm_l
+      index: 13
+      depth: 6
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 6744938347130401894}
+    rigElement:
+      name: lowerarm_l
+      index: 14
+      depth: 7
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 7543936239851984601}
+    rigElement:
+      name: hand_l
+      index: 15
+      depth: 8
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 3772646452188355684}
+    rigElement:
+      name: index_01_l
+      index: 16
+      depth: 9
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 268484114142225199}
+    rigElement:
+      name: index_02_l
+      index: 17
+      depth: 10
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 1034958544378101117}
+    rigElement:
+      name: index_03_l
+      index: 18
+      depth: 11
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 856864684027095576}
+    rigElement:
+      name: middle_01_l
+      index: 19
+      depth: 9
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 9015984924580431749}
+    rigElement:
+      name: middle_02_l
+      index: 20
+      depth: 10
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 3075490450471158332}
+    rigElement:
+      name: middle_03_l
+      index: 21
+      depth: 11
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 1163267632900716887}
+    rigElement:
+      name: pinky_01_l
+      index: 22
+      depth: 9
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 4906663527355692716}
+    rigElement:
+      name: pinky_02_l
+      index: 23
+      depth: 10
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 4965793583936861323}
+    rigElement:
+      name: pinky_03_l
+      index: 24
+      depth: 11
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 4888846519126945064}
+    rigElement:
+      name: ring_01_l
+      index: 25
+      depth: 9
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 6933949445759857074}
+    rigElement:
+      name: ring_02_l
+      index: 26
+      depth: 10
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 6655688606083338221}
+    rigElement:
+      name: ring_03_l
+      index: 27
+      depth: 11
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 755537327842546823}
+    rigElement:
+      name: thumb_01_l
+      index: 28
+      depth: 9
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 100878371366685143}
+    rigElement:
+      name: thumb_02_l
+      index: 29
+      depth: 10
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 1012019294122991874}
+    rigElement:
+      name: thumb_03_l
+      index: 30
+      depth: 11
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 2843302589945785398}
+    rigElement:
+      name: lowerarm_twist_01_l
+      index: 31
+      depth: 8
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 3840557563930416840}
+    rigElement:
+      name: upperarm_twist_01_l
+      index: 32
+      depth: 7
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 1823501401701961974}
+    rigElement:
+      name: clavicle_r
+      index: 33
+      depth: 5
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 1612165197362693645}
+    rigElement:
+      name: upperarm_r
+      index: 34
+      depth: 6
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 1318661862761108906}
+    rigElement:
+      name: lowerarm_r
+      index: 35
+      depth: 7
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 1803786678166059467}
+    rigElement:
+      name: hand_r
+      index: 36
+      depth: 8
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 1343268367637248490}
+    rigElement:
+      name: index_01_r
+      index: 37
+      depth: 9
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 8015531766334513305}
+    rigElement:
+      name: index_02_r
+      index: 38
+      depth: 10
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 6924145714813203765}
+    rigElement:
+      name: index_03_r
+      index: 39
+      depth: 11
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 2944305475910019888}
+    rigElement:
+      name: middle_01_r
+      index: 40
+      depth: 9
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 6972713504783180987}
+    rigElement:
+      name: middle_02_r
+      index: 41
+      depth: 10
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 1425916188884159152}
+    rigElement:
+      name: middle_03_r
+      index: 42
+      depth: 11
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 217981341967697718}
+    rigElement:
+      name: pinky_01_r
+      index: 43
+      depth: 9
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 4726534949514100084}
+    rigElement:
+      name: pinky_02_r
+      index: 44
+      depth: 10
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 3069447438420182064}
+    rigElement:
+      name: pinky_03_r
+      index: 45
+      depth: 11
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 7148600610447547350}
+    rigElement:
+      name: ring_01_r
+      index: 46
+      depth: 9
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 63663476578699361}
+    rigElement:
+      name: ring_02_r
+      index: 47
+      depth: 10
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 2286723756850184395}
+    rigElement:
+      name: ring_03_r
+      index: 48
+      depth: 11
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 6972963782409886213}
+    rigElement:
+      name: thumb_01_r
+      index: 49
+      depth: 9
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 5487869733661171806}
+    rigElement:
+      name: thumb_02_r
+      index: 50
+      depth: 10
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 3837356854396829539}
+    rigElement:
+      name: thumb_03_r
+      index: 51
+      depth: 11
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 6805296316889709080}
+    rigElement:
+      name: IK weapon_bone_r
+      index: 52
+      depth: 9
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 7332638085232649639}
+    rigElement:
+      name: lowerarm_twist_01_r
+      index: 53
+      depth: 8
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 5676907940774550425}
+    rigElement:
+      name: upperarm_twist_01_r
+      index: 54
+      depth: 7
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 8821324819292350794}
+    rigElement:
+      name: neck_01
+      index: 55
+      depth: 5
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 6455628488012232798}
+    rigElement:
+      name: head
+      index: 56
+      depth: 6
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 1816800956753299811}
+    rigElement:
+      name: IK weapon_bone
+      index: 57
+      depth: 7
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 2817575224982449138}
+    rigElement:
+      name: IK hand_r
+      index: 58
+      depth: 8
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 5091467764620795624}
+    rigElement:
+      name: IK hand_l
+      index: 59
+      depth: 8
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 5198508536225816386}
+    rigElement:
+      name: IK weapon_bone_aim
+      index: 60
+      depth: 7
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 7481553494828345136}
+    rigElement:
+      name: CameraSocket
+      index: 61
+      depth: 7
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 7935177254295169414}
+    rigElement:
+      name: thigh_l
+      index: 62
+      depth: 2
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 2556642238575200031}
+    rigElement:
+      name: calf_l
+      index: 63
+      depth: 3
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 2914967409948711116}
+    rigElement:
+      name: calf_twist_01_l
+      index: 64
+      depth: 4
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 8705474168183436443}
+    rigElement:
+      name: foot_l
+      index: 65
+      depth: 4
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 5140352770866661457}
+    rigElement:
+      name: ball_l
+      index: 66
+      depth: 5
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 2419959063096080472}
+    rigElement:
+      name: thigh_twist_01_l
+      index: 67
+      depth: 3
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 9033864066252183651}
+    rigElement:
+      name: thigh_r
+      index: 68
+      depth: 2
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 8376767101699741072}
+    rigElement:
+      name: calf_r
+      index: 69
+      depth: 3
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 8554199401595702164}
+    rigElement:
+      name: calf_twist_01_r
+      index: 70
+      depth: 4
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 124574525610429373}
+    rigElement:
+      name: foot_r
+      index: 71
+      depth: 4
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 3815423678251540140}
+    rigElement:
+      name: ball_r
+      index: 72
+      depth: 5
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 995647146619800694}
+    rigElement:
+      name: thigh_twist_01_r
+      index: 73
+      depth: 3
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 5259723137396686425}
+    rigElement:
+      name: ik_hand_gun_additive
+      index: 74
+      depth: 1
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 3034098846557255615}
+    rigElement:
+      name: camera_bone
+      index: 75
+      depth: 1
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 4451203207131082213}
+    rigElement:
+      name: IK foot_r
+      index: 76
+      depth: 1
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  - transform: {fileID: 7112720023827144448}
+    rigElement:
+      name: IK foot_l
+      index: 77
+      depth: 1
+    meshPose:
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+  skeletonBoneChains:
+  - chainName: root
+    elementChain:
+    - name: root
+      index: 0
+      depth: 0
+  - chainName: ik_foot_root
+    elementChain:
+    - name: ik_foot_root
+      index: 1
+      depth: 1
+  - chainName: ik_foot_l
+    elementChain:
+    - name: ik_foot_l
+      index: 2
+      depth: 2
+  - chainName: ik_foot_r
+    elementChain:
+    - name: ik_foot_r
+      index: 3
+      depth: 2
+  - chainName: ik_hand_root
+    elementChain:
+    - name: ik_hand_root
+      index: 4
+      depth: 1
+    - name: ik_hand_gun
+      index: 5
+      depth: 2
+  - chainName: ik_hand_l
+    elementChain:
+    - name: ik_hand_l
+      index: 6
+      depth: 3
+  - chainName: ik_hand_r
+    elementChain:
+    - name: ik_hand_r
+      index: 7
+      depth: 3
+  - chainName: pelvis
+    elementChain:
+    - name: pelvis
+      index: 8
+      depth: 1
+  - chainName: spine_01
+    elementChain:
+    - name: spine_01
+      index: 9
+      depth: 2
+    - name: spine_02
+      index: 10
+      depth: 3
+    - name: spine_03
+      index: 11
+      depth: 4
+  - chainName: clavicle_l
+    elementChain:
+    - name: clavicle_l
+      index: 12
+      depth: 5
+    - name: upperarm_l
+      index: 13
+      depth: 6
+  - chainName: lowerarm_l
+    elementChain:
+    - name: lowerarm_l
+      index: 14
+      depth: 7
+  - chainName: hand_l
+    elementChain:
+    - name: hand_l
+      index: 15
+      depth: 8
+  - chainName: index_01_l
+    elementChain:
+    - name: index_01_l
+      index: 16
+      depth: 9
+    - name: index_02_l
+      index: 17
+      depth: 10
+    - name: index_03_l
+      index: 18
+      depth: 11
+  - chainName: middle_01_l
+    elementChain:
+    - name: middle_01_l
+      index: 19
+      depth: 9
+    - name: middle_02_l
+      index: 20
+      depth: 10
+    - name: middle_03_l
+      index: 21
+      depth: 11
+  - chainName: pinky_01_l
+    elementChain:
+    - name: pinky_01_l
+      index: 22
+      depth: 9
+    - name: pinky_02_l
+      index: 23
+      depth: 10
+    - name: pinky_03_l
+      index: 24
+      depth: 11
+  - chainName: ring_01_l
+    elementChain:
+    - name: ring_01_l
+      index: 25
+      depth: 9
+    - name: ring_02_l
+      index: 26
+      depth: 10
+    - name: ring_03_l
+      index: 27
+      depth: 11
+  - chainName: thumb_01_l
+    elementChain:
+    - name: thumb_01_l
+      index: 28
+      depth: 9
+    - name: thumb_02_l
+      index: 29
+      depth: 10
+    - name: thumb_03_l
+      index: 30
+      depth: 11
+  - chainName: lowerarm_twist_01_l
+    elementChain:
+    - name: lowerarm_twist_01_l
+      index: 31
+      depth: 8
+  - chainName: upperarm_twist_01_l
+    elementChain:
+    - name: upperarm_twist_01_l
+      index: 32
+      depth: 7
+  - chainName: clavicle_r
+    elementChain:
+    - name: clavicle_r
+      index: 33
+      depth: 5
+    - name: upperarm_r
+      index: 34
+      depth: 6
+  - chainName: lowerarm_r
+    elementChain:
+    - name: lowerarm_r
+      index: 35
+      depth: 7
+  - chainName: hand_r
+    elementChain:
+    - name: hand_r
+      index: 36
+      depth: 8
+  - chainName: index_01_r
+    elementChain:
+    - name: index_01_r
+      index: 37
+      depth: 9
+    - name: index_02_r
+      index: 38
+      depth: 10
+    - name: index_03_r
+      index: 39
+      depth: 11
+  - chainName: middle_01_r
+    elementChain:
+    - name: middle_01_r
+      index: 40
+      depth: 9
+    - name: middle_02_r
+      index: 41
+      depth: 10
+    - name: middle_03_r
+      index: 42
+      depth: 11
+  - chainName: pinky_01_r
+    elementChain:
+    - name: pinky_01_r
+      index: 43
+      depth: 9
+    - name: pinky_02_r
+      index: 44
+      depth: 10
+    - name: pinky_03_r
+      index: 45
+      depth: 11
+  - chainName: ring_01_r
+    elementChain:
+    - name: ring_01_r
+      index: 46
+      depth: 9
+    - name: ring_02_r
+      index: 47
+      depth: 10
+    - name: ring_03_r
+      index: 48
+      depth: 11
+  - chainName: thumb_01_r
+    elementChain:
+    - name: thumb_01_r
+      index: 49
+      depth: 9
+    - name: thumb_02_r
+      index: 50
+      depth: 10
+    - name: thumb_03_r
+      index: 51
+      depth: 11
+  - chainName: IK weapon_bone_r
+    elementChain:
+    - name: IK weapon_bone_r
+      index: 52
+      depth: 9
+  - chainName: lowerarm_twist_01_r
+    elementChain:
+    - name: lowerarm_twist_01_r
+      index: 53
+      depth: 8
+  - chainName: upperarm_twist_01_r
+    elementChain:
+    - name: upperarm_twist_01_r
+      index: 54
+      depth: 7
+  - chainName: neck_01
+    elementChain:
+    - name: neck_01
+      index: 55
+      depth: 5
+    - name: head
+      index: 56
+      depth: 6
+  - chainName: IK weapon_bone
+    elementChain:
+    - name: IK weapon_bone
+      index: 57
+      depth: 7
+  - chainName: IK hand_r
+    elementChain:
+    - name: IK hand_r
+      index: 58
+      depth: 8
+  - chainName: IK hand_l
+    elementChain:
+    - name: IK hand_l
+      index: 59
+      depth: 8
+  - chainName: IK weapon_bone_aim
+    elementChain:
+    - name: IK weapon_bone_aim
+      index: 60
+      depth: 7
+  - chainName: CameraSocket
+    elementChain:
+    - name: CameraSocket
+      index: 61
+      depth: 7
+  - chainName: thigh_l
+    elementChain:
+    - name: thigh_l
+      index: 62
+      depth: 2
+  - chainName: calf_l
+    elementChain:
+    - name: calf_l
+      index: 63
+      depth: 3
+  - chainName: calf_twist_01_l
+    elementChain:
+    - name: calf_twist_01_l
+      index: 64
+      depth: 4
+  - chainName: foot_l
+    elementChain:
+    - name: foot_l
+      index: 65
+      depth: 4
+    - name: ball_l
+      index: 66
+      depth: 5
+  - chainName: thigh_twist_01_l
+    elementChain:
+    - name: thigh_twist_01_l
+      index: 67
+      depth: 3
+  - chainName: thigh_r
+    elementChain:
+    - name: thigh_r
+      index: 68
+      depth: 2
+  - chainName: calf_r
+    elementChain:
+    - name: calf_r
+      index: 69
+      depth: 3
+  - chainName: calf_twist_01_r
+    elementChain:
+    - name: calf_twist_01_r
+      index: 70
+      depth: 4
+  - chainName: foot_r
+    elementChain:
+    - name: foot_r
+      index: 71
+      depth: 4
+    - name: ball_r
+      index: 72
+      depth: 5
+  - chainName: thigh_twist_01_r
+    elementChain:
+    - name: thigh_twist_01_r
+      index: 73
+      depth: 3
+  - chainName: ik_hand_gun_additive
+    elementChain:
+    - name: ik_hand_gun_additive
+      index: 74
+      depth: 1
+  - chainName: camera_bone
+    elementChain:
+    - name: camera_bone
+      index: 75
+      depth: 1
+  - chainName: IK foot_r
+    elementChain:
+    - name: IK foot_r
+      index: 76
+      depth: 1
+  - chainName: IK foot_l
+    elementChain:
+    - name: IK foot_l
+      index: 77
+      depth: 1

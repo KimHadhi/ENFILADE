@@ -7,7 +7,9 @@ public enum HitMarkerKind { Body, Head, BodyKill, HeadKill, Blocked }
 /// Crosshair hit confirmation. Four diagonal ticks around the centre:
 /// body hit = white; headshot = gold, a little bolder, with a four-point glint flashing at the aim point (head kills keep
 /// the glint on their red); any kill (body or head) = red with a shock ring; no effect (guard/parry/invulnerable) = thin
-/// grey. Body and head markers grow with the share of health the hit took.
+/// grey. Body and head markers grow with the share of health the hit took. A bullet that came through or off something on
+/// the way (DamageHit.Pierced) gives each tick a fading tail outward in its colour, growing a little while the marker
+/// shows, as if the shot carried on through (the user's pick of four mockups).
 /// Back 4 Blood timing, in frames at GunFeel's marker frame rate: the marker holds wide (7), the ticks slide in to the
 /// shrunk gap (9), show faded for one frame and vanish; every new hit restarts it wide, a little bigger at first and
 /// popping back, so each hit of a burst reads on its own. A posture break adds its own burst on top: an orange ring and
@@ -18,22 +20,28 @@ public enum HitMarkerKind { Body, Head, BodyKill, HeadKill, Blocked }
 [DisallowMultipleComponent, DefaultExecutionOrder(10010)]
 public sealed class HitMarkerHUD : MonoBehaviour
 {
+    // Between a tick's outer end and its pierced tail (canvas units).
+    private const float TailGap = 1.5f;
     private static HitMarkerHUD instance;
-    private readonly Image[] ticks = new Image[4], shards = new Image[4];
+    private readonly Image[] ticks = new Image[4], tails = new Image[4], tailEnds = new Image[4], shards = new Image[4];
     private RectTransform root, glintRoot, breakRoot;
     private RawImage ring, glint, breakRing;
     private HitMarkerKind kind;
+    private bool pierced;
     private float age = 99f, lifetime = .2f, scale = 1f, glintAge = 99f, breakAge = 99f;
 
     public HitMarkerKind LastKind => kind;
+    /// <summary>The last marker came through or off something on the way, so its ticks trail tails.</summary>
+    public bool LastPierced => pierced;
     private bool IsShowing => age < lifetime;
 
-    /// <summary>share: the part of the target's health the hit took, which sizes body and head markers.</summary>
-    public static void Show(HitMarkerKind kind, float share = 1f)
+    /// <summary>share: the part of the target's health the hit took, which sizes body and head markers. pierced: the bullet
+    /// went through or off something on the way.</summary>
+    public static void Show(HitMarkerKind kind, float share = 1f, bool pierced = false)
     {
         if (!Application.isPlaying || !GunFeelSettings.Instance.hitMarkers) return;
         Prepare();
-        instance.Trigger(kind, share);
+        instance.Trigger(kind, share, pierced);
     }
 
     /// <summary>The player's hit broke the target's posture.</summary>
@@ -64,6 +72,7 @@ public sealed class HitMarkerHUD : MonoBehaviour
         ring = FeelUI.Rect("Ring", root).gameObject.AddComponent<RawImage>();
         ring.texture = FeelAssets.Ring; ring.raycastTarget = false;
         for (int i = 0; i < 4; i++) ticks[i] = Tick("Tick " + i, root);
+        for (int i = 0; i < 4; i++) { tails[i] = Tail("Pierced Tail " + i, root); tailEnds[i] = Tail("Pierced Tail End " + i, root); }
         root.gameObject.SetActive(false);
 
         // Its own root, so the glint can stay longer than the ticks.
@@ -91,13 +100,23 @@ public sealed class HitMarkerHUD : MonoBehaviour
         return image;
     }
 
+    // A pierced tail stays soft: no dark edge, so it reads as an afterimage of the tick rather than a second marker.
+    private static Image Tail(string name, Transform parent)
+    {
+        var image = FeelUI.Rect(name, parent).gameObject.AddComponent<Image>();
+        image.raycastTarget = false;
+        image.enabled = false;
+        return image;
+    }
+
     private void OnDestroy() { if (instance == this) instance = null; }
 
-    private void Trigger(HitMarkerKind next, float share)
+    private void Trigger(HitMarkerKind next, float share, bool throughSomething)
     {
         // A fresh kill marker is not overwritten by the next body hit of the same burst.
         if (IsShowing && IsKill(kind) && !IsKill(next) && age < .18f) return;
         kind = next; age = 0f;
+        pierced = throughSomething;
         var settings = GunFeelSettings.Instance;
         scale = IsKill(next) || next == HitMarkerKind.Blocked ? 1f
             : Mathf.Lerp(settings.markerSmallScale, settings.markerLargeScale, Mathf.Clamp01(share / settings.markerFullDamage));
@@ -170,11 +189,21 @@ public sealed class HitMarkerHUD : MonoBehaviour
         if (!blocked) color = Color.Lerp(Color.white, color, Mathf.Clamp01(age / .05f)); // white-hot first frame
         color.a *= alpha;
 
+        // Through or off something on the way: each tick trails a tail outward, near half brighter, growing as the marker shows.
+        float tail = length * settings.piercedTailLength * Mathf.Lerp(.6f, 1f, Smooth(Mathf.Clamp01(age / lifetime)));
+        float nearTail = tail * .55f, farTail = tail * .45f, tailStart = gap + length + TailGap;
+        Color near = color, far = color;
+        near.a *= settings.piercedTailAlpha;
+        far.a *= settings.piercedTailAlpha * .42f;
         for (int i = 0; i < 4; i++)
         {
             float angle = 45f + 90f * i;
             Vector2 direction = new Vector2(Mathf.Cos(angle * Mathf.Deg2Rad), Mathf.Sin(angle * Mathf.Deg2Rad));
             Place(ticks[i], direction * (gap + length * .5f), new Vector2(length, thickness), angle, color);
+            tails[i].enabled = tailEnds[i].enabled = pierced;
+            if (!pierced) continue;
+            Place(tails[i], direction * (tailStart + nearTail * .5f), new Vector2(nearTail, thickness * .7f), angle, near);
+            Place(tailEnds[i], direction * (tailStart + nearTail + farTail * .5f), new Vector2(farTail, thickness * .5f), angle, far);
         }
 
         ring.enabled = kill;

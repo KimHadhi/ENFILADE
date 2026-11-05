@@ -221,6 +221,30 @@ MonoBehaviour:
     - {fileID: 8300000, guid: bec0434978507f549b7898ff123ae64c, type: 3}
     - {fileID: 8300000, guid: dae0255fcf5fed84bbd874dde1ac3ba7, type: 3}
     - {fileID: 8300000, guid: e8b29a114f64b0742bcf23c70cf896be, type: 3}
+  - key: Dodge/Cloth
+    clips:
+    - {fileID: 8300000, guid: cd0d097432e94ad0a18b72722555ba2f, type: 3}
+    - {fileID: 8300000, guid: 61b4bbc9824841f0b1cf2415bc6411b9, type: 3}
+    - {fileID: 8300000, guid: b7cac5be52324d29a71f425dac1f6c2d, type: 3}
+    - {fileID: 8300000, guid: c4f13207d18e4e8db8539d7a89b50167, type: 3}
+    - {fileID: 8300000, guid: 3f8026ccd309477d855fbd27672981a5, type: 3}
+    - {fileID: 8300000, guid: 1f11d4af92c6483aa3a9fcd50e88d583, type: 3}
+  - key: Dodge/Perfect
+    clips:
+    - {fileID: 8300000, guid: 7dc39211c711446580885625f9307871, type: 3}
+    - {fileID: 8300000, guid: 72eabc1c5b734eb09c63ae62ef92a834, type: 3}
+    - {fileID: 8300000, guid: a1da1383251d4aac81790767d4e5ffe1, type: 3}
+    - {fileID: 8300000, guid: 030dd9371aa644aba0e7e1d4627113d3, type: 3}
+    - {fileID: 8300000, guid: fbe308741e0c4cc08aaf1de42f10d15a, type: 3}
+    - {fileID: 8300000, guid: c1a8555edd7041309d5ecc38ac811d02, type: 3}
+  - key: Dodge/Wind
+    clips:
+    - {fileID: 8300000, guid: 0d48d64c50df470bb96d0fadf9416a1a, type: 3}
+    - {fileID: 8300000, guid: c9b54d95c0f04b4985e2ebd49a79534b, type: 3}
+    - {fileID: 8300000, guid: e6e3718ddb274acaa0f433e8a01eb565, type: 3}
+    - {fileID: 8300000, guid: 318325d4c7c9485da91fdbca54e49e9a, type: 3}
+    - {fileID: 8300000, guid: 4e833b3e8dac44a599c7b688b4be3acb, type: 3}
+    - {fileID: 8300000, guid: 9cb34fb5d0124a43ab0f8ea09e15f603, type: 3}
   - key: Door/Barge
     clips:
     - {fileID: 8300000, guid: 698363a71d236f640a5999d2cfacad4a, type: 3}

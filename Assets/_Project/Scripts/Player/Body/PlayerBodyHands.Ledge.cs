@@ -68,7 +68,7 @@ public sealed partial class PlayerBodyHands
 
     private void CurlLedgeFingers(ArmIK arm, bool isLeft)
     {
-        float weight = weights[(int)Hold.Ledge] * edgeShares[isLeft ? 0 : 1];
+        float weight = weights[(int)Hold.Ledge] * edgeContacts[isLeft ? 0 : 1];
         if (weight <= 0f || !FindLedgeContact(arm, isLeft, out var contact)) return;
         arm.GripLedge(contact.Surface, contact.Fingers, -contact.Normal, contact.Palm, fingerSurfaceClearance, weight);
     }

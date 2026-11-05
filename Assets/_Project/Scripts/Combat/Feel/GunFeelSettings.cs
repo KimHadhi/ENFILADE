@@ -34,20 +34,50 @@ public sealed class GunFeelSettings : ScriptableObject
     public float shakeRecovery = 2.6f;
     [Range(5f, 60f)] public float shakeFrequency = 24f;
 
-    [Header("Muzzle")]
-    public Color muzzleFlashColor = new Color(1f, .78f, .42f);
-    [Min(0f)] public float muzzleLightIntensity = 5f;
-    [Min(.5f)] public float muzzleLightRange = 7f;
-    [Min(.01f)] public float muzzleFlashSeconds = .045f;
-    [Range(0f, 1f)] public float muzzleSmokeAlpha = .16f;
+    [Header("Muzzle light (MuzzleLight; the L4D2 addon Optimized Muzzle Flash 3605084814: 250 150 30, 12.7 m, 0.08 s)")]
+    [Tooltip("The addon's 250 150 30 as Unity's colour picker reads it: the soft orange the user picked (2026-11-06). Read as " +
+        "Source's linear colour it would be 253 202 96, a yellower light the user found duller.")]
+    public Color muzzleLightColor = new Color(250f / 255f, 150f / 255f, 30f / 255f);
+    [Min(0f), Tooltip("Brightness of one's own muzzle light sideways, at the gun's Muzzle Flash Scale 1. Straight down and up it " +
+        "is dimmed by Muzzle Light Below.")]
+    public float muzzleLightIntensity = 10f;
+    [Range(.1f, 1f), Tooltip("Share of the brightness straight down and straight up (sideways is full), eased between by the " +
+        "angle. The floor under the gun and the ceiling over it are the nearest surfaces, and with no tonemapping they burned to " +
+        "one flat colour and looked like the light's source. 1 is an even point light. Read when the gun is spawned.")]
+    public float muzzleLightBelow = .5f;
+    [Min(.5f), Tooltip("How far it reaches (m): 500 units.")]
+    public float muzzleLightRange = 12.7f;
+    [Min(.01f), Tooltip("How long one shot's light lasts (s): the addon's 0.08. With Hold 0.6 it is full for 48 ms and fades " +
+        "out by 80 ms, which follows MuzzleFlash's flame (50 ms bright, a tail to 68 ms). CS2's light, measured with the flame, " +
+        "is 0.06 with Hold 0.5.")]
+    public float muzzleLightSeconds = .08f;
+    [Range(0f, 1f), Tooltip("The share of that time at full brightness; the rest falls away squared.")]
+    public float muzzleLightHold = .6f;
+    [Tooltip("One's own muzzle light casts shadows: walls and bodies stop it. Six shadow faces while it shines; off, it " +
+        "lights through walls like the leak below at full strength.")]
+    public bool muzzleLightShadows = true;
+    [Range(0, 2), Tooltip("Size of those six shadow faces, a tier of the render pipeline asset: 0 low (256), 1 medium (512), " +
+        "2 high (1024). Higher draws sharper shadows and fills more of the shadow atlas. Read when the gun is spawned.")]
+    public int muzzleLightShadowTier = 1;
+    [Range(0f, 1f), Tooltip("With shadows on, a second light this share as bright and without shadows: the glow that slips round " +
+        "doors and under walls into the next room.")]
+    public float muzzleLightLeak = .15f;
+    [Range(0f, 1f), Tooltip("Someone else's gun lights this share as bright as one's own, without shadows.")]
+    public float muzzleLightOthers = .35f;
+    [Min(0f), Tooltip("How far ahead of the muzzle the light sits (m), so the gun itself doesn't hide it.")]
+    public float muzzleLightAhead = .15f;
 
     [Header("Sounds (empty = synthesized)")]
     [Range(0f, 1f)] public float gunshotVolume = .55f;
     [Range(0f, .2f)] public float gunshotPitchJitter = .045f;
-    public AudioClip[] dryFireSounds, lowAmmoSounds, magOutSounds, magInSounds, boltSounds;
+    public AudioClip[] dryFireSounds, lowAmmoSounds, lowAmmoClickSounds, lastRoundSounds, magOutSounds, magInSounds, boltSounds;
     [Range(0f, 1f)] public float mechanicalVolume = .45f;
-    [Range(0f, 1f), Tooltip("Magazine fraction at which the low-ammo tick starts. It rises in pitch and volume toward empty.")]
-    public float lowAmmoFraction = .3f;
+    [Range(0f, 1f), Tooltip("The low-ammo warning plays on every shot that leaves less than this share of the magazine, louder " +
+        "the emptier: TFA Base's LowAmmoSoundThreshold 0.33.")]
+    public float lowAmmoFraction = .33f;
+    [Min(0), Tooltip("Magazines this size or smaller get no low-ammo sounds (TFA's autodetection: 4); their last round still " +
+        "clicks empty.")]
+    public int lowAmmoSmallMagazine = 4;
     [Tooltip("Only used while the HitConfirm sound bank (Art/Audio/HitConfirm) is missing; empty = synthesized.")]
     public AudioClip[] killSounds, headshotKillSounds;
     [Range(0f, 1f)] public float killVolume = .6f;
@@ -94,6 +124,11 @@ public sealed class GunFeelSettings : ScriptableObject
     [Range(0f, 1f), Tooltip("Of the hits landed in one frame (a shotgun's pellets), at least this share must be headshots for the " +
         "headshot marker and sound, as in Overwatch. A single hit always counts.")]
     public float headshotHitShare = .3f;
+    [Range(0f, 2f), Tooltip("A hit whose bullet went through or off something on the way (DamageHit.Pierced): each tick trails a fading " +
+        "tail outward, this share of the tick's length by the time the marker goes (it starts at 60% of that).")]
+    public float piercedTailLength = .75f;
+    [Range(0f, 1f), Tooltip("Opacity of the tail's near half, as a share of the marker's own; the far half shows at 42% of it.")]
+    public float piercedTailAlpha = .38f;
     [Tooltip("The posture break marker: a ring and four shards bursting out from the aim point.")]
     public Color breakColor = new Color(1f, .52f, .14f);
     [Min(.05f)] public float breakSeconds = .4f;
@@ -180,6 +215,8 @@ public sealed class GunFeelSettings : ScriptableObject
     [Min(1f), Tooltip("Gun kills from at least this far add a long-range bonus (원거리 사격).")]
     public float longRangeDistance = 25f;
     [Min(0)] public int longRangeBonus = 25;
+    [Min(0), Tooltip("Gun kills whose bullet went through or off something first (관통 사살).")]
+    public int piercedBonus = 25;
     [Min(0)] public int killScore = 100;
     [Min(0)] public int headshotBonus = 50;
     [Min(0)] public int multiKillBonus = 50;

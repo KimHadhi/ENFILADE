@@ -185,3 +185,43 @@ Voice/StrainHard,1,0.95,1,Beatrun Faith.StrainHard
 Voice/StrainMedium,1,0.9,1.05,Beatrun Faith.StrainMedium
 Voice/StrainSoft,1,0.9,1.05,Beatrun Faith.StrainSoft
 Bullets/Ricochet,0.7,1,1,총알이 비스듬히 맞고 튕길 때(도탄). ArcCW 베이스(워크숍 2131057232) ricochet01~05. ArcCW처럼 높낮이 변화 없이 다섯 개 중에서 고른다
+Guns/Pistol/Shot,1,1,1,권총 발사. Hi-Octane Weapon Sounds(워크숍 3810863466) pistol_fire. 쏠 때마다의 높낮이는 GunFeel gunshotPitchJitter
+Guns/Rifle/Shot,1,1,1,소총 발사. Hi-Octane rifle_fire_1(M16)
+Guns/Heavy/Shot,1,1,1,샷건(Heavy) 발사. Hi-Octane shotgun_fire_1(펌프 샷건)
+Guns/Pistol/MagOut,1,1,1,권총 탄창 빼기. Hi-Octane pistol_clip_out_1
+Guns/Pistol/MagIn,1,1,1,권총 탄창 넣기. Hi-Octane pistol_clip_in_1
+Guns/Pistol/SlideBack,1,1,1,권총 슬라이드 당기기(SoundCues GunBolt/Pistol). Hi-Octane pistol_slideback_1
+Guns/Pistol/SlideForward,1,1,1,권총 슬라이드 놓기(SoundCues GunBolt/Pistol). Hi-Octane pistol_slideforward_1
+Guns/Pistol/DryFire,1,1,1,권총 빈 총 딸깍. Hi-Octane clipempty_pistol
+Guns/Rifle/MagOut,1,1,1,소총 탄창 빼기. Hi-Octane rifle_clip_out_1
+Guns/Rifle/MagIn,1,1,1,소총 탄창 넣기. Hi-Octane rifle_clip_in_1
+Guns/Rifle/SlideBack,1,1,1,소총 장전손잡이 당기기(SoundCues GunBolt/Rifle). Hi-Octane rifle_slideback_1
+Guns/Rifle/SlideForward,1,1,1,소총 장전손잡이 놓기(SoundCues GunBolt/Rifle). Hi-Octane rifle_slideforward_1
+Guns/Heavy/Bolt,1,1,1,샷건 펌프(당기고 미는 소리가 한 파일). Hi-Octane shotgun_pump_1
+Guns/Heavy/MagIn,1,0.97,1.03,샷건 탄 한 발 넣기. Hi-Octane shotgun_load_shell_2·4
+Guns/LowAmmoClick,1,1,1,잔탄 경고 딸깍(FeelAudio LowAmmoClick·SoundCues GunLowAmmoClick/<총>): 탄창이 3분의 1 아래로 남은 발마다 쏜 사람에게만 모든 총이 같이 낸다. CS2 sounds/weapons/lowammo_01(Default.NearlyEmpty) 원본. L4D2 애드온 Low Ammo Sound Cue의 click.mp3는 이 소리를 +10dB 키워 찌그러뜨린 것이라 원본으로 바꿨다
+Guns/Rifle/LowAmmo,1,1,1,소총 잔탄 경고음(FeelAudio LowAmmo): 탄창이 3분의 1 아래로 남은 발마다 내고 빌수록 커진다(AmmoCue). TFA Base(GMod 워크숍 2840031720) lowammo_indicator_ar
+Guns/Pistol/LowAmmo,1,1,1,권총 잔탄 경고음. TFA Base lowammo_indicator_handgun
+Guns/Heavy/LowAmmo,1,1,1,샷건 잔탄 경고음(아직 샷건이 없어 쓰이지 않는다). TFA Base lowammo_indicator_shotgun(한 발씩 장전하는 샷건용)
+Guns/Rifle/LastRound,1,1,1,소총 마지막 한 발(FeelAudio LastRound): 탄창을 비우는 발에 경고음 대신 낸다. TFA Base lowammo_dry_ar
+Guns/Pistol/LastRound,1,1,1,권총 마지막 한 발. TFA Base lowammo_dry_handgun
+Guns/Heavy/LastRound,1,1,1,샷건 마지막 한 발(미사용). TFA Base lowammo_dry_shotgun
+Guns/DryFire,1,1,1,권총 말고 모든 총의 빈 총 딸깍(L4D2처럼 소총 것을 같이 쓴다). Hi-Octane clipempty_rifle
+Guns/Reverb/Pistol/IndoorsClose,1,1,1,총 잔향 꼬리(GunReverb): 권총·좁은 실내. Accurate Gun Reverb(워크숍 3629393613) pistol-indoors-close-1
+Guns/Reverb/Pistol/IndoorsDistant,1,1,1,권총·넓은 실내. Accurate Gun Reverb pistol-indoors-distant-1
+Guns/Reverb/Pistol/OutdoorsClose,1,1,1,권총·실외(일부러 조용하고 낮다). Accurate Gun Reverb pistol-outdoors-close-1
+Guns/Reverb/Rifle/IndoorsClose,1,1,1,소총·좁은 실내. 꼬리가 없는 총도 이 소총 꼬리를 쓴다. Accurate Gun Reverb rifle-indoors-close-1
+Guns/Reverb/Rifle/IndoorsDistant,1,1,1,소총·넓은 실내. Accurate Gun Reverb rifle-indoors-distant-1
+Guns/Reverb/Rifle/OutdoorsClose,1,1,1,소총·실외. Accurate Gun Reverb rifle-outdoors-close-1
+Guns/Reverb/Heavy/IndoorsClose,1,1,1,샷건·좁은 실내. Accurate Gun Reverb shotgun_sniper-indoors-close-1
+Guns/Reverb/Heavy/IndoorsDistant,1,1,1,샷건·넓은 실내. 아주 큰 실내에서는 모든 총이 이 꼬리를 쓴다(원본 그대로). Accurate Gun Reverb shotgun_sniper-indoors-distant-1
+Guns/Reverb/Heavy/OutdoorsClose,1,1,1,샷건·실외. Accurate Gun Reverb shotgun_sniper-outdoors-close-1
+Guns/Reverb/Magnum/IndoorsClose,1,1,1,매그넘 꼬리. 아직 매그넘 종류의 총이 없어 쓰이지 않는다. Accurate Gun Reverb magnum-indoors-close-1
+Guns/Reverb/Magnum/IndoorsDistant,1,1,1,매그넘·넓은 실내(미사용). Accurate Gun Reverb magnum-indoors-distant-1
+Guns/Reverb/Magnum/OutdoorsClose,1,1,1,매그넘·실외(미사용). Accurate Gun Reverb magnum-outdoors-close-1
+Guns/Reverb/Smg/IndoorsClose,1,1,1,기관단총 꼬리. 아직 기관단총 종류의 총이 없어 쓰이지 않는다. Accurate Gun Reverb smg-indoors-close-1
+Guns/Reverb/Smg/IndoorsDistant,1,1,1,기관단총·넓은 실내(미사용). Accurate Gun Reverb smg-indoors-distant-1
+Guns/Reverb/Smg/OutdoorsClose,1,1,1,기관단총·실외(미사용). Accurate Gun Reverb smg-outdoors-close-1
+Movement/Dodge/Wind,0.25,0.95,1.05,스텝 회피의 바람. BOOM Violent Combat(구매) WHOOSH Dash의 6개 변형. 앞쪽에 부풀어 오르는 부분은 잘라서 0.14초 회피 안에 가장 커진다
+Movement/Dodge/Cloth,0.2,0.95,1.05,스텝 회피의 옷 스침. BOOM Violent Combat WHOOSH Kimono의 6개 변형. 바람처럼 앞쪽을 잘랐다
+Movement/Dodge/Perfect,0.35,0.95,1.05,완벽 회피 때 겹치는 바람(SoundCues DodgePerfect). BOOM Violent Combat WHOOSH Phantom Wind의 6개 변형. 11-06에 The End Is Low로 바꿨다가 사용자가 게임에서 들어 보고 되돌렸다

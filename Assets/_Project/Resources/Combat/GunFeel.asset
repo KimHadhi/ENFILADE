@@ -27,3 +27,16 @@ MonoBehaviour:
   gtaKillContrast: -3
   gtaKillChromatic: 0.1
   scoreOffset: {x: 130, y: -72}
+  lowAmmoFraction: 0.33
+  lowAmmoSmallMagazine: 4
+  muzzleLightColor: {r: 0.98039216, g: 0.5882353, b: 0.11764706, a: 1}
+  muzzleLightIntensity: 10
+  muzzleLightBelow: 0.5
+  muzzleLightRange: 12.7
+  muzzleLightSeconds: 0.08
+  muzzleLightHold: 0.6
+  muzzleLightShadows: 1
+  muzzleLightShadowTier: 1
+  muzzleLightLeak: 0.15
+  muzzleLightOthers: 0.35
+  muzzleLightAhead: 0.15

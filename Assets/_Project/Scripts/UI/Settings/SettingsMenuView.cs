@@ -7,8 +7,9 @@ using W = SettingsWidgets;
 /// <summary>Builds the Esc menu panel: a tab per group of settings, each control bound to <see cref="GameSettings.Current"/>.</summary>
 public sealed class SettingsMenuView
 {
-    private static readonly string[] Tabs = { "소리", "조작", "화면", "크로스헤어" };
-    private const int CrosshairTab = 3;
+    private static readonly string[] Tabs = { "소리", "조작", "화면", "크로스헤어", "캐릭터" };
+    private const int CrosshairTab = 3, CharacterTab = 4;
+    private const float PanelWidth = 820f, PanelPadding = 44f;
     private static readonly string[] OffOn = { "끔", "켬" };
     private static readonly string[] HoldToggle = { "누르는 동안", "눌러서 전환" };
     // In DamageNumberMode's order.
@@ -43,10 +44,10 @@ public sealed class SettingsMenuView
         if (panel != null) UnityEngine.Object.Destroy(panel.gameObject);
         panel = W.Rect("Panel", root);
         panel.anchorMin = panel.anchorMax = panel.pivot = new Vector2(.5f, .5f);
-        panel.sizeDelta = new Vector2(820f, 920f);
+        panel.sizeDelta = new Vector2(PanelWidth, 920f);
         W.Fill(panel, new Color(.06f, .07f, .09f, .96f));
         var layout = panel.gameObject.AddComponent<VerticalLayoutGroup>();
-        layout.padding = new RectOffset(44, 44, 36, 36);
+        layout.padding = new RectOffset((int)PanelPadding, (int)PanelPadding, 36, 36);
         layout.spacing = 8f;
         layout.childControlWidth = layout.childControlHeight = true;
         layout.childForceExpandWidth = true; layout.childForceExpandHeight = false;
@@ -75,6 +76,11 @@ public sealed class SettingsMenuView
         if (tab == CrosshairTab)
         {
             new CrosshairSettingsView(page);
+            return;
+        }
+        if (tab == CharacterTab)
+        {
+            new CharacterSkinView(page, PanelWidth - PanelPadding * 2f, true);
             return;
         }
         var rows = new SettingsRows(W.ScrollArea(page));
@@ -111,14 +117,6 @@ public sealed class SettingsMenuView
         rows.Choice("HUD 그리드 배경", OffOn, s.hudBoards ? 1 : 0, i => s.hudBoards = i == 1);
         rows.Choice("데미지 숫자", DamageNumberNames, (int)s.damageNumbers, i => s.damageNumbers = (DamageNumberMode)i);
         rows.Choice("내 머리카락 보기", OffOn, s.showOwnHead ? 1 : 0, i => s.showOwnHead = i == 1);
-        var bodyProfile = PlayerBodyProfile.Load();
-        var skins = bodyProfile?.Skins.Where(skin => skin != null && skin.Model != null).ToArray();
-        if (skins != null && skins.Length > 1 && !MainMenuScreen.IsOpen)
-        {
-            int selected = Array.FindIndex(skins, skin => skin.Model == bodyProfile.Model);
-            rows.Choice("캐릭터 스킨", skins.Select(skin => skin.DisplayName).ToArray(), Mathf.Max(0, selected),
-                i => s.characterSkin = skins[i].Id);
-        }
 
         rows.Header("프레임");
         RectTransform limitRow = null;

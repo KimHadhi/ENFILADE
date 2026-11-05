@@ -7,6 +7,7 @@ using UnityEngine;
 /// marker sized by the share of health they took, one dry tick, a metallic dink on top when enough of them were
 /// headshots (GunFeel → Headshot Hit Share, Overwatch's pellet rule), and a thump for kills that climbs a little with each
 /// kill of a streak (GunFeel → Kill Streak Pitch Step). A hit that breaks posture adds the break marker and a bone crack.
+/// When any of them came through or off something on the way (DamageHit.Pierced), the marker shows its pierced echo.
 /// Sounds come from the HitConfirm sound bank (Art/Audio/HitConfirm/Body, Head, Kill, Break; volume and pitch in
 /// Sounds.csv), so a sound is changed by swapping files; while the bank is missing a kill falls back to GunFeel's kill
 /// sounds. Created on first use during Play.
@@ -24,7 +25,7 @@ public sealed class HitConfirm : MonoBehaviour
     private static bool bankLoaded;
     private static int streak;
     private static float lastKillTime = -99f;
-    private int hits, heads, kills, headKills, breaks;
+    private int hits, heads, kills, headKills, breaks, pierces;
     private float share;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -57,6 +58,7 @@ public sealed class HitConfirm : MonoBehaviour
         var self = Get();
         self.hits++;
         if (report.IsCritical) self.heads++;
+        if (report.Hit.Pierced) self.pierces++;
         if (report.IsKillingBlow)
         {
             self.kills++;
@@ -90,11 +92,11 @@ public sealed class HitConfirm : MonoBehaviour
         var settings = GunFeelSettings.Instance;
         bool head = heads > 0 && heads >= settings.headshotHitShare * hits, kill = kills > 0, headKill = headKills > 0;
         HitMarkerHUD.Show(kill ? (headKill ? HitMarkerKind.HeadKill : HitMarkerKind.BodyKill) : head ? HitMarkerKind.Head : HitMarkerKind.Body,
-            Mathf.Min(1f, share));
+            Mathf.Min(1f, share), pierces > 0);
         Play("Body");
         if (head || headKill) Play("Head");
         if (kill) Kill(settings, headKill, kills);
-        hits = heads = kills = headKills = 0;
+        hits = heads = kills = headKills = pierces = 0;
         share = 0f;
     }
 

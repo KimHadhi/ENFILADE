@@ -13,7 +13,7 @@ public sealed class WeaponData : ScriptableObject
     public const string TableName = "Weapons";
     public void BindTable() => GameTables.Bind(TableName, name, this);
 
-    [SerializeField] private string displayName = "Foundation Rifle";
+    [SerializeField] private string displayName = "Weapon";
     [SerializeField] private Sprite hudIcon;
     [Tooltip("Crosshair while this weapon is in hand. Empty: melee weapons use Feedback's Melee Crosshair, the rest the scene's own.")]
     [SerializeField] private CrosshairProfile crosshairProfile;
@@ -43,6 +43,15 @@ public sealed class WeaponData : ScriptableObject
     [Tooltip("How far a bullet pushes through what it hits, in ArcCW's millimetres (BulletPenetration): Horde's M4A1 is 10, " +
         "its G17 4. 0 stops at the first hit.")]
     [SerializeField, Min(0f)] private float penetration;
+    [Tooltip("Crouched on the ground, the whole cone (hip or aimed, with moving, airborne and bloom) is multiplied by this, " +
+        "as ArcCW's arccw_mult_crouchdisp does. 0.5 is TFA's CrouchAccuracyMultiplier; 1 turns it off.")]
+    [SerializeField, Range(.05f, 1f)] private float crouchSpread = .5f;
+    [Tooltip("Crouched on the ground, aim recoil is multiplied by this, as ArcCW's arccw_mult_crouchrecoil does. 0.65 is " +
+        "TFA's CrouchRecoilMultiplier; 1 turns it off.")]
+    [SerializeField, Range(.05f, 1f)] private float crouchRecoil = .65f;
+    [Tooltip("An empty magazine starts its reload by itself this long after the gun could fire again (s), as ArcCW's " +
+        "arccw_automaticreload does (0.2). Below 0 turns it off.")]
+    [SerializeField] private float autoReloadDelay = .2f;
     [Tooltip("Repeats while firing; an empty array uses Recoil Per Shot.")]
     [SerializeField] private Vector2[] recoilPattern = new Vector2[0];
     [Header("Recoil feel")]
@@ -74,6 +83,11 @@ public sealed class WeaponData : ScriptableObject
     [SerializeField, Range(.01f, .2f)] private float highReadyRaiseHalfLife = .07f;
     [Tooltip("Seconds to halve the visual distance back to the firing pose.")]
     [SerializeField, Range(.01f, .2f)] private float highReadyLowerHalfLife = .09f;
+    [Header("Sway (ArcCW's viewmodel sway, WeaponSway; presentation only)")]
+    [Tooltip("How much the gun slides and tips as the view turns: ArcCW's arccw_vm_look_xmult and _ymult (1). 0 turns it off.")]
+    [SerializeField, Range(0f, 3f)] private float lookSway = 1f;
+    [Tooltip("How much the gun bobs with each stride and leans with movement: ArcCW's arccw_vm_sway_*mult (1). 0 turns it off.")]
+    [SerializeField, Range(0f, 3f)] private float moveSway = 1f;
     [Header("Body hands (weapon-root space, m)")]
     [Tooltip("Moves the hip pose (camera space) so the body's arms reach the grips.")]
     [SerializeField] private Vector3 holdOffset = new Vector3(-.08f, .03f, -.36f);
@@ -137,6 +151,12 @@ public sealed class WeaponData : ScriptableObject
     public float BloomRecovery => Mathf.Max(0f, bloomRecovery);
     public float HeadshotMultiplier => Mathf.Max(1f, headshotMultiplier);
     public float Penetration => Mathf.Max(0f, penetration);
+    public float CrouchSpread => Mathf.Clamp(crouchSpread, .05f, 1f);
+    public float CrouchRecoil => Mathf.Clamp(crouchRecoil, .05f, 1f);
+    /// <summary>Seconds after the gun could fire again that an empty magazine reloads by itself; negative: never.</summary>
+    public float AutoReloadDelay => autoReloadDelay;
+    public float LookSway => Mathf.Clamp(lookSway, 0f, 3f);
+    public float MoveSway => Mathf.Clamp(moveSway, 0f, 3f);
     public float AdsFov => Mathf.Clamp(adsFov, 20f, 100f);
     public float AdsMoveMultiplier => Mathf.Clamp(adsMoveMultiplier, .1f, 1f);
     public float AdsTransitionTime => Mathf.Max(.01f, adsTransitionTime);

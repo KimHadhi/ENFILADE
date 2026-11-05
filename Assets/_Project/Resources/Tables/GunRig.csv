@@ -1,0 +1,6 @@
+﻿key,value,note
+Rig.useRig,1,총을 KINEMATION 팔 리그(FPS Animation Pack x CAS)로 든다. 0이면 예전 임시 총 자세(WeaponPresentation)로 돌아간다
+Rig.bodyFit,1,KINEMATION 팔이 총을 드는 자리에서 이 캐릭터의 팔이 같은 굽힘으로 들 자리 쪽으로 총을 옮기는 비율. 팔이 짧은 캐릭터도 손이 총에 닿게 한다. 0이면 KINEMATION 자리 그대로. 정조준 중에는 저절로 0이 된다
+Rig.fitLimit,0.08,그렇게 옮기는 최대 거리(m)
+Rig.fitHalfLife,0.25,옮기는 빠르기: 남은 거리가 반이 되는 시간(초)
+Rig.muzzleDepth,0.015,KINEMATION 총에는 총구 뼈가 없어서 총 모양의 앞면에서 총구를 잰다. 그 앞면으로 보는 두께(m)

@@ -4,8 +4,8 @@ using MovementState = PlayerMovement.MovementState;
 /// <summary>
 /// The sounds of the player's actions, after Beatrun's: jumps, landings by how hard they hit (and getting up after a
 /// heavy one), rolls, vaults, mantles,
-/// ledge catches and climbs, wall climbs and kicks, bars, slides with their scrape, dives, dodges, dash pushes and the
-/// bodies they hit, prone, crouch and lean. Listens to PlayerMovement's events and fires cues of Tables/SoundCues on
+/// ledge catches and climbs, wall climbs and kicks, bars, slides with their scrape, dives, dodges (with a whoosh when an
+/// attack passes through one, DodgePerfect), dash pushes and the bodies they hit, prone, crouch and lean. Listens to PlayerMovement's events and fires cues of Tables/SoundCues on
 /// the surface involved (the ground, the obstacle, the ledge, the wall); what each cue plays is tuned there.
 /// Footsteps are PlayerFootsteps', breathing PlayerBreathing's. Numbers: Player.csv row MovementAudio.
 /// </summary>
@@ -51,6 +51,7 @@ public sealed class PlayerMovementAudio : MonoBehaviour
 
     private PlayerMovement player;
     private CharacterSounds sounds;
+    private DodgeController dodge;
     private SoundLoop slideLoop;
     private string slideSurface, recentTraversal;
     private Vector3 lastPosition;
@@ -79,6 +80,8 @@ public sealed class PlayerMovementAudio : MonoBehaviour
             player.Jumped -= OnJumped;
             player.DashPushHit -= OnDashPushHit;
         }
+        if (dodge != null) dodge.Succeeded -= OnDodged;
+        dodge = null;
         slideLoop?.Stop();
     }
 
@@ -86,6 +89,12 @@ public sealed class PlayerMovementAudio : MonoBehaviour
     {
         float dt = Time.deltaTime;
         if (dt <= 0f || player == null || !player.IsInitialized) return;
+        // The dodge exists once the movement has set up its abilities.
+        if (dodge == null && player.Abilities != null)
+        {
+            dodge = player.Abilities.Dodge;
+            dodge.Succeeded += OnDodged;
+        }
         var traversal = player.Abilities.Traversal;
         float moved = Vector3.Distance(transform.position, lastPosition) / dt;
         switch (player.CurrentState)
@@ -191,6 +200,9 @@ public sealed class PlayerMovementAudio : MonoBehaviour
     private void OnJumped() => Cue("Jump", Ground());
 
     private void OnDashPushHit(Vector3 point) => Cue("DashPushHit", Ground());
+
+    // An attack passed through a dodge (step or Q/E): a whoosh on top of the perfect evade's own sound.
+    private void OnDodged(DodgeKind kind, int side) => Cue("DodgePerfect", null, true);
 
     private void StartSlide(MovementState state)
     {

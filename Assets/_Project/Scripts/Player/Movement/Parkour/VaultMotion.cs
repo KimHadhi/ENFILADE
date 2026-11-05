@@ -2,7 +2,7 @@ using UnityEngine;
 
 /// <summary>
 /// How Beatrun carries the player along a vault or climb: the per-kind lerp rates of vaulting.lua and climb.lua, in its
-/// 66.66 Hz ticks, and when it hands control back. Speeds are in its units per second (see PlayerMovement.HullUnit).
+/// 66.66 Hz ticks, and when it hands control back. Speeds are in its units per second (see PlayerMovement.HeightUnit).
 /// Ability.vaultRate, mountRate and heaveRate scale the rates; 1 is the original.
 /// </summary>
 public static class VaultMotion

@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: eec70a737545e7e4eafa80d7038f7a92
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 7400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 276087
+  packageName: Advanced Zombie AI
+  packageVersion: 1.0.2
+  assetPath: Assets/Advanced Zombie AI/Animations (Representational)/Attack.anim
+  uploadId: 684220

@@ -2141,6 +2141,20 @@ struct lilLightData
         LIL_CORRECT_LIGHTCOLOR_VS(o.lightColor)
 #endif
 
+// ENFILADE patch (2026-11-05, lilToon 2.4.1): with baked Adaptive Probe Volume data, lilGetLightColorDoubleAPV lights the
+// model with the probes alone (issue #419, MR #420). The probes hold a Mixed main light's direct light only when baking in
+// Subtractive mode. ENFILADE bakes Baked Indirect, where the sun still lights directly in real time, so it is added back here,
+// stopped by its real-time shadow: lit in the sun, dark in a closed room. Reapply after updating lilToon (Docs/LightingGuide.md).
+#if defined(LIL_URP) && (defined(PROBE_VOLUMES_L1) || defined(PROBE_VOLUMES_L2)) && !defined(LIL_PASS_FORWARDADD)
+    #if defined(_MAIN_LIGHT_SHADOWS_SCREEN)
+        #define LIL_ADD_REALTIME_MAINLIGHT_APV(input,lc,atten) lc += LIL_MAINLIGHT_COLOR * (atten)
+    #else
+        #define LIL_ADD_REALTIME_MAINLIGHT_APV(input,lc,atten) lc += LIL_MAINLIGHT_COLOR * MainLightRealtimeShadow(TransformWorldToShadowCoord(input.positionWS))
+    #endif
+#else
+    #define LIL_ADD_REALTIME_MAINLIGHT_APV(input,lc,atten)
+#endif
+
 // Main Light in PS (Color / Direction / Attenuation)
 #if defined(LIL_PASS_FORWARDADD)
     // Point Light & Spot Light (ForwardAdd)
@@ -2231,6 +2245,7 @@ struct lilLightData
     // Realtime
     #define LIL_GET_MAINLIGHT(input,lc,ld,atten) \
         lc = input.lightColor; \
+        LIL_ADD_REALTIME_MAINLIGHT_APV(input,lc,atten); \
         lilGetAdditionalLights(input.positionWS, input.positionCS, LIL_ADDITIONAL_LIGHT_STRENGTH, lc, ld); \
         LIL_CORRECT_LIGHTCOLOR_PS(lc); \
         LIL_CORRECT_LIGHTDIRECTION_PS(ld)

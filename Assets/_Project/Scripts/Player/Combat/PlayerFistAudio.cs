@@ -64,7 +64,7 @@ public sealed class PlayerFistAudio : MonoBehaviour
         if (sound == FistSound.Swing)
         {
             if (swingVoices == null) swingVoices = NewRing(SwingVoices);
-            var swing = swingVoices.Take();
+            var swing = Place(swingVoices.Take());
             GameAudio.SetGain(swing, 1f);
             swing.PlayOneShot(clip, Mathf.Clamp01(volume));
             return;
@@ -72,9 +72,16 @@ public sealed class PlayerFistAudio : MonoBehaviour
         if (hitVoices == null) hitVoices = NewRing(HitVoices);
         swingVoices?.ForEach(swing => GameAudio.SetGain(swing, SwingUnderHit));
         float variance = CombatFeedbackSettings.InstanceOrDefaults.hitPitchVariance;
-        var hit = hitVoices.Take();
+        var hit = Place(hitVoices.Take());
         hit.pitch = 1f + Random.Range(-variance, variance);
         hit.PlayOneShot(clip, Mathf.Clamp01(volume));
+    }
+    /// <summary>Makes the swing and hit voices now (at spawn), so the first punch or counter adds no AudioSources mid-fight.</summary>
+    public void Prepare()
+    {
+        if (!Application.isPlaying) return;
+        if (swingVoices == null) swingVoices = NewRing(SwingVoices);
+        if (hitVoices == null) hitVoices = NewRing(HitVoices);
     }
     private VoiceRing NewRing(int count)
     {
@@ -85,11 +92,17 @@ public sealed class PlayerFistAudio : MonoBehaviour
     private AudioSource NewVoice()
     {
         var source = gameObject.AddComponent<AudioSource>();
-        // One's own fists sound flat; someone else's come from where they stand.
-        bool someoneElse = TryGetComponent(out PlayerMovement player) && !player.IsLocal;
-        source.playOnAwake = false; source.spatialBlend = someoneElse ? 1f : 0f;
+        source.playOnAwake = false;
         source.rolloffMode = AudioRolloffMode.Linear; source.minDistance = 2f; source.maxDistance = OthersReach;
         GameAudio.Bind(source, AudioChannel.Combat);
+        return Place(source);
+    }
+    // One's own fists sound flat; someone else's come from where they stand. Asked again at every sound, since the voices
+    // are made at spawn, before the network says whose copy this is.
+    private AudioSource Place(AudioSource source)
+    {
+        bool someoneElse = TryGetComponent(out PlayerMovement player) && !player.IsLocal;
+        source.spatialBlend = someoneElse ? 1f : 0f;
         return source;
     }
     /// <summary>Random clip that differs from the previous pick whenever an alternative exists.</summary>

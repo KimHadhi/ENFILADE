@@ -21,6 +21,36 @@ internal sealed class HandSkinCorrection : MonoBehaviour
         return result != null ? result : animator.gameObject.AddComponent<HandSkinCorrection>();
     }
 
+    /// <summary>
+    /// Copies, while the body is being made, each mesh this thumb's web skin lies on. Prepare used to copy them the first
+    /// time a hand closed on a ledge, and copying a whole body mesh mid-mantle stalled that frame (Instantiate, about 40 ms
+    /// in the hitch log): the first mantle's hitch.
+    /// </summary>
+    public void CopyAhead(Transform[] thumb)
+    {
+        foreach (var renderer in GetComponentsInChildren<SkinnedMeshRenderer>())
+        {
+            Mesh source = renderer.sharedMesh;
+            if (source == null || parts.Exists(item => item.Renderer == renderer) || !Carries(renderer.bones, thumb)) continue;
+            parts.Add(MakePart(renderer, source));
+        }
+    }
+
+    private static bool Carries(Transform[] bones, Transform[] thumb)
+    {
+        foreach (var bone in bones)
+            if (bone != null && System.Array.IndexOf(thumb, bone) >= 0) return true;
+        return false;
+    }
+
+    private static Part MakePart(SkinnedMeshRenderer renderer, Mesh source)
+    {
+        var part = new Part { Renderer = renderer, Original = source, Copy = Instantiate(source) };
+        part.Copy.name = source.name + " (hand contact correction)";
+        part.Copy.hideFlags = HideFlags.HideAndDontSave;
+        return part;
+    }
+
     public void Prepare(Transform[] thumb, bool left, System.Func<Vector3, bool> clear)
     {
         int side = left ? 0 : 1;
@@ -101,13 +131,7 @@ internal sealed class HandSkinCorrection : MonoBehaviour
             Dispose(baked);
 
             Part part = parts.Find(item => item.Renderer == renderer);
-            if (part == null)
-            {
-                part = new Part { Renderer = renderer, Original = source, Copy = Instantiate(source) };
-                part.Copy.name = source.name + " (hand contact correction)";
-                part.Copy.hideFlags = HideFlags.HideAndDontSave;
-                parts.Add(part);
-            }
+            if (part == null) parts.Add(part = MakePart(renderer, source));
             int count = renderer.sharedMesh.blendShapeCount;
             var previous = new float[count];
             for (int i = 0; i < count; i++) previous[i] = renderer.GetBlendShapeWeight(i);

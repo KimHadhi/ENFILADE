@@ -9,11 +9,26 @@ public sealed class ExecutionHUD : MonoBehaviour
     private CanvasGroup group;
     private RectTransform prompt;
     private MeleeCombatTarget shown;
+    private TextMeshProUGUI label;
+    private string keys = "[F]";
     private float appearance;
     public float Opacity => group != null ? group.alpha : 0f;
     public float PromptScale => prompt != null ? prompt.localScale.x : 1f;
     private void OnEnable() => execution = GetComponent<PlayerExecution>();
-    private void LateUpdate() => Refresh(execution != null ? execution.Candidate : null, Time.unscaledDeltaTime);
+    private void LateUpdate()
+    {
+        var near = execution != null ? execution.Candidate : null;
+        // With the fists out a left click also executes a broken enemy further off, dashing in (DeathblowCandidate).
+        var far = execution != null ? execution.DeathblowCandidate : null;
+        SetKeys(near != null && far != null ? "[좌클릭·F]" : far != null ? "[좌클릭]" : "[F]");
+        Refresh(near != null ? near : far, Time.unscaledDeltaTime);
+    }
+    private void SetKeys(string value)
+    {
+        if (keys == value) return;
+        keys = value;
+        if (label != null) label.text = keys + " 처형하기";
+    }
     public void Refresh(MeleeCombatTarget target, float dt)
     {
         if (target == null && group == null) return;
@@ -43,7 +58,8 @@ public sealed class ExecutionHUD : MonoBehaviour
         text.rectTransform.offsetMin = text.rectTransform.offsetMax = Vector2.zero;
         var settings = CombatFeedbackSettings.Instance;
         if (settings != null && settings.promptFont != null) text.font = settings.promptFont;
-        text.text = "[F] 처형하기"; text.fontSize = 27f; text.alignment = TextAlignmentOptions.Center;
+        label = text;
+        text.text = keys + " 처형하기"; text.fontSize = 27f; text.alignment = TextAlignmentOptions.Center;
         text.color = new Color(1f, .94f, .9f); text.raycastTarget = false;
         text.fontStyle = FontStyles.Bold;
     }

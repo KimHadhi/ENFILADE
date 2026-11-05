@@ -169,3 +169,6 @@ Packages/packages-lock.json linguist-generated
 
 # Exceptions for .asset files such as lightning pre-baking
 LightingData.asset     binary
+
+# KINEMATION ships animation clips as .anim YAML of up to 68 MB each; keep them in LFS
+Assets/ThirdParty/KINEMATION/**/*.anim lfs

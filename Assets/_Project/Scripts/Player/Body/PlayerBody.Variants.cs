@@ -159,6 +159,9 @@ public sealed partial class PlayerBody
     private bool ClipCarriesBody => playingOut || heaving || (!dead && (state == MovementState.Vault || state == MovementState.Mantle)
         && player.Abilities.Traversal.Obstacle.Kind != VaultKind.None);
 
+    /// <summary>A vault's or climb's clip is playing on after the move, to the touchdown (not a springboard).</summary>
+    internal bool PlaysOutObstacle => playingOut && !springing;
+
     // The player is over before the clip is: it plays on until the feet are down and moving, or a spring takes over.
     private void PlayOutObstacle()
     {

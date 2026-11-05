@@ -1,0 +1,442 @@
+// Generated from Source/Editor/Full. Do not edit this template directly.
+#if UNITY_EDITOR
+using UnityEditor;
+using UnityEngine;
+
+namespace RVFX.DestructionSystem
+{
+    [CustomEditor(typeof(RVFXPieceTransformPlayback), isFallback = true)]
+    internal sealed partial class RVFXPortablePlaybackEditor : Editor
+    {
+        private bool _showCodeExample;
+
+        internal const string PlaybackCodeExample =
+@"using UnityEngine;
+using RVFX.DestructionSystem;
+
+// Turn Play On Awake OFF for manual triggering.
+public class BakedPlaybackControlExample : MonoBehaviour
+{
+    [SerializeField] private GameObject bakedObject;
+    private RVFXBakedPlayback playback;
+
+    private void Awake()
+    {
+        playback = RVFXBakedPlayback.Get(bakedObject);
+    }
+
+    // The baked object/component must be active.
+    public void Play()
+    {
+        if (playback != null)
+        {
+            playback.Play();
+        }
+    }
+
+    public void Pause()
+    {
+        if (playback != null)
+        {
+            playback.Pause();
+        }
+    }
+
+    public void Stop()
+    {
+        if (playback != null)
+        {
+            playback.Stop();
+        }
+    }
+
+    public void Restart()
+    {
+        if (playback != null)
+        {
+            playback.Restart();
+        }
+    }
+
+    public void PlayAfterTwoSeconds()
+    {
+        if (playback != null)
+        {
+            playback.PlayDelayed(2f);
+        }
+    }
+}";
+
+        private bool _showRemap;
+        private double _lastRepaint;
+
+        private void OnEnable()
+        {
+            EditorApplication.update += UpdatePreview;
+            Undo.undoRedoPerformed += RestorePreview;
+        }
+
+        private void OnDisable()
+        {
+            EditorApplication.update -= UpdatePreview;
+            Undo.undoRedoPerformed -= RestorePreview;
+        }
+
+        private void UpdatePreview()
+        {
+            var playback = target as RVFXPieceTransformPlayback;
+            if (playback == null) return;
+            double now = EditorApplication.timeSinceStartup;
+            if (now - _lastRepaint < 1.0 / 30.0) return;
+            _lastRepaint = now;
+            Repaint();
+        }
+
+        private void RestorePreview()
+        {
+            var playback = target as RVFXPieceTransformPlayback;
+            if (playback == null) return;
+            playback.ApplyFrame(playback.useManualFrame ? playback.manualFrame : playback.CurrentFrame);
+            playback.RefreshPlaybackEffects();
+            SceneView.RepaintAll();
+            Repaint();
+        }
+
+        public override void OnInspectorGUI()
+        {
+            var playback = target as RVFXPieceTransformPlayback;
+            if (playback == null) return;
+            RVFXPortablePlaybackInspectorGUI.EnsureStyles();
+            float oldLabelWidth = EditorGUIUtility.labelWidth;
+            int oldIndent = EditorGUI.indentLevel;
+            EditorGUI.indentLevel = 0;
+            EditorGUIUtility.labelWidth = Mathf.Min(118, EditorGUIUtility.currentViewWidth * .34f);
+            try
+            {
+                serializedObject.Update();
+                DrawHeader(playback);
+                DrawTransformValidation(playback);
+                if (!playback.TryValidateRenderPipelineCompatibility(out string warning))
+                    EditorGUILayout.HelpBox(warning, MessageType.Warning);
+                if (!string.IsNullOrEmpty(playback.RuntimeCompatibilityNote))
+                    EditorGUILayout.HelpBox(playback.RuntimeCompatibilityNote, MessageType.Warning);
+                using (new EditorGUI.DisabledScope(!playback.TryValidatePlaybackTransform(out _)))
+                    DrawPreview(playback);
+                DrawSettings();
+                if (playback.HasAdaptiveBase)
+                {
+                    using (new EditorGUILayout.VerticalScope(RVFXPortablePlaybackInspectorGUI.Card))
+                    {
+                        GUI.Label(Row(), "ADAPTIVE BASE", RVFXPortablePlaybackInspectorGUI.Section);
+                        var adaptive = playback.fractureDataAsset.adaptive;
+                        bool sampled = adaptive.remapMetadata != null && adaptive.remapMetadata.height > 5;
+                        EditorGUILayout.LabelField(new GUIContent("Landing Accuracy", "Stored at Build time. Change in Rig Setup and rebuild the prefab; no new recording needed."),
+                            new GUIContent(sampled ? adaptive.landingAccuracy + " (baked)" : "Legacy bounds (rebuild recommended)"));
+                        if (sampled && adaptive.surfaceSampleSpacing > 0)
+                            EditorGUILayout.LabelField("Sample Spacing", adaptive.surfaceSampleSpacing.ToString("0.###") + " m (baked)");
+                        EditorGUILayout.PropertyField(serializedObject.FindProperty("adaptiveBaseEnabled"), new GUIContent("Adaptive Landing"));
+                        if (playback.secondaryDebrisBinaryData != null)
+                            EditorGUILayout.PropertyField(serializedObject.FindProperty("adaptiveDebrisEnabled"), new GUIContent("Adaptive Debris", "Use the same Surface and Target Height as Base."));
+                        EditorGUILayout.PropertyField(serializedObject.FindProperty("adaptiveSurfaceMode"), new GUIContent("Surface"));
+                        if (playback.fractureDataAsset.adaptive.version == 2)
+                            EditorGUILayout.PropertyField(serializedObject.FindProperty("adaptiveMaxFlightSeconds"), new GUIContent("Max Extra Flight (s)"));
+                        if (serializedObject.FindProperty("adaptiveSurfaceMode").enumValueIndex == 0)
+                            EditorGUILayout.PropertyField(serializedObject.FindProperty("adaptiveTargetHeight"), new GUIContent("Target Height", "Flat landing plane, world-space Y."));
+                        else
+                        {
+                            EditorGUILayout.PropertyField(serializedObject.FindProperty("adaptiveSurfaceLayers"), new GUIContent("Surface Layers"));
+                            var resolution = serializedObject.FindProperty("adaptiveMapResolution");
+                            resolution.intValue = EditorGUILayout.IntPopup(new GUIContent("Map Resolution", "32 to 512. Higher resolution captures smaller surface details and uses more memory. Separate from baked Landing Accuracy. Refresh Surface after changing the ground."),
+                                Mathf.Clamp(Mathf.ClosestPowerOfTwo(resolution.intValue),32,512), new[]{new GUIContent("32"), new GUIContent("64"), new GUIContent("128"), new GUIContent("256"), new GUIContent("512")}, new[]{32,64,128,256,512});
+                            if (GUILayout.Button("Refresh Surface"))
+                            {
+                                serializedObject.ApplyModifiedProperties();
+                                playback.RefreshAdaptiveSurface();
+                            }
+                        }
+                        EditorGUILayout.LabelField("World Y · anchored pieces stay fixed · rigid chunks", RVFXPortablePlaybackInspectorGUI.Muted);
+                    }
+                }
+                if (playback.HasCollisionPlayback)
+                    EditorGUILayout.HelpBox(playback.collisionData.BodyCount +
+                        " recorded collision bodies · fixed physics clock.", MessageType.None);
+                bool effectsChanged = DrawPlaybackEffects(playback);
+                DrawDebrisSettings(playback);
+                DrawFooter(playback);
+                if (serializedObject.ApplyModifiedProperties())
+                {
+                    if (effectsChanged) playback.RefreshPlaybackEffects();
+                    playback.ApplyRendererBounds();
+                    // Refresh already restores the particle tail after Body playback ends.
+                    if (!effectsChanged)
+                        playback.ApplyFrame(playback.useManualFrame ? playback.manualFrame : playback.CurrentFrame);
+                    SceneView.RepaintAll();
+                }
+            }
+            finally
+            {
+                EditorGUIUtility.labelWidth = oldLabelWidth;
+                EditorGUI.indentLevel = oldIndent;
+            }
+        }
+
+        private static Rect Row(float height = 20)
+        {
+            return EditorGUILayout.GetControlRect(false, height);
+        }
+
+        private static void DrawHeader(RVFXPieceTransformPlayback playback)
+        {
+            Rect header = Row(52);
+            Rect logo = new Rect(header.x, header.y + 5, 42, 40);
+            EditorGUI.DrawRect(logo, new Color(.12f, .14f, .15f));
+            EditorGUI.DrawRect(new Rect(logo.x, logo.y, logo.width, 2), RVFXPortablePlaybackInspectorGUI.Accent);
+            GUI.Label(logo, "RVFX", RVFXPortablePlaybackInspectorGUI.Logo);
+            GUI.Label(new Rect(header.x + 52, header.y + 6, header.width - 52, 21),
+                "GPU PLAYBACK", RVFXPortablePlaybackInspectorGUI.Title);
+            GUI.Label(new Rect(header.x + 52, header.y + 28, header.width - 52, 18),
+                new GUIContent(playback.gameObject.name, playback.gameObject.name), RVFXPortablePlaybackInspectorGUI.Muted);
+            using (new EditorGUILayout.VerticalScope(RVFXPortablePlaybackInspectorGUI.Card))
+            {
+                Rect stats = Row(18);
+                string[] values =
+                {
+                    Mathf.Max(0, playback.pieceCount).ToString("N0") + " Pieces",
+                    playback.GetSecondaryDebrisBakedPointCount().ToString("N0") + " Debris",
+                    (Mathf.Max(0, playback.frameCount - 1) / Mathf.Max(1, playback.fps)).ToString("0.00") + " s",
+                    playback.fps.ToString("0.#") + " FPS"
+                };
+                float width = stats.width / 4;
+                var centered = RVFXPortablePlaybackInspectorGUI.ButtonLabel;
+                for (int i = 0; i < 4; i++)
+                {
+                    GUI.Label(new Rect(stats.x + i * width, stats.y, width, stats.height), values[i], centered);
+                    if (i > 0) EditorGUI.DrawRect(new Rect(stats.x + i * width, stats.y + 3, 1, 12),
+                        new Color(.5f, .5f, .5f, .25f));
+                }
+            }
+        }
+
+        private void DrawPreview(RVFXPieceTransformPlayback playback)
+        {
+            using (new EditorGUILayout.VerticalScope(RVFXPortablePlaybackInspectorGUI.Card))
+            {
+                bool running = playback.IsPreviewRunning;
+                Rect heading = Row();
+                GUI.Label(heading, "PREVIEW", RVFXPortablePlaybackInspectorGUI.Section);
+                string state = !playback.isActiveAndEnabled ? "Inactive" :
+                    EditorApplication.isPlaying && EditorApplication.isPaused ? "Editor paused" :
+                    playback.IsWaitingForDelay ? "Waiting" : running ? "Playing" : "Paused";
+                GUI.Label(heading, state, RVFXPortablePlaybackInspectorGUI.Right);
+                int maxFrame = Mathf.Max(0, playback.frameCount - 1);
+                float frame = playback.PreviewTimelineFrame;
+                using (new EditorGUI.DisabledScope(!playback.isActiveAndEnabled))
+                {
+                    Rect transport = Row(28);
+                    float small = Mathf.Clamp(transport.width * .14f, 26, 48);
+                    float playWidth = transport.width - (small + 4) * 4;
+                    Rect button = new Rect(transport.x, transport.y, small, transport.height);
+                    if (RVFXPortablePlaybackInspectorGUI.IconButton(button, RVFXPortablePlaybackInspectorGUI.Icon.First, "", "First frame"))
+                        Seek(playback, 0);
+                    button.x += small + 4;
+                    if (RVFXPortablePlaybackInspectorGUI.IconButton(button, RVFXPortablePlaybackInspectorGUI.Icon.Previous, "", "Previous frame"))
+                        Seek(playback, Mathf.Ceil(frame) - 1);
+                    button.x += small + 4;
+                    button.width = playWidth;
+                    if (RVFXPortablePlaybackInspectorGUI.IconButton(button, running ? RVFXPortablePlaybackInspectorGUI.Icon.Pause :
+                            RVFXPortablePlaybackInspectorGUI.Icon.Play, running ? "Pause" : "Play",
+                            running ? "Pause at the current time" : "Continue from the playhead", true))
+                        Command(playback, running ? (System.Action)(() => playback.Pause()) : () => playback.Play(), "Playback transport");
+                    button.x += playWidth + 4;
+                    button.width = small;
+                    if (RVFXPortablePlaybackInspectorGUI.IconButton(button, RVFXPortablePlaybackInspectorGUI.Icon.Next, "", "Next frame"))
+                        Seek(playback, Mathf.Floor(frame) + 1);
+                    button.x += small + 4;
+                    if (RVFXPortablePlaybackInspectorGUI.IconButton(button, RVFXPortablePlaybackInspectorGUI.Icon.Last, "", "Last frame"))
+                        Seek(playback, maxFrame);
+
+                    GUILayout.Space(4);
+                    Rect slider = Row(22);
+                    EditorGUI.DrawRect(new Rect(slider.x + 4, slider.y + 7, slider.width - 8, 4),
+                        new Color(.11f, .12f, .13f));
+                    EditorGUI.DrawRect(new Rect(slider.x + 4, slider.y + 7,
+                        (slider.width - 8) * (maxFrame > 0 ? frame / maxFrame : 0), 4),
+                        RVFXPortablePlaybackInspectorGUI.Accent);
+                    EditorGUI.BeginChangeCheck();
+                    float seekFrame = GUI.HorizontalSlider(new Rect(slider.x + 1, slider.y + 2, slider.width - 2, 18),
+                        frame, 0, maxFrame, RVFXPortablePlaybackInspectorGUI.Slider, RVFXPortablePlaybackInspectorGUI.Thumb);
+                    if (EditorGUI.EndChangeCheck()) Seek(playback, seekFrame);
+                    if (Event.current.type == EventType.Repaint)
+                        for (int i = 0; i <= 20; i++)
+                            EditorGUI.DrawRect(new Rect(slider.x + 4 + (slider.width - 8) * i / 20,
+                                slider.y + 18, 1, i % 5 == 0 ? 4 : 2), new Color(.5f, .6f, .65f, .35f));
+
+                    Rect time = Row();
+                    float fps = Mathf.Max(1, playback.fps);
+                    GUI.Label(new Rect(time.x, time.y, time.width - 150, time.height),
+                        (frame / fps).ToString("0.00") + " / " + (maxFrame / fps).ToString("0.00") + " s",
+                        RVFXPortablePlaybackInspectorGUI.Muted);
+                    Rect field = new Rect(time.xMax - 150, time.y, 106, time.height);
+                    float width = EditorGUIUtility.labelWidth;
+                    EditorGUIUtility.labelWidth = 43;
+                    EditorGUI.BeginChangeCheck();
+                    int entered = EditorGUI.DelayedIntField(field, new GUIContent("Frame",
+                        "Timeline frame before Time Remap. Editing pauses playback."), Mathf.RoundToInt(frame));
+                    if (EditorGUI.EndChangeCheck()) Seek(playback, entered);
+                    EditorGUIUtility.labelWidth = width;
+                    GUI.Label(new Rect(time.xMax - 40, time.y, 40, time.height), "/ " + maxFrame,
+                        RVFXPortablePlaybackInspectorGUI.Right);
+                }
+                EditorGUILayout.LabelField("Drag to seek. Play resumes from here.", RVFXPortablePlaybackInspectorGUI.Muted);
+            }
+        }
+
+        private void Seek(RVFXPieceTransformPlayback playback, float frame)
+        {
+            Command(playback, () => playback.SeekPreviewFrame(Mathf.Round(frame)), "Seek GPU playback");
+        }
+
+        private void Command(RVFXPieceTransformPlayback playback, System.Action action, string undoLabel)
+        {
+            serializedObject.ApplyModifiedProperties();
+            Undo.RecordObject(playback, undoLabel);
+            action();
+            PrefabUtility.RecordPrefabInstancePropertyModifications(playback);
+            EditorUtility.SetDirty(playback);
+            serializedObject.Update();
+            SceneView.RepaintAll();
+            EditorApplication.QueuePlayerLoopUpdate();
+            Repaint();
+        }
+
+        private void DrawSettings()
+        {
+            using (new EditorGUILayout.VerticalScope(RVFXPortablePlaybackInspectorGUI.Card))
+            {
+                EditorGUILayout.LabelField("PLAYBACK SETTINGS", RVFXPortablePlaybackInspectorGUI.Section);
+                Rect toggles = Row();
+                float half = (toggles.width - 12) * .5f;
+                Toggle(new Rect(toggles.x, toggles.y, half, 20), "playOnAwake", "Play On Awake",
+                    "Automatically starts when the object becomes active. Turn off for code-triggered playback.");
+                Toggle(new Rect(toggles.x + half + 12, toggles.y, half, 20), "loop", "Loop",
+                    "Repeat after the last frame.");
+                Rect values = Row();
+                LabeledProperty(new Rect(values.x, values.y, half, 20), "startDelay", "Delay (s)", 62);
+                LabeledProperty(new Rect(values.x + half + 12, values.y, half, 20), "playbackSpeed", "Speed", 42);
+                Rect remap = Row();
+                _showRemap = EditorGUI.Foldout(new Rect(remap.x + 10, remap.y, remap.width - 10, 20),
+                    _showRemap, new GUIContent("Time Remap", "X: elapsed time. Y: sampled baked time."), true);
+                if (_showRemap)
+                    EditorGUILayout.PropertyField(serializedObject.FindProperty("playbackCurve"), GUIContent.none,
+                        GUILayout.Height(40));
+            }
+        }
+
+        private void DrawDebrisSettings(RVFXPieceTransformPlayback playback)
+        {
+            if (playback.secondaryDebrisBinaryData == null || playback.GetSecondaryDebrisBakedPointCount() <= 0)
+                return;
+            using (new EditorGUILayout.VerticalScope(RVFXPortablePlaybackInspectorGUI.Card))
+            {
+                Rect heading = Row();
+                GUI.Label(heading, "DEBRIS", RVFXPortablePlaybackInspectorGUI.Section);
+                Toggle(new Rect(heading.xMax - 70, heading.y, 70, 20), "secondaryDebrisDrawEnabled", "Enabled",
+                    "Render the baked GPU-instanced debris.");
+                bool enabled = serializedObject.FindProperty("secondaryDebrisDrawEnabled").boolValue;
+                using (new EditorGUI.DisabledScope(!enabled))
+                {
+                    DrawDebrisMeshPairs();
+                    EditorGUILayout.PropertyField(serializedObject.FindProperty("cpuFallbackDebrisLimit"),
+                        new GUIContent("Fallback Limit", "Maximum debris points when GPU playback falls back to CPU. Supported GPU playback keeps all points."));
+                    GUILayout.Space(4);
+                    Rect visibility = Row();
+                    GUI.Label(new Rect(visibility.x, visibility.y, 66, 20), "Visibility");
+                    float remaining = (visibility.width - 70) * .5f;
+                    Toggle(new Rect(visibility.x + 70, visibility.y, remaining, 20),
+                        "secondaryDebrisShowInSceneView", "Scene", "Draw debris in Scene View.");
+                    Toggle(new Rect(visibility.x + 70 + remaining, visibility.y, remaining, 20),
+                        "secondaryDebrisShowInGameView", "Game", "Draw debris in Game View and runtime cameras.");
+                    Rect shadows = Row();
+                    GUI.Label(new Rect(shadows.x, shadows.y, 66, 20), "Shadows");
+                    LabeledProperty(new Rect(shadows.x + 70, shadows.y, remaining - 7, 20),
+                        "secondaryDebrisShadowCastingMode", "Cast", 30);
+                    Toggle(new Rect(shadows.x + 70 + remaining, shadows.y, remaining, 20),
+                        "secondaryDebrisReceiveShadows", "Receive", "Receive scene shadows.");
+                }
+                if (!enabled)
+                    EditorGUILayout.LabelField("Disabled · debris data and GPU buffers stay unloaded.", RVFXPortablePlaybackInspectorGUI.Muted);
+                else if (!serializedObject.FindProperty("secondaryDebrisShowInSceneView").boolValue &&
+                         !serializedObject.FindProperty("secondaryDebrisShowInGameView").boolValue)
+                    EditorGUILayout.HelpBox("No view enabled · debris stays unloaded.", MessageType.None);
+            }
+        }
+
+        private void DrawDebrisMeshPairs()
+        {
+            var entries = serializedObject.FindProperty("secondaryDebrisMeshEntries");
+            if (entries == null || entries.arraySize == 0)
+            {
+                EditorGUILayout.PropertyField(serializedObject.FindProperty("secondaryDebrisMaterial"),
+                    new GUIContent("Material"));
+                return;
+            }
+            Rect title = Row(17);
+            GUI.Label(title, "MESH", RVFXPortablePlaybackInspectorGUI.Muted);
+            GUI.Label(new Rect(title.x + (title.width + 6) * .5f, title.y, title.width * .5f - 3, title.height),
+                "MATERIAL", RVFXPortablePlaybackInspectorGUI.Muted);
+            for (int i = 0; i < entries.arraySize; i++)
+            {
+                var entry = entries.GetArrayElementAtIndex(i);
+                var mesh = entry.FindPropertyRelative("mesh");
+                var material = entry.FindPropertyRelative("material");
+                Rect row = Row(25);
+                EditorGUI.DrawRect(row, new Color(0, 0, 0, i % 2 == 0 ? .12f : .05f));
+                float width = (row.width - 6) * .5f;
+                EditorGUI.PropertyField(new Rect(row.x, row.y + 3, width, 19),
+                    mesh, new GUIContent("", "Replace this slot's visual mesh. Recorded motion stays unchanged. None uses a fallback box."));
+                EditorGUI.PropertyField(new Rect(row.x + width + 6, row.y + 3, width, 19),
+                    material, GUIContent.none);
+            }
+            EditorGUILayout.LabelField("Replace mesh and material. Baked motion stays unchanged.", EditorStyles.wordWrappedMiniLabel);
+            if (EditorApplication.isPlaying)
+                EditorGUILayout.HelpBox("Play Mode edits are temporary. Edit outside Play Mode to save them.", MessageType.Info);
+        }
+
+        private void Toggle(Rect rect, string propertyName, string label, string tooltip)
+        {
+            var property = serializedObject.FindProperty(propertyName);
+            EditorGUI.BeginProperty(rect, new GUIContent(label, tooltip), property);
+            property.boolValue = EditorGUI.ToggleLeft(rect, new GUIContent(label, tooltip), property.boolValue);
+            EditorGUI.EndProperty();
+        }
+
+        private void LabeledProperty(Rect rect, string propertyName, string label, float labelWidth)
+        {
+            float previous = EditorGUIUtility.labelWidth;
+            EditorGUIUtility.labelWidth = labelWidth;
+            EditorGUI.PropertyField(rect, serializedObject.FindProperty(propertyName), new GUIContent(label));
+            EditorGUIUtility.labelWidth = previous;
+        }
+
+        private void DrawFooter(RVFXPieceTransformPlayback playback)
+        {
+            GUILayout.Space(4);
+            Rect footer = Row(25);
+            _showCodeExample = EditorGUI.Foldout(new Rect(footer.x + 10, footer.y, footer.width - 145, 22),
+                _showCodeExample, "Code Example", true);
+            using (new EditorGUI.DisabledScope(!playback.isActiveAndEnabled))
+                if (RVFXPortablePlaybackInspectorGUI.IconButton(new Rect(footer.xMax - 126, footer.y, 126, 23),
+                        RVFXPortablePlaybackInspectorGUI.Icon.Reset, "Reset to Start", "Rewind and pause at frame zero"))
+                    Command(playback, () => playback.Stop(), "Reset GPU playback");
+            if (!_showCodeExample) return;
+            EditorGUILayout.HelpBox("Turn Play On Awake off for code-triggered playback. Pause holds Base and Debris together.",
+                MessageType.None);
+            var style = new GUIStyle(EditorStyles.textArea) { wordWrap = true, fontSize = 11 };
+            EditorGUILayout.SelectableLabel(PlaybackCodeExample, style,
+                GUILayout.Height(style.CalcHeight(new GUIContent(PlaybackCodeExample),
+                    Mathf.Max(200, EditorGUIUtility.currentViewWidth - 40))));
+            if (GUILayout.Button("Copy Code", EditorStyles.miniButton)) EditorGUIUtility.systemCopyBuffer = PlaybackCodeExample;
+        }
+    }
+}
+#endif

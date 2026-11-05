@@ -21,6 +21,10 @@ foreach ($doc in $docs) {
 $guids = @{}
 $assetCount = 0
 foreach ($item in Get-ChildItem -LiteralPath $assetRoot -Recurse -Force) {
+    # Unity skips names starting with '.' or ending with '~' (and everything inside such folders) and gives them no
+    # metadata, e.g. the Poiyomi shader cache's .thrylock.
+    $relative = $item.FullName.Substring($assetRoot.Length).TrimStart('\', '/')
+    if ($relative -split '[\\/]' | Where-Object { $_.StartsWith('.') -or $_.EndsWith('~') }) { continue }
     if ($item.Extension -eq '.meta' -and !$item.PSIsContainer) {
         $assetPath = $item.FullName.Substring(0, $item.FullName.Length - 5)
         if (!(Test-Path -LiteralPath $assetPath)) { $problems.Add("Orphan metadata: $($item.FullName)") }

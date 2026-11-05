@@ -1,0 +1,27 @@
+{
+  "blender": "4.5.15 LTS",
+  "original_bones": 371,
+  "controls": 49,
+  "head_camera_forward": [
+    8.742277657347586e-08,
+    -0.9999999403953552,
+    3.82137093032941e-15
+  ],
+  "head_camera_position": [
+    -1.301988959312439e-06,
+    -0.05432657524943352,
+    1.3725197315216064
+  ],
+  "unreachable_ik_targets": "PASS: hands and feet stay attached",
+  "max_ik_endpoint_error_metres": 2.6402671144343682e-05,
+  "local_view_membership": "Checked in GUI; Blender background membership getter is unsupported",
+  "roundtrip_max_rest_matrix_difference": 4.291534423828125e-06,
+  "roundtrip_max_position_error_metres": 1.4513579925053355e-06,
+  "roundtrip_max_angle_error_degrees": 0.0,
+  "export_objects": 1,
+  "export_actions": [
+    "KazusaBandRig.001|enf_qa_reach"
+  ],
+  "editor_operators": "PASS: New Action, Reset Selected, Key All Controls",
+  "status": "PASS"
+}

@@ -300,7 +300,6 @@ public sealed class CharacterSounds : MonoBehaviour, ITableBound
         source.rolloffMode = AudioRolloffMode.Logarithmic;
         source.minDistance = fullVolumeDistance;
         source.maxDistance = Mathf.Max(fullVolumeDistance + .1f, maxDistance);
-        source.dopplerLevel = 0f;
         GameAudio.Bind(source, channel);
         return source;
     }

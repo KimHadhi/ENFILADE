@@ -5,7 +5,7 @@ using UnityEngine;
 /// the moves look past its top, and open space beyond it means over, otherwise onto it (a ParkourObstacle can overrule
 /// that for one object). In the air it tries over, a kong vault, then onto; facing a wall, the thin-wall vault, then the
 /// high climb. Ported check for check from Beatrun (vaulting.lua and the direct moves of climb.lua): distances stay in its
-/// units, 72 to the standing height, and PlayerMovement.HullUnit fits them to this player at any capsule size.
+/// units, 72 to the standing height, and PlayerMovement.HeightUnit fits them to this player at any capsule size.
 /// </summary>
 public sealed class VaultFinder
 {
@@ -14,6 +14,9 @@ public sealed class VaultFinder
     private static readonly float[] EdgeHeights = { Chest, 44f, 56f, 20f };
     private const int RiseSamples = 4;
     private const float OntoReach = 70f, OntoReachLeast = 25f, OntoReachStep = 5f;
+    // Beatrun's jump (player_beatrun.lua's SetJumpPower 230 under GMod's sv_gravity 600) and its server tick (s).
+    private const float JumpSpeed = 230f, JumpGravity = 600f;
+    internal const float Tick = .015f;
 
     private readonly PlayerMovement ctx;
     private readonly ParkourDetector detector;
@@ -21,12 +24,33 @@ public sealed class VaultFinder
     private float u;
     internal VaultFinder(PlayerMovement context, ParkourDetector parkour) { ctx = context; detector = parkour; }
 
-    /// <summary>Airborne with W held: over the obstacle if the far side is open, otherwise onto it.</summary>
-    internal bool TryAir(Vector3 forward, out ObstacleTarget target)
+    /// <summary>
+    /// Airborne with W held: over the obstacle if the far side is open, otherwise onto it. Beatrun looks every tick, and at
+    /// its first airborne one its jump has the feet 3 units up; the over moves find a top only above the chest box, 32
+    /// units over the feet, so a waist-high rail is caught there. This game's jump rises faster, and at 60 frames a second
+    /// its first airborne frame is already past that band, so a running jump sailed over the rail. While a jump off the
+    /// ground still rises, the moves look from where Beatrun's jump would have the feet by now: <paramref name="sinceJump"/>
+    /// seconds of it above <paramref name="groundY"/> (infinite when not in one). The move itself starts where the capsule is.
+    /// </summary>
+    internal bool TryAir(Vector3 forward, float sinceJump, float groundY, out ObstacleTarget target)
     {
-        u = ctx.HullUnit;
+        u = ctx.HeightUnit;
         Vector3 feet = ctx.transform.position;
+        if (!float.IsPositiveInfinity(sinceJump))
+            feet.y = Mathf.Min(feet.y, groundY + Mathf.Max(0f, (JumpSpeed - .5f * JumpGravity * sinceJump) * sinceJump) * u);
         return Over(feet, forward, out target) || Kong(feet, forward, out target) || Onto(feet, forward, out target);
+    }
+
+    /// <summary>
+    /// Whether a jump off the ground at <paramref name="feet"/> would be vaulted over (Vault2 or Vault3) on its first
+    /// airborne tick, where TryAir first looks, and the move it would be. ParkourTraversal.SurgesToVault runs an early
+    /// jump on until this is so, and starts that move there and then.
+    /// </summary>
+    internal bool CatchesLow(Vector3 feet, Vector3 forward, out ObstacleTarget target)
+    {
+        u = ctx.HeightUnit;
+        feet += Vector3.up * ((JumpSpeed - .5f * JumpGravity * Tick) * Tick * u);
+        return Over(feet, forward, out target) || Kong(feet, forward, out target);
     }
 
     /// <summary>
@@ -36,39 +60,45 @@ public sealed class VaultFinder
     internal bool TryLaterInJump(Vector3 forward, float rise, out ObstacleTarget target)
     {
         target = default;
-        u = ctx.HullUnit;
+        u = ctx.HeightUnit;
         for (int step = 1; step <= RiseSamples; step++)
         {
             Vector3 feet = ctx.transform.position + Vector3.up * (rise * step / RiseSamples);
             if (Over(feet, forward, out target) || Kong(feet, forward, out target)
-                || High(feet, forward, ctx.VerticalVelocity, out target)) return true;
+                || High(feet, forward, ctx.VerticalVelocity, true, false, out target)) return true;
         }
         return false;
     }
 
     /// <summary>
     /// The start of ClimbingCheck: a wall in front with its top within reach. Holding W, it stands the player at the wall
-    /// with the top 60 units above the feet, then tries the thin-wall vault and the high climb before any hang.
+    /// with the top 60 units above the feet, then tries the thin-wall vault and the high climb before any hang. During a
+    /// wall climb (<paramref name="wallClimb"/>) the top is looked for higher, as Beatrun does on its vertical wall run.
     /// </summary>
-    internal bool TryHigh(Vector3 forward, float verticalSpeed, out ObstacleTarget target)
+    internal bool TryHigh(Vector3 forward, float verticalSpeed, bool wallClimb, out ObstacleTarget target)
     {
-        u = ctx.HullUnit;
-        return High(ctx.transform.position, forward, verticalSpeed, out target);
+        u = ctx.HeightUnit;
+        return High(ctx.transform.position, forward, verticalSpeed, false, wallClimb, out target);
     }
 
     /// <summary>
     /// A ledge caught higher than TryHigh reaches from here: ClimbingCheck stands the player at the wall with this top 60
     /// units above the feet and, holding W, tries the same moves before it settles for the hang.
     /// </summary>
-    internal bool TryHighBelow(Vector3 edge, Vector3 forward, float verticalSpeed, out ObstacleTarget target)
+    internal bool TryHighBelow(Vector3 edge, Vector3 forward, float verticalSpeed, bool wallClimb, out ObstacleTarget target)
     {
-        u = ctx.HullUnit;
+        u = ctx.HeightUnit;
         Vector3 feet = ctx.transform.position;
         feet.y = edge.y - 60f * u;
-        return High(feet, forward, verticalSpeed, out target);
+        return High(feet, forward, verticalSpeed, true, wallClimb, out target);
     }
 
-    private bool High(Vector3 feet, Vector3 forward, float verticalSpeed, out ObstacleTarget target)
+    // Beatrun probes for the top from where the player is, every frame on the way in, and its 16-unit-wide hull stops 16
+    // units from the wall, where the nearer probe lands just past the face. Asked ahead of time (a jump still rising, a
+    // ledge caught from farther out), the probes stand there, at the wall (fromWall), as they will be by the time the
+    // move starts: probed from out here, a top thinner than the gap between the probes is missed, and a thin wall the
+    // jump would vault got climbed and hung from instead.
+    private bool High(Vector3 feet, Vector3 forward, float verticalSpeed, bool fromWall, bool wallClimb, out ObstacleTarget target)
     {
         target = default;
         // A box wider than the capsule would start inside a wall the player touches, and a cast can't see what it starts in.
@@ -80,10 +110,14 @@ public sealed class VaultFinder
         Vector3 inward = Vector3.ProjectOnPlane(-wall.normal, Vector3.up).normalized;
         if (Vector3.Angle(inward, forward) > 50f) return false;
 
+        Vector3 probe = feet;
+        if (fromWall) probe += inward * (Vector3.Dot(wall.point - feet, inward) - HullHalfWidth * u);
+        // On its vertical wall run ClimbingCheck looks for the top from 90 units up instead of 65 (upvalue).
+        float lookFrom = wallClimb ? 90f : 65f;
         float detection = 60f;
-        if (!TopWithin(feet + inward * (45f * u), out RaycastHit top))
+        if (!TopWithin(probe + inward * (45f * u), out RaycastHit top))
         {
-            if (!TopWithin(feet + inward * (20f * u), out top)) return false;
+            if (!TopWithin(probe + inward * (20f * u), out top)) return false;
             detection = 25f;
         }
         Vector3 start = wall.point - inward * (16.533f * u);
@@ -93,16 +127,18 @@ public sealed class VaultFinder
         Vector3 topAtWall = start + Up(77f) + skim;
         if (Line(topAtWall, topAtWall + inward * (detection * .5f * u)) || Line(feet, feet + Up(75f))) return false;
 
-        start += Up(17f);
+        // Holding W, ClimbingCheck lifts the hang spot 17 units before trying the moves; on a wall run the thin-wall vault
+        // starts from the hang's own height.
+        Vector3 lifted = start + Up(17f);
         Vector3 edge = wall.point;
         edge.y = top.point.y;
         Vector3 normal = -inward;
-        return OverHigh(start, forward, wall.collider, edge, normal, out target)
-            || OntoHigh(start, forward, verticalSpeed, wall.collider, edge, normal, out target);
+        return OverHigh(wallClimb ? start : lifted, forward, wall.collider, edge, normal, out target)
+            || OntoHigh(lifted, forward, verticalSpeed, wall.collider, edge, normal, out target);
 
         bool TopWithin(Vector3 from, out RaycastHit hit)
         {
-            Vector3 origin = from + Up(65f);
+            Vector3 origin = from + Up(lookFrom);
             hit = default;
             return !Inside(origin) && Down(origin, 45f, out hit) && hit.distance > .001f;
         }
@@ -140,6 +176,10 @@ public sealed class VaultFinder
             || !ParkourObstacle.AllowsClimb(top.collider)) return false;
         float fraction = top.distance / (Neck * u);
         if (fraction <= .3f) return false;
+        // Not in Beatrun: a top shallower than the body (a rail, a thin wall) is gone over, never stepped or climbed onto.
+        // Caught a moment late in a running jump, the rail was climbed and stood on instead of vaulted, which the user found
+        // awkward (2026-11-06). A ParkourObstacle set to Climb Onto still can be.
+        if (ParkourObstacle.AllowsVault(top.collider) && Depth(top, forward) < 2f * ctx.ControllerRadius) return false;
         bool stepUp = fraction > .65f;
         if (Line(origin - forward * (50f * u), origin) || !detector.ClearStraightCapsule(top.point, top.collider)) return false;
         Vector3 here = top.point + Up(MantleLift), onward = here + forward * (50f * u);
@@ -238,6 +278,17 @@ public sealed class VaultFinder
             normal = flat.normalized;
             return;
         }
+    }
+
+    // How deep a top is along the way the player goes (m): between its near and far faces, just under the top. Unmeasured
+    // (no faces within reach, as on a long platform), it counts as deep.
+    private static float Depth(RaycastHit top, Vector3 forward)
+    {
+        const float Reach = 3f;
+        Vector3 under = top.point - Vector3.up * .03f;
+        if (!top.collider.Raycast(new Ray(under - forward * Reach, forward), out RaycastHit near, Reach)
+            || !top.collider.Raycast(new Ray(under + forward * Reach, -forward), out RaycastHit far, Reach)) return float.PositiveInfinity;
+        return Vector3.Distance(near.point, far.point);
     }
 
     private Vector3 Up(float units) => Vector3.up * (units * u);

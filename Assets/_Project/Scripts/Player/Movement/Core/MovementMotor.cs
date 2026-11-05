@@ -17,6 +17,10 @@ public sealed class MovementMotor
     internal Vector3 previousPosition, actualVelocity;
     private bool hasRequestedMove;
     private bool hasTraversalPosition;
+    // The controller's isGrounded belongs to its last Move, and a traversal places the capsule without one, so after a vault
+    // begun on the ground (the run-up surge) it says grounded all through the move and on the first frame after it, in the
+    // air. Source looks at the ground anew every tick; here the probe under the feet decides until the next real Move.
+    private bool placedByTraversal;
     private Vector3 traversalPosition;
     private Vector3 requestedMove, additionalMove;
     private readonly List<Vector3> requestedPath = new List<Vector3>();
@@ -41,6 +45,7 @@ public sealed class MovementMotor
         previousPosition += position - ctx.transform.position;
         ctx.transform.position = position;
         Physics.SyncTransforms();
+        placedByTraversal = true;
     }
 
     internal MovementMotor(PlayerMovement context, CharacterController characterController)
@@ -71,6 +76,7 @@ public sealed class MovementMotor
             // tick occurs between this render frame and the next normal Move.
             Physics.SyncTransforms();
             lastMoveFlags = CollisionFlags.None;
+            placedByTraversal = true;
         }
         else if (requestedPath.Count > 0)
         {
@@ -78,8 +84,13 @@ public sealed class MovementMotor
             // Follow the curve within a long frame instead of cutting through its corners.
             foreach (Vector3 point in requestedPath)
                 lastMoveFlags |= controller.Move(point - ctx.transform.position);
+            placedByTraversal = false;
         }
-        else lastMoveFlags = hasRequestedMove ? controller.Move(requestedMove) : MoveCharacter(dt);
+        else
+        {
+            lastMoveFlags = hasRequestedMove ? controller.Move(requestedMove) : MoveCharacter(dt);
+            placedByTraversal = false;
+        }
         if (additionalMove.sqrMagnitude > 0f) lastMoveFlags |= controller.Move(additionalMove);
         hasTraversalPosition = hasRequestedMove = false; requestedMove = additionalMove = Vector3.zero;
         requestedPath.Clear();
@@ -170,7 +181,8 @@ public sealed class MovementMotor
         }
 
         bool wasGroundedBefore = isGrounded;
-        bool touchedGround = controller.isGrounded || (lastMoveFlags & CollisionFlags.Below) != 0 || (ctx.IsSliding && slideSupported);
+        bool touchedGround = (!placedByTraversal && controller.isGrounded) || (lastMoveFlags & CollisionFlags.Below) != 0
+            || (ctx.IsSliding && slideSupported);
 
         Vector3 bottomSphereLocal = controller.center - Vector3.up * (controller.height * 0.5f - controller.radius);
         Vector3 sphereCenter = ctx.transform.TransformPoint(bottomSphereLocal);
@@ -184,7 +196,8 @@ public sealed class MovementMotor
 
         Vector3 supportNormal = Vector3.up;
         bool walkableSupport = sphereHit && TryGetSupportNormal(hit, out supportNormal);
-        isGrounded = touchedGround || (wasGroundedBefore && walkableSupport);
+        // Placed by a traversal, the probe under the feet says whether it ended on something (a mantle's top) or in the air.
+        isGrounded = touchedGround || ((wasGroundedBefore || placedByTraversal) && walkableSupport);
         float walkableY = Mathf.Cos(SupportAngle * Mathf.Deg2Rad);
         groundNormal = isGrounded
             ? (walkableSupport ? supportNormal : (lastMoveGroundNormal.y >= walkableY ? lastMoveGroundNormal : Vector3.up))

@@ -1,0 +1,207 @@
+#pragma kernel CSMain
+
+struct DebrisParticle
+{
+    float4 positionLife;
+    float4 velocityRadius;
+    float4 rotationQuat;
+    float4 angularVelocityDamping;
+};
+
+RWStructuredBuffer<DebrisParticle> _Particles;
+
+int _ParticleCount;
+float _DeltaTime;
+float _TimeNow;
+float3 _Gravity;
+float _GroundY;
+float _Bounciness;
+float _StaticFriction;
+float _DynamicFriction;
+float _LinearDrag;
+float _AngularDrag;
+float _SleepVelocity;
+float _SleepAngularVelocity;
+
+float4 NormalizeQuat(float4 q)
+{
+    float lenSq = dot(q, q);
+    if (lenSq <= 0.000001)
+        return float4(0.0, 0.0, 0.0, 1.0);
+
+    return q * rsqrt(lenSq);
+}
+
+float4 QuatMul(float4 a, float4 b)
+{
+    return float4(
+        a.w * b.xyz + b.w * a.xyz + cross(a.xyz, b.xyz),
+        a.w * b.w - dot(a.xyz, b.xyz));
+}
+
+float4 IntegrateRotation(float4 q, float3 angularVelocity, float dt)
+{
+    float speed = length(angularVelocity);
+    if (speed <= 0.0001 || dt <= 0.0)
+        return NormalizeQuat(q);
+
+    float angle = speed * dt;
+    float3 axis = angularVelocity / speed;
+
+    float s;
+    float c;
+    sincos(angle * 0.5, s, c);
+
+    float4 dq = float4(axis * s, c);
+    return NormalizeQuat(QuatMul(dq, q));
+}
+
+float3 ApplyCpuLikeLinearDrag(float3 velocity, float dt)
+{
+    float drag = max(0.0, _LinearDrag);
+    return velocity / (1.0 + drag * dt);
+}
+
+float3 ApplyCpuLikeGroundFriction(float3 velocity, float dt)
+{
+    float2 tangent = velocity.xz;
+    float tangentSpeed = length(tangent);
+
+    if (tangentSpeed <= 0.00001)
+    {
+        velocity.x = 0.0;
+        velocity.z = 0.0;
+        return velocity;
+    }
+
+    float staticFriction = saturate(_StaticFriction);
+    float dynamicFriction = saturate(_DynamicFriction);
+
+    // CPU PhysX spheres usually keep sliding for a short time, even with high friction.
+    // This is intentionally softer than the earlier GPU version, so GPU points do not
+    // stick immediately to the Ground Y plane.
+    float gravityMagnitude = max(length(_Gravity), 0.001);
+    float frictionAcceleration = gravityMagnitude * lerp(0.015, 0.48, dynamicFriction);
+    float nextSpeed = max(0.0, tangentSpeed - frictionAcceleration * dt);
+
+    // Static friction should only catch very slow particles. If this is too high,
+    // GPU debris stops much earlier than the CPU Rigidbody/SphereCollider version.
+    float staticStopSpeed = lerp(0.002, 0.055, staticFriction);
+    if (nextSpeed <= staticStopSpeed)
+        nextSpeed = 0.0;
+
+    float2 nextTangent = tangent * (nextSpeed / tangentSpeed);
+    velocity.x = nextTangent.x;
+    velocity.z = nextTangent.y;
+    return velocity;
+}
+
+float3 ResolveGroundRollingAngularVelocity(float3 velocity, float radius)
+{
+    float2 tangent = velocity.xz;
+    float tangentSpeed = length(tangent);
+
+    if (tangentSpeed <= 0.001)
+        return float3(0.0, 0.0, 0.0);
+
+    float safeRadius = max(radius, 0.001);
+    float3 tangentDir = normalize(float3(tangent.x, 0.0, tangent.y));
+    float3 rollAxis = cross(float3(0.0, 1.0, 0.0), tangentDir);
+
+    if (dot(rollAxis, rollAxis) <= 0.0001)
+        return float3(0.0, 0.0, 0.0);
+
+    rollAxis = normalize(rollAxis);
+
+    // Use only a partial rolling target. CPU mode displays a Rigidbody driven mostly
+    // by the initial angular velocity plus contact friction, not a perfectly rolling wheel.
+    return rollAxis * (tangentSpeed / safeRadius) * 0.35;
+}
+
+[numthreads(64, 1, 1)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+    uint index = id.x;
+
+    if (index >= (uint)_ParticleCount)
+        return;
+
+    DebrisParticle p = _Particles[index];
+
+    if (_TimeNow > p.positionLife.w)
+        return;
+
+    float dt = min(max(_DeltaTime, 0.0), 0.0333333);
+
+    float3 position = p.positionLife.xyz;
+    float3 velocity = p.velocityRadius.xyz;
+    float radius = max(0.001, p.velocityRadius.w);
+    float4 rotationQuat = NormalizeQuat(p.rotationQuat);
+    float3 angularVelocity = p.angularVelocityDamping.xyz;
+    float spawnAngularDamping = max(0.0, p.angularVelocityDamping.w);
+
+    velocity += _Gravity * dt;
+    velocity = ApplyCpuLikeLinearDrag(velocity, dt);
+
+    position += velocity * dt;
+
+    bool onGround = false;
+    float groundLimit = _GroundY + radius;
+    if (position.y < groundLimit)
+    {
+        onGround = true;
+        position.y = groundLimit;
+
+        if (velocity.y < 0.0)
+        {
+            velocity.y = -velocity.y * saturate(_Bounciness);
+
+            if (abs(velocity.y) < 0.085)
+                velocity.y = 0.0;
+        }
+
+        float3 beforeFriction = velocity;
+        velocity = ApplyCpuLikeGroundFriction(velocity, dt);
+
+        float3 rollingAngular = ResolveGroundRollingAngularVelocity(velocity, radius);
+        float rollBlend = saturate(dt * lerp(0.08, 0.75, saturate(_DynamicFriction)));
+
+        // Add a mild rolling correction while keeping the random spawn angular velocity.
+        // This makes GPU debris rotate while sliding, but avoids the previous overly
+        // deterministic rolling behavior that did not resemble CPU point physics.
+        angularVelocity = lerp(angularVelocity, angularVelocity + rollingAngular, rollBlend);
+
+        // If friction killed almost all tangent motion, also damp the ground spin a bit.
+        if (length(velocity.xz) < length(beforeFriction.xz) * 0.15)
+            angularVelocity *= 1.0 / (1.0 + saturate(_StaticFriction) * dt * 1.5);
+    }
+
+    // CPU-like angular drag approximation. The CPU Rigidbody uses angularDrag;
+    // using the same value here keeps GPU visual spin closer to CPU display boxes.
+    float groundAngularExtra = onGround ? lerp(0.0, 0.35, saturate(_DynamicFriction)) : 0.0;
+    float totalAngularDamping = max(_AngularDrag, spawnAngularDamping) + groundAngularExtra + max(0.0, _LinearDrag) * 0.10;
+    angularVelocity /= (1.0 + totalAngularDamping * dt);
+
+    float sleepVelocity = max(0.0, _SleepVelocity);
+    float sleepAngularVelocity = max(0.0, _SleepAngularVelocity);
+
+    if (onGround &&
+        length(velocity.xz) <= max(0.015, sleepVelocity) &&
+        abs(velocity.y) <= 0.02 &&
+        length(angularVelocity) <= max(0.05, sleepAngularVelocity))
+    {
+        velocity.x = 0.0;
+        velocity.y = 0.0;
+        velocity.z = 0.0;
+        angularVelocity = float3(0.0, 0.0, 0.0);
+    }
+
+    rotationQuat = IntegrateRotation(rotationQuat, angularVelocity, dt);
+
+    p.positionLife.xyz = position;
+    p.velocityRadius.xyz = velocity;
+    p.rotationQuat = rotationQuat;
+    p.angularVelocityDamping.xyz = angularVelocity;
+
+    _Particles[index] = p;
+}

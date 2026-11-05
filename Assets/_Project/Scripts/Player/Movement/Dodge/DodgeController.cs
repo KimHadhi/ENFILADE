@@ -6,7 +6,7 @@ public enum DodgeKind { Step, Micro }
 /// <summary>Shared, deterministic invulnerability window. No collider is ever disabled.</summary>
 public sealed class DodgeController
 {
-    private float remaining, cooldown;
+    private float remaining, cooldown, heldOffUntil = -1f;
     private bool successEmitted;
     public DodgeKind Kind { get; private set; }
     public int LeanSide { get; private set; }
@@ -14,8 +14,12 @@ public sealed class DodgeController
     public float CooldownRemaining => cooldown;
     public bool IsInvulnerable => remaining > 0f;
     public bool HasSucceeded => successEmitted;
-    public bool CanStart => cooldown <= 0f && (remaining <= 0f || successEmitted);
+    public bool CanStart => Time.unscaledTime >= heldOffUntil && cooldown <= 0f && (remaining <= 0f || successEmitted);
     public event Action<DodgeKind, int> Succeeded;
+
+    /// <summary>No dodge starts for this many real seconds from now (0 lets them start again at once): the counter's dash
+    /// is a committed move, so a dodge pressed during it neither moves the body nor opens another slowed window.</summary>
+    public void HoldOff(float seconds) { heldOffUntil = Time.unscaledTime + Math.Max(0f, seconds); }
 
     public bool TryStart(DodgeKind kind, int side, float duration, float reuseDelay)
     {
@@ -55,5 +59,5 @@ public sealed class DodgeController
     }
 
     public void CancelWindow() { remaining = 0f; }
-    public void Reset() { remaining = cooldown = 0f; successEmitted = false; }
+    public void Reset() { remaining = cooldown = 0f; successEmitted = false; heldOffUntil = -1f; }
 }

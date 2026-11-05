@@ -94,9 +94,12 @@ public sealed class MovementLanding
         if (!ctx.IsGrounded && ctx.Input.CrouchPressed) rollBuffer = ctx.AbilitySettings.rollInputWindow;
     }
 
+    // A move carries the player, except the drop at the end of a vault, which is a fall like any other.
+    private bool Carried => ctx.IsParkour && !(ctx.StateMachine.Current is ObstacleTraversalState vault && vault.IsLanding);
+
     internal void BeforeMove()
     {
-        if (ctx.IsGrounded || ctx.IsParkour)
+        if (ctx.IsGrounded || Carried)
         {
             ClearFall();
             return;
@@ -117,7 +120,7 @@ public sealed class MovementLanding
     // without replacing the impact speed with a near-zero movement sample.
     internal void AfterMove(float dt, float movedY)
     {
-        if (!trackingFall || dt <= 0f || ctx.IsParkour) return;
+        if (!trackingFall || dt <= 0f || Carried) return;
         fallDistance = Mathf.Max(0f, fallDistance - movedY);
         if (ctx.VerticalVelocity > 0f)
         {

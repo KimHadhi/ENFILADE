@@ -17,6 +17,19 @@ public sealed class CombatCueAudio : MonoBehaviour
         var audio = owner.GetComponent<CombatCueAudio>() ?? owner.AddComponent<CombatCueAudio>();
         audio.Emit(cue, pitch, inWorld); return audio;
     }
+    /// <summary>Makes the owner's cue voice now (at spawn), so the first cue of a fight adds no components mid-frame.</summary>
+    public static void Prepare(GameObject owner)
+    {
+        if (owner == null || !Application.isPlaying) return;
+        var audio = owner.GetComponent<CombatCueAudio>() ?? owner.AddComponent<CombatCueAudio>();
+        audio.EnsureSource();
+    }
+    private void EnsureSource()
+    {
+        if (source != null) return;
+        source = gameObject.AddComponent<AudioSource>(); source.playOnAwake = false;
+        GameAudio.Bind(source, AudioChannel.Combat);
+    }
     private void Emit(CombatCue cue, float pitch, bool inWorld)
     {
         LastCue = cue; PlayCount++;
@@ -33,11 +46,7 @@ public sealed class CombatCueAudio : MonoBehaviour
             default: clip = settings.enemyAttackStartSound; volume = settings.enemyAttackVolume; break;
         }
         if (clip == null) return;
-        if (source == null)
-        {
-            source = gameObject.AddComponent<AudioSource>(); source.playOnAwake = false;
-            GameAudio.Bind(source, AudioChannel.Combat);
-        }
+        EnsureSource();
         source.spatialBlend = cue == CombatCue.EnemyAttackStart || inWorld ? 1f : 0f;
         source.minDistance = 2f; source.maxDistance = 20f;
         source.rolloffMode = AudioRolloffMode.Linear;

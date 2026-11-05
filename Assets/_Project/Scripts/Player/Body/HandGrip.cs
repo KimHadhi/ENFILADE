@@ -228,6 +228,9 @@ internal sealed class HandGrip
             depth = Mathf.Max(depth, Vector3.Dot(baseOffset, palm) + finger.Radii[0]);
             if (!finger.Thumb) halfWidth = Mathf.Max(halfWidth, Mathf.Abs(Vector3.Dot(baseOffset, across)) + finger.Radii[0]);
         }
+        // The thumb web's skin correction needs its own copy of the body mesh; made now, not on the first ledge.
+        foreach (var finger in result)
+            if (finger.Thumb) HandSkinCorrection.For(animator).CopyAhead(finger.Bones);
         return new HandGrip(hand, result.ToArray(), hand.InverseTransformPoint(centre), Mathf.Clamp(depth, .002f, palmLength * .65f), halfWidth, forward, palm, animator, left);
     }
 

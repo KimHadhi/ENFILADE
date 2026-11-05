@@ -19,11 +19,6 @@ public sealed class MovementAbilitySettings
     [Min(0f)] public float dodgeCooldown = 0.55f;
     [Tooltip("스텝 닷지 실패 시 다음 회피까지의 시간. 회피 성공 시 공통 쿨타임이 즉시 초기화됩니다.")]
     [Min(0f)] public float stepDodgeCooldown = 1.25f;
-    [Min(0f)] public float microSuccessDistance = 0.3f;
-    [Tooltip("마이크로 닷지 성공 시 짧게 가속·감속하며 이동하는 실제 시간(초). 슬로모션에도 동일합니다.")]
-    [Min(0.02f)] public float microSuccessDuration = 0.1f;
-    [Tooltip("마이크로 닷지 성공 시 현재 기울기에서 끝까지 빠르게 이어지는 실제 시간(초). 순간 이동하지 않습니다.")]
-    [Range(.02f, .2f)] public float microSuccessLeanDuration = .08f;
     [Range(0f, 30f)] public float leanAngle = 10f;
     [Range(0f, 0.5f)] public float leanOffset = 0.35f;
     [Min(1f)] public float leanSharpness = 10f;
@@ -34,6 +29,12 @@ public sealed class MovementAbilitySettings
     [Range(0f, 0.1f)] public float proneStepHeight = 0.05f;
     [Tooltip("넘기 세 종류의 이동 속도 배율. 1이면 Beatrun 원본.")]
     [Min(0.1f)] public float vaultRate = 1f;
+    [Tooltip("달리며 낮은 장애물 앞에서 일찍 누른 점프가 넘기가 걸리는 자리까지 빠르게 달려가 넘는 최대 거리(m). 0이면 Beatrun처럼 약 1.2m 안에서 눌러야 넘는다.")]
+    [Min(0f)] public float vaultSurgeDistance = 3f;
+    [Tooltip("그렇게 달려갈 때의 가장 느린 속도(m/s). 이미 더 빠르면 그 속도를 유지한다.")]
+    [Min(1f)] public float vaultSurgeSpeed = 11f;
+    [Tooltip("달려가기 시작할 때 카메라를 미는 힘: 앞으로 숙이는 회전(도/초), 시야각을 넓히는 양(도/초). 화면 흔들림 설정을 따른다.")]
+    public Vector2 vaultSurgeKick = new Vector2(25f, 120f);
     [Tooltip("바로 올라타기와 높은 올라서기의 이동 속도 배율. 1이면 Beatrun 원본.")]
     [Min(0.1f)] public float mountRate = 1f;
     [Tooltip("매달린 뒤 올라가기의 이동 속도 배율. 1이면 Beatrun 원본(약 0.93초).")]
@@ -56,8 +57,10 @@ public sealed class MovementAbilitySettings
 
     [Header("Wall Movement")]
     [Min(0.1f)] public float wallReach = 0.85f;
-    [Min(0.1f)] public float wallDuration = 1.8f;
-    [Min(0f)] public float wallClimbSpeed = 3.8f;
+    [Tooltip("벽 오르기 한 번의 기본 시간(초). Beatrun 원본 1.5. 오르는 속도가 남은 시간에 따라 줄어든다(WallClimbPace).")]
+    [Min(0.1f)] public float wallClimbTime = 1.5f;
+    [Tooltip("벽 오르기 속도 배율. 1이면 Beatrun 원본. 오르는 높이가 이 배율만큼 바뀐다.")]
+    [Min(0f)] public float wallClimbRate = 1f;
     [Range(0f, 1f)] public float wallClimbFacingDot = 0.9f;
     [Min(0f)] public float wallContactGrace = 0.1f;
     [Min(0f)] public float wallKickOutSpeed = 6f;
@@ -143,8 +146,9 @@ public sealed class MovementAbilitySettings
     [Min(0.05f)] public float rollDuration = 1f;
     [Tooltip("Slowest a landing roll moves (m/s); a faster landing keeps its speed.")]
     [Min(0f)] public float rollSpeed = 4f;
-    [Tooltip("Slower than this across the ground (m/s), or pulling back, Beatrun's safety roll lands on the spot instead of rolling.")]
-    [Min(0f)] public float rollLandSpeed = 5f;
+    [Tooltip("Slower than this across the ground (m/s), or pulling back, a landing roll lands on the spot instead of rolling. "
+        + "Below the walk's start speed, so a walk off a drop rolls too; Beatrun's 200 units/s is about the walk speed itself.")]
+    [Min(0f)] public float rollLandSpeed = 2f;
     [Tooltip("Seconds a landing on the spot holds the player there.")]
     [Min(0.05f)] public float rollLandTime = 0.6f;
     [Tooltip("Share of the fall damage a landing on the spot still takes: with no run to roll into, the legs take it. A big fall can't be rolled at all, as in Beatrun.")]

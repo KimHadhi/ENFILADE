@@ -70,6 +70,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     private PlayerBodyProfile profile;
     private GameObject loadedModel;
     private PlayerBodyProfile.Skin loadedSkin;
+    private SkinVariant loadedVariant;
     private string shownSkin;
     private Transform body, view, head, hips;
     private Animator animator;
@@ -97,13 +98,41 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     internal Vector3 EyePosition => head != null ? head.TransformPoint(eyeLocal) : transform.position;
     internal PlayerBodyProfile.Skin Skin => loadedSkin;
     // A copy of someone else wears what they chose, whatever this PC's own setting says.
-    private PlayerBodyProfile.Skin ChosenSkin => shownSkin != null ? profile.SkinOf(shownSkin) : profile.CurrentSkin;
-
-    /// <summary>Wears the skin the player of this copy chose on their own PC.</summary>
-    internal void ShowSkin(string id)
+    private PlayerBodyProfile.Skin ChosenSkin
     {
-        shownSkin = id;
-        rebuild = started;
+        get
+        {
+            if (shownSkin == null) return profile.CurrentSkin;
+            PlayerBodyProfile.SplitLook(shownSkin, out string skinId, out _);
+            return profile.SkinOf(skinId);
+        }
+    }
+    private SkinVariant ChosenVariant
+    {
+        get
+        {
+            if (shownSkin == null) return profile.CurrentVariant;
+            PlayerBodyProfile.SplitLook(shownSkin, out string skinId, out string variantId);
+            return profile.SkinOf(skinId)?.VariantOf(variantId);
+        }
+    }
+
+    /// <summary>Wears the skin and colour set the player of this copy chose on their own PC (PlayerBodyProfile.LookId).</summary>
+    internal void ShowSkin(string look)
+    {
+        shownSkin = look;
+        if (!started) return;
+        if (profile == null || ChosenSkin != loadedSkin) rebuild = true;
+        else WearChosenVariant();
+    }
+
+    // Another colour set of the same skin only swaps materials: the body, its pose and its cloth stay.
+    private void WearChosenVariant()
+    {
+        var next = ChosenVariant;
+        if (body == null || next == loadedVariant) return;
+        SkinVariant.Wear(body.gameObject, loadedVariant, next);
+        loadedVariant = next;
     }
 
     private void Start() { started = true; Build(); }
@@ -132,6 +161,8 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         loadedModel = profile.ModelOf(loadedSkin);
         body = Instantiate(loadedModel, transform, false).transform;
         body.name = "Body (" + loadedModel.name + ")";
+        loadedVariant = ChosenVariant;
+        SkinVariant.Wear(body.gameObject, null, loadedVariant);
         animator = body.GetComponentInChildren<Animator>();
         if (animator == null) animator = body.gameObject.AddComponent<Animator>();
         if (animator.avatar == null || !animator.avatar.isHuman)
@@ -206,6 +237,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         body = head = hips = leftHand = rightHand = null;
         loadedModel = null;
         loadedSkin = null;
+        loadedVariant = null;
         animator = null;
         if (view != null) { view.localPosition = viewHome; view.localRotation = viewRotationHome; }
         thirdPerson = false;
@@ -301,15 +333,22 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
             // stays over the capsule and takes the head's dips and quick sway.
             HoldHeadPlace();
             if (gripWeight <= 0f && !slideBodyAnchored && !ClipCarriesBody) FollowHead(Time.deltaTime);
-            Grip(Time.deltaTime);
-            LiftTuckedFeet(Time.deltaTime);
-            LeanHips();
-            PlantFeet(Time.deltaTime);
-            KeepLegsOffWall();
-            Look(Time.deltaTime);
+            using (GripMarker.Auto()) Grip(Time.deltaTime);
+            using (FeetMarker.Auto())
+            {
+                LiftTuckedFeet(Time.deltaTime);
+                LeanHips();
+                PlantFeet(Time.deltaTime);
+                KeepLegsOffWall();
+            }
+            using (LookMarker.Auto()) Look(Time.deltaTime);
         }
         if (thirdPerson) PlaceViewBehind();
     }
+
+    // Named spans of the late pose work, so the profiler and HitchProbe can tell which part of it a stall is in.
+    private static readonly Unity.Profiling.ProfilerMarker GripMarker = new Unity.Profiling.ProfilerMarker("PlayerBody.Grip"),
+        FeetMarker = new Unity.Profiling.ProfilerMarker("PlayerBody.Feet"), LookMarker = new Unity.Profiling.ProfilerMarker("PlayerBody.Look");
 
     // Clips put the head in different places (lying slides keep it far behind the feet). Ease the body so its head
     // stays just behind the camera; the follow is slower than a stride, so running sway is not cancelled.
@@ -605,6 +644,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     private void OnSettingsChanged()
     {
         if (profile != null && ChosenSkin != loadedSkin) rebuild = true;
+        else if (profile != null) WearChosenVariant();
         ApplyView();
     }
 

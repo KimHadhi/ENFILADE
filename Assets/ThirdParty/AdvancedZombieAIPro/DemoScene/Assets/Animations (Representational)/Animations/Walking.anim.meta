@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 47c06cc401333c94bb7788797f6f75ca
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 7400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 276087
+  packageName: Advanced Zombie AI
+  packageVersion: 1.0.2
+  assetPath: Assets/Advanced Zombie AI/Animations (Representational)/Walking.anim
+  uploadId: 684220

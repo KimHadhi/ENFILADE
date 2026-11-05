@@ -12,11 +12,11 @@ public sealed class ParryFeedback : MonoBehaviour
 {
     [Header("Hand")]
     [SerializeField, Min(.05f), Tooltip("Whole sweep: out, hold and back (real seconds).")]
-    private float handSweepSeconds = .34f;
+    private float handSweepSeconds = .45f;
     [SerializeField, Min(.01f), Tooltip("Snapping across (real seconds).")]
     private float handSweepAttack = .04f;
     [SerializeField, Min(0f), Tooltip("Holding the pose at full reach, inside the hit stop (real seconds).")]
-    private float handSweepHold = .075f;
+    private float handSweepHold = .16f;
     [SerializeField, Tooltip("Where the sweeping hand ends up, camera space towards the attacker's side (m; across;up;forward).")]
     private Vector3 handSweep = new Vector3(.2f, .02f, .42f);
     [Header("Attacker")]
@@ -42,10 +42,10 @@ public sealed class ParryFeedback : MonoBehaviour
     [SerializeField, Range(0f, 1f), Tooltip("Decaying shake added once time lets go.")]
     private float cameraTrauma = .12f;
     [Header("Hit stop")]
-    [SerializeField, Min(0f), Tooltip("Time catches this long on contact (real seconds). 0 turns it off.")]
-    private float hitStopSeconds = .07f;
-    [SerializeField, Min(0f), Tooltip("The same when the parry broke posture (real seconds).")]
-    private float breakHitStopSeconds = .12f;
+    [SerializeField, Min(0f), Tooltip("Time catches this long on contact (real seconds). 0 turns it off. The feet stay planted through it (Fists.parryRootSeconds).")]
+    private float hitStopSeconds = .2f;
+    [SerializeField, Min(0f), Tooltip("The same when the parry broke posture (real seconds). The posture-break slow motion follows it.")]
+    private float breakHitStopSeconds = .25f;
     [SerializeField, Range(.01f, 1f)] private float hitStopScale = .02f;
     [Header("Light")]
     [SerializeField, Min(.1f), Tooltip("Contact point in front of the eyes, towards the attacker (m).")]
@@ -76,7 +76,7 @@ public sealed class ParryFeedback : MonoBehaviour
     [SerializeField, Range(0f, 1f), Tooltip("Movement sounds and the voice drop to this level on contact, so the hit stands alone. 1 turns it off.")]
     private float duckLevel = .35f;
     [SerializeField, Min(.01f), Tooltip("Time they take to come back (real seconds).")]
-    private float duckSeconds = .3f;
+    private float duckSeconds = .4f;
     [Header("Screen")]
     [SerializeField, Min(0f), Tooltip("Exposure spike on contact (stops).")]
     private float screenFlash = .3f;
@@ -104,6 +104,9 @@ public sealed class ParryFeedback : MonoBehaviour
     private CombatTimeEffects timeEffects;
     private int chain;
     private float lastParryTime = float.NegativeInfinity, duckRemaining;
+
+    /// <summary>How long a parry's hit stop holds time (real s); broken is a parry that broke posture.</summary>
+    public float HitStopFor(bool broken) => broken ? breakHitStopSeconds : hitStopSeconds;
 
     private void OnEnable()
     {
@@ -197,12 +200,14 @@ public sealed class ParryFeedback : MonoBehaviour
     }
     private ParryScreenLook ContactLook() => new ParryScreenLook
     {
+        // Snap, hold while time is caught, let go with it.
         Flash = screenFlash, Chromatic = screenChromatic, Lens = screenLens, Saturation = screenSaturation, Contrast = 12f, Bloom = screenBloom,
-        Vignette = .14f, Hold = .04f, Fade = screenSeconds, Filter = Color.white, VignetteColor = new Color(.16f, .09f, .02f)
+        Vignette = .14f, Hold = Mathf.Max(.04f, hitStopSeconds), Fade = screenSeconds, Filter = Color.white, VignetteColor = new Color(.16f, .09f, .02f)
     };
     private ParryScreenLook BreakLook() => new ParryScreenLook
     {
+        // The drained colour holds through the hit stop and the slow motion that follows it.
         Flash = breakFlash, Chromatic = breakChromatic, Lens = breakLens, Saturation = breakSaturation, Contrast = 18f, Bloom = breakBloom,
-        Vignette = .34f, Hold = .34f, Fade = breakSeconds, Filter = new Color(1f, .95f, .86f), VignetteColor = new Color(.2f, .05f, .03f)
+        Vignette = .34f, Hold = breakHitStopSeconds + .34f, Fade = breakSeconds, Filter = new Color(1f, .95f, .86f), VignetteColor = new Color(.2f, .05f, .03f)
     };
 }

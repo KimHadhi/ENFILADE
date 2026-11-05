@@ -42,6 +42,8 @@ public sealed class GameSettings
         meleeCrosshair = CrosshairSettings.Default(CrosshairKind.Melee);
     [Tooltip("Player skin ID from the PlayerBody profile. Empty uses the profile's default character.")]
     public string characterSkin = "";
+    [Tooltip("Colour set ID of characterSkin (SkinVariant). Empty or unknown wears the skin's first colour set.")]
+    public string characterVariant = "";
     [Tooltip("The name other players see. Empty uses this PC's user name.")]
     public string nickname = "";
     [Tooltip("Scene name of the map last chosen on the main menu (Resources/Tables/Maps.csv).")]

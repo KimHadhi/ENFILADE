@@ -3,7 +3,7 @@ using UnityEngine;
 
 /// <summary>
 /// What a player does with their hands, for the other PCs: the weapon out, aiming, reloading and guarding as a stance,
-/// and shots, punches, shoves and the start of an execution as they happen. Each PC plays these on its own copy, whose
+/// and shots, punches, shoves, reload kicks and the start of an execution as they happen. Each PC plays these on its own copy, whose
 /// gun and hands then work as they always do, and nothing here deals damage. Alone it never spawns and does nothing.
 /// </summary>
 [DisallowMultipleComponent]
@@ -28,6 +28,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
     private PlayerMeleeCombat melee;
     private PlayerFistAudio fists;
     private PlayerShoveAudio shoves;
+    private ShoveMoves kicks;
     private PlayerExecution execution;
     private PlayerDamageReceiver receiver;
     private CombatTimeEffects time;
@@ -58,12 +59,15 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
         fists = GetComponent<PlayerFistAudio>();
         execution = GetComponent<PlayerExecution>();
         if (!TryGetComponent(out shoves)) shoves = gameObject.AddComponent<PlayerShoveAudio>();
+        kicks = ShoveMoves.For(GetComponent<PlayerMovement>());
         if (IsOwner)
         {
             weapon.ShotFired += OnShot;
             melee.Punched += OnPunched;
             fists.Played += OnFistSound;
             shoves.Played += OnShoveSound;
+            // Only the owner sends: a copy's Kicked comes from KickRpc itself.
+            if (kicks != null) kicks.Kicked += OnKicked;
             execution.Started += OnExecutionStarted;
             receiver.HitResolved += OnHit;
             return;
@@ -78,6 +82,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
         if (melee != null) melee.Punched -= OnPunched;
         if (fists != null) fists.Played -= OnFistSound;
         if (shoves != null) shoves.Played -= OnShoveSound;
+        if (kicks != null) kicks.Kicked -= OnKicked;
         if (execution != null) execution.Started -= OnExecutionStarted;
         if (receiver != null) receiver.HitResolved -= OnHit;
         stance.OnValueChanged -= OnStanceChanged;
@@ -116,6 +121,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
     private void OnPunched(float charge) => PunchRpc(charge);
     private void OnFistSound(FistSound sound) => FistSoundRpc(sound);
     private void OnShoveSound(ShoveImpactKind impact) => ShoveSoundRpc(impact);
+    private void OnKicked() => KickRpc();
     private void OnExecutionStarted(MeleeCombatTarget victim) => ExecutionStartedRpc();
     private void OnHit(DamageHit hit, DamageResult result)
     {
@@ -133,6 +139,13 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
 
     [Rpc(SendTo.NotMe)]
     private void ShoveSoundRpc(ShoveImpactKind impact) => shoves.Play(impact);
+
+    // The copy's legs play the kick (PlayerBody.Kick); the kicker's PC judged what it hit, and its sounds come as above.
+    [Rpc(SendTo.NotMe)]
+    private void KickRpc()
+    {
+        if (kicks != null) kicks.ShowKick();
+    }
 
     [Rpc(SendTo.NotMe)]
     private void ExecutionStartedRpc() => CombatCueAudio.Play(gameObject, CombatCue.Grab, 1f, true);

@@ -1,7 +1,7 @@
 using UnityEngine;
 
 /// <summary>Procedural placeholder poses; keeps the authored hip pose and exposes a real muzzle.</summary>
-public sealed class WeaponPresentation
+public sealed class WeaponPresentation : IWeaponPose
 {
     private readonly Transform root, muzzle;
     private readonly Vector3 hipPosition;
@@ -111,6 +111,19 @@ public sealed class WeaponPresentation
         }
         RememberPose(view);
         return obstructed || IsHighReady;
+    }
+
+    /// <summary>
+    /// Moves the posed gun by the sway (WeaponSway), given in the view's frame: turned by `turn` and moved by `offset` about
+    /// the eyes. Called last in a frame, after the shots and cover checks used the plain pose; the next Prepare starts
+    /// from the hip pose again, so nothing builds up.
+    /// </summary>
+    public void ApplySway(Transform view, Vector3 offset, Quaternion turn)
+    {
+        if (root == null || view == null) return;
+        Quaternion world = view.rotation * turn * Quaternion.Inverse(view.rotation);
+        Vector3 eye = view.position;
+        root.SetPositionAndRotation(eye + view.rotation * offset + world * (root.position - eye), world * root.rotation);
     }
 
     // Kept in the level frame so a raised gun blending in or out holds still while the view pitches.

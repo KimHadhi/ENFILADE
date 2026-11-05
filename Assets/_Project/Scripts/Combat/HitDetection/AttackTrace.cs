@@ -41,7 +41,7 @@ public static class AttackTrace
         if (direction.sqrMagnitude < 0.000001f || distance <= 0f)
             return new AttackTraceResult(false, default, origin, DamageResult.Ignored);
         direction.Normalize();
-        var result = Strike(attack, origin, direction, distance, layers, headshotMultiplier, 1f, attack.Origin ?? origin, null);
+        var result = Strike(attack, origin, direction, distance, layers, headshotMultiplier, 1f, attack.Origin ?? origin, null, false);
         StepDodgeTrail.RecognizeAttackSegment(attack, origin, result.End);
         return result;
     }
@@ -62,7 +62,7 @@ public static class AttackTrace
         direction.Normalize();
         Vector3 shooter = attack.Origin ?? origin;
         hurt.Clear();
-        var first = Strike(attack, origin, direction, distance, layers, headshotMultiplier, hurts ? 1f : 0f, shooter, hurt);
+        var first = Strike(attack, origin, direction, distance, layers, headshotMultiplier, hurts ? 1f : 0f, shooter, hurt, false);
         if (hurts) StepDodgeTrail.RecognizeAttackSegment(attack, origin, first.End);
         if (!first.HasHit || penetration <= 0f) return first;
         legs.Clear();
@@ -74,7 +74,8 @@ public static class AttackTrace
             rest -= Vector3.Distance(hit.point, onward.From);
             if (rest <= 0f) break;
             float share = onward.Left / penetration;
-            var trace = Strike(attack, onward.From, onward.Direction, rest, layers, headshotMultiplier, hurts ? share : 0f, shooter, hurt);
+            // Through a wall or a body, or off a surface: the hit marker and the kill score show it (DamageHit.Pierced).
+            var trace = Strike(attack, onward.From, onward.Direction, rest, layers, headshotMultiplier, hurts ? share : 0f, shooter, hurt, true);
             if (hurts) StepDodgeTrail.RecognizeAttackSegment(attack, onward.From, trace.End);
             legs.Add(new BulletLeg(hit.collider, onward, share, trace));
             if (!trace.HasHit) break;
@@ -86,9 +87,9 @@ public static class AttackTrace
     }
 
     // One straight stretch to the first thing it meets, hurting that by `share` of the attack unless it was hurt already
-    // by this bullet (`already`); share 0 hurts nothing.
+    // by this bullet (`already`); share 0 hurts nothing. `pierced`: the bullet got here through or off something.
     private static AttackTraceResult Strike(DamageHit attack, Vector3 origin, Vector3 direction, float distance, int layers,
-        float headshotMultiplier, float share, Vector3 shooter, System.Collections.Generic.HashSet<IDamageReceiver> already)
+        float headshotMultiplier, float share, Vector3 shooter, System.Collections.Generic.HashSet<IDamageReceiver> already, bool pierced)
     {
         Vector3 end = origin + direction * distance;
         DamageResult result = DamageResult.Ignored;
@@ -102,7 +103,7 @@ public static class AttackTrace
             if (receiver != null && share > 0f && (already == null || already.Add(receiver)))
                 result = receiver.ReceiveHit(new DamageHit(attack.Id, attack.Amount * share * (headshot ? headshotMultiplier : 1f), attack.Kind, hit.point, direction, attack.Source,
                     attack.CanBeGuarded, attack.PostureDamage * share, attack.IsComboFinisher, attack.IsCritical || headshot, attack.IsCounter, attack.Method,
-                    shooter, attack.IsFatal));
+                    shooter, attack.IsFatal, attack.Pierced || pierced));
         }
         return new AttackTraceResult(hasHit, hit, end, result, headshot);
     }

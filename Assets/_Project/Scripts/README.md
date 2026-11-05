@@ -21,9 +21,11 @@
 | 부서지는 문 (모든 PC에서 함께 부서짐, 서 있는 동안만 적의 길을 막음) | [BreakableDoor](World/BreakableDoor.cs), [DoorBreaks](World/DoorBreaks.cs), 길찾기 다시 굽기: Tools > World > 문 길찾기 다시 굽기 ([DoorNavMeshBaker](../Editor/Utilities/DoorNavMeshBaker.cs)) |
 | 슬라이딩의 적 접촉·저스트 판정 | [SlideCombat](Player/Combat/SlideCombat.cs) |
 | 적의 넘어짐·레그돌·복구 | [EnemyKnockdownPresentation](Combat/Damage/EnemyKnockdownPresentation.cs) |
-| 밀치기·돌진 밀치기 / 밀치기 피로 | [PlayerCombatActions](Player/Combat/PlayerCombatActions.cs) / [ShoveFatigue](Player/Combat/ShoveFatigue.cs), [ShoveFatigueHUD](UI/ShoveFatigueHUD.cs) |
-| 주먹·가드·패링·가드 브레이크 | [PlayerMeleeCombat](Player/Combat/PlayerMeleeCombat.cs) |
-| 완벽 방어·반격 / 처형 | [PlayerPerfectDefense](Player/Combat/PlayerPerfectDefense.cs), [PlayerExecution](Player/Combat/PlayerExecution.cs) |
+| 밀치기·돌진 밀치기 / 서서 도약 밀치기(ArcCW)·장전 중 발차기(Mighty Foot Engaged) / 밀치기 피로 | [PlayerCombatActions](Player/Combat/PlayerCombatActions.cs) / [ShoveMoves](Player/Combat/ShoveMoves.cs) / [ShoveFatigue](Player/Combat/ShoveFatigue.cs), [ShoveFatigueHUD](UI/ShoveFatigueHUD.cs) |
+| 주먹·가드(드는 동안 느린 걸음)·세키로식 패링(성공 때 발 묶임)·가드 브레이크 | [PlayerMeleeCombat](Player/Combat/PlayerMeleeCombat.cs) (걷는 속도는 `LimitMoveSpeed`로 이동이 묻는다) |
+| 적 머리 위에 선 플레이어: 밟힌 적이 털어 떨어뜨리고 주변 적은 위로 친다 | [HeadStandShakeOff](Player/Combat/HeadStandShakeOff.cs), [EnemyHead](Enemies/EnemyHead.cs), Enemies.csv `reachAbove` |
+| 완벽 방어·달려들어 치는 반격 / 처형(F, 주먹 상태의 좌클릭 인살) / 달려들 때 재는 몸 사이 거리 | [PlayerPerfectDefense](Player/Combat/PlayerPerfectDefense.cs), [PlayerExecution](Player/Combat/PlayerExecution.cs) / [BodyGap](Player/Combat/BodyGap.cs) |
+| Q/E 회피가 성공했을 때의 슬립과 시선 고정(비켜 돌기) / 전투가 카메라에 요청하는 짧은 머리 움직임(숙이기, 돌아보기, 시선 회전) / 화면 가장자리 빛 | [MicroSlip](Player/Movement/Dodge/MicroSlip.cs), [MovementLean](Player/Movement/Dodge/MovementLean.cs) / [CombatHeadMotion](Player/Combat/CombatHeadMotion.cs) / [CombatEdgeGlint](Player/Combat/CombatEdgeGlint.cs) |
 | 보이는 몸(진짜 1인칭)·상태별 애니메이션·F5 뒤에서 보기 / 연속 점프의 착지 | [PlayerBody](Player/Body/PlayerBody.cs), [PlayerBodyProfile](Player/Body/PlayerBodyProfile.cs), [사용 안내](../Docs/PlayerBodyGuide.md) / [PlayerBody.Hop](Player/Body/PlayerBody.Hop.cs) |
 | 눈 시점·시선 따라 허리·머리 굽히기·Q/E 몸 기울이기(골반 옮기기·옆으로 휘기)·공중에서 등을 대고 나는 몸·카메라 벽 판정 / F5에서도 총·주먹이 따르는 눈 시점 | [PlayerBody.Look](Player/Body/PlayerBody.Look.cs), [PlayerBody.Clearance](Player/Body/PlayerBody.Clearance.cs), [CameraClearance](Player/Camera/CameraClearance.cs) / [PlayerView](Player/Camera/PlayerView.cs) |
 | 손으로 총·주먹·난간 잡기 / 봉에 매달려 몸째 흔들리기·봉 잡는 손 / 발 IK·발목 제한 | [PlayerBodyHands](Player/Body/PlayerBodyHands.cs), [ArmIK](Player/Body/ArmIK.cs) / [PlayerBody.Bar](Player/Body/PlayerBody.Bar.cs), [PlayerBodyHands.Bar](Player/Body/PlayerBodyHands.Bar.cs) / [PlayerBody.Feet](Player/Body/PlayerBody.Feet.cs), [AnkleLimit](Player/Body/AnkleLimit.cs) |
@@ -45,9 +47,10 @@
 | 플레이어 궁극기 최대 보유량·소비량 스탯 / 현재 충전량 | [PlayerStats](Player/PlayerStats.cs), [UltimateCharge](UI/HP/UltimateCharge.cs) (Play 시작 때 `PlayerMovement`가 붙임) |
 | 피격 방향 아크·혈흔·쉐이크·빈사 박동·저체력 흑백 | [PlayerDamageFeedback](Player/Combat/PlayerDamageFeedback.cs), [LowHealthGrade](Player/Combat/LowHealthGrade.cs) ([LowHealth.csv](../Resources/Tables/LowHealth.csv)), [설정](../Resources/Combat/PlayerDamageFeedback.asset), [사용 안내](../Docs/PlayerDamageFeedbackGuide.md) |
 | 무기별 연출·사운드·반동 | [Data/Combat/Weapons](../Data/Combat/Weapons/), 형식은 [WeaponData](Combat/Weapons/Data/WeaponData.cs) |
-| 총구 화염·궤적 / 탄착·혈흔 프리팹 효과 (관통한 벽 뒷면의 탄흔, 그 뒤에 맞은 곳, 도탄 소리 포함) | [MuzzleEffects](Combat/Weapons/Effect/MuzzleEffects.cs), [WeaponImpactEffects](Combat/Weapons/Effect/WeaponImpactEffects.cs), [EnemyBloodEffect](Combat/Weapons/Effect/EnemyBloodEffect.cs) |
+| 총알 궤적 / 탄착·혈흔 프리팹 효과 (관통한 벽 뒷면의 큰 파편과 탄흔, 몸을 뚫은 뒤 등 뒤로 뿜는 피, 그 뒤에 맞은 곳, 관통·도탄 소리 포함) / 총구 조명 | [MuzzleEffects](Combat/Weapons/Effect/MuzzleEffects.cs), [MuzzleLight](Combat/Weapons/Effect/MuzzleLight.cs), [WeaponImpactEffects](Combat/Weapons/Effect/WeaponImpactEffects.cs), [EnemyBloodEffect](Combat/Weapons/Effect/EnemyBloodEffect.cs) |
+| 총구 화염 (CS2 1인칭을 프레임 단위로 잰 구름 불덩이: 3프레임 밝고 절반은 잔광 1프레임, 발마다 다른 모양 / F5·동료가 보면 1.6배와 엷은 연기) | [MuzzleFlash](Combat/Weapons/Effect/MuzzleFlash.cs) (총마다 하나, 쏠 때마다 총구에서 터뜨림, 내 총과 상대 사본 모두), [MuzzleFlame](Combat/Weapons/Effect/MuzzleFlame.cs) (화염의 모양과 시간, [MuzzleFlame.prefab](../Resources/Combat/MuzzleFlame.prefab)에서 조절), [MuzzleFlame.shader](../Resources/Combat/Shaders/MuzzleFlame.shader) |
 | 발사 간격·탄약·장전 타이머 | [WeaponRuntime](Combat/Weapons/Core/WeaponRuntime.cs) |
-| 발사·명중·조준 연결 / 총 모델 표현 | [WeaponController](Player/Combat/Weapons/WeaponController.cs), [WeaponPresentation](Player/Combat/Weapons/WeaponPresentation.cs) |
+| 발사·명중·조준 연결 / 총 모델 표현 / 이동·숨쉬기 흔들림(ArcCW)과 시선 흔들림(TFA) | [WeaponController](Player/Combat/Weapons/WeaponController.cs), [WeaponPresentation](Player/Combat/Weapons/WeaponPresentation.cs) / [WeaponSway](Player/Combat/Weapons/WeaponSway.cs) |
 | 장비 슬롯 / 사격 입력 | [PlayerWeaponSlots](Player/Combat/Weapons/PlayerWeaponSlots.cs), [PlayerWeaponInput](Player/Combat/Input/PlayerWeaponInput.cs) |
 | 피해 공통 규약·중복 타격 / 레이 판정 / 총알 관통과 도탄 (ArcCW) | [DamageHit](Combat/Damage/DamageHit.cs), [AttackTrace](Combat/HitDetection/AttackTrace.cs), [AttackHitbox](Combat/HitDetection/AttackHitbox.cs) / [BulletPenetration](Combat/HitDetection/BulletPenetration.cs), `AttackTrace.Bullet`, [Weapons.csv](../Resources/Tables/Weapons.csv)·[Surfaces.csv](../Resources/Tables/Surfaces.csv)의 `penetration` |
 | 적 체력·추적·공격·노릴 플레이어 고르기 / 웨이브 / 웨이브 끝 무렵 남은 적 벽 너머 표시 | [Enemies](Enemies/), [EnemyTargeting](Enemies/EnemyTargeting.cs), [WaveManager](Combat/Waves/WaveManager.cs) / [EnemyReveal](Combat/Waves/EnemyReveal.cs) ([Waves.csv](../Resources/Tables/Waves.csv)의 `revealRemaining`·`revealColor`) |
@@ -66,6 +69,8 @@
 | 소리 볼륨 채널(전투·이동·목소리·UI) / 연타가 동시 재생 한도를 넘지 않게 | [GameAudio](Audio/GameAudio.cs) / [VoiceRing](Audio/VoiceRing.cs) |
 | 발소리 / 동작 소리 / 숨·바람·큰 낙하·사다리류 소리 | [PlayerFootsteps](Player/Audio/PlayerFootsteps.cs), [PlayerMovementAudio](Player/Audio/PlayerMovementAudio.cs), [Player/Audio](Player/Audio/) |
 | 동작마다 나는 소리의 구성 / 소리 묶음·표면·재생 | [SoundCues.csv](../Resources/Tables/SoundCues.csv) / [SoundBank](Audio/SoundBank.cs), [Surfaces](Audio/Surfaces.cs), [SoundCues](Audio/SoundCues.cs), [CharacterSounds](Audio/CharacterSounds.cs), [사용 안내](../Docs/MaintenanceGuide.md#이동목소리-소리-폴더가-곧-목록) |
+| 총소리 고르기(총에 넣은 클립 → Guns 묶음 → 합성음) / 쏜 자리의 방에 맞춘 총 잔향 (Accurate Gun Reverb) | [FeelAudio](Combat/Feel/FeelAudio.cs), [Art/Audio/Guns](../Art/Audio/Guns) / [GunReverb](Audio/GunReverb.cs) ([Reverb.csv](../Resources/Tables/Reverb.csv)) |
+| 맵에 놓는 구역 리버브(귀가 들어간 상자의 프리셋) | [ReverbArea](Audio/ReverbArea.cs) (놓는 법은 [사용 안내](../Docs/MaintenanceGuide.md)의 구역 리버브) |
 | 적이 들을 소음 이벤트 | [Noise](World/Noise.cs) (아직 듣는 적은 없다) |
 
 ## 코드의 경계

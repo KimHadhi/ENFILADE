@@ -1,12 +1,15 @@
 using UnityEngine;
 
+/// <summary>Climbing straight up a wall, slowing as it goes, for as long as WallClimbPace gives this climb.</summary>
 public sealed class WallMovementState : MovementBaseState
 {
-    private float contactGrace;
+    private float contactGrace, remaining;
     public WallMovementState(PlayerMovement ctx, MovementBaseState parent) : base(ctx, parent) { }
     public override string Name => "WallClimb";
     public override void Enter()
     {
+        // How the climb lasts depends on the speed it began with, so it is read before the climb takes over.
+        remaining = ctx.Abilities.Traversal.BeginWallClimb();
         ctx.VerticalVelocity = 0f;
         ctx.Abilities.Landing.SupportedByTraversal();
         ctx.Actions.ClearJumpBuffer();
@@ -28,7 +31,8 @@ public sealed class WallMovementState : MovementBaseState
         if (!WallDetector.CanUseSurface(traversal.Wall.collider)) { Drop(); return; }
         if (ctx.CurrentInput.y > 0.1f && (traversal.TryVault(false) || traversal.TryVault(true))) return;
         if (traversal.TryCatchLedge(-traversal.Wall.normal)) return;
-        if (!traversal.SpendWallTime(dt)) { Drop(); return; }
+        remaining -= dt;
+        if (remaining <= 0f) { Drop(); return; }
         if (!traversal.Detector.TryWall(-traversal.Wall.normal, out RaycastHit contact)
             || Vector3.Dot(contact.normal, traversal.Wall.normal) < 0.7f)
         {
@@ -43,9 +47,8 @@ public sealed class WallMovementState : MovementBaseState
     {
         var traversal = ctx.Abilities.Traversal;
         Vector3 normal = traversal.Wall.normal;
-        // Into the wall at Beatrun's 50 units/s, so the hands are on it within a moment.
-        ctx.HorizontalVelocity = -normal * (50f * ctx.HullUnit);
-        ctx.VerticalVelocity = ctx.AbilitySettings.wallClimbSpeed;
+        ctx.HorizontalVelocity = -normal * (WallClimbPace.IntoWallUnits * ctx.HeightUnit);
+        ctx.VerticalVelocity = WallClimbPace.Speed(remaining, ctx.AbilitySettings) * ctx.HeightUnit;
     }
     public override void Exit() => ctx.Abilities.Traversal.LockWall();
     private void Drop() { ctx.Abilities.ReturnToLocomotion(); ctx.VerticalVelocity = Mathf.Min(ctx.VerticalVelocity, 0f); }

@@ -1,0 +1,59 @@
+RVFX Baked Playback - Compatibility
+
+Playback selects a backend from device capabilities, not from an OS name.
+Authoring/fracture and the recorded physics simulation run in the Unity Editor;
+the exported playback does not run the original fracture simulation again.
+
+Base motion
+- Exact recording uses vertex-shader playback and does not require compute.
+- Adaptive version 2 uses compute and floating-point render targets. If these
+  are unavailable, assets/kernels are missing, or preparation fails, playback
+  uses the original recording. Placement height and terrain correction are
+  disabled for BOTH Base and Adaptive Debris in that fallback.
+- This is not a CPU implementation of Adaptive. Use an Exact bake for a fixed
+  placement on compute-incompatible targets. The old version 1 solver remains
+  for old assets; version 2 recordings are never reinterpreted as version 1.
+
+Debris
+- Compute + indirect + instancing: GPU playback. Adaptive Debris additionally
+  requires its remap kernels and at least five compute buffer inputs.
+- Missing indirect support: CPU pose processing with direct instanced drawing.
+- Missing Adaptive Debris GPU support while Base Adaptive still works: CPU
+  remap of a limited subset, using Base's GPU contacts, then supported drawing.
+- Automatic CPU fallback defaults to 512 evenly distributed source points.
+  The playback Inspector's Fallback Limit controls this (1-10000). Normal GPU
+  playback is not capped. Explicit CPU debug mode keeps its original behavior.
+- Version 2 ordinary CPU fallback streams packed samples without copying the
+  full sample array. CPU Adaptive remap builds a cache for the selected subset.
+  Old version 1 binary decoding can still allocate its original sample arrays.
+- No instancing or shader level below 3.5: Debris is skipped. Base, CPU Proxy,
+  Collision and Effects tracks continue independently.
+- Allocation/draw failure falls back once, rather than retrying every frame.
+  Refresh Surface / RefreshSecondaryDebrisData explicitly retries preparation.
+
+Limits
+- Placement validation is independent of device fallback. Exact allows XYZ
+  rotation and positive uniform scale. Adaptive Landing allows Y rotation only
+  with world up aligned. Parent transforms count; non-uniform, zero/negative
+  scale and shear block playback with an Error. No fallback bypasses this check.
+- At world scale other than 1, enabled effect prefabs using Local/Shape particle
+  scaling show a Warning: set Main > Scaling Mode = Hierarchy, including nested
+  children. This warning allows playback. Adaptive particle events retain their
+  recorded timing/positions; they are not retimed to corrected landing contacts.
+- Base vertex shader, baked texture formats/sizes and materials must still be
+  supported. This is not software rendering for arbitrary legacy hardware.
+- URP, HDRP and Built-in require their matching exported shader/material set.
+  A built player reports a render-pipeline mismatch; it cannot install support
+  packages or convert materials at runtime. In the Editor, configure the new
+  Unity pipeline, install its RVFX support in Pipeline Setup, then use Update
+  RVFX Materials for Active Pipeline. This updates RVFX-owned materials while
+  keeping recorded motion. Third-party/custom shaders need their own conversion.
+- Compute capability does not guarantee high performance. Test on each target
+  device and tune content, heightmap size and fallback limit accordingly.
+- Inspector compatibility messages explain a degraded or disabled feature.
+
+Validation
+RVFXPlaybackCompatibilityRegression exercises missing compute, indirect,
+instancing, float targets, kernels/assets, low buffer limits, injected failures,
+cache stability and recovery, and shared Proxy/Collision/Effects playback.
+Capability injection in a Windows Editor is not physical Mac/mobile validation.

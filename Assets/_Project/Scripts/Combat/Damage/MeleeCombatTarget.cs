@@ -89,6 +89,13 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
     {
         if (dt <= 0f || !IsAvailable) return;
         if (agent == null) agent = GetComponent<NavMeshAgent>();
+        // A hold whose executor has moved on (an end message lost, a copy let go) is dropped, or this enemy would stay
+        // frozen and no one could ever execute it. Only here: the executor's own PC already said whatever it was going to.
+        if (executor != null && (!executor.isActiveAndEnabled || !executor.IsExecuting || executor.Victim != this))
+        {
+            executor = null;
+            if (!IsStunned && !PlayerExecution.Suppresses(this)) RestoreAgent();
+        }
         var suppressor = PlayerExecution.SuppressorOf(this);
         bool suppressed = suppressor != null;
         if (suppressed)

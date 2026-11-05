@@ -61,6 +61,9 @@ public sealed class PlayerCameraEffects : MonoBehaviour
     internal Vector3 CameraLocalHome => baseCameraPosition;
     internal Vector3 CameraAnchorPosition => targetCamera.parent.TransformPoint(baseCameraPosition);
     internal Vector3 LeanDisplacement { get; private set; }
+    /// <summary>Where combat's head moves put the eyes this frame (CombatHeadMotion.Offset, in the world). The body adds it too.</summary>
+    internal Vector3 HeadDisplacement { get; private set; }
+    private CombatHeadMotion headMotion;
     private ObstacleTraversalState punchSource;
     private int punchSerial;
     private Vector2 traversalPunch, punchVelocity;
@@ -210,25 +213,42 @@ public sealed class PlayerCameraEffects : MonoBehaviour
             distance + 0.02f, movement.groundLayers, QueryTriggerInteraction.Ignore))
             offset *= Mathf.Clamp01((hit.distance - 0.02f) / distance);
         LeanDisplacement = offset;
+        // Combat's head moves (a slip's dip): right, up and forward of the body, on top of everything, as asked.
+        var head = HeadMotion;
+        HeadDisplacement = head != null ? movement.transform.TransformDirection(head.Offset) : Vector3.zero;
         if (body == null) body = movement.GetComponent<PlayerBody>();
         // The visible body composes the final eye view after these effects. Without a body, keep the pivot camera.
         if (body == null || !body.isActiveAndEnabled || body.BodyAnimator == null || body.View != targetCamera)
-            targetCamera.position = origin + offset;
+            targetCamera.position = origin + offset + HeadDisplacement;
         movement.GetComponent<PlayerLeanHitboxes>()?.Sync(offset);
     }
 
     // The Esc menu's screen shake scales bob, landing, impacts, punches and movement tilt; Q/E lean is aiming, not shake.
     private static float Shake => GameSettings.Current.screenShake;
 
+    // Combat's head moves for this PC, added to the PC's player when it spawns (PlayerPerfectDefense); none on other PCs.
+    private CombatHeadMotion HeadMotion
+    {
+        get
+        {
+            if (headMotion == null) movement.TryGetComponent(out headMotion);
+            return headMotion != null && headMotion.isActiveAndEnabled ? headMotion : null;
+        }
+    }
+
     private void ApplyCameraRotation()
     {
         float shake = Shake;
         if (movementPunch == null) movementPunch = movement.GetComponent<PlayerMovementPunch>();
         Vector3 steps = movementPunch != null && movementPunch.isActiveAndEnabled ? movementPunch.Angles : Vector3.zero;
+        // Combat's head turns (the back elbow's glance over the shoulder) are moves of the head, not shake: never scaled.
+        // The look and the player's facing stay where they are.
+        var head = HeadMotion;
+        Vector3 glance = head != null ? head.Angles : Vector3.zero;
         effectsPivot.localRotation = Quaternion.Euler(
-            (traversalPunch.x + divePitch + impulseRotDisplacement.x + steps.x) * shake,
-            (impulseRotDisplacement.y + steps.y) * shake,
-            (currentTiltRoll + traversalPunch.y + impulseRotDisplacement.z + steps.z) * shake + movement.LeanRoll
+            (traversalPunch.x + divePitch + impulseRotDisplacement.x + steps.x) * shake + glance.x,
+            (impulseRotDisplacement.y + steps.y) * shake + glance.y,
+            (currentTiltRoll + traversalPunch.y + impulseRotDisplacement.z + steps.z) * shake + movement.LeanRoll + glance.z
         );
     }
 
@@ -251,6 +271,7 @@ public sealed class PlayerCameraEffects : MonoBehaviour
     private void OnDisable()
     {
         if (effectsPivot != null) effectsPivot.localRotation = Quaternion.identity;
+        HeadDisplacement = Vector3.zero;
         traversalPunch = punchVelocity = Vector2.zero;
         impulseRotDisplacement = impulseRotVelocity = Vector3.zero;
         divePitch = impulseFovDisplacement = impulseFovVelocity = 0f;

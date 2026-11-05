@@ -12,10 +12,12 @@ Fists.attackActiveTime,0.18,주먹 판정이 살아 있는 시간(초)
 Fists.attackMaxTargets,2,한 번의 주먹으로 맞힐 수 있는 대상 수
 Fists.lungeDistance,0.12,주먹을 뻗을 때 앞으로 나가는 거리(m)
 Fists.heavyPunchCharge,0.6,이만큼 충전한 주먹은 묵직한 타격음을 낸다(0~1)
-Fists.parryWindowDurations,0.35;0.2;0.1;0.05,연속으로 다시 누를 때마다 줄어드는 패링 시간(초)
-Fists.spamResetDelay,0.8,패링 시간이 처음 값으로 돌아오기까지(초)
+Fists.parryWindowDurations,0.2;0.133;0.067;0,가드를 누른 순간부터 튕겨 낼 수 있는 시간(초). 놓았다가 곧 다시 누를 때마다 다음 값으로 줄어든다. 세키로: 12프레임 → 4프레임 → 너무 빠른 연타는 0(막기만)
+Fists.spamResetDelay,0.5,가드에서 손을 뗀 채 이만큼(초) 지나거나 패링·막기에 성공하면 패링 시간이 처음 값으로 돌아온다. 세키로 30프레임
 Fists.guardInputBuffer,0.12,가드 선입력 허용 시간(초)
 Fists.guardAngle,150,정면 방어 각도(도)
+Fists.guardMoveShare,0.5,가드를 들고 있는 동안 걷는 속도의 이 배율까지만 움직인다(0~1). 가드를 계속 들고 다니지 못하게
+Fists.parryRootSeconds,0.15,패링 히트스톱이 끝난 뒤에도 발이 묶이는 시간(실제 초). 주먹·가드·회피는 바로 된다
 Fists.holdThreshold,0.14,V를 이 시간 이상 누르면 가드 브레이크(초)
 Fists.guardBreakReach,2.2,가드 브레이크 사거리(m)
 Fists.guardBreakApproachSpeed,12,가드 브레이크 돌진 속도(m/s)
@@ -28,10 +30,32 @@ Fists.guardBreakPostureDamage,55,가드 브레이크 자세 피해
 Defense.parryOpensCounter,false,패링이 반격 창을 연다. 반격 스킬이 생기기 전에는 끈다(완벽 회피의 반격은 그대로)
 Defense.postureBreakTimeScale,0.3,패링으로 체간을 무너뜨린 순간의 시간 배율
 Defense.postureBreakSlowSeconds,0.35,그 슬로모션 길이(실제 초). 처형을 시작하면 바로 끝난다. 0이면 끈다
-Defense.counterGuardSeconds,0.5,반격한 뒤 무적 시간(실제 초). 반격 창이 열린 동안에도 무적이고, 회피 판정은 무적보다 먼저 본다
-Parry.handSweepSeconds,0.34,패링 때 손 동작 전체 시간: 뻗기+멈춤+돌아오기(실제 초)
+Defense.counterGuardSeconds,0.5,반격한 뒤 무적 시간(실제 초). 반격 창이 열린 동안과 달려드는 동안에도 무적이고, 회피 판정은 무적보다 먼저 본다
+Defense.counterDashSpeed,14,반격 때 공격자에게 달려드는 속도(m/s)
+Defense.counterDashTimeout,0.35,이 시간(초) 안에 붙지 못해도 그 자리에서 주먹을 낸다. 그때는 빗나갈 수 있다. 가는 길이 다른 적에게 막히면 기다리지 않고 바로 낸다. 멈추는 거리 + 속도 × 이 시간(지금 5.4m, 내 몸 가운데에서 상대 몸 표면까지) 안의 적만 반격할 수 있다. 달려드는 동안에는 회피가 나가지 않는다
+Defense.counterStopDistance,0.5,달려들기를 멈추는 거리(m). 내 몸 가운데에서 상대 몸 표면까지
+Defense.counterStrikeReach,1.4,반격 주먹이 닿는 거리(m). 눈에서 상대 몸까지이고 사이에 막힌 것이 없어야 맞는다. 다른 적이 사이에 끼어 있으면 그 적이 맞는다
+Defense.counterPickDegreesPerMetre,10,한 번에 여러 적의 공격을 피했을 때 반격할 적 고르기: 1m 더 먼 것을 시선에서 이만큼(도) 더 벗어난 것과 같게 친다. 달려들기가 닿는 적 중에서 고르고, 닿는 적이 없으면 누르는 순간 반격 창과 슬로 모션이 끝난다
+Defense.elbowFromAngle,60,반격할 적이 시선에서 이 각도(도)보다 벗어나 있으면(옆이나 뒤) 주먹 대신 팔꿈치로 뒤를 찍는다. 안쪽이면 곧은 주먹
+Defense.elbowGlance,40,팔꿈치 반격 때 그 적 쪽 어깨 너머로 돌아보는 각도(도). 조준은 그대로 둔다
+Defense.elbowGlanceTiming,0.1;0.05;0.15,그 돌아보기의 나가기;머무르기;돌아오기(실제 초)
+Defense.elbowGlint,0.4,팔꿈치는 보이지 않는 곳에 맞으므로 맞는 순간 그쪽 화면 가장자리가 빛나는 세기(0~1). 0이면 끈다
+Defense.elbowGlintSeconds,0.14,그 빛이 사라지는 시간(실제 초)
+Defense.elbowGlintColor,#FFEDC7,그 빛의 색
+Slip.clearance,0.25,Q/E 회피가 실제 공격을 피하면 눈이 원래 자리에서 누른 쪽으로 적어도 이만큼(m) 비킨다(슬립). 이미 더 기울어 있으면 그대로 둔다. 몸은 움직이지 않는다
+Slip.slipSeconds,0.12,비키는 시간(실제 초). 슬로 모션 중에도 같다
+Slip.holdSeconds,0.48,공격이 지나가는 동안 비킨 채 머무는 시간(실제 초)
+Slip.returnSeconds,0.3,누르고 있는 기울기로 돌아오는 시간(실제 초)
+Slip.dip,0.06,비키는 동안 머리가 숙여지는 깊이(m)
+Slip.glint,0.35,공격이 지나간 쪽 화면 가장자리가 빛나는 세기(0~1). 0이면 끈다
+Slip.glintSeconds,0.35,그 빛이 사라지는 시간(실제 초)
+Slip.glintColor,#E0EDF7,그 빛의 색
+Slip.lockAngle,40,슬립하면 시선이 공격한 적에게 붙는다(비켜 돌기). 그 적이 시선에서 이 각도(도) 안에 있을 때만. 슬립하는 동안 머리가 비켜 나갔다 돌아와도 적이 화면 가운데에 있고, 곧은 주먹 반격은 달려드는 동안에도 그 적을 본다. 0이면 끈다
+Slip.lockRate,20,시선이 그 적에게 도는 빠르기(1/초). 남은 각도 중 이 비율을 1초에 돈다
+Slip.lockLetGo,5,붙어 있는 동안 마우스로 이 각도(도)만큼 돌리면 놓는다. 다른 적을 반격할 때
+Parry.handSweepSeconds,0.45,패링 때 손 동작 전체 시간: 뻗기+멈춤+돌아오기(실제 초)
 Parry.handSweepAttack,0.04,손이 화면을 가로질러 뻗는 시간(실제 초)
-Parry.handSweepHold,0.075,뻗은 자세로 멈추는 시간(실제 초). 히트스톱과 맞물린다
+Parry.handSweepHold,0.16,뻗은 자세로 멈추는 시간(실제 초). 히트스톱과 맞물린다
 Parry.handSweep,0.2;0.02;0.42,쳐낸 손의 위치(카메라 기준 m; 공격자 쪽;위;앞)
 Parry.enemyPushSpeed,4,패링당한 적이 밀려나는 속도(m/s). 1m/s당 약 0.16m 밀린다
 Parry.breakPushSpeed,1.5,체간이 무너진 적의 밀림 속도(m/s). 처형 거리 안에 남도록 작게 둔다
@@ -43,8 +67,8 @@ Parry.enemyFlashSeconds,0.12,적 몸이 하얗게 번쩍이는 시간(초). 0이
 Parry.cameraKick,1.3;0.8;2.2,화면 충격(도; 위;공격자 반대쪽;기울기). 멀미가 나면 뒤의 두 값을 줄인다
 Parry.cameraFov,-2.4,순간 줌(시야각 도). 음수면 앞으로 밀려 들어간다
 Parry.cameraTrauma,0.12,추가 흔들림(0~1)
-Parry.hitStopSeconds,0.07,접촉 순간 시간이 멈추는 길이(실제 초). 0이면 끈다
-Parry.breakHitStopSeconds,0.12,체간을 무너뜨린 패링의 멈춤 길이(실제 초)
+Parry.hitStopSeconds,0.2,접촉 순간 시간이 멈추는 길이(실제 초). 0이면 끈다. 멈춘 동안 발도 묶인다(Fists.parryRootSeconds가 그 뒤를 잇는다)
+Parry.breakHitStopSeconds,0.25,체간을 무너뜨린 패링의 멈춤 길이(실제 초). 체간 붕괴 슬로모션(Defense.postureBreakSlowSeconds)은 이 멈춤이 끝난 뒤 이어진다
 Parry.hitStopScale,0.02,멈춘 동안의 시간 배율
 Parry.contactDistance,0.55,빛이 터지는 위치(눈앞 m)
 Parry.vfxScale,1,패링 빛 효과 전체 크기
@@ -60,7 +84,7 @@ Parry.chainMax,4,연속 패링 단계 상한
 Parry.chainGrowth,0.16,연속 한 단계마다 커지는 크기
 Parry.chainPitchSemitones,1.5,연속 한 단계마다 올라가는 음높이(반음)
 Parry.duckLevel,0.35,패링 순간 이동 소리와 목소리를 낮추는 배율(1이면 끈다)
-Parry.duckSeconds,0.3,낮아진 소리가 돌아오는 시간(실제 초)
+Parry.duckSeconds,0.4,낮아진 소리가 돌아오는 시간(실제 초)
 Parry.screenFlash,0.3,접촉 순간 화면 밝기(스톱)
 Parry.screenBloom,0.9,패링 때 밝은 부분이 번지는 세기
 Parry.screenChromatic,0.5,접촉 순간 색수차(0~1)
@@ -79,8 +103,32 @@ Execution.duration,0.8,처형 전체 시간(초)
 Execution.impactTime,0.35,처형 타격 시점(초)
 Execution.clearance,2.6,처형 중 주변 적을 이 거리 밖으로 물린다(m)
 Execution.retreatSpeed,2.8,주변 적이 물러나는 속도(m/s)
+Execution.deathblowReach,4,주먹 상태에서 체간이 무너진 적이 이 거리(m) 안에 있으면 좌클릭이 처형이 된다(세키로의 인살). 달려들어서 처형한다. F는 reach 그대로
+Execution.dashSpeed,14,좌클릭 처형 때 달려드는 속도(m/s)
+Execution.dashTimeout,0.35,이 시간(초) 안에 붙지 못해도 그 자리에서 처형을 이어 간다
+Execution.dashStopDistance,0.65,달려들기를 멈추는 거리(m). 내 몸 가운데에서 적 몸 표면까지
 Execution.healthRestored,10,처형 성공 시 회복하는 체력
 Execution.ammoRestoredFraction,0.2,처형 성공 시 총기별 예비 탄약 회복(탄창 크기 대비 비율)
+Shove.lungeLength,1.6,가만히 서서 V를 누르면 밀치기 사거리(Ability.shoveSweepReach)보다 이만큼(m) 더 먼 곳까지의 적에게 달려든다. ArcCW의 근접 도약(64단위)
+Shove.lungeRate,5,그 도약 속도 = 이 값 × 적까지 거리(1/s). ArcCW 지상 5
+Shove.airLungeRate,2.5,공중에서의 같은 값. ArcCW 2.5
+Shove.lungeFriction,8,도약이 줄어드는 빠르기(1/s). GMod 바닥 마찰 8이라 ArcCW처럼 거리의 5/8만큼 나아간다
+Shove.standingSpeed,0.5,이동 키를 안 누르고 이보다 느리면(m/s) 서 있는 것으로 본다. 움직이면 그냥 밀치기(레포데)
+Shove.kickSwingTime,0.2,장전 중 V는 장전을 끊지 않는 발차기다(Mighty Foot Engaged). 누른 뒤 휘두르는 소리와 화면 충격까지(초)
+Shove.kickHitTime,0.3,누른 뒤 발이 닿는 순간(초)
+Shove.kickInterval,1.25,발차기 재사용 대기(초). 원본의 0.75 + 0.5
+Shove.kickRangeShare,1,발이 닿는 거리 = 선 키 × 이 값. 몸 가운데에서 시선이 머무는 곳 쪽으로
+Shove.kickRadius,0.1,곧은 선이 빗나가면 이 반지름(m)으로 한 번 더 훑는다. 원본 4단위
+Shove.kickDamage,20;30,발차기 피해 - 최소;최대(무작위). 밀침·경직·자세 피해는 밀치기와 같다
+Shove.kickPushback,2.5,맞히면 차는 사람이 뒤로 밀리는 속도(m/s). 공중이면 두 배. 원본 100단위/초
+Shove.kickViewPunch,-10;2,휘두를 때 화면 충격(도; 위아래;좌우 무작위 폭). 원본 -10;2
+HeadStand.shakeDelay,0.35,적 머리 위에 이만큼(초) 서 있으면 그 적이 몸을 털어 떨어뜨린다. 밟힌 적은 위로 치지 않고 주변 적은 위로 손을 뻗는다(Enemies.csv reachAbove)
+HeadStand.throwDistance,1.1,떨어뜨릴 때 옆으로 밀려나는 거리(m)
+HeadStand.throwSeconds,0.25,그 밀림에 걸리는 시간(초)
+HeadStand.throwLift,2.5,떨어뜨릴 때 살짝 튀어 오르는 속도(m/s). 발이 머리에서 떨어지게
+HeadStand.lurchDegrees,14,털어 낼 때 적이 기우는 각도(도)
+HeadStand.lurchSeconds,0.45,그 기울임이 돌아오기까지(초)
+HeadStand.viewJolt,-5;7,떨어질 때 화면 충격(도; 위아래;기울기). 기울기는 떨어지는 쪽으로
 Posture.crouchColliderHeight,0.9,웅크린 캡슐 높이(m). 이보다 낮은 틈은 웅크려도 못 지나간다
 Posture.crouchOffset,-0.8,웅크린 눈높이 = 서 있는 눈높이(1.6) + 이 값. 0.8m로 캡슐 꼭대기보다 낮게 둔다
 Posture.slideColliderHeight,0.6,슬라이딩 캡슐 높이(m)
@@ -169,9 +217,6 @@ Ability.stepDodgeRecognitionPadding,0.12,스텝 회피 판정 때 몸 반경에 
 Ability.microInvulnerability,0.08,Q/E 직후 공격을 회피로 인정하는 시간(초)
 Ability.dodgeCooldown,0.55,회피 공통 재사용 대기(초). 회피에 성공하면 바로 초기화
 Ability.stepDodgeCooldown,1.25,스텝 회피에 실패한 뒤 다음 회피까지(초)
-Ability.microSuccessDistance,0.3,Q/E 회피 성공 때 옆으로 비켜나는 거리(m)
-Ability.microSuccessDuration,0.1,그 이동에 걸리는 실제 시간(초). 슬로모션에도 같다
-Ability.microSuccessLeanDuration,0.08,회피 성공 때 끝까지 기우는 실제 시간(초)
 Ability.leanAngle,10,Q/E 기울이기 화면 기울기(도)
 Ability.leanOffset,0.35,Q/E 기울이기 옆 이동 거리(m)
 Ability.leanSharpness,10,기울이기 반응 빠르기
@@ -180,6 +225,9 @@ Ability.stepHeight,0.3,걸어서 넘는 턱 높이(m)
 Ability.proneStepHeight,0.05,엎드리거나 누워서 넘는 턱 높이(m)
 Ability.mantleDuration,0.45,바·사다리 꼭대기처럼 경로를 따로 쓰는 올라서기의 시간(초) = 이 값 + 높이 1m마다 mantleDurationPerMeter
 Ability.vaultRate,1,넘기 세 종류의 이동 속도 배율. 1이면 Beatrun 원본
+Ability.vaultSurgeDistance,3,달리며 낮은 장애물 앞에서 일찍 누른 점프는 넘기가 걸리는 자리까지 이만큼(m) 앞에서도 그 자리로 빠르게 달려가 바로 넘는다. 순간이동 없이 땅을 달려가며 달리기 동작도 빨라진다. 0이면 Beatrun처럼 장애물 앞면 약 1.2m 안에서 눌러야 넘는다(2026-11-06 사용자 요청: 대기 말고 빠르고 시원하게)
+Ability.vaultSurgeSpeed,11,그렇게 달려가는 가장 느린 속도(m/s). 질주(7.9)의 약 1.4배. 이미 더 빠르면 그 속도를 유지한다. 넘기 자체는 누르기 전 달리던 속도로 한다: 이 속도로 들어가면 넘기 클립이 빨리 감기처럼 잘려 보였다(2026-11-06 사용자)
+Ability.vaultSurgeKick,25;120,달려가기 시작할 때 카메라를 미는 힘: 앞으로 숙이는 회전과 시야각을 넓히는 양(도/초, 스프링에 주는 속도). 속도에 따른 시야각 넓힘이 그 뒤를 잇는다. 화면 흔들림 설정을 따른다
 Ability.mountRate,1,바로 올라타기와 높은 올라서기의 이동 속도 배율. 1이면 Beatrun 원본
 Ability.heaveRate,1,매달린 뒤 올라가기의 이동 속도 배율. 1이면 Beatrun 원본(약 0.93초)
 Ability.mantleDurationPerMeter,0.3,경로를 따로 쓰는 올라서기가 높이 1m마다 늘어나는 시간(초)
@@ -196,8 +244,8 @@ Ability.ledgeJumpSpeed,8.5,렛지 점프 수평 속도(m/s)
 Ability.ledgeJumpUpSpeed,6.5,렛지 점프 위쪽 속도(m/s)
 # 능력: 벽,,
 Ability.wallReach,0.85,벽을 찾는 거리(m)
-Ability.wallDuration,1.8,착지 전까지 벽 오르기에 쓸 수 있는 시간(초)
-Ability.wallClimbSpeed,3.8,벽 오르기 속도(m/s)
+Ability.wallClimbTime,1.5,벽 오르기 한 번의 기본 시간(초). Beatrun 원본 1.5. 처음엔 키의 2.8배(초당 200단위) 속도로 오르다 남은 시간에 맞춰 느려져 한 번에 키의 약 2.1배(약 3.7m)를 오른다. 위로 뛰어오르는 중이면 최대 1.1배 길고 떨어지는 중(초당 75단위 이상)이면 시작하지 않는다. 끝나고 2초 안에 다시 오르면 세 번째부터 0.6배·0.25배
+Ability.wallClimbRate,1,벽 오르기 속도 배율. 1이면 Beatrun 원본. 오르는 높이가 이 배율만큼 바뀐다
 Ability.wallClimbFacingDot,0.9,벽을 이만큼 정면으로 볼 때만 벽 오르기(1이면 정확히 정면)
 Ability.wallContactGrace,0.1,벽에서 잠깐 떨어져도 벽 동작을 유지하는 시간(초)
 Ability.wallKickOutSpeed,6,벽 차기 바깥쪽 속도(m/s)
@@ -252,7 +300,7 @@ Ability.heavyLandingBraking,10,크게 착지해 바닥을 미끄러지는 속도
 Ability.rollInputWindow,0.5,세게·크게 착지하기 전 이 시간 안에 Ctrl을 누르면 구른다(초). 피해·감속 없이 속도 유지
 Ability.rollDuration,1,착지 구르기 시간(초). 구르기 애니메이션이 이 시간에 맞춰 재생된다
 Ability.rollSpeed,4,구르는 동안 가장 느린 속도(m/s). 착지 속도가 더 빠르면 그 속도를 유지
-Ability.rollLandSpeed,5,수평 속도가 이보다 느리거나 S를 누르고 있으면 구르지 않고 제자리에 착지한다(m/s). Beatrun의 200단위/초
+Ability.rollLandSpeed,2,수평 속도가 이보다 느리거나 S를 누르고 있으면 구르지 않고 제자리에 착지한다(m/s). 걷기 출발 속도(Move.runStartSpeed 3.6)보다 낮아 걷다가 떨어져도 구른다(2026-11-06 사용자 요청). Beatrun의 200단위/초(약 4.9)는 걷기 속도와 같아 걸으면 늘 제자리 착지였다
 Ability.rollLandTime,0.6,제자리 착지로 멈춰 있는 시간(초)
 Ability.rollInPlaceDamageShare,0.5,제자리 착지(속도 없이 Ctrl)가 그래도 받는 낙하 피해 비율. 큰 낙하(바람 소리·허우적거림)가 시작된 낙하는 구르기 자체가 안 된다(Beatrun과 같음)
 Ability.rollLandHurtTime,1,다칠 만큼 높은 곳에서 제자리 착지했을 때 멈춰 있는 시간(초). 다치지 않으면 rollLandTime
@@ -394,6 +442,11 @@ Body.punchClipSpeed,1.6,주먹질 클립 재생 속도. 클립을 다 뻗는 프
 Body.punchBlendIn,0.04,주먹질 클립이 팔을 넘겨받는 시간(초)
 Body.punchBlendOut,0.12,주먹질 클립이 팔을 주먹 위치로 돌려주는 시간(초)
 Body.punchEyeSteady,0.5,주먹질로 머리가 앞으로 나갈 때 카메라를 눈에서 고정 위치 쪽으로 옮기는 비율(0~1). 0이면 머리를 그대로 따라간다
+Body.kick,kick,재장전 중 V로 차는 발차기(ShoveMoves)에 다리만 이 클립을 한 번 따른다. 엉덩이와 상체와 팔은 하던 대로 둔다
+Body.kickClipSpeed,1,발차기 클립 재생 속도. 1이면 발이 가장 멀리 나가는 때(0.33초)가 발이 닿는 때(Shove.kickHitTime 0.3초)와 거의 맞는다
+Body.kickBlendIn,0.06,발차기 클립이 다리를 넘겨받는 시간(초)
+Body.kickBlendOut,0.2,발차기 클립이 다리를 돌려주는 시간(초). 클립이 끝나기 이만큼 전부터 돌려준다
+Body.kickTurnSpeed,360,가만히 서서 찰 때 시선에서 비켜 있던 다리가 시선 쪽으로 도는 빠르기(도/초). 서 있는 다리는 시선에서 Body.turnStartAngle(60도)까지 어긋날 수 있다
 Body.jumpStillSpeed,1,이보다 느리게 뛰면 제자리 점프(m/s)
 Body.jumpFastSpeed,4,이보다 빠르게 뛰면 달리며 점프(m/s)
 Body.mantleStepHeight,0.7,이보다 낮으면 턱 올라서기(m)
@@ -432,6 +485,7 @@ Body.heavyLandingTurnLimit,90,크게 착지해 쓰러져 있는 동안 몸이 �
 Body.barTurnLimit,45,봉에 매달려 몸이 향한 쪽에서 좌우로 돌아볼 수 있는 각도(도). Beatrun의 봉과 같은 45
 Body.barReleaseTime,0.3,봉을 놓은 뒤 흔들리며 기울었던 몸이 똑바로 서는 시간(초)
 Body.supineDiveTurnLimit,75,공중에서 누운 다이브로 바꾼 뒤 등이 향한 쪽에서 좌우로 돌아볼 수 있는 각도(도). Beatrun의 점프 턴과 같은 75. 일반 다이브로 되돌아가지 않는다
+Body.mantleTurnLimit,45,올라서는 동안(맨틀·매달린 데서 올라가기) 올라가는 쪽에서 좌우로 돌아볼 수 있는 각도(도). Beatrun의 높은 올라서기와 같은 45. 더 돌면 카메라가 자기 목을 뚫어 본다
 Body.leanSpineBend,20,Q/E 기울이기를 끝까지 했을 때 척추가 허리부터 옆으로 휘는 각도(도). 머리는 화면 기울기(Ability.leanAngle)만큼만 기울고 나머지는 목이 되돌린다
 Body.leanHipShift,0.08,Q/E 기울이기를 끝까지 했을 때 골반이 기우는 쪽 발로 옮겨 가는 거리(m). 발은 디딘 자리에 그대로 둔다. 엿보는 거리의 나머지는 카메라가 메운다. 다른 사람 화면에서도 기운다
 Body.fixtureTurnLimit,90,사다리·집라인에서 몸이 향한 쪽에서 좌우로 돌아볼 수 있는 각도(도)
@@ -462,11 +516,13 @@ Hands.ledgeHandSpacing,1,난간을 잡은 두 손 사이 거리. 캐릭터의 �
 Hands.ledgePalmInset,0.15,렛지 손바닥 중심을 모서리 안쪽에 놓는 깊이(손바닥 길이 비율)
 Hands.edgeCatch,1,넘기·올라서기에서 애니메이션의 손이 모서리 자리에 가장 가까워졌을 때 이 거리 안이면 짚는다. 그 캐릭터의 팔 길이에 대한 비율
 Hands.edgeEase,0.1,손이 모서리에 닿거나 떨어지는 시간(초)
+Hands.edgeReach,0.2,높은 넘기·높은 올라서기를 시작할 때 손이 짚을 자리로 뻗어 가는 시간(초). 두 클립 모두 손을 머리 위에서 시작해 늦게 내려와 그동안 허공을 짚었다(2026-11-06 사용자 지적). 캡슐이 벽 앞으로 가는 0.2초와 맞춘다
 Hands.edgeArmUse,0.95,짚은 팔을 이만큼 펴면 그 뒤로는 몸이 팔 길이 안에 머문다. 그 캐릭터의 팔 길이에 대한 비율
 Hands.edgeHoldBack,0.6;1.8,짚은 손 때문에 몸이 캡슐보다 뒤처지는 거리(팔 길이 배). 첫 값부터 놓아주기 시작해 둘째 값에서 다 놓는다
 Hands.edgeCatchUp,3,손을 놓은 뒤 몸이 캡슐을 따라잡는 속도(초당 팔 길이 배)
 Hands.fistsRunSpeed,3,빈손으로 이보다 빠르게 앞으로 달리면 주먹을 내리고 달리기 클립대로 팔을 흔든다(m/s). 돌진 밀치기 중에도 클립대로
 Hands.fistsReadyTime,1.5,주먹질·차징·가드·가드 브레이크 뒤 달려도 주먹을 이만큼 올리고 있는 시간(초)
+Hands.fistsRaiseDelay,0.3,빈손이 주먹 자세로 올라오기 전에 앞으로 달리지 않는 상태가 이어져야 하는 시간(초). 이 PC의 플레이어는 W 입력과 달리려는 속도로 판단한다. 넘기 착지나 화면 돌리기로 잠깐 흔들릴 때마다 손바닥을 편 채 얼굴 앞으로 올라왔다 내려가 허공을 누르는 것처럼 보였다(2026-11-06 사용자 영상)
 Hands.fingerSurfaceClearance,0.001,실제 손가락 두께를 반영한 뒤 표면에 남기는 여유(m). 사다리·렛지·엄지에 공통 적용
 Hands.thumbUnderPalm,55,편하게 둔 엄지가 손바닥 면에서 손바닥 쪽으로 내려간 각도(도). 주먹·총을 빼고 클립 대신 이 자세를 쓴다
 Hands.thumbBend,20,편하게 둔 엄지의 바깥 두 마디가 손바닥 쪽으로 굽는 각도(도)
@@ -530,15 +586,18 @@ MovementAudio.slideLoudSpeed,8.4,긁는 소리가 가장 커지는 슬라이드 
 MovementAudio.slideFadeTime,0.15,긁는 소리가 커지고 사라지는 시간(초)
 MovementAudio.leanSoundShare,0.5,Q/E 기울이기가 이 비율만큼 기울면 옷 소리
 # 소리: 숨 (Breathing 행 → PlayerBreathing. Beatrun 숨소리),,
-Breathing.exertSpeed,1.9,땅에서 이보다 빠르거나 매달리고 오르는 중이면 숨이 찬다(m/s)
-Breathing.quickSpeed,3.8,이보다 빠르면 짧고 빠른 숨(m/s)
+Breathing.exertSpeed,6,땅에서 이보다 빠르게(질주) 달리거나 매달리고 오르는 중이면 숨이 찬다(m/s). 걷기(Move.walkSpeed 4.9)는 이보다 느려 숨이 가라앉는다. 이 속도는 Shift면 곧바로 넘고 W만 누르면 약 2초 뒤에 넘는다
 Breathing.stressGain,13,힘쓸 때 초당 쌓이는 숨참
-Breathing.stressRecovery,16.5,땅에서 쉴 때 초당 가라앉는 숨참
-Breathing.stressRange,-50;150,숨참 최저;최고. 최저까지 쉬면 숨소리가 멎는다
+Breathing.stressRecovery,16.5,땅에서 힘쓰지 않을 때(걷기 포함) 초당 가라앉는 숨참
+Breathing.stressRange,-50;150,숨참 최저;최고. 처음과 다 쉰 상태가 최저다
+Breathing.audibleStress,0,숨참이 이보다 클 때만 숨소리가 들린다. 조금 숨찬 정도는 조용하다. 다 쉰 상태에서 질주하면 약 4초 뒤부터 들린다
 Breathing.heavyStress,50,이보다 숨차면 보통 숨(Medium) 아니면 약한 숨(Soft)
-Breathing.quickInterval,0.5,빠른 숨 간격(초). 숨찰수록 이 값에 가깝다
+Breathing.landingStress,60,세게 착지하면 바로 더해지는 숨참. 다 쉰 상태에서도 약한 숨이 몇 번 난다
+Breathing.heavyLandingStress,100,크게 착지해 쓰러지면 바로 더해지는 숨참
+Breathing.quickInterval,0.5,힘쓰는 동안의 빠른 숨 간격(초). 숨찰수록 이 값에 가깝다
 Breathing.quickIntervalSlack,0.25,덜 숨찰 때 빠른 숨 간격에 더하는 시간(초)
-Breathing.slowInterval,1.25,느린 숨 간격(초)
+Breathing.slowInterval,1.25,힘쓰기를 멈춘 뒤 아직 많이 숨찰 때(heavyStress 이상)의 숨 간격(초). 숨이 가라앉을수록 restedInterval까지 느려진다
+Breathing.restedInterval,2.2,숨소리가 멎기 직전의 숨 간격(초)
 Breathing.afterVoicePause,0.3,신음이 끝나고 다음 숨까지(초)
 Breathing.breathNoise,1.5,숨소리가 적에게 들리는 거리(m)
 # 소리: 바람 (Wind 행 → PlayerWindAudio. Beatrun 달리기 바람),,

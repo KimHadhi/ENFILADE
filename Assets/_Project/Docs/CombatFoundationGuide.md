@@ -95,8 +95,10 @@
 
 | 데이터 | 방식 | HP 피해 | RPM | 탄창 / 예비탄 | 잔탄 있는 장전 / 빈 탄창 장전 |
 | --- | --- | ---: | ---: | ---: | ---: |
-| [FoundationRifle](../Data/Combat/Weapons/FoundationRifle.asset) | 연사 | 20 | 600 | 30 / 90 | 1.5초 / 2초 |
-| [FoundationPistol](../Data/Combat/Weapons/FoundationPistol.asset) | 단발 | 35 | 300 | 12 / 48 | 1.2초 / 1.65초 |
+| [MX16A4](../Data/Combat/Weapons/MX16A4.asset) | 연사 | 20 | 600 | 30 / 90 | 1.5초 / 2초 |
+| [M1911](../Data/Combat/Weapons/M1911.asset) | 단발 | 35 | 300 | 12 / 48 | 1.2초 / 1.65초 |
+
+손에 드는 총 모델과 그 움직임은 KINEMATION의 FPS Animation Pack 총(MX16A4, M1911)이다. [GunRig](../Scripts/Player/GunRig/GunRig.cs)가 KINEMATION 팔 리그를 보이지 않게 눈 위치에 맞춰 돌리고, 몸의 손이 그 리그의 손을 따라간다. 어떤 무기가 어떤 KINEMATION 총을 드는지는 [GunRig.asset](../Resources/Combat/GunRig.asset)에, 조정값은 [GunRig.csv](../Resources/Tables/GunRig.csv)에 있다.
 
 ## 다른 씬에 연결하기
 

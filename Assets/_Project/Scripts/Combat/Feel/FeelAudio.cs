@@ -3,68 +3,144 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public enum GunSoundProfile { Rifle, Pistol, Heavy }
-public enum FeelSound { RifleShot, PistolShot, HeavyShot, DryFire, LowAmmo, MagOut, MagIn, Bolt, HitMarker, Kill, HeadshotKill, BodyFall }
+// LowAmmo: the gun's own warning on a nearly empty magazine. LowAmmoClick: the click every gun shares on top of it.
+// LastRound: the shot that empties the magazine. SlideBack and SlideForward: a bolt or slide pulled back and let go, each
+// on its own when a reload clip times them (ReloadMoments); Bolt is both as one cue.
+public enum FeelSound { RifleShot, PistolShot, HeavyShot, DryFire, LowAmmo, MagOut, MagIn, Bolt, HitMarker, Kill, HeadshotKill, BodyFall,
+    LowAmmoClick, LastRound, SlideBack, SlideForward }
 
 /// <summary>
-/// Shot, mechanical and confirm sounds. Every sound has a synthesized fallback built once on first use, so the
-/// game has a full audio layer before any clips are imported; assigned clips (GunFeel / WeaponData) replace it.
-/// Created on first use during Play; no scene setup.
+/// Shot, mechanical and confirm sounds. A gun sound is, in order: the clips assigned to it (GunFeel / WeaponData),
+/// a Tables/SoundCues row "Gun&lt;sound&gt;/&lt;gun&gt;" (GunBolt/Rifle: the slide pulled, then let go), the Guns sound bank's
+/// "&lt;gun&gt;/&lt;sound&gt;" then "&lt;sound&gt;" (Art/Audio/Guns/Rifle/Shot, Art/Audio/Guns/DryFire), and last a synthesized
+/// sound built once, so the game has a full audio layer before any clips exist. Every shot also gets the room's tail
+/// (GunReverb). Created on first use during Play; no scene setup.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class FeelAudio : MonoBehaviour
 {
     private const int FlatVoices = 12, SpatialVoices = 6, Rate = 44100;
+    // A table may ask for a voice louder than its clip (PlayOneShot amplifies above 1); this caps a typo at +12 dB.
+    private const float MaxVolume = 4f;
+    private const string GunBank = "Guns", GunCue = "Gun";
     private static FeelAudio instance;
     private static readonly Dictionary<FeelSound, AudioClip[]> synthesized = new Dictionary<FeelSound, AudioClip[]>();
-    private readonly AudioSource[] flat = new AudioSource[FlatVoices], spatial = new AudioSource[SpatialVoices];
+    private static readonly Dictionary<AudioClip, float> peaks = new Dictionary<AudioClip, float>();
+    // Voices by [Wet, Dry]: wet ones take the room's reverb (ReverbArea); dry ones are for shots, whose room is GunReverb's
+    // tail, and for confirm sounds.
+    private const int Wet = 0, Dry = 1;
+    private readonly AudioSource[][] flat = { new AudioSource[FlatVoices], new AudioSource[FlatVoices] };
+    private readonly AudioSource[][] spatial = { new AudioSource[SpatialVoices], new AudioSource[SpatialVoices] };
+    private readonly int[] nextFlat = new int[2], nextSpatial = new int[2];
     private readonly Dictionary<FeelSound, AudioClip> previous = new Dictionary<FeelSound, AudioClip>();
-    private int nextFlat, nextSpatial;
+    private readonly Dictionary<string, SoundBank> banks = new Dictionary<string, SoundBank>(StringComparer.OrdinalIgnoreCase);
+    private readonly List<Pending> pending = new List<Pending>();
+    // The gun of the player's last shot, for a mechanical sound that comes without one (the empty click after it).
+    private GunSoundProfile lastGun = GunSoundProfile.Rifle;
+
+    // A cue's later part, played where and as its cue was.
+    private struct Pending
+    {
+        public float At, Volume, Pitch, MaxDistance;
+        public SoundCues.Item Item;
+        public Vector3? Point;
+        public bool Dry;
+    }
 
     public static FeelSound ShotFor(GunSoundProfile profile)
         => profile == GunSoundProfile.Pistol ? FeelSound.PistolShot : profile == GunSoundProfile.Heavy ? FeelSound.HeavyShot : FeelSound.RifleShot;
 
-    /// <summary>2D sound, for anything the player does or is told.</summary>
-    public static void Play(FeelSound sound, AudioClip[] overrides, float volume, float pitch = 1f)
+    /// <summary>2D sound, for anything the player does or is told. gun picks a gun's own mechanical sounds.</summary>
+    public static void Play(FeelSound sound, AudioClip[] overrides, float volume, float pitch = 1f, GunSoundProfile? gun = null)
     {
         if (!Application.isPlaying || volume <= 0f) return;
         var self = Get();
-        var clip = self.Pick(sound, overrides);
-        if (clip == null) return;
-        var voice = self.flat[self.nextFlat];
-        self.nextFlat = (self.nextFlat + 1) % FlatVoices;
-        voice.pitch = Mathf.Clamp(pitch, .25f, 3f);
-        voice.PlayOneShot(clip, Mathf.Clamp01(volume));
+        var profile = self.GunOf(sound, gun, true);
+        if (HasAny(overrides) || !self.PlayGun(sound, profile, null, volume, pitch, 0f))
+            self.Voice(self.Pick(sound, overrides), null, volume, pitch, 0f, IsDry(sound));
+        if (IsShot(sound)) GunReverb.Tail(profile, null, volume);
     }
 
-    /// <summary>2D sound of one given clip, such as a sound bank's pick, on the same voices as Play.</summary>
+    /// <summary>2D sound of one given clip, such as a sound bank's pick (a confirm sound), on the same voices as Play.</summary>
     public static void PlayClip(AudioClip clip, float volume, float pitch = 1f)
     {
         if (!Application.isPlaying || clip == null || volume <= 0f) return;
-        var self = Get();
-        var voice = self.flat[self.nextFlat];
-        self.nextFlat = (self.nextFlat + 1) % FlatVoices;
-        voice.pitch = Mathf.Clamp(pitch, .25f, 3f);
-        voice.PlayOneShot(clip, Mathf.Clamp01(volume));
+        Get().Voice(clip, null, volume, pitch, 0f, true);
     }
 
-    /// <summary>3D sound at a world point (bodies landing).</summary>
-    public static void PlayAt(FeelSound sound, AudioClip[] overrides, Vector3 point, float volume, float pitch = 1f, float maxDistance = 14f)
+    /// <summary>3D sound at a world point (bodies landing, someone else's gun). gun picks a gun's own mechanical sounds.</summary>
+    public static void PlayAt(FeelSound sound, AudioClip[] overrides, Vector3 point, float volume, float pitch = 1f, float maxDistance = 14f,
+        GunSoundProfile? gun = null)
     {
         if (!Application.isPlaying || volume <= 0f) return;
-        PlayClipAt(Get().Pick(sound, overrides), point, volume, pitch, maxDistance);
+        var self = Get();
+        var profile = self.GunOf(sound, gun, false);
+        if (HasAny(overrides) || !self.PlayGun(sound, profile, point, volume, pitch, maxDistance))
+            self.Voice(self.Pick(sound, overrides), point, volume, pitch, maxDistance, IsDry(sound));
+        if (IsShot(sound)) GunReverb.Tail(profile, point, volume, maxDistance);
     }
 
-    /// <summary>3D sound of one given clip at a world point, such as a sound bank's pick, on the same voices as PlayAt.</summary>
+    /// <summary>3D sound of one given clip at a world point, such as a sound bank's pick (a ricochet), on the same voices as PlayAt.</summary>
     public static void PlayClipAt(AudioClip clip, Vector3 point, float volume, float pitch = 1f, float maxDistance = 14f)
     {
         if (!Application.isPlaying || clip == null || volume <= 0f) return;
+        Get().Voice(clip, point, volume, pitch, maxDistance, false);
+    }
+
+    /// <summary>
+    /// Seconds from a gun sound's start to its loudest moment (a magazine's clack, a bolt hitting home), averaged over the
+    /// clips it picks from, found the way Play finds them. A caller that knows when the hit happens starts it this much early.
+    /// 0 for the synthesized fallback, whose hit is at its start, and for clips whose samples can't be read.
+    /// </summary>
+    public static float PeakTime(FeelSound sound, AudioClip[] overrides, GunSoundProfile gun)
+    {
+        if (!Application.isPlaying) return 0f;
         var self = Get();
-        var voice = self.spatial[self.nextSpatial];
-        self.nextSpatial = (self.nextSpatial + 1) % SpatialVoices;
-        voice.transform.position = point;
-        voice.maxDistance = Mathf.Max(voice.minDistance + .1f, maxDistance);
-        voice.pitch = Mathf.Clamp(pitch, .25f, 3f);
-        voice.PlayOneShot(clip, Mathf.Clamp01(volume));
+        AudioClip[] clips = HasAny(overrides) ? overrides : null;
+        float delay = 0f;
+        string name = GunEvent(sound);
+        if (clips == null && name != null)
+        {
+            if (SoundCues.TryFind(GunCue + name + "/" + gun, out var cue) && cue.Items.Length > 0)
+            {
+                var cueBank = self.Bank(cue.Items[0].Bank);
+                if (cueBank != null) cueBank.TryGet(cue.Items[0].Key, out clips);
+                delay = cue.Items[0].Delay;
+            }
+            else
+            {
+                var bank = self.Bank(GunBank);
+                if (bank != null && !bank.TryGet(gun + "/" + name, out clips)) bank.TryGet(name, out clips);
+            }
+        }
+        if (!HasAny(clips)) return 0f;
+        float sum = 0f;
+        int count = 0;
+        foreach (var clip in clips)
+        {
+            if (clip == null) continue;
+            sum += Peak(clip);
+            count++;
+        }
+        return delay + sum / count;
+    }
+
+    // Where a clip is loudest, in seconds; 0 when its samples can't be read (compressed in memory, streamed, not loaded).
+    private static float Peak(AudioClip clip)
+    {
+        if (peaks.TryGetValue(clip, out float at)) return at;
+        if (clip.loadType != AudioClipLoadType.DecompressOnLoad || clip.samples <= 0 || clip.channels <= 0) return peaks[clip] = 0f;
+        if (clip.loadState != AudioDataLoadState.Loaded && !clip.LoadAudioData()) return 0f;
+        var data = new float[clip.samples * clip.channels];
+        if (!clip.GetData(data, 0)) return 0f;
+        int loudest = 0;
+        float max = 0f;
+        for (int i = 0; i < data.Length; i++)
+        {
+            float level = Mathf.Abs(data[i]);
+            if (level > max) { max = level; loudest = i; }
+        }
+        return peaks[clip] = loudest / clip.channels / (float)clip.frequency;
     }
 
     private static FeelAudio Get()
@@ -73,32 +149,163 @@ public sealed class FeelAudio : MonoBehaviour
         return instance;
     }
 
-    /// <summary>Builds the voices and every synthesized sound, which the first shot would otherwise stop to make.</summary>
+    /// <summary>
+    /// Builds the voices, loads the gun sounds and the room tails and synthesizes every fallback, which the first shot
+    /// would otherwise stop to do.
+    /// </summary>
     public static void Prepare()
     {
         if (!Application.isPlaying) return;
-        Get();
+        Get().Bank(GunBank);
+        GunReverb.Prepare();
         foreach (FeelSound sound in Enum.GetValues(typeof(FeelSound))) Synthesized(sound);
+        // The reload hits a timed reload lines up (WeaponFeedback), read now rather than on the first reload.
+        foreach (GunSoundProfile gun in Enum.GetValues(typeof(GunSoundProfile)))
+        {
+            PeakTime(FeelSound.MagIn, null, gun);
+            PeakTime(FeelSound.SlideForward, null, gun);
+        }
+    }
+
+    private void Update()
+    {
+        if (pending.Count == 0) return;
+        float now = Time.time;
+        for (int i = pending.Count - 1; i >= 0; i--)
+        {
+            var due = pending[i];
+            if (due.At > now) continue;
+            pending.RemoveAt(i);
+            PlayItem(due.Item, due.Point, due.Volume, due.Pitch, due.MaxDistance, due.Dry);
+        }
+    }
+
+    private static bool IsShot(FeelSound sound) => sound == FeelSound.RifleShot || sound == FeelSound.PistolShot || sound == FeelSound.HeavyShot;
+
+    // Out of the rooms' reverb: shots carry their own room (GunReverb), and confirm sounds aren't in the world.
+    private static bool IsDry(FeelSound sound)
+        => IsShot(sound) || sound == FeelSound.HitMarker || sound == FeelSound.Kill || sound == FeelSound.HeadshotKill;
+
+    // A shot names its gun; one's own shot is remembered for the sounds that follow it without one.
+    private GunSoundProfile GunOf(FeelSound sound, GunSoundProfile? gun, bool own)
+    {
+        if (!IsShot(sound)) return gun ?? (own ? lastGun : GunSoundProfile.Rifle);
+        var shot = sound == FeelSound.PistolShot ? GunSoundProfile.Pistol : sound == FeelSound.HeavyShot ? GunSoundProfile.Heavy : GunSoundProfile.Rifle;
+        if (own) lastGun = shot;
+        return shot;
+    }
+
+    // The gun sound's name in the cue table and the Guns bank; null for sounds that aren't a gun's.
+    private static string GunEvent(FeelSound sound)
+    {
+        switch (sound)
+        {
+            case FeelSound.RifleShot:
+            case FeelSound.PistolShot:
+            case FeelSound.HeavyShot: return "Shot";
+            case FeelSound.DryFire:
+            case FeelSound.LowAmmo:
+            case FeelSound.LowAmmoClick:
+            case FeelSound.LastRound:
+            case FeelSound.MagOut:
+            case FeelSound.MagIn:
+            case FeelSound.Bolt:
+            case FeelSound.SlideBack:
+            case FeelSound.SlideForward: return sound.ToString();
+            default: return null;
+        }
+    }
+
+    // The cue row for this gun, else the Guns bank's clips for it, else its shared ones. False: nothing there.
+    private bool PlayGun(FeelSound sound, GunSoundProfile gun, Vector3? point, float volume, float pitch, float maxDistance)
+    {
+        string name = GunEvent(sound);
+        if (name == null) return false;
+        bool dry = IsDry(sound);
+        if (SoundCues.TryFind(GunCue + name + "/" + gun, out var cue) && cue.Items.Length > 0)
+        {
+            foreach (var item in cue.Items)
+            {
+                if (item.Delay > 0f)
+                    pending.Add(new Pending
+                    {
+                        At = Time.time + item.Delay, Item = item, Point = point, Volume = volume, Pitch = pitch, MaxDistance = maxDistance, Dry = dry
+                    });
+                else PlayItem(item, point, volume, pitch, maxDistance, dry);
+            }
+            return true;
+        }
+        var bank = Bank(GunBank);
+        if (bank == null) return false;
+        string key = gun + "/" + name;
+        if (!bank.TryGet(key, out _))
+        {
+            key = name;
+            if (!bank.TryGet(key, out _)) return false;
+        }
+        var settings = bank.SettingsOf(key);
+        Voice(bank.Pick(key), point, volume * settings.Volume, pitch * settings.RandomPitch(), maxDistance, dry);
+        return true;
+    }
+
+    private void PlayItem(SoundCues.Item item, Vector3? point, float volume, float pitch, float maxDistance, bool dry)
+    {
+        var bank = Bank(item.Bank);
+        var clip = bank != null ? bank.Pick(item.Key) : null;
+        if (clip == null) return;
+        var settings = bank.SettingsOf(item.Key);
+        Voice(clip, point, volume * item.Volume * settings.Volume, pitch * settings.RandomPitch(), maxDistance, dry);
+    }
+
+    // A flat voice, or a 3D one at the point; dry ones skip the rooms' reverb.
+    private void Voice(AudioClip clip, Vector3? point, float volume, float pitch, float maxDistance, bool dry)
+    {
+        if (clip == null || volume <= 0f) return;
+        int set = dry ? Dry : Wet;
+        AudioSource voice;
+        if (point.HasValue)
+        {
+            voice = spatial[set][nextSpatial[set]];
+            nextSpatial[set] = (nextSpatial[set] + 1) % SpatialVoices;
+            voice.transform.position = point.Value;
+            voice.maxDistance = Mathf.Max(voice.minDistance + .1f, maxDistance);
+        }
+        else
+        {
+            voice = flat[set][nextFlat[set]];
+            nextFlat[set] = (nextFlat[set] + 1) % FlatVoices;
+        }
+        voice.pitch = Mathf.Clamp(pitch, .25f, 3f);
+        voice.PlayOneShot(clip, Mathf.Clamp(volume, 0f, MaxVolume));
+    }
+
+    private SoundBank Bank(string id)
+    {
+        if (banks.TryGetValue(id, out var bank) && bank != null) return bank;
+        return banks[id] = SoundBank.Load(id);
     }
 
     private void Awake()
     {
         if (instance != null && instance != this) { Destroy(gameObject); return; }
         instance = this;
-        for (int i = 0; i < FlatVoices; i++)
+        for (int set = Wet; set <= Dry; set++)
         {
-            flat[i] = gameObject.AddComponent<AudioSource>();
-            flat[i].playOnAwake = false; flat[i].spatialBlend = 0f; flat[i].priority = 32;
-            GameAudio.Bind(flat[i], AudioChannel.Combat);
-        }
-        for (int i = 0; i < SpatialVoices; i++)
-        {
-            var voice = new GameObject("Feel Voice " + i).AddComponent<AudioSource>();
-            voice.transform.SetParent(transform, false);
-            voice.playOnAwake = false; voice.spatialBlend = 1f; voice.rolloffMode = AudioRolloffMode.Linear;
-            voice.minDistance = 1.5f; voice.dopplerLevel = 0f;
-            GameAudio.Bind(voice, AudioChannel.Combat);
-            spatial[i] = voice;
+            for (int i = 0; i < FlatVoices; i++)
+            {
+                var voice = flat[set][i] = gameObject.AddComponent<AudioSource>();
+                voice.playOnAwake = false; voice.spatialBlend = 0f; voice.priority = 32; voice.bypassReverbZones = set == Dry;
+                GameAudio.Bind(voice, AudioChannel.Combat);
+            }
+            for (int i = 0; i < SpatialVoices; i++)
+            {
+                var voice = new GameObject((set == Dry ? "Feel Dry Voice " : "Feel Voice ") + i).AddComponent<AudioSource>();
+                voice.transform.SetParent(transform, false);
+                voice.playOnAwake = false; voice.spatialBlend = 1f; voice.rolloffMode = AudioRolloffMode.Linear;
+                voice.minDistance = 1.5f; voice.bypassReverbZones = set == Dry;
+                GameAudio.Bind(voice, AudioChannel.Combat);
+                spatial[set][i] = voice;
+            }
         }
     }
 
@@ -157,11 +364,16 @@ public sealed class FeelAudio : MonoBehaviour
             case FeelSound.HeavyShot: return Gunshot(random, .8f, crack: .006f, body: .065f, thumpFrom: 110f, thumpTo: 34f, thumpDecay: .12f, tail: .26f, crackGain: .9f);
             case FeelSound.DryFire: return Finish(Mix(.09f, Click(random, 0f, .7f, 2600f), Click(random, .019f, .45f, 1900f)));
             // Dry mechanical tick (rising pitch is applied at play time), not a bell: no ringing tail.
-            case FeelSound.LowAmmo: return Finish(Mix(.06f, Click(random, 0f, .9f, 3200f), Sine(1400f * Jitter(random, .02f), .006f, .35f)), .8f);
+            case FeelSound.LowAmmo:
+            case FeelSound.LowAmmoClick: return Finish(Mix(.06f, Click(random, 0f, .9f, 3200f), Sine(1400f * Jitter(random, .02f), .006f, .35f)), .8f);
+            case FeelSound.LastRound: return Finish(Mix(.09f, Click(random, 0f, .7f, 2600f), Click(random, .019f, .45f, 1900f)));
             case FeelSound.MagOut: return Finish(Mix(.3f, Clack(random, 0f, .9f, 1500f), Slide(random, .015f, .07f, .3f), Clack(random, .095f, .35f, 1100f)));
             case FeelSound.MagIn: return Finish(Mix(.3f, Slide(random, 0f, .06f, .35f), Clack(random, .065f, 1f, 1700f), Click(random, .078f, .5f, 3200f)));
             case FeelSound.Bolt: return Finish(Mix(.38f, Clack(random, 0f, .7f, 1300f), Slide(random, .02f, .07f, .25f), Clack(random, .13f, 1f, 1900f),
                 Shift(Bell(1800f, .05f, .3f, 1.44f, 2.3f), .13f)));
+            // Bolt's two halves.
+            case FeelSound.SlideBack: return Finish(Mix(.13f, Clack(random, 0f, .7f, 1300f), Slide(random, .02f, .07f, .25f)));
+            case FeelSound.SlideForward: return Finish(Mix(.25f, Clack(random, 0f, 1f, 1900f), Bell(1800f, .05f, .3f, 1.44f, 2.3f)));
             case FeelSound.HitMarker: return Finish(Mix(.07f, Click(random, 0f, .8f, 5200f), Sine(1900f * Jitter(random, .03f), .012f, .55f), Sine(3800f, .006f, .25f)), .85f);
             // Kill confirms stay low and dull: no bell/ding layer, which is piercing at confirm volume.
             case FeelSound.Kill: return Finish(Mix(.65f, Sweep(120f, 40f, .17f, 1f), Noise(random, 0f, .055f, .8f, 900f), Whoosh(random)), .95f);

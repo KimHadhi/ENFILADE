@@ -19,6 +19,7 @@ public sealed class PlayerLook : MonoBehaviour
     private InputAction lookAction;
     private PlayerMovement movement;
     private PlayerBody body;
+    private CombatHeadMotion headMotion;
     private float yaw;
     private float pitch;
     private readonly RecoilSpring recoil = new RecoilSpring();
@@ -55,6 +56,7 @@ public sealed class PlayerLook : MonoBehaviour
 
     private void Update()
     {
+        TakeCombatTurn();
         // 커서가 풀려있거나(채팅창/메뉴 활성화 상태), 일시정지 중이거나 창 포커스를 잃거나 죽어 있으면 카메라 회전 중단
         if (Cursor.lockState != CursorLockMode.Locked || Time.timeScale <= 0f || !Application.isFocused
             || (movement != null && (movement.CombatInputLocked || movement.IsDead)))
@@ -73,6 +75,17 @@ public sealed class PlayerLook : MonoBehaviour
         yaw = ClampLookYaw(yaw);
         pitch = ClampLookPitch(pitch + mouseY);
         TickRecoil(Time.deltaTime);
+    }
+
+    // A turn combat asks of the look (a slip keeping the view on its attacker, MicroSlip.LockOn through CombatHeadMotion.Turn)
+    // turns it as the mouse would, also while combat holds the mouse. Asked for this frame only; one not taken is dropped.
+    private void TakeCombatTurn()
+    {
+        if (headMotion == null && !TryGetComponent(out headMotion)) return;
+        float turn = headMotion.TakeYaw();
+        if (turn == 0f || Time.timeScale <= 0f || (movement != null && movement.IsDead)) return;
+        yaw = ClampLookYaw(yaw + turn);
+        ApplyLookPose();
     }
 
     public void ApplyRecoil(Vector2 kick, WeaponData data = null)
@@ -136,6 +149,16 @@ public sealed class PlayerLook : MonoBehaviour
             Vector3 barFacing = PlayerBody.BarFacingFor(movement.Abilities.Traversal.Bar, transform.forward);
             if (body == null) body = GetComponent<PlayerBody>();
             return WithinArc(Mathf.Atan2(barFacing.x, barFacing.z) * Mathf.Rad2Deg, body != null ? body.BarLookYawLimit : 45f, candidate);
+        }
+        if (movement != null && movement.CurrentState == PlayerMovement.MovementState.Mantle && movement.Abilities != null)
+        {
+            // Climbing up, the camera rides the head: the view turns only so far from the way the climb goes.
+            Vector3 climb = movement.Abilities.Traversal.MantleFacing;
+            if (climb != Vector3.zero)
+            {
+                if (body == null) body = GetComponent<PlayerBody>();
+                return WithinArc(Mathf.Atan2(climb.x, climb.z) * Mathf.Rad2Deg, body != null ? body.MantleLookYawLimit : 45f, candidate);
+            }
         }
         if (movement != null && movement.CurrentState == PlayerMovement.MovementState.HeavyLanding && movement.Abilities != null)
         {

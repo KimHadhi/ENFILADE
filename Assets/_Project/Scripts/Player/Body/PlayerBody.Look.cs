@@ -37,6 +37,10 @@ public sealed partial class PlayerBody
     [SerializeField, Range(0f, 90f), Tooltip("A dive turned onto the back in the air: look limit either side of the way the "
         + "back faces (degrees), as Beatrun's jump turn holds it (75), so the view can't swing round to a front dive again.")]
     private float supineDiveTurnLimit = 75f;
+    [SerializeField, Range(0f, 180f), Tooltip("Climbing up (a mantle): look limit either side of the way the climb goes "
+        + "(degrees), as Beatrun holds its high climb (45). The camera rides the head, so looking back over the shoulder "
+        + "would look through the own neck.")]
+    private float mantleTurnLimit = 45f;
     [SerializeField, Range(0f, 40f), Tooltip("Q/E at full lean: how far the spine bends sideways from the waist (degrees). "
         + "The head tilts only as far as the view rolls (Ability.leanAngle), so the neck takes back the difference.")]
     private float leanSpineBend = 20f;
@@ -51,6 +55,7 @@ public sealed partial class PlayerBody
     public float SlideLookYawLimit => Mathf.Clamp(slideTurnLimit, 0f, 90f);
     public float HeavyLandingLookYawLimit => Mathf.Clamp(heavyLandingTurnLimit, 0f, 180f);
     public float SupineDiveLookYawLimit => Mathf.Clamp(supineDiveTurnLimit, 0f, 90f);
+    public float MantleLookYawLimit => Mathf.Clamp(mantleTurnLimit, 0f, 180f);
     public Vector2 SlideLookPitchLimits => new Vector2(Mathf.Clamp(slidePitchLimits.x, 0f, 85f), Mathf.Clamp(slidePitchLimits.y, 0f, 85f));
 
     private readonly List<Transform> spine = new List<Transform>();
@@ -164,7 +169,9 @@ public sealed partial class PlayerBody
         Vector3 anchor = cameraEffects != null ? cameraEffects.CameraAnchorPosition
             : view.parent != null ? view.parent.TransformPoint(viewHome) : transform.position + Vector3.up * player.runtimeBodyDefaults.w;
         ApplyGazeToCamera();
-        PlaceCamera(Vector3.Lerp(anchor + lean + eye - eyeBefore, eye + lean, eyeViewWeight));
+        // Combat's head moves (a slip's dip) go on the eyes as they are, the body itself staying put (CombatHeadMotion).
+        Vector3 headMove = cameraEffects != null ? cameraEffects.HeadDisplacement : Vector3.zero;
+        PlaceCamera(Vector3.Lerp(anchor + lean + eye - eyeBefore, eye + lean, eyeViewWeight) + headMove);
         PlayerView.Follow(eyes, view);
     }
 

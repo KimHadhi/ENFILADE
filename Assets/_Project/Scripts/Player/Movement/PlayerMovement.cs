@@ -58,7 +58,8 @@ public sealed partial class PlayerMovement : MonoBehaviour
     public PlayerExecution Execution { get; private set; }
     public PlayerPerfectDefense PerfectDefense { get; private set; }
     public DodgeEnemyPassThrough DodgePassThrough { get; private set; }
-    public bool CombatInputLocked => (MeleeCombat != null && MeleeCombat.IsGuardBreaking) || (Execution != null && Execution.IsExecuting);
+    public bool CombatInputLocked => (MeleeCombat != null && MeleeCombat.IsGuardBreaking) || (Execution != null && Execution.IsExecuting)
+        || (PerfectDefense != null && PerfectDefense.IsCountering);
     private WeaponController weapons;
     /// <summary>A reload has both hands on the gun, so a vault begun during one puts the gun away and stops it (ParkourTraversal).</summary>
     public bool HandsOnReload
@@ -186,8 +187,11 @@ public sealed partial class PlayerMovement : MonoBehaviour
     public float AirborneTimer => Motor.airborneTimer;
 
     public float StandingColliderHeight => Posture.standingColliderHeight;
-    /// <summary>One Beatrun unit on this player: its 72-unit hull fitted to the standing capsule, so ported distances keep their share of the body (m).</summary>
-    public float HullUnit => StandingColliderHeight / 72f;
+    /// <summary>
+    /// A seventy-second of the standing height (m). Distances and speeds ported from Beatrun are in units of its player,
+    /// who stands 72 tall, so one of them times this keeps its share of the body at any capsule size.
+    /// </summary>
+    public float HeightUnit => StandingColliderHeight / 72f;
     public float CrouchColliderHeight => crouchColliderHeight;
     public float ProneColliderHeight => proneColliderHeight;
 

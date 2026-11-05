@@ -23,7 +23,7 @@ public sealed class StraightLineTraversal
     {
         ctx = context; target = obstacle; detector = ctx.Abilities.Traversal.Detector;
         lastClearPosition = obstacle.Start;
-        entryUnits = entrySpeed / ctx.HullUnit;
+        entryUnits = entrySpeed / ctx.HeightUnit;
     }
 
     internal bool Advance(float dt)
@@ -38,6 +38,7 @@ public sealed class StraightLineTraversal
         // Beatrun leaves when its hull touches nothing, which its width makes true only past the obstacle. A narrower body
         // can touch nothing just before reaching it, so the rest of the way must be open too, for a body of any size.
         bool past = clear && VaultMotion.MayLeave(target.Kind, next)
+            && (!target.IsVault || detector.BodyClearOf(target.Surface, position))
             && detector.ClearPath(position, target.End, ctx.StandingColliderHeight);
         bool finish = VaultMotion.Arrived(target.Kind, next) || past;
         if (!finishing && finish && !clear)
@@ -52,7 +53,7 @@ public sealed class StraightLineTraversal
             finishTime = Mathf.Min(FinishDuration, finishTime + Mathf.Max(0f, dt));
             float t = finishTime / FinishDuration, t2 = t * t, t3 = t2 * t;
             Vector3 exitVelocity = Vector3.ProjectOnPlane(target.End - target.Start, Vector3.up).normalized
-                * (VaultMotion.ExitSpeed(target.Kind, entryUnits) * ctx.HullUnit);
+                * (VaultMotion.ExitSpeed(target.Kind, entryUnits) * ctx.HeightUnit);
             position = finishStart + (-2f * t3 + 3f * t2) * (target.End - finishStart)
                 + (t3 - 2f * t2 + t) * FinishDuration * finishVelocity
                 + (t3 - t2) * FinishDuration * exitVelocity;

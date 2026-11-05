@@ -9,6 +9,7 @@ using MovementState = PlayerMovement.MovementState;
 /// - on real ladder rungs, keeping one hand planted while the other reaches above it;
 /// - round a swing bar, as the body swings with it (PlayerBodyHands.Bar);
 /// - on the edge of what the player vaults or climbs while the arm can reach it (PlayerBodyHands.Edge), and on top of it, never through it;
+///   over a high wall, a hand that has pushed off stays no higher than the top until the clip has played out;
 /// - with the thumb at ease, measured from the character's own hand, unless it is a fist or on a gun.
 /// Parkour states take the hands off the gun, except as TraversalHands says: a vault or a waist-high climb keeps it in
 /// the right hand while the left plants, a step up keeps both on it, and the rest put it away (WeaponController).
@@ -28,6 +29,9 @@ public sealed partial class PlayerBodyHands : MonoBehaviour
     private float fistsRunSpeed = 3f;
     [SerializeField, Min(0f), Tooltip("After a punch, a charge, a guard or a guard break the fists stay up this long, running or not (s).")]
     private float fistsReadyTime = 1.5f;
+    [SerializeField, Min(0f), Tooltip("Empty hands come up into fists only once the player has not been running forward for this long (s), "
+        + "so a moment's slowing or turning (a landing, the end of a vault, a look round) doesn't flick them up and down.")]
+    private float fistsRaiseDelay = .3f;
     [SerializeField, Min(0f), Tooltip("Skin clearance at a ledge or bar, after measuring the character's finger pads (m).")]
     private float fingerSurfaceClearance = .001f;
     [SerializeField, Range(0f, 90f), Tooltip("How far out of the palm's plane a thumb at ease sits, turned under the palm (degrees).")]
@@ -39,7 +43,7 @@ public sealed partial class PlayerBodyHands : MonoBehaviour
     private const int HoldCount = 5;
     // How quickly a hand comes up onto a top, in arm lengths per second. Eased, since a top can appear under a wrist all at once.
     private const float RestLiftSpeed = 6f;
-    // Moving at least this share of the speed along the body's facing counts as running forward.
+    // At least this share of the input (this PC) or of the speed along the facing (another PC's copy) is forward, running forward.
     private const float RunAlignment = .7f;
 
     private PlayerMovement player;
@@ -51,7 +55,7 @@ public sealed partial class PlayerBodyHands : MonoBehaviour
     private readonly float[] weights = new float[HoldCount];
     private readonly float[] restLifts = new float[2];
     private readonly float[] holding = new float[2];
-    private float fistsReady, leftOffGun;
+    private float fistsReady, leftOffGun, notRunning;
 
     /// <summary>How far the hands have gone up as fists (0-1).</summary>
     internal float FistsWeight => weights[(int)Hold.Fists];
@@ -134,19 +138,40 @@ public sealed partial class PlayerBodyHands : MonoBehaviour
         Ease(Hold.Ladder, onLadder || (leavingLadder && (LadderHandWeight(true) > 0f || LadderHandWeight(false) > 0f)), dt);
         Ease(Hold.Bar, alive && OnBar(state), dt);
 
-        Place(right, false);
-        Place(left, true);
-        float open = 1f - Mathf.Max(weights[(int)Hold.Gun], weights[(int)Hold.Fists]);
-        left.RelaxThumb(1f - Mathf.Max(weights[(int)Hold.Gun] * (1f - leftOffGun), weights[(int)Hold.Fists]));
-        right.RelaxThumb(open);
-        CurlLedgeFingers(left, true);
-        CurlLedgeFingers(right, false);
-        CurlLadderFingers(left, true);
-        CurlLadderFingers(right, false);
-        CurlBarFingers(left);
-        CurlBarFingers(right);
-        if (alive && Climbing(state)) RestOnObstacle(dt);
+        using (PlaceMarker.Auto())
+        {
+            Place(right, false);
+            Place(left, true);
+        }
+        using (FingersMarker.Auto())
+        {
+            float open = 1f - Mathf.Max(weights[(int)Hold.Gun], weights[(int)Hold.Fists]);
+            left.RelaxThumb(1f - Mathf.Max(weights[(int)Hold.Gun] * (1f - leftOffGun), weights[(int)Hold.Fists]));
+            right.RelaxThumb(open);
+            var gunRig = GunRig.Holding(weapons);
+            if (gunRig != null)
+            {
+                gunRig.FollowFingers(true, weights[(int)Hold.Gun] * (1f - leftOffGun));
+                gunRig.FollowFingers(false, weights[(int)Hold.Gun]);
+            }
+            CurlLedgeFingers(left, true);
+            CurlLedgeFingers(right, false);
+            CurlLadderFingers(left, true);
+            CurlLadderFingers(right, false);
+            CurlBarFingers(left);
+            CurlBarFingers(right);
+        }
+        using (RestMarker.Auto())
+        {
+            if (alive && Climbing(state)) RestOnObstacle(dt);
+            KeepPushedHandsDown(dt);
+        }
     }
+
+    // Named spans, so the profiler and HitchProbe can tell which part of the hands' work a stall is in. The fingers' span
+    // takes in HandGrip and its first-contact HandSkinCorrection.Prepare.
+    private static readonly Unity.Profiling.ProfilerMarker PlaceMarker = new Unity.Profiling.ProfilerMarker("PlayerBodyHands.Place"),
+        FingersMarker = new Unity.Profiling.ProfilerMarker("PlayerBodyHands.Fingers"), RestMarker = new Unity.Profiling.ProfilerMarker("PlayerBodyHands.Rest");
 
     private void Ease(Hold hold, bool on, float dt)
         => weights[(int)hold] = Mathf.MoveTowards(weights[(int)hold], on ? 1f : 0f, dt / blendTime);
@@ -176,7 +201,9 @@ public sealed partial class PlayerBodyHands : MonoBehaviour
     }
 
     // Empty hands follow the clip while running forward or barging (the dash push and its play-out). A fist move puts
-    // them up at once and keeps them there for a moment.
+    // them up at once and keeps them there for a moment. Otherwise they come up only once the player has stopped running
+    // forward for fistsRaiseDelay: around a vault the speed dips and the view turns for a moment, and the guard flicked up
+    // and down with every one, open-handed in front of the face (user's video, 2026-11-06).
     private bool FistsUp(float dt)
     {
         var melee = player.MeleeCombat;
@@ -184,10 +211,25 @@ public sealed partial class PlayerBodyHands : MonoBehaviour
         if (fists.IsPunching || (melee != null && (melee.IsCharging || melee.IsGuarding || melee.IsParryActive || melee.IsGuardBreaking)))
             fistsReady = fistsReadyTime;
         if (fistsReady > 0f) return true;
-        if (body.PlaysDashPush) return false;
-        Vector3 run = Vector3.ProjectOnPlane(player.ActualVelocity, Vector3.up);
-        float speed = run.magnitude;
-        return speed < fistsRunSpeed || Vector3.Dot(run, transform.forward) < speed * RunAlignment;
+        if (body.PlaysDashPush) { notRunning = 0f; return false; }
+        notRunning = RunsForward() ? 0f : notRunning + dt;
+        return notRunning >= fistsRaiseDelay;
+    }
+
+    // Running forward at a run. This PC's player by what they ask for (W, mostly, at the run's own speed): the way the body
+    // actually moves swings round behind the view as it turns, and stalls against the next obstacle before a vault, and
+    // either alone had the fists flick up mid-run. Another PC's copy by how it moves.
+    private bool RunsForward()
+    {
+        if (player.IsNetworkDriven)
+        {
+            Vector3 moving = Vector3.ProjectOnPlane(player.ActualVelocity, Vector3.up);
+            float speed = moving.magnitude;
+            return speed >= fistsRunSpeed && Vector3.Dot(moving, transform.forward) >= speed * RunAlignment;
+        }
+        Vector2 input = player.CurrentInput;
+        return Vector3.ProjectOnPlane(player.HorizontalVelocity, Vector3.up).magnitude >= fistsRunSpeed
+            && input.y > .1f && input.y >= input.magnitude * RunAlignment;
     }
 
     // Mixes the holds by weight, so a change of hold slides the hand across instead of snapping it.
@@ -227,6 +269,9 @@ public sealed partial class PlayerBodyHands : MonoBehaviour
         {
             case Hold.Gun:
             {
+                // KINEMATION's arms rig holds the gun: the hand goes where the rig's hand is (GunRig).
+                var rig = GunRig.Holding(weapons);
+                if (rig != null) return rig.HandTarget(arm, isLeft, out position, out rotation, out hint);
                 var root = weapons.WeaponRoot;
                 var data = weapons.EquippedData;
                 if (root == null || data == null) return false;

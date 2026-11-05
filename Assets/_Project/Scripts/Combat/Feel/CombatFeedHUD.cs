@@ -5,7 +5,7 @@ using UnityEngine.UI;
 
 /// <summary>
 /// Call of Duty (MW3)-style kill rewards. A "110 XP" number slams in on each kill over the events that earned it
-/// (☠ 처치, 헤드샷, 원거리 사격, 처형, 반격, 더블 킬 ...), hung off the top right of the gun like Dead Space's ammo count
+/// (☠ 처치, 헤드샷, 원거리 사격, 관통 사살, 처형, 반격, 더블 킬 ...), hung off the top right of the gun like Dead Space's ammo count
 /// (GunScoreAnchor) so the middle of the screen stays clear. 처형 and 반격 carry their own icon
 /// (knife with a slash trail, return arrow) in the line colour. The number accumulates over a kill streak and the group fades after a quiet spell. Only kills score, so sustained fire stays quiet.
 /// A rolling XP total and a kill feed sit at the top right. Created on first use during Play; GunFeel → Score.
@@ -56,8 +56,10 @@ public sealed class CombatFeedHUD : MonoBehaviour
         return instance;
     }
 
-    /// <summary>distance: shooter to hit point, metres (0 when unknown); gun kills past Long Range Distance earn a bonus. feedRow is false when the host will send the row.</summary>
-    public static void Kill(string weapon, string target, bool headshot, bool execution, bool counter, bool bullet, float distance, bool feedRow)
+    /// <summary>distance: shooter to hit point, metres (0 when unknown); gun kills past Long Range Distance earn a bonus. feedRow is false when the host will send the row.
+    /// pierced: the killing bullet went through or off something first (관통 사살).</summary>
+    public static void Kill(string weapon, string target, bool headshot, bool execution, bool counter, bool bullet, float distance, bool feedRow,
+        bool pierced = false)
     {
         if (!Application.isPlaying) return;
         var settings = GunFeelSettings.Instance;
@@ -76,6 +78,7 @@ public sealed class CombatFeedHUD : MonoBehaviour
             self.AddLine("처치", LineIcon.Skull, false);
             if (headshot) { gained += settings.headshotBonus; self.AddLine("헤드샷", LineIcon.Headshot, true); }
             if (bullet && distance >= settings.longRangeDistance) { gained += settings.longRangeBonus; self.AddLine("원거리 사격", LineIcon.None, false); }
+            if (bullet && pierced) { gained += settings.piercedBonus; self.AddLine("관통 사살", LineIcon.None, false); }
             if (execution) { gained += settings.executionBonus; self.AddLine("처형", LineIcon.Execution, true, KillRed); }
             if (counter) { gained += settings.counterBonus; self.AddLine("반격", LineIcon.Counter, true, CombatFeedbackSettings.InstanceOrDefaults.counterColor); }
             if (self.multiKill >= 2)

@@ -41,7 +41,17 @@ public sealed class LocomotionState : MovementBaseState
         if (weapon != null) baseSpeed *= weapon.MovementMultiplier;
         // Getting over a hard landing, the legs give only part of the usual speed.
         if (ctx.IsGrounded) baseSpeed *= ctx.Abilities.Landing.RecoveryScale;
+        // The hands decide what the legs may do: rooted after a parry, a slow walk with the guard up (PlayerMeleeCombat).
+        if (ctx.MeleeCombat != null) baseSpeed = ctx.MeleeCombat.LimitMoveSpeed(baseSpeed);
         Vector3 targetVelocity = inputDirection * (baseSpeed * inputMagnitude);
+
+        // A surge toward a vault (ParkourTraversal.SurgesToVault) carries the run on at its own pace until the jump goes.
+        Vector3 surge = ctx.Abilities.Traversal.SurgeVelocity;
+        if (ctx.IsGrounded && surge != Vector3.zero)
+        {
+            ctx.HorizontalVelocity = surge;
+            return;
+        }
 
         if (ctx.IsGrounded)
         {

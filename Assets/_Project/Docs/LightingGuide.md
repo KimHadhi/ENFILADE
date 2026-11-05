@@ -12,12 +12,14 @@
 | | 그림자 150 m, 4단계, 4096 | 가까운 그림자를 선명하게 |
 | | Light Probe System: Adaptive Probe Volumes | 구운 간접광을 캐릭터와 좀비가 서 있는 자리에서 받는다. lilToon과 Poiyomi가 지원한다 |
 | | Volume Profile: [GameLook](../Settings/Rendering/GameLook.asset) | 톤매핑 끔, Bloom 0.25(임계값 1), 비네트 0.2 |
-| [PC_Renderer](../Settings/Rendering/PC_Renderer.asset) | SSAO 세기 0.7, 반경 0.4 | 구석과 접촉면을 어둡게 |
+| [PC_Renderer](../Settings/Rendering/PC_Renderer.asset) | SSAO 세기 0.7, 반경 0.4, Method: Interleaved Gradient | 구석과 접촉면을 어둡게. 노이즈는 고정 패턴을 쓴다. Blue Noise는 매 프레임 바뀌는 노이즈라 TAA로 섞어야 하는데, 카메라가 SMAA라 가까운 벽(렛지에 매달릴 때)이 지글거렸다. TAA로 바꾸면 Blue Noise로 돌린다 |
 | [Player](../Resources/Characters/Player.prefab) 카메라 | SMAA High, 디더링 | 머리카락과 반짝이는 부분의 계단, 하늘과 안개의 띠 줄무늬 |
 
 - 톤매핑을 꺼서 밝기 1을 넘는 부분은 하얗게 날아간다. 빛을 받은 흰 벽이 날아가면 그 빛의 세기를 낮춘다.
 - 블룸은 밝기 1을 넘는 부분만 번진다. 빛나야 하는 것(전구, 형광등, 간판)은 재질의 발광 세기를 1보다 크게 준다.
+- **lilToon 패치**: lilToon 2.4.1은 구운 프로브 볼륨이 있으면 캐릭터를 프로브 빛만으로 밝힌다(lilToon issue #419, MR #420). 해의 직사광까지 프로브에 굽는 Subtractive 모드에서만 맞는 방식이다. 이 프로젝트는 Baked Indirect로 구워서 프로브에는 간접광만 들어가므로, 그대로 두면 캐릭터가 해 아래에서도 푸르고 어둡다. 그래서 [lil_common_macro.hlsl](../../../Packages/jp.lilxyzw.liltoon/Shader/Includes/lil_common_macro.hlsl)의 `LIL_ADD_REALTIME_MAINLIGHT_APV`가 해의 실시간 빛을 해 그림자만큼 다시 더한다. lilToon을 업데이트하면 이 패치를 다시 넣는다. Lighting Mode를 Subtractive로 바꾸면 해가 두 번 더해지므로 패치를 뺀다. Poiyomi(Sil)는 해를 그대로 더하므로 해당하지 않는다. 다만 Sil의 뼈 재질은 원본 설정대로 다른 물체가 드리우는 그림자를 받지 않아서(Poiyomi의 Receive Casted Shadows 0), 해가 비치는 맵에서는 막힌 방 안에서도 해 쪽이 밝다. 껍질(`WES_soft_mod3`)은 원래 빛을 받지 않는 셰이더다.
 - 처치 연출과 저체력 화면이 덮어쓰는 값(노출, 대비, 채도, 색 필터, 화이트 밸런스, 블룸, 비네트)은 맵 볼륨에서 바꾸지 않는다. 분위기는 빛과 안개의 색으로 잡는다. 이유는 [화면 후처리](MaintenanceGuide.md#화면-후처리)에 있다.
+- 시야각이 바뀌는 동안(달리다 멈출 때 속도 시야각이 돌아오는 동안, 조준) 가까운 해 그림자의 경계가 잠깐 떤다. URP는 그림자 단계의 크기를 카메라 시야각으로 정하기 때문이다(Unity가 의도한 동작). 거슬리면 Player의 [PlayerCameraEffects](../Scripts/Player/Camera/PlayerCameraEffects.cs) `maxFovBonus`를 줄인다. 넘기·오르기 중에는 진입 속도로 시야각을 고정하므로 그동안은 떨지 않는다.
 
 ## 맵 하나 꾸미기
 
@@ -112,11 +114,13 @@ Lighting 창 오른쪽 아래의 **Generate Lighting**을 누른다. 씬 옆에 
 
 ### 이동 시험장 (야외)
 
+이미 들어간 것: 해의 부드러운 그림자와 `Mixed`, 아래 굽기 대상 36개(Contribute GI, Reflection Probe Static, Receive GI `Light Probes`), `Lights` 아래 전역 Adaptive Probe Volume, `★Map/DarkRoom` 안의 반사 프로브(위치 (-30, 5, 0), Box Size (15, 9, 14.5), Box Projection 켬), 조명 설정 에셋 [MovementAbilityPlayground.lighting](../Settings/Rendering/Lighting/MovementAbilityPlayground.lighting)(Baked Indirect). 하늘은 아직 기본 낮하늘이다. Generate Lighting으로 구우면 문 하나만 열린 DarkRoom 안이 어두워져 총구 불빛(`MuzzleLight`)을 시험할 수 있다. 남은 것은 아래의 밤하늘, 달, 안개, 가로등이다.
+
 - **안개**: 켬, Color `#4B5158`, Exponential, Density 0.01
 - **가로등 6개**: 바닥(가로 -20~20, 세로 -10~30) 가장자리 (±19.5, 0, -5), (±19.5, 0, 10), (±19.5, 0, 25)에 놓고 등이 안쪽을 향하게 돌린다.
   - 전구 재질 `street_lamp_01_bulb`: Emission 켬, 색 `#FFC27A`, 세기 3
   - Spot Light: 높이 3.6 m(등 안), Spot Angle 150, Range 15, Intensity 6, 3000 K
-- **굽기 대상**: `★Map` 아래의 Floor, Stairs, Cube, Cube (2), Cube (3), Step 0.15·0.30·0.45, Vault rail, Mantle ledge, Wall climb lane, Wall climb finish, Roll drop platform, Swing launch platform, Surface pads 전부
+- **굽기 대상**: `★Map` 아래의 Floor, Stairs, Cube, Cube (2), Cube (3), Step 0.15·0.30·0.45, Vault rail, Mantle ledge, Wall climb lane, Wall climb finish, Roll drop platform, Swing launch platform, Surface pads 전부, DarkRoom의 바닥·천장·벽 6조각
 - **빼는 것**: Door(`BreakableDoor`), Shove and tackle dummy(`Rigidbody`). Swing Bar, Ladder, Zipline은 프리팹이라 표시하지 않는다
 - **반사 프로브 1개**: 위치 (0, 6, 10), Box Size (44, 12, 44), Box Projection 끔
 
@@ -124,14 +128,18 @@ Lighting 창 오른쪽 아래의 **Generate Lighting**을 누른다. 씬 옆에 
 
 천장과 벽으로 막혀 있어서 달빛은 거의 들어오지 않는다. 형광등이 주 조명이다.
 
+이미 들어간 것(2026-11-05): 아래의 형광등 14개, 굽기 대상 26개(Contribute GI, Reflection Probe Static, Receive GI `Light Probes`), 해의 부드러운 그림자와 `Mixed`, 해 옆의 전역 Adaptive Probe Volume, 반사 프로브 3개, 조명 설정 에셋 [CombatFoundation.lighting](../Settings/Rendering/Lighting/CombatFoundation.lighting)(Baked Indirect). Generate Lighting으로 구우면 된다(2026-11-05에 구웠다).
+
+**해는 꺼 두었다(2026-11-06).** 이 맵은 사방이 막혀 해가 비출 곳이 없는데, 해 그림자 때문에 천장 바로 아래 벽에 햇빛이 반원이나 띠 모양으로 샜다. 줌하면서 천장 쪽을 올려다볼 때만 보였다. 원인은 그림자 설정이다. URP는 부드러운 그림자의 편향을 그림자 텍셀의 2.5배로 잡고(`ShadowUtils.GetShadowBias`, 조명이 파이프라인 설정을 따를 때), 이 프로젝트의 High 품질은 그 경계를 7×7로 거른다. 그림자 거리 150 m를 4구간으로 나누면 30~70 m 구간의 텍셀이 약 8 cm라 편향이 20 cm쯤 되고, 두께 25 cm인 이 천장은 거기에 필터 번짐까지 더한 만큼을 막지 못한다. 반원의 둥근 테두리는 텍셀이 작은 가까운 구간(10~30 m)의 경계다. 해를 끄면 새는 빛이 없어지고, 매 프레임 그리던 해 그림자 4구간 비용도 사라진다. 실내 조명은 형광등과 구운 간접광이 그대로 맡는다. 창문을 내서 달빛을 들이려면 해를 다시 켜고, 천장을 50 cm 이상으로 두껍게 하거나 지붕 위에 그림자만 드리우는 두꺼운 상자(Cast Shadows `Shadows Only`)를 얹는다. 이동 시험장 DarkRoom의 천장은 1 m라 괜찮다. 남은 것은 위 공통 값의 밤하늘이다.
+
 - **안개**: 끔
-- **형광등**: FBX를 놓으면 형광등 7개(a~g)가 나란히 나온다. `mounted_fluorescent_lights_a` 하나만 남겨 프리팹으로 만들고 복제한다.
-  - FirstRoom 12개: x = -10, 0, 10과 z = -15, -5, 5, 15가 만나는 자리, 높이 7.1 m(천장 아래면 7.125 m 바로 밑)
-  - 출발 방과 적 출현 방에 하나씩: (0, 6.7, -25), (0, 6.7, 24.6)
-  - 재질: `_emission` 텍스처로 Emission 켬, 세기 2
-  - Spot Light: Spot Angle 150, Range 12, Intensity 25, 6000 K
+- **형광등**: [MountedFluorescentLight](../Prefabs/Props/MountedFluorescentLight.prefab) 프리팹. 받은 FBX의 일곱 종류 중 `mounted_fluorescent_lights_a`만 쓴다. 원점이 천장에 붙는 면이고 관이 3.5 cm 아래로 내려오므로, 천장 아래면에서 1 mm 아래에 놓았다. 밝기와 각도는 프리팹 하나만 고치면 14개가 같이 바뀐다.
+  - FirstRoom 12개(`Ceiling Lights` 아래): x = -10, 0, 10과 z = -15, -5, 5, 15가 만나는 자리, 높이 7.124 m(천장 아래면 7.125 m)
+  - 출발 방과 적 출현 방에 하나씩: (0, 6.749, -25), (0, 6.749, 24.625)(천장 아래면 6.75 m)
+  - 재질: 관(`mounted_fluorescent_lights_glass`)만 `_emission` 텍스처로 Emission 켬, 세기 2
+  - Spot Light: Spot Angle 150(안쪽 110), Range 12, Intensity 25, 6000 K, `Mixed`, 부드러운 그림자, 그림자 해상도 Medium(512). 그림자를 끄면 첫 방의 빛이 벽을 지나 옆방 바닥까지 닿는다. 14개가 한 화면에 들어오므로 `PC_RPAsset`의 Additional Lights Shadow Atlas를 4096으로 늘렸다(2048이면 "Reduced additional punctual light shadows resolution" 경고와 함께 해상도가 깎인다). 실시간 그림자 14개가 무거우면 방 가장자리 등부터 그림자를 끈다
 - **굽기 대상**: `★Map` 아래 FirstRoom의 Floor, Ceiling, Walls 전부, Wall, Wall (1), Cover - bullets must stop here, 그리고 PlayerSpawnRoom, EnemySpawnRoom(Stairs 포함), 장식 전부
-- **빼는 것**: Door와 Door (1)(`BreakableDoor`), Targets(과녁), Chat Test Stations(버튼)
+- **빼는 것**: Door와 Door (1)(`BreakableDoor`), Targets(과녁), Chat Test Stations(버튼), TetoPear(물리 프롭), 형광등 프리팹(빛은 스포트 조명이 내고, 기구는 프로브 빛을 받는다)
 - **반사 프로브 3개**, 모두 Box Projection 켬:
 
   | 방 | 위치 | Box Size |

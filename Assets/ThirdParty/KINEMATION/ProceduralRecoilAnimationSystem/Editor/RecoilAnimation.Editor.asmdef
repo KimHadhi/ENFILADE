@@ -1,0 +1,19 @@
+{
+    "name": "RecoilAnimation.Editor",
+    "rootNamespace": "",
+    "references": [
+        "GUID:bef7f1246b968e04096165af98b4f824",
+        "GUID:3b9c1e777897a454ab8f17fb7264c2af"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
