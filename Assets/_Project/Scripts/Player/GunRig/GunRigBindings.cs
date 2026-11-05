@@ -82,11 +82,14 @@ internal static class GunRigBindings
         modifier.characterPrefab = prefab;
     }
 
+    // Ends every copy's name, so a copy left over from an earlier Play can be found and removed (RemoveLeftovers).
+    private const string CopyMark = " (GunRig copy)";
+
     // Instantiate copies only serialized fields, so the copies' bindings start unresolved until Resolve.
     private static T Copy<T>(T source) where T : ScriptableObject
     {
         var copy = Object.Instantiate(source);
-        copy.name = source.name;
+        copy.name = source.name + CopyMark;
         copy.hideFlags = HideFlags.DontSave;
         if (Made.Count == 0) Application.quitting += Release;
         Made.Add(copy);
@@ -106,6 +109,25 @@ internal static class GunRigBindings
         Settings.Clear();
         Procedural.Clear();
     }
+
+    // Release alone misses copies in the editor: a script reload empties Made while DontSave keeps the copies alive, and
+    // the reload wakes them (OnEnable), so they sign up for KINEMATION's load step again. That step runs at BeforeSceneLoad
+    // and binds every procedural settings in memory to KINEMATION's demo player, which has no GunRigInputs: 11 warnings.
+    // SubsystemRegistration runs first, so every leftover copy is gone by then. A build never has any.
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void RemoveLeftovers()
+    {
+        Release();
+        foreach (var leftover in Resources.FindObjectsOfTypeAll<ScriptableObject>())
+            if (leftover != null && IsCopy(leftover)) Object.DestroyImmediate(leftover);
+    }
+
+    // A copy: marked by name, or (made before the mark) one of KINEMATION's settings flagged exactly DontSave, as Copy
+    // flags them. An asset on disk never is, and KINEMATION's own editor tools use HideAndDontSave, which this leaves alone.
+    private static bool IsCopy(ScriptableObject item)
+        => item.name.EndsWith(CopyMark, StringComparison.Ordinal)
+           || ((item is ProceduralAnimationSettings || item is CharacterAnimationSettings || item is AnimationModifierSettings)
+               && item.hideFlags == HideFlags.DontSave);
 
     private static bool MovesLegsOnly(AnimationModifierSettings modifier)
         => modifier is StrideModifierSettings || modifier is StepModifierSettings || modifier is FootIkSettings
