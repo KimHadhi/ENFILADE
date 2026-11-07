@@ -13,7 +13,7 @@ using UnityEngine.Playables;
 /// </summary>
 public sealed partial class PlayerBody
 {
-    private const int MovesLayer = 0, ClenchLayer = 1, PunchLayer = 2, KickLayer = 3;
+    private const int MovesLayer = 0, ClenchLayer = 1, PunchLayer = 2, TurnLayer = 3, KickLayer = 4;
 
     [Header("Fists")]
     [SerializeField, Tooltip("Looped while fists are up. Only its fingers play, so the hands make fists.")]
@@ -58,6 +58,7 @@ public sealed partial class PlayerBody
         graph.Connect(punchMixer, 0, layers, PunchLayer);
         foreach (string clip in new[] { punchLeft, punchRight, punchLeftHard, punchRightHard }) AddPunch(clip);
         BuildKick();
+        BuildTurn();
         return layers;
     }
 
@@ -67,6 +68,7 @@ public sealed partial class PlayerBody
         punchByName.Clear();
         punch = null;
         punchTimeLeft = punchWeight = leftArmShare = rightArmShare = 0f;
+        TeardownTurn();
         TeardownKick();
         if (fingerMask != null) Destroy(fingerMask);
         if (upperMask != null) Destroy(upperMask);
@@ -126,6 +128,7 @@ public sealed partial class PlayerBody
     private void BlendLayers(float dt)
     {
         layers.SetInputWeight(ClenchLayer, hands != null ? hands.FistsWeight : 0f);
+        BlendTurn(dt);
         BlendKick(dt);
         // A guard or a climb takes the arm back at once: the parry's sweep and the hold need the hand on its target.
         var melee = player.MeleeCombat;

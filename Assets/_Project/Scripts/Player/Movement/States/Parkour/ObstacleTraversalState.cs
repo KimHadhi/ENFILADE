@@ -11,7 +11,10 @@ public sealed class ObstacleTraversalState : MovementBaseState
     private TraversalPath path;
     private Vector3 entryVelocity;
     private StraightLineTraversal straightLine;
-    public bool MovesInStraightLine => straightLine != null;
+    // A vault carried by its clip's hands (KINEMATION Motion Warping style), where the kind is switched on and the clip puts
+    // its hands down; otherwise the straight move.
+    private WarpedTraversal warp;
+    public bool MovesInStraightLine => straightLine != null || warp != null;
     public bool IsVault => vault;
     public int EntrySerial { get; private set; }
     public float EntrySpeed => entryVelocity.magnitude;
@@ -42,8 +45,12 @@ public sealed class ObstacleTraversalState : MovementBaseState
         var target = ctx.Abilities.Traversal.Obstacle;
         ctx.Abilities.Traversal.RecordObstacle();
         ctx.Abilities.Traversal.ObstacleProgress = 0f;
-        straightLine = target.StraightLine ? new StraightLineTraversal(ctx, target, entryVelocity.magnitude) : null;
-        path = straightLine != null ? null : new TraversalPath(target, ctx.Abilities.Traversal.Detector, ctx.CrouchColliderHeight);
+        ctx.Abilities.Traversal.ObstacleClipTime = -1f;
+        ctx.Abilities.Traversal.ObstacleSupport = Vector2.zero;
+        ctx.Abilities.Traversal.EdgeShortfall = 0f;
+        warp =target.ExitLadder != null ? StartLadderWarp(target) : StartWarp(target);
+        straightLine = warp == null && target.StraightLine ? new StraightLineTraversal(ctx, target, entryVelocity.magnitude) : null;
+        path = target.StraightLine ? null : new TraversalPath(target, ctx.Abilities.Traversal.Detector, ctx.CrouchColliderHeight);
         duration = Mathf.Max(0.05f, TraversalTiming.Duration(ctx.AbilitySettings, target));
         EntrySerial++;
     }
@@ -61,14 +68,16 @@ public sealed class ObstacleTraversalState : MovementBaseState
         if (landing)
         {
             landingLeft -= dt;
-            if (!FeetDown() && landingLeft > 0f) return;
+            if (!FeetDown() && landingLeft > 0f && !RanIntoSomething()) return;
             ctx.Abilities.ReturnToLocomotion();
             return;
         }
         if (target.Surface == null) { Abort(); return; }
-        if (straightLine != null)
+        if (straightLine != null || warp != null)
         {
-            if (!straightLine.Complete) return;
+            if (!(straightLine?.Complete ?? warp.Complete)) return;
+            // The clip runs on by itself from here, through the landing.
+            traversal.ObstacleClipTime = -1f;
             ctx.Abilities.Landing.SupportedByTraversal();
             if (vault && !SpringsOff(target.Kind) && LandsWithin(LandingReach * ctx.HeightUnit))
             {
@@ -90,11 +99,16 @@ public sealed class ObstacleTraversalState : MovementBaseState
             ctx.VerticalVelocity = -2f;
         }
     }
-    // Forward is the way the player looks now, so looking round in a vault steers what comes after it.
+    // Forward is the way the player looks now, so looking round in a vault steers what comes after it (Beatrun). Looking
+    // further back than sideways, the vault's own way carries on instead: Beatrun's rule sent the player back into the
+    // obstacle just vaulted, which caught on its edge (user, 2026-11-07: free look, no buggy push back).
     private void Leave(VaultKind kind)
     {
         float unit = ctx.HeightUnit, entry = entryVelocity.magnitude / unit;
         Vector3 forward = ctx.transform.forward;
+        var target = ctx.Abilities.Traversal.Obstacle;
+        Vector3 travel = Vector3.ProjectOnPlane(target.End - target.Start, Vector3.up);
+        if (travel.sqrMagnitude > .0001f && Vector3.Dot(forward, travel) < 0f) forward = travel.normalized;
         ctx.HorizontalVelocity = forward * (VaultMotion.ExitSpeed(kind, entry) * unit);
         ctx.VerticalVelocity = 0f;
         if (!ctx.Input.JumpHeld || !VaultMotion.CanSpring(kind)) return;
@@ -112,8 +126,30 @@ public sealed class ObstacleTraversalState : MovementBaseState
         => ctx.VerticalVelocity <= 0f && Physics.Raycast(ctx.transform.position + Vector3.up * .05f, Vector3.down,
                out RaycastHit ground, .05f + Mathf.Max(.06f, ctx.Motor.controller.skinWidth * 2f), ctx.groundLayers,
                QueryTriggerInteraction.Ignore) && ground.normal.y >= Mathf.Cos(ctx.SlopeLimit * Mathf.Deg2Rad);
+    // The way down met something other than the floor under the feet. Turned round mid-vault, the exit speed (Leave, the
+    // way the player looks, as Beatrun's) carries the player back at the obstacle just vaulted, and the capsule's round
+    // bottom caught on its top edge: held on as a vault, it hung there in the air until LandingTime ran out (user,
+    // 2026-11-07). The fall takes over at once instead, as Beatrun's walking movement does the moment its vault ends.
+    // Last frame's move (the motor moves after UpdateLogic).
+    private bool RanIntoSomething() => (ctx.Motor.lastMoveFlags & (CollisionFlags.Sides | CollisionFlags.Below)) != 0;
     public override void UpdatePhysics(float dt)
     {
+        if (warp != null)
+        {
+            if (landing) return;
+            if (!warp.Advance(dt))
+            {
+                ParkourProbeLog.Line($"{ctx.Abilities.Traversal.Obstacle.Kind} warped vault stopped: {warp.StopReason}");
+                Abort();
+                return;
+            }
+            ctx.Abilities.Traversal.ObstacleProgress = warp.Progress;
+            ctx.Abilities.Traversal.ObstacleClipTime = warp.Complete ? -1f : warp.ClipTime;
+            ctx.Abilities.Traversal.ObstacleSupport = new Vector2(warp.PlantTime, warp.ReleaseTime);
+            ctx.Abilities.Traversal.EdgeShortfall = warp.EdgeShortfall;
+            ctx.Abilities.Traversal.ObstacleContact = warp.Contact;
+            return;
+        }
         if (straightLine != null)
         {
             // Coming down: gravity and the motor carry the exit speed Leave set, with collisions, to the ground.
@@ -130,8 +166,11 @@ public sealed class ObstacleTraversalState : MovementBaseState
         Vector3 candidate = path.Evaluate(to);
         // Original exit conditions. Keep checking the body before handing control
         // back; unlike MOVETYPE_NOCLIP, this controller must not end inside a wall.
-        bool wantsExit = progress >= TraversalTiming.EndProgress
-            || (candidate - target.End).sqrMagnitude < TraversalTiming.EndDistanceSquared;
+        // Climbing off a ladder's top goes all the way: the body plays the climb off by this move's time, and ending it at
+        // EndProgress (about two thirds of the time) stood the player up on the floor while the clip still climbed the
+        // ladder on top of them (user, 2026-11-08). It ends with the clip, at the end of the route.
+        bool wantsExit = target.ExitLadder == null && (progress >= TraversalTiming.EndProgress
+            || (candidate - target.End).sqrMagnitude < TraversalTiming.EndDistanceSquared);
         bool safeExit = Mathf.Abs(candidate.y - target.End.y) < 0.08f
             && ctx.Abilities.Traversal.Detector.ClearCapsule(candidate, ctx.StandingColliderHeight)
             && ctx.Abilities.Traversal.Detector.HasTread(candidate, target.Surface);
@@ -162,10 +201,65 @@ public sealed class ObstacleTraversalState : MovementBaseState
     {
         // Held W must not immediately turn a blocked vault into a wall action
         // or another automatic grab before the body has recovered.
-        if (straightLine != null) ctx.Abilities.Traversal.LockLedge();
+        if (straightLine != null || warp != null) ctx.Abilities.Traversal.LockLedge();
         ctx.Abilities.ReturnToLocomotion();
         ctx.HorizontalVelocity = entryVelocity;
         ctx.VerticalVelocity = Mathf.Min(ctx.VerticalVelocity, 0f);
     }
-    public override void Exit() { straightLine?.Exit(); }
+    public override void Exit()
+    {
+        straightLine?.Exit();
+        warp?.Exit();
+        ctx.Abilities.Traversal.ObstacleClipTime = -1f;
+    }
+    // A vault carried by its clip's hands, or null for the straight move (the probe notes why).
+    // Climbing off a ladder's top on its clip's hands (Motion Warping), as the vaults are, at the clip's own pace over
+    // ladderExitDuration (user, 2026-11-08: "warp it"). Beatrun's clip grabs high and pushes the body up over its hands
+    // (measured: from 1.5 m over the feet at 0.3 s down to 0.8 m by about 1.1 s). Its ladders' rails stand up past the
+    // roof for that; ours end at it, and poles added for it looked ugly, so the hands go on the floor's near edge up
+    // there (user's pick, 2026-11-08): the clip's push is shorter than the climb, and the body is carried the rest of
+    // the way up onto the floor after the hands let go. Without a measure, the route.
+    private WarpedTraversal StartLadderWarp(in ObstacleTarget target)
+    {
+        string why;
+        WarpedTraversal made = null;
+        if (ctx.ObstacleMotions == null) why = "no body to ask";
+        else if (!ctx.ObstacleMotions.TryLadderExitMotion(ctx.Abilities.Fixtures.LadderLeftHand, out var motion))
+            why = "the climb-off clip puts no hands down (see its measure)";
+        else
+        {
+            // The clip's hands come down on the tops of the ladder's rails (user, 2026-11-08: the hands on the bar, not
+            // the roof): across the ladder's middle in the plane of its rails, at their top; PlayerBodyHands then closes
+            // each hand on its own rail.
+            var ladder = target.ExitLadder;
+            Vector3 feet = ctx.transform.position;
+            Vector3 middle = feet - ladder.Outward * Vector3.Dot(feet - ladder.transform.position, ladder.Outward);
+            middle += ladder.transform.right * Vector3.Dot(ladder.transform.position - middle, ladder.transform.right);
+            middle.y = (ladder.transform.position + ladder.transform.up * (ladder.Height - Ladder.BarThickness)).y;
+            Vector3 grip = middle + ladder.Outward * (Ladder.BarThickness * .5f + motion.WristAboveTop);
+            made = WarpedTraversal.TryStart(ctx, target, motion, 0f, Mathf.Max(.1f, target.Duration), grip, out why);
+        }
+        ParkourProbeLog.Line(made != null ? $"ladder climb-off warped: {made.Describe}" : $"ladder climb-off went by its route: {why}");
+        return made;
+    }
+
+    private WarpedTraversal StartWarp(in ObstacleTarget target)
+    {
+        if (!target.StraightLine || !Warps(target.Kind)) return null;
+        string why;
+        WarpedTraversal made = null;
+        if (ctx.ObstacleMotions == null) why = "no body to ask";
+        else if (!ctx.ObstacleMotions.TryObstacleMotion(target.Kind, out var motion)) why = "the clip puts no hands down (see its measure)";
+        else made = WarpedTraversal.TryStart(ctx, target, motion, entryVelocity.magnitude, out why);
+        ParkourProbeLog.Line(made != null ? $"{target.Kind} vault warped: {made.Describe}" : $"{target.Kind} vault went straight: {why}");
+        return made;
+    }
+
+    // The kinds carried by their clip's hands (Ability.warpKong, warpOver, warpOverHigh).
+    private bool Warps(VaultKind kind)
+    {
+        var settings = ctx.AbilitySettings;
+        return kind == VaultKind.Kong ? settings.warpKong : kind == VaultKind.Over ? settings.warpOver
+            : kind == VaultKind.OverHigh && settings.warpOverHigh;
+    }
 }

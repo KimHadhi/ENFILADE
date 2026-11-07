@@ -1,0 +1,22 @@
+{
+    "name": "TacticalShooterPack.Editor",
+    "rootNamespace": "",
+    "references": [
+        "GUID:cd09da1552d24f56a2bbf5734e164d9b",
+        "GUID:d1f3537cb1ed40b0861768521ca86022",
+        "GUID:d8548a9d25a091541a1fcde53694c91a",
+        "GUID:3b9c1e777897a454ab8f17fb7264c2af",
+        "GUID:bef7f1246b968e04096165af98b4f824"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

@@ -97,9 +97,6 @@ public sealed class WeaponController : MonoBehaviour
     // ...and stays up at least this long after it clears (s): walking, the head bobs across the edge with every step.
     private const float RaisedHold = .5f;
     private float raisedHoldLeft;
-    // The aim alone (mouse and recoil climb), for the sway's turn; the eyes also carry the camera's own shakes.
-    private Transform lookFrame;
-    private readonly WeaponSway sway = new WeaponSway();
     // How long an empty magazine has waited with the gun ready to fire (s), for the automatic reload.
     private float emptyReady;
     private float bloom, timeSinceShot, shoveRecovery, bareHandsLeft;
@@ -158,13 +155,8 @@ public sealed class WeaponController : MonoBehaviour
         eyes = Application.isPlaying && movement != null ? PlayerView.EyesOf(movement) : null;
         if (eyes == aimOrigin) eyes = null;
         if (eyes != null && weaponRoot != null && weaponRoot.parent == aimOrigin) weaponRoot.SetParent(eyes, false);
-        if (movement != null)
-        {
-            lookFrame = movement.transform.Find("CrouchPivot/BobPivot/LookPivot");
-            if (lookFrame == null) lookFrame = movement.transform.Find("CrouchPivot/LookPivot");
-        }
-        // KINEMATION's arms rig poses the gun where it has one (GunRig); otherwise the procedural placeholder does.
-        presentation = GunRig.Attach(this, weaponRoot, muzzlePoint) ?? new WeaponPresentation(weaponRoot, muzzlePoint);
+        // KINEMATION FPS Animation Framework holds the gun on the body (FPSBody); its Sway layer sways it.
+        presentation = FPSBody.Attach(this, weaponRoot, muzzlePoint);
         viewCamera = aimOrigin.GetComponent<Camera>();
         cameraEffects = owner.GetComponentInChildren<PlayerCameraEffects>();
         crosshair = movement?.IsLocal != false ? DynamicCrosshairView.FindHud() : null;
@@ -372,7 +364,6 @@ public sealed class WeaponController : MonoBehaviour
             presentation?.OnShot(weaponData, recoil);
             UpdateSpread();
         }
-        Sway(dt, aiming);
         UpdateCrosshair();
         cameraEffects?.RefreshWeaponFov();
     }
@@ -385,25 +376,6 @@ public sealed class WeaponController : MonoBehaviour
             && Runtime.Ammo == 0 && Runtime.ReserveAmmo > 0 && !Runtime.IsReloading && Runtime.CooldownRemaining <= 0f;
         emptyReady = waiting ? emptyReady + dt : 0f;
         return waiting && emptyReady > weaponData.AutoReloadDelay;
-    }
-
-    // The sway, last: this frame's shots and cover checks have used the plain pose. Only one's own gun sways; someone
-    // else's turns arrive in network steps, which it would only jolt about.
-    private void Sway(float dt, bool aiming)
-    {
-        if (presentation == null || !ShowsWeapon || (movement != null && (!movement.IsLocal || movement.IsNetworkDriven)))
-        {
-            // Put away, it starts fresh when it comes back instead of catching up on every turn made meanwhile.
-            sway.Reset();
-            return;
-        }
-        Transform view = PoseView;
-        var input = new SwayInput(view.rotation, lookFrame != null ? lookFrame.rotation : view.rotation,
-            movement != null ? movement.ActualVelocity : Vector3.zero, movement == null || movement.IsGrounded,
-            movement != null && movement.IsProning, movement != null && movement.IsSliding, aiming, 1f - AimBlend,
-            movement != null ? movement.WalkSpeed : float.PositiveInfinity, weaponData.LookSway, weaponData.MoveSway);
-        sway.Advance(dt, input, out Vector3 offset, out Quaternion turn);
-        presentation.ApplySway(view, offset, turn);
     }
 
     // ArcCW's crouch rule: on the ground and crouched.
@@ -455,7 +427,7 @@ public sealed class WeaponController : MonoBehaviour
     private void ResetPresentation()
     {
         AimBlend = bloom = shoveRecovery = CurrentSpread = raisedHoldLeft = emptyReady = 0f; recoilIndex = 0; IsHighReady = false;
-        presentation?.Reset(); sway.Reset(); crosshair?.SetDynamicSpread(0f);
+        presentation?.Reset(); crosshair?.SetDynamicSpread(0f);
         crosshair?.SetCombatHidden(false);
         cameraEffects?.RefreshWeaponFov();
     }

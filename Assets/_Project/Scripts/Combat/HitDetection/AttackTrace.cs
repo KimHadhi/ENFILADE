@@ -86,21 +86,24 @@ public static class AttackTrace
         return first;
     }
 
-    // One straight stretch to the first thing it meets, hurting that by `share` of the attack unless it was hurt already
-    // by this bullet (`already`); share 0 hurts nothing. `pierced`: the bullet got here through or off something.
+    // One straight stretch to the first thing it meets that this bullet hasn't met yet (`already`: what it passes unseen,
+    // so a body it went through, whatever its colliders, or one it starts inside isn't met twice), hurting that by `share`
+    // of the attack; share 0 hurts nothing but still counts the meeting, so a shot another PC judged takes the same path.
+    // `pierced`: the bullet got here through or off something.
     private static AttackTraceResult Strike(DamageHit attack, Vector3 origin, Vector3 direction, float distance, int layers,
         float headshotMultiplier, float share, Vector3 shooter, System.Collections.Generic.HashSet<IDamageReceiver> already, bool pierced)
     {
         Vector3 end = origin + direction * distance;
         DamageResult result = DamageResult.Ignored;
         bool headshot = false;
-        bool hasHit = FirstExternalHit(attack.Source, origin, direction, distance, layers, out RaycastHit hit);
+        bool hasHit = FirstExternalHit(attack.Source, origin, direction, distance, layers, already, out RaycastHit hit);
         if (hasHit)
         {
             end = hit.point;
             var receiver = hit.collider.GetComponentInParent<IDamageReceiver>();
             headshot = headshotMultiplier > 1f && WeaponHitRegion.IsHead(hit);
-            if (receiver != null && share > 0f && (already == null || already.Add(receiver)))
+            bool fresh = receiver != null && (already == null || already.Add(receiver));
+            if (fresh && share > 0f)
                 result = receiver.ReceiveHit(new DamageHit(attack.Id, attack.Amount * share * (headshot ? headshotMultiplier : 1f), attack.Kind, hit.point, direction, attack.Source,
                     attack.CanBeGuarded, attack.PostureDamage * share, attack.IsComboFinisher, attack.IsCritical || headshot, attack.IsCounter, attack.Method,
                     shooter, attack.IsFatal, attack.Pierced || pierced));
@@ -123,10 +126,24 @@ public static class AttackTrace
                 || hit.collider.GetComponentInParent<PlayerLeanHitboxes>()?.UsesSplitBody != true));
 
     public static bool FirstExternalHit(GameObject owner, Vector3 origin, Vector3 direction, float range, int layers, out RaycastHit hit)
+        => FirstExternalHit(owner, origin, direction, range, layers, null, out hit);
+
+    // A bullet's own query: also passes anything that takes damage in `passed` (what it already went through).
+    private static bool Passes(RaycastHit hit, GameObject owner, System.Collections.Generic.HashSet<IDamageReceiver> passed)
+    {
+        if (ShouldSkip(hit, owner)) return true;
+        if (passed == null || passed.Count == 0) return false;
+        var receiver = hit.collider.GetComponentInParent<IDamageReceiver>();
+        return receiver != null && passed.Contains(receiver);
+    }
+
+    private static bool FirstExternalHit(GameObject owner, Vector3 origin, Vector3 direction, float range, int layers,
+        System.Collections.Generic.HashSet<IDamageReceiver> passed, out RaycastHit hit)
     {
         if (!Physics.Raycast(origin, direction, out hit, range, layers, QueryTriggerInteraction.Collide)) return false;
-        if (!ShouldSkip(hit, owner)) return true;
-        // Most shots need one non-allocating Raycast. Only own-body obstruction needs a multi-hit query.
+        if (!Passes(hit, owner, passed)) return true;
+        // Most shots need one non-allocating Raycast. Only own-body obstruction, or a body the bullet already went
+        // through, needs a multi-hit query.
         int count = Physics.RaycastNonAlloc(origin, direction, ownerSkipHits, range, layers, QueryTriggerInteraction.Collide);
         RaycastHit[] results = ownerSkipHits;
         if (count == results.Length)
@@ -139,7 +156,7 @@ public static class AttackTrace
         for (int i = 0; i < count; i++)
         {
             var candidate = results[i];
-            if (ShouldSkip(candidate, owner) || candidate.distance >= closest) continue;
+            if (Passes(candidate, owner, passed) || candidate.distance >= closest) continue;
             closest = candidate.distance; hit = candidate; found = true;
         }
         return found;

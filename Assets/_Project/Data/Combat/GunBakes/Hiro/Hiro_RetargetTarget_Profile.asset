@@ -1,0 +1,1981 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-7729308170364387412
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9c037f4882c5493a84c1732694149815, type: 3}
+  m_Name: IKRetargetFeature
+  m_EditorClassIdentifier: RetargetPro.Runtime::KINEMATION.RetargetPro.Runtime.Features.IKRetargeting.IKRetargetFeature
+  sourceRig: {fileID: 771067914518447300}
+  targetRig: {fileID: 2647075778091879084}
+  featureWeight: 1
+  featureWeightMode: 0
+  featureWeightCurve:
+    serializedVersion: 2
+    m_Curve: []
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  sourceChain:
+    chainName: leftLeg
+    elementChain:
+    - name: thigh_l
+      index: 57
+      depth: 3
+    - name: calf_l
+      index: 58
+      depth: 4
+    - name: foot_l
+      index: 60
+      depth: 5
+  targetChain:
+    chainName: leftLeg
+    elementChain:
+    - name: ValveBiped.Bip01_L_Thigh
+      index: 6
+      depth: 3
+    - name: ValveBiped.Bip01_L_Calf
+      index: 7
+      depth: 4
+    - name: ValveBiped.Bip01_L_Foot
+      index: 8
+      depth: 5
+  scaleWeight: 1
+  translationWeight: 0
+  offset: {x: 0, y: 0, z: 0}
+  ikWeight: 1
+  useChainIk: 0
+  effectorOffset: {x: 0, y: 0, z: 0}
+  effectorSpace: 2
+  jointBone:
+    name: ValveBiped.Bip01_L_Calf
+    index: 7
+    depth: 4
+  jointOffset: {x: 0, y: 0, z: 1}
+  poleWeight: 1
+  maxReachMultiplier: 0.98
+--- !u!114 &-7296546806874003114
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8a6e0cf430a4479280dbe53e7c58bd9c, type: 3}
+  m_Name: BasicRetargetFeature
+  m_EditorClassIdentifier: RetargetPro.Runtime::KINEMATION.RetargetPro.Runtime.Features.BasicRetargeting.BasicRetargetFeature
+  sourceRig: {fileID: 771067914518447300}
+  targetRig: {fileID: 2647075778091879084}
+  featureWeight: 1
+  featureWeightMode: 0
+  featureWeightCurve:
+    serializedVersion: 2
+    m_Curve: []
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  sourceChain:
+    chainName: spine
+    elementChain:
+    - name: spine_01
+      index: 10
+      depth: 3
+    - name: spine_02
+      index: 11
+      depth: 4
+    - name: spine_03
+      index: 12
+      depth: 5
+  targetChain:
+    chainName: spine
+    elementChain:
+    - name: ValveBiped.Bip01_Spine
+      index: 14
+      depth: 3
+    - name: ValveBiped.Bip01_Spine4
+      index: 17
+      depth: 6
+  scaleWeight: 1
+  translationWeight: 0
+  offset: {x: 0, y: 0, z: 0}
+--- !u!114 &-5865842795074327255
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8a6e0cf430a4479280dbe53e7c58bd9c, type: 3}
+  m_Name: BasicRetargetFeature
+  m_EditorClassIdentifier: RetargetPro.Runtime::KINEMATION.RetargetPro.Runtime.Features.BasicRetargeting.BasicRetargetFeature
+  sourceRig: {fileID: 771067914518447300}
+  targetRig: {fileID: 2647075778091879084}
+  featureWeight: 1
+  featureWeightMode: 0
+  featureWeightCurve:
+    serializedVersion: 2
+    m_Curve: []
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  sourceChain:
+    chainName: toes
+    elementChain:
+    - name: ball_l
+      index: 61
+      depth: 6
+    - name: ball_r
+      index: 67
+      depth: 6
+  targetChain:
+    chainName: toes
+    elementChain:
+    - name: ValveBiped.Bip01_L_Toe0
+      index: 9
+      depth: 6
+    - name: ValveBiped.Bip01_R_Toe0
+      index: 13
+      depth: 6
+  scaleWeight: 1
+  translationWeight: 0
+  offset: {x: 0, y: 0, z: 0}
+--- !u!114 &-5748315090224480004
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8a6e0cf430a4479280dbe53e7c58bd9c, type: 3}
+  m_Name: BasicRetargetFeature
+  m_EditorClassIdentifier: RetargetPro.Runtime::KINEMATION.RetargetPro.Runtime.Features.BasicRetargeting.BasicRetargetFeature
+  sourceRig: {fileID: 771067914518447300}
+  targetRig: {fileID: 2647075778091879084}
+  featureWeight: 1
+  featureWeightMode: 0
+  featureWeightCurve:
+    serializedVersion: 2
+    m_Curve: []
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  sourceChain:
+    chainName: indexFingers
+    elementChain:
+    - name: index_01_l
+      index: 17
+      depth: 10
+    - name: index_02_l
+      index: 18
+      depth: 11
+    - name: index_03_l
+      index: 19
+      depth: 12
+    - name: index_01_r
+      index: 38
+      depth: 10
+    - name: index_02_r
+      index: 39
+      depth: 11
+    - name: index_03_r
+      index: 40
+      depth: 12
+  targetChain:
+    chainName: indexFingers
+    elementChain:
+    - name: ValveBiped.Bip01_L_Finger1
+      index: 25
+      depth: 11
+    - name: ValveBiped.Bip01_L_Finger11
+      index: 26
+      depth: 12
+    - name: ValveBiped.Bip01_L_Finger12
+      index: 27
+      depth: 13
+    - name: ValveBiped.Bip01_R_Finger1
+      index: 76
+      depth: 11
+    - name: ValveBiped.Bip01_R_Finger11
+      index: 77
+      depth: 12
+    - name: ValveBiped.Bip01_R_Finger12
+      index: 78
+      depth: 13
+  scaleWeight: 1
+  translationWeight: 0
+  offset: {x: 0, y: 0, z: 0}
+--- !u!114 &-5359450817888975885
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8a6e0cf430a4479280dbe53e7c58bd9c, type: 3}
+  m_Name: BasicRetargetFeature
+  m_EditorClassIdentifier: RetargetPro.Runtime::KINEMATION.RetargetPro.Runtime.Features.BasicRetargeting.BasicRetargetFeature
+  sourceRig: {fileID: 771067914518447300}
+  targetRig: {fileID: 2647075778091879084}
+  featureWeight: 1
+  featureWeightMode: 0
+  featureWeightCurve:
+    serializedVersion: 2
+    m_Curve: []
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  sourceChain:
+    chainName: pinkyFingers
+    elementChain:
+    - name: pinky_01_l
+      index: 23
+      depth: 10
+    - name: pinky_02_l
+      index: 24
+      depth: 11
+    - name: pinky_03_l
+      index: 25
+      depth: 12
+    - name: pinky_01_r
+      index: 44
+      depth: 10
+    - name: pinky_02_r
+      index: 45
+      depth: 11
+    - name: pinky_03_r
+      index: 46
+      depth: 12
+  targetChain:
+    chainName: pinkyFingers
+    elementChain:
+    - name: ValveBiped.Bip01_L_Finger4
+      index: 34
+      depth: 11
+    - name: ValveBiped.Bip01_L_Finger41
+      index: 35
+      depth: 12
+    - name: ValveBiped.Bip01_L_Finger42
+      index: 36
+      depth: 13
+    - name: ValveBiped.Bip01_R_Finger4
+      index: 85
+      depth: 11
+    - name: ValveBiped.Bip01_R_Finger41
+      index: 86
+      depth: 12
+    - name: ValveBiped.Bip01_R_Finger42
+      index: 87
+      depth: 13
+  scaleWeight: 1
+  translationWeight: 0
+  offset: {x: 0, y: 0, z: 0}
+--- !u!114 &-4722579019492974819
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 047ec8cf93d297e498ed7eead64dde5c, type: 3}
+  m_Name: ShootingStanceFeature
+  m_EditorClassIdentifier: Assembly-CSharp-Editor::ShootingStanceFeature
+  sourceRig: {fileID: 771067914518447300}
+  targetRig: {fileID: 2647075778091879084}
+  featureWeight: 1
+  featureWeightMode: 0
+  featureWeightCurve:
+    serializedVersion: 2
+    m_Curve: []
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  blade: 0
+--- !u!114 &-4102043913558611680
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9c037f4882c5493a84c1732694149815, type: 3}
+  m_Name: IKRetargetFeature
+  m_EditorClassIdentifier: RetargetPro.Runtime::KINEMATION.RetargetPro.Runtime.Features.IKRetargeting.IKRetargetFeature
+  sourceRig: {fileID: 771067914518447300}
+  targetRig: {fileID: 2647075778091879084}
+  featureWeight: 1
+  featureWeightMode: 0
+  featureWeightCurve:
+    serializedVersion: 2
+    m_Curve: []
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  sourceChain:
+    chainName: rightArm
+    elementChain:
+    - name: clavicle_r
+      index: 34
+      depth: 6
+    - name: upperarm_r
+      index: 35
+      depth: 7
+    - name: lowerarm_r
+      index: 36
+      depth: 8
+    - name: hand_r
+      index: 37
+      depth: 9
+  targetChain:
+    chainName: rightArm
+    elementChain:
+    - name: ValveBiped.Bip01_R_Clavicle
+      index: 69
+      depth: 7
+    - name: ValveBiped.Bip01_R_UpperArm
+      index: 70
+      depth: 8
+    - name: ValveBiped.Bip01_R_Forearm
+      index: 71
+      depth: 9
+    - name: ValveBiped.Bip01_R_Hand
+      index: 72
+      depth: 10
+  scaleWeight: 1
+  translationWeight: 0
+  offset: {x: 0, y: 0, z: 0}
+  ikWeight: 1
+  useChainIk: 0
+  effectorOffset: {x: 0, y: 0, z: 0}
+  effectorSpace: 2
+  jointBone:
+    name: ValveBiped.Bip01_R_Forearm
+    index: 71
+    depth: 9
+  jointOffset: {x: -0, y: -0, z: -1}
+  poleWeight: 1
+  maxReachMultiplier: 0.98
+--- !u!114 &-4004408708356942167
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8a6e0cf430a4479280dbe53e7c58bd9c, type: 3}
+  m_Name: BasicRetargetFeature
+  m_EditorClassIdentifier: RetargetPro.Runtime::KINEMATION.RetargetPro.Runtime.Features.BasicRetargeting.BasicRetargetFeature
+  sourceRig: {fileID: 771067914518447300}
+  targetRig: {fileID: 2647075778091879084}
+  featureWeight: 1
+  featureWeightMode: 0
+  featureWeightCurve:
+    serializedVersion: 2
+    m_Curve: []
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  sourceChain:
+    chainName: ringFingers
+    elementChain:
+    - name: ring_01_l
+      index: 26
+      depth: 10
+    - name: ring_02_l
+      index: 27
+      depth: 11
+    - name: ring_03_l
+      index: 28
+      depth: 12
+    - name: ring_01_r
+      index: 47
+      depth: 10
+    - name: ring_02_r
+      index: 48
+      depth: 11
+    - name: ring_03_r
+      index: 49
+      depth: 12
+  targetChain:
+    chainName: ringFingers
+    elementChain:
+    - name: ValveBiped.Bip01_L_Finger3
+      index: 31
+      depth: 11
+    - name: ValveBiped.Bip01_L_Finger31
+      index: 32
+      depth: 12
+    - name: ValveBiped.Bip01_L_Finger32
+      index: 33
+      depth: 13
+    - name: ValveBiped.Bip01_R_Finger3
+      index: 82
+      depth: 11
+    - name: ValveBiped.Bip01_R_Finger31
+      index: 83
+      depth: 12
+    - name: ValveBiped.Bip01_R_Finger32
+      index: 84
+      depth: 13
+  scaleWeight: 1
+  translationWeight: 0
+  offset: {x: 0, y: 0, z: 0}
+--- !u!114 &-1918169624917108287
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e8ad39bf7ddc43509a659ce5df42358b, type: 3}
+  m_Name: FPSRetargetFeature
+  m_EditorClassIdentifier: RetargetPro.Runtime::KINEMATION.RetargetPro.Runtime.Features.FPSRetargeting.FPSRetargetFeature
+  sourceRig: {fileID: 771067914518447300}
+  targetRig: {fileID: 2647075778091879084}
+  featureWeight: 1
+  featureWeightMode: 0
+  featureWeightCurve:
+    serializedVersion: 2
+    m_Curve: []
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  sourceRightArm:
+    chainName: rightArm
+    elementChain:
+    - name: upperarm_r
+      index: 35
+      depth: 7
+    - name: lowerarm_r
+      index: 36
+      depth: 8
+    - name: hand_r
+      index: 37
+      depth: 9
+  sourceLeftArm:
+    chainName: leftArm
+    elementChain:
+    - name: upperarm_l
+      index: 14
+      depth: 7
+    - name: lowerarm_l
+      index: 15
+      depth: 8
+    - name: hand_l
+      index: 16
+      depth: 9
+  sourceWeapon:
+    chainName: Weapon
+    elementChain:
+    - name: ik_hand_gun
+      index: 6
+      depth: 3
+  targetRightArm:
+    chainName: rightArm
+    elementChain:
+    - name: ValveBiped.Bip01_R_UpperArm
+      index: 70
+      depth: 8
+    - name: ValveBiped.Bip01_R_Forearm
+      index: 71
+      depth: 9
+    - name: ValveBiped.Bip01_R_Hand
+      index: 72
+      depth: 10
+  targetLeftArm:
+    chainName: leftArm
+    elementChain:
+    - name: ValveBiped.Bip01_L_UpperArm
+      index: 19
+      depth: 8
+    - name: ValveBiped.Bip01_L_Forearm
+      index: 20
+      depth: 9
+    - name: ValveBiped.Bip01_L_Hand
+      index: 21
+      depth: 10
+  targetWeapon:
+    chainName: Weapon
+    elementChain:
+    - name: ik_hand_gun
+      index: 133
+      depth: 1
+  rightHandOffset: {x: 0, y: 0, z: 0}
+  leftHandOffset: {x: 0, y: 0, z: 0}
+  weaponOffset: {x: 0.016360532, y: -0.10485816, z: 0.022315815}
+  rightPoleOffset: {x: 0, y: 0, z: 0}
+  leftPoleOffset: {x: 0, y: 0, z: 0}
+--- !u!114 &-1871205273862720667
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8a6e0cf430a4479280dbe53e7c58bd9c, type: 3}
+  m_Name: BasicRetargetFeature
+  m_EditorClassIdentifier: RetargetPro.Runtime::KINEMATION.RetargetPro.Runtime.Features.BasicRetargeting.BasicRetargetFeature
+  sourceRig: {fileID: 771067914518447300}
+  targetRig: {fileID: 2647075778091879084}
+  featureWeight: 1
+  featureWeightMode: 0
+  featureWeightCurve:
+    serializedVersion: 2
+    m_Curve: []
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  sourceChain:
+    chainName: middleFingers
+    elementChain:
+    - name: middle_01_l
+      index: 20
+      depth: 10
+    - name: middle_02_l
+      index: 21
+      depth: 11
+    - name: middle_03_l
+      index: 22
+      depth: 12
+    - name: middle_01_r
+      index: 41
+      depth: 10
+    - name: middle_02_r
+      index: 42
+      depth: 11
+    - name: middle_03_r
+      index: 43
+      depth: 12
+  targetChain:
+    chainName: middleFingers
+    elementChain:
+    - name: ValveBiped.Bip01_L_Finger2
+      index: 28
+      depth: 11
+    - name: ValveBiped.Bip01_L_Finger21
+      index: 29
+      depth: 12
+    - name: ValveBiped.Bip01_L_Finger22
+      index: 30
+      depth: 13
+    - name: ValveBiped.Bip01_R_Finger2
+      index: 79
+      depth: 11
+    - name: ValveBiped.Bip01_R_Finger21
+      index: 80
+      depth: 12
+    - name: ValveBiped.Bip01_R_Finger22
+      index: 81
+      depth: 13
+  scaleWeight: 1
+  translationWeight: 0
+  offset: {x: 0, y: 0, z: 0}
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 12349bae48c61824bb8e519537ce28eb, type: 3}
+  m_Name: Hiro_RetargetTarget_Profile
+  m_EditorClassIdentifier: RetargetPro.Runtime::KINEMATION.RetargetPro.Runtime.RetargetProfile
+  sourceCharacter: {fileID: 919132149155446097, guid: 405129f43f2032e4bbed300529635549, type: 3}
+  targetCharacter: {fileID: 7768154706005051335, guid: a603e87694018424bbc777a500ef06a1, type: 3}
+  sourcePose: {fileID: 0}
+  targetPose: {fileID: 0}
+  sourceRig: {fileID: 771067914518447300}
+  targetRig: {fileID: 2647075778091879084}
+  rootMotionBone:
+    name: 
+    index: -1
+    depth: -1
+  clipItemModel: {fileID: 0}
+  clipItemAnimation: {fileID: 0}
+  clipItemBone:
+    name: 
+    index: 0
+    depth: 0
+  clipItemRotationOffset: {x: 0, y: 0, z: 0}
+  <cameraViewPose>k__BackingField:
+    position: {x: 0, y: 0, z: 0}
+    rotation: {x: 0, y: 0, z: 0, w: 1}
+    scale: {x: 1, y: 1, z: 1}
+  saveFolderPath: Assets/_Project/Data/Combat/GunBakes/Hiro
+  retargetFeatures:
+  - {fileID: 6981365551117128240}
+  - {fileID: 2523156594440029270}
+  - {fileID: 4525299924198517214}
+  - {fileID: -7729308170364387412}
+  - {fileID: -5865842795074327255}
+  - {fileID: -7296546806874003114}
+  - {fileID: 3661251397461386937}
+  - {fileID: -4102043913558611680}
+  - {fileID: 6875348875581920382}
+  - {fileID: -5748315090224480004}
+  - {fileID: -1871205273862720667}
+  - {fileID: -4004408708356942167}
+  - {fileID: -5359450817888975885}
+  - {fileID: 3430544257797647003}
+  - {fileID: -4722579019492974819}
+  - {fileID: -1918169624917108287}
+--- !u!114 &771067914518447300
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8c9c04639ae548bdb0a8e927492d029d, type: 3}
+  m_Name: SK_Arms_Mono_Rig
+  m_EditorClassIdentifier: KAnimationCore.Runtime::KINEMATION.Shared.KAnimationCore.Runtime.Rig.KRig
+  targetAnimator: {fileID: 0}
+  rigHierarchy:
+  - name: SK_Arms_Mono
+    index: 0
+    depth: 0
+  - name: root
+    index: 1
+    depth: 1
+  - name: ik_foot_root
+    index: 2
+    depth: 2
+  - name: ik_foot_l
+    index: 3
+    depth: 3
+  - name: ik_foot_r
+    index: 4
+    depth: 3
+  - name: ik_hand_root
+    index: 5
+    depth: 2
+  - name: ik_hand_gun
+    index: 6
+    depth: 3
+  - name: ik_hand_l
+    index: 7
+    depth: 4
+  - name: ik_hand_r
+    index: 8
+    depth: 4
+  - name: pelvis
+    index: 9
+    depth: 2
+  - name: spine_01
+    index: 10
+    depth: 3
+  - name: spine_02
+    index: 11
+    depth: 4
+  - name: spine_03
+    index: 12
+    depth: 5
+  - name: clavicle_l
+    index: 13
+    depth: 6
+  - name: upperarm_l
+    index: 14
+    depth: 7
+  - name: lowerarm_l
+    index: 15
+    depth: 8
+  - name: hand_l
+    index: 16
+    depth: 9
+  - name: index_01_l
+    index: 17
+    depth: 10
+  - name: index_02_l
+    index: 18
+    depth: 11
+  - name: index_03_l
+    index: 19
+    depth: 12
+  - name: middle_01_l
+    index: 20
+    depth: 10
+  - name: middle_02_l
+    index: 21
+    depth: 11
+  - name: middle_03_l
+    index: 22
+    depth: 12
+  - name: pinky_01_l
+    index: 23
+    depth: 10
+  - name: pinky_02_l
+    index: 24
+    depth: 11
+  - name: pinky_03_l
+    index: 25
+    depth: 12
+  - name: ring_01_l
+    index: 26
+    depth: 10
+  - name: ring_02_l
+    index: 27
+    depth: 11
+  - name: ring_03_l
+    index: 28
+    depth: 12
+  - name: thumb_01_l
+    index: 29
+    depth: 10
+  - name: thumb_02_l
+    index: 30
+    depth: 11
+  - name: thumb_03_l
+    index: 31
+    depth: 12
+  - name: lowerarm_twist_01_l
+    index: 32
+    depth: 9
+  - name: upperarm_twist_01_l
+    index: 33
+    depth: 8
+  - name: clavicle_r
+    index: 34
+    depth: 6
+  - name: upperarm_r
+    index: 35
+    depth: 7
+  - name: lowerarm_r
+    index: 36
+    depth: 8
+  - name: hand_r
+    index: 37
+    depth: 9
+  - name: index_01_r
+    index: 38
+    depth: 10
+  - name: index_02_r
+    index: 39
+    depth: 11
+  - name: index_03_r
+    index: 40
+    depth: 12
+  - name: middle_01_r
+    index: 41
+    depth: 10
+  - name: middle_02_r
+    index: 42
+    depth: 11
+  - name: middle_03_r
+    index: 43
+    depth: 12
+  - name: pinky_01_r
+    index: 44
+    depth: 10
+  - name: pinky_02_r
+    index: 45
+    depth: 11
+  - name: pinky_03_r
+    index: 46
+    depth: 12
+  - name: ring_01_r
+    index: 47
+    depth: 10
+  - name: ring_02_r
+    index: 48
+    depth: 11
+  - name: ring_03_r
+    index: 49
+    depth: 12
+  - name: thumb_01_r
+    index: 50
+    depth: 10
+  - name: thumb_02_r
+    index: 51
+    depth: 11
+  - name: thumb_03_r
+    index: 52
+    depth: 12
+  - name: lowerarm_twist_01_r
+    index: 53
+    depth: 9
+  - name: upperarm_twist_01_r
+    index: 54
+    depth: 8
+  - name: neck_01
+    index: 55
+    depth: 6
+  - name: head
+    index: 56
+    depth: 7
+  - name: thigh_l
+    index: 57
+    depth: 3
+  - name: calf_l
+    index: 58
+    depth: 4
+  - name: calf_twist_01_l
+    index: 59
+    depth: 5
+  - name: foot_l
+    index: 60
+    depth: 5
+  - name: ball_l
+    index: 61
+    depth: 6
+  - name: thigh_twist_01_l
+    index: 62
+    depth: 4
+  - name: thigh_r
+    index: 63
+    depth: 3
+  - name: calf_r
+    index: 64
+    depth: 4
+  - name: calf_twist_01_r
+    index: 65
+    depth: 5
+  - name: foot_r
+    index: 66
+    depth: 5
+  - name: ball_r
+    index: 67
+    depth: 6
+  - name: thigh_twist_01_r
+    index: 68
+    depth: 4
+  - name: SK_Cloth_01
+    index: 69
+    depth: 1
+  - name: SK_Glove_01
+    index: 70
+    depth: 1
+  - name: SK_Hand
+    index: 71
+    depth: 1
+  rigElementChains:
+  - chainName: root
+    elementChain:
+    - name: root
+      index: 1
+      depth: 1
+  - chainName: pelvis
+    elementChain:
+    - name: pelvis
+      index: 9
+      depth: 2
+  - chainName: rightLeg
+    elementChain:
+    - name: thigh_r
+      index: 63
+      depth: 3
+    - name: calf_r
+      index: 64
+      depth: 4
+    - name: foot_r
+      index: 66
+      depth: 5
+  - chainName: leftLeg
+    elementChain:
+    - name: thigh_l
+      index: 57
+      depth: 3
+    - name: calf_l
+      index: 58
+      depth: 4
+    - name: foot_l
+      index: 60
+      depth: 5
+  - chainName: toes
+    elementChain:
+    - name: ball_l
+      index: 61
+      depth: 6
+    - name: ball_r
+      index: 67
+      depth: 6
+  - chainName: spine
+    elementChain:
+    - name: spine_01
+      index: 10
+      depth: 3
+    - name: spine_02
+      index: 11
+      depth: 4
+    - name: spine_03
+      index: 12
+      depth: 5
+  - chainName: neck
+    elementChain:
+    - name: neck_01
+      index: 55
+      depth: 6
+    - name: head
+      index: 56
+      depth: 7
+  - chainName: rightArm
+    elementChain:
+    - name: clavicle_r
+      index: 34
+      depth: 6
+    - name: upperarm_r
+      index: 35
+      depth: 7
+    - name: lowerarm_r
+      index: 36
+      depth: 8
+    - name: hand_r
+      index: 37
+      depth: 9
+  - chainName: leftArm
+    elementChain:
+    - name: clavicle_l
+      index: 13
+      depth: 6
+    - name: upperarm_l
+      index: 14
+      depth: 7
+    - name: lowerarm_l
+      index: 15
+      depth: 8
+    - name: hand_l
+      index: 16
+      depth: 9
+  - chainName: indexFingers
+    elementChain:
+    - name: index_01_l
+      index: 17
+      depth: 10
+    - name: index_02_l
+      index: 18
+      depth: 11
+    - name: index_03_l
+      index: 19
+      depth: 12
+    - name: index_01_r
+      index: 38
+      depth: 10
+    - name: index_02_r
+      index: 39
+      depth: 11
+    - name: index_03_r
+      index: 40
+      depth: 12
+  - chainName: middleFingers
+    elementChain:
+    - name: middle_01_l
+      index: 20
+      depth: 10
+    - name: middle_02_l
+      index: 21
+      depth: 11
+    - name: middle_03_l
+      index: 22
+      depth: 12
+    - name: middle_01_r
+      index: 41
+      depth: 10
+    - name: middle_02_r
+      index: 42
+      depth: 11
+    - name: middle_03_r
+      index: 43
+      depth: 12
+  - chainName: ringFingers
+    elementChain:
+    - name: ring_01_l
+      index: 26
+      depth: 10
+    - name: ring_02_l
+      index: 27
+      depth: 11
+    - name: ring_03_l
+      index: 28
+      depth: 12
+    - name: ring_01_r
+      index: 47
+      depth: 10
+    - name: ring_02_r
+      index: 48
+      depth: 11
+    - name: ring_03_r
+      index: 49
+      depth: 12
+  - chainName: pinkyFingers
+    elementChain:
+    - name: pinky_01_l
+      index: 23
+      depth: 10
+    - name: pinky_02_l
+      index: 24
+      depth: 11
+    - name: pinky_03_l
+      index: 25
+      depth: 12
+    - name: pinky_01_r
+      index: 44
+      depth: 10
+    - name: pinky_02_r
+      index: 45
+      depth: 11
+    - name: pinky_03_r
+      index: 46
+      depth: 12
+  - chainName: thumbFingers
+    elementChain:
+    - name: thumb_01_l
+      index: 29
+      depth: 10
+    - name: thumb_02_l
+      index: 30
+      depth: 11
+    - name: thumb_03_l
+      index: 31
+      depth: 12
+    - name: thumb_01_r
+      index: 50
+      depth: 10
+    - name: thumb_02_r
+      index: 51
+      depth: 11
+    - name: thumb_03_r
+      index: 52
+      depth: 12
+  inputConfig: {fileID: 0}
+  rigCurves: []
+  rigDepths: 00000000010000000200000003000000030000000200000003000000040000000400000002000000030000000400000005000000060000000700000008000000090000000a0000000b0000000c0000000a0000000b0000000c0000000a0000000b0000000c0000000a0000000b0000000c0000000a0000000b0000000c0000000900000008000000060000000700000008000000090000000a0000000b0000000c0000000a0000000b0000000c0000000a0000000b0000000c0000000a0000000b0000000c0000000a0000000b0000000c00000009000000080000000600000007000000030000000400000005000000050000000600000004000000030000000400000005000000050000000600000004000000010000000100000001000000
+--- !u!114 &2523156594440029270
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 692a86d3af6eef14a88ebfe8ed814739, type: 3}
+  m_Name: RootPelvisRetargetFeature
+  m_EditorClassIdentifier: RetargetPro.Runtime::KINEMATION.RetargetPro.Runtime.Features.RootPelvisRetargeting.RootPelvisRetargetFeature
+  sourceRig: {fileID: 771067914518447300}
+  targetRig: {fileID: 2647075778091879084}
+  featureWeight: 1
+  featureWeightMode: 0
+  featureWeightCurve:
+    serializedVersion: 2
+    m_Curve: []
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  sourceChain:
+    chainName: pelvis
+    elementChain:
+    - name: pelvis
+      index: 9
+      depth: 2
+  targetChain:
+    chainName: pelvis
+    elementChain:
+    - name: ValveBiped.Bip01_Pelvis
+      index: 5
+      depth: 2
+  scaleWeight: 1
+  translationWeight: 1
+  offset: {x: 0, y: 0, z: 0}
+--- !u!114 &2647075778091879084
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8c9c04639ae548bdb0a8e927492d029d, type: 3}
+  m_Name: Hiro_RetargetTarget_Rig
+  m_EditorClassIdentifier: KAnimationCore.Runtime::KINEMATION.Shared.KAnimationCore.Runtime.Rig.KRig
+  targetAnimator: {fileID: 0}
+  rigHierarchy:
+  - name: Hiro_RetargetTarget
+    index: 0
+    depth: 0
+  - name: Body
+    index: 1
+    depth: 1
+  - name: Hair
+    index: 2
+    depth: 1
+  - name: Head
+    index: 3
+    depth: 1
+  - name: Hiro
+    index: 4
+    depth: 1
+  - name: ValveBiped.Bip01_Pelvis
+    index: 5
+    depth: 2
+  - name: ValveBiped.Bip01_L_Thigh
+    index: 6
+    depth: 3
+  - name: ValveBiped.Bip01_L_Calf
+    index: 7
+    depth: 4
+  - name: ValveBiped.Bip01_L_Foot
+    index: 8
+    depth: 5
+  - name: ValveBiped.Bip01_L_Toe0
+    index: 9
+    depth: 6
+  - name: ValveBiped.Bip01_R_Thigh
+    index: 10
+    depth: 3
+  - name: ValveBiped.Bip01_R_Calf
+    index: 11
+    depth: 4
+  - name: ValveBiped.Bip01_R_Foot
+    index: 12
+    depth: 5
+  - name: ValveBiped.Bip01_R_Toe0
+    index: 13
+    depth: 6
+  - name: ValveBiped.Bip01_Spine
+    index: 14
+    depth: 3
+  - name: ValveBiped.Bip01_Spine1
+    index: 15
+    depth: 4
+  - name: ValveBiped.Bip01_Spine2
+    index: 16
+    depth: 5
+  - name: ValveBiped.Bip01_Spine4
+    index: 17
+    depth: 6
+  - name: ValveBiped.Bip01_L_Clavicle
+    index: 18
+    depth: 7
+  - name: ValveBiped.Bip01_L_UpperArm
+    index: 19
+    depth: 8
+  - name: ValveBiped.Bip01_L_Forearm
+    index: 20
+    depth: 9
+  - name: ValveBiped.Bip01_L_Hand
+    index: 21
+    depth: 10
+  - name: ValveBiped.Bip01_L_Finger0
+    index: 22
+    depth: 11
+  - name: ValveBiped.Bip01_L_Finger01
+    index: 23
+    depth: 12
+  - name: ValveBiped.Bip01_L_Finger02
+    index: 24
+    depth: 13
+  - name: ValveBiped.Bip01_L_Finger1
+    index: 25
+    depth: 11
+  - name: ValveBiped.Bip01_L_Finger11
+    index: 26
+    depth: 12
+  - name: ValveBiped.Bip01_L_Finger12
+    index: 27
+    depth: 13
+  - name: ValveBiped.Bip01_L_Finger2
+    index: 28
+    depth: 11
+  - name: ValveBiped.Bip01_L_Finger21
+    index: 29
+    depth: 12
+  - name: ValveBiped.Bip01_L_Finger22
+    index: 30
+    depth: 13
+  - name: ValveBiped.Bip01_L_Finger3
+    index: 31
+    depth: 11
+  - name: ValveBiped.Bip01_L_Finger31
+    index: 32
+    depth: 12
+  - name: ValveBiped.Bip01_L_Finger32
+    index: 33
+    depth: 13
+  - name: ValveBiped.Bip01_L_Finger4
+    index: 34
+    depth: 11
+  - name: ValveBiped.Bip01_L_Finger41
+    index: 35
+    depth: 12
+  - name: ValveBiped.Bip01_L_Finger42
+    index: 36
+    depth: 13
+  - name: ValveBiped.L_weapon_bone
+    index: 37
+    depth: 11
+  - name: ValveBiped.weapon_bolt_l
+    index: 38
+    depth: 11
+  - name: ValveBiped.weapon_bone_Clip2
+    index: 39
+    depth: 11
+  - name: ValveBiped.weapon_bone_Clip2_Bullets
+    index: 40
+    depth: 12
+  - name: ValveBiped.Bip01_L_Ulna
+    index: 41
+    depth: 10
+  - name: ValveBiped.Bip01_L_Wrist
+    index: 42
+    depth: 10
+  - name: ValveBiped.Bip01_Neck1
+    index: 43
+    depth: 7
+  - name: ValveBiped.Bip01_Head1
+    index: 44
+    depth: 8
+  - name: pd
+    index: 45
+    depth: 9
+  - name: pd.001
+    index: 46
+    depth: 9
+  - name: pd.002
+    index: 47
+    depth: 9
+  - name: pd.003
+    index: 48
+    depth: 9
+  - name: pd.004
+    index: 49
+    depth: 9
+  - name: pd.005
+    index: 50
+    depth: 9
+  - name: pd.006
+    index: 51
+    depth: 9
+  - name: pd.007
+    index: 52
+    depth: 9
+  - name: pd.008
+    index: 53
+    depth: 10
+  - name: pd.009
+    index: 54
+    depth: 11
+  - name: pd.010
+    index: 55
+    depth: 11
+  - name: pd.011
+    index: 56
+    depth: 11
+  - name: pd.012
+    index: 57
+    depth: 11
+  - name: pd.013
+    index: 58
+    depth: 9
+  - name: pd.014
+    index: 59
+    depth: 9
+  - name: pd.015
+    index: 60
+    depth: 9
+  - name: pd.016
+    index: 61
+    depth: 9
+  - name: pd.017
+    index: 62
+    depth: 9
+  - name: pd.018
+    index: 63
+    depth: 9
+  - name: pd.019
+    index: 64
+    depth: 9
+  - name: pd.020
+    index: 65
+    depth: 9
+  - name: pd.021
+    index: 66
+    depth: 9
+  - name: pd.022
+    index: 67
+    depth: 9
+  - name: pd.023
+    index: 68
+    depth: 9
+  - name: ValveBiped.Bip01_R_Clavicle
+    index: 69
+    depth: 7
+  - name: ValveBiped.Bip01_R_UpperArm
+    index: 70
+    depth: 8
+  - name: ValveBiped.Bip01_R_Forearm
+    index: 71
+    depth: 9
+  - name: ValveBiped.Bip01_R_Hand
+    index: 72
+    depth: 10
+  - name: ValveBiped.Bip01_R_Finger0
+    index: 73
+    depth: 11
+  - name: ValveBiped.Bip01_R_Finger01
+    index: 74
+    depth: 12
+  - name: ValveBiped.Bip01_R_Finger02
+    index: 75
+    depth: 13
+  - name: ValveBiped.Bip01_R_Finger1
+    index: 76
+    depth: 11
+  - name: ValveBiped.Bip01_R_Finger11
+    index: 77
+    depth: 12
+  - name: ValveBiped.Bip01_R_Finger12
+    index: 78
+    depth: 13
+  - name: ValveBiped.Bip01_R_Finger2
+    index: 79
+    depth: 11
+  - name: ValveBiped.Bip01_R_Finger21
+    index: 80
+    depth: 12
+  - name: ValveBiped.Bip01_R_Finger22
+    index: 81
+    depth: 13
+  - name: ValveBiped.Bip01_R_Finger3
+    index: 82
+    depth: 11
+  - name: ValveBiped.Bip01_R_Finger31
+    index: 83
+    depth: 12
+  - name: ValveBiped.Bip01_R_Finger32
+    index: 84
+    depth: 13
+  - name: ValveBiped.Bip01_R_Finger4
+    index: 85
+    depth: 11
+  - name: ValveBiped.Bip01_R_Finger41
+    index: 86
+    depth: 12
+  - name: ValveBiped.Bip01_R_Finger42
+    index: 87
+    depth: 13
+  - name: ValveBiped.weapon_bone
+    index: 88
+    depth: 11
+  - name: ValveBiped.weapon_bolt
+    index: 89
+    depth: 12
+  - name: ValveBiped.weapon_bolt_opposite
+    index: 90
+    depth: 12
+  - name: ValveBiped.weapon_bone_Clip
+    index: 91
+    depth: 12
+  - name: ValveBiped.weapon_bone_Clip_Bullets
+    index: 92
+    depth: 13
+  - name: ValveBiped.weapon_bone_extra
+    index: 93
+    depth: 12
+  - name: ValveBiped.weapon_charger
+    index: 94
+    depth: 12
+  - name: ValveBiped.Bip01_R_Ulna
+    index: 95
+    depth: 10
+  - name: ValveBiped.Bip01_R_Wrist
+    index: 96
+    depth: 10
+  - name: ValveBiped.qz
+    index: 97
+    depth: 4
+  - name: pd.024
+    index: 98
+    depth: 5
+  - name: pd.025
+    index: 99
+    depth: 6
+  - name: ValveBiped.qz.001
+    index: 100
+    depth: 4
+  - name: pd.026
+    index: 101
+    depth: 5
+  - name: pd.027
+    index: 102
+    depth: 6
+  - name: ValveBiped.qz.002
+    index: 103
+    depth: 4
+  - name: pd.028
+    index: 104
+    depth: 5
+  - name: pd.029
+    index: 105
+    depth: 6
+  - name: ValveBiped.qz.003
+    index: 106
+    depth: 4
+  - name: pd.030
+    index: 107
+    depth: 5
+  - name: pd.031
+    index: 108
+    depth: 6
+  - name: ValveBiped.qz.004
+    index: 109
+    depth: 4
+  - name: pd.032
+    index: 110
+    depth: 5
+  - name: pd.033
+    index: 111
+    depth: 6
+  - name: ValveBiped.qz.005
+    index: 112
+    depth: 4
+  - name: pd.034
+    index: 113
+    depth: 5
+  - name: pd.035
+    index: 114
+    depth: 6
+  - name: ValveBiped.qz.006
+    index: 115
+    depth: 4
+  - name: pd.036
+    index: 116
+    depth: 5
+  - name: pd.037
+    index: 117
+    depth: 6
+  - name: ValveBiped.qz.007
+    index: 118
+    depth: 4
+  - name: pd.038
+    index: 119
+    depth: 5
+  - name: pd.039
+    index: 120
+    depth: 6
+  - name: ValveBiped.qz.008
+    index: 121
+    depth: 4
+  - name: pd.040
+    index: 122
+    depth: 5
+  - name: pd.041
+    index: 123
+    depth: 6
+  - name: ValveBiped.qz.009
+    index: 124
+    depth: 4
+  - name: pd.042
+    index: 125
+    depth: 5
+  - name: pd.043
+    index: 126
+    depth: 6
+  - name: ValveBiped.qz.010
+    index: 127
+    depth: 4
+  - name: pd.044
+    index: 128
+    depth: 5
+  - name: pd.045
+    index: 129
+    depth: 6
+  - name: ValveBiped.qz.011
+    index: 130
+    depth: 4
+  - name: pd.046
+    index: 131
+    depth: 5
+  - name: pd.047
+    index: 132
+    depth: 6
+  - name: ik_hand_gun
+    index: 133
+    depth: 1
+  rigElementChains:
+  - chainName: root
+    elementChain: []
+  - chainName: pelvis
+    elementChain:
+    - name: ValveBiped.Bip01_Pelvis
+      index: 5
+      depth: 2
+  - chainName: rightLeg
+    elementChain:
+    - name: ValveBiped.Bip01_R_Thigh
+      index: 10
+      depth: 3
+    - name: ValveBiped.Bip01_R_Calf
+      index: 11
+      depth: 4
+    - name: ValveBiped.Bip01_R_Foot
+      index: 12
+      depth: 5
+  - chainName: leftLeg
+    elementChain:
+    - name: ValveBiped.Bip01_L_Thigh
+      index: 6
+      depth: 3
+    - name: ValveBiped.Bip01_L_Calf
+      index: 7
+      depth: 4
+    - name: ValveBiped.Bip01_L_Foot
+      index: 8
+      depth: 5
+  - chainName: toes
+    elementChain:
+    - name: ValveBiped.Bip01_L_Toe0
+      index: 9
+      depth: 6
+    - name: ValveBiped.Bip01_R_Toe0
+      index: 13
+      depth: 6
+  - chainName: spine
+    elementChain:
+    - name: ValveBiped.Bip01_Spine
+      index: 14
+      depth: 3
+    - name: ValveBiped.Bip01_Spine1
+      index: 15
+      depth: 4
+    - name: ValveBiped.Bip01_Spine2
+      index: 16
+      depth: 5
+    - name: ValveBiped.Bip01_Spine4
+      index: 17
+      depth: 6
+  - chainName: neck
+    elementChain:
+    - name: ValveBiped.Bip01_Neck1
+      index: 43
+      depth: 7
+    - name: ValveBiped.Bip01_Head1
+      index: 44
+      depth: 8
+  - chainName: rightArm
+    elementChain:
+    - name: ValveBiped.Bip01_R_Clavicle
+      index: 69
+      depth: 7
+    - name: ValveBiped.Bip01_R_UpperArm
+      index: 70
+      depth: 8
+    - name: ValveBiped.Bip01_R_Forearm
+      index: 71
+      depth: 9
+    - name: ValveBiped.Bip01_R_Hand
+      index: 72
+      depth: 10
+  - chainName: leftArm
+    elementChain:
+    - name: ValveBiped.Bip01_L_Clavicle
+      index: 18
+      depth: 7
+    - name: ValveBiped.Bip01_L_UpperArm
+      index: 19
+      depth: 8
+    - name: ValveBiped.Bip01_L_Forearm
+      index: 20
+      depth: 9
+    - name: ValveBiped.Bip01_L_Hand
+      index: 21
+      depth: 10
+  - chainName: indexFingers
+    elementChain:
+    - name: ValveBiped.Bip01_L_Finger1
+      index: 25
+      depth: 11
+    - name: ValveBiped.Bip01_L_Finger11
+      index: 26
+      depth: 12
+    - name: ValveBiped.Bip01_L_Finger12
+      index: 27
+      depth: 13
+    - name: ValveBiped.Bip01_R_Finger1
+      index: 76
+      depth: 11
+    - name: ValveBiped.Bip01_R_Finger11
+      index: 77
+      depth: 12
+    - name: ValveBiped.Bip01_R_Finger12
+      index: 78
+      depth: 13
+  - chainName: middleFingers
+    elementChain:
+    - name: ValveBiped.Bip01_L_Finger2
+      index: 28
+      depth: 11
+    - name: ValveBiped.Bip01_L_Finger21
+      index: 29
+      depth: 12
+    - name: ValveBiped.Bip01_L_Finger22
+      index: 30
+      depth: 13
+    - name: ValveBiped.Bip01_R_Finger2
+      index: 79
+      depth: 11
+    - name: ValveBiped.Bip01_R_Finger21
+      index: 80
+      depth: 12
+    - name: ValveBiped.Bip01_R_Finger22
+      index: 81
+      depth: 13
+  - chainName: ringFingers
+    elementChain:
+    - name: ValveBiped.Bip01_L_Finger3
+      index: 31
+      depth: 11
+    - name: ValveBiped.Bip01_L_Finger31
+      index: 32
+      depth: 12
+    - name: ValveBiped.Bip01_L_Finger32
+      index: 33
+      depth: 13
+    - name: ValveBiped.Bip01_R_Finger3
+      index: 82
+      depth: 11
+    - name: ValveBiped.Bip01_R_Finger31
+      index: 83
+      depth: 12
+    - name: ValveBiped.Bip01_R_Finger32
+      index: 84
+      depth: 13
+  - chainName: pinkyFingers
+    elementChain:
+    - name: ValveBiped.Bip01_L_Finger4
+      index: 34
+      depth: 11
+    - name: ValveBiped.Bip01_L_Finger41
+      index: 35
+      depth: 12
+    - name: ValveBiped.Bip01_L_Finger42
+      index: 36
+      depth: 13
+    - name: ValveBiped.Bip01_R_Finger4
+      index: 85
+      depth: 11
+    - name: ValveBiped.Bip01_R_Finger41
+      index: 86
+      depth: 12
+    - name: ValveBiped.Bip01_R_Finger42
+      index: 87
+      depth: 13
+  - chainName: thumbFingers
+    elementChain:
+    - name: ValveBiped.Bip01_L_Finger0
+      index: 22
+      depth: 11
+    - name: ValveBiped.Bip01_L_Finger01
+      index: 23
+      depth: 12
+    - name: ValveBiped.Bip01_L_Finger02
+      index: 24
+      depth: 13
+    - name: ValveBiped.Bip01_R_Finger0
+      index: 73
+      depth: 11
+    - name: ValveBiped.Bip01_R_Finger01
+      index: 74
+      depth: 12
+    - name: ValveBiped.Bip01_R_Finger02
+      index: 75
+      depth: 13
+  inputConfig: {fileID: 0}
+  rigCurves: []
+  rigDepths: 0000000001000000010000000100000001000000020000000300000004000000050000000600000003000000040000000500000006000000030000000400000005000000060000000700000008000000090000000a0000000b0000000c0000000d0000000b0000000c0000000d0000000b0000000c0000000d0000000b0000000c0000000d0000000b0000000c0000000d0000000b0000000b0000000b0000000c0000000a0000000a000000070000000800000009000000090000000900000009000000090000000900000009000000090000000a0000000b0000000b0000000b0000000b00000009000000090000000900000009000000090000000900000009000000090000000900000009000000090000000700000008000000090000000a0000000b0000000c0000000d0000000b0000000c0000000d0000000b0000000c0000000d0000000b0000000c0000000d0000000b0000000c0000000d0000000b0000000c0000000c0000000c0000000d0000000c0000000c0000000a0000000a00000004000000050000000600000004000000050000000600000004000000050000000600000004000000050000000600000004000000050000000600000004000000050000000600000004000000050000000600000004000000050000000600000004000000050000000600000004000000050000000600000004000000050000000600000004000000050000000600000001000000
+--- !u!114 &3430544257797647003
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8a6e0cf430a4479280dbe53e7c58bd9c, type: 3}
+  m_Name: BasicRetargetFeature
+  m_EditorClassIdentifier: RetargetPro.Runtime::KINEMATION.RetargetPro.Runtime.Features.BasicRetargeting.BasicRetargetFeature
+  sourceRig: {fileID: 771067914518447300}
+  targetRig: {fileID: 2647075778091879084}
+  featureWeight: 1
+  featureWeightMode: 0
+  featureWeightCurve:
+    serializedVersion: 2
+    m_Curve: []
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  sourceChain:
+    chainName: thumbFingers
+    elementChain:
+    - name: thumb_01_l
+      index: 29
+      depth: 10
+    - name: thumb_02_l
+      index: 30
+      depth: 11
+    - name: thumb_03_l
+      index: 31
+      depth: 12
+    - name: thumb_01_r
+      index: 50
+      depth: 10
+    - name: thumb_02_r
+      index: 51
+      depth: 11
+    - name: thumb_03_r
+      index: 52
+      depth: 12
+  targetChain:
+    chainName: thumbFingers
+    elementChain:
+    - name: ValveBiped.Bip01_L_Finger0
+      index: 22
+      depth: 11
+    - name: ValveBiped.Bip01_L_Finger01
+      index: 23
+      depth: 12
+    - name: ValveBiped.Bip01_L_Finger02
+      index: 24
+      depth: 13
+    - name: ValveBiped.Bip01_R_Finger0
+      index: 73
+      depth: 11
+    - name: ValveBiped.Bip01_R_Finger01
+      index: 74
+      depth: 12
+    - name: ValveBiped.Bip01_R_Finger02
+      index: 75
+      depth: 13
+  scaleWeight: 1
+  translationWeight: 0
+  offset: {x: 0, y: 0, z: 0}
+--- !u!114 &3661251397461386937
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8a6e0cf430a4479280dbe53e7c58bd9c, type: 3}
+  m_Name: BasicRetargetFeature
+  m_EditorClassIdentifier: RetargetPro.Runtime::KINEMATION.RetargetPro.Runtime.Features.BasicRetargeting.BasicRetargetFeature
+  sourceRig: {fileID: 771067914518447300}
+  targetRig: {fileID: 2647075778091879084}
+  featureWeight: 1
+  featureWeightMode: 0
+  featureWeightCurve:
+    serializedVersion: 2
+    m_Curve: []
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  sourceChain:
+    chainName: neck
+    elementChain:
+    - name: neck_01
+      index: 55
+      depth: 6
+    - name: head
+      index: 56
+      depth: 7
+  targetChain:
+    chainName: neck
+    elementChain:
+    - name: ValveBiped.Bip01_Neck1
+      index: 43
+      depth: 7
+    - name: ValveBiped.Bip01_Head1
+      index: 44
+      depth: 8
+  scaleWeight: 1
+  translationWeight: 0
+  offset: {x: 0, y: 0, z: 0}
+--- !u!114 &4525299924198517214
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9c037f4882c5493a84c1732694149815, type: 3}
+  m_Name: IKRetargetFeature
+  m_EditorClassIdentifier: RetargetPro.Runtime::KINEMATION.RetargetPro.Runtime.Features.IKRetargeting.IKRetargetFeature
+  sourceRig: {fileID: 771067914518447300}
+  targetRig: {fileID: 2647075778091879084}
+  featureWeight: 1
+  featureWeightMode: 0
+  featureWeightCurve:
+    serializedVersion: 2
+    m_Curve: []
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  sourceChain:
+    chainName: rightLeg
+    elementChain:
+    - name: thigh_r
+      index: 63
+      depth: 3
+    - name: calf_r
+      index: 64
+      depth: 4
+    - name: foot_r
+      index: 66
+      depth: 5
+  targetChain:
+    chainName: rightLeg
+    elementChain:
+    - name: ValveBiped.Bip01_R_Thigh
+      index: 10
+      depth: 3
+    - name: ValveBiped.Bip01_R_Calf
+      index: 11
+      depth: 4
+    - name: ValveBiped.Bip01_R_Foot
+      index: 12
+      depth: 5
+  scaleWeight: 1
+  translationWeight: 0
+  offset: {x: 0, y: 0, z: 0}
+  ikWeight: 1
+  useChainIk: 0
+  effectorOffset: {x: 0, y: 0, z: 0}
+  effectorSpace: 2
+  jointBone:
+    name: ValveBiped.Bip01_R_Calf
+    index: 11
+    depth: 4
+  jointOffset: {x: 0, y: 0, z: 1}
+  poleWeight: 1
+  maxReachMultiplier: 0.98
+--- !u!114 &6875348875581920382
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9c037f4882c5493a84c1732694149815, type: 3}
+  m_Name: IKRetargetFeature
+  m_EditorClassIdentifier: RetargetPro.Runtime::KINEMATION.RetargetPro.Runtime.Features.IKRetargeting.IKRetargetFeature
+  sourceRig: {fileID: 771067914518447300}
+  targetRig: {fileID: 2647075778091879084}
+  featureWeight: 1
+  featureWeightMode: 0
+  featureWeightCurve:
+    serializedVersion: 2
+    m_Curve: []
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  sourceChain:
+    chainName: leftArm
+    elementChain:
+    - name: clavicle_l
+      index: 13
+      depth: 6
+    - name: upperarm_l
+      index: 14
+      depth: 7
+    - name: lowerarm_l
+      index: 15
+      depth: 8
+    - name: hand_l
+      index: 16
+      depth: 9
+  targetChain:
+    chainName: leftArm
+    elementChain:
+    - name: ValveBiped.Bip01_L_Clavicle
+      index: 18
+      depth: 7
+    - name: ValveBiped.Bip01_L_UpperArm
+      index: 19
+      depth: 8
+    - name: ValveBiped.Bip01_L_Forearm
+      index: 20
+      depth: 9
+    - name: ValveBiped.Bip01_L_Hand
+      index: 21
+      depth: 10
+  scaleWeight: 1
+  translationWeight: 0
+  offset: {x: 0, y: 0, z: 0}
+  ikWeight: 1
+  useChainIk: 0
+  effectorOffset: {x: 0, y: 0, z: 0}
+  effectorSpace: 2
+  jointBone:
+    name: ValveBiped.Bip01_L_Forearm
+    index: 20
+    depth: 9
+  jointOffset: {x: -0, y: -0, z: -1}
+  poleWeight: 1
+  maxReachMultiplier: 0.98
+--- !u!114 &6981365551117128240
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 692a86d3af6eef14a88ebfe8ed814739, type: 3}
+  m_Name: RootPelvisRetargetFeature
+  m_EditorClassIdentifier: RetargetPro.Runtime::KINEMATION.RetargetPro.Runtime.Features.RootPelvisRetargeting.RootPelvisRetargetFeature
+  sourceRig: {fileID: 771067914518447300}
+  targetRig: {fileID: 2647075778091879084}
+  featureWeight: 1
+  featureWeightMode: 0
+  featureWeightCurve:
+    serializedVersion: 2
+    m_Curve: []
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  sourceChain:
+    chainName: root
+    elementChain:
+    - name: root
+      index: 1
+      depth: 1
+  targetChain:
+    chainName: root
+    elementChain: []
+  scaleWeight: 1
+  translationWeight: 1
+  offset: {x: 0, y: 0, z: 0}

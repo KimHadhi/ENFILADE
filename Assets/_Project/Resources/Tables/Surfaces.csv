@@ -1,25 +1,29 @@
-﻿id,parent,keywords,penetration,#note
-Concrete,,concrete;cement;asphalt;plaster;brick;sidewalk,0.75,기본 표면. 아무 키워드도 맞지 않으면 콘크리트
-ConcreteGrit,Concrete,grit;rubble;debris,,부스러기 깔린 콘크리트
-ConcreteDirt,Concrete,dirtyconcrete;dustyconcrete,,먼지 낀 콘크리트
-Stone,Concrete,stone;rock;cobble,,돌 (착지는 FEAR 소리 / 나머지는 콘크리트)
-Marble,,marble;polished;granite,0.75,대리석·광택 바닥
-Tile,Marble,tile;ceramic,0.5,타일 (착지는 FEAR 소리 / 나머지는 대리석)
-Glass,,glass;window,0.025,유리
-Metal,,metal;steel;iron;aluminium;aluminum,1.5,금속
-MetalBox,Metal,container;metalbox,,컨테이너·금속 상자
-Duct,Metal,duct;vent,0.75,환풍구·덕트
-Gantry,Metal,gantry;grate;grating;catwalk,1,철망 발판·통로
-MetalCrane,Metal,crane;girder,,크레인·철골
-MetalPipe,Metal,pipe;pole;railing,,파이프·봉·난간
-Wood,,wood;timber,0.5,나무
-WoodPanel,Wood,woodpanel;plywood,,나무 판
-WoodPlank,Wood,plank;woodfloor;deck,,나무 널빤지·마루
-Gravel,,gravel;pebble,0.5,자갈
-Dirt,Gravel,dirt;mud;soil,0.5,흙 (착지·슬라이드는 FEAR 소리 / 나머지는 자갈)
-Grass,Dirt,grass;lawn;moss,0.5,풀 (착지는 FEAR 소리 / 나머지는 흙→자갈)
-Sand,Gravel,sand,0.25,모래 (슬라이드는 FEAR 소리 / 나머지는 자갈)
-Water,,water;puddle,1,얕은 물
-Tarp,,tarp;canvas;tent,0.5,방수포·천막
-Carpet,Tarp,carpet;rug;fabric,,카펫
-Flesh,,,0.03,몸: 총알 관통에만 쓴다(적·플레이어·시체). 키워드가 없어 발소리와 충돌 이펙트는 고르지 않는다. ArcCW는 0.1이지만 거기서는 몸 모양 히트박스(약 25cm)를 뚫는다. 지금 좀비는 지름 1m 캡슐이라 같은 값이면 한 몸에 관통력 절반 넘게 써서 3분의 1로 낮췄다(2026-11-06). 좀비에 뼈 히트박스가 생기면 0.1로 되돌린다
+﻿id,parent,keywords,penetration,pierceCost,#note
+Concrete,,concrete;cement;sidewalk,0.75,,기본 표면. 아무 키워드도 맞지 않으면 콘크리트
+Asphalt,Concrete,asphalt;road,,,아스팔트 (탄흔만 따로 / 나머지는 콘크리트)
+Brick,Concrete,brick,,,벽돌 (탄흔만 따로 / 나머지는 콘크리트)
+Plaster,Concrete,plaster;drywall;stucco,,,석고·회벽 (탄흔만 따로 / 나머지는 콘크리트)
+ConcreteGrit,Concrete,grit;rubble;debris,,,부스러기 깔린 콘크리트
+ConcreteDirt,Concrete,dirtyconcrete;dustyconcrete,,,먼지 낀 콘크리트
+Stone,Concrete,stone;rock;cobble,,,돌 (착지는 FEAR 소리 / 나머지는 콘크리트)
+Marble,,marble;polished;granite,0.75,,대리석·광택 바닥
+Tile,Marble,tile;ceramic,0.5,,타일 (착지는 FEAR 소리 / 나머지는 대리석)
+Glass,,glass;window,0.025,,유리
+Metal,,metal;steel;iron;aluminium;aluminum,1.5,,금속
+MetalBox,Metal,container;metalbox,,,컨테이너·금속 상자
+Duct,Metal,duct;vent,0.75,,환풍구·덕트
+Gantry,Metal,gantry;grate;grating;catwalk,1,,철망 발판·통로
+MetalCrane,Metal,crane;girder,,,크레인·철골
+MetalPipe,Metal,pipe;pole;railing,,,파이프·봉·난간
+Wood,,wood;timber,0.5,,나무
+WoodPanel,Wood,woodpanel;plywood,,,나무 판
+WoodPlank,Wood,plank;woodfloor;deck,,,나무 널빤지·마루
+Gravel,,gravel;pebble,0.5,,자갈
+Dirt,Gravel,dirt;mud;soil,0.5,,흙 (착지·슬라이드는 FEAR 소리 / 나머지는 자갈)
+Grass,Dirt,grass;lawn;moss,0.5,,풀 (착지는 FEAR 소리 / 나머지는 흙→자갈)
+Sand,Gravel,sand,0.25,,모래 (슬라이드는 FEAR 소리 / 나머지는 자갈)
+Water,,water;puddle,1,,얕은 물
+Tarp,,tarp;canvas;tent,0.5,,방수포·천막
+Carpet,Tarp,carpet;rug;fabric,,,카펫
+Plastic,Concrete,plastic;pvc,,,플라스틱 (탄흔만 따로 / 나머지는 콘크리트)
+Flesh,,,0.1,2,몸: 총알 관통에만 쓴다(적·플레이어·시체). 키워드가 없어 발소리와 충돌 이펙트는 고르지 않는다. 몸은 두께와 상관없이 하나 지날 때 pierceCost(mm)만큼 관통력이 깎인다: 소총(관통력 20)은 몸 하나마다 피해가 처음의 10%씩 줄어 줄 선 좀비를 한 발로 쓸어 담는다(2026-11-06 사용자 요청). pierceCost를 비우면 ArcCW처럼 penetration(0.1)으로 몸 두께만큼 깎는다

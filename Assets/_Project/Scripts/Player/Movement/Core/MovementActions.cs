@@ -61,6 +61,11 @@ public sealed class MovementActions
         slideCooldownTimer = ctx.slideCooldown;
     }
 
+    /// <summary>When the player last got up off the ground (ProneState.Exit).</summary>
+    internal float LeftProneAt = float.NegativeInfinity;
+    /// <summary>Backlog 134: going down again right after getting up waits proneReentryDelay, so spamming can't flap the body.</summary>
+    internal bool ProneReady => Time.time - LeftProneAt >= ctx.AbilitySettings.proneReentryDelay;
+
     public void LaunchDive(Vector2 input)
     {
         Dive.TryLaunch(input, true);

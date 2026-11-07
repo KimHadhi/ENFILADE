@@ -49,6 +49,13 @@ public sealed partial class PlayerBody
         if (fixtures.Ladder != null) targetYaw = Mathf.DeltaAngle(transform.eulerAngles.y, fixtures.Ladder.ClimberYaw);
         if (fixtures.LadderSliding) { Want(ladderDown); return; }
         string step = fixtures.LadderLeftHand ? ladderLeft : ladderRight, still = fixtures.LadderLeftHand ? ladderStillLeft : ladderStillRight;
+        // Getting on from the top (backlog 141): the climb off the top played backwards, from standing up there to
+        // hanging on the top rungs, kept to the movement's own progress out over the edge and down.
+        if (fixtures.LadderSteps == 0 && fixtures.LadderFromTop && fixtures.LadderStepProgress < 1f)
+        {
+            Drive(LadderExitClip(), 1f - fixtures.LadderStepProgress);
+            return;
+        }
         if (fixtures.LadderSteps == 0)
         {
             Sequence(fixtures.LadderCaught ? ladderCatch : ladderEnter, still);

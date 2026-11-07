@@ -33,7 +33,7 @@ public sealed class WeaponFeedback : MonoBehaviour
     private readonly Casing[] casings = new Casing[CasingCount];
     private int nextCasing;
     private bool trackingReload, magOutPlayed, magInPlayed, boltBackPlayed, boltPlayed, emptyReload;
-    // A reload shown by KINEMATION's clip (GunRig) is timed by that clip's own moments; magInLead and boltLead start those
+    // A reload shown by KINEMATION's clip (FPSBody) is timed by that clip's own moments; magInLead and boltLead start those
     // hits early by where their clips are loudest.
     private bool timedReload;
     private ReloadMoments.Moments moments;
@@ -168,7 +168,8 @@ public sealed class WeaponFeedback : MonoBehaviour
         var settings = GunFeelSettings.Instance;
         trackingReload = true; magOutPlayed = magInPlayed = boltBackPlayed = boltPlayed = false; emptyReload = empty;
         var data = weapon != null ? weapon.EquippedData : null;
-        timedReload = data != null && GunRig.Holding(weapon) != null && ReloadMoments.TryGet(data, empty, out moments);
+        timedReload = data != null && FPSBody.Holding(weapon) != null
+            && ReloadMoments.TryGet(data, empty, out moments);
         if (timedReload)
         {
             magInLead = FeelAudio.PeakTime(FeelSound.MagIn, settings.magInSounds, data.SoundProfile);

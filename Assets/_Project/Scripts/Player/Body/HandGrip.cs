@@ -228,9 +228,12 @@ internal sealed class HandGrip
             depth = Mathf.Max(depth, Vector3.Dot(baseOffset, palm) + finger.Radii[0]);
             if (!finger.Thumb) halfWidth = Mathf.Max(halfWidth, Mathf.Abs(Vector3.Dot(baseOffset, across)) + finger.Radii[0]);
         }
-        // The thumb web's skin correction needs its own copy of the body mesh; made now, not on the first ledge.
+        // The thumb web's skin correction needs its own copy of the body mesh; made now, not on the first ledge. A skin it
+        // can't measure goes without it: the hand itself must still be made.
         foreach (var finger in result)
-            if (finger.Thumb) HandSkinCorrection.For(animator).CopyAhead(finger.Bones);
+            if (finger.Thumb)
+                try { HandSkinCorrection.For(animator).CopyAhead(finger.Bones); }
+                catch (System.Exception error) { Debug.LogWarning($"HandGrip: the thumb-web skin correction is off on {animator.name}: {error.Message}", animator); }
         return new HandGrip(hand, result.ToArray(), hand.InverseTransformPoint(centre), Mathf.Clamp(depth, .002f, palmLength * .65f), halfWidth, forward, palm, animator, left);
     }
 
@@ -240,7 +243,9 @@ internal sealed class HandGrip
         var baked = new Mesh { name = "Hand contact measurement", hideFlags = HideFlags.HideAndDontSave };
         foreach (var renderer in animator.GetComponentsInChildren<SkinnedMeshRenderer>())
         {
-            if (renderer.sharedMesh == null || (renderer.bounds.ClosestPoint(centre) - centre).sqrMagnitude > reach * reach) continue;
+            // A mesh without Read/Write gives no bone weights (0.7.34 skipped it the same way, by their count).
+            if (renderer.sharedMesh == null || !renderer.sharedMesh.isReadable
+                || (renderer.bounds.ClosestPoint(centre) - centre).sqrMagnitude > reach * reach) continue;
             // Compensate renderer scale here; TransformPoint applies the character's fitted scale once below.
             renderer.BakeMesh(baked, true);
             var vertices = baked.vertices;
@@ -364,6 +369,101 @@ internal sealed class HandGrip
 
     public void ClearLedgeSkin() => normals?.SetWeight(left, 0f);
 
+    /// <summary>The way the palm faces, as measured on this hand.</summary>
+    public Vector3 PalmFacing => hand.TransformDirection(palmInHand);
+
+    /// <summary>The way the fingers point from the wrist, as measured on this hand.</summary>
+    public Vector3 FingersForward => hand.TransformDirection(forwardInHand);
+
+    // The fingers solved on one gun, with the hand's place and turn on it they were solved at.
+    private sealed class SurfaceFit
+    {
+        public Quaternion[] Pose;
+        public Vector3 Position;
+        public Quaternion Rotation;
+        public bool Solved;
+    }
+
+    private readonly Dictionary<GunSurface, SurfaceFit> surfaceFits = new Dictionary<GunSurface, SurfaceFit>();
+    private GunSurface lastSurface;
+    private Vector3 lastSurfacePosition;
+    private Quaternion lastSurfaceRotation;
+    // The fingers are solved again once the hand is this far from where they were solved (m, degrees), and only with the
+    // hand at rest on the gun: moved less than this since the last frame.
+    private const float SolveAgainDistance = .004f, SolveAgainAngle = 3f, RestDistance = .001f, RestAngle = .5f;
+    // A solve costs tens of milliseconds (every joint is bent against the gun's mesh and the skin), so one hand a frame.
+    private static int lastSolveFrame = -1;
+
+    /// <summary>
+    /// Closes every finger round the gun's real surface: each starts straight off the palm and each joint bends only until
+    /// its padded segment and its skin meet the gun. The solve is slow (tens of milliseconds), so it is kept per gun and
+    /// done again only when the hand has come to rest somewhere else on it. The draw and a reload move the hand on the gun
+    /// every frame, and solving each of those frames stalled every draw (hitches 2026-11-08, 35 ms a frame in Fingers);
+    /// through them the last fit is worn as it is.
+    /// </summary>
+    public void Surface(GunSurface surface, float clearance, float weight)
+    {
+        if (weight <= 0f || surface == null) return;
+        Transform gun = surface.Gun;
+        Vector3 at = Quaternion.Inverse(gun.rotation) * (hand.position - gun.position);
+        Quaternion turn = Quaternion.Inverse(gun.rotation) * hand.rotation;
+        bool moving = lastSurface != surface || (at - lastSurfacePosition).magnitude > RestDistance
+            || Quaternion.Angle(turn, lastSurfaceRotation) > RestAngle;
+        lastSurface = surface;
+        lastSurfacePosition = at;
+        lastSurfaceRotation = turn;
+        if (!surfaceFits.TryGetValue(surface, out var fit))
+        {
+            // Guns come and go with the body's skins; a few stale ones are nothing, many are a leak.
+            if (surfaceFits.Count >= 8) surfaceFits.Clear();
+            surfaceFits[surface] = fit = new SurfaceFit { Pose = new Quaternion[fingers.Length * 3] };
+        }
+        bool stale = !fit.Solved || (at - fit.Position).magnitude > SolveAgainDistance || Quaternion.Angle(turn, fit.Rotation) > SolveAgainAngle;
+        if (solvingFit == fit)
+        {
+            // A fit under way is for where the hand was when it began; a hand that has since left there (a reload) drops
+            // it, unless the gun has no fit yet at all.
+            if (fit.Solved && (at - solvingPosition).magnitude > SolveAgainDistance) solvingFit = null;
+            else SolveStep(surface, clearance);
+        }
+        else if (stale && (!moving || !fit.Solved) && solvingFit == null && lastSolveFrame != Time.frameCount)
+        {
+            solvingFit = fit;
+            solvingFinger = 0;
+            solvingPosition = at;
+            solvingRotation = turn;
+            SolveStep(surface, clearance);
+        }
+        if (fit.Solved) ApplyPose(fit.Pose, weight);
+    }
+
+    // The gun fit under way: one finger a frame, each solved as the whole hand would be (the fingers before it already in
+    // their solved pose, the rest at rest), so a whole solve of 35 to 45 ms never lands on one frame (hitches 2026-11-08).
+    private SurfaceFit solvingFit;
+    private int solvingFinger;
+    private Vector3 solvingPosition;
+    private Quaternion solvingRotation;
+    private Quaternion[] solvingPose;
+
+    private void SolveStep(GunSurface surface, float clearance)
+    {
+        if (lastSolveFrame == Time.frameCount) return;
+        lastSolveFrame = Time.frameCount;
+        solvingPose ??= new Quaternion[fingers.Length * 3];
+        Vector3 forward = FingersForward, palm = PalmFacing;
+        Fit(new Contact(surface, forward, palm), forward, palm, clearance, 1f, solvingFinger, solvingPose);
+        var finger = fingers[solvingFinger];
+        for (int joint = 0; joint < 3; joint++) solvingPose[solvingFinger * 3 + joint] = finger.Bones[joint].localRotation;
+        foreach (var each in fingers)
+            for (int joint = 0; joint < 3; joint++) each.Bones[joint].localRotation = each.Before[joint];
+        if (++solvingFinger < fingers.Length) return;
+        System.Array.Copy(solvingPose, solvingFit.Pose, solvingPose.Length);
+        solvingFit.Solved = true;
+        solvingFit.Position = solvingPosition;
+        solvingFit.Rotation = solvingRotation;
+        solvingFit = null;
+    }
+
     private void SolvePose(Contact contact, Vector3 forward, Vector3 palm, float clearance, Quaternion[] pose)
     {
         Fit(contact, forward, palm, clearance, 1f);
@@ -393,7 +493,9 @@ internal sealed class HandGrip
             }
     }
 
-    private void Fit(Contact contact, Vector3 forward, Vector3 palm, float clearance, float weight)
+    // With <paramref name="only"/> (a finger's index) just that finger is solved, the fingers before it set from
+    // <paramref name="solved"/> as a whole solve would have left them (SolveStep).
+    private void Fit(Contact contact, Vector3 forward, Vector3 palm, float clearance, float weight, int only = -1, Quaternion[] solved = null)
     {
         if (weight <= 0f) return;
         forward.Normalize(); palm.Normalize();
@@ -405,10 +507,13 @@ internal sealed class HandGrip
                 if (finger.Bones[i] == null) return;
                 finger.Before[i] = finger.Bones[i].localRotation;
             }
-        foreach (var finger in fingers)
-            for (int i = 0; i < 3; i++) finger.Bones[i].localRotation = finger.Rest[i];
-        foreach (var finger in fingers)
+        for (int f = 0; f < fingers.Length; f++)
+            for (int i = 0; i < 3; i++)
+                fingers[f].Bones[i].localRotation = solved != null && only >= 0 && f < only ? solved[f * 3 + i] : fingers[f].Rest[i];
+        for (int f = 0; f < fingers.Length; f++)
         {
+            if (only >= 0 && f != only) continue;
+            var finger = fingers[f];
             bool ledgeThumb = finger.Thumb && contact.IsLedge;
             if (ledgeThumb)
             {
@@ -453,7 +558,7 @@ internal sealed class HandGrip
                 var root = finger.Bones[0];
                 Quaternion flat = root.localRotation;
                 Vector3 axis = root.InverseTransformDirection(hinge);
-                for (float lift = 2f; lift <= (finger.Thumb ? 20f : 60f); lift += 2f)
+                for (float lift = 2f; lift <= (finger.Thumb ? 20f : contact.FingerLift); lift += 2f)
                 {
                     root.localRotation = flat * Quaternion.AngleAxis(-lift, axis);
                     if (SkinClear()) break;
@@ -518,10 +623,19 @@ internal sealed class HandGrip
         private readonly bool box;
         private readonly Vector3 boxSize;
         private readonly Quaternion boxFrame;
+        private readonly GunSurface gunSurface;
         public bool IsLedge => surface != null;
+        // How far a straight finger may bend back to clear the surface. On a gun the palm already rests outside it, so a
+        // finger bent far back is a finger thrown open off the gun (user, 2026-11-08).
+        public float FingerLift => gunSurface != null ? 10f : 60f;
+        public Contact(GunSurface gunSurface, Vector3 forward, Vector3 palm)
+        {
+            this.gunSurface = gunSurface; this.forward = forward; this.palm = palm;
+            surface = null; centre = boxSize = Vector3.zero; half = 0f; boxFrame = Quaternion.identity; box = false;
+        }
         public Contact(Collider surface, Vector3 forward, Vector3 palm)
         {
-            this.surface = surface; this.forward = forward; this.palm = palm;
+            this.surface = surface; this.forward = forward; this.palm = palm; gunSurface = null;
             centre = boxSize = Vector3.zero; half = 0f; boxFrame = Quaternion.identity; box = false;
             if (surface is BoxCollider bounds)
             {
@@ -535,7 +649,7 @@ internal sealed class HandGrip
         public Contact(Vector3 centre, Vector3 forward, Vector3 palm, float half)
         {
             surface = null; this.centre = centre; this.forward = forward; this.palm = palm; this.half = half;
-            box = false; boxSize = Vector3.zero; boxFrame = Quaternion.identity;
+            box = false; boxSize = Vector3.zero; boxFrame = Quaternion.identity; gunSurface = null;
         }
 
         public void Key(Transform hand, float reach, out Vector3 min, out Vector3 max, out Quaternion frame, out int shape)
@@ -560,6 +674,7 @@ internal sealed class HandGrip
 
         public bool Clear(Vector3 start, Vector3 end, float padding)
         {
+            if (gunSurface != null) return gunSurface.Clear(start, end, padding);
             if (surface != null)
             {
                 if (box) return BoxClear(boxFrame * (start - centre), boxFrame * (end - centre), boxSize, padding);

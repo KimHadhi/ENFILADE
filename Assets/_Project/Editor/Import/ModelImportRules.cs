@@ -104,6 +104,10 @@ internal sealed class ModelImportRules : AssetPostprocessor
             model.animationType = ModelImporterAnimationType.Human;
             model.avatarSetup = ModelImporterAvatarSetup.CreateFromThisModel;
             model.importAnimation = false;
+            // The player body reads a character's own skin: the thumb web it relaxes in a grip (HandSkinCorrection) and
+            // the skin and skirt layers it measures (BodySurface). Hiro came in without it and its thumbs went uncorrected,
+            // with a warning on every skin switch (2026-11-07).
+            model.isReadable = true;
         }
     }
 

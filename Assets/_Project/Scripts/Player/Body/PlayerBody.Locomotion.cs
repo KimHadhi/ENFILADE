@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Animations;
 using UnityEngine.Playables;
 
 /// <summary>
@@ -48,9 +49,58 @@ public sealed partial class PlayerBody
         pistolSet = AddMoves(pistolMoves);
         AddMoves(plainMoves);
         foreach (string clip in new[] { crouchWalk, crouchRight, crouchBack, crouchLeft }) AddChannel(clip, crouchClipSpeed);
-        AddChannel(turnLeft, 0f);
-        AddChannel(turnRight, 0f);
         turning = 0;
+    }
+
+    // The turn clips play on the legs alone (TurnLayer, the kick's leg mask): the hips, spine and head stay on the standing
+    // clip, so the steps don't rock the head, and with it the camera on the eyes (item 312). The hips' turn comes from the
+    // body's own yaw (targetYaw), not the clip.
+    private AnimationMixerPlayable turnMixer;
+    private AnimationClipPlayable turnLeftClip, turnRightClip;
+    private float turnLayerWeight, turnLayerTarget;
+
+    // From BuildLayers, after BuildKick has made the leg mask.
+    private void BuildTurn()
+    {
+        layers.SetLayerMaskFromAvatarMask(TurnLayer, legMask);
+        turnMixer = AnimationMixerPlayable.Create(graph, 2);
+        graph.Connect(turnMixer, 0, layers, TurnLayer);
+        turnLeftClip = TurnClip(turnLeft, 0);
+        turnRightClip = TurnClip(turnRight, 1);
+        turnLayerWeight = turnLayerTarget = 0f;
+        layers.SetInputWeight(TurnLayer, 0f);
+    }
+
+    private AnimationClipPlayable TurnClip(string clipName, int input)
+    {
+        if (string.IsNullOrEmpty(clipName)) return default;
+        var clip = profile.Find(clipName);
+        if (clip == null)
+        {
+            Report($"clip '{clipName}' is not in the PlayerBody profile.");
+            return default;
+        }
+        var playable = ClipPlayable(clip);
+        playable.SetSpeed(0);
+        graph.Connect(playable, 0, turnMixer, input);
+        return playable;
+    }
+
+    private void TeardownTurn()
+    {
+        turnMixer = default;
+        turnLeftClip = turnRightClip = default;
+        turnLayerWeight = turnLayerTarget = 0f;
+    }
+
+    // From BlendLayers: the legs step round while TurnOnTheSpot asked for it this frame, and ease back otherwise.
+    private void BlendTurn(float dt)
+    {
+        if (!turnMixer.IsValid()) return;
+        float target = dead ? 0f : turnLayerTarget;
+        turnLayerTarget = 0f;
+        turnLayerWeight = Mathf.MoveTowards(turnLayerWeight, target, dt / blendTime);
+        layers.SetInputWeight(TurnLayer, turnLayerWeight);
     }
 
     private string[] AddMoves(string[] moves)
@@ -95,9 +145,8 @@ public sealed partial class PlayerBody
             // has a forward stride, so blend it in with the movement system's actual forward sprint intent.
             toSprint *= player.RunIntent * Mathf.Clamp01(local.z / Mathf.Max(.01f, speed));
             var moves = MovesInHand();
-            var stepping = TurnOnTheSpot(speed < .3f, dt);
-            if (stepping != null) stepping.Target += 1f - toWalk;
-            else Mix(moves[0], 1f - toWalk);
+            Mix(moves[0], 1f - toWalk);
+            if (TurnOnTheSpot(speed < .3f, dt)) turnLayerTarget = 1f - toWalk;
             Directions(heading, toWalk * (1f - toRun), moves[1], moves[2], moves[3], moves[4]);
             Directions(heading, toRun * (1f - toSprint), moves[5], moves[6], moves[7], moves[8]);
             Mix(moves[9], toSprint);
@@ -120,34 +169,40 @@ public sealed partial class PlayerBody
     }
 
     // Standing still, the legs keep their place while the view turns and step round once it has turned far enough
-    // (the spine twists the chest toward the view meanwhile). Returns the turn clip while stepping.
-    private Channel TurnOnTheSpot(bool still, float dt)
+    // (the spine twists the chest toward the view meanwhile). True while the legs step (BlendTurn plays the clip on them).
+    private bool TurnOnTheSpot(bool still, float dt)
     {
-        if (!still) { turning = 0; return null; }
+        if (!still) { turning = 0; return false; }
         float look = transform.eulerAngles.y, limit = turnStartAngle + 30f;
         float offset = Mathf.Clamp(Mathf.DeltaAngle(look, legYaw), -limit, limit);
         if (turning == 0 && Mathf.Abs(offset) > turnStartAngle)
         {
             // Legs left behind on the left step round to the right, and the other way round.
             turning = offset < 0f ? 1 : -1;
-            Restart(Find(turning > 0 ? turnRight : turnLeft));
+            var start = turning > 0 ? turnRightClip : turnLeftClip;
+            if (start.IsValid()) { start.SetTime(0); start.SetDone(false); }
         }
-        Channel clip = null;
+        bool stepping = false;
         if (turning != 0)
         {
             offset = Mathf.MoveTowards(offset, 0f, turnSpeed * dt);
-            clip = Find(turning > 0 ? turnRight : turnLeft);
-            if (clip != null)
+            var clip = turning > 0 ? turnRightClip : turnLeftClip;
+            var other = turning > 0 ? turnLeftClip : turnRightClip;
+            if (clip.IsValid())
             {
-                if (clip.Playable.GetTime() >= clip.Length) clip.Playable.SetTime(0);
-                clip.Playable.SetSpeed(turnClipSpeed);
+                if (clip.GetTime() >= clip.GetAnimationClip().length) clip.SetTime(0);
+                clip.SetSpeed(turnClipSpeed);
+                turnMixer.SetInputWeight(turning > 0 ? 1 : 0, 1f);
+                turnMixer.SetInputWeight(turning > 0 ? 0 : 1, 0f);
+                if (other.IsValid()) other.SetSpeed(0);
+                stepping = true;
             }
             if (Mathf.Abs(offset) < 1f) turning = 0;
         }
         legYaw = look + offset;
         targetYaw = offset;
         legsPlanted = true;
-        return clip;
+        return stepping;
     }
 
     // Shares the weight between the two direction clips either side of the heading (0° forward, 90° right).

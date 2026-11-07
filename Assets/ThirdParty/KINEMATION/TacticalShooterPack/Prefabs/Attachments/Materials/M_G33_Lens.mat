@@ -1,0 +1,75 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: M_G33_Lens
+  m_Shader: {fileID: 4800000, guid: 287328b262a443f184b7760d5a0a7b19, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords:
+  - _USELENSMASK_ON
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties:
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _RenderTexture:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _Reticle:
+        m_Texture: {fileID: 2800000, guid: f13ff4d4d78fadc40abf1c30d5cf9c98, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _Distortion: 0.1
+    - _ExitPupilDiameter: 8
+    - _EyeRelief: 80
+    - _EyeReliefFarFadeRange: 120
+    - _GlassCoatingStrength: 0.2
+    - _GlassCurvature: 0.35
+    - _GlassEdgeDarkness: 0.6
+    - _GlassImperfectionScale: 48
+    - _GlassImperfectionSeed: 0
+    - _GlassImperfectionStrength: 0
+    - _GlassReflectionStrength: 1
+    - _GlassSmoothness: 0.9
+    - _LateralChromaticAberration: 0
+    - _LensDistortion: 0
+    - _LensDistortionEdgeBias: 0.65
+    - _Magnification: 4
+    - _OcularDiameter: 25
+    - _ReticleEmission: 10
+    - _ScopeEdgeTintSize: 0.35
+    - _ScopeEdgeTintStrength: 0
+    - _ScopeReflectionStrength: 0.2
+    - _ScopeSharpening: 0.35
+    - _ScopeVisibility: 0
+    - _UseLensMask: 1
+    - _UseReticleZoom: 0
+    - _VignetteSoftness: 0.05
+    m_Colors:
+    - _GlassTintInner: {r: 0, g: 0.37889397, b: 1, a: 1}
+    - _GlassTintOuter: {r: 0, g: 0.08854196, b: 0.040683985, a: 1}
+    - _LensCenterOS: {r: 0, g: 0, b: 0, a: 0}
+    - _LensNormalOS: {r: 0, g: 0, b: -1, a: 0}
+    - _ReticleColor: {r: 0.7, g: 0.015, b: 0.005, a: 1}
+    - _ReticleOffset: {r: 0, g: 0, b: 0, a: 0}
+    - _ReticleSize: {r: 1, g: 1, b: 0, a: 0}
+    - _ScopeEdgeTintInner: {r: 1, g: 1, b: 1, a: 1}
+    - _ScopeEdgeTintOuter: {r: 1, g: 1, b: 1, a: 1}
+    - _ScopeTexelSize: {r: 0.0009765625, g: 0.0009765625, b: 1024, a: 1024}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1

@@ -42,6 +42,7 @@ public sealed class MovementFixtures
     {
         ladderLock = Mathf.Max(0f, ladderLock - dt);
         ziplineLock = Mathf.Max(0f, ziplineLock - dt);
+        TrackClimbDown();
     }
 
     internal bool TryStart()
@@ -64,9 +65,16 @@ public sealed class MovementFixtures
         }
     }
 
+    /// <summary>Getting on from the top (backlog 141): out over the edge to here, then down to LadderTopHold.</summary>
+    public bool LadderFromTop { get; private set; }
+    internal Vector3 LadderTopOver { get; private set; }
+    internal Vector3 LadderTopHold { get; private set; }
+
     private bool TryLadder()
     {
-        if (ladderLock > 0f || ctx.CurrentInput.y <= .1f) return false;
+        if (ladderLock > 0f) return false;
+        if (TryLadderFromTop()) return true;
+        if (ctx.CurrentInput.y <= .1f) return false;
         var settings = ctx.AbilitySettings;
         Vector3 feet = ctx.transform.position, facing = Vector3.ProjectOnPlane(ctx.transform.forward, Vector3.up).normalized;
         float minFacing = Mathf.Cos(settings.ladderFacingAngle * Mathf.Deg2Rad);
@@ -81,12 +89,75 @@ public sealed class MovementFixtures
             Vector3 hold = LadderHold(candidate, feet.y);
             if (!ctx.Abilities.Traversal.Detector.ClearPath(feet, hold, ctx.StandingColliderHeight)) continue;
             Ladder = candidate;
+            LadderFromTop = false;
             LadderCaught = !ctx.IsGrounded;
             LadderLeftHand = !LadderCaught;
             LadderSteps = 0;
             LadderStepProgress = 0f;
             LadderStepBlocked = false;
             ctx.ChangeState(State.Ladder);
+            return true;
+        }
+        return false;
+    }
+
+    // Backlog 141: standing on the floor the ladder leads up to, close to its top and looking out over it, Interact takes
+    // hold of it: out over the edge, then down until the hands are on the top rungs, at the height the climb up hands
+    // over to climbing off (ladderTopGap) less a rung. Only on the key: walking near the edge never takes the ladder
+    // (the user found that walking toward it took it whatever they meant).
+    private bool TryLadderFromTop()
+    {
+        if (!ctx.Input.InteractPressed || !FindLadderTop(out Ladder candidate, out Vector3 over, out Vector3 hold)) return false;
+        Ladder = candidate;
+        LadderFromTop = true;
+        LadderTopOver = over;
+        LadderTopHold = hold;
+        LadderCaught = false;
+        LadderLeftHand = true;
+        LadderSteps = 0;
+        LadderStepProgress = 0f;
+        LadderStepBlocked = false;
+        ctx.ChangeState(State.Ladder);
+        return true;
+    }
+
+    /// <summary>The ladder whose top the player could climb down from now, for the prompt (LadderPromptHUD); else null.</summary>
+    public Ladder ClimbDownLadder { get; private set; }
+
+    /// <summary>Kept each frame for the prompt: only standing about on the ground, never mid-move.</summary>
+    internal void TrackClimbDown()
+    {
+        bool free = ctx.IsLocal && ctx.Abilities.CanUseGroundActions && !ctx.ControlLocked && !ctx.IsGettingUp && !ctx.Input.CrouchHeld
+            && ladderLock <= 0f && (ctx.CurrentState == State.Standing || ctx.CurrentState == State.Crouching);
+        ClimbDownLadder = free && FindLadderTop(out Ladder found, out _, out _) ? found : null;
+    }
+
+    private bool FindLadderTop(out Ladder ladder, out Vector3 over, out Vector3 hold)
+    {
+        ladder = null; over = hold = Vector3.zero;
+        if (!ctx.IsGrounded) return false;
+        var settings = ctx.AbilitySettings;
+        Vector3 feet = ctx.transform.position;
+        Vector3 looking = Vector3.ProjectOnPlane(ctx.transform.forward, Vector3.up).normalized;
+        float minHeading = Mathf.Cos(settings.ladderFacingAngle * 1.5f * Mathf.Deg2Rad);
+        foreach (var candidate in Ladder.Active)
+        {
+            if (candidate == null || !candidate.isActiveAndEnabled) continue;
+            if (Vector3.Dot(looking, candidate.Outward) < minHeading) continue;
+            Vector3 offset = feet - candidate.transform.position;
+            float away = Vector3.Dot(offset, candidate.Outward), side = Vector3.Dot(offset, candidate.transform.right);
+            float top = candidate.Height;
+            // On the floor up there: behind the plane of the rungs, at the height the climb up comes off onto.
+            if (away > .05f || away < -settings.ladderTopEnterReach || Mathf.Abs(side) > candidate.Width * .5f + settings.ladderSideReach
+                || offset.y < top - settings.ladderTopGap || offset.y > top + .3f) continue;
+            float holdHeight = Mathf.Max(0f, top - settings.ladderTopGap - settings.ladderRungHeight);
+            Vector3 down = LadderHold(candidate, candidate.transform.position.y + holdHeight);
+            Vector3 out_ = down;
+            out_.y = feet.y;
+            var detector = ctx.Abilities.Traversal.Detector;
+            if (!detector.ClearPath(feet, out_, ctx.StandingColliderHeight) || !detector.ClearPath(out_, down, ctx.StandingColliderHeight))
+                continue;
+            ladder = candidate; over = out_; hold = down;
             return true;
         }
         return false;
@@ -104,6 +175,7 @@ public sealed class MovementFixtures
 
     internal void LadderStepped()
     {
+        LadderFromTop = false;
         LadderLeftHand = !LadderLeftHand;
         LadderSteps++;
         LadderStepProgress = 0f;
@@ -127,10 +199,30 @@ public sealed class MovementFixtures
         if (!detector.ClearPath(feet, raised, ctx.CrouchColliderHeight) || !detector.ClearPath(raised, end, ctx.CrouchColliderHeight)
             || !detector.ClearCapsule(end, ctx.StandingColliderHeight)) return false;
         ctx.Abilities.Traversal.Obstacle = new ObstacleTarget { Surface = floor.collider, ExitLadder = Ladder, Start = feet, RaisedStart = raised,
-            RaisedEnd = end, End = end, Height = end.y - feet.y, Duration = settings.ladderExitDuration };
+            RaisedEnd = end, End = end, Height = end.y - feet.y, Duration = settings.ladderExitDuration,
+            // The floor's near edge, where the climb-off's clip puts its hands down (WarpedTraversal).
+            Edge = NearEdge(floor, feet), EdgeNormal = Ladder.Outward };
         ctx.ChangeState(State.Mantle);
         ctx.Actions.ClearJumpBuffer();
         return true;
+    }
+
+    // Where the floor up there begins, in from the ladder in front of the climber: probed down every few cm from the
+    // plane of the rungs inward until it is met at the floor's height. The floor's point found further in, failing that.
+    private Vector3 NearEdge(in RaycastHit floor, Vector3 feet)
+    {
+        Vector3 inward = -Ladder.Outward;
+        Vector3 plane = feet - Ladder.Outward * Vector3.Dot(feet - Ladder.transform.position, Ladder.Outward);
+        plane.y = floor.point.y;
+        float reach = ctx.AbilitySettings.ladderExitReach + .3f;
+        for (float into = 0f; into <= reach; into += .03f)
+        {
+            Vector3 probe = plane + inward * into;
+            if (floor.collider.Raycast(new Ray(probe + Vector3.up * .3f, Vector3.down), out RaycastHit hit, .45f)
+                && Mathf.Abs(hit.point.y - floor.point.y) < .08f)
+                return hit.point;
+        }
+        return floor.point;
     }
 
     private bool TryZipline()
@@ -189,6 +281,7 @@ public sealed class MovementFixtures
     {
         ladderLock = ziplineLock = 0f;
         Ladder = null;
+        LadderFromTop = false;
         Zipline = null;
         LadderSteps = 0;
         LadderStepProgress = 0f;

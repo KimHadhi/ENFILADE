@@ -39,6 +39,9 @@ public sealed partial class PlayerMovement : MonoBehaviour
 
 
     internal MovementMotor Motor { get; private set; }
+    /// <summary>The body that plays the moves, asked how a vault's clip puts its hands down (PlayerBody).</summary>
+    internal IObstacleMotionSource ObstacleMotions => obstacleMotions ??= GetComponent<IObstacleMotionSource>();
+    private IObstacleMotionSource obstacleMotions;
     internal MovementPostureController Posture { get; private set; }
     internal MovementActions Actions { get; private set; }
     internal MovementInput Input { get; private set; }
@@ -283,6 +286,8 @@ public sealed partial class PlayerMovement : MonoBehaviour
         if (Application.isPlaying && IsLocal && GetComponent<ParryFeedback>() == null) GameTables.Bind(TableName, "Parry", gameObject.AddComponent<ParryFeedback>());
         DodgePassThrough =GetComponent<DodgeEnemyPassThrough>() ?? gameObject.AddComponent<DodgeEnemyPassThrough>();
         if (GetComponent<PlayerLeanHitboxes>() == null) gameObject.AddComponent<PlayerLeanHitboxes>();
+        // The "[F] climb down" prompt over a ladder's top in reach (backlog 141).
+        if (Application.isPlaying && IsLocal && GetComponent<LadderPromptHUD>() == null) gameObject.AddComponent<LadderPromptHUD>();
         // The visible body (true first person) appears once Resources/Characters/PlayerBody names a character.
         if (Application.isPlaying && GetComponent<PlayerBody>() == null && PlayerBodyProfile.Load() != null)
         {
@@ -384,6 +389,17 @@ public sealed partial class PlayerMovement : MonoBehaviour
     }
 
     public void ChangeState(MovementState state) => StateMachine.ChangeState(state);
+    /// <summary>
+    /// Lying on the ground, rolls from the front onto the back or back again; the head stays where it is (PlayerBody.Lying).
+    /// PlayerLook asks for it when the mouse pushes on past the neck's limit. False when not lying still on the ground.
+    /// </summary>
+    public bool TryRollOver()
+    {
+        if (!IsGrounded || IsDowned || !InputAvailable) return false;
+        if (CurrentState == MovementState.Proning) { ChangeState(MovementState.Supine); return true; }
+        if (CurrentState == MovementState.Supine) { ChangeState(MovementState.Proning); return true; }
+        return false;
+    }
     /// <summary>Puts the player at this point, as a spawn does.</summary>
     internal void MoveTo(Vector3 position)
     {
@@ -402,12 +418,19 @@ public sealed partial class PlayerMovement : MonoBehaviour
     {
         if (EnsureInitialized() && DamageReceiver.IsAlive) Abilities.Landing.KnockBack(velocity);
     }
+    private float ladderExitProbeUntil = float.NegativeInfinity;
     private void RaiseStateChanged(MovementState from, MovementState to)
     {
         // Up off the back, Beatrun holds the player for a second while the body gets up (quickturn.lua, JumpTurnRecovery).
         // Here only moving off waits; the hands are free.
         if (from == MovementState.Supine && (to == MovementState.Standing || to == MovementState.Crouching) && !IsNetworkDriven)
             Actions.riseTimer = AbilitySettings.supineRiseTime;
+        // Temporary probe: after climbing off a ladder's top the player ended up crouched with no ceiling found at the
+        // end of the climb (user, 2026-11-08). Every state change for two seconds after it, with what decides a crouch.
+        if (from == MovementState.Mantle && Abilities != null && Abilities.Traversal.Obstacle.ExitLadder != null) ladderExitProbeUntil = Time.time + 2f;
+        if (Time.time < ladderExitProbeUntil && IsLocal)
+            ParkourProbeLog.Line($"after the ladder: {from} -> {to}, capsule {Motor.controller.height:0.00}, crouch held {Input.CrouchHeld}, "
+                + $"crouch pressed {Input.CrouchPressed}, grounded {IsGrounded}, ceiling over standing {HasCeilingAbove(StandingColliderHeight)}");
         StateChanged?.Invoke(from, to);
     }
     internal void RaiseLanded(float impactSpeed) => Landed?.Invoke(impactSpeed);

@@ -8,7 +8,7 @@ using UnityEngine;
 [DisallowMultipleComponent]
 public sealed class Zipline : MonoBehaviour
 {
-    private const float CableThickness = .04f;
+    public const float CableThickness = .04f;
     private static readonly HashSet<Zipline> active = new HashSet<Zipline>();
     public static IEnumerable<Zipline> Active => active;
     [SerializeField, Tooltip("Where the cable ends, relative to this object (m).")]

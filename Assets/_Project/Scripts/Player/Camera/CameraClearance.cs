@@ -12,6 +12,9 @@ internal sealed class CameraClearance
     private RaycastHit[] hits = new RaycastHit[16];
     private Collider[] overlaps = new Collider[16];
 
+    /// <summary>Colliders under this don't obstruct either (a swing bar being climbed over); null for none.</summary>
+    public Transform Ignored { get; set; }
+
     public bool IsClear(Vector3 anchor, Vector3 target, float radius, LayerMask layers, Transform owner)
     {
         radius = Mathf.Max(.001f, radius);
@@ -95,6 +98,7 @@ internal sealed class CameraClearance
     private static bool HasClosestPoint(Collider collider)
         => collider is BoxCollider || collider is SphereCollider || collider is CapsuleCollider || collider is MeshCollider { convex: true };
 
-    private static bool External(Collider collider, Transform owner)
-        => collider != null && !collider.isTrigger && (owner == null || !collider.transform.IsChildOf(owner));
+    private bool External(Collider collider, Transform owner)
+        => collider != null && !collider.isTrigger && (owner == null || !collider.transform.IsChildOf(owner))
+            && (Ignored == null || !collider.transform.IsChildOf(Ignored));
 }

@@ -11,6 +11,9 @@ using MovementState = PlayerMovement.MovementState;
 /// The player's own visible body for true first person. The PlayerBody profile's character stands under the
 /// code-driven camera, scaled so its eyes meet the camera, and plays clips chosen from the movement state.
 /// Its eyes also carry the camera (PlayerBody.Look); F5 toggles a view from behind to check the body.
+/// The clips play in the Animator's own graph as its first output, the way KINEMATION's frameworks expect the Animator
+/// output to be: the body's Animator gets an empty Animator Controller (Characters/BodyHost) for the parameters they
+/// read, and FPS Animation Framework (FPSBody) and Character Animation System (BodyCas) then run on top of the clips.
 /// Presentation only: it never moves the player. Clip names and feel come from Tables/Player.csv, row Body.
 /// Runs after the camera effects and before the weapons, so shots and the gun start from where the eyes are.
 /// </summary>
@@ -91,6 +94,10 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     /// <summary>The barge clip is playing: a dash push under way, or one that stopped on someone playing out.</summary>
     public bool PlaysDashPush => state == MovementState.DashPush || (transition != null && transition == Find(dashPush));
     internal Animator BodyAnimator => animator;
+    /// <summary>The model the body was made from (the current skin's), which KINEMATION's gun clips were remade for (GunBakes).</summary>
+    internal GameObject BodyModel => loadedModel;
+    /// <summary>FPS Animation Framework holds a gun and poses the upper body (FPSBody): its Look layer bends, twists and leans it.</summary>
+    internal bool UpperBodyFromFramework { get; set; }
     internal Transform View => view;
     internal bool IsDead => dead;
     internal Vector2 LedgeGrip => ledgeGrip;
@@ -167,7 +174,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         if (animator == null) animator = body.gameObject.AddComponent<Animator>();
         if (animator.avatar == null || !animator.avatar.isHuman)
             Report(loadedModel.name + " has no humanoid avatar; set Rig → Animation Type to Humanoid.");
-        animator.runtimeAnimatorController = null;
+        animator.runtimeAnimatorController = Host;
         animator.applyRootMotion = false;
         animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
         foreach (var renderer in body.GetComponentsInChildren<Renderer>(true))
@@ -183,14 +190,23 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         body.localPosition = headAlignment;
         SetUpLook();
         SetUpFeet();
+        BindFeetClearance();
         hands = GetComponent<PlayerBodyHands>();
         hands?.BindAnimator(animator);
+        // KINEMATION Character Animation System goes on the body once FPS Animation Framework has (BodyCas).
+        bodyCas = GetComponent<BodyCas>();
+        if (bodyCas == null) bodyCas = gameObject.AddComponent<BodyCas>();
         GameSettings.Changed += OnSettingsChanged;
 
-        graph = PlayableGraph.Create(name + " body");
-        graph.SetTimeUpdateMode(DirectorUpdateMode.GameTime);
+        graph = HostGraph();
+        if (!graph.IsValid())
+        {
+            Report($"{loadedModel.name}'s Animator made no graph for the body's clips.");
+            enabled = false;
+            return;
+        }
         mixer = AnimationMixerPlayable.Create(graph, 0);
-        AnimationPlayableOutput.Create(graph, "Body", animator).SetSourcePlayable(BuildLayers());
+        BodyOutput.SetSourcePlayable(BuildLayers());
         foreach (string clip in new[] { idle, crouchIdle, jump, air, fall, land, slideStart, slide, slideEnd,
                      diveStart, dive, supineDiveStart, supineDive, bellySlideStart, bellySlide, bellySlideEnd,
                      supineSlideStart, supineSlide, supineSlideEnd,
@@ -216,9 +232,98 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         jumpClip = jump; obstacleClip = vault; wallKickClip = wallKick; rollClip = roll; downClip = heavyLand; tucked = flailing = false;
         var rest = Find(idle);
         if (rest != null) rest.Weight = rest.Target = 1f;
-        graph.Play();
         ApplyView();
+        // How the vault clips' hands meet an obstacle, measured now rather than on the first vault (PlayerBody.ObstacleMotion).
+        MeasureObstacleClips();
     }
+
+    private static RuntimeAnimatorController host;
+    // The empty Animator Controller the body's Animator takes, so the Animator makes its graph (KINEMATION's frameworks run
+    // in it) and holds the parameters they read.
+    private static RuntimeAnimatorController Host => host != null ? host : host = Resources.Load<RuntimeAnimatorController>("Characters/BodyHost");
+
+    // The Animator's own graph, made now if the Animator has not made it yet.
+    private PlayableGraph HostGraph()
+    {
+        if (!animator.playableGraph.IsValid())
+        {
+            animator.Rebind();
+            if (!animator.playableGraph.IsValid()) animator.Update(0f);
+        }
+        var made = animator.playableGraph;
+        if (made.IsValid()) made.SetTimeUpdateMode(DirectorUpdateMode.GameTime);
+        return made;
+    }
+
+    // The Animator's first output, which plays the body's clips under everything KINEMATION adds.
+    private AnimationPlayableOutput BodyOutput => (AnimationPlayableOutput)graph.GetOutputByType<AnimationPlayableOutput>(0);
+
+    /// <summary>
+    /// FPS Animation Framework has taken the body's clips into its own output (its master mixer's base layer, FPSBody). The
+    /// Animator's first output then steps back to no weight: both outputs start from the default pose, so whichever the
+    /// Animator played last would otherwise wipe out the other, FPSAF's gun pose with it.
+    /// </summary>
+    internal void HandClipsToFramework()
+    {
+        if (!graph.IsValid() || !layers.IsValid()) return;
+        var output = BodyOutput;
+        if (!output.IsOutputValid()) return;
+        bool taken = KeepClipsInFramework();
+        output.SetWeight(taken ? 0f : 1f);
+        if (!taken) Report("FPS Animation Framework did not take the body's clips; its gun pose may not show.");
+    }
+
+    /// <summary>
+    /// Once FPS Animation Framework plays the body's clips (its master mixer has them), the Animator's first output lets go
+    /// of them, so they play through one place only. Left in both, the same clips hung under two parents in the graph: the
+    /// user found the body high over a vault, its hands waving in the air instead of on the obstacle, and sliding broken,
+    /// none of which happened when the clips had one graph of their own (0.7.34). FPSAF takes the clips from that output
+    /// again when the Animator comes back on (ReattachGraph puts them there first), so this runs every frame.
+    /// Returns whether FPSAF has them.
+    /// </summary>
+    private bool KeepClipsInFramework()
+    {
+        if (!graph.IsValid() || !layers.IsValid()) return false;
+        var output = BodyOutput;
+        if (!output.IsOutputValid()) return false;
+        var source = output.GetSourcePlayable();
+        bool framework = false;
+        for (int i = 0; i < layers.GetOutputCount(); i++)
+        {
+            var parent = layers.GetOutput(i);
+            if (parent.IsValid() && (!source.IsValid() || !parent.Equals(source))) framework = true;
+        }
+        if (!framework || !source.IsValid()) return framework;
+        if (Time.frameCount - reattachedFrame < ReattachFrames || !animator.isActiveAndEnabled) return true;
+        if (source.Equals(layers))
+        {
+            output.SetSourcePlayable(Playable.Null);
+            return true;
+        }
+        for (int i = 0; i < source.GetInputCount(); i++)
+            if (source.GetInput(i).Equals(layers)) source.DisconnectInput(i);
+        return true;
+    }
+
+    // The Animator back on after the body lay limp: its controller output plays the clips again. If the Animator made its
+    // graph anew, the whole body is made again.
+    private void ReattachGraph()
+    {
+        if (animator == null) return;
+        if (!graph.IsValid() || !mixer.IsValid() || !animator.playableGraph.IsValid() || !animator.playableGraph.Equals(graph))
+        {
+            rebuild = true;
+            return;
+        }
+        var output = BodyOutput;
+        if (output.IsOutputValid() && !output.GetSourcePlayable().Equals(layers)) output.SetSourcePlayable(layers);
+        // FPSAF takes them from there in its next update (FPSAnimator rebuilds once the Animator is back on).
+        reattachedFrame = Time.frameCount;
+    }
+
+    // The frame the clips were put back on the Animator's first output; FPSAF needs them there for a few frames.
+    private int reattachedFrame = -1000;
+    private const int ReattachFrames = 3;
 
     private void Teardown()
     {
@@ -226,7 +331,8 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         UnbindHops();
         if (viewCamera != null) viewCamera.nearClipPlane = baseNearClip;
         viewCamera = null;
-        if (graph.IsValid()) graph.Destroy();
+        // The graph is the Animator's; it goes with the body.
+        graph = default;
         TeardownLayers();
         channels.Clear();
         byName.Clear();
@@ -243,25 +349,30 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         thirdPerson = false;
     }
 
-    // Prefer mapped eyes; otherwise estimate them from the head and crown. Fit to the standing camera height.
-    private float FitScale()
+    private float FitScale() => FitScaleOf(animator, body, player.runtimeBodyDefaults.w);
+
+    /// <summary>
+    /// The scale that brings <paramref name="model"/>'s eyes to the standing camera height <paramref name="camera"/>.
+    /// Prefers mapped eyes; otherwise estimates them from the head and crown. The editor's gun bakes use it too
+    /// (GunClipRetarget), so the clips are made for the body at the size it plays at.
+    /// </summary>
+    public static float FitScaleOf(Animator animator, Transform model, float camera)
     {
-        var head = animator.isHuman ? animator.GetBoneTransform(HumanBodyBones.Head) : null;
-        if (head == null) return 1f;
-        float headY = body.InverseTransformPoint(head.position).y, top = headY;
-        foreach (var renderer in body.GetComponentsInChildren<Renderer>())
-            top = Mathf.Max(top, renderer.bounds.max.y - body.position.y);
+        var head = animator != null && animator.isHuman ? animator.GetBoneTransform(HumanBodyBones.Head) : null;
+        if (head == null || model == null) return 1f;
+        float headY = model.InverseTransformPoint(head.position).y, top = headY;
+        foreach (var renderer in model.GetComponentsInChildren<Renderer>())
+            top = Mathf.Max(top, renderer.bounds.max.y - model.position.y);
         float eye = top > headY + .02f ? headY + (top - headY) * .45f : headY * 1.08f;
         var leftEye = animator.GetBoneTransform(HumanBodyBones.LeftEye);
         var rightEye = animator.GetBoneTransform(HumanBodyBones.RightEye);
         if (leftEye != null && rightEye != null)
         {
             float apart = Vector3.Distance(leftEye.position, rightEye.position);
-            float eyeY = body.InverseTransformPoint((leftEye.position + rightEye.position) * .5f).y;
+            float eyeY = model.InverseTransformPoint((leftEye.position + rightEye.position) * .5f).y;
             // Hair, animal ears and halos must not raise the estimated eye point on stylised characters.
             if (apart > .015f && apart < .2f && eyeY > headY && eyeY < headY + .25f) eye = eyeY;
         }
-        float camera = player.runtimeBodyDefaults.w;
         return eye > .1f && camera > .1f ? camera / eye : 1f;
     }
 
@@ -298,6 +409,9 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     {
         if (rebuild) Build();
         if (!graph.IsValid() || player == null) return;
+        // Temporary (PlayerBody.Probe): last frame's final pose, hands included, before this frame's animation.
+        ProbeStanding();
+        ProbeBody();
         float dt = Time.deltaTime;
         if (HoldsForPause() || dt <= 0f) return;
         var keyboard = Keyboard.current;
@@ -321,13 +435,21 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         }
         body.localRotation = Quaternion.Euler(0f, yaw, 0f);
         PlaceBody();
+        AimLook(dt);
     }
+
+    // The head as the clips posed it, before the look bent it (BodyCas keeps a copy); the head itself until CAS is on.
+    private Transform ClipHead => bodyCas != null && bodyCas.HeadAsClip != null ? bodyCas.HeadAsClip : head;
 
     private void LateUpdate()
     {
-        if (GamePause.IsPaused || Time.deltaTime <= 0f) return;
+        if (GamePause.IsPaused) { HoldFrozenPose(); return; }
+        if (Time.deltaTime <= 0f) return;
+        if (body != null && !limp) KeepClipsInFramework();
         if (body != null && !limp)
         {
+            // First, so the feet, the hands and the camera all work from the steadied body.
+            SteadyAim(Time.deltaTime);
             // Hanging, the hands hold the body in place instead of the head following the camera. FollowHead aims at
             // the camera's pivot, not the camera, so it keeps running while the camera rides the eyes: the camera
             // stays over the capsule and takes the head's dips and quick sway.
@@ -337,8 +459,8 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
             using (FeetMarker.Auto())
             {
                 LiftTuckedFeet(Time.deltaTime);
-                LeanHips();
                 PlantFeet(Time.deltaTime);
+                PlantLadderFeet(Time.deltaTime);
                 KeepLegsOffWall();
             }
             using (LookMarker.Auto()) Look(Time.deltaTime);
@@ -356,7 +478,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     {
         if (head == null || view == null || view.parent == null || dt <= 0f) return;
         Vector3 camera = transform.InverseTransformPoint(view.parent.position) - Vector3.forward * backOffset;
-        Vector3 error = camera - transform.InverseTransformPoint(head.position);
+        Vector3 error = camera - transform.InverseTransformPoint(ClipHead.position);
         error.y = 0f;
         headAlignment += error * (1f - Mathf.Exp(-dt / headFollowTime));
         headAlignment = Vector3.ClampMagnitude(headAlignment, 1.5f);
@@ -369,7 +491,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     private void HoldHeadPlace()
     {
         if (head == null) return;
-        Vector3 inBody = body.InverseTransformPoint(head.position);
+        Vector3 inBody = body.InverseTransformPoint(ClipHead.position);
         bool hold = !dead && transition != null && (transition == Find(supineSlideEndProne) || transition == Find(supineLand));
         if (hold && lastHeadFrame == Time.frameCount - 1)
         {
@@ -434,14 +556,22 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
                 if (slidesOnBack) Sequence(supineLand, supine);
                 else Sequence(supineSlideStart, supineSlide);
                 break;
-            case MovementState.HeadFirstSliding: Sequence(bellySlideStart, bellySlide); break;
-            case MovementState.Diving: Sequence(diveStart, dive); break;
+            // Down from a side dive the body already lies in the slide's pose (SideDivePose): no landing clip to swing the arms.
+            case MovementState.HeadFirstSliding:
+                Sequence(sideDiveLanded ? null : bellySlideStart, bellySlide);
+                FaceLying(dt);
+                break;
+            case MovementState.Diving:
+                if (SideDivePose) Want(bellySlide);
+                else Sequence(diveStart, dive);
+                FaceLying(dt);
+                break;
             case MovementState.SupineDiving:
                 Sequence(supineDiveAtOnce ? null : supineDiveStart, supineDive);
                 FaceBack(dt);
                 break;
-            case MovementState.Proning: Want(prone); break;
-            case MovementState.Supine: Want(supine); break;
+            case MovementState.Proning: Want(prone); FaceLying(dt); break;
+            case MovementState.Supine: Want(supine); FaceLying(dt); break;
             case MovementState.StepDodge: Want(dodgeClip); break;
             case MovementState.LandingRoll:
                 // A roll lasts as long as the move; a landing on the spot plays at its own pace and outlasts it.
@@ -450,12 +580,16 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
                 break;
             case MovementState.HeavyLanding: DownPose(); break;
             case MovementState.DashPush: Want(dashPush); break;
-            case MovementState.Vault: ObstaclePose(); break;
+            case MovementState.Vault: ObstaclePose(dt); break;
             case MovementState.Mantle:
                 var exitLadder = player.Abilities.Traversal.Obstacle.ExitLadder;
                 if (exitLadder != null) targetYaw = Mathf.DeltaAngle(transform.eulerAngles.y, exitLadder.ClimberYaw);
-                if (player.Abilities.Traversal.Obstacle.Kind == VaultKind.None) Drive(obstacleClip, player.Abilities.Traversal.ObstacleProgress);
-                else ObstaclePose();
+                // Climbing off a ladder's top warped on its hands (WarpedTraversal) plays at the clip time the movement drives.
+                if (player.Abilities.Traversal.Obstacle.Kind == VaultKind.None && player.Abilities.Traversal.ObstacleClipTime >= 0f
+                    && Find(obstacleClip) is Channel warped && warped.Length > 0f)
+                    Drive(obstacleClip, player.Abilities.Traversal.ObstacleClipTime / warped.Length);
+                else if (player.Abilities.Traversal.Obstacle.Kind == VaultKind.None) Drive(obstacleClip, player.Abilities.Traversal.ObstacleProgress);
+                else ObstaclePose(dt);
                 break;
             case MovementState.WallClimb: Sequence(wallClimbStart, wallClimb); break;
             case MovementState.WallKick: Want(wallKickClip); break;
@@ -471,8 +605,14 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     }
 
     // One-shot clips start from their first frame when their state begins.
+    // Climbing off a ladder's top ends a little over the floor and touches down a moment later; its landing clip (a
+    // crouched dip, held while the player stands still) made the body look crouched after every ladder (user, 2026-11-08).
+    private float climbedOffLadderAt = float.NegativeInfinity;
+    private const float ClimbOffTouchdown = .5f;
+
     private void Enter(MovementState from, MovementState to, bool onGround)
     {
+        if (from == MovementState.Mantle && player.Abilities.Traversal.Obstacle.ExitLadder != null) climbedOffLadderAt = Time.time;
         if (onGround && (to == MovementState.Standing || to == MovementState.Crouching || to == MovementState.Proning
             || to == MovementState.Supine))
         {
@@ -486,6 +626,10 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
             PlayOn(dashPush);
         if (from == MovementState.LandingRoll && onGround && (to == MovementState.Standing || to == MovementState.Crouching))
             PlayOn(rollClip);
+        // Down from a side dive, sliding or lying (PlayerBody.SideDive).
+        if (from == MovementState.Diving)
+            sideDiveLanded = sideDiveSide != 0 && (to == MovementState.HeadFirstSliding || to == MovementState.Proning);
+        StartLying(from, to);
         switch (to)
         {
             case MovementState.Sliding: Restart(Find(slideStart)); break;
@@ -494,8 +638,10 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
                 slidesOnBack = from == MovementState.SupineDiving;
                 Restart(Find(slidesOnBack ? supineLand : supineSlideStart));
                 break;
-            case MovementState.HeadFirstSliding: Restart(Find(bellySlideStart)); break;
-            case MovementState.Diving: Restart(Find(diveStart)); break;
+            case MovementState.HeadFirstSliding:
+                if (!sideDiveLanded) Restart(Find(bellySlideStart));
+                break;
+            case MovementState.Diving: if (player.Actions.Dive.Side == 0) Restart(Find(diveStart)); break;
             case MovementState.SupineDiving:
                 // Turned over from a front dive, or off an edge while lying, the body is already down.
                 supineDiveAtOnce = from == MovementState.Diving || from == MovementState.Supine;
@@ -513,7 +659,8 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
             case MovementState.DashPush: Restart(Find(dashPush)); break;
             case MovementState.Vault:
             case MovementState.Mantle:
-                obstacleClip = from == MovementState.Ladder ? LadderExitClip() : ObstacleClip();
+                // The clip the movement already measured its warp on, if it asked (PlayerBody.ObstacleMotion).
+                obstacleClip = from == MovementState.Ladder ? LadderExitClip() : PickObstacleClip();
                 StartObstacleClip();
                 break;
             case MovementState.WallClimb: Restart(Find(wallClimbStart)); break;
@@ -548,7 +695,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
             }
             return;
         }
-        if (state == MovementState.Standing || state == MovementState.Crouching)
+        if ((state == MovementState.Standing || state == MovementState.Crouching) && Time.time - climbedOffLadderAt > ClimbOffTouchdown)
         {
             string landing = LandingFor(state == MovementState.Crouching, wasTucked);
             if (landing != null) PlayTransition(landing);

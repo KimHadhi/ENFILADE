@@ -14,15 +14,13 @@ public sealed partial class PlayerBody
     internal void GoLimp()
     {
         limp = dead = true;
-        feetWeight = 0f;
-        feetSettled = feetOnGround = false;
+        feet?.LetGo();
         hands?.LetGo();
         if (animator != null)
         {
             animator.writeDefaultValuesOnDisable = false;
             animator.enabled = false;
         }
-        if (graph.IsValid()) graph.Stop();
     }
 
     // They come back somewhere else, so the body starts from a plain stand, not from what it was doing when it died.
@@ -37,7 +35,8 @@ public sealed partial class PlayerBody
         playingOut = false;
         headAlignment = new Vector3(0f, 0f, -backOffset);
         if (animator != null) animator.enabled = true;
-        graph.Play();
+        // Before FPS Animation Framework notices the Animator is back (FPSAnimator rebuilds from its first output).
+        ReattachGraph();
         return false;
     }
 }

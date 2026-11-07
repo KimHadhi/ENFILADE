@@ -27,7 +27,7 @@ public sealed class StandingState : MovementBaseState
                 {
                     ctx.LaunchDive(input);
                 }
-                else
+                else if (ctx.Actions.ProneReady)
                 {
                     ctx.ChangeState(PlayerMovement.MovementState.Proning);
                 }

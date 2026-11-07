@@ -172,26 +172,63 @@ public sealed class VaultFinder
     {
         target = default;
         Vector3 origin = feet + Up(Eye) + forward * (25f * u);
-        if (Inside(origin) || !Down(origin, Neck, out RaycastHit top) || !WallDetector.CanUseSurface(top.collider)
-            || !ParkourObstacle.AllowsClimb(top.collider)) return false;
+        if (Inside(origin)) return false;
+        if (!Down(origin, Neck, out RaycastHit top))
+        {
+            // Temporary (ParkourProbeLog): the top just below the probe's reach, where a jump only bumps into it.
+            if (Physics.Raycast(origin, Vector3.down, out RaycastHit below, (Neck + 40f) * u, ctx.groundLayers, QueryTriggerInteraction.Ignore)
+                && below.point.y > feet.y - .05f)
+                return OntoProbe($"top {below.point.y - feet.y:0.00} m over the feet is past the probe's {Neck * u:0.00} m");
+            return false;
+        }
+        if (!WallDetector.CanUseSurface(top.collider) || !ParkourObstacle.AllowsClimb(top.collider)) return OntoProbe("surface not climbable");
         float fraction = top.distance / (Neck * u);
-        if (fraction <= .3f) return false;
+        if (fraction <= .3f) return OntoProbe($"top too high (fraction {fraction:0.00})");
         // Not in Beatrun: a top shallower than the body (a rail, a thin wall) is gone over, never stepped or climbed onto.
         // Caught a moment late in a running jump, the rail was climbed and stood on instead of vaulted, which the user found
         // awkward (2026-11-06). A ParkourObstacle set to Climb Onto still can be.
-        if (ParkourObstacle.AllowsVault(top.collider) && Depth(top, forward) < 2f * ctx.ControllerRadius) return false;
+        if (ParkourObstacle.AllowsVault(top.collider) && Depth(top, forward) < 2f * ctx.ControllerRadius) return OntoProbe("top too shallow");
+        // Beatrun steps onto a top in the lower 35% of the probe's reach (fraction > .65) and climbs onto a higher one. Here
+        // that is judged from the floor in front of the obstacle, so the obstacle's own height decides, not how far a jump
+        // has risen: caught on the way up, a 0.9 m rail read as a step from the feet, and the step was over in a tenth of a
+        // second, where from closer the same rail was climbed onto (user, 2026-11-07: "0.1초 동안 mantle이라 부자연스러움").
         bool stepUp = fraction > .65f;
-        if (Line(origin - forward * (50f * u), origin) || !detector.ClearStraightCapsule(top.point, top.collider)) return false;
+        if (FloorUnder(feet, out float floor)) stepUp = top.point.y - floor < (Eye - .65f * Neck) * u;
+        if (Line(origin - forward * (50f * u), origin)) return OntoProbe("something at eye height");
+        if (!detector.ClearStraightCapsule(top.point, top.collider)) return OntoProbe("the capsule doesn't fit on the top");
         Vector3 here = top.point + Up(MantleLift), onward = here + forward * (50f * u);
         Vector3 end = stepUp ? here : onward;
         if (!detector.ClearStraightExit(end))
         {
             end = stepUp ? onward : here;
             stepUp = !stepUp;
-            if (!detector.ClearStraightExit(end)) return false;
+            if (!detector.ClearStraightExit(end)) return OntoProbe("no clear place to end");
         }
-        if (Line(feet + Up(Eye), end + Up(Eye))) return false;
-        return Target(stepUp ? VaultKind.StepUp : VaultKind.Onto, top.collider, feet, forward, end, out target);
+        if (Line(feet + Up(Eye), end + Up(Eye))) return OntoProbe("the view to the end is blocked");
+        return Target(stepUp ? VaultKind.StepUp : VaultKind.Onto, top.collider, feet, forward, end, out target, top.point.y);
+    }
+
+    // The floor under the feet (m), within reach of an obstacle's height; false over a drop.
+    private bool FloorUnder(Vector3 feet, out float floor)
+    {
+        floor = 0f;
+        if (!Physics.Raycast(feet + Vector3.up * .05f, Vector3.down, out RaycastHit hit, (Hull + 5f) * u, ctx.groundLayers,
+                QueryTriggerInteraction.Ignore)) return false;
+        floor = hit.point.y;
+        return true;
+    }
+
+    // Temporary (ParkourProbeLog, 2026-11-07): why a top ahead wasn't climbed onto, at most every OntoProbeStep seconds.
+    private float ontoProbeNext;
+    private const float OntoProbeStep = .1f;
+    private bool OntoProbe(string why)
+    {
+        if (ctx.IsLocal && Time.time >= ontoProbeNext)
+        {
+            ontoProbeNext = Time.time + OntoProbeStep;
+            ParkourProbeLog.Line($"onto refused: {why}");
+        }
+        return false;
     }
 
     // Vault4: a wall too high for Vault2 but thin enough to land behind.
@@ -246,13 +283,36 @@ public sealed class VaultFinder
         }
     }
 
-    private bool Target(VaultKind kind, Collider surface, Vector3 feet, Vector3 forward, Vector3 end, out ObstacleTarget target)
+    // topY: the top's height when the move already found it (climbing onto it), for where the hands go.
+    private bool Target(VaultKind kind, Collider surface, Vector3 feet, Vector3 forward, Vector3 end, out ObstacleTarget target,
+        float topY = float.NaN)
     {
         bool over = kind == VaultKind.Over || kind == VaultKind.Kong;
         if (!detector.StraightTarget(surface, feet, end, over, out target)) return false;
-        FindEdge(surface, feet, forward, out Vector3 edge, out Vector3 normal);
+        FindEdge(surface, feet, forward, topY, out Vector3 edge, out Vector3 normal);
+        if (over && normal != Vector3.zero && !CrossedBy(surface, edge, forward, end))
+        {
+            OntoProbe($"{kind} wouldn't get past the obstacle");
+            target = default;
+            return false;
+        }
         Finish(ref target, kind, edge, normal);
         return true;
+    }
+
+    /// <summary>
+    /// Not in Beatrun: a vault over has to get past the obstacle, its far side nearer along the way than where the move
+    /// ends. Beatrun's far-side test is one line straight ahead, and beside a narrow rail met end-on and a little aslant it
+    /// found open air: the kong ran 2 m along a 4 m rail and dropped beside it (2026-11-07). Such a top is climbed onto.
+    /// </summary>
+    private bool CrossedBy(Collider surface, Vector3 edge, Vector3 forward, Vector3 end)
+    {
+        float along = Vector3.Dot(end - edge, forward);
+        if (along <= 0f) return false;
+        // Just under the top, from where the move ends back toward the near face, it must meet the far face: inside the
+        // obstacle the ray finds nothing, and beside a rail it passes it or meets its side.
+        Vector3 from = edge + forward * along - Vector3.up * .03f;
+        return surface.Raycast(new Ray(from, -forward), out RaycastHit far, along) && Vector3.Dot(far.normal, forward) > .5f;
     }
 
     private static void Finish(ref ObstacleTarget target, VaultKind kind, Vector3 edge, Vector3 normal)
@@ -263,20 +323,29 @@ public sealed class VaultFinder
     }
 
     // Not part of the port: where hands can rest on this obstacle, for characters whose arms don't meet it by themselves.
-    private void FindEdge(Collider surface, Vector3 feet, Vector3 forward, out Vector3 edge, out Vector3 normal)
+    // A top already found (topY) is looked for just under it first, wherever a jump has the feet: from up in a jump the
+    // heights from the feet all passed over a 0.9 m rail, and the hands found no edge to go to (2026-11-07).
+    private void FindEdge(Collider surface, Vector3 feet, Vector3 forward, float topY, out Vector3 edge, out Vector3 normal)
     {
         edge = normal = Vector3.zero;
+        if (!float.IsNaN(topY) && At(topY - .04f, out edge, out normal)) return;
         foreach (float height in EdgeHeights)
+            if (At(feet.y + height * u, out edge, out normal)) return;
+
+        bool At(float y, out Vector3 found, out Vector3 facing)
         {
-            if (!surface.Raycast(new Ray(feet + Up(height), forward), out RaycastHit front, EdgeSearch * u)) continue;
+            found = facing = Vector3.zero;
+            Vector3 from = feet;
+            from.y = y;
+            if (!surface.Raycast(new Ray(from, forward), out RaycastHit front, EdgeSearch * u)) return false;
             Vector3 flat = Vector3.ProjectOnPlane(front.normal, Vector3.up);
-            if (flat.sqrMagnitude < .25f) continue;
+            if (flat.sqrMagnitude < .25f) return false;
             Vector3 above = front.point + forward * (3f * u) + Up(Hair);
-            if (!surface.Raycast(new Ray(above, Vector3.down), out RaycastHit top, (Hair + height) * u)) continue;
-            edge = front.point;
-            edge.y = top.point.y;
-            normal = flat.normalized;
-            return;
+            if (!surface.Raycast(new Ray(above, Vector3.down), out RaycastHit top, Mathf.Max(above.y - feet.y, above.y - y + .05f))) return false;
+            found = front.point;
+            found.y = top.point.y;
+            facing = flat.normalized;
+            return true;
         }
     }
 

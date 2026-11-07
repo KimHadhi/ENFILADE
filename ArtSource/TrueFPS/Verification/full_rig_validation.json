@@ -1,0 +1,20 @@
+{
+  "blender": "4.5.15 LTS",
+  "source": "ENFILADE_TrueFPS_FullRig.blend",
+  "visible_selectable_fingers": 30,
+  "visible_selectable_major_limb_bones": 12,
+  "fk_rotatable_major_bones": 12,
+  "ik_to_fk_max_position_error_m": 1.3657139822709083e-07,
+  "ik_to_fk_max_rotation_error_degrees": 0.0,
+  "fk_to_ik_endpoint_and_bend_match": "PASS",
+  "unreachable_ik_targets": "PASS",
+  "finger_skin_deformation_tests": 30,
+  "minimum_tested_finger_skin_motion_m": 0.0016387560422999898,
+  "mixed_fk_ik_roundtrip_max_position_error_m": 9.762250992154597e-07,
+  "mixed_fk_ik_roundtrip_max_rotation_error_degrees": 0.0,
+  "roundtrip_rest_matrix_error": 4.291534423828125e-06,
+  "exported_bones": 371,
+  "exported_objects": 1,
+  "exported_actions": 1,
+  "status": "PASS"
+}

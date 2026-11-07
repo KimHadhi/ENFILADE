@@ -5,7 +5,7 @@ using UnityEngine;
 /// <summary>
 /// Where a gun's reload clip moves the gun's parts, as shares of the reload: the magazine starting to leave, the new one
 /// seating, and the bolt or slide. KINEMATION's clips carry one baked sound for the whole reload at their own speed, while
-/// GunRig plays them fitted to our reload time, so WeaponFeedback plays MagOut, MagIn, SlideBack and SlideForward at these
+/// the body plays them fitted to our reload time (FPSBody), so WeaponFeedback plays MagOut, MagIn, SlideBack and SlideForward at these
 /// shares instead and each lands on what the hands do. Measured once per gun from the clip's own motion while the map loads,
 /// with no numbers per gun: the part that travels farthest and comes back is the magazine; of the other parts that don't just
 /// ride along while the magazine is out, the one that travels farthest is the bolt or slide. One that moves and stays was let
@@ -33,11 +33,11 @@ public static class ReloadMoments
 
     private static readonly Dictionary<(WeaponData, bool), Moments> measured = new Dictionary<(WeaponData, bool), Moments>();
 
-    /// <summary>The moments of this gun's tactical or empty reload, once GunRig has measured them.</summary>
+    /// <summary>The moments of this gun's tactical or empty reload, once FPSBody has measured them.</summary>
     public static bool TryGet(WeaponData gun, bool empty, out Moments moments) => measured.TryGetValue((gun, empty), out moments);
 
     /// <summary>
-    /// Measures both reload clips on the gun's model. GunRig calls it once per gun while it builds, with the gun awake;
+    /// Measures both reload clips on the gun's model. FPSBody calls it once per gun while it builds, with the gun awake;
     /// the model's pose is put back afterwards.
     /// </summary>
     public static void Measure(WeaponData gun, CasFPSWeapon weapon)
@@ -53,7 +53,7 @@ public static class ReloadMoments
     {
         if (measured.ContainsKey((gun, empty)) || pair.weapon == null || pair.weapon.clip == null) return;
         var clip = pair.weapon.clip;
-        // GunRig fits the pair to the reload by the character clip's play length and runs the weapon clip at that rate too,
+        // The reload plays the pair fitted by the character clip's play length and runs the weapon clip at that rate too,
         // so this much of the weapon clip spans the whole reload.
         var timing = pair.character != null ? pair.character : pair.weapon;
         float span = timing.GetPlayLength() * (Mathf.Approximately(pair.weapon.playRate, 0f) ? 1f : pair.weapon.playRate);

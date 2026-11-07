@@ -3,6 +3,12 @@
 User entry point: `ArtSource/TrueFPS/START_ANIMATING.cmd`.
 User guide: `ArtSource/TrueFPS/START_HERE.md`.
 
+Current deliverable: `ArtSource/TrueFPS/ENFILADE_TrueFPS_FullRig.blend`.
+It exposes all 54 humanoid joints, including 30 finger joints and the upper/lower
+arm and leg bones. Four keyable IK/FK switches support direct FK joint rotation.
+`upgrade_full_rig.py` upgrades a saved workspace to a new output without replacing
+the input; all original bind matrices and hierarchy are retained.
+
 The workspace is authored for Blender 4.5 LTS and KazusaBand's existing FBX.
 It adds properly aligned mechanism chains instead of changing imported bone
 rolls or lengths. Driver bones transfer solved transforms to the original

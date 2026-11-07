@@ -11,7 +11,10 @@ public sealed partial class PlayerBody
     /// <summary>How fast this body's clips play: a room's slow motion runs per character, so game time can't do it.</summary>
     internal void SetPace(float pace)
     {
-        if (graph.IsValid() && graph.GetRootPlayableCount() > 0) graph.GetRootPlayable(0).SetSpeed(pace);
+        // Every root: with FPS Animation Framework on the graph (FPSBody) the clips feed its mixer, and its own layers and
+        // animations must slow down with them.
+        if (!graph.IsValid()) return;
+        for (int i = 0; i < graph.GetRootPlayableCount(); i++) graph.GetRootPlayable(i).SetSpeed(pace);
     }
 
     /// <summary>Where the stride is: the player's real one when read, the one their PC reported when a copy is told.</summary>

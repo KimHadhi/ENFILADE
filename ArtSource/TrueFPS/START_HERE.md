@@ -1,10 +1,10 @@
 # ENFILADE · Blender 애니메이션 작업실
 
-**시작:** 이 폴더의 [START_ANIMATING.cmd](START_ANIMATING.cmd)를 더블클릭한다. Blender 4.5 LTS에서 [ENFILADE_TrueFPS_Ready.blend](ENFILADE_TrueFPS_Ready.blend)와 작업 버튼을 함께 연다.
+**시작:** 이 폴더의 [START_ANIMATING.cmd](START_ANIMATING.cmd)를 더블클릭한다. Blender 4.5 LTS에서 [ENFILADE_TrueFPS_FullRig.blend](ENFILADE_TrueFPS_FullRig.blend)와 작업 버튼을 함께 연다.
 
 기본 캐릭터는 게임에서 사용하는 카즈사다. 손·발 IK와 머리 카메라가 준비되어 있다. **프레임 선택 → 뼈 이동·회전 → 키 저장**을 반복한 뒤 FBX로 내보내면 된다.
 
-완성본은 이름에 **`_Ready`**가 들어간 파일이다. 이전 `ENFILADE_TrueFPS.blend`와 백업은 그대로 보존했다.
+수정본은 이름에 **`_FullRig`**가 들어간 파일이다. 휴머노이드 54개 뼈(손가락 30마디 포함)와 루트·손발 IK 손잡이를 모두 선택하고 키를 넣을 수 있다. 기존 작업과 포즈는 이전 `_Ready` 파일에도 보존했다.
 
 ## 1. 처음 열었을 때
 
@@ -33,10 +33,22 @@
 | `Spine`, `Chest`, `Upper Chest` | 주로 `R` | 허리와 상체의 굽힘·비틀기 |
 | `Neck`, `HeadBone` | 주로 `R` | 목·머리. 왼쪽 카메라도 머리 움직임을 따른다 |
 | `Left shoulder / Right shoulder` | 주로 `R` | 어깨 자세 |
+| `Left arm / Right arm` | 해당 팔을 **FK**로 전환 후 `R` | 위팔 회전 |
+| `Left elbow / Right elbow` | 해당 팔을 **FK**로 전환 후 `R` | 아래팔·팔꿈치 회전 |
+| `Left wrist / Right wrist` | 해당 팔을 **FK**로 전환 후 `R` | 손목 회전 |
+| `Left leg / Right leg` | 해당 다리를 **FK**로 전환 후 `R` | 허벅지 회전 |
+| `Left knee / Right knee` | 해당 다리를 **FK**로 전환 후 `R` | 종아리·무릎 회전 |
+| `Left ankle / Right ankle` | 해당 다리를 **FK**로 전환 후 `R` | 발목 회전 |
 | `Left toe / Right toe` | `R` | 발가락·앞꿈치 각도 |
 | `Center` | `G`, `R` | 몸과 IK 손잡이 전체를 함께 이동·회전 |
 
-손가락을 편집하려면 아마추어를 선택한 상태에서 **Armature Data → Bone Collections → `03 Fingers - expand to edit`**의 표시를 켠다. `Thumb`, `IndexFinger`, `MiddleFinger`, `RingFinger`, `LittleFinger` 뼈를 선택해 `R`로 구부린다. 숨겨진 원본 뼈와 `MCH_`, `DRV_` 뼈는 자동 계산용이다.
+**손가락 30마디는 처음부터 보이며 바로 키를 넣을 수 있다.** `Thumb`, `IndexFinger`, `MiddleFinger`, `RingFinger`, `LittleFinger`의 각 마디를 클릭해 `R`로 구부린다. `R X X`, `R Y Y`, `R Z Z`로 로컬 축을 고를 수 있다. 손가락은 팔의 IK/FK 설정과 관계없이 직접 회전한다.
+
+**팔·다리 직접 회전:** True FPS 패널에서 해당 팔/다리 줄의 **FK**를 누른 뒤 위팔·아래팔·허벅지·종아리 등의 뼈를 선택해 `R`로 회전한다. **손발 고정:** 같은 줄의 **IK**를 누른 뒤 `CTRL_hand` 또는 `CTRL_foot`를 `G`로 옮긴다. 전환 버튼은 현재 포즈를 맞추고 모드 키도 저장한다. 팔다리를 길이 방향으로 크게 비튼 FK 자세는 IK로 바꿀 때 중간 관절의 비틀림이 달라질 수 있다.
+
+**Key All Controls**는 휴머노이드 54개 뼈·루트·IK 손잡이 총 63개 조작 뼈의 위치·회전·크기와 네 팔다리의 IK/FK 모드를 저장한다. FK로 회전시킨 허벅지·종아리·팔과 손가락도 모두 포함된다. 내보낼 때는 FK/IK 결과를 원본 뼈의 최종 키로 굽는다.
+
+Bone Collections의 `03 Arms`, `04 Legs`, `05 Fingers`가 보이는 조작 뼈다. `07 Original auxiliary bones`, `08 IK mechanism`은 보조 계산용이다.
 
 오른쪽 화면에서 휠은 확대·축소, 휠 버튼 드래그는 회전, `Shift+휠 버튼 드래그`는 화면 이동이다. 뼈를 클릭해 선택하고 `Shift+클릭`으로 여러 개를 선택한다.
 

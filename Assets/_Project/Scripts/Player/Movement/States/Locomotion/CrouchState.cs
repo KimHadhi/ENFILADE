@@ -15,7 +15,7 @@ public sealed class CrouchingState : MovementBaseState
         bool diveJustPressed = ctx.Input.DivePressed;
 
         // 1. 앉은 상태에서 Z를 누르면 즉시 포복 자세로 진입
-        if (diveJustPressed && ctx.IsGrounded)
+        if (diveJustPressed && ctx.IsGrounded && ctx.Actions.ProneReady)
         {
             ctx.ChangeState(PlayerMovement.MovementState.Proning);
             return;

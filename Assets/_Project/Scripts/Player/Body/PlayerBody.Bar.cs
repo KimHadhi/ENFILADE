@@ -39,7 +39,10 @@ public sealed partial class PlayerBody
     private void BarPose(float dt)
     {
         var bar = player.Abilities.Traversal.Bar;
-        if (bar != null) barFacing = BarFacingFor(bar, transform.forward);
+        // Turning round on the bar (backlog 123) the body follows the view the way the mouse pushed. Heading straight
+        // for the far side instead took the shorter way, which for a half turn is always to the right.
+        if (bar != null) barFacing = player.Abilities.Traversal.BarTurning
+            ? Vector3.ProjectOnPlane(transform.forward, Vector3.up).normalized : BarFacingFor(bar, transform.forward);
         Want(barSwing);
         legYaw = Mathf.MoveTowardsAngle(legYaw, Mathf.Atan2(barFacing.x, barFacing.z) * Mathf.Rad2Deg, FacingTurnRate * dt);
         targetYaw = Mathf.DeltaAngle(transform.eulerAngles.y, legYaw);

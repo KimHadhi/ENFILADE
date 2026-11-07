@@ -1,22 +1,21 @@
-using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>
+/// Keeps the face and the camera out of walls. KINEMATION's Look (BodyCas) bends the spine whatever is in front of the
+/// face, so near a wall a downward look gives back as much of the spine's bend as it takes for the face to clear: the
+/// head keeps looking where it did, and the neck takes up the difference. Found by halving, before the camera is placed.
+/// The camera's sweep from inside the capsule is the last guard (CameraClearance).
+/// </summary>
 public sealed partial class PlayerBody
 {
     private readonly CameraClearance clearance = new CameraClearance();
-    private Transform[] lookBones;
-    private Quaternion[] unbentRotations;
     private CharacterController bodyController;
-    private float spineClearanceScale = 1f;
+    private BodyCas bodyCas;
+    private Quaternion[] facePose = new Quaternion[0];
 
     private void SetUpClearance()
     {
         bodyController = GetComponent<CharacterController>();
-        var bones = new List<Transform>(spine);
-        if (neck != null && !bones.Contains(neck)) bones.Add(neck);
-        if (head != null && !bones.Contains(head)) bones.Add(head);
-        lookBones = bones.ToArray();
-        unbentRotations = new Quaternion[lookBones.Length];
     }
 
     // A stable point inside the movement capsule stays on the same side of a wall as the player. In particular,
@@ -48,44 +47,50 @@ public sealed partial class PlayerBody
     private LayerMask CameraBlockers => player.groundLayers & ~LayerMask.GetMask("Enemy");
 
     private bool LookPoseIsClear(Vector3 anchor, float radius)
-    {
-        Vector3 lean = (cameraEffects != null ? cameraEffects.LeanDisplacement : transform.right * player.LeanOffset) - leanShift;
-        return clearance.IsClear(anchor, head.position, Mathf.Max(.09f, radius), CameraBlockers, transform)
-            && clearance.IsClear(anchor, EyePosition + lean, radius, CameraBlockers, transform);
-    }
+        => clearance.IsClear(anchor, head.position, Mathf.Max(.09f, radius), CameraBlockers, transform)
+            && clearance.IsClear(anchor, EyePosition, radius, CameraBlockers, transform);
 
-    // Keep the requested gaze, but use less torso lean when that would push the face into geometry. The neck and
-    // head take the remaining pitch. Solve the pose before moving the camera instead of moving it behind the face.
-    private void BendWithClearance(float pitch, float twist)
+    // How much of CAS's spine bend the face can keep without going into what is in front of it.
+    private void ClearFace()
     {
-        for (int i = 0; i < lookBones.Length; i++) unbentRotations[i] = lookBones[i].localRotation;
+        if (bodyCas == null || head == null || CasLookWeight <= 0f || Mathf.Abs(CasLookPitch) < .01f) return;
+        var bends = bodyCas.SpineBend;
+        int count = bends.Count;
+        if (count == 0) return;
         Vector3 anchor = SafeCameraAnchor();
         float radius = CameraRadius();
-        spineClearanceScale = 1f;
-        BendAndTwist(pitch, twist);
-        if (Mathf.Abs(pitch) < .01f || LookPoseIsClear(anchor, radius)) return;
+        if (LookPoseIsClear(anchor, radius)) return;
 
-        RestoreLookPose();
-        BendAndTwist(pitch, twist, 0f);
-        spineClearanceScale = 0f;
+        if (facePose.Length != count + 1) facePose = new Quaternion[count + 1];
+        for (int i = 0; i < count; i++) facePose[i] = bends[i].bone.rotation;
+        facePose[count] = head.rotation;
+        // CAS turned each spine bone about the view's right axis, as the hips see the view, by its share of the pitch.
+        float turn = Mathf.DeltaAngle(body.eulerAngles.y, CasLookYaw) * CasLookWeight;
+        Vector3 axis = body.rotation * Quaternion.Euler(0f, turn, 0f) * Vector3.right;
+        float fraction = CasLookPitch / 90f * CasLookWeight;
+
+        Keep(0f);
         if (!LookPoseIsClear(anchor, radius)) return;
-
         float safe = 0f, blocked = 1f;
         for (int i = 0; i < 7; i++)
         {
-            float scale = (safe + blocked) * .5f;
-            RestoreLookPose();
-            BendAndTwist(pitch, twist, scale);
-            if (LookPoseIsClear(anchor, radius)) safe = scale;
-            else blocked = scale;
+            float keep = (safe + blocked) * .5f;
+            Keep(keep);
+            if (LookPoseIsClear(anchor, radius)) safe = keep;
+            else blocked = keep;
         }
-        RestoreLookPose();
-        spineClearanceScale = safe;
-        BendAndTwist(pitch, twist, safe);
-    }
+        Keep(safe);
 
-    private void RestoreLookPose()
-    {
-        for (int i = 0; i < lookBones.Length; i++) lookBones[i].localRotation = unbentRotations[i];
+        // The spine as CAS bent it, with only `keep` of its bend; undone from the top down, as CAS bent it from the hips up.
+        void Keep(float keep)
+        {
+            for (int i = 0; i < count; i++) bends[i].bone.rotation = facePose[i];
+            for (int i = count - 1; i >= 0; i--)
+            {
+                float angle = (CasLookPitch > 0f ? bends[i].down : bends[i].up) * fraction * (1f - keep);
+                bends[i].bone.rotation = Quaternion.AngleAxis(-angle, axis) * bends[i].bone.rotation;
+            }
+            head.rotation = facePose[count];
+        }
     }
 }

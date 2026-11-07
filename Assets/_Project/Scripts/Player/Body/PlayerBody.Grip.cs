@@ -28,6 +28,7 @@ public sealed partial class PlayerBody
         bool holding = !dead && (state == MovementState.LedgeHang || state == MovementState.Ladder || state == MovementState.Zipline
             || HeavePressing || OnBar);
         gripWeight = Mathf.MoveTowards(gripWeight, holding ? 1f : 0f, dt / blendTime);
+        SideDive(dt);
         if (leftHand == null || rightHand == null) return;
         SwingWithBar(dt);
         Vector3 placed = body.position;
@@ -37,6 +38,8 @@ public sealed partial class PlayerBody
             body.position += gripOffset * gripWeight;
         }
         CarryHeave(placed, dt);
+        // A quick vault's clip lifts the body itself (PlayerBody.VaultHeight); the hands then take what room is left.
+        body.position += Vector3.down * KeepDownForQuickVault(dt);
         if (hands != null) body.position += hands.EdgeHoldBack(dt);
         if (!dead && state == MovementState.Mantle && player.Abilities.Traversal.Obstacle.ExitLadder != null)
         {

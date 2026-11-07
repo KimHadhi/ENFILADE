@@ -59,9 +59,9 @@ public sealed partial class PlayerBody
         headAnimationWeight = Mathf.Clamp01(weight);
         weight = dead ? 0f : headAnimationWeight * Mathf.Clamp01(animationViewStrength) * (1f - AimBlend());
 
-        // Sample this frame's animated head BEFORE adding procedural look. Neither last frame's camera
-        // nor its effects feed back into the input or the animation. Body yaw belongs to the hips, not aim.
-        Quaternion authored = Quaternion.Inverse(body.rotation) * (head.rotation * headToGaze);
+        // Sample this frame's animated head BEFORE the look bent it (CAS keeps that copy, BodyCas.HeadAsClip). Neither last
+        // frame's camera nor its effects feed back into the input or the animation. Body yaw belongs to the hips, not aim.
+        Quaternion authored = Quaternion.Inverse(body.rotation) * (ClipHead.rotation * headToGaze);
         // Fold inverted motion into small view offsets. Euler decomposition turns a pure somersault past
         // 90 degrees into spurious yaw/roll of 180 degrees, causing an unrelated sideways camera kick.
         Vector3 forward = authored * Vector3.forward, right = authored * Vector3.right, up = authored * Vector3.up;

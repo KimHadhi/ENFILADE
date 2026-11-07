@@ -3,6 +3,12 @@ using UnityEngine;
 /// <summary>Beatrun's moves, each with its own clip and pace. None is a route of our own: a bar, a ladder's top.</summary>
 public enum VaultKind : byte { None, StepUp, Onto, Over, Kong, OverHigh, OntoHigh, Heave }
 
+public static class VaultKinds
+{
+    /// <summary>The quick vaults: the body goes over the top on its clip's own arc, legs clear of it.</summary>
+    public static bool ClearsTop(this VaultKind kind) => kind == VaultKind.Over || kind == VaultKind.Kong;
+}
+
 public struct ObstacleTarget
 {
     public Collider Surface;
@@ -11,6 +17,8 @@ public struct ObstacleTarget
     public Vector3 Edge, EdgeNormal;
     /// <summary>The ladder this mantle climbs off; other vaults and mantles leave it null.</summary>
     public Ladder ExitLadder;
+    /// <summary>The swing bar this climb goes up over (ParkourTraversal.MantleFromBar); other moves leave it null.</summary>
+    public SwingBar FromBar;
     public Vector3 Start, RaisedStart, RaisedEnd, End;
     public bool IsVault;
     /// <summary>Carried over in a straight line (StraightLineTraversal), not along a rounded TraversalPath.</summary>
@@ -212,15 +220,16 @@ public sealed class ParkourDetector
             || top.normal.y < Mathf.Cos(ctx.SlopeLimit * Mathf.Deg2Rad)) return false;
         Vector3 feet = ctx.transform.position, end = top.point + Vector3.up * 0.1f;
         if (!ClearCapsule(end, ctx.StandingColliderHeight)) return false;
-        Vector3 outward = Vector3.ProjectOnPlane(feet - grip, Vector3.up);
-        if (outward.sqrMagnitude < 0.01f) outward = -bar.SwingDirection;
-        outward.Normalize();
+        // Climb the way the player faces along the swing (PlayerBody.BarFacingFor), not away from the feet: swung past the
+        // bar's middle, the feet are on its far side and the body turned round to climb back (user, 2026-11-08).
+        Vector3 swing = bar.SwingDirection;
+        Vector3 outward = Vector3.Dot(ctx.transform.forward, swing) >= 0f ? -swing : swing;
         Vector3 approach = grip + outward * (ctx.ControllerRadius + 0.22f); approach.y = feet.y;
         Vector3 raised = approach; raised.y = end.y;
         if (!ClearPath(feet, approach, ctx.CrouchColliderHeight)
             || !ClearPath(approach, raised, ctx.CrouchColliderHeight)
             || !ClearPath(raised, end, ctx.CrouchColliderHeight)) return false;
-        target = new ObstacleTarget { Surface = top.collider, Start = feet, HasApproach = true, Approach = approach,
+        target = new ObstacleTarget { Surface = top.collider, FromBar = bar, Start = feet, HasApproach = true, Approach = approach,
             RaisedStart = raised, RaisedEnd = end, End = end, Height = end.y - feet.y };
         return true;
     }

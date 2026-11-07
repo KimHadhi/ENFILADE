@@ -27,6 +27,16 @@ public sealed class MovementAbilitySettings
     [Range(0.05f, 0.5f)] public float stepHeight = 0.3f;
     [Tooltip("엎드리거나 누워서 이동할 때 넘을 수 있는 작은 단차 높이. 접지 중에만 적용됩니다.")]
     [Range(0f, 0.1f)] public float proneStepHeight = 0.05f;
+    [Tooltip("Down on the ground, getting up by key waits at least this long (s); a press before then gets up when it ends, a second press takes it back (backlog 134).")]
+    [Min(0f)] public float proneMinHold = 0.45f;
+    [Tooltip("After getting up, going down again in place waits this long (s) (backlog 134).")]
+    [Min(0f)] public float proneReentryDelay = 0.35f;
+    [Tooltip("A dive whose direction is at least this sideways (0-1, dot with the view's right) is a side dive: the body lies on its side, head leading (backlog 135).")]
+    [Range(0.3f, 1f)] public float sideDiveMinSideways = 0.7f;
+    [Tooltip("Lying down, pushing the mouse this far (degrees) past the view's limit (PlayerBody.lyingLookLimit) rolls the player over, front to back or back to front.")]
+    [Min(0f)] public float lyingRollMousePush = 25f;
+    [Tooltip("How long rolling over carries the view round (s).")]
+    [Min(0.05f)] public float lyingRollDuration = 0.3f;
     [Tooltip("넘기 세 종류의 이동 속도 배율. 1이면 Beatrun 원본.")]
     [Min(0.1f)] public float vaultRate = 1f;
     [Tooltip("달리며 낮은 장애물 앞에서 일찍 누른 점프가 넘기가 걸리는 자리까지 빠르게 달려가 넘는 최대 거리(m). 0이면 Beatrun처럼 약 1.2m 안에서 눌러야 넘는다.")]
@@ -35,6 +45,20 @@ public sealed class MovementAbilitySettings
     [Min(1f)] public float vaultSurgeSpeed = 11f;
     [Tooltip("달려가기 시작할 때 카메라를 미는 힘: 앞으로 숙이는 회전(도/초), 시야각을 넓히는 양(도/초). 화면 흔들림 설정을 따른다.")]
     public Vector2 vaultSurgeKick = new Vector2(25f, 120f);
+    [Tooltip("긴 넘기(kong)를 클립의 손이 장애물을 짚는 대로 옮긴다(WarpedTraversal). 끄면 Beatrun 직선 경로.")]
+    public bool warpKong = true;
+    [Tooltip("보통 넘기(over)를 클립의 손이 장애물을 짚는 대로 옮긴다.")]
+    public bool warpOver = false;
+    [Tooltip("높은 넘기를 클립의 손이 장애물을 짚는 대로 옮긴다.")]
+    public bool warpOverHigh = false;
+    [Tooltip("손 짚는 넘기에서 클립 재생 속도의 범위: 가장 느리게;가장 빠르게. 달리던 속도에 맞추되 이 안에서만.")]
+    public Vector2 vaultWarpRates = new Vector2(.7f, 1.8f);
+    [Tooltip("손 짚는 넘기의 접근 속도로 보는 가장 느린 속도(m/s). 걷다가 넘어도 클립이 늘어지지 않게.")]
+    [Min(.1f)] public float vaultWarpLeastSpeed = 3f;
+    [Tooltip("손바닥을 장애물 앞 모서리에서 위쪽 면 안으로 이만큼 들여 짚는다(m).")]
+    [Min(0f)] public float vaultPalmInset = .04f;
+    [Tooltip("손 짚는 자리까지 발이 가야 할 거리가 이보다 멀면 손 짚는 넘기를 하지 않고 Beatrun 직선 경로로 넘는다(m).")]
+    [Min(.1f)] public float vaultWarpReach = 2.5f;
     [Tooltip("바로 올라타기와 높은 올라서기의 이동 속도 배율. 1이면 Beatrun 원본.")]
     [Min(0.1f)] public float mountRate = 1f;
     [Tooltip("매달린 뒤 올라가기의 이동 속도 배율. 1이면 Beatrun 원본(약 0.93초).")]
@@ -74,6 +98,12 @@ public sealed class MovementAbilitySettings
     [Min(0.1f)] public float swingMaxAngularSpeed = 3.5f;
     [Min(0f)] public float lacheForwardBoost = 2f;
     [Min(0f)] public float lacheUpBoost = 2f;
+    [Tooltip("Hand over hand along a bar, sideways input (m/s). Slows as the swing speeds up (backlog 122).")]
+    [Min(0f)] public float barShimmySpeed = 1.2f;
+    [Tooltip("Hanging nearly still, pushing the mouse this far (degrees) past the bar's look limit turns the player round (backlog 123).")]
+    [Min(0f)] public float barTurnMousePush = 25f;
+    [Tooltip("How long the half turn round on the bar takes (s).")]
+    [Min(0.05f)] public float barTurnDuration = 0.35f;
 
     [Header("Ladder (MovementFixtures, LadderState)")]
     [Tooltip("Farthest out from the rungs a ladder can be taken hold of (m).")]
@@ -98,6 +128,10 @@ public sealed class MovementAbilitySettings
     [Min(0f)] public float ladderExitReach = .875f, ladderExitProbeHeight = 2.5f;
     [Tooltip("Seconds the climb off the top takes.")]
     [Min(.1f)] public float ladderExitDuration = 1.5f;
+    [Tooltip("Seconds getting onto a ladder from its top takes: out over the edge, then down onto the top rungs (backlog 141).")]
+    [Min(.1f)] public float ladderTopEnterTime = 1.1f;
+    [Tooltip("Getting on from the top (Interact, looking out over it), how far back from the ladder on the floor up there it can be taken (m).")]
+    [Min(0f)] public float ladderTopEnterReach = .9f;
     [Tooltip("Speed the player leaves a ladder with on letting go (m/s).")]
     [Min(0f)] public float ladderDropSpeed = 2f;
     [Tooltip("Seconds after letting go before a ladder can be taken hold of again.")]

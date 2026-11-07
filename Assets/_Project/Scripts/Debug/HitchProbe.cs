@@ -8,10 +8,11 @@ using Unity.Profiling.LowLevel.Unsafe;
 using UnityEngine;
 
 /// <summary>
-/// Temporary, editor only. Writes two records to Temp/hitches.txt, without opening the Profiler: every frame of
+/// Temporary, editor only. Writes two records to Logs/hitches.txt, without opening the Profiler: every frame of
 /// HitchMilliseconds or more with what took its time, and, when Play stops, each movement state's frame times with the
 /// markers that cost more in it than standing does. The second finds a steady drop (a mantle at half the frame rate) that
-/// never makes one long frame. The next Play starts the file again, so a stopped run is also kept in Temp/Hitches.
+/// never makes one long frame. The next Play starts the file again, so a stopped run is also kept in Logs/Hitches.
+/// Not Temp: Unity empties Temp when it closes, which lost every run recorded before 2026-11-06's restart.
 /// Delete this file once the stalls are understood.
 /// </summary>
 public sealed class HitchProbe : MonoBehaviour
@@ -25,7 +26,7 @@ public sealed class HitchProbe : MonoBehaviour
     private const float EntrySeconds = 0.3f;
     private const int NoPlayer = -1;
     private static readonly float[] ScanTimes = { 1f, 4f, 9f };
-    private static string Folder => Path.Combine(Application.dataPath, "..", "Temp");
+    private static string Folder => Path.Combine(Application.dataPath, "..", "Logs");
     private static string FilePath => Path.Combine(Folder, "hitches.txt");
 
     private sealed class Bucket
@@ -55,6 +56,7 @@ public sealed class HitchProbe : MonoBehaviour
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void Begin()
     {
+        Directory.CreateDirectory(Folder);
         File.WriteAllText(FilePath, $"Play started {System.DateTime.Now:HH:mm:ss}\n");
         var host = new GameObject("Hitch Probe");
         DontDestroyOnLoad(host);

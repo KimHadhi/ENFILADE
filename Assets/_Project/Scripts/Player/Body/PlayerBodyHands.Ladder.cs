@@ -51,12 +51,15 @@ public sealed partial class PlayerBodyHands
             // The last climbing hand starts one real rung above the other. Choose the pair once, never every frame.
             // Entry/catch clips can start with lowered shoulders. Use the fitted standing eye height so their
             // opening pose cannot choose a pair that becomes unreachable once the hanging pose settles.
-            Vector3 highGrip = player.transform.position + heldLadder.transform.up * (player.runtimeBodyDefaults.w - .05f);
+            // From the top (backlog 141) the hands take the rungs for where the body ends up, not the floor above.
+            Vector3 feet = fresh && fixtures.LadderFromTop ? fixtures.LadderTopHold : player.transform.position;
+            Vector3 highGrip = feet + heldLadder.transform.up * (player.runtimeBodyDefaults.w - .05f);
             int high = Mathf.Clamp(heldLadder.NearestRung(highGrip), Mathf.Min(2, heldLadder.RungCount), heldLadder.RungCount);
             Catch(leftLadderHand, left, true, fixtures.LadderLeftHand ? high : Mathf.Max(1, high - 1));
             Catch(rightLadderHand, right, false, fixtures.LadderLeftHand ? Mathf.Max(1, high - 1) : high);
             ladderCatchDuration = !fresh || fixtures.LadderSteps > 0 ? blendTime
-                : fixtures.LadderCaught ? player.AbilitySettings.ladderCatchTime : player.AbilitySettings.ladderEnterTime;
+                : fixtures.LadderCaught ? player.AbilitySettings.ladderCatchTime
+                : fixtures.LadderFromTop ? player.AbilitySettings.ladderTopEnterTime : player.AbilitySettings.ladderEnterTime;
         }
         if (startSlide)
         {
@@ -132,7 +135,39 @@ public sealed partial class PlayerBodyHands
         float gather = Mathf.Clamp01(ladderExitProgress / ExitGatherEnd);
         if (leftLadderHand.Progress < 1f) leftLadderHand.Progress = gather;
         if (rightLadderHand.Progress < 1f) rightLadderHand.Progress = gather;
+        // Off the top rung onto the rails (ExitRailPoint), as the climb takes the body up past the rungs.
+        exitRail = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(ExitGatherEnd, ExitGatherEnd + ExitRailBlend, ladderExitProgress));
+        exitReach[0] = RailInReach(left, true);
+        exitReach[1] = RailInReach(right, false);
     }
+
+    // Climbing off the top, the hands hold the ladder's bars the whole way (user, 2026-11-08: the hands on the bar, not the
+    // roof): off the top rung onto the rail on their side, each where the clip holds the hand, no higher than the rail's
+    // top end, and each lets go only when its rail is out of the arm's reach as the body stands, or by the climb's end.
+    private const float ExitRailBlend = .15f;
+    private float exitRail;
+    private readonly float[] exitReach = { 1f, 1f };
+
+    private Vector3 ExitRailPoint(ArmIK arm, bool isLeft)
+    {
+        Vector3 up = heldLadder.transform.up;
+        float height = Vector3.Dot(arm.Hand.position - heldLadder.transform.position, up);
+        // A climber faces -Outward, so its left side is the ladder's positive X (LocalRung).
+        Vector3 rail = heldLadder.transform.position + up * Mathf.Clamp(height, 0f, heldLadder.Height - Ladder.BarThickness)
+            + heldLadder.transform.right * (heldLadder.Width * .5f * (isLeft ? 1f : -1f));
+        return heldLadder.transform.InverseTransformPoint(rail);
+    }
+
+    // 1 while the hand's place on the rail is within the arm's reach, easing to 0 as it goes past it.
+    private float RailInReach(ArmIK arm, bool isLeft)
+    {
+        if (arm == null || arm.Upper == null || heldLadder == null) return 1f;
+        float distance = Vector3.Distance(heldLadder.transform.TransformPoint(ExitRailPoint(arm, isLeft)), arm.Upper.position);
+        return 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(arm.Reach * .95f, arm.Reach * 1.05f, distance));
+    }
+
+    // Holding a rail rather than a rung: sliding down, or climbing off the top.
+    private float RailShare => Mathf.Max(SlideShare, ladderTopExit ? exitRail : 0f);
 
     private void Gather(LadderHand hold, bool isLeft, int rung)
     {
@@ -147,8 +182,8 @@ public sealed partial class PlayerBodyHands
     private float LadderHandWeight(bool isLeft)
     {
         if (!ladderTopExit) return 1f;
-        float release = Mathf.Clamp01(isLeft == ladderExitFirstLeft ? ladderExitRelease.x : ladderExitRelease.y);
-        return 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(release, release + ExitReleaseFade, ladderExitProgress));
+        // On the rails until out of reach (RailInReach), and off by the end of the climb.
+        return exitReach[isLeft ? 0 : 1] * (1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(.85f, 1f, ladderExitProgress)));
     }
 
     // Before the eye camera is placed, keep supporting wrists within reach. A retargeted exit clip can raise
@@ -161,7 +196,8 @@ public sealed partial class PlayerBodyHands
         UpdateLadderExit();
         Vector3 offset = Vector3.zero;
         for (int i = 0; i < 4; i++) { Fit(left, true); Fit(right, false); }
-        return offset;
+        // On the rails the hands let go out of reach instead of holding the body back (LadderHandWeight).
+        return offset * (1f - exitRail);
 
         void Fit(ArmIK arm, bool isLeft)
         {
@@ -209,13 +245,14 @@ public sealed partial class PlayerBodyHands
 
     private Vector3 SampleLadderContact(LadderHand hold, ArmIK arm, bool isLeft)
     {
+        if (ladderTopExit) return Vector3.Lerp(SampleLadderHand(hold), ExitRailPoint(arm, isLeft), exitRail);
         Vector3 rail = RailPoint(arm, isLeft);
         return wasSliding ? rail + hold.SlideFrom * (1f - SlideShare) : SampleLadderHand(hold);
     }
 
     private float LadderSectionDepth()
     {
-        float angle = RailSectionAngle * SlideShare * Mathf.Deg2Rad;
+        float angle = RailSectionAngle * RailShare * Mathf.Deg2Rad;
         return Ladder.BarThickness * .5f * (Mathf.Abs(Mathf.Cos(angle)) + Mathf.Abs(Mathf.Sin(angle)));
     }
 
@@ -223,7 +260,7 @@ public sealed partial class PlayerBodyHands
     {
         Vector3 outward = heldLadder.Outward, side = heldLadder.transform.right * (isLeft ? 1f : -1f);
         var frame = Quaternion.Slerp(Quaternion.LookRotation(heldLadder.transform.up, -outward),
-            Quaternion.LookRotation((side - outward).normalized, (-side - outward).normalized), SlideShare);
+            Quaternion.LookRotation((side - outward).normalized, (-side - outward).normalized), RailShare);
         fingers = frame * Vector3.forward;
         palmFacing = frame * Vector3.up;
     }
@@ -254,7 +291,7 @@ public sealed partial class PlayerBodyHands
             - palmFacing * (LadderSectionDepth() + arm.PalmDepth + ladderPalmClearance);
         position = arm.WristAtPalm(palm, rotation);
         // Let the elbows drop outside the torso instead of pulling them in toward the camera.
-        hint = arm.Upper.position + side * Mathf.Lerp(.3f, .15f, SlideShare) + outward * .12f - up * Mathf.Lerp(.25f, .35f, SlideShare);
+        hint = arm.Upper.position + side * Mathf.Lerp(.3f, .15f, RailShare) + outward * .12f - up * Mathf.Lerp(.25f, .35f, RailShare);
         return true;
     }
 
@@ -267,9 +304,9 @@ public sealed partial class PlayerBodyHands
         float grip = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(.65f, 1f, progress));
         if (hold.Stepping) grip += 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0f, .2f, progress));
         // The hand lets go between the horizontal rung and the vertical rail; don't twist a closed fist.
-        float transfer = Mathf.Sin(SlideShare * Mathf.PI);
-        grip = Mathf.Lerp(Mathf.Clamp01(grip), 1f, SlideShare) * (1f - transfer);
+        float transfer = Mathf.Sin(RailShare * Mathf.PI);
+        grip = Mathf.Lerp(Mathf.Clamp01(grip), 1f, RailShare) * (1f - transfer);
         arm.GripBar(Ladder.BarThickness * .5f, ladderPalmClearance, fingerSurfaceClearance,
-            weights[(int)Hold.Ladder] * LadderHandWeight(isLeft), grip, RailSectionAngle * SlideShare);
+            weights[(int)Hold.Ladder] * LadderHandWeight(isLeft), grip, RailSectionAngle * RailShare);
     }
 }

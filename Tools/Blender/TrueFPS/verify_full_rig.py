@@ -94,7 +94,8 @@ for limb, (names, kind, pole, suffix) in limbs.items():
     endpoint_position, endpoint_rotation = difference(before[names[-1]], after[names[-1]])
     assert endpoint_position < .001, ('FK to IK endpoint jump', limb, endpoint_position)
     assert endpoint_rotation < .005, ('FK to IK endpoint rotation jump', limb, endpoint_rotation)
-    assert (before[names[1]].translation-after[names[1]].translation).length < .003, ('FK to IK bend jump', limb)
+    bend_error=(before[names[1]].translation-after[names[1]].translation).length
+    assert bend_error < .003, ('FK to IK bend jump', limb, bend_error,tuple(before[names[1]].translation),tuple(after[names[1]].translation))
     ctrl = rig.pose.bones[f'CTRL_{kind}.{suffix}']
     saved = ctrl.location.copy()
     ctrl.location.x += 2

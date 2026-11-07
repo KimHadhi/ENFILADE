@@ -1,13 +1,29 @@
 using UnityEngine;
 
-/// <summary>Separate combat volumes while peeking; the locomotion capsule remains planted behind cover.</summary>
+/// <summary>
+/// Separate combat volumes while peeking; the locomotion capsule remains planted behind cover. The upper one goes where the
+/// visible body's eyes went (PlayerBody.FollowLeanWithHitboxes), or by the lean's distance where no body poses them.
+/// </summary>
 [DisallowMultipleComponent, DefaultExecutionOrder(-50)]
 public sealed class PlayerLeanHitboxes : MonoBehaviour
 {
     private PlayerMovement player;
     private CharacterController body;
     private CapsuleCollider lower, upper;
+    private Vector3 eyesOffset;
+    private int eyesFrame = -10;
     public bool UsesSplitBody => isActiveAndEnabled && upper != null && upper.enabled;
+
+    /// <summary>The visible body's eyes have gone <paramref name="offset"/> sideways this frame; the hitboxes go with them.</summary>
+    public void FollowEyes(Vector3 offset)
+    {
+        eyesOffset = offset;
+        eyesFrame = Time.frameCount;
+        Sync(offset);
+    }
+
+    // The body's measure while it keeps coming (it is from the end of the last frame), else the lean's distance.
+    private Vector3 Offset => Time.frameCount - eyesFrame <= 2 ? eyesOffset : player.transform.right * player.LeanOffset;
     private void Awake()
     {
         player = GetComponent<PlayerMovement>(); body = GetComponent<CharacterController>();
@@ -24,7 +40,7 @@ public sealed class PlayerLeanHitboxes : MonoBehaviour
     private void Update()
     {
         if (player == null || body == null || !player.IsInitialized) return;
-        Sync(player.transform.right * player.LeanOffset);
+        Sync(Offset);
     }
     public void Sync(Vector3 offset)
     {

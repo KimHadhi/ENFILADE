@@ -71,10 +71,61 @@ public sealed class PlayerLook : MonoBehaviour
         float mouseX = delta.x * scale;
         float mouseY = delta.y * scale * (settings.invertY ? 1f : -1f);
 
+        TryMouseTurnOnBar(mouseX);
+        TryMouseRollOver(mouseX);
         yaw += mouseX;
         yaw = ClampLookYaw(yaw);
         pitch = ClampLookPitch(pitch + mouseY);
         TickRecoil(Time.deltaTime);
+    }
+
+    // Backlog 123: on a swing bar the view stops at the bar's look limit; the mouse pushed on past it by
+    // barTurnMousePush turns the player round toward that side (ParkourTraversal.TryTurnOnBar).
+    private float barTurnPush;
+    private void TryMouseTurnOnBar(float mouseX)
+    {
+        var traversal = movement != null && movement.Abilities != null ? movement.Abilities.Traversal : null;
+        if (traversal == null || traversal.Bar == null || movement.CurrentState != PlayerMovement.MovementState.BarSwing
+            || traversal.BarTurning) { barTurnPush = 0f; return; }
+        if (mouseX == 0f) return;
+        Vector3 facing = PlayerBody.BarFacingFor(traversal.Bar, transform.forward);
+        if (body == null) body = GetComponent<PlayerBody>();
+        float limit = body != null ? body.BarLookYawLimit : 45f;
+        float from = Mathf.DeltaAngle(Mathf.Atan2(facing.x, facing.z) * Mathf.Rad2Deg, transform.eulerAngles.y);
+        // Only pushing outward while already at the edge counts; turning back the other way starts over.
+        if (Mathf.Abs(from) < limit - 1f || Mathf.Sign(mouseX) != Mathf.Sign(from)) { barTurnPush = 0f; return; }
+        barTurnPush += Mathf.Abs(mouseX);
+        if (barTurnPush < movement.AbilitySettings.barTurnMousePush) return;
+        barTurnPush = 0f;
+        // Round to face straight along the bar's other side.
+        traversal.TryTurnOnBar(Mathf.Sign(from) * (180f - Mathf.Abs(from)));
+    }
+
+    // Lying prone or on the back the view stops at the neck's limit either side of the way the body faces
+    // (PlayerBody.Lying); the mouse pushed on past it by lyingRollMousePush rolls the player over and carries the view
+    // round, the way it was pushed, to face the way the body then faces (down the body to the feet on the back).
+    private float rollPush, rollStarted = float.NegativeInfinity, rollFrom, rollAmount;
+    private bool Lying => movement != null && movement.IsGrounded
+        && (movement.CurrentState == PlayerMovement.MovementState.Proning || movement.CurrentState == PlayerMovement.MovementState.Supine);
+    private bool RollingOver => movement != null && Time.time - rollStarted < movement.AbilitySettings.lyingRollDuration;
+    private void TryMouseRollOver(float mouseX)
+    {
+        if (!Lying || RollingOver) { rollPush = 0f; return; }
+        if (mouseX == 0f) return;
+        if (body == null) body = GetComponent<PlayerBody>();
+        if (body == null || !body.LyingStill) return;
+        float limit = body.LyingLookLimit;
+        float from = Mathf.DeltaAngle(body.LyingFacingYaw, transform.eulerAngles.y);
+        // Only pushing outward while already at the edge counts; turning back the other way starts over.
+        if (Mathf.Abs(from) < limit - 1f || Mathf.Sign(mouseX) != Mathf.Sign(from)) { rollPush = 0f; return; }
+        rollPush += Mathf.Abs(mouseX);
+        if (rollPush < movement.AbilitySettings.lyingRollMousePush) return;
+        rollPush = 0f;
+        if (!movement.TryRollOver()) return;
+        // Rolled over, the body faces the other way: on round the way pushed until the view faces it.
+        rollFrom = transform.eulerAngles.y;
+        rollAmount = Mathf.Sign(from) * (180f - Mathf.Abs(from));
+        rollStarted = Time.time;
     }
 
     // A turn combat asks of the look (a slip keeping the view on its attacker, MicroSlip.LockOn through CombatHeadMotion.Turn)
@@ -145,6 +196,8 @@ public sealed class PlayerLook : MonoBehaviour
             || movement.CurrentState == PlayerMovement.MovementState.BarSwing)
             && movement.Abilities != null && movement.Abilities.Traversal.Bar != null)
         {
+            // Turning round on the bar (backlog 123) the view is carried the half turn; the body follows its side.
+            if (movement.Abilities.Traversal.BarTurning) return movement.Abilities.Traversal.BarTurnYaw;
             // On a swing bar the body faces along the swing; the head turns only so far from that (Beatrun's swing: 45).
             Vector3 barFacing = PlayerBody.BarFacingFor(movement.Abilities.Traversal.Bar, transform.forward);
             if (body == null) body = GetComponent<PlayerBody>();
@@ -174,6 +227,14 @@ public sealed class PlayerLook : MonoBehaviour
             Vector3 inward = -ledge.Surface.transform.TransformDirection(ledge.LocalNormal);
             if (body == null) body = GetComponent<PlayerBody>();
             return WithinArc(Mathf.Atan2(inward.x, inward.z) * Mathf.Rad2Deg, body != null ? body.HangLookYawLimit : 175f, candidate);
+        }
+        if (Lying)
+        {
+            if (RollingOver)
+                return rollFrom + rollAmount * Mathf.SmoothStep(0f, 1f,
+                    Mathf.Clamp01((Time.time - rollStarted) / movement.AbilitySettings.lyingRollDuration));
+            if (body == null) body = GetComponent<PlayerBody>();
+            if (body != null && body.LyingStill) return WithinArc(body.LyingFacingYaw, body.LyingLookLimit, candidate);
         }
         if (movement != null && movement.Abilities != null && movement.Abilities.Fixtures.TryLookCentre(out float fixtureYaw))
         {

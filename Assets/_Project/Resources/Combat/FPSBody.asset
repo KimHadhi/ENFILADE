@@ -1,0 +1,45 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: abade1072a3e486ba18da82f3d562137, type: 3}
+  m_Name: FPSBody
+  m_EditorClassIdentifier: Assembly-CSharp::FPSBodyAssets
+  inputConfig: {fileID: 11400000, guid: 14d643eea4fc4dcf8c6c01252b3a3b5a, type: 2}
+  rig: {fileID: 11400000, guid: 23de537e4e054a8e899104d8e1030ed8, type: 2}
+  upperBody: {fileID: 31900000, guid: 42ac49efadcf44dab6167ae613229f70, type: 2}
+  idleProfile: {fileID: 11400000, guid: b46a39a9fbfd4e50b1aca2b97dfc6835, type: 2}
+  aimingMotion: {fileID: 11400000, guid: 68ae6cfa058c495c983865cab79a0597, type: 2}
+  crouchingMotion: {fileID: 11400000, guid: 1ca936ed4f18466abd63369bd1e142a7, type: 2}
+  jumpingMotion: {fileID: 11400000, guid: f9c62f05765b4d1e9a74873f915047c9, type: 2}
+  stopMotion: {fileID: 11400000, guid: 75928fa949424b06aa79acb1a72d796f, type: 2}
+  leanMotion: {fileID: 11400000, guid: aadf47b0e92e4ea7bb3086dc7429d8d1, type: 2}
+  equipMotion: {fileID: 11400000, guid: 57e5995d84e840fe867125406df309d4, type: 2}
+  unEquipMotion: {fileID: 11400000, guid: 2dd9cd38dddc445a8c99368fa50cbfd7, type: 2}
+  armsModel: {fileID: 919132149155446097, guid: 405129f43f2032e4bbed300529635549, type: 3}
+  guns:
+  - weapon: {fileID: 11400000, guid: 23002ebab5eaea7478f88c9de57f8dbf, type: 2}
+    prefab: {fileID: 4032086537580138804, guid: f46dcf168264251498385ab526af84b1, type: 3}
+    profile: {fileID: 11400000, guid: df99762b7fc14aa0b6ae7d9abe1a51bd, type: 2}
+    sourcePose: {fileID: 7400000, guid: 78d5e57c5e6d5b1479f2831ae162c9af, type: 2}
+    sourceReloadTactical: {fileID: 7400000, guid: af9f8c0e8cb05d74d80d1e5c61d822f7, type: 2}
+    sourceReloadEmpty: {fileID: 7400000, guid: 6482cb9a3db8de94996fc3046ba6b006, type: 2}
+    pose: {fileID: 11400000, guid: 6ec74827a4ff4311a40cb2ae07fb47e1, type: 2}
+    reloadTactical: {fileID: 11400000, guid: 5ad1b4cf5b644ae69079d3c9303c5641, type: 2}
+    reloadEmpty: {fileID: 11400000, guid: 805606c6762e4e90981532eabc80b1cf, type: 2}
+  - weapon: {fileID: 11400000, guid: 60c6069bb5f5ec044a22a44dbd9829a9, type: 2}
+    prefab: {fileID: 2249710175363591869, guid: 0b2f43c40cdaac64b8f53036af646bff, type: 3}
+    profile: {fileID: 11400000, guid: 845c4b2f5eef4657a01178a08e545621, type: 2}
+    sourcePose: {fileID: 7400000, guid: 240293a1bac37b34a98835cb25696d43, type: 2}
+    sourceReloadTactical: {fileID: 7400000, guid: da33efa37a2809b478a7eb4835c56d5e, type: 2}
+    sourceReloadEmpty: {fileID: 7400000, guid: 020029c1d578b5645b963d58dc823f5d, type: 2}
+    pose: {fileID: 11400000, guid: 085f949b853b412983870c4734a81b75, type: 2}
+    reloadTactical: {fileID: 11400000, guid: 0028cb98334244d482af929f6f67b4cc, type: 2}
+    reloadEmpty: {fileID: 11400000, guid: da95780fd6ad49569fc4ccefa0b94ded, type: 2}

@@ -1,0 +1,395 @@
+Begin Object Class=/Script/Engine.Material Name="M_ReflexSight_Glass"
+   Begin Object Class=/Script/Engine.MaterialExpressionCameraPositionWS Name="MaterialExpressionCameraPositionWS_0"
+   End Object
+   Begin Object Class=/Script/Engine.MaterialExpressionCustom Name="MaterialExpressionCustom_0"
+   End Object
+   Begin Object Class=/Script/Engine.MaterialExpressionMultiply Name="MaterialExpressionMultiply_0"
+   End Object
+   Begin Object Class=/Script/Engine.MaterialExpressionMultiply Name="MaterialExpressionMultiply_1"
+   End Object
+   Begin Object Class=/Script/Engine.MaterialExpressionMultiply Name="MaterialExpressionMultiply_2"
+   End Object
+   Begin Object Class=/Script/Engine.MaterialExpressionMultiply Name="MaterialExpressionMultiply_3"
+   End Object
+   Begin Object Class=/Script/Engine.MaterialExpressionMultiply Name="MaterialExpressionMultiply_4"
+   End Object
+   Begin Object Class=/Script/Engine.MaterialExpressionMultiply Name="MaterialExpressionMultiply_5"
+   End Object
+   Begin Object Class=/Script/Engine.MaterialExpressionSaturate Name="MaterialExpressionSaturate_0"
+   End Object
+   Begin Object Class=/Script/Engine.MaterialExpressionScalarParameter Name="MaterialExpressionScalarParameter_0"
+   End Object
+   Begin Object Class=/Script/Engine.MaterialExpressionScalarParameter Name="MaterialExpressionScalarParameter_1"
+   End Object
+   Begin Object Class=/Script/Engine.MaterialExpressionScalarParameter Name="MaterialExpressionScalarParameter_2"
+   End Object
+   Begin Object Class=/Script/Engine.MaterialExpressionScalarParameter Name="MaterialExpressionScalarParameter_3"
+   End Object
+   Begin Object Class=/Script/Engine.MaterialExpressionScalarParameter Name="MaterialExpressionScalarParameter_4"
+   End Object
+   Begin Object Class=/Script/Engine.MaterialExpressionScalarParameter Name="MaterialExpressionScalarParameter_5"
+   End Object
+   Begin Object Class=/Script/Engine.MaterialExpressionTextureCoordinate Name="MaterialExpressionTextureCoordinate_0"
+   End Object
+   Begin Object Class=/Script/Engine.MaterialExpressionTextureSampleParameter2D Name="MaterialExpressionTextureSampleParameter2D_0"
+   End Object
+   Begin Object Class=/Script/Engine.MaterialExpressionTextureSampleParameter2D Name="MaterialExpressionTextureSampleParameter2D_1"
+   End Object
+   Begin Object Class=/Script/Engine.MaterialExpressionTextureSampleParameter2D Name="MaterialExpressionTextureSampleParameter2D_2"
+   End Object
+   Begin Object Class=/Script/Engine.MaterialExpressionTextureSampleParameter2D Name="MaterialExpressionTextureSampleParameter2D_3"
+   End Object
+   Begin Object Class=/Script/Engine.MaterialExpressionTextureSampleParameter2D Name="MaterialExpressionTextureSampleParameter2D_4"
+   End Object
+   Begin Object Class=/Script/Engine.MaterialExpressionTextureSampleParameter2D Name="MaterialExpressionTextureSampleParameter2D_5"
+   End Object
+   Begin Object Class=/Script/Engine.MaterialExpressionTransformPosition Name="MaterialExpressionTransformPosition_0"
+   End Object
+   Begin Object Class=/Script/Engine.MaterialExpressionTransformPosition Name="MaterialExpressionTransformPosition_1"
+   End Object
+   Begin Object Class=/Script/Engine.MaterialExpressionVectorParameter Name="MaterialExpressionVectorParameter_0"
+   End Object
+   Begin Object Class=/Script/Engine.MaterialExpressionWorldPosition Name="MaterialExpressionWorldPosition_0"
+   End Object
+   Begin Object Class=/Script/UnrealEd.SceneThumbnailInfoWithPrimitive Name="SceneThumbnailInfoWithPrimitive_0"
+   End Object
+   Begin Object Name="MaterialExpressionCameraPositionWS_0"
+      MaterialExpressionEditorX=-2600
+      MaterialExpressionEditorY=850
+      MaterialExpressionGuid=505E38604AD14930D446F9A5B371FA06
+      Material=Material'"M_ReflexSight_Glass"'
+   End Object
+   Begin Object Name="MaterialExpressionCustom_0"
+      Code="float3 ray = LocalPosition - LocalCamera;\nif (abs(ray.y) < 1.0e-5) return float2(-1.0, -1.0);\nfloat distance = (Depth - LocalCamera.y) / ray.y;\nif (distance <= 0.0) return float2(-1.0, -1.0);\nfloat2 projected = LocalCamera.xz + ray.xz * distance;\nreturn (projected - float2(OffsetX, OffsetY)) * float2(1.0, -1.0)\n    / max(abs(Size), 0.001) + 0.5;\n"
+      OutputType=CMOT_Float2
+      Description="Flat reticle projection (local X/Z)"
+      Inputs(0)=(InputName="LocalPosition",Input=(Expression=MaterialExpressionTransformPosition'"M_ReflexSight_Glass:MaterialExpressionTransformPosition_0"'))
+      Inputs(1)=(InputName="LocalCamera",Input=(Expression=MaterialExpressionTransformPosition'"M_ReflexSight_Glass:MaterialExpressionTransformPosition_1"'))
+      Inputs(2)=(InputName="OffsetX",Input=(Expression=MaterialExpressionScalarParameter'"M_ReflexSight_Glass:MaterialExpressionScalarParameter_1"'))
+      Inputs(3)=(InputName="OffsetY",Input=(Expression=MaterialExpressionScalarParameter'"M_ReflexSight_Glass:MaterialExpressionScalarParameter_2"'))
+      Inputs(4)=(InputName="Size",Input=(Expression=MaterialExpressionScalarParameter'"M_ReflexSight_Glass:MaterialExpressionScalarParameter_3"'))
+      Inputs(5)=(InputName="Depth",Input=(Expression=MaterialExpressionScalarParameter'"M_ReflexSight_Glass:MaterialExpressionScalarParameter_0"'))
+      MaterialExpressionEditorX=-1700
+      MaterialExpressionEditorY=550
+      MaterialExpressionGuid=655E93C8478ACEE0E7984DB1CFA25479
+      Material=Material'"M_ReflexSight_Glass"'
+      Desc="Intersect the view ray with one flat X/Z plane in mesh space. Independent of glass curvature, UV islands and surface tangents."
+   End Object
+   Begin Object Name="MaterialExpressionMultiply_0"
+      A=(Expression=MaterialExpressionVectorParameter'"M_ReflexSight_Glass:MaterialExpressionVectorParameter_0"',Mask=1,MaskR=1,MaskG=1,MaskB=1)
+      B=(Expression=MaterialExpressionScalarParameter'"M_ReflexSight_Glass:MaterialExpressionScalarParameter_4"')
+      MaterialExpressionEditorX=-370
+      MaterialExpressionEditorY=900
+      MaterialExpressionGuid=7C3748874D39B96EA05E7FA441322ADB
+      Material=Material'"M_ReflexSight_Glass"'
+      Desc="Apply the reticle color and emission strength."
+   End Object
+   Begin Object Name="MaterialExpressionMultiply_1"
+      A=(Expression=MaterialExpressionTextureSampleParameter2D'"M_ReflexSight_Glass:MaterialExpressionTextureSampleParameter2D_0"',Mask=1,MaskR=1,MaskG=1,MaskB=1)
+      B=(Expression=MaterialExpressionTextureSampleParameter2D'"M_ReflexSight_Glass:MaterialExpressionTextureSampleParameter2D_0"',OutputIndex=4,Mask=1,MaskA=1)
+      MaterialExpressionEditorX=-370
+      MaterialExpressionEditorY=580
+      MaterialExpressionGuid=8F46FE65474E89F1BF82D2B89CC75A29
+      Material=Material'"M_ReflexSight_Glass"'
+      Desc="Respect reticle texture alpha while keeping emission independent of glass opacity."
+   End Object
+   Begin Object Name="MaterialExpressionMultiply_2"
+      A=(Expression=MaterialExpressionMultiply'"M_ReflexSight_Glass:MaterialExpressionMultiply_1"')
+      B=(Expression=MaterialExpressionMultiply'"M_ReflexSight_Glass:MaterialExpressionMultiply_0"')
+      MaterialExpressionEditorX=-170
+      MaterialExpressionEditorY=600
+      MaterialExpressionGuid=9D6F6EE3486158204EDC758DB85D64C6
+      Material=Material'"M_ReflexSight_Glass"'
+   End Object
+   Begin Object Name="MaterialExpressionMultiply_3"
+      A=(Expression=MaterialExpressionTextureSampleParameter2D'"M_ReflexSight_Glass:MaterialExpressionTextureSampleParameter2D_5"',OutputIndex=1,Mask=1,MaskR=1)
+      B=(Expression=MaterialExpressionScalarParameter'"M_ReflexSight_Glass:MaterialExpressionScalarParameter_5"')
+      MaterialExpressionEditorX=-1390
+      MaterialExpressionEditorY=-400
+      MaterialExpressionGuid=391D700945749D778479A9BF35189A7E
+      Material=Material'"M_ReflexSight_Glass"'
+   End Object
+   Begin Object Name="MaterialExpressionMultiply_4"
+      A=(Expression=MaterialExpressionTextureSampleParameter2D'"M_ReflexSight_Glass:MaterialExpressionTextureSampleParameter2D_1"',Mask=1,MaskR=1,MaskG=1,MaskB=1)
+      B=(Expression=MaterialExpressionSaturate'"M_ReflexSight_Glass:MaterialExpressionSaturate_0"')
+      MaterialExpressionEditorX=-650
+      MaterialExpressionEditorY=-650
+      MaterialExpressionGuid=8B4F1B5341B074B97A6C0BB022903CC0
+      Material=Material'"M_ReflexSight_Glass"'
+      Desc="Premultiply the glass color for AlphaComposite blending."
+   End Object
+   Begin Object Name="MaterialExpressionMultiply_5"
+      A=(Expression=MaterialExpressionSaturate'"M_ReflexSight_Glass:MaterialExpressionSaturate_0"')
+      ConstB=0.500000
+      MaterialExpressionEditorX=-650
+      MaterialExpressionEditorY=-400
+      MaterialExpressionGuid=7B22F2ED41E21D2C2B01CDA98AAE1DCB
+      Material=Material'"M_ReflexSight_Glass"'
+      Desc="Fade dielectric reflections with the glass alpha."
+   End Object
+   Begin Object Name="MaterialExpressionSaturate_0"
+      Input=(Expression=MaterialExpressionMultiply'"M_ReflexSight_Glass:MaterialExpressionMultiply_3"')
+      MaterialExpressionEditorX=-1130
+      MaterialExpressionEditorY=-400
+      MaterialExpressionGuid=16ADE743415ACA7C82B0CE8AEE797408
+      Material=Material'"M_ReflexSight_Glass"'
+   End Object
+   Begin Object Name="MaterialExpressionScalarParameter_0"
+      DefaultValue=-10.000000
+      ParameterName="ReticleDepth"
+      ExpressionGUID=12E805144850CEE8A940DBBD9D5F33C2
+      Group="Reticle"
+      SortPriority=4
+      MaterialExpressionEditorX=-2100
+      MaterialExpressionEditorY=1400
+      MaterialExpressionGuid=D1593AEE40317CA52BD4F8AC138B2E30
+      Material=Material'"M_ReflexSight_Glass"'
+      Desc="Virtual reticle plane position along mesh-local Y, in centimeters. Negative values place it forward of the MicroRedDot glass."
+   End Object
+   Begin Object Name="MaterialExpressionScalarParameter_1"
+      ParameterName="ReticleOffsetX"
+      ExpressionGUID=9EA5DEF94D9A3E38A490C780D74823FD
+      Group="Reticle"
+      SortPriority=1
+      MaterialExpressionEditorX=-2350
+      MaterialExpressionEditorY=1200
+      MaterialExpressionGuid=A6306AA74F3BE89DB5F1788FD4E1439A
+      Material=Material'"M_ReflexSight_Glass"'
+      Desc="Reticle center along mesh-local X, in centimeters. Unrestricted."
+   End Object
+   Begin Object Name="MaterialExpressionScalarParameter_2"
+      ParameterName="ReticleOffsetY"
+      ExpressionGUID=34B553D24ADFD90B8D4FD298F06C0C42
+      Group="Reticle"
+      SortPriority=2
+      MaterialExpressionEditorX=-2350
+      MaterialExpressionEditorY=1400
+      MaterialExpressionGuid=60861DC1443F843B3ADBDAB7DBC612FD
+      Material=Material'"M_ReflexSight_Glass"'
+      Desc="Reticle center height along mesh-local Z, in centimeters. Unrestricted."
+   End Object
+   Begin Object Name="MaterialExpressionScalarParameter_3"
+      DefaultValue=1.000000
+      ParameterName="ReticleSize"
+      ExpressionGUID=2650527C4C718D536D3769A2C5C12DCE
+      Group="Reticle"
+      SortPriority=3
+      MaterialExpressionEditorX=-2100
+      MaterialExpressionEditorY=1200
+      MaterialExpressionGuid=F8A17C74420096EEB1894DADBB60691A
+      Material=Material'"M_ReflexSight_Glass"'
+      Desc="Reticle image width and height in mesh-local centimeters; one uniform scale preserves its aspect."
+   End Object
+   Begin Object Name="MaterialExpressionScalarParameter_4"
+      DefaultValue=1.000000
+      SliderMax=20.000000
+      ParameterName="EmissionStrength"
+      ExpressionGUID=28EDB3F44FADFBF55752BBA084C60AF2
+      Group="Reticle"
+      SortPriority=5
+      MaterialExpressionEditorX=-650
+      MaterialExpressionEditorY=900
+      MaterialExpressionGuid=F40B168B4739E3D1409122AF6414622B
+      Material=Material'"M_ReflexSight_Glass"'
+      Desc="Reticle brightness, matching the XPS2 emission control."
+   End Object
+   Begin Object Name="MaterialExpressionScalarParameter_5"
+      DefaultValue=1.000000
+      SliderMax=1.000000
+      ParameterName="GlassOpacity"
+      ExpressionGUID=717967B1489FBAE0FCBE62ADD616DFC3
+      Group="Glass"
+      SortPriority=5
+      MaterialExpressionEditorX=-1700
+      MaterialExpressionEditorY=-180
+      MaterialExpressionGuid=1CC04FDE4DDA23DF64FF51BC378BD49D
+      Material=Material'"M_ReflexSight_Glass"'
+      Desc="Multiplier for the glass alpha texture. Does not dim the reticle."
+   End Object
+   Begin Object Name="MaterialExpressionTextureCoordinate_0"
+      MaterialExpressionEditorX=-2600
+      MaterialExpressionEditorY=480
+      MaterialExpressionGuid=EB26BF094AD83D250F998F9534A43998
+      Material=Material'"M_ReflexSight_Glass"'
+      Desc="Original mesh UVs for the five glass textures. Reticle projection is independent."
+   End Object
+   Begin Object Name="MaterialExpressionTextureSampleParameter2D_0"
+      ParameterName="ReticleTexture"
+      ExpressionGUID=875F81D243985865C5E2D09054F9E6E5
+      Group="Reticle"
+      SortPriority=0
+      Coordinates=(Expression=MaterialExpressionCustom'"M_ReflexSight_Glass:MaterialExpressionCustom_0"')
+      SamplerSource=SSM_Clamp_WorldGroupSettings
+      Texture=Texture2D'"/Game/KINEMATION/TacticalShooterPack/Weapons/TR15/Attachments/Holosight/Textures/T_XPS2.T_XPS2"'
+      MaterialExpressionEditorX=-1150
+      MaterialExpressionEditorY=550
+      MaterialExpressionGuid=E19262374F1C102C2870BBA8D9E4811C
+      Material=Material'"M_ReflexSight_Glass"'
+      Desc="Separate reticle image, with a black or transparent background. Clamped to prevent tiling."
+   End Object
+   Begin Object Name="MaterialExpressionTextureSampleParameter2D_1"
+      ParameterName="BaseColorTexture"
+      ExpressionGUID=987E6AF6412320675232008CB62BFFCD
+      Group="Glass"
+      SortPriority=0
+      Coordinates=(Expression=MaterialExpressionTextureCoordinate'"M_ReflexSight_Glass:MaterialExpressionTextureCoordinate_0"')
+      Texture=Texture2D'"/Game/KINEMATION/TacticalShooterPack/Weapons/Attachments/MicroRedDot/Textures/T_MicroRedDot_BaseColor.T_MicroRedDot_BaseColor"'
+      MaterialExpressionEditorX=-1150
+      MaterialExpressionEditorY=-800
+      MaterialExpressionGuid=818638E447B53E59F6450B8A79B042BF
+      Material=Material'"M_ReflexSight_Glass"'
+   End Object
+   Begin Object Name="MaterialExpressionTextureSampleParameter2D_2"
+      ParameterName="NormalTexture"
+      ExpressionGUID=576A60D6467BABB23D35CD947BBB5DB4
+      Group="Glass"
+      SortPriority=1
+      Coordinates=(Expression=MaterialExpressionTextureCoordinate'"M_ReflexSight_Glass:MaterialExpressionTextureCoordinate_0"')
+      Texture=Texture2D'"/Game/KINEMATION/TacticalShooterPack/Weapons/Attachments/MicroRedDot/Textures/T_MicroRedDot_Normal.T_MicroRedDot_Normal"'
+      SamplerType=SAMPLERTYPE_Normal
+      MaterialExpressionEditorX=-900
+      MaterialExpressionEditorY=-100
+      MaterialExpressionGuid=04D41DA74E9859110147F1AC4E776005
+      Material=Material'"M_ReflexSight_Glass"'
+   End Object
+   Begin Object Name="MaterialExpressionTextureSampleParameter2D_3"
+      ParameterName="MetallicTexture"
+      ExpressionGUID=31FCC14547B891345CA17FA0EC70FFF9
+      Group="Glass"
+      SortPriority=2
+      Coordinates=(Expression=MaterialExpressionTextureCoordinate'"M_ReflexSight_Glass:MaterialExpressionTextureCoordinate_0"')
+      Texture=Texture2D'"/Game/KINEMATION/TacticalShooterPack/Weapons/Attachments/MicroRedDot/Textures/T_MicroRedDot_Metallic.T_MicroRedDot_Metallic"'
+      SamplerType=SAMPLERTYPE_LinearColor
+      MaterialExpressionEditorX=-900
+      MaterialExpressionEditorY=-1400
+      MaterialExpressionGuid=3128D2384EF70BF18409EA8C1AA9B323
+      Material=Material'"M_ReflexSight_Glass"'
+   End Object
+   Begin Object Name="MaterialExpressionTextureSampleParameter2D_4"
+      ParameterName="RoughnessTexture"
+      ExpressionGUID=29DAA200461A3FD8ABE1B0A64AFC9E98
+      Group="Glass"
+      SortPriority=3
+      Coordinates=(Expression=MaterialExpressionTextureCoordinate'"M_ReflexSight_Glass:MaterialExpressionTextureCoordinate_0"')
+      Texture=Texture2D'"/Game/KINEMATION/TacticalShooterPack/Weapons/Attachments/MicroRedDot/Textures/T_MicroRedDot_Roughness.T_MicroRedDot_Roughness"'
+      SamplerType=SAMPLERTYPE_LinearColor
+      MaterialExpressionEditorX=-900
+      MaterialExpressionEditorY=-1100
+      MaterialExpressionGuid=9C3C63964C7352392D6382AEB6BAD97E
+      Material=Material'"M_ReflexSight_Glass"'
+   End Object
+   Begin Object Name="MaterialExpressionTextureSampleParameter2D_5"
+      ParameterName="AlphaTexture"
+      ExpressionGUID=F579147648FD3096176E2688B1453C99
+      Group="Glass"
+      SortPriority=4
+      Coordinates=(Expression=MaterialExpressionTextureCoordinate'"M_ReflexSight_Glass:MaterialExpressionTextureCoordinate_0"')
+      Texture=Texture2D'"/Game/KINEMATION/TacticalShooterPack/Weapons/Attachments/MicroRedDot/Textures/T_MicroRedDot_Alpha.T_MicroRedDot_Alpha"'
+      SamplerType=SAMPLERTYPE_LinearColor
+      MaterialExpressionEditorX=-1700
+      MaterialExpressionEditorY=-480
+      MaterialExpressionGuid=7CBEF99440B829097F1EB08B61111309
+      Material=Material'"M_ReflexSight_Glass"'
+      Desc="Glass opacity from the texture red channel: black is clear, white is opaque."
+   End Object
+   Begin Object Name="MaterialExpressionTransformPosition_0"
+      Input=(Expression=MaterialExpressionWorldPosition'"M_ReflexSight_Glass:MaterialExpressionWorldPosition_0"')
+      TransformSourceType=TRANSFORMPOSSOURCE_World
+      MaterialExpressionEditorX=-2350
+      MaterialExpressionEditorY=550
+      MaterialExpressionGuid=CF002E0242B4EF4095B0ABB0D92FBE94
+      Material=Material'"M_ReflexSight_Glass"'
+   End Object
+   Begin Object Name="MaterialExpressionTransformPosition_1"
+      Input=(Expression=MaterialExpressionCameraPositionWS'"M_ReflexSight_Glass:MaterialExpressionCameraPositionWS_0"')
+      TransformSourceType=TRANSFORMPOSSOURCE_World
+      MaterialExpressionEditorX=-2350
+      MaterialExpressionEditorY=850
+      MaterialExpressionGuid=6E8A2CE342A06B89593314991C117AA8
+      Material=Material'"M_ReflexSight_Glass"'
+   End Object
+   Begin Object Name="MaterialExpressionVectorParameter_0"
+      DefaultValue=(R=1.000000,G=1.000000,B=1.000000,A=1.000000)
+      ParameterName="ReticleColor"
+      ExpressionGUID=3BB5E09E49680E6EDA90DEA03A8FD887
+      Group="Reticle"
+      SortPriority=6
+      MaterialExpressionEditorX=-650
+      MaterialExpressionEditorY=1120
+      MaterialExpressionGuid=B80048DD442313C2E4A3568646BD6972
+      Material=Material'"M_ReflexSight_Glass"'
+      Desc="Reticle color tint. White preserves the reticle texture\'s original color."
+   End Object
+   Begin Object Name="MaterialExpressionWorldPosition_0"
+      MaterialExpressionEditorX=-2600
+      MaterialExpressionEditorY=550
+      MaterialExpressionGuid=76A4D98B482096F285C4888CA1291C97
+      Material=Material'"M_ReflexSight_Glass"'
+   End Object
+   Begin Object Name="SceneThumbnailInfoWithPrimitive_0"
+   End Object
+   BaseColor=(Expression=MaterialExpressionMultiply'"MaterialExpressionMultiply_4"')
+   Metallic=(Expression=MaterialExpressionTextureSampleParameter2D'"MaterialExpressionTextureSampleParameter2D_3"',OutputIndex=1,Mask=1,MaskR=1)
+   Specular=(Expression=MaterialExpressionMultiply'"MaterialExpressionMultiply_5"')
+   Roughness=(Expression=MaterialExpressionTextureSampleParameter2D'"MaterialExpressionTextureSampleParameter2D_4"',OutputIndex=1,Mask=1,MaskR=1)
+   Normal=(Expression=MaterialExpressionTextureSampleParameter2D'"MaterialExpressionTextureSampleParameter2D_2"',Mask=1,MaskR=1,MaskG=1,MaskB=1)
+   EmissiveColor=(Expression=MaterialExpressionMultiply'"MaterialExpressionMultiply_2"')
+   Opacity=(Expression=MaterialExpressionSaturate'"MaterialExpressionSaturate_0"')
+   BlendMode=BLEND_AlphaComposite
+   TranslucencyLightingMode=TLM_SurfacePerPixelLighting
+   Expressions(0)=MaterialExpressionMultiply'"MaterialExpressionMultiply_4"'
+   Expressions(1)=MaterialExpressionTextureSampleParameter2D'"MaterialExpressionTextureSampleParameter2D_3"'
+   Expressions(2)=MaterialExpressionMultiply'"MaterialExpressionMultiply_5"'
+   Expressions(3)=MaterialExpressionTextureSampleParameter2D'"MaterialExpressionTextureSampleParameter2D_4"'
+   Expressions(4)=MaterialExpressionTextureSampleParameter2D'"MaterialExpressionTextureSampleParameter2D_2"'
+   Expressions(5)=MaterialExpressionMultiply'"MaterialExpressionMultiply_2"'
+   Expressions(6)=MaterialExpressionSaturate'"MaterialExpressionSaturate_0"'
+   Expressions(7)=MaterialExpressionTextureCoordinate'"MaterialExpressionTextureCoordinate_0"'
+   Expressions(8)=MaterialExpressionScalarParameter'"MaterialExpressionScalarParameter_0"'
+   Expressions(9)=MaterialExpressionScalarParameter'"MaterialExpressionScalarParameter_1"'
+   Expressions(10)=MaterialExpressionScalarParameter'"MaterialExpressionScalarParameter_2"'
+   Expressions(11)=MaterialExpressionScalarParameter'"MaterialExpressionScalarParameter_3"'
+   Expressions(12)=MaterialExpressionTextureSampleParameter2D'"MaterialExpressionTextureSampleParameter2D_0"'
+   Expressions(13)=MaterialExpressionMultiply'"MaterialExpressionMultiply_1"'
+   Expressions(14)=MaterialExpressionScalarParameter'"MaterialExpressionScalarParameter_4"'
+   Expressions(15)=MaterialExpressionTextureSampleParameter2D'"MaterialExpressionTextureSampleParameter2D_1"'
+   Expressions(16)=MaterialExpressionTextureSampleParameter2D'"MaterialExpressionTextureSampleParameter2D_5"'
+   Expressions(17)=MaterialExpressionScalarParameter'"MaterialExpressionScalarParameter_5"'
+   Expressions(18)=MaterialExpressionMultiply'"MaterialExpressionMultiply_3"'
+   Expressions(19)=MaterialExpressionWorldPosition'"MaterialExpressionWorldPosition_0"'
+   Expressions(20)=MaterialExpressionTransformPosition'"MaterialExpressionTransformPosition_0"'
+   Expressions(21)=MaterialExpressionCameraPositionWS'"MaterialExpressionCameraPositionWS_0"'
+   Expressions(22)=MaterialExpressionTransformPosition'"MaterialExpressionTransformPosition_1"'
+   Expressions(23)=MaterialExpressionCustom'"MaterialExpressionCustom_0"'
+   Expressions(24)=MaterialExpressionVectorParameter'"MaterialExpressionVectorParameter_0"'
+   Expressions(25)=MaterialExpressionMultiply'"MaterialExpressionMultiply_0"'
+   ParameterGroupData(0)=(GroupName="Glass")
+   ParameterGroupData(1)=(GroupName="Glass")
+   ParameterGroupData(2)=(GroupName="Glass")
+   ParameterGroupData(3)=(GroupName="Reticle",GroupSortPriority=1)
+   ParameterGroupData(4)=(GroupName="Reticle",GroupSortPriority=1)
+   ParameterGroupData(5)=(GroupName="Reticle",GroupSortPriority=1)
+   ParameterGroupData(6)=(GroupName="Reticle",GroupSortPriority=1)
+   ParameterGroupData(7)=(GroupName="Reticle",GroupSortPriority=1)
+   ParameterGroupData(8)=(GroupName="Reticle",GroupSortPriority=1)
+   ParameterGroupData(9)=(GroupName="Glass")
+   ParameterGroupData(10)=(GroupName="Glass")
+   ParameterGroupData(11)=(GroupName="Glass")
+   bCanMaskedBeAssumedOpaque=True
+   StateId=6AFD320441E38AF70847F2AA2FC6B74B
+   ReferencedTextureGuids(0)=027F31A940D3D15F354D529820043236
+   ReferencedTextureGuids(1)=82BECE674D8DCDAF583CE6883C1A279F
+   ReferencedTextureGuids(2)=F7667E6F4FC53BBA13128DAC58C96C84
+   ReferencedTextureGuids(3)=00513070420E747969E78CAC4855EF37
+   ReferencedTextureGuids(4)=3CCB02914B45DE6D5AB352BE24557A45
+   ReferencedTextureGuids(5)=28E6572E40DFC52DBCA76692E3527E54
+   TextureStreamingDataVersion=1
+   TextureStreamingData(0)=(SamplingScale=1.000000,UVChannelIndex=0,TextureName="T_MicroRedDot_Alpha",TextureReference="/Game/KINEMATION/TacticalShooterPack/Weapons/Attachments/MicroRedDot/Textures/T_MicroRedDot_Alpha.T_MicroRedDot_Alpha")
+   TextureStreamingData(1)=(SamplingScale=1.000000,UVChannelIndex=0,TextureName="T_MicroRedDot_BaseColor",TextureReference="/Game/KINEMATION/TacticalShooterPack/Weapons/Attachments/MicroRedDot/Textures/T_MicroRedDot_BaseColor.T_MicroRedDot_BaseColor")
+   TextureStreamingData(2)=(SamplingScale=1.000000,UVChannelIndex=0,TextureName="T_MicroRedDot_Metallic",TextureReference="/Game/KINEMATION/TacticalShooterPack/Weapons/Attachments/MicroRedDot/Textures/T_MicroRedDot_Metallic.T_MicroRedDot_Metallic")
+   TextureStreamingData(3)=(SamplingScale=1.000000,UVChannelIndex=0,TextureName="T_MicroRedDot_Normal",TextureReference="/Game/KINEMATION/TacticalShooterPack/Weapons/Attachments/MicroRedDot/Textures/T_MicroRedDot_Normal.T_MicroRedDot_Normal")
+   TextureStreamingData(4)=(SamplingScale=1.000000,UVChannelIndex=0,TextureName="T_MicroRedDot_Roughness",TextureReference="/Game/KINEMATION/TacticalShooterPack/Weapons/Attachments/MicroRedDot/Textures/T_MicroRedDot_Roughness.T_MicroRedDot_Roughness")
+   ThumbnailInfo=SceneThumbnailInfoWithPrimitive'"SceneThumbnailInfoWithPrimitive_0"'
+   ParameterOverviewExpansion=(("-12Global Glass", True),("-12Global Reticle", True))
+   LightingGuid=DFA169A44281CA9B58014DBBBD48E2D4
+End Object

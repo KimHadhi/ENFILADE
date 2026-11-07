@@ -8,9 +8,35 @@ public sealed class ProneState : MovementBaseState
     public override string Name => "Prone";
     public override MovementPosture Posture => MovementPosture.Prone;
 
+    // Backlog 134: spamming down and up flapped the body like wings. Lying down now lasts at least proneMinHold; a
+    // get-up press before then is kept and carried out when it ends, and pressing again takes it back.
+    private float enteredAt;
+    private bool riseQueued, queuedCrouch;
+    private bool Settled => Time.time - enteredAt >= ctx.AbilitySettings.proneMinHold;
+
+    public override void Enter() { enteredAt = Time.time; riseQueued = false; }
+    public override void Exit() { riseQueued = false; ctx.Actions.LeftProneAt = Time.time; }
+
+    private int queuedFrame = -1;
+    private void QueueRise(bool toCrouch)
+    {
+        // A second press while one waits takes it back, so the presses' count decides where the player ends up.
+        // One frame's keys count once (on the back, W and Space can both ask in the same frame).
+        if (queuedFrame == Time.frameCount) return;
+        queuedFrame = Time.frameCount;
+        riseQueued = !riseQueued;
+        queuedCrouch = toCrouch;
+    }
+
     public override bool TryJump()
     {
         if (ctx.IsDowned || ctx.HasCeilingAbove(ctx.CrouchColliderHeight)) return false;
+        if (!Settled)
+        {
+            // A held W on the back (SupineState) asks every frame; only a fresh press counts toward the queue.
+            if (ctx.Input.JumpPressed) QueueRise(false);
+            return ctx.Input.JumpPressed;
+        }
         ctx.ChangeState(RiseTo());
         return true;
     }
@@ -34,6 +60,17 @@ public sealed class ProneState : MovementBaseState
             return;
         }
 
+        // A get-up asked for too early happens now that the body has settled.
+        if (riseQueued && Settled)
+        {
+            riseQueued = false;
+            if (!ctx.HasCeilingAbove(ctx.CrouchColliderHeight))
+            {
+                ctx.ChangeState(queuedCrouch ? PlayerMovement.MovementState.Crouching : RiseTo());
+                return;
+            }
+        }
+
         bool crouchPressed = ctx.Input.CrouchHeld;
         bool crouchJustPressed = ctx.Input.CrouchPressed;
 
@@ -52,7 +89,7 @@ public sealed class ProneState : MovementBaseState
             (sprintHeld && hasMoveInput) || (sprintJustPressed && hasMoveInput);
 
         // 1. 달리기 기상 캔슬. 앉기를 누르고 있으면 3번이 앉기로 일으킨다
-        if (wantsFastGetUp && !crouchPressed && !ctx.HasCeilingAbove(ctx.StandingColliderHeight))
+        if (wantsFastGetUp && Settled && !crouchPressed && !ctx.HasCeilingAbove(ctx.StandingColliderHeight))
         {
             ctx.SprintProgress = Mathf.Max(ctx.SprintProgress, 0.6f);
 
@@ -67,6 +104,11 @@ public sealed class ProneState : MovementBaseState
         }
 
         // 2. 앉기 또는 다이빙 키를 다시 눌러 일어서기
+        if ((crouchJustPressed || diveJustPressed) && !Settled)
+        {
+            QueueRise(crouchJustPressed);
+            return;
+        }
         if ((crouchJustPressed || diveJustPressed)
             && !ctx.HasCeilingAbove(ctx.CrouchColliderHeight))
         {

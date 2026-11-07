@@ -10,9 +10,49 @@ internal sealed class HandSkinCorrection : MonoBehaviour
         public SkinnedMeshRenderer Renderer;
         public Mesh Original, Copy;
         public readonly int[] Shapes = { -1, -1 };
+        // Each thumb's skin on this mesh, keyed by the thumb's root bone.
+        public readonly Dictionary<Transform, Thumb> Thumbs = new Dictionary<Transform, Thumb>();
+    }
+
+    // One thumb's skin on one mesh, worked out from the bind pose while the body is made. The first grip then only
+    // relaxes the few hundred vertices around the thumb web, where it used to scan, weld and invert the whole body mesh in
+    // that frame: 66 ms of the first ledge hang's 97 ms frame in the 2026-11-06 hitch log.
+    private sealed class Thumb
+    {
+        // The vertices the thumb bones move by more than 5%, which carry the correction, and their weights.
+        public int[] Affected = System.Array.Empty<int>();
+        public BoneWeight[] AffectedWeights = System.Array.Empty<BoneWeight>();
+        // Web vertices whose welded group relaxes, and that group as an index into Members.
+        public int[] Web = System.Array.Empty<int>();
+        public int[] WebGroup = System.Array.Empty<int>();
+        // Every welded group in play (the relaxing ones and their neighbours): its vertices, its strength (the least web
+        // amount among them) and, for a relaxing group, the groups it is averaged with.
+        public int[][] Members = System.Array.Empty<int[]>();
+        public float[] Strength = System.Array.Empty<float>();
+        public int[][] Neighbours = System.Array.Empty<int[]>();
+    }
+
+    // A correction under way. The first grip still cost 49 ms in one frame once the vertex work moved to load (2026-11-06
+    // re-measure): baking, relaxing and adding the blend shape are each a few milliseconds plus the upload. So the grip
+    // frame only bakes the held pose and the frames after relax it and then add the shape; the skin settles two frames
+    // later, which nothing can see.
+    private sealed class Work
+    {
+        public Part Part;
+        public Thumb Data;
+        public int Side;
+        public Mesh Baked;
+        public Matrix4x4[] Inverses;
+        public Matrix4x4 ToWorld;
+        public float MaxMove;
+        public System.Func<Vector3, bool> Clear;
+        public Vector3[] Delta, Displacements;
+        // The frame of the last step, so the next one waits for another frame even if this LateUpdate runs after the grip's.
+        public int Frame;
     }
 
     private readonly List<Part> parts = new List<Part>();
+    private readonly List<Work> pending = new List<Work>();
     private readonly bool[] prepared = new bool[2];
 
     public static HandSkinCorrection For(Animator animator)
@@ -22,18 +62,40 @@ internal sealed class HandSkinCorrection : MonoBehaviour
     }
 
     /// <summary>
-    /// Copies, while the body is being made, each mesh this thumb's web skin lies on. Prepare used to copy them the first
-    /// time a hand closed on a ledge, and copying a whole body mesh mid-mantle stalled that frame (Instantiate, about 40 ms
-    /// in the hitch log): the first mantle's hitch.
+    /// Everything the first grip of this thumb needs that the pose doesn't change, done while the body is being made:
+    /// the copy of each mesh the thumb's web skin lies on, already worn, and the thumb's vertices, welds and neighbours on
+    /// it. Done at the first ledge grip instead, it stalled that frame: copying the mesh (about 40 ms), then scanning and
+    /// inverting every vertex and uploading the swapped mesh (97 ms).
     /// </summary>
     public void CopyAhead(Transform[] thumb)
     {
+        if (thumb == null || thumb.Length < 3) return;
         foreach (var renderer in GetComponentsInChildren<SkinnedMeshRenderer>())
         {
             Mesh source = renderer.sharedMesh;
-            if (source == null || parts.Exists(item => item.Renderer == renderer) || !Carries(renderer.bones, thumb)) continue;
-            parts.Add(MakePart(renderer, source));
+            if (source == null) continue;
+            Transform[] bones = renderer.bones;
+            if (!Carries(bones, thumb)) continue;
+            // The skin's own vertices and weights are read here, which needs Read/Write on the model. Without it this skin
+            // goes without the thumb-web fix; reading it anyway threw and left the body half made (user, 2026-11-07).
+            if (!source.isReadable)
+            {
+                ReportUnreadable(source, renderer);
+                continue;
+            }
+            Part part = parts.Find(item => item.Renderer == renderer);
+            if (part == null) parts.Add(part = MakePart(renderer, source));
+            if (!part.Thumbs.ContainsKey(thumb[0])) part.Thumbs[thumb[0]] = Measure(part.Original, bones, thumb);
         }
+    }
+
+    private static readonly HashSet<Mesh> reportedUnreadable = new();
+
+    private static void ReportUnreadable(Mesh mesh, Renderer renderer)
+    {
+        if (!reportedUnreadable.Add(mesh)) return;
+        Debug.LogWarning($"HandSkinCorrection: the mesh '{mesh.name}' ({renderer.transform.root.name}) has Read/Write off, so its "
+            + "thumb web isn't corrected when the hand grips. Turn on Read/Write in its model's import settings to have it.", renderer);
     }
 
     private static bool Carries(Transform[] bones, Transform[] thumb)
@@ -48,160 +110,258 @@ internal sealed class HandSkinCorrection : MonoBehaviour
         var part = new Part { Renderer = renderer, Original = source, Copy = Instantiate(source) };
         part.Copy.name = source.name + " (hand contact correction)";
         part.Copy.hideFlags = HideFlags.HideAndDontSave;
+        // Worn from the start: swapping meshes at the first grip uploaded the whole mesh in that frame.
+        Wear(renderer, part.Copy);
         return part;
     }
 
-    public void Prepare(Transform[] thumb, bool left, System.Func<Vector3, bool> clear)
+    // Swaps the mesh and keeps the blend shape weights it had (the face's).
+    private static void Wear(SkinnedMeshRenderer renderer, Mesh mesh)
     {
-        int side = left ? 0 : 1;
-        if (prepared[side]) return;
-        foreach (var renderer in GetComponentsInChildren<SkinnedMeshRenderer>())
-        {
-            Mesh source = renderer.sharedMesh;
-            if (source == null) continue;
-            BoneWeight[] weights = source.boneWeights;
-            Transform[] bones = renderer.bones;
-            var affected = new bool[weights.Length];
-            var web = new float[weights.Length];
-            bool any = false;
-            for (int i = 0; i < weights.Length; i++)
-            {
-                BoneWeight w = weights[i];
-                float amount = OnThumb(w.boneIndex0, w.weight0) + OnThumb(w.boneIndex1, w.weight1)
-                    + OnThumb(w.boneIndex2, w.weight2) + OnThumb(w.boneIndex3, w.weight3);
-                affected[i] = amount > .05f;
-                web[i] = Mathf.Clamp01((OnRoot(w.boneIndex0, w.weight0) + OnRoot(w.boneIndex1, w.weight1)
-                    + OnRoot(w.boneIndex2, w.weight2) + OnRoot(w.boneIndex3, w.weight3) - .05f) * 2f);
-                any |= affected[i];
-            }
-            if (!any) continue;
-
-            var baked = new Mesh { hideFlags = HideFlags.HideAndDontSave };
-            renderer.BakeMesh(baked, true);
-            Vector3[] before = baked.normals;
-            Vector3[] original = baked.vertices;
-            var delta = new Vector3[weights.Length];
-            var displacements = new Vector3[weights.Length];
-            Matrix4x4[] bind = source.bindposes;
-            var matrices = new Matrix4x4[bones.Length];
-            for (int i = 0; i < bones.Length; i++)
-                matrices[i] = renderer.transform.worldToLocalMatrix * bones[i].localToWorldMatrix * bind[i];
-            var inverses = new Matrix4x4[weights.Length];
-            var native = new Vector3[weights.Length];
-            for (int i = 0; i < weights.Length; i++)
-            {
-                BoneWeight w = weights[i];
-                Matrix4x4 blended = Matrix4x4.zero;
-                Add(w.boneIndex0, w.weight0); Add(w.boneIndex1, w.weight1);
-                Add(w.boneIndex2, w.weight2); Add(w.boneIndex3, w.weight3);
-                inverses[i] = blended.inverse;
-                native[i] = inverses[i].MultiplyPoint3x4(original[i]);
-
-                void Add(int index, float amount)
-                {
-                    if (amount <= 0f) return;
-                    for (int cell = 0; cell < 16; cell++) blended[cell] += matrices[index][cell] * amount;
-                }
-            }
-            Vector3[] relaxed = RelaxWeb(original, native, web, baked.triangles);
-            float maxMove = .0025f / Mathf.Max(.001f, renderer.transform.lossyScale.magnitude / Mathf.Sqrt(3f));
-            for (int i = 0; i < relaxed.Length; i++)
-            {
-                if (web[i] <= 0f) continue;
-                relaxed[i] = original[i] + Vector3.ClampMagnitude(relaxed[i] - original[i], maxMove);
-                if (clear(renderer.transform.TransformPoint(relaxed[i]))) continue;
-                Vector3 target = relaxed[i];
-                float safe = 0f, blocked = 1f;
-                for (int attempt = 0; attempt < 7; attempt++)
-                {
-                    float at = (safe + blocked) * .5f;
-                    if (clear(renderer.transform.TransformPoint(Vector3.Lerp(original[i], target, at)))) safe = at; else blocked = at;
-                }
-                relaxed[i] = Vector3.Lerp(original[i], target, safe);
-            }
-            baked.vertices = relaxed;
-            baked.RecalculateNormals();
-            Vector3[] after = baked.normals;
-            for (int i = 0; i < weights.Length; i++)
-            {
-                if (!affected[i]) continue;
-                delta[i] = inverses[i].MultiplyVector(after[i]).normalized - inverses[i].MultiplyVector(before[i]).normalized;
-                displacements[i] = inverses[i].MultiplyVector(relaxed[i] - original[i]);
-            }
-            Dispose(baked);
-
-            Part part = parts.Find(item => item.Renderer == renderer);
-            if (part == null) parts.Add(part = MakePart(renderer, source));
-            int count = renderer.sharedMesh.blendShapeCount;
-            var previous = new float[count];
-            for (int i = 0; i < count; i++) previous[i] = renderer.GetBlendShapeWeight(i);
-            part.Shapes[side] = part.Copy.blendShapeCount;
-            part.Copy.AddBlendShapeFrame(left ? "Ledge thumb web L" : "Ledge thumb web R", 100f, displacements, delta, null);
-            renderer.sharedMesh = part.Copy;
-            for (int i = 0; i < count; i++) renderer.SetBlendShapeWeight(i, previous[i]);
-
-            float OnThumb(int index, float amount)
-            {
-                if (amount <= 0f) return 0f;
-                return bones[index] == thumb[0] || bones[index] == thumb[1] || bones[index] == thumb[2] ? amount : 0f;
-            }
-            float OnRoot(int index, float amount) => amount > 0f && bones[index] == thumb[0] ? amount : 0f;
-        }
-        prepared[side] = true;
+        int count = renderer.sharedMesh != null ? renderer.sharedMesh.blendShapeCount : 0;
+        var previous = new float[count];
+        for (int i = 0; i < count; i++) previous[i] = renderer.GetBlendShapeWeight(i);
+        renderer.sharedMesh = mesh;
+        for (int i = 0; i < count; i++) renderer.SetBlendShapeWeight(i, previous[i]);
     }
 
-    private static Vector3[] RelaxWeb(Vector3[] posed, Vector3[] native, float[] mask, int[] triangles)
+    private static Thumb Measure(Mesh mesh, Transform[] bones, Transform[] thumb)
     {
-        // Weld UV/normal seams in the undeformed skin before relaxing, so the correction cannot open a seam.
-        var welds = new Dictionary<Vector3Int, int>();
-        var groups = new int[native.Length];
-        var points = new List<Vector3>();
-        var counts = new List<int>();
-        var strength = new List<float>();
-        for (int i = 0; i < native.Length; i++)
+        var onThumb = new bool[bones.Length];
+        var onRoot = new bool[bones.Length];
+        for (int b = 0; b < bones.Length; b++)
         {
-            Vector3Int key = Vector3Int.RoundToInt(native[i] * 100000f);
+            onThumb[b] = bones[b] == thumb[0] || bones[b] == thumb[1] || bones[b] == thumb[2];
+            onRoot[b] = bones[b] == thumb[0];
+        }
+        BoneWeight[] weights = mesh.boneWeights;
+        int count = weights.Length;
+        var web = new float[count];
+        var affected = new List<int>();
+        var affectedWeights = new List<BoneWeight>();
+        for (int i = 0; i < count; i++)
+        {
+            BoneWeight w = weights[i];
+            if (Share(onThumb, w) > .05f) { affected.Add(i); affectedWeights.Add(w); }
+            web[i] = Mathf.Clamp01((Share(onRoot, w) - .05f) * 2f);
+        }
+        var result = new Thumb { Affected = affected.ToArray(), AffectedWeights = affectedWeights.ToArray() };
+        if (result.Affected.Length == 0) return result;
+
+        // Weld UV/normal seams in the undeformed skin before relaxing, so the correction cannot open a seam.
+        Vector3[] rest = mesh.vertices;
+        var welds = new Dictionary<Vector3Int, int>();
+        var groups = new int[count];
+        var strength = new List<float>();
+        for (int i = 0; i < count; i++)
+        {
+            Vector3Int key = Vector3Int.RoundToInt(rest[i] * 100000f);
             if (!welds.TryGetValue(key, out int group))
             {
-                group = points.Count; welds.Add(key, group);
-                points.Add(Vector3.zero); counts.Add(0); strength.Add(1f);
+                group = strength.Count; welds.Add(key, group);
+                strength.Add(1f);
             }
-            groups[i] = group; points[group] += posed[i]; counts[group]++;
-            strength[group] = Mathf.Min(strength[group], mask[i]);
+            groups[i] = group;
+            strength[group] = Mathf.Min(strength[group], web[i]);
         }
-        var neighbours = new List<int>[points.Count];
-        for (int i = 0; i < points.Count; i++) points[i] /= counts[i];
+        // Only a group of web skin alone relaxes, averaged with every group it shares an edge with.
+        var neighbours = new Dictionary<int, List<int>>();
+        int[] triangles = mesh.triangles;
         for (int i = 0; i < triangles.Length; i += 3)
             for (int edge = 0; edge < 3; edge++)
             {
                 int a = groups[triangles[i + edge]], b = groups[triangles[i + (edge + 1) % 3]];
                 Link(a, b); Link(b, a);
             }
-        Vector3[] current = points.ToArray(), next = new Vector3[points.Count];
-        // Alternating smoothing and inflation removes the folded spikes without shrinking the thumb web away.
-        for (int pass = 0; pass < 8; pass++)
+        var local = new Dictionary<int, int>();
+        foreach (var pair in neighbours)
         {
-            float amount = pass % 2 == 0 ? .45f : -.47f;
-            for (int i = 0; i < current.Length; i++)
-            {
-                next[i] = current[i];
-                if (neighbours[i] == null || neighbours[i].Count == 0) continue;
-                Vector3 centre = Vector3.zero;
-                foreach (int other in neighbours[i]) centre += current[other];
-                next[i] += (centre / neighbours[i].Count - current[i]) * (amount * strength[i]);
-            }
-            Vector3[] swap = current; current = next; next = swap;
+            Local(pair.Key);
+            foreach (int other in pair.Value) Local(other);
         }
-        var result = (Vector3[])posed.Clone();
-        for (int i = 0; i < result.Length; i++) if (mask[i] > 0f) result[i] += current[groups[i]] - points[groups[i]];
+        var members = new List<int>[local.Count];
+        for (int i = 0; i < local.Count; i++) members[i] = new List<int>();
+        var webVertices = new List<int>();
+        var webGroups = new List<int>();
+        for (int i = 0; i < count; i++)
+        {
+            if (!local.TryGetValue(groups[i], out int at)) continue;
+            members[at].Add(i);
+            if (web[i] > 0f && neighbours.ContainsKey(groups[i])) { webVertices.Add(i); webGroups.Add(at); }
+        }
+        result.Members = new int[local.Count][];
+        result.Strength = new float[local.Count];
+        result.Neighbours = new int[local.Count][];
+        foreach (var pair in local)
+        {
+            result.Members[pair.Value] = members[pair.Value].ToArray();
+            result.Strength[pair.Value] = strength[pair.Key];
+            if (!neighbours.TryGetValue(pair.Key, out var list)) continue;
+            var mapped = new int[list.Count];
+            for (int i = 0; i < list.Count; i++) mapped[i] = local[list[i]];
+            result.Neighbours[pair.Value] = mapped;
+        }
+        result.Web = webVertices.ToArray();
+        result.WebGroup = webGroups.ToArray();
         return result;
 
         void Link(int a, int b)
         {
             if (a == b || strength[a] <= 0f) return;
-            if (neighbours[a] == null) neighbours[a] = new List<int>();
-            if (!neighbours[a].Contains(b)) neighbours[a].Add(b);
+            if (!neighbours.TryGetValue(a, out var list)) neighbours[a] = list = new List<int>();
+            if (!list.Contains(b)) list.Add(b);
         }
+
+        void Local(int group)
+        {
+            if (!local.ContainsKey(group)) local.Add(group, local.Count);
+        }
+    }
+
+    private static float Share(bool[] flagged, BoneWeight w)
+        => Weight(flagged, w.boneIndex0, w.weight0) + Weight(flagged, w.boneIndex1, w.weight1)
+           + Weight(flagged, w.boneIndex2, w.weight2) + Weight(flagged, w.boneIndex3, w.weight3);
+
+    private static float Weight(bool[] flagged, int index, float amount) => amount > 0f && flagged[index] ? amount : 0f;
+
+    public void Prepare(Transform[] thumb, bool left, System.Func<Vector3, bool> clear)
+    {
+        int side = left ? 0 : 1;
+        if (prepared[side] || thumb == null || thumb.Length < 3) return;
+        // A body built without CopyAhead (or a new skin's) pays for it here, once.
+        if (!parts.Exists(item => item.Thumbs.ContainsKey(thumb[0]))) CopyAhead(thumb);
+        foreach (var part in parts)
+            if (part.Renderer != null && part.Thumbs.TryGetValue(thumb[0], out var data) && data.Affected.Length > 0)
+                pending.Add(Hold(part, data, side, clear));
+        prepared[side] = true;
+    }
+
+    // The grip frame's share: the held pose, baked, and the inverse skinning of the thumb's vertices in it.
+    private static Work Hold(Part part, Thumb data, int side, System.Func<Vector3, bool> clear)
+    {
+        SkinnedMeshRenderer renderer = part.Renderer;
+        var baked = new Mesh { hideFlags = HideFlags.HideAndDontSave };
+        renderer.BakeMesh(baked, true);
+        Transform[] bones = renderer.bones;
+        Matrix4x4[] bind = part.Original.bindposes;
+        var matrices = new Matrix4x4[bones.Length];
+        for (int i = 0; i < bones.Length; i++)
+            matrices[i] = renderer.transform.worldToLocalMatrix * bones[i].localToWorldMatrix * bind[i];
+        var inverses = new Matrix4x4[data.Affected.Length];
+        for (int k = 0; k < data.Affected.Length; k++)
+        {
+            BoneWeight w = data.AffectedWeights[k];
+            Matrix4x4 blended = Matrix4x4.zero;
+            Add(ref blended, matrices, w.boneIndex0, w.weight0); Add(ref blended, matrices, w.boneIndex1, w.weight1);
+            Add(ref blended, matrices, w.boneIndex2, w.weight2); Add(ref blended, matrices, w.boneIndex3, w.weight3);
+            inverses[k] = blended.inverse;
+        }
+        return new Work
+        {
+            Part = part, Data = data, Side = side, Baked = baked, Inverses = inverses, Clear = clear, Frame = Time.frameCount,
+            ToWorld = renderer.transform.localToWorldMatrix,
+            MaxMove = .0025f / Mathf.Max(.001f, renderer.transform.lossyScale.magnitude / Mathf.Sqrt(3f))
+        };
+    }
+
+    // One step of one correction per frame: relax, then add the shape.
+    private void LateUpdate()
+    {
+        if (pending.Count == 0) return;
+        Work work = pending[0];
+        if (work.Part.Renderer == null) { if (work.Baked != null) Dispose(work.Baked); pending.RemoveAt(0); return; }
+        if (work.Frame == Time.frameCount) return;
+        work.Frame = Time.frameCount;
+        if (work.Delta == null) { Relax(work); return; }
+        Apply(work);
+        pending.RemoveAt(0);
+    }
+
+    // The thumb web's skin, relaxed in the held pose and kept clear of what the hand holds.
+    private static void Relax(Work work)
+    {
+        Thumb data = work.Data;
+        Mesh baked = work.Baked;
+        Vector3[] before = baked.normals;
+        Vector3[] original = baked.vertices;
+
+        // Alternating smoothing and inflation removes the folded spikes without shrinking the thumb web away.
+        int groups = data.Members.Length;
+        var points = new Vector3[groups];
+        for (int g = 0; g < groups; g++)
+        {
+            int[] members = data.Members[g];
+            foreach (int i in members) points[g] += original[i];
+            points[g] /= members.Length;
+        }
+        Vector3[] current = (Vector3[])points.Clone(), next = new Vector3[groups];
+        for (int pass = 0; pass < 8; pass++)
+        {
+            float amount = pass % 2 == 0 ? .45f : -.47f;
+            for (int g = 0; g < groups; g++)
+            {
+                next[g] = current[g];
+                int[] neighbours = data.Neighbours[g];
+                if (neighbours == null || neighbours.Length == 0) continue;
+                Vector3 centre = Vector3.zero;
+                foreach (int other in neighbours) centre += current[other];
+                next[g] += (centre / neighbours.Length - current[g]) * (amount * data.Strength[g]);
+            }
+            Vector3[] swap = current; current = next; next = swap;
+        }
+
+        var relaxed = (Vector3[])original.Clone();
+        Matrix4x4 toWorld = work.ToWorld;
+        for (int k = 0; k < data.Web.Length; k++)
+        {
+            int i = data.Web[k], g = data.WebGroup[k];
+            Vector3 target = original[i] + Vector3.ClampMagnitude(current[g] - points[g], work.MaxMove);
+            if (work.Clear(toWorld.MultiplyPoint3x4(target))) { relaxed[i] = target; continue; }
+            float safe = 0f, blocked = 1f;
+            for (int attempt = 0; attempt < 7; attempt++)
+            {
+                float at = (safe + blocked) * .5f;
+                if (work.Clear(toWorld.MultiplyPoint3x4(Vector3.Lerp(original[i], target, at)))) safe = at; else blocked = at;
+            }
+            relaxed[i] = Vector3.Lerp(original[i], target, safe);
+        }
+        baked.vertices = relaxed;
+        baked.RecalculateNormals();
+        Vector3[] after = baked.normals;
+        Dispose(baked);
+        work.Baked = null;
+
+        work.Delta = new Vector3[original.Length];
+        work.Displacements = new Vector3[original.Length];
+        for (int k = 0; k < data.Affected.Length; k++)
+        {
+            int i = data.Affected[k];
+            Matrix4x4 inverse = work.Inverses[k];
+            work.Delta[i] = inverse.MultiplyVector(after[i]).normalized - inverse.MultiplyVector(before[i]).normalized;
+            work.Displacements[i] = inverse.MultiplyVector(relaxed[i] - original[i]);
+        }
+    }
+
+    // The relaxed skin as a blend shape on the worn copy; HandGrip sets its weight while the hand holds a ledge.
+    private static void Apply(Work work)
+    {
+        Part part = work.Part;
+        SkinnedMeshRenderer renderer = part.Renderer;
+        if (renderer.sharedMesh != part.Copy) Wear(renderer, part.Copy);
+        int count = part.Copy.blendShapeCount;
+        var previous = new float[count];
+        for (int i = 0; i < count; i++) previous[i] = renderer.GetBlendShapeWeight(i);
+        part.Copy.AddBlendShapeFrame(work.Side == 0 ? "Ledge thumb web L" : "Ledge thumb web R", 100f,
+            work.Displacements, work.Delta, null);
+        for (int i = 0; i < count; i++) renderer.SetBlendShapeWeight(i, previous[i]);
+        part.Shapes[work.Side] = count;
+    }
+
+    private static void Add(ref Matrix4x4 blended, Matrix4x4[] matrices, int index, float amount)
+    {
+        if (amount <= 0f) return;
+        Matrix4x4 bone = matrices[index];
+        for (int cell = 0; cell < 16; cell++) blended[cell] += bone[cell] * amount;
     }
 
     public void SetWeight(bool left, float weight)
@@ -213,6 +373,8 @@ internal sealed class HandSkinCorrection : MonoBehaviour
 
     private void OnDestroy()
     {
+        foreach (var work in pending) if (work.Baked != null) Dispose(work.Baked);
+        pending.Clear();
         foreach (var part in parts)
         {
             if (part.Renderer != null && part.Renderer.sharedMesh == part.Copy) part.Renderer.sharedMesh = part.Original;

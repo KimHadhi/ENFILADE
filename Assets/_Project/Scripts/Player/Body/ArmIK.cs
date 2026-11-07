@@ -18,6 +18,10 @@ internal sealed class ArmIK
     public float PalmDepth => grip.PalmDepth;
     public float HalfPalmWidth => grip.HalfWidth;
     public Vector3 PalmPosition => hand.TransformPoint(grip.PalmLocal);
+    public Vector3 PalmFacing => grip.PalmFacing;
+    public Vector3 FingersForward => grip.FingersForward;
+
+    public void GripSurface(GunSurface surface, float clearance, float weight) => grip.Surface(surface, clearance, weight);
     public float Reach => Vector3.Distance(upper.position, lower.position) + Vector3.Distance(lower.position, hand.position);
 
     private ArmIK(Transform shoulder, Transform upper, Transform lower, Transform hand, Quaternion handFromFrame, float palmLength, HandGrip grip)

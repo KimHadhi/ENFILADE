@@ -139,6 +139,30 @@ def switch_limb(context, rig, limb='arm_L', mode='FK', key=True):
         rig[prop] = 1.0
         rig.update_tag(refresh={'OBJECT'})
         context.view_layer.update()
+        # Imported FBX chains carry bone-roll offsets. Match their actual bend
+        # by rotating the pole around the limb axis, rather than assuming that
+        # a pole in the geometric bend plane reproduces the source knee/elbow.
+        bend_direction=bend.normalized()
+        distance=max((b-a).length+(c-b).length,.2)
+        best=((rig.pose.bones[names[1]].head-b).length,0.0)
+        if best[0] > .0002:
+            for i in range(48):
+                angle=math.tau*i/48
+                pole_matrix.translation=b+Quaternion(axis,angle)@bend_direction*distance
+                _set_pose_matrix(context,rig,names[4],pole_matrix)
+                error=(rig.pose.bones[names[1]].head-b).length
+                if error < best[0]:
+                    best=(error,angle)
+            center=best[1]
+            for i in range(-12,13):
+                angle=center+i*math.tau/1152
+                pole_matrix.translation=b+Quaternion(axis,angle)@bend_direction*distance
+                _set_pose_matrix(context,rig,names[4],pole_matrix)
+                error=(rig.pose.bones[names[1]].head-b).length
+                if error < best[0]:
+                    best=(error,angle)
+            pole_matrix.translation=b+Quaternion(axis,best[1])@bend_direction*distance
+            _set_pose_matrix(context,rig,names[4],pole_matrix)
     if key:
         for name in names:
             for attr in ('location', 'rotation_quaternion', 'scale'):

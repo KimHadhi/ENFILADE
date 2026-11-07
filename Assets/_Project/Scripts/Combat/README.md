@@ -42,7 +42,7 @@ PlayerWeaponInput → WeaponController
 2. **피해 정보**: `Source`, `Method`, `IsCritical`, `IsCounter`, `IsComboFinisher`, `CanBeGuarded`를 보존한다. 방어·마지막 타격 패링·점수·소리는 이 정보에 의존한다. `IsCritical`은 이미 배율이 적용된 피해를 표시하는 정보이며 추가 피해 배율을 뜻하지 않는다.
 3. **사망 순서**: HP 감소와 피해 보고를 먼저 처리한 뒤 기존 `Died` 경로로 사망시킨다. 효과에서 적을 직접 제거하면 웨이브 집계와 처형 처리가 어긋난다.
 4. **적 행동 잠금**: 새 AI는 기절·흐트러짐·넘어짐과 `PlayerExecution.Suppresses`를 확인한다. 이동·공격 준비·NavMesh 복구가 각각 이 상태를 존중해야 한다.
-5. **몸 이동과 화면 표현**: 실제 이동은 이동 서비스가 담당한다. `WeaponPresentation`과 `CameraViewPunch`의 시각 보간을 히트스캔·벽 차단에 섞지 않는다.
+5. **몸 이동과 화면 표현**: 실제 이동은 이동 서비스가 담당한다. 총 모델 표현(FPSBody, KINEMATION FPS Animation Framework)과 `CameraViewPunch`의 시각 보간을 히트스캔·벽 차단에 섞지 않는다.
 6. **시간 효과**: 히트스톱·반격 슬로모션은 [CombatTimeEffects](../Player/Combat/CombatTimeEffects.cs)로 요청·해제한다. 일시정지나 다른 효과의 시간 배율을 덮어쓰지 않는다.
 7. **무기 상태와 설정**: `WeaponData`는 공유 설정, `WeaponRuntime`은 개별 무기 상태다. 현재 장탄수·예비탄을 asset에 저장하지 않는다.
 

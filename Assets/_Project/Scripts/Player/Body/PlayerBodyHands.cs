@@ -3,7 +3,8 @@ using MovementState = PlayerMovement.MovementState;
 
 /// <summary>
 /// Puts the body's own hands where they belong after the clip has posed the arms:
-/// - on the held gun's grips (grip points per weapon in Weapons.csv), wherever the camera-driven gun pose puts it;
+/// - on the held gun: KINEMATION FPS Animation Framework has already put both hands on it (FPSBody), so that hold only
+///   counts, and the other holds take the hands from it as they come in;
 /// - on the fist targets while fists are out (FistsView), except running forward or barging, where the clip swings them;
 /// - on the ledge edge, a hand either side, while hanging;
 /// - on real ladder rungs, keeping one hand planted while the other reaches above it;
@@ -39,8 +40,8 @@ public sealed partial class PlayerBodyHands : MonoBehaviour
     [SerializeField, Range(0f, 60f), Tooltip("How far each outer thumb joint bends toward the palm at ease (degrees).")]
     private float thumbBend = 20f;
 
-    private enum Hold { Gun, Fists, Ledge, Ladder, Bar }
-    private const int HoldCount = 5;
+    private enum Hold { Gun, Fists, Ledge, Ladder, Bar, Zipline }
+    private const int HoldCount = 6;
     // How quickly a hand comes up onto a top, in arm lengths per second. Eased, since a top can appear under a wrist all at once.
     private const float RestLiftSpeed = 6f;
     // At least this share of the input (this PC) or of the speed along the facing (another PC's copy) is forward, running forward.
@@ -55,13 +56,34 @@ public sealed partial class PlayerBodyHands : MonoBehaviour
     private readonly float[] weights = new float[HoldCount];
     private readonly float[] restLifts = new float[2];
     private readonly float[] holding = new float[2];
-    private float fistsReady, leftOffGun, notRunning;
+    private float fistsReady, leftOffGun, notRunning, stance;
 
     /// <summary>How far the hands have gone up as fists (0-1).</summary>
     internal float FistsWeight => weights[(int)Hold.Fists];
 
+    /// <summary>How far the right hand is on the gun (0-1). It eases out in climbs, on ladders and bars, and stays on in a
+    /// one-handed vault (only the left leaves). FPSBody weighs FPS Animation Framework's upper body by it.</summary>
+    internal float GunWeight => weights[(int)Hold.Gun];
+
+    /// <summary>How far both hands are on the gun (0-1): in a one-handed vault the left leaves it for the edge.</summary>
+    internal float BothHandsOnGun => weights[(int)Hold.Gun] * (1f - leftOffGun);
+
+    /// <summary>
+    /// How much of the upper body FPS Animation Framework holds the gun with (0-1): both hands on it, standing or crouched
+    /// (walking, running and jumps included). In every other move (a vault, a slide, a dive, a roll, a heavy landing) the
+    /// move's own armed clip poses the upper body, as it did before KINEMATION (0.7.34), and the hands are put on the gun
+    /// here, where FPSBody keeps it (user, 2026-11-07: "움직임은 클립이").
+    /// </summary>
+    internal float FrameworkShare => BothHandsOnGun * stance;
+
+    // Standing or crouched, the shooting stances FPS Animation Framework's profiles are made for.
+    private static bool ShootingStance(MovementState state) => state == MovementState.Standing || state == MovementState.Crouching;
+
     /// <summary>How much of a hand something holds this frame (0-1): the gun, the fists, a ledge, a rung or a bar.</summary>
     internal float Holding(bool isLeft) => holding[isLeft ? 0 : 1];
+
+    /// <summary>How far the wrist sits above a surface the palm rests flat on (m), measured from the character's hand.</summary>
+    internal float PalmDepth => right != null ? right.PalmDepth : left != null ? left.PalmDepth : 0f;
 
     private void Awake()
     {
@@ -79,6 +101,8 @@ public sealed partial class PlayerBodyHands : MonoBehaviour
     {
         boundAnimator = animator;
         gripSkin = body != null ? body.Skin : null;
+        // Nothing of the old body is kept if making the new arms fails part way.
+        left = right = null;
         left = ArmIK.Create(animator, true);
         right = ArmIK.Create(animator, false);
         shoulderSpan = left != null && right != null ? Vector3.Distance(left.Upper.position, right.Upper.position) : 0f;
@@ -126,6 +150,7 @@ public sealed partial class PlayerBodyHands : MonoBehaviour
         // A vault keeps the gun in the right hand while the left plants; a step up keeps both on it.
         bool oneHanded = alive && gun && use == TraversalHandUse.LeftHand;
         leftOffGun = Mathf.MoveTowards(leftOffGun, oneHanded ? 1f : 0f, dt / blendTime);
+        stance = Mathf.MoveTowards(stance, alive && ShootingStance(state) ? 1f : 0f, dt / blendTime);
         Ease(Hold.Gun, gun && (armed || oneHanded || (alive && use == TraversalHandUse.Gun)), dt);
         Ease(Hold.Fists, armed && fists != null && fists.IsActive && FistsUp(dt), dt);
         TrackEdgeHands(state);
@@ -137,6 +162,8 @@ public sealed partial class PlayerBodyHands : MonoBehaviour
         UpdateLadder(onLadder, leavingLadder, dt);
         Ease(Hold.Ladder, onLadder || (leavingLadder && (LadderHandWeight(true) > 0f || LadderHandWeight(false) > 0f)), dt);
         Ease(Hold.Bar, alive && OnBar(state), dt);
+        Ease(Hold.Zipline, alive && OnZipline(state), dt);
+        PrepareZipline();
 
         using (PlaceMarker.Auto())
         {
@@ -148,22 +175,21 @@ public sealed partial class PlayerBodyHands : MonoBehaviour
             float open = 1f - Mathf.Max(weights[(int)Hold.Gun], weights[(int)Hold.Fists]);
             left.RelaxThumb(1f - Mathf.Max(weights[(int)Hold.Gun] * (1f - leftOffGun), weights[(int)Hold.Fists]));
             right.RelaxThumb(open);
-            var gunRig = GunRig.Holding(weapons);
-            if (gunRig != null)
-            {
-                gunRig.FollowFingers(true, weights[(int)Hold.Gun] * (1f - leftOffGun));
-                gunRig.FollowFingers(false, weights[(int)Hold.Gun]);
-            }
             CurlLedgeFingers(left, true);
             CurlLedgeFingers(right, false);
             CurlLadderFingers(left, true);
             CurlLadderFingers(right, false);
             CurlBarFingers(left);
             CurlBarFingers(right);
+            CurlZiplineFingers(left);
+            CurlZiplineFingers(right);
+            CurlGunFingers(left, true, dt);
+            CurlGunFingers(right, false, dt);
         }
         using (RestMarker.Auto())
         {
             if (alive && Climbing(state)) RestOnObstacle(dt);
+            if (alive && state == MovementState.Mantle) ProbeLadderExit();
             KeepPushedHandsDown(dt);
         }
     }
@@ -235,9 +261,10 @@ public sealed partial class PlayerBodyHands : MonoBehaviour
     // Mixes the holds by weight, so a change of hold slides the hand across instead of snapping it.
     private void Place(ArmIK arm, bool isLeft)
     {
-        float total = 0f;
+        float total = 0f, elsewhere = 0f;
         Vector3 position = Vector3.zero, hint = Vector3.zero;
         Quaternion rotation = Quaternion.identity;
+        // FPS Animation Framework has already put the hands on its gun (FPSBody): that hold counts, with nothing to solve.
         for (int i = 0; i < HoldCount; i++)
         {
             float weight = weights[i];
@@ -246,6 +273,20 @@ public sealed partial class PlayerBodyHands : MonoBehaviour
             // In a one-handed vault the left hand leaves the gun for the edge, the right stays on it.
             if ((Hold)i == Hold.Gun && isLeft) weight *= 1f - leftOffGun;
             if ((Hold)i == Hold.Ledge && !isLeft) weight *= 1f - leftOffGun;
+            if ((Hold)i == Hold.Gun)
+            {
+                // Where FPS Animation Framework holds the upper body its hands are already on the gun and only count; where
+                // the move's clip has it, the hand is put on the gun here, as before KINEMATION (FrameworkShare).
+                weight = Mathf.Max(0f, weight);
+                float framework = Mathf.Min(weight, FrameworkShare), solved = weight - framework;
+                elsewhere += framework;
+                if (solved <= 0f || !GunGrip(arm, isLeft, out Vector3 gp, out Quaternion gr, out Vector3 gh)) { elsewhere += solved; continue; }
+                total += solved;
+                position += gp * solved;
+                hint += gh * solved;
+                rotation = total <= solved ? gr : Quaternion.Slerp(rotation, gr, solved / total);
+                continue;
+            }
             if (weight <= 0f || !Target((Hold)i, arm, isLeft, out Vector3 p, out Quaternion r, out Vector3 h)) continue;
             if ((Hold)i == Hold.Ledge) weight *= EdgeShare(arm, isLeft, p);
             if (weight <= 0f) continue;
@@ -254,9 +295,22 @@ public sealed partial class PlayerBodyHands : MonoBehaviour
             hint += h * weight;
             rotation = total <= weight ? r : Quaternion.Slerp(rotation, r, weight / total);
         }
-        holding[isLeft ? 0 : 1] = Mathf.Clamp01(total);
+        holding[isLeft ? 0 : 1] = Mathf.Clamp01(total + elsewhere);
         if (total <= 0f) return;
         arm.Solve(position / total, rotation, hint / total, Mathf.Clamp01(total), 1f, shoulderReach);
+    }
+
+    // A hand on the gun where FPSBody keeps it while the move's clip has the upper body: the grip as FPS Animation Framework
+    // last held it; the trigger elbow drops out to the side, the support elbow tucks under the gun (as before KINEMATION).
+    private bool GunGrip(ArmIK arm, bool isLeft, out Vector3 position, out Quaternion rotation, out Vector3 hint)
+    {
+        Vector3 side = transform.right * (isLeft ? -1f : 1f), up = transform.up, forward = transform.forward;
+        hint = arm.Upper.position + (isLeft ? side * .1f + forward * .15f - up * .4f : side * .25f - forward * .1f - up * .35f);
+        var framework = FPSBody.Holding(weapons);
+        if (framework != null && framework.HandOnGun(isLeft, out position, out rotation)) return true;
+        position = Vector3.zero;
+        rotation = Quaternion.identity;
+        return false;
     }
 
     private bool Target(Hold hold, ArmIK arm, bool isLeft, out Vector3 position, out Quaternion rotation, out Vector3 hint)
@@ -267,21 +321,6 @@ public sealed partial class PlayerBodyHands : MonoBehaviour
         Vector3 shoulder = arm.Upper.position;
         switch (hold)
         {
-            case Hold.Gun:
-            {
-                // KINEMATION's arms rig holds the gun: the hand goes where the rig's hand is (GunRig).
-                var rig = GunRig.Holding(weapons);
-                if (rig != null) return rig.HandTarget(arm, isLeft, out position, out rotation, out hint);
-                var root = weapons.WeaponRoot;
-                var data = weapons.EquippedData;
-                if (root == null || data == null) return false;
-                position = root.TransformPoint(isLeft ? data.LeftGrip : data.RightGrip);
-                rotation = arm.HandRotation(root.TransformDirection(isLeft ? data.LeftGripFingers : data.RightGripFingers),
-                    root.TransformDirection(isLeft ? data.LeftGripPalm : data.RightGripPalm));
-                // The trigger elbow drops out to the side; the support elbow tucks under the gun.
-                hint = shoulder + (isLeft ? side * .1f + forward * .15f - up * .4f : side * .25f - forward * .1f - up * .35f);
-                return true;
-            }
             case Hold.Fists:
             {
                 var fist = isLeft ? fists.LeftFist : fists.RightFist;
@@ -297,11 +336,31 @@ public sealed partial class PlayerBodyHands : MonoBehaviour
                 return LadderTarget(arm, isLeft, out position, out rotation, out hint);
             case Hold.Bar:
                 return BarTarget(arm, isLeft, out position, out rotation, out hint);
+            case Hold.Zipline:
+                return ZiplineTarget(arm, isLeft, out position, out rotation, out hint);
         }
         return false;
     }
 
     // A hand that would sink into the obstacle's top rests on it instead, its elbow staying where the clip has it.
+    // Temporary probe (user, 2026-11-08: the climb-off's hands don't match, "like there's no IK"): through a climb off a
+    // ladder's top, where the hands' middle is against where the warp holds it, how far each hand is from the floor's
+    // edge, and the rung hold's weights. A hand on the hold reads near (0, 0, 0) while the clip's hands are down.
+    private float ladderProbeAt;
+    private void ProbeLadderExit()
+    {
+        var traversal = player.Abilities.Traversal;
+        if (traversal.Obstacle.ExitLadder == null || traversal.ObstacleClipTime < 0f || Time.time - ladderProbeAt < .1f) return;
+        ladderProbeAt = Time.time;
+        Vector2 support = traversal.ObstacleSupport;
+        float time = traversal.ObstacleClipTime;
+        Vector3 middle = (left.Hand.position + right.Hand.position) * .5f;
+        ParkourProbeLog.Line($"climb-off hands: clip {time:0.00} {(time >= support.x && time <= support.y ? "DOWN" : "up")} | middle - hold "
+            + $"{(middle - traversal.ObstacleContact).ToString("F3")} | left {left.Hand.position.ToString("F2")} right {right.Hand.position.ToString("F2")} "
+            + $"edge {traversal.Obstacle.Edge.ToString("F2")} | short {traversal.EdgeShortfall:0.000} | rung weights {weights[(int)Hold.Ladder]:0.00} "
+            + $"L {LadderHandWeight(true):0.00} R {LadderHandWeight(false):0.00} | feet {player.transform.position.ToString("F2")}");
+    }
+
     private void RestOnObstacle(float dt)
     {
         var surface = player.Abilities.Traversal.Obstacle.Surface;

@@ -143,21 +143,42 @@ public sealed partial class PlayerBody
         obstacleYaw = Mathf.Atan2(inward.x, inward.z) * Mathf.Rad2Deg;
     }
 
-    // The move keeps the way it started: looking round turns the head, not the climb.
-    private void ObstaclePose()
+    // The move keeps the way it started: looking round turns the head, not the climb. In a vault the body turns with a view
+    // that leads it too far, and late in it after the view, as Beatrun's does (PlayerBody.VaultLook).
+    private void ObstaclePose(float dt)
     {
+        TurnVaultWithView(dt);
         legYaw = obstacleYaw;
         targetYaw = Mathf.DeltaAngle(transform.eulerAngles.y, obstacleYaw);
         legsPlanted = true;
         turning = 0;
         var traversal = player.Abilities.Traversal;
         if (traversal.Obstacle.Kind == VaultKind.Heave) Drive(obstacleClip, traversal.ObstacleProgress);
-        else Want(obstacleClip);
+        // A vault carried by its clip's hands (WarpedTraversal) plays the clip at the time the movement drives, so the hands
+        // stay where the capsule was put for them.
+        else if (traversal.ObstacleClipTime >= 0f && Find(obstacleClip) is Channel driven && driven.Length > 0f)
+            Drive(obstacleClip, traversal.ObstacleClipTime / driven.Length);
+        else
+        {
+            ReleaseObstacleClip();
+            Want(obstacleClip);
+        }
+    }
+
+    // After the movement has driven it, the clip runs on by itself from where it was, at its own pace.
+    private void ReleaseObstacleClip()
+    {
+        var channel = Find(obstacleClip);
+        if (channel != null && channel.Playable.IsValid() && channel.Playable.GetSpeed() <= 0f)
+            channel.Playable.SetSpeed(ObstacleClipSpeed);
     }
 
     // In one of these moves the model stays on the capsule, as in GMod: easing the head back would pull the hands off.
     private bool ClipCarriesBody => playingOut || heaving || (!dead && (state == MovementState.Vault || state == MovementState.Mantle)
-        && player.Abilities.Traversal.Obstacle.Kind != VaultKind.None);
+        && player.Abilities.Traversal.Obstacle.Kind != VaultKind.None) || ClimbsOffLadder;
+
+    // Climbing off a ladder's top is warped on its clip's hands too (WarpedTraversal), so the model stays on the capsule.
+    private bool ClimbsOffLadder => !dead && state == MovementState.Mantle && player.Abilities.Traversal.Obstacle.ExitLadder != null;
 
     /// <summary>A vault's or climb's clip is playing on after the move, to the touchdown (not a springboard).</summary>
     internal bool PlaysOutObstacle => playingOut && !springing;
@@ -168,6 +189,7 @@ public sealed partial class PlayerBody
         var channel = Find(obstacleClip);
         var traversal = player.Abilities.Traversal;
         if (channel == null || channel.Synced || traversal.Obstacle.Kind == VaultKind.None) return;
+        ReleaseObstacleClip();
         // A move cut short never got over: carrying on with its clip would show a vault that isn't happening.
         if (traversal.ObstacleProgress < VaultMotion.EarliestLeave) return;
         if (player.VerticalVelocity > 1f && Find(springboard) is Channel spring)

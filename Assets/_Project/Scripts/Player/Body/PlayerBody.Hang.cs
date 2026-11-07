@@ -66,7 +66,7 @@ public sealed partial class PlayerBody
         OffWall(leftLeg);
         OffWall(rightLeg);
 
-        void OffWall(Leg leg)
+        void OffWall(FootPlanting.Leg leg)
         {
             Out(leg.Upper, leg.Lower.position, leg.Sole);
             Out(leg.Lower, leg.Foot.position, leg.Sole);

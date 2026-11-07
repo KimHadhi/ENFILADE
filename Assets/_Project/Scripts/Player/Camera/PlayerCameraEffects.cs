@@ -1,13 +1,18 @@
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
 
+/// <summary>
+/// The movement and combat feel on the camera's turn, on top of KINEMATION's first-person camera (the camera rides the
+/// body's eyes, PlayerBody; KINEMATION's gun shakes and camera motion go on last, FPSBodyCamera): Beatrun's movement
+/// punches (PlayerMovementPunch), the vault and climb punches, the dive's pitch, the move and slide tilt, collision and
+/// action impulses, and combat's head moves (CombatHeadMotion). It also sets the field of view (settings, speed, aiming).
+/// The camera's place is the eyes' alone: the clips carry the head's bob and a landing's dip, and the body's lean the peek.
+/// </summary>
 [DisallowMultipleComponent]
 [DefaultExecutionOrder(200)]
 public sealed class PlayerCameraEffects : MonoBehaviour
 {
     [Header("Optional References (비우면 자동 탐색)")]
-    [Tooltip("선택 사항. 비우면 CrouchPivot/BobPivot, LookPivot, 카메라 순서로 자동 탐색합니다.")]
-    [SerializeField] private Transform verticalBobTarget;
     [Tooltip("선택 사항. 비우면 자식 Camera를 자동 탐색합니다. 여러 카메라가 있을 때 지정하세요.")]
     [SerializeField] private Transform targetCamera;
     [Tooltip("선택 사항. 비우면 부모의 PlayerMovement를 자동 탐색합니다.")]
@@ -33,18 +38,7 @@ public sealed class PlayerCameraEffects : MonoBehaviour
     [SerializeField, Range(5f, 20f)] private float maxDiveRollAngle = 12f;
     [SerializeField, Min(0f)] private float diveTiltSharpness = 12f;
 
-    [Header("Headbob (레포데 스타일 Y축 수직 리프트)")]
-    [SerializeField] private bool enableHeadbob = true;
-    [SerializeField, Min(1f)] private float walkStride = 2.4f;
-    [SerializeField, Min(1f)] private float sprintStride = 3.8f;
-    [SerializeField, Range(0f, 0.08f)] private float bobAmountY = 0.03f;
-    [SerializeField, Range(0.5f, 1.5f)] private float sprintBobMultiplier = 0.8f;
-    [SerializeField, Min(0f)] private float bobWeightSharpness = 6f;
-
-    [Header("Land & Action Impacts (스프링 반동)")]
-    [SerializeField, Range(0f, 0.2f)] private float landKickAmount = 0.06f;
-    [SerializeField, Min(0f)] private float springStiffness = 260f;
-    [SerializeField, Min(0f)] private float springDamping = 22f;
+    [Header("Action Impacts (스프링 반동)")]
     [Tooltip("닷지, 롤링, 벽 충돌 시 카메라 흔들림 복원력")]
     [SerializeField, Min(0f)] private float impulseStiffness = 150f;
     [SerializeField, Min(0f)] private float impulseDamping = 18f;
@@ -52,7 +46,6 @@ public sealed class PlayerCameraEffects : MonoBehaviour
     private Camera cam;
     private float baseFov;
     private float currentFov;
-    private Vector3 initialBobTargetPos;
     private float currentTiltRoll;
     private Vector3 baseCameraPosition;
     private Transform effectsPivot, eyes;
@@ -69,14 +62,7 @@ public sealed class PlayerCameraEffects : MonoBehaviour
     private Vector2 traversalPunch, punchVelocity;
     private float divePitch;
 
-    private float bobPhase;
-    private float currentBobWeight;
-    private float currentBobY;
-
-    private bool wasGroundedLastFrame = true;
     private float lastHorizontalSpeed;
-    private float impactDisplacementY;
-    private float impactVelocityY;
 
     // 일회성 액션 임펄스 (Dodge, Roll, Collision)
     private Vector3 impulseRotDisplacement;
@@ -105,18 +91,6 @@ public sealed class PlayerCameraEffects : MonoBehaviour
         if (movement == null)
             movement = GetComponentInParent<PlayerMovement>();
 
-        if (verticalBobTarget == null)
-        {
-            var bob = transform.Find("CrouchPivot/BobPivot");
-            if (bob != null) verticalBobTarget = bob;
-            else
-            {
-                var look = transform.Find("CrouchPivot/LookPivot");
-                verticalBobTarget = look != null ? look : targetCamera;
-            }
-        }
-
-        initialBobTargetPos = verticalBobTarget.localPosition;
         effectsPivot = targetCamera.parent != null && targetCamera.parent.name == "CameraEffectsPivot"
             ? targetCamera.parent : null;
 
@@ -131,7 +105,7 @@ public sealed class PlayerCameraEffects : MonoBehaviour
 
     private void LateUpdate()
     {
-        if (movement == null || !movement.IsInitialized || cam == null || effectsPivot == null || verticalBobTarget == null)
+        if (movement == null || !movement.IsInitialized || cam == null || effectsPivot == null)
             return;
 
         float dt = Time.deltaTime;
@@ -140,14 +114,9 @@ public sealed class PlayerCameraEffects : MonoBehaviour
         UpdateCollisionImpacts();
         UpdateDynamicFov(dt);
         UpdateTilt(dt);
-        UpdateLandingImpact(dt);
-        UpdateVerticalStepBob(dt);
         UpdateTraversalPunch(dt);
         UpdateDivePresentation(dt);
         UpdateActionImpulses(dt);
-
-        float finalOffsetY = (currentBobY + impactDisplacementY) * Shake;
-        verticalBobTarget.localPosition = new Vector3(initialBobTargetPos.x, initialBobTargetPos.y + finalOffsetY, initialBobTargetPos.z);
 
         ApplyCameraRotation();
         ApplyLeanPosition();
@@ -218,12 +187,15 @@ public sealed class PlayerCameraEffects : MonoBehaviour
         HeadDisplacement = head != null ? movement.transform.TransformDirection(head.Offset) : Vector3.zero;
         if (body == null) body = movement.GetComponent<PlayerBody>();
         // The visible body composes the final eye view after these effects. Without a body, keep the pivot camera.
+        // The visible body then moves the leaning hitboxes to where its eyes went (PlayerBody.Lean).
         if (body == null || !body.isActiveAndEnabled || body.BodyAnimator == null || body.View != targetCamera)
+        {
             targetCamera.position = origin + offset + HeadDisplacement;
-        movement.GetComponent<PlayerLeanHitboxes>()?.Sync(offset);
+            movement.GetComponent<PlayerLeanHitboxes>()?.Sync(offset);
+        }
     }
 
-    // The Esc menu's screen shake scales bob, landing, impacts, punches and movement tilt; Q/E lean is aiming, not shake.
+    // The Esc menu's screen shake scales impacts, punches and movement tilt; Q/E lean is aiming, not shake.
     private static float Shake => GameSettings.Current.screenShake;
 
     // Combat's head moves for this PC, added to the PC's player when it spawns (PlayerPerfectDefense); none on other PCs.
@@ -255,7 +227,9 @@ public sealed class PlayerCameraEffects : MonoBehaviour
     private void UpdateTraversalPunch(float dt)
     {
         var traversal = movement.StateMachine.Current as ObstacleTraversalState;
-        if (traversal != null && traversal.MovesInStraightLine
+        // Not climbing off a ladder's top: warped now (WarpedTraversal), it counts as a straight-line move, but it starts
+        // from hanging still and its kick shook the view as the climb began (user, 2026-11-08).
+        if (traversal != null && traversal.MovesInStraightLine && movement.Abilities.Traversal.Obstacle.ExitLadder == null
             && (punchSource != traversal || punchSerial != traversal.EntrySerial))
         {
             punchSource = traversal; punchSerial = traversal.EntrySerial;
@@ -354,67 +328,6 @@ public sealed class PlayerCameraEffects : MonoBehaviour
         else
         {
             currentTiltRoll = Mathf.MoveTowards(currentTiltRoll, 0f, 15f * dt);
-        }
-    }
-
-    private void UpdateVerticalStepBob(float dt)
-    {
-        if (!enableHeadbob || movement.IsDiving || movement.IsSliding || movement.IsParkour)
-        {
-            currentBobY = Mathf.MoveTowards(currentBobY, 0f, 2f * dt);
-            return;
-        }
-
-        Vector3 hVel = movement.ActualVelocity;
-        hVel.y = 0f;
-        float actualSpeed = hVel.magnitude;
-
-        bool isMovingGrounded = movement.IsGrounded && actualSpeed > 0.5f;
-        float targetWeight = isMovingGrounded ? 1f : 0f;
-
-        float weightT = 1f - Mathf.Exp(-bobWeightSharpness * dt);
-        currentBobWeight = Mathf.Lerp(currentBobWeight, targetWeight, weightT);
-
-        float targetBobY = 0f;
-        if (currentBobWeight > 0.001f)
-        {
-            float sprintRatio = Mathf.InverseLerp(6.0f, 10.0f, actualSpeed);
-            float activeStride = Mathf.Lerp(walkStride, sprintStride, sprintRatio);
-
-            float phaseStep = (actualSpeed / Mathf.Max(0.5f, activeStride)) * Mathf.PI * 2f;
-            bobPhase = Mathf.Repeat(bobPhase + phaseStep * dt, Mathf.PI * 2f);
-
-            float wave = Mathf.Sin(bobPhase);
-            float dynamicBobAmount = bobAmountY * Mathf.Lerp(1f, sprintBobMultiplier, sprintRatio);
-
-            targetBobY = wave * dynamicBobAmount * currentBobWeight;
-        }
-
-        currentBobY = Mathf.Lerp(currentBobY, targetBobY, 15f * dt);
-    }
-
-    private void UpdateLandingImpact(float dt)
-    {
-        bool isGrounded = movement.IsGrounded;
-        float impactSpeed = movement.Abilities.Landing.LastImpactSpeed;
-        if (isGrounded && !wasGroundedLastFrame && movement.LandedThisFrame && impactSpeed > 4.5f)
-        {
-            float impactForce = Mathf.Clamp(impactSpeed / 18f, 0.2f, 1f) * landKickAmount;
-            impactVelocityY -= impactForce * 40f;
-        }
-        wasGroundedLastFrame = isGrounded;
-
-        float springForce = -springStiffness * impactDisplacementY;
-        float dampingForce = -springDamping * impactVelocityY;
-        float totalAccel = springForce + dampingForce;
-
-        impactVelocityY += totalAccel * dt;
-        impactDisplacementY += impactVelocityY * dt;
-
-        if (Mathf.Abs(impactDisplacementY) < 0.0005f && Mathf.Abs(impactVelocityY) < 0.001f)
-        {
-            impactDisplacementY = 0f;
-            impactVelocityY = 0f;
         }
     }
 }

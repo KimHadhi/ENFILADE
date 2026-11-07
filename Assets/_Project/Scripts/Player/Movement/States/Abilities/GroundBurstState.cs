@@ -11,6 +11,9 @@ public sealed class GroundBurstState : MovementBaseState
     private float exitElapsed;
     private Vector3 stepFrameStart;
     private bool interrupted;
+    // Backlog 155: a landing roll that meets a wall stops moving but plays to its end. Ending it at the wall stood or
+    // crouched the player at once while the body still played the roll out, so the view and the body disagreed.
+    private bool rollStopped;
     public GroundBurstState(PlayerMovement ctx, MovementBaseState parent, State kind) : base(ctx, parent) { this.kind = kind; }
     public override string Name => kind.ToString();
     // A dash push stays upright, so a run that carries on after it never dips the body.
@@ -18,7 +21,7 @@ public sealed class GroundBurstState : MovementBaseState
         kind == State.DashPush ? MovementPosture.Standing : MovementPosture.Crouching;
     private float Duration => kind == State.StepDodge ? ctx.AbilitySettings.stepDuration :
         kind == State.LandingRoll ? ctx.Abilities.Landing.RollTime : ctx.AbilitySettings.dashPushDuration;
-    public override void Enter() { interrupted = false; stepElapsed = stepExpectedAdvance = exitElapsed = 0f; initialSpeed = ctx.HorizontalVelocity.magnitude; ctx.Actions.ClearJumpBuffer(); }
+    public override void Enter() { interrupted = rollStopped = false; stepElapsed = stepExpectedAdvance = exitElapsed = 0f; initialSpeed = ctx.HorizontalVelocity.magnitude; ctx.Actions.ClearJumpBuffer(); }
     internal void RestartStep()
     {
         // Restart only after a confirmed success; do not retain the burst speed
@@ -54,7 +57,7 @@ public sealed class GroundBurstState : MovementBaseState
         // A landing roll keeps the speed it landed with; a landing on the spot stops dead.
         float speed = kind == State.StepDodge ? ctx.AbilitySettings.stepDistance / Mathf.Max(0.05f, Duration) :
             kind != State.LandingRoll ? ctx.Abilities.Combat.DashSpeed :
-            ctx.Abilities.Landing.LandsInPlace ? 0f : Mathf.Max(ctx.AbilitySettings.rollSpeed, initialSpeed);
+            ctx.Abilities.Landing.LandsInPlace || rollStopped ? 0f : Mathf.Max(ctx.AbilitySettings.rollSpeed, initialSpeed);
         ctx.HorizontalVelocity = ctx.Abilities.ActionDirection * speed;
         if (ctx.IsGrounded) ctx.VerticalVelocity = -2f;
         if (kind == State.StepDodge)
@@ -106,6 +109,14 @@ public sealed class GroundBurstState : MovementBaseState
         if (kind == State.DashPush && hit.collider.GetComponentInParent<IBreakable>() != null) return;
         // A light physics prop is kicked away instead of ending the dash or dodge.
         if (ctx.Motor.TryKickProp(hit.collider, hit.point, out Vector3 kept)) { ctx.HorizontalVelocity = kept; return; }
+        if (kind == State.LandingRoll)
+        {
+            if (!rollStopped && ctx.IsLocal)
+                ParkourProbeLog.Line($"landing roll met {hit.collider.name} at {ctx.CurrentStateDuration:0.00}s of {Duration:0.00}s; finishing on the spot");
+            rollStopped = true;
+            ctx.HorizontalVelocity = Vector3.zero;
+            return;
+        }
         interrupted = true;
         if (kind == State.StepDodge) ctx.Abilities.Dodge.CancelWindow();
         ctx.HorizontalVelocity = Vector3.zero;

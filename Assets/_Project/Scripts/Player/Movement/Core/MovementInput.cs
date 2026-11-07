@@ -6,7 +6,9 @@ public sealed class MovementInput
 {
     private readonly PlayerMovement ctx;
     internal readonly InputAction moveAction, sprintAction, jumpAction, crouchAction, diveAction;
-    private readonly InputAction dodgeAction, leanLeftAction, leanRightAction, shoveAction;
+    private readonly InputAction dodgeAction, leanLeftAction, leanRightAction, shoveAction, interactAction;
+    /// <summary>Interact (Player/Interact) was pressed this frame: also takes hold of a ladder from its top (backlog 141).</summary>
+    public bool InteractPressed { get; private set; }
     private bool crouchLatched, weaponInputSought;
     private int leanLatched;
     private PlayerWeaponInput weaponInput;
@@ -54,6 +56,7 @@ public sealed class MovementInput
         leanLeftAction = actions.FindAction("Player/LeanLeft", false);
         leanRightAction = actions.FindAction("Player/LeanRight", false);
         shoveAction = actions.FindAction("Player/Shove", false);
+        interactAction = actions.FindAction("Player/Interact", false);
     }
     /// <summary>
     /// moving false (getting up off the back) keeps the body's own moves (jump, crouch press, dodge, dive, sprint, lean)
@@ -71,6 +74,7 @@ public sealed class MovementInput
         CrouchHeld = available && (settings.crouchToggle ? crouchLatched : Held(crouchAction));
         DodgePressed = move && Pressed(dodgeAction);
         DivePressed = move && Pressed(diveAction);
+        InteractPressed = move && Pressed(interactAction);
         ShovePressed = available && Pressed(shoveAction);
         if (!weaponInputSought) { weaponInput = ctx.GetComponentInChildren<PlayerWeaponInput>(); weaponInputSought = true; }
         AimHeld = available && weaponInput != null && weaponInput.GuardHeld;

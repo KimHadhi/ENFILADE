@@ -14,6 +14,7 @@
 | 상태별 클립·연출 수치 | [Player.csv](../Resources/Tables/Player.csv)의 `Body` 행 (예: `Body.slide,slideloop`) |
 | 자세별 캡슐·눈높이 | `Player.csv`의 `Posture` 행. 웅크림 0.8m, 슬라이딩 0.62m, 엎드림 0.37m, 누움 0.35m. 눈이 캡슐 꼭대기를 넘지 않게 맞췄다 |
 | 동작 코드 | [PlayerBody](../Scripts/Player/Body/PlayerBody.cs). Play 시작 때 `PlayerMovement`가 붙인다 |
+| KINEMATION | 몸의 클립은 Animator의 그래프 첫 출력으로 돈다. Animator는 빈 컨트롤러([BodyHost](../Resources/Characters/BodyHost.controller), FPSAF·CAS가 읽는 파라미터만 있다)를 받는다. 그 위에 FPS Animation Framework(총, [FPSBody](../Scripts/Player/FPSBody/FPSBody.cs))와 Character Animation System(맨손 시선, [BodyCas](../Scripts/Player/Body/BodyCas.cs))이 이 순서로 붙는다. FPSAF가 몸의 클립을 넘겨받으면 Animator의 첫 출력은 가중치 0으로 물러난다(둘 다 기본 자세에서 시작해서 나중 것이 앞 것을 지운다). 발은 우리 발 IK다(아래 **발 IK**). 총 클립은 Retarget Pro가 스킨마다 다시 만든다([GunClipRetarget](../Editor/Import/GunClipRetarget.cs)) |
 
 몸의 수치는 모두 표에 있고 Play 중에도 바로 반영된다. 클립 이름을 바꾸면 몸이 다시 만들어진다.
 
@@ -147,22 +148,22 @@ Beatrun의 `meslideendprone`·`jumpturnland`는 몸 전체를 앞으로 옮긴�
 
 ## 눈 시점과 시선
 
-시선 방향은 [PlayerBody.Gaze](../Scripts/Player/Body/PlayerBody.Gaze.cs), 상체 자세와 눈 위치는 [PlayerBody.Look](../Scripts/Player/Body/PlayerBody.Look.cs)가 맡는다.
+시선 방향은 [PlayerBody.Gaze](../Scripts/Player/Body/PlayerBody.Gaze.cs), 상체 자세와 눈 위치는 [PlayerBody.Look](../Scripts/Player/Body/PlayerBody.Look.cs)가 맡는다. 맨손일 때 허리·목·머리를 시선대로 굽히는 일은 KINEMATION Character Animation System(CAS)의 Look이 애니메이션 단계에서 한다([BodyCas](../Scripts/Player/Body/BodyCas.cs)). 총을 들면 FPS Animation Framework(FPSAF)의 Look 레이어가 넘겨받는다([FPSBody](../Scripts/Player/FPSBody/FPSBody.cs)).
 
-- 평소에는 마우스가 정한 `LookPivot`의 방향으로 머리의 최종 시선을 맞춘다. 서기·걷기·제자리 돌기 클립의 고개 회전이 마우스를 멈춘 뒤 끄덕임으로 남지 않는다. 마우스 입력에는 별도 보간을 넣지 않으며, 1인칭 카메라와 F5·다른 플레이어에게 보이는 머리가 같은 기본 시선을 쓴다.
-- 넘기·올라서기·구르기 등 선택된 행동에서는 실제 클립 혼합 비율만큼 머리를 원래 애니메이션 자세에 맡긴다. 완전히 구르는 동안에는 목을 월드 위쪽으로 억지로 세우지 않으며, 클립이 빠지면 마우스 시선으로 돌아온다. 카메라는 그 머리 움직임을 편안한 범위로 줄여 반영한다. `Body.animationViewLimits`로 먼저 위아래 18°·좌우 12°·기울기 10° 안으로 제한한 뒤 `Body.animationViewStrength`(기본 0.65)와 클립 비율을 곱하고, `Body.animationViewTime`(기본 0.1초)으로 애니메이션 회전만 부드럽게 잇는다. 정조준할수록 카메라의 영향이 줄며, 사다리 반복 등반과 매달린 채 유지하는 자세는 마우스가 이끈다.
+- 평소에는 마우스가 정한 `LookPivot`의 방향을 CAS Look이 허리·목·머리에 나눠 준다. 마우스 입력에는 별도 보간을 넣지 않으며, 1인칭 카메라와 F5·다른 플레이어에게 보이는 몸이 같은 시선을 쓴다. 머리를 카메라 방향에 정확히 묶던 예전 보정은 없다. 머리는 CAS가 나눈 각도만큼 돌아간다.
+- 넘기·올라서기·구르기 등 선택된 행동에서는 카메라가 그 클립의 머리 움직임을 편안한 범위로 줄여 반영한다. 이때 머리는 시선으로 굽히기 전 클립의 머리(CAS가 Look보다 먼저 복사해 둔 `CAS Head (clip)`)를 쓴다. `Body.animationViewLimits`로 먼저 위아래 18°·좌우 12°·기울기 10° 안으로 제한한 뒤 `Body.animationViewStrength`(기본 0.65)와 클립 비율을 곱하고, `Body.animationViewTime`(기본 0.1초)으로 애니메이션 회전만 부드럽게 잇는다. 정조준할수록 카메라의 영향이 줄며, 사다리 반복 등반과 매달린 채 유지하는 자세는 마우스가 이끈다.
 - 카메라 회전은 머리의 앞·위 방향을 투영해 뒤집힌 동작을 작은 각도로 접어 계산한다. 구르기가 90°를 넘을 때 오일러 각 분해로 생기는 불필요한 좌우 회전·기울기를 막으며, 화면 전체가 머리와 함께 뒤집히지는 않는다.
-- 카메라는 시선 보정이 끝난 실제 머리의 눈에서 `eyeViewAhead`만큼 앞에 놓인다. 걸음의 흔들림, 착지·구르기의 꺼짐은 애니메이션에서 온다. Q/E 기울이기의 충돌 검사된 이동량을 더하고, 정조준하면 `eyeViewTime` 동안 고정 조준 위치로 옮겨 간다. 이 값은 위치 전환 시간이며 마우스 회전을 늦추지 않는다.
+- 카메라는 KINEMATION 1인칭 카메라처럼 눈(FPSAF가 조준경을 맞추는 머리의 카메라 소켓)에 붙는다. 머리의 눈에서 `eyeViewAhead`만큼 앞이다. 정조준할 때도 눈에 그대로 있다. 걸음의 흔들림과 착지·구르기의 꺼짐은 애니메이션에서 온다. Q/E로는 몸이 기운 만큼만 옆으로 간다. 회전은 마우스 시선에 이동 효과(Beatrun 펀치 등, [PlayerCameraEffects](../Scripts/Player/Camera/PlayerCameraEffects.cs))를 더하고, 마지막으로 KINEMATION 총의 사격 흔들림과 클립 카메라 뼈의 움직임을 더한다([FPSBodyCamera](../Scripts/Player/FPSBody/FPSBodyCamera.cs)). `eyeViewTime`은 사다리·주먹질 때 기준 위치로 옮겨 가는 시간이며 마우스 회전을 늦추지 않는다.
 - 사다리에서는 눈 시점을 기준 카메라 위치로 부드럽게 옮겨 고정한다. 상승·하강 클립의 머리 높이 차이가 상하 반복 입력 때 화면을 밀지 않게 하며, 사다리 하강 종료 끄덕임은 `Punch.ladderSlideStopNod` 기본 0으로 둔다.
 - 눈 위치는 아바타에 연결된 LeftEye·RightEye의 중점이다. 눈 사이 간격은 캐릭터 크기에 비례해 검사하므로 Hiro처럼 눈이 넓게 배치된 캐릭터도 실제 눈 뼈(`pd.013`·`pd.014`)를 쓴다. 모델 기본 자세의 앞 방향은 양팔 뼈로 구한다. Hiro의 기본 자세가 모델 -Z를 향해도 눈과 `eyeViewAhead`·`eyeAdjust`를 해부학적 앞 방향으로 계산해 머리 로컬 좌표에 저장한다. 눈 뼈가 없거나 적합하지 않으면 같은 앞 방향과 카메라 높이로 추정한다. 위치를 조정하려면 Play 중 `Body.eyeAdjust`(위;앞)를 고친다.
-- 벽 근처에서는 먼저 원하는 상체 자세의 머리·눈 여유 공간을 검사한다([PlayerBody.Clearance](../Scripts/Player/Body/PlayerBody.Clearance.cs)). 허리를 굽히면 얼굴이 벽에 닿는 경우, 닿지 않는 허리 굽힘 범위를 찾아 남은 시선 각도를 목·머리에 나눠 준다. 그 뒤에도 남는 충돌은 플레이어 캡슐 안의 일정한 기준점에서 눈까지 카메라 부피를 쓸어 검사한다([CameraClearance](../Scripts/Player/Camera/CameraClearance.cs)). 이 부피는 시야각·화면 비율·근거리 평면의 모서리까지 고려한다. 머리가 벽과 겹치는 순간마다 검사 시작점을 바꾸거나 뒤로 밀리는 양을 단순 보간하지 않는다.
-- 몸은 머리가 카메라 기준점 바로 뒤에 오도록 계속 따라오므로(`headFollowTime`), 카메라는 플레이어 위치에서 옆으로 멀리 벗어나지 않는다.
-- 평소 위아래를 보면 허리(`spineBendDown`·`spineBendUp` 비율)·목·머리가 나눠 굽고, 머리는 카메라가 보는 곳을 본다. 총을 들어 올린 자세(하이 레디)에서도 똑같이 굽는다. 예전에는 들어 올리면 허리를 폈는데, 그러면 눈과 총이 바닥에서 떨어져 총이 다시 내려가고 허리가 다시 굽기를 반복했다(소총을 들고 앉아 바닥을 볼 때). 들어 올린 총은 4cm 여유가 생기고 0.5초가 지나야 내려간다. 걸을 때 머리가 흔들리며 경계를 넘나들어도 걸음마다 들썩이지 않게 하려는 것이다.
-- Q/E 기울이기는 사람이 모퉁이를 엿보는 모습을 따른다. 골반이 기우는 쪽 발로 `Body.leanHipShift`(0.08m)만큼 옮겨 가고 발은 디딘 자리에 남는다. 척추는 허리부터 옆으로 `Body.leanSpineBend`(20°)만큼 휘고, 머리는 화면 기울기(`Ability.leanAngle`, 10°)만큼만 기울어 나머지는 목이 되돌린다. 몸이 옮긴 눈의 거리를 뼈마다 계산하고, 엿보는 거리(`Ability.leanOffset`)의 나머지는 카메라가 메운다. 기우는 쪽 팔은 클립 그대로 늘어뜨린다. 척추와 같이 돌면 골반이 옮겨 온 쪽 허리를 뚫기 때문이다. 반대쪽 팔은 기울어지는 옆구리를 따라 그대로 둔다. 다른 사람 화면에서도 똑같이 기운다.
+- 벽 근처에서 내려다보면 CAS가 굽힌 허리 때문에 얼굴이 벽에 닿을 수 있다. 그때는 얼굴이 닿지 않을 만큼만 허리 굽힘을 되돌리고(반씩 좁혀 찾는다), 머리는 보던 곳을 그대로 본다([PlayerBody.Clearance](../Scripts/Player/Body/PlayerBody.Clearance.cs)의 `ClearFace`). 그 뒤에도 남는 충돌은 플레이어 캡슐 안의 일정한 기준점에서 눈까지 카메라 부피를 쓸어 검사한다([CameraClearance](../Scripts/Player/Camera/CameraClearance.cs)). 이 부피는 시야각·화면 비율·근거리 평면의 모서리까지 고려한다.
+- 몸은 머리가 카메라 기준점 바로 뒤에 오도록 계속 따라오므로(`headFollowTime`), 카메라는 플레이어 위치에서 옆으로 멀리 벗어나지 않는다. 이때 머리는 시선으로 굽히기 전 클립의 머리를 쓴다. 내려다본다고 몸이 뒤로 밀리지 않는다.
+- 평소 위아래를 보면 허리(`spineBendDown`·`spineBendUp` 비율)·목(나머지의 0.3)·머리(0.7)가 나눠 굽는다. 이 비율이 CAS Look의 뼈마다 각도가 된다(BodyCas). 총을 들어 올린 자세(하이 레디)에서도 똑같이 굽는다. 예전에는 들어 올리면 허리를 폈는데, 그러면 눈과 총이 바닥에서 떨어져 총이 다시 내려가고 허리가 다시 굽기를 반복했다(소총을 들고 앉아 바닥을 볼 때). 들어 올린 총은 4cm 여유가 생기고 0.5초가 지나야 내려간다. 걸을 때 머리가 흔들리며 경계를 넘나들어도 걸음마다 들썩이지 않게 하려는 것이다.
+- Q/E 기울이기는 KINEMATION 방식이다. 맨손이면 CAS Look이 척추를 허리부터 옆으로 `Body.leanSpineBend`(20°)만큼 휘고, 총을 들면 FPSAF가 `FPSBody.csv`의 `Rig.leanAngle`(25°)만큼 기울인다. 눈과 카메라는 몸이 기운 만큼 따라간다. 골반을 옮기거나 카메라가 엿보는 거리를 따로 메우지는 않는다. 다른 사람 화면에서도 똑같이 기운다.
 - 골반이 시선과 다른 쪽을 보면 가슴·목·머리가 시선 쪽으로 비틀린다. 제자리에서 다리를 디딘 채일 때와 전력질주로 골반이 돌 때도 적용한다.
 - 일반 슬라이딩 중 하체는 플레이어 캡슐에 대한 위치와 월드 진행 방향(`SlideDirection`)을 유지한다. 시선만 돌려서는 다리 위치·방향이 달라지지 않으며, 실제 이동·조향을 따라간다. 상체는 부드럽게 따라가고 머리의 최종 시선은 입력에 맞춘다. 좌우는 `Body.slideTurnLimit`(기본 각 75°), 위아래는 `Body.slidePitchLimits`(기본 위 40°·아래 55°)로 제한하며, 상체와 카메라가 같은 범위를 쓴다. 미끄러지는 방향이 시선의 반대쪽(벽에 튕겨 뒤로 밀림, 뒤로 슬라이딩 시작)이면 시선과 다리는 그대로이고 몸이 뒤로 미끄러진다. 옆으로 튕겨 기존 시선이 새 범위를 벗어나면 그 범위 안으로 서서히 돌아온다.
-- 카메라 효과는 흔들림·기울이기와 기준 위치를 계산하고, 몸 코드가 그다음에 눈 시점의 최종 위치·방향을 한 번 정한다(실행 순서 250). 시선 입력은 계속 `LookPivot`에서 읽으며, 완성된 카메라를 다시 머리 입력에 넣지 않는다. 카메라 효과는 기본 시선 뒤에 한 번 더하고 기울이기 이동량도 직접 전달하므로 이전 프레임의 시점이 누적되지 않는다. 무기는 이후에 처리되어 총과 총알이 확정된 시점을 기준으로 동작한다.
-- Esc로 일시정지하면 카메라 효과와 몸 자세 갱신을 함께 멈추어 마지막 눈 시점을 유지한다. 메뉴를 여는 순간 고정 카메라 위치로 바뀌거나, 재개하면서 눈에서 다시 멀어지지 않는다.
+- 순서: 카메라 효과(200)가 회전 효과와 시야각을 정하고, 몸(250)이 눈 위치에 카메라를 놓는다. 그다음 FPSAF(330)가 KINEMATION 흔들림과 카메라 뼈 움직임을 더한다. 시선 입력은 계속 `LookPivot`에서 읽으며, 완성된 카메라를 다시 머리 입력에 넣지 않는다.
+- Esc로 일시정지하면 멈춘 순간의 휴머노이드 뼈 자세를 기억했다가 매 프레임 다시 씌운다([PlayerBody.Pause](../Scripts/Player/Body/PlayerBody.Pause.cs)). KINEMATION 프레임워크가 Animator 그래프 안에서 돌기 때문에 Animator는 끄지 않는다. 카메라 효과와 눈 시점도 멈춘 채 유지된다.
 - **내 머리카락 보기**(Esc 설정, 기본 켬): 켜면 머리·머리카락(`First Person Shadow Only`에 적힌 렌더러)을 그린다. 카메라가 그 안에 있는 부분은 근거리 클리핑(`Body.headNearClip`, 0.05m)으로 잘린다.
 
 ## 몸의 손
@@ -189,7 +190,7 @@ Beatrun의 `meslideendprone`·`jumpturnland`는 몸 전체를 앞으로 옮긴�
 - 치마: 클립이 손을 치마 자리에 두면 치마가 손 뒤로 눌린다. 치마를 다 누르고도 손이 묻히면 그만큼만 팔이 어깨에서 살짝 벌어진다(위의 **치마·겉옷·머리카락**). 무언가 잡은 손은 그대로다.
 - 총과 주먹은 카메라가 아니라 눈 시점([PlayerView](../Scripts/Player/Camera/PlayerView.cs))에 붙는다. 1인칭에서는 눈 시점이 카메라와 같은 자리라 달라지는 것이 없다. F5에서는 카메라만 뒤로 빠지고 총·주먹·근접 판정은 몸의 눈에 남는다. 총알은 손의 총구에서 화면 가운데 조준점이 가리키는 곳으로 나간다.
 - 동작마다 총을 든 손은 [TraversalHands](../Scripts/Player/Movement/Parkour/TraversalHands.cs)가 정한다. 넘기와 허리 높이 올라타기는 오른손에 총을 든 채 왼손만 짚고, 디뎌 오르기는 양손이 총에 남는다. 높은 올라서기·매달리기·벽·봉·사다리·집라인은 총을 넣고 맨손으로 하며, 끝난 뒤 0.25초 지나 다시 꺼낸다(Beatrun은 오르는 동작마다 무기를 숨긴다). 착지 구르기와 크게 착지하기도 두 손이 땅을 짚으므로 총을 넣는다. 장전은 두 손을 다 쓰므로, 장전 중에 시작한 넘기와 올라타기는 구르기처럼 총을 넣고 맨손으로 하며 장전은 끊긴다. 손이 필요 없는 디뎌 오르기는 장전을 그대로 이어 간다. Beatrun은 이때 총을 손에 쥔 채 구르는 전용 동작(`merollgun`, 제자리 착지는 `landgun`)을 쓰고, 이 클립들은 [Art/Animations/Beatrun](../Art/Animations/Beatrun)에도 들어 있다.
-- 지금 플레이어 프리팹의 총(`SK_AR_01`)은 재질을 비워 둬서 보이지 않는다. 보이게 하려면 프리팹을 열고 그 오브젝트의 Inspector에서 재질 오버라이드를 Revert한다. 그 상태에서 손 위치를 맞추면 된다. 권총 모델은 아직 없어서 권총도 같은 총 위치를 쓴다.
+- 손에 보이는 총은 KINEMATION 총(MX16A4, M1911)이고, 몸이 KINEMATION FPS Animation Framework로 든다([FPSBody](../Scripts/Player/FPSBody/FPSBody.cs)). 총 클립은 KINEMATION 팔 뼈대용 원본을 KINEMATION Retarget Pro가 스킨마다 몸에 맞게 다시 만든 것이다([GunClipRetarget](../Editor/Import/GunClipRetarget.cs), [GunBakes](../Scripts/Player/FPSBody/GunBakes.cs)). FPSAF가 상체를 굽히고 비틀고 기울이며 두 손을 총에 두므로, 총을 든 동안에는 CAS Look(`UpperBodyFromFramework`)과 PlayerBodyHands의 총 손 IK가 쉰다. 매달리기·사다리처럼 손이 총을 놓으면 총은 오른손이 잡은 모양 그대로 오른손을 따라간다. 플레이어 프리팹의 `Gun`은 모델 없는 뿌리라서 총구(`MuzzlePoint`)만 달려 있다.
 
 ### 난간 잡기
 
@@ -197,13 +198,13 @@ Beatrun의 `meslideendprone`·`jumpturnland`는 몸 전체를 앞으로 옮긴�
 
 ## 발 IK
 
-코드는 [PlayerBody.Feet](../Scripts/Player/Body/PlayerBody.Feet.cs)이다. GMod IK Foot 애드온의 방식을 따랐다.
+코드는 [FootPlanting](../Scripts/Player/Body/FootPlanting.cs)이고 [PlayerBody.Feet](../Scripts/Player/Body/PlayerBody.Feet.cs)가 표 수치를 넘겨 켠다. GMod IK Foot 애드온의 방식을 따랐다. 2026-11-07에 KINEMATION CAS Foot IK로 바꿨다가 무릎이 걸음마다 옆·뒤로 비틀려 이 방식으로 되돌렸다. CAS에서 자기 캐릭터 충돌체를 땅으로 치지 않는 점만 가져왔다(플레이어의 캡슐·히트박스·든 총은 땅이 아니다).
 
 서 있거나 웅크려 땅에 있을 때(착지 동작 포함, 넘기 마무리 동작 제외) 발마다 뒤꿈치·발목·발끝 아래로 땅을 찾아(`Body.footReach`) 가장 높은 곳에 선다. 그래서 발 일부가 계단 속으로 들어가지 않는다. 한 발의 땅이 캡슐 바닥보다 낮으면(내려가는 계단·경사) 그 발이 닿도록 골반을 내리고(최대 `maxHipDrop`), 높은 쪽 발은 무릎을 굽혀 땅에 맞춘다. 무릎은 클립의 무릎 축으로만 굽고, 다리가 제 길이 축으로 돌지 않아서 발목이 꼬이지 않는다(GMod IK Foot도 허벅지·종아리를 앞뒤로만 굽힌다). 거의 편 다리는 무릎 축이 분명하지 않아서 골반 좌우 방향을 축으로 앞으로 굽는다. 발은 그 아래 땅 높이만큼만 옮기므로 클립의 걸음과 발 들기는 그대로 남는다. 땅을 디딘 발은 경사에 맞춰 기운다(`maxFootTilt`). 골반이 내려가면 눈과 카메라도 같이 내려간다.
 
 - 땅과 골반 높이는 월드 기준으로 기억한다. 그래서 캡슐이 계단을 한 칸씩 툭 오르내려도 발이 계단을 뚫지 않는다. 높아진 땅에는 바로 올라서고, 낮아진 땅과 골반은 `footSettleTime`에 걸쳐 내려간다.
 - 발바닥은 어느 부분도 땅 아래로 들어가지 않는다. 다른 비율에 맞춘 클립은 발을 바닥에 박을 수 있다. 깊이 앉으면 발목이 너무 낮고, 발이 긴 캐릭터(예: Sil, 발목에서 발끝까지 약 18cm)는 발끝을 내리는 순간 앞코가 바닥을 파고든다. 그래서 뒤꿈치와 발끝 아래 발바닥이 땅 위에 오도록 발목을 그만큼 올리고, 무릎은 그만큼 더 굽힌다. 발끝은 발가락 뼈 끝(발끝 뼈가 있으면 그것)까지 잰다. 모두 그 캐릭터의 기본 자세에서 잰다.
-- 발의 수평 위치는 애니메이션을 따른다. Q/E 기울이기로 골반이 옮겨 가는 만큼만 되돌려 발을 디딘 자리에 둔다. 발밑을 놓쳤을 때 마지막 높이·기울기 보정은 `footSettleTime`에 걸쳐 풀고, 다시 지지를 찾으면 같은 시간에 보정의 영향을 늘린다. 실제 지지가 없는 발은 발소리를 내지 않는다. 이 표현은 물리 접지를 결정하지 않는다.
+- 발의 수평 위치는 애니메이션을 따른다. 발밑을 놓쳤을 때 마지막 높이·기울기 보정은 `footSettleTime`에 걸쳐 풀고, 다시 지지를 찾으면 같은 시간에 보정의 영향을 늘린다. 실제 지지가 없는 발은 발소리를 내지 않는다. 이 표현은 물리 접지를 결정하지 않는다.
 - 실행 중 Scene 뷰에서 플레이어를 선택하면 발마다 찾은 땅(초록 선)과 발목 목표(노란 구)가 보인다.
 - 팔·발 IK는 같은 두 뼈 계산([TwoBoneIK](../Scripts/Player/Body/TwoBoneIK.cs))을 쓴다.
 - **발목 제한**([AnkleLimit](../Scripts/Player/Body/AnkleLimit.cs)): 모든 상태에서 발이 정강이 축으로 돌아간 각도(`Body.maxAnkleTurn`)와 옆으로 꺾인 각도(`Body.maxAnkleRoll`)를 Hiro 기본 자세 기준으로 자른다. 발끝을 위아래로 젖히는 것은 자르지 않는다. 리타깃이 잘못된 클립이나 섞인 클립, 다리 IK 때문에 발목이 꼬여도 실제 발목이 가능한 범위 안에 머문다.

@@ -7,6 +7,7 @@ import bpy
 import json
 import math
 import sys
+import importlib.util
 from pathlib import Path
 from mathutils import Vector, Matrix, Quaternion
 
@@ -381,10 +382,14 @@ for name in original_names:
 for name in [n for n in original_names if 'DRV_'+n in rig.data.bones]:
     driver_rest = rig.data.bones['DRV_'+name].matrix_local
     assert max(abs(driver_rest[r][c]-original_rest[name][r][c]) for r in range(4) for c in range(4)) < 3e-5, name
+upgrade_spec = importlib.util.spec_from_file_location('upgrade_full_rig',HERE/'upgrade_full_rig.py')
+upgrade_module = importlib.util.module_from_spec(upgrade_spec)
+upgrade_spec.loader.exec_module(upgrade_module)
+upgrade_module.upgrade_rig(rig)
 bpy.ops.wm.save_as_mainfile(filepath=str(OUTPUT), check_existing=False)
 workspace_context.__exit__(None, None, None)
 print('TRUEFPS_BUILD_OK', str(OUTPUT))
-print('RIG', len(original_names), 'original bones;', len(editable), 'editable controls')
+print('RIG', len(original_names), 'original bones;', len(json.loads(rig['truefps_controls'])), 'editable controls')
 for kind,suffix,names,ctrl,pole,m1,m2,drivers,elbow in limbs:
     error = (rig.pose.bones[names[2]].head-rig.pose.bones[ctrl].head).length
     end_error = (rig.pose.bones[m2].tail-rig.pose.bones[ctrl].head).length

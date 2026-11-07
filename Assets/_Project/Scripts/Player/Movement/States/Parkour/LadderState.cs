@@ -7,8 +7,11 @@ using UnityEngine;
 public sealed class LadderState : MovementBaseState
 {
     private const float GroundReach = .25f;
-    private Vector3 from, to;
+    private Vector3 from, via, to;
+    private bool twoLegs;
     private float progress, moveTime, nextStep;
+    // Getting on from the top: the share of the move spent going out over the edge before going down.
+    private const float OverShare = .35f;
     public LadderState(PlayerMovement ctx, MovementBaseState parent) : base(ctx, parent) { }
     public override void Enter()
     {
@@ -17,10 +20,25 @@ public sealed class LadderState : MovementBaseState
         ctx.HorizontalVelocity = Vector3.zero; ctx.VerticalVelocity = 0f;
         ctx.Abilities.Landing.SupportedByTraversal();
         from = ctx.transform.position;
-        to = fixtures.LadderHold(from.y);
         progress = 0f;
+        twoLegs = fixtures.LadderFromTop;
+        if (twoLegs)
+        {
+            // From the top (backlog 141): out over the edge, then down onto the top rungs.
+            via = fixtures.LadderTopOver;
+            to = fixtures.LadderTopHold;
+            moveTime = nextStep = settings.ladderTopEnterTime;
+            return;
+        }
+        to = fixtures.LadderHold(from.y);
         moveTime = fixtures.LadderCaught ? settings.ladderCatchTime : settings.ladderEnterTime;
         nextStep = fixtures.LadderCaught ? settings.ladderCatchDelay : settings.ladderEnterTime;
+    }
+    private Vector3 Along(float share)
+    {
+        if (!twoLegs) return Vector3.Lerp(from, to, share);
+        return share < OverShare ? Vector3.Lerp(from, via, Mathf.SmoothStep(0f, 1f, share / OverShare))
+            : Vector3.Lerp(via, to, Mathf.SmoothStep(0f, 1f, (share - OverShare) / (1f - OverShare)));
     }
     public override void Exit() => ctx.Abilities.Fixtures.LadderSliding = false;
     public override void UpdateLogic(float dt)
@@ -57,11 +75,12 @@ public sealed class LadderState : MovementBaseState
         }
         if (progress >= 1f) return;
         progress = Mathf.Min(1f, progress + dt / Mathf.Max(.01f, moveTime));
-        Vector3 next = Vector3.Lerp(from, to, progress);
+        Vector3 next = Along(progress);
         // Something overhead stops the climb; the hands stay where they are.
         if (!detector.ClearPath(here, next, ctx.StandingColliderHeight))
         {
-            from = to = here;
+            from = via = to = here;
+            twoLegs = false;
             progress = 1f;
             fixtures.LadderStepBlocked = true;
             return;
@@ -77,6 +96,7 @@ public sealed class LadderState : MovementBaseState
         ctx.Abilities.Fixtures.LadderStepped();
         from = ctx.transform.position;
         to = from + Vector3.up * settings.ladderRungHeight;
+        twoLegs = false;
         progress = 0f;
         moveTime = settings.ladderRungTime;
         nextStep = ctx.CurrentStateDuration + settings.ladderRungInterval;

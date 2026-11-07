@@ -59,44 +59,18 @@ public sealed class WeaponData : ScriptableObject
     [SerializeField, Range(8f, 50f)] private float recoilResponse = 24f;
     [Tooltip("Fraction retained as gradual aim climb. The rest springs back without smoothing mouse input.")]
     [SerializeField, Range(0f, 1f)] private float recoilRetention = .22f;
-    [SerializeField, Range(0f, .1f)] private float weaponKickBack = .035f;
-    [SerializeField, Range(0f, 6f)] private float weaponKickUp = 1.8f;
-    [SerializeField, Range(8f, 50f)] private float weaponRecoilResponse = 28f;
-    [SerializeField, Range(0f, 1f)] private float adsWeaponKickMultiplier = .45f;
     [Header("Aim down sights")]
     [SerializeField, Range(20f, 100f)] private float adsFov = 40f;
     [SerializeField, Range(.1f, 1f)] private float adsMoveMultiplier = .6f;
     [SerializeField, Min(.01f)] private float adsTransitionTime = .16f;
-    [Tooltip("Sight height above the muzzle axis, in weapon-root local units.")]
-    [SerializeField] private float sightHeight = .035f;
-    [Header("Aim tracking feel")]
-    [Tooltip("Seconds to halve the near/far aim transition. Zero restores instant tracking. Mouse look stays immediate.")]
-    [SerializeField, Range(0f, .3f)] private float aimFollowHalfLife = .055f;
-    [Tooltip("Faster sight convergence while aiming. Zero restores instant ADS tracking.")]
-    [SerializeField, Range(0f, .3f)] private float adsAimFollowHalfLife = .025f;
     [Header("High-ready pose (level view space; Weapons.csv)")]
-    [Tooltip("Where the gun goes against a wall, added to the hip pose: right, up, forward (m). Kept close to the chest so the body's arms hold it naturally.")]
-    [SerializeField] private Vector3 highReadyOffset = new Vector3(-.1f, -.26f, .12f);
-    [Tooltip("How far the muzzle tips up against a wall (degrees). 45: the stock low at the chest, the muzzle up at a slant.")]
-    [SerializeField, Range(30f, 85f)] private float highReadyPitch = 45f;
     [Tooltip("Seconds to halve the visual distance to high ready. Cover and ADS blocking remain immediate.")]
     [SerializeField, Range(.01f, .2f)] private float highReadyRaiseHalfLife = .07f;
     [Tooltip("Seconds to halve the visual distance back to the firing pose.")]
     [SerializeField, Range(.01f, .2f)] private float highReadyLowerHalfLife = .09f;
-    [Header("Sway (ArcCW's viewmodel sway, WeaponSway; presentation only)")]
-    [Tooltip("How much the gun slides and tips as the view turns: ArcCW's arccw_vm_look_xmult and _ymult (1). 0 turns it off.")]
-    [SerializeField, Range(0f, 3f)] private float lookSway = 1f;
-    [Tooltip("How much the gun bobs with each stride and leans with movement: ArcCW's arccw_vm_sway_*mult (1). 0 turns it off.")]
-    [SerializeField, Range(0f, 3f)] private float moveSway = 1f;
-    [Header("Body hands (weapon-root space, m)")]
-    [Tooltip("Moves the hip pose (camera space) so the body's arms reach the grips.")]
-    [SerializeField] private Vector3 holdOffset = new Vector3(-.08f, .03f, -.36f);
-    [Tooltip("Trigger-hand wrist on the grip, then the way its fingers point and the way its palm faces.")]
-    [SerializeField] private Vector3 rightGrip = new Vector3(.27f, -.29f, .365f), rightGripFingers = new Vector3(-.25f, -.85f, .45f),
-        rightGripPalm = new Vector3(-1f, 0f, 0f);
-    [Tooltip("Support-hand wrist under the handguard, then the way its fingers point and the way its palm faces.")]
-    [SerializeField] private Vector3 leftGrip = new Vector3(.26f, -.285f, .7f), leftGripFingers = new Vector3(.5f, 0f, .85f),
-        leftGripPalm = new Vector3(0f, 1f, 0f);
+    [Header("Gun points for the HUD (weapon-root space, m)")]
+    [Tooltip("Support-hand wrist under the handguard: the score popup hangs beside it.")]
+    [SerializeField] private Vector3 leftGrip = new Vector3(.26f, -.285f, .7f);
     [Tooltip("Right side of the handguard's rail, where a laser sight mounts (weapon-root space, m). Zero: measured from " +
         "the gun, on its right surface at the bore's height a little ahead of the support hand. The score popup hangs just above it.")]
     [SerializeField] private Vector3 sideRail;
@@ -134,10 +108,6 @@ public sealed class WeaponData : ScriptableObject
     public Vector2 RecoilPerShot => recoilPerShot;
     public float RecoilResponse => Mathf.Clamp(recoilResponse, 8f, 50f);
     public float RecoilRetention => Mathf.Clamp01(recoilRetention);
-    public float WeaponKickBack => Mathf.Clamp(weaponKickBack, 0f, .1f);
-    public float WeaponKickUp => Mathf.Clamp(weaponKickUp, 0f, 6f);
-    public float WeaponRecoilResponse => Mathf.Clamp(weaponRecoilResponse, 8f, 50f);
-    public float AdsWeaponKickMultiplier => Mathf.Clamp01(adsWeaponKickMultiplier);
     public int InitialReserveAmmo => Mathf.Max(0, initialReserveAmmo);
     public float EmptyReloadDuration => Mathf.Max(.01f, emptyReloadDuration);
     public int BurstCount => Mathf.Max(1, burstCount);
@@ -155,25 +125,12 @@ public sealed class WeaponData : ScriptableObject
     public float CrouchRecoil => Mathf.Clamp(crouchRecoil, .05f, 1f);
     /// <summary>Seconds after the gun could fire again that an empty magazine reloads by itself; negative: never.</summary>
     public float AutoReloadDelay => autoReloadDelay;
-    public float LookSway => Mathf.Clamp(lookSway, 0f, 3f);
-    public float MoveSway => Mathf.Clamp(moveSway, 0f, 3f);
     public float AdsFov => Mathf.Clamp(adsFov, 20f, 100f);
     public float AdsMoveMultiplier => Mathf.Clamp(adsMoveMultiplier, .1f, 1f);
     public float AdsTransitionTime => Mathf.Max(.01f, adsTransitionTime);
-    public float SightHeight => sightHeight;
-    public float AimFollowHalfLife => Mathf.Clamp(aimFollowHalfLife, 0f, .3f);
-    public float AdsAimFollowHalfLife => Mathf.Clamp(adsAimFollowHalfLife, 0f, .3f);
-    public Vector3 HighReadyOffset => highReadyOffset;
-    public Vector3 HoldOffset => holdOffset;
-    public Vector3 RightGrip => rightGrip;
-    public Vector3 RightGripFingers => rightGripFingers;
-    public Vector3 RightGripPalm => rightGripPalm;
     public Vector3 LeftGrip => leftGrip;
-    public Vector3 LeftGripFingers => leftGripFingers;
-    public Vector3 LeftGripPalm => leftGripPalm;
     /// <summary>The handguard's right-side rail mount (weapon-root space), or zero when the gun should be measured.</summary>
     public Vector3 SideRail => sideRail;
-    public float HighReadyPitch => Mathf.Clamp(highReadyPitch, 30f, 85f);
     public float HighReadyRaiseHalfLife => Mathf.Clamp(highReadyRaiseHalfLife, .01f, .2f);
     public float HighReadyLowerHalfLife => Mathf.Clamp(highReadyLowerHalfLife, .01f, .2f);
     public Vector3 ViewPunch => viewPunch;

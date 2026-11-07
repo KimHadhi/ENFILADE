@@ -28,9 +28,13 @@ public readonly struct BulletOnward
 /// likelier, up to 45 %; it bounces off like light off a mirror, a few degrees astray, keeping a random share of its
 /// penetration. Otherwise it pushes on through what it hit 4 units (10 cm) at a time, each step costing 4 × the material's
 /// toughness (Surfaces.csv's penetration column) of its penetration (mm), 5 % more than the step before, and drifting off
-/// line a little. What it has left when it comes out is the share of the gun's damage it still carries. Bodies count as
-/// flesh, and anything that isn't level geometry (bodies, props, things that take damage) is half again as tough, as
-/// ArcCW treats entities. Each shot seeds its own randomness, so every PC draws the same path for it.
+/// line a little. What it has left when it comes out is the share of the gun's damage it still carries. Anything that
+/// isn't level geometry (props, things that take damage) is half again as tough, as ArcCW treats entities.
+/// A body (an enemy, a player, a corpse) is the one change from ArcCW, asked for on 2026-11-06 so one bullet sweeps a
+/// line of zombies: it goes by whole for a set cost (Surfaces.csv's pierceCost on Flesh), however deep its colliders
+/// are, so a 1 m capsule and a body of bone hitboxes cost the same, and the bullet sets off again from where it went in,
+/// so a body pressed against it is still met (AttackTrace passes the one it went through). With no pierceCost, bodies
+/// are flesh pierced by depth like anything else. Each shot seeds its own randomness, so every PC draws the same path.
 /// </summary>
 public static class BulletPenetration
 {
@@ -38,7 +42,9 @@ public static class BulletPenetration
     private const float Unit = .0254f, StepUnits = 4f, Step = StepUnits * Unit;
     // ArcCW.PenTable: a material not in it counts 1, and bodies are MAT_FLESH.
     private const float Unlisted = 1f;
-    private const string Table = "Surfaces", Column = "penetration", FleshRow = "Flesh";
+    private const string Table = "Surfaces", Column = "penetration", PierceColumn = "pierceCost", FleshRow = "Flesh";
+    // Farther than any body is deep, for finding the far side a body's bullet comes out of (the exit wound).
+    private const float BodyReach = 4f;
     // How far a single ricochet can turn astray (ArcCW's AngleRand() * 15 / 360) at the flattest angle.
     private const float StrayPitch = 90f * 15f / 360f, StrayYaw = 180f * 15f / 360f;
     // Unity's queries miss a shape they start inside, so the bullet sets off just clear of the surface it leaves.
@@ -47,13 +53,21 @@ public static class BulletPenetration
     private const int MostSteps = 256;
 
     private static readonly Dictionary<string, float> toughness = new Dictionary<string, float>(StringComparer.OrdinalIgnoreCase);
+    // A body's set cost (mm), below 0 when Flesh has none; NaN until read.
+    private static float bodyCost = float.NaN;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetStatics()
     {
+        Forget();
+        GameTables.Reloaded -= Forget;
+        GameTables.Reloaded += Forget;
+    }
+
+    private static void Forget()
+    {
         toughness.Clear();
-        GameTables.Reloaded -= toughness.Clear;
-        GameTables.Reloaded += toughness.Clear;
+        bodyCost = float.NaN;
     }
 
     /// <summary>The randomness a shot from here, this way, draws on: the same on every PC that knows the shot.</summary>
@@ -82,6 +96,14 @@ public static class BulletPenetration
         onward = default;
         if (left <= 0f || hit.collider == null) return false;
         Vector3 dir = direction.normalized;
+        if (IsBody(hit.collider) && BodyCost(out float cost))
+        {
+            left -= cost;
+            if (left <= 0f) return false;
+            Thickness(hit, dir, BodyReach, layers, out bool exits, out RaycastHit far);
+            onward = new BulletOnward(hit.point + dir * Clear, dir, left, false, exits, far);
+            return true;
+        }
         float tough = Toughness(hit.collider);
         float mult = tough * (IsLevel(hit.collider) ? 1f : 1.5f);
         mult *= Range(random, .9f, 1.1f) * Range(random, .9f, 1.1f);
@@ -202,6 +224,24 @@ public static class BulletPenetration
             }
         toughness[surface] = value;
         return value;
+    }
+
+    // Surfaces.csv's pierceCost on Flesh (or its parents): what going through one body costs, however deep it is.
+    private static bool BodyCost(out float cost)
+    {
+        if (float.IsNaN(bodyCost))
+        {
+            bodyCost = -1f;
+            foreach (string id in Surfaces.Fallbacks(FleshRow))
+                if (GameTables.TryGetRow(Table, id, out var row) && row.TryGetValue(PierceColumn, out string cell)
+                    && float.TryParse(cell, NumberStyles.Float, CultureInfo.InvariantCulture, out float parsed))
+                {
+                    bodyCost = Mathf.Max(0f, parsed);
+                    break;
+                }
+        }
+        cost = bodyCost;
+        return cost >= 0f;
     }
 
     private static float Range(System.Random random, float from, float to) => from + (to - from) * (float)random.NextDouble();

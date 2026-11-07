@@ -49,6 +49,8 @@ public sealed class CharacterSkinView
             W.Size(W.Label(root, "고를 캐릭터가 없습니다.", 20f, W.Muted), height: 40f);
             return;
         }
+        // Started straight in a level, no main menu has taken the pictures yet.
+        SkinPortraits.Ensure();
         var chosen = Array.IndexOf(skins, profile.CurrentSkin) >= 0 ? profile.CurrentSkin : skins[0];
         var worn = chosen.VariantOf(GameSettings.Current.characterVariant);
 

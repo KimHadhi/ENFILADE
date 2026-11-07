@@ -90,8 +90,21 @@ public sealed class MovementAbilities
         if (ctx.CurrentState == State.StepDodge) ctx.DodgePassThrough?.Finish();
         // A blocked crouch capsule may be a side wall or a shoved body, not a low tunnel.
         bool lowPassage = ctx.CurrentState != State.DashPush && ctx.HasVentCeilingAhead(ctx.transform.forward, 0f);
-        ctx.ChangeState(ctx.HasCeilingAbove(ctx.StandingColliderHeight)
-            ? (lowPassage ? State.Proning : State.Crouching) : State.Standing);
+        bool ceiling = ctx.HasCeilingAbove(ctx.StandingColliderHeight);
+        // Temporary probe: after climbing off a ladder the player came up crouched with nothing to crouch under (user,
+        // 2026-11-08); name what the stand-up check met.
+        if (ceiling && (ctx.CurrentState == State.Mantle || ctx.CurrentState == State.Vault)) LogCeiling();
+        ctx.ChangeState(ceiling ? (lowPassage ? State.Proning : State.Crouching) : State.Standing);
+    }
+    private void LogCeiling()
+    {
+        Vector3 feet = ctx.transform.position;
+        var hits = Physics.OverlapCapsule(feet + Vector3.up * .5f, feet + Vector3.up * (ctx.StandingColliderHeight - .3f), .27f,
+            ctx.groundLayers, QueryTriggerInteraction.Ignore);
+        var names = new System.Text.StringBuilder();
+        foreach (var hit in hits) names.Append($" {hit.name} (layer {LayerMask.LayerToName(hit.gameObject.layer)}, {hit.GetType().Name});");
+        ParkourProbeLog.Line($"{ctx.CurrentState} ended crouched at {feet.ToString("F2")}, controller height {ctx.Motor.controller.height:0.00}:"
+            + (hits.Length > 0 ? names.ToString() : " nothing found in the standing capsule"));
     }
     internal void Reset()
     {

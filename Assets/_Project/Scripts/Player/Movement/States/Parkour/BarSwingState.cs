@@ -46,7 +46,11 @@ public sealed class BarSwingState : MovementBaseState
         // Integrate a controlled pendulum in small steps, independent of render frame rate.
         int steps = Mathf.Max(1, Mathf.CeilToInt(dt / 0.016f));
         float slice = dt / steps;
-        float pump = Vector3.Dot(ctx.Abilities.InputDirection(Vector3.zero), bar.SwingDirection) * ctx.CurrentInput.magnitude;
+        // No pumping while the player is being turned round (the keys' meaning flips with the facing).
+        float pump = traversal.BarTurning ? 0f
+            : Vector3.Dot(ctx.Abilities.InputDirection(Vector3.zero), bar.SwingDirection) * ctx.CurrentInput.magnitude;
+        Vector3 heldGrip = traversal.LocalGrip;
+        traversal.ShimmyOnBar(dt);
         for (int i = 0; i < steps; i++)
         {
             traversal.AngularSpeed += (-Mathf.Abs(ctx.gravity) / bar.HangLength * Mathf.Sin(traversal.Angle)
@@ -60,7 +64,14 @@ public sealed class BarSwingState : MovementBaseState
         Vector3 destination = anchor + bar.SwingDirection * (Mathf.Sin(traversal.Angle) * bar.HangLength)
             - Vector3.up * (Mathf.Cos(traversal.Angle) * bar.HangLength);
         if (!traversal.Detector.ClearPath(ctx.transform.position, destination, ctx.CrouchColliderHeight))
-        { traversal.ReleaseBar(false); return; }
+        {
+            // Moving along the bar into something stops the hands there instead of dropping the player.
+            if (traversal.LocalGrip == heldGrip) { traversal.ReleaseBar(false); return; }
+            destination += bar.transform.TransformPoint(heldGrip) - anchor;
+            traversal.LocalGrip = heldGrip;
+            if (!traversal.Detector.ClearPath(ctx.transform.position, destination, ctx.CrouchColliderHeight))
+            { traversal.ReleaseBar(false); return; }
+        }
         ctx.Motor.RequestDisplacement(destination - ctx.transform.position);
     }
 }

@@ -214,9 +214,14 @@ public sealed class MovementLanding
     {
         Vector3 direction = ctx.Abilities.InputDirection(ctx.transform.forward);
         bool inPlace = ctx.HorizontalVelocity.magnitude < ctx.AbilitySettings.rollLandSpeed || ctx.CurrentInput.y < -0.1f;
-        if (ctx.HasCeilingAbove(ctx.CrouchColliderHeight) || (!inPlace
-            && !ctx.Abilities.Traversal.Detector.ClearCapsule(ctx.transform.position + direction * 0.6f, ctx.CrouchColliderHeight)))
-            return false;
+        if (ctx.HasCeilingAbove(ctx.CrouchColliderHeight)) return false;
+        // Backlog 155: a wall where the roll would go used to cancel the roll and leave a plain crouched landing. Now it
+        // rolls on the spot, so the view and the body play the same move.
+        if (!inPlace && !ctx.Abilities.Traversal.Detector.ClearCapsule(ctx.transform.position + direction * 0.6f, ctx.CrouchColliderHeight))
+        {
+            inPlace = true;
+            if (ctx.IsLocal) ParkourProbeLog.Line("landing roll: wall ahead, rolling on the spot");
+        }
         LandsInPlace = inPlace;
         ctx.Abilities.ActionDirection = direction;
         ctx.ChangeState(State.LandingRoll);

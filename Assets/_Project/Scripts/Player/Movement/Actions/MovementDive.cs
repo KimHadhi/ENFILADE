@@ -9,6 +9,8 @@ public sealed class MovementDive
     private float flightTime;
     public float RecoveryRemaining { get; private set; }
     public int EntrySerial { get; private set; }
+    /// <summary>Backlog 135: a dive launched mostly sideways, -1 left, +1 right, 0 otherwise (PlayerBody.SideDive lays the body on its side).</summary>
+    public int Side { get; private set; }
     internal float PoseProgress
     {
         get
@@ -36,6 +38,8 @@ public sealed class MovementDive
         Vector3 direction = ctx.transform.right * input.x + ctx.transform.forward * input.y;
         direction = Vector3.ProjectOnPlane(direction.sqrMagnitude > 0.01f ? direction : ctx.transform.forward, Vector3.up).normalized;
         bool backward = Vector3.Dot(direction, ctx.transform.forward) < -0.2f;
+        float side = Vector3.Dot(direction, ctx.transform.right);
+        Side = !backward && Mathf.Abs(side) >= ctx.AbilitySettings.sideDiveMinSideways ? (side > 0f ? 1 : -1) : 0;
         // This fixed axis classifies front/back relative to the flight direction.
         // Negating it for an air back-dive made the next input tick flip upright.
         ctx.DiveBodyForward = direction;
@@ -60,6 +64,8 @@ public sealed class MovementDive
     {
         RecoveryRemaining = Mathf.Max(RecoveryRemaining, ctx.diveLandingRecovery);
         usedInAir = false;
+        // A dive started some other way (off an edge while lying) is never a side dive.
+        Side = 0;
     }
 
     internal void UpdateFlight(float dt)

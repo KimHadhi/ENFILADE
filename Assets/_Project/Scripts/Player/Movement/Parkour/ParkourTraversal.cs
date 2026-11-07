@@ -16,6 +16,17 @@ public sealed class ParkourTraversal
     internal Vector3 LedgeJumpVelocity;
     /// <summary>Share of the current vault or mantle's time that has passed (0–1); the body plays its clip in step.</summary>
     public float ObstacleProgress { get; internal set; }
+    /// <summary>A warped move's clip times (s) its hands are down from and until (WarpedTraversal); zero without one.</summary>
+    public Vector2 ObstacleSupport { get; internal set; }
+    /// <summary>Climbing off a ladder's top: how far short of the floor's edge the warp kept the hands (m) to keep the feet out of the wall.</summary>
+    public float EdgeShortfall { get; internal set; }
+    /// <summary>A warped move's hold for the hands' middle in the world (WarpedTraversal.Contact); for the probe.</summary>
+    public Vector3 ObstacleContact { get; internal set; }
+    /// <summary>
+    /// The clip time (s) a vault carried by its clip's hands is at (WarpedTraversal); the body plays its clip there. Negative
+    /// when the clip runs by itself.
+    /// </summary>
+    public float ObstacleClipTime { get; internal set; } = -1f;
     private float wallLock, barLock, ledgeLock;
     // The wall climbs of this time in the air, as Beatrun counts them: how many came one after another, when the last is
     // planned to end (on this clock), and which way its wall faces, since the same wall isn't climbed twice before the
@@ -101,6 +112,15 @@ public sealed class ParkourTraversal
     {
         // A wall climb that ends in a vault or a climb onto the top ends its chain too (Beatrun clears the run's time).
         if (ctx.CurrentState == State.WallClimb) wallClimbEnds = float.NegativeInfinity;
+        // Temporary (ParkourProbeLog, 2026-11-07): which move a long low top got, and where it was found.
+        if (ctx.IsLocal)
+        {
+            Vector3 feet = ctx.transform.position;
+            ParkourProbeLog.Line($"move {candidate.Kind} on {(candidate.Surface != null ? candidate.Surface.name : "-")} "
+                + $"size {(candidate.Surface != null ? candidate.Surface.bounds.size.ToString("F2") : "-")} feet {feet.ToString("F2")} "
+                + $"edge {candidate.Edge.ToString("F2")} ({Vector3.Distance(feet, candidate.Edge):0.00} m) end {candidate.End.ToString("F2")} "
+                + $"facing {ctx.transform.forward.ToString("F2")} in air {!ctx.IsGrounded}");
+        }
         Obstacle = candidate;
         // A reload has both hands on the gun. A move that puts a hand on the obstacle still goes: the gun is put away for it,
         // as for a roll, and the reload stops. A step up needs no hand, so the reload carries on.
@@ -122,6 +142,7 @@ public sealed class ParkourTraversal
         {
             Bar = bar; LocalGrip = bar.transform.InverseTransformPoint(grip);
             Angle = 0f;
+            barTurnStarted = float.NegativeInfinity;
             AngularSpeed = Mathf.Clamp(Vector3.Dot(ctx.HorizontalVelocity, bar.SwingDirection) / bar.HangLength,
                 -ctx.AbilitySettings.swingMaxAngularSpeed, ctx.AbilitySettings.swingMaxAngularSpeed);
             ctx.ChangeState(State.BarGrab);
@@ -294,6 +315,16 @@ public sealed class ParkourTraversal
     internal bool MantleFromBar()
     {
         if (Bar == null || !Detector.TryBarMantle(Bar, Bar.transform.TransformPoint(LocalGrip), out Obstacle)) return false;
+        // Up over the bar the way a ledge hang climbs up: the hands stay on the bar's top and the body heaves over them.
+        // Without an edge the hands followed the full mantle clip and pressed down on the air in front (backlog 121), and a
+        // stale Ledge from an earlier hang could even pull the body toward that old edge.
+        Obstacle.Kind = VaultKind.Heave;
+        Transform support = Obstacle.Surface.transform;
+        Vector3 outward = Vector3.ProjectOnPlane(Obstacle.Approach - Obstacle.End, Vector3.up);
+        outward = outward.sqrMagnitude > .0001f ? outward.normalized : -Bar.SwingDirection;
+        Vector3 edge = Obstacle.End - Vector3.up * 0.1f;
+        Ledge = new LedgeTarget { Surface = Obstacle.Surface, LocalEdge = support.InverseTransformPoint(edge),
+            LocalNormal = support.InverseTransformDirection(outward), LocalHang = support.InverseTransformPoint(ctx.transform.position) };
         lastBar = Bar; barLock = 0.45f;
         ctx.ChangeState(State.Mantle);
         ctx.Actions.ClearJumpBuffer();
@@ -310,6 +341,38 @@ public sealed class ParkourTraversal
             else ReleaseBar(true);
         }
     }
+
+    // Backlog 123: hanging nearly still, the mouse pushed on past the bar's look limit turns the player round to face
+    // the bar's other side, from where a jump goes that way (PlayerLook.TryMouseTurnOnBar). The view is carried the
+    // half turn toward the side pushed; the body follows the view's side. The movement keys stay for pumping the swing.
+    private float barTurnStarted = float.NegativeInfinity, barTurnFrom, barTurnAmount = 180f;
+    internal bool BarTurning => Bar != null && Time.time - barTurnStarted < ctx.AbilitySettings.barTurnDuration;
+    /// <summary>Where the view is turned to on the bar right now; only meaningful while BarTurning.</summary>
+    internal float BarTurnYaw => barTurnFrom + barTurnAmount * Mathf.SmoothStep(0f, 1f,
+        Mathf.Clamp01((Time.time - barTurnStarted) / ctx.AbilitySettings.barTurnDuration));
+    /// <summary>Starts the turn round on the bar by this many degrees (+ right, - left); false when the swing is too big.</summary>
+    internal bool TryTurnOnBar(float degrees)
+    {
+        if (Bar == null || ctx.CurrentState != State.BarSwing || BarTurning) return false;
+        if (Mathf.Abs(Angle) > 20f * Mathf.Deg2Rad || Mathf.Abs(AngularSpeed) > 1.2f) return false;
+        barTurnFrom = ctx.transform.eulerAngles.y;
+        barTurnAmount = degrees;
+        barTurnStarted = Time.time;
+        return true;
+    }
+
+    /// <summary>Backlog 122: sideways input moves the grip along the bar, hand over hand, kept within its ends.</summary>
+    internal void ShimmyOnBar(float dt)
+    {
+        if (Bar == null || BarTurning) return;
+        Vector3 axis = Bar.transform.right;
+        float along = Vector3.Dot(ctx.Abilities.InputDirection(Vector3.zero), axis) * Mathf.Min(1f, ctx.CurrentInput.magnitude);
+        if (Mathf.Abs(along) < 0.1f) return;
+        float pace = ctx.AbilitySettings.barShimmySpeed * Mathf.Clamp01(1f - Mathf.Abs(AngularSpeed) / 2f);
+        if (pace <= 0f) return;
+        Vector3 grip = Bar.transform.TransformPoint(LocalGrip);
+        LocalGrip = Bar.transform.InverseTransformPoint(Bar.ClosestGrip(grip + axis * (along * pace * dt)));
+    }
     internal void LockLedge() { ledgeLock = ctx.AbilitySettings.ledgeRegrabDelay; LockWall(); }
     internal void LockWall() { wallLock = ctx.AbilitySettings.wallReattachDelay; }
     internal void ReleaseBar(bool jump)
@@ -320,9 +383,13 @@ public sealed class ParkourTraversal
             ReleaseVelocity = tangent * (AngularSpeed * Bar.HangLength);
             if (jump)
             {
-                Vector3 forward = Vector3.ProjectOnPlane(ReleaseVelocity, Vector3.up).normalized;
-                if (forward.sqrMagnitude < 0.01f) forward = ctx.transform.forward;
-                ReleaseVelocity += forward * ctx.AbilitySettings.lacheForwardBoost + Vector3.up * ctx.AbilitySettings.lacheUpBoost;
+                // The jump goes the way the player pushes (backlog 123: turned round, it goes the other way). Of the
+                // swing's own speed only what runs that way is kept; a swing running against it is let go of.
+                Vector3 flat = Vector3.ProjectOnPlane(ReleaseVelocity, Vector3.up);
+                Vector3 fallback = flat.sqrMagnitude > 0.01f ? flat : Vector3.ProjectOnPlane(ctx.transform.forward, Vector3.up);
+                Vector3 forward = ctx.Abilities.InputDirection(fallback);
+                ReleaseVelocity = forward * Mathf.Max(0f, Vector3.Dot(flat, forward)) + Vector3.up * ReleaseVelocity.y
+                    + forward * ctx.AbilitySettings.lacheForwardBoost + Vector3.up * ctx.AbilitySettings.lacheUpBoost;
             }
             lastBar = Bar; barLock = 0.45f;
         }

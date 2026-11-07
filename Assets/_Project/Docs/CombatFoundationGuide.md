@@ -95,10 +95,10 @@
 
 | 데이터 | 방식 | HP 피해 | RPM | 탄창 / 예비탄 | 잔탄 있는 장전 / 빈 탄창 장전 |
 | --- | --- | ---: | ---: | ---: | ---: |
-| [MX16A4](../Data/Combat/Weapons/MX16A4.asset) | 연사 | 20 | 600 | 30 / 90 | 1.5초 / 2초 |
-| [M1911](../Data/Combat/Weapons/M1911.asset) | 단발 | 35 | 300 | 12 / 48 | 1.2초 / 1.65초 |
+| [MX16A4](../Data/Combat/Weapons/MX16A4.asset) | 연사 | 20 | 600 | 30 / 90 | 2.667초 / 3.167초 |
+| [M1911](../Data/Combat/Weapons/M1911.asset) | 단발 | 35 | 300 | 12 / 48 | 2.5초 / 2.7초 |
 
-손에 드는 총 모델과 그 움직임은 KINEMATION의 FPS Animation Pack 총(MX16A4, M1911)이다. [GunRig](../Scripts/Player/GunRig/GunRig.cs)가 KINEMATION 팔 리그를 보이지 않게 눈 위치에 맞춰 돌리고, 몸의 손이 그 리그의 손을 따라간다. 어떤 무기가 어떤 KINEMATION 총을 드는지는 [GunRig.asset](../Resources/Combat/GunRig.asset)에, 조정값은 [GunRig.csv](../Resources/Tables/GunRig.csv)에 있다.
+손에 드는 총 모델은 KINEMATION의 FPS Animation Pack 총(MX16A4, M1911)이고, 몸이 그 총을 드는 것은 KINEMATION FPS Animation Framework(FPSAF)다. [FPSBody](../Scripts/Player/FPSBody/FPSBody.cs)가 몸에 FPSAF 데모의 휴머노이드 플레이어(FPSHumanoidPlayer)와 같은 구성을 올린다. FPSAnimator와 그 부품(FPSAF의 PlayablesController를 고치지 않고 그대로 쓴다), 리그(데모의 리그 순서대로 몸의 뼈를 늘어놓는다, [FPSBodyRig](../Scripts/Player/FPSBody/FPSBodyRig.cs)), 총마다 데모의 휴머노이드 라이플·권총 프로필([Data/Combat/FPSBody](../Data/Combat/FPSBody))이다. 몸의 클립은 Animator 그래프의 첫 출력으로 돌고, Animator는 FPSAF가 읽는 파라미터만 가진 빈 컨트롤러(BodyHost)를 받는다. FPSAF가 매 프레임 상체를 잡는다. 총의 자세 클립을 팔에, 시선을 따라 굽는 허리와 머리(Look), 기울이기, 정조준(Ads, 조준경을 눈의 카메라 소켓에 맞춘다), 흔들림(Sway), 반동, 두 손을 총에(IK)다. 총 클립은 KINEMATION 팔 뼈대(Generic)용 원본을 KINEMATION Retarget Pro가 스킨마다 몸에 맞는 휴머노이드 클립으로 다시 만든다([GunClipRetarget](../Editor/Import/GunClipRetarget.cs)). Retarget Pro의 FPS 기능이 두 손을 KINEMATION 팔이 쥐는 그대로 총에 두고, 총은 KINEMATION 카메라가 보는 자리를 몸의 눈 기준으로 옮겨 놓는다. 결과와 그 자세에서 총이 놓인 자리는 [GunBakes](../Resources/Combat/GunBakes.asset)에 모이고, FPSAF의 Pose Sampler가 그 자리에서 총을 시작한다. 편집기가 열릴 때 새 스킨이나 바뀐 클립만 자동으로 굽고, Tools → ENFILADE → Combat → Retarget KINEMATION Gun Clips로 모두 다시 굽는다. 장전 때 카메라는 원본 클립의 카메라 뼈대로 흔들린다([FPSBodyCamera](../Scripts/Player/FPSBody/FPSBodyCamera.cs)). 벽에 막힌 총은 FPSAF Collision 레이어의 막힘 자세 그대로이되, 그 레이어의 광선 대신 우리 벽 규칙이 켠다(GunCoverLayer, FPSAF의 광선은 트리거와 제 몸에도 맞는다). 무기마다 무엇을 쓰는지는 [FPSBody.asset](../Resources/Combat/FPSBody.asset)에, 조정값은 [FPSBody.csv](../Resources/Tables/FPSBody.csv)에 있다. 장전 시간은 KINEMATION 장전 클립의 길이이고, 정조준 시야각 60°는 KINEMATION 총 설정의 `aimFov`다.
 
 ## 다른 씬에 연결하기
 

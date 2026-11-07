@@ -13,7 +13,9 @@ namespace KINEMATION.FPSAnimationPack.Scripts.Player
     [AddComponentMenu("KINEMATION/FPS Animation Pack/Character/FPS Procedural Animation")]
     public class FPSProceduralAnimation : MonoBehaviour
     {
+#pragma warning disable 0414 // ENFILADE: KINEMATION never reads this field; its warning filled the console (AssetSources.md).
         [SerializeField, Range(0f, 1f)] private float ikWeight = 1f;
+#pragma warning restore 0414
         
         [Header("Skeleton")]
         [SerializeField] private Transform skeletonRoot;
