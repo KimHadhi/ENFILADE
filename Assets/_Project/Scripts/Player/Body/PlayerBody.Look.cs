@@ -4,18 +4,16 @@ using MovementState = PlayerMovement.MovementState;
 /// <summary>
 /// Where the head and eyes go.
 /// - Looking up or down bends the spine, neck and head with the view, and when the hips face away from the view (planted
-///   legs, a sprint's hip turn, legs following a slide) the chest turns back toward it. KINEMATION Character Animation
-///   System's Look does it in the animation pass (BodyCas): this works out how far each frame (upright or sliding, the
-///   slide's limits) and leaves it to FPS Animation Framework while a gun is held (FPSBody).
-/// - Q/E tips the spine sideways from the waist, CAS's Look roll, as far as takes the eyes, and the camera on them, the
-///   lean's distance; the leaning hitboxes follow the eyes (PlayerBody.Lean).
-/// - In every state the head looks where the view looks, as far as a committed action's clip doesn't carry it (FaceGaze).
+///   legs, a sprint's hip turn, legs following a slide) the chest turns back toward it. SpineLook does the bend first
+///   thing after the animation pass; this works out how far each frame (upright or sliding, the slide's limits) and
+///   leaves it to FPS Animation Framework while a gun is held (FPSBody).
+/// - Q/E tips the spine sideways from the waist, the look bend's roll; the leaning hitboxes follow (BodyLean).
+/// - In every state the head looks where the view looks, as far as a committed action's clip doesn't carry it (BodyGaze).
 /// - Aiming, the hips' gait bob is smoothed away so the eyes, the gun and the sight stay steady (PlayerBody.AimSteady).
 /// - Near a wall a downward look gives back as much of the spine's bend as it takes for the face to stay clear (ClearFace).
-/// - The mouse leads the camera; selected action clips add a bounded rotation (PlayerBody.Gaze).
-/// - The camera rides the eyes, as KINEMATION's first-person camera rides its camera socket: aiming too, since FPS
-///   Animation Framework lines the sight up with the eyes (FPSBody). On a ladder and through a punch it steadies toward
-///   its place in the capsule.
+/// - The mouse leads the camera; selected action clips add a bounded rotation (BodyGaze).
+/// - The camera rides the eyes (BodyCamera): this hands it the eyes, the lean's carry and the gaze each frame, and how far
+///   to ride them (off them toward the capsule on a ladder and through a punch).
 /// - The Esc menu's own-head option shows the head and hair; the near clip plane cuts what sits around the camera.
 /// </summary>
 public sealed partial class PlayerBody
@@ -55,46 +53,42 @@ public sealed partial class PlayerBody
     public float SupineDiveLookYawLimit => Mathf.Clamp(supineDiveTurnLimit, 0f, 90f);
     public float MantleLookYawLimit => Mathf.Clamp(mantleTurnLimit, 0f, 180f);
     public Vector2 SlideLookPitchLimits => new Vector2(Mathf.Clamp(slidePitchLimits.x, 0f, 85f), Mathf.Clamp(slidePitchLimits.y, 0f, 85f));
-    /// <summary>Share of a downward / upward look the spine takes (CAS Look's spine angles); neck and head take the rest.</summary>
+    /// <summary>Share of a downward / upward look the spine takes (SpineLook); neck and head take the rest.</summary>
     internal float SpineBendDown => Mathf.Clamp01(spineBendDown);
     internal float SpineBendUp => Mathf.Clamp01(spineBendUp);
 
-    /// <summary>What CAS's Look gets this frame (BodyCas): how much of it, the pitch (down-positive), the view's yaw in the
-    /// world and the lean's roll (positive tips the top left), in degrees.</summary>
-    internal float CasLookWeight { get; private set; }
-    internal float CasLookPitch { get; private set; }
-    internal float CasLookYaw { get; private set; }
-    internal float CasLookRoll { get; private set; }
+    // The look bend (SpineLook, first in LateUpdate) and what it gets this frame, worked out in Update: how much of it, the
+    // pitch (down-positive), the view's yaw in the world and the lean's roll (positive tips the top left), in degrees.
+    private readonly SpineLook spineLook = new SpineLook();
+    private float spineLookWeight, spineLookPitch, spineLookYaw, spineLookRoll;
 
-    private Transform lookPivot, leftUpperArm, rightUpperArm, neck;
-    private float faceGazeWeight;
-    private Camera viewCamera;
-    private PlayerCameraEffects cameraEffects;
+    // The camera on the eyes (BodyCamera): it holds its own state, and Look hands it the pose each frame.
+    private readonly BodyCamera bodyCamera = new BodyCamera();
+
+    private Transform lookPivot, leftUpperArm, rightUpperArm;
     private Vector3 restForward;
     private Vector3 eyeLocal;
-    private float eyeViewWeight, bendWeight, baseNearClip;
+    private float bendWeight;
     private float slideLookPitch, slideLookTwist;
     private Vector3 slideBodyOffset, slideWorldOffset;
     private bool slideBodyAnchored;
-    private Transform eyes;
 
     private bool ShowsOwnHead => thirdPerson || !player.IsLocal || GameSettings.Current.showOwnHead;
 
     private void SetUpLook()
     {
-        viewCamera = view != null ? view.GetComponent<Camera>() : null;
-        eyes = PlayerView.EyesOf(player);
-        if (viewCamera != null) baseNearClip = viewCamera.nearClipPlane;
+        bodyCamera.SetUp();
         lookPivot = view == null || view.parent == null ? null
             : view.parent.name == "CameraEffectsPivot" && view.parent.parent != null ? view.parent.parent : view.parent;
-        eyeViewWeight = 1f;
-        bendWeight = CasLookWeight = CasLookPitch = CasLookRoll = 0f;
+        spineLook.Bind(animator, SpineBendDown, SpineBendUp);
+        bendWeight = spineLookWeight = spineLookPitch = spineLookRoll = 0f;
         slideLookPitch = slideLookTwist = 0f;
         slideBodyAnchored = false;
-        faceGazeWeight = 0f;
-        SetUpLean();
+        bodyGaze.Reset(transform, lookPivot);
+        TuneGaze();
+        bodyLean.Reset(player, transform, body, head, spineLook, HoldsGun);
+        TuneLean();
         SetUpAimSteady();
-        neck = animator != null && animator.isHuman ? animator.GetBoneTransform(HumanBodyBones.Neck) : null;
         if (head == null) return;
         // Imported avatars need not face their prefab's +Z (Hiro faces -Z in its rest pose).
         leftUpperArm = animator.GetBoneTransform(HumanBodyBones.LeftUpperArm);
@@ -104,8 +98,8 @@ public sealed partial class PlayerBody
         if (restForward.sqrMagnitude < .001f) restForward = body.forward;
         Vector3 eye = EyesAtRest() + body.up * eyeAdjust.x + restForward * (eyeAdjust.y + eyeViewAhead);
         eyeLocal = head.InverseTransformPoint(eye);
-        SetUpGaze();
-        SetUpClearance();
+        bodyLean.Bind(eyeLocal, leftUpperArm, rightUpperArm);
+        bodyGaze.SetUp(body, head, animator.GetBoneTransform(HumanBodyBones.Neck), restForward);
     }
 
     // The avatar's eye bones when they sit like eyes (ahead of and above the head bone, an eye-width apart);
@@ -126,7 +120,7 @@ public sealed partial class PlayerBody
         return new Vector3(head.position.x, body.position.y + player.runtimeBodyDefaults.w, head.position.z) + restForward * backOffset;
     }
 
-    // In Update, once the body faces its way this frame: how far CAS's Look bends it (BodyCas feeds it before CAS runs).
+    // In Update, once the body faces its way this frame: how far the look bends it (SpineLook, first in LateUpdate).
     private void AimLook(float dt)
     {
         bool upright = !dead && transition == null
@@ -154,60 +148,44 @@ public sealed partial class PlayerBody
         }
         else { slideLookPitch = pitch; slideLookTwist = twist; }
 
-        CasLookPitch = pitch;
+        spineLookPitch = pitch;
         // The view's yaw as the hips see it: the body's own facing plus the turn back toward the view.
-        CasLookYaw = transform.eulerAngles.y + yaw + twist;
-        // About the view's forward axis a positive angle tips the top to the left, as the camera's own roll does: as far as
-        // takes the eyes the lean's distance (PlayerBody.Lean).
-        CasLookRoll = CasLeanRoll();
-        // FPS Animation Framework has the upper body while a gun is held; CAS hands it over and takes it back as smoothly.
+        spineLookYaw = transform.eulerAngles.y + yaw + twist;
+        // About the view's forward axis a positive angle tips the top to the left, as the camera's own roll does: the
+        // spine's bend for the Q/E lean, the old one with nothing in hand, as far as takes the eyes the whole peek with
+        // the fists (BodyLean).
+        TuneLean();
+        bodyLean.BlendHands(HoldsGun, dt);
+        spineLookRoll = bodyLean.SpineRoll(bendWeight);
+        // FPS Animation Framework has the upper body while a gun is held; the look bend hands it over and takes it back
+        // as smoothly.
         float target = UpperBodyFromFramework || dead ? 0f : bendWeight;
-        CasLookWeight = Mathf.MoveTowards(CasLookWeight, target, dt / blendTime);
+        spineLookWeight = Mathf.MoveTowards(spineLookWeight, target, dt / blendTime);
     }
 
-    // In LateUpdate, after the animation pass (CAS's Look, FPSAF with a gun) and the hands.
+    // Last in LateUpdate's pose work, after the look bend (or FPSAF's, with a gun), the body's placing and the legs.
     private void Look(float dt)
     {
         if (head == null || dt <= 0f) return;
-        UpdateGaze(dt);
+        TuneGaze();
+        bodyGaze.Update(GazeClipWeight(), AimBlend(), dead, spineLook.ClipHeadRotation, dt);
         float onEyes = 1f - punchEyeSteady * punchWeight;
         // Rung and slide clips put the head at different heights. A steady ladder view prevents repeated
         // up/down taps from turning that retargeted head offset into a camera lurch.
         if (state == MovementState.Ladder) onEyes = 0f;
-        eyeViewWeight = Mathf.MoveTowards(eyeViewWeight, dead ? 0f : onEyes, dt / eyeViewTime);
+        bodyCamera.EaseOntoEyes(dead ? 0f : onEyes, eyeViewTime, dt);
         Vector3 eyeBefore = head.TransformPoint(eyeLocal);
+        bodyLean.HangArm(spineLookRoll * spineLookWeight, dead, HoldsGun);
         ClearFace();
-        FaceGaze(dt);
+        // The head to the gaze, Q/E tilting it as far as the view rolls; FPSAF's while it holds a gun (BodyGaze).
+        bodyGaze.FaceHead(dead || UpperBodyFromFramework, player.LeanRoll * bendWeight, blendTime, dt);
         Vector3 eye = head.TransformPoint(eyeLocal);
-        // Every PC's copy of the body moves its hitboxes, with or without a camera of its own.
-        FollowLeanWithHitboxes(eye, dt);
-        // In the F5 view too: the eyes take this pose, then the camera moves behind (PlaceViewBehind).
-        if (view == null) return;
-        Vector3 anchor = cameraEffects != null ? cameraEffects.CameraAnchorPosition
-            : view.parent != null ? view.parent.TransformPoint(viewHome) : transform.position + Vector3.up * player.runtimeBodyDefaults.w;
-        ApplyGazeToCamera();
-        // Combat's head moves (a slip's dip) go on the eyes as they are, the body itself staying put (CombatHeadMotion).
-        Vector3 headMove = cameraEffects != null ? cameraEffects.HeadDisplacement : Vector3.zero;
-        PlaceCamera(Vector3.Lerp(anchor + eye - eyeBefore, eye, eyeViewWeight) + headMove);
-        PlayerView.Follow(eyes, view);
-    }
-
-    // In every state the head turns to look where the view looks, as far as a committed action's clip doesn't carry it
-    // (headAnimationWeight), as it did up to 0.7.34: with CAS's Look only upright or sliding, a vault, hang, roll or rung
-    // left the head where the clip had it, away from the aim in the F5 view and on friends' screens (user picked it back,
-    // 2026-11-08). Q/E tilts it only as far as the view rolls; the neck takes back the spine's tip. While FPS Animation
-    // Framework holds a gun the head is its (its Look lines the sight up on the eyes, the gun hangs from the head), so
-    // this steps back.
-    private void FaceGaze(float dt)
-    {
-        faceGazeWeight = Mathf.MoveTowards(faceGazeWeight, dead || UpperBodyFromFramework ? 0f : 1f, dt / blendTime);
-        if (faceGazeWeight <= 0f || head == null) return;
-        Quaternion gaze = gazeRotation * Quaternion.Euler(0f, 0f, player.LeanRoll * bendWeight);
-        Quaternion target = Quaternion.Slerp(gaze * Quaternion.Inverse(headToGaze), head.rotation, headAnimationWeight);
-        target = Quaternion.Slerp(head.rotation, target, faceGazeWeight);
-        if (neck != null)
-            neck.rotation = Quaternion.Slerp(Quaternion.identity, target * Quaternion.Inverse(head.rotation), .3f) * neck.rotation;
-        head.rotation = target;
+        // Every PC's copy of the body moves its leaning hitboxes, with or without a camera of its own.
+        Vector3 carried = bodyLean.Carry(eye, bendWeight, dead, dt);
+        // In the F5 view too: the eyes take this pose, then the camera moves behind (PlaceViewBehind). With nothing in hand
+        // the body carries part of the Q/E peek and the camera makes up the rest, as up to 0.7.34; holding a gun or the
+        // fists the body carries all of it and the camera stays on the eyes, where the guard and the sight are placed from.
+        bodyCamera.Place(eye, eyeBefore, carried, bodyLean.CameraMakesUp, bodyGaze.Rotation, bodyGaze.Input, CameraIgnores());
     }
 
     // On the back in the air the body faces back the way it flies, as Beatrun's jump turn sets it, and the view turns within
@@ -267,15 +245,13 @@ public sealed partial class PlayerBody
         body.localPosition = headAlignment;
     }
 
-    // The pose clears the wall first; this stable capsule-to-eye sweep is the final guard for any remaining contact.
-    private void PlaceCamera(Vector3 target)
+    // What the camera's sweep goes past. Heaving up over a swing bar the eyes stay under the hands while the capsule goes on
+    // above the bar, so the sweep from the capsule down to the eyes met the bar and the camera stopped against it, seeing
+    // nothing (user, 2026-11-08). The bar is thin; the camera goes past it to the eyes.
+    private Transform CameraIgnores()
     {
-        // Heaving up over a swing bar the eyes stay under the hands while the capsule goes on above the bar, so the sweep
-        // from the capsule down to the eyes met the bar and the camera stopped against it, seeing nothing (user,
-        // 2026-11-08). The bar is thin; the camera goes past it to the eyes.
         var climbed = player.Abilities.Traversal.Obstacle.FromBar;
-        clearance.Ignored = climbed != null && !dead && (state == MovementState.Mantle || heaving) ? climbed.transform : null;
-        view.position = clearance.Resolve(SafeCameraAnchor(), target, CameraRadius(), CameraBlockers, transform);
+        return climbed != null && !dead && (state == MovementState.Mantle || heaving) ? climbed.transform : null;
     }
 
     private float AimBlend()
@@ -291,7 +267,6 @@ public sealed partial class PlayerBody
         var mode = ShowsOwnHead ? UnityEngine.Rendering.ShadowCastingMode.On : UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly;
         foreach (var part in headParts)
             if (part != null) part.shadowCastingMode = mode;
-        if (viewCamera != null)
-            viewCamera.nearClipPlane = !thirdPerson && GameSettings.Current.showOwnHead ? Mathf.Max(baseNearClip, headNearClip) : baseNearClip;
+        bodyCamera.CutOwnHead(!thirdPerson && GameSettings.Current.showOwnHead, headNearClip);
     }
 }

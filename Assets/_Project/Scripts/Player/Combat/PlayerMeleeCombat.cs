@@ -2,7 +2,7 @@ using System;
 using UnityEngine;
 
 /// <summary>Fist prototype. Owns charge/release, frontal defense and single-target guard break.</summary>
-[DisallowMultipleComponent, DefaultExecutionOrder(-150)]
+[DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.MeleeCombat)]
 public sealed class PlayerMeleeCombat : MonoBehaviour
 {
     [Header("Fists")]

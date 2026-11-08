@@ -5,7 +5,7 @@ using UnityEngine;
 /// player the same way in every scene. In a room GameSession spawns everyone here instead.
 /// Stand one of these in a scene instead of placing a player there.
 /// </summary>
-[DefaultExecutionOrder(-1000), DisallowMultipleComponent]
+[DefaultExecutionOrder(FrameOrder.SpawnPoint), DisallowMultipleComponent]
 public sealed class PlayerSpawnPoint : MonoBehaviour
 {
     private void Awake()

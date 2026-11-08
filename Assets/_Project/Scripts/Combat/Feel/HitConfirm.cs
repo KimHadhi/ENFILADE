@@ -12,7 +12,7 @@ using UnityEngine;
 /// Sounds.csv), so a sound is changed by swapping files; while the bank is missing a kill falls back to GunFeel's kill
 /// sounds. Created on first use during Play.
 /// </summary>
-[DisallowMultipleComponent, DefaultExecutionOrder(10000)]
+[DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.HitConfirm)]
 public sealed class HitConfirm : MonoBehaviour
 {
     private const string BankId = "HitConfirm";

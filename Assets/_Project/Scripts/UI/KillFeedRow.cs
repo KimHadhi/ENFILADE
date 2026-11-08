@@ -13,6 +13,8 @@ public sealed class KillFeedRow
 {
     public const float Height = 32f;
     private const float Pad = 12f, Gap = 8f, AccentWidth = 4f, IconSize = 18f, SheenSeconds = .5f;
+    // FeedFlame's BorderMargin: how far the border's image stands out from the row on each side (px).
+    private static readonly Vector2 BorderMargin = new Vector2(14f, 20f);
     private static readonly Color Dark = new Color(.04f, .04f, .06f, .5f), Light = new Color(1f, .96f, .82f, .55f);
 
     private readonly RectTransform root;
@@ -20,17 +22,21 @@ public sealed class KillFeedRow
     private readonly KillRowPlate plate;
     private readonly Image accent;
     private readonly TextMeshProUGUI left, right;
-    private readonly RawImage icon;
+    private readonly RawImage icon, border;
     private readonly StreakBadge streak;
+    private readonly float seed = Random.value * 40f;
     // Each new row tilts the other way from the last, so two quick kills read as two slips.
     private static float nextRoll = 1f;
     private float y, lead, roll, weight = 1f, shade = 1f, painted = -1f;
-    private bool sheening;
+    private bool sheening, mine;
+    private Color warm;
     private KillFeedLook look;
     // The row's own colours and the newest row's, between which Paint blends.
     private Color plateLeft, heroLeft, leftInk, iconInk, heroIcon;
 
     public float Age { get; private set; }
+    /// <summary>This PC's own kill: the feed lists these first (backlog 332).</summary>
+    public bool Mine => mine;
 
     /// <summary>The height the row takes in the list now: the newest row's growth and the gap under it included.</summary>
     public float Extent => look == null ? Height : Height * (1f + look.leadScale * lead) + look.heroGap * lead;
@@ -42,6 +48,14 @@ public sealed class KillFeedRow
         group = root.gameObject.AddComponent<CanvasGroup>();
         group.interactable = group.blocksRaycasts = false;
         plate = root.gameObject.AddComponent<KillRowPlate>();
+        // Fire round the whole row (backlog 325), over the plate and under everything on it.
+        border = FeelUI.Rect("Border Fire", root).gameObject.AddComponent<RawImage>();
+        border.material = StreakBadge.FlameMaterial(StreakBadge.BorderOfFire);
+        border.raycastTarget = false;
+        var borderRect = border.rectTransform;
+        borderRect.anchorMin = Vector2.zero; borderRect.anchorMax = Vector2.one;
+        borderRect.offsetMin = -BorderMargin; borderRect.offsetMax = BorderMargin;
+        border.gameObject.SetActive(false);
         accent = FeelUI.Rect("Accent", root).gameObject.AddComponent<Image>();
         var accentRect = accent.rectTransform;
         accentRect.anchorMin = new Vector2(1f, 0f); accentRect.anchorMax = Vector2.one; accentRect.pivot = new Vector2(1f, .5f);
@@ -57,12 +71,13 @@ public sealed class KillFeedRow
         streak = new StreakBadge(root);
     }
 
-    /// <summary>emphatic: a headshot, a burning streak or a grave notice leans out a little further while newest.</summary>
+    /// <summary>emphatic: a headshot, a burning streak or a grave notice leans out a little further while newest. fire: the
+    /// border of fire round the row, a skull streak's blue or a named or elite kill's magenta (backlog 325).</summary>
     public void Show(string leftText, Texture iconTexture, Color iconColor, string rightText, Color accentColor, bool mine, int streakCount,
-        KillFeedLook look, bool emphatic)
+        KillFeedLook look, bool emphatic, FeedBorder fire = FeedBorder.None)
     {
         this.look = look;
-        weight = 1f + (emphatic || streakCount >= look.flameFrom ? look.leadEmphasis : 0f);
+        weight = 1f + (emphatic || fire != FeedBorder.None || streakCount >= look.flameFrom ? look.leadEmphasis : 0f);
         roll = nextRoll * look.leadRoll;
         nextRoll = -nextRoll;
         lead = 0f;
@@ -75,7 +90,9 @@ public sealed class KillFeedRow
         // On the light card the icon takes the kill's colour, deep enough to read on it.
         heroIcon = new Color(accentColor.r * .78f, accentColor.g * .78f, accentColor.b * .78f, 1f);
         accent.color = accentColor;
-        Color warm = GunFeelSettings.Instance.scoreColor;
+        this.mine = mine;
+        warm = GunFeelSettings.Instance.scoreColor;
+        plate.Highlight(Color.clear, 0f);
         plateLeft = mine ? new Color(warm.r, warm.g, warm.b, look.ownPlateStrength) : Dark;
         heroLeft = mine ? Color.Lerp(look.heroPlate, new Color(warm.r, warm.g, warm.b, look.heroPlate.a), look.heroOwnWash) : look.heroPlate;
         painted = -1f;
@@ -87,7 +104,17 @@ public sealed class KillFeedRow
         // Right-aligned: [left] [icon] [right] with the accent bar at the far right.
         float iconWidth = iconTexture != null ? IconSize : 0f;
         float rightWidth = right.GetPreferredValues(rightText).x, leftWidth = left.GetPreferredValues(leftText).x;
-        root.sizeDelta = new Vector2(Pad + leftWidth + Gap + iconWidth + Gap + rightWidth + Pad + AccentWidth, Height);
+        float rowWidth = Pad + leftWidth + Gap + iconWidth + Gap + rightWidth + Pad + AccentWidth;
+        root.sizeDelta = new Vector2(rowWidth, Height);
+        // The row's width travels in the uv's whole part, so the shader knows where the plate's outline runs.
+        border.gameObject.SetActive(fire != FeedBorder.None);
+        if (fire != FeedBorder.None)
+        {
+            Color tint = fire == FeedBorder.Standout ? look.eliteColor : look.blueColor;
+            tint.a = 1f;
+            border.color = tint;
+            border.uvRect = new Rect(Mathf.Floor(seed), Mathf.Round(rowWidth), 1f, 1f);
+        }
         float x = -AccentWidth - Pad;
         Place(right.rectTransform, x - rightWidth * .5f, rightWidth + 4f, Height); x -= rightWidth + Gap;
         Place(icon.rectTransform, x - iconWidth * .5f, iconWidth, iconWidth); x -= iconWidth + Gap;
@@ -118,8 +145,17 @@ public sealed class KillFeedRow
         root.localRotation = Quaternion.Euler(0f, -yaw, roll * lead);
         root.anchoredPosition3D = new Vector3((1f - enter) * 80f, y, -lift);
         root.localScale = Vector3.one * (1f + (look != null ? look.leadScale : 0f) * lead);
-        float dim = look != null ? Mathf.Max(look.olderFloor, 1f - look.olderFade * rank) : 1f;
+        // A recent row keeps full opacity and lit edges, gold for your own, fainter white for anyone else's; both ease off
+        // over .4 s once it stops being recent (backlog 332).
+        float recent = look != null ? 1f - Mathf.Clamp01((Age - look.recentSeconds) / .4f) : 0f;
+        float dim = look != null ? Mathf.Lerp(Mathf.Max(look.olderFloor, 1f - look.olderFade * rank), 1f, recent) : 1f;
         shade = Mathf.Lerp(shade, dim, 1f - Mathf.Exp(-10f * dt));
+        if (look != null)
+        {
+            Color edge = mine ? warm : Color.white;
+            edge.a = recent * (mine ? 1f : look.recentOthers);
+            plate.Highlight(edge, look.recentEdge);
+        }
         group.alpha = enter * shade * Mathf.Clamp01((lifetime - Age) / .4f);
         // The accent bar flares wide on arrival and stays wider while the row is the newest.
         float flash = 1f - Mathf.Clamp01(Age / .25f);

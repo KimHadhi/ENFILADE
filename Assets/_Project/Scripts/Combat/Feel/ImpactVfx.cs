@@ -12,7 +12,7 @@ public sealed class ImpactVfx : MonoBehaviour
     // Off the body toward the shooter, so a camera-facing splash isn't cut by the body it leaves.
     private const float SplashLift = .05f;
     private static ImpactVfx instance;
-    private ParticleSystem droplets, mist, dust;
+    private ParticleSystem droplets, mist, dust, shieldSparks, shieldFlash;
     private readonly Transform[] decals = new Transform[DecalCount];
     private readonly MeshRenderer[] decalRenderers = new MeshRenderer[DecalCount];
     private readonly float[] decalAge = new float[DecalCount];
@@ -59,6 +59,20 @@ public sealed class ImpactVfx : MonoBehaviour
         var dustColor = dust.colorOverLifetime; dustColor.enabled = true;
         dustColor.color = FeelAssets.Fade(Color.white, new Color(1f, 1f, 1f, 0f));
         var dustDrag = dust.limitVelocityOverLifetime; dustDrag.enabled = true; dustDrag.drag = 4f; dustDrag.multiplyDragByParticleSize = false;
+
+        // A shield taking a hit on someone else's body: bright streaks and a quick glow, additive, never blood.
+        shieldSparks = FeelAssets.CreateEmitter("Shield Sparks", transform, FeelAssets.Particle(FeelAssets.SoftDot, true), 200, .4f,
+            ParticleSystemRenderMode.Stretch);
+        var sparkStretch = shieldSparks.GetComponent<ParticleSystemRenderer>();
+        sparkStretch.velocityScale = .03f; sparkStretch.lengthScale = 1.4f;
+        var sparkSize = shieldSparks.sizeOverLifetime; sparkSize.enabled = true;
+        sparkSize.size = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0f, 1f, 1f, 0f));
+        var sparkDrag = shieldSparks.limitVelocityOverLifetime; sparkDrag.enabled = true; sparkDrag.drag = 5f; sparkDrag.multiplyDragByParticleSize = false;
+        shieldFlash = FeelAssets.CreateEmitter("Shield Flash", transform, FeelAssets.Particle(FeelAssets.SoftDot, true), 16, 0f);
+        var flashSize = shieldFlash.sizeOverLifetime; flashSize.enabled = true;
+        flashSize.size = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.EaseInOut(0f, .6f, 1f, 1.3f));
+        var flashColor = shieldFlash.colorOverLifetime; flashColor.enabled = true;
+        flashColor.color = FeelAssets.Fade(Color.white, new Color(1f, 1f, 1f, 0f));
     }
 
     private void OnDestroy() { if (instance == this) instance = null; }
@@ -68,6 +82,14 @@ public sealed class ImpactVfx : MonoBehaviour
     {
         if (!Application.isPlaying || !GunFeelSettings.Instance.proceduralBlood || point == Vector3.zero) return;
         Get().Spray(point, direction, critical, kill, bullet, target);
+    }
+
+    /// <summary>A shield taking a hit on a body this PC doesn't own: sparks of its colour thrown back toward the hitter and a
+    /// quick glow, instead of blood. direction is the attack direction (into the target).</summary>
+    public static void ShieldSpark(Vector3 point, Vector3 direction, Color color)
+    {
+        if (!Application.isPlaying || point == Vector3.zero) return;
+        Get().Crackle(point, direction, color);
     }
 
     public static void Dust(Vector3 point, float scale)
@@ -84,6 +106,28 @@ public sealed class ImpactVfx : MonoBehaviour
     {
         if (!Application.isPlaying || !GunFeelSettings.Instance.proceduralBlood || point == Vector3.zero) return;
         Get().Burst(point, direction, target);
+    }
+
+    private void Crackle(Vector3 point, Vector3 direction, Color color)
+    {
+        if (direction.sqrMagnitude < .0001f) direction = Camera.main != null ? Camera.main.transform.forward : Vector3.forward;
+        direction.Normalize();
+        var emit = new ParticleSystem.EmitParams();
+        for (int i = 0; i < 14; i++)
+        {
+            emit.position = point - direction * .04f + Random.insideUnitSphere * .02f;
+            emit.velocity = Cone(-direction, 70f) * Random.Range(1.5f, 5f);
+            emit.startSize = Random.Range(.008f, .018f);
+            emit.startLifetime = Random.Range(.1f, .22f);
+            emit.startColor = Color.Lerp(color, Color.white, Random.Range(0f, .5f));
+            shieldSparks.Emit(emit, 1);
+        }
+        emit.position = point - direction * .05f;
+        emit.velocity = Vector3.zero;
+        emit.startSize = .35f;
+        emit.startLifetime = .09f;
+        emit.startColor = new Color(color.r, color.g, color.b, .8f);
+        shieldFlash.Emit(emit, 1);
     }
 
     private void Burst(Vector3 point, Vector3 direction, Component target)

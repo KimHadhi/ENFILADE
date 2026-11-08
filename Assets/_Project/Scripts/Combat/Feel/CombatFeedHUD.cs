@@ -10,7 +10,7 @@ using UnityEngine.UI;
 /// (knife with a slash trail, return arrow) in the line colour. The number accumulates over a kill streak and the group fades after a quiet spell. Only kills score, so sustained fire stays quiet.
 /// A rolling XP total and a kill feed sit at the top right. Created on first use during Play; GunFeel → Score.
 /// </summary>
-[DisallowMultipleComponent, DefaultExecutionOrder(470)]
+[DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.CombatFeedHud)]
 public sealed class CombatFeedHUD : MonoBehaviour
 {
     private const int MaxLines = 4, MaxKills = 5;
@@ -37,7 +37,7 @@ public sealed class CombatFeedHUD : MonoBehaviour
     private CanvasGroup streakGroup;
     private readonly List<Line> lines = new List<Line>();
     private readonly Stack<Line> spareLines = new Stack<Line>();
-    private readonly List<KillFeedRow> kills = new List<KillFeedRow>();
+    private readonly List<KillFeedRow> kills = new List<KillFeedRow>(), shown = new List<KillFeedRow>();
     private readonly Stack<KillFeedRow> spareKills = new Stack<KillFeedRow>();
     private readonly KillFeedLook look = new KillFeedLook();
     private int streakScore, multiKill;
@@ -57,9 +57,10 @@ public sealed class CombatFeedHUD : MonoBehaviour
     }
 
     /// <summary>distance: shooter to hit point, metres (0 when unknown); gun kills past Long Range Distance earn a bonus. feedRow is false when the host will send the row.
-    /// pierced: the killing bullet went through or off something first (관통 사살).</summary>
+    /// pierced: the killing bullet went through or off something first (관통 사살). standout: the enemy was named or elite, so
+    /// its row burns magenta (backlog 325).</summary>
     public static void Kill(string weapon, string target, bool headshot, bool execution, bool counter, bool bullet, float distance, bool feedRow,
-        bool pierced = false)
+        bool pierced = false, bool standout = false)
     {
         if (!Application.isPlaying) return;
         var settings = GunFeelSettings.Instance;
@@ -91,13 +92,13 @@ public sealed class CombatFeedHUD : MonoBehaviour
             self.streakIdle = 0f; self.popAge = 0f; self.totalPop = 1f;
             self.streakLabel.text = self.streakScore + "<size=62%><color=#" + ColorUtility.ToHtmlStringRGB(settings.scoreColor) + "> XP</color></size>";
         }
-        if (feedRow && settings.killFeed) self.AddKill(Credit(PlayerRoster.Local, weapon), target, headshot, true, StreakOf(PlayerRoster.Local));
+        if (feedRow && settings.killFeed) self.AddKill(Credit(PlayerRoster.Local, weapon), target, headshot, true, StreakOf(PlayerRoster.Local), standout);
     }
 
     /// <summary>A kill in a room, as the host counted it, in the feed only: the score is the killer's own.</summary>
-    public static void PlayerKill(PlayerMovement who, string weapon, string target, bool headshot, int streak)
+    public static void PlayerKill(PlayerMovement who, string weapon, string target, bool headshot, int streak, bool standout = false)
     {
-        if (Application.isPlaying && GunFeelSettings.Instance.killFeed) Get().AddKill(Credit(who, weapon), target, headshot, who.IsLocal, streak);
+        if (Application.isPlaying && GunFeelSettings.Instance.killFeed) Get().AddKill(Credit(who, weapon), target, headshot, who.IsLocal, streak, standout);
     }
 
     /// <summary>What just happened to a player, for the whole team to read.</summary>
@@ -226,12 +227,17 @@ public sealed class CombatFeedHUD : MonoBehaviour
             if (kills[i].Age + dt < KillLifetime) continue;
             kills[i].Hide(); spareKills.Push(kills[i]); kills.RemoveAt(i);
         }
-        // Newest first, each row below the room the ones above it take now, so the newest's bigger card never overlaps.
+        // Your own kills first, then everyone else's, each newest first (backlog 332): in a room your rows stay at the top
+        // under a teammate's run of kills, and alone it is the plain newest-first list. Each row sits below the room the
+        // ones above it take now, so the top row's bigger card never overlaps.
+        shown.Clear();
+        for (int i = kills.Count - 1; i >= 0; i--) if (kills[i].Mine) shown.Add(kills[i]);
+        for (int i = kills.Count - 1; i >= 0; i--) if (!kills[i].Mine) shown.Add(kills[i]);
         float below = 0f;
-        for (int i = kills.Count - 1; i >= 0; i--)
+        for (int rank = 0; rank < shown.Count; rank++)
         {
-            kills[i].Tick(dt, -below, KillLifetime, kills.Count - 1 - i);
-            below += kills[i].Extent + 5f;
+            shown[rank].Tick(dt, -below, KillLifetime, rank);
+            below += shown[rank].Extent + 5f;
         }
     }
 
@@ -279,21 +285,24 @@ public sealed class CombatFeedHUD : MonoBehaviour
         lines.Add(line);
     }
 
-    private void AddKill(string weapon, string target, bool headshot, bool mine, int streak)
+    // A named or elite kill burns magenta round its row; a streak past the last numeral (its skull) burns blue (backlog 325).
+    private void AddKill(string weapon, string target, bool headshot, bool mine, int streak, bool standout)
     {
         var settings = GunFeelSettings.Instance;
+        var fire = standout ? FeedBorder.Standout : streak > look.mostNumeral ? FeedBorder.Skull : FeedBorder.None;
         AddRow(weapon, headshot ? CombatUIAssets.CriticalBurst : CombatUIAssets.Skull, headshot ? settings.scoreColor : Color.white,
-            target, headshot ? settings.scoreColor : KillRed, mine, streak, headshot);
+            target, headshot ? settings.scoreColor : KillRed, mine, streak, headshot, fire);
     }
 
-    private void AddRow(string left, Texture icon, Color iconColor, string right, Color accent, bool mine, int streak, bool emphatic)
+    private void AddRow(string left, Texture icon, Color iconColor, string right, Color accent, bool mine, int streak, bool emphatic,
+        FeedBorder fire = FeedBorder.None)
     {
         if (kills.Count >= MaxKills)
         {
             kills[0].Hide(); spareKills.Push(kills[0]); kills.RemoveAt(0);
         }
         var row = spareKills.Count > 0 ? spareKills.Pop() : new KillFeedRow(feedRoot);
-        row.Show(left, icon, iconColor, right, accent, mine, streak, look, emphatic);
+        row.Show(left, icon, iconColor, right, accent, mine, streak, look, emphatic, fire);
         kills.Add(row);
     }
 }

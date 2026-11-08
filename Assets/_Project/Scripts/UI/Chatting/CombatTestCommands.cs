@@ -1,8 +1,12 @@
+using System;
 using UnityEngine;
+using UnityEngine.SceneManagement;
+using Object = UnityEngine.Object;
 
 public static class CombatTestCommands
 {
-    public static void Register(ChatCommandRouter commands, SinglePlayerChatManager chat)
+    /// <summary>The chat is looked up when a command runs: the developer console exists in scenes without one.</summary>
+    public static void Register(ChatCommandRouter commands, Func<SinglePlayerChatManager> findChat)
     {
         commands.Register("wave", "start / stop(pause) / resume / abort / status — 웨이브 제어", args =>
         {
@@ -12,8 +16,9 @@ public static class CombatTestCommands
             if(!Application.isPlaying) return "Play 중에 사용할 수 있습니다.";
             if(GameSession.IsGuest&&action!="status") return "웨이브는 호스트만 조작할 수 있습니다.";
             WaveManager wave=null; int count=0;
+            var scene=SceneManager.GetActiveScene(); // the map; the chat's GameHUD lives in it too
             foreach(var candidate in Object.FindObjectsByType<WaveManager>(FindObjectsInactive.Exclude,FindObjectsSortMode.None))
-                if(candidate.gameObject.scene==chat.gameObject.scene && candidate.isActiveAndEnabled) {wave=candidate;count++;}
+                if(candidate.gameObject.scene==scene && candidate.isActiveAndEnabled) {wave=candidate;count++;}
             if(count!=1) return "이 씬에 활성 WaveManager가 하나 있어야 합니다.";
             switch(action)
             {
@@ -27,6 +32,8 @@ public static class CombatTestCommands
         commands.Register("chattest", "[dialogue / broadcast / team / all / mixed] — 채팅 유형 테스트", args =>
         {
             if(!Application.isPlaying) return "Play 중에 사용할 수 있습니다.";
+            var chat=findChat();
+            if(chat==null) return "이 씬에는 채팅 창이 없습니다.";
             switch(args.Trim().ToLowerInvariant())
             {
                 case "dialogue": Emit(chat,ChatChannel.Dialogue); break;

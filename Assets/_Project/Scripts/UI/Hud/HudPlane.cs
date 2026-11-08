@@ -3,10 +3,12 @@ using UnityEngine;
 /// <summary>
 /// Turns one side of the HUD about the screen edge on that side, so its inner edge recedes like the inside of a curved
 /// screen (The Division), and lets the look sway carry it. Goes on a group that is centred on its root canvas (GameHUD's
-/// LEFT and RIGHT, or a group Create makes to fill the canvas); nothing else may move that group. Hud.csv's Planes row
-/// sets the angle. Only a canvas drawn through HudCamera shows the depth.
+/// LEFT and RIGHT, or a group Create makes to fill the canvas); nothing else may move that group. The angle is the
+/// player's (Settings → HUD 원근 각도), Hud.csv's Planes row the lean back. While the player leans with Q/E the side also
+/// turns within the screen about the middle of that edge (HudCamera.LeanRoll), so the corners stay on the screen.
+/// Only a canvas drawn through HudCamera shows the depth.
 /// </summary>
-[DisallowMultipleComponent, DefaultExecutionOrder(10030)]
+[DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.HudPlanes)]
 public sealed class HudPlane : MonoBehaviour
 {
     public enum Side { Left, Right }
@@ -53,7 +55,8 @@ public sealed class HudPlane : MonoBehaviour
         Vector2 sway = HudCamera.Sway;
         // A positive yaw brings +x toward the viewer, so the left side turns the other way for its inner edge to recede.
         float sign = side == Side.Left ? -1f : 1f;
-        var turn = Quaternion.Euler(look.pitch + sway.y, sign * look.yaw + sway.x, 0f);
+        var turn = Quaternion.Euler(0f, 0f, HudCamera.LeanRoll)
+            * Quaternion.Euler(look.pitch + sway.y, sign * GameSettings.Current.hudAngle + sway.x, 0f);
         var axis = new Vector3(sign * canvasRect.rect.width * .5f, 0f, 0f);
         rect.localPosition = axis + turn * (home - axis) + (Vector3)(sway * look.shift);
         rect.localRotation = turn * homeRotation;

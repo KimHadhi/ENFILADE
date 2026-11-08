@@ -14,6 +14,9 @@ public interface IWeaponPose
     void OnShot(WeaponData data, Vector2 shotRecoil);
     /// <summary>Where the muzzle would be at this aim blend, for the cover probes; may be called several times a frame.</summary>
     Vector3 Prepare(Transform view, WeaponData data, float ads);
-    /// <summary>Poses the gun for this frame; returns whether it is held up by a wall.</summary>
-    bool Pose(GameObject owner, Transform view, Vector3 target, bool obstructed, WeaponRuntime runtime, float dt, int layers);
+    /// <summary>
+    /// Poses the gun for this frame; returns whether it is held up by a wall. quickLower: the way is clear and the player
+    /// wants to fire or aim, so a raised gun comes down at its quickest.
+    /// </summary>
+    bool Pose(GameObject owner, Transform view, Vector3 target, bool obstructed, WeaponRuntime runtime, float dt, int layers, bool quickLower);
 }

@@ -11,7 +11,7 @@ using UnityEngine;
 /// motion. The lean itself is MovementLean's; the dip and the turns go through CombatHeadMotion and the glint through
 /// CombatEdgeGlint; PlayerPerfectDefense says whom to lock onto. Numbers: Tables/Player.csv, row Slip.
 /// </summary>
-[DisallowMultipleComponent, DefaultExecutionOrder(-150)]
+[DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.MicroSlip)]
 public sealed class MicroSlip : MonoBehaviour
 {
     [SerializeField, Min(0f), Tooltip("The eyes end at least this far (m) to the pressed side of where they stood; a lean already further stays.")]

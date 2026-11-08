@@ -4,7 +4,7 @@ using UnityEngine.InputSystem;
 
 [DisallowMultipleComponent]
 [RequireComponent(typeof(CharacterController))]
-[DefaultExecutionOrder(-100)]
+[DefaultExecutionOrder(FrameOrder.Movement)]
 public sealed partial class PlayerMovement : MonoBehaviour
 {
     public enum MovementState

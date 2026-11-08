@@ -23,8 +23,16 @@ public sealed partial class PlayerBody
     [SerializeField, Range(10f, 120f), Tooltip("Standing still, the legs stay planted until the view has turned this far "
         + "from them (degrees); the chest twists toward the view meanwhile. Then the legs step round.")]
     private float turnStartAngle = 60f;
-    [SerializeField, Min(10f), Tooltip("How fast the legs step round to the view (degrees per second).")]
+    [SerializeField, Min(10f), Tooltip("How fast the legs turn round to the view (degrees per second).")]
     private float turnSpeed = 150f;
+    // Off by default (user, 2026-11-09): the clips' own turn is cut out (inPlaceYaw) and the body turns the legs itself,
+    // but a clip's legs still swing as though its hips had turned, by the clip's angle over its 0.8 s, while the body
+    // turns about 60 degrees at turnSpeed with the hips kept on the standing clip. So mid-step the legs swung aside, and
+    // snapped back when the clip let go.
+    [SerializeField, Tooltip("Step round with the turn clips on the legs. Off, the legs turn on the spot as they stand.")]
+    private bool turnSteps;
+    [SerializeField, Min(0f), Tooltip("Turning on the spot without steps, how softly the legs start and stop (s).")]
+    private float turnEaseTime = .08f;
     [SerializeField, Min(.1f), Tooltip("Playback speed of the turn clips while the legs step round.")]
     private float turnClipSpeed = 1.5f;
     [SerializeField, Min(0f), Tooltip("How quickly the legs follow a change in the way and speed of travel (s). Quick A/D or "
@@ -38,7 +46,7 @@ public sealed partial class PlayerBody
     };
 
     private string[] plainMoves, rifleSet, pistolSet;
-    private float legYaw;
+    private float legYaw, turnVelocity;
     private Vector3 stride;
     private int turning;
     private bool legsPlanted;
@@ -168,8 +176,9 @@ public sealed partial class PlayerBody
         phase = Mathf.Repeat(phase + dt * rate / (length / weight), 1f);
     }
 
-    // Standing still, the legs keep their place while the view turns and step round once it has turned far enough
-    // (the spine twists the chest toward the view meanwhile). True while the legs step (BlendTurn plays the clip on them).
+    // Standing still, the legs keep their place while the view turns and turn round once it has turned far enough
+    // (the spine twists the chest toward the view meanwhile): on the spot, or stepping with the turn clips (turnSteps).
+    // True while the legs step (BlendTurn plays the clip on them).
     private bool TurnOnTheSpot(bool still, float dt)
     {
         if (!still) { turning = 0; return false; }
@@ -177,18 +186,20 @@ public sealed partial class PlayerBody
         float offset = Mathf.Clamp(Mathf.DeltaAngle(look, legYaw), -limit, limit);
         if (turning == 0 && Mathf.Abs(offset) > turnStartAngle)
         {
-            // Legs left behind on the left step round to the right, and the other way round.
+            // Legs left behind on the left turn round to the right, and the other way round.
             turning = offset < 0f ? 1 : -1;
+            turnVelocity = 0f;
             var start = turning > 0 ? turnRightClip : turnLeftClip;
-            if (start.IsValid()) { start.SetTime(0); start.SetDone(false); }
+            if (turnSteps && start.IsValid()) { start.SetTime(0); start.SetDone(false); }
         }
         bool stepping = false;
         if (turning != 0)
         {
-            offset = Mathf.MoveTowards(offset, 0f, turnSpeed * dt);
+            offset = turnSteps ? Mathf.MoveTowards(offset, 0f, turnSpeed * dt)
+                : Mathf.SmoothDamp(offset, 0f, ref turnVelocity, turnEaseTime, turnSpeed, dt);
             var clip = turning > 0 ? turnRightClip : turnLeftClip;
             var other = turning > 0 ? turnLeftClip : turnRightClip;
-            if (clip.IsValid())
+            if (turnSteps && clip.IsValid())
             {
                 if (clip.GetTime() >= clip.GetAnimationClip().length) clip.SetTime(0);
                 clip.SetSpeed(turnClipSpeed);

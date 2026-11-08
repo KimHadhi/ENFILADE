@@ -9,7 +9,7 @@ using UnityEngine.InputSystem;
 /// does too, from further off, dashing in first, as Sekiro's deathblow sits on the attack button. Animation can
 /// subscribe to Started/Impact/Ended.
 /// </summary>
-[DisallowMultipleComponent, DefaultExecutionOrder(-160)]
+[DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.Execution)]
 public sealed class PlayerExecution : MonoBehaviour
 {
     [SerializeField, Min(.2f)] private float reach = 2.1f;

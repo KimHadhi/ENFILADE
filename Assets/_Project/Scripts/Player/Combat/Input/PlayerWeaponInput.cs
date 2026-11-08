@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 
 [DisallowMultipleComponent]
-[DefaultExecutionOrder(-200)]
+[DefaultExecutionOrder(FrameOrder.WeaponInput)]
 public sealed class PlayerWeaponInput : MonoBehaviour, IWeaponInput
 {
     [Tooltip("Optional. Uses the project's InputSystem.actions when empty; reads only the Combat action map.")]

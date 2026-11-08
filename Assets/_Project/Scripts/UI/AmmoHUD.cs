@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>Magazine and finite reserve readout. Presentation never changes ammunition.</summary>
-[DisallowMultipleComponent, DefaultExecutionOrder(400)]
+[DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.AmmoHud)]
 public sealed class AmmoHUD : MonoBehaviour
 {
     [SerializeField] private PlayerWeaponSlots weaponSlots;

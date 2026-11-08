@@ -125,7 +125,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
     private void OnExecutionStarted(MeleeCombatTarget victim) => ExecutionStartedRpc();
     private void OnHit(DamageHit hit, DamageResult result)
     {
-        if (result == DamageResult.Damaged) HurtRpc(hit.Point, hit.Direction, hit.Kind == DamageKind.Fall);
+        if (result == DamageResult.Damaged) HurtRpc(hit.Point, hit.Direction, hit.Kind == DamageKind.Fall, receiver.LastHitShielded);
     }
 
     [Rpc(SendTo.NotMe)]
@@ -150,9 +150,17 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
     [Rpc(SendTo.NotMe)]
     private void ExecutionStartedRpc() => CombatCueAudio.Play(gameObject, CombatCue.Grab, 1f, true);
 
+    // shielded: their shield took all of it, so others see its sparks and hear its crack, not blood (Apex Legends' shields).
     [Rpc(SendTo.NotMe)]
-    private void HurtRpc(Vector3 point, Vector3 direction, bool fall)
+    private void HurtRpc(Vector3 point, Vector3 direction, bool fall, bool shielded)
     {
+        if (shielded)
+        {
+            if (fall) return;
+            FeelAudio.PlayAt(FeelSound.ShieldHit, null, point, .8f);
+            ImpactVfx.ShieldSpark(point, direction, ShieldFeedback.WorldColor);
+            return;
+        }
         CombatHitAudio.PlayOtherPlayerHit(point, fall);
         if (!fall) ImpactVfx.Blood(point, direction, false, false, false, receiver);
     }

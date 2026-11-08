@@ -7,13 +7,19 @@ public static class PlayerConsoleCommands
 {
     public static void Register(ChatCommandRouter router, Func<PlayerMovement> resolvePlayer)
     {
-        router.Register("spawn", "[수량] 앞쪽 빈 공간에 적 소환. 생략하면 1마리 (웨이브 집계 제외)", args => WithPlayer(resolvePlayer, p =>
+        router.Register("spawn", "[수량] [elite/named] 앞쪽 빈 공간에 적 소환. 생략하면 1마리 (웨이브 집계 제외). elite·named는 잡으면 킬 피드가 자홍 불꽃으로 탄다", args => WithPlayer(resolvePlayer, p =>
         {
             int count = 1;
-            if (!string.IsNullOrWhiteSpace(args) && (!int.TryParse(args.Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out count) || count < 1))
-                return "사용법: /spawn [수량] — 1 이상의 정수를 입력하세요. 생략하면 1마리 소환합니다.";
+            EnemyRank? rank = null;
+            const string usage = "사용법: /spawn [수량] [elite/named] — 수량은 1 이상의 정수. 생략하면 보통 적 1마리를 소환합니다.";
+            foreach (string part in args.Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries))
+            {
+                if (part.Equals("elite", StringComparison.OrdinalIgnoreCase) || part == "엘리트") rank = EnemyRank.Elite;
+                else if (part.Equals("named", StringComparison.OrdinalIgnoreCase) || part == "네임드") rank = EnemyRank.Named;
+                else if (!int.TryParse(part, NumberStyles.Integer, CultureInfo.InvariantCulture, out count) || count < 1) return usage;
+            }
             if (!p.DamageReceiver.IsAlive) return "사망 상태입니다. /revive를 먼저 사용하세요.";
-            return ConsoleEnemySpawner.Spawn(p, count);
+            return ConsoleEnemySpawner.Spawn(p, count, rank);
         }));
         router.Register("dummy", "[수량] 또는 clear — 멀티 구조 시험용 더미 플레이어 소환·제거", args => WithPlayer(resolvePlayer, p =>
         {

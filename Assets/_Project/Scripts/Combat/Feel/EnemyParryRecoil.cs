@@ -6,7 +6,7 @@ using UnityEngine;
 /// no attack clips yet, so this tilts the whole body; a skinned enemy can play a clip instead. Added on demand.
 /// On another PC's copy it also lays the body down, since the host's physics only sends where the body has gone.
 /// </summary>
-[DisallowMultipleComponent, DefaultExecutionOrder(-200)]
+[DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.EnemyParryRecoil)]
 public sealed class EnemyParryRecoil : MonoBehaviour
 {
     // Share of the time spent snapping back; the rest rocks and settles.

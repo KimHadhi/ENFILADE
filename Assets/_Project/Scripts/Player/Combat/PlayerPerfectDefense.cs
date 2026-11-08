@@ -12,7 +12,7 @@ using UnityEngine;
 /// and stays on the target through the dash. An attacker to the side or behind, as when a dodge went right through it,
 /// gets a back elbow: a look over that shoulder, the aim left where it was.
 /// </summary>
-[DisallowMultipleComponent, DefaultExecutionOrder(-180)]
+[DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.PerfectDefense)]
 public sealed class PlayerPerfectDefense : MonoBehaviour
 {
     // Dodges wait this long (real s) past the last frame of the dash; the punch frees them at once.

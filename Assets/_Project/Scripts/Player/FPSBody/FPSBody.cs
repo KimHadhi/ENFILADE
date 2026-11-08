@@ -30,7 +30,7 @@ using MovementState = PlayerMovement.MovementState;
 /// WeaponController draws it, fires it or reloads it. WeaponController keeps every rule; this only shows them.
 /// Numbers come from Tables/FPSBody.csv, row Rig.
 /// </summary>
-[DisallowMultipleComponent, DefaultExecutionOrder(295)]
+[DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.GunHold)]
 public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
 {
     public const string TableName = "FPSBody";
@@ -66,6 +66,9 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
     private const float StillSpeed = .1f;
     // A gun still held back more than this share holds its fire.
     private const float RaisedFiring = .05f;
+    // Half-life (s) of a raised gun coming down when the player wants to fire or aim and the way is clear: fully raised
+    // to RaisedFiring in about 0.11 s.
+    private const float QuickLowerHalfLife = .025f;
     // A hip muzzle is learnt only within this angle of where the eyes look (degrees); a hip hold is well inside it.
     private const float HipMuzzleCone = 35f;
     // GunCoverLayer's input property (InputConfig_Body).
@@ -125,9 +128,6 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
         var component = weapons.GetComponent<FPSBody>();
         return component != null && component.HoldsGun ? component : null;
     }
-
-    /// <summary>FPSAF is set up on <paramref name="bodyAnimator"/>; KINEMATION's Character Animation System goes on after it (BodyCas).</summary>
-    internal bool InstalledOn(Animator bodyAnimator) => bodyAnimator != null && animator == bodyAnimator && framework != null;
 
     private bool HoldsGun => held != null && linked && framework != null;
 
@@ -230,8 +230,7 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
             bodyCamera.Bind(CameraPlaced);
         }
         framework = host.AddComponent<FPSBodyAnimator>();
-        // Set up now rather than on its first frame, so FPSAF's outputs follow the body's clips and come before what
-        // Character Animation System adds after it (BodyCas).
+        // Set up now rather than on its first frame, so FPSAF's outputs follow the body's clips in the Animator's graph.
         framework.Begin(assets.idleProfile, bodyCamera, AfterHands);
         // FPSAF's master mixer now plays the body's clips under its upper-body layer; the body's own output steps back.
         body.HandClipsToFramework();
@@ -539,6 +538,9 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
         float limit = stance == MovementState.Standing || stance == MovementState.Crouching ? 90f : twistLimit;
         float twist = Mathf.Clamp(Mathf.DeltaAngle(animator.transform.eulerAngles.y, transform.eulerAngles.y), -limit, limit);
         input.SetValue(FPSANames.MouseInput, new Vector4(twist, pitchDown));
+        // FPSAF's Look twists the spine by this. Its IK layer can also turn the feet back by it (offsetFeetTargets), because
+        // the demo turns the whole character with the view; ours already faces the legs, so that is off in our profiles
+        // (user, 2026-11-09: turning on the spot with a gun out, the legs slid round instead of stepping).
         input.SetValue(FPSANames.TurnOffset, twist);
         input.SetValue(FPSANames.MouseDeltaInput, new Vector4(delta.x, delta.y));
 
@@ -664,7 +666,6 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
         if (!HoldsGun) return;
         KeepGunInView();
         RideGun();
-        Probe();
         if (firing && Time.time - lastShot > shotInterval * TriggerReleaseIntervals) StopFiring();
         if (held.Reloading && (controller.Runtime == null || !controller.Runtime.IsReloading)) held.StopReload(playables, reloadBlendOut, bodyCamera);
     }
@@ -820,7 +821,7 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
     {
         if (!HoldsGun) return;
         StopFiring();
-        StartReloadProbe(held.Reload(empty, playables, bodyCamera));
+        held.Reload(empty, playables, bodyCamera);
     }
 
     private void OnReloadCompleted()
@@ -885,10 +886,11 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
 
     // Our wall rule says whether the gun may fire and how far it is held back, eased at the weapon's high-ready speeds;
     // FPSAF's blocking pose shows it (GunCoverLayer). The gun counts as held up until it is nearly back, so it can't
-    // fire on the way down.
-    public bool Pose(GameObject owner, Transform poseView, Vector3 target, bool obstructed, WeaponRuntime runtime, float dt, int layers)
+    // fire on the way down; when the player wants to fire or aim and the way is clear, it comes down at QuickLowerHalfLife.
+    public bool Pose(GameObject owner, Transform poseView, Vector3 target, bool obstructed, WeaponRuntime runtime, float dt, int layers, bool quickLower)
     {
-        float halfLife = obstructed ? runtime.Data.HighReadyRaiseHalfLife : runtime.Data.HighReadyLowerHalfLife;
+        float halfLife = obstructed ? runtime.Data.HighReadyRaiseHalfLife
+            : quickLower ? Mathf.Min(QuickLowerHalfLife, runtime.Data.HighReadyLowerHalfLife) : runtime.Data.HighReadyLowerHalfLife;
         cover = Mathf.Lerp(cover, obstructed ? 1f : 0f, 1f - Mathf.Exp(-Mathf.Log(2f) * Mathf.Max(0f, dt) / Mathf.Max(.001f, halfLife)));
         if (!obstructed && cover < .001f) cover = 0f;
         if (input != null) input.SetValue(CoverProperty, cover);

@@ -129,6 +129,17 @@ HeadStand.throwLift,2.5,떨어뜨릴 때 살짝 튀어 오르는 속도(m/s). �
 HeadStand.lurchDegrees,14,털어 낼 때 적이 기우는 각도(도)
 HeadStand.lurchSeconds,0.45,그 기울임이 돌아오기까지(초)
 HeadStand.viewJolt,-5;7,떨어질 때 화면 충격(도; 위아래;기울기). 기울기는 떨어지는 쪽으로
+Shield.color,#A6F2FF,내 실드의 색. 실드 피격 벌집 빛·방향 표시·실드가 깨질 때 유리판. 체력바 실드 띠와 같은 하늘색
+Shield.hitStrength,0.85,실드가 피해를 받을 때 맞은 쪽 화면 가장자리에 켜지는 벌집 빛의 밝기(0~1). 0이면 끈다. 실드만 맞은 피격은 피가 번지지 않는다(에이펙스 레전드 참고)
+Shield.hitSeconds,0.32,그 빛이 사라지는 시간(실제 초)
+Shield.hitFocus,3,빛이 맞은 쪽에 모이는 정도. 클수록 좁다
+Shield.hitReach,0.55,센 피격의 빛이 가장자리에서 안쪽으로 들어오는 정도. 1이 화면 끝이고 작을수록 깊이 들어온다
+Shield.hitVolume,0.7,합성한 실드 피격음 크기. Art/Audio/HitConfirm/ShieldHit에 클립을 넣으면 Sounds.csv의 HitConfirm/ShieldHit 행 크기로 튼다
+Shield.paneStrength,0.55,실드가 다 깨질 때 화면 가장자리에 금 간 유리판이 보이는 세기(0~1). 0이면 끈다. 체력바 위 실드 띠가 조각나는 것은 늘 나온다
+Shield.paneSeconds,0.5,그 유리판이 바깥으로 튀어 나가며 사라지는 시간(실제 초)
+Shield.viewKick,1.6,실드가 깨질 때 피격 흔들림 위에 더하는 화면 충격(도). 0이면 끈다
+Shield.trauma,0.2,실드가 깨질 때 피격 흔들림 위에 더하는 떨림(0~1)
+Shield.breakVolume,0.8,합성한 실드 깨지는 소리의 크기. Art/Audio/HitConfirm/ShieldBreak에 클립을 넣으면 Sounds.csv의 HitConfirm/ShieldBreak 행 크기로 튼다
 Posture.crouchColliderHeight,0.9,웅크린 캡슐 높이(m). 이보다 낮은 틈은 웅크려도 못 지나간다
 Posture.crouchOffset,-0.8,웅크린 눈높이 = 서 있는 눈높이(1.6) + 이 값. 0.8m로 캡슐 꼭대기보다 낮게 둔다
 Posture.slideColliderHeight,0.6,슬라이딩 캡슐 높이(m)
@@ -366,8 +377,8 @@ Body.crouchIdle,crouchstill,웅크려 서 있기
 Body.crouchWalk,crouchfwd,웅크려 걷기 (앞)
 Body.crouchRight,crouchright,웅크려 오른쪽으로 걷기
 Body.crouchLeft,crouchleft,웅크려 왼쪽으로 걷기
-Body.turnLeft,mx_turn_left,제자리에서 왼쪽으로 발을 옮기며 돌기 (도는 각도는 몸이 직접)
-Body.turnRight,mx_turn_right,제자리에서 오른쪽으로 발을 옮기며 돌기
+Body.turnLeft,mx_turn_left,제자리에서 왼쪽으로 발을 옮기며 돌기. Body.turnSteps가 1일 때만 쓴다 (도는 각도는 몸이 직접)
+Body.turnRight,mx_turn_right,제자리에서 오른쪽으로 발을 옮기며 돌기. Body.turnSteps가 1일 때만 쓴다
 Body.crouchBack,crouchbwd,웅크려 뒤로 걷기
 Body.jump,jumpfast,점프 도약
 Body.air,jumpidle,공중
@@ -474,11 +485,16 @@ Body.headFollowTime,0.25,자세가 바뀔 때 머리를 카메라 밑으로 맞�
 Body.fallClipSpeed,7.2,이보다 빠르게 떨어지면 빠른 낙하 애니메이션(fall)(m/s)
 Body.thirdPersonOffset,0.35;0.2;-2.4,F5 뒤에서 보기 카메라 위치(오른쪽;위;앞)
 Body.ledgeGrip,0.05;0.05,매달릴 때 손목 위치: 난간 윗면보다 위(m);벽면에서 안쪽(m)
-Body.turnStartAngle,60,서 있을 때 시선이 다리에서 이만큼 돌아가면 발을 옮겨 돈다(도). 그 전까지는 다리는 그대로, 상체만 비튼다
-Body.turnSpeed,150,발을 옮겨 시선 쪽으로 도는 빠르기(도/초)
-Body.turnClipSpeed,1.5,제자리 돌기 애니메이션 재생 속도
+Body.turnStartAngle,60,서 있을 때 시선이 다리에서 이만큼 돌아가면 다리가 시선 쪽으로 돈다(도). 그 전까지는 다리는 그대로, 상체만 비튼다
+Body.turnSpeed,150,다리가 시선 쪽으로 도는 가장 빠른 빠르기(도/초)
+Body.turnSteps,0,1이면 제자리 돌기 때 다리가 돌기 클립(Body.turnLeft/turnRight)으로 발을 옮긴다. 0이면 선 자세 그대로 제자리에서 돈다. 클립의 걸음은 클립 자신이 도는 각도·빠르기에 맞춰져 있는데 그 회전은 빼고 몸이 따로 돌아서, 1이면 걸음 중간에 다리가 옆으로 갔다가 클립이 끝날 때 돌아온다
+Body.turnEaseTime,0.08,Body.turnSteps가 0일 때 다리가 돌기 시작하고 멈추는 부드러움(초)
+Body.turnClipSpeed,1.5,제자리 돌기 클립 재생 속도 (Body.turnSteps가 1일 때)
 Body.spineBendDown,0.45,내려다볼 때 시선 각도 중 허리가 맡는 비율. 나머지는 목·머리가 맡는다
 Body.spineBendUp,0.2,올려다볼 때 허리가 맡는 비율
+Body.leanSpineBend,20,아무것도 안 들었거나 주먹일 때 Q/E 기울이기를 끝까지 하면 척추가 허리부터 옆으로 휘는 각도(도). 머리는 화면 기울기(Ability.leanAngle)만큼만 기울고 나머지는 목이 되돌린다. 0.7.34까지의 기울이기. 총을 들면 눈이 엿보기 끝까지 가는 만큼 기운다(KINEMATION 기울이기)
+Body.leanHipShift,0.08,아무것도 안 들었을 때 Q/E 기울이기를 끝까지 하면 골반이 기우는 쪽 발로 옮겨 가는 거리(m). 발은 디딘 자리에 그대로 둔다. 엿보는 거리(Ability.leanOffset)의 나머지는 카메라가 메운다. 다른 사람 화면에서도 기운다
+Body.leanHipReach,0.2,주먹일 때 Q/E 기울이기에서 골반이 기우는 쪽 발로 옮겨 갈 수 있는 최대 거리(m). 척추가 휘고 남은 엿보기 거리만큼 옮겨 가서 눈이 끝까지 가고 카메라는 눈에 붙어 있다(주먹 가드가 카메라 기준이라). 발은 디딘 자리에 그대로 둔다
 Body.eyeViewTime,0.15,눈 위치와 고정 조준·사다리 위치 사이의 전환 시간(초). 마우스 회전에는 영향 없음
 Body.aimSteadyTime,0.3,조준하는 동안 걸음에 따른 엉덩이 출렁임을 얼마나 느리게 따라갈지(초). 길수록 조준 화면과 총이 덜 흔들린다. 걸음 출렁임은 1초에 두 번쯤이라 0.3이면 4분의 3쯤 줄어든다. 다리는 발 고정이 맞춘다
 Body.aimSteadyReach,0.04,조준 중 다듬은 엉덩이가 클립의 엉덩이에서 벗어날 수 있는 최대치(발에서 엉덩이까지 높이에 대한 비율). 걸음 출렁임만 걸러지고 앉기·일어서기는 바로 따라간다

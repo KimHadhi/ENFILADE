@@ -5,8 +5,8 @@ using KINEMATION.Shared.KAnimationCore.Runtime.Rig;
 using UnityEngine;
 
 /// <summary>
-/// An FPS Animation Framework layer of ours: FPSAF's Collision layer (the same blocking poses, the same space, the
-/// primary pose looking up and the secondary one looking down) driven by our wall rule instead of its own ray. FPSAF's
+/// An FPS Animation Framework layer of ours: FPSAF's Collision layer (the same blocking poses, the same space; the
+/// secondary pose for looking down is off) driven by our wall rule instead of its own ray. FPSAF's
 /// ray hits trigger volumes and the player's own colliders here; our WeaponController already probes the wall that
 /// stops the shot, and FPSBody eases how far the gun is held back at the weapon's high-ready speeds (Weapons.csv) into
 /// the input property below.
@@ -18,7 +18,10 @@ public sealed class GunCoverLayerSettings : FPSAnimatorLayerSettings
     public KTransform primaryPose = KTransform.Identity;
     public KTransform secondaryPose = KTransform.Identity;
     public ESpaceType targetSpace = ESpaceType.ComponentSpace;
-    public bool useSecondaryPose = true;
+    // Off in our profiles: a blocked gun only ever goes up. Looking down swapped it to the secondary pose (the rifle's
+    // turned left, the pistol's lowered), with a jump wherever the view crossed level (user, 2026-11-09).
+    [Tooltip("Looking down takes the secondary pose instead of the primary one.")]
+    public bool useSecondaryPose;
     [InputProperty, Tooltip("How far a wall holds the gun back, 0 to 1 (FPSBody sets it).")]
     public string coverInputProperty = "CoverWeight";
 

@@ -15,6 +15,22 @@ public sealed class ChatCommandRouter
     }
 
     public bool Unregister(string name) => commands.Remove(name);
+
+    /// <summary>
+    /// Commands for a half-typed name (no slash): those starting with it in name order, then those merely containing it.
+    /// Fills <paramref name="into"/> with name and help, at most <paramref name="most"/>.
+    /// </summary>
+    public void Find(string typed, List<(string name, string help)> into, int most)
+    {
+        into.Clear();
+        string text = (typed ?? "").Trim().TrimStart('/');
+        if (text.Length == 0) return;
+        foreach (var pair in commands)
+            if (into.Count < most && pair.Key.StartsWith(text, StringComparison.OrdinalIgnoreCase)) into.Add((pair.Key, pair.Value.Help));
+        foreach (var pair in commands)
+            if (into.Count < most && !pair.Key.StartsWith(text, StringComparison.OrdinalIgnoreCase)
+                && pair.Key.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0) into.Add((pair.Key, pair.Value.Help));
+    }
     public string Help()
     {
         var lines = new List<string>();

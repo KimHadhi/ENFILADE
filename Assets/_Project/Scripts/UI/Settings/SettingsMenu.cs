@@ -8,7 +8,8 @@ using UnityEngine.UI;
 /// <summary>
 /// The Esc menu. Esc pauses the game, frees the cursor and shows the settings; Esc or "돌아가기" resumes and saves.
 /// On the main menu it is only the settings panel: there is nothing to pause, and the cursor stays free.
-/// One instance is created per run and survives scene loads. Esc that closes the chat does not open it.
+/// One instance is created per run and survives scene loads. Esc that closes the chat or the developer console does
+/// not open it.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class SettingsMenu : MonoBehaviour
@@ -44,6 +45,7 @@ public sealed class SettingsMenu : MonoBehaviour
     {
         var keyboard = Keyboard.current;
         if (keyboard == null || !keyboard.escapeKey.wasPressedThisFrame) return;
+        if (DevConsole.TakesKeyboard) return; // Esc closes the developer console first
         if (IsOpen) Close();
         else if (!ChatTookEscape()) Open();
     }

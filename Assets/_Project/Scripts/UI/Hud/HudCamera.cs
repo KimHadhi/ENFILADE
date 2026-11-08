@@ -6,10 +6,11 @@ using UnityEngine.Rendering.Universal;
 /// only squash it). An overlay camera stacked on whichever camera draws the world, with a fixed field of view of its own:
 /// aiming, sprint and the player's field of view setting never zoom the HUD. Post-processing stays off, so bloom, the
 /// kill screen and the low-health grade never touch it. It sits far below the world and sees only its own canvases.
-/// It also turns the world camera's turning into the HUD's sway (Settings → HUD 흔들림). One per run, made on first use;
-/// Hud.csv (Camera, Planes, Sway) holds its numbers.
+/// It also turns the world camera's turning into the HUD's sway (Settings → HUD 흔들림) and the local player's lean into
+/// the HUD's tilt (Settings → HUD 기울이기 따라가기). One per run, made on first use; Hud.csv (Camera, Planes, Sway, Lean)
+/// holds its numbers.
 /// </summary>
-[DisallowMultipleComponent, DefaultExecutionOrder(10020)]
+[DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.HudCamera)]
 public sealed class HudCamera : MonoBehaviour
 {
     public const string TableName = "Hud";
@@ -23,9 +24,8 @@ public sealed class HudCamera : MonoBehaviour
         [Tooltip("Vertical field of view of the HUD camera (°). Wider deepens a turned plane but stretches its near side " +
             "sideways; narrower with a steep yaw squeezes its text. The boards (HudBoard) are what show the plane.")]
         public float fov = 45f;
-        [Tooltip("How far the left and right planes turn away at their inner edge (°).")]
-        public float yaw = 20f;
-        [Tooltip("Both planes lean back at the top by this much (°).")]
+        [Tooltip("Both planes lean back at the top by this much (°). How far they turn away at their inner edge is the " +
+            "player's setting (GameSettings.hudAngle).")]
         public float pitch;
         [Tooltip("Sway per degree per second of camera turning: the HUD trails the look by this much.")]
         public float lag = .012f;
@@ -37,6 +37,9 @@ public sealed class HudCamera : MonoBehaviour
         public float follow = 9f;
         [Tooltip("How far the planes slide per degree of sway (px at 1080p).")]
         public float shift = 6f;
+        [Tooltip("Share of the lean's view roll the HUD's sides tilt by on the screen, the same way the world turns " +
+            "(Settings → HUD 기울이기 따라가기). 1 keeps them level with the world.")]
+        public float share = .6f;
     }
 
     private static HudCamera instance;
@@ -46,10 +49,13 @@ public sealed class HudCamera : MonoBehaviour
     private Quaternion lastWorldRotation;
     private bool hasLast;
     private Vector2 sway;
+    private float leanRoll;
 
     public static Look Settings => Get().look;
     /// <summary>Sideways (x) and vertical (y) sway in degrees, already scaled by the player's setting.</summary>
     public static Vector2 Sway => instance != null ? instance.sway : Vector2.zero;
+    /// <summary>How far the HUD's sides turn within the screen for the local player's lean (°, anticlockwise positive).</summary>
+    public static float LeanRoll => instance != null ? instance.leanRoll : 0f;
     /// <summary>True while this camera draws, so StandbyCamera can tell it from a camera that shows the world.</summary>
     public static bool IsDrawing => instance != null && instance.view != null && instance.view.enabled;
 
@@ -91,6 +97,7 @@ public sealed class HudCamera : MonoBehaviour
         GameTables.BindNested(TableName, "Camera", this, look);
         GameTables.BindNested(TableName, "Planes", this, look);
         GameTables.BindNested(TableName, "Sway", this, look);
+        GameTables.BindNested(TableName, "Lean", this, look);
     }
 
     private void OnDestroy() { if (instance == this) instance = null; }
@@ -103,6 +110,7 @@ public sealed class HudCamera : MonoBehaviour
         view.enabled = world != null;
         view.fieldOfView = look.fov;
         MeasureSway();
+        MeasureLean();
     }
 
     private Camera WorldCamera()
@@ -154,6 +162,14 @@ public sealed class HudCamera : MonoBehaviour
             hasLast = true;
         }
         sway = Vector2.Lerp(sway, target, 1f - Mathf.Exp(-Mathf.Max(0f, look.follow) * dt));
+    }
+
+    // Leaning rolls the view (PlayerCameraEffects adds MovementLean.Roll, anticlockwise positive), which turns the world
+    // the other way on the screen; the HUD turns with the world by Lean.share. The lean already eases in and out.
+    private void MeasureLean()
+    {
+        var player = PlayerRoster.Local;
+        leanRoll = GameSettings.Current.hudFollowsLean && player != null ? -player.LeanRoll * look.share : 0f;
     }
 
     private static float Yaw(Vector3 forward) => Mathf.Atan2(forward.x, forward.z) * Mathf.Rad2Deg;

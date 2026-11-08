@@ -6,7 +6,7 @@ using UnityEngine;
 /// Carries a player's pose, health and skin to the other PCs. The owner writes them; every other PC plays them back on
 /// its copy through MovementMirror, ahead of PlayerMovement. Alone it never spawns and does nothing.
 /// </summary>
-[DisallowMultipleComponent, DefaultExecutionOrder(-110)]
+[DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.NetworkPose)]
 public sealed class PlayerNetworkPose : NetworkBehaviour
 {
     // Every network tick (30 a second): this carries where the player looks, and a turn has to read as it happens.

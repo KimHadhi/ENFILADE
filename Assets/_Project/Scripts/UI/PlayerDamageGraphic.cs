@@ -66,6 +66,8 @@ public sealed class PlayerDamageGraphic : MaskableGraphic
         AddBloodField(mesh, rect);
         for (int i = 0; i < Owner.ActiveDripCount; i++) AddDrip(mesh, rect, Owner.Drips[i], settings);
         if (settings.directionArcs)
+        {
+            Color shield = Owner.ShieldTint;
             for (int i = 0; i < Owner.ActiveHitCount; i++)
             {
                 var hit = Owner.Hits[i];
@@ -73,12 +75,15 @@ public sealed class PlayerDamageGraphic : MaskableGraphic
                 float radius = Mathf.Max(30f, settings.arcRadius) + i % 3 * (settings.arcThickness + 3f)
                     + 9f * Mathf.Exp(-hit.Age * 18f);
                 float angle = Mathf.Atan2(hit.Direction.y, hit.Direction.x);
-                Color arc = Color.Lerp(Color.white, settings.arcColor, Mathf.Clamp01(hit.Age / .075f));
+                // What the shield took shows in its colour, over a dark blue edge instead of the dark red.
+                Color tint = Color.Lerp(settings.arcColor, new Color(shield.r, shield.g, shield.b, settings.arcColor.a), hit.Shield);
+                Color arc = Color.Lerp(Color.white, tint, Mathf.Clamp01(hit.Age / .075f));
                 arc.a = settings.arcColor.a * hit.Alpha;
                 AddArc(mesh, rect.center, angle, radius, settings.arcThickness + 3f, settings.arcDegrees + 1.5f,
-                    new Color(.05f, 0f, 0f, arc.a * .7f));
+                    Color.Lerp(new Color(.05f, 0f, 0f, arc.a * .7f), new Color(0f, .03f, .07f, arc.a * .7f), hit.Shield));
                 AddArc(mesh, rect.center, angle, radius, settings.arcThickness, settings.arcDegrees, arc);
             }
+        }
     }
 
     private void AddBloodField(VertexHelper mesh, Rect rect)

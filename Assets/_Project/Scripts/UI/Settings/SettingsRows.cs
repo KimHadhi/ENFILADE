@@ -62,6 +62,27 @@ public sealed class SettingsRows
         return row;
     }
 
+    /// <summary>A row stepping through options one at a time (<see cref="SettingsWidgets.Stepper"/>).</summary>
+    public RectTransform Stepper(string name, string[] options, int selected, Action<int> set)
+    {
+        var row = W.Row(parent, name);
+        W.Stepper(row, options, selected, i =>
+        {
+            set(i);
+            Apply();
+        });
+        return row;
+    }
+
+    /// <summary>A muted line of explanation under the rows above it.</summary>
+    public TextMeshProUGUI Note(string text)
+    {
+        var label = W.Label(parent, text, 17f, W.Muted);
+        label.textWrappingMode = TextWrappingModes.Normal;
+        W.Size(label, height: 28f);
+        return label;
+    }
+
     private void Apply()
     {
         GameSettings.Apply();

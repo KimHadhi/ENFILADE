@@ -4,7 +4,7 @@ using UnityEngine.InputSystem;
 
 /// <summary>Zero-based slots: ranged, ranged, melee, special. Empty selections use fists.</summary>
 [DisallowMultipleComponent, RequireComponent(typeof(WeaponController), typeof(PlayerWeaponInput))]
-[DefaultExecutionOrder(-175)]
+[DefaultExecutionOrder(FrameOrder.WeaponSlots)]
 public sealed class PlayerWeaponSlots : MonoBehaviour
 {
     public const int SlotCount = 4;

@@ -57,12 +57,13 @@ public sealed class PlayerNetworkScore : NetworkBehaviour
         };
     }
 
-    /// <summary>On the host: this player really killed a shared enemy. Counted once here, so every PC shows the same streak.</summary>
-    internal void AnnounceKill(string weapon, string target, bool headshot)
+    /// <summary>On the host: this player really killed a shared enemy. Counted once here, so every PC shows the same streak.
+    /// standout: the enemy was named or elite (backlog 325).</summary>
+    internal void AnnounceKill(string weapon, string target, bool headshot, bool standout)
     {
         if (!IsSpawned || !IsServer) return;
         tally.CountStreak();
-        KillRpc(new FixedString64Bytes(Clip(weapon)), new FixedString64Bytes(Clip(target)), headshot, tally.Streak);
+        KillRpc(new FixedString64Bytes(Clip(weapon)), new FixedString64Bytes(Clip(target)), headshot, standout, tally.Streak);
     }
 
     /// <summary>The console set this player's streak: the host holds the count.</summary>
@@ -72,11 +73,13 @@ public sealed class PlayerNetworkScore : NetworkBehaviour
     }
 
     [Rpc(SendTo.Everyone)]
-    private void KillRpc(FixedString64Bytes weapon, FixedString64Bytes target, bool headshot, int streak)
+    private void KillRpc(FixedString64Bytes weapon, FixedString64Bytes target, bool headshot, bool standout, int streak)
     {
-        CombatFeedHUD.PlayerKill(GetComponent<PlayerMovement>(), weapon.ToString(), target.ToString(), headshot, streak);
-        // Every PC hears of this kill, so the first skull of a streak slows the whole room (item 18).
+        CombatFeedHUD.PlayerKill(GetComponent<PlayerMovement>(), weapon.ToString(), target.ToString(), headshot, streak, standout);
+        // Every PC hears of this kill, so the first skull of a streak slows the whole room (item 18), and a named or
+        // elite kill briefly (backlog 325).
         if (streak == CombatFeedHUD.SkullStreak) SkullSlowMotion.Begin();
+        else if (standout) SkullSlowMotion.BeginBrief();
     }
 
     [Rpc(SendTo.Server)]

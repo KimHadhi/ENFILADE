@@ -11,7 +11,7 @@ using UnityEngine.UI;
 /// destroyed. Look and motion: Resources/Combat/Feedback (Damage popups); placement: Hud.csv's Damage row.
 /// </summary>
 // Runs after CameraViewPunch (10000) so numbers stay on their targets in the kicked view.
-[DisallowMultipleComponent, DefaultExecutionOrder(10010)]
+[DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.DamagePopups)]
 public sealed class DamagePopupManager : MonoBehaviour
 {
     private const int MaxNumbers = 48, Prewarm = 12;

@@ -7,7 +7,7 @@ using UnityEngine;
 /// around reach up to them (Enemies.csv reachAbove). A stunned, staggered or held enemy can't shake anyone off. Runs on
 /// the rider's own PC, as all of their movement does. Numbers: Tables/Player.csv, row HeadStand.
 /// </summary>
-[DisallowMultipleComponent, DefaultExecutionOrder(-140)]
+[DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.HeadStandShakeOff)]
 public sealed class HeadStandShakeOff : MonoBehaviour
 {
     [SerializeField, Min(0f), Tooltip("Standing on a head this long (s) before it throws the rider off.")]

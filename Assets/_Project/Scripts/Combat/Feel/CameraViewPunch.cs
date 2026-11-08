@@ -8,7 +8,7 @@ using UnityEngine;
 /// ride the kick too, like Call of Duty: the marker jumps with the view and settles back as the punch recovers.
 /// Added on demand by WeaponFeedback.
 /// </summary>
-[DisallowMultipleComponent, DefaultExecutionOrder(10000)]
+[DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.ViewPunch)]
 public sealed class CameraViewPunch : MonoBehaviour
 {
     // x = pitch up, y = yaw right, z = roll; degrees. Critically damped: a kick peaks at 1/response and settles.

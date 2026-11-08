@@ -15,7 +15,7 @@ using UnityEngine.Rendering.Universal;
 /// glow, the floor still falls away from under the muzzle, and the shadows show. Only one's own gun casts shadows;
 /// someone else's lights without them, dimmer. Tuning: GunFeel → Muzzle light. Added by WeaponController.
 /// </summary>
-[DisallowMultipleComponent, DefaultExecutionOrder(310)]
+[DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.ShotEffects)]
 public sealed class MuzzleLight : MonoBehaviour
 {
     // Back along the barrel to a point surely on the shooter's side of a wall the muzzle is pressed into, and how far short

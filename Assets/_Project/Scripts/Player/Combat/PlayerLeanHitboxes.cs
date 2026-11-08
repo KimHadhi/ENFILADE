@@ -2,9 +2,10 @@ using UnityEngine;
 
 /// <summary>
 /// Separate combat volumes while peeking; the locomotion capsule remains planted behind cover. The upper one goes where the
-/// visible body's eyes went (PlayerBody.FollowLeanWithHitboxes), or by the lean's distance where no body poses them.
+/// visible body's eyes went holding a gun or the fists, by the lean's whole distance with nothing in hand (BodyLean.Carry),
+/// or by the lean's distance where no body poses them.
 /// </summary>
-[DisallowMultipleComponent, DefaultExecutionOrder(-50)]
+[DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.LeanHitboxes)]
 public sealed class PlayerLeanHitboxes : MonoBehaviour
 {
     private PlayerMovement player;

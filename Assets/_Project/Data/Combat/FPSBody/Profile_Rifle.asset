@@ -562,7 +562,7 @@ MonoBehaviour:
     name: IK LeftKnee
     index: 89
     isVirtual: 0
-  offsetFeetTargets: 1
+  offsetFeetTargets: 0
   rightHandWeight: 1
   leftHandWeight: 1
   rightFootWeight: 0
@@ -815,5 +815,5 @@ MonoBehaviour:
     rotation: {x: 0, y: -0.70710677, z: 0, w: 0.70710677}
     scale: {x: 1, y: 1, z: 1}
   targetSpace: 0
-  useSecondaryPose: 1
+  useSecondaryPose: 0
   coverInputProperty: CoverWeight

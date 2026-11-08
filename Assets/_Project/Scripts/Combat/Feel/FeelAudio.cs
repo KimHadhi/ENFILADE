@@ -6,8 +6,10 @@ public enum GunSoundProfile { Rifle, Pistol, Heavy }
 // LowAmmo: the gun's own warning on a nearly empty magazine. LowAmmoClick: the click every gun shares on top of it.
 // LastRound: the shot that empties the magazine. SlideBack and SlideForward: a bolt or slide pulled back and let go, each
 // on its own when a reload clip times them (ReloadMoments); Bolt is both as one cue.
+// ShieldHit and ShieldBreak: a player's shield taking a hit and running out (backlog 321), until clips go in
+// Art/Audio/HitConfirm/ShieldHit and ShieldBreak.
 public enum FeelSound { RifleShot, PistolShot, HeavyShot, DryFire, LowAmmo, MagOut, MagIn, Bolt, HitMarker, Kill, HeadshotKill, BodyFall,
-    LowAmmoClick, LastRound, SlideBack, SlideForward }
+    LowAmmoClick, LastRound, SlideBack, SlideForward, ShieldBreak, ShieldHit }
 
 /// <summary>
 /// Shot, mechanical and confirm sounds. A gun sound is, in order: the clips assigned to it (GunFeel / WeaponData),
@@ -184,7 +186,8 @@ public sealed class FeelAudio : MonoBehaviour
 
     // Out of the rooms' reverb: shots carry their own room (GunReverb), and confirm sounds aren't in the world.
     private static bool IsDry(FeelSound sound)
-        => IsShot(sound) || sound == FeelSound.HitMarker || sound == FeelSound.Kill || sound == FeelSound.HeadshotKill;
+        => IsShot(sound) || sound == FeelSound.HitMarker || sound == FeelSound.Kill || sound == FeelSound.HeadshotKill
+            || sound == FeelSound.ShieldBreak;
 
     // A shot names its gun; one's own shot is remembered for the sounds that follow it without one.
     private GunSoundProfile GunOf(FeelSound sound, GunSoundProfile? gun, bool own)
@@ -381,8 +384,44 @@ public sealed class FeelAudio : MonoBehaviour
                 Click(random, 0f, .6f, 2200f)), .95f);
             case FeelSound.BodyFall: return Finish(Mix(.45f, Sweep(95f, 42f, .09f, 1f), Noise(random, 0f, .035f, .8f, 700f),
                 Shift(Noise(random, 0f, .05f, .3f, 1800f), .015f)), .9f);
+            // A pane of energy giving way: a bright crack, the charge falling out of it (a falling whine over a low knock),
+            // and glass raining down in short high pings that thin out.
+            case FeelSound.ShieldBreak: return Finish(Mix(.6f, Hiss(random, 0f, .03f, .9f, 3200f), Sweep(900f, 170f, .09f, .45f),
+                Sweep(170f, 55f, .06f, .55f), Tinkles(random, 11)), .9f, 1.4f);
+            // Energy taking a blow, never flesh: a sharp electric crack, a falling zap and a glassy ping over a short knock.
+            case FeelSound.ShieldHit: return Finish(Mix(.24f, Hiss(random, 0f, .012f, 1f, 4500f), Sweep(2600f, 1100f, .035f, .45f),
+                Bell(3400f * Jitter(random, .05f), .03f, .3f, 1.52f, 2.31f), Sweep(220f, 90f, .03f, .5f)), .85f, 1.6f);
             default: return new float[64];
         }
+    }
+
+    /// <summary>High-passed noise burst: the bright crack at the start of something brittle breaking.</summary>
+    private static float[] Hiss(System.Random random, float start, float decay, float gain, float cutoff)
+    {
+        int n = Mathf.CeilToInt((start + decay * 6f) * Rate); var data = new float[n]; float low = 0f, cut = Alpha(cutoff);
+        for (int i = (int)(start * Rate); i < n; i++)
+        {
+            float t = i / (float)Rate - start, white = (float)(random.NextDouble() * 2.0 - 1.0);
+            low += cut * (white - low);
+            data[i] = (white - low) * Mathf.Exp(-t / decay) * gain * Mathf.Clamp01(t / .0005f);
+        }
+        return data;
+    }
+
+    /// <summary>Glass coming apart: a scatter of short high bells, thick at first and thinning out over a third of a second.</summary>
+    private static float[] Tinkles(System.Random random, int count)
+    {
+        var data = new float[Mathf.CeilToInt(.6f * Rate)];
+        for (int k = 0; k < count; k++)
+        {
+            float spread = (float)random.NextDouble();
+            float start = .004f + spread * spread * .32f;
+            float frequency = 2600f + (float)random.NextDouble() * 4200f;
+            float gain = (.5f - .3f * spread * spread) * Jitter(random, .2f);
+            var ping = Shift(Bell(frequency, .018f + (float)random.NextDouble() * .03f, gain, 1.47f, 2.09f), start);
+            for (int i = 0; i < Mathf.Min(ping.Length, data.Length); i++) data[i] += ping[i];
+        }
+        return data;
     }
 
     /// <summary>

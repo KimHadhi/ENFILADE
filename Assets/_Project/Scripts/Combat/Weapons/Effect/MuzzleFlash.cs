@@ -7,7 +7,7 @@ using UnityEngine;
 /// muzzle is from the camera picks its size: the shooter's own eyes see the first-person flame, the F5 view and teammates
 /// the bigger third-person one. Built while the map loads; the light it throws is MuzzleLight's. Added by WeaponController.
 /// </summary>
-[DisallowMultipleComponent, DefaultExecutionOrder(310)]
+[DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.ShotEffects)]
 public sealed class MuzzleFlash : MonoBehaviour
 {
     private WeaponController weapon;

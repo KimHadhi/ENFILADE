@@ -10,7 +10,7 @@ using UnityEngine;
 /// whenever the body is, so a skin swap brings its own. A corpse is this same body, so its cloth goes on hanging as it
 /// falls. Numbers: Tables/Cloth, Tables/ClothBody.
 /// </summary>
-[DisallowMultipleComponent, DefaultExecutionOrder(340)]
+[DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.Cloth)]
 public sealed class PlayerBodyCloth : MonoBehaviour
 {
     public const string TableName = "ClothBody", TableRow = "Default";

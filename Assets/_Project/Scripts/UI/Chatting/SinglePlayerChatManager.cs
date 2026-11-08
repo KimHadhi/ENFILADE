@@ -125,7 +125,7 @@ public class SinglePlayerChatManager : MonoBehaviour
 
         if (Keyboard.current.enterKey.wasPressedThisFrame || Keyboard.current.numpadEnterKey.wasPressedThisFrame)
         {
-            if (!isChatOpen && Time.frameCount != lastClosedFrame && !GamePause.IsPaused) OpenChat();
+            if (!isChatOpen && Time.frameCount != lastClosedFrame && !GamePause.IsPaused && !DevConsole.TakesKeyboard) OpenChat();
         }
 
         if (isChatOpen && Keyboard.current.upArrowKey.wasPressedThisFrame) RecallInput(-1);
@@ -362,18 +362,11 @@ public class SinglePlayerChatManager : MonoBehaviour
     {
         if (commandsReady) return;
         commandsReady = true;
-        PlayerConsoleCommands.Register(commands, ResolveCommandPlayer);
-        CombatTestCommands.Register(commands, this);
-        commands.Register("help", "명령어 목록", _ => commands.Help());
+        GameCommands.Register(commands, () => this);
         commands.Register("clear", "현재 대화 기록 비우기", _ => { ClearHistory(); return null; });
-        commands.Register("echo", "입력한 내용 출력", text => text);
         commands.Register("chat", "채팅 채널로 전환", _ => { SetInputChannel(ChatChannel.Note); return "채팅 채널로 전환했습니다."; });
         commands.Register("console", "콘솔 채널로 전환", _ => { SetInputChannel(ChatChannel.Console); return "콘솔 채널로 전환했습니다."; });
-        commands.Register("map", "씬 이름 — 해당 씬으로 이동", SceneConsoleCommands.LoadMap);
-        commands.Register("net", "방의 실제 핑·전송량·프레임 측정 켜기, 다시 입력하면 끄고 결과 출력", _ => NetworkStatsHUD.Toggle());
     }
-
-    private PlayerMovement ResolveCommandPlayer() => PlayerRoster.Local;
 
     private void RequestScrollToBottom()
     {

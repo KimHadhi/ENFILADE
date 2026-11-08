@@ -71,6 +71,15 @@ public sealed class AdaptiveHealthHUD : MonoBehaviour
     // Colours, drain speed and shake strength: Resources/Combat/Feedback (Health loss).
     private readonly HealthLossTrail lossTrail = new HealthLossTrail();
     private float lastShield = float.NaN;
+    // The shield band shattering when the shield runs out (backlog 321); Play only. The lit part of the band as last
+    // drawn with some shield, in visualRoot's units, is where the pieces fly from.
+    private ShieldShatter shatter;
+    private Rect lastShieldBand;
+    private PlayerDamageReceiver watchedReceiver;
+    private int seenShieldBreaks;
+    // The band flashes white whenever the shield takes damage, as Apex Legends' shield bar does, fading over this long (s).
+    private const float ShieldFlashSeconds = .18f;
+    private float shieldFlash, shieldFill, shieldMax = 100f, shieldSlant;
     private Vector2 restingPosition;
     private double healthStep;
     private bool healthBlocks;
@@ -122,6 +131,7 @@ public sealed class AdaptiveHealthHUD : MonoBehaviour
         visualRoot = MakeRect("Adaptive Visuals (Runtime)", hpHealthBar);
         healthGraphic = MakeRect("Health", visualRoot).gameObject.AddComponent<SlantedHealthGraphic>();
         shieldGraphic = MakeRect("Shield", visualRoot).gameObject.AddComponent<SlantedHealthGraphic>();
+        if (Application.IsPlaying(gameObject)) shatter = new ShieldShatter(visualRoot);
         SetOriginalVisibility(false);
         Refresh();
     }
@@ -156,16 +166,35 @@ public sealed class AdaptiveHealthHUD : MonoBehaviour
     public void RefreshNow()
     {
         ResolvePlayer();
+        PlayerDamageReceiver receiver = null;
         if (Application.IsPlaying(gameObject) && player != null)
         {
             // PlayerMovement can create the receiver at runtime; do not cache it before Awake.
-            PlayerDamageReceiver receiver = player.DamageReceiver;
+            receiver = player.DamageReceiver;
             if (receiver == null) receiver = player.GetComponent<PlayerDamageReceiver>();
             if (receiver != null) SetValues(receiver.Health, receiver.MaximumHealth, receiver.Shield);
         }
         if (visualRoot == null) Initialize();
         if (dirty) Refresh();
-        if (Application.IsPlaying(gameObject)) AnimateDamage(Time.unscaledDeltaTime);
+        if (!Application.IsPlaying(gameObject)) return;
+        WatchShieldBreaks(receiver);
+        shatter?.Tick(Time.unscaledDeltaTime);
+        AnimateDamage(Time.unscaledDeltaTime);
+    }
+
+    // The receiver counts its breaks; a new one shatters the band from where it was last drawn lit. A different player
+    // (respawn, a new bind) starts counting from where theirs stands, so it never shatters for an old break.
+    private void WatchShieldBreaks(PlayerDamageReceiver receiver)
+    {
+        if (receiver != watchedReceiver)
+        {
+            watchedReceiver = receiver;
+            seenShieldBreaks = receiver != null ? receiver.ShieldBreaks : 0;
+            return;
+        }
+        if (receiver == null || receiver.ShieldBreaks == seenShieldBreaks) return;
+        seenShieldBreaks = receiver.ShieldBreaks;
+        if (shatter != null && visualRoot != null && visualRoot.gameObject.activeInHierarchy) shatter.Play(lastShieldBand, shieldColor);
     }
 
     private void AnimateDamage(float dt)
@@ -174,6 +203,12 @@ public sealed class AdaptiveHealthHUD : MonoBehaviour
         float shield = NonNegative(extraShield);
         float shieldLoss = float.IsNaN(lastShield) ? 0f : Mathf.Max(0f, lastShield - shield);
         lastShield = shield;
+        if (shieldLoss > 0f) shieldFlash = 1f;
+        if (shieldFlash > 0f)
+        {
+            shieldFlash = Mathf.Max(0f, shieldFlash - dt / ShieldFlashSeconds);
+            ConfigureShieldGraphic();
+        }
         bool wasAnimating = lossTrail.IsAnimating;
         float maximum = NonNegative(maxHealth);
         lossTrail.Tick(Mathf.Min(NonNegative(currentHealth), maximum), maximum, dt,
@@ -197,6 +232,13 @@ public sealed class AdaptiveHealthHUD : MonoBehaviour
             healthGap, healthColor, emptyColor, tickColor, live ? lossTrail.TrailColor : Color.clear);
     }
 
+    private void ConfigureShieldGraphic()
+    {
+        if (shieldGraphic == null) return;
+        Color fill = Color.Lerp(shieldColor, Color.white, shieldFlash * shieldFlash);
+        shieldGraphic.Configure(shieldFill, shieldMax, shieldMax, false, shieldSlant, 0f, fill, Color.clear, Color.clear);
+    }
+
     public void BindPlayer(PlayerMovement target) { player = target; dirty = true; }
 
     public void StopPreview()
@@ -212,6 +254,7 @@ public sealed class AdaptiveHealthHUD : MonoBehaviour
         else DestroyImmediate(visualRoot.gameObject);
         visualRoot = null;
         healthGraphic = shieldGraphic = null;
+        shatter = null; // its pieces went with visualRoot
         originalBlocks.Clear(); originalActive.Clear();
         barLayouts.Clear(); layoutEnabled.Clear();
         capturedLayout = false;
@@ -266,13 +309,20 @@ public sealed class AdaptiveHealthHUD : MonoBehaviour
         Place(healthGraphic.rectTransform, 0f, width, height);
         float shieldH = Mathf.Max(1f, NonNegative(shieldHeight)) * verticalScale;
         float shieldX = float.IsNaN(shieldXOffset) || float.IsInfinity(shieldXOffset) ? 0f : shieldXOffset;
-        Place(shieldGraphic.rectTransform, height + NonNegative(shieldOffset) * verticalScale, shieldWidth, shieldH, shieldX);
+        float shieldY = height + NonNegative(shieldOffset) * verticalScale;
+        Place(shieldGraphic.rectTransform, shieldY, shieldWidth, shieldH, shieldX);
+        if (shield > 0f)
+        {
+            // What SlantedHealthGraphic lights: the fill along the span, plus the slant at its top.
+            float slantPx = Mathf.Clamp(shear * shieldH / height, 0f, shieldWidth * .25f);
+            float lit = (shieldWidth - slantPx) * Mathf.Clamp01(Mathf.Min(shield, shieldScale) / shieldScale) + slantPx;
+            lastShieldBand = new Rect(shieldX, shieldY, lit, shieldH);
+        }
         healthStep = step; healthBlocks = !compact; healthShear = shear;
         healthGap = NonNegative(blockGap) * horizontalScale;
         ConfigureHealthGraphic();
-        shieldGraphic.Configure(Mathf.Min(shield, shieldScale), shieldScale,
-            shieldScale, false, shear * shieldH / height,
-            0f, shieldColor, Color.clear, Color.clear);
+        shieldFill = Mathf.Min(shield, shieldScale); shieldMax = shieldScale; shieldSlant = shear * shieldH / height;
+        ConfigureShieldGraphic();
         shieldGraphic.gameObject.SetActive(shield > 0f);
 
         SetLabel(hpText, current.ToString("N0"));

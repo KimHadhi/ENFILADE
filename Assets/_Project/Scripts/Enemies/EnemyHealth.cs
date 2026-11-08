@@ -4,6 +4,9 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
 
+/// <summary>An enemy's standing. Elite and named kills burn magenta in the kill feed and slow the game briefly (backlog 325).</summary>
+public enum EnemyRank { Normal, Elite, Named }
+
 [DisallowMultipleComponent, RequireComponent(typeof(MeleeCombatTarget))]
 public sealed class EnemyHealth : MonoBehaviour, IDamageReceiver, ICombatVitals, ICombatDisplayName, ITableBound
 {
@@ -19,7 +22,15 @@ public sealed class EnemyHealth : MonoBehaviour, IDamageReceiver, ICombatVitals,
     [Tooltip("Enemies.csv의 행 id. 비워두면 오브젝트 이름((Clone)/(Console) 제외)을 사용한다.")]
     [SerializeField] private string tableId = "";
 
+    [Tooltip("Normal, Elite 또는 Named. Elite와 Named를 잡으면 킬 피드 줄이 자홍 불꽃으로 타고 게임이 잠깐 느려진다.")]
+    [SerializeField] private EnemyRank rank = EnemyRank.Normal;
+
     public string DisplayName => displayName;
+    public EnemyRank Rank => rank;
+    /// <summary>Named or elite: its kill stands out in the feed.</summary>
+    public bool IsStandout => rank != EnemyRank.Normal;
+    /// <summary>Console test spawns (/spawn n elite). The table sets it otherwise.</summary>
+    internal void SetRank(EnemyRank value) => rank = value;
     public float Health { get; private set; }
     public float MaximumHealth => Mathf.Max(1f, maximumHealth);
     public bool IsAlive => Health > 0f;

@@ -4,7 +4,10 @@
 // around them, a few sparks thrown ahead. The row's end burns too and cools through the same colours along it, so there's no
 // place where the row stops and the fire starts. The whole part of uv.y is how long it runs in px, and vertex
 // alpha fades it. Vertex colour's rgb is the fire's colour. The whole part of uv.x is a seed, so fires side by side don't
-// move as one.
+// move as one. With _Trail at 2 it is a border of fire round the whole row (backlog 325: the skull's streak burns blue,
+// a named or elite kill magenta): the image stands BorderMargin px out from the row on every side, the whole part of
+// uv.y is the row's width in px, and fire climbs off the plate's outline, tall over its top, licking under its bottom,
+// with a hot rim along the edge and a few embers rising.
 Shader "Hidden/ENFILADE/FeedFlame"
 {
     Properties
@@ -48,6 +51,11 @@ Shader "Hidden/ENFILADE/FeedFlame"
 
             #define TONGUE_COUNT 5
             #define SPARK_COUNT 4
+            #define EMBER_COUNT 4
+            // The border's room round the row (px, each side) and how far its fire reaches under and over it. KillFeedRow
+            // stands the image out by BorderMargin to match.
+            static const float2 BorderMargin = float2(14.0, 20.0);
+            static const float BorderLow = 4.0, BorderHigh = 17.0;
             // The trail's image in px, and where the row's left end stands on it. StreakBadge sizes and places it to match.
             static const float2 TrailSize = float2(340.0, 96.0);
             static const float RowEnd = 196.0, RowMiddle = 48.0, RowHeight = 32.0, RowShear = 9.0;
@@ -139,6 +147,45 @@ Shader "Hidden/ENFILADE/FeedFlame"
                 return float4(light, saturate(cover));
             }
 
+            // Premultiplied. pixel is in the border image's px; width is the row's.
+            float4 Border(float2 pixel, float3 tint, float width, float seed, float t)
+            {
+                float xMin = BorderMargin.x, xMax = BorderMargin.x + width, yMin = BorderMargin.y, yMax = BorderMargin.y + RowHeight;
+                float up = saturate((pixel.y - yMin) / RowHeight);
+                // Distance out from the plate (px, below 0 inside): slanted at the left end like the plate, straight at the
+                // right where the accent bar stands.
+                float dx = max(xMin + RowShear * up - pixel.x, pixel.x - xMax);
+                float dy = max(yMin - pixel.y, pixel.y - yMax);
+                float d = length(max(float2(dx, dy), 0.0)) + min(max(dx, dy), 0.0);
+
+                // Tongues: noise rising up the screen, so the fire climbs; tall over the top edge, short under the bottom.
+                float reach = lerp(BorderLow, BorderHigh, smoothstep(0.0, 1.0, saturate((pixel.y - yMin + 4.0) / (RowHeight + 8.0))));
+                float rise = Fbm(float2(pixel.x * 0.075 + seed * 5.1, pixel.y * 0.05 - t * 1.9));
+                float lick = Noise(float2(pixel.x * 0.21 + seed * 2.3, pixel.y * 0.12 - t * 3.4));
+                float tongue = reach * (0.3 + 1.15 * rise * rise + 0.3 * lick);
+                float through = max(d, 0.0) / max(tongue, 0.75);
+                // Clean edges with a hot root: solid fire that ends crisply, and a thin rim of it just inside the plate.
+                float body = (1.0 - smoothstep(0.78, 1.0, through)) * smoothstep(-2.4, 0.2, d);
+                float glow = exp(-max(d, 0.0) / (reach * 0.55)) * 0.3 * smoothstep(-3.0, 0.0, d) * (1.0 - body);
+
+                float3 hot = pow(tint, float3(0.35, 0.35, 1.0));
+                float3 color = Cooled(tint, lerp(hot, float3(1.0, 1.0, 1.0), 0.35 * (1.0 - saturate(d / 3.0))), saturate(through));
+                float3 light = color * body + tint * glow;
+                float cover = body + glow * 0.35;
+
+                // Embers thrown up off the top edge, drifting as they rise and dimming out.
+                for (int k = 0; k < EMBER_COUNT; k++)
+                {
+                    float life = frac(t * (0.35 + 0.25 * Hash(float2(k, seed + 3.1))) + Hash(float2(seed + 1.7, k)));
+                    float across = xMin + 6.0 + Hash(float2(k + 2.5, seed)) * max(width - 12.0, 1.0) + sin(t * 1.7 + k * 2.3) * 3.0;
+                    float2 gap = pixel - float2(across, yMax + 2.0 + life * (BorderMargin.y - 4.0));
+                    float ember = exp(-dot(gap, gap) * 0.7) * pow(sin(life * 3.14159), 1.5) * 0.9;
+                    light += hot * ember;
+                    cover += ember * 0.7;
+                }
+                return float4(light, saturate(cover));
+            }
+
             // One flame; p runs 0-1 across it and up it.
             void Flame(float2 p, float seed, float t, out float alpha, out float heat)
             {
@@ -161,6 +208,12 @@ Shader "Hidden/ENFILADE/FeedFlame"
                 float2 uv = float2(input.uv.x - seed, frac(input.uv.y));
                 float t = _Time.y * 1.6;
                 float3 tint = input.color.rgb;
+                if (_Trail > 1.5)
+                {
+                    float width = floor(input.uv.y);
+                    return Border(uv * float2(width + 2.0 * BorderMargin.x, RowHeight + 2.0 * BorderMargin.y), tint, width, seed, t)
+                        * input.color.a;
+                }
                 if (_Trail > 0.5) return Trail(uv * TrailSize, tint, floor(input.uv.y), seed, t) * input.color.a;
 
                 float alpha, heat;

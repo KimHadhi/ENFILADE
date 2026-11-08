@@ -17,7 +17,7 @@ using MovementState = PlayerMovement.MovementState;
 ///   the feet start out planted when they touch down.
 /// Numbers: Player.csv row Footsteps.
 /// </summary>
-[DisallowMultipleComponent, DefaultExecutionOrder(260)]
+[DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.Footsteps)]
 public sealed class PlayerFootsteps : MonoBehaviour
 {
     [SerializeField, Min(.005f), Tooltip("Lift needed above this foot's last contact and the supporting foot's ground-relative height (m).")]

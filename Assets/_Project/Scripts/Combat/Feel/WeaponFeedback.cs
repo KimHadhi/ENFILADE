@@ -6,7 +6,7 @@ using UnityEngine;
 /// the controller's events and never changes ammunition, timing or aim. Added automatically by WeaponController.
 /// Global tuning: Resources/Combat/GunFeel. Per-weapon kick and sound: WeaponData → Feel.
 /// </summary>
-[DisallowMultipleComponent, DefaultExecutionOrder(310)]
+[DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.ShotEffects)]
 public sealed class WeaponFeedback : MonoBehaviour
 {
     private const int CasingCount = 24;

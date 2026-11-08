@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 
 [DisallowMultipleComponent]
-[DefaultExecutionOrder(0)]
+[DefaultExecutionOrder(FrameOrder.Look)]
 public sealed class PlayerLook : MonoBehaviour
 {
     [Header("Optional Reference (비우면 자동 탐색)")]

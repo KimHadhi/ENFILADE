@@ -1,19 +1,25 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
 using W = SettingsWidgets;
 
-/// <summary>Builds the Esc menu panel: a tab per group of settings, each control bound to <see cref="GameSettings.Current"/>.</summary>
+/// <summary>
+/// Builds the Esc menu panel: a tab per group of settings, each control bound to <see cref="GameSettings.Current"/>.
+/// The tabs follow <see cref="SettingsGroup"/>'s order, so "이 탭 기본값" resets the group of the tab on show.
+/// </summary>
 public sealed class SettingsMenuView
 {
-    private static readonly string[] Tabs = { "소리", "조작", "화면", "크로스헤어", "캐릭터" };
-    private const int CrosshairTab = 3, CharacterTab = 4;
+    // In SettingsGroup's order.
+    private static readonly string[] Tabs = { "소리", "조작", "화면", "HUD", "크로스헤어", "캐릭터" };
     private const float PanelWidth = 820f, PanelPadding = 44f;
     private static readonly string[] OffOn = { "끔", "켬" };
     private static readonly string[] HoldToggle = { "누르는 동안", "눌러서 전환" };
     // In DamageNumberMode's order.
     private static readonly string[] DamageNumberNames = { "끔", "합산", "낱개" };
+    // In WindowMode's order.
+    private static readonly string[] WindowModeNames = { "전체 화면", "테두리 없는 창", "창 모드" };
     private static readonly string[] FrameLimitNames =
         GameSettings.FrameLimits.Select(limit => limit > 0 ? limit.ToString() : "무제한").ToArray();
     private static int tab; // reopening shows the last tab
@@ -29,6 +35,11 @@ public sealed class SettingsMenuView
         W.Stretch(root);
         W.Fill(root, new Color(0f, 0f, 0f, .62f));
         root.gameObject.SetActive(false);
+        // Another monitor offers other resolutions: list them once the window is there.
+        DisplaySettings.Moved += () =>
+        {
+            if (root != null && root.gameObject.activeSelf && page != null && (SettingsGroup)tab == SettingsGroup.Screen) BuildPage();
+        };
     }
 
     /// <summary>Showing rebuilds the panel, so it always reflects the saved values.</summary>
@@ -64,7 +75,8 @@ public sealed class SettingsMenuView
         BuildPage();
 
         var buttons = W.ButtonRow(panel);
-        W.Size(W.ActionButton(buttons, "기본값", false, () => { GameSettings.ResetToDefaults(); Build(); }), ButtonWidth, 48f);
+        W.Size(W.ActionButton(buttons, "이 탭 기본값", false, () => { GameSettings.ResetToDefaults((SettingsGroup)tab); Build(); }),
+            ButtonWidth, 48f);
         if (!MainMenuScreen.IsOpen) W.Size(W.ActionButton(buttons, "메인 메뉴", false, leave), ButtonWidth, 48f);
         W.Size(W.ActionButton(buttons, "게임 종료", false, quit), ButtonWidth, 48f);
         W.Size(W.ActionButton(buttons, "돌아가기", true, resume), ButtonWidth, 48f);
@@ -73,21 +85,23 @@ public sealed class SettingsMenuView
     private void BuildPage()
     {
         W.Clear(page);
-        if (tab == CrosshairTab)
+        var group = (SettingsGroup)tab;
+        if (group == SettingsGroup.Crosshair)
         {
             new CrosshairSettingsView(page);
             return;
         }
-        if (tab == CharacterTab)
+        if (group == SettingsGroup.Character)
         {
             new CharacterSkinView(page, PanelWidth - PanelPadding * 2f, true);
             return;
         }
         var rows = new SettingsRows(W.ScrollArea(page));
         var s = GameSettings.Current;
-        if (tab == 0) SoundTab(rows, s);
-        else if (tab == 1) ControlsTab(rows, s);
-        else ScreenTab(rows, s);
+        if (group == SettingsGroup.Sound) SoundTab(rows, s);
+        else if (group == SettingsGroup.Controls) ControlsTab(rows, s);
+        else if (group == SettingsGroup.Screen) ScreenTab(rows, s);
+        else HudTab(rows, s);
     }
 
     private static void SoundTab(SettingsRows rows, GameSettings s)
@@ -110,13 +124,18 @@ public sealed class SettingsMenuView
 
     private static void ScreenTab(SettingsRows rows, GameSettings s)
     {
-        rows.Slider("시야각", GameSettings.MinFieldOfView, GameSettings.MaxFieldOfView, s.fieldOfView,
-            v => s.fieldOfView = Mathf.Round(v), v => Mathf.RoundToInt(v) + "°");
-        rows.Volume("화면 흔들림", s.screenShake, v => s.screenShake = v);
-        rows.Volume("HUD 흔들림", s.hudSway, v => s.hudSway = v);
-        rows.Choice("HUD 그리드 배경", OffOn, s.hudBoards ? 1 : 0, i => s.hudBoards = i == 1);
-        rows.Choice("데미지 숫자", DamageNumberNames, (int)s.damageNumbers, i => s.damageNumbers = (DamageNumberMode)i);
-        rows.Choice("내 머리카락 보기", OffOn, s.showOwnHead ? 1 : 0, i => s.showOwnHead = i == 1);
+        rows.Header("디스플레이");
+        if (!DisplaySettings.Applies) rows.Note("에디터에서는 저장만 되고, 빌드한 게임에서 적용돼요.");
+        var monitors = new List<DisplayInfo>(DisplaySettings.Monitors());
+        if (monitors.Count > 0)
+            rows.Stepper("모니터", monitors.Select(DisplaySettings.MonitorLabel).ToArray(), DisplaySettings.ChosenMonitor(), i =>
+            {
+                s.monitorName = monitors[i].name;
+                s.monitorIndex = i;
+                s.resolutionWidth = s.resolutionHeight = 0; // the new monitor's own, until another is picked there
+            });
+        rows.Choice("화면 모드", WindowModeNames, (int)s.windowMode, i => s.windowMode = (WindowMode)i);
+        ResolutionRow(rows, s);
 
         rows.Header("프레임");
         RectTransform limitRow = null;
@@ -128,5 +147,41 @@ public sealed class SettingsMenuView
         limitRow = rows.Choice("프레임 제한", FrameLimitNames, Array.IndexOf(GameSettings.FrameLimits, s.frameLimit),
             i => s.frameLimit = GameSettings.FrameLimits[i]);
         limitRow.gameObject.SetActive(!s.vSync);
+
+        rows.Header("시야");
+        rows.Slider("시야각", GameSettings.MinFieldOfView, GameSettings.MaxFieldOfView, s.fieldOfView,
+            v => s.fieldOfView = Mathf.Round(v), v => Mathf.RoundToInt(v) + "°");
+        rows.Volume("화면 흔들림", s.screenShake, v => s.screenShake = v);
+        rows.Choice("내 머리카락 보기", OffOn, s.showOwnHead ? 1 : 0, i => s.showOwnHead = i == 1);
+    }
+
+    // The first option is the monitor's own resolution (saved as 0 x 0), so it stays right on another monitor.
+    private static void ResolutionRow(SettingsRows rows, GameSettings s)
+    {
+        var sizes = DisplaySettings.Resolutions();
+        var saved = new Vector2Int(s.resolutionWidth, s.resolutionHeight);
+        if (saved.x > 0 && !sizes.Contains(saved)) sizes.Insert(0, saved); // chosen on a monitor this one does not match
+        var options = new string[sizes.Count + 1];
+        options[0] = "모니터 해상도 (" + DisplaySettings.ResolutionLabel(DisplaySettings.Native()) + ")";
+        for (int i = 0; i < sizes.Count; i++) options[i + 1] = DisplaySettings.ResolutionLabel(sizes[i]);
+        int selected = saved.x > 0 ? sizes.IndexOf(saved) + 1 : 0;
+        rows.Stepper("해상도", options, selected, i =>
+        {
+            var size = i > 0 ? sizes[i - 1] : Vector2Int.zero;
+            s.resolutionWidth = size.x;
+            s.resolutionHeight = size.y;
+        });
+    }
+
+    private static void HudTab(SettingsRows rows, GameSettings s)
+    {
+        rows.Volume("HUD 흔들림", s.hudSway, v => s.hudSway = v);
+        rows.Slider("HUD 기울기", 0f, GameSettings.MaxHudTilt, s.hudTilt, v => s.hudTilt = Mathf.Round(v * 20f) / 20f,
+            v => SettingsRows.Percent(Mathf.Round(v * 20f) / 20f));
+        rows.Slider("HUD 원근 각도", 0f, GameSettings.MaxHudAngle, s.hudAngle, v => s.hudAngle = Mathf.Round(v),
+            v => Mathf.RoundToInt(v) + "°");
+        rows.Choice("기울이기 따라가기", OffOn, s.hudFollowsLean ? 1 : 0, i => s.hudFollowsLean = i == 1);
+        rows.Choice("HUD 그리드 배경", OffOn, s.hudBoards ? 1 : 0, i => s.hudBoards = i == 1);
+        rows.Choice("데미지 숫자", DamageNumberNames, (int)s.damageNumbers, i => s.damageNumbers = (DamageNumberMode)i);
     }
 }

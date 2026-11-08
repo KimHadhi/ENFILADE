@@ -37,8 +37,9 @@
 | 방 만들기·참가·네트워크 스폰 / 서버 목록 | [GameSession](Network/GameSession.cs) / [ServerBrowserView](UI/Menu/ServerBrowserView.cs), [BusySpinner](UI/Menu/BusySpinner.cs), [IRoomList·RoomInfo](Network/RoomInfo.cs), [CombinedRoomList](Network/CombinedRoomList.cs), [LanRoomFinder](Network/LanRoomFinder.cs), [LanRoomBeacon](Network/LanRoomBeacon.cs), [InternetRoomFinder](Network/InternetRoomFinder.cs), [InternetRoom](Network/InternetRoom.cs) (공유기가 UPnP로 포트를 열면 직접 연결, 아니면 Relay: [RouterPortMap](Network/RouterPortMap.cs)), [OnlineServices](Network/OnlineServices.cs), 화면에 보이는 핑 [PingDisplay](Network/PingDisplay.cs) ([Network.csv](../Resources/Tables/Network.csv)) |
 | 플레이어 생성 / 시작 위치 / 목록·내 캐릭터 찾기 / 멀티 구조 시험용 더미 | [PlayerFactory](Player/PlayerFactory.cs) / [PlayerSpawnPoint](Player/PlayerSpawnPoint.cs) / [PlayerRoster](Player/PlayerRoster.cs) / [ConsoleDummyPlayers](Debug/Combat/ConsoleDummyPlayers.cs) |
 | 플레이어 HP·실드·피격·사망 | [PlayerDamageReceiver](Player/Combat/PlayerDamageReceiver.cs) |
+| 실드 (에이펙스 레전드 참고: 실드만 맞으면 피 대신 맞은 쪽 가장자리 벌집 빛·실드색 방향 표시·전기 튀는 소리·체력바 실드 띠 흰 번쩍, 친구 몸엔 실드색 불꽃 / 다 깨질 때 금 간 유리판·실드 띠 조각·깨지는 소리) | [ShieldFeedback](Player/Combat/ShieldFeedback.cs), [ShieldHexGraphic](UI/HP/ShieldHexGraphic.cs), [ShieldShatter](UI/HP/ShieldShatter.cs), [Player.csv](../Resources/Tables/Player.csv)의 `Shield.…` 행, 소리 [Art/Audio/HitConfirm](../Art/Audio/HitConfirm)의 ShieldHit·ShieldBreak (비면 합성음) |
 | 쓰러짐·부활·복귀·전멸 | [PlayerLife](Player/Combat/PlayerLife.cs), [PlayerRevive](Player/Combat/PlayerRevive.cs), [PlayerLifeHUD](UI/PlayerLifeHUD.cs), [Downed.csv](../Resources/Tables/Downed.csv) |
-| 킬 피드 (내 처치 강조, 연속 처치) | [CombatFeedHUD](Combat/Feel/CombatFeedHUD.cs), [KillFeedRow](UI/KillFeedRow.cs), [StreakBadge](UI/StreakBadge.cs), [KillFeed.csv](../Resources/Tables/KillFeed.csv) |
+| 킬 피드 (내 처치 먼저·최근 줄 빛 선, 연속 처치, 해골 줄 파란 불꽃 테두리, 네임드·엘리트 처치 자홍 불꽃 테두리와 짧은 슬로 모션) | [CombatFeedHUD](Combat/Feel/CombatFeedHUD.cs), [KillFeedRow](UI/KillFeedRow.cs), [StreakBadge](UI/StreakBadge.cs), [KillFeed.csv](../Resources/Tables/KillFeed.csv), [KillRowPlate](UI/KillRowPlate.cs), [FeedFlame](../Resources/Combat/Shaders/FeedFlame.shader), 적 등급은 [Enemies.csv](../Resources/Tables/Enemies.csv)의 `rank` (시험: `/spawn 1 elite`) |
 | 슬로 모션 (혼자: 세상 전체, 방: 본인과 상대만) / 연속 처치가 처음 해골이 될 때 방 전체 슬로 모션과 그동안의 화면(색, 가장자리, 모션 블러)과 소리(낮은 음, 먹먹함) / 느려져도 VFX Graph 이펙트가 매 프레임 움직이게 | [CombatTimeEffects](Player/Combat/CombatTimeEffects.cs), `EnemyNetwork.Pace` / [SkullSlowMotion](Combat/Feel/SkullSlowMotion.cs), [SlowMotionLook](Combat/Feel/SlowMotionLook.cs), [SlowMotionSound](Combat/Feel/SlowMotionSound.cs), [SkullSlowMotion.csv](../Resources/Tables/SkullSlowMotion.csv) / [VfxTimeStep](Combat/Feel/VfxTimeStep.cs) |
 | 쓰러진 동료 표시·동료 체력 | [DownedAura](Combat/Feel/DownedAura.cs), [TeammateMarkerHUD](UI/TeammateMarkerHUD.cs), [TeamHealthPanel](UI/TeamHealthPanel.cs), [HealthSegments](UI/HealthSegments.cs), [DownedAura.csv](../Resources/Tables/DownedAura.csv) |
 | Tab 화면 (점수판과 목표 목록) | [ScoreboardHUD](UI/ScoreboardHUD.cs), [ObjectiveLogPanel](UI/ObjectiveLogPanel.cs), [PlayerTally](Player/Combat/PlayerTally.cs), [PlayerNetworkScore](Network/PlayerNetworkScore.cs) |
@@ -59,12 +60,12 @@
 | 완벽 방어·흐트러짐·처형의 표시·사운드 | [Feedback.asset](../Resources/Combat/Feedback.asset) |
 | 시점 입력 / 이동 카메라 효과 / 시점 펀치 / 큰 낙하 화면 | [PlayerLook](Player/Camera/PlayerLook.cs), [PlayerCameraEffects](Player/Camera/PlayerCameraEffects.cs), [PlayerMovementPunch](Player/Camera/PlayerMovementPunch.cs), [PlayerFallScreen](Player/Camera/PlayerFallScreen.cs) |
 | 탄약·무기 슬롯·적 체력 UI | [AmmoHUD](UI/AmmoHUD.cs), [WeaponSlotsHUD](UI/WeaponSlotsHUD.cs), [EnemyVitalsHUD](UI/EnemyVitalsHUD.cs) |
-| 데미지 숫자 (적 몸 옆에 서는 합산·낱개 숫자, 설정 → 화면 → 데미지 숫자) | [DamagePopupManager](UI/DamagePopupManager.cs) (받기·묶기·쌓기), [DamageNumber](UI/DamageNumber.cs) (숫자 하나의 모양과 움직임), [DamageNumberAnchor](UI/DamageNumberAnchor.cs) (몸 옆 자리와 방향), [DamageNumberLayout](UI/DamageNumberLayout.cs) ([Hud.csv](../Resources/Tables/Hud.csv) Damage), [Feedback.asset](../Resources/Combat/Feedback.asset)의 Damage popups (색·글꼴·움직임) |
+| 데미지 숫자 (적 몸 옆에 서는 합산·낱개 숫자, 설정 → HUD → 데미지 숫자) | [DamagePopupManager](UI/DamagePopupManager.cs) (받기·묶기·쌓기), [DamageNumber](UI/DamageNumber.cs) (숫자 하나의 모양과 움직임), [DamageNumberAnchor](UI/DamageNumberAnchor.cs) (몸 옆 자리와 방향), [DamageNumberLayout](UI/DamageNumberLayout.cs) ([Hud.csv](../Resources/Tables/Hud.csv) Damage), [Feedback.asset](../Resources/Combat/Feedback.asset)의 Damage popups (색·글꼴·움직임) |
 | 체력·궁극기 UI / 목표·웨이브 UI | [UI/HP](UI/HP/), [MissionHUD](UI/MissionHUD.cs) (내용·알림), [MissionBarLook](UI/MissionBarLook.cs) (미션 바 모양, Hud.csv Mission), [MissionLineGraphic](UI/MissionLineGraphic.cs) (진행 선), [WaveMissionSource](UI/WaveMissionSource.cs) |
-| 3D HUD (UI 카메라, 좌우로 기운 면, 요소별 기울기, 시선 흔들림) | [HudCamera](UI/Hud/HudCamera.cs), [HudPlane](UI/Hud/HudPlane.cs), [HudTilt](UI/Hud/HudTilt.cs), [HudRig](UI/Hud/HudRig.cs) (GameHUD에 붙음), [HudBoard](UI/Hud/HudBoard.cs) (좌우 면이 서 있는 유리판, Hud.csv Board), [HudInstaller](../Editor/Utilities/HudInstaller.cs) (Tools → HUD), [Hud.csv](../Resources/Tables/Hud.csv), [HudTilt.csv](../Resources/Tables/HudTilt.csv) |
-| 채팅·테스트 명령 | [UI/Chatting](UI/Chatting/) |
+| 3D HUD (UI 카메라, 좌우로 기운 면, 요소별 기울기(기울어도 서로 겹치지 않게 밀어냄), 시선 흔들림, Q/E 기울이기 따라 돌기. 각도·기울기·따라 돌기는 설정 → HUD) | [HudCamera](UI/Hud/HudCamera.cs), [HudPlane](UI/Hud/HudPlane.cs), [HudTilt](UI/Hud/HudTilt.cs), [HudBridge](UI/Hud/HudBridge.cs) (기운 조각 사이 틈 가운데로 지나가는 얇은 띠), [HudRig](UI/Hud/HudRig.cs) (GameHUD에 붙음), [HudBoard](UI/Hud/HudBoard.cs) (좌우 면이 서 있는 유리판, Hud.csv Board), [HudInstaller](../Editor/Utilities/HudInstaller.cs) (Tools → HUD), [Hud.csv](../Resources/Tables/Hud.csv), [HudTilt.csv](../Resources/Tables/HudTilt.csv) |
+| 채팅·테스트 명령 / 개발자 콘솔(` 키) | [UI/Chatting](UI/Chatting/), [GameCommands](UI/Chatting/GameCommands.cs) (채팅과 콘솔이 같이 쓰는 명령) / [DevConsole](UI/Chatting/DevConsole.cs) |
 | 메인 메뉴·캐릭터 미리보기 | [MainMenuScreen](UI/Menu/MainMenuScreen.cs), [MainMenuPreview](UI/Menu/MainMenuPreview.cs) |
-| Esc 설정 메뉴·일시정지 / 저장되는 플레이어 설정 | [UI/Settings](UI/Settings/), [GamePause](Settings/GamePause.cs) / [GameSettings](Settings/GameSettings.cs) |
+| Esc 설정 메뉴·일시정지 / 저장되는 플레이어 설정 / 기본값 프리셋 / 모니터·해상도·화면 모드 | [UI/Settings](UI/Settings/), [GamePause](Settings/GamePause.cs) / [GameSettings](Settings/GameSettings.cs) / [GameSettingsPreset](Settings/GameSettingsPreset.cs) ([DefaultSettings.asset](../Resources/Settings/DefaultSettings.asset)) / [DisplaySettings](Settings/DisplaySettings.cs) |
 | 크로스헤어 꾸미기·프리셋·공유 코드 | [CrosshairSettingsView](UI/Settings/CrosshairSettingsView.cs), [CrosshairPresetGallery](UI/Settings/CrosshairPresetGallery.cs), [CrosshairCode](Settings/CrosshairCode.cs), [CrosshairPresets.csv](../Resources/Tables/CrosshairPresets.csv) |
 | 소리 볼륨 채널(전투·이동·목소리·UI) / 연타가 동시 재생 한도를 넘지 않게 | [GameAudio](Audio/GameAudio.cs) / [VoiceRing](Audio/VoiceRing.cs) |
 | 발소리 / 동작 소리 / 숨·바람·큰 낙하·사다리류 소리 | [PlayerFootsteps](Player/Audio/PlayerFootsteps.cs), [PlayerMovementAudio](Player/Audio/PlayerMovementAudio.cs), [Player/Audio](Player/Audio/) |
@@ -107,17 +108,22 @@
 | `Sounds`, `MovementAudio`, `Breathing`, `Wind`, `FallAudio`, `FixtureAudio` | [CharacterSounds](Audio/CharacterSounds.cs), [PlayerMovementAudio](Player/Audio/PlayerMovementAudio.cs), [PlayerBreathing](Player/Audio/PlayerBreathing.cs), [PlayerWindAudio](Player/Audio/PlayerWindAudio.cs), [PlayerFallAudio](Player/Audio/PlayerFallAudio.cs), [PlayerFixtureAudio](Player/Audio/PlayerFixtureAudio.cs) |
 | `Punch`, `FallScreen` | [PlayerMovementPunch](Player/Camera/PlayerMovementPunch.cs), [PlayerFallScreen](Player/Camera/PlayerFallScreen.cs) |
 
-한 프레임 안의 순서는 `DefaultExecutionOrder`로 고정되어 있다. 앞 단계의 결과를 뒤 단계가 읽으므로 순서를 바꾸면 카메라·손이 한 프레임 늦는다.
+한 프레임 안의 순서는 [FrameOrder](FrameOrder.cs) 한 파일에 모여 있다(2026-11-09). 순서가 정해진 스크립트는 모두 `[DefaultExecutionOrder(FrameOrder.이름)]`으로 거기서 숫자를 가져오고, 각 자리의 이유도 거기 적혀 있다. 누가 누구보다 먼저 도는지 바꾸려면 그 파일만 고친다. 앞 단계의 결과를 뒤 단계가 읽으므로 순서를 잘못 바꾸면 카메라·손이 한 프레임 늦는다. Unity는 Update를 이 순서로 모두 돌린 뒤 Animator 그래프(몸의 클립과 FPSAF)를 돌리고, LateUpdate를 다시 이 순서로 돌린다.
+
+몸 쪽의 큰 흐름은 다음과 같다.
 
 | 순서 | 컴포넌트 | 하는 일 |
 | ---: | --- | --- |
 | -100 | `PlayerMovement` | 입력·상태·실제 이동 |
 | 0 | `PlayerLook` | 시선 |
 | 200 | `PlayerCameraEffects` | 흔들림·기울이기와 카메라 기준 위치 |
-| 250 | `PlayerBody` | 몸 자세, 발 IK, 눈 시점으로 카메라 최종 위치 확정(F5면 그 뒤 카메라만 뒤로) |
+| 250 | `PlayerBody` | Update에서 클립 고르기. LateUpdate에서 시선 굽힘(`SpineLook`), 몸 위치, 발 IK, 눈 시점으로 카메라 최종 위치 확정(F5면 그 뒤 카메라만 뒤로). 이 안의 순서는 `PlayerBody.LateUpdate` 주석에 적혀 있다 |
 | 260 | `PlayerFootsteps` | IK가 끝난 발로 접지 판단 |
+| 295 | `FPSBody` | Update에서 FPSAF 입력. LateUpdate에서 FPSAF가 놓은 총을 시야에 붙잡기 |
 | 300 | `WeaponController` | 확정된 눈 시점(`PlayerView`)으로 총 자세, 카메라 조준선으로 발사 방향 |
 | 320 | `PlayerBodyHands` | 확정된 총·주먹 위치로 손 놓기 |
+| 330 | `FPSBodyAnimator` | FPSAF의 늦은 일(카메라 흔들림), 그 뒤 손을 따라가는 총 |
+| 340 | `PlayerBodyCloth` | 끝난 자세에서 옷감 |
 
 ## 입력과 설정
 

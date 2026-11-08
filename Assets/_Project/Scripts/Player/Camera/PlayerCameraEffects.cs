@@ -9,7 +9,7 @@ using UnityEngine.Rendering.Universal;
 /// The camera's place is the eyes' alone: the clips carry the head's bob and a landing's dip, and the body's lean the peek.
 /// </summary>
 [DisallowMultipleComponent]
-[DefaultExecutionOrder(200)]
+[DefaultExecutionOrder(FrameOrder.CameraEffects)]
 public sealed class PlayerCameraEffects : MonoBehaviour
 {
     [Header("Optional References (비우면 자동 탐색)")]
@@ -187,7 +187,7 @@ public sealed class PlayerCameraEffects : MonoBehaviour
         HeadDisplacement = head != null ? movement.transform.TransformDirection(head.Offset) : Vector3.zero;
         if (body == null) body = movement.GetComponent<PlayerBody>();
         // The visible body composes the final eye view after these effects. Without a body, keep the pivot camera.
-        // The visible body then moves the leaning hitboxes to where its eyes went (PlayerBody.Lean).
+        // The visible body then moves the leaning hitboxes to where its eyes went (BodyLean).
         if (body == null || !body.isActiveAndEnabled || body.BodyAnimator == null || body.View != targetCamera)
         {
             targetCamera.position = origin + offset + HeadDisplacement;

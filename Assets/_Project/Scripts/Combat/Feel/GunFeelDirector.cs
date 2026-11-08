@@ -33,8 +33,10 @@ public static class GunFeelDirector
         if (enemy && kill) CorpseTopple.Spawn(report.Target, hit, critical);
         // A shared enemy's death is the host's to call, so one count and one feed row reach every PC, whoever saw it first.
         bool shared = kill && report.Target.TryGetComponent(out EnemyNetwork network) && network.IsSpawned;
+        // A named or elite enemy's kill burns magenta in the feed and slows the game briefly (backlog 325).
+        bool standout = kill && report.Target is EnemyHealth ranked && ranked.IsStandout;
         if (shared && hit.Source != null && hit.Source.GetComponentInParent<PlayerNetworkScore>() is PlayerNetworkScore score)
-            score.AnnounceKill(WeaponName(hit), CombatDamageEvents.DisplayNameOf(report.Target), critical && bullet);
+            score.AnnounceKill(WeaponName(hit), CombatDamageEvents.DisplayNameOf(report.Target), critical && bullet, standout);
         if (!byPlayer) return;
 
         HitConfirm.Landed(report);
@@ -49,10 +51,11 @@ public static class GunFeelDirector
             {
                 tally.CountStreak();
                 if (tally.Streak == CombatFeedHUD.SkullStreak) SkullSlowMotion.Begin();
+                else if (standout) SkullSlowMotion.BeginBrief();
             }
         }
         CombatFeedHUD.Kill(WeaponName(hit), CombatDamageEvents.DisplayNameOf(report.Target), critical && bullet, execution, hit.IsCounter, bullet, distance, !shared,
-            hit.Pierced);
+            hit.Pierced, standout);
         if (pulse) KillConfirmEffect.Trigger(execution ? KillScreen.Execution : hit.IsCounter ? KillScreen.Counter : KillScreen.Ordinary,
             critical || execution);
     }

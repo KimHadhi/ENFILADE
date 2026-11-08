@@ -8,7 +8,7 @@ using UnityEngine;
 /// It starts on an empty profile (nothing held) and with our camera's FPSAF controller, since our camera is not under
 /// the body as FPSAF's demo camera is under its head.
 /// </summary>
-[DisallowMultipleComponent, DefaultExecutionOrder(330)]
+[DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.GunFramework)]
 public sealed class FPSBodyAnimator : FPSAnimator
 {
     private System.Action afterLateUpdate;

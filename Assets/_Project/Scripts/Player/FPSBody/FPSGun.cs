@@ -41,6 +41,8 @@ public sealed class FPSGun : MonoBehaviour
     private SimpleAnimationPlayer partsPlayer;
     private FPSCameraShake shake;
     private bool reloadEmptyPlaying, reloading;
+    // The gun-part player's rest pose has been seen to (EnsureRestPose), and the last shot's clip is holding the slide back.
+    private bool restChecked, slideHeld;
     // The gun's frame from KINEMATION's weapon bone (its rotationOffset), as the Pose Sampler's weapon bone offset turns it.
     private Quaternion frame = Quaternion.identity;
     // Where the hands sit on the gun in the pose made for this body (GunBakes), in the gun bone's own axes, for the probe.
@@ -128,6 +130,7 @@ public sealed class FPSGun : MonoBehaviour
         FPSBodyCamera camera)
     {
         reloading = false;
+        EnsureRestPose();
         if (recoil != null && Kinemation != null && Kinemation.weaponSettings != null)
             recoil.Init(Kinemation.weaponSettings.recoilAnimData, roundsPerMinute, mode);
         animator.LinkAnimatorProfile(gameObject);
@@ -156,8 +159,37 @@ public sealed class FPSGun : MonoBehaviour
         if (recoil != null && recoil.isActiveAndEnabled) recoil.Play();
         if (Kinemation == null || partsPlayer == null) return;
         var settings = Kinemation.weaponSettings;
-        var pair = settings != null && settings.hasFireOut && lastRound ? Kinemation.fireOut : Kinemation.fire;
-        if (pair.weapon != null) partsPlayer.PlayAnimation(pair.weapon);
+        bool lockBack = settings != null && settings.hasFireOut && lastRound;
+        var pair = lockBack ? Kinemation.fireOut : Kinemation.fire;
+        // The last round's clip holds the slide back until a reload's clip takes over (it doesn't blend out by itself).
+        if (pair.weapon != null && partsPlayer.PlayAnimation(pair.weapon)) slideHeld = lockBack;
+    }
+
+    /// <summary>
+    /// KINEMATION's M1911 comes with no rest pose on its gun-part player (its MX16A4 has one, A_W_MX16A4_Pose): once a clip
+    /// blended out, nothing put the parts back, so a slide the last round locked back stayed back through the reload
+    /// (user, 2026-11-08). A gun without one gets its fire clip held at its first frame, the gun at rest, as the pose under
+    /// every clip. Done once, the first time the gun is out (its player is built when the gun first switches on).
+    /// </summary>
+    private void EnsureRestPose()
+    {
+        if (restChecked || partsPlayer == null || Kinemation == null) return;
+        restChecked = true;
+        var field = typeof(SimpleAnimationPlayer).GetField("defaultClipPose",
+            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public);
+        if (field != null && field.GetValue(partsPlayer) is AnimationClip own && own != null) return;
+        var rest = Kinemation.fire.weapon != null ? Kinemation.fire.weapon.clip : null;
+        if (rest != null) partsPlayer.PlayBasePlayable(rest);
+    }
+
+    // The slide is still held back by the last round's clip although the gun has been loaded (its reload clip never
+    // played: the reload began while the body wasn't holding the gun up). The parts let go of it and go back to rest.
+    private void ReleaseSlide()
+    {
+        if (!slideHeld || partsPlayer == null || !partsPlayer.enabled) return;
+        slideHeld = false;
+        partsPlayer.enabled = false;
+        partsPlayer.enabled = true;
     }
 
     /// <summary>The trigger let go (Weapon.OnFireReleased): the recoil settles.</summary>
@@ -178,11 +210,17 @@ public sealed class FPSGun : MonoBehaviour
         float length = clip != null && clip.clip != null ? clip.clip.length / Mathf.Max(.01f, clip.blendTime.rateScale) : 0f;
         if (Kinemation == null || partsPlayer == null) return length;
         var pair = empty ? Kinemation.reloadEmpty : Kinemation.reloadTactical;
-        if (pair.weapon != null) partsPlayer.PlayAnimation(pair.weapon);
+        // The reload's own clip takes the slide from the last round's and lets it go forward.
+        if (pair.weapon != null && partsPlayer.PlayAnimation(pair.weapon)) slideHeld = false;
         return length;
     }
 
-    internal void ReloadDone() => reloading = false;
+    /// <summary>Our reload finished: the gun is loaded, so a slide still held back goes forward.</summary>
+    internal void ReloadDone()
+    {
+        reloading = false;
+        ReleaseSlide();
+    }
 
     /// <summary>The reload was cut short (a dodge, a climb, death): its clips stop.</summary>
     internal void StopReload(IPlayablesController playables, float blendOut, FPSBodyCamera camera)

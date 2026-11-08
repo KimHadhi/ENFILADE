@@ -8,12 +8,13 @@ using UnityEngine.Playables;
 /// Layers over the movement clips, so the hips and legs carry on under them: the fingers make fists while fists are
 /// up, and a punch's chest and arms come from its clip. The hands' IK lets go of the punching arm while the clip has
 /// it (PlayerBodyHands); the other hand stays on its fist target, which keeps the view framed the way FistsView set it.
-/// Without a clip FistsView's targets alone throw the punch. A reload kick takes only the legs (PlayerBody.Kick).
+/// Without a clip FistsView's targets alone throw the punch. A reload kick, the steps of a turn on the spot and a step
+/// dodge with a gun out take only the legs (PlayerBody.Kick, PlayerBody.Locomotion, PlayerBody.Dodge).
 /// Names and numbers come from Player.csv, row Body.
 /// </summary>
 public sealed partial class PlayerBody
 {
-    private const int MovesLayer = 0, ClenchLayer = 1, PunchLayer = 2, TurnLayer = 3, KickLayer = 4;
+    private const int MovesLayer = 0, ClenchLayer = 1, PunchLayer = 2, TurnLayer = 3, KickLayer = 4, DodgeLayer = 5;
 
     [Header("Fists")]
     [SerializeField, Tooltip("Looped while fists are up. Only its fingers play, so the hands make fists.")]
@@ -41,7 +42,7 @@ public sealed partial class PlayerBody
 
     private AnimationLayerMixerPlayable BuildLayers()
     {
-        layers = AnimationLayerMixerPlayable.Create(graph, KickLayer + 1);
+        layers = AnimationLayerMixerPlayable.Create(graph, DodgeLayer + 1);
         graph.Connect(mixer, 0, layers, MovesLayer);
         layers.SetInputWeight(MovesLayer, 1f);
 
@@ -59,6 +60,7 @@ public sealed partial class PlayerBody
         foreach (string clip in new[] { punchLeft, punchRight, punchLeftHard, punchRightHard }) AddPunch(clip);
         BuildKick();
         BuildTurn();
+        BuildDodge();
         return layers;
     }
 
@@ -68,6 +70,7 @@ public sealed partial class PlayerBody
         punchByName.Clear();
         punch = null;
         punchTimeLeft = punchWeight = leftArmShare = rightArmShare = 0f;
+        TeardownDodge();
         TeardownTurn();
         TeardownKick();
         if (fingerMask != null) Destroy(fingerMask);
@@ -130,6 +133,7 @@ public sealed partial class PlayerBody
         layers.SetInputWeight(ClenchLayer, hands != null ? hands.FistsWeight : 0f);
         BlendTurn(dt);
         BlendKick(dt);
+        BlendDodge(dt);
         // A guard or a climb takes the arm back at once: the parry's sweep and the hold need the hand on its target.
         var melee = player.MeleeCombat;
         bool guarding = melee != null && (melee.IsGuarding || melee.IsParryActive);

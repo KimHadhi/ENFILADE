@@ -118,7 +118,8 @@ public sealed class TeamHealthPanel : MonoBehaviour
                 if (used == cards.Count) cards.Add(Build());
                 var card = cards[used];
                 card.root.anchoredPosition = new Vector2(left, bottom + used * (CardHeight + Gap) + CardHeight * .5f);
-                card.root.localRotation = Quaternion.Euler(0f, -(yaw + used * fan), roll);
+                float tilt = GameSettings.Current.hudTilt; // Settings → HUD 기울기
+                card.root.localRotation = Quaternion.Euler(0f, -(yaw + used * fan) * tilt, roll * tilt);
                 Show(card, other);
                 used++;
             }

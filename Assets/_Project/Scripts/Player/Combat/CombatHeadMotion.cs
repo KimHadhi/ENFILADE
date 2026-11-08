@@ -8,7 +8,7 @@ using UnityEngine;
 /// else, not scaled by screen shake and without moving the aim; the look takes TakeYaw() every frame, also while combat
 /// locks the mouse, and turns by it as if the mouse had. Real time throughout, so slow motion doesn't stretch them.
 /// </summary>
-[DisallowMultipleComponent, DefaultExecutionOrder(-120)]
+[DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.CombatHeadMotion)]
 public sealed class CombatHeadMotion : MonoBehaviour
 {
     private struct Move { public Vector3 offset, angles; public float time, attack, hold, release; }

@@ -21,6 +21,16 @@ public sealed class PlayerDamageReceiver : MonoBehaviour, IDamageReceiver, ITabl
     public bool IsDowned { get; private set; }
     public event Action<DamageHit, DamageResult> HitResolved;
     public event Action Died;
+    /// <summary>A hit took the last of the shield (backlog 321). Raised after HitResolved, on the owner's PC only.</summary>
+    public event Action<DamageHit> ShieldBroken;
+    /// <summary>How many times the shield has broken, for HUDs that poll rather than listen (AdaptiveHealthHUD).</summary>
+    public int ShieldBreaks { get; private set; }
+    /// <summary>Of the last damaging hit, what the shield took and what health lost, set before HitResolved: a hit the shield
+    /// took whole shows no blood, only the shield's light (PlayerDamageFeedback, ShieldFeedback, PlayerNetworkCombat).</summary>
+    public float LastShieldTaken { get; private set; }
+    public float LastHealthTaken { get; private set; }
+    /// <summary>The last damaging hit never reached health: the shield took all of it.</summary>
+    public bool LastHitShielded => LastShieldTaken > 0f && LastHealthTaken <= 0f;
 
     internal void Initialize(PlayerMovement player)
     {
@@ -32,6 +42,8 @@ public sealed class PlayerDamageReceiver : MonoBehaviour, IDamageReceiver, ITabl
             gameObject.AddComponent<PlayerDamageFeedback>();
         if (Application.isPlaying && player.IsLocal && GetComponent<LowHealthGrade>() == null)
             gameObject.AddComponent<LowHealthGrade>();
+        if (Application.isPlaying && player.IsLocal && GetComponent<ShieldFeedback>() == null)
+            GameTables.Bind(PlayerMovement.TableName, "Shield", gameObject.AddComponent<ShieldFeedback>());
         // An enemy throws off whoever stands on its head; the rider's own PC moves them, so only there.
         if (Application.isPlaying && player.IsLocal && GetComponent<HeadStandShakeOff>() == null)
             GameTables.Bind(PlayerMovement.TableName, "HeadStand", gameObject.AddComponent<HeadStandShakeOff>());
@@ -69,11 +81,17 @@ public sealed class PlayerDamageReceiver : MonoBehaviour, IDamageReceiver, ITabl
             return defense;
         }
         float absorbed = hit.IsFatal ? 0f : Mathf.Min(Shield, hit.Amount);
-        shield = Shield - absorbed;
+        bool shieldBroke = absorbed > 0f && absorbed >= Shield;
+        shield = shieldBroke ? 0f : Shield - absorbed;
+        float healthBefore = Health;
         LoseHealth(hit.IsFatal ? Health : hit.Amount - absorbed);
+        LastShieldTaken = absorbed;
+        LastHealthTaken = Mathf.Max(0f, healthBefore - Health);
         melee?.NotifyDamaged();
         HitResolved?.Invoke(hit, DamageResult.Damaged);
-        if (movement == null || movement.IsLocal) CombatHitAudio.PlayPlayerHit(hit);
+        if (shieldBroke) { ShieldBreaks++; ShieldBroken?.Invoke(hit); }
+        // Flesh only when health was reached; the shield's own sound is ShieldFeedback's.
+        if ((movement == null || movement.IsLocal) && LastHealthTaken > 0f) CombatHitAudio.PlayPlayerHit(hit);
         if (!IsAlive && (hit.IsFatal || !TryGetComponent(out PlayerLife life) || !life.TryGoDown())) Die();
         return DamageResult.Damaged;
     }

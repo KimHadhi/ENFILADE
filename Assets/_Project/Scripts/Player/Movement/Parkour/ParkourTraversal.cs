@@ -45,6 +45,13 @@ public sealed class ParkourTraversal
     private float surgeLeft, surgeFrom;
     private const int SurgeSamples = 8;
     private const float SurgeLeast = 2f, SurgeSpare = .1f;
+    // The vault found at the spot the surge runs to, that spot, and the way the player looked when it was found. Reaching
+    // the spot (within SurgeArrive, m), or held up within SurgeHeldUp of it when the time runs out (the obstacle itself
+    // stops the capsule a little short), that vault goes even if the look from here misses it, while the player still
+    // looks within SurgeFacing (cosine) of that way.
+    private ObstacleTarget surgeVault;
+    private Vector3 surgeSpot, surgeFacing;
+    private const float SurgeArrive = .05f, SurgeHeldUp = .4f, SurgeFacing = .5f;
     /// <summary>A surge toward a vault under way: the ground velocity LocomotionState keeps; zero when there is none.</summary>
     internal Vector3 SurgeVelocity => surgeLeft > 0f ? surge : Vector3.zero;
     internal void StopSurge() => surgeLeft = 0f;
@@ -62,7 +69,15 @@ public sealed class ParkourTraversal
         sinceJump = grounded || !jumping ? float.PositiveInfinity : wasGrounded ? VaultFinder.Tick : sinceJump + dt;
         wasGrounded = grounded;
         // A surge is a run on the ground: off it, or into any other move, it is over.
-        if (!grounded || ctx.CurrentState != State.Standing) StopSurge();
+        if (!grounded || ctx.CurrentState != State.Standing)
+        {
+            if (surgeLeft > 0f) SurgeProbe($"surge ended without a vault: {(grounded ? $"state {ctx.CurrentState}" : "left the ground")}");
+            StopSurge();
+        }
+        // The vaulted obstacles are kept only for the time in the air. A vault stopped in the frame it began never left the
+        // ground, so no landing let go of its obstacle: the next surge at it ran on, the look there refused it as vaulted
+        // already, and the press went as a jump (2026-11-09).
+        if (grounded && !ctx.IsParkour) traversedObstacles.Clear();
     }
     internal void OnGrounded()
     {
@@ -177,13 +192,19 @@ public sealed class ParkourTraversal
     {
         var settings = ctx.AbilitySettings;
         Vector3 run = Vector3.ProjectOnPlane(ctx.HorizontalVelocity, Vector3.up);
-        if (!ctx.IsGrounded || ctx.CurrentState != State.Standing || ctx.CurrentInput.y <= 0.1f || ledgeLock > 0f
+        bool surging = surgeLeft > 0f;
+        // W starts a surge; once it is under way it runs to its vault whatever the keys do. Read every frame, W came up
+        // released within a tenth of a second of most surges (Logs/body-probe.txt, 2026-11-09) and the press went as a
+        // jump over the obstacle instead.
+        if (!ctx.IsGrounded || ctx.CurrentState != State.Standing || (!surging && ctx.CurrentInput.y <= 0.1f) || ledgeLock > 0f
             || settings.vaultSurgeDistance <= 0f)
         {
+            if (surging)
+                SurgeProbe("surge ended without a vault: " + (!ctx.IsGrounded ? "left the ground" : ctx.CurrentState != State.Standing
+                    ? $"state {ctx.CurrentState}" : ledgeLock > 0f ? "ledge lock" : "surge off"));
             StopSurge();
             return false;
         }
-        bool surging = surgeLeft > 0f;
         Vector3 forward = ctx.transform.forward, feet = ctx.transform.position, way = (surging ? surge : run).normalized;
         float speed = surging ? surge.magnitude : run.magnitude;
         // Close enough: the vault starts here and now, from the ground. Left to the next frame's first look, a frame a little
@@ -200,27 +221,60 @@ public sealed class ParkourTraversal
         }
         if (surging)
         {
-            // The surge ran out without the vault catching (the obstacle turned out out of reach): the jump goes as a jump.
             surgeLeft -= dt;
-            return surgeLeft > 0f;
+            // The look from here missed the vault the surge was run for, though it caught it from this very spot a moment
+            // ago: the look turned a little, or the obstacle stopped the capsule just short of the spot. Ending the surge
+            // as a jump then sailed over what was to be vaulted (user, 2026-11-09). At the spot, or held up next to it
+            // when the time is up, the vault found there goes from where the feet are; Begin's move starts from here.
+            float shortOf = Vector3.Dot(surgeSpot - feet, way);
+            bool arrived = shortOf <= SurgeArrive || (surgeLeft <= 0f && shortOf <= SurgeHeldUp);
+            if (!arrived) return surgeLeft > 0f || SurgeMissed($"ran out {shortOf:0.00} m short of the spot");
+            if (Vector3.Dot(forward, surgeFacing) < SurgeFacing) return SurgeMissed("looked away from the vault");
+            var found = surgeVault;
+            if (found.Surface == null || !found.Surface.enabled || !found.Surface.gameObject.activeInHierarchy
+                || traversedObstacles.Contains(found.Surface)) return SurgeMissed("the obstacle is gone");
+            SurgeProbe($"surge took the {found.Kind} found ahead, {shortOf:0.00} m short of the spot");
+            ctx.HorizontalVelocity = way * surgeFrom;
+            StopSurge();
+            Begin(found);
+            return true;
         }
         if (speed < SurgeLeast) return false;
-        float gap = GapToVault(feet, way, forward, settings.vaultSurgeDistance);
+        float gap = GapToVault(feet, way, forward, settings.vaultSurgeDistance, out surgeVault);
         if (gap <= 0f) return false;
+        surgeSpot = feet + way * gap;
+        surgeFacing = forward;
         surgeFrom = speed;
         speed = Mathf.Max(settings.vaultSurgeSpeed, speed);
         surge = way * speed;
         surgeLeft = gap / speed + SurgeSpare;
+        SurgeProbe($"surge to {surgeVault.Kind} on {(surgeVault.Surface != null ? surgeVault.Surface.name : "-")}: {gap:0.00} m at {speed:0.0} m/s");
         // The push sells the burst: the view dips forward a little and widens, and the speed widens it further on its own.
         ctx.GetComponentInChildren<PlayerCameraEffects>()?.ApplyCameraImpulse(
             new Vector3(settings.vaultSurgeKick.x, 0f, 0f), settings.vaultSurgeKick.y);
         return true;
     }
 
-    // How far along the run (m) the feet go before a jump from there would be vaulted, looking up to reach beyond where the
-    // body is now, and no further than it gets before it meets something (the obstacle itself). Zero when nothing is.
-    private float GapToVault(Vector3 feet, Vector3 way, Vector3 forward, float reach)
+    // A surge that won't end in its vault: the press goes as a jump (ProcessJump), as it would have without the surge.
+    private bool SurgeMissed(string why)
     {
+        SurgeProbe($"surge ended without a vault: {why}");
+        StopSurge();
+        return false;
+    }
+
+    // Temporary (ParkourProbeLog, 2026-11-09): how each surge started and ended, until surges reliably end in their vault.
+    private void SurgeProbe(string text)
+    {
+        if (ctx.IsLocal) ParkourProbeLog.Line(text);
+    }
+
+    // How far along the run (m) the feet go before a jump from there would be vaulted, and that vault, looking up to reach
+    // beyond where the body is now, and no further than it gets before it meets something (the obstacle itself). Zero when
+    // nothing is.
+    private float GapToVault(Vector3 feet, Vector3 way, Vector3 forward, float reach, out ObstacleTarget vault)
+    {
+        vault = default;
         var controller = ctx.Motor.controller;
         float radius = controller.radius, half = Mathf.Max(0f, controller.height * .5f - radius);
         Vector3 centre = ctx.transform.TransformPoint(controller.center), lift = Vector3.up * controller.stepOffset;
@@ -230,8 +284,10 @@ public sealed class ParkourTraversal
         for (int step = 1; step <= SurgeSamples; step++)
         {
             float along = reach * step / SurgeSamples;
-            if (Detector.Vaults.CatchesLow(feet + way * along, forward, out _)) return along;
+            if (Detector.Vaults.CatchesLow(feet + way * along, forward, out vault) && !traversedObstacles.Contains(vault.Surface))
+                return along;
         }
+        vault = default;
         return 0f;
     }
 

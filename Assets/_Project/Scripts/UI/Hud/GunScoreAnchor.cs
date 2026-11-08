@@ -9,7 +9,7 @@ using UnityEngine;
 /// and while aiming shrinks and fades a little so the sights stay clear. With nothing in the hands it waits right of
 /// the crosshair (GunFeel's Score Offset). Hud.csv's Popup row.
 /// </summary>
-[DisallowMultipleComponent, DefaultExecutionOrder(10040)]
+[DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.GunScoreAnchor)]
 public sealed class GunScoreAnchor : MonoBehaviour
 {
     // How far along the handguard the measured mount sits, from the support hand toward the muzzle; and the most a
@@ -81,7 +81,7 @@ public sealed class GunScoreAnchor : MonoBehaviour
         placed = true;
         holder.anchoredPosition = now;
         float aim = gun != null && gun.ShowsWeapon ? gun.AimBlend : 0f;
-        holder.localRotation = Quaternion.Euler(0f, lean, 0f);
+        holder.localRotation = Quaternion.Euler(0f, lean * GameSettings.Current.hudTilt, 0f); // Settings → HUD 기울기
         holder.localScale = Vector3.one * Mathf.Lerp(1f, aimScale, aim);
         group.alpha = Mathf.Lerp(1f, aimAlpha, aim);
     }

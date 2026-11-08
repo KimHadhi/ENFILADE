@@ -3,6 +3,9 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
+/// <summary>Fire round a whole kill feed row (backlog 325): none, a skull streak's blue, or a named or elite kill's magenta.</summary>
+public enum FeedBorder { None, Skull, Standout }
+
 /// <summary>How the kill feed reads, from Tables/KillFeed.</summary>
 [Serializable]
 public sealed class KillFeedLook
@@ -22,6 +25,8 @@ public sealed class KillFeedLook
         new Color(1f, .85f, .48f), new Color(1f, .95f, .82f), new Color(.56f, .84f, 1f)
     };
     public Color blueColor = new Color(.31f, .61f, 1f);
+    [Tooltip("The border of fire round a named or elite enemy's kill row (backlog 325). A skull streak's row burns blueColor.")]
+    public Color eliteColor = new Color(1f, .24f, .86f);
     [Tooltip("How far the newest row turns toward the player beyond the other rows (°).")]
     public float leadYaw = 2.5f;
     [Tooltip("The newest row's tilt within the screen (°), to the other side on each kill.")]
@@ -46,6 +51,12 @@ public sealed class KillFeedLook
     public float olderFade = .13f;
     [Tooltip("The least opacity an older row keeps from that.")]
     public float olderFloor = .55f;
+    [Min(0f), Tooltip("A row this young (s) is recent (backlog 332): it keeps full opacity whatever its place, and its plate's edges light up.")]
+    public float recentSeconds = 2f;
+    [Min(0f), Tooltip("How thick a recent row's edge lines are (px). 0 turns them off.")]
+    public float recentEdge = 2f;
+    [Range(0f, 1f), Tooltip("How strong those lines are on someone else's row, against your own row's full gold.")]
+    public float recentOthers = .5f;
 }
 
 /// <summary>
@@ -63,7 +74,10 @@ public sealed class StreakBadge
     private static readonly Vector2 Eye = new Vector2(.29f, .1f);
     private static readonly Color Bone = new Color(.86f, .94f, 1f);
     private static readonly int TrailId = Shader.PropertyToID("_Trail");
-    private static Material oneFlame, trailOfFire, numeralShade;
+    /// <summary>FeedFlame's modes: one flame, the trail off a row's left end, a border of fire round a whole row.</summary>
+    public const int OneFlame = 0, TrailOfFire = 1, BorderOfFire = 2;
+    private static readonly Material[] flameMaterials = new Material[3];
+    private static Material numeralShade;
 
     private readonly RectTransform root;
     private readonly KillRowPlate plate;
@@ -119,22 +133,23 @@ public sealed class StreakBadge
     private RawImage Flame(string name, Transform parent, bool trail)
     {
         var image = FeelUI.Rect(name, parent).gameObject.AddComponent<RawImage>();
-        image.material = FlameMaterial(trail);
+        image.material = FlameMaterial(trail ? TrailOfFire : OneFlame);
         image.raycastTarget = false;
         image.uvRect = new Rect(Mathf.Floor(seed), 0f, 1f, 1f);
         return image;
     }
 
-    private static Material FlameMaterial(bool trail)
+    /// <summary>FeedFlame in one of its modes, made once and shared.</summary>
+    public static Material FlameMaterial(int mode)
     {
-        var material = trail ? trailOfFire : oneFlame;
+        mode = Mathf.Clamp(mode, OneFlame, BorderOfFire);
+        var material = flameMaterials[mode];
         if (material != null) return material;
         var shader = Resources.Load<Shader>(FlameShader);
         if (shader == null) return null;
         material = new Material(shader) { name = "Feed Flame (Runtime)", hideFlags = HideFlags.HideAndDontSave };
-        material.SetFloat(TrailId, trail ? 1f : 0f);
-        if (trail) trailOfFire = material; else oneFlame = material;
-        return material;
+        material.SetFloat(TrailId, mode);
+        return flameMaterials[mode] = material;
     }
 
     /// <summary>

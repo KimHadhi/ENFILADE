@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 
 /// <summary>Reads Player/Interact; never owns or enables the Player action map.</summary>
-[DefaultExecutionOrder(260), DisallowMultipleComponent]
+[DefaultExecutionOrder(FrameOrder.TestInteraction), DisallowMultipleComponent]
 public sealed class PlayerTestInteraction : MonoBehaviour
 {
     [SerializeField] private Camera view;
@@ -30,7 +30,7 @@ public sealed class PlayerTestInteraction : MonoBehaviour
         Target=null;
         bool available=player!=null && player.InputAvailable && !player.CombatInputLocked
             && (player.Execution == null || player.Execution.Candidate == null)
-            && (chat==null||!chat.IsChatOpen) && interact!=null && interact.enabled;
+            && (chat==null||!chat.IsChatOpen) && !DevConsole.IsOpen && interact!=null && interact.enabled;
         if(available && view!=null && Physics.Raycast(view.transform.position,view.transform.forward,out RaycastHit hit,reach,~(1<<gameObject.layer),QueryTriggerInteraction.Ignore))
             Target=hit.collider.GetComponentInParent<ChatTestStation>();
         if(prompt!=null) { prompt.gameObject.SetActive(Target!=null); if(Target!=null) prompt.text=Target.Prompt; }

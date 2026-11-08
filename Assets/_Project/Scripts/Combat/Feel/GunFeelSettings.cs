@@ -114,13 +114,22 @@ public sealed class GunFeelSettings : ScriptableObject
     [Range(.05f, 1f)] public float markerFullDamage = .5f;
     [Tooltip("Headshot ticks are this much thicker and longer than a body hit's, so the gold reads at a glance.")]
     public float headThickness = 1.5f, headLength = 1.15f;
-    [Min(0f), Tooltip("Ray length of the glint that flashes at the aim point on a headshot (px), long enough to reach past the " +
-        "crosshair's own lines. 0 turns it off.")]
-    public float headGlintSize = 22f;
-    [Tooltip("Degrees the glint turns while it fades, so its rays sweep off the crosshair's lines.")]
-    public float headGlintTurn = 25f;
-    [Min(.15f), Tooltip("How long the glint shows: it snaps open, holds for a beat, then shrinks away over the last half.")]
-    public float headGlintSeconds = .45f;
+    [Min(0f), Tooltip("Ray length of the glint that flashes at the aim point on a headshot (px). Backlog 324 cut the first 22 " +
+        "to 14; the user then found it too small and asked for more show, so it stands bigger and brief. 0 turns it off.")]
+    public float headGlintSize = 26f;
+    [Tooltip("Degrees the glint spins while it fades, so its rays sweep off the crosshair's lines.")]
+    public float headGlintTurn = 45f;
+    [Min(.1f), Tooltip("How long the glint shows: it bangs open white past full size, snaps back gold and is gone. The user " +
+        "found .45 lingering; a headshot should land and be over.")]
+    public float headGlintSeconds = .2f;
+    [Min(0f), Tooltip("How far a headshot's sparks fly out from the aim point, and how wide its gold ring opens (px). 0 turns both off.")]
+    public float headBurstReach = 56f;
+    [Min(.05f), Tooltip("How long the sparks and the ring last (real seconds).")]
+    public float headBurstSeconds = .16f;
+    [Min(1f), Tooltip("A headshot's ticks run their frames this much faster than a body hit's, so they snap in and out.")]
+    public float headMarkerPace = 1.6f;
+    [Range(0f, 1f), Tooltip("How much bigger a headshot's ticks start before popping back (a body hit uses Marker Pop).")]
+    public float headPop = .55f;
     [Range(0f, 1f), Tooltip("Of the hits landed in one frame (a shotgun's pellets), at least this share must be headshots for the " +
         "headshot marker and sound, as in Overwatch. A single hit always counts.")]
     public float headshotHitShare = .3f;

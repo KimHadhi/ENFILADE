@@ -17,7 +17,7 @@ using MovementState = PlayerMovement.MovementState;
 /// Runs after the weapon has posed itself, so the hands never trail it.
 /// Numbers come from Tables/Player.csv, row Hands.
 /// </summary>
-[DisallowMultipleComponent, DefaultExecutionOrder(320)]
+[DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.Hands)]
 public sealed partial class PlayerBodyHands : MonoBehaviour
 {
     [SerializeField, Min(.01f), Tooltip("How quickly the hands move between holds (gun, fists, ledge, free) (s).")]
@@ -70,14 +70,17 @@ public sealed partial class PlayerBodyHands : MonoBehaviour
 
     /// <summary>
     /// How much of the upper body FPS Animation Framework holds the gun with (0-1): both hands on it, standing or crouched
-    /// (walking, running and jumps included). In every other move (a vault, a slide, a dive, a roll, a heavy landing) the
+    /// (walking, running and jumps included) and through a step dodge. In every other move (a vault, a slide, a dive, a roll, a heavy landing) the
     /// move's own armed clip poses the upper body, as it did before KINEMATION (0.7.34), and the hands are put on the gun
     /// here, where FPSBody keeps it (user, 2026-11-07: "움직임은 클립이").
     /// </summary>
     internal float FrameworkShare => BothHandsOnGun * stance;
 
-    // Standing or crouched, the shooting stances FPS Animation Framework's profiles are made for.
-    private static bool ShootingStance(MovementState state) => state == MovementState.Standing || state == MovementState.Crouching;
+    // Standing or crouched, the shooting stances FPS Animation Framework's profiles are made for. A step dodge counts too:
+    // with a gun its clip takes only the legs over the standing pose (PlayerBody.Dodge). Left out, FPSAF let go of the gun
+    // and took it back within the dodge, and the hands came off the gun and went back on (user, 2026-11-09).
+    private static bool ShootingStance(MovementState state)
+        => state == MovementState.Standing || state == MovementState.Crouching || state == MovementState.StepDodge;
 
     /// <summary>How much of a hand something holds this frame (0-1): the gun, the fists, a ledge, a rung or a bar.</summary>
     internal float Holding(bool isLeft) => holding[isLeft ? 0 : 1];
@@ -189,7 +192,6 @@ public sealed partial class PlayerBodyHands : MonoBehaviour
         using (RestMarker.Auto())
         {
             if (alive && Climbing(state)) RestOnObstacle(dt);
-            if (alive && state == MovementState.Mantle) ProbeLadderExit();
             KeepPushedHandsDown(dt);
         }
     }
@@ -343,24 +345,6 @@ public sealed partial class PlayerBodyHands : MonoBehaviour
     }
 
     // A hand that would sink into the obstacle's top rests on it instead, its elbow staying where the clip has it.
-    // Temporary probe (user, 2026-11-08: the climb-off's hands don't match, "like there's no IK"): through a climb off a
-    // ladder's top, where the hands' middle is against where the warp holds it, how far each hand is from the floor's
-    // edge, and the rung hold's weights. A hand on the hold reads near (0, 0, 0) while the clip's hands are down.
-    private float ladderProbeAt;
-    private void ProbeLadderExit()
-    {
-        var traversal = player.Abilities.Traversal;
-        if (traversal.Obstacle.ExitLadder == null || traversal.ObstacleClipTime < 0f || Time.time - ladderProbeAt < .1f) return;
-        ladderProbeAt = Time.time;
-        Vector2 support = traversal.ObstacleSupport;
-        float time = traversal.ObstacleClipTime;
-        Vector3 middle = (left.Hand.position + right.Hand.position) * .5f;
-        ParkourProbeLog.Line($"climb-off hands: clip {time:0.00} {(time >= support.x && time <= support.y ? "DOWN" : "up")} | middle - hold "
-            + $"{(middle - traversal.ObstacleContact).ToString("F3")} | left {left.Hand.position.ToString("F2")} right {right.Hand.position.ToString("F2")} "
-            + $"edge {traversal.Obstacle.Edge.ToString("F2")} | short {traversal.EdgeShortfall:0.000} | rung weights {weights[(int)Hold.Ladder]:0.00} "
-            + $"L {LadderHandWeight(true):0.00} R {LadderHandWeight(false):0.00} | feet {player.transform.position.ToString("F2")}");
-    }
-
     private void RestOnObstacle(float dt)
     {
         var surface = player.Abilities.Traversal.Obstacle.Surface;

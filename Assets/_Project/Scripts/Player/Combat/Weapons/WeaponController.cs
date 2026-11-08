@@ -32,7 +32,7 @@ public readonly struct WeaponShot
 }
 
 [DisallowMultipleComponent]
-[DefaultExecutionOrder(300)]
+[DefaultExecutionOrder(FrameOrder.Weapons)]
 public sealed class WeaponController : MonoBehaviour
 {
     [Header("Weapon Settings")]
@@ -96,7 +96,14 @@ public sealed class WeaponController : MonoBehaviour
     private const float RaisedClearance = .04f;
     // ...and stays up at least this long after it clears (s): walking, the head bobs across the edge with every step.
     private const float RaisedHold = .5f;
-    private float raisedHoldLeft;
+    // The hold is only for the edge. A gun this clear (m) is past anything the head bob reaches, so it comes down at once,
+    // and so does one the player wants back (fire or sights) as soon as it is clear (user, 2026-11-09: the gun stayed up
+    // far too long after it could fire again).
+    private const float WideClearance = .12f;
+    // A shot asked for while the gun is coming back down goes off as soon as it is down, if within this long (s), so the
+    // press that brought it down isn't lost on a semi-automatic gun.
+    private const float QueuedFireWindow = .3f;
+    private float raisedHoldLeft, queuedFireLeft;
     // How long an empty magazine has waited with the gun ready to fire (s), for the automatic reload.
     private float emptyReady;
     private float bloom, timeSinceShot, shoveRecovery, bareHandsLeft;
@@ -286,12 +293,25 @@ public sealed class WeaponController : MonoBehaviour
             if (blocked && AimBlend > 0f)
             { AimBlend = 0f; presentation.Prepare(PoseView, weaponData, 0f); }
         }
+        bool readyToAct = !Runtime.IsReloading && !bodyAction && shoveRecovery <= 0f && !stepDodging;
+        bool wantsGun = aiming || (readyToAct && (frame.FirePressed || frame.FireHeld));
         if (blocked) raisedHoldLeft = RaisedHold;
-        else if (IsHighReady && raisedHoldLeft > 0f) { raisedHoldLeft -= dt; blocked = true; }
-        IsHighReady = presentation != null ? presentation.Pose(owner, PoseView, target, blocked, Runtime, dt, hitLayers) : blocked;
+        else if (IsHighReady && raisedHoldLeft > 0f)
+        {
+            if (wantsGun || !WeaponAimSolver.IsObstructed(owner, PoseView, nominalMuzzle, target, hitLayers, WideClearance))
+                raisedHoldLeft = 0f;
+            else { raisedHoldLeft -= dt; blocked = true; }
+        }
+        bool quickLower = !blocked && wantsGun;
+        IsHighReady = presentation != null ? presentation.Pose(owner, PoseView, target, blocked, Runtime, dt, hitLayers, quickLower) : blocked;
         if (IsHighReady) AimBlend = 0f;
         bool cannotFire = IsHighReady || shoveRecovery > 0f || bodyAction;
         if (cannotFire) Runtime.CancelBurst();
+        if (blocked || !readyToAct) queuedFireLeft = 0f;
+        else if (frame.FirePressed && IsHighReady) queuedFireLeft = QueuedFireWindow;
+        else if (!cannotFire && queuedFireLeft > 0f)
+        { frame = new WeaponInputFrame(true, frame.FireHeld, frame.ReloadPressed, frame.AimHeld); queuedFireLeft = 0f; }
+        else queuedFireLeft = Mathf.Max(0f, queuedFireLeft - dt);
         bool reloadingBeforeTick = Runtime.IsReloading;
         if (cannotFire || reloadingBeforeTick)
             frame = new WeaponInputFrame(false, false, frame.ReloadPressed, frame.AimHeld);
@@ -426,7 +446,7 @@ public sealed class WeaponController : MonoBehaviour
     }
     private void ResetPresentation()
     {
-        AimBlend = bloom = shoveRecovery = CurrentSpread = raisedHoldLeft = emptyReady = 0f; recoilIndex = 0; IsHighReady = false;
+        AimBlend = bloom = shoveRecovery = CurrentSpread = raisedHoldLeft = queuedFireLeft = emptyReady = 0f; recoilIndex = 0; IsHighReady = false;
         presentation?.Reset(); crosshair?.SetDynamicSpread(0f);
         crosshair?.SetCombatHidden(false);
         cameraEffects?.RefreshWeaponFov();

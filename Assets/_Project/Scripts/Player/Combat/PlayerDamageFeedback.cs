@@ -8,7 +8,7 @@ using UnityEngine.UI;
 /// Low health adds a persistent blood baseline that surges with every heartbeat instead of blinking on and off.
 /// Pools are bounded; only a saturated pool replaces its oldest entry. No per-hit objects, materials or textures.
 /// </summary>
-[DisallowMultipleComponent, RequireComponent(typeof(PlayerDamageReceiver)), DefaultExecutionOrder(10020)]
+[DisallowMultipleComponent, RequireComponent(typeof(PlayerDamageReceiver)), DefaultExecutionOrder(FrameOrder.DamageFeedback)]
 public sealed class PlayerDamageFeedback : MonoBehaviour
 {
     internal struct Hit
@@ -17,6 +17,8 @@ public sealed class PlayerDamageFeedback : MonoBehaviour
         internal Vector2 Direction;
         internal bool Directional;
         internal float Age, Lifetime, Strength, Alpha;
+        /// <summary>Share of the hit the shield took: its arc is drawn that much in the shield's colour.</summary>
+        internal float Shield;
         internal ulong Serial;
     }
 
@@ -53,6 +55,8 @@ public sealed class PlayerDamageFeedback : MonoBehaviour
     public bool IsCritical { get; private set; }
     /// <summary>Heartbeat envelope, 0 between beats and 1 at the peak of the systole.</summary>
     public float PulseWeight { get; private set; }
+    /// <summary>The shield's colour for arcs of hits it took (ShieldFeedback's, else its world colour).</summary>
+    internal Color ShieldTint => TryGetComponent(out ShieldFeedback shield) ? shield.Tint : ShieldFeedback.WorldColor;
     /// <summary>Blood amount present on every edge from low health, including the current heartbeat surge.</summary>
     public float Baseline { get; private set; }
     public float Freshness { get; private set; }
@@ -125,12 +129,19 @@ public sealed class PlayerDamageFeedback : MonoBehaviour
         EnsureOverlay();
         bool directional = TryOrigin(hit, out Vector3 origin);
         Vector2 direction = directional ? Bearing(camera.transform, origin) : Vector2.zero;
-        // Shield-only hits still give feedback; HP is only read for the low-health layers.
         float strength = Mathf.Lerp(.55f, 1f, Mathf.Clamp01(hit.Amount / receiver.MaximumHealth * 4f));
+        // What the shield took is energy, not blood, as in Apex Legends: its honeycomb lights on that side (ShieldFeedback)
+        // and the arc takes its colour. Only what reached health bleeds, sized by that part alone.
+        float shieldTaken = receiver.LastShieldTaken, healthTaken = receiver.LastHealthTaken;
+        float shieldShare = shieldTaken + healthTaken > 0f ? shieldTaken / (shieldTaken + healthTaken) : 0f;
+        if (shieldTaken > 0f && TryGetComponent(out ShieldFeedback shieldLight))
+            shieldLight.ShowHit(direction, directional, Mathf.Lerp(.55f, 1f, Mathf.Clamp01(shieldTaken / receiver.MaximumHealth * 4f)));
         int index = ActiveHitCount < Hits.Length ? ActiveHitCount++ : OldestHit();
         Hits[index] = new Hit { Origin = origin, Direction = direction, Directional = directional,
-            Lifetime = Mathf.Max(.1f, settings.hitSeconds), Strength = strength, Alpha = strength, Serial = ++serial };
-        if (settings.bloodVignette)
+            Lifetime = Mathf.Max(.1f, settings.hitSeconds), Strength = strength, Alpha = strength, Shield = shieldShare, Serial = ++serial };
+        bool bleeds = healthTaken > 0f;
+        if (bleeds) strength = Mathf.Lerp(.55f, 1f, Mathf.Clamp01(healthTaken / receiver.MaximumHealth * 4f));
+        if (settings.bloodVignette && bleeds)
         {
             if (ActiveSplashCount == 0) PatternSeed = new Vector4(Random.Range(0f, 500f), Random.Range(0f, 500f));
             SpawnDrips(direction, directional, strength, settings);
@@ -144,8 +155,10 @@ public sealed class PlayerDamageFeedback : MonoBehaviour
         {
             punch = CameraViewPunch.For(camera);
             float side = directional ? direction.x : Random.Range(-.5f, .5f);
-            punch.DamagePunch(new Vector3(.45f, side * .35f, -side) * (settings.impactKickDegrees * strength),
-                settings.traumaPerHit * strength);
+            // The shield softens the flinch: a hit it took whole knocks the view about two thirds as hard.
+            float flinch = strength * (bleeds ? 1f : .65f);
+            punch.DamagePunch(new Vector3(.45f, side * .35f, -side) * (settings.impactKickDegrees * flinch),
+                settings.traumaPerHit * flinch);
         }
         graphic.SetVerticesDirty();
     }

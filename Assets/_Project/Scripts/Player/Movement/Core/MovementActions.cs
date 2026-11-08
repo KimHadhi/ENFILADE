@@ -96,14 +96,13 @@ public sealed class MovementActions
             return;
         }
         if (ctx.InputAvailable && ctx.Input.JumpPressed) jumpBufferTimer = ctx.jumpBufferTime;
-        if (jumpBufferTimer <= 0f || coyoteTimer <= 0f) return;
-        // Running at a low obstacle, the press becomes the vault: begun at once in reach, or after the run surges there, the
-        // press kept meanwhile (ParkourTraversal.SurgesToVault).
-        if (ctx.Abilities.Traversal.SurgesToVault(ctx.DeltaTime))
-        {
-            if (ctx.Abilities.Traversal.SurgeVelocity != Vector3.zero) jumpBufferTimer = Mathf.Max(jumpBufferTimer, ctx.DeltaTime * 2f);
-            return;
-        }
+        // Running at a low obstacle, the press becomes the vault: begun at once in reach, or after the run surges there
+        // (ParkourTraversal.SurgesToVault). A surge under way is looked after every frame until it ends, whatever is left
+        // of the press's buffer: kept alive by two frames' time, one frame twice as long as the one before let it lapse,
+        // and the surge ran on into the obstacle with nothing looking for its vault (2026-11-09).
+        bool surging = ctx.Abilities.Traversal.SurgeVelocity != Vector3.zero;
+        if ((jumpBufferTimer <= 0f && !surging) || coyoteTimer <= 0f) return;
+        if (ctx.Abilities.Traversal.SurgesToVault(ctx.DeltaTime)) return;
         if (ctx.StateMachine.Current.TryJump()) jumpBufferTimer = 0f;
     }
 

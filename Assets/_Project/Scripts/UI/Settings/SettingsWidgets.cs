@@ -137,6 +137,60 @@ public static class SettingsWidgets
         return root;
     }
 
+    /// <summary>
+    /// One option at a time between a back and a forward arrow, for lists too long to lay side by side (resolutions,
+    /// monitors). Stops at either end.
+    /// </summary>
+    public static RectTransform Stepper(Transform parent, string[] options, int selected, Action<int> changed)
+    {
+        var root = Rect("Stepper", parent);
+        Size(root, height: 34f, flexibleWidth: 1f, flexibleHeight: 0f);
+        var layout = root.gameObject.AddComponent<HorizontalLayoutGroup>();
+        layout.spacing = 6f;
+        layout.childControlWidth = layout.childControlHeight = true;
+        layout.childForceExpandWidth = false; layout.childForceExpandHeight = true;
+        int index = options.Length > 0 ? Mathf.Clamp(selected, 0, options.Length - 1) : 0;
+        TextMeshProUGUI value = null;
+        Image back = null, forward = null;
+        void Show()
+        {
+            value.text = options.Length > 0 ? options[index] : "";
+            back.color = index > 0 ? Surface : Track * new Color(1f, 1f, 1f, .4f);
+            forward.color = index < options.Length - 1 ? Surface : Track * new Color(1f, 1f, 1f, .4f);
+        }
+        void Step(int by)
+        {
+            int next = Mathf.Clamp(index + by, 0, Mathf.Max(0, options.Length - 1));
+            if (next == index) return;
+            index = next;
+            Show();
+            changed(index);
+        }
+        back = Arrow(root, "<", () => Step(-1));
+        var box = Rect("Value", root);
+        Size(box, flexibleWidth: 1f);
+        Fill(box, Surface);
+        value = Label(box, "", 19f, Text, TextAlignmentOptions.Center);
+        Stretch(value.rectTransform);
+        forward = Arrow(root, ">", () => Step(1));
+        Show();
+        return root;
+    }
+
+    private static Image Arrow(Transform parent, string glyph, Action clicked)
+    {
+        var rect = Rect(glyph == "<" ? "Back" : "Forward", parent);
+        Size(rect, width: 44f);
+        var image = Fill(rect, Surface);
+        var label = Label(rect, glyph, 21f, Text, TextAlignmentOptions.Center);
+        label.richText = false; // a lone "<" is the glyph, not a tag
+        Stretch(label.rectTransform);
+        var button = rect.gameObject.AddComponent<Button>();
+        button.targetGraphic = image;
+        button.onClick.AddListener(() => clicked());
+        return image;
+    }
+
     /// <summary>A vertical scroll view taking the rest of its layout parent. Rows go into the returned content.</summary>
     public static RectTransform ScrollArea(Transform parent)
     {

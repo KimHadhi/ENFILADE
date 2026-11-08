@@ -9,7 +9,7 @@ using UnityEngine;
 /// it (PlayerNetworkCorpse), so every PC shows the same body. This PC's own player watches through its eyes, which is why
 /// this runs after PlayerBody has placed the camera. Numbers: Tables/Ragdoll.
 /// </summary>
-[DisallowMultipleComponent, DefaultExecutionOrder(1000)]
+[DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.Ragdoll)]
 public sealed class PlayerRagdoll : MonoBehaviour
 {
     public const string TableName = "Ragdoll", TableRow = "Default";

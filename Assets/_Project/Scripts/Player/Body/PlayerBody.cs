@@ -11,13 +11,14 @@ using MovementState = PlayerMovement.MovementState;
 /// The player's own visible body for true first person. The PlayerBody profile's character stands under the
 /// code-driven camera, scaled so its eyes meet the camera, and plays clips chosen from the movement state.
 /// Its eyes also carry the camera (PlayerBody.Look); F5 toggles a view from behind to check the body.
-/// The clips play in the Animator's own graph as its first output, the way KINEMATION's frameworks expect the Animator
-/// output to be: the body's Animator gets an empty Animator Controller (Characters/BodyHost) for the parameters they
-/// read, and FPS Animation Framework (FPSBody) and Character Animation System (BodyCas) then run on top of the clips.
+/// The clips play in the Animator's own graph as its first output, the way KINEMATION's FPS Animation Framework expects the
+/// Animator output to be: the body's Animator gets an empty Animator Controller (Characters/BodyHost) for the parameters
+/// it reads, and FPSAF (FPSBody) runs on top of the clips while a gun is held. Everything after the animation pass is
+/// ours, in the order LateUpdate lists it, starting with the look bend (SpineLook).
 /// Presentation only: it never moves the player. Clip names and feel come from Tables/Player.csv, row Body.
 /// Runs after the camera effects and before the weapons, so shots and the gun start from where the eyes are.
 /// </summary>
-[DisallowMultipleComponent, DefaultExecutionOrder(250)]
+[DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.Body)]
 public sealed partial class PlayerBody : MonoBehaviour, ITableBound
 {
     [Header("Clips (names in the PlayerBody profile)")]
@@ -82,7 +83,6 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     private AnimationMixerPlayable mixer;
     private Channel transition;
     private MovementState state;
-    private Vector3 viewHome;
     private string dodgeClip;
     private float transitionLeft, stateTime, airTime, phase, yaw, yawVelocity, targetYaw;
     private bool started, grounded, jumped, dead, thirdPerson, rebuild, playingOut, springing;
@@ -159,10 +159,8 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         player = GetComponent<PlayerMovement>();
         profile = PlayerBodyProfile.Load();
         if (player == null || profile == null) { enabled = false; return; }
-        var camera = GetComponentInChildren<Camera>();
-        view = camera != null ? camera.transform : null;
-        cameraEffects = GetComponent<PlayerCameraEffects>();
-        if (view != null) viewHome = cameraEffects != null ? cameraEffects.CameraLocalHome : view.localPosition;
+        bodyCamera.Find(player, transform);
+        view = bodyCamera.View;
 
         loadedSkin = ChosenSkin;
         loadedModel = profile.ModelOf(loadedSkin);
@@ -193,9 +191,6 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         BindFeetClearance();
         hands = GetComponent<PlayerBodyHands>();
         hands?.BindAnimator(animator);
-        // KINEMATION Character Animation System goes on the body once FPS Animation Framework has (BodyCas).
-        bodyCas = GetComponent<BodyCas>();
-        if (bodyCas == null) bodyCas = gameObject.AddComponent<BodyCas>();
         GameSettings.Changed += OnSettingsChanged;
 
         graph = HostGraph();
@@ -329,10 +324,9 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     {
         GameSettings.Changed -= OnSettingsChanged;
         UnbindHops();
-        if (viewCamera != null) viewCamera.nearClipPlane = baseNearClip;
-        viewCamera = null;
         // The graph is the Animator's; it goes with the body.
         graph = default;
+        spineLook.Clear();
         TeardownLayers();
         channels.Clear();
         byName.Clear();
@@ -345,7 +339,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         loadedSkin = null;
         loadedVariant = null;
         animator = null;
-        if (view != null) { view.localPosition = viewHome; view.localRotation = viewRotationHome; }
+        bodyCamera.Release();
         thirdPerson = false;
     }
 
@@ -438,9 +432,15 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         AimLook(dt);
     }
 
-    // The head as the clips posed it, before the look bent it (BodyCas keeps a copy); the head itself until CAS is on.
-    private Transform ClipHead => bodyCas != null && bodyCas.HeadAsClip != null ? bodyCas.HeadAsClip : head;
-
+    /// <summary>
+    /// The pose work after the animation pass, in this order:
+    /// 1. the look bend (SpineLook), keeping the clip's head first;
+    /// 2. the aim's steady hips, then the body placed under the camera (HoldHeadPlace, FollowHead) or by the hands (Grip);
+    /// 3. the legs (tucked feet, the lean's hips, planted feet, ladder feet, legs off walls);
+    /// 4. the eyes and the camera (Look: the hanging lean arm, the face clear of walls, the head to the gaze, the camera).
+    /// Then the gun kept in view (FPSBody), the weapons, the hands' IK (PlayerBodyHands), FPSAF's late work
+    /// (FPSBodyAnimator) and the cloth run in their own LateUpdates, in the order FrameOrder sets.
+    /// </summary>
     private void LateUpdate()
     {
         if (GamePause.IsPaused) { HoldFrozenPose(); return; }
@@ -448,7 +448,10 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         if (body != null && !limp) KeepClipsInFramework();
         if (body != null && !limp)
         {
-            // First, so the feet, the hands and the camera all work from the steadied body.
+            // First, as the last step of the animation pass: the spine, neck and head bend with the view.
+            spineLook.KeepClipHead();
+            spineLook.Apply(spineLookWeight, spineLookPitch, spineLookYaw, spineLookRoll);
+            // Then the steadied body, so the feet, the hands and the camera all work from it.
             SteadyAim(Time.deltaTime);
             // Hanging, the hands hold the body in place instead of the head following the camera. FollowHead aims at
             // the camera's pivot, not the camera, so it keeps running while the camera rides the eyes: the camera
@@ -459,6 +462,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
             using (FeetMarker.Auto())
             {
                 LiftTuckedFeet(Time.deltaTime);
+                bodyLean.MoveHips(hips, bendWeight, dead);
                 PlantFeet(Time.deltaTime);
                 PlantLadderFeet(Time.deltaTime);
                 KeepLegsOffWall();
@@ -478,7 +482,8 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     {
         if (head == null || view == null || view.parent == null || dt <= 0f) return;
         Vector3 camera = transform.InverseTransformPoint(view.parent.position) - Vector3.forward * backOffset;
-        Vector3 error = camera - transform.InverseTransformPoint(ClipHead.position);
+        // Not the Q/E lean's part of where the head is: followed, it walked the body back under the pivot (BodyLean).
+        Vector3 error = camera - transform.InverseTransformPoint(spineLook.ClipHeadPosition - bodyLean.ClipHeadOffset(dead, dt));
         error.y = 0f;
         headAlignment += error * (1f - Mathf.Exp(-dt / headFollowTime));
         headAlignment = Vector3.ClampMagnitude(headAlignment, 1.5f);
@@ -491,7 +496,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     private void HoldHeadPlace()
     {
         if (head == null) return;
-        Vector3 inBody = body.InverseTransformPoint(ClipHead.position);
+        Vector3 inBody = body.InverseTransformPoint(spineLook.ClipHeadPosition);
         bool hold = !dead && transition != null && (transition == Find(supineSlideEndProne) || transition == Find(supineLand));
         if (hold && lastHeadFrame == Time.frameCount - 1)
         {
@@ -572,7 +577,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
                 break;
             case MovementState.Proning: Want(prone); FaceLying(dt); break;
             case MovementState.Supine: Want(supine); FaceLying(dt); break;
-            case MovementState.StepDodge: Want(dodgeClip); break;
+            case MovementState.StepDodge: DodgePose(); break;
             case MovementState.LandingRoll:
                 // A roll lasts as long as the move; a landing on the spot plays at its own pace and outlasts it.
                 if (player.Abilities.Landing.LandsInPlace) Want(rollClip);
@@ -650,6 +655,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
             case MovementState.StepDodge:
                 dodgeClip = Vector3.Dot(player.Abilities.ActionDirection, transform.right) < 0f ? dodgeLeft : dodgeRight;
                 Restart(Find(dodgeClip));
+                StartDodgeLegs(dodgeClip == dodgeLeft);
                 break;
             case MovementState.LandingRoll:
                 rollClip = RollFor();
@@ -795,18 +801,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         ApplyView();
     }
 
-    private void PlaceViewBehind()
-    {
-        if (view == null || view.parent == null) return;
-        view.localRotation = viewRotationHome;
-        Transform pivot = view.parent;
-        Vector3 origin = pivot.position, wanted = pivot.TransformPoint(thirdPersonOffset), offset = wanted - origin;
-        float distance = offset.magnitude;
-        if (distance > .01f && Physics.SphereCast(origin, .2f, offset / distance, out RaycastHit hit, distance,
-                ~(1 << gameObject.layer), QueryTriggerInteraction.Ignore))
-            wanted = origin + offset / distance * Mathf.Max(.1f, hit.distance - .05f);
-        view.position = wanted;
-    }
+    private void PlaceViewBehind() => bodyCamera.PlaceBehind(thirdPersonOffset, gameObject.layer);
 
     private void Report(string message)
     {
