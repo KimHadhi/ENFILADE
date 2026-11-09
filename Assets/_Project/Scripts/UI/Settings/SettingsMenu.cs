@@ -45,7 +45,9 @@ public sealed class SettingsMenu : MonoBehaviour
     {
         var keyboard = Keyboard.current;
         if (keyboard == null || !keyboard.escapeKey.wasPressedThisFrame) return;
-        if (DevConsole.TakesKeyboard) return; // Esc closes the developer console first
+        // Esc closes the developer console, the shop, the gun's customize menu or the perk cards first.
+        if (DevConsole.TakesKeyboard || ShopMenu.TakesKeyboard || GunCustomizeMenu.TakesKeyboard || PerkCardScreen.TakesKeyboard
+            || MainMenuScreen.TakesEscape) return;
         if (IsOpen) Close();
         else if (!ChatTookEscape()) Open();
     }

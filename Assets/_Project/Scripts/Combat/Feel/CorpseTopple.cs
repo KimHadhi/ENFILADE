@@ -19,6 +19,8 @@ public sealed class CorpseTopple : MonoBehaviour
     {
         var settings = GunFeelSettings.Instance;
         if (!Application.isPlaying || target == null || !settings.deathTopple) return null;
+        // A zombie falls as its own body (ZombieCorpse); only plain capsules need a stand-in.
+        if (target.TryGetComponent(out ZombieBody zombie) && zombie.Wears) return null;
         renderers.Clear();
         foreach (var renderer in target.GetComponentsInChildren<Renderer>())
             if ((renderer is MeshRenderer || renderer is SkinnedMeshRenderer) && renderer.enabled && renderer.gameObject.activeInHierarchy

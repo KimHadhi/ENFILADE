@@ -106,6 +106,18 @@ public sealed class GameSession : MonoBehaviour, INetworkPrefabInstanceHandler
     /// <summary>Leaves the room and returns to the main menu.</summary>
     public static void Leave() { if (current != null) current.End(""); }
 
+    /// <summary>
+    /// The host takes the whole room to another map (the campaign's next chapter, CampaignRun). Everyone's player goes
+    /// with the old scene and is made again at the new map's start, as when the room opened. False if it can't.
+    /// </summary>
+    public static bool ChangeMap(string map)
+    {
+        if (current == null || current.ending || !current.network.IsServer || !Application.CanStreamedLevelBeLoaded(map)) return false;
+        current.roomMap = map;
+        current.spawned = 0;
+        return current.network.SceneManager.LoadScene(map, LoadSceneMode.Single) == SceneEventProgressStatus.Started;
+    }
+
     private static GameSession Create()
     {
         var host = new GameObject("Game Session");

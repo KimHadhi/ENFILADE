@@ -1,0 +1,89 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: faeb944eb3d42ea4fb476e0091f6f751, type: 3}
+  m_Name: SRM12
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponData
+  displayName: SRM-12
+  hudIcon: {fileID: 0}
+  crosshairProfile: {fileID: 0}
+  category: 0
+  fireMode: 0
+  damage: 18
+  roundsPerMinute: 180
+  magazineSize: 6
+  reloadDuration: 3.083
+  range: 45
+  noiseRadius: 40
+  suppressedNoise: 0.3
+  recoilPerShot: {x: 3, y: 0.7}
+  initialReserveAmmo: 24
+  emptyReloadDuration: 5.25
+  burstCount: 1
+  burstPause: 0
+  hipSpread: 1
+  adsSpread: 0.3
+  movingSpread: 0.8
+  airborneSpread: 1.8
+  bloomPerShot: 0.45
+  maxBloom: 2
+  bloomRecovery: 3
+  headshotMultiplier: 2
+  penetration: 2
+  crouchSpread: 0.7
+  crouchRecoil: 0.65
+  autoReloadDelay: 0.2
+  pellets: 8
+  pelletSpread: 2.5
+  shellReload: 0
+  shellInsertDuration: 0.6
+  shellEndDuration: 0.6
+  reloadStartSounds: []
+  reloadStartEmptySounds: []
+  shellInsertSounds: []
+  reloadEndSounds: []
+  recoilPattern: []
+  fireModes: 
+  drawDuration: 0
+  holsterDuration: 0
+  falloffStart: 1000
+  falloffEnd: 1000
+  falloffMinimum: 1
+  recoilVertical: 0
+  recoilHorizontal: 0
+  recoilDrift: 0
+  recoilFirstShot: 1
+  recoilSettleShots: 1
+  recoilResponse: 18
+  recoilRetention: 0.15
+  adsFov: 60
+  adsMoveMultiplier: 0.65
+  adsTransitionTime: 0.18
+  highReadyRaiseHalfLife: 0.07
+  highReadyLowerHalfLife: 0.09
+  leftGrip: {x: 0.26, y: -0.285, z: 0.7}
+  sideRail: {x: 0, y: 0, z: 0}
+  viewPunch: {x: 2.2, y: 0.7, z: 1.3}
+  viewPunchFov: 1.3
+  shakeTrauma: 0.18
+  muzzleFlashScale: 1.3
+  ejectShells: 1
+  soundProfile: 2
+  fireSounds:
+  - {fileID: 8300000, guid: b37d3f197ff4f4a4c80640ae599ab207, type: 3}
+  suppressedFireSounds:
+  - {fileID: 8300000, guid: ea641be97843ab54795a17e6baa26b04, type: 3}
+  - {fileID: 8300000, guid: 4b287765198f25341902452c5c8e612d, type: 3}
+  - {fileID: 8300000, guid: e276d8df5be769c40872b44aa966159c, type: 3}
+  fireVolume: 1
+  postureDamage: 3
+  flinchMultiplier: 1.2
+  propImpulse: 2

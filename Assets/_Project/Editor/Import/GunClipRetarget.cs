@@ -21,7 +21,7 @@ using Object = UnityEngine.Object;
 /// - a Retarget Pro profile from SK_Arms_Mono to it: Retarget Pro's own preset mapping (spine, arms, fingers, legs), then
 ///   its FPS feature, which keeps both hands on the weapon bone as KINEMATION's arms hold it;
 /// - the gun goes where KINEMATION's camera sees it: its place from the camera bone, scaled to this body's arms, measured
-///   from this body's eyes, since our camera rides the eyes;
+///   from this body's eyes looking the way its hips face, since our camera rides the eyes;
 /// - a gun with a stock then moves until the stock's butt rests in this body's right shoulder pocket, on the front of the
 ///   body or its clothes: the first-person view is the body's own hold, so the third-person view shows the same (True FPS);
 ///   the chest turns toward the gun side, as a rifleman stands, as far as the support hand needs to reach its place on the
@@ -52,12 +52,17 @@ internal static class GunClipRetarget
     // mannequin sampled without its Animator, which had kept the clip off its fingers (every finger muscle 0 in 9).
     // 11: each hand placed by its knuckles, not its wrist (KnucklesOnto).
     // 13: no knuckle offset (V11/V12 put the support hand off the gun); the hands rest on the gun's surface in play.
-    private const int Version = 13;
+    // 14: one reference body, with where the gun sits from its eyes (gunFromEyes) for fitting any other body at load.
+    // 15: framed from the way the hips face, not the shoulders (HipsForward), and a gun's back end measured without the
+    // parts it parks away from itself (GunMuzzle.NearSightLine): the R08 went over the head, the Herrington off to the side.
+    // 16: the hands' reach measured as their real miss from KINEMATION's hold, and a gun the hands can't reach shouldered
+    // brought back toward the body until they do (the Herrington sat at arm's length in front of the face).
+    private const int Version = 16;
 
     // The shooting stance: the chest turns in steps of this (degrees) up to the most, until the support hand comes within
     // the slack of KINEMATION's hold on the gun (m in game) with its arm no straighter than the share (shoulder to wrist
     // over the arm's length).
-    private const float StanceStep = 2.5f, StanceMaxBlade = 40f, StanceReachSlack = .005f, StanceArmStraight = .97f;
+    private const float StanceStep = 2.5f, StanceMaxBlade = 40f, StanceReachSlack = .01f, StanceArmStraight = .97f;
 
     // Where a stock's butt rests: from the shoulder joint (RightUpperArm) toward the neck by this share of the way across,
     // under the joint by this share of the shoulder-to-neck distance, then on the front of the body there (skin or
@@ -97,10 +102,14 @@ internal static class GunClipRetarget
 
         var bakes = AssetDatabase.LoadAssetAtPath<GunBakes>(BakesPath);
         var entries = new List<GunBakes.Entry>(bakes != null ? bakes.entries : Array.Empty<GunBakes.Entry>());
+        // One reference body only: the default skin's. Every other body, a mod's character included, plays the same humanoid
+        // clips and has the gun fitted to its own eyes at load (FPSBody.FittedGunPose, from the bake's gun-from-eyes). Baking
+        // every skin took far too long, and a character added later by a mod could never have been baked (user, 2026-11-09).
         var skins = new List<GameObject>();
-        foreach (var skin in profile.Skins)
-            if (profile.ModelOf(skin) is GameObject model && !skins.Contains(model)) skins.Add(model);
-        if (profile.ModelOf(null) is GameObject fallback && !skins.Contains(fallback)) skins.Add(fallback);
+        if (profile.ModelOf(null) is GameObject reference) skins.Add(reference);
+        else
+            foreach (var skin in profile.Skins)
+                if (profile.ModelOf(skin) is GameObject model) { skins.Add(model); break; }
 
         var due = new List<GameObject>();
         foreach (var skin in skins)
@@ -123,7 +132,7 @@ internal static class GunClipRetarget
                 EditorUtility.DisplayProgressBar("ENFILADE: KINEMATION guns", $"Retargeting gun clips for {skin.name}", i / (float)due.Count);
                 try
                 {
-                    var made = Bake(skin, assets, fingers);
+                    var made = Bake(skin, assets, fingers, entries);
                     if (made == null) continue;
                     entries.RemoveAll(entry => entry.skin == skin);
                     entries.AddRange(made);
@@ -144,8 +153,16 @@ internal static class GunClipRetarget
         AssetDatabase.SaveAssets();
     }
 
+    // A gun with a shell reload or a camera rig of its own adds those, so the guns made before them keep their bakes.
     private static string SourceOf(GameObject skin, FPSBodyAssets assets, FPSBodyAssets.Gun gun)
-        => $"{Version}|{Guid(skin)}|{Guid(assets.armsModel)}|{Guid(gun.sourcePose)}|{Guid(gun.sourceReloadTactical)}|{Guid(gun.sourceReloadEmpty)}";
+    {
+        string source = $"{Version}|{Guid(skin)}|{Guid(gun.ArmsOr(assets.armsModel))}|{Guid(gun.sourcePose)}|{Guid(gun.sourceReloadTactical)}|{Guid(gun.sourceReloadEmpty)}";
+        if (gun.sourceReloadShell != null || gun.sourceReloadEnd != null || gun.sourceCameraRig != null)
+            source += $"|{Guid(gun.sourceReloadShell)}|{Guid(gun.sourceReloadEnd)}|{Guid(gun.sourceCameraRig)}";
+        if (gun.sourceDraw != null || gun.sourceHolster != null || gun.sourceInspect != null)
+            source += $"|{Guid(gun.sourceDraw)}|{Guid(gun.sourceHolster)}|{Guid(gun.sourceInspect)}";
+        return source;
+    }
 
     private static string Guid(Object asset) => asset != null ? AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(asset)) : "-";
 
@@ -159,21 +176,58 @@ internal static class GunClipRetarget
             var entry = entries[match];
             if (entry.source != SourceOf(skin, assets, gun) || entry.pose == null
                 || (gun.sourceReloadTactical != null && entry.reloadTactical == null)
-                || (gun.sourceReloadEmpty != null && entry.reloadEmpty == null)) return false;
+                || (gun.sourceReloadEmpty != null && entry.reloadEmpty == null)
+                || (gun.sourceReloadShell != null && entry.reloadShell == null)
+                || (gun.sourceReloadEnd != null && entry.reloadEnd == null)
+                || (gun.sourceDraw != null && entry.draw == null)
+                || (gun.sourceHolster != null && entry.holster == null)
+                || (gun.sourceInspect != null && entry.inspect == null)) return false;
         }
         return true;
     }
 
     // ---- One skin ----
 
-    private static List<GunBakes.Entry> Bake(GameObject skin, FPSBodyAssets assets, GunClipFingers fingers)
+    // Each of KINEMATION's skeletons the guns' clips are made for (the FPS Animation Pack's arms, the Tactical Shooter Pack's
+    // Operator) gets its own Retarget Pro profile onto the skin. A skeleton that can't be baked keeps its guns' older bakes.
+    private static List<GunBakes.Entry> Bake(GameObject skin, FPSBodyAssets assets, GunClipFingers fingers, List<GunBakes.Entry> previous)
     {
         string dir = $"{Folder}/{FileName(skin.name)}";
         Directory.CreateDirectory(dir);
         AssetDatabase.Refresh();
 
-        var target = MakeTarget(skin, $"{dir}/{FileName(skin.name)}_RetargetTarget.prefab", ArmsFacing(assets.armsModel));
-        var profile = MakeProfile(assets.armsModel, target, dir, out var stance, out var fps);
+        var sources = new List<GameObject>();
+        foreach (var gun in assets.guns)
+        {
+            var arms = gun.ArmsOr(assets.armsModel);
+            if (gun.weapon != null && gun.sourcePose != null && arms != null && !sources.Contains(arms)) sources.Add(arms);
+        }
+        var made = new List<GunBakes.Entry>();
+        foreach (var arms in sources)
+        {
+            var group = BakeFrom(skin, arms, assets, fingers, dir);
+            if (group != null) { made.AddRange(group); continue; }
+            foreach (var gun in assets.guns)
+                if (gun.ArmsOr(assets.armsModel) == arms)
+                    made.AddRange(previous.FindAll(entry => entry.skin == skin && entry.weapon == gun.weapon));
+        }
+        return made.Count > 0 ? made : null;
+    }
+
+    // The first camera rig given for a skeleton's guns (FPSBodyAssets.Gun.sourceCameraRig); null: the arms' CameraSocket.
+    private static GameObject CameraRigOf(FPSBodyAssets assets, GameObject arms)
+    {
+        foreach (var gun in assets.guns)
+            if (gun.sourceCameraRig != null && gun.ArmsOr(assets.armsModel) == arms) return gun.sourceCameraRig;
+        return null;
+    }
+
+    private static List<GunBakes.Entry> BakeFrom(GameObject skin, GameObject arms, FPSBodyAssets assets, GunClipFingers fingers, string dir)
+    {
+        // The FPS Animation Pack's arms keep the file names the bakes always had.
+        string targetName = arms == assets.armsModel ? FileName(skin.name) : $"{FileName(skin.name)}_{FileName(arms.name)}";
+        var target = MakeTarget(skin, $"{dir}/{targetName}_RetargetTarget.prefab", ArmsFacing(arms));
+        var profile = MakeProfile(arms, target, dir, out var stance, out var fps);
         if (profile == null) return null;
 
         var baker = new RetargetAnimBaker();
@@ -196,29 +250,31 @@ internal static class GunClipRetarget
             var source = baker.SourcePreviewInstance.transform;
             var body = baker.TargetPreviewInstance.transform;
             var sourceWeapon = Find(source, WeaponBone);
-            var sourceCamera = AddCameraSocket(source);
+            var cameraRig = CameraRigOf(assets, arms);
+            var sourceCamera = cameraRig != null ? AddCameraFrom(source, cameraRig) : AddCameraSocket(source);
             var bodyWeapon = Find(body, WeaponBone);
             if (sourceWeapon == null || bodyWeapon == null)
             {
-                Debug.LogWarning($"GunClipRetarget: {assets.armsModel.name} or {target.name} has no {WeaponBone}; the guns can't be placed.", profile);
+                Debug.LogWarning($"GunClipRetarget: {arms.name} or {target.name} has no {WeaponBone}; the guns can't be placed.", profile);
                 return null;
             }
             CheckFacing(source, body, skin);
             if (Mathf.Abs(Mathf.DeltaAngle(Yaw(source.InverseTransformDirection(SourceForward(source))), 0f)) > 10f)
-                Debug.LogWarning($"GunClipRetarget: {assets.armsModel.name} does not face +Z in its own model space; the guns may sit turned on the bodies.", assets.armsModel);
+                Debug.LogWarning($"GunClipRetarget: {arms.name} does not face +Z in its own model space; the guns may sit turned on the bodies.", arms);
 
-            var sourceLeft = FindLike(source, "hand_l");
             var made = new List<GunBakes.Entry>();
             foreach (var gun in assets.guns)
             {
-                if (gun.weapon == null || gun.sourcePose == null) continue;
-                // Where the body faces, taken standing square: the stance turns the shoulders, not where the gun points.
+                if (gun.weapon == null || gun.sourcePose == null || gun.ArmsOr(assets.armsModel) != arms) continue;
+                // Where the body faces: the way its hips face, as the camera looks. KINEMATION's Tactical Shooter Pack
+                // stands with the shoulders turned 14° to 47° off the hips (the Herrington most), and framed from the
+                // shoulders the guns sat turned that far to the left (user, 2026-11-09: the Herrington's arms off to
+                // the side). Our stance turns the shoulders, not the hips.
                 stance.blade = 0f;
                 fps.weaponOffset = Vector3.zero;
                 baker.RetargetAtTime(gun.sourcePose, null, 0f);
-                Vector3 facing = Forward(body);
+                Vector3 facing = HipsForward(body);
                 bool hasStock = MeasureStock(gun.prefab, out var stock);
-                float supportReach = sourceLeft != null ? Vector3.Distance(sourceLeft.position, sourceWeapon.position) : 0f;
 
                 // The gun where KINEMATION's camera sees it (its CameraSocket, in the camera's own axes), seen the same way
                 // from this body's eyes looking ahead, in true metres in game (the bake is at 1/fit of the size the body
@@ -226,8 +282,15 @@ internal static class GunClipRetarget
                 // with a stock then goes back along itself until its butt rests in the shoulder pocket, twice again, as the
                 // arms reach for it anew.
                 Vector3 fromCamera = Vector3.zero;
-                Placement Place(float blade)
+                // Whether the butt went to the shoulder: the gun reaches back past the wrist (ToShoulder), not only that
+                // its shape could be measured (hasStock), which a pistol's can too.
+                bool shouldered = false;
+                // How much of the way to the shoulder the gun went (1: all of it; less where the hands couldn't reach).
+                float toShoulder = 1f;
+                Placement Place(float blade, bool pullBack)
                 {
+                    shouldered = false;
+                    toShoulder = 1f;
                     stance.blade = blade;
                     fps.weaponOffset = fps.rightHandOffset = fps.leftHandOffset = Vector3.zero;
                     baker.RetargetAtTime(gun.sourcePose, null, 0f);
@@ -240,31 +303,48 @@ internal static class GunClipRetarget
                         fps.weaponOffset += desired - body.InverseTransformPoint(bodyWeapon.position);
                         baker.RetargetAtTime(gun.sourcePose, null, 0f);
                     }
+                    Vector3 framedOffset = fps.weaponOffset;
                     for (int pass = 0; framed && hasStock && pass < 2; pass++)
                     {
                         if (!ToShoulder(body, bodyWeapon, stock, fit, facing, out Vector3 move, out _, out _)) break;
+                        shouldered = true;
                         fps.weaponOffset += move;
                         baker.RetargetAtTime(gun.sourcePose, null, 0f);
                     }
                     // The hands stay where Retarget Pro puts them (V10); in play they rest on the gun's real surface
                     // (PlayerBodyHands.GunFingers). Moving them by the knuckles here put the support hand off the gun.
-                    return Measure(body, bodyWeapon, fit, supportReach);
+                    var placement = Measure(body, bodyWeapon, source, sourceWeapon, fit);
+                    if (!pullBack || !shouldered || placement.Reaches) return placement;
+                    // Hands that can't reach the gun shouldered, even with the chest turned, bring it back toward where
+                    // KINEMATION's camera framed it until they do: a long gun on short arms (the Herrington's pump is
+                    // 0.75 m from its butt) went out to arm's length with both hands short of it (user, 2026-11-09).
+                    Vector3 shoulderedOffset = fps.weaponOffset;
+                    for (int step = 9; step >= 0; step--)
+                    {
+                        toShoulder = step / 10f;
+                        fps.weaponOffset = Vector3.Lerp(framedOffset, shoulderedOffset, toShoulder);
+                        baker.RetargetAtTime(gun.sourcePose, null, 0f);
+                        placement = Measure(body, bodyWeapon, source, sourceWeapon, fit);
+                        if (placement.Reaches) break;
+                    }
+                    return placement;
                 }
 
-                // Shouldered, the chest turns toward the gun side only as far as the support hand needs to reach its place
-                // on the gun with the arm still bent (ShootingStanceFeature). A gun without a stock is held square.
+                // Shouldered, the chest turns toward the gun side only as far as the hands need to reach their places on
+                // the gun with the support arm still bent (ShootingStanceFeature); if they still can't, the gun comes back
+                // toward the body until they do. A gun without a stock is held square.
                 float bladed = 0f;
-                var placed = Place(0f);
-                if (hasStock && !placed.Reaches)
+                var placed = Place(0f, false);
+                if (shouldered && !placed.Reaches)
                 {
                     var best = placed;
                     for (float blade = StanceStep; blade <= StanceMaxBlade + .001f; blade += StanceStep)
                     {
-                        var trial = Place(blade);
-                        if (trial.Reaches || trial.shortfall < best.shortfall - .001f) { best = trial; bladed = blade; }
+                        var trial = Place(blade, false);
+                        if (trial.Reaches || trial.miss < best.miss - .001f) { best = trial; bladed = blade; }
                         if (trial.Reaches) break;
                     }
-                    placed = Place(bladed);
+                    placed = Place(bladed, true);
                 }
                 EditorUtility.SetDirty(fps);
                 EditorUtility.SetDirty(stance);
@@ -273,8 +353,9 @@ internal static class GunClipRetarget
                     : ToShoulder(body, bodyWeapon, stock, fit, facing, out Vector3 rest, out float reach, out _)
                         ? $"butt in the shoulder pocket, {rest.magnitude * fit:0.000} m off (reaches {reach:0.000} m behind the wrist)"
                         : $"no stock (back end {reach:0.000} m behind the wrist)";
-                shoulder += hasStock && placed.shortfall >= 0f
-                    ? $"; chest turned {bladed:0.#}°, support hand {placed.shortfall:0.000} m short of KINEMATION's hold, its arm {placed.extension:0.00} straight"
+                shoulder += shouldered
+                    ? $"; chest turned {bladed:0.#}°, hands {placed.miss:0.000} m off KINEMATION's hold, support arm {placed.extension:0.00} straight"
+                        + (toShoulder < 1f ? $", gun brought back to {toShoulder * 100f:0}% of the way to the shoulder" : "")
                     : "; standing square";
                 var entry = new GunBakes.Entry
                 {
@@ -285,6 +366,14 @@ internal static class GunClipRetarget
                     source = SourceOf(skin, assets, gun)
                 };
                 MeasureGrip(body, bodyWeapon, ref entry);
+                // Where the gun sits from the eyes (metres in game, in the eyes' frame facing the way the hips do), so any
+                // other humanoid has it put the same way from its own eyes at load (FPSBody.FittedGunPose).
+                if (EyeFrame(body, out Vector3 eyesAt, out Quaternion eyeFrame))
+                {
+                    entry.gunFromEyes = Quaternion.Inverse(eyeFrame) * (entry.gunPosition - eyesAt) * fit;
+                    entry.gunTurnFromEyes = Quaternion.Inverse(eyeFrame) * entry.gunRotation;
+                    entry.hasEyeFrame = true;
+                }
                 Report(skin, gun.weapon, source, sourceWeapon, body, bodyWeapon, entry, fit, trueSize, fromCamera, facing, shoulder);
 
                 // Each clip's fingers are KINEMATION's own, through Unity's humanoid muscles (GunClipFingers).
@@ -292,6 +381,11 @@ internal static class GunClipRetarget
                 entry.pose = fingers.Apply(gun.sourcePose, BakeClip(baker, gun.sourcePose, $"{dir}/{name}_Pose.anim"));
                 entry.reloadTactical = fingers.Apply(gun.sourceReloadTactical, BakeClip(baker, gun.sourceReloadTactical, $"{dir}/{name}_ReloadTactical.anim"));
                 entry.reloadEmpty = fingers.Apply(gun.sourceReloadEmpty, BakeClip(baker, gun.sourceReloadEmpty, $"{dir}/{name}_ReloadEmpty.anim"));
+                entry.reloadShell = fingers.Apply(gun.sourceReloadShell, BakeClip(baker, gun.sourceReloadShell, $"{dir}/{name}_ReloadShell.anim"));
+                entry.reloadEnd = fingers.Apply(gun.sourceReloadEnd, BakeClip(baker, gun.sourceReloadEnd, $"{dir}/{name}_ReloadEnd.anim"));
+                entry.draw = fingers.Apply(gun.sourceDraw, BakeClip(baker, gun.sourceDraw, $"{dir}/{name}_Draw.anim"));
+                entry.holster = fingers.Apply(gun.sourceHolster, BakeClip(baker, gun.sourceHolster, $"{dir}/{name}_Holster.anim"));
+                entry.inspect = fingers.Apply(gun.sourceInspect, BakeClip(baker, gun.sourceInspect, $"{dir}/{name}_Inspect.anim"));
                 if (entry.pose != null) made.Add(entry);
             }
             return made;
@@ -439,6 +533,23 @@ internal static class GunClipRetarget
         return made;
     }
 
+    // Another pack's camera point: the Camera on its rig (the Tactical Shooter Pack's FPCamera on its character's head),
+    // copied onto the source skeleton under the bone of the same name, with the same local pose, as AddCameraSocket does.
+    private static Transform AddCameraFrom(Transform source, GameObject rig)
+    {
+        var camera = rig.GetComponentInChildren<Camera>(true);
+        var parent = camera != null && camera.transform.parent != null ? FindLike(source, camera.transform.parent.name) : null;
+        if (parent == null)
+        {
+            Debug.LogWarning($"GunClipRetarget: {rig.name} has no camera on a bone of {source.name}; its guns are placed where Retarget Pro puts them.", rig);
+            return null;
+        }
+        var made = new GameObject(CameraSocketName) { hideFlags = HideFlags.DontSave }.transform;
+        made.SetParent(parent, false);
+        made.SetLocalPositionAndRotation(camera.transform.localPosition, camera.transform.localRotation);
+        return made;
+    }
+
     // ---- True size ----
 
     // The scale the game fits this skin to (PlayerBody.FitScaleOf, eyes to the standing camera height of Player.prefab).
@@ -505,26 +616,37 @@ internal static class GunClipRetarget
 
     // ---- The support hand ----
 
-    // How the support hand holds the gun as the body is placed: how much nearer the gun bone it sits than KINEMATION's
-    // hold (m in game; Retarget Pro's FPS feature leaves a hand that can't reach short of it) and how straight its arm is.
+    // How the hands hold the gun as the body is placed: how far the farther wrist is from where KINEMATION's hold puts it on
+    // the gun (m in game; Retarget Pro's FPS feature leaves a hand that can't reach short of its place), and how straight the
+    // support arm is. Measured against the hold itself, not the gun bone: a gun whose bone is ahead of the support hand
+    // (the Herrington's, at its pump) read as reaching when its hands fell short.
     private struct Placement
     {
-        public float shortfall, extension;
-        public bool Reaches => shortfall <= StanceReachSlack && extension <= StanceArmStraight;
+        public float miss, extension;
+        public bool Reaches => miss <= StanceReachSlack && extension <= StanceArmStraight;
     }
 
-    private static Placement Measure(Transform body, Transform weapon, float fit, float supportReach)
+    private static Placement Measure(Transform body, Transform weapon, Transform source, Transform sourceWeapon, float fit)
     {
         var shoulder = Human(body, HumanBodyBones.LeftUpperArm);
         var elbow = Human(body, HumanBodyBones.LeftLowerArm);
         var wrist = Human(body, HumanBodyBones.LeftHand);
-        if (shoulder == null || elbow == null || wrist == null || supportReach <= 0f) return new Placement { shortfall = -1f, extension = 0f };
+        if (shoulder == null || elbow == null || wrist == null) return new Placement { miss = 0f, extension = 0f };
         float arm = Vector3.Distance(shoulder.position, elbow.position) + Vector3.Distance(elbow.position, wrist.position);
         return new Placement
         {
-            shortfall = supportReach - Vector3.Distance(wrist.position, weapon.position) * fit,
+            miss = Mathf.Max(Miss(wrist, FindLike(source, "hand_l")), Miss(Human(body, HumanBodyBones.RightHand), FindLike(source, "hand_r"))),
             extension = arm > 1e-5f ? Vector3.Distance(shoulder.position, wrist.position) / arm : 0f
         };
+
+        // Where the FPS feature asks this wrist to be: KINEMATION's hand on its gun, carried onto ours at the bake's size.
+        float Miss(Transform hand, Transform sourceHand)
+        {
+            if (hand == null || sourceHand == null) return 0f;
+            Vector3 wanted = weapon.position + weapon.rotation * (Quaternion.Inverse(sourceWeapon.rotation) * (sourceHand.position - sourceWeapon.position))
+                / Mathf.Max(.01f, fit);
+            return Vector3.Distance(hand.position, wanted) * fit;
+        }
     }
 
     // ---- The stock in the shoulder ----
@@ -706,6 +828,21 @@ internal static class GunClipRetarget
         return true;
     }
 
+    // The eyes in the body's model space and the frame they look out of: ahead the way the hips face (the shooting stance
+    // turns the shoulders, not the hips), up the model's up. FPSBody.EyeFrame measures any body the same way at load.
+    private static bool EyeFrame(Transform body, out Vector3 eyes, out Quaternion frame)
+    {
+        eyes = default;
+        frame = Quaternion.identity;
+        var left = Human(body, HumanBodyBones.LeftUpperLeg);
+        var right = Human(body, HumanBodyBones.RightUpperLeg);
+        if (left == null || right == null) return false;
+        Vector3 ahead = Vector3.Cross(body.InverseTransformPoint(right.position) - body.InverseTransformPoint(left.position), Vector3.up);
+        if (ahead.sqrMagnitude < 1e-8f) return false;
+        frame = Quaternion.LookRotation(ahead.normalized, Vector3.up);
+        return Eyes(body, body.TransformDirection(ahead.normalized), out eyes);
+    }
+
     // Both skeletons must face the same way in their own model space for Retarget Pro's FPS feature to carry the gun
     // across as it is (MakeTarget turns the body for it); a mismatch left is reported, since the guns would sit turned.
     private static void CheckFacing(Transform source, Transform body, GameObject skin)
@@ -761,6 +898,16 @@ internal static class GunClipRetarget
         if (left == null || right == null) return body.forward;
         Vector3 forward = Vector3.Cross(right.position - left.position, body.up);
         return forward.sqrMagnitude > 1e-6f ? forward.normalized : body.forward;
+    }
+
+    // The way the hips face (from the thighs, as EyeFrame takes it); without both thighs, the shoulders' way.
+    private static Vector3 HipsForward(Transform body)
+    {
+        var left = Human(body, HumanBodyBones.LeftUpperLeg);
+        var right = Human(body, HumanBodyBones.RightUpperLeg);
+        if (left == null || right == null) return Forward(body);
+        Vector3 forward = Vector3.Cross(right.position - left.position, body.up);
+        return forward.sqrMagnitude > 1e-6f ? forward.normalized : Forward(body);
     }
 
     private static Transform Human(Transform body, HumanBodyBones bone) => PreviewHumanoid.Bone(body, bone);

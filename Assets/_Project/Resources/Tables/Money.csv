@@ -1,0 +1,3 @@
+﻿id,wonPerPoint,symbol,leftoverShare,dropAmount,pickupReach
+#설명,처치 점수 1점이 돈 얼마인지,돈 숫자 앞에 붙는 기호 (비우면 기호 없이 돈 아이콘만),(6E 클래스 성장용이고 화면엔 안 나옴) 남은 돈을 성장 점수로 셀 때의 비율(0~1),G로 한 번에 떨구는 돈,떨군 돈을 줍는 거리(m)
+Default,1,,0.5,500,1.3

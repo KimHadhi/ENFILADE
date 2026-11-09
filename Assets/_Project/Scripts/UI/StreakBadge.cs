@@ -12,8 +12,9 @@ public sealed class KillFeedLook
 {
     [Min(1)] public int flameFrom = 3, mostNumeral = 25;
     [Range(0f, 1f)] public float ownPlateStrength = .55f;
-    [Min(0f), Tooltip("Seconds added to the score's multi-kill window to keep a streak going.")]
-    public float streakGrace = 2.5f;
+    [Min(0f), Tooltip("Seconds added to the score's multi-kill window to keep a streak going. The user found 2.5 (a 4.1 s window) " +
+        "too long and 2.0 s too short; .9 makes it 2.5 s, 2026-11-09.")]
+    public float streakGrace = .9f;
     [Min(1f), Tooltip("How far the fire runs left of the row at flameFrom and on the last numeral, px. The longest is under 190, the image's reach.")]
     public float flameShortest = 74f, flameLongest = 180f;
     [Range(.1f, 1f), Tooltip("Below 1, the fire lengthens fastest early on, where most streaks end.")]

@@ -403,9 +403,6 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     {
         if (rebuild) Build();
         if (!graph.IsValid() || player == null) return;
-        // Temporary (PlayerBody.Probe): last frame's final pose, hands included, before this frame's animation.
-        ProbeStanding();
-        ProbeBody();
         float dt = Time.deltaTime;
         if (HoldsForPause() || dt <= 0f) return;
         var keyboard = Keyboard.current;

@@ -61,7 +61,9 @@ public sealed class MeleeAttackSweep
                 continue;
             }
             contacted.Add(identity);
-            var result = receiver.ReceiveHit(new DamageHit(attackId, damage, DamageKind.Attack,
+            // This PC's own player's fists carry their perk (PlayerPerks).
+            float dealt = player.IsLocal ? damage * PlayerPerks.FistFactor : damage;
+            var result = receiver.ReceiveHit(new DamageHit(attackId, dealt, DamageKind.Attack,
                 contact.point, forward, player.gameObject, true, posture));
             if (result == DamageResult.Blocked || result == DamageResult.Parried) { Cancel(); break; }
             if (result != DamageResult.Damaged) continue;

@@ -2,7 +2,7 @@ using UnityEngine;
 
 /// <summary>
 /// While a target can be executed, its body takes a faint red tint and a red outline, so the chance shows on the enemy
-/// itself as well as on its bar. Added on demand by MeleeCombatTarget. Runs on real time so the posture break's slow
+/// itself as well as on its bar. An unaware zombie the local player could take down from behind shows it too. Added on demand by MeleeCombatTarget. Runs on real time so the posture break's slow
 /// motion cannot delay it; the look is in Feedback → Executable body.
 /// </summary>
 [DisallowMultipleComponent]
@@ -18,11 +18,20 @@ public sealed class ExecutableHighlight : MonoBehaviour
     {
         if (Time.timeScale <= 0f) return;
         float fade = Mathf.Max(.01f, CombatFeedbackSettings.InstanceOrDefaults.executableBodyFade);
-        float next = Mathf.MoveTowards(amount, target.CanExecute ? 1f : 0f, Time.unscaledDeltaTime / fade);
+        float next = Mathf.MoveTowards(amount, target.CanExecute || TakenDownHere() ? 1f : 0f, Time.unscaledDeltaTime / fade);
         if (next == amount) return;
         amount = next;
         if (overlay == null) overlay = HitFlashRenderer.For(this);
         overlay.SetMark(amount);
+    }
+
+    // A stealth kill depends on where the player stands, so it shows only to the player who could make it, and only
+    // while it is theirs to take (their F or left-click target).
+    private bool TakenDownHere()
+    {
+        var local = PlayerRoster.Local;
+        var execution = local != null ? local.Execution : null;
+        return execution != null && (execution.Candidate == target || execution.DeathblowCandidate == target) && !target.CanExecute;
     }
 
     private void OnDisable()

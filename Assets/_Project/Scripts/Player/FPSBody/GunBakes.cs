@@ -20,6 +20,13 @@ public sealed class GunBakes : ScriptableObject
         public AnimationClip pose;
         public AnimationClip reloadTactical;
         public AnimationClip reloadEmpty;
+        [Tooltip("A shell reload's shell and end (its two starts are Reload Tactical and Reload Empty).")]
+        public AnimationClip reloadShell;
+        public AnimationClip reloadEnd;
+        [Tooltip("Drawing, putting away and looking the gun over.")]
+        public AnimationClip draw;
+        public AnimationClip holster;
+        public AnimationClip inspect;
         [Tooltip("Where the gun (KINEMATION's ik_hand_gun) sits in the pose, in the model's own space.")]
         public Vector3 gunPosition;
         public Quaternion gunRotation;
@@ -30,6 +37,11 @@ public sealed class GunBakes : ScriptableObject
         public Vector3 leftGripPosition;
         [Tooltip("The grip was measured (bakes from version 5 on).")]
         public bool hasGrip;
+        [Tooltip("Where the gun sits from the body's eyes in the pose, in metres in game, in the frame of the eyes facing the way the "
+            + "hips do (z ahead, y up): any other humanoid has the gun put there from its own eyes (FPSBody.FittedGunPose).")]
+        public Vector3 gunFromEyes;
+        public Quaternion gunTurnFromEyes;
+        public bool hasEyeFrame;
         [Tooltip("What the clips were made from; a change makes the editor make them again.")]
         public string source;
     }
@@ -42,8 +54,8 @@ public sealed class GunBakes : ScriptableObject
     public static GunBakes Instance => cached != null ? cached : cached = Resources.Load<GunBakes>(ResourcePath);
 
     /// <summary>
-    /// The clips made for <paramref name="skin"/>, or else the first skin's: humanoid clips play on any humanoid, only less
-    /// exactly on a body they were not made for.
+    /// The clips made for <paramref name="skin"/>, or else the reference body's: humanoid clips play on any humanoid, and the
+    /// gun is fitted to the body's own eyes (FPSBody.FittedGunPose). Only the default skin is baked now.
     /// </summary>
     public bool TryGet(GameObject skin, WeaponData weapon, out Entry entry, out bool exact)
     {

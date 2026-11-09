@@ -1,3 +1,5 @@
 ﻿id,value
-#설명 (pingDivisor = 실제 핑을 이 값으로 나눠 표시. 1이면 실제 핑),값
+#설명 (pingDivisor = 실제 핑을 이 값으로 나눠 표시. 1이면 실제 핑 / friendlyFire = 방을 열 때 아군 사격. 1 켜짐 0 꺼짐. 방장이 /ff로 바꾼다 / friendlyFireShare = 아군이 맞을 때 받는 피해 비율. 1이면 그대로),값
 pingDivisor,3
+friendlyFire,0
+friendlyFireShare,1

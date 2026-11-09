@@ -49,6 +49,14 @@ public sealed class CharacterScreenView
         panel.gameObject.SetActive(true);
     }
 
+    public bool IsOpen => panel.gameObject.activeSelf;
+
+    /// <summary>Goes back to the menu if the screen is open (the lobby's 플레이 tab).</summary>
+    public void Close()
+    {
+        if (panel.gameObject.activeSelf) Hide();
+    }
+
     private void Hide()
     {
         panel.gameObject.SetActive(false);

@@ -31,10 +31,6 @@ public sealed partial class PlayerBodyHands
     /// <summary>The hands have the body down for them, so its feet's room is still wanted (PlayerBody.VaultHeight).</summary>
     internal bool PullsBody => pulled > 0f;
 
-    /// <summary>Temporary, for Logs/body-probe.txt: the pull, its room and each hand's state.</summary>
-    internal string PullProbe => $"pull {pulled:0.000} room {pullRoom:0.000} held back {edgeHeld.magnitude:0.000} "
-        + $"hands {edgeHands[0]}/{edgeHands[1]} fingers {edgeContacts[0]:0.00}/{edgeContacts[1]:0.00}";
-
     private void ResetPull() => pulled = pullSpeed = pullRoom = 0f;
 
     /// <summary>

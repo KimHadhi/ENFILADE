@@ -12,6 +12,9 @@ public sealed class WeaponFeedback : MonoBehaviour
     private const int CasingCount = 24;
     // How far someone else's gun carries (m); its mechanical sounds carry FeelAudio's usual distance.
     private const float ShotReach = 60f, MechanicalReach = 14f;
+    // A suppressed shot is heard this far (m), and without suppressed clips of its own the gun's shot plays this loud and
+    // this high.
+    private const float SuppressedReach = 25f, SuppressedVolume = .4f, SuppressedPitch = 1.15f;
     private static readonly Color Brass = new Color(.86f, .64f, .27f);
 
     private struct Casing
@@ -74,6 +77,10 @@ public sealed class WeaponFeedback : MonoBehaviour
         weapon.DryFired += OnDryFire;
         weapon.ReloadStarted += OnReloadStarted;
         weapon.ReloadCompleted += OnReloadCompleted;
+        weapon.ReloadStepped += OnReloadStepped;
+        weapon.FireModeChanged += OnFireModeChanged;
+        weapon.SightChanged += OnSightChanged;
+        weapon.AttachmentChanged += OnSightChanged;
     }
 
     private void OnDisable()
@@ -84,6 +91,10 @@ public sealed class WeaponFeedback : MonoBehaviour
             weapon.DryFired -= OnDryFire;
             weapon.ReloadStarted -= OnReloadStarted;
             weapon.ReloadCompleted -= OnReloadCompleted;
+            weapon.ReloadStepped -= OnReloadStepped;
+            weapon.FireModeChanged -= OnFireModeChanged;
+            weapon.SightChanged -= OnSightChanged;
+            weapon.AttachmentChanged -= OnSightChanged;
         }
         trackingReload = false;
     }
@@ -96,14 +107,25 @@ public sealed class WeaponFeedback : MonoBehaviour
     private void OnShot(WeaponShot shot)
     {
         var data = weapon.EquippedData;
-        if (data == null) return;
+        // A shotgun's other pellets: the shot was heard, felt and ejected with its first.
+        if (data == null || shot.Pellet > 0) return;
         var settings = GunFeelSettings.Instance;
         EnsureView();
         float ads = weapon.AimBlend;
 
         if (settings.gunSounds)
-            Sound(FeelAudio.ShotFor(data.SoundProfile), data.FireSounds, settings.gunshotVolume * data.FireVolume,
-                1f + Random.Range(-1f, 1f) * settings.gunshotPitchJitter, ShotReach);
+        {
+            float pitch = 1f + Random.Range(-1f, 1f) * settings.gunshotPitchJitter;
+            // A suppressor: the pack's suppressed shot, or the gun's own shot quieter and higher without one, heard nearer.
+            bool own = weapon.Suppressed && data.SuppressedFireSounds != null && data.SuppressedFireSounds.Length > 0;
+            if (!weapon.Suppressed)
+                Sound(FeelAudio.ShotFor(data.SoundProfile), data.FireSounds, settings.gunshotVolume * data.FireVolume, pitch, ShotReach);
+            else if (own)
+                Sound(FeelAudio.ShotFor(data.SoundProfile), data.SuppressedFireSounds, settings.gunshotVolume * data.FireVolume, pitch, SuppressedReach);
+            else
+                Sound(FeelAudio.ShotFor(data.SoundProfile), data.FireSounds, settings.gunshotVolume * data.FireVolume * SuppressedVolume,
+                    pitch * SuppressedPitch, SuppressedReach);
+        }
         if (IsMine) AmmoCue(shot.AmmoAfterShot, data, settings);
         if (settings.shellCasings && data.EjectShells) Eject();
         if (!IsMine) return;
@@ -112,9 +134,14 @@ public sealed class WeaponFeedback : MonoBehaviour
         {
             float scale = Mathf.Lerp(1f, settings.adsViewPunchScale, ads);
             Vector3 p = data.ViewPunch;
-            var kick = new Vector3(p.x * Random.Range(.85f, 1.1f), p.y * Random.Range(-1f, 1f),
-                p.z * Random.Range(.55f, 1f) * (Random.value < .5f ? -1f : 1f));
-            punch.Punch(kick * scale, data.ViewPunchFov * scale, data.ShakeTrauma * scale);
+            // Down the sights the view only kicks up, as Rainbow Six Siege's does: the random sideways jolt, the roll and the
+            // shake fade out with the aim, since they rocked the sight off the target (user, 2026-11-09: "흔들거려서").
+            float loose = 1f - ads;
+            // The lift that springs back is only a flinch on top of the recoil that stays (PlayerLook); down the sights it is
+            // half again, or the view bounced up and down with every shot.
+            var kick = new Vector3(p.x * Random.Range(.85f, 1.1f) * Mathf.Lerp(1f, .5f, ads), p.y * Random.Range(-1f, 1f) * loose,
+                p.z * Random.Range(.55f, 1f) * (Random.value < .5f ? -1f : 1f) * loose);
+            punch.Punch(kick * scale, data.ViewPunchFov * scale, data.ShakeTrauma * scale * loose);
         }
         if (crosshair == null) crosshair = DynamicCrosshairView.FindHud();
         crosshair?.Kick(4f + data.ViewPunch.x * 4f);
@@ -166,8 +193,18 @@ public sealed class WeaponFeedback : MonoBehaviour
     private void OnReloadStarted(bool empty)
     {
         var settings = GunFeelSettings.Instance;
-        trackingReload = true; magOutPlayed = magInPlayed = boltBackPlayed = boltPlayed = false; emptyReload = empty;
         var data = weapon != null ? weapon.EquippedData : null;
+        // A shell reload has a sound for each step, made for its clip (KINEMATION's Tactical Shooter Pack), played as the
+        // step starts; there is no magazine to time.
+        if (data != null && data.ShellReload)
+        {
+            trackingReload = false;
+            if (settings.gunSounds)
+                Sound(FeelSound.MagOut, empty ? data.ReloadStartEmptySounds : data.ReloadStartSounds, settings.mechanicalVolume,
+                    Random.Range(.98f, 1.02f), MechanicalReach, Gun);
+            return;
+        }
+        trackingReload = true; magOutPlayed = magInPlayed = boltBackPlayed = boltPlayed = false; emptyReload = empty;
         timedReload = data != null && FPSBody.Holding(weapon) != null
             && ReloadMoments.TryGet(data, empty, out moments);
         if (timedReload)
@@ -181,6 +218,31 @@ public sealed class WeaponFeedback : MonoBehaviour
     }
 
     private void OnReloadCompleted() => trackingReload = false;
+
+    // The selector clicks over (B), a sight or part is swapped (the customize menu, C): a short mechanical click, higher for the selector.
+    private void OnFireModeChanged(WeaponFireMode mode)
+    {
+        var settings = GunFeelSettings.Instance;
+        if (settings.gunSounds) Sound(FeelSound.DryFire, settings.dryFireSounds, settings.mechanicalVolume * .7f, 1.35f, MechanicalReach, Gun);
+    }
+
+    private void OnSightChanged()
+    {
+        var settings = GunFeelSettings.Instance;
+        if (settings.gunSounds) Sound(FeelSound.DryFire, settings.dryFireSounds, settings.mechanicalVolume * .5f, .85f, MechanicalReach, Gun);
+    }
+
+    // A shell reload's next step: a shell going in, or its end (the pump racked).
+    private void OnReloadStepped(WeaponRuntime.ReloadStep step)
+    {
+        var settings = GunFeelSettings.Instance;
+        var data = weapon != null ? weapon.EquippedData : null;
+        if (data == null || !settings.gunSounds) return;
+        if (step == WeaponRuntime.ReloadStep.Shell)
+            Sound(FeelSound.MagIn, data.ShellInsertSounds, settings.mechanicalVolume, Random.Range(.97f, 1.03f), MechanicalReach, Gun);
+        else if (step == WeaponRuntime.ReloadStep.End)
+            Sound(FeelSound.Bolt, data.ReloadEndSounds, settings.mechanicalVolume, Random.Range(.98f, 1.02f), MechanicalReach, Gun);
+    }
 
     private void UpdateReload()
     {

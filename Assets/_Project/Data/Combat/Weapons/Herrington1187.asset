@@ -1,0 +1,95 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: faeb944eb3d42ea4fb476e0091f6f751, type: 3}
+  m_Name: Herrington1187
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponData
+  displayName: Herrington 11-87
+  hudIcon: {fileID: 0}
+  crosshairProfile: {fileID: 0}
+  category: 0
+  fireMode: 0
+  damage: 18
+  roundsPerMinute: 240
+  magazineSize: 8
+  reloadDuration: 0.667
+  range: 40
+  noiseRadius: 40
+  suppressedNoise: 0.3
+  recoilPerShot: {x: 3.5, y: 0.8}
+  initialReserveAmmo: 32
+  emptyReloadDuration: 2.667
+  burstCount: 1
+  burstPause: 0
+  hipSpread: 1
+  adsSpread: 0.35
+  movingSpread: 0.8
+  airborneSpread: 1.8
+  bloomPerShot: 0.5
+  maxBloom: 2
+  bloomRecovery: 3
+  headshotMultiplier: 2
+  penetration: 2
+  crouchSpread: 0.7
+  crouchRecoil: 0.65
+  autoReloadDelay: 0.2
+  pellets: 9
+  pelletSpread: 2.5
+  shellReload: 1
+  shellInsertDuration: 0.917
+  shellEndDuration: 0.85
+  reloadStartSounds:
+  - {fileID: 8300000, guid: 9f45ff19508ccb0408ca44b41994d707, type: 3}
+  reloadStartEmptySounds:
+  - {fileID: 8300000, guid: 17cb80c20b8a605439b9676481b93750, type: 3}
+  shellInsertSounds:
+  - {fileID: 8300000, guid: ea250b77dd6f4c54ababb300821d7967, type: 3}
+  reloadEndSounds:
+  - {fileID: 8300000, guid: 309ebc62f01709d42aca03a96befcd36, type: 3}
+  recoilPattern: []
+  fireModes: 
+  drawDuration: 0
+  holsterDuration: 0
+  falloffStart: 1000
+  falloffEnd: 1000
+  falloffMinimum: 1
+  recoilVertical: 0
+  recoilHorizontal: 0
+  recoilDrift: 0
+  recoilFirstShot: 1
+  recoilSettleShots: 1
+  recoilResponse: 18
+  recoilRetention: 0.15
+  adsFov: 60
+  adsMoveMultiplier: 0.65
+  adsTransitionTime: 0.18
+  highReadyRaiseHalfLife: 0.07
+  highReadyLowerHalfLife: 0.09
+  leftGrip: {x: 0.26, y: -0.285, z: 0.7}
+  sideRail: {x: 0, y: 0, z: 0}
+  viewPunch: {x: 2.5, y: 0.8, z: 1.5}
+  viewPunchFov: 1.5
+  shakeTrauma: 0.2
+  muzzleFlashScale: 1.4
+  ejectShells: 1
+  soundProfile: 2
+  fireSounds:
+  - {fileID: 8300000, guid: 447de8713376aa94c922f703b297314d, type: 3}
+  - {fileID: 8300000, guid: e5aa2db97a0e99b4ab7c1e2ffec5a386, type: 3}
+  - {fileID: 8300000, guid: 01dfc7fe506d9da4f9e736d346a0d468, type: 3}
+  suppressedFireSounds:
+  - {fileID: 8300000, guid: 674843dad2b19a14fa7846de40e4841d, type: 3}
+  - {fileID: 8300000, guid: bd2051d27f429e7468795fb8781a120d, type: 3}
+  - {fileID: 8300000, guid: 90a82f53c5241994cbfe9104915d8244, type: 3}
+  fireVolume: 1
+  postureDamage: 3
+  flinchMultiplier: 1.2
+  propImpulse: 2

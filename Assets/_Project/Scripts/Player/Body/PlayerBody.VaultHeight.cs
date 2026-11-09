@@ -44,9 +44,6 @@ public sealed partial class PlayerBody
     /// <summary>The same, over the feet's way across for vaultFeetAhead.</summary>
     internal float FeetRoomSoon { get; private set; }
 
-    /// <summary>Temporary, for Logs/body-probe.txt.</summary>
-    internal string VaultHeightProbe => $"kept down {keptDown:0.000} feet room {FeetRoomNow:0.000}/{FeetRoomSoon:0.000}";
-
     private void BindFeetClearance()
     {
         feetClearance = new FeetClearance(animator, transform);

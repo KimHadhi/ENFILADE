@@ -1,37 +1,81 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
-using W = SettingsWidgets;
 
 /// <summary>
-/// The title screen: choose a map and a character, then play alone, make a room or find one.
-/// Pressing Play in a level skips this screen, so levels can still be tested directly.
+/// The title screen, laid out like an FPS lobby (the user's pick on 2026-11-09, after Payday 3 and Overwatch style
+/// menus) in the menus' kit (KitStyle: the HUD's near-black, white and one pink; rangefinder marks). It opens like a
+/// shutter (MainMenuIntro) onto: a top bar with the tilted name, tabs (플레이, 캐릭터, 기록, 설정), the player's chip and
+/// quit (MainMenuTopBar); the ways to play stacked on the left as big slanted plates with a rail (MainMenuModes) and
+/// the worn look under them; the chosen map's picture card at the top right (MainMenuMapCard) and the big "출격" button
+/// at the bottom right saying what it will start (MainMenuLaunch); a bottom bar with key hints, radio calls and the
+/// time (MainMenuTicker). The chosen character stands in the middle (MainMenuPreview) on a night rooftop inside the
+/// rangefinder rings (MainMenuBackdrop), and dragging across the empty screen turns it. The lobby is drawn through the
+/// HUD camera (HudCamera) so it has real depth, the way the in-game HUD's planes turn: the ways to play and the right
+/// side lean inwards like two wings and tilt a little after the mouse, and the top bar tips back. Enter presses
+/// "출격" when no window is up. The windows behind the buttons
+/// (making a room, the server list, the profile, the character screen) are their own. Pressing Play in a level skips
+/// this screen, so levels can still be tested directly.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class MainMenuScreen : MonoBehaviour
 {
     public const string SceneName = "MainMenu";
+    // Layout (px at 1920x1080): how far everything keeps from the screen's sides, where the ways to play start (under
+    // the top bar), where the map card starts, and how high the launch button sits over the bottom bar.
+    private const float Edge = 56f, ModesGap = 150f, CardGap = 70f, LaunchGap = 50f, LookHeight = 40f;
+    // How far the side panels turn inwards (°), how much more they turn after the mouse at the screen's edge, how far
+    // they tip up or down after it, how far the top bar tips back, and how quickly they follow (1/s).
+    private const float PanelYaw = 16f, PanelFollow = 8f, PanelPitch = 6f, BarPitch = 8f, LeanFollow = 5f;
+
     private string[] maps = Array.Empty<string>();
+    private int mapIndex, characterTab = -1, recordsTab = -1;
     private MainMenuPreview preview;
-    private TMP_Text status, look;
+    private RectTransform canvas;
+    private TMP_Text lookLabel;
+    private MainMenuTopBar topBar;
+    private MainMenuTicker bottomBar;
+    private MainMenuModes modes;
+    private MainMenuMapCard mapCard;
+    private MainMenuLaunch launch;
+    private RectTransform right;
+    private KitReveal rightReveal;
+    private MainMenuRecords records;
     private CreateRoomView createRoom;
     private ServerBrowserView browser;
     private ProfileView profile;
     private CharacterScreenView character;
+    private Vector2 lean;
+
+    private static MainMenuScreen instance;
+    private static int escapeFrame = -1;
 
     public static bool IsOpen { get; private set; }
 
+    /// <summary>A window or page of the lobby takes Esc (it closes, and the Esc menu waits).</summary>
+    public static bool TakesEscape => instance != null && !SettingsMenu.IsOpen && (instance.AnyWindowOpen() || Time.frameCount == escapeFrame);
+
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-    private static void ResetStatics() => IsOpen = false;
+    private static void ResetStatics()
+    {
+        IsOpen = false;
+        instance = null;
+        escapeFrame = -1;
+    }
 
     private void Awake()
     {
+        instance = this;
         IsOpen = true;
         Time.timeScale = 1f;
         CombatFeedHUD.ResetScore();
+        PlayerPerks.Clear(); // perks last a campaign; back at the title screen it starts bare
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
         SettingsMenu.EnsureEventSystem();
@@ -42,99 +86,334 @@ public sealed class MainMenuScreen : MonoBehaviour
     private void Start()
     {
         maps = MapTable.Playable();
+        mapIndex = CurrentMap();
         Build();
         preview.Show();
         GameSettings.Changed += ShowLook; // the Esc menu's character tab can change it too
+        ProfilePicture.Changed += ShowPicture;
+        MainMenuIntro.Play(canvas, Open);
+    }
+
+    // The shutter has started to open: everything builds itself in.
+    private void Open()
+    {
+        topBar.Open(0f);
+        bottomBar.Open(.05f);
+        modes.Reveal.Open();
+        modes.PointRail();
+        rightReveal.Open();
+        mapCard.Show(mapIndex, .3f);
+        SayWhatLaunches();
     }
 
     private void Update()
     {
-        if (status != null && status.text != GameSession.Status) status.text = GameSession.Status;
+        if (topBar != null)
+        {
+            if (topBar.Status.text != GameSession.Status) topBar.Status.text = GameSession.Status;
+            string shown = GameSettings.Current.DisplayName;
+            if (topBar.PlayerName.text != shown)
+            {
+                topBar.PlayerName.text = shown;
+                ShowPicture();
+            }
+        }
         browser?.Tick();
+        LeanPanels();
+        CloseByEscape();
+        LaunchByKey();
+    }
+
+    private bool AnyWindowOpen() => createRoom != null && (createRoom.IsOpen || browser.IsOpen || profile.IsOpen || records.IsOpen || character.IsOpen);
+
+    // Esc closes the window or page that is up (back to the lobby) before the Esc menu would open.
+    private void CloseByEscape()
+    {
+        var keyboard = Keyboard.current;
+        if (keyboard == null || !keyboard.escapeKey.wasPressedThisFrame || SettingsMenu.IsOpen || DevConsole.TakesKeyboard) return;
+        if (createRoom.IsOpen) createRoom.Close();
+        else if (browser.IsOpen) browser.Close();
+        else if (profile.IsOpen) profile.Close();
+        else if (records.IsOpen || character.IsOpen) ShowPlay();
+        else return;
+        escapeFrame = Time.frameCount;
+    }
+
+    // The two wings lean inwards and turn a little after the mouse, as the in-game HUD's planes do.
+    private void LeanPanels()
+    {
+        if (modes == null || right == null) return;
+        var mouse = Mouse.current;
+        Vector2 aim = Vector2.zero;
+        if (mouse != null && Screen.width > 0 && Screen.height > 0)
+        {
+            var at = mouse.position.ReadValue();
+            aim = new Vector2(Mathf.Clamp(at.x / Screen.width - .5f, -.5f, .5f), Mathf.Clamp(at.y / Screen.height - .5f, -.5f, .5f));
+        }
+        lean = Vector2.Lerp(lean, aim, 1f - Mathf.Exp(-LeanFollow * Time.unscaledDeltaTime));
+        float pitch = -lean.y * PanelPitch;
+        modes.Root.localRotation = Quaternion.Euler(pitch, -PanelYaw + lean.x * PanelFollow, 0f);
+        right.localRotation = Quaternion.Euler(pitch, PanelYaw + lean.x * PanelFollow, 0f);
+    }
+
+    // Enter presses "출격" when nothing else has the keyboard.
+    private void LaunchByKey()
+    {
+        var keyboard = Keyboard.current;
+        if (keyboard == null || launch == null) return;
+        if (!keyboard.enterKey.wasPressedThisFrame && !keyboard.numpadEnterKey.wasPressedThisFrame) return;
+        if (SettingsMenu.IsOpen || DevConsole.TakesKeyboard || records.IsOpen || character.IsOpen || createRoom.IsOpen || browser.IsOpen
+            || profile.IsOpen) return;
+        var selected = EventSystem.current != null ? EventSystem.current.currentSelectedGameObject : null;
+        if (selected != null && selected.GetComponent<TMP_InputField>() != null) return;
+        launch.Press();
     }
 
     private void OnDestroy()
     {
+        if (instance == this) instance = null;
         IsOpen = false;
         GameSettings.Changed -= ShowLook;
+        ProfilePicture.Changed -= ShowPicture;
         browser?.StopSearching();
     }
 
     private void Build()
     {
-        var canvas = W.Rect("Canvas", transform);
+        canvas = FeelUI.Rect("Canvas", transform);
         canvas.gameObject.AddComponent<Canvas>().renderMode = RenderMode.ScreenSpaceOverlay;
         var scaler = canvas.gameObject.AddComponent<CanvasScaler>();
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         scaler.referenceResolution = new Vector2(1920f, 1080f);
         scaler.matchWidthOrHeight = .5f;
         canvas.gameObject.AddComponent<GraphicRaycaster>();
+        // Through the HUD camera, so the side panels lean in real depth.
+        HudCamera.Adopt(canvas.GetComponent<Canvas>());
+        MainMenuBackdrop.Make(transform, preview);
 
-        var column = W.Rect("Menu", canvas);
-        column.anchorMin = column.anchorMax = column.pivot = new Vector2(0f, .5f);
-        column.anchoredPosition = new Vector2(120f, 0f);
-        column.sizeDelta = new Vector2(600f, 0f);
-        var layout = column.gameObject.AddComponent<VerticalLayoutGroup>();
-        layout.spacing = 12f;
-        layout.childControlWidth = layout.childControlHeight = true;
-        layout.childForceExpandWidth = true; layout.childForceExpandHeight = false;
-        column.gameObject.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+        BuildShade();
+        BuildFrame();
 
-        W.Size(W.Label(column, "ENFILADE", 84f, W.Text), height: 124f);
-        AddMapChoice(column);
-        AddCharacterButton(column);
-        W.Size(W.Rect("Gap", column), height: 20f);
-        MenuButton(column, "혼자 하기", true, StartSolo);
-        MenuButton(column, "방 만들기", false, OpenCreateRoom);
-        MenuButton(column, "서버 찾기", false, () => browser.Open());
-        MenuButton(column, "프로필", false, () => profile.Show());
-        MenuButton(column, "설정", false, SettingsMenu.OpenFromMainMenu);
-        MenuButton(column, "게임 종료", false, SettingsMenu.QuitGame);
-        W.Size(W.Rect("Gap", column), height: 12f);
-        status = W.Label(column, GameSession.Status, 19f, W.Accent);
-        W.Size(status, height: 28f);
+        // 플레이 brings the lobby back from the character screen or the records; the other windows close themselves.
+        var tabs = new List<(string, Action)> { ("플레이", ShowPlay) };
+        if (CanChooseCharacter())
+        {
+            characterTab = tabs.Count;
+            tabs.Add(("캐릭터", OpenCharacter));
+        }
+        recordsTab = tabs.Count;
+        tabs.Add(("기록", OpenRecords));
+        // Settings is a gear beside quit at the top right, not a tab.
+        topBar = MainMenuTopBar.Make(canvas, Edge, tabs, () => profile.Show(), SettingsMenu.OpenFromMainMenu, SettingsMenu.QuitGame);
+        topBar.transform.localRotation = Quaternion.Euler(BarPitch, 0f, 0f);
+        bottomBar = MainMenuTicker.Make(canvas, Edge, new List<(string, string)> { ("Esc", "설정"), ("끌기", "캐릭터 돌리기") });
+
+        float modesTop = MainMenuTopBar.Height + ModesGap;
+        float modesHeight = 1080f - modesTop - MainMenuTicker.Height - 30f;
+        modes = MainMenuModes.Make(canvas, new Vector2(Edge, modesTop), modesHeight, new List<(MainMenuModes.Mode, string, string)>
+        {
+            (MainMenuModes.Mode.Solo, "혼자 하기", "나 혼자, 지금 바로"),
+            (MainMenuModes.Mode.Host, "방 만들기", "동료와 함께, 내가 방장"),
+            (MainMenuModes.Mode.Browse, "서버 찾기", "열린 방에 들어가기"),
+        }, _ => SayWhatLaunches(), Launch);
+        BuildLook(modesHeight - LookHeight);
+
+        right = KitStyle.Stretch("Right", canvas);
+        right.pivot = new Vector2(1f, .5f); // the right wing turns about the screen's right edge
+        rightReveal = right.gameObject.AddComponent<KitReveal>();
+        rightReveal.Hide();
+        mapCard = MainMenuMapCard.Make(right, Edge, MainMenuTopBar.Height + CardGap, maps, PickMap);
+        launch = MainMenuLaunch.Make(right, Edge, MainMenuTicker.Height + LaunchGap, () => Launch(modes.Chosen));
+        rightReveal.Card(mapCard.Root, mapCard.Lid, .12f);
+        rightReveal.Card(launch.Root, launch.Lid, .2f);
+        records = MainMenuRecords.Make(canvas, Edge, MainMenuTopBar.Height, MainMenuTicker.Height);
 
         createRoom = new CreateRoomView(canvas, StartHost);
         browser = new ServerBrowserView(canvas);
         profile = new ProfileView(canvas);
-        character = new CharacterScreenView(canvas, column, ShowLook);
+        // The character screen stands in for the ways to play, which open again on the way back.
+        character = new CharacterScreenView(canvas, modes.Root, () =>
+        {
+            ShowLook();
+            modes.Reveal.Open();
+            modes.PointRail();
+            topBar.SetActive(0);
+        });
+        KitGrain.Make(canvas);
+        ShowLook();
+        ShowPicture();
+        SayWhatLaunches();
     }
 
-    private void AddMapChoice(Transform column)
+    // Dark screen edges, deeper behind the left and right so their type reads, over the character; the shade is also
+    // the empty screen a drag turns the character on.
+    private void BuildShade()
+    {
+        var shade = KitStyle.Stretch("Shade", canvas);
+        var edges = shade.gameObject.AddComponent<RawImage>();
+        edges.texture = KitShapes.Vignette;
+        edges.color = KitStyle.With(KitStyle.Night, .9f);
+        edges.raycastTarget = true; // catches the drags
+        shade.gameObject.AddComponent<MainMenuDrag>().Preview = preview;
+        Side("Left Shade", false, 900f, .8f);
+        Side("Right Shade", true, 820f, .72f);
+    }
+
+    private void Side(string name, bool right, float width, float alpha)
+    {
+        var side = FeelUI.Rect(name, canvas);
+        side.anchorMin = new Vector2(right ? 1f : 0f, 0f);
+        side.anchorMax = new Vector2(right ? 1f : 0f, 1f);
+        side.pivot = new Vector2(right ? 1f : 0f, .5f);
+        side.sizeDelta = new Vector2(width, 0f);
+        var image = side.gameObject.AddComponent<RawImage>();
+        image.texture = KitShapes.Fade;
+        image.color = KitStyle.With(KitStyle.Night, alpha);
+        image.uvRect = right ? new Rect(1f, 0f, -1f, 1f) : new Rect(0f, 0f, 1f, 1f);
+        image.raycastTarget = false;
+    }
+
+    // Faint viewfinder corners round the screen, inside the top and bottom bars.
+    private void BuildFrame()
+    {
+        const float inset = 22f, arm = 30f;
+        for (int i = 0; i < 4; i++)
+        {
+            bool right = i % 2 == 1, bottom = i >= 2;
+            var corner = FeelUI.Rect("Frame Corner", canvas);
+            corner.anchorMin = corner.anchorMax = corner.pivot = new Vector2(right ? 1f : 0f, bottom ? 0f : 1f);
+            corner.anchoredPosition = new Vector2(right ? -inset : inset,
+                bottom ? inset + MainMenuTicker.Height : -(inset + MainMenuTopBar.Height));
+            corner.sizeDelta = Vector2.zero;
+            corner.localScale = new Vector3(right ? -1f : 1f, bottom ? -1f : 1f, 1f);
+            KitStyle.Bar("Across", corner, Vector2.zero, new Vector2(arm, 1f), KitStyle.Faint);
+            KitStyle.Bar("Down", corner, Vector2.zero, new Vector2(1f, arm), KitStyle.Faint);
+        }
+    }
+
+    // The worn look at the foot of the ways to play: a small slanted chip that opens the character screen.
+    private void BuildLook(float y)
+    {
+        var look = KitStyle.TopLeft("Look", modes.Root, new Vector2(0f, y), new Vector2(340f, LookHeight));
+        look.localRotation = Quaternion.Euler(0f, 0f, 2f);
+        var back = KitStyle.Fill(look, KitStyle.With(KitStyle.Ice, .09f));
+        back.raycastTarget = true;
+        KitSkew.On(back, 10f);
+        var icon = KitButtons.IconImage(look, "Character", 18f, KitStyle.Ice);
+        icon.rectTransform.anchorMin = icon.rectTransform.anchorMax = new Vector2(0f, .5f);
+        icon.rectTransform.anchoredPosition = new Vector2(24f, 0f);
+        lookLabel = KitStyle.Flat(KitStyle.TopLeft("Text", look, new Vector2(44f, 0f), new Vector2(280f, LookHeight)), "", 16f,
+            TextAlignmentOptions.MidlineLeft);
+        var lid = KitStyle.Fill(KitStyle.Stretch("Flash", look), KitStyle.Flash);
+        KitSkew.On(lid, 10f);
+        modes.Reveal.Card(look, lid, .32f);
+        if (characterTab < 0) return;
+        var button = look.gameObject.AddComponent<Button>();
+        button.targetGraphic = back;
+        button.onClick.AddListener(OpenCharacter);
+        look.gameObject.AddComponent<KitHover>();
+    }
+
+    private void OpenCharacter()
+    {
+        if (characterTab < 0) return;
+        CloseRecords();
+        character.Show();
+        topBar.SetActive(characterTab);
+    }
+
+    // Back to the lobby itself from whichever page is up.
+    private void ShowPlay()
+    {
+        character.Close();
+        CloseRecords();
+        topBar.SetActive(0);
+    }
+
+    // The records take the lobby's place: the ways to play and the right side step aside under them.
+    private void OpenRecords()
+    {
+        character.Close();
+        topBar.SetActive(recordsTab);
+        if (records.IsOpen) return;
+        records.Open();
+        modes.Root.gameObject.SetActive(false);
+        right.gameObject.SetActive(false);
+    }
+
+    private void CloseRecords()
+    {
+        if (records == null || !records.IsOpen) return;
+        records.Close();
+        modes.Root.gameObject.SetActive(true);
+        modes.Reveal.Open();
+        modes.PointRail();
+        right.gameObject.SetActive(true);
+        rightReveal.Open();
+    }
+
+    // What "출격" will start, under its name.
+    private void SayWhatLaunches()
+    {
+        if (launch == null || modes == null) return;
+        string map = maps.Length > 0 ? MapTable.DisplayName(maps[mapIndex]) : "맵이 없어요";
+        launch.Say(modes.Chosen switch
+        {
+            MainMenuModes.Mode.Host => "방 만들기  ·  " + map,
+            MainMenuModes.Mode.Browse => "서버 찾기  ·  열린 방 보기",
+            _ => "혼자  ·  " + map,
+        });
+    }
+
+    private void Launch(MainMenuModes.Mode mode)
+    {
+        switch (mode)
+        {
+            case MainMenuModes.Mode.Host: OpenCreateRoom(); break;
+            case MainMenuModes.Mode.Browse: browser.Open(); break;
+            default: StartSolo(); break;
+        }
+    }
+
+    private int CurrentMap()
+    {
+        if (maps.Length == 0) return 0;
+        var settings = GameSettings.Current;
+        int now = Array.IndexOf(maps, settings.lastMap);
+        if (now < 0) { now = 0; settings.lastMap = maps[0]; }
+        return now;
+    }
+
+    private void PickMap(int step)
     {
         if (maps.Length == 0) return;
-        var settings = GameSettings.Current;
-        var names = maps.Select(MapTable.DisplayName).ToArray();
-        int selected = Mathf.Max(0, Array.IndexOf(maps, settings.lastMap));
-        settings.lastMap = maps[selected];
-        W.Choice(W.Row(column, "맵"), names, selected, i => settings.lastMap = maps[i]);
+        mapIndex = (mapIndex + step + maps.Length) % maps.Length;
+        GameSettings.Current.lastMap = maps[mapIndex];
+        GameSettings.Save();
+        mapCard.Show(mapIndex, 0f);
+        SayWhatLaunches();
     }
 
-    // The worn look on a button that opens the character screen; shown when there is anything to choose.
-    private void AddCharacterButton(Transform column)
+    // There is something to choose: more than one character, or more than one look of the only one.
+    private static bool CanChooseCharacter()
     {
-        var profile = PlayerBodyProfile.Load();
-        var skins = profile?.Skins.Where(skin => skin != null && skin.Model != null).ToArray();
-        if (skins == null || skins.Length == 0) return;
-        if (skins.Length < 2 && skins[0].Variants.Count < 2) return;
-        var button = W.ActionButton(W.Row(column, "캐릭터"), "", false, () => character.Show());
-        W.Size(button, flexibleWidth: 1f);
-        look = button.GetComponentInChildren<TMP_Text>();
-        ShowLook();
+        var skins = PlayerBodyProfile.Load()?.Skins.Where(skin => skin != null && skin.Model != null).ToArray();
+        return skins != null && skins.Length > 0 && (skins.Length > 1 || skins[0].Variants.Count > 1);
     }
 
     private void ShowLook()
     {
-        var profile = PlayerBodyProfile.Load();
-        var skin = profile?.CurrentSkin;
-        if (look == null || skin == null) return;
-        var variant = profile.CurrentVariant;
-        look.text = variant != null ? skin.DisplayName + " · " + variant.DisplayName : skin.DisplayName;
+        var bodies = PlayerBodyProfile.Load();
+        var skin = bodies?.CurrentSkin;
+        if (skin == null) return;
+        var variant = bodies.CurrentVariant;
+        if (lookLabel != null) lookLabel.text = variant != null ? skin.DisplayName + "  ·  " + variant.DisplayName : skin.DisplayName;
     }
 
-    private static void MenuButton(Transform column, string text, bool primary, Action clicked)
+    // The top bar's square: the player's own picture, or their name's first letter.
+    private void ShowPicture()
     {
-        W.Size(W.ActionButton(column, text, primary, clicked), height: 54f);
+        if (topBar != null) ProfilePicture.Paint(topBar.Portrait, topBar.Initial, GameSettings.Current.DisplayName);
     }
 
     private void StartSolo()

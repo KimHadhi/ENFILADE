@@ -21,7 +21,7 @@ public sealed class PlayerRevive : MonoBehaviour
     /// <summary>How far along getting them up is (0-1).</summary>
     public float Progress { get; private set; }
     /// <summary>How long getting someone up takes from start to finish (s).</summary>
-    public float Seconds => reviveSeconds;
+    public float Seconds => Mathf.Max(.1f, reviveSeconds * PlayerPerks.ReviveFactor); // quicker with the rescue perk
 
     private void Awake() => player = GetComponent<PlayerMovement>();
 
@@ -37,16 +37,18 @@ public sealed class PlayerRevive : MonoBehaviour
         if (found != Candidate) Progress = 0f;
         Candidate = found;
         if (Candidate == null || !interact.IsPressed()) { Progress = 0f; return; }
-        Progress += Time.deltaTime / Mathf.Max(.1f, reviveSeconds);
+        Progress += Time.deltaTime / Seconds;
         if (Progress < 1f) return;
         Progress = 0f;
-        if (Candidate.TryGetComponent(out PlayerNetworkCombat network)) network.Revive();
+        if (!Candidate.TryGetComponent(out PlayerNetworkCombat network)) return;
+        network.Revive();
+        PlayerRecords.Revived();
     }
 
     private PlayerMovement FindDowned()
     {
         if (interact == null || !interact.enabled || !player.IsInitialized || !player.InputAvailable || player.IsDowned
-            || player.CombatInputLocked || player.Execution.Candidate != null) return null;
+            || player.CombatInputLocked || player.IsHeld || player.Execution.Candidate != null) return null;
         PlayerMovement nearest = null;
         float best = reviveReach * reviveReach;
         foreach (var other in PlayerRoster.All)

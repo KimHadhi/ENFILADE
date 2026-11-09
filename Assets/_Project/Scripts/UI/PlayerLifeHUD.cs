@@ -4,7 +4,8 @@ using UnityEngine.UI;
 
 /// <summary>
 /// What the screen says about staying alive: the wipe, being down, waiting to come back, and getting someone up. While
-/// someone is being got up, both of them see a panel with who it is, the seconds left and a filling bar.
+/// someone is being got up, both of them see a panel with who it is, the seconds left and a filling bar. Dead in a room,
+/// the bottom of the screen says who they watch and which keys change it (PlayerSpectate, backlog 722).
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class PlayerLifeHUD : MonoBehaviour
@@ -12,10 +13,13 @@ public sealed class PlayerLifeHUD : MonoBehaviour
     private const float PromptSize = 27f, WipeSize = 96f, PanelWidth = 440f, PanelHeight = 62f, BarHeight = 5f, Inset = 24f, Shear = 9f;
     private static readonly Color Pale = new Color(1f, .94f, .9f), WipeRed = new Color(.86f, .16f, .12f);
     private static readonly Color Plate = new Color(0f, 0f, 0f, .6f), Track = new Color(.34f, .91f, .72f, .18f);
+    private static readonly Color Keys = new Color(1f, .94f, .9f, .72f);
+    private const float WatchingSize = 30f, KeysSize = 19f, WatchingY = -380f, KeysY = -416f;
     private PlayerLife life;
     private PlayerRevive revive;
     private PlayerDamageReceiver receiver;
-    private TextMeshProUGUI label, who, secondsLeft;
+    private PlayerSpectate spectate;
+    private TextMeshProUGUI label, who, secondsLeft, watching, keys;
     private RectTransform panel, fill;
     private GameObject canvas;
 
@@ -37,6 +41,7 @@ public sealed class PlayerLifeHUD : MonoBehaviour
         label.fontSize = size;
         label.color = color;
         ShowRescue();
+        ShowSpectate();
     }
 
     private string Message(out float size, out Color color)
@@ -61,6 +66,33 @@ public sealed class PlayerLifeHUD : MonoBehaviour
         who.text = beingHelped ? NameOf(life.Rescuer) + " 님이 살리는 중" : NameOf(revive.Candidate) + " 살리는 중";
         secondsLeft.text = ((1f - progress) * revive.Seconds).ToString("0.0") + "초";
         fill.sizeDelta = new Vector2((PanelWidth - Inset * 2f) * progress, BarHeight);
+    }
+
+    private void ShowSpectate()
+    {
+        if (spectate == null) TryGetComponent(out spectate);
+        bool shown = spectate != null && !life.IsWiped && !receiver.IsAlive
+            && (spectate.Waiting || spectate.Current != PlayerSpectate.Mode.None);
+        watching.gameObject.SetActive(shown);
+        keys.gameObject.SetActive(shown);
+        if (!shown) return;
+        switch (spectate.Current)
+        {
+            case PlayerSpectate.Mode.Follow:
+                // The one watched may have just left; the next frame moves on.
+                var target = spectate.Target;
+                watching.text = target != null ? NameOf(target) + " 관전 중" : "";
+                keys.text = "[좌클릭] 다음    [우클릭] 이전    [Space] 자유 시점";
+                break;
+            case PlayerSpectate.Mode.Free:
+                watching.text = "자유 시점";
+                keys.text = "[WASD] 이동    [Shift] 빠르게    [좌클릭] 동료 관전    [Space] 따라가기";
+                break;
+            default:
+                watching.text = "";
+                keys.text = "[좌클릭] 관전";
+                break;
+        }
     }
 
     private static string NameOf(PlayerMovement player)
@@ -89,6 +121,19 @@ public sealed class PlayerLifeHUD : MonoBehaviour
         label.fontStyle = FontStyles.Bold;
         label.raycastTarget = false;
         BuildPanel();
+        watching = BottomLabel("Watching", WatchingSize, WatchingY, Pale);
+        keys = BottomLabel("Keys", KeysSize, KeysY, Keys);
+    }
+
+    private TextMeshProUGUI BottomLabel(string name, float size, float y, Color color)
+    {
+        var text = FeelUI.ScoreLabel(name, canvas.transform, size, TextAlignmentOptions.Center);
+        text.rectTransform.sizeDelta = new Vector2(1200f, size * 1.6f);
+        text.rectTransform.anchoredPosition = new Vector2(0f, y);
+        text.color = color;
+        text.raycastTarget = false;
+        text.gameObject.SetActive(false);
+        return text;
     }
 
     private void BuildPanel()

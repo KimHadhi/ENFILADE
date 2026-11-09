@@ -24,6 +24,14 @@ public sealed class WeaponData : ScriptableObject
     [SerializeField, Min(1)] private int magazineSize = 30;
     [SerializeField, Min(0.01f)] private float reloadDuration = 1.5f;
     [SerializeField, Min(0.1f)] private float range = 100f;
+    [Tooltip("How far a shot is heard by zombies (m, Noise). A wall between halves it for them.")]
+    [SerializeField, Min(0f)] private float noiseRadius = 40f;
+    [Tooltip("With a suppressor on (GunAttachments), the share of Noise Radius a shot is heard at by zombies.")]
+    [SerializeField, Range(0f, 1f)] private float suppressedNoise = .3f;
+    [Tooltip("With a vertical grip on (GunAttachments), the share of the climb each shot keeps (Rainbow Six Siege's vertical grip).")]
+    [SerializeField, Range(0f, 1f)] private float gripRecoil = .8f;
+    [Tooltip("With an angled grip on, the share of Ads Transition Time the sight takes to come up (Siege's angled grip).")]
+    [SerializeField, Range(.1f, 1f)] private float gripAimTime = .8f;
     [Tooltip("Pitch / yaw in degrees. Positive pitch kicks the view upward.")]
     [SerializeField] private Vector2 recoilPerShot = new Vector2(1.2f, 0.4f);
     [Header("Ammunition / fire mode")]
@@ -52,8 +60,51 @@ public sealed class WeaponData : ScriptableObject
     [Tooltip("An empty magazine starts its reload by itself this long after the gun could fire again (s), as ArcCW's " +
         "arccw_automaticreload does (0.2). Below 0 turns it off.")]
     [SerializeField] private float autoReloadDelay = .2f;
-    [Tooltip("Repeats while firing; an empty array uses Recoil Per Shot.")]
+    [Header("Shotgun")]
+    [Tooltip("Bullets one shot fires, each with the full Damage, spread round where the shot goes within Pellet Spread. " +
+        "1 is a single bullet.")]
+    [SerializeField, Min(1)] private int pellets = 1;
+    [Tooltip("Half-angle (degrees) of the cone the pellets spread in round where the shot goes, on top of the gun's own spread.")]
+    [SerializeField, Min(0f)] private float pelletSpread;
+    [Tooltip("Loaded a shell at a time, as a pump shotgun: Reload Duration is the start (Empty Reload Duration the start " +
+        "from empty, which also chambers a shell), then Shell Insert Duration for each shell, then Shell End Duration. " +
+        "Firing stops it once the shell in hand is in.")]
+    [SerializeField] private bool shellReload;
+    [SerializeField, Min(.01f)] private float shellInsertDuration = .6f;
+    [SerializeField, Min(0f)] private float shellEndDuration = .6f;
+    [Tooltip("A shell reload's sounds, each as its step starts: the start, the start from empty, every shell, the end.")]
+    [SerializeField] private AudioClip[] reloadStartSounds = new AudioClip[0], reloadStartEmptySounds = new AudioClip[0],
+        shellInsertSounds = new AudioClip[0], reloadEndSounds = new AudioClip[0];
+    [Tooltip("Repeats while firing; an empty array uses Recoil Per Shot. Only when Recoil Vertical is 0.")]
     [SerializeField] private Vector2[] recoilPattern = new Vector2[0];
+    [Tooltip("The fire modes B switches between, as 'Automatic;Burst;SemiAutomatic'. The gun starts on Fire Mode. Empty: Fire " +
+        "Mode only.")]
+    [SerializeField] private string fireModes = "";
+    [Header("Draw and holster")]
+    [Tooltip("Seconds from taking the gun out to firing it: its draw clip plays fitted to this, and it can't fire, aim or reload " +
+        "until it is up. 0: ready at once (and no draw clip).")]
+    [SerializeField, Min(0f)] private float drawDuration;
+    [Tooltip("Seconds the gun takes to go away before the next one comes out (its holster clip fitted to it). 0: swapped at once.")]
+    [SerializeField, Min(0f)] private float holsterDuration;
+    [Header("Range falloff (Rainbow Six Siege)")]
+    [Tooltip("Full body damage up to this far (m). A headshot kills at any range; only the body's damage falls off.")]
+    [SerializeField, Min(0f)] private float falloffStart = 1000f;
+    [Tooltip("From Falloff Start the body damage goes down evenly to Falloff Minimum of itself here (m), and stays there.")]
+    [SerializeField, Min(0f)] private float falloffEnd = 1000f;
+    [SerializeField, Range(.05f, 1f)] private float falloffMinimum = 1f;
+    [Header("Recoil pattern (Rainbow Six Siege)")]
+    [Tooltip("Degrees every shot lifts the view, kept there (Recoil Retention 1): the player pulls it back down, as in Rainbow Six " +
+        "Siege. 0 uses Recoil Pattern or Recoil Per Shot instead.")]
+    [SerializeField, Min(0f)] private float recoilVertical;
+    [Tooltip("Most degrees a shot throws the view sideways once the spray has settled (Recoil Settle Shots). The throw follows a " +
+        "wave of the gun's own, the same every spray, so it can be learnt, with a little chance on top.")]
+    [SerializeField, Min(0f)] private float recoilHorizontal;
+    [Tooltip("Which way the sideways throw leans: -1 left, 1 right, 0 both ways evenly.")]
+    [SerializeField, Range(-1f, 1f)] private float recoilDrift;
+    [Tooltip("The first shot's lift, times Recoil Vertical: Siege's guns jump on their first round.")]
+    [SerializeField, Min(0f)] private float recoilFirstShot = 1f;
+    [Tooltip("Shots until the sideways throw is full: the spray first climbs nearly straight (a quarter of the throw).")]
+    [SerializeField, Min(1)] private int recoilSettleShots = 1;
     [Header("Recoil feel")]
     [Tooltip("Spring response in 1/seconds. 24 peaks about 42ms after firing; higher is snappier.")]
     [SerializeField, Range(8f, 50f)] private float recoilResponse = 24f;
@@ -86,6 +137,8 @@ public sealed class WeaponData : ScriptableObject
     [Tooltip("Synthesized shot used when Fire Sounds is empty.")]
     [SerializeField] private GunSoundProfile soundProfile = GunSoundProfile.Rifle;
     [SerializeField] private AudioClip[] fireSounds = new AudioClip[0];
+    [Tooltip("The shot with a suppressor on (the Tactical Shooter Pack's own); empty plays Fire Sounds, quieter and higher.")]
+    [SerializeField] private AudioClip[] suppressedFireSounds = new AudioClip[0];
     [SerializeField, Range(0f, 2f)] private float fireVolume = 1f;
     [Header("Feel → target reaction (gameplay)")]
     [Tooltip("Posture (stagger meter) damage per bullet. Headshots multiply it (GunFeel). Bullets never cancel an attack through posture alone.")]
@@ -105,6 +158,15 @@ public sealed class WeaponData : ScriptableObject
     public int MagazineSize => Mathf.Max(1, magazineSize);
     public float ReloadDuration => Mathf.Max(0.01f, reloadDuration);
     public float Range => Mathf.Max(0.1f, range);
+    public float NoiseRadius => Mathf.Max(0f, noiseRadius);
+    public float SuppressedNoise => Mathf.Clamp01(suppressedNoise);
+    public float GripRecoil => Mathf.Clamp01(gripRecoil);
+    /// <summary>For the customize menu's stats: where body damage starts to fall off and where it bottoms out (m).</summary>
+    public float FalloffStart => falloffStart;
+    public float FalloffEnd => falloffEnd;
+    /// <summary>For the customize menu's stats: how far each shot climbs (degrees), before its random share.</summary>
+    public float RecoilVertical => recoilVertical > 0f ? recoilVertical : recoilPerShot.x;
+    public float GripAimTime => Mathf.Clamp(gripAimTime, .1f, 1f);
     public Vector2 RecoilPerShot => recoilPerShot;
     public float RecoilResponse => Mathf.Clamp(recoilResponse, 8f, 50f);
     public float RecoilRetention => Mathf.Clamp01(recoilRetention);
@@ -125,6 +187,17 @@ public sealed class WeaponData : ScriptableObject
     public float CrouchRecoil => Mathf.Clamp(crouchRecoil, .05f, 1f);
     /// <summary>Seconds after the gun could fire again that an empty magazine reloads by itself; negative: never.</summary>
     public float AutoReloadDelay => autoReloadDelay;
+    public float DrawDuration => Mathf.Max(0f, drawDuration);
+    public float HolsterDuration => Mathf.Max(0f, holsterDuration);
+    public int Pellets => Mathf.Max(1, pellets);
+    public float PelletSpread => Mathf.Max(0f, pelletSpread);
+    public bool ShellReload => shellReload;
+    public float ShellInsertDuration => Mathf.Max(.01f, shellInsertDuration);
+    public float ShellEndDuration => Mathf.Max(0f, shellEndDuration);
+    public AudioClip[] ReloadStartSounds => reloadStartSounds;
+    public AudioClip[] ReloadStartEmptySounds => reloadStartEmptySounds;
+    public AudioClip[] ShellInsertSounds => shellInsertSounds;
+    public AudioClip[] ReloadEndSounds => reloadEndSounds;
     public float AdsFov => Mathf.Clamp(adsFov, 20f, 100f);
     public float AdsMoveMultiplier => Mathf.Clamp(adsMoveMultiplier, .1f, 1f);
     public float AdsTransitionTime => Mathf.Max(.01f, adsTransitionTime);
@@ -140,10 +213,62 @@ public sealed class WeaponData : ScriptableObject
     public bool EjectShells => ejectShells;
     public GunSoundProfile SoundProfile => soundProfile;
     public AudioClip[] FireSounds => fireSounds;
+    public AudioClip[] SuppressedFireSounds => suppressedFireSounds;
     public float FireVolume => Mathf.Clamp(fireVolume, 0f, 2f);
     public float PostureDamage => Mathf.Max(0f, postureDamage);
     public float FlinchMultiplier => Mathf.Clamp(flinchMultiplier, 0f, 3f);
     public float PropImpulse => Mathf.Max(0f, propImpulse);
     public Vector2 RecoilAt(int index) => recoilPattern != null && recoilPattern.Length > 0
         ? recoilPattern[Mathf.Abs(index) % recoilPattern.Length] : recoilPerShot;
+
+    /// <summary>
+    /// The fire mode after <paramref name="current"/> in Fire Modes (B), round again from the last; <paramref name="current"/>
+    /// itself when the gun has no other.
+    /// </summary>
+    public WeaponFireMode NextFireMode(WeaponFireMode current)
+    {
+        var modes = new System.Collections.Generic.List<WeaponFireMode>();
+        foreach (string part in (fireModes ?? string.Empty).Split(';', ',', ' '))
+            if (System.Enum.TryParse(part.Trim(), true, out WeaponFireMode mode) && !modes.Contains(mode)) modes.Add(mode);
+        if (!modes.Contains(fireMode)) modes.Insert(0, fireMode);
+        if (modes.Count <= 1) return current;
+        int at = modes.IndexOf(current);
+        return modes[(at + 1) % modes.Count];
+    }
+
+    /// <summary>Share of the body damage a bullet keeps at <paramref name="distance"/> m (Falloff Start, End, Minimum).</summary>
+    public float FalloffAt(float distance)
+    {
+        float minimum = Mathf.Clamp(falloffMinimum, .05f, 1f);
+        if (distance <= falloffStart || minimum >= 1f) return 1f;
+        float span = Mathf.Max(.01f, falloffEnd - falloffStart);
+        return Mathf.Lerp(1f, minimum, Mathf.Clamp01((distance - falloffStart) / span));
+    }
+
+    /// <summary>
+    /// The view's kick (pitch up, yaw right; degrees) for the spray's shot number <paramref name="shot"/> (0 first), the
+    /// Rainbow Six Siege way when Recoil Vertical is set: a steady lift, a bigger first one, and a sideways throw that grows
+    /// over the settle shots along a wave of this gun's own. Otherwise RecoilAt.
+    /// </summary>
+    public Vector2 RecoilKick(int shot)
+    {
+        if (recoilVertical <= 0f) return RecoilAt(shot);
+        shot = Mathf.Max(0, shot);
+        float lift = recoilVertical * (shot == 0 ? recoilFirstShot : 1f);
+        float settle = Mathf.Lerp(.25f, 1f, Mathf.Clamp01(shot / (float)Mathf.Max(1, recoilSettleShots)));
+        float wave = Mathf.PerlinNoise(PatternSeed, shot * .45f) * 2f - 1f;
+        float side = (Mathf.Clamp(wave + recoilDrift, -1f, 1f) + Random.Range(-.15f, .15f)) * recoilHorizontal * settle;
+        return new Vector2(lift, side);
+    }
+
+    // Where along Perlin noise this gun's sideways wave runs: from its name, so it is the same in every session and build.
+    private float PatternSeed
+    {
+        get
+        {
+            int hash = 17;
+            foreach (char c in name) hash = unchecked(hash * 31 + c);
+            return (hash & 1023) * .173f;
+        }
+    }
 }

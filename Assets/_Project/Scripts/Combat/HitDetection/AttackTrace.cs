@@ -103,10 +103,12 @@ public static class AttackTrace
             var receiver = hit.collider.GetComponentInParent<IDamageReceiver>();
             headshot = headshotMultiplier > 1f && WeaponHitRegion.IsHead(hit);
             bool fresh = receiver != null && (already == null || already.Add(receiver));
+            // This PC's own shooter carries their gun perks (PlayerPerks); anyone else's shots are as they are.
+            float perk = attack.Method == DamageMethod.Bullet && PlayerPerks.IsMine(attack.Source) ? PlayerPerks.GunFactor(headshot) : 1f;
             if (fresh && share > 0f)
-                result = receiver.ReceiveHit(new DamageHit(attack.Id, attack.Amount * share * (headshot ? headshotMultiplier : 1f), attack.Kind, hit.point, direction, attack.Source,
+                result = receiver.ReceiveHit(new DamageHit(attack.Id, attack.Amount * share * (headshot ? headshotMultiplier : 1f) * perk, attack.Kind, hit.point, direction, attack.Source,
                     attack.CanBeGuarded, attack.PostureDamage * share, attack.IsComboFinisher, attack.IsCritical || headshot, attack.IsCounter, attack.Method,
-                    shooter, attack.IsFatal, attack.Pierced || pierced));
+                    shooter, attack.IsFatal, attack.Pierced || pierced, ZombieGore.PartOf(hit.collider)));
         }
         return new AttackTraceResult(hasHit, hit, end, result, headshot);
     }
@@ -119,10 +121,11 @@ public static class AttackTrace
         var player = hit.collider.GetComponentInParent<PlayerMovement>();
         return player != null && player.IsDead;
     }
+    // A zombie's capsule lets shots through to its bone hitboxes (triggers), which take them instead (ZombieBody).
     private static bool ShouldSkip(RaycastHit hit, GameObject owner)
-        => IsOwner(hit, owner) || PlayerLeanHitboxes.Replaces(hit.collider)
-            || IsDeadPlayer(hit)
-            || (hit.collider.isTrigger && (hit.collider.GetComponent<PlayerCombatHitbox>() == null
+        => IsOwner(hit, owner) || PlayerLeanHitboxes.Replaces(hit.collider) || ZombieBody.Replaces(hit.collider)
+            || IsDeadPlayer(hit) || GoreGib.IsPiece(hit.collider)
+            || (hit.collider.isTrigger && !ZombieBody.IsHitbox(hit.collider) && (hit.collider.GetComponent<PlayerCombatHitbox>() == null
                 || hit.collider.GetComponentInParent<PlayerLeanHitboxes>()?.UsesSplitBody != true));
 
     public static bool FirstExternalHit(GameObject owner, Vector3 origin, Vector3 direction, float range, int layers, out RaycastHit hit)

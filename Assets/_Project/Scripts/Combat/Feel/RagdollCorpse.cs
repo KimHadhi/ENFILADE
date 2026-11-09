@@ -45,6 +45,7 @@ public sealed class RagdollCorpse : MonoBehaviour, IDamageReceiver
     {
         public Collider Shape;
         public Transform Bone;
+        public HumanBodyBones Id;
         public Vector3 Place;
         public Quaternion Turn, Rest;
     }
@@ -53,6 +54,7 @@ public sealed class RagdollCorpse : MonoBehaviour, IDamageReceiver
     private struct Slack
     {
         public Transform Bone;
+        public HumanBodyBones Id;
         public Quaternion Rest, From;
         public float Share;
     }
@@ -65,8 +67,11 @@ public sealed class RagdollCorpse : MonoBehaviour, IDamageReceiver
     }
 
     private readonly List<Rigidbody> parts = new List<Rigidbody>();
-    // The real bone each part turns, by the part's place in the list.
+    // The real bone each part turns, by the part's place in the list, and which human bone it is (for Bind).
     private readonly List<Transform> bones = new List<Transform>();
+    private readonly List<HumanBodyBones> boneIds = new List<HumanBodyBones>();
+    // While building: which human bone each real bone is.
+    private Dictionary<Transform, HumanBodyBones> humanIds;
     private readonly List<Collider> shapes = new List<Collider>();
     // The part each shape is on, by the shape's place in its list.
     private readonly List<Rigidbody> shapeParts = new List<Rigidbody>();
@@ -90,6 +95,10 @@ public sealed class RagdollCorpse : MonoBehaviour, IDamageReceiver
 
     /// <summary>The real head, which is where the eyes are.</summary>
     public Transform Head { get; private set; }
+    /// <summary>The rig it was made for. Any body with this avatar can borrow it (Bind).</summary>
+    public Avatar Avatar { get; private set; }
+    /// <summary>Its colliders: a knocked-down zombie lets bullets past them to its own hitboxes (ZombieBody).</summary>
+    public IReadOnlyList<Collider> Shapes => shapes;
     /// <summary>Bullets, blows and shoves that reach it. It takes no damage; whoever laid it decides how far they push it.</summary>
     public event Action<DamageHit> Struck;
 
@@ -108,6 +117,7 @@ public sealed class RagdollCorpse : MonoBehaviour, IDamageReceiver
         foreach (var script in model.GetComponentsInChildren<MonoBehaviour>(true)) DestroyImmediate(script);
         DestroyImmediate(model.GetComponent<Animator>());
         var corpse = root.AddComponent<RagdollCorpse>();
+        corpse.Avatar = live.avatar;
         corpse.layer = layer;
         corpse.passes = ~(solid | (1 << layer));
         root.SetActive(true);
@@ -116,6 +126,50 @@ public sealed class RagdollCorpse : MonoBehaviour, IDamageReceiver
         DestroyImmediate(model);
         corpse.Stow();
         return corpse;
+    }
+
+    /// <summary>
+    /// From now on turns this body instead, which must be on the same rig (its Avatar): zombies of one pack share their
+    /// skeleton, so a few stowed dolls serve all of them in turn. Its human bones come indexed by HumanBodyBones (see
+    /// HumanBones), read while its Animator was on, since a body may die with it off (knocked down). Call it while
+    /// stowed, before Lay.
+    /// </summary>
+    public void Bind(Transform[] human)
+    {
+        for (int i = 0; i < bones.Count; i++) bones[i] = human[(int)boneIds[i]];
+        for (int i = 0; i < extremities.Count; i++)
+        {
+            var end = extremities[i];
+            end.Bone = human[(int)end.Id];
+            extremities[i] = end;
+        }
+        for (int i = 0; i < slack.Count; i++)
+        {
+            var bone = slack[i];
+            bone.Bone = human[(int)bone.Id];
+            slack[i] = bone;
+        }
+        Head = human[(int)HumanBodyBones.Head];
+        lastSeen = float.NegativeInfinity;
+    }
+
+    /// <summary>Each human bone of this body, indexed by HumanBodyBones (null where the rig has none), for Bind.</summary>
+    public static Transform[] HumanBones(Animator live)
+    {
+        var human = new Transform[(int)HumanBodyBones.LastBone];
+        if (live == null || !live.isHuman) return human;
+        for (var id = HumanBodyBones.Hips; id < HumanBodyBones.LastBone; id++) human[(int)id] = live.GetBoneTransform(id);
+        return human;
+    }
+
+    /// <summary>Every part has about stopped: slower than this (m/s), and turning slower than four times that (rad/s).</summary>
+    public bool Settled(float speed)
+    {
+        foreach (var part in parts)
+            if (!part.isKinematic && !part.IsSleeping()
+                && (part.linearVelocity.sqrMagnitude > speed * speed || part.angularVelocity.sqrMagnitude > 16f * speed * speed))
+                return false;
+        return true;
     }
 
     /// <summary>Notes where the live body's bones are this frame, so a fall can carry on their motion.</summary>
@@ -240,6 +294,44 @@ public sealed class RagdollCorpse : MonoBehaviour, IDamageReceiver
             part.isKinematic = true;
         }
         foreach (var shape in shapes) shape.enabled = false;
+    }
+
+    /// <summary>
+    /// Holds every part where it lies (kinematic): still shot and struck, still posing the body, costing no physics.
+    /// Thaw lets it go again.
+    /// </summary>
+    public void Hold()
+    {
+        foreach (var part in parts)
+        {
+            if (part.isKinematic) continue;
+            part.linearVelocity = Vector3.zero;
+            part.angularVelocity = Vector3.zero;
+            part.isKinematic = true;
+        }
+    }
+
+    /// <summary>After Hold: physics moves it again, where this PC runs it.</summary>
+    public void Thaw()
+    {
+        if (!laid || !simulated) return;
+        foreach (var part in parts)
+        {
+            part.isKinematic = false;
+            part.WakeUp();
+        }
+    }
+
+    /// <summary>From now on this PC runs it, from the pose it shows (the PC that ran it is gone).</summary>
+    public void Simulate()
+    {
+        if (!laid || simulated) return;
+        simulated = true;
+        foreach (var part in parts)
+        {
+            part.interpolation = RigidbodyInterpolation.Interpolate;
+            part.isKinematic = false;
+        }
     }
 
     DamageResult IDamageReceiver.ReceiveHit(DamageHit hit)
@@ -376,6 +468,12 @@ public sealed class RagdollCorpse : MonoBehaviour, IDamageReceiver
     {
         measured = model.GetComponentsInChildren<Transform>(true);
         real = live.GetComponentsInChildren<Transform>(true);
+        humanIds = new Dictionary<Transform, HumanBodyBones>();
+        for (var id = HumanBodyBones.Hips; id < HumanBodyBones.LastBone; id++)
+        {
+            var bone = live.GetBoneTransform(id);
+            if (bone != null) humanIds[bone] = id;
+        }
         Transform Bone(HumanBodyBones id)
         {
             int index = Array.IndexOf(real, live.GetBoneTransform(id));
@@ -428,6 +526,7 @@ public sealed class RagdollCorpse : MonoBehaviour, IDamageReceiver
         lastPlaces = new Vector3[bones.Count];
         lastTurns = new Quaternion[bones.Count];
         measured = real = null;
+        humanIds = null;
 
         // A knee bends one way and turns a little; the hip is a ball centred on a thigh raised halfway, so it bends right
         // up in front but only a little behind, and the thigh turns about its length, so a bent knee falls to the side.
@@ -497,7 +596,7 @@ public sealed class RagdollCorpse : MonoBehaviour, IDamageReceiver
             var bone = live.GetBoneTransform(id);
             if (bone == null || bones.Contains(bone)) continue;
             bool finger = id >= HumanBodyBones.LeftThumbProximal && id <= HumanBodyBones.RightLittleDistal;
-            slack.Add(new Slack { Bone = bone, Rest = measured[Array.IndexOf(real, bone)].localRotation, Share = finger ? FingerSlack : 1f });
+            slack.Add(new Slack { Bone = bone, Id = id, Rest = measured[Array.IndexOf(real, bone)].localRotation, Share = finger ? FingerSlack : 1f });
         }
     }
 
@@ -555,17 +654,21 @@ public sealed class RagdollCorpse : MonoBehaviour, IDamageReceiver
         part.maxDepenetrationVelocity = Unsticking;
         part.excludeLayers = passes;
         parts.Add(part);
-        bones.Add(real[Array.IndexOf(measured, bone)]);
+        var realBone = real[Array.IndexOf(measured, bone)];
+        bones.Add(realBone);
+        boneIds.Add(humanIds[realBone]);
         return part;
     }
 
     // Kept as it sits against its bone in the neutral pose, to be lined up with the real bone when laid.
     private void Attach(Collider shape, Transform bone)
     {
+        var realBone = real[Array.IndexOf(measured, bone)];
         extremities.Add(new Extremity
         {
             Shape = shape,
-            Bone = real[Array.IndexOf(measured, bone)],
+            Bone = realBone,
+            Id = humanIds[realBone],
             Place = bone.InverseTransformPoint(shape.transform.position),
             Turn = Quaternion.Inverse(bone.rotation) * shape.transform.rotation,
             Rest = bone.localRotation

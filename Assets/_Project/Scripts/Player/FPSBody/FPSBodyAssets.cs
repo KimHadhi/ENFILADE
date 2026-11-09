@@ -35,6 +35,43 @@ public sealed class FPSBodyAssets : ScriptableObject
         public FPSAnimationAsset pose;
         public FPSAnimationAsset reloadTactical;
         public FPSAnimationAsset reloadEmpty;
+
+        [Header("Another KINEMATION pack's gun")]
+        [Tooltip("KINEMATION's skeleton this gun's clips are made for, when it isn't the FPS Animation Pack's arms (Arms Model): "
+            + "the Tactical Shooter Pack's SKM_Operator. Empty: Arms Model.")]
+        public GameObject sourceArms;
+        [Tooltip("A prefab of KINEMATION's with that skeleton and its first-person camera on it (the Tactical Shooter Pack's "
+            + "TacticalShooterCharacter, whose FPCamera rides the head): where KINEMATION's camera sees the gun from. Empty: the FPS "
+            + "Animation Pack's CameraSocket.")]
+        public GameObject sourceCameraRig;
+
+        [Header("Shell reload (WeaponData.ShellReload)")]
+        [Tooltip("The clips of a shell reload: Source Reload Tactical and Source Reload Empty are its two starts, these its shell "
+            + "(played once for every shell) and its end.")]
+        public AnimationClip sourceReloadShell;
+        public AnimationClip sourceReloadEnd;
+        public FPSAnimationAsset reloadShell;
+        public FPSAnimationAsset reloadEnd;
+        [Tooltip("The gun-part clips of the shell and the end (CasFPSWeapon has fields for the two starts only).")]
+        public KINEMATION.CharacterAnimationSystem.Scripts.Runtime.Playables.AnimationAsset partsReloadShell;
+        public KINEMATION.CharacterAnimationSystem.Scripts.Runtime.Playables.AnimationAsset partsReloadEnd;
+
+        [Header("Draw, holster and inspect")]
+        [Tooltip("KINEMATION's draw, holster and inspect clips with this gun (made for the same skeleton as its pose). The body plays "
+            + "the draw and holster fitted to the gun's Draw Duration and Holster Duration, the inspect at its own pace.")]
+        public AnimationClip sourceDraw;
+        public AnimationClip sourceHolster;
+        public AnimationClip sourceInspect;
+        public FPSAnimationAsset draw;
+        public FPSAnimationAsset holster;
+        public FPSAnimationAsset inspect;
+        [Tooltip("Their gun-part clips.")]
+        public KINEMATION.CharacterAnimationSystem.Scripts.Runtime.Playables.AnimationAsset partsDraw;
+        public KINEMATION.CharacterAnimationSystem.Scripts.Runtime.Playables.AnimationAsset partsHolster;
+        public KINEMATION.CharacterAnimationSystem.Scripts.Runtime.Playables.AnimationAsset partsInspect;
+
+        /// <summary>KINEMATION's skeleton the gun's clips are made for.</summary>
+        public GameObject ArmsOr(GameObject armsModel) => sourceArms != null ? sourceArms : armsModel;
     }
 
     [Header("FPS Animation Framework")]

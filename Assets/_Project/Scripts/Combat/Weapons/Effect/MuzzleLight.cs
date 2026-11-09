@@ -136,11 +136,14 @@ public sealed class MuzzleLight : MonoBehaviour
 
     private void OnShot(WeaponShot shot)
     {
+        // One flash of light per shot, however many pellets it threw.
+        if (shot.Pellet > 0) return;
         var settings = GunFeelSettings.Instance;
         var data = weapon != null ? weapon.EquippedData : null;
         Transform muzzle = weapon != null ? weapon.MuzzlePoint : null;
+        // A suppressor throws no flash of light.
         if (!settings.muzzleEffects || direct == null || data == null || data.MuzzleFlashScale <= 0f
-            || muzzle == null || !muzzle.gameObject.activeInHierarchy) return;
+            || muzzle == null || !muzzle.gameObject.activeInHierarchy || weapon.Suppressed) return;
         warmFrames = 0;
         float size = Mathf.Min(1.5f, data.MuzzleFlashScale);
         float brightness = settings.muzzleLightIntensity * size * (IsMine ? 1f : settings.muzzleLightOthers);

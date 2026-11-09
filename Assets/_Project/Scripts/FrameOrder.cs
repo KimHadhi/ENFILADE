@@ -86,6 +86,10 @@ public static class FrameOrder
     public const int CombatFeedHud = 470;
     /// <summary>A dead body's ragdoll, after the living body's pose work.</summary>
     public const int Ragdoll = 1000;
+    /// <summary>The dead watching a teammate or flying free (PlayerSpectate), over the ragdoll's ride on the fallen eyes.</summary>
+    public const int Spectate = 1010;
+    /// <summary>The campaign's run (CampaignRun): a carried fuel can follows the finished camera and hands.</summary>
+    public const int Campaign = 1020;
     /// <summary>The view punch goes on the finished camera; the frame's hits are confirmed once, at its end.</summary>
     public const int ViewPunch = 10000;
     public const int HitConfirm = 10000;

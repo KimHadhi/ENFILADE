@@ -8,7 +8,8 @@ using UnityEngine.UI;
 /// (☠ 처치, 헤드샷, 원거리 사격, 관통 사살, 처형, 반격, 더블 킬 ...), hung off the top right of the gun like Dead Space's ammo count
 /// (GunScoreAnchor) so the middle of the screen stays clear. 처형 and 반격 carry their own icon
 /// (knife with a slash trail, return arrow) in the line colour. The number accumulates over a kill streak and the group fades after a quiet spell. Only kills score, so sustained fire stays quiet.
-/// A rolling XP total and a kill feed sit at the top right. Created on first use during Play; GunFeel → Score.
+/// A rolling money total (Wallet: points are money in play, a number beside a banknote icon; no experience on screen)
+/// and a kill feed sit at the top right. Created on first use during Play; GunFeel → Score.
 /// </summary>
 [DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.CombatFeedHud)]
 public sealed class CombatFeedHUD : MonoBehaviour
@@ -33,6 +34,7 @@ public sealed class CombatFeedHUD : MonoBehaviour
 
     private RectTransform streakRoot, linesRoot, totalRoot, feedRoot;
     private TextMeshProUGUI streakLabel, totalLabel;
+    private RawImage totalIcon;
     private Image streakBracket;
     private CanvasGroup streakGroup;
     private readonly List<Line> lines = new List<Line>();
@@ -42,7 +44,9 @@ public sealed class CombatFeedHUD : MonoBehaviour
     private readonly KillFeedLook look = new KillFeedLook();
     private int streakScore, multiKill;
     private bool fresh;
-    private float streakIdle = 99f, popAge = 99f, totalShown, totalPop, lastKillTime = -99f;
+    private float streakIdle = 99f, popAge = 99f, totalPop, lastKillTime = -99f;
+    // The money shown, rolling up to the balance (won; double, as a float can't hold big sums to the won).
+    private double totalShown;
 
     public string StreakText => streakLabel != null ? streakLabel.text : string.Empty;
 
@@ -90,7 +94,9 @@ public sealed class CombatFeedHUD : MonoBehaviour
             TotalScore += gained;
             self.streakScore += gained;
             self.streakIdle = 0f; self.popAge = 0f; self.totalPop = 1f;
-            self.streakLabel.text = self.streakScore + "<size=62%><color=#" + ColorUtility.ToHtmlStringRGB(settings.scoreColor) + "> XP</color></size>";
+            // Points are money in play (Wallet, stage 6A): the popup reads +110.
+            self.streakLabel.text = "<size=62%><color=#" + ColorUtility.ToHtmlStringRGB(settings.scoreColor) + ">+</color></size>"
+                + Wallet.FormatPoints(self.streakScore);
         }
         if (feedRow && settings.killFeed) self.AddKill(Credit(PlayerRoster.Local, weapon), target, headshot, true, StreakOf(PlayerRoster.Local), standout);
     }
@@ -163,11 +169,13 @@ public sealed class CombatFeedHUD : MonoBehaviour
         var caption = FeelUI.ScoreLabel("Caption", totalRoot, 13f, TextAlignmentOptions.Right);
         caption.rectTransform.anchoredPosition = new Vector2(0f, 13f);
         caption.rectTransform.sizeDelta = new Vector2(320f, 16f);
-        caption.text = "XP"; caption.color = new Color(1f, 1f, 1f, .55f); caption.characterSpacing = 8f;
+        caption.text = "돈"; caption.color = new Color(1f, 1f, 1f, .55f); caption.characterSpacing = 8f;
         totalLabel = FeelUI.ScoreLabel("Value", totalRoot, 28f, TextAlignmentOptions.Right);
         totalLabel.rectTransform.sizeDelta = new Vector2(320f, 34f);
         totalLabel.rectTransform.pivot = new Vector2(1f, .5f);
         totalLabel.rectTransform.anchoredPosition = new Vector2(160f, -8f);
+        // The banknote stands just left of the number, wherever its width puts that (MoneyIcon, the user's pick).
+        totalIcon = MoneyIcon.Make(totalRoot, 24f);
         totalRoot.gameObject.SetActive(false);
 
         feedRoot = FeelUI.Rect("Kill Feed", side);
@@ -215,11 +223,17 @@ public sealed class CombatFeedHUD : MonoBehaviour
             line.icon.color = iconColor;
         }
 
-        if (TotalScore > 0 && !totalRoot.gameObject.activeSelf) totalRoot.gameObject.SetActive(true);
-        totalShown = totalShown < TotalScore ? Mathf.Min(TotalScore, totalShown + Mathf.Max(80f * dt, (TotalScore - totalShown) * (1f - Mathf.Exp(-10f * dt)))) : TotalScore;
+        // The money held (Wallet.Balance): rolls up as kills earn it, drops at once when it is dropped or spent.
+        long balance = Wallet.Balance;
+        if ((balance != 0 || TotalScore > 0) && !totalRoot.gameObject.activeSelf) totalRoot.gameObject.SetActive(true);
+        totalShown = totalShown < balance
+            ? System.Math.Min(balance, totalShown + System.Math.Max(80d * Wallet.WonPerPoint * dt, (balance - totalShown) * (1d - System.Math.Exp(-10d * dt))))
+            : balance;
         totalPop = Mathf.MoveTowards(totalPop, 0f, dt * 3.5f);
-        totalLabel.text = Mathf.RoundToInt(totalShown).ToString("N0");
+        totalLabel.text = Wallet.Format((long)System.Math.Round(totalShown));
         totalLabel.rectTransform.localScale = Vector3.one * (1f + totalPop * totalPop * .25f);
+        float numberWidth = totalLabel.GetPreferredValues(totalLabel.text).x * totalLabel.rectTransform.localScale.x;
+        totalIcon.rectTransform.anchoredPosition = new Vector2(160f - numberWidth - 18f, -8f);
         totalLabel.color = Color.Lerp(Color.white, settings.scoreColor, totalPop);
 
         for (int i = kills.Count - 1; i >= 0; i--)

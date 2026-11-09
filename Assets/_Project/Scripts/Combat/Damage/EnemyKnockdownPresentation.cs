@@ -2,10 +2,15 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
 
-/// <summary>Temporarily hands the body to physics, then restores navigation and animation.</summary>
+/// <summary>
+/// Temporarily hands the body to physics, then restores navigation and animation. A zombie's body (ZombieBody) does its
+/// own: a doll falls, it gets up with a clip, and this only passes the calls on.
+/// </summary>
 internal sealed class EnemyKnockdownPresentation
 {
     private readonly Transform root;
+    private readonly ZombieBody zombie;
+    private bool zombieDown;
     private readonly NavMeshAgent agent;
     private readonly Rigidbody[] bodies;
     private readonly bool articulated;
@@ -18,6 +23,8 @@ internal sealed class EnemyKnockdownPresentation
     private Quaternion uprightRotation;
     private float feetOffset, standingHeight, standingRadius;
     public bool IsActive { get; private set; }
+    /// <summary>On the ground, not yet getting up.</summary>
+    public bool IsLying => zombieDown ? zombie.IsLying : IsActive;
 
     private struct BodyState
     {
@@ -34,6 +41,7 @@ internal sealed class EnemyKnockdownPresentation
     internal EnemyKnockdownPresentation(Transform owner)
     {
         root = owner; agent = owner.GetComponent<NavMeshAgent>();
+        zombie = owner.GetComponent<ZombieBody>();
         var bones = new List<Rigidbody>();
         foreach (var body in owner.GetComponentsInChildren<Rigidbody>(true))
             if (body.transform != owner && body.GetComponent<Collider>() != null) bones.Add(body);
@@ -56,6 +64,12 @@ internal sealed class EnemyKnockdownPresentation
     {
         // Repeated knockdowns extend the timer without recapturing a fallen pose as the standing pose.
         if (IsActive) return;
+        if (zombie != null && zombie.Wears && zombie.Model != null)
+        {
+            IsActive = zombieDown = true;
+            zombie.KnockDown(direction);
+            return;
+        }
         IsActive = true; entryPosition = root.position;
         uprightRotation = Quaternion.Euler(0f, root.eulerAngles.y, 0f);
         Bounds standing = new Bounds(root.position, Vector3.zero);
@@ -115,6 +129,11 @@ internal sealed class EnemyKnockdownPresentation
 
     internal void Tick(float dt, bool down)
     {
+        if (zombieDown)
+        {
+            if (!zombie.TickDown(dt, down)) IsActive = zombieDown = false;
+            return;
+        }
         if (!IsActive || down || dt <= 0f) return;
         // Stay down when a player, wall, low ceiling or missing floor prevents safe recovery.
         if (TryRecoveryPosition(out var position)) Restore(position);
@@ -183,6 +202,12 @@ internal sealed class EnemyKnockdownPresentation
 
     internal void Reset()
     {
+        if (zombieDown)
+        {
+            zombie.EndDown();
+            IsActive = zombieDown = false;
+            return;
+        }
         if (!IsActive) return;
         Restore(TryRecoveryPosition(out var position) ? position : entryPosition);
     }

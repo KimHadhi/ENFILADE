@@ -246,6 +246,8 @@ public sealed partial class PlayerBody
     private void DownPose()
     {
         var landing = player.Abilities.Landing;
+        // Pinned by a runner (G&B-2) the body stays lying, short of getting up, and gets up from there once it ends.
+        if (player.IsPinned) stateTime = Mathf.Min(stateTime, landing.HeavyDuration * PlayerHold.PinnedDownShare);
         Drive(downClip, stateTime / Mathf.Max(.05f, landing.HeavyDuration));
         legYaw = landing.HeavyYaw;
         targetYaw = Mathf.DeltaAngle(transform.eulerAngles.y, legYaw);

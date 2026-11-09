@@ -51,6 +51,7 @@ public sealed class PlayerCameraEffects : MonoBehaviour
     private Transform effectsPivot, eyes;
     private PlayerBody body;
     private PlayerMovementPunch movementPunch;
+    private WeaponController weapon;
     internal Vector3 CameraLocalHome => baseCameraPosition;
     internal Vector3 CameraAnchorPosition => targetCamera.parent.TransformPoint(baseCameraPosition);
     internal Vector3 LeanDisplacement { get; private set; }
@@ -195,6 +196,16 @@ public sealed class PlayerCameraEffects : MonoBehaviour
         }
     }
 
+    // How far down the sights the held gun is (0 at the hip or high ready, 1 aimed), for the zoom and the still view.
+    private float Aim
+    {
+        get
+        {
+            if (weapon == null && movement != null) weapon = movement.GetComponent<WeaponController>();
+            return weapon != null && weapon.EquippedData != null && !weapon.IsHighReady ? weapon.AimBlend : 0f;
+        }
+    }
+
     // The Esc menu's screen shake scales impacts, punches and movement tilt; Q/E lean is aiming, not shake.
     private static float Shake => GameSettings.Current.screenShake;
 
@@ -213,6 +224,10 @@ public sealed class PlayerCameraEffects : MonoBehaviour
         float shake = Shake;
         if (movementPunch == null) movementPunch = movement.GetComponent<PlayerMovementPunch>();
         Vector3 steps = movementPunch != null && movementPunch.isActiveAndEnabled ? movementPunch.Angles : Vector3.zero;
+        // Down the sights the view holds still as a marksman's does (Rainbow Six Siege): the footsteps' nods and the
+        // strafing tilt fade out with the aim (user, 2026-11-09: "흔들거려서").
+        float still = 1f - Aim;
+        steps *= still;
         // Combat's head turns (the back elbow's glance over the shoulder) are moves of the head, not shake: never scaled.
         // The look and the player's facing stay where they are.
         var head = HeadMotion;
@@ -220,7 +235,7 @@ public sealed class PlayerCameraEffects : MonoBehaviour
         effectsPivot.localRotation = Quaternion.Euler(
             (traversalPunch.x + divePitch + impulseRotDisplacement.x + steps.x) * shake + glance.x,
             (impulseRotDisplacement.y + steps.y) * shake + glance.y,
-            (currentTiltRoll + traversalPunch.y + impulseRotDisplacement.z + steps.z) * shake + movement.LeanRoll + glance.z
+            (currentTiltRoll * still + traversalPunch.y + impulseRotDisplacement.z + steps.z) * shake + movement.LeanRoll + glance.z
         );
     }
 
@@ -291,8 +306,7 @@ public sealed class PlayerCameraEffects : MonoBehaviour
         if (cam == null || movement == null) return;
         // ADS already has its own transition timer. Compose after smoothing movement FOV
         // so a second smoothing pass cannot delay the zoom behind the weapon's sight pose.
-        var weapon = movement.GetComponent<WeaponController>();
-        float aim = weapon != null && weapon.EquippedData != null && !weapon.IsHighReady ? weapon.AimBlend : 0f;
+        float aim = Aim;
         float aimedFov = aim > 0f ? Mathf.Min(baseFov, weapon.EquippedData.AdsFov) : currentFov;
         cam.fieldOfView = Mathf.Lerp(currentFov, aimedFov, aim)
             + impulseFovDisplacement * Shake * Mathf.Lerp(1f, .25f, aim);

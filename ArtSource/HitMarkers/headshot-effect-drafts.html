@@ -1,0 +1,633 @@
+<meta charset="utf-8">
+<title>헤드샷 이펙트 시안</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap">
+<style>
+/* Layout: a sticky transport bar (play, speed, situation, background, zoom, frame rate, scrubber) over a grid of
+   HUD panels that all run on one clock: the current effect first, then drafts A to E. One dark look, like the HUD. */
+:root {
+  --bg: #0e1012;
+  --panel: #15181b;
+  --sunk: #0a0b0c;
+  --line: #262b30;
+  --fg: #e6e8e9;
+  --muted: #8a9399;
+  --gold: #ffd133;      /* GunFeel headHitColor (1, .82, .2) */
+  --on-gold: #1c1503;
+  --display: "Black Han Sans", "IBM Plex Sans KR", "Malgun Gothic", sans-serif;
+  --body: "IBM Plex Sans KR", "Malgun Gothic", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 14px; line-height: 1.55; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+.wrap {
+  max-width: 1320px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 24px 48px;
+}
+.intro { display: grid; gap: 6px; margin-bottom: 16px; }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .08em; color: var(--muted); }
+h1 { font-family: var(--display); font-weight: 400; font-size: clamp(28px, 4vw, 40px); line-height: 1.1; margin: 0; text-wrap: balance; }
+h1 em { font-style: normal; color: var(--gold); }
+.intro p { margin: 0; color: var(--muted); max-width: 72ch; }
+
+.bar {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
+  background: var(--bg); border-block: 1px solid var(--line);
+  padding-block: 10px; display: grid; gap: 10px; margin-bottom: 16px;
+}
+.row { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; }
+.group { display: flex; align-items: center; gap: 8px; }
+.glabel { font-size: 12px; color: var(--muted); letter-spacing: .04em; }
+.seg { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.seg button, .btn {
+  font: 500 13px/1 var(--body); color: var(--fg); background: var(--panel);
+  border: 0; padding: 8px 11px; cursor: pointer;
+}
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--gold); color: var(--on-gold); }
+.btn { border: 1px solid var(--line); border-radius: 6px; }
+.btn.primary { background: var(--gold); color: var(--on-gold); border-color: var(--gold); min-width: 5.5em; }
+.check { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; }
+.check input { accent-color: var(--gold); width: 16px; height: 16px; }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.scrub { display: flex; align-items: center; gap: 12px; }
+.scrub input[type="range"] { flex: 1; min-width: 0; accent-color: var(--gold); }
+.readout { font-family: var(--mono); font-variant-numeric: tabular-nums; font-size: 13px; white-space: nowrap; }
+.readout b { color: var(--gold); font-weight: 500; }
+.keys { font-size: 12px; color: var(--muted); }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 14px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; display: grid; min-width: 0; }
+.card.now { border-color: #6b5a1f; }
+.card-head { display: flex; align-items: baseline; gap: 10px; padding: 10px 12px; }
+.letter { font-family: var(--display); font-size: 20px; line-height: 1; color: var(--gold); }
+.card h2 { font-size: 15px; font-weight: 600; margin: 0; flex: 1; min-width: 0; }
+.dur { font-family: var(--mono); font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.stage { height: 280px; background: var(--sunk); }
+.stage canvas { display: block; width: 100%; height: 100%; }
+.line { margin: 0; padding: 10px 12px 6px; color: var(--muted); font-size: 13.5px; }
+.use { margin: 0; padding: 0 12px 12px; font-size: 13px; color: var(--fg); }
+.use-k { font-family: var(--mono); font-size: 11px; letter-spacing: .06em; color: var(--gold); margin-right: 8px; }
+.notes { margin: 22px 0 0; padding-left: 18px; color: var(--muted); font-size: 13px; display: grid; gap: 4px; max-width: 86ch; }
+code { font-family: var(--mono); font-size: 12.5px; color: var(--fg); }
+</style>
+
+<div class="wrap">
+  <header class="intro">
+    <span class="eyebrow">BACKLOG 324 · HitMarkerHUD</span>
+    <h1>헤드샷 이펙트 <em>시안</em></h1>
+    <p>맨 앞은 지금 게임 코드를 그대로 옮겨 그린 것이고, A부터 E는 새 시안입니다. 여섯 칸이 같은 시계로 돌아가고, 모두 초록 크로스헤어 위에 금색 헤드샷 틱과 함께 뜹니다. 1×가 1080p 화면의 실제 크기입니다.</p>
+    <p>2026-11-09 결정: 총 헤드샷은 지금 것을 그대로 씁니다. A–E는 나중에 특수 연출로 쓸 후보로 남겨 두었고, 각 칸 아래에 쓸 곳을 적었습니다.</p>
+  </header>
+
+  <div class="bar" role="toolbar" aria-label="재생 조절">
+    <div class="row">
+      <div class="group">
+        <button id="play" class="btn primary" type="button">멈춤</button>
+        <button id="restart" class="btn" type="button">처음부터</button>
+        <label class="check" for="loop"><input id="loop" type="checkbox" checked> 반복</label>
+      </div>
+      <div class="group"><span class="glabel">속도</span>
+        <div class="seg" id="speed">
+          <button type="button" data-v="1" aria-pressed="true">1×</button>
+          <button type="button" data-v="0.5">0.5×</button>
+          <button type="button" data-v="0.25">0.25×</button>
+          <button type="button" data-v="0.1">0.1×</button>
+        </div>
+      </div>
+      <div class="group"><span class="glabel">상황</span>
+        <div class="seg" id="scen">
+          <button type="button" data-v="head" aria-pressed="true">헤드샷 한 발</button>
+          <button type="button" data-v="burst">연사 중 헤드샷</button>
+          <button type="button" data-v="pair">몸통 → 헤드</button>
+          <button type="button" data-v="kill">헤드샷 처치</button>
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="group"><span class="glabel">배경</span>
+        <div class="seg" id="bg">
+          <button type="button" data-v="dark" aria-pressed="true">어두운 실내</button>
+          <button type="button" data-v="wall">콘크리트 벽</button>
+          <button type="button" data-v="sky">밝은 하늘</button>
+        </div>
+      </div>
+      <div class="group"><span class="glabel">확대</span>
+        <div class="seg" id="zoom">
+          <button type="button" data-v="1" aria-pressed="true">1× 실제</button>
+          <button type="button" data-v="2">2×</button>
+          <button type="button" data-v="3">3×</button>
+        </div>
+      </div>
+      <div class="group"><span class="glabel">화면 주사율</span>
+        <div class="seg" id="fps">
+          <button type="button" data-v="60" aria-pressed="true">60fps</button>
+          <button type="button" data-v="144">144fps</button>
+          <button type="button" data-v="0">연속</button>
+        </div>
+      </div>
+    </div>
+    <div class="scrub">
+      <input id="time" type="range" min="0" max="0.75" step="0.001" value="0" aria-label="시간">
+      <span class="readout" id="readout">0 ms</span>
+    </div>
+    <span class="keys">스페이스: 재생/멈춤 · ← →: 한 프레임씩 · R: 처음부터 · 시간 막대를 끌면 멈춘 채로 볼 수 있습니다.</span>
+  </div>
+
+  <main class="grid" id="grid"></main>
+
+  <ul class="notes">
+    <li>현재 칸은 <code>HitMarkerHUD</code>의 <code>Layout</code>·<code>LayoutBurst</code>·<code>LayoutGlint</code>와 <code>FeelAssets</code>의 별·링·빛 텍스처 식을 그대로 옮겼습니다. <code>GunFeel.asset</code>에는 헤드샷 값이 저장돼 있지 않아 코드 기본값이 쓰입니다: 별 26 px · 0.2 s · 45° 회전, 링 56 px · 0.16 s, 틱 1.6배 빠르기, 팝 0.55.</li>
+    <li>60fps·144fps 보기는 게임처럼 맞은 프레임의 다음 화면부터 한 프레임 지난 모습으로 그립니다. 반동으로 표시가 같이 튀는 움직임, 효과음, 선형 색공간 합성 차이는 빠져 있습니다.</li>
+    <li>A–E도 틱은 지금과 같고(금색, 1.6배 빠르기, 팝 0.55) 헤드샷 부분만 다릅니다. 모두 UI 이미지와 코드로 만드는 텍스처로 옮길 수 있습니다. 헤드샷 처치에서는 틱이 빨갛고 이펙트는 금색 그대로입니다.</li>
+  </ul>
+</div>
+
+<script>
+(() => {
+  'use strict';
+  // ---------- math ----------
+  const clamp01 = x => x < 0 ? 0 : x > 1 ? 1 : x;
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const smooth = x => x * x * (3 - 2 * x);
+  const easeOut = (x, p) => 1 - Math.pow(1 - clamp01(x), p);
+  const easeIn = (x, p) => Math.pow(clamp01(x), p);
+  const lerpC = (a, b, t) => [lerp(a[0], b[0], t), lerp(a[1], b[1], t), lerp(a[2], b[2], t), lerp(a[3], b[3], t)];
+  const withA = (c, a) => [c[0], c[1], c[2], a];
+  const WHITE = [1, 1, 1, 1], GOLD = [1, .82, .2, 1], KILL = [1, .16, .12, 1];
+  const MAG = [1, .16, .62, 1], CYAN = [.12, .94, 1, 1];
+  const rgb = c => `rgb(${Math.round(clamp01(c[0]) * 255)},${Math.round(clamp01(c[1]) * 255)},${Math.round(clamp01(c[2]) * 255)})`;
+
+  // ---------- GunFeelSettings defaults (GunFeel.asset leaves every hit-marker field at its default) ----------
+  const S = {
+    markerLength: 16.5, markerThickness: 2.9, markerGap: 24, markerShrunkGap: 15.5, frameRate: 60,
+    hold: 7, shrink: 9, fadeFrames: 1, fadeAlpha: .5, markerPop: .3, popSeconds: .07,
+    small: .85, large: 1.25, fullDamage: .5, headThickness: 1.5, headLength: 1.15,
+    headGlintSize: 26, headGlintTurn: 45, headGlintSeconds: .2, headBurstReach: 56, headBurstSeconds: .16,
+    headMarkerPace: 1.6, headPop: .55,
+  };
+
+  // ---------- textures: white with coverage as alpha over u, v in [-1, 1] (FeelAssets.Generate) ----------
+  function makeTex(w, h, cov) {
+    const src = document.createElement('canvas'); src.width = w; src.height = h;
+    const g = src.getContext('2d'), img = g.createImageData(w, h);
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const u = (x + .5) / w * 2 - 1, v = (y + .5) / h * 2 - 1, i = (y * w + x) * 4;
+      img.data[i] = img.data[i + 1] = img.data[i + 2] = 255;
+      img.data[i + 3] = Math.round(clamp01(cov(u, v)) * 255);
+    }
+    g.putImageData(img, 0, 0);
+    const tint = document.createElement('canvas'); tint.width = w; tint.height = h;
+    return { src, tint, tctx: tint.getContext('2d') };
+  }
+  const glintRay = (along, across) => clamp01((.14 * (1 - Math.abs(along)) - Math.abs(across)) * 32);
+  // Comic burst outline: twelve uneven spikes, straight edges.
+  const SPIKES = [1, .8, .95, .76, .9, .84, 1, .78, .93, .74, .97, .82];
+  const burstPts = [];
+  for (let i = 0; i < 24; i++) {
+    const ang = i / 24 * Math.PI * 2 + (i % 2 ? 0 : (i % 4 ? .03 : -.04));
+    const r = (i % 2 === 0 ? SPIKES[i / 2] : .55 + (i % 3) * .03) * .98;
+    burstPts.push([Math.cos(ang) * r, Math.sin(ang) * r]);
+  }
+  function polyRadius(theta) {
+    const dx = Math.cos(theta), dy = Math.sin(theta);
+    for (let i = 0; i < burstPts.length; i++) {
+      const A = burstPts[i], B = burstPts[(i + 1) % burstPts.length];
+      const ex = B[0] - A[0], ey = B[1] - A[1], den = dx * ey - dy * ex;
+      if (Math.abs(den) < 1e-9) continue;
+      const t = (A[0] * ey - A[1] * ex) / den, s = (A[0] * dy - A[1] * dx) / den;
+      if (t > 0 && s >= -1e-6 && s <= 1 + 1e-6) return t;
+    }
+    return 0;
+  }
+  const T = {
+    glint: makeTex(128, 128, (u, v) => Math.max(clamp01((.2 - Math.hypot(u, v)) * 24), Math.max(glintRay(u, v), glintRay(v, u)))),
+    ring: makeTex(128, 128, (u, v) => clamp01(1 - Math.abs(Math.hypot(u, v) - .82) / .12)),
+    soft: makeTex(64, 64, (u, v) => { const a = 1 - clamp01(Math.hypot(u, v)); return a * a * (3 - 2 * a); }),
+    blade: makeTex(256, 32, (u, v) => clamp01((Math.pow(1 - Math.abs(u), 1.3) - Math.abs(v)) * 5)),
+    burst: makeTex(128, 128, (u, v) => clamp01((polyRadius(Math.atan2(v, u)) - Math.hypot(u, v)) * 30)),
+  };
+
+  // ---------- drawing in canvas units, y up, degrees counter-clockwise (Unity UI) ----------
+  function tex(ctx, Tx, x, y, w, h, deg, c) {
+    if (c[3] <= .003 || w <= .01 || h <= .01) return;
+    const g = Tx.tctx;
+    g.globalCompositeOperation = 'copy'; g.drawImage(Tx.src, 0, 0);
+    g.globalCompositeOperation = 'source-in'; g.fillStyle = rgb(c); g.fillRect(0, 0, Tx.tint.width, Tx.tint.height);
+    ctx.save(); ctx.translate(x, y); if (deg) ctx.rotate(deg * Math.PI / 180);
+    ctx.globalAlpha = Math.min(1, c[3]); ctx.drawImage(Tx.tint, -w / 2, -h / 2, w, h); ctx.restore();
+  }
+  function rect(ctx, x, y, w, h, deg, c) {
+    if (c[3] <= .003 || w <= .01 || h <= .01) return;
+    ctx.save(); ctx.translate(x, y); if (deg) ctx.rotate(deg * Math.PI / 180);
+    ctx.globalAlpha = Math.min(1, c[3]); ctx.fillStyle = rgb(c); ctx.fillRect(-w / 2, -h / 2, w, h); ctx.restore();
+  }
+  // Unity's Outline: four dark copies at (±1, ±1) in the graphic's own space, under it, faded with the graphic.
+  const OFF = [[1, 1], [1, -1], [-1, 1], [-1, -1]];
+  function rectO(ctx, x, y, w, h, deg, c, oa) {
+    ctx.save(); ctx.translate(x, y); if (deg) ctx.rotate(deg * Math.PI / 180);
+    for (const [ox, oy] of OFF) rect(ctx, ox, oy, w, h, 0, [0, 0, 0, oa * c[3]]);
+    rect(ctx, 0, 0, w, h, 0, c); ctx.restore();
+  }
+  function texO(ctx, Tx, x, y, w, h, deg, c, oa) {
+    ctx.save(); ctx.translate(x, y); if (deg) ctx.rotate(deg * Math.PI / 180);
+    for (const [ox, oy] of OFF) tex(ctx, Tx, ox, oy, w, h, 0, [0, 0, 0, oa * c[3]]);
+    tex(ctx, Tx, 0, 0, w, h, 0, c); ctx.restore();
+  }
+
+  // The default crosshair (CrosshairSettings.Default): green, 1 px dot, four 8 x 2 lines from a 4 px gap, 1 px outline at .6.
+  function crosshair(ctx) {
+    const green = [0, 1, 0, 1], ol = [0, 0, 0, .6];
+    const parts = [[0, 8, 2, 8], [0, -8, 2, 8], [8, 0, 8, 2], [-8, 0, 8, 2], [0, 0, 1, 1]];
+    for (const p of parts) rect(ctx, p[0], p[1], p[2] + 2, p[3] + 2, 0, ol);
+    for (const p of parts) rect(ctx, p[0], p[1], p[2], p[3], 0, green);
+  }
+
+  // ---------- ticks: HitMarkerHUD.Layout ----------
+  const isKill = k => k === 'BodyKill' || k === 'HeadKill';
+  const isHead = k => k === 'Head' || k === 'HeadKill';
+  const paceOf = e => e.kind === 'Head' ? Math.max(1, S.headMarkerPace) : 1;
+  const lifetimeOf = e => (S.hold + S.shrink + S.fadeFrames) / S.frameRate / paceOf(e);
+  function tickLook(e, age) {
+    const kill = isKill(e.kind), head = isHead(e.kind);
+    const scale = kill ? 1 : lerp(S.small, S.large, clamp01(e.share / S.fullDamage));
+    const pace = paceOf(e), frame = age * pace * S.frameRate;
+    const shrink = clamp01((frame - S.hold) / S.shrink);
+    const alpha = frame >= S.hold + S.shrink ? S.fadeAlpha : 1;
+    const popBy = e.kind === 'Head' ? S.headPop : S.markerPop;
+    const pop = 1 + popBy * (1 - smooth(clamp01(age / S.popSeconds)));
+    const bold = head && !kill;
+    const length = S.markerLength * (kill ? 1.45 : bold ? S.headLength : 1) * scale * pop;
+    const thick = S.markerThickness * (kill ? 1.5 : bold ? S.headThickness : 1);
+    const gap = lerp(S.markerGap, S.markerShrunkGap, smooth(shrink)) * pop;
+    const color = lerpC(WHITE, kill ? KILL : head ? GOLD : WHITE, clamp01(age / .05));
+    color[3] *= alpha;
+    return { kill, lifetime: lifetimeOf(e), length, thick, gap, color };
+  }
+  function drawTicks(ctx, L, age, o) {
+    const dx = o.dx || 0, dy = o.dy || 0;
+    if (L.kill && !o.tint) {
+      const wave = clamp01(age / L.lifetime);
+      const size = lerp(L.gap * 2, (S.markerGap + L.length) * 2.8, 1 - Math.pow(1 - wave, 2));
+      tex(ctx, T.ring, dx, dy, size, size, 0, withA(KILL, .85 * (1 - wave)));
+    }
+    for (let i = 0; i < 4; i++) {
+      const ang = 45 + 90 * i, r = L.gap + L.length * .5, rad = ang * Math.PI / 180;
+      const x = dx + Math.cos(rad) * r, y = dy + Math.sin(rad) * r;
+      if (o.tint) rect(ctx, x, y, L.length, L.thick, ang, withA(o.tint, L.color[3] * o.alpha));
+      else rectO(ctx, x, y, L.length, L.thick, ang, L.color, .55);
+    }
+  }
+
+  // ---------- current headshot: HitMarkerHUD.LayoutBurst then LayoutGlint ----------
+  function nowBurst(ctx, age) {
+    if (age >= S.headBurstSeconds) return;
+    const t = clamp01(age / S.headBurstSeconds), burst = 1 - Math.pow(1 - t, 3), fade = 1 - t;
+    const reach = S.headBurstReach, gs = S.headGlintSize;
+    const color = lerpC(WHITE, GOLD, clamp01(age / .04));
+    const bloomSize = lerp(gs * 1.6, gs * 3.4, burst);
+    tex(ctx, T.soft, 0, 0, bloomSize, bloomSize, 0, withA(lerpC([1, .97, .85, 1], GOLD, t), .75 * fade * fade));
+    const ringSize = lerp(gs * .6, reach * 2.2, burst);
+    tex(ctx, T.ring, 0, 0, ringSize, ringSize, 0, withA(color, .95 * fade * fade));
+    const quick = clamp01(t * 2), quickBurst = 1 - (1 - quick) * (1 - quick);
+    const flashSize = lerp(gs * .5, reach * 1.3, quickBurst);
+    tex(ctx, T.ring, 0, 0, flashSize, flashSize, 0, [1, 1, 1, (1 - quick) * (1 - quick)]);
+    const distance = lerp(gs * .4, reach, burst), length = lerp(26, 4, t), thickness = lerp(3.4, 1.2, t);
+    const spark = withA(lerpC(WHITE, color, clamp01(t * 1.6)), fade);
+    for (let i = 0; i < 12; i++) {
+      const ang = 15 + 30 * i, rad = ang * Math.PI / 180, own = i % 3 === 0 ? 1 : i % 3 === 1 ? .8 : .65;
+      const r = distance * own + length * own * .5;
+      rect(ctx, Math.cos(rad) * r, Math.sin(rad) * r, length * own, thickness, ang, spark);
+    }
+  }
+  function nowGlint(ctx, age) {
+    const total = S.headGlintSeconds;
+    if (age >= total) return;
+    const open = Math.min(.025, total * .15), settle = Math.min(.06, total * .35);
+    let size = age < open ? 1.5 * (1 - (1 - age / open) * (1 - age / open))
+      : age < settle ? lerp(1.5, 1, smooth((age - open) / (settle - open))) : 1;
+    const fade = age < settle ? 0 : clamp01((age - settle) / Math.max(.01, total - settle));
+    size *= lerp(1, .7, fade);
+    const px = S.headGlintSize * 2 * size;
+    const k = clamp01(age / total), spin = 1 - (1 - k) * (1 - k);
+    const glow = withA(lerpC(WHITE, GOLD, clamp01((age - open) / Math.max(.01, settle - open))), (1 - fade) * (1 - fade));
+    const cross = withA(lerpC(glow, WHITE, .55), glow[3] * .9);
+    ctx.save(); ctx.rotate(S.headGlintTurn * spin * Math.PI / 180);
+    texO(ctx, T.glint, 0, 0, px, px, 0, glow, .5);
+    tex(ctx, T.glint, 0, 0, px * .6, px * .6, 45, cross);
+    ctx.restore();
+  }
+
+  // ---------- draft A: X slash ----------
+  function draftA(ctx, a) {
+    if (a < .08) { const k = a / .08, s = lerp(20, 64, easeOut(k, 2)); tex(ctx, T.soft, 0, 0, s, s, 0, [1, 1, 1, .85 * (1 - k) * (1 - k)]); }
+    for (const [ang, delay] of [[150, 0], [60, .035]]) {
+      const t = a - delay;
+      if (t < 0 || t >= .15) continue;
+      const half = t < .03 ? 77 * easeOut(t / .03, 3) : t < .06 ? lerp(77, 70, smooth((t - .03) / .03)) : 70;
+      const w = 8 * (1 - smooth(clamp01((t - .025) / .115)));
+      const al = t < .1 ? 1 : 1 - (t - .1) / .05;
+      tex(ctx, T.blade, 0, 0, half * 2 + 2, w + 2.4, ang, [0, 0, 0, .45 * al]);
+      tex(ctx, T.blade, 0, 0, half * 2, w, ang, withA(lerpC(WHITE, GOLD, clamp01((t - .025) / .04)), al));
+      tex(ctx, T.blade, 0, 0, half * 1.8, w * .4, ang, [1, 1, 1, al]);
+    }
+  }
+
+  // ---------- draft B: anamorphic flare ----------
+  function draftB(ctx, a) {
+    if (a >= .18) return;
+    const k = a / .18;
+    const R = a < .02 ? 40 * easeOut(a / .02, 2) : lerp(40, 22, clamp01((a - .02) / .1));
+    tex(ctx, T.soft, 0, 0, R * 2, R * 2, 0, withA(lerpC(WHITE, [1, .9, .55, 1], clamp01(a / .08)), 1 - smooth(clamp01(a / .14))));
+    const grow = easeOut(a / .045, 4), L = 170 * grow, th = 5 * (1 - k * k);
+    const al = a < .12 ? 1 : 1 - (a - .12) / .06;
+    tex(ctx, T.blade, 0, 0, L * 2, th * 3.2, 0, withA(GOLD, .5 * al));
+    tex(ctx, T.blade, 0, 0, L * 2, th, 0, withA(lerpC(WHITE, [1, .93, .7, 1], clamp01(a / .06)), al));
+    if (a < .11) {
+      const v = 48 * easeOut(a / .035, 3), vt = 3.6 * (1 - a / .11);
+      tex(ctx, T.blade, 0, 0, v * 2, vt, 90, withA(lerpC(WHITE, GOLD, clamp01(a / .06)), 1 - a / .11));
+    }
+    for (const [x, s] of [[62, 9], [-98, 13], [132, 6]]) tex(ctx, T.soft, x * grow, 0, s, s, 0, withA(GOLD, .6 * (1 - k)));
+  }
+
+  // ---------- draft C: lock-on brackets ----------
+  function brackets(ctx, d, arm, th, c, ink) {
+    const arms = [];
+    for (const sx of [-1, 1]) for (const sy of [-1, 1]) {
+      const x0 = sx * (d + th / 2), x1 = sx * (d - arm);
+      const y0 = sy * (d - th / 2), y1 = sy * (d - arm);
+      arms.push([(x0 + x1) / 2, sy * d, Math.abs(x0 - x1), th]);
+      arms.push([sx * d, (y0 + y1) / 2, th, Math.abs(y0 - y1)]);
+    }
+    if (ink > 0) for (const p of arms) for (const [ox, oy] of OFF) rect(ctx, p[0] + ox, p[1] + oy, p[2], p[3], 0, [0, 0, 0, ink * c[3]]);
+    for (const p of arms) rect(ctx, p[0], p[1], p[2], p[3], 0, c);
+  }
+  function draftC(ctx, a) {
+    if (a >= .16) return;
+    const hit = .05, slam = t => lerp(112, 46, easeIn(t / hit, 3));
+    if (a < hit) {
+      for (const n of [1, 2]) { const p = a - n * .008; if (p > 0) brackets(ctx, slam(p), 14, 3.2, [1, 1, 1, .3 / n], 0); }
+      brackets(ctx, slam(a), 14, 3.2, withA(WHITE, clamp01(a / .012)), .5);
+      return;
+    }
+    const b = a - hit;
+    if (b < .06) { const k = b / .06, s = lerp(50, 90, easeOut(k, 2)); tex(ctx, T.soft, 0, 0, s, s, 0, [1, 1, 1, .7 * (1 - k) * (1 - k)]); }
+    const d = b < .03 ? lerp(46, 50, easeOut(b / .03, 2)) : lerp(50, 56, clamp01((b - .03) / .08));
+    const th = b < .02 ? lerp(5.2, 3.2, b / .02) : 3.2;
+    let al = b < .06 ? 1 : 1 - (b - .06) / .05;
+    if (b > .075 && b < .09) al = 0;
+    brackets(ctx, d, 14, th, withA(lerpC(WHITE, GOLD, clamp01(b / .035)), al), .5);
+  }
+
+  // ---------- draft D: comic impact ----------
+  function draftD(ctx, a, e) {
+    if (a >= .15) return;
+    const h = Math.sin(e.t * 91.7) * 43758.5453, rot0 = 360 * (h - Math.floor(h));
+    const s = a < .03 ? 1.2 * easeOut(a / .03, 2) : a < .06 ? lerp(1.2, 1, smooth((a - .03) / .03)) : lerp(1, .55, easeIn((a - .06) / .09, 2));
+    const al = a < .09 ? 1 : 1 - (a - .09) / .06;
+    const R = 46 * s, rot = rot0 + 10 * (a / .15);
+    tex(ctx, T.burst, 0, 0, R * 2.2, R * 2.2, rot, [.06, .04, .02, .85 * al]);
+    tex(ctx, T.burst, 0, 0, R * 2, R * 2, rot, withA(lerpC(WHITE, GOLD, clamp01(a / .03)), al));
+    const ws = s * .72 * (1 - smooth(clamp01((a - .02) / .06)));
+    if (ws > .01) tex(ctx, T.burst, 0, 0, 92 * ws, 92 * ws, rot + 12, [1, 1, 1, al]);
+  }
+
+  // ---------- draft E: chromatic glitch ----------
+  const GL = { dx: [10, -7, 6, -3, 2, 1], dy: [2, -1, 3, -2, 1, 0] };
+  const glitchFrame = a => Math.max(0, Math.ceil(a * 60 - 1e-6) - 1);
+  const SLICES = [[[9, 110, -12], [-15, 70, 20]], [[-6, 90, 16], [14, 120, -8]], [[17, 80, 6], [-3, 60, -22]], [[-11, 100, 10]]];
+  function draftEEcho(ctx, a, L, tickAge) {
+    const f = glitchFrame(a);
+    if (f >= 6) return;
+    drawTicks(ctx, L, tickAge, { dx: -GL.dx[f], dy: GL.dy[f], tint: MAG, alpha: .75 });
+    drawTicks(ctx, L, tickAge, { dx: GL.dx[f], dy: -GL.dy[f], tint: CYAN, alpha: .75 });
+  }
+  function draftEShift(a) { const f = glitchFrame(a); return f < 6 ? { dx: Math.round(GL.dx[f] * .3), dy: 0 } : {}; }
+  function draftE(ctx, a) {
+    const f = glitchFrame(a);
+    if (f === 0) tex(ctx, T.soft, 0, 0, 60, 60, 0, [1, 1, 1, .75]);
+    if (a < .14) {
+      const sz = a < .03 ? lerp(18, 12, a / .03) : lerp(12, 8, (a - .03) / .11);
+      const al = a < .08 ? 1 : 1 - (a - .08) / .06;
+      if (f < 6) {
+        rect(ctx, -GL.dx[f], GL.dy[f], sz, sz, 45, withA(MAG, .85 * al));
+        rect(ctx, GL.dx[f], -GL.dy[f], sz, sz, 45, withA(CYAN, .85 * al));
+      }
+      rectO(ctx, 0, 0, sz, sz, 45, withA(lerpC(WHITE, GOLD, clamp01(a / .04)), al), .55);
+    }
+    if (f < 4) for (const [y, w, x] of SLICES[f]) rect(ctx, x, y, w, 2, 0, withA(f < 2 ? WHITE : f % 2 ? CYAN : MAG, .85));
+  }
+
+  // ---------- the six panels ----------
+  const DESIGNS = [
+    { id: 'now', letter: '현재', name: '별빛 + 두 겹 링 + 불꽃', dur: .2, now: true,
+      line: '8각 별빛이 하얗게 1.5배로 터졌다가 금색으로 돌며 사라지고, 링 두 겹과 불꽃 12개가 퍼집니다.',
+      over(ctx, a) { nowBurst(ctx, a); nowGlint(ctx, a); } },
+    { id: 'A', letter: 'A', name: 'X 슬래시', dur: .185,
+      line: '칼날 두 줄이 "빵, 똮" 두 박자로 X자를 긋고 실처럼 가늘어지며 사라집니다. 별과 링 없이 날카롭게.',
+      under: draftA },
+    { id: 'B', letter: 'B', name: '렌즈 플레어', dur: .18,
+      line: '가로로 긴 빛줄기가 화면을 가르고 하얀 핵과 짧은 세로줄이 번쩍입니다. 저격 섬광 느낌.',
+      over: draftB },
+    { id: 'C', letter: 'C', name: '락온 브래킷', dur: .16,
+      line: '네 모서리 괄호가 밖에서 안으로 쾅 조여 들고, 닿는 순간 번쩍한 뒤 한 번 깜빡이고 꺼집니다.',
+      over: draftC },
+    { id: 'D', letter: 'D', name: '만화 임팩트', dur: .15,
+      line: '들쭉날쭉한 "쾅" 모양이 하얗게 부풀었다 금색으로 쪼그라듭니다. 검은 테두리라 밝은 하늘에서도 또렷합니다.',
+      under: draftD },
+    { id: 'E', letter: 'E', name: '색수차 글리치', dur: .14,
+      line: '표시가 청록과 자홍으로 갈라져 몇 프레임 떨다가 금색으로 딱 맞물립니다. 디지털 느낌.',
+      echo: draftEEcho, shift: draftEShift, over: draftE },
+  ];
+
+  // Decided 2026-11-09: the current effect stays for gun headshots; the drafts are kept for special moments.
+  const USES = {
+    now: '모든 총 헤드샷. 이대로 계속 씁니다.',
+    A: '근접 무기로 머리를 맞혔을 때 (정함).',
+    B: '제안: 저격총이나 원거리 사격(25 m 이상) 헤드샷.',
+    C: '제안: 네임드·정예 적의 머리나 약점을 맞혔을 때.',
+    D: '제안: 완벽 방어 반격이나 처형 같은 특수 처치.',
+    E: '제안: 실드를 두른 적의 머리. 피 대신 에너지 느낌이라 실드 규칙과 맞습니다.',
+  };
+
+  const SCEN = {
+    head: { cycle: .75, ev: [{ t: .15, kind: 'Head', share: .45 }] },
+    burst: { cycle: 1.0, ev: [{ t: .1, kind: 'Body', share: .15 }, { t: .2, kind: 'Body', share: .15 }, { t: .3, kind: 'Head', share: .45 }, { t: .4, kind: 'Body', share: .15 }] },
+    pair: { cycle: 1.1, ev: [{ t: .1, kind: 'Body', share: .3 }, { t: .6, kind: 'Head', share: .45 }] },
+    kill: { cycle: .8, ev: [{ t: .15, kind: 'HeadKill', share: 1 }] },
+  };
+
+  // ---------- state ----------
+  const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const st = { t: 0, playing: !reduced, speed: 1, loop: true, fps: 60, zoom: 1, scen: 'head', bg: 'dark' };
+  if (reduced) st.t = .15 + 2 / 60;
+
+  // A hit shows from the next drawn frame, already one frame old (Trigger, then LateUpdate adds the frame's time).
+  function ageOf(t, te) { const a = t - te; return st.fps ? (Math.floor(a * st.fps + 1e-6) + 1) / st.fps : a; }
+  function resolve(t, events) {
+    let cur = null, head = null;
+    for (const e of events) {
+      if (e.t > t + 1e-9) break;
+      if (cur) { const a = e.t - cur.t; if (a < lifetimeOf(cur) && isKill(cur.kind) && !isKill(e.kind) && a < .18) continue; }
+      cur = e; if (isHead(e.kind)) head = e;
+    }
+    return { cur, head };
+  }
+
+  // ---------- backgrounds ----------
+  const bgCache = new Map();
+  function background(kind, W, H) {
+    const key = kind + W + 'x' + H;
+    if (bgCache.has(key)) return bgCache.get(key);
+    const c = document.createElement('canvas'); c.width = W; c.height = H;
+    const g = c.getContext('2d'), grad = g.createLinearGradient(0, 0, 0, H);
+    if (kind === 'dark') { grad.addColorStop(0, '#2c3135'); grad.addColorStop(1, '#14171a'); }
+    else if (kind === 'wall') { grad.addColorStop(0, '#9b9c97'); grad.addColorStop(1, '#75766e'); }
+    else { grad.addColorStop(0, '#eef5fb'); grad.addColorStop(1, '#b0cbe1'); }
+    g.fillStyle = grad; g.fillRect(0, 0, W, H);
+    if (kind === 'wall') {
+      g.fillStyle = 'rgba(45,45,40,.35)';
+      for (let y = H * .22; y < H; y += H * .36) g.fillRect(0, Math.round(y), W, Math.max(1, Math.round(H / 280)));
+      for (let x = W * .31; x < W; x += W * .42) g.fillRect(Math.round(x), 0, Math.max(1, Math.round(H / 280)), H);
+    }
+    if (kind === 'sky') {
+      const sun = g.createRadialGradient(W * .8, H * .15, 0, W * .8, H * .15, H * .7);
+      sun.addColorStop(0, 'rgba(255,255,255,.9)'); sun.addColorStop(1, 'rgba(255,255,255,0)');
+      g.fillStyle = sun; g.fillRect(0, 0, W, H);
+    }
+    const amp = kind === 'wall' ? 16 : kind === 'dark' ? 7 : 3;
+    const img = g.getImageData(0, 0, W, H), d = img.data;
+    let s = 1234567;
+    for (let i = 0; i < d.length; i += 4) {
+      s = (Math.imul(s, 1664525) + 1013904223) | 0;
+      const n = ((s >>> 8) / 16777216 - .5) * 2 * amp;
+      d[i] += n; d[i + 1] += n; d[i + 2] += n;
+    }
+    g.putImageData(img, 0, 0);
+    if (kind === 'dark') {
+      const v = g.createRadialGradient(W / 2, H / 2, H * .2, W / 2, H / 2, W * .75);
+      v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,.45)');
+      g.fillStyle = v; g.fillRect(0, 0, W, H);
+    }
+    bgCache.set(key, c);
+    return c;
+  }
+
+  // ---------- panels ----------
+  const grid = document.getElementById('grid');
+  const panels = DESIGNS.map(D => {
+    const card = document.createElement('article');
+    card.className = 'card' + (D.now ? ' now' : '');
+    card.innerHTML = `<div class="card-head"><span class="letter">${D.letter}</span><h2></h2><span class="dur"></span></div>
+      <div class="stage"><canvas role="img"></canvas></div><p class="line"></p>
+      <p class="use"><span class="use-k">쓸 곳</span><span class="use-v"></span></p>`;
+    card.querySelector('.use-v').textContent = USES[D.id];
+    card.querySelector('h2').textContent = D.name;
+    card.querySelector('.dur').textContent = D.dur.toFixed(2) + ' s';
+    card.querySelector('.line').textContent = D.line;
+    const canvas = card.querySelector('canvas');
+    canvas.setAttribute('aria-label', `${D.letter} ${D.name}: ${D.line}`);
+    grid.appendChild(card);
+    return { D, canvas, ctx: canvas.getContext('2d'), W: 0, H: 0, dpr: 1 };
+  });
+  function fit() {
+    const dpr = Math.min(3, window.devicePixelRatio || 1);
+    bgCache.clear();
+    for (const p of panels) {
+      const r = p.canvas.getBoundingClientRect();
+      p.dpr = dpr; p.W = Math.max(1, Math.round(r.width * dpr)); p.H = Math.max(1, Math.round(r.height * dpr));
+      if (p.canvas.width !== p.W) p.canvas.width = p.W;
+      if (p.canvas.height !== p.H) p.canvas.height = p.H;
+    }
+  }
+  if ('ResizeObserver' in window) new ResizeObserver(fit).observe(grid);
+  window.addEventListener('resize', fit);
+  fit();
+
+  function render(p, t) {
+    const { ctx, D } = p;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+    ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(background(st.bg, p.W, p.H), 0, 0);
+    const k = st.zoom * p.dpr;
+    ctx.setTransform(k, 0, 0, -k, Math.round(p.W / 2), Math.round(p.H / 2));
+    crosshair(ctx);
+    const { cur, head } = resolve(t, SCEN[st.scen].ev);
+    const ha = head ? ageOf(t, head.t) : 99, on = head && ha < D.dur;
+    if (on && D.under) D.under(ctx, ha, head);
+    if (cur) {
+      const a = ageOf(t, cur.t), L = tickLook(cur, a);
+      if (a < L.lifetime) {
+        if (on && D.echo) D.echo(ctx, ha, L, a);
+        drawTicks(ctx, L, a, on && D.shift ? D.shift(ha) : {});
+      }
+    }
+    if (on && D.over) D.over(ctx, ha, head);
+  }
+
+  // ---------- controls ----------
+  const $ = id => document.getElementById(id);
+  const playBtn = $('play'), timeIn = $('time'), readout = $('readout');
+  function syncPlay() { playBtn.textContent = st.playing ? '멈춤' : '재생'; }
+  function seg(id, apply) {
+    const box = $(id);
+    box.addEventListener('click', ev => {
+      const b = ev.target.closest('button'); if (!b) return;
+      for (const x of box.querySelectorAll('button')) x.setAttribute('aria-pressed', x === b ? 'true' : 'false');
+      apply(b.dataset.v);
+    });
+  }
+  seg('speed', v => { st.speed = +v; });
+  seg('scen', v => { st.scen = v; st.t = 0; timeIn.max = SCEN[v].cycle; if (!st.playing) { st.playing = true; syncPlay(); } });
+  seg('bg', v => { st.bg = v; });
+  seg('zoom', v => { st.zoom = +v; });
+  seg('fps', v => { st.fps = +v; });
+  playBtn.addEventListener('click', () => {
+    if (!st.playing && st.t >= SCEN[st.scen].cycle - 1e-6) st.t = 0;
+    st.playing = !st.playing; syncPlay();
+  });
+  $('restart').addEventListener('click', () => { st.t = 0; st.playing = true; syncPlay(); });
+  $('loop').addEventListener('change', e => { st.loop = e.target.checked; });
+  timeIn.addEventListener('input', () => { st.t = +timeIn.value; st.playing = false; syncPlay(); });
+  function step(n) { const f = st.fps || 60; st.playing = false; syncPlay(); st.t = Math.min(SCEN[st.scen].cycle, Math.max(0, (Math.round(st.t * f) + n) / f)); }
+  window.addEventListener('keydown', e => {
+    if (e.target.closest && e.target.closest('button') && (e.key === ' ' || e.key === 'Enter')) return;
+    if (e.key === ' ') { e.preventDefault(); playBtn.click(); }
+    else if (e.key === 'ArrowRight') { e.preventDefault(); step(1); }
+    else if (e.key === 'ArrowLeft') { e.preventDefault(); step(-1); }
+    else if (e.key === 'r' || e.key === 'R') { $('restart').click(); }
+  });
+  syncPlay();
+
+  let last = performance.now();
+  function frame(now) {
+    const dt = Math.min(.1, (now - last) / 1000); last = now;
+    const cycle = SCEN[st.scen].cycle;
+    if (st.playing) {
+      st.t += dt * st.speed;
+      if (st.t >= cycle) {
+        if (st.loop) st.t %= cycle;
+        else { st.t = cycle; st.playing = false; syncPlay(); }
+      }
+    }
+    for (const p of panels) render(p, st.t);
+    if (document.activeElement !== timeIn) timeIn.value = st.t;
+    const { head } = resolve(st.t, SCEN[st.scen].ev);
+    let txt = `${Math.round(st.t * 1000)} ms`;
+    if (head && st.t - head.t < .3) {
+      const a = st.t - head.t, f = Math.floor(a * 60 + 1e-6);
+      txt += ` · <b>헤드샷 +${Math.round(a * 1000)} ms</b> (${f}프레임째)`;
+    }
+    if (readout.innerHTML !== txt) readout.innerHTML = txt;
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>

@@ -21,7 +21,7 @@ public sealed class CreateRoomView
     /// <summary>Showing rebuilds the window, so it reflects the map chosen just before.</summary>
     public void Show(string map)
     {
-        for (int i = panel.childCount - 1; i >= 0; i--) UnityEngine.Object.Destroy(panel.GetChild(i).gameObject);
+        W.ClearContent(panel);
         var settings = GameSettings.Current;
         if (string.IsNullOrWhiteSpace(settings.roomTitle)) settings.roomTitle = settings.DisplayName + "의 방";
         int size =Mathf.Max(0, Array.IndexOf(Sizes, settings.maxPlayers));
@@ -36,6 +36,10 @@ public sealed class CreateRoomView
         W.ActionButton(buttons, "만들기", true, Confirm);
         shade.gameObject.SetActive(true);
     }
+
+    public bool IsOpen => shade.gameObject.activeSelf;
+
+    public void Close() => Hide();
 
     private void Hide() => shade.gameObject.SetActive(false);
 

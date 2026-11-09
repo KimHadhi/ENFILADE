@@ -8,9 +8,10 @@ using UnityEngine;
 /// </summary>
 public static class FeelAssets
 {
-    private static Texture2D softDot, flashStar, flashSpike, bloodSplat, ring, glint;
+    private static Texture2D softDot, flashStar, flashSpike, bloodSplat, ring, glint, glintGlow;
     private static Mesh muzzleMesh, casingMesh, quad;
     private static Shader particleShader, overlayShader;
+    private static Material uiAdditive;
     private static readonly Color32 White = new Color32(255, 255, 255, 255);
     private static readonly Dictionary<(Texture, bool), Material> particleMaterials = new Dictionary<(Texture, bool), Material>();
 
@@ -26,6 +27,21 @@ public static class FeelAssets
             if (particleShader == null) particleShader = Shader.Find("Universal Render Pipeline/Particles/Unlit");
             if (particleShader == null) particleShader = Shader.Find("Sprites/Default");
             return particleShader;
+        }
+    }
+
+    /// <summary>
+    /// UI material that adds its light onto what is behind it (Blend SrcAlpha One), for HUD glows. Null when the shader is
+    /// missing; a Graphic given null draws alpha blended.
+    /// </summary>
+    public static Material UiAdditive
+    {
+        get
+        {
+            if (uiAdditive != null) return uiAdditive;
+            var shader = Resources.Load<Shader>("Combat/Shaders/UIAdditive");
+            if (shader == null) return null;
+            return uiAdditive = new Material(shader) { name = "UI Additive (Runtime)", hideFlags = HideFlags.HideAndDontSave };
         }
     }
 
@@ -126,6 +142,19 @@ public static class FeelAssets
     });
 
     private static float GlintRay(float along, float across) => Mathf.Clamp01((.14f * (1f - Mathf.Abs(along)) - Mathf.Abs(across)) * 32f);
+
+    /// <summary>
+    /// The glint blurred: a soft round core and four soft rays that thin and fade toward their tips. Added behind the crisp
+    /// glint, it makes the headshot star give off light instead of sitting on it.
+    /// </summary>
+    public static Texture2D GlintGlow => glintGlow != null ? glintGlow : glintGlow = Generate("Feel Glint Glow", 128, 128, (u, v) =>
+    {
+        float core = Mathf.Exp(-(u * u + v * v) / (2f * .2f * .2f));
+        return Mathf.Max(core, Mathf.Max(GlowRay(u, v), GlowRay(v, u)));
+    });
+
+    private static float GlowRay(float along, float across) =>
+        Mathf.Pow(Mathf.Max(0f, 1f - Mathf.Abs(along)), 1.8f) * Mathf.Exp(-across * across / (2f * .065f * .065f));
 
     /// <summary>Unit quad in the XY plane facing -Z (double-sided material).</summary>
     public static Mesh Quad

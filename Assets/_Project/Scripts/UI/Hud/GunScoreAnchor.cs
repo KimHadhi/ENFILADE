@@ -18,8 +18,9 @@ public sealed class GunScoreAnchor : MonoBehaviour
     // Seconds the popup stays put while the hands are briefly empty (a weapon swap).
     private const float EmptyHandsGrace = .6f;
 
-    [Tooltip("From the side rail to the popup's bottom-left corner, along the screen: right, up (m). Up keeps it above the gun.")]
-    [SerializeField] private Vector2 railOffset = new Vector2(.02f, .08f);
+    [Tooltip("From the side rail to the popup's bottom-left corner, along the screen: right, up (m). Up keeps it above the gun. " +
+        "The user found .08 up too high and wants it just above the rail's right end, 2026-11-09.")]
+    [SerializeField] private Vector2 railOffset = new Vector2(.035f, .025f);
     [Tooltip("Turn about the vertical axis (°). Positive brings the right edge toward the player.")]
     [SerializeField] private float lean = 14f;
     [Tooltip("Size while fully aimed (share of normal).")]

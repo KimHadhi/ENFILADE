@@ -1,0 +1,16 @@
+﻿id,kind,weapon,price,amount,order,name
+#설명 (kind: Gun 총 / Ammo 가진 총 탄약 채우기 / Heal 체력 회복 / Shield 실드),종류,Gun일 때 무기 에셋 이름(Data/Combat/Weapons),가격(처치 1번에 100쯤),Heal·Shield의 양,목록 순서,목록에 보일 이름(비우면 무기 이름)
+M1911,Gun,M1911,300,,1,
+R08,Gun,R08,600,,2,
+MKR9,Gun,MKR9,800,,3,
+WK11Viper,Gun,WK11Viper,900,,4,
+Herrington1187,Gun,Herrington1187,1000,,5,
+MX16A4,Gun,MX16A4,1200,,6,
+TR15,Gun,TR15,1200,,7,
+SRM12,Gun,SRM12,1300,,8,
+MX68,Gun,MX68,1400,,9,
+AK105,Gun,AK105,1500,,10,
+Mk14EBR,Gun,Mk14EBR,2000,,11,
+Ammo,Ammo,,300,,20,탄약 채우기
+Medkit,Heal,,500,100,21,구급상자
+Shield,Shield,,600,50,22,실드 50

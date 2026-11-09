@@ -1,0 +1,659 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using KINEMATION.CharacterAnimationSystem.Integrations.FPSAnimationPack.Scripts;
+using KINEMATION.FPSAnimationFramework.Runtime.Core;
+using KINEMATION.FPSAnimationFramework.Runtime.Playables;
+using KINEMATION.FPSAnimationPack.Scripts.Weapon;
+using KINEMATION.ProceduralRecoilAnimationSystem.Runtime;
+using UnityEditor;
+using UnityEngine;
+using CasAnimation = KINEMATION.CharacterAnimationSystem.Scripts.Runtime.Playables.AnimationAsset;
+using PartsPlayer = KINEMATION.CharacterAnimationSystem.Scripts.Runtime.Playables.SimpleAnimationPlayer;
+using Object = UnityEngine.Object;
+
+/// <summary>
+/// Makes KINEMATION's Tactical Shooter Pack guns into guns the body holds the way it holds the FPS Animation Pack's
+/// (FPSBody): each gets a prefab of its own in the shape of the CAS integration's guns, which FPSBody and the bake know.
+/// - The pack's gun prefab is copied with its default attachments put on (an iron sight, a grip, a muzzle; a scope that
+///   needs a camera of its own is left off for the iron sights), and the pack's own scripts and particle systems taken
+///   off: its KShooterCore player isn't ours, and our muzzle, brass and sounds stand in for them.
+/// - The gun-part Animator plays through CAS's SimpleAnimationPlayer at rest on the gun's idle clip, and a CasFPSWeapon
+///   carries the sight, a copy of the rifle's FPS Animation Pack settings with the gun's own recoil (the pack's Recoil
+///   asset is KINEMATION's Procedural Recoil data, as the FPS Animation Pack's is), and the gun-part clips.
+/// - FPSAF's animation assets are the rifle's, without its clip-timed curves; the body plays the clips GunClipRetarget
+///   makes for each skin from the pack's own (its Operator skeleton, framed from the pack's FPCamera).
+/// - The gun is added to Resources/Combat/FPSBody, which sets GunClipRetarget baking.
+/// Our numbers (damage, pellets, shells, reload times measured from the pack's clips) are Weapons.csv's.
+/// It runs by itself after scripts load for a gun not in FPSBody yet, and from Tools → ENFILADE → Combat → Make Tactical
+/// Shooter Pack Guns to make them all again.
+/// </summary>
+[InitializeOnLoad]
+internal static class TacticalGunSetup
+{
+    private const string Pack = "Assets/ThirdParty/KINEMATION/TacticalShooterPack";
+    private const string Folder = "Assets/_Project/Data/Combat/TacticalGuns";
+    private const string WeaponsFolder = "Assets/_Project/Data/Combat/Weapons";
+    private const string FPSBodyFolder = "Assets/_Project/Data/Combat/FPSBody";
+    private const string AssetsPath = "Assets/_Project/Resources/" + FPSBodyAssets.ResourcePath + ".asset";
+    private const string Operator = Pack + "/Meshes/Character/Operator/SKM_Operator.fbx";
+    private const string CameraRig = Pack + "/Prefabs/TacticalShooterCharacter.prefab";
+    // The FPS Animation Pack guns whose settings and FPSAF assets the pack's guns start from: the rifle for the long guns,
+    // the pistol for the one-handed ones (KINEMATION's isOneHanded).
+    private const string RifleWeapon = "MX16A4", PistolWeapon = "M1911";
+
+    /// <summary>
+    /// One of the pack's guns. Clip names leave out the pack's prefixes (A_FP_ for the body, A_W_ for the gun). Recoil
+    /// names the pack's Recoil asset; empty takes the one the pack's own gun settings name.
+    /// </summary>
+    private sealed class Spec
+    {
+        public string weapon, prefab, folder, recoil;
+        // The name the pack's clips share (A_FP_<clip>_Draw, A_W_<clip>_Inspect, ...): its draw, holster and inspect are found by it.
+        public string clip;
+        public bool pistol;
+        // A suppressor that is part of the gun's own model (a bone of it), shown or hidden as the muzzle choice.
+        public string builtInSuppressor;
+        public string pose, reloadTactical, reloadEmpty, reloadShell, reloadEnd;
+        public string partsIdle, partsFire, partsFireOut, partsReloadTactical, partsReloadEmpty, partsReloadShell, partsReloadEnd;
+    }
+
+    private static readonly Spec[] Guns =
+    {
+        // A semi-automatic shotgun loaded a shell at a time (KINEMATION's TacticalShotgun).
+        new Spec
+        {
+            weapon = "Herrington1187", clip = "Herrington_11-87", prefab = "W_Herrington_11-87_Police", folder = "Herrington_11-87", recoil = "Recoil_Herrington_11-87",
+            builtInSuppressor = "Suppressor",
+            pose = "Herrington_11-87_Idle", reloadTactical = "Herrington_11-87_Reload_Tac_Start",
+            reloadEmpty = "Herrington_11-87_Reload_Empty_Start", reloadShell = "Herrington_11-87_Reload_Loop", reloadEnd = "Herrington_11-87_Reload_End",
+            partsIdle = "Herrington_11-87_Idle", partsFire = "Herrington_11-87_Fire", partsFireOut = "Herrington_11-87_Fire_Out",
+            partsReloadTactical = "Herrington_11-87_Reload_Tac_Start", partsReloadEmpty = "Herrington_11-87_Reload_Empty_Start",
+            partsReloadShell = "Herrington_11-87_Reload_Loop", partsReloadEnd = "Herrington_11-87_Reload_End",
+        },
+        // A semi-automatic shotgun with a box magazine.
+        new Spec
+        {
+            weapon = "SRM12", clip = "SRM-12", prefab = "W_Oryx_SRM-12", folder = "SRM-12", recoil = "Recoil_Oryx_SRM-12",
+            pose = "SRM-12_Idle_Pose", reloadTactical = "SRM-12_Reload_Tactical", reloadEmpty = "SRM-12_Reload_Empty",
+            partsIdle = "SRM-12_Idle", partsFire = "SRM-12_Fire", partsReloadTactical = "SRM-12_Reload_Tac", partsReloadEmpty = "SRM-12_Reload_Empty",
+        },
+        // Assault rifles.
+        new Spec
+        {
+            weapon = "AK105", clip = "AK105", prefab = "W_AK105", folder = "AK105",
+            pose = "AK105_Idle", reloadTactical = "AK105_Reload_Tac", reloadEmpty = "AK105_Reload_Empty",
+            partsIdle = "AK105_Idle", partsFire = "AK105_Fire", partsReloadTactical = "AK105_Reload_Tac", partsReloadEmpty = "AK105_Reload_Empty",
+        },
+        new Spec
+        {
+            weapon = "TR15", clip = "TR15", prefab = "W_TR15", folder = "TR15",
+            pose = "TR15_Idle_Pose_Grip", reloadTactical = "TR15_Reload_Tactical", reloadEmpty = "TR15_Reload_Empty",
+            partsIdle = "TR15_Idle", partsFire = "TR15_Fire", partsFireOut = "TR15_Fire_Out",
+            partsReloadTactical = "TR15_Reload_Tac", partsReloadEmpty = "TR15_Reload_Empty",
+        },
+        // A marksman rifle; its gun clip "Empty" holds the bolt back after the last round.
+        new Spec
+        {
+            weapon = "Mk14EBR", clip = "Mk14EBR", prefab = "W_Mk14EBR", folder = "Mk14EBR",
+            pose = "Mk14EBR_Idle", reloadTactical = "Mk14EBR_Reload_Tactical", reloadEmpty = "Mk14EBR_Reload_Empty",
+            partsFire = "Mk14EBR_Fire", partsFireOut = "Mk14EBR_Empty",
+            partsReloadTactical = "Mk14EBR_Reload_Tactical", partsReloadEmpty = "Mk14EBR_Reload_Empty",
+        },
+        // A belt-fed machine gun: KINEMATION's three reloads (TacticalMX68), the first for a part-used belt, the third from empty.
+        new Spec
+        {
+            weapon = "MX68", clip = "MX68", prefab = "W_MX68", folder = "MX68",
+            pose = "MX68_Idle", reloadTactical = "MX68_Reload_01", reloadEmpty = "MX68_Reload_03",
+            partsIdle = "MX68_Idle", partsFire = "MX68_Fire_Belt", partsReloadTactical = "MX68_Reload_01", partsReloadEmpty = "MX68_Reload_03",
+        },
+        // A submachine gun.
+        new Spec
+        {
+            weapon = "MKR9", clip = "MKR9", prefab = "W_MKR9", folder = "MKR9",
+            pose = "MKR9_Idle", reloadTactical = "MKR9_Reload_Tac", reloadEmpty = "MKR9_Reload_Empty",
+            partsIdle = "MKR9_Idle", partsFire = "MKR9_Fire", partsReloadTactical = "MKR9_Reload_Tac", partsReloadEmpty = "MKR9_Reload_Empty",
+        },
+        // A revolver: KINEMATION's TacticalRevolver loads it round by round (Reload_01 to 07) or all at once with a speed
+        // loader (Reload_08); here always the speed loader.
+        new Spec
+        {
+            weapon = "R08", clip = "R08", prefab = "W_R08", folder = "R08", pistol = true,
+            pose = "R08_Idle", reloadTactical = "R08_Reload_08", reloadEmpty = "R08_Reload_08",
+            partsIdle = "R08_Idle", partsFire = "R08_Fire", partsReloadTactical = "R08_Reload_08", partsReloadEmpty = "R08_Reload_08",
+        },
+        // A machine pistol.
+        new Spec
+        {
+            weapon = "WK11Viper", clip = "WK-11_Viper", prefab = "W_WK-11_Viper", folder = "WK-11_Viper", pistol = true,
+            pose = "WK-11_Viper_Idle_Pose", reloadTactical = "WK-11_Viper_Reload_Tactical", reloadEmpty = "WK-11_Viper_Reload_Empty",
+            partsIdle = "WK-11_Viper_Idle", partsFire = "WK-11_Viper_Fire", partsFireOut = "WK-11_Viper_Fire_Empty",
+            partsReloadTactical = "WK-11_Viper_Reload_Tac", partsReloadEmpty = "WK-11_Viper_Reload_Empty",
+        },
+    };
+
+    static TacticalGunSetup() => EditorApplication.delayCall += () => Run(false);
+
+    [MenuItem("Tools/ENFILADE/Combat/Make Tactical Shooter Pack Guns")]
+    private static void RunAll() => Run(true);
+
+    private static void Run(bool all)
+    {
+        if (EditorApplication.isPlayingOrWillChangePlaymode || EditorApplication.isCompiling || EditorApplication.isUpdating) return;
+        var assets = AssetDatabase.LoadAssetAtPath<FPSBodyAssets>(AssetsPath);
+        if (assets == null || assets.guns == null || AssetDatabase.LoadAssetAtPath<GameObject>(Operator) == null) return;
+        if (!Template(assets, RifleWeapon, out var rifle, out var rifleWeapon)) return;
+        bool hasPistol = Template(assets, PistolWeapon, out var pistol, out var pistolWeapon);
+
+        bool changed = false;
+        foreach (var spec in Guns)
+        {
+            var weapon = AssetDatabase.LoadAssetAtPath<WeaponData>($"{WeaponsFolder}/{spec.weapon}.asset");
+            if (weapon == null) continue;
+            int index = Array.FindIndex(assets.guns, gun => gun.weapon == weapon);
+            // Made already, unless it was made before the sights could be switched (GunSights), before draw, holster and
+            // inspect, or before its muzzle, grip and underbarrel parts (GunAttachments).
+            if (!all && index >= 0 && assets.guns[index].prefab != null && assets.guns[index].prefab.GetComponent<GunSights>() != null
+                && assets.guns[index].prefab.GetComponent<GunAttachments>() is GunAttachments parts && !GripsWithoutHand(parts)
+                && assets.guns[index].sourceDraw != null) continue;
+            bool onePistol = spec.pistol && hasPistol;
+            try
+            {
+                if (Make(spec, weapon, assets, onePistol ? pistol : rifle, onePistol ? pistolWeapon : rifleWeapon)) changed = true;
+            }
+            catch (Exception error)
+            {
+                Debug.LogWarning($"TacticalGunSetup: {spec.weapon} could not be made: {error.Message}\n{error.StackTrace}");
+            }
+        }
+        if (!changed) return;
+        // Saved, FPSBody is imported again and GunClipRetarget bakes the new guns' clips for every skin.
+        EditorUtility.SetDirty(assets);
+        AssetDatabase.SaveAssets();
+    }
+
+    // Grips made before the support hand went on them (7b, 2026-11-09): made again once.
+    private static bool GripsWithoutHand(GunAttachments parts)
+    {
+        foreach (var grip in parts.grips)
+            if (grip.kind != GunAttachments.Kind.None && !grip.hasHand) return true;
+        return false;
+    }
+
+    // An FPS Animation Pack gun in Resources/Combat/FPSBody that the pack's guns start from.
+    private static bool Template(FPSBodyAssets assets, string name, out FPSBodyAssets.Gun gun, out CasFPSWeapon weapon)
+    {
+        gun = Array.Find(assets.guns, entry => entry.weapon != null && entry.weapon.name == name);
+        weapon = gun.prefab != null ? gun.prefab.GetComponent<CasFPSWeapon>() : null;
+        if (weapon != null && weapon.weaponSettings != null && gun.profile != null) return true;
+        Debug.LogWarning($"TacticalGunSetup: {name}'s gun in Resources/Combat/FPSBody is missing; the Tactical Shooter Pack's guns start from it.");
+        return false;
+    }
+
+    // rifle: the FPS Animation Pack gun this one starts from (MX16A4, or M1911 for a one-handed gun).
+    private static bool Make(Spec spec, WeaponData weapon, FPSBodyAssets assets, FPSBodyAssets.Gun rifle, CasFPSWeapon rifleWeapon)
+    {
+        string template = rifle.weapon.name;
+        string clips = $"{Pack}/Animations/{spec.folder}";
+        AnimationClip Body(string name) => name != null ? Clip($"{clips}/Character/A_FP_{name}.FBX") : null;
+        AnimationClip Parts(string name) => name != null ? Clip($"{clips}/Weapon/A_W_{name}.FBX") : null;
+
+        var source = AssetDatabase.LoadAssetAtPath<GameObject>($"{Pack}/Prefabs/Weapons/{spec.prefab}.prefab");
+        var pose = Body(spec.pose);
+        if (source == null || pose == null)
+        {
+            Debug.LogWarning($"TacticalGunSetup: {spec.prefab} or its clips are not in the Tactical Shooter Pack.");
+            return false;
+        }
+        Directory.CreateDirectory(Folder);
+        AssetDatabase.Refresh();
+        string stem = $"{Folder}/{spec.weapon}";
+
+        var settings = Settings(spec, weapon, source, rifleWeapon.weaponSettings, $"{stem}_Settings.asset", Parts(spec.partsFireOut) != null);
+        var partsFire = PartsAsset(Parts(spec.partsFire), $"{stem}_Parts_Fire.asset");
+        var partsFireOut = PartsAsset(Parts(spec.partsFireOut), $"{stem}_Parts_FireOut.asset");
+        var partsTactical = PartsAsset(Parts(spec.partsReloadTactical), $"{stem}_Parts_ReloadTactical.asset");
+        var partsEmpty = PartsAsset(Parts(spec.partsReloadEmpty), $"{stem}_Parts_ReloadEmpty.asset");
+        var partsShell = PartsAsset(Parts(spec.partsReloadShell), $"{stem}_Parts_ReloadShell.asset");
+        var partsEnd = PartsAsset(Parts(spec.partsReloadEnd), $"{stem}_Parts_ReloadEnd.asset");
+
+        var prefab = MakePrefab(source, $"{stem}.prefab", settings, Parts(spec.partsIdle), rifleWeapon,
+            partsFire, partsFireOut, partsTactical, partsEmpty, spec.builtInSuppressor);
+        if (prefab == null) return false;
+        SuppressedSounds(source, weapon);
+
+        // The rifle's FPSAF assets carry curves timed for its own clips; these keep its blends only.
+        var poseTemplate = rifle.pose != null ? rifle.pose : AssetDatabase.LoadAssetAtPath<FPSAnimationAsset>($"{FPSBodyFolder}/Anim_{template}_Pose.asset");
+        var reloadTemplate = rifle.reloadTactical != null ? rifle.reloadTactical
+            : AssetDatabase.LoadAssetAtPath<FPSAnimationAsset>($"{FPSBodyFolder}/Anim_{template}_ReloadTactical.asset");
+        bool shells = spec.reloadShell != null;
+        var entry = new FPSBodyAssets.Gun
+        {
+            weapon = weapon,
+            prefab = prefab,
+            profile = rifle.profile,
+            sourcePose = pose,
+            sourceReloadTactical = Body(spec.reloadTactical),
+            sourceReloadEmpty = Body(spec.reloadEmpty),
+            pose = BodyAsset(poseTemplate, $"{stem}_Anim_Pose.asset", .15f, .15f),
+            // A shell reload's start and shells hand straight over to the next step; FPSBody eases its end into the hold.
+            reloadTactical = BodyAsset(reloadTemplate, $"{stem}_Anim_ReloadTactical.asset", .15f, shells ? .1f : .15f),
+            reloadEmpty = BodyAsset(reloadTemplate, $"{stem}_Anim_ReloadEmpty.asset", .15f, shells ? .1f : .15f),
+            sourceArms = AssetDatabase.LoadAssetAtPath<GameObject>(Operator),
+            sourceCameraRig = AssetDatabase.LoadAssetAtPath<GameObject>(CameraRig),
+            sourceReloadShell = Body(spec.reloadShell),
+            sourceReloadEnd = Body(spec.reloadEnd),
+            reloadShell = shells ? BodyAsset(reloadTemplate, $"{stem}_Anim_ReloadShell.asset", .1f, .1f) : null,
+            reloadEnd = spec.reloadEnd != null ? BodyAsset(reloadTemplate, $"{stem}_Anim_ReloadEnd.asset", .1f, .15f) : null,
+            partsReloadShell = partsShell,
+            partsReloadEnd = partsEnd,
+            // Drawn and put away quickly (fitted to the gun's Draw and Holster Duration by FPSBody), looked over at leisure.
+            sourceDraw = Body($"{spec.clip}_Draw"),
+            sourceHolster = Body($"{spec.clip}_Holster"),
+            sourceInspect = Body($"{spec.clip}_Inspect"),
+            draw = BodyAsset(reloadTemplate, $"{stem}_Anim_Draw.asset", .05f, .2f),
+            holster = BodyAsset(reloadTemplate, $"{stem}_Anim_Holster.asset", .1f, .05f),
+            inspect = BodyAsset(reloadTemplate, $"{stem}_Anim_Inspect.asset", .2f, .25f),
+            partsDraw = PartsAsset(Parts($"{spec.clip}_Draw"), $"{stem}_Parts_Draw.asset"),
+            partsHolster = PartsAsset(Parts($"{spec.clip}_Holster"), $"{stem}_Parts_Holster.asset"),
+            partsInspect = PartsAsset(Parts($"{spec.clip}_Inspect"), $"{stem}_Parts_Inspect.asset"),
+        };
+        var list = new List<FPSBodyAssets.Gun>(assets.guns);
+        int index = list.FindIndex(gun => gun.weapon == weapon);
+        if (index >= 0) list[index] = entry;
+        else list.Add(entry);
+        assets.guns = list.ToArray();
+        Debug.Log($"TacticalGunSetup: {weapon.name} is made from the Tactical Shooter Pack's {spec.prefab}; GunClipRetarget bakes its clips next.", prefab);
+        return true;
+    }
+
+    // ---- The gun ----
+
+    // The pack's suppressed shots for the gun (its settings' suppressedFireSounds), into our WeaponData, unless it has its own.
+    private static void SuppressedSounds(GameObject source, WeaponData weapon)
+    {
+        var packWeapon = FindPack(source, "TacticalShooterWeapon");
+        var packSettings = packWeapon != null ? new SerializedObject(packWeapon).FindProperty("tacWeaponSettings")?.objectReferenceValue : null;
+        var sounds = packSettings != null ? new SerializedObject(packSettings).FindProperty("suppressedFireSounds") : null;
+        var write = new SerializedObject(weapon);
+        var mine = write.FindProperty("suppressedFireSounds");
+        if (sounds == null || mine == null || mine.arraySize > 0) return;
+        for (int i = 0; i < sounds.arraySize; i++)
+        {
+            if (!(sounds.GetArrayElementAtIndex(i).objectReferenceValue is AudioClip clip)) continue;
+            mine.InsertArrayElementAtIndex(mine.arraySize);
+            mine.GetArrayElementAtIndex(mine.arraySize - 1).objectReferenceValue = clip;
+        }
+        write.ApplyModifiedPropertiesWithoutUndo();
+        EditorUtility.SetDirty(weapon);
+    }
+
+    private static GameObject MakePrefab(GameObject source, string path, FPSWeaponSettings settings, AnimationClip idle, CasFPSWeapon rifle,
+        CasAnimation fire, CasAnimation fireOut, CasAnimation reloadTactical, CasAnimation reloadEmpty, string builtInSuppressor)
+    {
+        var instance = (GameObject)PrefabUtility.InstantiatePrefab(source);
+        try
+        {
+            PrefabUtility.UnpackPrefabInstance(instance, PrefabUnpackMode.Completely, InteractionMode.AutomatedAction);
+            instance.name = Path.GetFileNameWithoutExtension(path);
+            instance.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
+            // The gun's own Animator, found before any attachment (which may bring one) goes on.
+            var animator = instance.GetComponentInChildren<Animator>(true);
+
+            // What the pack's own gun script knew: its sight, and the bones it keeps hidden.
+            Transform aimPoint = null;
+            var weapon = FindPack(instance, "TacticalShooterWeapon");
+            if (weapon != null)
+            {
+                var read = new SerializedObject(weapon);
+                aimPoint = read.FindProperty("aimPoint")?.objectReferenceValue as Transform;
+                var hidden = read.FindProperty("bonesToHide");
+                for (int i = 0; hidden != null && i < hidden.arraySize; i++)
+                {
+                    var bone = hidden.GetArrayElementAtIndex(i);
+                    if (bone.FindPropertyRelative("isHidden").boolValue && bone.FindPropertyRelative("bone").objectReferenceValue is Transform shut)
+                        shut.localScale = Vector3.zero;
+                }
+            }
+            var sightAim = PutOnAttachments(instance, aimPoint, builtInSuppressor);
+            if (sightAim != null) aimPoint = sightAim;
+
+            // The pack's scripts expect its own player; its particle systems are its muzzle flash and brass.
+            for (int pass = 0; pass < 4; pass++)
+                foreach (var script in instance.GetComponentsInChildren<MonoBehaviour>(true))
+                    if (script != null && IsPack(script)) Object.DestroyImmediate(script);
+            foreach (var particles in instance.GetComponentsInChildren<ParticleSystem>(true))
+            {
+                if (particles == null) continue;
+                var main = particles.main;
+                main.playOnAwake = false;
+                // Off altogether, unless it shares its object with a part of the gun itself.
+                bool part = particles.gameObject == instance || particles.GetComponentsInChildren<MeshRenderer>(true).Length > 0
+                    || particles.GetComponentsInChildren<SkinnedMeshRenderer>(true).Length > 0;
+                if (!part) particles.gameObject.SetActive(false);
+            }
+
+            // The gun-part clips through CAS's player, the gun at rest on its idle clip.
+            if (animator != null)
+            {
+                animator.runtimeAnimatorController = null;
+                var player = animator.gameObject.GetComponent<PartsPlayer>();
+                if (player == null) player = animator.gameObject.AddComponent<PartsPlayer>();
+                // A graph of its own, as KINEMATION's CAS guns have it: the Animator has no controller to build on.
+                var write = new SerializedObject(player);
+                var rest = write.FindProperty("defaultClipPose");
+                if (rest != null) rest.objectReferenceValue = idle;
+                var own = write.FindProperty("useAnimator");
+                if (own != null) own.boolValue = false;
+                write.ApplyModifiedPropertiesWithoutUndo();
+            }
+
+            var cas = instance.GetComponent<CasFPSWeapon>();
+            if (cas == null) cas = instance.AddComponent<CasFPSWeapon>();
+            cas.weaponSettings = settings;
+            cas.aimPoint = aimPoint != null ? aimPoint : instance.transform;
+            cas.fire = new FPSAnimationPair { weapon = fire };
+            cas.fireOut = new FPSAnimationPair { weapon = fireOut };
+            cas.reloadTactical = new FPSAnimationPair { weapon = reloadTactical };
+            cas.reloadEmpty = new FPSAnimationPair { weapon = reloadEmpty };
+            // The rifle's camera shake (a CAS asset, which FPSGun copies into FPSAF's); semi-automatic.
+            var casWrite = new SerializedObject(cas);
+            var shake = casWrite.FindProperty("cameraShake");
+            var rifleShake = new SerializedObject(rifle).FindProperty("cameraShake");
+            if (shake != null && rifleShake != null) shake.objectReferenceValue = rifleShake.objectReferenceValue;
+            var mode = casWrite.FindProperty("fireMode");
+            if (mode != null) mode.enumValueIndex = 0;
+            casWrite.ApplyModifiedPropertiesWithoutUndo();
+
+            var made = PrefabUtility.SaveAsPrefabAsset(instance, path, out bool saved);
+            return saved ? made : null;
+        }
+        finally
+        {
+            Object.DestroyImmediate(instance);
+        }
+    }
+
+    // The pack's attachments, as its TacticalWeaponAttachments puts them on: every grip, muzzle and underbarrel choice on its
+    // mount for GunAttachments to switch between (the customize menu, C), nothing on the muzzle or grip to start with, and every sight on the
+    // sight mount for GunSights to switch between (the same menu), the pack's own pick shown. A magnified scope gets a GunScope with the pack's numbers, which renders its lens as the pack's
+    // ScopeAttachment did. The gun's own iron sights are a choice too when it has them. Returns the shown sight's aim point.
+    private static Transform PutOnAttachments(GameObject gun, Transform gunAim, string builtInSuppressor)
+    {
+        var list = new List<GunSights.Sight>();
+        var irons = new List<GameObject>();
+        int initial = 0;
+        // The muzzle, grip and underbarrel choices (GunAttachments), each starting with nothing there.
+        var none = new GunAttachments.Choice { kind = GunAttachments.Kind.None };
+        var muzzles = new List<GunAttachments.Choice> { none };
+        var grips = new List<GunAttachments.Choice> { none };
+        var under = new List<GunAttachments.Choice> { none };
+        var attachments = FindPack(gun, "TacticalWeaponAttachments");
+        if (attachments != null)
+        {
+            var read = new SerializedObject(attachments);
+            var ironList = read.FindProperty("ironSightObjects");
+            for (int i = 0; ironList != null && i < ironList.arraySize; i++)
+                if (ironList.GetArrayElementAtIndex(i).objectReferenceValue is GameObject iron) irons.Add(iron);
+            foreach (string group in new[] { "scopes", "grips", "muzzle", "underbarrel" })
+            {
+                var mount = read.FindProperty($"{group}.attachmentPoint")?.objectReferenceValue as Transform;
+                var choices = read.FindProperty($"{group}.attachments");
+                if (mount == null || choices == null || choices.arraySize == 0) continue;
+                int pick = Mathf.Clamp(read.FindProperty($"{group}.initialIndex")?.intValue ?? 0, 0, choices.arraySize - 1);
+                if (group != "scopes")
+                {
+                    // Every choice on the mount for GunAttachments to switch between; the pack's empty entries are its "none".
+                    var into = group == "grips" ? grips : group == "muzzle" ? muzzles : under;
+                    for (int i = 0; i < choices.arraySize; i++)
+                        if (choices.GetArrayElementAtIndex(i).objectReferenceValue is Component other)
+                            into.Add(ChoiceOf(other, Put(other, mount), gun.transform));
+                    continue;
+                }
+                // A sight's choice is a selection: its prefab (and secondary scopes, left off here).
+                for (int i = 0; i < choices.arraySize; i++)
+                {
+                    if (!(choices.GetArrayElementAtIndex(i).FindPropertyRelative("prefab")?.objectReferenceValue is Component prefab)) continue;
+                    var put = Put(prefab, mount);
+                    var sight = put.GetComponent(prefab.GetType());
+                    var sightRead = sight != null ? new SerializedObject(sight) : null;
+                    var sightAim = sightRead?.FindProperty("sightData.aimPoint")?.objectReferenceValue as Transform;
+                    var entry = new GunSights.Sight
+                    {
+                        part = put,
+                        aimPoint = sightAim != null ? sightAim : gunAim,
+                        ironSight = sightRead?.FindProperty("isIronSight")?.boolValue ?? false,
+                    };
+                    if (sightRead != null && prefab.GetType().Name.Contains("Scope"))
+                    {
+                        var scope = put.AddComponent<GunScope>();
+                        scope.lens = sightRead.FindProperty("lens")?.objectReferenceValue as Renderer;
+                        scope.capturePoint = sightRead.FindProperty("capturePoint")?.objectReferenceValue as Transform;
+                        scope.magnification = sightRead.FindProperty("magnification")?.floatValue ?? 1f;
+                        scope.textureResolution = sightRead.FindProperty("textureResolution")?.intValue ?? 1024;
+                        scope.captureFov = sightRead.FindProperty("captureFov")?.floatValue ?? 90f;
+                        entry.scope = scope;
+                    }
+                    if (i == pick) initial = list.Count;
+                    list.Add(entry);
+                }
+            }
+        }
+        // A suppressor that is part of the gun's own model is a muzzle choice too, shown by its size.
+        if (!string.IsNullOrEmpty(builtInSuppressor) && FindDeep(gun.transform, builtInSuppressor) is Transform built)
+            muzzles.Add(new GunAttachments.Choice { kind = GunAttachments.Kind.Suppressor, bone = built });
+        // Every gun gets one, empty or not, so a gun made before them is made again once (Run).
+        var parts = gun.AddComponent<GunAttachments>();
+        parts.muzzle = muzzles.Count > 1 ? muzzles.ToArray() : Array.Empty<GunAttachments.Choice>();
+        parts.grips = grips.Count > 1 ? grips.ToArray() : Array.Empty<GunAttachments.Choice>();
+        parts.underbarrel = under.Count > 1 ? under.ToArray() : Array.Empty<GunAttachments.Choice>();
+        // Nothing on the muzzle or under the grip to start with, as a Siege gun comes; a flashlight stays on its rail, off.
+        parts.initialUnderbarrel = Mathf.Max(0, under.FindIndex(choice => choice.kind == GunAttachments.Kind.Flashlight));
+        parts.Begin();
+
+        // The gun's own iron sights, a choice of their own when it has any, and the only one with no sights to pick from.
+        if (gunAim != null && (irons.Count > 0 || list.Count == 0))
+            list.Add(new GunSights.Sight { part = null, aimPoint = gunAim, ironSight = true });
+        if (list.Count == 0) return null;
+        var sights = gun.AddComponent<GunSights>();
+        sights.sights = list.ToArray();
+        sights.ironSights = irons.ToArray();
+        sights.initial = Mathf.Clamp(initial, 0, list.Count - 1);
+        sights.Select(sights.initial);
+        return sights.AimPoint;
+
+        static GameObject Put(Component prefab, Transform mount)
+        {
+            var put = Object.Instantiate(prefab.gameObject, mount, false);
+            put.name = prefab.gameObject.name;
+            put.transform.localPosition = Vector3.zero;
+            put.transform.localRotation = Quaternion.identity;
+            put.SetActive(true);
+            return put;
+        }
+
+        // What the pack's attachment script on the part said it is, read before the pack's scripts come off.
+        static GunAttachments.Choice ChoiceOf(Component prefab, GameObject put, Transform gunRoot)
+        {
+            var choice = new GunAttachments.Choice { part = put };
+            var script = put.GetComponent(prefab.GetType());
+            var read = script != null ? new SerializedObject(script) : null;
+            string type = prefab.GetType().Name;
+            if (type.Contains("Muzzle"))
+                choice.kind = read?.FindProperty("isSuppressed")?.boolValue == true ? GunAttachments.Kind.Suppressor : GunAttachments.Kind.None;
+            else if (type.Contains("Grip"))
+            {
+                choice.kind = put.name.IndexOf("Angled", StringComparison.OrdinalIgnoreCase) >= 0
+                    ? GunAttachments.Kind.AngledGrip : GunAttachments.Kind.VerticalGrip;
+                // The pack's LeftHand is where its Operator's left wrist goes, turned as that hand bone; kept as where the
+                // palm's middle goes and the ways the fingers point and the palm faces, which any hand can take (ArmIK).
+                if (read?.FindProperty("attachmentData.ikTarget")?.objectReferenceValue is Transform wrist
+                    && OperatorLeftHand(out Vector3 fingers, out Vector3 facing, out Vector3 palm))
+                {
+                    choice.hasHand = true;
+                    choice.handPalm = gunRoot.InverseTransformPoint(wrist.position + wrist.rotation * palm);
+                    choice.handFingers = gunRoot.InverseTransformDirection(wrist.rotation * fingers);
+                    choice.handFacing = gunRoot.InverseTransformDirection(wrist.rotation * facing);
+                }
+            }
+            else if (type.Contains("Flashlight"))
+            {
+                choice.kind = GunAttachments.Kind.Flashlight;
+                choice.light = read?.FindProperty("flashlight")?.objectReferenceValue as Light;
+                choice.lens = read?.FindProperty("emissiveRenderer")?.objectReferenceValue as Renderer;
+                choice.lensGlow = read?.FindProperty("emissionStrength")?.floatValue ?? 1f;
+            }
+            return choice;
+        }
+    }
+
+    // KINEMATION's Operator's left hand (its hand_l, which a grip's LeftHand stands for), in that bone's own turn: the way
+    // the fingers point (wrist to the middle knuckle), the way the palm faces (as ArmIK takes it for a left hand), and the
+    // palm's middle from the wrist (a little over half way to the knuckles, as HandGrip finds ours), in metres.
+    private static bool operatorMeasured, operatorFound;
+    private static Vector3 operatorFingers, operatorFacing, operatorPalm;
+
+    private static bool OperatorLeftHand(out Vector3 fingers, out Vector3 facing, out Vector3 palm)
+    {
+        if (!operatorMeasured)
+        {
+            operatorMeasured = true;
+            var model = AssetDatabase.LoadAssetAtPath<GameObject>(Operator);
+            if (model != null)
+            {
+                var copy = Object.Instantiate(model);
+                try
+                {
+                    copy.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
+                    copy.transform.localScale = Vector3.one;
+                    var hand = FindDeep(copy.transform, "hand_l");
+                    var index = FindDeep(copy.transform, "index_01_l");
+                    var middle = FindDeep(copy.transform, "middle_01_l");
+                    var ring = FindDeep(copy.transform, "ring_01_l");
+                    var pinky = FindDeep(copy.transform, "pinky_01_l");
+                    if (hand != null && index != null && middle != null && ring != null && pinky != null)
+                    {
+                        Quaternion toHand = Quaternion.Inverse(hand.rotation);
+                        Vector3 along = middle.position - hand.position, thumbSide = index.position - pinky.position;
+                        Vector3 face = -Vector3.Cross(along, thumbSide);
+                        Vector3 knuckles = (index.position + middle.position + ring.position + pinky.position) * .25f;
+                        operatorFingers = toHand * along.normalized;
+                        operatorFacing = toHand * face.normalized;
+                        operatorPalm = toHand * ((knuckles - hand.position) * .55f);
+                        operatorFound = along.sqrMagnitude > 1e-8f && face.sqrMagnitude > 1e-10f;
+                    }
+                }
+                finally
+                {
+                    Object.DestroyImmediate(copy);
+                }
+            }
+            if (!operatorFound) Debug.LogWarning("TacticalGunSetup: the Operator's left hand bones weren't found; grips won't take the support hand.");
+        }
+        fingers = operatorFingers;
+        facing = operatorFacing;
+        palm = operatorPalm;
+        return operatorFound;
+    }
+
+    private static Transform FindDeep(Transform root, string name)
+    {
+        if (root.name == name) return root;
+        foreach (Transform child in root)
+            if (FindDeep(child, name) is Transform found) return found;
+        return null;
+    }
+
+    private static bool IsPack(MonoBehaviour script)
+    {
+        string space = script.GetType().Namespace ?? string.Empty;
+        return space.StartsWith("KINEMATION.TacticalShooterPack", StringComparison.Ordinal)
+            || space.StartsWith("KINEMATION.KShooterCore", StringComparison.Ordinal);
+    }
+
+    private static MonoBehaviour FindPack(GameObject root, string typeName)
+    {
+        foreach (var script in root.GetComponentsInChildren<MonoBehaviour>(true))
+            if (script != null && IsPack(script))
+                for (var type = script.GetType(); type != null; type = type.BaseType)
+                    if (type.Name == typeName) return script;
+        return null;
+    }
+
+    // ---- Assets ----
+
+    // The rifle's FPS Animation Pack settings with this gun's recoil, magazine and turn on KINEMATION's weapon bone.
+    private static FPSWeaponSettings Settings(Spec spec, WeaponData weapon, GameObject source, FPSWeaponSettings template, string path, bool hasFireOut)
+    {
+        var made = AssetDatabase.LoadAssetAtPath<FPSWeaponSettings>(path);
+        bool fresh = made == null;
+        if (fresh) made = Object.Instantiate(template);
+        else EditorUtility.CopySerialized(template, made);
+        // The gun's KINEMATION recoil: the one named, or the one the pack's own settings for the gun give it.
+        var packWeaponForRecoil = FindPack(source, "TacticalShooterWeapon");
+        var packSettingsForRecoil = packWeaponForRecoil != null
+            ? new SerializedObject(packWeaponForRecoil).FindProperty("tacWeaponSettings")?.objectReferenceValue : null;
+        var recoil = spec.recoil != null ? AssetDatabase.LoadAssetAtPath<RecoilAnimData>($"{Pack}/Recoil/{spec.recoil}.asset")
+            : packSettingsForRecoil != null ? new SerializedObject(packSettingsForRecoil).FindProperty("recoilData")?.objectReferenceValue as RecoilAnimData
+            : null;
+        if (recoil != null) made.recoilAnimData = recoil;
+        made.ammo = weapon.MagazineSize;
+        made.fireRate = 60f / weapon.ShotInterval;
+        made.fullAuto = weapon.FireMode == WeaponFireMode.Automatic;
+        made.hasFireOut = hasFireOut;
+        made.ikOffset = Vector3.zero;
+        made.aimPointOffset = Vector3.zero;
+        made.characterController = null;
+        made.fireSounds = new List<AudioClip>();
+        made.weaponEventSounds = new List<AudioClip>();
+        // The pack's own settings say how its guns hang from KINEMATION's weapon bone.
+        var packWeapon = FindPack(source, "TacticalShooterWeapon");
+        var packSettings = packWeapon != null ? new SerializedObject(packWeapon).FindProperty("tacWeaponSettings")?.objectReferenceValue : null;
+        var turn = packSettings != null ? new SerializedObject(packSettings).FindProperty("weaponRotationOffset") : null;
+        if (turn != null) made.rotationOffset = turn.quaternionValue;
+        made.name = Path.GetFileNameWithoutExtension(path);
+        if (fresh) AssetDatabase.CreateAsset(made, path);
+        else EditorUtility.SetDirty(made);
+        return made;
+    }
+
+    private static CasAnimation PartsAsset(AnimationClip clip, string path)
+    {
+        if (clip == null) return null;
+        var made = AssetDatabase.LoadAssetAtPath<CasAnimation>(path);
+        bool fresh = made == null;
+        if (fresh) made = ScriptableObject.CreateInstance<CasAnimation>();
+        made.clip = clip;
+        made.playRate = 1f;
+        if (fresh) AssetDatabase.CreateAsset(made, path);
+        else EditorUtility.SetDirty(made);
+        return made;
+    }
+
+    private static FPSAnimationAsset BodyAsset(FPSAnimationAsset template, string path, float blendIn, float blendOut)
+    {
+        if (template == null) return null;
+        var made = AssetDatabase.LoadAssetAtPath<FPSAnimationAsset>(path);
+        bool fresh = made == null;
+        if (fresh) made = Object.Instantiate(template);
+        else EditorUtility.CopySerialized(template, made);
+        made.clip = null;
+        made.blendTime.blendInTime = blendIn;
+        made.blendTime.blendOutTime = blendOut;
+        made.blendTime.rateScale = 1f;
+        made.name = Path.GetFileNameWithoutExtension(path);
+        if (fresh) AssetDatabase.CreateAsset(made, path);
+        var write = new SerializedObject(made);
+        write.FindProperty("curves")?.ClearArray();
+        write.ApplyModifiedPropertiesWithoutUndo();
+        EditorUtility.SetDirty(made);
+        return made;
+    }
+
+    private static AnimationClip Clip(string path)
+    {
+        foreach (var asset in AssetDatabase.LoadAllAssetsAtPath(path))
+            if (asset is AnimationClip clip && !clip.name.StartsWith("__preview__", StringComparison.Ordinal)) return clip;
+        return null;
+    }
+}

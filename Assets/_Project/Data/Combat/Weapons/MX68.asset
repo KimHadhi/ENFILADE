@@ -1,0 +1,91 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: faeb944eb3d42ea4fb476e0091f6f751, type: 3}
+  m_Name: MX68
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponData
+  displayName: MX68
+  hudIcon: {fileID: 0}
+  crosshairProfile: {fileID: 0}
+  category: 0
+  fireMode: 1
+  damage: 34
+  roundsPerMinute: 750
+  magazineSize: 100
+  reloadDuration: 7.967
+  range: 120
+  noiseRadius: 40
+  suppressedNoise: 0.3
+  recoilPerShot: {x: 1.2, y: 0.4}
+  initialReserveAmmo: 200
+  emptyReloadDuration: 8.833
+  burstCount: 3
+  burstPause: 0.22
+  hipSpread: 1.2
+  adsSpread: 0.12
+  movingSpread: 0.8
+  airborneSpread: 1.8
+  bloomPerShot: 0.18
+  maxBloom: 2.5
+  bloomRecovery: 2.2
+  headshotMultiplier: 4
+  penetration: 26
+  crouchSpread: 0.5
+  crouchRecoil: 0.65
+  autoReloadDelay: 0.2
+  pellets: 1
+  pelletSpread: 0
+  shellReload: 0
+  shellInsertDuration: 0.6
+  shellEndDuration: 0.6
+  reloadStartSounds: []
+  reloadStartEmptySounds: []
+  shellInsertSounds: []
+  reloadEndSounds: []
+  recoilPattern: []
+  fireModes: 
+  drawDuration: 0
+  holsterDuration: 0
+  falloffStart: 1000
+  falloffEnd: 1000
+  falloffMinimum: 1
+  recoilVertical: 0.75
+  recoilHorizontal: 0.6
+  recoilDrift: 0.1
+  recoilFirstShot: 1.5
+  recoilSettleShots: 10
+  recoilResponse: 20
+  recoilRetention: 1
+  adsFov: 60
+  adsMoveMultiplier: 0.6
+  adsTransitionTime: 0.16
+  highReadyRaiseHalfLife: 0.07
+  highReadyLowerHalfLife: 0.09
+  leftGrip: {x: 0.26, y: -0.285, z: 0.7}
+  sideRail: {x: 0, y: 0, z: 0}
+  viewPunch: {x: 0.75, y: 0.3, z: 0.9}
+  viewPunchFov: 0.6
+  shakeTrauma: 0.07
+  muzzleFlashScale: 1.2
+  ejectShells: 1
+  soundProfile: 2
+  fireSounds:
+  - {fileID: 8300000, guid: 366df57e8bebd2a429ff4eed71042b93, type: 3}
+  - {fileID: 8300000, guid: 68f1bed569982ca488384b1f5c94c899, type: 3}
+  - {fileID: 8300000, guid: d400761aebb365f469a152efa4ef751c, type: 3}
+  suppressedFireSounds:
+  - {fileID: 8300000, guid: 129d9f91cd6499849b08649d28efdf64, type: 3}
+  - {fileID: 8300000, guid: 7ca3208d99ee94548bd1562688ae33d6, type: 3}
+  - {fileID: 8300000, guid: ec4d0abca81076649846c46502365e8c, type: 3}
+  fireVolume: 1
+  postureDamage: 4
+  flinchMultiplier: 1
+  propImpulse: 3

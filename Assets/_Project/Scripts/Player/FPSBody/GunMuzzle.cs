@@ -33,13 +33,23 @@ public static class GunMuzzle
         forward = gun.InverseTransformDirection(axis);
     }
 
+    // Parts a gun keeps parked away from itself while they are not in use are not its shape: the R08's speedloader waits
+    // 65 cm off the revolver in its idle, and taken as the back face it made the revolver a shouldered gun, lifted over
+    // the head to put the speedloader in the shoulder (user, 2026-11-09). Only points within this distance (m) of the
+    // sight line count, unless none do; a stock's butt sits well within it.
+    private const float NearSightLine = .3f;
+
     // The middle of the gun's face furthest along axis (world space).
     private static Vector3 Face(Transform gun, Transform aimPoint, Vector3 axis, float depth)
     {
         Points.Clear();
         bool vertices = false;
-        foreach (var renderer in gun.GetComponentsInChildren<Renderer>(true)) vertices |= Collect(renderer, Points);
+        // Only the parts the gun wears now: the sights, muzzles and grips it isn't wearing wait switched off on their mounts
+        // (GunSights, GunAttachments), and a suppressor put on moves the muzzle to its end. The gun itself may be off.
+        foreach (var renderer in gun.GetComponentsInChildren<Renderer>(true))
+            if (Worn(renderer.transform, gun)) vertices |= Collect(renderer, Points);
         Vector3 muzzle = aimPoint != null ? aimPoint.position : gun.position;
+        KeepNearLine(muzzle, axis);
         if (Points.Count > 0)
         {
             float front = float.NegativeInfinity;
@@ -56,6 +66,26 @@ public static class GunMuzzle
             else muzzle += axis * (front - Vector3.Dot(muzzle, axis));
         }
         return muzzle;
+    }
+
+    // On from the part up to the gun, whether the gun itself is on or not.
+    private static bool Worn(Transform part, Transform gun)
+    {
+        for (var at = part; at != null && at != gun; at = at.parent)
+            if (!at.gameObject.activeSelf) return false;
+        return true;
+    }
+
+    // Drops the points further than NearSightLine from the line through origin along axis, unless that would drop all.
+    private static void KeepNearLine(Vector3 origin, Vector3 axis)
+    {
+        int kept = 0;
+        for (int i = 0; i < Points.Count; i++)
+        {
+            Vector3 offset = Points[i] - origin;
+            if ((offset - axis * Vector3.Dot(offset, axis)).sqrMagnitude <= NearSightLine * NearSightLine) Points[kept++] = Points[i];
+        }
+        if (kept > 0) Points.RemoveRange(kept, Points.Count - kept);
     }
 
     // Adds the renderer's vertices (true) or, when its mesh can't be read, its bounds' corners (false).

@@ -1,0 +1,4 @@
+﻿id,minSpawnDistance,maxSpawnDistance,seenMinDistance,introSeconds,outroSeconds,intensityPerDamage,intensityDowned,intensityDecay,peakIntensity,peakSeconds,relaxSeconds,relaxShare,mobEveryMin,mobEveryMax,mobSize,mobRate
+#설명 (Default = 적이 나오는 자리·카드 / Director = 좀비 디렉터),누구에게서든 이보다 가까이 나타나지 않는다(m),향하는 플레이어에게서 이보다 멀리 나타나지 않는다(m),"누가 보고 있는 자리는 이보다 멀 때만, 안 보이는 자리가 없을 때만 쓴다(m)",장 시작 카드 시간(초),장 끝 카드 뒤 다음 장까지(초),체력을 전부 잃으면 오르는 긴장도(잃은 비율만큼),쓰러지면 오르는 긴장도,1초에 내려가는 긴장도(0~1),누군가의 긴장도가 이 이상이면 몰아치기로(0~1),몰아치기가 이어지는 시간(초),쉬는 구간 최소 시간(초). 긴장도가 반으로 줄 때까지도 기다린다,쉬는 동안 나오는 적의 비율(0~1),떼가 몰려오는 간격 최소(초),떼가 몰려오는 간격 최대(초),떼 한 번에 더 나오는 적 수,떼가 올 때 1초에 나오는 적 수
+Default,15,60,30,9,14,,,,,,,,,,,
+Director,,,,,,1.2,0.6,0.035,0.7,5,25,0.25,55,95,8,4

@@ -99,7 +99,8 @@ public sealed class HitFlashRenderer : MonoBehaviour
     private IEnumerable<Renderer> Renderers()
     {
         foreach (var renderer in GetComponentsInChildren<Renderer>())
-            if ((renderer is MeshRenderer || renderer is SkinnedMeshRenderer) && renderer.enabled && renderer.GetComponentInParent<Canvas>() == null)
+            if ((renderer is MeshRenderer || renderer is SkinnedMeshRenderer) && renderer.enabled && renderer.GetComponentInParent<Canvas>() == null
+                && !ZombieBody.IsEye(renderer))
                 yield return renderer;
     }
 

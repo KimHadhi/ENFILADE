@@ -20,8 +20,6 @@ public sealed class ParkourTraversal
     public Vector2 ObstacleSupport { get; internal set; }
     /// <summary>Climbing off a ladder's top: how far short of the floor's edge the warp kept the hands (m) to keep the feet out of the wall.</summary>
     public float EdgeShortfall { get; internal set; }
-    /// <summary>A warped move's hold for the hands' middle in the world (WarpedTraversal.Contact); for the probe.</summary>
-    public Vector3 ObstacleContact { get; internal set; }
     /// <summary>
     /// The clip time (s) a vault carried by its clip's hands is at (WarpedTraversal); the body plays its clip there. Negative
     /// when the clip runs by itself.
@@ -69,11 +67,7 @@ public sealed class ParkourTraversal
         sinceJump = grounded || !jumping ? float.PositiveInfinity : wasGrounded ? VaultFinder.Tick : sinceJump + dt;
         wasGrounded = grounded;
         // A surge is a run on the ground: off it, or into any other move, it is over.
-        if (!grounded || ctx.CurrentState != State.Standing)
-        {
-            if (surgeLeft > 0f) SurgeProbe($"surge ended without a vault: {(grounded ? $"state {ctx.CurrentState}" : "left the ground")}");
-            StopSurge();
-        }
+        if (!grounded || ctx.CurrentState != State.Standing) StopSurge();
         // The vaulted obstacles are kept only for the time in the air. A vault stopped in the frame it began never left the
         // ground, so no landing let go of its obstacle: the next surge at it ran on, the look there refused it as vaulted
         // already, and the press went as a jump (2026-11-09).
@@ -127,15 +121,6 @@ public sealed class ParkourTraversal
     {
         // A wall climb that ends in a vault or a climb onto the top ends its chain too (Beatrun clears the run's time).
         if (ctx.CurrentState == State.WallClimb) wallClimbEnds = float.NegativeInfinity;
-        // Temporary (ParkourProbeLog, 2026-11-07): which move a long low top got, and where it was found.
-        if (ctx.IsLocal)
-        {
-            Vector3 feet = ctx.transform.position;
-            ParkourProbeLog.Line($"move {candidate.Kind} on {(candidate.Surface != null ? candidate.Surface.name : "-")} "
-                + $"size {(candidate.Surface != null ? candidate.Surface.bounds.size.ToString("F2") : "-")} feet {feet.ToString("F2")} "
-                + $"edge {candidate.Edge.ToString("F2")} ({Vector3.Distance(feet, candidate.Edge):0.00} m) end {candidate.End.ToString("F2")} "
-                + $"facing {ctx.transform.forward.ToString("F2")} in air {!ctx.IsGrounded}");
-        }
         Obstacle = candidate;
         // A reload has both hands on the gun. A move that puts a hand on the obstacle still goes: the gun is put away for it,
         // as for a roll, and the reload stops. A step up needs no hand, so the reload carries on.
@@ -194,14 +179,11 @@ public sealed class ParkourTraversal
         Vector3 run = Vector3.ProjectOnPlane(ctx.HorizontalVelocity, Vector3.up);
         bool surging = surgeLeft > 0f;
         // W starts a surge; once it is under way it runs to its vault whatever the keys do. Read every frame, W came up
-        // released within a tenth of a second of most surges (Logs/body-probe.txt, 2026-11-09) and the press went as a
-        // jump over the obstacle instead.
+        // released within a tenth of a second of most surges (2026-11-09) and the press went as a jump over the obstacle
+        // instead.
         if (!ctx.IsGrounded || ctx.CurrentState != State.Standing || (!surging && ctx.CurrentInput.y <= 0.1f) || ledgeLock > 0f
             || settings.vaultSurgeDistance <= 0f)
         {
-            if (surging)
-                SurgeProbe("surge ended without a vault: " + (!ctx.IsGrounded ? "left the ground" : ctx.CurrentState != State.Standing
-                    ? $"state {ctx.CurrentState}" : ledgeLock > 0f ? "ledge lock" : "surge off"));
             StopSurge();
             return false;
         }
@@ -228,12 +210,12 @@ public sealed class ParkourTraversal
             // when the time is up, the vault found there goes from where the feet are; Begin's move starts from here.
             float shortOf = Vector3.Dot(surgeSpot - feet, way);
             bool arrived = shortOf <= SurgeArrive || (surgeLeft <= 0f && shortOf <= SurgeHeldUp);
-            if (!arrived) return surgeLeft > 0f || SurgeMissed($"ran out {shortOf:0.00} m short of the spot");
-            if (Vector3.Dot(forward, surgeFacing) < SurgeFacing) return SurgeMissed("looked away from the vault");
+            if (!arrived) return surgeLeft > 0f || SurgeMissed();
+            // Looked away from the vault, or the obstacle is gone.
+            if (Vector3.Dot(forward, surgeFacing) < SurgeFacing) return SurgeMissed();
             var found = surgeVault;
             if (found.Surface == null || !found.Surface.enabled || !found.Surface.gameObject.activeInHierarchy
-                || traversedObstacles.Contains(found.Surface)) return SurgeMissed("the obstacle is gone");
-            SurgeProbe($"surge took the {found.Kind} found ahead, {shortOf:0.00} m short of the spot");
+                || traversedObstacles.Contains(found.Surface)) return SurgeMissed();
             ctx.HorizontalVelocity = way * surgeFrom;
             StopSurge();
             Begin(found);
@@ -248,7 +230,6 @@ public sealed class ParkourTraversal
         speed = Mathf.Max(settings.vaultSurgeSpeed, speed);
         surge = way * speed;
         surgeLeft = gap / speed + SurgeSpare;
-        SurgeProbe($"surge to {surgeVault.Kind} on {(surgeVault.Surface != null ? surgeVault.Surface.name : "-")}: {gap:0.00} m at {speed:0.0} m/s");
         // The push sells the burst: the view dips forward a little and widens, and the speed widens it further on its own.
         ctx.GetComponentInChildren<PlayerCameraEffects>()?.ApplyCameraImpulse(
             new Vector3(settings.vaultSurgeKick.x, 0f, 0f), settings.vaultSurgeKick.y);
@@ -256,17 +237,10 @@ public sealed class ParkourTraversal
     }
 
     // A surge that won't end in its vault: the press goes as a jump (ProcessJump), as it would have without the surge.
-    private bool SurgeMissed(string why)
+    private bool SurgeMissed()
     {
-        SurgeProbe($"surge ended without a vault: {why}");
         StopSurge();
         return false;
-    }
-
-    // Temporary (ParkourProbeLog, 2026-11-09): how each surge started and ended, until surges reliably end in their vault.
-    private void SurgeProbe(string text)
-    {
-        if (ctx.IsLocal) ParkourProbeLog.Line(text);
     }
 
     // How far along the run (m) the feet go before a jump from there would be vaulted, and that vault, looking up to reach

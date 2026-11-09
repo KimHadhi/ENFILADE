@@ -6,8 +6,9 @@ using UnityEngine.InputSystem;
 
 /// <summary>
 /// One player's deathblow transaction. F executes a broken enemy within reach; with the fists out the attack button
-/// does too, from further off, dashing in first, as Sekiro's deathblow sits on the attack button. Animation can
-/// subscribe to Started/Impact/Ended.
+/// does too, from further off, dashing in first, as Sekiro's deathblow sits on the attack button. A zombie that hasn't
+/// noticed anyone can be executed the same way from behind, unbroken: a stealth kill (ZombieMind, stage 4C-2).
+/// Animation can subscribe to Started/Impact/Ended.
 /// </summary>
 [DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.Execution)]
 public sealed class PlayerExecution : MonoBehaviour
@@ -60,6 +61,8 @@ public sealed class PlayerExecution : MonoBehaviour
     public static PlayerExecution SuppressorOf(Component enemy)
     {
         if (executing.Count == 0 || enemy == null) return null;
+        // A zombie that hasn't noticed anyone keeps to itself, even beside a stealth kill (ZombieMind).
+        if (enemy.TryGetComponent(out ZombieMind mind) && !mind.IsAwake) return null;
         var after = enemy.TryGetComponent(out EnemyTargeting targeting) ? targeting.Player : null;
         foreach (var execution in executing)
             if (enemy.gameObject.scene == execution.gameObject.scene && (after == null || after == execution.player)) return execution;
@@ -80,7 +83,7 @@ public sealed class PlayerExecution : MonoBehaviour
         buttons = GetComponent<PlayerWeaponInput>();
     }
     private bool CanOffer => isActiveAndEnabled && player != null && player.IsInitialized && player.InputAvailable
-        && !player.CombatInputLocked && !player.IsParkour && !player.IsSliding && !player.IsDiving && !player.IsDowned
+        && !player.CombatInputLocked && !player.IsHeld && !player.IsParkour && !player.IsSliding && !player.IsDiving && !player.IsDowned
         && player.CurrentState != PlayerMovement.MovementState.StepDodge
         && player.CurrentState != PlayerMovement.MovementState.DashPush
         && !player.IsLandingRecovery && !IsExecuting;
@@ -138,7 +141,8 @@ public sealed class PlayerExecution : MonoBehaviour
     private bool Eligible(MeleeCombatTarget target, float within, out Vector3 point)
     {
         point = default;
-        if (target == null || !target.CanExecute || target.gameObject.scene != gameObject.scene || target.transform.IsChildOf(transform)) return false;
+        // Broken, or an unaware zombie with this player behind it: a stealth kill (MeleeCombatTarget.CanBeExecutedBy).
+        if (target == null || !target.CanBeExecutedBy(this) || target.gameObject.scene != gameObject.scene || target.transform.IsChildOf(transform)) return false;
         var body = target.GetComponentInChildren<Collider>();
         if (body == null || !body.enabled || body.isTrigger) return false;
         point = body.bounds.center;
@@ -216,7 +220,7 @@ public sealed class PlayerExecution : MonoBehaviour
         => BodyGap.Across(player, target != null ? target.GetComponentInChildren<Collider>() : null, out toward);
     private void GrantRewards()
     {
-        player.DamageReceiver.Heal(healthRestored);
+        player.DamageReceiver.Heal(healthRestored + (player.IsLocal ? PlayerPerks.ExecutionHealth : 0f));
         var slots = GetComponent<PlayerWeaponSlots>();
         if (slots != null && slots.isActiveAndEnabled)
         {

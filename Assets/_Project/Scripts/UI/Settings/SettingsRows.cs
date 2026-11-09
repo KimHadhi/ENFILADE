@@ -24,9 +24,11 @@ public sealed class SettingsRows
 
     public TextMeshProUGUI Header(string text)
     {
-        var label = W.Label(parent, text, 20f, W.Accent);
-        W.Size(label, height: 40f);
+        var label = W.Label(parent, text, 16f, W.Accent);
+        W.Size(label, height: 38f);
         label.alignment = TextAlignmentOptions.BottomLeft;
+        label.fontStyle = FontStyles.Bold;
+        label.characterSpacing = 4f;
         return label;
     }
 

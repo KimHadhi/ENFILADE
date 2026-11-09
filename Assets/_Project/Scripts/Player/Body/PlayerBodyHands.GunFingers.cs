@@ -1,55 +1,56 @@
 using UnityEngine;
 
 /// <summary>
-/// The hands on the gun's real surface (GunSurface, the gun's own mesh triangles): a palm that FPSAF left inside the gun
-/// is pushed back out along the way it faces, until its skin rests on the gun, and then each finger closes round the gun
-/// joint by joint only until it meets it (HandGrip, this body's own phalanges and skin). A bar standing in for the gun
-/// wasn't where the gun is, so fingers sank in or were thrown open (user, 2026-11-08). The trigger finger keeps
-/// KINEMATION's place. Each hand rests on the gun as far as it is on its grip (FPSBody.GripHold): a reload's hand on the
-/// magazine or the bolt lets go as it leaves and takes hold again as it comes back, instead of the whole reload and the
-/// draw playing with the hands off the gun (user, 2026-11-08).
+/// The hands' fingers on the gun, ours (HandGrip.Shape): the shooting hand round the pistol grip with the index finger on
+/// the trigger, the support hand cradling the handguard or pump, round a vertical grip, against an angled grip, or under a
+/// pistol's grip hand, and a hand off its grip mid-reload (on the magazine or the bolt) loosely closed as if holding it.
+/// The shapes are set angles inside a hand's reach on any humanoid's own fingers, so no character's fingers can break; the
+/// clips' finger curves (KINEMATION's, made for other skeletons) are no longer worn while the gun is held (user,
+/// 2026-11-09: "손가락이 자꾸 문제가 생기는 거 보니 … 우리 식으로"). A palm FPSAF left inside the gun is still pushed back out
+/// along the way it faces until its skin rests on the gun's real surface (GunSurface). Each hand holds by how far it is on
+/// its grip (FPSBody.GripHold): a reload's hand goes over to the loose shape as it leaves and back as it returns.
 /// </summary>
 public sealed partial class PlayerBodyHands
 {
-    [SerializeField, Range(0f, 1f), Tooltip("How far the hands rest on and close round the gun's real surface (1), "
-        + "instead of KINEMATION's hand and finger places alone (0).")]
+    [SerializeField, Range(0f, 1f), Tooltip("How far the hands wear our gun-holding finger shapes (1) instead of the clips' fingers (0).")]
     private float gunFingerWrap = 1f;
 
     private readonly float[] gunWrap = new float[2];
     private readonly float[] gunHold = { 1f, 1f };
-    private readonly GunSurface[] gunSurfaces = new GunSurface[2];
-    private readonly Quaternion[] triggerFinger = new Quaternion[3];
+    private readonly HandGrip.Shape[] gunShape = { HandGrip.Shape.Cradle, HandGrip.Shape.Trigger };
 
     private void CurlGunFingers(ArmIK arm, bool isLeft, float dt)
     {
         int side = isLeft ? 0 : 1;
         var gunBody = FPSBody.Holding(weapons);
-        var surface = gunFingerWrap > 0f && gunBody != null ? gunBody.HeldSurface : null;
-        if (surface != null) gunSurfaces[side] = surface;
-        gunWrap[side] = Mathf.MoveTowards(gunWrap[side], surface != null ? 1f : 0f, dt / blendTime);
-        // How far this hand is on its grip, kept through the ease out once the gun is gone.
-        if (surface != null) gunHold[side] = gunBody.GripHold(isLeft);
-        surface = gunSurfaces[side];
-        float weight = gunWrap[side] * gunHold[side] * weights[(int)Hold.Gun] * (isLeft ? 1f - leftOffGun : 1f) * gunFingerWrap;
-        if (weight <= 0f || surface == null || surface.Gun == null) return;
-
-        PalmOutOfGun(arm, surface, weight);
-
-        // The trigger finger stays where KINEMATION's clip put it.
-        Transform[] index = null;
-        if (!isLeft && boundAnimator != null)
+        // How far this hand is on its grip and the shape it holds it with, kept through the ease out once the gun is gone.
+        // A support hand on a grip the gun wears is away from the bake's place on purpose, and holds on as far as it is
+        // on that grip (GunGrip).
+        if (gunBody != null)
         {
-            index = new[]
-            {
-                boundAnimator.GetBoneTransform(HumanBodyBones.RightIndexProximal),
-                boundAnimator.GetBoneTransform(HumanBodyBones.RightIndexIntermediate),
-                boundAnimator.GetBoneTransform(HumanBodyBones.RightIndexDistal)
-            };
-            for (int i = 0; i < 3; i++) if (index[i] != null) triggerFinger[i] = index[i].localRotation;
+            gunHold[side] = isLeft ? Mathf.Max(gunBody.GripHold(true), OnAttachedGrip) : gunBody.GripHold(false);
+            gunShape[side] = ShapeFor(gunBody, isLeft);
         }
-        arm.GripSurface(surface, fingerSurfaceClearance, weight);
-        if (index != null)
-            for (int i = 0; i < 3; i++) if (index[i] != null) index[i].localRotation = triggerFinger[i];
+        gunWrap[side] = Mathf.MoveTowards(gunWrap[side], gunBody != null ? 1f : 0f, dt / blendTime);
+        float weight = gunWrap[side] * weights[(int)Hold.Gun] * (isLeft ? 1f - leftOffGun : 1f) * gunFingerWrap;
+        if (arm == null || weight <= 0f) return;
+
+        var surface = gunBody != null ? gunBody.HeldSurface : null;
+        if (surface != null && !surface.Empty) PalmOutOfGun(arm, surface, weight * gunHold[side]);
+        arm.WearShape(gunShape[side], HandGrip.Shape.Grab, gunHold[side], weight);
+    }
+
+    // The shape a hand holds this gun with: the shooting hand always round the pistol grip; the support hand by what it
+    // is on.
+    private static HandGrip.Shape ShapeFor(FPSBody gunBody, bool isLeft)
+    {
+        if (!isLeft) return HandGrip.Shape.Trigger;
+        switch (gunBody.HeldGripKind)
+        {
+            case GunAttachments.Kind.VerticalGrip: return HandGrip.Shape.Fist;
+            case GunAttachments.Kind.AngledGrip: return HandGrip.Shape.Angled;
+        }
+        return gunBody.HeldPistol ? HandGrip.Shape.Cup : HandGrip.Shape.Cradle;
     }
 
     // Six points on this palm's skin (heel and knuckle rows, both edges and the middle), each looked for from behind the

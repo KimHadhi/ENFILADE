@@ -110,6 +110,8 @@ public sealed class FPSBodyCamera : FPSCameraController
         cameraBone = new GameObject(CameraBone).transform;
         cameraBone.SetParent(root, false);
         var animator = rig.AddComponent<Animator>();
+        // KINEMATION's clips play here whole, events and all.
+        rig.AddComponent<KinemationClipEvents>();
         animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
         motionGraph = PlayableGraph.Create("KINEMATION camera bone");
         motionGraph.SetTimeUpdateMode(DirectorUpdateMode.GameTime);

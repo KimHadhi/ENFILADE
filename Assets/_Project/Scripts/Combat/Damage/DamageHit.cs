@@ -2,9 +2,10 @@ using System.Threading;
 using UnityEngine;
 
 public enum DamageKind { Attack, Fall, Execution }
-public enum DamageResult { Ignored, Duplicate, Evaded, Damaged, Blocked, Parried, Invulnerable }
+/// <summary>Countered: a grab or a leap met by a timed shove (ShoveCounter).</summary>
+public enum DamageResult { Ignored, Duplicate, Evaded, Damaged, Blocked, Parried, Invulnerable, Countered }
 /// <summary>How the hit was delivered. Presentation only (hit and kill sounds).</summary>
-public enum DamageMethod { Other, Bullet, Shove }
+public enum DamageMethod { Other, Bullet, Shove, Grab, Feed, Pounce }
 
 /// <summary>One ID per attack activation, shared by all of its hitboxes.</summary>
 public readonly struct DamageHit
@@ -30,12 +31,15 @@ public readonly struct DamageHit
     public readonly bool IsFatal;
     /// <summary>A bullet that reached this target after going through or glancing off something on the way (AttackTrace). Presentation and score only.</summary>
     public readonly bool Pierced;
+    /// <summary>The body part a bullet met (a zombie's bone hitbox), for gore. Presentation only.</summary>
+    public readonly BodyPart Part;
     public DamageHit(long id, float amount, DamageKind kind, Vector3 point, Vector3 direction, GameObject source = null,
         bool canBeGuarded = false, float postureDamage = 0f, bool isComboFinisher = true, bool isCritical = false, bool isCounter = false,
-        DamageMethod method = DamageMethod.Other, Vector3? origin = null, bool isFatal = false, bool pierced = false)
+        DamageMethod method = DamageMethod.Other, Vector3? origin = null, bool isFatal = false, bool pierced = false,
+        BodyPart part = BodyPart.None)
     { Id = id; Amount = amount; Kind = kind; Point = point; Direction = direction; Source = source;
         CanBeGuarded = canBeGuarded; PostureDamage = postureDamage; IsComboFinisher = isComboFinisher; IsCritical = isCritical; IsCounter = isCounter;
-        Method = method; Origin = origin; IsFatal = isFatal; Pierced = pierced; }
+        Method = method; Origin = origin; IsFatal = isFatal; Pierced = pierced; Part = part; }
 }
 
 public interface IDamageReceiver { DamageResult ReceiveHit(DamageHit hit); }

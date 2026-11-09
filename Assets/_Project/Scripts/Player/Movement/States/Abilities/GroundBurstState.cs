@@ -111,8 +111,6 @@ public sealed class GroundBurstState : MovementBaseState
         if (ctx.Motor.TryKickProp(hit.collider, hit.point, out Vector3 kept)) { ctx.HorizontalVelocity = kept; return; }
         if (kind == State.LandingRoll)
         {
-            if (!rollStopped && ctx.IsLocal)
-                ParkourProbeLog.Line($"landing roll met {hit.collider.name} at {ctx.CurrentStateDuration:0.00}s of {Duration:0.00}s; finishing on the spot");
             rollStopped = true;
             ctx.HorizontalVelocity = Vector3.zero;
             return;

@@ -32,6 +32,7 @@ public sealed class ScoreboardHUD : MonoBehaviour
         public RectTransform root;
         public Image seat;
         public TextMeshProUGUI name, character, kills, executions, downs, deaths, score, ping;
+        public RawImage money;
         public readonly WeaponCell[] weapons = new WeaponCell[WeaponColumns];
     }
 
@@ -43,8 +44,9 @@ public sealed class ScoreboardHUD : MonoBehaviour
     private readonly List<Row> rows = new List<Row>();
     private readonly List<PlayerMovement> shown = new List<PlayerMovement>();
     private CanvasGroup group;
-    private RectTransform table, footer;
-    private TextMeshProUGUI wave, title, subtitle, earned, played;
+    private RectTransform table, footer, perkRow;
+    private TextMeshProUGUI wave, title, subtitle, earned, played, perkCaption;
+    private bool perksDirty = true;
     private ObjectiveLogPanel objectives;
     private Volume blur;
     private WaveManager waves;
@@ -93,6 +95,13 @@ public sealed class ScoreboardHUD : MonoBehaviour
         earned = Text("Earned", footer, 36f, new Vector2(0f, -38f), 900f, TextAlignmentOptions.Center);
         played = Text("Played", footer, 19f, new Vector2(0f, -74f), 900f, TextAlignmentOptions.Center);
         played.color = Soft;
+        // This player's perk cards (stage 6C), so what they hold is a Tab away.
+        perkCaption = Text("Perks Caption", footer, 16f, new Vector2(0f, -110f), 900f, TextAlignmentOptions.Center);
+        perkCaption.color = Soft;
+        perkCaption.text = "내 능력";
+        perkRow = FeelUI.Rect("Perks", footer);
+        perkRow.anchoredPosition = new Vector2(0f, -148f);
+        PlayerPerks.Changed += MarkPerks;
 
         blur = host.AddComponent<Volume>();
         blur.isGlobal = true;
@@ -140,7 +149,7 @@ public sealed class ScoreboardHUD : MonoBehaviour
         Cell("Primary", row, WeaponsAt, 0f, WeaponWidth, 16f, TextAlignmentOptions.Center).text = "주무기";
         Cell("Secondary", row, WeaponsAt + WeaponWidth, 0f, WeaponWidth, 16f, TextAlignmentOptions.Center).text = "보조";
         Cell("Melee", row, WeaponsAt + WeaponWidth * 2f, 0f, WeaponWidth, 16f, TextAlignmentOptions.Center).text = "근접";
-        Cell("Score", row, ScoreAt, 0f, ScoreWidth, 16f, TextAlignmentOptions.Center).text = "XP";
+        Cell("Score", row, ScoreAt, 0f, ScoreWidth, 16f, TextAlignmentOptions.Center).text = "돈";
         Cell("Ping", row, PingAt, 0f, PingWidth, 16f, TextAlignmentOptions.Center).text = "핑";
     }
 
@@ -164,7 +173,11 @@ public sealed class ScoreboardHUD : MonoBehaviour
         row.executions = Cell("Executions", row.root, ExecutionsAt, 0f, NumberWidth, 20f, TextAlignmentOptions.Center);
         row.downs = Cell("Downs", row.root, DownsAt, 0f, NumberWidth, 20f, TextAlignmentOptions.Center);
         row.deaths = Cell("Deaths", row.root, DeathsAt, 0f, NumberWidth, 20f, TextAlignmentOptions.Center);
-        row.score = Cell("Score", row.root, ScoreAt, 0f, ScoreWidth, 19f, TextAlignmentOptions.Center);
+        // Money: the banknote at the column's left, the number to its right (MoneyIcon, stage 6A).
+        row.score = Cell("Score", row.root, ScoreAt, 0f, ScoreWidth, 19f, TextAlignmentOptions.Right);
+        row.money = MoneyIcon.Make(row.root, 18f);
+        row.money.rectTransform.anchorMin = row.money.rectTransform.anchorMax = new Vector2(0f, .5f);
+        row.money.rectTransform.anchoredPosition = new Vector2(ScoreAt + 11f, 0f);
         row.ping = Cell("Ping", row.root, PingAt, 0f, PingWidth, 19f, TextAlignmentOptions.Center);
         for (int i = 0; i < WeaponColumns; i++)
         {
@@ -218,11 +231,17 @@ public sealed class ScoreboardHUD : MonoBehaviour
             if (used) Fill(rows[i], shown[i]);
         }
         footer.anchoredPosition = table.anchoredPosition + new Vector2(0f, -HeaderY - 36f - shown.Count * (RowHeight + RowGap) + RowHeight * .5f - 8f);
-        earned.text = "획득 XP  " + CombatFeedHUD.TotalScore.ToString("N0");
+        earned.text = "돈  " + Wallet.Format(Wallet.Balance);
         int seconds = Mathf.FloorToInt(Time.timeSinceLevelLoad);
         played.text = "플레이 시간 " + (seconds / 60).ToString("00") + ":" + (seconds % 60).ToString("00");
         if (tracker == null) tracker = FindFirstObjectByType<MissionTracker>();
         objectives.Refresh(tracker);
+        if (perksDirty)
+        {
+            perksDirty = false;
+            var badges = PerkBadge.Row(perkRow, PlayerPerks.Held(), 44f, 10f);
+            perkCaption.gameObject.SetActive(badges.Count > 0);
+        }
     }
 
     private static void Fill(Row row, PlayerMovement player)
@@ -237,7 +256,8 @@ public sealed class ScoreboardHUD : MonoBehaviour
         row.executions.text = tally.Executions.ToString();
         row.downs.text = tally.Downs.ToString();
         row.deaths.text = tally.Deaths.ToString();
-        row.score.text = tally.Score.ToString("N0");
+        // The money they hold, the only money number in play (Wallet; stage 6A).
+        row.score.text = Wallet.Format(tally.Score);
         row.ping.text = tally.Ping.ToString();
         row.ping.color = tally.Ping < GoodPing ? PingGood : tally.Ping < FairPing ? PingFair : PingBad;
         var slots = player.GetComponent<PlayerWeaponSlots>();
@@ -251,8 +271,11 @@ public sealed class ScoreboardHUD : MonoBehaviour
         }
     }
 
+    private void MarkPerks() => perksDirty = true;
+
     private void OnDestroy()
     {
+        PlayerPerks.Changed -= MarkPerks;
         Openness = 0f;
         if (ownsShow) show?.Disable();
         if (group != null) Destroy(group.gameObject);

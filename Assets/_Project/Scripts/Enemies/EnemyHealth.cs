@@ -32,7 +32,22 @@ public sealed class EnemyHealth : MonoBehaviour, IDamageReceiver, ICombatVitals,
     /// <summary>Console test spawns (/spawn n elite). The table sets it otherwise.</summary>
     internal void SetRank(EnemyRank value) => rank = value;
     public float Health { get; private set; }
-    public float MaximumHealth => Mathf.Max(1f, maximumHealth);
+    public float MaximumHealth => Mathf.Max(1f, maximumHealth * healthShare);
+    // A zombie's kind scales its row's health (ZombieType: a runner dies sooner).
+    private float healthShare = 1f;
+
+    /// <summary>Its health becomes this share of its row's, at the same fraction of it (ZombieType, every PC alike).</summary>
+    internal void SetHealthShare(float share)
+    {
+        share = Mathf.Max(.01f, share);
+        if (Mathf.Approximately(share, healthShare)) return;
+        float fraction = MaximumHealth > 0f ? Health / MaximumHealth : 1f;
+        healthShare = share;
+        // A copy's health is the host's, already at the new share: it only can't be over the new maximum.
+        if (network != null && network.IsCopy) Health = Mathf.Min(Health, MaximumHealth);
+        else if (IsAlive) Health = Mathf.Max(.01f, fraction * MaximumHealth);
+        appliedMaximum = MaximumHealth;
+    }
     public bool IsAlive => Health > 0f;
     public bool WavePaused { get; private set; }
     private readonly HashSet<long> seen = new HashSet<long>();
@@ -40,6 +55,8 @@ public sealed class EnemyHealth : MonoBehaviour, IDamageReceiver, ICombatVitals,
     private NavMeshAgent pausedAgent;
     private EnemyHitReaction reaction;
     private EnemyNetwork network;
+    private ZombieBody body;
+    private ZombieMind mind;
     private float appliedMaximum;
     private bool restorePosition, restoreRotation, restoreStopped;
 
@@ -79,9 +96,19 @@ public sealed class EnemyHealth : MonoBehaviour, IDamageReceiver, ICombatVitals,
         // Bullet flinch (push, slow, interrupt) applies to existing prefabs without migration.
         reaction = GetComponent<EnemyHitReaction>();
         if (reaction == null) reaction = gameObject.AddComponent<EnemyHitReaction>();
+        // The zombie it wears (Resources/Enemies/ZombieLooks); without that asset it stays a capsule.
+        body = GetComponent<ZombieBody>();
+        if (body == null) body = gameObject.AddComponent<ZombieBody>();
+        // What it knows of the players: a horde zombie unless placed calm (ZombieMind.startCalm or /spawn n calm).
+        mind = GetComponent<ZombieMind>();
+        if (mind == null) mind = gameObject.AddComponent<ZombieMind>();
         network = GetComponent<EnemyNetwork>();
         GameTables.Bind(TableName, string.IsNullOrWhiteSpace(tableId) ? CombatDamageEvents.BaseName(gameObject) : tableId.Trim(),
             this, GetComponent<EnemyCombatAI>(), GetComponent<MeleeCombatTarget>(), GetComponent<NavMeshAgent>(), reaction);
+        // A shambler's hold on a player plays out here (ZombieGrip; the held player's PlayerHold decides it).
+        if (GetComponent<ZombieGrip>() == null) gameObject.AddComponent<ZombieGrip>();
+        // Its kind (shambler or runner) goes on top of that row (ZombieType, Tables/ZombieKinds).
+        if (GetComponent<ZombieType>() == null) gameObject.AddComponent<ZombieType>();
         Health = MaximumHealth;
         appliedMaximum = MaximumHealth;
     }
@@ -111,27 +138,39 @@ public sealed class EnemyHealth : MonoBehaviour, IDamageReceiver, ICombatVitals,
 
         if (!IsAlive)
         {
-            Die();
+            Die(hit);
         }
-        else if (reaction != null && !copy)
+        else if (!copy)
         {
-            reaction.OnHit(hit, before - Health, MaximumHealth);
+            if (reaction != null) reaction.OnHit(hit, before - Health, MaximumHealth);
+            // Knocked down, the blow pushes the body where its doll runs (here, on the host or alone).
+            if (body != null) body.Hit(hit);
+            // A blow wakes a calm zombie at once.
+            if (mind != null) mind.Struck(hit);
         }
 
         return DamageResult.Damaged;
     }
 
     /// <summary>On a copy: the health the host says. A kill this PC already judged stays a kill.</summary>
-    internal void ShowHealth(float health)
-    {
-        if (IsAlive) Health = Mathf.Min(health, MaximumHealth);
-    }
+    internal void ShowHealth(float health) => ShowHealth(health, default, false);
 
     /// <summary>On a copy: someone else's hit, as the host took it.</summary>
     internal void ShowHit(DamageHit hit, float before, float after)
     {
-        ShowHealth(after);
+        ShowHealth(after, hit, true);
         CombatDamageEvents.Report(this, hit, before, after, MaximumHealth);
+    }
+
+    // Someone else's kill, seen here: the body falls as their PC runs it (ZombieCorpse), and the enemy waits hidden for
+    // the host to remove it. Known: the killing hit came with it, so this PC knows whose PC runs the fall.
+    private void ShowHealth(float health, in DamageHit hit, bool known)
+    {
+        if (!IsAlive) return;
+        Health = Mathf.Min(health, MaximumHealth);
+        if (IsAlive) return;
+        if (body != null) body.Fall(hit, false, known ? ZombieCorpse.RunnerOf(hit, true, out _) : null);
+        if (network != null && network.IsCopy) network.HideUntilRemoved();
     }
 
     // A live table edit keeps the same health fraction instead of healing or killing enemies mid-fight.
@@ -141,11 +180,17 @@ public sealed class EnemyHealth : MonoBehaviour, IDamageReceiver, ICombatVitals,
         appliedMaximum = MaximumHealth;
     }
 
-    private void Die()
+    private void Die(in DamageHit hit)
     {
         // 웨이브 관리자에게 처치 사실을 알린다.
         Died?.Invoke(this);
 
+        // The body falls as its own corpse, run here if this PC's player landed the blow (or the host, for no player).
+        if (body != null)
+        {
+            var runner = ZombieCorpse.RunnerOf(hit, network != null && network.IsSpawned, out bool here);
+            body.Fall(hit, here, runner);
+        }
         if (network != null && network.IsCopy) network.HideUntilRemoved();
         else Destroy(gameObject);
     }

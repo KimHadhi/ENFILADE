@@ -52,10 +52,13 @@ public sealed class MuzzleFlash : MonoBehaviour
 
     private void OnShot(WeaponShot shot)
     {
+        // One flame per shot, however many pellets it threw.
+        if (shot.Pellet > 0) return;
         var data = weapon != null ? weapon.EquippedData : null;
         Transform muzzle = weapon != null ? weapon.MuzzlePoint : null;
+        // A suppressor throws no flame.
         if (flame == null || data == null || data.MuzzleFlashScale <= 0f || !GunFeelSettings.Instance.muzzleEffects
-            || muzzle == null || !muzzle.gameObject.activeInHierarchy) return;
+            || muzzle == null || !muzzle.gameObject.activeInHierarchy || weapon.Suppressed) return;
         Mount(muzzle);
         flame.Fire(data.MuzzleFlashScale, ViewDistance(muzzle));
     }

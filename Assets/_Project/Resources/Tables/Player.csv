@@ -129,6 +129,35 @@ HeadStand.throwLift,2.5,떨어뜨릴 때 살짝 튀어 오르는 속도(m/s). �
 HeadStand.lurchDegrees,14,털어 낼 때 적이 기우는 각도(도)
 HeadStand.lurchSeconds,0.45,그 기울임이 돌아오기까지(초)
 HeadStand.viewJolt,-5;7,떨어질 때 화면 충격(도; 위아래;기울기). 기울기는 떨어지는 쪽으로
+Hold.holdSeconds,5,셤블러 하나가 붙잡고 있는 시간(초). G&B 레슬. 붙잡힌 동안은 움직이지도 총을 쓰지도 못하고 밀치기·주먹으로 떼어낸다. 그 셤블러가 누구에게든 맞거나 기절하면 풀린다
+Hold.biteDamage,10,무는 셤블러 하나가 초당 주는 피해
+Hold.biteEvery,0.5,물기 피해가 들어가는 간격(초)
+Hold.biteFrom,2,이만큼 동시에 붙잡으면 모두 문다
+Hold.regrabsToBite,3,한 셤블러가 이보다 많이 붙잡았으면 혼자서도 문다
+Hold.eatenAt,4,이만큼 동시에 붙잡으면 뜯어먹혀 바로 죽는다
+Hold.grabJolt,4;5,붙잡힐 때 시점이 흔들리는 정도(도; 위아래;기울기)
+Hold.pinSeconds,5,러너에게 깔린 채(체력이 가득일 때) 목을 물려 죽기까지(초). G&B 러너. 깔리면 스스로 못 빠져나오고 동료가 그 러너를 죽여야 풀린다
+Hold.pinLowHealthShare,0.5,체력이 하나도 없을 때는 pinSeconds의 이 배수 만에 죽는다. 그 사이는 체력에 비례
+Hold.maxJoiners,2,깔린 플레이어에게 러너가 이만큼 더 달라붙을 수 있다
+Hold.joinSpeedup,0.5,달라붙은 러너 하나마다 죽는 속도가 이만큼 빨라진다(0.5면 1.5배)
+Hold.pinBiteDamage,2,깔린 동안 러너 하나가 물 때마다(biteEvery) 주는 피해. 아픈 게 보이게만. 죽이는 건 pinSeconds
+Hold.pinKnock,2.5,도약에 맞아 등으로 넘어질 때 뒤로 미끄러지는 속도(m/s)
+Hold.pinJolt,10;8,깔릴 때 시점이 흔들리는 정도(도; 위아래;기울기)
+Counter.window,0.3,G&B-3 밀치기 카운터. 섐블러 잡기나 러너 도약의 예고가 이만큼(초) 남았을 때 밀치기(V)가 닿으면 카운터. 누구를 노린 잡기든 된다(동료 구하기)
+Counter.grace,0.2,밀치기를 누르고 이 시간(초) 안에 잡기·도약이 내게 닿아도 카운터(그쪽을 보고 있었으면). 지연이나 공중의 러너에 살짝 못 미친 밀치기를 살려준다
+Counter.graceAngle,70,그 경우 밀칠 때 바라본 방향에서 이 각도(좌우 도) 안에 적이 있어야 한다
+Counter.pounceKnockdown,2.5,카운터당한 러너가 공중에서 바닥에 처박혀 누워 있는 시간(초)
+Counter.pounceDamageShare,0.5,카운터당한 러너가 잃는 체력 비율. 잡기를 카운터당한 섐블러는 자세가 무너져 바로 처형(F)할 수 있다
+Counter.hitStopSeconds,0.22,카운터 순간 시간이 멈추다시피 하는 시간(실제 초)
+Counter.hitStopScale,0.03,그때의 시간 배속
+Counter.slowSeconds,0.55,그다음 느려지는 시간(실제 초)
+Counter.slowScale,0.3,그때의 시간 배속
+Counter.cameraKick,4;1.5;6,화면 충격(도; 위;공격자 반대쪽;기울기). 멀미가 나면 뒤의 두 값을 줄인다
+Counter.cameraFov,-7,순간 줌(시야각 도). 음수면 당겨진다
+Counter.cameraTrauma,0.35,흔들림
+Counter.burstGrowth,1.6,카운터 폭발(자세 붕괴 패링 연출)의 크기 배수
+Counter.contactDistance,0.7,폭발이 터지는 곳: 눈앞에서 적 쪽으로 이 거리(m)
+Counter.bannerSeconds,0.85,COUNTER 연출 시간(실제 초). 세 프레임 화면 반전, 핑크 사선, 사선에 잘린 COUNTER가 맞붙었다가 갈라지며 빠진다.
 Shield.color,#A6F2FF,내 실드의 색. 실드 피격 벌집 빛·방향 표시·실드가 깨질 때 유리판. 체력바 실드 띠와 같은 하늘색
 Shield.hitStrength,0.85,실드가 피해를 받을 때 맞은 쪽 화면 가장자리에 켜지는 벌집 빛의 밝기(0~1). 0이면 끈다. 실드만 맞은 피격은 피가 번지지 않는다(에이펙스 레전드 참고)
 Shield.hitSeconds,0.32,그 빛이 사라지는 시간(실제 초)
@@ -496,8 +525,8 @@ Body.leanSpineBend,20,아무것도 안 들었거나 주먹일 때 Q/E 기울이�
 Body.leanHipShift,0.08,아무것도 안 들었을 때 Q/E 기울이기를 끝까지 하면 골반이 기우는 쪽 발로 옮겨 가는 거리(m). 발은 디딘 자리에 그대로 둔다. 엿보는 거리(Ability.leanOffset)의 나머지는 카메라가 메운다. 다른 사람 화면에서도 기운다
 Body.leanHipReach,0.2,주먹일 때 Q/E 기울이기에서 골반이 기우는 쪽 발로 옮겨 갈 수 있는 최대 거리(m). 척추가 휘고 남은 엿보기 거리만큼 옮겨 가서 눈이 끝까지 가고 카메라는 눈에 붙어 있다(주먹 가드가 카메라 기준이라). 발은 디딘 자리에 그대로 둔다
 Body.eyeViewTime,0.15,눈 위치와 고정 조준·사다리 위치 사이의 전환 시간(초). 마우스 회전에는 영향 없음
-Body.aimSteadyTime,0.3,조준하는 동안 걸음에 따른 엉덩이 출렁임을 얼마나 느리게 따라갈지(초). 길수록 조준 화면과 총이 덜 흔들린다. 걸음 출렁임은 1초에 두 번쯤이라 0.3이면 4분의 3쯤 줄어든다. 다리는 발 고정이 맞춘다
-Body.aimSteadyReach,0.04,조준 중 다듬은 엉덩이가 클립의 엉덩이에서 벗어날 수 있는 최대치(발에서 엉덩이까지 높이에 대한 비율). 걸음 출렁임만 걸러지고 앉기·일어서기는 바로 따라간다
+Body.aimSteadyTime,0.45,조준하는 동안 걸음에 따른 엉덩이 출렁임을 얼마나 느리게 따라갈지(초). 길수록 조준 화면과 총이 덜 흔들린다. 걸음 출렁임은 1초에 두 번쯤이라 0.3이면 4분의 3쯤 줄어든다. 다리는 발 고정이 맞춘다
+Body.aimSteadyReach,0.08,조준 중 다듬은 엉덩이가 클립의 엉덩이에서 벗어날 수 있는 최대치(발에서 엉덩이까지 높이에 대한 비율). 걸음 출렁임만 걸러지고 앉기·일어서기는 바로 따라간다
 Body.animationViewStrength,0.65,선택된 행동의 머리 움직임을 카메라에 반영하는 비율. 0이면 카메라 방향은 마우스만 사용
 Body.animationViewLimits,18;12;10,강도 적용 전 카메라에 더할 애니메이션의 위아래;좌우;기울기 제한 각도(도)
 Body.animationViewTime,0.1,카메라에 더할 애니메이션 회전만 부드럽게 잇는 응답 시간(초). 마우스 입력은 즉시 반영

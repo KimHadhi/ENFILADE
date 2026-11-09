@@ -1,11 +1,13 @@
 using System.Collections.Generic;
 using KINEMATION.CharacterAnimationSystem.Integrations.FPSAnimationPack.Scripts;
 using KINEMATION.FPSAnimationFramework.Runtime.Core;
+using KINEMATION.FPSAnimationFramework.Runtime.Layers.AdditiveLayer;
 using KINEMATION.FPSAnimationFramework.Runtime.Layers.AdsLayer;
 using KINEMATION.FPSAnimationFramework.Runtime.Layers.AttachHandLayer;
 using KINEMATION.FPSAnimationFramework.Runtime.Layers.IkMotionLayer;
 using KINEMATION.FPSAnimationFramework.Runtime.Layers.LookLayer;
 using KINEMATION.FPSAnimationFramework.Runtime.Layers.PoseSamplerLayer;
+using KINEMATION.FPSAnimationFramework.Runtime.Layers.SwayLayer;
 using KINEMATION.FPSAnimationFramework.Runtime.Playables;
 using KINEMATION.FPSAnimationPack.Scripts.Sounds;
 using KINEMATION.FPSAnimationPack.Scripts.Weapon;
@@ -59,6 +61,27 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
     private float weightTime = .15f;
     [SerializeField, Min(.01f), Tooltip("How long FPSAF takes the upper body over when a gun is drawn, and gives it back when it is put away (s).")]
     private float holdBlendTime = .2f;
+    [SerializeField, Range(0f, 1f), Tooltip("Share of FPSAF's Sway (the gun trailing the look and the steps) kept at the hip. Down the "
+        + "sights there is none, as in Rainbow Six Siege: the sight stays where the view is (user, 2026-11-09: \"흔들거려서\").")]
+    private float hipSway = .5f;
+    [SerializeField, Range(0f, 1f), Tooltip("Share of FPSAF's Additive layer (KINEMATION's recoil animation kicking the gun) kept down "
+        + "the sights. Its turn and lift are already cut there (aimedRecoilTurn, aimedRecoilLift), so the gun can kick back in full.")]
+    private float aimedKick = 1f;
+    [SerializeField, Range(0f, 1f), Tooltip("Share of KINEMATION's recoil animation kicking the gun model at all (visual recoil): in full "
+        + "it shook the gun more than the user liked (2026-11-09: \"비쥬얼 리코일 … 좀 쎄네\").")]
+    private float gunKick = .6f;
+    [SerializeField, Tooltip("Play KINEMATION's camera shake with each shot from the hip. Off: the view's kick (WeaponFeedback) is the "
+        + "only shot shake, as in Rainbow Six Siege. Down the sights it never plays.")]
+    private bool kinemationShake;
+    [SerializeField, Range(0f, 1f), Tooltip("Down the sights, the share of KINEMATION's recoil animation turning the gun and wandering "
+        + "that stays (times its own aiming multipliers): Siege's guns kick back into the shoulder with the sight on the hit point.")]
+    private float aimedRecoilTurn = .2f;
+    [SerializeField, Range(0f, 1f), Tooltip("Down the sights, the share of the recoil animation lifting and pushing the gun sideways "
+        + "that stays; its kick straight back stays whole.")]
+    private float aimedRecoilLift = .3f;
+    [SerializeField, Range(0f, 1f), Tooltip("Aiming at least this much, FPSAF's little moves (a stop, a crouch, a landing) don't play: "
+        + "they swung the sight off the target.")]
+    private float aimedNoMotions = .5f;
 
     // Shots further apart than this many fire intervals have let go of the trigger: the recoil then settles.
     private const float TriggerReleaseIntervals = 1.5f;
@@ -82,6 +105,8 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
     private PlayerBody body;
     private FPSBodyAssets assets;
     private Transform weaponRoot, muzzle, lookFrame, eyes, view;
+    // The player's own camera (a magnified sight's lens renders with its settings, GunScope).
+    private Camera viewCamera;
     private Vector3 muzzleHomePosition;
     private Quaternion muzzleHomeRotation;
 
@@ -146,9 +171,14 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
         }
         var camera = GetComponentInChildren<Camera>(true);
         view = camera != null ? camera.transform : null;
+        viewCamera = camera;
         if (muzzle != null) { muzzleHomePosition = muzzle.localPosition; muzzleHomeRotation = muzzle.localRotation; }
         controller.ReloadStarted += OnReloadStarted;
         controller.ReloadCompleted += OnReloadCompleted;
+        controller.ReloadStepped += OnReloadStepped;
+        controller.Holstering += OnHolstering;
+        controller.InspectStarted += OnInspectStarted;
+        controller.InspectStopped += OnInspectStopped;
         if (movement != null) movement.Jumped += OnJumped;
         if (assets == null || assets.inputConfig == null || assets.rig == null || assets.upperBody == null || assets.idleProfile == null)
             Report("Resources/Combat/FPSBody is missing or incomplete; the body can't hold KINEMATION's guns.");
@@ -160,6 +190,10 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
         {
             controller.ReloadStarted -= OnReloadStarted;
             controller.ReloadCompleted -= OnReloadCompleted;
+            controller.ReloadStepped -= OnReloadStepped;
+            controller.Holstering -= OnHolstering;
+            controller.InspectStarted -= OnInspectStarted;
+            controller.InspectStopped -= OnInspectStopped;
         }
         if (movement != null) movement.Jumped -= OnJumped;
         if (body != null) body.UpperBodyFromFramework = false;
@@ -205,6 +239,8 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
         animator = bodyAnimator;
         // PlayerBody has put the body's clips into the Animator's graph first; FPSAF takes them as the Animator output.
         if (animator == null || !animator.playableGraph.IsValid() || body.IsLimp) { animator = null; return; }
+        // The gun clips made for this body keep KINEMATION's events.
+        KinemationClipEvents.On(animator.gameObject);
         rig = FPSBodyRig.Build(animator, assets.rig);
         if (rig == null)
         {
@@ -275,7 +311,7 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
                 + "(Tools → ENFILADE → Combat → Retarget KINEMATION Gun Clips).");
             return;
         }
-        if (!exact) Report($"KINEMATION's gun clips were not made for {body.BodyModel.name} yet; it holds them as made for {bake.skin.name}.");
+        // Any body but the reference plays the reference's humanoid clips, with the gun fitted to its own eyes (FittedGunPose).
 
         // Woken under a root of its own: KINEMATION's gun script looks up its sound source from transform.root when it
         // wakes (even switched off), and under the player it would find our footstep or voice source and play its own
@@ -285,6 +321,8 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
         var instance = Instantiate(entry.prefab, holder.transform, false);
         instance.name = entry.prefab.name;
         var kinemation = instance.GetComponent<CasFPSWeapon>();
+        // The gun-part clips carry KINEMATION's events too.
+        foreach (var parts in instance.GetComponentsInChildren<Animator>(true)) KinemationClipEvents.On(parts.gameObject);
         // FPS Animation Pack's own weapon scripts expect its own player.
         foreach (var leftover in instance.GetComponentsInChildren<FPSWeaponSound>(true)) DestroyImmediate(leftover);
         foreach (var leftover in instance.GetComponentsInChildren<FPSWeapon>(true)) DestroyImmediate(leftover);
@@ -299,14 +337,32 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
 
         var gun = instance.AddComponent<FPSGun>();
         Quaternion gunFrame = GunFrameOf(kinemation);
-        var profile = ProfileFor(entry.profile, entry.weapon, bake, gunFrame);
-        gun.Set(entry, kinemation, muzzleDepth, profile, Settled(Copy(entry.reloadTactical, bake.reloadTactical)),
-            Settled(Copy(entry.reloadEmpty, bake.reloadEmpty)), gunFrame);
+        var profile = ProfileFor(entry.profile, entry.weapon, bake, gunFrame, exact);
+        // A shell reload's starts and shells hand over to its next step, so only its end settles back into the hold.
+        bool shells = entry.weapon.ShellReload;
+        gun.Set(entry, kinemation, muzzleDepth, profile,
+            shells ? Copy(entry.reloadTactical, bake.reloadTactical) : Settled(Copy(entry.reloadTactical, bake.reloadTactical)),
+            shells ? Copy(entry.reloadEmpty, bake.reloadEmpty) : Settled(Copy(entry.reloadEmpty, bake.reloadEmpty)), gunFrame,
+            Copy(entry.reloadShell, bake.reloadShell), Settled(Copy(entry.reloadEnd, bake.reloadEnd)));
         gun.SetGrip(bake, exact);
+        // Drawn at the clip's own pace: squeezed into the gun's Draw Duration it ran at up to three times its speed and looked
+        // fast-forwarded (user, 2026-11-09). The gun is ready at Draw Duration all the same, and using it then cuts the rest
+        // of the draw short (CutDraw). Put away in its Holster Duration, looked over at the clip's pace.
+        gun.SetActions(Copy(entry.draw, bake.draw),
+            Fitted(Copy(entry.holster, bake.holster), entry.weapon.HolsterDuration), Settled(Copy(entry.inspect, bake.inspect)));
         // From this body's profile: a stand-in's share has gone to the bone below it.
         gun.LeanChain = LeanChainOf(profile);
-        // Where this gun's reload clips move the magazine and bolt, for WeaponFeedback's reload sounds (sound session).
-        if (kinemation != null) ReloadMoments.Measure(entry.weapon, kinemation);
+        // This gun's own copies of the layers that move it about, turned down as it is aimed (FPSGun.Steady).
+        foreach (var layer in profile.settings)
+        {
+            if (layer is SwayLayerSettings || layer is AdditiveLayerSettings)
+                gun.FeelLayers.Add((layer, layer.alpha, layer is AdditiveLayerSettings));
+            else if (layer is GunConvergeLayerSettings converge) gun.Converge = converge;
+            else if (layer is AdsLayerSettings ads) gun.Ads = ads;
+        }
+        // Where this gun's reload clips move the magazine and bolt, for WeaponFeedback's reload sounds (sound session). A
+        // shell reload has a sound per step instead (WeaponData's reload sounds).
+        if (kinemation != null && !shells) ReloadMoments.Measure(entry.weapon, kinemation);
         instance.SetActive(false);
         guns.Add(gun);
     }
@@ -324,7 +380,7 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
     // FPSAF's Ads brings the sight up at our weapon's aim time: our rule (WeaponController.AimBlend) zooms the view and
     // tightens the spread over AdsTransitionTime, and the demo's aimingSpeed (1.8 a second, 0.56 s) left the gun 0.4 s
     // behind the zoom. Before KINEMATION the gun rose with the rule (user picked it back, 2026-11-07).
-    private FPSAnimatorProfile ProfileFor(FPSAnimatorProfile source, WeaponData weapon, GunBakes.Entry bake, Quaternion gunFrame)
+    private FPSAnimatorProfile ProfileFor(FPSAnimatorProfile source, WeaponData weapon, GunBakes.Entry bake, Quaternion gunFrame, bool exact)
     {
         var profile = Instantiate(source);
         Keep(profile);
@@ -341,7 +397,8 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
                 var mine = Instantiate(sampler);
                 Keep(mine);
                 mine.poseToSample = Copy(sampler.poseToSample, bake.pose);
-                mine.defaultWeaponPose = new KTransform(bake.gunPosition, bake.gunRotation, Vector3.one);
+                mine.defaultWeaponPose = exact || !bake.hasEyeFrame
+                    ? new KTransform(bake.gunPosition, bake.gunRotation, Vector3.one) : FittedGunPose(bake);
                 mine.weaponBoneOffset = new KTransform(Vector3.zero, gunFrame, Vector3.one);
                 mine.overwriteWeaponBone = true;
                 profile.settings.Add(mine);
@@ -355,6 +412,16 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
                 var mine = Instantiate(ads);
                 Keep(mine);
                 mine.aimingSpeed = 1f / weapon.AdsTransitionTime;
+                profile.settings.Add(mine);
+                // Then the barrel turns onto the crosshair's point, before sway and recoil go on top (GunConvergeLayer).
+                profile.settings.Add(ConvergeFor(ads));
+            }
+            else if (layer is SwayLayerSettings || layer is AdditiveLayerSettings)
+            {
+                // Copies of their own: their alpha is turned down while aiming every frame (FPSGun.Steady), and the shared
+                // asset must keep KINEMATION's.
+                var mine = Instantiate(layer);
+                Keep(mine);
                 profile.settings.Add(mine);
             }
             else profile.settings.Add(layer);
@@ -423,6 +490,17 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
         return weld;
     }
 
+    // Our layer that turns the gun onto the crosshair's point (GunConvergeLayerSettings), on the same rig and blended out by
+    // the same full-body moves as Ads.
+    private GunConvergeLayerSettings ConvergeFor(AdsLayerSettings ads)
+    {
+        var converge = ScriptableObject.CreateInstance<GunConvergeLayerSettings>();
+        Keep(converge);
+        converge.rigAsset = ads.rigAsset;
+        converge.curveBlending = new List<CurveBlend>(ads.curveBlending);
+        return converge;
+    }
+
     // How FPSAF's Look shares a lean down this body's spine for a gun's profile: each roll element's bone and its part of
     // the whole (its angle at a 90° lean).
     private List<(Transform bone, float share)> LeanChainOf(FPSAnimatorProfile profile)
@@ -438,6 +516,65 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
                 break;
             }
         return chain;
+    }
+
+    // Where the gun sits in this body's model space in the gun's pose, on a body the clips weren't baked for (another skin, a
+    // mod's character): as far from its own eyes, in metres in game, and as turned from where its hips face, as the bake put
+    // it on the reference body (GunBakes.Entry.gunFromEyes). The pose clip is sampled on this body for it and put back.
+    private KTransform FittedGunPose(in GunBakes.Entry bake)
+    {
+        var made = new KTransform(bake.gunPosition, bake.gunRotation, Vector3.one);
+        if (animator == null || bake.pose == null || !EyeFrame(bake.pose, out Vector3 eyes, out Quaternion frame)) return made;
+        float scale = Mathf.Max(1e-4f, ModelScale);
+        return new KTransform(eyes + frame * (bake.gunFromEyes / scale), frame * bake.gunTurnFromEyes, Vector3.one);
+    }
+
+    // The eyes in this body's model space and the frame they look out of (ahead the way the hips face, up the model's up),
+    // as the gun's pose clip stands the body: GunClipRetarget.EyeFrame's rule on the reference body.
+    private bool EyeFrame(AnimationClip pose, out Vector3 eyes, out Quaternion frame)
+    {
+        eyes = default;
+        frame = Quaternion.identity;
+        var root = animator.transform;
+        var head = animator.GetBoneTransform(HumanBodyBones.Head);
+        var leftLeg = animator.GetBoneTransform(HumanBodyBones.LeftUpperLeg);
+        var rightLeg = animator.GetBoneTransform(HumanBodyBones.RightUpperLeg);
+        if (head == null || leftLeg == null || rightLeg == null) return false;
+        var bones = root.GetComponentsInChildren<Transform>();
+        var saved = new (Vector3 position, Quaternion rotation)[bones.Length];
+        for (int i = 0; i < bones.Length; i++) saved[i] = (bones[i].localPosition, bones[i].localRotation);
+        try
+        {
+            pose.SampleAnimation(animator.gameObject, 0f);
+            Vector3 ahead = Vector3.Cross(root.InverseTransformPoint(rightLeg.position) - root.InverseTransformPoint(leftLeg.position), Vector3.up);
+            if (ahead.sqrMagnitude < 1e-8f) return false;
+            ahead.Normalize();
+            frame = Quaternion.LookRotation(ahead, Vector3.up);
+            Vector3 headAt = root.InverseTransformPoint(head.position);
+            eyes = headAt + Vector3.up * .08f + ahead * .1f;
+            var leftEye = animator.GetBoneTransform(HumanBodyBones.LeftEye);
+            var rightEye = animator.GetBoneTransform(HumanBodyBones.RightEye);
+            if (leftEye != null && rightEye != null)
+            {
+                Vector3 l = root.InverseTransformPoint(leftEye.position), r = root.InverseTransformPoint(rightEye.position);
+                Vector3 middle = (l + r) * .5f, fromHead = middle - headAt;
+                float apart = Vector3.Distance(l, r), above = fromHead.y, forward = Vector3.Dot(fromHead, ahead);
+                if (apart > .015f && apart < .2f && above > -.05f && above < .25f && forward > .01f && forward < .25f) eyes = middle;
+            }
+            return true;
+        }
+        finally
+        {
+            for (int i = 0; i < bones.Length; i++)
+                if (bones[i] != null) bones[i].SetLocalPositionAndRotation(saved[i].position, saved[i].rotation);
+        }
+    }
+
+    // A holster clip played over the gun's own time for it (s). No time keeps the clip's own pace.
+    private static FPSAnimationAsset Fitted(FPSAnimationAsset action, float seconds)
+    {
+        if (action != null && action.clip != null && seconds > .01f) action.blendTime.rateScale = action.clip.length / seconds;
+        return action;
     }
 
     // A reload eases back into the hold over reloadSettle (user, 2026-11-08: the arms jumped from the reload to the hold).
@@ -498,15 +635,21 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
         if (held == null || linked) return;
         held.gameObject.SetActive(true);
         aiming = false;
-        held.Equip(framework, recoil, assets, 60f / Mathf.Max(.001f, held.Data.ShotInterval), FireModeOf(held.Data), bodyCamera);
+        held.Equip(framework, recoil, assets, 60f / Mathf.Max(.001f, held.Data.ShotInterval), FireModeOf(HeldFireMode), bodyCamera,
+            aimedRecoilTurn, aimedRecoilLift);
         drawnAt = Time.time;
         drawSettle = LengthOf(assets.equipMotion);
+        convergeWeight = 0f;
+        // The pack's own draw at its own pace (WeaponController holds the trigger back for the gun's Draw Duration).
+        float drawing = held.PlayDraw(playables, bodyCamera);
+        if (drawing > 0f) drawSettle = drawing;
         linked = true;
     }
 
     private void PutAway()
     {
         if (held == null || !linked) return;
+        held.StopAction(playables, 0f, bodyCamera);
         held.StopReload(playables, 0f, bodyCamera);
         held.Unequip(framework, recoil, assets);
         held.gameObject.SetActive(false);
@@ -514,8 +657,12 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
         linked = false;
     }
 
-    private static FireMode FireModeOf(WeaponData data)
-        => data.FireMode == WeaponFireMode.Automatic ? FireMode.Auto : data.FireMode == WeaponFireMode.Burst ? FireMode.Burst : FireMode.Semi;
+    private static FireMode FireModeOf(WeaponFireMode mode)
+        => mode == WeaponFireMode.Automatic ? FireMode.Auto : mode == WeaponFireMode.Burst ? FireMode.Burst : FireMode.Semi;
+
+    // The held gun's fire mode as B left it (WeaponRuntime.FireMode; a friend's copy has theirs), else the gun's own.
+    private WeaponFireMode HeldFireMode
+        => controller.Runtime != null && controller.Runtime.Data == held.Data ? controller.Runtime.FireMode : held.Data.FireMode;
 
     // ---- What the demo's FPSController and FPSMovement feed FPSAF, from our player ----
 
@@ -567,11 +714,13 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
         var state = movement != null ? movement.CurrentState : MovementState.Standing;
         bool crouched = state == MovementState.Crouching;
         crouchWeight = Mathf.Lerp(crouchWeight, crouched ? 1f : 0f, follow);
-        if (crouched != wasCrouched) { wasCrouched = crouched; Motion(assets.crouchingMotion); }
-        if (grounded && !wasGrounded) Motion(assets.jumpingMotion);
+        // Down the sights FPSAF's little moves stay out: they swung the sight off the target (aimedNoMotions).
+        bool sighted = HoldsGun && controller.AimBlend >= aimedNoMotions;
+        if (crouched != wasCrouched) { wasCrouched = crouched; if (!sighted) Motion(assets.crouchingMotion); }
+        if (grounded && !wasGrounded && !sighted) Motion(assets.jumpingMotion);
         wasGrounded = grounded;
         bool moving = speed >= StillSpeed;
-        if (wasMoving && !moving) Motion(assets.stopMotion);
+        if (wasMoving && !moving && !sighted) Motion(assets.stopMotion);
         wasMoving = moving;
 
         // The Animator parameters FPSAF's profiles read. The demo's full-body actions take the upper body from FPSAF by
@@ -583,14 +732,64 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
 
         if (!HoldsGun) return;
         float aim = controller.AimBlend;
+        held.Steady(aim, hipSway, aimedKick, gunKick);
+        FeedConverge(dt, aim);
+        // FPSAF's Ads brings the sight up in our aim time, which an angled grip shortens (WeaponController.AdsTime).
+        if (held.Ads != null) held.Ads.aimingSpeed = 1f / Mathf.Max(.01f, controller.AdsTime);
+        // KINEMATION's recoil animation kicks per shot or loops by the fire mode, which B changes while the gun is out; it
+        // reads the field as each shot comes.
+        if (recoil != null) recoil.fireMode = FireModeOf(HeldFireMode);
+        // Only this PC's own player looks through a lens; a friend's copy has no view to render it for.
+        if (movement == null || movement.IsLocal) held.ShowScope(aim, viewCamera);
         bool wantsAim = aim >= .999f || aim > lastAim;
         lastAim = aim;
         if (wantsAim != aiming)
         {
+            if (wantsAim) CutDraw();
             aiming = wantsAim;
             held.Aim(aiming, input, recoil);
             Motion(assets.aimingMotion);
         }
+    }
+
+    // ---- The gun turned onto the crosshair's point (GunConvergeLayerSettings) ----
+
+    // How fast the turn comes in and goes as the hands come free of a reload, a draw or a look over the gun (s, 0 to full),
+    // so the gun eases back onto the point instead of snapping to it.
+    private const float ConvergeEase = .2f;
+    // How the distance to the crosshair's point is followed (half-lives, s) at the hip and down the sights: as before
+    // KINEMATION (WeaponData's aimFollowHalfLife .055 and adsAimFollowHalfLife .025, 0.7.34), followed as its reciprocal, so
+    // a swing from the sky onto a near wall doesn't hang far behind. The nearest it is taken (m), and without a point yet.
+    private const float AimFollowHalfLife = .055f, AdsAimFollowHalfLife = .025f, NearestAim = .5f, DefaultAim = 20f;
+    private float convergeWeight, inverseAimDistance;
+    private bool hasAimDistance;
+    // How far the gun is held out for the customize menu (0-1), and how long it takes to come out or go back (s).
+    private float presentWeight;
+    private const float PresentEase = .25f;
+
+    private void FeedConverge(float dt, float aim)
+    {
+        var converge = held.Converge;
+        if (converge == null) return;
+        // The gun model hangs at rest under the IK weapon bone, so its own space is the bone's.
+        converge.muzzle = held.MuzzlePosition;
+        converge.muzzleForward = held.MuzzleRotation * Vector3.forward;
+        converge.hasMuzzle = true;
+        bool free = !held.HandsBusy && Framework >= .999f;
+        convergeWeight = Mathf.MoveTowards(convergeWeight, free ? 1f : 0f, dt / ConvergeEase);
+        // The customize menu holds the gun out to show it (ArcCW's customize view).
+        presentWeight = Mathf.MoveTowards(presentWeight, controller.Customizing ? 1f : 0f, dt / PresentEase);
+        converge.present = Mathf.SmoothStep(0f, 1f, presentWeight);
+        // Down the sights Ads lines the sight up on the eyes; held back by a wall, its pose has the gun; shown off, the menu's.
+        converge.weight = convergeWeight * (1f - aim) * (1f - cover) * (1f - presentWeight);
+
+        float distance = DefaultAim;
+        if (controller.HasAimPoint && eyes != null)
+            distance = Mathf.Max(NearestAim, Vector3.Dot(controller.AimPoint - eyes.position, eyes.forward));
+        float halfLife = Mathf.Lerp(AimFollowHalfLife, AdsAimFollowHalfLife, aim);
+        if (!hasAimDistance) { inverseAimDistance = 1f / distance; hasAimDistance = true; }
+        else inverseAimDistance = Mathf.Lerp(inverseAimDistance, 1f / distance, 1f - Mathf.Exp(-Mathf.Log(2f) * dt / halfLife));
+        converge.distance = 1f / Mathf.Max(1e-4f, inverseAimDistance);
     }
 
     // The body's fit scale (PlayerBody scales the model to the camera height); the grip was measured at scale 1.
@@ -685,7 +884,7 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
         if (Framework >= .999f)
         {
             // Mid-reload the hands are on the magazine and the bolt, not the grips.
-            if (held.Reloading) return;
+            if (held.HandsBusy) return;
             var inView = new KTransform(eyes.InverseTransformPoint(gun.position), Quaternion.Inverse(eyes.rotation) * gun.rotation, Vector3.one);
             if (aim <= .001f) { gunAtHip = inView; hasGunInView = true; }
             else if (aim >= .999f) { gunAimed = inView; hasGunAimed = true; }
@@ -737,7 +936,7 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
     // never learnt again while raised, so it stayed raised and couldn't fire (user, 2026-11-07).
     private void LearnHipMuzzle()
     {
-        if (eyes == null || highReady || cover > 0f || held.Reloading || Framework < .999f || controller.AimBlend > .001f
+        if (eyes == null || highReady || cover > 0f || held.HandsBusy || Framework < .999f || controller.AimBlend > .001f
             || Time.time - drawnAt < drawSettle) return;
         Vector3 fromEyes = muzzle.position - eyes.position;
         if (Vector3.Angle(eyes.forward, fromEyes) > HipMuzzleCone) return;
@@ -754,7 +953,7 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
 
     private void LeftHandUnderGun(float dt)
     {
-        bool grip = Framework >= .999f && !held.Reloading && held.AimPoint != null;
+        bool grip = Framework >= .999f && !held.HandsBusy && held.AimPoint != null;
         leftGripWeight = Mathf.MoveTowards(leftGripWeight, grip ? 1f : 0f, dt / LeftGripEase);
         var upper = animator.GetBoneTransform(HumanBodyBones.LeftUpperArm);
         var lower = animator.GetBoneTransform(HumanBodyBones.LeftLowerArm);
@@ -780,7 +979,7 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
     }
 
     /// <summary>A reload is playing (its own fingers hold the magazine and bolt).</summary>
-    internal bool ReloadingGun => HoldsGun && held.Reloading;
+    internal bool ReloadingGun => HoldsGun && held.HandsBusy;
 
     /// <summary>
     /// The held gun's real surface while FPSAF holds it: what the hands rest on and the fingers close round, each hand
@@ -802,7 +1001,7 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
     internal float GripHold(bool isLeft)
     {
         if (!HoldsGun) return 0f;
-        float fallback = held.Reloading ? 0f : 1f;
+        float fallback = held.HandsBusy ? 0f : 1f;
         if (!held.HasGrip || rig == null || animator == null) return fallback;
         held.GripGaps(animator.GetBoneTransform(HumanBodyBones.RightHand), animator.GetBoneTransform(HumanBodyBones.LeftHand),
             rig.IkWeaponBone, ModelScale, out float rightGap, out float leftGap);
@@ -821,12 +1020,98 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
     {
         if (!HoldsGun) return;
         StopFiring();
+        CutDraw();
         held.Reload(empty, playables, bodyCamera);
+    }
+
+    // The gun used (a shot, an aim, a reload) once it is ready but before its draw clip is over: the rest of the draw lets
+    // go and the gun eases into the hold. A look over the gun is ended by WeaponController the same way.
+    private void CutDraw()
+    {
+        if (HoldsGun && held.Acting) held.StopAction(playables, reloadBlendOut, bodyCamera);
     }
 
     private void OnReloadCompleted()
     {
         if (held != null) held.ReloadDone();
+    }
+
+    // The gun going away before the next comes out (PlayerWeaponSlots waits for it): a reload under way lets go first.
+    private void OnHolstering(float seconds)
+    {
+        if (!HoldsGun) return;
+        StopFiring();
+        held.StopAction(playables, 0f, bodyCamera);
+        held.StopReload(playables, 0f, bodyCamera);
+        held.PlayHolster(playables, bodyCamera);
+    }
+
+    // Y: the gun looked over; WeaponController ends the look when its clip is over or the hands are wanted.
+    private void OnInspectStarted()
+    {
+        float length = HoldsGun ? held.PlayInspect(playables, bodyCamera) : 0f;
+        controller.SetInspectLength(length);
+    }
+
+    private void OnInspectStopped()
+    {
+        if (HoldsGun) held.StopAction(playables, reloadBlendOut, bodyCamera);
+    }
+
+    /// <summary>The gun of ours drawn now, for the customize menu (GunCustomizeMenu); null without one.</summary>
+    internal FPSGun Held => HoldsGun ? held : null;
+
+    /// <summary>L: the held gun's flashlight on or off. False when it wears none.</summary>
+    internal bool ToggleLight() => HoldsGun && held.ToggleLight();
+
+    /// <summary>The held gun wears a suppressor.</summary>
+    internal bool HeldSuppressed => held != null && held.Suppressed;
+
+    /// <summary>
+    /// That gun of ours: its sight, muzzle part and underbarrel part (-1 for no choice) and whether its flashlight is on,
+    /// for friends' PCs.
+    /// </summary>
+    internal int SightOf(WeaponData data) => Find(data) is FPSGun gun ? gun.SightIndex : -1;
+    internal int MuzzleOf(WeaponData data) => Find(data) is FPSGun gun ? gun.MuzzleIndex : -1;
+    internal int UnderbarrelOf(WeaponData data) => Find(data) is FPSGun gun ? gun.UnderbarrelIndex : -1;
+    internal int GripOf(WeaponData data) => Find(data) is FPSGun gun ? gun.GripIndex : -1;
+
+    /// <summary>The held gun's grip (Siege's: a vertical grip steadies the climb, an angled one brings the sight up sooner).</summary>
+    internal GunAttachments.Kind HeldGripKind => held != null ? held.GripKind : GunAttachments.Kind.None;
+
+    /// <summary>The held gun is a handgun (its sound profile): the support hand cups the grip hand instead of a handguard.</summary>
+    internal bool HeldPistol => held != null && held.Data != null && held.Data.SoundProfile == GunSoundProfile.Pistol;
+
+    /// <summary>
+    /// The held gun's grip takes the support hand (PlayerBodyHands.HoldGunGrip): where the palm goes and the ways the
+    /// fingers point and the palm faces. False without such a grip, or while the hands are busy (a reload, a draw).
+    /// </summary>
+    internal bool LeftGrip(out Vector3 palm, out Vector3 fingers, out Vector3 facing)
+    {
+        palm = fingers = facing = Vector3.zero;
+        return HoldsGun && held.LeftGrip(out palm, out fingers, out facing);
+    }
+    internal bool LightOf(WeaponData data) => Find(data) is FPSGun gun && gun.LightOn;
+
+    /// <summary>
+    /// Puts a sight, muzzle part, underbarrel part or flashlight state on that gun of ours, drawn or not: picked in the
+    /// customize menu, or what a friend's PC shows (PlayerNetworkCombat). False when nothing changed.
+    /// </summary>
+    internal bool ShowSight(WeaponData data, int index) => Find(data) is FPSGun gun && gun.ShowSight(index);
+    internal bool ShowMuzzle(WeaponData data, int index) => Find(data) is FPSGun gun && gun.ShowMuzzle(index);
+    internal bool ShowUnderbarrel(WeaponData data, int index) => Find(data) is FPSGun gun && gun.ShowUnderbarrel(index);
+    internal bool ShowGrip(WeaponData data, int index) => Find(data) is FPSGun gun && gun.ShowGrip(index);
+
+    internal void ShowLight(WeaponData data, bool on)
+    {
+        if (Find(data) is FPSGun gun) gun.ShowLight(on);
+    }
+
+    // A shell reload's next shell or its end.
+    private void OnReloadStepped(WeaponRuntime.ReloadStep step)
+    {
+        if (!HoldsGun || !held.Reloading) return;
+        held.ReloadStep(step, playables, bodyCamera);
     }
 
     private void StopFiring()
@@ -869,10 +1154,11 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
     public void OnShot(WeaponData data, Vector2 shotRecoil)
     {
         if (!HoldsGun) return;
+        CutDraw();
         firing = true;
         lastShot = Time.time;
         shotInterval = data.ShotInterval;
-        held.Fire(controller.LastShot.AmmoAfterShot == 0, recoil, bodyCamera);
+        held.Fire(controller.LastShot.AmmoAfterShot == 0, recoil, bodyCamera, !kinemationShake || controller.AimBlend >= .5f);
     }
 
     // The wall rule probes the gun as held at the hip, never the gun as it is (raised, swung aside or on its way in): the

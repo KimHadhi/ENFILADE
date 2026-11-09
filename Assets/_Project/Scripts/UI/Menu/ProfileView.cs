@@ -1,12 +1,22 @@
+using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 using W = SettingsWidgets;
 
-/// <summary>The window for the player's own profile: the nickname others see in the chat.</summary>
+/// <summary>
+/// The window for the player's own profile, laid out like a profile header: the picture large and square at the left
+/// (any image from this PC, ProfilePicture; the name's first letter until one is chosen) with a pink bar under it as on
+/// the lobby's chip, and at its right the nickname others see in the chat and the buttons to choose or remove the
+/// picture. A picture is kept the moment it is chosen or removed; the nickname waits for 저장.
+/// </summary>
 public sealed class ProfileView
 {
     private const int NameLimit = 16;
+    private const float PictureSize = 128f, Gap = 28f;
     private readonly RectTransform shade, panel;
     private string typed;
+    private RawImage picture;
+    private TMP_Text letter;
 
     public ProfileView(Transform canvas)
     {
@@ -16,17 +26,96 @@ public sealed class ProfileView
     /// <summary>Showing rebuilds the window, so a change that was cancelled doesn't stay in the box.</summary>
     public void Show()
     {
-        for (int i = panel.childCount - 1; i >= 0; i--) Object.Destroy(panel.GetChild(i).gameObject);
+        W.ClearContent(panel);
         typed = GameSettings.Current.DisplayName;
 
         W.Size(W.Label(panel, "프로필", 36f, W.Text), height: 54f);
-        W.TextInput(W.Row(panel, "닉네임"), typed, name => typed = name).characterLimit = NameLimit;
-        W.Size(W.Label(panel, "비워 두면 PC 사용자 이름을 씁니다.", 20f, W.Muted), height: 34f);
+        var header = W.Rect("Header", panel);
+        var row = header.gameObject.AddComponent<HorizontalLayoutGroup>();
+        row.spacing = Gap;
+        row.childAlignment = TextAnchor.UpperLeft;
+        row.childControlWidth = row.childControlHeight = true;
+        row.childForceExpandWidth = row.childForceExpandHeight = false;
+        BuildPicture(header);
+        BuildDetails(header);
+
         var buttons = W.ButtonRow(panel);
         W.ActionButton(buttons, "취소", false, Hide);
         W.ActionButton(buttons, "저장", true, Confirm);
+        ShowPicture();
         shade.gameObject.SetActive(true);
     }
+
+    // The square, never squeezed: its smallest size is its size.
+    private void BuildPicture(RectTransform header)
+    {
+        var frame = W.Rect("Picture", header);
+        var size = W.Size(frame, width: PictureSize, height: PictureSize);
+        size.minWidth = size.minHeight = PictureSize;
+        var image = W.Rect("Image", frame);
+        W.Stretch(image);
+        picture = image.gameObject.AddComponent<RawImage>();
+        picture.raycastTarget = false;
+        letter = W.Label(frame, "", 64f, KitStyle.Ink, TextAlignmentOptions.Center);
+        W.Stretch(letter.rectTransform);
+        letter.fontStyle = FontStyles.Bold;
+        var bar = W.Rect("Accent", frame);
+        bar.anchorMin = Vector2.zero;
+        bar.anchorMax = new Vector2(1f, 0f);
+        bar.pivot = new Vector2(.5f, 0f);
+        bar.sizeDelta = new Vector2(0f, 5f);
+        bar.anchoredPosition = Vector2.zero;
+        W.Fill(bar, KitStyle.Accent).raycastTarget = false;
+    }
+
+    // At the picture's right: the nickname with its hint, then the picture's buttons.
+    private void BuildDetails(RectTransform header)
+    {
+        var column = W.Rect("Details", header);
+        var stack = column.gameObject.AddComponent<VerticalLayoutGroup>();
+        stack.spacing = 8f;
+        stack.childAlignment = TextAnchor.UpperLeft;
+        stack.childControlWidth = stack.childControlHeight = true;
+        stack.childForceExpandWidth = true;
+        stack.childForceExpandHeight = false;
+        W.Size(column, flexibleWidth: 1f);
+
+        W.Size(W.Label(column, "닉네임", 20f, W.Muted), height: 26f);
+        W.TextInput(column, typed, name =>
+        {
+            typed = name;
+            ShowPicture();
+        }).characterLimit = NameLimit;
+        W.Size(W.Label(column, "비워 두면 PC 사용자 이름을 씁니다.", 17f, W.Muted), height: 24f);
+
+        var buttons = W.Rect("Picture Buttons", column);
+        var row = buttons.gameObject.AddComponent<HorizontalLayoutGroup>();
+        row.spacing = 10f;
+        row.childAlignment = TextAnchor.MiddleLeft;
+        row.childControlWidth = row.childControlHeight = true;
+        row.childForceExpandWidth = row.childForceExpandHeight = false;
+        W.Size(buttons, height: 44f);
+        W.Size(W.ActionButton(buttons, "사진 고르기", false, () =>
+        {
+            ProfilePicture.Choose();
+            ShowPicture();
+        }), width: 150f, height: 40f);
+        W.Size(W.ActionButton(buttons, "사진 지우기", false, () =>
+        {
+            ProfilePicture.Clear();
+            ShowPicture();
+        }), width: 150f, height: 40f);
+    }
+
+    private void ShowPicture()
+    {
+        string name = string.IsNullOrWhiteSpace(typed) ? GameSettings.Current.DisplayName : typed;
+        ProfilePicture.Paint(picture, letter, name);
+    }
+
+    public bool IsOpen => shade.gameObject.activeSelf;
+
+    public void Close() => Hide();
 
     private void Hide() => shade.gameObject.SetActive(false);
 

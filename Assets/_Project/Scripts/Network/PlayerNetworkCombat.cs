@@ -3,8 +3,9 @@ using UnityEngine;
 
 /// <summary>
 /// What a player does with their hands, for the other PCs: the weapon out, aiming, reloading and guarding as a stance,
-/// and shots, punches, shoves, reload kicks and the start of an execution as they happen. Each PC plays these on its own copy, whose
-/// gun and hands then work as they always do, and nothing here deals damage. Alone it never spawns and does nothing.
+/// and shots, punches, counter elbows, shoves, reload kicks and the start of an execution as they happen. Each PC plays these on its own copy, whose
+/// gun and hands then work as they always do, and nothing here deals damage, except a teammate's blow passed on to its
+/// owner when friendly fire is on (FriendlyHit). Alone it never spawns and does nothing.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class PlayerNetworkCombat : NetworkBehaviour
@@ -18,6 +19,42 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
         /// <summary>Whose feet they're helping back to: that client's id plus one, or 0 for nobody. It ends with them, so it can't stick.</summary>
         public ushort Reviving;
         public byte ReviveProgress;
+        /// <summary>
+        /// The gun in the slot they hold: its place in Resources/Combat/FPSBody's guns plus one, or 0 for none of those.
+        /// A gun put in a slot (/gun, later pickups and the shop) showed as the slot's own gun on other PCs (2026-11-09).
+        /// </summary>
+        public ushort Gun;
+        /// <summary>A runner pins them to the ground (PlayerHold): their copy stays lying where it fell.</summary>
+        public bool Pinned;
+        /// <summary>
+        /// The sight on that gun (its GunSights index) plus one, 0 for a gun without a choice of sights; and its fire mode
+        /// (WeaponFireMode) plus one, 0 for none. T and B changed them only on their own PC (2026-11-09).
+        /// </summary>
+        public byte Sight, Mode;
+        /// <summary>
+        /// The muzzle and underbarrel parts on that gun (GunAttachments) plus one, 0 for no choice; whether its flashlight
+        /// is on.
+        /// </summary>
+        public byte Muzzle, Under;
+        public bool Light;
+        /// <summary>The grip on that gun plus one, 0 for no choice; their support hand goes on it there too.</summary>
+        public byte Grip;
+    }
+
+    // The gun's place in FPSBody's guns plus one (the same list on every PC of a build), or 0.
+    private static ushort GunId(WeaponData data)
+    {
+        var guns = FPSBodyAssets.Instance != null ? FPSBodyAssets.Instance.guns : null;
+        if (data == null || guns == null) return 0;
+        for (int i = 0; i < guns.Length; i++)
+            if (guns[i].weapon == data) return (ushort)(i + 1);
+        return 0;
+    }
+
+    private static WeaponData GunOf(ushort id)
+    {
+        var guns = FPSBodyAssets.Instance != null ? FPSBodyAssets.Instance.guns : null;
+        return guns != null && id > 0 && id <= guns.Length ? guns[id - 1].weapon : null;
     }
 
     private const float AimingShare = .5f;
@@ -34,6 +71,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
     private CombatTimeEffects time;
     private PlayerBody body;
     private PlayerRevive revive;
+    private PlayerMovement mover;
 
     /// <summary>Someone on this PC finished getting this copy's player up: their own PC does it.</summary>
     public void Revive() => ReviveRpc();
@@ -47,12 +85,47 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
     /// <summary>The host saw nobody left standing.</summary>
     internal void AnnounceWipe() => WipeRpc();
 
+    /// <summary>
+    /// A zombie took hold of this PC's player (a shambler's grab, kneeling to eat them, a runner's pin), or let go
+    /// (PlayerHold): the host, which runs it, makes it hold on there. On the host itself PlayerHold already told the zombie.
+    /// </summary>
+    internal void ShareHold(EnemyNetwork enemy, bool holding, HoldKind kind)
+    {
+        if (!IsSpawned || IsServer || enemy == null || !enemy.IsSpawned) return;
+        HoldRpc(enemy.NetworkObjectId, holding, (byte)kind);
+    }
+
+    [Rpc(SendTo.Server)]
+    private void HoldRpc(ulong enemy, bool holding, byte kind)
+    {
+        if (!NetworkManager.SpawnManager.SpawnedObjects.TryGetValue(enemy, out NetworkObject found)) return;
+        if (!found.TryGetComponent(out ZombieGrip grip)) return;
+        var player = GetComponent<PlayerMovement>();
+        if (holding) grip.Hold(player, (HoldKind)kind);
+        else if (grip.Held == player) grip.LetGo();
+    }
+
+    /// <summary>
+    /// This PC's player hit this copy with friendly fire on (backlog 721, FriendlyFire): their own PC takes the blow. The id
+    /// carries the hitter's client so it can never be taken for one of that PC's own attacks.
+    /// </summary>
+    internal void FriendlyHit(in DamageHit hit, float share, Vector3 from)
+    {
+        if (!IsSpawned) return;
+        long id = (long)(NetworkManager.LocalClientId + 1) << 40 | (hit.Id & ((1L << 40) - 1));
+        FriendlyHitRpc(id, hit.Amount * share, hit.Point, hit.Direction, hit.Origin ?? from, hit.Method, hit.CanBeGuarded,
+            hit.IsCritical, hit.Pierced);
+    }
+
     public override void OnNetworkSpawn()
     {
         receiver = GetComponent<PlayerDamageReceiver>();
+        FriendlyFire.Listen();
+        if (IsServer && !IsOwner) FriendlyFire.Greet(OwnerClientId);
         time = GetComponent<CombatTimeEffects>();
         body = GetComponent<PlayerBody>();
         revive = GetComponent<PlayerRevive>();
+        mover = GetComponent<PlayerMovement>();
         slots = GetComponent<PlayerWeaponSlots>();
         weapon = GetComponent<WeaponController>();
         melee = GetComponent<PlayerMeleeCombat>();
@@ -64,6 +137,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
         {
             weapon.ShotFired += OnShot;
             melee.Punched += OnPunched;
+            melee.Elbowed += OnElbowed;
             fists.Played += OnFistSound;
             shoves.Played += OnShoveSound;
             // Only the owner sends: a copy's Kicked comes from KickRpc itself.
@@ -79,7 +153,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
     public override void OnNetworkDespawn()
     {
         if (weapon != null) weapon.ShotFired -= OnShot;
-        if (melee != null) melee.Punched -= OnPunched;
+        if (melee != null) { melee.Punched -= OnPunched; melee.Elbowed -= OnElbowed; }
         if (fists != null) fists.Played -= OnFistSound;
         if (shoves != null) shoves.Played -= OnShoveSound;
         if (kicks != null) kicks.Kicked -= OnKicked;
@@ -90,7 +164,12 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
 
     private void LateUpdate()
     {
-        if (!IsSpawned || !IsOwner) return;
+        if (!IsSpawned) return;
+        if (!IsOwner)
+        {
+            KeepTheirGun(stance.Value);
+            return;
+        }
         var gun = weapon.Runtime;
         bool helping = revive != null && revive.Progress > 0f && revive.Candidate != null;
         NetworkObject helped = null;
@@ -99,26 +178,51 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
         {
             Reviving = helped != null ? (ushort)(helped.OwnerClientId + 1) : (ushort)0,
             ReviveProgress = helped != null ? (byte)Mathf.RoundToInt(revive.Progress * 255f) : (byte)0,
-            Slot = (sbyte)slots.SelectedSlot, Aiming = weapon.AimBlend > AimingShare, Guarding = melee.IsGuarding || melee.IsParryActive,
+            Slot = (sbyte)slots.SelectedSlot, Gun = GunId(slots.SelectedWeapon),
+            Sight = (byte)Mathf.Clamp(weapon.SightIndex + 1, 0, 255), Mode = gun != null ? (byte)((int)gun.FireMode + 1) : (byte)0,
+            Muzzle = (byte)Mathf.Clamp(weapon.MuzzleIndex + 1, 0, 255), Under = (byte)Mathf.Clamp(weapon.UnderbarrelIndex + 1, 0, 255),
+            Light = weapon.LightOn, Grip = (byte)Mathf.Clamp(weapon.GripIndex + 1, 0, 255),
+            Aiming = weapon.AimBlend > AimingShare, Guarding = melee.IsGuarding || melee.IsParryActive,
             Reloading = gun != null && gun.IsReloading, EmptyReload = gun != null && gun.IsReloading && gun.IsEmptyReload,
-            Downed = receiver.IsDowned, Slowed = time != null ? (byte)Mathf.RoundToInt((1f - time.Pace) * 100f) : (byte)0
+            Downed = receiver.IsDowned, Slowed = time != null ? (byte)Mathf.RoundToInt((1f - time.Pace) * 100f) : (byte)0,
+            Pinned = mover != null && mover.IsPinned
         };
     }
 
     private void OnStanceChanged(Stance previous, Stance current) => Show(current);
 
+    // The sight and fire mode they have on the gun they hold, on this copy's same gun. Kept every frame, not only when the
+    // stance changes: the copy's body may build its guns, or draw this one, after the change came.
+    private void KeepTheirGun(in Stance now)
+    {
+        if (weapon == null || slots == null || now.Slot < 0 || weapon.EquippedData == null
+            || weapon.EquippedData != slots.GetWeapon(now.Slot)) return;
+        if (now.Sight > 0 && weapon.SightIndex != now.Sight - 1) weapon.ShowSight(now.Sight - 1);
+        var runtime = weapon.Runtime;
+        if (now.Mode > 0 && runtime != null && (int)runtime.FireMode != now.Mode - 1) weapon.ShowFireMode((WeaponFireMode)(now.Mode - 1));
+        if (now.Muzzle > 0 && weapon.MuzzleIndex != now.Muzzle - 1) weapon.ShowMuzzle(now.Muzzle - 1);
+        if (now.Under > 0 && weapon.UnderbarrelIndex != now.Under - 1) weapon.ShowUnderbarrel(now.Under - 1);
+        if (now.Grip > 0 && weapon.GripIndex != now.Grip - 1) weapon.ShowGrip(now.Grip - 1);
+        if (weapon.LightOn != now.Light) weapon.ShowLight(now.Light);
+    }
+
     private void Show(in Stance now)
     {
+        // Their slot holds the gun they hold, before it is drawn.
+        var gun = GunOf(now.Gun);
+        if (gun != null && now.Slot >= 0 && slots.GetWeapon(now.Slot) != gun) slots.TrySetWeapon(now.Slot, gun);
         slots.SelectSlot(now.Slot);
         weapon.ShowAiming(now.Aiming);
         weapon.ShowReload(now.Reloading, now.EmptyReload);
         melee.ShowGuard(now.Guarding);
         receiver.ShowDowned(now.Downed);
+        if (mover != null) mover.ShowPinned(now.Pinned);
         if (body != null) body.SetPace(1f - now.Slowed / 100f);
     }
 
-    private void OnShot(WeaponShot shot) => ShotRpc(shot.Origin, shot.Direction);
+    private void OnShot(WeaponShot shot) => ShotRpc(shot.Origin, shot.Direction, (byte)Mathf.Clamp(shot.Pellet, 0, 255));
     private void OnPunched(float charge) => PunchRpc(charge);
+    private void OnElbowed(int side) => ElbowRpc(side >= 0);
     private void OnFistSound(FistSound sound) => FistSoundRpc(sound);
     private void OnShoveSound(ShoveImpactKind impact) => ShoveSoundRpc(impact);
     private void OnKicked() => KickRpc();
@@ -128,11 +232,17 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
         if (result == DamageResult.Damaged) HurtRpc(hit.Point, hit.Direction, hit.Kind == DamageKind.Fall, receiver.LastHitShielded);
     }
 
+    // Each of a shotgun's pellets comes on its own, numbered, so the copy's gun fires once and each pellet leaves its mark.
     [Rpc(SendTo.NotMe)]
-    private void ShotRpc(Vector3 origin, Vector3 direction) => weapon.ShowShot(origin, direction);
+    private void ShotRpc(Vector3 origin, Vector3 direction, byte pellet) => weapon.ShowShot(origin, direction, pellet);
 
     [Rpc(SendTo.NotMe)]
     private void PunchRpc(float charge) => melee.ShowPunch(charge);
+
+    // The counter's back elbow on the attacker's side: the copy's fist pulls back and its arm drives the elbow behind, as
+    // their own body does. Its swing and hit come as fist sounds.
+    [Rpc(SendTo.NotMe)]
+    private void ElbowRpc(bool right) => melee.ShowElbow(right ? 1 : -1);
 
     [Rpc(SendTo.NotMe)]
     private void FistSoundRpc(FistSound sound) => fists.Play(sound);
@@ -163,6 +273,20 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
         }
         CombatHitAudio.PlayOtherPlayerHit(point, fall);
         if (!fall) ImpactVfx.Blood(point, direction, false, false, false, receiver);
+    }
+
+    // Taken on the owner's PC like any blow, from the hitter's copy there, so the hurt shows where it came from.
+    [Rpc(SendTo.Owner)]
+    private void FriendlyHitRpc(long id, float amount, Vector3 point, Vector3 direction, Vector3 origin, DamageMethod method,
+        bool canBeGuarded, bool critical, bool pierced, RpcParams rpc = default)
+    {
+        if (!FriendlyFire.Enabled || receiver == null) return;
+        GameObject hitter = null;
+        foreach (var someone in PlayerRoster.All)
+            if (someone != null && someone.TryGetComponent(out NetworkObject network) && network.OwnerClientId == rpc.Receive.SenderClientId)
+            { hitter = someone.gameObject; break; }
+        receiver.ReceiveHit(new DamageHit(id, amount, DamageKind.Attack, point, direction, hitter, canBeGuarded,
+            method: method, origin: origin, isCritical: critical, pierced: pierced));
     }
 
     [Rpc(SendTo.Owner)]

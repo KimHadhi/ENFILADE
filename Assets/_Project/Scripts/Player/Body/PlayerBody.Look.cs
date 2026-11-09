@@ -73,7 +73,17 @@ public sealed partial class PlayerBody
     private Vector3 slideBodyOffset, slideWorldOffset;
     private bool slideBodyAnchored;
 
-    private bool ShowsOwnHead => thirdPerson || !player.IsLocal || GameSettings.Current.showOwnHead;
+    private bool ShowsOwnHead => thirdPerson || watchedFromOutside || !player.IsLocal || GameSettings.Current.showOwnHead;
+
+    // Backlog 722: dead and watching someone else (PlayerSpectate), the own fallen body is seen from outside, head and all,
+    // and the near clip plane is the camera's own again.
+    private bool watchedFromOutside;
+    internal void ShowFromOutside(bool outside)
+    {
+        if (watchedFromOutside == outside) return;
+        watchedFromOutside = outside;
+        ApplyView();
+    }
 
     private void SetUpLook()
     {
@@ -267,6 +277,6 @@ public sealed partial class PlayerBody
         var mode = ShowsOwnHead ? UnityEngine.Rendering.ShadowCastingMode.On : UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly;
         foreach (var part in headParts)
             if (part != null) part.shadowCastingMode = mode;
-        bodyCamera.CutOwnHead(!thirdPerson && GameSettings.Current.showOwnHead, headNearClip);
+        bodyCamera.CutOwnHead(!thirdPerson && !watchedFromOutside && GameSettings.Current.showOwnHead, headNearClip);
     }
 }

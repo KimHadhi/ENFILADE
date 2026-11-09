@@ -1,0 +1,89 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: faeb944eb3d42ea4fb476e0091f6f751, type: 3}
+  m_Name: R08
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponData
+  displayName: R08
+  hudIcon: {fileID: 0}
+  crosshairProfile: {fileID: 0}
+  category: 0
+  fireMode: 0
+  damage: 60
+  roundsPerMinute: 200
+  magazineSize: 8
+  reloadDuration: 4.617
+  range: 80
+  noiseRadius: 40
+  suppressedNoise: 0.3
+  recoilPerShot: {x: 1.2, y: 0.4}
+  initialReserveAmmo: 40
+  emptyReloadDuration: 4.617
+  burstCount: 3
+  burstPause: 0.22
+  hipSpread: 1.2
+  adsSpread: 0.12
+  movingSpread: 0.8
+  airborneSpread: 1.8
+  bloomPerShot: 0.18
+  maxBloom: 2.5
+  bloomRecovery: 2.2
+  headshotMultiplier: 3
+  penetration: 14
+  crouchSpread: 0.5
+  crouchRecoil: 0.65
+  autoReloadDelay: 0.2
+  pellets: 1
+  pelletSpread: 0
+  shellReload: 0
+  shellInsertDuration: 0.6
+  shellEndDuration: 0.6
+  reloadStartSounds: []
+  reloadStartEmptySounds: []
+  shellInsertSounds: []
+  reloadEndSounds: []
+  recoilPattern: []
+  fireModes: 
+  drawDuration: 0
+  holsterDuration: 0
+  falloffStart: 1000
+  falloffEnd: 1000
+  falloffMinimum: 1
+  recoilVertical: 2
+  recoilHorizontal: 0.5
+  recoilDrift: 0
+  recoilFirstShot: 1
+  recoilSettleShots: 1
+  recoilResponse: 24
+  recoilRetention: 1
+  adsFov: 65
+  adsMoveMultiplier: 0.6
+  adsTransitionTime: 0.16
+  highReadyRaiseHalfLife: 0.07
+  highReadyLowerHalfLife: 0.09
+  leftGrip: {x: 0.24, y: -0.31, z: 0.38}
+  sideRail: {x: 0, y: 0, z: 0}
+  viewPunch: {x: 0.75, y: 0.3, z: 0.9}
+  viewPunchFov: 0.6
+  shakeTrauma: 0.07
+  muzzleFlashScale: 1.1
+  ejectShells: 0
+  soundProfile: 1
+  fireSounds:
+  - {fileID: 8300000, guid: 19280690230b8e4489cbe357d991f0f6, type: 3}
+  - {fileID: 8300000, guid: 70bb28cadcfaa5945954daff600e05f8, type: 3}
+  - {fileID: 8300000, guid: d4805362cb76a574b9e0ebc83a336b69, type: 3}
+  suppressedFireSounds:
+  - {fileID: 8300000, guid: b37d3f197ff4f4a4c80640ae599ab207, type: 3}
+  fireVolume: 1
+  postureDamage: 4
+  flinchMultiplier: 1
+  propImpulse: 3

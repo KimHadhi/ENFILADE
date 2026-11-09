@@ -1,13 +1,32 @@
 using System.Linq;
 using UnityEngine;
 
-/// <summary>The maps players can choose, from Resources/Tables/Maps.csv. Only scenes in the build are offered.</summary>
+/// <summary>
+/// The maps players can choose, from Resources/Tables/Maps.csv. Only scenes in the build are offered. Each map's
+/// picture for the title screen is Resources/UI/Maps/&lt;id&gt; (taken by Tools/World/맵 사진 찍기, or any image put
+/// there by hand); a "picture" column can name another image in that folder.
+/// </summary>
 public static class MapTable
 {
-    private const string Table = "Maps";
+    private const string Table = "Maps", PictureFolder = "UI/Maps/";
 
     public static string[] Playable() => GameTables.RowIds(Table).Where(id => Application.CanStreamedLevelBeLoaded(id)).ToArray();
 
+    /// <summary>Every map in the table, playable or not (the editor's picture tool goes through these).</summary>
+    public static string[] All() => GameTables.RowIds(Table).ToArray();
+
     public static string DisplayName(string id) =>
         GameTables.TryGetRow(Table, id, out var row) && row.TryGetValue("displayName", out string name) ? name : id;
+
+    /// <summary>The map's picture, or null when it has none yet.</summary>
+    public static Texture2D Picture(string id)
+    {
+        if (string.IsNullOrEmpty(id)) return null;
+        string file = GameTables.TryGetRow(Table, id, out var row) && row.TryGetValue("picture", out string named) && !string.IsNullOrWhiteSpace(named)
+            ? named.Trim() : id;
+        return Resources.Load<Texture2D>(PictureFolder + file);
+    }
+
+    /// <summary>The Resources path pictures are saved under (for the editor's picture tool).</summary>
+    public static string PictureResource(string id) => PictureFolder + id;
 }

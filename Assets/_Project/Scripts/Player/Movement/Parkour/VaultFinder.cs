@@ -173,38 +173,31 @@ public sealed class VaultFinder
         target = default;
         Vector3 origin = feet + Up(Eye) + forward * (25f * u);
         if (Inside(origin)) return false;
-        if (!Down(origin, Neck, out RaycastHit top))
-        {
-            // Temporary (ParkourProbeLog): the top just below the probe's reach, where a jump only bumps into it.
-            if (Physics.Raycast(origin, Vector3.down, out RaycastHit below, (Neck + 40f) * u, ctx.groundLayers, QueryTriggerInteraction.Ignore)
-                && below.point.y > feet.y - .05f)
-                return OntoProbe($"top {below.point.y - feet.y:0.00} m over the feet is past the probe's {Neck * u:0.00} m");
-            return false;
-        }
-        if (!WallDetector.CanUseSurface(top.collider) || !ParkourObstacle.AllowsClimb(top.collider)) return OntoProbe("surface not climbable");
+        if (!Down(origin, Neck, out RaycastHit top)) return false;
+        if (!WallDetector.CanUseSurface(top.collider) || !ParkourObstacle.AllowsClimb(top.collider)) return false;
         float fraction = top.distance / (Neck * u);
-        if (fraction <= .3f) return OntoProbe($"top too high (fraction {fraction:0.00})");
+        if (fraction <= .3f) return false;
         // Not in Beatrun: a top shallower than the body (a rail, a thin wall) is gone over, never stepped or climbed onto.
         // Caught a moment late in a running jump, the rail was climbed and stood on instead of vaulted, which the user found
         // awkward (2026-11-06). A ParkourObstacle set to Climb Onto still can be.
-        if (ParkourObstacle.AllowsVault(top.collider) && Depth(top, forward) < 2f * ctx.ControllerRadius) return OntoProbe("top too shallow");
+        if (ParkourObstacle.AllowsVault(top.collider) && Depth(top, forward) < 2f * ctx.ControllerRadius) return false;
         // Beatrun steps onto a top in the lower 35% of the probe's reach (fraction > .65) and climbs onto a higher one. Here
         // that is judged from the floor in front of the obstacle, so the obstacle's own height decides, not how far a jump
         // has risen: caught on the way up, a 0.9 m rail read as a step from the feet, and the step was over in a tenth of a
         // second, where from closer the same rail was climbed onto (user, 2026-11-07: "0.1초 동안 mantle이라 부자연스러움").
         bool stepUp = fraction > .65f;
         if (FloorUnder(feet, out float floor)) stepUp = top.point.y - floor < (Eye - .65f * Neck) * u;
-        if (Line(origin - forward * (50f * u), origin)) return OntoProbe("something at eye height");
-        if (!detector.ClearStraightCapsule(top.point, top.collider)) return OntoProbe("the capsule doesn't fit on the top");
+        if (Line(origin - forward * (50f * u), origin)) return false;
+        if (!detector.ClearStraightCapsule(top.point, top.collider)) return false;
         Vector3 here = top.point + Up(MantleLift), onward = here + forward * (50f * u);
         Vector3 end = stepUp ? here : onward;
         if (!detector.ClearStraightExit(end))
         {
             end = stepUp ? onward : here;
             stepUp = !stepUp;
-            if (!detector.ClearStraightExit(end)) return OntoProbe("no clear place to end");
+            if (!detector.ClearStraightExit(end)) return false;
         }
-        if (Line(feet + Up(Eye), end + Up(Eye))) return OntoProbe("the view to the end is blocked");
+        if (Line(feet + Up(Eye), end + Up(Eye))) return false;
         return Target(stepUp ? VaultKind.StepUp : VaultKind.Onto, top.collider, feet, forward, end, out target, top.point.y);
     }
 
@@ -216,19 +209,6 @@ public sealed class VaultFinder
                 QueryTriggerInteraction.Ignore)) return false;
         floor = hit.point.y;
         return true;
-    }
-
-    // Temporary (ParkourProbeLog, 2026-11-07): why a top ahead wasn't climbed onto, at most every OntoProbeStep seconds.
-    private float ontoProbeNext;
-    private const float OntoProbeStep = .1f;
-    private bool OntoProbe(string why)
-    {
-        if (ctx.IsLocal && Time.time >= ontoProbeNext)
-        {
-            ontoProbeNext = Time.time + OntoProbeStep;
-            ParkourProbeLog.Line($"onto refused: {why}");
-        }
-        return false;
     }
 
     // Vault4: a wall too high for Vault2 but thin enough to land behind.
@@ -292,7 +272,6 @@ public sealed class VaultFinder
         FindEdge(surface, feet, forward, topY, out Vector3 edge, out Vector3 normal);
         if (over && normal != Vector3.zero && !CrossedBy(surface, edge, forward, end))
         {
-            OntoProbe($"{kind} wouldn't get past the obstacle");
             target = default;
             return false;
         }

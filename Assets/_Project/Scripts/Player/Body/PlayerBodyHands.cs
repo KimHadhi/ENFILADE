@@ -172,6 +172,8 @@ public sealed partial class PlayerBodyHands : MonoBehaviour
         {
             Place(right, false);
             Place(left, true);
+            // A grip on the gun takes the support hand (GunGrip).
+            HoldGunGrip(left, dt);
         }
         using (FingersMarker.Auto())
         {
@@ -188,6 +190,9 @@ public sealed partial class PlayerBodyHands : MonoBehaviour
             CurlZiplineFingers(right);
             CurlGunFingers(left, true, dt);
             CurlGunFingers(right, false, dt);
+            // Last: no finger bent past a hand's reach, whatever the clips or the grips asked for.
+            left.KeepFingersHuman();
+            right.KeepFingersHuman();
         }
         using (RestMarker.Auto())
         {

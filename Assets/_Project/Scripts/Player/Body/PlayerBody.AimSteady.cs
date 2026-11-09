@@ -12,10 +12,10 @@ public sealed partial class PlayerBody
 {
     [SerializeField, Min(.01f), Tooltip("Aiming, how slowly the hips follow the gait's bob (s): longer is steadier. A step's bob "
         + "comes about twice a second, so 0.3 s takes out about three quarters of it.")]
-    private float aimSteadyTime = .3f;
+    private float aimSteadyTime = .45f;
     [SerializeField, Range(0f, .2f), Tooltip("The most the steadied hips may sit off the clip's, as a share of the hips' height "
         + "over the feet. A gait's bob is a few hundredths; a crouch or a stand is far more and passes through at once.")]
-    private float aimSteadyReach = .04f;
+    private float aimSteadyReach = .08f;
 
     private Vector3 steadyHips;
     private bool hasSteadyHips;

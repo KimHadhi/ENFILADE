@@ -5,7 +5,7 @@ public enum HitMarkerKind { Body, Head, BodyKill, HeadKill, Blocked }
 
 /// <summary>
 /// Crosshair hit confirmation. Four diagonal ticks around the centre:
-/// body hit = white; headshot = gold, a little bolder and quicker, with an eight-point glint, a bloom, a white and a gold ring and twelve sparks
+/// body hit = white; headshot = gold, a little bolder and quicker, with a glowing eight-point glint, a bloom, a white and a gold ring and twelve sparks
 /// banging out at the aim point and gone within .2 s (head kills keep
 /// the glint on their red); any kill (body or head) = red with a shock ring; no effect (guard/parry/invulnerable) = thin
 /// grey. Body and head markers grow with the share of health the hit took. A bullet that came through or off something on
@@ -29,7 +29,7 @@ public sealed class HitMarkerHUD : MonoBehaviour
     private readonly Image[] ticks = new Image[4], tails = new Image[4], tailEnds = new Image[4], shards = new Image[4],
         sparks = new Image[SparkCount];
     private RectTransform root, glintRoot, breakRoot, burstRoot;
-    private RawImage ring, glint, glintCross, breakRing, burstRing, burstFlashRing, burstBloom;
+    private RawImage ring, glintGlow, glintGlowCross, glint, glintCross, glintCore, breakRing, burstRing, burstFlashRing, burstBloom;
     private HitMarkerKind kind;
     private bool pierced;
     private float age = 99f, lifetime = .2f, scale = 1f, glintAge = 99f, breakAge = 99f, burstAge = 99f, pace = 1f;
@@ -79,20 +79,17 @@ public sealed class HitMarkerHUD : MonoBehaviour
         for (int i = 0; i < 4; i++) { tails[i] = Tail("Pierced Tail " + i, root); tailEnds[i] = Tail("Pierced Tail End " + i, root); }
         root.gameObject.SetActive(false);
 
-        // Its own root, so the glint can stay longer than the ticks.
+        // Its own root, so the glint can stay longer than the ticks: an empty turning frame, its layers stretched over it,
+        // bottom to top: the glow, the star blurred and added onto the burst's light (the turned second star gets a smaller
+        // one); the gold star; a smaller star turned 45° for eight points; a white-hot core. The glow replaced a black
+        // outline that set the star on the light like a sticker (the user's pick of four, 2026-11-09).
         glintRoot = FeelUI.Rect("Glint", transform);
-        glint = glintRoot.gameObject.AddComponent<RawImage>();
-        glint.texture = FeelAssets.Glint; glint.raycastTarget = false;
-        var rim = glint.gameObject.AddComponent<Outline>(); // keeps the gold apart from a bright sky or a green crosshair
-        rim.effectColor = new Color(0f, 0f, 0f, .5f); rim.effectDistance = new Vector2(1f, -1f);
-        // A smaller second star turned 45°, so the glint flashes eight points.
-        var crossRect = FeelUI.Rect("Glint Cross", glintRoot);
-        crossRect.anchorMin = Vector2.zero; crossRect.anchorMax = Vector2.one;
-        crossRect.offsetMin = crossRect.offsetMax = Vector2.zero;
-        crossRect.localScale = Vector3.one * .6f;
-        crossRect.localRotation = Quaternion.Euler(0f, 0f, 45f);
-        glintCross = crossRect.gameObject.AddComponent<RawImage>();
-        glintCross.texture = FeelAssets.Glint; glintCross.raycastTarget = false;
+        var additive = FeelAssets.UiAdditive;
+        glintGlow = GlintLayer("Glow", glintRoot, FeelAssets.GlintGlow, 0f, 1f, additive);
+        glintGlowCross = GlintLayer("Glow Cross", glintRoot, FeelAssets.GlintGlow, 45f, 1f, additive);
+        glint = GlintLayer("Star", glintRoot, FeelAssets.Glint, 0f, 1f, null);
+        glintCross = GlintLayer("Star Cross", glintRoot, FeelAssets.Glint, 45f, .6f, null);
+        glintCore = GlintLayer("Core", glintRoot, FeelAssets.Glint, 0f, 1f, null);
         glintRoot.gameObject.SetActive(false);
 
         // A headshot's bang: a bloom of light, a white ring flashing open inside a gold one and sparks flying out, gone in a
@@ -131,6 +128,20 @@ public sealed class HitMarkerHUD : MonoBehaviour
         var image = FeelUI.Rect(name, parent).gameObject.AddComponent<Image>();
         image.raycastTarget = false;
         image.enabled = false;
+        return image;
+    }
+
+    // One layer of the glint, stretched over its root and turned and scaled within it. material null: alpha blended.
+    private static RawImage GlintLayer(string name, Transform parent, Texture texture, float turn, float scale, Material material)
+    {
+        var rect = FeelUI.Rect(name, parent);
+        rect.anchorMin = Vector2.zero; rect.anchorMax = Vector2.one;
+        rect.offsetMin = rect.offsetMax = Vector2.zero;
+        rect.localRotation = Quaternion.Euler(0f, 0f, turn);
+        rect.localScale = Vector3.one * scale;
+        var image = rect.gameObject.AddComponent<RawImage>();
+        image.texture = texture; image.raycastTarget = false;
+        if (material != null) image.material = material;
         return image;
     }
 
@@ -261,7 +272,8 @@ public sealed class HitMarkerHUD : MonoBehaviour
 
     // The headshot glint, a bang and gone: it blows open white well past full size in a frame or two, snaps back to gold,
     // and is out within headGlintSeconds (.2), fading fast while it draws in and spins its rays off the crosshair's lines.
-    // The user found the first one (.45 s, a held beat) lingering; a headshot should land and be over.
+    // The user found the first one (.45 s, a held beat) lingering; a headshot should land and be over. A glow added behind
+    // the star lets it shine into the burst's light, and a white core keeps its heart hot while its tips turn gold.
     private void LayoutGlint(GunFeelSettings settings)
     {
         glintRoot.anchoredPosition = AimPoint();
@@ -273,13 +285,25 @@ public sealed class HitMarkerHUD : MonoBehaviour
         glintRoot.sizeDelta = Vector2.one * (settings.headGlintSize * 2f * size);
         float spin = 1f - (1f - Mathf.Clamp01(glintAge / total)) * (1f - Mathf.Clamp01(glintAge / total));
         glintRoot.localRotation = Quaternion.Euler(0f, 0f, settings.headGlintTurn * spin);
-        Color glow = Color.Lerp(Color.white, settings.headHitColor, Mathf.Clamp01((glintAge - open) / Mathf.Max(.01f, settle - open)));
-        glow.a = (1f - fade) * (1f - fade);
+        float heat = Mathf.Clamp01((glintAge - open) / Mathf.Max(.01f, settle - open)), alpha = (1f - fade) * (1f - fade);
+        Color glow = Color.Lerp(Color.white, settings.headHitColor, heat);
+        glow.a = alpha;
         glint.color = glow;
         // The turned second star stays whiter, so the eight points read as two layers of light.
         Color cross = Color.Lerp(glow, Color.white, .55f);
-        cross.a = glow.a * .9f;
+        cross.a = alpha * .9f;
         glintCross.color = cross;
+        glintCore.rectTransform.localScale = Vector3.one * settings.headCoreScale;
+        glintCore.color = new Color(1f, 1f, 1f, alpha);
+
+        // White while the star bangs open, a deeper ember than the gold once it settles, so the light has a warm edge.
+        Color light = Color.Lerp(Color.white, settings.headGlowColor, heat);
+        glintGlow.rectTransform.localScale = Vector3.one * settings.headGlowScale;
+        light.a = alpha * settings.headGlowStrength;
+        glintGlow.color = light;
+        glintGlowCross.rectTransform.localScale = Vector3.one * (settings.headGlowScale * .6f);
+        light.a = alpha * settings.headGlowStrength * .6f;
+        glintGlowCross.color = light;
     }
 
     // The headshot's bang around the glint, gone in headBurstSeconds: a bloom of warm light behind it, a white ring flashing

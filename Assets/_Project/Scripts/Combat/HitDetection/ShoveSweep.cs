@@ -29,6 +29,8 @@ public static class ShoveSweep
             Cancel(); player = owner; aim = view; this.damage = damage; this.layers = layers;
             contacted.Clear(); attackId = DamageHit.NewAttackId(); HitCount = 0;
             soundPlayed = false; impact = ShoveImpactKind.None;
+            // A grab or a leap landing just after this shove is countered (G&B-3).
+            ShoveCounter.Shoved(owner, view != null ? view.forward : owner.transform.forward);
             player.GetComponent<PlayerShoveAudio>()?.Play(ShoveImpactKind.None);
             window.Begin(aim, duration); PlayFeedback();
         }
@@ -76,6 +78,13 @@ public static class ShoveSweep
             if (posture == null) hitWorld = true;
             if (identity == null) continue;
             contacted.Add(identity);
+            // A zombie late in a grab or a leap is countered instead (G&B-3, ShoveCounter): its own return, its own show.
+            if (posture != null && ShoveCounter.TryShoveCounter(player, posture, point))
+            {
+                count++;
+                hitEnemy = true;
+                continue;
+            }
             Vector3 push = Vector3.ProjectOnPlane(collider.bounds.center - origin, Vector3.up).normalized;
             if (push.sqrMagnitude < .01f) push = Vector3.ProjectOnPlane(forward, Vector3.up).normalized;
             if (receiver != null)

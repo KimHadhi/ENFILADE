@@ -7,19 +7,24 @@ public static class PlayerConsoleCommands
 {
     public static void Register(ChatCommandRouter router, Func<PlayerMovement> resolvePlayer)
     {
-        router.Register("spawn", "[수량] [elite/named] 앞쪽 빈 공간에 적 소환. 생략하면 1마리 (웨이브 집계 제외). elite·named는 잡으면 킬 피드가 자홍 불꽃으로 탄다", args => WithPlayer(resolvePlayer, p =>
+        router.Register("spawn", "[수량] [elite/named] [calm] [runner/shambler] 앞쪽 빈 공간에 적 소환. 생략하면 1마리 (웨이브 집계 제외). elite·named는 잡으면 킬 피드가 자홍 불꽃으로 탄다. calm은 등을 돌리고 조용히 서서 플레이어를 알아채야 한다. runner·shambler는 좀비 종류(생략하면 표의 비율대로)", args => WithPlayer(resolvePlayer, p =>
         {
             int count = 1;
             EnemyRank? rank = null;
-            const string usage = "사용법: /spawn [수량] [elite/named] — 수량은 1 이상의 정수. 생략하면 보통 적 1마리를 소환합니다.";
+            bool calm = false;
+            ZombieKind? kind = null;
+            const string usage = "사용법: /spawn [수량] [elite/named] [calm] [runner/shambler] — 수량은 1 이상의 정수. 생략하면 보통 적 1마리를 소환합니다.";
             foreach (string part in args.Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries))
             {
                 if (part.Equals("elite", StringComparison.OrdinalIgnoreCase) || part == "엘리트") rank = EnemyRank.Elite;
                 else if (part.Equals("named", StringComparison.OrdinalIgnoreCase) || part == "네임드") rank = EnemyRank.Named;
+                else if (part.Equals("calm", StringComparison.OrdinalIgnoreCase) || part == "조용") calm = true;
+                else if (part.Equals("runner", StringComparison.OrdinalIgnoreCase) || part == "러너") kind = ZombieKind.Runner;
+                else if (part.Equals("shambler", StringComparison.OrdinalIgnoreCase) || part == "셤블러") kind = ZombieKind.Shambler;
                 else if (!int.TryParse(part, NumberStyles.Integer, CultureInfo.InvariantCulture, out count) || count < 1) return usage;
             }
             if (!p.DamageReceiver.IsAlive) return "사망 상태입니다. /revive를 먼저 사용하세요.";
-            return ConsoleEnemySpawner.Spawn(p, count, rank);
+            return ConsoleEnemySpawner.Spawn(p, count, rank, calm, kind);
         }));
         router.Register("dummy", "[수량] 또는 clear — 멀티 구조 시험용 더미 플레이어 소환·제거", args => WithPlayer(resolvePlayer, p =>
         {
@@ -41,6 +46,35 @@ public static class PlayerConsoleCommands
                 if (runtime != null && runtime.Data.Category == WeaponCategory.Ranged) { runtime.RefillAmmo(); count = 1; }
             }
             return count > 0 ? $"총기 {count}정의 탄창과 예비탄을 보충했습니다." : "탄약을 보충할 총기를 보유하고 있지 않습니다.";
+        }));
+        router.Register("gun", "이름 — 들고 있는 총 칸(총이 아니면 1번 칸)을 그 총으로 바꾸고 꺼낸다. 비우면 목록", args => WithPlayer(resolvePlayer, p =>
+        {
+            var guns = new System.Collections.Generic.List<WeaponData>();
+            var assets = FPSBodyAssets.Instance;
+            if (assets != null)
+                foreach (var entry in assets.guns)
+                    if (entry.weapon != null && entry.weapon.Category == WeaponCategory.Ranged && !guns.Contains(entry.weapon)) guns.Add(entry.weapon);
+            string list = string.Join(", ", guns.ConvertAll(gun => gun.name));
+            string wanted = Plain(args);
+            if (wanted.Length == 0) return $"사용법: /gun 이름 — 있는 총: {list}";
+            WeaponData found = guns.Find(gun => Plain(gun.name) == wanted || Plain(gun.DisplayName) == wanted)
+                ?? guns.Find(gun => Plain(gun.name).Contains(wanted) || Plain(gun.DisplayName).Contains(wanted));
+            if (found == null) return $"'{args.Trim()}' 총이 없습니다. 있는 총: {list}";
+            var slots = p.GetComponentInChildren<PlayerWeaponSlots>(true);
+            if (slots == null) return "무기 칸이 없습니다.";
+            int slot = slots.SelectedSlot >= 0 && PlayerWeaponSlots.GetSlotCategory(slots.SelectedSlot) == WeaponCategory.Ranged ? slots.SelectedSlot : 0;
+            if (!slots.TrySetWeapon(slot, found)) return "지금은 총을 바꿀 수 없습니다.";
+            slots.SelectSlot(slot);
+            return $"{slot + 1}번 칸: {found.DisplayName}";
+
+            // Lower case, letters and digits only: "Herrington 11-87" and "herrington1187" are the same gun.
+            static string Plain(string text)
+            {
+                var plain = new System.Text.StringBuilder();
+                foreach (char c in text ?? string.Empty)
+                    if (char.IsLetterOrDigit(c)) plain.Append(char.ToLowerInvariant(c));
+                return plain.ToString();
+            }
         }));
         router.Register("heal", "[양] HP 회복. 생략하면 최대까지 회복", args => WithPlayer(resolvePlayer, p =>
         {

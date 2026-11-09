@@ -139,7 +139,6 @@ public sealed class ObstacleTraversalState : MovementBaseState
             if (landing) return;
             if (!warp.Advance(dt))
             {
-                ParkourProbeLog.Line($"{ctx.Abilities.Traversal.Obstacle.Kind} warped vault stopped: {warp.StopReason}");
                 Abort();
                 return;
             }
@@ -147,7 +146,6 @@ public sealed class ObstacleTraversalState : MovementBaseState
             ctx.Abilities.Traversal.ObstacleClipTime = warp.Complete ? -1f : warp.ClipTime;
             ctx.Abilities.Traversal.ObstacleSupport = new Vector2(warp.PlantTime, warp.ReleaseTime);
             ctx.Abilities.Traversal.EdgeShortfall = warp.EdgeShortfall;
-            ctx.Abilities.Traversal.ObstacleContact = warp.Contact;
             return;
         }
         if (straightLine != null)
@@ -212,7 +210,7 @@ public sealed class ObstacleTraversalState : MovementBaseState
         warp?.Exit();
         ctx.Abilities.Traversal.ObstacleClipTime = -1f;
     }
-    // A vault carried by its clip's hands, or null for the straight move (the probe notes why).
+    // A vault carried by its clip's hands, or null for the straight move.
     // Climbing off a ladder's top on its clip's hands (Motion Warping), as the vaults are, at the clip's own pace over
     // ladderExitDuration (user, 2026-11-08: "warp it"). Beatrun's clip grabs high and pushes the body up over its hands
     // (measured: from 1.5 m over the feet at 0.3 s down to 0.8 m by about 1.1 s). Its ladders' rails stand up past the
@@ -221,38 +219,27 @@ public sealed class ObstacleTraversalState : MovementBaseState
     // the way up onto the floor after the hands let go. Without a measure, the route.
     private WarpedTraversal StartLadderWarp(in ObstacleTarget target)
     {
-        string why;
-        WarpedTraversal made = null;
-        if (ctx.ObstacleMotions == null) why = "no body to ask";
-        else if (!ctx.ObstacleMotions.TryLadderExitMotion(ctx.Abilities.Fixtures.LadderLeftHand, out var motion))
-            why = "the climb-off clip puts no hands down (see its measure)";
-        else
-        {
-            // The clip's hands come down on the tops of the ladder's rails (user, 2026-11-08: the hands on the bar, not
-            // the roof): across the ladder's middle in the plane of its rails, at their top; PlayerBodyHands then closes
-            // each hand on its own rail.
-            var ladder = target.ExitLadder;
-            Vector3 feet = ctx.transform.position;
-            Vector3 middle = feet - ladder.Outward * Vector3.Dot(feet - ladder.transform.position, ladder.Outward);
-            middle += ladder.transform.right * Vector3.Dot(ladder.transform.position - middle, ladder.transform.right);
-            middle.y = (ladder.transform.position + ladder.transform.up * (ladder.Height - Ladder.BarThickness)).y;
-            Vector3 grip = middle + ladder.Outward * (Ladder.BarThickness * .5f + motion.WristAboveTop);
-            made = WarpedTraversal.TryStart(ctx, target, motion, 0f, Mathf.Max(.1f, target.Duration), grip, out why);
-        }
-        ParkourProbeLog.Line(made != null ? $"ladder climb-off warped: {made.Describe}" : $"ladder climb-off went by its route: {why}");
-        return made;
+        // No body to ask, or the climb-off clip puts no hands down: the route.
+        if (ctx.ObstacleMotions == null || !ctx.ObstacleMotions.TryLadderExitMotion(ctx.Abilities.Fixtures.LadderLeftHand, out var motion))
+            return null;
+        // The clip's hands come down on the tops of the ladder's rails (user, 2026-11-08: the hands on the bar, not the
+        // roof): across the ladder's middle in the plane of its rails, at their top; PlayerBodyHands then closes each hand
+        // on its own rail.
+        var ladder = target.ExitLadder;
+        Vector3 feet = ctx.transform.position;
+        Vector3 middle = feet - ladder.Outward * Vector3.Dot(feet - ladder.transform.position, ladder.Outward);
+        middle += ladder.transform.right * Vector3.Dot(ladder.transform.position - middle, ladder.transform.right);
+        middle.y = (ladder.transform.position + ladder.transform.up * (ladder.Height - Ladder.BarThickness)).y;
+        Vector3 grip = middle + ladder.Outward * (Ladder.BarThickness * .5f + motion.WristAboveTop);
+        return WarpedTraversal.TryStart(ctx, target, motion, 0f, Mathf.Max(.1f, target.Duration), grip);
     }
 
     private WarpedTraversal StartWarp(in ObstacleTarget target)
     {
         if (!target.StraightLine || !Warps(target.Kind)) return null;
-        string why;
-        WarpedTraversal made = null;
-        if (ctx.ObstacleMotions == null) why = "no body to ask";
-        else if (!ctx.ObstacleMotions.TryObstacleMotion(target.Kind, out var motion)) why = "the clip puts no hands down (see its measure)";
-        else made = WarpedTraversal.TryStart(ctx, target, motion, entryVelocity.magnitude, out why);
-        ParkourProbeLog.Line(made != null ? $"{target.Kind} vault warped: {made.Describe}" : $"{target.Kind} vault went straight: {why}");
-        return made;
+        // No body to ask, or the clip puts no hands down: the straight move.
+        if (ctx.ObstacleMotions == null || !ctx.ObstacleMotions.TryObstacleMotion(target.Kind, out var motion)) return null;
+        return WarpedTraversal.TryStart(ctx, target, motion, entryVelocity.magnitude);
     }
 
     // The kinds carried by their clip's hands (Ability.warpKong, warpOver, warpOverHigh).

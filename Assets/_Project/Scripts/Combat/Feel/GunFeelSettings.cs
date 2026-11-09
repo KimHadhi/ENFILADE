@@ -122,6 +122,17 @@ public sealed class GunFeelSettings : ScriptableObject
     [Min(.1f), Tooltip("How long the glint shows: it bangs open white past full size, snaps back gold and is gone. The user " +
         "found .45 lingering; a headshot should land and be over.")]
     public float headGlintSeconds = .2f;
+    [Min(0f), Tooltip("The glint's glow: the star blurred and added onto the light behind it, so the star shines into the " +
+        "burst instead of sitting on it like a sticker (the user's pick of four, 2026-11-09, in place of a black outline). " +
+        "Its size as a multiple of the star's; the turned second star's glow is .6 of that.")]
+    public float headGlowScale = 1.8f;
+    [Range(0f, 1f), Tooltip("How bright the glow is at its peak. 0 turns it off.")]
+    public float headGlowStrength = .9f;
+    [Tooltip("The glow's colour once the star has settled from white: a deeper ember than the gold, for a warm edge.")]
+    public Color headGlowColor = new Color(1f, .7f, .16f);
+    [Range(0f, 1f), Tooltip("A white-hot copy of the star over its middle, this share of its size: white at the heart, gold " +
+        "at the tips. 0 turns it off.")]
+    public float headCoreScale = .5f;
     [Min(0f), Tooltip("How far a headshot's sparks fly out from the aim point, and how wide its gold ring opens (px). 0 turns both off.")]
     public float headBurstReach = 56f;
     [Min(.05f), Tooltip("How long the sparks and the ring last (real seconds).")]

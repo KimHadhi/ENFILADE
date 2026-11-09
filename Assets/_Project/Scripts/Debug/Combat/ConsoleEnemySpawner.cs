@@ -5,8 +5,8 @@ using UnityEngine.AI;
 public static class ConsoleEnemySpawner
 {
     /// <summary>rank: given, every enemy spawned takes it (elite and named kills stand out in the kill feed, backlog 325);
-    /// otherwise the table's.</summary>
-    public static string Spawn(PlayerMovement player, int count = 1, EnemyRank? rank = null)
+    /// otherwise the table's. Calm: they stand facing away and must notice the player (ZombieMind), for stealth tests.</summary>
+    public static string Spawn(PlayerMovement player, int count = 1, EnemyRank? rank = null, bool calm = false, ZombieKind? kind = null)
     {
         if (player == null) return "대상 플레이어를 찾지 못했습니다.";
         if (count < 1) return "사용법: /spawn [수량] — 1 이상의 정수를 입력하세요.";
@@ -27,10 +27,18 @@ public static class ConsoleEnemySpawner
             if (!TrySpawn(player, prefab, out EnemyHealth enemy, out string error))
                 return spawned == 0 ? error : $"적 {spawned}/{count}마리를 소환했습니다. (웨이브 집계 제외) " + error;
             if (rank.HasValue) enemy.SetRank(rank.Value);
+            if (kind.HasValue && enemy.TryGetComponent(out ZombieType type)) type.Set(kind.Value);
+            if (calm && enemy.TryGetComponent(out ZombieMind mind))
+            {
+                mind.Calm();
+                Vector3 away = Vector3.ProjectOnPlane(enemy.transform.position - player.transform.position, Vector3.up);
+                if (away.sqrMagnitude > .01f) enemy.transform.rotation = Quaternion.LookRotation(away);
+            }
             spawned++;
         }
-        string kind = rank == EnemyRank.Elite ? "엘리트 " : rank == EnemyRank.Named ? "네임드 " : "";
-        return count == 1 ? $"{kind}적 한 마리를 소환했습니다. (웨이브 집계 제외)" : $"{kind}적 {spawned}마리를 소환했습니다. (웨이브 집계 제외)";
+        string kindName = kind == ZombieKind.Runner ? "러너 " : kind == ZombieKind.Shambler ? "셤블러 " : "";
+        string label = (calm ? "조용한 " : "") + (rank == EnemyRank.Elite ? "엘리트 " : rank == EnemyRank.Named ? "네임드 " : "") + kindName;
+        return count == 1 ? $"{label}적 한 마리를 소환했습니다. (웨이브 집계 제외)" : $"{label}적 {spawned}마리를 소환했습니다. (웨이브 집계 제외)";
     }
 
     public static bool TrySpawn(PlayerMovement player, EnemyHealth prefab, out EnemyHealth enemy, out string error)

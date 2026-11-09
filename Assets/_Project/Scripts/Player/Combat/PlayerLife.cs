@@ -36,7 +36,9 @@ public sealed class PlayerLife : MonoBehaviour
     /// <summary>Waves bring the dead back when they start; otherwise a timer does.</summary>
     public bool WaitsForWave => waves != null && waves.IsRunning;
     public float RespawnLeft => respawnLeft;
-    public float BleedLeft => receiver != null ? receiver.Health / (downedHealth / bleedSeconds) : 0f;
+    public float BleedLeft => receiver != null ? receiver.Health / (downedHealth / BleedSeconds) : 0f;
+    // The bleed-out time, longer with the grit perk (PlayerPerks).
+    private float BleedSeconds => Mathf.Max(.1f, bleedSeconds * PlayerPerks.BleedFactor);
     /// <summary>Who is getting this player up right now, or null.</summary>
     public PlayerMovement Rescuer { get; private set; }
     /// <summary>How far along they are (0-1).</summary>
@@ -66,7 +68,12 @@ public sealed class PlayerLife : MonoBehaviour
     {
         if (!GameSession.IsOnline || receiver.IsDowned) return false;
         foreach (var other in PlayerRoster.All)
-            if (other != player && other.IsInitialized && Standing(other)) { receiver.GoDown(downedHealth); return true; }
+            if (other != player && other.IsInitialized && Standing(other))
+            {
+                receiver.GoDown(downedHealth);
+                PlayerRecords.WentDown();
+                return true;
+            }
         return false;
     }
 
@@ -79,7 +86,9 @@ public sealed class PlayerLife : MonoBehaviour
     /// <summary>The team is wiped, on every PC.</summary>
     internal void BeginWipe()
     {
-        if (!IsWiped) wipeLeft = Mathf.Max(.01f, wipeSeconds);
+        if (IsWiped) return;
+        wipeLeft = Mathf.Max(.01f, wipeSeconds);
+        PlayerRecords.Wiped();
     }
 
     private void Update()
@@ -93,7 +102,7 @@ public sealed class PlayerLife : MonoBehaviour
             return;
         }
         FindRescuer();
-        if (receiver.IsDowned && Rescuer == null) receiver.Bleed(downedHealth / Mathf.Max(.1f, bleedSeconds) * dt);
+        if (receiver.IsDowned && Rescuer == null) receiver.Bleed(downedHealth / BleedSeconds * dt);
         if (!receiver.IsAlive && !WaitsForWave)
         {
             respawnLeft -= dt;
@@ -141,7 +150,11 @@ public sealed class PlayerLife : MonoBehaviour
         if (!GameSession.IsGuest && waves != null && waves.IsRunning) waves.RestartFromFirst();
     }
 
-    private void OnDied() => respawnLeft = respawnSeconds;
+    private void OnDied()
+    {
+        respawnLeft = respawnSeconds;
+        PlayerRecords.Died();
+    }
 
     private void OnWaveStarted()
     {
@@ -152,7 +165,10 @@ public sealed class PlayerLife : MonoBehaviour
     {
         var point = FindFirstObjectByType<PlayerSpawnPoint>();
         Vector2 scatter = GameSession.IsOnline ? Random.insideUnitCircle * SpawnScatter : Vector2.zero;
-        if (point != null) player.MoveTo(point.transform.position + new Vector3(scatter.x, 0f, scatter.y));
+        // A campaign chapter brings them back at the last rest stop reached, not the chapter's start (CampaignRun).
+        bool campaign = CampaignRun.TryCheckpoint(out Vector3 checkpoint);
+        if (campaign || point != null)
+            player.MoveTo((campaign ? checkpoint : point.transform.position) + new Vector3(scatter.x, 0f, scatter.y));
         receiver.RestoreHealth();
     }
 }

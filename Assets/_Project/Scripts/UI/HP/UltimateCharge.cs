@@ -23,7 +23,7 @@ public sealed class UltimateCharge : MonoBehaviour, ITableBound
         if (hit.Kind != DamageKind.Attack || hit.Source == null) return;
         var player = hit.Source.GetComponentInParent<PlayerMovement>();
         if (player == null || !player.IsLocal || player.Ultimate == null || player.DamageReceiver == null || !player.DamageReceiver.IsAlive) return;
-        player.Ultimate.AddCharge(player.Ultimate.chargePerEnemyHit);
+        player.Ultimate.AddCharge(player.Ultimate.chargePerEnemyHit * PlayerPerks.ChargeFactor); // faster with the charge perk
     }
 
     private PlayerStats stats;

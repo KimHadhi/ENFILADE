@@ -76,8 +76,8 @@ public sealed class LadderState : MovementBaseState
         if (progress >= 1f) return;
         progress = Mathf.Min(1f, progress + dt / Mathf.Max(.01f, moveTime));
         Vector3 next = Along(progress);
-        // Something overhead stops the climb; the hands stay where they are.
-        if (!detector.ClearPath(here, next, ctx.StandingColliderHeight))
+        // Something overhead stops the climb; the hands stay where they are. A zombie clawing from below is no ceiling.
+        if (!detector.ClearPathPastEnemies(here, next, ctx.StandingColliderHeight))
         {
             from = via = to = here;
             twoLegs = false;

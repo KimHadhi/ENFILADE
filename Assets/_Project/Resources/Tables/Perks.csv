@@ -1,0 +1,10 @@
+﻿id,name,tag,icon,levels,value,text,weight
+#설명 (능력 카드. 게이지가 차면 X로 세 장 중 하나를 고름. 캠페인 동안 유지되고 제목 화면에 가면 없어짐),카드 이름,갈래 (총 / 근접 / 생존 / 팀 / 기타),Resources/UI/Icons 아이콘 이름,최대 단계,단계마다 더하는 값,효과 설명 ({0} = 그 단계까지 모두 더한 값),뽑힐 비중 (클수록 자주)
+gun_head,머리 사냥꾼,총,Headshot,3,25,헤드샷 피해 +{0}%,10
+gun_body,철갑탄,총,Bullet,3,12,"머리 말고 맞힌 총 피해 +{0}%",10
+melee_power,쇠주먹,근접,Fist,3,20,주먹 피해 +{0}%,8
+melee_butcher,피의 처형,근접,Heart,3,20,처형하면 체력 +{0},8
+body_tough,단단한 몸,생존,Armor,3,15,최대 체력 +{0},10
+body_grit,끈질긴 숨,생존,Hourglass,2,35,쓰러져서 버티는 시간 +{0}%,6
+team_rescue,손 빠른 구조,팀,Rescue,3,20,동료를 일으키는 시간 -{0}%,6
+gauge_charge,충전기,기타,Bolt,3,20,게이지가 차는 속도 +{0}%,8

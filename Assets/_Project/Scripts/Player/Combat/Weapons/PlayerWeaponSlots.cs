@@ -21,8 +21,11 @@ public sealed class PlayerWeaponSlots : MonoBehaviour
     private PlayerMovement player;
     private PlayerInput playerInput;
     private PlayerMeleeCombat melee;
-    private bool sidearmOnly;
-    private int slotBeforeSidearm;
+    private bool sidearmOnly, handsFull;
+    private int slotBeforeSidearm, slotBeforeHandsFull;
+    // The slot to take out once the held gun is put away (WeaponController.BeginHolster), and how long that has left (s).
+    private int holsterTo;
+    private float holsterLeft;
     public int SelectedSlot => selectedSlot;
     public WeaponData SelectedWeapon => GetWeapon(selectedSlot);
     public bool UsesFists => isActiveAndEnabled && selectedSlot >= 0 && SelectedWeapon == null;
@@ -77,11 +80,17 @@ public sealed class PlayerWeaponSlots : MonoBehaviour
         if (count > 0) SlotActivity?.Invoke();
         return count;
     }
-    public bool CanReadInput => isActiveAndEnabled && player != null && player.InputAvailable && !player.CombatInputLocked
+    public bool CanReadInput => isActiveAndEnabled && player != null && player.InputAvailable && !player.CombatInputLocked && !player.IsHeld
         && (playerInput == null || playerInput.actions.FindActionMap("Player")?.enabled == true);
 
     private void Update()
     {
+        // The held gun is put away: the next comes out.
+        if (holsterLeft > 0f)
+        {
+            holsterLeft -= Time.deltaTime;
+            if (holsterLeft <= 0f) SetSelection(holsterTo);
+        }
         if (controller.EquippedData != SelectedWeapon) SetSelection(selectedSlot);
         var keyboard = Keyboard.current;
         if (keyboard == null || !CanReadInput) return;
@@ -89,6 +98,14 @@ public sealed class PlayerWeaponSlots : MonoBehaviour
         else if (keyboard.digit2Key.wasPressedThisFrame || keyboard.numpad2Key.wasPressedThisFrame) HandleSlotInput(1);
         else if (keyboard.digit3Key.wasPressedThisFrame || keyboard.numpad3Key.wasPressedThisFrame) HandleSlotInput(2);
         else if (keyboard.digit4Key.wasPressedThisFrame || keyboard.numpad4Key.wasPressedThisFrame) HandleSlotInput(3);
+        // B switches the held gun's fire mode (Rainbow Six Siege's select fire).
+        else if (keyboard.bKey.wasPressedThisFrame && !sidearmOnly) controller.CycleFireMode();
+        // C opens the gun's customize menu, one key for its sight, muzzle and underbarrel parts, as ArcCW's (user,
+        // 2026-11-09: "키를 늘릴 바에 ArcCW처럼 커스터마이징 키를 하나 따로").
+        else if (keyboard.cKey.wasPressedThisFrame && !sidearmOnly && !GunCustomizeMenu.TakesKeyboard) GunCustomizeMenu.Open(player, controller);
+        // Y looks the gun over; L switches its flashlight.
+        else if (keyboard.yKey.wasPressedThisFrame) controller.Inspect();
+        else if (keyboard.lKey.wasPressedThisFrame) controller.ToggleLight();
     }
     /// <summary>Someone downed holds only their pistol and can't change it. With no pistol, their hands stay empty. Afterwards they go back to what they held.</summary>
     internal void HoldSidearm(bool hold)
@@ -96,7 +113,9 @@ public sealed class PlayerWeaponSlots : MonoBehaviour
         if (hold == sidearmOnly) return;
         sidearmOnly = hold;
         if (!hold) { SetSelection(slotBeforeSidearm); return; }
-        slotBeforeSidearm = selectedSlot;
+        // Going down drops whatever filled the hands (CampaignCans); getting up goes back to what was held before it.
+        slotBeforeSidearm = handsFull ? slotBeforeHandsFull : selectedSlot;
+        handsFull = false;
         for (int i = 0; i < SlotCount; i++)
         {
             var data = GetWeapon(i);
@@ -106,9 +125,22 @@ public sealed class PlayerWeaponSlots : MonoBehaviour
         }
         SetSelection(-1);
     }
+    /// <summary>Both hands hold something that isn't a weapon (HoldHandsFull).</summary>
+    public bool HandsFull => handsFull;
+
+    /// <summary>Something fills both hands (a campaign fuel can, CampaignCans): nothing is held and the number keys do
+    /// nothing until it is put down, then back to what was held.</summary>
+    internal void HoldHandsFull(bool full)
+    {
+        if (full == handsFull || (full && sidearmOnly)) return;
+        handsFull = full;
+        if (full) { slotBeforeHandsFull = selectedSlot; SetSelection(-1); return; }
+        SetSelection(slotBeforeHandsFull);
+    }
+
     public bool HandleSlotInput(int index)
     {
-        if (!CanReadInput || sidearmOnly || index < 0 || index >= SlotCount) return false;
+        if (!CanReadInput || sidearmOnly || handsFull || index < 0 || index >= SlotCount) return false;
         return SelectSlot(selectedSlot == index ? -1 : index);
     }
     public void ToggleSlot(int index)
@@ -119,8 +151,21 @@ public sealed class PlayerWeaponSlots : MonoBehaviour
     public bool SelectSlot(int index)
     {
         if (index < -1 || index >= SlotCount || (player != null && player.CombatInputLocked)) return false;
-        if (selectedSlot != index) SetSelection(index);
+        if (holsterLeft > 0f) holsterTo = index;
+        else if (selectedSlot != index && !Holster(index)) SetSelection(index);
         SlotActivity?.Invoke();
+        return true;
+    }
+
+    // This PC's own player puts the held gun away over its holster time before the next comes out, as Siege's swap does;
+    // someone else's copy follows their PC's slot at once (it already waited there). False when it goes at once.
+    private bool Holster(int index)
+    {
+        if (player == null || !player.IsLocal || player.IsNetworkDriven || controller == null) return false;
+        float seconds = controller.BeginHolster();
+        if (seconds <= 0f) return false;
+        holsterTo = index;
+        holsterLeft = seconds;
         return true;
     }
     public bool TrySetWeapon(int index, WeaponData data)
@@ -146,6 +191,8 @@ public sealed class PlayerWeaponSlots : MonoBehaviour
     }
     private void SetSelection(int index)
     {
+        // Any change of hands ends a put-away under way (its slot is taken now, or another reason took over).
+        holsterLeft = 0f;
         if (controller == null) controller = GetComponent<WeaponController>();
         if (melee == null) melee = GetComponent<PlayerMeleeCombat>();
         melee?.CancelAction();

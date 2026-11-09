@@ -169,6 +169,11 @@ public sealed class ParryFeedback : MonoBehaviour
         }
         if (broken) chain = 0;
     }
+    /// <summary>A shove counter's burst (ShoveCounter): the posture-break burst, this much bigger again.</summary>
+    internal void CounterBurst(Vector3 point, Vector3 spray, float growth)
+    {
+        if (view != null) Burst(point, spray, breakBoost * Mathf.Max(.1f, growth), true);
+    }
     private void Burst(Vector3 point, Vector3 spray, float growth, bool broken) => ParryVfx.Play(new ParryBurst
     {
         Point = point, Right = view.right, Up = view.up, Spray = spray,

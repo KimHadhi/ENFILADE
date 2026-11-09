@@ -3,27 +3,46 @@ using UnityEngine.Animations;
 using UnityEngine.Playables;
 
 /// <summary>
-/// The chosen character standing beside the title menu in its idle pose, with the camera and light it needs.
-/// Follows the saved skin and colour set: another colour set swaps materials on the same model.
+/// The chosen character standing in the title menu in its idle pose, with the camera and light it needs. Follows the
+/// saved skin and colour set: another colour set swaps materials on the same model. Dragging across the screen turns it
+/// (MainMenuDrag → Turn); let go and it keeps spinning a little, slows, and after a while eases back to face the camera.
+/// The menu's backdrop reads the camera and where the character stands (View, Feet, Head) to draw behind it.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class MainMenuPreview : MonoBehaviour
 {
     public const string IdleClip = "mx_idle";
-    private const float FieldOfView = 26f, ScreenFill = .86f, SideShift = .42f;
-    private static readonly Color Background = new Color(.055f, .06f, .075f);
+    // Nearly in the middle, between the menu's left column and its right-hand briefing, against the night.
+    private const float FieldOfView = 26f, ScreenFill = .8f, SideShift = .06f;
+    // Turning: degrees per dragged pixel, how fast a flick's spin dies (per second), how long it rests before facing
+    // the camera again (s) and how fast it then turns back.
+    private const float DegreesPerPixel = .45f, SpinDecay = 4.5f, RestBeforeReturn = 3.5f, ReturnSpeed = 2.2f, MaxSpin = 900f;
     private Camera view;
     private GameObject model;
     private PlayerBodyProfile.Skin shownSkin;
     private SkinVariant wornVariant;
     private PlayableGraph graph;
+    private Bounds shown;
+    private float yaw, spin, sinceTurned = float.PositiveInfinity;
+
+    /// <summary>The camera the character is seen through.</summary>
+    public Camera View => view;
+    /// <summary>Whether a character is standing.</summary>
+    public bool HasModel => model != null;
+    /// <summary>The middle of the ground under the character, and the top of its head (world).</summary>
+    public Vector3 Feet => new Vector3(shown.center.x, shown.min.y, shown.center.z);
+    public Vector3 Head => new Vector3(shown.center.x, shown.max.y, shown.center.z);
+    /// <summary>Which way it faces, 0 to 360 degrees (0 is toward the camera).</summary>
+    public float Facing => Mathf.Repeat(yaw, 360f);
+    /// <summary>How far the camera is from the character (m).</summary>
+    public float Distance => view != null ? Vector3.Distance(view.transform.position, shown.center) : 0f;
 
     private void Awake()
     {
         view = new GameObject("Camera", typeof(Camera), typeof(AudioListener)).GetComponent<Camera>();
         view.transform.SetParent(transform, false);
         view.clearFlags = CameraClearFlags.SolidColor;
-        view.backgroundColor = Background;
+        view.backgroundColor = KitStyle.Night;
         view.fieldOfView = FieldOfView;
         view.nearClipPlane = .05f;
         var sun = new GameObject("Light", typeof(Light)).GetComponent<Light>();
@@ -31,9 +50,24 @@ public sealed class MainMenuPreview : MonoBehaviour
         sun.type = LightType.Directional;
         sun.transform.rotation = Quaternion.Euler(30f, 200f, 0f);
         sun.intensity = 1.2f;
+        // Edge lights from behind (the character faces +Z, the camera): a white one high on the screen's right and a pink
+        // one low on its left, in the menu's two colours.
+        Rim("Ice Rim", Quaternion.Euler(15f, 35f, 0f), KitStyle.Ice, 1.1f);
+        Rim("Pink Rim", Quaternion.Euler(-10f, -40f, 0f), KitStyle.Accent, .6f);
         RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
-        RenderSettings.ambientLight = new Color(.5f, .5f, .55f);
+        RenderSettings.ambientLight = new Color(.42f, .45f, .55f);
         GameSettings.Changed += Follow;
+    }
+
+    private void Rim(string name, Quaternion rotation, Color color, float intensity)
+    {
+        var rim = new GameObject(name, typeof(Light)).GetComponent<Light>();
+        rim.transform.SetParent(transform, false);
+        rim.type = LightType.Directional;
+        rim.transform.rotation = rotation;
+        rim.color = color;
+        rim.intensity = intensity;
+        rim.shadows = LightShadows.None;
     }
 
     /// <summary>Stands the current skin in front of the camera, replacing the last one.</summary>
@@ -52,12 +86,49 @@ public sealed class MainMenuPreview : MonoBehaviour
             bounds.Encapsulate(renderer.bounds);
             if (renderer is SkinnedMeshRenderer skinned) skinned.updateWhenOffscreen = true;
         }
+        shown = bounds;
         Frame(bounds);
+        Face(); // measured facing the camera, then turned as it was
         var animator = model.GetComponentInChildren<Animator>();
         var idle = profile.Find(IdleClip);
         if (animator == null || idle == null) return;
         animator.applyRootMotion = false;
         AnimationPlayableUtilities.PlayClip(animator, idle, out graph);
+    }
+
+    /// <summary>Turns the character by a drag of <paramref name="pixels"/> across the screen (right turns it right).</summary>
+    public void Turn(float pixels, float deltaTime)
+    {
+        float degrees = -pixels * DegreesPerPixel;
+        yaw += degrees;
+        // What the drag was doing at the end is the spin it keeps when let go.
+        if (deltaTime > 0f) spin = Mathf.Clamp(Mathf.Lerp(spin, degrees / deltaTime, .5f), -MaxSpin, MaxSpin);
+        sinceTurned = 0f;
+        Face();
+    }
+
+    /// <summary>The drag ended: from here it coasts.</summary>
+    public void Release() => sinceTurned = 0f;
+
+    private void Update()
+    {
+        if (model == null) return;
+        float dt = Time.unscaledDeltaTime;
+        sinceTurned += dt;
+        if (Mathf.Abs(spin) > .5f)
+        {
+            yaw += spin * dt;
+            spin *= Mathf.Exp(-SpinDecay * dt);
+        }
+        else spin = 0f;
+        if (sinceTurned > RestBeforeReturn && spin == 0f)
+            yaw = Mathf.LerpAngle(yaw, 0f, 1f - Mathf.Exp(-ReturnSpeed * dt));
+        Face();
+    }
+
+    private void Face()
+    {
+        if (model != null) model.transform.localRotation = Quaternion.Euler(0f, yaw, 0f);
     }
 
     // The character faces +Z. Moving the camera toward +X puts it right of the menu.

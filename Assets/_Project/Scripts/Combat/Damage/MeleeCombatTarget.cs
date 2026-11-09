@@ -13,6 +13,11 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
     [SerializeField] private EnemyBodySize bodySize = EnemyBodySize.Small;
     public EnemyBodySize BodySize => bodySize;
     public bool IsKnockedDown => knockdownRemaining > 0f || knockdownPresentation?.IsActive == true || shownDown;
+    /// <summary>
+    /// On the ground, not yet getting up: what other PCs are told. A zombie getting up is still knocked down (it can't
+    /// fight yet), but every PC plays its getting up at once (ZombieBody).
+    /// </summary>
+    public bool IsLying => knockdownRemaining > 0f || knockdownPresentation?.IsLying == true || shownDown;
     /// <summary>Someone is holding it: a guard break or an execution under way.</summary>
     public bool IsHeld => grabber != null || executor != null;
     /// <summary>The way it was last knocked down.</summary>
@@ -202,9 +207,20 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
         grabber = null;
         if (!IsStunned && !PlayerExecution.Suppresses(this)) RestoreAgent();
     }
+    /// <summary>
+    /// Whether this executor may execute it now: broken (CanExecute), or a zombie unaware of anyone with them behind its
+    /// back, a stealth kill (ZombieMind.CanBeTakenDownFrom).
+    /// </summary>
+    public bool CanBeExecutedBy(Component executor) => CanExecute || CanBeTakenDownBy(executor);
+
+    /// <summary>The stealth kill alone: an unaware zombie with this executor behind it.</summary>
+    public bool CanBeTakenDownBy(Component executor)
+        => executor != null && IsAvailable && !IsHeld && !shownHeld && !IsKnockedDown && GetComponent<IDamageReceiver>() != null
+            && TryGetComponent(out ZombieMind mind) && mind.CanBeTakenDownFrom(executor.transform.position);
+
     public bool TryReserveExecution(PlayerExecution owner)
     {
-        if (owner == null || !CanExecute) return false;
+        if (owner == null || !CanBeExecutedBy(owner)) return false;
         knockdownPresentation?.Reset(); knockdownRemaining = 0f;
         executor = owner; shoveRemaining = bargeKnockdown = 0f; StopAgent();
         GetComponent<EnemyCombatAI>()?.CancelAttack(); Interrupted?.Invoke();
@@ -235,7 +251,8 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
         {
             shownDown = down;
             if (down) Invoke(nameof(PlayKnockdownSound), KnockdownSoundDelay);
-            EnemyParryRecoil.For(this)?.Lie(fall, down);
+            // A zombie's body falls on a doll that follows the host's (ZombieBody); only a plain capsule is tipped over.
+            if (!TryGetComponent(out ZombieBody zombie) || !zombie.Wears) EnemyParryRecoil.For(this)?.Lie(fall, down);
         }
         if (Time.time < predictedUntil) return;
         Posture = posture;

@@ -28,12 +28,15 @@ public sealed class FeelAudio : MonoBehaviour
     private static FeelAudio instance;
     private static readonly Dictionary<FeelSound, AudioClip[]> synthesized = new Dictionary<FeelSound, AudioClip[]>();
     private static readonly Dictionary<AudioClip, float> peaks = new Dictionary<AudioClip, float>();
-    // Voices by [Wet, Dry]: wet ones take the room's reverb (ReverbArea); dry ones are for shots, whose room is GunReverb's
-    // tail, and for confirm sounds.
-    private const int Wet = 0, Dry = 1;
-    private readonly AudioSource[][] flat = { new AudioSource[FlatVoices], new AudioSource[FlatVoices] };
-    private readonly AudioSource[][] spatial = { new AudioSource[SpatialVoices], new AudioSource[SpatialVoices] };
-    private readonly int[] nextFlat = new int[2], nextSpatial = new int[2];
+    // Voices by [Wet, Dry, Shot]: wet ones take the room's reverb (ReverbArea); dry ones are for confirm sounds; shots have
+    // voices of their own, dry too (their room is GunReverb's tail).
+    // Each voice is stopped before it plays again (VoiceRing). PlayOneShot alone never ended the sounds before it, and the
+    // MX68's 1.7 s shots at 750 RPM piled past Unity's 32 real voices in about 30 rounds; from there every new shot
+    // started virtual and the gun went silent while it kept firing (user, 2026-11-09). A full-auto string now holds six
+    // shots at once (the newest 0.48 s at 750 RPM, its room carried on by GunReverb's tail), and the last one rings out.
+    private const int Wet = 0, Dry = 1, Shot = 2;
+    private const int ShotVoices = 6, OtherShotVoices = 8;
+    private readonly VoiceRing[] flat = new VoiceRing[3], spatial = new VoiceRing[3];
     private readonly Dictionary<FeelSound, AudioClip> previous = new Dictionary<FeelSound, AudioClip>();
     private readonly Dictionary<string, SoundBank> banks = new Dictionary<string, SoundBank>(StringComparer.OrdinalIgnoreCase);
     private readonly List<Pending> pending = new List<Pending>();
@@ -46,7 +49,7 @@ public sealed class FeelAudio : MonoBehaviour
         public float At, Volume, Pitch, MaxDistance;
         public SoundCues.Item Item;
         public Vector3? Point;
-        public bool Dry;
+        public int Set;
     }
 
     public static FeelSound ShotFor(GunSoundProfile profile)
@@ -59,7 +62,7 @@ public sealed class FeelAudio : MonoBehaviour
         var self = Get();
         var profile = self.GunOf(sound, gun, true);
         if (HasAny(overrides) || !self.PlayGun(sound, profile, null, volume, pitch, 0f))
-            self.Voice(self.Pick(sound, overrides), null, volume, pitch, 0f, IsDry(sound));
+            self.Voice(self.Pick(sound, overrides), null, volume, pitch, 0f, SetOf(sound));
         if (IsShot(sound)) GunReverb.Tail(profile, null, volume);
     }
 
@@ -67,7 +70,7 @@ public sealed class FeelAudio : MonoBehaviour
     public static void PlayClip(AudioClip clip, float volume, float pitch = 1f)
     {
         if (!Application.isPlaying || clip == null || volume <= 0f) return;
-        Get().Voice(clip, null, volume, pitch, 0f, true);
+        Get().Voice(clip, null, volume, pitch, 0f, Dry);
     }
 
     /// <summary>3D sound at a world point (bodies landing, someone else's gun). gun picks a gun's own mechanical sounds.</summary>
@@ -78,7 +81,7 @@ public sealed class FeelAudio : MonoBehaviour
         var self = Get();
         var profile = self.GunOf(sound, gun, false);
         if (HasAny(overrides) || !self.PlayGun(sound, profile, point, volume, pitch, maxDistance))
-            self.Voice(self.Pick(sound, overrides), point, volume, pitch, maxDistance, IsDry(sound));
+            self.Voice(self.Pick(sound, overrides), point, volume, pitch, maxDistance, SetOf(sound));
         if (IsShot(sound)) GunReverb.Tail(profile, point, volume, maxDistance);
     }
 
@@ -86,7 +89,7 @@ public sealed class FeelAudio : MonoBehaviour
     public static void PlayClipAt(AudioClip clip, Vector3 point, float volume, float pitch = 1f, float maxDistance = 14f)
     {
         if (!Application.isPlaying || clip == null || volume <= 0f) return;
-        Get().Voice(clip, point, volume, pitch, maxDistance, false);
+        Get().Voice(clip, point, volume, pitch, maxDistance, Wet);
     }
 
     /// <summary>
@@ -178,7 +181,7 @@ public sealed class FeelAudio : MonoBehaviour
             var due = pending[i];
             if (due.At > now) continue;
             pending.RemoveAt(i);
-            PlayItem(due.Item, due.Point, due.Volume, due.Pitch, due.MaxDistance, due.Dry);
+            PlayItem(due.Item, due.Point, due.Volume, due.Pitch, due.MaxDistance, due.Set);
         }
     }
 
@@ -188,6 +191,9 @@ public sealed class FeelAudio : MonoBehaviour
     private static bool IsDry(FeelSound sound)
         => IsShot(sound) || sound == FeelSound.HitMarker || sound == FeelSound.Kill || sound == FeelSound.HeadshotKill
             || sound == FeelSound.ShieldBreak;
+
+    // Which voices a sound takes: a shot its own, else dry or wet.
+    private static int SetOf(FeelSound sound) => IsShot(sound) ? Shot : IsDry(sound) ? Dry : Wet;
 
     // A shot names its gun; one's own shot is remembered for the sounds that follow it without one.
     private GunSoundProfile GunOf(FeelSound sound, GunSoundProfile? gun, bool own)
@@ -224,7 +230,7 @@ public sealed class FeelAudio : MonoBehaviour
     {
         string name = GunEvent(sound);
         if (name == null) return false;
-        bool dry = IsDry(sound);
+        int set = SetOf(sound);
         if (SoundCues.TryFind(GunCue + name + "/" + gun, out var cue) && cue.Items.Length > 0)
         {
             foreach (var item in cue.Items)
@@ -232,9 +238,9 @@ public sealed class FeelAudio : MonoBehaviour
                 if (item.Delay > 0f)
                     pending.Add(new Pending
                     {
-                        At = Time.time + item.Delay, Item = item, Point = point, Volume = volume, Pitch = pitch, MaxDistance = maxDistance, Dry = dry
+                        At = Time.time + item.Delay, Item = item, Point = point, Volume = volume, Pitch = pitch, MaxDistance = maxDistance, Set = set
                     });
-                else PlayItem(item, point, volume, pitch, maxDistance, dry);
+                else PlayItem(item, point, volume, pitch, maxDistance, set);
             }
             return true;
         }
@@ -247,37 +253,32 @@ public sealed class FeelAudio : MonoBehaviour
             if (!bank.TryGet(key, out _)) return false;
         }
         var settings = bank.SettingsOf(key);
-        Voice(bank.Pick(key), point, volume * settings.Volume, pitch * settings.RandomPitch(), maxDistance, dry);
+        Voice(bank.Pick(key), point, volume * settings.Volume, pitch * settings.RandomPitch(), maxDistance, set);
         return true;
     }
 
-    private void PlayItem(SoundCues.Item item, Vector3? point, float volume, float pitch, float maxDistance, bool dry)
+    private void PlayItem(SoundCues.Item item, Vector3? point, float volume, float pitch, float maxDistance, int set)
     {
         var bank = Bank(item.Bank);
         var clip = bank != null ? bank.Pick(item.Key) : null;
         if (clip == null) return;
         var settings = bank.SettingsOf(item.Key);
-        Voice(clip, point, volume * item.Volume * settings.Volume, pitch * settings.RandomPitch(), maxDistance, dry);
+        Voice(clip, point, volume * item.Volume * settings.Volume, pitch * settings.RandomPitch(), maxDistance, set);
     }
 
-    // A flat voice, or a 3D one at the point; dry ones skip the rooms' reverb.
-    private void Voice(AudioClip clip, Vector3? point, float volume, float pitch, float maxDistance, bool dry)
+    // A flat voice, or a 3D one at the point, of the set's (Wet, Dry, Shot); dry ones and shots skip the rooms' reverb.
+    // The voice's last sound ends here.
+    private void Voice(AudioClip clip, Vector3? point, float volume, float pitch, float maxDistance, int set)
     {
         if (clip == null || volume <= 0f) return;
-        int set = dry ? Dry : Wet;
         AudioSource voice;
         if (point.HasValue)
         {
-            voice = spatial[set][nextSpatial[set]];
-            nextSpatial[set] = (nextSpatial[set] + 1) % SpatialVoices;
+            voice = spatial[set].Take();
             voice.transform.position = point.Value;
             voice.maxDistance = Mathf.Max(voice.minDistance + .1f, maxDistance);
         }
-        else
-        {
-            voice = flat[set][nextFlat[set]];
-            nextFlat[set] = (nextFlat[set] + 1) % FlatVoices;
-        }
+        else voice = flat[set].Take();
         voice.pitch = Mathf.Clamp(pitch, .25f, 3f);
         voice.PlayOneShot(clip, Mathf.Clamp(volume, 0f, MaxVolume));
     }
@@ -292,23 +293,28 @@ public sealed class FeelAudio : MonoBehaviour
     {
         if (instance != null && instance != this) { Destroy(gameObject); return; }
         instance = this;
-        for (int set = Wet; set <= Dry; set++)
+        for (int set = Wet; set <= Shot; set++)
         {
-            for (int i = 0; i < FlatVoices; i++)
+            var flatVoices = new AudioSource[set == Shot ? ShotVoices : FlatVoices];
+            for (int i = 0; i < flatVoices.Length; i++)
             {
-                var voice = flat[set][i] = gameObject.AddComponent<AudioSource>();
-                voice.playOnAwake = false; voice.spatialBlend = 0f; voice.priority = 32; voice.bypassReverbZones = set == Dry;
+                var voice = flatVoices[i] = gameObject.AddComponent<AudioSource>();
+                voice.playOnAwake = false; voice.spatialBlend = 0f; voice.priority = 32; voice.bypassReverbZones = set != Wet;
                 GameAudio.Bind(voice, AudioChannel.Combat);
             }
-            for (int i = 0; i < SpatialVoices; i++)
+            flat[set] = new VoiceRing(flatVoices);
+            var spatialVoices = new AudioSource[set == Shot ? OtherShotVoices : SpatialVoices];
+            string label = set == Shot ? "Feel Shot Voice " : set == Dry ? "Feel Dry Voice " : "Feel Voice ";
+            for (int i = 0; i < spatialVoices.Length; i++)
             {
-                var voice = new GameObject((set == Dry ? "Feel Dry Voice " : "Feel Voice ") + i).AddComponent<AudioSource>();
+                var voice = new GameObject(label + i).AddComponent<AudioSource>();
                 voice.transform.SetParent(transform, false);
                 voice.playOnAwake = false; voice.spatialBlend = 1f; voice.rolloffMode = AudioRolloffMode.Linear;
-                voice.minDistance = 1.5f; voice.bypassReverbZones = set == Dry;
+                voice.minDistance = 1.5f; voice.bypassReverbZones = set != Wet;
                 GameAudio.Bind(voice, AudioChannel.Combat);
-                spatial[set][i] = voice;
+                spatialVoices[i] = voice;
             }
+            spatial[set] = new VoiceRing(spatialVoices);
         }
     }
 

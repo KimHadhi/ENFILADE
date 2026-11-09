@@ -218,10 +218,7 @@ public sealed class MovementLanding
         // Backlog 155: a wall where the roll would go used to cancel the roll and leave a plain crouched landing. Now it
         // rolls on the spot, so the view and the body play the same move.
         if (!inPlace && !ctx.Abilities.Traversal.Detector.ClearCapsule(ctx.transform.position + direction * 0.6f, ctx.CrouchColliderHeight))
-        {
             inPlace = true;
-            if (ctx.IsLocal) ParkourProbeLog.Line("landing roll: wall ahead, rolling on the spot");
-        }
         LandsInPlace = inPlace;
         ctx.Abilities.ActionDirection = direction;
         ctx.ChangeState(State.LandingRoll);

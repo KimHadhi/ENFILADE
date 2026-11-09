@@ -23,9 +23,6 @@ public sealed class WarpedTraversal
     private readonly IObstacleMotion motion;
     private readonly Vector3 start, contact;
     private readonly float rate, exitSpeed, estimatedTime, lift, floor;
-
-    /// <summary>For the probe: the clip rate and how far the feet were raised over the clip's reach.</summary>
-    internal string Describe => $"rate {rate:0.00} lift {lift:0.000} contact {contact.ToString("F2")} start {start.ToString("F2")}";
     private Vector3 releaseFeet, lastClear;
     private float clipTime, elapsed, exitClock, exitTime;
     private bool exiting;
@@ -57,8 +54,8 @@ public sealed class WarpedTraversal
     /// A warp for <paramref name="target"/> on <paramref name="motion"/>'s hands, or null when the hands' place on the top
     /// can't be found or the move would make no sense (behind the player, too far, too fast); the straight move takes over.
     /// </summary>
-    internal static WarpedTraversal TryStart(PlayerMovement ctx, in ObstacleTarget target, IObstacleMotion motion, float entrySpeed,
-        out string why) => TryStart(ctx, target, motion, entrySpeed, 0f, null, out why);
+    internal static WarpedTraversal TryStart(PlayerMovement ctx, in ObstacleTarget target, IObstacleMotion motion, float entrySpeed)
+        => TryStart(ctx, target, motion, entrySpeed, 0f, null);
 
     /// <summary>
     /// As above; with <paramref name="clipDuration"/> above 0 the clip plays over that long whatever the run's speed, and
@@ -67,14 +64,15 @@ public sealed class WarpedTraversal
     /// middle, the wrists) hold there instead of on the obstacle's top past its near edge (a ladder's rails).
     /// </summary>
     internal static WarpedTraversal TryStart(PlayerMovement ctx, in ObstacleTarget target, IObstacleMotion motion, float entrySpeed,
-        float clipDuration, Vector3? grip, out string why)
+        float clipDuration, Vector3? grip)
     {
-        why = null;
-        if (motion == null || target.Surface == null) { why = "no clip hands or obstacle"; return null; }
-        if (grip == null && target.EdgeNormal == Vector3.zero) { why = "the obstacle's near edge wasn't found"; return null; }
+        // No clip hands or obstacle, or the obstacle's near edge wasn't found.
+        if (motion == null || target.Surface == null) return null;
+        if (grip == null && target.EdgeNormal == Vector3.zero) return null;
         var settings = ctx.AbilitySettings;
         float plant = motion.PlantTime, release = motion.ReleaseTime;
-        if (plant <= 0f || release <= plant) { why = $"plant {plant:0.000} and release {release:0.000} make no support"; return null; }
+        // The plant and the release make no support.
+        if (plant <= 0f || release <= plant) return null;
 
         Vector3 hands = motion.HandsFromFeet(plant), feet = ctx.transform.position;
         Vector3 spot;
@@ -88,11 +86,9 @@ public sealed class WarpedTraversal
             // Already closer than the clip reaches ahead: the hands go further onto the top instead of the feet going back.
             float short_ = Vector3.Dot(hands, inward) + LeastApproach - Vector3.Dot(spot - feet, inward);
             if (short_ > 0f) spot += inward * short_;
+            // No top under the hands' place.
             if (!target.Surface.Raycast(new Ray(spot + Vector3.up * .5f, Vector3.down), out RaycastHit top, 1f) || top.point.y < target.Edge.y - TopTolerance)
-            {
-                why = $"no top under the hands' place ({short_:0.00} m further in than the edge)";
                 return null;
-            }
             // The hand bone is the wrist: it rests a palm's depth above the top, as PlayerBodyHands puts a hand down.
             spot.y = top.point.y + motion.WristAboveTop;
         }
@@ -103,7 +99,7 @@ public sealed class WarpedTraversal
         float lift = Mathf.Max(0f, floor - (spot.y - hands.y));
         Vector3 plantFeet = spot - hands + Vector3.up * lift;
         Vector3 approach = plantFeet - feet;
-        if (approach.magnitude > settings.vaultWarpReach) { why = $"the hands' place is {approach.magnitude:0.00} m away"; return null; }
+        if (approach.magnitude > settings.vaultWarpReach) return null;
 
         // Motion Warping's rate for the phase: the clip's time to the plant over the time the run takes to get there.
         float speed = Mathf.Max(entrySpeed, settings.vaultWarpLeastSpeed);
@@ -186,23 +182,14 @@ public sealed class WarpedTraversal
         }
     }
 
-    /// <summary>Where the clip's hands (their middle, the wrists) are held in the world while they are down.</summary>
-    internal Vector3 Contact => contact;
-
     /// <summary>The clip time span the hands are down (support), for the hands' reach onto the edge.</summary>
     internal float PlantTime => motion.PlantTime;
     internal float ReleaseTime => motion.ReleaseTime;
 
-    /// <summary>Why the last Advance stopped the move, for the probe.</summary>
-    internal string StopReason { get; private set; }
-
     internal bool Advance(float dt)
     {
-        if (target.Surface == null || !target.Surface.enabled || !target.Surface.gameObject.activeInHierarchy)
-        {
-            StopReason = "the obstacle went";
-            return false;
-        }
+        // The obstacle went.
+        if (target.Surface == null || !target.Surface.enabled || !target.Surface.gameObject.activeInHierarchy) return false;
         dt = Mathf.Max(0f, dt);
         elapsed += dt;
         Vector3 position;
@@ -231,17 +218,9 @@ public sealed class WarpedTraversal
             EdgeShortfall = 0f;
         }
 
-        if (!detector.ClearStraightPath(ctx.transform.position, position, target.Surface))
-        {
-            StopReason = $"blocked at clip {clipTime:0.000} ({(exiting ? "exit" : clipTime < motion.PlantTime ? "approach" : "support")}) from "
-                + $"{ctx.transform.position.ToString("F2")} to {position.ToString("F2")}";
-            return false;
-        }
-        if (Complete && !detector.ClearStraightExit(position))
-        {
-            StopReason = $"the end {position.ToString("F2")} isn't clear";
-            return false;
-        }
+        // Blocked on the way, or the end isn't clear.
+        if (!detector.ClearStraightPath(ctx.transform.position, position, target.Surface)) return false;
+        if (Complete && !detector.ClearStraightExit(position)) return false;
         if (detector.ClearStraightExit(position)) lastClear = position;
         Vector3 velocity = (position - ctx.transform.position) / Mathf.Max(dt, .001f);
         ctx.HorizontalVelocity = Vector3.ProjectOnPlane(velocity, Vector3.up);

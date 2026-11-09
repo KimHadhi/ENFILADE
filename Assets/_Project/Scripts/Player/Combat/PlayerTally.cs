@@ -27,6 +27,7 @@ public sealed class PlayerTally : MonoBehaviour
     public int Deaths { get; private set; }
     /// <summary>Kills chained in quick succession, as the score popup's double kills are but with more time between. In a room the host counts it for everyone (PlayerNetworkScore), so it reads the same on every PC.</summary>
     public int Streak { get; private set; }
+    /// <summary>The money they hold (won, Wallet.Balance on their own PC), the one number the scoreboard shows of it.</summary>
     public long Score { get; private set; }
     /// <summary>The ping players see (PingDisplay). The host's is 0.</summary>
     public int Ping { get; private set; }
@@ -77,7 +78,7 @@ public sealed class PlayerTally : MonoBehaviour
         if (player.IsLocal)
         {
             DisplayName = GameSettings.Current.DisplayName;
-            Score = CombatFeedHUD.TotalScore;
+            Score = Wallet.Balance;
         }
         bool downed = player.IsDowned, dead = player.IsDead;
         if (downed == wasDowned && dead == wasDead) return;

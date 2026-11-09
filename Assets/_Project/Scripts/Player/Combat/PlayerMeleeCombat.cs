@@ -62,10 +62,11 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
     public bool IsCharging => charging;
     public float ChargeRatio => charging ? Mathf.Clamp01(chargeTime / fullChargeTime) : 0f;
     public bool IsGuardBreaking => target != null;
+    // Pinned by a runner the fists do nothing, unless a melee perk lets them fight it lying there (PlayerHold.FightsPinned).
     private bool MovementBlocksAttack => player.IsParkour || player.IsDiving || player.IsSliding || player.IsDowned
         || player.CurrentState == PlayerMovement.MovementState.StepDodge
         || player.CurrentState == PlayerMovement.MovementState.DashPush
-        || player.IsLandingRecovery;
+        || (player.IsLandingRecovery && !player.FightsPinned) || (player.IsPinned && !player.FightsPinned);
     public bool IsActive => isActiveAndEnabled && slots != null && slots.UsesFists && player != null && player.IsInitialized && player.DamageReceiver.IsAlive;
     /// <summary>The feet are planted after a parry (real time): the legs give no speed, the hands are free.</summary>
     public bool IsRooted => IsActive && Time.unscaledTime < rootUntil;
@@ -269,6 +270,11 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
         if (IsActive) { fistAudio?.PlaySwing(); if (landed) fistAudio?.PlayHeavyHit(); }
         Elbowed?.Invoke(side);
     }
+    /// <summary>
+    /// On someone else's copy: their counter's back elbow (+1 right). Its fist pulls back as on their own screen (FistsView),
+    /// and the body's hands follow it. Their PC judged it, and its swing and hit sounds already came as fist sounds.
+    /// </summary>
+    internal void ShowElbow(int side) => Elbowed?.Invoke(side);
     private void Shove()
     {
         shoveSweep.Begin(player, aim, 3f, hitLayers, player.AbilitySettings.shoveActiveTime);

@@ -11,6 +11,11 @@ public readonly struct WeaponShot
     public readonly BulletLeg[] Later;
     public readonly Vector2 Recoil;
     public readonly int AmmoAfterShot;
+    /// <summary>
+    /// Which of the shot's pellets this is (WeaponData.Pellets); 0 for a single bullet. The shot itself (its sound, flash,
+    /// light, kick and brass) belongs to pellet 0; each pellet has its own trace, tracer and marks.
+    /// </summary>
+    public readonly int Pellet;
 
     public WeaponShot(
         long id,
@@ -19,7 +24,8 @@ public readonly struct WeaponShot
         AttackTraceResult trace,
         Vector2 recoil,
         int ammo,
-        BulletLeg[] later = null)
+        BulletLeg[] later = null,
+        int pellet = 0)
     {
         AttackId = id;
         Origin = origin;
@@ -28,6 +34,7 @@ public readonly struct WeaponShot
         Later = later;
         Recoil = recoil;
         AmmoAfterShot = ammo;
+        Pellet = pellet;
     }
 }
 
@@ -54,6 +61,12 @@ public sealed class WeaponController : MonoBehaviour
     [SerializeField] private bool drawRays;
 
     public WeaponRuntime Runtime { get; private set; }
+    /// <summary>
+    /// What the crosshair is on (the middle of the screen), this frame. The body turns the gun to point there (FPSBody's
+    /// GunConvergeLayer) and the shots go there from the muzzle. False until a ranged weapon has looked this frame.
+    /// </summary>
+    public Vector3 AimPoint { get; private set; }
+    public bool HasAimPoint { get; private set; }
     public WeaponData EquippedData => Runtime != null ? Runtime.Data : null;
     public WeaponShot LastShot { get; private set; }
     public float AimBlend { get; private set; }
@@ -68,6 +81,180 @@ public sealed class WeaponController : MonoBehaviour
     public event Action<bool> ReloadStarted;
     /// <summary>Reload finished and moved ammunition (not raised for a cancelled reload).</summary>
     public event Action ReloadCompleted;
+    /// <summary>A shell reload moved on: the next shell goes in, or its end (WeaponRuntime.ReloadStep).</summary>
+    public event Action<WeaponRuntime.ReloadStep> ReloadStepped;
+    /// <summary>B switched the held gun's fire mode.</summary>
+    public event Action<WeaponFireMode> FireModeChanged;
+    /// <summary>The customize menu (C) switched the held gun's sight.</summary>
+    public event Action SightChanged;
+    /// <summary>The customize menu put a muzzle or underbarrel part on, or L switched the flashlight.</summary>
+    public event Action AttachmentChanged;
+
+    /// <summary>The held gun goes away over this many seconds (its holster clip); PlayerWeaponSlots then draws the next.</summary>
+    public event Action<float> Holstering;
+    /// <summary>Y: the held gun is looked over (its inspect clip).</summary>
+    public event Action InspectStarted;
+    /// <summary>A shot, an aim, a reload or a move that needs the hands cut the look over short.</summary>
+    public event Action InspectStopped;
+    /// <summary>The gun is coming out (Draw Duration) or going away (Holster Duration): it can't fire, aim or reload.</summary>
+    public bool IsSwitching => switchLeft > 0f;
+    private float switchLeft, inspectLeft;
+    private bool holstering, inspecting;
+
+    /// <summary>
+    /// Puts the held gun away over its Holster Duration, ending a reload as Siege's swap does. Returns the seconds it takes,
+    /// or 0 when it goes at once (no holster time, nothing shown, a melee weapon).
+    /// </summary>
+    public float BeginHolster()
+    {
+        if (Runtime == null || Runtime.Data.Category == WeaponCategory.Melee || !ShowsWeapon || Runtime.Data.HolsterDuration <= 0f) return 0f;
+        if (holstering) return switchLeft;
+        StopInspecting();
+        Runtime.Interrupt();
+        AimBlend = 0f;
+        holstering = true;
+        switchLeft = Runtime.Data.HolsterDuration;
+        Holstering?.Invoke(switchLeft);
+        return switchLeft;
+    }
+
+    /// <summary>Y: looks the held gun over, if it is up and idle.</summary>
+    public void Inspect()
+    {
+        if (Runtime == null || Runtime.Data.Category == WeaponCategory.Melee || !ShowsWeapon || inspecting || switchLeft > 0f
+            || Runtime.IsReloading || AimBlend > .01f || IsHighReady) return;
+        inspecting = true;
+        inspectLeft = 10f;
+        InspectStarted?.Invoke();
+    }
+
+    /// <summary>How long the look over the body plays (FPSBody, from its clip); it is over by itself after that.</summary>
+    internal void SetInspectLength(float seconds)
+    {
+        if (!inspecting) return;
+        if (seconds <= 0f) { inspecting = false; return; }
+        inspectLeft = seconds;
+    }
+
+    private void StopInspecting()
+    {
+        if (!inspecting) return;
+        inspecting = false;
+        InspectStopped?.Invoke();
+    }
+
+    /// <summary>B: the held gun's next fire mode (WeaponData Fire Modes), unless it is being reloaded.</summary>
+    public void CycleFireMode()
+    {
+        if (Runtime == null || Runtime.IsReloading || Runtime.Data.Category == WeaponCategory.Melee) return;
+        if (Runtime.CycleFireMode()) FireModeChanged?.Invoke(Runtime.FireMode);
+    }
+
+    /// <summary>The gun of ours drawn now (its sights and parts), for the customize menu; null without one.</summary>
+    internal FPSGun HeldGun => presentation is FPSBody body ? body.Held : null;
+
+    /// <summary>The customize menu is open for this player: the body holds the gun out before the eyes to show it.</summary>
+    internal bool Customizing { get; set; }
+
+    /// <summary>Why the held gun's parts can't be changed now, or null (the customize menu says it).</summary>
+    internal string CustomizeRefusal => Runtime == null || EquippedData == null ? "총을 들고 있지 않아요"
+        : Runtime.IsReloading ? "장전 중에는 바꿀 수 없어요" : IsSwitching ? "총을 꺼내는 중이에요" : null;
+
+    /// <summary>
+    /// The customize menu (C, GunCustomizeMenu) puts sight, muzzle part or underbarrel part <paramref name="index"/> on the
+    /// held gun. False when it can't be changed now or it is on already; the click plays as for a sight swap.
+    /// </summary>
+    internal bool ChooseSight(int index)
+    {
+        if (CustomizeRefusal != null || !(presentation is FPSBody body) || !body.ShowSight(EquippedData, index)) return false;
+        SightChanged?.Invoke();
+        return true;
+    }
+
+    internal bool ChooseMuzzle(int index)
+    {
+        if (CustomizeRefusal != null || !(presentation is FPSBody body) || !body.ShowMuzzle(EquippedData, index)) return false;
+        AttachmentChanged?.Invoke();
+        return true;
+    }
+
+    internal bool ChooseUnderbarrel(int index)
+    {
+        if (CustomizeRefusal != null || !(presentation is FPSBody body) || !body.ShowUnderbarrel(EquippedData, index)) return false;
+        AttachmentChanged?.Invoke();
+        return true;
+    }
+
+    internal bool ChooseGrip(int index)
+    {
+        if (CustomizeRefusal != null || !(presentation is FPSBody body) || !body.ShowGrip(EquippedData, index)) return false;
+        AttachmentChanged?.Invoke();
+        return true;
+    }
+
+    /// <summary>The held gun's grip (-1 for no choice), for friends' PCs, and a friend's copy taking theirs.</summary>
+    public int GripIndex => presentation is FPSBody body && EquippedData != null ? body.GripOf(EquippedData) : -1;
+
+    internal void ShowGrip(int index)
+    {
+        if (presentation is FPSBody body && EquippedData != null) body.ShowGrip(EquippedData, index);
+    }
+
+    /// <summary>The held gun's shown sight (GunSights), -1 for a gun without a choice of sights: for friends' PCs.</summary>
+    public int SightIndex => presentation is FPSBody body && EquippedData != null ? body.SightOf(EquippedData) : -1;
+
+    /// <summary>A friend's copy: the sight their PC shows on the held gun (PlayerNetworkCombat).</summary>
+    internal void ShowSight(int index)
+    {
+        if (presentation is FPSBody body && EquippedData != null) body.ShowSight(EquippedData, index);
+    }
+
+    /// <summary>A friend's copy: the fire mode their PC has the held gun in (PlayerNetworkCombat).</summary>
+    internal void ShowFireMode(WeaponFireMode mode) => Runtime?.ShowFireMode(mode);
+
+    /// <summary>L: the held gun's flashlight on or off.</summary>
+    public void ToggleLight()
+    {
+        if (Runtime == null || !(presentation is FPSBody body)) return;
+        if (body.ToggleLight()) AttachmentChanged?.Invoke();
+    }
+
+    /// <summary>
+    /// The held gun wears a suppressor: its shot is heard by zombies at the gun's Suppressed Noise share, sounds quieter and
+    /// throws no flash or light (WeaponFeedback, MuzzleFlash, MuzzleLight).
+    /// </summary>
+    public bool Suppressed => presentation is FPSBody body && body.HeldSuppressed;
+
+    /// <summary>The held gun's muzzle and underbarrel parts (-1 for no choice) and its flashlight, for friends' PCs.</summary>
+    public int MuzzleIndex => presentation is FPSBody body && EquippedData != null ? body.MuzzleOf(EquippedData) : -1;
+    public int UnderbarrelIndex => presentation is FPSBody body && EquippedData != null ? body.UnderbarrelOf(EquippedData) : -1;
+    public bool LightOn => presentation is FPSBody body && EquippedData != null && body.LightOf(EquippedData);
+
+    /// <summary>A friend's copy: the parts and flashlight their PC has on the held gun (PlayerNetworkCombat).</summary>
+    internal void ShowMuzzle(int index)
+    {
+        if (presentation is FPSBody body && EquippedData != null) body.ShowMuzzle(EquippedData, index);
+    }
+
+    internal void ShowUnderbarrel(int index)
+    {
+        if (presentation is FPSBody body && EquippedData != null) body.ShowUnderbarrel(EquippedData, index);
+    }
+
+    internal void ShowLight(bool on)
+    {
+        if (presentation is FPSBody body && EquippedData != null) body.ShowLight(EquippedData, on);
+    }
+
+    // The held gun's grip (GunAttachments).
+    private GunAttachments.Kind Grip => presentation is FPSBody body ? body.HeldGripKind : GunAttachments.Kind.None;
+
+    /// <summary>How long the sight takes to come up (s): the gun's Ads Transition Time, sooner with an angled grip on.</summary>
+    public float AdsTime => weaponData == null ? .16f
+        : weaponData.AdsTransitionTime * (Grip == GunAttachments.Kind.AngledGrip ? weaponData.GripAimTime : 1f);
+
+    // How far zombies hear this gun's shot: a suppressor cuts it to the gun's share.
+    private float ShotNoise => weaponData.NoiseRadius * (Suppressed ? weaponData.SuppressedNoise : 1f);
     public Transform MuzzlePoint => muzzlePoint;
     public Transform AimOrigin => aimOrigin;
     /// <summary>The posed gun model root; the body's hands hold it at the weapon's grip points.</summary>
@@ -218,15 +405,18 @@ public sealed class WeaponController : MonoBehaviour
     /// On someone else's copy: they fired. The muzzle, the tracer, the sound and the bullet's mark happen here, the same
     /// way as for this PC's own shots; their PC already judged the hit.
     /// </summary>
-    internal void ShowShot(Vector3 origin, Vector3 direction)
+    internal void ShowShot(Vector3 origin, Vector3 direction, int pellet = 0)
     {
         if (Runtime == null || weaponData == null) return;
         // The same path their PC drew, walls passed and ricochets included: the randomness comes from the shot itself.
         var look = new DamageHit(0, 0f, DamageKind.Attack, origin, direction, owner, method: DamageMethod.Bullet);
         var trace = AttackTrace.Bullet(look, origin, direction, weaponData.Range, hitLayers, 1f, weaponData.Penetration, false, out BulletLeg[] later);
-        LastShot = new WeaponShot(DamageHit.NewAttackId(), muzzlePoint != null ? muzzlePoint.position : origin, direction, trace, Vector2.zero, Runtime.Ammo, later);
+        LastShot = new WeaponShot(DamageHit.NewAttackId(), muzzlePoint != null ? muzzlePoint.position : origin, direction, trace, Vector2.zero, Runtime.Ammo, later, pellet);
+        // The host's zombies hear a friend's shot as it reaches this PC (ZombieMind), once per shot however many pellets.
+        if (pellet == 0) Noise.Make(origin, ShotNoise, owner);
         ShotFired?.Invoke(LastShot);
-        presentation?.OnShot(weaponData, Vector2.zero);
+        // The gun's kick once per shot, however many pellets it threw.
+        if (pellet == 0) presentation?.OnShot(weaponData, Vector2.zero);
     }
 
     public void Equip(WeaponRuntime weapon)
@@ -238,6 +428,10 @@ public sealed class WeaponController : MonoBehaviour
 
         Runtime = weapon;
         weaponData = weapon != null ? weapon.Data : null;
+        // Coming out: no shot, aim or reload until it is up (Draw Duration, its draw clip on the body).
+        StopInspecting();
+        holstering = false;
+        switchLeft = weapon != null && weapon.Data.Category != WeaponCategory.Melee ? weapon.Data.DrawDuration : 0f;
         savedAmmoData = weaponData;
         savedAmmo = weapon != null ? weapon.Ammo : -1;
         savedReserve = weapon != null ? weapon.ReserveAmmo : -1;
@@ -249,7 +443,9 @@ public sealed class WeaponController : MonoBehaviour
     internal void ProcessFrame(float dt, WeaponInputFrame frame)
     {
         if (dt <= 0f || float.IsNaN(dt) || float.IsInfinity(dt)) return;
-        if (owner != null && owner.GetComponent<PlayerMovement>()?.CombatInputLocked == true)
+        // Held by a shambler the gun can't be used either (PlayerHold).
+        var mover = owner != null ? owner.GetComponent<PlayerMovement>() : null;
+        if (mover != null && (mover.CombatInputLocked || mover.IsHeld))
         { Runtime?.Interrupt(); ResetPresentation(); return; }
         if (Runtime == null || Runtime.Data.Category == WeaponCategory.Melee ||
             aimOrigin == null ||
@@ -266,11 +462,20 @@ public sealed class WeaponController : MonoBehaviour
         }
         bool stepDodging = dodge != null && dodge.Kind == DodgeKind.Step && dodge.IsInvulnerable;
         shoveRecovery = Mathf.Max(0f, shoveRecovery - dt);
+        switchLeft = Mathf.Max(0f, switchLeft - dt);
         bloom = Mathf.MoveTowards(bloom, 0f, weaponData.BloomRecovery * dt);
         timeSinceShot += dt;
         if (timeSinceShot > .35f) recoilIndex = 0;
-        bool bodyAction = bareHandsLeft > 0f || (movement != null && (movement.IsParkour
+        // Coming out or going away holds the gun back like a move that needs the hands.
+        bool bodyAction = bareHandsLeft > 0f || switchLeft > 0f || (movement != null && (movement.IsParkour
             || movement.CurrentState == PlayerMovement.MovementState.DashPush || movement.IsLandingRecovery));
+        // A look over the gun ends by itself, or as soon as the hands are wanted for anything else.
+        if (inspecting)
+        {
+            inspectLeft -= dt;
+            if (inspectLeft <= 0f) inspecting = false;
+            else if (frame.FirePressed || frame.FireHeld || frame.AimHeld || frame.ReloadPressed || bodyAction || stepDodging) StopInspecting();
+        }
         // Asked for like an R press, so whatever holds a reload back now holds this one back until it lets go.
         if (AutoReloadDue(dt)) frame = new WeaponInputFrame(frame.FirePressed, frame.FireHeld, true, frame.AimHeld);
         if (survivalInterrupted || bodyAction || stepDodging || shoveRecovery > 0f)
@@ -278,8 +483,10 @@ public sealed class WeaponController : MonoBehaviour
         survivalInterrupted = false;
         bool aiming = frame.AimHeld && !Runtime.IsReloading && !bodyAction && shoveRecovery <= 0f
             && !stepDodging && !frame.ReloadPressed;
-        float nextAim = Mathf.MoveTowards(AimBlend, aiming ? 1f : 0f, dt / weaponData.AdsTransitionTime);
+        float nextAim = Mathf.MoveTowards(AimBlend, aiming ? 1f : 0f, dt / AdsTime);
         Vector3 target = AimTarget(weaponData.Range);
+        AimPoint = target;
+        HasAimPoint = true;
         // Probe the requested sight position even while high ready suppresses ADS. Otherwise
         // a clear hip pose and blocked ADS pose can alternate, causing zoom/ready flicker.
         Vector3 nominalMuzzle = presentation != null ? presentation.Prepare(PoseView, weaponData, aiming ? 1f : nextAim) : PoseView.position;
@@ -313,71 +520,98 @@ public sealed class WeaponController : MonoBehaviour
         { frame = new WeaponInputFrame(true, frame.FireHeld, frame.ReloadPressed, frame.AimHeld); queuedFireLeft = 0f; }
         else queuedFireLeft = Mathf.Max(0f, queuedFireLeft - dt);
         bool reloadingBeforeTick = Runtime.IsReloading;
+        // The trigger during a shell reload ends it once the shell in hand is in (KINEMATION's TacticalShotgun plays its end).
+        if (reloadingBeforeTick && !cannotFire && (frame.FirePressed || frame.FireHeld)) Runtime.StopAfterShell();
         if (cannotFire || reloadingBeforeTick)
             frame = new WeaponInputFrame(false, false, frame.ReloadPressed, frame.AimHeld);
         UpdateSpread();
 
         bool wasReloading = Runtime.IsReloading;
+        int stepsBefore = Runtime.StepCount;
         int shots = Runtime.Tick(dt, frame);
 
         if (!wasReloading && Runtime.IsReloading) ReloadStarted?.Invoke(Runtime.IsEmptyReload);
         else if (wasReloading && !Runtime.IsReloading) ReloadCompleted?.Invoke();
+        else if (Runtime.IsReloading && Runtime.StepCount != stepsBefore) ReloadStepped?.Invoke(Runtime.Step);
         if (shots == 0 && frame.FirePressed && Runtime.Ammo == 0 && !Runtime.IsReloading) DryFired?.Invoke();
 
         for (int i = 0; i < shots; i++)
         {
-            long id = DamageHit.NewAttackId();
-
             Vector3 origin = muzzlePoint != null ? muzzlePoint.position : PoseView.position;
             target = AimTarget(weaponData.Range);
             if (WeaponAimSolver.IsObstructed(owner, PoseView, origin, target, hitLayers))
             { Runtime.RefundUnfiredShots(shots - i); IsHighReady = true; AimBlend = 0f; break; }
-            Vector3 direction = WeaponAimSolver.SpreadDirection((target - origin).normalized, CurrentSpread, UnityEngine.Random.insideUnitCircle);
-            Vector2 recoil = weaponData.RecoilAt(recoilIndex++) * Mathf.Lerp(1f, .65f, AimBlend)
+            // From the muzzle to what the crosshair is on, which stays in the middle of the screen: the gun turns to point
+            // there (FPSBody's GunConvergeLayer), as the gun did before KINEMATION (user, 2026-11-09: "총이 조준선을 옮기면
+            // 안 되고 조준선 쪽으로 총이 이동해야지").
+            Vector3 toSight = (target - origin).normalized;
+            Vector3 aimed = WeaponAimSolver.SpreadDirection(toSight, CurrentSpread, UnityEngine.Random.insideUnitCircle);
+            // Siege's recoil is nearly the same down the sights as from the hip; aiming only steadies it a little.
+            Vector2 recoil = weaponData.RecoilKick(recoilIndex++) * Mathf.Lerp(1f, .85f, AimBlend)
                 * (Crouched ? weaponData.CrouchRecoil : 1f);
+            // A vertical grip steadies the climb (Siege's).
+            if (Grip == GunAttachments.Kind.VerticalGrip) recoil.x *= weaponData.GripRecoil;
 
-            var attack = new DamageHit(
-                id,
-                weaponData.Damage,
-                DamageKind.Attack,
-                origin,
-                direction,
-                owner,
-                postureDamage: weaponData.PostureDamage,
-                method: DamageMethod.Bullet);
-
-            var trace = AttackTrace.Bullet(
-                attack,
-                origin,
-                direction,
-                weaponData.Range,
-                hitLayers, weaponData.HeadshotMultiplier, weaponData.Penetration, true, out BulletLeg[] later);
-
-            var shot = new WeaponShot(
-                id,
-                origin,
-                direction,
-                trace,
-                recoil,
-                Runtime.Ammo + shots - i - 1,
-                later);
-
-            LastShot = shot;
-            PushProp(trace, direction, 1f);
-            if (later != null)
-                foreach (var leg in later) PushProp(leg.Trace, leg.Onward.Direction, leg.Share);
-
-            if (drawRays)
+            // A shotgun's pellets each fly their own way round where the shot goes, each a bullet of its own (own attack,
+            // own hit); one shot of a single-bullet gun is pellet 0 on its own.
+            int pellets = weaponData.Pellets;
+            for (int pellet = 0; pellet < pellets; pellet++)
             {
-                Debug.DrawRay(
-                    origin,
-                    trace.End - origin,
-                    trace.HasHit ? Color.red : Color.cyan,
-                    0.2f);
-            }
+                long id = DamageHit.NewAttackId();
+                Vector3 direction = pellets > 1
+                    ? WeaponAimSolver.SpreadDirection(aimed, weaponData.PelletSpread, UnityEngine.Random.insideUnitCircle)
+                    : aimed;
 
-            // Presentation (WeaponFeedback, MuzzleEffects, impact and blood effects) subscribes here.
-            ShotFired?.Invoke(shot);
+                // Body damage falls off with range, as in Rainbow Six Siege; a headshot kills at any range there, so the
+                // head's multiplier makes up what the range took (WeaponData.FalloffAt).
+                float falloff = AttackTrace.FirstExternalHit(owner, origin, direction, weaponData.Range, hitLayers, out RaycastHit first)
+                    ? weaponData.FalloffAt(first.distance) : 1f;
+                var attack = new DamageHit(
+                    id,
+                    weaponData.Damage * falloff,
+                    DamageKind.Attack,
+                    origin,
+                    direction,
+                    owner,
+                    postureDamage: weaponData.PostureDamage,
+                    method: DamageMethod.Bullet);
+
+                var trace = AttackTrace.Bullet(
+                    attack,
+                    origin,
+                    direction,
+                    weaponData.Range,
+                    hitLayers, weaponData.HeadshotMultiplier / Mathf.Max(.01f, falloff), weaponData.Penetration, true, out BulletLeg[] later);
+
+                var shot = new WeaponShot(
+                    id,
+                    origin,
+                    direction,
+                    trace,
+                    recoil,
+                    Runtime.Ammo + shots - i - 1,
+                    later,
+                    pellet);
+
+                LastShot = shot;
+                PushProp(trace, direction, 1f);
+                if (later != null)
+                    foreach (var leg in later) PushProp(leg.Trace, leg.Onward.Direction, leg.Share);
+
+                if (drawRays)
+                {
+                    Debug.DrawRay(
+                        origin,
+                        trace.End - origin,
+                        trace.HasHit ? Color.red : Color.cyan,
+                        0.2f);
+                }
+
+                // Zombies hear it (ZombieMind), once per shot however many pellets.
+                if (shot.Pellet == 0) Noise.Make(origin, ShotNoise, owner);
+                // Presentation (WeaponFeedback, MuzzleEffects, impact and blood effects) subscribes here.
+                ShotFired?.Invoke(shot);
+            }
             bloom = Mathf.Min(weaponData.MaxBloom, bloom + weaponData.BloomPerShot);
             timeSinceShot = 0f;
             look?.ApplyRecoil(recoil, weaponData);
@@ -431,8 +665,11 @@ public sealed class WeaponController : MonoBehaviour
     {
         float moving = movement == null ? 0f : Mathf.Clamp01(new Vector2(movement.ActualVelocity.x, movement.ActualVelocity.z).magnitude / Mathf.Max(.1f, movement.WalkSpeed));
         float air = movement != null && !movement.IsGrounded ? weaponData.AirborneSpread : 0f;
+        // Down the sights the shot goes where the sight is, as Rainbow Six Siege's does: walking and firing add nothing
+        // there, the recoil climbing the view is the whole of a spray's difficulty. Only a jump still throws it off, at half.
+        float loose = 1f - AimBlend;
         CurrentSpread = (Mathf.Lerp(weaponData.HipSpread, weaponData.AdsSpread, AimBlend)
-            + (bloom + moving * weaponData.MovingSpread + air) * Mathf.Lerp(1f, .25f, AimBlend))
+            + (bloom + moving * weaponData.MovingSpread) * loose + air * Mathf.Lerp(1f, .5f, AimBlend))
             * (Crouched ? weaponData.CrouchSpread : 1f);
     }
     private void UpdateCrosshair()
@@ -447,6 +684,7 @@ public sealed class WeaponController : MonoBehaviour
     private void ResetPresentation()
     {
         AimBlend = bloom = shoveRecovery = CurrentSpread = raisedHoldLeft = queuedFireLeft = emptyReady = 0f; recoilIndex = 0; IsHighReady = false;
+        HasAimPoint = false;
         presentation?.Reset(); crosshair?.SetDynamicSpread(0f);
         crosshair?.SetCombatHidden(false);
         cameraEffects?.RefreshWeaponFov();

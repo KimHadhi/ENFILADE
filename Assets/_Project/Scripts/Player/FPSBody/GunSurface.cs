@@ -54,6 +54,8 @@ internal sealed class GunSurface
         bool unreadable = false;
         foreach (var renderer in gun.GetComponentsInChildren<Renderer>(true))
         {
+            // Only the parts the gun wears now: a grip, sight or muzzle waiting off on its mount isn't there to hold.
+            if (!Worn(renderer.transform, gun)) continue;
             Mesh mesh = null;
             Matrix4x4 toWorld;
             bool baked = false;
@@ -84,6 +86,14 @@ internal sealed class GunSurface
         if (unreadable)
             Debug.LogWarning($"[GunSurface] {gun.name}: a mesh has Read/Write off, so the hands can't touch that part of the gun.", gun);
         return new GunSurface(gun, points);
+    }
+
+    // On from the part up to the gun, whether the gun itself is on or not.
+    private static bool Worn(Transform part, Transform gun)
+    {
+        for (var at = part; at != null && at != gun; at = at.parent)
+            if (!at.gameObject.activeSelf) return false;
+        return true;
     }
 
     private Vector3 Local(Vector3 world) => Quaternion.Inverse(gun.rotation) * (world - gun.position);

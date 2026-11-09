@@ -56,10 +56,11 @@ public sealed class ParkourDetector
         bottom = feet + Vector3.up * (radius + 0.04f);
         top = feet + Vector3.up * Mathf.Max(radius + 0.04f, height - radius);
     }
-    public bool ClearCapsule(Vector3 feet, float height)
+    public bool ClearCapsule(Vector3 feet, float height) => ClearCapsule(feet, height, ctx.groundLayers);
+    private bool ClearCapsule(Vector3 feet, float height, int layers)
     {
         Capsule(feet, height, out Vector3 a, out Vector3 b, out float r);
-        return !Physics.CheckCapsule(a, b, r, ctx.groundLayers, QueryTriggerInteraction.Ignore);
+        return !Physics.CheckCapsule(a, b, r, layers, QueryTriggerInteraction.Ignore);
     }
     public bool ClearStraightExit(Vector3 feet)
     {
@@ -70,14 +71,23 @@ public sealed class ParkourDetector
         Vector3 b = feet + Vector3.up * Mathf.Max(r + 0.04f, ctx.StandingColliderHeight - r);
         return !Physics.CheckCapsule(a, b, r, ctx.groundLayers, QueryTriggerInteraction.Ignore);
     }
-    public bool ClearPath(Vector3 start, Vector3 end, float height)
+    public bool ClearPath(Vector3 start, Vector3 end, float height) => ClearPath(start, end, height, ctx.groundLayers);
+
+    /// <summary>
+    /// ClearPath with the living enemies left out: on a ladder a zombie pressed against the climber (close enough to hit
+    /// them) is no ceiling, and counting it held every step up for as long as it stayed there.
+    /// </summary>
+    public bool ClearPathPastEnemies(Vector3 start, Vector3 end, float height)
+        => ClearPath(start, end, height, ctx.groundLayers & ~LayerMask.GetMask("Enemy"));
+
+    private bool ClearPath(Vector3 start, Vector3 end, float height, int layers)
     {
-        if (!ClearCapsule(end, height)) return false;
+        if (!ClearCapsule(end, height, layers)) return false;
         Vector3 delta = end - start;
         if (delta.sqrMagnitude < 0.0001f) return true;
         Capsule(start, height, out Vector3 a, out Vector3 b, out float r);
         return !Physics.CapsuleCast(a, b, r, delta.normalized, delta.magnitude,
-            ctx.groundLayers, QueryTriggerInteraction.Ignore);
+            layers, QueryTriggerInteraction.Ignore);
     }
     public bool HasTread(Vector3 feet, Collider surface)
         => Physics.Raycast(feet + Vector3.up * 0.05f, Vector3.down, out RaycastHit hit, 0.3f,

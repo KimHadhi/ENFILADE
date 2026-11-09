@@ -73,9 +73,9 @@ public sealed class AmmoHUD : MonoBehaviour
         magazine.color = Color.Lerp(empty || low ? tint : Color.white, accent, shotPulse * .35f);
         magazine.rectTransform.localScale = Vector3.one * (1f + shotPulse * .035f);
         reserve.color = runtime.ReserveAmmo == 0 ? lowAmmo : Color.white;
-        mode.text = runtime.Data.FireMode == WeaponFireMode.Automatic ? "AUTO"
-            : runtime.Data.FireMode == WeaponFireMode.Burst ? "BURST" : "SEMI";
-        silhouette.Kind = runtime.Data.FireMode == WeaponFireMode.Automatic ? 1 : 2;
+        mode.text = runtime.FireMode == WeaponFireMode.Automatic ? "AUTO"
+            : runtime.FireMode == WeaponFireMode.Burst ? "BURST" : "SEMI";
+        silhouette.Kind = runtime.FireMode == WeaponFireMode.Automatic ? 1 : 2;
 
         if (runtime.IsReloading)
         {

@@ -10,7 +10,7 @@ public struct EnemyHitMessage : INetworkSerializeByMemcpy
 
     private Vector3 point, direction, origin;
     private float amount, postureDamage;
-    private byte kind, method;
+    private byte kind, method, part;
     private Marks marks;
 
     public EnemyHitMessage(in DamageHit hit)
@@ -22,6 +22,7 @@ public struct EnemyHitMessage : INetworkSerializeByMemcpy
         postureDamage = hit.PostureDamage;
         kind = (byte)hit.Kind;
         method = (byte)hit.Method;
+        part = (byte)hit.Part;
         marks = Marks.None;
         if (hit.CanBeGuarded) marks |= Marks.Guardable;
         if (hit.IsComboFinisher) marks |= Marks.Finisher;
@@ -32,7 +33,7 @@ public struct EnemyHitMessage : INetworkSerializeByMemcpy
 
     public DamageHit ToHit(GameObject source) => new DamageHit(DamageHit.NewAttackId(), amount, (DamageKind)kind, point, direction, source,
         Has(Marks.Guardable), postureDamage, Has(Marks.Finisher), Has(Marks.Critical), Has(Marks.Counter), (DamageMethod)method,
-        Has(Marks.HasOrigin) ? origin : (Vector3?)null);
+        Has(Marks.HasOrigin) ? origin : (Vector3?)null, part: (BodyPart)part);
 
     private bool Has(Marks mark) => (marks & mark) != 0;
 }

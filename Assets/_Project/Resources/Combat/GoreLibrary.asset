@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6cb331277b1b494f871c6d738860efef, type: 3}
+  m_Name: GoreLibrary
+  m_EditorClassIdentifier:
+  guts:
+  - {fileID: 5500464533926985092, guid: 2a453fd06ad6ac24d9dbcae7c9024173, type: 3}
+  - {fileID: 1679759043721151081, guid: bc8ee98d1ae829e42b91d9762d169d06, type: 3}
+  - {fileID: 7464397538473042588, guid: 3aa6a30dadf48bd44b7f4cd7bc33abc5, type: 3}
+  - {fileID: 2038529753932151024, guid: f9f2c9067fa56ab4399b6d677b3bf004, type: 3}
+  - {fileID: 2945303980511135697, guid: 3592dd6d288a21443b6681a939d4576c, type: 3}
+  splats:
+  - {fileID: 2100000, guid: 8c782c560fa74c44b95475942d215350, type: 2}
+  - {fileID: 2100000, guid: 8f1c9b462e2f5e54fa41bf8856d62522, type: 2}
+  - {fileID: 2100000, guid: 519589c16f24cc24d8fbe0557d47f34e, type: 2}
+  - {fileID: 2100000, guid: 710b6c107a640e84a8f12c3ac451a9a9, type: 2}

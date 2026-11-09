@@ -21,7 +21,8 @@ internal sealed class ArmIK
     public Vector3 PalmFacing => grip.PalmFacing;
     public Vector3 FingersForward => grip.FingersForward;
 
-    public void GripSurface(GunSurface surface, float clearance, float weight) => grip.Surface(surface, clearance, weight);
+    /// <summary>The hand takes one of our gun-holding shapes (HandGrip.Wear), going to another as hold falls.</summary>
+    public void WearShape(HandGrip.Shape on, HandGrip.Shape off, float hold, float weight) => grip.Wear(on, off, hold, weight);
     public float Reach => Vector3.Distance(upper.position, lower.position) + Vector3.Distance(lower.position, hand.position);
 
     private ArmIK(Transform shoulder, Transform upper, Transform lower, Transform hand, Quaternion handFromFrame, float palmLength, HandGrip grip)
@@ -67,6 +68,9 @@ internal sealed class ArmIK
     public void PrepareThumb(float underPalm, float bend) => grip.PrepareThumb(underPalm, bend);
 
     public void RelaxThumb(float weight) => grip.RelaxThumb(weight);
+
+    /// <summary>Every finger joint back within a hand's reach (HandGrip.KeepHuman).</summary>
+    public void KeepFingersHuman() => grip.KeepHuman();
 
     public void ClearLedgeSkin() => grip.ClearLedgeSkin();
 

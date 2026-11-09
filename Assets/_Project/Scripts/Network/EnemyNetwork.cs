@@ -17,14 +17,23 @@ public sealed class EnemyNetwork : NetworkBehaviour
         public Vector3 Fall;
         public float Posture;
         public bool Staggered, Held, Down;
+        /// <summary>A zombie's ZombieMood, for its copies to show (0, awake, for anything else).</summary>
+        public byte Mood;
+        /// <summary>A shambler holds a player (ZombieGrip), or kneels eating one who lies on the ground.</summary>
+        public bool Holding, Feeding;
     }
 
     private const float ConditionInterval = .1f;
     private readonly NetworkVariable<float> health = new NetworkVariable<float>();
     private readonly NetworkVariable<Condition> condition = new NetworkVariable<Condition>();
+    // A zombie's ZombieKind: its copies time their own swing by it.
+    private readonly NetworkVariable<byte> kind = new NetworkVariable<byte>();
+    private ZombieType type;
+    private ZombieGrip grip;
     private EnemyHealth enemy;
     private EnemyCombatAI combat;
     private MeleeCombatTarget target;
+    private ZombieMind mind;
     private float pace = 1f, paceLeft;
 
     /// <summary>This PC only shows the enemy; the host runs it.</summary>
@@ -43,13 +52,19 @@ public sealed class EnemyNetwork : NetworkBehaviour
         enemy = GetComponent<EnemyHealth>();
         combat = GetComponent<EnemyCombatAI>();
         target = GetComponent<MeleeCombatTarget>();
+        mind = GetComponent<ZombieMind>();
+        type = GetComponent<ZombieType>();
+        grip = GetComponent<ZombieGrip>();
         condition.SetUpdateTraits(new NetworkVariableUpdateTraits { MinSecondsBetweenUpdates = ConditionInterval });
         if (IsServer)
         {
             health.Value = enemy.Health;
             condition.Value = ReadCondition();
+            if (type != null) kind.Value = (byte)type.Kind;
             return;
         }
+        if (type != null) type.Show((ZombieKind)kind.Value);
+        kind.OnValueChanged += OnKindChanged;
         if (TryGetComponent(out EnemyChaseAI chase)) chase.enabled = false;
         if (TryGetComponent(out NavMeshAgent agent)) agent.enabled = false;
         health.OnValueChanged += OnHealthChanged;
@@ -62,6 +77,18 @@ public sealed class EnemyNetwork : NetworkBehaviour
     {
         health.OnValueChanged -= OnHealthChanged;
         condition.OnValueChanged -= OnConditionChanged;
+        kind.OnValueChanged -= OnKindChanged;
+    }
+
+    private void OnKindChanged(byte previous, byte current)
+    {
+        if (type != null) type.Show((ZombieKind)current);
+    }
+
+    /// <summary>The host made its zombie this kind after it appeared (/spawn n runner): its copies follow.</summary>
+    internal void ShareKind(ZombieKind value)
+    {
+        if (IsSpawned && IsServer) kind.Value = (byte)value;
     }
 
     private void Update()
@@ -76,12 +103,21 @@ public sealed class EnemyNetwork : NetworkBehaviour
     private Condition ReadCondition() => new Condition
     {
         Fall = target.FallDirection, Posture = Mathf.Round(target.Posture), Staggered = target.IsStaggered, Held = target.IsHeld,
-        Down = target.IsKnockedDown
+        // Lying, not getting up: a zombie's copies start getting up when the host's does (ZombieBody).
+        Down = target.IsLying,
+        Mood = mind != null ? (byte)mind.Mood : (byte)0,
+        Holding = grip != null && grip.IsHolding,
+        Feeding = grip != null && grip.Feeding
     };
 
     private void OnHealthChanged(float previous, float current) => enemy.ShowHealth(current);
     private void OnConditionChanged(Condition previous, Condition current) => Show(current);
-    private void Show(in Condition now) => target.ShowCondition(now.Posture, now.Staggered, now.Held, now.Down, now.Fall);
+    private void Show(in Condition now)
+    {
+        target.ShowCondition(now.Posture, now.Staggered, now.Held, now.Down, now.Fall);
+        if (mind != null) mind.ShowMood(now.Mood);
+        if (grip != null) grip.ShowHolding(now.Holding, now.Feeding);
+    }
 
     /// <summary>This PC's player hit its copy: the host applies it for real.</summary>
     internal void SendHit(in DamageHit hit) => HitRpc(new EnemyHitMessage(hit));
@@ -102,11 +138,11 @@ public sealed class EnemyNetwork : NetworkBehaviour
     }
 
     /// <summary>The host's enemy began an attack on this player.</summary>
-    internal void AnnounceWindup(PlayerMovement victim, int combo)
+    internal void AnnounceWindup(PlayerMovement victim, int combo, AttackMove move)
     {
         if (!IsSpawned) return;
         ulong client = victim.TryGetComponent(out NetworkObject player) ? player.OwnerClientId : NetworkManager.ServerClientId;
-        WindupRpc(client, combo);
+        WindupRpc(client, combo, (byte)move);
     }
 
     internal void AnnounceCancel()
@@ -151,7 +187,7 @@ public sealed class EnemyNetwork : NetworkBehaviour
     }
 
     [Rpc(SendTo.NotServer)]
-    private void WindupRpc(ulong victim, int combo) => combat.ShowWindup(victim == NetworkManager.LocalClientId, combo);
+    private void WindupRpc(ulong victim, int combo, byte move) => combat.ShowWindup(victim == NetworkManager.LocalClientId, combo, (AttackMove)move);
 
     [Rpc(SendTo.NotServer)]
     private void CancelRpc() => combat.CancelAttack();

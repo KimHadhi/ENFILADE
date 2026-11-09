@@ -116,6 +116,33 @@ public sealed partial class PlayerMovement : MonoBehaviour
     /// <summary>On the ground, crawling and waiting to be got up (PlayerLife). Prone, and the prone controls for getting up do nothing.</summary>
     public bool IsDowned => DamageReceiver != null && DamageReceiver.IsDowned;
     public bool IsDead => DamageReceiver != null && !DamageReceiver.IsAlive;
+    private PlayerHold hold;
+    /// <summary>A shambler holds them (PlayerHold): they can't step anywhere or use a gun, but can shove or punch it off.</summary>
+    public bool IsHeld
+    {
+        get
+        {
+            if (hold == null) hold = GetComponent<PlayerHold>();
+            return hold != null && hold.IsHeld;
+        }
+    }
+    private bool shownPinned;
+    /// <summary>
+    /// A runner pins them flat on their back (PlayerHold, G&B-2): held, and they can't fight it unless FightsPinned. On
+    /// another PC, what their own PC says (PlayerNetworkCombat).
+    /// </summary>
+    public bool IsPinned
+    {
+        get
+        {
+            if (hold == null) hold = GetComponent<PlayerHold>();
+            return hold != null ? hold.IsPinned : shownPinned;
+        }
+    }
+    /// <summary>Pinned, but a melee class perk lets them fight the runner themselves (PlayerHold.FightsPinned).</summary>
+    public bool FightsPinned => IsPinned && hold != null && hold.FightsPinned;
+    /// <summary>Another PC: whether their own PC has them pinned (PlayerNetworkCombat).</summary>
+    internal void ShowPinned(bool pinned) => shownPinned = pinned;
     /// <summary>This player's frame time: in a room, slow motion runs on them alone (CombatTimeEffects).</summary>
     public float DeltaTime => Time.deltaTime * Pace;
     /// <summary>How fast this player's own time runs: below 1 only in a room's slow motion.</summary>
@@ -138,6 +165,8 @@ public sealed partial class PlayerMovement : MonoBehaviour
         return shift;
     }
     public bool IsProning => StateMachine != null && StateMachine.IsIn<ProneState>();
+    /// <summary>Lying on the ground, face down or on the back: zombies kneel and eat whoever lies there (EnemyCombatAI Feed).</summary>
+    public bool IsLyingDown => IsProning || CurrentState == MovementState.Supine;
     public Vector3 Velocity => HorizontalVelocity + Vector3.up * VerticalVelocity;
     public Vector3 ActualVelocity => Motor.actualVelocity;
     public Vector2 CurrentInput => InputAvailable && !ControlLocked && !IsGettingUp && Input != null ? Input.Move : Vector2.zero;
@@ -311,6 +340,9 @@ public sealed partial class PlayerMovement : MonoBehaviour
         if (Application.isPlaying && IsLocal && GetComponent<PlayerLife>() == null)
         {
             GameTables.Bind(PlayerLife.TableName, PlayerLife.TableRow, gameObject.AddComponent<PlayerLife>(), gameObject.AddComponent<PlayerRevive>());
+            GameTables.Bind(PlayerSpectate.TableName, PlayerSpectate.TableRow, gameObject.AddComponent<PlayerSpectate>());
+            gameObject.AddComponent<MoneyDrops>();
+            gameObject.AddComponent<PerkCardScreen>(); // the perk cards a full gauge buys, and their health perk
             gameObject.AddComponent<PlayerLifeHUD>();
             gameObject.AddComponent<TeammateMarkerHUD>();
             gameObject.AddComponent<TeamHealthPanel>();
@@ -359,6 +391,22 @@ public sealed partial class PlayerMovement : MonoBehaviour
             if (Motor.controller.enabled) Motor.Move(dt);
             return;
         }
+        // Held by shamblers (PlayerHold): rooted where they stand, but V shoves (with fists, PlayerMeleeCombat has it).
+        // Pinned by a runner they lie flat on their back where it knocked them, and can't fight it off (but for a perk).
+        if (IsHeld)
+        {
+            bool fists = MeleeCombat != null && MeleeCombat.IsActive;
+            bool pinned = IsPinned;
+            if (Input.ShovePressed && !fists && (!pinned || FightsPinned)) Abilities.Combat.TryShove();
+            if (pinned) StayPinned();
+            Input.Sample(false);
+            Actions.Momentum.Tick(dt, Vector2.zero);
+            HorizontalVelocity = Vector3.zero;
+            Motor.ApplyGravity(dt);
+            Posture.UpdateHeightsAndTransform(dt);
+            if (Motor.controller.enabled) Motor.Move(dt);
+            return;
+        }
         Vector2 input = CurrentInput;
         Actions.ProcessSprintRampUp(dt, input);
         Actions.Momentum.Tick(dt, input);
@@ -389,6 +437,19 @@ public sealed partial class PlayerMovement : MonoBehaviour
     }
 
     public void ChangeState(MovementState state) => StateMachine.ChangeState(state);
+
+    // Pinned: down on the back (a leap that caught them in the air puts them there on landing), and held lying there,
+    // short of getting up; once the pin ends the get-up plays on from there (HeavyLandingState).
+    private void StayPinned()
+    {
+        if (CurrentState != MovementState.HeavyLanding)
+        {
+            if (IsGrounded) KnockBack(-transform.forward * .1f);
+            return;
+        }
+        float lying = Abilities.Landing.HeavyDuration * PlayerHold.PinnedDownShare;
+        if (CurrentStateDuration > lying) CurrentStateDuration = lying;
+    }
     /// <summary>
     /// Lying on the ground, rolls from the front onto the back or back again; the head stays where it is (PlayerBody.Lying).
     /// PlayerLook asks for it when the mouse pushes on past the neck's limit. False when not lying still on the ground.
@@ -418,19 +479,12 @@ public sealed partial class PlayerMovement : MonoBehaviour
     {
         if (EnsureInitialized() && DamageReceiver.IsAlive) Abilities.Landing.KnockBack(velocity);
     }
-    private float ladderExitProbeUntil = float.NegativeInfinity;
     private void RaiseStateChanged(MovementState from, MovementState to)
     {
         // Up off the back, Beatrun holds the player for a second while the body gets up (quickturn.lua, JumpTurnRecovery).
         // Here only moving off waits; the hands are free.
         if (from == MovementState.Supine && (to == MovementState.Standing || to == MovementState.Crouching) && !IsNetworkDriven)
             Actions.riseTimer = AbilitySettings.supineRiseTime;
-        // Temporary probe: after climbing off a ladder's top the player ended up crouched with no ceiling found at the
-        // end of the climb (user, 2026-11-08). Every state change for two seconds after it, with what decides a crouch.
-        if (from == MovementState.Mantle && Abilities != null && Abilities.Traversal.Obstacle.ExitLadder != null) ladderExitProbeUntil = Time.time + 2f;
-        if (Time.time < ladderExitProbeUntil && IsLocal)
-            ParkourProbeLog.Line($"after the ladder: {from} -> {to}, capsule {Motor.controller.height:0.00}, crouch held {Input.CrouchHeld}, "
-                + $"crouch pressed {Input.CrouchPressed}, grounded {IsGrounded}, ceiling over standing {HasCeilingAbove(StandingColliderHeight)}");
         StateChanged?.Invoke(from, to);
     }
     internal void RaiseLanded(float impactSpeed) => Landed?.Invoke(impactSpeed);

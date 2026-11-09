@@ -69,7 +69,7 @@ public sealed class UltimatePortraitGlow : MonoBehaviour
         {
             ReleaseMaterial();
             if (!warnedInvalidMaterial)
-                Debug.LogWarning("UltimatePortraitGlow: assign a HexGlowFrame material to the portrait; glow will resume automatically when assigned.", this);
+                Debug.LogWarning("UltimatePortraitGlow: assign a glow portrait material (Mat_SquarePortrait) to the portrait; glow will resume automatically when assigned.", this);
             warnedInvalidMaterial = true;
             return false;
         }

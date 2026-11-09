@@ -14,6 +14,7 @@ public sealed class PlayerDamageReceiver : MonoBehaviour, IDamageReceiver, ITabl
     private readonly HashSet<long> seen = new HashSet<long>();
     private readonly Queue<long> recent = new Queue<long>();
     private PlayerMovement movement;
+    private ShoveCounter counter;
     [field: SerializeField, HideInInspector] public float Health { get; private set; }
     [SerializeField, HideInInspector] private bool healthInitialized;
     public bool IsAlive => Health > 0f;
@@ -44,6 +45,12 @@ public sealed class PlayerDamageReceiver : MonoBehaviour, IDamageReceiver, ITabl
             gameObject.AddComponent<LowHealthGrade>();
         if (Application.isPlaying && player.IsLocal && GetComponent<ShieldFeedback>() == null)
             GameTables.Bind(PlayerMovement.TableName, "Shield", gameObject.AddComponent<ShieldFeedback>());
+        // A shambler's grab holds them (Guts & Blackpowder's wrestle); their own PC judges it, so only there.
+        if (Application.isPlaying && player.IsLocal && GetComponent<PlayerHold>() == null)
+            GameTables.Bind(PlayerMovement.TableName, "Hold", gameObject.AddComponent<PlayerHold>());
+        // A timed shove counters a grab or a leap (G&B-3); judged on their own PC too.
+        if (Application.isPlaying && player.IsLocal && GetComponent<ShoveCounter>() == null)
+            GameTables.Bind(PlayerMovement.TableName, "Counter", gameObject.AddComponent<ShoveCounter>());
         // An enemy throws off whoever stands on its head; the rider's own PC moves them, so only there.
         if (Application.isPlaying && player.IsLocal && GetComponent<HeadStandShakeOff>() == null)
             GameTables.Bind(PlayerMovement.TableName, "HeadStand", gameObject.AddComponent<HeadStandShakeOff>());
@@ -52,8 +59,13 @@ public sealed class PlayerDamageReceiver : MonoBehaviour, IDamageReceiver, ITabl
     // Call only after a melee/projectile/hitscan attack actually intersects the player.
     public DamageResult ReceiveHit(DamageHit hit)
     {
-        // Someone else's copy: their health and their parry are decided on their own PC.
-        if (movement != null && movement.IsNetworkDriven) return DamageResult.Ignored;
+        // Someone else's copy: their health and their parry are decided on their own PC. With friendly fire on, a blow from
+        // this PC's own player goes to them there (backlog 721); it shows here when their PC reports the hurt.
+        if (movement != null && movement.IsNetworkDriven)
+        {
+            FriendlyFire.PassOn(movement, hit);
+            return DamageResult.Ignored;
+        }
         if (!isActiveAndEnabled || !IsAlive || hit.Amount <= 0f || float.IsNaN(hit.Amount) || float.IsInfinity(hit.Amount) || hit.Id <= 0) return DamageResult.Ignored;
         if (!seen.Add(hit.Id)) return DamageResult.Duplicate;
         recent.Enqueue(hit.Id);
@@ -67,6 +79,13 @@ public sealed class PlayerDamageReceiver : MonoBehaviour, IDamageReceiver, ITabl
         {
             HitResolved?.Invoke(hit, DamageResult.Evaded);
             return DamageResult.Evaded;
+        }
+        // A grab or a leap right after their shove is countered (G&B-3).
+        if (counter == null) counter = GetComponent<ShoveCounter>();
+        if (counter != null && counter.TryHitCounter(hit))
+        {
+            HitResolved?.Invoke(hit, DamageResult.Countered);
+            return DamageResult.Countered;
         }
         // After the dodge, so a perfect evade still counts while countering.
         if (movement != null && movement.PerfectDefense != null && movement.PerfectDefense.Shields)

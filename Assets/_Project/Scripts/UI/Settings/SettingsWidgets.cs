@@ -4,12 +4,24 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>Code-built uGUI pieces for the Esc menu. Flat rectangles, so the menu needs no imported sprites.</summary>
+/// <summary>
+/// Code-built uGUI pieces for the Esc menu and the title screen's windows, in the menus' kit look (KitStyle, 2026-11-09):
+/// the HUD's near-black, white and one pink, slanted buttons and choices, thin sliders with a slanted handle, windows
+/// with cut corners and a pink mark. No imported sprites.
+/// </summary>
 public static class SettingsWidgets
 {
-    public static readonly Color Text = new Color(.93f, .93f, .94f), Muted = new Color(.6f, .63f, .68f),
-        Accent = new Color(.95f, .63f, .27f), OnAccent = new Color(.1f, .08f, .06f),
+    public static readonly Color Text = KitStyle.Text, Muted = new Color(.66f, .68f, .74f), Accent = KitStyle.Accent, OnAccent = KitStyle.Ink,
         Track = new Color(1f, 1f, 1f, .14f), Surface = new Color(1f, 1f, 1f, .07f);
+    // How far buttons and choices lean (px).
+    private const float Slant = 10f;
+
+    /// <summary>The menus' font (the score font, as the lobby uses), or the prompt font without it.</summary>
+    public static TMP_FontAsset Font()
+    {
+        var score = GunFeelSettings.Instance != null ? GunFeelSettings.Instance.scoreFont : null;
+        return score != null ? score : CombatUIAssets.ResolveFont(null);
+    }
 
     public static RectTransform Rect(string name, Transform parent)
     {
@@ -40,6 +52,17 @@ public static class SettingsWidgets
         return layout;
     }
 
+    /// <summary>Clears a window's contents (Window), keeping its own fill and mark.</summary>
+    public static void ClearContent(Transform panel)
+    {
+        foreach (Transform child in panel)
+        {
+            if (child.TryGetComponent(out LayoutElement layout) && layout.ignoreLayout) continue;
+            child.gameObject.SetActive(false);
+            UnityEngine.Object.Destroy(child.gameObject);
+        }
+    }
+
     /// <summary>Takes every child out of the layout now and destroys it at the end of the frame.</summary>
     public static void Clear(Transform parent)
     {
@@ -54,7 +77,7 @@ public static class SettingsWidgets
         TextAlignmentOptions alignment = TextAlignmentOptions.MidlineLeft)
     {
         var label = Rect("Text", parent).gameObject.AddComponent<TextMeshProUGUI>();
-        label.font = CombatUIAssets.ResolveFont(null);
+        label.font = Font();
         label.text = text; label.fontSize = size; label.color = color; label.alignment = alignment;
         label.textWrappingMode = TextWrappingModes.NoWrap;
         label.raycastTarget = false;
@@ -81,10 +104,10 @@ public static class SettingsWidgets
         Size(root, height: 28f, flexibleWidth: 1f);
         Fill(root, Color.clear); // the whole row height takes clicks, not just the thin track
         var track = Rect("Track", root);
-        track.anchorMin = new Vector2(0f, .5f); track.anchorMax = new Vector2(1f, .5f); track.sizeDelta = new Vector2(0f, 6f);
+        track.anchorMin = new Vector2(0f, .5f); track.anchorMax = new Vector2(1f, .5f); track.sizeDelta = new Vector2(0f, 4f);
         Fill(track, Track);
         var fillArea = Rect("Fill Area", root);
-        fillArea.anchorMin = new Vector2(0f, .5f); fillArea.anchorMax = new Vector2(1f, .5f); fillArea.sizeDelta = new Vector2(0f, 6f);
+        fillArea.anchorMin = new Vector2(0f, .5f); fillArea.anchorMax = new Vector2(1f, .5f); fillArea.sizeDelta = new Vector2(0f, 4f);
         var fill = Rect("Fill", fillArea);
         fill.sizeDelta = Vector2.zero;
         Fill(fill, Accent);
@@ -92,9 +115,11 @@ public static class SettingsWidgets
         Stretch(handleArea);
         handleArea.offsetMin = new Vector2(7f, 0f); handleArea.offsetMax = new Vector2(-7f, 0f);
         var handle = Rect("Handle", handleArea);
-        handle.sizeDelta = new Vector2(14f, 0f);
+        handle.sizeDelta = new Vector2(6f, -4f);
         var slider = root.gameObject.AddComponent<Slider>();
-        slider.fillRect = fill; slider.handleRect = handle; slider.targetGraphic = Fill(handle, Text);
+        var grip = Fill(handle, Text);
+        KitSkew.On(grip, 6f);
+        slider.fillRect = fill; slider.handleRect = handle; slider.targetGraphic = grip;
         // Range and rounding go first: changing them later re-sets the value and calls the listener.
         slider.minValue = min; slider.maxValue = max; slider.wholeNumbers = wholeNumbers;
         slider.SetValueWithoutNotify(value);
@@ -119,6 +144,7 @@ public static class SettingsWidgets
             {
                 images[i].color = i == index ? Accent : Surface;
                 labels[i].color = i == index ? OnAccent : Muted;
+                labels[i].fontStyle = i == index ? FontStyles.Bold : FontStyles.Normal;
             }
         }
         for (int i = 0; i < options.Length; i++)
@@ -126,6 +152,7 @@ public static class SettingsWidgets
             int index = i;
             var option = Rect(options[i], root);
             var image = Fill(option, Surface);
+            KitSkew.On(image, Slant * .8f);
             var label = Label(option, options[i], 19f, Muted, TextAlignmentOptions.Center);
             Stretch(label.rectTransform);
             images.Add(image); labels.Add(label);
@@ -169,7 +196,7 @@ public static class SettingsWidgets
         back = Arrow(root, "<", () => Step(-1));
         var box = Rect("Value", root);
         Size(box, flexibleWidth: 1f);
-        Fill(box, Surface);
+        KitSkew.On(Fill(box, Surface), Slant * .8f);
         value = Label(box, "", 19f, Text, TextAlignmentOptions.Center);
         Stretch(value.rectTransform);
         forward = Arrow(root, ">", () => Step(1));
@@ -182,6 +209,7 @@ public static class SettingsWidgets
         var rect = Rect(glyph == "<" ? "Back" : "Forward", parent);
         Size(rect, width: 44f);
         var image = Fill(rect, Surface);
+        KitSkew.On(image, Slant * .8f);
         var label = Label(rect, glyph, 21f, Text, TextAlignmentOptions.Center);
         label.richText = false; // a lone "<" is the glyph, not a tag
         Stretch(label.rectTransform);
@@ -212,7 +240,7 @@ public static class SettingsWidgets
 
         var bar = Rect("Scrollbar", root);
         bar.anchorMin = new Vector2(1f, 0f); bar.anchorMax = Vector2.one; bar.pivot = new Vector2(1f, .5f);
-        bar.sizeDelta = new Vector2(6f, 0f);
+        bar.sizeDelta = new Vector2(4f, 0f);
         Fill(bar, Track);
         var slidingArea = Rect("Sliding Area", bar);
         Stretch(slidingArea);
@@ -237,11 +265,11 @@ public static class SettingsWidgets
     {
         shade = Rect(name, canvas);
         Stretch(shade);
-        Fill(shade, new Color(0f, 0f, 0f, .62f));
+        Fill(shade, new Color(0f, 0f, 0f, .72f));
         var panel = Rect("Panel", shade);
         panel.anchorMin = panel.anchorMax = panel.pivot = new Vector2(.5f, .5f);
         panel.sizeDelta = new Vector2(width, 0f);
-        Fill(panel, new Color(.06f, .07f, .09f, .96f));
+        Panel(panel);
         var layout = panel.gameObject.AddComponent<VerticalLayoutGroup>();
         layout.padding = new RectOffset(44, 44, 36, 36);
         layout.spacing = 10f;
@@ -250,6 +278,27 @@ public static class SettingsWidgets
         panel.gameObject.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
         shade.gameObject.SetActive(false);
         return panel;
+    }
+
+    /// <summary>
+    /// Dresses a window's panel: dark with cut corners, a faint edge and a short pink mark at its top left. The fill and
+    /// the mark are children kept out of the layout (and out of ClearContent).
+    /// </summary>
+    public static void Panel(RectTransform panel)
+    {
+        KitStyle.Cut(panel, new Color(1f, 1f, 1f, .12f));
+        var fill = Rect("Fill", panel);
+        Stretch(fill);
+        fill.offsetMin = new Vector2(1f, 1f); fill.offsetMax = new Vector2(-1f, -1f);
+        KitStyle.Cut(fill, KitStyle.Panel);
+        fill.gameObject.AddComponent<LayoutElement>().ignoreLayout = true;
+        fill.SetAsFirstSibling();
+        var mark = Rect("Mark", panel);
+        mark.anchorMin = mark.anchorMax = mark.pivot = new Vector2(0f, 1f);
+        mark.anchoredPosition = Vector2.zero;
+        mark.sizeDelta = new Vector2(140f, 3f);
+        KitStyle.Fill(mark, Accent);
+        mark.gameObject.AddComponent<LayoutElement>().ignoreLayout = true;
     }
 
     /// <summary>A row of buttons aligned to the right.</summary>
@@ -269,6 +318,10 @@ public static class SettingsWidgets
         var root = Rect("Input", parent);
         Size(root, height: 34f, flexibleWidth: 1f);
         var image = Fill(root, Surface);
+        var line = Rect("Line", root);
+        line.anchorMin = Vector2.zero; line.anchorMax = new Vector2(1f, 0f); line.pivot = new Vector2(.5f, 0f);
+        line.sizeDelta = new Vector2(0f, 2f);
+        Fill(line, Track).raycastTarget = false;
         var viewport = Rect("Viewport", root);
         Stretch(viewport);
         viewport.offsetMin = new Vector2(10f, 0f); viewport.offsetMax = new Vector2(-10f, 0f);
@@ -288,8 +341,10 @@ public static class SettingsWidgets
         var rect = Rect(text, parent);
         Size(rect, width: 180f, height: 48f);
         var image = Fill(rect, primary ? Accent : Surface);
+        KitSkew.On(image, Slant);
         var label = Label(rect, text, 21f, primary ? OnAccent : Text, TextAlignmentOptions.Center);
         Stretch(label.rectTransform);
+        label.fontStyle = primary ? FontStyles.Bold : FontStyles.Normal;
         var button = rect.gameObject.AddComponent<Button>();
         button.targetGraphic = image;
         button.onClick.AddListener(() => clicked());
