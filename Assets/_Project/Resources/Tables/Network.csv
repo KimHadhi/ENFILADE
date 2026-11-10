@@ -1,5 +1,5 @@
 ﻿id,value
-#설명 (pingDivisor = 실제 핑을 이 값으로 나눠 표시. 1이면 실제 핑(지금 값). 모든 방이 도쿄 릴레이를 거치던 때는 3이었다 / friendlyFire = 방을 열 때 아군 사격. 1 켜짐 0 꺼짐. 방장이 /ff로 바꾼다 / friendlyFireShare = 아군이 맞을 때 받는 피해 비율. 1이면 그대로 / direct = 인터넷 방에서 릴레이보다 직접 연결(홀 펀칭)을 먼저 시도. 1 켜짐 0 꺼짐. 꺼지면 예전처럼 전부 릴레이 / stunServers = 내 바깥 주소를 물어볼 서버들. 이름:포트를 띄어쓰기로 구분 / punchSeconds = 참가자가 방장에게 직접 닿기를 기다리는 시간(초). 지나면 릴레이로 접속. 릴레이 자리는 10초 안에 써야 해서 길게 잡지 말 것 / tickRate = 초당 네트워크 틱(Netcode). 팀원의 시선·자세·위치와 좀비 위치가 이 빈도로 간다. Netcode 기본값 30이었고 플레이 테스트 의견(11-11)으로 120. 낮추면 대역폭이 준다. 방 안의 모든 PC가 같은 값이어야 들어갈 수 있다 / bufferSeconds = 다른 PC의 몸을 이만큼(초) 과거로 보여 준다. 다음 위치가 늘 먼저 와 있게 하는 여유. 틱이 빨라도 이 시간만큼은 유지),값
+#설명 (pingDivisor = 실제 핑을 이 값으로 나눠 표시. 1이면 실제 핑(지금 값). 모든 방이 도쿄 릴레이를 거치던 때는 3이었다 / friendlyFire = 방을 열 때 아군 사격. 1 켜짐 0 꺼짐. 방장이 /ff로 바꾼다 / friendlyFireShare = 아군이 맞을 때 받는 피해 비율. 1이면 그대로 / direct = 인터넷 방에서 릴레이보다 직접 연결(홀 펀칭)을 먼저 시도. 1 켜짐 0 꺼짐. 꺼지면 예전처럼 전부 릴레이 / stunServers = 내 바깥 주소를 물어볼 서버들. 이름:포트를 띄어쓰기로 구분 / punchSeconds = 참가자가 방장에게 직접 닿기를 기다리는 시간(초). 지나면 릴레이로 접속. 릴레이 자리는 10초 안에 써야 해서 길게 잡지 말 것 / tickRate = 초당 네트워크 틱(Netcode). 팀원의 시선·자세·위치가 이 빈도로 간다(좀비 위치는 zombieNearRate~zombieFarRate). Netcode 기본값 30이었고 플레이 테스트 의견(11-11)으로 120. 낮추면 대역폭이 준다. 방 안의 모든 PC가 같은 값이어야 들어갈 수 있다 / bufferSeconds = 다른 PC의 몸을 이만큼(초) 과거로 보여 준다. 다음 위치가 늘 먼저 와 있게 하는 여유. 틱이 빨라도 이 시간만큼은 유지. 아래 smoothing이 1이면 시작 값일 뿐이다 / smoothing = 1이면 버퍼를 업데이트가 실제로 늦게 오는 만큼 자동으로 맞춘다(방장의 몸과 좀비 쪽·참가자 쪽을 따로 재서 둘 다 제때 오게). 늘릴 때는 바로 줄일 때는 bufferHold초 지켜본 뒤 1틱씩. 0이면 bufferSeconds 고정. /net에 Buffer 줄로 보인다 / bufferPercentile = 늦게 온 쪽 몇 %까지 덮을지(0.97이면 100개 중 가장 늦은 3개만 놓친다) / bufferMargin = 그 위에 더하는 여유(틱) / bufferHold = 필요한 버퍼가 줄어든 채 이만큼(초) 지나야 1틱 줄인다 / bufferMost = 버퍼의 최대(초) / zombieNearRate = 플레이어 zombieNearDistance(m) 안의 좀비 위치를 초당 몇 번 보내는지. 멀어질수록 zombieFarRate까지 줄고 zombieFarDistance(m)부터 그 값. 플레이어는 tickRate 그대로),값
 pingDivisor,1
 friendlyFire,0
 friendlyFireShare,1
@@ -8,3 +8,12 @@ stunServers,stun.l.google.com:19302 stun.cloudflare.com:3478
 punchSeconds,2.5
 tickRate,120
 bufferSeconds,0.05
+smoothing,1
+bufferPercentile,0.97
+bufferMargin,1
+bufferHold,3
+bufferMost,0.2
+zombieNearRate,60
+zombieFarRate,20
+zombieNearDistance,15
+zombieFarDistance,45

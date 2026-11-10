@@ -47,6 +47,7 @@ public sealed class PlayerNetworkPose : NetworkBehaviour
         }
         // Someone who was here before this PC joined sent theirs already: it asks.
         AskPortraitRpc();
+        pose.OnValueChanged += OnPoseChanged;
         skin.OnValueChanged += OnSkinChanged;
         maximumHealth.OnValueChanged += OnMaximumChanged;
         health.OnValueChanged += OnHealthChanged;
@@ -60,6 +61,7 @@ public sealed class PlayerNetworkPose : NetworkBehaviour
         ProfilePicture.Changed -= SendPortrait;
         if (Portrait != null) { Destroy(Portrait); Portrait = null; }
         GameSettings.Changed -= SendSkin;
+        pose.OnValueChanged -= OnPoseChanged;
         skin.OnValueChanged -= OnSkinChanged;
         maximumHealth.OnValueChanged -= OnMaximumChanged;
         health.OnValueChanged -= OnHealthChanged;
@@ -81,10 +83,23 @@ public sealed class PlayerNetworkPose : NetworkBehaviour
     private void LateUpdate()
     {
         if (!IsSpawned || !IsOwner) return;
-        pose.Value = movement.Mirror.Capture();
+        // The tick goes on only when something else changed (Netcode compares the bytes), so a pose standing still still
+        // sends nothing; a new one carries the tick it was taken on (NetSmoothing).
+        var now = movement.Mirror.Capture();
+        now.Tick = pose.Value.Tick;
+        pose.Value = now;
+        if (pose.IsDirty())
+        {
+            now.Tick = (uint)Mathf.Max(1, NetworkManager.ServerTime.Tick);
+            pose.Value = now;
+        }
         maximumHealth.Value = movement.DamageReceiver.MaximumHealth;
         health.Value = movement.DamageReceiver.Health;
     }
+
+    // A copy's pose came in: how late, for the buffer (NetSmoothing). The host's own player comes the way zombies do.
+    private void OnPoseChanged(PlayerPose previous, PlayerPose current)
+        => NetSmoothing.Heard(NetworkManager, current.Tick, OwnerClientId == NetworkManager.ServerClientId);
 
     private void OnHealthChanged(float previous, float current) => movement.DamageReceiver.ShowHealth(current);
 

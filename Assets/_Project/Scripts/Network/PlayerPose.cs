@@ -31,4 +31,9 @@ public struct PlayerPose : INetworkSerializeByMemcpy
     /// <summary>Where the stride is, so the legs step in time on every PC.</summary>
     public byte Step;
     public Marks Flags;
+    /// <summary>
+    /// The tick of its owner's clock of the server it was taken on, stamped only when something else changed: every PC
+    /// measures from it how late updates come in and sizes the interpolation buffer to it (NetSmoothing).
+    /// </summary>
+    public uint Tick;
 }

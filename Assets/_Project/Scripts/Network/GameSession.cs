@@ -152,8 +152,9 @@ public sealed class GameSession : MonoBehaviour, INetworkPrefabInstanceHandler
         }
         session.network = host.AddComponent<NetworkManager>();
         session.network.NetworkConfig = new NetworkConfig { NetworkTransport = used, ConnectionApproval = true, TickRate = TickRate };
-        // Position comes in TickRate times a second; the copies show it this far behind, whatever the rate (BufferTicks).
-        Unity.Netcode.Components.NetworkTransform.InterpolationBufferTickOffset = BufferTicks;
+        // Position comes in TickRate times a second; the copies show it this far behind to start with (BufferTicks), and
+        // then as far as the updates' real lateness asks (NetSmoothing, Network.csv smoothing).
+        NetSmoothing.Begin(BufferTicks);
         session.playerPrefab = PlayerFactory.Prefab;
         host.SetActive(true);
         session.network.AddNetworkPrefab(session.playerPrefab);

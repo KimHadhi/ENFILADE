@@ -90,6 +90,9 @@ public sealed class NetworkStatsHUD : MonoBehaviour
         }
         else AddPing("Host", NetworkManager.ServerClientId);
         lines.Add($"Up {sent:F1} kB/s, down {received:F1} kB/s");
+        // How far behind the others are drawn, and what the updates' lateness asks (NetSmoothing).
+        string buffer = NetSmoothing.Report(network);
+        if (buffer.Length > 0) lines.Add(buffer);
         lines.Add($"{framesInSample / time:F0} fps, worst {worstInSample * 1000f:F0} ms");
         framesInSample = 0;
         worstInSample = 0f;
@@ -113,8 +116,9 @@ public sealed class NetworkStatsHUD : MonoBehaviour
         float sent = (Sent - sentAtStart) / 1024f / elapsed, received = (Received - receivedAtStart) / 1024f / elapsed;
         // Whose room and how it is carried, so a ping can be read for what it is (friend feedback C16).
         string link = (network.IsHost ? "방장" : "참가") + " · " + GameSession.LinkName;
+        string buffer = NetSmoothing.Report(network);
         return $"측정 {elapsed:F0}초 ({link}): {ping} / 보냄 평균 {sent:F1}, 최고 {sentPeak:F1} kB/s / 받음 평균 {received:F1}, 최고 {receivedPeak:F1} kB/s / "
-            + $"평균 {frames / elapsed:F0} fps, 가장 느린 프레임 {worstFrame * 1000f:F0} ms";
+            + $"평균 {frames / elapsed:F0} fps, 가장 느린 프레임 {worstFrame * 1000f:F0} ms" + (buffer.Length > 0 ? " / " + buffer : "");
     }
 
     private void OnGUI()

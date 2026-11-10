@@ -1,4 +1,5 @@
 using Unity.Netcode;
+using Unity.Netcode.Components;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -41,6 +42,13 @@ public sealed class EnemyNetwork : NetworkBehaviour
     private MeleeCombatTarget target;
     private ZombieMind mind;
     private float pace = 1f, paceLeft;
+    // The host's send gate on its position (LateUpdate): the transform's own thresholds, whether it may go out on the next
+    // tick, when it may next, and the tick it last saw.
+    private const float Shut = 1e9f;
+    private NetworkTransform motion;
+    private float positionThreshold, rotationThreshold, scaleThreshold, nextSend;
+    private int lastTick;
+    private bool open = true;
 
     /// <summary>This PC only shows the enemy; the host runs it.</summary>
     public bool IsCopy => IsSpawned && !IsServer;
@@ -67,6 +75,13 @@ public sealed class EnemyNetwork : NetworkBehaviour
             health.Value = enemy.Health;
             condition.Value = ReadCondition();
             if (type != null) kind.Value = (byte)type.Kind;
+            motion = GetComponent<NetworkTransform>();
+            if (motion != null)
+            {
+                positionThreshold = motion.PositionThreshold;
+                rotationThreshold = motion.RotAngleThreshold;
+                scaleThreshold = motion.ScaleThreshold;
+            }
             return;
         }
         if (type != null) type.Show((ZombieKind)kind.Value);
@@ -103,6 +118,29 @@ public sealed class EnemyNetwork : NetworkBehaviour
         if (!IsSpawned || !IsServer) return;
         health.Value = enemy.Health;
         condition.Value = ReadCondition();
+    }
+
+    // The host sends a zombie's position only so often, by how near a player it is (NetSmoothing.ZombieRate: 60 a second
+    // close, 20 far off), not on all 120 ticks as a player's: far fewer bytes up from the host with a crowd about, and
+    // the copies' buffer covers the gap (user, 2026-11-11: "좀비만 초당 30~60번으로 낮춰서 데이터를 아끼고"). Netcode has
+    // no rate per transform, so between its turns the transform's thresholds stand past any move, and it sends what
+    // gathered at its turn. Its tick runs at the start of a frame, before this decides the next one.
+    private void LateUpdate()
+    {
+        if (motion == null || !IsSpawned || !IsServer) return;
+        int tick = NetworkManager.ServerTime.Tick;
+        bool ticked = tick != lastTick;
+        lastTick = tick;
+        float now = Time.unscaledTime;
+        if (open && ticked)
+        {
+            open = false;
+            nextSend = now + 1f / NetSmoothing.ZombieRate(NetworkManager, transform.position);
+        }
+        if (!open && now >= nextSend) open = true;
+        motion.PositionThreshold = open ? positionThreshold : Shut;
+        motion.RotAngleThreshold = open ? rotationThreshold : Shut;
+        motion.ScaleThreshold = open ? scaleThreshold : Shut;
     }
 
     // Whole points of posture, so recovering doesn't send a report every few frames.
