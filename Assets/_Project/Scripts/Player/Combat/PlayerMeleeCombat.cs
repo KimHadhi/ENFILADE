@@ -123,6 +123,8 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
         if (MovementBlocksAttack) { SuspendActionsForMovement(); return; }
         punchSweep.Tick(0f); shoveSweep.Tick(0f);
     }
+    /// <summary>A counter hands the shove straight back (ShoveCounter): the fists can shove or punch again at once.</summary>
+    internal void RefreshShove() { cooldown = shoveRest = 0f; }
     public void ProcessFrame(float dt, MeleeInputFrame frame)
     {
         if (dt <= 0f) return;
@@ -170,8 +172,10 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
                 shovePending = false;
                 if (shoveRest <= 0f)
                 {
-                    Shove(); cooldown = 0.55f;
+                    // The wait is set before the shove goes out: a counter on its first contact clears it again (RefreshShove).
+                    cooldown = 0.55f;
                     shoveRest = player.Abilities.Combat.Fatigue.Spend(cooldown, player.AbilitySettings);
+                    Shove();
                 }
             }
             else if (!frame.ShoveHeld) shovePending = false;

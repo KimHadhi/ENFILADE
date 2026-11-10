@@ -87,6 +87,18 @@ public sealed class HitFlashRenderer : MonoBehaviour
         if (mark > 0f) Attach();
     }
 
+    /// <summary>
+    /// Holds the holder's outline at this strength, 0 lets it go: the zombie has this PC's player in its grip (PlayerHold),
+    /// and stands out of the crowd so they see which one to shove or shoot off (user, 2026-11-10, after Left 4 Dead 2's
+    /// outlines). It goes over the executable mark's outline while both are set.
+    /// </summary>
+    public void SetHolder(float amount)
+    {
+        holder = Mathf.Clamp01(amount);
+        if (holder > 0f) Attach();
+    }
+    private float holder;
+
     private bool Near(Vector3 point)
     {
         // Contact points far from the body (some melee sources report the attacker) would light nothing anyway.
@@ -150,7 +162,7 @@ public sealed class HitFlashRenderer : MonoBehaviour
             spots[i].age += dt;
             if (spots[i].strength > 0f && spots[i].age < settings.hitGlowSeconds) glowing = true;
         }
-        if (tint <= .001f && white <= 0f && !glowing && mark <= 0f) { Detach(); enabled = false; return; }
+        if (tint <= .001f && white <= 0f && !glowing && mark <= 0f && holder <= 0f) { Detach(); enabled = false; return; }
 
         var feedback = CombatFeedbackSettings.InstanceOrDefaults;
         // The stronger tint shows, so a hit on a marked body still flashes.
@@ -158,8 +170,8 @@ public sealed class HitFlashRenderer : MonoBehaviour
         block.Clear();
         block.SetColor(TintColorId, marked ? feedback.executableBodyTint : settings.hitTintColor);
         block.SetFloat(TintId, marked ? mark : tint);
-        block.SetColor(OutlineColorId, feedback.executableOutlineColor);
-        block.SetFloat(OutlineWidthId, feedback.executableOutlineWidth * mark);
+        block.SetColor(OutlineColorId, holder > 0f ? feedback.holderOutlineColor : feedback.executableOutlineColor);
+        block.SetFloat(OutlineWidthId, holder > 0f ? feedback.holderOutlineWidth * holder : feedback.executableOutlineWidth * mark);
         block.SetColor(RimColorId, settings.hitRimColor);
         block.SetFloat(RimId, Mathf.Clamp01(tint * 1.2f));
         block.SetColor(GlowColorId, settings.hitGlowColor);

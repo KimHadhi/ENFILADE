@@ -15,7 +15,8 @@ using UnityEngine;
 /// (G&amp;B: a teammate must kill it; a teammate knocking it down does too), unless FightsPinned (a melee class perk to
 /// come, off until then) lets them fight it themselves. The bites hurt a little (pinBiteDamage); what kills is the pin itself, at the end of pinSeconds, sooner
 /// the lower their health (pinLowHealthShare at none) and sooner for each runner that joins it (up to maxJoiners, each
-/// joinSpeedup faster). Numbers: Tables/Player.csv, row Hold.
+/// joinSpeedup faster). What all of it looks and sounds like on their own screen is HoldFeedback's. Numbers:
+/// Tables/Player.csv, row Hold.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class PlayerHold : MonoBehaviour
@@ -75,6 +76,7 @@ public sealed class PlayerHold : MonoBehaviour
     private PlayerMovement player;
     private PlayerDamageReceiver receiver;
     private PlayerNetworkCombat network;
+    private HoldFeedback feedback;
     private float biteLeft, pinProgress;
 
     /// <summary>Some zombie holds them.</summary>
@@ -113,6 +115,30 @@ public sealed class PlayerHold : MonoBehaviour
         if (receiver != null) receiver.HitResolved -= OnHit;
         CombatDamageEvents.Damaged -= OnEnemyDamaged;
         LetAllGo();
+    }
+
+    /// <summary>A zombie kneels over them eating them where they lie (a Feed hold, not a runner's pin).</summary>
+    public bool IsEaten
+    {
+        get
+        {
+            foreach (var holder in holders) if (holder.Feeding && !holder.Pinning) return true;
+            return false;
+        }
+    }
+
+    // What being held looks and sounds like on their own screen, made on first need.
+    private HoldFeedback Feedback
+    {
+        get
+        {
+            if (feedback == null && !TryGetComponent(out feedback))
+            {
+                feedback = gameObject.AddComponent<HoldFeedback>();
+                GameTables.Bind(PlayerMovement.TableName, "HoldFeedback", feedback);
+            }
+            return feedback;
+        }
     }
 
     private int Pinners
@@ -171,10 +197,12 @@ public sealed class PlayerHold : MonoBehaviour
             Enemy = enemy, Grip = grip, Melee = enemy.GetComponent<MeleeCombatTarget>(), Until = Time.time + holdSeconds, Feeding = feeding
         });
         if (grip != null) grip.Hold(player, kind);
+        Outline(enemy, true);
         Share(enemy, true, kind);
         // A feed bites from the start.
         if (feeding) biteLeft = 0f;
         Jolt(grabJolt);
+        Feedback.Began(false);
         if (holders.Count >= eatenAt) Eaten(enemy);
     }
 
@@ -200,9 +228,11 @@ public sealed class PlayerHold : MonoBehaviour
             Feeding = true, Pinning = true
         });
         if (grip != null) grip.Hold(player, HoldKind.Pin);
+        Outline(enemy, true);
         Share(enemy, true, HoldKind.Pin);
         biteLeft = 0f;
         Jolt(pinJolt);
+        Feedback.Began(true);
         if (holders.Count >= eatenAt) Eaten(enemy);
     }
 
@@ -270,6 +300,7 @@ public sealed class PlayerHold : MonoBehaviour
             receiver.ReceiveHit(new DamageHit(DamageHit.NewAttackId(), damage, DamageKind.Attack,
                 transform.position + Vector3.up * 1.4f, transform.position - holder.Enemy.transform.position, holder.Enemy.gameObject,
                 false, 0f, true));
+            Feedback.Bitten();
             if (!receiver.IsAlive) return;
         }
     }
@@ -302,6 +333,7 @@ public sealed class PlayerHold : MonoBehaviour
         var holder = holders[at];
         holders.RemoveAt(at);
         if (holder.Grip != null) holder.Grip.LetGo();
+        Outline(holder.Enemy, false);
         if (holder.Enemy != null)
             Share(holder.Enemy, false, holder.Pinning ? HoldKind.Pin : holder.Feeding ? HoldKind.Feed : HoldKind.Grab);
         if (Pinners == 0) pinProgress = 0f;
@@ -311,6 +343,13 @@ public sealed class PlayerHold : MonoBehaviour
     {
         for (int i = holders.Count - 1; i >= 0; i--) Release(i);
         biteLeft = pinProgress = 0f;
+    }
+
+    // A zombie that has them stands out of the crowd with an outline, on their own screen (HitFlashRenderer.SetHolder):
+    // which one to shove or shoot off (user, 2026-11-10, after Left 4 Dead 2's outlines).
+    private static void Outline(EnemyHealth enemy, bool on)
+    {
+        if (enemy != null) HitFlashRenderer.For(enemy)?.SetHolder(on ? 1f : 0f);
     }
 
     private void Jolt(Vector2 jolt)

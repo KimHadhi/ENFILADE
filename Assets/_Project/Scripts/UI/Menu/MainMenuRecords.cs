@@ -8,7 +8,8 @@ using UnityEngine.UI;
 /// <summary>
 /// The title screen's 기록 page (PlayerRecords), filling the space between the top and bottom bars over a dark veil:
 /// at the left "기록" and the campaign, one slanted plate per chapter (its number pink once escaped, how often, the
-/// fastest time and the fewest deaths, a pink 탈출 stamp; dim and "아직" until then); at the right the totals as tiles
+/// fastest time and the fewest deaths, a pink 탈출 stamp; greyed and "아직" until then, but still easy to read); at the
+/// right the totals as tiles
 /// (kills, headshots with their share, play time, games with escapes, friends got up, going down, deaths, wipes) and
 /// the last few games as rows (escaped or left, map, time, kills, deaths, when). Every piece grows in as it opens.
 /// </summary>
@@ -72,12 +73,18 @@ public sealed class MainMenuRecords : MonoBehaviour
         var chapters = GameTables.RowIds(CampaignChapter.TableName).ToArray();
         int escaped = chapters.Count(map => PlayerRecords.ChapterOf(map) is PlayerRecords.Chapter chapter && chapter.escapes > 0);
         Caption("캠페인", new Vector2(edge, 160f), chapters.Length > 0 ? escaped + " / " + chapters.Length + " 장 탈출" : "");
-        float y = 196f;
+        float y = 196f, tiltAbove = 0f;
         for (int i = 0; i < chapters.Length; i++)
         {
-            Plate(chapters[i], new Vector2(edge, y), PlateTilts[i % PlateTilts.Length], reveal, at);
+            float tilt = PlateTilts[i % PlateTilts.Length];
+            // Each plate turns its own way about its left end, so one turning up under one turning down met it at the
+            // right end (the second and third lay over each other; user, 2026-11-10). It starts that much lower instead,
+            // which keeps PlateGap between the two at their nearest.
+            if (i > 0) y += Mathf.Max(0f, LeftWidth * (Mathf.Sin(tilt * Mathf.Deg2Rad) - Mathf.Sin(tiltAbove * Mathf.Deg2Rad)));
+            Plate(chapters[i], new Vector2(edge, y), tilt, reveal, at);
             at += .06f;
             y += PlateHeight + PlateGap;
+            tiltAbove = tilt;
         }
     }
 
@@ -88,17 +95,20 @@ public sealed class MainMenuRecords : MonoBehaviour
         Split(MapTable.DisplayName(map), out string number, out string name);
         var plate = KitStyle.TopLeft("Chapter " + map, content, where, new Vector2(LeftWidth, PlateHeight));
         plate.localRotation = Quaternion.Euler(0f, 0f, tilt);
-        KitSkew.On(KitStyle.Fill(KitStyle.Stretch("Plate", plate), KitStyle.With(KitStyle.Ice, done ? .09f : .04f)), Slant);
-        KitSkew.On(KitStyle.Bar("Bar", plate, Vector2.zero, new Vector2(4f, PlateHeight), done ? KitStyle.Accent : KitStyle.Faint), Slant);
+        // A chapter not escaped yet is greyed, not faded out: at a fifth of white its number and line could hardly be
+        // seen, and only the first chapter seemed to have a record at all (user, 2026-11-10).
+        Color waiting = KitStyle.With(KitStyle.Text, .45f);
+        KitSkew.On(KitStyle.Fill(KitStyle.Stretch("Plate", plate), KitStyle.With(KitStyle.Ice, done ? .09f : .06f)), Slant);
+        KitSkew.On(KitStyle.Bar("Bar", plate, Vector2.zero, new Vector2(4f, PlateHeight), done ? KitStyle.Accent : waiting), Slant);
         KitStyle.Flat(KitStyle.TopLeft("Number", plate, new Vector2(26f, 0f), new Vector2(110f, PlateHeight)), number, 66f,
-            TextAlignmentOptions.MidlineLeft, done ? KitStyle.Accent : KitStyle.Faint);
+            TextAlignmentOptions.MidlineLeft, done ? KitStyle.Accent : waiting);
         KitStyle.Flat(KitStyle.TopLeft("Name", plate, new Vector2(140f, 14f), new Vector2(LeftWidth - 280f, 42f)), name, 30f,
-            TextAlignmentOptions.MidlineLeft, done ? KitStyle.Text : KitStyle.Soft);
+            TextAlignmentOptions.MidlineLeft, done ? KitStyle.Text : KitStyle.With(KitStyle.Text, .8f));
         string line = done
             ? "탈출 " + chapter.escapes + "번   ·   최고 " + Clock(chapter.best) + "   ·   최소 죽음 " + Mathf.Max(0, chapter.fewestDeaths)
             : "아직 탈출 못 함";
         KitStyle.Flat(KitStyle.TopLeft("Line", plate, new Vector2(142f, 58f), new Vector2(LeftWidth - 170f, 26f)), line, 16f,
-            TextAlignmentOptions.MidlineLeft, done ? KitStyle.Soft : KitStyle.Faint).fontStyle = FontStyles.Normal;
+            TextAlignmentOptions.MidlineLeft, KitStyle.Soft).fontStyle = FontStyles.Normal;
         if (done)
         {
             var stamp = KitStyle.TopLeft("Stamp", plate, new Vector2(LeftWidth - 120f, 24f), new Vector2(92f, 38f));

@@ -9,7 +9,8 @@ using State = PlayerMovement.MovementState;
 /// twice the run for a moment, and the first enemy it meets is thrown along the ground (shoving whoever that one runs
 /// into) and knocked down. The dash stops there, and its own cooldown starts when it ends, hit or miss. Otherwise, with
 /// a gun out, V is the crowd shove (ShoveSweep), lunging at someone just out of reach when standing still, and while the
-/// gun reloads it is a kick that leaves the reload alone (ShoveMoves); the fists' V is PlayerMeleeCombat's.
+/// gun reloads it is a kick that leaves the reload alone (ShoveMoves); the fists' V is PlayerMeleeCombat's. A counter
+/// (ShoveCounter) hands the shove straight back: RefreshShove.
 /// </summary>
 public sealed class PlayerCombatActions
 {
@@ -36,6 +37,8 @@ public sealed class PlayerCombatActions
         SampleShove(dt);
     }
     internal void CancelShove() { shoveSweep.Cancel(); }
+    /// <summary>A counter hands the shove straight back (ShoveCounter): no wait left and no fatigue.</summary>
+    internal void RefreshShove() { cooldown = 0f; Fatigue.Reset(); }
     internal void SampleShove(float dt)
     {
         if (!ctx.InputAvailable || ctx.CombatInputLocked || ctx.IsParkour || ctx.IsDiving || ctx.IsSliding

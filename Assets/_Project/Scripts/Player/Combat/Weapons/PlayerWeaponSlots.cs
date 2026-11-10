@@ -80,6 +80,17 @@ public sealed class PlayerWeaponSlots : MonoBehaviour
         if (count > 0) SlotActivity?.Invoke();
         return count;
     }
+    /// <summary>Whether RefillAmmo would add anything: a held gun's magazine isn't full, or its reserve is under what it starts with.</summary>
+    public bool NeedsAmmo()
+    {
+        for (int i = 0; i < SlotCount; i++)
+        {
+            if (GetWeapon(i)?.Category != WeaponCategory.Ranged) continue;
+            var gun = GetRuntime(i);
+            if (gun.Ammo < gun.Data.MagazineSize || gun.ReserveAmmo < gun.Data.InitialReserveAmmo) return true;
+        }
+        return false;
+    }
     public bool CanReadInput => isActiveAndEnabled && player != null && player.InputAvailable && !player.CombatInputLocked && !player.IsHeld
         && (playerInput == null || playerInput.actions.FindActionMap("Player")?.enabled == true);
 

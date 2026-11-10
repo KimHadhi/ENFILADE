@@ -39,7 +39,7 @@ public sealed class HudCamera : MonoBehaviour
         public float shift = 6f;
         [Tooltip("Share of the lean's view roll the HUD's sides tilt by on the screen, the same way the world turns " +
             "(Settings → HUD 기울이기 따라가기). 1 keeps them level with the world.")]
-        public float share = .6f;
+        public float share = 1f;
     }
 
     private static HudCamera instance;

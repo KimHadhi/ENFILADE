@@ -35,8 +35,9 @@ public sealed partial class ZombieBody
     private void LeapTick(float dt)
     {
         // Dropping off a ledge (ZombieDrop, C5) looks the same in the air; only a leap lifts the body off its path.
+        // Down again, it is no longer in the air though the leap isn't over (EnemyCombatAI.PounceOver): the landing plays.
         if (drop == null) drop = GetComponent<ZombieDrop>();
-        bool leaping = combat != null && combat.IsPouncing && !down;
+        bool leaping = combat != null && combat.IsPouncing && !combat.PounceLanded && !down;
         bool pouncing = leaping || (drop != null && drop.Dropping && !down);
         if (pouncing)
         {

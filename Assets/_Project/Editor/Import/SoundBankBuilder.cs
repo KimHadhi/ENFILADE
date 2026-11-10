@@ -19,6 +19,8 @@ internal sealed class SoundBankBuilder : AssetPostprocessor
         ("HitConfirm", "Assets/_Project/Art/Audio/HitConfirm"),
         ("Bullets", "Assets/_Project/Art/Audio/Bullets"),
         ("Guns", "Assets/_Project/Art/Audio/Guns"),
+        // Menu sounds (KitSound): Art/Audio/UI/Buy, Art/Audio/UI/Refuse. Clips straight in the folder aren't keys.
+        ("UI", "Assets/_Project/Art/Audio/UI"),
     };
     private static bool queued;
 

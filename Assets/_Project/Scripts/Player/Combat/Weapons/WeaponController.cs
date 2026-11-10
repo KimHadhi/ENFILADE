@@ -552,14 +552,20 @@ public sealed class WeaponController : MonoBehaviour
             // A vertical grip steadies the climb (Siege's).
             if (Grip == GunAttachments.Kind.VerticalGrip) recoil.x *= weaponData.GripRecoil;
 
-            // A shotgun's pellets each fly their own way round where the shot goes, each a bullet of its own (own attack,
-            // own hit); one shot of a single-bullet gun is pellet 0 on its own.
+            // A shotgun's pellets each fly their own way, each a bullet of its own (own attack, own hit); one shot of a
+            // single-bullet gun is pellet 0 on its own. The pellets fill one circle evenly, middle to edge, every shot
+            // (EvenDisk): the circle round the crosshair's middle that the gun's spread and its Pellet Spread make together,
+            // which is the round the crosshair's parts stand on (UpdateCrosshair). So what the crosshair rings is what the
+            // shot covers, with no clump and no hole (user, 2026-11-10: pellets thrown at random read as weak and unfair,
+            // and one sent dead on the middle was not it either: "조준점 동그란 부분이 다 맞게"). Only the pattern's turn is
+            // left to chance.
             int pellets = weaponData.Pellets;
+            float patternTurn = pellets > 1 ? UnityEngine.Random.value * Mathf.PI * 2f : 0f;
             for (int pellet = 0; pellet < pellets; pellet++)
             {
                 long id = DamageHit.NewAttackId();
                 Vector3 direction = pellets > 1
-                    ? WeaponAimSolver.SpreadDirection(aimed, weaponData.PelletSpread, UnityEngine.Random.insideUnitCircle)
+                    ? WeaponAimSolver.SpreadDirection(toSight, CurrentSpread + weaponData.PelletSpread, EvenDisk(pellet, pellets, patternTurn))
                     : aimed;
 
                 // Body damage falls off with range, as in Rainbow Six Siege; a headshot kills at any range there, so the
@@ -622,6 +628,15 @@ public sealed class WeaponController : MonoBehaviour
         cameraEffects?.RefreshWeaponFov();
     }
 
+    // Where pellet <index> of <count> goes in the unit circle: a sunflower's seeds, which fill it evenly from the middle
+    // to the edge whatever the count, the whole pattern turned by <turn> (radians).
+    private static Vector2 EvenDisk(int index, int count, float turn)
+    {
+        const float GoldenAngle = 2.39996323f;
+        float radius = Mathf.Sqrt((index + .5f) / Mathf.Max(1, count)), angle = index * GoldenAngle + turn;
+        return new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * radius;
+    }
+
     // ArcCW's automatic reload (arccw_automaticreload): an empty magazine with rounds in reserve reloads 0.2 s after the
     // gun could fire again. Someone else's copy reloads when their PC says so.
     private bool AutoReloadDue(float dt)
@@ -677,15 +692,21 @@ public sealed class WeaponController : MonoBehaviour
         if (crosshair == null) return;
         crosshair.SetCombatHidden(AimBlend > .001f);
         if (viewCamera == null) return;
-        float pixels = Mathf.Tan(CurrentSpread * Mathf.Deg2Rad) / Mathf.Tan(viewCamera.fieldOfView * .5f * Mathf.Deg2Rad) * viewCamera.pixelHeight * .5f;
         var canvas = crosshair.GetComponentInParent<Canvas>();
-        crosshair.SetDynamicSpread(pixels / (canvas != null ? Mathf.Max(.01f, canvas.scaleFactor) : 1f));
+        // Canvas pixels a spread of tangent 1 covers from the screen's middle.
+        float perTangent = viewCamera.pixelHeight * .5f / Mathf.Tan(viewCamera.fieldOfView * .5f * Mathf.Deg2Rad)
+            / (canvas != null ? Mathf.Max(.01f, canvas.scaleFactor) : 1f);
+        crosshair.SetDynamicSpread(Mathf.Tan(CurrentSpread * Mathf.Deg2Rad) * perTangent);
+        // A shotgun's circle: the crosshair's parts stand on it, the steady crosshair too, so its round is what the
+        // pellets fill.
+        crosshair.SetPatternSpread(weaponData.Pellets > 1 ? Mathf.Tan(weaponData.PelletSpread * Mathf.Deg2Rad) * perTangent : 0f);
     }
     private void ResetPresentation()
     {
         AimBlend = bloom = shoveRecovery = CurrentSpread = raisedHoldLeft = queuedFireLeft = emptyReady = 0f; recoilIndex = 0; IsHighReady = false;
         HasAimPoint = false;
         presentation?.Reset(); crosshair?.SetDynamicSpread(0f);
+        crosshair?.SetPatternSpread(0f);
         crosshair?.SetCombatHidden(false);
         cameraEffects?.RefreshWeaponFov();
     }

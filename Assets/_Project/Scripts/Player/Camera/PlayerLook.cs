@@ -73,10 +73,35 @@ public sealed class PlayerLook : MonoBehaviour
 
         TryMouseTurnOnBar(mouseX);
         TryMouseRollOver(mouseX);
+        SteerSlide(mouseX);
         yaw += mouseX;
         yaw = ClampLookYaw(yaw);
         pitch = ClampLookPitch(pitch + mouseY);
         TickRecoil(Time.deltaTime);
+    }
+
+    // Sliding, the view stops slideTurnLimit either side of the way the slide goes (ClampLookYaw). The mouse pushed on
+    // past that edge turns the slide itself after it, up to Move.slideLookSteerRate degrees a second (user, 2026-11-10:
+    // "방향을 틀면 슬라이딩도 틀기", as Apex Legends' slide steers), so the look is slowed there instead of stopped
+    // dead, and the legs come round with the slide (PlayerBody.FaceSlide). Only on the ground: in the air a slide keeps
+    // its line. Called before the mouse turns the view, so the arc has already moved when the view is held to it.
+    private void SteerSlide(float mouseX)
+    {
+        if (mouseX == 0f || movement == null || movement.CurrentState != PlayerMovement.MovementState.Sliding
+            || !movement.IsGrounded || movement.SlideLookSteerRate <= 0f) return;
+        Vector3 direction = Vector3.ProjectOnPlane(movement.SlideDirection, Vector3.up);
+        if (direction.sqrMagnitude < .0001f) return;
+        if (body == null) body = GetComponent<PlayerBody>();
+        // The view's own edge (friend feedback C11 widened it to 120°), not the body's twist limit.
+        float limit = body != null ? body.SlideViewYawLimit : 120f;
+        float now = transform.eulerAngles.y;
+        // Where this push would take the view from the way the slide faces, and how far past the edge that is.
+        float wanted = Mathf.DeltaAngle(PlayerBody.SlideFacing(direction, now), now) + mouseX;
+        float past = Mathf.Abs(wanted) - limit;
+        // Only a push outward counts; one back toward the middle from outside the arc doesn't steer.
+        if (past <= 0f || Mathf.Sign(mouseX) != Mathf.Sign(wanted)) return;
+        float turn = Mathf.Sign(mouseX) * Mathf.Min(past, Mathf.Min(Mathf.Abs(mouseX), movement.SlideLookSteerRate * Time.deltaTime));
+        movement.SlideDirection = Quaternion.Euler(0f, turn, 0f) * direction.normalized;
     }
 
     // Backlog 123: on a swing bar the view stops at the bar's look limit; the mouse pushed on past it by

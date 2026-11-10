@@ -36,8 +36,10 @@ public sealed class GunConvergeLayerSettings : FPSAnimatorLayerSettings
 
     [Tooltip("Where the middle of the gun is held for the customize menu, from the eyes (m: right, up, ahead).")]
     public Vector3 displayAt = new Vector3(.1f, -.07f, .42f);
-    [Tooltip("How it is turned there (degrees: pitch, yaw, roll); a yaw to the right shows its right side.")]
-    public Vector3 displayTurn = new Vector3(-4f, 62f, -6f);
+    // The muzzle goes to the left (user, 2026-11-10): the right hand stays on the grip, and turning the gun the other way
+    // (yaw 62, its right side shown, as it first was) bent that wrist back on itself. This is that pose mirrored.
+    [Tooltip("How it is turned there (degrees: pitch, yaw, roll); a yaw to the left (negative) points the muzzle left and shows the gun's left side.")]
+    public Vector3 displayTurn = new Vector3(-4f, -62f, 6f);
 
     public override IAnimationLayerJob CreateAnimationJob() => new GunConvergeLayerJob();
 }

@@ -18,6 +18,11 @@ using UnityEngine.UI;
 /// isn't sold again. Buying touches only this PC's player, so it needs nobody else: a friend sees the gun once it is drawn
 /// (the stance carries it). While open the cursor is free and the player's move and combat input wait, as for the chat;
 /// F, Esc or the X closes it, and so does walking away, going down or dying.
+/// A buy answers on every channel at once (user, 2026-11-10: with only a line of small print they took a buy for
+/// nothing and paid for ammo three times): the till rings (KitSound), the money box flashes while its number runs down
+/// with what was paid falling away under it, the card reads 구매 완료, and the kill feed keeps a line. A refusal buzzes.
+/// Ammo is only sold while a held gun is short of it (탄약 가득 on the card otherwise): it used to take the money
+/// whether or not anything was filled.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class ShopMenu : MonoBehaviour
@@ -40,7 +45,7 @@ public sealed class ShopMenu : MonoBehaviour
         public Item Item;
         public TextMeshProUGUI Name, Note, Price;
         public Image Flash;
-        public float FlashAt = float.NegativeInfinity;
+        public float FlashAt = float.NegativeInfinity, BoughtAt = float.NegativeInfinity;
         public Color FlashColor;
     }
 
@@ -50,6 +55,12 @@ public sealed class ShopMenu : MonoBehaviour
     private const float Width = 560f, Margin = 48f, Inner = 20f, HeaderHeight = 84f, SectionHeight = 30f, CardHeight = 50f, CardGap = 6f, FooterHeight = 46f;
     // When things come in (s after opening).
     private const float CardsFrom = .22f, CardStagger = .035f, CountFrom = .1f, CountSeconds = .45f;
+    // The money box: its narrowest and widest (px; it grows leftward with the number, then the number shrinks), the room
+    // the banknote and the edges take beside the number, the number's size, and the X's box beside it.
+    private const float MoneyWidth = 150f, MoneyWidest = 250f, MoneyPad = 48f, MoneySize = 20f, CloseSize = 34f;
+    // After a buy: how long the card reads 구매 완료 and what was paid falls away under the money (s), how far it falls
+    // (px), and how fast the money number runs down to what is left (1/s).
+    private const float BoughtSeconds = 1.3f, SpentSeconds = 1.1f, SpentFall = 5f, MoneyRun = 12f;
 
     private static ShopMenu instance;
     private static int closedFrame = -1;
@@ -65,10 +76,12 @@ public sealed class ShopMenu : MonoBehaviour
     private Vector3 counter;
     private GameObject canvas;
     private KitReveal reveal;
-    private RectTransform moneyIcon, closeBox;
-    private Image closeFill;
-    private TextMeshProUGUI money, message;
-    private float messageLeft;
+    private RectTransform moneyIcon, moneyBox, spentBox, closeBox;
+    private Image closeFill, moneyFlash;
+    private TextMeshProUGUI money, spent, message;
+    private float messageLeft, spentAt = float.NegativeInfinity;
+    // The money shown: counts up as the panel opens, runs down after a buy (won).
+    private double moneyShown;
     private bool open, playerMapWas, combatMapWas;
     // The frame it opened on: the F that opened it still reads as pressed in this frame's Update, which would close it again
     // at once whenever this Update runs after the counter's (the same trap the gun's customize menu fell into, 2026-11-09).
@@ -100,6 +113,9 @@ public sealed class ShopMenu : MonoBehaviour
         closeFill.color = KitStyle.Card;
         closeBox.localRotation = Quaternion.identity;
         Say(null, KitStyle.Text);
+        spentAt = float.NegativeInfinity;
+        moneyShown = 0d;
+        foreach (var row in rows) row.BoughtAt = row.FlashAt = float.NegativeInfinity;
         reveal.Open();
         Refresh();
         Cursor.lockState = CursorLockMode.None;
@@ -183,9 +199,21 @@ public sealed class ShopMenu : MonoBehaviour
         string why = Refusal(item);
         if (why == null && !Wallet.TrySpend(item.Price)) why = "돈이 모자라요";
         if (why == null && !Hand(item)) { Wallet.Unspend(item.Price); why = "지금은 살 수 없어요"; }
-        if (why != null) { Say(why, KitStyle.Red); Pulse(row, new Color(KitStyle.Red.r, KitStyle.Red.g, KitStyle.Red.b, .35f)); return; }
-        Say(item.Name + " 샀어요", KitStyle.Accent);
+        if (why != null)
+        {
+            Say(why, KitStyle.Red);
+            Pulse(row, new Color(KitStyle.Red.r, KitStyle.Red.g, KitStyle.Red.b, .35f));
+            KitSound.Play(KitSound.Cue.Refuse);
+            return;
+        }
+        string paid = "-" + Wallet.Format(item.Price);
+        Say(item.Name + " 샀어요   " + paid, KitStyle.Accent);
         Pulse(row, KitStyle.Flash);
+        row.BoughtAt = spentAt = Time.unscaledTime;
+        spent.text = paid;
+        KitPulse.Play(moneyFlash, KitStyle.Flash, .45f);
+        KitSound.Play(KitSound.Cue.Buy);
+        CombatFeedHUD.Notice(player, item.Name + " 구매  " + paid, false);
     }
 
     // A card lights up again and drains, pink for a buy, red for a refusal.
@@ -208,7 +236,7 @@ public sealed class ShopMenu : MonoBehaviour
                 if (player.CombatInputLocked) return "지금은 살 수 없어요";
                 return null;
             case Kind.Ammo:
-                return slots == null || !HoldsAnyGun(slots) ? "채울 총이 없어요" : null;
+                return slots == null || !HoldsAnyGun(slots) ? "채울 총이 없어요" : !slots.NeedsAmmo() ? "탄약이 이미 가득해요" : null;
             case Kind.Heal:
                 return receiver.Health >= receiver.MaximumHealth - .5f ? "체력이 가득해요" : null;
             case Kind.Shield:
@@ -303,18 +331,37 @@ public sealed class ShopMenu : MonoBehaviour
 
     private void Refresh()
     {
-        // The money counts up as the panel opens, then reads the balance.
+        // The money counts up as the panel opens, then follows the balance: at once when it grows, running down in the
+        // accent when something was just paid for, so the eye catches the number changing.
         float counting = Mathf.Clamp01((reveal.Elapsed - CountFrom) / CountSeconds);
-        long shown = counting < 1f ? (long)(Wallet.Balance * KitReveal.EaseOut(counting)) : Wallet.Balance;
-        money.text = Wallet.Format(shown);
-        float width = money.GetPreferredValues(money.text).x;
+        long balance = Wallet.Balance;
+        if (counting < 1f) moneyShown = balance * (double)KitReveal.EaseOut(counting);
+        else if (moneyShown - balance < 1d) moneyShown = balance;
+        else moneyShown = Math.Max(balance, moneyShown - Math.Max(1d, (moneyShown - balance) * MoneyRun * Time.unscaledDeltaTime));
+        money.text = Wallet.Format((long)Math.Round(moneyShown));
+        money.color = counting >= 1f && moneyShown - balance >= 1d ? KitStyle.Accent : KitStyle.Text;
+        // The box grows leftward with the number (100,000 and up ran out of it; user, 2026-11-10); past its widest the
+        // number shrinks instead. The banknote stands just left of the number.
+        float natural = money.GetPreferredValues(money.text).x * MoneySize / Mathf.Max(1f, money.fontSize);
+        float room = MoneyWidest - MoneyPad, width = Mathf.Min(natural, room);
+        money.fontSize = natural > room ? MoneySize * room / natural : MoneySize;
+        float box = Mathf.Max(MoneyWidth, width + MoneyPad);
+        moneyBox.sizeDelta = new Vector2(box, CloseSize);
+        moneyBox.anchoredPosition = new Vector2(Width - Inner - CloseSize - 8f - box, -18f);
         moneyIcon.anchoredPosition = new Vector2(-width - 18f, 0f);
-        var slots = player != null ? player.GetComponent<PlayerWeaponSlots>() : null;
         float now = Time.unscaledTime;
+        // What was just paid falls away under the money box and fades.
+        float falling = Mathf.Clamp01((now - spentAt) / SpentSeconds);
+        spent.color = KitStyle.With(KitStyle.Accent, 1f - falling * falling);
+        spentBox.anchoredPosition = new Vector2(Width - Inner - CloseSize - 18f - spentBox.sizeDelta.x, -(18f + CloseSize + 1f + SpentFall * falling));
+        var slots = player != null ? player.GetComponent<PlayerWeaponSlots>() : null;
         foreach (var row in rows)
         {
+            // A card just bought from says so for a moment, then goes back to what it has to say (가진 총, 체력 가득 …).
+            bool bought = now - row.BoughtAt < BoughtSeconds;
             string note = player == null ? "" : Note(row.Item, slots);
-            row.Note.text = note;
+            row.Note.text = bought ? "구매 완료" : note;
+            row.Note.color = bought ? KitStyle.Accent : KitStyle.Soft;
             bool affordable = Wallet.Balance >= row.Item.Price;
             row.Price.color = note.Length > 0 ? KitStyle.Soft : affordable ? KitStyle.Text : KitStyle.Red;
             row.Name.color = note.Length > 0 ? KitStyle.Soft : KitStyle.Text;
@@ -329,6 +376,7 @@ public sealed class ShopMenu : MonoBehaviour
     private string Note(Item item, PlayerWeaponSlots slots)
     {
         if (item.Kind == Kind.Gun && slots != null && item.Weapon != null && Holds(slots, item.Weapon)) return "가진 총";
+        if (item.Kind == Kind.Ammo && slots != null && HoldsAnyGun(slots) && !slots.NeedsAmmo()) return "탄약 가득";
         if (item.Kind == Kind.Heal && player.DamageReceiver.Health >= player.DamageReceiver.MaximumHealth - .5f) return "체력 가득";
         if (item.Kind == Kind.Shield && player.DamageReceiver.Shield >= item.Amount - .5f) return "실드 있음";
         return "";
@@ -385,16 +433,21 @@ public sealed class ShopMenu : MonoBehaviour
         KitStyle.Label(subBox, "총  /  보급", 14f, TextAlignmentOptions.Left, KitStyle.Accent);
         reveal.Slide(subBox, new Vector2(300f, 0f), .1f);
 
-        // The money in a dark box, and the X.
-        const float CloseSize = 34f, MoneyWidth = 150f;
-        var moneyBox = KitStyle.TopLeft("Money", panel, new Vector2(Width - Inner - CloseSize - 8f - MoneyWidth, 18f), new Vector2(MoneyWidth, CloseSize));
+        // The money in a dark box, and the X. The box is sized to its number every frame (Refresh), so what is inside
+        // hangs from its right edge: the number 10 px in, the banknote left of the number, a lid that flashes on a buy.
+        moneyBox = KitStyle.TopLeft("Money", panel, new Vector2(Width - Inner - CloseSize - 8f - MoneyWidth, 18f), new Vector2(MoneyWidth, CloseSize));
         KitStyle.Fill(moneyBox, KitStyle.Card);
-        var moneyText = KitStyle.TopLeft("Value", moneyBox, new Vector2(0f, 0f), new Vector2(MoneyWidth - 10f, CloseSize));
-        money = KitStyle.Label(moneyText, "0", 20f, TextAlignmentOptions.Right);
+        moneyFlash = KitStyle.Fill(KitStyle.Stretch("Flash", moneyBox), Color.clear);
+        var moneyText = KitStyle.Stretch("Value", moneyBox);
+        moneyText.offsetMax = new Vector2(-10f, 0f);
+        money = KitStyle.Label(moneyText, "0", MoneySize, TextAlignmentOptions.Right);
         var holder = FeelUI.Rect("Icon Holder", moneyBox);
         holder.anchorMin = holder.anchorMax = new Vector2(1f, .5f);
         holder.anchoredPosition = new Vector2(-10f, 0f);
         moneyIcon = MoneyIcon.Make(holder, 20f).rectTransform;
+        // What a buy cost, under the money box's right end (Refresh moves and fades it).
+        spentBox = KitStyle.TopLeft("Spent", panel, new Vector2(Width - Inner - CloseSize - 18f - 190f, 18f + CloseSize + 1f), new Vector2(190f, 18f));
+        spent = KitStyle.Label(spentBox, "", 14f, TextAlignmentOptions.Right, Color.clear);
         closeBox = KitStyle.TopLeft("Close", panel, new Vector2(Width - Inner - CloseSize, 18f), new Vector2(CloseSize, CloseSize));
         closeBox.pivot = new Vector2(.5f, .5f);
         closeBox.anchoredPosition += new Vector2(CloseSize * .5f, -CloseSize * .5f);

@@ -4,7 +4,8 @@ using UnityEngine;
 /// The surface's impact effect and bullet hole where a shot from the parent WeaponController hits anything but a body.
 /// A bullet that went on (AttackTrace.Bullet) also bursts out of the far side of each wall it came through, bigger than
 /// where it went in and thrown along its way (ImpactPool.PlayExit), tears through it with the material's sound, makes an
-/// impact wherever it hit next, and plays ArcCW's ricochet sound where it glanced off.
+/// impact wherever it hit next, and plays ArcCW's ricochet sound where it glanced off. Each impact is told which way its
+/// bullet was going, so a hole shot at a slant comes out long (BulletHoles).
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class WeaponImpactEffects : MonoBehaviour
@@ -37,7 +38,7 @@ public sealed class WeaponImpactEffects : MonoBehaviour
     // 적이 아닌 표면에 맞았을 때 효과 생성
     private void ShowHitEffects(WeaponShot shot)
     {
-        ShowSurface(shot.Trace);
+        ShowSurface(shot.Trace, shot.Direction);
         if (shot.Later == null) return;
         var entered = shot.Trace;
         foreach (var leg in shot.Later)
@@ -48,7 +49,8 @@ public sealed class WeaponImpactEffects : MonoBehaviour
             // A body's far side bleeds instead (EnemyBloodEffect).
             if (onward.HasExit && onward.Exit.collider != null && !IsBody(onward.Exit.collider))
                 ImpactPool.PlayExit(onward.Exit.collider, onward.Exit.point, onward.Exit.normal, onward.Direction);
-            ShowSurface(leg.Trace);
+            // From here the bullet goes the way it left the last thing it met.
+            ShowSurface(leg.Trace, onward.Direction);
             entered = leg.Trace;
         }
     }
@@ -64,10 +66,10 @@ public sealed class WeaponImpactEffects : MonoBehaviour
         FeelAudio.PlayClipAt(bullets.Pick(key), point, sound.Volume, sound.RandomPitch(), RicochetReach);
     }
 
-    private void ShowSurface(in AttackTraceResult trace)
+    private void ShowSurface(in AttackTraceResult trace, Vector3 incoming)
     {
         if (!trace.HasHit || trace.Hit.collider == null || IsBody(trace.Hit.collider)) return;
-        ImpactPool.PlaySurface(trace.Hit.collider, trace.Hit.point, trace.Hit.normal);
+        ImpactPool.PlaySurface(trace.Hit.collider, trace.Hit.point, trace.Hit.normal, incoming);
     }
 
     // 적과 적의 부모는 제외. 시체도 벽이 아니라 몸이다

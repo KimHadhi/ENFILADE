@@ -19,9 +19,11 @@ public sealed class ScoreboardHUD : MonoBehaviour
     private const string ShowAction = "UI/OpenObjectiveBoard";
     private const int RowCount = 10, WeaponColumns = 3;
     private const float FadeSeconds = .16f, TableWidth = 1250f, RowHeight = 48f, RowGap = 4f, HeaderY = 96f, RefreshSeconds = .2f;
-    private const float PlayerColumn = 18f, NumberWidth = 70f, WeaponWidth = 130f, IconHeight = 30f, ScoreWidth = 96f, PingWidth = 50f;
+    private const float PlayerColumn = 18f, NumberWidth = 70f, WeaponWidth = 130f, IconHeight = 30f, ScoreWidth = 110f, PingWidth = 50f;
     // Left edges across the table.
-    private const float KillsAt = 400f, ExecutionsAt = 470f, DownsAt = 540f, DeathsAt = 610f, WeaponsAt = 690f, ScoreAt = 1084f, PingAt = 1190f;
+    private const float KillsAt = 400f, ExecutionsAt = 470f, DownsAt = 540f, DeathsAt = 610f, WeaponsAt = 690f, ScoreAt = 1074f, PingAt = 1190f;
+    // The money column: its number's size, the banknote's, and the gap kept between the two (px).
+    private const float ScoreSize = 19f, MoneyIconSize = 18f, MoneyGap = 5f;
     private const float GoodPing = 40f, FairPing = 80f;
     private static readonly Color Plate = new Color(0f, 0f, 0f, .62f), Soft = new Color(.82f, .84f, .88f), Gold = new Color(1f, .77f, .25f);
     private static readonly Color PingGood = new Color(.3f, 1f, .35f), PingFair = new Color(1f, .85f, .3f), PingBad = new Color(1f, .35f, .3f);
@@ -174,10 +176,10 @@ public sealed class ScoreboardHUD : MonoBehaviour
         row.downs = Cell("Downs", row.root, DownsAt, 0f, NumberWidth, 20f, TextAlignmentOptions.Center);
         row.deaths = Cell("Deaths", row.root, DeathsAt, 0f, NumberWidth, 20f, TextAlignmentOptions.Center);
         // Money: the banknote at the column's left, the number to its right (MoneyIcon, stage 6A).
-        row.score = Cell("Score", row.root, ScoreAt, 0f, ScoreWidth, 19f, TextAlignmentOptions.Right);
-        row.money = MoneyIcon.Make(row.root, 18f);
+        row.score = Cell("Score", row.root, ScoreAt, 0f, ScoreWidth, ScoreSize, TextAlignmentOptions.Right);
+        row.money = MoneyIcon.Make(row.root, MoneyIconSize);
         row.money.rectTransform.anchorMin = row.money.rectTransform.anchorMax = new Vector2(0f, .5f);
-        row.money.rectTransform.anchoredPosition = new Vector2(ScoreAt + 11f, 0f);
+        row.money.rectTransform.anchoredPosition = new Vector2(ScoreAt + 2f + MoneyIconSize * .5f, 0f);
         row.ping = Cell("Ping", row.root, PingAt, 0f, PingWidth, 19f, TextAlignmentOptions.Center);
         for (int i = 0; i < WeaponColumns; i++)
         {
@@ -258,6 +260,11 @@ public sealed class ScoreboardHUD : MonoBehaviour
         row.deaths.text = tally.Deaths.ToString();
         // The money they hold, the only money number in play (Wallet; stage 6A).
         row.score.text = Wallet.Format(tally.Score);
+        // A sum too long for the column at full size (100,000 and up ran over the banknote and out of the column; user,
+        // 2026-11-10) shrinks until it stands clear of the banknote at the column's left.
+        row.score.fontSize = ScoreSize;
+        float room = ScoreWidth - 2f - MoneyIconSize - MoneyGap, wide = row.score.GetPreferredValues(row.score.text).x;
+        if (wide > room) row.score.fontSize = ScoreSize * room / wide;
         row.ping.text = tally.Ping.ToString();
         row.ping.color = tally.Ping < GoodPing ? PingGood : tally.Ping < FairPing ? PingFair : PingBad;
         var slots = player.GetComponent<PlayerWeaponSlots>();

@@ -374,12 +374,27 @@ public class DynamicCrosshairView : MonoBehaviour
         UpdatePartOffsets();
     }
 
+    /// <summary>
+    /// The radius of the circle one shot of the gun in hand fills (a shotgun's pellets), in canvas pixels; 0 for a single
+    /// bullet. The parts stand on that circle when it is wider than the profile's own gap, and while the shape is held
+    /// (HoldShape) too: it is where the pellets land, not a wobble, so the crosshair's round is the round they fill
+    /// (user, 2026-11-10).
+    /// </summary>
+    public void SetPatternSpread(float pixels)
+    {
+        pixels = Mathf.Max(0f, pixels);
+        if (Mathf.Approximately(patternSpread, pixels)) return;
+        patternSpread = pixels;
+        UpdatePartOffsets();
+    }
+    private float patternSpread;
+
     private void UpdatePartOffsets()
     {
         if (currentProfile == null || !currentProfile.showParts || spawnedPartRects == null) return;
 
         // 모양 고정 중에는 퍼짐(점프·이동·무기별)과 사격 반동을 무시해 항상 같은 간격을 유지한다
-        float totalGap = currentProfile.baseGap + (holdShape ? 0f : dynamicSpread + fireKick);
+        float totalGap = Mathf.Max(currentProfile.baseGap, patternSpread) + (holdShape ? 0f : dynamicSpread + fireKick);
 
         for (int i = 0; i < currentProfile.partCount; i++)
         {

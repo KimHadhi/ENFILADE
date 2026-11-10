@@ -6,7 +6,10 @@ using UnityEngine;
 /// still, the shove also lunges at an enemy just beyond its reach, as ArcCW's bash does (sh_bash.lua DoLunge). With the
 /// gun reloading it is a kick instead, after Mighty Foot Engaged (GMod 1987521428): the reload goes on, the swing comes
 /// at 0.2 s and the foot lands at 0.3 s, out from the middle of the body towards where the eyes look and as far as the
-/// body is tall, shoving whoever it meets; the kicker rocks back on contact. Numbers: Tables/Player.csv, row Shove.
+/// body is tall, shoving whoever it meets; the kicker rocks back on contact. The kick counters as a shove does
+/// (ShoveCounter; user, 2026-11-10: V while reloading should be an answer to runners too): the foot landing on a zombie
+/// late in its grab or leap counters it, and so does a grab or a leap reaching the kicker while the foot is out or just
+/// after. Numbers: Tables/Player.csv, row Shove.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class ShoveMoves : MonoBehaviour
@@ -98,6 +101,9 @@ public sealed class ShoveMoves : MonoBehaviour
     /// <summary>On someone else's copy: their kick left. Their PC judged what it hit.</summary>
     internal void ShowKick() => Kicked?.Invoke();
 
+    /// <summary>A counter hands the shove straight back (ShoveCounter): the next kick needn't wait for the last.</summary>
+    internal void RefreshKick() => nextKick = 0f;
+
     private void Update()
     {
         if (player == null || !player.IsInitialized || player.IsNetworkDriven) return;
@@ -113,6 +119,10 @@ public sealed class ShoveMoves : MonoBehaviour
         if (kickClock < 0f) return;
         if (!player.DamageReceiver.IsAlive || player.CombatInputLocked) { kickClock = -1f; return; }
         kickClock += dt;
+        // While the foot is out it stands as a shove under way: a grab or a leap reaching them now, or within the
+        // counter's grace of the foot landing, is countered (ShoveCounter.TryHitCounter).
+        Transform eyes = PlayerView.EyesOf(player);
+        ShoveCounter.Shoved(player, eyes != null ? eyes.forward : transform.forward);
         if (!swung && kickClock >= kickSwingTime) Swing();
         if (kickClock >= kickHitTime) { kickClock = -1f; Land(); }
     }
@@ -167,6 +177,13 @@ public sealed class ShoveMoves : MonoBehaviour
         var posture = collider.GetComponentInParent<MeleeCombatTarget>();
         var receiver = collider.GetComponentInParent<IDamageReceiver>();
         var shove = posture != null ? posture : collider.GetComponentInParent<IShoveReceiver>();
+        var audio = GetComponent<PlayerShoveAudio>() ?? gameObject.AddComponent<PlayerShoveAudio>();
+        // A zombie late in a grab or a leap is countered instead, as by a shove (ShoveCounter): its own return and show.
+        if (posture != null && posture.IsAvailable && ShoveCounter.TryShoveCounter(player, posture, point))
+        {
+            audio.Play(ShoveImpactKind.Enemy);
+            return;
+        }
         bool landed = true;
         if (receiver != null)
         {
@@ -182,7 +199,6 @@ public sealed class ShoveMoves : MonoBehaviour
         var prop = PhysicsProp.Of(collider);
         if (landed && shove != null) shove.ReceiveShove(push * settings.shovePushSpeed, point);
         else if (prop != null) prop.Push(push * settings.propShoveImpulse, point, settings.shovePushSpeed);
-        var audio = GetComponent<PlayerShoveAudio>() ?? gameObject.AddComponent<PlayerShoveAudio>();
         audio.Play(posture != null || receiver != null ? ShoveImpactKind.Enemy : ShoveImpactKind.World);
         player.HorizontalVelocity -= push * (player.IsGrounded ? kickPushback : kickPushback * 2f);
     }
