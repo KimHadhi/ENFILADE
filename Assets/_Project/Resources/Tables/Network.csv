@@ -1,5 +1,8 @@
 ﻿id,value
-#설명 (pingDivisor = 실제 핑을 이 값으로 나눠 표시. 1이면 실제 핑 / friendlyFire = 방을 열 때 아군 사격. 1 켜짐 0 꺼짐. 방장이 /ff로 바꾼다 / friendlyFireShare = 아군이 맞을 때 받는 피해 비율. 1이면 그대로),값
+#설명 (pingDivisor = 실제 핑을 이 값으로 나눠 표시. 1이면 실제 핑 / friendlyFire = 방을 열 때 아군 사격. 1 켜짐 0 꺼짐. 방장이 /ff로 바꾼다 / friendlyFireShare = 아군이 맞을 때 받는 피해 비율. 1이면 그대로 / direct = 인터넷 방에서 릴레이보다 직접 연결(홀 펀칭)을 먼저 시도. 1 켜짐 0 꺼짐. 꺼지면 예전처럼 전부 릴레이 / stunServers = 내 바깥 주소를 물어볼 서버들. 이름:포트를 띄어쓰기로 구분 / punchSeconds = 참가자가 방장에게 직접 닿기를 기다리는 시간(초). 지나면 릴레이로 접속. 릴레이 자리는 10초 안에 써야 해서 길게 잡지 말 것),값
 pingDivisor,3
 friendlyFire,0
 friendlyFireShare,1
+direct,1
+stunServers,stun.l.google.com:19302 stun.cloudflare.com:3478
+punchSeconds,2.5

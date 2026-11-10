@@ -13,9 +13,9 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 
 /// <summary>
-/// A room shared with other people. Whoever makes it hosts on their own PC, and the others join over the local network
-/// or through Unity's relay. Alone, none of this exists, so solo play has no network at all. Lasts across scene loads
-/// until the room ends.
+/// A room shared with other people. Whoever makes it hosts on their own PC, and the others join over the local network,
+/// straight over the internet when the two routers let them, or through Unity's relay (InternetRoom). Alone, none of
+/// this exists, so solo play has no network at all. Lasts across scene loads until the room ends.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class GameSession : MonoBehaviour, INetworkPrefabInstanceHandler
@@ -31,10 +31,17 @@ public sealed class GameSession : MonoBehaviour, INetworkPrefabInstanceHandler
     private const int ReceiveQueue = 512;
     // Every enemy lives here, so all PCs know the same network prefabs before the first one spawns.
     private const string EnemyPrefabs = "Enemies";
+    // How Netcode's own description of a disconnect begins, when the host sent none.
+    private const string NetcodeOwnReason = "[Disconnect Event]";
     private static GameSession current;
+    // A room whose straight connection was found but never carried the game: joined once more, through the relay.
+    private static RoomInfo again;
     private NetworkManager network;
-    private CountingTransport transport;
+    // An internet room's host takes friends two ways at once (DualTransport): `transport` is then the relay's half.
+    private CountingTransport transport, direct;
+    private DualTransport dual;
     private InternetRoom internetRoom;
+    private RoomInfo joining;
     private GameObject playerPrefab;
     private int spawned, maxPlayers;
     private bool wasConnected, ending;
@@ -50,7 +57,7 @@ public sealed class GameSession : MonoBehaviour, INetworkPrefabInstanceHandler
     public static string Status { get; private set; } = "";
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-    private static void ResetStatics() { current = null; Status = ""; }
+    private static void ResetStatics() { current = null; again = null; Status = ""; }
 
     /// <summary>This PC's addresses a friend can join, on the local network or a virtual LAN.</summary>
     public static IEnumerable<string> LocalAddresses() => NetworkInterface.GetAllNetworkInterfaces()
@@ -71,6 +78,9 @@ public sealed class GameSession : MonoBehaviour, INetworkPrefabInstanceHandler
     /// <summary>How the room is carried (/net, friend feedback C16): an internet room's link, or a LAN or typed address's direct one.</summary>
     public static string LinkName => current == null ? "" : current.internetRoom != null ? current.internetRoom.LinkName : "직접 연결(LAN·주소)";
 
+    /// <summary>The friend with this Netcode client id reached this PC's internet room straight, not through the relay.</summary>
+    public static bool CameDirect(ulong client) => current != null && current.dual != null && current.dual.IsDirect(client);
+
     /// <summary>The room this PC hosts, as the server list shows it, or null once it is closing.</summary>
     public static RoomInfo DescribeRoom() => current == null || current.ending ? null : new RoomInfo
     {
@@ -82,7 +92,7 @@ public sealed class GameSession : MonoBehaviour, INetworkPrefabInstanceHandler
     public static void Host(string map, string title, int maxPlayers, bool internet)
     {
         if (IsOnline) return;
-        var session = Create();
+        var session = Create(internet && InternetRoom.DirectAllowed);
         session.roomMap = map; session.roomTitle = title; session.maxPlayers = maxPlayers;
         session.network.ConnectionApprovalCallback = session.Approve;
         if (internet) { session.HostOnInternet(); return; }
@@ -105,7 +115,9 @@ public sealed class GameSession : MonoBehaviour, INetworkPrefabInstanceHandler
     public static void JoinInternet(RoomInfo room)
     {
         if (IsOnline) return;
-        StartJoining(room.title).JoinOnInternet(room.id);
+        var session = StartJoining(room.title);
+        session.joining = room;
+        session.JoinOnInternet(room.id);
     }
 
     /// <summary>Leaves the room and returns to the main menu.</summary>
@@ -123,18 +135,23 @@ public sealed class GameSession : MonoBehaviour, INetworkPrefabInstanceHandler
         return current.network.SceneManager.LoadScene(map, LoadSceneMode.Single) == SceneEventProgressStatus.Started;
     }
 
-    private static GameSession Create()
+    // `twoWays` is an internet room's host, who takes friends straight and through the relay at once.
+    private static GameSession Create(bool twoWays = false)
     {
         var host = new GameObject("Game Session");
         host.SetActive(false);
         var session = host.AddComponent<GameSession>();
-        session.transport = host.AddComponent<CountingTransport>();
-        session.transport.DisconnectTimeoutMS = SilenceLimitMs;
-        // The build's log filled the default 128-packet receive queue and dropped packets (friend feedback C16), most
-        // likely as a chapter loads and every enemy, corpse and player reports at once.
-        session.transport.MaxPacketQueueSize = ReceiveQueue;
+        session.transport = AddTransport(host);
+        NetworkTransport used = session.transport;
+        if (twoWays)
+        {
+            session.direct = AddTransport(host);
+            session.dual = host.AddComponent<DualTransport>();
+            session.dual.Use(session.transport, session.direct);
+            used = session.dual;
+        }
         session.network = host.AddComponent<NetworkManager>();
-        session.network.NetworkConfig = new NetworkConfig { NetworkTransport = session.transport, ConnectionApproval = true };
+        session.network.NetworkConfig = new NetworkConfig { NetworkTransport = used, ConnectionApproval = true };
         session.playerPrefab = PlayerFactory.Prefab;
         host.SetActive(true);
         session.network.AddNetworkPrefab(session.playerPrefab);
@@ -143,6 +160,16 @@ public sealed class GameSession : MonoBehaviour, INetworkPrefabInstanceHandler
         current = session;
         Status = "";
         return session;
+    }
+
+    private static CountingTransport AddTransport(GameObject host)
+    {
+        var transport = host.AddComponent<CountingTransport>();
+        transport.DisconnectTimeoutMS = SilenceLimitMs;
+        // The build's log filled the default 128-packet receive queue and dropped packets (friend feedback C16), most
+        // likely as a chapter loads and every enemy, corpse and player reports at once.
+        transport.MaxPacketQueueSize = ReceiveQueue;
+        return transport;
     }
 
     private static GameSession StartJoining(string target)
@@ -173,13 +200,13 @@ public sealed class GameSession : MonoBehaviour, INetworkPrefabInstanceHandler
     // True when the room is ready and still wanted: the player can give up while this waits on Unity's services.
     private async Task<bool> EnterInternetRoom(Func<CancellationToken, Task> enter, string failed)
     {
-        internetRoom = new InternetRoom(network, transport, () => OnDisconnected(0));
+        internetRoom = new InternetRoom(network, transport, direct, dual, () => OnDisconnected(0));
         try { await enter(destroyCancellationToken); }
         catch (OperationCanceledException) { return false; }
-        catch (Exception e) when (OnlineServices.IsServiceError(e))
+        catch (Exception e) when (OnlineServices.IsServiceError(e) || e is InternetRoom.StartFailed)
         {
             Debug.LogWarning($"[GameSession] {e.Message}");
-            End(failed);
+            End(failed, true);
             return false;
         }
         if (ending) internetRoom.Close();
@@ -227,16 +254,26 @@ public sealed class GameSession : MonoBehaviour, INetworkPrefabInstanceHandler
 
     private void OnDisconnected(ulong client)
     {
+        // Only what the host itself said counts (the room is full). Without that Netcode fills in a technical line of
+        // its own, which is no use to a player; and a host that said something was reached, so the way there works.
         string reason = network.DisconnectReason;
-        if (string.IsNullOrEmpty(reason))
-            reason = wasConnected ? "방이 닫혔거나 연결이 끊겼습니다." : "접속하지 못했습니다. 방이 열려 있는지 확인하세요.";
-        End(reason);
+        bool told = !string.IsNullOrEmpty(reason) && !reason.StartsWith(NetcodeOwnReason, StringComparison.Ordinal);
+        if (!told) reason = wasConnected ? "방이 닫혔거나 연결이 끊겼습니다." : "접속하지 못했습니다. 방이 열려 있는지 확인하세요.";
+        End(reason, !told);
     }
 
-    private void End(string message)
+    // `failed` is an ending nobody asked for, as opposed to leaving.
+    private void End(string message, bool failed = false)
     {
         if (current != this || ending) return;
         ending = true;
+        // The straight way answered the probe and then didn't carry the game: the same room once more, and this time
+        // InternetRoom goes through the relay. Never when the player was already in, or gave up.
+        if (failed && !wasConnected && joining != null && internetRoom != null && internetRoom.GiveUpDirect())
+        {
+            again = joining;
+            message = "직접 연결이 되지 않아 릴레이로 다시 접속합니다...";
+        }
         Status = message;
         internetRoom?.Close();
         network.Shutdown();
@@ -249,6 +286,13 @@ public sealed class GameSession : MonoBehaviour, INetworkPrefabInstanceHandler
         yield return new WaitWhile(() => network.ShutdownInProgress);
         current = null;
         Destroy(gameObject);
-        if (SceneManager.GetActiveScene().name != MainMenuScreen.SceneName) SceneManager.LoadScene(MainMenuScreen.SceneName);
+        var retry = again;
+        again = null;
+        if (retry != null) JoinInternet(retry);
+        else if (SceneManager.GetActiveScene().name != MainMenuScreen.SceneName) SceneManager.LoadScene(MainMenuScreen.SceneName);
     }
+
+    // Play mode stopped or the game quit without the room ending: the router's port and the sockets' threads must not
+    // outlive it.
+    private void OnDestroy() => internetRoom?.ReleaseLocal();
 }

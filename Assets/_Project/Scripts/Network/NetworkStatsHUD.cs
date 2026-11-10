@@ -15,7 +15,10 @@ public sealed class NetworkStatsHUD : MonoBehaviour
 
     private readonly List<string> lines = new List<string>();
     private NetworkManager network;
-    private CountingTransport transport;
+    private NetworkTransport transport;
+    // One of the two counts the room's data: a plain transport, or a host's two as one.
+    private CountingTransport single;
+    private DualTransport dual;
     private long lastSent, lastReceived, sentAtStart, receivedAtStart;
     private float sampleLeft = SampleTime, worstFrame, worstInSample, elapsed, sentPeak, receivedPeak;
     private int frames, framesInSample, pingSamples;
@@ -41,11 +44,16 @@ public sealed class NetworkStatsHUD : MonoBehaviour
     private void Awake()
     {
         network = GetComponent<NetworkManager>();
-        transport = network.NetworkConfig.NetworkTransport as CountingTransport;
-        if (transport == null) { enabled = false; return; }
-        lastSent = sentAtStart = transport.BytesSent;
-        lastReceived = receivedAtStart = transport.BytesReceived;
+        transport = network.NetworkConfig.NetworkTransport;
+        single = transport as CountingTransport;
+        dual = transport as DualTransport;
+        if (single == null && dual == null) { enabled = false; return; }
+        lastSent = sentAtStart = Sent;
+        lastReceived = receivedAtStart = Received;
     }
+
+    private long Sent => dual != null ? dual.BytesSent : single.BytesSent;
+    private long Received => dual != null ? dual.BytesReceived : single.BytesReceived;
 
     private void Update()
     {
@@ -62,22 +70,23 @@ public sealed class NetworkStatsHUD : MonoBehaviour
 
     private void Sample(float time)
     {
-        float sent = (transport.BytesSent - lastSent) / 1024f / time;
-        float received = (transport.BytesReceived - lastReceived) / 1024f / time;
-        lastSent = transport.BytesSent;
-        lastReceived = transport.BytesReceived;
+        float sent = (Sent - lastSent) / 1024f / time;
+        float received = (Received - lastReceived) / 1024f / time;
+        lastSent = Sent;
+        lastReceived = Received;
         sentPeak = Mathf.Max(sentPeak, sent);
         receivedPeak = Mathf.Max(receivedPeak, received);
         worstFrame = Mathf.Max(worstFrame, worstInSample);
 
         lines.Clear();
-        bool relay = transport.Protocol == UnityTransport.ProtocolType.RelayUnityTransport;
-        lines.Add($"{(network.IsHost ? "Host" : "Client")} on {(relay ? "Relay" : "direct")}, {network.ConnectedClientsIds.Count} players");
+        // A host that takes friends both ways says which way each came, next to their ping.
+        string way = dual != null ? "Relay + direct" : single.Protocol == UnityTransport.ProtocolType.RelayUnityTransport ? "Relay" : "direct";
+        lines.Add($"{(network.IsHost ? "Host" : "Client")} on {way}, {network.ConnectedClientsIds.Count} players");
         lines.Add(GameSession.LinkName);
         if (network.IsHost)
         {
             foreach (ulong client in network.ConnectedClientsIds)
-                if (client != network.LocalClientId) AddPing($"Player {client}", client);
+                if (client != network.LocalClientId) AddPing($"Player {client}" + (dual == null ? "" : GameSession.CameDirect(client) ? " (direct)" : " (relay)"), client);
         }
         else AddPing("Host", NetworkManager.ServerClientId);
         lines.Add($"Up {sent:F1} kB/s, down {received:F1} kB/s");
@@ -101,7 +110,7 @@ public sealed class NetworkStatsHUD : MonoBehaviour
     {
         if (elapsed <= 0f) return "측정한 시간이 없습니다.";
         string ping = pingSamples > 0 ? $"실제 핑 평균 {pingTotal / pingSamples} ms, 최고 {pingPeak} ms" : "실제 핑 없음";
-        float sent = (transport.BytesSent - sentAtStart) / 1024f / elapsed, received = (transport.BytesReceived - receivedAtStart) / 1024f / elapsed;
+        float sent = (Sent - sentAtStart) / 1024f / elapsed, received = (Received - receivedAtStart) / 1024f / elapsed;
         // Whose room and how it is carried, so a ping can be read for what it is (friend feedback C16).
         string link = (network.IsHost ? "방장" : "참가") + " · " + GameSession.LinkName;
         return $"측정 {elapsed:F0}초 ({link}): {ping} / 보냄 평균 {sent:F1}, 최고 {sentPeak:F1} kB/s / 받음 평균 {received:F1}, 최고 {receivedPeak:F1} kB/s / "
