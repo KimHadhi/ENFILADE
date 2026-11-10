@@ -56,6 +56,8 @@ MonoBehaviour:
   ejectShells: 1
   soundProfile: 1
   fireSounds: []
+  suppressedFireSounds:
+  - {fileID: 8300000, guid: 5371e8911f6e4ae2a348e7e0d4854e0b, type: 3}
   fireVolume: 1
   postureDamage: 9
   flinchMultiplier: 1.35

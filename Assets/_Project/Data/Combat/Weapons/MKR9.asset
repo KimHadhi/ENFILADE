@@ -82,9 +82,7 @@ MonoBehaviour:
   - {fileID: 8300000, guid: c4cd0c5723a8dca4a9c03a13c059d8d0, type: 3}
   - {fileID: 8300000, guid: 093c9177eeed68141a827a95fc803b0e, type: 3}
   suppressedFireSounds:
-  - {fileID: 8300000, guid: 40019738b5aa3794996cf76ac7c14c2f, type: 3}
-  - {fileID: 8300000, guid: 55dd42e0834d5f14f9683e956297fb71, type: 3}
-  - {fileID: 8300000, guid: eab5efe8c4e3e88449761962eeaaace9, type: 3}
+  - {fileID: 8300000, guid: 602e50cf2f574126875c88faf7321c6d, type: 3}
   fireVolume: 1
   postureDamage: 4
   flinchMultiplier: 1
