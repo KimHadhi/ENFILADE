@@ -43,11 +43,16 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
     public static event Action<MeleeCombatTarget> AnyStaggered;
     public float StaggerAge { get; private set; }
     /// <summary>
-    /// A brute (friend feedback C2, ZombieType): shoves, barges, knockdowns, posture damage, guard breaks and executions
-    /// don't move it, nor do bullet flinches (EnemyHitReaction); a stun (a parried blow) lasts at most SteadfastStun.
+    /// A brute (friend feedback C2, ZombieType): barges, knockdowns, guard breaks and the player's holds don't move it,
+    /// nor do bullet flinches (EnemyHitReaction); a stun (a parried blow) lasts at most SteadfastStun. Shoves and
+    /// executions do work on it, at the user's word (2026-11-10: "밀치기와 처형은 먹히게 했으면"), though less than on
+    /// the pack: a shove moves it SteadfastShove as far, its posture takes SteadfastPosture of what is put into it, and
+    /// an execution takes ExecutionShare of its health rather than all of it (EnemyHealth).
     /// </summary>
     internal bool Steadfast { get; set; }
-    private const float SteadfastStun = .5f;
+    /// <summary>The share of its whole health an execution takes: 1 for all it has left (ZombieType, ZombieKinds' executionShare).</summary>
+    internal float ExecutionShare { get; set; } = 1f;
+    private const float SteadfastStun = .5f, SteadfastShove = .4f, SteadfastPosture = .25f;
     private static readonly HashSet<MeleeCombatTarget> active = new HashSet<MeleeCombatTarget>();
     public static IEnumerable<MeleeCombatTarget> Active => active;
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -150,8 +155,9 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
     {
         // Further hits cannot restart the recovery clock or repeatedly trigger the stagger cue.
         if (!IsAvailable || IsStaggered) return;
-        if (Steadfast) { if (interrupt && stun > 0f) InterruptHere(stun); return; }
         if (IsCopy) { network.SendPosture(amount, stun, interrupt); predictedUntil = Time.time + PredictionHold; }
+        // One that stands firm takes a share of it (the host was told the whole, and shares it out itself).
+        if (Steadfast) amount *= SteadfastPosture;
         Posture = Mathf.Max(0f, Posture - Mathf.Max(0f, amount));
         recoveryRemaining = recoveryDelay;
         if (Posture <= 0f)
@@ -219,7 +225,7 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
     /// Whether this executor may execute it now: broken (CanExecute), or a zombie unaware of anyone with them behind its
     /// back, a stealth kill (ZombieMind.CanBeTakenDownFrom).
     /// </summary>
-    public bool CanBeExecutedBy(Component executor) => !Steadfast && (CanExecute || CanBeTakenDownBy(executor));
+    public bool CanBeExecutedBy(Component executor) => CanExecute || CanBeTakenDownBy(executor);
 
     /// <summary>The stealth kill alone: an unaware zombie with this executor behind it.</summary>
     public bool CanBeTakenDownBy(Component executor)
@@ -312,7 +318,7 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
     }
     private void ReceiveShove(Vector3 impulse, Vector3 point, HashSet<MeleeCombatTarget> chain)
     {
-        if (!IsAvailable || executor != null || Steadfast || StartShove(impulse, chain, ShoveDuration)) return;
+        if (!IsAvailable || executor != null || StartShove(Steadfast ? impulse * SteadfastShove : impulse, chain, ShoveDuration)) return;
         var body = GetComponent<Rigidbody>();
         if (body != null && !body.isKinematic) body.AddForceAtPosition(impulse, point, ForceMode.Impulse);
     }

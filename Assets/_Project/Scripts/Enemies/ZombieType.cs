@@ -71,8 +71,10 @@ public sealed class ZombieType : MonoBehaviour
         public float knock;
         [Tooltip("And this fast up (m/s), so they fly and land on their back.")]
         public float knockUp;
-        [Tooltip("Shoves, knockdowns, posture breaks, guard breaks, executions and bullet flinches don't move it; a parry stuns it only briefly.")]
+        [Tooltip("Knockdowns, guard breaks and bullet flinches don't move it, a parry stuns it only briefly, a shove moves it less and its posture breaks far more slowly (MeleeCombatTarget.Steadfast).")]
         public bool steadfast;
+        [Tooltip("An execution takes this share of its whole health; 0 or 1 takes all it has left (the pack's).")]
+        public float executionShare;
     }
 
     // Guts & Blackpowder's shambler, its 14 studs a second against a player's walking 16 put to our walk (4.9 m/s).
@@ -94,7 +96,8 @@ public sealed class ZombieType : MonoBehaviour
     private readonly Numbers brute = new Numbers
     {
         speed = 5.2f, acceleration = 10f, angularSpeed = 140f, damage = 30f, windup = .65f, attackInterval = 1.8f, aimHeight = 1.1f,
-        attackRange = 2.6f, approachShare = .7f, healthShare = 30f, scale = 1.45f, knock = 9f, knockUp = 4.5f, steadfast = true
+        attackRange = 2.6f, approachShare = .7f, healthShare = 30f, scale = 1.45f, knock = 9f, knockUp = 4.5f, steadfast = true,
+        executionShare = .35f
     };
 
     private NavMeshAgent agent;
@@ -191,7 +194,11 @@ public sealed class ZombieType : MonoBehaviour
         if (mind != null) mind.SetChaseSpeed(numbers.speed);
         // A brute that loses a leg crawls but stays a brute: firm and big.
         var kept = Kind == ZombieKind.Brute ? brute : numbers;
-        if (melee != null) melee.Steadfast = kept.steadfast;
+        if (melee != null)
+        {
+            melee.Steadfast = kept.steadfast;
+            melee.ExecutionShare = kept.executionShare > 0f ? Mathf.Min(1f, kept.executionShare) : 1f;
+        }
         if (body == null) body = GetComponent<ZombieBody>();
         if (body != null) body.Regrow();
     }

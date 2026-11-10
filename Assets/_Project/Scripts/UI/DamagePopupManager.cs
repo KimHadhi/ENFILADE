@@ -84,7 +84,8 @@ public sealed class DamagePopupManager : MonoBehaviour
         bool environmental = !IsFromPlayer(hit);
         bool kill = report.IsKillingBlow;
         bool critical = report.IsCritical && !environmental, counter = hit.IsCounter && !environmental;
-        float amount = Mathf.Max(1, Mathf.RoundToInt(hit.Amount));
+        // What the target took, not what the weapon sent: a zombie lying knocked down takes more (CombatDamageReport.Dealt).
+        float amount = Mathf.Max(1, Mathf.RoundToInt(report.Dealt));
 
         var group = Find(report.Target, environmental) ?? Open(report.Target, environmental);
         if (!kill) group.anchor.Thaw();

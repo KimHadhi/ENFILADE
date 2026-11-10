@@ -37,6 +37,8 @@ public sealed class ZombieGore : MonoBehaviour
     private float wearCut = .6f;
     [SerializeField, Range(0f, 2f), Tooltip("Share of the zombie's health the killing blow must put into a limb to take it off.")]
     private float killCut = .15f;
+    [SerializeField, Min(0f), Tooltip("The most health those shares are taken of: a zombie with more (a brute, thirty times the pack's) loses a limb as if it had this much. Both its legs shot until it died never came off (user, 2026-11-10). 0: no limit.")]
+    private float limbHealthMost = 600f;
     [SerializeField, Min(0f), Tooltip("How fast a burst head's chunks fly (m/s).")]
     private float burstSpeed = 6f;
     [SerializeField, Min(0), Tooltip("Gut chunks thrown from a burst head.")]
@@ -195,6 +197,7 @@ public sealed class ZombieGore : MonoBehaviour
         }
         if (!BodyParts.IsLimb(part) || !body.Has(part)) return;
         float health = Mathf.Max(1f, report.MaximumHealth);
+        if (limbHealthMost > 0f) health = Mathf.Min(health, limbHealthMost);
         float blow = body.Blow(part, hit.Amount), worn = body.Wear(part, hit.Amount);
         bool off = kill ? blow >= killCut * health : blow >= blowCut * health || worn >= wearCut * health;
         if (!off || (!kill && BodyParts.IsLeg(part) && !LegsCanCrawl)) return;

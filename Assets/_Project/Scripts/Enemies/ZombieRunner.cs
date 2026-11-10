@@ -39,6 +39,8 @@ public sealed class ZombieRunner : MonoBehaviour
     private float cooldown = 1.2f;
     [SerializeField, Min(0f), Tooltip("Knocked down or stunned, once back on its feet it waits at least this long before it charges or leaps again (s): knocking it down buys that time (friend feedback C7).")]
     private float riseDaze = 1.5f;
+    [SerializeField, Min(0f), Tooltip("Come down off a ledge (ZombieDrop), it needs this long to find its feet before it charges or leaps (s): a runner dropping from above pounced the instant it touched the ground (user, 2026-11-10).")]
+    private float dropDaze = .9f;
     [SerializeField, Min(0f), Tooltip("Further above or below its quarry than this (m), it doesn't charge or leap.")]
     private float chargeHeight = 1.5f;
     [SerializeField, Min(0f), Tooltip("How high the leap goes, shown (m).")]
@@ -84,6 +86,7 @@ public sealed class ZombieRunner : MonoBehaviour
     private ZombieMind mind;
     private ZombieGrip grip;
     private ZombieType type;
+    private ZombieDrop drop;
     private Phase phase;
     private Vector3 heading, leapFrom, leapTo;
     private float chargeTime, skidLeft, restLeft, cooldownLeft, sightLeft;
@@ -134,6 +137,7 @@ public sealed class ZombieRunner : MonoBehaviour
         mind = GetComponent<ZombieMind>();
         grip = GetComponent<ZombieGrip>();
         type = GetComponent<ZombieType>();
+        drop = GetComponent<ZombieDrop>();
         int enemy = LayerMask.NameToLayer("Enemy");
         sightMask = ~((enemy >= 0 ? 1 << enemy : 0) | 1 << 31);
         GameTables.Bind(TableName, TableRow, this);
@@ -153,6 +157,8 @@ public sealed class ZombieRunner : MonoBehaviour
             if (melee != null && (melee.IsStunned || melee.IsLying)) cooldownLeft = Mathf.Max(cooldownLeft, riseDaze);
             return;
         }
+        // In the air off a ledge it neither charges nor leaps, and the wait starts over as it lands.
+        if (drop != null && drop.Dropping) cooldownLeft = Mathf.Max(cooldownLeft, dropDaze);
         if (targeting == null) targeting = GetComponent<EnemyTargeting>();
         var player = targeting != null ? targeting.Player : null;
         switch (phase)

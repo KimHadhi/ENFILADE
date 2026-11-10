@@ -28,6 +28,9 @@ internal sealed class CampaignCans
     private const float ReachSlack = .8f, ShareEvery = 2f, DropAhead = .6f, GroundSearch = 4f;
     // A throw: how fast it leaves the hands along the aim and up (m/s), the game's gravity, the longest flight (s).
     private const float ThrowSpeed = 11f, ThrowLift = 2.5f, Gravity = 20f, LongestFlight = 4f, CanRadius = .18f;
+    // What a flying can lands on: a face leaning no more than this from level (its normal's height). Anything steeper it
+    // knocks against, keeping this share of its speed.
+    private const float FloorNormal = .5f, Bounce = .3f;
     // The blast: how far it reaches (m), its damage at the middle and at the edge, how long it knocks zombies down (s).
     private const float BlastRadius = 5f, BlastDamage = 180f, BlastEdgeDamage = 60f, BlastKnockdown = 2.2f;
     // The fire after it: how wide (m), damage a second to a zombie in it, how long it burns, how long the can is gone (s).
@@ -223,7 +226,9 @@ internal sealed class CampaignCans
         }
     }
 
-    // Along its arc: it lands on whatever it meets (players and zombies aside), or after LongestFlight wherever it is.
+    // Along its arc (players and zombies aside). It lands on a floor; a wall or a ceiling it only knocks against, loses
+    // most of its speed and drops from. It used to lie wherever it first touched anything, so a can thrown at a ceiling
+    // stayed stuck up there (user, 2026-11-10). After LongestFlight it comes down wherever it is.
     private void Fly(int index, float dt)
     {
         var can = state[index];
@@ -231,16 +236,29 @@ internal sealed class CampaignCans
         velocity[index] += Vector3.down * Gravity * dt;
         Vector3 step = velocity[index] * dt;
         flown[index] += dt;
-        bool landed = Physics.SphereCast(from, CanRadius, step.normalized, out RaycastHit hit, step.magnitude, SolidMask(-1), QueryTriggerInteraction.Ignore);
-        if (landed || flown[index] >= LongestFlight || from.y < -100f)
+        RaycastHit hit = default;
+        bool met = step.sqrMagnitude > 1e-8f
+            && Physics.SphereCast(from, CanRadius, step.normalized, out hit, step.magnitude, SolidMask(-1), QueryTriggerInteraction.Ignore);
+        if (from.y < -100f) { can.Mode = (byte)Mode.Lying; can.Position = start[index].Position; }
+        else if (met && hit.normal.y >= FloorNormal) { can.Mode = (byte)Mode.Lying; can.Position = Ground(hit.point + hit.normal * .05f, -1); }
+        else if (flown[index] >= LongestFlight) { can.Mode = (byte)Mode.Lying; can.Position = Settle(from); }
+        else if (met)
         {
-            can.Mode = (byte)Mode.Lying;
-            can.Position = from.y < -100f ? start[index].Position : Ground(landed ? hit.point + hit.normal * .05f : from, -1);
+            // Up to where it touches and a little clear of it, then off it: nothing of its speed carries it further in,
+            // and off a ceiling nothing carries it up.
+            can.Position = from + step.normalized * hit.distance + hit.normal * .02f;
+            Vector3 off = Vector3.Reflect(velocity[index], hit.normal) * Bounce;
+            if (hit.normal.y < 0f && off.y > 0f) off.y = 0f;
+            velocity[index] = off;
         }
         else can.Position = from + step;
         state[index] = can;
         changed = true;
     }
+
+    // Where a can still in the air at the end of its flight comes down: the first floor under it, however far below.
+    private static Vector3 Settle(Vector3 at)
+        => Physics.Raycast(at, Vector3.down, out RaycastHit floor, 200f, SolidMask(-1), QueryTriggerInteraction.Ignore) ? floor.point : at;
 
     // The blast: zombies within reach are hurt by how near they are, and knocked flat (a brute shrugs that off).
     private void Blast(Vector3 at, PlayerMovement by)

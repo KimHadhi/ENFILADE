@@ -128,17 +128,26 @@ public sealed class EnemyHealth : MonoBehaviour, IDamageReceiver, ICombatVitals,
         if (recent.Count > 256) seen.Remove(recent.Dequeue());
         float before = Health;
         // Knocked down and lying there, it takes more (ZombieKnockdown lyingDamage, friend feedback C7).
-        if (melee == null) melee = GetComponent<MeleeCombatTarget>();
-        float amount = hit.Amount * (body != null && body.Wears && melee != null && melee.IsLying ? body.LyingDamage : 1f);
-        // An execution takes whatever is left, which on the host may be more than the copy it was judged on.
-        Health = hit.Kind == DamageKind.Execution ? 0f : Mathf.Max(0f, Health - amount);
+        float scale = LyingScale(), amount = hit.Amount * scale;
+        if (hit.Kind == DamageKind.Execution)
+        {
+            // An execution takes whatever is left, which on the host may be more than the copy it was judged on. Of one
+            // that stands firm (a brute) it takes a share of its whole health instead: executions work on it, without
+            // one of them ending a boss made for a whole team's fire.
+            float share = melee != null ? melee.ExecutionShare : 1f;
+            Health = share >= 1f ? 0f : Mathf.Max(0f, Health - MaximumHealth * share);
+            scale = hit.Amount > 0f ? (before - Health) / hit.Amount : 1f;
+        }
+        else Health = Mathf.Max(0f, Health - amount);
         UltimateCharge.AwardEnemyHit(hit);
         // A copy shows the hit now and leaves the rest to the host, whose enemy is the true one.
         bool copy = network != null && network.IsCopy;
         if (copy) network.SendHit(hit);
         else if (network != null) network.AnnounceHit(hit, before, Health);
-        // Report before Die(): popups bind to this transform and keep its last position after Destroy.
-        CombatDamageEvents.Report(this, hit, before, Health, MaximumHealth);
+        // Report before Die(): popups bind to this transform and keep its last position after Destroy. The number shown is
+        // what it took, the lying share included: it read as if lying made no difference while only the health knew
+        // (user, 2026-11-10).
+        CombatDamageEvents.Report(this, hit, before, Health, MaximumHealth, scale);
 
         if (!IsAlive)
         {
@@ -146,6 +155,8 @@ public sealed class EnemyHealth : MonoBehaviour, IDamageReceiver, ICombatVitals,
         }
         else if (!copy)
         {
+            // It lived through an execution: back on its guard, so the next one has to be earned again.
+            if (hit.Kind == DamageKind.Execution && melee != null) melee.ResetPosture();
             if (reaction != null) reaction.OnHit(hit, before - Health, MaximumHealth);
             // Knocked down, the blow pushes the body where its doll runs (here, on the host or alone).
             if (body != null) body.Hit(hit);
@@ -162,8 +173,18 @@ public sealed class EnemyHealth : MonoBehaviour, IDamageReceiver, ICombatVitals,
     /// <summary>On a copy: someone else's hit, as the host took it.</summary>
     internal void ShowHit(DamageHit hit, float before, float after)
     {
+        // Read before the health is shown: a killing hit ends the lying it was scaled by. An execution's number is what
+        // it took, which of a brute is a share.
+        float scale = hit.Kind == DamageKind.Execution && hit.Amount > 0f ? Mathf.Max(0f, before - after) / hit.Amount : LyingScale();
         ShowHealth(after, hit, true);
-        CombatDamageEvents.Report(this, hit, before, after, MaximumHealth);
+        CombatDamageEvents.Report(this, hit, before, after, MaximumHealth, scale);
+    }
+
+    // What a hit's amount is multiplied by here and now: more while it lies knocked down.
+    private float LyingScale()
+    {
+        if (melee == null) melee = GetComponent<MeleeCombatTarget>();
+        return body != null && body.Wears && melee != null && melee.IsLying ? body.LyingDamage : 1f;
     }
 
     // Someone else's kill, seen here: the body falls as their PC runs it (ZombieCorpse), and the enemy waits hidden for
