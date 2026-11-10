@@ -43,9 +43,8 @@ public sealed class CrosshairPresetGallery
         }
         glowTile = -1;
         CodeRow(parent, settings);
-        info = W.Label(parent, carriedInfo ?? (settings.custom
-            ? "모양을 고르면 색·불투명도·테두리는 그대로 두고 모양만 바뀝니다."
-            : "모양을 고르거나 코드를 붙여 넣으면 '직접 꾸미기'로 바뀝니다."), 16f, W.Muted);
+        info = W.Label(parent, carriedInfo ?? Texts.Get(settings.custom ? "crosshair.presets.info.custom" : "crosshair.presets.info.design"),
+            16f, W.Muted);
         W.Size(info, height: 24f);
         carriedInfo = null;
     }
@@ -121,13 +120,13 @@ public sealed class CrosshairPresetGallery
 
     private void CodeRow(Transform parent, CrosshairSettings settings)
     {
-        var row = W.Row(parent, "공유 코드");
+        var row = W.Row(parent, Texts.Get("crosshair.code"));
         shownCode = settings.custom ? CrosshairCode.Encode(settings) : string.Empty;
         var field = W.TextInput(row, shownCode, _ => { });
         // Above the field's own priority: the code's text width would otherwise squeeze the label and buttons.
         W.Size(field, width: 0f, height: 34f, flexibleWidth: 1f).layoutPriority = 2;
         field.characterLimit = 80;
-        var hint = W.Label(field.textViewport, CrosshairCode.Prefix + "로 시작하는 코드", 16f, W.Muted);
+        var hint = W.Label(field.textViewport, Texts.Format("crosshair.code.hint", CrosshairCode.Prefix), 16f, W.Muted);
         W.Stretch(hint.rectTransform);
         field.placeholder = hint;
         hint.enabled = shownCode.Length == 0; // set after the text, so the field has not hidden it on its own
@@ -135,14 +134,14 @@ public sealed class CrosshairPresetGallery
         field.onEndEdit.AddListener(text =>
         {
             if (text == shownCode) return;
-            if (!Read(text, "코드를 읽을 수 없습니다. " + CrosshairCode.Prefix + "로 시작하는 코드를 그대로 넣어 주세요."))
+            if (!Read(text, Texts.Format("crosshair.code.unreadable", CrosshairCode.Prefix)))
                 field.SetTextWithoutNotify(shownCode);
         });
 
-        var copy = W.ActionButton(row, "복사", false, () =>
+        var copy = W.ActionButton(row, Texts.Get("crosshair.code.copy"), false, () =>
         {
             GUIUtility.systemCopyBuffer = shownCode;
-            info.text = "복사했습니다. 디스코드나 방 채팅에 붙여 넣어 친구와 나누세요.";
+            info.text = Texts.Get("crosshair.code.copied");
         });
         W.Size(copy, 84f, 34f);
         if (!settings.custom)
@@ -150,8 +149,8 @@ public sealed class CrosshairPresetGallery
             copy.interactable = false; // the designed crosshair is an asset, not a drawing a code can carry
             copy.GetComponentInChildren<TextMeshProUGUI>().color = W.Muted;
         }
-        W.Size(W.ActionButton(row, "붙여넣기", false,
-            () => Read(GUIUtility.systemCopyBuffer, "클립보드에 크로스헤어 코드가 없습니다.")), 106f, 34f);
+        W.Size(W.ActionButton(row, Texts.Get("crosshair.code.paste"), false,
+            () => Read(GUIUtility.systemCopyBuffer, Texts.Get("crosshair.code.clipboard_empty"))), 106f, 34f);
     }
 
     private bool Read(string text, string failure)
@@ -163,7 +162,7 @@ public sealed class CrosshairPresetGallery
         }
         PlayerCrosshairs.Replace(kind, drawing);
         GameSettings.Apply();
-        carriedInfo = "코드를 불러왔습니다.";
+        carriedInfo = Texts.Get("crosshair.code.loaded");
         changed();
         return true;
     }

@@ -163,7 +163,8 @@ public sealed partial class ZombieBody : MonoBehaviour
         FindBlendBones();
         feetHeight = feet;
 
-        float top = BuildHitboxes(feet);
+        // Fitted to this look's own body (ZombieBody.Hitboxes.cs), or the fixed sizes below when its skin can't be read.
+        float top = FitHitboxes(feet);
         MeasureEyes();
         // 524: a body's depth round, not a metre across (ZombieCrowd), so crowds stand close and players come right up.
         var crowd = GetComponent<ZombieCrowd>();
@@ -227,7 +228,10 @@ public sealed partial class ZombieBody : MonoBehaviour
 
     // ---- Hitboxes ----------------------------------------------------------------------------------------------
 
-    /// <summary>Head sphere, a box per torso bone, a capsule per arm and leg bone. Returns the head's top in local y.</summary>
+    /// <summary>
+    /// The fixed sizes, for a look whose skin can't be read (FitHitboxes fits the rest): head sphere, a box per torso
+    /// bone, a capsule per arm and leg bone. Returns the head's top in local y.
+    /// </summary>
     private float BuildHitboxes(float feet)
     {
         Vector3 up = Model.transform.up, forward = Model.transform.forward;

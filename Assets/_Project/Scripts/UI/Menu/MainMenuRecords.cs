@@ -64,15 +64,16 @@ public sealed class MainMenuRecords : MonoBehaviour
     // The heading and one plate per chapter of the campaign, in the chapter table's order.
     private void BuildCampaign(KitReveal reveal, ref float at)
     {
-        var title = KitStyle.Flat(KitStyle.TopLeft("Title", content, new Vector2(edge, 26f), new Vector2(LeftWidth, 80f)), "기록", 64f,
+        var title = KitStyle.Flat(KitStyle.TopLeft("Title", content, new Vector2(edge, 26f), new Vector2(LeftWidth, 80f)), Texts.Get("records.title"), 64f,
             TextAlignmentOptions.MidlineLeft);
         title.rectTransform.parent.localRotation = Quaternion.Euler(0f, 0f, 3f);
-        KitStyle.Flat(KitStyle.TopLeft("Where", content, new Vector2(edge + 4f, 108f), new Vector2(LeftWidth, 22f)), "이 PC에 남은 기록", 16f,
+        KitStyle.Flat(KitStyle.TopLeft("Where", content, new Vector2(edge + 4f, 108f), new Vector2(LeftWidth, 22f)), Texts.Get("records.where"), 16f,
             TextAlignmentOptions.MidlineLeft, KitStyle.Soft);
 
         var chapters = GameTables.RowIds(CampaignChapter.TableName).ToArray();
         int escaped = chapters.Count(map => PlayerRecords.ChapterOf(map) is PlayerRecords.Chapter chapter && chapter.escapes > 0);
-        Caption("캠페인", new Vector2(edge, 160f), chapters.Length > 0 ? escaped + " / " + chapters.Length + " 장 탈출" : "");
+        Caption(Texts.Get("records.campaign"), new Vector2(edge, 160f),
+            chapters.Length > 0 ? Texts.Format("records.campaign.escaped", escaped, chapters.Length) : "");
         float y = 196f, tiltAbove = 0f;
         for (int i = 0; i < chapters.Length; i++)
         {
@@ -105,8 +106,8 @@ public sealed class MainMenuRecords : MonoBehaviour
         KitStyle.Flat(KitStyle.TopLeft("Name", plate, new Vector2(140f, 14f), new Vector2(LeftWidth - 280f, 42f)), name, 30f,
             TextAlignmentOptions.MidlineLeft, done ? KitStyle.Text : KitStyle.With(KitStyle.Text, .8f));
         string line = done
-            ? "탈출 " + chapter.escapes + "번   ·   최고 " + Clock(chapter.best) + "   ·   최소 죽음 " + Mathf.Max(0, chapter.fewestDeaths)
-            : "아직 탈출 못 함";
+            ? Texts.Format("records.chapter.line", chapter.escapes, Clock(chapter.best), Mathf.Max(0, chapter.fewestDeaths))
+            : Texts.Get("records.chapter.waiting");
         KitStyle.Flat(KitStyle.TopLeft("Line", plate, new Vector2(142f, 58f), new Vector2(LeftWidth - 170f, 26f)), line, 16f,
             TextAlignmentOptions.MidlineLeft, KitStyle.Soft).fontStyle = FontStyles.Normal;
         if (done)
@@ -114,7 +115,7 @@ public sealed class MainMenuRecords : MonoBehaviour
             var stamp = KitStyle.TopLeft("Stamp", plate, new Vector2(LeftWidth - 120f, 24f), new Vector2(92f, 38f));
             stamp.localRotation = Quaternion.Euler(0f, 0f, 8f);
             KitStyle.Fill(stamp, KitStyle.Accent);
-            KitStyle.Flat(stamp, "탈출", 20f, TextAlignmentOptions.Center, KitStyle.Ink);
+            KitStyle.Flat(stamp, Texts.Get("records.escaped"), 20f, TextAlignmentOptions.Center, KitStyle.Ink);
         }
         var lid = KitStyle.Fill(KitStyle.Stretch("Flash", plate), KitStyle.Flash);
         KitSkew.On(lid, Slant);
@@ -124,19 +125,19 @@ public sealed class MainMenuRecords : MonoBehaviour
     // The totals as two rows of four tiles.
     private void BuildTotals(PlayerRecords.Data records, KitReveal reveal, ref float at)
     {
-        Caption("합계", new Vector2(RightX, 40f), "");
+        Caption(Texts.Get("records.totals"), new Vector2(RightX, 40f), "");
         long kills = Math.Max(0L, records.kills);
         string share = kills > 0 ? Mathf.RoundToInt(100f * records.headshots / kills) + "%" : "";
         var tiles = new (string label, string value, string note)[]
         {
-            ("처치", Count(records.kills), ""),
-            ("헤드샷", Count(records.headshots), share),
-            ("플레이 시간", Hours(records.seconds), ""),
-            ("판", Count(records.games), records.escapes > 0 ? "탈출 " + Count(records.escapes) : ""),
-            ("살려 준 동료", Count(records.revives), ""),
-            ("쓰러짐", Count(records.downs), ""),
-            ("죽음", Count(records.deaths), ""),
-            ("전멸", Count(records.wipes), ""),
+            (Texts.Get("records.kills"), Count(records.kills), ""),
+            (Texts.Get("records.headshots"), Count(records.headshots), share),
+            (Texts.Get("records.play_time"), Hours(records.seconds), ""),
+            (Texts.Get("records.games"), Count(records.games), records.escapes > 0 ? Texts.Format("records.games.escapes", Count(records.escapes)) : ""),
+            (Texts.Get("records.revives"), Count(records.revives), ""),
+            (Texts.Get("records.downs"), Count(records.downs), ""),
+            (Texts.Get("records.deaths"), Count(records.deaths), ""),
+            (Texts.Get("records.wipes"), Count(records.wipes), ""),
         };
         for (int i = 0; i < tiles.Length; i++)
         {
@@ -165,11 +166,11 @@ public sealed class MainMenuRecords : MonoBehaviour
     private void BuildRecent(PlayerRecords.Data records, KitReveal reveal, ref float at)
     {
         float width = TileWidth * 4f + TileGap * 3f;
-        Caption("최근 판", new Vector2(RightX, 354f), "");
+        Caption(Texts.Get("records.recent"), new Vector2(RightX, 354f), "");
         if (records.recent.Count == 0)
         {
             KitStyle.Flat(KitStyle.TopLeft("Empty", content, new Vector2(RightX, 388f), new Vector2(width, RowHeight)),
-                "아직 기록이 없어요. 한 판 하고 오세요.", 18f, TextAlignmentOptions.MidlineLeft, KitStyle.Soft).fontStyle = FontStyles.Normal;
+                Texts.Get("records.recent.empty"), 18f, TextAlignmentOptions.MidlineLeft, KitStyle.Soft).fontStyle = FontStyles.Normal;
             return;
         }
         float y = 388f;
@@ -179,11 +180,12 @@ public sealed class MainMenuRecords : MonoBehaviour
             KitStyle.Fill(row, KitStyle.With(KitStyle.Ice, .05f));
             var tag = KitStyle.TopLeft("Result", row, new Vector2(10f, 9f), new Vector2(76f, 30f));
             KitStyle.Fill(tag, game.escaped ? KitStyle.Accent : KitStyle.With(KitStyle.Ice, .12f));
-            KitStyle.Flat(tag, game.escaped ? "탈출" : "나감", 15f, TextAlignmentOptions.Center, game.escaped ? KitStyle.Ink : KitStyle.Text);
+            KitStyle.Flat(tag, Texts.Get(game.escaped ? "records.escaped" : "records.left"), 15f, TextAlignmentOptions.Center,
+                game.escaped ? KitStyle.Ink : KitStyle.Text);
             Cell(row, MapTable.DisplayName(game.map), 106f, 380f, KitStyle.Text, 18f);
             Cell(row, Clock(game.seconds), 500f, 120f, KitStyle.Soft, 16f);
-            Cell(row, "처치 " + game.kills, 630f, 130f, KitStyle.Soft, 16f);
-            Cell(row, "죽음 " + game.deaths, 770f, 110f, KitStyle.Soft, 16f);
+            Cell(row, Texts.Format("records.recent.kills", game.kills), 630f, 130f, KitStyle.Soft, 16f);
+            Cell(row, Texts.Format("records.recent.deaths", game.deaths), 770f, 110f, KitStyle.Soft, 16f);
             var when = KitStyle.Flat(KitStyle.TopLeft("When", row, new Vector2(width - 170f, 0f), new Vector2(156f, RowHeight)), When(game.when), 15f,
                 TextAlignmentOptions.MidlineRight, KitStyle.Faint);
             when.fontStyle = FontStyles.Normal;
@@ -227,9 +229,9 @@ public sealed class MainMenuRecords : MonoBehaviour
     private static string Hours(double seconds)
     {
         var time = TimeSpan.FromSeconds(Math.Max(0d, Math.Round(seconds)));
-        if (time.TotalHours >= 1d) return ((int)time.TotalHours) + "시간 " + time.Minutes + "분";
-        if (time.TotalMinutes >= 1d) return time.Minutes + "분";
-        return time.Seconds + "초";
+        if (time.TotalHours >= 1d) return Texts.Format("records.time.hours", (int)time.TotalHours, time.Minutes);
+        if (time.TotalMinutes >= 1d) return Texts.Format("records.time.minutes", time.Minutes);
+        return Texts.Format("records.time.seconds", time.Seconds);
     }
 
     // "2026-11-09 21:47" → "11.09 21:47".

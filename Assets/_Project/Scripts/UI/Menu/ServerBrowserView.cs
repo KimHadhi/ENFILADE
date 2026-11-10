@@ -19,7 +19,8 @@ public sealed class ServerBrowserView
     private const float Width = 1240f, RowHeight = 76f, RowGap = 8f, ThumbWidth = 112f, ThumbHeight = 63f, MapWidth = 250f,
         PlayersWidth = 90f, PingWidth = 130f, Slant = 12f, DoubleClick = .35f;
     private const int RowsShown = 6;
-    private const string NoRooms = "찾은 방이 없습니다. 방이 열려 있는지 확인하세요.", Looking = "방을 찾는 중입니다...";
+    private static string NoRooms => Texts.Get("servers.empty");
+    private static string Looking => Texts.Get("servers.looking");
     private static readonly Color CardClear = KitStyle.With(KitStyle.Ice, .05f), CardDark = KitStyle.With(KitStyle.Night, .92f),
         CardGrey = KitStyle.With(KitStyle.Ice, .3f);
     private readonly RectTransform shade, panel, list;
@@ -40,7 +41,7 @@ public sealed class ServerBrowserView
         W.Size(head, height: 64f);
         var title = KitStyle.TopLeft("Title", head, Vector2.zero, new Vector2(300f, 64f));
         title.localRotation = Quaternion.Euler(0f, 0f, 3f);
-        KitStyle.Flat(title, "서버 찾기", 44f, TextAlignmentOptions.MidlineLeft);
+        KitStyle.Flat(title, Texts.Get("servers.title"), 44f, TextAlignmentOptions.MidlineLeft);
         count = KitStyle.Flat(KitStyle.TopLeft("Count", head, new Vector2(230f, 20f), new Vector2(240f, 32f)), "", 18f,
             TextAlignmentOptions.MidlineLeft, KitStyle.Accent);
         spinner = new BusySpinner(head, 26f, W.Accent);
@@ -52,11 +53,12 @@ public sealed class ServerBrowserView
         toolRow.childAlignment = TextAnchor.MiddleRight;
         toolRow.childControlWidth = toolRow.childControlHeight = true;
         toolRow.childForceExpandWidth = toolRow.childForceExpandHeight = false;
-        W.Size(W.ActionButton(tools, "새로고침", false, () => rooms?.Refresh()), 150f, 42f);
-        W.Size(W.ActionButton(tools, "닫기", false, Close), 150f, 42f);
+        W.Size(W.ActionButton(tools, Texts.Get("servers.refresh"), false, () => rooms?.Refresh()), 150f, 42f);
+        W.Size(W.ActionButton(tools, Texts.Get("common.close"), false, Close), 150f, 42f);
 
         var header = W.Rect("Header", panel);
-        Columns(header, "", "방 제목", "맵", "인원", "핑", 15f, W.Muted, 24f);
+        Columns(header, "", Texts.Get("servers.column.title"), Texts.Get("servers.column.map"), Texts.Get("servers.column.players"),
+            Texts.Get("servers.column.ping"), 15f, W.Muted, 24f);
 
         var scroll = W.Rect("List", panel);
         W.Size(scroll, height: RowsShown * (RowHeight + RowGap));
@@ -80,15 +82,15 @@ public sealed class ServerBrowserView
         bottomRow.childControlWidth = bottomRow.childControlHeight = true;
         bottomRow.childForceExpandWidth = false;
         bottomRow.childForceExpandHeight = false;
-        W.Size(W.Label(bottom, "주소로 참가", 19f, W.Muted), width: 120f, height: 40f);
+        W.Size(W.Label(bottom, Texts.Get("servers.address"), 19f, W.Muted), width: 120f, height: 40f);
         var settings = GameSettings.Current;
         if (GameSession.ParseAddress(settings.lastAddress) == null) settings.lastAddress = GameSession.DefaultAddress;
         var address = W.TextInput(bottom, settings.lastAddress, typed => settings.lastAddress = typed);
         W.Size(address, width: 280f, height: 38f, flexibleWidth: 0f);
         W.Size(W.Rect("Gap", bottom), flexibleWidth: 1f);
-        var hint = W.Label(bottom, "두 번 누르면 바로 참가", 16f, W.Muted, TextAlignmentOptions.MidlineRight);
+        var hint = W.Label(bottom, Texts.Get("servers.hint"), 16f, W.Muted, TextAlignmentOptions.MidlineRight);
         W.Size(hint, width: 220f, height: 40f);
-        var join = W.ActionButton(bottom, "참가   Enter", true, ToggleJoin);
+        var join = W.ActionButton(bottom, Texts.Get("servers.join"), true, ToggleJoin);
         W.Size(join, 210f, 50f);
         joinLabel = join.GetComponentInChildren<TextMeshProUGUI>();
     }
@@ -125,9 +127,9 @@ public sealed class ServerBrowserView
         spinner.Show(looking);
         spinner.Tick(Time.unscaledTime);
         int open = rooms.Rooms.Count();
-        count.text = open > 0 ? open + "개 열림" : looking ? "찾는 중" : "";
+        count.text = open > 0 ? Texts.Format("servers.count", open) : looking ? Texts.Get("servers.count.looking") : "";
         empty.text = looking ? Looking : NoRooms;
-        joinLabel.text = GameSession.IsOnline ? "접속 취소" : "참가   <size=70%>Enter</size>";
+        joinLabel.text = Texts.Get(GameSession.IsOnline ? "servers.join.cancel" : "servers.join");
         JoinByKey();
     }
 
@@ -174,7 +176,8 @@ public sealed class ServerBrowserView
         layout.childForceExpandWidth = layout.childForceExpandHeight = false;
         Thumb(row, room.map);
         string grey = "#" + ColorUtility.ToHtmlStringRGB(W.Muted);
-        var title = W.Label(row, $"<b>{Escape(room.title)}</b>\n<size=13><color={grey}>{(room.internet ? "인터넷" : "LAN")}</color></size>", 20f, W.Text);
+        string reach = Texts.Get(room.internet ? "servers.internet" : "servers.lan");
+        var title = W.Label(row, $"<b>{Escape(room.title)}</b>\n<size=13><color={grey}>{reach}</color></size>", 20f, W.Text);
         title.lineSpacing = -6f;
         W.Size(title, height: RowHeight, flexibleWidth: 1f);
         W.Size(W.Label(row, MapTable.DisplayName(room.map), 18f, W.Muted), width: MapWidth, height: RowHeight);

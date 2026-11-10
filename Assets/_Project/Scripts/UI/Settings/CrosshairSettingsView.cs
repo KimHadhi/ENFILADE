@@ -12,14 +12,19 @@ using W = SettingsWidgets;
 /// </summary>
 public sealed class CrosshairSettingsView
 {
-    private static readonly string[] Kinds = { "총", "근접" };
-    private static readonly string[] Modes = { "기본", "직접 꾸미기" };
-    private static readonly string[] Sections = { "프리셋", "점·테두리", "선", "색", "회전" };
-    private static readonly string[] SquareOrCircle = { "네모", "동그라미" };
-    private static readonly string[] BarOrSprite = { "막대", "기본 그림" };
-    private static readonly string[] SolidOrRainbow = { "단색", "무지개" };
-    private static readonly string[] OffOn = { "끔", "켬" };
-    private static readonly string[] FixedOrSpread = { "끔 (항상 같은 모양)", "켬 (점프·무기마다 다름)" };
+    // Built when asked rather than held in static fields, so reloaded or translated words show at the next build.
+    private static string[] Kinds => new[] { Texts.Get("crosshair.kind.gun"), Texts.Get("crosshair.kind.melee") };
+    private static string[] Modes => new[] { Texts.Get("crosshair.mode.design"), Texts.Get("crosshair.mode.custom") };
+    private static string[] Sections => new[]
+    {
+        Texts.Get("crosshair.section.presets"), Texts.Get("crosshair.section.dot"), Texts.Get("crosshair.section.lines"),
+        Texts.Get("crosshair.section.color"), Texts.Get("crosshair.section.spin"),
+    };
+    private static string[] SquareOrCircle => new[] { Texts.Get("crosshair.dot.square"), Texts.Get("crosshair.dot.circle") };
+    private static string[] BarOrSprite => new[] { Texts.Get("crosshair.lines.bar"), Texts.Get("crosshair.lines.sprite") };
+    private static string[] SolidOrRainbow => new[] { Texts.Get("crosshair.color.solid"), Texts.Get("crosshair.color.rainbow") };
+    private static string[] OffOn => new[] { Texts.Get("settings.off"), Texts.Get("settings.on") };
+    private static string[] FixedOrSpread => new[] { Texts.Get("crosshair.spread.fixed"), Texts.Get("crosshair.spread.follows") };
     private static readonly Color[] Swatches =
     {
         Color.white, new Color(1f, .2f, .25f), new Color(1f, .55f, .1f), new Color(1f, .92f, .2f), Color.green,
@@ -43,10 +48,10 @@ public sealed class CrosshairSettingsView
         W.Clear(root);
         var s = PlayerCrosshairs.Settings(kind);
         var top = new SettingsRows(root, Build);
-        top.Choice("대상", Kinds, (int)kind, i => kind = (CrosshairKind)i);
-        var modeRow = top.Choice("모양", Modes, s.custom ? 1 : 0, i => s.custom = i == 1);
+        top.Choice(Texts.Get("crosshair.kind"), Kinds, (int)kind, i => kind = (CrosshairKind)i);
+        var modeRow = top.Choice(Texts.Get("crosshair.mode"), Modes, s.custom ? 1 : 0, i => s.custom = i == 1);
         if (s.custom)
-            W.Size(W.ActionButton(modeRow, "처음 모양으로", false, () =>
+            W.Size(W.ActionButton(modeRow, Texts.Get("crosshair.reset"), false, () =>
             {
                 PlayerCrosshairs.ResetDrawing(kind);
                 GameSettings.Apply();
@@ -56,7 +61,7 @@ public sealed class CrosshairSettingsView
         if (kind == CrosshairKind.Gun)
         {
             var settings = GameSettings.Current;
-            top.Choice("크로스헤어 벌어짐", FixedOrSpread, settings.steadyCrosshair ? 0 : 1,
+            top.Choice(Texts.Get("crosshair.spread"), FixedOrSpread, settings.steadyCrosshair ? 0 : 1,
                 i => settings.steadyCrosshair = i == 0);
         }
 
@@ -102,37 +107,38 @@ public sealed class CrosshairSettingsView
         switch (section)
         {
             case 1:
-                rows.Slider("점 크기", 0f, CrosshairSettings.MaxDotSize, s.dotSize, v => s.dotSize = Mathf.RoundToInt(v),
-                    v => v < .5f ? "끔" : Pixels(v * 2f), wholeNumbers: true);
-                rows.Choice("점 모양", SquareOrCircle, s.roundDot ? 1 : 0, i => s.roundDot = i == 1);
+                rows.Slider(Texts.Get("crosshair.dot.size"), 0f, CrosshairSettings.MaxDotSize, s.dotSize, v => s.dotSize = Mathf.RoundToInt(v),
+                    v => v < .5f ? Texts.Get("settings.off") : Pixels(v * 2f), wholeNumbers: true);
+                rows.Choice(Texts.Get("crosshair.dot.shape"), SquareOrCircle, s.roundDot ? 1 : 0, i => s.roundDot = i == 1);
                 Slider outlineOpacity = null; // shown only while there is an outline, without rebuilding under the drag
-                rows.Slider("테두리", 0f, CrosshairSettings.MaxOutline, s.outline, v =>
+                rows.Slider(Texts.Get("crosshair.outline"), 0f, CrosshairSettings.MaxOutline, s.outline, v =>
                 {
                     s.outline = v;
                     outlineOpacity.transform.parent.gameObject.SetActive(v >= .5f);
-                }, v => v < .5f ? "끔" : Pixels(v), wholeNumbers: true);
-                outlineOpacity = rows.Slider("테두리 불투명도", CrosshairSettings.MinOpacity, 1f, s.outlineOpacity,
+                }, v => v < .5f ? Texts.Get("settings.off") : Pixels(v), wholeNumbers: true);
+                outlineOpacity = rows.Slider(Texts.Get("crosshair.outline.opacity"), CrosshairSettings.MinOpacity, 1f, s.outlineOpacity,
                     v => s.outlineOpacity = v, SettingsRows.Percent);
                 outlineOpacity.transform.parent.gameObject.SetActive(s.outline >= .5f);
                 break;
             case 2:
-                rows.Slider("선 개수", 0f, CrosshairSettings.MaxLines, s.lineCount, v => s.lineCount = Mathf.RoundToInt(v),
-                    v => v < .5f ? "없음" : Mathf.RoundToInt(v) + "개", wholeNumbers: true);
-                rows.Choice("선 모양", BarOrSprite, s.spriteLines ? 1 : 0, i => s.spriteLines = i == 1);
-                rows.Slider("길이", 1f, CrosshairSettings.MaxLineLength, s.lineLength, v => s.lineLength = v, Pixels,
+                rows.Slider(Texts.Get("crosshair.lines.count"), 0f, CrosshairSettings.MaxLines, s.lineCount, v => s.lineCount = Mathf.RoundToInt(v),
+                    v => v < .5f ? Texts.Get("crosshair.lines.none") : Texts.Format("crosshair.lines.count.value", Mathf.RoundToInt(v)),
                     wholeNumbers: true);
-                rows.Slider("두께", 1f, CrosshairSettings.MaxLineThickness, s.lineThickness, v => s.lineThickness = v, Pixels,
+                rows.Choice(Texts.Get("crosshair.lines.shape"), BarOrSprite, s.spriteLines ? 1 : 0, i => s.spriteLines = i == 1);
+                rows.Slider(Texts.Get("crosshair.lines.length"), 1f, CrosshairSettings.MaxLineLength, s.lineLength, v => s.lineLength = v, Pixels,
                     wholeNumbers: true);
-                rows.Slider("간격", 0f, CrosshairSettings.MaxGap, s.gap, v => s.gap = v, Pixels, wholeNumbers: true);
-                rows.Slider("기울기", 0f, CrosshairSettings.MaxAngle, s.angle, v => s.angle = Step(v), v => Step(v) + "°");
+                rows.Slider(Texts.Get("crosshair.lines.thickness"), 1f, CrosshairSettings.MaxLineThickness, s.lineThickness, v => s.lineThickness = v,
+                    Pixels, wholeNumbers: true);
+                rows.Slider(Texts.Get("crosshair.lines.gap"), 0f, CrosshairSettings.MaxGap, s.gap, v => s.gap = v, Pixels, wholeNumbers: true);
+                rows.Slider(Texts.Get("crosshair.lines.angle"), 0f, CrosshairSettings.MaxAngle, s.angle, v => s.angle = Step(v), v => Step(v) + "°");
                 break;
             case 3:
                 Colour(rows, s);
                 break;
             default:
-                rows.Choice("회전", OffOn, s.spinning ? 1 : 0, i => { s.spinning = i == 1; BuildSection(); });
+                rows.Choice(Texts.Get("crosshair.spin"), OffOn, s.spinning ? 1 : 0, i => { s.spinning = i == 1; BuildSection(); });
                 if (s.spinning)
-                    rows.Slider("초당 회전", CrosshairSettings.MinSpin, CrosshairSettings.MaxSpin, s.spin, v => s.spin = Step(v),
+                    rows.Slider(Texts.Get("crosshair.spin.speed"), CrosshairSettings.MinSpin, CrosshairSettings.MaxSpin, s.spin, v => s.spin = Step(v),
                         v => Step(v) + "°");
                 break;
         }
@@ -146,19 +152,21 @@ public sealed class CrosshairSettingsView
 
     private void Colour(SettingsRows rows, CrosshairSettings s)
     {
-        rows.Choice("방식", SolidOrRainbow, s.rainbow ? 1 : 0, i => { s.rainbow = i == 1; BuildSection(); });
+        rows.Choice(Texts.Get("crosshair.color.mode"), SolidOrRainbow, s.rainbow ? 1 : 0, i => { s.rainbow = i == 1; BuildSection(); });
         if (s.rainbow)
         {
-            rows.Slider("한 바퀴", CrosshairSettings.MinRainbowCycle, CrosshairSettings.MaxRainbowCycle, 1f / s.rainbowSpeed,
-                v => s.rainbowSpeed = 1f / v, v => v.ToString("0.0") + "초");
-            rows.Volume("채도", s.rainbowSaturation, v => s.rainbowSaturation = v);
+            rows.Slider(Texts.Get("crosshair.color.cycle"), CrosshairSettings.MinRainbowCycle, CrosshairSettings.MaxRainbowCycle, 1f / s.rainbowSpeed,
+                v => s.rainbowSpeed = 1f / v, v => Texts.Format("crosshair.color.cycle.value", v.ToString("0.0")));
+            rows.Volume(Texts.Get("crosshair.color.saturation"), s.rainbowSaturation, v => s.rainbowSaturation = v);
         }
         else
         {
-            var swatches = W.Row(rows.Parent, "견본");
-            var red = rows.Slider("빨강", 0f, 255f, Byte(s.color.r), v => s.color.r = v / 255f, ByteText, wholeNumbers: true);
-            var green = rows.Slider("초록", 0f, 255f, Byte(s.color.g), v => s.color.g = v / 255f, ByteText, wholeNumbers: true);
-            var blue = rows.Slider("파랑", 0f, 255f, Byte(s.color.b), v => s.color.b = v / 255f, ByteText, wholeNumbers: true);
+            var swatches = W.Row(rows.Parent, Texts.Get("crosshair.color.swatches"));
+            var red = rows.Slider(Texts.Get("crosshair.color.red"), 0f, 255f, Byte(s.color.r), v => s.color.r = v / 255f, ByteText, wholeNumbers: true);
+            var green = rows.Slider(Texts.Get("crosshair.color.green"), 0f, 255f, Byte(s.color.g), v => s.color.g = v / 255f, ByteText,
+                wholeNumbers: true);
+            var blue = rows.Slider(Texts.Get("crosshair.color.blue"), 0f, 255f, Byte(s.color.b), v => s.color.b = v / 255f, ByteText,
+                wholeNumbers: true);
             // A swatch or a typed colour moves the sliders, which write the colour and refresh everything like a drag would.
             void Pick(Color color)
             {
@@ -169,7 +177,7 @@ public sealed class CrosshairSettingsView
             Swatch(swatches, Pick);
             hex = HexInput(swatches, () => s.color, Pick);
         }
-        rows.Slider("불투명도", CrosshairSettings.MinOpacity, 1f, s.color.a, v => s.color.a = v, SettingsRows.Percent);
+        rows.Slider(Texts.Get("crosshair.color.opacity"), CrosshairSettings.MinOpacity, 1f, s.color.a, v => s.color.a = v, SettingsRows.Percent);
     }
 
     private static void Swatch(RectTransform row, Action<Color> picked)

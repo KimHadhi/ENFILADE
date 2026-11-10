@@ -151,13 +151,13 @@ public sealed class ObjectiveGuideHUD : MonoBehaviour
 
     private static string NameOf(CampaignStepKind kind) => kind switch
     {
-        CampaignStepKind.Checkpoint => "휴게소",
-        CampaignStepKind.Escape => "탈출",
-        CampaignStepKind.Hold => "지킬 곳",
-        CampaignStepKind.Collect => "붓는 곳",
-        CampaignStepKind.Press => "작동",
-        CampaignStepKind.Gather => "모일 곳",
-        _ => "목표"
+        CampaignStepKind.Checkpoint => Texts.Get("objective.kind.checkpoint"),
+        CampaignStepKind.Escape => Texts.Get("objective.kind.escape"),
+        CampaignStepKind.Hold => Texts.Get("objective.kind.hold"),
+        CampaignStepKind.Collect => Texts.Get("objective.kind.collect"),
+        CampaignStepKind.Press => Texts.Get("objective.kind.press"),
+        CampaignStepKind.Gather => Texts.Get("objective.kind.gather"),
+        _ => Texts.Get("objective.kind.other")
     };
 
     // ---- The place itself, lit while it is looked at ----

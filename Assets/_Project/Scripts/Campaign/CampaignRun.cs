@@ -236,7 +236,7 @@ public sealed class CampaignRun : MonoBehaviour
         var now = Current;
         bool noticed = wasQuiet && !finished && now != null && now.Kind != CampaignStepKind.Hold && now.Kind != CampaignStepKind.Escape;
         wasQuiet = quiet;
-        if (noticed) AlertHUD.Danger("들켰다 · 놈들이 몰려온다");
+        if (noticed) AlertHUD.Danger(Texts.Get("campaign.alert.noticed"));
     }
 
     private void OnDestroy()
@@ -395,7 +395,7 @@ public sealed class CampaignRun : MonoBehaviour
         BackToCheckpoint();
     }
 
-    private static void MissedRide() => AlertHUD.Danger("아무도 타지 못했다 · 휴게소로 돌아간다");
+    private static void MissedRide() => AlertHUD.Danger(Texts.Get("campaign.alert.ride"));
 
     // Friend feedback C4 ("일부러 지나친 곳 다시 가기 싫어"): a later step met first finishes every step before it, as long
     // as each step on the way is only getting somewhere, pressing something or a rest stop. A hold, a collect and the
@@ -519,18 +519,18 @@ public sealed class CampaignRun : MonoBehaviour
         if (button >= 0)
         {
             var at = steps[button];
-            text = string.IsNullOrEmpty(at.Prompt) ? "[F] " + at.Title : at.Prompt;
+            text = string.IsNullOrEmpty(at.Prompt) ? Texts.Format("campaign.prompt.step", at.Title) : at.Prompt;
             if (pressed) Press(button);
         }
         else if (able && fuel.Any && fuel.CarriedBy(mine) >= 0) text = CanPrompt(mine, pressed);
         else if (door >= 0)
         {
-            text = doors[door].Closed ? "[F] 문 열기" : "[F] 문 닫기";
+            text = doors[door].Closed ? Texts.Get("campaign.prompt.door.open") : Texts.Get("campaign.prompt.door.close");
             if (pressed) ToggleDoor(door);
         }
         else if (able && NearestShop(mine) is Transform shop)
         {
-            text = "[F] 상점 열기";
+            text = Texts.Get("campaign.prompt.shop");
             if (pressed) ShopMenu.Open(mine, shop.position);
         }
         else if (able && fuel.Any) text = CanPrompt(mine, pressed);
@@ -622,12 +622,12 @@ public sealed class CampaignRun : MonoBehaviour
         {
             bool pour = MayPour(mine);
             if (pressed) CanAct(pour ? CampaignCans.Act.Pour : CampaignCans.Act.Drop, carried, mine);
-            return (pour ? "[F] 발전기에 연료 붓기" : "[F] 연료통 내려놓기") + "   [좌클릭] 던지기";
+            return Texts.Format("campaign.prompt.can.carry", pour ? Texts.Get("campaign.prompt.can.pour") : Texts.Get("campaign.prompt.can.drop"));
         }
         int near = fuel.NearestLying(mine.transform.position);
         if (near < 0) return null;
         if (pressed) CanAct(CampaignCans.Act.Pick, near, mine);
-        return "[F] 연료통 들기";
+        return Texts.Get("campaign.prompt.can.pick");
     }
 
     private void CanAct(CampaignCans.Act act, int index, PlayerMovement mine, Vector3 aim = default)
@@ -793,12 +793,13 @@ public sealed class CampaignRun : MonoBehaviour
         PlayerRecords.ChapterEscaped(gameObject.scene.name);
         // The escape has its moment first; the card comes up as the banner lets go (ShowCardWhenDue).
         climb = ClassGrowth.Settle();
-        ChapterEndBanner.Play(chapter != null ? chapter.Title : "", leftBehind.Length > 0 ? "놓친 사람 · " + leftBehind : GameSession.IsOnline ? "모두 탈출" : "탈출 성공", BannerSeconds);
+        ChapterEndBanner.Play(chapter != null ? chapter.Title : "", leftBehind.Length > 0 ? Texts.Format("campaign.escape.left", leftBehind)
+            : GameSession.IsOnline ? Texts.Get("campaign.escape.all") : Texts.Get("campaign.escape.solo"), BannerSeconds);
         cardAt = Time.unscaledTime + BannerSeconds - CardOverBanner;
         if (tracker == null) return;
         string next = chapter != null ? chapter.Next : null;
-        string title = string.IsNullOrEmpty(next) ? "캠페인 완료"
-            : Application.CanStreamedLevelBeLoaded(next) ? "다음 장으로 이동합니다" : "다음 장은 아직 지어지지 않았어요";
+        string title = string.IsNullOrEmpty(next) ? Texts.Get("campaign.end.done")
+            : Application.CanStreamedLevelBeLoaded(next) ? Texts.Get("campaign.end.next") : Texts.Get("campaign.end.unbuilt");
         tracker.SetObjective(new MissionObjective(gameObject.scene.name + ".end", title, ""));
     }
 
@@ -821,11 +822,12 @@ public sealed class CampaignRun : MonoBehaviour
         var text = new System.Text.StringBuilder();
         var mine = PlayerRoster.Local;
         int kills = mine != null && mine.TryGetComponent(out PlayerTally own) ? own.Kills : 0;
-        text.Append("처치<pos=50%>").Append(kills).Append('\n');
-        text.Append("돈<pos=50%>").Append(Gold).Append(Wallet.Format(Wallet.Balance)).Append(End).Append('\n');
-        if (leftBehind.Length > 0) text.Append("놓침<pos=50%>").Append(leftBehind).Append('\n');
+        text.Append(Texts.Get("campaign.results.kills")).Append("<pos=50%>").Append(kills).Append('\n');
+        text.Append(Texts.Get("campaign.results.money")).Append("<pos=50%>").Append(Gold).Append(Wallet.Format(Wallet.Balance)).Append(End).Append('\n');
+        if (leftBehind.Length > 0) text.Append(Texts.Get("campaign.results.left")).Append("<pos=50%>").Append(leftBehind).Append('\n');
         if (!GameSession.IsOnline) return text.ToString();
-        text.Append("\n<b>팀</b><pos=50%>처치<pos=72%>돈\n");
+        text.Append("\n<b>").Append(Texts.Get("campaign.results.team")).Append("</b><pos=50%>").Append(Texts.Get("campaign.results.kills"))
+            .Append("<pos=72%>").Append(Texts.Get("campaign.results.money")).Append('\n');
         foreach (var someone in PlayerRoster.All)
         {
             if (someone == null || !(someone.IsLocal || someone.IsNetworkDriven) || !someone.TryGetComponent(out PlayerTally tally)) continue;

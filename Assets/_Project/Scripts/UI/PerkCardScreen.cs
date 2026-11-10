@@ -161,7 +161,7 @@ public sealed class PerkCardScreen : MonoBehaviour
         title.anchoredPosition = new Vector2(72f, -102f);
         title.localRotation = Quaternion.Euler(0f, 0f, 3f);
         titleGroup = title.gameObject.AddComponent<CanvasGroup>();
-        KitStyle.Flat(title, "능력 선택", 60f, TextAlignmentOptions.MidlineLeft);
+        KitStyle.Flat(title, Texts.Get("perk.title"), 60f, TextAlignmentOptions.MidlineLeft);
         var cost = KitStyle.TopLeft("Cost", title, new Vector2(6f, 80f), new Vector2(220f, 32f));
         cost.localRotation = Quaternion.Euler(0f, 0f, -6f);
         KitStyle.Fill(cost, KitStyle.Accent);
@@ -171,7 +171,7 @@ public sealed class PerkCardScreen : MonoBehaviour
         hint.anchorMin = hint.anchorMax = hint.pivot = Vector2.one;
         hint.anchoredPosition = new Vector2(-72f, -70f);
         hint.sizeDelta = new Vector2(420f, 64f);
-        var hintLabel = KitStyle.Flat(hint, "<b>1 · 2 · 3</b>  고르기\n<b>X</b>  닫기", 19f, TextAlignmentOptions.TopRight, KitStyle.Soft);
+        var hintLabel = KitStyle.Flat(hint, Texts.Get("perk.hint"), 19f, TextAlignmentOptions.TopRight, KitStyle.Soft);
         hintLabel.fontStyle = FontStyles.Normal;
         hintLabel.lineSpacing = 10f;
 
@@ -182,7 +182,7 @@ public sealed class PerkCardScreen : MonoBehaviour
         trayCaption.anchorMin = trayCaption.anchorMax = trayCaption.pivot = new Vector2(.5f, 0f);
         trayCaption.anchoredPosition = new Vector2(0f, TrayY + BadgeHeight + 8f);
         trayCaption.sizeDelta = new Vector2(400f, 24f);
-        KitStyle.Flat(trayCaption, "가진 능력", 15f, TextAlignmentOptions.Center, KitStyle.Ice).characterSpacing = 4f;
+        KitStyle.Flat(trayCaption, Texts.Get("perk.tray"), 15f, TextAlignmentOptions.Center, KitStyle.Ice).characterSpacing = 4f;
         tray = FeelUI.Rect("Tray", stage);
         tray.anchorMin = tray.anchorMax = new Vector2(.5f, 0f);
         tray.anchoredPosition = new Vector2(0f, TrayY + BadgeHeight * .5f);
@@ -190,7 +190,7 @@ public sealed class PerkCardScreen : MonoBehaviour
         empty.anchorMin = empty.anchorMax = new Vector2(.5f, 0f);
         empty.anchoredPosition = new Vector2(0f, TrayY + BadgeHeight * .5f);
         empty.sizeDelta = new Vector2(600f, BadgeHeight);
-        emptyLabel = KitStyle.Flat(empty, "아직 없어요. 첫 능력을 골라 보세요.", 17f, TextAlignmentOptions.Center, KitStyle.Faint);
+        emptyLabel = KitStyle.Flat(empty, Texts.Get("perk.tray.empty"), 17f, TextAlignmentOptions.Center, KitStyle.Faint);
         emptyLabel.fontStyle = FontStyles.Normal;
 
         fx = KitStyle.Stretch("Effects", stage);
@@ -209,7 +209,7 @@ public sealed class PerkCardScreen : MonoBehaviour
         KitSkew.On(KitStyle.Fill(prompt, KitStyle.With(KitStyle.Night, .82f)), 14f);
         promptBar = KitStyle.Bar("Bar", prompt, Vector2.zero, new Vector2(6f, 48f), KitStyle.Accent);
         KitSkew.On(promptBar, 14f);
-        KitStyle.Flat(KitStyle.TopLeft("Text", prompt, new Vector2(24f, 0f), new Vector2(160f, 48f)), "능력 준비", 21f,
+        KitStyle.Flat(KitStyle.TopLeft("Text", prompt, new Vector2(24f, 0f), new Vector2(160f, 48f)), Texts.Get("perk.ready"), 21f,
             TextAlignmentOptions.MidlineLeft);
         var key = KitStyle.TopLeft("Key", prompt, new Vector2(250f - 52f, 8f), new Vector2(32f, 32f));
         KitStyle.Fill(key, KitStyle.Ice);
@@ -253,7 +253,7 @@ public sealed class PerkCardScreen : MonoBehaviour
         var owned = KitStyle.TopLeft("Owned", card.Front, new Vector2(CardWidth - 112f, 22f), new Vector2(90f, 32f));
         owned.localRotation = Quaternion.Euler(0f, 0f, -6f);
         card.Owned = KitStyle.Fill(owned, KitStyle.Accent);
-        KitStyle.Flat(owned, "보유", 17f, TextAlignmentOptions.Center, KitStyle.Ink);
+        KitStyle.Flat(owned, Texts.Get("perk.owned"), 17f, TextAlignmentOptions.Center, KitStyle.Ink);
         var icon = FeelUI.Rect("Icon", card.Front);
         icon.anchorMin = icon.anchorMax = new Vector2(.5f, 1f);
         icon.anchoredPosition = new Vector2(0f, -168f);
@@ -317,7 +317,7 @@ public sealed class PerkCardScreen : MonoBehaviour
             card.Lift.localScale = Vector3.one;
             card.Lift.localRotation = Quaternion.identity;
         }
-        costLabel.text = "게이지 " + Mathf.RoundToInt(player.Ultimate.RequiredCharge) + "% 사용";
+        costLabel.text = Texts.Format("perk.cost", Mathf.RoundToInt(player.Ultimate.RequiredCharge));
         BuildTray(null);
         ClearEffects();
 
@@ -341,8 +341,8 @@ public sealed class PerkCardScreen : MonoBehaviour
         card.Icon.enabled = card.Icon.texture != null;
         card.Name.text = perk.Name;
         card.Owned.gameObject.SetActive(level > 0);
-        string next = level + 1 >= perk.Levels ? "마지막 단계" : (level + 1) + "단계";
-        card.Step.text = level == 0 ? "새 능력" : "보유 " + level + "단계  →  " + next;
+        string next = level + 1 >= perk.Levels ? Texts.Get("perk.step.last") : Texts.Format("perk.step", level + 1);
+        card.Step.text = level == 0 ? Texts.Get("perk.step.new") : Texts.Format("perk.step.owned", level, next);
         card.Text.text = perk.Describe(level + 1);
         int shown = Mathf.Min(perk.Levels, MaxPips);
         float width = shown * 34f + (shown - 1) * 8f;

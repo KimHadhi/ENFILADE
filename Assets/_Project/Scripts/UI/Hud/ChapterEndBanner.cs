@@ -66,7 +66,7 @@ public sealed class ChapterEndBanner : MonoBehaviour
         left.rectTransform.sizeDelta = right.rectTransform.sizeDelta = Vector2.one * 54f;
         var font = GunFeelSettings.Instance.scoreFont != null ? GunFeelSettings.Instance.scoreFont : CombatUIAssets.ResolveFont(null);
         word = Text("Word", slant, font, WordSize, KitStyle.Ink);
-        word.text = "탈출";
+        word.text = Texts.Get("hud.chapter_end.word");
         word.fontStyle = FontStyles.Bold | FontStyles.Italic;
         word.rectTransform.sizeDelta = new Vector2(1600f, BandHeight);
         word.rectTransform.anchoredPosition = new Vector2(0f, 6f);

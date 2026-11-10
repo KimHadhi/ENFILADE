@@ -88,9 +88,10 @@ public sealed class HitFlashRenderer : MonoBehaviour
     }
 
     /// <summary>
-    /// Holds the holder's outline at this strength, 0 lets it go: the zombie has this PC's player in its grip (PlayerHold),
-    /// and stands out of the crowd so they see which one to shove or shoot off (user, 2026-11-10, after Left 4 Dead 2's
-    /// outlines). It goes over the executable mark's outline while both are set.
+    /// Holds the holder's outline at this strength, 0 lets it go: the zombie has a player in its grip (HoldReveal, on every
+    /// PC since the 2026-11-11 playtest; first only on the held player's own), and stands out of the crowd so they see
+    /// which one to shove or shoot off (user, 2026-11-10, after Left 4 Dead 2's outlines). Behind a wall HoldReveal's
+    /// silhouette takes over. It goes over the executable mark's outline while both are set.
     /// </summary>
     public void SetHolder(float amount)
     {

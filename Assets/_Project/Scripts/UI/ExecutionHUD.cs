@@ -10,7 +10,8 @@ public sealed class ExecutionHUD : MonoBehaviour
     private RectTransform prompt;
     private MeleeCombatTarget shown;
     private TextMeshProUGUI label;
-    private string keys = "[F]", verb = " 처형하기";
+    // The verb is a Texts id, not words: the table's words take the keys in as {0}, where a language wants them.
+    private string keys = "[F]", verb = "execution.prompt";
     private float appearance;
     public float Opacity => group != null ? group.alpha : 0f;
     public float PromptScale => prompt != null ? prompt.localScale.x : 1f;
@@ -22,16 +23,16 @@ public sealed class ExecutionHUD : MonoBehaviour
         var far = execution != null ? execution.DeathblowCandidate : null;
         var target = near != null ? near : far;
         // Not broken but unaware with this player behind it: a stealth kill (ZombieMind).
-        SetKeys(near != null && far != null ? "[좌클릭·F]" : far != null ? "[좌클릭]" : "[F]", target != null && !target.CanExecute);
+        SetKeys(near != null && far != null ? Texts.Get("execution.keys.both") : far != null ? Texts.Get("execution.keys.click") : "[F]", target != null && !target.CanExecute);
         Refresh(target, Time.unscaledDeltaTime);
     }
     private void SetKeys(string value, bool stealth)
     {
-        string verb = stealth ? " 암살하기" : " 처형하기";
+        string verb = stealth ? "execution.stealth" : "execution.prompt";
         if (keys == value && this.verb == verb) return;
         keys = value;
         this.verb = verb;
-        if (label != null) label.text = keys + verb;
+        if (label != null) label.text = Texts.Format(verb, keys);
     }
     public void Refresh(MeleeCombatTarget target, float dt)
     {
@@ -63,7 +64,7 @@ public sealed class ExecutionHUD : MonoBehaviour
         var settings = CombatFeedbackSettings.Instance;
         if (settings != null && settings.promptFont != null) text.font = settings.promptFont;
         label = text;
-        text.text = keys + verb; text.fontSize = 27f; text.alignment = TextAlignmentOptions.Center;
+        text.text = Texts.Format(verb, keys); text.fontSize = 27f; text.alignment = TextAlignmentOptions.Center;
         text.color = new Color(1f, .94f, .9f); text.raycastTarget = false;
         text.fontStyle = FontStyles.Bold;
     }

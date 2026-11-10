@@ -36,7 +36,7 @@ public sealed class CharacterScreenView
     public void Show()
     {
         W.Clear(panel);
-        W.Size(W.Label(panel, "캐릭터", 48f, W.Text), height: 72f);
+        W.Size(W.Label(panel, Texts.Get("menu.character.title"), 48f, W.Text), height: 72f);
         var cards = W.Rect("Cards", panel);
         var layout = cards.gameObject.AddComponent<VerticalLayoutGroup>();
         layout.spacing = 8f;
@@ -44,7 +44,7 @@ public sealed class CharacterScreenView
         layout.childForceExpandWidth = true; layout.childForceExpandHeight = false;
         new CharacterSkinView(cards, Width, false, GameSettings.Save);
         W.Size(W.Rect("Gap", panel), height: 12f);
-        W.Size(W.ActionButton(panel, "뒤로", false, Hide), height: 54f);
+        W.Size(W.ActionButton(panel, Texts.Get("common.back"), false, Hide), height: 54f);
         menu.gameObject.SetActive(false);
         panel.gameObject.SetActive(true);
     }

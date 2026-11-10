@@ -1,0 +1,467 @@
+﻿id,ko,en,#어디
+#설명,"한국어 문구. {0} {1}은 코드가 채우는 자리. \n은 줄바꿈. <color>, <b> 같은 리치 텍스트 태그를 쓸 수 있다",영어 문구(번역판용). 비어 있으면 한국어가 나온다,어디에 나오는지(게임은 이 열을 읽지 않는다)
+#--- 좀비 이름 ---,,,
+zombie.shambler,셤블러,,좀비 이름: 체력 바 위와 처치 목록(킬 피드)
+zombie.runner,러너,,좀비 이름
+zombie.brute,거구,,좀비 이름(노래 절정에 나오는 보스)
+zombie.exploder,자폭 좀비,,좀비 이름(엘리트)
+zombie.charger,돌진 좀비,,좀비 이름(엘리트)
+#--- 붙잡힘·깔림 ---,,,
+hold.shove,[V] 밀치기 · 주먹으로 떼어내기,,셤블러에게 잡혔을 때 화면 아래 안내
+hold.pinned,깔렸다!,,러너에게 깔렸을 때 큰 글씨
+hold.pinned.burst,[V] 실드를 터뜨려 떨쳐내기,,깔렸는데 실드가 남아 있을 때 안내
+hold.pinned.alone,혼자서는 못 벗어난다 · 동료가 러너를 처치하거나 넘어뜨려야 풀린다,,깔렸는데 실드가 없을 때 안내
+hold.eaten,뜯어먹히는 중!,,엎드려 있다 뜯어먹힐 때 큰 글씨
+hold.grabbed,잡혔다!,,셤블러에게 잡혔을 때 큰 글씨
+hold.count,×{0},,잡은 좀비 수(큰 글씨 뒤에 붙는다). {0}=수
+#--- 공통 ---,,,
+common.ok,확인,,여러 창의 확인 버튼
+common.cancel,취소,,여러 창의 취소 버튼
+common.close,닫기,,여러 창의 닫기 버튼
+common.back,뒤로,,여러 창의 뒤로 버튼
+common.on,켜기,,켜기/끄기 선택지
+common.off,끄기,,켜기/끄기 선택지
+common.yes,예,,예/아니오 선택지
+common.no,아니오,,예/아니오 선택지
+#--- 명령어 공통 ---,,,
+chat.command.unknown,알 수 없는 명령어입니다. /help로 목록을 확인하세요.,,채팅에 / 명령어를 잘못 쳤을 때
+chat.command.failed,명령어 실행에 실패했습니다: /{0},,명령어가 실행 중 오류가 났을 때. {0}=명령어 이름
+#--- 메인 메뉴 ---,,,
+menu.tab.play,플레이,,메인 메뉴 > 위 막대 탭
+menu.tab.character,캐릭터,,메인 메뉴 > 위 막대 탭(고를 캐릭터가 있을 때)
+menu.tab.records,기록,,메인 메뉴 > 위 막대 탭
+menu.hint.settings,설정,,메인 메뉴 > 아래 막대 키 안내(Esc 옆)
+menu.hint.drag.key,끌기,,메인 메뉴 > 아래 막대 키 안내의 키 칸
+menu.hint.drag,캐릭터 돌리기,,메인 메뉴 > 아래 막대 키 안내(끌기 옆)
+menu.ticker.empty,<color={0}>무전</color>   ...,,메인 메뉴 > 아래 막대 무전 줄(MenuTicker 표가 비었을 때). {0}=분홍 색 코드
+menu.mode.solo,혼자 하기,,메인 메뉴 > 왼쪽 플레이 방식 판 이름
+menu.mode.solo.note,"나 혼자, 지금 바로",,메인 메뉴 > 혼자 하기 판 아래 작은 줄
+menu.mode.host,방 만들기,,메인 메뉴 > 왼쪽 플레이 방식 판 이름
+menu.mode.host.note,"동료와 함께, 내가 방장",,메인 메뉴 > 방 만들기 판 아래 작은 줄
+menu.mode.browse,서버 찾기,,메인 메뉴 > 왼쪽 플레이 방식 판 이름
+menu.mode.browse.note,열린 방에 들어가기,,메인 메뉴 > 서버 찾기 판 아래 작은 줄
+menu.mode.again,다시 누르면 시작,,메인 메뉴 > 고른 플레이 방식 판의 오른쪽
+menu.launch.title,출격,,메인 메뉴 > 오른쪽 아래 큰 분홍 버튼
+menu.launch.solo,혼자  ·  {0},,메인 메뉴 > 출격 버튼 아래 줄(혼자 하기). {0}=맵 이름
+menu.launch.host,방 만들기  ·  {0},,메인 메뉴 > 출격 버튼 아래 줄(방 만들기). {0}=맵 이름
+menu.launch.browse,서버 찾기  ·  열린 방 보기,,메인 메뉴 > 출격 버튼 아래 줄(서버 찾기)
+menu.map.empty,맵이 없어요,,메인 메뉴 > 맵 카드 제목과 출격 버튼 아래 줄(플레이할 맵이 없을 때)
+menu.map.none,맵 없음,,메인 메뉴 > 맵 카드 왼쪽 위 칩(플레이할 맵이 없을 때)
+menu.map.free,자유 맵,,메인 메뉴 > 맵 카드 왼쪽 위 칩(장 번호가 없는 맵)
+menu.character.title,캐릭터,,메인 메뉴 > 캐릭터 화면 제목
+#--- 기록 ---,,,
+records.title,기록,,메인 메뉴 > 기록 화면 큰 제목
+records.where,이 PC에 남은 기록,,기록 화면 > 제목 아래 작은 줄
+records.campaign,캠페인,,기록 화면 > 왼쪽 소제목
+records.campaign.escaped,{0} / {1} 장 탈출,,기록 화면 > 캠페인 소제목 오른쪽. {0}=탈출한 장 수 {1}=전체 장 수
+records.chapter.line,탈출 {0}번   ·   최고 {1}   ·   최소 죽음 {2},,기록 화면 > 탈출한 장 판의 줄. {0}=탈출 횟수 {1}=가장 빠른 시간 {2}=가장 적은 죽음
+records.chapter.waiting,아직 탈출 못 함,,기록 화면 > 아직 탈출하지 못한 장 판의 줄
+records.escaped,탈출,,기록 화면 > 장 판의 분홍 도장과 최근 판 결과 칸(탈출했을 때)
+records.left,나감,,기록 화면 > 최근 판 결과 칸(탈출하지 못하고 나갔을 때)
+records.totals,합계,,기록 화면 > 오른쪽 소제목
+records.kills,처치,,기록 화면 > 합계 칸 이름
+records.headshots,헤드샷,,기록 화면 > 합계 칸 이름
+records.play_time,플레이 시간,,기록 화면 > 합계 칸 이름
+records.games,판,,기록 화면 > 합계 칸 이름
+records.games.escapes,탈출 {0},,기록 화면 > 판 칸 아래 분홍 글씨. {0}=탈출한 판 수
+records.revives,살려 준 동료,,기록 화면 > 합계 칸 이름
+records.downs,쓰러짐,,기록 화면 > 합계 칸 이름
+records.deaths,죽음,,기록 화면 > 합계 칸 이름
+records.wipes,전멸,,기록 화면 > 합계 칸 이름
+records.recent,최근 판,,기록 화면 > 최근 판 소제목
+records.recent.empty,아직 기록이 없어요. 한 판 하고 오세요.,,기록 화면 > 최근 판이 하나도 없을 때
+records.recent.kills,처치 {0},,기록 화면 > 최근 판 줄. {0}=처치 수
+records.recent.deaths,죽음 {0},,기록 화면 > 최근 판 줄. {0}=죽은 수
+records.time.hours,{0}시간 {1}분,,기록 화면 > 플레이 시간 칸(한 시간이 넘을 때). {0}=시간 {1}=분
+records.time.minutes,{0}분,,기록 화면 > 플레이 시간 칸(한 시간 안). {0}=분
+records.time.seconds,{0}초,,기록 화면 > 플레이 시간 칸(1분 안). {0}=초
+#--- 방 만들기·서버 찾기 ---,,,
+room.create.title,방 만들기,,방 만들기 창 제목
+room.create.name,방 제목,,방 만들기 창 > 방 제목 행
+room.create.default_title,{0}의 방,,방 만들기 창 > 방 제목이 비었을 때 넣는 이름. {0}=내 닉네임
+room.create.max_players,최대 인원,,방 만들기 창 > 최대 인원 행
+room.create.players,{0}명,,방 만들기 창 > 최대 인원 선택지. {0}=인원
+room.create.reach,공개 범위,,방 만들기 창 > 공개 범위 행
+room.create.reach.internet,인터넷,,방 만들기 창 > 공개 범위 선택지
+room.create.reach.lan,같은 네트워크(LAN),,방 만들기 창 > 공개 범위 선택지
+room.create.map,맵: {0},,방 만들기 창 > 아래 맵 줄. {0}=맵 이름
+room.create.confirm,만들기,,방 만들기 창 > 만들기 버튼
+servers.title,서버 찾기,,서버 찾기 창 제목
+servers.count,{0}개 열림,,서버 찾기 창 > 제목 옆 분홍 글씨. {0}=열린 방 수
+servers.count.looking,찾는 중,,서버 찾기 창 > 제목 옆 분홍 글씨(찾는 동안)
+servers.refresh,새로고침,,서버 찾기 창 > 오른쪽 위 버튼
+servers.column.title,방 제목,,서버 찾기 창 > 목록 머리줄
+servers.column.map,맵,,서버 찾기 창 > 목록 머리줄
+servers.column.players,인원,,서버 찾기 창 > 목록 머리줄
+servers.column.ping,핑,,서버 찾기 창 > 목록 머리줄
+servers.internet,인터넷,,서버 찾기 창 > 방 카드의 방 제목 아래(인터넷 방)
+servers.lan,LAN,,서버 찾기 창 > 방 카드의 방 제목 아래(같은 네트워크 방)
+servers.empty,찾은 방이 없습니다. 방이 열려 있는지 확인하세요.,,서버 찾기 창 > 목록이 비었을 때
+servers.looking,방을 찾는 중입니다...,,서버 찾기 창 > 목록이 비었는데 아직 찾는 중일 때
+servers.address,주소로 참가,,서버 찾기 창 > 아래 주소 칸 앞
+servers.hint,두 번 누르면 바로 참가,,서버 찾기 창 > 아래 안내
+servers.join,참가   <size=70%>Enter</size>,,서버 찾기 창 > 오른쪽 아래 분홍 버튼
+servers.join.cancel,접속 취소,,서버 찾기 창 > 오른쪽 아래 분홍 버튼(접속하는 동안)
+#--- 프로필 ---,,,
+profile.title,프로필,,프로필 창 제목
+profile.nickname,닉네임,,프로필 창 > 닉네임 칸 위
+profile.nickname.hint,비워 두면 PC 사용자 이름을 씁니다.,,프로필 창 > 닉네임 칸 아래 안내
+profile.picture.choose,사진 고르기,,프로필 창 > 사진 버튼
+profile.picture.clear,사진 지우기,,프로필 창 > 사진 버튼
+profile.save,저장,,프로필 창 > 저장 버튼
+profile.picture.dialog,프로필 사진 고르기,,사진 고르기를 누르면 뜨는 파일 창의 제목
+profile.picture.kind,이미지,,사진 고르기를 누르면 뜨는 파일 창의 파일 종류 목록
+#--- 설정 ---,,,
+settings.title,설정,,설정 창(Esc 메뉴) 제목
+settings.hint.close,Esc  닫기,,설정 창 > 오른쪽 위 안내
+settings.tab.sound,소리,,설정 창 > 왼쪽 탭
+settings.tab.controls,조작,,설정 창 > 왼쪽 탭
+settings.tab.screen,화면,,설정 창 > 왼쪽 탭
+settings.tab.hud,HUD,,설정 창 > 왼쪽 탭
+settings.tab.crosshair,크로스헤어,,설정 창 > 왼쪽 탭
+settings.tab.character,캐릭터,,설정 창 > 왼쪽 탭
+settings.defaults,이 탭 기본값,,설정 창 > 아래 왼쪽 버튼
+settings.main_menu,메인 메뉴,,설정 창 > 아래 버튼(게임 안에서만)
+settings.quit,게임 종료,,설정 창 > 아래 버튼
+settings.resume,돌아가기,,설정 창 > 아래 오른쪽 분홍 버튼
+settings.off,끔,,설정 창 > 끔/켬 선택지와 데미지 숫자 선택지 · 크로스헤어 점 크기와 테두리 값이 0일 때
+settings.on,켬,,설정 창 > 끔/켬 선택지
+settings.hold,누르는 동안,,설정 창 > 조작 > 앉기와 기울이기 선택지
+settings.toggle,눌러서 전환,,설정 창 > 조작 > 앉기와 기울이기 선택지
+settings.sound.master,전체,,설정 창 > 소리 > 음량 행
+settings.sound.combat,전투,,설정 창 > 소리 > 음량 행
+settings.sound.movement,이동,,설정 창 > 소리 > 음량 행
+settings.sound.voice,목소리,,설정 창 > 소리 > 음량 행
+settings.sound.ui,UI,,설정 창 > 소리 > 음량 행
+settings.sound.music,음악,,설정 창 > 소리 > 음량 행
+settings.sound.ambience,환경음,,설정 창 > 소리 > 음량 행
+settings.controls.sensitivity,마우스 감도,,설정 창 > 조작 > 행
+settings.controls.invert_y,상하 반전,,설정 창 > 조작 > 행
+settings.controls.crouch,앉기,,설정 창 > 조작 > 행
+settings.controls.lean,기울이기,,설정 창 > 조작 > 행
+settings.screen.display,디스플레이,,설정 창 > 화면 > 소제목
+settings.screen.editor_note,"에디터에서는 저장만 되고, 빌드한 게임에서 적용돼요.",,설정 창 > 화면 > 에디터에서만 보이는 안내
+settings.screen.monitor,모니터,,설정 창 > 화면 > 모니터 행
+settings.screen.monitor.unnamed,모니터,,설정 창 > 화면 > 모니터 선택지(이름을 모르는 모니터)
+settings.screen.window_mode,화면 모드,,설정 창 > 화면 > 행
+settings.screen.window_mode.fullscreen,전체 화면,,설정 창 > 화면 > 화면 모드 선택지
+settings.screen.window_mode.borderless,테두리 없는 창,,설정 창 > 화면 > 화면 모드 선택지
+settings.screen.window_mode.windowed,창 모드,,설정 창 > 화면 > 화면 모드 선택지
+settings.screen.resolution,해상도,,설정 창 > 화면 > 해상도 행
+settings.screen.resolution.native,모니터 해상도 ({0}),,설정 창 > 화면 > 해상도 첫 선택지. {0}=모니터의 해상도(예: 2560 × 1440 (QHD))
+settings.screen.resolution.ultrawide_fhd,울트라와이드 FHD,,설정 창 > 화면 > 해상도 선택지의 괄호 속 이름(2560 × 1080)
+settings.screen.resolution.ultrawide_qhd,울트라와이드 QHD,,설정 창 > 화면 > 해상도 선택지의 괄호 속 이름(3440 × 1440)
+settings.screen.resolution.ultrawide_4k,울트라와이드 4K,,설정 창 > 화면 > 해상도 선택지의 괄호 속 이름(3840 × 1600)
+settings.screen.resolution.dual_qhd,듀얼 QHD,,설정 창 > 화면 > 해상도 선택지의 괄호 속 이름(5120 × 1440)
+settings.screen.frame,프레임,,설정 창 > 화면 > 소제목
+settings.screen.vsync,수직 동기화,,설정 창 > 화면 > 행
+settings.screen.frame_limit,프레임 제한,,설정 창 > 화면 > 행(수직 동기화가 꺼졌을 때)
+settings.screen.frame_limit.none,무제한,,설정 창 > 화면 > 프레임 제한 선택지
+settings.screen.view,시야,,설정 창 > 화면 > 소제목
+settings.screen.fov,시야각,,설정 창 > 화면 > 행
+settings.screen.shake,화면 흔들림,,설정 창 > 화면 > 행
+settings.screen.own_head,내 머리카락 보기,,설정 창 > 화면 > 행
+settings.hud.sway,HUD 흔들림,,설정 창 > HUD > 행
+settings.hud.tilt,HUD 기울기,,설정 창 > HUD > 행
+settings.hud.angle,HUD 원근 각도,,설정 창 > HUD > 행
+settings.hud.follow_lean,기울이기 따라가기,,설정 창 > HUD > 행
+settings.hud.boards,HUD 그리드 배경,,설정 창 > HUD > 행
+settings.hud.damage_numbers,데미지 숫자,,설정 창 > HUD > 행
+settings.hud.damage_numbers.total,합산,,설정 창 > HUD > 데미지 숫자 선택지
+settings.hud.damage_numbers.each,낱개,,설정 창 > HUD > 데미지 숫자 선택지
+settings.character.none,고를 캐릭터가 없습니다.,,설정 창 캐릭터 탭과 메인 메뉴 캐릭터 화면 > 캐릭터가 하나도 없을 때
+settings.character.colors,색 ({0}),,설정 창 캐릭터 탭과 메인 메뉴 캐릭터 화면 > 색 소제목. {0}=색 가짓수
+settings.character.colors.one,색 (한 가지),,설정 창 캐릭터 탭과 메인 메뉴 캐릭터 화면 > 색 소제목(한 가지뿐일 때)
+settings.character.color.default,기본,,설정 창 캐릭터 탭과 메인 메뉴 캐릭터 화면 > 색 카드(색 세트가 없을 때)
+#--- 크로스헤어 설정 ---,,,
+crosshair.kind,대상,,설정 창 > 크로스헤어 > 행
+crosshair.kind.gun,총,,설정 창 > 크로스헤어 > 대상 선택지
+crosshair.kind.melee,근접,,설정 창 > 크로스헤어 > 대상 선택지
+crosshair.mode,모양,,설정 창 > 크로스헤어 > 행
+crosshair.mode.design,기본,,설정 창 > 크로스헤어 > 모양 선택지(무기에 정해진 크로스헤어)
+crosshair.mode.custom,직접 꾸미기,,설정 창 > 크로스헤어 > 모양 선택지
+crosshair.reset,처음 모양으로,,설정 창 > 크로스헤어 > 모양 행 옆 버튼(직접 꾸미기일 때)
+crosshair.spread,크로스헤어 벌어짐,,설정 창 > 크로스헤어 > 행(총일 때)
+crosshair.spread.fixed,끔 (항상 같은 모양),,설정 창 > 크로스헤어 > 벌어짐 선택지
+crosshair.spread.follows,켬 (점프·무기마다 다름),,설정 창 > 크로스헤어 > 벌어짐 선택지
+crosshair.section.presets,프리셋,,설정 창 > 크로스헤어 > 꾸미기 구역 선택
+crosshair.section.dot,점·테두리,,설정 창 > 크로스헤어 > 꾸미기 구역 선택
+crosshair.section.lines,선,,설정 창 > 크로스헤어 > 꾸미기 구역 선택
+crosshair.section.color,색,,설정 창 > 크로스헤어 > 꾸미기 구역 선택
+crosshair.section.spin,회전,,설정 창 > 크로스헤어 > 꾸미기 구역 선택
+crosshair.dot.size,점 크기,,설정 창 > 크로스헤어 > 점·테두리 > 행
+crosshair.dot.shape,점 모양,,설정 창 > 크로스헤어 > 점·테두리 > 행
+crosshair.dot.square,네모,,설정 창 > 크로스헤어 > 점 모양 선택지
+crosshair.dot.circle,동그라미,,설정 창 > 크로스헤어 > 점 모양 선택지
+crosshair.outline,테두리,,설정 창 > 크로스헤어 > 점·테두리 > 행
+crosshair.outline.opacity,테두리 불투명도,,설정 창 > 크로스헤어 > 점·테두리 > 행(테두리가 있을 때)
+crosshair.lines.count,선 개수,,설정 창 > 크로스헤어 > 선 > 행
+crosshair.lines.count.value,{0}개,,설정 창 > 크로스헤어 > 선 개수 값. {0}=개수
+crosshair.lines.none,없음,,설정 창 > 크로스헤어 > 선 개수 값(0일 때)
+crosshair.lines.shape,선 모양,,설정 창 > 크로스헤어 > 선 > 행
+crosshair.lines.bar,막대,,설정 창 > 크로스헤어 > 선 모양 선택지
+crosshair.lines.sprite,기본 그림,,설정 창 > 크로스헤어 > 선 모양 선택지
+crosshair.lines.length,길이,,설정 창 > 크로스헤어 > 선 > 행
+crosshair.lines.thickness,두께,,설정 창 > 크로스헤어 > 선 > 행
+crosshair.lines.gap,간격,,설정 창 > 크로스헤어 > 선 > 행
+crosshair.lines.angle,기울기,,설정 창 > 크로스헤어 > 선 > 행
+crosshair.color.mode,방식,,설정 창 > 크로스헤어 > 색 > 행
+crosshair.color.solid,단색,,설정 창 > 크로스헤어 > 색 방식 선택지
+crosshair.color.rainbow,무지개,,설정 창 > 크로스헤어 > 색 방식 선택지
+crosshair.color.cycle,한 바퀴,,설정 창 > 크로스헤어 > 색 > 행(무지개일 때)
+crosshair.color.cycle.value,{0}초,,설정 창 > 크로스헤어 > 한 바퀴 값. {0}=초
+crosshair.color.saturation,채도,,설정 창 > 크로스헤어 > 색 > 행(무지개일 때)
+crosshair.color.swatches,견본,,설정 창 > 크로스헤어 > 색 > 행(단색일 때)
+crosshair.color.red,빨강,,설정 창 > 크로스헤어 > 색 > 행(단색일 때)
+crosshair.color.green,초록,,설정 창 > 크로스헤어 > 색 > 행(단색일 때)
+crosshair.color.blue,파랑,,설정 창 > 크로스헤어 > 색 > 행(단색일 때)
+crosshair.color.opacity,불투명도,,설정 창 > 크로스헤어 > 색 > 행
+crosshair.spin,회전,,설정 창 > 크로스헤어 > 회전 > 행
+crosshair.spin.speed,초당 회전,,설정 창 > 크로스헤어 > 회전 > 행(회전이 켜졌을 때)
+crosshair.presets.info.design,모양을 고르거나 코드를 붙여 넣으면 '직접 꾸미기'로 바뀝니다.,,설정 창 > 크로스헤어 > 프리셋 아래 안내(기본 모양일 때)
+crosshair.presets.info.custom,모양을 고르면 색·불투명도·테두리는 그대로 두고 모양만 바뀝니다.,,설정 창 > 크로스헤어 > 프리셋 아래 안내(직접 꾸미기일 때)
+crosshair.code,공유 코드,,설정 창 > 크로스헤어 > 공유 코드 행
+crosshair.code.hint,{0}로 시작하는 코드,,설정 창 > 크로스헤어 > 공유 코드 칸이 비었을 때. {0}=코드 머리(ENF-)
+crosshair.code.copy,복사,,설정 창 > 크로스헤어 > 공유 코드 버튼
+crosshair.code.paste,붙여넣기,,설정 창 > 크로스헤어 > 공유 코드 버튼
+crosshair.code.copied,복사했습니다. 디스코드나 방 채팅에 붙여 넣어 친구와 나누세요.,,설정 창 > 크로스헤어 > 복사한 뒤 안내
+crosshair.code.loaded,코드를 불러왔습니다.,,설정 창 > 크로스헤어 > 코드를 읽은 뒤 안내
+crosshair.code.unreadable,코드를 읽을 수 없습니다. {0}로 시작하는 코드를 그대로 넣어 주세요.,,설정 창 > 크로스헤어 > 읽을 수 없는 코드를 넣었을 때. {0}=코드 머리(ENF-)
+crosshair.code.clipboard_empty,클립보드에 크로스헤어 코드가 없습니다.,,설정 창 > 크로스헤어 > 붙여넣기 했는데 코드가 없을 때
+crosshair.preview.hint,눌러서 사격 반동 보기,,설정 창 > 크로스헤어 > 미리보기 왼쪽 아래(총일 때)
+crosshair.peek,누르고 있으면 실제 화면,,설정 창 > 크로스헤어 > 미리보기 오른쪽 위 버튼(게임 안에서)
+#--- HUD 공통 ---,,,
+hud.seconds,{0}초,,초 단위 숫자: 살리기 패널의 남은 시간과 총 커스터마이징의 조준 시간. {0}=초
+hud.counter.prompt,[LMB] 반격,,완벽 방어 직후 화면 가운데 아래 반격 안내
+hud.ladder.down,[{0}] 사다리 내려가기,,사다리 꼭대기 위에 뜨는 안내. {0}=상호작용 키
+hud.chapter_end.word,탈출,,장 끝 연출: 분홍 띠 위 큰 글자
+hud.alert.brute,거구 등장,,거구(보스)가 나타날 때 화면 위 경고
+#--- 쓰러짐·살리기·관전 ---,,,
+life.wipe,전멸,,모두 쓰러졌을 때 화면 가운데 큰 빨간 글씨
+life.downed.helped,쓰러졌습니다. 출혈이 멈췄습니다,,내가 쓰러졌고 동료가 살리는 중일 때
+life.downed.waiting,쓰러졌습니다. 동료를 기다리세요 ({0}초),,내가 쓰러졌을 때. {0}=출혈로 죽기까지 남은 초
+life.respawn.next_wave,다음 웨이브에 돌아옵니다,,죽은 뒤 (다음 웨이브에 부활할 때)
+life.respawn.seconds,{0}초 뒤 돌아옵니다,,죽은 뒤. {0}=부활까지 남은 초
+life.revive.prompt,[F] 일으키기,,쓰러진 동료 곁에 섰을 때 안내
+life.rescued_by,{0} 님이 살리는 중,,살리기 패널(살려지는 쪽). {0}=살리는 사람 이름(색 포함)
+life.rescuing,{0} 살리는 중,,살리기 패널(살리는 쪽). {0}=쓰러진 사람 이름(색 포함)
+life.spectate.watching,{0} 관전 중,,죽은 뒤 관전 화면 아래. {0}=보고 있는 동료 이름(색 포함)
+life.spectate.follow_keys,[좌클릭] 다음    [우클릭] 이전    [Space] 자유 시점,,관전 키 안내(동료를 따라갈 때)
+life.spectate.free,자유 시점,,관전: 자유 시점일 때 화면 아래 글씨
+life.spectate.free_keys,[WASD] 이동    [Shift] 빠르게    [좌클릭] 동료 관전    [Space] 따라가기,,관전 키 안내(자유 시점)
+life.spectate.wait_keys,[좌클릭] 관전,,관전 키 안내(관전 시작 전)
+#--- 처치 점수·킬 피드 ---,,,
+feed.score.kill,처치,,처치 점수 팝업(총 오른쪽 위)의 줄
+feed.score.headshot,헤드샷,,처치 점수 팝업의 줄
+feed.score.long_range,원거리 사격,,처치 점수 팝업의 줄
+feed.score.pierced,관통 사살,,처치 점수 팝업의 줄
+feed.score.execution,처형,,처치 점수 팝업의 줄
+feed.score.counter,반격,,처치 점수 팝업의 줄
+feed.multi.double,더블 킬,,처치 점수 팝업: 연속 처치 2
+feed.multi.triple,트리플 킬,,처치 점수 팝업: 연속 처치 3
+feed.multi.quad,쿼드 킬,,처치 점수 팝업: 연속 처치 4
+feed.multi.more,연속 처치 x{0},,처치 점수 팝업: 연속 처치 5 이상. {0}=연속 처치 수
+feed.money,돈,,화면 오른쪽 위 돈 숫자 위의 작은 제목
+feed.weapon.execution,처형,,킬 피드: 처형으로 잡았을 때 무기 자리
+feed.weapon.counter,반격,,킬 피드: 반격으로 잡았을 때 무기 자리
+feed.weapon.shove,밀치기,,킬 피드: 밀치기로 잡았을 때 무기 자리
+feed.weapon.fist,주먹,,킬 피드: 맨손·그 밖의 처치 무기 자리
+feed.notice.dead,사망,,킬 피드(방에서): 플레이어가 죽었을 때
+feed.notice.downed,쓰러짐,,킬 피드(방에서): 플레이어가 쓰러졌을 때
+feed.notice.up,일어남,,킬 피드(방에서): 쓰러진 플레이어가 일어났을 때
+#--- 동료 ---,,,
+team.dead,사망,,왼쪽 아래 동료 체력 카드: 죽은 동료
+team.downed,쓰러짐,,왼쪽 아래 동료 체력 카드: 쓰러진 동료
+team.alert.dead,{0} 사망,,화면 위 경고: 동료가 죽었을 때. {0}=이름(색 포함)
+team.alert.downed,{0} 쓰러짐,,화면 위 알림: 동료가 쓰러졌을 때. {0}=이름(색 포함)
+#--- 점수판(Tab) ---,,,
+score.wave,웨이브 {0},,Tab 점수판 맨 위. {0}=웨이브 번호
+score.waiting,대기 중,,Tab 점수판 맨 위: 웨이브가 없을 때
+score.players,{0}명 플레이 중,,Tab 점수판 맵 이름 아래(방에서). {0}=인원
+score.solo,혼자 하기,,Tab 점수판 맵 이름 아래(혼자일 때)
+score.col.player,플레이어,,Tab 점수판 > 열 이름
+score.col.kills,처치,,Tab 점수판 > 열 이름
+score.col.executions,처형,,Tab 점수판 > 열 이름
+score.col.downs,쓰러짐,,Tab 점수판 > 열 이름
+score.col.deaths,사망,,Tab 점수판 > 열 이름
+score.col.primary,주무기,,Tab 점수판 > 열 이름
+score.col.secondary,보조,,Tab 점수판 > 열 이름
+score.col.melee,근접,,Tab 점수판 > 열 이름
+score.col.money,돈,,Tab 점수판 > 열 이름
+score.col.ping,핑,,Tab 점수판 > 열 이름
+score.money,돈  {0},,Tab 점수판 아래 내 돈. {0}=금액
+score.played,플레이 시간 {0}:{1},,Tab 점수판 아래. {0}=분 {1}=초
+score.perks,내 능력,,Tab 점수판 아래 내 능력 배지 줄 제목
+#--- 목표·길 안내 ---,,,
+objective.waiting,목표 대기 중,,화면 위 목표 바와 Tab 목표 목록: 목표가 없을 때
+objective.waiting.detail,새로운 목표가 등록되면 이곳에 표시됩니다.,,Tab 목표 목록: 목표가 없을 때 설명
+objective.tab_hint,목표·점수판,,화면 위 목표 바 옆 Tab 키 안내
+objective.kind.checkpoint,휴게소,,길 안내(화면 가장자리 마름모) 옆 장소 이름
+objective.kind.escape,탈출,,길 안내 옆 장소 이름
+objective.kind.hold,지킬 곳,,길 안내 옆 장소 이름
+objective.kind.collect,붓는 곳,,길 안내 옆 장소 이름
+objective.kind.press,작동,,길 안내 옆 장소 이름
+objective.kind.gather,모일 곳,,길 안내 옆 장소 이름
+objective.kind.other,목표,,길 안내 옆 장소 이름(그 밖)
+#--- 웨이브 ---,,,
+wave.prepare.title,다음 공세에 대비하세요,,웨이브 사이의 목표 제목(목표 바와 Tab)
+wave.prepare.detail,주변을 살피고 전투를 준비하세요. 다음 공세가 시작되면 새로운 목표가 표시됩니다.,,웨이브 사이의 목표 설명(Tab)
+wave.cleared,{0}웨이브 격퇴,,Tab 목표 목록: 끝낸 웨이브. {0}=웨이브 번호
+#--- 처형 안내 ---,,,
+execution.prompt,{0} 처형하기,,처형할 수 있는 적 앞에서 화면 가운데 안내. {0}=키(execution.keys.* 또는 [F])
+execution.stealth,{0} 암살하기,,모르는 적 뒤에서 몰래 처치 안내. {0}=키
+execution.keys.both,[좌클릭·F],,처형 안내의 키: 가까운 적과 먼 적 둘 다 될 때
+execution.keys.click,[좌클릭],,처형 안내의 키: 맨손으로 달려들어 처형할 때
+#--- 능력 카드 ---,,,
+perk.ready,능력 준비,,게이지가 찼을 때 화면 아래 안내(옆에 X 키)
+perk.title,능력 선택,,카드 화면 왼쪽 위 큰 제목
+perk.cost,게이지 {0}% 사용,,카드 화면 제목 아래 분홍 띠. {0}=쓰는 게이지(%)
+perk.hint,<b>1 · 2 · 3</b>  고르기\n<b>X</b>  닫기,,카드 화면 오른쪽 위 키 안내(두 줄)
+perk.tray,가진 능력,,카드 화면 아래 배지 줄 제목
+perk.tray.empty,아직 없어요. 첫 능력을 골라 보세요.,,카드 화면 아래: 가진 능력이 없을 때
+perk.owned,보유,,이미 가진 능력 카드의 오른쪽 위 딱지
+perk.step.new,새 능력,,카드: 처음 고르는 능력
+perk.step,{0}단계,,카드: 다음 단계. {0}=단계
+perk.step.last,마지막 단계,,카드: 다음이 마지막 단계일 때
+perk.step.owned,보유 {0}단계  →  {1},,카드: 가진 능력. {0}=지금 단계 {1}=다음 단계(perk.step 또는 perk.step.last)
+#--- 총 커스터마이징(C) ---,,,
+gun.custom.caption,커스터마이징,,총 이름 아래 작은 제목
+gun.custom.hint,[C] · Esc 닫기   슬롯을 눌러 부품을 고르세요,,화면 왼쪽 아래 안내
+gun.custom.hint_empty,바꿀 수 있는 부품이 없어요   [C] 닫기,,화면 왼쪽 아래 안내: 바꿀 부품이 없는 총
+gun.custom.equipped,{0} 장착,,부품을 끼웠을 때 왼쪽 아래 알림. {0}=부품 이름
+gun.custom.none,없음,,슬롯에 부품이 없을 때와 부품 목록의 '없음'
+gun.custom.no_change,능력치는 그대로예요,,부품 설명 칸: 능력치가 안 바뀌는 부품
+gun.refuse.no_gun,총을 들고 있지 않아요,,부품을 못 바꿀 때 왼쪽 아래 빨간 알림
+gun.refuse.reloading,장전 중에는 바꿀 수 없어요,,부품을 못 바꿀 때 왼쪽 아래 빨간 알림
+gun.refuse.drawing,총을 꺼내는 중이에요,,부품을 못 바꿀 때 왼쪽 아래 빨간 알림
+gun.slot.sight,조준기,,왼쪽 슬롯 이름
+gun.slot.muzzle,총구,,왼쪽 슬롯 이름
+gun.slot.grip,손잡이,,왼쪽 슬롯 이름
+gun.slot.underbarrel,하단 레일,,왼쪽 슬롯 이름
+gun.sight.scope,배율 조준경 ×{0},,조준기 부품 이름. {0}=배율
+gun.sight.iron,가늠쇠,,조준기 부품 이름
+gun.sight.holo,홀로그램,,조준기 부품 이름
+gun.sight.reddot,레드닷,,조준기 부품 이름
+gun.sight.reddot_canted,레드닷 (기울임),,조준기 부품 이름
+gun.part.suppressor,소음기,,부품 이름
+gun.part.flashlight,플래시라이트,,부품 이름
+gun.part.vertical_grip,수직 손잡이,,부품 이름
+gun.part.vertical_grip.zetco,수직 손잡이 (Zetco),,부품 이름
+gun.part.vertical_grip.tr15,수직 손잡이 (TR-15),,부품 이름
+gun.part.angled_grip,앵글 손잡이,,부품 이름
+gun.part.other,부품,,이름을 모르는 부품
+gun.pro.scope_zoom,조준하면 렌즈 안이 ×{0} 확대,,부품 설명(초록 +). {0}=배율
+gun.pro.suppressor_range,좀비가 듣는 거리 {0}m → {1}m,,부품 설명(초록 +). {0}=지금 {1}=소음기를 끼면
+gun.pro.suppressor_quiet,총소리가 작아짐,,부품 설명(초록 +)
+gun.pro.suppressor_flash,총구 불꽃과 섬광이 없어짐,,부품 설명(초록 +)
+gun.pro.vertical_grip_recoil,위로 튀는 반동 {0}% 감소,,부품 설명(초록 +). {0}=줄어드는 %
+gun.pro.vertical_grip_hand,왼손이 손잡이를 쥠,,부품 설명(초록 +)
+gun.pro.angled_grip_aim,조준이 {0}% 빨라짐,,부품 설명(초록 +). {0}=빨라지는 %
+gun.pro.angled_grip_hand,왼손이 손잡이에 닿음,,부품 설명(초록 +)
+gun.pro.flashlight,[L]로 켜고 끄는 라이트,,부품 설명(초록 +)
+gun.stats.title,능력치,,오른쪽 능력치 칸 제목
+gun.stat.damage,피해 (몸 / 머리),,능력치 칸 줄 이름
+gun.stat.rpm,연사 속도,,능력치 칸 줄 이름
+gun.stat.recoil,위로 튀는 반동,,능력치 칸 줄 이름
+gun.stat.aim_time,조준 시간,,능력치 칸 줄 이름(값은 hud.seconds)
+gun.stat.noise,좀비가 듣는 거리,,능력치 칸 줄 이름
+gun.stat.magazine,탄창,,능력치 칸 줄 이름
+#--- 등급·실드 ---,,,
+rank.up,등급 상승,,장 끝 결과: 계급장 아래 분홍 띠
+rank.prestige,프레스티지,,장 끝 결과: 프레스티지일 때 분홍 띠
+shield.broken,실드 깨짐,,내 실드가 다 깨졌을 때 화면 위 알림
+#--- 캠페인 ---,,,
+campaign.alert.noticed,들켰다 · 놈들이 몰려온다,,캠페인 화면 위 경고 > 조용한 구간에서 좀비에게 들켰을 때
+campaign.alert.ride,아무도 타지 못했다 · 휴게소로 돌아간다,,캠페인 화면 위 경고 > 마지막 탈출 차량에 아무도 못 탔을 때
+campaign.prompt.step,[F] {0},,캠페인 [F] 안내 > 누를 것이 있는 단계(셔터 등)에 자기 안내 글이 없을 때. {0}=CampaignSteps의 단계 제목
+campaign.prompt.door.open,[F] 문 열기,,캠페인 [F] 안내 > 닫힌 휴게소 문 앞
+campaign.prompt.door.close,[F] 문 닫기,,캠페인 [F] 안내 > 열린 휴게소 문 앞
+campaign.prompt.shop,[F] 상점 열기,,캠페인 [F] 안내 > 휴게소 상점 카운터 앞
+campaign.prompt.can.carry,{0}   [좌클릭] 던지기,,캠페인 [F] 안내 > 연료통을 들고 있을 때. {0}=붓기 또는 내려놓기 안내
+campaign.prompt.can.pour,[F] 발전기에 연료 붓기,,캠페인 [F] 안내 > 연료통을 들고 붓는 자리에 있을 때
+campaign.prompt.can.drop,[F] 연료통 내려놓기,,캠페인 [F] 안내 > 연료통을 들고 붓는 자리 밖에 있을 때
+campaign.prompt.can.pick,[F] 연료통 들기,,캠페인 [F] 안내 > 바닥의 연료통 앞
+campaign.escape.left,놓친 사람 · {0},,장 끝 탈출 배너 아래 줄 > 차량을 놓친 사람이 있을 때. {0}=이름들
+campaign.escape.all,모두 탈출,,장 끝 탈출 배너 아래 줄 > 방에서 모두 탔을 때
+campaign.escape.solo,탈출 성공,,장 끝 탈출 배너 아래 줄 > 혼자 할 때
+campaign.end.done,캠페인 완료,,임무 칸 제목 > 마지막 장을 마쳤을 때
+campaign.end.next,다음 장으로 이동합니다,,임무 칸 제목 > 장을 마치고 다음 장이 열리기 전
+campaign.end.unbuilt,다음 장은 아직 지어지지 않았어요,,임무 칸 제목 > 다음 장 맵이 아직 없을 때
+campaign.results.kills,처치,,장 끝 카드 결과 > 처치 줄 이름과 팀 표의 열 이름
+campaign.results.money,돈,,장 끝 카드 결과 > 돈 줄 이름과 팀 표의 열 이름
+campaign.results.left,놓침,,장 끝 카드 결과 > 차량을 놓친 사람 줄 이름
+campaign.results.team,팀,,장 끝 카드 결과 > 방에서 할 때 팀 표 제목
+#--- 상점 ---,,,
+shop.title,상점,,상점 창 > 맨 위 제목
+shop.subtitle,총  /  보급,,상점 창 > 제목 아래 작은 줄
+shop.section.guns,총,,상점 창 > 총 칸 머리
+shop.section.supplies,보급,,상점 창 > 보급 칸 머리
+shop.detail.gun,총,,상점 카드 > 총 이름 아래 설명
+shop.detail.ammo,가진 총 모두,,상점 카드 > 탄약 이름 아래 설명
+shop.detail.heal,체력 {0} 회복,,상점 카드 > 구급상자 이름 아래 설명. {0}=회복량
+shop.detail.shield,실드 {0},,상점 카드 > 실드 이름 아래 설명. {0}=실드 양
+shop.note.bought,구매 완료,,상점 카드 가운데 > 막 샀을 때 잠깐
+shop.note.owned,가진 총,,상점 카드 가운데 > 이미 가진 총
+shop.note.ammofull,탄약 가득,,상점 카드 가운데 > 탄약이 가득할 때
+shop.note.healthfull,체력 가득,,상점 카드 가운데 > 체력이 가득할 때
+shop.note.shield,실드 있음,,상점 카드 가운데 > 실드가 이미 있을 때
+shop.hint.close,[F] 또는 Esc 닫기,,상점 창 맨 아래 줄 > 평소 안내
+shop.bought,{0} 샀어요   {1},,상점 창 맨 아래 줄 > 샀을 때. {0}=물건 이름 {1}=낸 돈(앞에 - 붙은 금액)
+shop.bought.feed,{0} 구매  {1},,처치 목록(킬 피드) > 상점에서 샀을 때. {0}=물건 이름 {1}=낸 돈
+shop.refuse.money,돈이 모자라요,,상점 창 맨 아래 줄 > 못 살 때: 돈 부족
+shop.refuse.now,지금은 살 수 없어요,,상점 창 맨 아래 줄 > 못 살 때: 지금은 불가
+shop.refuse.unsold,팔지 않는 총이에요,,상점 창 맨 아래 줄 > 못 살 때: 팔지 않는 총
+shop.refuse.owned,이미 가진 총이에요,,상점 창 맨 아래 줄 > 못 살 때: 이미 가진 총
+shop.refuse.nogun,채울 총이 없어요,,상점 창 맨 아래 줄 > 탄약을 못 살 때: 총이 없음
+shop.refuse.ammofull,탄약이 이미 가득해요,,상점 창 맨 아래 줄 > 탄약을 못 살 때: 가득 참
+shop.refuse.healthfull,체력이 가득해요,,상점 창 맨 아래 줄 > 구급상자를 못 살 때
+shop.refuse.shield,실드가 이미 있어요,,상점 창 맨 아래 줄 > 실드를 못 살 때
+#--- 돈 떨구기 ---,,,
+money.drop.short,떨굴 돈이 모자라요 (돈 {0} 필요),,처치 목록(킬 피드) > G로 돈을 떨구려는데 모자랄 때. {0}=필요한 돈
+money.drop.feed,돈 {0} 떨굼,,처치 목록(킬 피드) > 누가 돈을 떨궜을 때. {0}=금액
+money.pickup.feed,돈 {0} 주움,,처치 목록(킬 피드) > 누가 떨군 돈을 주웠을 때. {0}=금액
+#--- 필드 아이템 ---,,,
+pickup.refuse.now,지금은 못 주워요,,아이템 [F] 안내 > 총을 지금 못 주울 때
+pickup.refuse.nogun,채울 총이 없어요,,아이템 [F] 안내 > 탄약을 쓸 총이 없을 때
+pickup.refuse.ammofull,탄약이 가득해요,,아이템 [F] 안내 > 탄약이 가득할 때
+pickup.refuse.healthfull,체력이 가득해요,,아이템 [F] 안내 > 구급상자: 체력이 가득할 때
+pickup.refuse.shield,실드가 이미 있어요,,아이템 [F] 안내 > 실드 셀: 실드가 이미 있을 때
+pickup.gives.gun,총,,아이템 [F] 안내와 주운 목록(화면 아래) > 총
+pickup.gives.ammo,탄창 +{0},,아이템 [F] 안내와 주운 목록(화면 아래) > 탄약. {0}=탄창 수
+pickup.gives.heal,체력 +{0},,아이템 [F] 안내와 주운 목록(화면 아래) > 구급상자. {0}=회복량
+pickup.gives.shield,실드 +{0},,아이템 [F] 안내와 주운 목록(화면 아래) > 실드 셀. {0}=실드 양
+pickup.gives.refill,탄약 가득,,주운 목록(화면 아래) > 이미 가진 총을 주워 탄약이 채워졌을 때
+#--- 방 접속 ---,,,
+net.joining,{0}에 접속하는 중입니다...,,메인 메뉴 상태 줄 > 접속 중. {0}=주소 또는 방 이름
+net.join.badaddress,주소 형식이 맞지 않습니다. 예: 192.168.0.5,,메인 메뉴 상태 줄 > 주소로 접속: 잘못 친 주소
+net.join.nostart,접속을 시작하지 못했습니다. 주소를 확인하세요.,,메인 메뉴 상태 줄 > 주소로 접속: 시작 실패
+net.join.failed,접속하지 못했습니다. 방이 열려 있는지 확인하세요.,,메인 메뉴 상태 줄 > 접속 실패
+net.join.internetfailed,방에 들어가지 못했습니다. 방이 닫혔거나 가득 찼을 수 있습니다.,,메인 메뉴 상태 줄 > 인터넷 방 들어가기 실패
+net.join.relay,직접 연결이 되지 않아 릴레이로 다시 접속합니다...,,메인 메뉴 상태 줄 > 직접 연결 실패 뒤 릴레이로 다시 접속
+net.lost,방이 닫혔거나 연결이 끊겼습니다.,,메인 메뉴 상태 줄 > 방에 있다가 끊겼을 때
+net.full,방이 가득 찼습니다.,,메인 메뉴 상태 줄 > 방이 가득 차 거절됨(방장 PC의 표에서 읽어 보냄)
+net.host.creating,인터넷 방을 만드는 중입니다...,,메인 메뉴 상태 줄 > 인터넷 방 만드는 중
+net.host.failed,방을 만들지 못했습니다. 인터넷 연결을 확인하세요.,,메인 메뉴 상태 줄 > 인터넷 방 만들기 실패
+net.host.portbusy,방을 만들지 못했습니다. 포트 {0}을 다른 프로그램이 쓰고 있는지 확인하세요.,,메인 메뉴 상태 줄 > LAN 방 만들기 실패. {0}=포트 번호
+net.rooms.failed,인터넷 방 목록을 불러오지 못했습니다. 연결을 확인하세요.,,서버 목록 상태 줄 > 인터넷 방 목록을 못 불러왔을 때
+#--- 채팅 ---,,,
+chat.system,시스템,,채팅 > 시스템 줄의 말한 이(명령 결과와 방송)
+chat.placeholder.chat,메시지 입력 · Tab 전환,,채팅 입력 칸 > 채팅 채널일 때 빈 칸 안내
+chat.placeholder.console,/help · 명령어 입력,,채팅 입력 칸 > 콘솔 채널일 때 빈 칸 안내
+chat.switched.chat,채팅 채널로 전환했습니다.,,채팅 > /chat 입력 결과
+chat.switched.console,콘솔 채널로 전환했습니다.,,채팅 > /console 입력 결과
+chat.channel.chat,채팅,,채팅 줄 앞 [ ] 채널 이름과 입력 칸 채널 표시 > 채팅
+chat.channel.console,콘솔,,채팅 줄 앞 [ ] 채널 이름과 입력 칸 채널 표시 > 콘솔
+chat.channel.dialogue,대사,,채팅 줄 앞 [ ] 채널 이름 > 대사
+chat.channel.broadcast,방송,,채팅 줄 앞 [ ] 채널 이름 > 방송(시스템 알림)
+chat.channel.team,팀,,채팅 줄 앞 [ ] 채널 이름 > 팀
+chat.channel.all,전체,,채팅 줄 앞 [ ] 채널 이름 > 전체
+#--- 아군 사격 ---,,,
+ff.state.on,켜짐,,아군 사격 상태 낱말 > 아래 /ff 결과의 {0}에 들어감
+ff.state.off,꺼짐,,아군 사격 상태 낱말 > 아래 /ff 결과의 {0}에 들어감
+ff.now,아군 사격: {0},,채팅 콘솔 > /ff 결과(혼자일 때). {0}=켜짐/꺼짐
+ff.now.room,아군 사격: {0} (방 전체),,채팅 콘솔 > /ff 결과(방장이 방 전체에 적용). {0}=켜짐/꺼짐
+ff.usage,사용법: /ff 1 (켜기) · /ff 0 (끄기) · /ff (바꾸기). 지금: {0},,채팅 콘솔 > /ff 뒤에 모르는 말을 넣었을 때. {0}=켜짐/꺼짐
+ff.guest,아군 사격은 방장만 바꿀 수 있어요. 지금: {0},,채팅 콘솔 > 참가자가 /ff를 입력했을 때. {0}=켜짐/꺼짐
+ff.host.on,방장이 아군 사격을 켰습니다,,채팅 방송 > 참가자 화면: 방장이 켰을 때
+ff.host.off,방장이 아군 사격을 껐습니다,,채팅 방송 > 참가자 화면: 방장이 껐을 때

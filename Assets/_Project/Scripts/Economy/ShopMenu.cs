@@ -197,8 +197,8 @@ public sealed class ShopMenu : MonoBehaviour
         if (!open || reveal.Closing || player == null) return;
         var item = row.Item;
         string why = Refusal(item);
-        if (why == null && !Wallet.TrySpend(item.Price)) why = "돈이 모자라요";
-        if (why == null && !Hand(item)) { Wallet.Unspend(item.Price); why = "지금은 살 수 없어요"; }
+        if (why == null && !Wallet.TrySpend(item.Price)) why = Texts.Get("shop.refuse.money");
+        if (why == null && !Hand(item)) { Wallet.Unspend(item.Price); why = Texts.Get("shop.refuse.now"); }
         if (why != null)
         {
             Say(why, KitStyle.Red);
@@ -207,13 +207,13 @@ public sealed class ShopMenu : MonoBehaviour
             return;
         }
         string paid = "-" + Wallet.Format(item.Price);
-        Say(item.Name + " 샀어요   " + paid, KitStyle.Accent);
+        Say(Texts.Format("shop.bought", item.Name, paid), KitStyle.Accent);
         Pulse(row, KitStyle.Flash);
         row.BoughtAt = spentAt = Time.unscaledTime;
         spent.text = paid;
         KitPulse.Play(moneyFlash, KitStyle.Flash, .45f);
         KitSound.Play(KitSound.Cue.Buy);
-        CombatFeedHUD.Notice(player, item.Name + " 구매  " + paid, false);
+        CombatFeedHUD.Notice(player, Texts.Format("shop.bought.feed", item.Name, paid), false);
     }
 
     // A card lights up again and drains, pink for a buy, red for a refusal.
@@ -231,16 +231,16 @@ public sealed class ShopMenu : MonoBehaviour
         switch (item.Kind)
         {
             case Kind.Gun:
-                if (item.Weapon == null || slots == null) return "팔지 않는 총이에요";
-                if (Holds(slots, item.Weapon)) return "이미 가진 총이에요";
-                if (player.CombatInputLocked) return "지금은 살 수 없어요";
+                if (item.Weapon == null || slots == null) return Texts.Get("shop.refuse.unsold");
+                if (Holds(slots, item.Weapon)) return Texts.Get("shop.refuse.owned");
+                if (player.CombatInputLocked) return Texts.Get("shop.refuse.now");
                 return null;
             case Kind.Ammo:
-                return slots == null || !HoldsAnyGun(slots) ? "채울 총이 없어요" : !slots.NeedsAmmo() ? "탄약이 이미 가득해요" : null;
+                return slots == null || !HoldsAnyGun(slots) ? Texts.Get("shop.refuse.nogun") : !slots.NeedsAmmo() ? Texts.Get("shop.refuse.ammofull") : null;
             case Kind.Heal:
-                return receiver.Health >= receiver.MaximumHealth - .5f ? "체력이 가득해요" : null;
+                return receiver.Health >= receiver.MaximumHealth - .5f ? Texts.Get("shop.refuse.healthfull") : null;
             case Kind.Shield:
-                return receiver.Shield >= item.Amount - .5f ? "실드가 이미 있어요" : null;
+                return receiver.Shield >= item.Amount - .5f ? Texts.Get("shop.refuse.shield") : null;
         }
         return null;
     }
@@ -311,7 +311,8 @@ public sealed class ShopMenu : MonoBehaviour
             {
                 Kind = kind, Weapon = weapon, Price = (long)Number(row, "price", 0f), Amount = amount,
                 Order = (int)Number(row, "order", 0f), Name = name.Length > 0 ? name : weapon != null ? weapon.DisplayName : id,
-                Detail = kind == Kind.Gun ? "총" : kind == Kind.Ammo ? "가진 총 모두" : kind == Kind.Heal ? "체력 " + amount.ToString("0") + " 회복" : "실드 " + amount.ToString("0")
+                Detail = kind == Kind.Gun ? Texts.Get("shop.detail.gun") : kind == Kind.Ammo ? Texts.Get("shop.detail.ammo")
+                    : kind == Kind.Heal ? Texts.Format("shop.detail.heal", amount.ToString("0")) : Texts.Format("shop.detail.shield", amount.ToString("0"))
             });
         }
         stock.Sort((a, b) => a.Order.CompareTo(b.Order));
@@ -360,7 +361,7 @@ public sealed class ShopMenu : MonoBehaviour
             // A card just bought from says so for a moment, then goes back to what it has to say (가진 총, 체력 가득 …).
             bool bought = now - row.BoughtAt < BoughtSeconds;
             string note = player == null ? "" : Note(row.Item, slots);
-            row.Note.text = bought ? "구매 완료" : note;
+            row.Note.text = bought ? Texts.Get("shop.note.bought") : note;
             row.Note.color = bought ? KitStyle.Accent : KitStyle.Soft;
             bool affordable = Wallet.Balance >= row.Item.Price;
             row.Price.color = note.Length > 0 ? KitStyle.Soft : affordable ? KitStyle.Text : KitStyle.Red;
@@ -375,17 +376,17 @@ public sealed class ShopMenu : MonoBehaviour
 
     private string Note(Item item, PlayerWeaponSlots slots)
     {
-        if (item.Kind == Kind.Gun && slots != null && item.Weapon != null && Holds(slots, item.Weapon)) return "가진 총";
-        if (item.Kind == Kind.Ammo && slots != null && HoldsAnyGun(slots) && !slots.NeedsAmmo()) return "탄약 가득";
-        if (item.Kind == Kind.Heal && player.DamageReceiver.Health >= player.DamageReceiver.MaximumHealth - .5f) return "체력 가득";
-        if (item.Kind == Kind.Shield && player.DamageReceiver.Shield >= item.Amount - .5f) return "실드 있음";
+        if (item.Kind == Kind.Gun && slots != null && item.Weapon != null && Holds(slots, item.Weapon)) return Texts.Get("shop.note.owned");
+        if (item.Kind == Kind.Ammo && slots != null && HoldsAnyGun(slots) && !slots.NeedsAmmo()) return Texts.Get("shop.note.ammofull");
+        if (item.Kind == Kind.Heal && player.DamageReceiver.Health >= player.DamageReceiver.MaximumHealth - .5f) return Texts.Get("shop.note.healthfull");
+        if (item.Kind == Kind.Shield && player.DamageReceiver.Shield >= item.Amount - .5f) return Texts.Get("shop.note.shield");
         return "";
     }
 
     private void Say(string text, Color color)
     {
         if (message == null) return;
-        message.text = text ?? "[F] 또는 Esc 닫기";
+        message.text = text ?? Texts.Get("shop.hint.close");
         message.color = text != null ? color : KitStyle.Soft;
         messageLeft = text != null ? MessageSeconds : 0f;
     }
@@ -427,10 +428,10 @@ public sealed class ShopMenu : MonoBehaviour
         var titleMask = KitStyle.TopLeft("Title Mask", panel, new Vector2(Inner, 14f), new Vector2(300f, 56f));
         titleMask.gameObject.AddComponent<RectMask2D>();
         var titleBox = KitStyle.TopLeft("Title", titleMask, Vector2.zero, new Vector2(300f, 34f));
-        KitStyle.Label(titleBox, "상점", 30f, TextAlignmentOptions.Left);
+        KitStyle.Label(titleBox, Texts.Get("shop.title"), 30f, TextAlignmentOptions.Left);
         reveal.Slide(titleBox, new Vector2(300f, 0f), .05f);
         var subBox = KitStyle.TopLeft("Sections", titleMask, new Vector2(0f, 36f), new Vector2(300f, 18f));
-        KitStyle.Label(subBox, "총  /  보급", 14f, TextAlignmentOptions.Left, KitStyle.Accent);
+        KitStyle.Label(subBox, Texts.Get("shop.subtitle"), 14f, TextAlignmentOptions.Left, KitStyle.Accent);
         reveal.Slide(subBox, new Vector2(300f, 0f), .1f);
 
         // The money in a dark box, and the X. The box is sized to its number every frame (Refresh), so what is inside
@@ -466,7 +467,7 @@ public sealed class ShopMenu : MonoBehaviour
             bool gunsHere = section == 0;
             if ((gunsHere ? guns : supplies) == 0) continue;
             var header = KitStyle.TopLeft(gunsHere ? "Guns" : "Supplies", panel, new Vector2(Inner, y), new Vector2(Width - Inner * 2f, SectionHeight));
-            KitStyle.Label(header, gunsHere ? "총" : "보급", 15f, TextAlignmentOptions.MidlineLeft, KitStyle.Accent);
+            KitStyle.Label(header, gunsHere ? Texts.Get("shop.section.guns") : Texts.Get("shop.section.supplies"), 15f, TextAlignmentOptions.MidlineLeft, KitStyle.Accent);
             y += SectionHeight;
             foreach (var item in stock)
             {

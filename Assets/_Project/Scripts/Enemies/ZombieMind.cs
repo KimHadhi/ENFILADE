@@ -88,6 +88,9 @@ public sealed class ZombieMind : MonoBehaviour
     private float turnSpeed = 240f;
     [SerializeField, Min(0f), Tooltip("Woken from calm, how long it rouses before it charges (s): its rouse clip.")]
     private float rouseSeconds = 1.1f;
+    [SerializeField, Min(0f), Tooltip("Back on its feet after a knockdown, how long it comes to its senses before it chases, "
+        + "swings or grabs (s): it stands, turns to the nearest player and plays its rouse. Horde zombies too. 0: it goes at once.")]
+    private float riseRouse = 1.2f;
 
     [Header("Stealth kill")]
     [SerializeField, Range(10f, 180f), Tooltip("Within this angle either side of its back (degrees), a player may take an unaware zombie down (F, or a left click with the fists).")]
@@ -282,6 +285,7 @@ public sealed class ZombieMind : MonoBehaviour
     private void Update()
     {
         if (!Thinks) return;
+        ComeTo();
         if (Mood == ZombieMood.Alert) TurnTo(stimulus, Time.deltaTime);
         if (Mood == ZombieMood.Rousing)
         {
@@ -299,6 +303,22 @@ public sealed class ZombieMind : MonoBehaviour
         if (melee != null && melee.IsStunned) return;
         Think(ThinkEvery);
     }
+
+    // Knocked down, it used to fight again the moment the get-up clip let it go, so one that had just risen grabbed a
+    // player in the same instant (user, 2026-11-11 playtest: "완전히 일어나고 정신 차리고 잡아야지 ... 불공평함"). Now,
+    // the frame its knockdown ends (the clip done, ZombieBody.Down's Stand), it rouses for riseRouse: it stands where it
+    // got up, turns to the nearest player and plays its rouse on every PC, and only then chases and fights (Ready). A
+    // legless crawler pushes straight into its crawl instead: the rouse is a standing clip.
+    private void ComeTo()
+    {
+        bool down = melee != null && melee.IsKnockedDown;
+        bool rose = wasDown && !down;
+        wasDown = down;
+        if (!rose || riseRouse <= 0f || Mood != ZombieMood.Awake) return;
+        if (TryGetComponent(out ZombieType type) && type.Crawls) return;
+        Rouse(Alive(focus) ? focus : PlayerRoster.Nearest(transform.position), riseRouse);
+    }
+    private bool wasDown;
 
     private void Think(float dt)
     {

@@ -48,12 +48,12 @@ public sealed class PlayerLifeHUD : MonoBehaviour
     {
         size = PromptSize;
         color = Pale;
-        if (life.IsWiped) { size = WipeSize; color = WipeRed; return "전멸"; }
+        if (life.IsWiped) { size = WipeSize; color = WipeRed; return Texts.Get("life.wipe"); }
         if (receiver.IsDowned)
-            return life.Rescuer != null ? "쓰러졌습니다. 출혈이 멈췄습니다" : $"쓰러졌습니다. 동료를 기다리세요 ({Mathf.CeilToInt(life.BleedLeft)}초)";
+            return life.Rescuer != null ? Texts.Get("life.downed.helped") : Texts.Format("life.downed.waiting", Mathf.CeilToInt(life.BleedLeft));
         if (!receiver.IsAlive)
-            return life.WaitsForWave ? "다음 웨이브에 돌아옵니다" : $"{Mathf.Max(1, Mathf.CeilToInt(life.RespawnLeft))}초 뒤 돌아옵니다";
-        return revive != null && revive.Candidate != null ? "[F] 일으키기" : null;
+            return life.WaitsForWave ? Texts.Get("life.respawn.next_wave") : Texts.Format("life.respawn.seconds", Mathf.Max(1, Mathf.CeilToInt(life.RespawnLeft)));
+        return revive != null && revive.Candidate != null ? Texts.Get("life.revive.prompt") : null;
     }
 
     private void ShowRescue()
@@ -63,8 +63,8 @@ public sealed class PlayerLifeHUD : MonoBehaviour
         panel.gameObject.SetActive(beingHelped || helping);
         if (!beingHelped && !helping) return;
         float progress = beingHelped ? life.RescueProgress : revive.Progress;
-        who.text = beingHelped ? NameOf(life.Rescuer) + " 님이 살리는 중" : NameOf(revive.Candidate) + " 살리는 중";
-        secondsLeft.text = ((1f - progress) * revive.Seconds).ToString("0.0") + "초";
+        who.text = beingHelped ? Texts.Format("life.rescued_by", NameOf(life.Rescuer)) : Texts.Format("life.rescuing", NameOf(revive.Candidate));
+        secondsLeft.text = Texts.Format("hud.seconds", ((1f - progress) * revive.Seconds).ToString("0.0"));
         fill.sizeDelta = new Vector2((PanelWidth - Inset * 2f) * progress, BarHeight);
     }
 
@@ -81,16 +81,16 @@ public sealed class PlayerLifeHUD : MonoBehaviour
             case PlayerSpectate.Mode.Follow:
                 // The one watched may have just left; the next frame moves on.
                 var target = spectate.Target;
-                watching.text = target != null ? NameOf(target) + " 관전 중" : "";
-                keys.text = "[좌클릭] 다음    [우클릭] 이전    [Space] 자유 시점";
+                watching.text = target != null ? Texts.Format("life.spectate.watching", NameOf(target)) : "";
+                keys.text = Texts.Get("life.spectate.follow_keys");
                 break;
             case PlayerSpectate.Mode.Free:
-                watching.text = "자유 시점";
-                keys.text = "[WASD] 이동    [Shift] 빠르게    [좌클릭] 동료 관전    [Space] 따라가기";
+                watching.text = Texts.Get("life.spectate.free");
+                keys.text = Texts.Get("life.spectate.free_keys");
                 break;
             default:
                 watching.text = "";
-                keys.text = "[좌클릭] 관전";
+                keys.text = Texts.Get("life.spectate.wait_keys");
                 break;
         }
     }

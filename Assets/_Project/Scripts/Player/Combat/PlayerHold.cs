@@ -15,8 +15,10 @@ using UnityEngine;
 /// (G&amp;B: a teammate must kill it; a teammate knocking it down does too), unless FightsPinned (a melee class perk to
 /// come, off until then) lets them fight it themselves. The bites hurt a little (pinBiteDamage); what kills is the pin itself, at the end of pinSeconds, sooner
 /// the lower their health (pinLowHealthShare at none) and sooner for each runner that joins it (up to maxJoiners, each
-/// joinSpeedup faster). What all of it looks and sounds like on their own screen is HoldFeedback's. Numbers:
-/// Tables/Player.csv, row Hold.
+/// joinSpeedup faster). With shield left, though, the shove key bursts the whole shield and throws every runner on them
+/// off (TryBurstShield; the user's playtest of 2026-11-11): one shield, one escape. What all of it looks and sounds like
+/// on their own screen is HoldFeedback's; whatever holds anyone stands out through walls on every PC (HoldReveal).
+/// Numbers: Tables/Player.csv, row Hold.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class PlayerHold : MonoBehaviour
@@ -54,6 +56,18 @@ public sealed class PlayerHold : MonoBehaviour
     private Vector2 pinJolt = new Vector2(10f, 8f);
     [SerializeField, Tooltip("A jolt to the view as a brute's blow throws them (degrees; pitch;roll).")]
     private Vector2 slamJolt = new Vector2(16f, 10f);
+    [Header("Shield burst (2026-11-11 playtest)")]
+    [SerializeField, Tooltip("Pinned with any shield left, the shove key bursts the whole shield and throws the runners off.")]
+    private bool shieldBursts = true;
+    [SerializeField, Min(0f), Tooltip("The pin has to have held this long before the key bursts the shield (s), so a shove pressed "
+        + "for the counter as the leap landed doesn't spend it by accident.")]
+    private float shieldBurstFrom = .25f;
+    [SerializeField, Tooltip("The shield bursts by itself this long into a pin (s), the key or not. Negative: only the key.")]
+    private float shieldBurstAuto = -1f;
+    [SerializeField, Min(0f), Tooltip("Thrown off by the burst, each runner lies this long (s).")]
+    private float shieldBurstKnockdown = 2.5f;
+    [SerializeField, Tooltip("A jolt to the view as the shield bursts (degrees; pitch;roll).")]
+    private Vector2 shieldBurstJolt = new Vector2(7f, 5f);
 
     /// <summary>
     /// Pinned by a runner, how far into getting up off the back (the share of Ability.backLandingTime) they stay lying
@@ -77,7 +91,7 @@ public sealed class PlayerHold : MonoBehaviour
     private PlayerDamageReceiver receiver;
     private PlayerNetworkCombat network;
     private HoldFeedback feedback;
-    private float biteLeft, pinProgress;
+    private float biteLeft, pinProgress, pinnedAt;
 
     /// <summary>Some zombie holds them.</summary>
     public bool IsHeld => holders.Count > 0;
@@ -94,6 +108,8 @@ public sealed class PlayerHold : MonoBehaviour
     public bool FightsPinned { get; set; }
     /// <summary>The most runners that pin one player (the host's runners don't leap at a full pin, ZombieRunner).</summary>
     public static int MostPinning => 1 + (local != null ? local.maxJoiners : 2);
+    /// <summary>Pinned with shield left: the shove key would burst it and throw the runners off (HoldFeedback says so).</summary>
+    public bool CanBurstShield => shieldBursts && IsPinned && receiver != null && receiver.Shield > 0f && receiver.IsAlive;
 
     private void Awake()
     {
@@ -197,7 +213,6 @@ public sealed class PlayerHold : MonoBehaviour
             Enemy = enemy, Grip = grip, Melee = enemy.GetComponent<MeleeCombatTarget>(), Until = Time.time + holdSeconds, Feeding = feeding
         });
         if (grip != null) grip.Hold(player, kind);
-        Outline(enemy, true);
         Share(enemy, true, kind);
         // A feed bites from the start.
         if (feeding) biteLeft = 0f;
@@ -210,6 +225,8 @@ public sealed class PlayerHold : MonoBehaviour
     private void Pin(EnemyHealth enemy)
     {
         if (enemy == null || !enemy.IsAlive || IndexOf(enemy) >= 0) return;
+        // On a ladder, a ledge or mid-vault no leap takes hold, as no grab does (EnemyCombatAI also lets it miss there).
+        if (player.IsParkour) return;
         int pinners = Pinners;
         if (pinners >= 1 + maxJoiners) return;
         if (pinners == 0)
@@ -217,6 +234,7 @@ public sealed class PlayerHold : MonoBehaviour
             // Shamblers standing holding them lose their grip as they go down; any eating them stays on them.
             for (int i = holders.Count - 1; i >= 0; i--) if (!holders[i].Feeding) Release(i);
             pinProgress = 0f;
+            pinnedAt = Time.time;
             Vector3 away = Vector3.ProjectOnPlane(transform.position - enemy.transform.position, Vector3.up);
             away = away.sqrMagnitude > 1e-4f ? away.normalized : -transform.forward;
             player.KnockBack(away * pinKnock);
@@ -228,7 +246,6 @@ public sealed class PlayerHold : MonoBehaviour
             Feeding = true, Pinning = true
         });
         if (grip != null) grip.Hold(player, HoldKind.Pin);
-        Outline(enemy, true);
         Share(enemy, true, HoldKind.Pin);
         biteLeft = 0f;
         Jolt(pinJolt);
@@ -267,10 +284,70 @@ public sealed class PlayerHold : MonoBehaviour
                 Release(i);
         }
         if (holders.Count == 0) return;
+        // Set to go off by itself (Hold.shieldBurstAuto), the shield bursts that far into the pin.
+        if (shieldBurstAuto >= 0f && CanBurstShield && Time.time - pinnedAt >= Mathf.Max(shieldBurstFrom, shieldBurstAuto))
+        {
+            BurstShield();
+            if (holders.Count == 0) return;
+        }
         if (TickPin()) return;
         if ((biteLeft -= Time.deltaTime) > 0f) return;
         biteLeft = biteEvery;
         Bite();
+    }
+
+    /// <summary>
+    /// The shove key while pinned (PlayerMovement): with shield left, the whole shield bursts (PlayerDamageReceiver.
+    /// SpendShield, so it breaks with its usual look and sound), every runner on them is thrown off and knocked down for
+    /// shieldBurstKnockdown, and they get up. One shield buys one escape (the user's playtest of 2026-11-11: "쉴드 있으면
+    /// 쉴드 대가로 러너한테서 한번 벗어나게"). False with no pin, no shield, or a pin younger than shieldBurstFrom.
+    /// </summary>
+    internal bool TryBurstShield()
+    {
+        if (!CanBurstShield || Time.time - pinnedAt < shieldBurstFrom) return false;
+        BurstShield();
+        return true;
+    }
+
+    private void BurstShield()
+    {
+        EnemyHealth first = null;
+        foreach (var holder in holders) if (holder.Pinning && holder.Enemy != null) { first = holder.Enemy; break; }
+        if (first == null) return;
+        var cause = new DamageHit(DamageHit.NewAttackId(), 0f, DamageKind.Attack, transform.position + Vector3.up * .4f,
+            transform.position - first.transform.position, first.gameObject, false, 0f, true);
+        if (!receiver.SpendShield(cause)) return;
+        // The pins let go here at once; the host hears of it (ShareHold) and of each knockdown (a copy's MeleeCombatTarget
+        // forwards it), so on every PC the runners go flying off them.
+        for (int i = holders.Count - 1; i >= 0; i--)
+        {
+            var holder = holders[i];
+            if (!holder.Pinning) continue;
+            if (holder.Enemy != null)
+            {
+                Vector3 away = Vector3.ProjectOnPlane(holder.Enemy.transform.position - transform.position, Vector3.up);
+                away = away.sqrMagnitude > 1e-4f ? away.normalized : Vector3.ProjectOnPlane(transform.forward, Vector3.up).normalized;
+                holder.Enemy.GetComponent<EnemyCombatAI>()?.CancelAttack();
+                if (holder.Melee != null && holder.Melee.IsAvailable) holder.Melee.KnockDown(away, shieldBurstKnockdown);
+                Burst(holder.Melee, away);
+            }
+            Release(i);
+        }
+        Jolt(shieldBurstJolt);
+    }
+
+    // Where the shield met the runner: the shove counter's burst in this PC's view, shared so the others see it there too.
+    private void Burst(MeleeCombatTarget target, Vector3 away)
+    {
+        if (target == null) return;
+        var camera = GetComponentInChildren<Camera>();
+        if (camera == null) return;
+        var view = camera.transform;
+        Vector3 to = target.transform.position + Vector3.up * .8f - view.position;
+        to = to.sqrMagnitude > 1e-4f ? to.normalized : view.forward;
+        Vector3 contact = view.position + Vector3.Slerp(view.forward, to, .6f).normalized * .7f;
+        GetComponent<ParryFeedback>()?.CounterBurst(contact, (to * .35f + view.up * .5f).normalized, 1.2f);
+        if (target.TryGetComponent(out EnemyNetwork network)) network.ShareParry(contact, away, true);
     }
 
     // The pin closes on a kill: sooner at low health, sooner with each runner that joined. True when it killed.
@@ -333,7 +410,6 @@ public sealed class PlayerHold : MonoBehaviour
         var holder = holders[at];
         holders.RemoveAt(at);
         if (holder.Grip != null) holder.Grip.LetGo();
-        Outline(holder.Enemy, false);
         if (holder.Enemy != null)
             Share(holder.Enemy, false, holder.Pinning ? HoldKind.Pin : holder.Feeding ? HoldKind.Feed : HoldKind.Grab);
         if (Pinners == 0) pinProgress = 0f;
@@ -343,13 +419,6 @@ public sealed class PlayerHold : MonoBehaviour
     {
         for (int i = holders.Count - 1; i >= 0; i--) Release(i);
         biteLeft = pinProgress = 0f;
-    }
-
-    // A zombie that has them stands out of the crowd with an outline, on their own screen (HitFlashRenderer.SetHolder):
-    // which one to shove or shoot off (user, 2026-11-10, after Left 4 Dead 2's outlines).
-    private static void Outline(EnemyHealth enemy, bool on)
-    {
-        if (enemy != null) HitFlashRenderer.For(enemy)?.SetHolder(on ? 1f : 0f);
     }
 
     private void Jolt(Vector2 jolt)

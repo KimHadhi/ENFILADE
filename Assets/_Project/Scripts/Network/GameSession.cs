@@ -97,7 +97,7 @@ public sealed class GameSession : MonoBehaviour, INetworkPrefabInstanceHandler
         session.network.ConnectionApprovalCallback = session.Approve;
         if (internet) { session.HostOnInternet(); return; }
         session.transport.SetConnectionData(DefaultAddress, Port, "0.0.0.0");
-        if (!session.network.StartHost()) { session.End("방을 만들지 못했습니다. 포트 " + Port + "을 다른 프로그램이 쓰고 있는지 확인하세요."); return; }
+        if (!session.network.StartHost()) { session.End(Texts.Format("net.host.portbusy", Port)); return; }
         session.gameObject.AddComponent<LanRoomBeacon>();
         session.OpenRoom();
     }
@@ -106,10 +106,10 @@ public sealed class GameSession : MonoBehaviour, INetworkPrefabInstanceHandler
     {
         if (IsOnline) return;
         string address = ParseAddress(typed);
-        if (address == null) { Status = "주소 형식이 맞지 않습니다. 예: 192.168.0.5"; return; }
+        if (address == null) { Status = Texts.Get("net.join.badaddress"); return; }
         var session = StartJoining(address);
         session.transport.SetConnectionData(address, Port);
-        if (!session.network.StartClient()) session.End("접속을 시작하지 못했습니다. 주소를 확인하세요.");
+        if (!session.network.StartClient()) session.End(Texts.Get("net.join.nostart"));
     }
 
     public static void JoinInternet(RoomInfo room)
@@ -151,7 +151,9 @@ public sealed class GameSession : MonoBehaviour, INetworkPrefabInstanceHandler
             used = session.dual;
         }
         session.network = host.AddComponent<NetworkManager>();
-        session.network.NetworkConfig = new NetworkConfig { NetworkTransport = used, ConnectionApproval = true };
+        session.network.NetworkConfig = new NetworkConfig { NetworkTransport = used, ConnectionApproval = true, TickRate = TickRate };
+        // Position comes in TickRate times a second; the copies show it this far behind, whatever the rate (BufferTicks).
+        Unity.Netcode.Components.NetworkTransform.InterpolationBufferTickOffset = BufferTicks;
         session.playerPrefab = PlayerFactory.Prefab;
         host.SetActive(true);
         session.network.AddNetworkPrefab(session.playerPrefab);
@@ -161,6 +163,21 @@ public sealed class GameSession : MonoBehaviour, INetworkPrefabInstanceHandler
         Status = "";
         return session;
     }
+
+    // Netcode's tick: how often whatever changed goes out to the others, a teammate's look and position included
+    // (PlayerNetworkPose sends every tick). Netcode's own default is 30; the user asked whether it could be 120 (2026-11-11
+    // playtest: "팀원 30hz로 보내나. 이거 120hz까지 늘릴 수 있나"), so it is Network.csv's tickRate, 120. Zombies' positions
+    // go out as often, which /net shows; every PC in a room must use the same number or joining fails.
+    private static uint TickRate => (uint)Mathf.Clamp(Mathf.RoundToInt(TableNumber("tickRate", 120f)), 10, 240);
+
+    // A copy is drawn a little in the past so the next position has always come in by the time it is needed: two ticks
+    // was Netcode's own buffer at 30 a second (66 ms), which at 120 would leave 17 ms for every bump in the connection.
+    // Network.csv's bufferSeconds keeps it about that long in time instead, as extra ticks on top of Netcode's two.
+    private static int BufferTicks => Mathf.Max(0, Mathf.RoundToInt(TableNumber("bufferSeconds", .05f) * TickRate) - 2);
+
+    private static float TableNumber(string row, float fallback)
+        => GameTables.TryGetRow("Network", row, out var cells) && cells.TryGetValue("value", out string text)
+            && float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out float value) ? value : fallback;
 
     private static CountingTransport AddTransport(GameObject host)
     {
@@ -175,7 +192,7 @@ public sealed class GameSession : MonoBehaviour, INetworkPrefabInstanceHandler
     private static GameSession StartJoining(string target)
     {
         var session = Create();
-        Status = target + "에 접속하는 중입니다...";
+        Status = Texts.Format("net.joining", target);
         session.transport.MaxConnectAttempts = ConnectAttempts;
         session.network.OnClientConnectedCallback += _ => session.wasConnected = true;
         session.network.OnClientDisconnectCallback += session.OnDisconnected;
@@ -184,9 +201,9 @@ public sealed class GameSession : MonoBehaviour, INetworkPrefabInstanceHandler
 
     private async void HostOnInternet()
     {
-        Status = "인터넷 방을 만드는 중입니다...";
+        Status = Texts.Get("net.host.creating");
         bool opened = await EnterInternetRoom(cancel => internetRoom.Create(roomTitle, roomMap, maxPlayers, cancel),
-            "방을 만들지 못했습니다. 인터넷 연결을 확인하세요.");
+            Texts.Get("net.host.failed"));
         if (!opened) return;
         Status = "";
         OpenRoom();
@@ -194,7 +211,7 @@ public sealed class GameSession : MonoBehaviour, INetworkPrefabInstanceHandler
 
     private async void JoinOnInternet(string id)
     {
-        await EnterInternetRoom(cancel => internetRoom.Join(id, cancel), "방에 들어가지 못했습니다. 방이 닫혔거나 가득 찼을 수 있습니다.");
+        await EnterInternetRoom(cancel => internetRoom.Join(id, cancel), Texts.Get("net.join.internetfailed"));
     }
 
     // True when the room is ready and still wanted: the player can give up while this waits on Unity's services.
@@ -224,7 +241,7 @@ public sealed class GameSession : MonoBehaviour, INetworkPrefabInstanceHandler
     private void Approve(NetworkManager.ConnectionApprovalRequest request, NetworkManager.ConnectionApprovalResponse response)
     {
         response.Approved = network.ConnectedClients.Count < maxPlayers;
-        response.Reason = response.Approved ? string.Empty : "방이 가득 찼습니다.";
+        response.Reason = response.Approved ? string.Empty : Texts.Get("net.full");
     }
 
     private void OnMapLoaded(string scene, LoadSceneMode mode, List<ulong> completed, List<ulong> timedOut)
@@ -258,7 +275,7 @@ public sealed class GameSession : MonoBehaviour, INetworkPrefabInstanceHandler
         // its own, which is no use to a player; and a host that said something was reached, so the way there works.
         string reason = network.DisconnectReason;
         bool told = !string.IsNullOrEmpty(reason) && !reason.StartsWith(NetcodeOwnReason, StringComparison.Ordinal);
-        if (!told) reason = wasConnected ? "방이 닫혔거나 연결이 끊겼습니다." : "접속하지 못했습니다. 방이 열려 있는지 확인하세요.";
+        if (!told) reason = wasConnected ? Texts.Get("net.lost") : Texts.Get("net.join.failed");
         End(reason, !told);
     }
 
@@ -272,7 +289,7 @@ public sealed class GameSession : MonoBehaviour, INetworkPrefabInstanceHandler
         if (failed && !wasConnected && joining != null && internetRoom != null && internetRoom.GiveUpDirect())
         {
             again = joining;
-            message = "직접 연결이 되지 않아 릴레이로 다시 접속합니다...";
+            message = Texts.Get("net.join.relay");
         }
         Status = message;
         internetRoom?.Close();

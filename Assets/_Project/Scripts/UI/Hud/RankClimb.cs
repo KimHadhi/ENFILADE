@@ -122,7 +122,7 @@ public sealed class RankClimb : MonoBehaviour
         plate = Panel("Climbed", root, Pink).rectTransform;
         plate.sizeDelta = new Vector2(Size * 1.15f, 40f);
         plate.localRotation = Quaternion.Euler(0f, 0f, 3f);
-        var words = Text("Climbed text", plate, climb.PrestigeAfter > climb.PrestigeBefore ? "프레스티지" : "등급 상승", 24f, Ink);
+        var words = Text("Climbed text", plate, climb.PrestigeAfter > climb.PrestigeBefore ? Texts.Get("rank.prestige") : Texts.Get("rank.up"), 24f, Ink);
         words.rectTransform.sizeDelta = plate.sizeDelta;
         plate.gameObject.SetActive(false);
 

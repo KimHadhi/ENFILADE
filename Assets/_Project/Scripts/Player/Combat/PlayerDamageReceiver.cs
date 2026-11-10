@@ -175,6 +175,19 @@ public sealed class PlayerDamageReceiver : MonoBehaviour, IDamageReceiver, ITabl
     }
 
     public void SetShield(float amount) { shield = NonNegative(amount); }
+
+    /// <summary>
+    /// The whole shield goes at once and breaks as if a hit had taken it (ShieldBroken: ShieldFeedback's break, sound and
+    /// alert): the price a pinned player pays to burst out from under a runner (PlayerHold). False with no shield left.
+    /// </summary>
+    public bool SpendShield(in DamageHit cause)
+    {
+        if (Shield <= 0f || !IsAlive) return false;
+        shield = 0f;
+        ShieldBreaks++;
+        ShieldBroken?.Invoke(cause);
+        return true;
+    }
     public void AddShield(float amount) { shield = (float)Math.Min(float.MaxValue, (double)Shield + NonNegative(amount)); }
     private static float NonNegative(float value) => float.IsNaN(value) || float.IsInfinity(value) ? 0f : Mathf.Max(0f, value);
 

@@ -154,7 +154,7 @@ public sealed class TeamHealthPanel : MonoBehaviour
         if (!health.IsAlive)
         {
             card.name.color = card.value.color = card.badge.color = Gone;
-            card.value.text = "사망";
+            card.value.text = Texts.Get("team.dead");
             card.cells.Show(0f, Gone);
             return;
         }
@@ -162,7 +162,7 @@ public sealed class TeamHealthPanel : MonoBehaviour
         if (other.IsDowned)
         {
             float remaining = other.TryGetComponent(out DownedAura aura) ? 1f - aura.Urgency : 0f;
-            card.value.text = "쓰러짐";
+            card.value.text = Texts.Get("team.downed");
             card.value.color = HealthSegments.Downed;
             card.cells.Show(remaining, HealthSegments.Downed);
             return;

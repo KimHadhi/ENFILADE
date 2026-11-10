@@ -9,8 +9,9 @@ using UnityEngine;
 [DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.NetworkPose)]
 public sealed class PlayerNetworkPose : NetworkBehaviour
 {
-    // Every network tick (30 a second): this carries where the player looks, and a turn has to read as it happens.
-    private const float SendInterval = .03f;
+    // Every network tick (Network.csv tickRate, 120 a second since the 2026-11-11 playtest; Netcode's default was 30):
+    // this carries where the player looks, and a turn has to read as it happens. 0 holds nothing back between ticks.
+    private const float SendInterval = 0f;
 
     private readonly NetworkVariable<PlayerPose> pose = new NetworkVariable<PlayerPose>(default,
         NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);

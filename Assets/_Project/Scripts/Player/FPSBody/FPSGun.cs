@@ -43,6 +43,8 @@ public sealed class FPSGun : MonoBehaviour
 
     // The gun's real surface for the hands to touch, built from its meshes as it is set up (at load, not in play).
     internal GunSurface Surface { get; private set; }
+    // Its magazine, a real one that a reload lets fall to the floor (GunMagazine; 2026-11-11 playtest).
+    private GunMagazine magazine;
     // How FPSAF's Look shares a lean down the body's spine with this gun (FPSBody.LeanChainOf).
     internal System.Collections.Generic.List<(Transform bone, float share)> LeanChain { get; set; } = new();
     // FPSAF's layers that move the gun about on its own, with the alpha its profile gave them: Sway (the gun trailing the
@@ -142,6 +144,7 @@ public sealed class FPSGun : MonoBehaviour
         MeasureMuzzle();
         Surface = GunSurface.Of(transform);
         FindParked();
+        magazine = GunMagazine.For(this);
     }
 
     // ---- Parts parked away from the gun ----
@@ -501,6 +504,8 @@ public sealed class FPSGun : MonoBehaviour
         if (camera != null)
             camera.PlayGunMotion(empty ? entry.sourceReloadEmpty : entry.sourceReloadTactical, clip != null ? clip.blendTime.rateScale : 1f);
         float length = clip != null && clip.clip != null ? clip.clip.length / Mathf.Max(.01f, clip.blendTime.rateScale) : 0f;
+        // The old magazine will fall out as the clip takes it away (GunMagazine).
+        if (magazine != null) magazine.Begin(empty, length);
         if (Kinemation == null || partsPlayer == null) return length;
         var pair = empty ? Kinemation.reloadEmpty : Kinemation.reloadTactical;
         // The reload's own clip takes the slide from the last round's and lets it go forward.
@@ -530,6 +535,7 @@ public sealed class FPSGun : MonoBehaviour
     internal void ReloadDone()
     {
         reloading = false;
+        if (magazine != null) magazine.End();
         ReleaseSlide();
     }
 
@@ -538,6 +544,8 @@ public sealed class FPSGun : MonoBehaviour
     {
         if (!reloading) return;
         reloading = false;
+        // Cut short, the gun has a magazine in it again (one already let go stays on the floor).
+        if (magazine != null) magazine.End();
         playables?.StopAnimation(blendOut);
         if (camera != null) camera.StopGunMotion();
         if (Kinemation == null) return;

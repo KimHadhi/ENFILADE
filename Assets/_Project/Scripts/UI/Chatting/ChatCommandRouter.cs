@@ -45,8 +45,8 @@ public sealed class ChatCommandRouter
         int split = text.IndexOfAny(new[] { ' ', '\t', '\n', '\r' });
         string name = split < 0 ? text : text.Substring(0, split);
         string args = split < 0 ? "" : text.Substring(split + 1).Trim();
-        if (!commands.TryGetValue(name, out var command)) return "알 수 없는 명령어입니다. /help로 목록을 확인하세요.";
+        if (!commands.TryGetValue(name, out var command)) return Texts.Get("chat.command.unknown");
         try { return command.Run(args); }
-        catch (Exception) { return "명령어 실행에 실패했습니다: /" + name; }
+        catch (Exception) { return Texts.Format("chat.command.failed", name); }
     }
 }

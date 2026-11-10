@@ -86,7 +86,7 @@ public sealed class MainMenuModes : MonoBehaviour
             var note = KitStyle.Flat(KitStyle.TopLeft("Note", body, new Vector2(32f, 60f), new Vector2(width - 60f, 22f)), items[i].note, 15f,
                 TextAlignmentOptions.MidlineLeft, KitStyle.Soft);
             note.fontStyle = FontStyles.Normal;
-            var again = KitStyle.Flat(KitStyle.TopLeft("Again", body, new Vector2(width - 230f, 0f), new Vector2(200f, Height)), "다시 누르면 시작", 14f,
+            var again = KitStyle.Flat(KitStyle.TopLeft("Again", body, new Vector2(width - 230f, 0f), new Vector2(200f, Height)), Texts.Get("menu.mode.again"), 14f,
                 TextAlignmentOptions.MidlineRight, KitStyle.With(KitStyle.Accent, 0f));
             again.fontStyle = FontStyles.Normal;
             var lid = KitStyle.Fill(KitStyle.Stretch("Flash", body), KitStyle.Flash);

@@ -31,10 +31,30 @@ public static class ReloadMoments
     // Samples of slack when telling a part that rides along with the magazine.
     private const float Slack = 2f;
 
+    /// <summary>
+    /// The magazine part a reload clip moves: its path under the gun's animated model, the shares of the reload at which
+    /// it leaves, is farthest off (at the pouch) and is back, and how far it was from the sight line as the clip starts
+    /// (a part that waits parked off the gun, a revolver's speedloader, isn't a magazine to drop). GunMagazine drops it.
+    /// </summary>
+    public readonly struct Magazine
+    {
+        public readonly string Path;
+        public readonly float Out, Far, In, Start;
+
+        public Magazine(string path, float leaves, float far, float back, float start)
+        {
+            Path = path; Out = leaves; Far = far; In = back; Start = start;
+        }
+    }
+
     private static readonly Dictionary<(WeaponData, bool), Moments> measured = new Dictionary<(WeaponData, bool), Moments>();
+    private static readonly Dictionary<(WeaponData, bool), Magazine> magazines = new Dictionary<(WeaponData, bool), Magazine>();
 
     /// <summary>The moments of this gun's tactical or empty reload, once FPSBody has measured them.</summary>
     public static bool TryGet(WeaponData gun, bool empty, out Moments moments) => measured.TryGetValue((gun, empty), out moments);
+
+    /// <summary>The magazine part of this gun's tactical or empty reload, once measured (no entry: nothing to drop).</summary>
+    public static bool TryGetMagazine(WeaponData gun, bool empty, out Magazine magazine) => magazines.TryGetValue((gun, empty), out magazine);
 
     /// <summary>
     /// Measures both reload clips on the gun's model. FPSBody calls it once per gun while it builds, with the gun awake;
@@ -47,6 +67,9 @@ public static class ReloadMoments
         if (animator == null) return;
         Measure(gun, false, animator.gameObject, weapon.reloadTactical);
         Measure(gun, true, animator.gameObject, weapon.reloadEmpty);
+        // The magazine that falls out in a reload is cut from the gun's mesh now, while the map loads, not at the first
+        // reload in play (GunMagazine).
+        if (weapon.TryGetComponent(out GunMagazine magazine)) magazine.Prepare();
     }
 
     private static void Measure(WeaponData gun, bool empty, GameObject model, FPSAnimationPair pair)
@@ -107,6 +130,32 @@ public static class ReloadMoments
 
         float Share(float at) => at < 0f ? -1f : Mathf.Clamp01(at * step / span);
         measured[(gun, empty)] = new Moments(Share(magOut), Share(magIn), Share(boltBack), Share(boltForward));
+        // The magazine itself, for GunMagazine: where it is under the model and when it is farthest off (the pouch).
+        if (magOut >= 0f && magIn >= 0f)
+            magazines[(gun, empty)] = new Magazine(PathOf(parts[magazine], model.transform), Share(magOut),
+                Share(FarthestAt(travel, magazine, samples)), Share(magIn), OffSight(parts[magazine], model));
+    }
+
+    // Its path under the model, for finding the same part on any copy of the gun.
+    private static string PathOf(Transform part, Transform root)
+    {
+        string path = part.name;
+        for (var at = part.parent; at != null && at != root; at = at.parent) path = at.name + "/" + path;
+        return path;
+    }
+
+    // How far the part sits off the gun's sight line in the pose the model is in (its idle): a magazine sits in the gun,
+    // a part parked away (the R08's speedloader, 0.45 m) far off it. The model's own aim point stands for the sight line;
+    // without one, its own forward through its root.
+    private static float OffSight(Transform part, GameObject model)
+    {
+        Transform aim = null;
+        foreach (var child in model.GetComponentsInChildren<Transform>(true))
+            if (child.name == "AimPoint") { aim = child; break; }
+        Vector3 origin = aim != null ? aim.position : model.transform.position;
+        Vector3 along = aim != null ? aim.forward : model.transform.forward;
+        Vector3 offset = part.position - origin;
+        return (offset - along * Vector3.Dot(offset, along)).magnitude;
     }
 
     // How far each part has moved from where the clip starts it, relative to its parent (a part that only rides on another

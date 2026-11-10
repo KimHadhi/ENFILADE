@@ -1,3 +1,3 @@
-﻿id,calmColor,urgentColor,calmBeats,urgentBeats,brightness,rimStrength,outlineWidth,nearDistance
-#설명,막 쓰러졌을 때의 색,출혈이 끝나 갈 때의 색,막 쓰러졌을 때 1분당 심장 박동,끝나 갈 때 1분당 심장 박동,색 밝기 배율. 1보다 크면 빛이 번진다,몸에 어리는 빛의 세기,외곽선 두께(1080p 기준 px),이 거리(m)보다 가까우면 빛이 옅어진다
-Default,#FFC247,#FF1F2E,60,170,1.6,0.5,3,3
+﻿id,calmColor,urgentColor,calmBeats,urgentBeats,brightness,rimStrength,outlineWidth,nearDistance,heldColor,heldBeats
+#설명,막 쓰러졌을 때의 색,출혈이 끝나 갈 때의 색,막 쓰러졌을 때 1분당 심장 박동,끝나 갈 때 1분당 심장 박동,색 밝기 배율. 1보다 크면 빛이 번진다,몸에 어리는 빛의 세기,외곽선 두께(1080p 기준 px),이 거리(m)보다 가까우면 빛이 옅어진다,좀비에게 잡히거나 깔리거나 뜯어먹히는 팀원이 벽 너머로 빛나는 색(플레이 테스트 의견 11-11: 잡힌 팀원을 빨리 찾아 도우러 가게),잡혀 있는 동안 1분당 깜빡임
+Default,#FFC247,#FF1F2E,60,170,1.6,0.5,3,3,#FF4F78,150

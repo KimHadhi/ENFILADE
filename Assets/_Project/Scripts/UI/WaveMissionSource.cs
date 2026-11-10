@@ -31,14 +31,14 @@ public sealed class WaveMissionSource : MonoBehaviour
         }
         if (waves.Phase == WaveManager.WavePhase.Countdown)
         {
-            Set(new MissionObjective("wave.prepare." + (waves.CurrentWave + 1), "다음 공세에 대비하세요",
-                "주변을 살피고 전투를 준비하세요. 다음 공세가 시작되면 새로운 목표가 표시됩니다."));
+            Set(new MissionObjective("wave.prepare." + (waves.CurrentWave + 1), Texts.Get("wave.prepare.title"),
+                Texts.Get("wave.prepare.detail")));
             return;
         }
         string id = "wave.combat." + waves.CurrentWave;
         if (ownedId == id) tracker.SetProgress(id, waves.DefeatedEnemies, waves.TotalEnemiesThisWave);
         else Set(new MissionObjective(id, combatTitle, combatDescription, MissionProgressDisplay.Count,
-            waves.DefeatedEnemies, waves.TotalEnemiesThisWave, waves.CurrentWave + "웨이브 격퇴"));
+            waves.DefeatedEnemies, waves.TotalEnemiesThisWave, Texts.Format("wave.cleared", waves.CurrentWave)));
     }
     private void Set(MissionObjective objective)
     {

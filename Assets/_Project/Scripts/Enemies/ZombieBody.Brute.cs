@@ -58,7 +58,7 @@ public sealed partial class ZombieBody
         GameAudio.PlayAt(Roar(), transform.position + Vector3.up * 2f, AudioChannel.Combat, 1f, 6f, 120f);
         PlayFlat(Sting(), .8f);
         var health = GetComponent<EnemyHealth>();
-        AlertHUD.Danger("거구 등장", transform, MarkSeconds, () => health == null || !health.IsAlive);
+        AlertHUD.Danger(Texts.Get("hud.alert.brute"), transform, MarkSeconds, () => health == null || !health.IsAlive);
         var mine = PlayerRoster.Local;
         if (mine == null) return;
         float near = 1f - Mathf.InverseLerp(NearShake, FarShake, Vector3.Distance(mine.transform.position, transform.position));

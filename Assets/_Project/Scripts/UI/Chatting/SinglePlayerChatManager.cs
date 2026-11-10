@@ -277,7 +277,7 @@ public class SinglePlayerChatManager : MonoBehaviour
         {
             AddMessage(ChatChannel.Console, speaker, text);
             string result = Commands.Execute(text);
-            if (!string.IsNullOrEmpty(result)) AddMessage(ChatChannel.Console, "시스템", result);
+            if (!string.IsNullOrEmpty(result)) AddMessage(ChatChannel.Console, Texts.Get("chat.system"), result);
             return;
         }
         AddMessage(ChatChannel.Note, speaker, text);
@@ -288,7 +288,7 @@ public class SinglePlayerChatManager : MonoBehaviour
 
     public void AddDialogue(string speaker, string text) => AddMessage(ChatChannel.Dialogue, speaker, text);
     public void AddDialogue(string speaker, string text, Color speakerColor) => AddEntry(new ChatEntry(ChatChannel.Dialogue, speaker, text, speakerColor));
-    public void AddBroadcast(string text) => AddMessage(ChatChannel.Broadcast, "시스템", text);
+    public void AddBroadcast(string text) => AddMessage(ChatChannel.Broadcast, Texts.Get("chat.system"), text);
     public void AddMessage(ChatChannel channel, string speaker, string text) => AddEntry(new ChatEntry(channel, speaker, text));
 
     public void AddEntry(ChatEntry entry)
@@ -346,7 +346,7 @@ public class SinglePlayerChatManager : MonoBehaviour
         if (channelLabel != null) { channelLabel.text = "[" + ChatStyle.Label(inputChannel) + "]"; channelLabel.color = color; }
         if (channelIcon != null) { channelIcon.color = color; channelIcon.SetChannel(inputChannel); }
         if (chatInput != null && chatInput.placeholder is TMP_Text placeholder)
-            placeholder.text = inputChannel == ChatChannel.Console ? "/help · 명령어 입력" : "메시지 입력 · Tab 전환";
+            placeholder.text = inputChannel == ChatChannel.Console ? Texts.Get("chat.placeholder.console") : Texts.Get("chat.placeholder.chat");
     }
 
     private void RecallInput(int direction)
@@ -364,8 +364,8 @@ public class SinglePlayerChatManager : MonoBehaviour
         commandsReady = true;
         GameCommands.Register(commands, () => this);
         commands.Register("clear", "현재 대화 기록 비우기", _ => { ClearHistory(); return null; });
-        commands.Register("chat", "채팅 채널로 전환", _ => { SetInputChannel(ChatChannel.Note); return "채팅 채널로 전환했습니다."; });
-        commands.Register("console", "콘솔 채널로 전환", _ => { SetInputChannel(ChatChannel.Console); return "콘솔 채널로 전환했습니다."; });
+        commands.Register("chat", "채팅 채널로 전환", _ => { SetInputChannel(ChatChannel.Note); return Texts.Get("chat.switched.chat"); });
+        commands.Register("console", "콘솔 채널로 전환", _ => { SetInputChannel(ChatChannel.Console); return Texts.Get("chat.switched.console"); });
     }
 
     private void RequestScrollToBottom()

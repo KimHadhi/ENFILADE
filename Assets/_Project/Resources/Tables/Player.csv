@@ -145,6 +145,11 @@ Hold.pinKnock,2.5,도약에 맞아 등으로 넘어질 때 뒤로 미끄러지�
 Hold.pinJolt,10;8,깔릴 때 시점이 흔들리는 정도(도; 위아래;기울기)
 Hold.downedBiteDamage,25,쓰러진 플레이어를 좀비 하나가 뜯어먹을 때 초당 깎는 쓰러진 체력(쓰러진 체력은 Downed.csv의 downedHealth). 친구 피드백 C8
 Hold.slamJolt,16;10,거구 주먹에 날아갈 때 시점이 흔들리는 정도(도; 위아래;기울기). 친구 피드백 C2
+Hold.shieldBursts,true,러너에게 깔렸을 때 실드가 남아 있으면 V로 실드를 통째로 터뜨려 러너를 떨쳐낸다(러너는 넘어지고 나는 일어난다). 실드 하나에 한 번. 플레이 테스트 의견(11-11)
+Hold.shieldBurstFrom,0.25,깔리고 나서 이 시간(초)이 지나야 V로 터뜨릴 수 있다. 도약이 떨어질 때 카운터를 노리고 누른 밀치기가 실드를 쓰지 않게
+Hold.shieldBurstAuto,-1,깔리고 이 시간(초)이 지나면 V를 안 눌러도 실드가 저절로 터진다. 음수면 V로만 터진다
+Hold.shieldBurstKnockdown,2.5,실드 폭발에 떨쳐진 러너가 넘어져 있는 시간(초)
+Hold.shieldBurstJolt,7;5,실드가 터질 때 시점이 흔들리는 정도(도; 위아래;기울기)
 HoldFeedback.grabEdge,0.45,셤블러 하나에게 잡혔을 때 화면 가장자리가 붉게 조여 오는 정도(0~1)
 HoldFeedback.perHolder,0.12,잡은 좀비가 하나 늘 때마다 더 조여 오는 정도
 HoldFeedback.pinEdge,0.6,러너에게 깔렸을 때 조여 오기 시작하는 정도. 물어 죽이기까지 남은 시간이 줄수록 끝까지 조여 온다

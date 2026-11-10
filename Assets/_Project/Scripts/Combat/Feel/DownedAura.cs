@@ -4,7 +4,8 @@ using UnityEngine;
 /// <summary>
 /// A downed teammate glows through walls, so their friends can find them, and the glow tells how long they have: it
 /// turns from gold to red and its heartbeat quickens as they bleed out. It softens up close, where it would only get in
-/// the way. A copy of each skinned mesh carries it, because an extra material on the real mesh only covers its last
+/// the way. A teammate a zombie holds (grabbed, eaten or pinned) glows the same way in heldColor, beating fast, until it
+/// lets go. A copy of each skinned mesh carries it, because an extra material on the real mesh only covers its last
 /// submesh. They're made with the body and wait switched off. Numbers: Tables/DownedAura.
 /// </summary>
 [DisallowMultipleComponent]
@@ -22,6 +23,10 @@ public sealed class DownedAura : MonoBehaviour
     [SerializeField, Min(0f)] private float rimStrength = .5f, outlineWidth = 3f;
     [SerializeField, Min(.1f), Tooltip("Closer than this it starts to fade (m).")]
     private float nearDistance = 3f;
+    [SerializeField, Tooltip("Held by a zombie (grabbed, eaten or pinned), they glow in this colour instead.")]
+    private Color heldColor = new Color(1f, .31f, .47f);
+    [SerializeField, Min(1f), Tooltip("Beats a minute while held.")]
+    private float heldBeats = 150f;
 
     private readonly List<SkinnedMeshRenderer> glows = new List<SkinnedMeshRenderer>();
     private PlayerMovement player;
@@ -29,7 +34,7 @@ public sealed class DownedAura : MonoBehaviour
     private Animator builtFor;
     private Material material;
     private float startHealth = 1f, beat;
-    private bool shown;
+    private bool shown, wasDowned;
 
     /// <summary>How far they have bled out: 0 just down, 1 at the end.</summary>
     public float Urgency { get; private set; }
@@ -46,20 +51,37 @@ public sealed class DownedAura : MonoBehaviour
         if (!player.IsInitialized) return;
         Build();
         bool downed = player.IsDowned;
-        if (downed != shown)
+        // Held by a zombie they glow as well, in heldColor at a quick beat, so a friend can find them and pull it off
+        // (user, 2026-11-11 playtest: the grabbed teammate and what holds them should show through walls; the zombie's
+        // own silhouette is HoldReveal's).
+        bool held = !downed && player.InZombieGrip;
+        bool on = downed || held;
+        if (downed && !wasDowned) { startHealth = Mathf.Max(1f, player.DamageReceiver.Health); beat = 0f; }
+        wasDowned = downed;
+        if (on != shown)
         {
-            shown = downed;
-            if (downed) { startHealth = Mathf.Max(1f, player.DamageReceiver.Health); beat = 0f; }
-            foreach (var glow in glows) if (glow != null) glow.enabled = downed;
+            shown = on;
+            foreach (var glow in glows) if (glow != null) glow.enabled = on;
         }
-        if (!downed || material == null) return;
-        Urgency = 1f - Mathf.Clamp01(player.DamageReceiver.Health / startHealth);
-        beat += Time.unscaledDeltaTime * Mathf.Lerp(calmBeats, urgentBeats, Urgency) / 60f;
+        if (!on || material == null) return;
+        Color color;
+        if (held)
+        {
+            Urgency = 0f;
+            color = heldColor;
+            beat += Time.unscaledDeltaTime * heldBeats / 60f;
+        }
+        else
+        {
+            Urgency = 1f - Mathf.Clamp01(player.DamageReceiver.Health / startHealth);
+            color = Color;
+            beat += Time.unscaledDeltaTime * Mathf.Lerp(calmBeats, urgentBeats, Urgency) / 60f;
+        }
         float pulse = 1f - Mathf.Repeat(beat, 1f);
         float strength = Mathf.Lerp(.55f, 1f, pulse * pulse * pulse);
         var mine = PlayerRoster.Local;
         float near = mine != null ? Mathf.Clamp01(Vector3.Distance(mine.transform.position, transform.position) / nearDistance) : 1f;
-        material.SetColor(ColorId, Color * brightness * strength);
+        material.SetColor(ColorId, color * brightness * strength);
         material.SetFloat(RimId, rimStrength * near);
         material.SetFloat(WidthId, outlineWidth * Mathf.Lerp(.4f, 1f, near));
     }

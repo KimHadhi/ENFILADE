@@ -143,6 +143,21 @@ public sealed partial class PlayerMovement : MonoBehaviour
     public bool FightsPinned => IsPinned && hold != null && hold.FightsPinned;
     /// <summary>Another PC: whether their own PC has them pinned (PlayerNetworkCombat).</summary>
     internal void ShowPinned(bool pinned) => shownPinned = pinned;
+    private bool shownHeld;
+    /// <summary>
+    /// Some zombie has them, standing, eating or pinning (PlayerHold.IsHeld); on another PC, what their own PC says
+    /// (PlayerNetworkCombat). Friends see them through walls then (DownedAura), to come and pull it off.
+    /// </summary>
+    public bool InZombieGrip
+    {
+        get
+        {
+            if (hold == null) hold = GetComponent<PlayerHold>();
+            return hold != null ? hold.IsHeld : shownHeld || shownPinned;
+        }
+    }
+    /// <summary>Another PC: whether their own PC has them in a zombie's grip (PlayerNetworkCombat).</summary>
+    internal void ShowHeld(bool held) => shownHeld = held;
     /// <summary>This player's frame time: in a room, slow motion runs on them alone (CombatTimeEffects).</summary>
     public float DeltaTime => Time.deltaTime * Pace;
     /// <summary>How fast this player's own time runs: below 1 only in a room's slow motion.</summary>
@@ -402,7 +417,9 @@ public sealed partial class PlayerMovement : MonoBehaviour
         {
             bool fists = MeleeCombat != null && MeleeCombat.IsActive;
             bool pinned = IsPinned;
-            if (Input.ShovePressed && !fists && (!pinned || FightsPinned)) Abilities.Combat.TryShove();
+            // Pinned with shield left, V bursts the shield and throws the runners off, fists out or not (PlayerHold).
+            if (Input.ShovePressed && pinned && hold != null && hold.TryBurstShield()) { }
+            else if (Input.ShovePressed && !fists && (!pinned || FightsPinned)) Abilities.Combat.TryShove();
             if (pinned) StayPinned();
             Input.Sample(false);
             Actions.Momentum.Tick(dt, Vector2.zero);

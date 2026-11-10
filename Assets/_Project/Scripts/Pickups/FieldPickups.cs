@@ -435,12 +435,12 @@ public sealed class FieldPickups : MonoBehaviour
         player.TryGetComponent(out PlayerWeaponSlots slots);
         switch (row.Kind)
         {
-            case Kind.Gun: return slots == null || player.CombatInputLocked ? "지금은 못 주워요" : null;
+            case Kind.Gun: return slots == null || player.CombatInputLocked ? Texts.Get("pickup.refuse.now") : null;
             case Kind.Ammo:
-                if (slots == null || !HoldsAnyGun(slots)) return "채울 총이 없어요";
-                return RoomForAmmo(slots) ? null : "탄약이 가득해요";
-            case Kind.Heal: return receiver.Health >= receiver.MaximumHealth - .5f ? "체력이 가득해요" : null;
-            case Kind.Shield: return receiver.Shield >= row.Amount - .5f ? "실드가 이미 있어요" : null;
+                if (slots == null || !HoldsAnyGun(slots)) return Texts.Get("pickup.refuse.nogun");
+                return RoomForAmmo(slots) ? null : Texts.Get("pickup.refuse.ammofull");
+            case Kind.Heal: return receiver.Health >= receiver.MaximumHealth - .5f ? Texts.Get("pickup.refuse.healthfull") : null;
+            case Kind.Shield: return receiver.Shield >= row.Amount - .5f ? Texts.Get("pickup.refuse.shield") : null;
         }
         return null;
     }
@@ -461,15 +461,15 @@ public sealed class FieldPickups : MonoBehaviour
             case Kind.Ammo:
                 int magazines = Mathf.Max(1, Mathf.RoundToInt(row.Amount));
                 if (slots != null) AddMagazines(slots, magazines);
-                Pop(row.Kind, row.Name, "탄창 +" + magazines);
+                Pop(row.Kind, row.Name, Texts.Format("pickup.gives.ammo", magazines));
                 break;
             case Kind.Heal:
                 receiver.Heal(row.Amount);
-                Pop(row.Kind, row.Name, "체력 +" + Mathf.RoundToInt(row.Amount));
+                Pop(row.Kind, row.Name, Texts.Format("pickup.gives.heal", Mathf.RoundToInt(row.Amount)));
                 break;
             case Kind.Shield:
                 receiver.SetShield(Mathf.Max(receiver.Shield, row.Amount));
-                Pop(row.Kind, row.Name, "실드 +" + Mathf.RoundToInt(row.Amount));
+                Pop(row.Kind, row.Name, Texts.Format("pickup.gives.shield", Mathf.RoundToInt(row.Amount)));
                 break;
             case Kind.Money:
                 Wallet.Receive((long)row.Amount);
@@ -487,14 +487,14 @@ public sealed class FieldPickups : MonoBehaviour
         {
             if (slots.GetWeapon(i) != row.Weapon) continue;
             slots.RefillAmmo();
-            Pop(row.Kind, row.Name, "탄약 가득");
+            Pop(row.Kind, row.Name, Texts.Get("pickup.gives.refill"));
             return;
         }
         int slot = GunSlotFor(slots);
         var before = slots.GetWeapon(slot);
         if (!slots.TrySetWeapon(slot, row.Weapon)) return;
         if (!slots.HandsFull) slots.SelectSlot(slot);
-        Pop(row.Kind, row.Name, "총");
+        Pop(row.Kind, row.Name, Texts.Get("pickup.gives.gun"));
         if (before != null && before.Category == WeaponCategory.Ranged)
             Leave(RowOf(before), player.transform.position + player.transform.forward * LeaveAhead);
     }
@@ -565,10 +565,10 @@ public sealed class FieldPickups : MonoBehaviour
 
     private static string AmountOf(Row row) => row.Kind switch
     {
-        Kind.Gun => "총",
-        Kind.Ammo => "탄창 +" + Mathf.RoundToInt(row.Amount),
-        Kind.Heal => "체력 +" + Mathf.RoundToInt(row.Amount),
-        Kind.Shield => "실드 +" + Mathf.RoundToInt(row.Amount),
+        Kind.Gun => Texts.Get("pickup.gives.gun"),
+        Kind.Ammo => Texts.Format("pickup.gives.ammo", Mathf.RoundToInt(row.Amount)),
+        Kind.Heal => Texts.Format("pickup.gives.heal", Mathf.RoundToInt(row.Amount)),
+        Kind.Shield => Texts.Format("pickup.gives.shield", Mathf.RoundToInt(row.Amount)),
         _ => "+" + Wallet.Format((long)row.Amount),
     };
 

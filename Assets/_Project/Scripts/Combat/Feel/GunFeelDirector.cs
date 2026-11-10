@@ -62,14 +62,14 @@ public static class GunFeelDirector
 
     private static string WeaponName(DamageHit hit)
     {
-        if (hit.Kind == DamageKind.Execution) return "처형";
-        if (hit.IsCounter) return "반격";
-        if (hit.Method == DamageMethod.Shove) return "밀치기";
+        if (hit.Kind == DamageKind.Execution) return Texts.Get("feed.weapon.execution");
+        if (hit.IsCounter) return Texts.Get("feed.weapon.counter");
+        if (hit.Method == DamageMethod.Shove) return Texts.Get("feed.weapon.shove");
         if (hit.Method == DamageMethod.Bullet && hit.Source != null)
         {
             var weapon = hit.Source.GetComponentInChildren<WeaponController>();
             if (weapon != null && weapon.EquippedData != null) return weapon.EquippedData.DisplayName;
         }
-        return "주먹";
+        return Texts.Get("feed.weapon.fist");
     }
 }

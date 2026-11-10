@@ -53,7 +53,7 @@ public sealed class InternetRoomFinder : IRoomList
             if (closed) return;
             if (Problem.Length == 0) Debug.LogWarning($"[InternetRoomFinder] {e.Message}");
             rooms = new List<RoomInfo>();
-            Problem = "인터넷 방 목록을 불러오지 못했습니다. 연결을 확인하세요.";
+            Problem = Texts.Get("net.rooms.failed");
         }
         finally
         {

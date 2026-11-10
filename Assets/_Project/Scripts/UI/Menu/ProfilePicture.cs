@@ -45,7 +45,7 @@ public static class ProfilePicture
     /// <summary>Opens the file dialog and uses the image picked. False if cancelled or the file isn't an image.</summary>
     public static bool Choose()
     {
-        string path = FilePicker.Open("프로필 사진 고르기", "이미지", "png", "jpg", "jpeg");
+        string path = FilePicker.Open(Texts.Get("profile.picture.dialog"), Texts.Get("profile.picture.kind"), "png", "jpg", "jpeg");
         return !string.IsNullOrEmpty(path) && Use(path);
     }
 

@@ -40,7 +40,7 @@ public sealed class CrosshairPreview
         W.Fill(Half(Box, .5f), new Color(.72f, .74f, .77f));
         view = Draw(Box);
 
-        hint = W.Label(Box, "눌러서 사격 반동 보기", 15f, W.Muted, TextAlignmentOptions.BottomLeft);
+        hint = W.Label(Box, Texts.Get("crosshair.preview.hint"), 15f, W.Muted, TextAlignmentOptions.BottomLeft);
         W.Stretch(hint.rectTransform);
         hint.rectTransform.offsetMin = new Vector2(12f, 8f);
         var button = Box.gameObject.AddComponent<Button>();

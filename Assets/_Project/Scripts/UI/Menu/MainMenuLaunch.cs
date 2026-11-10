@@ -38,7 +38,7 @@ public sealed class MainMenuLaunch : MonoBehaviour
     {
         KitStyle.Fill(Root, Color.clear).raycastTarget = true;
         KitSkew.On(KitStyle.Fill(KitStyle.Stretch("Plate", Root), KitStyle.Accent), Slant);
-        var title = KitStyle.Flat(KitStyle.TopLeft("Title", Root, new Vector2(36f, 4f), new Vector2(300f, 76f)), "출격", 58f,
+        var title = KitStyle.Flat(KitStyle.TopLeft("Title", Root, new Vector2(36f, 4f), new Vector2(300f, 76f)), Texts.Get("menu.launch.title"), 58f,
             TextAlignmentOptions.MidlineLeft, KitStyle.Ink);
         title.characterSpacing = 4f;
         var key = KitStyle.TopLeft("Key", Root, new Vector2(Width - 120f, 26f), new Vector2(76f, 30f));

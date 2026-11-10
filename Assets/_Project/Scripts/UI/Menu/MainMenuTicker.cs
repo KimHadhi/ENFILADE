@@ -113,7 +113,7 @@ public sealed class MainMenuTicker : MonoBehaviour
                 text.Append("<b><color=").Append(accent).Append('>').Append(label.Trim()).Append("</color></b>   ");
             text.Append(line.Trim());
         }
-        return text.Length > 0 ? text.ToString() : "<color=" + accent + ">무전</color>   ...";
+        return text.Length > 0 ? text.ToString() : Texts.Format("menu.ticker.empty", accent);
     }
 
     /// <summary>Raises the bar in from below after <paramref name="delay"/> (s).</summary>

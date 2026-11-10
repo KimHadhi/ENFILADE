@@ -29,7 +29,7 @@ public sealed class ProfileView
         W.ClearContent(panel);
         typed = GameSettings.Current.DisplayName;
 
-        W.Size(W.Label(panel, "프로필", 36f, W.Text), height: 54f);
+        W.Size(W.Label(panel, Texts.Get("profile.title"), 36f, W.Text), height: 54f);
         var header = W.Rect("Header", panel);
         var row = header.gameObject.AddComponent<HorizontalLayoutGroup>();
         row.spacing = Gap;
@@ -40,8 +40,8 @@ public sealed class ProfileView
         BuildDetails(header);
 
         var buttons = W.ButtonRow(panel);
-        W.ActionButton(buttons, "취소", false, Hide);
-        W.ActionButton(buttons, "저장", true, Confirm);
+        W.ActionButton(buttons, Texts.Get("common.cancel"), false, Hide);
+        W.ActionButton(buttons, Texts.Get("profile.save"), true, Confirm);
         ShowPicture();
         shade.gameObject.SetActive(true);
     }
@@ -80,13 +80,13 @@ public sealed class ProfileView
         stack.childForceExpandHeight = false;
         W.Size(column, flexibleWidth: 1f);
 
-        W.Size(W.Label(column, "닉네임", 20f, W.Muted), height: 26f);
+        W.Size(W.Label(column, Texts.Get("profile.nickname"), 20f, W.Muted), height: 26f);
         W.TextInput(column, typed, name =>
         {
             typed = name;
             ShowPicture();
         }).characterLimit = NameLimit;
-        W.Size(W.Label(column, "비워 두면 PC 사용자 이름을 씁니다.", 17f, W.Muted), height: 24f);
+        W.Size(W.Label(column, Texts.Get("profile.nickname.hint"), 17f, W.Muted), height: 24f);
 
         var buttons = W.Rect("Picture Buttons", column);
         var row = buttons.gameObject.AddComponent<HorizontalLayoutGroup>();
@@ -95,12 +95,12 @@ public sealed class ProfileView
         row.childControlWidth = row.childControlHeight = true;
         row.childForceExpandWidth = row.childForceExpandHeight = false;
         W.Size(buttons, height: 44f);
-        W.Size(W.ActionButton(buttons, "사진 고르기", false, () =>
+        W.Size(W.ActionButton(buttons, Texts.Get("profile.picture.choose"), false, () =>
         {
             ProfilePicture.Choose();
             ShowPicture();
         }), width: 150f, height: 40f);
-        W.Size(W.ActionButton(buttons, "사진 지우기", false, () =>
+        W.Size(W.ActionButton(buttons, Texts.Get("profile.picture.clear"), false, () =>
         {
             ProfilePicture.Clear();
             ShowPicture();

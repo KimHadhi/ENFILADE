@@ -41,6 +41,8 @@ public sealed class ZombieRunner : MonoBehaviour
     private float riseDaze = 1.5f;
     [SerializeField, Min(0f), Tooltip("Come down off a ledge (ZombieDrop), it needs this long to find its feet before it charges or leaps (s): a runner dropping from above pounced the instant it touched the ground (user, 2026-11-10).")]
     private float dropDaze = .9f;
+    [SerializeField, Min(0f), Tooltip("It leaps only at a player whose feet are this near its own in height (m), and never at one on a ladder, a ledge or mid-vault; a leap that lands pins only within this height too (EnemyCombatAI).")]
+    private float pounceHeight = .8f;
     [SerializeField, Min(0f), Tooltip("Further above or below its quarry than this (m), it doesn't charge or leap.")]
     private float chargeHeight = 1.5f;
     [SerializeField, Min(0f), Tooltip("How high the leap goes, shown (m).")]
@@ -101,6 +103,13 @@ public sealed class ZombieRunner : MonoBehaviour
     public float PounceCounterRadius => pounceCounterRadius;
     /// <summary>How long a landed leap must keep its quarry within reach to pin them (s).</summary>
     public float PounceDwell => pounceDwell;
+    /// <summary>How far above or below its own feet a leap still reaches someone (m).</summary>
+    public float PounceHeight => pounceHeight;
+
+    // Someone it can leap at: on its own floor (pounceHeight), not climbing a ladder, hanging on a ledge or vaulting. A
+    // runner at the foot of a ladder pinned the player climbing it (user, 2026-11-11 playtest).
+    private bool CanLeapAt(PlayerMovement player)
+        => player != null && !player.IsParkour && Mathf.Abs(player.transform.position.y - Feet.y) <= pounceHeight;
 
     /// <summary>
     /// Where a leap of <paramref name="airTime"/> seconds aims: ahead of its quarry the way they are moving as it begins,
@@ -207,7 +216,8 @@ public sealed class ZombieRunner : MonoBehaviour
             // Close, it faces them, which an agent stopped short of them doesn't, and leaps once it may.
             transform.rotation = Quaternion.RotateTowards(transform.rotation, Quaternion.LookRotation(to),
                 Mathf.Max(90f, agent.angularSpeed) * dt);
-            if (cooldownLeft <= 0f && Vector3.Angle(Flat(transform.forward), to) <= pounceAngle && Sees(player)) BeginLeap(player);
+            if (cooldownLeft <= 0f && Vector3.Angle(Flat(transform.forward), to) <= pounceAngle && CanLeapAt(player) && Sees(player))
+                BeginLeap(player);
             return;
         }
         if (cooldownLeft > 0f) return;
@@ -230,7 +240,7 @@ public sealed class ZombieRunner : MonoBehaviour
         float distance = to.magnitude;
         float off = distance > .01f ? Vector3.Angle(heading, to) : 0f;
         if ((sightLeft -= dt) <= 0f) { sightLeft = SightEvery; sees = Sees(player); }
-        if (distance <= pounceRange && off <= pounceAngle && sees && ZombieGrip.CountPinning(player) < PlayerHold.MostPinning)
+        if (distance <= pounceRange && off <= pounceAngle && sees && CanLeapAt(player) && ZombieGrip.CountPinning(player) < PlayerHold.MostPinning)
         {
             BeginLeap(player);
             return;

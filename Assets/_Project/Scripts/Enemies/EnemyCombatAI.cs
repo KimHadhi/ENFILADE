@@ -41,6 +41,9 @@ public sealed class EnemyCombatAI : MonoBehaviour
     [SerializeField, Min(.05f)] private float feedWindup = .6f;
     [Tooltip("The height it aims at a player lying on the ground or down (m above their feet).")]
     [SerializeField, Min(0f)] private float lyingAimHeight = .3f;
+    [Tooltip("It grabs, or kneels to eat, only a player whose feet are this near its own in height (m): on the same floor. "
+        + "Up on a step or down below one, they are clawed instead.")]
+    [SerializeField, Min(0f)] private float holdHeight = .6f;
     [Tooltip("Kneeling to eat, it still takes someone who has crawled this far (m) past its reach since the kneel began, "
         + "while they stay lying. 0 takes them only where they lay then.")]
     [SerializeField, Min(0f)] private float feedReach = .8f;
@@ -252,9 +255,11 @@ public sealed class EnemyCombatAI : MonoBehaviour
         // A shambler grabs whoever isn't getting away from it; only an opening attack may be a bite.
         // Nobody on a ladder or mid-climb is grabbed: held there, they could never climb on while the shambler kept
         // grabbing again (friend feedback C9); they are clawed instead. (A copy's state is mirrored, so this holds for
-        // players on other PCs too.)
-        move = Lying(player) ? AttackMove.Feed
-            : grabs && !MovingAway() && !player.IsParkour ? AttackMove.Grab
+        // players on other PCs too.) Nor anyone up on a step or down below one (Level): a shambler under a ledge took
+        // hold of the player standing on it, hidden by the very floor they stood on (user, 2026-11-11 playtest).
+        bool level = Level(player);
+        move = Lying(player) && level ? AttackMove.Feed
+            : grabs && level && !MovingAway() && !player.IsParkour ? AttackMove.Grab
             : comboIndex == 0 && biteShare > 0f && Random.value < biteShare ? AttackMove.Bite : AttackMove.Swing;
         lockedAim = player.transform.position + Vector3.up * AimHeightFor(player);
         UpdateIndicator(true);
@@ -306,9 +311,27 @@ public sealed class EnemyCombatAI : MonoBehaviour
         if (victim != null)
         {
             Vector3 off = victim.transform.position - lockedFeet;
-            if (new Vector2(off.x, off.z).magnitude <= pounceRadius && Mathf.Abs(off.y) <= 1.5f) pounceInside += dt;
+            if (new Vector2(off.x, off.z).magnitude <= pounceRadius && OnItsFloor(victim)) pounceInside += dt;
         }
         return pounceInside >= dwell || timer >= Windup + dwell + PounceLinger;
+    }
+
+    // Its own feet: the agent floats baseOffset above the mesh (a copy's agent is off but keeps the number).
+    private float FeetHeight => transform.position.y - (agent != null ? agent.baseOffset : 0f);
+
+    // On the floor it stands on: the player's feet within holdHeight of its own, so a grab or a kneel can reach them.
+    private bool Level(PlayerMovement target) => target != null && Mathf.Abs(target.transform.position.y - FeetHeight) <= holdHeight;
+
+    // A landed leap catches only someone on the floor it came down on, their feet within ZombieRunner's pounceHeight of
+    // its own, and not on a ladder, a ledge or mid-vault: from the foot of a ladder it pinned a player near its top, its
+    // check going by where the player had been (user, 2026-11-11 playtest: "사다리 타고 위에 있는데 왜 맨 아래에 있는
+    // 러너한테 잡히는 거임??").
+    private bool OnItsFloor(PlayerMovement victim)
+    {
+        if (victim == null || victim.IsParkour) return false;
+        if (leaper == null) leaper = GetComponent<ZombieRunner>();
+        float most = leaper != null ? leaper.PounceHeight : holdHeight;
+        return Mathf.Abs(victim.transform.position.y - FeetHeight) <= most;
     }
 
     // Where a leap at this player aims as it begins: ahead of them, the way they are moving (ZombieRunner.LeapSpot).
@@ -355,7 +378,7 @@ public sealed class EnemyCombatAI : MonoBehaviour
         // A dodge through the leap counts as one through any attack (a perfect dodge).
         StepDodgeTrail.RecognizeAttackSegment(hit, chest - direction * pounceRadius, chest);
         float away = new Vector2(off.x, off.z).magnitude;
-        if (Mathf.Abs(off.y) > 1.5f) return DamageResult.Ignored;
+        if (!OnItsFloor(victim)) return DamageResult.Ignored;
         if (away > pounceRadius || pounceInside < PounceDwell)
         {
             if (leaper == null) leaper = GetComponent<ZombieRunner>();

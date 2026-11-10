@@ -125,6 +125,8 @@ public static class PlayerConsoleCommands
             counter.PreviewBanner(grade);
             return "COUNTER 연출 " + grade + "단계";
         }));
+        // To judge the fitted hitboxes by eye (ZombieBody.Hitboxes.cs; 2026-11-11 playtest).
+        router.Register("hitbox", "좀비 히트박스 보이기/숨기기 — 머리(목 포함) 빨강, 몸 노랑", _ => ZombieBody.ToggleHitboxes());
         router.Register("alert", "[danger/team/self] — 화면 위 알림 띠 미리 보기 (비우면 danger). danger는 오른쪽, team은 왼쪽 25m에 가상의 자리를 둔다", args => WithPlayer(resolvePlayer, p =>
         {
             string kind = args.Trim().ToLowerInvariant();

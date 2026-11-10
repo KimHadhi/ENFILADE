@@ -1,0 +1,3 @@
+﻿id,holderColor,beats,dimShare
+#설명,좀비가 플레이어를 붙잡거나 뜯어먹거나 깔고 있는 동안 모든 PC에서 벽 너머로 보이는 그 좀비의 실루엣 색(#RRGGBBAA. 알파는 가장 진할 때의 불투명도). 보이는 곳에서는 붙잡은 좀비 외곽선이 같이 뜬다. 잡힌 팀원은 DownedAura.csv의 heldColor로 빛난다(플레이 테스트 의견 11-11),1분당 두근거림,두근거림 사이에 남는 진하기(holderColor 알파의 배수)
+Default,#FF294DB3,120,0.55

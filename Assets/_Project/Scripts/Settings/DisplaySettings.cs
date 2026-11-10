@@ -59,7 +59,7 @@ public static class DisplaySettings
 
     public static string MonitorLabel(DisplayInfo monitor, int index)
     {
-        string name = string.IsNullOrWhiteSpace(monitor.name) ? "모니터" : monitor.name.Trim();
+        string name = string.IsNullOrWhiteSpace(monitor.name) ? Texts.Get("settings.screen.monitor.unnamed") : monitor.name.Trim();
         return $"{index + 1}. {name} ({monitor.width} × {monitor.height})";
     }
 
@@ -105,14 +105,14 @@ public static class DisplaySettings
             case (1600, 900): return "HD+";
             case (1920, 1080): return "FHD";
             case (1920, 1200): return "WUXGA";
-            case (2560, 1080): return "울트라와이드 FHD";
+            case (2560, 1080): return Texts.Get("settings.screen.resolution.ultrawide_fhd");
             case (2560, 1440): return "QHD";
             case (2560, 1600): return "WQXGA";
-            case (3440, 1440): return "울트라와이드 QHD";
-            case (3840, 1600): return "울트라와이드 4K";
+            case (3440, 1440): return Texts.Get("settings.screen.resolution.ultrawide_qhd");
+            case (3840, 1600): return Texts.Get("settings.screen.resolution.ultrawide_4k");
             case (3200, 1800): return "QHD+";
             case (3840, 2160): return "4K UHD";
-            case (5120, 1440): return "듀얼 QHD";
+            case (5120, 1440): return Texts.Get("settings.screen.resolution.dual_qhd");
             case (5120, 2880): return "5K";
             default: return null;
         }

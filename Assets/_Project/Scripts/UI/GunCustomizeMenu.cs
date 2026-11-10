@@ -204,7 +204,7 @@ public sealed class GunCustomizeMenu : MonoBehaviour
             : box.Slot == Slot.Muzzle ? weapon.ChooseMuzzle(part.Index)
             : box.Slot == Slot.Grip ? weapon.ChooseGrip(part.Index) : weapon.ChooseUnderbarrel(part.Index));
         if (why != null) Say(why, KitStyle.Red);
-        else if (done) Say(part.Name + " 장착", KitStyle.Accent);
+        else if (done) Say(Texts.Format("gun.custom.equipped", part.Name), KitStyle.Accent);
         Refresh();
     }
 
@@ -241,49 +241,49 @@ public sealed class GunCustomizeMenu : MonoBehaviour
 
     private static string SightName(in GunSights.Sight sight)
     {
-        if (sight.scope != null) return "배율 조준경 ×" + sight.scope.magnification.ToString("0.#");
+        if (sight.scope != null) return Texts.Format("gun.sight.scope", sight.scope.magnification.ToString("0.#"));
         string part = sight.part != null ? sight.part.name : "";
-        if (sight.part == null || sight.ironSight || part.Contains("Iron")) return "가늠쇠";
-        if (part.Contains("Holograph")) return "홀로그램";
-        if (part.Contains("RedDot")) return part.Contains("Canted") ? "레드닷 (기울임)" : "레드닷";
+        if (sight.part == null || sight.ironSight || part.Contains("Iron")) return Texts.Get("gun.sight.iron");
+        if (part.Contains("Holograph")) return Texts.Get("gun.sight.holo");
+        if (part.Contains("RedDot")) return part.Contains("Canted") ? Texts.Get("gun.sight.reddot_canted") : Texts.Get("gun.sight.reddot");
         return Clean(part);
     }
 
     private static string PartName(GunAttachments.Choice choice) => choice.kind switch
     {
-        GunAttachments.Kind.None => "없음",
-        GunAttachments.Kind.Suppressor => "소음기",
-        GunAttachments.Kind.Flashlight => "플래시라이트",
+        GunAttachments.Kind.None => Texts.Get("gun.custom.none"),
+        GunAttachments.Kind.Suppressor => Texts.Get("gun.part.suppressor"),
+        GunAttachments.Kind.Flashlight => Texts.Get("gun.part.flashlight"),
         // Two vertical grips can be on offer (the TR-15's own and the Zetco), told apart by their maker.
-        GunAttachments.Kind.VerticalGrip => choice.part != null && choice.part.name.Contains("Zetco") ? "수직 손잡이 (Zetco)"
-            : choice.part != null && choice.part.name.Contains("TR15") ? "수직 손잡이 (TR-15)" : "수직 손잡이",
-        GunAttachments.Kind.AngledGrip => "앵글 손잡이",
-        _ => choice.part != null ? Clean(choice.part.name) : "부품",
+        GunAttachments.Kind.VerticalGrip => choice.part != null && choice.part.name.Contains("Zetco") ? Texts.Get("gun.part.vertical_grip.zetco")
+            : choice.part != null && choice.part.name.Contains("TR15") ? Texts.Get("gun.part.vertical_grip.tr15") : Texts.Get("gun.part.vertical_grip"),
+        GunAttachments.Kind.AngledGrip => Texts.Get("gun.part.angled_grip"),
+        _ => choice.part != null ? Clean(choice.part.name) : Texts.Get("gun.part.other"),
     };
 
     // What a part gives (+) and costs (−), as ArcCW lists them.
     private void Describe(Part part, GunAttachments.Kind kind, GunScope scope)
     {
         var data = gun.Data;
-        if (scope != null) part.Pros.Add("조준하면 렌즈 안이 ×" + scope.magnification.ToString("0.#") + " 확대");
+        if (scope != null) part.Pros.Add(Texts.Format("gun.pro.scope_zoom", scope.magnification.ToString("0.#")));
         switch (kind)
         {
             case GunAttachments.Kind.Suppressor:
                 float noise = data != null ? data.NoiseRadius : 40f, share = data != null ? data.SuppressedNoise : .3f;
-                part.Pros.Add("좀비가 듣는 거리 " + noise.ToString("0") + "m → " + (noise * share).ToString("0") + "m");
-                part.Pros.Add("총소리가 작아짐");
-                part.Pros.Add("총구 불꽃과 섬광이 없어짐");
+                part.Pros.Add(Texts.Format("gun.pro.suppressor_range", noise.ToString("0"), (noise * share).ToString("0")));
+                part.Pros.Add(Texts.Get("gun.pro.suppressor_quiet"));
+                part.Pros.Add(Texts.Get("gun.pro.suppressor_flash"));
                 break;
             case GunAttachments.Kind.VerticalGrip:
-                part.Pros.Add("위로 튀는 반동 " + Mathf.RoundToInt((1f - (data != null ? data.GripRecoil : .8f)) * 100f) + "% 감소");
-                part.Pros.Add("왼손이 손잡이를 쥠");
+                part.Pros.Add(Texts.Format("gun.pro.vertical_grip_recoil", Mathf.RoundToInt((1f - (data != null ? data.GripRecoil : .8f)) * 100f)));
+                part.Pros.Add(Texts.Get("gun.pro.vertical_grip_hand"));
                 break;
             case GunAttachments.Kind.AngledGrip:
-                part.Pros.Add("조준이 " + Mathf.RoundToInt((1f - (data != null ? data.GripAimTime : .8f)) * 100f) + "% 빨라짐");
-                part.Pros.Add("왼손이 손잡이에 닿음");
+                part.Pros.Add(Texts.Format("gun.pro.angled_grip_aim", Mathf.RoundToInt((1f - (data != null ? data.GripAimTime : .8f)) * 100f)));
+                part.Pros.Add(Texts.Get("gun.pro.angled_grip_hand"));
                 break;
             case GunAttachments.Kind.Flashlight:
-                part.Pros.Add("[L]로 켜고 끄는 라이트");
+                part.Pros.Add(Texts.Get("gun.pro.flashlight"));
                 break;
         }
     }
@@ -307,7 +307,7 @@ public sealed class GunCustomizeMenu : MonoBehaviour
             box.Back.color = isOpen ? KitStyle.With(KitStyle.Card, 1f) : KitStyle.Card;
             int now = Current(box.Slot);
             var worn = box.Parts.Find(part => part.Index == now);
-            box.Current.text = worn != null ? worn.Name : "없음";
+            box.Current.text = worn != null ? worn.Name : Texts.Get("gun.custom.none");
             foreach (var part in box.Parts)
             {
                 bool on = part.Index == now;
@@ -332,7 +332,7 @@ public sealed class GunCustomizeMenu : MonoBehaviour
             var lines = new System.Text.StringBuilder();
             foreach (string pro in shown.Pros) lines.Append("<color=#").Append(ColorUtility.ToHtmlStringRGB(KitStyle.Green)).Append(">+ ").Append(pro).Append("</color>\n");
             foreach (string con in shown.Cons) lines.Append("<color=#").Append(ColorUtility.ToHtmlStringRGB(KitStyle.Red)).Append(">− ").Append(con).Append("</color>\n");
-            detailBody.text = lines.Length > 0 ? lines.ToString().TrimEnd('\n') : "능력치는 그대로예요";
+            detailBody.text = lines.Length > 0 ? lines.ToString().TrimEnd('\n') : Texts.Get("gun.custom.no_change");
             // Under the open slot's last part.
             float top = -openSlot.Column.anchoredPosition.y + openSlot.Parts.Count * (PartHeight + PartGap) + 8f;
             detail.anchoredPosition = new Vector2(Margin + SlotWidth + ColumnGap, -top);
@@ -356,7 +356,7 @@ public sealed class GunCustomizeMenu : MonoBehaviour
     private void Say(string text, Color color)
     {
         if (message == null) return;
-        message.text = text ?? (slots.Count > 0 ? "[C] · Esc 닫기   슬롯을 눌러 부품을 고르세요" : "바꿀 수 있는 부품이 없어요   [C] 닫기");
+        message.text = text ?? (slots.Count > 0 ? Texts.Get("gun.custom.hint") : Texts.Get("gun.custom.hint_empty"));
         message.color = text != null ? color : KitStyle.Soft;
         messageLeft = text != null ? MessageSeconds : 0f;
     }
@@ -389,13 +389,13 @@ public sealed class GunCustomizeMenu : MonoBehaviour
         var name = KitStyle.TopLeft("Gun", root, new Vector2(Margin, 56f), new Vector2(SlotWidth + PartWidth, 44f));
         KitStyle.Label(name, gun.Data != null ? gun.Data.DisplayName : gun.name, 34f, TextAlignmentOptions.Left);
         var caption = KitStyle.TopLeft("Caption", root, new Vector2(Margin, 100f), new Vector2(SlotWidth, 20f));
-        KitStyle.Label(caption, "커스터마이징", 14f, TextAlignmentOptions.Left, KitStyle.Accent);
+        KitStyle.Label(caption, Texts.Get("gun.custom.caption"), 14f, TextAlignmentOptions.Left, KitStyle.Accent);
 
         // The slots, each with its parts.
         var sights = gun.Sights;
         if (sights != null && sights.Count > 1)
         {
-            var box = new SlotBox { Slot = Slot.Sight, Title = "조준기" };
+            var box = new SlotBox { Slot = Slot.Sight, Title = Texts.Get("gun.slot.sight") };
             for (int i = 0; i < sights.sights.Length; i++)
             {
                 var part = new Part { Index = i, Name = SightName(sights.sights[i]) };
@@ -407,9 +407,9 @@ public sealed class GunCustomizeMenu : MonoBehaviour
         var parts = gun.Attachments;
         if (parts != null)
         {
-            AddSlot(Slot.Muzzle, "총구", parts.muzzle);
-            AddSlot(Slot.Grip, "손잡이", parts.grips);
-            AddSlot(Slot.Underbarrel, "하단 레일", parts.underbarrel);
+            AddSlot(Slot.Muzzle, Texts.Get("gun.slot.muzzle"), parts.muzzle);
+            AddSlot(Slot.Grip, Texts.Get("gun.slot.grip"), parts.grips);
+            AddSlot(Slot.Underbarrel, Texts.Get("gun.slot.underbarrel"), parts.underbarrel);
         }
         for (int i = 0; i < slots.Count; i++) BuildSlot(slots[i], Top + i * (SlotHeight + SlotGap));
 
@@ -512,14 +512,14 @@ public sealed class GunCustomizeMenu : MonoBehaviour
         panel.sizeDelta = new Vector2(StatsWidth, 56f + 6 * StatRow);
         KitStyle.Fill(panel, KitStyle.Panel);
         var title = KitStyle.TopLeft("Title", panel, new Vector2(18f, 12f), new Vector2(StatsWidth - 36f, 24f));
-        KitStyle.Label(title, "능력치", 15f, TextAlignmentOptions.MidlineLeft, KitStyle.Accent);
+        KitStyle.Label(title, Texts.Get("gun.stats.title"), 15f, TextAlignmentOptions.MidlineLeft, KitStyle.Accent);
         int row = 0;
-        Add("피해 (몸 / 머리)", s => (s.Pellets > 1 ? s.Body.ToString("0") + "×" + s.Pellets : s.Body.ToString("0")) + " / " + s.Head.ToString("0"), (a, b) => 0);
-        Add("연사 속도", s => s.Rpm.ToString("0") + " RPM", (a, b) => 0);
-        Add("위로 튀는 반동", s => s.Recoil.ToString("0.00") + "°", (a, b) => b.Recoil < a.Recoil ? 1 : b.Recoil > a.Recoil ? -1 : 0);
-        Add("조준 시간", s => s.AimTime.ToString("0.00") + "초", (a, b) => b.AimTime < a.AimTime ? 1 : b.AimTime > a.AimTime ? -1 : 0);
-        Add("좀비가 듣는 거리", s => s.Noise.ToString("0") + "m", (a, b) => b.Noise < a.Noise ? 1 : b.Noise > a.Noise ? -1 : 0);
-        Add("탄창", s => s.Magazine.ToString(), (a, b) => 0);
+        Add(Texts.Get("gun.stat.damage"), s => (s.Pellets > 1 ? s.Body.ToString("0") + "×" + s.Pellets : s.Body.ToString("0")) + " / " + s.Head.ToString("0"), (a, b) => 0);
+        Add(Texts.Get("gun.stat.rpm"), s => s.Rpm.ToString("0") + " RPM", (a, b) => 0);
+        Add(Texts.Get("gun.stat.recoil"), s => s.Recoil.ToString("0.00") + "°", (a, b) => b.Recoil < a.Recoil ? 1 : b.Recoil > a.Recoil ? -1 : 0);
+        Add(Texts.Get("gun.stat.aim_time"), s => Texts.Format("hud.seconds", s.AimTime.ToString("0.00")), (a, b) => b.AimTime < a.AimTime ? 1 : b.AimTime > a.AimTime ? -1 : 0);
+        Add(Texts.Get("gun.stat.noise"), s => s.Noise.ToString("0") + "m", (a, b) => b.Noise < a.Noise ? 1 : b.Noise > a.Noise ? -1 : 0);
+        Add(Texts.Get("gun.stat.magazine"), s => s.Magazine.ToString(), (a, b) => 0);
 
         void Add(string label, System.Func<Stats, string> read, System.Func<Stats, Stats, int> better)
         {

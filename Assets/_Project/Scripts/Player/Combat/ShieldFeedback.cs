@@ -168,7 +168,7 @@ public sealed class ShieldFeedback : MonoBehaviour
         PlaySound(BreakKey, FeelSound.ShieldBreak, breakVolume);
         // Broken by the blow that killed: the death screen has the moment.
         if (!receiver.IsAlive) return;
-        AlertHUD.Self("실드 깨짐");
+        AlertHUD.Self(Texts.Get("shield.broken"));
         if (paneStrength > 0f && pane != null) { paneLife = 0f; ApplyPane(); }
         if (viewKick <= 0f && trauma <= 0f) return;
         var view = GetComponentInChildren<Camera>();

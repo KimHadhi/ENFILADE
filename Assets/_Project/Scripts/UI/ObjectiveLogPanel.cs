@@ -14,7 +14,8 @@ public sealed class ObjectiveLogPanel
     private const float ProgressHeight = 4f, DetailWidth = 410f;
     // Lined up with the mission bar it takes over from; it starts a little to the left.
     private const float Left = 44f, Top = -46f, SlideFrom = 24f;
-    private const string Waiting = "목표 대기 중", WaitingDetail = "새로운 목표가 등록되면 이곳에 표시됩니다.";
+    private static string Waiting => Texts.Get("objective.waiting");
+    private static string WaitingDetail => Texts.Get("objective.waiting.detail");
     private const float TickShare = 7f / Width;
     // The mint of the HUD's TAB key, so the list reads as what that key opens and not as the mission bar again.
     public static readonly Color Accent = new Color(.34f, .91f, .72f);

@@ -172,6 +172,9 @@ public sealed class ZombieType : MonoBehaviour
 
     private void OnDestroy() => GameTables.Reloaded -= Reapply;
 
+    /// <summary>The Texts.csv id of a kind's name: zombie.shambler, zombie.runner and so on.</summary>
+    public static string NameId(ZombieKind kind) => "zombie." + kind.ToString().ToLowerInvariant();
+
     // A live table edit puts the enemy's own row back first; its kind goes on top again.
     private void Reapply() => Apply();
 
@@ -218,6 +221,8 @@ public sealed class ZombieType : MonoBehaviour
             combat.SetSlam(numbers.knock, numbers.knockUp);
         }
         if (health != null && numbers.healthShare > 0f) health.SetHealthShare(numbers.healthShare);
+        // Its kind's name, over its health bar and in the kill feed (Texts.csv zombie.*), every PC alike.
+        if (health != null) health.SetDisplayName(Texts.Get(NameId(Kind)));
         if (mind != null) mind.SetChaseSpeed(numbers.speed);
         // A brute that loses a leg crawls but stays a brute: firm and big.
         var kept = Kind == ZombieKind.Brute ? brute : numbers;

@@ -38,7 +38,7 @@ public sealed class GameSettings
     [Tooltip("How far the HUD's left and right sides turn away at their inner edge (°), like the inside of a curved " +
         "screen (HudPlane). 0 is a flat HUD.")]
     public float hudAngle = 20f;
-    [Tooltip("While leaning (Q/E) the HUD's sides tilt on the screen the way the world does (HudPlane, Hud.csv Lean).")]
+    [Tooltip("While leaning (Q/E) the HUD's sides tilt on the screen the way the head does: Q to the left, E to the right (HudPlane, Hud.csv Lean).")]
     public bool hudFollowsLean = true;
     [Tooltip("Show the glass boards with their grid that the HUD's two sides stand on (HudBoard). Off by default.")]
     public bool hudBoards;

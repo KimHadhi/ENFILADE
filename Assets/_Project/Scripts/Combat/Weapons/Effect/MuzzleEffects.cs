@@ -2,156 +2,256 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// The bullet's tracer for the parent WeaponController: a short streak from the muzzle to the hit point, and on along
-/// each stretch the bullet went on through or off something. Lives on the muzzle point, so it follows the gun model and
-/// hides with it. The flame is MuzzleFlash's; the particle flash this used to play (the MuzzleFlash object under the muzzle
-/// in Player.prefab) no longer plays.
+/// The bullet's tracer for the parent WeaponController: a hot streak that flies from the muzzle to the hit point, and on
+/// along each stretch the bullet went on through or off something. Lives on the muzzle point, so it follows the gun model
+/// and hides with it. The flame is MuzzleFlash's; the particle flash this used to play (the MuzzleFlash object under the
+/// muzzle in Player.prefab) no longer plays.
+/// The user reads their grouping off the tracers and wanted them handsomer (2026-11-11 playtest: "총알 날라가는 거 보고
+/// 탄착군 잡긴 함 ... 멋스럽게 다듬어야 할 듯"). The old one was a flat yellow line that slid along the whole path in a fixed
+/// 0.12 s, so a near shot crawled and a far one was a 35 m bar. Now every tracer flies at one speed with one streak
+/// length (Tracer.csv), a white-hot core with a hot head inside an orange glow that bloom spreads (Hidden/ENFILADE/
+/// BulletTracer), tapering to nothing at its tail, and it never thins below minAngle on screen, so a far one still
+/// reads. Reaching the hit it shrinks into it and is gone: nothing lingers. A shotgun's pellets fly shorter and dimmer.
+/// Friends' shots draw theirs too (WeaponController.ShowShot raises ShotFired). Without the shader the old line plays.
+/// Pooled: no tracer is made or destroyed while firing.
 /// </summary>
 [DisallowMultipleComponent]
-public sealed class MuzzleEffects : MonoBehaviour
+public sealed class MuzzleEffects : MonoBehaviour, ITableBound
 {
-    [Header("Bullet Tracer")]
+    public const string TableName = "Tracer", TableRow = "Default";
+    private const string ShaderPath = "Combat/Shaders/BulletTracer";
+    private static readonly int CoreColorId = Shader.PropertyToID("_CoreColor"), GlowColorId = Shader.PropertyToID("_GlowColor"),
+        CoreId = Shader.PropertyToID("_Core"), TailId = Shader.PropertyToID("_Tail"), HeadId = Shader.PropertyToID("_Head");
+
+    [Header("Bullet Tracer (old line, when the tracer shader is missing)")]
     [SerializeField] private LineRenderer tracerPrefab;
     [SerializeField, Min(0.01f)] private float tracerDuration = 0.12f;
     [SerializeField, Range(0f, 1f)] private float tracerTailLength = 0.35f;
 
-    private WeaponController weapon;
+    [Header("Tracer (Tracer.csv)")]
+    [SerializeField, Min(1f), Tooltip("How fast a tracer flies (m/s).")]
+    private float speed = 600f;
+    [SerializeField, Min(.1f), Tooltip("The streak's length (m).")]
+    private float length = 5.5f;
+    [SerializeField, Min(0f), Tooltip("It appears this far out of the muzzle (m), so the first frame already shows a streak.")]
+    private float startAhead = .4f;
+    [SerializeField, Min(.001f), Tooltip("Width of the glow (m); the core is `core` of it.")]
+    private float width = .05f;
+    [SerializeField, Min(0f), Tooltip("Never thinner on screen than this angle (radians), so a far tracer still reads.")]
+    private float minAngle = .004f;
+    [SerializeField, Tooltip("The core's hue; coreBrightness makes it white-hot.")]
+    private Color coreColor = new Color(1f, .8f, .53f);
+    [SerializeField, Min(0f), Tooltip("The core's brightness: above 1 it blooms.")]
+    private float coreBrightness = 6f;
+    [SerializeField, Tooltip("The glow's hue round the core.")]
+    private Color glowColor = new Color(1f, .4f, .1f);
+    [SerializeField, Min(0f), Tooltip("The glow's brightness.")]
+    private float glowBrightness = 2.4f;
+    [SerializeField, Range(.02f, 1f), Tooltip("The core's share of the width.")]
+    private float core = .24f;
+    [SerializeField, Min(.1f), Tooltip("How fast it fades toward its tail (higher: a shorter bright part).")]
+    private float tail = 1.6f;
+    [SerializeField, Range(0f, 1f), Tooltip("The hot head's share of the streak.")]
+    private float head = .16f;
+    [SerializeField, Range(0f, 1f), Tooltip("A shotgun pellet's tracer: this share of the brightness.")]
+    private float pelletBrightness = .55f;
+    [SerializeField, Range(.1f, 1f), Tooltip("A shotgun pellet's tracer: this share of the length.")]
+    private float pelletLength = .6f;
+    [SerializeField, Min(1), Tooltip("Tracers in flight at once from one gun; the oldest gives way.")]
+    private int mostAtOnce = 48;
 
-    private sealed class ActiveTracer
+    private WeaponController weapon;
+    private Material material;
+    private bool fallback;
+
+    private sealed class Flying
     {
         public LineRenderer line;
-        public Vector3 start;
+        public Vector3 from, way;
+        public float distance, flown, length, brightness;
+        // The old line's numbers, when it plays instead.
         public Vector3 end;
         public float elapsed;
-        public float duration;
-        public float tailLength;
-        public Color startColor;
-        public Color endColor;
+        public Color startColor, endColor;
     }
 
-    private readonly List<ActiveTracer> activeTracers = new();
+    private readonly List<Flying> flying = new();
+    private readonly Stack<LineRenderer> spare = new();
+
+    public void OnTableApplied() => Paint();
 
     private void OnEnable()
     {
         weapon = GetComponentInParent<WeaponController>();
         if (weapon != null) weapon.ShotFired += Play;
+        if (material == null && !fallback)
+        {
+            GameTables.Bind(TableName, TableRow, this);
+            var shader = Resources.Load<Shader>(ShaderPath);
+            if (shader != null) material = new Material(shader) { name = "Bullet Tracer (Runtime)", hideFlags = HideFlags.HideAndDontSave };
+            else fallback = true;
+            Paint();
+        }
     }
 
-    private void Play(WeaponShot shot) => ShowBulletTracer(shot);
-
-    private void Update()
+    private void Paint()
     {
-        UpdateTracers();
+        if (material == null) return;
+        // A table colour is plain RGB; the brightness takes it past white for bloom.
+        material.SetColor(CoreColorId, coreColor * coreBrightness);
+        material.SetColor(GlowColorId, glowColor * glowBrightness);
+        material.SetFloat(CoreId, core);
+        material.SetFloat(TailId, tail);
+        material.SetFloat(HeadId, head);
     }
 
-    private void ShowBulletTracer(WeaponShot shot)
+    private void Play(WeaponShot shot)
     {
-        if (tracerPrefab == null)
-            return;
-
-        ShowTracer(shot.Origin, EndOf(shot.Trace));
+        bool pellet = weapon != null && weapon.EquippedData != null && weapon.EquippedData.Pellets > 1;
+        Launch(shot.Origin, EndOf(shot.Trace), pellet);
         // A bullet that went on through or off something (AttackTrace.Bullet) streaks on from there.
         if (shot.Later != null)
-            foreach (var leg in shot.Later) ShowTracer(leg.Onward.From, EndOf(leg.Trace));
+            foreach (var leg in shot.Later) Launch(leg.Onward.From, EndOf(leg.Trace), pellet);
     }
 
     private static Vector3 EndOf(in AttackTraceResult trace)
         => trace.HasHit && trace.Hit.collider != null ? trace.Hit.point : trace.End;
 
-    private void ShowTracer(Vector3 startPoint, Vector3 endPoint)
+    private void Launch(Vector3 from, Vector3 to, bool pellet)
     {
-        if ((endPoint - startPoint).sqrMagnitude < 0.0001f)
-            return;
-
-        LineRenderer line = Instantiate(tracerPrefab);
-
-        line.useWorldSpace = true;
-        line.positionCount = 2;
-
-        ActiveTracer tracer = new ActiveTracer
+        Vector3 path = to - from;
+        float distance = path.magnitude;
+        if (distance < .01f) return;
+        if (fallback) { Old(from, to); return; }
+        if (material == null) return;
+        if (flying.Count >= Mathf.Max(1, mostAtOnce)) Land(0);
+        var line = Take();
+        var tracer = new Flying
         {
-            line = line,
-            start = startPoint,
-            end = endPoint,
-            elapsed = 0f,
-            duration = Mathf.Max(0.01f, tracerDuration),
-            tailLength = tracerTailLength,
-            startColor = line.startColor,
-            endColor = line.endColor
+            line = line, from = from, way = path / distance, distance = distance,
+            flown = Mathf.Min(startAhead, distance), length = length * (pellet ? pelletLength : 1f),
+            brightness = pellet ? pelletBrightness : 1f
         };
-
-        activeTracers.Add(tracer);
-
-        line.SetPosition(0, startPoint);
-        line.SetPosition(1, endPoint);
+        flying.Add(tracer);
+        Place(tracer, Camera.main);
     }
 
-    private void UpdateTracers()
+    private void Update()
     {
-        for (int i = activeTracers.Count - 1; i >= 0; i--)
+        if (flying.Count == 0) return;
+        var view = Camera.main;
+        float dt = Time.deltaTime;
+        for (int i = flying.Count - 1; i >= 0; i--)
         {
-            ActiveTracer tracer = activeTracers[i];
-
-            if (tracer.line == null)
-            {
-                activeTracers.RemoveAt(i);
-                continue;
-            }
-
-            tracer.elapsed += Time.deltaTime;
-
-            float progress = Mathf.Clamp01(
-                tracer.elapsed / tracer.duration);
-
-            Vector3 currentStart = Vector3.Lerp(
-                tracer.start,
-                tracer.end,
-                progress);
-
-            Vector3 currentEnd = Vector3.Lerp(
-                tracer.start,
-                tracer.end,
-                Mathf.Min(1f, progress + tracer.tailLength));
-
-            tracer.line.SetPosition(0, currentStart);
-            tracer.line.SetPosition(1, currentEnd);
-
-            Color startColor = tracer.startColor;
-            Color endColor = tracer.endColor;
-
-            startColor.a = tracer.startColor.a * (1f - progress);
-            endColor.a = tracer.endColor.a * (1f - progress);
-
-            tracer.line.startColor = startColor;
-            tracer.line.endColor = endColor;
-
-            if (progress >= 1f)
-            {
-                Destroy(tracer.line.gameObject);
-                activeTracers.RemoveAt(i);
-            }
+            var tracer = flying[i];
+            if (tracer.line == null) { flying.RemoveAt(i); continue; }
+            if (fallback) { if (OldTick(tracer, dt)) Land(i); continue; }
+            tracer.flown += speed * dt;
+            // Gone once its tail has reached the hit too: it shrinks into it.
+            if (tracer.flown - tracer.length >= tracer.distance) { Land(i); continue; }
+            Place(tracer, view);
         }
+    }
+
+    // The streak where it is now: its head ahead along the path, its tail a length behind, both kept on the path.
+    private void Place(Flying tracer, Camera view)
+    {
+        float headAt = Mathf.Min(tracer.flown, tracer.distance);
+        float tailAt = Mathf.Clamp(tracer.flown - tracer.length, 0f, headAt);
+        Vector3 tailPoint = tracer.from + tracer.way * tailAt, headPoint = tracer.from + tracer.way * headAt;
+        var line = tracer.line;
+        line.SetPosition(0, tailPoint);
+        line.SetPosition(1, headPoint);
+        line.startWidth = Wide(tailPoint, view);
+        line.endWidth = Wide(headPoint, view);
+        // Shrinking into the hit, it dims with what is left of it.
+        float left = tracer.length > 0f ? Mathf.Clamp01((headAt - tailAt) / tracer.length) : 1f;
+        bool arrived = tracer.flown >= tracer.distance;
+        var tint = new Color(1f, 1f, 1f, tracer.brightness * (arrived ? left : 1f));
+        line.startColor = line.endColor = tint;
+    }
+
+    private float Wide(Vector3 point, Camera view)
+        => view != null ? Mathf.Max(width, Vector3.Distance(view.transform.position, point) * minAngle) : width;
+
+    private LineRenderer Take()
+    {
+        while (spare.Count > 0)
+        {
+            var reused = spare.Pop();
+            if (reused == null) continue;
+            reused.gameObject.SetActive(true);
+            return reused;
+        }
+        var line = new GameObject("Bullet Tracer", typeof(LineRenderer)).GetComponent<LineRenderer>();
+        line.useWorldSpace = true;
+        line.positionCount = 2;
+        line.numCapVertices = 0;
+        line.textureMode = LineTextureMode.Stretch;
+        line.alignment = LineAlignment.View;
+        line.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        line.receiveShadows = false;
+        line.sharedMaterial = material;
+        return line;
+    }
+
+    private void Land(int at)
+    {
+        var tracer = flying[at];
+        flying.RemoveAt(at);
+        if (tracer.line == null) return;
+        if (fallback) { Destroy(tracer.line.gameObject); return; }
+        tracer.line.gameObject.SetActive(false);
+        spare.Push(tracer.line);
+    }
+
+    // ---- The old line, when the tracer shader can't be found ----
+
+    private void Old(Vector3 from, Vector3 to)
+    {
+        if (tracerPrefab == null) return;
+        var line = Instantiate(tracerPrefab);
+        line.useWorldSpace = true;
+        line.positionCount = 2;
+        line.SetPosition(0, from);
+        line.SetPosition(1, to);
+        flying.Add(new Flying { line = line, from = from, end = to, startColor = line.startColor, endColor = line.endColor });
+    }
+
+    // True once it has run its course.
+    private bool OldTick(Flying tracer, float dt)
+    {
+        tracer.elapsed += dt;
+        float progress = Mathf.Clamp01(tracer.elapsed / Mathf.Max(.01f, tracerDuration));
+        tracer.line.SetPosition(0, Vector3.Lerp(tracer.from, tracer.end, progress));
+        tracer.line.SetPosition(1, Vector3.Lerp(tracer.from, tracer.end, Mathf.Min(1f, progress + tracerTailLength)));
+        Color start = tracer.startColor, end = tracer.endColor;
+        start.a *= 1f - progress;
+        end.a *= 1f - progress;
+        tracer.line.startColor = start;
+        tracer.line.endColor = end;
+        return progress >= 1f;
     }
 
     private void OnDisable()
     {
         if (weapon != null) weapon.ShotFired -= Play;
-        ClearTracers();
+        Clear();
     }
 
     private void OnDestroy()
     {
-        ClearTracers();
+        Clear();
+        while (spare.Count > 0)
+        {
+            var line = spare.Pop();
+            if (line != null) Destroy(line.gameObject);
+        }
+        if (material != null) Destroy(material);
     }
 
-    private void ClearTracers()
+    private void Clear()
     {
-        foreach (ActiveTracer tracer in activeTracers)
-        {
-            if (tracer.line != null)
-                Destroy(tracer.line.gameObject);
-        }
-
-        activeTracers.Clear();
+        for (int i = flying.Count - 1; i >= 0; i--) Land(i);
     }
 }

@@ -76,7 +76,7 @@ public sealed class LadderPromptHUD : MonoBehaviour
         text.rectTransform.offsetMin = text.rectTransform.offsetMax = Vector2.zero;
         var settings = CombatFeedbackSettings.Instance;
         if (settings != null && settings.promptFont != null) text.font = settings.promptFont;
-        text.text = $"[{KeyName()}] 사다리 내려가기"; text.fontSize = 22f; text.alignment = TextAlignmentOptions.Center;
+        text.text = Texts.Format("hud.ladder.down", KeyName()); text.fontSize = 22f; text.alignment = TextAlignmentOptions.Center;
         text.color = new Color(1f, .94f, .9f); text.raycastTarget = false;
         text.fontStyle = FontStyles.Bold;
     }

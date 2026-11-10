@@ -22,7 +22,7 @@ public sealed class PerfectDefenseHUD : MonoBehaviour
         var label = new GameObject("Counter prompt", typeof(RectTransform), typeof(TextMeshProUGUI)).GetComponent<TextMeshProUGUI>();
         label.transform.SetParent(root.transform, false); label.raycastTarget = false;
         label.font = CombatFeedbackSettings.Instance?.promptFont;
-        label.text = "[LMB] 반격"; label.fontSize = 24; label.alignment = TextAlignmentOptions.Center;
+        label.text = Texts.Get("hud.counter.prompt"); label.fontSize = 24; label.alignment = TextAlignmentOptions.Center;
         label.color = new Color(.8f, .92f, 1f);
         label.rectTransform.sizeDelta = new Vector2(250, 40); label.rectTransform.anchoredPosition = new Vector2(0, -85);
     }

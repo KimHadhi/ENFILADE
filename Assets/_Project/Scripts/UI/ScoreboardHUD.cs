@@ -100,7 +100,7 @@ public sealed class ScoreboardHUD : MonoBehaviour
         // This player's perk cards (stage 6C), so what they hold is a Tab away.
         perkCaption = Text("Perks Caption", footer, 16f, new Vector2(0f, -110f), 900f, TextAlignmentOptions.Center);
         perkCaption.color = Soft;
-        perkCaption.text = "내 능력";
+        perkCaption.text = Texts.Get("score.perks");
         perkRow = FeelUI.Rect("Perks", footer);
         perkRow.anchoredPosition = new Vector2(0f, -148f);
         PlayerPerks.Changed += MarkPerks;
@@ -143,16 +143,16 @@ public sealed class ScoreboardHUD : MonoBehaviour
         var row = FeelUI.Rect("Header", table);
         row.sizeDelta = new Vector2(TableWidth, 24f);
         row.anchoredPosition = new Vector2(0f, -HeaderY);
-        Cell("Player", row, PlayerColumn, 0f, 300f, 16f, TextAlignmentOptions.Left).text = "플레이어";
-        Cell("Kills", row, KillsAt, 0f, NumberWidth, 16f, TextAlignmentOptions.Center).text = "처치";
-        Cell("Executions", row, ExecutionsAt, 0f, NumberWidth, 16f, TextAlignmentOptions.Center).text = "처형";
-        Cell("Downs", row, DownsAt, 0f, NumberWidth, 16f, TextAlignmentOptions.Center).text = "쓰러짐";
-        Cell("Deaths", row, DeathsAt, 0f, NumberWidth, 16f, TextAlignmentOptions.Center).text = "사망";
-        Cell("Primary", row, WeaponsAt, 0f, WeaponWidth, 16f, TextAlignmentOptions.Center).text = "주무기";
-        Cell("Secondary", row, WeaponsAt + WeaponWidth, 0f, WeaponWidth, 16f, TextAlignmentOptions.Center).text = "보조";
-        Cell("Melee", row, WeaponsAt + WeaponWidth * 2f, 0f, WeaponWidth, 16f, TextAlignmentOptions.Center).text = "근접";
-        Cell("Score", row, ScoreAt, 0f, ScoreWidth, 16f, TextAlignmentOptions.Center).text = "돈";
-        Cell("Ping", row, PingAt, 0f, PingWidth, 16f, TextAlignmentOptions.Center).text = "핑";
+        Cell("Player", row, PlayerColumn, 0f, 300f, 16f, TextAlignmentOptions.Left).text = Texts.Get("score.col.player");
+        Cell("Kills", row, KillsAt, 0f, NumberWidth, 16f, TextAlignmentOptions.Center).text = Texts.Get("score.col.kills");
+        Cell("Executions", row, ExecutionsAt, 0f, NumberWidth, 16f, TextAlignmentOptions.Center).text = Texts.Get("score.col.executions");
+        Cell("Downs", row, DownsAt, 0f, NumberWidth, 16f, TextAlignmentOptions.Center).text = Texts.Get("score.col.downs");
+        Cell("Deaths", row, DeathsAt, 0f, NumberWidth, 16f, TextAlignmentOptions.Center).text = Texts.Get("score.col.deaths");
+        Cell("Primary", row, WeaponsAt, 0f, WeaponWidth, 16f, TextAlignmentOptions.Center).text = Texts.Get("score.col.primary");
+        Cell("Secondary", row, WeaponsAt + WeaponWidth, 0f, WeaponWidth, 16f, TextAlignmentOptions.Center).text = Texts.Get("score.col.secondary");
+        Cell("Melee", row, WeaponsAt + WeaponWidth * 2f, 0f, WeaponWidth, 16f, TextAlignmentOptions.Center).text = Texts.Get("score.col.melee");
+        Cell("Score", row, ScoreAt, 0f, ScoreWidth, 16f, TextAlignmentOptions.Center).text = Texts.Get("score.col.money");
+        Cell("Ping", row, PingAt, 0f, PingWidth, 16f, TextAlignmentOptions.Center).text = Texts.Get("score.col.ping");
     }
 
     private Row BuildRow(int index)
@@ -220,12 +220,12 @@ public sealed class ScoreboardHUD : MonoBehaviour
 
     private void Refresh()
     {
-        wave.text = waves != null && waves.IsRunning ? "웨이브 " + waves.CurrentWave : "대기 중";
+        wave.text = waves != null && waves.IsRunning ? Texts.Format("score.wave", waves.CurrentWave) : Texts.Get("score.waiting");
         title.text = MapTable.DisplayName(SceneManager.GetActiveScene().name);
         shown.Clear();
         foreach (var player in PlayerRoster.All)
             if (player.IsInitialized && (player.IsLocal || player.IsNetworkDriven) && shown.Count < rows.Count) shown.Add(player);
-        subtitle.text = GameSession.IsOnline ? shown.Count + "명 플레이 중" : "혼자 하기";
+        subtitle.text = GameSession.IsOnline ? Texts.Format("score.players", shown.Count) : Texts.Get("score.solo");
         for (int i = 0; i < rows.Count; i++)
         {
             bool used = i < shown.Count;
@@ -233,9 +233,9 @@ public sealed class ScoreboardHUD : MonoBehaviour
             if (used) Fill(rows[i], shown[i]);
         }
         footer.anchoredPosition = table.anchoredPosition + new Vector2(0f, -HeaderY - 36f - shown.Count * (RowHeight + RowGap) + RowHeight * .5f - 8f);
-        earned.text = "돈  " + Wallet.Format(Wallet.Balance);
+        earned.text = Texts.Format("score.money", Wallet.Format(Wallet.Balance));
         int seconds = Mathf.FloorToInt(Time.timeSinceLevelLoad);
-        played.text = "플레이 시간 " + (seconds / 60).ToString("00") + ":" + (seconds % 60).ToString("00");
+        played.text = Texts.Format("score.played", (seconds / 60).ToString("00"), (seconds % 60).ToString("00"));
         if (tracker == null) tracker = FindFirstObjectByType<MissionTracker>();
         objectives.Refresh(tracker);
         if (perksDirty)

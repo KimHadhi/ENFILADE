@@ -46,7 +46,7 @@ public sealed class CharacterSkinView
             : profile.Skins.Where(skin => skin != null && skin.Model != null).ToArray();
         if (skins.Length == 0)
         {
-            W.Size(W.Label(root, "고를 캐릭터가 없습니다.", 20f, W.Muted), height: 40f);
+            W.Size(W.Label(root, Texts.Get("settings.character.none"), 20f, W.Muted), height: 40f);
             return;
         }
         // Started straight in a level, no main menu has taken the pictures yet.
@@ -74,9 +74,10 @@ public sealed class CharacterSkinView
         }
 
         int count = chosen.Variants.Count(variant => variant != null);
-        W.Size(W.Label(cards, count > 1 ? $"색 ({count})" : "색 (한 가지)", 18f, W.Muted), height: 34f);
+        W.Size(W.Label(cards, count > 1 ? Texts.Format("settings.character.colors", count) : Texts.Get("settings.character.colors.one"), 18f,
+            W.Muted), height: 34f);
         var colours = Grid(cards, cardsWidth, ColourColumns, 17f);
-        if (count == 0) Card(colours, "기본", 17f, chosen, null, true, null);
+        if (count == 0) Card(colours, Texts.Get("settings.character.color.default"), 17f, chosen, null, true, null);
         foreach (var variant in chosen.Variants)
         {
             if (variant == null) continue;

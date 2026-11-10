@@ -104,7 +104,7 @@ public sealed class MoneyDrops : MonoBehaviour
         long amount = Wallet.DropAmount;
         if (!Wallet.TryGive(amount))
         {
-            CombatFeedHUD.Notice(player, "떨굴 돈이 모자라요 (돈 " + Wallet.Format(amount) + " 필요)", false);
+            CombatFeedHUD.Notice(player, Texts.Format("money.drop.short", Wallet.Format(amount)), false);
             return;
         }
         Vector3 at = Ground(transform.position + transform.forward * DropAhead);
@@ -193,7 +193,7 @@ public sealed class MoneyDrops : MonoBehaviour
         stack.GetComponent<Renderer>().sharedMaterial = Look();
         lying[id] = new Lying { Amount = amount, Dropper = dropper, At = at, Since = Time.time, Look = stack.transform };
         var who = PlayerOf(dropper);
-        if (who != null) CombatFeedHUD.Notice(who, "돈 " + Wallet.Format(amount) + " 떨굼", false);
+        if (who != null) CombatFeedHUD.Notice(who, Texts.Format("money.drop.feed", Wallet.Format(amount)), false);
     }
 
     private void Gone(ushort id, long amount, ulong taker)
@@ -205,7 +205,7 @@ public sealed class MoneyDrops : MonoBehaviour
         }
         if (taker == network.LocalClientId) Wallet.Receive(amount);
         var who = PlayerOf(taker);
-        if (who != null) CombatFeedHUD.Notice(who, "돈 " + Wallet.Format(amount) + " 주움", false);
+        if (who != null) CombatFeedHUD.Notice(who, Texts.Format("money.pickup.feed", Wallet.Format(amount)), false);
     }
 
     private void Animate()

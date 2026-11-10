@@ -52,12 +52,25 @@ public static class AttackTrace
     /// is hurt once. `hurts` false only finds the path, for a shot another PC already judged. `later` is null when the
     /// bullet stopped at its first hit.
     /// </summary>
+    // Transforms reach physics only when someone syncs them (the project's Auto Sync Transforms is off). A zombie's bone
+    // hitboxes move with its animation after the frame's scripts, so a bullet fired before anything synced this frame
+    // met them where they had been a frame earlier still, off what was on screen by a running zombie's stride (user,
+    // 2026-11-11 playtest: "히트 박스 좀 아쉬운 듯"). Once a frame, before the first bullet, they catch up with the picture.
+    private static int syncedFrame = -1;
+    private static void SyncBodies()
+    {
+        if (syncedFrame == Time.frameCount) return;
+        syncedFrame = Time.frameCount;
+        Physics.SyncTransforms();
+    }
+
     public static AttackTraceResult Bullet(DamageHit attack, Vector3 origin, Vector3 direction, float distance, int layers,
         float headshotMultiplier, float penetration, bool hurts, out BulletLeg[] later)
     {
         later = null;
         if (direction.sqrMagnitude < 0.000001f || distance <= 0f)
             return new AttackTraceResult(false, default, origin, DamageResult.Ignored);
+        SyncBodies();
         var random = BulletPenetration.RandomFor(origin, direction);
         direction.Normalize();
         Vector3 shooter = attack.Origin ?? origin;

@@ -80,12 +80,12 @@ public sealed class CombatFeedHUD : MonoBehaviour
             if (self.fresh) self.streakScore = 0;
             self.ClearLines();
             int gained = settings.killScore;
-            self.AddLine("처치", LineIcon.Skull, false);
-            if (headshot) { gained += settings.headshotBonus; self.AddLine("헤드샷", LineIcon.Headshot, true); }
-            if (bullet && distance >= settings.longRangeDistance) { gained += settings.longRangeBonus; self.AddLine("원거리 사격", LineIcon.None, false); }
-            if (bullet && pierced) { gained += settings.piercedBonus; self.AddLine("관통 사살", LineIcon.None, false); }
-            if (execution) { gained += settings.executionBonus; self.AddLine("처형", LineIcon.Execution, true, KillRed); }
-            if (counter) { gained += settings.counterBonus; self.AddLine("반격", LineIcon.Counter, true, CombatFeedbackSettings.InstanceOrDefaults.counterColor); }
+            self.AddLine(Texts.Get("feed.score.kill"), LineIcon.Skull, false);
+            if (headshot) { gained += settings.headshotBonus; self.AddLine(Texts.Get("feed.score.headshot"), LineIcon.Headshot, true); }
+            if (bullet && distance >= settings.longRangeDistance) { gained += settings.longRangeBonus; self.AddLine(Texts.Get("feed.score.long_range"), LineIcon.None, false); }
+            if (bullet && pierced) { gained += settings.piercedBonus; self.AddLine(Texts.Get("feed.score.pierced"), LineIcon.None, false); }
+            if (execution) { gained += settings.executionBonus; self.AddLine(Texts.Get("feed.score.execution"), LineIcon.Execution, true, KillRed); }
+            if (counter) { gained += settings.counterBonus; self.AddLine(Texts.Get("feed.score.counter"), LineIcon.Counter, true, CombatFeedbackSettings.InstanceOrDefaults.counterColor); }
             if (self.multiKill >= 2)
             {
                 gained += settings.multiKillBonus * (self.multiKill - 1);
@@ -131,7 +131,8 @@ public sealed class CombatFeedHUD : MonoBehaviour
         => who.TryGetComponent(out PlayerTally tally) ? "<color=#" + ColorUtility.ToHtmlStringRGB(tally.Color) + ">" + tally.DisplayName + "</color>" : who.name;
 
     private static string MultiKillName(int count)
-        => count == 2 ? "더블 킬" : count == 3 ? "트리플 킬" : count == 4 ? "쿼드 킬" : "연속 처치 x" + count;
+        => count == 2 ? Texts.Get("feed.multi.double") : count == 3 ? Texts.Get("feed.multi.triple") : count == 4 ? Texts.Get("feed.multi.quad")
+            : Texts.Format("feed.multi.more", count);
 
     private void Awake()
     {
@@ -169,7 +170,7 @@ public sealed class CombatFeedHUD : MonoBehaviour
         var caption = FeelUI.ScoreLabel("Caption", totalRoot, 13f, TextAlignmentOptions.Right);
         caption.rectTransform.anchoredPosition = new Vector2(0f, 13f);
         caption.rectTransform.sizeDelta = new Vector2(320f, 16f);
-        caption.text = "돈"; caption.color = new Color(1f, 1f, 1f, .55f); caption.characterSpacing = 8f;
+        caption.text = Texts.Get("feed.money"); caption.color = new Color(1f, 1f, 1f, .55f); caption.characterSpacing = 8f;
         totalLabel = FeelUI.ScoreLabel("Value", totalRoot, 28f, TextAlignmentOptions.Right);
         totalLabel.rectTransform.sizeDelta = new Vector2(320f, 34f);
         totalLabel.rectTransform.pivot = new Vector2(1f, .5f);

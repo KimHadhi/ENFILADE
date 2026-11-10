@@ -96,8 +96,8 @@ public sealed class MainMenuMapCard : MonoBehaviour
         {
             picture.enabled = false;
             emptyIcon.enabled = emptyIcon.texture != null;
-            chip.text = "맵 없음";
-            KitScramble.On(title).Decode("맵이 없어요", delay, .4f);
+            chip.text = Texts.Get("menu.map.none");
+            KitScramble.On(title).Decode(Texts.Get("menu.map.empty"), delay, .4f);
             KitScramble.On(number).Decode("--", delay, .3f);
             return;
         }
@@ -116,7 +116,7 @@ public sealed class MainMenuMapCard : MonoBehaviour
     private static void Split(string display, out string chapterNumber, out string name, out string label)
     {
         chapterNumber = "EX";
-        label = "자유 맵";
+        label = Texts.Get("menu.map.free");
         name = display ?? "";
         int dot = name.IndexOf('·');
         if (dot < 0) return;

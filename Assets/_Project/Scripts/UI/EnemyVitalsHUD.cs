@@ -61,6 +61,12 @@ public sealed class EnemyVitalsHUD : MonoBehaviour
     }
     private void LateUpdate() => Refresh(Camera.main);
 
+    /// <summary>Its name changed (a zombie's kind, which a copy may hear of after its bar was built): the label follows.</summary>
+    internal void Rename()
+    {
+        if (nameLabel != null) nameLabel.text = CombatDamageEvents.DisplayNameOf(this);
+    }
+
     public void Refresh(Camera view)
     {
         if (vitals == null || posture == null) OnEnable();

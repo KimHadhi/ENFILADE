@@ -26,6 +26,8 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
         public ushort Gun;
         /// <summary>A runner pins them to the ground (PlayerHold): their copy stays lying where it fell.</summary>
         public bool Pinned;
+        /// <summary>Some zombie holds them, any way (PlayerHold.IsHeld): friends see them through walls (DownedAura).</summary>
+        public bool Held;
         /// <summary>
         /// The sight on that gun (its GunSights index) plus one, 0 for a gun without a choice of sights; and its fire mode
         /// (WeaponFireMode) plus one, 0 for none. T and B changed them only on their own PC (2026-11-09).
@@ -185,7 +187,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
             Aiming = weapon.AimBlend > AimingShare, Guarding = melee.IsGuarding || melee.IsParryActive,
             Reloading = gun != null && gun.IsReloading, EmptyReload = gun != null && gun.IsReloading && gun.IsEmptyReload,
             Downed = receiver.IsDowned, Slowed = time != null ? (byte)Mathf.RoundToInt((1f - time.Pace) * 100f) : (byte)0,
-            Pinned = mover != null && mover.IsPinned
+            Pinned = mover != null && mover.IsPinned, Held = mover != null && mover.IsHeld
         };
     }
 
@@ -216,7 +218,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
         weapon.ShowReload(now.Reloading, now.EmptyReload);
         melee.ShowGuard(now.Guarding);
         receiver.ShowDowned(now.Downed);
-        if (mover != null) mover.ShowPinned(now.Pinned);
+        if (mover != null) { mover.ShowPinned(now.Pinned); mover.ShowHeld(now.Held); }
         if (body != null) body.SetPace(1f - now.Slowed / 100f);
     }
 

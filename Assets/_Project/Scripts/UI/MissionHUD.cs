@@ -9,7 +9,7 @@ using UnityEngine.UI;
 /// </summary>
 public sealed class MissionHUD : MonoBehaviour
 {
-    private const string TabHint = "목표·점수판";
+    private static string TabHint => Texts.Get("objective.tab_hint");
     // How far the bar slides off as the Tab screen's list takes its place (px at 1080p).
     private const float MakeWay = 24f;
 
@@ -150,7 +150,7 @@ public sealed class MissionHUD : MonoBehaviour
     private void Refresh(MissionObjective objective, bool announce)
     {
         if (title == null) return;
-        title.text = objective != null ? objective.Title : "목표 대기 중";
+        title.text = objective != null ? objective.Title : Texts.Get("objective.waiting");
         if (Look() != null) look.Show(objective, CanvasWidth());
         if (objective == null) HideAlert();
         else if (announce) ShowAlert(objective.Title);

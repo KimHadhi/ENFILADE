@@ -27,7 +27,7 @@ public static class FriendlyFire
     public static bool Enabled => rule ?? Number("friendlyFire", 0f) > .5f;
     /// <summary>The share of a blow's damage a teammate takes.</summary>
     public static float Share => Mathf.Max(0f, Number("friendlyFireShare", 1f));
-    private static string State => Enabled ? "켜짐" : "꺼짐";
+    private static string State => Enabled ? Texts.Get("ff.state.on") : Texts.Get("ff.state.off");
 
     /// <summary>Hooks this PC up to the room's rule, once a room. Each room starts from the table's rule.</summary>
     internal static void Listen()
@@ -50,17 +50,17 @@ public static class FriendlyFire
             case "": want = !Enabled; break;
             case "on": case "1": case "켜기": want = true; break;
             case "off": case "0": case "끄기": want = false; break;
-            default: return "사용법: /ff 1 (켜기) · /ff 0 (끄기) · /ff (바꾸기). 지금: " + State;
+            default: return Texts.Format("ff.usage", State);
         }
-        if (GameSession.IsGuest) return "아군 사격은 방장만 바꿀 수 있어요. 지금: " + State;
+        if (GameSession.IsGuest) return Texts.Format("ff.guest", State);
         // Before the rule is set: the room's first Listen starts it from the table.
         Listen();
         rule = want;
         var network = GameSession.Network;
-        if (network == null || !network.IsListening) return "아군 사격: " + State;
+        if (network == null || !network.IsListening) return Texts.Format("ff.now", State);
         using var writer = Write(want);
         network.CustomMessagingManager.SendNamedMessageToAll(Message, writer);
-        return "아군 사격: " + State + " (방 전체)";
+        return Texts.Format("ff.now.room", State);
     }
 
     /// <summary>
@@ -102,7 +102,7 @@ public static class FriendlyFire
         rule = on;
         if (!changed) return;
         var chat = Object.FindFirstObjectByType<SinglePlayerChatManager>();
-        if (chat != null) chat.AddBroadcast("방장이 아군 사격을 " + (on ? "켰습니다" : "껐습니다"));
+        if (chat != null) chat.AddBroadcast(on ? Texts.Get("ff.host.on") : Texts.Get("ff.host.off"));
     }
 
     private static FastBufferWriter Write(bool on)

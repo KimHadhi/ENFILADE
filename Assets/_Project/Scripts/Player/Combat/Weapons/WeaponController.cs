@@ -157,8 +157,8 @@ public sealed class WeaponController : MonoBehaviour
     internal bool Customizing { get; set; }
 
     /// <summary>Why the held gun's parts can't be changed now, or null (the customize menu says it).</summary>
-    internal string CustomizeRefusal => Runtime == null || EquippedData == null ? "총을 들고 있지 않아요"
-        : Runtime.IsReloading ? "장전 중에는 바꿀 수 없어요" : IsSwitching ? "총을 꺼내는 중이에요" : null;
+    internal string CustomizeRefusal => Runtime == null || EquippedData == null ? Texts.Get("gun.refuse.no_gun")
+        : Runtime.IsReloading ? Texts.Get("gun.refuse.reloading") : IsSwitching ? Texts.Get("gun.refuse.drawing") : null;
 
     /// <summary>
     /// The customize menu (C, GunCustomizeMenu) puts sight, muzzle part or underbarrel part <paramref name="index"/> on the

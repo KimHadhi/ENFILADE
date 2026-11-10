@@ -165,11 +165,13 @@ public sealed class HudCamera : MonoBehaviour
     }
 
     // Leaning rolls the view (PlayerCameraEffects adds MovementLean.Roll, anticlockwise positive), which turns the world
-    // the other way on the screen; the HUD turns with the world by Lean.share. The lean already eases in and out.
+    // the other way on the screen. The HUD used to turn with the world, and the user found it tilting the wrong way
+    // (2026-11-11 playtest: "기울이기 HUD가 반대로 기울여짐"): it now tips the way the head does, Q to the left and E to
+    // the right, by Lean.share of the view's roll. The lean already eases in and out.
     private void MeasureLean()
     {
         var player = PlayerRoster.Local;
-        leanRoll = GameSettings.Current.hudFollowsLean && player != null ? -player.LeanRoll * look.share : 0f;
+        leanRoll = GameSettings.Current.hudFollowsLean && player != null ? player.LeanRoll * look.share : 0f;
     }
 
     private static float Yaw(Vector3 forward) => Mathf.Atan2(forward.x, forward.z) * Mathf.Rad2Deg;

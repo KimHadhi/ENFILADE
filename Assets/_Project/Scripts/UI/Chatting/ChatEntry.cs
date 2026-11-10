@@ -30,12 +30,12 @@ public static class ChatStyle
     {
         switch (channel)
         {
-            case ChatChannel.Note: return "채팅";
-            case ChatChannel.Console: return "콘솔";
-            case ChatChannel.Dialogue: return "대사";
-            case ChatChannel.Broadcast: return "방송";
-            case ChatChannel.Team: return "팀";
-            default: return "전체";
+            case ChatChannel.Note: return Texts.Get("chat.channel.chat");
+            case ChatChannel.Console: return Texts.Get("chat.channel.console");
+            case ChatChannel.Dialogue: return Texts.Get("chat.channel.dialogue");
+            case ChatChannel.Broadcast: return Texts.Get("chat.channel.broadcast");
+            case ChatChannel.Team: return Texts.Get("chat.channel.team");
+            default: return Texts.Get("chat.channel.all");
         }
     }
 

@@ -80,6 +80,7 @@ public sealed class ZombieGrip : MonoBehaviour
         pinWay = WayTo(player);
         since = Time.time;
         if (!holding.Contains(this)) holding.Add(this);
+        HoldReveal.Watch(this);
         PassThrough(true);
         if (Runs && agent != null && agent.isActiveAndEnabled && agent.isOnNavMesh) { agent.isStopped = true; agent.velocity = Vector3.zero; }
     }
@@ -100,6 +101,8 @@ public sealed class ZombieGrip : MonoBehaviour
     {
         shown = value && !Runs;
         shownFeeding = eat;
+        // Seen holding someone on this PC too: it stands out through walls while it does (HoldReveal).
+        if (shown) HoldReveal.Watch(this);
     }
 
     /// <summary>The shamblers holding this player now, on this PC.</summary>

@@ -24,7 +24,7 @@ public sealed class CrosshairPeek : MonoBehaviour, IPointerDownHandler, IPointer
         chip.anchoredPosition = new Vector2(-8f, -8f);
         chip.sizeDelta = new Vector2(214f, 30f);
         W.Fill(chip, new Color(0f, 0f, 0f, .6f));
-        var label = W.Label(chip, "누르고 있으면 실제 화면", 15f, W.Text, TextAlignmentOptions.Center);
+        var label = W.Label(chip, Texts.Get("crosshair.peek"), 15f, W.Text, TextAlignmentOptions.Center);
         W.Stretch(label.rectTransform);
         var peek = chip.gameObject.AddComponent<CrosshairPeek>();
         peek.kind = kind;

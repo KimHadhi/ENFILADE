@@ -195,26 +195,30 @@ public sealed class MainMenuScreen : MonoBehaviour
         BuildFrame();
 
         // 플레이 brings the lobby back from the character screen or the records; the other windows close themselves.
-        var tabs = new List<(string, Action)> { ("플레이", ShowPlay) };
+        var tabs = new List<(string, Action)> { (Texts.Get("menu.tab.play"), ShowPlay) };
         if (CanChooseCharacter())
         {
             characterTab = tabs.Count;
-            tabs.Add(("캐릭터", OpenCharacter));
+            tabs.Add((Texts.Get("menu.tab.character"), OpenCharacter));
         }
         recordsTab = tabs.Count;
-        tabs.Add(("기록", OpenRecords));
+        tabs.Add((Texts.Get("menu.tab.records"), OpenRecords));
         // Settings is a gear beside quit at the top right, not a tab.
         topBar = MainMenuTopBar.Make(canvas, Edge, tabs, () => profile.Show(), SettingsMenu.OpenFromMainMenu, SettingsMenu.QuitGame);
         topBar.transform.localRotation = Quaternion.Euler(BarPitch, 0f, 0f);
-        bottomBar = MainMenuTicker.Make(canvas, Edge, new List<(string, string)> { ("Esc", "설정"), ("끌기", "캐릭터 돌리기") });
+        bottomBar = MainMenuTicker.Make(canvas, Edge, new List<(string, string)>
+        {
+            ("Esc", Texts.Get("menu.hint.settings")),
+            (Texts.Get("menu.hint.drag.key"), Texts.Get("menu.hint.drag")),
+        });
 
         float modesTop = MainMenuTopBar.Height + ModesGap;
         float modesHeight = 1080f - modesTop - MainMenuTicker.Height - 30f;
         modes = MainMenuModes.Make(canvas, new Vector2(Edge, modesTop), modesHeight, new List<(MainMenuModes.Mode, string, string)>
         {
-            (MainMenuModes.Mode.Solo, "혼자 하기", "나 혼자, 지금 바로"),
-            (MainMenuModes.Mode.Host, "방 만들기", "동료와 함께, 내가 방장"),
-            (MainMenuModes.Mode.Browse, "서버 찾기", "열린 방에 들어가기"),
+            (MainMenuModes.Mode.Solo, Texts.Get("menu.mode.solo"), Texts.Get("menu.mode.solo.note")),
+            (MainMenuModes.Mode.Host, Texts.Get("menu.mode.host"), Texts.Get("menu.mode.host.note")),
+            (MainMenuModes.Mode.Browse, Texts.Get("menu.mode.browse"), Texts.Get("menu.mode.browse.note")),
         }, _ => SayWhatLaunches(), Launch);
         BuildLook(modesHeight - LookHeight);
 
@@ -356,12 +360,12 @@ public sealed class MainMenuScreen : MonoBehaviour
     private void SayWhatLaunches()
     {
         if (launch == null || modes == null) return;
-        string map = maps.Length > 0 ? MapTable.DisplayName(maps[mapIndex]) : "맵이 없어요";
+        string map = maps.Length > 0 ? MapTable.DisplayName(maps[mapIndex]) : Texts.Get("menu.map.empty");
         launch.Say(modes.Chosen switch
         {
-            MainMenuModes.Mode.Host => "방 만들기  ·  " + map,
-            MainMenuModes.Mode.Browse => "서버 찾기  ·  열린 방 보기",
-            _ => "혼자  ·  " + map,
+            MainMenuModes.Mode.Host => Texts.Format("menu.launch.host", map),
+            MainMenuModes.Mode.Browse => Texts.Get("menu.launch.browse"),
+            _ => Texts.Format("menu.launch.solo", map),
         });
     }
 

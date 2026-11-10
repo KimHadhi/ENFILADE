@@ -26,6 +26,18 @@ public sealed class EnemyHealth : MonoBehaviour, IDamageReceiver, ICombatVitals,
     [SerializeField] private EnemyRank rank = EnemyRank.Normal;
 
     public string DisplayName => displayName;
+
+    /// <summary>
+    /// Its name over its health bar and in the kill feed: a zombie's kind's words from Texts.csv (ZombieType), where every
+    /// zombie used to read its prefab's name, Enemy_Test (user, 2026-11-11 playtest).
+    /// </summary>
+    internal void SetDisplayName(string name)
+    {
+        name = name ?? "";
+        if (name == displayName) return;
+        displayName = name;
+        if (TryGetComponent(out EnemyVitalsHUD vitals)) vitals.Rename();
+    }
     public EnemyRank Rank => rank;
     /// <summary>Named or elite: its kill stands out in the feed.</summary>
     public bool IsStandout => rank != EnemyRank.Normal;

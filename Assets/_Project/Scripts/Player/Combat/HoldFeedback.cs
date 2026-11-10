@@ -46,7 +46,7 @@ public sealed class HoldFeedback : MonoBehaviour
     private Image bar, barBack;
     private float shown, beat, progress;
     private int holders = 1;
-    private bool pinned, eaten, fights, written;
+    private bool pinned, eaten, fights, bursts, written;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void Forget() => edgeTexture = null;
@@ -84,13 +84,13 @@ public sealed class HoldFeedback : MonoBehaviour
         // What holds them is read while it does; fading out, the last of it stays on show.
         if (held)
         {
-            bool nowPinned = hold.IsPinned, nowEaten = hold.IsEaten, nowFights = hold.FightsPinned;
+            bool nowPinned = hold.IsPinned, nowEaten = hold.IsEaten, nowFights = hold.FightsPinned, nowBursts = hold.CanBurstShield;
             int nowHolders = Mathf.Max(1, hold.Holders);
             // A label made in code has no text at all until it is given some (null, not ""), so what was written is
             // remembered here and not read back from the label.
-            if (!written || nowPinned != pinned || nowEaten != eaten || nowFights != fights || nowHolders != holders)
+            if (!written || nowPinned != pinned || nowEaten != eaten || nowFights != fights || nowHolders != holders || nowBursts != bursts)
             {
-                pinned = nowPinned; eaten = nowEaten; fights = nowFights; holders = nowHolders;
+                pinned = nowPinned; eaten = nowEaten; fights = nowFights; holders = nowHolders; bursts = nowBursts;
                 Write();
                 written = true;
             }
@@ -106,19 +106,20 @@ public sealed class HoldFeedback : MonoBehaviour
         if (pinned) bar.fillAmount = progress;
     }
 
-    // What has them, and what gets them out of it.
+    // What has them, and what gets them out of it (Texts.csv hold.*).
     private void Write()
     {
-        const string Shove = "[V] 밀치기 · 주먹으로 떼어내기";
+        string shove = Texts.Get("hold.shove");
         if (pinned)
         {
-            title.text = "깔렸다!";
-            hint.text = fights ? Shove : "혼자서는 못 벗어난다 · 동료가 러너를 처치하거나 넘어뜨려야 풀린다";
+            title.text = Texts.Get("hold.pinned");
+            // With shield left, V bursts it to throw the runner off (PlayerHold.TryBurstShield).
+            hint.text = bursts ? Texts.Get("hold.pinned.burst") : fights ? shove : Texts.Get("hold.pinned.alone");
         }
         else
         {
-            title.text = (eaten ? "뜯어먹히는 중!" : "잡혔다!") + (holders > 1 ? "  ×" + holders : "");
-            hint.text = Shove;
+            title.text = Texts.Get(eaten ? "hold.eaten" : "hold.grabbed") + (holders > 1 ? "  " + Texts.Format("hold.count", holders) : "");
+            hint.text = shove;
         }
     }
 
