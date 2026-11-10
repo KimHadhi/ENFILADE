@@ -125,7 +125,8 @@ public static class AttackTrace
     private static bool ShouldSkip(RaycastHit hit, GameObject owner)
         => IsOwner(hit, owner) || PlayerLeanHitboxes.Replaces(hit.collider) || ZombieBody.Replaces(hit.collider)
             || IsDeadPlayer(hit) || GoreGib.IsPiece(hit.collider)
-            || (hit.collider.isTrigger && !ZombieBody.IsHitbox(hit.collider) && (hit.collider.GetComponent<PlayerCombatHitbox>() == null
+            || (hit.collider.isTrigger && !ZombieBody.IsHitbox(hit.collider) && !CampaignCanTarget.Is(hit.collider)
+                && (hit.collider.GetComponent<PlayerCombatHitbox>() == null
                 || hit.collider.GetComponentInParent<PlayerLeanHitboxes>()?.UsesSplitBody != true));
 
     public static bool FirstExternalHit(GameObject owner, Vector3 origin, Vector3 direction, float range, int layers, out RaycastHit hit)

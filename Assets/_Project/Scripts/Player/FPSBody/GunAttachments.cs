@@ -58,6 +58,42 @@ public sealed class GunAttachments : MonoBehaviour
     private static readonly int EmissionStrength = Shader.PropertyToID("_EmissionStrength");
     private MaterialPropertyBlock glow;
 
+    // How far past the front of the gun a flashlight's beam starts (m): a little more than GunMuzzle's front-face depth.
+    private const float LightPastMuzzle = .03f;
+    // Where each underbarrel light sat as the setup put it (its local position), before LightAhead moved it.
+    private Vector3[] lightHomes;
+
+    /// <summary>
+    /// Slides each flashlight's light forward along its own beam until it starts just past the front of the gun
+    /// (<paramref name="muzzleFront"/>, world space), keeping the beam's line. On the MX16A4 the LS3 hangs halfway down
+    /// the handguard, and the barrel, the front sight post and the muzzle ahead of it threw a big shadow into the beam
+    /// on the wall (user, 2026-11-09). With the beam starting in front of everything the gun wears, the gun shadows
+    /// nothing; the world still does. The lamp's model and lens stay where they are, since the Light sits on its own
+    /// child object ("Spotlight" in the pack's A_LS3_Flashlight). Call again when the muzzle part changes.
+    /// </summary>
+    public void LightAhead(Vector3 muzzleFront)
+    {
+        if (underbarrel == null) return;
+        if (lightHomes == null || lightHomes.Length != underbarrel.Length)
+        {
+            lightHomes = new Vector3[underbarrel.Length];
+            for (int i = 0; i < underbarrel.Length; i++)
+                if (underbarrel[i].light != null) lightHomes[i] = underbarrel[i].light.transform.localPosition;
+        }
+        for (int i = 0; i < underbarrel.Length; i++)
+        {
+            var light = underbarrel[i].light;
+            if (light == null) continue;
+            var lamp = light.transform;
+            // A Light on the part's own root would carry the whole lamp along with it.
+            if (underbarrel[i].part != null && lamp == underbarrel[i].part.transform) continue;
+            lamp.localPosition = lightHomes[i];
+            Vector3 beam = lamp.forward;
+            float ahead = Vector3.Dot(muzzleFront - lamp.position, beam) + LightPastMuzzle;
+            if (ahead > 0f) lamp.position += beam * ahead;
+        }
+    }
+
     private static Kind KindOf(Choice[] list, int index) => list != null && index >= 0 && index < list.Length ? list[index].kind : Kind.None;
 
     /// <summary>The starting choices, unless some are up already.</summary>

@@ -74,6 +74,7 @@ public sealed partial class ZombieBody : MonoBehaviour
         BuildGraph(looks);
         if (target != null) target.Interrupted += OnInterrupted;
         WatchCrawl();
+        Arrive();
     }
 
     private void OnDestroy()
@@ -127,15 +128,18 @@ public sealed partial class ZombieBody : MonoBehaviour
         var capsule = GetComponent<CapsuleCollider>();
         var agent = GetComponent<NavMeshAgent>();
         float feet = capsule != null ? capsule.center.y - capsule.height * .5f : agent != null ? -agent.baseOffset : 0f;
-        // Its own body stays as the prefab placed it; one of the pack's stands on the capsule's feet.
+        // Its own body stays as the prefab placed it; one of the pack's stands on the capsule's feet, as big as its kind
+        // wants (a brute, ZombieBody.Brute.cs).
         bool own = character.transform.parent == transform;
+        wearsOwn = own;
+        grown = own ? 1f : GrowthWanted;
         Model = own ? character : Instantiate(character, transform);
         if (!own)
         {
             Model.name = character.name;
             Model.transform.localPosition = new Vector3(0f, feet, 0f);
             Model.transform.localRotation = Quaternion.identity;
-            Model.transform.localScale = Vector3.one;
+            Model.transform.localScale = Vector3.one * grown;
         }
         animator = Model.GetComponentInChildren<Animator>();
         if (animator == null || !animator.isHuman || !animator.avatar.isValid)
@@ -164,10 +168,10 @@ public sealed partial class ZombieBody : MonoBehaviour
         var crowd = GetComponent<ZombieCrowd>();
         if (crowd != null)
         {
-            if (capsule != null) capsule.radius = crowd.BodyRadius;
-            if (agent != null) agent.radius = crowd.BodyRadius;
+            if (capsule != null) capsule.radius = crowd.BodyRadius * grown;
+            if (agent != null) agent.radius = crowd.BodyRadius * grown;
         }
-        float height = Mathf.Clamp(top - feet + .04f, 1.3f, 2.1f);
+        float height = Mathf.Clamp(top - feet + .04f, 1.3f * grown, 2.1f * grown);
         if (capsule != null)
         {
             capsule.height = Mathf.Max(height, capsule.radius * 2f);
@@ -180,6 +184,7 @@ public sealed partial class ZombieBody : MonoBehaviour
         lastPosition = transform.position;
         dressedFrame = Time.frameCount;
         Wears = true;
+        if (!Mathf.Approximately(grown, 1f)) ZombieCorpse.MarkGrown(animator);
         return true;
     }
 
@@ -223,21 +228,23 @@ public sealed partial class ZombieBody : MonoBehaviour
     private float BuildHitboxes(float feet)
     {
         Vector3 up = Model.transform.up, forward = Model.transform.forward;
+        // Lengths come from the bones; the thicknesses are in metres for the pack's size, so a bigger body (a brute,
+        // `grown`) gets them as much bigger.
         var head = Bone(HumanBodyBones.Head);
-        float top = feet + 1.75f;
+        float top = feet + 1.75f * grown;
         if (head != null)
         {
-            Vector3 center = head.position + up * HeadLift;
+            Vector3 center = head.position + up * HeadLift * grown;
             var sphere = Hitbox(head, center, Quaternion.LookRotation(forward, up)).AddComponent<SphereCollider>();
-            sphere.radius = HeadRadius;
+            sphere.radius = HeadRadius * grown;
             Own(sphere, WeaponHitRegion.Region.Head);
-            top = transform.InverseTransformPoint(center + up * HeadRadius).y;
+            top = transform.InverseTransformPoint(center + up * HeadRadius * grown).y;
         }
 
         var leftArm = Bone(HumanBodyBones.LeftUpperArm);
         var rightArm = Bone(HumanBodyBones.RightUpperArm);
         float width = leftArm != null && rightArm != null
-            ? Mathf.Clamp(Vector3.Distance(leftArm.position, rightArm.position) * .85f, .28f, .46f) : .36f;
+            ? Mathf.Clamp(Vector3.Distance(leftArm.position, rightArm.position) * .85f, .28f * grown, .46f * grown) : .36f * grown;
         // Each torso box rides its own bone, so a hunched spine carries the chest box with it.
         var chain = new List<Transform>();
         foreach (var bone in new[] { HumanBodyBones.Hips, HumanBodyBones.Spine, HumanBodyBones.Chest, HumanBodyBones.UpperChest,
@@ -248,7 +255,7 @@ public sealed partial class ZombieBody : MonoBehaviour
         }
         for (int i = 0; i + 1 < chain.Count; i++)
         {
-            Vector3 from = chain[i].position - (i == 0 ? up * PelvisDrop : Vector3.zero);
+            Vector3 from = chain[i].position - (i == 0 ? up * PelvisDrop * grown : Vector3.zero);
             Box(chain[i], from, chain[i + 1].position, width, forward);
         }
 
@@ -273,7 +280,7 @@ public sealed partial class ZombieBody : MonoBehaviour
         Vector3 facing = Vector3.ProjectOnPlane(forward, axis);
         if (facing.sqrMagnitude < 1e-4f) facing = Vector3.ProjectOnPlane(Model.transform.right, axis);
         var box = Hitbox(bone, (from + to) * .5f, Quaternion.LookRotation(facing, axis)).AddComponent<BoxCollider>();
-        box.size = new Vector3(width, length + .04f, TorsoDepth);
+        box.size = new Vector3(width, length + .04f * grown, TorsoDepth * grown);
         Own(box, WeaponHitRegion.Region.Body);
     }
 
@@ -286,6 +293,7 @@ public sealed partial class ZombieBody : MonoBehaviour
         float length = axis.magnitude;
         if (length < .02f) return;
         var limb = Hitbox(from, (from.position + to.position) * .5f, Quaternion.LookRotation(axis)).AddComponent<CapsuleCollider>();
+        radius *= grown;
         limb.direction = 2;
         limb.radius = radius;
         limb.height = length + radius;
@@ -339,9 +347,10 @@ public sealed partial class ZombieBody : MonoBehaviour
         BuildBite(looks, rest);
         BuildLeap(looks, rest);
         output.SetSourcePlayable(top);
-        walkSpeed = RootSpeed(looks.walk, WalkFallback);
-        runSpeed = Mathf.Max(walkSpeed + .5f, RootSpeed(looks.run, RunFallback));
-        searchWalkSpeed = Mathf.Min(walkSpeed, RootSpeed(looks.searchWalk, walkSpeed));
+        // A bigger body's stride covers more ground (a brute).
+        walkSpeed = RootSpeed(looks.walk, WalkFallback) * grown;
+        runSpeed = Mathf.Max(walkSpeed + .5f, RootSpeed(looks.run, RunFallback) * grown);
+        searchWalkSpeed = Mathf.Min(walkSpeed, RootSpeed(looks.searchWalk, walkSpeed / grown) * grown);
         attackHit = HitTime(looks.attack, attackLength);
         graph.Play();
         riseDownShape = RiseShape(looks.riseFaceDown, 4);

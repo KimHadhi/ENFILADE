@@ -92,7 +92,8 @@ public sealed class PlayerLook : MonoBehaviour
         Vector3 direction = Vector3.ProjectOnPlane(movement.SlideDirection, Vector3.up);
         if (direction.sqrMagnitude < .0001f) return;
         if (body == null) body = GetComponent<PlayerBody>();
-        float limit = body != null ? body.SlideLookYawLimit : 75f;
+        // The view's own edge (friend feedback C11 widened it to 120°), not the body's twist limit.
+        float limit = body != null ? body.SlideViewYawLimit : 120f;
         float now = transform.eulerAngles.y;
         // Where this push would take the view from the way the slide faces, and how far past the edge that is.
         float wanted = Mathf.DeltaAngle(PlayerBody.SlideFacing(direction, now), now) + mouseX;
@@ -204,7 +205,7 @@ public sealed class PlayerLook : MonoBehaviour
             Vector3 direction = Vector3.ProjectOnPlane(movement.SlideDirection, Vector3.up);
             if (direction.sqrMagnitude < .0001f) return candidate;
             if (body == null) body = GetComponent<PlayerBody>();
-            float limit = body != null ? body.SlideLookYawLimit : 75f;
+            float limit = body != null ? body.SlideViewYawLimit : 120f;
             // A slide carrying the player backwards (wall bounce, backward entry) keeps facing the view.
             return WithinArc(PlayerBody.SlideFacing(direction, transform.eulerAngles.y), limit, candidate);
         }

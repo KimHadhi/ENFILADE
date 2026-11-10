@@ -87,6 +87,9 @@ public sealed class ZombieCorpse : MonoBehaviour
     private static readonly Dictionary<ulong, ZombieCorpse> byId = new Dictionary<ulong, ZombieCorpse>();
     private static readonly Dictionary<ulong, (ZombieCorpseFall fall, float at)> waiting = new Dictionary<ulong, (ZombieCorpseFall, float)>();
     private static readonly List<ulong> stale = new List<ulong>();
+    // Living bodies bigger than the pack's (MarkGrown), and the dolls made for one such body alone.
+    private static readonly HashSet<Animator> grownBodies = new HashSet<Animator>();
+    private static readonly HashSet<RagdollCorpse> oneOff = new HashSet<RagdollCorpse>();
     private static int stockedFrame = -1;
 
     private readonly List<SkinnedMeshRenderer> skins = new List<SkinnedMeshRenderer>();
@@ -104,7 +107,7 @@ public sealed class ZombieCorpse : MonoBehaviour
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ClearStatics()
     {
-        stowed.Clear(); made.Clear(); lying.Clear(); byId.Clear(); waiting.Clear();
+        stowed.Clear(); made.Clear(); lying.Clear(); byId.Clear(); waiting.Clear(); grownBodies.Clear(); oneOff.Clear();
         stockedFrame = -1;
     }
 
@@ -472,7 +475,7 @@ public sealed class ZombieCorpse : MonoBehaviour
     /// </summary>
     internal static void Stock(Animator live)
     {
-        if (live == null || live.avatar == null || stockedFrame == Time.frameCount) return;
+        if (live == null || live.avatar == null || stockedFrame == Time.frameCount || grownBodies.Contains(live)) return;
         var all = Made(live.avatar);
         all.RemoveAll(doll => doll == null);
         if (all.Count >= MostMade || (all.Count >= Stocked && Stowed(live.avatar).Count >= Spare)) return;
@@ -487,6 +490,14 @@ public sealed class ZombieCorpse : MonoBehaviour
     internal static RagdollCorpse TakeDoll(Animator live, Transform[] human)
     {
         if (live == null || live.avatar == null || human == null) return null;
+        // A body bigger than the pack's (a brute) gets a doll of its own size, used once and never stowed for others (it
+        // stays marked: knocked down by a lost leg first, it needs another such doll when it dies).
+        if (grownBodies.Contains(live))
+        {
+            var own = RagdollCorpse.Prepare(live, DollLayer, Solid);
+            if (own != null) oneOff.Add(own);
+            return own;
+        }
         var stack = Stowed(live.avatar);
         while (stack.Count > 0)
         {
@@ -503,9 +514,21 @@ public sealed class ZombieCorpse : MonoBehaviour
 
     internal static void GiveDoll(RagdollCorpse doll) => Give(doll);
 
+    /// <summary>
+    /// This living body stands bigger than the pack's own (a brute, ZombieBody.Brute.cs): its doll will be made for it
+    /// when it falls, since the stowed ones fit the pack's size.
+    /// </summary>
+    internal static void MarkGrown(Animator live)
+    {
+        if (live == null) return;
+        grownBodies.RemoveWhere(body => body == null);
+        grownBodies.Add(live);
+    }
+
     private static void Give(RagdollCorpse doll)
     {
         if (doll == null) return;
+        if (oneOff.Remove(doll)) { Destroy(doll.gameObject); return; }
         doll.Stow();
         if (doll.Avatar != null) Stowed(doll.Avatar).Push(doll);
     }

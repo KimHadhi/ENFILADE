@@ -23,7 +23,8 @@ using UnityEngine.SceneManagement;
 public sealed class CampaignRun : MonoBehaviour
 {
     public const string TableName = "Campaign", TableRow = "Default", DirectorRow = "Director", StartSpot = "Start";
-    private const string StatusMessage = "ENFILADE.Campaign", PressMessage = "ENFILADE.CampaignPress", DoorMessage = "ENFILADE.CampaignDoor";
+    private const string StatusMessage = "ENFILADE.Campaign", PressMessage = "ENFILADE.CampaignPress", DoorMessage = "ENFILADE.CampaignDoor",
+        CanShotMessage = "ENFILADE.CanShot";
     // How near the doorway someone must be to shut or open a rest stop's door, and a counter to shop (m).
     private const float DoorReach = 2.2f, ShopReach = 2f;
     // The run is told again this often even when nothing changed, so a guest who missed a message catches up (s).
@@ -54,6 +55,9 @@ public sealed class CampaignRun : MonoBehaviour
     private CampaignDoor[] doors;
     [SerializeField, Tooltip("Where the rest stops' shop counters stand (ShopMenu opens there).")]
     private Transform[] shops;
+    [SerializeField, Tooltip("A shot fuel can's blast, its fire and its sound (C17; the builder sets them).")]
+    private GameObject canBlast, canFire;
+    [SerializeField] private AudioClip canBlastSound;
     [SerializeField, Min(0f), Tooltip("Enemies never appear nearer than this to anyone (m).")]
     private float minSpawnDistance = 15f;
     [SerializeField, Min(0f), Tooltip("Nor farther than this from the player they head for (m).")]
@@ -76,13 +80,14 @@ public sealed class CampaignRun : MonoBehaviour
     private CampaignHorde horde;
     private CampaignDirector pacer;
     private CampaignCans fuel;
+    private CampaignMusic music;
     private CampaignScreen screen;
     private MissionTracker tracker;
     private NetworkManager network;
     private InputAction interact;
     private Status sent;
-    private int step, checkpoint = -1, shownPoured = -1;
-    private float held, finishedAt, nextShare;
+    private int step, checkpoint = -1, shownPoured = -1, brutesDue;
+    private float held, finishedAt, nextShare, nextBruteTry;
     private bool finished, movedOn, wasWiped, listening;
 
     private bool IsHost => network == null || network.IsServer;
@@ -133,6 +138,8 @@ public sealed class CampaignRun : MonoBehaviour
         chapter = CampaignChapter.For(scene);
         horde = new CampaignHorde(enemyPrefab, spawns, gameObject.scene);
         fuel = new CampaignCans(cans);
+        fuel.Dress(canBlast, canFire, canBlastSound);
+        music = new CampaignMusic(gameObject);
         if (steps.Count == 0) Debug.LogWarning("[Campaign] Tables/CampaignSteps has no steps for " + scene + ".", this);
     }
 
@@ -153,7 +160,7 @@ public sealed class CampaignRun : MonoBehaviour
         var messages = network.CustomMessagingManager;
         messages.UnregisterNamedMessageHandler(network.IsServer ? PressMessage : StatusMessage);
         messages.UnregisterNamedMessageHandler(network.IsServer ? CampaignCans.AskMessage : CampaignCans.StateMessage);
-        if (network.IsServer) messages.UnregisterNamedMessageHandler(DoorMessage);
+        if (network.IsServer) { messages.UnregisterNamedMessageHandler(DoorMessage); messages.UnregisterNamedMessageHandler(CanShotMessage); }
     }
 
     private void Listen()
@@ -167,6 +174,7 @@ public sealed class CampaignRun : MonoBehaviour
             messages.RegisterNamedMessageHandler(PressMessage, ReceivePress);
             messages.RegisterNamedMessageHandler(CampaignCans.AskMessage, (sender, reader) => fuel.ReceiveAsk(sender, reader, MayPour));
             messages.RegisterNamedMessageHandler(DoorMessage, ReceiveDoor);
+            messages.RegisterNamedMessageHandler(CanShotMessage, ReceiveCanShot);
         }
         else
         {
@@ -188,7 +196,9 @@ public sealed class CampaignRun : MonoBehaviour
         if (dt <= 0f) return;
         GatherPlayers();
         WatchForWipe();
-        if (IsHost) { fuel.Tick(); Run(dt); }
+        if (IsHost) { fuel.Tick(dt); Run(dt); }
+        PlayMusic();
+        ThrowCan();
         Prompt();
         ShowPoured();
         if (IsHost) { Share(); fuel.Share(network); }
@@ -252,9 +262,45 @@ public sealed class CampaignRun : MonoBehaviour
                 if (fuel.Poured >= Mathf.Max(1, now.Count)) Advance();
                 break;
         }
+        if (!finished && Current == now) SkipAhead();
     }
 
-    private void Advance()
+    // Friend feedback C4 ("일부러 지나친 곳 다시 가기 싫어"): a later step met first finishes every step before it, as long
+    // as each step on the way is only getting somewhere, pressing something or a rest stop. A hold, a collect and the
+    // escape always play out, and nothing is skipped past them. A rest stop passed on the way still becomes the place
+    // the dead come back. Pressing a later button goes through Prompt.
+    private void SkipAhead()
+    {
+        for (int later = step + 1; later < steps.Count; later++)
+        {
+            if (!Passable(steps[later - 1].Kind)) return;
+            var ahead = steps[later];
+            if (SpotOf(ahead.Spot) == null) continue;
+            bool met = ahead.Kind == CampaignStepKind.Reach ? AnyoneAt(ahead)
+                : ahead.Kind == CampaignStepKind.Gather ? EveryoneAt(ahead)
+                : ahead.Kind == CampaignStepKind.Checkpoint && EveryoneAt(ahead) && DoorsShut(ahead.Spot);
+            if (met) { AdvanceTo(later + 1); return; }
+        }
+    }
+
+    private static bool Passable(CampaignStepKind kind) => kind == CampaignStepKind.Reach || kind == CampaignStepKind.Press
+        || kind == CampaignStepKind.Gather || kind == CampaignStepKind.Checkpoint;
+
+    // Every step from the current one up to this one can be passed by (SkipAhead).
+    private bool PassableUpTo(int index)
+    {
+        if (index < step || index >= steps.Count) return false;
+        for (int i = step; i < index; i++) if (!Passable(steps[i].Kind)) return false;
+        return true;
+    }
+
+    // The steps passed by go into the log one after another; only the step landed on is announced.
+    private void AdvanceTo(int next)
+    {
+        while (!finished && step < next) Advance(step + 1 >= next);
+    }
+
+    private void Advance(bool announce = true)
     {
         var done = Current;
         if (done == null) return;
@@ -262,7 +308,7 @@ public sealed class CampaignRun : MonoBehaviour
         step++;
         held = 0f;
         if (done.Kind == CampaignStepKind.Escape || step >= steps.Count) Finish();
-        else ShowObjective(true);
+        else ShowObjective(announce);
     }
 
     private void Finish()
@@ -273,10 +319,26 @@ public sealed class CampaignRun : MonoBehaviour
         ShowFinish();
     }
 
+    // C1/C2: the step's song on every PC (a finished chapter's plays on under its closing card); on the host, the
+    // song's highlight sends the step's brutes. A spot for them is looked for again every half second until one does.
+    private void PlayMusic()
+    {
+        var now = Current;
+        string wanted = finished ? music.Playing : now != null ? now.Music : "";
+        float from = now != null && now.Kind == CampaignStepKind.Hold ? held : 0f;
+        if (music.Want(wanted, from)) brutesDue = IsHost && now != null ? now.PeakBosses : 0;
+        music.Tick();
+        if (!IsHost || finished || brutesDue <= 0 || !music.PastPeak || Time.time < nextBruteTry) return;
+        nextBruteTry = Time.time + .5f;
+        brutesDue -= horde.SpawnBrutes(brutesDue, players, minSpawnDistance, maxSpawnDistance, seenMinDistance);
+    }
+
     private void BackToCheckpoint()
     {
         if (finished) return;
         horde.Clear();
+        music.Stop();
+        brutesDue = 0;
         fuel.Reset();
         step = checkpoint + 1;
         held = 0f;
@@ -301,14 +363,18 @@ public sealed class CampaignRun : MonoBehaviour
         var now = Current;
         var mine = PlayerRoster.Local;
         string text = null;
-        bool able = mine != null && mine.IsInitialized && !mine.IsDead && !mine.DamageReceiver.IsDowned;
+        // A field pickup looked at has [F] first (FieldPickups).
+        bool able = mine != null && mine.IsInitialized && !mine.IsDead && !mine.DamageReceiver.IsDowned && !FieldPickups.Targeting;
         bool pressed = able && TakesInput() && interact != null && interact.WasPressedThisFrame();
         int door = able ? NearestDoor(mine) : -1;
-        // One [F] at a time: the step's button, then a can in hand, then a door, then a can to pick up.
-        if (able && !finished && now != null && now.Kind == CampaignStepKind.Press && Within(mine, now))
+        // One [F] at a time: a step's button (this one's, or a later one's with nothing but getting there before it, C4),
+        // then a can in hand, then a door, then a can to pick up.
+        int button = able && !finished && now != null ? ButtonWithin(mine) : -1;
+        if (button >= 0)
         {
-            text = string.IsNullOrEmpty(now.Prompt) ? "[F] " + now.Title : now.Prompt;
-            if (pressed) Press();
+            var at = steps[button];
+            text = string.IsNullOrEmpty(at.Prompt) ? "[F] " + at.Title : at.Prompt;
+            if (pressed) Press(button);
         }
         else if (able && fuel.Any && fuel.CarriedBy(mine) >= 0) text = CanPrompt(mine, pressed);
         else if (door >= 0)
@@ -409,7 +475,7 @@ public sealed class CampaignRun : MonoBehaviour
         {
             bool pour = MayPour(mine);
             if (pressed) CanAct(pour ? CampaignCans.Act.Pour : CampaignCans.Act.Drop, carried, mine);
-            return pour ? "[F] 발전기에 연료 붓기" : "[F] 연료통 내려놓기";
+            return (pour ? "[F] 발전기에 연료 붓기" : "[F] 연료통 내려놓기") + "   [좌클릭] 던지기";
         }
         int near = fuel.NearestLying(mine.transform.position);
         if (near < 0) return null;
@@ -417,10 +483,47 @@ public sealed class CampaignRun : MonoBehaviour
         return "[F] 연료통 들기";
     }
 
-    private void CanAct(CampaignCans.Act act, int index, PlayerMovement mine)
+    private void CanAct(CampaignCans.Act act, int index, PlayerMovement mine, Vector3 aim = default)
     {
-        if (IsHost) fuel.Apply(act, index, mine, MayPour(mine));
-        else CampaignCans.Send(network, act, index);
+        if (IsHost) fuel.Apply(act, index, mine, MayPour(mine), aim);
+        else CampaignCans.Send(network, act, index, aim);
+    }
+
+    // C17: carried, the left button throws the can where the view looks.
+    private void ThrowCan()
+    {
+        var mine = PlayerRoster.Local;
+        if (mine == null || !mine.IsInitialized || mine.IsDead || mine.DamageReceiver.IsDowned || !TakesInput()) return;
+        if (UnityEngine.InputSystem.Mouse.current == null || !UnityEngine.InputSystem.Mouse.current.leftButton.wasPressedThisFrame) return;
+        int carried = fuel.CarriedBy(mine);
+        if (carried < 0) return;
+        var view = mine.TryGetComponent(out PlayerBody body) ? body.View : null;
+        CanAct(CampaignCans.Act.Throw, carried, mine, view != null ? view.forward : mine.transform.forward);
+    }
+
+    /// <summary>
+    /// C17: this PC's player shot fuel can <paramref name="index"/> (CampaignCanTarget): the host sets it off; a guest
+    /// tells the host.
+    /// </summary>
+    public static void ShootCan(int index, PlayerMovement shooter)
+    {
+        if (active == null || shooter == null || !shooter.IsLocal) return;
+        if (active.IsHost) { active.fuel.Ignite(index, shooter); return; }
+        var network = active.network;
+        if (network == null || !network.IsListening || network.CustomMessagingManager == null) return;
+        using var writer = new FastBufferWriter(sizeof(byte), Allocator.Temp);
+        writer.WriteValueSafe((byte)index);
+        network.CustomMessagingManager.SendNamedMessage(CanShotMessage, NetworkManager.ServerClientId, writer);
+    }
+
+    // A guest's shot reached a can: the host sets it off as theirs.
+    private void ReceiveCanShot(ulong sender, FastBufferReader reader)
+    {
+        reader.ReadValueSafe(out byte index);
+        PlayerMovement shooter = null;
+        foreach (var someone in PlayerRoster.All)
+            if (someone != null && someone.TryGetComponent(out NetworkObject owner) && owner.IsSpawned && owner.OwnerClientId == sender) { shooter = someone; break; }
+        fuel.Ignite(index, shooter);
     }
 
     // A Collect's count on the mission HUD as the cans go in, here and on every guest.
@@ -434,21 +537,32 @@ public sealed class CampaignRun : MonoBehaviour
         tracker.SetProgress(now.Id, Mathf.Min(poured, now.Count), Mathf.Max(1, now.Count));
     }
 
-    private void Press()
+    // The button of the current step, or of a later one with only passable steps before it (C4), that this player
+    // stands at; -1 for none.
+    private int ButtonWithin(PlayerMovement mine)
     {
-        if (IsHost) { Advance(); return; }
+        for (int i = step; i < steps.Count; i++)
+        {
+            if (i > step && !Passable(steps[i - 1].Kind)) return -1;
+            if (steps[i].Kind == CampaignStepKind.Press && Within(mine, steps[i])) return i;
+        }
+        return -1;
+    }
+
+    private void Press(int button)
+    {
+        if (IsHost) { AdvanceTo(button + 1); return; }
         if (network == null || !network.IsListening) return;
         using var writer = new FastBufferWriter(sizeof(byte), Allocator.Temp);
-        writer.WriteValueSafe((byte)step);
+        writer.WriteValueSafe((byte)button);
         network.CustomMessagingManager.SendNamedMessage(PressMessage, NetworkManager.ServerClientId, writer);
     }
 
-    // A guest pressed the step's button: it counts if the run is still at that step.
+    // A guest pressed a step's button: it counts if that step is still ahead with nothing but passable steps before it.
     private void ReceivePress(ulong sender, FastBufferReader reader)
     {
         reader.ReadValueSafe(out byte pressed);
-        var now = Current;
-        if (!finished && pressed == step && now != null && now.Kind == CampaignStepKind.Press) Advance();
+        if (!finished && PassableUpTo(pressed) && steps[pressed].Kind == CampaignStepKind.Press) AdvanceTo(pressed + 1);
     }
 
     private void Share()
@@ -484,6 +598,7 @@ public sealed class CampaignRun : MonoBehaviour
             return;
         }
         finished = false;
+        if (back) music.Stop();
         if (back && tracker != null) tracker.ClearObjective();
         if (moved) ShowObjective(true);
         else if (Current != null && Current.Kind == CampaignStepKind.Hold) ShowHeld(Current);
@@ -512,6 +627,8 @@ public sealed class CampaignRun : MonoBehaviour
     {
         PlayerRecords.ChapterEscaped(gameObject.scene.name);
         if (chapter != null && screen != null) screen.ShowCard(chapter.Title, chapter.Outro, outroSeconds, Results());
+        // The class's insignia beside the results, climbing if this chapter took it up a rank (stage 6E).
+        RankClimb.Play(ClassGrowth.Settle(), outroSeconds);
         if (tracker == null) return;
         string next = chapter != null ? chapter.Next : null;
         string title = string.IsNullOrEmpty(next) ? "캠페인 완료"

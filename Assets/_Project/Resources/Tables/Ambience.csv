@@ -1,0 +1,18 @@
+﻿id,clips,volumes,fadeIn
+#설명 (환경음. id가 씬 이름인 줄은 맵 전체에 깔리고 / Ch1.Shop 같은 줄은 그 구역 안에서만 들린다. 구역 상자는 CampaignMaps가 맵을 지을 때 놓는다. 파일은 Resources/Audio/Ambience 아래. 받은 파일: Outdoor1~3 = 바깥1~3 / OpenIndoor1~3 = 바깥이 뚫린 실내1~3 / Indoor1~4 = 실내1~4 / Machinery = 기계 소리 나는 배경 / Dumpster = 쓰레기장 / RestroomFront = 화장실 앞1),Resources 아래 경로(확장자 빼고). 여러 겹이면 ;로 나눈다. 파일이 없는 겹은 빠진다,겹마다 음량(0~1). ;로 나눈다,맵 줄은 맵에 들어와 커지는 시간 / 구역 줄은 그 구역에 들어가고 나올 때 소리가 바뀌는 시간(초)
+Ch1_Rooftops,Audio/Ambience/Outdoor1,1,3
+Ch1.Street,Audio/Ambience/Outdoor3,1,2
+Ch1.SafeRoom,Audio/Ambience/Indoor4,1,1.5
+Ch1.Alley,Audio/Ambience/Dumpster,1,2
+Ch1.Shop,Audio/Ambience/Indoor1,1,1.5
+Ch2_Overpass,Audio/Ambience/Outdoor2,1,3
+Ch2.Below,Audio/Ambience/Outdoor3,1,2
+Ch2.UnderDeck,Audio/Ambience/OpenIndoor1,1,2
+Ch2.Canopy,Audio/Ambience/OpenIndoor2,1,1.5
+Ch2.Shop,Audio/Ambience/Indoor2,1,1.5
+Ch2.GuardPost,Audio/Ambience/Indoor1,1,1.5
+Ch2.SubwayEntrance,Audio/Ambience/OpenIndoor3,1,1.5
+Ch3_Subway,Audio/Ambience/Machinery,1,3
+Ch3.Concourse,Audio/Ambience/RestroomFront,1,2
+Ch3.Office,Audio/Ambience/Indoor3,1,1.5
+Ch3.FarBank,Audio/Ambience/Outdoor1,1,2

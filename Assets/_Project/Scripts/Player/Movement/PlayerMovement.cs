@@ -363,6 +363,8 @@ public sealed partial class PlayerMovement : MonoBehaviour
             GameTables.Bind(TableName, "Wind", gameObject.AddComponent<PlayerWindAudio>());
             GameTables.Bind(TableName, "FallAudio", gameObject.AddComponent<PlayerFallAudio>());
             GameTables.Bind(TableName, "Punch", gameObject.AddComponent<PlayerMovementPunch>());
+            // Teammates side by side keep a body's width apart, not two capsules' (backlog 524).
+            GameTables.Bind(TableName, "Teammate", gameObject.AddComponent<TeammateSpacing>());
             GameTables.Bind(TableName, "FallScreen", gameObject.AddComponent<PlayerFallScreen>());
         }
         if (controller.height < Posture.standingColliderHeight - 0.02f)

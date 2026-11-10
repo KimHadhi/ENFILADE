@@ -16,9 +16,19 @@ public sealed class PlayerNetworkPose : NetworkBehaviour
         NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     private readonly NetworkVariable<FixedString64Bytes> skin = new NetworkVariable<FixedString64Bytes>(default,
         NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+    // The maximum before the health, so a copy knows how much it can hold (a perk's 145, not the base 100: friend
+    // feedback C14, where a teammate's card read 100 for 145).
+    private readonly NetworkVariable<float> maximumHealth = new NetworkVariable<float>(default,
+        NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     private readonly NetworkVariable<float> health = new NetworkVariable<float>(default,
         NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     private PlayerMovement movement;
+
+    /// <summary>
+    /// On a copy, this player's profile picture as their PC sent it (ProfilePicture.SmallJpg); null for none, when
+    /// their letter shows. Friend feedback C14: teammates' cards showed only a letter.
+    /// </summary>
+    public Texture2D Portrait { get; private set; }
 
     public override void OnNetworkSpawn()
     {
@@ -26,22 +36,40 @@ public sealed class PlayerNetworkPose : NetworkBehaviour
         pose.SetUpdateTraits(new NetworkVariableUpdateTraits { MinSecondsBetweenUpdates = SendInterval });
         if (IsOwner)
         {
+            maximumHealth.Value = movement.DamageReceiver.MaximumHealth;
             health.Value = movement.DamageReceiver.Health;
             GameSettings.Changed += SendSkin;
             SendSkin();
+            ProfilePicture.Changed += SendPortrait;
+            SendPortrait();
             return;
         }
+        // Someone who was here before this PC joined sent theirs already: it asks.
+        AskPortraitRpc();
         skin.OnValueChanged += OnSkinChanged;
+        maximumHealth.OnValueChanged += OnMaximumChanged;
         health.OnValueChanged += OnHealthChanged;
         ShowSkin();
+        if (maximumHealth.Value > 0f) movement.DamageReceiver.SetMaximumHealth(maximumHealth.Value);
         if (health.Value > 0f) movement.DamageReceiver.ShowHealth(health.Value);
     }
 
     public override void OnNetworkDespawn()
     {
+        ProfilePicture.Changed -= SendPortrait;
+        if (Portrait != null) { Destroy(Portrait); Portrait = null; }
         GameSettings.Changed -= SendSkin;
         skin.OnValueChanged -= OnSkinChanged;
+        maximumHealth.OnValueChanged -= OnMaximumChanged;
         health.OnValueChanged -= OnHealthChanged;
+    }
+
+    // A bigger maximum may come after the health it holds: the health is shown again under it.
+    private void OnMaximumChanged(float previous, float current)
+    {
+        if (current <= 0f) return;
+        movement.DamageReceiver.SetMaximumHealth(current);
+        if (health.Value > 0f) movement.DamageReceiver.ShowHealth(health.Value);
     }
 
     private void Update()
@@ -53,10 +81,27 @@ public sealed class PlayerNetworkPose : NetworkBehaviour
     {
         if (!IsSpawned || !IsOwner) return;
         pose.Value = movement.Mirror.Capture();
+        maximumHealth.Value = movement.DamageReceiver.MaximumHealth;
         health.Value = movement.DamageReceiver.Health;
     }
 
     private void OnHealthChanged(float previous, float current) => movement.DamageReceiver.ShowHealth(current);
+
+    // The owner's picture, small, to everyone else: on joining, when it changes, and when a newcomer asks.
+    private void SendPortrait()
+    {
+        if (IsSpawned && IsOwner) PortraitRpc(ProfilePicture.SmallJpg());
+    }
+
+    [Rpc(SendTo.Owner)]
+    private void AskPortraitRpc() => SendPortrait();
+
+    [Rpc(SendTo.NotMe)]
+    private void PortraitRpc(byte[] jpg)
+    {
+        if (Portrait != null) Destroy(Portrait);
+        Portrait = ProfilePicture.FromBytes(jpg);
+    }
 
     // The skin and its colour set in one string (PlayerBodyProfile.LookId); a build without colour sets reads the skin only.
     private void SendSkin()

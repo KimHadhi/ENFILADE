@@ -22,7 +22,7 @@ internal sealed class CampaignHorde
     private readonly EnemyHealth prefab;
     private readonly Transform[] spawns;
     private readonly Scene scene;
-    private readonly HashSet<EnemyHealth> alive = new HashSet<EnemyHealth>();
+    private readonly HashSet<EnemyHealth> alive = new HashSet<EnemyHealth>(), brutes = new HashSet<EnemyHealth>();
     private readonly List<Vector3> choices = new List<Vector3>(), inView = new List<Vector3>();
     private readonly NavMeshPath path = new NavMeshPath();
     private float saved;
@@ -46,7 +46,33 @@ internal sealed class CampaignHorde
         while (saved >= 1f && alive.Count < most)
         {
             saved -= 1f;
-            if (!SpawnOne(players, near, far, seenFar)) { saved = 0f; break; }
+            var enemy = SpawnOne(players, near, far, seenFar, null);
+            if (enemy == null) { saved = 0f; break; }
+            alive.Add(enemy);
+            made++;
+        }
+        return made;
+    }
+
+    /// <summary>
+    /// Friend feedback C2: brutes (ZombieKind.Brute), a song's highlight's boss, from the same hidden spawn points but
+    /// outside the step's numbers. Elite, so their kill burns in the feed. Returns how many came (fewer when no spot
+    /// would do).
+    /// </summary>
+    public int SpawnBrutes(int count, List<PlayerMovement> players, float near, float far, float seenFar)
+    {
+        brutes.RemoveWhere(enemy => enemy == null);
+        if (prefab == null || players.Count == 0) return 0;
+        int made = 0;
+        for (int i = 0; i < count; i++)
+        {
+            var brute = SpawnOne(players, near, far, seenFar, enemy =>
+            {
+                enemy.SetRank(EnemyRank.Elite);
+                if (enemy.TryGetComponent(out ZombieType type)) type.Set(ZombieKind.Brute);
+            });
+            if (brute == null) break;
+            brutes.Add(brute);
             made++;
         }
         return made;
@@ -55,18 +81,23 @@ internal sealed class CampaignHorde
     /// <summary>Every enemy it made goes at once (a wipe starting over, a chapter done).</summary>
     public void Clear()
     {
-        foreach (var enemy in alive)
-        {
-            if (enemy == null) continue;
-            enemy.Died -= OnDied;
-            enemy.gameObject.SetActive(false);
-            Object.Destroy(enemy.gameObject);
-        }
+        foreach (var enemy in alive) Remove(enemy);
+        foreach (var enemy in brutes) Remove(enemy);
         alive.Clear();
+        brutes.Clear();
         saved = 0f;
     }
 
-    private bool SpawnOne(List<PlayerMovement> players, float near, float far, float seenFar)
+    private void Remove(EnemyHealth enemy)
+    {
+        if (enemy == null) return;
+        enemy.Died -= OnDied;
+        enemy.gameObject.SetActive(false);
+        Object.Destroy(enemy.gameObject);
+    }
+
+    // Set up runs before the enemy goes out to the room, so its copies are born what it is.
+    private EnemyHealth SpawnOne(List<PlayerMovement> players, float near, float far, float seenFar, System.Action<EnemyHealth> setUp)
     {
         choices.Clear();
         inView.Clear();
@@ -82,19 +113,20 @@ internal sealed class CampaignHorde
             else if (distance >= seenFar) inView.Add(ground.position);
         }
         var from = choices.Count > 0 ? choices : inView;
-        if (from.Count == 0) return false;
+        if (from.Count == 0) return null;
         var container = RuntimeSceneHierarchy.GetGroup(scene, "ENEMIES", "Campaign");
         var enemy = Object.Instantiate(prefab, from[Random.Range(0, from.Count)], Quaternion.identity, container);
+        setUp?.Invoke(enemy);
         EnemyNetwork.SpawnInRoom(enemy);
-        alive.Add(enemy);
         enemy.Died += OnDied;
-        return true;
+        return enemy;
     }
 
     private void OnDied(EnemyHealth enemy)
     {
         enemy.Died -= OnDied;
         alive.Remove(enemy);
+        brutes.Remove(enemy);
     }
 
     // Someone has a clear line from their eyes to where its head would be (players' own capsules and enemies aside).

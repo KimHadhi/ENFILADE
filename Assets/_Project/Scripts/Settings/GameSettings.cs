@@ -21,6 +21,8 @@ public enum SettingsGroup { Sound, Controls, Screen, Hud, Crosshair, Character }
 public sealed class GameSettings
 {
     public float masterVolume = 1f, combatVolume = 1f, movementVolume = 1f, voiceVolume = 1f, uiVolume = 1f;
+    [Tooltip("The campaign's songs (CampaignMusic) and each map's background sound (MapAmbience).")]
+    public float musicVolume = .8f, ambienceVolume = 1f;
     [Tooltip("Multiplies PlayerLook's base sensitivity.")]
     public float mouseSensitivity = 1f;
     public bool invertY;
@@ -116,6 +118,7 @@ public sealed class GameSettings
             case SettingsGroup.Sound:
                 s.masterVolume = d.masterVolume; s.combatVolume = d.combatVolume; s.movementVolume = d.movementVolume;
                 s.voiceVolume = d.voiceVolume; s.uiVolume = d.uiVolume;
+                s.musicVolume = d.musicVolume; s.ambienceVolume = d.ambienceVolume;
                 break;
             case SettingsGroup.Controls:
                 s.mouseSensitivity = d.mouseSensitivity; s.invertY = d.invertY;
@@ -172,6 +175,8 @@ public sealed class GameSettings
         movementVolume = Mathf.Clamp01(movementVolume);
         voiceVolume = Mathf.Clamp01(voiceVolume);
         uiVolume = Mathf.Clamp01(uiVolume);
+        musicVolume = Mathf.Clamp01(musicVolume);
+        ambienceVolume = Mathf.Clamp01(ambienceVolume);
         mouseSensitivity = Mathf.Clamp(mouseSensitivity, MinSensitivity, MaxSensitivity);
         screenShake = Mathf.Clamp01(screenShake);
         hudSway = Mathf.Clamp01(hudSway);

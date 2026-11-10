@@ -27,6 +27,8 @@ public sealed class GameSession : MonoBehaviour, INetworkPrefabInstanceHandler
     private const int ConnectAttempts = 10;
     // How long a silent connection lasts when a PC crashes or loses its network, without any goodbye.
     private const int SilenceLimitMs = 10000;
+    // Packets the transport may hold waiting each frame (UnityTransport's default is 128).
+    private const int ReceiveQueue = 512;
     // Every enemy lives here, so all PCs know the same network prefabs before the first one spawns.
     private const string EnemyPrefabs = "Enemies";
     private static GameSession current;
@@ -65,6 +67,9 @@ public sealed class GameSession : MonoBehaviour, INetworkPrefabInstanceHandler
         var parts = text.Split('.');
         return parts.Length == 4 && parts.All(part => byte.TryParse(part, NumberStyles.None, CultureInfo.InvariantCulture, out _)) ? text : null;
     }
+
+    /// <summary>How the room is carried (/net, friend feedback C16): an internet room's link, or a LAN or typed address's direct one.</summary>
+    public static string LinkName => current == null ? "" : current.internetRoom != null ? current.internetRoom.LinkName : "직접 연결(LAN·주소)";
 
     /// <summary>The room this PC hosts, as the server list shows it, or null once it is closing.</summary>
     public static RoomInfo DescribeRoom() => current == null || current.ending ? null : new RoomInfo
@@ -125,6 +130,9 @@ public sealed class GameSession : MonoBehaviour, INetworkPrefabInstanceHandler
         var session = host.AddComponent<GameSession>();
         session.transport = host.AddComponent<CountingTransport>();
         session.transport.DisconnectTimeoutMS = SilenceLimitMs;
+        // The build's log filled the default 128-packet receive queue and dropped packets (friend feedback C16), most
+        // likely as a chapter loads and every enemy, corpse and player reports at once.
+        session.transport.MaxPacketQueueSize = ReceiveQueue;
         session.network = host.AddComponent<NetworkManager>();
         session.network.NetworkConfig = new NetworkConfig { NetworkTransport = session.transport, ConnectionApproval = true };
         session.playerPrefab = PlayerFactory.Prefab;

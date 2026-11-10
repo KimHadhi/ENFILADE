@@ -1,7 +1,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public enum AudioChannel { Combat, Movement, Voice, UI }
+/// <summary>Music: the campaign's songs (CampaignMusic). Ambience: each map's background sound (MapAmbience).</summary>
+public enum AudioChannel { Combat, Movement, Voice, UI, Music, Ambience }
 
 /// <summary>
 /// Volume channels for every sound the game plays. Bind a source once when it is created; its volume then follows the
@@ -14,7 +15,7 @@ public static class GameAudio
     // ownPitch is the pitch the source's owner gave it; setPitch is what FollowWorldPitch last wrote over it.
     private struct Bound { public AudioSource source; public AudioChannel channel; public float gain, ownPitch, setPitch; }
     private static readonly List<Bound> bound = new List<Bound>();
-    private static readonly float[] duck = { 1f, 1f, 1f, 1f };
+    private static readonly float[] duck = { 1f, 1f, 1f, 1f, 1f, 1f };
     private static bool listening;
 
     /// <summary>Share of their own pitch every world sound plays at (1 is normal); see FollowWorldPitch.</summary>
@@ -28,6 +29,8 @@ public static class GameAudio
             case AudioChannel.Movement: return settings.movementVolume;
             case AudioChannel.Voice: return settings.voiceVolume;
             case AudioChannel.UI: return settings.uiVolume;
+            case AudioChannel.Music: return settings.musicVolume;
+            case AudioChannel.Ambience: return settings.ambienceVolume;
             default: return settings.combatVolume;
         }
     }
@@ -46,7 +49,8 @@ public static class GameAudio
         // Menu sounds keep playing while the pause menu pauses the listener, and stay clear of its filters (a slowdown's
         // muffling, SlowMotionSound) and of the rooms' reverb (ReverbArea).
         source.ignoreListenerPause = source.bypassListenerEffects = channel == AudioChannel.UI;
-        if (channel == AudioChannel.UI) source.bypassReverbZones = true;
+        // Music isn't in any room: no reverb on it either.
+        if (channel == AudioChannel.UI || channel == AudioChannel.Music) source.bypassReverbZones = true;
     }
 
     /// <summary>The ears of this PC: the player camera's AudioListener, else any; null between scenes.</summary>
@@ -77,7 +81,8 @@ public static class GameAudio
         {
             var item = bound[i];
             if (item.source == null) { bound.RemoveAt(i); continue; }
-            if (item.channel == AudioChannel.UI) continue;
+            // A song slowed with the world would drift off its own beat (CampaignMusic times the boss to it).
+            if (item.channel == AudioChannel.UI || item.channel == AudioChannel.Music) continue;
             if (!Mathf.Approximately(item.source.pitch, item.setPitch)) item.ownPitch = item.source.pitch;
             item.source.pitch = item.setPitch = item.ownPitch * WorldPitch;
             bound[i] = item;
@@ -108,14 +113,23 @@ public static class GameAudio
         Refresh();
     }
 
-    /// <summary>A one-shot 3D sound at a world point, in place of AudioSource.PlayClipAtPoint.</summary>
-    public static void PlayAt(AudioClip clip, Vector3 point, AudioChannel channel, float volume = 1f)
+    /// <summary>
+    /// A one-shot 3D sound at a world point, in place of AudioSource.PlayClipAtPoint. A nearest and farthest distance
+    /// (m) over 0 replace Unity's own, fading out in a straight line to the farthest.
+    /// </summary>
+    public static void PlayAt(AudioClip clip, Vector3 point, AudioChannel channel, float volume = 1f, float near = 0f, float far = 0f)
     {
         if (clip == null) return;
         var source = new GameObject("One Shot (" + clip.name + ")").AddComponent<AudioSource>();
         source.transform.position = point;
         source.playOnAwake = false;
         source.spatialBlend = 1f;
+        if (near > 0f && far > near)
+        {
+            source.minDistance = near;
+            source.maxDistance = far;
+            source.rolloffMode = AudioRolloffMode.Linear;
+        }
         Bind(source, channel);
         source.PlayOneShot(clip, Mathf.Clamp01(volume));
         Object.Destroy(source.gameObject, clip.length + .1f);

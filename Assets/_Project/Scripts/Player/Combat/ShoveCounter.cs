@@ -30,8 +30,8 @@ public sealed class ShoveCounter : MonoBehaviour
     [Header("Return")]
     [SerializeField, Min(0f), Tooltip("A countered runner is slammed down for this long (s).")]
     private float pounceKnockdown = 2.5f;
-    [SerializeField, Range(0f, 1f), Tooltip("A countered runner loses this share of its health.")]
-    private float pounceDamageShare = .5f;
+    [SerializeField, Range(0f, 1f), Tooltip("A countered runner loses this share of its health (1: dead at once, friend feedback C6).")]
+    private float pounceDamageShare = 1f;
     [Header("Feel")]
     [SerializeField, Min(0f), Tooltip("Time catches on contact (real s).")]
     private float hitStopSeconds = .22f;
@@ -134,8 +134,10 @@ public sealed class ShoveCounter : MonoBehaviour
         if (airborne)
         {
             var health = target.GetComponent<EnemyHealth>();
+            // At 1 it takes whatever is left, which on the host may be more than this PC's copy shows.
             if (health != null && pounceDamageShare > 0f)
-                health.ReceiveHit(new DamageHit(DamageHit.NewAttackId(), health.MaximumHealth * pounceDamageShare, DamageKind.Attack,
+                health.ReceiveHit(new DamageHit(DamageHit.NewAttackId(),
+                    pounceDamageShare >= 1f ? Mathf.Max(health.Health, health.MaximumHealth) * 2f : health.MaximumHealth * pounceDamageShare, DamageKind.Attack,
                     point, away, gameObject, false, 0f, true, isCounter: true, method: DamageMethod.Shove));
             if (target.IsAvailable) target.KnockDown(away, pounceKnockdown);
         }

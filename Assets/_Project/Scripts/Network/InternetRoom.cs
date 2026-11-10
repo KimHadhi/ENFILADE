@@ -28,6 +28,22 @@ public sealed class InternetRoom : INetworkHandler
     /// <summary>The room goes straight to the host, not through a relay.</summary>
     public bool Direct => portMap != null;
 
+    /// <summary>
+    /// How this room is carried, for /net (friend feedback C16): straight to the host (its router opened a port), or
+    /// through a relay and which region's.
+    /// </summary>
+    public string LinkName
+    {
+        get
+        {
+            if (Direct) return "직접 연결(방장 공유기 포트 열림)";
+            var properties = session?.Properties;
+            if (properties != null && properties.TryGetValue(LinkKey, out var link) && link?.Value == DirectLink) return "직접 연결";
+            string region = properties != null && properties.TryGetValue(RegionKey, out var where) ? where?.Value : null;
+            return string.IsNullOrEmpty(region) ? "릴레이 경유" : "릴레이 경유(" + region + ")";
+        }
+    }
+
     public InternetRoom(NetworkManager network, UnityTransport transport, Action lost)
     {
         this.network = network;

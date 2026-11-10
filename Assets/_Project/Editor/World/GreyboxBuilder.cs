@@ -33,7 +33,8 @@ public sealed class GreyboxBuilder
         shops = new List<Transform>();
     private readonly List<CampaignDoor> doors = new List<CampaignDoor>();
     private Scene scene;
-    private Transform terrain, parkour, enemies, progress, systems;
+    private Transform terrain, parkour, enemies, progress, systems, pickups, ambience;
+    private int pickupCount;
 
     public Material Concrete { get; private set; }
     public Material Road { get; private set; }
@@ -84,6 +85,7 @@ public sealed class GreyboxBuilder
         enemies = Root("◤━━ 적 나오는 곳");
         progress = Root("◤━━ 진행 자리 (CampaignSteps.csv의 spot 이름)");
         systems = Root("◤━━ 시스템");
+        pickups = Root("◤━━ 줍기 자리 (무엇이 놓일지는 Tables/Pickups)");
         var input = new GameObject("EventSystem", typeof(EventSystem), typeof(InputSystemUIInputModule));
         input.transform.SetParent(systems, false);
         var hud = AssetDatabase.LoadAssetAtPath<GameObject>(HudPrefab);
@@ -171,6 +173,38 @@ public sealed class GreyboxBuilder
         place.position = stand;
         shops.Add(place);
         Box("상점 표지", sign.x - .6f, sign.x + .6f, sign.y, sign.y + .3f, sign.z - .05f, sign.z + .05f, Marker, solid: false);
+    }
+
+    /// <summary>
+    /// A field pickup's place on <paramref name="floor"/> (stage 6D, PickupSpot): what lies there is rolled from
+    /// Tables/Pickups each run, only guns, only supplies (ammo, heals, shields, money) or anything.
+    /// </summary>
+    public void Pickup(Vector3 floor, PickupSpot.Roll kind = PickupSpot.Roll.Supply)
+    {
+        string name = kind == PickupSpot.Roll.Gun ? "총 자리 " : kind == PickupSpot.Roll.Supply ? "보급 자리 " : "줍기 자리 ";
+        var spot = new GameObject(name + ++pickupCount, typeof(PickupSpot));
+        spot.transform.SetParent(pickups, false);
+        spot.transform.position = floor + Vector3.up * Lift;
+        spot.GetComponent<PickupSpot>().Kind = kind;
+    }
+
+    /// <summary>
+    /// An area with its own background sound (AmbienceArea), a box by its extents: inside it the map's ambience gives way
+    /// to <paramref name="sound"/>, a row id in Tables/Ambience. Where boxes overlap the higher
+    /// <paramref name="priority"/> wins, then the smaller box, so a room inside a street area takes over there.
+    /// </summary>
+    public void Ambience(string sound, float x0, float x1, float y0, float y1, float z0, float z1, int priority = 1)
+    {
+        ambience ??= Root("◤━━ 환경음 구역 (Tables/Ambience의 id)");
+        var area = new GameObject("환경음 " + sound).AddComponent<AmbienceArea>();
+        area.transform.SetParent(ambience, false);
+        area.transform.localPosition = new Vector3((x0 + x1) * .5f, (y0 + y1) * .5f, (z0 + z1) * .5f);
+        Set(area, so =>
+        {
+            so.FindProperty("size").vector3Value = new Vector3(Mathf.Abs(x1 - x0), Mathf.Abs(y1 - y0), Mathf.Abs(z1 - z0));
+            so.FindProperty("sound").stringValue = sound;
+            so.FindProperty("priority").intValue = priority;
+        });
     }
 
     /// <summary>A warm lamp with no shadows, for underground stretches the sun can't reach.</summary>
@@ -265,6 +299,25 @@ public sealed class GreyboxBuilder
         if (icon != null) EditorGUIUtility.SetIconForObject(spot, icon);
     }
 
+    // How far down a zombie drops off a ledge and how wide a gap it hops (m): the overpass deck (8 m) over the road
+    // counts, the rooftops (12 m and more) over the street don't.
+    private const float DropHeight = 9f, JumpGap = 1.6f;
+
+    // The project's walk-mesh agent (type 0, what the zombies use) gets links down ledges and across gaps.
+    private static void AllowDrops()
+    {
+        var settings = new SerializedObject(Unsupported.GetSerializedAssetInterfaceSingleton("NavMeshProjectSettings"));
+        var agents = settings.FindProperty("m_Settings");
+        for (int i = 0; agents != null && i < agents.arraySize; i++)
+        {
+            var agent = agents.GetArrayElementAtIndex(i);
+            if (agent.FindPropertyRelative("agentTypeID").intValue != 0) continue;
+            agent.FindPropertyRelative("ledgeDropHeight").floatValue = DropHeight;
+            agent.FindPropertyRelative("maxJumpAcrossDistance").floatValue = JumpGap;
+        }
+        settings.ApplyModifiedPropertiesWithoutUndo();
+    }
+
     /// <summary>Adds the waves, bakes the walk mesh, saves the scene and puts it in the build.</summary>
     public void Finish(string summary)
     {
@@ -276,6 +329,12 @@ public sealed class GreyboxBuilder
         var surface = terrain.gameObject.AddComponent<NavMeshSurface>();
         surface.collectObjects = CollectObjects.Children;
         surface.useGeometry = NavMeshCollectGeometry.PhysicsColliders;
+        // Friend feedback C5: zombies drop off ledges and hop small gaps to reach players (ZombieDrop walks the links),
+        // so no ledge is a safe spot.
+        AllowDrops();
+        var links = new SerializedObject(surface);
+        links.FindProperty("m_GenerateLinks").boolValue = true;
+        links.ApplyModifiedPropertiesWithoutUndo();
         surface.BuildNavMesh();
         string meshPath = dataFolder + "/NavMesh.asset";
         if (AssetDatabase.LoadAssetAtPath<NavMeshData>(meshPath) != null) AssetDatabase.DeleteAsset(meshPath);
@@ -322,8 +381,16 @@ public sealed class GreyboxBuilder
             Fill(so.FindProperty("cans"), cans);
             Fill(so.FindProperty("doors"), doors);
             Fill(so.FindProperty("shops"), shops);
+            // A shot fuel can's blast, fire and sound (friend feedback C17).
+            so.FindProperty("canBlast").objectReferenceValue = AssetDatabase.LoadAssetAtPath<GameObject>(CanBlastPrefab);
+            so.FindProperty("canFire").objectReferenceValue = AssetDatabase.LoadAssetAtPath<GameObject>(CanFirePrefab);
+            so.FindProperty("canBlastSound").objectReferenceValue = AssetDatabase.LoadAssetAtPath<AudioClip>(CanBlastSound);
         });
     }
+
+    private const string CanBlastPrefab = "Assets/ThirdParty/Piloto Studio/Super Realistic FX Bundle 02/Realistic Gunslinger/Big Explosion Sequence.prefab",
+        CanFirePrefab = "Assets/ThirdParty/JMO Assets/Cartoon FX Remaster/CFXR Prefabs/Fire/CFXR Fire.prefab",
+        CanBlastSound = "Assets/ThirdParty/Vefects/Combat Flipbook VFX URP/Audio/WAV/Sergi/SFX_Vefects_Explosion_01_One_Shot_01.wav";
 
     private static void Fill<T>(SerializedProperty array, List<T> items) where T : Object
     {

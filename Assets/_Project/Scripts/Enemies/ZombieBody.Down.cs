@@ -44,6 +44,11 @@ public sealed partial class ZombieBody
     private float riseBlend = .25f;
     [SerializeField, Min(.01f), Tooltip("Easing from the end of the getting-up clip into walking (s). It moves and fights again from then.")]
     private float riseOut = .25f;
+    [SerializeField, Min(1f), Tooltip("Lying knocked down it takes this many times the damage (friend feedback C7: knocking it down pays).")]
+    private float lyingDamage = 2f;
+
+    /// <summary>What a blow to it is worth while it lies knocked down (EnemyHealth).</summary>
+    internal float LyingDamage => Mathf.Max(1f, lyingDamage);
 
     private static readonly Dictionary<ulong, ZombieBody> downById = new Dictionary<ulong, ZombieBody>();
     // Where each getting-up clip's lying body is at its start, in the body's own space: hips across the floor, and

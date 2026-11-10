@@ -104,7 +104,9 @@ public sealed class PlayerWeaponSlots : MonoBehaviour
         }
         if (controller.EquippedData != SelectedWeapon) SetSelection(selectedSlot);
         var keyboard = Keyboard.current;
-        if (keyboard == null || !CanReadInput) return;
+        // The perk cards take 1-3 while they are up (in a room the game runs on, so these keys still reach here): a card
+        // picked must not also swap the gun and cut its reload (friend feedback C13).
+        if (keyboard == null || !CanReadInput || PerkCardScreen.TakesKeyboard) return;
         if (keyboard.digit1Key.wasPressedThisFrame || keyboard.numpad1Key.wasPressedThisFrame) HandleSlotInput(0);
         else if (keyboard.digit2Key.wasPressedThisFrame || keyboard.numpad2Key.wasPressedThisFrame) HandleSlotInput(1);
         else if (keyboard.digit3Key.wasPressedThisFrame || keyboard.numpad3Key.wasPressedThisFrame) HandleSlotInput(2);

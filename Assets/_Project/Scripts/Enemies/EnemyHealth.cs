@@ -57,6 +57,7 @@ public sealed class EnemyHealth : MonoBehaviour, IDamageReceiver, ICombatVitals,
     private EnemyNetwork network;
     private ZombieBody body;
     private ZombieMind mind;
+    private MeleeCombatTarget melee;
     private float appliedMaximum;
     private bool restorePosition, restoreRotation, restoreStopped;
 
@@ -126,8 +127,11 @@ public sealed class EnemyHealth : MonoBehaviour, IDamageReceiver, ICombatVitals,
         recent.Enqueue(hit.Id);
         if (recent.Count > 256) seen.Remove(recent.Dequeue());
         float before = Health;
+        // Knocked down and lying there, it takes more (ZombieKnockdown lyingDamage, friend feedback C7).
+        if (melee == null) melee = GetComponent<MeleeCombatTarget>();
+        float amount = hit.Amount * (body != null && body.Wears && melee != null && melee.IsLying ? body.LyingDamage : 1f);
         // An execution takes whatever is left, which on the host may be more than the copy it was judged on.
-        Health = hit.Kind == DamageKind.Execution ? 0f : Mathf.Max(0f, Health - hit.Amount);
+        Health = hit.Kind == DamageKind.Execution ? 0f : Mathf.Max(0f, Health - amount);
         UltimateCharge.AwardEnemyHit(hit);
         // A copy shows the hit now and leaves the rest to the host, whose enemy is the true one.
         bool copy = network != null && network.IsCopy;

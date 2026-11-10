@@ -42,6 +42,12 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
     /// <summary>Any target's posture broke, for presentation that watches every enemy (the break hit marker).</summary>
     public static event Action<MeleeCombatTarget> AnyStaggered;
     public float StaggerAge { get; private set; }
+    /// <summary>
+    /// A brute (friend feedback C2, ZombieType): shoves, barges, knockdowns, posture damage, guard breaks and executions
+    /// don't move it, nor do bullet flinches (EnemyHitReaction); a stun (a parried blow) lasts at most SteadfastStun.
+    /// </summary>
+    internal bool Steadfast { get; set; }
+    private const float SteadfastStun = .5f;
     private static readonly HashSet<MeleeCombatTarget> active = new HashSet<MeleeCombatTarget>();
     public static IEnumerable<MeleeCombatTarget> Active => active;
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -144,6 +150,7 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
     {
         // Further hits cannot restart the recovery clock or repeatedly trigger the stagger cue.
         if (!IsAvailable || IsStaggered) return;
+        if (Steadfast) { if (interrupt && stun > 0f) InterruptHere(stun); return; }
         if (IsCopy) { network.SendPosture(amount, stun, interrupt); predictedUntil = Time.time + PredictionHold; }
         Posture = Mathf.Max(0f, Posture - Mathf.Max(0f, amount));
         recoveryRemaining = recoveryDelay;
@@ -162,6 +169,7 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
     private void InterruptHere(float duration)
     {
         if (!IsAvailable) return;
+        if (Steadfast) duration = Mathf.Min(duration, SteadfastStun);
         stunRemaining = Mathf.Max(stunRemaining, duration);
         StopAgent();
         GetComponent<EnemyCombatAI>()?.CancelAttack();
@@ -169,7 +177,7 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
     }
     public void KnockDown(Vector3 direction, float duration)
     {
-        if (!IsAvailable || executor != null) return;
+        if (!IsAvailable || executor != null || Steadfast) return;
         if (IsCopy) { network.SendKnockDown(direction, duration); return; }
         FallDirection = direction;
         // Repeated knockdowns only extend the timer; the body hits the ground once, a moment after it starts to fall.
@@ -186,7 +194,7 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
     /// </summary>
     public void Barge(Vector3 velocity, float throwTime, float knockdownTime)
     {
-        if (!IsAvailable || executor != null) return;
+        if (!IsAvailable || executor != null || Steadfast) return;
         if (IsCopy) { network.SendBarge(velocity, throwTime, knockdownTime); return; }
         if (!StartShove(velocity, new HashSet<MeleeCombatTarget> { this }, Mathf.Max(.05f, throwTime)))
         { KnockDown(velocity, knockdownTime); return; }
@@ -195,7 +203,7 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
     }
     public bool TryReserve(PlayerMeleeCombat owner)
     {
-        if (!IsAvailable || owner == null || grabber != null || executor != null) return false;
+        if (!IsAvailable || owner == null || grabber != null || executor != null || Steadfast) return false;
         knockdownPresentation?.Reset(); knockdownRemaining = 0f;
         grabber = owner; bargeKnockdown = 0f; StopAgent(); GetComponent<EnemyCombatAI>()?.CancelAttack(); Interrupted?.Invoke();
         if (IsCopy) network.SendInterrupt(GrabHold);
@@ -211,7 +219,7 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
     /// Whether this executor may execute it now: broken (CanExecute), or a zombie unaware of anyone with them behind its
     /// back, a stealth kill (ZombieMind.CanBeTakenDownFrom).
     /// </summary>
-    public bool CanBeExecutedBy(Component executor) => CanExecute || CanBeTakenDownBy(executor);
+    public bool CanBeExecutedBy(Component executor) => !Steadfast && (CanExecute || CanBeTakenDownBy(executor));
 
     /// <summary>The stealth kill alone: an unaware zombie with this executor behind it.</summary>
     public bool CanBeTakenDownBy(Component executor)
@@ -304,7 +312,7 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
     }
     private void ReceiveShove(Vector3 impulse, Vector3 point, HashSet<MeleeCombatTarget> chain)
     {
-        if (!IsAvailable || executor != null || StartShove(impulse, chain, ShoveDuration)) return;
+        if (!IsAvailable || executor != null || Steadfast || StartShove(impulse, chain, ShoveDuration)) return;
         var body = GetComponent<Rigidbody>();
         if (body != null && !body.isKinematic) body.AddForceAtPosition(impulse, point, ForceMode.Impulse);
     }

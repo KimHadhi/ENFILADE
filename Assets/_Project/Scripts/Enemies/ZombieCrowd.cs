@@ -181,7 +181,7 @@ public sealed class ZombieCrowd : MonoBehaviour
     // 523: pressing into a player, it steps back out of them itself.
     private void LateUpdate()
     {
-        if (!Runs || agent == null || !agent.isActiveAndEnabled || !agent.isOnNavMesh) return;
+        if (!Runs || agent == null || !agent.isActiveAndEnabled || !agent.isOnNavMesh || agent.isOnOffMeshLink) return;
         if (health != null && !health.IsAlive) return;
         if (grip == null) grip = GetComponent<ZombieGrip>();
         if ((grip != null && grip.IsHolding) || (melee != null && (melee.IsHeld || melee.IsLying))) return;

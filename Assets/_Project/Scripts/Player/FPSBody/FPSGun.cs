@@ -395,12 +395,13 @@ public sealed class FPSGun : MonoBehaviour
     }
 
     // The shots, the flash and the tracer leave from the front of whatever is on the muzzle now (GunMuzzle measures only the
-    // parts worn).
+    // parts worn). The flashlight's beam starts there too, so the gun throws no shadow into it.
     private void MeasureMuzzle()
     {
         GunMuzzle.Measure(transform, AimPoint, muzzleDepth, out Vector3 muzzle, out Quaternion muzzleRotation);
         MuzzlePosition = muzzle;
         MuzzleRotation = muzzleRotation;
+        if (Attachments != null) Attachments.LightAhead(transform.TransformPoint(muzzle));
     }
 
     /// <summary>The sight shown (GunSights.Current), -1 for a gun without a choice of sights.</summary>

@@ -35,6 +35,7 @@ public sealed class TeamHealthPanel : MonoBehaviour
     {
         public RectTransform root;
         public Image badge;
+        public RawImage picture;
         public TextMeshProUGUI initial, name, value;
         public HealthSegments cells;
     }
@@ -81,6 +82,13 @@ public sealed class TeamHealthPanel : MonoBehaviour
         card.initial.rectTransform.anchorMin = Vector2.zero; card.initial.rectTransform.anchorMax = Vector2.one;
         card.initial.rectTransform.offsetMin = card.initial.rectTransform.offsetMax = Vector2.zero;
         card.initial.color = Ink;
+        // Their own profile picture over the badge, once their PC has sent it (PlayerNetworkPose.Portrait, C14).
+        var picture = FeelUI.Rect("Picture", badge);
+        picture.anchorMin = picture.anchorMax = picture.pivot = new Vector2(.5f, .5f);
+        picture.sizeDelta = new Vector2(BadgeWidth, BadgeWidth);
+        card.picture = picture.gameObject.AddComponent<RawImage>();
+        card.picture.raycastTarget = false;
+        card.picture.enabled = false;
 
         var cells = card.cells.Rect;
         cells.anchorMin = cells.anchorMax = cells.pivot = Vector2.zero;
@@ -137,6 +145,11 @@ public sealed class TeamHealthPanel : MonoBehaviour
         string displayName = named ? tally.DisplayName : other.name;
         card.name.text = displayName;
         card.initial.text = string.IsNullOrEmpty(displayName) ? "?" : displayName.Substring(0, 1).ToUpperInvariant();
+        var portrait = other.TryGetComponent(out PlayerNetworkPose pose) ? pose.Portrait : null;
+        card.picture.texture = portrait;
+        card.picture.enabled = portrait != null;
+        card.picture.color = health.IsAlive ? Color.white : Gone;
+        card.initial.enabled = portrait == null;
         Color seat = named ? tally.Color : Color.white;
         if (!health.IsAlive)
         {

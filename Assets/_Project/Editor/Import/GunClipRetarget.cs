@@ -553,7 +553,7 @@ internal static class GunClipRetarget
     // ---- True size ----
 
     // The scale the game fits this skin to (PlayerBody.FitScaleOf, eyes to the standing camera height of Player.prefab).
-    private static float FitScaleOf(GameObject skin)
+    internal static float FitScaleOf(GameObject skin)
     {
         var player = Resources.Load<GameObject>("Characters/Player");
         var pivot = player != null ? player.transform.Find("CrouchPivot") : null;

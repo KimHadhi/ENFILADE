@@ -43,6 +43,8 @@ public sealed class EnemyHitReaction : MonoBehaviour, ITableBound
     {
         var settings = GunFeelSettings.Instance;
         if (!settings.enemyFlinch || hit.Method != DamageMethod.Bullet || applied <= 0f) return;
+        // A brute (friend feedback C2) walks through gunfire.
+        if (target != null && target.Steadfast) return;
         float flinch = FlinchOf(hit);
         bool head = hit.IsCritical;
 

@@ -29,8 +29,11 @@ public sealed partial class PlayerBody
     private Vector2 eyeAdjust;
     [SerializeField, Min(.01f), Tooltip("Near clip plane while the own head is shown: anything closer to the camera is cut (m).")]
     private float headNearClip = .05f;
-    [SerializeField, Range(0f, 90f), Tooltip("Sliding look limit either side of the travel direction (degrees). The legs keep following travel.")]
-    private float slideTurnLimit = 75f;
+    [SerializeField, Range(0f, 150f), Tooltip("Sliding look limit either side of the travel direction (degrees). The legs keep following travel; "
+        + "the torso turns at most SlideTwistLimit of it and the head the rest (friend feedback C11: 75 was too narrow).")]
+    private float slideTurnLimit = 120f;
+    // The torso's own share of a slide's look: past this the spine would wring, so the head and neck turn the rest.
+    private const float SlideTwistLimit = 90f;
     [SerializeField, Tooltip("Sliding look pitch limits in degrees: up, down. Shared with the camera to keep the torso and view together.")]
     private Vector2 slidePitchLimits = new Vector2(40f, 55f);
     [SerializeField, Range(0f, 180f), Tooltip("Down after a heavy landing, look limit either side of the way the body faces "
@@ -48,7 +51,10 @@ public sealed partial class PlayerBody
     // (degrees per second).
     private const float FacingTurnRate = 720f;
 
-    public float SlideLookYawLimit => Mathf.Clamp(slideTurnLimit, 0f, 90f);
+    /// <summary>How far round the view turns from a slide's travel (PlayerLook).</summary>
+    public float SlideViewYawLimit => Mathf.Clamp(slideTurnLimit, 0f, 150f);
+    /// <summary>How far round the torso twists from a slide's travel: the view's limit, no more than SlideTwistLimit.</summary>
+    public float SlideLookYawLimit => Mathf.Min(SlideViewYawLimit, SlideTwistLimit);
     public float HeavyLandingLookYawLimit => Mathf.Clamp(heavyLandingTurnLimit, 0f, 180f);
     public float SupineDiveLookYawLimit => Mathf.Clamp(supineDiveTurnLimit, 0f, 90f);
     public float MantleLookYawLimit => Mathf.Clamp(mantleTurnLimit, 0f, 180f);
