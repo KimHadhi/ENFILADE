@@ -10,6 +10,7 @@ using UnityEngine;
 /// Friend feedback C17: carried, the left button throws it (an arc under gravity, landing where it hits); shot where it
 /// lies or flies, it blows up (zombies near it are hurt and knocked flat, the brute only hurt) and burns a while,
 /// hurting zombies that stand in the fire, then turns up again where it first lay, so the step can still be done.
+/// The blast and the fire are drawn by CanBlastEffect, in the game's own flat style.
 /// The host, or the PC alone, keeps every can's state and tells the others (a named message on change, every frame while
 /// one flies, and every couple of seconds); a guest asks the host to pick up, put down, pour or throw, and a shot from a
 /// guest goes to the host (CampaignRun). A wipe puts every can back where it started. Each PC hangs a carried can from its
@@ -58,9 +59,8 @@ internal sealed class CampaignCans
     private readonly ulong[] setOffBy;
     // What each PC last showed of each can, so a can catching fire shows its blast once.
     private readonly byte[] shown;
-    private readonly GameObject[] fires;
+    private readonly CanBlastEffect[] fires;
     private readonly HashSet<EnemyHealth> struck = new HashSet<EnemyHealth>();
-    private GameObject blastPrefab, firePrefab;
     private AudioClip blastSound;
     private bool changed = true;
     private float nextShare;
@@ -78,7 +78,7 @@ internal sealed class CampaignCans
         nextBurn = new float[count];
         setOffBy = new ulong[count];
         shown = new byte[count];
-        fires = new GameObject[count];
+        fires = new CanBlastEffect[count];
         for (int i = 0; i < count; i++)
         {
             start[i] = state[i] = new Can { Mode = (byte)Mode.Lying, Position = this.cans[i] != null ? this.cans[i].position : Vector3.zero };
@@ -90,13 +90,8 @@ internal sealed class CampaignCans
 
     public bool Any => cans.Length > 0;
 
-    /// <summary>What a blast and a fire look and sound like (CampaignRun's, set by the builder); none is fine.</summary>
-    public void Dress(GameObject blast, GameObject fire, AudioClip sound)
-    {
-        blastPrefab = blast;
-        firePrefab = fire;
-        blastSound = sound;
-    }
+    /// <summary>What a blast sounds like (CampaignRun's, set by the builder); none is fine.</summary>
+    public void Dress(AudioClip sound) => blastSound = sound;
 
     public int Poured
     {
@@ -379,9 +374,9 @@ internal sealed class CampaignCans
         Vector3 at = state[index].Position;
         if (mode == Mode.Burning && was != Mode.Burning)
         {
-            if (blastPrefab != null) Object.Destroy(Object.Instantiate(blastPrefab, at, Quaternion.identity), 6f);
+            if (fires[index] != null) fires[index].PutOut();
+            fires[index] = CanBlastEffect.Play(at, BlastRadius, FireRadius);
             if (blastSound != null) GameAudio.PlayAt(blastSound, at + Vector3.up, AudioChannel.Combat, 1f, 4f, 90f);
-            if (firePrefab != null && fires[index] == null) fires[index] = Object.Instantiate(firePrefab, at, Quaternion.identity);
             if (mine != null)
             {
                 float near = 1f - Mathf.Clamp01(Vector3.Distance(mine.transform.position, at) / ShakeReach);
@@ -389,7 +384,7 @@ internal sealed class CampaignCans
                 if (shake != null) shake.ApplyCameraImpulse(new Vector3(-9f * near, 0f, (Random.value < .5f ? -5f : 5f) * near), 5f * near);
             }
         }
-        if (mode != Mode.Burning && fires[index] != null) { Object.Destroy(fires[index]); fires[index] = null; }
+        if (mode != Mode.Burning && fires[index] != null) { fires[index].PutOut(); fires[index] = null; }
     }
 
     // A player's id in the cans' state: their client in a room, 0 alone.

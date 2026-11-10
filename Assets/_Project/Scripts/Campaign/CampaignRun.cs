@@ -55,9 +55,8 @@ public sealed class CampaignRun : MonoBehaviour
     private CampaignDoor[] doors;
     [SerializeField, Tooltip("Where the rest stops' shop counters stand (ShopMenu opens there).")]
     private Transform[] shops;
-    [SerializeField, Tooltip("A shot fuel can's blast, its fire and its sound (C17; the builder sets them).")]
-    private GameObject canBlast, canFire;
-    [SerializeField] private AudioClip canBlastSound;
+    [SerializeField, Tooltip("A shot fuel can's blast sound (C17; the builder sets it). The blast and its fire are drawn by CanBlastEffect.")]
+    private AudioClip canBlastSound;
     [SerializeField, Min(0f), Tooltip("Enemies never appear nearer than this to anyone (m).")]
     private float minSpawnDistance = 15f;
     [SerializeField, Min(0f), Tooltip("Nor farther than this from the player they head for (m).")]
@@ -155,7 +154,7 @@ public sealed class CampaignRun : MonoBehaviour
         chapter = CampaignChapter.For(scene);
         horde = new CampaignHorde(enemyPrefab, spawns, gameObject.scene);
         fuel = new CampaignCans(cans);
-        fuel.Dress(canBlast, canFire, canBlastSound);
+        fuel.Dress(canBlastSound);
         music = new CampaignMusic(gameObject);
         if (steps.Count == 0) Debug.LogWarning("[Campaign] Tables/CampaignSteps has no steps for " + scene + ".", this);
     }

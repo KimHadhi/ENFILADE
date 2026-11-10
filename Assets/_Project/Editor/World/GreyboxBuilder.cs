@@ -381,16 +381,12 @@ public sealed class GreyboxBuilder
             Fill(so.FindProperty("cans"), cans);
             Fill(so.FindProperty("doors"), doors);
             Fill(so.FindProperty("shops"), shops);
-            // A shot fuel can's blast, fire and sound (friend feedback C17).
-            so.FindProperty("canBlast").objectReferenceValue = AssetDatabase.LoadAssetAtPath<GameObject>(CanBlastPrefab);
-            so.FindProperty("canFire").objectReferenceValue = AssetDatabase.LoadAssetAtPath<GameObject>(CanFirePrefab);
+            // A shot fuel can's blast sound (friend feedback C17); the blast and its fire are drawn in code (CanBlastEffect).
             so.FindProperty("canBlastSound").objectReferenceValue = AssetDatabase.LoadAssetAtPath<AudioClip>(CanBlastSound);
         });
     }
 
-    private const string CanBlastPrefab = "Assets/ThirdParty/Piloto Studio/Super Realistic FX Bundle 02/Realistic Gunslinger/Big Explosion Sequence.prefab",
-        CanFirePrefab = "Assets/ThirdParty/JMO Assets/Cartoon FX Remaster/CFXR Prefabs/Fire/CFXR Fire.prefab",
-        CanBlastSound = "Assets/ThirdParty/Vefects/Combat Flipbook VFX URP/Audio/WAV/Sergi/SFX_Vefects_Explosion_01_One_Shot_01.wav";
+    private const string CanBlastSound = "Assets/ThirdParty/Vefects/Combat Flipbook VFX URP/Audio/WAV/Sergi/SFX_Vefects_Explosion_01_One_Shot_01.wav";
 
     private static void Fill<T>(SerializedProperty array, List<T> items) where T : Object
     {
