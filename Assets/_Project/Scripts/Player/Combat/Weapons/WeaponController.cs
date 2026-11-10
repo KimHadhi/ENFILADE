@@ -555,18 +555,31 @@ public sealed class WeaponController : MonoBehaviour
             // A shotgun's pellets each fly their own way, each a bullet of its own (own attack, own hit); one shot of a
             // single-bullet gun is pellet 0 on its own. The pellets fill one circle evenly, middle to edge, every shot
             // (EvenDisk): the circle round the crosshair's middle that the gun's spread and its Pellet Spread make together,
-            // which is the round the crosshair's parts stand on (UpdateCrosshair). So what the crosshair rings is what the
-            // shot covers, with no clump and no hole (user, 2026-11-10: pellets thrown at random read as weak and unfair,
-            // and one sent dead on the middle was not it either: "조준점 동그란 부분이 다 맞게"). Only the pattern's turn is
-            // left to chance.
+            // which is the ring the crosshair draws while such a gun is in hand (UpdateCrosshair). So what the ring holds is
+            // what the shot covers, with no clump and no hole (user, 2026-11-10: pellets thrown at random read as weak and
+            // unfair, and one sent dead on the middle was not it either: "조준점 동그란 부분이 다 맞게"). Only the pattern's
+            // turn is left to chance.
             int pellets = weaponData.Pellets;
             float patternTurn = pellets > 1 ? UnityEngine.Random.value * Mathf.PI * 2f : 0f;
             for (int pellet = 0; pellet < pellets; pellet++)
             {
                 long id = DamageHit.NewAttackId();
-                Vector3 direction = pellets > 1
-                    ? WeaponAimSolver.SpreadDirection(toSight, CurrentSpread + weaponData.PelletSpread, EvenDisk(pellet, pellets, patternTurn))
-                    : aimed;
+                Vector3 direction = aimed;
+                if (pellets > 1)
+                {
+                    // Each pellet is aimed from the eyes, as the single bullet is: it goes from the muzzle to what the
+                    // eyes see at its own place in the ring. Spread about the muzzle's line to the crosshair's point, the
+                    // pattern only met the ring at that point's distance; a zombie nearer than what the middle of the
+                    // screen was on, a step away with the middle looking past its shoulder, stood inside the ring and
+                    // was missed by a hand's breadth, the gun being off to the side of the eyes (user, 2026-11-10:
+                    // "근거리면 원 안 쪽이 다 맞게", "부정확한 소총"). A pellet whose point is no place to shoot from the
+                    // muzzle (beside or behind it, against a wall) keeps the muzzle's own spread.
+                    Vector2 place = EvenDisk(pellet, pellets, patternTurn);
+                    float cone = CurrentSpread + weaponData.PelletSpread;
+                    direction = WeaponAimSolver.SpreadDirection(toSight, cone, place);
+                    Vector3 seen = AimTarget(WeaponAimSolver.SpreadDirection(aimOrigin.forward, cone, place), weaponData.Range) - origin;
+                    if (seen.sqrMagnitude > .04f && Vector3.Dot(seen.normalized, direction) > PelletAimAgrees) direction = seen.normalized;
+                }
 
                 // Body damage falls off with range, as in Rainbow Six Siege; a headshot kills at any range there, so the
                 // head's multiplier makes up what the range took (WeaponData.FalloffAt).
@@ -628,6 +641,10 @@ public sealed class WeaponController : MonoBehaviour
         cameraEffects?.RefreshWeaponFov();
     }
 
+    // A pellet takes the point its place in the ring shows only while that lies within about 40 degrees of where the
+    // muzzle's own spread would send it (the cosine).
+    private const float PelletAimAgrees = .766f;
+
     // Where pellet <index> of <count> goes in the unit circle: a sunflower's seeds, which fill it evenly from the middle
     // to the edge whatever the count, the whole pattern turned by <turn> (radians).
     private static Vector2 EvenDisk(int index, int count, float turn)
@@ -659,9 +676,12 @@ public sealed class WeaponController : MonoBehaviour
 
     // The crosshair's ray. In the F5 view it starts level with the eyes, so nothing between the camera and the player
     // catches it; in first person the eyes are the camera.
-    private Vector3 AimTarget(float range)
+    private Vector3 AimTarget(float range) => AimTarget(aimOrigin.forward, range);
+
+    // What the eyes see along `forward`: the same ray turned off the middle of the screen, for a pellet's place in the ring.
+    private Vector3 AimTarget(Vector3 forward, float range)
     {
-        Vector3 start = aimOrigin.position, forward = aimOrigin.forward;
+        Vector3 start = aimOrigin.position;
         if (eyes != null) start += forward * Mathf.Max(0f, Vector3.Dot(eyes.position - start, forward));
         return AttackTrace.FirstExternalHit(owner, start, forward, range, hitLayers, out RaycastHit hit)
             ? hit.point : start + forward * range;
@@ -697,8 +717,8 @@ public sealed class WeaponController : MonoBehaviour
         float perTangent = viewCamera.pixelHeight * .5f / Mathf.Tan(viewCamera.fieldOfView * .5f * Mathf.Deg2Rad)
             / (canvas != null ? Mathf.Max(.01f, canvas.scaleFactor) : 1f);
         crosshair.SetDynamicSpread(Mathf.Tan(CurrentSpread * Mathf.Deg2Rad) * perTangent);
-        // A shotgun's circle: the crosshair's parts stand on it, the steady crosshair too, so its round is what the
-        // pellets fill.
+        // A shotgun's circle: the crosshair draws it as a ring in place of its lines, the steady crosshair too, so what the
+        // ring holds is what the pellets fill.
         crosshair.SetPatternSpread(weaponData.Pellets > 1 ? Mathf.Tan(weaponData.PelletSpread * Mathf.Deg2Rad) * perTangent : 0f);
     }
     private void ResetPresentation()

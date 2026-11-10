@@ -104,28 +104,56 @@ public sealed class RagdollCorpse : MonoBehaviour, IDamageReceiver
 
     /// <summary>
     /// Makes a doll of this live model and stows it. It touches what's in solid and the parts of corpses, its own among
-    /// them; its shapes sit on this layer.
+    /// them; its shapes sit on this layer. Safe to call from anywhere, a physics callback included: a body with no doll
+    /// stowed for its rig gets one made on the spot, and a slide into a zombie knocks it down from inside
+    /// OnControllerColliderHit, where Unity refuses DestroyImmediate. It used to copy the whole model and strip the copy
+    /// with DestroyImmediate; refused there, the copy stayed standing inside the corpse (user, 2026-11-10: the errors).
     /// </summary>
     public static RagdollCorpse Prepare(Animator live, int layer, LayerMask solid)
     {
         if (live == null || !live.isHuman) return null;
         var root = new GameObject("Corpse (" + live.name + ")");
-        // Made under an inactive parent, the copy's scripts never wake.
-        root.SetActive(false);
-        var model = Instantiate(live.gameObject, live.transform.position, live.transform.rotation, root.transform);
-        model.transform.localScale = live.transform.lossyScale;
-        foreach (var script in model.GetComponentsInChildren<MonoBehaviour>(true)) DestroyImmediate(script);
-        DestroyImmediate(model.GetComponent<Animator>());
         var corpse = root.AddComponent<RagdollCorpse>();
         corpse.Avatar = live.avatar;
         corpse.layer = layer;
         corpse.passes = ~(solid | (1 << layer));
-        root.SetActive(true);
-        corpse.Build(live, model.transform);
-        // The copy was only there to measure the neutral pose on, away from the real bones.
-        DestroyImmediate(model);
+        // The neutral pose is measured on a copy of the skeleton, away from the real bones; it goes at the frame's end.
+        var skeleton = Skeleton(live.transform);
+        corpse.Build(live, skeleton);
+        Destroy(skeleton.gameObject);
         corpse.Stow();
         return corpse;
+    }
+
+    // The model's transforms and nothing else, each named and placed as its own and in the same order (Build pairs the
+    // two by their place in GetComponentsInChildren): a skeleton to pose, with no scripts, Animator, skin or hitboxes to
+    // wake or to strip, and far cheaper to make than a copy of the model.
+    private static Transform Skeleton(Transform model)
+    {
+        var real = model.GetComponentsInChildren<Transform>(true);
+        var copies = new Transform[real.Length];
+        var places = new Dictionary<Transform, int>(real.Length);
+        for (int i = 0; i < real.Length; i++)
+        {
+            places[real[i]] = i;
+            var copy = new GameObject(real[i].name).transform;
+            if (i == 0)
+            {
+                // Under nothing, at the size the model has under whatever it hangs from.
+                copy.SetPositionAndRotation(model.position, model.rotation);
+                copy.localScale = model.lossyScale;
+            }
+            else
+            {
+                // Depth first, so its parent is already made and brothers are added in their order.
+                copy.SetParent(copies[places[real[i].parent]], false);
+                copy.localPosition = real[i].localPosition;
+                copy.localRotation = real[i].localRotation;
+                copy.localScale = real[i].localScale;
+            }
+            copies[i] = copy;
+        }
+        return copies[0];
     }
 
     /// <summary>

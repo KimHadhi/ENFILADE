@@ -127,7 +127,7 @@ public class DynamicCrosshairView : MonoBehaviour
         ApplyProfile(profile != null ? profile : baseProfile);
     }
 
-    private void UpdateRainbowColor()
+    private Color RainbowColor()
     {
         float hue = Mathf.Repeat((UnscaledTime ? Time.unscaledTime : Time.time) * currentProfile.rainbowSpeed, 1f);
         Color pastelColor = Color.HSVToRGB(
@@ -136,6 +136,13 @@ public class DynamicCrosshairView : MonoBehaviour
             currentProfile.rainbowBrightness
         );
         pastelColor.a = currentProfile.color.a; // 무지개여도 프로필의 불투명도는 지킨다
+        return pastelColor;
+    }
+
+    private void UpdateRainbowColor()
+    {
+        Color pastelColor = RainbowColor();
+        if (ring != null && ring.gameObject.activeSelf) UpdateRing();
 
         if (centerDot != null && currentProfile.showDot)
         {
@@ -235,6 +242,13 @@ public class DynamicCrosshairView : MonoBehaviour
     }
 
     public void ApplyProfile(CrosshairProfile profile)
+    {
+        ApplyParts(profile);
+        // Last, on every way out of the above: the ring takes the lines' place while it shows.
+        UpdateRing();
+    }
+
+    private void ApplyParts(CrosshairProfile profile)
     {
         if (currentProfile != profile)
         {
@@ -365,6 +379,7 @@ public class DynamicCrosshairView : MonoBehaviour
         {
             if (centerDot != null) centerDot.gameObject.SetActive(!hidden && savedDotActive);
             if (partsContainer != null) partsContainer.gameObject.SetActive(!hidden && savedPartsActive);
+            UpdateRing();
         }
     }
 
@@ -376,9 +391,10 @@ public class DynamicCrosshairView : MonoBehaviour
 
     /// <summary>
     /// The radius of the circle one shot of the gun in hand fills (a shotgun's pellets), in canvas pixels; 0 for a single
-    /// bullet. The parts stand on that circle when it is wider than the profile's own gap, and while the shape is held
-    /// (HoldShape) too: it is where the pellets land, not a wobble, so the crosshair's round is the round they fill
-    /// (user, 2026-11-10).
+    /// bullet. While it is set the crosshair is a ring of that radius in place of its lines, the centre dot staying if the
+    /// crosshair has one (user, 2026-11-10: "샷건은 들었을 때 원 조준선으로 바뀌고 근거리면 원 안 쪽이 다 맞게"). The
+    /// ring is where the pellets land, not a wobble, so it shows while the shape is held (HoldShape) too; the gun's own
+    /// spread and a shot's kick widen it as they widen the lines.
     /// </summary>
     public void SetPatternSpread(float pixels)
     {
@@ -388,9 +404,40 @@ public class DynamicCrosshairView : MonoBehaviour
         UpdatePartOffsets();
     }
     private float patternSpread;
+    private CrosshairRing ring;
+    // The ring's line when the crosshair has no plain lines to take a thickness from (none, or drawn sprites), and the
+    // least and most it may be (px). A crosshair of drawn sprites carries its own edge; its ring gets this thin dark one.
+    private const float RingLine = 2.5f, ThinnestRing = 1.5f, ThickestRing = 4f, DrawnBorder = 1f;
+    private static readonly Color DrawnBorderColor = new Color(0f, 0f, 0f, .5f);
+
+    // The pellets' ring: made the first time a gun needs it, never in the editor's scene or the settings preview. While it
+    // shows, the lines are hidden: a ring with lines standing on it read as neither.
+    private void UpdateRing()
+    {
+        bool show = Application.isPlaying && !isPreview && patternSpread > 0f && !combatHidden && currentProfile != null;
+        if (ring == null && !show) return;
+        if (ring == null)
+        {
+            var parent = partsContainer != null && partsContainer.parent != null ? partsContainer.parent : transform;
+            ring = CrosshairRing.Create(parent);
+        }
+        if (ring.gameObject.activeSelf != show) ring.gameObject.SetActive(show);
+        bool lines = partsContainer != null && currentProfile != null && currentProfile.showParts && currentProfile.partCount > 0;
+        if (lines && partsContainer.gameObject.activeSelf != (!combatHidden && !show)) partsContainer.gameObject.SetActive(!combatHidden && !show);
+        if (!show) return;
+        // Round the same middle as the lines, wherever their container sits.
+        if (partsContainer != null) ring.rectTransform.position = partsContainer.position;
+        bool plain = lines && currentProfile.partSprite == null;
+        float line = plain ? Mathf.Clamp(Mathf.Min(currentProfile.partSize.x, currentProfile.partSize.y), ThinnestRing, ThickestRing) : RingLine;
+        bool bordered = currentProfile.outlineWidth > 0f || plain;
+        float radius = patternSpread + (holdShape ? 0f : dynamicSpread + fireKick);
+        ring.Set(radius, line, currentProfile.isRainbow ? RainbowColor() : currentProfile.color,
+            bordered ? currentProfile.outlineWidth : DrawnBorder, bordered ? currentProfile.outlineColor : DrawnBorderColor);
+    }
 
     private void UpdatePartOffsets()
     {
+        UpdateRing();
         if (currentProfile == null || !currentProfile.showParts || spawnedPartRects == null) return;
 
         // 모양 고정 중에는 퍼짐(점프·이동·무기별)과 사격 반동을 무시해 항상 같은 간격을 유지한다
