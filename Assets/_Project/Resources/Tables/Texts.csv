@@ -40,6 +40,9 @@ menu.mode.host,방 만들기,,메인 메뉴 > 왼쪽 플레이 방식 판 이름
 menu.mode.host.note,"동료와 함께, 내가 방장",,메인 메뉴 > 방 만들기 판 아래 작은 줄
 menu.mode.browse,서버 찾기,,메인 메뉴 > 왼쪽 플레이 방식 판 이름
 menu.mode.browse.note,열린 방에 들어가기,,메인 메뉴 > 서버 찾기 판 아래 작은 줄
+menu.mode.solo.tag,오프라인,,메인 메뉴 > 혼자 하기 판 오른쪽 위 작은 칩(이 방식의 특징)
+menu.mode.host.tag,최대 10명,,메인 메뉴 > 방 만들기 판 오른쪽 위 작은 칩(이 방식의 특징)
+menu.mode.browse.tag,LAN · 인터넷,,메인 메뉴 > 서버 찾기 판 오른쪽 위 작은 칩(이 방식의 특징)
 menu.mode.again,다시 누르면 시작,,메인 메뉴 > 고른 플레이 방식 판의 오른쪽
 menu.launch.title,출격,,메인 메뉴 > 오른쪽 아래 큰 분홍 버튼
 menu.launch.solo,혼자  ·  {0},,메인 메뉴 > 출격 버튼 아래 줄(혼자 하기). {0}=맵 이름

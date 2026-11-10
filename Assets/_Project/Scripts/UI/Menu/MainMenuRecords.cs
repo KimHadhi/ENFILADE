@@ -16,9 +16,12 @@ using UnityEngine.UI;
 [DisallowMultipleComponent]
 public sealed class MainMenuRecords : MonoBehaviour
 {
+    // PlateGap: the least room between two chapter plates where they come nearest (KitStack).
     private const float LeftWidth = 660f, RightX = 820f, TileWidth = 246f, TileHeight = 118f, TileGap = 14f, RowHeight = 48f,
-        RowGap = 8f, PlateHeight = 104f, PlateGap = 14f, Slant = 16f;
-    private static readonly float[] PlateTilts = { 1.5f, -1f, 1f, -1.5f };
+        RowGap = 8f, PlateHeight = 104f, PlateGap = 26f, Slant = 16f;
+    // Each chapter plate's own tilt, indent and width, so the stack reads as pieces laid one by one, not a list.
+    private static readonly float[] PlateTilts = { 1.5f, -1f, 1f, -1.5f }, PlateIndents = { 0f, 22f, 8f, 30f },
+        PlateWidths = { 660f, 630f, 646f, 618f };
 
     private RectTransform root, content;
     private float edge;
@@ -74,27 +77,26 @@ public sealed class MainMenuRecords : MonoBehaviour
         int escaped = chapters.Count(map => PlayerRecords.ChapterOf(map) is PlayerRecords.Chapter chapter && chapter.escapes > 0);
         Caption(Texts.Get("records.campaign"), new Vector2(edge, 160f),
             chapters.Length > 0 ? Texts.Format("records.campaign.escaped", escaped, chapters.Length) : "");
-        float y = 196f, tiltAbove = 0f;
+        float y = 196f, lastX = 0f, lastWidth = 0f, lastTilt = 0f;
         for (int i = 0; i < chapters.Length; i++)
         {
-            float tilt = PlateTilts[i % PlateTilts.Length];
+            float tilt = PlateTilts[i % PlateTilts.Length], x = PlateIndents[i % PlateIndents.Length], width = PlateWidths[i % PlateWidths.Length];
             // Each plate turns its own way about its left end, so one turning up under one turning down met it at the
-            // right end (the second and third lay over each other; user, 2026-11-10). It starts that much lower instead,
-            // which keeps PlateGap between the two at their nearest.
-            if (i > 0) y += Mathf.Max(0f, LeftWidth * (Mathf.Sin(tilt * Mathf.Deg2Rad) - Mathf.Sin(tiltAbove * Mathf.Deg2Rad)));
-            Plate(chapters[i], new Vector2(edge, y), tilt, reveal, at);
+            // right end (the second and third lay over each other; user, 2026-11-10). KitStack starts it low enough to
+            // keep PlateGap between the two at their nearest, which a gap of 14 left looking cramped (user, 2026-11-11).
+            if (i > 0) y = KitStack.Below(lastX, y, lastWidth, PlateHeight, lastTilt, x, width, tilt, PlateGap);
+            Plate(chapters[i], new Vector2(edge + x, y), width, tilt, reveal, at);
             at += .06f;
-            y += PlateHeight + PlateGap;
-            tiltAbove = tilt;
+            lastX = x; lastWidth = width; lastTilt = tilt;
         }
     }
 
-    private void Plate(string map, Vector2 where, float tilt, KitReveal reveal, float at)
+    private void Plate(string map, Vector2 where, float width, float tilt, KitReveal reveal, float at)
     {
         var chapter = PlayerRecords.ChapterOf(map);
         bool done = chapter != null && chapter.escapes > 0;
         Split(MapTable.DisplayName(map), out string number, out string name);
-        var plate = KitStyle.TopLeft("Chapter " + map, content, where, new Vector2(LeftWidth, PlateHeight));
+        var plate = KitStyle.TopLeft("Chapter " + map, content, where, new Vector2(width, PlateHeight));
         plate.localRotation = Quaternion.Euler(0f, 0f, tilt);
         // A chapter not escaped yet is greyed, not faded out: at a fifth of white its number and line could hardly be
         // seen, and only the first chapter seemed to have a record at all (user, 2026-11-10).
@@ -103,16 +105,16 @@ public sealed class MainMenuRecords : MonoBehaviour
         KitSkew.On(KitStyle.Bar("Bar", plate, Vector2.zero, new Vector2(4f, PlateHeight), done ? KitStyle.Accent : waiting), Slant);
         KitStyle.Flat(KitStyle.TopLeft("Number", plate, new Vector2(26f, 0f), new Vector2(110f, PlateHeight)), number, 66f,
             TextAlignmentOptions.MidlineLeft, done ? KitStyle.Accent : waiting);
-        KitStyle.Flat(KitStyle.TopLeft("Name", plate, new Vector2(140f, 14f), new Vector2(LeftWidth - 280f, 42f)), name, 30f,
+        KitStyle.Flat(KitStyle.TopLeft("Name", plate, new Vector2(140f, 14f), new Vector2(width - 280f, 42f)), name, 30f,
             TextAlignmentOptions.MidlineLeft, done ? KitStyle.Text : KitStyle.With(KitStyle.Text, .8f));
         string line = done
             ? Texts.Format("records.chapter.line", chapter.escapes, Clock(chapter.best), Mathf.Max(0, chapter.fewestDeaths))
             : Texts.Get("records.chapter.waiting");
-        KitStyle.Flat(KitStyle.TopLeft("Line", plate, new Vector2(142f, 58f), new Vector2(LeftWidth - 170f, 26f)), line, 16f,
+        KitStyle.Flat(KitStyle.TopLeft("Line", plate, new Vector2(142f, 58f), new Vector2(width - 170f, 26f)), line, 16f,
             TextAlignmentOptions.MidlineLeft, KitStyle.Soft).fontStyle = FontStyles.Normal;
         if (done)
         {
-            var stamp = KitStyle.TopLeft("Stamp", plate, new Vector2(LeftWidth - 120f, 24f), new Vector2(92f, 38f));
+            var stamp = KitStyle.TopLeft("Stamp", plate, new Vector2(width - 120f, 24f), new Vector2(92f, 38f));
             stamp.localRotation = Quaternion.Euler(0f, 0f, 8f);
             KitStyle.Fill(stamp, KitStyle.Accent);
             KitStyle.Flat(stamp, Texts.Get("records.escaped"), 20f, TextAlignmentOptions.Center, KitStyle.Ink);
