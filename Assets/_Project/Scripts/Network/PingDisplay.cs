@@ -2,8 +2,10 @@ using System.Globalization;
 using UnityEngine;
 
 /// <summary>
-/// The ping players see, on purpose not the true one. Relay's nearest region to Korea is Tokyo, and a true 75 ms looks
-/// worse than it plays, so Network.csv sets how much smaller the number is. Anything that measures lag uses the raw value.
+/// The ping players see. It is the true one now (user, 2026-11-10: rooms connect straight, so the number no longer needs
+/// dressing up). Network.csv can still divide it (pingDivisor), as it did by 3 while every room went through the relay:
+/// the nearest region to Korea is Tokyo, and a true 75 ms looked worse than it played. Anything that measures lag uses
+/// the raw value either way.
 /// </summary>
 public static class PingDisplay
 {
