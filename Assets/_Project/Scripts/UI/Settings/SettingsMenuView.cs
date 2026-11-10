@@ -10,7 +10,8 @@ using W = SettingsWidgets;
 /// Builds the Esc menu panel in the menus' kit look (2026-11-09): "설정" tilted at the top left, a slanted plate per
 /// group of settings down the left (the chosen one dark with a thin pink edge and a pink bar, as the lobby's ways to
 /// play), the group's controls at the right, each bound to <see cref="GameSettings.Current"/>, and the buttons along the
-/// bottom ("이 탭 기본값" at the left, 돌아가기 in pink at the right). The tabs grow in as it opens. The tabs follow
+/// bottom ("이 탭 기본값" at the left, 돌아가기 in pink at the right). The tabs grow in together as it opens (one after
+/// another from the top read as slow; user, 2026-11-10). The tabs follow
 /// <see cref="SettingsGroup"/>'s order, so "이 탭 기본값" resets the group of the tab on show.
 /// </summary>
 public sealed class SettingsMenuView
@@ -77,14 +78,14 @@ public sealed class SettingsMenuView
         var hint = KitStyle.TopLeft("Hint", panel, new Vector2(PanelWidth - Margin - 300f, 44f), new Vector2(300f, 30f));
         KitStyle.Flat(hint, "Esc  닫기", 16f, TextAlignmentOptions.MidlineRight, KitStyle.Soft).fontStyle = FontStyles.Normal;
 
-        float at = .05f;
+        // All at the same moment, not one after another.
+        const float TabsAt = .05f;
         for (int i = 0; i < Tabs.Length; i++)
         {
             var plate = Tab(i);
             var lid = KitStyle.Fill(KitStyle.Stretch("Flash", plate), KitStyle.Flash);
             KitSkew.On(lid, TabSlant);
-            reveal.Card(plate, lid, at);
-            at += .05f;
+            reveal.Card(plate, lid, TabsAt);
         }
         PaintTabs();
 
