@@ -5,9 +5,10 @@ using UnityEngine.AI;
 /// <summary>
 /// What kind of zombie it is (ZombieType). Shambler is 0, so an older report reads as one. Brute: the boss that comes
 /// at a song's highlight (friend feedback C2), never picked at random. Exploder: an elite that walks in and bursts
-/// (ZombieExploder, stage C-16), picked now and then by its share.
+/// (ZombieExploder, stage C-16), and Charger: one that bellows and runs people down (ZombieCharger), each picked now
+/// and then by its share.
 /// </summary>
-public enum ZombieKind : byte { Shambler, Runner, Brute, Exploder }
+public enum ZombieKind : byte { Shambler, Runner, Brute, Exploder, Charger }
 
 /// <summary>
 /// Multiplayer plan stage 4D-1, made Guts & Blackpowder's at the user's word: what kind of zombie it is. A shambler
@@ -109,6 +110,14 @@ public sealed class ZombieType : MonoBehaviour
         approachShare = .5f, healthShare = .7f, scale = 1.12f
     };
 
+    // C-16's charger: bigger than the pack and much harder to kill, a slow swing up close that throws whoever it lands on
+    // (the throw is also what running into someone does), and its charge (ZombieCharger).
+    private readonly Numbers charger = new Numbers
+    {
+        share = .03f, speed = 4.4f, acceleration = 9f, angularSpeed = 150f, damage = 16f, windup = .55f, attackInterval = 1.6f, aimHeight = 1f,
+        attackRange = 2.1f, approachShare = .7f, healthShare = 8f, scale = 1.28f, knock = 10f, knockUp = 5f
+    };
+
     private NavMeshAgent agent;
     private EnemyCombatAI combat;
     private ZombieMind mind;
@@ -121,7 +130,7 @@ public sealed class ZombieType : MonoBehaviour
     /// <summary>Its body's size against the pack's own (ZombieBody).</summary>
     public float Scale => Mathf.Clamp((Kind == ZombieKind.Brute ? brute : Current).scale, .5f, 3f);
     private Numbers Current => Crawls ? crawler : Kind == ZombieKind.Runner ? runner : Kind == ZombieKind.Brute ? brute
-        : Kind == ZombieKind.Exploder ? exploder : shambler;
+        : Kind == ZombieKind.Exploder ? exploder : Kind == ZombieKind.Charger ? charger : shambler;
     /// <summary>Lost a leg: it crawls with the Crawler numbers, whatever its kind.</summary>
     public bool Crawls { get; private set; }
     /// <summary>Its height crawling (m), for its capsule (ZombieBody.Crawl.cs).</summary>
@@ -145,15 +154,19 @@ public sealed class ZombieType : MonoBehaviour
         if (GetComponent<ZombieDrop>() == null) gameObject.AddComponent<ZombieDrop>();
         // An exploder's fuse and burst; it does nothing for other kinds.
         if (GetComponent<ZombieExploder>() == null) gameObject.AddComponent<ZombieExploder>();
+        // A charger's bellow and charge; likewise.
+        if (GetComponent<ZombieCharger>() == null) gameObject.AddComponent<ZombieCharger>();
         GameTables.BindNested(TableName, nameof(ZombieKind.Shambler), this, shambler);
         GameTables.BindNested(TableName, nameof(ZombieKind.Runner), this, runner);
         GameTables.BindNested(TableName, "Crawler", this, crawler);
         GameTables.BindNested(TableName, nameof(ZombieKind.Brute), this, brute);
         GameTables.BindNested(TableName, nameof(ZombieKind.Exploder), this, exploder);
+        GameTables.BindNested(TableName, nameof(ZombieKind.Charger), this, charger);
         GameTables.Reloaded += Reapply;
-        float runners = Mathf.Max(0f, runner.share), exploders = Mathf.Max(0f, exploder.share);
-        float roll = UnityEngine.Random.value * (Mathf.Max(0f, shambler.share) + runners + exploders);
-        Kind = roll < runners ? ZombieKind.Runner : roll < runners + exploders ? ZombieKind.Exploder : ZombieKind.Shambler;
+        float runners = Mathf.Max(0f, runner.share), exploders = Mathf.Max(0f, exploder.share), chargers = Mathf.Max(0f, charger.share);
+        float roll = UnityEngine.Random.value * (Mathf.Max(0f, shambler.share) + runners + exploders + chargers);
+        Kind = roll < runners ? ZombieKind.Runner : roll < runners + exploders ? ZombieKind.Exploder
+            : roll < runners + exploders + chargers ? ZombieKind.Charger : ZombieKind.Shambler;
         Apply();
     }
 

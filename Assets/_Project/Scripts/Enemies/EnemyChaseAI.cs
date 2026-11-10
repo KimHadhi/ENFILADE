@@ -15,6 +15,7 @@ public sealed class EnemyChaseAI : MonoBehaviour
     private ZombieMind mind;
     private ZombieGrip grip;
     private ZombieRunner runner;
+    private ZombieCharger charger;
     private ZombieCrowd crowd;
     // Going to its place in the crowd (ZombieCrowd), it stops this close to it (m).
     private const float SpotStop = .15f;
@@ -45,6 +46,9 @@ public sealed class EnemyChaseAI : MonoBehaviour
         // A runner charging, leaping or skidding moves itself (ZombieRunner, added by ZombieType, maybe after Awake).
         if (runner == null) runner = GetComponent<ZombieRunner>();
         if (runner != null && runner.Driving) return;
+        // So does a charger winding up, charging or sliding to a stop (ZombieCharger).
+        if (charger == null) charger = GetComponent<ZombieCharger>();
+        if (charger != null && charger.Driving) return;
         if (PlayerExecution.Suppresses(this) || (enemyHealth != null && enemyHealth.WavePaused) || GetComponent<MeleeCombatTarget>()?.IsStunned == true)
         { agent.isStopped = true; return; }
         if (enemyHealth != null && !enemyHealth.IsAlive)

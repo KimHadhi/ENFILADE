@@ -17,7 +17,6 @@ public sealed class ZombieExploder : MonoBehaviour
 {
     public const string TableName = "ZombieExploder", TableRow = "Default";
     private const int SampleRate = 44100;
-    private static readonly int ColorId = Shader.PropertyToID("_Color");
     private static readonly List<EnemyHealth> near = new List<EnemyHealth>();
     private static AudioClip boom;
 
@@ -60,13 +59,9 @@ public sealed class ZombieExploder : MonoBehaviour
     private ZombieType type;
     private ZombieMind mind;
     private MeleeCombatTarget melee;
-    private Animator animator;
-    private Transform chest;
-    private GameObject glow;
-    private Renderer glowRenderer;
-    private MaterialPropertyBlock block;
+    private EliteLight marker;
     private GameObject lastSource;
-    private float fuse, beat, nextFlash, nextLook;
+    private float fuse, beat, nextFlash;
     private bool watching;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -90,7 +85,7 @@ public sealed class ZombieExploder : MonoBehaviour
     {
         if (health != null) health.Died -= OnDied;
         Watch(false);
-        if (glow != null) Destroy(glow);
+        marker?.Remove();
     }
 
     // Only an exploder listens for who hurts it: every zombie carries this component, and most are not one.
@@ -102,10 +97,7 @@ public sealed class ZombieExploder : MonoBehaviour
         else CombatDamageEvents.Damaged -= OnDamaged;
     }
 
-    private void OnDisable()
-    {
-        if (glow != null) glow.SetActive(false);
-    }
+    private void OnDisable() => marker?.Hide();
 
     // Who last hurt it: the pack its burst takes along is theirs.
     private void OnDamaged(CombatDamageReport report)
@@ -119,7 +111,7 @@ public sealed class ZombieExploder : MonoBehaviour
         Watch(lit);
         if (!lit)
         {
-            if (glow != null && glow.activeSelf) glow.SetActive(false);
+            marker?.Hide();
             fuse = 0f;
             return;
         }
@@ -149,49 +141,16 @@ public sealed class ZombieExploder : MonoBehaviour
             Vector3.up, null));
     }
 
-    // The light: a soft glow at the chest, turned to the camera and held a little toward it so the body doesn't hide it.
+    // The light in its chest (EliteLight): it beats as it walks, faster and whiter as the fuse runs.
     private void ShowGlow(float dt)
     {
-        var view = Camera.main;
-        if (view == null) return;
-        if (chest == null)
-        {
-            // Its body is put on after it appears, and may be changed: looked for again now and then until it is there.
-            if (Time.time < nextLook) return;
-            nextLook = Time.time + .4f;
-            animator = null;
-            foreach (var candidate in GetComponentsInChildren<Animator>())
-                if (candidate.isHuman) { animator = candidate; break; }
-            chest = animator != null ? animator.GetBoneTransform(HumanBodyBones.Chest) ?? animator.GetBoneTransform(HumanBodyBones.Spine) : null;
-            if (chest == null) { if (glow != null && glow.activeSelf) glow.SetActive(false); return; }
-        }
-        if (glow == null) BuildGlow();
-        if (!glow.activeSelf) glow.SetActive(true);
+        if (marker == null) marker = new EliteLight(this, HumanBodyBones.Chest, HumanBodyBones.Spine);
         float share = fuse / fuseSeconds;
         beat += dt * Mathf.Lerp(glowBeat, fuseBeat, share) * Mathf.PI * 2f;
         float pulse = .5f + .5f * Mathf.Sin(beat);
-        Vector3 at = chest.position, toward = view.transform.position - at;
-        glow.transform.position = at + toward.normalized * Mathf.Min(.3f, toward.magnitude * .5f);
-        glow.transform.rotation = view.transform.rotation;
-        glow.transform.localScale = Vector3.one * (glowSize * Mathf.Lerp(.8f, 1.15f, pulse) * (1f + share * .5f));
         Color color = Color.Lerp(glowColor, Color.white, share * .8f);
         color.a = Mathf.Lerp(.55f, 1f, pulse);
-        block.SetColor(ColorId, color);
-        glowRenderer.SetPropertyBlock(block);
-    }
-
-    // Its own object, not a child of the body: the hit flash is laid over every renderer under the zombie.
-    private void BuildGlow()
-    {
-        glow = new GameObject("Exploder Light");
-        RuntimeSceneHierarchy.Group(glow, "EFFECTS", "World", gameObject);
-        glow.AddComponent<MeshFilter>().sharedMesh = FeelAssets.Quad;
-        var renderer = glow.AddComponent<MeshRenderer>();
-        renderer.sharedMaterial = FeelAssets.Particle(FeelAssets.SoftDot, true);
-        renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-        renderer.receiveShadows = false;
-        glowRenderer = renderer;
-        block = new MaterialPropertyBlock();
+        marker.Show(color, glowSize * Mathf.Lerp(.8f, 1.15f, pulse) * (1f + share * .5f));
     }
 
     // Every PC, as it dies: the burst where it stood, this PC's own player hurt and thrown; on the host, the zombies round it.
@@ -199,7 +158,7 @@ public sealed class ZombieExploder : MonoBehaviour
     {
         if (!IsExploder) return;
         Vector3 at = transform.position;
-        if (glow != null) glow.SetActive(false);
+        marker?.Hide();
         CanBlastEffect.Play(at, blastRadius, 0f);
         GameAudio.PlayAt(Boom(), at + Vector3.up, AudioChannel.Combat, 1f, 4f, 80f);
         var mine = PlayerRoster.Local;

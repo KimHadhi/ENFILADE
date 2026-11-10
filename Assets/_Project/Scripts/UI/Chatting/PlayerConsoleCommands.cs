@@ -7,7 +7,7 @@ public static class PlayerConsoleCommands
 {
     public static void Register(ChatCommandRouter router, Func<PlayerMovement> resolvePlayer)
     {
-        router.Register("spawn", "[수량] [elite/named] [calm] [runner/shambler/brute/exploder] 앞쪽 빈 공간에 적 소환. 생략하면 1마리 (웨이브 집계 제외). elite·named는 잡으면 킬 피드가 자홍 불꽃으로 탄다. calm은 등을 돌리고 조용히 서서 플레이어를 알아채야 한다. runner·shambler·brute(거구)·exploder(자폭)는 좀비 종류(생략하면 표의 비율대로)", args => WithPlayer(resolvePlayer, p =>
+        router.Register("spawn", "[수량] [elite/named] [calm] [runner/shambler/brute/exploder/charger] 앞쪽 빈 공간에 적 소환. 생략하면 1마리 (웨이브 집계 제외). elite·named는 잡으면 킬 피드가 자홍 불꽃으로 탄다. calm은 등을 돌리고 조용히 서서 플레이어를 알아채야 한다. runner·shambler·brute(거구)·exploder(자폭)·charger(돌진)는 좀비 종류(생략하면 표의 비율대로)", args => WithPlayer(resolvePlayer, p =>
         {
             int count = 1;
             EnemyRank? rank = null;
@@ -23,6 +23,7 @@ public static class PlayerConsoleCommands
                 else if (part.Equals("shambler", StringComparison.OrdinalIgnoreCase) || part == "셤블러") kind = ZombieKind.Shambler;
                 else if (part.Equals("brute", StringComparison.OrdinalIgnoreCase) || part == "거구") { kind = ZombieKind.Brute; rank ??= EnemyRank.Elite; }
                 else if (part.Equals("exploder", StringComparison.OrdinalIgnoreCase) || part == "자폭") { kind = ZombieKind.Exploder; rank ??= EnemyRank.Elite; }
+                else if (part.Equals("charger", StringComparison.OrdinalIgnoreCase) || part == "돌진") { kind = ZombieKind.Charger; rank ??= EnemyRank.Elite; }
                 else if (!int.TryParse(part, NumberStyles.Integer, CultureInfo.InvariantCulture, out count) || count < 1) return usage;
             }
             if (!p.DamageReceiver.IsAlive) return "사망 상태입니다. /revive를 먼저 사용하세요.";

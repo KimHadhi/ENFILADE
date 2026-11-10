@@ -181,6 +181,10 @@ public sealed class EnemyCombatAI : MonoBehaviour
         if (grip == null) grip = GetComponent<ZombieGrip>();
         if (grip != null && grip.IsHolding) { if (preparing) CancelAttack(); timer = 0f; return; }
 
+        // A charger winding up, charging or sliding to a stop swings at no one: running into them is its blow (ZombieCharger).
+        if (charger == null) charger = GetComponent<ZombieCharger>();
+        if (charger != null && charger.Driving) { if (preparing) CancelAttack(); timer = 0f; return; }
+
         // A runner doesn't swing: ZombieRunner starts its leap (Pounce), and here it lands.
         if (pounces)
         {
@@ -314,6 +318,7 @@ public sealed class EnemyCombatAI : MonoBehaviour
         return leaper != null ? leaper.LeapSpot(target, pounceWindup) : target.transform.position;
     }
     private ZombieRunner leaper;
+    private ZombieCharger charger;
 
     /// <summary>
     /// A runner leaps at this player now (ZombieRunner), to land where they are heading: the windup is its time in the air.

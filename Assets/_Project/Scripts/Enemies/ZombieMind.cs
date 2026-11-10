@@ -189,6 +189,19 @@ public sealed class ZombieMind : MonoBehaviour
         Halt();
     }
 
+    /// <summary>
+    /// Awake already, it rouses again for this long: it stands, faces this player and plays its rouse on every PC, then
+    /// goes on as before. A charger winding up (ZombieCharger).
+    /// </summary>
+    internal void Rouse(PlayerMovement at, float seconds)
+    {
+        if (IsCopy || Mood != ZombieMood.Awake) return;
+        Mood = ZombieMood.Rousing;
+        if (Alive(at)) focus = at;
+        rouseUntil = Time.time + Mathf.Max(0f, seconds);
+        Halt();
+    }
+
     /// <summary>Wakes it after who (or the nearest player). Rouse: it rouses a moment first. Call: it wakes the calm near it.</summary>
     public void Wake(PlayerMovement who, bool rouse = true, bool call = true)
     {
