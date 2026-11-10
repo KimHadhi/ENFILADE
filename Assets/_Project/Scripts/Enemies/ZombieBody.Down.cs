@@ -107,6 +107,7 @@ public sealed partial class ZombieBody
         // Whatever it was doing stops.
         striking = flinching = false;
         attackWeight = flinchWeight = staggerWeight = 0f;
+        StopJolt();
         // Nobody bumps where it stood; on the PC running it, the agent lets go of the body.
         foreach (var collider in covered) collider.enabled = false;
         if (agent == null) agent = GetComponent<NavMeshAgent>();

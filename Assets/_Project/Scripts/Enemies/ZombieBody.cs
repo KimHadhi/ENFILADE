@@ -72,6 +72,7 @@ public sealed partial class ZombieBody : MonoBehaviour
         var character = Pick(looks);
         if (character == null || looks == null || !Dress(character)) return;
         BuildGraph(looks);
+        BuildJolt();
         if (target != null) target.Interrupted += OnInterrupted;
         WatchCrawl();
         Arrive();
@@ -196,6 +197,8 @@ public sealed partial class ZombieBody : MonoBehaviour
     {
         if (Model == null || animator == null) return;
         if (target != null) target.Interrupted -= OnInterrupted;
+        // The corpse takes the pose as it is, a jolt it was in included; nothing more goes onto its bones.
+        StopJolt();
         // Down already, the corpse carries on with the doll it lies on.
         var lying = HandOverDoll();
         blendLeft = 0f;

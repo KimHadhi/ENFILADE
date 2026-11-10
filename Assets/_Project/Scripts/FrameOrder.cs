@@ -48,6 +48,12 @@ public static class FrameOrder
     public const int LeanHitboxes = -50;
     /// <summary>The mouse turns the look.</summary>
     public const int Look = 0;
+    /// <summary>
+    /// A zombie's jolt goes onto its bones (ZombieJolt). Its own pose work (ZombieBody) and the bought reactors that work
+    /// the jolt out both run at 0, in no set order; this reads what they wrote, so it has a number of its own after them,
+    /// and before the players' bodies and cameras look at a zombie.
+    /// </summary>
+    public const int ZombieJolt = 100;
     /// <summary>The camera's movement and combat feel (punches, tilts, field of view) on the look.</summary>
     public const int CameraEffects = 200;
 
