@@ -258,7 +258,7 @@ public sealed class EnemyCombatAI : MonoBehaviour
             : comboIndex == 0 && biteShare > 0f && Random.value < biteShare ? AttackMove.Bite : AttackMove.Swing;
         lockedAim = player.transform.position + Vector3.up * AimHeightFor(player);
         UpdateIndicator(true);
-        CombatCueAudio.Play(gameObject, CombatCue.EnemyAttackStart, CuePitch);
+        Telegraph(player.IsLocal);
         if (network != null) network.AnnounceWindup(player, comboIndex, move);
     }
 
@@ -333,7 +333,7 @@ public sealed class EnemyCombatAI : MonoBehaviour
         lockedFeet = LeapSpot(target);
         lockedAim = lockedFeet + Vector3.up * AimHeightFor(target);
         UpdateIndicator(true);
-        CombatCueAudio.Play(gameObject, CombatCue.EnemyAttackStart, CuePitch);
+        Telegraph(target.IsLocal);
         if (network != null) network.AnnounceWindup(target, 0, move);
     }
 
@@ -435,11 +435,29 @@ public sealed class EnemyCombatAI : MonoBehaviour
             lockedAim = lockedFeet + Vector3.up * AimHeightFor(mine);
         }
         UpdateIndicator(true);
-        CombatCueAudio.Play(gameObject, CombatCue.EnemyAttackStart, CuePitch);
+        Telegraph(aimedHere);
     }
 
     private float CuePitch => move == AttackMove.Bite ? BitePitch : move == AttackMove.Grab || move == AttackMove.Feed ? GrabPitch
         : move == AttackMove.Pounce ? PouncePitch : slam.x > 0f || slam.y > 0f ? SlamPitch : 1f;
+
+    // When this zombie last voiced an attack (game time), so it doesn't snarl at every swing (ZombieVoice ownGap).
+    private float voicedAt = float.NegativeInfinity;
+
+    /// <summary>
+    /// The wind-up is heard as it starts, on every PC: the host's or the lone PC's in BeginWindup and Pounce, a copy's
+    /// in ShowWindup, each at the instant its own timer starts, so the parry window doesn't move. The cue whose loud
+    /// part marks the blow is louder when the blow is meant for this PC's own player (AtMine), and the zombie's voice
+    /// goes with it (the user's memo of 2026-11-10, item 10: a voice and a small signal). Only the opening blow of a
+    /// combo is voiced, and never an exploder's close-up swing (it does no harm; the burst is its attack), nor a
+    /// wind-up that a late message starts on a copy this PC has already seen die.
+    /// </summary>
+    private void Telegraph(bool atMine)
+    {
+        CombatCueAudio.Play(gameObject, CombatCue.EnemyAttackStart, CuePitch, gain: ZombieVoice.SignalGain(atMine));
+        if (comboIndex > 0 || enemyHealth == null || !enemyHealth.IsAlive || (move == AttackMove.Swing && damage <= 0f)) return;
+        if (ZombieVoice.Attacks(this, move == AttackMove.Pounce, atMine, Time.time - voicedAt)) voicedAt = Time.time;
+    }
 
     // Someone lying on the ground, pinned there by a runner, or down: they are eaten. Down, the eating kills them fast
     // (PlayerHold downedBiteDamage; friend feedback C8: being down was safe from the zombies).

@@ -11,11 +11,16 @@ public sealed class CombatCueAudio : MonoBehaviour
     private bool paused;
     public CombatCue LastCue { get; private set; }
     public int PlayCount { get; private set; }
-    /// <summary>inWorld plays it where the owner is, for a cue that isn't happening to this PC's player.</summary>
-    public static CombatCueAudio Play(GameObject owner, CombatCue cue, float pitch = 1f, bool inWorld = false)
+    // The pitch the attack cue was started at (a grab's is lower, a leap's higher, a brute's lowest: EnemyCombatAI.CuePitch).
+    private float cuePitch = 1f;
+    /// <summary>
+    /// inWorld plays it where the owner is, for a cue that isn't happening to this PC's player. Gain: how many times
+    /// the cue's own volume (an attack aimed at this PC's own player is louder, ZombieVoice.SignalGain).
+    /// </summary>
+    public static CombatCueAudio Play(GameObject owner, CombatCue cue, float pitch = 1f, bool inWorld = false, float gain = 1f)
     {
         var audio = owner.GetComponent<CombatCueAudio>() ?? owner.AddComponent<CombatCueAudio>();
-        audio.Emit(cue, pitch, inWorld); return audio;
+        audio.Emit(cue, pitch, inWorld, gain); return audio;
     }
     /// <summary>Makes the owner's cue voice now (at spawn), so the first cue of a fight adds no components mid-frame.</summary>
     public static void Prepare(GameObject owner)
@@ -30,9 +35,10 @@ public sealed class CombatCueAudio : MonoBehaviour
         source = gameObject.AddComponent<AudioSource>(); source.playOnAwake = false;
         GameAudio.Bind(source, AudioChannel.Combat);
     }
-    private void Emit(CombatCue cue, float pitch, bool inWorld)
+    private void Emit(CombatCue cue, float pitch, bool inWorld, float gain)
     {
         LastCue = cue; PlayCount++;
+        if (cue == CombatCue.EnemyAttackStart) cuePitch = pitch;
         var settings = CombatFeedbackSettings.Instance;
         if (settings == null || !Application.isPlaying) return;
         AudioClip clip; float volume;
@@ -51,7 +57,7 @@ public sealed class CombatCueAudio : MonoBehaviour
         source.minDistance = 2f; source.maxDistance = 20f;
         source.rolloffMode = AudioRolloffMode.Linear;
         source.pitch = pitch;
-        source.PlayOneShot(clip, Mathf.Clamp01(volume));
+        source.PlayOneShot(clip, Mathf.Clamp01(volume * Mathf.Max(0f, gain)));
     }
     // Avoid repeating the same variant when another non-null clip is available.
     private static AudioClip Pick(AudioClip[] clips, ref AudioClip previous)
@@ -79,8 +85,10 @@ public sealed class CombatCueAudio : MonoBehaviour
         if (paused) { source.UnPause(); paused = false; }
         // The cue tells when the blow lands, so it keeps the attacker's time whichever way that was slowed. A slowed game
         // also lowers every world sound (GameAudio.WorldPitch), which already counts that time, so it is taken back out.
+        // The cue's own pitch stays in it: written without it, every attack's cue went back to one pitch a frame after
+        // it started, and a grab, a leap and a brute's blow could not be told apart by ear as they were meant to be.
         if (network == null) TryGetComponent(out network);
-        source.pitch = Mathf.Clamp(Time.timeScale * (network != null ? network.Pace : 1f) / GameAudio.WorldPitch, .01f, 3f);
+        source.pitch = Mathf.Clamp(cuePitch * Time.timeScale * (network != null ? network.Pace : 1f) / GameAudio.WorldPitch, .01f, 3f);
     }
     private void OnDisable() => Stop();
 }

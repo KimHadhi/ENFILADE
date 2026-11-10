@@ -1,0 +1,64 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0513b63a8f85441499f8c22cf0761180, type: 3}
+  m_Name: Zombie
+  m_EditorClassIdentifier: Assembly-CSharp::SoundBank
+  id: Zombie
+  entries:
+  - key: Attack
+    clips:
+    - {fileID: 8300000, guid: 2a895255451a4bf2abba0f47b9d3c264, type: 3}
+    - {fileID: 8300000, guid: 5da96686b28940da8e3a1efb7789702a, type: 3}
+    - {fileID: 8300000, guid: f7d5e88b871542479666c5f24fc53687, type: 3}
+    - {fileID: 8300000, guid: c093c2484f86467a9c97fd9374ccd670, type: 3}
+    - {fileID: 8300000, guid: bfc581c3e22b4d93be42277541d1dc8a, type: 3}
+  - key: Attack/Female
+    clips:
+    - {fileID: 8300000, guid: 88f5cb112c864eb2838590489e09a3f8, type: 3}
+    - {fileID: 8300000, guid: 78c2653a405b4973963e9572b328fa55, type: 3}
+    - {fileID: 8300000, guid: 619c6a93d3ee4ad1810156a61799f0d2, type: 3}
+    - {fileID: 8300000, guid: 9e6c586c37c641f9bcfc44ac23cf5d9e, type: 3}
+    - {fileID: 8300000, guid: 687fd52c236b4ac29f76696fa9d0615f, type: 3}
+    - {fileID: 8300000, guid: 494c04f1db01411dbc8eaaa3f981bb3a, type: 3}
+    - {fileID: 8300000, guid: fa63249b0da74eb69e5f07fe278a1717, type: 3}
+    - {fileID: 8300000, guid: 90ed5ccfc7454f54970f25d898e8d29e, type: 3}
+    - {fileID: 8300000, guid: 2907ebf73e7b4373b399e40f409ac887, type: 3}
+  - key: Attack/Male
+    clips:
+    - {fileID: 8300000, guid: b7cbb04afdb14d869f8f47ec774987fd, type: 3}
+    - {fileID: 8300000, guid: f6e27599875348d29b55cbb38df3c3d2, type: 3}
+    - {fileID: 8300000, guid: 5b1504d6fa834024a865573aa7c91866, type: 3}
+    - {fileID: 8300000, guid: 7e00c10766d24878b9c0401f8907f829, type: 3}
+    - {fileID: 8300000, guid: e6bbe91112544bcdbf0faaa879ca1684, type: 3}
+    - {fileID: 8300000, guid: 7e625fc3a87b4666a783a60d0a0c47cb, type: 3}
+    - {fileID: 8300000, guid: 1dfc49f904fd4d61944248ea696db41e, type: 3}
+    - {fileID: 8300000, guid: f1bcdf12fff14786935e2d67bb782f43, type: 3}
+  - key: Leap/Female
+    clips:
+    - {fileID: 8300000, guid: 52b40faa85e4403ea1c128d7f25384a8, type: 3}
+    - {fileID: 8300000, guid: a15b72e0d3c54f939d010b215bb139cf, type: 3}
+    - {fileID: 8300000, guid: a41e6429939b4526a5548c73dd29395f, type: 3}
+    - {fileID: 8300000, guid: 3fc0b263bc274ad3bb5a8b6f0e39d322, type: 3}
+    - {fileID: 8300000, guid: d600d7381be34e51826f226b21605304, type: 3}
+    - {fileID: 8300000, guid: 52b8b06bf0044997904dcc5c7f806f3e, type: 3}
+    - {fileID: 8300000, guid: ae6b201b70744c3096d4704d8f6147e3, type: 3}
+    - {fileID: 8300000, guid: 70244640357740409285df312e207db6, type: 3}
+  - key: Leap/Male
+    clips:
+    - {fileID: 8300000, guid: 5e4b56676ffd407da07a0dccdfe6ee85, type: 3}
+    - {fileID: 8300000, guid: 506756a060614f2994708a957fdea4ff, type: 3}
+    - {fileID: 8300000, guid: 4be25b19bdaf45c4bb46e64991b88229, type: 3}
+    - {fileID: 8300000, guid: cdfe5896b1f74cc98f96966f83a8c63a, type: 3}
+    - {fileID: 8300000, guid: c4365b9b25a54bb3b99d941ee768a0f5, type: 3}
+    - {fileID: 8300000, guid: 83b0c0ae3f09415a84f55cd70bda292d, type: 3}
+    - {fileID: 8300000, guid: 77a2affe923344e189f9406238d35441, type: 3}
+    - {fileID: 8300000, guid: 1973e2169a2944d3bbaee53bee80ff50, type: 3}

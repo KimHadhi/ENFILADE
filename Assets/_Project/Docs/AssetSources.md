@@ -25,6 +25,7 @@
 | `Art/Audio/Guns/Reverb` | 15개, 7.7MB | Accurate Gun Reverb(워크숍 3629393613)의 총 잔향 꼬리(권총·매그넘·기관단총·소총·샷건과 저격 × 좁은 실내·넓은 실내·실외). 원래 출처는 설명에 없다(2026-11-05 추가) |
 | `Art/Audio/Guns/LowAmmoClick` | 1개, 11KB | Counter-Strike 2 게임 파일의 잔탄 경고음 `sounds/weapons/lowammo_01`(사운드 이벤트 `Default.NearlyEmpty`)을 WAV로 그대로 꺼낸 것(2026-11-06 추가). 같은 날 넣었던 Low Ammo Sound Cue(워크숍 3198155663)의 `lasc/click.mp3`는 이 소리를 +10dB 키운 것이라 빼고 원본으로 바꿨다 |
 | `Art/Audio/Guns/<총>/LowAmmo`, `Art/Audio/Guns/<총>/LastRound` | 6개, 0.7MB | TFA Base(GMod 워크숍 2840031720)의 총 종류별 잔탄 경고음 `lowammo_indicator_ar`·`handgun`·`shotgun`과 마지막 한 발 소리 `lowammo_dry_ar`·`handgun`·`shotgun` 그대로(2026-11-06 추가) |
+| `Art/Audio/Enemies/Zombie` | 38개, 2MB | 좀비가 공격을 시작할 때 내는 소리(0.8.15, 2026-11-11). L4D2 워크숍 3675704366 "RE6 Common Infected Sound"(제작자 표기 MR.GDYMH, 소리의 원래 출처는 바이오하자드 6)에서 꺼냈다. 사용자가 애드온 표에서 좀비 목소리용으로 고른 모드다. 365개 가운데 공격 음성 `action/rageat`의 22개(`Attack`, `Attack/Male`, `Attack/Female`)와 분노 비명 `action/rage`의 16개(`Leap/Male`, `Leap/Female`: 러너의 도약)만 넣었다. 길이 1.25초 이하이고 앞부분이 가장 큰 것을 골라 앞뒤 무음을 자르고 크기를 서로 맞췄다. 들어 보지 못하고 길이와 파형 수치로 고른 것이라, 들어 보고 어색한 파일은 폴더에서 지우면 된다. 원본 전체는 넣지 않았고 이 PC의 L4D2 워크숍 폴더에 있다. 쓰는 곳은 [ZombieVoice](../Scripts/Enemies/ZombieVoice.cs), 크기는 Sounds.csv의 `Zombie/…` 행 |
 | `Art/Models/Characters/KazusaBand` | 91개, 108MB | 블루 아카이브의 카즈사. `KazusaBand.kkbp.json`으로 보아 코이카츠 모델 변환본으로 추정. 어디서 받았는지 기록이 없다 |
 | `Tools/Blender/Source/Hiro` | 저장소 안, Assets 밖 | 클립을 구울 때 쓰는 Hiro 뼈대 MDL(워크숍 3744034369) |
 

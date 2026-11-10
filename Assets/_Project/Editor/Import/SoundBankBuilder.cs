@@ -21,6 +21,8 @@ internal sealed class SoundBankBuilder : AssetPostprocessor
         ("Guns", "Assets/_Project/Art/Audio/Guns"),
         // Menu sounds (KitSound): Art/Audio/UI/Buy, Art/Audio/UI/Refuse. Clips straight in the folder aren't keys.
         ("UI", "Assets/_Project/Art/Audio/UI"),
+        // Zombies' voices (ZombieVoice): Attack and Leap, with Male and Female folders under them.
+        (ZombieVoice.BankId, "Assets/_Project/Art/Audio/Enemies/Zombie"),
     };
     private static bool queued;
 

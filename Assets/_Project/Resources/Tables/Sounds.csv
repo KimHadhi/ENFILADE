@@ -227,3 +227,8 @@ Guns/Reverb/Smg/OutdoorsClose,1,1,1,기관단총·실외(미사용). Accurate Gu
 Movement/Dodge/Wind,0.25,0.95,1.05,스텝 회피의 바람. BOOM Violent Combat(구매) WHOOSH Dash의 6개 변형. 앞쪽에 부풀어 오르는 부분은 잘라서 0.14초 회피 안에 가장 커진다
 Movement/Dodge/Cloth,0.2,0.95,1.05,스텝 회피의 옷 스침. BOOM Violent Combat WHOOSH Kimono의 6개 변형. 바람처럼 앞쪽을 잘랐다
 Movement/Dodge/Perfect,0.35,0.95,1.05,완벽 회피 때 겹치는 바람(SoundCues DodgePerfect). BOOM Violent Combat WHOOSH Phantom Wind의 6개 변형. 11-06에 The End Is Low로 바꿨다가 사용자가 게임에서 들어 보고 되돌렸다
+Zombie/Attack,0.85,0.96,1.04,좀비가 공격을 시작할 때의 으르렁(ZombieVoice). 이름에 성별이 없는 몸이 쓰고 다른 몸도 가끔 쓴다. L4D2 워크숍 3675704366(RE6 Common Infected Sound) rageat의 rage_at_victim 5개. 앞뒤 무음을 자르고 크기를 맞췄다
+Zombie/Attack/Male,0.85,0.96,1.04,남자 좀비의 공격 으르렁. 같은 워크숍 rageat/male의 8개
+Zombie/Attack/Female,0.9,0.96,1.04,여자 좀비의 공격 으르렁. 같은 워크숍 rageat/female의 9개(원본이 22kHz라 조금 먹먹하다)
+Zombie/Leap/Male,0.95,0.97,1.05,러너가 도약할 때의 짧은 비명(남). 같은 워크숍 rage/male의 8개
+Zombie/Leap/Female,1,0.97,1.05,러너가 도약할 때의 짧은 비명(여). 같은 워크숍 rage/female의 8개
