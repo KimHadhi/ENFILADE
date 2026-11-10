@@ -95,6 +95,12 @@ public sealed class ZombieMind : MonoBehaviour
 
     private static readonly List<ZombieMind> minds = new List<ZombieMind>();
 
+    /// <summary>
+    /// On the host or alone: a zombie that had not noticed anyone has, and who it is after. A campaign's quiet stretch
+    /// ends on it (CampaignRun).
+    /// </summary>
+    public static event System.Action<ZombieMind, PlayerMovement> Woke;
+
     private EnemyHealth health;
     private EnemyNetwork network;
     private MeleeCombatTarget melee;
@@ -131,7 +137,11 @@ public sealed class ZombieMind : MonoBehaviour
     }
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-    private static void ClearStatics() => minds.Clear();
+    private static void ClearStatics()
+    {
+        minds.Clear();
+        Woke = null;
+    }
 
     private void Awake()
     {
@@ -193,6 +203,7 @@ public sealed class ZombieMind : MonoBehaviour
         // Rousing, it stands and faces its quarry; then EnemyChaseAI takes it.
         if (Mood == ZombieMood.Rousing) Halt();
         else if (agent != null && agent.isActiveAndEnabled && agent.isOnNavMesh) agent.isStopped = false;
+        Woke?.Invoke(this, focus);
         if (!call) return;
         foreach (var other in minds)
             if (other != this && !other.IsAwake && other.Thinks && (other.transform.position - transform.position).sqrMagnitude <= callRadius * callRadius)

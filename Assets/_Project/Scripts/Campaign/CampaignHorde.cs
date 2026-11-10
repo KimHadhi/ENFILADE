@@ -10,11 +10,16 @@ using UnityEngine.SceneManagement;
 /// nothing at players on the ground. Points no player can see come first (a sight line from every player's eyes to the
 /// point is blocked); one in plain view is used only past the seen distance, and only when no hidden one will do. The
 /// host makes them; in a room they reach the others as networked enemies, as the waves' do.
+/// A quiet stretch (CampaignRun, stage C-15) has no horde: instead zombies stand calm along the way, set by PlaceCalm,
+/// and have to notice the players.
 /// </summary>
 internal sealed class CampaignHorde
 {
     // Spawns saved up while none could come (nobody in reach), so a step's first moments don't burst.
     private const float MostSaved = 3f, PointSearch = 2f, PlayerSearch = 3f, EyeHeight = 1.6f, HeadHeight = 1.5f;
+    // Calm zombies: one about this far along the walk (m), up to this far off it to one side, a ring of places this far
+    // round where the walk ends, and no two nearer each other than this.
+    private const float CalmEvery = 9f, CalmAside = 3f, CalmRound = 6f, CalmApart = 2.5f;
     // What blocks a player's sight: everything but players (layer 31) and enemies. Found on first use.
     private static int sightMask;
     private static int SightMask => sightMask != 0 ? sightMask : sightMask = Physics.DefaultRaycastLayers & ~(1 << 31) & ~LayerMask.GetMask("Enemy");
@@ -23,7 +28,8 @@ internal sealed class CampaignHorde
     private readonly Transform[] spawns;
     private readonly Scene scene;
     private readonly HashSet<EnemyHealth> alive = new HashSet<EnemyHealth>(), brutes = new HashSet<EnemyHealth>();
-    private readonly List<Vector3> choices = new List<Vector3>(), inView = new List<Vector3>();
+    private readonly List<Vector3> choices = new List<Vector3>(), inView = new List<Vector3>(), calmPlaces = new List<Vector3>(),
+        calmTaken = new List<Vector3>();
     private readonly NavMeshPath path = new NavMeshPath();
     private float saved;
 
@@ -78,6 +84,63 @@ internal sealed class CampaignHorde
         return made;
     }
 
+    /// <summary>
+    /// Stage C-15: zombies standing calm on the way from one place to another, each facing its own way, who have to
+    /// notice the players (ZombieMind.Calm). Places are taken along the walk between the two, as far as the walk mesh
+    /// goes (a gap the players jump leaves it short), and round where it ends; none nearer than <paramref name="near"/>
+    /// to a player. They count with the horde's own. Called while the players can't see the way ahead (a chapter's
+    /// opening card, a rest stop's shut door). Returns how many were set.
+    /// </summary>
+    public int PlaceCalm(int count, Vector3 from, Vector3 to, List<PlayerMovement> players, float near)
+    {
+        if (prefab == null || count <= 0) return 0;
+        calmPlaces.Clear();
+        if (NavMesh.SamplePosition(from, out NavMeshHit start, PlayerSearch, NavMesh.AllAreas)
+            && NavMesh.SamplePosition(to, out NavMeshHit end, PlayerSearch, NavMesh.AllAreas)
+            && NavMesh.CalculatePath(start.position, end.position, NavMesh.AllAreas, path))
+        {
+            var corners = path.corners;
+            float along = CalmEvery * .5f;
+            for (int i = 1; i < corners.Length; i++)
+            {
+                float leg = Vector3.Distance(corners[i - 1], corners[i]);
+                for (; along < leg; along += CalmEvery) calmPlaces.Add(Vector3.Lerp(corners[i - 1], corners[i], along / leg));
+                along -= leg;
+            }
+        }
+        for (int i = 0; i < 6; i++)
+        {
+            float turn = (i + Random.value) / 6f * Mathf.PI * 2f;
+            calmPlaces.Add(to + new Vector3(Mathf.Cos(turn), 0f, Mathf.Sin(turn)) * (CalmRound * Random.Range(.6f, 1f)));
+        }
+        int made = 0;
+        var container = RuntimeSceneHierarchy.GetGroup(scene, "ENEMIES", "Campaign");
+        while (made < count && calmPlaces.Count > 0)
+        {
+            int pick = Random.Range(0, calmPlaces.Count);
+            Vector2 aside = Random.insideUnitCircle * CalmAside;
+            Vector3 wanted = calmPlaces[pick] + new Vector3(aside.x, 0f, aside.y);
+            calmPlaces.RemoveAt(pick);
+            if (!NavMesh.SamplePosition(wanted, out NavMeshHit ground, PointSearch, NavMesh.AllAreas) || !Free(ground.position, players, near)) continue;
+            var enemy = Object.Instantiate(prefab, ground.position, Quaternion.Euler(0f, Random.Range(0f, 360f), 0f), container);
+            if (enemy.TryGetComponent(out ZombieMind mind)) mind.Calm();
+            EnemyNetwork.SpawnInRoom(enemy);
+            enemy.Died += OnDied;
+            alive.Add(enemy);
+            calmTaken.Add(ground.position);
+            made++;
+        }
+        return made;
+    }
+
+    // Far enough from every player and from every calm zombie set before it.
+    private bool Free(Vector3 place, List<PlayerMovement> players, float near)
+    {
+        foreach (var player in players) if ((player.transform.position - place).sqrMagnitude < near * near) return false;
+        foreach (var taken in calmTaken) if ((taken - place).sqrMagnitude < CalmApart * CalmApart) return false;
+        return true;
+    }
+
     /// <summary>Every enemy it made goes at once (a wipe starting over, a chapter done).</summary>
     public void Clear()
     {
@@ -85,6 +148,7 @@ internal sealed class CampaignHorde
         foreach (var enemy in brutes) Remove(enemy);
         alive.Clear();
         brutes.Clear();
+        calmTaken.Clear();
         saved = 0f;
     }
 

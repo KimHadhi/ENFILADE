@@ -18,6 +18,11 @@ using UnityEngine.SceneManagement;
 /// poured at its spot (CampaignCans), and [F] picks up, puts down and pours them; a step's gate opens by its progress
 /// (CampaignGate). The builder (Editor/World/GreyboxBuilder) puts one in each chapter's
 /// scene with its spots and spawn points. Numbers: Tables/Campaign.
+/// Stage C-15, stealth (user, 2026-11-10: no horde until woken, calm zombies in the maps): a chapter opens quiet, and
+/// so does every stretch after a rest stop. Quiet, the director sends no one; zombies stand calm along the way ahead
+/// instead (CampaignHorde.PlaceCalm, the steps' own numbers by calmShare), and can be slipped past or taken from
+/// behind. The quiet ends when one of them notices someone (ZombieMind.Woke: a sight, a sound, a blow), which every PC
+/// is told at the top of the screen, or when a hold or the escape begins; from then on the horde comes as before.
 /// </summary>
 [DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.Campaign)]
 public sealed class CampaignRun : MonoBehaviour
@@ -39,8 +44,10 @@ public sealed class CampaignRun : MonoBehaviour
         public ushort Held;
         /// <summary>Which rest-stop doors are shut, a bit each (CampaignRun.doors).</summary>
         public byte Doors;
+        /// <summary>1 while the stretch is quiet: no horde until a zombie notices someone.</summary>
+        public byte Quiet;
         public bool Equals(Status other) => Step == other.Step && Finished == other.Finished && Checkpoint == other.Checkpoint
-            && Held == other.Held && Doors == other.Doors;
+            && Held == other.Held && Doors == other.Doors && Quiet == other.Quiet;
     }
 
     [SerializeField, Tooltip("What the hordes are made of.")]
@@ -69,6 +76,12 @@ public sealed class CampaignRun : MonoBehaviour
     private float introSeconds = 9f;
     [SerializeField, Min(0f), Tooltip("How long the closing card stays before the next chapter loads (s).")]
     private float outroSeconds = 10f;
+    [SerializeField, Tooltip("A chapter, and every stretch after a rest stop, opens quiet: no horde until a zombie notices someone or a hold begins. Off: the horde comes from the first moment, as it used to.")]
+    private bool quietStart = true;
+    [SerializeField, Min(0f), Tooltip("Zombies set calm along the way of a quiet stretch: each step's horde number times this.")]
+    private float calmShare = 1f;
+    [SerializeField, Min(0f), Tooltip("No calm zombie is set nearer than this to a player (m).")]
+    private float calmNear = 14f;
 
     private static CampaignRun active;
     private readonly Dictionary<string, Transform> spotsByName = new Dictionary<string, Transform>();
@@ -88,6 +101,8 @@ public sealed class CampaignRun : MonoBehaviour
     private int step, checkpoint = -1, shownPoured = -1, brutesDue;
     private float held, finishedAt, nextShare, nextBruteTry;
     private bool finished, movedOn, wasWiped, listening;
+    // The stretch is quiet (the host's word, shared); this PC last saw it so; the host still owes the stretch its calm zombies.
+    private bool quiet, wasQuiet, calmDue;
 
     private bool IsHost => network == null || network.IsServer;
     private CampaignStep Current => step >= 0 && step < steps.Count ? steps[step] : null;
@@ -167,10 +182,52 @@ public sealed class CampaignRun : MonoBehaviour
         Listen();
         if (chapter != null) screen.ShowCard(chapter.Title, chapter.Intro, introSeconds);
         ShowObjective(true);
+        ZombieMind.Woke += OnWoke;
+        if (IsHost) BeginQuiet();
+    }
+
+    // A quiet stretch begins (the chapter, or the way on from a rest stop): no horde, and calm zombies owed to the way ahead.
+    private void BeginQuiet()
+    {
+        quiet = wasQuiet = calmDue = quietStart;
+    }
+
+    // One of them has noticed someone: the horde is on its way from here on.
+    private void OnWoke(ZombieMind mind, PlayerMovement who)
+    {
+        if (IsHost && !finished) quiet = false;
+    }
+
+    // The way ahead of a quiet stretch, up to the next hold, escape or rest stop: each step's share of calm zombies between
+    // the place before it and its own.
+    private void PlaceCalmAhead()
+    {
+        Vector3 from = players[0].transform.position;
+        for (int i = step; i < steps.Count; i++)
+        {
+            var ahead = steps[i];
+            if (ahead.Kind == CampaignStepKind.Hold || ahead.Kind == CampaignStepKind.Escape) break;
+            var spot = SpotOf(ahead.Spot);
+            if (spot == null) continue;
+            horde.PlaceCalm(Mathf.RoundToInt(ahead.Horde * calmShare), from, spot.position, players, calmNear);
+            from = spot.position;
+            if (ahead.Kind == CampaignStepKind.Checkpoint) break;
+        }
+    }
+
+    // Every PC: the quiet ended because they were noticed. A hold or the escape beginning says so itself.
+    private void WatchQuiet()
+    {
+        if (quiet == wasQuiet) return;
+        var now = Current;
+        bool noticed = wasQuiet && !finished && now != null && now.Kind != CampaignStepKind.Hold && now.Kind != CampaignStepKind.Escape;
+        wasQuiet = quiet;
+        if (noticed) AlertHUD.Danger("들켰다 · 놈들이 몰려온다");
     }
 
     private void OnDestroy()
     {
+        ZombieMind.Woke -= OnWoke;
         if (active == this) active = null;
         if (!listening || network == null || network.CustomMessagingManager == null) return;
         var messages = network.CustomMessagingManager;
@@ -213,6 +270,7 @@ public sealed class CampaignRun : MonoBehaviour
         GatherPlayers();
         WatchForWipe();
         if (IsHost) { fuel.Tick(dt); Run(dt); }
+        WatchQuiet();
         PlayMusic();
         ThrowCan();
         Prompt();
@@ -255,7 +313,11 @@ public sealed class CampaignRun : MonoBehaviour
         var now = Current;
         if (now == null) return;
         bool scripted = now.Kind == CampaignStepKind.Hold || now.Kind == CampaignStepKind.Escape;
-        pacer.Pace(dt, players, scripted, Resting(), now.Horde, now.Rate, out int most, out float rate);
+        // A hold or the escape is a crescendo whatever was noticed. Quiet, nobody is sent, and the pacing starts afresh
+        // when it ends, as after a rest stop.
+        if (scripted) quiet = calmDue = false;
+        if (calmDue && players.Count > 0) { calmDue = false; PlaceCalmAhead(); }
+        pacer.Pace(dt, players, scripted, quiet || Resting(), now.Horde, now.Rate, out int most, out float rate);
         pacer.Spawned(horde.Tick(dt, most, rate, players, minSpawnDistance, maxSpawnDistance, seenMinDistance));
         switch (now.Kind)
         {
@@ -323,6 +385,8 @@ public sealed class CampaignRun : MonoBehaviour
         if (done.Kind == CampaignStepKind.Checkpoint) checkpoint = step;
         step++;
         held = 0f;
+        // The way on from a rest stop starts quiet again.
+        if (done.Kind == CampaignStepKind.Checkpoint && step < steps.Count) BeginQuiet();
         if (done.Kind == CampaignStepKind.Escape || step >= steps.Count) Finish();
         else ShowObjective(announce);
     }
@@ -358,6 +422,7 @@ public sealed class CampaignRun : MonoBehaviour
         fuel.Reset();
         step = checkpoint + 1;
         held = 0f;
+        BeginQuiet();
         // The goals done since the rest stop are undone: the log starts over rather than counting them twice.
         if (tracker != null) tracker.ClearObjective();
         ShowObjective(true);
@@ -480,7 +545,8 @@ public sealed class CampaignRun : MonoBehaviour
     {
         if (active == null) return "캠페인 맵이 아니에요.";
         if (!active.IsHost) return "디렉터는 방장 PC에서 돌아요. 방장이 입력해 보세요.";
-        return active.pacer.Report(active.horde.Alive) + (active.Resting() ? " · 휴게소에서 쉬는 중" : "");
+        return active.pacer.Report(active.horde.Alive) + (active.Resting() ? " · 휴게소에서 쉬는 중" : "")
+            + (active.quiet ? " · 조용한 구간(좀비가 알아채기 전에는 떼가 오지 않음)" : "");
     }
 
     // Carrying a can: pour it where the step wants it, else put it down. Hands free: pick up the can within reach.
@@ -588,7 +654,7 @@ public sealed class CampaignRun : MonoBehaviour
         {
             Step = (byte)Mathf.Clamp(step, 0, 255), Finished = (byte)(finished ? 1 : 0),
             Checkpoint = (byte)Mathf.Clamp(checkpoint + 1, 0, 255), Held = (ushort)Mathf.Clamp(Mathf.FloorToInt(held), 0, ushort.MaxValue),
-            Doors = DoorBits()
+            Doors = DoorBits(), Quiet = (byte)(quiet ? 1 : 0)
         };
         if (now.Equals(sent) && Time.unscaledTime < nextShare) return;
         sent = now;
@@ -607,6 +673,7 @@ public sealed class CampaignRun : MonoBehaviour
         step = status.Step;
         checkpoint = status.Checkpoint - 1;
         held = status.Held;
+        quiet = status.Quiet != 0;
         for (int i = 0; i < doors.Length && i < 8; i++) if (doors[i] != null) doors[i].Closed = (status.Doors & (1 << i)) != 0;
         if (status.Finished != 0)
         {
