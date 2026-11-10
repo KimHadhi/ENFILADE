@@ -43,7 +43,7 @@
 
 - `Markers.*`: 머리 위 의심 표시와 조준점 둘레 쐐기. 크기(px), 높이(m), 나오는 최소 의심, !가 남는 시간, 효과음 크기.
 - `View.*`: 바닥의 시야 콘(`coneMode` 0 끔 · 1 앉았을 때 · 2 항상, 진하기, 최대 개수, 거리)과 소리 파동(최소 거리, 시간, 진하기). 콘은 셰이더가 깊이 텍스처로 바닥 위치를 찾아 칠하므로 URP 에셋의 Depth Texture가 켜져 있어야 한다(PC_RPAsset은 켜져 있다).
-- `Throw.*`: T 돌 던지기의 쿨다운, 던지는 빠르기, 소리가 닿는 거리(`noise`), 돌 크기와 남는 시간. 돌 소리는 [StealthSounds](../Resources/Stealth/StealthSounds.asset)의 `stoneHits`에서 고르고 비면 코드가 만든 소리를 쓴다.
+- `Throw.*`: T 돌 던지기(누르고 있으면 궤적과 떨어질 곳의 소리 범위가 보이고 떼면 던진다)의 쿨다운, 던지는 빠르기, 소리가 닿는 거리(`noise`), 돌 크기와 남는 시간. 돌에 반응하는 방식은 ZombieSenses의 `lure*` 열(지켜보는 시간 `lureGlance`, 곁눈질 `lureFocus`, 다가가는 빠르기와 둘러보는 시간). 돌 소리는 [StealthSounds](../Resources/Stealth/StealthSounds.asset)의 `stoneHits`에서 고르고 비면 코드가 만든 소리를 쓴다.
 - `Score.takedown`(암살 추가 점수), `Score.unseen`(조용한 구간을 아무도 안 들키고 지나간 보상, 모두에게).
 - 더 쉽게 하려면: ZombieSenses의 `nearRate`를 낮추거나 `forget`을 올리고 `crouchShare`를 낮춘다. 덜 두리번거리게 하려면 `lookAroundEvery`를 늘리거나 0으로 끈다. 돌이 더 멀리 들리게 하려면 `Throw.noise`.
 

@@ -6,16 +6,21 @@ using Random = UnityEngine.Random;
 
 /// <summary>
 /// T: a stone thrown where the player looks, the 2026-11-11 stealth round's lure (after Advanced Stealth's thrown
-/// objects and sound grenade, F:\Addons). It flies, clacks where it lands, and that clack is a lure (Noise.Lure): the
-/// nearest zombie that isn't awake and hears it stares that way and walks over to look, the rest turn their heads, and
-/// none learns where it came from. A zombie can be drawn off the way past, or turned round for a takedown from behind.
-/// Stones never run out, one every cooldown seconds: generous, so trying is cheap. Every PC throws its own copy of a
-/// friend's stone (PlayerNetworkCombat), and the host's is the one its zombies hear. Numbers: Stealth.csv Throw.
+/// objects and sound grenade, F:\Addons). Held, T aims: the arc it will fly is drawn to where it lands, with the ring of
+/// how far its clack carries there, pink when a zombie that isn't awake will hear it, and those zombies' sight cones
+/// show pink (StealthView); let go, it is thrown (a tap throws at once). It flies through zombies and players, clacks
+/// where it lands, and that clack is a lure (Noise.Lure): every zombie that isn't awake and hears it turns to watch
+/// that spot a good while with its mind on it, and the nearest walks over to look, none learning where it came from. A
+/// zombie facing the way past is turned off it, or turned round for a takedown from behind. Stones never run out, one
+/// every cooldown seconds: generous, so trying is cheap. Every PC throws its own copy of a friend's stone
+/// (PlayerNetworkCombat), and the host's is the one its zombies hear. Numbers: Stealth.csv Throw.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class PlayerThrow : MonoBehaviour, ITableBound
 {
     public const string TableName = "Stealth", TableRow = "Throw";
+    // The aim's arc: a step of its flight (s), the longest flight drawn (s), and how thick the line is (m).
+    private const float ArcStep = 1f / 30f, ArcLongest = 3f, ArcWidth = .022f;
 
     [SerializeField, Min(0f), Tooltip("Seconds between two stones.")]
     private float cooldown = 2.5f;
@@ -36,7 +41,11 @@ public sealed class PlayerThrow : MonoBehaviour, ITableBound
     public event Action<Vector3, Vector3> Thrown;
 
     private PlayerMovement movement;
+    private StealthView view;
+    private LineRenderer arc;
+    private readonly List<Vector3> path = new List<Vector3>(96);
     private float readyAt;
+    private bool aiming;
 
     private void Awake()
     {
@@ -48,22 +57,100 @@ public sealed class PlayerThrow : MonoBehaviour, ITableBound
 
     private void Update()
     {
-        if (movement == null || !movement.InputAvailable || Keyboard.current == null || !Keyboard.current.tKey.wasPressedThisFrame) return;
-        if (!TakesInput() || Time.time < readyAt || movement.IsDead || movement.IsHeld || movement.CombatInputLocked) return;
-        var view = Camera.main;
-        if (view == null) return;
+        var key = Keyboard.current != null ? Keyboard.current.tKey : null;
+        bool able = movement != null && movement.InputAvailable && key != null && TakesInput() && !movement.IsDead && !movement.IsHeld
+            && !movement.CombatInputLocked;
+        var eye = Camera.main;
+        if (!able || eye == null) { StopAim(); return; }
+        if (key.wasPressedThisFrame) aiming = true;
+        if (!aiming) return;
+        if (key.isPressed) { Aim(eye.transform); return; }
+        // Let go: thrown, if a stone is ready.
+        StopAim();
+        if (Time.time < readyAt) return;
         readyAt = Time.time + cooldown;
-        var eye = view.transform;
-        Vector3 from = eye.position + eye.forward * .35f + eye.right * .12f - eye.up * .12f;
+        Launch(eye.transform, out Vector3 from, out Vector3 velocity);
+        ThrownStone.Throw(from, velocity, gameObject, noise, size, life, volume);
+        Thrown?.Invoke(from, velocity);
+    }
+
+    // Where it leaves the hand and how fast, from the eyes now.
+    private void Launch(Transform eye, out Vector3 from, out Vector3 velocity)
+    {
+        from = eye.position + eye.forward * .35f + eye.right * .12f - eye.up * .12f;
         // Face to a wall, it leaves from just this side of it.
         if (Physics.Linecast(eye.position, from, out RaycastHit wall, ThrownStone.WorldMask, QueryTriggerInteraction.Ignore))
             from = wall.point - (from - eye.position).normalized * .08f;
         Vector3 carried = movement.ActualVelocity;
         carried.y = 0f;
-        Vector3 velocity = eye.forward * speed + Vector3.up * lift + carried * .5f;
-        ThrownStone.Throw(from, velocity, gameObject, noise, size, life, volume);
-        Thrown?.Invoke(from, velocity);
+        velocity = eye.forward * speed + Vector3.up * lift + carried * .5f;
     }
+
+    // Held: the arc it would fly, to where it would land, and there the reach of its clack (StealthView).
+    private void Aim(Transform eye)
+    {
+        Launch(eye, out Vector3 at, out Vector3 velocity);
+        path.Clear();
+        path.Add(at);
+        Vector3 gravity = Physics.gravity;
+        bool landed = false;
+        float radius = size * .5f;
+        for (float t = 0f; t < ArcLongest; t += ArcStep)
+        {
+            Vector3 next = at + velocity * ArcStep + .5f * ArcStep * ArcStep * gravity;
+            Vector3 step = next - at;
+            float length = step.magnitude;
+            if (length > 1e-4f && Physics.SphereCast(at, radius, step / length, out RaycastHit hit, length, ThrownStone.WorldMask, QueryTriggerInteraction.Ignore))
+            {
+                at = hit.point;
+                path.Add(at);
+                landed = true;
+                break;
+            }
+            at = next;
+            velocity += gravity * ArcStep;
+            path.Add(at);
+        }
+        bool ready = Time.time >= readyAt;
+        Line(ready);
+        if (view == null) view = GetComponent<StealthView>();
+        if (view != null && landed) view.ShowAim(at, noise, ready);
+    }
+
+    private void Line(bool ready)
+    {
+        if (arc == null)
+        {
+            var host = new GameObject("Throw Arc") { hideFlags = HideFlags.DontSave };
+            host.transform.SetParent(transform, false);
+            arc = host.AddComponent<LineRenderer>();
+            arc.useWorldSpace = true;
+            arc.widthMultiplier = ArcWidth;
+            arc.numCapVertices = 2;
+            arc.numCornerVertices = 0;
+            arc.alignment = LineAlignment.View;
+            arc.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            arc.receiveShadows = false;
+            arc.sharedMaterial = FeelAssets.Particle(Texture2D.whiteTexture, false);
+        }
+        arc.enabled = true;
+        // Faint near the hand, solid along the flight and pink where it lands; grey while no stone is ready.
+        Color body = ready ? KitStyle.Ice : KitStyle.With(KitStyle.Ice, .35f), end = ready ? KitStyle.Accent : KitStyle.With(KitStyle.Ice, .35f);
+        var colors = new Gradient();
+        colors.SetKeys(new[] { new GradientColorKey(body, 0f), new GradientColorKey(body, .8f), new GradientColorKey(end, 1f) },
+            new[] { new GradientAlphaKey(0f, 0f), new GradientAlphaKey(ready ? .85f : .4f, .12f), new GradientAlphaKey(ready ? .85f : .4f, 1f) });
+        arc.colorGradient = colors;
+        arc.positionCount = path.Count;
+        for (int i = 0; i < path.Count; i++) arc.SetPosition(i, path[i]);
+    }
+
+    private void StopAim()
+    {
+        aiming = false;
+        if (arc != null && arc.enabled) arc.enabled = false;
+    }
+
+    private void OnDisable() => StopAim();
 
     /// <summary>A friend's stone, seen here: this PC throws its own copy (the host's is the one its zombies hear).</summary>
     internal void ShowThrow(Vector3 from, Vector3 velocity) => ThrownStone.Throw(from, velocity, gameObject, noise, size, life, volume);
@@ -121,6 +208,9 @@ public sealed class ThrownStone : MonoBehaviour
         renderer.sharedMaterial = Look();
         var collider = host.AddComponent<SphereCollider>();
         collider.radius = .5f;
+        // It flies through zombies and players (layer 31) and lands behind them: one hit square in the face only learnt to
+        // look at its own feet.
+        collider.excludeLayers = LayerMask.GetMask("Enemy") | (1 << 31);
         var stone = host.AddComponent<ThrownStone>();
         stone.box = collider;
         stones.Add(collider);

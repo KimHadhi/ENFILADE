@@ -95,10 +95,14 @@ public sealed class ZombieMind : MonoBehaviour
     private float lureSpeedShare = .6f;
     [SerializeField, Min(0f), Tooltip("Come to where a stone fell, how long it looks round there before it settles on that spot (s).")]
     private float lureLook = 5f;
-    [SerializeField, Min(0f), Tooltip("The others that hear a stone turn and look at where it fell this long (s), then turn back.")]
-    private float lureGlance = 2.5f;
+    [SerializeField, Min(0f), Tooltip("The others that hear a stone turn and watch where it fell this long (s), then turn back.")]
+    private float lureGlance = 6f;
     [SerializeField, Range(0f, 2f), Tooltip("Share of a stone's reach it hears, calm or not: a stone's clack carries as it is.")]
     private float lureHearShare = 1f;
+    [SerializeField, Range(0f, 1f), Tooltip("Turned to a stone, how well it still notices things off to the side, as a share: its mind is on the stone.")]
+    private float lureFocus = .35f;
+    [SerializeField, Range(0f, 180f), Tooltip("Come to where a stone fell, how far it looks either way (degrees): about the stone, not back the way it came.")]
+    private float lureSweep = 35f;
 
     [Header("Mind")]
     [SerializeField, Min(0f), Tooltip("Suspicion lost a second while it notices nothing.")]
@@ -166,9 +170,13 @@ public sealed class ZombieMind : MonoBehaviour
     // the way it faced on reaching a search's place.
     private float glanceUntil, postYaw, lookYaw, lookAt, arriveYaw;
     private bool horde = true, arrived;
-    // On its way to (or looking round) where a stone fell, and where that was.
+    // On its way to (or looking round) where a stone fell, and where that was; turned to watch a stone until then.
     private bool lured;
     private Vector3 lureAt;
+    private float distractedUntil;
+
+    // Its mind on a stone: it notices what is off to the side of it far more slowly (lureFocus).
+    private bool Distracted => lured || Time.time < distractedUntil;
     // On a copy: how sure the host's zombie is, in twentieths, and of whom (their client id + 1; 0 for nobody).
     private byte shownStep;
     private ulong shownWatch, resolvedWatch;
@@ -314,7 +322,7 @@ public sealed class ZombieMind : MonoBehaviour
         Mood = ZombieMood.Calm;
         suspicion = 0f;
         focus = noticed = null;
-        glanceUntil = 0f;
+        glanceUntil = distractedUntil = 0f;
         lured = false;
         Halt();
         Post();
@@ -356,7 +364,7 @@ public sealed class ZombieMind : MonoBehaviour
         if (IsCopy || IsAwake) return;
         Mood = rouse && rouseSeconds > 0f ? ZombieMood.Rousing : ZombieMood.Awake;
         suspicion = 1f;
-        glanceUntil = 0f;
+        glanceUntil = distractedUntil = 0f;
         lured = false;
         focus = Alive(who) ? who : PlayerRoster.Nearest(transform.position);
         noticed = focus;
@@ -546,7 +554,9 @@ public sealed class ZombieMind : MonoBehaviour
         {
             suspicion += rate * dt;
             focus = noticed = seen;
-            stimulus = seen.transform.position;
+            // Watching a stone, a glimpse doesn't turn its head: only once it is unsure of someone (alertAt) does it look
+            // their way.
+            if (!Distracted || suspicion >= alertAt) stimulus = seen.transform.position;
             if (touching) { Wake(seen); return; }
         }
         else suspicion = Mathf.Max(0f, suspicion - forget * dt);
@@ -620,10 +630,10 @@ public sealed class ZombieMind : MonoBehaviour
     // Come to where it searches, it looks left, then right, then back ahead over lookSeconds, not a statue's stare.
     private void Sweep(float dt)
     {
-        float look = LookTime;
-        if (searchSweep <= 0f || look <= 0f) return;
+        float look = LookTime, sweep = lured ? lureSweep : searchSweep;
+        if (sweep <= 0f || look <= 0f) return;
         float phase = Mathf.Clamp01((Time.time - arrivedAt) / look);
-        float yaw = arriveYaw + Mathf.Sin(phase * Mathf.PI * 2f) * searchSweep;
+        float yaw = arriveYaw + Mathf.Sin(phase * Mathf.PI * 2f) * sweep;
         transform.rotation = Quaternion.RotateTowards(transform.rotation, Quaternion.Euler(0f, yaw, 0f), turnSpeed * .5f * dt);
     }
 
@@ -672,7 +682,8 @@ public sealed class ZombieMind : MonoBehaviour
         if (angle <= front) return Mathf.Lerp(1f, .85f, Mathf.Clamp01(angle / Mathf.Max(1f, front)));
         if (angle >= edge) return 0f;
         float t = (angle - front) / (edge - front);
-        return Mathf.Lerp(.85f, sideShare, Mathf.SmoothStep(0f, 1f, t / .25f)) * (1f - Mathf.SmoothStep(0f, 1f, (t - .75f) / .25f));
+        return Mathf.Lerp(.85f, sideShare, Mathf.SmoothStep(0f, 1f, t / .25f)) * (1f - Mathf.SmoothStep(0f, 1f, (t - .75f) / .25f))
+            * (Distracted ? lureFocus : 1f);
     }
 
     // Their flashlight is on and turned this way: it makes them out sooner and from farther ("손전등 켜면 들킨다").
@@ -748,12 +759,13 @@ public sealed class ZombieMind : MonoBehaviour
         foreach (var mind in minds) if (mind != null && mind.Thinks && !mind.horde) mind.Heard(noise, source);
     }
 
-    // A thrown stone landing (PlayerThrow): of those not awake that hear it, the nearest goes to look and the rest turn to
-    // look and settle. It never says where the thrower is, nor wakes anyone by itself (Advanced Stealth: "The nearest
-    // guard goes to check the object; others turn to look").
+    // A thrown stone landing (PlayerThrow): every one not awake that hears it turns to watch where it fell, its mind on it
+    // (lureGlance, lureFocus), and the nearest then goes over to look. It never says where the thrower is, nor wakes
+    // anyone, nor marks anyone on the thrower's stealth HUD: a zombie facing the way past is turned off it, which is what
+    // the stone is for (user, 2026-11-11: "좀비가 내 쪽을 바라보고 있으면 접근 조차 불가능 ... 돌로 시선을 그쪽으로
+    // 자연스럽게 옮기고 싶은데"). Advanced Stealth: "The nearest guard goes to check the object; others turn to look".
     private static void HearLure(in NoiseEvent noise)
     {
-        var thrower = noise.Source != null ? noise.Source.GetComponentInParent<PlayerMovement>() : null;
         ZombieMind nearest = null;
         float best = float.MaxValue;
         foreach (var mind in minds)
@@ -762,10 +774,14 @@ public sealed class ZombieMind : MonoBehaviour
             if (mind.melee != null && mind.melee.IsStunned) continue;
             if (!mind.Reaches(noise, out float distance, out _)) continue;
             if (distance < best) { best = distance; nearest = mind; }
-            mind.Glance(noise.Point, thrower, mind.lureGlance);
+            mind.distractedUntil = Time.time + mind.lureGlance;
+            mind.Glance(noise.Point, null, mind.lureGlance);
         }
-        if (nearest != null) nearest.Investigate(noise.Point, thrower);
+        if (nearest != null) nearest.Investigate(noise.Point, null);
     }
+
+    /// <summary>For the throw's aim (StealthView): whether this zombie, not awake, would hear this sound now.</summary>
+    internal bool Hears(in NoiseEvent noise) => !IsAwake && Living && Reaches(noise, out _, out _);
 
     private void Heard(in NoiseEvent noise, PlayerMovement source)
     {

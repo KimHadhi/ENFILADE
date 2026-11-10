@@ -82,6 +82,67 @@ public sealed class StealthView : MonoBehaviour, ITableBound
     private Material material;
     private Mesh cube;
     private float show, pickLeft, lastRing = -9f;
+    // The stone's aim (PlayerThrow, held T): where it would land, how far it carries, the frame it was last asked for,
+    // whether a stone is ready, and which zombies would hear it (worked out a few times a second).
+    private readonly HashSet<ZombieMind> wouldHear = new HashSet<ZombieMind>();
+    private readonly MaterialPropertyBlock aimBlock = new MaterialPropertyBlock(), aimDot = new MaterialPropertyBlock();
+    private Vector3 aimAt, aimHeardAt;
+    private float aimNoise, aimReach, aimCheckAt;
+    private int aimFrame = -9;
+    private bool aimReady, aimHeard;
+
+    /// <summary>
+    /// The held stone's landing (PlayerThrow), for this frame: the ring of how far its clack carries there, pink when a
+    /// zombie that isn't awake will hear it, those zombies' cones pink, and every cone shown while aiming.
+    /// </summary>
+    internal void ShowAim(Vector3 at, float noise, bool ready)
+    {
+        aimAt = at;
+        aimNoise = noise;
+        aimReady = ready;
+        aimFrame = Time.frameCount;
+    }
+
+    private bool Aiming => Time.frameCount - aimFrame <= 1;
+
+    // Which zombies would hear the stone land there, and how far its clack carries: again when the aim moves or anyway
+    // a few times a second (each is a ray).
+    private void Hearers()
+    {
+        if (Time.time < aimCheckAt && (aimAt - aimHeardAt).sqrMagnitude < .09f) return;
+        aimCheckAt = Time.time + .15f;
+        aimHeardAt = aimAt;
+        var clack = new NoiseEvent(aimAt + Vector3.up * .15f, aimNoise, null, true);
+        aimReach = ZombieMind.CalmReach(clack, null, out aimHeard);
+        wouldHear.Clear();
+        foreach (var cone in cones) if (cone.mind != null && cone.mind.Hears(clack)) wouldHear.Add(cone.mind);
+    }
+
+    private void DrawAim(Camera view)
+    {
+        Hearers();
+        if (aimReach <= 0f) return;
+        float strength = aimReady ? 1f : .45f;
+        Color tint = (aimHeard ? KitStyle.Accent : KitStyle.Ice).linear;
+        // The reach, standing still, faintly filled.
+        aimBlock.SetVector(TintId, new Vector4(tint.r, tint.g, tint.b, ringStrength * .7f * strength));
+        aimBlock.SetVector(OriginId, new Vector4(aimAt.x, aimAt.y, aimAt.z, aimReach));
+        aimBlock.SetVector(FacingId, new Vector4(0f, 1f, 0f, 0f));
+        aimBlock.SetVector(ShapeId, new Vector4(1f, aimReach, ringWidth, coneHeight));
+        aimBlock.SetVector(LookId, new Vector4(0f, 0f, 0f, .05f));
+        var box = Matrix4x4.TRS(aimAt, Quaternion.identity, new Vector3(aimReach * 2f + 1f, coneHeight * 2f + .5f, aimReach * 2f + 1f));
+        Graphics.DrawMesh(cube, box, material, 0, view, 0, aimBlock, ShadowCastingMode.Off, false);
+        // And a small beating ring where it lands.
+        float beat = .3f + .06f * Mathf.Sin(Time.unscaledTime * 9f);
+        Color mark = (aimReady ? KitStyle.Accent : KitStyle.Ice).linear;
+        aimDot.SetVector(TintId, new Vector4(mark.r, mark.g, mark.b, .9f * strength));
+        aimDot.SetVector(OriginId, new Vector4(aimAt.x, aimAt.y, aimAt.z, .6f));
+        aimDot.SetVector(FacingId, new Vector4(0f, 1f, 0f, 0f));
+        aimDot.SetVector(ShapeId, new Vector4(1f, beat, .07f, coneHeight));
+        aimDot.SetVector(LookId, new Vector4(0f, 0f, 0f, .25f));
+        Graphics.DrawMesh(cube, Matrix4x4.TRS(aimAt, Quaternion.identity, new Vector3(2.2f, coneHeight * 2f + .5f, 2.2f)), material, 0, view, 0, aimDot,
+            ShadowCastingMode.Off, false);
+    }
     private int turn;
     private bool broken;
 
@@ -104,7 +165,9 @@ public sealed class StealthView : MonoBehaviour, ITableBound
         if (view == null) return;
         float dt = Time.deltaTime;
         bool alive = !movement.IsDead;
-        bool wanted = alive && (coneMode == 2 || coneMode == 1 && (movement.IsCrouching || movement.IsProning));
+        bool aiming = alive && Aiming;
+        // Aiming a stone shows them too, whatever the posture: whom it would turn is the point.
+        bool wanted = alive && (coneMode == 2 || coneMode == 1 && (movement.IsCrouching || movement.IsProning) || aiming && coneMode > 0);
         show = Mathf.MoveTowards(show, wanted ? 1f : 0f, dt / coneFade);
         if ((pickLeft -= dt) <= 0f) { pickLeft = .25f; Pick(); }
         if (show > 0f) CastSome();
@@ -116,6 +179,7 @@ public sealed class StealthView : MonoBehaviour, ITableBound
             if (cone.alpha <= 0f && !on) { cones.RemoveAt(i); cone.mind = null; spare.Push(cone); continue; }
             if (show > 0f && cone.cast && cone.mind != null) DrawCone(cone, view);
         }
+        if (aiming) DrawAim(view);
         foreach (var ring in rings)
         {
             if (ring.age < 0f) continue;
@@ -197,8 +261,11 @@ public sealed class StealthView : MonoBehaviour, ITableBound
         var mood = mind.Mood;
         bool looking = mood == ZombieMood.Alert || mood == ZombieMood.Searching;
         float sure = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(mind.ShownSuspicion / .6f));
-        Color tint = Color.Lerp(KitStyle.Ice, KitStyle.Accent, looking ? 1f : sure).linear;
-        float strength = coneStrength * cone.alpha * show * (looking ? 1.35f : 1f + .3f * sure);
+        // One the aimed stone would turn shows pink and beats.
+        bool turned = Aiming && wouldHear.Contains(mind);
+        Color tint = Color.Lerp(KitStyle.Ice, KitStyle.Accent, looking || turned ? 1f : sure).linear;
+        float strength = coneStrength * cone.alpha * show * (looking ? 1.35f : 1f + .3f * sure)
+            * (turned ? 1.4f + .25f * Mathf.Sin(Time.unscaledTime * 8f) : 1f);
         cone.block.SetVector(TintId, new Vector4(tint.r, tint.g, tint.b, strength));
         cone.block.SetVector(OriginId, new Vector4(feet.x, feet.y, feet.z, range));
         cone.block.SetVector(FacingId, new Vector4(forward.x, forward.y, mind.FrontView * .5f * Mathf.Deg2Rad, mind.EdgeView * .5f * Mathf.Deg2Rad));
