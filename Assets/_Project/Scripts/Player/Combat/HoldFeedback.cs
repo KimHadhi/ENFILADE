@@ -46,7 +46,7 @@ public sealed class HoldFeedback : MonoBehaviour
     private Image bar, barBack;
     private float shown, beat, progress;
     private int holders = 1;
-    private bool pinned, eaten, fights;
+    private bool pinned, eaten, fights, written;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void Forget() => edgeTexture = null;
@@ -86,10 +86,13 @@ public sealed class HoldFeedback : MonoBehaviour
         {
             bool nowPinned = hold.IsPinned, nowEaten = hold.IsEaten, nowFights = hold.FightsPinned;
             int nowHolders = Mathf.Max(1, hold.Holders);
-            if (nowPinned != pinned || nowEaten != eaten || nowFights != fights || nowHolders != holders || title.text.Length == 0)
+            // A label made in code has no text at all until it is given some (null, not ""), so what was written is
+            // remembered here and not read back from the label.
+            if (!written || nowPinned != pinned || nowEaten != eaten || nowFights != fights || nowHolders != holders)
             {
                 pinned = nowPinned; eaten = nowEaten; fights = nowFights; holders = nowHolders;
                 Write();
+                written = true;
             }
             progress = hold.PinProgress;
         }
@@ -124,6 +127,7 @@ public sealed class HoldFeedback : MonoBehaviour
         host = new GameObject("Hold Feedback", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(CanvasGroup));
         FeelUI.SetupOverlay(host, 24);
         group = host.GetComponent<CanvasGroup>();
+        written = false;
         group.alpha = 0f;
         group.interactable = group.blocksRaycasts = false;
 

@@ -72,6 +72,7 @@ Unity에 맞춘 차이: 벽 두께는 들어간 선을 따라 한 번 잰다. �
 ### 정확도·반동·ADS
 
 - **탄퍼짐**은 도 단위의 원뿔 반각이다. Hip / ADS / Moving / Airborne Spread와 발사 후 Bloom을 합성하며, 크로스헤어도 실제 각도와 FOV를 반영한다.
+- **산탄총**: 한 발이 `pellets`(12)개의 알을 반각 `pelletSpread`(3.5°)의 원에 고르게 채운다(해바라기 씨 배열, 무늬의 방향만 무작위. `WeaponController.EvenDisk`). 알마다 눈에서 본 원 안의 제자리에 보이는 곳으로 총구에서 날아가므로, 화면의 원 안에 보이는 것이 곧 맞는 범위다. 총구 기준으로 퍼뜨리면 가까운 적은 원 안에 보여도 총이 눈 옆에 있는 만큼 빗나갔다(2026-11-10 사용자: "근거리면 원 안 쪽이 다 맞게", "부정확한 소총"). 산탄총은 이동·연사 탄퍼짐이 0이라 원의 크기가 늘 같다. 알 하나는 26 피해이고 몸 하나를 뚫고 뒤의 몸에 절반을 준다(`penetration` 4, 몸의 `pierceCost` 2). 거리 감쇠는 다른 총과 같은 규칙이다. 수치는 [Weapons.csv](../Resources/Tables/Weapons.csv).
 - **앉아 쏘기**: 땅 위에서 앉아 있으면 탄퍼짐 전체에 `crouchSpread`(0.5), 조준 반동에 `crouchRecoil`(0.65)을 곱한다. 규칙은 ArcCW의 `arccw_mult_crouchdisp`·`arccw_mult_crouchrecoil`(기본 1이라 꺼져 있다)이고 값은 TFA 베이스의 기본값이다. 지향·조준·이동·연사 누적에 모두 들어가며 엎드림·슬라이드에는 들어가지 않는다.
 - **총 흔들림**: KINEMATION FPS Animation Framework의 Sway 레이어가 한다(총마다의 데모 프로필 값). 예전 ArcCW·TFA 흔들림 이식(WeaponSway)은 지웠다.
   - ArcCW에서 바꾼 까닭(2026-11-06 사용자 테스트): ArcCW의 시선 흔들림은 총을 도는 쪽으로 돌려서, 반대로 밀리는 것을 거의 상쇄해 고개를 돌린 느낌이 나지 않았다. 걸음 출렁임은 속도에 비례하고 질주에서 더 커져(×1.25, sextra) 몸의 달리기 위에서 우스꽝스러웠다. 숨쉬기는 총이 오를 때 총구를 숙여 내려가는 것처럼 보였다.
@@ -216,6 +217,8 @@ HP·체간 바, 흐트러짐 표시와 처형 안내는 기존 적·프리팹에
 2. 무기의 `Crosshair Profile`
 3. Feedback의 `Gun Crosshair` 또는 `Melee Crosshair`
 4. 그 외에는 씬의 크로스헤어에 지정된 프로필
+
+알을 여러 개 쏘는 총(산탄총)을 들면 조준선의 선 대신 고리가 뜬다([CrosshairRing](../Scripts/UI/Crosshair/CrosshairRing.cs)). 고리의 반지름은 알이 채우는 원 그대로이고(`DynamicCrosshairView.SetPatternSpread`), 선 두께·색·테두리는 지금 조준선의 것을 쓰며 가운데 점은 조준선에 있으면 남는다. 쏘면 잠깐 벌어졌다 돌아오고, 조준(ADS)하면 다른 조준선처럼 사라진다.
 
 직접 꾸미기는 [CrosshairPresets.csv](../Resources/Tables/CrosshairPresets.csv)의 프리셋이나 공유 코드에서 시작한다. 프리셋은 모양과 회전만 바꾸고 색·불투명도·테두리는 그대로 둔다. 표에 줄을 더하면 타일이 늘어나고, 두 줄을 넘으면 스크롤된다. 공유 코드는 `ENF-`로 시작하는 문자열이다([CrosshairCode](../Scripts/Settings/CrosshairCode.cs)). 새 항목은 뒤에만 붙이므로 예전 코드도 계속 읽힌다. 미리보기 오른쪽 위의 버튼을 누르고 있으면 설정창이 사라지고, 꾸미는 중인 크로스헤어가 실제 HUD에 보인다.
 
