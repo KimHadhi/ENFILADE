@@ -105,6 +105,23 @@ public sealed class CampaignRun : MonoBehaviour
         return true;
     }
 
+    /// <summary>
+    /// Where the step under way wants the players: its spot, how near counts as there (m) and what kind of step it is,
+    /// for the HUD's guide (ObjectiveGuideHUD). False outside a chapter, once the chapter is over, and for a step whose
+    /// spot the scene lacks.
+    /// </summary>
+    public static bool TryObjective(out Transform spot, out float radius, out CampaignStepKind kind)
+    {
+        spot = null; radius = 0f; kind = default;
+        if (active == null || active.finished) return false;
+        var now = active.Current;
+        // Not SpotOf: a missing spot was reported once already, and this asks every frame.
+        if (now == null || string.IsNullOrEmpty(now.Spot) || !active.spotsByName.TryGetValue(now.Spot, out spot) || spot == null) return false;
+        radius = now.Radius;
+        kind = now.Kind;
+        return true;
+    }
+
     /// <summary>How far a step has come: 0 before it, 1 once it is done (or outside a chapter, or for an unknown step),
     /// and while it runs a hold's share of its time (0 for other kinds). What CampaignGate opens by.</summary>
     public static float ProgressOf(string stepId)

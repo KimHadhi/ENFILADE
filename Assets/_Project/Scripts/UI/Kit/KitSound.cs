@@ -6,16 +6,20 @@ using UnityEngine;
 /// game is paused). A cue is, in order, a clip from the UI sound bank when its folder holds any
 /// (Art/Audio/UI/&lt;cue&gt;, e.g. Art/Audio/UI/Buy; volume and pitch in Tables/Sounds, row "UI/&lt;cue&gt;") and otherwise a
 /// short sound made here once, so a menu answers the player before any clips exist, as the guns do (FeelAudio).
-/// First used by the shop (user, 2026-11-10: nothing told them a buy went through); the HUD's alerts use it too.
+/// First used by the shop (user, 2026-11-10: nothing told them a buy went through); the HUD's alerts and what the
+/// player picks up use it too, each kind of pickup with a sound of its own.
 /// </summary>
 public static class KitSound
 {
-    /// <summary>Buy: something was paid for. Refuse: it couldn't be. Alert: a teammate went down or died (AlertHUD).</summary>
-    public enum Cue { Buy, Refuse, Alert }
+    /// <summary>
+    /// Buy: something was paid for. Refuse: it couldn't be. Alert: a teammate went down or died (AlertHUD). The Pick
+    /// cues: this player took ammo, a medkit, a shield cell, money or a gun off the floor (FieldPickups).
+    /// </summary>
+    public enum Cue { Buy, Refuse, Alert, PickAmmo, PickHeal, PickShield, PickMoney, PickGun }
 
     private const string BankId = "UI";
     private const int Rate = 44100;
-    private static readonly AudioClip[] made = new AudioClip[3];
+    private static readonly AudioClip[] made = new AudioClip[Enum.GetValues(typeof(Cue)).Length];
     private static AudioSource source;
     private static SoundBank bank;
     private static bool bankLooked;
@@ -59,7 +63,17 @@ public static class KitSound
     {
         int index = (int)cue;
         if (made[index] != null) return made[index];
-        float[] data = cue == Cue.Buy ? Till() : cue == Cue.Alert ? Fall() : Buzz();
+        float[] data = cue switch
+        {
+            Cue.Buy => Till(),
+            Cue.Alert => Fall(),
+            Cue.PickAmmo => Magazine(),
+            Cue.PickHeal => Mend(),
+            Cue.PickShield => Charge(),
+            Cue.PickMoney => Coin(),
+            Cue.PickGun => Rack(),
+            _ => Buzz()
+        };
         var clip = AudioClip.Create("Kit " + cue, data.Length, 1, Rate, false);
         clip.SetData(data, 0);
         clip.hideFlags = HideFlags.HideAndDontSave;
@@ -125,6 +139,88 @@ public static class KitSound
         Note(data, 0f, 880f, .08f, .5f);
         Note(data, .13f, 659f, .15f, .5f);
         return Finish(data, .55f);
+    }
+
+    // Ammo: a magazine dropped into a pouch, two dry clicks over a short low knock.
+    private static float[] Magazine()
+    {
+        var data = new float[(int)(Rate * .2f)];
+        var random = new System.Random(7741);
+        Click(data, random, 0f, .012f, .7f);
+        Click(data, random, .055f, .009f, .5f);
+        Knock(data, .004f, 190f, .03f, .6f);
+        return Finish(data, .6f);
+    }
+
+    // A medkit: two round notes going up a fifth, the kind of sound that says better.
+    private static float[] Mend()
+    {
+        var data = new float[(int)(Rate * .42f)];
+        Note(data, 0f, 587f, .07f, .5f);
+        Note(data, .1f, 880f, .13f, .5f);
+        return Finish(data, .5f);
+    }
+
+    // A shield cell: a tone sweeping up as it charges, with a fine flutter on it, then let go.
+    private static float[] Charge()
+    {
+        var data = new float[(int)(Rate * .34f)];
+        float turn = 0f;
+        for (int i = 0; i < data.Length; i++)
+        {
+            float t = i / (float)Rate, along = t / .34f;
+            turn += 2f * Mathf.PI * Mathf.Lerp(420f, 1500f, along * along) / Rate;
+            float level = Mathf.Min(1f, t / .01f) * Mathf.Min(1f, (.34f - t) / .09f);
+            data[i] = (Mathf.Sin(turn) + .35f * Mathf.Sin(turn * 2f)) * (.8f + .2f * Mathf.Sin(2f * Mathf.PI * 46f * t)) * level;
+        }
+        return Finish(data, .45f);
+    }
+
+    // Money: a coin's two quick high rings, thinner and shorter than the shop's till.
+    private static float[] Coin()
+    {
+        var data = new float[(int)(Rate * .3f)];
+        Bell(data, 0f, 2637f, .05f, .3f);
+        Bell(data, .045f, 3520f, .1f, .34f);
+        return Finish(data, .5f);
+    }
+
+    // A gun: taken up and its action worked, a heavy knock and two clacks after it.
+    private static float[] Rack()
+    {
+        var data = new float[(int)(Rate * .3f)];
+        var random = new System.Random(1187);
+        Knock(data, 0f, 120f, .05f, .8f);
+        Click(data, random, .002f, .014f, .6f);
+        Click(data, random, .1f, .012f, .7f);
+        Click(data, random, .16f, .016f, .55f);
+        return Finish(data, .65f);
+    }
+
+    // A dry click starting at <at> (s): a burst of dulled noise dying over <decay>.
+    private static void Click(float[] data, System.Random random, float at, float decay, float level)
+    {
+        int from = (int)(at * Rate), length = (int)(decay * 6f * Rate);
+        float held = 0f;
+        for (int i = 0; i < length && from + i < data.Length; i++)
+        {
+            float t = i / (float)Rate;
+            held += ((float)random.NextDouble() * 2f - 1f - held) * .45f;
+            data[from + i] += held * Mathf.Exp(-t / decay) * level;
+        }
+    }
+
+    // A low knock starting at <at> (s): a tone that drops as it dies, the weight under a click.
+    private static void Knock(float[] data, float at, float pitch, float decay, float level)
+    {
+        int from = (int)(at * Rate);
+        float turn = 0f;
+        for (int i = from; i < data.Length; i++)
+        {
+            float t = (i - from) / (float)Rate;
+            turn += 2f * Mathf.PI * pitch * (1f + Mathf.Exp(-t / (decay * .5f))) / Rate;
+            data[i] += Mathf.Sin(turn) * Mathf.Exp(-t / decay) * Mathf.Min(1f, t / .002f) * level;
+        }
     }
 
     // A plain note starting at <at> (s): the pitch and a little of its octave and twelfth.

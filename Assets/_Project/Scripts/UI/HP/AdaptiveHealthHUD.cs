@@ -136,8 +136,22 @@ public sealed class AdaptiveHealthHUD : MonoBehaviour
         Refresh();
     }
 
+    private static AdaptiveHealthHUD current;
+
+    /// <summary>
+    /// The bar blinks once: health or shield was just given by something taken (FieldPickups). shield: the shield's
+    /// band, when it is showing, rather than the health's.
+    /// </summary>
+    public static void Blink(Color color, bool shield)
+    {
+        if (current == null || current.visualRoot == null) return;
+        bool band = shield && current.shieldGraphic != null && current.shieldGraphic.gameObject.activeSelf;
+        HudBlink.On(band ? current.shieldGraphic.rectTransform : current.visualRoot, color);
+    }
+
     private void OnEnable()
     {
+        if (Application.IsPlaying(gameObject)) current = this;
         if (visualRoot == null) return;
         visualRoot.gameObject.SetActive(true);
         SetLayoutEnabled(false);
@@ -147,6 +161,7 @@ public sealed class AdaptiveHealthHUD : MonoBehaviour
 
     private void OnDisable()
     {
+        if (current == this) current = null;
         if (!Application.IsPlaying(gameObject)) { StopPreview(); return; }
         if (visualRoot == null) return;
         visualRoot.gameObject.SetActive(false);

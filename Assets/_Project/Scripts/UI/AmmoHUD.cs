@@ -35,9 +35,19 @@ public sealed class AmmoHUD : MonoBehaviour
     private float shotPulse;
     private PlayerDamageReceiver health;
 
+    private static AmmoHUD current;
+
+    /// <summary>The display blinks once: what it shows just changed by something taken (FieldPickups: ammo, a gun).</summary>
+    public static void Blink(Color color)
+    {
+        if (current != null && current.panel != null) HudBlink.On(current.panel, color);
+    }
+
+    private void OnEnable() => current = this;
     private void LateUpdate() => RefreshNow();
     private void OnDisable()
     {
+        if (current == this) current = null;
         if (group != null) group.alpha = 0f;
         shown = null; shotPulse = 0f;
     }

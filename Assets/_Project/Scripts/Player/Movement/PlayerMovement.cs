@@ -347,6 +347,7 @@ public sealed partial class PlayerMovement : MonoBehaviour
             gameObject.AddComponent<PerkCardScreen>(); // the perk cards a full gauge buys, and their health perk
             gameObject.AddComponent<PlayerLifeHUD>();
             gameObject.AddComponent<TeammateMarkerHUD>();
+            gameObject.AddComponent<ObjectiveGuideHUD>(); // where the campaign's step wants them: a mark at the screen's edge
             gameObject.AddComponent<TeamHealthPanel>();
             gameObject.AddComponent<ScoreboardHUD>();
             gameObject.AddComponent<ShoveFatigueHUD>();

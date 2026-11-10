@@ -16,7 +16,8 @@ using UnityEngine.UI;
 /// them (touchReach), unless this player couldn't use the ammo; a gun, a medkit and a shield cell with [F] while looking
 /// at it. Everything goes to whoever takes it first and is gone for everyone. Ammo adds `amount` magazines to every gun
 /// held, up to its starting reserve. A gun goes into an empty gun slot, else replaces the gun in hand, which is left on
-/// the floor for someone else; a gun already held refills its ammo instead. What was taken pops up beside the crosshair.
+/// the floor for someone else; a gun already held refills its ammo instead. What was taken is listed at the bottom of
+/// the screen (PickupFeedHUD), with a sound of its kind, a blink of the HUD part it went to and a dip of the gun in hand.
 /// <para>The host, or the PC alone, keeps every item and tells the others (a named message on change and every couple
 /// of seconds, so late joiners catch up); a guest asks the host to take one, and the host tells the taker's PC what it
 /// got, which applies it there (its own guns, health, shield and money are its own). The [F] prompt here comes before
@@ -33,9 +34,8 @@ public sealed class FieldPickups : MonoBehaviour
     private const float ReachSlack = 1.2f, GroundSearch = 4f, LeaveAhead = .6f;
     // How often an unanswered touch asks again (s); how far above or below an item still counts as over it (m).
     private const float AskAgain = .5f, TouchHeight = 1.6f;
-    // The pop-ups: how long one stays (s), how many at once, and the [F] key's flash when pressed (s).
-    private const float ToastSeconds = 1.6f, ToastIn = .12f, ToastOut = .3f, KeyFlash = .14f;
-    private const int MostToasts = 4;
+    // The [F] key's flash when pressed (s).
+    private const float KeyFlash = .14f;
 
     public enum Kind : byte { Gun, Ammo, Heal, Shield, Money }
 
@@ -67,12 +67,6 @@ public sealed class FieldPickups : MonoBehaviour
         public Vector3 Position;
     }
 
-    private sealed class Toast
-    {
-        public TMP_Text Label;
-        public float Age;
-    }
-
     private static FieldPickups instance;
 
     /// <summary>This PC's player is looking at a pickup within reach ([F] is the pickup's).</summary>
@@ -85,12 +79,11 @@ public sealed class FieldPickups : MonoBehaviour
     private readonly Dictionary<ushort, float> asked = new Dictionary<ushort, float>();
     private readonly HashSet<ushort> seen = new HashSet<ushort>();
     private readonly List<ushort> gone = new List<ushort>();
-    private readonly List<Toast> toasts = new List<Toast>();
     private readonly System.Random random = new System.Random(Environment.TickCount);
     private NetworkManager network;
     private InputAction interact;
     private GameObject promptHost;
-    private RectTransform promptRoot, toastRoot;
+    private RectTransform promptRoot;
     private Image keyBox, underline;
     private TMP_Text keyLabel, nameLabel, amountLabel;
     private Transform eye;
@@ -369,7 +362,6 @@ public sealed class FieldPickups : MonoBehaviour
         Touch();
         Aim();
         ShowPrompt();
-        TickToasts();
         if (targeted < 0 || refusal != null || interact == null || !interact.WasPressedThisFrame()) return;
         var item = items[targeted];
         pressedAt = Time.unscaledTime;
@@ -547,7 +539,7 @@ public sealed class FieldPickups : MonoBehaviour
         return false;
     }
 
-    // ---- The [F] prompt and the pop-ups (the HUD's kit, beside the crosshair) ----
+    // ---- The [F] prompt (the HUD's kit, beside the crosshair) and what a pickup shows ----
 
     private void ShowPrompt()
     {
@@ -580,38 +572,38 @@ public sealed class FieldPickups : MonoBehaviour
         _ => "+" + Wallet.Format((long)row.Amount),
     };
 
-    // What was taken: "+ name amount" beside the crosshair, newest at the bottom, gone after a moment.
-    private void Pop(Kind kind, string name, string amount)
+    // What was taken, on the taker's own PC (the user's pick of the pickup drafts, 2026-11-10, draft C, after "줍는 소리,
+    // 화면 효과, 줍는 동작, 주울 때 뜨는 글자 다 부족"): a row in the list at the bottom of the screen, its kind's own
+    // sound, a blink of the HUD part it went to, and the gun in hand dipping as the body goes for it. Money has no part
+    // to blink: its number counts up by itself.
+    private static void Pop(Kind kind, string name, string amount)
     {
-        Build();
-        while (toasts.Count >= MostToasts) { Destroy(toasts[0].Label.gameObject); toasts.RemoveAt(0); }
-        var label = FeelUI.ScoreLabel("Taken", toastRoot, 30f, TextAlignmentOptions.Left);
-        label.rectTransform.pivot = new Vector2(0f, .5f);
-        label.rectTransform.sizeDelta = new Vector2(520f, 46f);
-        string tint = ColorUtility.ToHtmlStringRGB(ColorOf(kind));
-        label.text = "<color=#" + tint + ">+</color>  " + name + "  <color=#" + tint + "><size=80%>" + amount + "</size></color>";
-        toasts.Add(new Toast { Label = label });
-        TickToasts();
+        Color tint = ColorOf(kind);
+        PickupFeedHUD.Show(IconOf(kind), tint, name, amount);
+        KitSound.Play(kind switch
+        {
+            Kind.Gun => KitSound.Cue.PickGun,
+            Kind.Ammo => KitSound.Cue.PickAmmo,
+            Kind.Heal => KitSound.Cue.PickHeal,
+            Kind.Shield => KitSound.Cue.PickShield,
+            _ => KitSound.Cue.PickMoney
+        }, .8f);
+        if (kind == Kind.Gun || kind == Kind.Ammo) AmmoHUD.Blink(KitStyle.Ice);
+        else if (kind == Kind.Heal || kind == Kind.Shield) AdaptiveHealthHUD.Blink(KitStyle.Ice, kind == Kind.Shield);
+        var player = PlayerRoster.Local;
+        var weapons = player != null ? player.GetComponentInChildren<WeaponController>() : null;
+        if (weapons != null) FPSBody.Holding(weapons)?.Reach();
     }
 
-    private void TickToasts()
+    // The list's icon for a kind; a gun has none and shows a gun's outline.
+    private static Texture IconOf(Kind kind) => kind switch
     {
-        float dt = Time.unscaledDeltaTime;
-        for (int i = toasts.Count - 1; i >= 0; i--)
-        {
-            var toast = toasts[i];
-            toast.Age += dt;
-            if (toast.Age >= ToastSeconds) { Destroy(toast.Label.gameObject); toasts.RemoveAt(i); }
-        }
-        for (int i = 0; i < toasts.Count; i++)
-        {
-            var toast = toasts[i];
-            float slide = 1f - Mathf.Pow(1f - Mathf.Clamp01(toast.Age / ToastIn), 3f);
-            int fromBottom = toasts.Count - 1 - i;
-            toast.Label.rectTransform.anchoredPosition = new Vector2((1f - slide) * 60f, fromBottom * 52f);
-            toast.Label.alpha = 1f - Mathf.Clamp01((toast.Age - (ToastSeconds - ToastOut)) / ToastOut);
-        }
-    }
+        Kind.Ammo => KitButtons.Icon("Bullet"),
+        Kind.Heal => KitButtons.Icon("Heart"),
+        Kind.Shield => KitButtons.Icon("Armor"),
+        Kind.Money => MoneyIcon.Texture,
+        _ => null
+    };
 
     private void Build()
     {
@@ -644,11 +636,6 @@ public sealed class FieldPickups : MonoBehaviour
         amountLabel = FeelUI.ScoreLabel("Gives", plate.rectTransform, 20f, TextAlignmentOptions.Right);
         Fill(amountLabel.rectTransform, new Vector2(120f, 0f), new Vector2(-12f, 0f));
         promptRoot.gameObject.SetActive(false);
-
-        // The pop-ups stack up from here, lower right of the crosshair, at their own lean.
-        toastRoot = Rect("Taken", promptHost.transform);
-        toastRoot.anchoredPosition = new Vector2(210f, -200f);
-        toastRoot.localRotation = Quaternion.Euler(0f, 0f, 4f);
     }
 
     private static RectTransform Rect(string name, Transform parent)
