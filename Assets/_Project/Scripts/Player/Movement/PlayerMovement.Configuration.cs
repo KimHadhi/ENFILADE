@@ -60,7 +60,7 @@ public sealed partial class PlayerMovement
     [SerializeField, Min(0f)] internal float slideEndSpeed = 1.5f;
     [SerializeField, Min(1f)] internal float slideCancelMaxSpeed = 5.0f;
     [SerializeField, Min(1f)] internal float diveSlideCancelMaxSpeed = 2.0f;
-    [Tooltip("Sliding on the back, W or Space gets up once the slide is this slow (m/s) and slideCancelMinDuration old.")]
+    [Tooltip("Sliding on the back, Shift with a move key or Space gets up once the slide is this slow (m/s) and slideCancelMinDuration old.")]
     [SerializeField, Min(1f)] internal float supineSlideCancelMaxSpeed = 5.0f;
     [SerializeField, Min(0f)] internal float slideBrakeDeceleration = 18f;
     [SerializeField, Min(0f)] internal float landingSlideMinSpeed = 6.5f;
