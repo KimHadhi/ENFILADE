@@ -51,8 +51,10 @@ public sealed class CampaignRun : MonoBehaviour
         public byte Doors;
         /// <summary>1 while the stretch is quiet: no horde until a zombie notices someone.</summary>
         public byte Quiet;
+        /// <summary>How many quiet stretches the room got through unseen this chapter: each PC pays its player as it rises.</summary>
+        public byte Unseen;
         public bool Equals(Status other) => Step == other.Step && Finished == other.Finished && Checkpoint == other.Checkpoint
-            && Held == other.Held && Doors == other.Doors && Quiet == other.Quiet;
+            && Held == other.Held && Doors == other.Doors && Quiet == other.Quiet && Unseen == other.Unseen;
     }
 
     [SerializeField, Tooltip("What the hordes are made of.")]
@@ -113,6 +115,11 @@ public sealed class CampaignRun : MonoBehaviour
     private bool quiet, wasQuiet, calmDue;
     // The quiet came back after they were found (a lull, not the stretch's own start), and when they were last found.
     private bool lull;
+    // The stealth round's reward (StealthScore.Unseen): this stretch hasn't been found yet, how many calm zombies it was
+    // given, how many stretches went unseen this chapter, and whether a guest has heard the host's count yet.
+    private bool unseen, unseenKnown;
+    private int calmMade;
+    private byte unseenCount;
     private float noticedAt = float.NegativeInfinity;
     // A hold with no song has sent its brutes; who the ride left behind, for the closing card.
     private bool songlessSent;
@@ -211,13 +218,15 @@ public sealed class CampaignRun : MonoBehaviour
     {
         quiet = wasQuiet = calmDue = quietStart;
         lull = false;
+        unseen = quietStart;
+        calmMade = 0;
     }
 
     // One of them has noticed someone: the horde is on its way from here on.
     private void OnWoke(ZombieMind mind, PlayerMovement who)
     {
         if (!IsHost || finished) return;
-        quiet = lull = false;
+        quiet = lull = unseen = false;
         noticedAt = Time.time;
     }
 
@@ -232,7 +241,7 @@ public sealed class CampaignRun : MonoBehaviour
             if (ahead.Kind == CampaignStepKind.Hold || ahead.Kind == CampaignStepKind.Escape) break;
             var spot = SpotOf(ahead.Spot);
             if (spot == null) continue;
-            horde.PlaceCalm(Mathf.RoundToInt(ahead.Horde * calmShare), from, spot.position, players, calmNear);
+            calmMade += horde.PlaceCalm(Mathf.RoundToInt(ahead.Horde * calmShare), from, spot.position, players, calmNear);
             from = spot.position;
             if (ahead.Kind == CampaignStepKind.Checkpoint) break;
         }
@@ -416,6 +425,14 @@ public sealed class CampaignRun : MonoBehaviour
 
     private static void MissedRide() => AlertHUD.Danger(Texts.Get("campaign.alert.ride"));
 
+    // Through unseen: the points, the words and three bells.
+    private static void ShowUnseen()
+    {
+        CombatFeedHUD.Award(Texts.Get("feed.score.unseen"), StealthScore.Unseen);
+        AlertHUD.Self(Texts.Get("campaign.alert.unseen"));
+        KitSound.Play(KitSound.Cue.Unseen, .8f);
+    }
+
     // Friend feedback C4 ("일부러 지나친 곳 다시 가기 싫어"): a later step met first finishes every step before it, as long
     // as each step on the way is only getting somewhere, pressing something or a rest stop. A hold, a collect and the
     // escape always play out, and nothing is skipped past them. A rest stop passed on the way still becomes the place
@@ -459,6 +476,17 @@ public sealed class CampaignRun : MonoBehaviour
         step++;
         held = 0f;
         songlessSent = false;
+        // A whole quiet stretch got through without one zombie finding anyone: into the rest stop, or up to where a hold
+        // or the escape begins. Every player is paid for it, each PC on the host's word (Status.Unseen).
+        var next = Current;
+        bool through = done.Kind == CampaignStepKind.Checkpoint
+            || next != null && (next.Kind == CampaignStepKind.Hold || next.Kind == CampaignStepKind.Escape);
+        if (IsHost && through && unseen && quiet && !lull && calmMade > 0)
+        {
+            unseen = false;
+            unseenCount++;
+            ShowUnseen();
+        }
         // The way on from a rest stop starts quiet again.
         if (done.Kind == CampaignStepKind.Checkpoint && step < steps.Count) BeginQuiet();
         if (done.Kind == CampaignStepKind.Escape || step >= steps.Count) Finish();
@@ -742,7 +770,7 @@ public sealed class CampaignRun : MonoBehaviour
         {
             Step = (byte)Mathf.Clamp(step, 0, 255), Finished = (byte)(finished ? 1 : 0),
             Checkpoint = (byte)Mathf.Clamp(checkpoint + 1, 0, 255), Held = (ushort)Mathf.Clamp(Mathf.FloorToInt(held), 0, ushort.MaxValue),
-            Doors = DoorBits(), Quiet = (byte)(quiet ? lull ? 2 : 1 : 0)
+            Doors = DoorBits(), Quiet = (byte)(quiet ? lull ? 2 : 1 : 0), Unseen = unseenCount
         };
         if (now.Equals(sent) && Time.unscaledTime < nextShare) return;
         sent = now;
@@ -765,6 +793,15 @@ public sealed class CampaignRun : MonoBehaviour
         held = status.Held;
         quiet = status.Quiet != 0;
         lull = status.Quiet == 2;
+        // The host's count of stretches got through unseen: each one more pays this player too. The first word only
+        // sets the count, so joining late pays for nothing that came before.
+        if (!unseenKnown) { unseenKnown = true; unseenCount = status.Unseen; }
+        else if (status.Unseen != unseenCount)
+        {
+            int more = (byte)(status.Unseen - unseenCount);
+            unseenCount = status.Unseen;
+            if (more > 0 && more < 4) for (int i = 0; i < more; i++) ShowUnseen();
+        }
         for (int i = 0; i < doors.Length && i < 8; i++) if (doors[i] != null) doors[i].Closed = (status.Doors & (1 << i)) != 0;
         if (status.Finished != 0)
         {

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -13,14 +14,20 @@ public enum ZombieMood : byte { Awake, Calm, Searching, Alert, Rousing, Rising }
 /// <summary>
 /// Multiplayer plan stage 4C: what a zombie knows. A horde zombie (a wave's, or a plain /spawn) is awake from the start
 /// and always knows where the nearest player is, as before. One that starts calm (placed in a map with startCalm, or
-/// /spawn n calm) has to notice them: it stands Calm, grows Alert (stops and turns to what it noticed), goes Searching
-/// (walks over to look) and wakes when sure, then chases and fights as before, and calls the calm ones nearby. Its
-/// suspicion grows from what it sees and hears. Sight: players within range and in front (slower to the side), each
-/// checked at the head, chest and hips with rays, faster the closer, the more of them shows and the faster they move,
-/// slower crouched and slower still lying down; anyone this close and seen wakes it at once. Hearing: every Noise
-/// (footsteps, landings, vaults, voices, shots) within its reach, half the reach through a wall, louder the nearer. A
-/// blow wakes it at once. Awake but no longer seeing nor hearing its quarry, it searches where it last knew them, and
-/// gives up in the end. The host thinks; other PCs only show its mood (EnemyNetwork). Numbers: Tables/ZombieSenses.
+/// /spawn n calm) has to notice them: it stands Calm and looks round now and then, grows Alert (stops and turns to what
+/// it noticed), goes Searching (walks over and looks about) and wakes when sure, then chases and fights as before, and
+/// calls the calm ones nearby. Its suspicion grows from what it sees and hears. Sight: players within range and in
+/// front, best straight ahead and fading toward the edge of its sight, each checked at the head, chest and hips with
+/// rays, faster the closer, the more of them shows and the faster they move, slower crouched and slower still lying
+/// down, sooner and from farther with their flashlight turned on it; anyone this close right before its eyes wakes it
+/// at once. Hearing: every Noise (footsteps, landings, vaults, voices, shots) within its reach, half the reach through a
+/// wall, louder the nearer, but none of a crouched player's small sounds; a faint one only turns its head. A stone a
+/// player threw (a lure) draws the nearest that hears it over to look, and turns the others' heads, without ever
+/// telling them who threw it. A blow wakes it at once. Awake but no longer seeing nor hearing its quarry, it searches
+/// where it last knew them, and gives up in the end. The host thinks; other PCs show its mood, how sure it is and of
+/// whom (EnemyNetwork), for the stealth HUD. Numbers: Tables/ZombieSenses. The 2026-11-11 stealth round took its
+/// shape from Advanced Stealth (F:\Addons): the smooth fall-off of sight to the side, silent crouched steps, thrown
+/// objects that draw one zombie while the rest turn to look.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class ZombieMind : MonoBehaviour
@@ -49,7 +56,7 @@ public sealed class ZombieMind : MonoBehaviour
     private float nearRate = 2.5f;
     [SerializeField, Range(0f, 1f), Tooltip("How fast it notices at the far end of its sight, as a share of nearRate.")]
     private float farShare = .15f;
-    [SerializeField, Min(0f), Tooltip("Seen this close (m), a player wakes it at once.")]
+    [SerializeField, Min(0f), Tooltip("Seen this close (m) and in its full view, a player wakes it at once.")]
     private float touchRange = 2f;
     [SerializeField, Range(0f, 1f)] private float crouchShare = .55f;
     [SerializeField, Range(0f, 1f), Tooltip("Lying down: prone, on the back, crawling.")]
@@ -60,6 +67,12 @@ public sealed class ZombieMind : MonoBehaviour
     private float sprintShare = 1.6f;
     [SerializeField, Min(.1f), Tooltip("Speed that counts as sprinting (m/s).")]
     private float sprintSpeed = 5f;
+    [SerializeField, Min(1f), Tooltip("A player whose flashlight is on and turned on it: how much faster it notices them.")]
+    private float lightShare = 1.6f;
+    [SerializeField, Min(1f), Tooltip("...and how much farther it sees them from, as a share of its sight.")]
+    private float lightRange = 1.4f;
+    [SerializeField, Range(1f, 90f), Tooltip("How far off the way a player faces their flashlight still lights it (degrees either side).")]
+    private float lightAngle = 30f;
 
     [Header("Hearing")]
     [SerializeField, Range(0f, 2f), Tooltip("Share of a noise's reach it hears, alert or searching.")]
@@ -70,6 +83,14 @@ public sealed class ZombieMind : MonoBehaviour
     private float wallShare = .5f;
     [SerializeField, Min(0f), Tooltip("Suspicion a noise gives right at its source; less the farther off.")]
     private float hearGain = 1.5f;
+    [SerializeField, Min(0f), Tooltip("A crouched player's sounds that carry no farther than this (m: a sneaking step, crouching, a lean) don't reach it at all.")]
+    private float sneakSilent = 3f;
+    [SerializeField, Min(0f), Tooltip("Least suspicion a sound has to give it for it to turn its head that way a moment.")]
+    private float glanceAt = .06f;
+    [SerializeField, Min(0f), Tooltip("How long it looks toward a faint sound, or a stone it isn't the one to check, before it settles (s).")]
+    private float glanceSeconds = 1.5f;
+    [SerializeField, Min(0f), Tooltip("The one nearest a thrown stone stares at where it fell this long (s), then walks over to look.")]
+    private float lureStare = 1.2f;
 
     [Header("Mind")]
     [SerializeField, Min(0f), Tooltip("Suspicion lost a second while it notices nothing.")]
@@ -82,12 +103,20 @@ public sealed class ZombieMind : MonoBehaviour
     private float searchSeconds = 12f;
     [SerializeField, Min(0f), Tooltip("How long it looks round once it reaches the place (s).")]
     private float lookSeconds = 3f;
+    [SerializeField, Range(0f, 180f), Tooltip("Looking round where it came to search, how far it turns either way (degrees).")]
+    private float searchSweep = 70f;
     [SerializeField, Range(.05f, 1f), Tooltip("Searching, it walks at this share of its chase speed.")]
     private float searchSpeedShare = .3f;
     [SerializeField, Min(0f), Tooltip("Waking, it wakes the calm ones this near (m).")]
     private float callRadius = 12f;
     [SerializeField, Min(0f), Tooltip("Alert, how fast it turns to what it noticed (degrees a second).")]
     private float turnSpeed = 240f;
+    [SerializeField, Min(0f), Tooltip("Calm, about how often it turns to look elsewhere (s). 0: never.")]
+    private float lookAroundEvery = 8f;
+    [SerializeField, Range(0f, 180f), Tooltip("Calm, how far from the way it stood it turns to look (degrees either side).")]
+    private float lookAroundAngle = 80f;
+    [SerializeField, Min(0f), Tooltip("Calm, how fast it turns when it looks round (degrees a second).")]
+    private float lookAroundSpeed = 40f;
     [SerializeField, Min(0f), Tooltip("Woken from calm, how long it rouses before it charges (s): its rouse clip.")]
     private float rouseSeconds = 1.1f;
     [SerializeField, Range(0f, 90f), Tooltip("How far it looks up (degrees above level from its eyes): someone higher than this "
@@ -100,10 +129,15 @@ public sealed class ZombieMind : MonoBehaviour
     private float riseRouse = 1.2f;
 
     [Header("Stealth kill")]
-    [SerializeField, Range(10f, 180f), Tooltip("Within this angle either side of its back (degrees), a player may take an unaware zombie down (F, or a left click with the fists).")]
+    [SerializeField, Range(10f, 180f), Tooltip("Within this angle either side of its back (degrees), a player may take a zombie that isn't awake down (F, or a left click with the fists).")]
     private float takedownAngle = 70f;
 
     private static readonly List<ZombieMind> minds = new List<ZombieMind>();
+    // Each player's gun, for its flashlight. Found once.
+    private static readonly Dictionary<PlayerMovement, WeaponController> guns = new Dictionary<PlayerMovement, WeaponController>();
+
+    /// <summary>Every zombie mind switched on, on this PC (the host's or copies), for the stealth HUD and view.</summary>
+    public static IReadOnlyList<ZombieMind> All => minds;
 
     /// <summary>
     /// On the host or alone: a zombie that had not noticed anyone has, and who it is after. A campaign's quiet stretch
@@ -116,10 +150,18 @@ public sealed class ZombieMind : MonoBehaviour
     private MeleeCombatTarget melee;
     private NavMeshAgent agent;
     private ZombieBody body;
-    private PlayerMovement focus;
+    // Who it is after (or would be), and who its suspicion or a stone came from: whom the stealth HUD shows it to.
+    private PlayerMovement focus, noticed;
     private Vector3 stimulus, lastKnown;
     private float suspicion, thinkLeft, lastSeen, searchStart, arrivedAt, rouseUntil, chaseSpeed = -1f;
+    // A glance's end (0: not glancing), the way it stood calm, the way it looks now and when it looks elsewhere next, and
+    // the way it faced on reaching a search's place.
+    private float glanceUntil, postYaw, lookYaw, lookAt, arriveYaw;
     private bool horde = true, arrived;
+    // On a copy: how sure the host's zombie is, in twentieths, and of whom (their client id + 1; 0 for nobody).
+    private byte shownStep;
+    private ulong shownWatch, resolvedWatch;
+    private PlayerMovement shownWatcher;
 
     /// <summary>Its mood: thought on the host (or alone), shown on every other PC.</summary>
     public ZombieMood Mood { get; private set; } = ZombieMood.Awake;
@@ -127,17 +169,57 @@ public sealed class ZombieMind : MonoBehaviour
     public bool IsAwake => Mood == ZombieMood.Awake || Mood == ZombieMood.Rousing || Mood == ZombieMood.Rising;
     /// <summary>Awake and done rousing: it may chase and fight (EnemyChaseAI, EnemyCombatAI).</summary>
     public bool Ready => Mood == ZombieMood.Awake;
-    /// <summary>Unaware of anyone: calm or searching, not alert.</summary>
-    public bool Unaware => Mood == ZombieMood.Calm || Mood == ZombieMood.Searching;
+    /// <summary>
+    /// Not awake: calm, searching, or alert to something it hasn't made out. A takedown from behind ends it (EnemyHealth).
+    /// Alert used to count as aware, so a zombie turned to look at a thrown stone could not be taken from behind.
+    /// </summary>
+    public bool Unaware => !IsAwake;
     /// <summary>The player it is after, awake; null for a horde zombie, which takes the nearest (EnemyTargeting).</summary>
     public PlayerMovement Target => IsAwake && !horde && Alive(focus) ? focus : null;
-    /// <summary>How sure it is that someone is there, 0 to 1.</summary>
+    /// <summary>How sure it is that someone is there, 0 to 1 (the host's own).</summary>
     public float Suspicion => suspicion;
 
+    /// <summary>How sure it is that someone is there, 0 to 1, on every PC: the host's own, a copy's as the host shares it.</summary>
+    public float ShownSuspicion => IsCopy ? shownStep / 20f : horde ? 0f : suspicion;
+
+    /// <summary>The host's suspicion in twentieths, for its copies (EnemyNetwork).</summary>
+    internal byte SuspicionStep => (byte)Mathf.Clamp(Mathf.RoundToInt(ShownSuspicion * 20f), 0, 20);
+
     /// <summary>
-    /// Stage 4C-2: unaware of anyone (calm or searching) and this spot behind its back, so a player standing there may
-    /// take it down, an execution without breaking it first (MeleeCombatTarget.CanBeExecutedBy). Every PC judges it the
-    /// same way from the mood the host shares; the host checks again when it holds the zombie for them.
+    /// The player it is noticing, going to look for or woke after, on every PC; null for nobody and for a horde zombie.
+    /// The stealth HUD shows it to that player (StealthMarkersHUD).
+    /// </summary>
+    public PlayerMovement Watching
+    {
+        get
+        {
+            if (!IsCopy) return !horde && Alive(noticed) ? noticed : null;
+            if (shownWatch == 0) return null;
+            if (resolvedWatch != shownWatch || shownWatcher == null)
+            {
+                resolvedWatch = shownWatch;
+                shownWatcher = null;
+                foreach (var player in PlayerRoster.All)
+                    if (player != null && player.TryGetComponent(out NetworkObject net) && net.OwnerClientId + 1 == shownWatch) { shownWatcher = player; break; }
+            }
+            return shownWatcher;
+        }
+    }
+
+    /// <summary>Where it sees and hears from: its head, or about there without a body.</summary>
+    internal Vector3 EyePoint => Eye();
+    /// <summary>Its body still lives (on this PC).</summary>
+    internal bool Living => health != null && health.IsAlive;
+    /// <summary>How far it sees now (m): its calm sight while calm.</summary>
+    internal float ViewRange => Mood == ZombieMood.Calm ? calmSightRange : sightRange;
+    /// <summary>Its full view and the edge of its sight, side to side (degrees).</summary>
+    internal float FrontView => fieldOfView;
+    internal float EdgeView => Mathf.Max(fieldOfView, sideView);
+
+    /// <summary>
+    /// Stage 4C-2: not awake (calm, searching or alert) and this spot behind its back, so a player standing there may take
+    /// it down, an execution without breaking it first (MeleeCombatTarget.CanBeExecutedBy). Every PC judges it the same
+    /// way from the mood the host shares; the host checks again when it holds the zombie for them.
     /// </summary>
     public bool CanBeTakenDownFrom(Vector3 at)
     {
@@ -150,6 +232,7 @@ public sealed class ZombieMind : MonoBehaviour
     private static void ClearStatics()
     {
         minds.Clear();
+        guns.Clear();
         Woke = null;
         LastNoticed = float.NegativeInfinity;
     }
@@ -205,6 +288,8 @@ public sealed class ZombieMind : MonoBehaviour
             if (mind.TryGetComponent(out ZombieGrip grip) && grip.IsHolding) continue;
             mind.horde = false;
             mind.focus = null;
+            // Lost, none of them is noticing anyone in particular: no question marks over the whole crowd.
+            mind.noticed = null;
             mind.suspicion = mind.alertAt;
             mind.Search(mind.lastKnown != Vector3.zero ? mind.lastKnown : mind.transform.position);
         }
@@ -217,8 +302,27 @@ public sealed class ZombieMind : MonoBehaviour
         horde = false;
         Mood = ZombieMood.Calm;
         suspicion = 0f;
-        focus = null;
+        focus = noticed = null;
+        glanceUntil = 0f;
         Halt();
+        Post();
+        lookAt = Time.time + Random.Range(1.5f, Mathf.Max(1.5f, lookAroundEvery));
+    }
+
+    /// <summary>
+    /// Placed calm (CampaignHorde), it stands looking this way (degrees about up) and looks round from there.
+    /// </summary>
+    internal void FaceWhenCalm(float yaw)
+    {
+        if (IsCopy) return;
+        transform.rotation = Quaternion.Euler(0f, yaw, 0f);
+        Post();
+    }
+
+    // Where it stands looking now becomes the way it looks round from.
+    private void Post()
+    {
+        postYaw = lookYaw = transform.eulerAngles.y;
     }
 
     /// <summary>
@@ -240,7 +344,9 @@ public sealed class ZombieMind : MonoBehaviour
         if (IsCopy || IsAwake) return;
         Mood = rouse && rouseSeconds > 0f ? ZombieMood.Rousing : ZombieMood.Awake;
         suspicion = 1f;
+        glanceUntil = 0f;
         focus = Alive(who) ? who : PlayerRoster.Nearest(transform.position);
+        noticed = focus;
         lastSeen = Time.time;
         if (focus != null) lastKnown = focus.transform.position;
         rouseUntil = Time.time + rouseSeconds;
@@ -263,9 +369,34 @@ public sealed class ZombieMind : MonoBehaviour
         Halt();
     }
 
+    // It turns to look at something a moment (a faint sound, a stone another goes to check), then settles back where it
+    // stood. One already searching keeps at it, and a real alert stays one.
+    private void Glance(Vector3 at, PlayerMovement by)
+    {
+        if (glanceSeconds <= 0f) return;
+        if (Mood != ZombieMood.Calm && !(Mood == ZombieMood.Alert && glanceUntil > 0f)) return;
+        stimulus = at;
+        if (noticed == null && Alive(by)) noticed = by;
+        glanceUntil = Time.time + glanceSeconds;
+        if (Mood == ZombieMood.Calm) { Mood = ZombieMood.Alert; Halt(); }
+    }
+
+    // The one nearest where a stone fell: it stares that way a moment, then walks over to look (Searching), as at anything
+    // it half noticed. Never sure enough to wake from it.
+    private void Investigate(Vector3 at, PlayerMovement by)
+    {
+        glanceUntil = 0f;
+        stimulus = at;
+        if (Alive(by)) noticed = by;
+        suspicion = Mathf.Max(suspicion, Mathf.Min(.9f, alertAt + forget * lureStare));
+        if (Mood == ZombieMood.Searching) { Search(at); return; }
+        Alert(at);
+    }
+
     private void Search(Vector3 at)
     {
         Mood = ZombieMood.Searching;
+        glanceUntil = 0f;
         stimulus = at;
         searchStart = Time.time;
         arrived = false;
@@ -273,6 +404,18 @@ public sealed class ZombieMind : MonoBehaviour
         if (agent == null || !agent.isActiveAndEnabled || !agent.isOnNavMesh) return;
         agent.isStopped = false;
         agent.SetDestination(at);
+    }
+
+    // Back to standing calm. Glancing, it turns back the way it stood; after a search, where it ends up is its new post.
+    private void Settle(bool newPost)
+    {
+        glanceUntil = 0f;
+        Mood = ZombieMood.Calm;
+        SetSpeed(1f);
+        Halt();
+        if (newPost) Post();
+        else lookYaw = postYaw;
+        lookAt = Time.time + Mathf.Max(1f, lookAroundEvery) * Random.Range(.5f, 1f);
     }
 
     private void Halt()
@@ -303,10 +446,13 @@ public sealed class ZombieMind : MonoBehaviour
         Wake(hit.Source != null ? hit.Source.GetComponentInParent<PlayerMovement>() : null, false);
     }
 
-    /// <summary>On another PC: the mood the host's zombie is in.</summary>
-    internal void ShowMood(byte mood)
+    /// <summary>On another PC: the mood the host's zombie is in, how sure it is (twentieths) and of whom (client id + 1).</summary>
+    internal void ShowMind(byte mood, byte step, ulong watch)
     {
-        if (IsCopy) Mood = (ZombieMood)mood;
+        if (!IsCopy) return;
+        Mood = (ZombieMood)mood;
+        shownStep = step;
+        shownWatch = watch;
     }
 
     // ---- Thinking ----------------------------------------------------------------------------------------------
@@ -315,23 +461,31 @@ public sealed class ZombieMind : MonoBehaviour
     {
         if (!Thinks) return;
         ComeTo();
-        if (Mood == ZombieMood.Alert) TurnTo(stimulus, Time.deltaTime);
+        float dt = Time.deltaTime;
+        // Held (a takedown, a grab), shoved or down, it turns to nothing: an alert one can be taken from behind now, and
+        // turning in the executor's hands would pull the takedown apart.
+        if (melee == null || !melee.IsStunned)
+        {
+            if (Mood == ZombieMood.Alert) TurnTo(stimulus, dt);
+            else if (Mood == ZombieMood.Calm) LookRound(dt);
+            else if (Mood == ZombieMood.Searching && arrived) Sweep(dt);
+        }
         if (Mood == ZombieMood.Rousing || Mood == ZombieMood.Rising)
         {
-            if (focus != null) TurnTo(focus.transform.position, Time.deltaTime);
+            if (focus != null) TurnTo(focus.transform.position, dt);
             if (Time.time >= rouseUntil)
             {
                 Mood = ZombieMood.Awake;
                 if (agent != null && agent.isActiveAndEnabled && agent.isOnNavMesh) agent.isStopped = false;
             }
         }
-        if ((thinkLeft -= Time.deltaTime) > 0f) return;
+        if ((thinkLeft -= dt) > 0f) return;
         thinkLeft += ThinkEvery;
         // A horde zombie needs no senses to hunt (EnemyTargeting gives it the nearest), but whether any zombie still has
         // someone in sight decides when the campaign lets the chase die down (LastNoticed, CampaignRun's lull).
         if (horde)
         {
-            if (Mood == ZombieMood.Awake && Look(out _) is PlayerMovement seen) { LastNoticed = Time.time; lastKnown = seen.transform.position; }
+            if (Mood == ZombieMood.Awake && Look(out _, out _) is PlayerMovement seen) { LastNoticed = Time.time; lastKnown = seen.transform.position; }
             return;
         }
         // Down, stunned or held it notices nothing new; a blow has woken it anyway.
@@ -361,7 +515,7 @@ public sealed class ZombieMind : MonoBehaviour
 
     private void Think(float dt)
     {
-        var seen = Look(out float rate);
+        var seen = Look(out float rate, out bool touching);
         if (IsAwake)
         {
             if (seen != null && (focus == null || seen == focus || !Alive(focus))) focus = seen;
@@ -372,16 +526,24 @@ public sealed class ZombieMind : MonoBehaviour
         if (seen != null)
         {
             suspicion += rate * dt;
-            focus = seen;
+            focus = noticed = seen;
             stimulus = seen.transform.position;
-            if (Vector3.Distance(seen.transform.position, transform.position) <= touchRange) { Wake(seen); return; }
+            if (touching) { Wake(seen); return; }
         }
         else suspicion = Mathf.Max(0f, suspicion - forget * dt);
 
         if (suspicion >= 1f) { Wake(focus); return; }
-        if (suspicion >= alertAt) { Alert(stimulus); return; }
-        if (Mood == ZombieMood.Alert) { Search(stimulus); return; }
+        // Sure enough to stop and stare: a glance becomes a real look.
+        if (suspicion >= alertAt) { glanceUntil = 0f; Alert(stimulus); return; }
+        if (Mood == ZombieMood.Alert)
+        {
+            // A glance at something it won't go to: it looks till its time is up, then settles back.
+            if (glanceUntil > 0f) { if (Time.time >= glanceUntil) Settle(false); return; }
+            Search(stimulus);
+            return;
+        }
         if (Mood == ZombieMood.Searching) Searching();
+        else if (Mood == ZombieMood.Calm && suspicion <= 0f) noticed = null;
     }
 
     private void Searching()
@@ -391,14 +553,10 @@ public sealed class ZombieMind : MonoBehaviour
         {
             arrived = true;
             arrivedAt = Time.time;
+            arriveYaw = transform.eulerAngles.y;
             Halt();
         }
-        if ((arrived && Time.time - arrivedAt >= lookSeconds) || Time.time - searchStart >= searchSeconds)
-        {
-            Mood = ZombieMood.Calm;
-            SetSpeed(1f);
-            Halt();
-        }
+        if ((arrived && Time.time - arrivedAt >= lookSeconds) || Time.time - searchStart >= searchSeconds) Settle(true);
     }
 
     private void TurnTo(Vector3 at, float dt)
@@ -408,31 +566,93 @@ public sealed class ZombieMind : MonoBehaviour
         transform.rotation = Quaternion.RotateTowards(transform.rotation, Quaternion.LookRotation(way), turnSpeed * dt);
     }
 
-    // The player it notices fastest now, and how fast (suspicion a second).
-    private PlayerMovement Look(out float best)
+    // Standing calm it looks round now and then: a slow turn some way off the way it stood, and back again the next time,
+    // so no stretch of the way is watched for good and gaps open and close (the stealth view's cones show it). Every
+    // calm zombie used to stare one way forever, so a scattered few covered every way past (user, 2026-11-11: "얘들이
+    // 각자 흩어져 있으니까 사방을 보고 있고").
+    private void LookRound(float dt)
+    {
+        if (lookAroundEvery <= 0f || lookAroundAngle <= 0f || lookAroundSpeed <= 0f) return;
+        if (Time.time >= lookAt)
+        {
+            lookAt = Time.time + lookAroundEvery * Random.Range(.6f, 1.4f);
+            bool atPost = Mathf.Abs(Mathf.DeltaAngle(lookYaw, postYaw)) < 1f;
+            lookYaw = atPost ? postYaw + Random.Range(-lookAroundAngle, lookAroundAngle) : postYaw;
+        }
+        transform.rotation = Quaternion.RotateTowards(transform.rotation, Quaternion.Euler(0f, lookYaw, 0f), lookAroundSpeed * dt);
+    }
+
+    // Come to where it searches, it looks left, then right, then back ahead over lookSeconds, not a statue's stare.
+    private void Sweep(float dt)
+    {
+        if (searchSweep <= 0f || lookSeconds <= 0f) return;
+        float phase = Mathf.Clamp01((Time.time - arrivedAt) / lookSeconds);
+        float yaw = arriveYaw + Mathf.Sin(phase * Mathf.PI * 2f) * searchSweep;
+        transform.rotation = Quaternion.RotateTowards(transform.rotation, Quaternion.Euler(0f, yaw, 0f), turnSpeed * .5f * dt);
+    }
+
+    // The player it notices fastest now, how fast (suspicion a second), and whether they stand right before its eyes.
+    private PlayerMovement Look(out float best, out bool touching)
     {
         best = 0f;
+        touching = false;
         PlayerMovement found = null;
-        float range = Mood == ZombieMood.Calm ? calmSightRange : sightRange;
+        float sight = Mood == ZombieMood.Calm ? calmSightRange : sightRange;
         Vector3 eye = Eye();
         foreach (var player in PlayerRoster.All)
         {
             if (!Alive(player)) continue;
             Vector3 toward = player.transform.position - transform.position;
+            bool lit = Lit(player, toward);
+            float range = sight * (lit ? lightRange : 1f);
             float distance = toward.magnitude;
             if (distance > range) continue;
             float angle = Vector3.Angle(transform.forward, Vector3.ProjectOnPlane(toward, Vector3.up));
-            if (angle > sideView * .5f) continue;
+            float view = Angular(angle);
+            if (view <= 0f) continue;
             float shown = Shown(player, eye);
             if (shown <= 0f) continue;
             // It hardly looks up: someone well above its eyes is seen at lookUpShare.
             float above = Mathf.Atan2(player.transform.position.y + 1f - eye.y, Mathf.Max(.01f, new Vector2(toward.x, toward.z).magnitude))
                 * Mathf.Rad2Deg;
-            float rate = nearRate * Mathf.Lerp(1f, farShare, distance / Mathf.Max(.01f, range)) * shown * Posture(player)
-                * (angle <= fieldOfView * .5f ? 1f : sideShare) * (above > lookUp ? lookUpShare : 1f);
-            if (rate > best) { best = rate; found = player; }
+            float rate = nearRate * Mathf.Lerp(1f, farShare, distance / Mathf.Max(.01f, range)) * shown * Posture(player) * view
+                * (above > lookUp ? lookUpShare : 1f) * (lit ? lightShare : 1f);
+            if (rate <= best) continue;
+            best = rate;
+            found = player;
+            touching = distance <= touchRange && angle <= fieldOfView * .5f;
         }
         return found;
+    }
+
+    // How well it sees at this angle off its nose (degrees): fully straight ahead, a little less toward the edge of its
+    // full view, then quickly down to sideShare, which holds across the edge of its sight and fades out at its very end.
+    // It was a step from full to sideShare, so one degree either side of the line decided a great deal (Advanced
+    // Stealth's peripheral glimpses, which gather suspicion much more slowly).
+    private float Angular(float angle)
+    {
+        float front = fieldOfView * .5f, edge = Mathf.Max(front + 1f, sideView * .5f);
+        if (angle <= front) return Mathf.Lerp(1f, .85f, Mathf.Clamp01(angle / Mathf.Max(1f, front)));
+        if (angle >= edge) return 0f;
+        float t = (angle - front) / (edge - front);
+        return Mathf.Lerp(.85f, sideShare, Mathf.SmoothStep(0f, 1f, t / .25f)) * (1f - Mathf.SmoothStep(0f, 1f, (t - .75f) / .25f));
+    }
+
+    // Their flashlight is on and turned this way: it makes them out sooner and from farther ("손전등 켜면 들킨다").
+    private bool Lit(PlayerMovement player, Vector3 toward)
+    {
+        if (lightShare <= 1f && lightRange <= 1f) return false;
+        var gun = GunOf(player);
+        if (gun == null || !gun.LightOn) return false;
+        Vector3 beam = Vector3.ProjectOnPlane(player.transform.forward, Vector3.up);
+        Vector3 back = Vector3.ProjectOnPlane(-toward, Vector3.up);
+        return beam.sqrMagnitude > 1e-4f && back.sqrMagnitude > 1e-4f && Vector3.Angle(beam, back) <= lightAngle;
+    }
+
+    private static WeaponController GunOf(PlayerMovement player)
+    {
+        if (!guns.TryGetValue(player, out var gun) || gun == null) guns[player] = gun = player.GetComponentInChildren<WeaponController>();
+        return gun;
     }
 
     // How much of them it can see: the share of head, chest and hips no wall hides.
@@ -475,6 +695,8 @@ public sealed class ZombieMind : MonoBehaviour
 
     // Walls and the world hide players (maps build them on Default); other zombies don't.
     private static int Sight => ~LayerMask.GetMask(EnemyLayer);
+    // Sound goes round players, corpses and what lies on the floor (layer 31): only the world muffles it.
+    private static int Hearing => Sight & ~(1 << 31);
 
     private static bool Alive(PlayerMovement player)
         => player != null && player.IsInitialized && !player.IsDead && player.DamageReceiver != null && player.DamageReceiver.IsAlive;
@@ -483,23 +705,38 @@ public sealed class ZombieMind : MonoBehaviour
 
     private static void Hear(NoiseEvent noise)
     {
+        if (noise.Lure) { HearLure(noise); return; }
         var source = noise.Source != null ? noise.Source.GetComponentInParent<PlayerMovement>() : null;
         if (source == null || !Alive(source)) return;
         foreach (var mind in minds) if (mind != null && mind.Thinks && !mind.horde) mind.Heard(noise, source);
     }
 
+    // A thrown stone landing (PlayerThrow): of those not awake that hear it, the nearest goes to look and the rest turn to
+    // look and settle. It never says where the thrower is, nor wakes anyone by itself (Advanced Stealth: "The nearest
+    // guard goes to check the object; others turn to look").
+    private static void HearLure(in NoiseEvent noise)
+    {
+        var thrower = noise.Source != null ? noise.Source.GetComponentInParent<PlayerMovement>() : null;
+        ZombieMind nearest = null;
+        float best = float.MaxValue;
+        foreach (var mind in minds)
+        {
+            if (mind == null || !mind.Thinks || mind.horde || mind.IsAwake) continue;
+            if (mind.melee != null && mind.melee.IsStunned) continue;
+            if (!mind.Reaches(noise, out float distance, out _)) continue;
+            if (distance < best) { best = distance; nearest = mind; }
+            mind.Glance(noise.Point, thrower);
+        }
+        if (nearest != null) nearest.Investigate(noise.Point, thrower);
+    }
+
     private void Heard(in NoiseEvent noise, PlayerMovement source)
     {
-        float reach = noise.Radius * (Mood == ZombieMood.Calm ? calmHearShare : hearShare);
-        Vector3 ear = Eye();
-        float distance = Vector3.Distance(noise.Point, ear);
-        if (distance > reach) return;
-        Vector3 path = ear - noise.Point;
-        if (distance > .01f && Physics.Raycast(noise.Point, path / distance, distance, Sight, QueryTriggerInteraction.Ignore))
-        {
-            reach *= wallShare;
-            if (distance > reach) return;
-        }
+        // A crouched player's small sounds (a sneaking step, crouching, a lean) don't carry to it: crouched steps alerted
+        // a zombie a step behind it, which then turned, saw them that close and woke (user, 2026-11-11: "앉아서 가도 금방
+        // 눈치챈다"). Advanced Stealth silences crouched footsteps the same way.
+        if (source.IsCrouching && noise.Radius <= sneakSilent) return;
+        if (!Reaches(noise, out float distance, out float reach)) return;
         float loudness = 1f - distance / Mathf.Max(.01f, reach);
         if (IsAwake)
         {
@@ -508,10 +745,49 @@ public sealed class ZombieMind : MonoBehaviour
             return;
         }
         if (melee != null && melee.IsStunned) return;
-        suspicion += hearGain * loudness;
-        focus = source;
+        float gained = hearGain * loudness;
+        suspicion += gained;
+        focus = noticed = source;
         stimulus = noise.Point;
         if (suspicion >= 1f) Wake(source);
-        else if (suspicion >= alertAt) Alert(noise.Point);
+        else if (suspicion >= alertAt) { glanceUntil = 0f; Alert(noise.Point); }
+        // Too faint to stop for, it still turns its head that way a moment, and may see who made it.
+        else if (gained >= glanceAt) Glance(noise.Point, source);
+    }
+
+    // Whether this sound reaches its ears, how far off it is and how far it carries to it (m): half as far through a wall.
+    private bool Reaches(in NoiseEvent noise, out float distance, out float reach)
+    {
+        reach = noise.Radius * (Mood == ZombieMood.Calm ? calmHearShare : hearShare);
+        Vector3 ear = Eye();
+        distance = Vector3.Distance(noise.Point, ear);
+        if (distance > reach) return false;
+        Vector3 path = ear - noise.Point;
+        if (distance > .01f && Physics.Raycast(noise.Point, path / distance, distance, Hearing, QueryTriggerInteraction.Ignore))
+        {
+            reach *= wallShare;
+            if (distance > reach) return false;
+        }
+        return true;
+    }
+
+    /// <summary>
+    /// For the stealth view (StealthView): how far a sound of the local player's carries to a calm zombie in the open (m),
+    /// and whether any zombie that isn't awake hears it now. 0 when it doesn't carry at all (a crouched player's small
+    /// sounds), or with no zombie about.
+    /// </summary>
+    internal static float CalmReach(in NoiseEvent noise, PlayerMovement source, out bool heard)
+    {
+        heard = false;
+        ZombieMind any = null;
+        foreach (var mind in minds) if (mind != null) { any = mind; break; }
+        if (any == null) return 0f;
+        if (!noise.Lure && source != null && source.IsCrouching && noise.Radius <= any.sneakSilent) return 0f;
+        foreach (var mind in minds)
+        {
+            if (mind == null || mind.IsAwake || mind.health == null || !mind.health.IsAlive) continue;
+            if (mind.Reaches(noise, out _, out _)) { heard = true; break; }
+        }
+        return noise.Radius * any.calmHearShare;
     }
 }

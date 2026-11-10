@@ -37,6 +37,16 @@
 - 저장하고 표를 다시 읽으면(Play 중이면 바로) 새로 그려지는 글자부터 바뀐다. 이미 떠 있는 글자는 다음에 다시 쓸 때 바뀐다.
 - 개발자 콘솔(`/` 명령)의 도움말과 대답, /net 같은 개발용 표시, 디버그 로그는 코드에 남겨 두었다. 이야기 카드(CampaignChapters.csv), 능력 카드(Perks.csv), 상점 품목(Shop.csv), 메뉴 소식(MenuTicker.csv), 맵 이름(Maps.csv)과 무기 이름(무기 데이터)은 원래 각자의 표·에셋에 있다.
 
+### 잠입 (Stealth.csv, ZombieSenses.csv)
+
+2026-11-11 잠입 개편(사용자의 Advanced Stealth 애드온과 시야 참고 영상을 바탕으로). 화면에 보이는 것과 보상은 [Stealth.csv](../Resources/Tables/Stealth.csv), 좀비의 눈·귀는 [ZombieSenses.csv](../Resources/Tables/ZombieSenses.csv)에 있다.
+
+- `Markers.*`: 머리 위 의심 표시와 조준점 둘레 쐐기. 크기(px), 높이(m), 나오는 최소 의심, !가 남는 시간, 효과음 크기.
+- `View.*`: 바닥의 시야 콘(`coneMode` 0 끔 · 1 앉았을 때 · 2 항상, 진하기, 최대 개수, 거리)과 소리 파동(최소 거리, 시간, 진하기). 콘은 셰이더가 깊이 텍스처로 바닥 위치를 찾아 칠하므로 URP 에셋의 Depth Texture가 켜져 있어야 한다(PC_RPAsset은 켜져 있다).
+- `Throw.*`: T 돌 던지기의 쿨다운, 던지는 빠르기, 소리가 닿는 거리(`noise`), 돌 크기와 남는 시간. 돌 소리는 [StealthSounds](../Resources/Stealth/StealthSounds.asset)의 `stoneHits`에서 고르고 비면 코드가 만든 소리를 쓴다.
+- `Score.takedown`(암살 추가 점수), `Score.unseen`(조용한 구간을 아무도 안 들키고 지나간 보상, 모두에게).
+- 더 쉽게 하려면: ZombieSenses의 `nearRate`를 낮추거나 `forget`을 올리고 `crouchShare`를 낮춘다. 덜 두리번거리게 하려면 `lookAroundEvery`를 늘리거나 0으로 끈다. 돌이 더 멀리 들리게 하려면 `Throw.noise`.
+
 ### 총 꾸미기 저장 (gun_setups.json)
 
 C 메뉴에서 바꾼 조준경·총구·하단·손잡이, L 플래시, B 사격 모드는 바꾸는 즉시 이 PC의 `gun_setups.json`(`Application.persistentDataPath`, 보통 `%USERPROFILE%\AppData\LocalLow\<회사>\<제품>`)에 총 에셋 이름별로 적히고, 그 총을 꺼낼 때마다(다음 판 포함) 그대로 붙는다(2026-11-11 플레이 테스트: 판마다 다시 꾸며야 했음). 처음 상태로 돌리려면 게임을 끄고 그 파일을 지운다. 표에 없는 사격 모드가 적혀 있으면 그것만 무시한다.

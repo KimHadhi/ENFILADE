@@ -21,6 +21,12 @@ public sealed class EnemyNetwork : NetworkBehaviour
         public byte Mood;
         /// <summary>A shambler holds a player (ZombieGrip), or kneels eating one who lies on the ground.</summary>
         public bool Holding, Feeding;
+        /// <summary>
+        /// How sure a zombie is that someone is there, in twentieths, and of whom (their client id + 1, 0 for nobody):
+        /// every PC's stealth HUD shows its own player the zombies noticing them (StealthMarkersHUD, StealthView).
+        /// </summary>
+        public byte Suspicion;
+        public ulong Watch;
     }
 
     private const float ConditionInterval = .1f;
@@ -107,15 +113,21 @@ public sealed class EnemyNetwork : NetworkBehaviour
         Down = target.IsLying,
         Mood = mind != null ? (byte)mind.Mood : (byte)0,
         Holding = grip != null && grip.IsHolding,
-        Feeding = grip != null && grip.Feeding
+        Feeding = grip != null && grip.Feeding,
+        Suspicion = mind != null ? mind.SuspicionStep : (byte)0,
+        Watch = mind != null ? WatchOf(mind.Watching) : 0UL
     };
+
+    // A player as their client id + 1 (0: nobody).
+    private static ulong WatchOf(PlayerMovement player)
+        => player != null && player.TryGetComponent(out NetworkObject owner) && owner.IsSpawned ? owner.OwnerClientId + 1 : 0UL;
 
     private void OnHealthChanged(float previous, float current) => enemy.ShowHealth(current);
     private void OnConditionChanged(Condition previous, Condition current) => Show(current);
     private void Show(in Condition now)
     {
         target.ShowCondition(now.Posture, now.Staggered, now.Held, now.Down, now.Fall);
-        if (mind != null) mind.ShowMood(now.Mood);
+        if (mind != null) mind.ShowMind(now.Mood, now.Suspicion, now.Watch);
         if (grip != null) grip.ShowHolding(now.Holding, now.Feeding);
     }
 

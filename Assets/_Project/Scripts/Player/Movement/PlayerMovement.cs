@@ -334,6 +334,11 @@ public sealed partial class PlayerMovement : MonoBehaviour
         if (GetComponent<PlayerLeanHitboxes>() == null) gameObject.AddComponent<PlayerLeanHitboxes>();
         // The "[F] climb down" prompt over a ladder's top in reach (backlog 141).
         if (Application.isPlaying && IsLocal && GetComponent<LadderPromptHUD>() == null) gameObject.AddComponent<LadderPromptHUD>();
+        // Stealth (2026-11-11): who is noticing them and how sure (marks over heads, wedges round the crosshair), the
+        // sight cones and sound rings on the ground, and the stone thrown with T (friends' copies throw theirs too).
+        if (Application.isPlaying && IsLocal && GetComponent<StealthMarkersHUD>() == null) gameObject.AddComponent<StealthMarkersHUD>();
+        if (Application.isPlaying && IsLocal && GetComponent<StealthView>() == null) gameObject.AddComponent<StealthView>();
+        if (Application.isPlaying && GetComponent<PlayerThrow>() == null) gameObject.AddComponent<PlayerThrow>();
         // The visible body (true first person) appears once Resources/Characters/PlayerBody names a character.
         if (Application.isPlaying && GetComponent<PlayerBody>() == null && PlayerBodyProfile.Load() != null)
         {

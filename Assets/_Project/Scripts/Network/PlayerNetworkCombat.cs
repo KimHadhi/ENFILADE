@@ -69,6 +69,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
     private PlayerShoveAudio shoves;
     private ShoveMoves kicks;
     private PlayerExecution execution;
+    private PlayerThrow throws;
     private PlayerDamageReceiver receiver;
     private CombatTimeEffects time;
     private PlayerBody body;
@@ -135,8 +136,12 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
         execution = GetComponent<PlayerExecution>();
         if (!TryGetComponent(out shoves)) shoves = gameObject.AddComponent<PlayerShoveAudio>();
         kicks = ShoveMoves.For(GetComponent<PlayerMovement>());
+        // Stones (PlayerThrow): thrown by the owner, copied on every other PC.
+        throws = GetComponent<PlayerThrow>();
+        if (throws == null) throws = gameObject.AddComponent<PlayerThrow>();
         if (IsOwner)
         {
+            throws.Thrown += OnThrown;
             weapon.ShotFired += OnShot;
             melee.Punched += OnPunched;
             melee.Elbowed += OnElbowed;
@@ -160,6 +165,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
         if (shoves != null) shoves.Played -= OnShoveSound;
         if (kicks != null) kicks.Kicked -= OnKicked;
         if (execution != null) execution.Started -= OnExecutionStarted;
+        if (throws != null) throws.Thrown -= OnThrown;
         if (receiver != null) receiver.HitResolved -= OnHit;
         stance.OnValueChanged -= OnStanceChanged;
     }
@@ -228,6 +234,14 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
     private void OnFistSound(FistSound sound) => FistSoundRpc(sound);
     private void OnShoveSound(ShoveImpactKind impact) => ShoveSoundRpc(impact);
     private void OnKicked() => KickRpc();
+    private void OnThrown(Vector3 from, Vector3 velocity) => ThrowRpc(from, velocity);
+
+    // A stone this player threw: every other PC throws its own copy, and the host's is the one its zombies hear.
+    [Rpc(SendTo.NotMe)]
+    private void ThrowRpc(Vector3 from, Vector3 velocity)
+    {
+        if (throws != null) throws.ShowThrow(from, velocity);
+    }
     private void OnExecutionStarted(MeleeCombatTarget victim) => ExecutionStartedRpc();
     private void OnHit(DamageHit hit, DamageResult result)
     {

@@ -137,7 +137,7 @@ public static class AttackTrace
     // A zombie's capsule lets shots through to its bone hitboxes (triggers), which take them instead (ZombieBody).
     private static bool ShouldSkip(RaycastHit hit, GameObject owner)
         => IsOwner(hit, owner) || PlayerLeanHitboxes.Replaces(hit.collider) || ZombieBody.Replaces(hit.collider)
-            || IsDeadPlayer(hit) || GoreGib.IsPiece(hit.collider) || DroppedMagazine.IsMagazine(hit.collider)
+            || IsDeadPlayer(hit) || GoreGib.IsPiece(hit.collider) || DroppedMagazine.IsMagazine(hit.collider) || ThrownStone.IsStone(hit.collider)
             || (hit.collider.isTrigger && !ZombieBody.IsHitbox(hit.collider) && !CampaignCanTarget.Is(hit.collider)
                 && (hit.collider.GetComponent<PlayerCombatHitbox>() == null
                 || hit.collider.GetComponentInParent<PlayerLeanHitboxes>()?.UsesSplitBody != true));

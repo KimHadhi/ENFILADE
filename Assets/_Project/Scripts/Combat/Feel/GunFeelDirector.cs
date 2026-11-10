@@ -54,8 +54,11 @@ public static class GunFeelDirector
                 else if (standout) SkullSlowMotion.BeginBrief();
             }
         }
+        // A takedown of one that never knew they were there pays a stealth bonus (암살). It is judged before the zombie
+        // goes, so its mood is still the one it died in (the host's, shared to this PC).
+        bool takedown = execution && report.Target.TryGetComponent(out ZombieMind mind) && mind.Unaware;
         CombatFeedHUD.Kill(WeaponName(hit), CombatDamageEvents.DisplayNameOf(report.Target), critical && bullet, execution, hit.IsCounter, bullet, distance, !shared,
-            hit.Pierced, standout);
+            hit.Pierced, standout, takedown);
         if (pulse) KillConfirmEffect.Trigger(execution ? KillScreen.Execution : hit.IsCounter ? KillScreen.Counter : KillScreen.Ordinary,
             critical || execution);
     }

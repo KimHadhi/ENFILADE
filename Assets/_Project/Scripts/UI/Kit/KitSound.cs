@@ -14,9 +14,10 @@ public static class KitSound
     /// <summary>
     /// Buy: something was paid for. Refuse: it couldn't be. Alert: a teammate went down or died (AlertHUD). The Pick
     /// cues: this player took ammo, a medkit, a shield cell, money or a gun off the floor (FieldPickups). Escape: a
-    /// chapter is escaped (ChapterEndBanner).
+    /// chapter is escaped (ChapterEndBanner). Stealth (StealthMarkersHUD, CampaignRun): Suspect, a zombie stopped to look
+    /// this player's way; Spotted, one woke on them; Unseen, a stretch got through without being found.
     /// </summary>
-    public enum Cue { Buy, Refuse, Alert, PickAmmo, PickHeal, PickShield, PickMoney, PickGun, Escape }
+    public enum Cue { Buy, Refuse, Alert, PickAmmo, PickHeal, PickShield, PickMoney, PickGun, Escape, Suspect, Spotted, Unseen }
 
     private const string BankId = "UI";
     private const int Rate = 44100;
@@ -74,6 +75,9 @@ public static class KitSound
             Cue.PickMoney => Coin(),
             Cue.PickGun => Rack(),
             Cue.Escape => Away(),
+            Cue.Suspect => Wonder(),
+            Cue.Spotted => Found(),
+            Cue.Unseen => Slip(),
             _ => Buzz()
         };
         var clip = AudioClip.Create("Kit " + cue, data.Length, 1, Rate, false);
@@ -245,6 +249,52 @@ public static class KitSound
         {
             float t = (i - from) / (float)Rate, turn = 2f * Mathf.PI * pitch * t;
             data[i] += (Mathf.Sin(turn) + .3f * Mathf.Sin(turn * 2f) + .12f * Mathf.Sin(turn * 3f)) * Mathf.Exp(-t / decay) * Mathf.Min(1f, t / .004f) * level;
+        }
+    }
+
+    // Something stopped to look this way: two soft notes rising a fourth, a question, quiet so it warns without startling.
+    private static float[] Wonder()
+    {
+        var data = new float[(int)(Rate * .34f)];
+        Click(data, new System.Random(77), 0f, .003f, .25f);
+        Note(data, 0f, 740f, .07f, .45f);
+        Note(data, .085f, 988f, .13f, .55f);
+        return Finish(data, .5f);
+    }
+
+    // Found: a hard knock under a bright chord that bends up as it strikes, gone in half a second. Our own sting, made
+    // here, for the '!' over the zombie that woke.
+    private static float[] Found()
+    {
+        var data = new float[(int)(Rate * .55f)];
+        Click(data, new System.Random(913), 0f, .004f, .9f);
+        Knock(data, 0f, 150f, .11f, .8f);
+        Stab(data, 0f, 880f, .2f, .5f);
+        Stab(data, .012f, 1318f, .16f, .32f);
+        return Finish(data, .78f);
+    }
+
+    // Through unseen: three bells climbing, soft and bright.
+    private static float[] Slip()
+    {
+        var data = new float[(int)(Rate * .9f)];
+        Bell(data, 0f, 1175f, .22f, .28f);
+        Bell(data, .09f, 1568f, .26f, .32f);
+        Bell(data, .18f, 2349f, .45f, .36f);
+        return Finish(data, .6f);
+    }
+
+    // A stab starting at <at> (s): a bright chord bending up a little as it strikes.
+    private static void Stab(float[] data, float at, float pitch, float decay, float level)
+    {
+        int from = (int)(at * Rate);
+        float turn = 0f;
+        for (int i = from; i < data.Length; i++)
+        {
+            float t = (i - from) / (float)Rate;
+            turn += 2f * Mathf.PI * pitch * (1f + .18f * (1f - Mathf.Exp(-t / .03f))) / Rate;
+            float wave = Mathf.Sin(turn) + .6f * Mathf.Sin(turn * 1.5f) + .45f * Mathf.Sin(turn * 2f) + .2f * Mathf.Sin(turn * 3.01f);
+            data[i] += wave * Mathf.Exp(-t / decay) * Mathf.Min(1f, t / .0015f) * level;
         }
     }
 

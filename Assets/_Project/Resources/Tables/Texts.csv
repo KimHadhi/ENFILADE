@@ -257,6 +257,8 @@ feed.score.long_range,원거리 사격,,처치 점수 팝업의 줄
 feed.score.pierced,관통 사살,,처치 점수 팝업의 줄
 feed.score.execution,처형,,처치 점수 팝업의 줄
 feed.score.counter,반격,,처치 점수 팝업의 줄
+feed.score.takedown,암살,,처치 점수 팝업의 줄: 눈치채지 못한 좀비를 뒤에서 처치했을 때(처형 점수 위에 더 받는다)
+feed.score.unseen,잠입 성공,,점수 팝업의 줄: 조용한 구간을 아무도 들키지 않고 휴게소나 버티기 자리까지 지나갔을 때
 feed.multi.double,더블 킬,,처치 점수 팝업: 연속 처치 2
 feed.multi.triple,트리플 킬,,처치 점수 팝업: 연속 처치 3
 feed.multi.quad,쿼드 킬,,처치 점수 팝업: 연속 처치 4
@@ -392,6 +394,7 @@ campaign.results.money,돈,,장 끝 카드 결과 > 돈 줄 이름과 팀 표의
 campaign.results.left,놓침,,장 끝 카드 결과 > 차량을 놓친 사람 줄 이름
 campaign.results.team,팀,,장 끝 카드 결과 > 방에서 할 때 팀 표 제목
 campaign.alert.lull,따돌렸다 · 놈들이 흩어진다,,캠페인: 들킨 뒤 한동안 들키지 않아 추격이 가라앉을 때 화면 위 알림
+campaign.alert.unseen,들키지 않고 지나갔다,,캠페인: 조용한 구간을 아무도 들키지 않고 휴게소나 버티기 자리까지 지나갔을 때 화면 위 알림
 #--- 상점 ---,,,
 shop.title,상점,,상점 창 > 맨 위 제목
 shop.subtitle,총  /  보급,,상점 창 > 제목 아래 작은 줄
