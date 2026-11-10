@@ -219,36 +219,47 @@ def point():
     layers.append(('-', front_hole))
     return layers
 
-def dove(k=1.0, ox=0.0, oy=0.0):
-    """A dove in flight with its wing raised, at scale k moved by (ox, oy): its white parts and its cuts."""
-    def place(poly):
-        return [(x * k + ox, y * k + oy) for x, y in poly]
-
-    head = circle(70, 104, 19, 48)
-    beak = path((54, 100), (32, 110), (54, 114))
-    body = path((78, 92), ('q', (122, 100), (150, 124)), (196, 138), (238, 124), (228, 140), (246, 148), (228, 156), (238, 172),
-                (196, 158), ('q', (140, 178), (94, 152)), (68, 124))
-    wing = path((102, 116), (110, 84), ('q', (128, 42), (176, 18)), (164, 46), (206, 28), (186, 60), (224, 54), (194, 88),
-                (228, 92), (180, 118), (140, 128))
-    eye = circle(66, 100, 4, 24)
-    seam = bar(104, 122, 150, 130, 5)
-    return [place(p) for p in (head, beak, body, wing)], [place(p) for p in (seam, eye)]
+def dove():
+    """A dove in flight, wing raised, drawn about its middle facing -x with its body along x: its white parts, one
+    polygon each (they overlap, and overlaps in one layer cancel), and the eye to cut."""
+    head = circle(-96, -14, 22, 64)
+    beak = path((-112, -24), (-136, -12), (-112, -2))
+    body = path((-100, -32), ('q', (-30, -46), (50, -20)), (84, -8), (84, 14), ('q', (10, 48), (-70, 28)),
+                ('q', (-116, 16), (-116, -10)))
+    # The tail ends in the same long pointed feathers as the wing, so wing and tail read as one bird either side of the
+    # cross (rounded scallops read as a paw).
+    tail = path((60, -14), ('q', (104, -26), (146, -38)), ('q', (132, -22), (122, -16)), ('q', (140, -14), (152, -6)),
+                ('q', (136, -2), (124, 2)), ('q', (138, 10), (144, 26)), ('q', (104, 26), (60, 16)))
+    wing = path((-64, -24), ('q', (-72, -96), (-8, -142)), ('q', (16, -160), (44, -160)),
+                ('q', (32, -142), (20, -130)), ('q', (58, -138), (70, -128)),
+                ('q', (50, -110), (36, -100)), ('q', (72, -102), (80, -90)),
+                ('q', (58, -76), (42, -66)), ('q', (76, -66), (78, -54)),
+                ('q', (52, -38), (30, -22)))
+    eye = circle(-100, -18, 4, 24)
+    return [head, beak, body, tail, wing], [eye]
 
 
 def detente():
-    """A white cross, the healer's, with a dove rising off its top: the one who mends, and the peace the name means
-    (the user, 2026-11-11: the dove alone didn't read as a healer, "백십자 추가하자")."""
-    across, upright = rect(24, 134, 168, 186), rect(70, 88, 122, 232)
-    birds, cuts = dove(.64, 84, 22)
-    layers = [('+', [across]), ('+', [upright])]
-    # A gap round the dove where it meets the cross (the dove pushed a few px every way), so the two read apart.
-    for i in range(8):
-        a = 2 * math.pi * i / 8
-        dx, dy = 6 * math.cos(a), 6 * math.sin(a)
-        layers += [('-', [[(x + dx, y + dy) for x, y in part]]) for part in birds]
-    layers += [('+', [part]) for part in birds]
-    layers.append(('-', cuts))
+    """A white cross, the healer's, with a dove rising behind it: the one who mends, and the peace the name means.
+    The dove fills the icon and the cross lies over its body, so the head shows above the left arm, the raised wing
+    above the right and the tail below it: one mark, not two (the user, 2026-11-11: the dove off the cross's arm was
+    too small and apart, "비둘기가 배경으로써 잘 어울리게"). Seen from the side with its wing raised, the peace dove;
+    from the front with both wings spread it read as a heraldic eagle."""
+    def place(poly):
+        # Tipped 34 degrees so it rises to the upper left; the whole mark centred in the square.
+        return turned([(x * 0.9, y * 0.9) for x, y in poly], 34, 112, 138)
+
+    parts, cuts = dove()
+    layers = [('+', [place(p)]) for p in parts]
+    layers.append(('-', [place(p) for p in cuts]))
+    across, upright = (52, 128, 164, 168), (88, 92, 128, 204)
+    # A rounded gap round the cross where it lies on the dove, so the two read apart.
+    gap = 7
+    layers += [('-', [rounded(x0 - gap, y0 - gap, x1 + gap, y1 + gap, gap)]) for x0, y0, x1, y1 in (across, upright)]
+    layers += [('+', [rect(*across)]), ('+', [rect(*upright)])]
     return layers
+
+
 def schiesshund():
     """The hunting hound's head with its collar, and the diamond of its bounty mark over it."""
     head = path((36, 132), (50, 116), (86, 104), (100, 88), (108, 82), (122, 30), (144, 74), (152, 66), (164, 26), (182, 82),
