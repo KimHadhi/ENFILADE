@@ -168,6 +168,8 @@ Counter.cameraTrauma,0.35,흔들림
 Counter.burstGrowth,1.6,카운터 폭발(자세 붕괴 패링 연출)의 크기 배수
 Counter.contactDistance,0.7,폭발이 터지는 곳: 눈앞에서 적 쪽으로 이 거리(m)
 Counter.bannerSeconds,0.85,COUNTER 연출 시간(실제 초). 세 프레임 화면 반전, 핑크 사선, 사선에 잘린 COUNTER가 맞붙었다가 갈라지며 빠진다.
+Counter.baseGrade,0,COUNTER 연출의 기본 단계(0~3). 0은 사선만. 1은 검은 판·빗금·눈금이 붙고 2는 얇은 사선 둘·핑크 잔상·마름모가 더해지고 3은 집중선과 내려찍기까지. 카운터를 강화하는 스킬이 생기면 이 값을 올린다
+Counter.chainSeconds,8,앞 카운터 뒤 이 시간(실제 초) 안에 또 카운터하면 연출이 한 단계씩 올라간다(연속 카운터). 0이면 안 올라간다
 Teammate.radius,0.15,팀원과 나란히 설 때 각자 몸 반지름(m). 두 사람 가운데 사이가 이것의 두 배까지 붙는다. 이동용 몸통(0.3)끼리는 옆으로는 통과하고 서로 비켜선다
 Teammate.pushSpeed,3,팀원 몸에서 비켜서는 빠르기(m/s)
 Teammate.aboveShare,0.7,발이 상대 키의 이 비율보다 위에 있으면 위아래로 겹친 것: 예전처럼 부딪혀서 팀원 머리 위에 올라설 수 있다

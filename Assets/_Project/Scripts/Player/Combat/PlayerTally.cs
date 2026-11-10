@@ -92,6 +92,15 @@ public sealed class PlayerTally : MonoBehaviour
             if (dead && !wasDead) CombatFeedHUD.Notice(player, "사망", true);
             else if (downed && !wasDowned) CombatFeedHUD.Notice(player, "쓰러짐", false);
             else if (wasDowned && !downed && !dead) CombatFeedHUD.Notice(player, "일어남", false);
+            // A teammate going down or dying is also said at the top of the screen, from the side they are on (AlertHUD);
+            // the downed keep their own mark (TeammateMarkerHUD).
+            if (!player.IsLocal && (dead && !wasDead || downed && !wasDowned))
+            {
+                string name = "<color=#" + ColorUtility.ToHtmlStringRGB(Color) + ">" + DisplayName + "</color>";
+                if (dead && !wasDead) AlertHUD.Danger(name + " 사망", transform);
+                else AlertHUD.Team(name + " 쓰러짐", transform, Color);
+                KitSound.Play(KitSound.Cue.Alert);
+            }
         }
         wasDowned = downed;
         wasDead = dead;

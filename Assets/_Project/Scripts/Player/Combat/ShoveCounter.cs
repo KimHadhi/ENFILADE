@@ -16,6 +16,9 @@ using UnityEngine;
 /// and then crawls, the view takes a heavy knock, the screen burns red, the posture-break burst goes off where they met
 /// (ParryFeedback), the break cue rings out and COUNTER slams across the screen (CounterBanner). Other PCs see the burst
 /// and hear it there (EnemyNetwork.ShareParry). Numbers: Tables/Player.csv, row Counter.
+/// The banner has grades (user, 2026-11-10: "카운터가 강화되면 더 이펙트가 화려해져도 될 것 같은"): a lone counter shows
+/// baseGrade, and each counter landed within chainSeconds of the last shows one more, so meeting a pack one after
+/// another builds up to the loudest. A skill that strengthens the counter has only to raise BaseGrade.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class ShoveCounter : MonoBehaviour
@@ -51,13 +54,21 @@ public sealed class ShoveCounter : MonoBehaviour
     private float contactDistance = .7f;
     [SerializeField, Min(.2f), Tooltip("COUNTER on screen, in and out (real s).")]
     private float bannerSeconds = .85f;
+    [SerializeField, Range(0, CounterBanner.Grades - 1), Tooltip("The banner's grade for a lone counter (0: the plain slash). A skill that strengthens the counter raises this.")]
+    private int baseGrade;
+    [SerializeField, Min(0f), Tooltip("A counter this soon after the last one (real s) shows one grade more than it did, up to the top. 0: never.")]
+    private float chainSeconds = 8f;
 
     private PlayerMovement player;
     private Transform view;
     private CombatTimeEffects timeEffects;
     private CounterBanner banner;
-    private float lastShove = float.NegativeInfinity;
+    private float lastShove = float.NegativeInfinity, lastCounter = float.NegativeInfinity;
     private Vector3 shoveForward;
+    private int chain;
+
+    /// <summary>The banner's grade for a lone counter, for a skill that strengthens the counter to raise.</summary>
+    public int BaseGrade { get => baseGrade; set => baseGrade = Mathf.Clamp(value, 0, CounterBanner.Grades - 1); }
 
     // The afterglow's own claim on time, apart from the hit stop's (CombatTimeEffects keeps one per owner).
     private Object slowOwner;
@@ -176,7 +187,24 @@ public sealed class ShoveCounter : MonoBehaviour
         });
         CombatCueAudio.Play(gameObject, CombatCue.ParryBreak, .82f);
         HitFlashRenderer.For(target)?.WhiteFlash(.14f);
-        if (banner == null) banner = gameObject.AddComponent<CounterBanner>();
-        banner.Play(bannerSeconds);
+        ShowBanner(NextGrade());
     }
+
+    // The grade of a counter landing now: the base one, and one more for each counter chained before it. Real time, since
+    // the counter itself slows the game's.
+    private int NextGrade()
+    {
+        chain = chainSeconds > 0f && Time.unscaledTime - lastCounter <= chainSeconds ? chain + 1 : 0;
+        lastCounter = Time.unscaledTime;
+        return baseGrade + chain;
+    }
+
+    private void ShowBanner(int grade)
+    {
+        if (banner == null) banner = gameObject.AddComponent<CounterBanner>();
+        banner.Play(bannerSeconds, grade);
+    }
+
+    /// <summary>The banner alone at this grade, nothing countered: for looking at the grades (console, /counter).</summary>
+    public void PreviewBanner(int grade) => ShowBanner(grade);
 }

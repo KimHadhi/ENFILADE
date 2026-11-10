@@ -7,7 +7,8 @@ using UnityEngine.UI;
 /// white-hot for a moment and gone in about a third of a second, with an electric crack instead of the flesh sound
 /// (PlayerDamageFeedback leaves out the blood and colours its arc to match; the HUD's shield band flashes white).
 /// Running the shield out (backlog 321) gets a moment of its own: a cracked pane of the same cyan bursts outward off the
-/// screen's edge, the view takes a small extra knock, and a glassy break plays; the HUD's band shatters (ShieldShatter).
+/// screen's edge, the view takes a small extra knock, a glassy break plays and it is said at the top of the screen
+/// (AlertHUD); the HUD's band shatters (ShieldShatter).
 /// Sounds: clips in Art/Audio/HitConfirm/ShieldHit and ShieldBreak when there are any, else FeelAudio's synthesized ones.
 /// This PC's player only, as the shield is decided there; others see sparks on the body (PlayerNetworkCombat). Both
 /// overlays are built at spawn, so the first hit costs nothing in a fight. Numbers: Tables/Player.csv, row Shield.
@@ -167,6 +168,7 @@ public sealed class ShieldFeedback : MonoBehaviour
         PlaySound(BreakKey, FeelSound.ShieldBreak, breakVolume);
         // Broken by the blow that killed: the death screen has the moment.
         if (!receiver.IsAlive) return;
+        AlertHUD.Self("실드 깨짐");
         if (paneStrength > 0f && pane != null) { paneLife = 0f; ApplyPane(); }
         if (viewKick <= 0f && trauma <= 0f) return;
         var view = GetComponentInChildren<Camera>();

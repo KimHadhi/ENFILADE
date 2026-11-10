@@ -6,16 +6,16 @@ using UnityEngine;
 /// game is paused). A cue is, in order, a clip from the UI sound bank when its folder holds any
 /// (Art/Audio/UI/&lt;cue&gt;, e.g. Art/Audio/UI/Buy; volume and pitch in Tables/Sounds, row "UI/&lt;cue&gt;") and otherwise a
 /// short sound made here once, so a menu answers the player before any clips exist, as the guns do (FeelAudio).
-/// First used by the shop (user, 2026-11-10: nothing told them a buy went through).
+/// First used by the shop (user, 2026-11-10: nothing told them a buy went through); the HUD's alerts use it too.
 /// </summary>
 public static class KitSound
 {
-    /// <summary>Buy: something was paid for. Refuse: it couldn't be.</summary>
-    public enum Cue { Buy, Refuse }
+    /// <summary>Buy: something was paid for. Refuse: it couldn't be. Alert: a teammate went down or died (AlertHUD).</summary>
+    public enum Cue { Buy, Refuse, Alert }
 
     private const string BankId = "UI";
     private const int Rate = 44100;
-    private static readonly AudioClip[] made = new AudioClip[2];
+    private static readonly AudioClip[] made = new AudioClip[3];
     private static AudioSource source;
     private static SoundBank bank;
     private static bool bankLooked;
@@ -59,7 +59,7 @@ public static class KitSound
     {
         int index = (int)cue;
         if (made[index] != null) return made[index];
-        float[] data = cue == Cue.Buy ? Till() : Buzz();
+        float[] data = cue == Cue.Buy ? Till() : cue == Cue.Alert ? Fall() : Buzz();
         var clip = AudioClip.Create("Kit " + cue, data.Length, 1, Rate, false);
         clip.SetData(data, 0);
         clip.hideFlags = HideFlags.HideAndDontSave;
@@ -115,6 +115,27 @@ public static class KitSound
             }
         }
         return Finish(data, .6f);
+    }
+
+    // An alert: two round notes, the second a fourth lower and ringing a little longer. Falling, so it reads as bad news,
+    // and soft, so it is never taken for a hit.
+    private static float[] Fall()
+    {
+        var data = new float[(int)(Rate * .5f)];
+        Note(data, 0f, 880f, .08f, .5f);
+        Note(data, .13f, 659f, .15f, .5f);
+        return Finish(data, .55f);
+    }
+
+    // A plain note starting at <at> (s): the pitch and a little of its octave and twelfth.
+    private static void Note(float[] data, float at, float pitch, float decay, float level)
+    {
+        int from = (int)(at * Rate);
+        for (int i = from; i < data.Length; i++)
+        {
+            float t = (i - from) / (float)Rate, turn = 2f * Mathf.PI * pitch * t;
+            data[i] += (Mathf.Sin(turn) + .3f * Mathf.Sin(turn * 2f) + .12f * Mathf.Sin(turn * 3f)) * Mathf.Exp(-t / decay) * Mathf.Min(1f, t / .004f) * level;
+        }
     }
 
     // Brings the loudest sample to <peak> and fades the last few ms so the end doesn't click.

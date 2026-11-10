@@ -113,6 +113,33 @@ public static class PlayerConsoleCommands
             tally.SetStreak(Mathf.RoundToInt(amount));
             return "연속 처치 " + tally.Streak;
         }));
+        router.Register("counter", "[0~3] — COUNTER 연출만 그 단계로 미리 보기 (비우면 0). 실제로는 연속 카운터마다 한 단계씩 오른다", args => WithPlayer(resolvePlayer, p =>
+        {
+            int grade = 0;
+            if (!string.IsNullOrWhiteSpace(args)
+                && (!int.TryParse(args.Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out grade) || grade < 0 || grade >= CounterBanner.Grades))
+                return "사용법: /counter [0~" + (CounterBanner.Grades - 1) + "]";
+            if (!p.TryGetComponent(out ShoveCounter counter)) return "카운터를 쓸 수 없는 상태입니다.";
+            counter.PreviewBanner(grade);
+            return "COUNTER 연출 " + grade + "단계";
+        }));
+        router.Register("alert", "[danger/team/self] — 화면 위 알림 띠 미리 보기 (비우면 danger). danger는 오른쪽, team은 왼쪽 25m에 가상의 자리를 둔다", args => WithPlayer(resolvePlayer, p =>
+        {
+            string kind = args.Trim().ToLowerInvariant();
+            if (kind == "self") { AlertHUD.Self("실드 깨짐"); return "알림: 내 상태"; }
+            if (kind.Length > 0 && kind != "danger" && kind != "team") return "사용법: /alert [danger/team/self]";
+            // Somewhere to point at, off to one side, gone again once the alert is.
+            var camera = p.GetComponentInChildren<Camera>();
+            Transform eyes = camera != null ? camera.transform : p.transform;
+            bool team = kind == "team";
+            var spot = new GameObject("Alert Preview Spot").transform;
+            spot.position = eyes.position + (team ? -eyes.right : eyes.right) * 25f + eyes.forward * 8f;
+            UnityEngine.Object.Destroy(spot.gameObject, 10f);
+            var mate = new Color(.4f, .85f, 1f);
+            if (team) AlertHUD.Team("<color=#" + ColorUtility.ToHtmlStringRGB(mate) + ">철수</color> 쓰러짐", spot, mate);
+            else AlertHUD.Danger("거구 등장", spot, 6f);
+            return team ? "알림: 아군" : "알림: 위험";
+        }));
         router.Register("hit", "양 [front/right/back/left] — 방향성 피격 연출 시험 (기본 front)", args => WithPlayer(resolvePlayer, p =>
         {
             string[] parts = args.Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);

@@ -52,6 +52,8 @@
 | `/stats`, `/heal`, `/revive` | 플레이어 상태 확인 / HP 회복 / 사망 복구·실드 초기화 |
 | `/hurt 20`, `/shield 50`, `/maxhp 200` | 피격·실드·최대 HP와 HUD 확인 |
 | `/hit 10 left`, `/hit 10 back` | 방향성 플레이어 피격·혈흔 비네트·쉐이크 시험. front/right/back/left 지원 |
+| `/counter 0` ~ `/counter 3` | COUNTER 연출만 그 단계로 미리 보기. 실제로는 연속 카운터마다 한 단계씩 오른다 |
+| `/alert danger`, `/alert team`, `/alert self` | 화면 위 알림 띠 미리 보기. danger는 오른쪽, team은 왼쪽 25m에 가상의 자리를 두고 self는 위에서 내려온다 |
 | `/ult 100`, `/ultuse` | 궁극기 게이지 충전·자원 소비 테스트. 무기 진화나 스킬은 실행하지 않음 |
 | `/ultmax 200`, `/ultcost 70` | 궁극기 최대 보유량을 200%, 1회 소비량을 70%로 각각 지정. 증가량이 아닌 지정한 값으로 설정 |
 

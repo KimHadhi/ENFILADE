@@ -5,7 +5,8 @@ using UnityEngine.AI;
 /// Friend feedback C2: the brute, the boss a song's highlight sends (CampaignMusic). One of the pack's bodies worn half
 /// again as big (ZombieType.Scale): its capsule, agent and stride grow with it, its hitboxes ride its bones and grow
 /// too, and its corpse gets a doll made for its size (ZombieCorpse.MarkGrown). Its coming is heard on every PC: a roar
-/// where it stands, a deep boom for everyone, a shake of the view by how near it is, and a line in the feed. The sounds
+/// where it stands, a deep boom for everyone, a shake of the view by how near it is, and an alert that comes in from the
+/// side it is on and leaves a mark on it for a while (AlertHUD; it was a line in the feed). The sounds
 /// are Resources/Audio/Boss/BruteRoar and BruteSting when those files exist, otherwise made here.
 /// </summary>
 public sealed partial class ZombieBody
@@ -14,6 +15,8 @@ public sealed partial class ZombieBody
     private const int SampleRate = 44100;
     // The view shakes fully within NearShake of it and not at all past FarShake (m).
     private const float NearShake = 25f, FarShake = 70f;
+    // How long the alert's mark stays on it after it comes (real s): long enough to turn and find it.
+    private const float MarkSeconds = 6f;
     private static AudioClip roar, sting;
 
     // How much bigger than the pack's own size this body stands, and whether it wears a body of its own (never grown).
@@ -54,7 +57,8 @@ public sealed partial class ZombieBody
         arrived = true;
         GameAudio.PlayAt(Roar(), transform.position + Vector3.up * 2f, AudioChannel.Combat, 1f, 6f, 120f);
         PlayFlat(Sting(), .8f);
-        CombatFeedHUD.Warn("거구가 나타났다");
+        var health = GetComponent<EnemyHealth>();
+        AlertHUD.Danger("거구 등장", transform, MarkSeconds, () => health == null || !health.IsAlive);
         var mine = PlayerRoster.Local;
         if (mine == null) return;
         float near = 1f - Mathf.InverseLerp(NearShake, FarShake, Vector3.Distance(mine.transform.position, transform.position));

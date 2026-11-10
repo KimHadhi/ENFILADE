@@ -6,7 +6,8 @@ public enum HitMarkerKind { Body, Head, BodyKill, HeadKill, Blocked }
 /// <summary>
 /// Crosshair hit confirmation. Four diagonal ticks around the centre:
 /// body hit = white; headshot = gold, a little bolder and quicker, with a glowing eight-point glint, a bloom, a white and a gold ring and twelve sparks
-/// banging out at the aim point and gone within .2 s (head kills keep
+/// banging out at the aim point and gone within .2 s, and a lens's flare across it, thin: a streak of light, a shorter
+/// one up and down it and four ghosts along a slant (head kills keep
 /// the glint on their red); any kill (body or head) = red with a shock ring; no effect (guard/parry/invulnerable) = thin
 /// grey. Body and head markers grow with the share of health the hit took. A bullet that came through or off something on
 /// the way (DamageHit.Pierced) gives each tick a fading tail outward in its colour, growing a little while the marker
@@ -26,13 +27,19 @@ public sealed class HitMarkerHUD : MonoBehaviour
     private static HitMarkerHUD instance;
     // A headshot's sparks, set between the ticks and the glint's rays so all three read at once.
     private const int SparkCount = 12;
+    // The flare's ghosts: where along the slant each lies (a share of the streak's reach; negative is the other side of the
+    // aim point), its size (px) and how bright it is. Uneven, as a lens throws them.
+    private static readonly Vector3[] Ghosts = { new Vector3(-.21f, 8f, .5f), new Vector3(.16f, 12f, .35f), new Vector3(.35f, 6f, .6f), new Vector3(.58f, 17f, .22f) };
+    // The slant they lie along: right and a little down.
+    private static readonly Vector2 GhostSlant = new Vector2(.924f, -.383f);
     private readonly Image[] ticks = new Image[4], tails = new Image[4], tailEnds = new Image[4], shards = new Image[4],
         sparks = new Image[SparkCount];
-    private RectTransform root, glintRoot, breakRoot, burstRoot;
-    private RawImage ring, glintGlow, glintGlowCross, glint, glintCross, glintCore, breakRing, burstRing, burstFlashRing, burstBloom;
+    private readonly Graphic[] ghosts = new Graphic[Ghosts.Length];
+    private RectTransform root, glintRoot, breakRoot, burstRoot, flareRoot;
+    private RawImage ring, glintGlow, glintGlowCross, glint, glintCross, glintCore, breakRing, burstRing, burstFlashRing, burstBloom, flareStreak, flareRise;
     private HitMarkerKind kind;
     private bool pierced;
-    private float age = 99f, lifetime = .2f, scale = 1f, glintAge = 99f, breakAge = 99f, burstAge = 99f, pace = 1f;
+    private float age = 99f, lifetime = .2f, scale = 1f, glintAge = 99f, breakAge = 99f, burstAge = 99f, flareAge = 99f, pace = 1f;
 
     public HitMarkerKind LastKind => kind;
     /// <summary>The last marker came through or off something on the way, so its ticks trail tails.</summary>
@@ -105,6 +112,23 @@ public sealed class HitMarkerHUD : MonoBehaviour
         for (int i = 0; i < SparkCount; i++) sparks[i] = Tail("Spark " + i, burstRoot);
         burstRoot.gameObject.SetActive(false);
 
+        // A headshot's lens flare, under the burst: two soft streaks and the ghosts, all added onto the picture so they
+        // light it without covering it. Every other ghost is the HUD's diamond.
+        flareRoot = FeelUI.Rect("Head Flare", transform);
+        flareRoot.SetSiblingIndex(burstRoot.GetSiblingIndex());
+        flareStreak = SoftLight("Streak", flareRoot, additive);
+        flareRise = SoftLight("Rise", flareRoot, additive);
+        for (int i = 0; i < Ghosts.Length; i++)
+        {
+            if (i % 2 == 0) ghosts[i] = SoftLight("Ghost " + i, flareRoot, additive);
+            else
+            {
+                ghosts[i] = HudShapes.Make<DiamondGraphic>("Ghost " + i, flareRoot, Color.white);
+                if (additive != null) ghosts[i].material = additive;
+            }
+        }
+        flareRoot.gameObject.SetActive(false);
+
         breakRoot = FeelUI.Rect("Break", transform);
         breakRing = FeelUI.Rect("Ring", breakRoot).gameObject.AddComponent<RawImage>();
         breakRing.texture = FeelAssets.Ring; breakRing.raycastTarget = false;
@@ -145,6 +169,15 @@ public sealed class HitMarkerHUD : MonoBehaviour
         return image;
     }
 
+    // A soft blob of light: stretched long and thin it is a streak, left round a ghost. material null: alpha blended.
+    private static RawImage SoftLight(string name, Transform parent, Material material)
+    {
+        var image = FeelUI.Rect(name, parent).gameObject.AddComponent<RawImage>();
+        image.texture = FeelAssets.SoftDot; image.raycastTarget = false;
+        if (material != null) image.material = material;
+        return image;
+    }
+
     private void OnDestroy() { if (instance == this) instance = null; }
 
     private void Trigger(HitMarkerKind next, float share, bool throughSomething)
@@ -175,6 +208,12 @@ public sealed class HitMarkerHUD : MonoBehaviour
             burstRoot.gameObject.SetActive(true);
             LayoutBurst(settings);
         }
+        if (head && settings.headFlareReach > 0f)
+        {
+            flareAge = 0f;
+            flareRoot.gameObject.SetActive(true);
+            LayoutFlare(settings);
+        }
     }
 
     private void LateUpdate()
@@ -197,6 +236,12 @@ public sealed class HitMarkerHUD : MonoBehaviour
             burstAge += Time.unscaledDeltaTime;
             if (burstAge >= settings.headBurstSeconds) burstRoot.gameObject.SetActive(false);
             else LayoutBurst(settings);
+        }
+        if (flareRoot.gameObject.activeSelf)
+        {
+            flareAge += Time.unscaledDeltaTime;
+            if (flareAge >= settings.headFlareSeconds) flareRoot.gameObject.SetActive(false);
+            else LayoutFlare(settings);
         }
         if (breakRoot.gameObject.activeSelf)
         {
@@ -346,6 +391,36 @@ public sealed class HitMarkerHUD : MonoBehaviour
             float own = i % 3 == 0 ? 1f : i % 3 == 1 ? .8f : .65f;
             sparks[i].enabled = true;
             Place(sparks[i], direction * (distance * own + length * own * .5f), new Vector2(length * own, thickness), angle, spark);
+        }
+    }
+
+    // The headshot's lens flare (the user's pick of the second drafts, 2026-11-10, draft B: "B가 좋은데 너무 화면 가리게끔
+    // 하진 말고. 지금 헤드샷 이펙트 크기도 살짝 부족한 거 빼면 적당 … 그 크기를 이번 게 늘려주는 시도"): one thin streak of
+    // light across the aim point out to headFlareReach, a shorter one up and down it, and four ghosts strung along a slant
+    // as a lens throws them. It widens the hit to several times the burst's size, but in lines a few pixels thick and
+    // added onto the picture, so nothing behind it is hidden; open in the first sixth of headFlareSeconds, then thinning out.
+    private void LayoutFlare(GunFeelSettings settings)
+    {
+        flareRoot.anchoredPosition = AimPoint();
+        float t = Mathf.Clamp01(flareAge / settings.headFlareSeconds), reach = settings.headFlareReach;
+        float open = 1f - Mathf.Pow(1f - Mathf.Clamp01(t * 6f), 3f), fade = (1f - t) * (1f - t);
+        // White-hot as it opens, the headshot's gold as it goes.
+        Color light = Color.Lerp(Color.white, settings.headHitColor, Mathf.Clamp01(t * 2.5f));
+        light.a = fade;
+        flareStreak.rectTransform.sizeDelta = new Vector2(reach * 2f * open, Mathf.Lerp(7f, 2.5f, t));
+        flareStreak.color = light;
+        light.a = fade * .8f;
+        flareRise.rectTransform.sizeDelta = new Vector2(Mathf.Lerp(5f, 2f, t), reach * .9f * open);
+        flareRise.color = light;
+        for (int i = 0; i < Ghosts.Length; i++)
+        {
+            var rect = ghosts[i].rectTransform;
+            // They slide out along the slant as the streak opens, and stay there.
+            rect.anchoredPosition = GhostSlant * (Ghosts[i].x * reach * Mathf.Lerp(.7f, 1f, open));
+            rect.sizeDelta = Vector2.one * (Ghosts[i].y * Mathf.Lerp(1.3f, 1f, open));
+            Color ghost = settings.headHitColor;
+            ghost.a = Ghosts[i].z * fade * open;
+            ghosts[i].color = ghost;
         }
     }
 

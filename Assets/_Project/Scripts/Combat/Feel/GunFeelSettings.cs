@@ -115,8 +115,9 @@ public sealed class GunFeelSettings : ScriptableObject
     [Tooltip("Headshot ticks are this much thicker and longer than a body hit's, so the gold reads at a glance.")]
     public float headThickness = 1.5f, headLength = 1.15f;
     [Min(0f), Tooltip("Ray length of the glint that flashes at the aim point on a headshot (px). Backlog 324 cut the first 22 " +
-        "to 14; the user then found it too small and asked for more show, so it stands bigger and brief. 0 turns it off.")]
-    public float headGlintSize = 26f;
+        "to 14; the user then found it too small and asked for more show, so it stands bigger and brief; 26 was still a " +
+        "little short of enough (2026-11-10), so 30, with the lens flare below widening it further. 0 turns it off.")]
+    public float headGlintSize = 30f;
     [Tooltip("Degrees the glint spins while it fades, so its rays sweep off the crosshair's lines.")]
     public float headGlintTurn = 45f;
     [Min(.1f), Tooltip("How long the glint shows: it bangs open white past full size, snaps back gold and is gone. The user " +
@@ -137,6 +138,13 @@ public sealed class GunFeelSettings : ScriptableObject
     public float headBurstReach = 56f;
     [Min(.05f), Tooltip("How long the sparks and the ring last (real seconds).")]
     public float headBurstSeconds = .16f;
+    [Min(0f), Tooltip("A headshot's lens flare (the user's pick of the second drafts, 2026-11-10): how far its thin streak of " +
+        "light reaches either side of the aim point (px). A shorter streak stands up and down it and four ghosts lie along " +
+        "a slant inside it. All of it is a few pixels thick and added onto the picture, so it makes the hit bigger without " +
+        "covering the screen. 0 turns it off.")]
+    public float headFlareReach = 180f;
+    [Min(.05f), Tooltip("How long the flare lasts (real seconds): open in the first sixth, then thinning and fading.")]
+    public float headFlareSeconds = .24f;
     [Min(1f), Tooltip("A headshot's ticks run their frames this much faster than a body hit's, so they snap in and out.")]
     public float headMarkerPace = 1.6f;
     [Range(0f, 1f), Tooltip("How much bigger a headshot's ticks start before popping back (a body hit uses Marker Pop).")]
