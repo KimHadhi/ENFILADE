@@ -1,0 +1,652 @@
+<meta charset="utf-8">
+<title>ENFILADE 디자인 시안</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap">
+<style>
+/* Layout: one reading column under a sticky tally. Each item is a slanted memo tag, the complaint it answers, then its
+   drafts side by side as small game screens that all run on one clock. One dark look, the HUD's own: near-black,
+   near-white and the one pink. */
+:root {
+  --bg: #0e0e11;
+  --panel: #16161b;
+  --sunk: #0a0a0c;
+  --line: #2a2a31;
+  --fg: #f7f7f7;
+  --muted: #9b99a4;
+  --accent: #ff4f78;      /* KitStyle.Accent, the HUD's one pink */
+  --on-accent: #0e0e11;
+  --ice: #fff5f7;
+  --ok: #7be0a8;
+  --warn: #ffb547;
+  --display: "Black Han Sans", "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 15px; line-height: 1.6; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+.gutter { max-width: 1180px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+
+header.top { padding-block: 28px 16px; }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .08em; color: var(--accent); }
+h1 { font-family: var(--display); font-weight: 400; font-size: clamp(30px, 6vw, 46px); line-height: 1.1; margin: 6px 0 10px; text-wrap: balance; }
+.lede { margin: 0; max-width: 64ch; color: var(--muted); }
+.lede strong { color: var(--fg); font-weight: 500; }
+
+.bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); border-bottom: 1px solid var(--line); }
+.bar .gutter { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding-block: 10px; }
+.tally { font-size: 14px; font-variant-numeric: tabular-nums; }
+.tally b { color: var(--accent); font-weight: 600; }
+.status { font-size: 12.5px; color: var(--muted); flex: 1 1 180px; min-width: 0; }
+.status.warn { color: var(--warn); }
+.btn { font: 500 13px/1 var(--body); color: var(--fg); background: var(--panel); border: 1px solid var(--line); padding: 9px 12px; cursor: pointer; }
+.btn:hover { border-color: var(--accent); }
+.btn[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+button:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+main { padding-block: 22px 64px; display: flex; flex-direction: column; gap: 44px; }
+.item-head { display: grid; gap: 8px; padding-bottom: 12px; border-bottom: 2px solid var(--fg); margin-bottom: 14px; }
+.item-top { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
+.memo { display: inline-block; background: var(--accent); color: var(--on-accent); font-family: var(--mono); font-size: 12px; font-weight: 500; padding: 4px 10px; transform: skewX(-12deg); white-space: nowrap; }
+.memo span { display: inline-block; transform: skewX(12deg); }
+.item h2 { font-family: var(--display); font-weight: 400; font-size: clamp(22px, 4.4vw, 28px); line-height: 1.15; margin: 0; }
+.picked { margin-left: auto; font-family: var(--mono); font-size: 12.5px; color: var(--muted); white-space: nowrap; }
+.picked.on { color: var(--ok); }
+.quote { margin: 0; padding-left: 12px; border-left: 3px solid var(--line); color: var(--fg); max-width: 70ch; }
+.now { margin: 0; color: var(--muted); font-size: 14px; max-width: 70ch; }
+
+.drafts { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 14px; }
+.card { background: var(--panel); border: 1px solid var(--line); display: flex; flex-direction: column; min-width: 0; }
+.card[data-on="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.stage { background: var(--sunk); line-height: 0; }
+.stage canvas { display: block; width: 100%; max-width: 100%; aspect-ratio: 16 / 9; }
+.card-body { padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
+.card-name { display: flex; align-items: baseline; gap: 10px; }
+.letter { font-family: var(--display); font-size: 26px; line-height: 1; color: var(--accent); }
+.card h3 { margin: 0; font-size: 16px; font-weight: 600; }
+.pitch { margin: 0; color: var(--muted); font-size: 14px; flex: 1; }
+.card-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.pick { font: 600 13.5px/1 var(--body); padding: 10px 14px; background: transparent; color: var(--fg); border: 1px solid var(--fg); cursor: pointer; flex: 1 1 auto; }
+.pick:hover { border-color: var(--accent); color: var(--accent); }
+.pick[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.snd { font: 500 12.5px/1 var(--body); padding: 10px 10px; background: var(--sunk); color: var(--fg); border: 1px solid var(--line); cursor: pointer; }
+.snd:hover { border-color: var(--accent); }
+.pick:disabled, .snd:disabled { opacity: .5; cursor: not-allowed; }
+
+.after { display: grid; gap: 8px; margin-top: 12px; }
+.after-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.none { font: 500 13px/1 var(--body); padding: 9px 12px; background: transparent; color: var(--muted); border: 1px dashed var(--line); cursor: pointer; }
+.none[aria-pressed="true"] { color: var(--bg); background: var(--warn); border: 1px solid var(--warn); }
+.extra { margin: 0; font-size: 13.5px; color: var(--muted); }
+.after label { font-size: 13px; color: var(--muted); }
+.after textarea { font: 14px/1.5 var(--body); color: var(--fg); background: var(--sunk); border: 1px solid var(--line); padding: 9px 11px; resize: vertical; min-height: 60px; width: 100%; }
+
+footer.foot { padding-block: 0 44px; color: var(--muted); font-size: 13.5px; }
+@media (max-width: 560px) { .picked { margin-left: 0; } }
+</style>
+
+<header class="top">
+  <div class="gutter">
+    <div class="eyebrow">0.8.2 이후 · D단계</div>
+    <h1>ENFILADE 디자인 시안</h1>
+    <p class="lede">만들기 전에 방향부터 고르는 페이지예요. 항목마다 시안이 셋씩 움직이고 있어요. <strong>마음에 드는 것을 고르고</strong>, 섞고 싶거나 바꾸고 싶은 점은 아래 칸에 적어 주세요. 그림은 느낌을 보려는 것이라 게임 화면과 똑같지는 않아요. 다 고른 뒤 Claude에게 "시안 고른 거 봐 줘"라고 하면 그대로 만들어요.</p>
+  </div>
+</header>
+
+<div class="bar">
+  <div class="gutter">
+    <span class="tally">고른 것 <b id="n-done">0</b> / <span id="n-all">0</span></span>
+    <span class="status" id="status">저장소에 연결 중…</span>
+    <button type="button" class="btn" id="motion" aria-pressed="true">움직임 켬</button>
+  </div>
+</div>
+
+<main class="gutter" id="list"></main>
+<footer class="foot gutter">고른 것과 메모는 이 페이지에 저장돼서 다른 기기에서 열어도 그대로 보여요. 같은 버튼을 다시 누르면 풀려요.</footer>
+
+<script>
+// ---------------------------------------------------------------- drawing kit (every draft draws in 960 x 540)
+const DISPLAY = '"Black Han Sans","IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif';
+const BODY = '"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif';
+const MONO = '"IBM Plex Mono",ui-monospace,Consolas,monospace';
+const P = '#ff4f78', ICE = '#fff5f7', INK = '#0e0e11', GOLD = '#ffd133', CY = '#99edff', PLATE = 'rgba(6,6,8,.86)';
+const TAU = Math.PI * 2;
+const cl = (x, a = 0, b = 1) => x < a ? a : x > b ? b : x;
+const lp = (a, b, t) => a + (b - a) * t;
+const sg = (t, a, b) => cl((t - a) / (b - a));
+const eo = t => 1 - Math.pow(1 - cl(t), 3);
+const rnd = i => { const x = Math.sin(i * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
+// 0 → 1 → 0 from time a: in, hold, out
+const pulse = (t, a, inn, hold, out) => { const x = t - a; return x < 0 ? 0 : x < inn ? x / inn : x < inn + hold ? 1 : cl(1 - (x - inn - hold) / out); };
+
+function T(c, s, x, y, px, col, al = 'left', f = DISPLAY, w = '') { c.font = w + px + 'px ' + f; c.fillStyle = col; c.textAlign = al; c.textBaseline = 'middle'; c.fillText(s, x, y); }
+function R(c, x, y, w, h, col) { c.fillStyle = col; c.fillRect(x, y, w, h); }
+function PG(c, p, col, st, lw) { c.beginPath(); c.moveTo(p[0], p[1]); for (let i = 2; i < p.length; i += 2) c.lineTo(p[i], p[i + 1]); c.closePath(); if (col) { c.fillStyle = col; c.fill(); } if (st) { c.strokeStyle = st; c.lineWidth = lw || 2; c.stroke(); } }
+function SK(c, x, y, w, h, s, col, st, lw) { PG(c, [x + s, y, x + w + s, y, x + w, y + h, x, y + h], col, st, lw); }
+function LN(c, x1, y1, x2, y2, col, lw) { c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.strokeStyle = col; c.lineWidth = lw; c.stroke(); }
+function A(c, a, fn) { if (a <= 0) return; c.save(); c.globalAlpha *= cl(a); fn(); c.restore(); }
+function negative(c, x = 0, y = 0, w = 960, h = 540) { c.save(); c.globalCompositeOperation = 'difference'; R(c, x, y, w, h, '#fff'); c.restore(); }
+function star(c, x, y, R1, r1, n, rot, fill, st, lw) { const p = []; for (let i = 0; i < n * 2; i++) { const a = rot + i * Math.PI / n, r = i % 2 ? r1 : R1; p.push(x + Math.cos(a) * r, y + Math.sin(a) * r); } PG(c, p, fill, st, lw); }
+
+function backdrop(c) {
+  const g = c.createLinearGradient(0, 0, 0, 540);
+  g.addColorStop(0, '#232b3a'); g.addColorStop(.56, '#39414f'); g.addColorStop(.561, '#22252b'); g.addColorStop(1, '#121418');
+  R(c, 0, 0, 960, 540, g);
+}
+function zombie(c, x, y, s, col) {
+  c.fillStyle = col || '#0c0e12';
+  c.beginPath(); c.arc(x, y - 80 * s, 11 * s, 0, TAU); c.fill();
+  c.fillRect(x - 13 * s, y - 68 * s, 26 * s, 42 * s); c.fillRect(x - 12 * s, y - 28 * s, 10 * s, 30 * s); c.fillRect(x + 2 * s, y - 28 * s, 10 * s, 30 * s);
+  c.fillRect(x - 25 * s, y - 64 * s, 10 * s, 30 * s); c.fillRect(x + 15 * s, y - 66 * s, 10 * s, 24 * s);
+}
+function scene(c, o = {}) {
+  backdrop(c);
+  c.fillStyle = '#161b24'; [[30, 120, 130], [200, 190, 90], [620, 150, 160], [830, 210, 130]].forEach(b => c.fillRect(b[0], b[1], b[2], 303 - b[1]));
+  c.fillStyle = '#1d232e'; [[330, 230, 70], [520, 250, 60]].forEach(b => c.fillRect(b[0], b[1], b[2], 303 - b[1]));
+  (o.z || [[300, 330, .9], [610, 322, .75]]).forEach(z => zombie(c, z[0], z[1], z[2]));
+}
+function cross(c, x = 480, y = 270) { c.fillStyle = 'rgba(255,255,255,.9)'; c.fillRect(x - 1, y - 1, 2, 2); c.fillRect(x - 12, y - 1, 6, 2); c.fillRect(x + 6, y - 1, 6, 2); c.fillRect(x - 1, y - 12, 2, 6); c.fillRect(x - 1, y + 6, 2, 6); }
+function gun(c) { PG(c, [640, 540, 720, 452, 905, 372, 960, 384, 960, 540], '#08090b'); PG(c, [720, 452, 905, 372, 912, 384, 740, 462], '#14171c'); }
+function hud(c, o = {}) {
+  const hp = o.hp === undefined ? 100 : o.hp, res = o.res === undefined ? 90 : o.res;
+  SK(c, 60, 474, 220, 16, 6, 'rgba(0,0,0,.55)'); SK(c, 60, 474, 220 * cl(hp / 100), 16, 6, ICE);
+  if (o.shield > 0) SK(c, 60, 462, 220 * cl(o.shield / 50), 8, 6, o.shCol || CY);
+  T(c, String(Math.round(hp)), 60, 448, 30, ICE);
+  T(c, '30', 880, 468, 40, ICE, 'right'); T(c, '/ ' + res, 888, 474, 18, 'rgba(255,255,255,.6)', 'left', MONO, '500 ');
+}
+function mbar(c, title = '발전기를 켜라', hot) {
+  SK(c, 40, 30, 46, 40, 6, hot ? INK : P); T(c, '!', 64, 51, 28, hot ? P : INK, 'center');
+  SK(c, 90, 36, 300, 34, 6, hot ? P : PLATE); T(c, title, 108, 54, 19, hot ? INK : ICE);
+}
+function play(c) { scene(c); cross(c); gun(c); hud(c); }
+
+// ---------------------------------------------------------------- 1. portrait and ultimate gauge
+const BUSTS = [null, null];
+function bust(i) {
+  if (BUSTS[i]) return BUSTS[i];
+  const k = document.createElement('canvas'); k.width = k.height = 200; const g = k.getContext('2d'), col = i === 1;
+  const bg = g.createLinearGradient(0, 0, 200, 200); bg.addColorStop(0, col ? '#5b3a66' : '#3f3f44'); bg.addColorStop(1, col ? '#f08a7a' : '#8d8d92');
+  g.fillStyle = bg; g.fillRect(0, 0, 200, 200);
+  g.fillStyle = col ? '#2b1f3a' : '#1f1f22'; g.beginPath(); g.ellipse(100, 200, 78, 66, 0, 0, TAU); g.fill();
+  g.fillStyle = col ? '#ffd9cf' : '#bdbdc2'; g.beginPath(); g.arc(100, 92, 30, 0, TAU); g.fill();
+  g.fillStyle = col ? '#2b1f3a' : '#1f1f22'; g.beginPath(); g.arc(100, 80, 34, Math.PI, 0); g.fill(); g.fillRect(66, 78, 12, 40); g.fillRect(122, 78, 12, 40);
+  return BUSTS[i] = k;
+}
+const TX = 150, TY = 150, TS = 190;
+function cutPath(c, x, y, S, k) { c.beginPath(); c.moveTo(x, y); c.lineTo(x + S - k, y); c.lineTo(x + S, y + k); c.lineTo(x + S, y + S); c.lineTo(x + k, y + S); c.lineTo(x, y + S - k); c.closePath(); }
+function slabs(c, rise, blades) {
+  c.save(); c.translate(TX + TS / 2, TY + TS / 2); c.rotate(-.1);
+  const top = -TS / 2 - 12 - rise; R(c, -TS / 2 - 14, top, TS * .8, TS * .8 + rise, P);
+  if (blades) blades(top);
+  c.rotate(.2); R(c, -TS / 2 + 18, -TS / 2 + 20, TS, TS, '#000'); c.restore();
+}
+function tile(c, gray) {
+  R(c, TX - 6, TY - 6, TS + 12, TS + 12, '#08080a');
+  c.save(); cutPath(c, TX, TY, TS, 18); c.clip(); c.drawImage(bust(gray ? 0 : 1), TX, TY, TS, TS); c.restore();
+  R(c, TX - 6, TY + TS + 1, TS + 12, 5, P);
+}
+// The portrait corner of the HUD, drawn half as large again so the tile reads on a phone.
+function pBack(c) { scene(c); R(c, 0, 0, 960, 540, 'rgba(8,8,12,.66)'); c.translate(480, 270); c.scale(1.5, 1.5); c.translate(-380, -205); }
+function pSide(c, ch, ready, t) {
+  const x = TX + TS + 40;
+  T(c, '100', x, TY + TS - 74, 46, ICE); SK(c, x, TY + TS - 44, 250, 14, 5, ICE);
+  T(c, '궁극기 ' + Math.round(ch * 100) + '%', x, TY + TS - 8, 18, ready ? P : 'rgba(255,255,255,.6)', 'left', MONO, '500 ');
+  if (ready) { const k = eo(sg(t, 3.25, 3.5)); A(c, k, () => { const dx = (1 - k) * 24; SK(c, x + dx, TY + 22, 42, 34, 6, P); T(c, 'X', x + dx + 24, TY + 40, 24, INK, 'center'); T(c, '궁극기 준비', x + dx + 60, TY + 40, 20, ICE); }); }
+}
+const charge = t => sg(t, .4, 3.2), isReady = t => t > 3.2 && t < 5.8;
+function pA(c, t) {
+  pBack(c); const ch = charge(t), rd = isReady(t), m = 12; slabs(c, 0); tile(c);
+  const x0 = TX - m, y0 = TY - m, x1 = TX + TS + m, y1 = TY + TS + m, L = 4 * (TS + 2 * m);
+  c.beginPath(); c.moveTo(x0, y1); c.lineTo(x0, y0); c.lineTo(x1, y0); c.lineTo(x1, y1); c.closePath();
+  c.strokeStyle = 'rgba(255,245,247,.16)'; c.lineWidth = 7; c.stroke();
+  c.setLineDash([L * ch, L]); c.strokeStyle = rd && t < 3.32 ? '#fff' : P; c.lineWidth = rd ? 7 + 2 * Math.sin(t * 9) : 7; c.stroke(); c.setLineDash([]);
+  if (rd) for (let i = 0; i < 8; i++) { const life = ((t - 3.2) * 1.3 + rnd(i)) % 1, px = x1 - rnd(i + 9) * 90, py = y0 - life * 80, s = 12 * (1 - life); A(c, 1 - life, () => PG(c, [px, py, px + s, py - s * 1.6, px + s * 1.5, py + s * .3], i % 3 ? P : ICE)); }
+  pSide(c, ch, rd, t);
+}
+function pB(c, t) {
+  pBack(c); const ch = charge(t), rd = isReady(t); slabs(c, 0); tile(c, true);
+  const lv = TY + TS + 15 - ch * (TS + 30);
+  c.save(); cutPath(c, TX, TY, TS, 18); c.clip();
+  c.save(); c.beginPath(); c.moveTo(TX, lv + 15); c.lineTo(TX + TS, lv - 15); c.lineTo(TX + TS, TY + TS); c.lineTo(TX, TY + TS); c.closePath(); c.clip(); c.drawImage(bust(1), TX, TY, TS, TS); c.restore();
+  if (ch > 0 && ch < 1) LN(c, TX, lv + 15, TX + TS, lv - 15, P, 4);
+  if (rd) { const k = t - 3.2; if (k < .1) negative(c, TX, TY, TS, TS); const sw = (k % 1.3) / 1.3 * (TS + 140); A(c, .24, () => PG(c, [TX - 80 + sw, TY + TS, TX - 40 + sw, TY + TS, TX + 20 + sw, TY, TX - 20 + sw, TY], '#fff')); }
+  c.restore();
+  pSide(c, ch, rd, t);
+}
+function pC(c, t) {
+  pBack(c); const ch = charge(t), rd = isReady(t), st = Math.floor(t * 12);
+  slabs(c, ch * 40, top => {
+    for (let i = 0; i < 5; i++) R(c, -TS / 2 - 26, -TS / 2 - 12 - i * 10, i % 4 ? 6 : 11, 2, 'rgba(255,245,247,.7)');
+    if (rd) for (let i = 0; i < 4; i++) { const h = 34 + rnd(st + i * 7) * 40, bx = -TS / 2 - 10 + i * 36, tip = bx + 12 + rnd(st + i) * 14; PG(c, [bx, top, bx + 30, top, tip, top - h], i % 2 ? P : '#ff86a3'); PG(c, [bx + 9, top, bx + 21, top, tip - 2, top - h * .45], ICE); }
+  });
+  tile(c); pSide(c, ch, rd, t);
+}
+
+// ---------------------------------------------------------------- 2. counter
+const SL = -.28;
+function cBase(c) { scene(c, { z: [[250, 330, .8], [700, 326, .75]] }); zombie(c, 480, 400, 1.9); cross(c); gun(c); hud(c); }
+function slash(c, ang, th1, th2, grow, col, core) { c.save(); c.translate(480, 270); c.rotate(ang); const L = 760 * grow; PG(c, [-L, -th1 / 2, L, -th2 / 2, L, th2 / 2, -L, th1 / 2], col); if (core) PG(c, [-L, -th1 / 6, L, -th2 / 6, L, th2 / 6, -L, th1 / 6], core); c.restore(); }
+function cWord(c, k, out, fill = INK, rim = ICE) {
+  const d = (1 - eo(k)) * 90 + out * 46;
+  [-1, 1].forEach(s => { c.save(); c.translate(480, 270); c.rotate(SL); c.beginPath(); c.rect(-700, s < 0 ? -220 : 0, 1400, 220); c.clip(); c.translate(s * d, 0);
+    c.font = '150px ' + DISPLAY; c.textAlign = 'center'; c.textBaseline = 'middle'; if (rim) { c.lineWidth = 10; c.lineJoin = 'round'; c.strokeStyle = rim; c.strokeText('COUNTER', 0, 0); } c.fillStyle = fill; c.fillText('COUNTER', 0, 0); c.restore(); });
+}
+function kA(c, t) {
+  cBase(c); const e = t - .6; if (e < 0) return; const out = sg(e, 1.1, 1.3);
+  if (e < .06) negative(c);
+  A(c, (1 - out) * .14, () => R(c, 0, 0, 960, 540, P));
+  A(c, 1 - out, () => {
+    slash(c, SL, 46, 5, eo(sg(e, 0, .08)), P, ICE); slash(c, .5, 10, 2, eo(sg(e, .05, .13)), ICE);
+    for (let i = 0; i < 10; i++) { const k = sg(e, .05, .6), r = (i - 5) * 120 + 60, px = 480 + Math.cos(SL) * r, py = 270 + Math.sin(SL) * r + (rnd(i) - .5) * 2 * k * 90, s = 14 * (1 - k) + 4; PG(c, [px, py, px + s * 1.8, py - s * .5, px + s * .6, py + s], i % 2 ? P : ICE); }
+    for (let g = 3; g >= 1; g--) A(c, .3 * (1 - sg(e, .1, .45 + g * .1)), () => { c.save(); c.translate(g * 24 * eo(sg(e, .05, .4)), -g * 7); cWord(c, sg(e, .03, .17), 0, P, null); c.restore(); });
+  });
+  A(c, 1 - out, () => cWord(c, sg(e, .03, .17), out));
+}
+function kB(c, t) {
+  const e = t - .6, cut = e >= 0 ? pulse(e, 0, .05, .55, .12) : 0;
+  [-1, 1].forEach(s => { c.save(); c.translate(480, 270); c.rotate(SL); c.beginPath(); c.rect(-900, s < 0 ? -700 : 0, 1800, 700); c.rotate(-SL); c.translate(-480, -270); c.clip(); c.translate(-s * 28 * cut, 0); cBase(c); c.restore(); });
+  if (e < 0) return;
+  const h = 150 * eo(pulse(e, 0, .1, .75, .12));
+  c.save(); c.translate(480, 270); c.rotate(SL); R(c, -900, -h / 2, 1800, h, '#060608'); c.beginPath(); c.rect(-900, -h / 2, 1800, h); c.clip();
+  for (let i = 0; i < 16; i++) { const yy = (rnd(i) - .5) * 140, xx = ((e * 900 * (.5 + rnd(i + 3)) + rnd(i + 5) * 1600) % 1600) - 800; R(c, xx, yy, 90 + rnd(i) * 120, 2, i % 4 ? 'rgba(255,245,247,.35)' : P); }
+  const sl = (1 - eo(sg(e, .06, .2))) * -320; T(c, 'COUNTER', sl, -4, 132, ICE, 'center'); R(c, -330 + sl, 60, 660 * eo(sg(e, .12, .3)), 6, P);
+  c.restore();
+}
+function kC(c, t) {
+  cBase(c); const e = t - .6; if (e < 0) return; const ex = 480, ey = 300;
+  if (e < .07) { c.save(); c.beginPath(); c.arc(ex, ey, 150, 0, TAU); c.clip(); negative(c); c.restore(); }
+  const k = sg(e, 0, .45); A(c, 1 - k, () => { c.beginPath(); c.arc(ex, ey, 60 + eo(k) * 170, 0, TAU); c.strokeStyle = P; c.lineWidth = 6 * (1 - k) + 1; c.stroke(); });
+  A(c, 1 - sg(e, .9, 1.1), () => {
+    c.save(); c.translate(ex, ey); c.rotate(SL); const L = 190 * eo(sg(e, 0, .08)); PG(c, [-L, -9, L, -2, L, 2, -L, 9], P); PG(c, [-L, -3, L, -1, L, 1, -L, 3], ICE); c.restore();
+    const kk = eo(sg(e, .04, .16)), dy = (1 - kk) * 12; R(c, 520, 318 + dy, 6, 46, P); T(c, 'COUNTER', 536, 334 + dy, 46, ICE); T(c, '반격', 538, 366 + dy, 16, 'rgba(255,255,255,.75)', 'left', BODY, '500 ');
+  });
+}
+
+// ---------------------------------------------------------------- 3. alerts
+const MATE = '#6fd3ff';
+const EV = [{ at: .6, k: 'd', ic: '!', tx: '거구가 나타났다', sb: '북쪽 28m' }, { at: 3.5, k: 'w', ic: '▼', tx: '철수가 쓰러졌다', sb: '12m' }, { at: 6.4, k: 'i', ic: '◆', tx: '실드가 깨졌다', sb: '' }];
+function aBase(c) { play(c); mbar(c); }
+function team(c) { [['철수', MATE, 0], ['영희', '#ffd36b', .8]].forEach((m, i) => { const y = 336 + i * 40; SK(c, 40, y, 190, 32, 5, 'rgba(6,6,8,.75)'); R(c, 40, y, 5, 32, m[1]); T(c, m[0], 56, y + 17, 17, ICE); SK(c, 112, y + 12, 100, 8, 3, 'rgba(255,255,255,.18)'); if (m[2] > 0) SK(c, 112, y + 12, 100 * m[2], 8, 3, ICE); }); }
+function aA(c, t) {
+  aBase(c);
+  EV.forEach(ev => { const e = t - ev.at; if (e < 0 || e > 2.8) return; const k = eo(sg(e, 0, .22)), o = sg(e, 2.5, 2.8), d = ev.k === 'd';
+    A(c, k * (1 - o), () => { const x = 270 + (1 - k) * 60, y = 96; SK(c, x, y, 420, 46, 8, d ? P : PLATE); SK(c, x, y, 50, 46, 8, d ? INK : ev.k === 'w' ? P : ICE); T(c, ev.ic, x + 29, y + 24, 22, d ? P : INK, 'center'); T(c, ev.tx, x + 68, y + 24, 22, d ? INK : ICE); if (ev.sb) T(c, ev.sb, x + 404, y + 24, 15, d ? INK : 'rgba(255,255,255,.65)', 'right', MONO, '500 '); });
+    if (d) A(c, pulse(e, 0, .08, .1, .5) * .8, () => { c.strokeStyle = P; c.lineWidth = 14; c.strokeRect(7, 7, 946, 526); }); });
+}
+function aB(c, t) {
+  aBase(c); team(c);
+  EV.filter(ev => t >= ev.at && t < ev.at + 3.2).sort((a, b) => b.at - a.at).forEach((ev, i) => { const e = t - ev.at, k = eo(sg(e, 0, .2)), o = sg(e, 2.9, 3.2), y = 290 - i * 42;
+    A(c, k * (1 - o), () => { const x = 40 - (1 - k) * 40, w = ev.k === 'w'; SK(c, x, y, 300, 36, 6, PLATE); R(c, x, y, 6, 36, ev.k === 'i' ? ICE : P); if (w) R(c, x + 16, y + 10, 16, 16, MATE); T(c, ev.tx, x + (w ? 40 : 18), y + 19, 19, ev.k === 'd' ? P : ICE); if (ev.sb) T(c, ev.sb, x + 290, y + 19, 13, 'rgba(255,255,255,.6)', 'right', MONO, '500 '); }); });
+}
+function aC(c, t) {
+  aBase(c); team(c);
+  EV.forEach(ev => { const e = t - ev.at; if (e < 0 || e > 3) return; const k = eo(sg(e, 0, .2)), o = sg(e, 2.7, 3);
+    A(c, k * (1 - o), () => {
+      if (ev.k === 'd') { const x = 900 - Math.abs(Math.sin(e * 5)) * 8; PG(c, [x, 230, x + 34, 270, x, 310, x + 10, 270], P); SK(c, 756, 252, 130, 36, 6, PLATE); T(c, '거구', 772, 271, 20, P); T(c, '28m', 876, 271, 15, ICE, 'right', MONO, '500 '); T(c, ev.tx, 480, 112, 24, ICE, 'center'); }
+      else if (ev.k === 'w') { const y = 296; PG(c, [28, y, 60, y - 22, 52, y, 60, y + 22], MATE); SK(c, 70, y - 18, 190, 36, 6, PLATE); T(c, '철수 쓰러짐', 84, y + 1, 19, MATE); T(c, '12m', 250, y + 1, 15, ICE, 'right', MONO, '500 '); }
+      else T(c, ev.tx, 480, 318, 18, CY, 'center', BODY, '600 ');
+    }); });
+}
+
+// ---------------------------------------------------------------- 4. pickups
+function icon(c, x, y, s, heal) { SK(c, x - s / 2, y - s / 2, s, s, s * .15, heal ? '#ff6b6b' : MATE); T(c, heal ? '+' : '≡', x + s * .07, y + 1, s * .8, INK, 'center'); }
+const slotFlash = (c, heal, col) => heal ? SK(c, 56, 470, 232, 24, 6, col) : SK(c, 800, 440, 150, 56, 8, col);
+function uA(c, t) {
+  const a1 = 1.75, a2 = 3.95; scene(c); cross(c); gun(c); hud(c, { hp: t >= a2 ? 95 : 55, res: t >= a1 ? 150 : 90 });
+  [[.6, 0, '탄약 +60', a1, 880, 474], [2.8, 1, '체력 +40', a2, 80, 452]].forEach(([at, heal, tx, ar, tx2, ty2]) => { const e = t - at; if (e < 0) return; const k = eo(sg(e, 0, .18)), fly = sg(t, ar - .3, ar);
+    if (fly < 1) A(c, k, () => { const x = lp(520 + (1 - k) * 24, tx2, eo(fly)), y = lp(270, ty2, eo(fly)); icon(c, x, y, 26 * (1 - fly * .6), heal); A(c, 1 - fly, () => T(c, tx, x + 24, y + 1, 22, ICE)); });
+    A(c, pulse(t, ar, .03, .1, .4), () => slotFlash(c, heal, 'rgba(255,79,120,.65)')); });
+}
+function uB(c, t) {
+  const a1 = 1.2, a2 = 3.4; scene(c); cross(c); gun(c); hud(c, { hp: t >= a2 ? 95 : 55, res: t >= a1 ? 150 : 90 });
+  [[.6, 0, '+60', a1, 880, 474], [2.8, 1, '+40', a2, 170, 482]].forEach(([at, heal, tx, ar, tx2, ty2]) => { if (t < at) return; const e = sg(t, at, ar);
+    if (e < 1) for (let g = 3; g >= 0; g--) { const u = cl(e - g * .06), x = lp(480, tx2, u), y = lp(410, ty2, u) - Math.sin(u * Math.PI) * 120; A(c, g ? .35 - g * .08 : 1, () => icon(c, x, y, 24 - g * 3, heal)); }
+    A(c, pulse(t, ar, .03, .12, .45), () => slotFlash(c, heal, 'rgba(255,245,247,.7)'));
+    const r = sg(t, ar, ar + .9); if (r > 0 && r < 1) A(c, 1 - r * r, () => T(c, tx, tx2 + (heal ? 80 : -10), ty2 - 36 - r * 18, 24, P, heal ? 'left' : 'right')); });
+}
+function uC(c, t) {
+  const a1 = .6, a2 = 2.8; scene(c); cross(c); gun(c); hud(c, { hp: t >= a2 + .1 ? 95 : 55, res: t >= a1 + .1 ? 150 : 90 });
+  [[a1, 0, '탄약', '+60'], [a2, 1, '구급상자', '체력 +40']].filter(v => t >= v[0] && t < v[0] + 2.4).sort((a, b) => b[0] - a[0]).forEach(([at, heal, nm, am], i) => { const e = t - at, k = eo(sg(e, 0, .16)), o = sg(e, 2.1, 2.4), y = 430 - i * 42;
+    A(c, k * (1 - o), () => { c.save(); c.translate(480, y); c.scale(.9 + .1 * k, .9 + .1 * k); SK(c, -130, -17, 260, 34, 6, PLATE); icon(c, -108, 0, 22, heal); T(c, nm, -88, 1, 19, ICE); T(c, am, 118, 1, 17, P, 'right', MONO, '500 '); c.restore(); });
+    A(c, pulse(t, at, .03, .1, .35), () => slotFlash(c, heal, 'rgba(255,245,247,.5)')); });
+}
+
+// ---------------------------------------------------------------- 5. assault bar
+const left3 = t => '0:0' + Math.max(1, Math.ceil(3 - t));
+function sA(c, t) {
+  play(c); mbar(c); const on = t >= 3, x = 610, y = 34, w = 310, h = 34;
+  if (!on) { SK(c, x, y, w, h, 8, 'rgba(6,6,8,.8)', ICE, 1.5); T(c, '다음 습격까지', x + 24, y + 18, 17, ICE); T(c, left3(t), x + w - 8, y + 18, 18, ICE, 'right', MONO, '500 '); return; }
+  c.save(); c.beginPath(); c.moveTo(x + 8, y); c.lineTo(x + w + 8, y); c.lineTo(x + w, y + h); c.lineTo(x, y + h); c.closePath(); c.clip(); R(c, x, y, w + 8, h, P);
+  const off = (t * 40) % 28; for (let i = -2; i < 16; i++) PG(c, [x + i * 28 + off, y + h, x + i * 28 + off + 14, y + h, x + i * 28 + off + 28, y, x + i * 28 + off + 14, y], INK); c.restore();
+  SK(c, x + 84, y - 3, 150, h + 6, 8, INK); T(c, '습격 중', x + 163, y + 18, 21, P, 'center');
+  A(c, pulse(t, 3, .03, .08, .4) * .25, () => R(c, 0, 0, 960, 540, P));
+}
+function sB(c, t) {
+  play(c); const on = t >= 3;
+  if (!on) { mbar(c); T(c, '습격까지 ' + left3(t), 410, 54, 15, 'rgba(255,255,255,.7)', 'left', MONO, '500 '); return; }
+  mbar(c, '버텨라 · 습격 중', true);
+  c.save(); c.beginPath(); c.rect(250, 36, 146, 34); c.clip(); const off = (t * 90) % 40; for (let i = 0; i < 6; i++) { const x = 240 + i * 40 + off - 40; A(c, .4, () => PG(c, [x, 40, x + 10, 40, x + 22, 53, x + 10, 66, x, 66, x + 12, 53], INK)); } c.restore();
+  const left = 1 - sg(t, 3, 8); for (let i = 0; i < 20; i++) R(c, 96 + i * 15, 76, 11, 4, i / 20 < left ? P : 'rgba(255,255,255,.2)');
+  A(c, pulse(t, 3, .03, .08, .4) * .7, () => SK(c, 36, 26, 366, 48, 6, '#fff'));
+}
+function sC(c, t) {
+  play(c); mbar(c); const on = t >= 3, col = on ? P : 'rgba(255,245,247,.45)', lw = on ? 5 + 1.5 * Math.sin(t * TAU) : 2, m = on ? 18 : 22, L = on ? 64 : 40;
+  [[m, m, 1, 1], [960 - m, m, -1, 1], [m, 540 - m, 1, -1], [960 - m, 540 - m, -1, -1]].forEach(([x, y, sx, sy]) => { c.beginPath(); c.moveTo(x + sx * L, y); c.lineTo(x, y); c.lineTo(x, y + sy * L); c.strokeStyle = col; c.lineWidth = lw; c.stroke(); });
+  if (on) { const s = Math.floor(98 - (t - 3)); SK(c, 486, 34, 150, 34, 6, P); T(c, '습격 ' + Math.floor(s / 60) + ':' + ('0' + s % 60).slice(-2), 564, 52, 19, INK, 'center'); }
+  else T(c, '습격까지 ' + left3(t), 560, 52, 16, ICE, 'center', MONO, '500 ');
+}
+
+// ---------------------------------------------------------------- 6. headshot star
+const HX = 480, HY = 238;
+function hBase(c, t) { scene(c, { z: [[220, 330, .8], [730, 326, .75]] }); const f = sg(t, .75, 1.3); A(c, 1 - f, () => zombie(c, 480, 430 + f * 30, 2.4)); cross(c, HX, HY); gun(c); hud(c); }
+function hA(c, t) {
+  hBase(c, t); const e = t - .6; if (e < 0) return; const k = eo(sg(e, 0, .1)), o = sg(e, .45, .75), s = lp(1.9, 1, k) * (1 - o * .5);
+  A(c, 1 - o, () => { LN(c, HX - 270 * k, HY, HX + 270 * k, HY, GOLD, 3 * (1 - o) + 1); LN(c, HX, HY - 150 * k, HX, HY + 150 * k, GOLD, 2); star(c, HX, HY, 96 * s, 13 * s, 4, e * .4, GOLD); star(c, HX, HY, 46 * s, 7 * s, 4, e * .4, '#fff');
+    const k2 = eo(sg(e, .08, .2)); A(c, k2, () => star(c, HX + 70, HY - 44, 32 * k2, 5, 4, .3, GOLD)); A(c, eo(sg(e, .14, .26)), () => star(c, HX - 62, HY + 52, 20, 3, 4, .2, '#fff')); });
+}
+function hB(c, t) {
+  hBase(c, t); const e = t - .6; if (e < 0) return; const s = lp(.3, 1, eo(sg(e, 0, .09))) * (1 - sg(e, .4, .6)); if (s <= 0) return;
+  star(c, HX, HY, 86 * s, 42 * s, 8, -.2, GOLD, INK, 5); star(c, HX, HY, 42 * s, 20 * s, 8, .2, '#fff');
+  const r = sg(e, .02, .5); A(c, 1 - r, () => { c.beginPath(); c.arc(HX, HY, 60 + eo(r) * 120, 0, TAU); c.strokeStyle = GOLD; c.lineWidth = 5 * (1 - r) + 1; c.stroke(); });
+}
+function hC(c, t) {
+  hBase(c, t); const e = t - .6; if (e < 0) return; const k = sg(e, 0, .16), s = eo(k) * (k < 1 ? 1 + Math.sin(k * Math.PI) * .35 : 1), o = sg(e, .55, .8);
+  A(c, 1 - o, () => { star(c, HX, HY, 74 * s, 31 * s, 5, -Math.PI / 2 - .2, GOLD, INK, 7); const r = 74 + eo(sg(e, .05, .4)) * 64; for (let i = 0; i < 3; i++) { const a = -2.5 + i * 1.15; star(c, HX + Math.cos(a) * r, HY + Math.sin(a) * r, 15, 6.5, 5, -Math.PI / 2 + i, i === 1 ? '#fff' : GOLD, INK, 3); } });
+}
+
+// ---------------------------------------------------------------- 7. shield
+const shield = t => t < .6 ? 50 : t < 1.7 ? 32 : t < 2.9 ? 14 : 0;
+const HITS = [[.6, 1], [1.7, -1]];
+function qA(c, t) {
+  scene(c); cross(c); gun(c); hud(c, { shield: shield(t) });
+  HITS.forEach(([at, sd]) => { const a = pulse(t, at, .02, .06, .3); if (a <= 0) return;
+    [['#ff5a7a', -5], ['#5ad2ff', 5], [CY, 0]].forEach(([col, dx]) => A(c, a * (dx ? .6 : 1), () => { c.beginPath(); c.ellipse(480 + sd * (478 + dx), 270, 70, 250, 0, sd > 0 ? Math.PI * .62 : -Math.PI * .38, sd > 0 ? Math.PI * 1.38 : Math.PI * .38); c.strokeStyle = col; c.lineWidth = dx ? 3 : 5; c.stroke(); })); });
+  const e = t - 2.9; if (e < 0) return;
+  A(c, pulse(e, 0, .02, .1, .5), () => { c.beginPath(); c.moveTo(0, 270); for (let i = 1; i <= 12; i++) c.lineTo(i * 80, 270 + (rnd(i) - .5) * 46); c.strokeStyle = e < .06 ? '#fff' : CY; c.lineWidth = e < .06 ? 6 : 3; c.stroke(); });
+  for (let i = 0; i < 8; i++) { const k = sg(e, 0, .7), sd = i % 2 ? 1 : -1, x = 480 + sd * (380 + k * 120), y = 60 + i * 55 + k * 30, s = 16 * (1 - k); A(c, 1 - k, () => PG(c, [x, y, x + s * sd * 1.5, y + s * .4, x + s * sd * .3, y + s * 1.3], CY)); }
+}
+function qB(c, t) {
+  scene(c); const e = t - 2.9, v = shield(t);
+  if (e >= 0 && e < .35) { c.save(); c.globalCompositeOperation = 'saturation'; c.globalAlpha = 1 - e / .35; R(c, 0, 0, 960, 540, '#808080'); c.restore(); }
+  cross(c); gun(c); hud(c, { shield: v, shCol: HITS.some(h => t >= h[0] && t < h[0] + .08) ? '#fff' : CY });
+  HITS.forEach(([at]) => { A(c, pulse(t, at, .01, .04, .12), () => { c.strokeStyle = '#fff'; c.lineWidth = 6; c.strokeRect(3, 3, 954, 534); });
+    if (t >= at && v > 0) { const x = 64 + 220 * v / 50; c.beginPath(); c.moveTo(x, 462); for (let i = 1; i < 5; i++) c.lineTo(x - i * 9 - (i % 2 ? 3 : 8), 462 + (i % 2 ? 8 : 2)); c.strokeStyle = INK; c.lineWidth = 2; c.stroke(); } });
+  if (e >= 0) for (let i = 0; i < 10; i++) { const k = sg(e, 0, .6), x = 70 + i * 22 + k * (40 + rnd(i) * 90), y = 466 - k * (30 + rnd(i + 4) * 80) + k * k * 60, s = 10 * (1 - k) + 2; A(c, 1 - k, () => PG(c, [x, y, x + s * 1.4, y - s * .5, x + s * .5, y + s], i % 3 ? CY : '#fff')); }
+}
+function qC(c, t) {
+  scene(c); cross(c); gun(c); hud(c, { shield: shield(t) });
+  HITS.forEach(([at, sd]) => { const e = t - at; if (e < 0 || e > .45) return; const k = e / .45;
+    for (let i = 0; i < 54; i++) { const reach = (.25 + .55 * eo(k)) * 960 * (.6 + rnd(i) * .4); A(c, (1 - k) * .5 * (.4 + rnd(i + 2) * .6), () => R(c, sd > 0 ? 960 - reach : 0, i * 10 + (i * 7) % 5, reach, 2, CY)); } });
+  const e = t - 2.9; if (e < 0 || e >= .6) return; const h = 270 * eo(sg(e, 0, .22)), w = 960 * (1 - sg(e, .22, .5));
+  A(c, .85 * (1 - sg(e, .35, .6)), () => { R(c, 0, 0, 960, h, 'rgba(4,8,12,.8)'); R(c, 0, 540 - h, 960, h, 'rgba(4,8,12,.8)'); });
+  A(c, 1 - sg(e, .3, .6), () => R(c, 480 - w / 2, 268, w, 4, e < .25 ? CY : '#fff'));
+}
+
+// ---------------------------------------------------------------- 8. can blast and fire
+function bBase(c, t) { scene(c, { z: [[250, 330, .8], [720, 326, .75]] }); if (t < .5) { R(c, 470, 318, 20, 28, '#b03a3a'); R(c, 472, 323, 16, 5, '#ddd'); } }
+function blades(c, e, x, y, n, w, hh, cols, step) {
+  const st = Math.floor(e * (step || 9));
+  for (let i = 0; i < n; i++) { const bx = x + (i - (n - 1) / 2) * w * .8, h = hh * (.55 + rnd(st + i * 13) * .6), tip = bx + (rnd(st + i * 5) - .5) * w; PG(c, [bx - w / 2, y, bx + w / 2, y, tip, y - h], cols[0]); PG(c, [bx - w / 4, y, bx + w / 4, y, lp(bx, tip, .6), y - h * .55], cols[1]); }
+}
+function bA(c, t) {
+  bBase(c, t); const e = t - .5; if (e < 0) return; const st = Math.floor(e * 12) / 12;
+  if (e < 1.1) {
+    for (let i = 0; i < 7; i++) { const a = i / 7 * TAU + .4, rr = sg(st, .1, 1) * 150; A(c, (1 - sg(st, .5, 1)) * .9, () => { c.beginPath(); c.arc(480 + Math.cos(a) * rr * .8, 330 - 60 * sg(st, .1, 1) + Math.sin(a) * rr * .45, 30 + 26 * sg(st, .1, .6), 0, TAU); c.fillStyle = '#0b0b0d'; c.fill(); }); }
+    const r = 20 + eo(sg(st, 0, .35)) * 120, seed = Math.floor(e * 12);
+    A(c, 1 - sg(st, .4, .9), () => { const p = [], q = []; for (let i = 0; i < 10; i++) { const a = i / 10 * TAU, rr = r * (.75 + rnd(i + seed) * .45); p.push(480 + Math.cos(a) * rr, 335 + Math.sin(a) * rr * .8); } for (let i = 0; i < 8; i++) { const a = i / 8 * TAU + .3, rr = r * .5 * (.75 + rnd(i + 3) * .4); q.push(480 + Math.cos(a) * rr, 335 + Math.sin(a) * rr * .8); } PG(c, p, st < .17 ? '#fff' : st < .34 ? '#ffe07a' : '#ff8a3d'); PG(c, q, st < .34 ? '#fff' : '#ffe07a'); });
+    for (let i = 0; i < 9; i++) { const a = -Math.PI * rnd(i), d = 40 + sg(e, 0, .5) * 220 * (.5 + rnd(i + 2)); A(c, 1 - sg(e, .2, .6), () => LN(c, 480 + Math.cos(a) * d, 335 + Math.sin(a) * d * .8, 480 + Math.cos(a) * (d + 26), 335 + Math.sin(a) * (d + 26) * .8, '#ffe07a', 4)); }
+    if (e < .09) A(c, 1 - e / .09, () => R(c, 0, 0, 960, 540, '#fff'));
+  }
+  if (e > .6) A(c, sg(e, .6, 1), () => { c.beginPath(); c.ellipse(480, 348, 130, 22, 0, 0, TAU); c.fillStyle = 'rgba(255,138,61,.25)'; c.fill(); blades(c, e, 480, 350, 6, 44, 95, ['#ff8a3d', '#ffe07a'], 10); });
+}
+function bB(c, t) {
+  bBase(c, t); const e = t - .5; if (e < 0) return;
+  if (e < .08) negative(c);
+  A(c, sg(e, .05, .3), () => { c.beginPath(); c.ellipse(480, 350, 150, 24, 0, 0, TAU); c.fillStyle = 'rgba(0,0,0,.55)'; c.fill(); });
+  const k = sg(e, 0, .6), rr = 40 + eo(k) * 380; A(c, 1 - k, () => { c.beginPath(); c.ellipse(480, 345, rr, rr * .2, 0, 0, TAU); c.strokeStyle = ICE; c.lineWidth = 6 * (1 - k) + 1; c.stroke(); });
+  A(c, 1 - sg(e, .08, .5), () => { c.beginPath(); c.arc(480, 320, 50 + eo(sg(e, 0, .3)) * 70, 0, TAU); c.fillStyle = '#fff'; c.fill(); });
+  if (e > .4) A(c, sg(e, .4, .8), () => { blades(c, e, 480, 352, 9, 34, 58, [P, '#fff']); for (let i = 0; i < 12; i++) A(c, .18, () => R(c, 380 + i * 18 + Math.sin(e * 5 + i) * 4, 250, 2, 90, ICE)); });
+}
+function bC(c, t) {
+  bBase(c, t); const e = t - .5; if (e < 0) return;
+  const k = sg(e, 0, .35); A(c, 1 - k, () => { const g = c.createRadialGradient(480, 330, 0, 480, 330, 40 + k * 90); g.addColorStop(0, '#fff'); g.addColorStop(.4, '#ffd27a'); g.addColorStop(1, 'rgba(255,140,60,0)'); c.fillStyle = g; c.beginPath(); c.arc(480, 330, 40 + k * 90, 0, TAU); c.fill(); });
+  const rr = 30 + eo(sg(e, 0, .3)) * 220; A(c, 1 - sg(e, 0, .3), () => { c.beginPath(); c.ellipse(480, 345, rr, rr * .2, 0, 0, TAU); c.strokeStyle = 'rgba(255,255,255,.8)'; c.lineWidth = 2; c.stroke(); });
+  for (let i = 0; i < 14; i++) { const a = -Math.PI * (.05 + .9 * rnd(i)), d = 30 + sg(e, 0, .45) * 170 * (.5 + rnd(i + 1)); A(c, 1 - sg(e, .15, .5), () => LN(c, 480 + Math.cos(a) * d, 335 + Math.sin(a) * d, 480 + Math.cos(a) * (d + 14), 335 + Math.sin(a) * (d + 14), '#ffd27a', 2)); }
+  if (e > .2) for (let i = 0; i < 6; i++) { const life = (e * .35 + i / 6) % 1; A(c, (1 - life) * .5 * sg(e, .2, .6), () => { c.beginPath(); c.arc(480 + Math.sin(i * 2 + e) * 18 * life, 330 - life * 200, 20 + life * 36, 0, TAU); c.fillStyle = '#3a3d42'; c.fill(); }); }
+  if (e > .5) A(c, sg(e, .5, .9), () => { blades(c, e, 480, 350, 4, 26, 44, ['#ff9a4d', '#ffe6a0']); for (let i = 0; i < 8; i++) { const life = (e * .7 + rnd(i)) % 1; A(c, 1 - life, () => R(c, 455 + rnd(i + 4) * 50 + Math.sin(e * 3 + i) * 6, 345 - life * 110, 3, 3, '#ffd27a')); } });
+}
+
+// ---------------------------------------------------------------- 9. where to go
+function gScene(c, off) { backdrop(c); c.save(); c.translate(off, 0); R(c, 560, 150, 300, 153, '#161b24'); R(c, 598, 222, 40, 80, '#0d1016'); R(c, 300, 190, 330, 113, '#10141b'); c.restore(); }
+function door(c, off, a) { A(c, a, () => { c.save(); c.translate(off, 0); c.shadowColor = ICE; c.shadowBlur = 14; c.strokeStyle = ICE; c.lineWidth = 3; c.strokeRect(590, 214, 56, 88); c.restore(); }); }
+function gTail(c) { cross(c); gun(c); hud(c); mbar(c, '쉬는 곳으로 가라'); }
+function gA(c, t) {
+  gScene(c, 0); door(c, 0, .75 + .25 * Math.sin(t * 3)); A(c, .16, () => R(c, 590, 214, 56, 88, ICE));
+  SK(c, 556, 180, 124, 26, 5, PLATE); T(c, '쉬는 곳', 568, 194, 15, ICE); T(c, '34m', 670, 194, 13, 'rgba(255,255,255,.7)', 'right', MONO, '500 ');
+  gTail(c);
+}
+function gB(c, t) {
+  const off = Math.sin(t * TAU / 6) * 560, dx = 618 + off; gScene(c, off);
+  if (dx > 40 && dx < 920) { const near = 1 - cl(Math.abs(dx - 480) / 300); door(c, off, near); A(c, .5 + .5 * near, () => { c.save(); c.translate(dx, 186); c.rotate(Math.PI / 4); R(c, -7, -7, 14, 14, P); c.restore(); T(c, '34m', dx, 164, 13, ICE, 'center', MONO, '500 '); }); }
+  else { const L = dx <= 40, x = L ? 36 : 924; c.save(); c.translate(x, 270); c.rotate(Math.PI / 4); R(c, -11, -11, 22, 22, P); c.restore(); PG(c, L ? [8, 270, 20, 260, 20, 280] : [952, 270, 940, 260, 940, 280], ICE); T(c, '쉬는 곳 34m', L ? 58 : 902, 270, 15, ICE, L ? 'left' : 'right'); }
+  gTail(c);
+}
+function gC(c, t) {
+  gScene(c, 0); A(c, pulse(t, .3, .2, 1, .3), () => T(c, '헤맨 지 5초', 480, 330, 16, 'rgba(255,255,255,.75)', 'center', BODY, '500 '));
+  const ang = Math.atan2(310 - 505, 618 - 480) + Math.PI / 2;
+  if (t > 1.6) for (let i = 0; i < 7; i++) { const u = i / 7, s = lp(34, 8, u), ph = (t * 1.6 - i * .22) % 1.6, a = cl(1 - Math.abs(ph - .3) / .5) * .9 + .1;
+    A(c, a * sg(t, 1.6 + i * .08, 1.8 + i * .08), () => { c.save(); c.translate(lp(480, 618, u), lp(505, 310, u)); c.rotate(ang); PG(c, [-s, s * .5, 0, -s * .5, s, s * .5, s * .6, s * .5, 0, -s * .05, -s * .6, s * .5], P); c.restore(); }); }
+  gTail(c);
+}
+
+// ---------------------------------------------------------------- sounds (shield drafts)
+let AC = null;
+function audio() { if (!AC) { const K = window.AudioContext || window.webkitAudioContext; if (!K) return null; AC = new K(); } if (AC.state === 'suspended') AC.resume(); return AC; }
+function tone(x, type, f0, f1, dur, gain, at = 0) { const o = x.createOscillator(), g = x.createGain(), t = x.currentTime + at; o.type = type; o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(Math.max(1, f1), t + dur); g.gain.setValueAtTime(gain, t); g.gain.exponentialRampToValueAtTime(.0001, t + dur); o.connect(g); g.connect(x.destination); o.start(t); o.stop(t + dur + .02); }
+function hiss(x, dur, gain, freq, type = 'highpass', at = 0) { const b = x.createBuffer(1, Math.ceil(x.sampleRate * dur), x.sampleRate), d = b.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; const n = x.createBufferSource(), f = x.createBiquadFilter(), g = x.createGain(), t = x.currentTime + at; n.buffer = b; f.type = type; f.frequency.value = freq; g.gain.setValueAtTime(gain, t); g.gain.exponentialRampToValueAtTime(.0001, t + dur); n.connect(f); f.connect(g); g.connect(x.destination); n.start(t); }
+const SOUNDS = {
+  'A-hit': x => { hiss(x, .03, .5, 5000); tone(x, 'sine', 2600, 1000, .06, .25); tone(x, 'triangle', 3400, 3300, .09, .12, .01); },
+  'A-break': x => { hiss(x, .06, .6, 3500); tone(x, 'sine', 1200, 180, .18, .3); for (let i = 0; i < 6; i++) tone(x, 'sine', 2600 + Math.random() * 2600, 2400, .07, .08, .05 + i * .045); },
+  'B-hit': x => { tone(x, 'sine', 190, 70, .09, .5); hiss(x, .015, .35, 2500); tone(x, 'sine', 3200, 3000, .04, .1); },
+  'B-break': x => { tone(x, 'sine', 900, 110, .28, .35); tone(x, 'square', 70, 40, .12, .2, .02); hiss(x, .2, .25, 1800, 'bandpass'); },
+  'C-hit': x => { tone(x, 'sawtooth', 120, 100, .05, .25); hiss(x, .05, .3, 6000); },
+  'C-break': x => { hiss(x, .25, .3, 900, 'bandpass'); tone(x, 'sawtooth', 400, 40, .3, .25); tone(x, 'sine', 60, 35, .12, .4, .28); }
+};
+
+// ---------------------------------------------------------------- the items
+const ITEMS = [
+  { id: 'portrait', memo: '메모 2', title: '초상화와 궁극기 게이지', dur: 6.2, poster: 4.3,
+    quote: '뒤에 불타는 하트가 안 어울리고, 게이지 차는 빛이 프로필 사진을 뜬금없이 가려요. 맛있고 센스 있으면 가려도 돼요.',
+    now: '지금: 네모 타일 뒤에 판 두 장, 모서리 꺾쇠가 빛나고, 다 차면 불꽃 그림이 돌아요.',
+    drafts: [['A', '테두리가 찬다', '사진은 그대로 두고 타일 둘레를 분홍 선이 한 바퀴 돌아요. 다 차면 모서리에서 각진 조각이 튀어요.', pA],
+      ['B', '사진이 게이지', '사진이 흑백에서 색으로 비스듬히 차올라요. 다 차면 한 번 반전되고 빛줄이 지나가요. 사진을 가리지만 사진 자체가 게이지예요.', pB],
+      ['C', '뒤 판이 타오른다', '사진 뒤 분홍 판이 위로 자라요. 다 차면 판이 각진 불꽃 날로 갈라져 끊기듯 흔들려요. 사진은 안 가려요.', pC]] },
+  { id: 'counter', memo: '메모 12', title: '카운터 이펙트', dur: 3.2, poster: .78,
+    quote: '시인성은 좋으면서 화려함은 더 살게.',
+    now: '지금: 화면이 세 프레임 반전되고 분홍 슬래시가 가로지르며 COUNTER가 반으로 갈라졌다 맞물려요(어제 고르신 D).',
+    drafts: [['A', '이중 슬래시와 잔상', '지금 것에 흰 슬래시 하나, 분홍 글자 잔상, 튀는 조각을 더해요. 셋 중 가장 화려해요.', kA],
+      ['B', '컷 인', '화면이 슬래시를 따라 어긋나고 검은 띠가 열리며 그 안에 COUNTER가 들어와요. 만화 컷 느낌이고, 화면 가운데를 0.8초쯤 가려요.', kB],
+      ['C', '적에게만', '반전과 충격 고리를 카운터한 적 둘레에만 써요. 글자는 조준선 옆에 작게. 화면이 가장 잘 보여요.', kC]] },
+  { id: 'alerts', memo: '메모 17', title: '알림', dur: 9.6, poster: 1.6,
+    quote: '거구가 나타났다, 아군 사망·쓰러짐 알림을 개선해야 해요. 레포데는 알림이 계속 떠서 무슨 일이 났는지 알려 줘요.',
+    now: '지금: 오른쪽 위 킬 피드에 한 줄로만 떠요.',
+    extra: '시안 속 알림 셋: 거구 등장(위험), 아군 쓰러짐(경고), 내 실드 깨짐(상태).',
+    drafts: [['A', '가운데 위 띠', '미션 바 아래에 띠가 하나씩 들어와요. 위험한 알림은 분홍으로 꽉 차고 화면 테두리가 한 번 번쩍여요.', aA],
+      ['B', '왼쪽에 쌓기', '아군 카드 위에 최근 알림이 세 줄까지 쌓여요. 아군에게 생긴 일은 그 아군 색 표시가 붙어요.', aB],
+      ['C', '방향과 거리', '거구와 쓰러진 아군은 화면 끝 화살표로 어느 쪽 몇 m인지 알려 줘요. 내 상태는 조준선 아래 작게.', aC]] },
+  { id: 'pickup', memo: '메모 19', title: '아이템 픽업', dur: 5.2, poster: 1.0,
+    quote: '줍는 소리, 화면 효과, 줍는 동작, 주울 때 뜨는 글자 다 부족해요.',
+    now: '지금: 조준선 옆에 "+ 이름 양"이 잠깐 떠요.',
+    extra: '어느 시안이든 손을 뻗는 동작(0.25초)과 종류별 줍는 소리를 같이 넣어요.',
+    drafts: [['A', '조준선 옆에서 HUD로', '글자가 조준선 옆에 떴다가 해당 HUD 칸으로 날아가고, 칸이 분홍으로 번쩍여요.', uA],
+      ['B', '아이콘이 날아간다', '가운데 글자 없이 아이콘이 주운 자리에서 HUD 칸으로 포물선을 그려요. 칸 위에 +60이 떠요.', uB],
+      ['C', '아래 목록', '화면 아래 가운데에 주운 것이 목록으로 쌓여요(레포데식). HUD 칸은 깜빡이기만 해요.', uC]] },
+  { id: 'assault', memo: '메모 25', title: '어썰트 바', dur: 8, poster: 4.2,
+    quote: '어썰트 바 HUD도 바꾸기.',
+    now: '지금: "ASSAULT IN PROGRESS" 글자 띠예요.',
+    extra: '앞 3초는 습격 전, 그 뒤는 습격 중이에요.',
+    drafts: [['A', '경고 테이프', '오른쪽 위. 기다릴 땐 얇은 흰 띠와 남은 시간, 습격이 시작되면 분홍·검정 줄무늬가 흘러요.', sA],
+      ['B', '미션 바가 변한다', '띠를 따로 두지 않고 미션 바가 분홍으로 바뀌어요. 아래 눈금이 남은 시간이에요.', sB],
+      ['C', '화면 모서리', '네 모서리 꺾쇠가 분홍으로 굵어지며 뛰고, 위에 작은 시간표가 떠요. 화면을 가장 덜 가려요.', sC]] },
+  { id: 'headshot', memo: '체크 g-headshot', title: '헤드샷 별', dur: 2.6, poster: .72,
+    quote: '별이 좀 약해요. 별이라는 느낌이 안 들고 그냥 빛 효과 하나 넣은 것 같아요.',
+    now: '지금: 금색 빛 번짐이에요.',
+    drafts: [['A', '네 갈래 별', '길고 가는 네 갈래 별과 가로 빛줄. 작은 별 둘이 따라 붙어요.', hA],
+      ['B', '여덟 갈래 도장', '검은 테두리의 꽉 찬 금색 별이 쾅 찍히고 고리가 퍼져요.', hB],
+      ['C', '오각 별', '누가 봐도 별이에요. 튀어나왔다가 작은 별 셋이 흩어져요.', hC]] },
+  { id: 'shield', memo: '체크 h-shield', title: '실드 피격과 깨짐', dur: 4.6, poster: .68, sound: true,
+    quote: '효과음이 아쉽고, 이펙트도 좀 모바일 게임 느낌이에요.',
+    now: '지금: 화면에 하늘색 벌집 무늬가 뜨고, 깨질 때 유리판이 터져요.',
+    extra: '두 번 맞고 세 번째에 깨져요. 소리 버튼은 방향만 보려고 합성한 것이라 실제로는 더 다듬어요.',
+    drafts: [['A', '가장자리 한 줄', '맞은 쪽 화면 끝에 가는 호 하나가 색 번짐과 함께 스쳐요. 깨질 때 화면을 가로지르는 금 한 줄.', qA],
+      ['B', 'HUD가 받는다', '화면은 흰 테두리 한 프레임뿐. 실드 띠에 금이 가고, 깨지면 띠가 조각나 튀며 화면 색이 잠깐 빠져요.', qB],
+      ['C', '주사선', '맞은 쪽에서 가는 가로줄이 밀려와요. 깨지면 브라운관이 꺼지듯 한 줄로 접혀요.', qC]] },
+  { id: 'blast', memo: '체크 c-cans', title: '깡통 폭발과 불', dur: 5.2, poster: .72,
+    quote: '불 이펙트가 너무 과하고 총 스킬 이펙트 같아요. 불을 우리 스타일로 만들 거면 터지는 것도 만들어 봐요.',
+    now: '지금: 산 에셋의 폭발과 다른 에셋의 불을 그대로 써요.',
+    drafts: [['A', '만화 컷', '한 프레임 흰 화면 뒤, 각진 폭발 덩어리가 끊기듯 커지고 검은 연기가 남아요. 불은 두 색 날.', bA],
+      ['B', '반전 한 컷', '두 프레임 반전과 바닥을 훑는 충격 고리. 불은 낮고 넓게, 분홍빛으로.', bB],
+      ['C', '절제', '작은 섬광, 가는 고리, 불티와 회색 연기. 불은 작게. 가장 현실적이에요.', bC]] },
+  { id: 'guide', memo: '새 항목', title: '어디로 가야 하는지', dur: 6, poster: 2.6,
+    quote: '레포데는 외곽선으로 세이프하우스나 어디로 가야 하는지 알려 줘요.',
+    now: '지금: 미션 바의 글자뿐이에요.',
+    drafts: [['A', '벽 너머 외곽선', '목표 문이 벽 뒤에서도 흰 외곽선으로 보이고 거리가 붙어요. 항상 켜져 있어요.', gA],
+      ['B', '화면 끝 표식', '시야 밖이면 화면 끝 마름모가 방향과 거리를 알려 주고, 바라보면 외곽선이 떠요.', gB],
+      ['C', '바닥 화살표', '평소엔 아무것도 없다가 5초쯤 헤매면 바닥에 화살표가 흘러요.', gC]] }
+];
+
+// ---------------------------------------------------------------- page
+const $ = id => document.getElementById(id);
+function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+const results = {}, views = {}, cards = [], noteTimers = {}, chains = {};
+let col = null, mode = 'connecting', readOnly = false, loadTimer = null;
+let moving = !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+function build() {
+  const list = $('list');
+  $('n-all').textContent = ITEMS.length;
+  for (const it of ITEMS) {
+    const sec = el('section', 'item');
+    const head = el('div', 'item-head'), top = el('div', 'item-top');
+    const memo = el('span', 'memo'); memo.append(el('span', null, it.memo));
+    const picked = el('span', 'picked', '아직 안 고름');
+    top.append(memo, el('h2', null, it.title), picked);
+    head.append(top, el('p', 'quote', it.quote), el('p', 'now', it.now));
+    const grid = el('div', 'drafts'), picks = {};
+    for (const [key, name, pitch, fn] of it.drafts) {
+      const card = el('article', 'card');
+      const stage = el('div', 'stage'), cv = el('canvas'); cv.setAttribute('role', 'img'); cv.setAttribute('aria-label', it.title + ' 시안 ' + key + ': ' + name); stage.append(cv);
+      const body = el('div', 'card-body'), nm = el('div', 'card-name'); nm.append(el('span', 'letter', key), el('h3', null, name));
+      const actions = el('div', 'card-actions'), pick = el('button', 'pick', key + ' 고르기'); pick.type = 'button'; pick.setAttribute('aria-pressed', 'false');
+      pick.addEventListener('click', () => setPick(it.id, key));
+      actions.append(pick);
+      if (it.sound) for (const [kind, label] of [['hit', '피격음'], ['break', '깨짐음']]) { const b = el('button', 'snd', label); b.type = 'button'; b.addEventListener('click', () => { const x = audio(); if (x) SOUNDS[key + '-' + kind](x); else b.disabled = true; }); actions.append(b); }
+      body.append(nm, el('p', 'pitch', pitch), actions); card.append(stage, body); grid.append(card);
+      picks[key] = { card, pick };
+      cards.push({ cv, ctx: cv.getContext('2d'), fn, dur: it.dur, poster: it.poster, seen: false, w: 0 });
+    }
+    const after = el('div', 'after'), row = el('div', 'after-row');
+    const none = el('button', 'none', '셋 다 아니에요'); none.type = 'button'; none.setAttribute('aria-pressed', 'false'); none.addEventListener('click', () => setPick(it.id, 'none'));
+    row.append(none); if (it.extra) row.append(el('p', 'extra', it.extra));
+    const label = el('label', null, '섞고 싶거나 바꾸고 싶은 점 (안 적어도 돼요)'); label.htmlFor = 'note-' + it.id;
+    const ta = el('textarea'); ta.id = 'note-' + it.id; ta.rows = 2; ta.placeholder = '예: A인데 조각은 빼고, C의 작은 글자를 같이';
+    ta.addEventListener('input', () => onNote(it.id, ta.value)); ta.addEventListener('blur', () => flushNote(it.id));
+    after.append(row, label, ta);
+    sec.append(head, grid, after); list.append(sec);
+    views[it.id] = { picks, none, ta, picked };
+  }
+}
+
+function apply(id) {
+  const v = views[id], r = results[id], pick = r ? r.pick : '';
+  for (const key of Object.keys(v.picks)) { const on = pick === key; v.picks[key].card.dataset.on = String(on); v.picks[key].pick.setAttribute('aria-pressed', String(on)); v.picks[key].pick.disabled = readOnly; }
+  v.none.setAttribute('aria-pressed', String(pick === 'none')); v.none.disabled = readOnly; v.ta.readOnly = readOnly;
+  if (document.activeElement !== v.ta) v.ta.value = r && r.note ? r.note : '';
+  v.picked.textContent = pick === 'none' ? '셋 다 아님' : pick ? pick + ' 고름' : '아직 안 고름';
+  v.picked.classList.toggle('on', !!pick);
+}
+function refresh() { let done = 0; for (const it of ITEMS) { apply(it.id); if (results[it.id] && results[it.id].pick) done++; } $('n-done').textContent = done; }
+function setPick(id, key) {
+  if (readOnly) return;
+  const cur = results[id] || { pick: '', note: '' };
+  results[id] = { pick: cur.pick === key ? '' : key, note: cur.note || '' };
+  refresh(); save(id);
+}
+function onNote(id, value) { const cur = results[id] || { pick: '', note: '' }; results[id] = { pick: cur.pick, note: value }; clearTimeout(noteTimers[id]); noteTimers[id] = setTimeout(() => flushNote(id), 900); }
+function flushNote(id) { if (noteTimers[id] == null) return; clearTimeout(noteTimers[id]); noteTimers[id] = null; save(id); }
+
+const LOCAL_KEY = 'enfilade-drafts-d';
+function status(text, warn) { const s = $('status'); s.textContent = text; s.classList.toggle('warn', !!warn); }
+function save(id) {
+  if (mode === 'local') { try { localStorage.setItem(LOCAL_KEY, JSON.stringify(results)); } catch (e) {} return; }
+  if (!col) return;
+  chains[id] = (chains[id] || Promise.resolve()).then(() => {
+    const r = results[id], ref = col.doc(id);
+    return r && (r.pick || r.note) ? ref.set({ pick: r.pick || '', note: r.note || '', at: new Date().toISOString() }) : ref.delete();
+  }).then(() => { if (!readOnly) status('저장됨 · 다른 기기에서도 보여요'); }).catch(e => {
+    const code = e && e.code;
+    if (code === 'invalid_argument') { readOnly = true; status('보기 전용이에요. 고른 것이 저장되지 않아요.', true); refresh(); }
+    else if (code === 'quota_exceeded') status('저장 공간이 꽉 찼어요. Claude에게 알려 주세요.', true);
+    else if (code === 'revoked') status('이 페이지의 저장 권한이 바뀌었어요. 새로고침해 주세요.', true);
+    else status('방금 고른 것을 저장하지 못했어요. 다시 눌러 주세요.', true);
+  });
+}
+function clean(v) { return v && typeof v === 'object' ? { pick: typeof v.pick === 'string' ? v.pick : '', note: typeof v.note === 'string' ? v.note : '' } : null; }
+function useLocal() {
+  mode = 'local';
+  try { const data = JSON.parse(localStorage.getItem(LOCAL_KEY) || '{}'); for (const it of ITEMS) { const v = clean(data[it.id]); if (v) results[it.id] = v; } } catch (e) {}
+  refresh(); status('저장소에 연결할 수 없어서 이 브라우저에만 저장돼요.', true);
+}
+async function connect() {
+  let db = null;
+  try { db = window.claude && window.claude.use ? await window.claude.use('db') : null; } catch (e) { db = null; }
+  if (!db) { useLocal(); return; }
+  col = db.collection('picks'); mode = 'db';
+  loadTimer = setTimeout(() => status('저장소가 아직 답하지 않아요. 고른 것은 연결되면 저장돼요.', true), 10000);
+  const pending = Object.keys(results); let first = true;
+  col.onSnapshot(snap => {
+    const next = {};
+    for (const d of snap.docs) { const v = clean(d.data()); if (v && views[d.id]) next[d.id] = v; }
+    // A note being typed right now is not overwritten by what the store last held.
+    for (const id of Object.keys(noteTimers)) if (noteTimers[id] != null && results[id]) next[id] = { pick: next[id] ? next[id].pick : results[id].pick, note: results[id].note };
+    if (first) { first = false; for (const id of pending) if (results[id]) next[id] = results[id]; }
+    for (const k of Object.keys(results)) delete results[k];
+    Object.assign(results, next); refresh();
+    if (!snap.metadata.fromCache) { clearTimeout(loadTimer); if (!readOnly) status('저장됨 · 다른 기기에서도 보여요'); }
+    if (pending.length) for (const id of pending.splice(0)) save(id);
+  }, err => {
+    clearTimeout(loadTimer);
+    status(err && err.code === 'revoked' ? '이 페이지의 저장 권한이 바뀌었어요. 새로고침해 주세요.' : '저장소 연결이 끊겼어요. 새로고침하면 다시 연결돼요.', true);
+  });
+}
+
+// ---------------------------------------------------------------- one clock for every draft on screen
+function size(card) {
+  const w = card.cv.clientWidth; if (!w || w === card.w) return false;
+  const dpr = Math.min(2, window.devicePixelRatio || 1); card.w = w; card.cv.width = Math.round(w * dpr); card.cv.height = Math.round(w * dpr * 9 / 16); return true;
+}
+function paint(card, time) {
+  const c = card.ctx, cv = card.cv; if (!cv.width) return;
+  c.setTransform(cv.width / 960, 0, 0, cv.height / 540, 0, 0); c.globalAlpha = 1; c.globalCompositeOperation = 'source-over'; c.shadowBlur = 0; c.setLineDash([]);
+  c.save(); try { card.fn(c, time); } catch (e) { if (!card.failed) { card.failed = true; console.error(e); } } c.restore();
+}
+function frame(now) {
+  const t = now / 1000;
+  for (const card of cards) { const resized = size(card); if (!card.seen && !resized) continue; if (moving) paint(card, t % card.dur); else if (resized || card.still !== true) { paint(card, card.poster); card.still = true; } }
+  requestAnimationFrame(frame);
+}
+function setMoving(on) { moving = on; for (const card of cards) card.still = false; const b = $('motion'); b.setAttribute('aria-pressed', String(on)); b.textContent = on ? '움직임 켬' : '움직임 끔'; }
+
+build();
+setMoving(moving);
+$('motion').addEventListener('click', () => setMoving(!moving));
+if ('IntersectionObserver' in window) { const io = new IntersectionObserver(es => { for (const e of es) { const card = cards.find(k => k.cv === e.target); if (card) { card.seen = e.isIntersecting; if (card.seen) card.still = false; } } }, { rootMargin: '120px' }); cards.forEach(card => io.observe(card.cv)); }
+else cards.forEach(card => { card.seen = true; });
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { for (const card of cards) card.still = false; });
+refresh();
+requestAnimationFrame(frame);
+connect();
+</script>
