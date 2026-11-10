@@ -334,6 +334,8 @@ public sealed partial class PlayerMovement : MonoBehaviour
         if (GetComponent<PlayerLeanHitboxes>() == null) gameObject.AddComponent<PlayerLeanHitboxes>();
         // The "[F] climb down" prompt over a ladder's top in reach (backlog 141).
         if (Application.isPlaying && IsLocal && GetComponent<LadderPromptHUD>() == null) gameObject.AddComponent<LadderPromptHUD>();
+        // "[CTRL] 눌러 낙하" under the crosshair while a move the crouch key lets go of is on (2026-11-11).
+        if (Application.isPlaying && IsLocal && GetComponent<ParkourPromptHUD>() == null) gameObject.AddComponent<ParkourPromptHUD>();
         // Stealth (2026-11-11): who is noticing them and how sure (marks over heads, wedges round the crosshair), the
         // sight cones and sound rings on the ground, and the stone thrown with T (friends' copies throw theirs too).
         if (Application.isPlaying && IsLocal && GetComponent<StealthMarkersHUD>() == null) gameObject.AddComponent<StealthMarkersHUD>();
