@@ -12,11 +12,13 @@ using UnityEngine.UI;
 [DisallowMultipleComponent]
 public sealed class MainMenuClasses : MonoBehaviour
 {
-    private const float LeftWidth = 600f, PlateHeight = 74f, PlateGap = 18f, Slant = 16f, RightX = 860f, RightWidth = 880f;
+    private const float LeftWidth = 600f, PlateHeight = 74f, PlateGap = 18f, Slant = 16f, RightX = 860f, RightWidth = 880f,
+        IconSize = 48f, TextX = 86f, DetailIcon = 132f;
     private static readonly float[] Tilts = { 1.2f, -1f, .8f, -1.3f, 1f, -.8f, 1.3f }, Indents = { 0f, 24f, 8f, 30f, 14f, 4f, 26f };
 
     private RectTransform root, content;
     private TextMeshProUGUI detailTitle, detailRole, detailBody;
+    private RawImage detailIcon;
     private float edge;
     private string pointed;
 
@@ -88,9 +90,13 @@ public sealed class MainMenuClasses : MonoBehaviour
             KitSkew.On(KitStyle.Fill(rim, KitStyle.With(KitStyle.Accent, .75f)), Slant);
         }
         KitSkew.On(KitStyle.Bar("Bar", plate, Vector2.zero, new Vector2(4f, PlateHeight), chosen ? KitStyle.Accent : KitStyle.With(KitStyle.Ice, .35f)), Slant);
-        KitStyle.Flat(KitStyle.TopLeft("Name", plate, new Vector2(28f, 6f), new Vector2(260f, 40f)), info.Title, 30f,
+        // Its white icon at the left (Resources/UI/Icons/Class_<id>, drawn by Tools/Icons/class_icons.py).
+        var icon = KitButtons.IconImage(plate, Icon(info.Id), IconSize, chosen ? KitStyle.Ice : KitStyle.With(KitStyle.Ice, .72f));
+        icon.rectTransform.anchorMin = icon.rectTransform.anchorMax = new Vector2(0f, .5f);
+        icon.rectTransform.anchoredPosition = new Vector2(24f + IconSize * .5f, 0f);
+        KitStyle.Flat(KitStyle.TopLeft("Name", plate, new Vector2(TextX, 6f), new Vector2(260f, 40f)), info.Title, 30f,
             TextAlignmentOptions.MidlineLeft, chosen ? KitStyle.Text : KitStyle.With(KitStyle.Text, .85f));
-        var role = KitStyle.Flat(KitStyle.TopLeft("Role", plate, new Vector2(30f, 44f), new Vector2(LeftWidth - 170f, 22f)), info.Role, 14f,
+        var role = KitStyle.Flat(KitStyle.TopLeft("Role", plate, new Vector2(TextX + 2f, 44f), new Vector2(LeftWidth - TextX - 150f, 22f)), info.Role, 14f,
             TextAlignmentOptions.MidlineLeft, KitStyle.Soft);
         role.fontStyle = FontStyles.Normal;
         role.overflowMode = CombatUIAssets.ClippedOverflow(role);
@@ -140,6 +146,11 @@ public sealed class MainMenuClasses : MonoBehaviour
         KitStyle.Cut(panel, KitStyle.With(KitStyle.Ice, .05f));
         detailTitle = KitStyle.Flat(KitStyle.TopLeft("Name", panel, new Vector2(34f, 22f), new Vector2(RightWidth - 68f, 60f)), "", 46f,
             TextAlignmentOptions.MidlineLeft);
+        // The class's icon large at the top right, leaning a little.
+        detailIcon = KitButtons.IconImage(panel, Icon(PlayerClass.CurrentId), DetailIcon, KitStyle.With(KitStyle.Ice, .9f));
+        detailIcon.rectTransform.anchorMin = detailIcon.rectTransform.anchorMax = new Vector2(1f, 1f);
+        detailIcon.rectTransform.anchoredPosition = new Vector2(-40f - DetailIcon * .5f, -28f - DetailIcon * .5f);
+        detailIcon.rectTransform.localRotation = Quaternion.Euler(0f, 0f, -4f);
         detailRole = KitStyle.Flat(KitStyle.TopLeft("Role", panel, new Vector2(36f, 86f), new Vector2(RightWidth - 72f, 56f)), "", 18f,
             TextAlignmentOptions.TopLeft, KitStyle.Soft);
         detailRole.fontStyle = FontStyles.Normal;
@@ -160,6 +171,8 @@ public sealed class MainMenuClasses : MonoBehaviour
         var info = PlayerClass.Find(id);
         if (info == null) return;
         detailTitle.text = info.Title;
+        detailIcon.texture = KitButtons.Icon(Icon(id));
+        detailIcon.enabled = detailIcon.texture != null;
         detailRole.text = info.Role;
         string weapons = info.Weapons.Length > 0 ? string.Join(" · ", info.Weapons) : "-";
         string body = Texts.Format("classes.loadout", Name(info.Primary), Name(info.Secondary)) + "\n"
@@ -168,6 +181,9 @@ public sealed class MainMenuClasses : MonoBehaviour
         if (!info.Ready) body += "\n\n<color=#" + ColorUtility.ToHtmlStringRGB(KitStyle.Soft) + ">" + Texts.Get("classes.later_note") + "</color>";
         detailBody.text = body;
     }
+
+    /// <summary>A class's icon's name in Resources/UI/Icons.</summary>
+    public static string Icon(string id) => "Class_" + id;
 
     // A gun's name as the HUD has it.
     private static string Name(string weapon)

@@ -23,6 +23,7 @@ public sealed class ClassHUD : MonoBehaviour
     private readonly Image[] pips = new Image[MostPips];
     private readonly Image[] slotLines = new Image[2], slotBacks = new Image[2];
     private TextMeshProUGUI title, note;
+    private RawImage icon;
     private RectTransform keyRect;
     private KeyCapGraphic keyCap;
     private TextMeshProUGUI keyLabel;
@@ -58,6 +59,8 @@ public sealed class ClassHUD : MonoBehaviour
         shownClass = id;
         var info = PlayerClass.Find(id);
         title.text = info != null ? info.Title : id;
+        icon.texture = KitButtons.Icon(MainMenuClasses.Icon(id));
+        icon.enabled = icon.texture != null;
         bool assault = PlayerClass.Is(PlayerClass.Assault), point = PlayerClass.Is(PlayerClass.Point);
         pipRow.gameObject.SetActive(assault);
         slotRow.gameObject.SetActive(point);
@@ -133,14 +136,17 @@ public sealed class ClassHUD : MonoBehaviour
         var edge = KitStyle.Bar("Edge", plate, Vector2.zero, new Vector2(4f, Height), KitStyle.Accent);
         KitSkew.On(edge, Slant);
 
-        title = KitStyle.Label(KitStyle.TopLeft("Title", plate, new Vector2(18f, 0f), new Vector2(110f, Height)), "", 17f,
+        icon = KitButtons.IconImage(plate, "", 28f, KitStyle.Ice);
+        icon.rectTransform.anchorMin = icon.rectTransform.anchorMax = new Vector2(0f, .5f);
+        icon.rectTransform.anchoredPosition = new Vector2(28f, 0f);
+        title = KitStyle.Label(KitStyle.TopLeft("Title", plate, new Vector2(46f, 0f), new Vector2(80f, Height)), "", 16f,
             TextAlignmentOptions.MidlineLeft, KitStyle.Ice);
         title.characterSpacing = 2f;
-        note = KitStyle.Label(KitStyle.TopLeft("Note", plate, new Vector2(118f, 0f), new Vector2(170f, Height)), "", 13f,
+        note = KitStyle.Label(KitStyle.TopLeft("Note", plate, new Vector2(128f, 0f), new Vector2(160f, Height)), "", 13f,
             TextAlignmentOptions.MidlineLeft, KitStyle.Soft);
         note.fontStyle = FontStyles.Normal;
 
-        pipRow = KitStyle.TopLeft("Adrenaline", plate, new Vector2(118f, (Height - PipHeight) * .5f), new Vector2(170f, PipHeight));
+        pipRow = KitStyle.TopLeft("Adrenaline", plate, new Vector2(128f, (Height - PipHeight) * .5f), new Vector2(160f, PipHeight));
         for (int i = 0; i < MostPips; i++)
         {
             var pip = KitStyle.Fill(KitStyle.TopLeft("Pip", pipRow, new Vector2(i * (PipWidth + PipGap), 0f), new Vector2(PipWidth, PipHeight)),
@@ -149,7 +155,7 @@ public sealed class ClassHUD : MonoBehaviour
             pips[i] = pip;
         }
 
-        slotRow = KitStyle.TopLeft("Guns", plate, new Vector2(118f, 7f), new Vector2(170f, Height - 14f));
+        slotRow = KitStyle.TopLeft("Guns", plate, new Vector2(128f, 7f), new Vector2(160f, Height - 14f));
         for (int slot = 0; slot < 2; slot++)
         {
             var box = KitStyle.TopLeft("Gun " + (slot + 1), slotRow, new Vector2(slot * 62f, 0f), new Vector2(52f, Height - 14f));
