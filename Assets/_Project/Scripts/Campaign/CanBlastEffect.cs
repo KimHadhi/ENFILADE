@@ -42,7 +42,10 @@ public sealed class CanBlastEffect : MonoBehaviour
     private float age, whiteAge, blastReach = 5f, fireReach = 3f, whiteStrength, outAt = -1f;
     private int drawnStep = -1;
 
-    /// <summary>A can blows up here: the blast out to blastRadius, then a fire fireRadius wide until PutOut.</summary>
+    /// <summary>
+    /// A can blows up here: the blast out to blastRadius, then a fire fireRadius wide until PutOut. With no fireRadius
+    /// there is only the blast, and the effect removes itself after it (an exploder's burst, ZombieExploder).
+    /// </summary>
     public static CanBlastEffect Play(Vector3 at, float blastRadius, float fireRadius)
     {
         var host = new GameObject("Can Blast");
@@ -115,6 +118,7 @@ public sealed class CanBlastEffect : MonoBehaviour
             else whiteLid.color = new Color(1f, 1f, 1f, whiteStrength * (1f - whiteAge / WhiteSeconds));
         }
         if (outAt >= 0f && age - outAt >= FireOut) { Destroy(gameObject); return; }
+        if (fireReach <= 0f && age >= BlastSeconds) { Destroy(gameObject); return; }
         Draw();
     }
 
@@ -122,7 +126,8 @@ public sealed class CanBlastEffect : MonoBehaviour
     private void Draw()
     {
         int step = age < BlastSeconds ? Mathf.FloorToInt(age * BlastRate) : 1000 + Mathf.FloorToInt(age * FireRate);
-        float fire = Mathf.Clamp01((age - FireFrom) / FireIn) * (outAt < 0f ? 1f : 1f - Mathf.Clamp01((age - outAt) / FireOut));
+        float fire = fireReach <= 0f ? 0f
+            : Mathf.Clamp01((age - FireFrom) / FireIn) * (outAt < 0f ? 1f : 1f - Mathf.Clamp01((age - outAt) / FireOut));
         Shine(fire, step);
         if (step == drawnStep) return;
         drawnStep = step;

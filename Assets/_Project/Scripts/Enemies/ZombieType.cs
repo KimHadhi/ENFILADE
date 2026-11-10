@@ -4,9 +4,10 @@ using UnityEngine.AI;
 
 /// <summary>
 /// What kind of zombie it is (ZombieType). Shambler is 0, so an older report reads as one. Brute: the boss that comes
-/// at a song's highlight (friend feedback C2), never picked at random.
+/// at a song's highlight (friend feedback C2), never picked at random. Exploder: an elite that walks in and bursts
+/// (ZombieExploder, stage C-16), picked now and then by its share.
 /// </summary>
-public enum ZombieKind : byte { Shambler, Runner, Brute }
+public enum ZombieKind : byte { Shambler, Runner, Brute, Exploder }
 
 /// <summary>
 /// Multiplayer plan stage 4D-1, made Guts & Blackpowder's at the user's word: what kind of zombie it is. A shambler
@@ -100,6 +101,14 @@ public sealed class ZombieType : MonoBehaviour
         executionShare = .35f
     };
 
+    // C-16's exploder: a little bloated, a little quicker than a shambler, dies sooner, and never claws (its reach is too
+    // short to swing from): it walks into its quarry and bursts (ZombieExploder).
+    private readonly Numbers exploder = new Numbers
+    {
+        share = .05f, speed = 4.6f, acceleration = 9f, angularSpeed = 160f, windup = .3f, attackInterval = 1f, attackRange = .2f,
+        approachShare = .5f, healthShare = .7f, scale = 1.12f
+    };
+
     private NavMeshAgent agent;
     private EnemyCombatAI combat;
     private ZombieMind mind;
@@ -111,7 +120,8 @@ public sealed class ZombieType : MonoBehaviour
     public ZombieKind Kind { get; private set; }
     /// <summary>Its body's size against the pack's own (ZombieBody).</summary>
     public float Scale => Mathf.Clamp((Kind == ZombieKind.Brute ? brute : Current).scale, .5f, 3f);
-    private Numbers Current => Crawls ? crawler : Kind == ZombieKind.Runner ? runner : Kind == ZombieKind.Brute ? brute : shambler;
+    private Numbers Current => Crawls ? crawler : Kind == ZombieKind.Runner ? runner : Kind == ZombieKind.Brute ? brute
+        : Kind == ZombieKind.Exploder ? exploder : shambler;
     /// <summary>Lost a leg: it crawls with the Crawler numbers, whatever its kind.</summary>
     public bool Crawls { get; private set; }
     /// <summary>Its height crawling (m), for its capsule (ZombieBody.Crawl.cs).</summary>
@@ -133,13 +143,17 @@ public sealed class ZombieType : MonoBehaviour
         if (GetComponent<ZombieCrowd>() == null) gameObject.AddComponent<ZombieCrowd>();
         // Down ledges and across gaps on the walk mesh's links (friend feedback C5).
         if (GetComponent<ZombieDrop>() == null) gameObject.AddComponent<ZombieDrop>();
+        // An exploder's fuse and burst; it does nothing for other kinds.
+        if (GetComponent<ZombieExploder>() == null) gameObject.AddComponent<ZombieExploder>();
         GameTables.BindNested(TableName, nameof(ZombieKind.Shambler), this, shambler);
         GameTables.BindNested(TableName, nameof(ZombieKind.Runner), this, runner);
         GameTables.BindNested(TableName, "Crawler", this, crawler);
         GameTables.BindNested(TableName, nameof(ZombieKind.Brute), this, brute);
+        GameTables.BindNested(TableName, nameof(ZombieKind.Exploder), this, exploder);
         GameTables.Reloaded += Reapply;
-        float total = Mathf.Max(0f, shambler.share) + Mathf.Max(0f, runner.share);
-        Kind = total > 0f && UnityEngine.Random.value * total < Mathf.Max(0f, runner.share) ? ZombieKind.Runner : ZombieKind.Shambler;
+        float runners = Mathf.Max(0f, runner.share), exploders = Mathf.Max(0f, exploder.share);
+        float roll = UnityEngine.Random.value * (Mathf.Max(0f, shambler.share) + runners + exploders);
+        Kind = roll < runners ? ZombieKind.Runner : roll < runners + exploders ? ZombieKind.Exploder : ZombieKind.Shambler;
         Apply();
     }
 
