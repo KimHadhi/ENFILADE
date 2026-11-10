@@ -17,6 +17,8 @@ using UnityEngine.UI;
 public sealed class StealthMarkersHUD : MonoBehaviour, ITableBound
 {
     public const string TableName = "Stealth", TableRow = "Markers";
+    // From this suspicion on, a zombie that stopped to look is unsure of the player: pink rim, and a tick.
+    private const float SuspectFrom = .2f;
 
     [SerializeField, Range(0f, 1f), Tooltip("Least suspicion that shows a mark.")]
     private float showFrom = .03f;
@@ -127,8 +129,9 @@ public sealed class StealthMarkersHUD : MonoBehaviour, ITableBound
             mark.fill = suspicion;
         }
         mark.used = true;
-        // It stopped to look this way (a fresh mark counts as having been calm).
-        if (mine && looking && !mark.looked && now - lastSuspect > .25f)
+        // It stopped to look this way, unsure of them (a fresh mark counts as having been calm). One only turned to a
+        // sound or off to see a stone is no news of being seen: no tick.
+        if (mine && looking && !mark.looked && suspicion >= SuspectFrom && now - lastSuspect > .25f)
         {
             KitSound.Play(KitSound.Cue.Suspect, suspectVolume);
             lastSuspect = now;
@@ -159,7 +162,9 @@ public sealed class StealthMarkersHUD : MonoBehaviour, ITableBound
         mark.alpha = Mathf.MoveTowards(mark.alpha, fade, Time.unscaledDeltaTime * 10f);
         mark.group.alpha = bursting ? fade : mark.alpha;
         Color pink = KitStyle.Accent, ice = KitStyle.Ice;
-        Color line = bursting ? Color.Lerp(Color.white, pink, Mathf.Clamp01(t / .12f)) : looking ? pink : ice;
+        // Pink is for being made out: one off to look at a stone (no suspicion of anyone) keeps a white rim and an empty
+        // diamond under its '?'.
+        Color line = bursting ? Color.Lerp(Color.white, pink, Mathf.Clamp01(t / .12f)) : looking && mark.fill >= SuspectFrom ? pink : ice;
         Color fill = bursting ? pink : Color.Lerp(ice, pink, Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(.25f, .8f, mark.fill)));
         Color plate = bursting ? new Color(.16f, .02f, .06f, .92f) : KitStyle.With(KitStyle.Ink, .82f);
         string sign = bursting ? "!" : looking ? "?" : "";

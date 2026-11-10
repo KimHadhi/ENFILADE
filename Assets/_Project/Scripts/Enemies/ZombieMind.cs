@@ -89,8 +89,16 @@ public sealed class ZombieMind : MonoBehaviour
     private float glanceAt = .06f;
     [SerializeField, Min(0f), Tooltip("How long it looks toward a faint sound, or a stone it isn't the one to check, before it settles (s).")]
     private float glanceSeconds = 1.5f;
-    [SerializeField, Min(0f), Tooltip("The one nearest a thrown stone stares at where it fell this long (s), then walks over to look.")]
+    [SerializeField, Min(0f), Tooltip("The one nearest a thrown stone stares at where it fell this long (s), then walks over to look. A stone never makes it surer that someone is there.")]
     private float lureStare = 1.2f;
+    [SerializeField, Range(.05f, 1f), Tooltip("Going to look where a stone fell, it walks at this share of its chase speed (a search's is slower).")]
+    private float lureSpeedShare = .6f;
+    [SerializeField, Min(0f), Tooltip("Come to where a stone fell, how long it looks round there before it settles on that spot (s).")]
+    private float lureLook = 5f;
+    [SerializeField, Min(0f), Tooltip("The others that hear a stone turn and look at where it fell this long (s), then turn back.")]
+    private float lureGlance = 2.5f;
+    [SerializeField, Range(0f, 2f), Tooltip("Share of a stone's reach it hears, calm or not: a stone's clack carries as it is.")]
+    private float lureHearShare = 1f;
 
     [Header("Mind")]
     [SerializeField, Min(0f), Tooltip("Suspicion lost a second while it notices nothing.")]
@@ -158,6 +166,9 @@ public sealed class ZombieMind : MonoBehaviour
     // the way it faced on reaching a search's place.
     private float glanceUntil, postYaw, lookYaw, lookAt, arriveYaw;
     private bool horde = true, arrived;
+    // On its way to (or looking round) where a stone fell, and where that was.
+    private bool lured;
+    private Vector3 lureAt;
     // On a copy: how sure the host's zombie is, in twentieths, and of whom (their client id + 1; 0 for nobody).
     private byte shownStep;
     private ulong shownWatch, resolvedWatch;
@@ -211,7 +222,7 @@ public sealed class ZombieMind : MonoBehaviour
     /// <summary>Its body still lives (on this PC).</summary>
     internal bool Living => health != null && health.IsAlive;
     /// <summary>How far it sees now (m): its calm sight while calm.</summary>
-    internal float ViewRange => Mood == ZombieMood.Calm ? calmSightRange : sightRange;
+    internal float ViewRange => Mood == ZombieMood.Calm || lured ? calmSightRange : sightRange;
     /// <summary>Its full view and the edge of its sight, side to side (degrees).</summary>
     internal float FrontView => fieldOfView;
     internal float EdgeView => Mathf.Max(fieldOfView, sideView);
@@ -304,6 +315,7 @@ public sealed class ZombieMind : MonoBehaviour
         suspicion = 0f;
         focus = noticed = null;
         glanceUntil = 0f;
+        lured = false;
         Halt();
         Post();
         lookAt = Time.time + Random.Range(1.5f, Mathf.Max(1.5f, lookAroundEvery));
@@ -345,6 +357,7 @@ public sealed class ZombieMind : MonoBehaviour
         Mood = rouse && rouseSeconds > 0f ? ZombieMood.Rousing : ZombieMood.Awake;
         suspicion = 1f;
         glanceUntil = 0f;
+        lured = false;
         focus = Alive(who) ? who : PlayerRoster.Nearest(transform.position);
         noticed = focus;
         lastSeen = Time.time;
@@ -369,38 +382,43 @@ public sealed class ZombieMind : MonoBehaviour
         Halt();
     }
 
-    // It turns to look at something a moment (a faint sound, a stone another goes to check), then settles back where it
-    // stood. One already searching keeps at it, and a real alert stays one.
-    private void Glance(Vector3 at, PlayerMovement by)
+    // It turns to look at something a while (a faint sound, a stone another goes to check), then settles back where it
+    // stood. One already searching keeps at it, one on its way to a stone keeps to it, and a real alert stays one.
+    private void Glance(Vector3 at, PlayerMovement by, float seconds)
     {
-        if (glanceSeconds <= 0f) return;
+        if (seconds <= 0f || lured) return;
         if (Mood != ZombieMood.Calm && !(Mood == ZombieMood.Alert && glanceUntil > 0f)) return;
         stimulus = at;
         if (noticed == null && Alive(by)) noticed = by;
-        glanceUntil = Time.time + glanceSeconds;
+        glanceUntil = Time.time + seconds;
         if (Mood == ZombieMood.Calm) { Mood = ZombieMood.Alert; Halt(); }
     }
 
-    // The one nearest where a stone fell: it stares that way a moment, then walks over to look (Searching), as at anything
-    // it half noticed. Never sure enough to wake from it.
+    // The one nearest where a stone fell: it stares that way a moment, then walks over briskly, looks round there a good
+    // while and settles on that spot. A stone never makes it any surer that someone is there: it used to, which filled
+    // the thrower's stealth gauge as if they had been seen and left the zombie a glimpse from waking (user, 2026-11-11:
+    // "돌 던지기가 걍 좀비 의심 게이지만 높이고 별 쓸모가 없는 거 같은데"). Turned to the stone its back is to the way
+    // past, and once settled it no longer stands where it stood.
     private void Investigate(Vector3 at, PlayerMovement by)
     {
-        glanceUntil = 0f;
-        stimulus = at;
+        lured = true;
+        lureAt = stimulus = at;
         if (Alive(by)) noticed = by;
-        suspicion = Mathf.Max(suspicion, Mathf.Min(.9f, alertAt + forget * lureStare));
-        if (Mood == ZombieMood.Searching) { Search(at); return; }
-        Alert(at);
+        if (Mood == ZombieMood.Searching) { Search(at, true); return; }
+        glanceUntil = Time.time + Mathf.Max(.05f, lureStare);
+        if (Mood != ZombieMood.Alert) { Mood = ZombieMood.Alert; Halt(); }
     }
 
-    private void Search(Vector3 at)
+    // Lure: it is going to look where a stone fell (briskly, and with calm eyes: Look).
+    private void Search(Vector3 at, bool lure = false)
     {
         Mood = ZombieMood.Searching;
+        lured = lure;
         glanceUntil = 0f;
         stimulus = at;
         searchStart = Time.time;
         arrived = false;
-        SetSpeed(searchSpeedShare);
+        SetSpeed(lure ? lureSpeedShare : searchSpeedShare);
         if (agent == null || !agent.isActiveAndEnabled || !agent.isOnNavMesh) return;
         agent.isStopped = false;
         agent.SetDestination(at);
@@ -410,6 +428,7 @@ public sealed class ZombieMind : MonoBehaviour
     private void Settle(bool newPost)
     {
         glanceUntil = 0f;
+        lured = false;
         Mood = ZombieMood.Calm;
         SetSpeed(1f);
         Halt();
@@ -436,7 +455,7 @@ public sealed class ZombieMind : MonoBehaviour
     {
         chaseSpeed = speed;
         if (TryGetComponent(out EnemyHitReaction reaction)) reaction.SetBaseSpeed(speed);
-        SetSpeed(Mood == ZombieMood.Searching ? searchSpeedShare : 1f);
+        SetSpeed(Mood == ZombieMood.Searching ? lured ? lureSpeedShare : searchSpeedShare : 1f);
     }
 
     /// <summary>A blow (EnemyHealth, where it thinks): it wakes at once, after whoever landed it.</summary>
@@ -533,13 +552,26 @@ public sealed class ZombieMind : MonoBehaviour
         else suspicion = Mathf.Max(0f, suspicion - forget * dt);
 
         if (suspicion >= 1f) { Wake(focus); return; }
-        // Sure enough to stop and stare: a glance becomes a real look.
-        if (suspicion >= alertAt) { glanceUntil = 0f; Alert(stimulus); return; }
+        // Sure enough to stop and stare: a glance becomes a real look, and one that made someone out forgets the stone.
+        if (suspicion >= alertAt)
+        {
+            glanceUntil = 0f;
+            if (seen != null) lured = false;
+            Alert(stimulus);
+            return;
+        }
         if (Mood == ZombieMood.Alert)
         {
-            // A glance at something it won't go to: it looks till its time is up, then settles back.
-            if (glanceUntil > 0f) { if (Time.time >= glanceUntil) Settle(false); return; }
-            Search(stimulus);
+            // A glance at something it won't go to looks till its time is up and settles back; the stare at a stone ends
+            // in a walk over to it.
+            if (glanceUntil > 0f)
+            {
+                if (Time.time < glanceUntil) return;
+                if (lured) Search(lureAt, true);
+                else Settle(false);
+                return;
+            }
+            Search(stimulus, lured);
             return;
         }
         if (Mood == ZombieMood.Searching) Searching();
@@ -556,8 +588,11 @@ public sealed class ZombieMind : MonoBehaviour
             arriveYaw = transform.eulerAngles.y;
             Halt();
         }
-        if ((arrived && Time.time - arrivedAt >= lookSeconds) || Time.time - searchStart >= searchSeconds) Settle(true);
+        if ((arrived && Time.time - arrivedAt >= LookTime) || Time.time - searchStart >= searchSeconds + (lured ? lureLook : 0f)) Settle(true);
     }
+
+    // How long it looks round where it came to search: longer where a stone fell.
+    private float LookTime => lured ? lureLook : lookSeconds;
 
     private void TurnTo(Vector3 at, float dt)
     {
@@ -585,8 +620,9 @@ public sealed class ZombieMind : MonoBehaviour
     // Come to where it searches, it looks left, then right, then back ahead over lookSeconds, not a statue's stare.
     private void Sweep(float dt)
     {
-        if (searchSweep <= 0f || lookSeconds <= 0f) return;
-        float phase = Mathf.Clamp01((Time.time - arrivedAt) / lookSeconds);
+        float look = LookTime;
+        if (searchSweep <= 0f || look <= 0f) return;
+        float phase = Mathf.Clamp01((Time.time - arrivedAt) / look);
         float yaw = arriveYaw + Mathf.Sin(phase * Mathf.PI * 2f) * searchSweep;
         transform.rotation = Quaternion.RotateTowards(transform.rotation, Quaternion.Euler(0f, yaw, 0f), turnSpeed * .5f * dt);
     }
@@ -597,7 +633,8 @@ public sealed class ZombieMind : MonoBehaviour
         best = 0f;
         touching = false;
         PlayerMovement found = null;
-        float sight = Mood == ZombieMood.Calm ? calmSightRange : sightRange;
+        // Going to look at a stone it is curious, not alarmed: its calm eyes.
+        float sight = Mood == ZombieMood.Calm || lured ? calmSightRange : sightRange;
         Vector3 eye = Eye();
         foreach (var player in PlayerRoster.All)
         {
@@ -725,7 +762,7 @@ public sealed class ZombieMind : MonoBehaviour
             if (mind.melee != null && mind.melee.IsStunned) continue;
             if (!mind.Reaches(noise, out float distance, out _)) continue;
             if (distance < best) { best = distance; nearest = mind; }
-            mind.Glance(noise.Point, thrower);
+            mind.Glance(noise.Point, thrower, mind.lureGlance);
         }
         if (nearest != null) nearest.Investigate(noise.Point, thrower);
     }
@@ -752,13 +789,13 @@ public sealed class ZombieMind : MonoBehaviour
         if (suspicion >= 1f) Wake(source);
         else if (suspicion >= alertAt) { glanceUntil = 0f; Alert(noise.Point); }
         // Too faint to stop for, it still turns its head that way a moment, and may see who made it.
-        else if (gained >= glanceAt) Glance(noise.Point, source);
+        else if (gained >= glanceAt) Glance(noise.Point, source, glanceSeconds);
     }
 
     // Whether this sound reaches its ears, how far off it is and how far it carries to it (m): half as far through a wall.
     private bool Reaches(in NoiseEvent noise, out float distance, out float reach)
     {
-        reach = noise.Radius * (Mood == ZombieMood.Calm ? calmHearShare : hearShare);
+        reach = noise.Radius * (noise.Lure ? lureHearShare : Mood == ZombieMood.Calm ? calmHearShare : hearShare);
         Vector3 ear = Eye();
         distance = Vector3.Distance(noise.Point, ear);
         if (distance > reach) return false;
@@ -788,6 +825,6 @@ public sealed class ZombieMind : MonoBehaviour
             if (mind == null || mind.IsAwake || mind.health == null || !mind.health.IsAlive) continue;
             if (mind.Reaches(noise, out _, out _)) { heard = true; break; }
         }
-        return noise.Radius * any.calmHearShare;
+        return noise.Radius * (noise.Lure ? any.lureHearShare : any.calmHearShare);
     }
 }
