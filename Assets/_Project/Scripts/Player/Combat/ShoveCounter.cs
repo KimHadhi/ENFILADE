@@ -95,14 +95,26 @@ public sealed class ShoveCounter : MonoBehaviour
     /// </summary>
     internal bool TryHitCounter(in DamageHit hit)
     {
-        if (hit.Method != DamageMethod.Grab && hit.Method != DamageMethod.Pounce) return false;
-        if (Time.time - lastShove > grace || hit.Source == null) return false;
-        var target = hit.Source.GetComponentInParent<MeleeCombatTarget>();
-        if (target == null || !target.IsAvailable) return false;
-        Vector3 to = Vector3.ProjectOnPlane(target.transform.position - transform.position, Vector3.up);
-        if (to.sqrMagnitude > 1e-4f && shoveForward.sqrMagnitude > 1e-4f && Vector3.Angle(shoveForward, to) > graceAngle) return false;
+        if (!Counters(hit, out var target)) return false;
         Land(target, hit.Method == DamageMethod.Pounce, target.transform.position + Vector3.up);
         return true;
+    }
+
+    /// <summary>
+    /// Whether a grab or a leap reaching them now would be countered, without doing it: a runner's leap that lands just
+    /// short of catching them still asks, so the counter stays as forgiving as before the catch was tightened (EnemyCombatAI).
+    /// </summary>
+    internal bool WouldCounter(in DamageHit hit) => Counters(hit, out _);
+
+    private bool Counters(in DamageHit hit, out MeleeCombatTarget target)
+    {
+        target = null;
+        if (hit.Method != DamageMethod.Grab && hit.Method != DamageMethod.Pounce) return false;
+        if (Time.time - lastShove > grace || hit.Source == null) return false;
+        target = hit.Source.GetComponentInParent<MeleeCombatTarget>();
+        if (target == null || !target.IsAvailable) return false;
+        Vector3 to = Vector3.ProjectOnPlane(target.transform.position - transform.position, Vector3.up);
+        return !(to.sqrMagnitude > 1e-4f && shoveForward.sqrMagnitude > 1e-4f && Vector3.Angle(shoveForward, to) > graceAngle);
     }
 
     private void Land(MeleeCombatTarget target, bool airborne, Vector3 point)

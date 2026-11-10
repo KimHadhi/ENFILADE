@@ -5,8 +5,9 @@ using UnityEngine.AI;
 /// Stage G&amp;B-2, Guts &amp; Blackpowder's runner, at the user's word: a runner doesn't swing. Seeing its quarry within
 /// chargeRange it charges, faster than anyone can run but turning badly, so a sidestep late in the charge makes it run
 /// past and skid to a stop. Within pounceRange, its quarry ahead, it leaps (EnemyCombatAI's Pounce): it flies to where
-/// they stood as the leap began, and whoever is still there is knocked flat and pinned (PlayerHold), its teeth at their
-/// neck until a teammate kills it. A leap that lands on nothing leaves it standing there a moment. Up to
+/// they were heading as the leap began (LeapSpot: ahead of them the way they were moving, and committed there, so
+/// keeping on meets it and a feint sends it to the wrong side), and whoever is there is knocked flat and pinned
+/// (PlayerHold), its teeth at their neck until a teammate kills it. A leap that lands on nothing leaves it standing there a moment. Up to
 /// PlayerHold.MostPinning runners pin one player; the others don't leap at a full pin. This runs where the enemy really
 /// runs (the host, or the PC alone); other PCs see it move as the host moves it, and time the leap themselves.
 /// Numbers: Tables/ZombieRunner.csv.
@@ -40,6 +41,14 @@ public sealed class ZombieRunner : MonoBehaviour
     private float chargeHeight = 1.5f;
     [SerializeField, Min(0f), Tooltip("How high the leap goes, shown (m).")]
     private float leapHeight = .45f;
+    [SerializeField, Range(0f, 1.5f), Tooltip("A leap aims ahead of its quarry by this share of how far they would get, "
+        + "moving as they are, in its time in the air. 0 aims at where they stand.")]
+    private float pounceLead = .6f;
+    [SerializeField, Min(0f), Tooltip("It never aims further ahead of them than this (m): someone running flat out sideways gets clear.")]
+    private float pounceLeadMost = 1.2f;
+    [SerializeField, Min(0f), Tooltip("A leap landing this near someone who has just shoved is still countered (m), though "
+        + "it only catches within ZombieKinds' pounceRadius.")]
+    private float pounceCounterRadius = 1.1f;
     [Header("Glowing eyes (ZombieBody.Eyes.cs)")]
     [SerializeField, Tooltip("Without eye bones: the eyes this far ahead of the head bone (m).")]
     private float eyeForward = .1f;
@@ -80,6 +89,24 @@ public sealed class ZombieRunner : MonoBehaviour
     public bool Driving => phase != Phase.Chase;
     /// <summary>How high its leap goes (m), for ZombieBody to show on every PC.</summary>
     public float LeapHeight => leapHeight;
+    /// <summary>How near a leap must land for a shove just before it to counter it (m); the catch itself is tighter.</summary>
+    public float PounceCounterRadius => pounceCounterRadius;
+
+    /// <summary>
+    /// Where a leap of <paramref name="airTime"/> seconds aims: ahead of its quarry the way they are moving as it begins,
+    /// by pounceLead of how far they would get and no more than pounceLeadMost, and nowhere it couldn't stand. The leap
+    /// is committed to that spot (user, 2026-11-10, after Guts &amp; Blackpowder's runners: it should strike where they
+    /// are going, so that setting off one way and going the other leaves it on the wrong side).
+    /// </summary>
+    internal Vector3 LeapSpot(PlayerMovement player, float airTime)
+    {
+        Vector3 stands = player.transform.position;
+        Vector3 lead = Vector3.ClampMagnitude(Flat(player.ActualVelocity) * (Mathf.Max(0f, airTime) * pounceLead), pounceLeadMost);
+        if (lead.sqrMagnitude < 1e-4f) return stands;
+        // Off the ground it can run on (over a ledge, into a wall), it aims at where they stand instead.
+        return NavMesh.SamplePosition(stands + lead, out NavMeshHit ground, 1f, NavMesh.AllAreas)
+            ? new Vector3(ground.position.x, stands.y, ground.position.z) : stands;
+    }
     // Its glowing eyes, for ZombieBody.Eyes.cs.
     public float EyeForward => eyeForward;
     public float EyeUp => eyeUp;
@@ -206,7 +233,8 @@ public sealed class ZombieRunner : MonoBehaviour
         if (!combat.IsPouncing) return;
         phase = Phase.Leap;
         leapFrom = transform.position;
-        Vector3 spot = player.transform.position;
+        // To the spot the leap is committed to (EnemyCombatAI.Pounce asked LeapSpot for it).
+        Vector3 spot = combat.PounceSpot;
         leapTo = new Vector3(spot.x, leapFrom.y, spot.z);
         Vector3 way = Flat(leapTo - leapFrom);
         if (way.sqrMagnitude > 1e-4f) heading = way.normalized;
@@ -214,7 +242,7 @@ public sealed class ZombieRunner : MonoBehaviour
         Halt();
     }
 
-    // In the air from where it leapt to where they stood, over the leap's windup (EnemyCombatAI).
+    // In the air from where it leapt to the spot it aimed at, over the leap's windup (EnemyCombatAI).
     private void Leap(float dt)
     {
         if (!combat.IsPouncing)

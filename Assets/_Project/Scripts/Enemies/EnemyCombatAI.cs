@@ -45,7 +45,7 @@ public sealed class EnemyCombatAI : MonoBehaviour
     [SerializeField] private bool pounces;
     [Tooltip("A leap's time in the air (s), from its cue to landing.")]
     [SerializeField, Min(.05f)] private float pounceWindup = .35f;
-    [Tooltip("A leap catches whoever is still within this of where they stood as it began (m).")]
+    [Tooltip("A leap catches whoever is within this of the spot it aimed at as it began (m). ZombieRunner.LeapSpot picks the spot.")]
     [SerializeField, Min(.1f)] private float pounceRadius = 1.1f;
     // The bite's cue, pitched down from the swing's so it sounds heavier; a grab's a little lower too.
     private const float BitePitch = .72f, GrabPitch = .85f, PouncePitch = 1.2f;
@@ -250,8 +250,19 @@ public sealed class EnemyCombatAI : MonoBehaviour
         { comboIndex++; BeginWindup(); }
     }
 
+    /// <summary>Where the leap under way comes down (ZombieRunner flies there).</summary>
+    internal Vector3 PounceSpot => lockedFeet;
+
+    // Where a leap at this player aims as it begins: ahead of them, the way they are moving (ZombieRunner.LeapSpot).
+    private Vector3 LeapSpot(PlayerMovement target)
+    {
+        if (leaper == null) leaper = GetComponent<ZombieRunner>();
+        return leaper != null ? leaper.LeapSpot(target, pounceWindup) : target.transform.position;
+    }
+    private ZombieRunner leaper;
+
     /// <summary>
-    /// A runner leaps at this player now (ZombieRunner), to land where they stand: the windup is its time in the air.
+    /// A runner leaps at this player now (ZombieRunner), to land where they are heading: the windup is its time in the air.
     /// </summary>
     internal void Pounce(PlayerMovement target)
     {
@@ -259,15 +270,17 @@ public sealed class EnemyCombatAI : MonoBehaviour
         player = target;
         comboIndex = 0;
         preparing = true; timer = 0f; move = AttackMove.Pounce;
-        lockedFeet = target.transform.position;
+        lockedFeet = LeapSpot(target);
         lockedAim = lockedFeet + Vector3.up * AimHeightFor(target);
         UpdateIndicator(true);
         CombatCueAudio.Play(gameObject, CombatCue.EnemyAttackStart, CuePitch);
         if (network != null) network.AnnounceWindup(target, 0, move);
     }
 
-    // The leap lands where they stood as it began: whoever is still there is knocked flat and pinned (PlayerHold). Not
-    // guarded or parried; a dodge's dodging frames get through it (the receiver), as a sidestep out of the spot does.
+    // The leap lands on the spot it aimed at as it began: whoever is there is knocked flat and pinned (PlayerHold). Not
+    // guarded or parried; a dodge's dodging frames get through it (the receiver), as stepping off the spot does. The
+    // catch is tight (pounceRadius), but a shove just before it still counters a leap landing as near as it used to
+    // have to (ZombieRunner.PounceCounterRadius; user, 2026-11-10: a tighter catch, the counter as forgiving as it was).
     private DamageResult Land()
     {
         var victim = network != null && network.IsCopy ? PlayerRoster.Local : player;
@@ -281,7 +294,15 @@ public sealed class EnemyCombatAI : MonoBehaviour
             method: DamageMethod.Pounce);
         // A dodge through the leap counts as one through any attack (a perfect dodge).
         StepDodgeTrail.RecognizeAttackSegment(hit, chest - direction * pounceRadius, chest);
-        if (new Vector2(off.x, off.z).magnitude > pounceRadius || Mathf.Abs(off.y) > 1.5f) return DamageResult.Ignored;
+        float away = new Vector2(off.x, off.z).magnitude;
+        if (Mathf.Abs(off.y) > 1.5f) return DamageResult.Ignored;
+        if (away > pounceRadius)
+        {
+            if (leaper == null) leaper = GetComponent<ZombieRunner>();
+            bool counters = leaper != null && away <= leaper.PounceCounterRadius
+                && victim.TryGetComponent(out ShoveCounter counter) && counter.WouldCounter(hit);
+            if (!counters) return DamageResult.Ignored;
+        }
         return victim.DamageReceiver.ReceiveHit(hit);
     }
 
@@ -333,7 +354,8 @@ public sealed class EnemyCombatAI : MonoBehaviour
         aimedHere = mine != null;
         if (aimedHere)
         {
-            lockedFeet = mine.transform.position;
+            // A leap aims ahead of them as the host's does; this PC judges whether it caught its own player.
+            lockedFeet = shown == AttackMove.Pounce ? LeapSpot(mine) : mine.transform.position;
             lockedAim = lockedFeet + Vector3.up * AimHeightFor(mine);
         }
         UpdateIndicator(true);
