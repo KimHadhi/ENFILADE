@@ -1,11 +1,11 @@
 ﻿id,chapter,order,kind,spot,radius,seconds,horde,rate,title,description,done,prompt,count,music,peakBoss
-#설명 (kind: Reach 누군가 도착 / Press 누군가 F / Hold 버티기 / Checkpoint 모두 들어와 문을 닫으면 휴게소 / Gather 모두 모이기만 / Collect 연료통을 count개 붓기 / Escape 모두 도착하면 장 끝),장 씬 이름,순서,종류,진행 자리 이름(씬의 진행 자리 아래 오브젝트),이만큼 가까우면 도착(m),Hold 시간(초),이 단계에 한꺼번에 있을 수 있는 적 수,1초에 나오는 적 수,목표 제목,목표 설명,끝난 뒤 Tab 기록에 남는 말,Press에서 화면에 뜨는 말,Collect가 원하는 연료통 수,이 단계에 트는 노래(Music.csv id). 다음 단계가 같은 노래면 끊지 않고 이어 튼다,노래 하이라이트(Music.csv peak)에 나오는 거구 수
+#설명 (kind: Reach 누군가 도착 / Press 누군가 F / Hold 버티기 / Checkpoint 모두 들어와 문을 닫으면 휴게소 / Gather 모두 모이기만 / Collect 연료통을 count개 붓기 / Escape 모두 도착하면 장 끝),장 씬 이름,순서,종류,진행 자리 이름(씬의 진행 자리 아래 오브젝트),이만큼 가까우면 도착(m),Hold 시간(초). 이 단계의 노래가 피날레용(Music.csv board)이고 파일이 있으면 이 값 대신 노래 길이에서 board를 뺀 시간,이 단계에 한꺼번에 있을 수 있는 적 수,1초에 나오는 적 수,목표 제목,목표 설명,끝난 뒤 Tab 기록에 남는 말,Press에서 화면에 뜨는 말,Collect가 원하는 연료통 수,이 단계에 트는 노래(Music.csv id). 다음 단계가 같은 노래면 끊지 않고 이어 튼다,노래 하이라이트(Music.csv peak)에 나오는 거구 수. 노래가 없는 버티기는 절반이 지났을 때 나온다
 Ch1.01,Ch1_Rooftops,1,Reach,LiftRoom,3,,3,0.3,옆 건물 엘리베이터실 위로,틈을 뛰어 건너 엘리베이터실 위로 올라가세요. 벽을 타거나 사다리를 쓰세요.,옥상 건너기,,,,
 Ch1.02,Ch1_Rooftops,2,Reach,ZiplineEnd,5,,3,0.3,집라인으로 길 건너기,엘리베이터실 위에서 줄을 잡고 길 건너 옥상으로 내려가세요.,길 건너기,,,,
 Ch1.03,Ch1_Rooftops,3,Reach,B4Roof,7,,4,0.35,철봉 타고 건너편 옥상으로,뛰기엔 먼 틈이에요. 철봉을 잡고 흔들어 건너세요.,철봉 건너기,,,,
 Ch1.04,Ch1_Rooftops,4,Reach,Alley,6,,4,0.35,골목으로 내려가기,별관 지붕과 트럭을 밟고 골목으로 내려가세요.,골목 도착,,,,
 Ch1.05,Ch1_Rooftops,5,Press,ShutterButton,2,,4,0.3,셔터 올리기,버튼을 누르면 경보가 울려요. 각오하세요.,셔터 작동,[F] 셔터 올리기,,,
-Ch1.06,Ch1_Rooftops,6,Hold,AlleyHold,,60,14,1.2,셔터가 올라갈 때까지 버티기,경보를 듣고 놈들이 몰려와요. 셔터가 다 올라갈 때까지 버티세요.,골목에서 버팀,,,Ch1Shutter,1
+Ch1.06,Ch1_Rooftops,6,Hold,AlleyHold,,60,14,1.2,셔터가 올라갈 때까지 버티기,경보를 듣고 놈들이 몰려와요. 셔터가 다 올라갈 때까지 버티세요.,골목에서 버팀,,,,1
 Ch1.07,Ch1_Rooftops,7,Checkpoint,RestStop,4.6,,4,0.3,편의점으로 피하기,모두 편의점 안으로 들어와 문을 닫으면 숨을 돌려요. 이제부터 죽은 사람은 여기서 돌아와요.,휴게소 도착,,,,
 Ch1.08,Ch1_Rooftops,8,Reach,SiteGate,5,,5,0.4,공사장으로,길 건너 공사장 정문으로 가세요.,공사장 진입,,,,
 Ch1.09,Ch1_Rooftops,9,Reach,Helipad,7,,5,0.4,공사 중인 빌딩 옥상으로,컨테이너와 비계를 타고 옥상 착륙장까지 올라가세요.,옥상 도착,,,,

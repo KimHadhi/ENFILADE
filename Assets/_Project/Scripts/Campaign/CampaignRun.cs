@@ -23,6 +23,11 @@ using UnityEngine.SceneManagement;
 /// instead (CampaignHorde.PlaceCalm, the steps' own numbers by calmShare), and can be slipped past or taken from
 /// behind. The quiet ends when one of them notices someone (ZombieMind.Woke: a sight, a sound, a blow), which every PC
 /// is told at the top of the screen, or when a hold or the escape begins; from then on the horde comes as before.
+/// Stage C-14, a finale as long as its song (the user's answer, 2026-11-10: the song plays whole, and its end is when
+/// the ride leaves; whoever misses it is left behind): under a finale's song (Music.board) the hold lasts the song
+/// less the board time, then the ride waits at the escape's spot for the board time and leaves as the song ends, with
+/// whoever stands there. Those who don't are named on the closing card; with nobody aboard the run goes back to the
+/// last rest stop. Without the song's file the steps run as they did (the hold's own seconds, everyone to the spot).
 /// </summary>
 [DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.Campaign)]
 public sealed class CampaignRun : MonoBehaviour
@@ -103,6 +108,9 @@ public sealed class CampaignRun : MonoBehaviour
     private bool finished, movedOn, wasWiped, listening;
     // The stretch is quiet (the host's word, shared); this PC last saw it so; the host still owes the stretch its calm zombies.
     private bool quiet, wasQuiet, calmDue;
+    // A hold with no song has sent its brutes; who the ride left behind, for the closing card.
+    private bool songlessSent;
+    private string leftBehind = "";
 
     private bool IsHost => network == null || network.IsServer;
     private CampaignStep Current => step >= 0 && step < steps.Count ? steps[step] : null;
@@ -145,7 +153,8 @@ public sealed class CampaignRun : MonoBehaviour
         if (index < 0 || active.finished || active.step > index) return 1f;
         if (active.step < index) return 0f;
         var now = active.steps[index];
-        return now.Kind == CampaignStepKind.Hold && now.Seconds > 0f ? Mathf.Clamp01(active.held / now.Seconds) : 0f;
+        float total = now.Kind == CampaignStepKind.Hold ? active.TotalOf(now) : 0f;
+        return total > 0f ? Mathf.Clamp01(active.held / total) : 0f;
     }
 
     /// <summary>The run is at this step now.</summary>
@@ -328,12 +337,21 @@ public sealed class CampaignRun : MonoBehaviour
                 if (EveryoneAt(now) && DoorsShut(now.Spot)) Advance();
                 break;
             case CampaignStepKind.Gather:
-            case CampaignStepKind.Escape:
                 if (EveryoneAt(now)) Advance();
                 break;
+            case CampaignStepKind.Escape:
+                if (CampaignMusic.TryFinale(now.Music, out float holdBefore, out float board))
+                {
+                    // The ride waits out the song and leaves as it ends, with whoever stands on it.
+                    held = SongTime(now, dt, holdBefore);
+                    if (held >= board) Depart(now);
+                    else ShowHeld(now);
+                }
+                else if (EveryoneAt(now)) Advance();
+                break;
             case CampaignStepKind.Hold:
-                held += dt;
-                if (held >= now.Seconds) Advance();
+                held = SongTime(now, dt, 0f);
+                if (held >= TotalOf(now)) Advance();
                 else ShowHeld(now);
                 break;
             case CampaignStepKind.Collect:
@@ -342,6 +360,36 @@ public sealed class CampaignRun : MonoBehaviour
         }
         if (!finished && Current == now) SkipAhead();
     }
+
+    // How long a hold lasts, or a finale's escape waits: under a finale's song, by the song (CampaignMusic.TryFinale);
+    // otherwise the hold's own seconds, and no time at all for an escape (0).
+    private float TotalOf(CampaignStep at)
+    {
+        bool finale = CampaignMusic.TryFinale(at.Music, out float hold, out float board);
+        return at.Kind == CampaignStepKind.Escape ? (finale ? board : 0f) : finale ? hold : at.Seconds;
+    }
+
+    // How far into its time a step is. Under a finale's song that this PC is playing, the song's own clock says, less
+    // what of the song came before the step: the song runs in real time, and a slowed moment of the game must not
+    // leave the ride waiting after its last note. Otherwise the game's clock.
+    private float SongTime(CampaignStep now, float dt, float before)
+    {
+        bool bySong = !string.IsNullOrEmpty(now.Music) && string.Equals(music.Playing, now.Music, System.StringComparison.OrdinalIgnoreCase)
+            && CampaignMusic.TryFinale(now.Music, out _, out _);
+        return bySong ? Mathf.Max(held, music.Clock - before) : held + dt;
+    }
+
+    // The song is over and the ride goes. Whoever stands on it leaves with it and the chapter is done (ShowFinish names
+    // the rest); with nobody aboard, the run goes back to the last rest stop.
+    private void Depart(CampaignStep now)
+    {
+        foreach (var someone in players)
+            if (Within(someone, now)) { Advance(); return; }
+        MissedRide();
+        BackToCheckpoint();
+    }
+
+    private static void MissedRide() => AlertHUD.Danger("아무도 타지 못했다 · 휴게소로 돌아간다");
 
     // Friend feedback C4 ("일부러 지나친 곳 다시 가기 싫어"): a later step met first finishes every step before it, as long
     // as each step on the way is only getting somewhere, pressing something or a rest stop. A hold, a collect and the
@@ -385,6 +433,7 @@ public sealed class CampaignRun : MonoBehaviour
         if (done.Kind == CampaignStepKind.Checkpoint) checkpoint = step;
         step++;
         held = 0f;
+        songlessSent = false;
         // The way on from a rest stop starts quiet again.
         if (done.Kind == CampaignStepKind.Checkpoint && step < steps.Count) BeginQuiet();
         if (done.Kind == CampaignStepKind.Escape || step >= steps.Count) Finish();
@@ -405,10 +454,19 @@ public sealed class CampaignRun : MonoBehaviour
     {
         var now = Current;
         string wanted = finished ? music.Playing : now != null ? now.Music : "";
-        float from = now != null && now.Kind == CampaignStepKind.Hold ? held : 0f;
+        // Joined partway: a hold's song from as far in as the hold is, a finale's escape from past the whole hold.
+        float from = now == null ? 0f : now.Kind == CampaignStepKind.Hold ? held
+            : now.Kind == CampaignStepKind.Escape && CampaignMusic.TryFinale(now.Music, out float holdBefore, out _) ? holdBefore + held : 0f;
         if (music.Want(wanted, from)) brutesDue = IsHost && now != null ? now.PeakBosses : 0;
         music.Tick();
-        if (!IsHost || finished || brutesDue <= 0 || !music.PastPeak || Time.time < nextBruteTry) return;
+        // A hold with no song (the first chapter's shutter, whose siren is its music) sends its brutes halfway through.
+        bool songless = now != null && now.Kind == CampaignStepKind.Hold && string.IsNullOrEmpty(now.Music);
+        if (IsHost && songless && !songlessSent && now.PeakBosses > 0 && held >= now.Seconds * .5f)
+        {
+            songlessSent = true;
+            brutesDue = now.PeakBosses;
+        }
+        if (!IsHost || finished || brutesDue <= 0 || !(music.PastPeak || songless) || Time.time < nextBruteTry) return;
         nextBruteTry = Time.time + .5f;
         brutesDue -= horde.SpawnBrutes(brutesDue, players, minSpawnDistance, maxSpawnDistance, seenMinDistance);
     }
@@ -422,6 +480,7 @@ public sealed class CampaignRun : MonoBehaviour
         fuel.Reset();
         step = checkpoint + 1;
         held = 0f;
+        songlessSent = false;
         BeginQuiet();
         // The goals done since the rest stop are undone: the log starts over rather than counting them twice.
         if (tracker != null) tracker.ClearObjective();
@@ -670,6 +729,8 @@ public sealed class CampaignRun : MonoBehaviour
         reader.ReadValueSafe(out Status status);
         if (sender != NetworkManager.ServerClientId) return;
         bool back = status.Step < step, moved = status.Step != step;
+        // Sent back from a finale's escape while the chapter still runs: the ride left with nobody on it.
+        if (back && !finished && Current != null && Current.Kind == CampaignStepKind.Escape && TotalOf(Current) > 0f) MissedRide();
         step = status.Step;
         checkpoint = status.Checkpoint - 1;
         held = status.Held;
@@ -684,16 +745,18 @@ public sealed class CampaignRun : MonoBehaviour
         if (back) music.Stop();
         if (back && tracker != null) tracker.ClearObjective();
         if (moved) ShowObjective(true);
-        else if (Current != null && Current.Kind == CampaignStepKind.Hold) ShowHeld(Current);
+        else if (Current != null) ShowHeld(Current);
     }
 
     private void ShowObjective(bool announce)
     {
         var now = Current;
         if (tracker == null || now == null) return;
-        tracker.SetObjective(now.Kind == CampaignStepKind.Hold
+        // A hold, and a finale's escape (the ride's wait), show their time passing.
+        float total = now.Kind == CampaignStepKind.Hold || now.Kind == CampaignStepKind.Escape ? TotalOf(now) : 0f;
+        tracker.SetObjective(total > 0f
             ? new MissionObjective(now.Id, now.Title, now.Description, MissionProgressDisplay.Percent,
-                Mathf.FloorToInt(held), Mathf.CeilToInt(now.Seconds), now.Done)
+                Mathf.FloorToInt(held), Mathf.CeilToInt(total), now.Done)
             : now.Kind == CampaignStepKind.Collect
             ? new MissionObjective(now.Id, now.Title, now.Description, MissionProgressDisplay.Count,
                 Mathf.Min(fuel.Poured, now.Count), Mathf.Max(1, now.Count), now.Done)
@@ -703,11 +766,24 @@ public sealed class CampaignRun : MonoBehaviour
 
     private void ShowHeld(CampaignStep now)
     {
-        if (tracker != null) tracker.SetProgress(now.Id, Mathf.FloorToInt(held), Mathf.CeilToInt(now.Seconds));
+        if (tracker == null || (now.Kind != CampaignStepKind.Hold && now.Kind != CampaignStepKind.Escape)) return;
+        float total = TotalOf(now);
+        if (total > 0f) tracker.SetProgress(now.Id, Mathf.FloorToInt(held), Mathf.CeilToInt(total));
     }
 
     private void ShowFinish()
     {
+        // Under a finale's song the ride left as it ended: whoever wasn't on it is named on the card ("못 타면 걍 아쉬운
+        // 거지": no more comes of it than that).
+        leftBehind = "";
+        var last = step - 1 >= 0 && step - 1 < steps.Count ? steps[step - 1] : null;
+        if (last != null && last.Kind == CampaignStepKind.Escape && TotalOf(last) > 0f)
+        {
+            var names = new List<string>();
+            foreach (var someone in players)
+                if (!Within(someone, last)) names.Add(someone.TryGetComponent(out PlayerTally tally) ? tally.DisplayName : someone.name);
+            leftBehind = string.Join(", ", names);
+        }
         PlayerRecords.ChapterEscaped(gameObject.scene.name);
         if (chapter != null && screen != null) screen.ShowCard(chapter.Title, chapter.Outro, outroSeconds, Results());
         // The class's insignia beside the results, climbing if this chapter took it up a rank (stage 6E).
@@ -729,6 +805,7 @@ public sealed class CampaignRun : MonoBehaviour
         int kills = mine != null && mine.TryGetComponent(out PlayerTally own) ? own.Kills : 0;
         text.Append("처치<pos=50%>").Append(kills).Append('\n');
         text.Append("돈<pos=50%>").Append(Gold).Append(Wallet.Format(Wallet.Balance)).Append(End).Append('\n');
+        if (leftBehind.Length > 0) text.Append("놓침<pos=50%>").Append(leftBehind).Append('\n');
         if (!GameSession.IsOnline) return text.ToString();
         text.Append("\n<b>팀</b><pos=50%>처치<pos=72%>돈\n");
         foreach (var someone in PlayerRoster.All)

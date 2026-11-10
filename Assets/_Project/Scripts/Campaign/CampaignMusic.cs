@@ -11,6 +11,9 @@ using UnityEngine;
 /// host sends that step's brutes (C2, CampaignRun). Without the file the clock still runs, so the brutes still come.
 /// A song may start partway into its file (Music.start), so one song can serve holds of different lengths with its drop
 /// landing inside each (the user gave two songs for four holds, 2026-11-10).
+/// A finale's song (Music.board above 0; C-14, the user's answer of 2026-11-10: "a song plays whole from its start; its
+/// end is when the ride leaves") times the finale itself: the hold under it lasts the song less the board time, the
+/// ride then waits the board time, and it is gone as the song ends (CampaignRun). Such a song plays once, not round.
 /// The files go under Resources/Audio/Music; the song plays on the Music channel (its own volume in the Esc menu).
 /// </summary>
 internal sealed class CampaignMusic
@@ -20,8 +23,11 @@ internal sealed class CampaignMusic
     private sealed class Song
     {
         public AudioClip Clip;
-        public float Start, Peak, Volume, FadeIn, FadeOut;
+        public float Start, Peak, Volume, FadeIn, FadeOut, Board;
     }
+
+    // A finale's hold is never shorter than this, whatever its song's length (s).
+    private const float ShortestHold = 20f;
 
     private static readonly Dictionary<string, Song> songs = new Dictionary<string, Song>(StringComparer.OrdinalIgnoreCase);
     private readonly AudioSource source;
@@ -67,7 +73,10 @@ internal sealed class CampaignMusic
         if (song.Clip != null)
         {
             source.clip = song.Clip;
-            source.time = Mathf.Repeat(song.Start + Clock, Mathf.Max(.01f, song.Clip.length));
+            // A finale's song is heard once through; any other goes round under a hold longer than it.
+            source.loop = song.Board <= 0f;
+            float at = song.Start + Clock, length = Mathf.Max(.01f, song.Clip.length);
+            source.time = source.loop ? Mathf.Repeat(at, length) : Mathf.Min(at, length - .01f);
             source.Play();
         }
         else source.Stop();
@@ -97,6 +106,24 @@ internal sealed class CampaignMusic
         if (level <= 0f && target <= 0f && source.isPlaying) source.Stop();
     }
 
+    /// <summary>
+    /// A finale's song (Music.board above 0): how long the hold under it lasts, the song's length from where it starts
+    /// less the board time, and how long the ride then waits, the board time. False for any other song, and for one
+    /// whose file is not there, since its length is not known: the step's own seconds stand then.
+    /// </summary>
+    public static bool TryFinale(string id, out float hold, out float board)
+    {
+        hold = board = 0f;
+        if (string.IsNullOrEmpty(id)) return false;
+        var finale = Find(id);
+        if (finale.Board <= 0f || finale.Clip == null) return false;
+        float length = finale.Clip.length - finale.Start;
+        if (length < finale.Board + ShortestHold) return false;
+        board = finale.Board;
+        hold = length - board;
+        return true;
+    }
+
     private static Song Find(string id)
     {
         if (songs.TryGetValue(id, out var known)) return known;
@@ -111,6 +138,7 @@ internal sealed class CampaignMusic
             song.Volume = Mathf.Clamp01(Number(row, "volume", 1f));
             song.FadeIn = Mathf.Max(.01f, Number(row, "fadeIn", 1f));
             song.FadeOut = Mathf.Max(.01f, Number(row, "fadeOut", 3f));
+            song.Board = Mathf.Max(0f, Number(row, "board", 0f));
         }
         else Debug.LogWarning($"[Campaign] Tables/Music has no song '{id}'.");
         songs[id] = song;
