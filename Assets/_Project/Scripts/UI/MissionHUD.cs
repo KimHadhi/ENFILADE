@@ -43,7 +43,9 @@ public sealed class MissionHUD : MonoBehaviour
     private float lastCanvasWidth;
     private MissionBarLook look;
 
-    private struct Part { public RectTransform Rect; public CanvasGroup Group; public Vector2 Home; }
+    private struct Part { public RectTransform Rect; public CanvasGroup Group; public Vector2 Home; public Quaternion Turn; }
+    // The bar stands on neither side's plane (HudPlane), so it turns with a lean itself (MakeWayForTabScreen).
+    private bool turnsWithLean, turned;
     private readonly List<Part> parts = new List<Part>();
 
     private void Awake()
@@ -79,8 +81,9 @@ public sealed class MissionHUD : MonoBehaviour
             if (child == alert || !(child is RectTransform rect)) continue;
             var group = child.GetComponent<CanvasGroup>();
             if (group == null) group = child.gameObject.AddComponent<CanvasGroup>();
-            parts.Add(new Part { Rect = rect, Group = group, Home = rect.anchoredPosition });
+            parts.Add(new Part { Rect = rect, Group = group, Home = rect.anchoredPosition, Turn = rect.localRotation });
         }
+        turnsWithLean = GetComponentInParent<HudPlane>() == null;
     }
 
     private void OnEnable()
@@ -125,6 +128,20 @@ public sealed class MissionHUD : MonoBehaviour
         {
             part.Group.alpha = 1f - away;
             part.Rect.anchoredPosition = part.Home + slide;
+        }
+        // Leaning with Q/E, the bar turns within the screen as the HUD's sides do (HudCamera.LeanRoll, HudPlane), its
+        // parts as one about the bar itself, so the whole HUD tilts together (user, 2026-11-10: the bar staying upright
+        // while the rest tilted read badly and made them queasy).
+        float roll = turnsWithLean ? HudCamera.LeanRoll : 0f;
+        if (Mathf.Abs(roll) < .01f && !turned) return;
+        turned = Mathf.Abs(roll) >= .01f;
+        var turn = Quaternion.Euler(0f, 0f, turned ? roll : 0f);
+        Vector3 about = missionBar != null && missionBar.parent == transform ? missionBar.localPosition
+            : parts.Count > 0 ? parts[0].Rect.localPosition : Vector3.zero;
+        foreach (var part in parts)
+        {
+            part.Rect.localPosition = about + turn * (part.Rect.localPosition - about);
+            part.Rect.localRotation = turn * part.Turn;
         }
     }
 
