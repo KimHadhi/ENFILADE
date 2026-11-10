@@ -35,6 +35,7 @@ public sealed class KitReveal : MonoBehaviour
     private CanvasGroup group;
     private Vector2 home;
     private float openedAt = float.NegativeInfinity, closingAt = float.NegativeInfinity, longest;
+    private bool fades = true;
     private Action closed;
 
     /// <summary>Seconds since it last opened (unscaled).</summary>
@@ -83,16 +84,21 @@ public sealed class KitReveal : MonoBehaviour
         enabled = false;
     }
 
-    public void Open()
+    public void Open() => Open(true);
+
+    /// <summary>Plays the opening; with <paramref name="fade"/> false the panel itself shows at once and only its
+    /// registered parts play (a panel built again in place, where a fade of the whole would blink).</summary>
+    public void Open(bool fade)
     {
         Ensure();
         closed = null;
+        fades = fade;
         openedAt = Time.unscaledTime;
         root.anchoredPosition = home;
         gameObject.SetActive(true);
         enabled = true;
         foreach (var part in parts) Apply(part, 0f);
-        group.alpha = 0f;
+        group.alpha = fade ? 0f : 1f;
     }
 
     /// <summary>Slides it away to the left; <paramref name="done"/> runs once it is gone.</summary>
@@ -124,7 +130,7 @@ public sealed class KitReveal : MonoBehaviour
             return;
         }
         float t = Elapsed;
-        group.alpha = Mathf.Clamp01(t / FadeInSeconds);
+        group.alpha = fades ? Mathf.Clamp01(t / FadeInSeconds) : 1f;
         foreach (var part in parts) Apply(part, t);
         if (t > longest + .05f) enabled = false;
     }

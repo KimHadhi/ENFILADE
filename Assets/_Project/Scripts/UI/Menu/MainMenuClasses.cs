@@ -6,8 +6,10 @@ using UnityEngine.UI;
 /// The title screen's 클래스 page (stage 7, PlayerClass): the seven classes down the left as slanted plates, each at its
 /// own lean and indent (KitStack keeps room between them), the one played dark with a pink edge and bar, those whose
 /// abilities come later marked 준비 중 (they can still be played); its rank (ClassGrowth) at the right of each. At the
-/// right, the class pointed at or played: its name, what it does, its starting guns, its own guns and their bonus, and
-/// its ability in its numbers. A click plays that class from the next run. The records page's look.
+/// right, always the class played: its name, what it does, its starting guns, its own guns and their bonus, and its
+/// ability in its numbers. Pointing at another plate only lights it (the user, 2026-11-11: "오른쪽에는 내가 선택된 거
+/// 설명이 계속"; it used to follow the pointer and stay on the last plate passed over). A click plays that class from
+/// the next run and the right side turns to it. The records page's look.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class MainMenuClasses : MonoBehaviour
@@ -20,7 +22,6 @@ public sealed class MainMenuClasses : MonoBehaviour
     private TextMeshProUGUI detailTitle, detailRole, detailBody;
     private RawImage detailIcon;
     private float edge;
-    private string pointed;
 
     public bool IsOpen => root != null && root.gameObject.activeSelf;
 
@@ -40,14 +41,18 @@ public sealed class MainMenuClasses : MonoBehaviour
     }
 
     /// <summary>Builds the page from the table and the pick as they are now, and grows it in.</summary>
-    public void Open()
+    public void Open() => Build(null);
+
+    // The page from the table and the pick as they are now. Opening, all of it grows in. After a pick (picked), it is
+    // built again at once and only the plate picked and the right side grow in again, so clicking through the classes
+    // to read them doesn't replay the whole page.
+    private void Build(string picked)
     {
         if (content != null) Destroy(content.gameObject);
         root.gameObject.SetActive(true);
         content = KitStyle.Stretch("Content", root);
         var reveal = content.gameObject.AddComponent<KitReveal>();
         reveal.Hide();
-        pointed = null;
         var title = KitStyle.Flat(KitStyle.TopLeft("Title", content, new Vector2(edge, 26f), new Vector2(LeftWidth, 80f)), Texts.Get("classes.title"), 64f,
             TextAlignmentOptions.MidlineLeft);
         title.rectTransform.parent.localRotation = Quaternion.Euler(0f, 0f, 3f);
@@ -59,14 +64,16 @@ public sealed class MainMenuClasses : MonoBehaviour
         {
             float tilt = Tilts[i % Tilts.Length], x = Indents[i % Indents.Length];
             if (i > 0) y = KitStack.Below(lastX, y, LeftWidth, PlateHeight, lastTilt, x, LeftWidth, tilt, PlateGap);
-            Plate(catalog[i], new Vector2(edge + x, y), tilt, reveal, at);
+            bool grows = picked == null || catalog[i].Id == picked;
+            Plate(catalog[i], new Vector2(edge + x, y), tilt, grows ? reveal : null, picked == null ? at : 0f);
             at += .05f;
             lastX = x;
             lastTilt = tilt;
         }
-        BuildDetail(reveal, at);
-        Point(PlayerClass.CurrentId);
-        reveal.Open();
+        BuildDetail(reveal, picked == null ? at : .05f);
+        Show(PlayerClass.CurrentId);
+        // Built again after a pick, the page stays shown: no fade of the whole page.
+        reveal.Open(picked == null);
     }
 
     public void Close()
@@ -74,6 +81,7 @@ public sealed class MainMenuClasses : MonoBehaviour
         if (root != null) root.gameObject.SetActive(false);
     }
 
+    // One class's plate; with a reveal it grows in under a pink lid at its time, without one it is simply there.
     private void Plate(PlayerClass.Info info, Vector2 where, float tilt, KitReveal reveal, float at)
     {
         bool chosen = PlayerClass.Is(info.Id);
@@ -116,28 +124,27 @@ public sealed class MainMenuClasses : MonoBehaviour
             KitSkew.On(KitStyle.Fill(mark, KitStyle.Accent), 6f);
             KitStyle.Flat(mark, Texts.Get("classes.chosen"), 13f, TextAlignmentOptions.Center, KitStyle.Ink);
         }
-        var lid = KitStyle.Fill(KitStyle.Stretch("Flash", plate), KitStyle.Flash);
-        KitSkew.On(lid, Slant);
-        reveal.Card(plate, lid, at);
+        if (reveal != null)
+        {
+            var lid = KitStyle.Fill(KitStyle.Stretch("Flash", plate), KitStyle.Flash);
+            KitSkew.On(lid, Slant);
+            reveal.Card(plate, lid, at);
+        }
         var button = plate.gameObject.AddComponent<Button>();
         button.transition = Selectable.Transition.None;
         button.targetGraphic = back;
         string id = info.Id;
         button.onClick.AddListener(() => Pick(id));
         plate.gameObject.AddComponent<KitHover>();
-        var trigger = plate.gameObject.AddComponent<UnityEngine.EventSystems.EventTrigger>();
-        var enter = new UnityEngine.EventSystems.EventTrigger.Entry { eventID = UnityEngine.EventSystems.EventTriggerType.PointerEnter };
-        enter.callback.AddListener(_ => Point(id));
-        trigger.triggers.Add(enter);
     }
 
-    // Plays this class from the next run: the page is built again to show it.
+    // Plays this class from the next run: the page is built again to show it, the right side telling of it.
     private void Pick(string id)
     {
         if (PlayerClass.Is(id)) return;
         ClassGrowth.Choose(id);
         KitSound.Play(KitSound.Cue.Buy, .5f);
-        Open();
+        Build(id);
     }
 
     private void BuildDetail(KitReveal reveal, float at)
@@ -164,10 +171,9 @@ public sealed class MainMenuClasses : MonoBehaviour
     }
 
     // The right side tells of this class.
-    private void Point(string id)
+    private void Show(string id)
     {
-        if (id == pointed || detailTitle == null) return;
-        pointed = id;
+        if (detailTitle == null) return;
         var info = PlayerClass.Find(id);
         if (info == null) return;
         detailTitle.text = info.Title;
