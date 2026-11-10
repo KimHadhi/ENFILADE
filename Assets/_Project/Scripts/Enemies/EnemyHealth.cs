@@ -147,6 +147,9 @@ public sealed class EnemyHealth : MonoBehaviour, IDamageReceiver, ICombatVitals,
             // that stands firm (a brute) it takes a share of its whole health instead: executions work on it, without
             // one of them ending a boss made for a whole team's fire.
             float share = melee != null ? melee.ExecutionShare : 1f;
+            // A stealth takedown, on a zombie that never knew they were there, ends it whatever it is (user, 2026-11-11
+            // playtest: "돌진 좀비도 암살하면 한 번에 죽어야 하는 거 아님??").
+            if (mind != null && mind.Unaware) share = 1f;
             Health = share >= 1f ? 0f : Mathf.Max(0f, Health - MaximumHealth * share);
             scale = hit.Amount > 0f ? (before - Health) / hit.Amount : 1f;
         }

@@ -139,6 +139,10 @@ public sealed class ZombieDrop : MonoBehaviour
         foot = from + way * toFace;
         lip = new Vector3(foot.x, top.position.y + agent.baseOffset + .12f, foot.z);
         to = top.position + lift;
+        // The way up and over has to be clear of the world: straight up from the foot to the top's height, then across
+        // onto the top. Without it a zombie under a platform rose through the slab and one at a wall came up through it
+        // (user, 2026-11-11 playtest: "올라오는 게 벽을 뚫고 올라오는 거 같은데").
+        if (!ClimbIsClear(foot - lift, lip - lift, to - lift)) return;
         footTime = toFace / FootSpeed;
         riseTime = Mathf.Max(.2f, (lip.y - foot.y) / (ClimbSpeed * (type != null && type.Kind == ZombieKind.Runner ? 2f : 1f)));
         time = 0f;
@@ -149,6 +153,20 @@ public sealed class ZombieDrop : MonoBehaviour
         agent.updateRotation = false;
         if (way.sqrMagnitude > 1e-4f) transform.rotation = Quaternion.LookRotation(way);
         climbing = Dropping = true;
+    }
+
+    // A sphere the body's width rises from the foot to the top's height, then a body-high capsule crosses onto the top.
+    private bool ClimbIsClear(Vector3 foot, Vector3 lip, Vector3 top)
+    {
+        float radius = Mathf.Clamp(agent.radius * .85f, .15f, .4f);
+        Vector3 start = foot + Vector3.up * (radius + .15f), high = new Vector3(foot.x, lip.y + radius + .05f, foot.z);
+        float rise = high.y - start.y;
+        if (rise > 0f && Physics.SphereCast(start, radius, Vector3.up, out _, rise, solidMask, QueryTriggerInteraction.Ignore)) return false;
+        Vector3 across = Vector3.ProjectOnPlane(top - foot, Vector3.up);
+        float distance = across.magnitude;
+        if (distance < .05f) return true;
+        Vector3 low = high, upper = high + Vector3.up * Mathf.Max(0f, 1.2f - 2f * radius);
+        return !Physics.CapsuleCast(low, upper, radius, across / distance, out _, distance, solidMask, QueryTriggerInteraction.Ignore);
     }
 
     private void Climb()

@@ -29,6 +29,12 @@ public readonly struct DamageHit
     public readonly DamageMethod Method;
     /// <summary>On a player: kills where it lands, whatever health and shield are left, with no going down first. A dodge or parry still beats it.</summary>
     public readonly bool IsFatal;
+    /// <summary>
+    /// A shambler's grab, a kneel to eat or a runner's leap taking hold: it hurts nothing by itself (PlayerHold's bites
+    /// do), so it draws no blood and no hurt sound or look on anyone's screen (user, 2026-11-11 playtest: "잡혔을 때도
+    /// 맞은 것처럼 피가 나오는 게 아쉬움").
+    /// </summary>
+    public bool TakesHold => Method == DamageMethod.Grab || Method == DamageMethod.Feed || Method == DamageMethod.Pounce;
     /// <summary>A bullet that reached this target after going through or glancing off something on the way (AttackTrace). Presentation and score only.</summary>
     public readonly bool Pierced;
     /// <summary>The body part a bullet met (a zombie's bone hitbox), for gore. Presentation only.</summary>

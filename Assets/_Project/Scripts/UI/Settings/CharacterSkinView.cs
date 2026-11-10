@@ -160,7 +160,7 @@ public sealed class CharacterSkinView
         PortraitImage.Add(picture, skin, variant);
 
         var label = W.Label(inside, name, labelSize, on ? W.Text : W.Muted, TextAlignmentOptions.Center);
-        label.overflowMode = TextOverflowModes.Ellipsis;
+        label.overflowMode = CombatUIAssets.ClippedOverflow(label);
         var rect = label.rectTransform;
         rect.anchorMin = Vector2.zero; rect.anchorMax = new Vector2(1f, 0f); rect.pivot = new Vector2(.5f, 0f);
         rect.anchoredPosition = Vector2.zero;
@@ -183,7 +183,7 @@ public sealed class CharacterSkinView
         PortraitImage.Add(picture, skin, variant);
         string name = variant != null ? skin.DisplayName + " · " + variant.DisplayName : skin.DisplayName;
         var label = W.Label(column, name, 19f, W.Text, TextAlignmentOptions.Center);
-        label.overflowMode = TextOverflowModes.Ellipsis;
+        label.overflowMode = CombatUIAssets.ClippedOverflow(label);
         W.Size(label, width, 30f);
     }
 }

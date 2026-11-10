@@ -231,7 +231,8 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
     private void OnExecutionStarted(MeleeCombatTarget victim) => ExecutionStartedRpc();
     private void OnHit(DamageHit hit, DamageResult result)
     {
-        if (result == DamageResult.Damaged) HurtRpc(hit.Point, hit.Direction, hit.Kind == DamageKind.Fall, receiver.LastHitShielded);
+        // A hold taking hold is no wound: friends see no blood on them for it either.
+        if (result == DamageResult.Damaged && !hit.TakesHold) HurtRpc(hit.Point, hit.Direction, hit.Kind == DamageKind.Fall, receiver.LastHitShielded);
     }
 
     // Each of a shotgun's pellets comes on its own, numbered, so the copy's gun fires once and each pellet leaves its mark.

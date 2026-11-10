@@ -290,10 +290,13 @@ public sealed class PlayerHold : MonoBehaviour
                 Release(i);
         }
         if (holders.Count == 0) return;
-        // Set to go off by itself (Hold.shieldBurstAuto), the shield bursts that far into the pin.
-        if (shieldBurstAuto >= 0f && CanBurstShield && Time.time - pinnedAt >= Mathf.Max(shieldBurstFrom, shieldBurstAuto))
+        // Set to go off by itself (Hold.shieldBurstAuto), the shield bursts that far into the pin; and the shove key bursts
+        // it here as well as in PlayerMovement's held branch, read straight off the key whatever locks the controls, so
+        // nothing in the movement's frame can swallow the press (the user pressed V again and again: 2026-11-11).
+        bool pressed = player != null && player.Input != null && player.InputAvailable && player.Input.ShoveKeyPressed;
+        if (CanBurstShield && (pressed || shieldBurstAuto >= 0f && Time.time - pinnedAt >= Mathf.Max(shieldBurstFrom, shieldBurstAuto))
+            && TryBurstShield())
         {
-            BurstShield();
             if (holders.Count == 0) return;
         }
         if (TickPin()) return;

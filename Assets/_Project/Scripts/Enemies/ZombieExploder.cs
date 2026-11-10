@@ -168,7 +168,10 @@ public sealed class ZombieExploder : MonoBehaviour
             float far = away.magnitude;
             Vector3 flat = Vector3.ProjectOnPlane(away, Vector3.up);
             flat = flat.sqrMagnitude > 1e-4f ? flat.normalized : mine.transform.forward * -1f;
-            if (far <= blastRadius)
+            // A wall, a floor or a car between the burst and them takes it (user, 2026-11-11 playtest: the burst hurt as
+            // much through a wall). Only the world counts: bodies don't shield anyone.
+            bool covered = Covered(at, mine.transform.position);
+            if (far <= blastRadius && !covered)
             {
                 float share = 1f - far / Mathf.Max(.01f, blastRadius);
                 mine.DamageReceiver.ReceiveHit(new DamageHit(DamageHit.NewAttackId(), Mathf.Lerp(playerEdgeDamage, playerDamage, share), DamageKind.Attack,
@@ -187,7 +190,7 @@ public sealed class ZombieExploder : MonoBehaviour
         var struck = near.ToArray();
         foreach (var enemy in struck)
         {
-            if (enemy == null || !enemy.IsAlive) continue;
+            if (enemy == null || !enemy.IsAlive || Covered(at, enemy.transform.position)) continue;
             Vector3 away = Vector3.ProjectOnPlane(enemy.transform.position - at, Vector3.up);
             float share = 1f - Mathf.Clamp01(away.magnitude / Mathf.Max(.01f, blastRadius));
             away = away.sqrMagnitude > 1e-4f ? away.normalized : Vector3.forward;
@@ -195,6 +198,15 @@ public sealed class ZombieExploder : MonoBehaviour
                 enemy.transform.position + Vector3.up, away, lastSource, false, 0f, true, origin: at));
             if (enemy != null && enemy.IsAlive && enemy.TryGetComponent(out MeleeCombatTarget target)) target.KnockDown(away, zombieKnockdown);
         }
+    }
+
+    private static int coverMask;
+
+    // Something solid between the burst's heart and a body's chest.
+    private static bool Covered(Vector3 burst, Vector3 feet)
+    {
+        if (coverMask == 0) coverMask = ~(LayerMask.GetMask("Enemy") | 1 << 31);
+        return Physics.Linecast(burst + Vector3.up, feet + Vector3.up, coverMask, QueryTriggerInteraction.Ignore);
     }
 
     // A wet, heavy burst, made here once: a thump that drops, under a short rush of dulled noise.

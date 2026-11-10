@@ -391,6 +391,7 @@ campaign.results.kills,처치,,장 끝 카드 결과 > 처치 줄 이름과 팀 
 campaign.results.money,돈,,장 끝 카드 결과 > 돈 줄 이름과 팀 표의 열 이름
 campaign.results.left,놓침,,장 끝 카드 결과 > 차량을 놓친 사람 줄 이름
 campaign.results.team,팀,,장 끝 카드 결과 > 방에서 할 때 팀 표 제목
+campaign.alert.lull,따돌렸다 · 놈들이 흩어진다,,캠페인: 들킨 뒤 한동안 들키지 않아 추격이 가라앉을 때 화면 위 알림
 #--- 상점 ---,,,
 shop.title,상점,,상점 창 > 맨 위 제목
 shop.subtitle,총  /  보급,,상점 창 > 제목 아래 작은 줄

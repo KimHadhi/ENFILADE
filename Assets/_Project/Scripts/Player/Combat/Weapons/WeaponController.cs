@@ -100,6 +100,8 @@ public sealed class WeaponController : MonoBehaviour
     public bool IsSwitching => switchLeft > 0f;
     private float switchLeft, inspectLeft;
     private bool holstering, inspecting;
+    // A gun just drawn still to get the parts and fire mode this PC's player last left on it (GunSetups).
+    private bool setupDue;
 
     /// <summary>
     /// Puts the held gun away over its Holster Duration, ending a reload as Siege's swap does. Returns the seconds it takes,
@@ -147,7 +149,9 @@ public sealed class WeaponController : MonoBehaviour
     public void CycleFireMode()
     {
         if (Runtime == null || Runtime.IsReloading || Runtime.Data.Category == WeaponCategory.Melee) return;
-        if (Runtime.CycleFireMode()) FireModeChanged?.Invoke(Runtime.FireMode);
+        if (!Runtime.CycleFireMode()) return;
+        FireModeChanged?.Invoke(Runtime.FireMode);
+        KeepSetup();
     }
 
     /// <summary>The gun of ours drawn now (its sights and parts), for the customize menu; null without one.</summary>
@@ -168,6 +172,7 @@ public sealed class WeaponController : MonoBehaviour
     {
         if (CustomizeRefusal != null || !(presentation is FPSBody body) || !body.ShowSight(EquippedData, index)) return false;
         SightChanged?.Invoke();
+        KeepSetup();
         return true;
     }
 
@@ -175,6 +180,7 @@ public sealed class WeaponController : MonoBehaviour
     {
         if (CustomizeRefusal != null || !(presentation is FPSBody body) || !body.ShowMuzzle(EquippedData, index)) return false;
         AttachmentChanged?.Invoke();
+        KeepSetup();
         return true;
     }
 
@@ -182,6 +188,7 @@ public sealed class WeaponController : MonoBehaviour
     {
         if (CustomizeRefusal != null || !(presentation is FPSBody body) || !body.ShowUnderbarrel(EquippedData, index)) return false;
         AttachmentChanged?.Invoke();
+        KeepSetup();
         return true;
     }
 
@@ -189,6 +196,7 @@ public sealed class WeaponController : MonoBehaviour
     {
         if (CustomizeRefusal != null || !(presentation is FPSBody body) || !body.ShowGrip(EquippedData, index)) return false;
         AttachmentChanged?.Invoke();
+        KeepSetup();
         return true;
     }
 
@@ -216,7 +224,18 @@ public sealed class WeaponController : MonoBehaviour
     public void ToggleLight()
     {
         if (Runtime == null || !(presentation is FPSBody body)) return;
-        if (body.ToggleLight()) AttachmentChanged?.Invoke();
+        if (!body.ToggleLight()) return;
+        AttachmentChanged?.Invoke();
+        KeepSetup();
+    }
+
+    // This PC's own player, not a friend's copy: only its choices are kept, and only its guns get them back.
+    private bool Mine => movement == null || movement.IsLocal && !movement.IsNetworkDriven;
+
+    // Its fitting is written down at once, so the next game starts with the gun as it was left (GunSetups).
+    private void KeepSetup()
+    {
+        if (Mine) GunSetups.Remember(this);
     }
 
     /// <summary>
@@ -375,6 +394,8 @@ public sealed class WeaponController : MonoBehaviour
         bareHandsLeft = bare ? BareHandsLinger : Mathf.Max(0f, bareHandsLeft - Time.deltaTime);
         presentation?.SetVisible(Runtime != null && Runtime.Data.Category != WeaponCategory.Melee && bareHandsLeft <= 0f);
         if (Runtime == null) { ResetPresentation(); return; }
+        // The body builds a drawn gun a frame or so later; its remembered parts go on once it holds it.
+        if (setupDue && (!Mine || GunSetups.Restore(this))) setupDue = false;
 
         if (health != null && !health.IsAlive)
         {
@@ -435,6 +456,7 @@ public sealed class WeaponController : MonoBehaviour
         savedAmmoData = weaponData;
         savedAmmo = weapon != null ? weapon.Ammo : -1;
         savedReserve = weapon != null ? weapon.ReserveAmmo : -1;
+        setupDue = weapon != null && weapon.Data.Category != WeaponCategory.Melee;
 
         if (input is PlayerWeaponInput playerInput)
             playerInput.RequireTriggerRelease();

@@ -148,7 +148,7 @@ public sealed class PickupFeedHUD : MonoBehaviour
         row.name.rectTransform.pivot = new Vector2(0f, .5f);
         row.name.rectTransform.anchoredPosition = new Vector2(left, 0f);
         row.name.rectTransform.sizeDelta = new Vector2(right - left - 120f, Height);
-        row.name.overflowMode = TextOverflowModes.Ellipsis;
+        row.name.overflowMode = CombatUIAssets.ClippedOverflow(row.name);
         row.amount = Words("Gives", row.root, AmountSize, TextAlignmentOptions.MidlineRight, KitStyle.Accent);
         row.amount.rectTransform.pivot = new Vector2(1f, .5f);
         row.amount.rectTransform.anchoredPosition = new Vector2(right, 0f);

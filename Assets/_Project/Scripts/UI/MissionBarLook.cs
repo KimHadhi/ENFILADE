@@ -63,6 +63,9 @@ public sealed class MissionBarLook : MonoBehaviour, ITableBound
         line = Part<MissionLineGraphic>(LineName);
         var font = GunFeelSettings.Instance.scoreFont;
         if (font != null) counter.font = font;
+        // The prefab clipped the count with "…", which the score font (Pretendard) lacks: TMP warned and fell back to
+        // cutting it with a warning (user, 2026-11-11). Without the glyph it is cut plainly from the start.
+        counter.overflowMode = CombatUIAssets.ClippedOverflow(counter);
         // The count's big number and small total are tags; the prefab's text had them switched off.
         counter.richText = true;
         Anchor();

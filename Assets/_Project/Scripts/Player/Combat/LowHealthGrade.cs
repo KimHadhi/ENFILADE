@@ -75,7 +75,7 @@ public sealed class LowHealthGrade : MonoBehaviour
 
     private void OnHit(DamageHit hit, DamageResult result)
     {
-        if (result == DamageResult.Damaged && grey > 0f) flash = 1f;
+        if (result == DamageResult.Damaged && grey > 0f && !hit.TakesHold) flash = 1f;
     }
 
     private void Update()

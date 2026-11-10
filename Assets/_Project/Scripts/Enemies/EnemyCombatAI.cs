@@ -311,7 +311,7 @@ public sealed class EnemyCombatAI : MonoBehaviour
         if (victim != null)
         {
             Vector3 off = victim.transform.position - lockedFeet;
-            if (new Vector2(off.x, off.z).magnitude <= pounceRadius && OnItsFloor(victim)) pounceInside += dt;
+            if (new Vector2(off.x, off.z).magnitude <= pounceRadius && OnItsFloor(victim) && Reached(victim)) pounceInside += dt;
         }
         return pounceInside >= dwell || timer >= Windup + dwell + PounceLinger;
     }
@@ -361,6 +361,21 @@ public sealed class EnemyCombatAI : MonoBehaviour
         return Mathf.Abs(FloorUnder(victim) - FeetHeight) <= most;
     }
 
+    // How near the runner itself has to come down to whoever it pins (m, flat), past the leap's own reach.
+    private const float PinBodyReach = .9f;
+
+    // The runner itself came down on them: near enough, with nothing solid between its chest and theirs. A leap blocked
+    // by a wall left the runner behind it while the spot it aimed at, on this side, still pinned whoever stood there,
+    // through the wall (user, 2026-11-11 playtest: "벽 너머의 러너가 날 덮쳐서 죽였다고").
+    private bool Reached(PlayerMovement victim)
+    {
+        Vector3 feet = transform.position - Vector3.up * (agent != null ? agent.baseOffset : 0f);
+        Vector3 flat = Vector3.ProjectOnPlane(victim.transform.position - feet, Vector3.up);
+        if (flat.magnitude > pounceRadius + PinBodyReach) return false;
+        if (floorMask == 0) floorMask = ~(LayerMask.GetMask("Enemy") | 1 << 31);
+        return !Physics.Linecast(feet + Vector3.up * 1f, victim.transform.position + Vector3.up * 1f, floorMask, QueryTriggerInteraction.Ignore);
+    }
+
     // Where a leap at this player aims as it begins: ahead of them, the way they are moving (ZombieRunner.LeapSpot).
     private Vector3 LeapSpot(PlayerMovement target)
     {
@@ -405,7 +420,7 @@ public sealed class EnemyCombatAI : MonoBehaviour
         // A dodge through the leap counts as one through any attack (a perfect dodge).
         StepDodgeTrail.RecognizeAttackSegment(hit, chest - direction * pounceRadius, chest);
         float away = new Vector2(off.x, off.z).magnitude;
-        if (!OnItsFloor(victim)) return DamageResult.Ignored;
+        if (!OnItsFloor(victim) || !Reached(victim)) return DamageResult.Ignored;
         if (away > pounceRadius || pounceInside < PounceDwell)
         {
             if (leaper == null) leaper = GetComponent<ZombieRunner>();

@@ -41,6 +41,10 @@ public sealed class FPSBodyCamera : FPSCameraController
 
     public override void UpdateCamera()
     {
+        // Paused (Esc stops time), nothing places the view afresh, so a reload's camera motion laid on again each frame
+        // kept turning the view the way it was going (user, 2026-11-11 playtest: "장전 중일 때 ESC 누르면 카메라가 움직이던
+        // 방향으로 계속 움직임"). Nothing moves the camera while time stands still.
+        if (Time.deltaTime <= 0f) return;
         if (placed != null && !placed()) return;
         UpdateCameraShake();
         ApplyGunMotion();

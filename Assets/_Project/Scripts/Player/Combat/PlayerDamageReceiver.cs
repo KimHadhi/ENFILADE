@@ -99,11 +99,13 @@ public sealed class PlayerDamageReceiver : MonoBehaviour, IDamageReceiver, ITabl
             HitResolved?.Invoke(hit, defense);
             return defense;
         }
-        float absorbed = hit.IsFatal ? 0f : Mathf.Min(Shield, hit.Amount);
+        // A hold taking hold costs nothing: the bites that follow do (DamageHit.TakesHold).
+        float amount = hit.TakesHold && !hit.IsFatal ? 0f : hit.Amount;
+        float absorbed = hit.IsFatal ? 0f : Mathf.Min(Shield, amount);
         bool shieldBroke = absorbed > 0f && absorbed >= Shield;
         shield = shieldBroke ? 0f : Shield - absorbed;
         float healthBefore = Health;
-        LoseHealth(hit.IsFatal ? Health : hit.Amount - absorbed);
+        LoseHealth(hit.IsFatal ? Health : amount - absorbed);
         LastShieldTaken = absorbed;
         LastHealthTaken = Mathf.Max(0f, healthBefore - Health);
         melee?.NotifyDamaged();

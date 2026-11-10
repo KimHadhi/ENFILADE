@@ -90,6 +90,11 @@ public sealed class ZombieMind : MonoBehaviour
     private float turnSpeed = 240f;
     [SerializeField, Min(0f), Tooltip("Woken from calm, how long it rouses before it charges (s): its rouse clip.")]
     private float rouseSeconds = 1.1f;
+    [SerializeField, Range(0f, 90f), Tooltip("How far it looks up (degrees above level from its eyes): someone higher than this "
+        + "is seen only at lookUpShare. Shamblers stared up at players on ledges (user, 2026-11-11 playtest).")]
+    private float lookUp = 30f;
+    [SerializeField, Range(0f, 1f), Tooltip("How well it sees someone above lookUp, as a share.")]
+    private float lookUpShare = .2f;
     [SerializeField, Min(0f), Tooltip("Back on its feet after a knockdown, how long it comes to its senses before it chases, "
         + "swings or grabs (s): it stands, turns to the nearest player and plays its rouse. Horde zombies too. 0: it goes at once.")]
     private float riseRouse = 1.2f;
@@ -146,6 +151,7 @@ public sealed class ZombieMind : MonoBehaviour
     {
         minds.Clear();
         Woke = null;
+        LastNoticed = float.NegativeInfinity;
     }
 
     private void Awake()
@@ -182,6 +188,27 @@ public sealed class ZombieMind : MonoBehaviour
     private bool Thinks => !IsCopy && health != null && health.IsAlive && !health.WavePaused;
 
     // ---- Moods -------------------------------------------------------------------------------------------------
+
+    /// <summary>When an awake zombie last saw anyone (game time), horde or not: the campaign's lull waits on it.</summary>
+    public static float LastNoticed { get; private set; } = float.NegativeInfinity;
+
+    /// <summary>
+    /// The chase dies down (CampaignRun's lull): every awake zombie on the host, horde ones included, loses its quarry and
+    /// goes to look where it last knew them, then calms (Searching). Being found once no longer means being found for good
+    /// (user, 2026-11-11 playtest: "한번 들키면 끝이고 의미 없는 거 아니야?").
+    /// </summary>
+    public static void LoseAll()
+    {
+        foreach (var mind in minds)
+        {
+            if (mind == null || !mind.Thinks || !mind.IsAwake) continue;
+            if (mind.TryGetComponent(out ZombieGrip grip) && grip.IsHolding) continue;
+            mind.horde = false;
+            mind.focus = null;
+            mind.suspicion = mind.alertAt;
+            mind.Search(mind.lastKnown != Vector3.zero ? mind.lastKnown : mind.transform.position);
+        }
+    }
 
     /// <summary>Calms it: it stands where it is and has to notice the players (a placed zombie, /spawn n calm).</summary>
     public void Calm()
@@ -300,7 +327,13 @@ public sealed class ZombieMind : MonoBehaviour
         }
         if ((thinkLeft -= Time.deltaTime) > 0f) return;
         thinkLeft += ThinkEvery;
-        if (horde) return;
+        // A horde zombie needs no senses to hunt (EnemyTargeting gives it the nearest), but whether any zombie still has
+        // someone in sight decides when the campaign lets the chase die down (LastNoticed, CampaignRun's lull).
+        if (horde)
+        {
+            if (Mood == ZombieMood.Awake && Look(out _) is PlayerMovement seen) { LastNoticed = Time.time; lastKnown = seen.transform.position; }
+            return;
+        }
         // Down, stunned or held it notices nothing new; a blow has woken it anyway.
         if (melee != null && melee.IsStunned) return;
         Think(ThinkEvery);
@@ -332,7 +365,7 @@ public sealed class ZombieMind : MonoBehaviour
         if (IsAwake)
         {
             if (seen != null && (focus == null || seen == focus || !Alive(focus))) focus = seen;
-            if (focus != null && seen == focus) { lastSeen = Time.time; lastKnown = focus.transform.position; }
+            if (focus != null && seen == focus) { lastSeen = Time.time; lastKnown = focus.transform.position; LastNoticed = Time.time; }
             else if (Time.time - lastSeen > loseSeconds) { suspicion = alertAt; Search(lastKnown); }
             return;
         }
@@ -392,8 +425,11 @@ public sealed class ZombieMind : MonoBehaviour
             if (angle > sideView * .5f) continue;
             float shown = Shown(player, eye);
             if (shown <= 0f) continue;
+            // It hardly looks up: someone well above its eyes is seen at lookUpShare.
+            float above = Mathf.Atan2(player.transform.position.y + 1f - eye.y, Mathf.Max(.01f, new Vector2(toward.x, toward.z).magnitude))
+                * Mathf.Rad2Deg;
             float rate = nearRate * Mathf.Lerp(1f, farShare, distance / Mathf.Max(.01f, range)) * shown * Posture(player)
-                * (angle <= fieldOfView * .5f ? 1f : sideShare);
+                * (angle <= fieldOfView * .5f ? 1f : sideShare) * (above > lookUp ? lookUpShare : 1f);
             if (rate > best) { best = rate; found = player; }
         }
         return found;

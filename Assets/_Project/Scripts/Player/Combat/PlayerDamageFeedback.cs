@@ -123,6 +123,8 @@ public sealed class PlayerDamageFeedback : MonoBehaviour
     private void OnHit(DamageHit hit, DamageResult result)
     {
         if (result != DamageResult.Damaged || !Application.isPlaying || receiver == null || !receiver.IsAlive) return;
+        // Being grabbed or pinned isn't a wound: HoldFeedback shows it.
+        if (hit.TakesHold) return;
         var camera = ResolveCamera();
         if (camera == null) return;
         var settings = PlayerDamageFeedbackSettings.Instance;

@@ -264,7 +264,13 @@ public sealed class ScoreboardHUD : MonoBehaviour
         // 2026-11-10) shrinks until it stands clear of the banknote at the column's left.
         row.score.fontSize = ScoreSize;
         float room = ScoreWidth - 2f - MoneyIconSize - MoneyGap, wide = row.score.GetPreferredValues(row.score.text).x;
-        if (wide > room) row.score.fontSize = ScoreSize * room / wide;
+        if (wide > room) { row.score.fontSize = ScoreSize * room / wide; wide = room; }
+        // The banknote and the number as one group in the middle of the column, however many figures (user, 2026-11-11
+        // playtest: a three-figure sum sat far off to the right of the banknote).
+        float group = MoneyIconSize + MoneyGap + wide, left = ScoreAt + Mathf.Max(0f, (ScoreWidth - group) * .5f);
+        row.money.rectTransform.anchoredPosition = new Vector2(left + MoneyIconSize * .5f, 0f);
+        row.score.alignment = TextAlignmentOptions.Left;
+        row.score.rectTransform.anchoredPosition = new Vector2(left + MoneyIconSize + MoneyGap + row.score.rectTransform.sizeDelta.x * .5f, 0f);
         row.ping.text = tally.Ping.ToString();
         row.ping.color = tally.Ping < GoodPing ? PingGood : tally.Ping < FairPing ? PingFair : PingBad;
         var slots = player.GetComponent<PlayerWeaponSlots>();

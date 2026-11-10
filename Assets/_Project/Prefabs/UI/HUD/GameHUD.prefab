@@ -2757,7 +2757,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5918595515459402406}
   m_Layer: 5
-  m_Name: RIGHT
+  m_Name: Right Panel
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3598,7 +3598,7 @@ GameObject:
   - component: {fileID: 2264750836757833185}
   - component: {fileID: 1306632143262585986}
   m_Layer: 5
-  m_Name: "\u2605ChatManager"
+  m_Name: Chat
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -6535,7 +6535,7 @@ GameObject:
   m_Component:
   - component: {fileID: 3282474230478541260}
   m_Layer: 5
-  m_Name: LEFT
+  m_Name: Left Panel
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -7924,7 +7924,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1254761717082488143
 RectTransform:
   m_ObjectHideFlags: 0
@@ -8965,7 +8965,7 @@ GameObject:
   - component: {fileID: 4531795192092637828}
   - component: {fileID: 8937860176579905499}
   m_Layer: 5
-  m_Name: "\u2605MissionHUD"
+  m_Name: Mission
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -10809,7 +10809,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4784864356043009349}
   m_Layer: 5
-  m_Name: MIDDLE
+  m_Name: Center
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -10979,7 +10979,7 @@ GameObject:
   m_Component:
   - component: {fileID: 8116086528349984883}
   m_Layer: 5
-  m_Name: "\u2605HPSection"
+  m_Name: Health
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

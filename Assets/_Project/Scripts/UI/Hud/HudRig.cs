@@ -1,15 +1,16 @@
 using UnityEngine;
 
 /// <summary>
-/// Sets GameHUD up for depth when Play starts: draws its canvas through HudCamera, turns LEFT and RIGHT into the two
-/// sides of a curved screen and stands each on a visible glass board (HudBoard), lifts what must stay flat off those
-/// sides (the new-objective alert in the top centre), and gives each element named in HudTilt.csv its own lean. MIDDLE
-/// (wave banner, crosshair, prompts) stays flat.
+/// Sets GameHUD up for depth when Play starts: draws its canvas through HudCamera, turns Left Panel and Right Panel into
+/// the two sides of a curved screen and stands each on a visible glass board (HudBoard), lifts what must stay flat off
+/// those sides (the new-objective alert in the top centre), and gives each element named in HudTilt.csv its own lean.
+/// Center (crosshair, prompts) stays flat. The groups were LEFT, MIDDLE and RIGHT, with ★ on Mission, Chat and Health,
+/// until the user asked for a tidy hierarchy (2026-11-11); the old wave indicator under Center is switched off.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class HudRig : MonoBehaviour
 {
-    private const string LeftName = "LEFT", RightName = "RIGHT";
+    private const string LeftName = "Left Panel", RightName = "Right Panel";
     // Children of a side that sit in the centre of the screen.
     private static readonly string[] FlatNames = { "ObjectiveAlert" };
 

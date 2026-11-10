@@ -121,7 +121,8 @@ internal sealed class CampaignHorde
             Vector2 aside = Random.insideUnitCircle * CalmAside;
             Vector3 wanted = calmPlaces[pick] + new Vector3(aside.x, 0f, aside.y);
             calmPlaces.RemoveAt(pick);
-            if (!NavMesh.SamplePosition(wanted, out NavMeshHit ground, PointSearch, NavMesh.AllAreas) || !Free(ground.position, players, near)) continue;
+            if (!NavMesh.SamplePosition(wanted, out NavMeshHit ground, PointSearch, NavMesh.AllAreas) || !Free(ground.position, players, near)
+                || !Roomy(ground.position)) continue;
             var enemy = Object.Instantiate(prefab, ground.position, Quaternion.Euler(0f, Random.Range(0f, 360f), 0f), container);
             if (enemy.TryGetComponent(out ZombieMind mind)) mind.Calm();
             EnemyNetwork.SpawnInRoom(enemy);
@@ -160,6 +161,11 @@ internal sealed class CampaignHorde
         Object.Destroy(enemy.gameObject);
     }
 
+    // A body fits there: nothing of the world inside a zombie standing on the spot (user, 2026-11-11 playtest: a runner
+    // came out of a wall during the alley hold).
+    private static bool Roomy(Vector3 feet)
+        => !Physics.CheckCapsule(feet + Vector3.up * .35f, feet + Vector3.up * 1.55f, .28f, SightMask, QueryTriggerInteraction.Ignore);
+
     // Set up runs before the enemy goes out to the room, so its copies are born what it is.
     private EnemyHealth SpawnOne(List<PlayerMovement> players, float near, float far, float seenFar, System.Action<EnemyHealth> setUp)
     {
@@ -167,7 +173,8 @@ internal sealed class CampaignHorde
         inView.Clear();
         foreach (var point in spawns)
         {
-            if (point == null || !NavMesh.SamplePosition(point.position, out NavMeshHit ground, PointSearch, NavMesh.AllAreas)) continue;
+            if (point == null || !NavMesh.SamplePosition(point.position, out NavMeshHit ground, PointSearch, NavMesh.AllAreas)
+                || !Roomy(ground.position)) continue;
             var target = Nearest(players, ground.position, out float distance);
             if (target == null || distance < near || distance > far) continue;
             if (!NavMesh.SamplePosition(target.transform.position, out NavMeshHit them, PlayerSearch, NavMesh.AllAreas)) continue;

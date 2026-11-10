@@ -170,5 +170,7 @@ public sealed class PlayerLife : MonoBehaviour
         if (campaign || point != null)
             player.MoveTo((campaign ? checkpoint : point.transform.position) + new Vector3(scatter.x, 0f, scatter.y));
         receiver.RestoreHealth();
+        // Back with full magazines and reserves, as at the start (user, 2026-11-11 playtest: "탄창 보충이 안 돼 있음").
+        if (TryGetComponent(out PlayerWeaponSlots slots)) slots.RefillAmmo();
     }
 }
