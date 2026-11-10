@@ -713,7 +713,7 @@ public sealed class WeaponController : MonoBehaviour
     {
         Runtime?.Interrupt(); AimBlend = 0f;
         cameraEffects?.RefreshWeaponFov();
-        crosshair?.SetCombatHidden(false);
+        if (crosshair != null) crosshair.SetCombatHidden(false);
         survivalInterrupted = true;
         if (shove) shoveRecovery = missedShoveRecovery;
     }
@@ -747,9 +747,15 @@ public sealed class WeaponController : MonoBehaviour
     {
         AimBlend = bloom = shoveRecovery = CurrentSpread = raisedHoldLeft = queuedFireLeft = emptyReady = 0f; recoilIndex = 0; IsHighReady = false;
         HasAimPoint = false;
-        presentation?.Reset(); crosshair?.SetDynamicSpread(0f);
-        crosshair?.SetPatternSpread(0f);
-        crosshair?.SetCombatHidden(false);
+        presentation?.Reset();
+        // Unity's null check, not `?.`: a closing scene disables and destroys its objects one root at a time, so the HUD's
+        // crosshair can be gone before this runs from OnDisable, and `?.` only sees a reference that was never set.
+        if (crosshair != null)
+        {
+            crosshair.SetDynamicSpread(0f);
+            crosshair.SetPatternSpread(0f);
+            crosshair.SetCombatHidden(false);
+        }
         cameraEffects?.RefreshWeaponFov();
     }
 

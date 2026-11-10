@@ -85,7 +85,9 @@ public sealed class StealthView : MonoBehaviour, ITableBound
     // The stone's aim (PlayerThrow, held T): where it would land, how far it carries, the frame it was last asked for,
     // whether a stone is ready, and which zombies would hear it (worked out a few times a second).
     private readonly HashSet<ZombieMind> wouldHear = new HashSet<ZombieMind>();
-    private readonly MaterialPropertyBlock aimBlock = new MaterialPropertyBlock(), aimDot = new MaterialPropertyBlock();
+    // Made in Awake, not here: Unity won't make a MaterialPropertyBlock while a MonoBehaviour is being constructed (field
+    // initializers run then), and the throw left this view half made each time PlayerMovement added it.
+    private MaterialPropertyBlock aimBlock, aimDot;
     private Vector3 aimAt, aimHeardAt;
     private float aimNoise, aimReach, aimCheckAt;
     private int aimFrame = -9;
@@ -150,6 +152,8 @@ public sealed class StealthView : MonoBehaviour, ITableBound
     {
         movement = GetComponent<PlayerMovement>();
         for (int i = 0; i < rings.Length; i++) rings[i] = new Ring();
+        aimBlock = new MaterialPropertyBlock();
+        aimDot = new MaterialPropertyBlock();
         GameTables.Bind(TableName, TableRow, this);
     }
 
