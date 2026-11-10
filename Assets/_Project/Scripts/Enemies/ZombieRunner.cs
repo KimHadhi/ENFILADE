@@ -36,6 +36,8 @@ public sealed class ZombieRunner : MonoBehaviour
     private float missSeconds = 1f;
     [SerializeField, Min(0f), Tooltip("From the end of one charge or leap to the next (s).")]
     private float cooldown = 1.2f;
+    [SerializeField, Min(0f), Tooltip("Knocked down or stunned, once back on its feet it waits at least this long before it charges or leaps again (s): knocking it down buys that time (friend feedback C7).")]
+    private float riseDaze = 1.5f;
     [SerializeField, Min(0f), Tooltip("Further above or below its quarry than this (m), it doesn't charge or leap.")]
     private float chargeHeight = 1.5f;
     [SerializeField, Min(0f), Tooltip("How high the leap goes, shown (m).")]
@@ -112,7 +114,13 @@ public sealed class ZombieRunner : MonoBehaviour
         if (!Runs) return;
         float dt = Time.deltaTime * (network != null ? network.Pace : 1f);
         if (dt <= 0f) return;
-        if (!CanAct()) { Stop(); return; }
+        if (!CanAct())
+        {
+            Stop();
+            // Down or reeling, it gets up dazed: no charge or leap the moment it stands.
+            if (melee != null && (melee.IsStunned || melee.IsLying)) cooldownLeft = Mathf.Max(cooldownLeft, riseDaze);
+            return;
+        }
         if (targeting == null) targeting = GetComponent<EnemyTargeting>();
         var player = targeting != null ? targeting.Player : null;
         switch (phase)

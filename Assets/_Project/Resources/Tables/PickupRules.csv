@@ -1,0 +1,3 @@
+﻿id,dropChance,dropSeconds,reach,touchReach,lookAngle,shareSeconds
+#설명,좀비가 죽을 때 뭔가 떨굴 확률 (0~1),떨군 물건이 사라지기까지 (초),[F]로 줍는 거리 (m),탄약과 돈을 지나가며 줍는 거리 (m),얼마나 바라봐야 줍는지 (도),방장이 상태를 다시 보내는 간격 (초)
+Default,0.07,90,2.2,1.3,32,2

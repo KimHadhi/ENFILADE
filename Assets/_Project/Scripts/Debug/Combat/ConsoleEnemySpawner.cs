@@ -36,7 +36,7 @@ public static class ConsoleEnemySpawner
             }
             spawned++;
         }
-        string kindName = kind == ZombieKind.Runner ? "러너 " : kind == ZombieKind.Shambler ? "셤블러 " : "";
+        string kindName = kind == ZombieKind.Runner ? "러너 " : kind == ZombieKind.Shambler ? "셤블러 " : kind == ZombieKind.Brute ? "거구 " : "";
         string label = (calm ? "조용한 " : "") + (rank == EnemyRank.Elite ? "엘리트 " : rank == EnemyRank.Named ? "네임드 " : "") + kindName;
         return count == 1 ? $"{label}적 한 마리를 소환했습니다. (웨이브 집계 제외)" : $"{label}적 {spawned}마리를 소환했습니다. (웨이브 집계 제외)";
     }

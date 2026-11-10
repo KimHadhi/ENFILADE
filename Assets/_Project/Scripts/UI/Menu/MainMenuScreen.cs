@@ -367,6 +367,9 @@ public sealed class MainMenuScreen : MonoBehaviour
 
     private void Launch(MainMenuModes.Mode mode)
     {
+        // From the character screen or the records "출격" goes back to the lobby first: the room's window opened behind the
+        // character screen (friend feedback C12).
+        if (character.IsOpen || records.IsOpen) ShowPlay();
         switch (mode)
         {
             case MainMenuModes.Mode.Host: OpenCreateRoom(); break;

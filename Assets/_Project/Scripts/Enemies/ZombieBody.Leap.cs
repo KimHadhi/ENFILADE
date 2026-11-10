@@ -16,6 +16,7 @@ public sealed partial class ZombieBody
 
     private AnimationClipPlayable leap, land;
     private ZombieRunner runner;
+    private ZombieDrop drop;
     private float leapLength, landLength, leapTime, landTime, leapWeight, landWeight, modelFeet;
     // How the body sits in the enemy as dressed (a body of its own keeps its maker's turn): the leap and the grab clips'
     // turn go on top of it.
@@ -33,7 +34,10 @@ public sealed partial class ZombieBody
     /// <summary>From Update, after ArmsTick: the leap's pose and height, and the landing.</summary>
     private void LeapTick(float dt)
     {
-        bool pouncing = combat != null && combat.IsPouncing && !down;
+        // Dropping off a ledge (ZombieDrop, C5) looks the same in the air; only a leap lifts the body off its path.
+        if (drop == null) drop = GetComponent<ZombieDrop>();
+        bool leaping = combat != null && combat.IsPouncing && !down;
+        bool pouncing = leaping || (drop != null && drop.Dropping && !down);
         if (pouncing)
         {
             if (!wasPouncing) leapTime = 0f;
@@ -52,7 +56,7 @@ public sealed partial class ZombieBody
         landWeight = Mathf.MoveTowards(landWeight, landing ? 1f : 0f, dt / LandBlend);
         leap.SetTime(Mathf.Repeat(leapTime, leapLength));
         land.SetTime(Mathf.Min(landTime, landLength));
-        Rise(pouncing);
+        Rise(leaping);
     }
 
     // Up off the ground and back down over the leap's time in the air.

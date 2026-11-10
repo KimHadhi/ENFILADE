@@ -1,0 +1,17 @@
+﻿id,kind,weapon,amount,spot,drop,name
+#설명 (맵에 놓이는 물건. 탄약과 돈은 지나가면 줍고 총·구급상자·실드는 [F]. 모두 먼저 줍는 사람 것),Gun / Ammo / Heal / Shield / Money,총이면 Data/Combat/Weapons의 이름,구급상자는 체력 · 실드는 실드 · 돈은 돈의 양. 탄약은 가진 총마다 더할 탄창 수 (처음 예비 탄약까지),줍기 자리에서 뽑힐 비중 (0이면 자리에 안 나옴),좀비가 떨굴 때 비중 (0이면 안 떨굼),보일 이름 (비우면 총 이름)
+gun_m1911,Gun,M1911,,6,1,
+gun_r08,Gun,R08,,4,1,
+gun_mx16a4,Gun,MX16A4,,5,0,
+gun_ak105,Gun,AK105,,5,0,
+gun_tr15,Gun,TR15,,4,0,
+gun_mkr9,Gun,MKR9,,4,0,
+gun_herrington,Gun,Herrington1187,,4,0,
+gun_srm12,Gun,SRM12,,3,0,
+gun_mk14,Gun,Mk14EBR,,2,0,
+gun_mx68,Gun,MX68,,2,0,
+gun_wk11,Gun,WK11Viper,,2,0,
+ammo,Ammo,,2,16,3,탄약 더미
+medkit,Heal,,40,10,3,구급상자
+shield,Shield,,25,8,2,실드 셀
+money,Money,,100,6,5,돈 뭉치

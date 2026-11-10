@@ -25,16 +25,17 @@ public enum CampaignStepKind
 /// One step of a chapter, read from Tables/CampaignSteps: the rows whose chapter is the scene's name, in their order.
 /// spot names an object under the scene's 진행 자리 (CampaignRun.spots); radius is how near counts (m); seconds is a
 /// hold's length; count is how many cans a Collect wants; horde and rate are how many enemies may be about during the
-/// step and how many come per second.
+/// step and how many come per second. music names a song in Tables/Music played while the step runs (the next step
+/// naming the same song lets it play on), and peakBoss is how many brutes come at that song's highlight (CampaignMusic).
 /// </summary>
 public sealed class CampaignStep
 {
     public const string TableName = "CampaignSteps";
 
-    public string Id, Spot, Title, Description, Done, Prompt;
+    public string Id, Spot, Title, Description, Done, Prompt, Music;
     public CampaignStepKind Kind;
     public float Radius, Seconds, Rate;
-    public int Horde, Order, Count;
+    public int Horde, Order, Count, PeakBosses;
 
     public static List<CampaignStep> For(string chapter)
     {
@@ -49,7 +50,8 @@ public sealed class CampaignStep
                 Id = id, Kind = kind, Spot = Text(row, "spot"), Title = Text(row, "title"), Description = Text(row, "description"),
                 Done = Text(row, "done"), Prompt = Text(row, "prompt"), Order = (int)Number(row, "order", 0f),
                 Radius = Number(row, "radius", 4f), Seconds = Number(row, "seconds", 0f),
-                Horde = (int)Number(row, "horde", 0f), Rate = Number(row, "rate", 0f), Count = (int)Number(row, "count", 1f)
+                Horde = (int)Number(row, "horde", 0f), Rate = Number(row, "rate", 0f), Count = (int)Number(row, "count", 1f),
+                Music = Text(row, "music"), PeakBosses = (int)Number(row, "peakBoss", 0f)
             });
         }
         steps.Sort((a, b) => a.Order.CompareTo(b.Order));

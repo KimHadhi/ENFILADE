@@ -187,6 +187,8 @@ public sealed class SettingsMenuView
         rows.Volume("이동", s.movementVolume, v => s.movementVolume = v);
         rows.Volume("목소리", s.voiceVolume, v => s.voiceVolume = v);
         rows.Volume("UI", s.uiVolume, v => s.uiVolume = v);
+        rows.Volume("음악", s.musicVolume, v => s.musicVolume = v);
+        rows.Volume("환경음", s.ambienceVolume, v => s.ambienceVolume = v);
     }
 
     private static void ControlsTab(SettingsRows rows, GameSettings s)

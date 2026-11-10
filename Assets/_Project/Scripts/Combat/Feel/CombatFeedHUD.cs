@@ -115,6 +115,13 @@ public sealed class CombatFeedHUD : MonoBehaviour
         Get().AddRow(NameOf(who), grave ? CombatUIAssets.Skull : null, Color.white, what, grave ? KillRed : settings.scoreColor, false, 0, grave);
     }
 
+    /// <summary>A warning for everyone, not about any one player (a brute has come, friend feedback C2).</summary>
+    public static void Warn(string what)
+    {
+        if (!Application.isPlaying || !GunFeelSettings.Instance.killFeed) return;
+        Get().AddRow("", CombatUIAssets.Skull, KillRed, what, KillRed, false, 0, true);
+    }
+
     private static int StreakOf(PlayerMovement who) => who != null && who.TryGetComponent(out PlayerTally tally) ? tally.Streak : 0;
 
     /// <summary>How long a kill keeps a streak alive: the score's double-kill window with some grace on top (s).</summary>

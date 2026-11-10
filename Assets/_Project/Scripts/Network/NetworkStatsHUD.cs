@@ -73,6 +73,7 @@ public sealed class NetworkStatsHUD : MonoBehaviour
         lines.Clear();
         bool relay = transport.Protocol == UnityTransport.ProtocolType.RelayUnityTransport;
         lines.Add($"{(network.IsHost ? "Host" : "Client")} on {(relay ? "Relay" : "direct")}, {network.ConnectedClientsIds.Count} players");
+        lines.Add(GameSession.LinkName);
         if (network.IsHost)
         {
             foreach (ulong client in network.ConnectedClientsIds)
@@ -101,7 +102,9 @@ public sealed class NetworkStatsHUD : MonoBehaviour
         if (elapsed <= 0f) return "측정한 시간이 없습니다.";
         string ping = pingSamples > 0 ? $"실제 핑 평균 {pingTotal / pingSamples} ms, 최고 {pingPeak} ms" : "실제 핑 없음";
         float sent = (transport.BytesSent - sentAtStart) / 1024f / elapsed, received = (transport.BytesReceived - receivedAtStart) / 1024f / elapsed;
-        return $"측정 {elapsed:F0}초: {ping} / 보냄 평균 {sent:F1}, 최고 {sentPeak:F1} kB/s / 받음 평균 {received:F1}, 최고 {receivedPeak:F1} kB/s / "
+        // Whose room and how it is carried, so a ping can be read for what it is (friend feedback C16).
+        string link = (network.IsHost ? "방장" : "참가") + " · " + GameSession.LinkName;
+        return $"측정 {elapsed:F0}초 ({link}): {ping} / 보냄 평균 {sent:F1}, 최고 {sentPeak:F1} kB/s / 받음 평균 {received:F1}, 최고 {receivedPeak:F1} kB/s / "
             + $"평균 {frames / elapsed:F0} fps, 가장 느린 프레임 {worstFrame * 1000f:F0} ms";
     }
 

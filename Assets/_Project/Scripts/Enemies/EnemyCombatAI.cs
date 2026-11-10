@@ -47,8 +47,10 @@ public sealed class EnemyCombatAI : MonoBehaviour
     [SerializeField, Min(.05f)] private float pounceWindup = .35f;
     [Tooltip("A leap catches whoever is still within this of where they stood as it began (m).")]
     [SerializeField, Min(.1f)] private float pounceRadius = 1.1f;
-    // The bite's cue, pitched down from the swing's so it sounds heavier; a grab's a little lower too.
-    private const float BitePitch = .72f, GrabPitch = .85f, PouncePitch = 1.2f;
+    [Tooltip("A brute's blow throws whoever it lands on this fast away (m/s) and this fast up (ZombieKinds knock, knockUp). 0 throws no one.")]
+    [SerializeField] private Vector2 slam;
+    // The bite's cue, pitched down from the swing's so it sounds heavier; a grab's a little lower too; a brute's lowest.
+    private const float BitePitch = .72f, GrabPitch = .85f, PouncePitch = 1.2f, SlamPitch = .6f;
     // Moving away from it faster than this (m/s), a player isn't grabbed but clawed.
     private const float AwaySpeed = 1f;
     private AttackMove move;
@@ -97,6 +99,18 @@ public sealed class EnemyCombatAI : MonoBehaviour
         this.pounces = pounces;
         pounceWindup = Mathf.Max(.05f, windup);
         pounceRadius = Mathf.Max(.1f, radius);
+    }
+
+    /// <summary>A brute's blow (ZombieType): how fast it throws the player away and up (m/s); 0 throws no one.</summary>
+    internal void SetSlam(float away, float up) => slam = new Vector2(Mathf.Max(0f, away), Mathf.Max(0f, up));
+
+    /// <summary>How this one's blow throws a player it lands on, from where it stands (zero when it throws no one).</summary>
+    public Vector3 SlamVelocity(Vector3 victim)
+    {
+        if (slam.x <= 0f && slam.y <= 0f) return Vector3.zero;
+        Vector3 away = Vector3.ProjectOnPlane(victim - transform.position, Vector3.up);
+        away = away.sqrMagnitude > 1e-4f ? away.normalized : transform.forward;
+        return away * slam.x + Vector3.up * slam.y;
     }
 
     /// <summary>A shambler's grab (ZombieType): whether it grabs, and the grab's windup.</summary>
@@ -225,8 +239,11 @@ public sealed class EnemyCombatAI : MonoBehaviour
     {
         preparing = true; timer = 0f;
         // A shambler grabs whoever isn't getting away from it; only an opening attack may be a bite.
+        // Nobody on a ladder or mid-climb is grabbed: held there, they could never climb on while the shambler kept
+        // grabbing again (friend feedback C9); they are clawed instead. (A copy's state is mirrored, so this holds for
+        // players on other PCs too.)
         move = Lying(player) ? AttackMove.Feed
-            : grabs && !MovingAway() ? AttackMove.Grab
+            : grabs && !MovingAway() && !player.IsParkour ? AttackMove.Grab
             : comboIndex == 0 && biteShare > 0f && Random.value < biteShare ? AttackMove.Bite : AttackMove.Swing;
         lockedAim = player.transform.position + Vector3.up * AimHeightFor(player);
         UpdateIndicator(true);
@@ -309,7 +326,8 @@ public sealed class EnemyCombatAI : MonoBehaviour
             lockedAim,
             direction,
             gameObject, !holds, 0f, comboIndex >= Mathf.Max(1, comboHits) - 1,
-            method: move == AttackMove.Grab ? DamageMethod.Grab : move == AttackMove.Feed ? DamageMethod.Feed : DamageMethod.Other,
+            method: move == AttackMove.Grab ? DamageMethod.Grab : move == AttackMove.Feed ? DamageMethod.Feed
+                : slam.x > 0f || slam.y > 0f ? DamageMethod.Slam : DamageMethod.Other,
             isFatal: fatalHit || move == AttackMove.Bite
         );
 
@@ -341,11 +359,11 @@ public sealed class EnemyCombatAI : MonoBehaviour
     }
 
     private float CuePitch => move == AttackMove.Bite ? BitePitch : move == AttackMove.Grab || move == AttackMove.Feed ? GrabPitch
-        : move == AttackMove.Pounce ? PouncePitch : 1f;
+        : move == AttackMove.Pounce ? PouncePitch : slam.x > 0f || slam.y > 0f ? SlamPitch : 1f;
 
-    // Someone lying on the ground, or pinned there by a runner, not down: they are eaten (being down has its own
-    // bleeding out, PlayerLife).
-    private static bool Lying(PlayerMovement target) => target != null && (target.IsLyingDown || target.IsPinned) && !target.IsDowned;
+    // Someone lying on the ground, pinned there by a runner, or down: they are eaten. Down, the eating kills them fast
+    // (PlayerHold downedBiteDamage; friend feedback C8: being down was safe from the zombies).
+    private static bool Lying(PlayerMovement target) => target != null && (target.IsLyingDown || target.IsPinned || target.IsDowned);
 
     // Low at whoever lies on the ground (or is down, or pinned), where a swing at standing height passed over them.
     private float AimHeightFor(PlayerMovement target)

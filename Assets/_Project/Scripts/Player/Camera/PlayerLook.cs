@@ -180,7 +180,7 @@ public sealed class PlayerLook : MonoBehaviour
             Vector3 direction = Vector3.ProjectOnPlane(movement.SlideDirection, Vector3.up);
             if (direction.sqrMagnitude < .0001f) return candidate;
             if (body == null) body = GetComponent<PlayerBody>();
-            float limit = body != null ? body.SlideLookYawLimit : 75f;
+            float limit = body != null ? body.SlideViewYawLimit : 120f;
             // A slide carrying the player backwards (wall bounce, backward entry) keeps facing the view.
             return WithinArc(PlayerBody.SlideFacing(direction, transform.eulerAngles.y), limit, candidate);
         }

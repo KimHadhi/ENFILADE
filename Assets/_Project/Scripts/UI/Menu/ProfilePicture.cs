@@ -8,7 +8,8 @@ using UnityEngine.UI;
 /// <summary>
 /// The player's own profile picture: any image they choose (PNG or JPG, through FilePicker), cut to a centred square,
 /// shrunk to 256 px and kept as profile.png in the game's save folder. With none chosen, a profile shows the first
-/// letter of the name on pink instead. Only this PC sees it for now.
+/// letter of the name on pink instead. In a room a small copy goes to the others (PlayerNetworkPose), whose teammate
+/// cards show it (TeamHealthPanel).
 /// </summary>
 public static class ProfilePicture
 {
@@ -93,6 +94,47 @@ public static class ProfilePicture
             image.color = picture != null ? Color.white : KitStyle.Accent;
         }
         if (letter != null) letter.text = picture != null ? "" : Initial(name);
+    }
+
+    /// <summary>
+    /// The picture small enough to send to the room (friend feedback C14): a <paramref name="side"/> px JPG kept under
+    /// <paramref name="most"/> bytes, or an empty array when there is no picture.
+    /// </summary>
+    public static byte[] SmallJpg(int side = 64, int most = 5000)
+    {
+        var picture = Current;
+        if (picture == null) return Array.Empty<byte>();
+        var target = RenderTexture.GetTemporary(side, side, 0, RenderTextureFormat.ARGB32);
+        var previous = RenderTexture.active;
+        var small = new Texture2D(side, side, TextureFormat.RGB24, false);
+        try
+        {
+            Graphics.Blit(picture, target);
+            RenderTexture.active = target;
+            small.ReadPixels(new Rect(0f, 0f, side, side), 0, 0);
+            small.Apply();
+            for (int quality = 75; ; quality -= 15)
+            {
+                byte[] bytes = small.EncodeToJPG(quality);
+                if (bytes.Length <= most || quality <= 30) return bytes.Length <= most ? bytes : Array.Empty<byte>();
+            }
+        }
+        finally
+        {
+            RenderTexture.active = previous;
+            RenderTexture.ReleaseTemporary(target);
+            UnityEngine.Object.Destroy(small);
+        }
+    }
+
+    /// <summary>A picture sent by someone else (SmallJpg), or null for none or one that can't be read.</summary>
+    public static Texture2D FromBytes(byte[] bytes)
+    {
+        if (bytes == null || bytes.Length == 0) return null;
+        var texture = new Texture2D(2, 2) { wrapMode = TextureWrapMode.Clamp };
+        if (texture.LoadImage(bytes)) return texture;
+        UnityEngine.Object.Destroy(texture);
+        return null;
     }
 
     /// <summary>The first letter of <paramref name="name"/> (a whole character, even a combined one), or "?".</summary>

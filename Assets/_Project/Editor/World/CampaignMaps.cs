@@ -150,6 +150,26 @@ public static class CampaignMaps
         b.EnemySpawn("공사장 북서", new Vector3(176f, 0f, 20f));
         b.EnemySpawn("경사로 아래", new Vector3(186f, 0f, -16f));
 
+        // Background sound by area (user, 2026-11-10; the rows are in Tables/Ambience, the roofs keep the map's own): the
+        // street below the roofs, the start room, the alley with its bins and the shutter's passage, the corner shop.
+        b.Ambience("Ch1.Street", -30f, 240f, -1f, 7f, -50f, 50f, 0);
+        b.Ambience("Ch1.SafeRoom", 2f, 9f, 18f, 21f, -3f, 3f);
+        b.Ambience("Ch1.Alley", 104f, 141f, -1f, 7f, -4f, 4f);
+        b.Ambience("Ch1.Shop", 145f, 157f, 0f, 4.5f, 10f, 20f);
+
+        // Field pickups (6D): a gun at the start and on the last roof, supplies along the way, more for the alley's hold
+        // and the finale, a gun and supplies in the rest stop.
+        b.Pickup(new Vector3(6.5f, 18f, 2f), PickupSpot.Roll.Gun);
+        b.Pickup(new Vector3(8f, 18f, -2f));
+        b.Pickup(new Vector3(40f, 19.4f, 1.5f));
+        b.Pickup(new Vector3(72f, 13f, 2f));
+        b.Pickup(new Vector3(95f, 12f, 2f), PickupSpot.Roll.Gun);
+        b.Pickup(new Vector3(110f, 0f, 1.5f));
+        b.Pickup(new Vector3(124f, 0f, 2f));
+        b.Pickup(new Vector3(152.5f, 0f, 13.5f));
+        b.Pickup(new Vector3(148f, 0f, 13f), PickupSpot.Roll.Gun);
+        b.Pickup(new Vector3(172f, 0f, 2f));
+        b.Pickup(new Vector3(191f, 14f, -2f));
         b.Finish("1장 옥상 탈출을 지었어요 (Scenes/Campaign/Ch1_Rooftops). 메인 메뉴의 맵 목록에도 나와요.\n" +
                  "길: 안전가옥 → 옥상 틈 점프 → 엘리베이터실 벽 오르기 → 집라인 → 철봉 → 골목으로 내려가기 → 셔터 → 편의점 → 공사장 컨테이너·비계·사다리 → 헬기 착륙장.");
     }
@@ -254,6 +274,25 @@ public static class CampaignMaps
         b.EnemySpawn("검문소 북", new Vector3(222f, 0f, 12f));
         b.EnemySpawn("주유소 뒤", new Vector3(165f, 0f, -18f));
 
+        // Background sound by area (the deck keeps the map's own): the road and the pit below, the shade under the deck,
+        // the filling station's canopy and shop, the guard post, the subway entrance.
+        b.Ambience("Ch2.Below", -20f, 240f, -1f, 6.5f, -40f, 40f, 0);
+        b.Ambience("Ch2.UnderDeck", -19f, 120f, -1f, 7f, -7f, 7f);
+        b.Ambience("Ch2.Canopy", 140f, 156f, 0f, 5f, 8f, 20f);
+        b.Ambience("Ch2.Shop", 158f, 168f, 0f, 4f, 12f, 22f);
+        b.Ambience("Ch2.GuardPost", 207f, 213f, 0f, 3f, 4f, 10f);
+        b.Ambience("Ch2.SubwayEntrance", 225f, 233f, 0f, 3.5f, -4f, 4f);
+
+        // Field pickups (6D).
+        b.Pickup(new Vector3(6f, Deck, -1f), PickupSpot.Roll.Gun);
+        b.Pickup(new Vector3(66f, Deck, 2f));
+        b.Pickup(new Vector3(114f, Deck, 2f));
+        b.Pickup(new Vector3(128f, 0f, 2f), PickupSpot.Roll.Gun);
+        b.Pickup(new Vector3(163f, 0f, 15.5f));
+        b.Pickup(new Vector3(161f, 0f, 16f), PickupSpot.Roll.Gun);
+        b.Pickup(new Vector3(198f, 0f, 2f));
+        b.Pickup(new Vector3(206f, 0f, 2f));
+        b.Pickup(new Vector3(227f, 0f, 2f));
         b.Finish("2장 막힌 고가도로를 지었어요 (Scenes/Campaign/Ch2_Overpass).\n" +
                  "길: 헬기 잔해 → 막힌 차들 → 뒤집힌 트럭 → 끊어진 끝에서 버스로 뛰어내리기(돌아갈 수 없음) → 주유소 → 톨게이트 → 초소 무전 → 버티기 → 지하철 입구.");
     }
@@ -403,6 +442,22 @@ public static class CampaignMaps
         b.EnemySpawn("광장 남동", new Vector3(342f, Bank, -20f));
         b.EnemySpawn("광장 북동", new Vector3(342f, Bank, 20f));
 
+        // Background sound by area (the platform hall, the tunnels and the depot keep the map's machinery hum): the
+        // concourse, the depot office, the far bank out in the open.
+        b.Ambience("Ch3.Concourse", -9f, 30f, -1f, 5f, -12f, 12f);
+        b.Ambience("Ch3.Office", 172f, 182f, 0f, 3f, 10f, 18f);
+        b.Ambience("Ch3.FarBank", 322f, 345f, 7f, 40f, -25f, 25f);
+
+        // Field pickups (6D).
+        b.Pickup(new Vector3(-3f, 0f, 1.5f));
+        b.Pickup(new Vector3(75f, 1.1f, 4f), PickupSpot.Roll.Gun);
+        b.Pickup(new Vector3(156f, 0f, 1f));
+        b.Pickup(new Vector3(172f, 0f, 0f));
+        b.Pickup(new Vector3(177f, 0f, 13f));
+        b.Pickup(new Vector3(176f, 0f, 15f), PickupSpot.Roll.Gun);
+        b.Pickup(new Vector3(200f, 0f, -2f));
+        b.Pickup(new Vector3(300f, 0f, 1f));
+        b.Pickup(new Vector3(333f, Bank, 2f));
         b.Finish("3장 지하철을 지었어요 (Scenes/Campaign/Ch3_Subway).\n" +
                  "길: 대합실 → 승강장 → 어두운 터널 → 정비창 사무실(휴게소) → 연료통 4개를 발전기에 → 방수문 → 강 밑 터널 → 비상 계단 → 신호탄 → 버티기 → 보트.");
     }

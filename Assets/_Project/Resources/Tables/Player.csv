@@ -143,11 +143,13 @@ Hold.joinSpeedup,0.5,달라붙은 러너 하나마다 죽는 속도가 이만큼
 Hold.pinBiteDamage,2,깔린 동안 러너 하나가 물 때마다(biteEvery) 주는 피해. 아픈 게 보이게만. 죽이는 건 pinSeconds
 Hold.pinKnock,2.5,도약에 맞아 등으로 넘어질 때 뒤로 미끄러지는 속도(m/s)
 Hold.pinJolt,10;8,깔릴 때 시점이 흔들리는 정도(도; 위아래;기울기)
+Hold.downedBiteDamage,25,쓰러진 플레이어를 좀비 하나가 뜯어먹을 때 초당 깎는 쓰러진 체력(쓰러진 체력은 Downed.csv의 downedHealth). 친구 피드백 C8
+Hold.slamJolt,16;10,거구 주먹에 날아갈 때 시점이 흔들리는 정도(도; 위아래;기울기). 친구 피드백 C2
 Counter.window,0.3,G&B-3 밀치기 카운터. 섐블러 잡기나 러너 도약의 예고가 이만큼(초) 남았을 때 밀치기(V)가 닿으면 카운터. 누구를 노린 잡기든 된다(동료 구하기)
 Counter.grace,0.2,밀치기를 누르고 이 시간(초) 안에 잡기·도약이 내게 닿아도 카운터(그쪽을 보고 있었으면). 지연이나 공중의 러너에 살짝 못 미친 밀치기를 살려준다
 Counter.graceAngle,70,그 경우 밀칠 때 바라본 방향에서 이 각도(좌우 도) 안에 적이 있어야 한다
 Counter.pounceKnockdown,2.5,카운터당한 러너가 공중에서 바닥에 처박혀 누워 있는 시간(초)
-Counter.pounceDamageShare,0.5,카운터당한 러너가 잃는 체력 비율. 잡기를 카운터당한 섐블러는 자세가 무너져 바로 처형(F)할 수 있다
+Counter.pounceDamageShare,1,카운터당한 러너가 잃는 체력 비율(1이면 한 방에 죽는다. 친구 피드백 C6). 잡기를 카운터당한 섐블러는 자세가 무너져 바로 처형(F)할 수 있다
 Counter.hitStopSeconds,0.22,카운터 순간 시간이 멈추다시피 하는 시간(실제 초)
 Counter.hitStopScale,0.03,그때의 시간 배속
 Counter.slowSeconds,0.55,그다음 느려지는 시간(실제 초)
@@ -158,6 +160,9 @@ Counter.cameraTrauma,0.35,흔들림
 Counter.burstGrowth,1.6,카운터 폭발(자세 붕괴 패링 연출)의 크기 배수
 Counter.contactDistance,0.7,폭발이 터지는 곳: 눈앞에서 적 쪽으로 이 거리(m)
 Counter.bannerSeconds,0.85,COUNTER 연출 시간(실제 초). 세 프레임 화면 반전, 핑크 사선, 사선에 잘린 COUNTER가 맞붙었다가 갈라지며 빠진다.
+Teammate.radius,0.15,팀원과 나란히 설 때 각자 몸 반지름(m). 두 사람 가운데 사이가 이것의 두 배까지 붙는다. 이동용 몸통(0.3)끼리는 옆으로는 통과하고 서로 비켜선다
+Teammate.pushSpeed,3,팀원 몸에서 비켜서는 빠르기(m/s)
+Teammate.aboveShare,0.7,발이 상대 키의 이 비율보다 위에 있으면 위아래로 겹친 것: 예전처럼 부딪혀서 팀원 머리 위에 올라설 수 있다
 Shield.color,#A6F2FF,내 실드의 색. 실드 피격 벌집 빛·방향 표시·실드가 깨질 때 유리판. 체력바 실드 띠와 같은 하늘색
 Shield.hitStrength,0.85,실드가 피해를 받을 때 맞은 쪽 화면 가장자리에 켜지는 벌집 빛의 밝기(0~1). 0이면 끈다. 실드만 맞은 피격은 피가 번지지 않는다(에이펙스 레전드 참고)
 Shield.hitSeconds,0.32,그 빛이 사라지는 시간(실제 초)
@@ -257,7 +262,7 @@ Ability.stepDodgeRecognitionPadding,0.12,스텝 회피 판정 때 몸 반경에 
 Ability.microInvulnerability,0.08,Q/E 직후 공격을 회피로 인정하는 시간(초)
 Ability.dodgeCooldown,0.55,회피 공통 재사용 대기(초). 회피에 성공하면 바로 초기화
 Ability.stepDodgeCooldown,1.25,스텝 회피에 실패한 뒤 다음 회피까지(초)
-Ability.leanAngle,10,Q/E 기울이기 화면 기울기(도)
+Ability.leanAngle,18,Q/E 기울이기 화면 기울기(도). 몸이 기우는 만큼 화면도 기울게 10에서 올림(친구 피드백 C10)
 Ability.leanOffset,0.35,Q/E 기울이기 옆 이동 거리(m)
 Ability.leanSharpness,10,기울이기 반응 빠르기
 # 능력: 턱·볼트·맨틀,,
@@ -533,7 +538,7 @@ Body.animationViewTime,0.1,카메라에 더할 애니메이션 회전만 부드�
 Body.eyeViewAhead,0.02,카메라를 눈보다 이만큼 앞에 둔다(m). 카메라는 항상 눈을 따라간다
 Body.eyeAdjust,0;0,캐릭터의 눈 위치가 어긋날 때 옮기는 값: 위(m);앞(m). 얼굴 안쪽이 보이면 앞을 늘리고, 눈보다 높거나 낮게 보이면 위를 조절
 Body.headNearClip,0.05,내 머리카락 보기를 켰을 때 카메라에서 이보다 가까운 것은 잘라 낸다(m)
-Body.slideTurnLimit,75,슬라이딩 시선의 좌우 제한 각도(도). 하체는 이동 방향에 고정하고 상체만 시선을 따른다
+Body.slideTurnLimit,120,슬라이딩 시선의 좌우 제한 각도(도). 하체는 이동 방향에 고정하고 상체는 90도까지 돌고 나머지는 머리가 돈다. 75는 좁았다(친구 피드백 C11)
 Body.slidePitchLimits,40;55,슬라이딩 시선의 위;아래 제한 각도(도). 상체와 카메라가 같은 범위를 쓴다
 Body.heavyLandingTurnLimit,90,크게 착지해 쓰러져 있는 동안 몸이 향한 쪽에서 좌우로 돌아볼 수 있는 각도(도). 더 돌면 카메라가 자기 머리를 뚫어 본다
 Body.barTurnLimit,45,봉에 매달려 몸이 향한 쪽에서 좌우로 돌아볼 수 있는 각도(도). Beatrun의 봉과 같은 45

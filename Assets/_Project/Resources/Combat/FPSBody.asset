@@ -26,7 +26,7 @@ MonoBehaviour:
   armsModel: {fileID: 919132149155446097, guid: 405129f43f2032e4bbed300529635549, type: 3}
   guns:
   - weapon: {fileID: 11400000, guid: 23002ebab5eaea7478f88c9de57f8dbf, type: 2}
-    prefab: {fileID: 4032086537580138804, guid: f46dcf168264251498385ab526af84b1, type: 3}
+    prefab: {fileID: 5523781235564577234, guid: e4eef436171688145a768373dfc5903f, type: 3}
     profile: {fileID: 11400000, guid: df99762b7fc14aa0b6ae7d9abe1a51bd, type: 2}
     sourcePose: {fileID: 7400000, guid: 78d5e57c5e6d5b1479f2831ae162c9af, type: 2}
     sourceReloadTactical: {fileID: 7400000, guid: af9f8c0e8cb05d74d80d1e5c61d822f7, type: 2}
@@ -52,7 +52,7 @@ MonoBehaviour:
     partsHolster: {fileID: 0}
     partsInspect: {fileID: 0}
   - weapon: {fileID: 11400000, guid: 60c6069bb5f5ec044a22a44dbd9829a9, type: 2}
-    prefab: {fileID: 2249710175363591869, guid: 0b2f43c40cdaac64b8f53036af646bff, type: 3}
+    prefab: {fileID: 2639480700390153425, guid: 5316adfc06baa114599e8bdeec3916be, type: 3}
     profile: {fileID: 11400000, guid: 845c4b2f5eef4657a01178a08e545621, type: 2}
     sourcePose: {fileID: 7400000, guid: 240293a1bac37b34a98835cb25696d43, type: 2}
     sourceReloadTactical: {fileID: 7400000, guid: da33efa37a2809b478a7eb4835c56d5e, type: 2}

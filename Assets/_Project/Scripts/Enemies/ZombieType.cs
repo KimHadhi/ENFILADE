@@ -2,8 +2,11 @@ using System;
 using UnityEngine;
 using UnityEngine.AI;
 
-/// <summary>What kind of zombie it is (ZombieType). Shambler is 0, so an older report reads as one.</summary>
-public enum ZombieKind : byte { Shambler, Runner }
+/// <summary>
+/// What kind of zombie it is (ZombieType). Shambler is 0, so an older report reads as one. Brute: the boss that comes
+/// at a song's highlight (friend feedback C2), never picked at random.
+/// </summary>
+public enum ZombieKind : byte { Shambler, Runner, Brute }
 
 /// <summary>
 /// Multiplayer plan stage 4D-1, made Guts & Blackpowder's at the user's word: what kind of zombie it is. A shambler
@@ -62,6 +65,14 @@ public sealed class ZombieType : MonoBehaviour
         public float pounceRadius = 1.1f;
         [Tooltip("Its health, as a share of the enemy row's; 0 keeps what it has.")]
         public float healthShare;
+        [Tooltip("Its body's size against the pack's own (1 as it comes; a brute stands bigger).")]
+        public float scale = 1f;
+        [Tooltip("A blow that lands throws the player this fast away from it (m/s); 0 throws no one.")]
+        public float knock;
+        [Tooltip("And this fast up (m/s), so they fly and land on their back.")]
+        public float knockUp;
+        [Tooltip("Shoves, knockdowns, posture breaks, guard breaks, executions and bullet flinches don't move it; a parry stuns it only briefly.")]
+        public bool steadfast;
     }
 
     // Guts & Blackpowder's shambler, its 14 studs a second against a player's walking 16 put to our walk (4.9 m/s).
@@ -78,14 +89,26 @@ public sealed class ZombieType : MonoBehaviour
     };
     private readonly Numbers crawler = new Numbers
         { speed = .7f, acceleration = 3f, angularSpeed = 90f, damage = 8f, windup = .6f, attackInterval = 1.6f, aimHeight = .35f, height = .8f };
+    // C2's boss: half again as big, keeps up with a walking player, a slow readable swing that throws whoever it lands
+    // on, and health for a whole team's fire.
+    private readonly Numbers brute = new Numbers
+    {
+        speed = 5.2f, acceleration = 10f, angularSpeed = 140f, damage = 30f, windup = .65f, attackInterval = 1.8f, aimHeight = 1.1f,
+        attackRange = 2.6f, approachShare = .7f, healthShare = 30f, scale = 1.45f, knock = 9f, knockUp = 4.5f, steadfast = true
+    };
 
     private NavMeshAgent agent;
     private EnemyCombatAI combat;
     private ZombieMind mind;
     private EnemyNetwork network;
     private EnemyHealth health;
+    private MeleeCombatTarget melee;
+    private ZombieBody body;
 
     public ZombieKind Kind { get; private set; }
+    /// <summary>Its body's size against the pack's own (ZombieBody).</summary>
+    public float Scale => Mathf.Clamp((Kind == ZombieKind.Brute ? brute : Current).scale, .5f, 3f);
+    private Numbers Current => Crawls ? crawler : Kind == ZombieKind.Runner ? runner : Kind == ZombieKind.Brute ? brute : shambler;
     /// <summary>Lost a leg: it crawls with the Crawler numbers, whatever its kind.</summary>
     public bool Crawls { get; private set; }
     /// <summary>Its height crawling (m), for its capsule (ZombieBody.Crawl.cs).</summary>
@@ -99,13 +122,18 @@ public sealed class ZombieType : MonoBehaviour
         mind = GetComponent<ZombieMind>();
         network = GetComponent<EnemyNetwork>();
         health = GetComponent<EnemyHealth>();
+        melee = GetComponent<MeleeCombatTarget>();
+        body = GetComponent<ZombieBody>();
         // A runner's charge and leap; it does nothing for other kinds.
         if (GetComponent<ZombieRunner>() == null) gameObject.AddComponent<ZombieRunner>();
         // Its place in a crowd, its body's size, and stepping back out of players (stage 4E).
         if (GetComponent<ZombieCrowd>() == null) gameObject.AddComponent<ZombieCrowd>();
+        // Down ledges and across gaps on the walk mesh's links (friend feedback C5).
+        if (GetComponent<ZombieDrop>() == null) gameObject.AddComponent<ZombieDrop>();
         GameTables.BindNested(TableName, nameof(ZombieKind.Shambler), this, shambler);
         GameTables.BindNested(TableName, nameof(ZombieKind.Runner), this, runner);
         GameTables.BindNested(TableName, "Crawler", this, crawler);
+        GameTables.BindNested(TableName, nameof(ZombieKind.Brute), this, brute);
         GameTables.Reloaded += Reapply;
         float total = Mathf.Max(0f, shambler.share) + Mathf.Max(0f, runner.share);
         Kind = total > 0f && UnityEngine.Random.value * total < Mathf.Max(0f, runner.share) ? ZombieKind.Runner : ZombieKind.Shambler;
@@ -142,7 +170,7 @@ public sealed class ZombieType : MonoBehaviour
 
     private void Apply()
     {
-        var numbers = Crawls ? crawler : Kind == ZombieKind.Runner ? runner : shambler;
+        var numbers = Current;
         if (agent != null)
         {
             agent.speed = numbers.speed;
@@ -157,8 +185,14 @@ public sealed class ZombieType : MonoBehaviour
             combat.SetGrab(numbers.grabs, numbers.grabWindup);
             combat.SetReach(numbers.attackRange, numbers.approachShare);
             combat.SetPounce(numbers.pounces, numbers.pounceWindup, numbers.pounceRadius);
+            combat.SetSlam(numbers.knock, numbers.knockUp);
         }
         if (health != null && numbers.healthShare > 0f) health.SetHealthShare(numbers.healthShare);
         if (mind != null) mind.SetChaseSpeed(numbers.speed);
+        // A brute that loses a leg crawls but stays a brute: firm and big.
+        var kept = Kind == ZombieKind.Brute ? brute : numbers;
+        if (melee != null) melee.Steadfast = kept.steadfast;
+        if (body == null) body = GetComponent<ZombieBody>();
+        if (body != null) body.Regrow();
     }
 }

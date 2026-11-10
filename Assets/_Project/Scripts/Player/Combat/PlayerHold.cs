@@ -34,6 +34,8 @@ public sealed class PlayerHold : MonoBehaviour
     private int eatenAt = 4;
     [SerializeField, Tooltip("A jolt to the view as a grab lands (degrees; pitch;roll).")]
     private Vector2 grabJolt = new Vector2(4f, 5f);
+    [SerializeField, Min(0f), Tooltip("Down on the ground, each zombie eating them takes this much a second from what holds them on the ground (friend feedback C8).")]
+    private float downedBiteDamage = 25f;
     [Header("Runner's pin (G&B-2)")]
     [SerializeField, Min(.1f), Tooltip("Pinned at full health, the runner's bite kills after this long (s).")]
     private float pinSeconds = 5f;
@@ -49,6 +51,8 @@ public sealed class PlayerHold : MonoBehaviour
     private float pinKnock = 2.5f;
     [SerializeField, Tooltip("A jolt to the view as a runner pins them (degrees; pitch;roll).")]
     private Vector2 pinJolt = new Vector2(10f, 8f);
+    [SerializeField, Tooltip("A jolt to the view as a brute's blow throws them (degrees; pitch;roll).")]
+    private Vector2 slamJolt = new Vector2(16f, 10f);
 
     /// <summary>
     /// Pinned by a runner, how far into getting up off the back (the share of Ability.backLandingTime) they stay lying
@@ -124,8 +128,21 @@ public sealed class PlayerHold : MonoBehaviour
     private void OnHit(DamageHit hit, DamageResult result)
     {
         if (result != DamageResult.Damaged || hit.Source == null) return;
+        // A brute's blow (friend feedback C2) throws them: they fly and land on their back.
+        if (hit.Method == DamageMethod.Slam)
+        {
+            var thrower = hit.Source.GetComponentInParent<EnemyCombatAI>();
+            if (thrower != null && receiver.IsAlive && !receiver.IsDowned)
+            {
+                LetAllGo();
+                player.KnockBack(thrower.SlamVelocity(transform.position));
+                Jolt(slamJolt);
+            }
+            return;
+        }
         if (hit.Method != DamageMethod.Grab && hit.Method != DamageMethod.Feed && hit.Method != DamageMethod.Pounce) return;
-        if (!receiver.IsAlive || receiver.IsDowned) return;
+        // Down, only eating takes hold (C8): a zombie kneels over them and eats.
+        if (!receiver.IsAlive || (receiver.IsDowned && hit.Method != DamageMethod.Feed)) return;
         var enemy = hit.Source.GetComponentInParent<EnemyHealth>();
         if (hit.Method == DamageMethod.Pounce) Pin(enemy);
         else Grab(enemy, hit.Method == DamageMethod.Feed);
@@ -134,6 +151,8 @@ public sealed class PlayerHold : MonoBehaviour
     private void Grab(EnemyHealth enemy, bool feeding)
     {
         if (enemy == null || !enemy.IsAlive) return;
+        // On a ladder, a ledge or mid-vault nothing takes hold: held there, they could never climb on (C9).
+        if (!feeding && player.IsParkour) return;
         grabs[enemy] = grabs.TryGetValue(enemy, out int times) ? times + 1 : 1;
         int at = IndexOf(enemy);
         if (at >= 0)
@@ -190,7 +209,19 @@ public sealed class PlayerHold : MonoBehaviour
     private void Update()
     {
         if (holders.Count == 0) return;
-        if (!receiver.IsAlive || receiver.IsDowned) { LetAllGo(); return; }
+        if (!receiver.IsAlive) { LetAllGo(); return; }
+        // Gone down: a standing grab and a runner's pin let go (a pin would hold them in its own pose, not lying down);
+        // whatever kneels eating them stays on them and eats faster.
+        if (receiver.IsDowned)
+        {
+            for (int i = holders.Count - 1; i >= 0; i--)
+                if (holders[i].Enemy == null || !holders[i].Enemy.IsAlive || !holders[i].Feeding || holders[i].Pinning) Release(i);
+            if (holders.Count == 0) return;
+            if ((biteLeft -= Time.deltaTime) > 0f) return;
+            biteLeft = biteEvery;
+            Bite();
+            return;
+        }
         // Time, death, a stun or a knockdown let a shambler go. A runner pinning them, only its death or a teammate
         // knocking it down (they can't reach it themselves, but for the perk).
         for (int i = holders.Count - 1; i >= 0; i--)
@@ -234,7 +265,7 @@ public sealed class PlayerHold : MonoBehaviour
         {
             if (holder.Enemy == null) continue;
             if (!together && !holder.Feeding && (!grabs.TryGetValue(holder.Enemy, out int times) || times <= regrabsToBite)) continue;
-            float damage = holder.Pinning ? pinBiteDamage : biteDamage * biteEvery;
+            float damage = receiver.IsDowned ? downedBiteDamage * biteEvery : holder.Pinning ? pinBiteDamage : biteDamage * biteEvery;
             if (damage <= 0f) continue;
             receiver.ReceiveHit(new DamageHit(DamageHit.NewAttackId(), damage, DamageKind.Attack,
                 transform.position + Vector3.up * 1.4f, transform.position - holder.Enemy.transform.position, holder.Enemy.gameObject,

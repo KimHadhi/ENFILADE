@@ -88,7 +88,14 @@ public sealed partial class ZombieBody
             capsule.center = new Vector3(capsule.center.x, feetHeight + capsule.height * .5f, capsule.center.z);
         }
         // Losing the leg brings it down; the host says so, and its copies follow the fall.
-        if (fall && !down && target != null && (network == null || !network.IsCopy)) target.KnockDown(transform.forward, CrawlFall);
+        // A brute (steadfast, friend feedback C2) can't be knocked down, but a lost leg still brings it down.
+        if (fall && !down && target != null && (network == null || !network.IsCopy))
+        {
+            bool firm = target.Steadfast;
+            target.Steadfast = false;
+            target.KnockDown(transform.forward, CrawlFall);
+            target.Steadfast = firm;
+        }
     }
 
     /// <summary>From Update, after Move: crawl idle and forward by its speed, the arms keeping the clip's pace.</summary>

@@ -4,8 +4,8 @@ using UnityEngine;
 public enum DamageKind { Attack, Fall, Execution }
 /// <summary>Countered: a grab or a leap met by a timed shove (ShoveCounter).</summary>
 public enum DamageResult { Ignored, Duplicate, Evaded, Damaged, Blocked, Parried, Invulnerable, Countered }
-/// <summary>How the hit was delivered. Presentation only (hit and kill sounds).</summary>
-public enum DamageMethod { Other, Bullet, Shove, Grab, Feed, Pounce }
+/// <summary>How the hit was delivered. Presentation only (hit and kill sounds). Slam: a brute's blow that throws the player (PlayerHold).</summary>
+public enum DamageMethod { Other, Bullet, Shove, Grab, Feed, Pounce, Slam }
 
 /// <summary>One ID per attack activation, shared by all of its hitboxes.</summary>
 public readonly struct DamageHit
