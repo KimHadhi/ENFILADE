@@ -17,7 +17,8 @@ public static class KitSound
     /// chapter is escaped (ChapterEndBanner). Stealth (StealthMarkersHUD, CampaignRun): Suspect, a zombie stopped to look
     /// this player's way; Spotted, one woke on them; Unseen, a stretch got through without being found.
     /// </summary>
-    public enum Cue { Buy, Refuse, Alert, PickAmmo, PickHeal, PickShield, PickMoney, PickGun, Escape, Suspect, Spotted, Unseen }
+    /// Charge: an Assault's CHARGE sounded (ClassKit).
+    public enum Cue { Buy, Refuse, Alert, PickAmmo, PickHeal, PickShield, PickMoney, PickGun, Escape, Suspect, Spotted, Unseen, Charge }
 
     private const string BankId = "UI";
     private const int Rate = 44100;
@@ -78,6 +79,7 @@ public static class KitSound
             Cue.Suspect => Wonder(),
             Cue.Spotted => Found(),
             Cue.Unseen => Slip(),
+            Cue.Charge => Rally(),
             _ => Buzz()
         };
         var clip = AudioClip.Create("Kit " + cue, data.Length, 1, Rate, false);
@@ -282,6 +284,30 @@ public static class KitSound
         Bell(data, .09f, 1568f, .26f, .32f);
         Bell(data, .18f, 2349f, .45f, .36f);
         return Finish(data, .6f);
+    }
+
+    // A CHARGE: a drum's thump under a horn call climbing a fifth, the second note held, as an officer's call to charge.
+    private static float[] Rally()
+    {
+        var data = new float[(int)(Rate * .9f)];
+        Knock(data, 0f, 90f, .14f, 1f);
+        Click(data, new System.Random(5), 0f, .006f, .5f);
+        Horn(data, .02f, 262f, .16f, .45f);
+        Horn(data, .17f, 392f, .55f, .55f);
+        return Finish(data, .8f);
+    }
+
+    // A horn note starting at <at> (s) for <length> (s): odd and even partials swelling in and dying away.
+    private static void Horn(float[] data, float at, float pitch, float length, float level)
+    {
+        int from = (int)(at * Rate), count = (int)(length * Rate);
+        for (int i = 0; i < count && from + i < data.Length; i++)
+        {
+            float t = i / (float)Rate, turn = 2f * Mathf.PI * pitch * t * (1f + .004f * Mathf.Sin(2f * Mathf.PI * 5f * t));
+            float wave = Mathf.Sin(turn) + .55f * Mathf.Sin(turn * 2f) + .4f * Mathf.Sin(turn * 3f) + .22f * Mathf.Sin(turn * 4f) + .12f * Mathf.Sin(turn * 5f);
+            float swell = Mathf.Min(1f, t / .03f) * Mathf.Min(1f, (length - t) / .08f);
+            data[from + i] += wave * swell * level;
+        }
     }
 
     // A stab starting at <at> (s): a bright chord bending up a little as it strikes.

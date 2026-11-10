@@ -68,6 +68,9 @@ public sealed class PlayerWeaponSlots : MonoBehaviour
                 savedData[index] == data && savedReserve[index] >= 0 ? savedReserve[index] : (int?)null);
         return weapons[index];
     }
+    /// <summary>A gun's ammo changed outside a shot or a reload (a Point's gun put away reloading itself): the HUD reads again.</summary>
+    internal void NotifyAmmo() => SlotActivity?.Invoke();
+
     public int RefillAmmo()
     {
         int count = 0;

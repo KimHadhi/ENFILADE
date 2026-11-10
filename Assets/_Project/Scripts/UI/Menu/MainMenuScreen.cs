@@ -35,7 +35,7 @@ public sealed class MainMenuScreen : MonoBehaviour
     private const float PanelYaw = 16f, PanelFollow = 8f, PanelPitch = 6f, BarPitch = 8f, LeanFollow = 5f;
 
     private string[] maps = Array.Empty<string>();
-    private int mapIndex, characterTab = -1, recordsTab = -1;
+    private int mapIndex, characterTab = -1, recordsTab = -1, classesTab = -1;
     private MainMenuPreview preview;
     private RectTransform canvas;
     private TMP_Text lookLabel;
@@ -47,6 +47,7 @@ public sealed class MainMenuScreen : MonoBehaviour
     private RectTransform right;
     private KitReveal rightReveal;
     private MainMenuRecords records;
+    private MainMenuClasses classes;
     private CreateRoomView createRoom;
     private ServerBrowserView browser;
     private ProfileView profile;
@@ -201,6 +202,9 @@ public sealed class MainMenuScreen : MonoBehaviour
             characterTab = tabs.Count;
             tabs.Add((Texts.Get("menu.tab.character"), OpenCharacter));
         }
+        // The classes (stage 7): which one this player plays from the next run.
+        classesTab = tabs.Count;
+        tabs.Add((Texts.Get("menu.tab.classes"), OpenClasses));
         recordsTab = tabs.Count;
         tabs.Add((Texts.Get("menu.tab.records"), OpenRecords));
         // Settings is a gear beside quit at the top right, not a tab.
@@ -231,6 +235,7 @@ public sealed class MainMenuScreen : MonoBehaviour
         rightReveal.Card(mapCard.Root, mapCard.Lid, .12f);
         rightReveal.Card(launch.Root, launch.Lid, .2f);
         records = MainMenuRecords.Make(canvas, Edge, MainMenuTopBar.Height, MainMenuTicker.Height);
+        classes = MainMenuClasses.Make(canvas, Edge, MainMenuTopBar.Height, MainMenuTicker.Height);
 
         createRoom = new CreateRoomView(canvas, StartHost);
         browser = new ServerBrowserView(canvas);
@@ -322,6 +327,7 @@ public sealed class MainMenuScreen : MonoBehaviour
     {
         if (characterTab < 0) return;
         CloseRecords();
+        CloseClasses();
         character.Show();
         topBar.SetActive(characterTab);
     }
@@ -331,6 +337,7 @@ public sealed class MainMenuScreen : MonoBehaviour
     {
         character.Close();
         CloseRecords();
+        CloseClasses();
         topBar.SetActive(0);
     }
 
@@ -338,11 +345,35 @@ public sealed class MainMenuScreen : MonoBehaviour
     private void OpenRecords()
     {
         character.Close();
+        CloseClasses();
         topBar.SetActive(recordsTab);
         if (records.IsOpen) return;
         records.Open();
         modes.Root.gameObject.SetActive(false);
         right.gameObject.SetActive(false);
+    }
+
+    // The classes take the lobby's place as the records do.
+    private void OpenClasses()
+    {
+        character.Close();
+        CloseRecords();
+        topBar.SetActive(classesTab);
+        classes.Open();
+        modes.Root.gameObject.SetActive(false);
+        right.gameObject.SetActive(false);
+    }
+
+    private void CloseClasses()
+    {
+        if (classes == null || !classes.IsOpen) return;
+        classes.Close();
+        modes.Root.gameObject.SetActive(true);
+        modes.Reveal.Open();
+        modes.PointRail();
+        right.gameObject.SetActive(true);
+        rightReveal.Open();
+        SayWhatLaunches();
     }
 
     private void CloseRecords()

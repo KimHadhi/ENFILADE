@@ -70,6 +70,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
     private ShoveMoves kicks;
     private PlayerExecution execution;
     private PlayerThrow throws;
+    private ClassKit kit;
     private PlayerDamageReceiver receiver;
     private CombatTimeEffects time;
     private PlayerBody body;
@@ -139,9 +140,13 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
         // Stones (PlayerThrow): thrown by the owner, copied on every other PC.
         throws = GetComponent<PlayerThrow>();
         if (throws == null) throws = gameObject.AddComponent<PlayerThrow>();
+        // The class (ClassKit): an Assault's CHARGE reaches friends near it on their PCs.
+        kit = GetComponent<ClassKit>();
+        if (kit == null) kit = gameObject.AddComponent<ClassKit>();
         if (IsOwner)
         {
             throws.Thrown += OnThrown;
+            kit.Charged += OnCharged;
             weapon.ShotFired += OnShot;
             melee.Punched += OnPunched;
             melee.Elbowed += OnElbowed;
@@ -166,6 +171,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
         if (kicks != null) kicks.Kicked -= OnKicked;
         if (execution != null) execution.Started -= OnExecutionStarted;
         if (throws != null) throws.Thrown -= OnThrown;
+        if (kit != null) kit.Charged -= OnCharged;
         if (receiver != null) receiver.HitResolved -= OnHit;
         stance.OnValueChanged -= OnStanceChanged;
     }
@@ -235,6 +241,15 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
     private void OnShoveSound(ShoveImpactKind impact) => ShoveSoundRpc(impact);
     private void OnKicked() => KickRpc();
     private void OnThrown(Vector3 from, Vector3 velocity) => ThrowRpc(from, velocity);
+    private void OnCharged(Vector3 at) => ChargeRpc(at);
+
+    // An Assault sounded a CHARGE here: each other PC's player near it charges too.
+    [Rpc(SendTo.NotMe)]
+    private void ChargeRpc(Vector3 at)
+    {
+        string name = TryGetComponent(out PlayerTally tally) ? tally.DisplayName : gameObject.name;
+        ClassKit.ReceiveCharge(at, Texts.Format("class.assault.charge.friend", name));
+    }
 
     // A stone this player threw: every other PC throws its own copy, and the host's is the one its zombies hear.
     [Rpc(SendTo.NotMe)]

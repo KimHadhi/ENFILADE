@@ -152,6 +152,20 @@ public sealed class WeaponRuntime
     internal void RefundUnfiredShots(int count) { Ammo = Mathf.Min(Data.MagazineSize, Ammo + Mathf.Max(0, count)); CancelBurst(); }
     public void AddReserve(int amount) { if (amount > 0) ReserveAmmo = (int)Math.Min(int.MaxValue, (long)ReserveAmmo + amount); }
 
+    /// <summary>
+    /// A gun put away reloads itself (a Point's passive, ClassKit): its magazine fills from its reserve at once. False
+    /// when it is being reloaded, full or out of reserve.
+    /// </summary>
+    internal bool ReloadAside()
+    {
+        if (IsReloading || Ammo >= Data.MagazineSize || ReserveAmmo <= 0) return false;
+        int moved = Math.Min(Data.MagazineSize - Ammo, ReserveAmmo);
+        Ammo += moved;
+        ReserveAmmo -= moved;
+        IsEmptyReload = false;
+        return true;
+    }
+
     /// <summary>Fill the magazine and restore at least the starting reserve, preserving bonus ammunition.</summary>
     public void RefillAmmo()
     {

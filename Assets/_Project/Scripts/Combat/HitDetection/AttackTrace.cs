@@ -117,7 +117,9 @@ public static class AttackTrace
             headshot = headshotMultiplier > 1f && WeaponHitRegion.IsHead(hit);
             bool fresh = receiver != null && (already == null || already.Add(receiver));
             // This PC's own shooter carries their gun perks (PlayerPerks); anyone else's shots are as they are.
-            float perk = attack.Method == DamageMethod.Bullet && PlayerPerks.IsMine(attack.Source) ? PlayerPerks.GunFactor(headshot) : 1f;
+            // ...and their class: its own guns' bonus, an Assault's adrenaline, a CHARGE they are in (PlayerClass).
+            float perk = attack.Method == DamageMethod.Bullet && PlayerPerks.IsMine(attack.Source)
+                ? PlayerPerks.GunFactor(headshot) * PlayerClass.GunFactor(headshot) : 1f;
             if (fresh && share > 0f)
                 result = receiver.ReceiveHit(new DamageHit(attack.Id, attack.Amount * share * (headshot ? headshotMultiplier : 1f) * perk, attack.Kind, hit.point, direction, attack.Source,
                     attack.CanBeGuarded, attack.PostureDamage * share, attack.IsComboFinisher, attack.IsCritical || headshot, attack.IsCounter, attack.Method,

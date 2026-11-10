@@ -37,6 +37,15 @@
 - 저장하고 표를 다시 읽으면(Play 중이면 바로) 새로 그려지는 글자부터 바뀐다. 이미 떠 있는 글자는 다음에 다시 쓸 때 바뀐다.
 - 개발자 콘솔(`/` 명령)의 도움말과 대답, /net 같은 개발용 표시, 디버그 로그는 코드에 남겨 두었다. 이야기 카드(CampaignChapters.csv), 능력 카드(Perks.csv), 상점 품목(Shop.csv), 메뉴 소식(MenuTicker.csv), 맵 이름(Maps.csv)과 무기 이름(무기 데이터)은 원래 각자의 표·에셋에 있다.
 
+### 클래스 (Classes.csv, ClassAbilities.csv)
+
+클래스는 [Classes.csv](../Resources/Tables/Classes.csv)의 줄이다(2026-11-11 사용자의 설계: KF2·GMod Horde 느낌의 7개). 열은 `title`(이름), `role`(한 줄 소개), `primary`·`secondary`(장이 시작될 때 1·2번 칸에 주는 총. 무기 에셋 이름), `classWeapons`(;로 구분한 클래스 총. 이 총을 들면 `gunBonus`% 피해가 세진다), `ready`(1이면 능력이 만들어진 클래스. 0이면 메뉴에 "준비 중"이지만 고를 수는 있다).
+
+- 고른 클래스는 ClassGrowth의 classes.json에 저장되고 클래스마다 등급이 따로 쌓인다. 아직 안 골랐으면 `ready` 1인 첫 클래스(어썰트)다.
+- 능력 수치는 [ClassAbilities.csv](../Resources/Tables/ClassAbilities.csv): `Assault.*`(스택 최대·스택당 피해와 이동·스택 유지와 감소·CHARGE 시간·반경·피해·이동), `Point.reloadShare`(들지 않은 총이 저절로 장전되는 시간 배수).
+- 클래스 기술 키는 입력 액션 `Player/ClassAbility`(기본 마우스 휠 클릭)이고 설정 → 조작의 "클래스 기술"에서 바꾼다. 바꾼 키는 GameSettings의 `keyBindings`에 저장되고 조작 탭을 초기화하면 기본으로 돌아간다.
+- 나이트·고스트·데탕트·시순트·서포트의 능력과 클래스 전용 퍼크 카드, 근접 무기·저격총 에셋은 다음 단계다.
+
 ### 잠입 (Stealth.csv, ZombieSenses.csv)
 
 2026-11-11 잠입 개편(사용자의 Advanced Stealth 애드온과 시야 참고 영상을 바탕으로). 화면에 보이는 것과 보상은 [Stealth.csv](../Resources/Tables/Stealth.csv), 좀비의 눈·귀는 [ZombieSenses.csv](../Resources/Tables/ZombieSenses.csv)에 있다.

@@ -28,6 +28,8 @@ public sealed class GameSettings
     public bool invertY;
     [Tooltip("Crouch and lean keys latch on one press instead of acting while held.")]
     public bool crouchToggle, leanToggle;
+    /// <summary>The keys the player picked (KeyBindings: the Input System's overrides as JSON); empty for every default.</summary>
+    public string keyBindings = "";
     [Tooltip("Scales head bob, landing, impacts and movement tilt. Lean and weapon recoil are not affected.")]
     public float screenShake = 1f;
     [Tooltip("How much the HUD trails the look when turning (HudCamera). 0 keeps it still.")]
@@ -123,6 +125,8 @@ public sealed class GameSettings
             case SettingsGroup.Controls:
                 s.mouseSensitivity = d.mouseSensitivity; s.invertY = d.invertY;
                 s.crouchToggle = d.crouchToggle; s.leanToggle = d.leanToggle;
+                s.keyBindings = d.keyBindings;
+                KeyBindings.Apply(s.keyBindings);
                 break;
             case SettingsGroup.Screen:
                 s.monitorName = d.monitorName; s.monitorIndex = d.monitorIndex;
@@ -186,6 +190,7 @@ public sealed class GameSettings
         fieldOfView = Mathf.Clamp(fieldOfView, MinFieldOfView, MaxFieldOfView);
         frameLimit = Mathf.Max(0, frameLimit);
         monitorName ??= "";
+        keyBindings ??= "";
         monitorIndex = Mathf.Max(-1, monitorIndex);
         if (resolutionWidth <= 0 || resolutionHeight <= 0) resolutionWidth = resolutionHeight = 0;
         if (windowMode < WindowMode.Fullscreen || windowMode > WindowMode.Windowed) windowMode = WindowMode.Borderless;

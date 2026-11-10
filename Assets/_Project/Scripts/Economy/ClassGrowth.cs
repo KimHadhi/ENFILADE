@@ -151,8 +151,14 @@ public static class ClassGrowth
         {
             string picked = Current.current;
             if (!string.IsNullOrEmpty(picked) && Known(picked)) return picked;
-            foreach (string id in GameTables.RowIds(ClassTable)) return id;
-            return "Default";
+            // Not picked yet: the first class whose abilities are built (Classes.csv ready), else the first.
+            string first = null;
+            foreach (string id in GameTables.RowIds(ClassTable))
+            {
+                first ??= id;
+                if (GameTables.TryGetRow(ClassTable, id, out var row) && row.TryGetValue("ready", out string ready) && ready.Trim() == "1") return id;
+            }
+            return first ?? "Default";
         }
     }
 
