@@ -53,3 +53,7 @@ MonoBehaviour:
   adsAimFollowHalfLife: 0.025
   highReadyRaiseHalfLife: 0.045
   highReadyLowerHalfLife: 0.055
+  suppressedFireSounds:
+  - {fileID: 8300000, guid: ea5ab81d7e5fbd64d9c010ee0739db45, type: 3}
+  - {fileID: 8300000, guid: b813dde6809d98249903dfdd062d70a5, type: 3}
+  - {fileID: 8300000, guid: ec48f644eb12b474184870183beef4c1, type: 3}

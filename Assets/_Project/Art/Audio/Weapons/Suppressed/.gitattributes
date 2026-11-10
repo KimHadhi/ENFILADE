@@ -1,0 +1,3 @@
+# These five shots are small (0.7 MB in all) and are kept in git itself, not in LFS: the cloud session that added them
+# (2026-11-10) may push commits but not LFS objects. To move them into LFS, delete this file and add them again.
+*.wav -filter -diff -merge
