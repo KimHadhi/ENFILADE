@@ -214,11 +214,13 @@ Move.slopeSlideGravity,28,내리막에서 슬라이드가 빨라지는 정도(m/
 Move.slideEndSpeed,1.5,이 속도 아래로 느려지면 슬라이드가 끝난다(m/s)
 Move.slideCancelMaxSpeed,5,슬라이드를 직접 멈출 수 있는 최대 속도(m/s)
 Move.diveSlideCancelMaxSpeed,2,머리부터 미끄러지기를 직접 멈출 수 있는 최대 속도(m/s)
+Move.supineSlideCancelMaxSpeed,5,누워 미끄러지는 중 W나 Space로 바로 일어날 수 있는 최대 속도(m/s). 미끄럼이 Move.slideCancelMinDuration만큼 이어진 뒤부터다. Ctrl을 누르고 있으면 앉으며 일어난다
 Move.slideCancelMinDuration,0.5,슬라이드 시작 후 멈출 수 있게 되기까지(초)
 Move.slideBrakeDeceleration,18,제동 입력 때의 감속(m/s²)
 Move.landingSlideMinSpeed,6.5,Ctrl을 누른 채 착지하면 슬라이드로 이어지는 최소 속도(m/s)
 Move.slideCooldown,0.4,슬라이드 재사용 대기(초)
 Move.slideSteerSharpness,4,슬라이드 중 A/D 조향 빠르기
+Move.slideLookSteerRate,90,슬라이드 중 마우스를 시선 제한(Body.slideTurnLimit) 너머로 밀면 미끄러지는 방향이 시선을 따라 도는 최대 빠르기(도/초). 0이면 예전처럼 시선이 제한에서 멈춘다
 Move.groundSnapDistance,0.5,슬라이드 중 바닥에 붙여 두는 거리(m)
 Move.slideJumpMinDuration,0.1,슬라이드 시작 후 점프(다이브로 이어짐)가 가능해지기까지(초)
 Move.slideKickJumpHeight,1.05,슬라이드 점프 높이(m)
