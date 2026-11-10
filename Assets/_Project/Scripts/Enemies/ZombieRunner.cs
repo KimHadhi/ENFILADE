@@ -6,8 +6,8 @@ using UnityEngine.AI;
 /// chargeRange it charges, faster than anyone can run but turning badly, so a sidestep late in the charge makes it run
 /// past and skid to a stop. Within pounceRange, its quarry ahead, it leaps (EnemyCombatAI's Pounce): it flies to where
 /// they were heading as the leap began (LeapSpot: ahead of them the way they were moving, and committed there, so
-/// keeping on meets it and a feint sends it to the wrong side), and whoever is there is knocked flat and pinned
-/// (PlayerHold), its teeth at their neck until a teammate kills it. A leap that lands on nothing leaves it standing there a moment. Up to
+/// keeping on meets it and a feint sends it to the wrong side), and whoever stays within its reach there for
+/// pounceDwell is knocked flat and pinned (PlayerHold), its teeth at their neck until a teammate kills it. A leap that lands on nothing leaves it standing there a moment. Up to
 /// PlayerHold.MostPinning runners pin one player; the others don't leap at a full pin. This runs where the enemy really
 /// runs (the host, or the PC alone); other PCs see it move as the host moves it, and time the leap themselves.
 /// Numbers: Tables/ZombieRunner.csv.
@@ -48,7 +48,10 @@ public sealed class ZombieRunner : MonoBehaviour
     private float pounceLeadMost = 1.2f;
     [SerializeField, Min(0f), Tooltip("A leap landing this near someone who has just shoved is still countered (m), though "
         + "it only catches within ZombieKinds' pounceRadius.")]
-    private float pounceCounterRadius = 1.1f;
+    private float pounceCounterRadius = 1.5f;
+    [SerializeField, Min(0f), Tooltip("Landed, a leap pins only someone who stays within its reach (ZombieKinds' pounceRadius) "
+        + "for this long (s): stepping away sooner clears them. 0 pins at the moment it lands.")]
+    private float pounceDwell = .5f;
     [Header("Glowing eyes (ZombieBody.Eyes.cs)")]
     [SerializeField, Tooltip("Without eye bones: the eyes this far ahead of the head bone (m).")]
     private float eyeForward = .1f;
@@ -91,6 +94,8 @@ public sealed class ZombieRunner : MonoBehaviour
     public float LeapHeight => leapHeight;
     /// <summary>How near a leap must land for a shove just before it to counter it (m); the catch itself is tighter.</summary>
     public float PounceCounterRadius => pounceCounterRadius;
+    /// <summary>How long a landed leap must keep its quarry within reach to pin them (s).</summary>
+    public float PounceDwell => pounceDwell;
 
     /// <summary>
     /// Where a leap of <paramref name="airTime"/> seconds aims: ahead of its quarry the way they are moving as it begins,

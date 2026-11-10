@@ -33,7 +33,8 @@ public sealed partial class ZombieBody
     /// <summary>From Update, after ArmsTick: the leap's pose and height, and the landing.</summary>
     private void LeapTick(float dt)
     {
-        bool pouncing = combat != null && combat.IsPouncing && !down;
+        // Down again, it is no longer in the air though the leap isn't over (EnemyCombatAI.PounceOver): the landing plays.
+        bool pouncing = combat != null && combat.IsPouncing && !combat.PounceLanded && !down;
         if (pouncing)
         {
             if (!wasPouncing) leapTime = 0f;

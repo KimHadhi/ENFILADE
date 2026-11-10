@@ -36,6 +36,11 @@ public sealed class CombatFeedbackSettings : ScriptableObject
     public float executableOutlineWidth = 3f;
     [Min(.01f), Tooltip("Tint and outline coming in and going out (real seconds).")]
     public float executableBodyFade = .12f;
+    [Header("Holder (a zombie that has this PC's player in its grip)")]
+    [ColorUsage(false, true), Tooltip("Outline around a zombie holding or pinning this PC's player. Above 1 it catches the bloom.")]
+    public Color holderOutlineColor = new Color(2f, 1.05f, .1f, 1f);
+    [Min(0f), Tooltip("Its width, pixels at 1080p. 0 turns it off.")]
+    public float holderOutlineWidth = 4f;
     [Header("Executable palette (whole enemy bar re-dresses while executable)")]
     [Tooltip("Remaining health fill. Bright crimson pink: clearly not the normal red, without going dull.")]
     public Color executableHealthColor = new Color(.98f, .24f, .42f);

@@ -178,6 +178,7 @@ public sealed class PlayerHold : MonoBehaviour
             Enemy = enemy, Grip = grip, Melee = enemy.GetComponent<MeleeCombatTarget>(), Until = Time.time + holdSeconds, Feeding = feeding
         });
         if (grip != null) grip.Hold(player, kind);
+        Outline(enemy, true);
         Share(enemy, true, kind);
         // A feed bites from the start.
         if (feeding) biteLeft = 0f;
@@ -208,6 +209,7 @@ public sealed class PlayerHold : MonoBehaviour
             Feeding = true, Pinning = true
         });
         if (grip != null) grip.Hold(player, HoldKind.Pin);
+        Outline(enemy, true);
         Share(enemy, true, HoldKind.Pin);
         biteLeft = 0f;
         Jolt(pinJolt);
@@ -300,6 +302,7 @@ public sealed class PlayerHold : MonoBehaviour
         var holder = holders[at];
         holders.RemoveAt(at);
         if (holder.Grip != null) holder.Grip.LetGo();
+        Outline(holder.Enemy, false);
         if (holder.Enemy != null)
             Share(holder.Enemy, false, holder.Pinning ? HoldKind.Pin : holder.Feeding ? HoldKind.Feed : HoldKind.Grab);
         if (Pinners == 0) pinProgress = 0f;
@@ -309,6 +312,13 @@ public sealed class PlayerHold : MonoBehaviour
     {
         for (int i = holders.Count - 1; i >= 0; i--) Release(i);
         biteLeft = pinProgress = 0f;
+    }
+
+    // A zombie that has them stands out of the crowd with an outline, on their own screen (HitFlashRenderer.SetHolder):
+    // which one to shove or shoot off (user, 2026-11-10, after Left 4 Dead 2's outlines).
+    private static void Outline(EnemyHealth enemy, bool on)
+    {
+        if (enemy != null) HitFlashRenderer.For(enemy)?.SetHolder(on ? 1f : 0f);
     }
 
     private void Jolt(Vector2 jolt)

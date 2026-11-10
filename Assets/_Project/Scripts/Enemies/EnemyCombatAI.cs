@@ -41,11 +41,14 @@ public sealed class EnemyCombatAI : MonoBehaviour
     [SerializeField, Min(.05f)] private float feedWindup = .6f;
     [Tooltip("The height it aims at a player lying on the ground or down (m above their feet).")]
     [SerializeField, Min(0f)] private float lyingAimHeight = .3f;
+    [Tooltip("Kneeling to eat, it still takes someone who has crawled this far (m) past its reach since the kneel began, "
+        + "while they stay lying. 0 takes them only where they lay then.")]
+    [SerializeField, Min(0f)] private float feedReach = .8f;
     [Tooltip("Guts & Blackpowder's runner: it never swings; ZombieRunner charges and leaps (ZombieKinds pounces).")]
     [SerializeField] private bool pounces;
     [Tooltip("A leap's time in the air (s), from its cue to landing.")]
     [SerializeField, Min(.05f)] private float pounceWindup = .35f;
-    [Tooltip("A leap catches whoever is within this of the spot it aimed at as it began (m). ZombieRunner.LeapSpot picks the spot.")]
+    [Tooltip("A leap catches whoever stays within this of the spot it came down on (m) for ZombieRunner's pounceDwell. ZombieRunner.LeapSpot picks the spot.")]
     [SerializeField, Min(.1f)] private float pounceRadius = 1.1f;
     // The bite's cue, pitched down from the swing's so it sounds heavier; a grab's a little lower too.
     private const float BitePitch = .72f, GrabPitch = .85f, PouncePitch = 1.2f;
@@ -90,6 +93,8 @@ public sealed class EnemyCombatAI : MonoBehaviour
     public bool IsFeeding => preparing && move == AttackMove.Feed;
     /// <summary>A runner is in the air, leaping (ZombieBody shows it, ZombieRunner carries it).</summary>
     public bool IsPouncing => preparing && move == AttackMove.Pounce;
+    /// <summary>The leap has come down and is waiting to see whether its quarry stays in reach (PounceOver).</summary>
+    public bool PounceLanded => IsPouncing && timer >= Windup;
 
     /// <summary>A runner's leap (ZombieType): whether it leaps instead of swinging, its time in the air and its reach.</summary>
     internal void SetPounce(bool pounces, float windup, float radius)
@@ -168,7 +173,9 @@ public sealed class EnemyCombatAI : MonoBehaviour
             if (!preparing) { timer = 0f; return; }
             if (player == null) { CancelAttack(); return; }
             timer += dt;
-            if (timer >= Windup) FireAttack();
+            // Landed, it has to keep them in reach a while before it has them (PounceOver). Someone on another PC is
+            // judged there; here it only waits that out.
+            if (timer >= Windup && PounceOver(player.IsNetworkDriven ? null : player, dt)) FireAttack();
             return;
         }
 
@@ -253,6 +260,36 @@ public sealed class EnemyCombatAI : MonoBehaviour
     /// <summary>Where the leap under way comes down (ZombieRunner flies there).</summary>
     internal Vector3 PounceSpot => lockedFeet;
 
+    // How long a landed leap that has caught nobody yet still waits past the dwell before it gives up (s).
+    private const float PounceLinger = .25f;
+    // How long this leap's quarry has been within its reach since it landed (s).
+    private float pounceInside;
+    private float PounceDwell
+    {
+        get
+        {
+            if (leaper == null) leaper = GetComponent<ZombieRunner>();
+            return leaper != null ? leaper.PounceDwell : 0f;
+        }
+    }
+
+    // Each frame once a leap has landed: it pins only someone who stays within pounceRadius of where it came down for
+    // PounceDwell, so the catch keeps its reach but takes time (user, 2026-11-10: "잡는 범위를 줄이기보단 … 잡히려면 그
+    // 잡히는 범위에 0.5초 정도 있어야"). Stepping out of it in time clears them, and a shove meanwhile counters it
+    // (ShoveCounter: the leap still counts as in its last moment). True once it is over: they have stayed long enough,
+    // or it has waited PounceLinger past the dwell for nothing.
+    private bool PounceOver(PlayerMovement victim, float dt)
+    {
+        float dwell = PounceDwell;
+        if (dwell <= 0f) return true;
+        if (victim != null)
+        {
+            Vector3 off = victim.transform.position - lockedFeet;
+            if (new Vector2(off.x, off.z).magnitude <= pounceRadius && Mathf.Abs(off.y) <= 1.5f) pounceInside += dt;
+        }
+        return pounceInside >= dwell || timer >= Windup + dwell + PounceLinger;
+    }
+
     // Where a leap at this player aims as it begins: ahead of them, the way they are moving (ZombieRunner.LeapSpot).
     private Vector3 LeapSpot(PlayerMovement target)
     {
@@ -270,6 +307,7 @@ public sealed class EnemyCombatAI : MonoBehaviour
         player = target;
         comboIndex = 0;
         preparing = true; timer = 0f; move = AttackMove.Pounce;
+        pounceInside = 0f;
         lockedFeet = LeapSpot(target);
         lockedAim = lockedFeet + Vector3.up * AimHeightFor(target);
         UpdateIndicator(true);
@@ -277,10 +315,10 @@ public sealed class EnemyCombatAI : MonoBehaviour
         if (network != null) network.AnnounceWindup(target, 0, move);
     }
 
-    // The leap lands on the spot it aimed at as it began: whoever is there is knocked flat and pinned (PlayerHold). Not
-    // guarded or parried; a dodge's dodging frames get through it (the receiver), as stepping off the spot does. The
-    // catch is tight (pounceRadius), but a shove just before it still counters a leap landing as near as it used to
-    // have to (ZombieRunner.PounceCounterRadius; user, 2026-11-10: a tighter catch, the counter as forgiving as it was).
+    // The leap came down on the spot it aimed at as it began, and whoever has stayed within its reach since for the
+    // dwell (PounceOver) is knocked flat and pinned (PlayerHold). Not guarded or parried; a dodge's dodging frames get
+    // through it (the receiver), as stepping away in time does. A shove just before still counters it from further off
+    // than it catches (ZombieRunner.PounceCounterRadius; user, 2026-11-10: the counter stays generous).
     private DamageResult Land()
     {
         var victim = network != null && network.IsCopy ? PlayerRoster.Local : player;
@@ -296,7 +334,7 @@ public sealed class EnemyCombatAI : MonoBehaviour
         StepDodgeTrail.RecognizeAttackSegment(hit, chest - direction * pounceRadius, chest);
         float away = new Vector2(off.x, off.z).magnitude;
         if (Mathf.Abs(off.y) > 1.5f) return DamageResult.Ignored;
-        if (away > pounceRadius)
+        if (away > pounceRadius || pounceInside < PounceDwell)
         {
             if (leaper == null) leaper = GetComponent<ZombieRunner>();
             bool counters = leaper != null && away <= leaper.PounceCounterRadius
@@ -310,6 +348,20 @@ public sealed class EnemyCombatAI : MonoBehaviour
     {
         if (move == AttackMove.Pounce) return Land();
         Vector3 origin = transform.position;
+        // Kneeling to eat someone on the ground isn't a swing to slip: it takes them where they lie now, if that is still
+        // near enough. Aimed only at where they lay as the kneel began, a crawl of a metre took them out from under it and
+        // the feed kept missing (user, 2026-11-10: "잘 못 잡음 … 판정이 약함"). Up and away from it, they are clear as before.
+        float stretch = 0f;
+        if (move == AttackMove.Feed && feedReach > 0f)
+        {
+            var eaten = network != null && network.IsCopy ? PlayerRoster.Local : player;
+            if (eaten != null && Lying(eaten))
+            {
+                Vector3 lies = eaten.transform.position + Vector3.up * AimHeightFor(eaten);
+                Vector3 flat = Vector3.ProjectOnPlane(lies - origin, Vector3.up);
+                if (flat.magnitude <= attackRange + feedReach) { lockedAim = lies; stretch = feedReach; }
+            }
+        }
         Vector3 direction = (lockedAim - origin).normalized;
 
         if (direction.sqrMagnitude < 0.0001f)
@@ -319,7 +371,7 @@ public sealed class EnemyCombatAI : MonoBehaviour
         origin += direction * rayStartOffset;
         // Up on a neighbour's head the aim point is further than attackRange; the arm reaches up to it, no further.
         float reach = Mathf.Max(attackRange + rayStartOffset,
-            Mathf.Min(Vector3.Distance(origin, lockedAim) + rayStartOffset, attackRange + reachAbove + rayStartOffset));
+            Mathf.Min(Vector3.Distance(origin, lockedAim) + rayStartOffset, attackRange + reachAbove + rayStartOffset + stretch));
 
         // A grab or a feed does no harm of its own (PlayerHold holds them and bites), but a hit needs some to land.
         bool holds = move == AttackMove.Grab || move == AttackMove.Feed;
@@ -355,6 +407,7 @@ public sealed class EnemyCombatAI : MonoBehaviour
         if (aimedHere)
         {
             // A leap aims ahead of them as the host's does; this PC judges whether it caught its own player.
+            pounceInside = 0f;
             lockedFeet = shown == AttackMove.Pounce ? LeapSpot(mine) : mine.transform.position;
             lockedAim = lockedFeet + Vector3.up * AimHeightFor(mine);
         }
@@ -401,6 +454,13 @@ public sealed class EnemyCombatAI : MonoBehaviour
         if (enemyHealth == null || !enemyHealth.IsAlive) { CancelAttack(); return; }
         timer += dt;
         if (timer < Windup) return;
+        if (move == AttackMove.Pounce)
+        {
+            // A landed leap waits as the host's does (PounceOver), unless it already holds someone.
+            if (grip == null) grip = GetComponent<ZombieGrip>();
+            bool holds = grip != null && grip.IsHolding;
+            if (!holds && !PounceOver(aimedHere ? PlayerRoster.Local : null, dt)) return;
+        }
         preparing = false;
         timer = 0f;
         UpdateIndicator(false);
@@ -414,6 +474,7 @@ public sealed class EnemyCombatAI : MonoBehaviour
         preparing = false;
         move = AttackMove.Swing;
         timer = 0f;
+        pounceInside = 0f;
         comboIndex = 0;
         GetComponent<CombatCueAudio>()?.Stop();
         UpdateIndicator(false);

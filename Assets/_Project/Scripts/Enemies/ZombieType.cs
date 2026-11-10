@@ -74,7 +74,7 @@ public sealed class ZombieType : MonoBehaviour
     private readonly Numbers runner = new Numbers
     {
         share = .35f, speed = 7.4f, acceleration = 14f, angularSpeed = 300f, damage = 10f, windup = .45f, attackInterval = 1f,
-        pounces = true, pounceWindup = .35f, pounceRadius = .8f, healthShare = .4f
+        pounces = true, pounceWindup = .35f, pounceRadius = 1.1f, healthShare = .4f
     };
     private readonly Numbers crawler = new Numbers
         { speed = .7f, acceleration = 3f, angularSpeed = 90f, damage = 8f, windup = .6f, attackInterval = 1.6f, aimHeight = .35f, height = .8f };
