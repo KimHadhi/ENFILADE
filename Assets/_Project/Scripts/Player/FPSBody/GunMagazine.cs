@@ -233,28 +233,38 @@ public sealed class GunMagazine : MonoBehaviour, ITableBound
         return mesh != null;
     }
 
+    // A skin's part of the magazine. Each kept corner goes to the part's space through its own bone, as skinning does
+    // (bone.localToWorld × bindpose), with the gun at rest: the Tactical Shooter Pack's magazines are skins of their own
+    // (SKM_Mag_AK105 …) on bones that hang under the part, never the part itself (the 2026-11-11 review), while the
+    // FPS pack's MX16A4 skins its magazine to the part's own bone. Either way every corner lands where it is drawn.
     private void CutSkin(SkinnedMeshRenderer skin, List<CombineInstance> pieces, List<Material> pieceMaterials)
     {
         var source = skin.sharedMesh;
         var bones = skin.bones;
-        if (source == null || bones == null) return;
-        int home = System.Array.IndexOf(bones, part);
+        if (source == null || bones == null || bones.Length == 0) return;
         var moving = new bool[bones.Length];
         bool any = false;
         for (int b = 0; b < bones.Length; b++)
             if (bones[b] != null && bones[b].IsChildOf(part)) { moving[b] = true; any = true; }
-        if (!any || home < 0) return;
+        if (!any) return;
         if (!source.isReadable)
         {
             Debug.LogWarning($"[GunMagazine] {source.name} can't be read (Read/Write off), so its magazine isn't dropped.", this);
             return;
         }
-        var bind = source.bindposes[home];
+        var bindposes = source.bindposes;
+        var toPart = new Matrix4x4[bones.Length];
+        var worldToPart = part.worldToLocalMatrix;
+        for (int b = 0; b < bones.Length; b++)
+            if (moving[b] && b < bindposes.Length) toPart[b] = worldToPart * bones[b].localToWorldMatrix * bindposes[b];
+            else moving[b] = false;
         var weights = source.boneWeights;
         var vertices = source.vertices;
         var normals = source.normals;
         var uvs = source.uv;
         var shared = skin.sharedMaterials;
+        var strongest = new int[vertices.Length];
+        for (int v = 0; v < vertices.Length; v++) strongest[v] = v < weights.Length ? Strongest(weights[v]) : -1;
         for (int s = 0; s < source.subMeshCount; s++)
         {
             var triangles = source.GetTriangles(s);
@@ -265,7 +275,7 @@ public sealed class GunMagazine : MonoBehaviour, ITableBound
                     keep.Add(triangles[t]); keep.Add(triangles[t + 1]); keep.Add(triangles[t + 2]);
                 }
             if (keep.Count == 0) continue;
-            // Only the corners used, in the part's own space at the bind pose.
+            // Only the corners used, in the part's own space.
             var map = new Dictionary<int, int>();
             var ownVertices = new List<Vector3>();
             var ownNormals = new List<Vector3>();
@@ -278,8 +288,9 @@ public sealed class GunMagazine : MonoBehaviour, ITableBound
                 {
                     mine = ownVertices.Count;
                     map[v] = mine;
-                    ownVertices.Add(bind.MultiplyPoint3x4(vertices[v]));
-                    ownNormals.Add(v < normals.Length ? bind.MultiplyVector(normals[v]).normalized : Vector3.up);
+                    var matrix = toPart[strongest[v]];
+                    ownVertices.Add(matrix.MultiplyPoint3x4(vertices[v]));
+                    ownNormals.Add(v < normals.Length ? matrix.MultiplyVector(normals[v]).normalized : Vector3.up);
                     ownUvs.Add(v < uvs.Length ? uvs[v] : Vector2.zero);
                 }
                 ownTriangles[i] = mine;
@@ -294,16 +305,16 @@ public sealed class GunMagazine : MonoBehaviour, ITableBound
         }
 
         // A corner moves with the magazine when the bone that moves it most is the part or one under it.
-        bool Moves(int v)
-        {
-            if (v >= weights.Length) return false;
-            var w = weights[v];
-            int strongest = w.boneIndex0;
-            float best = w.weight0;
-            if (w.weight1 > best) { best = w.weight1; strongest = w.boneIndex1; }
-            if (w.weight2 > best) { best = w.weight2; strongest = w.boneIndex2; }
-            if (w.weight3 > best) strongest = w.boneIndex3;
-            return strongest >= 0 && strongest < moving.Length && moving[strongest];
-        }
+        bool Moves(int v) => v < strongest.Length && strongest[v] >= 0 && strongest[v] < moving.Length && moving[strongest[v]];
+    }
+
+    private static int Strongest(in BoneWeight w)
+    {
+        int index = w.boneIndex0;
+        float best = w.weight0;
+        if (w.weight1 > best) { best = w.weight1; index = w.boneIndex1; }
+        if (w.weight2 > best) { best = w.weight2; index = w.boneIndex2; }
+        if (w.weight3 > best) index = w.boneIndex3;
+        return best > 0f ? index : -1;
     }
 }

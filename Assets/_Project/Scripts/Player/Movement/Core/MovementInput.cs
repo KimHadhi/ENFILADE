@@ -106,5 +106,11 @@ public sealed class MovementInput
     }
     private static bool Held(InputAction action) => action != null && action.IsPressed();
     private static bool Pressed(InputAction action) => action != null && action.WasPressedThisFrame();
+
+    /// <summary>
+    /// The shove key went down this frame, whether or not control is locked: pinned by a runner the player lies locked
+    /// in a heavy landing, and ShovePressed stays false all the while, but V still bursts the shield (PlayerHold).
+    /// </summary>
+    internal bool ShoveKeyPressed => Pressed(shoveAction);
     public Vector2 Move => moveAction != null ? moveAction.ReadValue<Vector2>() : Vector2.zero;
 }

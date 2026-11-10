@@ -417,8 +417,9 @@ public sealed partial class PlayerMovement : MonoBehaviour
         {
             bool fists = MeleeCombat != null && MeleeCombat.IsActive;
             bool pinned = IsPinned;
-            // Pinned with shield left, V bursts the shield and throws the runners off, fists out or not (PlayerHold).
-            if (Input.ShovePressed && pinned && hold != null && hold.TryBurstShield()) { }
+            // Pinned with shield left, V bursts the shield and throws the runners off, fists out or not (PlayerHold). Read
+            // past the control lock: the pin keeps them in a locked heavy landing, where ShovePressed never comes true.
+            if (pinned && InputAvailable && Input.ShoveKeyPressed && hold != null && hold.TryBurstShield()) { }
             else if (Input.ShovePressed && !fists && (!pinned || FightsPinned)) Abilities.Combat.TryShove();
             if (pinned) StayPinned();
             Input.Sample(false);

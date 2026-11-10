@@ -319,8 +319,35 @@ public sealed class EnemyCombatAI : MonoBehaviour
     // Its own feet: the agent floats baseOffset above the mesh (a copy's agent is off but keeps the number).
     private float FeetHeight => transform.position.y - (agent != null ? agent.baseOffset : 0f);
 
-    // On the floor it stands on: the player's feet within holdHeight of its own, so a grab or a kneel can reach them.
-    private bool Level(PlayerMovement target) => target != null && Mathf.Abs(target.transform.position.y - FeetHeight) <= holdHeight;
+    // On the floor it stands on: the floor under the player within holdHeight of its own feet, so a grab or a kneel can
+    // reach them.
+    private bool Level(PlayerMovement target) => target != null && Mathf.Abs(FloorUnder(target) - FeetHeight) <= holdHeight;
+
+    private static readonly RaycastHit[] floorHits = new RaycastHit[8];
+    private static int floorMask;
+
+    /// <summary>
+    /// The height of the floor a player stands on: their feet when this PC moves them and they are on the ground, else
+    /// the first thing under their feet that isn't a zombie, a player, a body or a trigger. A hop lifts the feet, not the
+    /// floor: going by the feet, jumping in place as a leap came down cleared the height check and the pin with it (the
+    /// 2026-11-11 review).
+    /// </summary>
+    internal static float FloorUnder(PlayerMovement player)
+    {
+        Vector3 feet = player.transform.position;
+        if (!player.IsNetworkDriven && player.IsGrounded) return feet.y;
+        if (floorMask == 0) floorMask = ~(LayerMask.GetMask("Enemy") | 1 << 31);
+        int count = Physics.RaycastNonAlloc(feet + Vector3.up * .1f, Vector3.down, floorHits, 2.6f, floorMask, QueryTriggerInteraction.Ignore);
+        float nearest = float.PositiveInfinity, floor = feet.y;
+        for (int i = 0; i < count; i++)
+        {
+            var hit = floorHits[i];
+            if (hit.distance >= nearest || hit.collider.GetComponentInParent<PlayerMovement>() != null) continue;
+            nearest = hit.distance;
+            floor = hit.point.y;
+        }
+        return floor;
+    }
 
     // A landed leap catches only someone on the floor it came down on, their feet within ZombieRunner's pounceHeight of
     // its own, and not on a ladder, a ledge or mid-vault: from the foot of a ladder it pinned a player near its top, its
@@ -331,7 +358,7 @@ public sealed class EnemyCombatAI : MonoBehaviour
         if (victim == null || victim.IsParkour) return false;
         if (leaper == null) leaper = GetComponent<ZombieRunner>();
         float most = leaper != null ? leaper.PounceHeight : holdHeight;
-        return Mathf.Abs(victim.transform.position.y - FeetHeight) <= most;
+        return Mathf.Abs(FloorUnder(victim) - FeetHeight) <= most;
     }
 
     // Where a leap at this player aims as it begins: ahead of them, the way they are moving (ZombieRunner.LeapSpot).
@@ -392,6 +419,13 @@ public sealed class EnemyCombatAI : MonoBehaviour
     private DamageResult Strike()
     {
         if (move == AttackMove.Pounce) return Land();
+        // The height rule again where the hit is judged (the victim's PC, or the host for its own player): a hop or a step
+        // up during the windup takes them out of a grab's or a kneel's reach, and it claws instead (the 2026-11-11 review).
+        if (move == AttackMove.Grab || move == AttackMove.Feed)
+        {
+            var judged = network != null && network.IsCopy ? PlayerRoster.Local : player;
+            if (judged != null && !Level(judged)) move = AttackMove.Swing;
+        }
         Vector3 origin = transform.position;
         // Kneeling to eat someone on the ground isn't a swing to slip: it takes them where they lie now, if that is still
         // near enough. Aimed only at where they lay as the kneel began, a crawl of a metre took them out from under it and

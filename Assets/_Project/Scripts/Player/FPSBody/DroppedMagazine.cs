@@ -16,6 +16,13 @@ public sealed class DroppedMagazine : MonoBehaviour
     private const float SinkDepth = .25f;
 
     private static readonly List<DroppedMagazine> lying = new List<DroppedMagazine>();
+    // Their boxes, which bullets pass (AttackTrace.ShouldSkip): a magazine on the floor took the shot meant for a crawler
+    // behind it (the 2026-11-11 review).
+    private static readonly HashSet<Collider> boxes = new HashSet<Collider>();
+    private Collider box;
+
+    /// <summary>A dropped magazine's box: bullets go through it.</summary>
+    public static bool IsMagazine(Collider collider) => collider != null && boxes.Contains(collider);
 
     private Rigidbody body;
     private float age, life, sinkSeconds, sinking = -1f, lastClack = -1f, volume;
@@ -23,7 +30,11 @@ public sealed class DroppedMagazine : MonoBehaviour
     private Vector3 sinkFrom;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-    private static void ResetStatics() => lying.Clear();
+    private static void ResetStatics()
+    {
+        lying.Clear();
+        boxes.Clear();
+    }
 
     /// <summary>A new magazine on its way down. Over the most allowed, the oldest one starts to sink.</summary>
     internal static DroppedMagazine Make(Mesh mesh, Material[] materials, Vector3 position, Quaternion rotation, Vector3 scale,
@@ -39,6 +50,8 @@ public sealed class DroppedMagazine : MonoBehaviour
         box.center = mesh.bounds.center;
         box.size = Vector3.Max(mesh.bounds.size, Vector3.one * .005f);
         var magazine = host.AddComponent<DroppedMagazine>();
+        magazine.box = box;
+        boxes.Add(box);
         var body = magazine.body = host.AddComponent<Rigidbody>();
         body.mass = Mathf.Max(.01f, mass);
         body.linearDamping = .05f;
@@ -103,5 +116,9 @@ public sealed class DroppedMagazine : MonoBehaviour
         FeelAudio.PlayAt(FeelSound.MagOut, null, point, volume * Mathf.Lerp(.35f, 1f, strength), Random.Range(.68f, .8f), 14f);
     }
 
-    private void OnDestroy() => lying.Remove(this);
+    private void OnDestroy()
+    {
+        lying.Remove(this);
+        if (!ReferenceEquals(box, null)) boxes.Remove(box);
+    }
 }

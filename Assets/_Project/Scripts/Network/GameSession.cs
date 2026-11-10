@@ -185,7 +185,9 @@ public sealed class GameSession : MonoBehaviour, INetworkPrefabInstanceHandler
         transport.DisconnectTimeoutMS = SilenceLimitMs;
         // The build's log filled the default 128-packet receive queue and dropped packets (friend feedback C16), most
         // likely as a chapter loads and every enemy, corpse and player reports at once.
-        transport.MaxPacketQueueSize = ReceiveQueue;
+        // That queue was sized at 30 ticks a second; packets come about once a ticking frame, so it grows with the tick
+        // (2048 at 120: the 2026-11-11 review).
+        transport.MaxPacketQueueSize = Mathf.Max(ReceiveQueue, Mathf.CeilToInt(ReceiveQueue * TickRate / 30f));
         return transport;
     }
 

@@ -51,7 +51,12 @@ public sealed class HoldReveal : MonoBehaviour
     private void Awake()
     {
         var shader = Resources.Load<Shader>(ShaderPath);
-        if (shader != null) material = new Material(shader) { name = "Hold Reveal (Runtime)", hideFlags = HideFlags.HideAndDontSave };
+        if (shader == null) return;
+        material = new Material(shader) { name = "Hold Reveal (Runtime)", hideFlags = HideFlags.HideAndDontSave };
+        // Ahead of the teammates' auras (Transparent+50), whose stencil covers the held teammate's whole outline with a
+        // value that has this shader's bit in it: drawn after it, the holder's silhouette was cut where the two overlap
+        // (the 2026-11-11 review).
+        material.renderQueue = 3049;
     }
 
     private void OnDestroy()
@@ -76,7 +81,9 @@ public sealed class HoldReveal : MonoBehaviour
         foreach (var grip in watched)
         {
             bool holding = Holds(grip);
-            bool has = grip != null && shown.ContainsKey(grip);
+            // By reference: a grip destroyed with its zombie still has its entry here, and its copies (gone with the
+            // body to its corpse) must go too.
+            bool has = !ReferenceEquals(grip, null) && shown.ContainsKey(grip);
             if (holding && !has) shown.Add(grip, Show(grip));
             else if (!holding && has)
             {

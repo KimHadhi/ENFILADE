@@ -68,6 +68,9 @@ public sealed class PlayerHold : MonoBehaviour
     private float shieldBurstKnockdown = 2.5f;
     [SerializeField, Tooltip("A jolt to the view as the shield bursts (degrees; pitch;roll).")]
     private Vector2 shieldBurstJolt = new Vector2(7f, 5f);
+    [SerializeField, Min(0f), Tooltip("After the burst, nothing takes hold of them for this long (s): the rest of getting up off "
+        + "the back, so a runner that was waiting for the pin to free up can't pin them again before they stand.")]
+    private float shieldBurstGrace = 2.7f;
 
     /// <summary>
     /// Pinned by a runner, how far into getting up off the back (the share of Ability.backLandingTime) they stay lying
@@ -91,7 +94,7 @@ public sealed class PlayerHold : MonoBehaviour
     private PlayerDamageReceiver receiver;
     private PlayerNetworkCombat network;
     private HoldFeedback feedback;
-    private float biteLeft, pinProgress, pinnedAt;
+    private float biteLeft, pinProgress, pinnedAt, burstGraceUntil = float.NegativeInfinity;
 
     /// <summary>Some zombie holds them.</summary>
     public bool IsHeld => holders.Count > 0;
@@ -193,6 +196,8 @@ public sealed class PlayerHold : MonoBehaviour
     private void Grab(EnemyHealth enemy, bool feeding)
     {
         if (enemy == null || !enemy.IsAlive) return;
+        // Just burst out with the shield: nothing takes hold until they are up.
+        if (Time.time < burstGraceUntil) return;
         // On a ladder, a ledge or mid-vault nothing takes hold: held there, they could never climb on (C9).
         if (!feeding && player.IsParkour) return;
         grabs[enemy] = grabs.TryGetValue(enemy, out int times) ? times + 1 : 1;
@@ -225,8 +230,9 @@ public sealed class PlayerHold : MonoBehaviour
     private void Pin(EnemyHealth enemy)
     {
         if (enemy == null || !enemy.IsAlive || IndexOf(enemy) >= 0) return;
-        // On a ladder, a ledge or mid-vault no leap takes hold, as no grab does (EnemyCombatAI also lets it miss there).
-        if (player.IsParkour) return;
+        // On a ladder, a ledge or mid-vault no leap takes hold, as no grab does (EnemyCombatAI also lets it miss there);
+        // nor in the moments after a shield burst.
+        if (player.IsParkour || Time.time < burstGraceUntil) return;
         int pinners = Pinners;
         if (pinners >= 1 + maxJoiners) return;
         if (pinners == 0)
@@ -317,22 +323,29 @@ public sealed class PlayerHold : MonoBehaviour
         var cause = new DamageHit(DamageHit.NewAttackId(), 0f, DamageKind.Attack, transform.position + Vector3.up * .4f,
             transform.position - first.transform.position, first.gameObject, false, 0f, true);
         if (!receiver.SpendShield(cause)) return;
-        // The pins let go here at once; the host hears of it (ShareHold) and of each knockdown (a copy's MeleeCombatTarget
-        // forwards it), so on every PC the runners go flying off them.
+        // Everything on them lets go here at once, the runners pinning them and any zombie kneeling to eat them (a burst
+        // that left an eater on them kept them down and bitten: the 2026-11-11 review). The host hears of it (ShareHold)
+        // and of each knockdown (a copy's MeleeCombatTarget forwards it), so on every PC they go flying off. A brute
+        // can't be knocked down; it reels instead.
         for (int i = holders.Count - 1; i >= 0; i--)
         {
             var holder = holders[i];
-            if (!holder.Pinning) continue;
             if (holder.Enemy != null)
             {
                 Vector3 away = Vector3.ProjectOnPlane(holder.Enemy.transform.position - transform.position, Vector3.up);
                 away = away.sqrMagnitude > 1e-4f ? away.normalized : Vector3.ProjectOnPlane(transform.forward, Vector3.up).normalized;
                 holder.Enemy.GetComponent<EnemyCombatAI>()?.CancelAttack();
-                if (holder.Melee != null && holder.Melee.IsAvailable) holder.Melee.KnockDown(away, shieldBurstKnockdown);
-                Burst(holder.Melee, away);
+                if (holder.Melee != null && holder.Melee.IsAvailable)
+                {
+                    if (holder.Melee.Steadfast) holder.Melee.Interrupt(shieldBurstKnockdown);
+                    else holder.Melee.KnockDown(away, shieldBurstKnockdown);
+                }
+                if (holder.Pinning) Burst(holder.Melee, away);
             }
             Release(i);
         }
+        biteLeft = pinProgress = 0f;
+        burstGraceUntil = Time.time + shieldBurstGrace;
         Jolt(shieldBurstJolt);
     }
 

@@ -109,7 +109,7 @@ public sealed class ZombieRunner : MonoBehaviour
     // Someone it can leap at: on its own floor (pounceHeight), not climbing a ladder, hanging on a ledge or vaulting. A
     // runner at the foot of a ladder pinned the player climbing it (user, 2026-11-11 playtest).
     private bool CanLeapAt(PlayerMovement player)
-        => player != null && !player.IsParkour && Mathf.Abs(player.transform.position.y - Feet.y) <= pounceHeight;
+        => player != null && !player.IsParkour && Mathf.Abs(EnemyCombatAI.FloorUnder(player) - Feet.y) <= pounceHeight;
 
     /// <summary>
     /// Where a leap of <paramref name="airTime"/> seconds aims: ahead of its quarry the way they are moving as it begins,

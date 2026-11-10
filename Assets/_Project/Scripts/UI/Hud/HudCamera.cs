@@ -37,9 +37,10 @@ public sealed class HudCamera : MonoBehaviour
         public float follow = 9f;
         [Tooltip("How far the planes slide per degree of sway (px at 1080p).")]
         public float shift = 6f;
-        [Tooltip("Share of the lean's view roll the HUD's sides tilt by on the screen, the same way the world turns " +
-            "(Settings → HUD 기울이기 따라가기). 1 keeps them level with the world.")]
-        public float share = 1f;
+        [Tooltip("Share of the lean's view roll the HUD's sides tilt by on the screen, the way the head tips " +
+            "(Settings → HUD 기울이기 따라가기). Small: the HUD stays on the screen and only leans a touch with it " +
+            "(2026-11-11 playtest: at 1 it drifted apart from the view and its corners left the screen).")]
+        public float share = .15f;
     }
 
     private static HudCamera instance;

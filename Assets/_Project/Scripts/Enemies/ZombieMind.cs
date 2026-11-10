@@ -4,9 +4,11 @@ using UnityEngine.AI;
 
 /// <summary>
 /// What a zombie knows of the players (ZombieMind). Awake is 0, so an older report reads as awake. Rousing: just woken
-/// from calm, it rouses (its rouse clip on every PC) before it charges.
+/// from calm, it rouses (its rouse clip on every PC) before it charges. Rising: back on its feet after a knockdown, it
+/// comes to its senses the same way, but apart from Rousing, which a charger's charge wind-up also shows as (the
+/// 2026-11-11 review: a charger getting up bellowed and flared for a charge that never came).
 /// </summary>
-public enum ZombieMood : byte { Awake, Calm, Searching, Alert, Rousing }
+public enum ZombieMood : byte { Awake, Calm, Searching, Alert, Rousing, Rising }
 
 /// <summary>
 /// Multiplayer plan stage 4C: what a zombie knows. A horde zombie (a wave's, or a plain /spawn) is awake from the start
@@ -117,7 +119,7 @@ public sealed class ZombieMind : MonoBehaviour
     /// <summary>Its mood: thought on the host (or alone), shown on every other PC.</summary>
     public ZombieMood Mood { get; private set; } = ZombieMood.Awake;
     /// <summary>It knows someone is there: rousing or awake.</summary>
-    public bool IsAwake => Mood == ZombieMood.Awake || Mood == ZombieMood.Rousing;
+    public bool IsAwake => Mood == ZombieMood.Awake || Mood == ZombieMood.Rousing || Mood == ZombieMood.Rising;
     /// <summary>Awake and done rousing: it may chase and fight (EnemyChaseAI, EnemyCombatAI).</summary>
     public bool Ready => Mood == ZombieMood.Awake;
     /// <summary>Unaware of anyone: calm or searching, not alert.</summary>
@@ -287,7 +289,7 @@ public sealed class ZombieMind : MonoBehaviour
         if (!Thinks) return;
         ComeTo();
         if (Mood == ZombieMood.Alert) TurnTo(stimulus, Time.deltaTime);
-        if (Mood == ZombieMood.Rousing)
+        if (Mood == ZombieMood.Rousing || Mood == ZombieMood.Rising)
         {
             if (focus != null) TurnTo(focus.transform.position, Time.deltaTime);
             if (Time.time >= rouseUntil)
@@ -316,7 +318,11 @@ public sealed class ZombieMind : MonoBehaviour
         wasDown = down;
         if (!rose || riseRouse <= 0f || Mood != ZombieMood.Awake) return;
         if (TryGetComponent(out ZombieType type) && type.Crawls) return;
-        Rouse(Alive(focus) ? focus : PlayerRoster.Nearest(transform.position), riseRouse);
+        var at = Alive(focus) ? focus : PlayerRoster.Nearest(transform.position);
+        Mood = ZombieMood.Rising;
+        if (Alive(at)) focus = at;
+        rouseUntil = Time.time + riseRouse;
+        Halt();
     }
     private bool wasDown;
 

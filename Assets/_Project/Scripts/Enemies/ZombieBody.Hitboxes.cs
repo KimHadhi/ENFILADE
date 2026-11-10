@@ -39,7 +39,6 @@ public sealed partial class ZombieBody
     }
 
     private static readonly Dictionary<Mesh, FitPart[]> fitted = new Dictionary<Mesh, FitPart[]>();
-    private static readonly HashSet<ZombieBody> withHitboxes = new HashSet<ZombieBody>();
     private static bool showingHitboxes;
     private static Material headView, bodyView;
     private readonly List<GameObject> hitboxViews = new List<GameObject>();
@@ -48,7 +47,6 @@ public sealed partial class ZombieBody
     private static void ClearFits()
     {
         fitted.Clear();
-        withHitboxes.Clear();
         showingHitboxes = false;
     }
 
@@ -56,8 +54,8 @@ public sealed partial class ZombieBody
     public static string ToggleHitboxes()
     {
         showingHitboxes = !showingHitboxes;
-        withHitboxes.RemoveWhere(body => body == null);
-        foreach (var body in withHitboxes) body.ViewHitboxes(showingHitboxes);
+        // Found when asked rather than kept in a list, which would hold every zombie ever dressed (the 2026-11-11 review).
+        foreach (var body in FindObjectsByType<ZombieBody>(FindObjectsSortMode.None)) body.ViewHitboxes(showingHitboxes);
         return showingHitboxes ? "좀비 히트박스 보이기 (머리 빨강 · 몸 노랑). 다시 입력하면 숨긴다" : "좀비 히트박스 숨김";
     }
 
@@ -101,7 +99,6 @@ public sealed partial class ZombieBody
                 }
             }
         }
-        withHitboxes.Add(this);
         if (showingHitboxes) ViewHitboxes(true);
         return top;
     }
@@ -153,8 +150,10 @@ public sealed partial class ZombieBody
                 // Which part each of this skin's bones counts for, worked out once per bone rather than per vertex.
                 var partOf = new int[bones.Length];
                 for (int b = 0; b < bones.Length; b++) partOf[b] = bones[b] != null ? OwnerOf(bones[b], owner) : -1;
-                // Baked with the renderer's scale, in its own position and turn.
-                var toWorld = Matrix4x4.TRS(skin.transform.position, skin.transform.rotation, Vector3.one);
+                // BakeMesh(…, true) gives the mesh in the renderer's own unscaled space, so the renderer's whole matrix takes
+                // it to the world. With its scale left out, a brute (grown) dressed first fitted its look too small for
+                // every later zombie of that look (the 2026-11-11 review).
+                var toWorld = skin.transform.localToWorldMatrix;
                 for (int v = 0; v < vertices.Count; v++)
                 {
                     int index = Strongest(weights[v]);
@@ -396,7 +395,17 @@ public sealed partial class ZombieBody
         if (!on) return;
         if (headView == null)
         {
-            headView = new Material(FeelAssets.Particle(Texture2D.whiteTexture, true)) { hideFlags = HideFlags.HideAndDontSave };
+            // Over the body (GuideBeacon is the shot effects' material drawn whatever stands in front): the shapes sit mostly
+            // inside the skin, and with the depth test only their corners poked out (the 2026-11-11 review).
+            var through = Resources.Load<Shader>("Combat/Shaders/GuideBeacon");
+            headView = through != null ? new Material(through) : new Material(FeelAssets.Particle(Texture2D.whiteTexture, true));
+            headView.hideFlags = HideFlags.HideAndDontSave;
+            if (through != null)
+            {
+                headView.SetTexture("_MainTex", Texture2D.whiteTexture);
+                headView.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
+                headView.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.One);
+            }
             headView.SetColor("_Color", new Color(1f, .15f, .15f, .45f));
             bodyView = new Material(headView) { hideFlags = HideFlags.HideAndDontSave };
             bodyView.SetColor("_Color", new Color(1f, .85f, .1f, .3f));

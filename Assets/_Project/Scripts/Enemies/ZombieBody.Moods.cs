@@ -48,12 +48,13 @@ public sealed partial class ZombieBody
         var mood = mind != null ? mind.Mood : ZombieMood.Awake;
         if (mood != shownMood)
         {
-            if (mood == ZombieMood.Rousing) Cue(true);
+            if (mood == ZombieMood.Rousing || mood == ZombieMood.Rising) Cue(true);
             else if (mood == ZombieMood.Alert && shownMood == ZombieMood.Calm) Cue(false);
             shownMood = mood;
         }
         float step = dt / MoodBlend;
-        bool looking = mood == ZombieMood.Alert || mood == ZombieMood.Searching || mood == ZombieMood.Rousing;
+        bool looking = mood == ZombieMood.Alert || mood == ZombieMood.Searching || mood == ZombieMood.Rousing
+            || mood == ZombieMood.Rising;
         calmShare = Mathf.MoveTowards(calmShare, mood == ZombieMood.Calm ? 1f : 0f, step);
         alertShare = Mathf.MoveTowards(alertShare, looking ? 1f : 0f, step);
         searchShare = Mathf.MoveTowards(searchShare, mood == ZombieMood.Searching ? 1f : 0f, step);

@@ -111,7 +111,12 @@ internal sealed class GoreBody
                 bones[i] = stand;
                 changed = true;
             }
-            if (changed) skin.bones = bones;
+            if (!changed) continue;
+            skin.bones = bones;
+            // The through-wall copies drawn over this skin (HoldReveal's, EnemyReveal's) ride its bones too, or a limb
+            // shot off a holding zombie stayed in its silhouette (the 2026-11-11 review).
+            foreach (Transform child in skin.transform)
+                if (child.TryGetComponent(out SkinnedMeshRenderer copy) && copy.sharedMesh == skin.sharedMesh) copy.bones = bones;
         }
         // Gone, so not shot: its hitboxes (triggers on its bones) are switched off whole. A shot's blood mark hangs on the
         // hitbox it hit (EnemyBloodEffect), even the mark of the shot that cut it, which comes after this, so it goes

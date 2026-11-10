@@ -97,9 +97,11 @@ public sealed class MuzzleEffects : MonoBehaviour, ITableBound
     private void Paint()
     {
         if (material == null) return;
-        // A table colour is plain RGB; the brightness takes it past white for bloom.
-        material.SetColor(CoreColorId, coreColor * coreBrightness);
-        material.SetColor(GlowColorId, glowColor * glowBrightness);
+        // A table colour is plain RGB; the brightness takes it past white for bloom. Sent as linear values: the project
+        // renders in linear space, and SetColor would raise an HDR colour to the power 2.2 (the 2026-11-11 review: the
+        // core came out about 8 times hotter and the orange glow deep red).
+        material.SetVector(CoreColorId, coreColor.linear * coreBrightness);
+        material.SetVector(GlowColorId, glowColor.linear * glowBrightness);
         material.SetFloat(CoreId, core);
         material.SetFloat(TailId, tail);
         material.SetFloat(HeadId, head);
@@ -108,16 +110,25 @@ public sealed class MuzzleEffects : MonoBehaviour, ITableBound
     private void Play(WeaponShot shot)
     {
         bool pellet = weapon != null && weapon.EquippedData != null && weapon.EquippedData.Pellets > 1;
-        Launch(shot.Origin, EndOf(shot.Trace), pellet);
-        // A bullet that went on through or off something (AttackTrace.Bullet) streaks on from there.
-        if (shot.Later != null)
-            foreach (var leg in shot.Later) Launch(leg.Onward.From, EndOf(leg.Trace), pellet);
+        Vector3 first = EndOf(shot.Trace);
+        Launch(shot.Origin, first, pellet, 0f);
+        // A bullet that went on through or off something (AttackTrace.Bullet) streaks on from there, once it gets there:
+        // each stretch waits for the path flown before it.
+        if (shot.Later == null) return;
+        float before = Vector3.Distance(shot.Origin, first);
+        foreach (var leg in shot.Later)
+        {
+            Vector3 end = EndOf(leg.Trace);
+            Launch(leg.Onward.From, end, pellet, before);
+            before += Vector3.Distance(leg.Onward.From, end);
+        }
     }
 
     private static Vector3 EndOf(in AttackTraceResult trace)
         => trace.HasHit && trace.Hit.collider != null ? trace.Hit.point : trace.End;
 
-    private void Launch(Vector3 from, Vector3 to, bool pellet)
+    // delay: how far the bullet flies before this stretch starts (m); the stretch stays hidden until then.
+    private void Launch(Vector3 from, Vector3 to, bool pellet, float delay)
     {
         Vector3 path = to - from;
         float distance = path.magnitude;
@@ -129,7 +140,7 @@ public sealed class MuzzleEffects : MonoBehaviour, ITableBound
         var tracer = new Flying
         {
             line = line, from = from, way = path / distance, distance = distance,
-            flown = Mathf.Min(startAhead, distance), length = length * (pellet ? pelletLength : 1f),
+            flown = delay > 0f ? -delay : Mathf.Min(startAhead, distance), length = length * (pellet ? pelletLength : 1f),
             brightness = pellet ? pelletBrightness : 1f
         };
         flying.Add(tracer);
@@ -156,10 +167,14 @@ public sealed class MuzzleEffects : MonoBehaviour, ITableBound
     // The streak where it is now: its head ahead along the path, its tail a length behind, both kept on the path.
     private void Place(Flying tracer, Camera view)
     {
+        var line = tracer.line;
+        // A later stretch the bullet hasn't reached yet.
+        bool started = tracer.flown > 0f;
+        if (line.enabled != started) line.enabled = started;
+        if (!started) return;
         float headAt = Mathf.Min(tracer.flown, tracer.distance);
         float tailAt = Mathf.Clamp(tracer.flown - tracer.length, 0f, headAt);
         Vector3 tailPoint = tracer.from + tracer.way * tailAt, headPoint = tracer.from + tracer.way * headAt;
-        var line = tracer.line;
         line.SetPosition(0, tailPoint);
         line.SetPosition(1, headPoint);
         line.startWidth = Wide(tailPoint, view);
