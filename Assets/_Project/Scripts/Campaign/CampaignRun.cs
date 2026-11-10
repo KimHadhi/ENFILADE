@@ -111,6 +111,11 @@ public sealed class CampaignRun : MonoBehaviour
     // A hold with no song has sent its brutes; who the ride left behind, for the closing card.
     private bool songlessSent;
     private string leftBehind = "";
+    // The closing card waits for the escape's banner (ChapterEndBanner): when it comes up (real s; negative, none due),
+    // and what the game did to the class, for the insignia beside it.
+    private const float BannerSeconds = 2.8f, CardOverBanner = .5f;
+    private float cardAt = -1f;
+    private ClassGrowth.Climb climb;
 
     private bool IsHost => network == null || network.IsServer;
     private CampaignStep Current => step >= 0 && step < steps.Count ? steps[step] : null;
@@ -280,6 +285,7 @@ public sealed class CampaignRun : MonoBehaviour
         WatchForWipe();
         if (IsHost) { fuel.Tick(dt); Run(dt); }
         WatchQuiet();
+        ShowCardWhenDue();
         PlayMusic();
         ThrowCan();
         Prompt();
@@ -785,14 +791,26 @@ public sealed class CampaignRun : MonoBehaviour
             leftBehind = string.Join(", ", names);
         }
         PlayerRecords.ChapterEscaped(gameObject.scene.name);
-        if (chapter != null && screen != null) screen.ShowCard(chapter.Title, chapter.Outro, outroSeconds, Results());
-        // The class's insignia beside the results, climbing if this chapter took it up a rank (stage 6E).
-        RankClimb.Play(ClassGrowth.Settle(), outroSeconds);
+        // The escape has its moment first; the card comes up as the banner lets go (ShowCardWhenDue).
+        climb = ClassGrowth.Settle();
+        ChapterEndBanner.Play(chapter != null ? chapter.Title : "", leftBehind.Length > 0 ? "놓친 사람 · " + leftBehind : GameSession.IsOnline ? "모두 탈출" : "탈출 성공", BannerSeconds);
+        cardAt = Time.unscaledTime + BannerSeconds - CardOverBanner;
         if (tracker == null) return;
         string next = chapter != null ? chapter.Next : null;
         string title = string.IsNullOrEmpty(next) ? "캠페인 완료"
             : Application.CanStreamedLevelBeLoaded(next) ? "다음 장으로 이동합니다" : "다음 장은 아직 지어지지 않았어요";
         tracker.SetObjective(new MissionObjective(gameObject.scene.name + ".end", title, ""));
+    }
+
+    // The closing card and, beside its results, the class's insignia, climbing if this chapter took it up a rank (6E).
+    private void ShowCardWhenDue()
+    {
+        if (cardAt < 0f || Time.unscaledTime < cardAt) return;
+        cardAt = -1f;
+        float seconds = Mathf.Max(4f, outroSeconds - (BannerSeconds - CardOverBanner));
+        if (chapter != null && screen != null) screen.ShowCard(chapter.Title, chapter.Outro, seconds, Results());
+        if (climb != null) RankClimb.Play(climb, seconds);
+        climb = null;
     }
 
     // The chapter's results under its closing story (stage 6A), two plain numbers: this chapter's kills and the money

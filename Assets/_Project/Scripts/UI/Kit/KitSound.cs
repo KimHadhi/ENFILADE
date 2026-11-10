@@ -13,9 +13,10 @@ public static class KitSound
 {
     /// <summary>
     /// Buy: something was paid for. Refuse: it couldn't be. Alert: a teammate went down or died (AlertHUD). The Pick
-    /// cues: this player took ammo, a medkit, a shield cell, money or a gun off the floor (FieldPickups).
+    /// cues: this player took ammo, a medkit, a shield cell, money or a gun off the floor (FieldPickups). Escape: a
+    /// chapter is escaped (ChapterEndBanner).
     /// </summary>
-    public enum Cue { Buy, Refuse, Alert, PickAmmo, PickHeal, PickShield, PickMoney, PickGun }
+    public enum Cue { Buy, Refuse, Alert, PickAmmo, PickHeal, PickShield, PickMoney, PickGun, Escape }
 
     private const string BankId = "UI";
     private const int Rate = 44100;
@@ -72,6 +73,7 @@ public static class KitSound
             Cue.PickShield => Charge(),
             Cue.PickMoney => Coin(),
             Cue.PickGun => Rack(),
+            Cue.Escape => Away(),
             _ => Buzz()
         };
         var clip = AudioClip.Create("Kit " + cue, data.Length, 1, Rate, false);
@@ -195,6 +197,18 @@ public static class KitSound
         Click(data, random, .1f, .012f, .7f);
         Click(data, random, .16f, .016f, .55f);
         return Finish(data, .65f);
+    }
+
+    // A chapter escaped: four notes climbing a chord, the last held, over a low note under them all.
+    private static float[] Away()
+    {
+        var data = new float[(int)(Rate * 1.5f)];
+        Note(data, 0f, 131f, .7f, .35f);
+        Note(data, 0f, 523f, .12f, .4f);
+        Note(data, .11f, 659f, .12f, .4f);
+        Note(data, .22f, 784f, .14f, .4f);
+        Note(data, .34f, 1047f, .5f, .5f);
+        return Finish(data, .6f);
     }
 
     // A dry click starting at <at> (s): a burst of dulled noise dying over <decay>.
