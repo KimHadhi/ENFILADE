@@ -17,7 +17,8 @@ GMod 애드온(`F:\Addons`, 저장소 밖)의 이동·애니메이션·소리를
 | FEAR-like SFX for Various VManip Addons | 일부 표면의 착지·슬라이드, 포복, 렛지, 기울이기, 옷 소리 | `Art/Audio/Movement`, 나머지는 [Art/Audio/Library](../Art/Audio/Library) |
 | [wOS] DynaBase, Mixamo 확장 | 착지 클립을 시험했다. 지금은 mixamo.com에서 직접 받은 클립으로 바꿔서 남아 있지 않다 | [Art/Animations/Mixamo](../Art/Animations/Mixamo) |
 | [MW] Quick Throwing Knife | 소리만 보관. 기능은 이후 전투 작업에서 다룬다 | `Art/Audio/Library/ThrowingKnife` |
-| Advanced Stealth | 소리만 보관. 잠입·분대 AI는 별도 계획이 필요하다 | `Art/Audio/Library/AdvancedStealth` |
+| Advanced Stealth | 소리만 보관. 좀비의 시야·의심·소음 듣기·수색·등 뒤 암살은 따로 만들었다([ZombieMind](../Scripts/Enemies/ZombieMind.cs), [ZombieSenses.csv](../Resources/Tables/ZombieSenses.csv)). 이 애드온의 수식을 옮겼다는 기록은 없다. 분대 AI는 옮기지 않았다 | `Art/Audio/Library/AdvancedStealth` |
+| Horde : Wave Survival (GMod 워크숍 2401598805) | 돈 떨구기(G로 묶음을 떨궈 동료에게 주기), 웨이브 막바지에 남은 적을 벽 너머로 보이기. 총의 관통력 수치는 위 ArcCW 행 | [MoneyDrops](../Scripts/Economy/MoneyDrops.cs), [EnemyReveal](../Scripts/Combat/Waves/EnemyReveal.cs) |
 | [ArcCW] Arctic's Customizable Weapons (Base) (워크숍 2131057232, Horde가 쓰는 무기 베이스) | 총알 관통과 도탄(`DoPenetration`, `GetRicochetChance`, `PenTable`), 총마다 관통력은 Horde의 ArcCW 무기 수치(M4A1 10, G17 4), 도탄 소리, 앉아 쏘기 배율 규칙(`arccw_mult_crouchdisp`·`arccw_mult_crouchrecoil`, 값은 TFA 베이스의 0.5·0.65), 자동 장전(`arccw_automaticreload`), 뷰모델 흔들림(`cl_viewmodel.lua`의 coolsway 중 움직임·걸음·숨쉬기. 숨쉬기는 총구가 들리게 바로 세웠고 질주에서 커지는 출렁임은 뺐다. 시선 흔들림은 아래 TFA 것). 몸만 ArcCW와 다르다(2026-11-06 사용자 요청): 두께와 상관없이 몸 하나에 `pierceCost` 2mm만 깎고, 들어간 자리에서 다시 나가 붙어 선 몸도 맞힌다. `Flesh`의 재질 계수는 ArcCW의 0.1로 되돌렸고, `pierceCost`를 비울 때만 쓴다 | [BulletPenetration](../Scripts/Combat/HitDetection/BulletPenetration.cs), [AttackTrace](../Scripts/Combat/HitDetection/AttackTrace.cs), [Weapons.csv](../Resources/Tables/Weapons.csv), [Surfaces.csv](../Resources/Tables/Surfaces.csv), `Art/Audio/Bullets/Ricochet` |
 | TFA Base (GMod 워크숍 2840031720) | 시선 흔들림(Sway)은 2026-11-07부터 KINEMATION FPS Animation Framework의 Sway 레이어로 바꿔 지웠다. 앉아 쏘기 배율 값 0.5·0.65. 잔탄 경고음 규칙(`shared.lua`의 `EmitLowAmmoSound`: 쏜 뒤 탄창 3분의 1 미만이면 총마다의 경고음, 비어 갈수록 크게(`RequiredVolume`), 마지막 발은 마지막 발 소리, `autodetection.lua`대로 4발 이하 탄창은 없음). 경고음과 함께 CS2 딸깍을 내는 것은 사용자가 고른 조합이다(2026-11-06) | [Weapons.csv](../Resources/Tables/Weapons.csv), `WeaponFeedback.AmmoCue`, GunFeel `Low Ammo Fraction`·`Low Ammo Small Magazine` |
 | Accurate Gun Reverb (L4D2 워크숍 3629393613) | 쏠 때마다 발밑에서 9방향 광선으로 방 크기를 재고(양끝 2개씩 버린 합 ÷ 7, 위가 500유닛 넘게 트이면 실외) 총과 방에 맞는 잔향 꼬리를 겹치기. 꼬리 15개. 유니티 때문에 다른 점: 길찾기 영역 대신 2m 칸마다 기억, 광선이 사람을 지나감, 동시 꼬리 수 제한 | [GunReverb](../Scripts/Audio/GunReverb.cs), `Art/Audio/Guns/Reverb` |
@@ -47,6 +48,25 @@ GMod 애드온(`F:\Addons`, 저장소 밖)의 이동·애니메이션·소리를
 | 근접·타격 소리 | `Art/Audio/Combat/<용도>` |
 | 이펙트 | `Prefabs/Effects/<용도>`, 재질은 `Art/Materials/<용도>` |
 | 스토어 팩처럼 통째로 받는 에셋 | `Assets/ThirdParty/<팩 이름>` |
+
+## 이식표 묶음별 현황 (2026-11-10 재점검)
+
+[워크숍 애드온 이식표](https://claude.ai/artifact/TjkB8PvDvQ1dnhJr27FEbz)는 애드온 121개(L4D2 70, GMod 51)를 적었고, 그중 35개를 묶음 10개로 골랐다. 표는 좀비가 캡슐 하나뿐이던 때 쓴 것이라 "없음"으로 적힌 칸 여럿이 낡았다. 아래는 GitHub의 0.8.2 가지에서 코드·표·폴더를 보고 다시 매긴 것이다. 이 재점검은 PC에만 있던 0.8.1 작업(거구 좀비, 음악, 던지는 캔, 필드 줍기, 구역 환경음)을 보지 못했으므로, 그 작업을 합친 뒤 "안 함" 칸을 다시 본다.
+
+| 묶음 | 지금 | 남은 것 |
+| --- | --- | --- |
+| 1. 좀비 감각과 상태 | 핵심은 끝남. 조용함→경계→수색→깸, 시야 광선 3점, 소음 듣기, 등 뒤 암살([ZombieMind](../Scripts/Enemies/ZombieMind.cs), [PlayerExecution](../Scripts/Player/Combat/PlayerExecution.cs)) | 빛·손전등 반영, 벽 재질별 소리 손실, 시체 발견 |
+| 2. 좀비 몸과 소리 | 몸·애니메이션·절단은 구매 팩과 자체 구현으로 대체(Synty, Nephilite, [ZombieGore](../Scripts/Enemies/Gore/ZombieGore.cs)) | **좀비 목소리**(RE6 Zombie Sound 365개). `Art/Audio`에 적 소리 폴더가 없다 |
+| 3. 맵 진행과 디렉터 | 뼈대는 L4D식으로 따로 만듦([CampaignDirector](../Scripts/Campaign/CampaignDirector.cs), [Campaign.csv](../Resources/Tables/Campaign.csv)). Horde의 숫자는 쓰지 않음 | 인원수에 비례하는 동시 상한, 엘리트·보스 편성, 엔드리스 |
+| 4. 클래스, 퍽, 상점 | 돈, 돈 떨구기, 상점, 능력 카드([Perks.csv](../Resources/Tables/Perks.csv))는 있음. 부착물 메뉴는 ArcCW 배치 | 클래스, 무게 제한, 퍽 트리, 부착물 능력치 겹치기 규칙 |
+| 5. 카타나 | 안 함. 근접 무기가 없고 주먹뿐 | 전부. 칼·삽 모델은 `Assets/ThirdParty/LowPolyWeaponBundlePackV`와 Synty에 있다 |
+| 6. 던지는 칼 | 안 함. 소리 43개만 `Art/Audio/Library/ThrowingKnife`에 보관 | 전부 |
+| 7. 총소리·잔향 | 끝남([GunReverb](../Scripts/Audio/GunReverb.cs), `Art/Audio/Guns`) | 없음 |
+| 8. 권총·쌍권총 | 권총은 구매 팩(M1911)으로 대체 | 쌍권총 |
+| 9. 발차기·근접 보조 | 핵심 끝남: 장전 중 V 발차기, 도약 밀치기, 밀치기 카운터([ShoveMoves](../Scripts/Player/Combat/ShoveMoves.cs)) | 독립 발차기 키, 공중 드롭킥 2배, 문 차기 |
+| 10. 무기 구조 정리 | 셸 단위 장전과 사격으로 끊기는 있음([Weapons.csv](../Resources/Tables/Weapons.csv)의 `shellReload`) | 작업 우선순위 상태기계, 숨 참기, 무기 살펴보기. 급하지 않다 |
+
+표가 "없음"이라 했지만 그 뒤에 생긴 것: 샷건과 한 발씩 장전, 소음기와 소리를 듣는 좀비, 쓰러짐·부활과 누운 플레이어 뜯어먹기, 래그돌 시체, 머리·팔다리 절단, 상점 구급상자, 디렉터의 긴장도, 죽은 뒤 관전 카메라.
 
 ## 단위
 
@@ -88,7 +108,7 @@ Source 단위는 **1 = 0.025m**로 환산했다. Beatrun의 수치를 옮길 때
 - **몸 클립 펀치**: 주먹이 지금은 손 IK로만 뻗는다. `punchleft`·`punchright`·`punchmid`·발차기 클립을 섞는다.
 - **총 든 동작 클립**: `Body.armedClips`를 켜서 확인한다. 손 IK가 생겨서 가능해졌지만 아직 시험하지 않았다.
 - **사다리·줄의 손 IK**: 했다(백로그 142). 사다리는 `PlayerBodyHands.Ladder`가 손을 가로대에, `PlayerBody.LadderFeet`가 발을 가로대에 올리고, 집라인은 `PlayerBodyHands.Zipline`이 클립의 앞뒤 손 위치 그대로 각 손을 줄 위에 감아 쥔다. 모두 캐릭터마다 손바닥 치수(ArmIK)를 쓴다.
-- **총 모델**: 지금 플레이어 프리팹의 총은 재질을 비워 보이지 않고, 권총 모델은 없다.
+- **총 모델**: 했다. KINEMATION 팩의 총 11자루(권총 M1911 포함)를 쓴다([외부 에셋 출처](AssetSources.md)). 쌍권총은 없다.
 - **중력**: 24다. 20도 시험해 볼 만하다.
-- **소음을 듣는 적**: `Noise` 이벤트는 나가지만 듣는 AI가 없다.
+- **소음을 듣는 적**: 했다. 좀비가 `Noise`를 듣는다([ZombieMind](../Scripts/Enemies/ZombieMind.cs), [ZombieSenses.csv](../Resources/Tables/ZombieSenses.csv)).
 - **멀티플레이**: 혼자일 때만 Esc 메뉴가 게임을 멈추게 한다.

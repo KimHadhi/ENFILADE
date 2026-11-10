@@ -18,7 +18,7 @@ public readonly struct NoiseEvent
 
 /// <summary>
 /// What enemies will be able to hear. Every character sound reports here as it plays (CharacterSounds: footsteps,
-/// landings, vaults, voice), with a reach from Tables/SoundCues. Nothing listens yet; enemy hearing subscribes to Made.
+/// landings, vaults, voice), with a reach from Tables/SoundCues. Zombies hear it: ZombieMind subscribes to Made.
 /// </summary>
 public static class Noise
 {
