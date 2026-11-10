@@ -449,13 +449,15 @@ public sealed class EnemyCombatAI : MonoBehaviour
     /// in ShowWindup, each at the instant its own timer starts, so the parry window doesn't move. The cue whose loud
     /// part marks the blow is louder when the blow is meant for this PC's own player (AtMine), and the zombie's voice
     /// goes with it (the user's memo of 2026-11-10, item 10: a voice and a small signal). Only the opening blow of a
-    /// combo is voiced, and never an exploder's close-up swing (it does no harm; the burst is its attack), nor a
-    /// wind-up that a late message starts on a copy this PC has already seen die.
+    /// combo is voiced, and never a wind-up that a late message starts on a copy this PC has already seen die. An
+    /// exploder's close-up swing does no harm (the burst is its attack): it has no voice, and its cue stays at its
+    /// plain volume, so the loud cue always means a blow to answer.
     /// </summary>
     private void Telegraph(bool atMine)
     {
-        CombatCueAudio.Play(gameObject, CombatCue.EnemyAttackStart, CuePitch, gain: ZombieVoice.SignalGain(atMine));
-        if (comboIndex > 0 || enemyHealth == null || !enemyHealth.IsAlive || (move == AttackMove.Swing && damage <= 0f)) return;
+        bool harmless = move == AttackMove.Swing && damage <= 0f;
+        CombatCueAudio.Play(gameObject, CombatCue.EnemyAttackStart, CuePitch, gain: ZombieVoice.SignalGain(atMine && !harmless));
+        if (comboIndex > 0 || enemyHealth == null || !enemyHealth.IsAlive || harmless) return;
         if (ZombieVoice.Attacks(this, move == AttackMove.Pounce, atMine, Time.time - voicedAt)) voicedAt = Time.time;
     }
 

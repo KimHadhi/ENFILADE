@@ -37,6 +37,7 @@ public sealed class CombatCueAudio : MonoBehaviour
     }
     private void Emit(CombatCue cue, float pitch, bool inWorld, float gain)
     {
+        bool wasAttack = LastCue == CombatCue.EnemyAttackStart;
         LastCue = cue; PlayCount++;
         if (cue == CombatCue.EnemyAttackStart) cuePitch = pitch;
         var settings = CombatFeedbackSettings.Instance;
@@ -53,6 +54,11 @@ public sealed class CombatCueAudio : MonoBehaviour
         }
         if (clip == null) return;
         EnsureSource();
+        // One source plays every cue of this owner, and its pitch bends whatever is still ringing on it. An attack's
+        // cue keeps its own pitch (a brute's is .6) and follows the attacker's time; the block or parry that answers
+        // it starts at 1 and ends that following, so the rest of the attack cue would jump in pitch and could no
+        // longer be cut short. The attack has been answered: its cue ends here.
+        if (wasAttack && cue != CombatCue.EnemyAttackStart) source.Stop();
         source.spatialBlend = cue == CombatCue.EnemyAttackStart || inWorld ? 1f : 0f;
         source.minDistance = 2f; source.maxDistance = 20f;
         source.rolloffMode = AudioRolloffMode.Linear;

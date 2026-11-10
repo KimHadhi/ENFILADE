@@ -231,4 +231,4 @@ Zombie/Attack,0.85,0.96,1.04,좀비가 공격을 시작할 때의 으르렁(Zomb
 Zombie/Attack/Male,0.85,0.96,1.04,남자 좀비의 공격 으르렁. 같은 워크숍 rageat/male의 8개
 Zombie/Attack/Female,0.9,0.96,1.04,여자 좀비의 공격 으르렁. 같은 워크숍 rageat/female의 9개(원본이 22kHz라 조금 먹먹하다)
 Zombie/Leap/Male,0.95,0.97,1.05,러너가 도약할 때의 짧은 비명(남). 같은 워크숍 rage/male의 8개
-Zombie/Leap/Female,1,0.97,1.05,러너가 도약할 때의 짧은 비명(여). 같은 워크숍 rage/female의 8개
+Zombie/Leap/Female,1,0.97,1.05,러너가 도약할 때의 짧은 비명(여). 같은 워크숍 rage/female의 7개

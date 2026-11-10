@@ -10,8 +10,10 @@ using UnityEngine;
 /// Tables/ZombieVoice.
 /// A horde starts many attacks a second and Unity plays 32 sounds at once: past that, gunshots go silent. So the
 /// voices are a ring of a few sources, the oldest giving way; a zombie that has spoken keeps quiet a while; no two
-/// voices start together; and an attack on someone else is voiced only some of the time and only within earshot. An
-/// attack on this PC's own player is always voiced, and its cue is louder (SignalGain).
+/// voices start together; and an attack on someone else is voiced only some of the time and only within earshot.
+/// An attack on this PC's own player comes first: it isn't left out by chance, a voice for somebody else never takes
+/// its turn, a leap at them is always heard, it keeps its place when Unity runs short of voices, and its cue is
+/// louder (SignalGain).
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class ZombieVoice : MonoBehaviour
@@ -28,11 +30,11 @@ public sealed class ZombieVoice : MonoBehaviour
     private bool speak = true;
     [SerializeField, Range(1, 16), Tooltip("Voices that can sound at once; one more stops the oldest. Read once, when the ring is built.")]
     private int voices = 5;
-    [SerializeField, Min(0f), Tooltip("A zombie that has spoken keeps quiet this long (s). A leap is voiced all the same.")]
-    private float ownGap = 2.5f;
-    [SerializeField, Min(0f), Tooltip("No two voices start closer together than this (s).")]
+    [SerializeField, Min(0f), Tooltip("A zombie that has spoken keeps quiet this long (s): one that swings every second or so speaks at every other swing, a slow heavy one at each. A leap is voiced all the same.")]
+    private float ownGap = 2f;
+    [SerializeField, Min(0f), Tooltip("No two voices start closer together than this (s). Voices for this PC's own player wait only for one another.")]
     private float anyGap = .18f;
-    [SerializeField, Range(0f, 1f), Tooltip("How many of the attacks aimed at another player are voiced. One aimed at this PC's own player always is.")]
+    [SerializeField, Range(0f, 1f), Tooltip("How many of the attacks aimed at another player are voiced. One aimed at this PC's own player is never left out by this.")]
     private float othersShare = .5f;
     [SerializeField, Range(0f, 1f), Tooltip("How often a body named Male or Female uses the clips that are neither.")]
     private float neutralShare = .25f;
@@ -46,13 +48,13 @@ public sealed class ZombieVoice : MonoBehaviour
     private float bigSize = 1.15f;
     [SerializeField, Range(.3f, 1.5f), Tooltip("A big body's voice is pitched by this.")]
     private float bigPitch = .8f;
-    [SerializeField, Range(0f, 3f), Tooltip("The wind-up cue of an attack aimed at this PC's own player is this many times as loud.")]
+    [SerializeField, Range(0f, 3f), Tooltip("The wind-up cue of an attack aimed at this PC's own player is this many times as loud. A swing that does no harm (an exploder's) stays as it is.")]
     private float signalAtMine = 1.8f;
 
     private static ZombieVoice instance;
     private VoiceRing ring;
     private SoundBank bank;
-    private float nextBankTry, nextVoice;
+    private float nextBankTry, nextVoice, nextMine;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void Forget() => instance = null;
@@ -95,7 +97,7 @@ public sealed class ZombieVoice : MonoBehaviour
             voice.playOnAwake = false;
             voice.spatialBlend = 1f;
             voice.rolloffMode = AudioRolloffMode.Linear;
-            // Less pressing than a gun's source (128): when Unity runs out of real voices, a snarl gives way before a shot.
+            // Less pressing than most sounds (128) until a voice says otherwise as it starts (Say).
             voice.priority = 160;
             GameAudio.Bind(voice, AudioChannel.Combat);
             sources[i] = voice;
@@ -113,7 +115,9 @@ public sealed class ZombieVoice : MonoBehaviour
         if (!speak || ring == null) return false;
         // A leap is over in a third of a second and can pin: it is always heard, whatever the zombie said before.
         if (!leap && sinceOwn < ownGap) return false;
-        if (Time.time < nextVoice) return false;
+        // No two voices start together. One for this PC's own player waits only for another of its own, and a leap at
+        // them for nothing: a voice for somebody else must never take the turn of the zombie about to hit me.
+        if (atMine ? !leap && Time.time < nextMine : Time.time < nextVoice) return false;
         if (!atMine && Random.value > othersShare) return false;
         if (bank == null)
         {
@@ -139,6 +143,10 @@ public sealed class ZombieVoice : MonoBehaviour
         if (clip == null) return false;
         var settings = bank.SettingsOf(key);
         var source = ring.Take();
+        // Unity plays 32 sounds for real and drops the least pressing first, then the quietest. A snarl meant for this
+        // PC's own player ranks with everything else (128), so close by it outlasts far-off tails; one for somebody
+        // else goes first (160). The player's own shots rank above both.
+        source.priority = atMine ? 128 : 160;
         source.transform.position = mouth;
         source.minDistance = near;
         source.maxDistance = Mathf.Max(near + 1f, far);
@@ -146,6 +154,7 @@ public sealed class ZombieVoice : MonoBehaviour
         source.pitch = settings.RandomPitch() * (size >= bigSize ? bigPitch : 1f);
         source.PlayOneShot(clip, Mathf.Clamp01(settings.Volume * volume));
         nextVoice = Time.time + anyGap;
+        if (atMine) nextMine = nextVoice;
         return true;
     }
 
