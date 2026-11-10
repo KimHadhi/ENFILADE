@@ -553,14 +553,20 @@ public sealed class WeaponController : MonoBehaviour
             if (Grip == GunAttachments.Kind.VerticalGrip) recoil.x *= weaponData.GripRecoil;
 
             // A shotgun's pellets each fly their own way round where the shot goes, each a bullet of its own (own attack,
-            // own hit); one shot of a single-bullet gun is pellet 0 on its own.
+            // own hit); one shot of a single-bullet gun is pellet 0 on its own. The first pellet flies dead on where the
+            // shot goes and the rest gather toward the middle of their cone (half of them inside half its radius, where an
+            // even scatter puts a quarter), so a close shot lands as one clump on the aim point and opens up with distance
+            // (user, 2026-11-10: the even scatter read as random and weak; a slug's feel was the pick).
             int pellets = weaponData.Pellets;
             for (int pellet = 0; pellet < pellets; pellet++)
             {
                 long id = DamageHit.NewAttackId();
-                Vector3 direction = pellets > 1
-                    ? WeaponAimSolver.SpreadDirection(aimed, weaponData.PelletSpread, UnityEngine.Random.insideUnitCircle)
-                    : aimed;
+                Vector3 direction = aimed;
+                if (pellet > 0)
+                {
+                    Vector2 scatter = UnityEngine.Random.insideUnitCircle;
+                    direction = WeaponAimSolver.SpreadDirection(aimed, weaponData.PelletSpread, scatter * scatter.magnitude);
+                }
 
                 // Body damage falls off with range, as in Rainbow Six Siege; a headshot kills at any range there, so the
                 // head's multiplier makes up what the range took (WeaponData.FalloffAt).

@@ -64,7 +64,8 @@ public sealed class WeaponData : ScriptableObject
     [Tooltip("Bullets one shot fires, each with the full Damage, spread round where the shot goes within Pellet Spread. " +
         "1 is a single bullet.")]
     [SerializeField, Min(1)] private int pellets = 1;
-    [Tooltip("Half-angle (degrees) of the cone the pellets spread in round where the shot goes, on top of the gun's own spread.")]
+    [Tooltip("Half-angle (degrees) of the cone the pellets spread in round where the shot goes, on top of the gun's own spread. " +
+        "The first pellet flies dead on and the rest gather toward the cone's middle (WeaponController).")]
     [SerializeField, Min(0f)] private float pelletSpread;
     [Tooltip("Loaded a shell at a time, as a pump shotgun: Reload Duration is the start (Empty Reload Duration the start " +
         "from empty, which also chambers a shell), then Shell Insert Duration for each shell, then Shell End Duration. " +
