@@ -168,6 +168,8 @@ public sealed class ZombieNinja : ZombieElite
     private void Vanish()
     {
         hidden = true;
+        // Gone into the smoke is gone: no shot or blow lands on it until it comes out behind someone.
+        if (health != null) health.Untouchable = true;
         Vector3 at = transform.position + Vector3.up * 1f;
         Puff(at, smokeColor, smokeSize, 18);
         var looks = EliteLooks.Instance;
@@ -180,6 +182,7 @@ public sealed class ZombieNinja : ZombieElite
     private void Appear(bool alive)
     {
         hidden = false;
+        if (health != null) health.Untouchable = false;
         Show(true);
         hiddenParts = null;
         if (!alive) return;
@@ -199,6 +202,7 @@ public sealed class ZombieNinja : ZombieElite
     {
         base.OnDisable();
         if (hidden) { hidden = false; Show(true); }
+        if (health != null) health.Untouchable = false;
     }
 
     // ---- Its blow from behind ----

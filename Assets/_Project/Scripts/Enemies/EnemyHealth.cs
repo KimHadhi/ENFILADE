@@ -44,6 +44,11 @@ public sealed class EnemyHealth : MonoBehaviour, IDamageReceiver, ICombatVitals,
     /// <summary>Console test spawns (/spawn n elite). The table sets it otherwise.</summary>
     internal void SetRank(EnemyRank value) => rank = value;
     public float Health { get; private set; }
+    /// <summary>
+    /// Out of reach for now: every hit is turned away (a ninja gone into its smoke, ZombieNinja, set on every PC alike so
+    /// no copy takes what the host's wouldn't).
+    /// </summary>
+    public bool Untouchable { get; set; }
     public float MaximumHealth => Mathf.Max(1f, maximumHealth * healthShare);
     // A zombie's kind scales its row's health (ZombieType: a runner dies sooner).
     private float healthShare = 1f;
@@ -134,6 +139,7 @@ public sealed class EnemyHealth : MonoBehaviour, IDamageReceiver, ICombatVitals,
         {
             return DamageResult.Ignored;
         }
+        if (Untouchable) return DamageResult.Invulnerable;
 
         if (!seen.Add(hit.Id)) return DamageResult.Duplicate;
         recent.Enqueue(hit.Id);
