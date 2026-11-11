@@ -25,8 +25,17 @@ MonoBehaviour:
     character: {fileID: 0}
     handProp: {fileID: 0}
     headProp: {fileID: 0}
+  - kind: 8
+    character: {fileID: 0}
+    handProp: {fileID: 0}
+    headProp: {fileID: 0}
   ninjaVanish: []
   ninjaAppear: []
   chainsawIdle: {fileID: 0}
   chainsawRev: {fileID: 0}
   candymanBuzz: {fileID: 0}
+  reaperCharge:
+  - {fileID: 8300000, guid: 8c2f8253c48d47f99ca75724726218cd, type: 3}
+  reaperSwing:
+  - {fileID: 8300000, guid: 30f26206a25b479a8186f8b634a1d04a, type: 3}
+  - {fileID: 8300000, guid: fdfba86f493545c4aef774ef8b101422, type: 3}

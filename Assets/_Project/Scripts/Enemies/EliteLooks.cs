@@ -2,7 +2,7 @@ using System;
 using UnityEngine;
 
 /// <summary>
-/// What the memo's elites (2026-11-11: ninja, candyman, breadbag) look and sound like, at Resources/Enemies/EliteLooks.
+/// What the memo's elites (2026-11-11: ninja, candyman, breadbag; 2026-11-12: reaper) look and sound like, at Resources/Enemies/EliteLooks.
 /// None has a model of its own yet: each wears one of the pack's bodies (ZombieBody) a little bigger or smaller, with a
 /// light of its own colour and something in its hands that a few boxes stand in for (ZombieElite builds them). Drop a
 /// humanoid body, a prop for the right hand or one for the head into its row and the placeholder gives way; sounds left
@@ -44,6 +44,12 @@ public sealed class EliteLooks : ScriptableObject
     [Header("Candyman (ZombieCandyman)")]
     [Tooltip("The bees about it, looped while it lives. Empty: made in code.")]
     public AudioClip candymanBuzz;
+
+    [Header("Reaper (ZombieReaper)")]
+    [Tooltip("As it draws its scythe back to charge: a blade's ring, played low. One is picked each time. Empty: none.")]
+    public AudioClip[] reaperCharge = new AudioClip[0];
+    [Tooltip("The scythe going round, played low so a light swing sounds heavy. One is picked each time. Empty: made in code.")]
+    public AudioClip[] reaperSwing = new AudioClip[0];
 
     private static EliteLooks loaded;
     private static bool looked;

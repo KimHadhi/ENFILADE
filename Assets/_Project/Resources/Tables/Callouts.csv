@@ -3,6 +3,7 @@
 zombie.ninja,zombie,kind:ninja,30,target,닌자다! 등 뒤 조심해!,Ninja! Watch your back!,보고 있는(없으면 가장 가까운) 좀비가 닌자
 zombie.candyman,zombie,kind:candyman,30,target,캔디맨이다! 끌려가지 마!,Candyman! Don't get hooked!,
 zombie.breadbag,zombie,kind:breadbag,30,target,전기톱이다! 브레드백!,Chainsaw! Breadbag!,
+zombie.reaper,zombie,kind:reaper,30,target,리퍼다! 품으로 붙어서 앉아!,Reaper! Hug it and get down!,그림 리퍼: 멀어지면 낫에 맞고 붙어 앉으면 피한다
 zombie.brute,zombie,kind:brute,25,target,거구다! 다 같이 쏴!,Brute! Focus fire!,
 zombie.charger,zombie,kind:charger,20,target,차저! 돌진 온다!,Charger! It's coming through!,
 zombie.exploder,zombie,kind:exploder,15,target,자폭 좀비! 붙지 마!,Bomber! Keep away!,

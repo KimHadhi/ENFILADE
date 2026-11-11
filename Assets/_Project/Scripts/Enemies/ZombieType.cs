@@ -8,9 +8,11 @@ using UnityEngine.AI;
 /// (ZombieExploder, stage C-16), and Charger: one that bellows and runs people down (ZombieCharger), each picked now
 /// and then by its share. The 2026-11-11 memo's elites (items 23 and 25): Ninja, vanishing in smoke to strike from
 /// behind (ZombieNinja); Candyman, hooking a player and dragging them off (ZombieCandyman); Breadbag, with a chainsaw
-/// (ZombieBreadbag). New kinds go on the end: the number is what the network sends.
+/// (ZombieBreadbag). Reaper (item 24, as the user shaped it on 2026-11-12): a grim reaper charging its scythe while a ring
+/// on the ground widens, beaten by hugging it low (ZombieReaper). New kinds go on the end: the number is what the network
+/// sends.
 /// </summary>
-public enum ZombieKind : byte { Shambler, Runner, Brute, Exploder, Charger, Ninja, Candyman, Breadbag }
+public enum ZombieKind : byte { Shambler, Runner, Brute, Exploder, Charger, Ninja, Candyman, Breadbag, Reaper }
 
 /// <summary>
 /// Multiplayer plan stage 4D-1, made Guts & Blackpowder's at the user's word: what kind of zombie it is. A shambler
@@ -143,6 +145,13 @@ public sealed class ZombieType : MonoBehaviour
         share = .015f, speed = 3.4f, acceleration = 8f, angularSpeed = 150f, damage = 0f, windup = .9f, attackInterval = 2.2f,
         aimHeight = 1.1f, attackRange = 2.1f, approachShare = .75f, healthShare = 6f, scale = 1.18f, most = 1
     };
+    // Item 24's reaper: tall and slow, it starts its charge from well off (attackRange) and stands there; its own numbers
+    // (the charge, the ring, the cut) are ZombieReaper's. Damage 0: the scythe deals its own.
+    private readonly Numbers reaper = new Numbers
+    {
+        share = .012f, speed = 3.6f, acceleration = 7f, angularSpeed = 120f, damage = 0f, windup = 2.4f, attackInterval = 3.2f,
+        aimHeight = 1.1f, attackRange = 4.5f, approachShare = .4f, healthShare = 7f, scale = 1.22f, most = 1
+    };
 
     private NavMeshAgent agent;
     private EnemyCombatAI combat;
@@ -159,10 +168,10 @@ public sealed class ZombieType : MonoBehaviour
 
     private Numbers Of(ZombieKind kind) => kind == ZombieKind.Runner ? runner : kind == ZombieKind.Brute ? brute
         : kind == ZombieKind.Exploder ? exploder : kind == ZombieKind.Charger ? charger : kind == ZombieKind.Ninja ? ninja
-        : kind == ZombieKind.Candyman ? candyman : kind == ZombieKind.Breadbag ? breadbag : shambler;
+        : kind == ZombieKind.Candyman ? candyman : kind == ZombieKind.Breadbag ? breadbag : kind == ZombieKind.Reaper ? reaper : shambler;
 
-    /// <summary>A memo elite (ninja, candyman, breadbag): its own component plays it out.</summary>
-    public bool IsMemoElite => Kind == ZombieKind.Ninja || Kind == ZombieKind.Candyman || Kind == ZombieKind.Breadbag;
+    /// <summary>A memo elite (ninja, candyman, breadbag, reaper): its own component plays it out.</summary>
+    public bool IsMemoElite => Kind == ZombieKind.Ninja || Kind == ZombieKind.Candyman || Kind == ZombieKind.Breadbag || Kind == ZombieKind.Reaper;
     /// <summary>Lost a leg: it crawls with the Crawler numbers, whatever its kind.</summary>
     public bool Crawls { get; private set; }
     /// <summary>Fast, its body breaks into a run; otherwise it hurries in its walk (ZombieBody.Move, ZombieKinds runs).</summary>
@@ -199,6 +208,7 @@ public sealed class ZombieType : MonoBehaviour
         GameTables.BindNested(TableName, nameof(ZombieKind.Ninja), this, ninja);
         GameTables.BindNested(TableName, nameof(ZombieKind.Candyman), this, candyman);
         GameTables.BindNested(TableName, nameof(ZombieKind.Breadbag), this, breadbag);
+        GameTables.BindNested(TableName, nameof(ZombieKind.Reaper), this, reaper);
         GameTables.Reloaded += Reapply;
         Kind = Roll();
         Apply();
@@ -206,7 +216,8 @@ public sealed class ZombieType : MonoBehaviour
 
     // The kinds picked by their shares, in this order; whatever the roll leaves is a shambler.
     private static readonly ZombieKind[] Rolled =
-        { ZombieKind.Runner, ZombieKind.Exploder, ZombieKind.Charger, ZombieKind.Ninja, ZombieKind.Candyman, ZombieKind.Breadbag };
+        { ZombieKind.Runner, ZombieKind.Exploder, ZombieKind.Charger, ZombieKind.Ninja, ZombieKind.Candyman, ZombieKind.Breadbag,
+          ZombieKind.Reaper };
 
     // One kind by the shares, leaving out a kind already about as many times as its `most` allows.
     private ZombieKind Roll()
@@ -301,5 +312,6 @@ public sealed class ZombieType : MonoBehaviour
         if (Kind == ZombieKind.Ninja && !TryGetComponent(out ZombieNinja _)) gameObject.AddComponent<ZombieNinja>();
         if (Kind == ZombieKind.Candyman && !TryGetComponent(out ZombieCandyman _)) gameObject.AddComponent<ZombieCandyman>();
         if (Kind == ZombieKind.Breadbag && !TryGetComponent(out ZombieBreadbag _)) gameObject.AddComponent<ZombieBreadbag>();
+        if (Kind == ZombieKind.Reaper && !TryGetComponent(out ZombieReaper _)) gameObject.AddComponent<ZombieReaper>();
     }
 }

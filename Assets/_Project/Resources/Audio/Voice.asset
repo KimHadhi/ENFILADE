@@ -273,6 +273,9 @@ MonoBehaviour:
   - key: Callout/zombie.none
     clips:
     - {fileID: 8300000, guid: cef6d2491e1954eca70e17744676f19e, type: 3}
+  - key: Callout/zombie.reaper
+    clips:
+    - {fileID: 8300000, guid: 8fc8af6635b056afb9084fa6b1baf300, type: 3}
   - key: Callout/zombie.runner
     clips:
     - {fileID: 8300000, guid: b5032051e9c256b5a9caa7ae350b21dd, type: 3}

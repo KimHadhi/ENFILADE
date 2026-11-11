@@ -9,6 +9,7 @@ zombie.charger,돌진 좀비,,좀비 이름(엘리트)
 zombie.ninja,닌자,Ninja,좀비 이름(11-11 메모의 엘리트: 연기 속에 사라졌다 등 뒤에서 친다)
 zombie.candyman,캔디맨,Candyman,좀비 이름(11-11 메모의 엘리트: 갈고리로 동료를 끌고 간다)
 zombie.breadbag,브레드백,Breadbag,좀비 이름(11-11 메모의 엘리트: 전기톱)
+zombie.reaper,그림 리퍼,Grim Reaper,좀비 이름(11-12 메모 24의 엘리트: 낫을 모으는 동안 넓어지는 원. 품에 붙어 앉으면 피한다)
 #--- 붙잡힘·깔림 ---,,,
 hold.shove,[V] 밀치기 · 주먹으로 떼어내기,,셤블러에게 잡혔을 때 화면 아래 안내
 hold.pinned,깔렸다!,,러너에게 깔렸을 때 큰 글씨
@@ -725,9 +726,11 @@ score.rank.climb,판이 끝나면 휘장 {0}단계 오름,{0} insignia up when t
 hud.alert.ninja,닌자 — 연기 속에서 등 뒤로 온다. 칼 소리에 돌아서 패링,Ninja: it vanishes and strikes from behind. Turn and parry at the blade's ring,화면 위 경고 띠: 이 판에서 닌자를 처음 가까이 봤을 때 한 번. 무엇을 하고 어떻게 이기는지
 hud.alert.candyman,캔디맨 — 갈고리로 동료를 끌고 간다. 쫓아가 쏘거나 넘어뜨려 풀어 줘,Candyman: it hooks a teammate and drags them off. Chase it and shoot or knock it down,화면 위 경고 띠: 캔디맨을 처음 가까이 봤을 때 한 번
 hud.alert.breadbag,브레드백 — 전기톱 시동 소리에 패링하면 튕겨 나간다. 가드는 갈려 뚫린다,Breadbag: parry the chainsaw as it revs. A guard alone gets ground through,화면 위 경고 띠: 브레드백을 처음 가까이 봤을 때 한 번
+hud.alert.reaper,그림 리퍼 — 긴 낫은 허리 높이로 원 끝까지 돈다. 품에 바짝 붙어 앉으면 자루 안쪽이라 날이 머리 위로 지나간다,Grim Reaper: its scythe sweeps waist-high out to the ring. Hug it and crouch: inside the shaft the blade passes overhead,화면 위 경고 띠: 그림 리퍼를 처음 가까이 봤을 때 한 번. 무엇을 하고 어떻게 이기는지(이유와 함께)
 hud.hold.hooked,갈고리에 걸렸다 — 살을 파고들어 계속 아프다. V를 연타해 몸부림쳐라,Hooked: it tears at you all the while. Mash V to struggle free,캔디맨의 갈고리에 걸려 끌려갈 때 내 화면 위 알림 한 번
 feed.score.ninja_parry,닌자 튕겨내기,Ninja parried,점수 팝업의 줄: 닌자의 등 뒤 공격을 돌아서 패링했을 때(돈)
 feed.score.saw_parry,전기톱 튕겨내기,Chainsaw parried,점수 팝업의 줄: 브레드백의 전기톱을 패링했을 때(돈)
+feed.score.reap_dodge,낫 밑으로,Under the scythe,점수 팝업의 줄: 그림 리퍼의 품에 붙어 앉아 낫을 피했을 때(돈)
 menu.launch.solo.hub,혼자  ·  은신처에서 {0} 준비,,"메인 메뉴 > 출격 버튼 아래 줄(혼자 하기, 허브가 있을 때). {0}=맵 이름"
 menu.launch.host.hub,방 만들기  ·  은신처에서 {0} 준비,,"메인 메뉴 > 출격 버튼 아래 줄(방 만들기, 허브가 있을 때). {0}=맵 이름"
 hub.objective.title,출발 준비  ·  {0},,허브 > 임무 칸 제목. {0}=고른 장

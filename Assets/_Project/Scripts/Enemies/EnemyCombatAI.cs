@@ -10,9 +10,10 @@ using UnityEngine.AI;
 /// they stood as it began (PlayerHold) and can't be guarded or parried, only dodged or stepped out of. Saw: a breadbag's
 /// chainsaw (ZombieBreadbag): the windup is the engine revving, then it cuts whoever is in front for a while. Backstab: a
 /// ninja's blow from behind after it steps out of its smoke (ZombieNinja): parried only by someone turned to face it.
-/// New moves go on the end: the network sends the number.
+/// Reap: a reaper's scythe (ZombieReaper): a long charge while a ring on the ground widens, then one turn of the blade at
+/// waist height out to the ring; whoever hugs it low goes under. New moves go on the end: the network sends the number.
 /// </summary>
-public enum AttackMove : byte { Swing, Bite, Grab, Feed, Pounce, Saw, Backstab }
+public enum AttackMove : byte { Swing, Bite, Grab, Feed, Pounce, Saw, Backstab, Reap }
 
 [RequireComponent(typeof(NavMeshAgent))]
 [RequireComponent(typeof(EnemyHealth))]
@@ -60,7 +61,8 @@ public sealed class EnemyCombatAI : MonoBehaviour
     [SerializeField] private Vector2 slam;
     // The bite's cue, pitched down from the swing's so it sounds heavier; a grab's a little lower too; a brute's lowest. A
     // chainsaw's cut is low and long, a ninja's blow from behind sharp.
-    private const float BitePitch = .72f, GrabPitch = .85f, PouncePitch = 1.2f, SlamPitch = .6f, SawPitch = .7f, BackstabPitch = 1.35f;
+    private const float BitePitch = .72f, GrabPitch = .85f, PouncePitch = 1.2f, SlamPitch = .6f, SawPitch = .7f, BackstabPitch = 1.35f,
+        ReapPitch = .5f;
     // Moving away from it faster than this (m/s), a player isn't grabbed but clawed.
     private const float AwaySpeed = 1f;
     private AttackMove move;
@@ -94,7 +96,7 @@ public sealed class EnemyCombatAI : MonoBehaviour
     /// <summary>Seconds from the attack cue to the hit (ZombieBody lands its swing clip's strike there).</summary>
     public float Windup => move == AttackMove.Bite ? biteWindup : move == AttackMove.Grab ? grabWindup
         : move == AttackMove.Feed ? feedWindup : move == AttackMove.Pounce ? pounceWindup
-        : move == AttackMove.Backstab && Elite != null && Elite.WindupOf(move) > 0f ? Elite.WindupOf(move) : windup;
+        : (move == AttackMove.Backstab || move == AttackMove.Reap) && Elite != null && Elite.WindupOf(move) > 0f ? Elite.WindupOf(move) : windup;
     /// <summary>The move under way (or last made).</summary>
     public AttackMove Move => move;
     /// <summary>
@@ -453,8 +455,9 @@ public sealed class EnemyCombatAI : MonoBehaviour
     private DamageResult Strike()
     {
         if (move == AttackMove.Pounce) return Land();
-        // A chainsaw's cut is no single blow: it runs on a while, and every PC cuts its own player (ZombieBreadbag).
-        if (move == AttackMove.Saw) return DamageResult.Ignored;
+        // A chainsaw's cut is no single blow: it runs on a while, and every PC cuts its own player (ZombieBreadbag). A
+        // reaper's turn of the scythe reaches everyone in its ring, likewise judged by each PC for its own (ZombieReaper).
+        if (move == AttackMove.Saw || move == AttackMove.Reap) return DamageResult.Ignored;
         // The height rule again where the hit is judged (the victim's PC, or the host for its own player): a hop or a step
         // up during the windup takes them out of a grab's or a kneel's reach, and it claws instead (the 2026-11-11 review).
         if (move == AttackMove.Grab || move == AttackMove.Feed)
@@ -561,6 +564,7 @@ public sealed class EnemyCombatAI : MonoBehaviour
 
     private float CuePitch => move == AttackMove.Bite ? BitePitch : move == AttackMove.Grab || move == AttackMove.Feed ? GrabPitch
         : move == AttackMove.Pounce ? PouncePitch : move == AttackMove.Saw ? SawPitch : move == AttackMove.Backstab ? BackstabPitch
+        : move == AttackMove.Reap ? ReapPitch
         : slam.x > 0f || slam.y > 0f ? SlamPitch : 1f;
 
     // When this zombie last voiced an attack (game time), so it doesn't snarl at every swing (ZombieVoice ownGap).
