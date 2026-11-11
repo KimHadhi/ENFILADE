@@ -58,9 +58,8 @@ records.title,기록,,메인 메뉴 > 기록 화면 큰 제목
 records.where,이 PC에 남은 기록,,기록 화면 > 제목 아래 작은 줄
 records.campaign,캠페인,,기록 화면 > 왼쪽 소제목
 records.campaign.escaped,{0} / {1} 장 탈출,,기록 화면 > 캠페인 소제목 오른쪽. {0}=탈출한 장 수 {1}=전체 장 수
-records.chapter.line,탈출 {0}번   ·   최고 {1}   ·   최소 죽음 {2},,기록 화면 > 탈출한 장 판의 줄. {0}=탈출 횟수 {1}=가장 빠른 시간 {2}=가장 적은 죽음
-records.chapter.waiting,아직 탈출 못 함,,기록 화면 > 아직 탈출하지 못한 장 판의 줄
-records.escaped,탈출,,기록 화면 > 장 판의 분홍 도장과 최근 판 결과 칸(탈출했을 때)
+records.chapter.waiting,아직 탈출 못 함,,기록 화면 > 장 기록 사진 오른쪽 위 칸(아직 탈출하지 못한 장)
+records.escaped,탈출,,기록 화면 > 최근 판 결과 칸(탈출했을 때)
 records.left,나감,,기록 화면 > 최근 판 결과 칸(탈출하지 못하고 나갔을 때)
 records.totals,합계,,기록 화면 > 오른쪽 소제목
 records.kills,처치,,기록 화면 > 합계 칸 이름
@@ -79,6 +78,34 @@ records.recent.deaths,죽음 {0},,기록 화면 > 최근 판 줄. {0}=죽은 수
 records.time.hours,{0}시간 {1}분,,기록 화면 > 플레이 시간 칸(한 시간이 넘을 때). {0}=시간 {1}=분
 records.time.minutes,{0}분,,기록 화면 > 플레이 시간 칸(한 시간 안). {0}=분
 records.time.seconds,{0}초,,기록 화면 > 플레이 시간 칸(1분 안). {0}=초
+records.totals.hint,왼쪽 장을 누르면 그 장의 기록,,기록 화면 > 합계 소제목 오른쪽 옅은 안내
+records.row.games,{0}판,,기록 화면 > 캠페인 장 줄의 이름 아래. {0}=그 장에서 한 판 수
+records.row.never,아직 안 해 봄,,기록 화면 > 캠페인 장 줄의 이름 아래와 장 기록 사진의 날짜 줄(한 번도 안 한 장)
+records.col.escapes,탈출,,기록 화면 > 캠페인 장 줄의 칸 이름과 장 기록 칸 이름(탈출 횟수)
+records.col.best,최고 기록,,기록 화면 > 캠페인 장 줄의 칸 이름과 장 기록 칸 이름(가장 빠른 탈출)
+records.col.fewest,최소 죽음,,기록 화면 > 캠페인 장 줄의 칸 이름과 장 기록 칸 이름(탈출한 판 중 가장 적게 죽은 수)
+records.summary,캠페인 합계,,기록 화면 > 캠페인 장 줄 아래 소제목
+records.summary.best,최고 기록 합,,기록 화면 > 캠페인 합계 칸 이름(장마다 가장 빠른 탈출 시간을 더한 것)
+records.summary.best.note,장마다 가장 빠른 탈출의 합,,기록 화면 > 최고 기록 합 아래 작은 줄(모든 장을 탈출했을 때)
+records.summary.best.waiting,모든 장을 탈출하면 나온다,,기록 화면 > 최고 기록 합 아래 작은 줄(아직 못 한 장이 있을 때)
+records.summary.clean,무사 탈출,,기록 화면 > 캠페인 합계 칸 이름(한 번도 안 죽고 탈출한 장 수)
+records.summary.clean.note,한 번도 안 죽고 탈출한 장,,기록 화면 > 무사 탈출 아래 작은 줄
+records.summary.time,캠페인 시간,,기록 화면 > 캠페인 합계 칸 이름(캠페인 장 안에 있던 시간)
+records.summary.time.note,장 안에 있던 시간,,기록 화면 > 캠페인 시간 아래 작은 줄
+records.chapter.caption,장 기록,,기록 화면 > 장을 눌렀을 때 오른쪽 소제목
+records.chapter.hint,다시 누르거나 빈 곳을 누르면 합계로,,기록 화면 > 장 기록 소제목 오른쪽 옅은 안내
+records.chapter.escaped,탈출 {0}번,,기록 화면 > 장 기록 사진 오른쪽 위 분홍 칸. {0}=탈출 횟수
+records.chapter.first,첫 탈출 {0},,기록 화면 > 장 기록 사진의 이름 아래 줄. {0}=처음 탈출한 날과 시각
+records.chapter.last,마지막 판 {0},,기록 화면 > 장 기록 사진의 이름 아래 줄. {0}=마지막으로 한 판의 날과 시각
+records.chapter.tries,{0}판 중 {1}%,,기록 화면 > 장 기록 탈출 칸 아래 분홍 글씨. {0}=그 장에서 한 판 수 {1}=탈출한 비율
+records.chapter.clean,무사 탈출,,기록 화면 > 장 기록 최소 죽음 칸 아래 분홍 글씨(안 죽고 탈출한 적이 있을 때)
+records.chapter.most_kills,한 판 최다 처치,,기록 화면 > 장 기록 칸 이름
+records.chapter.headshots,헤드샷 {0}%,,기록 화면 > 장 기록 처치 칸 아래 분홍 글씨. {0}=처치 중 헤드샷 비율
+records.chapter.games,이 장의 최근 판,,기록 화면 > 장 기록 아래 소제목
+records.chapter.games.empty,이 장에서 남은 판이 아직 없어요.,,기록 화면 > 장 기록에서 그 장의 판이 하나도 없을 때
+records.recent.headshots,헤드샷 {0},,기록 화면 > 장 기록의 판 줄. {0}=헤드샷 수
+records.recent.downs,쓰러짐 {0},,기록 화면 > 장 기록의 판 줄. {0}=쓰러진 수
+records.recent.best,최고,,기록 화면 > 장 기록의 판 줄에서 가장 빠른 탈출 판 시간 옆 분홍 칸
 #--- 방 만들기·서버 찾기 ---,,,
 room.create.title,방 만들기,,방 만들기 창 제목
 room.create.name,방 제목,,방 만들기 창 > 방 제목 행

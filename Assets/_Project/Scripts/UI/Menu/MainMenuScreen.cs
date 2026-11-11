@@ -127,7 +127,8 @@ public sealed class MainMenuScreen : MonoBehaviour
 
     private bool AnyWindowOpen() => createRoom != null && (createRoom.IsOpen || browser.IsOpen || profile.IsOpen || records.IsOpen || character.IsOpen);
 
-    // Esc closes the window or page that is up (back to the lobby) before the Esc menu would open.
+    // Esc closes the window or page that is up (back to the lobby) before the Esc menu would open; on the records, a
+    // chapter's page goes back to the totals first.
     private void CloseByEscape()
     {
         var keyboard = Keyboard.current;
@@ -135,6 +136,7 @@ public sealed class MainMenuScreen : MonoBehaviour
         if (createRoom.IsOpen) createRoom.Close();
         else if (browser.IsOpen) browser.Close();
         else if (profile.IsOpen) profile.Close();
+        else if (records.ShowsChapter) records.ShowTotals();
         else if (records.IsOpen || character.IsOpen) ShowPlay();
         else return;
         escapeFrame = Time.frameCount;
