@@ -114,6 +114,12 @@ public sealed class ZombieGore : MonoBehaviour
         return bone != null && boneParts.TryGetValue(bone, out var part) ? part : BodyPart.None;
     }
 
+    /// <summary>
+    /// Whether a killing blow bursts the head: it met the head, or it was a bullet's headshot. Read from the hit alone, so
+    /// every PC judges it alike; a zombie killed so dies without a sound (ZombieVoice).
+    /// </summary>
+    public static bool BurstsHead(in DamageHit hit) => hit.Part == BodyPart.Head || (hit.IsCritical && hit.Method == DamageMethod.Bullet);
+
     /// <summary>What a zombie has lost: legs and arms (0 to 2 each). False if it isn't followed.</summary>
     public static bool Losses(EnemyHealth enemy, out int legs, out int arms)
     {
@@ -190,7 +196,7 @@ public sealed class ZombieGore : MonoBehaviour
         var hit = report.Hit;
         bool kill = report.IsKillingBlow;
         var part = hit.Part;
-        if (kill && (part == BodyPart.Head || (hit.IsCritical && hit.Method == DamageMethod.Bullet)))
+        if (kill && BurstsHead(hit))
         {
             if (body.Has(BodyPart.Head)) Burst(body, hit);
             return;

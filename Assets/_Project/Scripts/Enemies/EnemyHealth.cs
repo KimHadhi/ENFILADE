@@ -209,6 +209,8 @@ public sealed class EnemyHealth : MonoBehaviour, IDamageReceiver, ICombatVitals,
         if (!IsAlive) return;
         Health = Mathf.Min(health, MaximumHealth);
         if (IsAlive) return;
+        // Its last cry, from its head while the body still stands (ZombieVoice). Unknown, the hit reads as no headshot.
+        ZombieVoice.Dies(this, hit);
         if (body != null) body.Fall(hit, false, known ? ZombieCorpse.RunnerOf(hit, true, out _) : null);
         if (network != null && network.IsCopy) network.HideUntilRemoved();
     }
@@ -222,6 +224,8 @@ public sealed class EnemyHealth : MonoBehaviour, IDamageReceiver, ICombatVitals,
 
     private void Die(in DamageHit hit)
     {
+        // Its last cry, from its head while the body still stands, and before an exploder's burst kills others (ZombieVoice).
+        ZombieVoice.Dies(this, hit);
         // 웨이브 관리자에게 처치 사실을 알린다.
         Died?.Invoke(this);
 

@@ -254,7 +254,18 @@ public sealed class ZombieMind : MonoBehaviour, ITableBound
     private PlayerMovement shownWatcher;
 
     /// <summary>Its mood: thought on the host (or alone), shown on every other PC.</summary>
-    public ZombieMood Mood { get; private set; } = ZombieMood.Awake;
+    public ZombieMood Mood
+    {
+        get => currentMood;
+        private set
+        {
+            // Knowing of nobody, it now knows someone is there: it cries out once, on each PC as its mood changes here
+            // (ZombieVoice). A charger winding up or one back on its feet knew already; the charger bellows by itself.
+            if (!IsAwake && (value == ZombieMood.Awake || value == ZombieMood.Rousing || value == ZombieMood.Rising)) ZombieVoice.Alerts(this);
+            currentMood = value;
+        }
+    }
+    private ZombieMood currentMood = ZombieMood.Awake;
     /// <summary>It knows someone is there: rousing or awake.</summary>
     public bool IsAwake => Mood == ZombieMood.Awake || Mood == ZombieMood.Rousing || Mood == ZombieMood.Rising;
     /// <summary>Awake and done rousing: it may chase and fight (EnemyChaseAI, EnemyCombatAI).</summary>

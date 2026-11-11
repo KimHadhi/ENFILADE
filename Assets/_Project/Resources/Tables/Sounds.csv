@@ -234,3 +234,18 @@ Zombie/Attack/Male,0.85,0.96,1.04,남자 좀비의 공격 으르렁. 같은 워�
 Zombie/Attack/Female,0.9,0.96,1.04,여자 좀비의 공격 으르렁. 같은 워크숍 rageat/female의 9개(원본이 22kHz라 조금 먹먹하다)
 Zombie/Leap/Male,0.95,0.97,1.05,러너가 도약할 때의 짧은 비명(남). 같은 워크숍 rage/male의 8개
 Zombie/Leap/Female,1,0.97,1.05,러너가 도약할 때의 짧은 비명(여). 같은 워크숍 rage/female의 7개
+Zombie/Idle,0.55,0.95,1.05,아무도 모르는(조용하거나 수색 중인) 좀비가 가끔 내는 낮은 신음(ZombieVoice Idle). 이름에 성별이 없는 몸이 쓰고 다른 몸도 가끔 쓴다. 파일은 아직 없다: L4D2 워크숍 3675704366(RE6 Common Infected Sound)의 평소 소리를 넣을 자리
+Zombie/Idle/Male,0.55,0.95,1.05,남자 좀비의 평소 신음. 파일은 아직 없다
+Zombie/Idle/Female,0.55,0.95,1.05,여자 좀비의 평소 신음. 파일은 아직 없다
+Zombie/Breathe,0.35,0.95,1.05,앉거나 먹거나 웅크린 자세로 있거나 기어 다니는 조용한 좀비의 숨(ZombieVoice). 넣지 않아도 되는 폴더다. 없으면 그런 좀비는 아무 소리도 내지 않는다
+Zombie/Breathe/Male,0.35,0.95,1.05,남자 좀비의 숨. 넣지 않아도 된다
+Zombie/Breathe/Female,0.35,0.95,1.05,여자 좀비의 숨. 넣지 않아도 된다
+Zombie/Alert,0.9,0.96,1.04,아무도 모르던 좀비가 깨는 순간 한 번 지르는 소리(ZombieVoice Alert). 파일은 아직 없다
+Zombie/Alert/Male,0.9,0.96,1.04,남자 좀비가 깰 때. 파일은 아직 없다
+Zombie/Alert/Female,0.9,0.96,1.04,여자 좀비가 깰 때. 파일은 아직 없다
+Zombie/Hurt,0.8,0.94,1.06,맞을 때의 비명(ZombieVoice Hurt). 큰 피해·자세 붕괴·넘어짐에는 늘 내고 작은 피해에는 가끔 낸다. 파일은 아직 없다
+Zombie/Hurt/Male,0.8,0.94,1.06,남자 좀비가 맞을 때. 파일은 아직 없다
+Zombie/Hurt/Female,0.8,0.94,1.06,여자 좀비가 맞을 때. 파일은 아직 없다
+Zombie/Death,0.9,0.96,1.04,죽을 때의 마지막 소리(ZombieVoice Death). 머리가 터진 좀비와 몰래 암살된 좀비는 내지 않는다. 파일은 아직 없다
+Zombie/Death/Male,0.9,0.96,1.04,남자 좀비가 죽을 때. 파일은 아직 없다
+Zombie/Death/Female,0.9,0.96,1.04,여자 좀비가 죽을 때. 파일은 아직 없다

@@ -99,6 +99,8 @@ public sealed partial class ZombieBody
 
     private void GoDown(bool runs)
     {
+        // Knocked down, it cries out, on each PC as it goes down here (ZombieVoice).
+        ZombieVoice.Reels(this);
         down = true;
         rising = false;
         dollRuns = runs;
