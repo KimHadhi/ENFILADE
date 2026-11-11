@@ -8,6 +8,7 @@ body_tough,단단한 몸,,생존,Armor,3,15,,,,,,10,최대 체력 +{0},옷 안�
 body_grit,끈질긴 숨,,생존,Hourglass,2,35,,,,,,6,쓰러져서 버티는 시간 +{0}%,쓰러져도 숨을 아껴 쉬는 법을 안다
 team_rescue,손 빠른 구조,,팀,Rescue,3,20,,,,,,6,동료를 일으키는 시간 -{0}%,동료를 끌어올리는 요령을 몸이 기억한다
 gauge_charge,충전기,,기타,Bolt,3,20,,,,,,8,게이지가 차는 속도 +{0}%,싸움의 박자를 읽어 기운이 빨리 모인다
+heriot,사망세,,돈,Money,3,20,,,,,,8,처치할 때 받는 돈 +{0}%. 점수 팝업에 '사망세' 줄,Heriot: 중세 영주가 죽은 이의 재산에서 몫을 떼어 가던 세금. 쓰러뜨린 적에게서도 몫을 챙긴다
 knight_taunt,거듭된 도발,knight,나이트,Class_knight,2,-5,,-1,Knight.tauntCooldown,,,10,도발을 다시 쓰기까지 -{0}초,목청이 트여 숨 돌릴 틈 없이 다시 외친다
 assault_adrenaline,깊은 숨,assault,어썰트,Class_assault,2,2,,,Assault.stackMax,,,10,아드레날린 최대 +{0}스택,숨이 턱까지 차도 멈추지 않는 법을 익혔다
 assault_rally,질긴 흥분,assault,어썰트,Class_assault,2,2,,,Assault.stackHold,,,8,마지막 처치 뒤 아드레날린이 줄기 시작하기까지 +{0}초,한번 오른 흥분이 쉬이 가라앉지 않는다

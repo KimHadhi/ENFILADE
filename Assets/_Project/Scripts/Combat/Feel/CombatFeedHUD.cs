@@ -95,6 +95,9 @@ public sealed class CombatFeedHUD : MonoBehaviour
                 gained += settings.multiKillBonus * (self.multiKill - 1);
                 self.AddLine(MultiKillName(self.multiKill), LineIcon.None, true);
             }
+            // Heriot (사망세), a perk card: a share of this kill's money on top (PlayerPerks; this PC's own kills only).
+            int tax = PlayerPerks.DeathTax(gained);
+            if (tax > 0) { gained += tax; self.AddLine(Texts.Get("feed.score.heriot"), LineIcon.None, true, new Color(.25f, .85f, .38f)); }
             TotalScore += gained;
             self.streakScore += gained;
             self.streakIdle = 0f; self.popAge = 0f; self.totalPop = 1f;

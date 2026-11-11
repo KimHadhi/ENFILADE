@@ -331,6 +331,7 @@ feed.score.counter,반격,,처치 점수 팝업의 줄
 feed.score.takedown,암살,,처치 점수 팝업의 줄: 눈치채지 못한 좀비를 뒤에서 처치했을 때(처형 점수 위에 더 받는다)
 feed.score.bounty,현상금,,처치 점수 줄: 시순트가 자기 표식 대상을 처치했을 때
 feed.score.unseen,잠입 성공,,점수 팝업의 줄: 조용한 구간을 아무도 들키지 않고 휴게소나 버티기 자리까지 지나갔을 때
+feed.score.heriot,사망세,,처치 점수 팝업의 줄: 사망세(Heriot) 카드가 처치 돈에 몫을 더 얹을 때
 feed.multi.double,더블 킬,,처치 점수 팝업: 연속 처치 2
 feed.multi.triple,트리플 킬,,처치 점수 팝업: 연속 처치 3
 feed.multi.quad,쿼드 킬,,처치 점수 팝업: 연속 처치 4
