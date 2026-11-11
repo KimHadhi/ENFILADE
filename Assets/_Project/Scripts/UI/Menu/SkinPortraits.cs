@@ -138,12 +138,10 @@ public sealed class SkinPortraits : MonoBehaviour
         spoiled = false;
         sitter = Instantiate(look.skin.Model, studio, Quaternion.identity, transform);
         SkinVariant.Wear(sitter, null, look.variant);
-        var bounds = new Bounds(sitter.transform.position, Vector3.zero);
         foreach (var renderer in sitter.GetComponentsInChildren<Renderer>())
-        {
-            bounds.Encapsulate(renderer.bounds);
             if (renderer is SkinnedMeshRenderer skinned) skinned.updateWhenOffscreen = true;
-        }
+        // Feet to crown on its skeleton, as the preview frames it, so every card shows its character at one size.
+        var bounds = CharacterFrame.Measure(sitter);
         var animator = sitter.GetComponentInChildren<Animator>();
         var idle = profile.Find(MainMenuPreview.IdleClip);
         if (animator != null && idle != null)

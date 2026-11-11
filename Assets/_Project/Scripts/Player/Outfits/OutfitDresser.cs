@@ -86,6 +86,9 @@ internal static class OutfitDresser
         // The character's own, before anything is added: outfits merge only onto its bones and switch off only its pieces,
         // and its shape keys as it was made are what the clothes follow.
         var own = model.GetComponentsInChildren<Renderer>(true);
+        // The player's body options (BodyShapes.csv) go on first: they are the body as its player shaped it, which the
+        // clothes then follow like any key the body has, a key turned down to 0 too.
+        var shaped = BodyShapes.Apply(own, skin.Id, look);
         var bodyShapes = ShapesOf(own);
         var animator = model.GetComponentInChildren<Animator>();
         Skeleton skeleton = null;
@@ -146,6 +149,7 @@ internal static class OutfitDresser
         // The clothes follow the body as dressing left it: a key the stockings or shoes held and let go of (a heel) goes
         // down on the socks worn instead too.
         freed.UnionWith(bodyShapes.Keys);
+        freed.UnionWith(shaped);
         Follow(ShapesNow(own, freed), worn);
         return dressing;
     }

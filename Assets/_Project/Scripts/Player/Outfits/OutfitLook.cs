@@ -35,6 +35,9 @@ public sealed class OutfitLook
 
     public bool IsEmpty => picks.Count == 0;
 
+    /// <summary>Every entry's slot in order, body options ("shape:…", BodyShapes) among them.</summary>
+    public IEnumerable<string> Slots => picks.Keys;
+
     public bool TryGet(string slot, out Pick pick) => picks.TryGetValue(slot ?? "", out pick);
 
     /// <summary>Puts <paramref name="item"/> in the slot; null or empty empties it, back to the character's own piece.</summary>

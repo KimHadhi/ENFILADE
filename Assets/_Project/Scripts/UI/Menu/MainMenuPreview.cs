@@ -9,8 +9,11 @@ using UnityEngine.Playables;
 /// saved skin and colour set: another colour set swaps materials on the same model. Dragging across the screen turns it
 /// (MainMenuDrag → Turn); let go and it keeps spinning a little, slows, and after a while eases back to face the camera.
 /// The menu's backdrop reads the camera and where the character stands (View, Feet, Head) to draw behind it.
-/// The wardrobe tries things on it (Try: the choice under the pointer worn see-through, OutfitGhost) and marks what a
-/// slot holds (Highlight); the idle carries on through each rebuild so a try never restarts the pose.
+/// The wardrobe tries things on it (Try: the choice under the pointer worn as it really looks with a quick pink rim, or a
+/// piece a try would take off drawn fading, OutfitGhost) and marks what a slot holds (Highlight); the idle carries on
+/// through each rebuild so a try never restarts the pose. Every character is framed from its skeleton (CharacterFrame),
+/// so each stands the same size whatever its file's renderers reach. The wardrobe's body page shapes it live (Shape) and
+/// brings the camera close on the face or the eyes (Focus).
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class MainMenuPreview : MonoBehaviour
@@ -30,15 +33,19 @@ public sealed class MainMenuPreview : MonoBehaviour
     // is heading for it.
     private string focus;
     private Vector3 cameraGoal;
-    private bool cameraMoving;
+    private bool cameraMoving, refocus;
     // How quickly the camera moves to a part of the body and back (1/s).
     private const float FocusSpeed = 7f;
+    // The body page's close-ups, as shares of the character's height: how far over the head bone the face's middle is
+    // and how much of the screen the face fills; the same for the eyes when the skeleton has no eye bones.
+    private const float FaceLift = .06f, FaceSpan = .2f, EyesLift = .07f, EyesSpan = .11f;
     private PlayableGraph graph;
     private AnimationClipPlayable idlePlayable;
-    // A look tried on from the wardrobe instead of the saved one (null: the saved one), the item in it shown see-through,
-    // the slot whose pieces are marked, and what dressing put on, to find them by.
+    // A look tried on from the wardrobe instead of the saved one (null: the saved one), the slot it tries and whether the
+    // try takes that slot's pieces off, the slot whose pieces are marked, and what dressing put on, to find them by.
     private OutfitLook tried;
-    private string triedText, ghostItem, highlighted;
+    private string triedText, trialSlot, highlighted;
+    private bool trialRemoves;
     private OutfitDresser.Dressing dressing;
     private Bounds shown;
     private float yaw, spin, sinceTurned = float.PositiveInfinity;
@@ -99,28 +106,27 @@ public sealed class MainMenuPreview : MonoBehaviour
         model = Instantiate(profile.Model, transform);
         wornVariant = profile.CurrentVariant;
         SkinVariant.Wear(model, null, wornVariant);
-        var bounds = new Bounds(model.transform.position, Vector3.zero);
         foreach (var renderer in model.GetComponentsInChildren<Renderer>())
-        {
-            bounds.Encapsulate(renderer.bounds);
             if (renderer is SkinnedMeshRenderer skinned) skinned.updateWhenOffscreen = true;
-        }
         // Measured before dressing, so putting on a helmet doesn't move the camera back and shrink the character.
-        var outfit = tried ?? OutfitLook.Saved(shownSkin?.Id);
+        var bounds = CharacterFrame.Measure(model);
+        // A removal tried is shown on the saved outfit, the pieces that would go drawn see-through.
+        var outfit = (!trialRemoves ? tried : null) ?? OutfitLook.Saved(shownSkin?.Id);
         dressing = OutfitDresser.Dress(model, profile.Model, shownSkin, outfit);
         // A try is never what is saved: whatever changes next stands the saved outfit again.
         shownOutfit = tried != null ? null : outfit.ToString();
-        if (ghostItem != null && dressing.Pieces.TryGetValue(ghostItem, out var trying)) OutfitGhost.Wear(trying);
-        Mark();
         shown = bounds;
+        MarkTrial(outfit);
+        Mark();
         Frame(bounds);
         Face(); // measured facing the camera, then turned as it was
-        // Made again for another outfit while the wardrobe looks at a part: the camera stays on it, no jump.
-        if (focus != null)
-        {
-            view.transform.position = cameraGoal = FocusedCamera(focus);
-            cameraMoving = false;
-        }
+        // Made again for another outfit while the wardrobe looks at a part: the camera stays on it, no jump. Otherwise it
+        // stands framed for this character, and a move begun for the last one (the wardrobe asked for the whole
+        // character a moment before a new character was picked, with the old one's size) is dropped: kept, it carried
+        // the camera on to the old one's frame, too close or too far (user, 2026-11-12: "히로 -> 카즈사로 넘어갈 때").
+        cameraGoal = view.transform.position = focus != null ? FocusedCamera(focus) : view.transform.position;
+        cameraMoving = false;
+        refocus = focus != null;
         var animator = model.GetComponentInChildren<Animator>();
         var idle = profile.Find(IdleClip);
         if (animator == null || idle == null) return;
@@ -130,16 +136,22 @@ public sealed class MainMenuPreview : MonoBehaviour
     }
 
     /// <summary>
-    /// Wears <paramref name="look"/> instead of the saved outfit while the wardrobe's pointer rests on a choice, the item
-    /// <paramref name="ghost"/> see-through (OutfitGhost); null goes back to the saved outfit.
+    /// Wears <paramref name="look"/> instead of the saved outfit while the wardrobe's pointer rests on a choice, as it
+    /// would really look, the tried slot's pieces lit by a quick pink rim so it reads as a try (OutfitGhost.Trial; the
+    /// see-through try hid how a piece really looked, and pretty ones read plain: the user, 2026-11-12). With
+    /// <paramref name="removes"/> the saved outfit stays on and the slot's pieces that would come off are drawn
+    /// see-through, fading, instead of simply gone. Null goes back to the saved outfit.
     /// </summary>
-    public void Try(OutfitLook look, string ghost)
+    public void Try(OutfitLook look, string slot, bool removes)
     {
         string text = look != null ? look.ToString() : null;
-        if (text == triedText && ghost == ghostItem) return;
+        slot = look != null ? slot : null;
+        removes = look != null && removes;
+        if (text == triedText && slot == trialSlot && removes == trialRemoves) return;
         tried = look;
         triedText = text;
-        ghostItem = ghost;
+        trialSlot = slot;
+        trialRemoves = removes;
         if (model != null) Show();
     }
 
@@ -148,8 +160,27 @@ public sealed class MainMenuPreview : MonoBehaviour
     public void DropTry()
     {
         tried = null;
-        triedText = ghostItem = null;
+        triedText = trialSlot = null;
+        trialRemoves = false;
         shownOutfit = null;
+    }
+
+    /// <summary>
+    /// Moves one body option (BodyShapes) on the standing character at once, on every mesh with its keys, the clothes too
+    /// as dressing makes them follow, while the wardrobe's slider is dragged or a chip picked. The save that follows is
+    /// this same look, so the character isn't stood up again for it (Kept).
+    /// </summary>
+    public void Shape(BodyShapes.Option option, float value)
+    {
+        if (model == null || option == null || shownSkin == null
+            || !string.Equals(option.Skin, shownSkin.Id, StringComparison.OrdinalIgnoreCase)) return;
+        BodyShapes.Set(model.GetComponentsInChildren<SkinnedMeshRenderer>(true), option, value);
+    }
+
+    /// <summary>The wardrobe saved the look the character already shows (its body options set live by Shape).</summary>
+    public void Kept(OutfitLook look)
+    {
+        if (tried == null && look != null && model != null) shownOutfit = look.ToString();
     }
 
     /// <summary>Marks on the body what the slot holds (the wardrobe's tile under the pointer); null takes the marks off.</summary>
@@ -161,23 +192,44 @@ public sealed class MainMenuPreview : MonoBehaviour
         Mark();
     }
 
-    // The slot's pieces: the item worn there, or the character's own (CharacterParts) as they show; nothing once it is off.
+    // The highlighted slot's pieces marked with the breathing rim.
     private void Mark()
     {
         if (model == null || highlighted == null || shownSkin == null) { OutfitGhost.Show(null); return; }
+        OutfitGhost.Show(PiecesOf(highlighted, tried ?? OutfitLook.Saved(shownSkin.Id)));
+    }
+
+    // The tried slot's pieces: see-through when the try takes them off, else lit with the try's rim in their own colours.
+    private void MarkTrial(OutfitLook outfit)
+    {
+        if (model == null || trialSlot == null || shownSkin == null) { OutfitGhost.Trial(null); return; }
+        var pieces = PiecesOf(trialSlot, outfit);
+        if (!trialRemoves)
+        {
+            OutfitGhost.Trial(pieces);
+            return;
+        }
+        OutfitGhost.Trial(null);
+        OutfitGhost.Wear(pieces);
+    }
+
+    // A slot's pieces as this look has them: the item worn there, or the character's own (CharacterParts) as they show;
+    // nothing once it is off.
+    private List<Renderer> PiecesOf(string slot, OutfitLook look)
+    {
         var found = new List<Renderer>();
-        var look = tried ?? OutfitLook.Saved(shownSkin.Id);
-        bool picked = look.TryGet(highlighted, out var pick) && pick.Item.Length > 0;
+        if (model == null || shownSkin == null || slot == null || look == null) return found;
+        bool picked = look.TryGet(slot, out var pick) && pick.Item.Length > 0;
         if (picked && !pick.IsOff && dressing != null && dressing.Pieces.TryGetValue(pick.Item, out var worn)) found.AddRange(worn);
         else if (!picked)
         {
             var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var part in OutfitCatalog.PartsOf(shownSkin.Id))
-                if (string.Equals(part.slot, highlighted, StringComparison.OrdinalIgnoreCase)) names.UnionWith(OutfitCatalog.Split(part.parts));
+                if (string.Equals(part.slot, slot, StringComparison.OrdinalIgnoreCase)) names.UnionWith(OutfitCatalog.Split(part.parts));
             foreach (var renderer in model.GetComponentsInChildren<Renderer>())
                 if (renderer.enabled && names.Contains(renderer.name)) found.Add(renderer);
         }
-        OutfitGhost.Show(found);
+        return found;
     }
 
     /// <summary>Turns the character by a drag of <paramref name="pixels"/> across the screen (right turns it right).</summary>
@@ -195,8 +247,8 @@ public sealed class MainMenuPreview : MonoBehaviour
     public void Release() => sinceTurned = 0f;
 
     /// <summary>
-    /// Brings the camera close on a part of the body (an OutfitSlot group: head, neck, torso, arms, legs), as the wardrobe
-    /// opens one of its slots; null goes back to the whole character.
+    /// Brings the camera close on a part of the body (an OutfitSlot group: head, neck, torso, arms, legs; or for the body
+    /// page's tabs face, eyes, hair), as the wardrobe opens one of its slots; null goes back to the whole character.
     /// </summary>
     public void Focus(string group)
     {
@@ -204,6 +256,7 @@ public sealed class MainMenuPreview : MonoBehaviour
         if (model == null || view == null) return;
         cameraGoal = focus != null ? FocusedCamera(focus) : CameraFor(shown.center, shown.size.y);
         cameraMoving = true;
+        refocus = true;
     }
 
     // Where the camera stands to frame that part of the character, measured from its bones as it stands now.
@@ -216,6 +269,8 @@ public sealed class MainMenuPreview : MonoBehaviour
         var neck = Bone(HumanBodyBones.Neck);
         var chest = Bone(HumanBodyBones.Chest);
         var hips = Bone(HumanBodyBones.Hips);
+        var leftEye = Bone(HumanBodyBones.LeftEye);
+        var rightEye = Bone(HumanBodyBones.RightEye);
         Vector3 center = shown.center;
         float span = height;
         switch (group)
@@ -223,6 +278,25 @@ public sealed class MainMenuPreview : MonoBehaviour
             case "head" when head != null:
                 center = head.position + Vector3.up * height * .05f;
                 span = height * .3f;
+                break;
+            // The body page's face and eye tabs: their keys are small (a pupil's heart, a lash), so the camera comes in
+            // closer than for a hat.
+            case "face" when head != null:
+                center = head.position + Vector3.up * height * FaceLift;
+                span = height * FaceSpan;
+                break;
+            case "eyes" when leftEye != null && rightEye != null:
+                center = (leftEye.position + rightEye.position) * .5f;
+                span = height * EyesSpan;
+                break;
+            case "eyes" when head != null:
+                center = head.position + Vector3.up * height * EyesLift;
+                span = height * EyesSpan;
+                break;
+            // Hair falls past the shoulders (twintails, long sides): the head and chest together.
+            case "hair" when head != null && chest != null:
+                center = Vector3.Lerp(chest.position, head.position, .6f) + Vector3.up * height * .03f;
+                span = height * .5f;
                 break;
             case "neck" when neck != null:
                 center = neck.position;
@@ -248,7 +322,7 @@ public sealed class MainMenuPreview : MonoBehaviour
     {
         if (model == null) return;
         float dt = Time.unscaledDeltaTime;
-        if (highlighted != null) OutfitGhost.Breathe(Time.unscaledTime);
+        if (highlighted != null || trialSlot != null) OutfitGhost.Breathe(Time.unscaledTime);
         if (cameraMoving && view != null)
         {
             view.transform.position = Vector3.Lerp(view.transform.position, cameraGoal, 1f - Mathf.Exp(-FocusSpeed * dt));
@@ -264,6 +338,16 @@ public sealed class MainMenuPreview : MonoBehaviour
         if (sinceTurned > RestBeforeReturn && spin == 0f)
             yaw = Mathf.LerpAngle(yaw, 0f, 1f - Mathf.Exp(-ReturnSpeed * dt));
         Face();
+    }
+
+    // A part's spot measured before the idle posed the bones (a model made this frame stands as its file was made) is
+    // measured again once it has: a close look at the eyes is a few centimetres wide, and the file's pose is off by that.
+    private void LateUpdate()
+    {
+        if (!refocus || model == null || view == null) return;
+        refocus = false;
+        cameraGoal = focus != null ? FocusedCamera(focus) : CameraFor(shown.center, shown.size.y);
+        cameraMoving = true;
     }
 
     private void Face()
@@ -302,6 +386,7 @@ public sealed class MainMenuPreview : MonoBehaviour
     {
         // Marks hold the renderers' own materials: let go of them before the model goes.
         OutfitGhost.Show(null);
+        OutfitGhost.Trial(null);
         dressing = null;
         if (graph.IsValid()) graph.Destroy();
         if (model != null) Destroy(model);

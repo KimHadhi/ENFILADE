@@ -822,7 +822,7 @@ results.sheet.next,다음 작전  ·  {0},,결과 마지막 장 > 아래 줄. {0
 results.sheet.done,캠페인 완료  ·  은신처에서 처음부터,,결과 마지막 장 > 아래 줄(마지막 장을 마쳤을 때)
 results.sheet.key,Space  계속,,결과 마지막 장 > 오른쪽 아래
 wardrobe.own.named,기본 · {0},Own · {0},옷장 > 칸 타일: 캐릭터가 원래 입은 그 칸의 옷 이름(CharacterParts.csv name)
-wardrobe.try,올려 두면 비쳐 입어 본다,Rest on one to try it on,옷장 > 칸을 연 화면 > 제목 아래 설명 뒤: 판에 마우스를 올려 두면 캐릭터에 반투명하게 입혀 본다
+wardrobe.try,올려 두면 입어 본다,Rest on one to try it on,옷장 > 칸을 연 화면 > 제목 아래 설명 뒤: 판에 마우스를 올려 두면 캐릭터에 그대로 입혀 보고(분홍 테두리) 캐릭터 위에 미리 보기 띠가 뜬다
 callout.slot.zombie,좀비,Zombie,콜아웃 휠 칸(위): 조준점의 좀비(없으면 보이는 가장 위험한 좀비)를 외치고 팀에 핑. 칸 아래 작은 글씨는 지금 그 칸을 고르면 할 말
 callout.slot.move,이동,Move,콜아웃 휠 칸: 가자 · 바닥이나 벽을 보고 있으면 '이쪽으로!'와 그 자리에 핀
 callout.slot.request,요청,Request,콜아웃 휠 칸: 치료·탄약·엄호 부탁. 팀에 데탕트나 서포트가 있으면 그 클래스를 부른다
@@ -848,3 +848,273 @@ settings.controls.callout_key,콜아웃 키,Callout key,설정 > 조작 > 키 �
 settings.controls.callout_release,콜아웃: 놓으면 말하기,Callout: say on release,설정 > 조작. 끄면 좌클릭으로 말하고 키를 놓으면 그냥 닫힌다
 settings.controls.callout_bubbles,동료 콜아웃 말풍선,Teammates' callout bubbles,설정 > 조작. 동료가 외친 말을 머리 위에 글로도 보여 준다(끄면 목소리와 핀만)
 settings.controls.callout_auto,저절로 외치기,Shout by myself,설정 > 조작. 잡히거나 쓰러질 때 도와달라고 · 엘리트를 처음 가까이 볼 때 그 이름을 · CHARGE 때 돌격을 저절로 외친다
+wardrobe.preview,미리 보기,Preview,옷장 > 판에 마우스를 올려 입어 보는 동안 캐릭터 위에 뜨는 분홍 띠
+wardrobe.preview.wear,누르면 입는다,Click to wear it,옷장 > 미리 보기 띠 아래 줄: 올려 둔 옷을 누르면 입는다
+wardrobe.preview.off,누르면 벗는다 · 흐린 옷이 벗겨진다,Click to take it off · the faded piece goes,옷장 > 미리 보기 띠 아래 줄: 벗기 판에 올려 두었을 때(벗겨질 옷은 반투명하게 깜빡인다)
+wardrobe.preview.own,누르면 원래 옷으로,Click for the character's own,옷장 > 미리 보기 띠 아래 줄: 기본 판에 올려 두었을 때
+wardrobe.changed,바꿈,Changed,옷장 > 칸 타일: 캐릭터가 원래 입은 것에서 바꾼 칸에 붙는 분홍 꼬리표
+body.title,체형,Body,옷장 > 체형 페이지 제목
+body.open,체형,Body,메인 메뉴 > 캐릭터 페이지 왼쪽 > 색 칩 아래 체형 판의 제목
+body.open.note,꾸미기 {0}가지 · 바꾼 것 {1},{0} options · {1} changed,"체형 판의 설명. {0}=그 캐릭터의 체형 옵션 수, {1}=원래와 다르게 바꾼 옵션 수"
+body.where,모델에 든 꾸미기를 모두 · 입은 옷도 따라간다 · 놓으면 저장,Everything the model offers · clothes follow · saved on release,옷장 > 체형 > 제목 아래 작은 줄
+body.reset,원래대로,As made,옷장 > 체형 > 그 캐릭터의 체형을 모두 처음대로 되돌리는 버튼
+body.own,원래,Own,옷장 > 체형 > 슬라이더의 원래 값 눈금과 원래 칩 밑줄 옆의 작은 글자
+body.group.body,몸,Body,옷장 > 체형 > 탭 이름
+body.group.face,얼굴,Face,옷장 > 체형 > 탭 이름
+body.group.eyes,눈,Eyes,옷장 > 체형 > 탭 이름
+body.group.brows,눈썹·속눈썹,Brows & lashes,옷장 > 체형 > 탭 이름
+body.group.ears,귀,Ears,옷장 > 체형 > 탭 이름
+body.group.hair,머리,Hair,옷장 > 체형 > 탭 이름
+body.group.animal,동물 귀·꼬리,Animal ears & tail,옷장 > 체형 > 탭 이름
+body.group.outfit,옷 세부,Outfit details,옷장 > 체형 > 탭 이름
+body.chest,가슴,Chest,옷장 > 체형 > 몸 탭의 줄 이름
+body.chest.ends,작게|크게,smaller|bigger,옷장 > 체형 > 가슴 슬라이더 양 끝의 작은 글자(왼쪽|오른쪽)
+body.chest_flat,납작한 가슴,Flat chest,옷장 > 체형 > 몸 탭의 줄 이름
+body.push_up,가슴 모으기,Push-up,옷장 > 체형 > 몸 탭의 줄 이름
+body.hips,엉덩이 크게,Fuller hips,옷장 > 체형 > 몸 탭의 줄 이름
+body.waist,허리 가늘게,Slim waist,옷장 > 체형 > 몸 탭의 줄 이름
+body.legs,다리,Legs,옷장 > 체형 > 몸 탭의 줄 이름
+body.legs.ends,가늘게|굵게,slimmer|thicker,옷장 > 체형 > 다리 슬라이더 양 끝의 작은 글자(왼쪽|오른쪽)
+body.nails,손톱,Nails,옷장 > 체형 > 몸 탭의 줄 이름
+body.nails.choices,보통|길게|안 보이게,as made|long|hidden,"옷장 > 체형 > 손톱 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+body.face_type,얼굴 프리셋,Face preset,옷장 > 체형 > 얼굴 탭의 줄 이름
+body.face_type.choices,보통|A|B|보이시,as made|A|B|boyish,"옷장 > 체형 > 얼굴 프리셋 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+body.head_small,머리 작게,Smaller head,옷장 > 체형 > 얼굴 탭의 줄 이름
+body.face_length,얼굴 길이,Face length,옷장 > 체형 > 얼굴 탭의 줄 이름
+body.face_length.ends,짧게|길게,shorter|longer,옷장 > 체형 > 얼굴 길이 슬라이더 양 끝의 작은 글자(왼쪽|오른쪽)
+body.face_width,얼굴 폭,Face width,옷장 > 체형 > 얼굴 탭의 줄 이름
+body.face_width.ends,좁게|넓게,narrower|wider,옷장 > 체형 > 얼굴 폭 슬라이더 양 끝의 작은 글자(왼쪽|오른쪽)
+body.face_narrow_plus,얼굴 더 좁게,Even narrower face,옷장 > 체형 > 얼굴 탭의 줄 이름
+body.features_height,이목구비 높이,Features height,옷장 > 체형 > 얼굴 탭의 줄 이름
+body.features_height.ends,아래로|위로,lower|higher,옷장 > 체형 > 이목구비 높이 슬라이더 양 끝의 작은 글자(왼쪽|오른쪽)
+body.cheeks,볼살,Chubby cheeks,옷장 > 체형 > 얼굴 탭의 줄 이름
+body.cheeks_front,앞볼,Front cheeks,옷장 > 체형 > 얼굴 탭의 줄 이름
+body.soft_cheeks,부드러운 볼,Soft cheeks,옷장 > 체형 > 얼굴 탭의 줄 이름
+body.round_face,둥근 얼굴,Round face,옷장 > 체형 > 얼굴 탭의 줄 이름
+body.sharp_face,갸름한 얼굴,Slim face,옷장 > 체형 > 얼굴 탭의 줄 이름
+body.sharp_face.choices,보통|조금|많이,as made|a little|a lot,"옷장 > 체형 > 갸름한 얼굴 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+body.jawline,턱선,Jawline,옷장 > 체형 > 얼굴 탭의 줄 이름
+body.jawline.ends,아래로|위로,lower|higher,옷장 > 체형 > 턱선 슬라이더 양 끝의 작은 글자(왼쪽|오른쪽)
+body.jawline2,턱선 2,Jawline 2,옷장 > 체형 > 얼굴 탭의 줄 이름
+body.jawline2.ends,아래로|위로,lower|higher,옷장 > 체형 > 턱선 2 슬라이더 양 끝의 작은 글자(왼쪽|오른쪽)
+body.chin,턱끝,Chin,옷장 > 체형 > 얼굴 탭의 줄 이름
+body.chin.ends,뒤로|앞으로,back|forward,옷장 > 체형 > 턱끝 슬라이더 양 끝의 작은 글자(왼쪽|오른쪽)
+body.chin_sharp,뾰족한 턱끝,Pointed chin,옷장 > 체형 > 얼굴 탭의 줄 이름
+body.muzzle,입가 들어가게,Mouth set back,옷장 > 체형 > 얼굴 탭의 줄 이름
+body.nose_size,코 크기,Nose size,옷장 > 체형 > 얼굴 탭의 줄 이름
+body.nose_size.ends,작게|크게,smaller|bigger,옷장 > 체형 > 코 크기 슬라이더 양 끝의 작은 글자(왼쪽|오른쪽)
+body.nose_height,코 높이,Nose height,옷장 > 체형 > 얼굴 탭의 줄 이름
+body.nose_height.ends,아래로|위로,lower|higher,옷장 > 체형 > 코 높이 슬라이더 양 끝의 작은 글자(왼쪽|오른쪽)
+body.nose_tip,코끝,Nose tip,옷장 > 체형 > 얼굴 탭의 줄 이름
+body.nose_tip.choices,보통|작게|크게|없음,as made|smaller|bigger|none,"옷장 > 체형 > 코끝 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+body.teeth_upper,윗니,Upper teeth,옷장 > 체형 > 얼굴 탭의 줄 이름
+body.teeth_upper.choices,보통|덧니|둥글게|톱니|없음,as made|snaggle|round|jagged|none,"옷장 > 체형 > 윗니 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+body.teeth_lower,아랫니,Lower teeth,옷장 > 체형 > 얼굴 탭의 줄 이름
+body.teeth_lower.choices,보통|덧니|둥글게|톱니|없음,as made|snaggle|round|jagged|none,"옷장 > 체형 > 아랫니 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+body.teeth_size,이 크기,Teeth size,옷장 > 체형 > 얼굴 탭의 줄 이름
+body.teeth_size.ends,작게|크게,smaller|bigger,옷장 > 체형 > 이 크기 슬라이더 양 끝의 작은 글자(왼쪽|오른쪽)
+body.blush,볼 홍조,Blush,옷장 > 체형 > 얼굴 탭의 줄 이름
+body.blush.choices,없음|1|2|빗금,none|1|2|lines,"옷장 > 체형 > 볼 홍조 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+body.ears,귀 모양,Ears,옷장 > 체형 > 귀 탭의 줄 이름
+body.ears.choices,보통|엘프 1|엘프 2|엘프 3|없음,as made|elf 1|elf 2|elf 3|none,"옷장 > 체형 > 귀 모양 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+body.ear_size,귀 크기,Ear size,옷장 > 체형 > 귀 탭의 줄 이름
+body.ear_size.ends,작게|크게,smaller|bigger,옷장 > 체형 > 귀 크기 슬라이더 양 끝의 작은 글자(왼쪽|오른쪽)
+body.ear_height,귀 높이,Ear height,옷장 > 체형 > 귀 탭의 줄 이름
+body.ear_height.ends,아래로|위로,lower|higher,옷장 > 체형 > 귀 높이 슬라이더 양 끝의 작은 글자(왼쪽|오른쪽)
+body.ear_spread,귀 벌어짐,Ear spread,옷장 > 체형 > 귀 탭의 줄 이름
+body.ear_spread.ends,붙게|벌어지게,in|out,옷장 > 체형 > 귀 벌어짐 슬라이더 양 끝의 작은 글자(왼쪽|오른쪽)
+body.ear_position,귀 위치,Ear position,옷장 > 체형 > 귀 탭의 줄 이름
+body.ear_position.ends,뒤로|앞으로,back|forward,옷장 > 체형 > 귀 위치 슬라이더 양 끝의 작은 글자(왼쪽|오른쪽)
+body.ear_turn,귀 돌리기,Ear turn,옷장 > 체형 > 귀 탭의 줄 이름
+body.eye_size,눈 크기,Eye size,옷장 > 체형 > 눈 탭의 줄 이름
+body.eye_size.ends,작게|크게,smaller|bigger,옷장 > 체형 > 눈 크기 슬라이더 양 끝의 작은 글자(왼쪽|오른쪽)
+body.eye_width,눈 가로 크기,Eye width,옷장 > 체형 > 눈 탭의 줄 이름
+body.eye_width.ends,좁게|넓게,narrower|wider,옷장 > 체형 > 눈 가로 크기 슬라이더 양 끝의 작은 글자(왼쪽|오른쪽)
+body.eye_tall,눈 세로 크기,Eye height,옷장 > 체형 > 눈 탭의 줄 이름
+body.eye_tall.ends,낮게|높게,shorter|taller,옷장 > 체형 > 눈 세로 크기 슬라이더 양 끝의 작은 글자(왼쪽|오른쪽)
+body.eye_position,눈 높이,Eye position,옷장 > 체형 > 눈 탭의 줄 이름
+body.eye_position.ends,아래로|위로,lower|higher,옷장 > 체형 > 눈 높이 슬라이더 양 끝의 작은 글자(왼쪽|오른쪽)
+body.eye_spacing,눈 사이,Eye spacing,옷장 > 체형 > 눈 탭의 줄 이름
+body.eye_spacing.ends,좁게|넓게,narrower|wider,옷장 > 체형 > 눈 사이 슬라이더 양 끝의 작은 글자(왼쪽|오른쪽)
+body.eye_tilt,눈 기울기,Eye tilt,옷장 > 체형 > 눈 탭의 줄 이름
+body.eye_tilt.ends,안으로|밖으로,inward|outward,옷장 > 체형 > 눈 기울기 슬라이더 양 끝의 작은 글자(왼쪽|오른쪽)
+body.eye_shape,눈매,Eye shape,옷장 > 체형 > 눈 탭의 줄 이름
+body.eye_shape.choices,보통|너구리|여우|고양이|강아지|토끼|나무늘보,as made|tanuki|fox|cat|dog|rabbit|sloth,"옷장 > 체형 > 눈매 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+body.eye_tail,눈꼬리,Eye corners,옷장 > 체형 > 눈 탭의 줄 이름
+body.eye_tail.choices,보통|처짐 1|처짐 2|처짐 3|처짐 4|올라감 1|올라감 2|올라감 3|올라감 4,as made|droop 1|droop 2|droop 3|droop 4|lift 1|lift 2|lift 3|lift 4,"옷장 > 체형 > 눈꼬리 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+body.eye_narrow,가는 눈,Narrow eyes,옷장 > 체형 > 눈 탭의 줄 이름
+body.eye_sharp,날카로운 눈,Sharp eyes,옷장 > 체형 > 눈 탭의 줄 이름
+body.eye_sharp.choices,보통|1|2,as made|1|2,"옷장 > 체형 > 날카로운 눈 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+body.upper_lid,윗눈꺼풀,Upper lid,옷장 > 체형 > 눈 탭의 줄 이름
+body.upper_lid.ends,내리기|올리기,lower|raise,옷장 > 체형 > 윗눈꺼풀 슬라이더 양 끝의 작은 글자(왼쪽|오른쪽)
+body.upper_lid_tilt,윗눈꺼풀 기울기,Upper lid tilt,옷장 > 체형 > 눈 탭의 줄 이름
+body.upper_lid_tilt.ends,처지게|올라가게,droop|lift,옷장 > 체형 > 윗눈꺼풀 기울기 슬라이더 양 끝의 작은 글자(왼쪽|오른쪽)
+body.upper_lid_thick,윗눈꺼풀 두께,Upper lid thickness,옷장 > 체형 > 눈 탭의 줄 이름
+body.upper_lid_thick.ends,얇게|두껍게,thinner|thicker,옷장 > 체형 > 윗눈꺼풀 두께 슬라이더 양 끝의 작은 글자(왼쪽|오른쪽)
+body.lid_tip,눈꼬리 끝,Eye tips,옷장 > 체형 > 눈 탭의 줄 이름
+body.lid_tip.choices,보통|길게|짧게|뾰족하게,as made|long|short|pointed,"옷장 > 체형 > 눈꼬리 끝 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+body.lower_lid,아랫눈꺼풀,Lower lid,옷장 > 체형 > 눈 탭의 줄 이름
+body.lower_lid.ends,내리기|올리기,lower|raise,옷장 > 체형 > 아랫눈꺼풀 슬라이더 양 끝의 작은 글자(왼쪽|오른쪽)
+body.lower_lid_tilt,아랫눈꺼풀 기울기,Lower lid tilt,옷장 > 체형 > 눈 탭의 줄 이름
+body.lower_lid_tilt.ends,처지게|올라가게,droop|lift,옷장 > 체형 > 아랫눈꺼풀 기울기 슬라이더 양 끝의 작은 글자(왼쪽|오른쪽)
+body.lower_lid_round,아랫눈꺼풀 둥글게,Rounder lower lid,옷장 > 체형 > 눈 탭의 줄 이름
+body.double_lid,쌍꺼풀 선 없애기,Hide eyelid creases,옷장 > 체형 > 눈 탭의 줄 이름
+body.double_lid.choices,보통|1|2|모두,as made|1|2|all,"옷장 > 체형 > 쌍꺼풀 선 없애기 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+body.iris,홍채,Iris,옷장 > 체형 > 눈 탭의 줄 이름
+body.iris.choices,보통|크게|작게|애니풍|동그랗게|납작하게|고양이|촉촉하게|무늬 1|무늬 2|없음,as made|bigger|smaller|anime|round|squashed|cat|glossy|pattern 1|pattern 2|none,"옷장 > 체형 > 홍채 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+body.pupil,동공,Pupil,옷장 > 체형 > 눈 탭의 줄 이름
+body.pupil.choices,보통|작게|더 작게|크게|더 크게|납작하게|세로로|동그라미|고양이|하트|큰 하트|별|큰 별|반짝 1|큰 반짝 1|반짝 2|큰 반짝 2|없음,as made|smaller|smallest|bigger|biggest|squashed|slit|ring|cat|heart|big heart|star|big star|sparkle 1|big sparkle 1|sparkle 2|big sparkle 2|none,"옷장 > 체형 > 동공 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+body.highlight,눈 하이라이트,Eye highlight,옷장 > 체형 > 눈 탭의 줄 이름
+body.highlight.choices,보통|크게|더 크게|작게|하트|큰 하트|동그라미|큰 동그라미|별|큰 별|반짝|큰 반짝,as made|bigger|biggest|smaller|heart|big heart|ring|big ring|star|big star|sparkle|big sparkle,"옷장 > 체형 > 눈 하이라이트 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+body.highlight_pattern,하이라이트 배치,Highlight layout,옷장 > 체형 > 눈 탭의 줄 이름
+body.highlight_pattern.choices,보통|1|2|3|4,as made|1|2|3|4,"옷장 > 체형 > 하이라이트 배치 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+body.highlight_sub,작은 하이라이트,Small highlights,옷장 > 체형 > 눈 탭의 줄 이름
+body.highlight_sub.choices,보통|크게|작게,as made|bigger|smaller,"옷장 > 체형 > 작은 하이라이트 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+body.highlight_lower,아래 하이라이트,Lower highlight,옷장 > 체형 > 눈 탭의 줄 이름
+body.highlight_lower.choices,보통|크게|넓게|없음,as made|bigger|wider|none,"옷장 > 체형 > 아래 하이라이트 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+body.highlight_off,하이라이트 끄기,Hide highlights,옷장 > 체형 > 눈 탭의 줄 이름
+body.highlight_off.choices,보통|1|2|3|4|5|모두,as made|1|2|3|4|5|all,"옷장 > 체형 > 하이라이트 끄기 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+body.brow_shape,눈썹 모양,Brow shape,옷장 > 체형 > 눈썹·속눈썹 탭의 줄 이름
+body.brow_shape.choices,보통|일자|굵게|짧게|길게|마로 눈썹,as made|straight|thick|short|long|dot brows,"옷장 > 체형 > 눈썹 모양 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+body.brow_height,눈썹 높이,Brow height,옷장 > 체형 > 눈썹·속눈썹 탭의 줄 이름
+body.brow_height.ends,아래로|위로,lower|higher,옷장 > 체형 > 눈썹 높이 슬라이더 양 끝의 작은 글자(왼쪽|오른쪽)
+body.brow_spacing,눈썹 사이,Brow spacing,옷장 > 체형 > 눈썹·속눈썹 탭의 줄 이름
+body.brow_spacing.ends,좁게|넓게,narrower|wider,옷장 > 체형 > 눈썹 사이 슬라이더 양 끝의 작은 글자(왼쪽|오른쪽)
+body.brow_tilt,눈썹 기울기,Brow tilt,옷장 > 체형 > 눈썹·속눈썹 탭의 줄 이름
+body.brow_tilt.ends,처지게|올라가게,droop|lift,옷장 > 체형 > 눈썹 기울기 슬라이더 양 끝의 작은 글자(왼쪽|오른쪽)
+body.maro_shape,마로 눈썹 모양,Dot brow shape,옷장 > 체형 > 눈썹·속눈썹 탭의 줄 이름
+body.maro_shape.choices,보통|크게|작게|길게|처지게|올라가게,as made|bigger|smaller|longer|droop|lift,"옷장 > 체형 > 마로 눈썹 모양 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+body.maro_place,마로 눈썹 위치,Dot brow place,옷장 > 체형 > 눈썹·속눈썹 탭의 줄 이름
+body.maro_place.choices,보통|위로|아래로|가운데로|바깥으로,as made|up|down|inward|outward,"옷장 > 체형 > 마로 눈썹 위치 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+body.upper_lash,윗속눈썹,Upper lashes,옷장 > 체형 > 눈썹·속눈썹 탭의 줄 이름
+body.upper_lash.choices,보통|길게|굵게|작게|가늘게|모양 2|바깥으로|안으로|없음,as made|long|thick|small|thin|shape 2|outward|inward|none,"옷장 > 체형 > 윗속눈썹 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+body.lash_lines,속눈썹 선,Lash lines,옷장 > 체형 > 눈썹·속눈썹 탭의 줄 이름
+body.lash_lines.choices,보통|1 굵게|2 굵게|1 없애기|2 없애기,as made|1 thick|2 thick|1 off|2 off,"옷장 > 체형 > 속눈썹 선 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+body.lower_lash,아랫속눈썹,Lower lashes,옷장 > 체형 > 눈썹·속눈썹 탭의 줄 이름
+body.lower_lash.choices,보통|길게 1|길게 2|올리기 1|올리기 2|없음,as made|long 1|long 2|raised 1|raised 2|none,"옷장 > 체형 > 아랫속눈썹 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+body.bangs,앞머리,Bangs,옷장 > 체형 > 머리 탭의 줄 이름
+body.bangs.choices,보통|길게|짧게|옆으로,as made|long|short|swept,"옷장 > 체형 > 앞머리 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+body.bangs_shadow,앞머리 그림자,Bangs shadow,옷장 > 체형 > 머리 탭의 줄 이름
+body.bangs_shadow.choices,보통|없음,as made|none,"옷장 > 체형 > 앞머리 그림자 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+body.ahoge,바보털,Ahoge,옷장 > 체형 > 머리 탭의 줄 이름
+body.ahoge.choices,보통|짧게|지그재그,as made|short|zigzag,"옷장 > 체형 > 바보털 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+body.side_hair,옆머리 모양,Side hair shape,옷장 > 체형 > 머리 탭의 줄 이름
+body.side_hair.choices,보통|1|지그재그,as made|1|zigzag,"옷장 > 체형 > 옆머리 모양 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+body.side_left,왼쪽 옆머리,Left side hair,옷장 > 체형 > 머리 탭의 줄 이름
+body.side_left.ends,짧게|길게,shorter|longer,옷장 > 체형 > 왼쪽 옆머리 슬라이더 양 끝의 작은 글자(왼쪽|오른쪽)
+body.side_right,오른쪽 옆머리,Right side hair,옷장 > 체형 > 머리 탭의 줄 이름
+body.side_right.ends,짧게|길게,shorter|longer,옷장 > 체형 > 오른쪽 옆머리 슬라이더 양 끝의 작은 글자(왼쪽|오른쪽)
+body.hairpin,머리핀 크게,Bigger hairpin,옷장 > 체형 > 머리 탭의 줄 이름
+body.kemomimi,동물 귀 모양,Animal ears,옷장 > 체형 > 동물 귀·꼬리 탭의 줄 이름
+body.kemomimi.choices,보통|길게|넓게|고양이|둥글게|처지게|쫑긋,as made|long|wide|cat|round|droopy|perked,"옷장 > 체형 > 동물 귀 모양 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+body.kemomimi_height,동물 귀 높이,Animal ear height,옷장 > 체형 > 동물 귀·꼬리 탭의 줄 이름
+body.kemomimi_height.ends,아래로|위로,lower|higher,옷장 > 체형 > 동물 귀 높이 슬라이더 양 끝의 작은 글자(왼쪽|오른쪽)
+body.tail_fluffy,꼬리 복슬복슬,Fluffy tail,옷장 > 체형 > 동물 귀·꼬리 탭의 줄 이름
+body.chest_size,가슴 크기,Chest size,옷장 > 체형 > 몸 탭의 줄 이름
+body.chest_plus,가슴 더 크게,Even bigger chest,옷장 > 체형 > 몸 탭의 줄 이름
+body.corset,허리 조이기,Corseted waist,옷장 > 체형 > 몸 탭의 줄 이름
+body.belly,배,Belly,옷장 > 체형 > 몸 탭의 줄 이름
+body.nail_style,손톱,Nails,옷장 > 체형 > 몸 탭의 줄 이름
+body.nail_style.choices,보통|길게|뾰족하게,as made|long|pointed,"옷장 > 체형 > 손톱 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+body.toenail_style,발톱,Toenails,옷장 > 체형 > 몸 탭의 줄 이름
+body.toenail_style.choices,보통|길게|뾰족하게,as made|long|pointed,"옷장 > 체형 > 발톱 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+body.face_age,얼굴 나이,Face age,옷장 > 체형 > 얼굴 탭의 줄 이름
+body.face_age.choices,보통|앳되게|어른스럽게,as made|younger|older,"옷장 > 체형 > 얼굴 나이 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+body.jaw_shape,턱 모양,Jaw shape,옷장 > 체형 > 얼굴 탭의 줄 이름
+body.jaw_shape.choices,보통|갸름하게|둥글게|각지게,as made|slim|round|square,"옷장 > 체형 > 턱 모양 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+body.chin_shape,턱끝 모양,Chin shape,옷장 > 체형 > 얼굴 탭의 줄 이름
+body.chin_shape.choices,보통|둥글게|뾰족하게,as made|round|pointed,"옷장 > 체형 > 턱끝 모양 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+body.nose_line,콧날 선,Nose line,옷장 > 체형 > 얼굴 탭의 줄 이름
+body.nose_line.choices,보통|없음,as made|none,"옷장 > 체형 > 콧날 선 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+body.teeth_hide,이 감추기,Hide teeth,옷장 > 체형 > 얼굴 탭의 줄 이름
+body.teeth_hide.choices,보통|윗니|아랫니|모두,as made|upper|lower|all,"옷장 > 체형 > 이 감추기 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+body.cheek_tint,볼 홍조,Blush,옷장 > 체형 > 얼굴 탭의 줄 이름
+body.cheek_tint.choices,없음|1|2|3|4|5,none|1|2|3|4|5,"옷장 > 체형 > 볼 홍조 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+body.ear_shape,귀 모양,Ears,옷장 > 체형 > 귀 탭의 줄 이름
+body.ear_shape.choices,보통|엘프 1|엘프 2|없음,as made|elf 1|elf 2|none,"옷장 > 체형 > 귀 모양 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+body.ear_small,귀 작게,Smaller ears,옷장 > 체형 > 귀 탭의 줄 이름
+body.eye_style,눈동자,Eyes,옷장 > 체형 > 눈 탭의 줄 이름
+body.eye_style.choices,보통|크게|작게|고양이|동그랗게|촉촉하게,as made|bigger|smaller|cat|round|glossy,"옷장 > 체형 > 눈동자 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+body.eye_corner,눈꼬리,Eye corners,옷장 > 체형 > 눈 탭의 줄 이름
+body.eye_corner.choices,보통|처짐 1|처짐 2|올라감 1|올라감 2,as made|droop 1|droop 2|lift 1|lift 2,"옷장 > 체형 > 눈꼬리 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+body.lid_head,눈머리 높이,Inner corner height,옷장 > 체형 > 눈 탭의 줄 이름
+body.lid_head.ends,아래로|위로,lower|higher,옷장 > 체형 > 눈머리 높이 슬라이더 양 끝의 작은 글자(왼쪽|오른쪽)
+body.lid_head_sharp,뾰족한 눈머리,Pointed inner corner,옷장 > 체형 > 눈 탭의 줄 이름
+body.lid_center,눈꺼풀 가운데,Lid middle,옷장 > 체형 > 눈 탭의 줄 이름
+body.lid_center.ends,내리기|올리기,lower|raise,옷장 > 체형 > 눈꺼풀 가운데 슬라이더 양 끝의 작은 글자(왼쪽|오른쪽)
+body.lid_tail,눈꼬리 높이,Outer corner height,옷장 > 체형 > 눈 탭의 줄 이름
+body.lid_tail.ends,아래로|위로,lower|higher,옷장 > 체형 > 눈꼬리 높이 슬라이더 양 끝의 작은 글자(왼쪽|오른쪽)
+body.lid_tail_length,눈꼬리 길이,Outer corner length,옷장 > 체형 > 눈 탭의 줄 이름
+body.lid_tail_length.ends,짧게|길게,shorter|longer,옷장 > 체형 > 눈꼬리 길이 슬라이더 양 끝의 작은 글자(왼쪽|오른쪽)
+body.lid_thick,눈꺼풀 두께,Lid thickness,옷장 > 체형 > 눈 탭의 줄 이름
+body.lid_thick.ends,얇게|두껍게,thinner|thicker,옷장 > 체형 > 눈꺼풀 두께 슬라이더 양 끝의 작은 글자(왼쪽|오른쪽)
+body.lid_side_thick,눈가 두께,Eye rim thickness,옷장 > 체형 > 눈 탭의 줄 이름
+body.lid_side_thick.ends,얇게|두껍게,thinner|thicker,옷장 > 체형 > 눈가 두께 슬라이더 양 끝의 작은 글자(왼쪽|오른쪽)
+body.crease_hide,쌍꺼풀 선 없애기,Hide eyelid creases,옷장 > 체형 > 눈 탭의 줄 이름
+body.crease_hide.choices,보통|1|2|3|모두,as made|1|2|3|all,"옷장 > 체형 > 쌍꺼풀 선 없애기 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+body.pupil_style,동공,Pupil,옷장 > 체형 > 눈 탭의 줄 이름
+body.pupil_style.choices,보통|크게|작게|동그랗게|고양이|양|하트|큰 하트|흰색|없음,as made|bigger|smaller|round|cat|sheep|heart|big heart|white|none,"옷장 > 체형 > 동공 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+body.highlight_style,눈 하이라이트,Eye highlight,옷장 > 체형 > 눈 탭의 줄 이름
+body.highlight_style.choices,보통|크게|작게|하트|큰 하트|별|큰 별|아래로,as made|bigger|smaller|heart|big heart|star|big star|lower,"옷장 > 체형 > 눈 하이라이트 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+body.highlight_hide,하이라이트 끄기,Hide highlights,옷장 > 체형 > 눈 탭의 줄 이름
+body.highlight_hide.choices,보통|큰 것 1|큰 것 2|작은 것|모두,as made|main 1|main 2|small ones|all,"옷장 > 체형 > 하이라이트 끄기 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+body.top_lash,윗속눈썹,Upper lashes,옷장 > 체형 > 눈썹·속눈썹 탭의 줄 이름
+body.top_lash.choices,보통|길게|짧게|선 없애기,as made|long|short|no line,"옷장 > 체형 > 윗속눈썹 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+body.top_lash_wisps,윗속눈썹 잔털,Upper lash wisps,옷장 > 체형 > 눈썹·속눈썹 탭의 줄 이름
+body.under_lash,아랫속눈썹,Lower lashes,옷장 > 체형 > 눈썹·속눈썹 탭의 줄 이름
+body.under_lash.choices,보통|길게|짧게|없애기,as made|long|short|none,"옷장 > 체형 > 아랫속눈썹 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+body.under_lash_wisps,아랫속눈썹 잔털,Lower lash wisps,옷장 > 체형 > 눈썹·속눈썹 탭의 줄 이름
+body.under_lash_wisps.choices,보통|길게|짧게,as made|long|short,"옷장 > 체형 > 아랫속눈썹 잔털 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+body.bang,앞머리,Bangs,옷장 > 체형 > 머리 탭의 줄 이름
+body.bang.choices,보통|길게|짧게|가지런히,as made|long|short|even,"옷장 > 체형 > 앞머리 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+body.short_side,옆머리,Side hair,옷장 > 체형 > 머리 탭의 줄 이름
+body.short_side.choices,보통|길게|짧게|바깥으로,as made|long|short|outward,"옷장 > 체형 > 옆머리 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+body.long_side,긴 옆머리,Long side hair,옷장 > 체형 > 머리 탭의 줄 이름
+body.long_side.choices,보통|길게|짧게|바깥으로|안으로|앞으로|뒤로,as made|long|short|outward|inward|forward|back,"옷장 > 체형 > 긴 옆머리 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+body.side_streak,옆머리 가닥,Side strand,옷장 > 체형 > 머리 탭의 줄 이름
+body.side_streak.choices,보통|없음,as made|none,"옷장 > 체형 > 옆머리 가닥 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+body.hair_point,삐침머리,Stray strand,옷장 > 체형 > 머리 탭의 줄 이름
+body.hair_point.choices,보통|없음,as made|none,"옷장 > 체형 > 삐침머리 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+body.ahoge_hide,바보털,Ahoge,옷장 > 체형 > 머리 탭의 줄 이름
+body.ahoge_hide.choices,보통|없음,as made|none,"옷장 > 체형 > 바보털 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+body.braid,땋은 머리,Braid,옷장 > 체형 > 머리 탭의 줄 이름
+body.braid.choices,보통|없음|모자용,as made|none|under a hat,"옷장 > 체형 > 땋은 머리 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+body.small_tail,꽁지머리,Small tail,옷장 > 체형 > 머리 탭의 줄 이름
+body.small_tail.choices,보통|짧게|없음,as made|short|none,"옷장 > 체형 > 꽁지머리 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+body.twintails,트윈테일,Twintails,옷장 > 체형 > 머리 탭의 줄 이름
+body.twintails.choices,보통|길게|짧게,as made|long|short,"옷장 > 체형 > 트윈테일 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+body.twintail_point,트윈테일 가닥,Twintail strand,옷장 > 체형 > 머리 탭의 줄 이름
+body.twintail_point.choices,보통|없음,as made|none,"옷장 > 체형 > 트윈테일 가닥 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+body.kemono_ears,동물 귀 모양,Animal ears,옷장 > 체형 > 동물 귀·꼬리 탭의 줄 이름
+body.kemono_ears.choices,보통|길게|짧게|둥글게,as made|long|short|round,"옷장 > 체형 > 동물 귀 모양 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+body.kemono_ear_way,동물 귀 방향,Animal ear angle,옷장 > 체형 > 동물 귀·꼬리 탭의 줄 이름
+body.kemono_ear_way.choices,보통|안으로|바깥으로|앞으로|뒤로,as made|inward|outward|forward|back,"옷장 > 체형 > 동물 귀 방향 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+body.tail_big,꼬리 크게,Bigger tail,옷장 > 체형 > 동물 귀·꼬리 탭의 줄 이름
+body.tail_ribbons,꼬리 리본,Tail ribbons,옷장 > 체형 > 동물 귀·꼬리 탭의 줄 이름
+body.tail_ribbons.choices,보통|꼬리 쪽 없애기|다리 쪽 없애기|모두 없애기,as made|tail one off|leg one off|both off,"옷장 > 체형 > 꼬리 리본 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+body.hat_ribbon,모자 리본,Hat ribbon,옷장 > 체형 > 옷 세부 탭의 줄 이름
+body.hat_ribbon.choices,보통|없음,as made|none,"옷장 > 체형 > 모자 리본 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+body.collar_tie,목 장식 끈,Collar tie,옷장 > 체형 > 옷 세부 탭의 줄 이름
+body.collar_tie.choices,보통|짧게,as made|short,"옷장 > 체형 > 목 장식 끈 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+body.outer_cover,겉옷 덮개,Coat cover,옷장 > 체형 > 옷 세부 탭의 줄 이름
+body.outer_cover.choices,보통|없음,as made|none,"옷장 > 체형 > 겉옷 덮개 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+body.cape,망토,Cape,옷장 > 체형 > 옷 세부 탭의 줄 이름
+body.cape.choices,보통|없음,as made|none,"옷장 > 체형 > 망토 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+body.sleeve_tie,소매 끈,Sleeve ties,옷장 > 체형 > 옷 세부 탭의 줄 이름
+body.sleeve_tie.choices,보통|없음,as made|none,"옷장 > 체형 > 소매 끈 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+body.sleeve_ribbon,소매 리본,Sleeve ribbons,옷장 > 체형 > 옷 세부 탭의 줄 이름
+body.sleeve_ribbon.choices,보통|짧게|없음,as made|short|none,"옷장 > 체형 > 소매 리본 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+body.shoe_ribbon,신발 리본,Shoe ribbons,옷장 > 체형 > 옷 세부 탭의 줄 이름
+body.shoe_ribbon.choices,보통|없음,as made|none,"옷장 > 체형 > 신발 리본 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+body.skirt_strap,치마 끈,Skirt strap,옷장 > 체형 > 옷 세부 탭의 줄 이름
+body.skirt_strap.choices,보통|없음,as made|none,"옷장 > 체형 > 치마 끈 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+body.thigh_belt,허벅지 벨트,Thigh belt,옷장 > 체형 > 옷 세부 탭의 줄 이름
+body.thigh_belt.choices,보통|끈 없애기|없음,as made|no strap|none,"옷장 > 체형 > 허벅지 벨트 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+body.tights,타이츠,Tights,옷장 > 체형 > 옷 세부 탭의 줄 이름
+body.tights.choices,보통|스타킹 1|스타킹 2|발끝 트임,as made|stockings 1|stockings 2|open toe,"옷장 > 체형 > 타이츠 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+body.heart_charm,하트 장식,Heart charm,옷장 > 체형 > 옷 세부 탭의 줄 이름
+body.heart_charm.choices,보통|크게|없음,as made|bigger|none,"옷장 > 체형 > 하트 장식 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+body.earring_size,귀걸이 크기,Earring size,옷장 > 체형 > 옷 세부 탭의 줄 이름
+body.earring_size.ends,작게|크게,smaller|bigger,옷장 > 체형 > 귀걸이 크기 슬라이더 양 끝의 작은 글자(왼쪽|오른쪽)
+body.arm_charm,팔 끈 장식,Arm strap charm,옷장 > 체형 > 옷 세부 탭의 줄 이름
+body.arm_charm.choices,보통|없음,as made|none,"옷장 > 체형 > 팔 끈 장식 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
