@@ -21,9 +21,10 @@ using UnityEngine.SceneManagement;
 /// Boxes are given by their extents in metres, x0..x1, y0..y1, z0..z1. A chapter runs along +X.
 /// Small props (the user's memo 48): no prop a player can stand on may be out of every zombie's reach. The bake keeps
 /// small tops, lays a walk slab over narrow ones a zombie could climb to, and the build names in the console any prop
-/// still out of reach (see "Small props" below). Every chapter at once: RebuildAll.
+/// still out of reach (see "Small props" below). Every chapter at once: RebuildAll. Each chapter's sky, sun and fog
+/// come from Tables/MapLook (GreyboxBuilder.Look.cs).
 /// </summary>
-public sealed class GreyboxBuilder
+public sealed partial class GreyboxBuilder
 {
     public const string Folder = "Assets/_Project/Scenes/Campaign";
     private const string HudPrefab = "Assets/_Project/Prefabs/UI/HUD/GameHUD.prefab";
@@ -89,7 +90,7 @@ public sealed class GreyboxBuilder
     public static void RebuildAll(string title, params (string name, System.Action build)[] chapters)
     {
         if (EditorApplication.isPlayingOrWillChangePlaymode) { EditorUtility.DisplayDialog(title, "Play를 멈춘 뒤에 실행해 주세요.", "확인"); return; }
-        if (!EditorUtility.DisplayDialog(title, "캠페인 " + chapters.Length + "개 장을 1장부터 차례로 다시 지어요(좀비 길찾기와 가림 굽기까지). " +
+        if (!EditorUtility.DisplayDialog(title, "캠페인 " + chapters.Length + "개 장을 1장부터 차례로 다시 지어요(좀비 길찾기, 가림·환경광 굽기까지). " +
                 "씬에서 손으로 고친 것은 모두 사라져요. 계속할까요?", "모두 다시 짓기", "취소"))
             return;
         if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
@@ -123,10 +124,11 @@ public sealed class GreyboxBuilder
         foreach (var root in scene.GetRootGameObjects())
         {
             if (root.GetComponent<Camera>() != null) { Object.DestroyImmediate(root); continue; }
-            if (!root.TryGetComponent(out Light sun)) continue;
-            sun.name = "해";
-            sun.transform.rotation = Quaternion.Euler(50f, -35f, 0f);
-            sun.shadows = LightShadows.Soft;
+            if (!root.TryGetComponent(out Light light)) continue;
+            light.name = "해";
+            light.transform.rotation = Quaternion.Euler(50f, -35f, 0f);
+            light.shadows = LightShadows.Soft;
+            sun = light;
         }
         Concrete = Load("MovementPlayground.mat");
         Road = Load("SurfacePads/SurfacePad_ConcreteGrit.mat");
@@ -437,6 +439,7 @@ public sealed class GreyboxBuilder
         if (!AssetDatabase.IsValidFolder(Folder)) AssetDatabase.CreateFolder(Path.GetDirectoryName(Folder).Replace('\\', '/'), Path.GetFileName(Folder));
         string dataFolder = Folder + "/" + sceneName;
         if (!AssetDatabase.IsValidFolder(dataFolder)) AssetDatabase.CreateFolder(Folder, sceneName);
+        string look = ApplyLook();
         var surface = terrain.gameObject.AddComponent<NavMeshSurface>();
         surface.collectObjects = CollectObjects.Children;
         surface.useGeometry = NavMeshCollectGeometry.PhysicsColliders;
@@ -460,7 +463,9 @@ public sealed class GreyboxBuilder
         // The occlusion data is kept beside the saved scene (Scenes/Campaign/<scene>/OcclusionCullingData), so it bakes
         // after the first save, and the scene is saved again to keep hold of it.
         bool culled = BakeOcclusion();
-        if (culled)
+        // The sky's ambient light and reflection are baked the same way, beside the saved scene (LightingData).
+        bool lit = look != null && BakeEnvironment();
+        if (culled || lit)
         {
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene, ScenePath);
@@ -476,7 +481,9 @@ public sealed class GreyboxBuilder
              "곳. Play하면 미션이 바로 시작돼요(목표는 Resources/Tables/CampaignSteps.csv).\n" +
              "작은 소품: 좁은 꼭대기 " + slabs + "곳에 좀비 길을 깔았어요. " +
              (stranded == 0 ? "좀비가 못 가는 소품은 없어요." : "좀비가 못 가는 소품이 " + stranded + "곳 남았어요(콘솔에 이름과 자리).") +
-             "\n가림 굽기(오클루전 컬링): " + (culled ? "구웠어요. 벽과 건물 뒤의 좀비는 그리지 않아요." : "실패했어요(콘솔을 보세요). 맵은 그대로 쓸 수 있어요."));
+             "\n가림 굽기(오클루전 컬링): " + (culled ? "구웠어요. 벽과 건물 뒤의 좀비는 그리지 않아요." : "실패했어요(콘솔을 보세요). 맵은 그대로 쓸 수 있어요.") +
+             "\n하늘·해·안개: " + (look == null ? "Tables/MapLook에 이 장의 줄이 없어 기본 하늘이에요."
+                 : look + (lit ? " (환경광·반사를 구웠어요)" : " (환경광을 굽지 못했어요. Window > Rendering > Lighting의 Generate Lighting을 눌러 주세요)")));
     }
 
     // ---- Culling (the user's memo 40: "최적화, 컬링") ----

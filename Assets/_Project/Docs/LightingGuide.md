@@ -16,7 +16,8 @@
 | | 데칼 Max Draw Distance 120 m | 2026-11-11 성능: 200 → 120 m. 120 m 밖의 총알 자국은 한 점도 안 된다 |
 | [Player](../Resources/Characters/Player.prefab) 카메라 | SMAA High, 디더링 | 머리카락과 반짝이는 부분의 계단, 하늘과 안개의 띠 줄무늬 |
 | [QualitySettings](../../../ProjectSettings/QualitySettings.asset) PC | Async Upload Time Slice 4 ms, Buffer 64 MB | 2026-11-11 성능: 2 ms·16 MB에서 늘렸다. 장을 불러올 때 큰 텍스처·메시를 GPU로 올리는 일을 덜 쪼개 로딩이 빨라지고 첫 사용 끊김이 줄기를 바란 것(측정 없음). 되돌리려면 2·16 |
-| 캠페인 맵 (회색 맵 빌더) | 정적 배칭·가림 컬링, 레이어 거리 컬링 | 맵을 지을 때 움직이지 않는 상자를 static으로 표시하고 가림 컬링을 굽는다(작은 가림체 4 m). 벽과 건물 뒤의 좀비는 그리지 않는다. 트인 곳은 [Culling.csv](../Resources/Tables/Culling.csv)의 레이어 거리(좀비 160 m)로 자른다. 조명은 그림자 없는 점 조명만 쓴다(Forward+라 개수 제한 없음) |
+| 캠페인 맵 (회색 맵 빌더) | 하늘·해·안개는 [MapLook.csv](../Resources/Tables/MapLook.csv) | 2026-11-12 맵 꾸미기 1단계(월드 워 Z 느낌, 사용자가 고른 시안 A안): 장마다 Poly Haven HDRI 하나(`Art/Sky`), 해의 방향·색·세기는 그 HDRI에서 잰 값(해가 너무 낮으면 올림), 안개 색은 그 하늘의 지평선 색. 맵을 지을 때 하늘 재질(`Scenes/Campaign/<장>/Sky.mat`)과 조명 설정(`Lighting.lighting`, 구운 GI 없음)을 만들고 저장한 뒤 환경광·반사만 굽는다(몇 초). 하늘 텍스처는 4096, 밉맵 없음(이음매 줄 방지) |
+| | 정적 배칭·가림 컬링, 레이어 거리 컬링 | 맵을 지을 때 움직이지 않는 상자를 static으로 표시하고 가림 컬링을 굽는다(작은 가림체 4 m). 벽과 건물 뒤의 좀비는 그리지 않는다. 트인 곳은 [Culling.csv](../Resources/Tables/Culling.csv)의 레이어 거리(좀비 160 m)로 자른다. 조명은 그림자 없는 점 조명만 쓴다(Forward+라 개수 제한 없음) |
 
 - 톤매핑을 꺼서 밝기 1을 넘는 부분은 하얗게 날아간다. 빛을 받은 흰 벽이 날아가면 그 빛의 세기를 낮춘다.
 - 블룸은 밝기 1을 넘는 부분만 번진다. 빛나야 하는 것(전구, 형광등, 간판)은 재질의 발광 세기를 1보다 크게 준다.

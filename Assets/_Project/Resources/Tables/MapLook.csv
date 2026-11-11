@@ -1,0 +1,6 @@
+﻿id,sky,skyExposure,skyRotation,sunPitch,sunYaw,sunColor,sunIntensity,shadowStrength,ambientIntensity,reflectionIntensity,fogColor,fogDensity
+#설명 (장마다 하늘·해·안개. id = 씬 이름. 맵을 다시 지을 때 들어가고 환경광을 함께 굽는다. 해 방향과 안개 색은 각 HDRI에서 잰 값이다),Art/Sky 안의 HDRI 파일 이름,하늘 밝기(톤매핑이 없어서 1을 넘는 곳은 하얗게 날아간다),하늘을 Y축으로 돌리는 각도(도),해 높이(도). HDRI에서 잰 해 높이에서 시작하고 너무 낮으면 올렸다,빛이 가는 방위(도) = HDRI에서 잰 해의 방위 + 180,해 색,해 세기,그림자 진하기(0~1). 흐린 하늘은 옅게,하늘에서 오는 환경광 세기,하늘 반사 세기,안개 색 = 하늘 지평선 색을 그 밝기에서 잰 값,안개 짙기(지수 안개). 0.006이면 200 m 앞은 70%가 안개
+Ch1_Rooftops,kloofendal_overcast_puresky_4k.hdr,0.75,0,45,304,#fff4e8,0.9,0.6,1,1,#c7cdd8,0.006
+Ch2_Overpass,overcast_soil_puresky_4k.hdr,0.6,0,40,266,#f6f2ec,0.75,0.5,1,1,#b4b0ac,0.008
+Ch3_Subway,kloofendal_misty_morning_puresky_4k.hdr,0.7,0,30,313,#eef0f5,0.55,0.4,0.6,0.6,#cbcbd0,0.004
+Ch4_Airport,qwantani_sunrise_puresky_4k.hdr,0.55,0,14,306,#ffcc99,1.4,0.85,1,1,#e1bba8,0.0035
