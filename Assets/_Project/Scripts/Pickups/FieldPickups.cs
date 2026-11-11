@@ -512,8 +512,9 @@ public sealed class FieldPickups : MonoBehaviour
         if (!slots.TrySetWeapon(slot, row.Weapon)) return;
         if (!slots.HandsFull) slots.SelectSlot(slot);
         Pop(row.Kind, row.Name, Texts.Get("pickup.gives.gun"));
+        // A dual pistol has no floor row of its own: it leaves its single gun (AkimboGuns), so a bought pair isn't lost.
         if (before != null && before.Category == WeaponCategory.Ranged)
-            Leave(RowOf(before), player.transform.position + player.transform.forward * LeaveAhead);
+            Leave(RowOf(AkimboGuns.SingleOf(before) ?? before), player.transform.position + player.transform.forward * LeaveAhead);
     }
 
     // Each gun held gets this many magazines more, up to the reserve it started with.

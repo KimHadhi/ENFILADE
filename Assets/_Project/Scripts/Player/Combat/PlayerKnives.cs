@@ -238,13 +238,18 @@ public sealed class PlayerKnives : MonoBehaviour
         if (Home != null) Home.ShareHand(false);
     }
 
-    // The hands are free for a knife: not down, held, in a takedown or a climb that needs them, nor carrying a can.
+    // The hands are free for a knife: not down, held, in a takedown or a climb that needs them, nor carrying a can, and
+    // the off hand isn't holding a weapon of its own (a dual pistol's left gun, the katana's grip), where the knife would
+    // show inside the other hand's grip.
     private bool Able()
     {
         if (movement.IsDead || movement.IsDowned || movement.IsHeld || movement.CombatInputLocked) return false;
         if (!PlayerBodyHands.HoldsWeapons(movement.CurrentState) || (slots != null && slots.HandsFull)) return false;
+        if (slots != null && OffHandBusy(slots.SelectedWeapon)) return false;
         return Home != null;
     }
+
+    private static bool OffHandBusy(WeaponData held) => held != null && (AkimboGuns.Is(held) || MeleeWeapons.IndexOf(held) >= 0);
 
     // As the mouse look: not while the cursor is free (chat, menus), the window is in the background or the console is open.
     private static bool TakesInput() => Cursor.lockState == CursorLockMode.Locked && Application.isFocused && !DevConsole.TakesKeyboard;
