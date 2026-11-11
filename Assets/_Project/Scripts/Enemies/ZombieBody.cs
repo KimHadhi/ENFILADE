@@ -66,6 +66,13 @@ public sealed partial class ZombieBody : MonoBehaviour
         AlertSlot = 8, SearchSlot = 9, NoticeSlot = 10, RouseSlot = 11, CrawlAttackSlot = 12, PoseSlot = 13, PhaseSlot = 20;
     private Vector3 lastPosition, moving;
     private int dressedFrame;
+    [SerializeField, Min(1f), Tooltip("A kind that doesn't run (ZombieKinds runs 0) plays its walk up to this many times as fast " +
+        "when it hurries (Tables/ZombieClips hurryRate). Past that its feet slide a little rather than look sped up.")]
+    private float hurryRate = 2.4f;
+    // Its kind, for whether it runs or hurries in its walk, and how far its gait has gone from walking (0) to running (1).
+    private ZombieType kinds;
+    private float runShare = 1f;
+    private bool gaitKnown;
     // Its human bones by HumanBodyBones, read once the Animator is on: it may die with the Animator off (knocked down).
     private Transform[] human;
 
@@ -469,12 +476,20 @@ public sealed partial class ZombieBody : MonoBehaviour
         speed = Mathf.Lerp(speed, measured, 1f - Mathf.Exp(-SpeedSharpness * real));
         // Searching, the slower search walk sets the pace.
         float stepSpeed = StepSpeed, walking, running;
+        // Only a kind that runs (ZombieKinds runs: a runner, the big elites) breaks into its run clip; the rest hurry in
+        // their own walk, played faster up to hurryRate (user, 2026-11-11: "쉠블러는 뛰는 모션 안 했으면 좋겠어 러너랑
+        // 헷갈리니까"). Eased, so a kind the host names late doesn't snap from one gait to the other.
+        if (kinds == null) TryGetComponent(out kinds);
+        float gait = kinds == null || kinds.RunsWhenFast ? 1f : 0f;
+        runShare = gaitKnown ? Mathf.MoveTowards(runShare, gait, real * 2f) : gait;
+        gaitKnown = true;
         if (speed <= stepSpeed) { walking = Mathf.SmoothStep(0f, 1f, speed / stepSpeed); running = 0f; }
-        else { running = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(stepSpeed, runSpeed, speed)); walking = 1f - running; }
+        else { running = runShare * Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(stepSpeed, runSpeed, speed)); walking = 1f - running; }
         moves.SetInputWeight(0, 1f - walking - running);
         moves.SetInputWeight(1, walking);
         moves.SetInputWeight(2, running);
-        float rate = speed > runSpeed ? Mathf.Min(speed / runSpeed, MaxRate) : 1f;
+        float rate = Mathf.Lerp(speed > stepSpeed ? Mathf.Min(speed / Mathf.Max(.1f, stepSpeed), Mathf.Max(1f, hurryRate)) : 1f,
+            speed > runSpeed ? Mathf.Min(speed / runSpeed, MaxRate) : 1f, runShare);
         phase = Mathf.Repeat(phase + dt * rate / Mathf.Lerp(StepLength, runLength, running), 1f);
         walk.SetTime(phase * walkLength);
         searchWalk.SetTime(phase * searchWalkLength);

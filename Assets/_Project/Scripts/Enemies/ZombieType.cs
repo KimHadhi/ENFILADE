@@ -77,6 +77,9 @@ public sealed class ZombieType : MonoBehaviour
         public bool steadfast;
         [Tooltip("An execution takes this share of its whole health; 0 or 1 takes all it has left (the pack's).")]
         public float executionShare;
+        [Tooltip("Fast, it breaks into a run (the run clips). Off, it hurries in its own walk played faster instead, so only " +
+                 "a runner (and the big elites) is ever seen running (user, 2026-11-11: shamblers running read as runners).")]
+        public bool runs;
     }
 
     // Guts & Blackpowder's shambler, its 14 studs a second against a player's walking 16 put to our walk (4.9 m/s).
@@ -89,7 +92,7 @@ public sealed class ZombieType : MonoBehaviour
     private readonly Numbers runner = new Numbers
     {
         share = .35f, speed = 7.4f, acceleration = 14f, angularSpeed = 300f, damage = 10f, windup = .45f, attackInterval = 1f,
-        pounces = true, pounceWindup = .35f, pounceRadius = 1.1f, healthShare = .4f
+        pounces = true, pounceWindup = .35f, pounceRadius = 1.1f, healthShare = .4f, runs = true
     };
     private readonly Numbers crawler = new Numbers
         { speed = .7f, acceleration = 3f, angularSpeed = 90f, damage = 8f, windup = .6f, attackInterval = 1.6f, aimHeight = .35f, height = .8f };
@@ -99,7 +102,7 @@ public sealed class ZombieType : MonoBehaviour
     {
         speed = 5.2f, acceleration = 10f, angularSpeed = 140f, damage = 30f, windup = .65f, attackInterval = 1.8f, aimHeight = 1.1f,
         attackRange = 2.6f, approachShare = .7f, healthShare = 30f, scale = 1.45f, knock = 9f, knockUp = 4.5f, steadfast = true,
-        executionShare = .35f
+        executionShare = .35f, runs = true
     };
 
     // C-16's exploder: a little bloated, a little quicker than a shambler, dies sooner, and never claws (its reach is too
@@ -115,7 +118,7 @@ public sealed class ZombieType : MonoBehaviour
     private readonly Numbers charger = new Numbers
     {
         share = .03f, speed = 4.4f, acceleration = 9f, angularSpeed = 150f, damage = 16f, windup = .55f, attackInterval = 1.6f, aimHeight = 1f,
-        attackRange = 2.1f, approachShare = .7f, healthShare = 8f, scale = 1.28f, knock = 10f, knockUp = 5f
+        attackRange = 2.1f, approachShare = .7f, healthShare = 8f, scale = 1.28f, knock = 10f, knockUp = 5f, runs = true
     };
 
     private NavMeshAgent agent;
@@ -133,6 +136,8 @@ public sealed class ZombieType : MonoBehaviour
         : Kind == ZombieKind.Exploder ? exploder : Kind == ZombieKind.Charger ? charger : shambler;
     /// <summary>Lost a leg: it crawls with the Crawler numbers, whatever its kind.</summary>
     public bool Crawls { get; private set; }
+    /// <summary>Fast, its body breaks into a run; otherwise it hurries in its walk (ZombieBody.Move, ZombieKinds runs).</summary>
+    public bool RunsWhenFast => Current.runs;
     /// <summary>Its height crawling (m), for its capsule (ZombieBody.Crawl.cs).</summary>
     public float CrawlHeight => crawler.height;
 
