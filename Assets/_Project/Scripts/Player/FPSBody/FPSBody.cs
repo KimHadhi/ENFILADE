@@ -748,7 +748,10 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
             if (wantsAim) CutDraw();
             aiming = wantsAim;
             held.Aim(aiming, input, recoil);
-            Motion(assets.aimingMotion);
+            // KINEMATION's aiming motion bobs the gun as it comes up; down a 4x or 8x sight that bob was the picture
+            // shaking just as the player wanted to look (user, 2026-11-10: "바로 흔들림 없이 줌"). It plays only as the gun
+            // comes down again.
+            if (!aiming) Motion(assets.aimingMotion);
         }
     }
 
