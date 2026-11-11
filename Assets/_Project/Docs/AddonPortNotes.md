@@ -25,7 +25,7 @@ GMod 애드온(`F:\Addons`, 저장소 밖)의 이동·애니메이션·소리를
 | Hi-Octane Weapon Sounds: Re-Charged! (L4D2 워크숍 3810863466) | 총소리만: 권총·소총·샷건 발사, 장전, 빈 총 소리 | `Art/Audio/Guns` |
 | 소음 무기 모드 5개 (L4D2 워크숍 1280137683·1324155748·790038322·1154171177·3354970327, 사용자가 2026-11-10에 고름) | 소음기를 단 발사음만. 모델과 재질은 쓰지 않았다 | `Art/Audio/Weapons/Suppressed`, 총마다의 연결은 `Data/Combat/Weapons/<총>.asset`의 Suppressed Fire Sounds |
 | Low Ammo Sound Cue (L4D2 워크숍 3198155663) | 한때 잔탄 경고음 규칙이었다(쏜 뒤 남은 탄이 탄창의 20%(올림)이자 적어도 3발 이하면 매 발 같은 딸깍). 2026-11-06에 사용자가 TFA 베이스의 규칙과 소리를 골라 바꿨다(위 TFA 행). 이 애드온의 `click.mp3`는 CS2의 `lowammo_01`을 키워 찌그러뜨린 것이어서 CS2 원본으로 바꿨다 | 없음 |
-| mighty foot engaged (GMod 워크숍 1987521428) | 장전 중 V 발차기의 시간표와 판정: 0.2초에 시점 펀치(-10, 좌우 ±2)와 휘두르는 소리, 0.3초에 몸 가운데에서 시선이 머무는 곳 쪽으로 키 높이만큼 선 판정 후 4유닛 훑기, 피해 20~30, 맞히면 차는 사람 100유닛/초 뒤로(공중 두 배), 재사용 0.75+0.5초. 문 열기·부수기는 옮기지 않았다 | [ShoveMoves](../Scripts/Player/Combat/ShoveMoves.cs), Player.csv `Shove` |
+| mighty foot engaged (GMod 워크숍 1987521428) | 장전 중 V 발차기의 시간표와 판정: 0.2초에 시점 펀치(-10, 좌우 ±2)와 휘두르는 소리, 0.3초에 몸 가운데에서 시선이 머무는 곳 쪽으로 키 높이만큼 선 판정 후 4유닛 훑기, 피해 20~30, 맞히면 차는 사람 100유닛/초 뒤로(공중 두 배), 재사용 0.75+0.5초. 0.8.58에 발차기 전용 키(Player/Kick), 공중 드롭킥(피해·자세 피해 2배), 문 차기(휴게소 문을 세게 열고 부서지는 문은 20%로 떨어져 나감)를 더했다 | [ShoveMoves](../Scripts/Player/Combat/ShoveMoves.cs), Player.csv `Shove`, [CampaignDoor](../Scripts/Campaign/CampaignDoor.cs) |
 | ArcCW 근접 도약 (위 ArcCW의 `sh_bash.lua` DoLunge) | 서서 밀칠 때 사거리 너머 64유닛 안의 조준한 적에게 거리 × 5(공중 2.5)의 속도로 도약, 앉아 있으면 안 함 | [ShoveMoves](../Scripts/Player/Combat/ShoveMoves.cs) |
 | Beatrun addon compatibility layer, Landing Anim-Fix | 옮기지 않았다. GMod 안에서 동작하는 Lua 패치다 | 없음 |
 
@@ -50,21 +50,21 @@ GMod 애드온(`F:\Addons`, 저장소 밖)의 이동·애니메이션·소리를
 | 이펙트 | `Prefabs/Effects/<용도>`, 재질은 `Art/Materials/<용도>` |
 | 스토어 팩처럼 통째로 받는 에셋 | `Assets/ThirdParty/<팩 이름>` |
 
-## 이식표 묶음별 현황 (2026-11-10 재점검)
+## 이식표 묶음별 현황 (2026-11-11 이식 배치 뒤)
 
 [워크숍 애드온 이식표](https://claude.ai/artifact/TjkB8PvDvQ1dnhJr27FEbz)는 애드온 121개(L4D2 70, GMod 51)를 적었고, 그중 35개를 묶음 10개로 골랐다. 표는 좀비가 캡슐 하나뿐이던 때 쓴 것이라 "없음"으로 적힌 칸 여럿이 낡았다. 아래는 GitHub에 올라온 0.8.1의 코드·표·폴더를 보고 다시 매긴 것이다. PC 폴더에만 있는 작업(거구 좀비, 음악, 던지는 캔, 필드 줍기, 구역 환경음)은 보지 못했으므로, 그 작업이 올라오면 "안 함" 칸을 다시 본다.
 
 | 묶음 | 지금 | 남은 것 |
 | --- | --- | --- |
-| 1. 좀비 감각과 상태 | 핵심은 끝남. 조용함→경계→수색→깸, 시야 광선 3점, 소음 듣기, 등 뒤 암살([ZombieMind](../Scripts/Enemies/ZombieMind.cs), [PlayerExecution](../Scripts/Player/Combat/PlayerExecution.cs)) | 빛·손전등 반영, 벽 재질별 소리 손실, 시체 발견 |
-| 2. 좀비 몸과 소리 | 몸·애니메이션·절단은 구매 팩과 자체 구현으로 대체(Synty, Nephilite, [ZombieGore](../Scripts/Enemies/Gore/ZombieGore.cs)) | 좀비 목소리는 공격할 때의 음성 37개만 들어왔다(0.8.15, [ZombieVoice](../Scripts/Enemies/ZombieVoice.cs), `Art/Audio/Enemies/Zombie`). **평소 신음, 알아챘을 때, 맞을 때, 죽을 때 소리**(RE6 Zombie Sound의 나머지)는 아직이다 |
-| 3. 맵 진행과 디렉터 | 뼈대는 L4D식으로 따로 만듦([CampaignDirector](../Scripts/Campaign/CampaignDirector.cs), [Campaign.csv](../Resources/Tables/Campaign.csv)). Horde의 숫자는 쓰지 않음 | 인원수에 비례하는 동시 상한, 엘리트·보스 편성, 엔드리스 |
-| 4. 클래스, 퍽, 상점 | 돈, 돈 떨구기, 상점, 능력 카드([Perks.csv](../Resources/Tables/Perks.csv))는 있음. 부착물 메뉴는 ArcCW 배치 | 클래스, 무게 제한, 퍽 트리, 부착물 능력치 겹치기 규칙 |
-| 5. 카타나 | 안 함. 근접 무기가 없고 주먹뿐 | 전부. 칼·삽 모델은 `Assets/ThirdParty/LowPolyWeaponBundlePackV`와 Synty에 있다 |
-| 6. 던지는 칼 | 안 함. 소리 43개만 `Art/Audio/Library/ThrowingKnife`에 보관 | 전부 |
+| 1. 좀비 감각과 상태 | 끝남. 조용함→경계→수색→깸, 시야 광선 3점, 소음 듣기, 등 뒤 암살, 손전등, 0.8.54의 시체 발견(수색·주변 호출·경계)과 벽 재질별 소리 손실([ZombieMind](../Scripts/Enemies/ZombieMind.cs), [ZombieSenses.csv](../Resources/Tables/ZombieSenses.csv)) | 시체 옮기기는 없음(숨기기는 시야 밖 처치나 가라앉는 동안 피하기) |
+| 2. 좀비 몸과 소리 | 몸·애니메이션·절단은 구매 팩과 자체 구현으로 대체(Synty, Nephilite, [ZombieGore](../Scripts/Enemies/Gore/ZombieGore.cs)). 목소리는 공격(0.8.15)에 더해 0.8.55에 평소 신음·숨·깸·맞음·죽음 코드가 들어왔다([ZombieVoice](../Scripts/Enemies/ZombieVoice.cs)) | 새 목소리 파일. RE6 Zombie Sound(3675704366)를 `Tools/Workshop/port_assets.py`로 `Art/Audio/Enemies/Zombie/<Idle|Breathe|Alert|Hurt|Death>`에 넣으면 들린다 |
+| 3. 맵 진행과 디렉터 | 0.8.56: 인원 비례 동시 상한·떼 크기, 장마다 엘리트 편성과 보스 자리([CampaignMix.csv](../Resources/Tables/CampaignMix.csv)), 캠페인 마지막 버티기의 엔드리스(방장 `/endless`) | 엔드리스 메뉴 토글과 최고 기록 |
+| 4. 클래스, 퍽, 상점 | 0.8.57: 클래스 전용 카드 20장(Horde식 단계), 무게 제한(최대 15, [CarryWeight](../Scripts/Player/Combat/Weapons/CarryWeight.cs)), 부착물 능력치 겹치기(ArcCW 규칙, [Attachments.csv](../Resources/Tables/Attachments.csv)) | 클래스 카드 전용 아이콘 |
+| 5. 카타나 | 0.8.61 첫 판: 3번 칸, 약·강공격, 가드·패링, 상점과 나이트 시작 장비, 코드로 만든 임시 모델([PlayerKatana](../Scripts/Player/Combat/PlayerKatana.cs), [Katana.csv](../Resources/Tables/Katana.csv)) | 진짜 모델과 소리(`port_assets.py --only 5`, 후보 3개 중 `--pick`), 휘두르는 몸 클립 |
+| 6. 던지는 칼 | 0.8.60: H로 꺼내고 던지기, 박힘과 F 회수, 3개([PlayerKnives](../Scripts/Player/Combat/PlayerKnives.cs), [ThrowingKnife.csv](../Resources/Tables/ThrowingKnife.csv)). 모델은 LowPolyWeaponBundlePackV Combat Knife_A, 소리는 `Library/ThrowingKnife` | 왼손으로 꺼내고 던지는 몸 클립, 나중에 들어온 사람에게 이미 놓인 칼 보이기 |
 | 7. 총소리·잔향 | 끝남([GunReverb](../Scripts/Audio/GunReverb.cs), `Art/Audio/Guns`) | 없음 |
-| 8. 권총·쌍권총 | 권총은 구매 팩(M1911)으로 대체 | 쌍권총 |
-| 9. 발차기·근접 보조 | 핵심 끝남: 장전 중 V 발차기, 도약 밀치기, 밀치기 카운터([ShoveMoves](../Scripts/Player/Combat/ShoveMoves.cs)) | 독립 발차기 키, 공중 드롭킥 2배, 문 차기 |
+| 8. 권총·쌍권총 | 권총은 구매 팩(M1911)으로 대체. 0.8.59에 쌍권총 DualM1911([AkimboGuns](../Scripts/Combat/Weapons/Data/AkimboGuns.cs), [Akimbo.csv](../Resources/Tables/Akimbo.csv)) | KRAIT P68(3803570564) 모델·소리로 바꾸기(`port_assets.py --only 8` 뒤 Akimbo.csv `model`·`sounds`) |
+| 9. 발차기·근접 보조 | 끝남: 장전 중 V 발차기, 도약 밀치기, 밀치기 카운터, 0.8.58의 발차기 전용 키·공중 드롭킥·문 차기([ShoveMoves](../Scripts/Player/Combat/ShoveMoves.cs)) | 앉아 차기·내려찍기 전용 클립, 킬 피드의 발차기 이름(지금은 "밀치기") |
 | 10. 무기 구조 정리 | 셸 단위 장전과 사격으로 끊기는 있음([Weapons.csv](../Resources/Tables/Weapons.csv)의 `shellReload`) | 작업 우선순위 상태기계, 숨 참기, 무기 살펴보기. 급하지 않다 |
 
 표가 "없음"이라 했지만 그 뒤에 생긴 것: 샷건과 한 발씩 장전, 소음기와 소리를 듣는 좀비, 쓰러짐·부활과 누운 플레이어 뜯어먹기, 래그돌 시체, 머리·팔다리 절단, 상점 구급상자, 디렉터의 긴장도, 죽은 뒤 관전 카메라.
