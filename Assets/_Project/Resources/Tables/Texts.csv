@@ -715,6 +715,13 @@ special.lastround,LAST ROUND,LAST ROUND,특수 처치: 탄창의 마지막 한 �
 special.lastround.note,탄창의 마지막 한 발로,With the magazine's last round,특수 처치 도장의 이유 줄
 special.savior,SAVIOR,SAVIOR,특수 처치: 동료를 붙잡은(잡기·먹기·깔기) 좀비를 처치했을 때
 special.savior.note,동료를 붙든 놈을,The one holding a teammate,특수 처치 도장의 이유 줄
+hud.rank.gain,+{0} XP,+{0} XP,초상화 아래 휘장 줄: 처치 때 막대 위에 잠깐 뜨는 경험치
+score.rank.game,이번 판 +{0} 경험치,This game +{0} XP,Tab 화면 휘장 막대 아래: 이번 판에 번 성장
+score.rank.split,(처치 +{0} · 남긴 돈 몫 +{1}),(kills +{0} · money kept +{1}),Tab 화면: 이번 판 성장의 내역. 판이 끝날 때 가진 돈의 절반도 성장이 된다
+score.rank.kill,처치 하나 +{0} 경험치 · 헤드샷 처치 +{1},A kill +{0} XP · a headshot kill +{1},Tab 화면: 처치 하나가 주는 경험치
+score.rank.next,다음 휘장까지 {0},{0} to the next insignia,Tab 화면 휘장 막대 위 오른쪽
+score.rank.top,마지막 휘장,The last insignia,Tab 화면: 더 오를 휘장이 없을 때
+score.rank.climb,판이 끝나면 휘장 {0}단계 오름,{0} insignia up when this game ends,Tab 화면: 이번 판 성장으로 오를 휘장 수(판이 끝날 때 오른다)
 hud.alert.ninja,닌자 — 연기 속에서 등 뒤로 온다. 칼 소리에 돌아서 패링,Ninja: it vanishes and strikes from behind. Turn and parry at the blade's ring,화면 위 경고 띠: 이 판에서 닌자를 처음 가까이 봤을 때 한 번. 무엇을 하고 어떻게 이기는지
 hud.alert.candyman,캔디맨 — 갈고리로 동료를 끌고 간다. 쫓아가 쏘거나 넘어뜨려 풀어 줘,Candyman: it hooks a teammate and drags them off. Chase it and shoot or knock it down,화면 위 경고 띠: 캔디맨을 처음 가까이 봤을 때 한 번
 hud.alert.breadbag,브레드백 — 전기톱 시동 소리에 패링하면 튕겨 나간다. 가드는 갈려 뚫린다,Breadbag: parry the chainsaw as it revs. A guard alone gets ground through,화면 위 경고 띠: 브레드백을 처음 가까이 봤을 때 한 번
