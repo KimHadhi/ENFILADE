@@ -103,6 +103,8 @@ public sealed class WeaponController : MonoBehaviour
     public event Action InspectStopped;
     /// <summary>The gun is coming out (Draw Duration) or going away (Holster Duration): it can't fire, aim or reload.</summary>
     public bool IsSwitching => switchLeft > 0f;
+    /// <summary>Y: the held gun is being looked over (its kill count shows, AmmoHUD).</summary>
+    public bool IsInspecting => inspecting;
     private float switchLeft, inspectLeft;
     private bool holstering, inspecting;
     // A gun just drawn still to get the parts and fire mode this PC's player last left on it (GunSetups).

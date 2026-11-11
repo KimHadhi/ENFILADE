@@ -36,6 +36,13 @@ public sealed class AmmoHUD : MonoBehaviour
     private PlayerDamageReceiver health;
 
     private static AmmoHUD current;
+    // The held gun's controller, for its look-over (Y) that shows its kill count (GunKills).
+    private WeaponController weapon;
+    // A gun of this player's reached a new rank: its name shows on the status line for this long (s).
+    private const float RankUpHold = 2.5f;
+    private static readonly Color RankColor = new Color(1f, .6f, .18f);
+    private float rankUpLeft;
+    private string rankUpText;
 
     /// <summary>The display blinks once: what it shows just changed by something taken (FieldPickups: ammo, a gun).</summary>
     public static void Blink(Color color)
@@ -43,10 +50,25 @@ public sealed class AmmoHUD : MonoBehaviour
         if (current != null && current.panel != null) HudBlink.On(current.panel, color);
     }
 
-    private void OnEnable() => current = this;
+    private void OnEnable()
+    {
+        current = this;
+        GunKills.Counted += OnKillCounted;
+    }
     private void LateUpdate() => RefreshNow();
+
+    // A new rank: the status line says it for a moment and the panel blinks the counter's orange.
+    private void OnKillCounted(WeaponData gun, int kills, bool rankedUp)
+    {
+        if (!rankedUp || gun == null) return;
+        rankUpText = Texts.Format("gunkills.rankup", GunKills.Title(gun));
+        rankUpLeft = RankUpHold;
+        Blink(RankColor);
+    }
+
     private void OnDisable()
     {
+        GunKills.Counted -= OnKillCounted;
         if (current == this) current = null;
         if (group != null) group.alpha = 0f;
         shown = null; shotPulse = 0f;
@@ -107,6 +129,19 @@ public sealed class AmmoHUD : MonoBehaviour
         }
         progress.color = edge.color = tint;
         status.color = runtime.ReserveAmmo == 0 && !empty && !runtime.IsReloading ? lowAmmo : tint;
+        // A new rank, then the look-over (Y): the gun's rank and kill count on the status line (GunKills).
+        rankUpLeft = Mathf.Max(0f, rankUpLeft - Time.unscaledDeltaTime);
+        if (weapon == null && weaponSlots != null) weapon = weaponSlots.GetComponent<WeaponController>();
+        if (rankUpLeft > 0f && !string.IsNullOrEmpty(rankUpText))
+        {
+            status.text = rankUpText;
+            status.color = RankColor;
+        }
+        else if (weapon != null && weapon.IsInspecting && !runtime.IsReloading)
+        {
+            status.text = Texts.Format("gunkills.inspect", GunKills.Title(runtime.Data), GunKills.Kills(runtime.Data), GunKills.Headshots(runtime.Data));
+            status.color = RankColor;
+        }
         background.color = panelColor;
     }
 
@@ -146,6 +181,8 @@ public sealed class AmmoHUD : MonoBehaviour
         Image("Track", panel, 20, 40, 260, 3, new Color(1f, 1f, 1f, .12f));
         progress = Image("Progress", panel, 20, 40, 260, 3, accent); fill = progress.rectTransform;
         status = Label("Status", 20, 11, 260, 20, 14, accent);
+        // The look-over's rank and kill line is longer than the reload words: it shrinks to fit rather than being cut.
+        status.enableAutoSizing = true; status.fontSizeMin = 9f; status.fontSizeMax = 14f;
         return true;
     }
 

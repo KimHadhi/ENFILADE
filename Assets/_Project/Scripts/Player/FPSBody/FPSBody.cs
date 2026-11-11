@@ -348,6 +348,8 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
             shells ? Copy(entry.reloadEmpty, bake.reloadEmpty) : Settled(Copy(entry.reloadEmpty, bake.reloadEmpty)), gunFrame,
             Copy(entry.reloadShell, bake.reloadShell), Settled(Copy(entry.reloadEnd, bake.reloadEnd)));
         gun.SetGrip(bake, exact);
+        // This PC's own player's guns carry their kill counters (GunKills).
+        if (movement == null || (movement.IsLocal && !movement.IsNetworkDriven)) GunKillPlate.On(gun);
         // Drawn at the clip's own pace: squeezed into the gun's Draw Duration it ran at up to three times its speed and looked
         // fast-forwarded (user, 2026-11-09). The gun is ready at Draw Duration all the same, and using it then cuts the rest
         // of the draw short (CutDraw). Put away in its Holster Duration, looked over at the clip's pace.

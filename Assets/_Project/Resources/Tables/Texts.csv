@@ -474,6 +474,27 @@ gun.stat.recoil,위로 튀는 반동,,능력치 칸 줄 이름
 gun.stat.aim_time,조준 시간,,능력치 칸 줄 이름(값은 hud.seconds)
 gun.stat.noise,좀비가 듣는 거리,,능력치 칸 줄 이름
 gun.stat.magazine,탄창,,능력치 칸 줄 이름
+#--- 킬 카운트(총마다) ---,,,
+gunkills.title,{0} {1},{0} {1},등급이 붙은 총 이름(팀포2 이상한 무기처럼 등급이 앞에). {0}=등급 이름 {1}=총 이름
+gunkills.inspect,{0} · 처치 {1:N0} · 헤드샷 {2:N0},{0} · {1:N0} kills · {2:N0} headshots,총을 살펴볼 때(Y) 탄약 표시 아래 줄. {0}=등급이 붙은 총 이름 {1}=처치 {2}=헤드샷 처치
+gunkills.rankup,등급 상승 · {0},Rank up · {0},총이 새 등급에 오르면 탄약 표시 아래 줄에 2.5초. {0}=새 등급이 붙은 총 이름
+gunrank.0,갓 뜯은,Fresh,총 등급 0번 이름(처치 수 문턱은 KillCounter.csv Ranks.kills)
+gunrank.1,손에 익은,Broken-In,총 등급 1번 이름(처치 수 문턱은 KillCounter.csv Ranks.kills)
+gunrank.2,쓸 만한,Serviceable,총 등급 2번 이름(처치 수 문턱은 KillCounter.csv Ranks.kills)
+gunrank.3,피 맛을 본,Blooded,총 등급 3번 이름(처치 수 문턱은 KillCounter.csv Ranks.kills)
+gunrank.4,이름이 알려진,Known,총 등급 4번 이름(처치 수 문턱은 KillCounter.csv Ranks.kills)
+gunrank.5,무시무시한,Fearsome,총 등급 5번 이름(처치 수 문턱은 KillCounter.csv Ranks.kills)
+gunrank.6,썩은 내 나는,Reeking,총 등급 6번 이름(처치 수 문턱은 KillCounter.csv Ranks.kills)
+gunrank.7,좀비가 피하는,Shunned by the Dead,총 등급 7번 이름(처치 수 문턱은 KillCounter.csv Ranks.kills)
+gunrank.8,무덤지기의,Gravekeeper's,총 등급 8번 이름(처치 수 문턱은 KillCounter.csv Ranks.kills)
+gunrank.9,백정의,Butcher's,총 등급 9번 이름(처치 수 문턱은 KillCounter.csv Ranks.kills)
+gunrank.10,피에 젖은,Bloodsoaked,총 등급 10번 이름(처치 수 문턱은 KillCounter.csv Ranks.kills)
+gunrank.11,악명 높은,Infamous,총 등급 11번 이름(처치 수 문턱은 KillCounter.csv Ranks.kills)
+gunrank.12,전설로 남은,Legendary,총 등급 12번 이름(처치 수 문턱은 KillCounter.csv Ranks.kills)
+gunrank.13,지옥에서 온,Hell-Sent,총 등급 13번 이름(처치 수 문턱은 KillCounter.csv Ranks.kills)
+gunrank.14,종말의,Apocalyptic,총 등급 14번 이름(처치 수 문턱은 KillCounter.csv Ranks.kills)
+gunrank.15,신화가 된,Mythic,총 등급 15번 이름(처치 수 문턱은 KillCounter.csv Ranks.kills)
+gunrank.16,세상을 끝낸,World-Ending,총 등급 16번 이름(처치 수 문턱은 KillCounter.csv Ranks.kills)
 #--- 등급·실드 ---,,,
 rank.up,등급 상승,,장 끝 결과: 계급장 아래 분홍 띠
 rank.prestige,프레스티지,,장 끝 결과: 프레스티지일 때 분홍 띠
