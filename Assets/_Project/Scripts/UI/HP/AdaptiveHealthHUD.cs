@@ -83,6 +83,8 @@ public sealed class AdaptiveHealthHUD : MonoBehaviour
     // Round 4 draft A (the user's pick, 2026-11-11): pieces knocked off, low-health stripes and tag, heal glints and
     // floats, the rolling number. Play only.
     private HealthBarFlair flair;
+    // The stance figure on the bar's right end (2026-11-11): standing, crouched, prone and so on. Play only.
+    private StanceFigure stance;
     private float lastHealth = float.NaN;
     private bool flairDrawn, shieldGlinted, labelRolled;
     private Vector2 restingPosition;
@@ -141,6 +143,8 @@ public sealed class AdaptiveHealthHUD : MonoBehaviour
             shatter = new ShieldShatter(visualRoot);
             flair = new HealthBarFlair(visualRoot, hpText);
             GameTables.BindNested(HealthBarFlair.TableName, HealthBarFlair.Row, this, flair.Config);
+            stance = new StanceFigure(visualRoot, hpText.transform.parent as RectTransform);
+            GameTables.BindNested(HudCamera.TableName, StanceFigure.Row, this, stance.Config);
         }
         SetOriginalVisibility(false);
         Refresh();
@@ -205,6 +209,7 @@ public sealed class AdaptiveHealthHUD : MonoBehaviour
         WatchShieldBreaks(receiver);
         shatter?.Tick(Time.unscaledDeltaTime);
         AnimateDamage(Time.unscaledDeltaTime);
+        stance?.Tick(player, Time.unscaledDeltaTime);
     }
 
     // The receiver counts its breaks; a new one shatters the band from where it was last drawn lit. A different player
@@ -313,6 +318,7 @@ public sealed class AdaptiveHealthHUD : MonoBehaviour
         healthGraphic = shieldGraphic = null;
         shatter = null; // its pieces went with visualRoot
         flair = null;   // and so did the flair's
+        stance = null;  // and the stance figure
         originalBlocks.Clear(); originalActive.Clear();
         barLayouts.Clear(); layoutEnabled.Clear();
         capturedLayout = false;
@@ -383,6 +389,7 @@ public sealed class AdaptiveHealthHUD : MonoBehaviour
         ConfigureShieldGraphic();
         shieldGraphic.gameObject.SetActive(shield > 0f);
         flair?.Place(width, height);
+        stance?.Place(width, height);
 
         SetLabel(hpText, (flair != null && flair.Rolling ? flair.Shown : current).ToString("N0"));
         SetLabel(maxHPText, maximum.ToString("N0"));
