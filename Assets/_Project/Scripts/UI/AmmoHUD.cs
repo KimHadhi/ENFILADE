@@ -106,7 +106,7 @@ public sealed class AmmoHUD : MonoBehaviour
         magazine.rectTransform.localScale = Vector3.one * (1f + shotPulse * .035f);
         reserve.color = runtime.ReserveAmmo == 0 ? lowAmmo : Color.white;
         mode.text = runtime.FireMode == WeaponFireMode.Automatic ? "AUTO"
-            : runtime.FireMode == WeaponFireMode.Burst ? "BURST" : "SEMI";
+            : runtime.FireMode == WeaponFireMode.Burst ? "BURST" : runtime.FireMode == WeaponFireMode.Fanning ? "FAN" : "SEMI";
         silhouette.Kind = runtime.FireMode == WeaponFireMode.Automatic ? 1 : 2;
 
         if (runtime.IsReloading)

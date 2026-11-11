@@ -46,6 +46,8 @@ public sealed class WeaponRuntime
     public bool ResumeDue => MagazineOut || ChamberDue;
     /// <summary>Goes up each time a reload leaves the gun loaded, done in full or cut short past its bolt (for whoever shows it).</summary>
     public int Loads { get; private set; }
+    /// <summary>The gun is at the hip (WeaponController sets it each frame): a revolver in Fanning fans.</summary>
+    internal bool FanFromHip { get; set; }
     // Where the next reload goes on from (a share of its clip) and which clip that is (empty or tactical).
     private float resumeShare;
     private bool resumeEmpty;
@@ -111,8 +113,11 @@ public sealed class WeaponRuntime
             ReloadRemaining = ReloadDuration * (1f - ReloadStartShare); burstRemaining = 0;
             cooldown = Mathf.Max(0f, cooldown); wasHoldingFire = false; return 0;
         }
-        bool automatic = FireMode == WeaponFireMode.Automatic;
+        // Fanning from the hip fires while the trigger is held, at the fanning rate; down the sights one round a pull.
+        bool fanning = FireMode == WeaponFireMode.Fanning && FanFromHip;
+        bool automatic = FireMode == WeaponFireMode.Automatic || fanning;
         bool burst = FireMode == WeaponFireMode.Burst;
+        float interval = fanning ? Data.FanInterval : Data.ShotInterval;
         bool continuingBurst = burstRemaining > 0;
         if (burst && !continuingBurst && input.FirePressed && cooldown <= .000001f)
             burstRemaining = Data.BurstCount;
@@ -125,7 +130,7 @@ public sealed class WeaponRuntime
         int shots = 0;
         while (cooldown <= 0.000001f && Ammo > 0 && shots < MaxShotsPerUpdate)
         {
-            Ammo--; shots++; cooldown += Data.ShotInterval;
+            Ammo--; shots++; cooldown += interval;
             if (burst)
             {
                 if (--burstRemaining <= 0 || Ammo == 0)
@@ -133,7 +138,7 @@ public sealed class WeaponRuntime
             }
             else if (!automatic) break;
         }
-        if (shots == MaxShotsPerUpdate && cooldown <= 0f) cooldown = Data.ShotInterval;
+        if (shots == MaxShotsPerUpdate && cooldown <= 0f) cooldown = interval;
         wasHoldingFire = automatic && input.FireHeld && Ammo > 0;
         return shots;
     }

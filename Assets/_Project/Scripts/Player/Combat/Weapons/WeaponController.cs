@@ -581,6 +581,8 @@ public sealed class WeaponController : MonoBehaviour
 
         bool wasReloading = Runtime.IsReloading;
         int stepsBefore = Runtime.StepCount;
+        // A revolver in Fanning fans only from the hip (user, 2026-11-11: "리볼버에 Fanning 기능 넣기").
+        Runtime.FanFromHip = AimBlend < .5f;
         int shots = Runtime.Tick(dt, frame);
 
         if (!wasReloading && Runtime.IsReloading) ReloadStarted?.Invoke(Runtime.IsEmptyReload);
@@ -760,8 +762,10 @@ public sealed class WeaponController : MonoBehaviour
         // Down the sights the shot goes where the sight is, as Rainbow Six Siege's does: walking and firing add nothing
         // there, the recoil climbing the view is the whole of a spray's difficulty. Only a jump still throws it off, at half.
         float loose = 1f - AimBlend;
+        // Fanning bucks the revolver off line with every slap of the palm.
+        float fan = Runtime != null && Runtime.FireMode == WeaponFireMode.Fanning ? weaponData.FanSpread : 0f;
         CurrentSpread = (Mathf.Lerp(weaponData.HipSpread, weaponData.AdsSpread, AimBlend)
-            + (bloom + moving * weaponData.MovingSpread) * loose + air * Mathf.Lerp(1f, .5f, AimBlend))
+            + (bloom + moving * weaponData.MovingSpread + fan) * loose + air * Mathf.Lerp(1f, .5f, AimBlend))
             * (Crouched ? weaponData.CrouchSpread : 1f);
     }
     private void UpdateCrosshair()

@@ -1,6 +1,10 @@
 using UnityEngine;
 
-public enum WeaponFireMode { SemiAutomatic, Automatic, Burst }
+/// <summary>
+/// How the trigger fires. Fanning is a single-action revolver's (B on the R08): from the hip, held down, the palm slaps the
+/// hammer and the cylinder empties fast and wide; down the sights it fires one aimed round a pull, as SemiAutomatic.
+/// </summary>
+public enum WeaponFireMode { SemiAutomatic, Automatic, Burst, Fanning }
 public enum WeaponCategory { Ranged, Melee, Special }
 
 /// <summary>
@@ -75,6 +79,11 @@ public sealed class WeaponData : ScriptableObject
     [SerializeField, Min(0f)] private float chokePelletSpread;
     [Tooltip("Seconds fully down the sights for the choke to draw the pellets all the way in. 0: no choke.")]
     [SerializeField, Min(0f)] private float chokeSeconds;
+    [Header("Fanning (a revolver's Fanning fire mode)")]
+    [Tooltip("Rounds a minute while fanning from the hip (the trigger held, the palm on the hammer).")]
+    [SerializeField, Min(1f)] private float fanRoundsPerMinute = 500f;
+    [Tooltip("Degrees fanning adds to the cone: the gun bucks off line with every slap.")]
+    [SerializeField, Min(0f)] private float fanSpread = 3.5f;
     [Tooltip("Loaded a shell at a time, as a pump shotgun: Reload Duration is the start (Empty Reload Duration the start " +
         "from empty, which also chambers a shell), then Shell Insert Duration for each shell, then Shell End Duration. " +
         "Firing stops it once the shell in hand is in.")]
@@ -202,6 +211,9 @@ public sealed class WeaponData : ScriptableObject
     public float PelletSpread => Mathf.Max(0f, pelletSpread);
     /// <summary>A shotgun whose pellets draw in while it is held down the sights (Choke Seconds).</summary>
     public bool HasChoke => chokeSeconds > 0f && Pellets > 1;
+    /// <summary>Seconds between fanned rounds, and the degrees fanning adds to the cone.</summary>
+    public float FanInterval => 60f / Mathf.Max(1f, fanRoundsPerMinute);
+    public float FanSpread => Mathf.Max(0f, fanSpread);
     public float ChokeSeconds => Mathf.Max(0f, chokeSeconds);
 
     /// <summary>

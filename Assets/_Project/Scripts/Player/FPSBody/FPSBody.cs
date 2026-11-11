@@ -670,8 +670,10 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
         linked = false;
     }
 
+    // A fanned revolver kicks as an automatic does, round after round.
     private static FireMode FireModeOf(WeaponFireMode mode)
-        => mode == WeaponFireMode.Automatic ? FireMode.Auto : mode == WeaponFireMode.Burst ? FireMode.Burst : FireMode.Semi;
+        => mode == WeaponFireMode.Automatic || mode == WeaponFireMode.Fanning ? FireMode.Auto
+            : mode == WeaponFireMode.Burst ? FireMode.Burst : FireMode.Semi;
 
     // The held gun's fire mode as B left it (WeaponRuntime.FireMode; a friend's copy has theirs), else the gun's own.
     private WeaponFireMode HeldFireMode
