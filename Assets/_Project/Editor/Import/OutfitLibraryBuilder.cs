@@ -6,16 +6,17 @@ using UnityEditor;
 using UnityEngine;
 
 /// <summary>
-/// Keeps Resources/Characters/Outfits (<see cref="OutfitLibrary"/>) in step with the outfit folders, so adding an item
-/// takes files and a row of Outfits.csv, nothing clicked: Art/Models/Outfits/&lt;item&gt;/&lt;skin id&gt;.fbx (or .prefab)
-/// is that item's model for that character, and each folder under &lt;item&gt;/Colors is a colour set whose materials
-/// replace the model's materials of the same names. Runs whenever something there is imported, moved or deleted, and
-/// from Tools/Characters/옷 목록 다시 만들기.
+/// Keeps the hand-made outfits in Resources/Characters/Outfits (<see cref="OutfitLibrary"/>) in step with their folders,
+/// so adding one takes files and a row of Outfits.csv, nothing clicked: Art/Models/Outfits/&lt;model&gt;/&lt;skin id&gt;.fbx
+/// (or .prefab) is that model for that character, and each folder under &lt;model&gt;/Colors is a colour set whose
+/// materials replace the model's materials of the same names. Entries whose model lives elsewhere (BOOTH packages,
+/// BoothImport) are left as they are. Runs whenever something there is imported, moved or deleted, and from
+/// Tools/Characters/옷 목록 다시 만들기.
 /// </summary>
 internal sealed class OutfitLibraryBuilder : AssetPostprocessor
 {
     private const string OutfitsFolder = ModelImportRules.ModelsFolder + "Outfits";
-    private const string LibraryPath = "Assets/_Project/Resources/Characters/Outfits.asset";
+    internal const string LibraryPath = "Assets/_Project/Resources/Characters/Outfits.asset";
     private const string ColoursFolder = "Colors";
     private static readonly string[] ModelExtensions = { ".fbx", ".prefab" };
 
@@ -31,33 +32,39 @@ internal sealed class OutfitLibraryBuilder : AssetPostprocessor
     {
         var entries = new List<OutfitLibrary.Entry>();
         if (AssetDatabase.IsValidFolder(OutfitsFolder))
-            foreach (string itemFolder in AssetDatabase.GetSubFolders(OutfitsFolder))
+            foreach (string modelFolder in AssetDatabase.GetSubFolders(OutfitsFolder))
             {
-                string item = Path.GetFileName(itemFolder);
-                foreach (string path in Directory.GetFiles(itemFolder).Select(p => p.Replace('\\', '/')).OrderBy(p => p, StringComparer.Ordinal))
+                string id = Path.GetFileName(modelFolder);
+                foreach (string path in Directory.GetFiles(modelFolder).Select(p => p.Replace('\\', '/')).OrderBy(p => p, StringComparer.Ordinal))
                 {
                     if (!ModelExtensions.Contains(Path.GetExtension(path).ToLowerInvariant())) continue;
                     var model = AssetDatabase.LoadAssetAtPath<GameObject>(path);
                     if (model == null) continue;
-                    entries.Add(new OutfitLibrary.Entry(item, Path.GetFileNameWithoutExtension(path), model, Colours(itemFolder, model)));
+                    entries.Add(new OutfitLibrary.Entry(id, Path.GetFileNameWithoutExtension(path), model, Colours(modelFolder, model)));
                 }
             }
-        var library = AssetDatabase.LoadAssetAtPath<OutfitLibrary>(LibraryPath);
-        if (library == null)
-        {
-            if (entries.Count == 0) return;
-            library = ScriptableObject.CreateInstance<OutfitLibrary>();
-            AssetDatabase.CreateAsset(library, LibraryPath);
-        }
-        library.EditorSet(entries.ToArray());
+        var library = Library(entries.Count > 0);
+        if (library == null) return;
+        // An entry whose model is gone is dropped too; BoothImport puts its own back on its next run.
+        library.EditorReplace(entry => entry.Model == null || IsOutfitPath(AssetDatabase.GetAssetPath(entry.Model)), entries);
         EditorUtility.SetDirty(library);
         AssetDatabase.SaveAssets();
     }
 
-    // The model as imported comes first ("기본"), then one set per folder under Colors.
-    private static SkinVariant[] Colours(string itemFolder, GameObject model)
+    /// <summary>The library asset, made when <paramref name="create"/> and missing.</summary>
+    internal static OutfitLibrary Library(bool create)
     {
-        string folder = itemFolder + "/" + ColoursFolder;
+        var library = AssetDatabase.LoadAssetAtPath<OutfitLibrary>(LibraryPath);
+        if (library != null || !create) return library;
+        library = ScriptableObject.CreateInstance<OutfitLibrary>();
+        AssetDatabase.CreateAsset(library, LibraryPath);
+        return library;
+    }
+
+    // The model as imported comes first ("기본"), then one set per folder under Colors.
+    private static SkinVariant[] Colours(string modelFolder, GameObject model)
+    {
+        string folder = modelFolder + "/" + ColoursFolder;
         if (!AssetDatabase.IsValidFolder(folder)) return Array.Empty<SkinVariant>();
         var worn = model.GetComponentsInChildren<Renderer>(true).SelectMany(r => r.sharedMaterials).Where(m => m != null).Distinct().ToArray();
         var sets = new List<SkinVariant> { new SkinVariant("base", "기본", Array.Empty<SkinVariant.Swap>()) };

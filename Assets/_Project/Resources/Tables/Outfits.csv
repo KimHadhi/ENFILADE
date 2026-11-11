@@ -1,2 +1,11 @@
-﻿id,slot,also,hides,name
-#설명,들어가는 칸(OutfitSlots.csv의 id),같이 차지하는 칸. |로 여럿. 원피스는 slot이 top이고 also가 bottom,입으면 가려서 안 보이게 할 칸. |로 여럿. 얼굴을 다 덮는 마스크는 eyes처럼 그 칸의 원래 옷과 그 칸에 입힌 옷을 모두 숨긴다,화면에 나오는 이름. 모델은 Art/Models/Outfits/<id>/<캐릭터 Id>.fbx(또는 .prefab)에 두면 캐릭터마다 자동으로 등록된다
+﻿id,slot,also,hides,name,model,parts
+#설명,들어가는 칸(OutfitSlots.csv의 id),같이 차지하는 칸. |로 여럿. 원피스는 slot이 top이고 also가 bottom,입으면 가려서 안 보이게 할 칸. |로 여럿. 얼굴을 다 덮는 마스크는 eyes처럼 그 칸의 원래 옷과 그 칸에 입힌 옷을 모두 숨긴다,화면에 나오는 이름,이 옷이 들어 있는 모델의 Id(OutfitLibrary). 빈칸이면 옷 Id와 같다. BOOTH 옷 한 벌은 모델 하나에 베레모·재킷·치마가 다 들어 있어서 여러 옷이 한 모델을 나눠 쓴다(BoothSources.csv의 outfit 줄),모델에서 이 옷이 보여 줄 렌더러 이름. |로 여럿. 빈칸이면 다른 옷이 가져가지 않은 렌더러 전부
+sm-beret,helmet,,,세일러 메이든 베레모,sailor-maiden,SM2_Beret
+sm-jacket,top,,,세일러 메이든 재킷,sailor-maiden,SM1_Sailor_Jacket|SM1_Sleeve_Side_Ribbon_BowTip|SM1_Sleeve_Side_Ribbon_Cross|SM2_FrontTie_A|SM2_FrontTie_B|SM2_FrontTie_C
+sm-skirt,bottom,,,세일러 메이든 플리츠 치마,sailor-maiden,SM2_leated_Skirt
+sm-socks,legs,,,세일러 메이든 루즈삭스,sailor-maiden,SM2_Loose socks|SM2_Loose socks_Side_Ribbon
+sm-loafers,shoes,,,세일러 메이든 로퍼,sailor-maiden,SM2_Loafers
+banshaku-shirt,top,,,반샤쿠 셔츠,banshaku-shirt,
+ichigo-shirt,top,,,이치고 셔츠,ichigo-shirt,
+mayo-side-hair-1,hairpin,,,거울 옆머리 1,mayo-side-hair-1,
+mayo-side-hair-2,hairpin,,,거울 옆머리 2,mayo-side-hair-2,

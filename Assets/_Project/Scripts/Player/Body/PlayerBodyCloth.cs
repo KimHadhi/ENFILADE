@@ -114,8 +114,10 @@ public sealed class PlayerBodyCloth : MonoBehaviour
         foreach (string id in GameTables.RowIds(ClothPart.TableName))
         {
             var part = Part(id);
-            // A row names a skin or an outfit item (Outfits.csv): an item's skirt or coat tails swing once it is on.
+            // A row names a skin or an outfit item or model (Outfits.csv): an outfit's skirt or coat tails swing once it is
+            // on, and only while a mesh it moves shows.
             if (!string.Equals(part.skin, body.Skin.Id, StringComparison.OrdinalIgnoreCase) && !body.Wears(part.skin)) continue;
+            if (!Shows(part.parts, animator)) continue;
             var roots = part.FindRoots(bones, animator.name);
             if (roots.Count == 0) continue;
             part.AddTips(roots, -animator.transform.up);
@@ -166,6 +168,17 @@ public sealed class PlayerBodyCloth : MonoBehaviour
             swings[side] = 0f;
             swingAxes[side] = Vector3.zero;
         }
+    }
+
+    // Whether one of the renderers a row moves shows on the body; a row that names none always swings.
+    private static bool Shows(string parts, Animator animator)
+    {
+        if (string.IsNullOrEmpty(parts)) return true;
+        var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (string name in parts.Split('|')) names.Add(name.Trim());
+        foreach (var renderer in animator.GetComponentsInChildren<Renderer>(true))
+            if (renderer.enabled && renderer.gameObject.activeInHierarchy && names.Contains(renderer.name)) return true;
+        return false;
     }
 
     // One object per row, because a table's binding keeps the object it was first given.

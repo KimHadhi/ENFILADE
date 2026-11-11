@@ -37,6 +37,13 @@ public sealed class ClothPart
     /// only the legs stop them; zero, they pass through it.
     /// </summary>
     public float press = -1f;
+    /// <summary>How much of the gravity goes while the part rests in its own shape (Magica's gravityFalloff). Below zero keeps the preset's.</summary>
+    public float gravityFalloff = -1f;
+    /// <summary>
+    /// The renderers this part moves, "name|name". While none of them shows (the piece is off, or a new outfit hid it) the
+    /// part doesn't swing at all, so the arms never push a skirt nobody sees. Empty swings always.
+    /// </summary>
+    public string parts = "";
 
     /// <summary>The bones the part hangs from, in the table's order: a ring runs through them in turn.</summary>
     internal List<Transform> FindRoots(Dictionary<string, Transform> bones, string model)
@@ -103,6 +110,7 @@ public sealed class ClothPart
         if (thick != null) data.radius.SetValue(thickness * length, thick);
         data.rootRotation = rootTurn;
         data.gravity = gravity;
+        if (gravityFalloff >= 0f) data.gravityFalloff = Mathf.Clamp01(gravityFalloff);
         data.damping.value = damping;
         data.inertiaConstraint.worldInertia = worldInertia;
         data.inertiaConstraint.localInertia = localInertia;

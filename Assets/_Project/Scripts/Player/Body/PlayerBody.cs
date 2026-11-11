@@ -132,8 +132,11 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     private string ChosenOutfit => shownSkin == null ? OutfitLook.SavedText(ChosenSkin?.Id) : OutfitLook.OutfitPart(shownSkin);
     private bool WearsChosenOutfit => OutfitLook.Tidy(ChosenOutfit) == (loadedOutfit ?? "");
 
-    /// <summary>Whether the body has the item with this id on (OutfitDresser): its rows in Cloth.csv swing its loose parts.</summary>
-    internal bool Wears(string itemId) => dressing != null && dressing.Items.Contains(itemId ?? "");
+    /// <summary>
+    /// Whether the body has the outfit item or model with this id on (OutfitDresser): their rows in Cloth.csv swing their
+    /// loose parts.
+    /// </summary>
+    internal bool Wears(string id) => dressing != null && (dressing.Items.Contains(id ?? "") || dressing.Models.Contains(id ?? ""));
 
     /// <summary>
     /// Wears the skin, colour set and outfit the player of this copy chose on their own PC (PlayerBodyProfile.LookId,
@@ -190,11 +193,18 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         animator.runtimeAnimatorController = Host;
         animator.applyRootMotion = false;
         animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+        var headBone = animator.isHuman ? animator.GetBoneTransform(HumanBodyBones.Head) : null;
         foreach (var renderer in body.GetComponentsInChildren<Renderer>(true))
         {
-            if (renderer is SkinnedMeshRenderer skinned) skinned.updateWhenOffscreen = true;
+            bool onHead = false;
+            if (renderer is SkinnedMeshRenderer skinned)
+            {
+                skinned.updateWhenOffscreen = true;
+                onHead = HeadMeshes.OnHead(skinned, headBone);
+            }
             foreach (string part in profile.FirstPersonShadowOnly)
-                if (string.Equals(renderer.name, part, StringComparison.OrdinalIgnoreCase)) headParts.Add(renderer);
+                onHead |= string.Equals(renderer.name, part, StringComparison.OrdinalIgnoreCase);
+            if (onHead) headParts.Add(renderer);
         }
         body.localScale = Vector3.one * FitScale();
         // Dressed after the fit, so a tall helmet never makes the body that wears it smaller, and before the feet, hands

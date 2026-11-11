@@ -58,20 +58,34 @@ public sealed class SkinVariant
     public static void Wear(GameObject model, SkinVariant worn, SkinVariant next)
     {
         if (model == null || worn == next) return;
-        foreach (var renderer in model.GetComponentsInChildren<Renderer>(true))
-        {
-            renderer.GetSharedMaterials(scratch);
-            bool changed = false;
-            for (int i = 0; i < scratch.Count; i++)
-            {
-                var material = Dressed(next, Original(worn, scratch[i]));
-                if (material == scratch[i]) continue;
-                scratch[i] = material;
-                changed = true;
-            }
-            if (changed) renderer.SetSharedMaterials(scratch);
-        }
+        foreach (var renderer in model.GetComponentsInChildren<Renderer>(true)) Wear(renderer, worn, next);
         scratch.Clear();
+    }
+
+    /// <summary>
+    /// Dresses only these renderers in <paramref name="next"/>, from the materials they came with: the pieces of one
+    /// outfit model each wear their own colour (OutfitDresser), a black jacket over a pink skirt.
+    /// </summary>
+    public static void WearOn(IEnumerable<Renderer> renderers, SkinVariant next)
+    {
+        if (renderers == null || next == null) return;
+        foreach (var renderer in renderers)
+            if (renderer != null) Wear(renderer, null, next);
+        scratch.Clear();
+    }
+
+    private static void Wear(Renderer renderer, SkinVariant worn, SkinVariant next)
+    {
+        renderer.GetSharedMaterials(scratch);
+        bool changed = false;
+        for (int i = 0; i < scratch.Count; i++)
+        {
+            var material = Dressed(next, Original(worn, scratch[i]));
+            if (material == scratch[i]) continue;
+            scratch[i] = material;
+            changed = true;
+        }
+        if (changed) renderer.SetSharedMaterials(scratch);
     }
 
     private static Material Original(SkinVariant variant, Material material)

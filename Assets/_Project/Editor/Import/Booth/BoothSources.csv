@@ -1,0 +1,11 @@
+﻿id,kind,skin,source,colours,name
+#설명,character는 캐릭터·outfit은 옷 모델·colour는 캐릭터의 색 세트,colour 줄의 캐릭터 Id. outfit 줄은 id를 '모델 Id@캐릭터 Id'로 쓴다,Assets/ThirdParty/BOOTH 아래 경로. character·outfit은 프리팹이고 colour는 '바꿀 재질>새 재질'을 |로 여럿,outfit의 색 프리팹이 모인 폴더. 그 안의 다른 프리팹이 저마다 색 세트가 된다(기준 프리팹과 재질이 다른 것만),캐릭터·색 세트의 화면 이름
+mayo,character,,Chocolate rice/0.MAYO/MAYO.prefab,,마요
+ichigo,character,,Hamini3Dbox/ICHIGO/ICHIGO_v1.05.prefab,,이치고
+abs,colour,mayo,Chocolate rice/0.MAYO/Material/Body/MAYO_Body.mat>Chocolate rice/0.MAYO/Material/Body/MAYO_Abs_Body.mat,,복근
+sailor-maiden@mayo,outfit,,Ene Collection/Sailor Maiden/Mayo/_Basic.prefab,Ene Collection/Sailor Maiden/Mayo,
+sailor-maiden@ichigo,outfit,,Ene Collection/Sailor Maiden/Ichigo/_Basic.prefab,Ene Collection/Sailor Maiden/Ichigo,
+banshaku-shirt@mayo,outfit,,Ene Collection/Banshaku Shirt/Mayo/White.prefab,Ene Collection/Banshaku Shirt/Mayo,
+ichigo-shirt@ichigo,outfit,,Hamini3Dbox/ICHIGO/omake_ICHIGO_Shirt/MA_Ichigo_Shirt_v1.01.prefab,,
+mayo-side-hair-1@mayo,outfit,,Chocolate rice/0.MAYO/Hair_parts_Mirror/Hair_Side_1.prefab,,
+mayo-side-hair-2@mayo,outfit,,Chocolate rice/0.MAYO/Hair_parts_Mirror/Hair_Side_2.prefab,,

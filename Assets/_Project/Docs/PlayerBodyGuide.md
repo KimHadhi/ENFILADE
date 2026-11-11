@@ -8,7 +8,7 @@
 
 | 구성 | 위치 |
 | --- | --- |
-| 캐릭터 | 기본은 [KazusaBand](../Art/Models/Characters/KazusaBand)의 카즈사(밴드). 메인 메뉴의 **캐릭터** 화면이나 Esc → **캐릭터** 탭에서 [Hiro](../Art/Models/Characters/Hiro), [Sil](../Art/Models/Characters/Sil)과 그 색 세트로 바꾼다. 모두 휴머노이드이며 서 있는 눈높이가 카메라(1.6m)에 맞게 자동으로 크기가 정해진다 |
+| 캐릭터 | 기본은 [KazusaBand](../Art/Models/Characters/KazusaBand)의 카즈사(밴드). 메인 메뉴의 **캐릭터** 화면이나 Esc → **캐릭터** 탭에서 [Hiro](../Art/Models/Characters/Hiro), [Sil](../Art/Models/Characters/Sil), BOOTH의 마요·이치고(`ThirdParty/BOOTH`, 아래 **BOOTH 캐릭터·옷 가져오기**)와 그 색 세트로 바꾼다. 모두 휴머노이드이며 서 있는 눈높이가 카메라(1.6m)에 맞게 자동으로 크기가 정해진다 |
 | 애니메이션 | [Art/Animations/Mixamo](../Art/Animations/Mixamo)의 26개 클립(서기·걷기·달리기 8방향, 넘기, 난간, 낙하·착지·구르기, 일어나기). [Art/Animations/Beatrun](../Art/Animations/Beatrun)의 173개 + 웅크려 옆걸음 2개(슬라이딩·다이브·웅크리기·벽·봉 등, 소총·권총 버전 포함). [Art/Animations/MocapOnline](../Art/Animations/MocapOnline)의 19개(총 든 이동, 사다리, 주먹). 휴머노이드라 어떤 캐릭터에도 옮겨 붙는다 |
 | 연결 | `Resources/Characters/PlayerBody` 프로필(모델 + 클립 목록). 임포트할 때 자동으로 만들어지고 클립 목록도 자동 갱신된다 |
 | 상태별 클립·연출 수치 | [Player.csv](../Resources/Tables/Player.csv)의 `Body` 행 (예: `Body.slide,slideloop`) |
@@ -20,7 +20,7 @@
 
 ## 캐릭터 바꾸기
 
-메인 메뉴의 **캐릭터** 버튼이나 Esc → **캐릭터** 탭에서 고른다. 위에 캐릭터 카드(카즈사(밴드)·히로·실), 아래에 고른 캐릭터의 색 카드가 있고, 메인 메뉴에서는 오른쪽 3D 미리보기가, Esc 탭에서는 오른쪽의 큰 사진이 고른 모습을 보여 준다([CharacterSkinView](../Scripts/UI/Settings/CharacterSkinView.cs)). 다른 캐릭터를 고르면 그 캐릭터의 첫 색 세트로 시작한다. 캐릭터를 바꾸면 몸과 손발 IK를 다시 연결하고, 같은 캐릭터의 색만 바꾸면 몸은 그대로 두고 재질만 갈아입힌다. 메인 메뉴에서는 고르는 즉시, Esc 메뉴에서는 메뉴를 닫을 때 저장한다. 기본값으로 초기화하면 카즈사가 선택된다. F5 시점은 스킨을 바꿔도 유지된다. 멀티에서는 "스킨#색" 문자열로 다른 PC에 전해지므로, 색 세트가 들어간 빌드끼리 해야 서로의 색이 보인다.
+메인 메뉴의 **캐릭터** 버튼이나 Esc → **캐릭터** 탭에서 고른다. 위에 캐릭터 카드(카즈사(밴드)·히로·실·마요·이치고), 아래에 고른 캐릭터의 색 카드가 있고, 메인 메뉴에서는 오른쪽 3D 미리보기가, Esc 탭에서는 오른쪽의 큰 사진이 고른 모습을 보여 준다([CharacterSkinView](../Scripts/UI/Settings/CharacterSkinView.cs)). 다른 캐릭터를 고르면 그 캐릭터의 첫 색 세트로 시작한다. 캐릭터를 바꾸면 몸과 손발 IK를 다시 연결하고, 같은 캐릭터의 색만 바꾸면 몸은 그대로 두고 재질만 갈아입힌다. 메인 메뉴에서는 고르는 즉시, Esc 메뉴에서는 메뉴를 닫을 때 저장한다. 기본값으로 초기화하면 카즈사가 선택된다. F5 시점은 스킨을 바꿔도 유지된다. 멀티에서는 "스킨#색" 문자열로 다른 PC에 전해지므로, 색 세트가 들어간 빌드끼리 해야 서로의 색이 보인다.
 
 카드 사진은 메인 메뉴가 열릴 때 미리보기 조명 아래에서 모습마다 한 장씩 찍어 두고([SkinPortraits](../Scripts/UI/Menu/SkinPortraits.cs)), Esc 탭도 그 사진을 쓴다. 레벨에서 바로 Play를 누르면 메인 메뉴를 거치지 않아 카드에 이름만 나온다. 편집기는 셰이더를 뒤에서 컴파일하는 동안 그 물체를 청록색으로 그리므로, 컴파일 중에 찍힌 사진은 버리고 컴파일이 끝난 뒤 다시 찍는다. 그동안 카드에는 이름만 보인다.
 
@@ -38,15 +38,28 @@ KKBP 모델은 뼈 연결 뒤 **Rig → Configure → Pose → Enforce T-Pose �
 
 ## 옷 입히기(부위별 칸)
 
-캐릭터 화면(메인 메뉴 **캐릭터**, Esc → **캐릭터**)의 색 카드 아래 **옷**에서 칸마다 ◀ ▶로 고른다. 장비창 화면을 만들기 전까지 쓰는 임시 목록이다. 칸은 [OutfitSlots.csv](../Resources/Tables/OutfitSlots.csv)의 19개다. 머리(헤어, 모자·헬멧, 머리 장식, 안경·고글, 마스크, 귀걸이), 목(목걸이·초커), 몸통(상의, 겉옷, 조끼, 가방·등), 팔·손(장갑, 팔찌·시계, 반지), 다리(벨트·허리, 하의, 양말·스타킹, 신발, 꼬리)로 나뉜다. 칸마다 하나씩 입는다. **기본**(빈칸)은 그 캐릭터가 원래 입은 옷이고, **벗기**는 원래 옷을 벗고 아무것도 입지 않는다. 헤어는 벗을 수 없다. 고르면 바로 저장되고 캐릭터마다 따로 기억한다(`settings.json`의 `outfits`). 멀티에서는 "스킨#색@칸=옷#색;…" 문자열로 다른 PC에 전해지며, 그 PC에 없는 옷은 그 칸만 원래 옷으로 보인다. 입을 옷도 벗을 옷도 없는 캐릭터는 칸 대신 "입힐 옷이 아직 없습니다."가 나온다.
+캐릭터 화면(메인 메뉴 **캐릭터**, Esc → **캐릭터**)의 색 카드 아래 **옷**에서 칸마다 ◀ ▶로 고르고, 색 세트가 있는 옷은 그 옆의 ◀ ▶로 색을 고른다. 장비창 화면을 만들기 전까지 쓰는 임시 목록이다. 칸은 [OutfitSlots.csv](../Resources/Tables/OutfitSlots.csv)의 19개다. 머리(헤어, 모자·헬멧, 머리 장식, 안경·고글, 마스크, 귀걸이), 목(목걸이·초커), 몸통(상의, 겉옷, 조끼, 가방·등), 팔·손(장갑, 팔찌·시계, 반지), 다리(벨트·허리, 하의, 양말·스타킹, 신발, 꼬리)로 나뉜다. 칸마다 하나씩 입는다. **기본**(빈칸)은 그 캐릭터가 원래 입은 옷이고, **벗기**는 원래 옷을 벗고 아무것도 입지 않는다. 헤어는 벗을 수 없다. 고르면 바로 저장되고 캐릭터마다 따로 기억한다(`settings.json`의 `outfits`). 멀티에서는 "스킨#색@칸=옷#색;…" 문자열로 다른 PC에 전해지며, 그 PC에 없는 옷은 그 칸만 원래 옷으로 보인다. 입을 옷도 벗을 옷도 없는 캐릭터는 칸 대신 "입힐 옷이 아직 없습니다."가 나온다.
 
-- **옷 넣기:** 모델을 `Art/Models/Outfits/<옷 Id>/<캐릭터 Id>.fbx`(또는 `.prefab`)에 두고 [Outfits.csv](../Resources/Tables/Outfits.csv)에 줄을 더한다(들어갈 칸, 같이 차지하는 칸, 가리는 칸, 이름). 편집기가 폴더를 읽어 `Resources/Characters/Outfits`([OutfitLibrary](../Scripts/Player/Outfits/OutfitLibrary.cs))를 저절로 채운다. **Tools → Characters → 옷 목록 다시 만들기**로도 채울 수 있다. BOOTH 옷은 대응 아바타 전용이라, 그 캐릭터용 모델이 있는 옷만 그 캐릭터의 목록에 나온다. `<옷 Id>/Colors/<색 이름>/` 폴더에 모델 재질과 같은 이름의 재질을 두면 색 세트가 된다. 첫째 색은 모델 그대로인 "기본"이다.
-- **입히는 방식**([OutfitDresser](../Scripts/Player/Outfits/OutfitDresser.cs)): VRChat에서 Modular Avatar의 Merge Armature가 하듯, 옷의 뼈 가운데 캐릭터 뼈와 이름이 같은 것을 그 뼈 밑으로 옮긴다. 이름이 조금 다르면 대소문자와 기호를 빼고 다시 맞춘다. 자리는 그대로 두므로 그 뒤로는 캐릭터 뼈를 따라가고, 옷에만 있는 뼈(치마·코트 자락)는 그 밑에 딸려 간다. 뼈가 없는 통짜 물건(용접 마스크 같은)은 칸의 뼈(`bone`)에 통째로 붙는다. 편집기에서 캐릭터마다 굽는 과정이 없어서, 같은 이름의 뼈를 가진 모델이면 어디에나 입는다. 몸 크기를 눈높이에 맞춘 다음에 입히므로 헬멧이 몸을 줄이지 않는다. 옷 파일에 함께 들어 있는 아바타 몸(캐릭터 메시와 이름도 정점 수도 같은 것)은 저절로 뺀다. 원피스처럼 다른 칸도 차지하는 옷(`also`)을 입으면 그 칸에 고른 옷은 벗겨진다.
-- **원래 옷 끄기:** [CharacterParts.csv](../Resources/Tables/CharacterParts.csv)에 캐릭터 Id, 칸, 그 칸의 원래 옷 렌더러 이름을 적는다. 칸에 옷을 넣거나 **벗기**를 고르거나, 입은 옷이 그 칸을 가리면(`hides`, 얼굴을 다 덮는 마스크가 안경 칸을 가리듯) 그 렌더러가 꺼진다. 카즈사·히로·실은 옷이 몸과 한 메시라 줄이 없다.
-- **캐릭터별 맞춤:** [OutfitFits.csv](../Resources/Tables/OutfitFits.csv)의 `옷 Id@캐릭터 Id` 줄에 입었을 때 걸 셰이프키(옷 밑 피부를 줄이는 키나 힐 키, `이름=0~100`)와 쓰지 않을 렌더러를 적는다.
-- **1인칭:** 칸의 `firstPerson`이 `head`면 머리카락처럼 **내 머리카락 보기**를 켰을 때만 보인다. `hide`(안경·고글, 마스크, 목걸이·초커)면 1인칭에서는 늘 그림자만 남는다. 얼굴 바로 앞의 물건이 시야를 가리기 때문이다.
-- **흔들림:** [Cloth.csv](../Resources/Tables/Cloth.csv)의 `skin` 칸에 옷 Id를 적은 줄은 그 옷을 입었을 때 움직인다.
+- **옷과 모델:** [Outfits.csv](../Resources/Tables/Outfits.csv)의 줄 하나가 옷 하나다(들어갈 칸, 같이 차지하는 칸, 가리는 칸, 이름, 모델, 렌더러). BOOTH 옷 한 벌은 모델 하나에 베레모·재킷·치마·양말·신발이 다 들어 있어서, 여러 옷이 한 모델(`model`)을 나눠 쓰고 저마다 자기 렌더러(`parts`)만 보인다. 그래서 세일러 메이든 재킷에 마요의 원래 치마를 입히는 식으로 섞어 입는다. 몸에는 모델 하나가 한 번만 붙고, 옷마다 자기 색 세트를 따로 입는다(검정 재킷에 분홍 치마).
+- **모델 등록:** 모델은 `Resources/Characters/Outfits`([OutfitLibrary](../Scripts/Player/Outfits/OutfitLibrary.cs))에 모델 Id·캐릭터 Id별로 있다. BOOTH 것은 아래 **BOOTH 캐릭터·옷 가져오기**가 채운다. 직접 만든 것은 `Art/Models/Outfits/<모델 Id>/<캐릭터 Id>.fbx`(또는 `.prefab`)에 두면 편집기가 폴더를 읽어 채우고(**Tools → Characters → 옷 목록 다시 만들기**로도), `<모델 Id>/Colors/<색 이름>/` 폴더에 모델 재질과 같은 이름의 재질을 두면 색 세트가 된다. BOOTH 옷은 대응 아바타 전용이라, 그 캐릭터용 모델이 있는 옷만 그 캐릭터의 목록에 나온다.
+- **입히는 방식**([OutfitDresser](../Scripts/Player/Outfits/OutfitDresser.cs)): VRChat에서 Modular Avatar의 Merge Armature가 하듯, 모델의 뼈 가운데 캐릭터 뼈와 이름이 같은 것을 그 뼈 밑으로 옮긴다. 이름이 조금 다르면 대소문자와 기호를 빼고 다시 맞춘다. 자리는 그대로 두므로 그 뒤로는 캐릭터 뼈를 따라가고, 옷에만 있는 뼈(치마·코트 자락)는 그 밑에 딸려 간다. 뼈가 없는 통짜 물건(용접 마스크 같은)은 칸의 뼈(`bone`)에 통째로 붙는다. 편집기에서 캐릭터마다 굽는 과정이 없어서, 같은 이름의 뼈를 가진 모델이면 어디에나 입는다. 몸 크기를 눈높이에 맞춘 다음에 입히므로 헬멧이 몸을 줄이지 않는다. 모델 파일에 함께 들어 있는 아바타 몸(캐릭터 메시와 이름도 정점 수도 같은 것)은 저절로 뺀다. 원피스처럼 다른 칸도 차지하는 옷(`also`)을 입으면 그 칸에 고른 옷은 벗겨진다.
+- **몸 모양 따라가기:** 옷 메시에 캐릭터 몸과 같은 이름의 셰이프키(Breast_Big, Hip_Big, Legs_Slim 등)가 있으면 몸의 값을 그대로 받는다. VRChat에서 Modular Avatar의 Blendshape Sync가 하는 일이라, 가슴·골반을 바꾼 아바타에도 옷이 맞는다.
+- **원래 옷 끄기:** [CharacterParts.csv](../Resources/Tables/CharacterParts.csv)에 캐릭터 Id, 칸, 그 칸의 원래 옷 렌더러(`parts`)를 적는다. 칸에 옷을 넣거나 **벗기**를 고르거나, 입은 옷이 그 칸을 가리면(`hides`, 얼굴을 다 덮는 마스크가 안경 칸을 가리듯) 그 렌더러가 꺼진다. `under`의 렌더러는 그 줄의 `parts`가 모두 꺼졌을 때(어느 칸 때문이든) 켜진다. 마요의 드레스는 상의·하의 두 줄에 다 있어서, 치마만 바꿔도 드레스가 빠지는데, 그때 상의 줄의 `under`(브라)가 켜져 맨몸이 되지 않는다. 렌더러 없이 셰이프키로 숨기는 장식(이치고의 귀걸이 `Earring_L_x`)은 `shapes`에 적는다. 카즈사·히로·실은 옷이 몸과 한 메시라 줄이 없다.
+- **캐릭터별 맞춤:** [OutfitFits.csv](../Resources/Tables/OutfitFits.csv)의 `옷 Id@캐릭터 Id` 줄에 입었을 때 걸 셰이프키(옷 밑 피부를 줄이는 키나 힐 키, `이름=0~100`)와 통째로 입는 옷에서 쓰지 않을 렌더러를 적는다.
+- **1인칭:** 칸의 `firstPerson`이 `head`면 머리카락처럼 **내 머리카락 보기**를 켰을 때만 보인다. `hide`(안경·고글, 마스크, 목걸이·초커)면 1인칭에서는 늘 그림자만 남는다. 얼굴 바로 앞의 물건이 시야를 가리기 때문이다. 캐릭터 자신의 머리 메시도 이름 목록(`First Person Shadow Only`)에 더해, 스킨 가중치의 80% 이상이 머리 뼈 아래에 걸린 메시면 머리로 본다([HeadMeshes](../Scripts/Player/Body/HeadMeshes.cs)). BOOTH 아바타는 얼굴 메시 이름이 `Body`라(카즈사는 몸이 `Body`) 이름만으로는 가를 수 없기 때문이다. 메시의 Read/Write가 꺼져 있으면 이름 목록만 쓴다.
+- **흔들림:** [Cloth.csv](../Resources/Tables/Cloth.csv)의 `skin` 칸에 옷 Id나 모델 Id를 적은 줄은 그 옷을 입었을 때 움직인다. `parts`에 렌더러를 적은 줄은 그중 하나라도 보일 때만 움직인다. 벗었거나 다른 옷에 가려진 치마를 팔이 밀어내지 않게 하려는 것이다.
 - 옷을 바꾸면 스킨을 바꿀 때처럼 몸을 새로 만든다. 옷의 뼈는 캐릭터가 처음 만들어진 자세에서 맞춰야 하기 때문이다. 메인 메뉴 미리보기도 같으며, 카메라는 옷을 입기 전의 키에 맞춘다.
+
+## BOOTH 캐릭터·옷 가져오기
+
+BOOTH에서 산 VRChat 아바타와 옷은 `Assets/ThirdParty/BOOTH`에 원래 패키지 경로대로 들어 있다. 지금은 마요(Chocolate rice)·이치고(Hamini3Dbox)와 Ene Collection의 세일러 메이든(마요·이치고)·반샤쿠 셔츠(마요), 마요의 복근 재질과 거울 옆머리, 이치고 덤 셔츠다.
+
+1. **풀기:** [booth_extract.py](../../../Tools/Booth/booth_extract.py)가 받은 zip 속 `.unitypackage`에서 쓸 프리팹과, 그것이 가리키는 모델·재질·텍스처만 GUID 그대로 푼다. 패키지끼리 오가는 참조도 따라간다(반샤쿠 셔츠의 재질은 다른 패키지에 있다). VRChat 전용(애니메이터, 표정 메뉴, AFK 효과)과 PSD·CLIP·BLEND 원본은 쓰는 재질이 없으면 넣지 않고, 모델은 Read/Write를 켠다. 실행 예는 파일 맨 위에 있다. 유니티의 Import Package로 넣어도 된다.
+2. **가져오기:** 유니티가 그 폴더를 가져오면 [BoothImport](../Editor/Import/Booth/BoothImport.cs)가 [BoothSources.csv](../Editor/Import/Booth/BoothSources.csv)대로 처리한다(**Tools → Characters → BOOTH 다시 가져오기**로도). 순서는 이렇다. ① 프리팹 텍스트에서 VRChat PhysBone 설정을 읽어 Cloth.csv에 흔들림 줄을 더한다([VrcPrefab](../Editor/Import/Booth/VrcPrefab.cs), [VrcSway](../Editor/Import/Booth/VrcSway.cs)). 같은 id의 줄이 이미 있으면 손대지 않으므로, 손으로 고친 값은 남는다. ② 게임에 없는 VRChat 스크립트(아바타 설정, PhysBone, Modular Avatar, VRChat 제약), AFK 효과, 들어오지 않은 중첩 프리팹, 아바타의 애니메이터 컨트롤러를 프리팹에서 뺀다. ③ 캐릭터는 PlayerBody 프로필에, 옷 모델은 OutfitLibrary에 넣는다. 옷의 색 세트는 패키지에 색마다 있는 프리팹에서, 기준 프리팹과 다른 재질을 렌더러마다 읽어 만든다. 다시 돌려도 바뀌는 것이 없다.
+3. **흔들림 옮기기:** VRChat의 PhysBone은 뿌리를 제자리에 두고 그 밑 사슬을 흔든다. Cloth.csv 줄은 그 뿌리를 적고 사슬과 함께 돌게 해서(`rootTurn` 1) 같은 움직임을 낸다. 몸이 함께 쓰는 뼈이거나 밑에서 다른 PhysBone이 시작하면 사슬의 첫 뼈들을 적는다. 이름에 skirt가 들어간 뿌리 밑에 사슬이 넷 이상이면 치마 고리(`ring`, 다리·팔과 닿음)가 되고, breast·bust면 출렁임(`spring`)이 된다. 설정이 같은 사슬은 한 줄로 묶는다. 값은 이렇게 옮긴다. pull(제자리로 당기는 힘) → `stiffness`, spring(출렁임) → 클수록 작은 `damping`, gravity(중력 비율) → `gravity` ×10, gravity falloff → `gravityFalloff`, immobile(세상 움직임을 무시하는 정도) → 1 - `worldInertia`, 각도 제한 → `angleLimit`, radius(m) → `thickness`(사슬 길이의 배수). 콜라이더가 다리·골반이면 `legs`, 머리·가슴이면 `head`다. 옷이 캐릭터와 함께 쓰는 뼈는 캐릭터의 흔들림을 따라가므로 옷 줄에서 뺀다.
+4. **칸 나누기:** 옷 조각(Outfits.csv의 `parts`)과 캐릭터 원래 옷의 칸(CharacterParts.csv)은 렌더러 이름을 보고 손으로 적는다. 이치고의 칸은 FBX 메시 이름으로 짐작해 적었다.
+
+이용 규약은 각 zip 속 PDF에 있다. 개인적으로 쓰는 데에는 문제없다.
 
 ## 치마·겉옷·머리카락
 

@@ -5,8 +5,8 @@ using UnityEngine;
 /// <summary>
 /// The outfit tables, read once and kept until a table is saved again (GameTables.Reloaded): the slots
 /// (OutfitSlots.csv), the items (Outfits.csv), what an item needs on one character (OutfitFits.csv), each character's
-/// own pieces by slot (CharacterParts.csv) and the items' models (<see cref="OutfitLibrary"/>). The player body, the
-/// menu preview and the character screen all read it.
+/// own pieces by slot (CharacterParts.csv) and the models (<see cref="OutfitLibrary"/>). The player body, the menu
+/// preview and the character screen all read it.
 /// </summary>
 public static class OutfitCatalog
 {
@@ -18,14 +18,23 @@ public static class OutfitCatalog
     {
         /// <summary>Shape keys set while it is on, "name=weight|name=weight" (0 to 100; a name alone is 100).</summary>
         public string shapes = "";
-        /// <summary>Renderers of its file left off, "name|name".</summary>
+        /// <summary>Renderers of its model it leaves off, "name|name", when it takes the whole model.</summary>
         public string drop = "";
     }
 
-    /// <summary>A row of CharacterParts.csv: the renderers of a character's own piece in one slot.</summary>
+    /// <summary>A row of CharacterParts.csv: a character's own piece in one slot.</summary>
     public sealed class Part
     {
-        public string skin = "", slot = "", parts = "";
+        public string skin = "", slot = "";
+        /// <summary>Its renderers, switched off when the slot is filled, emptied or covered.</summary>
+        public string parts = "";
+        /// <summary>
+        /// Renderers it covers that switch on once all of <see cref="parts"/> are off, whichever slot took them: the
+        /// underwear a dress hid, so taking the dress off for a skirt leaves no bare chest.
+        /// </summary>
+        public string under = "";
+        /// <summary>Shape keys set when the slot is filled or emptied: avatars that hide a piece with a key ("Earring_x").</summary>
+        public string shapes = "";
     }
 
     private static List<OutfitSlot> slots;
@@ -80,8 +89,12 @@ public static class OutfitCatalog
         return id != null && items.TryGetValue(id, out var item) ? item : null;
     }
 
-    /// <summary>The item's model for this character, or null when it was not made for them.</summary>
-    public static OutfitLibrary.Entry Model(string itemId, string skinId) => Library != null ? Library.Find(itemId, skinId) : null;
+    /// <summary>The item's model made for this character, or null when it was not made for them.</summary>
+    public static OutfitLibrary.Entry Model(string itemId, string skinId)
+    {
+        var item = Item(itemId);
+        return item != null && Library != null ? Library.Find(item.ModelId, skinId) : null;
+    }
 
     /// <summary>What the item needs on this character; null when its row is missing (worn as it comes).</summary>
     public static Fit FitOf(string itemId, string skinId)
@@ -101,18 +114,24 @@ public static class OutfitCatalog
         return found;
     }
 
-    /// <summary>The renderer names of the character's own piece in a slot; empty when it wears nothing there.</summary>
-    public static List<string> OwnParts(string skinId, string slotId)
+    /// <summary>The character's own pieces, every slot.</summary>
+    public static List<Part> PartsOf(string skinId)
     {
         Ensure();
-        var names = new List<string>();
+        var found = new List<Part>();
         foreach (var part in parts)
-            if (string.Equals(part.skin, skinId, StringComparison.OrdinalIgnoreCase) && string.Equals(part.slot, slotId, StringComparison.OrdinalIgnoreCase))
-                names.AddRange(Split(part.parts));
-        return names;
+            if (string.Equals(part.skin, skinId, StringComparison.OrdinalIgnoreCase)) found.Add(part);
+        return found;
     }
 
-    public static bool HasOwnPiece(string skinId, string slotId) => OwnParts(skinId, slotId).Count > 0;
+    /// <summary>Whether the character wears something of its own in the slot that could be taken off.</summary>
+    public static bool HasOwnPiece(string skinId, string slotId)
+    {
+        foreach (var part in PartsOf(skinId))
+            if (string.Equals(part.slot, slotId, StringComparison.OrdinalIgnoreCase)
+                && (!string.IsNullOrEmpty(part.parts) || !string.IsNullOrEmpty(part.shapes))) return true;
+        return false;
+    }
 
     /// <summary>The entries of a "a|b|c" cell, trimmed, empty ones skipped.</summary>
     public static IEnumerable<string> Split(string list)
@@ -156,6 +175,8 @@ public static class OutfitCatalog
         items = null;
         fits = null;
         parts = null;
+        // The editor's BOOTH import fills the library while the game may be stopped; look again next time.
+        libraryLooked = false;
     }
 
     // The row's cells into the object's fields of the same names, as GameTables does for bound objects.

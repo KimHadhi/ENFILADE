@@ -24,6 +24,10 @@ public sealed class PlayerBodyProfile : ScriptableObject
             "Empty: the model as imported is the only look.")]
         private SkinVariant[] variants = Array.Empty<SkinVariant>();
 
+        public Skin() { }
+
+        public Skin(string id) => this.id = id;
+
         public string Id => id;
         public string DisplayName => string.IsNullOrEmpty(displayName) ? id : displayName;
         public GameObject Model => model;
@@ -39,6 +43,16 @@ public sealed class PlayerBodyProfile : ScriptableObject
                 if (variant != null && string.Equals(variant.Id, variantId, StringComparison.Ordinal)) return variant;
             return variants[0];
         }
+
+#if UNITY_EDITOR
+        /// <summary>Editor import step (BoothImport): the character as its package has it. Hand-tuned ledge scales stay.</summary>
+        public void EditorSet(string name, GameObject character, SkinVariant[] colours)
+        {
+            displayName = name;
+            model = character;
+            variants = colours ?? Array.Empty<SkinVariant>();
+        }
+#endif
     }
 
     public const string ResourcePath = "Characters/PlayerBody";
@@ -105,6 +119,21 @@ public sealed class PlayerBodyProfile : ScriptableObject
     }
 
 #if UNITY_EDITOR
+    /// <summary>Editor import step (BoothImport): adds the character, or updates the one with this id.</summary>
+    public void EditorPutSkin(string id, string name, GameObject character, SkinVariant[] colours)
+    {
+        foreach (var skin in skins)
+            if (skin != null && string.Equals(skin.Id, id, StringComparison.Ordinal))
+            {
+                skin.EditorSet(name, character, colours);
+                return;
+            }
+        var added = new Skin(id);
+        added.EditorSet(name, character, colours);
+        var list = new List<Skin>(skins ?? Array.Empty<Skin>()) { added };
+        skins = list.ToArray();
+    }
+
     /// <summary>Editor import step: keep a chosen model, otherwise take the default; always mirror the clip library.</summary>
     public bool EditorRefresh(GameObject defaultModel, AnimationClip[] library)
     {

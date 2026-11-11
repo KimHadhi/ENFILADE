@@ -117,6 +117,17 @@ public sealed class CharacterSkinView
             var row = W.Row(column, slot.Name);
             var place = slot;
             W.Stepper(row, names.ToArray(), Mathf.Max(0, choices.IndexOf(worn.Item ?? "")), index => PickOutfit(skin, place, choices[index]));
+            // The colour sets of the piece worn here, each piece in its own (a black jacket over a pink skirt).
+            var colours = OutfitCatalog.Model(worn.Item, skin.Id)?.Variants;
+            if (colours != null && colours.Count > 1)
+            {
+                int at = 0;
+                for (int i = 0; i < colours.Count; i++)
+                    if (colours[i] != null && colours[i].Id == worn.Colour) at = i;
+                string item = worn.Item;
+                W.Stepper(row, colours.Select(colour => colour != null ? colour.DisplayName : "").ToArray(), at,
+                    index => PickColour(skin, place, item, colours[index]?.Id ?? ""));
+            }
             rows++;
         }
         if (rows == 0) W.Size(W.Label(column, Texts.Get("outfit.none"), 17f, W.Muted), height: 30f);
@@ -134,6 +145,14 @@ public sealed class CharacterSkinView
                 && wornItem.AlsoSlots.Contains(slot.id, StringComparer.OrdinalIgnoreCase))
                 look.Set(other.id, null);
         look.Set(slot.id, item);
+        OutfitLook.Save(skin.Id, look);
+        Commit();
+    }
+
+    private void PickColour(PlayerBodyProfile.Skin skin, OutfitSlot slot, string item, string colour)
+    {
+        var look = OutfitLook.Saved(skin.Id);
+        look.Set(slot.id, item, colour);
         OutfitLook.Save(skin.Id, look);
         Commit();
     }
