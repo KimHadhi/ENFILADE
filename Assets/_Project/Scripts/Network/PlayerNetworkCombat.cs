@@ -85,9 +85,9 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
     private PlayerMovement mover;
 
     /// <summary>Someone on this PC finished getting this copy's player up: their own PC does it.</summary>
-    public void Revive() => ReviveRpc();
+    public void Revive() { PlayerTally.Raised(); ReviveRpc(); }
     /// <summary>A Détente's dose or treatment for this copy's player (DetenteKit): their own PC adds the health.</summary>
-    public void Heal(float amount) { if (IsSpawned) HealRpc(amount); }
+    public void Heal(float amount) { if (!IsSpawned) return; PlayerTally.Healed(this, amount); HealRpc(amount); }
     /// <summary>A Support's resupply for this copy's player (SupportKit): their own PC fills their guns.</summary>
     public void Resupply(int magazines, float overfill, float syringe) { if (IsSpawned) ResupplyRpc(magazines, overfill, syringe); }
     /// <summary>On the host: barricade id's health, for every client's copy of it (Barricade).</summary>
@@ -95,7 +95,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
     /// <summary>On a client: a zombie's blow landed on its copy of barricade id; the host's is the true one (Barricade).</summary>
     public void SendBarricadeHit(ushort id, float damage) { if (IsSpawned) BarricadeHitRpc(id, damage); }
     /// <summary>A Détente's Resurrection for this copy's dead player, back with this share of their health.</summary>
-    public void Resurrect(float share) { if (IsSpawned) ResurrectRpc(share); }
+    public void Resurrect(float share) { if (!IsSpawned) return; PlayerTally.Raised(); ResurrectRpc(share); }
     /// <summary>Whether this player is getting that client up right now, and how far along (0-1).</summary>
     public bool IsReviving(ulong client, out float progress)
     {
