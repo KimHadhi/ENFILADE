@@ -75,7 +75,7 @@ public sealed class CampaignPushback : MonoBehaviour
     private static AudioClip EngineClip()
     {
         if (engineClip != null) return engineClip;
-        const float Seconds = 2f, Growl = 32f, Firing = 16f, Beep = 1100f, BeepLength = .35f, Edge = .01f;
+        const float Seconds = 2f, GrowlNote = 32f, Firing = 16f, Beep = 1100f, BeepLength = .35f, Edge = .01f;
         const float GrowlLevel = .3f, NoiseLevel = .06f, BeepLevel = .16f;
         int total = Mathf.RoundToInt(Seconds * SampleRate);
         var samples = new float[total];
@@ -83,14 +83,15 @@ public sealed class CampaignPushback : MonoBehaviour
         float rough = 0f;
         for (int i = 0; i < total; i++)
         {
-            float t = i / (float)SampleRate, phase = 2f * Mathf.PI * Growl * t;
+            float t = i / (float)SampleRate, phase = 2f * Mathf.PI * GrowlNote * t;
             float throb = .55f + .45f * Mathf.Pow(.5f + .5f * Mathf.Sin(2f * Mathf.PI * Firing * t), 3f);
             float growl = Mathf.Sin(phase) + .6f * Mathf.Sin(2f * phase) + .35f * Mathf.Sin(3f * phase) + .2f * Mathf.Sin(5f * phase);
             // Noise through a one-pole low-pass: a rumble, not a hiss.
             rough += .08f * ((float)random.NextDouble() * 2f - 1f - rough);
             float inBeep = t % 1f;
+            // Two-argument Mins: the params form would make an array for each of the 88,200 samples.
             float beep = inBeep < BeepLength
-                ? Mathf.Sin(2f * Mathf.PI * Beep * t) * Mathf.Min(1f, inBeep / Edge, (BeepLength - inBeep) / Edge) : 0f;
+                ? Mathf.Sin(2f * Mathf.PI * Beep * t) * Mathf.Min(1f, Mathf.Min(inBeep / Edge, (BeepLength - inBeep) / Edge)) : 0f;
             samples[i] = (growl * .45f * throb) * GrowlLevel + rough * 8f * NoiseLevel * throb + beep * BeepLevel;
         }
         engineClip = AudioClip.Create("Pushback Tug", total, 1, SampleRate, false);
