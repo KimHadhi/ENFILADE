@@ -2,6 +2,13 @@ using System;
 using UnityEngine;
 
 /// <summary>
+/// What a calm zombie lying low is busy with (ZombieLooks.CalmPose): Rest (sitting or crouched, its senses as they are),
+/// Eat (tearing at a body on the ground: it sees less far and narrower, and hears less) or Doze (nodding off: less still).
+/// The 2026-11-11 stealth memo, item 47: "바닥에 엎드려 시체를 뜯어먹거나 졸고 있어서 시야가 좁은 좀비".
+/// </summary>
+public enum CalmPoseKind : byte { Rest, Eat, Doze }
+
+/// <summary>
 /// What a zombie can look like and the clips it moves with (multiplayer plan stage 4A): the bought Synty City Zombies
 /// characters, and the humanoid clips of Advanced Zombie AI Pro's demo set (only the clips; its AI scripts stay unused,
 /// ZombieBody plays them). Resources/Enemies/ZombieLooks.asset. Take a character out of the list to stop it spawning,
@@ -125,7 +132,16 @@ public sealed class ZombieLooks : ScriptableObject
         public AnimationClip loop;
         [Tooltip("Getting up from it, once, ending on its feet. Empty: the zombie's notice clip.")]
         public AnimationClip getUp;
+        [Tooltip("What it is busy with, which dulls its senses (Tables/ZombieSenses eat* and doze*): Rest sees as a standing " +
+                 "zombie does; Eat tears at a body on the ground in front of it (laid there, ZombieMeal); Doze nods off.")]
+        public CalmPoseKind kind;
+        [Tooltip("Eat: how far in front of its feet the body it eats lies, to that body's chest (m).")]
+        public float mealAhead;
     }
+
+    [Header("The body a calm zombie eats (ZombieMeal)")]
+    [Tooltip("A body lying on the ground, posed from this clip's last frame: one of the characters above, baked still.")]
+    public AnimationClip mealPose;
 
     private static ZombieLooks loaded;
 

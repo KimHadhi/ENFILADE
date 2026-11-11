@@ -215,6 +215,8 @@ public sealed class SettingsMenuView
         // The class key (stage 7): the wheel click unless picked otherwise.
         rows.Key(Texts.Get("settings.controls.class_key"),
             UnityEngine.InputSystem.InputSystem.actions != null ? UnityEngine.InputSystem.InputSystem.actions.FindAction("Player/ClassAbility", false) : null);
+        rows.Key(Texts.Get("settings.controls.knock_key"),
+            UnityEngine.InputSystem.InputSystem.actions != null ? UnityEngine.InputSystem.InputSystem.actions.FindAction("Player/Knock", false) : null);
     }
 
     private static void ScreenTab(SettingsRows rows, GameSettings s)

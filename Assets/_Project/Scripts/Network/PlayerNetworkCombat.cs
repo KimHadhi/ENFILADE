@@ -72,6 +72,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
     private ShoveMoves kicks;
     private PlayerExecution execution;
     private PlayerThrow throws;
+    private PlayerKnock knocks;
     private ClassKit kit;
     private PlayerPing ping;
     private SupportKit support;
@@ -154,6 +155,8 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
         // Stones (PlayerThrow): thrown by the owner, copied on every other PC.
         throws = GetComponent<PlayerThrow>();
         if (throws == null) throws = gameObject.AddComponent<PlayerThrow>();
+        // Knocks on walls (PlayerKnock), likewise: the host's is the one its zombies hear.
+        if (!TryGetComponent(out knocks)) knocks = gameObject.AddComponent<PlayerKnock>();
         // The class (ClassKit): an Assault's CHARGE reaches friends near it on their PCs.
         kit = GetComponent<ClassKit>();
         if (kit == null) kit = gameObject.AddComponent<ClassKit>();
@@ -166,6 +169,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
         if (IsOwner)
         {
             throws.Thrown += OnThrown;
+            knocks.Knocked += OnKnocked;
             kit.Charged += OnCharged;
             kit.Taunted += OnTaunted;
             kit.Claimed += OnClaimed;
@@ -196,6 +200,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
         if (kicks != null) kicks.Kicked -= OnKicked;
         if (execution != null) execution.Started -= OnExecutionStarted;
         if (throws != null) throws.Thrown -= OnThrown;
+        if (knocks != null) knocks.Knocked -= OnKnocked;
         if (kit != null) { kit.Charged -= OnCharged; kit.Taunted -= OnTaunted; kit.Claimed -= OnClaimed; }
         if (ping != null) ping.Pinged -= OnPinged;
         if (support != null) { support.Built -= OnBuilt; support.TookDown -= OnTookDown; }
@@ -269,6 +274,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
     private void OnShoveSound(ShoveImpactKind impact) => ShoveSoundRpc(impact);
     private void OnKicked() => KickRpc();
     private void OnThrown(Vector3 from, Vector3 velocity) => ThrowRpc(from, velocity);
+    private void OnKnocked(Vector3 at, Vector3 normal) => KnockRpc(at, normal);
     private void OnCharged(Vector3 at) => ChargeRpc(at);
     private void OnTaunted(Vector3 at) => TauntRpc(at);
     private void OnClaimed(Vector3 head, Vector3 from, Vector3 ground, bool grand) => BountyRpc(head, from, ground, grand);
@@ -346,6 +352,13 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
     private void ThrowRpc(Vector3 from, Vector3 velocity)
     {
         if (throws != null) throws.ShowThrow(from, velocity);
+    }
+
+    // A knock on a wall by this player: every other PC hears it there, and the host's zombies come to look.
+    [Rpc(SendTo.NotMe)]
+    private void KnockRpc(Vector3 at, Vector3 normal)
+    {
+        if (knocks != null) knocks.ShowKnock(at, normal);
     }
     private void OnExecutionStarted(MeleeCombatTarget victim) => ExecutionStartedRpc();
     private void OnHit(DamageHit hit, DamageResult result)

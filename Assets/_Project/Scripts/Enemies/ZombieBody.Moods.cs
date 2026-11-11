@@ -9,7 +9,9 @@ using UnityEngine.Playables;
 /// Clips: ZombieLooks calmIdle, alertIdle, searchWalk, notice, rouse, each with its list of alternatives (one picked per
 /// zombie, ZombieLooks.Pick). Some zombies placed calm lie low instead of standing (ZombieLooks.calmPoses: sitting,
 /// eating, crouched; Tables/ZombieClips poseShare) and play the pose's getting up as they leave calm. They hold the pose
-/// only from their first calm: a zombie calmed again after a search stands, as no clip sits it back down.
+/// only from their first calm: a zombie calmed again after a search stands, as no clip sits it back down. A pose is busy
+/// with something (CalmPose kind, the 2026-11-11 memo's item 47): an eater kneels or lies over a body laid in front of it
+/// (ZombieMeal) and a dozer nods off, and while they hold it ZombieMind sees and hears less (PoseKind).
 /// </summary>
 public sealed partial class ZombieBody
 {
@@ -36,9 +38,12 @@ public sealed partial class ZombieBody
     private float calmIdleLength, alertIdleLength, searchWalkLength, noticeLength, rouseLength, searchWalkSpeed;
     private float poseLength, getUpLength, poseTime, poseClock, cueRate = 1f;
     private float calmShare, alertShare, searchShare, calmIdleTime, alertIdleTime, cueTime, cueWeight;
-    private bool cueing;
+    private bool cueing, mealLaid;
     private CueKind cueKind;
     private PoseState pose;
+    // What its pose is busy with (eating, dozing) and how far ahead the body it eats lies (ZombieLooks.CalmPose).
+    private CalmPoseKind poseKind;
+    private float mealAhead;
     private ZombieMood shownMood = ZombieMood.Awake;
 
     /// <summary>The walking pace and step length now: the awake walk's, or the search walk's while searching.</summary>
@@ -69,6 +74,8 @@ public sealed partial class ZombieBody
             getUp = Clip(Or(chosen.getUp, noticeClip), top, GetUpInput, out getUpLength);
             pose = PoseState.Pending;
             poseTime = ZombieLooks.Fraction(clipSeed, PoseSlot + 2u) * poseLength;
+            poseKind = chosen.kind;
+            mealAhead = chosen.mealAhead;
         }
         calmIdleTime = ZombieLooks.Fraction(clipSeed, CalmSlot) * calmIdleLength;
         alertIdleTime = ZombieLooks.Fraction(clipSeed, AlertSlot) * alertIdleLength;
@@ -134,7 +141,7 @@ public sealed partial class ZombieBody
         if (pose == PoseState.Pending)
         {
             poseClock += dt;
-            if (mood == ZombieMood.Calm) pose = PoseState.Held;
+            if (mood == ZombieMood.Calm) { pose = PoseState.Held; LayMeal(); }
             else if (poseClock > PoseWait) pose = PoseState.Done;
         }
         else if (pose == PoseState.Held && mood != ZombieMood.Calm)
@@ -142,8 +149,26 @@ public sealed partial class ZombieBody
             pose = PoseState.Done;
             leaves = true;
         }
-        if (mind != null) mind.HoldsPose = pose == PoseState.Held;
+        if (mind != null)
+        {
+            mind.HoldsPose = pose == PoseState.Held;
+            // Busy eating or nodding off, it sees and hears less (ZombieMind), on every PC alike for the stealth view.
+            mind.PoseKind = pose == PoseState.Held ? poseKind : CalmPoseKind.Rest;
+        }
         return leaves;
+    }
+
+    // An eater lies over a body: one of the pack's characters baked lying still in front of it, the same on every PC
+    // (picked from its network id, laid by its feet and the way it faces as it first takes the pose). It stays when the
+    // eater gets up: it is a body (ZombieMeal keeps the newest few).
+    private void LayMeal()
+    {
+        if (poseKind != CalmPoseKind.Eat || mealLaid) return;
+        mealLaid = true;
+        Vector3 feet = transform.position + Vector3.up * feetHeight;
+        Vector3 ahead = Vector3.ProjectOnPlane(transform.forward, Vector3.up).normalized;
+        float yaw = Mathf.Atan2(ahead.x, ahead.z) * Mathf.Rad2Deg + 90f + (ZombieLooks.Fraction(clipSeed, PoseSlot + 3u) - .5f) * 40f;
+        ZombieMeal.Lay(ZombieLooks.Instance, clipSeed, feet + ahead * Mathf.Max(.2f, mealAhead), yaw);
     }
 
     private void Cue(CueKind kind, bool hurried)

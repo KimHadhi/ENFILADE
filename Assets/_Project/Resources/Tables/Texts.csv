@@ -609,3 +609,7 @@ wardrobe.off.note,아무것도 입지 않는다,,옷장 > 칸을 연 화면 > �
 wardrobe.off.worn,벗음,,옷장 > 칸 타일에 벗기를 고른 칸
 wardrobe.colours,색 {0}가지,,옷장 > 칸을 연 화면 > 옷 판의 설명. {0}=색 세트 수
 wardrobe.worn,입음,,옷장 > 칸을 연 화면 > 지금 입은 판의 분홍 칩
+settings.controls.knock_key,벽 두드리기 키,Wall knock key,설정 > 조작 > 키 줄. 바로 앞 벽을 두드려 근처 좀비를 그 자리로 불러온다
+hud.stealth.dark,어둠,Dark,잠입 > 앉았을 때 조준점 아래 밝기 표시: 어두워서 좀비가 잘 못 본다
+hud.stealth.dim,그늘,Dim,잠입 > 밝기 표시: 반쯤 어둡다
+hud.stealth.lit,밝음,Lit,잠입 > 밝기 표시: 밝아서 잘 보인다

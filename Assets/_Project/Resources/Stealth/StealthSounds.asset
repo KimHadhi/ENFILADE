@@ -14,3 +14,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::StealthSounds
   stoneHits:
   - {fileID: 8300000, guid: 9a40003267eaf974d8c838b8b0976973, type: 3}
+  knocks:
+  - {fileID: 8300000, guid: 9e7209b54eda2cd438365728f564c7a9, type: 3}

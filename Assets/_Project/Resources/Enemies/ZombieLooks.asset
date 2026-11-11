@@ -141,7 +141,22 @@ MonoBehaviour:
   calmPoses:
   - loop: {fileID: -7827417325818891787, guid: aa562d0d7bb334b4a9deb473fc3184bc, type: 3}
     getUp: {fileID: -3250332911158739521, guid: 23c7fcf9811ae1f4f9fe2b8a20b95a35, type: 3}
+    kind: 2
+    mealAhead: 0
   - loop: {fileID: 6631770836247667153, guid: d70f069e2786f1c4e874c2389e484ca2, type: 3}
     getUp: {fileID: 737584038750481667, guid: bf467de4a5a19fb4db62e47cf278e73a, type: 3}
+    kind: 1
+    mealAhead: 0.65
   - loop: {fileID: -8514547714546179350, guid: 8100f98c067c088429a64f8663beb384, type: 3}
     getUp: {fileID: -4003253231572624451, guid: dd590d385c81a674cb2f57f6aed2a050, type: 3}
+    kind: 0
+    mealAhead: 0
+  - loop: {fileID: -4042824077083528707, guid: 5d491cbc6081cb74aa8dc300dff2dd1f, type: 3}
+    getUp: {fileID: -7800461266367870822, guid: 57133e91c21479441b9b1741bfe4a677, type: 3}
+    kind: 1
+    mealAhead: 1.05
+  - loop: {fileID: 2774341967929724855, guid: a977285cb187f0f4994a79003c440af2, type: 3}
+    getUp: {fileID: -7800461266367870822, guid: 57133e91c21479441b9b1741bfe4a677, type: 3}
+    kind: 2
+    mealAhead: 0
+  mealPose: {fileID: -7467713157752783831, guid: 8eb4e22b1ff786349a87c869e8f7b68b, type: 3}

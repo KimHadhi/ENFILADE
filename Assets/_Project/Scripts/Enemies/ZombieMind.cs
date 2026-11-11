@@ -140,6 +140,24 @@ public sealed class ZombieMind : MonoBehaviour
         + "swings or grabs (s): it stands, turns to the nearest player and plays its rouse. Horde zombies too. 0: it goes at once.")]
     private float riseRouse = 1.2f;
 
+    [Header("Busy (a calm pose: ZombieLooks.CalmPose kind)")]
+    [SerializeField, Range(0f, 1f), Tooltip("Eating a body on the ground: how far it sees, as a share of its calm sight.")]
+    private float eatRangeShare = .5f;
+    [SerializeField, Range(0f, 1f), Tooltip("Eating: how wide it sees, as a share of its view and the edge of its sight.")]
+    private float eatViewShare = .5f;
+    [SerializeField, Range(0f, 1f), Tooltip("Eating: how far it hears, as a share.")]
+    private float eatHearShare = .7f;
+    [SerializeField, Range(0f, 1f), Tooltip("Eating: how fast it notices what it does see, as a share.")]
+    private float eatNoticeShare = .7f;
+    [SerializeField, Range(0f, 1f), Tooltip("Dozing: how far it sees, as a share of its calm sight.")]
+    private float dozeRangeShare = .35f;
+    [SerializeField, Range(0f, 1f), Tooltip("Dozing: how wide it sees, as a share.")]
+    private float dozeViewShare = .4f;
+    [SerializeField, Range(0f, 1f), Tooltip("Dozing: how far it hears, as a share.")]
+    private float dozeHearShare = .45f;
+    [SerializeField, Range(0f, 1f), Tooltip("Dozing: how fast it notices what it does see, as a share.")]
+    private float dozeNoticeShare = .5f;
+
     [Header("Stealth kill")]
     [SerializeField, Range(10f, 180f), Tooltip("Within this angle either side of its back (degrees), a player may take a zombie that isn't awake down (F, or a left click with the fists).")]
     private float takedownAngle = 70f;
@@ -229,11 +247,22 @@ public sealed class ZombieMind : MonoBehaviour
     internal Vector3 EyePoint => Eye();
     /// <summary>Its body still lives (on this PC).</summary>
     internal bool Living => health != null && health.IsAlive;
-    /// <summary>How far it sees now (m): its calm sight while calm.</summary>
-    internal float ViewRange => Mood == ZombieMood.Calm || lured ? calmSightRange : sightRange;
-    /// <summary>Its full view and the edge of its sight, side to side (degrees).</summary>
-    internal float FrontView => fieldOfView;
-    internal float EdgeView => Mathf.Max(fieldOfView, sideView);
+    /// <summary>How far it sees now (m): its calm sight while calm, less again while eating or dozing.</summary>
+    internal float ViewRange => (Mood == ZombieMood.Calm || lured ? calmSightRange : sightRange) * BusyRange;
+    /// <summary>Its full view and the edge of its sight, side to side (degrees), narrower while eating or dozing.</summary>
+    internal float FrontView => fieldOfView * BusyView;
+    internal float EdgeView => Mathf.Max(fieldOfView, sideView) * BusyView;
+
+    /// <summary>
+    /// What its calm pose is busy with (ZombieBody sets it on every PC while it holds the pose; Rest otherwise): eating
+    /// or dozing, it sees less far and narrower, hears less and is slower to notice (eat*, doze* in ZombieSenses). The
+    /// 2026-11-11 memo, item 47.
+    /// </summary>
+    internal CalmPoseKind PoseKind { get; set; }
+    private float BusyRange => !HoldsPose ? 1f : PoseKind == CalmPoseKind.Eat ? eatRangeShare : PoseKind == CalmPoseKind.Doze ? dozeRangeShare : 1f;
+    private float BusyView => !HoldsPose ? 1f : PoseKind == CalmPoseKind.Eat ? eatViewShare : PoseKind == CalmPoseKind.Doze ? dozeViewShare : 1f;
+    private float BusyHear => !HoldsPose ? 1f : PoseKind == CalmPoseKind.Eat ? eatHearShare : PoseKind == CalmPoseKind.Doze ? dozeHearShare : 1f;
+    private float BusyNotice => !HoldsPose ? 1f : PoseKind == CalmPoseKind.Eat ? eatNoticeShare : PoseKind == CalmPoseKind.Doze ? dozeNoticeShare : 1f;
 
     /// <summary>
     /// Stage 4C-2: not awake (calm, searching or alert) and this spot behind its back, so a player standing there may take
@@ -649,15 +678,18 @@ public sealed class ZombieMind : MonoBehaviour
         best = 0f;
         touching = false;
         PlayerMovement found = null;
-        // Going to look at a stone it is curious, not alarmed: its calm eyes.
-        float sight = Mood == ZombieMood.Calm || lured ? calmSightRange : sightRange;
+        // Going to look at a stone it is curious, not alarmed: its calm eyes. Eating or dozing, it sees less (BusyRange).
+        float sight = ViewRange;
         Vector3 eye = Eye();
         foreach (var player in PlayerRoster.All)
         {
             if (!Alive(player)) continue;
             Vector3 toward = player.transform.position - transform.position;
             bool lit = Lit(player, toward);
-            float range = sight * (lit ? lightRange : 1f);
+            // Someone standing in the dark is made out from less far and more slowly (StealthLight, the memo's item 47:
+            // "어두운 곳일수록 덜 보이게"); a flashlight turned on it lights them whatever the dark.
+            float light = lit ? 1f : StealthLight.Level(player);
+            float range = sight * (lit ? lightRange : StealthLight.RangeShare(light));
             float distance = toward.magnitude;
             if (distance > range) continue;
             float angle = Vector3.Angle(transform.forward, Vector3.ProjectOnPlane(toward, Vector3.up));
@@ -669,11 +701,11 @@ public sealed class ZombieMind : MonoBehaviour
             float above = Mathf.Atan2(player.transform.position.y + 1f - eye.y, Mathf.Max(.01f, new Vector2(toward.x, toward.z).magnitude))
                 * Mathf.Rad2Deg;
             float rate = nearRate * Mathf.Lerp(1f, farShare, distance / Mathf.Max(.01f, range)) * shown * Posture(player) * view
-                * (above > lookUp ? lookUpShare : 1f) * (lit ? lightShare : 1f);
+                * (above > lookUp ? lookUpShare : 1f) * (lit ? lightShare : StealthLight.SeenShare(light)) * BusyNotice;
             if (rate <= best) continue;
             best = rate;
             found = player;
-            touching = distance <= touchRange && angle <= fieldOfView * .5f;
+            touching = distance <= touchRange && angle <= FrontView * .5f;
         }
         return found;
     }
@@ -684,7 +716,8 @@ public sealed class ZombieMind : MonoBehaviour
     // Stealth's peripheral glimpses, which gather suspicion much more slowly).
     private float Angular(float angle)
     {
-        float front = fieldOfView * .5f, edge = Mathf.Max(front + 1f, sideView * .5f);
+        // Eating or dozing, both narrow (BusyView).
+        float front = FrontView * .5f, edge = Mathf.Max(front + 1f, EdgeView * .5f);
         if (angle <= front) return Mathf.Lerp(1f, .85f, Mathf.Clamp01(angle / Mathf.Max(1f, front)));
         if (angle >= edge) return 0f;
         float t = (angle - front) / (edge - front);
@@ -817,7 +850,8 @@ public sealed class ZombieMind : MonoBehaviour
     // Whether this sound reaches its ears, how far off it is and how far it carries to it (m): half as far through a wall.
     private bool Reaches(in NoiseEvent noise, out float distance, out float reach)
     {
-        reach = noise.Radius * (noise.Lure ? lureHearShare : Mood == ZombieMood.Calm ? calmHearShare : hearShare);
+        // Eating or dozing it hears less, a stone or a knock too (BusyHear): asleep it may sleep through one.
+        reach = noise.Radius * (noise.Lure ? lureHearShare : Mood == ZombieMood.Calm ? calmHearShare : hearShare) * BusyHear;
         Vector3 ear = Eye();
         distance = Vector3.Distance(noise.Point, ear);
         if (distance > reach) return false;

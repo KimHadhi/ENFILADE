@@ -151,6 +151,8 @@ public sealed class StealthView : MonoBehaviour, ITableBound
     private void Awake()
     {
         movement = GetComponent<PlayerMovement>();
+        // The knock key (PlayerKnock) goes with the stealth view: alone there is no PlayerNetworkCombat to add it.
+        if (GetComponent<PlayerKnock>() == null) gameObject.AddComponent<PlayerKnock>();
         for (int i = 0; i < rings.Length; i++) rings[i] = new Ring();
         aimBlock = new MaterialPropertyBlock();
         aimDot = new MaterialPropertyBlock();
@@ -261,7 +263,9 @@ public sealed class StealthView : MonoBehaviour, ITableBound
         var mind = cone.mind;
         Vector3 feet = mind.transform.position;
         Vector2 forward = Flat(mind.transform.forward);
-        float range = mind.ViewRange;
+        // How far it would make this player out where they stand now: shorter in the dark (StealthLight), so the cone
+        // shows what hiding in the shadows buys.
+        float range = mind.ViewRange * StealthLight.RangeShare(StealthLight.Level(movement));
         var mood = mind.Mood;
         bool looking = mood == ZombieMood.Alert || mood == ZombieMood.Searching;
         float sure = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(mind.ShownSuspicion / .6f));

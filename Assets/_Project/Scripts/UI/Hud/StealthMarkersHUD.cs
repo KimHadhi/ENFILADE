@@ -40,6 +40,17 @@ public sealed class StealthMarkersHUD : MonoBehaviour, ITableBound
     private float suspectVolume = .5f;
     [SerializeField, Range(0f, 1f), Tooltip("Volume of the sting when one wakes on the player.")]
     private float spottedVolume = .85f;
+    [SerializeField, Min(0f), Tooltip("How far below the crosshair the light meter stands while crouched (px; StealthLight).")]
+    private float lightBelow = 92f;
+    [SerializeField, Min(8f), Tooltip("The light meter's diamond (px).")]
+    private float lightSize = 22f;
+
+    // The light meter (StealthLight): a small diamond under the crosshair, filled as lit as the player stands, with a word.
+    private RectTransform lightRoot;
+    private CanvasGroup lightGroup;
+    private StealthGlyph lightGlyph;
+    private TextMeshProUGUI lightWord;
+    private float lightAlpha, lightShown = 1f;
 
     private sealed class Mark
     {
@@ -94,6 +105,58 @@ public sealed class StealthMarkersHUD : MonoBehaviour, ITableBound
         // Destroyed zombies' entries: swept out whole.
         if (gone.Contains(null)) Sweep();
         if (Time.frameCount % 120 == 0) Prune();
+        LightMeter(dt);
+    }
+
+    // Crouched or lying, how lit they stand (StealthLight): the darker, the less the zombies see them. A diamond under the
+    // crosshair fills from dim to white as the light grows, with 어둠 / 그늘 / 밝음 beside it, as Thief's light gem tells
+    // its thief; the memo's item 47 ("어두운 곳일수록 덜 보이게").
+    private void LightMeter(float dt)
+    {
+        bool wanted = movement != null && movement.IsLocal && !movement.IsDead && StealthLight.Enabled
+            && (movement.IsCrouching || movement.IsProning);
+        lightAlpha = Mathf.MoveTowards(lightAlpha, wanted ? 1f : 0f, dt * 5f);
+        if (lightRoot == null)
+        {
+            if (lightAlpha <= 0f) return;
+            BuildLight();
+        }
+        lightGroup.alpha = lightAlpha;
+        if (lightAlpha <= 0f) return;
+        lightShown = Mathf.MoveTowards(lightShown, StealthLight.Level(movement), dt * 2.5f);
+        Color fill = Color.Lerp(KitStyle.With(KitStyle.Ice, .3f), Color.white, lightShown);
+        lightGlyph.Paint(KitStyle.With(KitStyle.Ink, .82f), KitStyle.Ice, fill, Mathf.Max(.08f, lightShown));
+        lightWord.text = Texts.Get(lightShown < .3f ? "hud.stealth.dark" : lightShown < .7f ? "hud.stealth.dim" : "hud.stealth.lit");
+        lightWord.color = KitStyle.With(KitStyle.Ice, Mathf.Lerp(.55f, 1f, lightShown));
+    }
+
+    private void BuildLight()
+    {
+        Build();
+        lightRoot = new GameObject("Light Meter", typeof(RectTransform), typeof(CanvasGroup)).GetComponent<RectTransform>();
+        lightRoot.SetParent(canvas, false);
+        lightRoot.anchorMin = lightRoot.anchorMax = lightRoot.pivot = new Vector2(.5f, .5f);
+        lightRoot.anchoredPosition = new Vector2(0f, -lightBelow);
+        lightRoot.sizeDelta = new Vector2(lightSize, lightSize);
+        lightGroup = lightRoot.GetComponent<CanvasGroup>();
+        lightGroup.interactable = lightGroup.blocksRaycasts = false;
+        lightGlyph = HudShapes.Make<StealthGlyph>("Diamond", lightRoot, Color.white);
+        lightGlyph.rectTransform.sizeDelta = new Vector2(lightSize * .78f, lightSize);
+        lightGlyph.Form(false, lightSize * .16f);
+        lightWord = new GameObject("Word", typeof(RectTransform), typeof(TextMeshProUGUI)).GetComponent<TextMeshProUGUI>();
+        lightWord.rectTransform.SetParent(lightRoot, false);
+        lightWord.rectTransform.anchorMin = lightWord.rectTransform.anchorMax = new Vector2(1f, .5f);
+        lightWord.rectTransform.pivot = new Vector2(0f, .5f);
+        lightWord.rectTransform.anchoredPosition = new Vector2(lightSize * .35f, 0f);
+        lightWord.rectTransform.sizeDelta = new Vector2(120f, lightSize);
+        // The prompts' font: it has the Korean letters.
+        lightWord.font = CombatUIAssets.ResolveFont(null);
+        lightWord.fontSize = lightSize * .62f;
+        lightWord.fontStyle = FontStyles.Bold;
+        lightWord.alignment = TextAlignmentOptions.MidlineLeft;
+        lightWord.raycastTarget = false;
+        lightWord.textWrappingMode = TextWrappingModes.NoWrap;
+        lightWord.overflowMode = TextOverflowModes.Overflow;
     }
 
     private void Track(ZombieMind mind, Camera view, float dt, float now)
