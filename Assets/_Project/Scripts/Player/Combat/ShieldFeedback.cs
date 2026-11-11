@@ -380,6 +380,9 @@ public sealed class ShieldFeedback : MonoBehaviour
 
         public void Clear()
         {
+            // Leaving play, the overlay can go before this is switched off: nothing is left to clear (2026-11-12, the
+            // user's console: "The object of type 'RectTransform' has been destroyed" from OnDisable).
+            if (root == null) return;
             for (int i = 0; i < chips.Length; i++) { chips[i].Age = chips[i].Life; chips[i].Rect.gameObject.SetActive(false); }
             for (int i = 0; i < bands.Length; i++) { bands[i].Age = bands[i].Life; bands[i].Rect.gameObject.SetActive(false); }
             lossAge = slashAge = darkAge = 99f;

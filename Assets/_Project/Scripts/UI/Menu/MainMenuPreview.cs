@@ -134,6 +134,8 @@ public sealed class MainMenuPreview : MonoBehaviour
             cameraMoving = false;
             refocus = focus != null;
         }
+        // Hair, tails and skirts hang free here as in the game, on the body as it stands, turned as it was.
+        PreviewCloth.Wear(model, shownSkin?.Id, dressing, outfit + (trialRemoves ? "|-" + trialSlot : ""));
         var animator = model.GetComponentInChildren<Animator>();
         var idle = profile.Find(IdleClip);
         if (animator == null || idle == null) return;

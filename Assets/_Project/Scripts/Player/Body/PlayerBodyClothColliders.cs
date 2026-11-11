@@ -5,7 +5,9 @@ using UnityEngine;
 
 /// <summary>
 /// What cloth can't pass through. Magica Cloth doesn't see Unity's colliders, so these are its own, measured from the
-/// avatar as the body is made, so any humanoid gets them in its own size. They stop cloth and nothing else: combat never
+/// avatar as the body is made, so any humanoid gets them in its own size: from its bones, or for what BoothImport made,
+/// from its meshes as well, the skin and clothes as they really stand (DressedBody), each shape then fitted to the cloth
+/// part that rests on it (Fit). They stop cloth and nothing else: combat never
 /// reads them. The PC that simulates the cloth makes them. A copy makes the legs only when a pressed skirt has no measured
 /// skin to stop at (BodySurface), to know where they are; nothing collides with them there. Numbers: Tables/ClothBody.
 /// The arms aren't colliders. A collider pushes cloth out of itself every way, so a hand the clip puts inside a skirt
@@ -70,8 +72,16 @@ public sealed class PlayerBodyClothColliders : MonoBehaviour
     [SerializeField, Range(0f, 2f), Tooltip("Chest radius, as a share of the shoulder width.")]
     private float chest = .35f;
 
-    // A shape fitted to a part that hangs inside it keeps at least this share of its girth, or the part loses it.
-    private const float LeastGirth = .25f;
+    [Header("The body as measured, for what BoothImport made (DressedBody)")]
+    [SerializeField, Range(.5f, 1f), Tooltip("A part's outside in each direction: where this share of the points of its skin and clothes lie nearer.")]
+    private float bodySurface = .9f;
+    [SerializeField, Range(0f, 1f), Tooltip("A part's size among its outside's distances all round: 0.5 takes the middle one. Smaller sits inside more of the body.")]
+    private float bodySize = .5f;
+    [SerializeField, Range(0f, 1f), Tooltip("A shape made smaller for a cloth part lying inside it keeps at least this share of its girth, or the part meets the shape made from the bones instead.")]
+    private float fitGirth = .25f;
+
+    // The sets made from the bones are kept by name, the ones measured from the meshes by name and this mark.
+    private const string Measured = "+";
 
     private readonly Dictionary<string, List<ColliderComponent>> made =
         new Dictionary<string, List<ColliderComponent>>(StringComparer.OrdinalIgnoreCase);
@@ -79,6 +89,8 @@ public sealed class PlayerBodyClothColliders : MonoBehaviour
     // where the copy would be too thin to keep.
     private readonly Dictionary<(ColliderComponent, int), ColliderComponent> fitted =
         new Dictionary<(ColliderComponent, int), ColliderComponent>();
+    // A measured shape's twin made from the bones, which a part that can't take the measured one meets instead.
+    private readonly Dictionary<ColliderComponent, ColliderComponent> fromBones = new Dictionary<ColliderComponent, ColliderComponent>();
     private ArmBone[] arms;
     private CharacterController capsule;
     private PlayerMovement player;
@@ -95,18 +107,34 @@ public sealed class PlayerBodyClothColliders : MonoBehaviour
 
     /// <summary>
     /// The colliders a part of the cloth touches on this body ("legs|arms"), each set made the first time it is asked
-    /// for, so two parts that touch the legs share one set. The arms make none: they press instead.
+    /// for, so two parts that touch the legs share one set. The arms make none: they press instead. With
+    /// <paramref name="measured"/> the shapes are the body's real ones, measured from its meshes, wherever it could be
+    /// measured.
     /// </summary>
-    internal List<ColliderComponent> For(Animator animator, string shapes)
+    internal List<ColliderComponent> For(Animator animator, string shapes, DressedBody measured = null)
     {
         Use(animator);
         var found = new List<ColliderComponent>();
         foreach (string shape in shapes.Split(ShapeSeparator))
         {
             string name = shape.Trim();
-            if (!string.Equals(name, Arms, StringComparison.OrdinalIgnoreCase)) found.AddRange(Set(animator, name));
+            if (!string.Equals(name, Arms, StringComparison.OrdinalIgnoreCase)) found.AddRange(Set(animator, name, measured));
         }
         return found;
+    }
+
+    /// <summary>The body's real shapes, measured from its meshes (DressedBody) with this body's numbers.</summary>
+    internal DressedBody Measure(Animator animator, string look, Func<SkinSample> read, HashSet<Transform> hanging) =>
+        DressedBody.Measure(animator, look, read, hanging, bodySurface, bodySize);
+
+    /// <summary>
+    /// Gives this component ClothBody.csv's numbers where it has no player to bind them (the menu's preview), its own
+    /// columns only: the rest belong to PlayerBodyCloth.
+    /// </summary>
+    internal void ReadTable()
+    {
+        if (!GameTables.TryGetRow(PlayerBodyCloth.TableName, PlayerBodyCloth.TableRow, out var row)) return;
+        foreach (var cell in row) TableFieldWriter.TryWrite(this, cell.Key, cell.Value, out _);
     }
 
     /// <summary>Both arms' bones, upper arm to fingers, as they press a skirt.</summary>
@@ -138,21 +166,37 @@ public sealed class PlayerBodyClothColliders : MonoBehaviour
     /// pushes cloth out of any it is in, so a piece its maker drew close against the body (a choker round the neck, a
     /// necklace on the chest, ears rising from the head) would be shoved off what the maker drew before anything moved.
     /// A shape the cloth comes nearer than clear to (the cloth's thinnest: as near as it can be without a push) is
-    /// swapped for a copy that much smaller, which every part needing the same shares; one that would keep less than a
-    /// quarter of its girth goes. The cloth still meets the body, just where its own shape says the body is.
+    /// swapped for a copy that much smaller, which every part needing the same shares; one that would keep less than
+    /// fitGirth of its girth goes. A measured shape made smaller no longer covers all the body it stood for (a tail
+    /// grows out of the hips' ball, Ichigo's took it from 99 mm to 53), so its twin made from the bones, fitted the same
+    /// way, joins it and covers what it can of the rest. The cloth still meets the body, just where its own shape says
+    /// the body is. <paramref name="roots"/>: the bones it hangs from count (a ring, colliding line by line).
     /// </summary>
-    internal void Fit(List<ColliderComponent> shapes, ClothBones bones, float clear)
+    internal void Fit(List<ColliderComponent> shapes, ClothBones bones, float clear, bool roots)
     {
         for (int i = shapes.Count - 1; i >= 0; i--)
         {
             var shape = shapes[i];
             if (shape == null || shape is MagicaPlaneCollider) continue;
-            float shrink = clear - bones.Nearest(point => Gap(point, shape));
-            if (shrink <= 0f) continue;
-            var smaller = Smaller(shape, shrink);
-            if (smaller != null) shapes[i] = smaller;
-            else shapes.RemoveAt(i);
+            var kept = Fitted(shape, bones, clear, roots);
+            var twin = kept != shape && fromBones.TryGetValue(shape, out var boneMade) ? Fitted(boneMade, bones, clear, roots) : null;
+            if (kept == null) (kept, twin) = (twin, null);
+            if (kept == null)
+            {
+                shapes.RemoveAt(i);
+                continue;
+            }
+            shapes[i] = kept;
+            // Added past this one, so the loop, walking down, never meets it.
+            if (twin != null && twin != kept) shapes.Add(twin);
         }
+    }
+
+    // The shape itself, a copy smaller by what the cloth needs, or null where that leaves too little.
+    private ColliderComponent Fitted(ColliderComponent shape, ClothBones bones, float clear, bool roots)
+    {
+        float shrink = clear - bones.Nearest(point => Gap(point, shape), roots);
+        return shrink <= 0f ? shape : Smaller(shape, shrink);
     }
 
     // A copy of a shape on the same bone, its rounding thinner by at least this much (whole millimetres, so near needs
@@ -167,7 +211,7 @@ public sealed class PlayerBodyClothColliders : MonoBehaviour
         if (shape is MagicaCapsuleCollider capsule)
         {
             float start = size.x - by, end = size.y - by;
-            if (start < size.x * LeastGirth || end < size.y * LeastGirth) return fitted[(shape, mm)] = null;
+            if (start < size.x * fitGirth || end < size.y * fitGirth) return fitted[(shape, mm)] = null;
             var thinner = Shape<MagicaCapsuleCollider>(at.parent, at.position, at.rotation);
             thinner.direction = capsule.direction;
             thinner.alignedOnCenter = capsule.alignedOnCenter;
@@ -178,7 +222,7 @@ public sealed class PlayerBodyClothColliders : MonoBehaviour
         else
         {
             float radius = size.x - by;
-            if (radius < size.x * LeastGirth) return fitted[(shape, mm)] = null;
+            if (radius < size.x * fitGirth) return fitted[(shape, mm)] = null;
             var thinner = Shape<MagicaSphereCollider>(at.parent, at.position, at.rotation);
             thinner.SetSize(radius / scale);
             copy = thinner;
@@ -207,8 +251,49 @@ public sealed class PlayerBodyClothColliders : MonoBehaviour
         if (animator == madeFor) return;
         made.Clear();
         fitted.Clear();
+        fromBones.Clear();
         arms = null;
         madeFor = animator;
+    }
+
+    private List<ColliderComponent> Set(Animator animator, string shape, DressedBody measured)
+    {
+        if (measured == null) return Set(animator, shape);
+        if (made.TryGetValue(shape + Measured, out var set)) return set;
+        // Each part as measured where the meshes gave it, beside its twin from the bones in that set, which may join it
+        // (Fit); the rest is that set's own shape.
+        var bones = Set(animator, shape);
+        set = new List<ColliderComponent>(bones);
+        var parts = string.Equals(shape, Legs, StringComparison.OrdinalIgnoreCase) ? LegParts
+            : string.Equals(shape, Head, StringComparison.OrdinalIgnoreCase) ? HeadParts : Array.Empty<DressedBody.Part>();
+        for (int i = 0; i < parts.Length && i < set.Count; i++)
+        {
+            var real = MakeMeasured(measured, parts[i]);
+            if (real == null) continue;
+            fromBones[real] = set[i];
+            set[i] = real;
+        }
+        return made[shape + Measured] = set;
+    }
+
+    // The parts of each set in the order the bones make them (MakeLegs, MakeHead): the floor comes after the legs.
+    private static readonly DressedBody.Part[] LegParts =
+    {
+        DressedBody.Part.Pelvis, DressedBody.Part.LeftThigh, DressedBody.Part.RightThigh, DressedBody.Part.LeftShin, DressedBody.Part.RightShin
+    };
+    private static readonly DressedBody.Part[] HeadParts = { DressedBody.Part.Head, DressedBody.Part.Chest };
+
+    // One part of the body as its meshes measured it, or null where they couldn't.
+    private static ColliderComponent MakeMeasured(DressedBody measured, DressedBody.Part part)
+    {
+        var one = new List<ColliderComponent>(1);
+        if (part is DressedBody.Part.Head or DressedBody.Part.Pelvis)
+        {
+            if (measured.Ball(part, out var bone, out var centre, out float radius)) Ball(bone, centre, radius, one);
+        }
+        else if (measured.Rod(part, out var bone, out var a, out var b, out float startRadius, out float endRadius))
+            Capsule(bone, a, b, startRadius, endRadius, one);
+        return one.Count > 0 ? one[0] : null;
     }
 
     private List<ColliderComponent> Set(Animator animator, string shape)
@@ -234,7 +319,8 @@ public sealed class PlayerBodyClothColliders : MonoBehaviour
         Limb(rightLeg, rightKnee, thighStart, thighEnd, into);
         Limb(leftKnee, animator.GetBoneTransform(HumanBodyBones.LeftFoot), shinStart, shinEnd, into);
         Limb(rightKnee, animator.GetBoneTransform(HumanBodyBones.RightFoot), shinStart, shinEnd, into);
-        into.Add(MakeFloor());
+        var ground = MakeFloor();
+        if (ground != null) into.Add(ground);
     }
 
     private void Arm(Animator animator, HumanBodyBones upper, HumanBodyBones lower, HumanBodyBones hand, HumanBodyBones knuckle,
@@ -270,22 +356,24 @@ public sealed class PlayerBodyClothColliders : MonoBehaviour
         Capsule(upperBody, neck, shoulders * chest, shoulders * chest, into);
     }
 
-    // The floor is only a plane under the capsule, which keeps a slide's cloth out of the ground.
+    // The floor is only a plane under the capsule, which keeps a slide's cloth out of the ground. A body with no player
+    // under it (the menu's preview) stands still and gets none.
     private MagicaPlaneCollider MakeFloor()
     {
         if (floor == null)
         {
-            floor = new GameObject("Cloth floor", typeof(MagicaPlaneCollider)).GetComponent<MagicaPlaneCollider>();
-            floor.transform.SetParent(transform, false);
             capsule = GetComponent<CharacterController>();
             player = GetComponent<PlayerMovement>();
+            if (capsule == null || player == null) return null;
+            floor = new GameObject("Cloth floor", typeof(MagicaPlaneCollider)).GetComponent<MagicaPlaneCollider>();
+            floor.transform.SetParent(transform, false);
         }
         return floor;
     }
 
     private void LateUpdate()
     {
-        if (floor == null) return;
+        if (floor == null || player == null) return;
         if (player.IsDead && FloorUnderBody()) return;
         floor.enabled = LowOnTheGround;
         floor.transform.SetPositionAndRotation(new Vector3(transform.position.x, capsule.bounds.min.y, transform.position.z), transform.rotation);
@@ -318,14 +406,18 @@ public sealed class PlayerBodyClothColliders : MonoBehaviour
         Capsule(from, to, length * start, length * end, into);
     }
 
-    // Aligned to its start, Magica's capsule runs down the object's -Y, and its length counts both ends' rounding.
-    private static void Capsule(Transform from, Transform to, float start, float end, List<ColliderComponent> into)
+    private static void Capsule(Transform from, Transform to, float start, float end, List<ColliderComponent> into) =>
+        Capsule(from, from.position, to.position, start, end, into);
+
+    // On the bone, from one point to the other. Aligned to its start, Magica's capsule runs down the object's -Y, and
+    // its length counts both ends' rounding.
+    private static void Capsule(Transform bone, Vector3 a, Vector3 b, float start, float end, List<ColliderComponent> into)
     {
-        var shape = Shape<MagicaCapsuleCollider>(from, from.position, Quaternion.FromToRotation(Vector3.down, to.position - from.position));
+        var shape = Shape<MagicaCapsuleCollider>(bone, a, Quaternion.FromToRotation(Vector3.down, b - a));
         float scale = Mathf.Abs(shape.GetScale());
         shape.direction = MagicaCapsuleCollider.Direction.Y;
         shape.alignedOnCenter = false;
-        shape.SetSize(start / scale, end / scale, (Vector3.Distance(from.position, to.position) + start + end) / scale);
+        shape.SetSize(start / scale, end / scale, (Vector3.Distance(a, b) + start + end) / scale);
         into.Add(shape);
     }
 

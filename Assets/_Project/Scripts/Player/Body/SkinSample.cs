@@ -24,6 +24,8 @@ internal sealed class SkinSample
 
     private static readonly HashSet<string> unreadable = new HashSet<string>();
     private readonly List<Transform[]> bones = new List<Transform[]>();
+    // Per mesh read: whether it was shown (a piece taken off or switched off is still read, for what measures skin).
+    private readonly List<bool> shown = new List<bool>();
 
     internal readonly List<Point> Points = new List<Point>();
 
@@ -52,14 +54,22 @@ internal sealed class SkinSample
             {
                 int index = sample.bones.Count;
                 sample.bones.Add(renderer.bones);
+                sample.shown.Add(renderer.enabled && renderer.gameObject.activeInHierarchy);
+                // One matrix for the mesh rather than a call into the engine per vertex: a body and its clothes run to a
+                // hundred thousand of them.
+                Matrix4x4 toWorld = renderer.transform.localToWorldMatrix;
+                sample.Points.Capacity = Mathf.Max(sample.Points.Capacity, sample.Points.Count + vertices.Length);
                 for (int i = 0; i < vertices.Length; i++)
-                    sample.Points.Add(new Point(renderer.transform.TransformPoint(vertices[i]), weights[i], index));
+                    sample.Points.Add(new Point(toWorld.MultiplyPoint3x4(vertices[i]), weights[i], index));
             }
             baked.Clear();
         }
         Object.Destroy(baked);
         return sample;
     }
+
+    /// <summary>Whether the mesh a vertex belongs to was shown as it was read: not taken off, hidden by an outfit or off.</summary>
+    internal bool Shown(in Point point) => shown[point.Renderer];
 
     /// <summary>The bone that carries most of a vertex.</summary>
     internal Transform Main(in Point point)
@@ -72,6 +82,33 @@ internal sealed class SkinSample
         if (w.weight3 > weight) most = w.boneIndex3;
         return Bone(point.Renderer, most);
     }
+
+    /// <summary>
+    /// For each mesh read, which of its bones are in the set: what CarriedBy asks of every vertex, worked out once per
+    /// mesh rather than four lookups per vertex.
+    /// </summary>
+    internal bool[][] Marks(HashSet<Transform> set)
+    {
+        var marks = new bool[bones.Count][];
+        for (int renderer = 0; renderer < bones.Count; renderer++)
+        {
+            var list = bones[renderer];
+            marks[renderer] = new bool[list.Length];
+            for (int i = 0; i < list.Length; i++) marks[renderer][i] = list[i] != null && set.Contains(list[i]);
+        }
+        return marks;
+    }
+
+    /// <summary>Whether any bone marked (Marks) carries part of a vertex.</summary>
+    internal static bool CarriedBy(in Point point, bool[][] marks)
+    {
+        var mark = marks[point.Renderer];
+        BoneWeight w = point.Weight;
+        return Marked(mark, w.boneIndex0, w.weight0) || Marked(mark, w.boneIndex1, w.weight1)
+            || Marked(mark, w.boneIndex2, w.weight2) || Marked(mark, w.boneIndex3, w.weight3);
+    }
+
+    private static bool Marked(bool[] mark, int index, float weight) => weight > 0f && index >= 0 && index < mark.Length && mark[index];
 
     /// <summary>Whether any of these bones carries part of a vertex.</summary>
     internal bool CarriedBy(in Point point, HashSet<Transform> set)

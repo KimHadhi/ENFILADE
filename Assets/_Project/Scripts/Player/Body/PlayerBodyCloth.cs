@@ -106,39 +106,26 @@ public sealed class PlayerBodyCloth : MonoBehaviour
         arms = null;
         contacts = null;
         if (animator == null || body.Skin == null) return;
-        var bones = new Dictionary<string, Transform>();
-        foreach (var bone in animator.GetComponentsInChildren<Transform>(true)) bones.TryAdd(bone.name, bone);
         // This skin's parts first, so that measuring the body can leave everything it wears out.
-        var found = new List<(string Id, ClothPart Part, List<Transform> Roots)>();
         var cloth = new HashSet<Transform>();
-        foreach (string id in GameTables.RowIds(ClothPart.TableName))
-        {
-            var part = Part(id);
-            // A row names a skin or an outfit item or model (Outfits.csv): an outfit's skirt or coat tails swing once it is
-            // on, and only while a mesh it moves shows.
-            if (!string.Equals(part.skin, body.Skin.Id, StringComparison.OrdinalIgnoreCase) && !body.Wears(part.skin)) continue;
-            if (!Shows(part.parts, animator)) continue;
-            var roots = part.FindRoots(bones, animator.name);
-            if (roots.Count == 0) continue;
-            part.AddTips(roots, -animator.transform.up);
-            found.Add((id, part, roots));
-            foreach (var root in roots) cloth.UnionWith(root.GetComponentsInChildren<Transform>(true));
-        }
+        var hanging = new HashSet<Transform>();
+        var found = Rows(animator, body.Skin.Id, body.Wears, Part, cloth, hanging);
         var colliders = GetComponent<PlayerBodyClothColliders>();
         bool simulates = !player.IsNetworkDriven;
         SkinSample skin = null;
         BodySurface surface = null;
+        DressedBody measured = null;
         HashSet<Transform> armBones = null;
         foreach (var (id, part, roots) in found)
         {
             // Read before the simulation first moves them.
             var item = new Worn { Part = part, Bones = new ClothBones(roots, part.rootTurn) };
             string shapes = Touches(part, roots, animator, ref armBones);
-            List<ColliderComponent> touching = simulates ? colliders.For(animator, shapes) : null;
+            List<ColliderComponent> touching = null;
             if (simulates)
             {
-                // What BoothImport read from VRChat meets the body as its maker drew it; a row written by hand is as written.
-                if (part.vrc) colliders.Fit(touching, item.Bones, part.Thinnest(item.Bones));
+                if (part.vrc) measured ??= colliders.Measure(animator, null, () => skin ??= SkinSample.Read(animator), hanging);
+                touching = Touching(colliders, animator, part, shapes, item.Bones, measured);
                 item.Bones.MeasureRoom(point => colliders.Room(point, touching));
                 item.Cloth = part.Wear(animator.transform, id, roots, touching, item.Bones);
             }
@@ -174,6 +161,51 @@ public sealed class PlayerBodyCloth : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// The rows of Cloth.csv a body wears, their roots found on it and tips added, in the table's order: this skin's own
+    /// first, then an outfit's (a row names a skin, or an outfit item or model, Outfits.csv: an outfit's skirt or coat
+    /// tails swing once it is on), each only while a mesh it moves shows. <paramref name="cloth"/> gets every bone they
+    /// move, <paramref name="hanging"/> those that hang free (not a spring's soft lump), for measuring the body without them.
+    /// </summary>
+    internal static List<(string Id, ClothPart Part, List<Transform> Roots)> Rows(Animator animator, string skin,
+        Func<string, bool> wears, Func<string, ClothPart> part, HashSet<Transform> cloth, HashSet<Transform> hanging)
+    {
+        var bones = new Dictionary<string, Transform>();
+        foreach (var bone in animator.GetComponentsInChildren<Transform>(true)) bones.TryAdd(bone.name, bone);
+        var found = new List<(string Id, ClothPart Part, List<Transform> Roots)>();
+        foreach (string id in GameTables.RowIds(ClothPart.TableName))
+        {
+            var row = part(id);
+            if (!string.Equals(row.skin, skin, StringComparison.OrdinalIgnoreCase) && !wears(row.skin)) continue;
+            if (!Shows(row.parts, animator)) continue;
+            var roots = row.FindRoots(bones, animator.name);
+            if (roots.Count == 0) continue;
+            row.AddTips(roots, -animator.transform.up);
+            found.Add((id, row, roots));
+            foreach (var root in roots)
+            {
+                var under = root.GetComponentsInChildren<Transform>(true);
+                cloth.UnionWith(under);
+                if (!row.spring) hanging.UnionWith(under);
+            }
+        }
+        return found;
+    }
+
+    /// <summary>
+    /// The shapes a row's cloth rests against. A row written by hand meets the shapes made from the bones it was tuned
+    /// with; one BoothImport made meets the body as measured from its meshes (DressedBody), each shape fitted to the
+    /// cloth as its maker drew it (PlayerBodyClothColliders.Fit).
+    /// </summary>
+    internal static List<ColliderComponent> Touching(PlayerBodyClothColliders colliders, Animator animator, ClothPart part,
+        string shapes, ClothBones bones, DressedBody measured)
+    {
+        if (!part.vrc) return colliders.For(animator, shapes);
+        var touching = colliders.For(animator, shapes, measured);
+        colliders.Fit(touching, bones, part.Thinnest(bones), part.ring);
+        return touching;
+    }
+
     // The body a row's cloth rests against: its shapes, or, for a row BoothImport made from a PhysBone with no colliders,
     // all of it. VRChat authors leave colliders off many chains (Mayo's side hair, Ichigo's tail and cape, ribbons, an
     // outfit's jacket tails and belts), and in VRChat those pass through the body; here they went through it too (the
@@ -182,7 +214,7 @@ public sealed class PlayerBodyCloth : MonoBehaviour
     // fitted to it (PlayerBodyClothColliders.Fit), so it keeps the shape its maker drew. A chain hung from an arm gets
     // none, as the arm would drag it through the body wherever it goes, and a spring (a chest's or a bottom's own jiggle)
     // stays inside the body it is part of. A row written by hand with no shapes touches nothing, as it says.
-    private static string Touches(ClothPart part, List<Transform> roots, Animator animator, ref HashSet<Transform> armBones)
+    internal static string Touches(ClothPart part, List<Transform> roots, Animator animator, ref HashSet<Transform> armBones)
     {
         if (!part.vrc || !string.IsNullOrWhiteSpace(part.shapes) || part.spring || roots.Count == 0) return part.shapes ?? "";
         armBones ??= ArmTransforms(animator);

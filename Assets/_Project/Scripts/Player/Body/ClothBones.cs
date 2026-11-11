@@ -75,14 +75,16 @@ internal sealed class ClothBones
     }
 
     /// <summary>
-    /// How near the part comes to something as it is made, given how far outside it a point is (below zero inside). The
-    /// bones it hangs from count too: Magica collides the line from a root to its first free bone, and a root stuck
-    /// inside would lever the chain off its shape.
+    /// How near the part comes to something as it is made, given how far outside it a point is (below zero inside). With
+    /// <paramref name="roots"/> the bones it hangs from count too: colliding line by line (a ring), Magica meets the line
+    /// from a root to its first free bone, and a root stuck inside would lever the chain off its shape. Point by point,
+    /// only the free bones meet anything.
     /// </summary>
-    internal float Nearest(System.Func<Vector3, float> gap)
+    internal float Nearest(System.Func<Vector3, float> gap, bool roots)
     {
         float least = float.PositiveInfinity;
-        for (int i = 0; i < bones.Length; i++) least = Mathf.Min(least, gap(bones[i].Transform.position));
+        for (int i = 0; i < bones.Length; i++)
+            if (roots || bones[i].Moves) least = Mathf.Min(least, gap(bones[i].Transform.position));
         return least;
     }
 

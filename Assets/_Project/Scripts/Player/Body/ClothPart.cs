@@ -101,8 +101,11 @@ public sealed class ClothPart
         // The other PCs see this cloth even when this PC's camera doesn't.
         data.cullingSettings.cameraCullingMode = CullingSettings.CameraCullingMode.Off;
         data.inertiaConstraint.teleportMode = InertiaConstraint.TeleportMode.Reset;
-        // A ring's few bones leave gaps a thigh would slip through point by point.
-        data.colliderCollisionConstraint.mode = ColliderCollisionConstraint.Mode.Edge;
+        // A ring's few bones leave gaps a thigh would slip through point by point. A chain BoothImport made collides point
+        // by point, as Magica's own presets do: only its free bones meet the body, so a root on the scalp or at a tail's
+        // base never levers the chain off the shape its maker drew (PlayerBodyClothColliders.Fit). Rows written by hand
+        // keep the lines they were tuned with.
+        data.colliderCollisionConstraint.mode = ring || !vrc ? ColliderCollisionConstraint.Mode.Edge : ColliderCollisionConstraint.Mode.Point;
         data.colliderCollisionConstraint.colliderList.AddRange(colliders);
         // The backstop keeps each bone out of the way the part's own middle lies: "in" has to mean toward the body.
         if (backstop >= 0f) data.normalAlignmentSetting.alignmentMode = NormalAlignmentSettings.AlignmentMode.BoundingBoxCenter;

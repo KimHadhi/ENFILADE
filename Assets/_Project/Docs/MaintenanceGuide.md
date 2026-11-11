@@ -159,6 +159,7 @@ C 메뉴에서 바꾼 조준경·총구·하단·손잡이, L 플래시, B 사�
 - 에셋 이동은 Unity Project 창에서 한다. 파일 도구로 옮긴다면 원래 `.meta`를 함께 옮겨 GUID를 보존한다. 씬·프리팹 연결은 GUID에 의존한다.
 - `Resources/Combat/Feedback.asset`과 `GunFeel.asset`의 로드 키는 각각 `Combat/Feedback`, `Combat/GunFeel`이다. 경로를 바꿀 때는 코드의 키도 함께 바꾼다.
 - 외부 폰트·모델은 씬·재질·프리팹뿐 아니라 문자열 로드에서도 사용한다. 참조와 라이선스를 확인한 뒤 정리한다.
+- TMP 설정(`ThirdParty/TextMeshPro/Resources/TMP Settings.asset`)의 전역 대체 폰트는 Pretendard SemiBold다. 영어 폰트(TMP 기본 LiberationSans, KINEMATION의 Roboto)로 만든 글자에 한글이 들어와도 네모(□)와 경고 없이 이 폰트로 그린다. 2026-11-12에 탄약 HUD 상태 줄의 총 칭호("갓 뜯은 · 처치 · 헤드샷")가 LiberationSans로 그려지며 프레임마다 글자 수만큼 경고를 냈다.
 - `Tools` 메뉴에는 `Data Tables`(표 폴더 열기·다시 읽기), `Models`(임포트 규칙 재적용·물리 프랍 만들기), `TextMeshPro`(Dynamic 폰트 정리·저장), `HUD`(현재 씬에 HUD 넣기·갱신, HUD 프리팹 열기)만 둔다. 전투 HUD는 [GameHUD](../Prefabs/UI/HUD/GameHUD.prefab) 프리팹 하나를 모든 플레이 씬이 같이 쓴다. 새 씬에 HUD를 넣거나 씬의 HUD를 프리팹과 똑같이 맞출 때는 `Tools → HUD → 현재 씬에 HUD 넣기·갱신`을 누른다. 이때 미션 바 모양도 Hud.csv 값으로 프리팹에 반영되어, Play 전 편집 화면에서도 Play 때와 같은 모양이 보인다. 킬로그·점수 팝업·동료 체력·Tab 화면·설정 창은 어느 씬에서나 코드가 스스로 만든다. HUD는 프리팹에서 직접 편집하며, 숨겨진 새 목표 알림은 `MissionHUD` Inspector의 편집 미리보기 버튼으로 펼친다. 목표 목록은 Tab 화면의 [ObjectiveLogPanel](../Scripts/UI/ObjectiveLogPanel.cs)이 코드로 만든다.
 - 공유할 소스는 `Assets`와 `.meta`, `Packages`, `ProjectSettings`, `Tools`, 문서다. `Library`, `Temp`, `.vs`, 생성 솔루션·업그레이드 로그는 재생성 가능한 로컬 파일이다.
 
