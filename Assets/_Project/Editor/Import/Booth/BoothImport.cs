@@ -34,11 +34,13 @@ internal sealed class BoothImport : AssetPostprocessor
     private static bool queued, running;
 
     // Colour words of BOOTH colour prefabs, for the colour cards.
+    // White Board (Ene Collection, 2026-11-12) brought Basis, Burgundy, Gold, Lime and Sax (Japanese サックス, saxe blue).
     private static readonly (string English, string Korean)[] ColourWords =
     {
-        ("Basic", "기본"), ("Beige", "베이지"), ("Black", "검정"), ("White", "흰색"), ("Yellow", "노랑"), ("Brown", "갈색"),
-        ("Gray", "회색"), ("Grey", "회색"), ("Navy", "남색"), ("Pink", "분홍"), ("Purple", "보라"), ("Blue", "파랑"),
-        ("Sky", "하늘"), ("Red", "빨강"), ("Green", "초록"), ("Mint", "민트"), ("Orange", "주황"), ("Transparent", "비침"),
+        ("Basic", "기본"), ("Basis", "기본"), ("Beige", "베이지"), ("Black", "검정"), ("White", "흰색"), ("Yellow", "노랑"),
+        ("Brown", "갈색"), ("Gray", "회색"), ("Grey", "회색"), ("Navy", "남색"), ("Pink", "분홍"), ("Purple", "보라"),
+        ("Blue", "파랑"), ("Sky", "하늘"), ("Red", "빨강"), ("Green", "초록"), ("Mint", "민트"), ("Orange", "주황"),
+        ("Transparent", "비침"), ("Burgundy", "버건디"), ("Gold", "금색"), ("Lime", "라임"), ("Sax", "색스"),
     };
 
     private sealed class Source
@@ -332,10 +334,11 @@ internal sealed class BoothImport : AssetPostprocessor
         return sets.Count > 1 ? sets.ToArray() : Array.Empty<SkinVariant>();
     }
 
-    // "Black&White2" → "검정·흰색 2", "Pink 1_Transparent" → "분홍 1 비침", "_Basic" → "기본".
+    // "Black&White2" → "검정·흰색 2", "Pink 1_Transparent" → "분홍 1 비침", "_Basic" → "기본", "Black_and_Gold" → "검정·금색".
     private static string Korean(string name)
     {
         string text = name.Replace('&', '·').Replace('_', ' ').Trim();
+        text = Regex.Replace(text, @"\s+and\s+", "·", RegexOptions.IgnoreCase);
         foreach (var (english, korean) in ColourWords)
             text = Regex.Replace(text, english, korean, RegexOptions.IgnoreCase);
         text = Regex.Replace(text, @"(\D)(\d)", "$1 $2");

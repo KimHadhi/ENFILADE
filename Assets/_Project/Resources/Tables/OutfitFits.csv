@@ -1,2 +1,7 @@
 ﻿id,shapes,drop
 #설명,"옷 Id@캐릭터 Id(예: weld-mask@manuka) 줄마다 그 캐릭터에 입힐 때만 쓰는 값. 줄이 없으면 그대로 입힌다","입었을 때 몸에 거는 셰이프키. 이름=값(0~100)을 |로 여럿. 옷 밑 피부를 줄이는 키(Shrink_Chest=100)나 힐 키(Foot_Heel=100). 캐릭터와 입은 옷의 메시 모두에 그 이름의 키가 있으면 건다",옷 파일 안에서 쓰지 않을 렌더러 이름. |로 여럿. 캐릭터 몸과 이름도 정점 수도 같은 메시(옷 파일에 들어 있는 참고용 몸)는 적지 않아도 저절로 뺀다
+wb-legs@mayo,Shrink_Knee_R|Shrink_Knee_L|Shrink_Lower_leg_1_R|Shrink_Lower_leg_1_L|Shrink_Lower_leg_2_R|Shrink_Lower_leg_2_L|Shrink_Ankle_R|Shrink_Ankle_L|Shrink_Foot_R|Shrink_Foot_L|Shrink_Toe_R|Shrink_Toe_L,
+wb-stockings@mayo,Shrink_Knee_R|Shrink_Knee_L|Shrink_Lower_leg_1_R|Shrink_Lower_leg_1_L|Shrink_Lower_leg_2_R|Shrink_Lower_leg_2_L|Shrink_Ankle_R|Shrink_Ankle_L|Shrink_Foot_R|Shrink_Foot_L|Shrink_Toe_R|Shrink_Toe_L,
+wb-socks@mayo,Shrink_Ankle_R|Shrink_Ankle_L|Shrink_Foot_R|Shrink_Foot_L|Shrink_Toe_R|Shrink_Toe_L,
+wb-boots@mayo,Heeled_Feet_Normal|Shrink_Ankle_R|Shrink_Ankle_L|Shrink_Foot_R|Shrink_Foot_L|Shrink_Toe_R|Shrink_Toe_L,
+wb-gloves@mayo,Shrink_Hand_R|Shrink_Hand_L|Shrink_Wrist_R|Shrink_Wrist_L,
