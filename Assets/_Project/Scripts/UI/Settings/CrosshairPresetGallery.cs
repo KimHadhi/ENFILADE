@@ -114,6 +114,7 @@ public sealed class CrosshairPresetGallery
         }
         var shape = look.Clone();
         CrosshairPresets.Apply(preset, shape);
+        shape.image = ""; // the tiles show shapes: the player's picture would cover them all alike
         shape.WriteTo(profile, PlayerCrosshairs.Design(kind));
         return profile;
     }

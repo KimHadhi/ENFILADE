@@ -7,7 +7,8 @@ using W = SettingsWidgets;
 /// <summary>
 /// The crosshair tab: pick the gun or the melee crosshair, keep the designed one or draw your own, with a live preview
 /// that stays in view (hold its corner button to see the real HUD instead). Drawing starts from a preset or a share code
-/// (<see cref="CrosshairPresetGallery"/>) and is split into a few short sections, so nothing needs scrolling.
+/// (<see cref="CrosshairPresetGallery"/>) and is split into a few short sections, so nothing needs scrolling. The last
+/// section puts a picture of the player's own at the middle (<see cref="CrosshairImages"/>).
 /// Drawing writes <see cref="CrosshairSettings"/>; the HUD follows through <see cref="WeaponCrosshairSelector"/>.
 /// </summary>
 public sealed class CrosshairSettingsView
@@ -18,8 +19,10 @@ public sealed class CrosshairSettingsView
     private static string[] Sections => new[]
     {
         Texts.Get("crosshair.section.presets"), Texts.Get("crosshair.section.dot"), Texts.Get("crosshair.section.lines"),
-        Texts.Get("crosshair.section.color"), Texts.Get("crosshair.section.spin"),
+        Texts.Get("crosshair.section.color"), Texts.Get("crosshair.section.spin"), Texts.Get("crosshair.section.image"),
     };
+    private static string[] OwnOrTint => new[] { Texts.Get("crosshair.image.tint.own"), Texts.Get("crosshair.image.tint.color") };
+    private static string[] WithOrOnly => new[] { Texts.Get("crosshair.image.shape.with"), Texts.Get("crosshair.image.shape.only") };
     private static string[] SquareOrCircle => new[] { Texts.Get("crosshair.dot.square"), Texts.Get("crosshair.dot.circle") };
     private static string[] BarOrSprite => new[] { Texts.Get("crosshair.lines.bar"), Texts.Get("crosshair.lines.sprite") };
     private static string[] SolidOrRainbow => new[] { Texts.Get("crosshair.color.solid"), Texts.Get("crosshair.color.rainbow") };
@@ -131,18 +134,57 @@ public sealed class CrosshairSettingsView
                 rows.Slider(Texts.Get("crosshair.lines.thickness"), 1f, CrosshairSettings.MaxLineThickness, s.lineThickness, v => s.lineThickness = v,
                     Pixels, wholeNumbers: true);
                 rows.Slider(Texts.Get("crosshair.lines.gap"), 0f, CrosshairSettings.MaxGap, s.gap, v => s.gap = v, Pixels, wholeNumbers: true);
-                rows.Slider(Texts.Get("crosshair.lines.angle"), 0f, CrosshairSettings.MaxAngle, s.angle, v => s.angle = Step(v), v => Step(v) + "°");
+                // CS2's T style; the angle went to the turning section to keep this one at six rows.
+                rows.Choice(Texts.Get("crosshair.lines.t"), OffOn, s.tStyle ? 1 : 0, i => s.tStyle = i == 1);
                 break;
             case 3:
                 Colour(rows, s);
                 break;
-            default:
+            case 4:
+                rows.Slider(Texts.Get("crosshair.lines.angle"), 0f, CrosshairSettings.MaxAngle, s.angle, v => s.angle = Step(v), v => Step(v) + "°");
                 rows.Choice(Texts.Get("crosshair.spin"), OffOn, s.spinning ? 1 : 0, i => { s.spinning = i == 1; BuildSection(); });
                 if (s.spinning)
                     rows.Slider(Texts.Get("crosshair.spin.speed"), CrosshairSettings.MinSpin, CrosshairSettings.MaxSpin, s.spin, v => s.spin = Step(v),
                         v => Step(v) + "°");
                 break;
+            default:
+                Picture(rows, s);
+                break;
         }
+    }
+
+    /// <summary>
+    /// The player's own picture (user, 2026-11-11: "크로스헤어에 커스텀 이미지 넣을 수 있도록"): one of the PNG and JPG
+    /// files in Documents\ENFILADE\Crosshairs, stepped through like resolutions, or one picked anywhere, which is copied
+    /// there. Then its size, its colours or the crosshair's, and whether the dot and the lines stay with it. It turns with
+    /// the turning section and takes the colour section's opacity.
+    /// </summary>
+    private void Picture(SettingsRows rows, CrosshairSettings s)
+    {
+        var names = CrosshairImages.List();
+        // One gone from the folder still shows, so it can be stepped off.
+        if (!string.IsNullOrEmpty(s.image) && !names.Contains(s.image)) names.Insert(0, s.image);
+        var options = new string[names.Count + 1];
+        options[0] = Texts.Get("crosshair.image.none");
+        for (int i = 0; i < names.Count; i++) options[i + 1] = names[i];
+        int selected = string.IsNullOrEmpty(s.image) ? 0 : names.IndexOf(s.image) + 1;
+        var row = rows.Stepper(Texts.Get("crosshair.image"), options, selected, i => s.image = i > 0 ? names[i - 1] : "");
+        W.Size(W.ActionButton(row, Texts.Get("crosshair.image.pick"), false, () =>
+        {
+            string path = FilePicker.Open(Texts.Get("crosshair.image.dialog"), Texts.Get("crosshair.image.kind"), "png", "jpg", "jpeg");
+            string name = string.IsNullOrEmpty(path) ? null : CrosshairImages.Import(path);
+            if (name == null) return; // cancelled, or not a picture
+            s.image = name;
+            GameSettings.Apply();
+            BuildSection();
+            ShowPreview();
+        }), 128f, 34f);
+        W.Size(W.ActionButton(row, Texts.Get("crosshair.image.folder"), false, CrosshairImages.OpenFolder), 112f, 34f);
+        rows.Slider(Texts.Get("crosshair.image.size"), CrosshairSettings.MinImageSize, CrosshairSettings.MaxImageSize, s.imageSize,
+            v => s.imageSize = Mathf.Round(v), Pixels, wholeNumbers: true);
+        rows.Choice(Texts.Get("crosshair.image.tint"), OwnOrTint, s.imageTint ? 1 : 0, i => s.imageTint = i == 1);
+        rows.Choice(Texts.Get("crosshair.image.shape"), WithOrOnly, s.imageOnly ? 1 : 0, i => s.imageOnly = i == 1);
+        rows.Note(Texts.Get(names.Count == 0 ? "crosshair.image.empty" : "crosshair.image.note"));
     }
 
     private void Changed()

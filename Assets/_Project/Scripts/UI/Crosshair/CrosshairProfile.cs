@@ -41,6 +41,16 @@ public class CrosshairProfile : ScriptableObject
     [Header("색상")]
     public Color color = Color.white;     // 무지개가 꺼져 있을 때 사용할 기본 색상
 
+    [Header("T자 · 그림")]
+    [Tooltip("CS2's T style: the part pointing straight up is left out.")]
+    public bool hideTopPart;
+    [Tooltip("A picture shown at the middle, under the dot and the parts (the player's own, CrosshairImages). None for no picture.")]
+    public Sprite image;
+    [Min(0f), Tooltip("The picture's longer side (px).")]
+    public float imageSize = 32f;
+    [Tooltip("The picture takes the crosshair's colour (and the rainbow) instead of keeping its own; either way it takes the colour's opacity.")]
+    public bool imageTinted;
+
 #if UNITY_EDITOR
     private void OnValidate()
     {

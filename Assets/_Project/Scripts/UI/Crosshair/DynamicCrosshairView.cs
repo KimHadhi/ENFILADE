@@ -28,6 +28,8 @@ public class DynamicCrosshairView : MonoBehaviour
     private float currentContainerAngle = 0f;
     private bool isPreview;
     private static Sprite fallbackWhiteSprite;
+    // The player's own picture (CrosshairProfile.image): made the first time one shows, under the dot and the parts.
+    private Image picture;
 
     /// <summary>Spin and rainbow on real time, so they keep moving while the game is paused (the settings preview).</summary>
     public bool UnscaledTime { get; set; }
@@ -96,6 +98,7 @@ public class DynamicCrosshairView : MonoBehaviour
             currentContainerAngle += currentProfile.rotationSpeed * (UnscaledTime ? Time.unscaledDeltaTime : Time.deltaTime);
             currentContainerAngle %= 360f;
             partsContainer.localEulerAngles = new Vector3(0f, 0f, currentContainerAngle);
+            TurnPicture();
         }
 
         if (currentProfile != null && currentProfile.isRainbow)
@@ -148,6 +151,7 @@ public class DynamicCrosshairView : MonoBehaviour
         {
             centerDot.color = pastelColor;
         }
+        if (picture != null && picture.gameObject.activeSelf && currentProfile.imageTinted) picture.color = pastelColor;
 
         int activeCount = currentProfile.showParts ? currentProfile.partCount : 0;
         for (int i = 0; i < activeCount && i < spawnedPartImages.Count; i++)
@@ -244,9 +248,54 @@ public class DynamicCrosshairView : MonoBehaviour
     public void ApplyProfile(CrosshairProfile profile)
     {
         ApplyParts(profile);
-        // Last, on every way out of the above: the ring takes the lines' place while it shows.
+        // On every way out of the above: the picture, then the ring, which takes the lines' place while it shows.
+        ApplyPicture();
         UpdateRing();
     }
+
+    /// <summary>
+    /// The player's own picture at the middle (CrosshairImages): its longer side imageSize pixels, turned with the shape's
+    /// angle and spin, in its own colours or tinted with the crosshair's, at the colour's opacity either way.
+    /// </summary>
+    private void ApplyPicture()
+    {
+        var profile = currentProfile;
+        bool show = !combatHidden && profile != null && profile.image != null;
+        if (picture == null && !show) return;
+        if (picture == null)
+        {
+            var rect = (RectTransform)new GameObject("Picture", typeof(RectTransform)).transform;
+            rect.gameObject.hideFlags = HideFlags.DontSave; // never kept in a scene the editor saves
+            rect.SetParent(partsContainer != null && partsContainer.parent != null ? partsContainer.parent : transform, false);
+            rect.SetAsFirstSibling();
+            rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(.5f, .5f);
+            rect.localScale = Vector3.one;
+            picture = rect.gameObject.AddComponent<Image>();
+            picture.raycastTarget = false;
+            picture.preserveAspect = true;
+        }
+        if (picture.gameObject.activeSelf != show) picture.gameObject.SetActive(show);
+        if (!show) return;
+        picture.sprite = profile.image;
+        Vector2 size = profile.image.rect.size;
+        picture.rectTransform.sizeDelta = size / Mathf.Max(1f, Mathf.Max(size.x, size.y)) * Mathf.Max(0f, profile.imageSize);
+        // Round the same middle as the parts, wherever their container sits.
+        if (partsContainer != null) picture.rectTransform.position = partsContainer.position;
+        picture.color = profile.imageTinted ? (profile.isRainbow ? RainbowColor() : profile.color) : new Color(1f, 1f, 1f, profile.color.a);
+        TurnPicture();
+    }
+
+    // Clockwise by the shape's angle, as the parts are, and round with their spin.
+    private void TurnPicture()
+    {
+        if (picture == null || currentProfile == null || !picture.gameObject.activeSelf) return;
+        float spin = currentProfile.isRotating ? currentContainerAngle : 0f;
+        picture.rectTransform.localEulerAngles = new Vector3(0f, 0f, spin - currentProfile.baseAngleOffset);
+    }
+
+    // CS2's T style leaves out the part pointing up: the one nearer straight up than half the gap to the next, so an x's two
+    // upper arms, leaning up alike, both stay.
+    private static bool PointsUp(float angle, int count) => count > 0 && Mathf.Abs(Mathf.DeltaAngle(angle, 0f)) < 180f / count - .5f;
 
     private void ApplyParts(CrosshairProfile profile)
     {
@@ -353,6 +402,7 @@ public class DynamicCrosshairView : MonoBehaviour
                 float angle = (360f / profile.partCount) * i + profile.baseAngleOffset;
                 // 위아래가 반전되던 문제 수정 (-angle + 180f)
                 rt.localEulerAngles = new Vector3(0f, 0f, -angle + 180f);
+                if (profile.hideTopPart && PointsUp(angle, profile.partCount)) rt.gameObject.SetActive(false);
             }
             else
             {
@@ -379,6 +429,7 @@ public class DynamicCrosshairView : MonoBehaviour
         {
             if (centerDot != null) centerDot.gameObject.SetActive(!hidden && savedDotActive);
             if (partsContainer != null) partsContainer.gameObject.SetActive(!hidden && savedPartsActive);
+            ApplyPicture();
             UpdateRing();
         }
     }

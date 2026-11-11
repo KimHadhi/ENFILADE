@@ -39,6 +39,7 @@ public static class CrosshairPresets
         target.lineThickness = shape.lineThickness;
         target.gap = shape.gap;
         target.angle = shape.angle;
+        target.tStyle = shape.tStyle; // a T is a shape too: a preset without the column has all four arms
         target.spinning = shape.spinning;
         if (shape.spinning) target.spin = shape.spin; // a still preset keeps the player's spin speed for later
     }
@@ -58,7 +59,7 @@ public static class CrosshairPresets
         if (shape.spinning && !Mathf.Approximately(s.spin, shape.spin)) return false;
         return shape.lineCount == 0 || s.spriteLines == shape.spriteLines && Mathf.Approximately(s.lineLength, shape.lineLength)
             && Mathf.Approximately(s.lineThickness, shape.lineThickness) && Mathf.Approximately(s.gap, shape.gap)
-            && Mathf.Approximately(s.angle, shape.angle);
+            && Mathf.Approximately(s.angle, shape.angle) && s.tStyle == shape.tStyle;
     }
 
     private static List<Preset> Load()

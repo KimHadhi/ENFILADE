@@ -8,19 +8,21 @@ using UnityEngine;
 /// seven. The fields are bit-packed into 12 bytes (opacities and saturation in 32 or 64 steps, colour channels in 256);
 /// a later version appends whole bytes after them, so an older code still reads with the missing fields at their
 /// defaults. The last byte is a checksum, so a mistyped code is refused instead of turning into a strange crosshair.
+/// Version 2 (2026-11-11) adds one byte of flags, the T style; a drawing without it still writes the shorter version 1.
+/// The player's own picture is a file on their PC, so no code carries it.
 /// </summary>
 public static class CrosshairCode
 {
     public const string Prefix = "ENF-";
     private const string Digits = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"; // Crockford's base32: no I, L, O or U to misread
-    private const int Version = 1;
     private const int DataBytes = 12; // version 1's fields
     private const int Group = 7;
 
     public static string Encode(CrosshairSettings s)
     {
         var bits = new BitWriter();
-        bits.Write(Version, 3);
+        int version = s.tStyle ? 2 : 1;
+        bits.Write(version, 3);
         bits.Write((s.roundDot ? 1 : 0) | (s.spriteLines ? 2 : 0) | (s.spinning ? 4 : 0) | (s.rainbow ? 8 : 0), 4);
         bits.Write(s.dotSize, 4);
         bits.Write(s.lineCount, 4);
@@ -37,6 +39,7 @@ public static class CrosshairCode
         bits.Write(Level(s.rainbowSaturation, 6), 6);
         bits.Write(Round(s.outline), 3);
         bits.Write(Level(s.outlineOpacity, 5), 5);
+        if (version >= 2) bits.Write(s.tStyle ? 1 : 0, 8); // version 2's byte of flags
         var bytes = bits.Bytes;
         bytes.Add(Checksum(bytes, bytes.Count));
         string digits = ToBase32(bytes);
@@ -71,7 +74,8 @@ public static class CrosshairCode
         if (count < DataBytes || bytes[count] != Checksum(bytes, count)) return false;
 
         var bits = new BitReader(bytes);
-        if (bits.Read(3) < 1) return false;
+        int version = bits.Read(3);
+        if (version < 1) return false;
         int flags = bits.Read(4);
         settings = new CrosshairSettings
         {
@@ -94,6 +98,7 @@ public static class CrosshairCode
         settings.rainbowSaturation = Fraction(bits.Read(6), 6);
         settings.outline = bits.Read(3);
         settings.outlineOpacity = Fraction(bits.Read(5), 5);
+        if (version >= 2 && count > DataBytes) settings.tStyle = (bits.Read(8) & 1) != 0;
         settings.Clamp();
         return true;
     }
