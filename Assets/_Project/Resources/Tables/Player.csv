@@ -288,8 +288,8 @@ Ability.stepDodgeRecognitionPadding,0.12,스텝 회피 판정 때 몸 반경에 
 Ability.microInvulnerability,0.08,Q/E 직후 공격을 회피로 인정하는 시간(초)
 Ability.dodgeCooldown,0.55,회피 공통 재사용 대기(초). 회피에 성공하면 바로 초기화
 Ability.stepDodgeCooldown,1.25,스텝 회피에 실패한 뒤 다음 회피까지(초)
-Ability.leanAngle,18,Q/E 기울이기 화면 기울기(도). 몸이 기우는 만큼 화면도 기울게 10에서 올림(친구 피드백 C10)
-Ability.leanOffset,0.35,Q/E 기울이기 옆 이동 거리(m)
+Ability.leanAngle,12,Q/E 기울이기 화면 기울기(도). 몸이 기우는 만큼 화면도 기울게 10에서 18로 올렸다가(친구 피드백 C10) 필요 이상으로 기운다는 말에 옆 이동과 함께 3분의 2로 줄임(2026-11-11)
+Ability.leanOffset,0.25,Q/E 기울이기 옆 이동 거리(m). 0.35에서 줄임(2026-11-11 "필요 이상으로 기울이는 것 같음"). Slip.clearance(0.25)보다 작으면 회피 슬립이 다 비키지 못하니 그 이상으로 둔다
 Ability.leanSharpness,10,기울이기 반응 빠르기
 # 능력: 턱·볼트·맨틀,,
 Ability.stepHeight,0.3,걸어서 넘는 턱 높이(m)
@@ -552,7 +552,7 @@ Body.turnEaseTime,0.08,Body.turnSteps가 0일 때 다리가 돌기 시작하고 
 Body.turnClipSpeed,1.5,제자리 돌기 클립 재생 속도 (Body.turnSteps가 1일 때)
 Body.spineBendDown,0.45,내려다볼 때 시선 각도 중 허리가 맡는 비율. 나머지는 목·머리가 맡는다
 Body.spineBendUp,0.2,올려다볼 때 허리가 맡는 비율
-Body.leanSpineBend,20,아무것도 안 들었거나 주먹일 때 Q/E 기울이기를 끝까지 하면 척추가 허리부터 옆으로 휘는 각도(도). 머리는 화면 기울기(Ability.leanAngle)만큼만 기울고 나머지는 목이 되돌린다. 0.7.34까지의 기울이기. 총을 들면 눈이 엿보기 끝까지 가는 만큼 기운다(KINEMATION 기울이기)
+Body.leanSpineBend,14,아무것도 안 들었거나 주먹일 때 Q/E 기울이기를 끝까지 하면 척추가 허리부터 옆으로 휘는 각도(도). 머리는 화면 기울기(Ability.leanAngle)만큼만 기울고 나머지는 목이 되돌린다. 0.7.34까지의 기울이기. 총을 들면 눈이 엿보기 끝까지 가는 만큼 기운다(KINEMATION 기울이기)
 Body.leanHipShift,0.08,아무것도 안 들었을 때 Q/E 기울이기를 끝까지 하면 골반이 기우는 쪽 발로 옮겨 가는 거리(m). 발은 디딘 자리에 그대로 둔다. 엿보는 거리(Ability.leanOffset)의 나머지는 카메라가 메운다. 다른 사람 화면에서도 기운다
 Body.leanHipReach,0.2,주먹일 때 Q/E 기울이기에서 골반이 기우는 쪽 발로 옮겨 갈 수 있는 최대 거리(m). 척추가 휘고 남은 엿보기 거리만큼 옮겨 가서 눈이 끝까지 가고 카메라는 눈에 붙어 있다(주먹 가드가 카메라 기준이라). 발은 디딘 자리에 그대로 둔다
 Body.eyeViewTime,0.15,눈 위치와 고정 조준·사다리 위치 사이의 전환 시간(초). 마우스 회전에는 영향 없음

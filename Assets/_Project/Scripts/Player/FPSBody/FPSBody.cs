@@ -79,9 +79,10 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
     [SerializeField, Range(0f, 1f), Tooltip("Down the sights, the share of the recoil animation lifting and pushing the gun sideways "
         + "that stays; its kick straight back stays whole.")]
     private float aimedRecoilLift = .3f;
-    [SerializeField, Range(0f, 1f), Tooltip("Aiming at least this much, FPSAF's little moves (a stop, a crouch, a landing) don't play: "
-        + "they swung the sight off the target.")]
-    private float aimedNoMotions = .5f;
+    [SerializeField, Range(0f, 1f), Tooltip("Aiming more than this much, or on the way in, FPSAF's little moves (a stop, a crouch, a "
+        + "landing, a jump, a lean) don't play: they swung the sight off the target. At 0.5 a stop begun early in the zoom bobbed "
+        + "the sight all through it (user, 2026-11-11).")]
+    private float aimedNoMotions;
 
     // Shots further apart than this many fire intervals have let go of the trigger: the recoil then settles.
     private const float TriggerReleaseIntervals = 1.5f;
@@ -704,23 +705,29 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
             ? Mathf.Sign(share) * body.LeanRollFor(Mathf.Abs(movement.LeanOffset), held.LeanChain) : 0f;
         input.SetValue(FPSANames.LeanInput, -roll);
         float sign = Mathf.Abs(share) > .05f ? Mathf.Sign(share) : 0f;
-        if (sign != leanSign) { leanSign = sign; Motion(assets.leanMotion); }
+        // Down the sights a peek keeps the sight where it is, as Siege's does: the lean's little gun motion is the hip's.
+        if (sign != leanSign) { leanSign = sign; if (!Sighted) Motion(assets.leanMotion); }
 
         // Sprinting the spine lets the view go and the upper body is no longer held steady (FPSController.OnSprintStarted).
         float sprint = movement != null ? movement.SprintProgress : 0f;
         bool grounded = movement == null || movement.IsGrounded;
-        bool sprinting = grounded && sprint >= sprintFrom && speed > walk;
-        input.SetValue(FPSANames.StabilizationWeight, sprinting ? 0f : 1f);
-        input.SetValue("LookLayerWeight", (sprinting ? sprintLookWeight : 1f) * Framework);
-        input.SetValue(FPSANames.PlayablesWeight, 1f);
+        // The sights coming up end the sprint's hold at once: the body ran on above walking speed for a moment after the
+        // aim began, and the spine let the view go and then caught it again under the rising sight (user, 2026-11-11: "줌
+        // 할 때 가끔씩 처음에 엄청 흔들리면서").
+        bool sighting = HoldsGun && controller.AimBlend > 0f;
+        bool sprinting = grounded && sprint >= sprintFrom && speed > walk && !sighting;
         float follow = 1f - Mathf.Exp(-dt / weightTime);
-        sprintWeight = Mathf.Lerp(sprintWeight, sprinting ? 1f : 0f, follow);
+        sprintWeight = Mathf.Lerp(sprintWeight, sprinting ? 1f : 0f, sighting ? 1f - Mathf.Exp(-dt / (weightTime * AimedSprintShare)) : follow);
+        // Eased with the sprint pose instead of switched: the spine took the view back in a single frame as a sprint ended.
+        input.SetValue(FPSANames.StabilizationWeight, 1f - sprintWeight);
+        input.SetValue("LookLayerWeight", Mathf.Lerp(1f, sprintLookWeight, sprintWeight) * Framework);
+        input.SetValue(FPSANames.PlayablesWeight, 1f);
 
         var state = movement != null ? movement.CurrentState : MovementState.Standing;
         bool crouched = state == MovementState.Crouching;
         crouchWeight = Mathf.Lerp(crouchWeight, crouched ? 1f : 0f, follow);
         // Down the sights FPSAF's little moves stay out: they swung the sight off the target (aimedNoMotions).
-        bool sighted = HoldsGun && controller.AimBlend >= aimedNoMotions;
+        bool sighted = Sighted;
         if (crouched != wasCrouched) { wasCrouched = crouched; if (!sighted) Motion(assets.crouchingMotion); }
         if (grounded && !wasGrounded && !sighted) Motion(assets.jumpingMotion);
         wasGrounded = grounded;
@@ -746,11 +753,15 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
         if (recoil != null) recoil.fireMode = FireModeOf(HeldFireMode);
         // Only this PC's own player looks through a lens; a friend's copy has no view to render it for.
         if (movement == null || movement.IsLocal) held.ShowScope(aim, viewCamera);
-        bool wantsAim = aim >= .999f || aim > lastAim;
+        // Aiming in holds until the aim really goes back down. It was read afresh each frame from the aim rising, so a frame
+        // where it stood still (the player's pace stopped by a hit stop or slow motion) read as letting go: the leaving
+        // motion bobbed the sight just as the zoom began and the sights came up a second time (user, 2026-11-11: "줌 할 때
+        // 가끔씩 처음에 엄청 흔들리면서 줌하는데 조준하는 데 불편해").
+        bool wantsAim = aim >= .999f || aim > lastAim || (aiming && aim > 0f && aim >= lastAim);
         lastAim = aim;
         if (wantsAim != aiming)
         {
-            if (wantsAim) CutDraw();
+            if (wantsAim) SteadyForSights();
             aiming = wantsAim;
             held.Aim(aiming, input, recoil);
             // KINEMATION's aiming motion bobs the gun as it comes up; down a 4x or 8x sight that bob was the picture
@@ -862,7 +873,49 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
         hasLook = true;
     }
 
-    private void OnJumped() => Motion(assets.jumpingMotion);
+    private void OnJumped()
+    {
+        if (!Sighted) Motion(assets.jumpingMotion);
+    }
+
+    // Down the sights or on the way in (aimedNoMotions): FPSAF's little moves stay out.
+    private bool Sighted => HoldsGun && (controller.AimBlend > aimedNoMotions || aiming);
+
+    // The sprint pose lets go this share of weightTime once the sights come up.
+    private const float AimedSprintShare = .35f;
+    // How quickly a little move still playing eases out as the sights come up, and a reload settling into the hold lets
+    // go (s).
+    private const float StillTime = .1f, SightsCut = .1f;
+    private IkMotionLayerSettings stillMotion;
+    private float reloadEndedAt = -100f;
+
+    // An IK motion that moves nothing: linked, FPSAF eases whatever little move was playing back to rest over its blend
+    // time (IkMotionLayerJob blends from where the last one had the gun).
+    private IkMotionLayerSettings StillMotion
+    {
+        get
+        {
+            if (stillMotion != null || assets == null || assets.aimingMotion == null) return stillMotion;
+            stillMotion = Instantiate(assets.aimingMotion);
+            Keep(stillMotion);
+            stillMotion.rotationCurves = VectorCurve.Constant(0f, StillTime, 0f);
+            stillMotion.translationCurves = VectorCurve.Constant(0f, StillTime, 0f);
+            stillMotion.blendTime = StillTime;
+            stillMotion.playRate = 1f;
+            return stillMotion;
+        }
+    }
+
+    // The sights coming up take the gun as it is, as Rainbow Six Siege's come straight up: a draw still playing lets go
+    // (CutDraw), a little move FPSAF is still playing (a stop, a landing, a crouch) eases out in StillTime, and a reload that
+    // has just ended stops settling into the hold, so nothing but the sight moves the gun as it rises.
+    private void SteadyForSights()
+    {
+        CutDraw();
+        if (!HoldsGun) return;
+        Motion(StillMotion);
+        if (!held.HandsBusy && Time.time - reloadEndedAt < reloadSettle) playables.StopAnimation(SightsCut);
+    }
 
     // The body placed the camera this frame (PlayerBody.Look), so FPSAF's shake and gun motion go on a fresh pose.
     private bool CameraPlaced() => body != null && !body.IsLimp && !body.IsDead;
@@ -1042,6 +1095,7 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
     private void OnReloadCompleted()
     {
         if (held != null) held.ReloadDone();
+        reloadEndedAt = Time.time;
     }
 
     // The gun going away before the next comes out (PlayerWeaponSlots waits for it): a reload under way lets go first.
