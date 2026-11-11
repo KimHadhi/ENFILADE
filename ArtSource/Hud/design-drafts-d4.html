@@ -1,0 +1,670 @@
+<title>ENFILADE HUD 4차 시안</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap">
+<style>
+/* Layout: one reading column under a sticky tally, as in rounds 1-3. Each item is a slanted memo tag, the note it answers,
+   then three drafts side by side as small game screens running on one clock. One dark look, the HUD's own:
+   near-black, near-white and the one pink. */
+:root {
+  color-scheme: dark;
+  --bg: #0e0e11;
+  --panel: #16161b;
+  --sunk: #0a0a0c;
+  --line: #2a2a31;
+  --fg: #f7f7f7;
+  --muted: #9b99a4;
+  --accent: #ff4f78;
+  --on-accent: #0e0e11;
+  --ok: #7be0a8;
+  --warn: #ffb547;
+  --display: "Black Han Sans", "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 15px; line-height: 1.6; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+.gutter { max-width: 1180px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+
+header.top { padding-block: 28px 16px; }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .08em; color: var(--accent); }
+h1 { font-family: var(--display); font-weight: 400; font-size: clamp(30px, 6vw, 46px); line-height: 1.1; margin: 6px 0 10px; text-wrap: balance; }
+.lede { margin: 0; max-width: 66ch; color: var(--muted); }
+.lede strong { color: var(--fg); font-weight: 500; }
+
+.bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); border-bottom: 1px solid var(--line); }
+.bar .gutter { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding-block: 10px; }
+.tally { font-size: 14px; font-variant-numeric: tabular-nums; }
+.tally b { color: var(--accent); font-weight: 600; }
+.status { font-size: 12.5px; color: var(--muted); flex: 1 1 200px; min-width: 0; }
+.status.warn { color: var(--warn); }
+.btn { font: 500 13px/1 var(--body); color: var(--fg); background: var(--panel); border: 1px solid var(--line); padding: 9px 12px; cursor: pointer; white-space: nowrap; }
+.btn:hover { border-color: var(--accent); }
+.btn[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+.file-in { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.file-in:focus-visible + label { outline: 2px solid var(--accent); outline-offset: 2px; }
+button:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+main { padding-block: 22px 64px; display: flex; flex-direction: column; gap: 48px; }
+.item-head { display: grid; gap: 8px; padding-bottom: 12px; border-bottom: 2px solid var(--fg); margin-bottom: 14px; }
+.item-top { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
+.memo { display: inline-block; background: var(--accent); color: var(--on-accent); font-family: var(--mono); font-size: 12px; font-weight: 500; padding: 4px 10px; transform: skewX(-12deg); white-space: nowrap; }
+.memo span { display: inline-block; transform: skewX(12deg); }
+.item h2 { font-family: var(--display); font-weight: 400; font-size: clamp(22px, 4.4vw, 28px); line-height: 1.15; margin: 0; }
+.picked { margin-left: auto; font-family: var(--mono); font-size: 12.5px; color: var(--muted); white-space: nowrap; }
+.picked.on { color: var(--ok); }
+.quote { margin: 0; padding-left: 12px; border-left: 3px solid var(--line); color: var(--fg); max-width: 70ch; }
+.now { margin: 0; color: var(--muted); font-size: 14px; max-width: 72ch; }
+
+.drafts { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 14px; }
+.card { background: var(--panel); border: 1px solid var(--line); display: flex; flex-direction: column; min-width: 0; }
+.card[data-on="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.stage { background: var(--sunk); line-height: 0; }
+.stage canvas { display: block; width: 100%; max-width: 100%; aspect-ratio: 16 / 9; }
+.card-body { padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
+.card-name { display: flex; align-items: baseline; gap: 10px; }
+.letter { font-family: var(--display); font-size: 26px; line-height: 1; color: var(--accent); }
+.card h3 { margin: 0; font-size: 16px; font-weight: 600; }
+.pitch { margin: 0; color: var(--muted); font-size: 14px; flex: 1; }
+.card-actions { display: flex; gap: 8px; }
+.pick { font: 600 13.5px/1 var(--body); padding: 10px 14px; background: transparent; color: var(--fg); border: 1px solid var(--fg); cursor: pointer; flex: 1 1 auto; }
+.pick:hover { border-color: var(--accent); color: var(--accent); }
+.pick[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+
+.after { display: grid; gap: 8px; margin-top: 12px; }
+.after-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.none { font: 500 13px/1 var(--body); padding: 9px 12px; background: transparent; color: var(--muted); border: 1px dashed var(--line); cursor: pointer; }
+.none[aria-pressed="true"] { color: var(--bg); background: var(--warn); border: 1px solid var(--warn); }
+.after label { font-size: 13px; color: var(--muted); }
+.after textarea { font: 14px/1.5 var(--body); color: var(--fg); background: var(--sunk); border: 1px solid var(--line); padding: 9px 11px; resize: vertical; min-height: 60px; width: 100%; }
+
+footer.foot { padding-block: 0 44px; color: var(--muted); font-size: 13.5px; }
+@media (max-width: 560px) { .picked { margin-left: 0; } }
+</style>
+
+<header class="top">
+  <div class="gutter">
+    <div class="eyebrow">D단계 4차 · 체력바와 초상화</div>
+    <h1>ENFILADE HUD 4차 시안</h1>
+    <p class="lede">초상화는 3차 메모대로 <strong>C의 "탄창처럼 장전"을 셋으로 더 밀어 봤어요</strong>. 체력바는 이번에 처음 보여 드려요. HUD 왼쪽 아래를 1.5배로 키워 그렸어요. 위 막대의 "내 사진으로 보기"로 프로필 사진을 넣어 볼 수 있어요(이 브라우저에서만 보여요). 다 고른 뒤 Claude에게 "4차 시안 봐 줘"라고 하면 그대로 만들어요.</p>
+  </div>
+</header>
+
+<div class="bar">
+  <div class="gutter">
+    <span class="tally">고른 것 <b id="n-done">0</b> / <span id="n-all">0</span></span>
+    <span class="status" id="status">저장소에 연결 중…</span>
+    <input type="file" id="photo" class="file-in" accept="image/*">
+    <label class="btn" for="photo">내 사진으로 보기</label>
+    <button type="button" class="btn" id="unphoto" hidden>기본 그림</button>
+    <button type="button" class="btn" id="motion" aria-pressed="true">움직임 켬</button>
+  </div>
+</div>
+
+<main class="gutter" id="list"></main>
+<footer class="foot gutter">고른 것과 메모는 이 페이지에 저장돼서 다른 기기에서 열어도 그대로 보여요. 같은 버튼을 다시 누르면 풀려요. 넣어 본 사진은 저장소에 올라가지 않아요.</footer>
+
+<script>
+'use strict';
+// ================================================================ drawing kit (every draft draws in 960 x 540)
+const DISPLAY = '"Black Han Sans","IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif';
+const MONO = '"IBM Plex Mono",ui-monospace,Consolas,monospace';
+const P = '#ff4f78', ICE = '#fff5f7', INK = '#0e0e11', CY = '#99edff', PLATE = 'rgba(6,6,8,.86)', BRASS = '#e9c27a';
+const TAU = Math.PI * 2;
+const cl = (x, a = 0, b = 1) => x < a ? a : x > b ? b : x;
+const lp = (a, b, t) => a + (b - a) * t;
+const sg = (t, a, b) => cl((t - a) / (b - a));
+const eo = t => 1 - Math.pow(1 - cl(t), 3);
+// Ease out past the end and back: the snap of something seating.
+const kick = t => { t = cl(t); const u = t - 1; return 1 + 2.9 * u * u * u + 1.9 * u * u; };
+const rnd = i => { const x = Math.sin(i * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
+const pulse = (t, a, inn, hold, out) => { const x = t - a; return x < 0 ? 0 : x < inn ? x / inn : x < inn + hold ? 1 : cl(1 - (x - inn - hold) / out); };
+// The game's heartbeat (UltimatePortraitGlow.Heartbeat): two beats, then rest.
+const heart = k => { const p = ((k * 1.1) % 1 + 1) % 1, a = (p - .12) / .055, b = (p - .32) / .075; return cl(Math.exp(-a * a) + .6 * Math.exp(-b * b)); };
+
+function T(c, s, x, y, px, col, al = 'left', f = DISPLAY, w = '') { c.font = w + px + 'px ' + f; c.fillStyle = col; c.textAlign = al; c.textBaseline = 'middle'; c.fillText(s, x, y); }
+function W(c, s, px, f = DISPLAY, w = '') { c.font = w + px + 'px ' + f; return c.measureText(s).width; }
+function R(c, x, y, w, h, col) { c.fillStyle = col; c.fillRect(x, y, w, h); }
+function PG(c, p, col, st, lw) { c.beginPath(); c.moveTo(p[0], p[1]); for (let i = 2; i < p.length; i += 2) c.lineTo(p[i], p[i + 1]); c.closePath(); if (col) { c.fillStyle = col; c.fill(); } if (st) { c.strokeStyle = st; c.lineWidth = lw || 2; c.stroke(); } }
+function SK(c, x, y, w, h, s, col, st, lw) { PG(c, [x + s, y, x + w + s, y, x + w, y + h, x, y + h], col, st, lw); }
+function LN(c, x1, y1, x2, y2, col, lw) { c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.strokeStyle = col; c.lineWidth = lw; c.stroke(); }
+function A(c, a, fn) { if (a <= 0) return; c.save(); c.globalAlpha *= cl(a); fn(); c.restore(); }
+function diamond(c, x, y, r, fill, st, lw) { PG(c, [x, y - r, x + r, y, x, y + r, x - r, y], fill, st, lw); }
+function dd(c, x, y, r, col) { diamond(c, x, y, r, null, col, Math.max(1.5, r * .2)); diamond(c, x, y, r * .45, col); }
+function hazard(c, x, y, w, h, col, off = 0, gap = 6, skew = 0) {
+  if (w <= 0) return;
+  c.save(); c.beginPath(); c.moveTo(x + skew, y); c.lineTo(x + w + skew, y); c.lineTo(x + w, y + h); c.lineTo(x, y + h); c.closePath(); c.clip();
+  c.fillStyle = col; const step = gap * 2, o = ((off % step) + step) % step;
+  for (let i = -h - step + o; i < w + skew + step; i += step) { c.beginPath(); c.moveTo(x + i, y + h); c.lineTo(x + i + gap, y + h); c.lineTo(x + i + gap + h, y); c.lineTo(x + i + h, y); c.closePath(); c.fill(); }
+  c.restore();
+}
+// A skewed cell filled from its left to share f (0..1); paint is a colour or a function given the filled width.
+function fillSk(c, x, y, w, h, s, f, paint) {
+  if (f <= 0) return;
+  c.save(); c.beginPath(); c.moveTo(x + s, y); c.lineTo(x + w + s, y); c.lineTo(x + w, y + h); c.lineTo(x, y + h); c.closePath(); c.clip();
+  if (typeof paint === 'function') paint((w + s) * f); else R(c, x, y, (w + s) * f, h, paint);
+  c.restore();
+}
+function sparks(c, x, y, k, col, n, seed, dir) {
+  if (k < 0 || k >= 1) return;
+  for (let i = 0; i < n; i++) {
+    const a = (dir < 0 ? Math.PI : 0) + (rnd(i + seed) - .5) * 1.6, d = 4 + eo(k) * (16 + rnd(i + 7 + seed) * 16), s = 5 * (1 - k) + 1.5;
+    const px = x + Math.cos(a) * d, py = y + Math.sin(a) * d;
+    A(c, 1 - k, () => PG(c, [px, py, px + Math.cos(a) * s * 1.8, py + Math.sin(a) * s * 1.8, px + Math.cos(a + 1.6) * s * .6, py + Math.sin(a + 1.6) * s * .6], i % 2 ? P : col));
+  }
+}
+// A spent case thrown out of a port, spinning; k runs 0..1 over its flight.
+function casing(c, x, y, k, dir) {
+  if (!(k >= 0 && k < 1)) return;
+  const px = x + dir * k * 74, py = y - k * 58 + k * k * 96;
+  A(c, 1 - sg(k, .6, 1), () => { c.save(); c.translate(px, py); c.rotate(k * 9 * dir); R(c, -5, -2.5, 10, 5, BRASS); R(c, -5, -2.5, 2, 5, '#b8914f'); c.restore(); });
+}
+// A cartridge lying on its side, bullet to the right; x, y = its back end, centre line.
+function bullet(c, x, y, L, h, body, tip) {
+  const m = L * .62;
+  R(c, x, y - h / 2, m, h, body);
+  PG(c, [x + m, y - h / 2 + .5, x + L * .84, y - h / 2 + 1.1, x + L, y, x + L * .84, y + h / 2 - 1.1, x + m, y + h / 2 - .5], tip);
+  R(c, x + 1.5, y - h / 2, 1.5, h, 'rgba(14,14,17,.45)');
+}
+// The same, leaning like the HUD's plates.
+function roundPath(c, x, y, L, h) { const s = 3; c.beginPath(); c.moveTo(x + s, y - h / 2); c.lineTo(x + L * .86 + s * .5, y - h / 2); c.lineTo(x + L, y); c.lineTo(x + L * .86, y + h / 2); c.lineTo(x, y + h / 2); c.closePath(); }
+function slantRound(c, x, y, L, h, body, tip) {
+  const s = 3, m = L * .62;
+  PG(c, [x + s, y - h / 2, x + m + s, y - h / 2, x + m, y + h / 2, x, y + h / 2], body);
+  PG(c, [x + m + s, y - h / 2, x + L * .86 + s * .5, y - h / 2, x + L, y, x + L * .86, y + h / 2, x + m, y + h / 2], tip);
+  R(c, x + 3.5, y - h / 2 + 1, 1.5, h - 2, 'rgba(14,14,17,.45)');
+}
+
+// ---------------------------------------------------------------- the game behind the HUD
+function zombie(c, x, y, s) {
+  c.fillStyle = '#0c0e12';
+  c.beginPath(); c.arc(x, y - 80 * s, 11 * s, 0, TAU); c.fill();
+  c.fillRect(x - 13 * s, y - 68 * s, 26 * s, 42 * s); c.fillRect(x - 12 * s, y - 28 * s, 10 * s, 30 * s); c.fillRect(x + 2 * s, y - 28 * s, 10 * s, 30 * s);
+  c.fillRect(x - 25 * s, y - 64 * s, 10 * s, 30 * s); c.fillRect(x + 15 * s, y - 66 * s, 10 * s, 24 * s);
+}
+function scene(c) {
+  const g = c.createLinearGradient(0, 0, 0, 540);
+  g.addColorStop(0, '#1f2633'); g.addColorStop(.56, '#363d4b'); g.addColorStop(.561, '#20232a'); g.addColorStop(1, '#111317');
+  R(c, 0, 0, 960, 540, g);
+  c.fillStyle = '#151a23'; [[30, 120, 130], [200, 190, 90], [620, 150, 160], [830, 210, 130]].forEach(b => c.fillRect(b[0], b[1], b[2], 303 - b[1]));
+  c.fillStyle = '#1c222c'; [[330, 230, 70], [520, 250, 60]].forEach(b => c.fillRect(b[0], b[1], b[2], 303 - b[1]));
+  zombie(c, 300, 330, .9); zombie(c, 610, 322, .75); zombie(c, 760, 344, 1.05);
+  PG(c, [640, 540, 720, 452, 905, 372, 960, 384, 960, 540], '#08090b');
+  T(c, '30', 880, 468, 40, ICE, 'right'); T(c, '/ 90', 888, 474, 18, 'rgba(255,255,255,.6)', 'left', MONO, '500 ');
+  R(c, 0, 0, 960, 540, 'rgba(7,7,10,.6)');
+}
+// Which part of the timeline a draft is in, top left; outside the zoomed HUD.
+function phase(c, s) {
+  c.font = '500 15px ' + MONO; const w = c.measureText(s).width + 24;
+  R(c, 16, 16, w, 28, 'rgba(6,6,8,.82)'); R(c, 16, 16, 3, 28, P); T(c, s, 29, 31, 15, ICE, 'left', MONO, '500 ');
+}
+
+// ---------------------------------------------------------------- the profile picture and its tile (as in the game now)
+let photo = null, avatar = null;
+function oval(g, x, y, rx, ry, col) { g.fillStyle = col; g.beginPath(); g.ellipse(x, y, rx, ry, 0, 0, TAU); g.fill(); }
+function makeAvatar() {
+  const k = document.createElement('canvas'); k.width = k.height = 256; const g = k.getContext('2d');
+  const bg = g.createLinearGradient(0, 0, 256, 256); bg.addColorStop(0, '#2c2440'); bg.addColorStop(1, '#b8506e');
+  g.fillStyle = bg; g.fillRect(0, 0, 256, 256);
+  oval(g, 196, 58, 74, 74, 'rgba(255,245,247,.07)');
+  oval(g, 128, 124, 80, 88, '#17131f');
+  oval(g, 128, 268, 98, 72, '#2a2233');
+  g.fillStyle = P; g.beginPath(); g.moveTo(110, 202); g.lineTo(128, 236); g.lineTo(146, 202); g.closePath(); g.fill();
+  oval(g, 128, 130, 50, 57, '#f2d4c8');
+  g.fillStyle = '#17131f'; g.beginPath(); g.moveTo(74, 124); g.quadraticCurveTo(82, 54, 128, 52); g.quadraticCurveTo(176, 54, 184, 126);
+  g.lineTo(168, 100); g.lineTo(152, 114); g.lineTo(136, 92); g.lineTo(118, 114); g.lineTo(100, 96); g.lineTo(86, 118); g.closePath(); g.fill();
+  oval(g, 108, 142, 8, 10, '#d8324f'); oval(g, 148, 142, 8, 10, '#d8324f');
+  g.fillStyle = '#fff'; g.fillRect(104, 136, 3, 3); g.fillRect(144, 136, 3, 3);
+  oval(g, 97, 162, 9, 4, 'rgba(216,50,79,.35)'); oval(g, 159, 162, 9, 4, 'rgba(216,50,79,.35)');
+  return k;
+}
+const picture = () => photo || avatar || (avatar = makeAvatar());
+
+// The HUD's bottom-left corner, zoomed 1.5x. Cluster units: the tile's picture is 150 across.
+const Z = 1.5, OX = -22, OY = 18;
+const TX = 150, TY = 70, TS = 150, CUT = 16, NX = 346;
+function cluster(c, fn) { c.save(); c.translate(OX, OY); c.scale(Z, Z); fn(); c.restore(); }
+function cutPath(c, x, y, S, k) { c.beginPath(); c.moveTo(x, y); c.lineTo(x + S - k, y); c.lineTo(x + S, y + k); c.lineTo(x + S, y + S); c.lineTo(x + k, y + S); c.lineTo(x, y + S - k); c.closePath(); }
+function tile(c, o = {}) {
+  const x = TX, y = TY, S = TS;
+  c.save(); c.translate(x + S / 2, y + S / 2);
+  c.save(); c.rotate(-.105); R(c, -S / 2 - 13, -S / 2 - 11, S + 8, S + 8, o.slab || P); c.restore();
+  c.save(); c.rotate(.06); R(c, -S / 2 + 9, -S / 2 + 11, S + 4, S + 4, '#050506'); c.restore();
+  c.restore();
+  cutPath(c, x - 7, y - 7, S + 14, CUT + 3); c.fillStyle = '#0b0b0d'; c.fill();
+  c.save(); cutPath(c, x, y, S, CUT); c.clip();
+  c.drawImage(picture(), x, y, S, S);
+  const g = c.createRadialGradient(x + S / 2, y + S / 2, S * .3, x + S / 2, y + S / 2, S * .76);
+  g.addColorStop(0, 'rgba(14,14,17,0)'); g.addColorStop(1, 'rgba(14,14,17,.5)'); c.fillStyle = g; c.fillRect(x, y, S, S);
+  R(c, x, y + S - 5, S, 5, P);
+  c.restore();
+  cutPath(c, x, y, S, CUT); c.strokeStyle = 'rgba(255,245,247,.75)'; c.lineWidth = 1.2; c.stroke();
+  const m = 4, L = 22; c.strokeStyle = o.bracket || 'rgba(255,245,247,.45)'; c.lineWidth = 2.5; c.beginPath();
+  c.moveTo(x - m, y - m + L); c.lineTo(x - m, y - m); c.lineTo(x - m + L, y - m);
+  c.moveTo(x + S + m - L, y + S + m); c.lineTo(x + S + m, y + S + m); c.lineTo(x + S + m, y + S + m - L);
+  c.stroke();
+}
+// "Ready" tag over the health number: the key and what it does.
+function readyChip(c, k) {
+  if (k <= 0) return;
+  A(c, k, () => { const x = NX + (1 - k) * 18, y = 94;
+    SK(c, x, y, 34, 26, 6, P); T(c, 'X', x + 19, y + 14, 18, INK, 'center');
+    SK(c, x + 38, y, 104, 26, 6, PLATE); T(c, '궁극기 준비', x + 50, y + 14, 15, ICE); });
+}
+// The health side as it is in the game now, still, for the portrait drafts.
+function hpNow(c) {
+  T(c, '100', NX, 150, 46, ICE); T(c, '/ 100', NX + W(c, '100', 46) + 8, 158, 15, 'rgba(255,245,247,.6)', 'left', MONO, '500 ');
+  SK(c, NX, 171, 250, 4, 3, CY);
+  for (let i = 0; i < 5; i++) SK(c, NX + i * 51, 181, 46, 20, 6, P);
+}
+
+// ================================================================ 1. portrait and ultimate: loaded like a magazine
+// One round is 10% of the ultimate. Hits feed it in uneven bites; ten rounds and it is loaded; X spends it.
+const PSTEPS = [[.45, 7], [.7, 5], [.95, 9], [1.25, 6], [1.5, 8], [1.75, 4], [2.0, 11], [2.3, 7], [2.55, 9], [2.85, 6], [3.1, 12], [3.45, 16]];
+const READY = 3.57, USE = 5.2, EMPTY = 6.4, PDUR = 8;
+function rawCharge(t) {
+  if (t >= USE) return cl(1 - (t - USE - .05) / (EMPTY - USE - .05));
+  let s = 0; for (const [at, v] of PSTEPS) s += v * eo(sg(t, at, at + .12)); return cl(s / 100);
+}
+const seatAt = new Array(10).fill(null), fireAt = new Array(10).fill(null);
+for (let t = 0; t <= PDUR; t += 1 / 240) {
+  const n = rawCharge(t) * 10 + 1e-6;
+  for (let i = 0; i < 10; i++) {
+    if (seatAt[i] === null && t < USE && n >= i + 1) seatAt[i] = t;
+    if (fireAt[i] === null && t >= USE && n < i + 1) fireAt[i] = t;
+  }
+}
+const PTL = { n: t => rawCharge(t) * 10, since: (a, t) => a === null ? -1 : t - a, seatAt, fireAt, readyAt: READY, useAt: USE, emptyAt: EMPTY };
+// The health drafts show the portrait still, six rounds and a bit in.
+const STILL = { n: () => 6.3, since: () => -1, seatAt: new Array(10).fill(null), fireAt: new Array(10).fill(null), readyAt: 1e9, useAt: 1e9, emptyAt: 1e9 };
+function pPhase(t) {
+  const n = PTL.n(t);
+  if (t < READY) return '충전 ' + Math.round(n * 10) + '% · ' + Math.floor(n + 1e-6) + '발';
+  if (t < USE) return '장전 완료 · X';
+  if (t < EMPTY) return '궁극기 사용 중';
+  return '빈 탄창 · 다시 충전';
+}
+function xKey(c, t) {
+  const a = pulse(t, USE - .3, .12, .5, .2); if (a <= 0) return;
+  const down = t >= USE && t < USE + .14, dy = down ? 3 : 0;
+  A(c, a, () => { SK(c, 876, 16 + dy, 48, 34, 6, down ? P : PLATE, down ? null : ICE, 1.4); T(c, 'X', 902, 34 + dy, 22, down ? INK : ICE, 'center'); });
+}
+
+// ---------------------------------------------------------------- A. a real magazine, inserted when full
+function magShape(c) { c.beginPath(); c.moveTo(-21, 0); c.lineTo(21, 0); c.quadraticCurveTo(25, 50, 33, 92); c.lineTo(-11, 98); c.quadraticCurveTo(-17, 50, -21, 0); c.closePath(); }
+const PITCH = 7.8;
+function magazine(c, t, tl, n, rk, use) {
+  const full = Math.floor(n + 1e-6), part = n - full, ready = rk >= 0 && !use;
+  magShape(c); c.fillStyle = '#131317'; c.fill(); c.strokeStyle = 'rgba(255,245,247,.55)'; c.lineWidth = 1.4; c.stroke();
+  const plate = [-13, 94, 35, 88, 37, 98, -12, 104];
+  PG(c, plate, P); if (ready) A(c, .5 * heart(rk), () => PG(c, plate, ICE));
+  R(c, -6, 7, 22, 82, '#050506');
+  for (let k = 2; k <= 10; k += 2) T(c, String(k), -9, 8.1 + PITCH * k, 8, 'rgba(255,245,247,.45)', 'right', MONO, '500 ');
+  // Rounds go in at the top and push the stack down, as in a real magazine; j = 0 is the top round.
+  const sk = !use && full > 0 ? tl.since(tl.seatAt[full - 1], t) / .22 : 9, seating = sk >= 0 && sk < 1;
+  const fk = use && full < 10 ? tl.since(tl.fireAt[full], t) / .1 : 9, leaving = fk >= 0 && fk < 1;
+  for (let j = 0; j < full; j++) {
+    const y = seating ? (j === 0 ? lp(-7, 12, kick(sk)) : 12 + (j - 1 + eo(sk)) * PITCH) : leaving ? 12 + (j + 1 - eo(fk)) * PITCH : 12 + j * PITCH;
+    bullet(c, (full - 1 - j) % 2 ? -3 : 0, y, 16, 6.2, seating && j === 0 && sk < .35 ? ICE : P, ICE);
+  }
+  if (leaving) A(c, 1 - fk, () => bullet(c, full % 2 ? -3 : 0, lp(12, -12, fk), 16, 6.2, P, ICE));
+  const f = seating ? full - 1 + eo(sk) : leaving ? full + 1 - eo(fk) : full;
+  R(c, -6, 8.1 + PITCH * f - 1.2, 22, 2.4, ICE);
+  // The next round, pressed in as the charge comes.
+  if (!use && rk < 0 && part > .02 && full < 10) {
+    c.save(); c.strokeStyle = 'rgba(255,245,247,.8)'; c.lineWidth = 1; c.strokeRect(-.5, -10.6, 17, 7.2);
+    c.beginPath(); c.rect(0, -11, 16 * part, 8); c.clip(); bullet(c, 0, -7, 16, 6.2, 'rgba(255,79,120,.9)', ICE); c.restore();
+  }
+}
+function pA(c, t, tl) {
+  const n = tl.n(t), rk = tl.since(tl.readyAt, t), use = t >= tl.useAt, ek = tl.since(tl.emptyAt, t), ready = rk >= 0 && !use;
+  const MX = TX + 40, MY = TY + TS + 10;
+  let my = rk >= 0 ? -24 * kick(sg(rk, 0, .2)) : 0, rot = -.1, alpha = 1;
+  if (ek >= 0) { const d = sg(ek, 0, .45); my = -24 + 24 * d + d * d * 110; rot -= d * .6; alpha = 1 - d; }
+  if (ready) A(c, .35 + .3 * heart(rk), () => { const g = c.createRadialGradient(MX + 8, MY + my + 100, 2, MX + 8, MY + my + 100, 46); g.addColorStop(0, 'rgba(255,79,120,.55)'); g.addColorStop(1, 'rgba(255,79,120,0)'); c.fillStyle = g; c.fillRect(MX - 50, MY + my + 54, 116, 92); });
+  A(c, alpha, () => { c.save(); c.translate(MX, MY + my); c.rotate(rot); magazine(c, t, tl, ek >= 0 ? 0 : n, rk, use); c.restore(); });
+  const fresh = ek >= 0 ? sg(ek, .55, .9) : 0;
+  if (fresh > 0) A(c, fresh, () => { c.save(); c.translate(MX, MY + 70 * (1 - kick(fresh))); c.rotate(-.1); magazine(c, t, tl, 0, -1, false); c.restore(); });
+  const jolt = rk >= 0 ? pulse(rk, 0, .03, .02, .14) : 0;
+  c.save(); c.translate(0, -3 * jolt); tile(c, { slab: rk >= 0 && rk < .06 ? ICE : P, bracket: rk >= 0 && rk < .1 ? ICE : null }); c.restore();
+  if (rk >= 0) { sparks(c, MX - 20, TY + TS + 6, rk / .3, ICE, 4, 1, -1); sparks(c, MX + 22, TY + TS + 6, rk / .3, ICE, 4, 9, 1); }
+  for (let i = 0; i < 10; i++) casing(c, TX + TS - 4, TY + 8, tl.since(tl.fireAt[i], t) / .55, 1);
+  readyChip(c, ready ? eo(sg(rk, .1, .3)) : 0);
+}
+
+// ---------------------------------------------------------------- B. the tile's own left edge is the magazine
+function pB(c, t, tl) {
+  const n = tl.n(t), full = Math.floor(n + 1e-6), part = n - full;
+  const rk = tl.since(tl.readyAt, t), use = t >= tl.useAt, ready = rk >= 0 && !use, live = rk >= 0 && t < tl.emptyAt;
+  // Full: the whole tile is pulled back like a slide and lets go.
+  const rack = rk >= 0 && rk < .3 ? (rk < .06 ? -10 * eo(rk / .06) : -10 * (1 - kick(sg(rk, .06, .3)))) : 0;
+  c.save(); c.translate(rack, 0);
+  tile(c, { bracket: rk >= 0 && rk < .14 ? ICE : null });
+  const X0 = TX - 33, W0 = 24, slotY = i => TY + TS - 7.5 - i * 15;
+  R(c, X0, TY - 7, W0, TS + 14, '#08080a'); c.strokeStyle = 'rgba(255,245,247,.28)'; c.lineWidth = 1.2; c.strokeRect(X0 + .5, TY - 6.5, W0 - 1, TS + 13);
+  for (let i = 0; i < 10; i++) LN(c, X0 - (i % 5 === 4 ? 8 : 4), slotY(i), X0, slotY(i), i < full ? 'rgba(255,245,247,.7)' : 'rgba(255,245,247,.22)', 1.4);
+  const fk = use && full < 10 ? tl.since(tl.fireAt[full], t) / .12 : 9;
+  for (let i = 0; i < full; i++) {
+    const sk = use ? 9 : tl.since(tl.seatAt[i], t) / .2, seating = sk >= 0 && sk < 1;
+    bullet(c, X0 + 3 - (seating ? 6 * (1 - kick(sk)) : 0), slotY(i), 18, 8, seating && sk < .3 ? ICE : P, ICE);
+  }
+  if (!use && rk < 0 && part > .02 && full < 10) A(c, cl(part * 2.5), () => bullet(c, X0 + 3 - 6 - 22 * (1 - part), slotY(full), 18, 8, 'rgba(255,79,120,.6)', 'rgba(255,245,247,.65)'));
+  if (fk >= 0 && fk < 1) A(c, 1 - fk, () => bullet(c, X0 + 3, lp(slotY(full), TY - 18, eo(fk)), 18, 8, P, ICE));
+  if (ready) { const k = (rk * .8) % 1; A(c, .55 * (1 - k * .5), () => R(c, X0 + 2, TY + TS - k * (TS + 4), W0 - 4, 2, ICE)); }
+  // The chamber over the channel: an empty nested diamond, filled once loaded.
+  const CX = X0 + W0 / 2, CYy = TY - 20;
+  if (live) { diamond(c, CX, CYy, 9, P); diamond(c, CX, CYy, 4, INK); } else dd(c, CX, CYy, 8, 'rgba(255,245,247,.5)');
+  if (ready) { const k = (rk % 1.3) / 1.3; A(c, .7 * (1 - k), () => diamond(c, CX, CYy, 10 + k * 14, null, P, 2)); }
+  for (let i = 0; i < 10; i++) { const k = tl.since(tl.fireAt[i], t) / .07; if (k >= 0 && k < 1) A(c, 1 - k, () => diamond(c, CX, CYy, 11, ICE)); }
+  c.restore();
+  // Cases fly out of the tile's cut top-right corner, the ejection port.
+  for (let i = 0; i < 10; i++) casing(c, TX + TS - 4, TY + 8, tl.since(tl.fireAt[i], t) / .55, 1);
+  readyChip(c, ready ? eo(sg(rk, .12, .32)) : 0);
+}
+
+// ---------------------------------------------------------------- C. round 3's C, worked further
+function pC(c, t, tl) {
+  const n = tl.n(t), full = Math.floor(n + 1e-6), part = n - full;
+  const rk = tl.since(tl.readyAt, t), use = t >= tl.useAt, ready = rk >= 0 && !use, live = rk >= 0 && t < tl.emptyAt;
+  tile(c);
+  const RX = TX - 64, RY = TY - 4, RW = 48, RH = TS + 8, RS = 10;
+  SK(c, RX, RY, RW, RH, RS, '#0b0b0d', 'rgba(255,245,247,.22)', 1.2);
+  const slotY = i => TY + TS - 10 - i * 14.6, lean = y => RS * (1 - (y - RY) / RH), slotX = i => RX + 6 + lean(slotY(i));
+  for (let i = 0; i < 10; i++) { const y = slotY(i), x = RX + lean(y) - 2; LN(c, x - (i % 5 === 4 ? 9 : 5), y, x, y, i < full ? 'rgba(255,245,247,.7)' : 'rgba(255,245,247,.22)', 1.4); }
+  const fk = use && full < 10 ? tl.since(tl.fireAt[full], t) / .12 : 9, glint = ready ? Math.floor((rk * 9) % 16) : -1;
+  for (let i = 0; i < 10; i++) {
+    const x = slotX(i), y = slotY(i);
+    if (i < full) {
+      const sk = use ? 9 : tl.since(tl.seatAt[i], t) / .22, seating = sk >= 0 && sk < 1;
+      slantRound(c, x - (seating ? 16 * (1 - kick(sk)) : 0), y, 30, 9, (seating && sk < .3) || i === glint ? ICE : P, ICE);
+      if (seating) sparks(c, x - 6, y, sk, ICE, 4, i * 3, -1);
+    } else {
+      slantRound(c, x, y, 30, 9, 'rgba(255,245,247,.06)', 'rgba(255,245,247,.09)');
+      if (i === full && !use && rk < 0 && part > .02) {
+        A(c, .3 * part, () => slantRound(c, x, y, 30, 9, P, ICE));
+        roundPath(c, x, y, 30, 9); c.setLineDash([70 * part, 70]); c.strokeStyle = ICE; c.lineWidth = 1.4; c.stroke(); c.setLineDash([]);
+      }
+    }
+  }
+  if (fk >= 0 && fk < 1) A(c, 1 - fk, () => slantRound(c, slotX(full), lp(slotY(full), TY - 22, eo(fk)), 30, 9, P, ICE));
+  // How many, read as a number under the rail.
+  const num = String(full).padStart(2, '0'), bump = full > 0 && !use ? pulse(t, tl.seatAt[full - 1] ?? -9, .02, .04, .16) : 0;
+  c.save(); c.translate(RX - 4, TY + TS + 30); c.scale(1 + bump * .14, 1 + bump * .14); T(c, num, 0, 0, 30, ready ? P : ICE); c.restore();
+  T(c, '/10', RX - 2 + W(c, '00', 30), TY + TS + 36, 12, 'rgba(255,245,247,.55)', 'left', MONO, '500 ');
+  // The chamber hatch over the rail: slammed shut by a pink plate once loaded.
+  const HX = RX + 10, HY = TY - 34;
+  SK(c, HX, HY, 40, 22, 6, '#08080a', 'rgba(255,245,247,.35)', 1.2); dd(c, HX + 23, HY + 11, 7, 'rgba(255,245,247,.45)');
+  if (live) { const k = kick(sg(rk, 0, .16)); SK(c, HX - 30 * (1 - k), HY, 40, 22, 6, rk < .05 ? ICE : P); diamond(c, HX + 23 - 30 * (1 - k), HY + 11, 6, INK); }
+  if (ready) A(c, .5 * heart(rk), () => SK(c, HX - 3, HY - 3, 46, 28, 7, null, P, 2));
+  for (let i = 0; i < 10; i++) { const k = tl.since(tl.fireAt[i], t); if (k >= 0 && k < .07) A(c, 1 - k / .07, () => SK(c, HX, HY, 40, 22, 6, ICE)); casing(c, HX + 4, HY + 8, k / .55, -1); }
+  readyChip(c, ready ? eo(sg(rk, .12, .32)) : 0);
+}
+
+// ================================================================ 2. health bar
+// Two hits break the shield, three bring health down into danger (25 or less), a medkit and a shield cell bring it back.
+const HDUR = 8, HEAL = 5.4, CELL = 6.3, REGEN = 7.1;
+const HITS = [{ at: .8, kind: 's', from: 50, to: 28 }, { at: 1.6, kind: 'b', from: 28, to: 0 },
+  { at: 2.5, kind: 'h', from: 100, to: 72 }, { at: 3.3, kind: 'h', from: 72, to: 38 }, { at: 4.0, kind: 'h', from: 38, to: 16 }];
+function shieldAt(t) { if (t < .8) return 50; if (t < 1.6) return 28; if (t < CELL) return 0; return lp(0, 50, eo(sg(t, CELL, CELL + .45))); }
+function hpAt(t) { if (t < 2.5) return 100; if (t < 3.3) return 72; if (t < 4) return 38; if (t < HEAL) return 16; if (t < REGEN) return lp(16, 61, eo(sg(t, HEAL, HEAL + .55))); return lp(61, 100, eo(sg(t, REGEN, REGEN + .6))); }
+// What was just lost stays white a moment, then shrinks away.
+function ghost(t, kinds, now) { for (const h of HITS) if (kinds.includes(h.kind) && t >= h.at && t < h.at + .75) return Math.max(now, lp(h.from, h.to, eo(sg(t, h.at + .35, h.at + .75)))); return now; }
+function shown(t) { for (const h of HITS) if (h.kind === 'h' && t >= h.at && t < h.at + .22) return lp(h.from, h.to, eo((t - h.at) / .22)); return hpAt(t); }
+function lastHit(t, kinds, dur) { for (const h of HITS) if (kinds.includes(h.kind) && t >= h.at && t < h.at + dur) return h; return null; }
+function hPhase(t) { return t < .8 ? '실드 50 · 체력 100' : t < 1.6 ? '실드 피격' : t < 2.5 ? '실드 깨짐' : t < 4 ? '체력 피격' : t < HEAL ? '위험 · 체력 16' : t < CELL ? '구급상자 +45' : t < REGEN ? '실드 셀 +50' : '회복'; }
+function bigNumber(c, v, lo, beat) {
+  const s = String(v); c.save(); c.translate(NX, 150); c.scale(1 + beat * .07, 1 + beat * .07); T(c, s, 0, 0, 46, lo ? P : ICE); c.restore();
+  T(c, '/ 100', NX + W(c, s, 46) + 8, 158, 15, 'rgba(255,245,247,.6)', 'left', MONO, '500 ');
+}
+function danger(c, x, y, t) { A(c, .65 + .35 * Math.sin(t * 9), () => { SK(c, x, y, 26, 20, 4, P); hazard(c, x + 3, y + 2, 20, 16, INK, t * 20, 3, 3); T(c, '위험', x + 34, y + 11, 15, P); }); }
+function floats(c, t, x, y) {
+  const a = sg(t, HEAL, HEAL + 1); if (t >= HEAL && a < 1) A(c, 1 - a * a, () => T(c, '+45', x, y - a * 22, 20, P));
+  const b = sg(t, CELL, CELL + 1); if (t >= CELL && b < 1) A(c, 1 - b * b, () => T(c, '+50', x, y - 28 - b * 22, 18, CY));
+}
+function shards(c, t, h, x0, x1, y, col, count) {
+  const k = (t - h.at) / .5; if (k < 0 || k >= 1) return;
+  for (let i = 0; i < count; i++) {
+    const px = lp(x0, x1, rnd(i + h.at * 10)), a = -Math.PI * (.15 + .7 * rnd(i + 3)), d = eo(k) * (18 + rnd(i + 5) * 40), s = 5 * (1 - k) + 1.5;
+    const qx = px + Math.cos(a) * d, qy = y + Math.sin(a) * d + k * k * 30;
+    A(c, 1 - k, () => PG(c, [qx, qy, qx + s * 1.6, qy - s * .4, qx + s * .4, qy + s], i % 3 ? col : '#fff'));
+  }
+}
+
+// ---------------------------------------------------------------- A. cells that break
+const CW = 46, CG = 5, CSK = 6, cellX = i => NX + i * (CW + CG);
+const posX = (v, per) => { const i = Math.min(4, Math.floor(v / per)); return cellX(i) + CW * cl((v - i * per) / per); };
+function hA(c, t) {
+  const hp = hpAt(t), sh = shieldAt(t), gh = ghost(t, 'h', hp), gs = ghost(t, 'sb', sh), lo = hp <= 25;
+  const hit = lastHit(t, 'h', .06), sHit = lastHit(t, 'sb', .06), SY = 170, SH = 6, HY = 181, HH = 22;
+  bigNumber(c, Math.round(shown(t)), lo, lo ? heart(t - 4) : 0);
+  if (lo) danger(c, NX + 150, 136, t);
+  for (let i = 0; i < 5; i++) {
+    SK(c, cellX(i), SY, CW, SH, 3, 'rgba(153,237,255,.13)');
+    fillSk(c, cellX(i), SY, CW, SH, 3, cl((gs - i * 10) / 10), ICE);
+    fillSk(c, cellX(i), SY, CW, SH, 3, cl((sh - i * 10) / 10), sHit ? '#fff' : CY);
+    SK(c, cellX(i), HY, CW, HH, CSK, 'rgba(255,79,120,.15)');
+    fillSk(c, cellX(i), HY, CW, HH, CSK, cl((gh - i * 20) / 20), ICE);
+    const f = cl((hp - i * 20) / 20);
+    if (lo) fillSk(c, cellX(i), HY, CW, HH, CSK, f, w => { R(c, cellX(i), HY, w, HH, P); hazard(c, cellX(i), HY, w, HH, 'rgba(14,14,17,.5)', t * 26, 5); });
+    else fillSk(c, cellX(i), HY, CW, HH, CSK, f, hit ? '#fff' : P);
+  }
+  // What a hit takes breaks off its cells and falls.
+  for (const h of HITS) {
+    const k = (t - h.at) / .55; if (h.kind !== 'h' || k < 0 || k >= 1) continue;
+    for (let i = 0; i < 5; i++) {
+      const a = Math.max(h.to, i * 20), b = Math.min(h.from, i * 20 + 20); if (b <= a) continue;
+      const x = cellX(i) + CW * (a - i * 20) / 20, w = CW * (b - a) / 20;
+      A(c, 1 - sg(k, .55, 1), () => { c.save(); c.translate(x + w / 2 + k * 22, HY + HH / 2 + k * k * 110 - k * 14); c.rotate(k * (.8 + rnd(i) * .6)); SK(c, -w / 2, -HH / 2, w, HH, CSK, k < .08 ? '#fff' : P); c.restore(); });
+    }
+  }
+  for (const h of HITS) if (h.kind !== 'h') shards(c, t, h, posX(h.to, 10), posX(h.from, 10), SY + 3, CY, h.kind === 'b' ? 16 : 7);
+  if (t >= HEAL && t < HEAL + .6) A(c, 1 - sg(t, HEAL + .45, HEAL + .6), () => SK(c, posX(hp, 20) - 3, HY - 2, 5, HH + 4, 4, ICE));
+  if (t >= CELL && t < CELL + .5) A(c, 1 - sg(t, CELL + .38, CELL + .5), () => SK(c, posX(sh, 10) - 2, SY - 2, 4, SH + 4, 2, '#fff'));
+  floats(c, t, NX + 262, 194);
+}
+
+// ---------------------------------------------------------------- B. a rangefinder scale
+function hB(c, t) {
+  const hp = hpAt(t), sh = shieldAt(t), gh = ghost(t, 'h', hp), gs = ghost(t, 'sb', sh), lo = hp <= 25, L = 258, y = 186;
+  c.save(); c.translate(NX, 0);
+  for (let v = 0; v <= 100; v += 5) {
+    const x = L * v / 100, big = v % 25 === 0, on = v <= hp, struck = HITS.some(h => h.kind === 'h' && t >= h.at && t < h.at + .3 && v <= h.from && v > h.to);
+    LN(c, x, y + 10, x, y + 10 + (big ? 9 : 4), struck ? '#fff' : on ? 'rgba(255,245,247,.85)' : 'rgba(255,245,247,.25)', big ? 2 : 1.2);
+    if (big) T(c, String(v), x, y + 28, 9, 'rgba(255,245,247,.5)', 'center', MONO, '500 ');
+  }
+  R(c, 0, y, L, 7, 'rgba(255,79,120,.16)');
+  if (lo) hazard(c, L * hp / 100, y, L * (1 - hp / 100), 7, 'rgba(255,79,120,.4)', t * 30, 4);
+  R(c, 0, y, L * gh / 100, 7, ICE); R(c, 0, y, L * hp / 100, 7, P);
+  // The shield: its own thin line above, on its own scale.
+  R(c, 0, y - 9, L, 3, 'rgba(153,237,255,.16)'); R(c, 0, y - 9, L * gs / 50, 3, ICE); R(c, 0, y - 9, L * sh / 50, 3, CY);
+  if (sh > 0) LN(c, L * sh / 50, y - 13, L * sh / 50, y - 4, CY, 2);
+  for (const h of HITS) if (h.kind !== 'h') shards(c, t, h, L * h.to / 50, L * h.from / 50, y - 8, CY, h.kind === 'b' ? 16 : 7);
+  if (t >= HEAL && t < HEAL + .6) A(c, 1 - sg(t, HEAL + .45, HEAL + .6), () => { const x = L * hp / 100; R(c, x - 3, y - 2, 6, 11, '#fff'); });
+  // The reading rides the end of the bar on a needle.
+  const v = shown(t), x = L * v / 100, hit = lastHit(t, 'h', .16), jit = hit ? (rnd(Math.floor(t * 60)) - .5) * 7 : 0;
+  const tw = 92, tx = Math.max(-10, x - tw) + jit, ty = 128;
+  SK(c, tx, ty, tw, 40, 8, lo ? P : PLATE, lo ? null : 'rgba(255,245,247,.35)', 1.2);
+  T(c, 'HP', tx + 14, ty + 13, 10, lo ? INK : 'rgba(255,245,247,.6)', 'left', MONO, '500 ');
+  T(c, String(Math.round(v)), tx + tw - 8, ty + 22, 32, lo ? INK : ICE, 'right');
+  LN(c, x + jit * .3, ty + 40, x, y - 1, lo ? P : ICE, 2); PG(c, [x - 4, y - 7, x + 4, y - 7, x, y - 1], lo ? P : ICE);
+  if (lo) T(c, '위험', L + 10, y + 4, 15, P);
+  c.restore();
+  floats(c, t, NX + L + 12, lo ? 168 : 192);
+}
+
+// ---------------------------------------------------------------- C. a thick plate with the number cut into it
+function hC(c, t) {
+  const hp = hpAt(t), sh = shieldAt(t), gh = ghost(t, 'h', hp), lo = hp <= 25, x0 = NX, y0 = 146, Wd = 262, Hd = 48, s = 12;
+  const hit = lastHit(t, 'h', .12), shake = hit ? (1 - (t - hit.at) / .12) * 4 * (Math.floor(t * 60) % 2 ? 1 : -1) : 0;
+  const path = () => { c.beginPath(); c.moveTo(x0 + s, y0); c.lineTo(x0 + Wd + s, y0); c.lineTo(x0 + Wd, y0 + Hd); c.lineTo(x0, y0 + Hd); c.closePath(); };
+  c.save(); c.translate(shake, 0);
+  path(); c.fillStyle = '#070709'; c.fill();
+  c.save(); path(); c.clip();
+  if (lo) hazard(c, x0, y0, Wd + s, Hd, 'rgba(255,79,120,.16)', t * 24, 7);
+  const span = Wd + s, fx = span * hp / 100, gx = span * gh / 100;
+  R(c, x0, y0, gx, Hd, 'rgba(255,245,247,.92)'); R(c, x0, y0, fx, Hd, P);
+  if (t >= HEAL && t < HEAL + .6) A(c, 1 - sg(t, HEAL + .45, HEAL + .6), () => R(c, x0 + fx - 4, y0, 6, Hd, '#fff'));
+  // Where the pink has passed under the number it reads dark on pink; elsewhere light on black.
+  const str = String(Math.round(shown(t))), nx = x0 + Wd - 6, ny = y0 + Hd / 2 + 2;
+  c.save(); c.beginPath(); c.rect(x0 + gx, y0, span, Hd); c.clip(); T(c, str, nx, ny, 40, lo ? P : ICE, 'right'); c.restore();
+  c.save(); c.beginPath(); c.rect(x0, y0, gx, Hd); c.clip(); T(c, str, nx, ny, 40, INK, 'right'); c.restore();
+  c.restore();
+  T(c, '/ 100', x0 + Wd + s, y0 - 11, 12, 'rgba(255,245,247,.55)', 'right', MONO, '500 ');
+  if (lo) danger(c, x0 + s, y0 - 30, t);
+  // The shield is a line round the plate, from its bottom-left corner clockwise, as long as the shield is.
+  const pts = [x0 - 4, y0 + Hd + 4, x0 + s - 5, y0 - 4, x0 + Wd + s + 5, y0 - 4, x0 + Wd + 4, y0 + Hd + 4, x0 - 4, y0 + Hd + 4];
+  const seg = []; let total = 0; for (let i = 0; i < pts.length - 2; i += 2) { const l = Math.hypot(pts[i + 2] - pts[i], pts[i + 3] - pts[i + 1]); seg.push(l); total += l; }
+  let left = total * sh / 50; const sHit = lastHit(t, 'sb', .06);
+  if (left > 0) {
+    c.beginPath(); c.moveTo(pts[0], pts[1]); let ex = pts[0], ey = pts[1];
+    for (let i = 0; i < seg.length && left > 0; i++) { const u = Math.min(1, left / seg[i]); ex = lp(pts[i * 2], pts[i * 2 + 2], u); ey = lp(pts[i * 2 + 1], pts[i * 2 + 3], u); c.lineTo(ex, ey); left -= seg[i]; }
+    c.strokeStyle = sHit ? '#fff' : CY; c.lineWidth = 3; c.lineJoin = 'miter'; c.stroke();
+  }
+  for (const h of HITS) if (h.kind !== 'h') shards(c, t, h, x0, x0 + Wd, y0 - 4, CY, h.kind === 'b' ? 18 : 7);
+  // The slice a hit takes drops off the plate's foot.
+  for (const h of HITS) {
+    const k = (t - h.at) / .55; if (h.kind !== 'h' || k < 0 || k >= 1) continue;
+    const a = span * h.to / 100, w = span * (h.from - h.to) / 100;
+    A(c, 1 - sg(k, .5, 1), () => { c.save(); c.translate(x0 + a + w / 2 + k * 20, y0 + Hd + 10 + k * k * 120); c.rotate(k * .7); R(c, -w / 2, -6, w, 12, k < .08 ? '#fff' : P); c.restore(); });
+  }
+  c.restore();
+  floats(c, t, x0 + Wd + 22, 172);
+}
+
+// ================================================================ the items
+const PSTYLE = { A: pA, B: pB, C: pC };
+const results = {}, views = {}, cards = [], noteTimers = {}, chains = {};
+const pickedPortrait = () => { const p = results.portrait && results.portrait.pick; return PSTYLE[p] ? p : 'C'; };
+const portraitFrame = draw => (c, t) => { scene(c); cluster(c, () => { draw(c, t, PTL); hpNow(c); }); phase(c, pPhase(t)); xKey(c, t); };
+const hpFrame = draw => (c, t) => { scene(c); cluster(c, () => { PSTYLE[pickedPortrait()](c, t, STILL); draw(c, t); }); phase(c, hPhase(t)); };
+
+const ITEMS = [
+  { id: 'portrait', memo: '메모 2 · 3차 C에서', title: '초상화와 궁극기: 탄창처럼 장전', dur: PDUR, poster: 4.3,
+    quote: '3차 메모: "C 느낌 좋은데. 탄창처럼 장전. 여기서 더 디벨롭 해 줘."',
+    now: '셋 다 한 발이 궁극기 10%예요. 맞힐 때마다 조금씩 차서 열 발이면 장전이 끝나고, X로 쓰면 한 발씩 빠져나가며 탄피가 튀어요. 체력바 아래 흰 궁극기 막대는 없애고 탄창이 대신해요. 빛은 탄창 쪽에만 두고 사진은 어느 시안도 가리지 않아요.',
+    drafts: [
+      ['A', '진짜 탄창을 꽂는다', '타일 아래에 휜 탄창이 살짝 떨어져 매달려 있어요. 탄은 진짜처럼 위에서 눌러 넣어 아래로 밀리고, 옆 창의 숫자로 몇 발인지 읽혀요. 열 발이 차면 탄창이 타일 안으로 철컥 꽂히고, 다 쓰면 빈 탄창이 떨어져 나가요.', pA],
+      ['B', '타일 테두리가 탄창', '타일 왼쪽 테두리가 그대로 탄창이 돼요. 탄이 옆에서 밀려 들어와 아래부터 쌓이고, 다 차면 타일 전체가 슬라이드처럼 뒤로 당겨졌다 돌아오며 위의 약실 마름모가 채워져요. 차지하는 자리가 가장 작아요.', pB],
+      ['C', '3차 C를 다듬은 것', '3차 C처럼 타일 옆 레일에 비스듬한 탄이 쌓이는데, 다음 탄은 테두리부터 그려지다 다 차면 옆에서 쾅 밀려 들어와요. 아래 숫자로 몇 발인지 읽히고, 열 발이면 위 약실 덮개가 분홍 판으로 닫혀요.', pC]] },
+  { id: 'hp', memo: '체력바', title: '체력바', dur: HDUR, poster: 4.5,
+    quote: '요청: "체력바랑 초상화쪽 디자인 시안 좀 함 보여 주실까?" 지금 게임의 체력바는 20씩 나뉜 분홍 칸, 그 위 하늘색 실드 띠, 위쪽 숫자예요.',
+    now: '셋 다 같은 일을 겪어요. 실드가 두 번 맞아 깨지고, 체력이 세 번 맞아 위험(25 이하)까지 가고, 구급상자와 실드 셀로 돌아와요. 왼쪽 초상화는 위에서 고른 시안으로 바뀌어요(아직 안 골랐으면 C).',
+    drafts: [
+      ['A', '깨지는 칸', '지금처럼 20씩 나뉜 칸이지만, 맞으면 잃은 만큼이 조각으로 떨어져 나가요. 실드도 10씩 칸으로 나뉘어 체력 칸 위에 얹혀요. 위험해지면 남은 칸이 빗금으로 바뀌고 숫자가 분홍으로 뛰어요.', hA],
+      ['B', '거리측정기 눈금', '가는 막대 아래에 0·25·50·75·100 눈금이 있고, 숫자 표가 바늘로 막대 끝을 가리키며 체력과 함께 움직여요. 맞으면 표가 흔들리고 잃은 구간의 눈금이 번쩍여요. 메인 메뉴의 거리측정기와 같은 말투예요.', hB],
+      ['C', '숫자를 새긴 판', '두꺼운 검은 판 안에 분홍이 차 있고, 숫자가 판 안에 크게 새겨져 있어요. 분홍이 숫자를 지나가면 숫자 색이 반으로 갈려요. 실드는 판을 두르는 하늘색 테두리로, 줄어드는 만큼 테두리가 걷혀요.', hC]] }
+];
+
+// ---------------------------------------------------------------- page
+const $ = id => document.getElementById(id);
+function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+let motion = !(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches), col = null, warned = false;
+const live = new Set();
+const io = 'IntersectionObserver' in window ? new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) live.add(e.target); else live.delete(e.target); }), { rootMargin: '160px' }) : null;
+const t0 = performance.now();
+
+function drawCard(cd, t) {
+  try { cd.ctx.save(); cd.ctx.clearRect(0, 0, 960, 540); cd.draw(cd.ctx, t); cd.ctx.restore(); }
+  catch (e) { cd.ctx.restore(); if (!warned) { warned = true; console.error(e); } }
+}
+const clock = cd => motion ? ((performance.now() - t0) / 1000) % cd.item.dur : cd.item.poster;
+function drawAll() { for (const cd of cards) drawCard(cd, clock(cd)); }
+function frame() {
+  if (motion) for (const cd of cards) if (!io || live.has(cd.cv)) drawCard(cd, clock(cd));
+  requestAnimationFrame(frame);
+}
+
+function build() {
+  const list = $('list');
+  for (const it of ITEMS) {
+    const sec = el('section', 'item'); sec.id = it.id;
+    const head = el('div', 'item-head'), top = el('div', 'item-top'), memo = el('span', 'memo'), picked = el('span', 'picked', '아직 안 고름');
+    memo.append(el('span', null, it.memo)); top.append(memo, el('h2', null, it.title), picked);
+    head.append(top, el('p', 'quote', it.quote), el('p', 'now', it.now)); sec.append(head);
+    const grid = el('div', 'drafts'), picks = {};
+    for (const [key, name, pitch, draw] of it.drafts) {
+      const card = el('article', 'card'), stage = el('div', 'stage'), cv = document.createElement('canvas');
+      cv.width = 960; cv.height = 540; cv.setAttribute('role', 'img'); cv.setAttribute('aria-label', it.title + ' 시안 ' + key + ': ' + name); stage.append(cv);
+      const body = el('div', 'card-body'), nm = el('div', 'card-name'); nm.append(el('span', 'letter', key), el('h3', null, name));
+      const act = el('div', 'card-actions'), pick = el('button', 'pick', key + ' 고르기');
+      pick.type = 'button'; pick.setAttribute('aria-pressed', 'false'); pick.addEventListener('click', () => choose(it.id, key)); act.append(pick);
+      body.append(nm, el('p', 'pitch', pitch), act); card.append(stage, body); grid.append(card);
+      const cd = { item: it, key, cv, ctx: cv.getContext('2d'), draw: it.id === 'portrait' ? portraitFrame(draw) : hpFrame(draw) };
+      cards.push(cd); if (io) io.observe(cv);
+      picks[key] = { card, pick };
+    }
+    sec.append(grid);
+    const after = el('div', 'after'), row = el('div', 'after-row'), none = el('button', 'none', '셋 다 아님');
+    none.type = 'button'; none.setAttribute('aria-pressed', 'false'); none.addEventListener('click', () => choose(it.id, 'none')); row.append(none);
+    const lab = el('label', null, '바꾸고 싶은 점'), ta = document.createElement('textarea');
+    lab.htmlFor = 'note-' + it.id; ta.id = 'note-' + it.id; ta.placeholder = it.id === 'portrait' ? '예: A의 꽂히는 동작에 C의 숫자를 붙여 줘' : '예: B의 눈금에 A의 깨지는 조각';
+    ta.addEventListener('input', () => typed(it.id, ta.value));
+    after.append(row, lab, ta); sec.append(after); list.append(sec);
+    views[it.id] = { picks, none, ta, picked };
+  }
+  $('n-all').textContent = ITEMS.length;
+}
+function render() {
+  let done = 0;
+  for (const it of ITEMS) {
+    const v = views[it.id], r = results[it.id] || {}, pick = r.pick || '';
+    if (pick) done++;
+    for (const k of Object.keys(v.picks)) { const on = pick === k; v.picks[k].card.dataset.on = String(on); v.picks[k].pick.setAttribute('aria-pressed', String(on)); v.picks[k].pick.textContent = on ? k + ' 골랐음' : k + ' 고르기'; }
+    v.none.setAttribute('aria-pressed', String(pick === 'none'));
+    v.picked.textContent = pick === 'none' ? '셋 다 아님' : pick ? pick + ' 고름' : '아직 안 고름'; v.picked.classList.toggle('on', !!pick);
+    if (document.activeElement !== v.ta) v.ta.value = r.note || '';
+  }
+  $('n-done').textContent = done;
+}
+function status(text, warn) { const s = $('status'); s.textContent = text; s.classList.toggle('warn', !!warn); }
+
+// Picks and notes: the page's shared store when it answers, this browser otherwise.
+const LS = 'enfilade-picks4';
+function saveLocal() { try { localStorage.setItem(LS, JSON.stringify(results)); } catch (e) { /* storage blocked */ } }
+function loadLocal() { try { const v = JSON.parse(localStorage.getItem(LS) || '{}'); if (v && typeof v === 'object') Object.assign(results, v); } catch (e) { /* storage blocked */ } }
+function write(id) {
+  const r = results[id] || {}, body = { pick: r.pick || '', note: r.note || '', at: new Date().toISOString() };
+  saveLocal();
+  if (!col) return;
+  chains[id] = (chains[id] || Promise.resolve()).then(() => col.doc(id).set(body)).catch(() => status('저장소에 쓰지 못했어요. 이 브라우저에는 남아 있어요.', true));
+}
+function choose(id, key) { const r = results[id] || (results[id] = {}); r.pick = r.pick === key ? '' : key; render(); write(id); if (!motion) drawAll(); }
+function typed(id, v) { const r = results[id] || (results[id] = {}); r.note = v; clearTimeout(noteTimers[id]); noteTimers[id] = setTimeout(() => write(id), 700); }
+async function connect() {
+  let db = null;
+  try { db = window.claude && window.claude.use ? await window.claude.use('db') : null; } catch (e) { db = null; }
+  if (!db) { status('저장소에 닿지 않아 이 브라우저에만 저장돼요.', true); return; }
+  col = db.collection('picks4');
+  const timer = setTimeout(() => status('저장소 응답을 기다리는 중이에요. 고른 것은 이 브라우저에도 남아요.', true), 10000);
+  col.onSnapshot(snap => {
+    clearTimeout(timer);
+    for (const d of snap.docs) if (d.exists) { const v = d.data() || {}; results[d.id] = { pick: typeof v.pick === 'string' ? v.pick : '', note: typeof v.note === 'string' ? v.note : '' }; }
+    render(); if (!motion) drawAll();
+    status(snap.metadata.fromCache ? '저장된 것을 불러오는 중…' : '고른 것과 메모는 이 페이지에 저장돼요.');
+  }, () => { clearTimeout(timer); col = null; status('저장소 연결이 끊겨 이 브라우저에만 저장돼요.', true); });
+}
+
+// A picture of the player's own, cut to a centred square as the game does (ProfilePicture); kept in this browser only.
+function usePicture(src, keep) {
+  const img = new Image();
+  img.onload = () => {
+    const k = document.createElement('canvas'); k.width = k.height = 256; const s = Math.min(img.width, img.height);
+    k.getContext('2d').drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, 0, 0, 256, 256);
+    photo = k; $('unphoto').hidden = false; drawAll();
+    if (keep) try { localStorage.setItem('enfilade-photo', k.toDataURL('image/jpeg', .86)); } catch (e) { /* storage blocked */ }
+  };
+  img.src = src;
+}
+$('photo').addEventListener('change', e => { const f = e.target.files && e.target.files[0]; if (f) usePicture(URL.createObjectURL(f), true); e.target.value = ''; });
+$('unphoto').addEventListener('click', () => { photo = null; $('unphoto').hidden = true; try { localStorage.removeItem('enfilade-photo'); } catch (e) { /* storage blocked */ } drawAll(); });
+$('motion').addEventListener('click', () => { motion = !motion; const b = $('motion'); b.setAttribute('aria-pressed', String(motion)); b.textContent = motion ? '움직임 켬' : '움직임 끔'; drawAll(); });
+
+build(); loadLocal(); render();
+$('motion').setAttribute('aria-pressed', String(motion)); $('motion').textContent = motion ? '움직임 켬' : '움직임 끔';
+try { const saved = localStorage.getItem('enfilade-photo'); if (saved) usePicture(saved, false); } catch (e) { /* storage blocked */ }
+drawAll(); requestAnimationFrame(frame);
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(drawAll);
+connect();
+</script>
