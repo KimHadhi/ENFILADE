@@ -7,9 +7,12 @@ using UnityEngine.AI;
 /// which does no harm of its own but holds the player (PlayerHold) and can't be guarded or parried, only dodged; or,
 /// at the user's word (lying down was safe from every swing), any zombie kneeling to eat a player lying on the ground:
 /// it holds them there and bites at once; or a runner's leap (G&B-2, ZombieRunner), which pins whoever is still where
-/// they stood as it began (PlayerHold) and can't be guarded or parried, only dodged or stepped out of.
+/// they stood as it began (PlayerHold) and can't be guarded or parried, only dodged or stepped out of. Saw: a breadbag's
+/// chainsaw (ZombieBreadbag): the windup is the engine revving, then it cuts whoever is in front for a while. Backstab: a
+/// ninja's blow from behind after it steps out of its smoke (ZombieNinja): parried only by someone turned to face it.
+/// New moves go on the end: the network sends the number.
 /// </summary>
-public enum AttackMove : byte { Swing, Bite, Grab, Feed, Pounce }
+public enum AttackMove : byte { Swing, Bite, Grab, Feed, Pounce, Saw, Backstab }
 
 [RequireComponent(typeof(NavMeshAgent))]
 [RequireComponent(typeof(EnemyHealth))]
@@ -55,8 +58,9 @@ public sealed class EnemyCombatAI : MonoBehaviour
     [SerializeField, Min(.1f)] private float pounceRadius = 1.1f;
     [Tooltip("A brute's blow throws whoever it lands on this fast away (m/s) and this fast up (ZombieKinds knock, knockUp). 0 throws no one.")]
     [SerializeField] private Vector2 slam;
-    // The bite's cue, pitched down from the swing's so it sounds heavier; a grab's a little lower too; a brute's lowest.
-    private const float BitePitch = .72f, GrabPitch = .85f, PouncePitch = 1.2f, SlamPitch = .6f;
+    // The bite's cue, pitched down from the swing's so it sounds heavier; a grab's a little lower too; a brute's lowest. A
+    // chainsaw's cut is low and long, a ninja's blow from behind sharp.
+    private const float BitePitch = .72f, GrabPitch = .85f, PouncePitch = 1.2f, SlamPitch = .6f, SawPitch = .7f, BackstabPitch = 1.35f;
     // Moving away from it faster than this (m/s), a player isn't grabbed but clawed.
     private const float AwaySpeed = 1f;
     private AttackMove move;
@@ -89,7 +93,15 @@ public sealed class EnemyCombatAI : MonoBehaviour
     public float ApproachDistance => attackRange * approachShare;
     /// <summary>Seconds from the attack cue to the hit (ZombieBody lands its swing clip's strike there).</summary>
     public float Windup => move == AttackMove.Bite ? biteWindup : move == AttackMove.Grab ? grabWindup
-        : move == AttackMove.Feed ? feedWindup : move == AttackMove.Pounce ? pounceWindup : windup;
+        : move == AttackMove.Feed ? feedWindup : move == AttackMove.Pounce ? pounceWindup
+        : move == AttackMove.Backstab && Elite != null && Elite.WindupOf(move) > 0f ? Elite.WindupOf(move) : windup;
+    /// <summary>The move under way (or last made).</summary>
+    public AttackMove Move => move;
+    /// <summary>
+    /// A memo elite's own part (ZombieElite sets it as it is put on): it picks its kind's attack, may hold the swing back
+    /// while it moves itself, and hears how its blows went.
+    /// </summary>
+    internal ZombieElite Elite { get; set; }
     /// <summary>The windup under way is a bite at the neck: fatal if it lands (ZombieBody shows the lunge).</summary>
     public bool IsBiting => preparing && move == AttackMove.Bite;
     /// <summary>The windup under way is a grab (ZombieBody shows the reach).</summary>
@@ -187,6 +199,8 @@ public sealed class EnemyCombatAI : MonoBehaviour
         // A charger winding up, charging or sliding to a stop swings at no one: running into them is its blow (ZombieCharger).
         if (charger == null) charger = GetComponent<ZombieCharger>();
         if (charger != null && charger.Driving) { if (preparing) CancelAttack(); timer = 0f; return; }
+        // Nor a memo elite while it moves itself (a ninja in its smoke, a candyman dragging, a breadbag's cut running on).
+        if (Elite != null && Elite.Driving) { if (preparing) CancelAttack(); timer = 0f; return; }
 
         // A runner doesn't swing: ZombieRunner starts its leap (Pounce), and here it lands.
         if (pounces)
@@ -258,7 +272,10 @@ public sealed class EnemyCombatAI : MonoBehaviour
         // players on other PCs too.) Nor anyone up on a step or down below one (Level): a shambler under a ledge took
         // hold of the player standing on it, hidden by the very floor they stood on (user, 2026-11-11 playtest).
         bool level = Level(player);
-        move = Lying(player) && level ? AttackMove.Feed
+        // A memo elite makes its own kind's attack (a breadbag's chainsaw, a candyman's hook) where it has one.
+        var chosen = Elite != null ? Elite.Choose(player, level) : null;
+        move = chosen.HasValue ? chosen.Value
+            : Lying(player) && level ? AttackMove.Feed
             : grabs && level && !MovingAway() && !player.IsParkour ? AttackMove.Grab
             : comboIndex == 0 && biteShare > 0f && Random.value < biteShare ? AttackMove.Bite : AttackMove.Swing;
         lockedAim = player.transform.position + Vector3.up * AimHeightFor(player);
@@ -275,6 +292,8 @@ public sealed class EnemyCombatAI : MonoBehaviour
         preparing = false;
         timer = 0f;
         UpdateIndicator(false);
+        // A memo elite hears its windup end here (a breadbag's cut starts on it), as every copy does in TickCopy.
+        if (Elite != null) Elite.Struck(move);
 
         bool finisher = move == AttackMove.Pounce || comboIndex >= Mathf.Max(1, comboHits) - 1;
         // Aimed at someone on another PC, the swing lands there. A parry comes back as a stun, which ends the combo.
@@ -434,6 +453,8 @@ public sealed class EnemyCombatAI : MonoBehaviour
     private DamageResult Strike()
     {
         if (move == AttackMove.Pounce) return Land();
+        // A chainsaw's cut is no single blow: it runs on a while, and every PC cuts its own player (ZombieBreadbag).
+        if (move == AttackMove.Saw) return DamageResult.Ignored;
         // The height rule again where the hit is judged (the victim's PC, or the host for its own player): a hop or a step
         // up during the windup takes them out of a grab's or a kneel's reach, and it claws instead (the 2026-11-11 review).
         if (move == AttackMove.Grab || move == AttackMove.Feed)
@@ -469,25 +490,53 @@ public sealed class EnemyCombatAI : MonoBehaviour
 
         // A grab or a feed does no harm of its own (PlayerHold holds them and bites), but a hit needs some to land.
         bool holds = move == AttackMove.Grab || move == AttackMove.Feed;
+        // Whom it lands on is judged on this PC: the host's own player, or this PC's for a copy. A memo elite may say it
+        // can't be guarded from where they stand (a ninja behind someone who hasn't turned to it).
+        var victim = network != null && network.IsCopy ? PlayerRoster.Local : player;
+        bool guardable = !holds && (Elite == null || Elite.GuardableBy(victim, move));
         DamageHit hit = new DamageHit(
             DamageHit.NewAttackId(),
             holds ? .01f : damage,
             DamageKind.Attack,
             lockedAim,
             direction,
-            gameObject, !holds, 0f, comboIndex >= Mathf.Max(1, comboHits) - 1,
+            gameObject, guardable, 0f, comboIndex >= Mathf.Max(1, comboHits) - 1,
             method: move == AttackMove.Grab ? DamageMethod.Grab : move == AttackMove.Feed ? DamageMethod.Feed
                 : slam.x > 0f || slam.y > 0f ? DamageMethod.Slam : DamageMethod.Other,
             isFatal: fatalHit || move == AttackMove.Bite
         );
 
-        return AttackTrace.Raycast(
+        var result = AttackTrace.Raycast(
             hit,
             origin,
             direction,
             reach,
             hitLayers
         );
+        // Turned aside, the elite hears of it on the PC that turned it (the reward and its stagger start there).
+        if (Elite != null && victim != null)
+        {
+            if (result == DamageResult.Parried) Elite.Parried(victim);
+            else if (result == DamageResult.Blocked) Elite.Blocked(victim);
+        }
+        return result;
+    }
+
+    /// <summary>
+    /// A memo elite starts this attack on this player now, wherever it stands (a ninja stepping out of its smoke behind
+    /// them): the windup runs from here as any other's, cue, voice and the word to the other PCs included.
+    /// </summary>
+    internal void BeginSpecial(PlayerMovement target, AttackMove special)
+    {
+        if (target == null) return;
+        if (preparing) CancelAttack();
+        player = target;
+        comboIndex = 0;
+        preparing = true; timer = 0f; move = special;
+        lockedAim = target.transform.position + Vector3.up * AimHeightFor(target);
+        UpdateIndicator(true);
+        Telegraph(target.IsLocal);
+        if (network != null) network.AnnounceWindup(target, 0, move);
     }
 
     /// <summary>
@@ -511,7 +560,8 @@ public sealed class EnemyCombatAI : MonoBehaviour
     }
 
     private float CuePitch => move == AttackMove.Bite ? BitePitch : move == AttackMove.Grab || move == AttackMove.Feed ? GrabPitch
-        : move == AttackMove.Pounce ? PouncePitch : slam.x > 0f || slam.y > 0f ? SlamPitch : 1f;
+        : move == AttackMove.Pounce ? PouncePitch : move == AttackMove.Saw ? SawPitch : move == AttackMove.Backstab ? BackstabPitch
+        : slam.x > 0f || slam.y > 0f ? SlamPitch : 1f;
 
     // When this zombie last voiced an attack (game time), so it doesn't snarl at every swing (ZombieVoice ownGap).
     private float voicedAt = float.NegativeInfinity;
@@ -579,6 +629,7 @@ public sealed class EnemyCombatAI : MonoBehaviour
         preparing = false;
         timer = 0f;
         UpdateIndicator(false);
+        if (Elite != null) Elite.Struck(move);
         // The host can't see a rider land in time; this PC can, and doesn't swing at its own rider either.
         if (aimedHere && !EnemyHead.Carries(this, PlayerRoster.Local)) Strike();
     }
@@ -586,6 +637,8 @@ public sealed class EnemyCombatAI : MonoBehaviour
     public void CancelAttack()
     {
         if (preparing && network != null) network.AnnounceCancel();
+        // A breadbag's cut runs on past its windup: it stops with the rest (ZombieElite.Cancelled).
+        if (Elite != null) Elite.Cancelled();
         preparing = false;
         move = AttackMove.Swing;
         timer = 0f;

@@ -24,6 +24,7 @@ public static class PlayerConsoleCommands
                 else if (part.Equals("brute", StringComparison.OrdinalIgnoreCase) || part == "거구") { kind = ZombieKind.Brute; rank ??= EnemyRank.Elite; }
                 else if (part.Equals("exploder", StringComparison.OrdinalIgnoreCase) || part == "자폭") { kind = ZombieKind.Exploder; rank ??= EnemyRank.Elite; }
                 else if (part.Equals("charger", StringComparison.OrdinalIgnoreCase) || part == "돌진") { kind = ZombieKind.Charger; rank ??= EnemyRank.Elite; }
+                else if (char.IsLetter(part[0]) && Enum.TryParse(part, true, out ZombieKind named)) { kind = named; rank ??= EnemyRank.Elite; } // ninja, candyman, breadbag: any kind by its name
                 else if (!int.TryParse(part, NumberStyles.Integer, CultureInfo.InvariantCulture, out count) || count < 1) return usage;
             }
             if (!p.DamageReceiver.IsAlive) return "사망 상태입니다. /revive를 먼저 사용하세요.";

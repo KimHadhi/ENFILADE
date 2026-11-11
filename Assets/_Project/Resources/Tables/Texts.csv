@@ -6,6 +6,9 @@ zombie.runner,러너,,좀비 이름
 zombie.brute,거구,,좀비 이름(노래 절정에 나오는 보스)
 zombie.exploder,자폭 좀비,,좀비 이름(엘리트)
 zombie.charger,돌진 좀비,,좀비 이름(엘리트)
+zombie.ninja,닌자,Ninja,좀비 이름(11-11 메모의 엘리트: 연기 속에 사라졌다 등 뒤에서 친다)
+zombie.candyman,캔디맨,Candyman,좀비 이름(11-11 메모의 엘리트: 갈고리로 동료를 끌고 간다)
+zombie.breadbag,브레드백,Breadbag,좀비 이름(11-11 메모의 엘리트: 전기톱)
 #--- 붙잡힘·깔림 ---,,,
 hold.shove,[V] 밀치기 · 주먹으로 떼어내기,,셤블러에게 잡혔을 때 화면 아래 안내
 hold.pinned,깔렸다!,,러너에게 깔렸을 때 큰 글씨
@@ -686,3 +689,9 @@ special.lastround,LAST ROUND,LAST ROUND,특수 처치: 탄창의 마지막 한 �
 special.lastround.note,탄창의 마지막 한 발로,With the magazine's last round,특수 처치 도장의 이유 줄
 special.savior,SAVIOR,SAVIOR,특수 처치: 동료를 붙잡은(잡기·먹기·깔기) 좀비를 처치했을 때
 special.savior.note,동료를 붙든 놈을,The one holding a teammate,특수 처치 도장의 이유 줄
+hud.alert.ninja,닌자 — 연기 속에서 등 뒤로 온다. 칼 소리에 돌아서 패링,Ninja: it vanishes and strikes from behind. Turn and parry at the blade's ring,화면 위 경고 띠: 이 판에서 닌자를 처음 가까이 봤을 때 한 번. 무엇을 하고 어떻게 이기는지
+hud.alert.candyman,캔디맨 — 갈고리로 동료를 끌고 간다. 쫓아가 쏘거나 넘어뜨려 풀어 줘,Candyman: it hooks a teammate and drags them off. Chase it and shoot or knock it down,화면 위 경고 띠: 캔디맨을 처음 가까이 봤을 때 한 번
+hud.alert.breadbag,브레드백 — 전기톱 시동 소리에 패링하면 튕겨 나간다. 가드는 갈려 뚫린다,Breadbag: parry the chainsaw as it revs. A guard alone gets ground through,화면 위 경고 띠: 브레드백을 처음 가까이 봤을 때 한 번
+hud.hold.hooked,갈고리에 걸렸다 — 살을 파고들어 계속 아프다. V를 연타해 몸부림쳐라,Hooked: it tears at you all the while. Mash V to struggle free,캔디맨의 갈고리에 걸려 끌려갈 때 내 화면 위 알림 한 번
+feed.score.ninja_parry,닌자 튕겨내기,Ninja parried,점수 팝업의 줄: 닌자의 등 뒤 공격을 돌아서 패링했을 때(돈)
+feed.score.saw_parry,전기톱 튕겨내기,Chainsaw parried,점수 팝업의 줄: 브레드백의 전기톱을 패링했을 때(돈)

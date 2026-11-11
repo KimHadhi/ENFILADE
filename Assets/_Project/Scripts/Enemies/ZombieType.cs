@@ -6,9 +6,11 @@ using UnityEngine.AI;
 /// What kind of zombie it is (ZombieType). Shambler is 0, so an older report reads as one. Brute: the boss that comes
 /// at a song's highlight (friend feedback C2), never picked at random. Exploder: an elite that walks in and bursts
 /// (ZombieExploder, stage C-16), and Charger: one that bellows and runs people down (ZombieCharger), each picked now
-/// and then by its share.
+/// and then by its share. The 2026-11-11 memo's elites (items 23 and 25): Ninja, vanishing in smoke to strike from
+/// behind (ZombieNinja); Candyman, hooking a player and dragging them off (ZombieCandyman); Breadbag, with a chainsaw
+/// (ZombieBreadbag). New kinds go on the end: the number is what the network sends.
 /// </summary>
-public enum ZombieKind : byte { Shambler, Runner, Brute, Exploder, Charger }
+public enum ZombieKind : byte { Shambler, Runner, Brute, Exploder, Charger, Ninja, Candyman, Breadbag }
 
 /// <summary>
 /// Multiplayer plan stage 4D-1, made Guts & Blackpowder's at the user's word: what kind of zombie it is. A shambler
@@ -80,6 +82,8 @@ public sealed class ZombieType : MonoBehaviour
         [Tooltip("Fast, it breaks into a run (the run clips). Off, it hurries in its own walk played faster instead, so only " +
                  "a runner (and the big elites) is ever seen running (user, 2026-11-11: shamblers running read as runners).")]
         public bool runs;
+        [Tooltip("The most of this kind about at once when picked by share (0: no limit), so one elite stays a moment.")]
+        public int most;
     }
 
     // Guts & Blackpowder's shambler, its 14 studs a second against a player's walking 16 put to our walk (4.9 m/s).
@@ -121,6 +125,25 @@ public sealed class ZombieType : MonoBehaviour
         attackRange = 2.1f, approachShare = .7f, healthShare = 8f, scale = 1.28f, knock = 10f, knockUp = 5f, runs = true
     };
 
+    // The memo's elites (2026-11-11, items 23 and 25). Each is rare, alone or nearly, and has its own way to be beaten
+    // and a reward for doing it (ZombieNinja, ZombieCandyman, ZombieBreadbag). None has a model of its own yet: a pack
+    // body, a little bigger or smaller, its light and what it carries tell it apart (EliteLooks holds the slots).
+    private readonly Numbers ninja = new Numbers
+    {
+        share = .02f, speed = 5.2f, acceleration = 14f, angularSpeed = 420f, damage = 22f, windup = .45f, attackInterval = 1.3f,
+        aimHeight = 1.2f, attackRange = 1.8f, approachShare = .7f, healthShare = 2.2f, scale = .96f, most = 2
+    };
+    private readonly Numbers candyman = new Numbers
+    {
+        share = .015f, speed = 4f, acceleration = 8f, angularSpeed = 170f, damage = 12f, windup = .5f, attackInterval = 1.3f,
+        grabs = true, grabWindup = .55f, attackRange = 1.9f, approachShare = .7f, healthShare = 4f, scale = 1.16f, most = 1
+    };
+    private readonly Numbers breadbag = new Numbers
+    {
+        share = .015f, speed = 3.4f, acceleration = 8f, angularSpeed = 150f, damage = 0f, windup = .9f, attackInterval = 2.2f,
+        aimHeight = 1.1f, attackRange = 2.1f, approachShare = .75f, healthShare = 6f, scale = 1.18f, most = 1
+    };
+
     private NavMeshAgent agent;
     private EnemyCombatAI combat;
     private ZombieMind mind;
@@ -132,8 +155,14 @@ public sealed class ZombieType : MonoBehaviour
     public ZombieKind Kind { get; private set; }
     /// <summary>Its body's size against the pack's own (ZombieBody).</summary>
     public float Scale => Mathf.Clamp((Kind == ZombieKind.Brute ? brute : Current).scale, .5f, 3f);
-    private Numbers Current => Crawls ? crawler : Kind == ZombieKind.Runner ? runner : Kind == ZombieKind.Brute ? brute
-        : Kind == ZombieKind.Exploder ? exploder : Kind == ZombieKind.Charger ? charger : shambler;
+    private Numbers Current => Crawls ? crawler : Of(Kind);
+
+    private Numbers Of(ZombieKind kind) => kind == ZombieKind.Runner ? runner : kind == ZombieKind.Brute ? brute
+        : kind == ZombieKind.Exploder ? exploder : kind == ZombieKind.Charger ? charger : kind == ZombieKind.Ninja ? ninja
+        : kind == ZombieKind.Candyman ? candyman : kind == ZombieKind.Breadbag ? breadbag : shambler;
+
+    /// <summary>A memo elite (ninja, candyman, breadbag): its own component plays it out.</summary>
+    public bool IsMemoElite => Kind == ZombieKind.Ninja || Kind == ZombieKind.Candyman || Kind == ZombieKind.Breadbag;
     /// <summary>Lost a leg: it crawls with the Crawler numbers, whatever its kind.</summary>
     public bool Crawls { get; private set; }
     /// <summary>Fast, its body breaks into a run; otherwise it hurries in its walk (ZombieBody.Move, ZombieKinds runs).</summary>
@@ -167,12 +196,42 @@ public sealed class ZombieType : MonoBehaviour
         GameTables.BindNested(TableName, nameof(ZombieKind.Brute), this, brute);
         GameTables.BindNested(TableName, nameof(ZombieKind.Exploder), this, exploder);
         GameTables.BindNested(TableName, nameof(ZombieKind.Charger), this, charger);
+        GameTables.BindNested(TableName, nameof(ZombieKind.Ninja), this, ninja);
+        GameTables.BindNested(TableName, nameof(ZombieKind.Candyman), this, candyman);
+        GameTables.BindNested(TableName, nameof(ZombieKind.Breadbag), this, breadbag);
         GameTables.Reloaded += Reapply;
-        float runners = Mathf.Max(0f, runner.share), exploders = Mathf.Max(0f, exploder.share), chargers = Mathf.Max(0f, charger.share);
-        float roll = UnityEngine.Random.value * (Mathf.Max(0f, shambler.share) + runners + exploders + chargers);
-        Kind = roll < runners ? ZombieKind.Runner : roll < runners + exploders ? ZombieKind.Exploder
-            : roll < runners + exploders + chargers ? ZombieKind.Charger : ZombieKind.Shambler;
+        Kind = Roll();
         Apply();
+    }
+
+    // The kinds picked by their shares, in this order; whatever the roll leaves is a shambler.
+    private static readonly ZombieKind[] Rolled =
+        { ZombieKind.Runner, ZombieKind.Exploder, ZombieKind.Charger, ZombieKind.Ninja, ZombieKind.Candyman, ZombieKind.Breadbag };
+
+    // One kind by the shares, leaving out a kind already about as many times as its `most` allows.
+    private ZombieKind Roll()
+    {
+        float total = Mathf.Max(0f, shambler.share);
+        foreach (var kind in Rolled) total += Available(kind);
+        float roll = UnityEngine.Random.value * total;
+        foreach (var kind in Rolled)
+        {
+            float share = Available(kind);
+            if (roll < share) return kind;
+            roll -= share;
+        }
+        return ZombieKind.Shambler;
+    }
+
+    private float Available(ZombieKind kind)
+    {
+        var numbers = Of(kind);
+        if (numbers.share <= 0f) return 0f;
+        if (numbers.most <= 0) return numbers.share;
+        int about = 0;
+        foreach (var enemy in EnemyHealth.Living)
+            if (enemy != null && enemy != health && enemy.TryGetComponent(out ZombieType other) && other.Kind == kind) about++;
+        return about >= numbers.most ? 0f : numbers.share;
     }
 
     private void OnDestroy() => GameTables.Reloaded -= Reapply;
@@ -238,5 +297,9 @@ public sealed class ZombieType : MonoBehaviour
         }
         if (body == null) body = GetComponent<ZombieBody>();
         if (body != null) body.Regrow();
+        // A memo elite's own part, put on only when it is one (most zombies never carry them).
+        if (Kind == ZombieKind.Ninja && !TryGetComponent(out ZombieNinja _)) gameObject.AddComponent<ZombieNinja>();
+        if (Kind == ZombieKind.Candyman && !TryGetComponent(out ZombieCandyman _)) gameObject.AddComponent<ZombieCandyman>();
+        if (Kind == ZombieKind.Breadbag && !TryGetComponent(out ZombieBreadbag _)) gameObject.AddComponent<ZombieBreadbag>();
     }
 }

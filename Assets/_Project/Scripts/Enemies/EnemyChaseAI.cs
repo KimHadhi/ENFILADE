@@ -21,6 +21,9 @@ public sealed class EnemyChaseAI : MonoBehaviour
     private const float SpotStop = .15f;
     private float updateTimer, appliedPace = 1f;
 
+    /// <summary>A memo elite's own part (ZombieElite sets it as it is put on): it may move the body itself.</summary>
+    internal ZombieElite Elite { get; set; }
+
     private void Awake()
     {
         agent = GetComponent<NavMeshAgent>();
@@ -46,9 +49,11 @@ public sealed class EnemyChaseAI : MonoBehaviour
         // A runner charging, leaping or skidding moves itself (ZombieRunner, added by ZombieType, maybe after Awake).
         if (runner == null) runner = GetComponent<ZombieRunner>();
         if (runner != null && runner.Driving) return;
-        // So does a charger winding up, charging or sliding to a stop (ZombieCharger).
+        // So does a charger winding up, charging or sliding to a stop (ZombieCharger), and a memo elite moving itself (a
+        // ninja vanishing, a candyman dragging someone off, a breadbag's cut: ZombieElite, which tells this one it is there).
         if (charger == null) charger = GetComponent<ZombieCharger>();
         if (charger != null && charger.Driving) return;
+        if (Elite != null && Elite.Driving) return;
         if (PlayerExecution.Suppresses(this) || (enemyHealth != null && enemyHealth.WavePaused) || GetComponent<MeleeCombatTarget>()?.IsStunned == true)
         { agent.isStopped = true; return; }
         if (enemyHealth != null && !enemyHealth.IsAlive)

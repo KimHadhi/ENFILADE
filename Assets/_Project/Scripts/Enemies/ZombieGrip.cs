@@ -4,9 +4,10 @@ using UnityEngine.AI;
 
 /// <summary>
 /// How a zombie holds a player (ZombieGrip, PlayerHold): a shambler's grab, standing; kneeling to eat someone lying on
-/// the ground; or a runner's pin (G&amp;B-2), knelt over them at their neck.
+/// the ground; a runner's pin (G&amp;B-2), knelt over them at their neck; or a candyman's hook (the 2026-11-11 memo, item
+/// 25), dragging them off behind it (ZombieCandyman). New kinds go on the end: the network sends the number.
 /// </summary>
-public enum HoldKind : byte { Grab, Feed, Pin }
+public enum HoldKind : byte { Grab, Feed, Pin, Drag }
 
 /// <summary>
 /// Stage G&B-1 (Guts &amp; Blackpowder's wrestle): a shambler holding a player. The held player's own PC decides the hold
@@ -27,6 +28,9 @@ public sealed class ZombieGrip : MonoBehaviour
     // Pinning, from where it kneels to their chest (m), and how far their chest lies past their feet (m); and the longest
     // a pin holds without word (s): the bite kills well before.
     private const float PinDistance = .5f, PinChest = .35f, LongestPin = 12f;
+    // A drag lasts until its victim's PC says it ended (a rescue, a struggle, going down); past this without word (s) it
+    // lets go by itself.
+    private const float LongestDrag = 30f;
 
     private static readonly List<ZombieGrip> holding = new List<ZombieGrip>();
 
@@ -38,8 +42,24 @@ public sealed class ZombieGrip : MonoBehaviour
     private readonly List<Collider> body = new List<Collider>();
     private Collider heldCapsule;
     private float since;
-    private bool shown, shownFeeding, feeding, pinning;
+    private bool shown, shownFeeding, feeding, pinning, dragging;
     private Vector3 pinWay;
+    private ZombieType zombieType;
+
+    /// <summary>
+    /// A candyman drags the player it holds off behind it (ZombieCandyman walks; they follow on their own PC). Elsewhere
+    /// a candyman seen holding anyone is dragging: it holds no other way.
+    /// </summary>
+    public bool Dragging
+    {
+        get
+        {
+            if (held != null) return dragging;
+            if (!shown) return false;
+            if (zombieType == null) TryGetComponent(out zombieType);
+            return zombieType != null && zombieType.Kind == ZombieKind.Candyman;
+        }
+    }
 
     /// <summary>It holds a player: thought where it runs or by the held player's PC, shown everywhere else.</summary>
     public bool IsHolding => held != null || shown;
@@ -69,14 +89,15 @@ public sealed class ZombieGrip : MonoBehaviour
         if (player == null) return;
         if (held == player)
         {
-            feeding |= kind != HoldKind.Grab;
+            feeding |= kind == HoldKind.Feed || kind == HoldKind.Pin;
             if (kind == HoldKind.Pin && !pinning) { pinning = true; since = Time.time; pinWay = WayTo(player); }
             return;
         }
         if (held != null) LetGo();
         held = player;
-        feeding = kind != HoldKind.Grab;
+        feeding = kind == HoldKind.Feed || kind == HoldKind.Pin;
         pinning = kind == HoldKind.Pin;
+        dragging = kind == HoldKind.Drag;
         pinWay = WayTo(player);
         since = Time.time;
         if (!holding.Contains(this)) holding.Add(this);
@@ -91,7 +112,7 @@ public sealed class ZombieGrip : MonoBehaviour
         if (held == null) return;
         PassThrough(false);
         held = null;
-        feeding = pinning = false;
+        feeding = pinning = dragging = false;
         holding.Remove(this);
         if (Runs && agent != null && agent.isActiveAndEnabled && agent.isOnNavMesh) agent.isStopped = false;
     }
@@ -134,9 +155,11 @@ public sealed class ZombieGrip : MonoBehaviour
         if (health == null || !health.IsAlive || held == null || !held.IsInitialized) { LetGo(); return; }
         if (!Runs) return;
         // Word that it let go never came (the held player left, or the message was lost).
-        if (Time.time - since > (pinning ? LongestPin : LongestHold)) { LetGo(); return; }
+        if (Time.time - since > (pinning ? LongestPin : dragging ? LongestDrag : LongestHold)) { LetGo(); return; }
         // Knocked down, its body lies where it fell until word that it let go comes.
         if (melee != null && melee.IsLying) return;
+        // Dragging, it leads and they follow (ZombieCandyman walks it, their PC pulls them after it).
+        if (dragging) return;
         // Pinning, it goes for their chest, which lies past their feet the way it came at them.
         Vector3 at = held.transform.position + (pinning ? pinWay * PinChest : Vector3.zero);
         Vector3 toward = Vector3.ProjectOnPlane(at - transform.position, Vector3.up);

@@ -148,8 +148,8 @@ public sealed partial class ZombieBody
         biteSwing.SetTime(SwingTime(biteHit));
         grabSwing.SetTime(SwingTime(grabHit));
         feedStart.SetTime(SwingTime(feedStartHit));
-        // Holding someone it hangs on to them, round and round.
-        bool holding = grip != null && grip.IsHolding && !down;
+        // Holding someone it hangs on to them, round and round. A candyman dragging someone off walks on its legs instead.
+        bool holding = grip != null && grip.IsHolding && !grip.Dragging && !down;
         holdWeight = Mathf.MoveTowards(holdWeight, holding ? 1f : 0f, Time.deltaTime / (holding ? HoldIn : HoldOut));
         // Kneeling to eat, or standing holding on.
         feedShare = grip != null && grip.Feeding ? 1f : holding ? 0f : feedShare;

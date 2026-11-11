@@ -114,6 +114,12 @@ public sealed partial class ZombieBody : MonoBehaviour
     {
         var own = OwnBody();
         if (own != null) return own;
+        // A memo elite with a body of its own in EliteLooks wears it (none have one yet: they wear the pack's).
+        if (TryGetComponent(out ZombieType kind) && kind.IsMemoElite)
+        {
+            var elite = EliteLooks.For(kind.Kind).character;
+            if (elite != null) return elite;
+        }
         if (looks == null || looks.characters == null || looks.characters.Length == 0) return null;
         int count = looks.characters.Length;
         int start = network != null && network.IsSpawned

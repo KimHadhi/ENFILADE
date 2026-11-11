@@ -20,7 +20,11 @@ using UnityEngine;
 /// without the shield, once every BreakFreeEvery seconds (the user, 2026-11-11: "나이트는 혼자서 러너한테 덮쳐져도 빠져
 /// 나올 수 있게"); the shield is only spent while the kick is not ready. What all of it looks and sounds like
 /// on their own screen is HoldFeedback's; whatever holds anyone stands out through walls on every PC (HoldReveal).
-/// Numbers: Tables/Player.csv, row Hold.
+/// A candyman's grab is a hook (the 2026-11-11 memo, item 25: Drag): it drags them off behind it, their PC pulling them
+/// after it (LateUpdate), the hook hurting all the while (its HookDamage a second); friends free them by putting its
+/// BreakDamage into it from anywhere, or by knocking or shoving it, and alone each press of the shove key heaves against
+/// it (its StruggleStep; a shove that lands frees them at once); torn free, it reels. Going down ends a drag too.
+/// Numbers: Tables/Player.csv, row Hold; the hook's in Tables/ZombieCandyman.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class PlayerHold : MonoBehaviour
@@ -86,7 +90,10 @@ public sealed class PlayerHold : MonoBehaviour
         public ZombieGrip Grip;
         public MeleeCombatTarget Melee;
         public float Until;
-        public bool Feeding, Pinning;
+        public bool Feeding, Pinning, Dragging;
+        // A candyman's hook (memo 25): it, and the damage it has taken from anyone since it hooked them.
+        public ZombieCandyman Hook;
+        public float Taken;
     }
 
     private static PlayerHold local;
@@ -97,6 +104,21 @@ public sealed class PlayerHold : MonoBehaviour
     private PlayerNetworkCombat network;
     private HoldFeedback feedback;
     private float biteLeft, pinProgress, pinnedAt, burstGraceUntil = float.NegativeInfinity, breakFreeAt = float.NegativeInfinity;
+    // Hooked by a candyman: how far their struggling has got (1 tears them free).
+    private float struggle;
+    private CharacterController capsule;
+
+    /// <summary>A candyman's hook drags them off (memo 25): pulled after it, the hook hurting, the shove key to struggle.</summary>
+    public bool IsDragged
+    {
+        get
+        {
+            foreach (var holder in holders) if (holder.Dragging) return true;
+            return false;
+        }
+    }
+    /// <summary>How far their struggle against the hook has got (0-1).</summary>
+    public float Struggle => IsDragged ? Mathf.Clamp01(struggle) : 0f;
 
     /// <summary>Some zombie holds them.</summary>
     public bool IsHeld => holders.Count > 0;
@@ -199,7 +221,39 @@ public sealed class PlayerHold : MonoBehaviour
         if (!receiver.IsAlive || (receiver.IsDowned && hit.Method != DamageMethod.Feed)) return;
         var enemy = hit.Source.GetComponentInParent<EnemyHealth>();
         if (hit.Method == DamageMethod.Pounce) Pin(enemy);
+        else if (hit.Method == DamageMethod.Grab && Hooked(enemy, out var hook)) Drag(enemy, hook);
         else Grab(enemy, hit.Method == DamageMethod.Feed);
+    }
+
+    // A candyman's grab is its hook: it drags them off rather than standing holding on.
+    private static bool Hooked(EnemyHealth enemy, out ZombieCandyman hook)
+    {
+        hook = null;
+        return enemy != null && enemy.TryGetComponent(out ZombieType type) && type.Kind == ZombieKind.Candyman && !type.Crawls
+            && enemy.TryGetComponent(out hook);
+    }
+
+    // Hooked (memo 25): pulled along behind the candyman until friends shoot it off them (BreakDamage) or knock or shove
+    // it, or they struggle free with the shove key, or go down. Shamblers holding them lose their grip as it pulls.
+    private void Drag(EnemyHealth enemy, ZombieCandyman hook)
+    {
+        if (enemy == null || !enemy.IsAlive || IndexOf(enemy) >= 0) return;
+        if (Time.time < burstGraceUntil || player.IsParkour || IsPinned) return;
+        for (int i = holders.Count - 1; i >= 0; i--) if (!holders[i].Feeding) Release(i);
+        var grip = enemy.GetComponent<ZombieGrip>();
+        holders.Add(new Holder
+        {
+            Enemy = enemy, Grip = grip, Melee = enemy.GetComponent<MeleeCombatTarget>(), Until = float.PositiveInfinity,
+            Dragging = true, Hook = hook
+        });
+        if (grip != null) grip.Hold(player, HoldKind.Drag);
+        Share(enemy, true, HoldKind.Drag);
+        struggle = 0f;
+        biteLeft = biteEvery;
+        Jolt(grabJolt);
+        Feedback.Began(false);
+        // What is happening and what to do, once a drag: the hook's hurt has its reason (the user's rule).
+        AlertHUD.Self(Texts.Get("hud.hold.hooked"));
     }
 
     private void Grab(EnemyHealth enemy, bool feeding)
@@ -303,6 +357,9 @@ public sealed class PlayerHold : MonoBehaviour
         // it here as well as in PlayerMovement's held branch, read straight off the key whatever locks the controls, so
         // nothing in the movement's frame can swallow the press (the user pressed V again and again: 2026-11-11).
         bool pressed = player != null && player.Input != null && player.InputAvailable && player.Input.ShoveKeyPressed;
+        // Hooked, each press of the shove key is a heave against the hook; enough tears them free (memo 25: alone, they
+        // struggle out). A shove that lands on the candyman stuns it and frees them at once, as with any holder.
+        if (pressed && Struggles() && holders.Count == 0) return;
         bool auto = shieldBurstAuto >= 0f && Time.time - pinnedAt >= Mathf.Max(shieldBurstFrom, shieldBurstAuto);
         if ((CanBreakFree && pressed || CanBurstShield && (pressed || auto)) && TryBurstShield())
         {
@@ -398,15 +455,43 @@ public sealed class PlayerHold : MonoBehaviour
         return false;
     }
 
-    // Two or more at once bite, each; alone, only one that keeps coming back, or eats them, or pins them.
+    // One heave against a candyman's hook. True when it was one (they are hooked).
+    private bool Struggles()
+    {
+        for (int i = 0; i < holders.Count; i++)
+        {
+            var holder = holders[i];
+            if (!holder.Dragging) continue;
+            struggle += holder.Hook != null ? holder.Hook.StruggleStep : .2f;
+            Jolt(grabJolt * .35f);
+            if (struggle >= 1f) TearFree(i);
+            return true;
+        }
+        return false;
+    }
+
+    // Free of the hook: struggled out, or the candyman took enough from anyone. It reels a moment (BreakStun), and the
+    // host hears of both (the reel through its copy, the hold through ShareHold).
+    private void TearFree(int at)
+    {
+        var holder = holders[at];
+        if (holder.Melee != null && holder.Melee.IsAvailable && holder.Hook != null) holder.Melee.Interrupt(holder.Hook.BreakStun);
+        Release(at);
+        struggle = 0f;
+    }
+
+    // Two or more at once bite, each; alone, only one that keeps coming back, or eats them, or pins them. A candyman's
+    // hook hurts on its own all the while it drags them (the hook in their flesh: HookDamage a second).
     private void Bite()
     {
         bool together = holders.Count >= biteFrom;
         foreach (var holder in holders.ToArray())
         {
             if (holder.Enemy == null) continue;
-            if (!together && !holder.Feeding && (!grabs.TryGetValue(holder.Enemy, out int times) || times <= regrabsToBite)) continue;
-            float damage = receiver.IsDowned ? downedBiteDamage * biteEvery : holder.Pinning ? pinBiteDamage : biteDamage * biteEvery;
+            if (!together && !holder.Feeding && !holder.Dragging
+                && (!grabs.TryGetValue(holder.Enemy, out int times) || times <= regrabsToBite)) continue;
+            float damage = receiver.IsDowned ? downedBiteDamage * biteEvery : holder.Pinning ? pinBiteDamage
+                : holder.Dragging && holder.Hook != null ? holder.Hook.HookDamage * biteEvery : biteDamage * biteEvery;
             if (damage <= 0f) continue;
             receiver.ReceiveHit(new DamageHit(DamageHit.NewAttackId(), damage, DamageKind.Attack,
                 transform.position + Vector3.up * 1.4f, transform.position - holder.Enemy.transform.position, holder.Enemy.gameObject,
@@ -430,7 +515,39 @@ public sealed class PlayerHold : MonoBehaviour
     {
         if (holders.Count == 0 || !(report.Target is EnemyHealth enemy)) return;
         int at = IndexOf(enemy);
-        if (at >= 0 && !holders[at].Pinning) Release(at);
+        if (at < 0 || holders[at].Pinning) return;
+        // A candyman lets go only once it has taken BreakDamage from anyone since it hooked them (friends chase it and
+        // shoot); a single blow frees them from a shambler.
+        if (holders[at].Dragging)
+        {
+            var holder = holders[at];
+            holder.Taken += report.Applied;
+            holders[at] = holder;
+            if (holder.Hook == null || holder.Taken >= holder.Hook.BreakDamage) TearFree(at);
+            return;
+        }
+        Release(at);
+    }
+
+    // Hooked, they are pulled along behind the candyman on their own PC (it walks on the host; their copy follows here),
+    // their capsule moved as far as Follow allows a frame, walls and all.
+    private void LateUpdate()
+    {
+        if (holders.Count == 0) return;
+        foreach (var holder in holders)
+        {
+            if (!holder.Dragging || holder.Enemy == null || holder.Hook == null) continue;
+            if (holder.Melee != null && holder.Melee.IsLying) return;
+            Vector3 back = Vector3.ProjectOnPlane(holder.Enemy.transform.forward, Vector3.up);
+            if (back.sqrMagnitude < 1e-4f) return;
+            Vector3 off = holder.Enemy.transform.position - back.normalized * holder.Hook.Gap - transform.position;
+            off.y = 0f;
+            float distance = off.magnitude;
+            if (distance < .05f) return;
+            if (capsule == null) capsule = GetComponent<CharacterController>();
+            if (capsule != null && capsule.enabled) capsule.Move(off / distance * Mathf.Min(distance, holder.Hook.Follow * Time.deltaTime));
+            return;
+        }
     }
 
     private int IndexOf(EnemyHealth enemy)
@@ -445,8 +562,9 @@ public sealed class PlayerHold : MonoBehaviour
         holders.RemoveAt(at);
         if (holder.Grip != null) holder.Grip.LetGo();
         if (holder.Enemy != null)
-            Share(holder.Enemy, false, holder.Pinning ? HoldKind.Pin : holder.Feeding ? HoldKind.Feed : HoldKind.Grab);
+            Share(holder.Enemy, false, holder.Pinning ? HoldKind.Pin : holder.Dragging ? HoldKind.Drag : holder.Feeding ? HoldKind.Feed : HoldKind.Grab);
         if (Pinners == 0) pinProgress = 0f;
+        if (!IsDragged) struggle = 0f;
     }
 
     private void LetAllGo()

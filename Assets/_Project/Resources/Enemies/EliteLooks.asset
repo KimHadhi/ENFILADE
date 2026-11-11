@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 86d450652dee4b8b8829f7e9a7c8e971, type: 3}
+  m_Name: EliteLooks
+  m_EditorClassIdentifier: Assembly-CSharp::EliteLooks
+  looks:
+  - kind: 5
+    character: {fileID: 0}
+    handProp: {fileID: 0}
+    headProp: {fileID: 0}
+  - kind: 6
+    character: {fileID: 0}
+    handProp: {fileID: 0}
+    headProp: {fileID: 0}
+  - kind: 7
+    character: {fileID: 0}
+    handProp: {fileID: 0}
+    headProp: {fileID: 0}
+  ninjaVanish: []
+  ninjaAppear: []
+  chainsawIdle: {fileID: 0}
+  chainsawRev: {fileID: 0}
+  candymanBuzz: {fileID: 0}
