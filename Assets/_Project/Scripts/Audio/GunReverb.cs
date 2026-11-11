@@ -41,6 +41,10 @@ public sealed class GunReverb : MonoBehaviour, ITableBound
     private int otherVoices = 8;
     [SerializeField, Range(0f, 2f), Tooltip("Loudness of a tail against its shot.")]
     private float volume = 1f;
+    [SerializeField, Range(0f, 1f), Tooltip("Loudness of the tail behind a suppressed shot, against the same gun's open one: a "
+        + "suppressor kills the muzzle blast the room would ring with, and the open tail at full size buried the suppressed "
+        + "shot under a plain gunshot's echo (user, 2026-11-11: \"소음기 꼈는데 소음기 소리가 안 남\"). 0: no tail.")]
+    private float suppressedVolume = .15f;
 
     private enum Room { IndoorsClose, IndoorsDistant, OutdoorsClose, Hall }
 
@@ -70,11 +74,16 @@ public sealed class GunReverb : MonoBehaviour, ITableBound
     private readonly List<Voice> own = new List<Voice>(), others = new List<Voice>();
     private SoundBank bank;
 
-    /// <summary>The room's tail for a shot: the player's own (shooter null, heard flat) or someone else's at their gun.</summary>
-    public static void Tail(GunSoundProfile gun, Vector3? shooter, float shotVolume, float reach = 60f)
+    /// <summary>
+    /// The room's tail for a shot: the player's own (shooter null, heard flat) or someone else's at their gun. A suppressed
+    /// shot's tail is only Suppressed Volume of the open one.
+    /// </summary>
+    public static void Tail(GunSoundProfile gun, Vector3? shooter, float shotVolume, float reach = 60f, bool suppressed = false)
     {
         if (!Application.isPlaying || shotVolume <= 0f) return;
-        Get().Play(gun, shooter, shotVolume, reach);
+        var self = Get();
+        if (suppressed) shotVolume *= self.suppressedVolume;
+        if (shotVolume > 0f) self.Play(gun, shooter, shotVolume, reach);
     }
 
     /// <summary>Builds the voices and loads the tails at map load rather than on the first shot.</summary>

@@ -55,15 +55,19 @@ public sealed class FeelAudio : MonoBehaviour
     public static FeelSound ShotFor(GunSoundProfile profile)
         => profile == GunSoundProfile.Pistol ? FeelSound.PistolShot : profile == GunSoundProfile.Heavy ? FeelSound.HeavyShot : FeelSound.RifleShot;
 
-    /// <summary>2D sound, for anything the player does or is told. gun picks a gun's own mechanical sounds.</summary>
-    public static void Play(FeelSound sound, AudioClip[] overrides, float volume, float pitch = 1f, GunSoundProfile? gun = null)
+    /// <summary>
+    /// 2D sound, for anything the player does or is told. gun picks a gun's own mechanical sounds. A suppressed shot gets
+    /// only a little of the room's tail (GunReverb).
+    /// </summary>
+    public static void Play(FeelSound sound, AudioClip[] overrides, float volume, float pitch = 1f, GunSoundProfile? gun = null,
+        bool suppressed = false)
     {
         if (!Application.isPlaying || volume <= 0f) return;
         var self = Get();
         var profile = self.GunOf(sound, gun, true);
         if (HasAny(overrides) || !self.PlayGun(sound, profile, null, volume, pitch, 0f))
             self.Voice(self.Pick(sound, overrides), null, volume, pitch, 0f, SetOf(sound));
-        if (IsShot(sound)) GunReverb.Tail(profile, null, volume);
+        if (IsShot(sound)) GunReverb.Tail(profile, null, volume, suppressed: suppressed);
     }
 
     /// <summary>2D sound of one given clip, such as a sound bank's pick (a confirm sound), on the same voices as Play.</summary>
@@ -75,14 +79,14 @@ public sealed class FeelAudio : MonoBehaviour
 
     /// <summary>3D sound at a world point (bodies landing, someone else's gun). gun picks a gun's own mechanical sounds.</summary>
     public static void PlayAt(FeelSound sound, AudioClip[] overrides, Vector3 point, float volume, float pitch = 1f, float maxDistance = 14f,
-        GunSoundProfile? gun = null)
+        GunSoundProfile? gun = null, bool suppressed = false)
     {
         if (!Application.isPlaying || volume <= 0f) return;
         var self = Get();
         var profile = self.GunOf(sound, gun, false);
         if (HasAny(overrides) || !self.PlayGun(sound, profile, point, volume, pitch, maxDistance))
             self.Voice(self.Pick(sound, overrides), point, volume, pitch, maxDistance, SetOf(sound));
-        if (IsShot(sound)) GunReverb.Tail(profile, point, volume, maxDistance);
+        if (IsShot(sound)) GunReverb.Tail(profile, point, volume, maxDistance, suppressed);
     }
 
     /// <summary>3D sound of one given clip at a world point, such as a sound bank's pick (a ricochet), on the same voices as PlayAt.</summary>

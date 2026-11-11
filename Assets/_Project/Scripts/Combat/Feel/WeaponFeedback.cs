@@ -45,11 +45,12 @@ public sealed class WeaponFeedback : MonoBehaviour
     private bool IsMine => movement == null || movement.IsLocal;
 
     // One's own gun sounds flat; someone else's comes from where they stand. gun picks that gun's own mechanical sounds
-    // (Art/Audio/Guns/<gun>/...).
-    private void Sound(FeelSound sound, AudioClip[] clips, float volume, float pitch, float reach = MechanicalReach, GunSoundProfile? gun = null)
+    // (Art/Audio/Guns/<gun>/...). A suppressed shot takes only a little of the room's tail (GunReverb).
+    private void Sound(FeelSound sound, AudioClip[] clips, float volume, float pitch, float reach = MechanicalReach, GunSoundProfile? gun = null,
+        bool suppressed = false)
     {
-        if (IsMine) FeelAudio.Play(sound, clips, volume, pitch, gun);
-        else FeelAudio.PlayAt(sound, clips, transform.position + Vector3.up, volume, pitch, reach, gun);
+        if (IsMine) FeelAudio.Play(sound, clips, volume, pitch, gun, suppressed);
+        else FeelAudio.PlayAt(sound, clips, transform.position + Vector3.up, volume, pitch, reach, gun, suppressed);
     }
 
     private GunSoundProfile? Gun => weapon != null && weapon.EquippedData != null ? weapon.EquippedData.SoundProfile : (GunSoundProfile?)null;
@@ -133,10 +134,11 @@ public sealed class WeaponFeedback : MonoBehaviour
             if (!weapon.Suppressed)
                 Sound(FeelAudio.ShotFor(data.SoundProfile), data.FireSounds, settings.gunshotVolume * data.FireVolume, pitch, ShotReach);
             else if (own)
-                Sound(FeelAudio.ShotFor(data.SoundProfile), data.SuppressedFireSounds, settings.gunshotVolume * data.FireVolume, pitch, SuppressedReach);
+                Sound(FeelAudio.ShotFor(data.SoundProfile), data.SuppressedFireSounds, settings.gunshotVolume * data.FireVolume, pitch,
+                    SuppressedReach, suppressed: true);
             else
                 Sound(FeelAudio.ShotFor(data.SoundProfile), data.FireSounds, settings.gunshotVolume * data.FireVolume * SuppressedVolume,
-                    pitch * SuppressedPitch, SuppressedReach);
+                    pitch * SuppressedPitch, SuppressedReach, suppressed: true);
         }
         if (IsMine) AmmoCue(shot.AmmoAfterShot, data, settings);
         if (settings.shellCasings && data.EjectShells) Eject();
