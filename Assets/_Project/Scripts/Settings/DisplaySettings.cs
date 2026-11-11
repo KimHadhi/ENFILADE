@@ -7,13 +7,21 @@ using UnityEngine;
 /// monitorName/monitorIndex, resolutionWidth/Height, windowMode) before the first scene and whenever they change.
 /// A monitor change moves the window first and sets the resolution once the move is done, since each monitor offers its
 /// own resolutions. Builds only: in the editor the Game view keeps its own size, so the choices are only saved.
+/// A second after each change it notes what Windows actually gave (Tick); after Alt+Tab, DisplayGuard asks Restore to put
+/// back whatever has moved since. Alt+Enter is off in the Player Settings, so the menu is the one place the mode changes and
+/// any other change is a stray one to undo.
 /// </summary>
 public static class DisplaySettings
 {
     private const int SmallestWidth = 1024;
+    // How long after a change Windows is given to settle before what it gave is noted (s).
+    private const float SettleSeconds = 1f;
     private static readonly List<DisplayInfo> layout = new List<DisplayInfo>();
     private static bool moving;
     private static (string name, int index, int width, int height, WindowMode mode) applied;
+    private static float settleAt = -1f;
+    // The window as it stood once the last change had settled; null until one has.
+    private static (int width, int height, FullScreenMode mode, DisplayInfo monitor)? achieved;
 
     /// <summary>Raised after the window has moved to another monitor, whose resolutions the menu then lists.</summary>
     public static event Action Moved;
@@ -27,6 +35,8 @@ public static class DisplaySettings
         Moved = null;
         moving = false;
         applied = default;
+        settleAt = -1f;
+        achieved = null;
     }
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
@@ -165,11 +175,63 @@ public static class DisplaySettings
 
     private static void SetMode(GameSettings s)
     {
+        Settle();
         Vector2Int size = Size(s, Native());
         FullScreenMode mode = ToFullScreenMode(s.windowMode);
         if (Screen.width == size.x && Screen.height == size.y && Screen.fullScreenMode == mode) return;
         Screen.SetResolution(size.x, size.y, mode);
     }
+
+    private static void Settle() => settleAt = Time.realtimeSinceStartup + SettleSeconds;
+
+    /// <summary>Notes the window once a change has settled. Only with focus: in the background an exclusive full screen
+    /// stands aside for the desktop, which is not what the game was given.</summary>
+    internal static void Tick()
+    {
+        if (settleAt < 0f || moving || !Application.isFocused || Time.realtimeSinceStartup < settleAt) return;
+        settleAt = -1f;
+        achieved = Now();
+    }
+
+    /// <summary>
+    /// After Alt+Tab: if the window is not as it stood when the last change settled (the mode, the size, or, full screen,
+    /// the monitor), the settings go on again. Compared with what was given rather than with what was asked, so a size the
+    /// monitor could not do is never asked for over and over. A window's monitor is the player's to drag, so only a full
+    /// screen is moved back. The cursor, held by the game, is taken again at once rather than at the next click.
+    /// </summary>
+    internal static void Restore(string reason)
+    {
+        if (!Applies || moving) return;
+        if (Cursor.lockState == CursorLockMode.Locked)
+        {
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+        }
+        if (achieved == null) return;
+        var was = achieved.Value;
+        var now = Now();
+        var s = GameSettings.Current;
+        bool fullScreen = s.windowMode != WindowMode.Windowed;
+        if (now.mode == was.mode && now.width == was.width && now.height == was.height && (!fullScreen || now.monitor.Equals(was.monitor)))
+            return;
+        Debug.Log($"[Display] {reason}: the window was {Describe(was)} and is now {Describe(now)}; putting it back.");
+        if (fullScreen)
+        {
+            applied = default;
+            Apply();
+        }
+        else SetMode(s);
+    }
+
+    /// <summary>One line in Player.log with the window as it is now, for reading a stray Alt+Tab afterwards.</summary>
+    internal static void Report(string what) => Debug.Log($"[Display] {what}: {Describe(Now())}, cursor {Cursor.lockState}.");
+
+    private static (int width, int height, FullScreenMode mode, DisplayInfo monitor) Now() =>
+        (Screen.width, Screen.height, Screen.fullScreenMode, Screen.mainWindowDisplayInfo);
+
+    private static string Describe((int width, int height, FullScreenMode mode, DisplayInfo monitor) window) =>
+        $"{window.width} × {window.height} {window.mode} on '{window.monitor.name}'";
 
     private static Vector2Int Size(GameSettings s, Vector2Int native) =>
         s.resolutionWidth > 0 && s.resolutionHeight > 0 ? new Vector2Int(s.resolutionWidth, s.resolutionHeight) : native;
