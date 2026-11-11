@@ -28,6 +28,16 @@ public sealed class SkinVariant
 
     private static readonly List<Material> scratch = new List<Material>();
 
+    public SkinVariant() { }
+
+    /// <summary>A colour set made by code: the outfit library makes one per colour folder (OutfitLibraryBuilder).</summary>
+    public SkinVariant(string id, string displayName, Swap[] swaps)
+    {
+        this.id = id;
+        this.displayName = displayName;
+        this.swaps = swaps ?? Array.Empty<Swap>();
+    }
+
     public string Id => id;
     public string DisplayName => string.IsNullOrEmpty(displayName) ? id : displayName;
     /// <summary>The colour card's label: the display name up to its first space.</summary>

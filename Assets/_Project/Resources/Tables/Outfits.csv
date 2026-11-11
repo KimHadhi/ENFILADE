@@ -1,0 +1,2 @@
+﻿id,slot,also,hides,name
+#설명,들어가는 칸(OutfitSlots.csv의 id),같이 차지하는 칸. |로 여럿. 원피스는 slot이 top이고 also가 bottom,입으면 가려서 안 보이게 할 칸. |로 여럿. 얼굴을 다 덮는 마스크는 eyes처럼 그 칸의 원래 옷과 그 칸에 입힌 옷을 모두 숨긴다,화면에 나오는 이름. 모델은 Art/Models/Outfits/<id>/<캐릭터 Id>.fbx(또는 .prefab)에 두면 캐릭터마다 자동으로 등록된다

@@ -69,7 +69,11 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     private readonly List<Channel> channels = new List<Channel>();
     private readonly Dictionary<string, Channel> byName = new Dictionary<string, Channel>(StringComparer.OrdinalIgnoreCase);
     private readonly List<Renderer> headParts = new List<Renderer>();
+    // Worn over the face (a mask, glasses): only their shadows in first person, whatever the head setting says.
+    private readonly List<Renderer> faceParts = new List<Renderer>();
     private readonly HashSet<string> reported = new HashSet<string>();
+    private OutfitDresser.Dressing dressing;
+    private string loadedOutfit;
     private PlayerMovement player;
     private PlayerBodyProfile profile;
     private GameObject loadedModel;
@@ -124,12 +128,23 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         }
     }
 
-    /// <summary>Wears the skin and colour set the player of this copy chose on their own PC (PlayerBodyProfile.LookId).</summary>
+    // The outfit in its slots: what this copy's player sent after their skin, or this PC's own saved one for the character.
+    private string ChosenOutfit => shownSkin == null ? OutfitLook.SavedText(ChosenSkin?.Id) : OutfitLook.OutfitPart(shownSkin);
+    private bool WearsChosenOutfit => OutfitLook.Tidy(ChosenOutfit) == (loadedOutfit ?? "");
+
+    /// <summary>Whether the body has the item with this id on (OutfitDresser): its rows in Cloth.csv swing its loose parts.</summary>
+    internal bool Wears(string itemId) => dressing != null && dressing.Items.Contains(itemId ?? "");
+
+    /// <summary>
+    /// Wears the skin, colour set and outfit the player of this copy chose on their own PC (PlayerBodyProfile.LookId,
+    /// OutfitLook.Join). Another outfit makes the body again, as another skin does: items are joined to the bones in the
+    /// pose the model was made in.
+    /// </summary>
     internal void ShowSkin(string look)
     {
         shownSkin = look;
         if (!started) return;
-        if (profile == null || ChosenSkin != loadedSkin) rebuild = true;
+        if (profile == null || ChosenSkin != loadedSkin || !WearsChosenOutfit) rebuild = true;
         else WearChosenVariant();
     }
 
@@ -182,6 +197,13 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
                 if (string.Equals(renderer.name, part, StringComparison.OrdinalIgnoreCase)) headParts.Add(renderer);
         }
         body.localScale = Vector3.one * FitScale();
+        // Dressed after the fit, so a tall helmet never makes the body that wears it smaller, and before the feet, hands
+        // and cloth read the model, so they find the items' bones on it.
+        var outfit = OutfitLook.Parse(ChosenOutfit);
+        dressing = OutfitDresser.Dress(body.gameObject, loadedModel, loadedSkin, outfit);
+        loadedOutfit = outfit.ToString();
+        headParts.AddRange(dressing.HeadParts);
+        faceParts.AddRange(dressing.FaceParts);
         legYaw = transform.eulerAngles.y;
         head = animator.isHuman ? animator.GetBoneTransform(HumanBodyBones.Head) : null;
         headAlignment = new Vector3(0f, 0f, -backOffset);
@@ -331,6 +353,9 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         channels.Clear();
         byName.Clear();
         headParts.Clear();
+        faceParts.Clear();
+        dressing = null;
+        loadedOutfit = null;
         transition = null;
         playingOut = false;
         if (body != null) Destroy(body.gameObject);
@@ -793,7 +818,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
 
     private void OnSettingsChanged()
     {
-        if (profile != null && ChosenSkin != loadedSkin) rebuild = true;
+        if (profile != null && (ChosenSkin != loadedSkin || !WearsChosenOutfit)) rebuild = true;
         else if (profile != null) WearChosenVariant();
         ApplyView();
     }

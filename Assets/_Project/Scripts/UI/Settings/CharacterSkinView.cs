@@ -85,7 +85,57 @@ public sealed class CharacterSkinView
             Card(colours, variant.ShortName, 17f, chosen, variant, variant == worn, () => { if (pick != worn) PickVariant(pick); });
         }
 
+        Outfit(cards, chosen);
+
         if (stage) Stage(body, stageWidth, chosen, worn);
+    }
+
+    // The chosen character's outfit slots, one row each: its own piece ("기본"), taking that off ("벗기") where the slot
+    // allows it, then every item made for this character. A slot with only its own piece is left out. For now a plain
+    // list to try items on with; the equipment screen from the mockups replaces it.
+    private void Outfit(Transform column, PlayerBodyProfile.Skin skin)
+    {
+        W.Size(W.Label(column, Texts.Get("outfit.title"), 18f, W.Muted), height: 34f);
+        var look = OutfitLook.Saved(skin.Id);
+        int rows = 0;
+        foreach (var slot in OutfitCatalog.Slots)
+        {
+            var choices = new System.Collections.Generic.List<string> { "" };
+            var names = new System.Collections.Generic.List<string> { Texts.Get("outfit.default") };
+            if (slot.removable && OutfitCatalog.HasOwnPiece(skin.Id, slot.id))
+            {
+                choices.Add(OutfitLook.Off);
+                names.Add(Texts.Get("outfit.off"));
+            }
+            foreach (var item in OutfitCatalog.ItemsFor(skin.Id, slot.id))
+            {
+                choices.Add(item.id);
+                names.Add(item.DisplayName);
+            }
+            if (choices.Count < 2) continue;
+            look.TryGet(slot.id, out var worn);
+            var row = W.Row(column, slot.Name);
+            var place = slot;
+            W.Stepper(row, names.ToArray(), Mathf.Max(0, choices.IndexOf(worn.Item ?? "")), index => PickOutfit(skin, place, choices[index]));
+            rows++;
+        }
+        if (rows == 0) W.Size(W.Label(column, Texts.Get("outfit.none"), 17f, W.Muted), height: 30f);
+    }
+
+    // One thing per place: an item that also takes other slots (a one-piece over the bottom) empties them, and putting
+    // something in a slot another item also takes takes that item off.
+    private void PickOutfit(PlayerBodyProfile.Skin skin, OutfitSlot slot, string item)
+    {
+        var look = OutfitLook.Saved(skin.Id);
+        if (OutfitCatalog.Item(item) is OutfitItem picked)
+            foreach (string also in picked.AlsoSlots) look.Set(also, null);
+        foreach (var other in OutfitCatalog.Slots)
+            if (other != slot && look.TryGet(other.id, out var worn) && OutfitCatalog.Item(worn.Item) is OutfitItem wornItem
+                && wornItem.AlsoSlots.Contains(slot.id, StringComparer.OrdinalIgnoreCase))
+                look.Set(other.id, null);
+        look.Set(slot.id, item);
+        OutfitLook.Save(skin.Id, look);
+        Commit();
     }
 
     private void PickSkin(PlayerBodyProfile.Skin skin)

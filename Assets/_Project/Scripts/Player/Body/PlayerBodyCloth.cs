@@ -114,7 +114,8 @@ public sealed class PlayerBodyCloth : MonoBehaviour
         foreach (string id in GameTables.RowIds(ClothPart.TableName))
         {
             var part = Part(id);
-            if (!string.Equals(part.skin, body.Skin.Id, StringComparison.OrdinalIgnoreCase)) continue;
+            // A row names a skin or an outfit item (Outfits.csv): an item's skirt or coat tails swing once it is on.
+            if (!string.Equals(part.skin, body.Skin.Id, StringComparison.OrdinalIgnoreCase) && !body.Wears(part.skin)) continue;
             var roots = part.FindRoots(bones, animator.name);
             if (roots.Count == 0) continue;
             part.AddTips(roots, -animator.transform.up);

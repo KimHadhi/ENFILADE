@@ -36,6 +36,18 @@ KKBP 모델은 뼈 연결 뒤 **Rig → Configure → Pose → Enforce T-Pose �
 
 실은 VRChat 아바타 `sil_ess_1_2.blend`를 [sil_model_to_fbx.py](../../../Tools/Blender/sil_model_to_fbx.py)로 변환했다. 원본 치마에는 뼈가 없어 모든 정점이 골반에 붙어 있었으므로, 허리에서 밑단까지 치마 뼈(`Skirt_<줄>_<관절>`, 12줄 × 4관절)를 만들어 가중치를 옮겼다. 얼굴, 뼈대의 두개골, 눈은 `HeadAccessories` 하나로 합쳐 1인칭에서 숨긴다. 이 모델은 머리 뼈 이름이 `Head`라서 메시에 같은 이름을 쓰면 휴머노이드 아바타를 만들지 못한다. 휴머노이드 연결은 Unity가 가져올 때 자동으로 한다. 재질은 패키지 원본이다. 겉의 실루엣(`sil_01`)은 패키지의 `WES_soft_mod3` 셰이더이고, 뼈대, 눈, 목걸이(`ess01`)는 Poiyomi Toon URP(`Assets/_PoiyomiShaders`)다. 뼈 재질 `ess01`~`ess04`는 원작자가 쓴 Poiyomi 7.2.41의 값을 Poiyomi 10의 이름으로 옮겼다(셰이드 맵 그림자, 림, 피부 밑 산란, 금속 반사, 발광. 대응표는 [외부 에셋 출처](AssetSources.md)). 금속 반사는 원본에서 금속 맵과 반사 마스크(Rough 맵)를 따로 읽었는데 Poiyomi 10은 한 장으로 읽으므로, 두 장을 그대로 합친 `Mat0N_PackedMaps`를 쓴다. 이 재질들은 잠금 해제 상태라, 빌드 전에 Thry 메뉴로 잠가야 빌드에서 분홍색이 되지 않는다. `WES_soft_mod3`은 원래 Built-in 전용인 GrabPass로 뒤 배경을 가져왔다. 이를 URP의 Opaque Texture(`_CameraOpaqueTexture`)를 읽게 바꾸었고, 나머지 계산은 원본 그대로다. 그래서 `PC_RPAsset`의 Opaque Texture와 Depth Texture가 켜져 있어야 하며, GrabPass처럼 원래 해상도로 찍도록 Opaque Downsampling은 None으로 둔다. 치마 누르기가 몸을 만들 때 메시를 재므로 모델의 Read/Write는 켜 둔다.
 
+## 옷 입히기(부위별 칸)
+
+캐릭터 화면(메인 메뉴 **캐릭터**, Esc → **캐릭터**)의 색 카드 아래 **옷**에서 칸마다 ◀ ▶로 고른다. 장비창 화면을 만들기 전까지 쓰는 임시 목록이다. 칸은 [OutfitSlots.csv](../Resources/Tables/OutfitSlots.csv)의 19개다. 머리(헤어, 모자·헬멧, 머리 장식, 안경·고글, 마스크, 귀걸이), 목(목걸이·초커), 몸통(상의, 겉옷, 조끼, 가방·등), 팔·손(장갑, 팔찌·시계, 반지), 다리(벨트·허리, 하의, 양말·스타킹, 신발, 꼬리)로 나뉜다. 칸마다 하나씩 입는다. **기본**(빈칸)은 그 캐릭터가 원래 입은 옷이고, **벗기**는 원래 옷을 벗고 아무것도 입지 않는다. 헤어는 벗을 수 없다. 고르면 바로 저장되고 캐릭터마다 따로 기억한다(`settings.json`의 `outfits`). 멀티에서는 "스킨#색@칸=옷#색;…" 문자열로 다른 PC에 전해지며, 그 PC에 없는 옷은 그 칸만 원래 옷으로 보인다. 입을 옷도 벗을 옷도 없는 캐릭터는 칸 대신 "입힐 옷이 아직 없습니다."가 나온다.
+
+- **옷 넣기:** 모델을 `Art/Models/Outfits/<옷 Id>/<캐릭터 Id>.fbx`(또는 `.prefab`)에 두고 [Outfits.csv](../Resources/Tables/Outfits.csv)에 줄을 더한다(들어갈 칸, 같이 차지하는 칸, 가리는 칸, 이름). 편집기가 폴더를 읽어 `Resources/Characters/Outfits`([OutfitLibrary](../Scripts/Player/Outfits/OutfitLibrary.cs))를 저절로 채운다. **Tools → Characters → 옷 목록 다시 만들기**로도 채울 수 있다. BOOTH 옷은 대응 아바타 전용이라, 그 캐릭터용 모델이 있는 옷만 그 캐릭터의 목록에 나온다. `<옷 Id>/Colors/<색 이름>/` 폴더에 모델 재질과 같은 이름의 재질을 두면 색 세트가 된다. 첫째 색은 모델 그대로인 "기본"이다.
+- **입히는 방식**([OutfitDresser](../Scripts/Player/Outfits/OutfitDresser.cs)): VRChat에서 Modular Avatar의 Merge Armature가 하듯, 옷의 뼈 가운데 캐릭터 뼈와 이름이 같은 것을 그 뼈 밑으로 옮긴다. 이름이 조금 다르면 대소문자와 기호를 빼고 다시 맞춘다. 자리는 그대로 두므로 그 뒤로는 캐릭터 뼈를 따라가고, 옷에만 있는 뼈(치마·코트 자락)는 그 밑에 딸려 간다. 뼈가 없는 통짜 물건(용접 마스크 같은)은 칸의 뼈(`bone`)에 통째로 붙는다. 편집기에서 캐릭터마다 굽는 과정이 없어서, 같은 이름의 뼈를 가진 모델이면 어디에나 입는다. 몸 크기를 눈높이에 맞춘 다음에 입히므로 헬멧이 몸을 줄이지 않는다. 옷 파일에 함께 들어 있는 아바타 몸(캐릭터 메시와 이름도 정점 수도 같은 것)은 저절로 뺀다. 원피스처럼 다른 칸도 차지하는 옷(`also`)을 입으면 그 칸에 고른 옷은 벗겨진다.
+- **원래 옷 끄기:** [CharacterParts.csv](../Resources/Tables/CharacterParts.csv)에 캐릭터 Id, 칸, 그 칸의 원래 옷 렌더러 이름을 적는다. 칸에 옷을 넣거나 **벗기**를 고르거나, 입은 옷이 그 칸을 가리면(`hides`, 얼굴을 다 덮는 마스크가 안경 칸을 가리듯) 그 렌더러가 꺼진다. 카즈사·히로·실은 옷이 몸과 한 메시라 줄이 없다.
+- **캐릭터별 맞춤:** [OutfitFits.csv](../Resources/Tables/OutfitFits.csv)의 `옷 Id@캐릭터 Id` 줄에 입었을 때 걸 셰이프키(옷 밑 피부를 줄이는 키나 힐 키, `이름=0~100`)와 쓰지 않을 렌더러를 적는다.
+- **1인칭:** 칸의 `firstPerson`이 `head`면 머리카락처럼 **내 머리카락 보기**를 켰을 때만 보인다. `hide`(안경·고글, 마스크, 목걸이·초커)면 1인칭에서는 늘 그림자만 남는다. 얼굴 바로 앞의 물건이 시야를 가리기 때문이다.
+- **흔들림:** [Cloth.csv](../Resources/Tables/Cloth.csv)의 `skin` 칸에 옷 Id를 적은 줄은 그 옷을 입었을 때 움직인다.
+- 옷을 바꾸면 스킨을 바꿀 때처럼 몸을 새로 만든다. 옷의 뼈는 캐릭터가 처음 만들어진 자세에서 맞춰야 하기 때문이다. 메인 메뉴 미리보기도 같으며, 카메라는 옷을 입기 전의 키에 맞춘다.
+
 ## 치마·겉옷·머리카락
 
 카즈사의 치마, 허리에 묶은 겉옷, 머리카락은 [Magica Cloth 2](../../ThirdParty/MagicaCloth2)의 BoneCloth로 움직인다. [PlayerBodyCloth](../Scripts/Player/Body/PlayerBodyCloth.cs)가 몸이 만들어질 때 천을 만들고, 스킨을 바꾸면 몸과 함께 다시 만든다. 멀티에서는 플레이하는 PC가 계산하고 다른 PC는 그 결과를 따라간다([설정·유지보수](MaintenanceGuide.md)). 실은 새로 만든 치마 뼈, 머리카락 4가닥, 원작자가 흔들림을 설정해 둔 가슴이 움직인다. 가슴은 매달린 천이 아니라 제자리로 돌아오는 출렁임이라 `spring`(Magica의 BoneSpring)으로 둔다.

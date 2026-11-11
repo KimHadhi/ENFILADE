@@ -21,6 +21,7 @@ public sealed class MainMenuPreview : MonoBehaviour
     private GameObject model;
     private PlayerBodyProfile.Skin shownSkin;
     private SkinVariant wornVariant;
+    private string shownOutfit;
     private PlayableGraph graph;
     private Bounds shown;
     private float yaw, spin, sinceTurned = float.PositiveInfinity;
@@ -86,6 +87,10 @@ public sealed class MainMenuPreview : MonoBehaviour
             bounds.Encapsulate(renderer.bounds);
             if (renderer is SkinnedMeshRenderer skinned) skinned.updateWhenOffscreen = true;
         }
+        // Measured before dressing, so putting on a helmet doesn't move the camera back and shrink the character.
+        var outfit = OutfitLook.Saved(shownSkin?.Id);
+        OutfitDresser.Dress(model, profile.Model, shownSkin, outfit);
+        shownOutfit = outfit.ToString();
         shown = bounds;
         Frame(bounds);
         Face(); // measured facing the camera, then turned as it was
@@ -140,12 +145,13 @@ public sealed class MainMenuPreview : MonoBehaviour
         view.transform.rotation = Quaternion.LookRotation(Vector3.back);
     }
 
-    // A new skin stands a new model; a new colour set of the same skin dresses the one standing.
+    // A new skin or outfit stands a new model (items join the bones in the pose the model was made in); a new colour set
+    // of the same skin dresses the one standing.
     private void Follow()
     {
         var profile = PlayerBodyProfile.Load();
         if (profile == null || model == null) return;
-        if (profile.CurrentSkin != shownSkin) { Show(); return; }
+        if (profile.CurrentSkin != shownSkin || OutfitLook.Tidy(OutfitLook.SavedText(shownSkin?.Id)) != shownOutfit) { Show(); return; }
         var next = profile.CurrentVariant;
         SkinVariant.Wear(model, wornVariant, next);
         wornVariant = next;
@@ -158,6 +164,7 @@ public sealed class MainMenuPreview : MonoBehaviour
         model = null;
         shownSkin = null;
         wornVariant = null;
+        shownOutfit = null;
     }
 
     private void OnDestroy()

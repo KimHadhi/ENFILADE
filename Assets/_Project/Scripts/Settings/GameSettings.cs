@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
 
@@ -72,6 +73,9 @@ public sealed class GameSettings
     public string characterSkin = "";
     [Tooltip("Colour set ID of characterSkin (SkinVariant). Empty or unknown wears the skin's first colour set.")]
     public string characterVariant = "";
+    [Tooltip("What each character wears in its outfit slots, one entry per character: \"skin@slot=item#colour;slot=item\" " +
+        "(OutfitLook). A character without an entry wears its own clothes.")]
+    public List<string> outfits = new List<string>();
     [Tooltip("The name other players see. Empty uses this PC's user name.")]
     public string nickname = "";
     [Tooltip("Scene name of the map last chosen on the main menu (Resources/Tables/Maps.csv).")]
@@ -144,6 +148,7 @@ public sealed class GameSettings
                 break;
             case SettingsGroup.Character:
                 s.characterSkin = d.characterSkin; s.characterVariant = d.characterVariant;
+                s.outfits = new List<string>(d.outfits ?? new List<string>());
                 break;
         }
         Apply();
@@ -191,6 +196,7 @@ public sealed class GameSettings
         frameLimit = Mathf.Max(0, frameLimit);
         monitorName ??= "";
         keyBindings ??= "";
+        outfits ??= new List<string>();
         monitorIndex = Mathf.Max(-1, monitorIndex);
         if (resolutionWidth <= 0 || resolutionHeight <= 0) resolutionWidth = resolutionHeight = 0;
         if (windowMode < WindowMode.Fullscreen || windowMode > WindowMode.Windowed) windowMode = WindowMode.Borderless;

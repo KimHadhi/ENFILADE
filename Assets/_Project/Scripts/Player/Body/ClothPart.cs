@@ -3,8 +3,8 @@ using MagicaCloth2;
 using UnityEngine;
 
 /// <summary>
-/// One row of Cloth.csv: which bones of a skin hang free and how they move. A preset in Resources/Cloth holds Magica
-/// Cloth's full settings, and the columns here overrule the ones worth tuning.
+/// One row of Cloth.csv: which bones of a skin, or of an outfit item (Outfits.csv), hang free and how they move. A
+/// preset in Resources/Cloth holds Magica Cloth's full settings, and the columns here overrule the ones worth tuning.
 /// </summary>
 public sealed class ClothPart
 {

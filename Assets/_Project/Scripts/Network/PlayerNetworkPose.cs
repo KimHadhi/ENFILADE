@@ -15,7 +15,9 @@ public sealed class PlayerNetworkPose : NetworkBehaviour
 
     private readonly NetworkVariable<PlayerPose> pose = new NetworkVariable<PlayerPose>(default,
         NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
-    private readonly NetworkVariable<FixedString64Bytes> skin = new NetworkVariable<FixedString64Bytes>(default,
+    // The skin, its colour set and the outfit in its slots (OutfitLook.Join). Nineteen slots with long item ids outgrow
+    // the smaller sizes; it is only sent when it changes.
+    private readonly NetworkVariable<FixedString4096Bytes> skin = new NetworkVariable<FixedString4096Bytes>(default,
         NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     // The maximum before the health, so a copy knows how much it can hold (a perk's 145, not the base 100: friend
     // feedback C14, where a teammate's card read 100 for 145).
@@ -119,15 +121,19 @@ public sealed class PlayerNetworkPose : NetworkBehaviour
         Portrait = ProfilePicture.FromBytes(jpg);
     }
 
-    // The skin and its colour set in one string (PlayerBodyProfile.LookId); a build without colour sets reads the skin only.
+    // The skin and its colour set in one string (PlayerBodyProfile.LookId), then the character's outfit after it
+    // (OutfitLook.Join); a build without colour sets reads the skin only.
     private void SendSkin()
     {
         var settings = GameSettings.Current;
-        string look = PlayerBodyProfile.LookId(settings.characterSkin, settings.characterVariant);
+        // Outfits are kept under the character actually worn, the profile's default when none was picked.
+        string skinId = PlayerBodyProfile.Load()?.CurrentSkin?.Id ?? settings.characterSkin;
+        string look = OutfitLook.Join(PlayerBodyProfile.LookId(settings.characterSkin, settings.characterVariant),
+            OutfitLook.SavedText(skinId));
         if (skin.Value.ToString() != look) skin.Value = look;
     }
 
-    private void OnSkinChanged(FixedString64Bytes previous, FixedString64Bytes current) => ShowSkin();
+    private void OnSkinChanged(FixedString4096Bytes previous, FixedString4096Bytes current) => ShowSkin();
 
     private void ShowSkin()
     {

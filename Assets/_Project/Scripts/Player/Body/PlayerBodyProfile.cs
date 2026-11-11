@@ -84,10 +84,13 @@ public sealed class PlayerBodyProfile : ScriptableObject
     public static string LookId(string skinId, string variantId) =>
         string.IsNullOrEmpty(variantId) ? skinId ?? "" : (skinId ?? "") + LookSeparator + variantId;
 
-    /// <summary>Splits what <see cref="LookId"/> made. A plain skin id, as older builds send, has no colour set.</summary>
+    /// <summary>
+    /// Splits what <see cref="LookId"/> made. A plain skin id, as older builds send, has no colour set. An outfit sent
+    /// after the look (OutfitLook.Join) is left out.
+    /// </summary>
     public static void SplitLook(string look, out string skinId, out string variantId)
     {
-        look ??= "";
+        look = OutfitLook.SkinPart(look);
         int split = look.IndexOf(LookSeparator);
         skinId = split < 0 ? look : look.Substring(0, split);
         variantId = split < 0 ? "" : look.Substring(split + 1);

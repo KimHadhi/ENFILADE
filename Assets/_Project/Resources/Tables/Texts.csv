@@ -532,3 +532,32 @@ ff.usage,사용법: /ff 1 (켜기) · /ff 0 (끄기) · /ff (바꾸기). 지금:
 ff.guest,아군 사격은 방장만 바꿀 수 있어요. 지금: {0},,채팅 콘솔 > 참가자가 /ff를 입력했을 때. {0}=켜짐/꺼짐
 ff.host.on,방장이 아군 사격을 켰습니다,,채팅 방송 > 참가자 화면: 방장이 켰을 때
 ff.host.off,방장이 아군 사격을 껐습니다,,채팅 방송 > 참가자 화면: 방장이 껐을 때
+#--- 옷 칸 ---,,,
+outfit.title,옷,,설정 창 캐릭터 탭과 메인 메뉴 캐릭터 화면 > 옷 칸 소제목
+outfit.none,입힐 옷이 아직 없습니다.,,설정 창 캐릭터 탭과 메인 메뉴 캐릭터 화면 > 고른 캐릭터에게 입힐 옷도 벗길 옷도 없을 때
+outfit.default,기본,,옷 칸 > 캐릭터가 원래 입은 옷(빈칸)
+outfit.off,벗기,,옷 칸 > 원래 옷을 벗고 아무것도 입지 않음
+outfit.slot.hair,헤어,,옷 칸 이름
+outfit.slot.helmet,모자·헬멧,,옷 칸 이름
+outfit.slot.hairpin,머리 장식,,옷 칸 이름(리본·핀·머리띠·동물 귀)
+outfit.slot.eyes,안경·고글,,옷 칸 이름(안대 포함)
+outfit.slot.mask,마스크,,옷 칸 이름(용접 마스크·방독면·입마개)
+outfit.slot.ears,귀걸이,,옷 칸 이름
+outfit.slot.neck,목걸이·초커,,옷 칸 이름(스카프 포함)
+outfit.slot.top,상의,,옷 칸 이름
+outfit.slot.outer,겉옷,,옷 칸 이름(재킷·코트·후드)
+outfit.slot.vest,조끼,,옷 칸 이름(전술 조끼·하네스)
+outfit.slot.back,가방·등,,옷 칸 이름(배낭·날개·망토)
+outfit.slot.gloves,장갑,,옷 칸 이름
+outfit.slot.wrist,팔찌·시계,,옷 칸 이름
+outfit.slot.ring,반지,,옷 칸 이름
+outfit.slot.waist,벨트·허리,,옷 칸 이름(벨트·홀스터·파우치)
+outfit.slot.bottom,하의,,옷 칸 이름(바지·치마)
+outfit.slot.legs,양말·스타킹,,옷 칸 이름(레그워머 포함)
+outfit.slot.shoes,신발,,옷 칸 이름
+outfit.slot.tail,꼬리,,옷 칸 이름
+outfit.group.head,머리,,옷 칸 묶음 이름(장비창 화면)
+outfit.group.neck,목,,옷 칸 묶음 이름(장비창 화면)
+outfit.group.torso,몸통,,옷 칸 묶음 이름(장비창 화면)
+outfit.group.arms,팔·손,,옷 칸 묶음 이름(장비창 화면)
+outfit.group.legs,다리,,옷 칸 묶음 이름(장비창 화면)
