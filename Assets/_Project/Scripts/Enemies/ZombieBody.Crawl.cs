@@ -39,11 +39,12 @@ public sealed partial class ZombieBody
         crawlForward = Clip(Or(looks.crawl, Or(looks.crawlIdle, rest)), crawls, 1, out crawlForwardLength);
         graph.Connect(crawls, 0, top, 8);
         crawls.SetInputWeight(0, 1f);
-        crawlAttack = Clip(Or(looks.crawlAttack, Or(looks.attack, rest)), top, 9, out crawlAttackLength);
+        var crawlSwing = Or(Pick(looks.crawlAttack, looks.crawlAttacks, CrawlAttackSlot), Or(looks.attack, rest));
+        crawlAttack = Clip(crawlSwing, top, 9, out crawlAttackLength);
         crawlFlinch = Clip(Or(looks.crawlFlinch, Or(looks.flinch, rest)), top, 10, out crawlFlinchLength);
         riseCrawl = Clip(Or(looks.toCrawl, Or(looks.crawlIdle, rest)), top, 11, out riseCrawlLength);
         crawlClipSpeed = RootSpeed(looks.crawl, .5f);
-        crawlAttackHit = HitTime(looks.crawlAttack, crawlAttackLength);
+        crawlAttackHit = HitTime(crawlSwing, crawlAttackLength);
     }
 
     private void WatchCrawl()

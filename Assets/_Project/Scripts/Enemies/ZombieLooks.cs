@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 /// <summary>
@@ -5,6 +6,11 @@ using UnityEngine;
 /// characters, and the humanoid clips of Advanced Zombie AI Pro's demo set (only the clips; its AI scripts stay unused,
 /// ZombieBody plays them). Resources/Enemies/ZombieLooks.asset. Take a character out of the list to stop it spawning,
 /// or drag another humanoid clip onto a slot to try it.
+/// Variety (2026-11-11, the user: "there are so few animations"): most slots also have a list of alternatives. Each
+/// zombie picks one per slot from the slot's clip and its list, from its network id, so a crowd no longer walks, idles
+/// and swings as one, and every PC picks alike. The lists hold the Nephilite pack's clips and fill themselves from the
+/// folders under Art/Animations/Zombies (ZombieClipFolders: drop a clip into Walk/ and it joins walks). Calm zombies
+/// may also sit, eat or crouch (calmPoses) and get up as they notice someone.
 /// </summary>
 [CreateAssetMenu(menuName = "ENFILADE/Zombie Looks", fileName = "ZombieLooks")]
 public sealed class ZombieLooks : ScriptableObject
@@ -80,8 +86,101 @@ public sealed class ZombieLooks : ScriptableObject
     [Tooltip("Getting up after a knockdown, lying face up. In place: the body must not travel.")]
     public AnimationClip riseFaceUp;
 
+    // Each list adds to its slot: a zombie picks one of the slot's clip and the list's (ZombieBody, Pick). The folders
+    // under Art/Animations/Zombies with the same names fill them (ZombieClipFolders); remove an entry to stop it.
+    [Header("Variety: one per zombie from the slot's clip and these (Art/Animations/Zombies/<folder> adds)")]
+    [Tooltip("Folder Idle. Standing still. Loops.")]
+    public AnimationClip[] idles = new AnimationClip[0];
+    [Tooltip("Folder Walk. Slow walks. Loops; each one's own root speed sets the pace its feet keep.")]
+    public AnimationClip[] walks = new AnimationClip[0];
+    [Tooltip("Folder Run. Runs. Loops; each one's own root speed sets the pace its feet keep.")]
+    public AnimationClip[] runs = new AnimationClip[0];
+    [Tooltip("Folder Attack. Swings. The strike is an AnimationEvent_AttackHit, else where a hand reaches furthest forward.")]
+    public AnimationClip[] attacks = new AnimationClip[0];
+    [Tooltip("Folder Flinch. Short flinches.")]
+    public AnimationClip[] flinches = new AnimationClip[0];
+    [Tooltip("Folder Stagger. Reels while the posture is broken.")]
+    public AnimationClip[] staggers = new AnimationClip[0];
+    [Tooltip("Folder CalmIdle. Standing calm. Loops.")]
+    public AnimationClip[] calmIdles = new AnimationClip[0];
+    [Tooltip("Folder AlertIdle. Standing alert. Loops.")]
+    public AnimationClip[] alertIdles = new AnimationClip[0];
+    [Tooltip("Folder SearchWalk. Walking over to search. Loops.")]
+    public AnimationClip[] searchWalks = new AnimationClip[0];
+    [Tooltip("Folder Notice. Once, as a calm zombie notices something.")]
+    public AnimationClip[] notices = new AnimationClip[0];
+    [Tooltip("Folder Rouse. Once, as a zombie rouses before it charges.")]
+    public AnimationClip[] rouses = new AnimationClip[0];
+    [Tooltip("Folder CrawlAttack. Crawling swings at the legs.")]
+    public AnimationClip[] crawlAttacks = new AnimationClip[0];
+    [Tooltip("Folder CalmPose (X.fbx with X_getup.fbx). Some calm zombies hold one of these instead of standing, the share " +
+             "in Tables/ZombieClips poseShare, and get up with its getUp as they notice someone or wake.")]
+    public CalmPose[] calmPoses = new CalmPose[0];
+
+    /// <summary>A pose a calm zombie lies low in, and the way it gets up from it.</summary>
+    [Serializable]
+    public struct CalmPose
+    {
+        [Tooltip("Held while calm, round and round: sitting, eating, crouched. In place.")]
+        public AnimationClip loop;
+        [Tooltip("Getting up from it, once, ending on its feet. Empty: the zombie's notice clip.")]
+        public AnimationClip getUp;
+    }
+
     private static ZombieLooks loaded;
 
     /// <summary>The project's looks, or null when the asset is missing (enemies then stay capsules).</summary>
     public static ZombieLooks Instance => loaded != null ? loaded : loaded = Resources.Load<ZombieLooks>(ResourcePath);
+
+    /// <summary>
+    /// One of <paramref name="main"/> and <paramref name="more"/>, each as likely, the same for the same seed and slot
+    /// (ZombieBody seeds it with the network id, so every PC picks alike). Empty entries don't count; null only when
+    /// there is nothing at all.
+    /// </summary>
+    public static AnimationClip Pick(AnimationClip main, AnimationClip[] more, uint seed, uint slot)
+    {
+        int count = main != null ? 1 : 0;
+        if (more != null)
+            foreach (var clip in more)
+                if (clip != null) count++;
+        if (count == 0) return null;
+        int index = (int)(Mix(seed, slot) % (uint)count);
+        if (main != null && index-- == 0) return main;
+        foreach (var clip in more)
+            if (clip != null && index-- == 0) return clip;
+        return main;
+    }
+
+    /// <summary>Whether this zombie lies low while calm (<paramref name="share"/> of them do), and in which pose.</summary>
+    public static bool PickPose(CalmPose[] poses, uint seed, uint slot, float share, out CalmPose pose)
+    {
+        pose = default;
+        if (poses == null || share <= 0f || Fraction(seed, slot) >= share) return false;
+        int count = 0;
+        foreach (var each in poses)
+            if (each.loop != null) count++;
+        if (count == 0) return false;
+        int index = (int)(Mix(seed, slot + 1u) % (uint)count);
+        foreach (var each in poses)
+            if (each.loop != null && index-- == 0) { pose = each; return true; }
+        return false;
+    }
+
+    /// <summary>A number from 0 to 1 for this seed and slot: where in its loops a zombie starts, so a crowd isn't in step.</summary>
+    public static float Fraction(uint seed, uint slot) => (Mix(seed, slot) & 0xFFFFFF) / 16777216f;
+
+    // A small integer hash (lowbias32): neighbouring network ids land far apart.
+    private static uint Mix(uint seed, uint slot)
+    {
+        unchecked
+        {
+            uint hash = seed ^ (slot * 0x9E3779B9u);
+            hash ^= hash >> 16;
+            hash *= 0x7FEB352Du;
+            hash ^= hash >> 15;
+            hash *= 0x846CA68Bu;
+            hash ^= hash >> 16;
+            return hash;
+        }
+    }
 }

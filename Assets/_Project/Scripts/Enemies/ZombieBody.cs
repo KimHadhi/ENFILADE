@@ -56,6 +56,14 @@ public sealed partial class ZombieBody : MonoBehaviour
     private float speed, phase, idleTime, attackWeight, sinceStrike, flinchTime, flinchWeight, swingWindup, swingElapsed;
     private float staggerTime, staggerWeight;
     private bool striking, flinching, swingPreparing;
+    // Which of the looks' clips this zombie moves with (ZombieLooks.Pick): picked from its network id, so every PC
+    // shows the same walk, idle and swing for it. Its swing's strike is measured at its first swing if the clip doesn't mark it.
+    private uint clipSeed;
+    private AnimationClip attackClip, walkClip, runClip, searchWalkClip;
+    private bool attackMeasured;
+    // The slots' salts for the pick, so one zombie's walk doesn't decide its idle.
+    private const uint IdleSlot = 1, WalkSlot = 2, RunSlot = 3, AttackSlot = 4, FlinchSlot = 5, StaggerSlot = 6, CalmSlot = 7,
+        AlertSlot = 8, SearchSlot = 9, NoticeSlot = 10, RouseSlot = 11, CrawlAttackSlot = 12, PoseSlot = 13, PhaseSlot = 20;
     private Vector3 lastPosition, moving;
     private int dressedFrame;
     // Its human bones by HumanBodyBones, read once the Animator is on: it may die with the Animator off (knocked down).
@@ -68,6 +76,7 @@ public sealed partial class ZombieBody : MonoBehaviour
         network = GetComponent<EnemyNetwork>();
         mind = GetComponent<ZombieMind>();
         GameTables.Bind(KnockdownTable, KnockdownRow, this);
+        GameTables.Bind(ClipsTable, ClipsRow, this);
         var looks = ZombieLooks.Instance;
         var character = Pick(looks);
         if (character == null || looks == null || !Dress(character)) return;
@@ -333,6 +342,10 @@ public sealed partial class ZombieBody : MonoBehaviour
     {
         var rest = Or(looks.idle, looks.walk);
         if (rest == null) return;
+        // The same on every PC in a room (the network id), so everyone sees this zombie walk and swing alike.
+        clipSeed = network != null && network.IsSpawned
+            ? unchecked((uint)network.NetworkObjectId * 2654435761u ^ (uint)(network.NetworkObjectId >> 32))
+            : (uint)Random.Range(int.MinValue, int.MaxValue);
         graph = PlayableGraph.Create(name + " (Zombie)");
         // The Animator poses it as usual, but every clip stands still (speed 0) and its time is set here each frame,
         // so slow motion, the windup and the feet follow the game rather than the clock.
@@ -340,12 +353,15 @@ public sealed partial class ZombieBody : MonoBehaviour
         var output = AnimationPlayableOutput.Create(graph, "Body", animator);
         // Idle and walk (inputs 0 and 1) are mood mixers (ZombieBody.Moods.cs); run is plain.
         moves = AnimationMixerPlayable.Create(graph, 3);
-        run = Clip(Or(looks.run, Or(looks.walk, rest)), moves, 2, out runLength);
-        top = AnimationMixerPlayable.Create(graph, 20);
+        runClip = Pick(looks.run, looks.runs, RunSlot);
+        run = Clip(Or(runClip, Or(looks.walk, rest)), moves, 2, out runLength);
+        top = AnimationMixerPlayable.Create(graph, TopInputs);
         graph.Connect(moves, 0, top, 0);
-        attack = Clip(Or(looks.attack, rest), top, 1, out float attackLength);
-        flinch = Clip(Or(looks.flinch, rest), top, 2, out flinchLength);
-        stagger = Clip(Or(looks.stagger, Or(looks.flinch, rest)), top, 3, out staggerLength);
+        attackClip = Or(Pick(looks.attack, looks.attacks, AttackSlot), rest);
+        attack = Clip(attackClip, top, 1, out float attackLength);
+        var flinchClip = Or(Pick(looks.flinch, looks.flinches, FlinchSlot), rest);
+        flinch = Clip(flinchClip, top, 2, out flinchLength);
+        stagger = Clip(Or(Pick(looks.stagger, looks.staggers, StaggerSlot), flinchClip), top, 3, out staggerLength);
         // Without a getting-up clip it eases from the doll straight into standing.
         riseDown = Clip(Or(looks.riseFaceDown, rest), top, 4, out riseDownLength);
         riseUp = Clip(Or(looks.riseFaceUp, Or(looks.riseFaceDown, rest)), top, 5, out riseUpLength);
@@ -355,10 +371,15 @@ public sealed partial class ZombieBody : MonoBehaviour
         BuildLeap(looks, rest);
         output.SetSourcePlayable(top);
         // A bigger body's stride covers more ground (a brute).
-        walkSpeed = RootSpeed(looks.walk, WalkFallback) * grown;
-        runSpeed = Mathf.Max(walkSpeed + .5f, RootSpeed(looks.run, RunFallback) * grown);
-        searchWalkSpeed = Mathf.Min(walkSpeed, RootSpeed(looks.searchWalk, walkSpeed / grown) * grown);
-        attackHit = HitTime(looks.attack, attackLength);
+        walkSpeed = RootSpeed(walkClip, WalkFallback) * grown;
+        runSpeed = Mathf.Max(walkSpeed + .5f, RootSpeed(runClip, RunFallback) * grown);
+        searchWalkSpeed = Mathf.Min(walkSpeed, RootSpeed(searchWalkClip, walkSpeed / grown) * grown);
+        attackHit = HitTime(attackClip, attackLength);
+        // The pack's swings don't mark their strike: it is measured on this body at the first swing (Act).
+        attackMeasured = HasHitEvent(attackClip);
+        // Each starts somewhere else in its loops, so zombies spawned together don't step and sway in time.
+        phase = ZombieLooks.Fraction(clipSeed, PhaseSlot);
+        idleTime = phase * idleLength;
         graph.Play();
         riseDownShape = RiseShape(looks.riseFaceDown, 4);
         riseUpShape = RiseShape(Or(looks.riseFaceUp, looks.riseFaceDown), 5);
@@ -367,6 +388,17 @@ public sealed partial class ZombieBody : MonoBehaviour
     }
 
     private static AnimationClip Or(AnimationClip clip, AnimationClip fallback) => clip != null ? clip : fallback;
+
+    /// <summary>This zombie's clip for a slot: the slot's own or one of its list's (ZombieLooks.Pick), null if neither.</summary>
+    private AnimationClip Pick(AnimationClip main, AnimationClip[] more, uint slot) => ZombieLooks.Pick(main, more, clipSeed, slot);
+
+    private static bool HasHitEvent(AnimationClip clip)
+    {
+        if (clip != null)
+            foreach (var cue in clip.events)
+                if (cue.functionName != null && cue.functionName.EndsWith("AttackHit")) return true;
+        return false;
+    }
 
     private AnimationClipPlayable Clip(AnimationClip clip, AnimationMixerPlayable mixer, int input, out float length)
     {
@@ -455,6 +487,13 @@ public sealed partial class ZombieBody : MonoBehaviour
     {
         // The swing follows the windup: its strike frame lands when the windup hits, however long the windup is.
         swingPreparing = combat != null && combat.IsPreparingAttack;
+        // A swing whose clip doesn't mark its strike: the moment its hand reaches furthest is found once, standing up,
+        // as the first windup begins (shared by every zombie with that clip).
+        if (swingPreparing && !attackMeasured && !down && animator != null && animator.enabled)
+        {
+            attackMeasured = true;
+            attackHit = Hand(attackClip).hit;
+        }
         if (swingPreparing)
         {
             swingWindup = combat.Windup;
@@ -535,8 +574,7 @@ public sealed partial class ZombieBody : MonoBehaviour
         top.SetInputWeight(2, flinched * stand * rest);
         top.SetInputWeight(10, flinched * crawl * rest);
         top.SetInputWeight(3, reel * rest);
-        top.SetInputWeight(6, cueRouse ? 0f : cue * rest);
-        top.SetInputWeight(7, cueRouse ? cue * rest : 0f);
+        WeighCue(cue * rest);
         top.SetInputWeight(4, !crawling && riseFaceDown ? rise : 0f);
         top.SetInputWeight(5, !crawling && !riseFaceDown ? rise : 0f);
         top.SetInputWeight(11, crawling ? rise : 0f);

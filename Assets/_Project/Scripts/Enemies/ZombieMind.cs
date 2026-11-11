@@ -615,9 +615,15 @@ public sealed class ZombieMind : MonoBehaviour
     // so no stretch of the way is watched for good and gaps open and close (the stealth view's cones show it). Every
     // calm zombie used to stare one way forever, so a scattered few covered every way past (user, 2026-11-11: "얘들이
     // 각자 흩어져 있으니까 사방을 보고 있고").
+    /// <summary>
+    /// Its body sits, eats or crouches while calm (ZombieBody, ZombieLooks.calmPoses): it doesn't turn to look round,
+    /// as a seated body spinning on the spot looks wrong. Set by ZombieBody on every PC; only the host's is read.
+    /// </summary>
+    internal bool HoldsPose { get; set; }
+
     private void LookRound(float dt)
     {
-        if (lookAroundEvery <= 0f || lookAroundAngle <= 0f || lookAroundSpeed <= 0f) return;
+        if (HoldsPose || lookAroundEvery <= 0f || lookAroundAngle <= 0f || lookAroundSpeed <= 0f) return;
         if (Time.time >= lookAt)
         {
             lookAt = Time.time + lookAroundEvery * Random.Range(.6f, 1.4f);

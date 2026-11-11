@@ -104,8 +104,8 @@ public sealed partial class ZombieBody
         else if (leftArmLost || rightArmLost)
         {
             bool keepLeft = rightArmLost;
-            // Its own swing may already strike with the arm it kept.
-            if (looks.attack != null && Hand(looks.attack).left == keepLeft) chosen = null;
+            // Its own swing (the one it picked, ZombieLooks.attacks) may already strike with the arm it kept.
+            if (attackClip != null && Hand(attackClip).left == keepLeft) chosen = null;
             else if (looks.oneArmAttacks != null)
                 foreach (var clip in looks.oneArmAttacks)
                     if (clip != null && Hand(clip).left == keepLeft) { chosen = clip; break; }

@@ -19,11 +19,17 @@ using UnityEngine;
 /// yawOffset corrects the source clip's forward axis in degrees without discarding its authored turns.
 /// A folder may also hold "&lt;folder&gt;.tpose.fbx", the clips' character in its T-pose with its mesh (Mixamo: the character
 /// downloaded "T-Pose", with skin). Every other file there then copies that avatar.
+/// Under Art/Animations/Zombies, "enf_" files (exported from the Blender zombie workspace on the Synty skeleton) use the
+/// Synty zombie model's avatar directly; other files there (a Mixamo download with skin) keep their own avatar. A file in
+/// a slot folder there (ZombieClipFolders) without a list loops by its folder, and its travel becomes root motion, which
+/// a zombie's body drops (ZombieBody moves by its agent).
 /// </summary>
 internal sealed class ModelImportRules : AssetPostprocessor
 {
     public const string ModelsFolder = "Assets/_Project/Art/Models/";
     public const string AnimationsFolder = "Assets/_Project/Art/Animations/";
+    private const string ZombieAnimationsFolder = AnimationsFolder + "Zombies/";
+    private const string ZombieAvatarModel = "Assets/ThirdParty/Synty/PolygonCityZombies/Models/Zombies.fbx";
     private const string CharactersCategory = "Characters/";
     private static readonly string[] StaticCategories = { "Props/", "Environment/" };
     private static readonly string[] ImageExtensions = { ".png", ".tga", ".jpg", ".jpeg", ".psd", ".tif", ".tiff", ".exr" };
@@ -36,13 +42,24 @@ internal sealed class ModelImportRules : AssetPostprocessor
 
     private static bool IsProjectModel(string path) => path.StartsWith(ModelsFolder, StringComparison.OrdinalIgnoreCase);
     private static bool IsAnimationFile(string path) => path.StartsWith(AnimationsFolder, StringComparison.OrdinalIgnoreCase);
+    public static bool IsZombieAnimation(string path) => path.StartsWith(ZombieAnimationsFolder, StringComparison.OrdinalIgnoreCase);
+    /// <summary>Exported from the Blender zombie workspace (Tools/Blender/Zombies), which names every file "enf_…".</summary>
+    public static bool IsZombieWorkspaceClip(string path)
+        => IsZombieAnimation(path) && Path.GetFileName(path).StartsWith("enf_", StringComparison.OrdinalIgnoreCase);
     private static bool IsImage(string path) => ImageExtensions.Contains(Path.GetExtension(path).ToLowerInvariant());
 
     private void OnPreprocessModel()
     {
         if ((IsProjectModel(assetPath) || IsAnimationFile(assetPath)) && assetImporter.importSettingsMissing)
             Apply((ModelImporter)assetImporter);
-        if (IsAnimationFile(assetPath)) ShareTPose((ModelImporter)assetImporter);
+        if (IsZombieWorkspaceClip(assetPath))
+        {
+            var model = (ModelImporter)assetImporter;
+            // The Synty Avatar's bone axes were imported without baking the FBX axis conversion.
+            model.bakeAxisConversion = false;
+            ShareAvatar(model, ZombieAvatarModel);
+        }
+        else if (IsAnimationFile(assetPath)) ShareTPose((ModelImporter)assetImporter);
     }
 
     private const string TPoseSuffix = ".tpose.fbx";
@@ -66,8 +83,13 @@ internal sealed class ModelImportRules : AssetPostprocessor
             model.importAnimation = false;
             return;
         }
-        context.DependsOnArtifact(tpose);
-        var avatar = AssetDatabase.LoadAssetAtPath<Avatar>(tpose);
+        ShareAvatar(model, tpose);
+    }
+
+    private void ShareAvatar(ModelImporter model, string modelPath)
+    {
+        context.DependsOnArtifact(modelPath);
+        var avatar = AssetDatabase.LoadAssetAtPath<Avatar>(modelPath);
         if (avatar == null || !avatar.isHuman) return;
         if (model.avatarSetup == ModelImporterAvatarSetup.CopyFromOther && model.sourceAvatar == avatar) return;
         model.avatarSetup = ModelImporterAvatarSetup.CopyFromOther;
@@ -121,7 +143,11 @@ internal sealed class ModelImportRules : AssetPostprocessor
         {
             string folder = Path.GetDirectoryName(assetPath).Replace('\\', '/');
             listPath = folder + "/" + Path.GetFileName(folder) + ".clips.csv";
-            if (!File.Exists(listPath)) return;
+            if (!File.Exists(listPath))
+            {
+                if (ZombieClipFolders.SlotOf(assetPath) != null) ZombieSlotDefaults((ModelImporter)assetImporter);
+                return;
+            }
         }
         context.DependsOnSourceAsset(listPath);
         var list = CsvTable.Parse(File.ReadAllText(listPath), Path.GetFileName(listPath));
@@ -158,6 +184,29 @@ internal sealed class ModelImportRules : AssetPostprocessor
     }
 
     private const string GenericMixamoTake = "mixamo.com";
+
+    // A clip dropped into a zombie slot folder with no list (a Mixamo download): it loops if its folder's clips do
+    // (ZombieClipFolders.Loops), height and facing stay in the pose, and its travel becomes root motion, which the
+    // zombie's body drops, so a walk downloaded without "In Place" walks on the spot like the rest.
+    private void ZombieSlotDefaults(ModelImporter importer)
+    {
+        bool loop = ZombieClipFolders.Loops(assetPath);
+        var clips = importer.defaultClipAnimations;
+        foreach (var clip in clips)
+        {
+            int bar = clip.takeName.LastIndexOf('|');
+            clip.name = bar >= 0 ? clip.takeName.Substring(bar + 1) : clip.takeName;
+            if (clips.Length == 1 && clip.name == GenericMixamoTake) clip.name = Path.GetFileNameWithoutExtension(assetPath);
+            clip.loopTime = loop;
+            clip.lockRootRotation = true;
+            clip.keepOriginalOrientation = true;
+            clip.lockRootHeightY = true;
+            clip.keepOriginalPositionY = true;
+            clip.lockRootPositionXZ = false;
+            clip.keepOriginalPositionXZ = true;
+        }
+        importer.clipAnimations = clips;
+    }
 
     private static bool Flag(System.Collections.Generic.IReadOnlyDictionary<string, string> row, string column)
         => row != null && row.TryGetValue(column, out string value) && value.Trim() == "1";

@@ -7,11 +7,12 @@ import bpy
 import json
 import math
 import re
+from contextlib import contextmanager
 from pathlib import Path
 from bpy.app.handlers import persistent
 from bpy.props import StringProperty, IntProperty, BoolProperty, EnumProperty
 from bpy_extras.io_utils import ExportHelper
-from mathutils import Quaternion, Vector
+from mathutils import Matrix, Quaternion, Vector
 
 bl_info = {'name': 'ENFILADE True FPS', 'author': 'ENFILADE',
            'version': (1, 1, 0), 'blender': (4, 5, 0),
@@ -34,6 +35,11 @@ LIMBS = {'arm_L': ('Left arm', 'Left elbow', 'Left wrist', 'CTRL_hand.L', 'CTRL_
          'arm_R': ('Right arm', 'Right elbow', 'Right wrist', 'CTRL_hand.R', 'CTRL_elbow.R'),
          'leg_L': ('Left leg', 'Left knee', 'Left ankle', 'CTRL_foot.L', 'CTRL_knee.L'),
          'leg_R': ('Right leg', 'Right knee', 'Right ankle', 'CTRL_foot.R', 'CTRL_knee.R')}
+
+
+def limb_names(rig):
+    mapping = rig.get('truefps_limbs')
+    return json.loads(mapping) if mapping else LIMBS
 
 
 def _action_curves(rig):
@@ -95,7 +101,8 @@ def switch_limb(context, rig, limb='arm_L', mode='FK', key=True):
     effector and bend plane; deliberately authored axial FK twist is governed
     by the two-bone IK solver after switching.
     """
-    if limb not in LIMBS or mode not in {'FK', 'IK'}:
+    mapping = limb_names(rig)
+    if limb not in mapping or mode not in {'FK', 'IK'}:
         raise ValueError('Choose one limb and FK or IK.')
     prop = 'ik_' + limb
     if prop not in rig:
@@ -103,7 +110,7 @@ def switch_limb(context, rig, limb='arm_L', mode='FK', key=True):
     new_value = 1.0 if mode == 'IK' else 0.0
     if abs(float(rig[prop]) - new_value) < .001:
         return
-    names = LIMBS[limb]
+    names = mapping[limb]
     context.view_layer.update()
     evaluated = rig.evaluated_get(context.evaluated_depsgraph_get())
     matrices = {n: evaluated.pose.bones[n].matrix.copy() for n in names[:3]}
@@ -198,6 +205,69 @@ def key_controls(rig, frame):
     key_ik_modes(rig, frame)
     if rig.animation_data and rig.animation_data.action:
         rig.animation_data.action.use_fake_user = True
+
+
+def preview_models(context, rig):
+    """Find the configured zombie mesh variants in the current view layer."""
+    models = json.loads(rig.get('truefps_preview_models', '{}'))
+    return {label: context.view_layer.objects[name] for label, name in models.items()
+            if name in context.view_layer.objects}
+
+
+@contextmanager
+def _preserve_preview_pose(context, rig):
+    """Restore the editing frame and any pending pose edits after sampling."""
+    scene = context.scene
+    frame, subframe = scene.frame_current, scene.frame_subframe
+    object_basis = rig.matrix_basis.copy()
+    channels = ('location', 'rotation_quaternion', 'scale')
+    bones = [rig.pose.bones[name] for name in control_names(rig)]
+    transforms = [(bone, [getattr(bone, channel).copy() for channel in channels])
+                  for bone in bones]
+    modes = {'ik_' + limb: rig['ik_' + limb] for limb in limb_names(rig) if 'ik_' + limb in rig}
+    try:
+        yield
+    finally:
+        scene.frame_set(frame, subframe=subframe)
+        rig.matrix_basis = object_basis
+        for bone, values in transforms:
+            for channel, value in zip(channels, values):
+                setattr(bone, channel, value)
+        for name, value in modes.items():
+            rig[name] = value
+        rig.update_tag(refresh={'OBJECT'})
+        context.view_layer.update()
+
+
+def _loop_range(context, rig):
+    if not rig or not rig.animation_data or not rig.animation_data.action:
+        raise ValueError('Select an active Action first.')
+    start, end = context.scene.frame_start, context.scene.frame_end
+    if end <= start:
+        raise ValueError('End frame must be greater than Start frame.')
+    return start, end
+
+
+def loop_seam(context, rig):
+    """Return the largest start/end differences in meters, degrees and scale ratio."""
+    start, end = _loop_range(context, rig)
+    names = json.loads(rig['truefps_original_bones'])
+    samples = []
+    with _preserve_preview_pose(context, rig):
+        for frame in (start, end):
+            context.scene.frame_set(frame)
+            context.view_layer.update()
+            evaluated = rig.evaluated_get(context.evaluated_depsgraph_get())
+            samples.append([(evaluated.matrix_world @ evaluated.pose.bones[name].matrix).decompose()
+                            for name in names])
+    distance = rotation = scale = 0.0
+    for (p0, q0, s0), (p1, q1, s1) in zip(*samples):
+        distance = max(distance, (p1 - p0).length)
+        delta = q0.rotation_difference(q1)
+        angle = 2 * math.atan2(math.hypot(delta.x, delta.y, delta.z), abs(delta.w))
+        rotation = max(rotation, math.degrees(angle))
+        scale = max(scale, *(abs(a - b) / max(abs(a), abs(b), 1e-8) for a, b in zip(s0, s1)))
+    return distance, rotation, scale
 
 
 def repair_preview_views():
@@ -327,6 +397,9 @@ def export_active_clip(context, rig, filepath):
     if any(n not in rig.data.bones for n in names):
         raise ValueError('The original skeleton is incomplete; use the intact template.')
     name_set = set(names)
+    # Match the Synty Avatar's root node and meter-space bone lengths. Blender
+    # imports its centimeters as an object scale, which Avatar copy ignores.
+    unit_scale = float(rig.get('truefps_export_unit_scale', 1.0))
     old_frame, old_subframe = scene.frame_current, scene.frame_subframe
     old_scene_name, old_rig_name = scene.name, rig.name
     old_active = context.view_layer.objects.active
@@ -369,6 +442,8 @@ def export_active_clip(context, rig, filepath):
             if bone.name not in name_set:
                 temp.data.edit_bones.remove(bone)
         bpy.ops.object.mode_set(mode='OBJECT')
+        if unit_scale != 1.0:
+            temp.data.transform(Matrix.Scale(unit_scale, 4))
         for col in temp.data.collections:
             col.is_visible = True
         baked_action = bpy.data.actions.new('__TrueFPS_export_bake')
@@ -381,6 +456,10 @@ def export_active_clip(context, rig, filepath):
             export_frame = frame - start
             scene.frame_set(export_frame)
             location, rotation, scale = obj_matrix.decompose()
+            if unit_scale != 1.0:
+                scale /= unit_scale
+                for matrix in pose.values():
+                    matrix.translation *= unit_scale
             if previous_obj_rotation is not None and previous_obj_rotation.dot(rotation) < 0:
                 rotation.negate()
             previous_obj_rotation = rotation.copy()
@@ -411,12 +490,13 @@ def export_active_clip(context, rig, filepath):
         # Blender's importer then maps it back to frame 1 by default.
         scene.frame_start, scene.frame_end = 0, end - start
         rig.name = '__TrueFPS_authoring_in_export'
-        temp.name = old_rig_name
+        temp.name = rig.get('truefps_export_armature_name', old_rig_name)
         # Skeleton-only FBX has no skin bind-pose record. Its default node
         # transforms come from the current pose, so provide the ORIGINAL rest
         # pose at a sentinel frame outside the exported 0..duration take.
         scene.frame_set(-1)
-        temp.matrix_world = rig.matrix_world.copy()
+        location, rotation, scale = rig.matrix_world.decompose()
+        temp.matrix_world = Matrix.LocRotScale(location, rotation, scale / unit_scale)
         for attr in ('location', 'rotation_quaternion', 'scale'):
             temp.keyframe_insert(data_path=attr, frame=-1)
         for pb in temp.pose.bones:
@@ -503,12 +583,25 @@ class TRUEFPS_OT_new(bpy.types.Operator):
     clip_name: StringProperty(name='Clip name', default='enf_new_clip')
     end_frame: IntProperty(name='End frame', default=31, min=2, max=100000)
     loop: BoolProperty(name='Loop in Unity', default=False)
+
+    def set_zombie_defaults(self, rig):
+        if not rig or rig.get('truefps_kind') != 'zombie':
+            return
+        if not self.properties.is_property_set('clip_name'):
+            self.clip_name = 'enf_zombie_new'
+        if not self.properties.is_property_set('end_frame'):
+            self.end_frame = 91
+        if not self.properties.is_property_set('loop'):
+            self.loop = True
+
     def invoke(self, context, event):
+        self.set_zombie_defaults(find_rig(context))
         return context.window_manager.invoke_props_dialog(self)
     def execute(self, context):
         rig = find_rig(context)
         if not rig:
             return {'CANCELLED'}
+        self.set_zombie_defaults(rig)
         name = self.clip_name.strip()
         if not re.fullmatch(r'[A-Za-z0-9_.-]+', name):
             self.report({'ERROR'}, 'Use letters, numbers, underscore, dot or dash for clip names')
@@ -519,6 +612,9 @@ class TRUEFPS_OT_new(bpy.types.Operator):
         action = bpy.data.actions.new(name)
         action.use_fake_user = True
         action['truefps_loop'] = self.loop
+        if rig.get('truefps_kind') == 'zombie':
+            action.use_frame_range = True
+            action.frame_start, action.frame_end = 1, self.end_frame
         rig.animation_data.action = action
         context.scene.frame_start, context.scene.frame_end = 1, self.end_frame
         context.scene.frame_set(1)
@@ -546,6 +642,67 @@ class TRUEFPS_OT_switch_limb(bpy.types.Operator):
             self.report({'ERROR'}, str(error))
             return {'CANCELLED'}
         self.report({'INFO'}, self.limb.replace('_',' ') + ': ' + self.mode + ' (matched and keyed)')
+        return {'FINISHED'}
+
+
+class TRUEFPS_OT_preview_model(bpy.types.Operator):
+    bl_idname = 'truefps.preview_model'
+    bl_label = 'Preview Zombie Model'
+    bl_description = 'Display this zombie mesh on the shared animation rig'
+    bl_options = {'REGISTER', 'UNDO'}
+    model: StringProperty()
+
+    def execute(self, context):
+        rig = find_rig(context)
+        if not rig or rig.get('truefps_kind') != 'zombie':
+            return {'CANCELLED'}
+        models = preview_models(context, rig)
+        if self.model not in models:
+            self.report({'WARNING'}, 'This preview model is unavailable in the current view layer')
+            return {'CANCELLED'}
+        chosen = models[self.model]
+        for obj in models.values():
+            obj.hide_set(obj != chosen, view_layer=context.view_layer)
+            obj.hide_render = obj != chosen
+        return {'FINISHED'}
+
+
+class TRUEFPS_OT_copy_loop_end(bpy.types.Operator):
+    bl_idname = 'truefps.copy_loop_end'
+    bl_label = 'Copy Start Pose to End'
+    bl_description = 'Key the starting control pose and limb modes on the end frame'
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        rig = find_rig(context)
+        try:
+            start, end = _loop_range(context, rig)
+            with _preserve_preview_pose(context, rig):
+                context.scene.frame_set(start)
+                context.view_layer.update()
+                key_controls(rig, end)
+        except (ValueError, RuntimeError) as error:
+            self.report({'WARNING'}, str(error))
+            return {'CANCELLED'}
+        self.report({'INFO'}, f'Pose from frame {start} keyed at frame {end}')
+        return {'FINISHED'}
+
+
+class TRUEFPS_OT_check_loop(bpy.types.Operator):
+    bl_idname = 'truefps.check_loop'
+    bl_label = 'Check Loop Seam'
+    bl_description = 'Compare the evaluated bone poses on the first and last frames'
+
+    def execute(self, context):
+        try:
+            distance, rotation, scale = loop_seam(context, find_rig(context))
+        except (ValueError, RuntimeError, KeyError) as error:
+            self.report({'WARNING'}, str(error))
+            return {'CANCELLED'}
+        match = distance <= .001 and rotation <= .5 and scale <= .001
+        message = 'Loop endpoints match' if match else 'Loop endpoints differ'
+        self.report({'INFO'} if match else {'WARNING'},
+                    f'{message} ({distance * 1000:.1f} mm, {rotation:.1f}°, {scale * 100:.2f}% scale max)')
         return {'FINISHED'}
 
 
@@ -578,7 +735,8 @@ class TRUEFPS_OT_export(bpy.types.Operator, ExportHelper):
                 csv_path.write_text(
                     'clip,loop,inPlace,inPlaceY,inPlaceYaw,yawOffset,cycleOffset,from,to\n'
                     f'{action.name},{int(self.loop)},0,0,0,0,0,,\n', encoding='utf-8')
-            self.report({'INFO'}, 'Exported FBX; copy it and its clips.csv to Unity Custom folder')
+            folder = 'Animations/Zombies' if rig.get('truefps_kind') == 'zombie' else 'Animations/Custom'
+            self.report({'INFO'}, f'Exported FBX. Copy it and its clips.csv to Unity {folder}.')
             return {'FINISHED'}
         except Exception as error:
             self.report({'ERROR'}, str(error))
@@ -598,6 +756,17 @@ class TRUEFPS_PT_panel(bpy.types.Panel):
             layout.label(text='Open the ENFILADE workspace')
             return
         action = rig.animation_data.action if rig.animation_data else None
+        is_zombie = rig.get('truefps_kind') == 'zombie'
+        if is_zombie:
+            models = preview_models(context, rig)
+            if models:
+                box = layout.box()
+                box.label(text='Zombie Preview')
+                row = box.row(align=True)
+                for label, obj in models.items():
+                    op = row.operator('truefps.preview_model', text=label,
+                                      depress=not obj.hide_get(view_layer=context.view_layer))
+                    op.model = label
         if any('ik_' + limb in rig for limb in LIMBS):
             box = layout.box()
             box.label(text='Limb controls')
@@ -621,16 +790,24 @@ class TRUEFPS_PT_panel(bpy.types.Panel):
         layout.prop(context.scene, 'frame_current', text='Frame')
         layout.operator('truefps.key_controls', icon='KEY_HLT')
         layout.operator('truefps.reset_selected', icon='LOOP_BACK')
+        if is_zombie:
+            box = layout.box()
+            box.label(text='Loop')
+            box.enabled = action is not None and context.scene.frame_end > context.scene.frame_start
+            box.operator('truefps.copy_loop_end', icon='DUPLICATE')
+            box.operator('truefps.check_loop', icon='CHECKMARK')
         layout.separator()
         layout.operator('truefps.export_clip', icon='EXPORT')
         layout.separator()
         layout.label(text='G: move   R: rotate')
         layout.label(text='Key after every pose change')
-        layout.label(text='Head view = authored motion')
-        layout.label(text='Unity adds look / IK / smoothing')
+        if not is_zombie:
+            layout.label(text='Head view = authored motion')
+            layout.label(text='Unity adds look / IK / smoothing')
 
 
 CLASSES = (TRUEFPS_OT_key, TRUEFPS_OT_reset, TRUEFPS_OT_new, TRUEFPS_OT_switch_limb,
+           TRUEFPS_OT_preview_model, TRUEFPS_OT_copy_loop_end, TRUEFPS_OT_check_loop,
            TRUEFPS_OT_export, TRUEFPS_PT_panel)
 
 

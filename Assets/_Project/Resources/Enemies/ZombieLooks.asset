@@ -95,3 +95,53 @@ MonoBehaviour:
   feed: {fileID: 6631770836247667153, guid: d70f069e2786f1c4e874c2389e484ca2, type: 3}
   leap: {fileID: 3528536130609783060, guid: d5c86af36bb78084293c0f660bf29e50, type: 3}
   leapLand: {fileID: 599903583345120271, guid: ed39309a9779dd54a8bdfacab64f3605, type: 3}
+  idles:
+  - {fileID: 6992793450619409858, guid: 3d59dba0e9e33f243b67b21539910b48, type: 3}
+  walks:
+  - {fileID: 1470454970490018069, guid: 5546e3807734fb848baa4996d9e956c7, type: 3}
+  - {fileID: -726061701027144905, guid: 68ebbba6ff2867b47b2e9a5547aab815, type: 3}
+  - {fileID: -4433731114154778983, guid: 33adb465dbe40a14aaf49d50d758ef11, type: 3}
+  - {fileID: -1331184960704888024, guid: c3b4fa9853fb3664aa9f1353e094059f, type: 3}
+  - {fileID: 6053303403308736431, guid: 4d7f3d4d40b5aa54bbbd4bc854a78bc3, type: 3}
+  - {fileID: 2993444573250039460, guid: 347547906ef0aa34c8ada1ce5e83431b, type: 3}
+  runs:
+  - {fileID: -2432957212303469411, guid: 21fe50c1785561945818618435e1bf4e, type: 3}
+  - {fileID: 6807084127475010460, guid: dbcf4e9ba81ee224fb3ba46d174dfe20, type: 3}
+  - {fileID: -3146348633520434190, guid: c3407499021e7b648aa3dda0c5f9dc7e, type: 3}
+  - {fileID: -671497779519508937, guid: b929c02f4349e96428619061335a2dd8, type: 3}
+  - {fileID: 6610929218996927397, guid: 14c11718ee135c945b626a0ff9d2ab38, type: 3}
+  attacks:
+  - {fileID: -7104571153434317, guid: c20d967c14912e7489922ec5fb3e8b47, type: 3}
+  - {fileID: -412404313485304530, guid: 80a439b6c9078574abfa289b1f77837a, type: 3}
+  - {fileID: 221409413640339461, guid: 8ac79e0f74acc11438a6c977d379a90a, type: 3}
+  - {fileID: 6854334624626206543, guid: 4af113519ec41ab40a5586393b2098b8, type: 3}
+  - {fileID: 7977578997007036338, guid: 5b0df9d68e3e2ea4bb1cdd7abd1d8d6b, type: 3}
+  flinches:
+  - {fileID: -7959569735815888632, guid: a1912ae336b6915479a42cfdd44e548d, type: 3}
+  - {fileID: 1431198907024658100, guid: f80d01187f6bfce4d93ad2e1455b0cba, type: 3}
+  - {fileID: -4666266018825210585, guid: f1d8f1dab83cff6468ced42123559ca6, type: 3}
+  staggers: []
+  calmIdles:
+  - {fileID: 2232985245941357681, guid: c2bddb3a6ad737d41b7164f8c5d4042c, type: 3}
+  - {fileID: 1699268238491404134, guid: 01323798f26e6994cbf5a0546b513abb, type: 3}
+  - {fileID: -4542341414811020070, guid: 73f083dde8aae7545adb43be678d2524, type: 3}
+  - {fileID: -2798715196642600347, guid: e30bc32958d08ce46833645e45510137, type: 3}
+  alertIdles:
+  - {fileID: -3871542928920690869, guid: c09904853774f764e865d9d8934146bc, type: 3}
+  searchWalks:
+  - {fileID: 6053303403308736431, guid: fd38d2202a7c6714f83d00a0bde323d0, type: 3}
+  - {fileID: 1470454970490018069, guid: 1b2147756782c9e4b841bc01ebb34bef, type: 3}
+  notices:
+  - {fileID: 5534346714299562448, guid: 232fb84a34fbe6c44a5d27e22da8fd16, type: 3}
+  rouses:
+  - {fileID: -8998736153758727476, guid: 7c3fc0aca45d288429799fd2bdb159e7, type: 3}
+  - {fileID: 7428759227272194196, guid: 9bc42eace540c4e43874872e79173a52, type: 3}
+  crawlAttacks:
+  - {fileID: -4234053242460046972, guid: f90f856d0576d9145bd10f0469bd9874, type: 3}
+  calmPoses:
+  - loop: {fileID: -7827417325818891787, guid: aa562d0d7bb334b4a9deb473fc3184bc, type: 3}
+    getUp: {fileID: -3250332911158739521, guid: 23c7fcf9811ae1f4f9fe2b8a20b95a35, type: 3}
+  - loop: {fileID: 6631770836247667153, guid: d70f069e2786f1c4e874c2389e484ca2, type: 3}
+    getUp: {fileID: 737584038750481667, guid: bf467de4a5a19fb4db62e47cf278e73a, type: 3}
+  - loop: {fileID: -8514547714546179350, guid: 8100f98c067c088429a64f8663beb384, type: 3}
+    getUp: {fileID: -4003253231572624451, guid: dd590d385c81a674cb2f57f6aed2a050, type: 3}
