@@ -79,6 +79,8 @@ public sealed class MainMenuScreen : MonoBehaviour
         instance = this;
         IsOpen = true;
         Time.timeScale = 1f;
+        // The class growth of a game left without its ending first, while the score still holds it (ClassGrowth.Leave).
+        ClassGrowth.Leave();
         CombatFeedHUD.ResetScore();
         PlayerPerks.Clear(); // perks last a campaign; back at the title screen it starts bare
         MatchResults.Clear(); // a chapter's results wait for the hub it leads back to, not for a later visit from here

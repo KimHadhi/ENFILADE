@@ -102,6 +102,13 @@ public static class ClassGrowth
         baseline = Wallet.Experience;
     }
 
+    /// <summary>
+    /// The game is being left for the title screen (MainMenuScreen, just before it sets the score back to 0): what it
+    /// earned counts now, while the score still holds it. Waiting for the scene's load, as before, read it after the
+    /// reset and added next to nothing.
+    /// </summary>
+    public static void Leave() => EndGame();
+
     // Left without an ending: what it earned still counts, unseen.
     private static void EndGame()
     {
