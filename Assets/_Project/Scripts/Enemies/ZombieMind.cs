@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Globalization;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.AI;
@@ -20,20 +21,27 @@ public enum ZombieMood : byte { Awake, Calm, Searching, Alert, Rousing, Rising }
 /// front, best straight ahead and fading toward the edge of its sight, each checked at the head, chest and hips with
 /// rays, faster the closer, the more of them shows and the faster they move, slower crouched and slower still lying
 /// down, sooner and from farther with their flashlight turned on it; anyone this close right before its eyes wakes it
-/// at once. Hearing: every Noise (footsteps, landings, vaults, voices, shots) within its reach, half the reach through a
-/// wall, louder the nearer, but none of a crouched player's small sounds; a faint one only turns its head. A stone a
-/// player threw (a lure) draws the nearest that hears it over to look, and turns the others' heads, without ever
-/// telling them who threw it. A blow wakes it at once. Awake but no longer seeing nor hearing its quarry, it searches
-/// where it last knew them, and gives up in the end. The host thinks; other PCs show its mood, how sure it is and of
-/// whom (EnemyNetwork), for the stealth HUD. Numbers: Tables/ZombieSenses. The 2026-11-11 stealth round took its
-/// shape from Advanced Stealth (F:\Addons): the smooth fall-off of sight to the side, silent crouched steps, thrown
-/// objects that draw one zombie while the rest turn to look.
+/// at once. Hearing: every Noise (footsteps, landings, vaults, voices, shots) within its reach, louder the nearer, but
+/// none of a crouched player's small sounds; a faint one only turns its head. What stands between muffles a sound by
+/// how thick it is and what it is made of (Surfaces), a shut door less and an open one not at all, unless the sound
+/// comes round louder through a doorway or round a corner (Carries). A stone a player threw (a lure) draws the
+/// nearest that hears it over to look, and turns the others' heads, without ever telling them who threw it. A blow
+/// wakes it at once. A body it makes out (a dead zombie's or a dead player's, fresh, near and in plain view) makes it
+/// suspicious: it stares, searches round it and calls the ones near to search too, and stays wary a minute (Found).
+/// Awake but no longer seeing nor hearing its quarry, it searches where it last knew them, and gives up in the end.
+/// The host thinks; other PCs show its mood, how sure it is and of whom (EnemyNetwork), for the stealth HUD. Numbers:
+/// Tables/ZombieSenses. The 2026-11-11 stealth round took its shape from Advanced Stealth (F:\Addons): the smooth
+/// fall-off of sight to the side, silent crouched steps, thrown objects that draw one zombie while the rest turn to
+/// look; its wall loss and its guards' search round a body found came after.
 /// </summary>
 [DisallowMultipleComponent]
-public sealed class ZombieMind : MonoBehaviour
+public sealed class ZombieMind : MonoBehaviour, ITableBound
 {
     public const string TableName = "ZombieSenses", TableRow = "Default";
     private const float ThinkEvery = .1f, ArriveDistance = 1f;
+    // How far off the walk mesh a sound or a zombie may be and still be found on it, for a sound's way round (m). A spot
+    // to look round a body is found within SpotSnap of where it was wanted, at most SpotRise above or below the body.
+    private const float RoundSnap = 2f, SpotSnap = 1.5f, SpotRise = 1.5f;
     private const string EnemyLayer = "Enemy";
     // Where a player is looked at, as shares of their capsule's height from its bottom.
     private static readonly float[] LookHeights = { .9f, .62f, .3f };
@@ -79,8 +87,26 @@ public sealed class ZombieMind : MonoBehaviour
     private float hearShare = 1f;
     [SerializeField, Range(0f, 2f), Tooltip("Share of a noise's reach it hears while calm.")]
     private float calmHearShare = .6f;
-    [SerializeField, Range(0f, 1f), Tooltip("Share of the reach left through a wall.")]
-    private float wallShare = .5f;
+    [SerializeField, Min(0f), Tooltip("What a thin wall takes off a sound (dB) before what it is made of scales it (wallMaterials): "
+        + "a sound's reach becomes 10^(-dB/20) of itself, so 6 dB halves it. Advanced Stealth's 7.96.")]
+    private float wallLoss = 7.96f;
+    [SerializeField, Min(0f), Tooltip("Up to this much more (dB) as a wall thickens from wallThin to wallThick. Advanced Stealth's 10.")]
+    private float wallThickLoss = 10f;
+    [SerializeField, Min(0f), Tooltip("A wall this thick (m) or thinner takes wallLoss alone. Advanced Stealth's 8 units.")]
+    private float wallThin = .2f;
+    [SerializeField, Min(0f), Tooltip("A wall this thick (m) or thicker takes all of wallThickLoss too. Advanced Stealth's 32 units.")]
+    private float wallThick = .8f;
+    [SerializeField, Min(0f), Tooltip("What a shut door takes off (dB): a rest stop's door, a breakable door, a shutter. An open one "
+        + "takes nothing. Advanced Stealth's 6, as much as every wall used to (half the reach).")]
+    private float doorLoss = 6f;
+    [SerializeField, Tooltip("What a wall is made of scales its loss: a surface of Tables/Surfaces and its share (Glass:0.4). A "
+        + "surface not listed counts as its nearest listed parent (WoodPanel as Wood), and as Concrete in the end. Advanced "
+        + "Stealth: glass 0.4, wood 0.75, grate 0.15, metal 0.9, concrete 1.15; railings and poles (MetalPipe) are as open as a "
+        + "grate, and canvas lets most through.")]
+    private string[] wallMaterials = { "Glass:0.4", "Wood:0.75", "Gantry:0.15", "MetalPipe:0.15", "Metal:0.9", "Concrete:1.15", "Tarp:0.3" };
+    [SerializeField, Min(0f), Tooltip("A sound that comes round what stands between instead (along the walk mesh: an open doorway, "
+        + "a corner) loses this much (dB) for every right angle it turns. The louder of round and through is heard.")]
+    private float cornerLoss = 3f;
     [SerializeField, Min(0f), Tooltip("Suspicion a noise gives right at its source; less the farther off.")]
     private float hearGain = 1.5f;
     [SerializeField, Min(0f), Tooltip("A crouched player's sounds that carry no farther than this (m: a sneaking step, crouching, a lean) don't reach it at all.")]
@@ -144,9 +170,39 @@ public sealed class ZombieMind : MonoBehaviour
     [SerializeField, Range(10f, 180f), Tooltip("Within this angle either side of its back (degrees), a player may take a zombie that isn't awake down (F, or a left click with the fists).")]
     private float takedownAngle = 70f;
 
+    [Header("Bodies")]
+    [SerializeField, Min(0f), Tooltip("How far it makes out a body (m): a dead zombie's or a dead player's, in its full view "
+        + "(fieldOfView) with nothing of the world between its eyes and the body's trunk. Shorter than its sight of someone. 0: never.")]
+    private float corpseSight = 8f;
+    [SerializeField, Min(0f), Tooltip("Only a body that fell within this long (s) is news.")]
+    private float corpseFresh = 40f;
+    [SerializeField, Min(0f), Tooltip("Having found a body, it stares at it this long (s), then goes to search round it.")]
+    private float corpseStare = 1.5f;
+    [SerializeField, Min(0f), Tooltip("How long it, and those it called, search round a body (s). Advanced Stealth's 30.")]
+    private float corpseSearch = 30f;
+    [SerializeField, Min(0f), Tooltip("Having found a body or been called to one, how long it stays wary (s). Advanced Stealth's 60.")]
+    private float corpseWary = 60f;
+    [SerializeField, Min(1f), Tooltip("Wary, how much faster it notices someone. Advanced Stealth's 1.3 for a guard on alert.")]
+    private float waryShare = 1.3f;
+    [SerializeField, Min(0f), Tooltip("Finding a body, it calls the ones not awake this near (m) to search round it too; walls "
+        + "muffle the call as they do any sound. Advanced Stealth's 242.8 units twice over: 12.1 m.")]
+    private float corpseCall = 12f;
+    [SerializeField, Min(0f), Tooltip("Searching round a body, how far from it it looks at first (m), each searcher its own share "
+        + "of the way round. Advanced Stealth's squad search starts at 150 units.")]
+    private float corpseNear = 3.75f;
+    [SerializeField, Min(0f), Tooltip("...and by the search's end (m), the circle widening as it goes on. Advanced Stealth widens to "
+        + "800 units over 60 s; at that pace a 30 s search reaches 475 units.")]
+    private float corpseFar = 12f;
+
     private static readonly List<ZombieMind> minds = new List<ZombieMind>();
     // Each player's gun, for its flashlight. Found once.
     private static readonly Dictionary<PlayerMovement, WeaponController> guns = new Dictionary<PlayerMovement, WeaponController>();
+    // Those a body's finder calls to search with it, one call at a time.
+    private static readonly List<ZombieMind> helpers = new List<ZombieMind>();
+    // What a sound meets on its straight way to the ears, and the corners of its way round (asked one at a time).
+    private static readonly RaycastHit[] wallHits = new RaycastHit[16];
+    private static readonly Vector3[] corners = new Vector3[32];
+    private static NavMeshPath roundPath, spotPath;
 
     /// <summary>Every zombie mind switched on, on this PC (the host's or copies), for the stealth HUD and view.</summary>
     public static IReadOnlyList<ZombieMind> All => minds;
@@ -175,8 +231,23 @@ public sealed class ZombieMind : MonoBehaviour
     private Vector3 lureAt;
     private float distractedUntil;
 
+    // Bodies it found or was called to, by the body's id and when it fell: each alarms it once. When it was last awake: a
+    // body that fell before then is no news to it (it was in that fight). Until when it is wary of having found one.
+    private readonly HashSet<(int, float)> knownBodies = new HashSet<(int, float)>();
+    private float awakeUntil = float.NegativeInfinity, waryUntil;
+    // Searching round a body: where it lies, until when, this one's share of the way round (middle and width, degrees)
+    // and how many places it has set off to look at.
+    private bool combing;
+    private Vector3 bodyAt;
+    private float bodyUntil, bodySector, bodyWidth;
+    private int bodyLeg;
+    // wallMaterials as surface → share, read when first needed and again after the table changes.
+    private Dictionary<string, float> materialShares;
+
     // Its mind on a stone: it notices what is off to the side of it far more slowly (lureFocus).
     private bool Distracted => lured || Time.time < distractedUntil;
+    // It found a body, or was called to one, not long ago: it notices waryShare faster.
+    private bool Wary => Time.time < waryUntil;
     // On a copy: how sure the host's zombie is, in twentieths, and of whom (their client id + 1; 0 for nobody).
     private byte shownStep;
     private ulong shownWatch, resolvedWatch;
@@ -252,6 +323,8 @@ public sealed class ZombieMind : MonoBehaviour
     {
         minds.Clear();
         guns.Clear();
+        helpers.Clear();
+        roundPath = spotPath = null;
         Woke = null;
         LastNoticed = float.NegativeInfinity;
     }
@@ -265,6 +338,9 @@ public sealed class ZombieMind : MonoBehaviour
         body = GetComponent<ZombieBody>();
         GameTables.Bind(TableName, TableRow, this);
     }
+
+    // The table may have changed wallMaterials.
+    void ITableBound.OnTableApplied() => materialShares = null;
 
     private void OnEnable()
     {
@@ -322,8 +398,8 @@ public sealed class ZombieMind : MonoBehaviour
         Mood = ZombieMood.Calm;
         suspicion = 0f;
         focus = noticed = null;
-        glanceUntil = distractedUntil = 0f;
-        lured = false;
+        glanceUntil = distractedUntil = waryUntil = 0f;
+        lured = combing = false;
         Halt();
         Post();
         lookAt = Time.time + Random.Range(1.5f, Mathf.Max(1.5f, lookAroundEvery));
@@ -365,7 +441,7 @@ public sealed class ZombieMind : MonoBehaviour
         Mood = rouse && rouseSeconds > 0f ? ZombieMood.Rousing : ZombieMood.Awake;
         suspicion = 1f;
         glanceUntil = distractedUntil = 0f;
-        lured = false;
+        lured = combing = false;
         focus = Alive(who) ? who : PlayerRoster.Nearest(transform.position);
         noticed = focus;
         lastSeen = Time.time;
@@ -417,11 +493,13 @@ public sealed class ZombieMind : MonoBehaviour
         if (Mood != ZombieMood.Alert) { Mood = ZombieMood.Alert; Halt(); }
     }
 
-    // Lure: it is going to look where a stone fell (briskly, and with calm eyes: Look).
+    // Lure: it is going to look where a stone fell (briskly, and with calm eyes: Look). Any search but the next place round
+    // a body (SearchBody) ends the search round it.
     private void Search(Vector3 at, bool lure = false)
     {
         Mood = ZombieMood.Searching;
         lured = lure;
+        combing = false;
         glanceUntil = 0f;
         stimulus = at;
         searchStart = Time.time;
@@ -436,7 +514,7 @@ public sealed class ZombieMind : MonoBehaviour
     private void Settle(bool newPost)
     {
         glanceUntil = 0f;
-        lured = false;
+        lured = combing = false;
         Mood = ZombieMood.Calm;
         SetSpeed(1f);
         Halt();
@@ -487,6 +565,8 @@ public sealed class ZombieMind : MonoBehaviour
     private void Update()
     {
         if (!Thinks) return;
+        // A body that falls while it is awake is no news to it later (FindBody): it was in that fight.
+        if (IsAwake) awakeUntil = Time.time;
         ComeTo();
         float dt = Time.deltaTime;
         // Held (a takedown, a grab), shoved or down, it turns to nothing: an alert one can be taken from behind now, and
@@ -562,6 +642,8 @@ public sealed class ZombieMind : MonoBehaviour
         else suspicion = Mathf.Max(0f, suspicion - forget * dt);
 
         if (suspicion >= 1f) { Wake(focus); return; }
+        // A body it hadn't seen: unless someone already has its eye, it stares at it and then searches round it (Found).
+        if (FindBody(out var found) && Found(found, seen != null || suspicion >= alertAt)) return;
         // Sure enough to stop and stare: a glance becomes a real look, and one that made someone out forgets the stone.
         if (suspicion >= alertAt)
         {
@@ -573,11 +655,12 @@ public sealed class ZombieMind : MonoBehaviour
         if (Mood == ZombieMood.Alert)
         {
             // A glance at something it won't go to looks till its time is up and settles back; the stare at a stone ends
-            // in a walk over to it.
+            // in a walk over to it, and the stare at a body in the search round it.
             if (glanceUntil > 0f)
             {
                 if (Time.time < glanceUntil) return;
                 if (lured) Search(lureAt, true);
+                else if (combing) SearchBody();
                 else Settle(false);
                 return;
             }
@@ -598,7 +681,12 @@ public sealed class ZombieMind : MonoBehaviour
             arriveYaw = transform.eulerAngles.y;
             Halt();
         }
-        if ((arrived && Time.time - arrivedAt >= LookTime) || Time.time - searchStart >= searchSeconds + (lured ? lureLook : 0f)) Settle(true);
+        if ((arrived && Time.time - arrivedAt >= LookTime) || Time.time - searchStart >= searchSeconds + (lured ? lureLook : 0f))
+        {
+            // Round a body it goes on to its next place until that search is up.
+            if (combing && Time.time < bodyUntil) SearchBody();
+            else Settle(true);
+        }
     }
 
     // How long it looks round where it came to search: longer where a stone fell.
@@ -669,7 +757,7 @@ public sealed class ZombieMind : MonoBehaviour
             float above = Mathf.Atan2(player.transform.position.y + 1f - eye.y, Mathf.Max(.01f, new Vector2(toward.x, toward.z).magnitude))
                 * Mathf.Rad2Deg;
             float rate = nearRate * Mathf.Lerp(1f, farShare, distance / Mathf.Max(.01f, range)) * shown * Posture(player) * view
-                * (above > lookUp ? lookUpShare : 1f) * (lit ? lightShare : 1f);
+                * (above > lookUp ? lookUpShare : 1f) * (lit ? lightShare : 1f) * (Wary ? waryShare : 1f);
             if (rate <= best) continue;
             best = rate;
             found = player;
@@ -749,8 +837,8 @@ public sealed class ZombieMind : MonoBehaviour
 
     // Walls and the world hide players (maps build them on Default); other zombies don't.
     private static int Sight => ~LayerMask.GetMask(EnemyLayer);
-    // Sound goes round players, corpses and what lies on the floor (layer 31): only the world muffles it.
-    private static int Hearing => Sight & ~(1 << 31);
+    // The world alone, not players, corpses or what lies on the floor (layer 31): it muffles sound and hides bodies.
+    private static int World => Sight & ~(1 << 31);
 
     private static bool Alive(PlayerMovement player)
         => player != null && player.IsInitialized && !player.IsDead && player.DamageReceiver != null && player.DamageReceiver.IsAlive;
@@ -795,12 +883,15 @@ public sealed class ZombieMind : MonoBehaviour
         // a zombie a step behind it, which then turned, saw them that close and woke (user, 2026-11-11: "앉아서 가도 금방
         // 눈치챈다"). Advanced Stealth silences crouched footsteps the same way.
         if (source.IsCrouching && noise.Radius <= sneakSilent) return;
+        // Awake, it listens for its quarry alone, so no other sound's way to it need be worked out.
+        if (IsAwake && source != focus) return;
         if (!Reaches(noise, out float distance, out float reach)) return;
         float loudness = 1f - distance / Mathf.Max(.01f, reach);
         if (IsAwake)
         {
             // Its quarry gives itself away.
-            if (source == focus) { lastSeen = Time.time; lastKnown = source.transform.position; }
+            lastSeen = Time.time;
+            lastKnown = source.transform.position;
             return;
         }
         if (melee != null && melee.IsStunned) return;
@@ -814,20 +905,115 @@ public sealed class ZombieMind : MonoBehaviour
         else if (gained >= glanceAt) Glance(noise.Point, source, glanceSeconds);
     }
 
-    // Whether this sound reaches its ears, how far off it is and how far it carries to it (m): half as far through a wall.
+    // Whether this sound reaches its ears, how far off it seems there once muffled (m) and how far it carries in the open.
     private bool Reaches(in NoiseEvent noise, out float distance, out float reach)
     {
         reach = noise.Radius * (noise.Lure ? lureHearShare : Mood == ZombieMood.Calm ? calmHearShare : hearShare);
+        return Carries(noise.Point, reach, out distance);
+    }
+
+    // Whether a sound from there carries to its ears within reach (m), and how far off it seems once muffled: its way's
+    // length over the share of the reach that gets along it, the louder of straight through what stands between (Through)
+    // and round it (Round). Loudness is 1 - seeming / reach, as when every wall left half the reach.
+    private bool Carries(Vector3 from, float reach, out float seeming)
+    {
         Vector3 ear = Eye();
-        distance = Vector3.Distance(noise.Point, ear);
+        float distance = Vector3.Distance(from, ear);
+        seeming = distance;
         if (distance > reach) return false;
-        Vector3 path = ear - noise.Point;
-        if (distance > .01f && Physics.Raycast(noise.Point, path / distance, distance, Hearing, QueryTriggerInteraction.Ignore))
+        if (distance < .01f) return true;
+        float through = Through(from, ear, distance);
+        if (through >= 1f) return true;
+        seeming = through > 1e-4f ? distance / through : float.PositiveInfinity;
+        if (Round(from, Mathf.Min(seeming, reach), out float around)) seeming = around;
+        return seeming <= reach;
+    }
+
+    // The share of a sound's reach left after what stands on its straight way to the ears: Advanced Stealth's wall loss,
+    // each thing's in dB (LossOf) added up. L dB leaves 10^(-L/20) of the reach, as a sound's level falls off with
+    // distance; the old flat wallShare 0.5 was 6 dB. A wall's thickness is how far the way runs inside it, from where the
+    // sound goes in to its far side (found back along the way from the ears), across the wall rather than along a way
+    // that only grazes it: a curb under a footstep's low way isn't a metre of concrete.
+    private float Through(Vector3 from, Vector3 to, float distance)
+    {
+        Vector3 way = (to - from) / distance;
+        int count = Physics.RaycastNonAlloc(from, way, wallHits, distance, World, QueryTriggerInteraction.Ignore);
+        float loss = 0f;
+        for (int i = 0; i < count; i++)
         {
-            reach *= wallShare;
-            if (distance > reach) return false;
+            var shape = wallHits[i].collider;
+            if (shape == null) continue;
+            float back = distance - wallHits[i].distance, thickness = 0f;
+            if (back > 0f && shape.Raycast(new Ray(to, -way), out RaycastHit exit, back))
+                thickness = Mathf.Max(0f, back - exit.distance) * Mathf.Abs(Vector3.Dot(way, wallHits[i].normal));
+            loss += LossOf(shape, thickness);
         }
-        return true;
+        return loss > 0f ? Mathf.Pow(10f, -loss / 20f) : 1f;
+    }
+
+    // What one thing in the way takes off a sound (dB): a shut door doorLoss, an open one nothing, anything loose (a prop,
+    // a stone) nothing, and a wall wallLoss and up to wallThickLoss more as it thickens, times what it is made of.
+    private float LossOf(Collider shape, float thickness)
+    {
+        var rigid = shape.attachedRigidbody;
+        if (rigid != null && !rigid.isKinematic) return 0f;
+        var restDoor = shape.GetComponentInParent<CampaignDoor>();
+        if (restDoor != null) return restDoor.Closed ? doorLoss : 0f;
+        if (shape.GetComponentInParent<BreakableDoor>() != null || shape.GetComponentInParent<CampaignGate>() != null) return doorLoss;
+        float thick = Mathf.Clamp01((thickness - wallThin) / Mathf.Max(.01f, wallThick - wallThin));
+        return (wallLoss + wallThickLoss * thick) * MaterialShare(shape);
+    }
+
+    // Its share of a wall's loss for what the wall is made of: its surface's in wallMaterials, or its nearest listed
+    // parent's (Surfaces.Fallbacks ends in Concrete); 1 if none is listed.
+    private float MaterialShare(Collider shape)
+    {
+        if (materialShares == null)
+        {
+            materialShares = new Dictionary<string, float>(System.StringComparer.OrdinalIgnoreCase);
+            if (wallMaterials != null)
+                foreach (string entry in wallMaterials)
+                {
+                    int colon = entry != null ? entry.IndexOf(':') : -1;
+                    if (colon > 0 && float.TryParse(entry.Substring(colon + 1).Trim(), NumberStyles.Float, CultureInfo.InvariantCulture,
+                            out float parsed))
+                        materialShares[entry.Substring(0, colon).Trim()] = Mathf.Max(0f, parsed);
+                }
+        }
+        foreach (string surface in Surfaces.Fallbacks(Surfaces.Of(shape)))
+            if (materialShares.TryGetValue(surface, out float share)) return share;
+        return 1f;
+    }
+
+    // The sound's way round what stands between, along the walk mesh (an open doorway, a corner, a gap between
+    // buildings), losing cornerLoss dB for every right angle it turns: Advanced Stealth weighs going round a corner against
+    // going through, and the louder is heard. A shut door has carved the walk mesh, so nothing comes round through it.
+    // True, with how far off it seems that way, when that is nearer than `than`.
+    private bool Round(Vector3 from, float than, out float seeming)
+    {
+        seeming = float.PositiveInfinity;
+        if (!NavMesh.SamplePosition(from, out NavMeshHit start, RoundSnap, NavMesh.AllAreas)
+            || !NavMesh.SamplePosition(transform.position, out NavMeshHit end, RoundSnap, NavMesh.AllAreas))
+            return false;
+        roundPath ??= new NavMeshPath();
+        if (!NavMesh.CalculatePath(start.position, end.position, NavMesh.AllAreas, roundPath)
+            || roundPath.status != NavMeshPathStatus.PathComplete)
+            return false;
+        int count = Mathf.Min(roundPath.GetCornersNonAlloc(corners), corners.Length);
+        float length = Vector3.Distance(from, start.position), turned = 0f;
+        Vector3 last = Vector3.zero;
+        for (int i = 1; i < count; i++)
+        {
+            Vector3 leg = corners[i] - corners[i - 1];
+            length += leg.magnitude;
+            if (length >= than) return false;
+            leg.y = 0f;
+            if (leg.sqrMagnitude < 1e-4f) continue;
+            if (last != Vector3.zero) turned += Vector3.Angle(last, leg);
+            last = leg;
+        }
+        seeming = length * Mathf.Pow(10f, cornerLoss * turned / 90f / 20f);
+        return seeming < than;
     }
 
     /// <summary>
@@ -848,5 +1034,175 @@ public sealed class ZombieMind : MonoBehaviour
             if (mind.Reaches(noise, out _, out _)) { heard = true; break; }
         }
         return noise.Radius * (noise.Lure ? any.lureHearShare : any.calmHearShare);
+    }
+
+    // ---- Bodies --------------------------------------------------------------------------------------------------
+
+    // A body come upon: which it is and when it fell (each alarms a zombie once), where its trunk is, and the player who
+    // left it, if one did.
+    private readonly struct Body
+    {
+        public readonly (int, float) Key;
+        public readonly Vector3 Torso;
+        public readonly PlayerMovement By;
+
+        public Body((int, float) key, Vector3 torso, PlayerMovement by)
+        {
+            Key = key;
+            Torso = torso;
+            By = by;
+        }
+    }
+
+    // The nearest body it makes out now that is news to it: a dead zombie's (ZombieCorpse) or a dead player's
+    // (PlayerRagdoll), fallen within corpseFresh and since it was last awake, within corpseSight, in its full view and
+    // not far above its eyes, with nothing of the world between its eyes and the body's trunk. Advanced Stealth's guards
+    // find bodies; these limits keep it fair: a body hidden round a corner, behind a car or killed out of sight is safe.
+    private bool FindBody(out Body found)
+    {
+        found = default;
+        if (corpseSight <= 0f) return false;
+        Vector3 eye = Eye();
+        float best = corpseSight * corpseSight;
+        bool any = false;
+        foreach (var corpse in ZombieCorpse.Lying)
+            if (corpse != null && !corpse.Sinking
+                && Sees(corpse.GetInstanceID(), corpse.FellAt, corpse.Torso, corpse.Killer, eye, ref best, ref found))
+                any = true;
+        foreach (var player in PlayerRoster.All)
+        {
+            if (player == null || !player.IsDead || !player.TryGetComponent(out PlayerRagdoll ragdoll) || ragdoll.Corpse == null) continue;
+            if (Sees(ragdoll.GetInstanceID(), ragdoll.FellAt, ragdoll.Torso, null, eye, ref best, ref found)) any = true;
+        }
+        return any;
+    }
+
+    private bool Sees(int id, float fell, Vector3 torso, PlayerMovement by, Vector3 eye, ref float best, ref Body found)
+    {
+        if (Time.time - fell > corpseFresh || fell <= awakeUntil) return false;
+        Vector3 toward = torso - eye;
+        float far = toward.sqrMagnitude;
+        if (far > best || knownBodies.Contains((id, fell))) return false;
+        Vector3 flat = Vector3.ProjectOnPlane(toward, Vector3.up);
+        float level = flat.magnitude;
+        if (level > .05f && Vector3.Angle(transform.forward, flat) > fieldOfView * .5f) return false;
+        if (Mathf.Atan2(toward.y, Mathf.Max(.01f, level)) * Mathf.Rad2Deg > lookUp) return false;
+        if (Physics.Linecast(eye, torso, World, QueryTriggerInteraction.Ignore)) return false;
+        best = far;
+        found = new Body((id, fell), torso, by);
+        return true;
+    }
+
+    // It has found a body: something is wrong. It knows of it and is wary, and calls the ones near to search round it.
+    // Unless someone already has its eye (busy), it is surer someone is about (short of stopping for them: the stealth
+    // HUD ticks for whoever left the body), stares at the body a moment and then searches round it itself. Returns
+    // whether it does. Finding a body wakes nobody, so a quiet stretch stays quiet and can still be got through unseen
+    // (CampaignRun): the searchers, looking about with alert eyes, are what may find whoever did it.
+    private bool Found(in Body body, bool busy)
+    {
+        Learn(body);
+        CallOthers(body, !busy);
+        if (busy) return false;
+        if (Alive(body.By)) noticed = body.By;
+        lured = false;
+        stimulus = body.Torso;
+        suspicion = Mathf.Max(suspicion, alertAt - .01f);
+        glanceUntil = Time.time + Mathf.Max(.05f, corpseStare);
+        if (Mood != ZombieMood.Alert) { Mood = ZombieMood.Alert; Halt(); }
+        return true;
+    }
+
+    // Told of a body (it found it, or was called to it): each alarms it once, and it stays wary a good while. The stealth
+    // HUD shows whoever left the body that this one is looking (StealthMarkersHUD), unless it is noticing someone else.
+    private void Learn(in Body body)
+    {
+        knownBodies.Add(body.Key);
+        if (knownBodies.Count > 48) knownBodies.RemoveWhere(Stale);
+        waryUntil = Mathf.Max(waryUntil, Time.time + corpseWary);
+        if (Alive(body.By) && (!Alive(noticed) || suspicion <= 0f)) noticed = body.By;
+    }
+
+    private bool Stale((int, float) body) => Time.time - body.Item2 > corpseFresh;
+
+    // Its call: the ones not awake within corpseCall that hear it (walls muffle it as any sound) learn of the body, and
+    // those not taken up with someone or another body come to search round it. Each searcher, this one first if it
+    // searches too, takes its own share of the way round (Advanced Stealth's squad search: a sector each).
+    private void CallOthers(in Body body, bool searches)
+    {
+        helpers.Clear();
+        if (corpseCall > 0f)
+        {
+            Vector3 voice = Eye();
+            foreach (var other in minds)
+            {
+                if (other == null || other == this || !other.Thinks || other.horde || other.IsAwake) continue;
+                if ((other.melee != null && other.melee.IsStunned) || other.knownBodies.Contains(body.Key)) continue;
+                if (!other.Carries(voice, corpseCall, out _)) continue;
+                other.Learn(body);
+                if (!other.combing && other.suspicion < other.alertAt) helpers.Add(other);
+            }
+        }
+        int shares = helpers.Count + (searches ? 1 : 0);
+        if (shares > 0)
+        {
+            float width = 360f / shares, from = Random.Range(0f, 360f);
+            int share = 0;
+            if (searches) Comb(body.Torso, from + width * share++, width, true);
+            foreach (var other in helpers)
+            {
+                other.Comb(body.Torso, from + width * share++, width, false);
+                other.SearchBody();
+            }
+        }
+        helpers.Clear();
+    }
+
+    // From now on it searches round a body: where it lies, until when, its share of the way round (middle and width,
+    // degrees), and whether its first place to look is the body itself (the one that found it) or its own share. Its
+    // mind is off any stone now: it looks about with its whole view.
+    private void Comb(Vector3 at, float sector, float width, bool fromBody)
+    {
+        combing = true;
+        distractedUntil = 0f;
+        bodyAt = at;
+        bodyUntil = Time.time + corpseSearch;
+        bodySector = sector;
+        bodyWidth = width;
+        bodyLeg = fromBody ? 0 : 1;
+    }
+
+    // The next place it looks round a body: the body itself first for the one that found it, then spots in its share of
+    // the way round, farther out as the search goes on (corpseNear to corpseFar across corpseSearch). Each it walks to and
+    // looks round, as any search.
+    private void SearchBody()
+    {
+        Vector3 to = bodyAt;
+        if (bodyLeg++ > 0)
+        {
+            float done = 1f - Mathf.Clamp01((bodyUntil - Time.time) / Mathf.Max(.01f, corpseSearch));
+            to = Around(bodyAt, bodySector, bodyWidth * .5f, Mathf.Lerp(corpseNear, corpseFar, done));
+        }
+        Search(to);
+        combing = true;
+    }
+
+    // A spot on the walk mesh about this far from the middle, somewhere in this share of the way round (degrees either
+    // side of yaw), on about the body's level and one it can walk to; nearer in if there is none; the middle itself at worst.
+    private Vector3 Around(Vector3 middle, float yaw, float half, float radius)
+    {
+        for (int attempt = 0; attempt < 4; attempt++, radius *= .6f)
+        {
+            Vector3 way = Quaternion.Euler(0f, yaw + Random.Range(-half, half), 0f) * Vector3.forward;
+            if (!NavMesh.SamplePosition(middle + way * radius, out NavMeshHit spot, SpotSnap, NavMesh.AllAreas)
+                || Mathf.Abs(spot.position.y - middle.y) > SpotRise)
+                continue;
+            if (agent != null && agent.isActiveAndEnabled && agent.isOnNavMesh)
+            {
+                spotPath ??= new NavMeshPath();
+                if (!agent.CalculatePath(spot.position, spotPath) || spotPath.status != NavMeshPathStatus.PathComplete) continue;
+            }
+            return spot.position;
+        }
+        return middle;
     }
 }

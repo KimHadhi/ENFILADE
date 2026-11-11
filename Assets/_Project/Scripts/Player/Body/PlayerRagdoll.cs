@@ -45,6 +45,8 @@ public sealed class PlayerRagdoll : MonoBehaviour
     private CharacterController capsule;
     private RagdollCorpse corpse;
     private Animator preparedFor;
+    // The bone in the middle of the trunk, found while the body lives: zombies make a dead body out by it (ZombieMind).
+    private Transform torso;
     private Transform view;
     private Vector3 eye, carried;
     private Quaternion gaze, viewHome;
@@ -56,6 +58,10 @@ public sealed class PlayerRagdoll : MonoBehaviour
 
     /// <summary>The corpse on the ground on this PC, or null while they live.</summary>
     public RagdollCorpse Corpse => fell ? corpse : null;
+    /// <summary>When they last fell dead (game time): a zombie that comes upon a fresh body grows suspicious (ZombieMind).</summary>
+    internal float FellAt { get; private set; } = float.NegativeInfinity;
+    /// <summary>The middle of the body's trunk.</summary>
+    internal Vector3 Torso => torso != null ? torso.position : transform.position;
     private Animator Model => body != null ? body.BodyAnimator : null;
 
     private void Awake()
@@ -139,6 +145,8 @@ public sealed class PlayerRagdoll : MonoBehaviour
         if (animator == null || (animator == preparedFor && corpse != null)) return;
         if (corpse != null) Destroy(corpse.gameObject);
         preparedFor = animator;
+        var chest = animator.isHuman ? animator.GetBoneTransform(HumanBodyBones.Chest) : null;
+        torso = chest != null ? chest : animator.isHuman ? animator.GetBoneTransform(HumanBodyBones.Hips) : null;
         solid = player.groundLayers & ~LayerMask.GetMask(Enemies);
         corpse = RagdollCorpse.Prepare(animator, gameObject.layer, solid);
         if (corpse != null) corpse.Struck += OnCorpseStruck;
@@ -146,6 +154,8 @@ public sealed class PlayerRagdoll : MonoBehaviour
 
     private void Fall()
     {
+        // A new skin while dead falls again, but it is still the same death.
+        if (!fell) FellAt = Time.time;
         fell = true;
         Prepare();
         if (corpse == null) return;

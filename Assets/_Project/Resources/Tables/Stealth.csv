@@ -25,7 +25,7 @@ View.ringWidth,0.14,파동 테두리 두께(m)
 Throw.cooldown,2.5,T로 돌을 던지고 다음 돌까지(초). 돌은 무한이다. T를 누르고 있으면 날아갈 궤적과 떨어질 곳에 소리가 닿는 범위(링)가 보이고 그 소리를 들을 좀비의 시야 콘이 분홍으로 깜빡인다. 떼면 던진다(짧게 누르면 바로). 돌은 좀비와 플레이어를 뚫고 지나가 뒤에 떨어진다. 들은 좀비는 모두 그쪽을 지켜보고 가장 가까운 하나는 걸어가서 살핀다. 의심 게이지는 오르지 않고 누가 던졌는지도 모른다
 Throw.speed,15,보는 쪽으로 던지는 빠르기(m/s)
 Throw.lift,2.5,그 위로 더하는 빠르기(m/s). 포물선이 된다
-Throw.noise,16,돌이 떨어진 소리가 닿는 거리(m). 좀비는 이의 ZombieSenses.lureHearShare만큼(기본 그대로) 듣고 벽 너머는 wallShare만큼. 가장 가까운 하나가 걸어가 살피고 나머지는 lureGlance초 동안 그쪽을 본다
+Throw.noise,16,돌이 떨어진 소리가 닿는 거리(m). 좀비는 이의 ZombieSenses.lureHearShare만큼(기본 그대로) 듣고 벽 너머는 벽의 두께·재질만큼 줄어든다(ZombieSenses.wallLoss·wallMaterials. 열린 문으로 돌아오는 소리는 cornerLoss). 가장 가까운 하나가 걸어가 살피고 나머지는 lureGlance초 동안 그쪽을 본다
 Throw.size,0.075,돌 크기(m)
 Throw.life,7,돌이 바닥에 남는 시간(초). 그 뒤 가라앉아 사라진다
 Throw.volume,0.9,돌 소리 크기(0~1)

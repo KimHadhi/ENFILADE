@@ -95,6 +95,8 @@ public sealed class ZombieCorpse : MonoBehaviour
     private readonly List<SkinnedMeshRenderer> skins = new List<SkinnedMeshRenderer>();
     private RagdollCorpse doll;
     private Animator animator;
+    // The bone in the middle of its trunk, which the doll moves: where a zombie makes the body out from (ZombieMind).
+    private Transform torso;
     private PlayerNetworkCorpse runner, sender;
     private CorpsePose pose;
     private Vector3 sinkFrom;
@@ -103,6 +105,17 @@ public sealed class ZombieCorpse : MonoBehaviour
     private float age, stillFor, movingFor, nextSend, nextPassThrough, lastPoseAt, lieUntil = float.PositiveInfinity, sinkAge;
 
     private static LayerMask Solid => ~((1 << DollLayer) | LayerMask.GetMask(EnemyLayer));
+
+    /// <summary>Every dead zombie's body on this PC, sinking ones too: zombies that come upon one grow suspicious (ZombieMind).</summary>
+    internal static IReadOnlyList<ZombieCorpse> Lying => lying;
+    /// <summary>Sinking away: no longer a body to be found.</summary>
+    internal bool Sinking => sinking;
+    /// <summary>When it fell (game time).</summary>
+    internal float FellAt { get; private set; }
+    /// <summary>The player whose blow killed it, if a player's did.</summary>
+    internal PlayerMovement Killer { get; private set; }
+    /// <summary>The middle of its trunk as it lies.</summary>
+    internal Vector3 Torso => torso != null ? torso.position : transform.position;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ClearStatics()
@@ -144,6 +157,8 @@ public sealed class ZombieCorpse : MonoBehaviour
         animator.writeDefaultValuesOnDisable = false;
         animator.enabled = false;
         corpse.animator = animator;
+        var chest = human != null ? human[(int)HumanBodyBones.Chest] : null;
+        corpse.torso = chest != null ? chest : human != null ? human[(int)HumanBodyBones.Hips] : null;
         body.GetComponentsInChildren(true, corpse.skins);
         corpse.Begin(doll, hit, simulated, id, runner, velocity, lying != null);
     }
@@ -155,6 +170,8 @@ public sealed class ZombieCorpse : MonoBehaviour
     {
         this.id = id;
         this.simulated = simulated;
+        FellAt = Time.time;
+        Killer = hit.Source != null ? hit.Source.GetComponentInParent<PlayerMovement>() : null;
         runner = killer != null ? killer.GetComponent<PlayerNetworkCorpse>() : null;
         lying.Add(this);
         if (id != 0UL) byId[id] = this;
