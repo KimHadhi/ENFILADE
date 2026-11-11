@@ -82,6 +82,7 @@ public sealed class WeaponFeedback : MonoBehaviour
         weapon.FireModeChanged += OnFireModeChanged;
         weapon.SightChanged += OnSightChanged;
         weapon.AttachmentChanged += OnSightChanged;
+        weapon.ChokeCharged += OnChokeCharged;
     }
 
     private void OnDisable()
@@ -96,6 +97,7 @@ public sealed class WeaponFeedback : MonoBehaviour
             weapon.FireModeChanged -= OnFireModeChanged;
             weapon.SightChanged -= OnSightChanged;
             weapon.AttachmentChanged -= OnSightChanged;
+            weapon.ChokeCharged -= OnChokeCharged;
         }
         trackingReload = false;
     }
@@ -249,6 +251,14 @@ public sealed class WeaponFeedback : MonoBehaviour
     {
         var settings = GunFeelSettings.Instance;
         if (settings.gunSounds) Sound(FeelSound.DryFire, settings.dryFireSounds, settings.mechanicalVolume * .7f, 1.35f, MechanicalReach, Gun);
+    }
+
+    // A shotgun's choke drawn all the way in (WeaponController.ChokeCharged): a short high click for the shooter alone, as
+    // the Peacekeeper's charged choke ticks, with the ring's snap on the crosshair.
+    private void OnChokeCharged()
+    {
+        var settings = GunFeelSettings.Instance;
+        if (IsMine && settings.gunSounds) FeelAudio.Play(FeelSound.DryFire, settings.dryFireSounds, settings.mechanicalVolume * .6f, 1.8f, Gun);
     }
 
     private void OnSightChanged()

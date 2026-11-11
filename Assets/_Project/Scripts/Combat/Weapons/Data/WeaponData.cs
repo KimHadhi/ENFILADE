@@ -67,6 +67,14 @@ public sealed class WeaponData : ScriptableObject
     [Tooltip("Half-angle (degrees) of the circle the pellets fill round the crosshair's middle, on top of the gun's own spread. " +
         "They fill it evenly every shot, and the crosshair's parts stand on it (WeaponController).")]
     [SerializeField, Min(0f)] private float pelletSpread;
+    [Tooltip("Half-angle (degrees) of the pellets' circle the moment the sights are fully up, before any choke draws it in. " +
+        "0: Pellet Spread.")]
+    [SerializeField, Min(0f)] private float adsPelletSpread;
+    [Tooltip("Apex Legends' Peacekeeper precision choke: held fully down the sights, the pellets' circle draws in to this " +
+        "half-angle (degrees) over Choke Seconds, and a shot lets it out again (user, 2026-11-11). 0 with no Choke Seconds.")]
+    [SerializeField, Min(0f)] private float chokePelletSpread;
+    [Tooltip("Seconds fully down the sights for the choke to draw the pellets all the way in. 0: no choke.")]
+    [SerializeField, Min(0f)] private float chokeSeconds;
     [Tooltip("Loaded a shell at a time, as a pump shotgun: Reload Duration is the start (Empty Reload Duration the start " +
         "from empty, which also chambers a shell), then Shell Insert Duration for each shell, then Shell End Duration. " +
         "Firing stops it once the shell in hand is in.")]
@@ -192,6 +200,22 @@ public sealed class WeaponData : ScriptableObject
     public float HolsterDuration => Mathf.Max(0f, holsterDuration);
     public int Pellets => Mathf.Max(1, pellets);
     public float PelletSpread => Mathf.Max(0f, pelletSpread);
+    /// <summary>A shotgun whose pellets draw in while it is held down the sights (Choke Seconds).</summary>
+    public bool HasChoke => chokeSeconds > 0f && Pellets > 1;
+    public float ChokeSeconds => Mathf.Max(0f, chokeSeconds);
+
+    /// <summary>
+    /// The pellets' circle (half-angle, degrees, on top of the gun's own spread) at <paramref name="aim"/> down the sights
+    /// and <paramref name="choke"/> of the choke drawn in (both 0-1): wide at the hip to sweep what is close (user,
+    /// 2026-11-11: "근거리에선 시원하게 한번에 여러 명을 다 쓸어 버리는"), tighter the moment the sights are up, and in to
+    /// Choke Pellet Spread as the choke draws (Apex's Peacekeeper).
+    /// </summary>
+    public float PelletCone(float aim, float choke)
+    {
+        float aimed = adsPelletSpread > 0f ? adsPelletSpread : PelletSpread;
+        if (HasChoke) aimed = Mathf.Lerp(aimed, Mathf.Max(0f, chokePelletSpread), Mathf.Clamp01(choke));
+        return Mathf.Lerp(PelletSpread, aimed, Mathf.Clamp01(aim));
+    }
     public bool ShellReload => shellReload;
     public float ShellInsertDuration => Mathf.Max(.01f, shellInsertDuration);
     public float ShellEndDuration => Mathf.Max(0f, shellEndDuration);

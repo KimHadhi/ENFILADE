@@ -88,6 +88,8 @@ public sealed class WeaponController : MonoBehaviour
     public event Action<WeaponRuntime.ReloadStep> ReloadStepped;
     /// <summary>B switched the held gun's fire mode.</summary>
     public event Action<WeaponFireMode> FireModeChanged;
+    /// <summary>A shotgun's choke has drawn its pellets all the way in (WeaponData.PelletCone): its short signal.</summary>
+    public event Action ChokeCharged;
     /// <summary>The customize menu (C) switched the held gun's sight.</summary>
     public event Action SightChanged;
     /// <summary>The customize menu put a muzzle or underbarrel part on, or L switched the flashlight.</summary>
@@ -318,6 +320,11 @@ public sealed class WeaponController : MonoBehaviour
     // The held gun's WeaponRuntime.Loads as last seen: a reload cut short past its bolt loads the gun outside a frame's
     // tick (a swap, a climb), and its completion is told then.
     private int loadsSeen;
+    // A shotgun's choke (WeaponData.PelletCone): how far it has drawn in (0-1), and the ring's snap as it gets there (s).
+    private float chokeCharge, chokePop;
+    private const float ChokePopTime = .14f, ChokePopSqueeze = .3f;
+    /// <summary>How far the held shotgun's choke has drawn its pellets in (0-1), eased: quick at first, settling at the end.</summary>
+    public float ChokeShare => 1f - (1f - chokeCharge) * (1f - chokeCharge);
     private float bloom, timeSinceShot, shoveRecovery, bareHandsLeft;
     private int recoilIndex, dodgeActivation;
     private bool survivalInterrupted, shownAiming;
@@ -549,6 +556,13 @@ public sealed class WeaponController : MonoBehaviour
         bool quickLower = !blocked && wantsGun;
         IsHighReady = presentation != null ? presentation.Pose(owner, PoseView, target, blocked, Runtime, dt, hitLayers, quickLower) : blocked;
         if (IsHighReady) AimBlend = 0f;
+        // Apex's Peacekeeper precision choke: held fully down the sights, a shotgun draws its pellets in over Choke Seconds;
+        // anything else lets it out (a shot does, below).
+        bool choking = weaponData.HasChoke && AimBlend >= .999f && !Runtime.IsReloading;
+        float chokeBefore = chokeCharge;
+        chokeCharge = choking ? Mathf.MoveTowards(chokeCharge, 1f, dt / Mathf.Max(.01f, weaponData.ChokeSeconds)) : 0f;
+        if (chokeBefore < 1f && chokeCharge >= 1f) { chokePop = ChokePopTime; ChokeCharged?.Invoke(); }
+        chokePop = Mathf.Max(0f, chokePop - dt);
         bool cannotFire = IsHighReady || shoveRecovery > 0f || bodyAction;
         if (cannotFire) Runtime.CancelBurst();
         if (blocked || !readyToAct) queuedFireLeft = 0f;
@@ -612,7 +626,7 @@ public sealed class WeaponController : MonoBehaviour
                     // "근거리면 원 안 쪽이 다 맞게", "부정확한 소총"). A pellet whose point is no place to shoot from the
                     // muzzle (beside or behind it, against a wall) keeps the muzzle's own spread.
                     Vector2 place = EvenDisk(pellet, pellets, patternTurn);
-                    float cone = CurrentSpread + weaponData.PelletSpread;
+                    float cone = CurrentSpread + weaponData.PelletCone(AimBlend, ChokeShare);
                     direction = WeaponAimSolver.SpreadDirection(toSight, cone, place);
                     Vector3 seen = AimTarget(WeaponAimSolver.SpreadDirection(aimOrigin.forward, cone, place), weaponData.Range) - origin;
                     if (seen.sqrMagnitude > .04f && Vector3.Dot(seen.normalized, direction) > PelletAimAgrees) direction = seen.normalized;
@@ -670,6 +684,8 @@ public sealed class WeaponController : MonoBehaviour
             }
             bloom = Mathf.Min(weaponData.MaxBloom, bloom + weaponData.BloomPerShot);
             timeSinceShot = 0f;
+            // The shot lets the choke out; held down the sights it draws in again for the next.
+            chokeCharge = chokePop = 0f;
             look?.ApplyRecoil(recoil, weaponData);
             presentation?.OnShot(weaponData, recoil);
             UpdateSpread();
@@ -749,7 +765,8 @@ public sealed class WeaponController : MonoBehaviour
     private void UpdateCrosshair()
     {
         if (crosshair == null) return;
-        crosshair.SetCombatHidden(AimBlend > .001f);
+        // A choke shotgun keeps its ring down the sights, closing in as the choke draws, as the Peacekeeper's reticle does.
+        crosshair.SetCombatHidden(AimBlend > .001f && !weaponData.HasChoke);
         if (viewCamera == null) return;
         var canvas = crosshair.GetComponentInParent<Canvas>();
         // Canvas pixels a spread of tangent 1 covers from the screen's middle.
@@ -757,12 +774,15 @@ public sealed class WeaponController : MonoBehaviour
             / (canvas != null ? Mathf.Max(.01f, canvas.scaleFactor) : 1f);
         crosshair.SetDynamicSpread(Mathf.Tan(CurrentSpread * Mathf.Deg2Rad) * perTangent);
         // A shotgun's circle: the crosshair draws it as a ring in place of its lines, the steady crosshair too, so what the
-        // ring holds is what the pellets fill.
-        crosshair.SetPatternSpread(weaponData.Pellets > 1 ? Mathf.Tan(weaponData.PelletSpread * Mathf.Deg2Rad) * perTangent : 0f);
+        // ring holds is what the pellets fill. The choke drawn all the way in snaps it tighter for a moment.
+        float snap = 1f - ChokePopSqueeze * Mathf.Sin(Mathf.Clamp01(chokePop / ChokePopTime) * Mathf.PI);
+        crosshair.SetPatternSpread(weaponData.Pellets > 1
+            ? Mathf.Tan(weaponData.PelletCone(AimBlend, ChokeShare) * Mathf.Deg2Rad) * perTangent * snap : 0f);
     }
     private void ResetPresentation()
     {
-        AimBlend = bloom = shoveRecovery = CurrentSpread = raisedHoldLeft = queuedFireLeft = emptyReady = 0f; recoilIndex = 0; IsHighReady = false;
+        AimBlend = bloom = shoveRecovery = CurrentSpread = raisedHoldLeft = queuedFireLeft = emptyReady = chokeCharge = chokePop = 0f;
+        recoilIndex = 0; IsHighReady = false;
         HasAimPoint = false;
         presentation?.Reset();
         // Unity's null check, not `?.`: a closing scene disables and destroys its objects one root at a time, so the HUD's
