@@ -166,6 +166,25 @@ public sealed class WeaponRuntime
         return true;
     }
 
+    /// <summary>
+    /// A gun loaded only from outside (a Schießhund's Desperado, ClassKit): this many rounds in it and nothing in reserve,
+    /// so no reload can fill it.
+    /// </summary>
+    internal void LoadOwnRounds(int rounds)
+    {
+        Interrupt();
+        Ammo = Mathf.Clamp(rounds, 0, Data.MagazineSize);
+        ReserveAmmo = 0;
+    }
+
+    /// <summary>One round more into such a gun (a bounty claimed). False when it is full.</summary>
+    internal bool LoadRound()
+    {
+        if (Ammo >= Data.MagazineSize) return false;
+        Ammo++;
+        return true;
+    }
+
     /// <summary>Fill the magazine and restore at least the starting reserve, preserving bonus ammunition.</summary>
     public void RefillAmmo()
     {

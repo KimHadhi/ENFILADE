@@ -2,7 +2,10 @@ using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-/// <summary>Zero-based slots: ranged, ranged, melee, special. Empty selections use fists.</summary>
+/// <summary>
+/// Zero-based slots: ranged, ranged, melee, special. Empty selections use fists. A Schießhund's special slot holds its
+/// Desperado, a revolver loaded only by bounties (ClassKit; the user, 2026-11-11: "데스페라도는 헷갈리니까 4번 칸에").
+/// </summary>
 [DisallowMultipleComponent, RequireComponent(typeof(WeaponController), typeof(PlayerWeaponInput))]
 [DefaultExecutionOrder(FrameOrder.WeaponSlots)]
 public sealed class PlayerWeaponSlots : MonoBehaviour
@@ -27,6 +30,15 @@ public sealed class PlayerWeaponSlots : MonoBehaviour
     private int holsterTo;
     private float holsterLeft;
     public int SelectedSlot => selectedSlot;
+    // The special slot, the fourth.
+    private const int SpecialSlot = 3;
+    /// <summary>
+    /// A Schießhund's (ClassKit): the special slot holds a gun, its Desperado, whose rounds come only from its bounties;
+    /// no ammo pickup, refill, resupply or execution tops it up (KeepsOwnRounds).
+    /// </summary>
+    internal bool SpecialHoldsGun { get; set; }
+    /// <summary>This slot's gun is loaded only from outside (a Schießhund's Desperado): leave its rounds alone.</summary>
+    public bool KeepsOwnRounds(int index) => index == SpecialSlot && SpecialHoldsGun;
     public WeaponData SelectedWeapon => GetWeapon(selectedSlot);
     public bool UsesFists => isActiveAndEnabled && selectedSlot >= 0 && SelectedWeapon == null;
     public event Action SlotActivity;
@@ -58,7 +70,11 @@ public sealed class PlayerWeaponSlots : MonoBehaviour
     public static bool IsCompatible(int index, WeaponData data) => index >= 0 && index < SlotCount
         && (data == null || data.Category == GetSlotCategory(index));
     private WeaponData RawWeapon(int index) => index == 0 ? slot1 : index == 1 ? slot2 : index == 2 ? slot3 : index == 3 ? slot4 : null;
-    public WeaponData GetWeapon(int index) => IsCompatible(index, RawWeapon(index)) ? RawWeapon(index) : null;
+    public WeaponData GetWeapon(int index) => Fits(index, RawWeapon(index)) ? RawWeapon(index) : null;
+    // This gun may go in this slot: the slot's own kind, or a gun in the special slot for a Schießhund's Desperado (and on
+    // someone else's copy, whatever their own PC put there).
+    private bool Fits(int index, WeaponData data) => IsCompatible(index, data) || (index == SpecialSlot && data != null
+        && data.Category == WeaponCategory.Ranged && (SpecialHoldsGun || (player != null && player.IsNetworkDriven)));
     public WeaponRuntime GetRuntime(int index)
     {
         var data = GetWeapon(index);
@@ -76,7 +92,7 @@ public sealed class PlayerWeaponSlots : MonoBehaviour
         int count = 0;
         for (int i = 0; i < SlotCount; i++)
         {
-            if (GetWeapon(i)?.Category != WeaponCategory.Ranged) continue;
+            if (GetWeapon(i)?.Category != WeaponCategory.Ranged || KeepsOwnRounds(i)) continue;
             GetRuntime(i).RefillAmmo();
             count++;
         }
@@ -88,7 +104,7 @@ public sealed class PlayerWeaponSlots : MonoBehaviour
     {
         for (int i = 0; i < SlotCount; i++)
         {
-            if (GetWeapon(i)?.Category != WeaponCategory.Ranged) continue;
+            if (GetWeapon(i)?.Category != WeaponCategory.Ranged || KeepsOwnRounds(i)) continue;
             var gun = GetRuntime(i);
             if (gun.Ammo < gun.Data.MagazineSize || gun.ReserveAmmo < gun.Data.InitialReserveAmmo) return true;
         }
@@ -186,7 +202,7 @@ public sealed class PlayerWeaponSlots : MonoBehaviour
     }
     public bool TrySetWeapon(int index, WeaponData data)
     {
-        if (!IsCompatible(index, data) || (player != null && player.CombatInputLocked)) return false;
+        if (!Fits(index, data) || (player != null && player.CombatInputLocked)) return false;
         weapons[index]?.Interrupt(); weapons[index] = null; savedAmmo[index] = -1; savedData[index] = null;
         savedReserve[index] = -1;
         switch (index) { case 0: slot1 = data; break; case 1: slot2 = data; break; case 2: slot3 = data; break; case 3: slot4 = data; break; }

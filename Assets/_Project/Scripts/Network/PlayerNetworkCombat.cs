@@ -156,6 +156,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
             throws.Thrown += OnThrown;
             kit.Charged += OnCharged;
             kit.Taunted += OnTaunted;
+            kit.Claimed += OnClaimed;
             ping.Pinged += OnPinged;
             weapon.ShotFired += OnShot;
             melee.Punched += OnPunched;
@@ -181,7 +182,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
         if (kicks != null) kicks.Kicked -= OnKicked;
         if (execution != null) execution.Started -= OnExecutionStarted;
         if (throws != null) throws.Thrown -= OnThrown;
-        if (kit != null) { kit.Charged -= OnCharged; kit.Taunted -= OnTaunted; }
+        if (kit != null) { kit.Charged -= OnCharged; kit.Taunted -= OnTaunted; kit.Claimed -= OnClaimed; }
         if (ping != null) ping.Pinged -= OnPinged;
         if (receiver != null) receiver.HitResolved -= OnHit;
         stance.OnValueChanged -= OnStanceChanged;
@@ -254,6 +255,18 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
     private void OnThrown(Vector3 from, Vector3 velocity) => ThrowRpc(from, velocity);
     private void OnCharged(Vector3 at) => ChargeRpc(at);
     private void OnTaunted(Vector3 at) => TauntRpc(at);
+    private void OnClaimed(Vector3 head, Vector3 from, Vector3 ground, bool grand) => BountyRpc(head, from, ground, grand);
+
+    // A Schießhund claimed a bounty here (the Desperado's own claim when grand): every other PC sees it burst in the world
+    // (BountyBurst) and hears it, the softer the further off.
+    [Rpc(SendTo.NotMe)]
+    private void BountyRpc(Vector3 head, Vector3 from, Vector3 ground, bool grand)
+    {
+        BountyBurst.Play(head, from, ground, grand);
+        var local = PlayerRoster.Local;
+        float volume = local != null ? Mathf.Clamp01(1f - Vector3.Distance(local.transform.position, head) / 60f) : .5f;
+        KitSound.Play(KitSound.Cue.Bounty, volume * (grand ? .9f : .5f));
+    }
 
     private void OnPinged(EnemyHealth enemy, bool bounty)
     {

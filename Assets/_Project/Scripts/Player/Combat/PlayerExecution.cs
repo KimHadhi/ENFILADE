@@ -232,6 +232,8 @@ public sealed class PlayerExecution : MonoBehaviour
     {
         if (weapon == null || weapon.Data.Category != WeaponCategory.Ranged ||
             float.IsNaN(ammoRestoredFraction) || float.IsInfinity(ammoRestoredFraction)) return;
+        // A Schießhund's Desperado in hand is loaded by bounties alone.
+        if (TryGetComponent(out PlayerWeaponSlots slots) && slots.KeepsOwnRounds(slots.SelectedSlot)) return;
         weapon.AddReserve(Mathf.CeilToInt(weapon.Data.MagazineSize * Mathf.Clamp01(ammoRestoredFraction)));
     }
     public void Cancel()

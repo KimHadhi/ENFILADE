@@ -101,12 +101,12 @@ public static class PlayerClass
     /// bossShare of its whole health, as an execution takes a share of it. AttackTrace asks for this PC's own bullets;
     /// anything else keeps its amount.
     /// </summary>
-    public static float Finish(float amount, bool headshot, IDamageReceiver receiver)
+    public static float Finish(float amount, bool headshot, IDamageReceiver receiver, Vector3 point, Vector3 from)
     {
         var kit = ClassKit.Local;
         if (!headshot || kit == null || !kit.DesperadoLoaded || !(receiver is EnemyHealth enemy) || !enemy.IsAlive) return amount;
         if (!PingMarks.IsBountyOf(enemy, kit.Movement)) return amount;
-        kit.Finishing(enemy);
+        kit.Finishing(enemy, point, from);
         // Its whole health, not what this PC has of it: the host's may stand higher than a copy's.
         bool firm = enemy.TryGetComponent(out MeleeCombatTarget melee) && melee.Steadfast;
         return Mathf.Max(amount, firm ? enemy.MaximumHealth * Mathf.Clamp01(Ability(HoundRow, "bossShare", .4f)) : enemy.MaximumHealth + 1f);

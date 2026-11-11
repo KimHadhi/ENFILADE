@@ -122,7 +122,7 @@ public static class AttackTrace
             bool mine = attack.Method == DamageMethod.Bullet && PlayerPerks.IsMine(attack.Source);
             float perk = mine ? PlayerPerks.GunFactor(headshot) * PlayerClass.GunFactor(headshot, receiver as Component) : 1f;
             float amount = attack.Amount * share * (headshot ? headshotMultiplier : 1f) * perk;
-            if (mine && fresh && share > 0f) amount = PlayerClass.Finish(amount, headshot, receiver);
+            if (mine && fresh && share > 0f) amount = PlayerClass.Finish(amount, headshot, receiver, hit.point, shooter);
             if (fresh && share > 0f)
                 result = receiver.ReceiveHit(new DamageHit(attack.Id, amount, attack.Kind, hit.point, direction, attack.Source,
                     attack.CanBeGuarded, attack.PostureDamage * share, attack.IsComboFinisher, attack.IsCritical || headshot, attack.IsCounter, attack.Method,

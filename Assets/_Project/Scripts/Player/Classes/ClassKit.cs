@@ -27,9 +27,11 @@ using UnityEngine.InputSystem;
 /// - Schießhund (stage 3; the user's design, with the Jagdfieber and Return Back of their old memo): its F ping is a
 ///   teal bounty mark (PlayerPing, PingMarks), one at a time, which its bullets hit harder. A marked enemy it kills pays
 ///   a bounty: money (CombatFeedHUD), a Return Back stack (quicker and harder-hitting a while), and points toward the
-///   Desperado's next round. The Desperado is its revolver (the class's own gun, the R08): held with a round in it, every
-///   shot spends one and hits double, and one in the head of its own mark kills it outright, elites too (a brute loses a
-///   share of its health), with BOUNTY slammed across the screen in teal.
+///   Desperado's next round. The Desperado is its own revolver in slot 4 (the class's own gun, the R08; slot 2 holds a
+///   plain pistol, so the two are never mixed up: the user's word), loaded by bounties alone and never reloaded: every
+///   round hits double, and one in the head of its own mark kills it outright, elites too (a brute loses a share of its
+///   health), with BOUNTY slammed across the screen in teal and burst in the world for everyone to see (BountyBurst;
+///   a plain bounty spills its coins there too).
 /// - Détente (the user's design): its syringe, Golden Hour and Resurrection are DetenteKit's; the class key injects.
 /// The other classes' abilities come in later stages (Classes.csv ready 0). Numbers: Tables/ClassAbilities.
 /// </summary>
@@ -48,6 +50,11 @@ public sealed class ClassKit : MonoBehaviour
     public event Action<Vector3> Charged;
     /// <summary>This PC's Knight taunted here: the other PCs are told (PlayerNetworkCombat), and the host's zombies go after them.</summary>
     public event Action<Vector3> Taunted;
+    /// <summary>
+    /// This PC's Schießhund claimed a bounty: where the head was, where the shot came from, the ground under it, and
+    /// whether the Desperado claimed it (the grand burst) or a plain kill (the coins). The other PCs are told (PlayerNetworkCombat).
+    /// </summary>
+    public event Action<Vector3, Vector3, Vector3, bool> Claimed;
 
     private PlayerMovement movement;
     private PlayerWeaponSlots slots;
@@ -73,9 +80,13 @@ public sealed class ClassKit : MonoBehaviour
     private float tauntUntil, tauntTotal = 1f, tauntReadyAt, tauntWait = 1f;
     // Schießhund: Desperado rounds and the points toward the next; Return Back's stacks and when they go; when the last
     // bounty came; and the bounty a Desperado round was just put in the head of, for its BOUNTY.
-    private int rounds, bountyPoints, returnStacks;
+    private int bountyPoints, returnStacks;
     private float returnUntil, returnTotal = 1f, bountyAt = -99f, finishAt = -99f;
     private EnemyHealth finishing;
+    // Where the Desperado's round went into its head and where it was fired from (for the burst).
+    private Vector3 finishPoint, finishFrom;
+    // The special slot, where a Schießhund's Desperado sits.
+    private const int DesperadoSlot = 3;
     private bool pingMade;
     private DetenteKit detente;
 
@@ -125,11 +136,22 @@ public sealed class ClassKit : MonoBehaviour
     public float TauntWait => Mathf.Max(0f, tauntReadyAt - Time.time);
     public float TauntWaitShare => Mathf.Clamp01(TauntWait / tauntWait);
 
-    /// <summary>A Schießhund's Desperado rounds, and the most its cylinder holds.</summary>
-    public int Rounds => rounds;
-    public int RoundMax => Mathf.Clamp(Mathf.RoundToInt(PlayerClass.Ability(HoundRow, "desperadoMax", 6f)), 1, 12);
-    /// <summary>A Schießhund holding its Desperado with a round in it: the next shot spends one (and may claim the bounty).</summary>
-    public bool DesperadoLoaded => PlayerClass.Is(PlayerClass.Schiesshund) && rounds > 0 && PlayerClass.OwnsWeapon(PlayerClass.Current, HeldGun);
+    // A Schießhund's Desperado as it is (the gun in slot 4, its rounds its own), or null.
+    private WeaponRuntime Desperado => PlayerClass.Is(PlayerClass.Schiesshund) && slots != null && slots.KeepsOwnRounds(DesperadoSlot)
+        ? slots.GetRuntime(DesperadoSlot) : null;
+    /// <summary>A Schießhund's Desperado rounds, and the most its cylinder holds (the table's, within the gun's own).</summary>
+    public int Rounds => Desperado != null ? Desperado.Ammo : 0;
+    public int RoundMax
+    {
+        get
+        {
+            int most = Mathf.Clamp(Mathf.RoundToInt(PlayerClass.Ability(HoundRow, "desperadoMax", 6f)), 1, 12);
+            var gun = Desperado;
+            return gun != null ? Mathf.Min(most, gun.Data.MagazineSize) : most;
+        }
+    }
+    /// <summary>A Schießhund holding its Desperado (slot 4) with a round in it: its next shot may claim the bounty.</summary>
+    public bool DesperadoLoaded => slots != null && slots.SelectedSlot == DesperadoSlot && Rounds > 0;
     /// <summary>Return Back's stacks now (0 when they have gone), and seconds since the last bounty.</summary>
     public int ReturnStacks => returnUntil > Time.time ? returnStacks : 0;
     /// <summary>How much of Return Back is left, 0 to 1 (0: none).</summary>
@@ -250,12 +272,18 @@ public sealed class ClassKit : MonoBehaviour
         kitGiven = true;
         // Out of the box both guns are loaded: their first rounds are a Ghost's Deadeye shots too.
         loaded[0] = loaded[1] = true;
-        // A Schießhund starts the chapter with a round or so in the Desperado, to show what it does.
-        rounds = Mathf.Clamp(Mathf.RoundToInt(PlayerClass.Ability(HoundRow, "startRounds", 1f)), 0, RoundMax);
         var info = PlayerClass.Current;
         if (info == null) return;
         Give(0, info.Primary);
         Give(1, info.Secondary);
+        // A Schießhund's Desperado in slot 4: its own gun (the class's first), with a round or so in it to show what it
+        // does, and nothing in reserve.
+        slots.SpecialHoldsGun = PlayerClass.Is(PlayerClass.Schiesshund);
+        if (!slots.SpecialHoldsGun || info.Weapons.Length == 0) return;
+        var revolver = Gun(info.Weapons[0]);
+        if (revolver == null || !slots.TrySetWeapon(DesperadoSlot, revolver)) return;
+        slots.GetRuntime(DesperadoSlot)?.LoadOwnRounds(Mathf.Clamp(Mathf.RoundToInt(PlayerClass.Ability(HoundRow, "startRounds", 1f)), 0, RoundMax));
+        slots.NotifyAmmo();
     }
 
     private void Give(int slot, string name)
@@ -365,15 +393,7 @@ public sealed class ClassKit : MonoBehaviour
     // its last pellet: a head among its pellets is a headshot, else a body is a body shot.
     private void OnShot(WeaponShot shot)
     {
-        if (movement == null || !movement.IsLocal) return;
-        // A Schießhund's Desperado spends a round on each shot (its last pellet: a revolver has one).
-        if (PlayerClass.Is(PlayerClass.Schiesshund))
-        {
-            var held = HeldGun;
-            if (DesperadoLoaded && shot.Pellet >= (held != null ? Mathf.Max(1, held.Pellets) : 1) - 1) rounds--;
-            return;
-        }
-        if (!PlayerClass.Is(PlayerClass.Ghost)) return;
+        if (movement == null || !movement.IsLocal || !PlayerClass.Is(PlayerClass.Ghost)) return;
         var data = HeldGun;
         var trace = shot.Trace;
         var enemy = trace.HasHit && trace.Damage == DamageResult.Damaged && trace.Hit.collider != null
@@ -448,10 +468,12 @@ public sealed class ClassKit : MonoBehaviour
     /// A Desperado round is going into the head of this Schießhund's own mark (PlayerClass.Finish, as AttackTrace weighs
     /// the hit): when it dies of it, BOUNTY.
     /// </summary>
-    internal void Finishing(EnemyHealth enemy)
+    internal void Finishing(EnemyHealth enemy, Vector3 point, Vector3 from)
     {
         finishing = enemy;
         finishAt = Time.time;
+        finishPoint = point;
+        finishFrom = from;
     }
 
     // Its own mark died at its hand: points toward the Desperado's next round (an elite's count more), a Return Back
@@ -460,11 +482,13 @@ public sealed class ClassKit : MonoBehaviour
     {
         bountyPoints += Mathf.Max(1, Mathf.RoundToInt(PlayerClass.IsElite(enemy) ? PlayerClass.Ability(HoundRow, "elitePoints", 2f) : 1f));
         int need = Mathf.Max(1, Mathf.RoundToInt(PlayerClass.Ability(HoundRow, "roundPoints", 2f)));
+        var desperado = Desperado;
         while (bountyPoints >= need)
         {
             bountyPoints -= need;
-            rounds = Mathf.Min(RoundMax, rounds + 1);
+            if (desperado != null && desperado.Ammo < RoundMax) desperado.LoadRound();
         }
+        slots?.NotifyAmmo();
         returnStacks = Mathf.Min(Mathf.Max(1, Mathf.RoundToInt(PlayerClass.Ability(HoundRow, "returnMax", 5f))), ReturnStacks + 1);
         returnTotal = Mathf.Max(.1f, PlayerClass.Ability(HoundRow, "returnSeconds", 8f));
         returnUntil = Time.time + returnTotal;
@@ -472,8 +496,16 @@ public sealed class ClassKit : MonoBehaviour
         bool claimed = finishing == enemy && Time.time - finishAt < 1f;
         finishing = null;
         KitSound.Play(KitSound.Cue.Bounty, claimed ? 1f : .7f);
+        // In the world, for everyone: the Desperado's grand burst where its round went in, or a plain bounty's coins.
+        var body = enemy.GetComponentInChildren<Collider>();
+        Vector3 ground = enemy.transform.position;
+        Vector3 head = claimed ? finishPoint : body != null ? new Vector3(body.bounds.center.x, body.bounds.max.y - .15f, body.bounds.center.z)
+            : ground + Vector3.up * 1.6f;
+        Vector3 from = claimed ? finishFrom : transform.position + Vector3.up * 1.5f;
+        BountyBurst.Play(head, from, ground, claimed);
+        Claimed?.Invoke(head, from, ground, claimed);
         if (!claimed) return;
-        // The Desperado's own kill: BOUNTY, the counter's banner at its most in the mark's teal.
+        // The Desperado's own kill on this screen too: BOUNTY, the counter's banner at its most in the mark's teal.
         if (!TryGetComponent(out CounterBanner banner)) banner = gameObject.AddComponent<CounterBanner>();
         banner.Play(.95f, CounterBanner.Grades - 1, "BOUNTY", PingMarks.BountyColor);
     }

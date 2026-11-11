@@ -505,7 +505,8 @@ public sealed class FieldPickups : MonoBehaviour
         for (int i = 0; i < PlayerWeaponSlots.SlotCount; i++)
         {
             var data = slots.GetWeapon(i);
-            if (data == null || data.Category != WeaponCategory.Ranged) continue;
+            // A Schießhund's Desperado is loaded by bounties alone.
+            if (data == null || data.Category != WeaponCategory.Ranged || slots.KeepsOwnRounds(i)) continue;
             var runtime = slots.GetRuntime(i);
             int room = data.InitialReserveAmmo - runtime.ReserveAmmo;
             if (room > 0) runtime.AddReserve(Mathf.Min(room, data.MagazineSize * magazines));
@@ -517,7 +518,8 @@ public sealed class FieldPickups : MonoBehaviour
         for (int i = 0; i < PlayerWeaponSlots.SlotCount; i++)
         {
             var data = slots.GetWeapon(i);
-            if (data != null && data.Category == WeaponCategory.Ranged && slots.GetRuntime(i).ReserveAmmo < data.InitialReserveAmmo) return true;
+            if (data != null && data.Category == WeaponCategory.Ranged && !slots.KeepsOwnRounds(i)
+                && slots.GetRuntime(i).ReserveAmmo < data.InitialReserveAmmo) return true;
         }
         return false;
     }
