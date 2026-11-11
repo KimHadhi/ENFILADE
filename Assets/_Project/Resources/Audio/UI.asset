@@ -13,4 +13,16 @@ MonoBehaviour:
   m_Name: UI
   m_EditorClassIdentifier: Assembly-CSharp::SoundBank
   id: UI
-  entries: []
+  entries:
+  - key: PickAmmo
+    clips:
+    - {fileID: 8300000, guid: 8674388e93db477f85a8485a9798f8ed, type: 3}
+  - key: PickGun
+    clips:
+    - {fileID: 8300000, guid: ad7995145b124015ad9dbf80365faa4f, type: 3}
+  - key: PickHeal
+    clips:
+    - {fileID: 8300000, guid: 5a6cd893677748c9ae1c9d357f47cc16, type: 3}
+  - key: PickShield
+    clips:
+    - {fileID: 8300000, guid: 793ad07a737b49acabf44c95da3b473f, type: 3}
