@@ -33,6 +33,8 @@ using UnityEngine.InputSystem;
 ///   health), with BOUNTY slammed across the screen in teal and burst in the world for everyone to see (BountyBurst;
 ///   a plain bounty spills its coins there too).
 /// - Détente (the user's design): its syringe, Golden Hour and Resurrection are DetenteKit's; the class key injects.
+/// - Support (stage 4): its supply bag, resupplying a friend with F and its barricades are SupportKit's; the class key
+///   puts a barricade up.
 /// The other classes' abilities come in later stages (Classes.csv ready 0). Numbers: Tables/ClassAbilities.
 /// </summary>
 [DisallowMultipleComponent]
@@ -89,6 +91,7 @@ public sealed class ClassKit : MonoBehaviour
     private const int DesperadoSlot = 3;
     private bool pingMade;
     private DetenteKit detente;
+    private SupportKit support;
 
     public PlayerMovement Movement => movement;
     public WeaponData HeldGun => weapon != null ? weapon.EquippedData : null;
@@ -225,6 +228,8 @@ public sealed class ClassKit : MonoBehaviour
         if (!pingMade) { pingMade = true; if (GetComponent<PlayerPing>() == null) gameObject.AddComponent<PlayerPing>(); }
         // A Détente's syringe, treatment and Resurrection.
         if (detente == null && (detente = GetComponent<DetenteKit>()) == null) detente = gameObject.AddComponent<DetenteKit>();
+        // A Support's bag, resupply and barricades.
+        if (support == null && (support = GetComponent<SupportKit>()) == null) support = gameObject.AddComponent<SupportKit>();
         if (!kitGiven) TryGiveKit();
         Ebb();
         if (PlayerClass.Is(PlayerClass.Point)) ReloadAside();
@@ -316,6 +321,7 @@ public sealed class ClassKit : MonoBehaviour
         }
         if (PlayerClass.Is(PlayerClass.Knight)) { Taunt(); return; }
         if (PlayerClass.Is(PlayerClass.Detente) && detente != null) { detente.Inject(); return; }
+        if (PlayerClass.Is(PlayerClass.Support) && support != null) { support.Build(); return; }
         // No ability on the key for this class (a Point's and a Ghost's are always on), or not built yet.
         KitSound.Play(KitSound.Cue.Refuse, .35f);
     }

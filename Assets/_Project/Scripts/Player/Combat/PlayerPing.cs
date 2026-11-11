@@ -63,6 +63,8 @@ public sealed class PlayerPing : MonoBehaviour
         if (revive != null && revive.Candidate != null) return true;
         // A Détente treating a friend by hand, or bringing one back.
         if (DetenteKit.Local != null && DetenteKit.Local.TakesInteract) return true;
+        // A Support with a friend in reach to resupply.
+        if (SupportKit.Local != null && SupportKit.Local.Offered != null) return true;
         if (movement.Abilities != null && movement.Abilities.Fixtures.ClimbDownLadder != null) return true;
         return CampaignRun.Offering || ShopMenu.IsOpen;
     }

@@ -72,6 +72,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
     private PlayerThrow throws;
     private ClassKit kit;
     private PlayerPing ping;
+    private SupportKit support;
     private PlayerDamageReceiver receiver;
     private CombatTimeEffects time;
     private PlayerBody body;
@@ -82,6 +83,12 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
     public void Revive() => ReviveRpc();
     /// <summary>A Détente's dose or treatment for this copy's player (DetenteKit): their own PC adds the health.</summary>
     public void Heal(float amount) { if (IsSpawned) HealRpc(amount); }
+    /// <summary>A Support's resupply for this copy's player (SupportKit): their own PC fills their guns.</summary>
+    public void Resupply(int magazines, float overfill, float syringe) { if (IsSpawned) ResupplyRpc(magazines, overfill, syringe); }
+    /// <summary>On the host: barricade id's health, for every client's copy of it (Barricade).</summary>
+    public void ShareBarricadeHealth(ushort id, float health) { if (IsSpawned) BarricadeStateRpc(id, health); }
+    /// <summary>On a client: a zombie's blow landed on its copy of barricade id; the host's is the true one (Barricade).</summary>
+    public void SendBarricadeHit(ushort id, float damage) { if (IsSpawned) BarricadeHitRpc(id, damage); }
     /// <summary>A Détente's Resurrection for this copy's dead player, back with this share of their health.</summary>
     public void Resurrect(float share) { if (IsSpawned) ResurrectRpc(share); }
     /// <summary>Whether this player is getting that client up right now, and how far along (0-1).</summary>
@@ -151,6 +158,9 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
         // F on an enemy (PlayerPing): the whole team sees it marked.
         ping = GetComponent<PlayerPing>();
         if (ping == null) ping = gameObject.AddComponent<PlayerPing>();
+        // A Support's barricades (SupportKit): every PC puts them up and takes them down.
+        support = GetComponent<SupportKit>();
+        if (support == null) support = gameObject.AddComponent<SupportKit>();
         if (IsOwner)
         {
             throws.Thrown += OnThrown;
@@ -158,6 +168,8 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
             kit.Taunted += OnTaunted;
             kit.Claimed += OnClaimed;
             ping.Pinged += OnPinged;
+            support.Built += OnBuilt;
+            support.TookDown += OnTookDown;
             weapon.ShotFired += OnShot;
             melee.Punched += OnPunched;
             melee.Elbowed += OnElbowed;
@@ -184,6 +196,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
         if (throws != null) throws.Thrown -= OnThrown;
         if (kit != null) { kit.Charged -= OnCharged; kit.Taunted -= OnTaunted; kit.Claimed -= OnClaimed; }
         if (ping != null) ping.Pinged -= OnPinged;
+        if (support != null) { support.Built -= OnBuilt; support.TookDown -= OnTookDown; }
         if (receiver != null) receiver.HitResolved -= OnHit;
         stance.OnValueChanged -= OnStanceChanged;
     }
@@ -256,6 +269,38 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
     private void OnCharged(Vector3 at) => ChargeRpc(at);
     private void OnTaunted(Vector3 at) => TauntRpc(at);
     private void OnClaimed(Vector3 head, Vector3 from, Vector3 ground, bool grand) => BountyRpc(head, from, ground, grand);
+    private void OnBuilt(ushort id, Vector3 at, float yaw) => BarricadeRpc(id, at, yaw);
+    private void OnTookDown(ushort id) => CollapseRpc(id);
+
+    // A Support put a barricade up here: every other PC puts its copy up.
+    [Rpc(SendTo.NotMe)]
+    private void BarricadeRpc(ushort id, Vector3 at, float yaw) => Barricade.Place(id, at, yaw, mover != null ? mover : GetComponent<PlayerMovement>());
+
+    // A Support took one of its barricades down for a new one: every other PC takes its copy down.
+    [Rpc(SendTo.NotMe)]
+    private void CollapseRpc(ushort id) => Barricade.Collapse(id);
+
+    // The host's barricade's health, for every client's copy.
+    [Rpc(SendTo.NotServer)]
+    private void BarricadeStateRpc(ushort id, float health) => Barricade.Show(id, health);
+
+    // A client's zombie blow on its copy of a barricade: the host's takes it.
+    [Rpc(SendTo.Server)]
+    private void BarricadeHitRpc(ushort id, float damage) => Barricade.Hurt(id, damage);
+
+    // A friend's Support resupplied this player: their own PC (this one) fills the guns.
+    [Rpc(SendTo.Owner)]
+    private void ResupplyRpc(int magazines, float overfill, float syringe, RpcParams rpc = default)
+    {
+        string from = "";
+        foreach (var someone in PlayerRoster.All)
+            if (someone != null && someone.TryGetComponent(out NetworkObject network) && network.OwnerClientId == rpc.Receive.SenderClientId)
+            {
+                from = someone.TryGetComponent(out PlayerTally tally) ? tally.DisplayName : someone.name;
+                break;
+            }
+        SupportKit.Receive(mover != null ? mover : GetComponent<PlayerMovement>(), magazines, overfill, syringe, from);
+    }
 
     // A Schießhund claimed a bounty here (the Desperado's own claim when grand): every other PC sees it burst in the world
     // (BountyBurst) and hears it, the softer the further off.

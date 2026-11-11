@@ -60,6 +60,7 @@ public sealed class ClassHUD : MonoBehaviour
         else if (PlayerClass.Is(PlayerClass.Knight)) Taunt();
         else if (PlayerClass.Is(PlayerClass.Schiesshund)) Hound();
         else if (PlayerClass.Is(PlayerClass.Detente) && Detente()) return;
+        else if (PlayerClass.Is(PlayerClass.Support)) Support();
         // The bar along the foot: a Knight's own taunt, a Schießhund's Return Back, or a friend's CHARGE, which reaches
         // any class.
         float taunt = kit.TauntShare, back = kit.ReturnShare;
@@ -82,13 +83,13 @@ public sealed class ClassHUD : MonoBehaviour
         icon.enabled = icon.texture != null;
         bool assault = PlayerClass.Is(PlayerClass.Assault), point = PlayerClass.Is(PlayerClass.Point);
         bool ghost = PlayerClass.Is(PlayerClass.Ghost), knight = PlayerClass.Is(PlayerClass.Knight), hound = PlayerClass.Is(PlayerClass.Schiesshund);
-        bool detente = PlayerClass.Is(PlayerClass.Detente);
-        pipRow.gameObject.SetActive(assault || ghost || hound || detente);
+        bool detente = PlayerClass.Is(PlayerClass.Detente), support = PlayerClass.Is(PlayerClass.Support);
+        pipRow.gameObject.SetActive(assault || ghost || hound || detente || support);
         deadeye.text = Texts.Get(hound ? "class.hud.desperado" : "class.hud.deadeye");
         slotRow.gameObject.SetActive(point);
         keyRect.gameObject.SetActive(false);
         deadeye.gameObject.SetActive(false);
-        keyWord.text = Texts.Get(knight ? "class.hud.taunt" : detente ? "class.hud.inject" : "class.hud.charge");
+        keyWord.text = Texts.Get(knight ? "class.hud.taunt" : detente ? "class.hud.inject" : support ? "class.hud.barricade" : "class.hud.charge");
         note.text = info != null && !info.Ready ? Texts.Get("class.hud.later") : "";
         // A Détente moves the note past its pips; every other class has it back in its place.
         ((RectTransform)note.rectTransform.parent).anchoredPosition = new Vector2(128f, 0f);
@@ -180,6 +181,29 @@ public sealed class ClassHUD : MonoBehaviour
         string word = working ? Texts.Get(detente.Raising != null ? "class.hud.raise" : "class.hud.treat") : Texts.Get("class.hud.golden");
         if (barWord.text != word) barWord.text = word;
         return true;
+    }
+
+    // A Support's bag: a pip a resupply's worth (white when full, the next one filling), "[휠] 바리케이드" while one can go
+    // up, and beside the pips "[F] 보급 · name" while a friend is in reach, or how many of its barricades stand.
+    private void Support()
+    {
+        var support = SupportKit.Local;
+        if (support == null) return;
+        Pips(Mathf.FloorToInt(support.SupplyMax / support.GiveCost + .001f));
+        int count = shownPips;
+        float bags = support.Supply / support.GiveCost, flash = Mathf.Clamp01(1f - Mathf.Min(support.SinceGive, support.SinceBuild) / .35f);
+        for (int i = 0; i < count; i++)
+        {
+            float fill = Mathf.Clamp01(bags - i);
+            Color color = fill >= 1f ? KitStyle.Ice : KitStyle.With(KitStyle.Ice, .14f + .3f * fill);
+            pips[i].color = flash > 0f && i == Mathf.FloorToInt(bags) ? Color.Lerp(color, KitStyle.Accent, flash) : color;
+        }
+        KeyPrompt(support.CanBuild);
+        var friend = support.Offered;
+        string side = friend != null ? Texts.Format("class.hud.resupply", friend.TryGetComponent(out PlayerTally tally) ? tally.DisplayName : friend.name)
+            : Texts.Format("class.hud.barricades", support.Standing, support.MostStanding);
+        if (note.text != side) note.text = side;
+        ((RectTransform)note.rectTransform.parent).anchoredPosition = new Vector2(128f + count * (PipWidth + PipGap) + 6f, 0f);
     }
 
     // A Knight's taunt: the key's prompt while it is ready, the seconds left to wait in its place while it isn't.

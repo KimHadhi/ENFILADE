@@ -61,3 +61,18 @@ Detente.resurrections,1,리저렉션: 웨이브마다(캠페인은 쉬는 곳에
 Detente.resurrectSeconds,5,죽은 동료 곁에서 F를 이만큼(초) 누르면 그 자리에서 되살아난다
 Detente.resurrectHealth,50,되살아난 동료의 체력(최대 체력의 %)
 Detente.resurrectReach,2.2,되살릴 수 있는 거리(m)
+Support.supplyMax,100,서포트 보급 가방 용량. 보급(F) 한 번과 바리케이드(휠 클릭) 하나가 여기서 나간다
+Support.supplyStart,100,장이 시작될 때 가방에 든 양
+Support.supplyRegen,1.5,가방이 저절로 차는 양(초당). 1.5면 빈 가방이 약 67초에 다 찬다
+Support.resupplyCost,25,동료 한 명 보급에 드는 양
+Support.resupplyMagazines,2,보급받은 동료의 총마다 예비탄에 더해 주는 탄창 수
+Support.resupplyOverfill,25,풀리 로디드: 보급으로는 예비탄이 처음 예비탄보다 이만큼(%) 더 찰 수 있다(줍기·상점은 처음 예비탄까지)
+Support.resupplySyringe,25,보급받은 동료가 데탕트면 주사기에 더해 주는 양
+Support.resupplyReach,3.5,F로 보급할 수 있는 동료까지 거리(m). 처형·줍기·부활·사다리·미션 버튼·문·상점이 먼저
+Support.resupplyAngle,14,조준선에서 이 각도(도) 안의 동료에게 보급한다
+Support.barricadeCost,50,바리케이드 하나에 드는 양
+Support.barricadeMax,2,한 서포트의 바리케이드가 한 번에 서 있는 최대. 넘으면 가장 오래된 것이 무너진다
+Support.barricadeAhead,1.8,바리케이드를 세우는 곳: 바라보는 쪽으로 이만큼(m) 앞 바닥. 앞에 사람이나 벽이 있으면 못 세운다
+Support.barricadeHealth,400,바리케이드 체력. 허리 높이라 아군은 넘어 쏘고 뛰어넘고 좀비는 못 지나간다(내비 메시를 깎는다)
+Support.barricadeBlow,1,좀비의 공격이 바리케이드에 막혔을 때 그 피해의 몇 배를 바리케이드가 입는지. 아군의 총알과 주먹은 피해가 없다
+Support.barricadePressure,4,바리케이드에 붙어 밀어대는 좀비 한 마리가 주는 피해(초당)

@@ -19,9 +19,10 @@ public static class KitSound
     /// </summary>
     /// Charge: an Assault's CHARGE sounded (ClassKit). Taunt: a Knight's taunt went out (its own, or a friend's, softer
     /// the further). Hunter: a Ghost's headshot added a Head Hunter stack; HunterLost: a hurt took them all. Ping: F
-    /// marked an enemy for the team; Mark: a Schießhund's bounty mark went on; Bounty: its mark died at its hand.
+    /// marked an enemy for the team; Mark: a Schießhund's bounty mark went on; Bounty: its mark died at its hand. Supply:
+    /// a Support handed ammo over; Hammer: it put a barricade up; Splinter: a zombie's blow on one; Collapse: one broke.
     public enum Cue { Buy, Refuse, Alert, PickAmmo, PickHeal, PickShield, PickMoney, PickGun, Escape, Suspect, Spotted, Unseen, Charge,
-        Taunt, Hunter, HunterLost, Ping, Mark, Bounty }
+        Taunt, Hunter, HunterLost, Ping, Mark, Bounty, Supply, Hammer, Splinter, Collapse }
 
     private const string BankId = "UI";
     private const int Rate = 44100;
@@ -89,6 +90,10 @@ public static class KitSound
             Cue.Ping => Spot(),
             Cue.Mark => Brand(),
             Cue.Bounty => Claim(),
+            Cue.Supply => Pack(),
+            Cue.Hammer => Nails(),
+            Cue.Splinter => Crack(),
+            Cue.Collapse => Timber(),
             _ => Buzz()
         };
         var clip = AudioClip.Create("Kit " + cue, data.Length, 1, Rate, false);
@@ -389,6 +394,66 @@ public static class KitSound
         Bell(data, .12f, 1319f, .14f, .4f);
         Bell(data, .2f, 1568f, .4f, .5f);
         return Finish(data, .8f);
+    }
+
+    // Ammo handed over: a bag's zip, then two magazines knocking into a pouch.
+    private static float[] Pack()
+    {
+        var data = new float[(int)(Rate * .4f)];
+        var random = new System.Random(4041);
+        float held = 0f;
+        int zip = (int)(Rate * .12f);
+        for (int i = 0; i < zip; i++)
+        {
+            float t = i / (float)Rate;
+            held += ((float)random.NextDouble() * 2f - 1f - held) * .6f;
+            data[i] += held * (.5f + .5f * Mathf.Sin(2f * Mathf.PI * 90f * t)) * .35f;
+        }
+        Click(data, random, .15f, .01f, .7f);
+        Knock(data, .15f, 180f, .03f, .5f);
+        Click(data, random, .24f, .012f, .6f);
+        Knock(data, .24f, 160f, .03f, .5f);
+        return Finish(data, .6f);
+    }
+
+    // A barricade put up: three hammer blows on wood, each a dull knock with a sharp edge, the last the hardest.
+    private static float[] Nails()
+    {
+        var data = new float[(int)(Rate * .62f)];
+        var random = new System.Random(77);
+        for (int blow = 0; blow < 3; blow++)
+        {
+            float at = blow * .17f, level = .7f + blow * .15f;
+            Click(data, random, at, .004f, level);
+            Knock(data, at, 230f - blow * 20f, .045f, level);
+        }
+        return Finish(data, .7f);
+    }
+
+    // A blow on a barricade: wood cracking, a short burst of splintering over a low knock.
+    private static float[] Crack()
+    {
+        var data = new float[(int)(Rate * .26f)];
+        var random = new System.Random(9137);
+        Knock(data, 0f, 120f, .05f, .6f);
+        for (int i = 0; i < 4; i++) Click(data, random, i * .025f, .006f, .8f - i * .15f);
+        return Finish(data, .55f);
+    }
+
+    // A barricade broken: a heavy knock and planks clattering down one after another.
+    private static float[] Timber()
+    {
+        var data = new float[(int)(Rate * .9f)];
+        var random = new System.Random(2718);
+        Knock(data, 0f, 85f, .16f, 1f);
+        Click(data, random, 0f, .01f, .9f);
+        float[] falls = { .16f, .27f, .35f, .5f, .62f };
+        for (int i = 0; i < falls.Length; i++)
+        {
+            Click(data, random, falls[i], .008f, .6f - i * .08f);
+            Knock(data, falls[i], 200f + i * 25f, .03f, .45f - i * .06f);
+        }
+        return Finish(data, .75f);
     }
 
     // A horn note starting at <at> (s) for <length> (s): odd and even partials swelling in and dying away.
