@@ -5,7 +5,7 @@ using UnityEngine;
 
 /// <summary>
 /// Keeps Resources/Characters/PlayerBody in step with the imported art: creates it with the first humanoid model
-/// in Art/Models/Characters, and mirrors every clip found under Art/Animations into its clip library. A model the
+/// in Art/Models/Characters, and mirrors player clips found under Art/Animations into its clip library. A model the
 /// user picked in the profile is never replaced.
 /// </summary>
 internal sealed class PlayerBodyProfileBuilder : AssetPostprocessor
@@ -20,7 +20,8 @@ internal sealed class PlayerBodyProfileBuilder : AssetPostprocessor
         bool relevant = imported.Concat(deleted).Concat(moved).Concat(movedFrom).Any(p =>
             p.EndsWith(".fbx", StringComparison.OrdinalIgnoreCase)
             && (p.StartsWith(CharactersFolder + "/", StringComparison.OrdinalIgnoreCase)
-                || p.StartsWith(ModelImportRules.AnimationsFolder, StringComparison.OrdinalIgnoreCase)));
+                || (p.StartsWith(ModelImportRules.AnimationsFolder, StringComparison.OrdinalIgnoreCase)
+                    && !ModelImportRules.IsZombieAnimation(p))));
         if (relevant) Queue();
     }
 
@@ -46,6 +47,7 @@ internal sealed class PlayerBodyProfileBuilder : AssetPostprocessor
             .Where(p => AssetImporter.GetAtPath(p) is ModelImporter { animationType: ModelImporterAnimationType.Human })
             .Select(AssetDatabase.LoadAssetAtPath<GameObject>).FirstOrDefault(g => g != null);
         var clips = Models(ModelImportRules.AnimationsFolder.TrimEnd('/')).OrderBy(p => p, StringComparer.Ordinal)
+            .Where(p => !ModelImportRules.IsZombieAnimation(p))
             .SelectMany(p => AssetDatabase.LoadAllAssetsAtPath(p).OfType<AnimationClip>())
             .Where(c => !c.name.StartsWith("__preview__", StringComparison.Ordinal)).ToArray();
 
