@@ -211,13 +211,11 @@ for name in fk:
     size = 0.21 if name == 'Center' else 0.13 if name == 'Hips' else 0.085
     pb.custom_shape_scale_xyz = (size,size,size)
 
-# A comfortable starting stance; original rest pose remains untouched.
-for suffix, sign in [('L', 1), ('R', -1)]:
-    pb = rig.pose.bones[f'CTRL_hand.{suffix}']
-    mat = Matrix.Rotation(sign*math.radians(76), 4, 'Y') @ original_rest['Left wrist' if suffix=='L' else 'Right wrist']
-    mat.translation = Vector((sign*0.20, -0.32, 1.25))
-    pb.matrix = mat
-bpy.context.view_layer.update()
+# Use the same ready pose as the starter workspace and Reset Selected.
+starter_spec = importlib.util.spec_from_file_location('make_starter', HERE / 'make_starter.py')
+starter = importlib.util.module_from_spec(starter_spec)
+starter_spec.loader.exec_module(starter)
+starter.pose_ready_hands(bpy.context, rig)
 rig['truefps_default_pose'] = json.dumps({n: {'location':list(rig.pose.bones[n].location),
     'rotation_quaternion':list(rig.pose.bones[n].rotation_quaternion),
     'scale':list(rig.pose.bones[n].scale)} for n in editable})

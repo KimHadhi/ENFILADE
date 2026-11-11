@@ -1,10 +1,10 @@
 # ENFILADE · Blender 애니메이션 작업실
 
-**시작:** 이 폴더의 [START_ANIMATING.cmd](START_ANIMATING.cmd)를 더블클릭한다. Blender 4.5 LTS에서 [ENFILADE_TrueFPS_FullRig.blend](ENFILADE_TrueFPS_FullRig.blend)와 작업 버튼을 함께 연다.
+이 폴더의 [START_ANIMATING.cmd](START_ANIMATING.cmd)를 더블클릭하면 Blender 4.5 LTS에서 [ENFILADE_TrueFPS_Start.blend](ENFILADE_TrueFPS_Start.blend)와 작업 버튼을 함께 연다.
 
 기본 캐릭터는 게임에서 사용하는 카즈사다. 손·발 IK와 머리 카메라가 준비되어 있다. **프레임 선택 → 뼈 이동·회전 → 키 저장**을 반복한 뒤 FBX로 내보내면 된다.
 
-수정본은 이름에 **`_FullRig`**가 들어간 파일이다. 휴머노이드 54개 뼈(손가락 30마디 포함)와 루트·손발 IK 손잡이를 모두 선택하고 키를 넣을 수 있다. 기존 작업과 포즈는 이전 `_Ready` 파일에도 보존했다.
+`_Start` 파일에는 손목을 아래팔 방향에 맞추고 손가락을 살짝 구부린 기본 포즈가 들어 있다. 처음 열면 `enf_practice_reach` 예제의 1프레임이다. 휴머노이드 54개 뼈(손가락 30마디 포함)와 루트·손발 IK 손잡이를 모두 선택하고 키를 넣을 수 있다.
 
 ## 1. 처음 열었을 때
 
@@ -58,7 +58,15 @@ Bone Collections의 `03 Arms`, `04 Legs`, `05 Fingers`가 보이는 조작 뼈�
 - 팔·다리가 닿을 수 없는 곳에 손발 손잡이를 두면 관절이 완전히 펴진다. 몸이나 손잡이를 가까이 옮긴다.
 - 일반 포즈 작업에서는 뼈의 크기를 바꾸는 `S`를 사용하지 않는 편이 좋다.
 
-## 3. 1초짜리 손 뻗기 만들어 보기
+## 3. 1초짜리 손 뻗기 바꿔 보기
+
+1. 열려 있는 `enf_practice_reach`에서 `Space`를 눌러 재생한다. **1 준비 → 16 뻗기 → 31 돌아오기**가 이미 들어 있다.
+2. 멈춘 뒤 **16프레임**으로 이동한다. 오른쪽에서 `CTRL_hand.R`을 선택하고 `G`, `Y`, `0.03`, `Enter` 순으로 눌러 손을 몸 쪽으로 3cm 당긴다.
+3. **Key All Controls**를 누르고 다시 재생한다. 왼쪽 시점에서 손이 어디까지 나오는지 비교한다.
+
+처음에는 가운데 포즈 하나만 바꿔도 된다. 다른 이름으로 저장해 두고, 익숙해지면 **New Action**으로 같은 기본 자세에서 시작한다.
+
+### 빈 동작으로 같은 연습하기
 
 1. **True FPS → New Action**을 누르고 이름을 `enf_reach`, 끝 프레임을 `31`로 정한다. 새 동작은 기본 포즈에서 시작한다.
 2. 현재 프레임을 **1**로 놓고 **Key All Controls**를 누른다. 이 버튼은 손가락을 포함한 조작 뼈들의 위치·회전·크기를 현재 프레임에 기록한다.
