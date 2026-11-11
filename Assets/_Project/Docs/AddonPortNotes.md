@@ -79,8 +79,8 @@ GMod 애드온(`F:\Addons`, 저장소 밖)의 이동·애니메이션·소리를
 
 | 묶음 | 워크숍 | 들인 것 | 크기 |
 | --- | --- | --- | --- |
-| [LowPolyCI_3386016169](../Art/Models/Addons/Zombies/LowPolyCI_3386016169) | Low Poly Common Infected (L4D2 3386016169) | 감염자 50종(500삼각형 안팎, 128px 텍스처라 점 필터). 2종(`ceda_l4d1`, `tshirt_cargos_swamp`)은 게임 본편의 메시를 빌려 쓰는 MDL이라 바꿀 것이 없었다 | 4MB |
-| [ZombieSNPCs_152529683](../Art/Models/Addons/Zombies/ZombieSNPCs_152529683) | Zombie SNPCs (GMod 152529683) | 23종: 셤블러 slow1~12, 러너 fast1·3, Zombie Panic! Source의 일곱(carrier, eugene, jessica, lea, marcus, paul, vanessa), gal_boss와 작은 판(0.4~2.6만 삼각형, 텍스처 1K JPG). 뼈대가 ValveBiped가 아닌 9종(burnzie, draggy, fast2·4, hulk, stalker, zombine 등)은 휴머노이드가 될 수 없어 뺐다 | 19MB |
+| LowPolyCI_3386016169 (뺌) | Low Poly Common Infected (L4D2 3386016169) | 2026-11-12에 뺐다: 사용자가 저폴리 모습이 별로라고 했다("그거 별로던데"). 0.8.102 eaf923ff의 기록에는 남아 있어 되살릴 수 있다 | 0 |
+| [ZombieSNPCs_152529683](../Art/Models/Addons/Zombies/ZombieSNPCs_152529683) | Zombie SNPCs (GMod 152529683) | 21종(2026-11-12에 fast3·gal_boss_mini는 손·아래팔 뼈가 휴머노이드로 잡히지 않아 Unity가 리그 오류를 내서 뺐다). 처음 들인 23종: 셤블러 slow1~12, 러너 fast1·3, Zombie Panic! Source의 일곱(carrier, eugene, jessica, lea, marcus, paul, vanessa), gal_boss와 작은 판(0.4~2.6만 삼각형, 텍스처 1K JPG). 뼈대가 ValveBiped가 아닌 9종(burnzie, draggy, fast2·4, hulk, stalker, zombine 등)은 휴머노이드가 될 수 없어 뺐다 | 19MB |
 
 Walkers [XDR](3353266656)와 [xdR] nmrih zombies(3709350917)는 모델이 아니라 L4D2 감염자 뼈대용 걷기 애니메이션이라 이번에는 들이지 않았다. 좀비 걷기 클립으로 쓰려면 MDL의 시퀀스를 FBX로 구워 `Art/Animations/Zombies/<슬롯>`에 넣으면 된다(그 폴더는 넣는 즉시 좀비 목록에 섞인다).
 
