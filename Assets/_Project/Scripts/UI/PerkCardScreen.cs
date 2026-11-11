@@ -23,6 +23,8 @@ using UnityEngine.UI;
 /// Since the class cards (2026-11-11, Docs/ClassCards.md) the three are drawn from everyone's cards and this player's
 /// class's own (PlayerPerks.Dealable); each card says under its name, small and slanted, why it works (the user's rule
 /// that an effect comes with a believable reason), and a class's final card (궁극) wears a pink frame from the start.
+/// Once every card this player can be dealt is taken, the prompt reads "궁극 준비" and X spends the full gauge on the
+/// class's ultimate at once (ClassCards.Ultimate) instead of opening the cards.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class PerkCardScreen : MonoBehaviour
@@ -77,7 +79,9 @@ public sealed class PerkCardScreen : MonoBehaviour
     private RectTransform layer, stage, fx, prompt, band, title, tray, landing;
     private CanvasGroup layerGroup, promptGroup, titleGroup, landingGroup;
     private Image veil, promptBar, bandImage;
-    private TMP_Text costLabel, emptyLabel;
+    private TMP_Text costLabel, emptyLabel, promptLabel;
+    // What the ready prompt says now: the cards, or, every card taken, the class's ultimate.
+    private bool promptCards = true;
     private readonly List<Card> cards = new List<Card>();
     private readonly List<Spark> sparks = new List<Spark>();
     private readonly List<Burst> bursts = new List<Burst>();
@@ -212,7 +216,7 @@ public sealed class PerkCardScreen : MonoBehaviour
         KitSkew.On(KitStyle.Fill(prompt, KitStyle.With(KitStyle.Night, .82f)), 14f);
         promptBar = KitStyle.Bar("Bar", prompt, Vector2.zero, new Vector2(6f, 48f), KitStyle.Accent);
         KitSkew.On(promptBar, 14f);
-        KitStyle.Flat(KitStyle.TopLeft("Text", prompt, new Vector2(24f, 0f), new Vector2(160f, 48f)), Texts.Get("perk.ready"), 21f,
+        promptLabel = KitStyle.Flat(KitStyle.TopLeft("Text", prompt, new Vector2(24f, 0f), new Vector2(160f, 48f)), Texts.Get("perk.ready"), 21f,
             TextAlignmentOptions.MidlineLeft);
         var key = KitStyle.TopLeft("Key", prompt, new Vector2(250f - 52f, 8f), new Vector2(32f, 32f));
         KitStyle.Fill(key, KitStyle.Ice);
@@ -462,16 +466,22 @@ public sealed class PerkCardScreen : MonoBehaviour
         if (host == null) return;
         var keyboard = Keyboard.current;
         bool able = player.IsInitialized && receiver != null && receiver.IsAlive && !player.IsDowned;
-        bool ready = able && player.Ultimate != null && player.Ultimate.IsReady && AnyLeft();
+        // Every card taken, the full gauge buys the class's ultimate instead (Docs/ClassCards.md: ClassCards.Ultimate).
+        bool cards = AnyLeft(), ultimate = !cards && ClassCards.Local != null && ClassCards.Local.HasUltimate;
+        bool ready = able && player.Ultimate != null && player.Ultimate.IsReady && (cards || ultimate);
         if (open && !able && picked < 0) Close();
 
         if (!open)
         {
-            ShowPrompt(ready && !Blocked());
-            if (ready && keyboard != null && keyboard.xKey.wasPressedThisFrame && !Blocked()) Open();
+            ShowPrompt(ready && !Blocked(), cards);
+            if (ready && keyboard != null && keyboard.xKey.wasPressedThisFrame && !Blocked())
+            {
+                if (cards) Open();
+                else if (player.Ultimate.TryConsume()) ClassCards.Local.Ultimate();
+            }
             return;
         }
-        ShowPrompt(false);
+        ShowPrompt(false, true);
         if (keyboard != null && picked < 0 && !closing)
         {
             if (keyboard.xKey.wasPressedThisFrame || keyboard.escapeKey.wasPressedThisFrame) Close();
@@ -493,9 +503,14 @@ public sealed class PerkCardScreen : MonoBehaviour
     // A card left to deal: this player's class's cards count, another class's don't (PlayerPerks.Dealable).
     private static bool AnyLeft() => PlayerPerks.AnyLeft();
 
-    private void ShowPrompt(bool show)
+    private void ShowPrompt(bool show, bool cards)
     {
         if (prompt.gameObject.activeSelf != show) prompt.gameObject.SetActive(show);
+        if (show && cards != promptCards)
+        {
+            promptCards = cards;
+            promptLabel.text = Texts.Get(cards ? "perk.ready" : "perk.ult.ready");
+        }
         if (!show) return;
         float time = Time.unscaledTime;
         promptBar.color = KitStyle.With(KitStyle.Accent, .55f + .45f * Mathf.Abs(Mathf.Sin(time * 3f)));

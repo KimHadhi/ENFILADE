@@ -43,6 +43,13 @@ public sealed class SupportKit : MonoBehaviour
     public int MostStanding => Mathf.Max(1, Mathf.RoundToInt(Number("barricadeMax", 2f)));
     /// <summary>Seconds since it last handed ammo over, and since it last put a barricade up (the HUD's flash).</summary>
     public float SinceGive => Time.time - lastGive;
+
+    /// <summary>The ultimate (every card taken, a full gauge: ClassCards.Ultimate): the bag full at once.</summary>
+    internal void Restock()
+    {
+        supply = SupplyMax;
+        lastGive = Time.time;
+    }
     public float SinceBuild => Time.time - lastBuild;
     /// <summary>The friend F would resupply now (standing, in reach, under the crosshair), or null.</summary>
     public PlayerMovement Offered { get; private set; }

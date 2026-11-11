@@ -10,6 +10,7 @@ public static class GameCommands
     public static void Register(ChatCommandRouter router, Func<SinglePlayerChatManager> findChat)
     {
         PlayerConsoleCommands.Register(router, () => PlayerRoster.Local);
+        CardCommands.Register(router); // /card: the class cards at once, for trying them (Docs/ClassCards.md)
         CombatTestCommands.Register(router, findChat);
         router.Register("help", "명령어 목록", _ => router.Help());
         router.Register("echo", "입력한 내용 출력", text => text);

@@ -581,6 +581,43 @@ public sealed class ClassCards : MonoBehaviour
         }
     }
 
+    // ---- The ultimate ----
+
+    /// <summary>Whether this player's class has an ultimate for the full gauge once every card is taken (all seven do).</summary>
+    public bool HasUltimate => PlayerClass.Current != null;
+
+    /// <summary>
+    /// Every card this player can be dealt is taken and the full gauge is spent on X (PerkCardScreen; classes-design's
+    /// open question, "what a full gauge does once the cards are all taken"): the class's ultimate at once, ULTIMATE
+    /// slammed across the screen. Knight: the shadow double; Assault: adrenaline full and the CHARGE, its phantom riders
+    /// with it; Ghost: the Head Hunter full under the White Tiger's guard; Point: both guns loaded and the Gunslinger's
+    /// moment; Détente: the syringe full and one more Resurrection; Schießhund: the Desperado's cylinder full; Support:
+    /// the bag full. Numbers: ClassAbilities Cards.ultimateSeconds.
+    /// </summary>
+    public void Ultimate()
+    {
+        float seconds = Mathf.Max(1f, PlayerClass.Ability("Cards", "ultimateSeconds", 10f));
+        if (PlayerClass.Is(PlayerClass.Knight)) ShadowFor(seconds);
+        else if (PlayerClass.Is(PlayerClass.Assault))
+        {
+            kit?.UltimateCharge();
+            if (!PlayerPerks.Has(PlayerPerks.AssaultCavalry)) Cavalry(transform.position);
+        }
+        else if (PlayerClass.Is(PlayerClass.Ghost))
+        {
+            kit?.FillHunter();
+            tigerTotal = seconds;
+            tigerUntil = Time.time + seconds;
+        }
+        else if (PlayerClass.Is(PlayerClass.Point)) kit?.ReloadAll();
+        else if (PlayerClass.Is(PlayerClass.Detente)) DetenteKit.Local?.Ultimate();
+        else if (PlayerClass.Is(PlayerClass.Schiesshund)) kit?.LoadDesperado();
+        else if (PlayerClass.Is(PlayerClass.Support)) SupportKit.Local?.Restock();
+        if (!TryGetComponent(out CounterBanner banner)) banner = gameObject.AddComponent<CounterBanner>();
+        banner.Play(1.05f, CounterBanner.Grades - 1, "ULTIMATE", KitStyle.Accent);
+        KitSound.Play(KitSound.Cue.Charge, 1f);
+    }
+
     // ---- Ghost: White Tiger ----
 
     // The stacks are safe a while; the claws, and the stagger round the kill, at most once in a while.

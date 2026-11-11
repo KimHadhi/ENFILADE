@@ -152,6 +152,13 @@ public sealed class DetenteKit : MonoBehaviour
     /// <summary>A shop sells the refill only to a Détente whose syringe isn't full.</summary>
     public bool Full => Syringe >= SyringeMax - .01f;
 
+    /// <summary>The ultimate (every card taken, a full gauge: ClassCards.Ultimate): the syringe full and one Resurrection more.</summary>
+    internal void Ultimate()
+    {
+        Refill(SyringeMax);
+        raisesLeft++;
+    }
+
     // A friend's health is theirs on their own PC; this player's is here.
     private void Heal(PlayerMovement patient, float amount)
     {
