@@ -28,7 +28,8 @@ public sealed class PreviewCloth : MonoBehaviour
     {
         var cloth = new HashSet<Transform>();
         var hanging = new HashSet<Transform>();
-        var rows = PlayerBodyCloth.Rows(animator, skin, id => Wears(dressing, id), Part, cloth, hanging);
+        var springs = new HashSet<Transform>();
+        var rows = PlayerBodyCloth.Rows(animator, skin, id => Wears(dressing, id), Part, cloth, hanging, springs);
         if (rows.Count == 0) return;
         var colliders = gameObject.AddComponent<PlayerBodyClothColliders>();
         colliders.ReadTable();
@@ -40,7 +41,7 @@ public sealed class PreviewCloth : MonoBehaviour
             // Read before the simulation first moves them.
             var bones = new ClothBones(roots, part.rootTurn);
             string shapes = PlayerBodyCloth.Touches(part, roots, animator, ref armBones);
-            if (part.vrc) measured ??= colliders.Measure(animator, skin + "|" + look, () => sample ??= SkinSample.Read(animator), hanging);
+            if (part.vrc) measured ??= colliders.Measure(animator, skin + "|" + look, () => sample ??= SkinSample.Read(animator), hanging, springs);
             var touching = PlayerBodyCloth.Touching(colliders, animator, part, shapes, bones, measured);
             bones.MeasureRoom(point => colliders.Room(point, touching));
             part.Wear(animator.transform, id, roots, touching, bones);

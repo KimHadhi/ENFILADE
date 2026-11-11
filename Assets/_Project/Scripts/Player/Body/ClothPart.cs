@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Globalization;
 using MagicaCloth2;
 using UnityEngine;
 
@@ -37,7 +38,11 @@ public sealed class ClothPart
     /// only the legs stop them; zero, they pass through it.
     /// </summary>
     public float press = -1f;
-    /// <summary>How much of the gravity goes while the part rests in its own shape (Magica's gravityFalloff). Below zero keeps the preset's.</summary>
+    /// <summary>
+    /// How much of the gravity goes while the character stands upright (Magica's gravityFalloff, which measures the
+    /// whole body's lean, not each bone's: 1 hangs nothing while she stands, half as she lies down). Below zero keeps
+    /// the preset's.
+    /// </summary>
     public float gravityFalloff = -1f;
     /// <summary>
     /// The renderers this part moves, "name|name". While none of them shows (the piece is off, or a new outfit hid it) the
@@ -46,6 +51,17 @@ public sealed class ClothPart
     public string parts = "";
     /// <summary>Made by BoothImport from VRChat PhysBones: it is rewritten the next time the import reads them.</summary>
     public bool vrc;
+    /// <summary>
+    /// How much less of the body's motion the bones near the root feel than those at the end (Magica's depthInertia,
+    /// 0..1, falling off as 1 - depth²). Below zero keeps the preset's.
+    /// </summary>
+    public float depthInertia = -1f;
+    /// <summary>
+    /// How angleLimit, stiffness, damping and thickness run down the part, root (0) to far end (1), each as a share of
+    /// its number: "depth:share|depth:share", straight between, or "1" for the same all the way. Empty keeps the preset's
+    /// own curve, which the rows written by hand were tuned with; BoothImport writes VRChat's.
+    /// </summary>
+    public string angleCurve = "", stiffnessCurve = "", dampingCurve = "", thicknessCurve = "";
 
     /// <summary>The bones the part hangs from, in the table's order: a ring runs through them in turn.</summary>
     internal List<Transform> FindRoots(Dictionary<string, Transform> bones, string model)
@@ -79,10 +95,10 @@ public sealed class ClothPart
 
     /// <summary>
     /// The thinnest this part's cloth gets where it lies close to the body (metres): the presets' own, or its thickness
-    /// where that is thinner still (Apply).
+    /// where that is thinner still, at its thinnest depth (Apply).
     /// </summary>
     internal float Thinnest(ClothBones shape) =>
-        thickness > 0f ? Mathf.Min(ClothBones.LeastThickness, thickness * shape.Length) : ClothBones.LeastThickness;
+        thickness > 0f ? Mathf.Min(ClothBones.LeastThickness, thickness * shape.Length * Least(Curve(thicknessCurve))) : ClothBones.LeastThickness;
 
     /// <summary>Starts the simulation on these bones. Living under the model, it goes when the body does.</summary>
     internal MagicaCloth Wear(Transform model, string id, List<Transform> bones, List<ColliderComponent> colliders, ClothBones shape)
@@ -118,26 +134,62 @@ public sealed class ClothPart
     internal void Apply(ClothSerializeData data, ClothBones shape)
     {
         float length = shape.Length;
-        var thick = shape.Thickness(thickness * length);
+        var thick = shape.Thickness(thickness * length, Curve(thicknessCurve));
         if (thick != null) data.radius.SetValue(thickness * length, thick);
         data.rootRotation = rootTurn;
         data.gravity = gravity;
         if (gravityFalloff >= 0f) data.gravityFalloff = Mathf.Clamp01(gravityFalloff);
-        data.damping.value = damping;
+        Down(data.damping, damping, dampingCurve);
         data.inertiaConstraint.worldInertia = worldInertia;
         data.inertiaConstraint.localInertia = localInertia;
+        if (depthInertia >= 0f) data.inertiaConstraint.depthInertia = Mathf.Clamp01(depthInertia);
         data.inertiaConstraint.movementSpeedLimit.SetValue(true, speedLimit);
         data.inertiaConstraint.centrifualAcceleration = centrifugal;
         data.inertiaConstraint.teleportDistance = teleportDistance;
         data.wind.influence = windPower;
         data.wind.movingWind = movingWind;
         data.wind.synchronization = windSync;
-        data.angleRestorationConstraint.stiffness.value = stiffness;
-        data.angleLimitConstraint.limitAngle.value = angleLimit;
+        Down(data.angleRestorationConstraint.stiffness, stiffness, stiffnessCurve);
+        Down(data.angleLimitConstraint.limitAngle, angleLimit, angleCurve);
         data.colliderCollisionConstraint.friction = friction;
         data.motionConstraint.useMaxDistance = reach > 0f;
         data.motionConstraint.maxDistance.SetValue(reach * length);
         data.motionConstraint.useBackstop = backstop >= 0f;
         data.motionConstraint.backstopDistance.SetValue(Mathf.Max(0f, backstop) * length);
+    }
+
+    // A number down the part: as its curve column says, or under the preset's own curve where the column is empty.
+    private static void Down(CurveSerializeData data, float value, string curve)
+    {
+        if (string.IsNullOrWhiteSpace(curve)) data.value = value;
+        else if (Curve(curve) is AnimationCurve along) data.SetValue(value, along);
+        else data.SetValue(value);
+    }
+
+    /// <summary>A curve column as a curve of shares by depth, null where it is empty or the same all the way ("1").</summary>
+    internal static AnimationCurve Curve(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return null;
+        var keys = new List<Keyframe>();
+        foreach (string pair in text.Split(BoneSeparator))
+        {
+            int colon = pair.IndexOf(':');
+            if (colon < 0
+                || !float.TryParse(pair.Substring(0, colon).Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out float depth)
+                || !float.TryParse(pair.Substring(colon + 1).Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out float share)) continue;
+            keys.Add(new Keyframe(Mathf.Clamp01(depth), Mathf.Max(0f, share)));
+        }
+        if (keys.Count < 2) return null;
+        keys.Sort((a, b) => a.time.CompareTo(b.time));
+        return ClothBones.Straight(keys);
+    }
+
+    // The smallest share a curve gives (straight between its keys), 1 for none.
+    private static float Least(AnimationCurve curve)
+    {
+        if (curve == null) return 1f;
+        float least = float.PositiveInfinity;
+        foreach (var key in curve.keys) least = Mathf.Min(least, key.value);
+        return least;
     }
 }

@@ -31,6 +31,8 @@ internal sealed class BoothImport : AssetPostprocessor
     private const string SourcesPath = "Assets/_Project/Editor/Import/Booth/BoothSources.csv";
     private const string ProfilePath = "Assets/_Project/Resources/Characters/PlayerBody.asset";
     private const string ClothPath = "Assets/_Project/Resources/Tables/Cloth.csv";
+    // The VrcSway.Version this PC's Cloth.csv rows were last written with (FinishPending).
+    private const string SwayVersionKey = "ENFILADE.BoothImport.SwayVersion";
     private static bool queued, running;
     // A table write that meets a lock: how many times it is tried and how long apart (s).
     private const int WriteTries = 6;
@@ -103,7 +105,9 @@ internal sealed class BoothImport : AssetPostprocessor
 
     // The files can come in while the project's scripts don't build (another change half done), and then this never
     // sees them arrive: the first time the editor loads it, it finishes whatever BoothSources.csv lists and isn't done.
-    // On 2026-11-11 Mayo and Ichigo stayed off the character screen that way.
+    // On 2026-11-11 Mayo and Ichigo stayed off the character screen that way. It also runs once when VrcSway writes its
+    // rows differently than it did for this table (VrcSway.Version), so a fix to the sway reaches the rows already
+    // written without anyone running the import by hand.
     [InitializeOnLoadMethod]
     private static void FinishPending()
     {
@@ -125,15 +129,18 @@ internal sealed class BoothImport : AssetPostprocessor
         };
     }
 
-    // A character or outfit model whose files are here but which isn't registered with its copy yet.
+    // A character or outfit model whose files are here but which isn't registered with its copy yet, or sway rows
+    // written by an older VrcSway.
     private static bool Pending()
     {
         if (!File.Exists(SourcesPath)) return false;
         var profile = AssetDatabase.LoadAssetAtPath<PlayerBodyProfile>(ProfilePath);
         var library = AssetDatabase.LoadAssetAtPath<OutfitLibrary>(OutfitLibraryBuilder.LibraryPath);
+        bool present = false;
         foreach (var source in ReadSources())
         {
             if (!File.Exists(Root + source.Path)) continue;
+            present = true;
             if (source.Kind == "character")
             {
                 var skin = profile != null ? profile.Skins.FirstOrDefault(s => s != null && s.Id == source.Id) : null;
@@ -145,7 +152,7 @@ internal sealed class BoothImport : AssetPostprocessor
                 if (entry == null || AssetDatabase.GetAssetPath(entry.Model) != CopyOf(source)) return true;
             }
         }
-        return false;
+        return present && EditorPrefs.GetInt(SwayVersionKey, 0) != VrcSway.Version;
     }
 
     // Where the game's copy of a source's prefab lives.
@@ -206,6 +213,7 @@ internal sealed class BoothImport : AssetPostprocessor
             EditorUtility.SetDirty(library);
             AssetDatabase.SaveAssets();
             ReplaceClothRows(sway);
+            EditorPrefs.SetInt(SwayVersionKey, VrcSway.Version);
             GameTables.Reload();
         }
         finally

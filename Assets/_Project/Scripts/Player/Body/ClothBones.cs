@@ -89,11 +89,13 @@ internal sealed class ClothBones
     }
 
     /// <summary>
-    /// How thick the cloth is down the part, for Magica's particle radius: what was wanted (metres), but at each depth no
-    /// more than the room its bones had when the part was made, so the legs don't push it out of shape before anything has
-    /// moved, and never thinner than the presets made it. The curve runs 0..1 of what was wanted. Null when nothing was.
+    /// How thick the cloth is down the part, for Magica's particle radius: what was wanted (metres), shaped down the part
+    /// by <paramref name="along"/> (shares by depth; null, the same all the way), but at each depth no more than the room
+    /// its bones had when the part was made, so the legs don't push it out of shape before anything has moved, and never
+    /// thinner than the presets made it unless less was wanted. The curve runs 0..1 of what was wanted. Null when nothing
+    /// was.
     /// </summary>
-    internal AnimationCurve Thickness(float wanted)
+    internal AnimationCurve Thickness(float wanted, AnimationCurve along = null)
     {
         if (wanted <= 0f) return null;
         var least = new SortedDictionary<float, float>();
@@ -101,7 +103,8 @@ internal sealed class ClothBones
         {
             if (!bones[i].Moves) continue;
             float depth = Mathf.Round(bones[i].Depth * 100f) / 100f;
-            float thick = Mathf.Clamp(bones[i].Room * RoomShare, Mathf.Min(LeastThickness, wanted), wanted) / wanted;
+            float want = along != null ? wanted * Mathf.Max(0f, along.Evaluate(bones[i].Depth)) : wanted;
+            float thick = Mathf.Clamp(bones[i].Room * RoomShare, Mathf.Min(LeastThickness, want), want) / wanted;
             least[depth] = least.TryGetValue(depth, out float before) ? Mathf.Min(before, thick) : thick;
         }
         if (least.Count == 0) return null;
@@ -112,11 +115,17 @@ internal sealed class ClothBones
             keys.Add(new Keyframe(pair.Key, pair.Value));
         }
         // Straight lines between the depths, as the bones between them are.
+        return Straight(keys);
+    }
+
+    /// <summary>A curve through these keys (in order of depth) with straight lines between them.</summary>
+    internal static AnimationCurve Straight(List<Keyframe> keys)
+    {
         for (int i = 0; i < keys.Count; i++)
         {
             var key = keys[i];
-            key.inTangent = i > 0 ? (key.value - keys[i - 1].value) / (key.time - keys[i - 1].time) : 0f;
-            key.outTangent = i + 1 < keys.Count ? (keys[i + 1].value - key.value) / (keys[i + 1].time - key.time) : 0f;
+            key.inTangent = i > 0 && key.time > keys[i - 1].time ? (key.value - keys[i - 1].value) / (key.time - keys[i - 1].time) : 0f;
+            key.outTangent = i + 1 < keys.Count && keys[i + 1].time > key.time ? (keys[i + 1].value - key.value) / (keys[i + 1].time - key.time) : 0f;
             keys[i] = key;
         }
         return new AnimationCurve(keys.ToArray());

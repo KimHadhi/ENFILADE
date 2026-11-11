@@ -20,11 +20,37 @@ using UnityEngine;
 /// it rests while none of them shows.
 /// Numbers, from VRChat's PhysBone documentation to Magica's: pull (pull back to the rest pose) → stiffness; spring
 /// (wobble) → less damping; gravity (share of g) → gravity ×10, as the presets use 2 for hair and 5 for skirts;
-/// gravity falloff as is; immobile (motion of the world ignored) → 1 - world inertia; the angle limit as is; the radius
-/// (metres) → thickness as a share of the chain's length; colliders → the body parts they hang from.
+/// immobile (the body's motion ignored) → 1 - world inertia (half of it for a chain that hangs: ImmobileShare); the
+/// angle limit as is; the radius (metres) → thickness as a share of the chain's length; colliders → the body parts
+/// they hang from.
+/// A chain that hangs (hair, tails, ribbons, ties: not a ring, not a spring) carries its maker's numbers down its whole
+/// length, curves included, as Magica's own curves (ClothPart), and Magica's hair preset no longer bends them: its
+/// curves let a bone near the root turn a fifth of the angle set (Mayo's back hair 9° of 45) and rest twice as stiff
+/// as at the end. VRChat keeps a chain off the body with its limit cones, turned (limitRotation) so a strand rests on
+/// the cone's edge and can swing out but not in; Magica's cones can't turn, so such a chain meets the whole body here
+/// instead (PlayerBodyCloth.Touches) and rests where its maker drew it while the character stands (gravity falloff 1:
+/// Magica's falloff is the whole body's lean, not each bone's, and gravity pulled Mayo's side locks off her chest and
+/// into it). PhysBones slide along what they touch, so there is no friction: Magica's static friction held a strand
+/// that slowly met the body where it was, and her hair looked painted on (the user, 2026-11-12: "마요는 머리카락이 안
+/// 움직여. 어쩐지 내려온 옆머리가 가슴 쪽을 뚫더라"). Rings and springs keep the presets they were tuned with.
 /// </summary>
 internal static class VrcSway
 {
+    /// <summary>
+    /// Raised whenever the rows this writes change, so the rows an older one wrote are written again (BoothImport).
+    /// 2: hanging chains carry their curves, hold their drawn shape, slide without friction and take half of immobile;
+    /// switched-off PhysBones are skipped (2026-11-12).
+    /// </summary>
+    internal const int Version = 2;
+    // Depths down a chain where its curves are read: root, quarters, far end.
+    private const int Samples = 5;
+    // How much of a PhysBone's immobile carries over to a chain that hangs. VRChat makers set it high to calm what a
+    // VR body does and a game body doesn't: a tracked head jerking every frame and thumbstick walking (Ichigo's hair
+    // 0.54-0.86). Taken whole, it left her hair 14-46% of the body's moves, so turning, running or being spun in the
+    // wardrobe hardly stirred it; the game's own fast turns are already capped by the presets' speed limits (720°/s
+    // for the body, 360°/s felt by the cloth). Half keeps a calm maker's hair calmer than a free one's: Ichigo's back
+    // hair takes 0.57 of the body's moves, near the 0.7 Kazusa's hand-tuned hair swings with.
+    private const float ImmobileShare = .5f;
     private static readonly string[] SkirtWords = { "skirt", "スカート", "frill", "hem", "すそ", "裾" };
     private static readonly string[] SpringWords = { "breast", "bust", "oppai", "胸", "おっぱい", "butt", "hip", "thigh", "belly", "stomach", "jiggle" };
     private static readonly string[] GimmickWords = { "tongue", "舌", "cheek", "nose", "afk" };
@@ -147,7 +173,7 @@ internal static class VrcSway
 
     private static Dictionary<string, string> Settings(VrcPrefab.PhysBone bone, bool ring, bool spring, float length, bool tip)
     {
-        float stiffness = Mathf.Clamp(.05f + .35f * Mathf.Clamp01(bone.Pull) + (bone.Integration == 1 ? .3f * Mathf.Clamp01(bone.Stiffness) : 0f), .02f, .8f);
+        float stiffness = Stiffness(bone, -1f);
         float angle = bone.LimitType == 0 ? 90f : bone.LimitType == 1 ? bone.MaxAngleX : Mathf.Max(bone.MaxAngleX, bone.MaxAngleZ);
         var row = new Dictionary<string, string>
         {
@@ -170,7 +196,8 @@ internal static class VrcSway
             ["friction"] = "0.05",
             ["teleportDistance"] = "2",
         };
-        if (bone.Radius > 0f && length > 0f) row["thickness"] = Text(Mathf.Clamp(bone.Radius / length, 0f, .5f));
+        if (!ring && !spring) Hanging(row, bone, length);
+        else if (bone.Radius > 0f && length > 0f) row["thickness"] = Text(Mathf.Clamp(bone.Radius / length, 0f, .5f));
         if (tip)
         {
             float parent = bone.Root.parent != null ? Vector3.Distance(bone.Root.position, bone.Root.parent.position) : 0f;
@@ -184,6 +211,87 @@ internal static class VrcSway
             row["backstop"] = "0.1";
         }
         return row;
+    }
+
+    // A chain that hangs, as its maker set it down its length. Each number is read at five depths, curve applied, and
+    // written as the row's largest with a curve of shares (ClothPart). Immobile (its share that carries over) becomes
+    // Magica's two inertias: what the far end feels of the body's motion is the world inertia, and how much more of it
+    // the root takes with it is the depth inertia (Magica's grows toward the root as 1 - depth², as VRChat makers draw
+    // immobile falling off toward the end: Mayo's side lock 0.7 at the root, 0.29 at its end). Gravity is held off while
+    // she stands and friction is none (see the class).
+    private static void Hanging(Dictionary<string, string> row, VrcPrefab.PhysBone bone, float length)
+    {
+        var stiff = new float[Samples];
+        var damp = new float[Samples];
+        var limit = new float[Samples];
+        var radius = new float[Samples];
+        var still = new float[Samples];
+        float gravity = 0f;
+        for (int i = 0; i < Samples; i++)
+        {
+            float depth = i / (Samples - 1f);
+            stiff[i] = Stiffness(bone, depth);
+            damp[i] = Damping(Mathf.Clamp01(VrcPrefab.PhysBone.At(bone.Spring, bone.SpringCurve, depth)));
+            limit[i] = Mathf.Clamp(Limit(bone, depth), 5f, 180f);
+            radius[i] = Mathf.Max(0f, VrcPrefab.PhysBone.At(bone.Radius, bone.RadiusCurve, depth));
+            still[i] = Mathf.Clamp01(VrcPrefab.PhysBone.At(bone.Immobile, bone.ImmobileCurve, depth)) * ImmobileShare;
+            gravity += VrcPrefab.PhysBone.At(bone.Gravity, bone.GravityCurve, depth) / Samples;
+        }
+        Down(row, "stiffness", "stiffnessCurve", stiff);
+        Down(row, "damping", "dampingCurve", damp);
+        Down(row, "angleLimit", "angleCurve", limit);
+        float widest = radius.Max();
+        if (widest > 0f && length > 0f)
+        {
+            row["thickness"] = Text(Mathf.Clamp(widest / length, 0f, .5f));
+            row["thicknessCurve"] = Shares(radius);
+        }
+        float root = still[0], end = still[Samples - 1];
+        bool fading = root > end && end < 1f;
+        row["worldInertia"] = Text(1f - (fading ? end : (root + end) * .5f));
+        row["depthInertia"] = Text(fading ? (root - end) / (1f - end) : 0f);
+        row["gravity"] = Text(Mathf.Clamp(gravity * 10f, 0f, 10f));
+        row["gravityFalloff"] = "1";
+        row["friction"] = "0";
+    }
+
+    // Pull (and in VRChat's advanced mode stiffness) as Magica's angle restoration, at a depth; below zero, the values
+    // as set, curves left out.
+    private static float Stiffness(VrcPrefab.PhysBone bone, float depth)
+    {
+        float pull = depth < 0f ? bone.Pull : VrcPrefab.PhysBone.At(bone.Pull, bone.PullCurve, depth);
+        float stiff = depth < 0f ? bone.Stiffness : VrcPrefab.PhysBone.At(bone.Stiffness, bone.StiffnessCurve, depth);
+        return Mathf.Clamp(.05f + .35f * Mathf.Clamp01(pull) + (bone.Integration == 1 ? .3f * Mathf.Clamp01(stiff) : 0f), .02f, .8f);
+    }
+
+    // VRChat's spring (how much a bone wobbles on its way back) as Magica's damping, which takes that share of a bone's
+    // speed every step. VRChat's default, 0.2, lands on the 0.1 of Magica's hair preset, the damping the game's own hair
+    // swings with; the old straight line put it at 0.21, which takes speed twice as fast, and Mayo's hair stopped before
+    // it got going. No wobble at all damps 0.2, full wobble 0.02, the least that still settles.
+    private static float Damping(float spring) =>
+        spring <= .2f ? Mathf.Lerp(.2f, .1f, spring / .2f) : Mathf.Lerp(.1f, .02f, (spring - .2f) / .8f);
+
+    // The angle a bone may turn from its rest at a depth: an angle cone's, a hinge's, or the wider of a polar limit's two.
+    private static float Limit(VrcPrefab.PhysBone bone, float depth) => bone.LimitType switch
+    {
+        0 => 90f,
+        1 or 2 => VrcPrefab.PhysBone.At(bone.MaxAngleX, bone.MaxAngleXCurve, depth),
+        _ => Mathf.Max(VrcPrefab.PhysBone.At(bone.MaxAngleX, bone.MaxAngleXCurve, depth), VrcPrefab.PhysBone.At(bone.MaxAngleZ, bone.MaxAngleZCurve, depth)),
+    };
+
+    // A number read down the chain: its largest, and the curve of shares that gives the rest.
+    private static void Down(Dictionary<string, string> row, string value, string curve, float[] samples)
+    {
+        row[value] = Text(samples.Max());
+        row[curve] = Shares(samples);
+    }
+
+    // "depth:share|…" of the largest, or "1" where it stays the same all the way.
+    private static string Shares(float[] samples)
+    {
+        float top = samples.Max(), least = samples.Min();
+        if (top <= 0f || top - least <= top * .01f) return "1";
+        return string.Join("|", samples.Select((sample, i) => Text(i / (Samples - 1f)) + ":" + Math.Round(sample / top, 2).ToString(CultureInfo.InvariantCulture)));
     }
 
     // Rings meet the legs and the arms, as the game's skirts do, and any skirt chain meets the legs; other parts meet

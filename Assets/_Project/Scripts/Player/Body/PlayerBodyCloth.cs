@@ -109,7 +109,8 @@ public sealed class PlayerBodyCloth : MonoBehaviour
         // This skin's parts first, so that measuring the body can leave everything it wears out.
         var cloth = new HashSet<Transform>();
         var hanging = new HashSet<Transform>();
-        var found = Rows(animator, body.Skin.Id, body.Wears, Part, cloth, hanging);
+        var springs = new HashSet<Transform>();
+        var found = Rows(animator, body.Skin.Id, body.Wears, Part, cloth, hanging, springs);
         var colliders = GetComponent<PlayerBodyClothColliders>();
         bool simulates = !player.IsNetworkDriven;
         SkinSample skin = null;
@@ -124,7 +125,7 @@ public sealed class PlayerBodyCloth : MonoBehaviour
             List<ColliderComponent> touching = null;
             if (simulates)
             {
-                if (part.vrc) measured ??= colliders.Measure(animator, null, () => skin ??= SkinSample.Read(animator), hanging);
+                if (part.vrc) measured ??= colliders.Measure(animator, null, () => skin ??= SkinSample.Read(animator), hanging, springs);
                 touching = Touching(colliders, animator, part, shapes, item.Bones, measured);
                 item.Bones.MeasureRoom(point => colliders.Room(point, touching));
                 item.Cloth = part.Wear(animator.transform, id, roots, touching, item.Bones);
@@ -165,10 +166,13 @@ public sealed class PlayerBodyCloth : MonoBehaviour
     /// The rows of Cloth.csv a body wears, their roots found on it and tips added, in the table's order: this skin's own
     /// first, then an outfit's (a row names a skin, or an outfit item or model, Outfits.csv: an outfit's skirt or coat
     /// tails swing once it is on), each only while a mesh it moves shows. <paramref name="cloth"/> gets every bone they
-    /// move, <paramref name="hanging"/> those that hang free (not a spring's soft lump), for measuring the body without them.
+    /// move, <paramref name="hanging"/> those that hang free (not a spring's soft lump), for measuring the body without them,
+    /// and <paramref name="springs"/> the bones each soft lump hangs from, which the body is measured with as lumps of
+    /// their own (DressedBody).
     /// </summary>
     internal static List<(string Id, ClothPart Part, List<Transform> Roots)> Rows(Animator animator, string skin,
-        Func<string, bool> wears, Func<string, ClothPart> part, HashSet<Transform> cloth, HashSet<Transform> hanging)
+        Func<string, bool> wears, Func<string, ClothPart> part, HashSet<Transform> cloth, HashSet<Transform> hanging,
+        HashSet<Transform> springs)
     {
         var bones = new Dictionary<string, Transform>();
         foreach (var bone in animator.GetComponentsInChildren<Transform>(true)) bones.TryAdd(bone.name, bone);
@@ -187,6 +191,7 @@ public sealed class PlayerBodyCloth : MonoBehaviour
                 var under = root.GetComponentsInChildren<Transform>(true);
                 cloth.UnionWith(under);
                 if (!row.spring) hanging.UnionWith(under);
+                else springs.Add(root);
             }
         }
         return found;
@@ -206,22 +211,33 @@ public sealed class PlayerBodyCloth : MonoBehaviour
         return touching;
     }
 
-    // The body a row's cloth rests against: its shapes, or, for a row BoothImport made from a PhysBone with no colliders,
-    // all of it. VRChat authors leave colliders off many chains (Mayo's side hair, Ichigo's tail and cape, ribbons, an
-    // outfit's jacket tails and belts), and in VRChat those pass through the body; here they went through it too (the
-    // user, 2026-11-12: "옷이나 천이 바디와 상호작용을 안 함. 그냥 뚫고 들어감"). The head and chest and the hips and legs
-    // both, since a chain hung from the chest reaches the hips and long hair the back of the thighs; the shapes are then
-    // fitted to it (PlayerBodyClothColliders.Fit), so it keeps the shape its maker drew. A chain hung from an arm gets
-    // none, as the arm would drag it through the body wherever it goes, and a spring (a chest's or a bottom's own jiggle)
-    // stays inside the body it is part of. A row written by hand with no shapes touches nothing, as it says.
+    // The body a row's cloth rests against. A row written by hand, a ring and a spring: their shapes, as they say (a
+    // spring, a chest's or a bottom's own jiggle, stays inside the body it is part of). A chain BoothImport made from a
+    // PhysBone: all of the body, the head and chest and the hips and legs, besides whatever its maker listed. VRChat keeps
+    // such a chain off the body with few colliders or none (Mayo's long side locks list only her arms and the floor) and
+    // with limit cones turned so that the chain rests on their edge, free to swing out but not in; Magica's cones can't
+    // turn, so here the body itself has to stop it. A chain with no colliders met nothing and passed through the body
+    // (the user, 2026-11-12: "옷이나 천이 바디와 상호작용을 안 함. 그냥 뚫고 들어감"); one that listed only its head's met
+    // nothing below the chest, and Mayo's side locks sank into her ("어쩐지 내려온 옆머리가 가슴 쪽을 뚫더라"). Both, since a
+    // chain hung from the chest reaches the hips and long hair the back of the thighs; the shapes are then fitted to it
+    // (PlayerBodyClothColliders.Fit), so it keeps the shape its maker drew. A chain hung from an arm keeps only what its
+    // maker listed, as the arm would drag it through the body wherever it goes.
     internal static string Touches(ClothPart part, List<Transform> roots, Animator animator, ref HashSet<Transform> armBones)
     {
-        if (!part.vrc || !string.IsNullOrWhiteSpace(part.shapes) || part.spring || roots.Count == 0) return part.shapes ?? "";
+        string own = part.shapes ?? "";
+        if (!part.vrc || part.spring || part.ring || roots.Count == 0) return own;
         armBones ??= ArmTransforms(animator);
         for (var at = roots[0].parent; at != null && at != animator.transform; at = at.parent)
-            if (armBones.Contains(at)) return "";
-        return "head|legs";
+            if (armBones.Contains(at)) return own;
+        var all = new List<string>(WholeBody);
+        foreach (string shape in own.Split('|'))
+            if (shape.Trim().Length > 0 && !all.Exists(name => string.Equals(name, shape.Trim(), StringComparison.OrdinalIgnoreCase)))
+                all.Add(shape.Trim());
+        return string.Join("|", all);
     }
+
+    // What a chain BoothImport made meets wherever it hangs (Touches).
+    private static readonly string[] WholeBody = { "head", "legs" };
 
     // Every humanoid bone of both arms, upper arms down to the fingers.
     private static HashSet<Transform> ArmTransforms(Animator animator)

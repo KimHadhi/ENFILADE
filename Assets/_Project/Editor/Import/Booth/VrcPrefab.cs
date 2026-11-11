@@ -12,7 +12,9 @@ using Object = UnityEngine.Object;
 /// the file still holds every one. PhysBones (what sways and how) and their colliders are read here for VrcSway to turn
 /// into this game's sway; the references in them are resolved against the prefab's loaded objects. An object of a model
 /// nested in the prefab (an FBX instance, as most BOOTH outfits are) is written in the file under its source's id XOR
-/// its instance's id, which is how it is found here too.
+/// its instance's id, which is how it is found here too. A PhysBone its maker switched off is skipped, as VRChat runs
+/// none: Mayo's right breast carries a second, older one beside the one in use, and whichever the file listed first
+/// used to set the sway.
 /// </summary>
 internal sealed class VrcPrefab
 {
@@ -30,7 +32,15 @@ internal sealed class VrcPrefab
         public Vector3 Endpoint;
         public int Integration, LimitType;
         public float Pull, Spring, Stiffness, Gravity, GravityFalloff, Immobile, Radius, MaxAngleX, MaxAngleZ;
+        /// <summary>
+        /// How each value runs down the chain, root (0) to far end (1), as a share of it: VRChat's curve beside each
+        /// value. Null where the maker left it the same all the way.
+        /// </summary>
+        public AnimationCurve PullCurve, SpringCurve, StiffnessCurve, GravityCurve, ImmobileCurve, RadiusCurve, MaxAngleXCurve, MaxAngleZCurve;
         public bool Collides;
+
+        /// <summary>A value at a depth of the chain (0 root, 1 far end), its curve applied.</summary>
+        public static float At(float value, AnimationCurve curve, float depth) => curve != null ? value * curve.Evaluate(depth) : value;
     }
 
     private static readonly Regex Header = new Regex(@"^--- !u!(-?\d+) &(-?\d+)[^\r\n]*", RegexOptions.Multiline);
@@ -72,6 +82,7 @@ internal sealed class VrcPrefab
 
     private void ReadPhysBone(string document)
     {
+        if (Regex.IsMatch(document, @"^  m_Enabled: 0\b", RegexOptions.Multiline)) return;
         var owner = Find<GameObject>(Reference(document, "m_GameObject"));
         var bone = new PhysBone
         {
@@ -88,6 +99,14 @@ internal sealed class VrcPrefab
             Radius = Number(document, "radius"),
             MaxAngleX = Number(document, "maxAngleX"),
             MaxAngleZ = Number(document, "maxAngleZ"),
+            PullCurve = Curve(document, "pullCurve"),
+            SpringCurve = Curve(document, "springCurve"),
+            StiffnessCurve = Curve(document, "stiffnessCurve"),
+            GravityCurve = Curve(document, "gravityCurve"),
+            ImmobileCurve = Curve(document, "immobileCurve"),
+            RadiusCurve = Curve(document, "radiusCurve"),
+            MaxAngleXCurve = Curve(document, "maxAngleXCurve"),
+            MaxAngleZCurve = Curve(document, "maxAngleZCurve"),
             Collides = Number(document, "allowCollision") != 0f,
         };
         if (bone.Root == null) return;
@@ -140,6 +159,23 @@ internal sealed class VrcPrefab
         foreach (Match item in Regex.Matches(list.Groups[1].Value, @"fileID: (-?\d+)"))
             if (long.TryParse(item.Groups[1].Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out long id) && id != 0) found.Add(id);
         return found;
+    }
+
+    // An AnimationCurve field as Unity writes it: its keys, tangents and weights, so it evaluates exactly as VRChat's
+    // own. Null when it has no keys (the maker drew none).
+    private static AnimationCurve Curve(string document, string field)
+    {
+        var block = Regex.Match(document, @"^  " + field + @":[ \t]*\r?\n    serializedVersion: \d+\r?\n    m_Curve:(.*?)\r?\n    m_PreInfinity",
+            RegexOptions.Multiline | RegexOptions.Singleline);
+        if (!block.Success) return null;
+        var keys = new List<Keyframe>();
+        foreach (Match key in Regex.Matches(block.Groups[1].Value,
+                     @"time: (\S+)\s+value: (\S+)\s+inSlope: (\S+)\s+outSlope: (\S+)\s+tangentMode: \S+\s+weightedMode: (\S+)\s+inWeight: (\S+)\s+outWeight: (\S+)"))
+        {
+            float Part(int group) => float.TryParse(key.Groups[group].Value, NumberStyles.Float, CultureInfo.InvariantCulture, out float v) ? v : 0f;
+            keys.Add(new Keyframe(Part(1), Part(2), Part(3), Part(4), Part(6), Part(7)) { weightedMode = (WeightedMode)(int)Part(5) });
+        }
+        return keys.Count > 0 ? new AnimationCurve(keys.ToArray()) : null;
     }
 
     private static Vector3 Vector(string document, string field)

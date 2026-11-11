@@ -123,9 +123,12 @@ public sealed class PlayerBodyClothColliders : MonoBehaviour
         return found;
     }
 
-    /// <summary>The body's real shapes, measured from its meshes (DressedBody) with this body's numbers.</summary>
-    internal DressedBody Measure(Animator animator, string look, Func<SkinSample> read, HashSet<Transform> hanging) =>
-        DressedBody.Measure(animator, look, read, hanging, bodySurface, bodySize);
+    /// <summary>
+    /// The body's real shapes, measured from its meshes (DressedBody) with this body's numbers; each soft lump on the
+    /// chest (<paramref name="springs"/>: a bust) measured as a ball of its own.
+    /// </summary>
+    internal DressedBody Measure(Animator animator, string look, Func<SkinSample> read, HashSet<Transform> hanging, HashSet<Transform> springs) =>
+        DressedBody.Measure(animator, look, read, hanging, springs, bodySurface, bodySize);
 
     /// <summary>
     /// Gives this component ClothBody.csv's numbers where it has no player to bind them (the menu's preview), its own
@@ -273,6 +276,12 @@ public sealed class PlayerBodyClothColliders : MonoBehaviour
             fromBones[real] = set[i];
             set[i] = real;
         }
+        // The chest's soft lumps (a bust) as balls where they rest on the chest (DressedBody), so what hangs over them
+        // rests on them. The chest's rod is measured without them: a rod can't be round the ribs and out to the front of
+        // a bust both, and on Mayo it ran some 4 cm inside her bust, as far as her side locks sank.
+        if (string.Equals(shape, Head, StringComparison.OrdinalIgnoreCase))
+            for (int i = 0; i < measured.LumpCount; i++)
+                if (measured.Lump(i, out var bone, out var centre, out float radius)) Ball(bone, centre, radius, set);
         return made[shape + Measured] = set;
     }
 
