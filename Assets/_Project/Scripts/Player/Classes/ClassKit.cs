@@ -36,6 +36,8 @@ using UnityEngine.InputSystem;
 /// - Support (stage 4): its supply bag, resupplying a friend with F and its barricades are SupportKit's; the class key
 ///   puts a barricade up.
 /// The other classes' abilities come in later stages (Classes.csv ready 0). Numbers: Tables/ClassAbilities.
+/// The class cards with code behind them (Docs/ClassCards.md) are ClassCards', added here; a Point's Gunslinger card and
+/// a Ghost's White Tiger guard are read here (DamageFactor, OnHurt).
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class ClassKit : MonoBehaviour
@@ -92,6 +94,11 @@ public sealed class ClassKit : MonoBehaviour
     private bool pingMade;
     private DetenteKit detente;
     private SupportKit support;
+    // The class cards with code behind them (ClassCards); and, for a Point's Gunslinger card, the gun slot last seen in
+    // hand and when it was drawn.
+    private ClassCards cards;
+    private int drawnSlot = -2;
+    private float drawnAt = -99f;
 
     public PlayerMovement Movement => movement;
     public WeaponData HeldGun => weapon != null ? weapon.EquippedData : null;
@@ -161,6 +168,20 @@ public sealed class ClassKit : MonoBehaviour
     public float ReturnShare => returnUntil > Time.time ? Mathf.Clamp01((returnUntil - Time.time) / returnTotal) : 0f;
     public float SinceBounty => Time.time - bountyAt;
 
+    /// <summary>
+    /// A Point's Gunslinger card (건슬링어): how much of the moment after a gun is drawn, while it hits harder, is left,
+    /// 0 to 1 (0: none, or not a Point with the card).
+    /// </summary>
+    public float GunslingerShare
+    {
+        get
+        {
+            if (!PlayerClass.Is(PlayerClass.Point) || !PlayerPerks.Has(PlayerPerks.PointGunslinger)) return 0f;
+            float seconds = Mathf.Max(.1f, PlayerClass.Ability(PointRow, "gunslingerSeconds", 2.5f));
+            return Mathf.Clamp01(1f - (Time.time - drawnAt) / seconds);
+        }
+    }
+
     /// <summary>The factor this player's class puts on their shots now (adrenaline, a CHARGE, Head Hunter, Deadeye).</summary>
     public float DamageFactor
     {
@@ -182,6 +203,8 @@ public sealed class ClassKit : MonoBehaviour
                 // A Desperado round, likewise read before the shot spends it.
                 if (DesperadoLoaded) factor *= 1f + PlayerClass.Ability(HoundRow, "desperadoDamage", 100f) / 100f;
             }
+            // A Point's Gunslinger card: the gun just drawn hits harder a moment.
+            if (GunslingerShare > 0f) factor *= 1f + PlayerPerks.Total(PlayerPerks.PointGunslinger) / 100f;
             return factor;
         }
     }
@@ -230,7 +253,15 @@ public sealed class ClassKit : MonoBehaviour
         if (detente == null && (detente = GetComponent<DetenteKit>()) == null) detente = gameObject.AddComponent<DetenteKit>();
         // A Support's bag, resupply and barricades.
         if (support == null && (support = GetComponent<SupportKit>()) == null) support = gameObject.AddComponent<SupportKit>();
+        // The class cards with code behind them (Docs/ClassCards.md).
+        if (cards == null && (cards = GetComponent<ClassCards>()) == null) cards = gameObject.AddComponent<ClassCards>();
         if (!kitGiven) TryGiveKit();
+        // A gun drawn: a Point's Gunslinger card counts from now.
+        if (slots != null && slots.SelectedSlot != drawnSlot)
+        {
+            drawnSlot = slots.SelectedSlot;
+            drawnAt = Time.time;
+        }
         Ebb();
         if (PlayerClass.Is(PlayerClass.Point)) ReloadAside();
         // A Knight fights on pinned under a runner with its fists and shoves, and kicks it off with the shove key every
@@ -442,6 +473,8 @@ public sealed class ClassKit : MonoBehaviour
     {
         if (result != DamageResult.Damaged || hunter <= 0 || receiver == null || !PlayerClass.Is(PlayerClass.Ghost)) return;
         if (receiver.LastShieldTaken + receiver.LastHealthTaken <= 0f) return;
+        // The White Tiger card holds: no hurt takes the stacks (ClassCards).
+        if (cards != null && cards.TigerGuards) return;
         hunter = 0;
         hunterChange = -2;
         hunterChangedAt = Time.time;

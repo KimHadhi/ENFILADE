@@ -15,6 +15,9 @@ using UnityEngine.UI;
 /// Back's stacks on the draining bar; for a Détente its syringe as a pip a dose, red, "[휠] 주사" while a dose is in it,
 /// how many Resurrections are left beside them, and on the bar a treatment or a Resurrection under way, else Golden
 /// Hour. Classes whose abilities come later show their name only.
+/// The class cards (Docs/ClassCards.md): a thin pink line over the plate runs out while Momentum (기세) lasts and fills
+/// again with each hit; a card state under way takes the bar along the foot (ClassCards: a Ghost's White Tiger in
+/// white, its Head Hunter pips white with it; a Point's Gunslinger after a gun is drawn).
 /// Local player only (PlayerMovement). HUD look: black, white and pink.
 /// </summary>
 [DisallowMultipleComponent]
@@ -25,8 +28,8 @@ public sealed class ClassHUD : MonoBehaviour
 
     private PlayerMovement movement;
     private ClassKit kit;
-    private RectTransform plate, pipRow, chargeBar, slotRow;
-    private Image chargeFill;
+    private RectTransform plate, pipRow, chargeBar, slotRow, momentumLine;
+    private Image chargeFill, momentumFill;
     private readonly Image[] pips = new Image[MostPips];
     private readonly Image[] slotLines = new Image[2], slotBacks = new Image[2];
     private TextMeshProUGUI title, note;
@@ -54,6 +57,10 @@ public sealed class ClassHUD : MonoBehaviour
         bool dead = movement.IsDead;
         plate.gameObject.SetActive(!dead);
         if (dead || kit == null) return;
+        // Momentum (기세, a perk card): its time over the plate.
+        float momentum = PlayerPerks.MomentumShare;
+        momentumLine.gameObject.SetActive(momentum > 0f);
+        if (momentum > 0f) momentumFill.rectTransform.anchorMax = new Vector2(momentum, 1f);
         if (PlayerClass.Is(PlayerClass.Assault)) Adrenaline();
         else if (PlayerClass.Is(PlayerClass.Point)) Guns();
         else if (PlayerClass.Is(PlayerClass.Ghost)) Hunter();
@@ -61,8 +68,19 @@ public sealed class ClassHUD : MonoBehaviour
         else if (PlayerClass.Is(PlayerClass.Schiesshund)) Hound();
         else if (PlayerClass.Is(PlayerClass.Detente) && Detente()) return;
         else if (PlayerClass.Is(PlayerClass.Support)) Support();
-        // The bar along the foot: a Knight's own taunt, a Schießhund's Return Back, or a friend's CHARGE, which reaches
-        // any class.
+        // The bar along the foot: a class card's state under way (ClassCards) first, else a Knight's own taunt, a
+        // Schießhund's Return Back, or a friend's CHARGE, which reaches any class.
+        var cards = ClassCards.Local;
+        float card = cards != null ? cards.BarShare : 0f;
+        if (card > 0f)
+        {
+            chargeBar.gameObject.SetActive(true);
+            chargeFill.rectTransform.anchorMax = new Vector2(card, 1f);
+            chargeFill.color = cards.BarColor;
+            string cardWord = cards.BarWord;
+            if (barWord.text != cardWord) barWord.text = cardWord;
+            return;
+        }
         float taunt = kit.TauntShare, back = kit.ReturnShare;
         float share = taunt > 0f ? taunt : back > 0f ? back : kit.ChargeShare;
         chargeBar.gameObject.SetActive(share > 0f);
@@ -124,9 +142,11 @@ public sealed class ClassHUD : MonoBehaviour
         Pips(kit.HunterMax);
         int count = shownPips, stacks = Mathf.Min(kit.Hunter, count), change = kit.HunterChange;
         float flash = Mathf.Clamp01(1f - kit.SinceHunterChange / .3f);
+        // The White Tiger card holding: the stacks shine white, safe from hurt.
+        bool tiger = ClassCards.Local != null && ClassCards.Local.TigerGuards;
         for (int i = 0; i < count; i++)
         {
-            Color color = i < stacks ? KitStyle.Accent : KitStyle.With(KitStyle.Ice, .14f);
+            Color color = i < stacks ? (tiger ? KitStyle.Ice : KitStyle.Accent) : KitStyle.With(KitStyle.Ice, .14f);
             bool changed = change == -2 || (change == 1 && i == stacks - 1) || (change == -1 && i == stacks);
             pips[i].color = flash > 0f && changed ? Color.Lerp(color, KitStyle.Ice, flash) : color;
         }
@@ -334,6 +354,17 @@ public sealed class ClassHUD : MonoBehaviour
         deadeye = KitStyle.Label(mark, Texts.Get("class.hud.deadeye"), 15f, TextAlignmentOptions.MidlineRight, KitStyle.Accent);
         deadeye.characterSpacing = 3f;
         deadeye.gameObject.SetActive(false);
+
+        // Momentum's time (a perk card), a thin line running out over the plate.
+        momentumLine = KitStyle.TopLeft("Momentum", plate, new Vector2(0f, -7f), new Vector2(Width, 3f));
+        KitSkew.On(KitStyle.Fill(momentumLine, KitStyle.With(KitStyle.Ice, .1f)), 2f);
+        var momentumBar = KitStyle.Stretch("Fill", momentumLine);
+        momentumFill = momentumBar.gameObject.AddComponent<Image>();
+        momentumFill.color = KitStyle.Accent;
+        momentumFill.raycastTarget = false;
+        momentumBar.anchorMin = Vector2.zero;
+        momentumBar.anchorMax = Vector2.one;
+        momentumLine.gameObject.SetActive(false);
 
         // The CHARGE's time, draining along the plate's foot.
         chargeBar = KitStyle.TopLeft("Charge", plate, new Vector2(0f, Height + 4f), new Vector2(Width, 6f));

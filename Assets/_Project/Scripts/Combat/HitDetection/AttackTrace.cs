@@ -75,6 +75,8 @@ public static class AttackTrace
         direction.Normalize();
         Vector3 shooter = attack.Origin ?? origin;
         hurt.Clear();
+        // A Ghost's over-penetration card (과관통) carries this PC's own bullets further through bodies and walls.
+        if (hurts) penetration *= PlayerPerks.PierceFactor(attack);
         var first = Strike(attack, origin, direction, distance, layers, headshotMultiplier, hurts ? 1f : 0f, shooter, hurt, false);
         if (hurts) StepDodgeTrail.RecognizeAttackSegment(attack, origin, first.End);
         if (!first.HasHit || penetration <= 0f) return first;

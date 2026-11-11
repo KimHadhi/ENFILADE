@@ -315,6 +315,8 @@ class.hud.taunt_wait,도발 {0}초,,클래스 HUD: 나이트 도발을 다시 �
 class.hud.deadeye,DEADEYE,,클래스 HUD: 고스트 데드아이(장전 뒤 첫 발 강화)가 걸려 있을 때 밝아지는 글자
 class.hud.desperado,DESPERADO,,클래스 HUD: 시순트가 데스페라도(R08)를 들었고 탄이 있을 때 밝아지는 글자
 class.hud.return,리턴 백 ×{0},,클래스 HUD: 시순트 리턴 백이 걸려 있을 때 시간 막대 글자. {0}=스택
+class.hud.tiger,화이트 타이거,,클래스 HUD > 고스트 화이트 타이거 카드가 헤드 헌터를 지켜 주는 동안 아래 막대 글자
+class.hud.gunslinger,건슬링어,,클래스 HUD > 포인트 건슬링어 카드: 총을 바꿔 든 뒤 세지는 동안 아래 막대 글자
 key.mouse.middle,휠,,키 이름: 마우스 휠 클릭
 key.mouse.left,좌클릭,,키 이름: 마우스 왼쪽 버튼
 key.mouse.right,우클릭,,키 이름: 마우스 오른쪽 버튼
