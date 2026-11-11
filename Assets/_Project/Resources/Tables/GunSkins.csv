@@ -1,0 +1,15 @@
+﻿id,kind,gun,pattern,scale,colors,material,replaces,#설명
+#설명,Finish 단색 칠 · Camo 위장 무늬 · Pack 팩의 다른 재질,이 총만(WeaponData 이름). 비우면 모든 총,Camo의 무늬: Blobs 얼룩 · Digital 사각 픽셀 · Tiger 줄무늬,무늬 크기(클수록 잘다),색(;로 구분). Finish는 첫 색으로 칠하고 Camo는 차례로 얼룩이 된다(Tiger는 마지막 두 색이 줄무늬),Pack의 재질(Resources 안 경로),Pack이 바꾸는 총 재질 이름,무기 스킨(메인 메뉴 무기 탭, GunSkins). 이름은 Texts.csv skin.<id>. 유리·조준선·탄·탄피는 칠하지 않는다. 2026-11-11
+finish.black,Finish,,,,#2A2C30,,,검정 칠
+finish.olive,Finish,,,,#5F6B3C,,,국방색 칠
+finish.tan,Finish,,,,#B59C6E,,,사막색 칠
+finish.gray,Finish,,,,#7D848B,,,회색 칠
+finish.white,Finish,,,,#E6EAEE,,,흰색 칠
+finish.pink,Finish,,,,#FF4F78,,,ENFILADE 분홍(HUD 강조색) 칠
+camo.woodland,Camo,,Blobs,3,#2F3A22;#55653A;#7A5C3A;#1C1D18,,,숲 얼룩
+camo.desert,Camo,,Blobs,2.5,#D2BE93;#B0956A;#8A7352;#E3D6B5,,,사막 얼룩
+camo.urban,Camo,,Blobs,3,#BEC3C8;#858B92;#50555B;#24272B,,,도시 얼룩
+camo.digital,Camo,,Digital,3,#5A6650;#7D8A6A;#3A4236;#A2A98C,,,디지털 픽셀
+camo.tiger,Camo,,Tiger,4,#C68A3A;#D9B27A;#3A2E25;#141210,,,호랑이 줄무늬
+camo.enfilade,Camo,,Blobs,3.5,#FF4F78;#0E0E11;#F5F0F1;#5A1A2E,,,분홍·검정·흰 얼룩(메뉴의 색)
+pack.chigurh,Pack,Herrington1187,,,#3B3A37,Combat/GunSkins/M_Herrington_11-87_Chigurh,M_Herrington_11-87_Police,KINEMATION Tactical Shooter Pack이 Herrington 11-87에 준 다른 재질(Chigurh). 색은 칩 표시용

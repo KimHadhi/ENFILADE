@@ -187,10 +187,22 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
             if (kicks != null) kicks.Kicked += OnKicked;
             execution.Started += OnExecutionStarted;
             receiver.HitResolved += OnHit;
+            gunSkins.Value = GunSkins.LookText();
             return;
         }
         stance.OnValueChanged += OnStanceChanged;
         Show(stance.Value);
+        gunSkins.OnValueChanged += OnGunSkins;
+        OnGunSkins(default, gunSkins.Value);
+    }
+
+    // The skins their guns wear, picked on their title screen (GunSkins): their copy's guns wear them too.
+    private readonly NetworkVariable<Unity.Collections.FixedString512Bytes> gunSkins = new NetworkVariable<Unity.Collections.FixedString512Bytes>(default,
+        NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+
+    private void OnGunSkins(Unity.Collections.FixedString512Bytes previous, Unity.Collections.FixedString512Bytes current)
+    {
+        if (weapon != null && weapon.TryGetComponent(out FPSBody gunBody)) gunBody.WearSkins(current.ToString());
     }
 
     public override void OnNetworkDespawn()
@@ -208,6 +220,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
         if (support != null) { support.Built -= OnBuilt; support.TookDown -= OnTookDown; }
         if (receiver != null) receiver.HitResolved -= OnHit;
         stance.OnValueChanged -= OnStanceChanged;
+        gunSkins.OnValueChanged -= OnGunSkins;
     }
 
     private void LateUpdate()

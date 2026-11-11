@@ -49,6 +49,9 @@ public sealed class MainMenuScreen : MonoBehaviour
     private KitReveal rightReveal;
     private MainMenuRecords records;
     private MainMenuClasses classes;
+    // The guns' skins and kill counts (MainMenuWeapons), and its tab.
+    private MainMenuWeapons weapons;
+    private int weaponsTab = -1;
     private CreateRoomView createRoom;
     private ServerBrowserView browser;
     private ProfileView profile;
@@ -127,7 +130,8 @@ public sealed class MainMenuScreen : MonoBehaviour
         LaunchByKey();
     }
 
-    private bool AnyWindowOpen() => createRoom != null && (createRoom.IsOpen || browser.IsOpen || profile.IsOpen || records.IsOpen || wardrobe.IsOpen);
+    private bool AnyWindowOpen() => createRoom != null && (createRoom.IsOpen || browser.IsOpen || profile.IsOpen || records.IsOpen || wardrobe.IsOpen
+        || (weapons != null && weapons.IsOpen));
 
     // Esc closes the window or page that is up (back to the lobby) before the Esc menu would open; on the records, a
     // chapter's page goes back to the totals first.
@@ -140,7 +144,7 @@ public sealed class MainMenuScreen : MonoBehaviour
         else if (profile.IsOpen) profile.Close();
         else if (records.ShowsChapter) records.ShowTotals();
         else if (wardrobe.ShowsSlot) wardrobe.ShowSlots();
-        else if (records.IsOpen || wardrobe.IsOpen) ShowPlay();
+        else if (records.IsOpen || wardrobe.IsOpen || (weapons != null && weapons.IsOpen)) ShowPlay();
         else return;
         escapeFrame = Time.frameCount;
     }
@@ -210,6 +214,8 @@ public sealed class MainMenuScreen : MonoBehaviour
         // The classes (stage 7): which one this player plays from the next run.
         classesTab = tabs.Count;
         tabs.Add((Texts.Get("menu.tab.classes"), OpenClasses));
+        weaponsTab = tabs.Count;
+        tabs.Add((Texts.Get("menu.tab.weapons"), OpenWeapons));
         recordsTab = tabs.Count;
         tabs.Add((Texts.Get("menu.tab.records"), OpenRecords));
         // Settings is a gear beside quit at the top right, not a tab.
@@ -241,6 +247,7 @@ public sealed class MainMenuScreen : MonoBehaviour
         rightReveal.Card(launch.Root, launch.Lid, .2f);
         records = MainMenuRecords.Make(canvas, Edge, MainMenuTopBar.Height, MainMenuTicker.Height);
         classes = MainMenuClasses.Make(canvas, Edge, MainMenuTopBar.Height, MainMenuTicker.Height);
+        weapons = MainMenuWeapons.Make(canvas, Edge, MainMenuTopBar.Height, MainMenuTicker.Height);
 
         createRoom = new CreateRoomView(canvas, StartHost);
         browser = new ServerBrowserView(canvas);
@@ -327,6 +334,7 @@ public sealed class MainMenuScreen : MonoBehaviour
         if (characterTab < 0) return;
         CloseRecords();
         CloseClasses();
+        CloseWeapons();
         topBar.SetActive(characterTab);
         if (wardrobe.IsOpen) return;
         wardrobe.Open();
@@ -353,6 +361,7 @@ public sealed class MainMenuScreen : MonoBehaviour
         CloseWardrobe();
         CloseRecords();
         CloseClasses();
+        CloseWeapons();
         topBar.SetActive(0);
     }
 
@@ -361,6 +370,7 @@ public sealed class MainMenuScreen : MonoBehaviour
     {
         CloseWardrobe();
         CloseClasses();
+        CloseWeapons();
         topBar.SetActive(recordsTab);
         if (records.IsOpen) return;
         records.Open();
@@ -373,10 +383,36 @@ public sealed class MainMenuScreen : MonoBehaviour
     {
         CloseWardrobe();
         CloseRecords();
+        CloseWeapons();
         topBar.SetActive(classesTab);
         classes.Open();
         modes.Root.gameObject.SetActive(false);
         right.gameObject.SetActive(false);
+    }
+
+    // The guns' skins and kill counts take the lobby's place as the classes do.
+    private void OpenWeapons()
+    {
+        CloseWardrobe();
+        CloseRecords();
+        CloseClasses();
+        topBar.SetActive(weaponsTab);
+        if (weapons.IsOpen) return;
+        weapons.Open();
+        modes.Root.gameObject.SetActive(false);
+        right.gameObject.SetActive(false);
+    }
+
+    private void CloseWeapons()
+    {
+        if (weapons == null || !weapons.IsOpen) return;
+        weapons.Close();
+        modes.Root.gameObject.SetActive(true);
+        modes.Reveal.Open();
+        modes.PointRail();
+        right.gameObject.SetActive(true);
+        rightReveal.Open();
+        SayWhatLaunches();
     }
 
     private void CloseClasses()
@@ -421,7 +457,7 @@ public sealed class MainMenuScreen : MonoBehaviour
     {
         // From the character screen or the records "출격" goes back to the lobby first: the room's window opened behind the
         // character screen (friend feedback C12).
-        if (wardrobe.IsOpen || records.IsOpen) ShowPlay();
+        if (wardrobe.IsOpen || records.IsOpen || weapons.IsOpen) ShowPlay();
         switch (mode)
         {
             case MainMenuModes.Mode.Host: OpenCreateRoom(); break;

@@ -502,6 +502,31 @@ gunrank.13,지옥에서 온,Hell-Sent,총 등급 13번 이름(처치 수 문턱�
 gunrank.14,종말의,Apocalyptic,총 등급 14번 이름(처치 수 문턱은 KillCounter.csv Ranks.kills)
 gunrank.15,신화가 된,Mythic,총 등급 15번 이름(처치 수 문턱은 KillCounter.csv Ranks.kills)
 gunrank.16,세상을 끝낸,World-Ending,총 등급 16번 이름(처치 수 문턱은 KillCounter.csv Ranks.kills)
+#--- 메인 메뉴 무기 탭 ---,,,
+menu.tab.weapons,무기,Weapons,메인 메뉴 위 탭 이름
+weapons.title,무기,Weapons,무기 페이지 제목
+weapons.where,총을 고르고 스킨을 입힌다 · 고르면 바로 저장되고 방에서는 친구에게도 보인다 · 가운데 총은 끌어서 돌린다,Pick a gun and dress it · saved at once and seen by friends in a room · drag the gun to turn it,무기 페이지 제목 아래 안내
+weapons.kills,처치 {0:N0} · 헤드샷 {1:N0},{0:N0} kills · {1:N0} headshots,무기 페이지 오른쪽 등급 아래. {0}=처치 {1}=헤드샷 처치
+weapons.next,다음 등급 「{0}」까지 처치 {1:N0},{1:N0} kills to 「{0}」,무기 페이지 오른쪽 진행 막대 아래. {0}=다음 등급 이름 {1}=남은 처치
+weapons.top,가장 높은 등급,Top rank,무기 페이지 오른쪽: 마지막 등급에 오른 총
+weapons.group.default,기본,Stock,무기 페이지 스킨 묶음 이름: 총 본래 모습
+weapons.group.finish,단색 칠,Finishes,무기 페이지 스킨 묶음 이름
+weapons.group.camo,위장 무늬,Camouflage,무기 페이지 스킨 묶음 이름
+weapons.group.pack,팩 재질,Pack finishes,무기 페이지 스킨 묶음 이름: KINEMATION 팩이 그 총에 준 다른 재질
+skin.default,본래 모습,Stock,스킨 이름(총이 원래 생긴 대로)
+skin.finish.black,검정,Black,스킨 이름
+skin.finish.olive,국방색,Olive,스킨 이름
+skin.finish.tan,사막색,Tan,스킨 이름
+skin.finish.gray,회색,Gray,스킨 이름
+skin.finish.white,흰색,White,스킨 이름
+skin.finish.pink,분홍,Pink,스킨 이름
+skin.camo.woodland,숲,Woodland,스킨 이름
+skin.camo.desert,사막,Desert,스킨 이름
+skin.camo.urban,도시,Urban,스킨 이름
+skin.camo.digital,디지털,Digital,스킨 이름
+skin.camo.tiger,호랑이,Tiger,스킨 이름
+skin.camo.enfilade,앙필라드,Enfilade,스킨 이름(메뉴의 분홍·검정·흰색)
+skin.pack.chigurh,시거,Chigurh,스킨 이름(Herrington 11-87만: 팩의 다른 재질)
 #--- 등급·실드 ---,,,
 rank.up,등급 상승,,장 끝 결과: 계급장 아래 분홍 띠
 rank.prestige,프레스티지,,장 끝 결과: 프레스티지일 때 분홍 띠

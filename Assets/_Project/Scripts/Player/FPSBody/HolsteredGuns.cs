@@ -159,45 +159,57 @@ public sealed class HolsteredGuns : MonoBehaviour, ITableBound
             holder = new GameObject("Worn Guns").transform;
             holder.SetParent(movement != null ? movement.transform : transform, false);
         }
-        var map = new Dictionary<Transform, Transform>();
-        var root = Mirror(gun.Source.transform, null, map);
-        root.SetActive(true);
-        var renderers = new List<Renderer>();
-        foreach (var filter in gun.Source.GetComponentsInChildren<MeshFilter>(true))
-        {
-            var source = filter.GetComponent<MeshRenderer>();
-            if (source == null || filter.sharedMesh == null || !map.TryGetValue(filter.transform, out var at)) continue;
-            at.gameObject.AddComponent<MeshFilter>().sharedMesh = filter.sharedMesh;
-            var made = at.gameObject.AddComponent<MeshRenderer>();
-            made.sharedMaterials = source.sharedMaterials;
-            made.enabled = source.enabled;
-            renderers.Add(made);
-        }
-        foreach (var skin in gun.Source.GetComponentsInChildren<SkinnedMeshRenderer>(true))
-        {
-            if (skin.sharedMesh == null || !map.TryGetValue(skin.transform, out var at)) continue;
-            var made = at.gameObject.AddComponent<SkinnedMeshRenderer>();
-            made.sharedMesh = skin.sharedMesh;
-            made.sharedMaterials = skin.sharedMaterials;
-            var bones = skin.bones;
-            var mapped = new Transform[bones.Length];
-            for (int i = 0; i < bones.Length; i++) mapped[i] = bones[i] != null && map.TryGetValue(bones[i], out var bone) ? bone : null;
-            made.bones = mapped;
-            made.rootBone = skin.rootBone != null && map.TryGetValue(skin.rootBone, out var top) ? top : null;
-            made.localBounds = skin.localBounds;
-            made.updateWhenOffscreen = true;
-            made.enabled = skin.enabled;
-            for (int i = 0; i < skin.sharedMesh.blendShapeCount; i++) made.SetBlendShapeWeight(i, skin.GetBlendShapeWeight(i));
-            renderers.Add(made);
-        }
+        var root = CopyLook(gun.Source.transform, out var renderers, out var map);
         gun.Copy = root;
-        gun.Renderers = renderers.ToArray();
+        gun.Renderers = renderers;
         int layer = BodyLayer();
         foreach (var part in root.GetComponentsInChildren<Transform>(true)) part.gameObject.layer = layer;
         Measure(gun, map);
         root.transform.SetParent(holder, false);
         gun.Shown = true;
         Show(gun, false);
+    }
+
+    /// <summary>
+    /// A copy of a gun's look: its transforms (each with its own pose, size and on/off) and its mesh and skinned
+    /// renderers, with no scripts, animators, lights, colliders or cameras. Made at the scene's root, switched on; the
+    /// title screen's 무기 page shows one too (MainMenuWeapons).
+    /// </summary>
+    internal static GameObject CopyLook(Transform source, out Renderer[] renderers, out Dictionary<Transform, Transform> map)
+    {
+        map = new Dictionary<Transform, Transform>();
+        var root = Mirror(source, null, map);
+        root.SetActive(true);
+        var made = new List<Renderer>();
+        foreach (var filter in source.GetComponentsInChildren<MeshFilter>(true))
+        {
+            var mesh = filter.GetComponent<MeshRenderer>();
+            if (mesh == null || filter.sharedMesh == null || filter.GetComponent<TMPro.TMP_Text>() != null || !map.TryGetValue(filter.transform, out var at)) continue;
+            at.gameObject.AddComponent<MeshFilter>().sharedMesh = filter.sharedMesh;
+            var copy = at.gameObject.AddComponent<MeshRenderer>();
+            copy.sharedMaterials = mesh.sharedMaterials;
+            copy.enabled = mesh.enabled;
+            made.Add(copy);
+        }
+        foreach (var skin in source.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+        {
+            if (skin.sharedMesh == null || !map.TryGetValue(skin.transform, out var at)) continue;
+            var copy = at.gameObject.AddComponent<SkinnedMeshRenderer>();
+            copy.sharedMesh = skin.sharedMesh;
+            copy.sharedMaterials = skin.sharedMaterials;
+            var bones = skin.bones;
+            var mapped = new Transform[bones.Length];
+            for (int i = 0; i < bones.Length; i++) mapped[i] = bones[i] != null && map.TryGetValue(bones[i], out var bone) ? bone : null;
+            copy.bones = mapped;
+            copy.rootBone = skin.rootBone != null && map.TryGetValue(skin.rootBone, out var top) ? top : null;
+            copy.localBounds = skin.localBounds;
+            copy.updateWhenOffscreen = true;
+            copy.enabled = skin.enabled;
+            for (int i = 0; i < skin.sharedMesh.blendShapeCount; i++) copy.SetBlendShapeWeight(i, skin.GetBlendShapeWeight(i));
+            made.Add(copy);
+        }
+        renderers = made.ToArray();
+        return root;
     }
 
     private static GameObject Mirror(Transform source, Transform parent, Dictionary<Transform, Transform> map)

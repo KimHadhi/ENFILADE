@@ -20,6 +20,8 @@ public static class GunSetups
         public string gun;
         public int sight = -1, muzzle = -1, under = -1, grip = -1, mode = -1;
         public bool light;
+        /// <summary>The skin picked on the title screen's 무기 page (GunSkins); empty for the gun's own look.</summary>
+        public string skin = "";
     }
 
     [Serializable]
@@ -70,6 +72,17 @@ public static class GunSetups
         if (entry.mode >= 0 && runtime != null && (int)runtime.FireMode != entry.mode && Has(gun, runtime.FireMode, (WeaponFireMode)entry.mode))
             runtime.ShowFireMode((WeaponFireMode)entry.mode);
         return true;
+    }
+
+    /// <summary>The skin picked for the gun (GunSkins), empty for none.</summary>
+    internal static string SkinOf(string gun) => Find(gun, false)?.skin ?? "";
+
+    /// <summary>The 무기 page's pick, written down at once.</summary>
+    internal static void RememberSkin(string gun, string skin)
+    {
+        if (string.IsNullOrEmpty(gun)) return;
+        Find(gun, true).skin = skin ?? "";
+        Save();
     }
 
     // Only a fire mode the gun still has: Weapons.csv may have taken it away since.
