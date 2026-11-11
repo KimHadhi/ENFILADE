@@ -28,6 +28,12 @@ GMod 애드온(`F:\Addons`, 저장소 밖)의 이동·애니메이션·소리를
 | mighty foot engaged (GMod 워크숍 1987521428) | 장전 중 V 발차기의 시간표와 판정: 0.2초에 시점 펀치(-10, 좌우 ±2)와 휘두르는 소리, 0.3초에 몸 가운데에서 시선이 머무는 곳 쪽으로 키 높이만큼 선 판정 후 4유닛 훑기, 피해 20~30, 맞히면 차는 사람 100유닛/초 뒤로(공중 두 배), 재사용 0.75+0.5초. 문 열기·부수기는 옮기지 않았다 | [ShoveMoves](../Scripts/Player/Combat/ShoveMoves.cs), Player.csv `Shove` |
 | ArcCW 근접 도약 (위 ArcCW의 `sh_bash.lua` DoLunge) | 서서 밀칠 때 사거리 너머 64유닛 안의 조준한 적에게 거리 × 5(공중 2.5)의 속도로 도약, 앉아 있으면 안 함 | [ShoveMoves](../Scripts/Player/Combat/ShoveMoves.cs) |
 | Beatrun addon compatibility layer, Landing Anim-Fix | 옮기지 않았다. GMod 안에서 동작하는 Lua 패치다 | 없음 |
+| Meaty Melee SFX (L4D2 워크숍 3660295000) | 처형의 마지막 일격(등 뒤면 목 꺾기, 앞이면 두개골, 거구처럼 버티면 팔 부러짐), 머리가 터질 때 목의 피 뿜기(2초를 1초로 줄임), 산 좀비의 팔다리가 떨어질 때 피 뿜기와 뼈. 나머지 근접 무기 소리 161개(카타나·칼·도끼·마체테·삽 등의 휘두르기·살·벽 타격, 전기톱)는 보관(2026-11-11) | `Art/Audio/Enemies/Zombie/Bone`·`Gore`, [BodyBreakSounds](../Scripts/Audio/BodyBreakSounds.cs), SoundCues `Execution/…`·`Gore/…`, `Art/Audio/Library/MeatyMelee_3660295000` |
+| Fleshy CI Hit Sounds (L4D2 워크숍 3725589072) | 주먹이 좀비에 맞을 때 BOOM 타격음 밑에 깔리는 살 소리 13개(감염자 피격음). 생존자용 3개는 보관 | `Art/Audio/Enemies/Zombie/Hit/Fist`, SoundCues `ZombieHit/Fist` |
+| RE4 standard pick up sound (2432848231), [COD:MWII] Shove and Pick-up Sounds (2907759388) | 필드 줍기 소리(탄약 = RE4, 총 = MWII, 실드 = MWII 레이저 켜짐의 앞 무음을 뺀 1초)와 V 밀치기 헛스윙(MWII 휘두름 2개). 오케스트라 히트는 보관 | `Art/Audio/UI/PickAmmo`·`PickGun`·`PickShield`, `Art/Audio/Movement/Shove/Swing`, SoundCues `ShoveSwing` |
+| A.V.A Headshot hitsound (2981494447) | 헤드샷 확인음 후보만(쓰이지 않음). 처치 종류별 겹침 구조는 이미 CombatHitAudio에 있다 | `Art/Audio/HitConfirm/HeadAVA` |
+| Biblically Accurate L4D1 Weapon Audio (3785893356), Partisan's Alternate Sounds Tweaked (3798403978) | 연결된 Hi-Octane과 비교: 셋 다 L4D2 총 이름의 같은 자리 소리이고, L4D1 팩과 Hi-Octane은 같은 Valve 원음을 다듬은 것(길이·크기가 거의 같다)이라 들어 보지 않고 바꿀 근거가 없어 Hi-Octane을 그대로 둔다. 대신 키가 없어 합성음이던 자리를 채웠다: 탄창을 쓰는 Heavy 총(SRM-12·Mk14 EBR·MX68)의 탄창 빼기·넣기·장전손잡이를 L4D1 팩의 군용 저격총 소리로(샷건 탄 한 발 소리이던 Heavy 탄창 넣기도 바꿈), 구급상자 줍기를 L4D1 팩의 아이템 줍기로. 나머지(총·근접·아이템 250개, Partisan 124개)는 보관 | `Art/Audio/Guns/Heavy/MagOut`·`MagIn`·`SlideBack`·`SlideForward`, `Art/Audio/UI/PickHeal`, `Art/Audio/Library/L4D1WeaponAudio_3785893356`·`PartisanWeapons_3798403978`·`HiOctane_3810863466`(옮긴 샷건 탄 소리) |
+| 칼 모드 3개: [绝区零] 讨骸刀·无尾 (3802606110), DMC5: Yamato (3532432838), Heavy Cavalry Sword (3661236204) / COD23:MW4 KRAIT P68 (3803570564) | 칼 꺼내기·기병도 휘두르기·타격 소리와 권총·쌍권총 소리 22개를 보관. 모델은 아래 [워크숍 모델](#워크숍-모델-2026-11-11) | `Art/Audio/Library/ZZZKatana_3802606110`·`Yamato_3532432838`·`CavalrySword_3661236204`·`KraitP68_3803570564` |
 
 소리의 표면별 출처는 [사운드 관리](MaintenanceGuide.md#이동목소리-소리-폴더가-곧-목록)에, 프로젝트 전체의 에셋 출처는 [외부 에셋 출처](AssetSources.md)에 있다.
 
@@ -57,12 +63,12 @@ GMod 애드온(`F:\Addons`, 저장소 밖)의 이동·애니메이션·소리를
 | 묶음 | 지금 | 남은 것 |
 | --- | --- | --- |
 | 1. 좀비 감각과 상태 | 핵심은 끝남. 조용함→경계→수색→깸, 시야 광선 3점, 소음 듣기, 등 뒤 암살([ZombieMind](../Scripts/Enemies/ZombieMind.cs), [PlayerExecution](../Scripts/Player/Combat/PlayerExecution.cs)) | 빛·손전등 반영, 벽 재질별 소리 손실, 시체 발견 |
-| 2. 좀비 몸과 소리 | 몸·애니메이션·절단은 구매 팩과 자체 구현으로 대체(Synty, Nephilite, [ZombieGore](../Scripts/Enemies/Gore/ZombieGore.cs)) | 좀비 목소리는 공격할 때의 음성 37개만 들어왔다(0.8.15, [ZombieVoice](../Scripts/Enemies/ZombieVoice.cs), `Art/Audio/Enemies/Zombie`). **평소 신음, 알아챘을 때, 맞을 때, 죽을 때 소리**(RE6 Zombie Sound의 나머지)는 아직이다 |
+| 2. 좀비 몸과 소리 | 몸·애니메이션·절단은 구매 팩과 자체 구현으로 대체(Synty, Nephilite, [ZombieGore](../Scripts/Enemies/Gore/ZombieGore.cs)). 2026-11-11에 맞을 때의 살 소리(Fleshy CI Hit Sounds), 처형·머리 터짐·팔다리 절단 소리(Meaty Melee SFX)가 들어왔다([BodyBreakSounds](../Scripts/Audio/BodyBreakSounds.cs)) | 좀비 목소리는 공격할 때의 음성 37개만 들어왔다(0.8.15, [ZombieVoice](../Scripts/Enemies/ZombieVoice.cs), `Art/Audio/Enemies/Zombie`). **평소 신음, 알아챘을 때, 맞을 때, 죽을 때 소리**(RE6 Zombie Sound의 나머지)는 아직이다 |
 | 3. 맵 진행과 디렉터 | 뼈대는 L4D식으로 따로 만듦([CampaignDirector](../Scripts/Campaign/CampaignDirector.cs), [Campaign.csv](../Resources/Tables/Campaign.csv)). Horde의 숫자는 쓰지 않음 | 인원수에 비례하는 동시 상한, 엘리트·보스 편성, 엔드리스 |
 | 4. 클래스, 퍽, 상점 | 돈, 돈 떨구기, 상점, 능력 카드([Perks.csv](../Resources/Tables/Perks.csv))는 있음. 부착물 메뉴는 ArcCW 배치 | 클래스, 무게 제한, 퍽 트리, 부착물 능력치 겹치기 규칙 |
 | 5. 카타나 | 안 함. 근접 무기가 없고 주먹뿐 | 전부. 칼·삽 모델은 `Assets/ThirdParty/LowPolyWeaponBundlePackV`와 Synty에 있다 |
 | 6. 던지는 칼 | 안 함. 소리 43개만 `Art/Audio/Library/ThrowingKnife`에 보관 | 전부 |
-| 7. 총소리·잔향 | 끝남([GunReverb](../Scripts/Audio/GunReverb.cs), `Art/Audio/Guns`) | 없음 |
+| 7. 총소리·잔향 | 끝남([GunReverb](../Scripts/Audio/GunReverb.cs), `Art/Audio/Guns`). 2026-11-11에 L4D1 팩으로 Heavy 탄창 총의 합성음 자리를 채우고 L4D1·Partisan 팩을 보관했다 | 보관본(`Art/Audio/Library/L4D1WeaponAudio_3785893356`·`PartisanWeapons_3798403978`)에 기관단총·저격총·매그넘·M60 등 총 종류별 소리가 있다. 새 총 종류를 더할 때 쓴다 |
 | 8. 권총·쌍권총 | 권총은 구매 팩(M1911)으로 대체 | 쌍권총 |
 | 9. 발차기·근접 보조 | 핵심 끝남: 장전 중 V 발차기, 도약 밀치기, 밀치기 카운터([ShoveMoves](../Scripts/Player/Combat/ShoveMoves.cs)) | 독립 발차기 키, 공중 드롭킥 2배, 문 차기 |
 | 10. 무기 구조 정리 | 셸 단위 장전과 사격으로 끊기는 있음([Weapons.csv](../Resources/Tables/Weapons.csv)의 `shellReload`) | 작업 우선순위 상태기계, 숨 참기, 무기 살펴보기. 급하지 않다 |

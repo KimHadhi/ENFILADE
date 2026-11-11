@@ -202,7 +202,7 @@ Guns/Rifle/SlideForward,1,1,1,소총 장전손잡이 놓기(SoundCues GunBolt/Ri
 Guns/Rifle/DrawBack,1,1,1,소총을 꺼낼 때 장전손잡이 당기기(SoundCues GunDraw/Rifle). L4D2 워크숍 2894462364(소음 기관단총 소리 모드) smg_slideback_1을 2dB 줄여 Hi-Octane 장전손잡이 소리와 크기를 맞춤
 Guns/Rifle/DrawForward,1,1,1,소총을 꺼낼 때 장전손잡이 놓기(SoundCues GunDraw/Rifle). 2894462364 smg_slideforward_1을 2dB 줄임
 Guns/Heavy/Bolt,1,1,1,샷건 펌프(당기고 미는 소리가 한 파일). Hi-Octane shotgun_pump_1
-Guns/Heavy/MagIn,1,0.97,1.03,샷건 탄 한 발 넣기. Hi-Octane shotgun_load_shell_2·4
+Guns/Heavy/MagIn,1,0.97,1.03,Heavy 총 가운데 탄창을 쓰는 SRM-12·Mk14 EBR·MX68의 탄창 넣기. Biblically Accurate L4D1 Weapon Audio(L4D2 워크숍 3785893356) sniper_military_clip_in_1. 전에 쓰던 Hi-Octane 샷건 탄 소리는 탄창 총에 맞지 않아 Art/Audio/Library/HiOctane_3810863466으로 옮겼다(헤링턴은 Tactical 팩의 제 탄 소리를 쓴다)
 Guns/LowAmmoClick,1,1,1,잔탄 경고 딸깍(FeelAudio LowAmmoClick·SoundCues GunLowAmmoClick/<총>): 탄창이 3분의 1 아래로 남은 발마다 쏜 사람에게만 모든 총이 같이 낸다. CS2 sounds/weapons/lowammo_01(Default.NearlyEmpty) 원본. L4D2 애드온 Low Ammo Sound Cue의 click.mp3는 이 소리를 +10dB 키워 찌그러뜨린 것이라 원본으로 바꿨다
 Guns/Rifle/LowAmmo,1,1,1,소총 잔탄 경고음(FeelAudio LowAmmo): 탄창이 3분의 1 아래로 남은 발마다 내고 빌수록 커진다(AmmoCue). TFA Base(GMod 워크숍 2840031720) lowammo_indicator_ar
 Guns/Pistol/LowAmmo,1,1,1,권총 잔탄 경고음. TFA Base lowammo_indicator_handgun
@@ -234,3 +234,18 @@ Zombie/Attack/Male,0.85,0.96,1.04,남자 좀비의 공격 으르렁. 같은 워�
 Zombie/Attack/Female,0.9,0.96,1.04,여자 좀비의 공격 으르렁. 같은 워크숍 rageat/female의 9개(원본이 22kHz라 조금 먹먹하다)
 Zombie/Leap/Male,0.95,0.97,1.05,러너가 도약할 때의 짧은 비명(남). 같은 워크숍 rage/male의 8개
 Zombie/Leap/Female,1,0.97,1.05,러너가 도약할 때의 짧은 비명(여). 같은 워크숍 rage/female의 7개
+Guns/Heavy/MagOut,1,0.97,1.03,Heavy 탄창 총(SRM-12·Mk14 EBR·MX68)의 탄창 빼기. 전에는 키가 없어 합성음이었다. L4D1 Weapon Audio(3785893356) sniper_military_clip_out_1
+Guns/Heavy/SlideBack,1,1,1,Heavy 탄창 총의 장전손잡이 당기기(ReloadMoments가 클립의 노리쇠 움직임에 맞춰 낸다). 전에는 합성음. L4D1 Weapon Audio sniper_military_slideback_1
+Guns/Heavy/SlideForward,1,1,1,Heavy 탄창 총의 장전손잡이 놓기. 전에는 합성음. L4D1 Weapon Audio sniper_military_slideforward_1
+UI/PickAmmo,1,0.97,1.03,필드 줍기: 탄약(FieldPickups → KitSound PickAmmo). RE4 standard pick up sound(L4D2 워크숍 2432848231)의 itempickup에서 앞뒤 무음을 잘라 0.34초. 폴더를 비우면 합성음(Magazine)으로 돌아간다
+UI/PickGun,1,0.97,1.03,필드 줍기: 총. [COD:MWII] Shove and Pick-up Sounds(L4D2 워크숍 2907759388)의 itempickup을 0.42초로 자름. 비우면 합성음(Rack)
+UI/PickHeal,0.9,0.97,1.03,필드 줍기: 구급상자(동료가 치료해 줄 때도 0.7배로 난다). L4D1 Weapon Audio(3785893356)의 items/itempickup 0.72초. 비우면 합성음(Mend)
+UI/PickShield,0.7,0.98,1.02,필드 줍기: 실드 셀. 2907759388의 laser_on에서 앞 0.44초 무음을 빼고 1.05초로(끝 0.3초를 줄임). 비우면 합성음(Charge). 돈 줍기(PickMoney)는 폴더가 없어 합성한 동전 소리 그대로
+Movement/Shove/Swing,0.3,0.94,1.06,V 밀치기 헛스윙(SoundCues ShoveSwing): 밀치기가 시작될 때마다 난다. 2907759388의 swish_weaponswing_swipe5·6을 0.42초로 자름
+Zombie/Hit/Fist,0.6,0.95,1.05,주먹이 좀비에 맞을 때 BOOM 타격음 밑에 깔리는 살 소리(BodyBreakSounds · SoundCues ZombieHit/Fist). Fleshy CI Hit Sounds(L4D2 워크숍 3725589072)의 감염자 피격음 13개 그대로
+Zombie/Bone/NeckSnap,0.8,0.95,1.05,등 뒤에서 한 처형(암살 포함)의 목 꺾기(SoundCues Execution/Behind). Meaty Melee SFX(L4D2 워크숍 3660295000) neck_snap_01 그대로
+Zombie/Bone/SkullBreak,0.8,0.95,1.05,앞에서 한 처형의 두개골 깨지는 소리(Execution/Front). Meaty Melee melee_skull_break_01·02 그대로
+Zombie/Bone/ArmBreak,0.8,0.95,1.05,처형을 버틴 거구의 팔 부러지는 소리(Execution/Survived)와 산 좀비의 팔다리가 떨어질 때 겹치는 뼈 소리(Gore/LimbOff). Meaty Melee melee_arm_break_01·02 그대로
+Zombie/Gore/HeadBurst,0.55,0.97,1.03,머리가 터질 때 목에서 피가 뿜는 소리(Gore/HeadBurst). Meaty Melee headless_1~4를 1초로 자르고 끝 0.45초를 줄였다(원본 2~2.5초는 Art/Audio/Library/MeatyMelee_3660295000에 OGG로)
+Zombie/Gore/BloodSpray,0.6,0.95,1.05,산 좀비의 팔다리가 떨어질 때 피 뿜는 소리(Gore/LimbOff). Meaty Melee zombie_blood_spray_01~06을 0.55초로 자름
+HitConfirm/HeadAVA,0.6,1,1.06,헤드샷 확인음 후보(아직 쓰이지 않음). A.V.A Headshot hitsound(L4D2 워크숍 2981494447)의 body_medium_break2~4를 0.8초로 자름. 지금 헤드샷음(Head)과 바꾸려면 Art/Audio/HitConfirm의 두 폴더 이름을 맞바꾼다. /sound HitConfirm/HeadAVA로 들어 본다

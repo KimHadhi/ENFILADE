@@ -26,6 +26,11 @@ MonoBehaviour:
     clips:
     - {fileID: 8300000, guid: d7ef414e4a820c64cb0f11d69fb6f0cd, type: 3}
     - {fileID: 8300000, guid: a395ee728116ddd439074e80c6598427, type: 3}
+  - key: HeadAVA
+    clips:
+    - {fileID: 8300000, guid: 6f7850867e294022a4b434a592b4a091, type: 3}
+    - {fileID: 8300000, guid: 6edf3c9a1f544259bec741dd434b910a, type: 3}
+    - {fileID: 8300000, guid: 03e12ee83f694aaf8ac3b2cc7d078782, type: 3}
   - key: Kill
     clips:
     - {fileID: 8300000, guid: 8e6e4dbec5d5b48498204bc8da562db5, type: 3}
