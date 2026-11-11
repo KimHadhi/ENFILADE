@@ -17,8 +17,10 @@ public static class KitSound
     /// chapter is escaped (ChapterEndBanner). Stealth (StealthMarkersHUD, CampaignRun): Suspect, a zombie stopped to look
     /// this player's way; Spotted, one woke on them; Unseen, a stretch got through without being found.
     /// </summary>
-    /// Charge: an Assault's CHARGE sounded (ClassKit).
-    public enum Cue { Buy, Refuse, Alert, PickAmmo, PickHeal, PickShield, PickMoney, PickGun, Escape, Suspect, Spotted, Unseen, Charge }
+    /// Charge: an Assault's CHARGE sounded (ClassKit). Taunt: a Knight's taunt went out (its own, or a friend's, softer
+    /// the further). Hunter: a Ghost's headshot added a Head Hunter stack; HunterLost: a hurt took them all.
+    public enum Cue { Buy, Refuse, Alert, PickAmmo, PickHeal, PickShield, PickMoney, PickGun, Escape, Suspect, Spotted, Unseen, Charge,
+        Taunt, Hunter, HunterLost }
 
     private const string BankId = "UI";
     private const int Rate = 44100;
@@ -80,6 +82,9 @@ public static class KitSound
             Cue.Spotted => Found(),
             Cue.Unseen => Slip(),
             Cue.Charge => Rally(),
+            Cue.Taunt => Clash(),
+            Cue.Hunter => Notch(),
+            Cue.HunterLost => Shatter(),
             _ => Buzz()
         };
         var clip = AudioClip.Create("Kit " + cue, data.Length, 1, Rate, false);
@@ -295,6 +300,57 @@ public static class KitSound
         Horn(data, .02f, 262f, .16f, .45f);
         Horn(data, .17f, 392f, .55f, .55f);
         return Finish(data, .8f);
+    }
+
+    // A taunt: a blade struck flat on a shield, twice, the clang ringing over a low horn held under it, as a knight calls
+    // the fight onto himself.
+    private static float[] Clash()
+    {
+        var data = new float[(int)(Rate * 1f)];
+        var random = new System.Random(1187);
+        Knock(data, 0f, 70f, .16f, 1f);
+        Click(data, random, 0f, .005f, .8f);
+        Clang(data, 0f, 523f, .32f, .55f);
+        Click(data, random, .13f, .004f, .6f);
+        Clang(data, .13f, 587f, .4f, .45f);
+        Horn(data, .05f, 98f, .8f, .4f);
+        return Finish(data, .85f);
+    }
+
+    // A struck plate starting at <at> (s): partials too far apart to be a bell, so it reads as metal hit, not rung.
+    private static void Clang(float[] data, float at, float pitch, float decay, float level)
+    {
+        int from = (int)(at * Rate);
+        for (int i = from; i < data.Length; i++)
+        {
+            float t = (i - from) / (float)Rate, turn = 2f * Mathf.PI * pitch * t;
+            float wave = Mathf.Sin(turn) * Mathf.Exp(-t / decay)
+                + .7f * Mathf.Sin(turn * 2.41f) * Mathf.Exp(-t / (decay * .6f))
+                + .5f * Mathf.Sin(turn * 3.89f) * Mathf.Exp(-t / (decay * .4f))
+                + .3f * Mathf.Sin(turn * 6.13f) * Mathf.Exp(-t / (decay * .25f));
+            data[i] += wave * Mathf.Min(1f, t / .001f) * level;
+        }
+    }
+
+    // A Head Hunter stack: one bright tick climbing, short and quiet, heard under the shot's own crack.
+    private static float[] Notch()
+    {
+        var data = new float[(int)(Rate * .16f)];
+        Click(data, new System.Random(31), 0f, .002f, .4f);
+        Stab(data, 0f, 1760f, .05f, .5f);
+        return Finish(data, .4f);
+    }
+
+    // Every stack lost: a dull knock and two notes falling a fourth, as something lets go.
+    private static float[] Shatter()
+    {
+        var data = new float[(int)(Rate * .42f)];
+        var random = new System.Random(97);
+        Click(data, random, 0f, .01f, .7f);
+        Knock(data, 0f, 140f, .06f, .6f);
+        Note(data, .02f, 698f, .06f, .4f);
+        Note(data, .1f, 523f, .14f, .45f);
+        return Finish(data, .55f);
     }
 
     // A horn note starting at <at> (s) for <length> (s): odd and even partials swelling in and dying away.

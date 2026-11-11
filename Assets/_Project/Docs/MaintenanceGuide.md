@@ -42,9 +42,11 @@
 클래스는 [Classes.csv](../Resources/Tables/Classes.csv)의 줄이다(2026-11-11 사용자의 설계: KF2·GMod Horde 느낌의 7개). 열은 `title`(이름), `role`(한 줄 소개), `primary`·`secondary`(장이 시작될 때 1·2번 칸에 주는 총. 무기 에셋 이름), `classWeapons`(;로 구분한 클래스 총. 이 총을 들면 `gunBonus`% 피해가 세진다), `ready`(1이면 능력이 만들어진 클래스. 0이면 메뉴에 "준비 중"이지만 고를 수는 있다).
 
 - 고른 클래스는 ClassGrowth의 classes.json에 저장되고 클래스마다 등급이 따로 쌓인다. 아직 안 골랐으면 `ready` 1인 첫 클래스(어썰트)다.
-- 능력 수치는 [ClassAbilities.csv](../Resources/Tables/ClassAbilities.csv): `Assault.*`(스택 최대·스택당 피해와 이동·스택 유지와 감소·CHARGE 시간·반경·피해·이동), `Point.reloadShare`(들지 않은 총이 저절로 장전되는 시간 배수).
+- 능력 수치는 [ClassAbilities.csv](../Resources/Tables/ClassAbilities.csv): `Assault.*`(스택 최대·스택당 피해와 이동·스택 유지와 감소·CHARGE 시간·반경·피해·이동), `Point.reloadShare`(들지 않은 총이 저절로 장전되는 시간 배수), `Ghost.*`(헤드 헌터 최대·스택당 피해(곱연산)·바디샷에 잃는 스택, 데드아이 피해, 엘리트 휘청임 시간과 다시 휘청일 때까지), `Knight.*`(받는 피해 배수, 패리 판정·패리 자세 피해, 패리 반격 켜기, 반격·주먹 피해, 깔려도 싸우기, 도발 반경·시간·재사용·도발 중 받는 피해).
 - 클래스 기술 키는 입력 액션 `Player/ClassAbility`(기본 마우스 휠 클릭)이고 설정 → 조작의 "클래스 기술"에서 바꾼다. 바꾼 키는 GameSettings의 `keyBindings`에 저장되고 조작 탭을 초기화하면 기본으로 돌아간다.
-- 나이트·고스트·데탕트·시순트·서포트의 능력과 클래스 전용 퍼크 카드, 근접 무기·저격총 에셋은 다음 단계다.
+- 고스트(2단계): 헤드샷마다 헤드 헌터 1스택, 바디샷에 하나 잃고 피해를 입으면 모두 잃는다. 스택마다 총 피해가 곱으로 오른다. 장전한 뒤 첫 발은 데드아이(기본 두 배). 클래스 총으로 엘리트(거구·돌진·자폭과 엘리트·네임드 등급)를 맞히면 휘청인다(MeleeCombatTarget.Interrupt: 공격과 돌진이 끊긴다).
+- 나이트(2단계): 적에게 받는 피해가 줄고, 패리 판정이 길고 자세 피해가 크며, 패리하면 완벽 회피처럼 반격 창이 열린다. 반격과 주먹이 세고 러너에게 깔려도 싸운다. 클래스 기술 키는 도발: 반경 안에서 이미 싸우던 좀비가 몇 초 동안 나이트를 노린다(EnemyTargeting.Taunt). 좀비를 움직이는 건 호스트라서 친구 PC의 도발은 PlayerNetworkCombat.TauntRpc로 호스트에 간다. 조용한 좀비는 깨우지 않는다.
+- 데탕트·시순트·서포트의 능력과 클래스 전용 퍼크 카드(헤드 헌터 최대 같은 수치를 키운다), 근접 무기·저격총 에셋은 다음 단계다.
 
 ### 잠입 (Stealth.csv, ZombieSenses.csv)
 

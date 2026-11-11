@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -11,29 +12,57 @@ using UnityEngine.InputSystem;
 ///   charge: for some seconds it and every friend near hit harder and run faster (friends' PCs are told,
 ///   PlayerNetworkCombat, and each gives its own player the buff);
 /// - Point: a gun put away reloads itself in the time its own reload takes, from its reserve, so the SMG empties while
-///   the shotgun refills and back (Killing Floor 2's gunslinger feel, the user's "화력이 끊기지 않고").
+///   the shotgun refills and back (Killing Floor 2's gunslinger feel, the user's "화력이 끊기지 않고");
+/// - Ghost (stage 2; the user's design, with the Headhunter and Deadeye of their old class memo): a headshot adds a
+///   Head Hunter stack, a shot into a body takes one away and any hurt taken loses them all, and every stack makes each
+///   shot hit harder, compounding, so a steady hand grows into the elite killer of the late game whatever gun it holds.
+///   The first round after a reload hits double (Deadeye). Its own guns stagger an elite they hit: a short stun that
+///   breaks off its blow or its charge, longer for a headshot, each elite at most once in a while (the early game's
+///   job, before the cards make it strong);
+/// - Knight (stage 2; the user's design, with the memo's Perfect Parry and Deflect): it takes less from every enemy's
+///   blow; its parries last longer, wear posture down harder and open the counter as a perfect dodge does; its counters
+///   and fists hit harder; pinned under a runner it fights on; and the class key taunts: the zombies already fighting
+///   near it go after it for a few seconds, elites too, while it takes less again (the host's zombies, as
+///   PlayerNetworkCombat tells the host), so the elites keep off the shooters.
 /// The other classes' abilities come in later stages (Classes.csv ready 0). Numbers: Tables/ClassAbilities.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class ClassKit : MonoBehaviour
 {
-    private const string AssaultRow = "Assault", PointRow = "Point";
+    private const string AssaultRow = "Assault", PointRow = "Point", GhostRow = PlayerClass.GhostRow, KnightRow = PlayerClass.KnightRow;
+    // Elites remembered as lately staggered: past this many, those free again are forgotten.
+    private const int StaggerMemory = 32;
 
     /// <summary>This PC's own player's kit.</summary>
     public static ClassKit Local { get; private set; }
 
     /// <summary>This PC's player spent a full adrenaline on a CHARGE here: friends' PCs are told (PlayerNetworkCombat).</summary>
     public event Action<Vector3> Charged;
+    /// <summary>This PC's Knight taunted here: the other PCs are told (PlayerNetworkCombat), and the host's zombies go after them.</summary>
+    public event Action<Vector3> Taunted;
 
     private PlayerMovement movement;
     private PlayerWeaponSlots slots;
     private WeaponController weapon;
+    private PlayerDamageReceiver receiver;
+    private PlayerHold hold;
     private InputAction ability;
-    private bool kitGiven;
+    private bool kitGiven, wired;
     private int stacks;
     private float lastKill = -99f, nextEbb, chargeUntil, chargeTotal = 1f;
     // Point: when each gun slot's gun was last seen put away and short (-1: not waiting), and when one last refilled.
     private readonly float[] asideSince = { -1f, -1f }, refilledAt = { -99f, -99f };
+    // Ghost: the Head Hunter stacks, their last change (+1 one more, -1 one fewer, -2 all lost) and when; which of the two
+    // gun slots holds a gun loaded and not fired since (Deadeye); what the shot under way has met so far, pellet by
+    // pellet; and when each elite this Ghost staggered may be staggered again.
+    private int hunter, hunterChange;
+    private float hunterChangedAt = -99f;
+    private readonly bool[] loaded = { true, true };
+    private bool shotHead, shotBody;
+    private readonly Dictionary<MeleeCombatTarget, float> staggerAgain = new Dictionary<MeleeCombatTarget, float>();
+    private readonly List<MeleeCombatTarget> forget = new List<MeleeCombatTarget>();
+    // Knight: when the taunt under way ends and how long it lasts; when it may be used again and how long that wait is.
+    private float tauntUntil, tauntTotal = 1f, tauntReadyAt, tauntWait = 1f;
 
     public PlayerMovement Movement => movement;
     public WeaponData HeldGun => weapon != null ? weapon.EquippedData : null;
@@ -55,7 +84,33 @@ public sealed class ClassKit : MonoBehaviour
     }
     public float SinceRefill(int slot) => slot >= 0 && slot <= 1 ? Time.time - refilledAt[slot] : 99f;
 
-    /// <summary>The factor this player's class puts on their shots now (adrenaline, a CHARGE).</summary>
+    /// <summary>A Ghost's Head Hunter stacks now, and the most (the cards will raise it).</summary>
+    public int Hunter => hunter;
+    public int HunterMax => Mathf.Clamp(Mathf.RoundToInt(PlayerClass.Ability(GhostRow, "hunterMax", 5f)), 1, 99);
+    /// <summary>The Head Hunter's last change: +1 a stack more, -1 a stack fewer, -2 all lost; and seconds since.</summary>
+    public int HunterChange => hunterChange;
+    public float SinceHunterChange => Time.time - hunterChangedAt;
+
+    /// <summary>A Ghost's gun in hand is loaded and not fired since: its next shot hits Deadeye's double.</summary>
+    public bool DeadeyeReady
+    {
+        get
+        {
+            if (!PlayerClass.Is(PlayerClass.Ghost) || slots == null || HeldGun == null) return false;
+            int slot = slots.SelectedSlot;
+            return slot >= 0 && slot < loaded.Length && loaded[slot];
+        }
+    }
+
+    /// <summary>How much of a Knight's taunt under way is left, 0 to 1 (0: none).</summary>
+    public float TauntShare => tauntUntil > Time.time ? Mathf.Clamp01((tauntUntil - Time.time) / tauntTotal) : 0f;
+    /// <summary>A Knight whose taunt may be used now.</summary>
+    public bool TauntReady => PlayerClass.Is(PlayerClass.Knight) && Time.time >= tauntReadyAt;
+    /// <summary>Seconds until a Knight's taunt may be used again (0: now), and how much of that wait is left, 0 to 1.</summary>
+    public float TauntWait => Mathf.Max(0f, tauntReadyAt - Time.time);
+    public float TauntWaitShare => Mathf.Clamp01(TauntWait / tauntWait);
+
+    /// <summary>The factor this player's class puts on their shots now (adrenaline, a CHARGE, Head Hunter, Deadeye).</summary>
     public float DamageFactor
     {
         get
@@ -63,6 +118,13 @@ public sealed class ClassKit : MonoBehaviour
             float factor = 1f;
             if (PlayerClass.Is(PlayerClass.Assault)) factor *= 1f + stacks * PlayerClass.Ability(AssaultRow, "damagePerStack", 3f) / 100f;
             if (chargeUntil > Time.time) factor *= 1f + PlayerClass.Ability(AssaultRow, "chargeDamage", 25f) / 100f;
+            if (PlayerClass.Is(PlayerClass.Ghost))
+            {
+                // Compounding, as the memo has it: five stacks of 7% are 1.07^5, some 40%.
+                if (hunter > 0) factor *= Mathf.Pow(1f + PlayerClass.Ability(GhostRow, "hunterDamage", 7f) / 100f, hunter);
+                // Read while the shot is traced, before ShotFired spends it: every pellet of that first shot has it.
+                if (DeadeyeReady) factor *= 1f + PlayerClass.Ability(GhostRow, "deadeye", 100f) / 100f;
+            }
             return factor;
         }
     }
@@ -91,6 +153,7 @@ public sealed class ClassKit : MonoBehaviour
     private void OnDisable()
     {
         CombatDamageEvents.Damaged -= OnDamaged;
+        Unwire();
         if (Local == this) Local = null;
     }
 
@@ -100,9 +163,13 @@ public sealed class ClassKit : MonoBehaviour
     {
         if (movement == null || !movement.IsLocal) return;
         Local = this;
+        if (!wired) Wire();
         if (!kitGiven) TryGiveKit();
         Ebb();
         if (PlayerClass.Is(PlayerClass.Point)) ReloadAside();
+        // A Knight fights on pinned under a runner with its fists and shoves (PlayerHold, PlayerMeleeCombat).
+        if (hold == null && receiver != null) hold = receiver.GetComponent<PlayerHold>();
+        if (hold != null) hold.FightsPinned = PlayerClass.Is(PlayerClass.Knight) && PlayerClass.Ability(KnightRow, "fightsPinned", 1f) > .5f;
         if (ability == null && InputSystem.actions != null)
         {
             KeyBindings.EnsureRestored();
@@ -111,11 +178,33 @@ public sealed class ClassKit : MonoBehaviour
         if (ability != null && ability.WasPressedThisFrame() && movement.InputAvailable && !movement.IsDead && !movement.IsHeld) Use();
     }
 
+    // This PC's own player's gun and hurt, once both are there (the gun and the health may be made after this kit).
+    private void Wire()
+    {
+        if (weapon == null) weapon = GetComponent<WeaponController>();
+        if (receiver == null) receiver = movement.DamageReceiver;
+        if (weapon == null || receiver == null) return;
+        weapon.ShotFired += OnShot;
+        weapon.ReloadCompleted += OnReloaded;
+        receiver.HitResolved += OnHurt;
+        wired = true;
+    }
+
+    private void Unwire()
+    {
+        if (!wired) return;
+        wired = false;
+        if (weapon != null) { weapon.ShotFired -= OnShot; weapon.ReloadCompleted -= OnReloaded; }
+        if (receiver != null) receiver.HitResolved -= OnHurt;
+    }
+
     // The class's guns in slots 1 and 2 once this player is ready, every chapter (a run starts with them).
     private void TryGiveKit()
     {
         if (kitGiven || movement == null || !movement.IsLocal || slots == null || !slots.isActiveAndEnabled) return;
         kitGiven = true;
+        // Out of the box both guns are loaded: their first rounds are a Ghost's Deadeye shots too.
+        loaded[0] = loaded[1] = true;
         var info = PlayerClass.Current;
         if (info == null) return;
         Give(0, info.Primary);
@@ -150,7 +239,8 @@ public sealed class ClassKit : MonoBehaviour
             Charged?.Invoke(at);
             return;
         }
-        // Not built for this class yet.
+        if (PlayerClass.Is(PlayerClass.Knight)) { Taunt(); return; }
+        // No ability on the key for this class (a Point's and a Ghost's are always on), or not built yet.
         KitSound.Play(KitSound.Cue.Refuse, .35f);
     }
 
@@ -217,5 +307,111 @@ public sealed class ClassKit : MonoBehaviour
             ? data.ReloadDuration + data.ShellInsertDuration * Mathf.Max(1, data.MagazineSize - gun.Ammo) + data.ShellEndDuration
             : gun.Ammo <= 0 ? data.EmptyReloadDuration : data.ReloadDuration;
         return Mathf.Max(.05f, time * Mathf.Max(0f, PlayerClass.Ability(PointRow, "reloadShare", 1f)));
+    }
+
+    // ---- Ghost: Head Hunter, Deadeye, the stagger ----
+
+    // Each pellet of this PC's own shot, once traced (a lone bullet is pellet 0 of 1). What the shot met counts once, at
+    // its last pellet: a head among its pellets is a headshot, else a body is a body shot.
+    private void OnShot(WeaponShot shot)
+    {
+        if (movement == null || !movement.IsLocal || !PlayerClass.Is(PlayerClass.Ghost)) return;
+        var data = HeldGun;
+        var trace = shot.Trace;
+        var enemy = trace.HasHit && trace.Damage == DamageResult.Damaged && trace.Hit.collider != null
+            ? trace.Hit.collider.GetComponentInParent<EnemyHealth>() : null;
+        if (enemy != null)
+        {
+            if (trace.IsHeadshot) shotHead = true;
+            else shotBody = true;
+            if (PlayerClass.IsElite(enemy) && PlayerClass.OwnsWeapon(PlayerClass.Current, data)) Stagger(enemy, trace.IsHeadshot);
+        }
+        if (shot.Pellet < (data != null ? Mathf.Max(1, data.Pellets) : 1) - 1) return;
+        // The round loaded first is spent.
+        int slot = slots != null ? slots.SelectedSlot : -1;
+        if (slot >= 0 && slot < loaded.Length) loaded[slot] = false;
+        if (shotHead) Hunt(1);
+        else if (shotBody) Hunt(-Mathf.Max(0, Mathf.RoundToInt(PlayerClass.Ability(GhostRow, "hunterBodyLoss", 1f))));
+        shotHead = shotBody = false;
+    }
+
+    // A reload done: the gun in hand is loaded again, its next round Deadeye's.
+    private void OnReloaded()
+    {
+        if (movement == null || !movement.IsLocal || slots == null) return;
+        int slot = slots.SelectedSlot;
+        if (slot >= 0 && slot < loaded.Length) loaded[slot] = true;
+    }
+
+    private void Hunt(int change)
+    {
+        int before = hunter;
+        hunter = Mathf.Clamp(hunter + change, 0, HunterMax);
+        if (hunter == before) return;
+        hunterChange = hunter > before ? 1 : -1;
+        hunterChangedAt = Time.time;
+        if (hunter > before) KitSound.Play(KitSound.Cue.Hunter, .45f);
+    }
+
+    // Hurt, shield or health: a Ghost loses every stack (the memo's rule: the Head Hunter is for whoever isn't touched).
+    private void OnHurt(DamageHit hit, DamageResult result)
+    {
+        if (result != DamageResult.Damaged || hunter <= 0 || receiver == null || !PlayerClass.Is(PlayerClass.Ghost)) return;
+        if (receiver.LastShieldTaken + receiver.LastHealthTaken <= 0f) return;
+        hunter = 0;
+        hunterChange = -2;
+        hunterChangedAt = Time.time;
+        KitSound.Play(KitSound.Cue.HunterLost, .6f);
+    }
+
+    // A Ghost's own gun hit an elite: it staggers (a stun that cuts off its blow or its charge; the host is told by the
+    // stun itself, MeleeCombatTarget), unless this Ghost staggered it lately.
+    private void Stagger(EnemyHealth enemy, bool head)
+    {
+        if (!enemy.TryGetComponent(out MeleeCombatTarget target) || !target.IsAvailable) return;
+        if (staggerAgain.TryGetValue(target, out float again) && Time.time < again) return;
+        float seconds = head ? PlayerClass.Ability(GhostRow, "stumbleHead", 1.6f) : PlayerClass.Ability(GhostRow, "stumbleBody", .8f);
+        if (seconds <= 0f) return;
+        target.Interrupt(seconds);
+        if (staggerAgain.Count >= StaggerMemory) Forget();
+        staggerAgain[target] = Time.time + seconds + Mathf.Max(0f, PlayerClass.Ability(GhostRow, "stumbleRest", 3f));
+    }
+
+    private void Forget()
+    {
+        forget.Clear();
+        foreach (var pair in staggerAgain) if (pair.Key == null || Time.time >= pair.Value) forget.Add(pair.Key);
+        foreach (var key in forget) staggerAgain.Remove(key);
+    }
+
+    // ---- Knight: the taunt ----
+
+    private void Taunt()
+    {
+        if (Time.time < tauntReadyAt) { KitSound.Play(KitSound.Cue.Refuse, .5f); return; }
+        tauntTotal = Mathf.Max(.1f, PlayerClass.Ability(KnightRow, "tauntSeconds", 6f));
+        tauntWait = Mathf.Max(tauntTotal, PlayerClass.Ability(KnightRow, "tauntCooldown", 25f));
+        tauntUntil = Time.time + tauntTotal;
+        tauntReadyAt = Time.time + tauntWait;
+        Vector3 at = transform.position;
+        ReceiveTaunt(movement, at, true);
+        AlertHUD.Self(Texts.Get("class.knight.taunt.self"));
+        Taunted?.Invoke(at);
+    }
+
+    /// <summary>
+    /// A Knight taunted at <paramref name="at"/> (this PC's own, or a friend's as their PC said it): the zombies this PC
+    /// runs that are already fighting within reach go after them (real only on the host or alone; EnemyTargeting), and
+    /// every PC sees the ring go out and hears it, a friend's the softer the further off.
+    /// </summary>
+    public static void ReceiveTaunt(PlayerMovement knight, Vector3 at, bool mine)
+    {
+        float reach = Mathf.Max(0f, PlayerClass.Ability(KnightRow, "tauntRadius", 12f));
+        EnemyTargeting.Taunt(knight, at, reach, PlayerClass.Ability(KnightRow, "tauntSeconds", 6f));
+        TauntRing.Show(at, reach);
+        float volume = 1f;
+        var local = Local != null ? Local.movement : null;
+        if (!mine && local != null) volume = Mathf.Clamp01(1f - Vector3.Distance(local.transform.position, at) / 40f) * .7f;
+        KitSound.Play(KitSound.Cue.Taunt, volume);
     }
 }

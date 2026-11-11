@@ -98,7 +98,8 @@ public sealed class PlayerPerfectDefense : MonoBehaviour
                 float lead = feedback != null ? feedback.HitStopFor(true) : 0f;
                 if (postureBreakSlowSeconds > 0f) timeEffects.RequestSlowdown(this, postureBreakTimeScale, lead + postureBreakSlowSeconds, target);
             }
-            else if (parryOpensCounter && hit.IsComboFinisher) OpenCounter(hit, false);
+            // A Knight's parry opens it as a perfect dodge does (the user's memo, 퍼펙트 패리; PlayerClass).
+            else if ((parryOpensCounter || PlayerClass.ParryCounters(player)) && hit.IsComboFinisher) OpenCounter(hit, false);
         }
         else if (result == DamageResult.Evaded)
         {
@@ -258,8 +259,10 @@ public sealed class PlayerPerfectDefense : MonoBehaviour
             Vector3 delta = point - aim.position;
             if (victim != null && delta.magnitude <= counterStrikeReach)
             {
-                float posture = settings != null ? settings.counterPostureDamage : 60f;
-                result = victim.ReceiveHit(new DamageHit(DamageHit.NewAttackId(), settings != null ? settings.counterDamage : 80f,
+                // A Knight's counter, after a dodge or a parry, hits harder (the memo's 흘리기; PlayerClass).
+                float knight = PlayerClass.CounterFactor(player);
+                float posture = (settings != null ? settings.counterPostureDamage : 60f) * knight;
+                result = victim.ReceiveHit(new DamageHit(DamageHit.NewAttackId(), (settings != null ? settings.counterDamage : 80f) * knight,
                     DamageKind.Attack, point, delta.sqrMagnitude > .0001f ? delta.normalized : aim.forward, gameObject, false, posture,
                     isCounter: true));
                 if (result == DamageResult.Damaged) target.ApplyPostureDamage(posture, .65f);

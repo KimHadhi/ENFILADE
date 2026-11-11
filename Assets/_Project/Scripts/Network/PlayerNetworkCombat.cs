@@ -147,6 +147,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
         {
             throws.Thrown += OnThrown;
             kit.Charged += OnCharged;
+            kit.Taunted += OnTaunted;
             weapon.ShotFired += OnShot;
             melee.Punched += OnPunched;
             melee.Elbowed += OnElbowed;
@@ -171,7 +172,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
         if (kicks != null) kicks.Kicked -= OnKicked;
         if (execution != null) execution.Started -= OnExecutionStarted;
         if (throws != null) throws.Thrown -= OnThrown;
-        if (kit != null) kit.Charged -= OnCharged;
+        if (kit != null) { kit.Charged -= OnCharged; kit.Taunted -= OnTaunted; }
         if (receiver != null) receiver.HitResolved -= OnHit;
         stance.OnValueChanged -= OnStanceChanged;
     }
@@ -242,6 +243,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
     private void OnKicked() => KickRpc();
     private void OnThrown(Vector3 from, Vector3 velocity) => ThrowRpc(from, velocity);
     private void OnCharged(Vector3 at) => ChargeRpc(at);
+    private void OnTaunted(Vector3 at) => TauntRpc(at);
 
     // An Assault sounded a CHARGE here: each other PC's player near it charges too.
     [Rpc(SendTo.NotMe)]
@@ -250,6 +252,10 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
         string name = TryGetComponent(out PlayerTally tally) ? tally.DisplayName : gameObject.name;
         ClassKit.ReceiveCharge(at, Texts.Format("class.assault.charge.friend", name));
     }
+
+    // A Knight taunted here: the host's zombies already fighting near go after them, and every PC sees and hears it.
+    [Rpc(SendTo.NotMe)]
+    private void TauntRpc(Vector3 at) => ClassKit.ReceiveTaunt(mover != null ? mover : GetComponent<PlayerMovement>(), at, false);
 
     // A stone this player threw: every other PC throws its own copy, and the host's is the one its zombies hear.
     [Rpc(SendTo.NotMe)]

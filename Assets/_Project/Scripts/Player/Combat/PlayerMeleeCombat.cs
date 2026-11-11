@@ -215,7 +215,8 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
     {
         int last = parryWindowDurations != null ? parryWindowDurations.Length - 1 : -1;
         spamCount = Mathf.Clamp(spamCount + (pendingWhiff ? 1 : 0), 0, Mathf.Max(0, last));
-        float duration = last >= 0 ? parryWindowDurations[spamCount] : .2f;
+        // A Knight's windows are longer, the shrinking ones as much (PlayerClass).
+        float duration = (last >= 0 ? parryWindowDurations[spamCount] : .2f) * PlayerClass.ParryWindowFactor(player);
         // A window of 0 is Sekiro's mashing floor: that press only guards.
         parryRemaining = float.IsNaN(duration) || float.IsInfinity(duration) ? .2f : Mathf.Max(0f, duration);
         pendingWhiff = !held; defenseConnected = false; guardAttemptHeld = held;
@@ -241,8 +242,10 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
         lungeRemaining = player.IsGrounded ? 0.1f : 0f;
         // Swing first: the sweep can land on its first sample inside Begin.
         punchLanded = false; punchCharge = charge; fistAudio?.PlaySwing();
-        punchSweep.Begin(player, aim, Mathf.Lerp(damage.x, damage.y, charge),
-            Mathf.Lerp(postureDamage.x, postureDamage.y, charge), reach, .22f, attackActiveTime,
+        // A Knight's fists hit harder, flesh and posture (PlayerClass).
+        float fist = PlayerClass.FistFactor(player);
+        punchSweep.Begin(player, aim, Mathf.Lerp(damage.x, damage.y, charge) * fist,
+            Mathf.Lerp(postureDamage.x, postureDamage.y, charge) * fist, reach, .22f, attackActiveTime,
             attackMaxTargets, hitLayers, OnPunchLanded, OnPunchWallHit);
         Punched?.Invoke(charge);
     }
@@ -301,7 +304,8 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
         {
             parryRemaining = 0f;
             var attacker = hit.Source != null ? hit.Source.GetComponentInParent<MeleeCombatTarget>() : null;
-            attacker?.ApplyPostureDamage(25f, 0.8f);
+            // A Knight's parry wears the attacker down harder: a pack zombie breaks on its second (PlayerClass).
+            attacker?.ApplyPostureDamage(25f * PlayerClass.ParryPostureFactor(player), 0.8f);
             // The deflect plants the feet: the hit stop holds everything, then the legs stay put a moment longer.
             if (parryFeedback == null) parryFeedback = GetComponent<ParryFeedback>();
             float stop = parryFeedback != null ? parryFeedback.HitStopFor(attacker != null && attacker.IsStaggered) : 0f;

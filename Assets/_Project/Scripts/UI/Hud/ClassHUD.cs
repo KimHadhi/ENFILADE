@@ -7,8 +7,11 @@ using UnityEngine.UI;
 /// The class's own resource, at the foot of the screen (stage 7, ClassKit): a dark slanted plate with the class's name,
 /// and for an Assault its adrenaline as a row of leaning pips that fill pink, "[휠] CHARGE" beating on it once they are
 /// full and a draining bar while a CHARGE lasts (a friend's too); for a Point its two guns' numbers, each with a line
-/// that runs out while the gun put away reloads itself and a flash when it has. Classes whose abilities come later show
-/// their name only. Local player only (PlayerMovement). HUD look: black, white and pink.
+/// that runs out while the gun put away reloads itself and a flash when it has; for a Ghost its Head Hunter stacks as
+/// the pips, the newest flashing white as it comes and all of them as they are lost, and "DEADEYE" over the plate while
+/// the gun in hand holds its first round since loading; for a Knight "[휠] 도발" while its taunt is ready, the wait in
+/// its place while not, and the draining bar while it lasts. Classes whose abilities come later show their name only.
+/// Local player only (PlayerMovement). HUD look: black, white and pink.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class ClassHUD : MonoBehaviour
@@ -26,9 +29,10 @@ public sealed class ClassHUD : MonoBehaviour
     private RawImage icon;
     private RectTransform keyRect;
     private KeyCapGraphic keyCap;
-    private TextMeshProUGUI keyLabel;
+    private TextMeshProUGUI keyLabel, keyWord, barWord, deadeye;
     private InputAction ability;
     private string shownClass;
+    private int shownPips;
 
     private void OnEnable()
     {
@@ -48,10 +52,15 @@ public sealed class ClassHUD : MonoBehaviour
         if (dead || kit == null) return;
         if (PlayerClass.Is(PlayerClass.Assault)) Adrenaline();
         else if (PlayerClass.Is(PlayerClass.Point)) Guns();
-        // A friend's CHARGE reaches any class.
-        float charge = kit.ChargeShare;
-        chargeBar.gameObject.SetActive(charge > 0f);
-        if (charge > 0f) chargeFill.rectTransform.anchorMax = new Vector2(charge, 1f);
+        else if (PlayerClass.Is(PlayerClass.Ghost)) Hunter();
+        else if (PlayerClass.Is(PlayerClass.Knight)) Taunt();
+        // The bar along the foot: a Knight's own taunt, or a friend's CHARGE, which reaches any class.
+        float taunt = kit.TauntShare, share = taunt > 0f ? taunt : kit.ChargeShare;
+        chargeBar.gameObject.SetActive(share > 0f);
+        if (share <= 0f) return;
+        chargeFill.rectTransform.anchorMax = new Vector2(share, 1f);
+        string word = Texts.Get(taunt > 0f ? "class.hud.taunt" : "class.hud.charge");
+        if (barWord.text != word) barWord.text = word;
     }
 
     private void Show(string id)
@@ -62,12 +71,23 @@ public sealed class ClassHUD : MonoBehaviour
         icon.texture = KitButtons.Icon(MainMenuClasses.Icon(id));
         icon.enabled = icon.texture != null;
         bool assault = PlayerClass.Is(PlayerClass.Assault), point = PlayerClass.Is(PlayerClass.Point);
-        pipRow.gameObject.SetActive(assault);
+        bool ghost = PlayerClass.Is(PlayerClass.Ghost), knight = PlayerClass.Is(PlayerClass.Knight);
+        pipRow.gameObject.SetActive(assault || ghost);
         slotRow.gameObject.SetActive(point);
         keyRect.gameObject.SetActive(false);
+        deadeye.gameObject.SetActive(false);
+        keyWord.text = Texts.Get(knight ? "class.hud.taunt" : "class.hud.charge");
         note.text = info != null && !info.Ready ? Texts.Get("class.hud.later") : "";
-        if (!assault) return;
-        int count = Mathf.Clamp(kit != null ? kit.StackMax : 8, 1, MostPips);
+        shownPips = 0;
+        if (assault) Pips(kit != null ? kit.StackMax : 8);
+    }
+
+    // As many pips as the resource holds (an Assault's adrenaline; a Ghost's Head Hunter, whose most the cards may raise).
+    private void Pips(int most)
+    {
+        int count = Mathf.Clamp(most, 1, MostPips);
+        if (count == shownPips) return;
+        shownPips = count;
         for (int i = 0; i < MostPips; i++) pips[i].gameObject.SetActive(i < count);
     }
 
@@ -79,6 +99,39 @@ public sealed class ClassHUD : MonoBehaviour
         float beat = ready ? .75f + .25f * Mathf.Sin(Time.unscaledTime * 9f) : 1f;
         for (int i = 0; i < count; i++)
             pips[i].color = i < stacks ? KitStyle.With(KitStyle.Accent, beat) : KitStyle.With(KitStyle.Ice, .14f);
+        KeyPrompt(ready);
+    }
+
+    // A Ghost's Head Hunter: a pip a stack. The one that came flashes white, the one lost too, and all of them when a
+    // hurt takes every stack. "DEADEYE" over the plate while the gun in hand holds its first round since loading.
+    private void Hunter()
+    {
+        Pips(kit.HunterMax);
+        int count = shownPips, stacks = Mathf.Min(kit.Hunter, count), change = kit.HunterChange;
+        float flash = Mathf.Clamp01(1f - kit.SinceHunterChange / .3f);
+        for (int i = 0; i < count; i++)
+        {
+            Color color = i < stacks ? KitStyle.Accent : KitStyle.With(KitStyle.Ice, .14f);
+            bool changed = change == -2 || (change == 1 && i == stacks - 1) || (change == -1 && i == stacks);
+            pips[i].color = flash > 0f && changed ? Color.Lerp(color, KitStyle.Ice, flash) : color;
+        }
+        bool ready = kit.DeadeyeReady;
+        deadeye.gameObject.SetActive(ready);
+        if (ready) deadeye.color = KitStyle.With(KitStyle.Accent, .78f + .22f * Mathf.Sin(Time.unscaledTime * 6f));
+    }
+
+    // A Knight's taunt: the key's prompt while it is ready, the seconds left to wait in its place while it isn't.
+    private void Taunt()
+    {
+        bool ready = kit.TauntReady;
+        KeyPrompt(ready);
+        string wait = ready ? "" : Texts.Format("class.hud.taunt_wait", Mathf.CeilToInt(kit.TauntWait));
+        if (note.text != wait) note.text = wait;
+    }
+
+    // "[휠] CHARGE" or "[휠] 도발" over the plate's right end, beating, while the class key has something to do.
+    private void KeyPrompt(bool ready)
+    {
         keyRect.gameObject.SetActive(ready);
         if (!ready) return;
         string key = KeyName();
@@ -185,8 +238,16 @@ public sealed class ClassHUD : MonoBehaviour
         word.anchorMin = word.anchorMax = new Vector2(1f, .5f);
         word.pivot = new Vector2(0f, .5f);
         word.anchoredPosition = new Vector2(8f, 0f);
-        KitStyle.Label(word, Texts.Get("class.hud.charge"), 15f, TextAlignmentOptions.MidlineLeft, KitStyle.Accent);
+        keyWord = KitStyle.Label(word, Texts.Get("class.hud.charge"), 15f, TextAlignmentOptions.MidlineLeft, KitStyle.Accent);
         keyRect.gameObject.SetActive(false);
+
+        // A Ghost's "DEADEYE", over the plate's right end where a key's prompt would be.
+        var mark = KitStyle.TopLeft("Deadeye", plate, Vector2.zero, new Vector2(120f, 24f));
+        mark.anchorMin = mark.anchorMax = mark.pivot = new Vector2(1f, .5f);
+        mark.anchoredPosition = new Vector2(-14f, Height * .5f + 16f);
+        deadeye = KitStyle.Label(mark, Texts.Get("class.hud.deadeye"), 15f, TextAlignmentOptions.MidlineRight, KitStyle.Accent);
+        deadeye.characterSpacing = 3f;
+        deadeye.gameObject.SetActive(false);
 
         // The CHARGE's time, draining along the plate's foot.
         chargeBar = KitStyle.TopLeft("Charge", plate, new Vector2(0f, Height + 4f), new Vector2(Width, 6f));
@@ -197,7 +258,7 @@ public sealed class ClassHUD : MonoBehaviour
         chargeFill.raycastTarget = false;
         fill.anchorMin = Vector2.zero;
         fill.anchorMax = Vector2.one;
-        KitStyle.Label(KitStyle.TopLeft("Charge text", chargeBar, new Vector2(Width - 90f, -2f), new Vector2(90f, 18f)),
+        barWord = KitStyle.Label(KitStyle.TopLeft("Charge text", chargeBar, new Vector2(Width - 90f, -2f), new Vector2(90f, 18f)),
             Texts.Get("class.hud.charge"), 12f, TextAlignmentOptions.MidlineRight, KitStyle.Accent);
         chargeBar.gameObject.SetActive(false);
     }

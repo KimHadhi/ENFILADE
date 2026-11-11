@@ -212,10 +212,18 @@ public sealed class MainMenuClasses : MonoBehaviour
             case PlayerClass.Assault:
                 return Texts.Format(key, Whole("Assault", "stackMax", 8f), Whole("Assault", "damagePerStack", 3f), Whole("Assault", "speedPerStack", 1.5f),
                     Whole("Assault", "chargeSeconds", 7f), Whole("Assault", "chargeRadius", 15f), Whole("Assault", "chargeDamage", 25f),
-                    Whole("Assault", "chargeSpeed", 25f), KeyBindings.Name(UnityEngine.InputSystem.InputSystem.actions != null
-                        ? UnityEngine.InputSystem.InputSystem.actions.FindAction("Player/ClassAbility", false) : null));
+                    Whole("Assault", "chargeSpeed", 25f), ClassKey());
             case PlayerClass.Point:
                 return Texts.Format(key, Whole("Point", "reloadShare", 1f));
+            case PlayerClass.Ghost:
+                return Texts.Format(key, Whole("Ghost", "hunterMax", 5f), Whole("Ghost", "hunterDamage", 7f), Whole("Ghost", "hunterBodyLoss", 1f),
+                    Whole("Ghost", "deadeye", 100f), Whole("Ghost", "stumbleBody", .8f), Whole("Ghost", "stumbleHead", 1.6f));
+            case PlayerClass.Knight:
+                float less = (1f - Mathf.Clamp01(PlayerClass.Ability("Knight", "taken", .75f))) * 100f;
+                return Texts.Format(key, less.ToString("0", System.Globalization.CultureInfo.InvariantCulture),
+                    Whole("Knight", "parryWindow", 50f), Whole("Knight", "parryPosture", 100f), Whole("Knight", "counter", 50f),
+                    Whole("Knight", "fists", 50f), Whole("Knight", "tauntRadius", 12f), Whole("Knight", "tauntSeconds", 6f),
+                    Whole("Knight", "tauntCooldown", 25f), ClassKey());
             default:
                 return Texts.Has(key) ? Texts.Get(key) : "";
         }
@@ -223,4 +231,8 @@ public sealed class MainMenuClasses : MonoBehaviour
 
     private static string Whole(string row, string name, float fallback)
         => PlayerClass.Ability(row, name, fallback).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
+
+    // The class key as the player has it bound (the wheel click unless changed in Settings → 조작).
+    private static string ClassKey() => KeyBindings.Name(UnityEngine.InputSystem.InputSystem.actions != null
+        ? UnityEngine.InputSystem.InputSystem.actions.FindAction("Player/ClassAbility", false) : null);
 }

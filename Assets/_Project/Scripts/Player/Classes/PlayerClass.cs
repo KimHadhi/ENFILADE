@@ -18,6 +18,8 @@ public static class PlayerClass
     public const string TableName = ClassGrowth.ClassTable, AbilityTable = "ClassAbilities";
     public const string Knight = "knight", Assault = "assault", Ghost = "ghost", Point = "point", Detente = "detente",
         Schiesshund = "schiesshund", Support = "support";
+    /// <summary>The rows of Tables/ClassAbilities ("Ghost.hunterMax").</summary>
+    internal const string KnightRow = "Knight", GhostRow = "Ghost";
 
     /// <summary>One class in the table.</summary>
     public sealed class Info
@@ -77,8 +79,9 @@ public static class PlayerClass
     }
 
     /// <summary>
-    /// The bullet's damage factor from this PC's player's class: its own guns' bonus, an Assault's adrenaline and a
-    /// CHARGE they are in. AttackTrace multiplies it in with the perk cards' for this PC's shots only.
+    /// The bullet's damage factor from this PC's player's class: its own guns' bonus, an Assault's adrenaline, a CHARGE
+    /// they are in, a Ghost's Head Hunter and Deadeye. AttackTrace multiplies it in with the perk cards' for this PC's
+    /// shots only.
     /// </summary>
     public static float GunFactor(bool headshot)
     {
@@ -94,6 +97,54 @@ public static class PlayerClass
     {
         var kit = ClassKit.Local;
         return kit != null && player != null && player.IsLocal && kit.Movement == player ? kit.SpeedFactor : 1f;
+    }
+
+    /// <summary>
+    /// An elite to the classes (a Ghost's class gun staggers it): ranked elite or named, or one of the elite kinds, a
+    /// brute, an exploder or a charger, however it was ranked.
+    /// </summary>
+    public static bool IsElite(EnemyHealth enemy)
+    {
+        if (enemy == null) return false;
+        if (enemy.IsStandout) return true;
+        if (!enemy.TryGetComponent(out ZombieType type)) return false;
+        return type.Kind == ZombieKind.Brute || type.Kind == ZombieKind.Exploder || type.Kind == ZombieKind.Charger;
+    }
+
+    // ---- The Knight: what this PC's own player takes, and what their fists, parries and counters do ----
+
+    /// <summary>
+    /// The share of an enemy's blow this PC's player takes from their class: a Knight less (the toughest class), and less
+    /// again while their taunt holds. PlayerDamageReceiver multiplies it in, on the player's own PC.
+    /// </summary>
+    public static float TakenFactor(PlayerMovement player)
+    {
+        if (!Knights(player)) return 1f;
+        float share = Mathf.Clamp01(Ability(KnightRow, "taken", .75f));
+        if (ClassKit.Local.TauntShare > 0f) share *= Mathf.Clamp01(Ability(KnightRow, "tauntTaken", .6f));
+        return share;
+    }
+
+    /// <summary>A Knight's fists hit this much harder, damage and posture (PlayerMeleeCombat's punches).</summary>
+    public static float FistFactor(PlayerMovement player) => Knights(player) ? 1f + Ability(KnightRow, "fists", 50f) / 100f : 1f;
+
+    /// <summary>A Knight's counter, after a dodge or a parry, hits this much harder (PlayerPerfectDefense: the memo's 흘리기).</summary>
+    public static float CounterFactor(PlayerMovement player) => Knights(player) ? 1f + Ability(KnightRow, "counter", 50f) / 100f : 1f;
+
+    /// <summary>A Knight's parry windows are this much longer (PlayerMeleeCombat).</summary>
+    public static float ParryWindowFactor(PlayerMovement player) => Knights(player) ? 1f + Ability(KnightRow, "parryWindow", 50f) / 100f : 1f;
+
+    /// <summary>A Knight's parry wears the attacker's posture down this much more (PlayerMeleeCombat).</summary>
+    public static float ParryPostureFactor(PlayerMovement player) => Knights(player) ? 1f + Ability(KnightRow, "parryPosture", 100f) / 100f : 1f;
+
+    /// <summary>A Knight's parry opens the counter as a perfect dodge does (the memo's 퍼펙트 패리; PlayerPerfectDefense).</summary>
+    public static bool ParryCounters(PlayerMovement player) => Knights(player) && Ability(KnightRow, "parryCounter", 1f) > .5f;
+
+    // This PC's own player, playing a Knight.
+    private static bool Knights(PlayerMovement player)
+    {
+        var kit = ClassKit.Local;
+        return player != null && kit != null && kit.Movement == player && Is(Knight);
     }
 
     /// <summary>An ability's number (Tables/ClassAbilities, "Class.name").</summary>

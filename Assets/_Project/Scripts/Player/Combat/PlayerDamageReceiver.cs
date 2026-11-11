@@ -101,6 +101,8 @@ public sealed class PlayerDamageReceiver : MonoBehaviour, IDamageReceiver, ITabl
         }
         // A hold taking hold costs nothing: the bites that follow do (DamageHit.TakesHold).
         float amount = hit.TakesHold && !hit.IsFatal ? 0f : hit.Amount;
+        // A Knight takes less from an enemy's blow, and less again while its taunt holds (PlayerClass); a fall is a fall.
+        if (hit.Kind == DamageKind.Attack) amount *= PlayerClass.TakenFactor(movement);
         float absorbed = hit.IsFatal ? 0f : Mathf.Min(Shield, amount);
         bool shieldBroke = absorbed > 0f && absorbed >= Shield;
         shield = shieldBroke ? 0f : Shield - absorbed;
