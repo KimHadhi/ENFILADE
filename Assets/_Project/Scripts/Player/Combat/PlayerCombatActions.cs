@@ -9,8 +9,8 @@ using State = PlayerMovement.MovementState;
 /// twice the run for a moment, and the first enemy it meets is thrown along the ground (shoving whoever that one runs
 /// into) and knocked down. The dash stops there, and its own cooldown starts when it ends, hit or miss. Otherwise, with
 /// a gun out, V is the crowd shove (ShoveSweep), lunging at someone just out of reach when standing still, and while the
-/// gun reloads it is a kick that leaves the reload alone (ShoveMoves); the fists' V is PlayerMeleeCombat's. A counter
-/// (ShoveCounter) hands the shove straight back: RefreshShove.
+/// gun reloads it is a kick that leaves the reload alone (ShoveMoves); crouched it is the leg sweep (ShoveMoves); the
+/// fists' V is PlayerMeleeCombat's. A counter (ShoveCounter) hands the shove straight back: RefreshShove.
 /// </summary>
 public sealed class PlayerCombatActions
 {
@@ -53,6 +53,8 @@ public sealed class PlayerCombatActions
     internal bool TryShove()
     {
         if (cooldown > 0f) return false;
+        // Crouched, V is the leg sweep (ShoveMoves): the legs do it, so the gun and its reload are left alone.
+        if (ctx.IsCrouching) return ShoveMoves.For(ctx).TrySweep();
         var weapon = ctx.GetComponent<WeaponController>();
         // Both hands are on the reload: the foot does the shoving, and the reload goes on.
         if (Reloading(weapon))

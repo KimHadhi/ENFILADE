@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -9,7 +10,11 @@ using UnityEngine;
 /// body is tall, shoving whoever it meets; the kicker rocks back on contact. The kick counters as a shove does
 /// (ShoveCounter; user, 2026-11-10: V while reloading should be an answer to runners too): the foot landing on a zombie
 /// late in its grab or leap counters it, and so does a grab or a leap reaching the kicker while the foot is out or just
-/// after. Numbers: Tables/Player.csv, row Shove.
+/// after. Crouched, V is a leg sweep instead, gun or fists (user, 2026-11-11 #33: Guilty Gear Strive's Ramlethal
+/// crouching sweep): one leg goes round the front at the floor, sweepArc degrees in sweepSeconds, and everyone it passes
+/// within sweepRadius is knocked off their feet (a big body only staggers); the reload, if any, goes on. While the leg is
+/// out it counters as a shove does. Every PC sees the leg go round (PlayerBody.Sweep) and the arc it leaves on the floor
+/// (SweepArcVfx), through the kick's own event. Numbers: Tables/Player.csv, row Shove.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class ShoveMoves : MonoBehaviour
@@ -42,12 +47,33 @@ public sealed class ShoveMoves : MonoBehaviour
     private float kickPushback = 2.5f;
     [SerializeField, Tooltip("View punch at the swing (degrees; pitch;random yaw either way). Mighty Foot: -10;2.")]
     private Vector2 kickViewPunch = new Vector2(-10f, 2f);
+    [Header("Crouched sweep (Guilty Gear Strive, Ramlethal's crouching sweep)")]
+    [SerializeField, Min(.05f), Tooltip("The leg going round (s).")]
+    private float sweepSeconds = .32f;
+    [SerializeField, Range(30f, 360f), Tooltip("How far round it goes, from one side through the front to the other (degrees).")]
+    private float sweepArc = 220f;
+    [SerializeField, Min(.3f), Tooltip("Whom it reaches, from the middle of the body (m).")]
+    private float sweepRadius = 1.9f;
+    [SerializeField, Min(0f), Tooltip("Damage to each one it sweeps.")]
+    private float sweepDamage = 10f;
+    [SerializeField, Min(0f), Tooltip("They lie this long (s). A big body only staggers.")]
+    private float sweepKnockdown = 1.6f;
+    [SerializeField, Min(.1f), Tooltip("From one sweep to the next (s).")]
+    private float sweepInterval = .9f;
+    [SerializeField, Tooltip("The view drops and tilts with it (m down; degrees down;roll).")]
+    private Vector3 sweepView = new Vector3(.1f, 4f, 6f);
 
     private PlayerMovement player;
-    private Vector3 lungeVelocity;
-    private float kickClock = -1f, nextKick;
+    private Vector3 lungeVelocity, sweepForward;
+    private float kickClock = -1f, nextKick, sweepClock = -1f, nextSweep, sweepPrev;
     private bool swung;
     private readonly RaycastHit[] hits = new RaycastHit[16];
+    private readonly Collider[] around = new Collider[48];
+    private readonly HashSet<MeleeCombatTarget> swept = new HashSet<MeleeCombatTarget>();
+
+    /// <summary>The sweep's numbers, for the leg every PC shows (PlayerBody.Sweep).</summary>
+    public float SweepSeconds => sweepSeconds;
+    public float SweepArc => sweepArc;
 
     /// <summary>A kick left, on this player's own PC or, shown, on another's copy: the body plays it.</summary>
     public event Action Kicked;
@@ -98,8 +124,119 @@ public sealed class ShoveMoves : MonoBehaviour
         return true;
     }
 
-    /// <summary>On someone else's copy: their kick left. Their PC judged what it hit.</summary>
-    internal void ShowKick() => Kicked?.Invoke();
+    /// <summary>On someone else's copy: their kick left, or crouched their sweep. Their PC judged what it hit.</summary>
+    internal void ShowKick()
+    {
+        if (player != null && player.IsCrouching) BeginSweep(false);
+        Kicked?.Invoke();
+    }
+
+    /// <summary>
+    /// Crouched V, gun or fists: the leg sweep. False while the last one is still in its interval. With the fists out the
+    /// punch comes straight back after it as the spinning backfist (MeleeCombos link).
+    /// </summary>
+    internal bool TrySweep()
+    {
+        if (player == null || Time.time < nextSweep || kickClock >= 0f || sweepClock >= 0f) return false;
+        nextSweep = Time.time + sweepInterval;
+        BeginSweep(true);
+        // The other PCs hear of it as a kick; crouched, their copy sweeps (ShowKick), and so does the body (PlayerBody.Sweep).
+        Kicked?.Invoke();
+        MeleeCombos.For(player)?.OpenLink();
+        return true;
+    }
+
+    // The leg starts round from the side, along where the body faces now. mine: this player's own, which judges the hits.
+    private void BeginSweep(bool mine)
+    {
+        sweepForward = Vector3.ProjectOnPlane(transform.forward, Vector3.up).normalized;
+        SweepArcVfx.Play(transform, sweepForward, sweepArc, sweepRadius, sweepSeconds);
+        if (!mine) return;
+        sweepClock = 0f; sweepPrev = sweepArc * .5f; swept.Clear();
+        GetComponent<PlayerFistAudio>()?.PlaySwing();
+        ShoveCounter.Shoved(player, sweepForward);
+        CombatHeadMotion.For(player)?.Move(new Vector3(0f, -sweepView.x, 0f), new Vector3(sweepView.y, 0f, -sweepView.z),
+            .05f, sweepSeconds * .6f, .2f);
+    }
+
+    // The foot's way round this frame, eased out (quick from the side, slowing past the far one); everyone it passes, once.
+    private void TickSweep(float dt)
+    {
+        sweepClock += dt;
+        float t = Mathf.Clamp01(sweepClock / sweepSeconds), eased = 1f - (1f - t) * (1f - t);
+        float angle = Mathf.Lerp(sweepArc * .5f, -sweepArc * .5f, eased);
+        // While the leg is out it stands as a shove: a grab or a leap meeting it now is countered (ShoveCounter).
+        ShoveCounter.Shoved(player, sweepForward);
+        SweepPast(angle, sweepPrev);
+        sweepPrev = angle;
+        if (t >= 1f) sweepClock = -1f;
+    }
+
+    private void SweepPast(float from, float to)
+    {
+        var settings = player.AbilitySettings;
+        Vector3 centre = transform.position;
+        int count = Physics.OverlapSphereNonAlloc(centre + Vector3.up * .5f, sweepRadius, around, settings.interactionLayers, QueryTriggerInteraction.Ignore);
+        for (int i = 0; i < count; i++)
+        {
+            var collider = around[i];
+            if (collider == null || collider.transform.IsChildOf(transform)) continue;
+            var target = collider.GetComponentInParent<MeleeCombatTarget>();
+            if (target == null || !target.IsAvailable || swept.Contains(target)) continue;
+            Vector3 to3 = target.transform.position - centre, flat = Vector3.ProjectOnPlane(to3, Vector3.up);
+            if (flat.magnitude > sweepRadius + .3f || Mathf.Abs(to3.y) > 1f) continue;
+            float bearing = flat.sqrMagnitude > 1e-4f ? Vector3.SignedAngle(sweepForward, flat, Vector3.up) : 0f;
+            // A little slack either side, so a frame's step never jumps a body.
+            if (bearing < from - 8f || bearing > to + 8f) continue;
+            if (!LegReaches(centre + Vector3.up * .35f, target)) continue;
+            swept.Add(target);
+            SweepStrike(target, collider, flat.sqrMagnitude > 1e-4f ? flat.normalized : sweepForward, settings);
+        }
+    }
+
+    // Nothing solid between the swinging leg and that body.
+    private bool LegReaches(Vector3 from, MeleeCombatTarget target)
+    {
+        Vector3 delta = target.transform.position + Vector3.up * .35f - from;
+        float length = delta.magnitude;
+        if (length < .05f) return true;
+        int count = Physics.RaycastNonAlloc(from, delta / length, hits, length, player.AbilitySettings.interactionLayers, QueryTriggerInteraction.Ignore);
+        for (int i = 0; i < count; i++)
+        {
+            Transform hit = hits[i].collider.transform;
+            if (hit.IsChildOf(transform) || hit.IsChildOf(target.transform) || hits[i].collider.GetComponentInParent<MeleeCombatTarget>() != null) continue;
+            if (PhysicsProp.Of(hits[i].collider) != null) continue;
+            return false;
+        }
+        return true;
+    }
+
+    // Swept off their feet, falling the way the leg goes; a big body only staggers back a little. A grab or a leap late in
+    // its windup is countered instead, as by a shove.
+    private void SweepStrike(MeleeCombatTarget target, Collider collider, Vector3 away, MovementAbilitySettings settings)
+    {
+        Vector3 point = collider.bounds.ClosestPoint(transform.position + Vector3.up * .25f);
+        var audio = GetComponent<PlayerShoveAudio>() ?? gameObject.AddComponent<PlayerShoveAudio>();
+        if (ShoveCounter.TryShoveCounter(player, target, point)) { audio.Play(ShoveImpactKind.Enemy); return; }
+        var receiver = target.GetComponent<IDamageReceiver>() ?? collider.GetComponentInParent<IDamageReceiver>();
+        bool landed = true;
+        if (receiver != null)
+            landed = receiver.ReceiveHit(new DamageHit(DamageHit.NewAttackId(), sweepDamage, DamageKind.Attack, point, away,
+                player.gameObject, true, settings.shovePostureDamage, method: DamageMethod.Shove)) == DamageResult.Damaged;
+        if (landed)
+        {
+            // The leg takes the feet the way it goes, so they fall across it rather than straight back.
+            Vector3 fall = (away * .5f + Quaternion.AngleAxis(-90f, Vector3.up) * away).normalized;
+            if (target.BodySize != EnemyBodySize.Large) target.KnockDown(fall, sweepKnockdown);
+            else
+            {
+                target.ApplyPostureDamage(settings.shovePostureDamage);
+                target.Interrupt(settings.shoveStun);
+                target.ReceiveShove(away * settings.shovePushSpeed * .5f, point);
+            }
+        }
+        audio.Play(ShoveImpactKind.Enemy);
+    }
 
     /// <summary>A counter hands the shove straight back (ShoveCounter): the next kick needn't wait for the last.</summary>
     internal void RefreshKick() => nextKick = 0f;
@@ -116,6 +253,11 @@ public sealed class ShoveMoves : MonoBehaviour
             lungeVelocity *= Mathf.Exp(-lungeFriction * dt);
         }
         else lungeVelocity = Vector3.zero;
+        if (sweepClock >= 0f)
+        {
+            if (!player.DamageReceiver.IsAlive || player.CombatInputLocked || !player.IsCrouching) sweepClock = -1f;
+            else TickSweep(dt);
+        }
         if (kickClock < 0f) return;
         if (!player.DamageReceiver.IsAlive || player.CombatInputLocked) { kickClock = -1f; return; }
         kickClock += dt;
@@ -203,5 +345,5 @@ public sealed class ShoveMoves : MonoBehaviour
         player.HorizontalVelocity -= push * (player.IsGrounded ? kickPushback : kickPushback * 2f);
     }
 
-    private void OnDisable() { lungeVelocity = Vector3.zero; kickClock = -1f; }
+    private void OnDisable() { lungeVelocity = Vector3.zero; kickClock = sweepClock = -1f; }
 }

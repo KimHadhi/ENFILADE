@@ -62,6 +62,8 @@ public sealed partial class PlayerBody
 
     private void OnKicked()
     {
+        // Crouched, the kick is the leg sweep, posed by IK (PlayerBody.Sweep).
+        if (state == MovementState.Crouching) { BeginSweep(); return; }
         if (!kickClip.IsValid()) return;
         kickClip.SetTime(0);
         kickClip.SetSpeed(kickClipSpeed);

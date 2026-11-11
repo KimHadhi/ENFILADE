@@ -176,7 +176,13 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
             float slice = Mathf.Min(dt, lungeRemaining); lungeRemaining -= slice;
             player.Motor.AddDisplacement(lungeDirection * (lungeDistance * slice / 0.1f));
         }
-        if (frame.ShovePressed && cooldown <= 0f && shoveWait <= 0f)
+        // Crouched, V is the leg sweep round the front at once, no hold to wait for (ShoveMoves; it keeps its own interval).
+        if (frame.ShovePressed && player.IsCrouching && cooldown <= 0f && shoveWait <= 0f)
+        {
+            punchSweep.Cancel(); charging = shovePending = false; IsGuarding = false; parryRemaining = 0f;
+            ShoveMoves.For(player)?.TrySweep();
+        }
+        else if (frame.ShovePressed && cooldown <= 0f && shoveWait <= 0f)
         { punchSweep.Cancel(); shoveSweep.Cancel(); shovePending = true; shoveTime = 0f; charging = false; IsGuarding = false; parryRemaining = 0f; }
         if (shovePending)
         {

@@ -122,6 +122,13 @@ Shove.kickRadius,0.1,곧은 선이 빗나가면 이 반지름(m)으로 한 번 �
 Shove.kickDamage,20;30,발차기 피해 - 최소;최대(무작위). 밀침·경직·자세 피해는 밀치기와 같다
 Shove.kickPushback,2.5,맞히면 차는 사람이 뒤로 밀리는 속도(m/s). 공중이면 두 배. 원본 100단위/초
 Shove.kickViewPunch,-10;2,휘두를 때 화면 충격(도; 위아래;좌우 무작위 폭). 원본 -10;2
+Shove.sweepSeconds,0.32,앉아서 V는 다리 쓸기(길티기어 스트라이브 램리썰의 앉아 하단): 총이든 주먹이든 한 다리가 바닥을 따라 앞쪽을 돌며 닿는 적을 모두 넘어뜨린다(장전은 계속). 다리가 도는 시간(초)
+Shove.sweepArc,220,다리가 도는 각도(도). 한쪽 옆에서 앞을 지나 반대쪽 옆까지. 360이면 한 바퀴
+Shove.sweepRadius,1.9,다리가 닿는 거리(m). 몸 가운데에서
+Shove.sweepDamage,10,쓸린 적 하나마다 피해
+Shove.sweepKnockdown,1.6,쓸린 적이 넘어져 있는 시간(초). 거구는 넘어지지 않고 비틀거리며 조금 밀린다
+Shove.sweepInterval,0.9,다리 쓸기 재사용 대기(초)
+Shove.sweepView,0.1;4;6,쓸 때 화면이 내려가고 기우는 정도(m 아래; 도 아래;기울기)
 HeadStand.shakeDelay,0.35,적 머리 위에 이만큼(초) 서 있으면 그 적이 몸을 털어 떨어뜨린다. 밟힌 적은 위로 치지 않고 주변 적은 위로 손을 뻗는다(Enemies.csv reachAbove)
 HeadStand.throwDistance,1.1,떨어뜨릴 때 옆으로 밀려나는 거리(m)
 HeadStand.throwSeconds,0.25,그 밀림에 걸리는 시간(초)

@@ -497,6 +497,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
                 bodyLean.MoveHips(hips, bendWeight, dead);
                 PlantFeet(Time.deltaTime);
                 PlantLadderFeet(Time.deltaTime);
+                SweepLeg(Time.deltaTime);
                 KeepLegsOffWall();
             }
             using (LookMarker.Auto()) Look(Time.deltaTime);
