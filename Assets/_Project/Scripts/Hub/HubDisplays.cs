@@ -82,8 +82,9 @@ public static class HubDisplays
     }
 
     /// <summary>
-    /// A copy of <paramref name="prefab"/> with nothing but its looks: no scripts, colliders, bodies, sounds or animators.
-    /// Made switched off and switched on a frame later, after its scripts are gone, so none of them ever wakes.
+    /// A copy of <paramref name="prefab"/> with nothing but its looks: no scripts, colliders, bodies, sounds, animators or
+    /// effects (a muzzle flash's particles and their renderer go too). Made switched off and switched on a frame later,
+    /// after its scripts are gone, so none of them ever wakes.
     /// </summary>
     public static Transform Showpiece(MonoBehaviour runner, GameObject prefab, Transform parent, System.Action<Transform> woke = null)
     {
@@ -97,7 +98,7 @@ public static class HubDisplays
         for (int i = parts.Length - 1; i >= 0; i--)
         {
             var part = parts[i];
-            if (part == null || part is Transform || part is Renderer || part is MeshFilter) continue;
+            if (part == null || part is Transform || part is MeshRenderer || part is SkinnedMeshRenderer || part is MeshFilter) continue;
             Object.Destroy(part);
         }
         runner.StartCoroutine(WakeLater(holder, woke));

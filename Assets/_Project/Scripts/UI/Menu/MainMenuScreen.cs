@@ -78,6 +78,7 @@ public sealed class MainMenuScreen : MonoBehaviour
         Time.timeScale = 1f;
         CombatFeedHUD.ResetScore();
         PlayerPerks.Clear(); // perks last a campaign; back at the title screen it starts bare
+        MatchResults.Clear(); // a chapter's results wait for the hub it leads back to, not for a later visit from here
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
         SettingsMenu.EnsureEventSystem();
