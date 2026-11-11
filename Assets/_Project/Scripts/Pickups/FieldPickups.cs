@@ -489,7 +489,9 @@ public sealed class FieldPickups : MonoBehaviour
         if (slots == null || row.Weapon == null) return;
         for (int i = 0; i < PlayerWeaponSlots.SlotCount; i++)
         {
-            if (slots.GetWeapon(i) != row.Weapon) continue;
+            // Held twice as a dual pistol (AkimboGuns) counts as held.
+            var held = slots.GetWeapon(i);
+            if (held != row.Weapon && (held == null || AkimboGuns.SingleOf(held) != row.Weapon)) continue;
             slots.RefillAmmo();
             Pop(row.Kind, row.Name, Texts.Get("pickup.gives.refill"));
             return;

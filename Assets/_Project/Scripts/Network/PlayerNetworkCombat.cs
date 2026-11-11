@@ -43,9 +43,14 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
         public byte Grip;
     }
 
+    // A dual pistol (AkimboGuns) is its single gun's number with this bit set; every PC makes the same pair of it.
+    private const ushort AkimboBit = 0x8000;
+
     // The gun's place in FPSBody's guns plus one (the same list on every PC of a build), or 0.
     private static ushort GunId(WeaponData data)
     {
+        var single = AkimboGuns.SingleOf(data);
+        if (single != null) { ushort id = GunId(single); return id > 0 ? (ushort)(id | AkimboBit) : (ushort)0; }
         var guns = FPSBodyAssets.Instance != null ? FPSBodyAssets.Instance.guns : null;
         if (data == null || guns == null) return 0;
         for (int i = 0; i < guns.Length; i++)
@@ -55,6 +60,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
 
     private static WeaponData GunOf(ushort id)
     {
+        if ((id & AkimboBit) != 0) return AkimboGuns.DualOf(GunOf((ushort)(id & ~AkimboBit)));
         var guns = FPSBodyAssets.Instance != null ? FPSBodyAssets.Instance.guns : null;
         return guns != null && id > 0 && id <= guns.Length ? guns[id - 1].weapon : null;
     }
@@ -259,7 +265,8 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
         if (body != null) body.SetPace(1f - now.Slowed / 100f);
     }
 
-    private void OnShot(WeaponShot shot) => ShotRpc(shot.Origin, shot.Direction, (byte)Mathf.Clamp(shot.Pellet, 0, 255));
+    // A dual pistol's left gun (AkimboGuns) rides the pellet number's top bit.
+    private void OnShot(WeaponShot shot) => ShotRpc(shot.Origin, shot.Direction, (byte)(Mathf.Clamp(shot.Pellet, 0, 127) | (shot.Left ? 128 : 0)));
     private void OnPunched(float charge) => PunchRpc(charge);
     private void OnElbowed(int side) => ElbowRpc(side >= 0);
     private void OnFistSound(FistSound sound) => FistSoundRpc(sound);
@@ -357,7 +364,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
 
     // Each of a shotgun's pellets comes on its own, numbered, so the copy's gun fires once and each pellet leaves its mark.
     [Rpc(SendTo.NotMe)]
-    private void ShotRpc(Vector3 origin, Vector3 direction, byte pellet) => weapon.ShowShot(origin, direction, pellet);
+    private void ShotRpc(Vector3 origin, Vector3 direction, byte pellet) => weapon.ShowShot(origin, direction, pellet & 127, (pellet & 128) != 0);
 
     [Rpc(SendTo.NotMe)]
     private void PunchRpc(float charge) => melee.ShowPunch(charge);

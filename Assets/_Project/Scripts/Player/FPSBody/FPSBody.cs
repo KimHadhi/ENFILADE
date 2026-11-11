@@ -291,6 +291,7 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
         if (body != null) body.UpperBodyFromFramework = false;
         if (bodyCamera != null) bodyCamera.SetGunWeight(0f);
         ForgetMade();
+        ForgetAkimbo();
     }
 
     private void ForgetMade()
@@ -611,16 +612,22 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
     private FPSGun Find(WeaponData data)
     {
         if (data == null) return null;
+        // A dual pistol is its single gun in the right hand, and a copy of it in the left (FPSBody.Akimbo).
+        var single = AkimboGuns.SingleOf(data);
+        if (single != null) data = single;
         foreach (var gun in guns) if (gun.Data == data) return gun;
         return null;
     }
 
     private void Equip(WeaponData data)
     {
+        // The single gun and its pair are one gun in the right hand: going from one to the other draws it again.
+        bool pairChanged = AkimboGuns.Is(shownData) != AkimboGuns.Is(data);
         shownData = data;
+        AkimboEquip(data);
         StopFiring();
         var next = Find(data);
-        if (held != null && held != next) PutAway();
+        if (held != null && (held != next || pairChanged)) PutAway();
         held = next;
         if (held == null)
         {
@@ -870,9 +877,12 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
     // After the body has been posed and before the weapon fires from its muzzle (300).
     private void LateUpdate()
     {
-        if (!HoldsGun) return;
+        if (!HoldsGun) { AkimboOff(); return; }
         KeepGunInView();
+        // A dual pistol: the right gun set apart and the left one where the left hand will hold it (FPSBody.Akimbo).
+        PoseAkimbo(Time.deltaTime);
         RideGun();
+        RideAkimbo();
         if (firing && Time.time - lastShot > shotInterval * TriggerReleaseIntervals) StopFiring();
         if (held.Reloading && (controller.Runtime == null || !controller.Runtime.IsReloading)) held.StopReload(playables, reloadBlendOut, bodyCamera);
     }
@@ -1029,7 +1039,8 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
         if (!HoldsGun) return;
         StopFiring();
         CutDraw();
-        held.Reload(empty, playables, bodyCamera);
+        // A dual pistol's left gun waits out the clip (FPSBody.Akimbo).
+        AkimboReloading(held.Reload(empty, playables, bodyCamera));
     }
 
     // The gun used (a shot, an aim, a reload) once it is ready but before its draw clip is over: the rest of the draw lets
@@ -1166,6 +1177,8 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
         firing = true;
         lastShot = Time.time;
         shotInterval = data.ShotInterval;
+        // A dual pistol's left gun kicks on its own (FPSBody.Akimbo); the right one is KINEMATION's as ever.
+        if (AkimboShot(controller.LastShot)) return;
         held.Fire(controller.LastShot.AmmoAfterShot == 0, recoil, bodyCamera, !kinemationShake || controller.AimBlend >= .5f);
     }
 

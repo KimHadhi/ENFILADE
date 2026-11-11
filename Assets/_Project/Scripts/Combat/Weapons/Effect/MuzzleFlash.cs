@@ -55,7 +55,8 @@ public sealed class MuzzleFlash : MonoBehaviour
         // One flame per shot, however many pellets it threw.
         if (shot.Pellet > 0) return;
         var data = weapon != null ? weapon.EquippedData : null;
-        Transform muzzle = weapon != null ? weapon.MuzzlePoint : null;
+        // The muzzle this shot left from: a dual pistol's left gun's for its shots (AkimboGuns).
+        Transform muzzle = weapon != null ? weapon.ShotMuzzle : null;
         // A suppressor throws no flame.
         if (flame == null || data == null || data.MuzzleFlashScale <= 0f || !GunFeelSettings.Instance.muzzleEffects
             || muzzle == null || !muzzle.gameObject.activeInHierarchy || weapon.Suppressed) return;

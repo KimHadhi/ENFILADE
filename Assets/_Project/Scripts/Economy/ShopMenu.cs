@@ -261,7 +261,8 @@ public sealed class ShopMenu : MonoBehaviour
         switch (item.Kind)
         {
             case Kind.Gun:
-                int slot = GunSlotFor(slots);
+                int slot = PairSlot(slots, item.Weapon);
+                if (slot < 0) slot = GunSlotFor(slots);
                 if (!slots.TrySetWeapon(slot, item.Weapon)) return false;
                 if (!slots.HandsFull) slots.SelectSlot(slot);
                 return true;
@@ -289,9 +290,24 @@ public sealed class ShopMenu : MonoBehaviour
         return 0;
     }
 
+    // A dual pistol goes where its single gun is held, as the second of it (AkimboGuns); -1 when none is held.
+    private static int PairSlot(PlayerWeaponSlots slots, WeaponData gun)
+    {
+        var single = AkimboGuns.SingleOf(gun);
+        if (single == null) return -1;
+        for (int i = 0; i < PlayerWeaponSlots.SlotCount; i++)
+            if (PlayerWeaponSlots.GetSlotCategory(i) == WeaponCategory.Ranged && slots.GetWeapon(i) == single) return i;
+        return -1;
+    }
+
+    // A gun held, or held twice as a dual pistol (AkimboGuns): buying it again would take the second one away.
     private static bool Holds(PlayerWeaponSlots slots, WeaponData gun)
     {
-        for (int i = 0; i < PlayerWeaponSlots.SlotCount; i++) if (slots.GetWeapon(i) == gun) return true;
+        for (int i = 0; i < PlayerWeaponSlots.SlotCount; i++)
+        {
+            var held = slots.GetWeapon(i);
+            if (held == gun || (held != null && AkimboGuns.SingleOf(held) == gun)) return true;
+        }
         return false;
     }
 
@@ -311,6 +327,9 @@ public sealed class ShopMenu : MonoBehaviour
         if (assets != null)
             foreach (var entry in assets.guns)
                 if (entry.weapon != null && !guns.ContainsKey(entry.weapon.name)) guns[entry.weapon.name] = entry.weapon;
+        // The dual pistols (Tables/Akimbo, made at runtime) by their names too.
+        foreach (var pair in AkimboGuns.All)
+            if (!guns.ContainsKey(pair.name)) guns[pair.name] = pair;
         foreach (string id in GameTables.RowIds(TableName))
         {
             if (!GameTables.TryGetRow(TableName, id, out var row) || !Enum.TryParse(Text(row, "kind"), true, out Kind kind)) continue;
@@ -322,13 +341,24 @@ public sealed class ShopMenu : MonoBehaviour
             {
                 Kind = kind, Weapon = weapon, Price = (long)Number(row, "price", 0f), Amount = amount,
                 Order = (int)Number(row, "order", 0f), Name = name.Length > 0 ? name : weapon != null ? weapon.DisplayName : id,
-                Detail = kind == Kind.Gun ? Texts.Format("shop.detail.gun", CarryWeight.Show(CarryWeight.Of(weapon)))
+                Detail = kind == Kind.Gun ? GunDetail(weapon)
                     : kind == Kind.Ammo ? Texts.Get("shop.detail.ammo")
                     : kind == Kind.Syringe ? Texts.Format("shop.detail.syringe", amount.ToString("0"))
                     : kind == Kind.Heal ? Texts.Format("shop.detail.heal", amount.ToString("0")) : Texts.Format("shop.detail.shield", amount.ToString("0"))
             });
         }
         stock.Sort((a, b) => a.Order.CompareTo(b.Order));
+    }
+
+    // A gun's card says what it is; a dual pistol's which key fires its left gun alone (AkimboGuns, Combat/AltFire).
+    // A gun card's line under its name: its weight (CarryWeight), and for a dual pistol also the key that fires its left
+    // gun alone.
+    private static string GunDetail(WeaponData weapon)
+    {
+        string weight = CarryWeight.Show(CarryWeight.Of(weapon));
+        return !AkimboGuns.Is(weapon) ? Texts.Format("shop.detail.gun", weight)
+            : Texts.Format("shop.detail.akimbo",
+                KeyBindings.Name(InputSystem.actions != null ? InputSystem.actions.FindAction("Combat/AltFire", false) : null), weight);
     }
 
     private static string Text(IReadOnlyDictionary<string, string> row, string key) => row.TryGetValue(key, out string text) ? text.Trim() : "";

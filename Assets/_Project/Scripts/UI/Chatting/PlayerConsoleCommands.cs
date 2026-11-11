@@ -57,6 +57,8 @@ public static class PlayerConsoleCommands
             if (assets != null)
                 foreach (var entry in assets.guns)
                     if (entry.weapon != null && entry.weapon.Category == WeaponCategory.Ranged && !guns.Contains(entry.weapon)) guns.Add(entry.weapon);
+            // 쌍권총 (Tables/Akimbo): /gun DualM1911
+            foreach (var pair in AkimboGuns.All) if (!guns.Contains(pair)) guns.Add(pair);
             string list = string.Join(", ", guns.ConvertAll(gun => gun.name));
             string wanted = Plain(args);
             if (wanted.Length == 0) return $"사용법: /gun 이름 — 있는 총: {list}";

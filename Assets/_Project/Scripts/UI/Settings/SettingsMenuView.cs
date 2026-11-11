@@ -218,6 +218,9 @@ public sealed class SettingsMenuView
         // The kick key (porting bundle 9, Mighty Foot Engaged): the mouse's back side button unless picked otherwise.
         rows.Key(Texts.Get("settings.controls.kick_key"),
             UnityEngine.InputSystem.InputSystem.actions != null ? UnityEngine.InputSystem.InputSystem.actions.FindAction("Player/Kick", false) : null);
+        // A dual pistol's left gun alone (AkimboGuns): the right button unless picked otherwise.
+        rows.Key(Texts.Get("settings.controls.alt_fire"),
+            UnityEngine.InputSystem.InputSystem.actions != null ? UnityEngine.InputSystem.InputSystem.actions.FindAction("Combat/AltFire", false) : null);
     }
 
     private static void ScreenTab(SettingsRows rows, GameSettings s)

@@ -47,13 +47,18 @@ public sealed partial class PlayerBodyHands
         {
             gunHold[side] = isLeft ? Mathf.Max(gunBody.GripHold(true), OnAttachedGrip) : gunBody.GripHold(false);
             gunShape[side] = ShapeFor(gunBody, isLeft);
-            string gun = GunName(weapons != null ? weapons.EquippedData : null);
+            // A dual pistol's hands take its single gun's own shapes (AkimboGuns).
+            var held = weapons != null ? weapons.EquippedData : null;
+            var single = AkimboGuns.SingleOf(held);
+            string gun = GunName(single != null ? single : held);
             bool ownBody = !isLeft || gunBody.HeldGripKind == GunAttachments.Kind.None;
             gunCustom[side] = gun != null && ownBody && GunGrips.TryGet(gun, isLeft, out var custom) ? custom : null;
         }
         gunWrap[side] = Mathf.MoveTowards(gunWrap[side], gunBody != null ? 1f : 0f, dt / blendTime);
         float weight = gunWrap[side] * weights[(int)Hold.Gun] * (isLeft ? 1f - leftOffGun : 1f) * gunFingerWrap;
         if (arm == null || weight <= 0f) return;
+        // A dual pistol's left hand holds a gun of its own, as the shooting hand does (Akimbo).
+        if (isLeft && AkimboFingers(arm, gunBody, weight)) return;
 
         var surface = gunBody != null ? gunBody.HeldSurface : null;
         if (surface != null && !surface.Empty) PalmOutOfGun(arm, surface, weight * gunHold[side]);

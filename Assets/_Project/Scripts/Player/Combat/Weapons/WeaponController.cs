@@ -16,6 +16,8 @@ public readonly struct WeaponShot
     /// light, kick and brass) belongs to pellet 0; each pellet has its own trace, tracer and marks.
     /// </summary>
     public readonly int Pellet;
+    /// <summary>A dual pistol's left gun fired it (AkimboGuns): it left from that gun's muzzle (WeaponController.ShotMuzzle).</summary>
+    public readonly bool Left;
 
     public WeaponShot(
         long id,
@@ -25,7 +27,8 @@ public readonly struct WeaponShot
         Vector2 recoil,
         int ammo,
         BulletLeg[] later = null,
-        int pellet = 0)
+        int pellet = 0,
+        bool left = false)
     {
         AttackId = id;
         Origin = origin;
@@ -35,6 +38,7 @@ public readonly struct WeaponShot
         Recoil = recoil;
         AmmoAfterShot = ammo;
         Pellet = pellet;
+        Left = left;
     }
 }
 
@@ -156,8 +160,11 @@ public sealed class WeaponController : MonoBehaviour
         KeepSetup();
     }
 
-    /// <summary>The gun of ours drawn now (its sights and parts), for the customize menu; null without one.</summary>
-    internal FPSGun HeldGun => presentation is FPSBody body ? body.Held : null;
+    /// <summary>
+    /// The gun of ours drawn now (its sights and parts), for the customize menu; null without one, and for a dual pistol,
+    /// whose two guns are fitted as they come (AkimboGuns).
+    /// </summary>
+    internal FPSGun HeldGun => presentation is FPSBody body && !akimbo ? body.Held : null;
 
     /// <summary>The customize menu is open for this player: the body holds the gun out before the eyes to show it.</summary>
     internal bool Customizing { get; set; }
@@ -277,6 +284,24 @@ public sealed class WeaponController : MonoBehaviour
     // How far zombies hear this gun's shot: its Noise Radius through its parts (a suppressor cuts it to the gun's share).
     private float ShotNoise => Mathf.Max(0f, Fitted(GunStats.Stat.Noise, weaponData.NoiseRadius));
     public Transform MuzzlePoint => muzzlePoint;
+    /// <summary>
+    /// The muzzle the latest shot left from, which its flame, light and brass come from (MuzzleFlash, MuzzleLight,
+    /// WeaponFeedback): a dual pistol's left gun's for its shots, else Muzzle Point.
+    /// </summary>
+    public Transform ShotMuzzle => shotMuzzle != null ? shotMuzzle : muzzlePoint;
+    /// <summary>The gun in hand is a dual pistol (AkimboGuns): a gun in each hand, fired in turn, and no sights.</summary>
+    public bool Akimbo => akimbo;
+
+    // ---- Dual pistols (AkimboGuns) ----
+    // TFA Base's akimbo rule (2840031720): one magazine for both guns, twice the rate, the two firing in turn, the right
+    // first. On top, ArcCW MW2's left trigger (2135529088): AltFire, the button that would aim (there are no sights to aim
+    // with two guns), fires the left gun alone, as often as one gun may (twice the pair's interval). A shot whose left gun
+    // isn't in the hand (a reload's end, a vault's plant) goes from the right.
+    private bool akimbo, leftNext;
+    private float leftWait;
+    private Transform shotMuzzle;
+    // The left gun's muzzle while that gun is up in the left hand (FPSBody.Akimbo), else null.
+    private Transform LeftMuzzle => akimbo && presentation is FPSBody body ? body.AkimboMuzzle : null;
     public Transform AimOrigin => aimOrigin;
     /// <summary>The posed gun model root; the body's hands hold it at the weapon's grip points.</summary>
     public Transform WeaponRoot => weaponRoot;
@@ -396,8 +421,9 @@ public sealed class WeaponController : MonoBehaviour
         bareHandsLeft = bare ? BareHandsLinger : Mathf.Max(0f, bareHandsLeft - Time.deltaTime);
         presentation?.SetVisible(Runtime != null && Runtime.Data.Category != WeaponCategory.Melee && bareHandsLeft <= 0f);
         if (Runtime == null) { ResetPresentation(); return; }
-        // The body builds a drawn gun a frame or so later; its remembered parts go on once it holds it.
-        if (setupDue && (!Mine || GunSetups.Restore(this))) setupDue = false;
+        // The body builds a drawn gun a frame or so later; its remembered parts go on once it holds it. A dual pistol's
+        // guns are fitted as they come.
+        if (setupDue && (!Mine || akimbo || GunSetups.Restore(this))) setupDue = false;
 
         if (health != null && !health.IsAlive)
         {
@@ -426,15 +452,19 @@ public sealed class WeaponController : MonoBehaviour
 
     /// <summary>
     /// On someone else's copy: they fired. The muzzle, the tracer, the sound and the bullet's mark happen here, the same
-    /// way as for this PC's own shots; their PC already judged the hit.
+    /// way as for this PC's own shots; their PC already judged the hit. <paramref name="left"/>: their dual pistol's left
+    /// gun fired it (AkimboGuns), so it shows from this copy's left gun.
     /// </summary>
-    internal void ShowShot(Vector3 origin, Vector3 direction, int pellet = 0)
+    internal void ShowShot(Vector3 origin, Vector3 direction, int pellet = 0, bool left = false)
     {
         if (Runtime == null || weaponData == null) return;
         // The same path their PC drew, walls passed and ricochets included: the randomness comes from the shot itself.
         var look = new DamageHit(0, 0f, DamageKind.Attack, origin, direction, owner, method: DamageMethod.Bullet);
         var trace = AttackTrace.Bullet(look, origin, direction, weaponData.Range, hitLayers, 1f, weaponData.Penetration, false, out BulletLeg[] later);
-        LastShot = new WeaponShot(DamageHit.NewAttackId(), muzzlePoint != null ? muzzlePoint.position : origin, direction, trace, Vector2.zero, Runtime.Ammo, later, pellet);
+        shotMuzzle = left ? LeftMuzzle : null;
+        Transform from = shotMuzzle != null ? shotMuzzle : muzzlePoint;
+        LastShot = new WeaponShot(DamageHit.NewAttackId(), from != null ? from.position : origin, direction, trace, Vector2.zero, Runtime.Ammo, later,
+            pellet, shotMuzzle != null);
         // The host's zombies hear a friend's shot as it reaches this PC (ZombieMind), once per shot however many pellets.
         if (pellet == 0) Noise.Make(origin, ShotNoise, owner);
         ShotFired?.Invoke(LastShot);
@@ -451,6 +481,11 @@ public sealed class WeaponController : MonoBehaviour
 
         Runtime = weapon;
         weaponData = weapon != null ? weapon.Data : null;
+        // Two guns, the right one first (TFA's AnimCycle 0).
+        akimbo = AkimboGuns.Is(weaponData);
+        leftNext = false;
+        leftWait = 0f;
+        shotMuzzle = null;
         // Coming out: no shot, aim or reload until it is up (Draw Duration, its draw clip on the body).
         StopInspecting();
         holstering = false;
@@ -493,6 +528,11 @@ public sealed class WeaponController : MonoBehaviour
         // Coming out or going away holds the gun back like a move that needs the hands.
         bool bodyAction = bareHandsLeft > 0f || switchLeft > 0f || (movement != null && (movement.IsParkour
             || movement.CurrentState == PlayerMovement.MovementState.DashPush || movement.IsLandingRecovery));
+        // A dual pistol's left trigger is a trigger press of its own from here on, so whatever holds a shot back holds it
+        // back too; it is spent on the left gun below.
+        leftWait = Mathf.Max(0f, leftWait - dt);
+        bool leftTrigger = akimbo && frame.AltFirePressed && !frame.FirePressed && leftWait <= 0f && LeftMuzzle != null;
+        if (leftTrigger) frame = new WeaponInputFrame(true, frame.FireHeld, frame.ReloadPressed, frame.AimHeld);
         // A look over the gun ends by itself, or as soon as the hands are wanted for anything else.
         if (inspecting)
         {
@@ -505,7 +545,8 @@ public sealed class WeaponController : MonoBehaviour
         if (survivalInterrupted || bodyAction || stepDodging || shoveRecovery > 0f)
             frame = new WeaponInputFrame(frame.FirePressed, frame.FireHeld, false, frame.AimHeld);
         survivalInterrupted = false;
-        bool aiming = frame.AimHeld && !Runtime.IsReloading && !bodyAction && shoveRecovery <= 0f
+        // Two guns have no sights to aim down (TFA's M9 pair, ArcCW MW2's akimbo): they are fired from the hip.
+        bool aiming = frame.AimHeld && !akimbo && !Runtime.IsReloading && !bodyAction && shoveRecovery <= 0f
             && !stepDodging && !frame.ReloadPressed;
         float nextAim = Mathf.MoveTowards(AimBlend, aiming ? 1f : 0f, dt / AdsTime);
         Vector3 target = AimTarget(weaponData.Range);
@@ -561,10 +602,16 @@ public sealed class WeaponController : MonoBehaviour
 
         for (int i = 0; i < shots; i++)
         {
-            Vector3 origin = muzzlePoint != null ? muzzlePoint.position : PoseView.position;
+            // A dual pistol's turn: the left trigger's shot, else whichever gun didn't fire last.
+            Transform leftMuzzle = LeftMuzzle;
+            bool left = leftMuzzle != null && ((leftTrigger && i == 0) || leftNext);
+            Vector3 origin = left ? leftMuzzle.position : muzzlePoint != null ? muzzlePoint.position : PoseView.position;
             target = AimTarget(weaponData.Range);
             if (WeaponAimSolver.IsObstructed(owner, PoseView, origin, target, hitLayers))
             { Runtime.RefundUnfiredShots(shots - i); IsHighReady = true; AimBlend = 0f; break; }
+            if (akimbo) leftNext = !left;
+            if (left) leftWait = weaponData.ShotInterval * 2f;
+            shotMuzzle = left ? leftMuzzle : null;
             // From the muzzle to what the crosshair is on, which stays in the middle of the screen: the gun turns to point
             // there (FPSBody's GunConvergeLayer), as the gun did before KINEMATION (user, 2026-11-09: "총이 조준선을 옮기면
             // 안 되고 조준선 쪽으로 총이 이동해야지").
@@ -634,7 +681,8 @@ public sealed class WeaponController : MonoBehaviour
                     recoil,
                     Runtime.Ammo + shots - i - 1,
                     later,
-                    pellet);
+                    pellet,
+                    left);
 
                 LastShot = shot;
                 PushProp(trace, direction, 1f);

@@ -9,6 +9,8 @@ public sealed class PlayerWeaponInput : MonoBehaviour, IWeaponInput
     [SerializeField] private InputActionAsset inputActions;
     private InputActionMap ownedMap;
     private InputAction fire, reload, guard, shove;
+    // A dual pistol's left trigger (AkimboGuns), and the project's own action, where Settings → 조작 rebinds it.
+    private InputAction altFire, altFireKey;
     private bool meleeReleaseRequired = true;
     private bool acceptInputThisFrame, releaseRequired = true;
 
@@ -23,6 +25,8 @@ public sealed class PlayerWeaponInput : MonoBehaviour, IWeaponInput
         if (map == null) { Debug.LogError("PlayerWeaponInput needs Combat/Fire and Combat/Reload in the input asset.", this); return; }
         ownedMap = map.Clone(); fire = ownedMap.FindAction("Fire", false); reload = ownedMap.FindAction("Reload", false);
         guard = ownedMap.FindAction("Guard", false);
+        altFire = ownedMap.FindAction("AltFire", false);
+        altFireKey = asset.FindAction("Combat/AltFire", false);
         shove = asset.FindAction("Player/Shove", false);
         if (fire == null || reload == null)
         { Debug.LogError("Combat input map is missing Fire or Reload.", this); ownedMap.Dispose(); ownedMap = null; return; }
@@ -49,7 +53,20 @@ public sealed class PlayerWeaponInput : MonoBehaviour, IWeaponInput
             if (!fire.IsPressed()) releaseRequired = false;
             return default;
         }
-        return new WeaponInputFrame(fire.WasPressedThisFrame(), fire.IsPressed(), reload.WasPressedThisFrame(), guard != null && guard.IsPressed());
+        FollowAltFireKey();
+        return new WeaponInputFrame(fire.WasPressedThisFrame(), fire.IsPressed(), reload.WasPressedThisFrame(), guard != null && guard.IsPressed(),
+            altFire != null && altFire.WasPressedThisFrame());
+    }
+
+    // This player's map is a copy made when it woke, with the keys as they were then; a key changed since in Settings →
+    // 조작 (KeyBindings, on the project's actions) comes over to it here.
+    private void FollowAltFireKey()
+    {
+        if (altFire == null || altFireKey == null || altFire.bindings.Count == 0 || altFireKey.bindings.Count == 0) return;
+        string wanted = altFireKey.bindings[0].overridePath;
+        if (altFire.bindings[0].overridePath == wanted) return;
+        if (string.IsNullOrEmpty(wanted)) altFire.RemoveBindingOverride(0);
+        else altFire.ApplyBindingOverride(0, wanted);
     }
 
     public bool TryReadMeleeInput(out MeleeInputFrame frame)
@@ -93,6 +110,6 @@ public sealed class PlayerWeaponInput : MonoBehaviour, IWeaponInput
     private void OnDisable()
     {
         ownedMap?.Disable(); ownedMap?.Dispose(); ownedMap = null; fire = reload = null;
-        acceptInputThisFrame = false; releaseRequired = meleeReleaseRequired = true; guard = shove = null;
+        acceptInputThisFrame = false; releaseRequired = meleeReleaseRequired = true; guard = shove = altFire = altFireKey = null;
     }
 }

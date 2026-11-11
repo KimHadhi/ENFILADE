@@ -174,6 +174,8 @@ public sealed partial class PlayerBodyHands : MonoBehaviour
             Place(left, true);
             // A grip on the gun takes the support hand (GunGrip).
             HoldGunGrip(left, dt);
+            // A dual pistol: each hand on its own gun (Akimbo).
+            HoldAkimbo();
         }
         using (FingersMarker.Auto())
         {

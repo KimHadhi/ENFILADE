@@ -15,6 +15,7 @@
 | [Surfaces.csv](../Resources/Tables/Surfaces.csv) | 표면 종류의 부모와 찾을 키워드 | 표면 이름 (`Concrete` …) |
 | [Weapons.csv](../Resources/Tables/Weapons.csv) | 총 피해·RPM·장탄·예비탄·장전·자동 장전·탄퍼짐·앉아 쏘기·헤드샷·ADS·흔들림·무게, 몸의 손이 잡는 위치 | `WeaponData` 에셋 이름 (`MX16A4` …) |
 | [Attachments.csv](../Resources/Tables/Attachments.csv) | 부품(소음기·손잡이·조준경)이 총의 반동·탄퍼짐·조준 시간·조준 중 이동·소리 거리를 바꾸는 값 ([부착물 능력치](#부착물-능력치-attachmentscsv)) | `부품.Mult_능력치` (`VerticalGrip.Mult_spread` …) |
+| [Akimbo.csv](../Resources/Tables/Akimbo.csv) | 쌍권총: 어느 총의 쌍인지, 두 총이 벌어지는 거리, 왼손 총의 흔들림·반동·슬라이드, 두 총의 다른 모델·발사음 폴더. 수치는 Weapons.csv의 같은 이름 행 | 쌍의 무기 이름 (`DualM1911`) |
 | [FPSBody.csv](../Resources/Tables/FPSBody.csv) | 총을 드는 KINEMATION FPS Animation Framework: Q/E 때 몸이 기우는 각도, 질주 때 상체가 시선을 따르는 정도와 질주로 보는 지점, 끊긴 장전이 풀리는 시간, 총구를 재는 깊이, 총을 꺼내고 넣을 때 상체를 넘겨받는 시간 | `Rig` |
 | [Enemies.csv](../Resources/Tables/Enemies.csv) | 적 체력·공격·자세(체간)·이동 속도 | 적 프리팹 이름 (`Enemy_Test`) |
 | [Waves.csv](../Resources/Tables/Waves.csv) | 웨이브 적 수·증가량·대기·등장 간격 | `WaveManager`의 `Table Id` (기본 `Default`) |
@@ -103,6 +104,17 @@ C 메뉴에서 끼는 부품이 총의 숫자를 바꾸는 방식은 ArcCW(GMod 
 - 원래 있던 셋은 총마다 다른 값이라 Weapons.csv에 그대로 두었고, 그 부품의 `Mult_`로 들어간다: `suppressedNoise`(소음기 `Mult_noise`), `gripRecoil`(수직 손잡이 `Mult_recoil`), `gripAimTime`(앵글 손잡이 `Mult_aimTime`). 그래서 예전과 같은 숫자가 나온다(MX16A4: 소리 40m → 12m, 반동 0.85° → 0.68°, 조준 0.16초 → 0.128초). 같은 항목을 Attachments.csv에도 적으면 둘 다 곱한다.
 - 표의 시작값(ENFILADE가 정했다. ArcCW 부품처럼 얻는 것과 잃는 것을 함께 둔다): 수직 손잡이 지향사격 탄퍼짐 ×0.9·조준 시간 ×1.05, 앵글 손잡이 지향사격 탄퍼짐 ×1.1, 배율 조준경 조준 시간 ×1.15·조준 중 이동 ×0.9. 줄을 지우면 그 효과가 없어진다.
 - 총을 쏘는 쪽(`WeaponController`의 조준 시간, 총소리 거리, 반동, 탄퍼짐, 조준 중 이동)과 C 메뉴가 같은 계산을 쓴다. C 메뉴 오른쪽 능력치 칸에 지향사격 탄퍼짐과 조준 중 이동 줄이 있고, 부품 설명의 초록 +·빨강 −는 그 부품 하나만 낀 총과 아무것도 안 낀 총을 비교해 표에서 계산한다. 친구 PC의 총 사본은 그 친구가 낀 부품으로 계산하므로 좀비가 듣는 거리가 같다.
+
+### 쌍권총 (Akimbo.csv)
+
+`DualM1911`은 에셋이 없는 무기다. [Akimbo.csv](../Resources/Tables/Akimbo.csv)의 한 줄이 게임을 시작할 때 `single`(M1911)의 무기 데이터를 복사해 만들고(소리·아이콘·조준선 모양이 따라온다), 피해·RPM·탄창·장전·탄퍼짐·반동은 [Weapons.csv](../Resources/Tables/Weapons.csv)의 `DualM1911` 행, 값은 [Shop.csv](../Resources/Tables/Shop.csv)의 `DualM1911` 행이다. 규칙은 [전투 규칙의 쌍권총](WeaponSystemDesign.md#쌍권총).
+
+- 두 총이 너무 붙거나 떨어져 보이면 `spread`(m), 왼손 총이 출렁이거나 늦으면 `follow`·`settle`·`steady`(초), 왼손 총 반동은 `kickBack`(m)·`kickUp`(도)·`kickReturn`, 슬라이드는 `slideTravel`·`slideReturn`. Play 중에 저장하면 바로 보인다.
+- 다른 권총의 쌍: Akimbo.csv에 줄을 더하고(`id` 새 이름, `single` KINEMATION 총의 무기 이름), Weapons.csv에 같은 이름의 행, 팔려면 Shop.csv에 행을 더한다. 한 총으로 쌍은 하나만 만든다(친구 PC에 그 총 번호로 보낸다). `/gun 이름`으로 바로 들어 본다.
+- 왼손 사격 키는 입력 `Combat/AltFire`이고 설정 → 조작의 "쌍권총 왼손 사격"에서 바꾼다. 클래스 기술 키처럼 GameSettings의 `keyBindings`에 저장된다.
+- 클래스가 쌍권총으로 시작하게 하려면 [Classes.csv](../Resources/Tables/Classes.csv)의 `primary`·`secondary`에 `DualM1911`을 적는다(클래스 총 `classWeapons`도 같은 이름).
+- **KRAIT P68 넣기**(워크숍 3803570564): 모델을 `Art/Models/Weapons/KraitP68/`에, 발사음을 `Art/Audio/Guns/KraitP68/Shot/`에 넣는다. 에디터가 모델 목록(`Resources/Combat/AkimboModels`, [AkimboModelsBuilder](../Editor/Import/AkimboModelsBuilder.cs). 폴더마다 첫 프리팹, 없으면 첫 모델 파일)과 소리 묶음 `Guns`를 알아서 고친다. 그다음 Akimbo.csv `DualM1911` 줄의 `model`과 `sounds`에 `KraitP68`을 적으면 두 손 모두 그 모델을 들고 그 소리로 쏜다(M1911의 메시는 숨는다). Play 중에 `modelOffset`(m: 오른쪽;위;앞)·`modelTurn`(도: x;y;z)·`modelScale`을 고쳐 저장하며 손에 맞춘다. 원점은 원래 M1911의 무기 뼈 자리이고 앞이 조준선이다. 총구는 그 모델의 앞면에서 다시 잰다. L4D2의 `v_` 모델은 팔이 붙어 있으니 `w_pistol_a`(월드 모델)나 팔을 지운 모델을 쓴다. 이름이 `Slider`·`Slide`인 부품이 있으면 쏠 때 슬라이드처럼 움직인다. 장전 클립과 떨어지는 탄창은 여전히 M1911 것이고, 장전·빈 총 소리도 권총(`Art/Audio/Guns/Pistol`) 것이다.
+- 표에 적은 모델·소리 폴더가 아직 없으면 Console에 경고를 한 번 내고 M1911 모델·소리를 쓴다.
 
 ### 기록 저장 (records.json)
 

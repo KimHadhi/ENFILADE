@@ -41,6 +41,9 @@ public sealed class WeaponFeedback : MonoBehaviour
     private bool timedReload;
     private ReloadMoments.Moments moments;
     private float magInLead, boltLead;
+    // A dual pistol's reload plays its single gun's clip, then the left hand fetches its gun (AkimboGuns): the clip's
+    // moments, as shares of the clip, times this to be shares of the pair's longer reload.
+    private float momentScale = 1f;
 
     private bool IsMine => movement == null || movement.IsLocal;
 
@@ -217,8 +220,13 @@ public sealed class WeaponFeedback : MonoBehaviour
             return;
         }
         trackingReload = true; magOutPlayed = magInPlayed = boltBackPlayed = boltPlayed = false; emptyReload = empty;
+        var clipGun = data != null ? AkimboGuns.SingleOf(data) : null;
+        if (clipGun == null) clipGun = data;
+        momentScale = clipGun != null && clipGun != data
+            ? (empty ? clipGun.EmptyReloadDuration : clipGun.ReloadDuration) / Mathf.Max(.01f, empty ? data.EmptyReloadDuration : data.ReloadDuration)
+            : 1f;
         timedReload = data != null && FPSBody.Holding(weapon) != null
-            && ReloadMoments.TryGet(data, empty, out moments);
+            && ReloadMoments.TryGet(clipGun, empty, out moments);
         if (timedReload)
         {
             magInLead = FeelAudio.PeakTime(FeelSound.MagIn, settings.magInSounds, data.SoundProfile);
@@ -267,10 +275,10 @@ public sealed class WeaponFeedback : MonoBehaviour
         if (timedReload)
         {
             // Each sound when the clip moves its part: the magazine leaving and seating, the bolt or slide pulled and let go.
-            Due(ref magOutPlayed, moments.MagOut, 0f, progress, duration, FeelSound.MagOut, settings.magOutSounds, settings);
-            Due(ref magInPlayed, moments.MagIn, magInLead, progress, duration, FeelSound.MagIn, settings.magInSounds, settings);
-            Due(ref boltBackPlayed, moments.BoltBack, 0f, progress, duration, FeelSound.SlideBack, null, settings);
-            Due(ref boltPlayed, moments.BoltForward, boltLead, progress, duration, FeelSound.SlideForward, null, settings);
+            Due(ref magOutPlayed, moments.MagOut * momentScale, 0f, progress, duration, FeelSound.MagOut, settings.magOutSounds, settings);
+            Due(ref magInPlayed, moments.MagIn * momentScale, magInLead, progress, duration, FeelSound.MagIn, settings.magInSounds, settings);
+            Due(ref boltBackPlayed, moments.BoltBack * momentScale, 0f, progress, duration, FeelSound.SlideBack, null, settings);
+            Due(ref boltPlayed, moments.BoltForward * momentScale, boltLead, progress, duration, FeelSound.SlideForward, null, settings);
             return;
         }
         if (!magInPlayed && progress >= (emptyReload ? .5f : .62f))
@@ -305,7 +313,8 @@ public sealed class WeaponFeedback : MonoBehaviour
 
     private void Eject()
     {
-        Transform muzzle = weapon.MuzzlePoint;
+        // From the gun that fired: a dual pistol's left gun for its shots (AkimboGuns). Both throw their brass to the right.
+        Transform muzzle = weapon.ShotMuzzle;
         if (muzzle == null || view == null || !muzzle.gameObject.activeInHierarchy) return;
         if (effectsRoot == null) effectsRoot = FeelAssets.CreateRuntimeRoot("Weapon Feel FX", gameObject).transform;
         Transform eye = view.transform;

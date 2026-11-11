@@ -140,7 +140,8 @@ public sealed class MuzzleLight : MonoBehaviour
         if (shot.Pellet > 0) return;
         var settings = GunFeelSettings.Instance;
         var data = weapon != null ? weapon.EquippedData : null;
-        Transform muzzle = weapon != null ? weapon.MuzzlePoint : null;
+        // The muzzle this shot left from: a dual pistol's left gun's for its shots (AkimboGuns).
+        Transform muzzle = weapon != null ? weapon.ShotMuzzle : null;
         // A suppressor throws no flash of light.
         if (!settings.muzzleEffects || direct == null || data == null || data.MuzzleFlashScale <= 0f
             || muzzle == null || !muzzle.gameObject.activeInHierarchy || weapon.Suppressed) return;
@@ -165,7 +166,7 @@ public sealed class MuzzleLight : MonoBehaviour
         if (remaining <= 0f) return;
         remaining -= Time.deltaTime;
         if (remaining <= 0f) { Hide(); return; }
-        Transform muzzle = weapon != null ? weapon.MuzzlePoint : null;
+        Transform muzzle = weapon != null ? weapon.ShotMuzzle : null;
         if (muzzle != null && muzzle.gameObject.activeInHierarchy) Place(muzzle, GunFeelSettings.Instance);
         float left = remaining / Mathf.Max(.001f, duration);
         float fall = Mathf.Clamp01(left / (1f - hold));

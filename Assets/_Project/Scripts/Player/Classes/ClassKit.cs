@@ -309,7 +309,8 @@ public sealed class ClassKit : MonoBehaviour
         if (string.IsNullOrEmpty(name) || assets == null) return null;
         foreach (var entry in assets.guns)
             if (entry.weapon != null && string.Equals(entry.weapon.name, name, StringComparison.OrdinalIgnoreCase)) return entry.weapon;
-        return null;
+        // A dual pistol by its name (Tables/Akimbo): a class may start with one.
+        return AkimboGuns.Find(name);
     }
 
     // ---- The class key ----

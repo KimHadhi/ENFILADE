@@ -93,6 +93,8 @@
 5. 모델을 바꾸면 `WeaponController`의 Weapon Root / Muzzle Point를 확인한다. 실제 총구의 로컬 **+Z**가 발사 방향이며 Sight Height는 모델별로 조절한다.
 6. 단발·점사·연사, 장전 취소, 슬롯 전환 후 탄약 보존, 벽 앞 사격 차단을 확인한다.
 
+쌍권총(같은 권총 두 자루)은 에셋을 만들지 않고 [Akimbo.csv](../Resources/Tables/Akimbo.csv)에 줄을 더한다([쌍권총 표](MaintenanceGuide.md#쌍권총-akimbocsv)).
+
 `WeaponController`의 Weapon Data를 직접 할당하는 방식은 슬롯 관리자가 없는 단일 무기 테스트용이다. 슬롯 관리자가 있으면 선택한 슬롯의 데이터와 런타임이 컨트롤러에 연결된다. 새 근접·특수 무기는 Category만 바꿔 완성되지 않으며, 유형별 공격 구현과 모델 연결이 추가로 필요하다.
 
 현재 예제 무기는 다음과 같다. 값은 `Weapons.csv` 기준이다.
