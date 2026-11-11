@@ -1,5 +1,7 @@
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 /// <summary>
 /// The class cards that need more than a number (Docs/ClassCards.md; the numbers alone are PlayerPerks.AbilityBonus),
@@ -20,13 +22,31 @@ using UnityEngine;
 /// <item>Assault, the phantom cavalry (유령 기병대, its final card; the user's "돌진할 때 일직선으로 적들 쓸고 나가는"):
 /// a CHARGE sends five riders galloping out along where they look, and whatever stands in their line is hit and thrown
 /// aside, knocked down (a brute only reels).</item>
+/// <item>Knight, 비껴 흘리기 (the user's name, checked against the dictionary: Docs/ClassCards.md): a parried blow slides
+/// off sideways, the zombie stumbles and loses more posture, a white arc running off the parry.</item>
+/// <item>Knight, 되치기 (Dying Light's grab counter, at the user's word): grabbed, a ring closes on a mark round the
+/// crosshair; the shove key as it meets it throws the zombie, its posture broken for the execution, with REVERSAL slammed
+/// across the screen. Early or late is no worse than without the card: the shove only tears it off as ever.</item>
+/// <item>Knight, 폭렬 건틀렛 (the user's gauntlet that bursts a flash and a shotgun): a charged punch or a counter that
+/// lands sets off the gauntlet, by turns a flash that stuns what is in front and a shot that blows it back.</item>
+/// <item>Knight, 그림자 분신 (its final card; the user's Ryoshu of Limbus Company): a perfect parry or dodge brings out a
+/// shadow that strikes every punch and counter again a beat later, a violet crescent cutting where it lands.</item>
 /// </list>
 /// The HUD's bar (ClassHUD) shows the card state under way: BarShare, BarWord, BarColor.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class ClassCards : MonoBehaviour
 {
-    private const string GhostRow = PlayerClass.GhostRow, PointRow = "Point", AssaultRow = "Assault";
+    private const string GhostRow = PlayerClass.GhostRow, PointRow = "Point", AssaultRow = "Assault", KnightRow = PlayerClass.KnightRow;
+    private static readonly Color Violet = new Color(.62f, .32f, 1f);
+
+    // A shadow double's blow waiting to land: on whom, how hard, where and which way.
+    private struct Echo
+    {
+        public float Due, Amount, Posture;
+        public EnemyHealth Target;
+        public Vector3 Point, Direction;
+    }
 
     /// <summary>This PC's own player's cards at work.</summary>
     public static ClassCards Local { get; private set; }
@@ -50,23 +70,45 @@ public sealed class ClassCards : MonoBehaviour
     private Vector3 rideFrom, rideWay;
     private float rideSince;
     private readonly HashSet<EnemyHealth> ridden = new HashSet<EnemyHealth>();
+    // Knight: the health whose parries, dodges and grabs are watched, and the fists whose punches are.
+    private PlayerDamageReceiver receiver;
+    private PlayerMeleeCombat fists;
+    // The gauntlet: the last punch's charge and when it went; the blow the last burst went off for; which burst is next.
+    private float punchCharge, punchAt = -99f;
+    private long burstFor = -1;
+    private bool flashNext = true;
+    // The shadow double: until when and how long; when its coming out was last shown; its blows waiting to land.
+    private float shadowUntil = -99f, shadowTotal = 1f, shadowShown = -99f;
+    private readonly List<Echo> echoes = new List<Echo>();
+    // The reversal: when a grab took hold (below 0: none waiting), whose; whether its one press is spent; the ring.
+    private float grabbedAt = -1f;
+    private EnemyHealth grabber;
+    private bool reversalSpent;
+    private GameObject ringHost;
+    private RawImage ringClosing, ringMark;
 
     /// <summary>A Ghost's White Tiger holds: hurt takes no Head Hunter stack (ClassKit).</summary>
     public bool TigerGuards => tigerUntil > Time.time && PlayerClass.Is(PlayerClass.Ghost);
     public float TigerShare => TigerGuards ? Mathf.Clamp01((tigerUntil - Time.time) / tigerTotal) : 0f;
+
+    /// <summary>A Knight's shadow double is out: its punches and counters strike twice.</summary>
+    public bool ShadowOut => shadowUntil > Time.time && PlayerClass.Is(PlayerClass.Knight);
+    public float ShadowShare => ShadowOut ? Mathf.Clamp01((shadowUntil - Time.time) / shadowTotal) : 0f;
 
     /// <summary>The card state the class HUD's bar shows now, 0 to 1 (0: none), its word and its colour.</summary>
     public float BarShare
     {
         get
         {
+            if (ShadowShare > 0f) return ShadowShare;
             if (TigerShare > 0f) return TigerShare;
             return kit != null ? kit.GunslingerShare : 0f;
         }
     }
 
-    public string BarWord => TigerShare > 0f ? Texts.Get("class.hud.tiger") : Texts.Get("class.hud.gunslinger");
-    public Color BarColor => TigerShare > 0f ? KitStyle.Ice : KitStyle.Accent;
+    public string BarWord => ShadowShare > 0f ? Texts.Get("class.hud.shadow")
+        : TigerShare > 0f ? Texts.Get("class.hud.tiger") : Texts.Get("class.hud.gunslinger");
+    public Color BarColor => ShadowShare > 0f ? Violet : TigerShare > 0f ? KitStyle.Ice : KitStyle.Accent;
 
     private void Awake()
     {
@@ -79,10 +121,35 @@ public sealed class ClassCards : MonoBehaviour
     private void OnDisable()
     {
         CombatDamageEvents.Damaged -= OnDamaged;
+        if (receiver != null) receiver.HitResolved -= OnResolved;
+        if (fists != null) fists.Punched -= OnPunched;
+        receiver = null;
+        fists = null;
+        if (ringHost != null) ringHost.SetActive(false);
         if (Local == this)
         {
             Local = null;
             CardNet.Stop();
+        }
+    }
+
+    private void OnDestroy()
+    {
+        if (ringHost != null) Destroy(ringHost);
+    }
+
+    // This player's health and fists, once they are there (both may come after this).
+    private void Wire()
+    {
+        if (receiver == null && movement.DamageReceiver != null)
+        {
+            receiver = movement.DamageReceiver;
+            receiver.HitResolved += OnResolved;
+        }
+        if (fists == null && movement.MeleeCombat != null)
+        {
+            fists = movement.MeleeCombat;
+            fists.Punched += OnPunched;
         }
     }
 
@@ -94,8 +161,11 @@ public sealed class ClassCards : MonoBehaviour
         // In a room, hear the others' card effects.
         var network = GameSession.Network;
         if (network != null && network.IsListening) CardNet.Listen();
+        Wire();
         BrokenArrow();
         Ride();
+        Reversal();
+        Echoes();
     }
 
     // After the frame's shots are counted (ClassKit adds a headshot's stack once the shot is traced).
@@ -112,6 +182,19 @@ public sealed class ClassCards : MonoBehaviour
         if (movement == null || !movement.IsLocal || report.Target == null || !PlayerPerks.IsMine(report.Hit.Source)) return;
         if (report.Target.GetComponentInParent<PlayerMovement>() != null) return;
         PlayerPerks.Struck();
+        // A Knight's own punch or counter (the cards' own blows can't be guarded, so they never count here).
+        var hit = report.Hit;
+        if (hit.Kind == DamageKind.Attack && hit.Method == DamageMethod.Other && (hit.IsCounter || hit.CanBeGuarded)
+            && report.Target is EnemyHealth struck && PlayerClass.Is(PlayerClass.Knight))
+        {
+            if (ShadowOut) Shadowed(struck, hit);
+            if (PlayerPerks.Has(PlayerPerks.KnightGauntlet) && hit.Id != burstFor
+                && (hit.IsCounter || (Time.time - punchAt < .5f && punchCharge >= PlayerClass.Ability(KnightRow, "gauntletCharge", .6f))))
+            {
+                burstFor = hit.Id;
+                Gauntlet(hit);
+            }
+        }
         if (report.IsKillingBlow && report.Hit.Method == DamageMethod.Bullet && report.Hit.IsCritical
             && PlayerClass.Is(PlayerClass.Ghost) && PlayerPerks.Has(PlayerPerks.GhostTiger))
         {
@@ -127,10 +210,10 @@ public sealed class ClassCards : MonoBehaviour
     // called); then its shells go out one by one, and each one landing hurts what is round it.
     private void BrokenArrow()
     {
-        var receiver = movement.DamageReceiver;
-        bool able = receiver != null && receiver.IsAlive && !movement.IsDead;
-        bool high = able && receiver.MaximumHealth > 0f
-            && receiver.Health / receiver.MaximumHealth * 100f > PlayerClass.Ability(AssaultRow, "brokenHealth", 30f);
+        var body = movement.DamageReceiver;
+        bool able = body != null && body.IsAlive && !movement.IsDead;
+        bool high = able && body.MaximumHealth > 0f
+            && body.Health / body.MaximumHealth * 100f > PlayerClass.Ability(AssaultRow, "brokenHealth", 30f);
         bool held = able && movement.IsHeld;
         if (able && PlayerClass.Is(PlayerClass.Assault) && PlayerPerks.Has(PlayerPerks.AssaultBroken) && Time.time >= brokenAgain
             && ((wasHigh && !high) || (held && !wasHeld)))
@@ -278,6 +361,224 @@ public sealed class ClassCards : MonoBehaviour
         if (amount <= 0f || enemy == null || !enemy.IsAlive) return;
         enemy.ReceiveHit(new DamageHit(DamageHit.NewAttackId(), amount, DamageKind.Attack, point, direction, gameObject,
             false, posture, true));
+    }
+
+    // ---- Knight ----
+
+    private void OnPunched(float charge)
+    {
+        punchCharge = charge;
+        punchAt = Time.time;
+    }
+
+    // A parry or a perfect dodge (a Knight's), and a grab taking hold.
+    private void OnResolved(DamageHit hit, DamageResult result)
+    {
+        if (!PlayerClass.Is(PlayerClass.Knight)) return;
+        if (result == DamageResult.Parried)
+        {
+            Deflect(hit);
+            ShadowFor(PlayerPerks.Has(PlayerPerks.KnightShadow) ? PlayerPerks.Total(PlayerPerks.KnightShadow) : 0f);
+        }
+        else if (result == DamageResult.Evaded) ShadowFor(PlayerPerks.Has(PlayerPerks.KnightShadow) ? PlayerPerks.Total(PlayerPerks.KnightShadow) : 0f);
+        else if (result == DamageResult.Damaged && hit.Method == DamageMethod.Grab && PlayerPerks.Has(PlayerPerks.KnightReversal))
+        {
+            grabber = hit.Source != null ? hit.Source.GetComponentInParent<EnemyHealth>() : null;
+            if (grabber == null) return;
+            grabbedAt = Time.time;
+            reversalSpent = false;
+        }
+    }
+
+    // 비껴 흘리기: the parried zombie stumbles past, its posture worn down more; a white arc runs off sideways.
+    private void Deflect(DamageHit hit)
+    {
+        if (!PlayerPerks.Has(PlayerPerks.KnightDeflect)) return;
+        var attacker = hit.Source != null ? hit.Source.GetComponentInParent<MeleeCombatTarget>() : null;
+        if (attacker == null || !attacker.IsAvailable) return;
+        attacker.ApplyPostureDamage(PlayerPerks.Total(PlayerPerks.KnightDeflect));
+        if (!attacker.IsStaggered) attacker.Interrupt(Mathf.Max(0f, PlayerClass.Ability(KnightRow, "deflectStagger", 1f)));
+        Vector3 to = Vector3.ProjectOnPlane(attacker.transform.position - transform.position, Vector3.up);
+        to = to.sqrMagnitude > 1e-4f ? to.normalized : transform.forward;
+        Vector3 side = Vector3.Cross(Vector3.up, to) * (Random.value < .5f ? 1f : -1f);
+        CardNet.Show(CardFx.Kind.Deflect, transform.position + Vector3.up * 1.35f + to * .75f, side, 0f);
+    }
+
+    // 되치기: grabbed, a ring closes on its mark; the shove key as they meet throws the zombie, its posture broken.
+    private void Reversal()
+    {
+        if (grabbedAt < 0f) { Ring(false, 0f, false); return; }
+        float from = Mathf.Max(.1f, PlayerClass.Ability(KnightRow, "reversalFrom", .45f));
+        float half = Mathf.Max(.02f, PlayerClass.Ability(KnightRow, "reversalWindow", .4f)) * .5f;
+        float since = Time.time - grabbedAt;
+        bool inside = Mathf.Abs(since - from) <= half;
+        // One press decides: on the mark it throws; off it, the shove only does what a shove does.
+        bool pressed = movement.Input != null && movement.InputAvailable && movement.Input.ShoveKeyPressed;
+        if (pressed && !reversalSpent)
+        {
+            reversalSpent = true;
+            if (inside) Reverse();
+            grabbedAt = -1f;
+            Ring(false, 0f, false);
+            return;
+        }
+        bool held = movement.IsHeld && !movement.IsPinned;
+        if (since > from + half + .1f || (!held && since > .15f) || grabber == null || !grabber.IsAlive)
+        {
+            grabbedAt = -1f;
+            Ring(false, 0f, false);
+            return;
+        }
+        Ring(true, since / from, inside);
+    }
+
+    private void Reverse()
+    {
+        if (grabber == null || !grabber.IsAlive) return;
+        Vector3 away = Vector3.ProjectOnPlane(grabber.transform.position - transform.position, Vector3.up);
+        away = away.sqrMagnitude > 1e-4f ? away.normalized : transform.forward;
+        // Thrown and broken: it reels with its posture gone (the execution is there for the taking), and its grip goes
+        // with it (PlayerHold lets a stunned holder go).
+        if (grabber.TryGetComponent(out MeleeCombatTarget target) && target.IsAvailable && !target.IsStaggered)
+            target.ApplyPostureDamage(target.MaximumPosture * 4f + 1f);
+        Vector3 contact = transform.position + Vector3.up * 1.25f + away * .6f;
+        GetComponent<ParryFeedback>()?.CounterBurst(contact, (away * .35f + Vector3.up * .5f).normalized, 1.2f);
+        if (grabber.TryGetComponent(out EnemyNetwork network)) network.ShareParry(contact, away, true);
+        if (!TryGetComponent(out CounterBanner banner)) banner = gameObject.AddComponent<CounterBanner>();
+        banner.Play(.95f, Mathf.Min(2, CounterBanner.Grades - 1), "REVERSAL", KitStyle.Accent);
+        GetComponent<PlayerFistAudio>()?.PlayHeavyHit();
+        GetComponentInChildren<PlayerCameraEffects>()?.ApplyCameraImpulse(new Vector3(-5f, 0f, 6f), -6f);
+    }
+
+    // The reversal's ring round the crosshair: white closing on the faint mark, both pink while the key would throw.
+    private void Ring(bool show, float closing, bool inside)
+    {
+        if (!show)
+        {
+            if (ringHost != null && ringHost.activeSelf) ringHost.SetActive(false);
+            return;
+        }
+        if (ringHost == null) BuildRing();
+        if (!ringHost.activeSelf) ringHost.SetActive(true);
+        float size = Mathf.Lerp(320f, 96f, Mathf.Clamp01(closing));
+        ringClosing.rectTransform.sizeDelta = new Vector2(size, size);
+        ringClosing.color = inside ? KitStyle.Accent : KitStyle.With(KitStyle.Ice, .9f);
+        ringMark.color = inside ? KitStyle.Accent : KitStyle.With(KitStyle.Ice, .35f);
+        float beat = inside ? 1.08f : 1f;
+        ringMark.rectTransform.localScale = new Vector3(beat, beat, 1f);
+    }
+
+    private void BuildRing()
+    {
+        ringHost = new GameObject("Reversal Ring", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler));
+        ringHost.hideFlags = HideFlags.DontSave;
+        var canvas = ringHost.GetComponent<Canvas>();
+        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        canvas.sortingOrder = 79;
+        var scaler = ringHost.GetComponent<CanvasScaler>();
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1920f, 1080f);
+        scaler.matchWidthOrHeight = .5f;
+        ringMark = RingImage("Mark", 96f);
+        ringClosing = RingImage("Closing", 320f);
+        var label = FeelUI.Rect("Key", ringHost.transform);
+        label.anchoredPosition = new Vector2(0f, -86f);
+        label.sizeDelta = new Vector2(300f, 30f);
+        KitStyle.Flat(label, Texts.Get("class.knight.reversal"), 20f, TextAlignmentOptions.Center, KitStyle.Ice);
+    }
+
+    private RawImage RingImage(string name, float size)
+    {
+        var rect = FeelUI.Rect(name, ringHost.transform);
+        rect.sizeDelta = new Vector2(size, size);
+        var image = rect.gameObject.AddComponent<RawImage>();
+        image.texture = KitShapes.Ring;
+        image.raycastTarget = false;
+        return image;
+    }
+
+    // 폭렬 건틀렛: by turns, a flash that stuns what is in front, and a shot that blows it back and hurts it.
+    private void Gauntlet(DamageHit hit)
+    {
+        Vector3 way = Vector3.ProjectOnPlane(hit.Direction, Vector3.up);
+        way = way.sqrMagnitude > 1e-4f ? way.normalized : Vector3.ProjectOnPlane(transform.forward, Vector3.up).normalized;
+        float reach = Mathf.Max(1f, PlayerClass.Ability(KnightRow, "gauntletReach", 5f));
+        float cone = Mathf.Cos(Mathf.Clamp(PlayerClass.Ability(KnightRow, "gauntletAngle", 70f), 1f, 360f) * .5f * Mathf.Deg2Rad);
+        near.Clear();
+        foreach (var enemy in EnemyHealth.Living)
+        {
+            if (enemy == null || !enemy.IsAlive) continue;
+            Vector3 to = Vector3.ProjectOnPlane(enemy.transform.position - transform.position, Vector3.up);
+            float far = to.magnitude;
+            if (far > reach || (far > 1.2f && Vector3.Dot(to / far, way) < cone)) continue;
+            near.Add(enemy);
+        }
+        bool flash = flashNext;
+        flashNext = !flashNext;
+        if (flash)
+        {
+            float stun = Mathf.Max(0f, PlayerClass.Ability(KnightRow, "gauntletStun", 1.5f));
+            foreach (var enemy in near)
+                if (enemy.TryGetComponent(out MeleeCombatTarget target) && target.IsAvailable) target.Interrupt(stun);
+            CardNet.Show(CardFx.Kind.Flash, hit.Point, way, 2.2f);
+            return;
+        }
+        float damage = Mathf.Max(0f, PlayerPerks.Total(PlayerPerks.KnightGauntlet));
+        float posture = Mathf.Max(0f, PlayerClass.Ability(KnightRow, "gauntletPosture", 30f));
+        foreach (var enemy in near)
+        {
+            float far = Vector3.ProjectOnPlane(enemy.transform.position - transform.position, Vector3.up).magnitude;
+            Strike(enemy, damage * (1f - .5f * Mathf.Clamp01(far / reach)), enemy.transform.position + Vector3.up * 1.2f, way, posture);
+            if (!enemy.IsAlive || !enemy.TryGetComponent(out MeleeCombatTarget target) || !target.IsAvailable) continue;
+            if (posture > 0f) target.ApplyPostureDamage(posture);
+            if (target.Steadfast) target.Interrupt(.5f);
+            else if (!target.IsStaggered) target.Barge(way * 6f, .25f, .9f);
+        }
+        CardNet.Show(CardFx.Kind.Blast, hit.Point, way, reach);
+    }
+
+    /// <summary>
+    /// The shadow double comes out (or stays out) for <paramref name="seconds"/> (the final card's, or the ultimate's
+    /// when every card is taken): violet wisps leap up round the Knight, at most once a second.
+    /// </summary>
+    public void ShadowFor(float seconds)
+    {
+        if (seconds <= 0f) return;
+        if (!ShadowOut || shadowUntil < Time.time + seconds)
+        {
+            shadowTotal = seconds;
+            shadowUntil = Time.time + seconds;
+        }
+        if (Time.time - shadowShown < 1f) return;
+        shadowShown = Time.time;
+        CardNet.Show(CardFx.Kind.Shadow, transform.position, transform.forward, 0f);
+    }
+
+    // A punch or counter landed while the shadow is out: the shadow's own blow follows a beat later.
+    private void Shadowed(EnemyHealth target, DamageHit hit)
+    {
+        echoes.Add(new Echo
+        {
+            Due = Time.time + Mathf.Max(.02f, PlayerClass.Ability(KnightRow, "shadowDelay", .14f)), Target = target,
+            Amount = hit.Amount * Mathf.Max(0f, PlayerClass.Ability(KnightRow, "shadowShare", 1f)), Posture = hit.PostureDamage,
+            Point = hit.Point, Direction = hit.Direction
+        });
+    }
+
+    // The shadow's blows land when they are due: the cut shows wherever it lands, the blow hurts what still stands.
+    private void Echoes()
+    {
+        for (int i = echoes.Count - 1; i >= 0; i--)
+        {
+            var echo = echoes[i];
+            if (Time.time < echo.Due) continue;
+            echoes.RemoveAt(i);
+            CardNet.Show(CardFx.Kind.Echo, echo.Point, echo.Direction, 0f);
+            if (echo.Target == null || !echo.Target.IsAlive) continue;
+            Strike(echo.Target, echo.Amount, echo.Point, echo.Direction, echo.Posture);
+            if (echo.Posture > 0f && echo.Target.IsAlive && echo.Target.TryGetComponent(out MeleeCombatTarget target))
+                target.ApplyPostureDamage(echo.Posture);
+        }
     }
 
     // ---- Ghost: White Tiger ----

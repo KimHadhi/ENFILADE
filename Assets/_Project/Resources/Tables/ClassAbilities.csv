@@ -92,3 +92,13 @@ Assault.brokenEvery,.22,브로큰 애로우: 포탄과 포탄 사이(초)
 Assault.cavalryReach,24,유령 기병대 카드: CHARGE를 쓰면 기병이 바라보는 쪽으로 쓸고 나가는 거리(m)
 Assault.cavalryWidth,4.5,유령 기병대: 쓸고 나가는 폭(m)
 Assault.cavalryKnockdown,2,유령 기병대: 기병에 받힌 좀비가 내동댕이쳐진 뒤 쓰러져 있는 시간(초). 피해는 카드 값(Perks.csv)
+Knight.deflectStagger,1,비껴 흘리기 카드: 패리한 좀비가 휘청이는 시간(초). 자세를 더 잃는 양은 카드 값(Perks.csv)
+Knight.reversalFrom,.45,되치기 카드: 잡힌 뒤 줄어드는 고리가 흰 원에 닿기까지(초)
+Knight.reversalWindow,.4,되치기: 흰 원 둘레에서 [V]가 먹히는 시간(초). 닿기 전 절반과 뒤 절반. 일찍이나 늦게 누르면 평소처럼 밀치기만 한다(벌 없음)
+Knight.gauntletCharge,.6,폭렬 건틀렛 카드: 주먹을 이만큼(0~1) 모아 쳐야 터진다. 반격은 언제나
+Knight.gauntletReach,5,폭렬 건틀렛: 섬광과 산탄이 닿는 거리(m)
+Knight.gauntletAngle,70,폭렬 건틀렛: 앞쪽 부채꼴의 전체 각도(도). 1.2m 안은 각도와 상관없이
+Knight.gauntletStun,1.5,폭렬 건틀렛 섬광: 좀비가 기절하는 시간(초). 거구는 0.5초까지만
+Knight.gauntletPosture,30,폭렬 건틀렛 산탄: 맞은 좀비의 자세 피해. 피해는 카드 값(가장자리 절반)
+Knight.shadowDelay,.14,그림자 분신 카드: 분신이 한 박자 늦게 때리는 간격(초)
+Knight.shadowShare,1,그림자 분신: 분신 한 대가 주는 피해의 몫(1이면 같은 피해)
