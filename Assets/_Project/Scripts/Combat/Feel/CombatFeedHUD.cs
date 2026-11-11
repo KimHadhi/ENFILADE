@@ -14,7 +14,8 @@ using UnityEngine.UI;
 [DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.CombatFeedHud)]
 public sealed class CombatFeedHUD : MonoBehaviour
 {
-    private const int MaxLines = 4, MaxKills = 5;
+    // Six lines: a kill's own events plus a special kill's name or two (SpecialKills) still fit.
+    private const int MaxLines = 6, MaxKills = 5;
     private const string TableName = "KillFeed", TableRow = "Default";
     private const float KillLifetime = 5f, LineHeight = 25f, FadeSeconds = .3f, IconSize = 17f;
     private static readonly Color Soft = new Color(.86f, .88f, .92f), KillRed = new Color(1f, .2f, .14f), Number = new Color(1f, .96f, .86f);
@@ -123,6 +124,25 @@ public sealed class CombatFeedHUD : MonoBehaviour
         if (self.fresh) self.streakScore = 0;
         self.ClearLines();
         self.AddLine(what, LineIcon.None, true, KitStyle.Accent);
+        self.streakScore += points;
+        self.streakIdle = 0f; self.popAge = 0f; self.totalPop = 1f;
+        self.streakLabel.text = "<size=62%><color=#" + ColorUtility.ToHtmlStringRGB(settings.scoreColor) + ">+</color></size>"
+            + Wallet.FormatPoints(self.streakScore);
+    }
+
+    /// <summary>
+    /// A special kill's bonus (SpecialKills: MEATSHOT, SKEET ...) on top of the kill just shown: its name joins the kill's
+    /// lines in its colour, and its points the popup's number, as money like any kill's.
+    /// </summary>
+    public static void Special(string what, int points, Color tint)
+    {
+        if (!Application.isPlaying || points <= 0) return;
+        var settings = GunFeelSettings.Instance;
+        var self = Get();
+        TotalScore += points;
+        if (!settings.scoreFeed) return;
+        if (self.streakScore == 0) { self.fresh = true; self.ClearLines(); }
+        self.AddLine(what, LineIcon.None, true, tint);
         self.streakScore += points;
         self.streakIdle = 0f; self.popAge = 0f; self.totalPop = 1f;
         self.streakLabel.text = "<size=62%><color=#" + ColorUtility.ToHtmlStringRGB(settings.scoreColor) + ">+</color></size>"

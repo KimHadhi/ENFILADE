@@ -63,6 +63,8 @@ public static class GunFeelDirector
                 PlayerClass.IsElite(report.Target as EnemyHealth) ? 300f : 100f)) : 0;
         CombatFeedHUD.Kill(WeaponName(hit), CombatDamageEvents.DisplayNameOf(report.Target), critical && bullet, execution, hit.IsCounter, bullet, distance, !shared,
             hit.Pierced, standout, takedown, bounty);
+        // Kills done some way worth a name (MEATSHOT, RAILGUN, SKEET ...) stamp it and pay on top.
+        SpecialKills.Kill(report, bullet, critical && bullet, execution);
         if (pulse) KillConfirmEffect.Trigger(execution ? KillScreen.Execution : hit.IsCounter ? KillScreen.Counter : KillScreen.Ordinary,
             critical || execution);
     }

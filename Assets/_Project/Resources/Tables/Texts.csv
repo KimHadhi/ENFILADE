@@ -628,3 +628,18 @@ settings.controls.knock_key,벽 두드리기 키,Wall knock key,설정 > 조작 
 hud.stealth.dark,어둠,Dark,잠입 > 앉았을 때 조준점 아래 밝기 표시: 어두워서 좀비가 잘 못 본다
 hud.stealth.dim,그늘,Dim,잠입 > 밝기 표시: 반쯤 어둡다
 hud.stealth.lit,밝음,Lit,잠입 > 밝기 표시: 밝아서 잘 보인다
+special.meatshot,MEATSHOT,MEATSHOT,특수 처치 도장(조준선 아래)과 점수 팝업 줄: 산탄총 한 발의 펠릿이 전부 처치한 한 놈에게 들어갔을 때
+special.meatshot.note,산탄이 전부 한 놈에게,Every pellet into one,특수 처치 도장의 이유 줄(단어 아래)
+special.railgun,RAILGUN,RAILGUN,특수 처치: 돌진해 오는 차저를 근접 공격으로 머리를 맞혀 처치했을 때
+special.railgun.note,돌진하는 차저의 머리를 근접 공격으로,A charging charger's head up close,특수 처치 도장의 이유 줄
+special.skeet,SKEET,SKEET,특수 처치: 도약해 날아드는 러너를 공중에서 처치했을 때
+special.skeet.note,날아드는 놈을 공중에서,Shot down mid-leap,특수 처치 도장의 이유 줄
+special.collateral,COLLATERAL,COLLATERAL,특수 처치: 한 발로 둘 이상 처치했을 때
+special.collateral.note,한 발로 둘,Two with one shot,특수 처치 도장의 이유 줄
+special.collateral.many,한 발로 {0}킬,{0} with one shot,특수 처치 도장의 이유 줄: 셋 이상
+special.hattrick,HAT TRICK,HAT TRICK,특수 처치: 헤드샷 처치를 이어서 했을 때(SpecialKills.csv hattrick의 need번마다)
+special.hattrick.note,헤드샷 처치 {0}연속,{0} headshot kills in a row,특수 처치 도장의 이유 줄
+special.lastround,LAST ROUND,LAST ROUND,특수 처치: 탄창의 마지막 한 발로 처치했을 때
+special.lastround.note,탄창의 마지막 한 발로,With the magazine's last round,특수 처치 도장의 이유 줄
+special.savior,SAVIOR,SAVIOR,특수 처치: 동료를 붙잡은(잡기·먹기·깔기) 좀비를 처치했을 때
+special.savior.note,동료를 붙든 놈을,The one holding a teammate,특수 처치 도장의 이유 줄

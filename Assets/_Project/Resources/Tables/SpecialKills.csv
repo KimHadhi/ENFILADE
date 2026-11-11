@@ -1,0 +1,9 @@
+﻿id,points,need,colour
+#설명,"처치 점수 위에 더 받는 점수(처치 하나가 100점, 돈은 Money.csv earnShare만큼). 틀려도 깎이는 일은 없다","규칙마다 쓰는 숫자: meatshot은 맞아야 하는 펠릿의 몫(1이면 전부), railgun은 머리 뼈에서 이만큼(m) 안에 맞아야 머리, collateral은 한 발에 필요한 처치 수, hattrick은 이어서 필요한 헤드샷 처치 수. 나머지는 쓰지 않는다","조준선 아래 도장의 번쩍임·옆 막대·스치는 선과 점수 팝업 줄의 색(#RRGGBB)"
+meatshot,50,1,#FF4F78
+railgun,150,0.32,#61E0FF
+skeet,100,0,#FF4F78
+collateral,75,2,#FF4F78
+hattrick,100,3,#FFD45C
+lastround,50,0,#FFFFFF
+savior,100,0,#4FE08A

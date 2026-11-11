@@ -76,6 +76,8 @@ public sealed class ZombieCharger : MonoBehaviour
 
     /// <summary>It moves itself (winding up, charging or sliding to a stop): its chase waits (EnemyChaseAI).</summary>
     public bool Driving => phase != Phase.Chase;
+    /// <summary>Running at its quarry as this PC sees it (the host's phase, or a copy's speed and heading): RAILGUN reads it (SpecialKills).</summary>
+    public bool IsCharging => Runs ? phase == Phase.Charge : seenVelocity.magnitude >= ramSpeed && Vector3.Dot(seenVelocity.normalized, Flat(transform.forward).normalized) > .7f;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void Forget() => bellow = null;
