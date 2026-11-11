@@ -28,19 +28,11 @@ MonoBehaviour:
     - {fileID: 8300000, guid: c9514903a2604c5892cb9cede5a9c1c7, type: 3}
   - key: Heavy/MagIn
     clips:
-    - {fileID: 8300000, guid: 2a664159bff749109258f5a894ea13f5, type: 3}
-  - key: Heavy/MagOut
-    clips:
-    - {fileID: 8300000, guid: 3fea08cd4850435c861d557b52314813, type: 3}
+    - {fileID: 8300000, guid: 073b524b8a6442369a99c7a26c9d1921, type: 3}
+    - {fileID: 8300000, guid: 765de4b145244273bd514c30b0c2b61c, type: 3}
   - key: Heavy/Shot
     clips:
     - {fileID: 8300000, guid: ff8ff056faa5405f93fc33a6da2e733e, type: 3}
-  - key: Heavy/SlideBack
-    clips:
-    - {fileID: 8300000, guid: 4181d2f69d9b4168b450c5b3f901879b, type: 3}
-  - key: Heavy/SlideForward
-    clips:
-    - {fileID: 8300000, guid: c58b6fd959fa4473b2f2a570c527321c, type: 3}
   - key: LowAmmoClick
     clips:
     - {fileID: 8300000, guid: 76d4f23486fa426b823b2550445bbb52, type: 3}

@@ -1201,10 +1201,6 @@ MonoBehaviour:
     - {fileID: 8300000, guid: 6bb22b32e91bb994194b4865e454ff2c, type: 3}
     - {fileID: 8300000, guid: c63ac501a3a18ec46932bd61ed4b1355, type: 3}
     - {fileID: 8300000, guid: 87b1bd015de540a4b941d2def46f286a, type: 3}
-  - key: Shove/Swing
-    clips:
-    - {fileID: 8300000, guid: 09178b046cc547d8af9d9b8fd2d58c23, type: 3}
-    - {fileID: 8300000, guid: 2e855027763d414c8eb04fe878bad21f, type: 3}
   - key: Slide/Concrete
     clips:
     - {fileID: 8300000, guid: 06b6b104d764f1d4b8174b6a5f7c7b7e, type: 3}

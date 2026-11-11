@@ -27,6 +27,7 @@ public enum CampaignStepKind
 /// hold's length; count is how many cans a Collect wants; horde and rate are how many enemies may be about during the
 /// step and how many come per second. music names a song in Tables/Music played while the step runs (the next step
 /// naming the same song lets it play on), and peakBoss is how many brutes come at that song's highlight (CampaignMusic).
+/// manned (chapter 4's pushback) makes a hold's clock run only while someone stands within radius of its spot.
 /// </summary>
 public sealed class CampaignStep
 {
@@ -36,6 +37,11 @@ public sealed class CampaignStep
     public CampaignStepKind Kind;
     public float Radius, Seconds, Rate;
     public int Horde, Order, Count, PeakBosses;
+    /// <summary>
+    /// A hold that goes on only while someone is at its spot (the airport's tug: nobody at the controls, nothing moves).
+    /// Leaving pauses it and takes nothing back, so stepping away to fight costs time, never progress.
+    /// </summary>
+    public bool Manned;
 
     public static List<CampaignStep> For(string chapter)
     {
@@ -51,7 +57,7 @@ public sealed class CampaignStep
                 Done = Text(row, "done"), Prompt = Text(row, "prompt"), Order = (int)Number(row, "order", 0f),
                 Radius = Number(row, "radius", 4f), Seconds = Number(row, "seconds", 0f),
                 Horde = (int)Number(row, "horde", 0f), Rate = Number(row, "rate", 0f), Count = (int)Number(row, "count", 1f),
-                Music = Text(row, "music"), PeakBosses = (int)Number(row, "peakBoss", 0f)
+                Music = Text(row, "music"), PeakBosses = (int)Number(row, "peakBoss", 0f), Manned = Number(row, "manned", 0f) > 0f
             });
         }
         steps.Sort((a, b) => a.Order.CompareTo(b.Order));

@@ -56,10 +56,3 @@ DodgePerfect,Movement/Dodge/Perfect,0,완벽 회피(공격이 회피 중에 지�
 GunLowAmmoClick/Rifle,Guns/LowAmmoClick *5.56 +0.05,0,잔탄 경고 딸깍. CS2처럼 총소리 0.05초 뒤에 낸다. AmmoCue가 넘기는 0.45(mechanicalVolume)에 5.56을 곱해 클립의 2.5배로 낸다: CS2는 이 소리를 총소리(1.0~1.1)보다 큰 1.5로 내는데 우리 총소리는 CS2 것보다 5dB쯤 커서 큰 방에서 연사해도 묻히지 않게 더 키웠다(1이 넘으면 FeelAudio가 클립보다 크게 낸다. 최대 4). FeelAudio가 낸다
 GunLowAmmoClick/Pistol,Guns/LowAmmoClick *5.56 +0.05,0,잔탄 경고 딸깍(권총). 위와 같다
 GunLowAmmoClick/Heavy,Guns/LowAmmoClick *5.56 +0.05,0,잔탄 경고 딸깍(샷건). 위와 같다
-ShoveSwing,Movement/Shove/Swing,0,V 밀치기 헛스윙: 밀치기가 시작될 때 PlayerShoveAudio가 몸에서 낸다(맨손 V·총 V 모두). 무엇에 닿으면 BOOM 접촉음이 따로 겹친다. 헛스윙은 적이 듣지 않는다(noise 0: 틀려도 손해가 없게)
-Execution/Behind,Zombie/Bone/NeckSnap,0,처형의 마지막 일격을 등 뒤에서 했을 때(암살 포함): 목을 꺾는다(BodyBreakSounds). noise는 쓰지 않는다: 처형은 조용히 끝나야 해서 옆의 좀비를 깨우지 않는다
-Execution/Front,Zombie/Bone/SkullBreak,0,앞에서 한 처형의 마지막 일격: 두개골이 깨진다
-Execution/Survived,Zombie/Bone/ArmBreak; Zombie/Hit/Fist *0.7,0,처형을 버틴 적(거구는 최대 체력의 35%만 깎인다): 죽이지 못한 대신 팔을 부러뜨린다
-Gore/HeadBurst,Zombie/Gore/HeadBurst,0,머리가 터질 때(머리를 맞힌 처치나 총알 헤드샷 처치. ZombieGore와 같은 규칙): 목에서 피가 뿜는다. 헤드샷 처치음(CombatHitAudio)은 따로 난다
-Gore/LimbOff,Zombie/Gore/BloodSpray; Zombie/Bone/ArmBreak *0.6,0,살아 있는 좀비의 팔다리가 떨어질 때(ZombieGore.Crippled): 피가 뿜고 뼈가 꺾인다
-ZombieHit/Fist,Zombie/Hit/Fist,0,총알·밀치기가 아닌 플레이어의 근접 타격(주먹·카운터·발차기)이 2.5m 안의 좀비에 맞을 때 BOOM 타격음 밑에 깔리는 살 소리

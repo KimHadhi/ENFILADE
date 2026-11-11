@@ -405,7 +405,8 @@ public sealed class CampaignRun : MonoBehaviour
                 else if (EveryoneAt(now)) Advance();
                 break;
             case CampaignStepKind.Hold:
-                held = SongTime(now, dt, 0f);
+                // A manned hold (chapter 4's tug) counts only while someone stands at its spot, and pauses otherwise.
+                held = now.Manned ? held + (AnyoneAt(now) ? dt : 0f) : SongTime(now, dt, 0f);
                 if (held >= TotalOf(now)) Advance();
                 else ShowHeld(now);
                 break;

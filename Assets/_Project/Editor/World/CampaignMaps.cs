@@ -10,7 +10,11 @@ using UnityEngine;
 /// 2장 막힌 고가도로: from the wreck along the jammed overpass toward the army checkpoint at the toll gate. The road is
 ///   broken, so they jump down to the road below (no way back). Rest stop at a filling station, finale at the gate.
 /// 3장 지하철: the checkpoint has fallen; the way out is the subway under the river. Fuel cans for the depot's generator,
-///   rest stop in the depot, finale at the far bank's exit.
+///   rest stop in the depot, finale at the far bank's exit. The army's boat takes them down the river to the airport.
+/// 4장 공항 (the user's memo 15): from the cargo pier through the terminal (check-in hall, security, the duty-free shop as
+///   the rest stop, a jet bridge with no plane) to the apron and the control tower's radio. An airliner left across the
+///   runway keeps the last transport on the ground: its tug pushes it off while someone mans the tug (a manned hold,
+///   CampaignPushback). Finale at the transport's ramp; it takes off as the song ends.
 /// Each chapter runs along +X; the gimmicks (5C) and objectives (5B) hang on the named spots under 진행 자리.
 /// </summary>
 public static class CampaignMaps
@@ -21,7 +25,7 @@ public static class CampaignMaps
     /// <summary>Every chapter in a row after one question (memo 48: the small-prop fix needs each map rebuilt).</summary>
     [MenuItem("Tools/World/캠페인 회색 맵/모든 장 다시 짓기", priority = 0)]
     private static void RebuildAll() => GreyboxBuilder.RebuildAll("모든 장 다시 짓기",
-        ("1장 옥상 탈출", Rooftops), ("2장 막힌 고가도로", Overpass), ("3장 지하철", Subway));
+        ("1장 옥상 탈출", Rooftops), ("2장 막힌 고가도로", Overpass), ("3장 지하철", Subway), ("4장 공항", Airport));
 
     [MenuItem("Tools/World/캠페인 회색 맵/1장 옥상 탈출", priority = 11)]
     private static void Rooftops()
@@ -470,6 +474,245 @@ public static class CampaignMaps
         b.Pickup(new Vector3(333f, Bank, 2f));
         b.Finish("3장 지하철을 지었어요 (Scenes/Campaign/Ch3_Subway).\n" +
                  "길: 대합실 → 승강장 → 어두운 터널 → 정비창 사무실(휴게소) → 연료통 4개를 발전기에 → 방수문 → 강 밑 터널 → 비상 계단 → 신호탄 → 버티기 → 보트.");
+    }
+
+    [MenuItem("Tools/World/캠페인 회색 맵/4장 공항", priority = 14)]
+    private static void Airport()
+    {
+        var b = GreyboxBuilder.Begin("Ch4_Airport", "4장 공항");
+        if (b == null) return;
+        // The terminal stands on a podium 4 m up, as departures do; the apron and the runway are at the ground.
+        const float Floor = 4f, Roof = 16f, Upper = Floor + 5.4f;
+
+        // The ground and the edge of the map: the river to the west, the airfield's wall on the other sides.
+        b.Box("땅", -22f, 360f, -.5f, 0f, -60f, 60f, b.Road, "Asphalt");
+        b.Box("맵 끝 서 (강)", -22f, -21f, 0f, 6f, -60f, 60f);
+        b.Box("맵 끝 동", 359f, 360f, 0f, 8f, -60f, 60f);
+        b.Box("맵 끝 남", -22f, 360f, 0f, 8f, -60f, -59f);
+        b.Box("맵 끝 북", -22f, 360f, 0f, 8f, 59f, 60f);
+
+        // 1. The cargo pier where chapter 3's boat left them, and the cargo yard: containers to climb, its gate in the fence.
+        b.Box("화물 부두", -20f, -6f, 0f, .3f, -6f, 6f, b.Wood, "WoodPlank");
+        b.Box("군 보트", -19.5f, -15.5f, 0f, 1.6f, 7f, 10f, b.Metal, solid: false);
+        b.PlayerStart(new Vector3(-10f, .3f, 0f), 90f);
+        b.Spot("Start", new Vector3(-10f, .3f, 0f));
+        b.Box("화물 컨테이너 1", 0f, 12f, 0f, 2.6f, 12f, 14.5f, b.Metal, "MetalBox");
+        b.Box("화물 컨테이너 2", 3f, 9f, 2.6f, 5.2f, 12f, 14.5f, b.Metal, "MetalBox");
+        b.Box("화물 컨테이너 3", 4f, 16f, 0f, 2.6f, -16f, -13.5f, b.Metal, "MetalBox");
+        b.Box("지게차", 10f, 12f, 0f, 2.2f, 4f, 7f, b.Metal, "Metal");
+        b.Box("화물 팔레트 1", 2f, 3.2f, 0f, .9f, -4f, -2.8f, b.Wood, "WoodPlank");
+        b.Box("화물 팔레트 2", 6f, 7.2f, 0f, .9f, 4.5f, 5.7f, b.Wood, "WoodPlank");
+        b.Box("화물장 펜스 남", 20f, 20.2f, 0f, 2.4f, -59f, -4f, b.Metal, "MetalPipe");
+        b.Box("화물장 펜스 북", 20f, 20.2f, 0f, 2.4f, 4f, 59f, b.Metal, "MetalPipe");
+        b.Spot("CargoGate", new Vector3(23f, 0f, 0f));
+        b.EnemySpawn("화물장 북", new Vector3(5f, 0f, 30f));
+        b.EnemySpawn("화물장 남", new Vector3(8f, 0f, -35f));
+
+        // 2. The landside road and the ramp up to the departures curb, where the terminal's two doors are. A wall from the
+        // terminal's corners to the map's edges keeps everyone going through the terminal, not around it.
+        Car(b, 27f, 0f, -14f); Car(b, 30f, 0f, 17f); Car(b, 41f, 0f, -24f); Car(b, 44f, 0f, 22f);
+        b.Ramp("출발층 진입로", new Vector3(32f, 0f, 0f), new Vector3(48f, Floor, 0f), 12f, b.Road);
+        b.Box("출발층 도로", 48f, 60f, 0f, Floor, -40.3f, 40.3f, b.Road, "Asphalt");
+        Car(b, 53f, Floor, -22f); Car(b, 55f, Floor, 24f);
+        b.Box("공항 셔틀버스", 50.5f, 53.1f, Floor, Floor + 3.2f, -37f, -25f, b.Metal, "Metal");
+        b.Box("공항 담장 북", 60f, 60.3f, 0f, 6f, 40.3f, 59f);
+        b.Box("공항 담장 남", 60f, 60.3f, 0f, 6f, -59f, -40.3f);
+        b.Spot("Departures", new Vector3(57f, Floor, 0f));
+        b.EnemySpawn("도로 북", new Vector3(38f, 0f, 45f));
+        b.EnemySpawn("도로 남", new Vector3(38f, 0f, -45f));
+        b.EnemySpawn("출발층 북", new Vector3(54f, Floor, 36f));
+
+        // 3. The terminal: the departure hall with check-in islands, the information desk and a food court upstairs
+        // reached by a stopped escalator. Its roof keeps the sun out, so lamps light it.
+        b.Box("터미널 바닥", 60f, 180.3f, 0f, Floor, -40.3f, 40.3f, b.Concrete, "Tile");
+        b.Box("터미널 지붕", 60f, 180.3f, Roof, Roof + .5f, -40.3f, 40.3f);
+        b.Box("터미널 벽 북", 60f, 180.3f, Floor, Roof, 40f, 40.3f);
+        b.Box("터미널 벽 남", 60f, 180.3f, Floor, Roof, -40.3f, -40f);
+        b.Box("정면 벽 1", 60f, 60.3f, Floor, Roof, -40f, -10f);
+        b.Box("정면 벽 2", 60f, 60.3f, Floor, Roof, -6f, 6f);
+        b.Box("정면 벽 3", 60f, 60.3f, Floor, Roof, 10f, 40f);
+        b.Box("정면 문 위 1", 60f, 60.3f, Floor + 3f, Roof, -10f, -6f);
+        b.Box("정면 문 위 2", 60f, 60.3f, Floor + 3f, Roof, 6f, 10f);
+        b.Box("안내 데스크", 66f, 70f, Floor, Floor + 1.1f, -2f, 2f, b.Wood, "Wood");
+        foreach (float z in new[] { -26f, -12f, 2f })
+        {
+            b.Box("체크인 카운터", 76f, 100f, Floor, Floor + 1.1f, z, z + 2.4f, b.Wood, "Wood");
+            b.Box("체크인 안내판", 76f, 100f, Floor + 3.4f, Floor + 4.4f, z + 1.1f, z + 1.3f, b.Marker, solid: false);
+        }
+        b.Box("포장기", 104f, 105.2f, Floor, Floor + 1.4f, -4f, -2.8f, b.Metal, "Metal");
+        foreach (float z in new[] { -36f, -32f }) b.Box("홀 의자 줄", 104f, 116f, Floor, Floor + .5f, z, z + .6f, b.Metal, "Metal");
+        foreach (float x in new[] { 88f, 108f })
+            foreach (float z in new[] { -18f, 14f })
+                b.Box("홀 기둥", x - .6f, x + .6f, Floor, Roof, z - .6f, z + .6f);
+        b.Box("2층 식당가", 64f, 116f, Upper - .4f, Upper, 28f, 40f, b.Concrete, "Tile");
+        b.Ramp("멈춘 에스컬레이터", new Vector3(70f, Floor, 14f), new Vector3(70f, Upper, 28f), 3f, b.Metal);
+        b.Box("2층 난간 1", 64f, 68.5f, Upper, Upper + 1f, 28f, 28.2f, b.Metal, "MetalPipe");
+        b.Box("2층 난간 2", 71.5f, 116f, Upper, Upper + 1f, 28f, 28.2f, b.Metal, "MetalPipe");
+        foreach (float x in new[] { 80f, 96f, 112f }) b.Box("2층 기둥", x - .4f, x + .4f, Floor, Upper - .4f, 28.2f, 29f);
+        b.Box("식당 계산대", 84f, 92f, Upper, Upper + 1.1f, 37f, 38.2f, b.Wood, "Wood");
+        foreach (float x in new[] { 76f, 82f, 98f, 104f }) b.Box("식탁", x, x + 1f, Upper, Upper + .75f, 32f, 33f, b.Wood, "Wood");
+        b.EnemySpawn("홀 서남", new Vector3(66f, Floor, -34f));
+        b.EnemySpawn("홀 동남", new Vector3(112f, Floor, -26f));
+        b.EnemySpawn("홀 동북", new Vector3(114f, Floor, 22f));
+        b.EnemySpawn("홀 2층", new Vector3(100f, Upper, 35f));
+
+        // 4. The security line across the terminal: four lanes between the scanners, a detector frame in each.
+        foreach (var (z0, z1) in new[] { (-40f, -14f), (-10f, -6f), (-2f, 2f), (6f, 10f), (14f, 40f) })
+            b.Box("검색대 칸막이", 120f, 120.3f, Floor, Floor + 4f, z0, z1);
+        foreach (float lane in new[] { -12f, -4f, 4f, 12f })
+        {
+            b.Box("엑스레이 검색기", 120.3f, 125.5f, Floor, Floor + 1.2f, lane - 2f, lane - 1f, b.Metal, "Metal");
+            b.Box("금속 탐지기 왼쪽", 126.5f, 126.8f, Floor, Floor + 2.2f, lane - .9f, lane - .7f, b.Metal, solid: false);
+            b.Box("금속 탐지기 오른쪽", 126.5f, 126.8f, Floor, Floor + 2.2f, lane + .7f, lane + .9f, b.Metal, solid: false);
+            b.Box("금속 탐지기 위", 126.5f, 126.8f, Floor + 2.2f, Floor + 2.4f, lane - .9f, lane + .9f, b.Metal, solid: false);
+        }
+        b.Spot("Security", new Vector3(129f, Floor, 0f));
+
+        // 5. Airside: the duty-free shop is the rest stop (its door, its till), a café, the gates' seats, a stopped moving
+        // walkway, and the gate desk by the jet bridge's door.
+        Room(b, "면세점", 140f, 154f, 26f, 40f, Floor, 4f, Side.South, 145f, 147.5f);
+        b.Door("면세점 문", 145f, 147.5f, Floor, Floor + 2.4f, 26.05f, 26.25f, "DutyFree", new Vector3(2.5f, 0f, 0f));
+        b.Box("면세점 계산대", 148f, 152f, Floor, Floor + 1f, 35f, 36f, b.Wood, "Wood");
+        b.Shop(new Vector3(150f, Floor, 34.3f), new Vector3(150f, Floor + 2.2f, 36f));
+        b.Box("면세점 진열대", 141f, 141.8f, Floor, Floor + 1.4f, 29f, 37f, b.Metal, "Metal");
+        b.Spot("DutyFree", new Vector3(147f, Floor, 32f));
+        b.Lamp(new Vector3(147f, Floor + 3.5f, 33f), 9f, 1.6f);
+        b.Box("카페 계산대", 128f, 134f, Floor, Floor + 1.1f, -38f, -36.8f, b.Wood, "Wood");
+        b.Box("멈춘 무빙워크", 128f, 170f, Floor, Floor + .15f, -31f, -29.6f, b.Metal, "Metal");
+        foreach (float z in new[] { -24f, -20f, -16f, 12f, 16f })
+            b.Box("탑승구 의자 줄", 158f, 176f, Floor, Floor + .5f, z, z + .6f, b.Metal, "Metal");
+        b.Box("탑승구 데스크", 172f, 175f, Floor, Floor + 1.1f, 5f, 6.2f, b.Wood, "Wood");
+        b.Spot("Gate", new Vector3(177f, Floor, 0f));
+        foreach (var (x, z) in new[] { (72f, -18f), (72f, 20f), (96f, -30f), (96f, -4f), (110f, 20f), (132f, -14f), (150f, 8f), (166f, -24f), (166f, 22f) })
+            b.Lamp(new Vector3(x, Roof - 1f, z), 20f, 2.4f);
+        b.EnemySpawn("대합실 남", new Vector3(136f, Floor, -24f));
+        b.EnemySpawn("대합실 동남", new Vector3(172f, Floor, -35f));
+        b.EnemySpawn("대합실 북", new Vector3(166f, Floor, 34f));
+
+        // 6. The gate's jet bridge: its plane is gone, so it ends in the air over the apron, and its service stairs go down.
+        b.Box("동쪽 벽 1", 180f, 180.3f, Floor, Roof, -40f, -2f);
+        b.Box("동쪽 벽 2", 180f, 180.3f, Floor, Roof, 2f, 40f);
+        b.Box("탑승구 문 위", 180f, 180.3f, Floor + 2.6f, Roof, -2f, 2f);
+        b.Box("탑승교 바닥", 180.3f, 196f, Floor - .4f, Floor, -1.6f, 1.6f, b.Metal, "Gantry");
+        b.Box("탑승교 벽 남", 180.3f, 196f, Floor, Floor + 2.6f, -1.9f, -1.6f, b.Metal, "Metal");
+        b.Box("탑승교 벽 북", 180.3f, 196f, Floor, Floor + 2.6f, 1.6f, 1.9f, b.Metal, "Metal");
+        b.Box("탑승교 지붕", 180.3f, 196f, Floor + 2.6f, Floor + 2.9f, -1.9f, 1.9f, b.Metal);
+        b.Box("탑승교 다리", 191.7f, 192.3f, 0f, Floor - .4f, -.3f, .3f, b.Metal, "MetalPipe");
+        b.Box("탑승교 끝 바닥", 196f, 199f, Floor - .4f, Floor, -2.4f, 2.4f, b.Metal, "Gantry");
+        b.Box("탑승교 끝 벽 북", 196f, 199f, Floor, Floor + 2.6f, 2.1f, 2.4f, b.Metal, "Metal");
+        b.Box("탑승교 끝 벽 남 1", 196f, 196.6f, Floor, Floor + 2.6f, -2.4f, -2.1f, b.Metal, "Metal");
+        b.Box("탑승교 끝 벽 남 2", 198.4f, 199f, Floor, Floor + 2.6f, -2.4f, -2.1f, b.Metal, "Metal");
+        b.Box("탑승교 끝 벽 동 1", 198.7f, 199f, Floor, Floor + 2.6f, -2.1f, -1.2f, b.Metal, "Metal");
+        b.Box("탑승교 끝 벽 동 2", 198.7f, 199f, Floor, Floor + 2.6f, 1.2f, 2.1f, b.Metal, "Metal");
+        b.Box("탑승교 끝 지붕", 196f, 199f, Floor + 2.6f, Floor + 2.9f, -2.4f, 2.4f, b.Metal);
+        b.Box("정비 계단 위", 196.4f, 198.6f, Floor - .4f, Floor, -3.6f, -2.4f, b.Metal, "Gantry");
+        b.Ramp("정비 계단", new Vector3(197.5f, 0f, -11f), new Vector3(197.5f, Floor, -3.6f), 1.6f, b.Metal);
+        b.Lamp(new Vector3(188f, Floor + 2.3f, 0f), 8f, 1.2f);
+        b.Spot("Apron", new Vector3(197.5f, 0f, -12.5f));
+
+        // 7. The apron: baggage carts, freight cans, a fuel truck, a catering truck, a stairs truck, and the control tower,
+        // whose ground-floor radio reaches the transport's crew.
+        foreach (float x in new[] { 196f, 199f, 202f, 205f }) b.Box("수하물 카트", x, x + 2.4f, 0f, 1f, 14f, 15.4f, b.Metal, "MetalBox");
+        b.Box("견인 트랙터", 207.5f, 210.5f, 0f, 1.4f, 13.7f, 15.7f, b.Metal, "Metal");
+        foreach (float x in new[] { 200f, 202.2f, 204.4f, 206.6f })
+            b.Box("항공 화물 컨테이너", x, x + 1.6f, 0f, 1.5f, 30f, 31.6f, b.Metal, "MetalBox");
+        b.Box("급유차", 226f, 235f, 0f, 3f, 10f, 12.6f, b.Metal, "Metal");
+        b.Box("기내식 트럭", 205f, 212f, 0f, 3.8f, -32f, -29.5f, b.Metal, "MetalBox");
+        b.Ramp("계단차 계단", new Vector3(238f, 0f, -21f), new Vector3(238f, 3.5f, -14.5f), 1.6f, b.Metal);
+        b.Box("계단차 발판", 237.2f, 238.8f, 3.2f, 3.5f, -14.5f, -13f, b.Metal, "Gantry");
+        Room(b, "관제탑 1층", 214f, 224f, -52f, -42f, 0f, 4f, Side.North, 217.5f, 220f);
+        b.Box("관제탑 기둥", 217f, 221f, 4.3f, 26f, -49f, -45f);
+        b.Box("관제탑 관제실", 214f, 224f, 26f, 30f, -52f, -42f, b.Metal, "Metal");
+        b.Box("관제탑 무전기", 221.5f, 223f, 0f, 1.1f, -51.2f, -50.2f, b.Marker);
+        b.Spot("TowerRadio", new Vector3(222.2f, 0f, -49.5f));
+        b.Lamp(new Vector3(219f, 3.4f, -47f), 8f, 1.4f);
+        b.EnemySpawn("계류장 북", new Vector3(215f, 0f, 45f));
+        b.EnemySpawn("계류장 북동", new Vector3(240f, 0f, 30f));
+        b.EnemySpawn("계류장 남", new Vector3(232f, 0f, -55f));
+        b.EnemySpawn("터미널 밑", new Vector3(186f, 0f, 25f));
+
+        // 8. The runway, and across it the airliner that was being pushed back when everything fell: the transport can't
+        // take off past it. Its tug pushes it 40 m north, off the runway, while someone stands at the tug (Ch4.09, a
+        // manned hold; CampaignPushback). Its body, wings and engines hang high enough to walk under, and its gear and
+        // the tug cut the walk mesh as they go.
+        b.Box("활주로", 238f, 359f, 0f, .02f, -12f, 12f, b.Concrete, solid: false);
+        for (float x = 245f; x < 355f; x += 12f) b.Box("활주로 중앙선", x, x + 6f, .02f, .03f, -.2f, .2f, b.Metal, solid: false);
+        var plane = b.Pushback("버려진 여객기 (견인차로 밀어냄)", "Ch4.09", new Vector3(0f, 0f, 40f));
+        b.Box("여객기 동체", 278f, 282f, 2.4f, 6.6f, -20f, 16f, b.Metal, "Metal", group: plane);
+        b.Box("여객기 기수", 278.6f, 281.4f, 3f, 6f, -22f, -20f, b.Metal, "Metal", group: plane);
+        b.Box("여객기 날개", 263f, 297f, 5.4f, 5.8f, -6f, 1f, b.Metal, "Metal", group: plane);
+        b.Box("여객기 엔진 왼쪽", 268f, 271f, 2.6f, 5.4f, -9f, -3f, b.Metal, "Metal", group: plane);
+        b.Box("여객기 엔진 오른쪽", 289f, 292f, 2.6f, 5.4f, -9f, -3f, b.Metal, "Metal", group: plane);
+        b.Box("여객기 수평 꼬리", 273f, 287f, 6.6f, 6.9f, 12f, 15.5f, b.Metal, solid: false, group: plane);
+        b.Box("여객기 수직 꼬리", 279.85f, 280.15f, 6.6f, 12f, 10f, 16f, b.Metal, solid: false, group: plane);
+        b.Carve(b.Box("여객기 앞바퀴", 279.7f, 280.3f, 0f, 2.4f, -17.3f, -16.7f, b.Metal, "MetalPipe", group: plane));
+        b.Carve(b.Box("여객기 뒷바퀴 왼쪽", 276.6f, 277.4f, 0f, 5.4f, -3.4f, -2.6f, b.Metal, "MetalPipe", group: plane));
+        b.Carve(b.Box("여객기 뒷바퀴 오른쪽", 282.6f, 283.4f, 0f, 5.4f, -3.4f, -2.6f, b.Metal, "MetalPipe", group: plane));
+        var tug = b.Box("견인차", 278.8f, 281.2f, 0f, 1.2f, -26f, -22.5f, b.Metal, "Metal", group: plane);
+        b.Carve(tug);
+        b.PushbackTug(plane, tug);
+        b.Box("견인 막대", 279.9f, 280.1f, .4f, .6f, -22.5f, -17.3f, b.Metal, solid: false, group: plane);
+        b.Spot("Tug", new Vector3(280f, 0f, -24.25f), plane);
+        b.EnemySpawn("활주로 서남", new Vector3(250f, 0f, -45f));
+        b.EnemySpawn("활주로 서북", new Vector3(250f, 0f, 45f));
+        b.EnemySpawn("활주로 남", new Vector3(300f, 0f, -48f));
+        b.EnemySpawn("활주로 북동", new Vector3(318f, 0f, 48f));
+
+        // 9. The last transport at the runway's east end, its rear ramp down: the finale's hold is around it, the escape
+        // is into its hold, and as the song ends it goes with whoever is aboard.
+        b.Box("수송기 화물칸 바닥", 322f, 346f, 0f, 1.2f, -3f, 3f, b.Metal, "Gantry");
+        b.Box("수송기 벽 남", 322f, 346f, 1.2f, 5.5f, -3f, -2.7f, b.Metal, "Metal");
+        b.Box("수송기 벽 북", 322f, 346f, 1.2f, 5.5f, 2.7f, 3f, b.Metal, "Metal");
+        b.Box("수송기 앞벽", 322f, 322.3f, 1.2f, 5.5f, -2.7f, 2.7f, b.Metal, "Metal");
+        b.Box("수송기 지붕", 322f, 346f, 5.5f, 5.8f, -3f, 3f, b.Metal, "Metal");
+        b.Box("수송기 기수", 318f, 322f, 1f, 4.5f, -2.2f, 2.2f, b.Metal, "Metal");
+        b.Ramp("수송기 램프", new Vector3(352f, 0f, 0f), new Vector3(346f, 1.2f, 0f), 5.4f, b.Metal);
+        b.Box("수송기 날개", 330f, 336f, 5.8f, 6.2f, -22f, 22f, b.Metal, "Metal");
+        foreach (float z in new[] { -15.4f, -8.2f, 5.8f, 13f }) b.Box("수송기 엔진", 328f, 332.5f, 3.6f, 5.8f, z, z + 2.4f, b.Metal, "Metal");
+        b.Box("수송기 바퀴 덮개 남", 328f, 340f, 0f, 1.5f, -4.2f, -3f, b.Metal, "Metal");
+        b.Box("수송기 바퀴 덮개 북", 328f, 340f, 0f, 1.5f, 3f, 4.2f, b.Metal, "Metal");
+        b.Box("수송기 수직 꼬리", 340f, 346f, 5.8f, 12f, -.15f, .15f, b.Metal, solid: false);
+        b.Box("수송기 수평 꼬리", 341f, 346f, 10.5f, 10.8f, -9f, 9f, b.Metal, solid: false);
+        b.Box("화물칸 짐 1", 326f, 328f, 1.2f, 2.4f, -2.2f, -.6f, b.Wood, "WoodPlank");
+        b.Box("화물칸 짐 2", 330f, 332.4f, 1.2f, 2.2f, .8f, 2.2f, b.Wood, "WoodPlank");
+        b.Box("출발 신호등", 350.6f, 351.4f, 0f, 1.3f, -5f, -4.2f, b.Marker);
+        b.Spot("Transport", new Vector3(353f, 0f, 0f));
+        b.Spot("Signal", new Vector3(351f, 0f, -3.6f));
+        b.Spot("Cargo", new Vector3(336f, 1.2f, 0f));
+        b.EnemySpawn("수송기 남", new Vector3(340f, 0f, -32f));
+        b.EnemySpawn("수송기 북", new Vector3(340f, 0f, 32f));
+        b.EnemySpawn("활주로 동남", new Vector3(356f, 0f, -20f));
+        b.EnemySpawn("활주로 동북", new Vector3(356f, 0f, 20f));
+
+        // Background sound by area (rows in Tables/Ambience; the runway and the road keep the map's own): the pier, the
+        // hall, the concourse, the duty-free shop, the jet bridge, the apron's machinery, the tower's radio room.
+        b.Ambience("Ch4.Pier", -22f, 20f, -1f, 10f, -60f, 60f, 0);
+        b.Ambience("Ch4.Hall", 60f, 120f, Floor - 1f, Roof, -40f, 40f);
+        b.Ambience("Ch4.Concourse", 120f, 180f, Floor - 1f, Roof, -40f, 40f);
+        b.Ambience("Ch4.DutyFree", 140f, 154f, Floor, Floor + 4f, 26f, 40f);
+        b.Ambience("Ch4.Bridge", 180.3f, 199f, Floor - .5f, Floor + 3f, -2.4f, 2.4f);
+        b.Ambience("Ch4.Apron", 180f, 250f, -1f, 12f, -60f, 60f, 0);
+        b.Ambience("Ch4.Tower", 214f, 224f, 0f, 4f, -52f, -42f);
+
+        // Field pickups (6D): a gun at the pier, upstairs in the hall and in the rest stop, supplies along the way and
+        // in the transport's hold for the finale.
+        b.Pickup(new Vector3(-8f, .3f, 2.5f), PickupSpot.Roll.Gun);
+        b.Pickup(new Vector3(6f, 0f, 9f));
+        b.Pickup(new Vector3(52f, Floor, -4f));
+        b.Pickup(new Vector3(68f, Floor, 3.5f));
+        b.Pickup(new Vector3(110f, Upper, 34f), PickupSpot.Roll.Gun);
+        b.Pickup(new Vector3(131f, Floor, 3f));
+        b.Pickup(new Vector3(151f, Floor, 30f));
+        b.Pickup(new Vector3(143f, Floor, 33f), PickupSpot.Roll.Gun);
+        b.Pickup(new Vector3(197.5f, 0f, -14.5f));
+        b.Pickup(new Vector3(219f, 0f, -46f));
+        b.Pickup(new Vector3(262f, 0f, -20f));
+        b.Pickup(new Vector3(336f, 1.2f, 1.6f));
+        b.Pickup(new Vector3(350f, 0f, 8f));
+        b.Shot(new Vector3(-10f, 50f, -75f), new Vector3(170f, 0f, 0f));
+        b.Finish("4장 공항을 지었어요 (Scenes/Campaign/Ch4_Airport).\n" +
+                 "길: 화물 부두 → 화물장 → 출발층 진입로 → 터미널 출발 홀(2층 식당가) → 보안 검색대 → 면세점(휴게소) → 탑승교와 정비 계단 → " +
+                 "계류장 → 관제탑 무전 → 활주로를 막은 여객기를 견인차로 밀어내기(누가 견인차 옆에 있어야 움직임) → 수송기 → 출발 신호 → 버티기 → 탑승.");
     }
 
     // A stopped car, 4.5 m long across x, at <paramref name="y"/> (the road it stands on).

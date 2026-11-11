@@ -146,18 +146,65 @@ public sealed class GreyboxBuilder
         else Debug.LogWarning("[Greybox] " + HudPrefab + " not found; the scene has no HUD.");
     }
 
-    /// <summary>A solid block (or, with <paramref name="solid"/> off, a look only: no collider, no walk mesh).</summary>
+    /// <summary>A solid block (or, with <paramref name="solid"/> off, a look only: no collider, no walk mesh). In a
+    /// <paramref name="group"/> made by Pushback it moves with the group.</summary>
     public GameObject Box(string name, float x0, float x1, float y0, float y1, float z0, float z1,
-        Material material = null, string surface = null, bool solid = true)
+        Material material = null, string surface = null, bool solid = true, Transform group = null)
     {
         var box = GameObject.CreatePrimitive(PrimitiveType.Cube);
         box.name = name;
-        box.transform.SetParent(terrain, false);
+        box.transform.SetParent(group != null ? group : terrain, false);
         box.transform.localPosition = new Vector3((x0 + x1) * .5f, (y0 + y1) * .5f, (z0 + z1) * .5f);
         box.transform.localScale = new Vector3(Mathf.Abs(x1 - x0), Mathf.Abs(y1 - y0), Mathf.Abs(z1 - z0));
         Dress(box, material, surface, solid);
-        if (solid) blocks.Add(new Block { Shape = box, Box = new Bounds(box.transform.localPosition, box.transform.localScale) });
+        if (solid)
+            blocks.Add(new Block { Shape = box, Box = new Bounds(box.transform.localPosition, box.transform.localScale), Moves = group != null });
         return box;
+    }
+
+    /// <summary>
+    /// A group of boxes that a manned hold moves as one by <paramref name="offset"/> (CampaignPushback; chapter 4's
+    /// airliner): put its parts in with Box(..., group: it), give the tug to PushbackTug and carve what stands on the
+    /// ground (Carve). The group sits at the origin, so its parts take world extents, and it stays out of the walk-mesh
+    /// bake, the small-prop check and the static flags.
+    /// </summary>
+    public Transform Pushback(string name, string step, Vector3 offset)
+    {
+        var group = new GameObject(name);
+        group.transform.SetParent(terrain, false);
+        group.AddComponent<NavMeshModifier>().ignoreFromBuild = true;
+        Set(group.AddComponent<CampaignPushback>(), so =>
+        {
+            so.FindProperty("step").stringValue = step;
+            so.FindProperty("offset").vector3Value = offset;
+        });
+        return group.transform;
+    }
+
+    /// <summary>Where a pushback's engine sounds from.</summary>
+    public void PushbackTug(Transform group, GameObject tug)
+        => Set(group.GetComponent<CampaignPushback>(), so => so.FindProperty("tug").objectReferenceValue = tug.transform);
+
+    /// <summary>A part of a moving group that cuts the walk mesh where it stands as it goes (the bake left it out). It
+    /// carves again each time it has moved a third of a metre, not every frame.</summary>
+    public void Carve(GameObject part)
+    {
+        var obstacle = part.AddComponent<NavMeshObstacle>();
+        obstacle.shape = NavMeshObstacleShape.Box;
+        obstacle.center = Vector3.zero;
+        obstacle.size = Vector3.one;
+        obstacle.carving = true;
+        obstacle.carveOnlyStationary = false;
+        obstacle.carvingMoveThreshold = .3f;
+    }
+
+    /// <summary>Where Tools > World > 맵 사진 찍기 (MapPictures) takes the menu's map picture from, looking at
+    /// <paramref name="lookAt"/>.</summary>
+    public void Shot(Vector3 position, Vector3 lookAt)
+    {
+        var shot = new GameObject("MapShot").transform;
+        shot.SetParent(systems, false);
+        shot.SetPositionAndRotation(position, Quaternion.LookRotation(lookAt - position, Vector3.up));
     }
 
     // A gate or a door: it moves, so no walk slab goes on it and the small-prop check leaves it alone.
@@ -350,11 +397,12 @@ public sealed class GreyboxBuilder
     }
 
     /// <summary>A named spot along the way, where a step of Tables/CampaignSteps sends the players (its spot column is
-    /// this name; "Start" is where the dead come back before the first rest stop). Gimmicks (5C) hang on them too.</summary>
-    public void Spot(string name, Vector3 position)
+    /// this name; "Start" is where the dead come back before the first rest stop). Gimmicks (5C) hang on them too. Put on
+    /// a moving <paramref name="group"/> (Pushback), it goes along.</summary>
+    public void Spot(string name, Vector3 position, Transform group = null)
     {
         var spot = new GameObject(name);
-        spot.transform.SetParent(progress, false);
+        spot.transform.SetParent(group != null ? group : progress, false);
         spot.transform.position = position;
         spots.Add(spot.transform);
         var icon = EditorGUIUtility.IconContent("sv_label_1").image as Texture2D;
