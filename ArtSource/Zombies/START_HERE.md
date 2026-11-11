@@ -132,6 +132,35 @@
 
 Mixamo에서 **With Skin**으로 받은 FBX를 슬롯 폴더(`Assets/_Project/Art/Animations/Zombies/Walk/` 등)에 그대로 넣어도 된다. 반복 여부는 폴더가 정하고, 목록에 자동으로 들어간다.
 
+## 다른 컴퓨터에서 (블렌더만)
+
+블렌더 작업에는 Unity가 필요 없다. 그 PC에 **Git for Windows**(Git LFS가 들어 있다), **Blender 4.5 LTS**(blender.org, 무료), GitHub 로그인만 있으면 된다. 먼저 이 PC의 작업이 GitHub에 올라가 있어야 한다.
+
+처음 한 번, PowerShell에서 블렌더 작업에 쓰는 큰 파일만 받는다(약 150MB). 저장소를 통째로 받으면 큰 파일이 약 5GB라서 GitHub 무료 한도인 한 달 다운로드 10GiB의 절반을 한 번에 쓴다.
+
+```powershell
+$env:GIT_LFS_SKIP_SMUDGE = "1"
+git clone -b multiplayer https://github.com/KimHadhi/ENFILADE.git
+cd ENFILADE
+git config lfs.fetchinclude "ArtSource/Zombies/**,Assets/ThirdParty/Nephilite Studios/**,Assets/_Project/Art/Animations/Zombies/**"
+Remove-Item Env:GIT_LFS_SKIP_SMUDGE
+git lfs pull
+```
+
+그 뒤로는 `git pull`도 이 폴더들의 큰 파일만 받는다. 작업은 똑같이 [START_ZOMBIE_ANIMATION.cmd](START_ZOMBIE_ANIMATION.cmd)로 연다(블렌더 위치는 알아서 찾고, 못 찾으면 `BLENDER_EXE` 환경 변수에 blender.exe 경로를 넣는다). 게임에 보내기는 그 PC의 `Assets/_Project/Art/Animations/Zombies/<슬롯>/`에 파일을 만든다. 끝나면 올린다.
+
+```powershell
+git add ArtSource/Zombies/Recipes Assets/_Project/Art/Animations/Zombies
+git commit -m "좀비 클립 추가"
+git push
+```
+
+이 PC에서 Claude에게 "받아 줘"라고 하면 받아서 Unity가 슬롯 목록에 넣는다.
+
+- 그 PC에서는 이 폴더를 Unity로 열지 않는다. 받지 않은 큰 파일은 빈 껍데기라서 Unity가 깨진 에셋으로 읽는다.
+- 작업 파일(.blend)은 `File → Save As`로 다른 이름에 저장한다. 같은 .blend를 두 PC에서 고치면 git이 합치지 못한다.
+- 총 손 모양(Grip Tuner)은 Unity 안의 도구라서 프로젝트 전체가 있는 PC에서만 된다.
+
 ## 안 될 때
 
 - **사람 뼈대로 읽을 수 없는 파일**: 뼈 이름이 낯선 리그다. Mixamo나 Synty 뼈대 파일을 쓴다.
