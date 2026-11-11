@@ -43,6 +43,8 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
         public byte Grip;
         /// <summary>How far into its clip their reload began, 0-255: theirs going on from a cut-short one (WeaponRuntime.ReloadStartShare).</summary>
         public byte ReloadFrom;
+        /// <summary>The guns in their first, second and special slots (Gun ids), held or not: their body wears the others (HolsteredGuns).</summary>
+        public ushort GunA, GunB, GunD;
     }
 
     // The gun's place in FPSBody's guns plus one (the same list on every PC of a build), or 0.
@@ -225,6 +227,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
             Reviving = helped != null ? (ushort)(helped.OwnerClientId + 1) : (ushort)0,
             ReviveProgress = helped != null ? (byte)Mathf.RoundToInt(revive.Progress * 255f) : (byte)0,
             Slot = (sbyte)slots.SelectedSlot, Gun = GunId(slots.SelectedWeapon),
+            GunA = GunId(slots.GetWeapon(0)), GunB = GunId(slots.GetWeapon(1)), GunD = GunId(slots.GetWeapon(3)),
             Sight = (byte)Mathf.Clamp(weapon.SightIndex + 1, 0, 255), Mode = gun != null ? (byte)((int)gun.FireMode + 1) : (byte)0,
             Muzzle = (byte)Mathf.Clamp(weapon.MuzzleIndex + 1, 0, 255), Under = (byte)Mathf.Clamp(weapon.UnderbarrelIndex + 1, 0, 255),
             Light = weapon.LightOn, Grip = (byte)Mathf.Clamp(weapon.GripIndex + 1, 0, 255),
@@ -237,6 +240,17 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
     }
 
     private void OnStanceChanged(Stance previous, Stance current) => Show(current);
+
+    // A slot they aren't holding gets the gun their PC has there, for their body to wear (HolsteredGuns); one with no gun of
+    // ours (0) clears only a gun, never some other special item their PC put there.
+    private void Carry(int slot, ushort id)
+    {
+        if (slot == slots.SelectedSlot) return;
+        var gun = GunOf(id);
+        var now = slots.GetWeapon(slot);
+        if (now == gun || (gun == null && (now == null || now.Category != WeaponCategory.Ranged))) return;
+        slots.TrySetWeapon(slot, gun);
+    }
 
     // The sight and fire mode they have on the gun they hold, on this copy's same gun. Kept every frame, not only when the
     // stance changes: the copy's body may build its guns, or draw this one, after the change came.
@@ -259,6 +273,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
         var gun = GunOf(now.Gun);
         if (gun != null && now.Slot >= 0 && slots.GetWeapon(now.Slot) != gun) slots.TrySetWeapon(now.Slot, gun);
         slots.SelectSlot(now.Slot);
+        Carry(0, now.GunA); Carry(1, now.GunB); Carry(3, now.GunD);
         weapon.ShowAiming(now.Aiming);
         weapon.ShowReload(now.Reloading, now.EmptyReload, now.ReloadFrom / 255f);
         melee.ShowGuard(now.Guarding);

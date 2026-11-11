@@ -181,6 +181,8 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
         controller.InspectStarted += OnInspectStarted;
         controller.InspectStopped += OnInspectStopped;
         if (movement != null) movement.Jumped += OnJumped;
+        // The guns carried but not held are worn on the body for everyone to see (HolsteredGuns).
+        if (Application.isPlaying && GetComponent<HolsteredGuns>() == null) gameObject.AddComponent<HolsteredGuns>();
         if (assets == null || assets.inputConfig == null || assets.rig == null || assets.upperBody == null || assets.idleProfile == null)
             Report("Resources/Combat/FPSBody is missing or incomplete; the body can't hold KINEMATION's guns.");
     }
@@ -1123,6 +1125,9 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
 
     /// <summary>The gun of ours drawn now, for the customize menu (GunCustomizeMenu); null without one.</summary>
     internal FPSGun Held => HoldsGun ? held : null;
+
+    /// <summary>This body's own copy of that gun, drawn or not (HolsteredGuns wears a copy of it); null when none was built.</summary>
+    internal FPSGun GunFor(WeaponData data) => Find(data);
 
     /// <summary>L: the held gun's flashlight on or off. False when it wears none.</summary>
     internal bool ToggleLight() => HoldsGun && held.ToggleLight();
