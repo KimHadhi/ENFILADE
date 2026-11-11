@@ -32,6 +32,9 @@ internal sealed class BoothImport : AssetPostprocessor
     private const string ProfilePath = "Assets/_Project/Resources/Characters/PlayerBody.asset";
     private const string ClothPath = "Assets/_Project/Resources/Tables/Cloth.csv";
     private static bool queued, running;
+    // A table write that meets a lock: how many times it is tried and how long apart (s).
+    private const int WriteTries = 6;
+    private const double RetrySeconds = .5;
 
     // Colour words of BOOTH colour prefabs, for the colour cards.
     // White Board (Ene Collection, 2026-11-12) brought Basis, Burgundy, Gold, Lime and Sax (Japanese サックス, saxe blue).
@@ -198,10 +201,11 @@ internal sealed class BoothImport : AssetPostprocessor
                 entries.Add(new OutfitLibrary.Entry(source.Id, source.Skin, copy, OutfitColours(prefab, colourPaths)));
             }
             library.EditorReplace(entry => entry.Model == null || IsOurs(AssetDatabase.GetAssetPath(entry.Model)), entries);
-            ReplaceClothRows(sway);
+            // Saved before the table is written: a write that fails must not take the characters and outfits with it.
             if (profile != null) EditorUtility.SetDirty(profile);
             EditorUtility.SetDirty(library);
             AssetDatabase.SaveAssets();
+            ReplaceClothRows(sway);
             GameTables.Reload();
         }
         finally
@@ -381,8 +385,40 @@ internal sealed class BoothImport : AssetPostprocessor
             }
         string written = kept.ToString();
         if (written == text) return;
-        File.WriteAllText(ClothPath, written, new UTF8Encoding(true));
-        AssetDatabase.ImportAsset(ClothPath);
+        WriteTable(ClothPath, written, WriteTries);
+    }
+
+    // Writes a table the editor may hold open. Just after an import it keeps cached handles on the files it read, and
+    // Windows then refuses the truncating write (Win32 IO 1224, "user-mapped section", on Cloth.csv: the user's console,
+    // 2026-11-12, a second run of the White Board import, which threw and stopped there). The editor lets go of its
+    // handles first; a write that still meets a lock is tried again a moment later, a few times, instead of stopping the
+    // import, and the tables are read again once it lands.
+    private static void WriteTable(string path, string text, int tries)
+    {
+        AssetDatabase.ReleaseCachedFileHandles();
+        try
+        {
+            File.WriteAllText(path, text, new UTF8Encoding(true));
+        }
+        catch (IOException error)
+        {
+            if (tries <= 1)
+            {
+                Debug.LogError($"[BOOTH] {path}에 흔들림 줄을 쓰지 못했습니다({error.Message}). 그 파일을 연 다른 프로그램을 닫고 Tools → Characters → BOOTH 다시 가져오기를 눌러 주세요.");
+                return;
+            }
+            double at = EditorApplication.timeSinceStartup + RetrySeconds;
+            void Later()
+            {
+                if (EditorApplication.timeSinceStartup < at) return;
+                EditorApplication.update -= Later;
+                WriteTable(path, text, tries - 1);
+            }
+            EditorApplication.update += Later;
+            return;
+        }
+        AssetDatabase.ImportAsset(path);
+        GameTables.Reload();
     }
 
     private static string Quote(string cell) =>
