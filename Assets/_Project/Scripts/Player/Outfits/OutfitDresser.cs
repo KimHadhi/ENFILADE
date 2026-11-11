@@ -6,9 +6,9 @@ using Object = UnityEngine.Object;
 
 /// <summary>
 /// Dresses a freshly made model of a character in an outfit (<see cref="OutfitLook"/>), the way VRChat outfits go on with
-/// Modular Avatar's Merge Armature: every bone of an outfit model that shares its name with one of the character's moves
-/// under that bone, staying where it is, so from then on it follows it, and the outfit's own extra bones (a skirt's, a
-/// coat's tails) come along beneath. Nothing is baked per character in the editor, because the user means to let players
+/// Modular Avatar's Merge Armature: the outfit's meshes are bound to the character's bones wherever the outfit's skeleton
+/// has a bone of the same name, and the outfit's own extra bones (a skirt's, a coat's tails) go under the character's
+/// bone they hung from, so from then on they follow it (Merge). Nothing is baked per character in the editor, because the user means to let players
 /// bring their own characters: a model goes on any body whose bones carry the names it was made for. A model with no
 /// bones of its own (a rigid mask) follows its slot's bone.
 /// Pieces cut from one model (a BOOTH set's beret, jacket and skirt, Outfits.csv) share one copy of it, so its bones are
@@ -276,27 +276,103 @@ internal static class OutfitDresser
         instance.localScale = local.lossyScale;
     }
 
-    // Each transform of the outfit that the character's skeleton has too goes under the character's, staying where it
-    // is. Parents come before their children, so a bone under one already moved is still where it was made.
-    // Each one moved is renamed after its outfit ("Hips [white-board]"). Kept as it was, a "Hips" under the body's own
-    // "Hips" made the humanoid ambiguous ("Ambiguous Transform 'Armature/Hips' and 'Armature/Hips/Hips' found in
-    // hierarchy for human bone 'Hips'"), Unity let go of the whole avatar, and with no bones to find the body's cloth
-    // colliders and its ragdoll failed: skirts and coats went through the body, and the game lagged (the user,
-    // 2026-11-12, Mayo in White Board and Sailor Maiden). Nothing finds these by name: meshes hold their bones, and the
-    // sway rows name only an outfit's own bones.
+    // How far an outfit's bone may stand from the character's of the same name and still be the same bone (metres,
+    // degrees, share of its size): the two files' skeletons, made from one avatar, agree to rounding.
+    private const float SameSpot = .0005f, SameTurn = .1f, SameSize = .001f;
+
+    // Meshes whose bind poses took in where an outfit's bones stood apart from the character's, kept for every later
+    // dressing (the wardrobe's preview dresses the model again on every try).
+    private static readonly Dictionary<(Mesh, int), Mesh> rebound = new Dictionary<(Mesh, int), Mesh>();
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetSession() => rebound.Clear();
+
+    // An outfit's file carries a copy of the character's skeleton (every BOOTH outfit does). Each bone of it the character
+    // has too (its twin, matched by name) is the character's own: the outfit's meshes are bound straight to the
+    // character's bone, as Modular Avatar binds them, and whatever of the outfit's own hangs from a twin (a coat's tails,
+    // a belt, a ribbon's chain) goes under the character's bone, staying where it is.
+    // The twins used to go under the character's bones themselves. Magica takes every transform under a cloth chain's
+    // root for a particle of that chain, so a twin under Mayo's breast swung on its own inside her breast's spring and
+    // the chest belt bound to it flapped apart from her (the user, 2026-11-12: "조끼랑 가슴이랑 서로 맞물리는 게 아니라
+    // 걍 서로 안 맞아서 흐물거리고 휘적거려"). Bound to her bones, the belt moves exactly as they do, hair and skirt chains
+    // likewise. The twins stay behind in the outfit, unused, renamed after it ("Hips [white-board]"): a second "Hips"
+    // anywhere under the model makes the humanoid ambiguous ("Ambiguous Transform 'Armature/Hips' and 'Armature/Hips/Hips'
+    // found in hierarchy for human bone 'Hips'") and Unity lets go of the whole avatar (0.8.115). Nothing finds them by
+    // name: the sway rows name only an outfit's own bones. Returns how many twins there were; none is a rigid piece.
     private static int Merge(Transform instance, Skeleton skeleton, string mark)
     {
-        int merged = 0;
+        var twins = new Dictionary<Transform, Transform>();
         foreach (var part in instance.GetComponentsInChildren<Transform>(true))
         {
             if (part == instance || part.GetComponent<Renderer>() != null) continue;
             var twin = skeleton.Find(part.name);
-            if (twin == null) continue;
-            part.SetParent(twin, true);
-            part.name += " [" + mark + "]";
-            merged++;
+            if (twin != null) twins[part] = twin;
         }
-        return merged;
+        if (twins.Count == 0) return 0;
+        // Gathered before anything moves: a mesh's object may hang from a twin too.
+        var meshes = instance.GetComponentsInChildren<SkinnedMeshRenderer>(true);
+        var hanging = new List<(Transform Part, Transform Under)>();
+        foreach (var pair in twins)
+            foreach (Transform child in pair.Key)
+                if (!twins.ContainsKey(child)) hanging.Add((child, pair.Value));
+        foreach (var (part, under) in hanging) part.SetParent(under, true);
+        foreach (var mesh in meshes) Bind(mesh, twins);
+        foreach (var twin in twins.Keys) twin.name += " [" + mark + "]";
+        return twins.Count;
+    }
+
+    // Points a mesh's bones at the character's. Where the outfit's bone stood apart from the character's (two skeletons
+    // that don't quite agree), the mesh's bind poses take the difference in, so nothing moves, on a copy of the mesh.
+    private static void Bind(SkinnedMeshRenderer renderer, Dictionary<Transform, Transform> twins)
+    {
+        var bones = renderer.bones;
+        Matrix4x4[] apart = null;
+        bool changed = false;
+        for (int i = 0; i < bones.Length; i++)
+        {
+            if (bones[i] == null || !twins.TryGetValue(bones[i], out var own)) continue;
+            if (!SameBone(bones[i], own))
+            {
+                apart ??= Identities(bones.Length);
+                apart[i] = own.worldToLocalMatrix * bones[i].localToWorldMatrix;
+            }
+            bones[i] = own;
+            changed = true;
+        }
+        if (renderer.rootBone != null && twins.TryGetValue(renderer.rootBone, out var root)) renderer.rootBone = root;
+        if (!changed) return;
+        if (apart != null && renderer.sharedMesh != null) renderer.sharedMesh = Rebound(renderer.sharedMesh, apart);
+        renderer.bones = bones;
+    }
+
+    private static bool SameBone(Transform outfit, Transform own) =>
+        (outfit.position - own.position).sqrMagnitude < SameSpot * SameSpot
+        && Quaternion.Angle(outfit.rotation, own.rotation) < SameTurn
+        && Mathf.Abs(Mathf.Abs(outfit.lossyScale.x) / Mathf.Max(Mathf.Abs(own.lossyScale.x), 1e-6f) - 1f) < SameSize;
+
+    private static Matrix4x4[] Identities(int count)
+    {
+        var all = new Matrix4x4[count];
+        for (int i = 0; i < count; i++) all[i] = Matrix4x4.identity;
+        return all;
+    }
+
+    // The mesh with each bind pose moved by where its outfit bone stood on the character's: skinned to the character's
+    // bone, a vertex lands where the outfit's bone put it.
+    private static Mesh Rebound(Mesh mesh, Matrix4x4[] apart)
+    {
+        if (!mesh.isReadable) return mesh;
+        int key = 17;
+        foreach (var matrix in apart)
+            for (int k = 0; k < 16; k++) key = key * 31 + Mathf.RoundToInt(matrix[k] * 10000f);
+        if (rebound.TryGetValue((mesh, key), out var copy) && copy != null) return copy;
+        var poses = mesh.bindposes;
+        if (poses.Length != apart.Length) return mesh;
+        for (int i = 0; i < poses.Length; i++) poses[i] = apart[i] * poses[i];
+        copy = Object.Instantiate(mesh);
+        copy.name = mesh.name;
+        copy.bindposes = poses;
+        return rebound[(mesh, key)] = copy;
     }
 
     // The character's own mesh shipped inside an outfit's file: the same name and the same vertex count.
