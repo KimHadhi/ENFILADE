@@ -234,6 +234,7 @@ public sealed class ShoveMoves : MonoBehaviour
                 target.Interrupt(settings.shoveStun);
                 target.ReceiveShove(away * settings.shovePushSpeed * .5f, point);
             }
+            BashImpact.Play(point, away, .8f, player);
         }
         audio.Play(ShoveImpactKind.Enemy);
     }
@@ -341,6 +342,7 @@ public sealed class ShoveMoves : MonoBehaviour
         var prop = PhysicsProp.Of(collider);
         if (landed && shove != null) shove.ReceiveShove(push * settings.shovePushSpeed, point);
         else if (prop != null) prop.Push(push * settings.propShoveImpulse, point, settings.shovePushSpeed);
+        if (landed && (posture != null || receiver != null)) BashImpact.Play(point, push, 1f, player);
         audio.Play(posture != null || receiver != null ? ShoveImpactKind.Enemy : ShoveImpactKind.World);
         player.HorizontalVelocity -= push * (player.IsGrounded ? kickPushback : kickPushback * 2f);
     }

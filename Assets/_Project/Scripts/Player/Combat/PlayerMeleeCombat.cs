@@ -425,6 +425,7 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
             grabRecoveryRemaining = guardBreakRecovery;
             target.ApplyPostureDamage(guardBreakPostureDamage, guardBreakStun);
             fistAudio?.PlayHeavyHit();
+            BashImpact.Play(targetCollider.bounds.ClosestPoint(aim.position), Vector3.ProjectOnPlane(aim.forward, Vector3.up), 1.1f, player);
         }
         else if (grabTime >= guardBreakApproachTimeout) CancelAction();
         else if (delta.magnitude > 0.65f)

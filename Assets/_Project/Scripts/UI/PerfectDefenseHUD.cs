@@ -23,7 +23,8 @@ public sealed class PerfectDefenseHUD : MonoBehaviour
         label.transform.SetParent(root.transform, false); label.raycastTarget = false;
         label.font = CombatFeedbackSettings.Instance?.promptFont;
         label.text = Texts.Get("hud.counter.prompt"); label.fontSize = 24; label.alignment = TextAlignmentOptions.Center;
-        label.color = new Color(.8f, .92f, 1f);
+        // Warm white over the red rim (it was ice blue over a navy one).
+        label.color = new Color(1f, .9f, .9f);
         label.rectTransform.sizeDelta = new Vector2(250, 40); label.rectTransform.anchoredPosition = new Vector2(0, -85);
     }
     private void LateUpdate()

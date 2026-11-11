@@ -75,7 +75,7 @@ public sealed class PlayerPerfectDefense : MonoBehaviour
         CombatCueAudio.Prepare(gameObject);
         if (Application.isPlaying && owner.IsLocal && GetComponent<PerfectDefenseHUD>() == null) gameObject.AddComponent<PerfectDefenseHUD>();
         // The slip's numbers, the head moves and the edge light are made at spawn, not in the first fight.
-        if (Application.isPlaying && owner.IsLocal) { MicroSlip.For(owner); CombatHeadMotion.For(owner); CombatEdgeGlint.For(owner); }
+        if (Application.isPlaying && owner.IsLocal) { MicroSlip.For(owner); CombatHeadMotion.For(owner); CombatEdgeGlint.For(owner); DodgeFlash.For(owner); }
     }
     private void OnEnable() { var owner = GetComponent<PlayerMovement>(); if (owner?.DamageReceiver != null) Initialize(owner); }
     private void OnResolved(DamageHit hit, DamageResult result)

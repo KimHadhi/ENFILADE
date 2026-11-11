@@ -295,6 +295,7 @@ public sealed class MeleeCombos : MonoBehaviour
         if (!landedNow || target == null || !target.IsAvailable) return;
         Vector3 away = Vector3.ProjectOnPlane(target.transform.position - transform.position, Vector3.up);
         away = away.sqrMagnitude > 1e-4f ? away.normalized : Vector3.ProjectOnPlane(transform.forward, Vector3.up).normalized;
+        BashImpact.Play(target.transform.position + Vector3.up * 1.2f, away, 1.4f, player);
         if (beat.finisherPush > 0f) target.ReceiveShove(away * beat.finisherPush, target.transform.position + Vector3.up);
         if (beat.finisherStun > 0f) target.Interrupt(beat.finisherStun);
         if (beat.finisherStop > 0f && TryGetComponent(out CombatTimeEffects time))

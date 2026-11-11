@@ -17,11 +17,17 @@ public sealed class PlayerShoveAudio : MonoBehaviour
     public void Play(ShoveImpactKind impact)
     {
         LastImpact = impact; LastClip = null;
+        // None comes as a shove starts (ShoveSweep): the swing itself, SoundCues ShoveSwing (a COD MWII swipe), from the body.
+        if (impact == ShoveImpactKind.None && isActiveAndEnabled && Application.isPlaying)
+            GetComponent<CharacterSounds>()?.Play("ShoveSwing", transform.position + Vector3.up * 1.3f);
         var settings = CombatFeedbackSettings.Instance;
         if (impact == ShoveImpactKind.None || settings == null || !isActiveAndEnabled) return;
         LastClip = impact == ShoveImpactKind.Enemy ? PickEnemyClip(settings.shoveEnemySounds) : settings.shoveWorldSound;
         if (LastClip == null || !Application.isPlaying) return;
         Played?.Invoke(impact);
+        // A friend's bash heard here (their copy, through the network) shows its shock too, a little ahead of their eyes;
+        // this PC's own player's bashes show where they met (BashImpact).
+        if (impact == ShoveImpactKind.Enemy && TryGetComponent(out PlayerMovement mover) && !mover.IsLocal) ShowFriendBash(mover);
         if (source == null)
         {
             source = gameObject.AddComponent<AudioSource>(); source.playOnAwake = false;
@@ -34,6 +40,14 @@ public sealed class PlayerShoveAudio : MonoBehaviour
         float volume = impact == ShoveImpactKind.Enemy ? settings.shoveEnemyVolume : settings.shoveWorldVolume;
         source.pitch = 1f + Random.Range(-settings.hitPitchVariance, settings.hitPitchVariance);
         source.PlayOneShot(LastClip, Mathf.Clamp01(volume));
+    }
+    private static void ShowFriendBash(PlayerMovement friend)
+    {
+        Transform eyes = PlayerView.EyesOf(friend);
+        Vector3 forward = Vector3.ProjectOnPlane(eyes != null ? eyes.forward : friend.transform.forward, Vector3.up).normalized;
+        // A copy without a view gives its root, at the feet: from there, about where eyes would be.
+        Vector3 from = eyes != null && eyes != friend.transform ? eyes.position : friend.transform.position + Vector3.up * 1.35f;
+        BashImpact.Play(from + forward * .9f - Vector3.up * .15f, forward, .8f);
     }
     private AudioClip PickEnemyClip(AudioClip[] clips)
     {

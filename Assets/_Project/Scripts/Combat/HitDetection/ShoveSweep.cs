@@ -104,7 +104,7 @@ public static class ShoveSweep
             else if (prop != null) prop.Push(push * settings.propShoveImpulse, point, settings.shovePushSpeed);
             else if (body != null && !body.isKinematic) body.AddForceAtPosition(impulse, point, ForceMode.Impulse);
             count++;
-            if (posture != null) hitEnemy = true;
+            if (posture != null) { hitEnemy = true; BashImpact.Play(point, push, 1f, player); }
         }
         impact = hitEnemy ? ShoveImpactKind.Enemy : hitWorld ? ShoveImpactKind.World : ShoveImpactKind.None;
         return count;

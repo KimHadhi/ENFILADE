@@ -176,6 +176,8 @@ public sealed class ShoveCounter : MonoBehaviour
             punch?.ImpactPunch(new Vector3(cameraKick.x, -sign * cameraKick.y, -sign * cameraKick.z), cameraFov, cameraTrauma);
             Vector3 contact = view.position + Vector3.Slerp(view.forward, toAttacker, .6f).normalized * contactDistance - view.up * .05f;
             GetComponent<ParryFeedback>()?.CounterBurst(contact, (toAttacker * .35f + view.right * (sign * .8f) + view.up * .5f).normalized, burstGrowth);
+            // The bash's own shock on top, the biggest of them (For Honor's bash, BashImpact).
+            BashImpact.Play(contact, away, 1.8f, player);
             if (target.TryGetComponent(out EnemyNetwork network)) network.ShareParry(contact, away, true);
         }
         KillConfirmEffect.Parry(new ParryScreenLook

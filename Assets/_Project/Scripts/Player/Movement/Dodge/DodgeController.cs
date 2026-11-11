@@ -16,6 +16,8 @@ public sealed class DodgeController
     public bool HasSucceeded => successEmitted;
     public bool CanStart => Time.unscaledTime >= heldOffUntil && cooldown <= 0f && (remaining <= 0f || successEmitted);
     public event Action<DodgeKind, int> Succeeded;
+    /// <summary>A dodge began (kind, lean side): the white air streaks of a plain dodge go with it (DodgeFlash).</summary>
+    public event Action<DodgeKind, int> Started;
 
     /// <summary>No dodge starts for this many real seconds from now (0 lets them start again at once): the counter's dash
     /// is a committed move, so a dodge pressed during it neither moves the body nor opens another slowed window.</summary>
@@ -42,6 +44,7 @@ public sealed class DodgeController
             camFx.ApplyCameraImpulse(new Vector3(pitchImpulse, 0f, rollImpulse), 15f); // FOV 8에서 15로 증가
         }
 
+        Started?.Invoke(kind, side);
         return true;
     }
 
