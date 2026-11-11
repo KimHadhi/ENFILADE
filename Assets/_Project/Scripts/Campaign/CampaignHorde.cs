@@ -12,6 +12,8 @@ using UnityEngine.SceneManagement;
 /// host makes them; in a room they reach the others as networked enemies, as the waves' do.
 /// A quiet stretch (CampaignRun, stage C-15) has no horde: instead zombies stand calm along the way, set by PlaceCalm,
 /// and have to notice the players.
+/// Bundle 3: each new one, of the horde or calm, is made a kind by the step's mix (CampaignMix, short of each kind's cap),
+/// the boss slot takes the mix's boss kind, and in the endless waves every new one is made stronger (Boost).
 /// </summary>
 internal sealed class CampaignHorde
 {
@@ -35,6 +37,9 @@ internal sealed class CampaignHorde
     // The way the walk goes at each of calmPlaces (degrees about up).
     private readonly List<float> calmWays = new List<float>();
     private readonly NavMeshPath path = new NavMeshPath();
+    // Made once: what dresses a new zombie of the horde, and what counts a kind about.
+    private readonly System.Action<EnemyHealth> dress;
+    private readonly System.Func<ZombieKind, int> countOf;
     private float saved;
 
     public CampaignHorde(EnemyHealth prefab, Transform[] spawns, Scene scene)
@@ -42,9 +47,18 @@ internal sealed class CampaignHorde
         this.prefab = prefab;
         this.spawns = spawns ?? new Transform[0];
         this.scene = scene;
+        dress = Dress;
+        countOf = CountOf;
     }
 
     public int Alive => alive.Count;
+    /// <summary>Bundle 3: what new zombies are made of now (the step's mix); null leaves each to its own roll by
+    /// Tables/ZombieKinds' shares.</summary>
+    public CampaignMix Mix { get; set; }
+    /// <summary>How much each kind's cap grows for the players in the room (CampaignDirector.HordeGrowth; 1 alone).</summary>
+    public float CapGrowth { get; set; } = 1f;
+    /// <summary>The endless waves: every new zombie's health and blows, times this (1 otherwise).</summary>
+    public float Boost { get; set; } = 1f;
 
     /// <summary>Makes what may come this frame; returns how many it made.</summary>
     public int Tick(float dt, int most, float rate, List<PlayerMovement> players, float near, float far, float seenFar)
@@ -56,7 +70,7 @@ internal sealed class CampaignHorde
         while (saved >= 1f && alive.Count < most)
         {
             saved -= 1f;
-            var enemy = SpawnOne(players, near, far, seenFar, null);
+            var enemy = SpawnOne(players, near, far, seenFar, dress);
             if (enemy == null) { saved = 0f; break; }
             alive.Add(enemy);
             made++;
@@ -65,11 +79,12 @@ internal sealed class CampaignHorde
     }
 
     /// <summary>
-    /// Friend feedback C2: brutes (ZombieKind.Brute), a song's highlight's boss, from the same hidden spawn points but
-    /// outside the step's numbers. Elite, so their kill burns in the feed. Returns how many came (fewer when no spot
-    /// would do).
+    /// Friend feedback C2: the boss slot, a song's highlight's boss, from the same hidden spawn points but outside the
+    /// step's numbers: brutes (ZombieKind.Brute), or whatever kind the step's mix puts there (bundle 3). Elite, so their
+    /// kill burns in the feed; in the endless waves as strong as the wave makes them. Returns how many came (fewer when
+    /// no spot would do).
     /// </summary>
-    public int SpawnBrutes(int count, List<PlayerMovement> players, float near, float far, float seenFar)
+    public int SpawnBosses(int count, ZombieKind kind, List<PlayerMovement> players, float near, float far, float seenFar)
     {
         brutes.RemoveWhere(enemy => enemy == null);
         if (prefab == null || players.Count == 0) return 0;
@@ -79,7 +94,8 @@ internal sealed class CampaignHorde
             var brute = SpawnOne(players, near, far, seenFar, enemy =>
             {
                 enemy.SetRank(EnemyRank.Elite);
-                if (enemy.TryGetComponent(out ZombieType type)) type.Set(ZombieKind.Brute);
+                if (enemy.TryGetComponent(out ZombieType type)) type.Set(kind);
+                Strengthen(enemy);
             });
             if (brute == null) break;
             brutes.Add(brute);
@@ -183,12 +199,35 @@ internal sealed class CampaignHorde
     private bool CalmOne(Vector3 at, float yaw, Transform container)
     {
         var enemy = Object.Instantiate(prefab, at, Quaternion.Euler(0f, yaw, 0f), container);
+        Dress(enemy);
         if (enemy.TryGetComponent(out ZombieMind mind)) { mind.Calm(); mind.FaceWhenCalm(yaw); }
         EnemyNetwork.SpawnInRoom(enemy);
         enemy.Died += OnDied;
         alive.Add(enemy);
         calmTaken.Add(at);
         return true;
+    }
+
+    // Bundle 3: a new one of the horde, or a calm one, before it goes out to the room: its kind by the step's mix, never
+    // one whose cap is about already (no mix: its own roll stands), and an endless wave's strength.
+    private void Dress(EnemyHealth enemy)
+    {
+        if (Mix != null && Mix.TryPick(countOf, CapGrowth, out ZombieKind kind) && enemy.TryGetComponent(out ZombieType type)) type.Set(kind);
+        Strengthen(enemy);
+    }
+
+    private void Strengthen(EnemyHealth enemy)
+    {
+        if (!Mathf.Approximately(Boost, 1f)) enemy.SetBoost(Boost, Boost);
+    }
+
+    // How many of a kind the horde has about now, calm ones included and the bosses apart.
+    private int CountOf(ZombieKind kind)
+    {
+        int count = 0;
+        foreach (var enemy in alive)
+            if (enemy != null && enemy.TryGetComponent(out ZombieType type) && type.Kind == kind) count++;
+        return count;
     }
 
     // Far enough from every player and from every calm zombie set before it.

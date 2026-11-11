@@ -17,5 +17,6 @@ public static class GameCommands
         router.Register("net", "방의 실제 핑·전송량·프레임 측정 켜기, 다시 입력하면 끄고 결과 출력", _ => NetworkStatsHUD.Toggle());
         router.Register("ff", "1 아군 사격 켜기, 0 끄기, 비우면 바꾸기 (방장만, 방 전체에 적용)", FriendlyFire.Command);
         router.Register("director", "캠페인 좀비 디렉터: 지금 단계·긴장도·적 수·다음 떼까지", _ => CampaignRun.DirectorReport());
+        router.Register("endless", "1 켜기, 0 끄기, 비우면 바꾸기 — 캠페인 마지막 버티기가 끝나지 않고 엔드리스 웨이브로 (방장만, 게임을 끌 때까지)", CampaignEndless.Command);
     }
 }

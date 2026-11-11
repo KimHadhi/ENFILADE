@@ -1,31 +1,31 @@
-﻿id,chapter,order,kind,spot,radius,seconds,horde,rate,title,description,done,prompt,count,music,peakBoss
-#설명 (kind: Reach 누군가 도착 / Press 누군가 F / Hold 버티기 / Checkpoint 모두 들어와 문을 닫으면 휴게소 / Gather 모두 모이기만 / Collect 연료통을 count개 붓기 / Escape 모두 도착하면 장 끝),장 씬 이름,순서,종류,진행 자리 이름(씬의 진행 자리 아래 오브젝트),이만큼 가까우면 도착(m),Hold 시간(초). 이 단계의 노래가 피날레용(Music.csv board)이고 파일이 있으면 이 값 대신 노래 길이에서 board를 뺀 시간,이 단계에 한꺼번에 있을 수 있는 적 수,1초에 나오는 적 수,목표 제목,목표 설명,끝난 뒤 Tab 기록에 남는 말,Press에서 화면에 뜨는 말,Collect가 원하는 연료통 수,이 단계에 트는 노래(Music.csv id). 다음 단계가 같은 노래면 끊지 않고 이어 튼다,노래 하이라이트(Music.csv peak)에 나오는 거구 수. 노래가 없는 버티기는 절반이 지났을 때 나온다
-Ch1.01,Ch1_Rooftops,1,Reach,LiftRoom,3,,3,0.3,옆 건물 엘리베이터실 위로,틈을 뛰어 건너 엘리베이터실 위로 올라가세요. 벽을 타거나 사다리를 쓰세요.,옥상 건너기,,,,
-Ch1.02,Ch1_Rooftops,2,Reach,ZiplineEnd,5,,3,0.3,집라인으로 길 건너기,엘리베이터실 위에서 줄을 잡고 길 건너 옥상으로 내려가세요.,길 건너기,,,,
-Ch1.03,Ch1_Rooftops,3,Reach,B4Roof,7,,4,0.35,철봉 타고 건너편 옥상으로,뛰기엔 먼 틈이에요. 철봉을 잡고 흔들어 건너세요.,철봉 건너기,,,,
-Ch1.04,Ch1_Rooftops,4,Reach,Alley,6,,4,0.35,골목으로 내려가기,별관 지붕과 트럭을 밟고 골목으로 내려가세요.,골목 도착,,,,
-Ch1.05,Ch1_Rooftops,5,Press,ShutterButton,2,,4,0.3,셔터 올리기,버튼을 누르면 경보가 울려요. 각오하세요.,셔터 작동,[F] 셔터 올리기,,,
-Ch1.06,Ch1_Rooftops,6,Hold,AlleyHold,,60,14,1.2,셔터가 올라갈 때까지 버티기,경보를 듣고 놈들이 몰려와요. 셔터가 다 올라갈 때까지 버티세요.,골목에서 버팀,,,,1
-Ch1.07,Ch1_Rooftops,7,Checkpoint,RestStop,4.6,,4,0.3,편의점으로 피하기,모두 편의점 안으로 들어와 문을 닫으면 숨을 돌려요. 이제부터 죽은 사람은 여기서 돌아와요.,휴게소 도착,,,,
-Ch1.08,Ch1_Rooftops,8,Reach,SiteGate,5,,5,0.4,공사장으로,길 건너 공사장 정문으로 가세요.,공사장 진입,,,,
-Ch1.09,Ch1_Rooftops,9,Reach,Helipad,7,,5,0.4,공사 중인 빌딩 옥상으로,컨테이너와 비계를 타고 옥상 착륙장까지 올라가세요.,옥상 도착,,,,
-Ch1.10,Ch1_Rooftops,10,Press,Radio,2,,3,0.3,무전으로 헬기 부르기,착륙장의 무전기로 헬기를 부르세요. 소리를 듣고 놈들이 올 거예요.,헬기 호출,[F] 무전기로 헬기 부르기,,,
-Ch1.11,Ch1_Rooftops,11,Hold,Helipad,,120,20,1.6,헬기가 올 때까지 버티기,놈들이 경사로로 올라와요. 착륙장을 지키세요.,착륙장 사수,,,Ch1Finale,1
-Ch1.12,Ch1_Rooftops,12,Escape,Helipad,7,,20,1.6,헬기에 타기,모두 착륙장으로 모이세요.,탈출,,,Ch1Finale,
-Ch2.01,Ch2_Overpass,1,Reach,Overturn,6,,4,0.35,고가도로를 따라가기,멈춘 차들 사이로 고가도로를 따라가세요. 뒤집힌 트럭을 넘어야 해요.,고가도로 진입,,,,
-Ch2.02,Ch2_Overpass,2,Gather,BrokenEdge,6,,6,0.45,끊어진 끝에 모두 모이기,다리가 끊겼어요. 아래 버스로 뛰어내리면 다시는 못 올라와요. 모두 모이세요.,모두 모임,,,,
-Ch2.03,Ch2_Overpass,3,Reach,UnderBus,7,,6,0.45,아래 도로로 뛰어내리기,버스 지붕으로 뛰어내리세요. 돌아갈 수 없어요.,뛰어내림,,,,
-Ch2.04,Ch2_Overpass,4,Checkpoint,Station,4.6,,5,0.4,주유소로 피하기,모두 주유소 가게 안으로 들어와 문을 닫으면 숨을 돌려요. 이제부터 죽은 사람은 여기서 돌아와요.,휴게소 도착,,,,
-Ch2.05,Ch2_Overpass,5,Reach,TollGate,8,,5,0.45,톨게이트로,도로 끝 톨게이트로 가세요. 검문소가 그 너머에 있어요.,톨게이트 도착,,,,
-Ch2.06,Ch2_Overpass,6,Press,CheckpointRadio,2,,4,0.4,검문소 무전기 켜기,초소 안의 무전기로 군을 불러 보세요.,무전 연결,[F] 무전기 켜기,,,
-Ch2.07,Ch2_Overpass,7,Hold,TollHold,,100,18,1.5,응답이 올 때까지 버티기,무전 소리에 놈들이 몰려와요. 응답이 올 때까지 버티세요.,검문소 사수,,,Ch2Finale,1
-Ch2.08,Ch2_Overpass,8,Escape,SubwayEntrance,4,,18,1.5,지하철 입구로,강 밑 지하철 터널로 가래요. 모두 입구 안으로 들어가세요.,탈출,,,Ch2Finale,
-Ch3.01,Ch3_Subway,1,Reach,Platform,8,,4,0.35,승강장으로 내려가기,개찰구를 넘어 승강장으로 내려가세요.,승강장 도착,,,,
-Ch3.02,Ch3_Subway,2,Reach,DepotDoor,5,,5,0.45,터널을 지나 정비창으로,선로로 내려가 멈춘 열차 옆 어두운 터널을 따라가세요.,터널 통과,,,,
-Ch3.03,Ch3_Subway,3,Checkpoint,Office,4,,4,0.35,정비창 사무실로 피하기,모두 사무실 안으로 들어와 문을 닫으면 숨을 돌려요. 이제부터 죽은 사람은 여기서 돌아와요.,휴게소 도착,,,,
-Ch3.04,Ch3_Subway,4,Collect,Generator,3,,10,0.8,발전기에 연료 채우기,정비창 곳곳의 연료통 4개를 찾아 발전기에 부으세요. 들고 있는 동안엔 총을 못 써요.,발전기 가동,,4,,
-Ch3.05,Ch3_Subway,5,Reach,StairsBottom,5,,6,0.5,강 밑 터널 지나기,열린 방수문 너머 강 밑 터널을 따라가세요.,강 밑 통과,,,,
-Ch3.06,Ch3_Subway,6,Reach,Exit,6,,6,0.5,비상계단으로 올라가기,계단 끝이 강 건너편이에요.,지상 도착,,,,
-Ch3.07,Ch3_Subway,7,Press,Flare,2,,5,0.4,신호탄 쏘기,부두의 신호탄으로 군 보트를 부르세요.,신호탄 발사,[F] 신호탄 쏘기,,,
-Ch3.08,Ch3_Subway,8,Hold,Plaza,,90,22,1.8,보트가 올 때까지 버티기,신호탄을 보고 놈들도 몰려와요. 보트가 올 때까지 부두를 지키세요.,부두 사수,,,Ch3Finale,1
-Ch3.09,Ch3_Subway,9,Escape,Boat,5,,22,1.8,보트에 타기,모두 부두 끝 보트로 가세요.,탈출,,,Ch3Finale,
+﻿id,chapter,order,kind,spot,radius,seconds,horde,rate,title,description,done,prompt,count,music,peakBoss,mix
+#설명 (kind: Reach 누군가 도착 / Press 누군가 F / Hold 버티기 / Checkpoint 모두 들어와 문을 닫으면 휴게소 / Gather 모두 모이기만 / Collect 연료통을 count개 붓기 / Escape 모두 도착하면 장 끝),장 씬 이름,순서,종류,진행 자리 이름(씬의 진행 자리 아래 오브젝트),이만큼 가까우면 도착(m),Hold 시간(초). 이 단계의 노래가 피날레용(Music.csv board)이고 파일이 있으면 이 값 대신 노래 길이에서 board를 뺀 시간,이 단계에 한꺼번에 있을 수 있는 적 수,1초에 나오는 적 수,목표 제목,목표 설명,끝난 뒤 Tab 기록에 남는 말,Press에서 화면에 뜨는 말,Collect가 원하는 연료통 수,이 단계에 트는 노래(Music.csv id). 다음 단계가 같은 노래면 끊지 않고 이어 튼다,노래 하이라이트(Music.csv peak)에 나오는 거구 수. 노래가 없는 버티기는 절반이 지났을 때 나온다,이 단계부터 쓰는 좀비 편성(CampaignMix.csv id): 종류별 비율 · 엘리트 동시 수 제한 · 보스 자리 종류. 비우면 앞 단계의 편성을 이어 쓴다. 장 첫 단계도 비우면 ZombieKinds.csv의 share 비율
+Ch1.01,Ch1_Rooftops,1,Reach,LiftRoom,3,,3,0.3,옆 건물 엘리베이터실 위로,틈을 뛰어 건너 엘리베이터실 위로 올라가세요. 벽을 타거나 사다리를 쓰세요.,옥상 건너기,,,,,Opening
+Ch1.02,Ch1_Rooftops,2,Reach,ZiplineEnd,5,,3,0.3,집라인으로 길 건너기,엘리베이터실 위에서 줄을 잡고 길 건너 옥상으로 내려가세요.,길 건너기,,,,,
+Ch1.03,Ch1_Rooftops,3,Reach,B4Roof,7,,4,0.35,철봉 타고 건너편 옥상으로,뛰기엔 먼 틈이에요. 철봉을 잡고 흔들어 건너세요.,철봉 건너기,,,,,
+Ch1.04,Ch1_Rooftops,4,Reach,Alley,6,,4,0.35,골목으로 내려가기,별관 지붕과 트럭을 밟고 골목으로 내려가세요.,골목 도착,,,,,
+Ch1.05,Ch1_Rooftops,5,Press,ShutterButton,2,,4,0.3,셔터 올리기,버튼을 누르면 경보가 울려요. 각오하세요.,셔터 작동,[F] 셔터 올리기,,,,
+Ch1.06,Ch1_Rooftops,6,Hold,AlleyHold,,60,14,1.2,셔터가 올라갈 때까지 버티기,경보를 듣고 놈들이 몰려와요. 셔터가 다 올라갈 때까지 버티세요.,골목에서 버팀,,,,1,Exploders
+Ch1.07,Ch1_Rooftops,7,Checkpoint,RestStop,4.6,,4,0.3,편의점으로 피하기,모두 편의점 안으로 들어와 문을 닫으면 숨을 돌려요. 이제부터 죽은 사람은 여기서 돌아와요.,휴게소 도착,,,,,
+Ch1.08,Ch1_Rooftops,8,Reach,SiteGate,5,,5,0.4,공사장으로,길 건너 공사장 정문으로 가세요.,공사장 진입,,,,,
+Ch1.09,Ch1_Rooftops,9,Reach,Helipad,7,,5,0.4,공사 중인 빌딩 옥상으로,컨테이너와 비계를 타고 옥상 착륙장까지 올라가세요.,옥상 도착,,,,,
+Ch1.10,Ch1_Rooftops,10,Press,Radio,2,,3,0.3,무전으로 헬기 부르기,착륙장의 무전기로 헬기를 부르세요. 소리를 듣고 놈들이 올 거예요.,헬기 호출,[F] 무전기로 헬기 부르기,,,,
+Ch1.11,Ch1_Rooftops,11,Hold,Helipad,,120,20,1.6,헬기가 올 때까지 버티기,놈들이 경사로로 올라와요. 착륙장을 지키세요.,착륙장 사수,,,Ch1Finale,1,Elites
+Ch1.12,Ch1_Rooftops,12,Escape,Helipad,7,,20,1.6,헬기에 타기,모두 착륙장으로 모이세요.,탈출,,,Ch1Finale,,
+Ch2.01,Ch2_Overpass,1,Reach,Overturn,6,,4,0.35,고가도로를 따라가기,멈춘 차들 사이로 고가도로를 따라가세요. 뒤집힌 트럭을 넘어야 해요.,고가도로 진입,,,,,Elites
+Ch2.02,Ch2_Overpass,2,Gather,BrokenEdge,6,,6,0.45,끊어진 끝에 모두 모이기,다리가 끊겼어요. 아래 버스로 뛰어내리면 다시는 못 올라와요. 모두 모이세요.,모두 모임,,,,,
+Ch2.03,Ch2_Overpass,3,Reach,UnderBus,7,,6,0.45,아래 도로로 뛰어내리기,버스 지붕으로 뛰어내리세요. 돌아갈 수 없어요.,뛰어내림,,,,,
+Ch2.04,Ch2_Overpass,4,Checkpoint,Station,4.6,,5,0.4,주유소로 피하기,모두 주유소 가게 안으로 들어와 문을 닫으면 숨을 돌려요. 이제부터 죽은 사람은 여기서 돌아와요.,휴게소 도착,,,,,
+Ch2.05,Ch2_Overpass,5,Reach,TollGate,8,,5,0.45,톨게이트로,도로 끝 톨게이트로 가세요. 검문소가 그 너머에 있어요.,톨게이트 도착,,,,,
+Ch2.06,Ch2_Overpass,6,Press,CheckpointRadio,2,,4,0.4,검문소 무전기 켜기,초소 안의 무전기로 군을 불러 보세요.,무전 연결,[F] 무전기 켜기,,,,
+Ch2.07,Ch2_Overpass,7,Hold,TollHold,,100,18,1.5,응답이 올 때까지 버티기,무전 소리에 놈들이 몰려와요. 응답이 올 때까지 버티세요.,검문소 사수,,,Ch2Finale,1,Finale
+Ch2.08,Ch2_Overpass,8,Escape,SubwayEntrance,4,,18,1.5,지하철 입구로,강 밑 지하철 터널로 가래요. 모두 입구 안으로 들어가세요.,탈출,,,Ch2Finale,,
+Ch3.01,Ch3_Subway,1,Reach,Platform,8,,4,0.35,승강장으로 내려가기,개찰구를 넘어 승강장으로 내려가세요.,승강장 도착,,,,,Elites
+Ch3.02,Ch3_Subway,2,Reach,DepotDoor,5,,5,0.45,터널을 지나 정비창으로,선로로 내려가 멈춘 열차 옆 어두운 터널을 따라가세요.,터널 통과,,,,,
+Ch3.03,Ch3_Subway,3,Checkpoint,Office,4,,4,0.35,정비창 사무실로 피하기,모두 사무실 안으로 들어와 문을 닫으면 숨을 돌려요. 이제부터 죽은 사람은 여기서 돌아와요.,휴게소 도착,,,,,
+Ch3.04,Ch3_Subway,4,Collect,Generator,3,,10,0.8,발전기에 연료 채우기,정비창 곳곳의 연료통 4개를 찾아 발전기에 부으세요. 들고 있는 동안엔 총을 못 써요.,발전기 가동,,4,,,
+Ch3.05,Ch3_Subway,5,Reach,StairsBottom,5,,6,0.5,강 밑 터널 지나기,열린 방수문 너머 강 밑 터널을 따라가세요.,강 밑 통과,,,,,
+Ch3.06,Ch3_Subway,6,Reach,Exit,6,,6,0.5,비상계단으로 올라가기,계단 끝이 강 건너편이에요.,지상 도착,,,,,
+Ch3.07,Ch3_Subway,7,Press,Flare,2,,5,0.4,신호탄 쏘기,부두의 신호탄으로 군 보트를 부르세요.,신호탄 발사,[F] 신호탄 쏘기,,,,
+Ch3.08,Ch3_Subway,8,Hold,Plaza,,90,22,1.8,보트가 올 때까지 버티기,신호탄을 보고 놈들도 몰려와요. 보트가 올 때까지 부두를 지키세요.,부두 사수,,,Ch3Finale,1,Finale
+Ch3.09,Ch3_Subway,9,Escape,Boat,5,,22,1.8,보트에 타기,모두 부두 끝 보트로 가세요.,탈출,,,Ch3Finale,,

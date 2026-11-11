@@ -28,11 +28,15 @@ using UnityEngine.SceneManagement;
 /// less the board time, then the ride waits at the escape's spot for the board time and leaves as the song ends, with
 /// whoever stands there. Those who don't are named on the closing card; with nobody aboard the run goes back to the
 /// last rest stop. Without the song's file the steps run as they did (the hold's own seconds, everyone to the spot).
+/// Bundle 3 (GMod Horde's director, ported): the director's numbers grow with the players in the room
+/// (CampaignDirector.Crew); each step's zombies are made by its mix (CampaignMix), the elites coming in as the chapters
+/// go on, and the mix names the boss slot's kind; and the campaign's final hold can go on as endless waves
+/// (CampaignEndless), which the room follows through the status (Status.Wave).
 /// </summary>
 [DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.Campaign)]
 public sealed class CampaignRun : MonoBehaviour
 {
-    public const string TableName = "Campaign", TableRow = "Default", DirectorRow = "Director", StartSpot = "Start";
+    public const string TableName = "Campaign", TableRow = "Default", DirectorRow = "Director", EndlessRow = "Endless", StartSpot = "Start";
     private const string StatusMessage = "ENFILADE.Campaign", PressMessage = "ENFILADE.CampaignPress", DoorMessage = "ENFILADE.CampaignDoor",
         CanShotMessage = "ENFILADE.CanShot";
     // How near the doorway someone must be to shut or open a rest stop's door, and a counter to shop (m).
@@ -53,8 +57,10 @@ public sealed class CampaignRun : MonoBehaviour
         public byte Quiet;
         /// <summary>How many quiet stretches the room got through unseen this chapter: each PC pays its player as it rises.</summary>
         public byte Unseen;
+        /// <summary>Bundle 3: the endless wave the final hold is on (0: not endless). Held is then the wave's own time.</summary>
+        public byte Wave;
         public bool Equals(Status other) => Step == other.Step && Finished == other.Finished && Checkpoint == other.Checkpoint
-            && Held == other.Held && Doors == other.Doors && Quiet == other.Quiet && Unseen == other.Unseen;
+            && Held == other.Held && Doors == other.Doors && Quiet == other.Quiet && Unseen == other.Unseen && Wave == other.Wave;
     }
 
     [SerializeField, Tooltip("What the hordes are made of.")]
@@ -79,6 +85,8 @@ public sealed class CampaignRun : MonoBehaviour
     private float seenMinDistance = 30f;
     [SerializeField, Tooltip("How the director paces the hordes (Tables/Campaign, row Director).")]
     private CampaignDirector.Tuning director = new CampaignDirector.Tuning();
+    [SerializeField, Tooltip("The final hold going on as endless waves, when that's on (Tables/Campaign, row Endless).")]
+    private CampaignEndless endless = new CampaignEndless();
     [SerializeField, Min(0f), Tooltip("How long the opening story card stays (s).")]
     private float introSeconds = 9f;
     [SerializeField, Min(0f), Tooltip("How long the closing card stays before the next chapter loads (s).")]
@@ -124,6 +132,8 @@ public sealed class CampaignRun : MonoBehaviour
     // A hold with no song has sent its brutes; who the ride left behind, for the closing card.
     private bool songlessSent;
     private string leftBehind = "";
+    // Bundle 3: the endless wave the final hold is on (0: not endless; held then counts the wave's own time).
+    private int endlessWave;
     // The closing card waits for the escape's banner (ChapterEndBanner): when it comes up (real s; negative, none due),
     // and what the game did to the class, for the insignia beside it.
     private const float BannerSeconds = 2.8f, CardOverBanner = .5f;
@@ -175,6 +185,8 @@ public sealed class CampaignRun : MonoBehaviour
         int index = active.IndexOf(stepId);
         if (index < 0 || active.finished || active.step > index) return 1f;
         if (active.step < index) return 0f;
+        // Gone on as endless waves: its own time is over (bundle 3).
+        if (active.endlessWave > 0) return 1f;
         var now = active.steps[index];
         float total = now.Kind == CampaignStepKind.Hold ? active.TotalOf(now) : 0f;
         return total > 0f ? Mathf.Clamp01(active.held / total) : 0f;
@@ -208,6 +220,7 @@ public sealed class CampaignRun : MonoBehaviour
         active = this;
         GameTables.Bind(TableName, TableRow, this);
         GameTables.BindNested(TableName, DirectorRow, this, director);
+        GameTables.BindNested(TableName, EndlessRow, this, endless);
         pacer = new CampaignDirector(director);
         if (doors == null) doors = new CampaignDoor[0];
         if (shops == null) shops = new Transform[0];
@@ -252,7 +265,7 @@ public sealed class CampaignRun : MonoBehaviour
     }
 
     // The way ahead of a quiet stretch, up to the next hold, escape or rest stop: each step's share of calm zombies between
-    // the place before it and its own.
+    // the place before it and its own, made by that step's mix and as many more as the players grow its horde (bundle 3).
     private void PlaceCalmAhead()
     {
         Vector3 from = players[0].transform.position;
@@ -262,7 +275,8 @@ public sealed class CampaignRun : MonoBehaviour
             if (ahead.Kind == CampaignStepKind.Hold || ahead.Kind == CampaignStepKind.Escape) break;
             var spot = SpotOf(ahead.Spot);
             if (spot == null) continue;
-            calmMade += horde.PlaceCalm(Mathf.RoundToInt(ahead.Horde * calmShare), from, spot.position, players, calmNear);
+            horde.Mix = CampaignMix.Of(ahead.Mix);
+            calmMade += horde.PlaceCalm(Mathf.RoundToInt(ahead.Horde * calmShare * pacer.HordeGrowth), from, spot.position, players, calmNear);
             from = spot.position;
             if (ahead.Kind == CampaignStepKind.Checkpoint) break;
         }
@@ -380,7 +394,12 @@ public sealed class CampaignRun : MonoBehaviour
             quiet = lull = true;
             ZombieMind.LoseAll();
         }
+        // Bundle 3: the numbers grow with everyone in the room and with an endless wave; the step's mix makes its zombies.
+        pacer.Crew = Crew();
+        pacer.Extra = endlessWave > 0 ? endless.ExtraAt(endlessWave) : 0;
+        horde.CapGrowth = pacer.HordeGrowth;
         if (calmDue && players.Count > 0) { calmDue = false; PlaceCalmAhead(); }
+        horde.Mix = CampaignMix.Of(now.Mix);
         pacer.Pace(dt, players, scripted, quiet || Resting(), now.Horde, now.Rate, out int most, out float rate);
         pacer.Spawned(horde.Tick(dt, most, rate, players, minSpawnDistance, maxSpawnDistance, seenMinDistance));
         switch (now.Kind)
@@ -405,8 +424,10 @@ public sealed class CampaignRun : MonoBehaviour
                 else if (EveryoneAt(now)) Advance();
                 break;
             case CampaignStepKind.Hold:
+                if (endlessWave > 0) { RunEndless(now, dt); break; }
                 held = SongTime(now, dt, 0f);
-                if (held >= TotalOf(now)) Advance();
+                // The final hold with endless on doesn't end: its waves begin (bundle 3).
+                if (held >= TotalOf(now)) { if (EndlessAt(now)) NextWave(now); else Advance(); }
                 else ShowHeld(now);
                 break;
             case CampaignStepKind.Collect:
@@ -420,6 +441,8 @@ public sealed class CampaignRun : MonoBehaviour
     // otherwise the hold's own seconds, and no time at all for an escape (0).
     private float TotalOf(CampaignStep at)
     {
+        // Gone on as endless waves: a wave's own time (bundle 3).
+        if (endlessWave > 0 && at == Current) return endless.WaveSeconds;
         bool finale = CampaignMusic.TryFinale(at.Music, out float hold, out float board);
         return at.Kind == CampaignStepKind.Escape ? (finale ? board : 0f) : finale ? hold : at.Seconds;
     }
@@ -497,6 +520,8 @@ public sealed class CampaignRun : MonoBehaviour
         step++;
         held = 0f;
         songlessSent = false;
+        // Endless turned off during the waves: the ride comes after all, at the step's own numbers.
+        StopEndless();
         // A whole quiet stretch got through without one zombie finding anyone: into the rest stop, or up to where a hold
         // or the escape begins. Every player is paid for it, each PC on the host's word (Status.Unseen).
         var next = Current;
@@ -527,11 +552,13 @@ public sealed class CampaignRun : MonoBehaviour
     private void PlayMusic()
     {
         var now = Current;
-        string wanted = finished ? music.Playing : now != null ? now.Music : "";
+        // The endless waves have their own song (bundle 3); the finale's would run out under them.
+        string wanted = finished ? music.Playing : now != null ? (endlessWave > 0 ? endless.endlessMusic ?? "" : now.Music) : "";
         // Joined partway: a hold's song from as far in as the hold is, a finale's escape from past the whole hold.
         float from = now == null ? 0f : now.Kind == CampaignStepKind.Hold ? held
             : now.Kind == CampaignStepKind.Escape && CampaignMusic.TryFinale(now.Music, out float holdBefore, out _) ? holdBefore + held : 0f;
-        if (music.Want(wanted, from)) brutesDue = IsHost && now != null ? now.PeakBosses : 0;
+        // An endless wave's song brings no brutes of its own: the waves send theirs (NextWave).
+        if (music.Want(wanted, from) && endlessWave == 0) brutesDue = IsHost && now != null ? now.PeakBosses : 0;
         music.Tick();
         // A hold with no song (the first chapter's shutter, whose siren is its music) sends its brutes halfway through.
         bool songless = now != null && now.Kind == CampaignStepKind.Hold && string.IsNullOrEmpty(now.Music);
@@ -540,14 +567,20 @@ public sealed class CampaignRun : MonoBehaviour
             songlessSent = true;
             brutesDue = now.PeakBosses;
         }
-        if (!IsHost || finished || brutesDue <= 0 || !(music.PastPeak || songless) || Time.time < nextBruteTry) return;
+        if (!IsHost || finished || brutesDue <= 0 || !(music.PastPeak || songless || endlessWave > 0) || Time.time < nextBruteTry) return;
         nextBruteTry = Time.time + .5f;
-        brutesDue -= horde.SpawnBrutes(brutesDue, players, minSpawnDistance, maxSpawnDistance, seenMinDistance);
+        // The boss slot takes the kind the step's mix puts there (a brute unless it says otherwise, bundle 3).
+        var mix = now != null ? CampaignMix.Of(now.Mix) : null;
+        brutesDue -= horde.SpawnBosses(brutesDue, mix != null ? mix.Boss : ZombieKind.Brute, players, minSpawnDistance, maxSpawnDistance,
+            seenMinDistance);
     }
 
     private void BackToCheckpoint()
     {
         if (finished) return;
+        // The endless waves end with the wipe; everyone hears how far they got (bundle 3).
+        if (endlessWave > 0) EndlessOver(endlessWave);
+        StopEndless();
         horde.Clear();
         music.Stop();
         brutesDue = 0;
@@ -563,6 +596,52 @@ public sealed class CampaignRun : MonoBehaviour
         // The goals done since the rest stop are undone: the log starts over rather than counting them twice.
         if (tracker != null) tracker.ClearObjective();
         ShowObjective(true);
+    }
+
+    // Bundle 3: how many play in the room, the dead and those still loading included, so the director's numbers grow with
+    // them from a chapter's first moment and don't drop while someone waits to come back. Alone, one; test dummies never count.
+    private int Crew() => network != null && network.IsListening && network.IsServer ? Mathf.Max(1, network.ConnectedClientsIds.Count) : 1;
+
+    // The final hold, its time up, goes on as endless waves while the option is on (CampaignEndless).
+    private bool EndlessAt(CampaignStep at) => endless.On && at.Kind == CampaignStepKind.Hold
+        && string.Equals(at.Id, endless.endlessStep, System.StringComparison.OrdinalIgnoreCase);
+
+    // A wave's time: the next one, harder. Endless turned off on the way (the host's `endless 0`): the ride comes after all.
+    private void RunEndless(CampaignStep now, float dt)
+    {
+        if (!endless.On) { Advance(); return; }
+        held += dt;
+        if (held >= endless.WaveSeconds) NextWave(now);
+        else ShowHeld(now);
+    }
+
+    // The next endless wave: more about (CampaignDirector.Extra, from endlessWave), each new zombie stronger, and now and
+    // then the step's boss slot again.
+    private void NextWave(CampaignStep now)
+    {
+        int was = endlessWave;
+        endlessWave = Mathf.Min(endlessWave + 1, byte.MaxValue);
+        held = 0f;
+        horde.Boost = endless.BoostAt(endlessWave);
+        if (endless.BossAt(endlessWave)) brutesDue += Mathf.Max(1, now.PeakBosses);
+        ShowWave(was);
+    }
+
+    // Every PC: the waves began (the alert), or the next came (its goal on the mission bar).
+    private void ShowWave(int was)
+    {
+        if (was == 0 && endlessWave > 0) AlertHUD.Danger(Texts.Get("campaign.alert.endless"));
+        ShowObjective(true);
+    }
+
+    // Every PC: a wipe ended the waves; how far they got.
+    private static void EndlessOver(int reached) => AlertHUD.Danger(Texts.Format("campaign.alert.endless.over", reached));
+
+    // The host: no endless waves any more, and new zombies at their own strength.
+    private void StopEndless()
+    {
+        endlessWave = 0;
+        horde.Boost = 1f;
     }
 
     // The next chapter, for everyone; after the last one, or with the next not built yet, the run just stays done.
@@ -684,7 +763,10 @@ public sealed class CampaignRun : MonoBehaviour
         if (active == null) return "캠페인 맵이 아니에요.";
         if (!active.IsHost) return "디렉터는 방장 PC에서 돌아요. 방장이 입력해 보세요.";
         return active.pacer.Report(active.horde.Alive) + (active.Resting() ? " · 휴게소에서 쉬는 중" : "")
-            + (active.quiet ? " · 조용한 구간(좀비가 알아채기 전에는 떼가 오지 않음)" : "");
+            + (active.quiet ? " · 조용한 구간(좀비가 알아채기 전에는 떼가 오지 않음)" : "")
+            + (active.horde.Mix != null ? " · 편성 " + active.horde.Mix.Id : "")
+            + (active.endlessWave > 0 ? $" · 엔드리스 {active.endlessWave}웨이브(새 좀비 체력·피해 ×{active.horde.Boost:0.00})"
+                : active.endless.On ? " · 엔드리스 켜짐(" + active.endless.endlessStep + "에서)" : "");
     }
 
     // Carrying a can: pour it where the step wants it, else put it down. Hands free: pick up the can within reach.
@@ -792,7 +874,8 @@ public sealed class CampaignRun : MonoBehaviour
         {
             Step = (byte)Mathf.Clamp(step, 0, 255), Finished = (byte)(finished ? 1 : 0),
             Checkpoint = (byte)Mathf.Clamp(checkpoint + 1, 0, 255), Held = (ushort)Mathf.Clamp(Mathf.FloorToInt(held), 0, ushort.MaxValue),
-            Doors = DoorBits(), Quiet = (byte)(quiet ? lull ? 2 : 1 : 0), Unseen = unseenCount
+            Doors = DoorBits(), Quiet = (byte)(quiet ? lull ? 2 : 1 : 0), Unseen = unseenCount,
+            Wave = (byte)Mathf.Clamp(endlessWave, 0, 255)
         };
         if (now.Equals(sent) && Time.unscaledTime < nextShare) return;
         sent = now;
@@ -813,6 +896,11 @@ public sealed class CampaignRun : MonoBehaviour
         step = status.Step;
         checkpoint = status.Checkpoint - 1;
         held = status.Held;
+        // Bundle 3: the endless wave the host's final hold is on; back to the rest stop from one, the waves ended in a wipe.
+        int wasWave = endlessWave;
+        endlessWave = status.Wave;
+        bool waved = endlessWave != wasWave;
+        if (waved && endlessWave == 0 && back) EndlessOver(wasWave);
         quiet = status.Quiet != 0;
         lull = status.Quiet == 2;
         // The host's count of stretches got through unseen: each one more pays this player too. The first word only
@@ -834,6 +922,7 @@ public sealed class CampaignRun : MonoBehaviour
         if (back) music.Stop();
         if (back && tracker != null) tracker.ClearObjective();
         if (moved) ShowObjective(true);
+        else if (waved) ShowWave(wasWave);
         else if (Current != null) ShowHeld(Current);
     }
 
@@ -841,6 +930,15 @@ public sealed class CampaignRun : MonoBehaviour
     {
         var now = Current;
         if (tracker == null || now == null) return;
+        // An endless wave: which one, and its time passing (bundle 3).
+        if (endlessWave > 0)
+        {
+            tracker.SetObjective(new MissionObjective(ObjectiveId(now), Texts.Format("campaign.endless.title", endlessWave),
+                Texts.Get("campaign.endless.detail"), MissionProgressDisplay.Percent, Mathf.FloorToInt(held),
+                Mathf.CeilToInt(endless.WaveSeconds), Texts.Format("campaign.endless.done", endlessWave)), announce);
+            shownPoured = -1;
+            return;
+        }
         // A hold, and a finale's escape (the ride's wait), show their time passing.
         float total = now.Kind == CampaignStepKind.Hold || now.Kind == CampaignStepKind.Escape ? TotalOf(now) : 0f;
         tracker.SetObjective(total > 0f
@@ -857,8 +955,11 @@ public sealed class CampaignRun : MonoBehaviour
     {
         if (tracker == null || (now.Kind != CampaignStepKind.Hold && now.Kind != CampaignStepKind.Escape)) return;
         float total = TotalOf(now);
-        if (total > 0f) tracker.SetProgress(now.Id, Mathf.FloorToInt(held), Mathf.CeilToInt(total));
+        if (total > 0f) tracker.SetProgress(ObjectiveId(now), Mathf.FloorToInt(held), Mathf.CeilToInt(total));
     }
+
+    // The mission bar's id for a step: an endless wave's own, so each wave is a goal of its own in the Tab log.
+    private string ObjectiveId(CampaignStep now) => endlessWave > 0 ? now.Id + ".endless." + endlessWave : now.Id;
 
     private void ShowFinish()
     {

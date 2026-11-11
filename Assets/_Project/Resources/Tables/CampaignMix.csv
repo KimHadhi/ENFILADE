@@ -1,0 +1,6 @@
+﻿id,shambler,runner,exploder,charger,shamblerMost,runnerMost,exploderMost,chargerMost,boss
+#설명 (캠페인 좀비 편성. CampaignSteps.csv의 mix 열이 이 id를 부르고 그 단계부터 쓴다. 비워 둔 단계는 앞 단계의 편성을 이어 쓰고 장 첫 단계를 비우면 예전처럼 ZombieKinds.csv의 share 비율. 엘리트가 장을 따라 풀린다: Opening 1장 처음은 셤블러와 러너만 / Exploders 1장 셔터부터 자폭 좀비 / Elites 1장 피날레부터 돌진 좀비까지 / Finale 2·3장 피날레는 엘리트가 더 자주. Horde 애드온의 가중치 편성(sh_enemy.lua)을 옮긴 것. 체력·속도 같은 종류의 수치는 ZombieKinds.csv),셤블러가 나올 비율(다른 종류의 비율과 견준다),러너 비율,자폭 좀비 비율. 0이면 아직 안 나온다,돌진 좀비 비율. 0이면 아직 안 나온다,셤블러가 한꺼번에 있을 수 있는 수(혼자 기준. 한 명 늘 때마다 Campaign.csv hordePerPlayer 비율만큼 는다). 비우면 제한 없음,러너 동시 수 제한(같은 방식). 비우면 제한 없음,자폭 좀비 동시 수 제한(같은 방식). 다 차면 다른 종류가 나온다. 비우면 제한 없음,돌진 좀비 동시 수 제한(같은 방식). 비우면 제한 없음,단계의 보스 자리에 나오는 종류: Brute(거구)·Charger(돌진)·Exploder·Runner·Shambler. 보스 자리는 CampaignSteps.csv peakBoss(버티기 노래 절정 · 노래 없는 버티기는 절반 · 엔드리스는 Campaign.csv endlessBossEvery 웨이브마다). 비우면 Brute
+Opening,0.65,0.35,0,0,,,,,Brute
+Exploders,0.65,0.35,0.05,0,,,2,,Brute
+Elites,0.65,0.35,0.05,0.03,,,2,1,Brute
+Finale,0.6,0.4,0.07,0.05,,,3,2,Brute

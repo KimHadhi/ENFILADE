@@ -35,6 +35,9 @@ public sealed class EnemyNetwork : NetworkBehaviour
     private readonly NetworkVariable<Condition> condition = new NetworkVariable<Condition>();
     // A zombie's ZombieKind: its copies time their own swing by it.
     private readonly NetworkVariable<byte> kind = new NetworkVariable<byte>();
+    // The campaign's endless waves (bundle 3): its health and its blows, times x and y (EnemyHealth.SetBoost). The victim's
+    // PC judges a blow, so its copy must hit as hard; and a copy short of the host's health would die early on its PC.
+    private readonly NetworkVariable<Vector2> boost = new NetworkVariable<Vector2>(Vector2.one);
     private ZombieType type;
     private ZombieGrip grip;
     private EnemyHealth enemy;
@@ -75,6 +78,7 @@ public sealed class EnemyNetwork : NetworkBehaviour
             health.Value = enemy.Health;
             condition.Value = ReadCondition();
             if (type != null) kind.Value = (byte)type.Kind;
+            boost.Value = new Vector2(enemy.HealthBoost, enemy.DamageBoost);
             motion = GetComponent<NetworkTransform>();
             if (motion != null)
             {
@@ -86,6 +90,8 @@ public sealed class EnemyNetwork : NetworkBehaviour
         }
         if (type != null) type.Show((ZombieKind)kind.Value);
         kind.OnValueChanged += OnKindChanged;
+        enemy.SetBoost(boost.Value.x, boost.Value.y);
+        boost.OnValueChanged += OnBoostChanged;
         if (TryGetComponent(out EnemyChaseAI chase)) chase.enabled = false;
         if (TryGetComponent(out NavMeshAgent agent)) agent.enabled = false;
         health.OnValueChanged += OnHealthChanged;
@@ -99,11 +105,19 @@ public sealed class EnemyNetwork : NetworkBehaviour
         health.OnValueChanged -= OnHealthChanged;
         condition.OnValueChanged -= OnConditionChanged;
         kind.OnValueChanged -= OnKindChanged;
+        boost.OnValueChanged -= OnBoostChanged;
     }
 
     private void OnKindChanged(byte previous, byte current)
     {
         if (type != null) type.Show((ZombieKind)current);
+    }
+
+    // A late word on its boost: the new maximum, then the host's health again, which the old maximum may have cut short.
+    private void OnBoostChanged(Vector2 previous, Vector2 current)
+    {
+        enemy.SetBoost(current.x, current.y);
+        enemy.ShowHealth(health.Value);
     }
 
     /// <summary>The host made its zombie this kind after it appeared (/spawn n runner): its copies follow.</summary>

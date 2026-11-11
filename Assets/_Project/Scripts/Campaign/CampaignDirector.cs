@@ -10,6 +10,10 @@ using UnityEngine;
 /// and the tension has eased. Holds and the escape are scripted crescendos and always run at full numbers; nobody comes
 /// at all while everyone sits in a rest stop with its door shut. The host runs it (CampaignRun); health and going down
 /// reach the host from every player, so it can read everyone's tension. Numbers: Tables/Campaign, row Director.
+/// Bundle 3, after GMod Horde (sv_horde.lua: at most 20 + 5 a player alive at once, 50 at most; a wave's total and each
+/// spawn tick grow with the players): with more players in the room (Crew) the step's horde, how fast they come and a
+/// mob's size all grow, each by its share a player past the first, and so does an endless wave's Extra; whatever grew
+/// stops at mostAlive. Alone, the numbers are the step's own, exactly as before.
 /// </summary>
 internal sealed class CampaignDirector
 {
@@ -38,6 +42,14 @@ internal sealed class CampaignDirector
         public int mobSize = 8;
         [Tooltip("How many a second while a mob comes in.")]
         public float mobRate = 4f;
+        [Tooltip("Each player past the first lets this share more of the step's horde be about at once (Horde: 20 + 5 a player, so 25 alone and 40 with four).")]
+        public float hordePerPlayer = .2f;
+        [Tooltip("Each player past the first makes them come this share faster, a mob too (Horde: 6 a tick alone, 8.5 with four).")]
+        public float ratePerPlayer = .15f;
+        [Tooltip("Each player past the first makes a mob this share bigger (Horde: a wave's total times ceil(0.75 a player), three times with four).")]
+        public float mobPerPlayer = .67f;
+        [Tooltip("What grew with the players or an endless wave stops at this many about at once (Horde: 50); never below the step's own number alone.")]
+        public int mostAlive = 50;
     }
 
     public enum Phase { BuildUp, Peak, Relax }
@@ -63,6 +75,14 @@ internal sealed class CampaignDirector
     public Phase Now { get; private set; }
     /// <summary>The tensest player's tension (0-1).</summary>
     public float Intensity { get; private set; }
+    /// <summary>How many play in the room, the dead included (bundle 3; the run sets it each frame). 1 alone.</summary>
+    public int Crew { get; set; } = 1;
+    /// <summary>An endless wave: this many more may be about than the step's own horde, before the players' growth.</summary>
+    public int Extra { get; set; }
+    /// <summary>How much the horde grows for the players: 1 alone. The calm zombies and the elites' caps grow by it too.</summary>
+    public float HordeGrowth => Growth(tuning.hordePerPlayer);
+    // A mob's size for the players in the room.
+    private int MobSize => Mathf.RoundToInt(Mathf.Max(0, tuning.mobSize) * Growth(tuning.mobPerPlayer));
 
     /// <summary>
     /// How many may be about (<paramref name="most"/>) and how many come a second (<paramref name="rate"/>) this frame,
@@ -83,20 +103,31 @@ internal sealed class CampaignDirector
             rate = 0f;
             return;
         }
-        if (scripted)
-        {
-            most = stepMost;
-            rate = stepRate;
-            return;
-        }
-        Advance(dt);
-        float share = Now == Phase.Relax ? tuning.relaxShare : 1f;
-        most = Mathf.RoundToInt(stepMost * share);
-        rate = stepRate * share;
-        if (Now != Phase.BuildUp || mobLeft <= 0) return;
-        most += tuning.mobSize;
-        rate = Mathf.Max(rate, tuning.mobRate);
+        if (!scripted) Advance(dt);
+        Numbers(stepMost, stepRate, scripted, 1f, 1f, tuning.mobSize, out most, out rate);
+        // Bundle 3: more players, or an endless wave, let more be about, send them faster and make mobs bigger. Alone and
+        // not endless, the numbers above stand as they were; whatever grew stops at mostAlive, never below them.
+        if (Crew <= 1 && Extra <= 0) return;
+        Numbers(stepMost + Mathf.Max(0, Extra), stepRate, scripted, HordeGrowth, Growth(tuning.ratePerPlayer), MobSize,
+            out int grown, out float faster);
+        most = Mathf.Max(most, Mathf.Min(grown, tuning.mostAlive));
+        rate = Mathf.Max(rate, faster);
     }
+
+    // This frame's numbers from the step's own grown by the given scales: a hold or the escape at full numbers, a relax at
+    // its share, and a mob under way on top during a build-up.
+    private void Numbers(int stepMost, float stepRate, bool scripted, float hordeScale, float rateScale, int mob, out int most, out float rate)
+    {
+        float share = scripted || Now != Phase.Relax ? 1f : tuning.relaxShare;
+        most = Mathf.RoundToInt(stepMost * hordeScale * share);
+        rate = stepRate * rateScale * share;
+        if (scripted || Now != Phase.BuildUp || mobLeft <= 0) return;
+        most += mob;
+        rate = Mathf.Max(rate, tuning.mobRate * rateScale);
+    }
+
+    // 1 alone; each player past the first adds the share.
+    private float Growth(float perPlayer) => 1f + Mathf.Max(0f, perPlayer) * (Mathf.Max(1, Crew) - 1);
 
     /// <summary>The horde made this many: a mob under way counts them off.</summary>
     public void Spawned(int count) => mobLeft = Mathf.Max(0, mobLeft - count);
@@ -105,7 +136,8 @@ internal sealed class CampaignDirector
     {
         string phase = Now == Phase.BuildUp ? "쌓아 올리는 중" : Now == Phase.Peak ? "몰아치는 중" : "쉬는 중";
         return $"디렉터: {phase} · 긴장도 {Intensity:0.00} · 적 {alive} · " +
-               (mobLeft > 0 ? $"떼 {mobLeft} 마리 오는 중" : $"다음 떼까지 {Mathf.CeilToInt(Mathf.Max(0f, mobIn))}초");
+               (mobLeft > 0 ? $"떼 {mobLeft} 마리 오는 중" : $"다음 떼까지 {Mathf.CeilToInt(Mathf.Max(0f, mobIn))}초") +
+               (Crew > 1 ? $" · {Crew}명 기준(동시 상한 ×{HordeGrowth:0.##}, 떼 {MobSize}마리)" : "");
     }
 
     private void Advance(float dt)
@@ -117,7 +149,7 @@ internal sealed class CampaignDirector
                 if (mobLeft > 0) break;
                 mobIn -= dt;
                 if (mobIn > 0f) break;
-                mobLeft = Mathf.Max(0, tuning.mobSize);
+                mobLeft = MobSize;
                 mobIn = NextMob();
                 break;
             case Phase.Peak:

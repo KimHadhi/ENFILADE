@@ -103,6 +103,8 @@ public sealed class PlayerDamageReceiver : MonoBehaviour, IDamageReceiver, ITabl
         float amount = hit.TakesHold && !hit.IsFatal ? 0f : hit.Amount;
         // A Knight takes less from an enemy's blow, and less again while its taunt holds (PlayerClass); a fall is a fall.
         if (hit.Kind == DamageKind.Attack) amount *= PlayerClass.TakenFactor(movement);
+        // The campaign's endless waves make an enemy's blows, bites, rams and bursts land harder (bundle 3; 1 otherwise).
+        if (hit.Kind == DamageKind.Attack) amount *= EnemyHealth.DamageBoostOf(hit.Source);
         float absorbed = hit.IsFatal ? 0f : Mathf.Min(Shield, amount);
         bool shieldBroke = absorbed > 0f && absorbed >= Shield;
         shield = shieldBroke ? 0f : Shield - absorbed;

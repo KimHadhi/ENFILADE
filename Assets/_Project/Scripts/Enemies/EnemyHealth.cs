@@ -44,9 +44,38 @@ public sealed class EnemyHealth : MonoBehaviour, IDamageReceiver, ICombatVitals,
     /// <summary>Console test spawns (/spawn n elite). The table sets it otherwise.</summary>
     internal void SetRank(EnemyRank value) => rank = value;
     public float Health { get; private set; }
-    public float MaximumHealth => Mathf.Max(1f, maximumHealth * healthShare);
+    public float MaximumHealth => Mathf.Max(1f, maximumHealth * healthShare * healthBoost);
     // A zombie's kind scales its row's health (ZombieType: a runner dies sooner).
     private float healthShare = 1f;
+    // The campaign's endless waves make it tougher on top of that (bundle 3, CampaignHorde; its copies are told, EnemyNetwork).
+    private float healthBoost = 1f;
+
+    /// <summary>Endless waves (bundle 3): its health, times this over what its kind gives it.</summary>
+    public float HealthBoost => healthBoost;
+    /// <summary>Endless waves (bundle 3): its blows land this many times as hard (PlayerDamageReceiver).</summary>
+    public float DamageBoost { get; private set; } = 1f;
+
+    /// <summary>
+    /// Endless waves (bundle 3): its health becomes <paramref name="health"/> times its kind's, at the same fraction of
+    /// it, and its blows land <paramref name="damage"/> times as hard. The host sets it before the enemy goes out to the
+    /// room; a copy is told (EnemyNetwork), every PC alike.
+    /// </summary>
+    internal void SetBoost(float health, float damage)
+    {
+        DamageBoost = Mathf.Max(0f, damage);
+        health = Mathf.Max(.01f, health);
+        if (Mathf.Approximately(health, healthBoost)) return;
+        float fraction = MaximumHealth > 0f ? Health / MaximumHealth : 1f;
+        healthBoost = health;
+        // As with its kind's share: a copy's health is the host's, already boosted, and only can't be over the new maximum.
+        if (network != null && network.IsCopy) Health = Mathf.Min(Health, MaximumHealth);
+        else if (IsAlive) Health = Mathf.Max(.01f, fraction * MaximumHealth);
+        appliedMaximum = MaximumHealth;
+    }
+
+    /// <summary>How hard a blow from <paramref name="source"/> lands: an enemy's DamageBoost, 1 for anything else.</summary>
+    public static float DamageBoostOf(GameObject source)
+        => source != null && source.TryGetComponent(out EnemyHealth enemy) ? enemy.DamageBoost : 1f;
 
     /// <summary>Its health becomes this share of its row's, at the same fraction of it (ZombieType, every PC alike).</summary>
     internal void SetHealthShare(float share)

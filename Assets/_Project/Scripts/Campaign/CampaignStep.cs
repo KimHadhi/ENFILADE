@@ -27,12 +27,14 @@ public enum CampaignStepKind
 /// hold's length; count is how many cans a Collect wants; horde and rate are how many enemies may be about during the
 /// step and how many come per second. music names a song in Tables/Music played while the step runs (the next step
 /// naming the same song lets it play on), and peakBoss is how many brutes come at that song's highlight (CampaignMusic).
+/// mix (bundle 3) names the step's row in Tables/CampaignMix, what its zombies are made of and what fills its boss slot;
+/// a step that names none keeps the mix of the step before it.
 /// </summary>
 public sealed class CampaignStep
 {
     public const string TableName = "CampaignSteps";
 
-    public string Id, Spot, Title, Description, Done, Prompt, Music;
+    public string Id, Spot, Title, Description, Done, Prompt, Music, Mix;
     public CampaignStepKind Kind;
     public float Radius, Seconds, Rate;
     public int Horde, Order, Count, PeakBosses;
@@ -51,10 +53,12 @@ public sealed class CampaignStep
                 Done = Text(row, "done"), Prompt = Text(row, "prompt"), Order = (int)Number(row, "order", 0f),
                 Radius = Number(row, "radius", 4f), Seconds = Number(row, "seconds", 0f),
                 Horde = (int)Number(row, "horde", 0f), Rate = Number(row, "rate", 0f), Count = (int)Number(row, "count", 1f),
-                Music = Text(row, "music"), PeakBosses = (int)Number(row, "peakBoss", 0f)
+                Music = Text(row, "music"), PeakBosses = (int)Number(row, "peakBoss", 0f), Mix = Text(row, "mix")
             });
         }
         steps.Sort((a, b) => a.Order.CompareTo(b.Order));
+        // A step that names no mix keeps the one before it, so a mix holds from where it is named on.
+        for (int i = 1; i < steps.Count; i++) if (steps[i].Mix.Length == 0) steps[i].Mix = steps[i - 1].Mix;
         return steps;
     }
 
