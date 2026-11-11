@@ -14,9 +14,10 @@ public enum SettingsGroup { Sound, Controls, Screen, Camera, Hud, Crosshair, Cha
 
 /// <summary>
 /// Player preferences: volume, controls, screen, camera, HUD, frame rate and crosshairs. Saved per user in settings.json under
-/// Application.persistentDataPath and changed in the Esc menu. A fresh player starts from the preset asset
-/// (Resources/Settings/DefaultSettings, <see cref="GameSettingsPreset"/>), which is also what each tab's reset returns to;
-/// the values written below are only the fallback when that asset is missing. Balance numbers stay in Resources/Tables.
+/// Application.persistentDataPath and changed in the Esc menu. A fresh player starts from the defaults
+/// (<see cref="GameSettingsPreset"/>: the values written below, then Resources/Settings/DefaultSettings if it was edited,
+/// then the table Tables/SettingsDefaults.csv), which are also what each tab's reset returns to. Balance numbers stay in
+/// Resources/Tables.
 /// </summary>
 [Serializable]
 public sealed class GameSettings

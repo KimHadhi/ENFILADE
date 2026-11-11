@@ -167,11 +167,17 @@ C 메뉴에서 바꾼 조준경·총구·하단·손잡이, L 플래시, B 사�
 - **숫자 칸**: 슬라이더 줄 끝의 값(80%, 1.00×, 90° 같은 것)은 숫자 칸이다. 누르면 숫자만 남고 통째로 선택되니 바로 쳐서 바꾼다. Enter를 누르거나 다른 곳을 누르면 적용되고, Esc는 원래 값으로 돌린다(그 Esc로는 메뉴가 닫히지 않고, 한 번 더 누르면 닫힌다). 보이는 단위로 친다(퍼센트는 80, 크로스헤어 점 크기는 px). 범위 밖 숫자는 끝 값이 된다. 프레임 제한 줄 끝 칸에는 목록에 없는 값도 넣는다(20~1000, 0은 무제한). 위젯은 `SettingsWidgets.NumberBox`, 줄은 `SettingsRows.Slider`·`NumberChoice`.
 - **알트탭**: 빌드에서 게임이 포커스를 다시 받으면 0.5초 뒤와 2초 뒤에 두 번, 창이 마지막 변경 뒤 자리 잡은 모습(화면 모드·크기, 전체 화면이면 모니터까지)과 같은지 보고 다르면 설정대로 다시 적용한다([DisplayGuard](../Scripts/Settings/DisplayGuard.cs), `DisplaySettings.Restore`). 요청한 값이 아니라 실제로 받은 값과 비교하므로, 모니터가 못 하는 크기를 계속 다시 청하지 않는다. 커서를 가두고 있었다면 바로 다시 가둔다. 창 모드에서는 플레이어가 창을 다른 모니터로 끌어 옮길 수 있으니 모니터는 되돌리지 않는다. Alt+Enter 전환은 Player Settings(Allow Fullscreen Switch)에서 껐다. 화면 모드는 설정 메뉴에서만 바뀌고, 그 밖의 변화는 되돌릴 대상이다. 포커스가 바뀔 때마다 Player.log(`%USERPROFILE%\AppData\LocalLow\AlaskanGyaru\ENFILADE\Player.log`)에 `[Display]` 줄이 하나씩 남는다.
 - **저장 위치**: 사용자별 `Application.persistentDataPath/settings.json`이다. Windows에서는 보통 `%USERPROFILE%\AppData\LocalLow\<회사>\<제품>\settings.json`이다. 파일을 지우면 기본값으로 돌아간다. 밸런스 숫자는 CSV 표, 플레이어 취향은 이 파일에 둔다.
-- **기본값 프리셋**: 처음 하는 플레이어의 설정과 "이 탭 기본값"이 돌아가는 값은 [DefaultSettings.asset](../Resources/Settings/DefaultSettings.asset)([GameSettingsPreset](../Scripts/Settings/GameSettingsPreset.cs))의 Inspector에서 바꾼다. 플레이어가 고른 값은 settings.json이 이기고, 한 번도 건드리지 않은 설정(새로 생긴 설정 포함)은 프리셋을 따른다. 애셋이 없으면 `GameSettings` 코드에 적힌 값이 기본값이다.
+- **기본값**: 처음 하는 플레이어의 설정과 "이 탭 기본값"이 돌아가는 값은 [SettingsDefaults.csv](../Resources/Tables/SettingsDefaults.csv)에서 바꾼다(아래 **설정 기본값·화면 글자 고치는 곳**). 층은 `GameSettings` 코드 값 → [DefaultSettings.asset](../Resources/Settings/DefaultSettings.asset)(Inspector에서 고친 적이 있을 때만) → 표 순서이고 뒤가 이긴다([GameSettingsPreset](../Scripts/Settings/GameSettingsPreset.cs)). 플레이어가 고른 값은 settings.json이 이긴다. settings.json은 모든 설정을 적어 두므로, 이미 저장한 PC에서는 새로 생긴 설정만 기본값을 따른다.
 - **앉기 전환**: 한 번 누르면 앉고, 다시 누르면 선다. Shift나 점프를 누르거나, 다이브·포복·파쿠르로 앉기·슬라이드 상태를 벗어나면 자동으로 풀린다. 키를 놓은 것과 같다. 그래서 전환 모드의 점프는 서서 하는 점프이고, 몸을 접는 앉아 점프는 Ctrl을 누른 채 점프할 때만 나온다. 점프 중에 누르면 공중에서 몸을 접고, 앉은 채로 착지한다. 달리며 누르면 슬라이드하고, 끝나면 앉은 채로 남는다. 전환 모드에서 슬라이드 감속은 S 키로 한다.
 - **기울이기 전환**: Q나 E를 한 번 누르면 그쪽으로 기울고, 같은 키를 다시 누르면 돌아온다. 반대 키를 누르면 반대로 기운다. Shift를 누르거나 서기·앉기 외의 상태가 되면 풀린다.
 - **일시정지**: 싱글 플레이 기준이다. 멀티 플레이로 바꿀 때는 메뉴만 열고 게임은 멈추지 않게 한다(`SettingsMenu.Open`의 `GamePause.Set(true)`). [GamePause](../Scripts/Settings/GamePause.cs)만 게임 속도를 0으로 만든다. 멈출 때의 속도(반격 슬로 포함)를 그대로 되돌리므로, `CombatTimeEffects`의 슬로는 메뉴를 닫은 뒤 이어진다. UI 채널 소리만 일시정지 중에도 재생된다.
 - 메뉴는 코드로 만든 화면이다([UI/Settings](../Scripts/UI/Settings)). 항목은 `SettingsMenuView`, 모양은 `SettingsWidgets`에서 바꾼다. 탭 순서는 `SettingsGroup` 순서와 같아야 "이 탭 기본값"이 맞는 묶음을 돌린다. EventSystem이 없는 씬에서는 메뉴를 처음 열 때 하나 만든다.
+
+### 설정 기본값·화면 글자 고치는 곳
+
+- **기본값**: [SettingsDefaults.csv](../Resources/Tables/SettingsDefaults.csv)를 엑셀로 연다. `Default` 한 줄에 설정마다 한 칸이고, 둘째 줄 `#설명`에 어느 탭의 무엇인지와 값의 범위가 적혀 있다. 고친 뒤 CSV UTF-8로 저장한다(편집기에서는 `Tools → Data Tables`의 다시 읽기나 다음 플레이에 반영). 빈 칸은 코드 값을 쓴다. 음량·화면 흔들림·HUD 흔들림은 0~1(0.8이 80%), 켬/끔은 true/false, 화면 모드는 Fullscreen·Borderless·Windowed, 데미지 숫자는 Off·Stacked·Each, 프레임 제한 0은 무제한이다. `gunCrosshairCode`·`meleeCrosshairCode`에 크로스헤어 공유 코드(ENF-…)를 넣으면 새 플레이어가 그 직접 꾸민 크로스헤어로 시작한다(비우면 기본 모양). 표에 없는 설정도 `GameSettings`의 필드 이름으로 열을 더하면 읽는다.
+- **내 PC에서 확인**: 이미 저장된 settings.json이 이기므로, 바꾼 기본값은 그 탭의 "이 탭 기본값"을 누르거나 `%USERPROFILE%\AppData\LocalLow\AlaskanGyaru\ENFILADE\settings.json`을 지운 뒤에 보인다.
+- **화면 글자**: [Texts.csv](../Resources/Tables/Texts.csv)의 `ko` 열을 고친다. `id`는 코드가 찾는 이름이라 그대로 두고, `#어디` 열에 화면 어디에 나오는지 적혀 있다. 설정 창은 `settings.`(탭·줄·선택지·안내), 크로스헤어 탭은 `crosshair.`로 시작한다. `{0}`은 코드가 채우는 자리라 남겨 둔다. 설정 창은 열 때마다 새로 만들므로 저장하고 다시 열면 바뀐 글자가 보인다.
 
 ## 개발자 콘솔 (` 키)
 
