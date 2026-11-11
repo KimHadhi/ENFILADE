@@ -167,9 +167,14 @@ public static class PlayerClass
         return player != null && kit != null && kit.Movement == player && Is(Knight);
     }
 
-    /// <summary>An ability's number (Tables/ClassAbilities, "Class.name").</summary>
+    /// <summary>
+    /// An ability's number (Tables/ClassAbilities, "Class.name"), with what this PC's player's perk cards add to it
+    /// (a card naming it in Tables/Perks' ability column: PlayerPerks.AbilityBonus). Only a player of that class is ever
+    /// dealt its cards, so a class's numbers grow for its own player.
+    /// </summary>
     public static float Ability(string classRow, string name, float fallback)
-        => GameTables.TryGetRow(AbilityTable, classRow, out var row) ? Number(row, name, fallback) : fallback;
+        => (GameTables.TryGetRow(AbilityTable, classRow, out var row) ? Number(row, name, fallback) : fallback)
+            + PlayerPerks.AbilityBonus(classRow, name);
 
     private static string Cell(IReadOnlyDictionary<string, string> row, string key, string fallback)
         => row.TryGetValue(key, out string text) && !string.IsNullOrWhiteSpace(text) ? text.Trim() : fallback;

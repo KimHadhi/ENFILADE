@@ -20,6 +20,9 @@ using UnityEngine.UI;
 /// the gauge is spent and the perk goes up a level (PlayerPerks). X or Esc puts the cards away and keeps the gauge.
 /// Alone the game stops while they are up; in a room it keeps running and only the combat keys wait (so 1, 2 and 3 pick
 /// instead of switching guns). Also applies the health perk to this player's body. Added to this PC's own player only.
+/// Since the class cards (2026-11-11, Docs/ClassCards.md) the three are drawn from everyone's cards and this player's
+/// class's own (PlayerPerks.Dealable); each card says under its name, small and slanted, why it works (the user's rule
+/// that an effect comes with a believable reason), and a class's final card (궁극) wears a pink frame from the start.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class PerkCardScreen : MonoBehaviour
@@ -36,7 +39,7 @@ public sealed class PerkCardScreen : MonoBehaviour
         public RectTransform Root, Lift, Body, Front, Back, Shine;
         public Image Frame, Plate, Lid, KeyBack, TagBack, Owned;
         public RawImage Icon, Glow;
-        public TMP_Text Tag, Name, Step, Text, Key;
+        public TMP_Text Tag, Name, Step, Why, Text, Key;
         public Image[] Pips;
         public PlayerPerks.Perk Perk;
         public float Hover;
@@ -256,18 +259,23 @@ public sealed class PerkCardScreen : MonoBehaviour
         KitStyle.Flat(owned, Texts.Get("perk.owned"), 17f, TextAlignmentOptions.Center, KitStyle.Ink);
         var icon = FeelUI.Rect("Icon", card.Front);
         icon.anchorMin = icon.anchorMax = new Vector2(.5f, 1f);
-        icon.anchoredPosition = new Vector2(0f, -168f);
-        icon.sizeDelta = new Vector2(150f, 150f);
+        icon.anchoredPosition = new Vector2(0f, -150f);
+        icon.sizeDelta = new Vector2(128f, 128f);
         card.Icon = icon.gameObject.AddComponent<RawImage>();
         card.Icon.raycastTarget = false;
-        card.Name = KitStyle.Flat(KitStyle.TopLeft("Name", card.Front, new Vector2(20f, 262f), new Vector2(CardWidth - 40f, 58f)), "", 40f,
+        card.Name = KitStyle.Flat(KitStyle.TopLeft("Name", card.Front, new Vector2(20f, 226f), new Vector2(CardWidth - 40f, 54f)), "", 38f,
             TextAlignmentOptions.Center);
-        var pips = KitStyle.TopLeft("Pips", card.Front, new Vector2(0f, 328f), new Vector2(CardWidth, 6f));
+        var pips = KitStyle.TopLeft("Pips", card.Front, new Vector2(0f, 286f), new Vector2(CardWidth, 6f));
         card.Pips = new Image[MaxPips];
         for (int i = 0; i < MaxPips; i++) card.Pips[i] = KitStyle.Fill(KitStyle.TopLeft("Pip", pips, Vector2.zero, new Vector2(34f, 6f)), KitStyle.Faint);
-        card.Step = KitStyle.Flat(KitStyle.TopLeft("Step", card.Front, new Vector2(20f, 344f), new Vector2(CardWidth - 40f, 30f)), "", 19f,
+        card.Step = KitStyle.Flat(KitStyle.TopLeft("Step", card.Front, new Vector2(20f, 298f), new Vector2(CardWidth - 40f, 28f)), "", 18f,
             TextAlignmentOptions.Center, KitStyle.Accent);
-        card.Text = KitStyle.Flat(KitStyle.TopLeft("Effect", card.Front, new Vector2(34f, 390f), new Vector2(CardWidth - 68f, 96f)), "", 23f,
+        // Why it works (the user's rule: every effect comes with a reason that makes it believable), small, over the effect.
+        card.Why = KitStyle.Flat(KitStyle.TopLeft("Why", card.Front, new Vector2(30f, 332f), new Vector2(CardWidth - 60f, 66f)), "", 16f,
+            TextAlignmentOptions.Top, KitStyle.With(KitStyle.Soft, .72f));
+        card.Why.textWrappingMode = TextWrappingModes.Normal;
+        card.Why.fontStyle = FontStyles.Italic;
+        card.Text = KitStyle.Flat(KitStyle.TopLeft("Effect", card.Front, new Vector2(30f, 402f), new Vector2(CardWidth - 60f, 100f)), "", 21f,
             TextAlignmentOptions.Top, KitStyle.Soft);
         card.Text.textWrappingMode = TextWrappingModes.Normal;
         card.Text.fontStyle = FontStyles.Normal;
@@ -340,6 +348,7 @@ public sealed class PerkCardScreen : MonoBehaviour
         card.Icon.texture = KitButtons.Icon(perk.Icon);
         card.Icon.enabled = card.Icon.texture != null;
         card.Name.text = perk.Name;
+        card.Why.text = perk.Reason;
         card.Owned.gameObject.SetActive(level > 0);
         string next = level + 1 >= perk.Levels ? Texts.Get("perk.step.last") : Texts.Format("perk.step", level + 1);
         card.Step.text = level == 0 ? Texts.Get("perk.step.new") : Texts.Format("perk.step.owned", level, next);
@@ -481,7 +490,8 @@ public sealed class PerkCardScreen : MonoBehaviour
         return chat != null && chat.BlocksMissionInputThisFrame;
     }
 
-    private static bool AnyLeft() => PlayerPerks.Catalog.Any(perk => perk.Weight > 0f && PlayerPerks.Level(perk.Id) < perk.Levels);
+    // A card left to deal: this player's class's cards count, another class's don't (PlayerPerks.Dealable).
+    private static bool AnyLeft() => PlayerPerks.AnyLeft();
 
     private void ShowPrompt(bool show)
     {
@@ -568,7 +578,7 @@ public sealed class PerkCardScreen : MonoBehaviour
         bool over = pointing && flip >= 1f && RectTransformUtility.RectangleContainsScreenPoint(card.Root, mouse.position.ReadValue(), null);
         card.Hover = Mathf.MoveTowards(card.Hover, over || picked == index ? 1f : 0f, dt / HoverSeconds);
         Paint(card, card.Hover);
-        card.Glow.color = KitStyle.With(KitStyle.Accent, .5f * card.Hover);
+        card.Glow.color = KitStyle.With(KitStyle.Accent, .5f * card.Hover + (card.Perk != null && card.Perk.Final ? .18f : 0f));
 
         Vector2 lift = new Vector2(0f, 26f * KitReveal.EaseOut(card.Hover));
         float grow = 1f + .05f * card.Hover;
@@ -600,17 +610,21 @@ public sealed class PerkCardScreen : MonoBehaviour
         card.Lift.localRotation = Quaternion.Euler(0f, 0f, spin);
     }
 
-    // The card under the pointer (or picked) turns pink with dark type.
+    // The card under the pointer (or picked) turns pink with dark type. A class's final card (궁극) wears a pink frame
+    // from the start, so it reads apart before it is pointed at.
     private static void Paint(Card card, float hover)
     {
-        card.Frame.color = Color.Lerp(KitStyle.Ice, KitStyle.Accent, hover);
+        bool final = card.Perk != null && card.Perk.Final;
+        card.Frame.color = Color.Lerp(final ? KitStyle.Accent : KitStyle.Ice, KitStyle.Accent, hover);
         card.Plate.color = Color.Lerp(KitStyle.With(KitStyle.Night, .97f), KitStyle.Accent, hover);
         Color ink = Color.Lerp(KitStyle.Text, KitStyle.Ink, hover);
         card.Name.color = card.Tag.color = ink;
         card.Icon.color = ink;
         card.Text.color = Color.Lerp(KitStyle.Soft, KitStyle.With(KitStyle.Ink, .8f), hover);
+        card.Why.color = Color.Lerp(KitStyle.With(KitStyle.Soft, .72f), KitStyle.With(KitStyle.Ink, .6f), hover);
         card.Step.color = Color.Lerp(KitStyle.Accent, KitStyle.Ink, hover);
-        card.TagBack.color = Color.Lerp(KitStyle.With(KitStyle.Ice, .15f), KitStyle.With(KitStyle.Ink, .15f), hover);
+        card.TagBack.color = Color.Lerp(final ? KitStyle.With(KitStyle.Accent, .35f) : KitStyle.With(KitStyle.Ice, .15f),
+            KitStyle.With(KitStyle.Ink, .15f), hover);
         card.Owned.color = Color.Lerp(KitStyle.Accent, KitStyle.Ink, hover);
         card.KeyBack.color = Color.Lerp(KitStyle.Ice, KitStyle.Ink, hover);
         card.Key.color = Color.Lerp(KitStyle.Ink, KitStyle.Accent, hover);

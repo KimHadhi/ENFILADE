@@ -1,10 +1,21 @@
-﻿id,name,tag,icon,levels,value,text,weight
-#설명 (능력 카드. 게이지가 차면 X로 세 장 중 하나를 고름. 캠페인 동안 유지되고 제목 화면에 가면 없어짐),카드 이름,갈래 (총 / 근접 / 생존 / 팀 / 기타),Resources/UI/Icons 아이콘 이름,최대 단계,단계마다 더하는 값,효과 설명 ({0} = 그 단계까지 모두 더한 값),뽑힐 비중 (클수록 자주)
-gun_head,머리 사냥꾼,총,Headshot,3,25,헤드샷 피해 +{0}%,10
-gun_body,철갑탄,총,Bullet,3,12,"머리 말고 맞힌 총 피해 +{0}%",10
-melee_power,쇠주먹,근접,Fist,3,20,주먹 피해 +{0}%,8
-melee_butcher,피의 처형,근접,Heart,3,20,처형하면 체력 +{0},8
-body_tough,단단한 몸,생존,Armor,3,15,최대 체력 +{0},10
-body_grit,끈질긴 숨,생존,Hourglass,2,35,쓰러져서 버티는 시간 +{0}%,6
-team_rescue,손 빠른 구조,팀,Rescue,3,20,동료를 일으키는 시간 -{0}%,6
-gauge_charge,충전기,기타,Bolt,3,20,게이지가 차는 속도 +{0}%,8
+﻿id,name,class,tag,icon,levels,value,value2,display,ability,after,final,weight,text,why
+#설명 (능력 카드. 게이지가 차면 X로 세 장 중 하나를 고름. 캠페인 동안 유지되고 제목 화면에 가면 없어짐. class가 있는 카드는 그 클래스에게만 공용 카드와 섞여 나온다),카드 이름,클래스 전용이면 Classes.csv의 id (비우면 모두),카드 왼쪽 위 딱지 (총 / 근접 / 생존 / 팀 / 돈 / 기타 / 클래스 이름 / 궁극),Resources/UI/Icons 아이콘 이름,최대 단계,단계마다 더하는 값,단계마다 더하는 두 번째 값({1}),{0}에 보일 때 곱하는 수(비우면 1. 비율을 %로 보일 때 100),ClassAbilities.csv의 수치 이름(예: Ghost.hunterMax): 카드가 그 수치에 value×단계를 더한다,그 클래스 카드를 이만큼 단계 모은 뒤에야 나온다(궁극 카드),1이면 클래스의 궁극 카드(분홍 테두리),뽑힐 비중 (클수록 자주),효과 ({0} = 그 단계까지 모두 더한 값 · {1} = value2의 합 · {Knight.deflectStagger}처럼 쓰면 ClassAbilities 수치),납득할 이유 한 줄(효과 위에 작게 보인다)
+gun_head,머리 사냥꾼,,총,Headshot,3,25,,,,,,10,헤드샷 피해 +{0}%,눈과 눈 사이를 노리는 버릇이 손에 배었다
+gun_body,철갑탄,,총,Bullet,3,12,,,,,,10,머리 말고 맞힌 총 피해 +{0}%,강철 심을 박은 탄이라 살과 뼈에 덜 무뎌진다
+melee_power,쇠주먹,,근접,Fist,3,20,,,,,,8,주먹 피해 +{0}%,손가락 마디에 쇳조각을 감아 묶었다
+melee_butcher,피의 처형,,근접,Heart,3,20,,,,,,8,처형하면 체력 +{0},처형의 흥분이 아픔을 잊게 한다
+body_tough,단단한 몸,,생존,Armor,3,15,,,,,,10,최대 체력 +{0},옷 안에 철판을 한 겹 더 댔다
+body_grit,끈질긴 숨,,생존,Hourglass,2,35,,,,,,6,쓰러져서 버티는 시간 +{0}%,쓰러져도 숨을 아껴 쉬는 법을 안다
+team_rescue,손 빠른 구조,,팀,Rescue,3,20,,,,,,6,동료를 일으키는 시간 -{0}%,동료를 끌어올리는 요령을 몸이 기억한다
+gauge_charge,충전기,,기타,Bolt,3,20,,,,,,8,게이지가 차는 속도 +{0}%,싸움의 박자를 읽어 기운이 빨리 모인다
+knight_taunt,거듭된 도발,knight,나이트,Class_knight,2,-5,,-1,Knight.tauntCooldown,,,10,도발을 다시 쓰기까지 -{0}초,목청이 트여 숨 돌릴 틈 없이 다시 외친다
+assault_adrenaline,깊은 숨,assault,어썰트,Class_assault,2,2,,,Assault.stackMax,,,10,아드레날린 최대 +{0}스택,숨이 턱까지 차도 멈추지 않는 법을 익혔다
+assault_rally,질긴 흥분,assault,어썰트,Class_assault,2,2,,,Assault.stackHold,,,8,마지막 처치 뒤 아드레날린이 줄기 시작하기까지 +{0}초,한번 오른 흥분이 쉬이 가라앉지 않는다
+ghost_patience,긴 호흡,ghost,고스트,Class_ghost,2,2,,,Ghost.hunterMax,,,10,헤드 헌터 최대 +{0}스택,숨을 길게 참을수록 조준이 깊어진다
+point_hands,빠른 손,point,포인트,Class_point,2,-0.2,,-100,Point.reloadShare,,,10,넣어 둔 총이 저절로 장전되는 시간 -{0}%,총을 넣는 손길에 탄창을 갈아 끼우는 버릇이 붙었다
+detente_dose,진한 주사액,detente,데탕트,Class_detente,2,10,,,Detente.injectHeal,,,10,주사 한 번이 채우는 체력 +{0},약을 진하게 타서 한 번에 더 많이 낫게 한다
+detente_golden,긴 골든 아워,detente,데탕트,Heart,2,4,,,Detente.goldenSeconds,,,10,골든 아워 +{0}초,다친 뒤 첫 한 시간이 생사를 가른다는 응급의학의 말처럼 치료한 뒤가 가장 바쁘다
+hound_price,몸값 인상,schiesshund,시순트,Class_schiesshund,2,15,,,Schiesshund.markDamage,,,10,내 표식 대상에게 주는 총 피해 +{0}%,현상금이 오를수록 사냥개의 이빨이 날카로워진다
+hound_cylinder,큰 실린더,schiesshund,시순트,Class_schiesshund,1,2,,,Schiesshund.desperadoMax,,,8,데스페라도 실린더 +{0}발,실린더를 바꿔 끼워 데스페라도에 두 발을 더 잰다
+support_bag,큰 보급 가방,support,서포트,Class_support,2,50,,,Support.supplyMax,,,10,보급 가방 용량 +{0},가방 끈을 덧대 더 많이 담는다
+support_planks,판자 더미,support,서포트,Class_support,1,1,,,Support.barricadeMax,,,10,바리케이드를 한 번에 +{0}개 더 세워 둔다,판자와 못을 한 짐 더 짊어졌다
