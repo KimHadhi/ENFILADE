@@ -6,9 +6,9 @@ using UnityEngine.UI;
 using W = SettingsWidgets;
 
 /// <summary>
-/// The character screen, as in the card mockup the user picked on 2026-11-05: character cards on top, the chosen
-/// character's colour cards under them, and the chosen look large beside them. The Esc menu's character tab shows that
-/// stage as a picture; the main menu leaves it out, since its 3D preview stands beside the screen (CharacterScreenView).
+/// The Esc menu's character tab, as in the card mockup the user picked on 2026-11-05: character cards on top, the chosen
+/// character's colour cards under them, the outfit slots as plain rows, and the chosen look large beside them. The main
+/// menu has its own wardrobe page instead (MainMenuWardrobe), its 3D character standing between the wings.
 /// Picking writes characterSkin and characterVariant in <see cref="GameSettings"/>; another character starts on its
 /// first colour set. Pictures come from <see cref="SkinPortraits"/>.
 /// </summary>

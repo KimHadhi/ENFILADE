@@ -20,7 +20,8 @@ using UnityEngine.UI;
 /// HUD camera (HudCamera) so it has real depth, the way the in-game HUD's planes turn: the ways to play and the right
 /// side lean inwards like two wings and tilt a little after the mouse, and the top bar tips back. Enter presses
 /// "출격" when no window is up. The windows behind the buttons
-/// (making a room, the server list, the profile, the character screen) are their own. Pressing Play in a level skips
+/// (making a room, the server list, the profile) and the pages behind the tabs (the wardrobe, MainMenuWardrobe; the classes; the
+/// records) are their own. Pressing Play in a level skips
 /// this screen, so levels can still be tested directly.
 /// </summary>
 [DisallowMultipleComponent]
@@ -51,7 +52,7 @@ public sealed class MainMenuScreen : MonoBehaviour
     private CreateRoomView createRoom;
     private ServerBrowserView browser;
     private ProfileView profile;
-    private CharacterScreenView character;
+    private MainMenuWardrobe wardrobe;
     private Vector2 lean;
 
     private static MainMenuScreen instance;
@@ -125,7 +126,7 @@ public sealed class MainMenuScreen : MonoBehaviour
         LaunchByKey();
     }
 
-    private bool AnyWindowOpen() => createRoom != null && (createRoom.IsOpen || browser.IsOpen || profile.IsOpen || records.IsOpen || character.IsOpen);
+    private bool AnyWindowOpen() => createRoom != null && (createRoom.IsOpen || browser.IsOpen || profile.IsOpen || records.IsOpen || wardrobe.IsOpen);
 
     // Esc closes the window or page that is up (back to the lobby) before the Esc menu would open; on the records, a
     // chapter's page goes back to the totals first.
@@ -137,7 +138,8 @@ public sealed class MainMenuScreen : MonoBehaviour
         else if (browser.IsOpen) browser.Close();
         else if (profile.IsOpen) profile.Close();
         else if (records.ShowsChapter) records.ShowTotals();
-        else if (records.IsOpen || character.IsOpen) ShowPlay();
+        else if (wardrobe.ShowsSlot) wardrobe.ShowSlots();
+        else if (records.IsOpen || wardrobe.IsOpen) ShowPlay();
         else return;
         escapeFrame = Time.frameCount;
     }
@@ -165,7 +167,7 @@ public sealed class MainMenuScreen : MonoBehaviour
         var keyboard = Keyboard.current;
         if (keyboard == null || launch == null) return;
         if (!keyboard.enterKey.wasPressedThisFrame && !keyboard.numpadEnterKey.wasPressedThisFrame) return;
-        if (SettingsMenu.IsOpen || DevConsole.TakesKeyboard || records.IsOpen || character.IsOpen || createRoom.IsOpen || browser.IsOpen
+        if (SettingsMenu.IsOpen || DevConsole.TakesKeyboard || records.IsOpen || wardrobe.IsOpen || createRoom.IsOpen || browser.IsOpen
             || profile.IsOpen) return;
         var selected = EventSystem.current != null ? EventSystem.current.currentSelectedGameObject : null;
         if (selected != null && selected.GetComponent<TMP_InputField>() != null) return;
@@ -197,7 +199,7 @@ public sealed class MainMenuScreen : MonoBehaviour
         BuildShade();
         BuildFrame();
 
-        // 플레이 brings the lobby back from the character screen or the records; the other windows close themselves.
+        // 플레이 brings the lobby back from the wardrobe, the classes or the records; the other windows close themselves.
         var tabs = new List<(string, Action)> { (Texts.Get("menu.tab.play"), ShowPlay) };
         if (CanChooseCharacter())
         {
@@ -242,14 +244,8 @@ public sealed class MainMenuScreen : MonoBehaviour
         createRoom = new CreateRoomView(canvas, StartHost);
         browser = new ServerBrowserView(canvas);
         profile = new ProfileView(canvas);
-        // The character screen stands in for the ways to play, which open again on the way back.
-        character = new CharacterScreenView(canvas, modes.Root, () =>
-        {
-            ShowLook();
-            modes.Reveal.Open();
-            modes.PointRail();
-            topBar.SetActive(0);
-        });
+        // The wardrobe takes the lobby's place as the records do, the character left standing in the middle.
+        wardrobe = MainMenuWardrobe.Make(canvas, Edge, MainMenuTopBar.Height, MainMenuTicker.Height, preview);
         KitGrain.Make(canvas);
         ShowLook();
         ShowPicture();
@@ -302,7 +298,7 @@ public sealed class MainMenuScreen : MonoBehaviour
         }
     }
 
-    // The worn look at the foot of the ways to play: a small slanted chip that opens the character screen.
+    // The worn look at the foot of the ways to play: a small slanted chip that opens the wardrobe.
     private void BuildLook(float y)
     {
         var look = KitStyle.TopLeft("Look", modes.Root, new Vector2(0f, y), new Vector2(340f, LookHeight));
@@ -330,14 +326,30 @@ public sealed class MainMenuScreen : MonoBehaviour
         if (characterTab < 0) return;
         CloseRecords();
         CloseClasses();
-        character.Show();
         topBar.SetActive(characterTab);
+        if (wardrobe.IsOpen) return;
+        wardrobe.Open();
+        modes.Root.gameObject.SetActive(false);
+        right.gameObject.SetActive(false);
+    }
+
+    private void CloseWardrobe()
+    {
+        if (wardrobe == null || !wardrobe.IsOpen) return;
+        wardrobe.Close();
+        modes.Root.gameObject.SetActive(true);
+        modes.Reveal.Open();
+        modes.PointRail();
+        right.gameObject.SetActive(true);
+        rightReveal.Open();
+        ShowLook();
+        SayWhatLaunches();
     }
 
     // Back to the lobby itself from whichever page is up.
     private void ShowPlay()
     {
-        character.Close();
+        CloseWardrobe();
         CloseRecords();
         CloseClasses();
         topBar.SetActive(0);
@@ -346,7 +358,7 @@ public sealed class MainMenuScreen : MonoBehaviour
     // The records take the lobby's place: the ways to play and the right side step aside under them.
     private void OpenRecords()
     {
-        character.Close();
+        CloseWardrobe();
         CloseClasses();
         topBar.SetActive(recordsTab);
         if (records.IsOpen) return;
@@ -358,7 +370,7 @@ public sealed class MainMenuScreen : MonoBehaviour
     // The classes take the lobby's place as the records do.
     private void OpenClasses()
     {
-        character.Close();
+        CloseWardrobe();
         CloseRecords();
         topBar.SetActive(classesTab);
         classes.Open();
@@ -406,7 +418,7 @@ public sealed class MainMenuScreen : MonoBehaviour
     {
         // From the character screen or the records "출격" goes back to the lobby first: the room's window opened behind the
         // character screen (friend feedback C12).
-        if (character.IsOpen || records.IsOpen) ShowPlay();
+        if (wardrobe.IsOpen || records.IsOpen) ShowPlay();
         switch (mode)
         {
             case MainMenuModes.Mode.Host: OpenCreateRoom(); break;

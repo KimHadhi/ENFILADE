@@ -22,6 +22,13 @@ public sealed class MainMenuPreview : MonoBehaviour
     private PlayerBodyProfile.Skin shownSkin;
     private SkinVariant wornVariant;
     private string shownOutfit;
+    // The part of the body the wardrobe looks at (OutfitSlot.group), null for the whole character, and where the camera
+    // is heading for it.
+    private string focus;
+    private Vector3 cameraGoal;
+    private bool cameraMoving;
+    // How quickly the camera moves to a part of the body and back (1/s).
+    private const float FocusSpeed = 7f;
     private PlayableGraph graph;
     private Bounds shown;
     private float yaw, spin, sinceTurned = float.PositiveInfinity;
@@ -94,6 +101,12 @@ public sealed class MainMenuPreview : MonoBehaviour
         shown = bounds;
         Frame(bounds);
         Face(); // measured facing the camera, then turned as it was
+        // Made again for another outfit while the wardrobe looks at a part: the camera stays on it, no jump.
+        if (focus != null)
+        {
+            view.transform.position = cameraGoal = FocusedCamera(focus);
+            cameraMoving = false;
+        }
         var animator = model.GetComponentInChildren<Animator>();
         var idle = profile.Find(IdleClip);
         if (animator == null || idle == null) return;
@@ -115,10 +128,65 @@ public sealed class MainMenuPreview : MonoBehaviour
     /// <summary>The drag ended: from here it coasts.</summary>
     public void Release() => sinceTurned = 0f;
 
+    /// <summary>
+    /// Brings the camera close on a part of the body (an OutfitSlot group: head, neck, torso, arms, legs), as the wardrobe
+    /// opens one of its slots; null goes back to the whole character.
+    /// </summary>
+    public void Focus(string group)
+    {
+        focus = string.IsNullOrEmpty(group) ? null : group;
+        if (model == null || view == null) return;
+        cameraGoal = focus != null ? FocusedCamera(focus) : CameraFor(shown.center, shown.size.y);
+        cameraMoving = true;
+    }
+
+    // Where the camera stands to frame that part of the character, measured from its bones as it stands now.
+    private Vector3 FocusedCamera(string group)
+    {
+        float height = Mathf.Max(.1f, shown.size.y);
+        var animator = model != null ? model.GetComponentInChildren<Animator>() : null;
+        Transform Bone(HumanBodyBones bone) => animator != null && animator.isHuman ? animator.GetBoneTransform(bone) : null;
+        var head = Bone(HumanBodyBones.Head);
+        var neck = Bone(HumanBodyBones.Neck);
+        var chest = Bone(HumanBodyBones.Chest);
+        var hips = Bone(HumanBodyBones.Hips);
+        Vector3 center = shown.center;
+        float span = height;
+        switch (group)
+        {
+            case "head" when head != null:
+                center = head.position + Vector3.up * height * .05f;
+                span = height * .3f;
+                break;
+            case "neck" when neck != null:
+                center = neck.position;
+                span = height * .32f;
+                break;
+            case "torso" when chest != null:
+                center = chest.position;
+                span = height * .45f;
+                break;
+            case "arms" when chest != null && hips != null:
+                center = (chest.position + hips.position) * .5f;
+                span = height * .55f;
+                break;
+            case "legs" when hips != null:
+                center = new Vector3(hips.position.x, (hips.position.y + shown.min.y) * .5f, hips.position.z);
+                span = height * .6f;
+                break;
+        }
+        return CameraFor(center, span);
+    }
+
     private void Update()
     {
         if (model == null) return;
         float dt = Time.unscaledDeltaTime;
+        if (cameraMoving && view != null)
+        {
+            view.transform.position = Vector3.Lerp(view.transform.position, cameraGoal, 1f - Mathf.Exp(-FocusSpeed * dt));
+            cameraMoving = (view.transform.position - cameraGoal).sqrMagnitude > 1e-6f;
+        }
         sinceTurned += dt;
         if (Mathf.Abs(spin) > .5f)
         {
@@ -139,10 +207,16 @@ public sealed class MainMenuPreview : MonoBehaviour
     // The character faces +Z. Moving the camera toward +X puts it right of the menu.
     private void Frame(Bounds bounds)
     {
-        float height = Mathf.Max(.1f, bounds.size.y);
-        float distance = height * .5f / Mathf.Tan(FieldOfView * .5f * Mathf.Deg2Rad) / ScreenFill;
-        view.transform.position = bounds.center + Vector3.forward * distance + Vector3.right * (height * SideShift);
+        view.transform.position = CameraFor(bounds.center, bounds.size.y);
         view.transform.rotation = Quaternion.LookRotation(Vector3.back);
+    }
+
+    // The camera's place to show something this tall around this point, looking straight back at it.
+    private static Vector3 CameraFor(Vector3 center, float height)
+    {
+        height = Mathf.Max(.1f, height);
+        float distance = height * .5f / Mathf.Tan(FieldOfView * .5f * Mathf.Deg2Rad) / ScreenFill;
+        return center + Vector3.forward * distance + Vector3.right * (height * SideShift);
     }
 
     // A new skin or outfit stands a new model (items join the bones in the pose the model was made in); a new colour set

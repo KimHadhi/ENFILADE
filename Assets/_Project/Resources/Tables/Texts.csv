@@ -585,3 +585,19 @@ shop.refuse.notdetente,데탕트만 쓸 수 있다,,상점 > 데탕트가 아닌
 shop.refuse.syringefull,주사기가 가득 찼다,,상점 > 주사기가 가득인데 보충을 살 때
 shop.note.notdetente,데탕트 전용,,상점 > 데탕트가 아닐 때 주사기 보충 카드의 작은 글자
 shop.note.syringefull,주사기 가득,,상점 > 주사기가 가득일 때 주사기 보충 카드의 작은 글자
+#--- 옷장 ---,,,
+wardrobe.where,고르면 바로 입고 저장된다 · 가운데 캐릭터는 끌어서 돌린다,,메인 메뉴 > 캐릭터 페이지 제목 아래 작은 줄
+wardrobe.colour,색,,메인 메뉴 > 캐릭터 페이지 > 캐릭터 카드 아래 소제목
+wardrobe.reset,원래 옷으로,,메인 메뉴 > 캐릭터 페이지 > 그 캐릭터의 옷을 모두 처음대로 되돌리는 버튼
+wardrobe.title,옷장,,메인 메뉴 > 캐릭터 페이지 오른쪽 제목
+wardrobe.slots.where,칸을 누르면 그 부위로 다가가 갈아입는다,,메인 메뉴 > 캐릭터 페이지 > 옷장 제목 아래 작은 줄
+wardrobe.back,옷장,,메인 메뉴 > 캐릭터 페이지 > 칸 하나를 연 화면의 돌아가기 버튼(앞에 ‹가 붙는다)
+wardrobe.own,기본,,옷장 > 캐릭터가 원래 입은 옷(빈칸)
+wardrobe.own.note,캐릭터가 원래 입은 옷,,옷장 > 칸을 연 화면 > 기본 판의 설명
+wardrobe.none,없음,,옷장 > 원래 아무것도 없는 칸
+wardrobe.none.note,원래 아무것도 없다,,옷장 > 칸을 연 화면 > 그 칸에 원래 옷이 없는 캐릭터의 기본 판 설명
+wardrobe.off,벗기,,옷장 > 칸을 연 화면 > 원래 옷을 벗는 판
+wardrobe.off.note,아무것도 입지 않는다,,옷장 > 칸을 연 화면 > 벗기 판의 설명
+wardrobe.off.worn,벗음,,옷장 > 칸 타일에 벗기를 고른 칸
+wardrobe.colours,색 {0}가지,,옷장 > 칸을 연 화면 > 옷 판의 설명. {0}=색 세트 수
+wardrobe.worn,입음,,옷장 > 칸을 연 화면 > 지금 입은 판의 분홍 칩

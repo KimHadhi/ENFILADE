@@ -83,13 +83,46 @@ internal sealed class BoothImport : AssetPostprocessor
     {
         if (running || queued) return;
         if (!imported.Concat(moved).Any(path => path.StartsWith(Root, StringComparison.OrdinalIgnoreCase) || path == SourcesPath)) return;
-        // After this import is over: saving prefabs inside it would import them inside it.
+        Queue();
+    }
+
+    // The files can come in while the project's scripts don't build (another change half done), and then this never
+    // sees them arrive: the first time the editor loads it, it finishes whatever BoothSources.csv lists and isn't done.
+    // On 2026-11-11 Mayo and Ichigo stayed off the character screen that way.
+    [InitializeOnLoadMethod]
+    private static void FinishPending()
+    {
+        if (Application.isBatchMode) return;
+        EditorApplication.delayCall += () =>
+        {
+            if (!EditorApplication.isPlayingOrWillChangePlaymode && !running && Pending()) Run();
+        };
+    }
+
+    // After the import that brought the files is over: saving prefabs inside it would import them inside it.
+    private static void Queue()
+    {
         queued = true;
         EditorApplication.delayCall += () =>
         {
             queued = false;
             Run();
         };
+    }
+
+    // A character missing from the PlayerBody profile, or an outfit model missing from the library, whose files are here.
+    private static bool Pending()
+    {
+        if (!File.Exists(SourcesPath)) return false;
+        var profile = AssetDatabase.LoadAssetAtPath<PlayerBodyProfile>(ProfilePath);
+        var library = AssetDatabase.LoadAssetAtPath<OutfitLibrary>(OutfitLibraryBuilder.LibraryPath);
+        foreach (var source in ReadSources())
+        {
+            if (!File.Exists(Root + source.Path)) continue;
+            if (source.Kind == "character" && (profile == null || !profile.Skins.Any(skin => skin != null && skin.Id == source.Id))) return true;
+            if (source.Kind == "outfit" && (library == null || library.Find(source.Id, source.Skin) == null)) return true;
+        }
+        return false;
     }
 
     [MenuItem("Tools/Characters/BOOTH 다시 가져오기")]
