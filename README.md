@@ -50,7 +50,7 @@
 | `Assets/ThirdParty` | 외부 소총 모델·폰트·TextMesh Pro 원본 |
 | `Assets/ProBuilder Data`, `Assets/ProjectSettings` | 도구가 관리하는 데이터 |
 | `Packages`, `ProjectSettings` | 패키지 버전·잠금 정보 / Unity 프로젝트 설정 |
-| `Tools` | Unity 없이 문서 링크·메타데이터 구조 확인, `Blender`의 Source 모델·애니메이션 변환 스크립트 |
+| `Tools` | Unity 없이 문서 링크·메타데이터 구조 확인, `Blender`의 Source 모델·애니메이션 변환 스크립트, `Workshop`의 워크숍 애드온 읽기와 에셋 들여오기([안내](Tools/Workshop/README.md)) |
 
 ## 변경 후 확인하기
 
