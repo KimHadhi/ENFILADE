@@ -5,9 +5,11 @@ using UnityEngine.UI;
 /// <summary>
 /// The title screen's 클래스 page (stage 7, PlayerClass): the seven classes down the left as slanted plates, each at its
 /// own lean and indent (KitStack keeps room between them), the one played dark with a pink edge and bar, those whose
-/// abilities come later marked 준비 중 (they can still be played); its rank (ClassGrowth) at the right of each. At the
-/// right, always the class played: its name, what it does, its starting guns, its own guns and their bonus, and its
-/// ability in its numbers. Pointing at another plate only lights it (the user, 2026-11-11: "오른쪽에는 내가 선택된 거
+/// abilities come later marked 준비 중 (they can still be played); its rank insignia (ClassGrowth, the LAYERLAB Space Rank
+/// picture) at the right of each, prestige as small pink diamonds under it, never a number (the user, 2026-11-11:
+/// "클래스별로 랭크 이미지 좀 보이게"; growth reads as the picture alone). At the right, always the class played: its name
+/// with its insignia beside it, what it does, its starting guns, its own guns and their bonus, and its ability in its
+/// numbers. Pointing at another plate only lights it (the user, 2026-11-11: "오른쪽에는 내가 선택된 거
 /// 설명이 계속"; it used to follow the pointer and stay on the last plate passed over). A click plays that class from
 /// the next run and the right side turns to it. The records page's look.
 /// </summary>
@@ -15,12 +17,13 @@ using UnityEngine.UI;
 public sealed class MainMenuClasses : MonoBehaviour
 {
     private const float LeftWidth = 600f, PlateHeight = 74f, PlateGap = 18f, Slant = 16f, RightX = 860f, RightWidth = 880f,
-        IconSize = 48f, TextX = 86f, DetailIcon = 132f;
+        IconSize = 48f, TextX = 86f, DetailIcon = 132f, PlateInsignia = 66f, DetailInsignia = 92f;
     private static readonly float[] Tilts = { 1.2f, -1f, .8f, -1.3f, 1f, -.8f, 1.3f }, Indents = { 0f, 24f, 8f, 30f, 14f, 4f, 26f };
 
     private RectTransform root, content;
     private TextMeshProUGUI detailTitle, detailRole, detailBody;
     private RawImage detailIcon;
+    private RectTransform detailPanel, detailRank;
     private float edge;
 
     public bool IsOpen => root != null && root.gameObject.activeSelf;
@@ -104,23 +107,25 @@ public sealed class MainMenuClasses : MonoBehaviour
         icon.rectTransform.anchoredPosition = new Vector2(24f + IconSize * .5f, 0f);
         KitStyle.Flat(KitStyle.TopLeft("Name", plate, new Vector2(TextX, 6f), new Vector2(260f, 40f)), info.Title, 30f,
             TextAlignmentOptions.MidlineLeft, chosen ? KitStyle.Text : KitStyle.With(KitStyle.Text, .85f));
-        var role = KitStyle.Flat(KitStyle.TopLeft("Role", plate, new Vector2(TextX + 2f, 44f), new Vector2(LeftWidth - TextX - 150f, 22f)), info.Role, 14f,
+        var role = KitStyle.Flat(KitStyle.TopLeft("Role", plate, new Vector2(TextX + 2f, 44f), new Vector2(LeftWidth - TextX - 240f, 22f)), info.Role, 14f,
             TextAlignmentOptions.MidlineLeft, KitStyle.Soft);
         role.fontStyle = FontStyles.Normal;
         role.overflowMode = CombatUIAssets.ClippedOverflow(role);
-        // Its rank, and 준비 중 for one whose abilities come later.
-        string side = Texts.Format("classes.rank", ClassGrowth.RankNow(info.Id));
-        KitStyle.Flat(KitStyle.TopLeft("Rank", plate, new Vector2(LeftWidth - 150f, 8f), new Vector2(120f, 26f)), side, 15f,
-            TextAlignmentOptions.MidlineRight, chosen ? KitStyle.Accent : KitStyle.Soft);
+        // Its rank insignia at the right end, at a lean of its own; 준비 중 or 선택됨 left of it.
+        var rank = Rank(plate, info.Id, PlateInsignia, chosen ? 1f : .8f);
+        rank.anchorMin = rank.anchorMax = new Vector2(1f, .5f);
+        rank.anchoredPosition = new Vector2(-34f - PlateInsignia * .5f, 0f);
+        rank.localRotation = Quaternion.Euler(0f, 0f, -6f);
+        const float ChipX = LeftWidth - 216f, ChipY = (PlateHeight - 24f) * .5f;
         if (!info.Ready)
         {
-            var later = KitStyle.TopLeft("Later", plate, new Vector2(LeftWidth - 128f, 40f), new Vector2(96f, 24f));
+            var later = KitStyle.TopLeft("Later", plate, new Vector2(ChipX, ChipY), new Vector2(96f, 24f));
             KitSkew.On(KitStyle.Fill(later, KitStyle.With(KitStyle.Ice, .12f)), 6f);
             KitStyle.Flat(later, Texts.Get("classes.later"), 13f, TextAlignmentOptions.Center, KitStyle.Soft);
         }
         else if (chosen)
         {
-            var mark = KitStyle.TopLeft("Chosen", plate, new Vector2(LeftWidth - 128f, 40f), new Vector2(96f, 24f));
+            var mark = KitStyle.TopLeft("Chosen", plate, new Vector2(ChipX, ChipY), new Vector2(96f, 24f));
             KitSkew.On(KitStyle.Fill(mark, KitStyle.Accent), 6f);
             KitStyle.Flat(mark, Texts.Get("classes.chosen"), 13f, TextAlignmentOptions.Center, KitStyle.Ink);
         }
@@ -151,6 +156,8 @@ public sealed class MainMenuClasses : MonoBehaviour
     {
         var panel = KitStyle.TopLeft("Detail", content, new Vector2(RightX, 160f), new Vector2(RightWidth, 560f));
         KitStyle.Cut(panel, KitStyle.With(KitStyle.Ice, .05f));
+        detailPanel = panel;
+        detailRank = null;
         detailTitle = KitStyle.Flat(KitStyle.TopLeft("Name", panel, new Vector2(34f, 22f), new Vector2(RightWidth - 68f, 60f)), "", 46f,
             TextAlignmentOptions.MidlineLeft);
         // The class's icon large at the top right, leaning a little.
@@ -177,6 +184,13 @@ public sealed class MainMenuClasses : MonoBehaviour
         var info = PlayerClass.Find(id);
         if (info == null) return;
         detailTitle.text = info.Title;
+        // Its insignia right after its name, like a name badge, short of the icon at the top right.
+        if (detailRank != null) Destroy(detailRank.gameObject);
+        detailRank = Rank(detailPanel, id, DetailInsignia, 1f);
+        detailRank.anchorMin = detailRank.anchorMax = new Vector2(0f, 1f);
+        float after = 34f + detailTitle.GetPreferredValues(info.Title).x + 26f + DetailInsignia * .5f;
+        detailRank.anchoredPosition = new Vector2(Mathf.Min(after, RightWidth - 60f - DetailIcon - DetailInsignia * .5f), -22f - 30f);
+        detailRank.localRotation = Quaternion.Euler(0f, 0f, -6f);
         detailIcon.texture = KitButtons.Icon(Icon(id));
         detailIcon.enabled = detailIcon.texture != null;
         detailRole.text = info.Role;
@@ -186,6 +200,31 @@ public sealed class MainMenuClasses : MonoBehaviour
             + "\n<color=#" + ColorUtility.ToHtmlStringRGB(KitStyle.Accent) + ">" + Texts.Get("classes.ability") + "</color>\n" + Ability(info);
         if (!info.Ready) body += "\n\n<color=#" + ColorUtility.ToHtmlStringRGB(KitStyle.Soft) + ">" + Texts.Get("classes.later_note") + "</color>";
         detailBody.text = body;
+    }
+
+    // A class's rank insignia (ClassGrowth: its rank's LAYERLAB Space Rank picture), its prestige as small pink diamonds
+    // under it. Anchor and place the holder it returns.
+    private static RectTransform Rank(RectTransform parent, string id, float size, float alpha)
+    {
+        var holder = FeelUI.Rect("Rank", parent);
+        holder.sizeDelta = new Vector2(size, size);
+        var picture = new GameObject("Insignia", typeof(RectTransform), typeof(RawImage)).GetComponent<RawImage>();
+        picture.transform.SetParent(holder, false);
+        picture.raycastTarget = false;
+        picture.texture = ClassGrowth.Insignia(ClassGrowth.RankNow(id));
+        picture.color = new Color(1f, 1f, 1f, picture.texture != null ? alpha : 0f);
+        picture.rectTransform.sizeDelta = new Vector2(size, size);
+        int pips = Mathf.Min(ClassGrowth.PrestigeNow(id), ClassGrowth.MostPips);
+        float pip = Mathf.Max(6f, size * .11f);
+        for (int i = 0; i < pips; i++)
+        {
+            var mark = FeelUI.Rect("Prestige", holder);
+            KitStyle.Fill(mark, KitStyle.Accent).raycastTarget = false;
+            mark.sizeDelta = new Vector2(pip, pip);
+            mark.anchoredPosition = new Vector2((i - (pips - 1) * .5f) * pip * 1.8f, -size * .5f - pip * .3f);
+            mark.localRotation = Quaternion.Euler(0f, 0f, 45f);
+        }
+        return holder;
     }
 
     /// <summary>A class's icon's name in Resources/UI/Icons.</summary>
