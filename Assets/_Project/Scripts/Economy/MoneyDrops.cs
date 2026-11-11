@@ -76,7 +76,6 @@ public sealed class MoneyDrops : MonoBehaviour
 
     private void OnDestroy()
     {
-        if (look != null) Destroy(look);
         foreach (var bundle in lying.Values) if (bundle.Look != null) Destroy(bundle.Look.gameObject);
         if (!listening || network == null || network.CustomMessagingManager == null) return;
         var messages = network.CustomMessagingManager;
