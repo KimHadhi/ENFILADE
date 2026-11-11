@@ -13,6 +13,21 @@ public sealed class WeaponData : ScriptableObject
     public const string TableName = "Weapons";
     public void BindTable() => GameTables.Bind(TableName, name, this);
 
+    /// <summary>
+    /// A weapon made in code rather than kept as an asset (MeleeWeapons: the katana has no gun asset to hang on): its
+    /// asset name, its kind and its HUD name, then its Weapons.csv row if one is ever added. Never saved.
+    /// </summary>
+    internal static WeaponData Make(string assetName, WeaponCategory kind, string shownName)
+    {
+        var data = CreateInstance<WeaponData>();
+        data.name = assetName;
+        data.hideFlags = HideFlags.DontSave;
+        data.category = kind;
+        data.displayName = shownName;
+        data.BindTable();
+        return data;
+    }
+
     [SerializeField] private string displayName = "Weapon";
     [SerializeField] private Sprite hudIcon;
     [Tooltip("Crosshair while this weapon is in hand. Empty: melee weapons use Feedback's Melee Crosshair, the rest the scene's own.")]

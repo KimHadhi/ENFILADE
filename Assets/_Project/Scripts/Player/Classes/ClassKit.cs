@@ -5,7 +5,8 @@ using UnityEngine.InputSystem;
 
 /// <summary>
 /// A player's class at work (PlayerClass), on every player; the live part runs for this PC's own:
-/// - its starting guns (the class's primary and secondary, slots 1 and 2) as each chapter begins;
+/// - its starting guns (the class's primary and secondary, slots 1 and 2) as each chapter begins, and a melee weapon
+///   among its own weapons (a Knight's katana) in slot 3;
 /// - its ability on the class key (Player/ClassAbility, the wheel click by default, rebindable in Settings → 조작);
 /// - Assault: every kill adds a stack of adrenaline (harder hits and a quicker pace a stack), which holds a few seconds
 ///   after the last kill and then ebbs; full, the class key spends it all on a CHARGE, Guts &amp; Blackpowder's officer's
@@ -287,6 +288,14 @@ public sealed class ClassKit : MonoBehaviour
         if (info == null) return;
         Give(0, info.Primary);
         Give(1, info.Secondary);
+        // A melee weapon among the class's own (a Knight's katana, MeleeWeapons) waits in the melee slot, slot 3.
+        foreach (string name in info.Weapons)
+        {
+            var blade = MeleeWeapons.Find(name);
+            if (blade == null) continue;
+            if (slots.GetWeapon(PlayerWeaponSlots.MeleeSlot) != blade) slots.TrySetWeapon(PlayerWeaponSlots.MeleeSlot, blade);
+            break;
+        }
         // A Schießhund's Desperado in slot 4: its own gun (the class's first), with a round or so in it to show what it
         // does, and nothing in reserve.
         slots.SpecialHoldsGun = PlayerClass.Is(PlayerClass.Schiesshund);

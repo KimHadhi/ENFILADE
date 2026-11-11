@@ -3,7 +3,8 @@ using UnityEngine;
 
 /// <summary>
 /// What a player does with their hands, for the other PCs: the weapon out, aiming, reloading and guarding as a stance,
-/// and shots, punches, counter elbows, shoves, kicks (the pose each left from) and the start of an execution as they happen. Each PC plays these on its own copy, whose
+/// and shots, punches, counter elbows, shoves, kicks (the pose each left from), katana moves and what the katana met,
+/// and the start of an execution as they happen. Each PC plays these on its own copy, whose
 /// gun and hands then work as they always do, and nothing here deals damage, except a teammate's blow passed on to its
 /// owner when friendly fire is on (FriendlyHit). Alone it never spawns and does nothing.
 /// </summary>
@@ -22,6 +23,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
         /// <summary>
         /// The gun in the slot they hold: its place in Resources/Combat/FPSBody's guns plus one, or 0 for none of those.
         /// A gun put in a slot (/gun, later pickups and the shop) showed as the slot's own gun on other PCs (2026-11-09).
+        /// A melee weapon (the katana) is MeleeIds plus its place in MeleeWeapons plus one.
         /// </summary>
         public ushort Gun;
         /// <summary>A runner pins them to the ground (PlayerHold): their copy stays lying where it fell.</summary>
@@ -45,12 +47,16 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
 
     // A dual pistol (AkimboGuns) is its single gun's number with this bit set; every PC makes the same pair of it.
     private const ushort AkimboBit = 0x8000;
+    // A melee weapon's id: past any gun list, then its place in MeleeWeapons (the same list on every PC of a build).
+    private const ushort MeleeIds = 1000;
 
     // The gun's place in FPSBody's guns plus one (the same list on every PC of a build), or 0.
     private static ushort GunId(WeaponData data)
     {
         var single = AkimboGuns.SingleOf(data);
         if (single != null) { ushort id = GunId(single); return id > 0 ? (ushort)(id | AkimboBit) : (ushort)0; }
+        int melee = MeleeWeapons.IndexOf(data);
+        if (melee >= 0) return (ushort)(MeleeIds + melee + 1);
         var guns = FPSBodyAssets.Instance != null ? FPSBodyAssets.Instance.guns : null;
         if (data == null || guns == null) return 0;
         for (int i = 0; i < guns.Length; i++)
@@ -61,6 +67,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
     private static WeaponData GunOf(ushort id)
     {
         if ((id & AkimboBit) != 0) return AkimboGuns.DualOf(GunOf((ushort)(id & ~AkimboBit)));
+        if (id > MeleeIds) return MeleeWeapons.At(id - MeleeIds - 1);
         var guns = FPSBodyAssets.Instance != null ? FPSBodyAssets.Instance.guns : null;
         return guns != null && id > 0 && id <= guns.Length ? guns[id - 1].weapon : null;
     }
@@ -71,6 +78,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
     private PlayerWeaponSlots slots;
     private WeaponController weapon;
     private PlayerMeleeCombat melee;
+    private PlayerKatana katana;
     private PlayerFistAudio fists;
     private PlayerShoveAudio shoves;
     private ShoveMoves kicks;
@@ -167,6 +175,9 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
         // A Support's barricades (SupportKit): every PC puts them up and takes them down.
         support = GetComponent<SupportKit>();
         if (support == null) support = gameObject.AddComponent<SupportKit>();
+        // The katana (PlayerKatana): its owner's PC judges its cuts; every other PC plays its moves and hears what it met.
+        katana = GetComponent<PlayerKatana>();
+        if (katana == null) katana = gameObject.AddComponent<PlayerKatana>();
         if (IsOwner)
         {
             throws.Thrown += OnThrown;
@@ -179,6 +190,8 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
             weapon.ShotFired += OnShot;
             melee.Punched += OnPunched;
             melee.Elbowed += OnElbowed;
+            katana.Swung += OnSwung;
+            katana.Struck += OnBladeStruck;
             fists.Played += OnFistSound;
             shoves.Played += OnShoveSound;
             // Only the owner sends: a copy's Kicked comes from KickRpc itself.
@@ -195,6 +208,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
     {
         if (weapon != null) weapon.ShotFired -= OnShot;
         if (melee != null) { melee.Punched -= OnPunched; melee.Elbowed -= OnElbowed; }
+        if (katana != null) { katana.Swung -= OnSwung; katana.Struck -= OnBladeStruck; }
         if (fists != null) fists.Played -= OnFistSound;
         if (shoves != null) shoves.Played -= OnShoveSound;
         if (kicks != null) kicks.Kicked -= OnKicked;
@@ -269,6 +283,8 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
     private void OnShot(WeaponShot shot) => ShotRpc(shot.Origin, shot.Direction, (byte)(Mathf.Clamp(shot.Pellet, 0, 127) | (shot.Left ? 128 : 0)));
     private void OnPunched(float charge) => PunchRpc(charge);
     private void OnElbowed(int side) => ElbowRpc(side >= 0);
+    private void OnSwung(KatanaMove move) => KatanaMoveRpc((byte)move);
+    private void OnBladeStruck(KatanaSound sound, Vector3 at) => KatanaStruckRpc((byte)sound, at);
     private void OnFistSound(FistSound sound) => FistSoundRpc(sound);
     private void OnShoveSound(ShoveImpactKind impact) => ShoveSoundRpc(impact);
     private void OnKicked(KickKind kind) => KickRpc(kind);
@@ -376,6 +392,14 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
 
     [Rpc(SendTo.NotMe)]
     private void FistSoundRpc(FistSound sound) => fists.Play(sound);
+
+    // A katana move their PC began: the copy's blade and hands play it out (body and blade); their PC judged its cut.
+    [Rpc(SendTo.NotMe)]
+    private void KatanaMoveRpc(byte move) => katana?.ShowAttack((KatanaMove)move);
+
+    // What their katana met (flesh, a wall, a parried or blocked blow), heard from them and a wall's sparks where it rang.
+    [Rpc(SendTo.NotMe)]
+    private void KatanaStruckRpc(byte sound, Vector3 at) => katana?.ShowStruck((KatanaSound)sound, at);
 
     [Rpc(SendTo.NotMe)]
     private void ShoveSoundRpc(ShoveImpactKind impact) => shoves.Play(impact);

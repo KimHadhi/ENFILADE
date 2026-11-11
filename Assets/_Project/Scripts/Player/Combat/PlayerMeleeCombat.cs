@@ -1,7 +1,11 @@
 using System;
 using UnityEngine;
 
-/// <summary>Fist prototype. Owns charge/release, frontal defense and single-target guard break.</summary>
+/// <summary>
+/// Fist prototype. Owns charge/release, frontal defense and single-target guard break. With the katana out
+/// (PlayerKatana) the guard and parry here are the blade's too, in its own cone and with its block letting a share
+/// through; its swings are its own, and V is the body's shove as with a gun.
+/// </summary>
 [DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.MeleeCombat)]
 public sealed class PlayerMeleeCombat : MonoBehaviour
 {
@@ -51,6 +55,9 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
     private float parryRemaining, guardBufferRemaining, guardIdleTime, rootUntil = float.NegativeInfinity;
     private int spamCount;
     private ParryFeedback parryFeedback;
+    private PlayerKatana blade;
+    // How long the guard has been up this time (game s): a katana's block lets more through the longer it is held.
+    private float guardTime;
     private bool charging, shovePending, grabConnected, guardAttemptHeld, defenseConnected, pendingWhiff, punchLanded;
     private Vector3 lungeDirection;
     private readonly MeleeAttackSweep punchSweep = new MeleeAttackSweep();
@@ -68,8 +75,12 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
         || player.CurrentState == PlayerMovement.MovementState.DashPush
         || (player.IsLandingRecovery && !player.FightsPinned) || (player.IsPinned && !player.FightsPinned);
     public bool IsActive => isActiveAndEnabled && slots != null && slots.UsesFists && player != null && player.IsInitialized && player.DamageReceiver.IsAlive;
+    /// <summary>The katana is in hand (PlayerKatana): it guards and parries here as the fists do.</summary>
+    public bool HoldsBlade => isActiveAndEnabled && blade != null && blade.IsActive;
+    // Fists or the katana: either one guards and parries.
+    private bool Defends => IsActive || HoldsBlade;
     /// <summary>The feet are planted after a parry (real time): the legs give no speed, the hands are free.</summary>
-    public bool IsRooted => IsActive && Time.unscaledTime < rootUntil;
+    public bool IsRooted => Defends && Time.unscaledTime < rootUntil;
     public event Action<float> Punched;
 
     /// <summary>
@@ -78,9 +89,11 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
     /// </summary>
     public float LimitMoveSpeed(float speed)
     {
-        if (!IsActive) return speed;
+        if (!Defends) return speed;
         if (IsRooted) return 0f;
-        return IsGuarding ? Mathf.Min(speed, player.WalkSpeed * guardMoveShare) : speed;
+        if (IsGuarding) return Mathf.Min(speed, player.WalkSpeed * guardMoveShare);
+        // A katana's heavy cut plants the feet a little while it is under way (PlayerKatana).
+        return HoldsBlade ? blade.LimitMoveSpeed(speed, player.WalkSpeed) : speed;
     }
 
     private void OnEnable()
@@ -95,6 +108,9 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
         fistAudio = GetComponent<PlayerFistAudio>();
         if (fistAudio == null && Application.isPlaying) fistAudio = gameObject.AddComponent<PlayerFistAudio>();
         if (fistAudio != null) fistAudio.Prepare();
+        // The katana, for when the melee slot holds it (bundle 5 of the addon port).
+        blade = GetComponent<PlayerKatana>();
+        if (blade == null && Application.isPlaying) blade = gameObject.AddComponent<PlayerKatana>();
         CancelAction();
     }
     /// <summary>On someone else's copy: their guard went up or down.</summary>
@@ -104,7 +120,7 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
     private void Update()
     {
         if (player != null && player.IsNetworkDriven) return;
-        if (!IsActive || !player.InputAvailable) { CancelAction(); TickGuardInput(player.DeltaTime, default); return; }
+        if (!Defends || !player.InputAvailable) { CancelAction(); TickGuardInput(player.DeltaTime, default); return; }
         if (IsGuardBreaking)
         {
             if (input != null && input.TryReadGuardBuffer(out var guardFrame)) ProcessFrame(player.DeltaTime, guardFrame);
@@ -118,10 +134,11 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
     {
         // PlayerLook updates after input processing. Include this frame's final camera rotation.
         if (Time.timeScale <= 0f || (player != null && player.IsNetworkDriven)) return;
-        if (!IsActive || !player.InputAvailable || player.Execution?.IsExecuting == true) { CancelAction(); return; }
+        if (!Defends || !player.InputAvailable || player.Execution?.IsExecuting == true) { CancelAction(); return; }
         if (IsGuardBreaking) return;
         if (MovementBlocksAttack) { SuspendActionsForMovement(); return; }
         punchSweep.Tick(0f); shoveSweep.Tick(0f);
+        if (HoldsBlade) blade.LateTick();
     }
     /// <summary>A counter hands the shove straight back (ShoveCounter): the fists can shove or punch again at once.</summary>
     internal void RefreshShove() { cooldown = shoveRest = 0f; }
@@ -130,7 +147,7 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
     public void ProcessFrame(float dt, MeleeInputFrame frame)
     {
         if (dt <= 0f) return;
-        if (!IsActive || player.Execution?.IsExecuting == true) { CancelAction(); return; }
+        if (!Defends || player.Execution?.IsExecuting == true) { CancelAction(); return; }
         cooldown = Mathf.Max(0f, cooldown - dt);
         shoveRest = Mathf.Max(0f, shoveRest - dt);
         TickGuardInput(dt, frame);
@@ -143,14 +160,19 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
         }
         if (MovementBlocksAttack)
         { SuspendActionsForMovement(); return; }
-        // Guard has priority over charge, punch/shove active frames and their recovery.
-        if (guardBufferRemaining > 0f) BeginGuard(frame.GuardHeld);
-        else if (frame.GuardHeld && !IsGuarding)
+        // Guard has priority over charge, punch/shove active frames and their recovery. A katana's blade in its cut
+        // finishes it first; the press waits in the buffer meanwhile.
+        bool guardFree = !HoldsBlade || blade.CanGuard;
+        if (guardBufferRemaining > 0f) { if (guardFree) BeginGuard(frame.GuardHeld); }
+        else if (frame.GuardHeld && !IsGuarding && guardFree)
         {
             // A long hold through an uninterruptible action resumes block, never a fresh parry.
             CancelOffense(); IsGuarding = true; guardAttemptHeld = true; defenseConnected = false;
         }
+        guardTime = IsGuarding || IsParryActive ? guardTime + dt : 0f;
         if (IsGuarding) return;
+        // The katana's own cuts; V is the body's shove with it, as with a gun (MovementAbilities).
+        if (HoldsBlade) { blade.ProcessFrame(dt, frame); return; }
         punchSweep.Tick(dt); shoveSweep.Tick(dt);
         if (!player.IsGrounded) lungeRemaining = 0f;
         if (lungeRemaining > 0f)
@@ -222,13 +244,14 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
         // A window of 0 is Sekiro's mashing floor: that press only guards.
         parryRemaining = float.IsNaN(duration) || float.IsInfinity(duration) ? .2f : Mathf.Max(0f, duration);
         pendingWhiff = !held; defenseConnected = false; guardAttemptHeld = held;
-        IsGuarding = held; guardIdleTime = guardBufferRemaining = 0f;
+        IsGuarding = held; guardIdleTime = guardBufferRemaining = guardTime = 0f;
         CancelOffense(); cooldown = 0f;
     }
     private void CancelOffense()
     {
         punchSweep.Cancel(); shoveSweep.Cancel();
         charging = shovePending = false; chargeTime = shoveTime = lungeRemaining = 0f;
+        if (blade != null) blade.Cancel();
     }
     private void SuspendActionsForMovement()
     {
@@ -270,6 +293,8 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
     public void ShowCounterPunch(bool landed)
     {
         if (IsActive) { fistAudio?.PlaySwing(); if (landed) fistAudio?.PlayHeavyHit(); }
+        // With the katana out the counter is a quick cut (PlayerKatana shows it on Punched); its swing comes with it.
+        else if (HoldsBlade) blade.CounterLanded(landed);
         Punched?.Invoke(1f);
     }
     /// <summary>The counter's back elbow, driven back on the attacker's side (+1 right): the fist pulls back past the shoulder.</summary>
@@ -277,6 +302,7 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
     public void ShowCounterElbow(bool landed, int side)
     {
         if (IsActive) { fistAudio?.PlaySwing(); if (landed) fistAudio?.PlayHeavyHit(); }
+        else if (HoldsBlade) blade.CounterLanded(landed);
         Elbowed?.Invoke(side);
     }
     /// <summary>
@@ -290,17 +316,26 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
         // Standing still, it lunges at someone just out of reach, as the gun's shove does (ShoveMoves).
         ShoveMoves.For(player).Lunge(aim, player.AbilitySettings.shoveSweepReach, hitLayers);
     }
-    public bool TryDefend(DamageHit hit, out DamageResult result)
+    public bool TryDefend(DamageHit hit, out DamageResult result) => TryDefend(hit, out result, out _);
+    /// <summary>
+    /// As TryDefend; leak is the share of a blocked blow that gets through anyway: a katana's block isn't a wall (TFA's
+    /// block, PlayerKatana.GuardLeak). The fists' block and every parry take it all (0).
+    /// </summary>
+    public bool TryDefend(DamageHit hit, out DamageResult result, out float leak)
     {
         result = DamageResult.Ignored;
-        if (!IsActive || !player.InputAvailable || (!IsGuarding && !IsParryActive) || IsGuardBreaking
+        leak = 0f;
+        if (!Defends || !player.InputAvailable || (!IsGuarding && !IsParryActive) || IsGuardBreaking
             || MovementBlocksAttack || hit.Kind != DamageKind.Attack || !hit.CanBeGuarded) return false;
         Vector3 incoming = hit.Source != null ? hit.Source.transform.position - player.transform.position : -hit.Direction;
         incoming = Vector3.ProjectOnPlane(incoming, Vector3.up).normalized;
         Vector3 facing = Vector3.ProjectOnPlane(aim.forward, Vector3.up).normalized;
-        if (incoming.sqrMagnitude < 0.01f || Vector3.Dot(incoming, facing) < Mathf.Cos(guardAngle * 0.5f * Mathf.Deg2Rad)) return false;
+        // The katana guards a narrower cone than the fists (TFA's BlockCone, 135°).
+        float cone = HoldsBlade ? blade.GuardAngle : guardAngle;
+        if (incoming.sqrMagnitude < 0.01f || Vector3.Dot(incoming, facing) < Mathf.Cos(cone * 0.5f * Mathf.Deg2Rad)) return false;
         bool parry = IsParryActive;
         result = parry ? DamageResult.Parried : DamageResult.Blocked;
+        if (!parry && HoldsBlade) leak = blade.GuardLeak(guardTime);
         ResetParrySpam(); defenseConnected = true;
         if (parry)
         {
@@ -390,6 +425,7 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
     public void CancelAction()
     {
         punchSweep.Cancel(); shoveSweep.Cancel();
+        if (blade != null) blade.Cancel();
         if (target != null) target.Release(this);
         target = null; targetCollider = null;
         if (guardAttemptHeld && !defenseConnected) pendingWhiff = true;

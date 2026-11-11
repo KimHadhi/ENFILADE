@@ -5,7 +5,7 @@ Stats.ultimateCostPercent,100,궁극기 1회 사용량(%)
 Ultimate.chargePerEnemyHit,3,살아 있는 적에게 공격이 들어갈 때마다 충전(%)
 Carry.weightMax,15,들고 다닐 수 있는 무게(GMod Horde의 무게 제한 15). 1~4번 칸 무기의 무게(Weapons.csv weight) 합이 이것을 넘게 되는 무기는 상점에서 못 사고 바닥에서 못 줍는다(가벼워지는 교체는 된다). 클래스 시작 장비는 그대로 준다
 Carry.gun,4,Weapons.csv에 무게가 없는 총의 무게
-Carry.melee,3,무게가 없는 근접 무기의 무게(Horde의 크로바 3)
+Carry.melee,5,무게가 없는 근접 무기의 무게(지금 근접 무기는 카타나뿐이라 Horde의 카타나 5)
 Carry.special,1,무게가 없는 4번 칸 특수 무기의 무게
 Fists.reach,1.6,주먹 사거리(m)
 Fists.fullChargeTime,0.9,최대 충전까지 걸리는 시간(초)
@@ -31,6 +31,37 @@ Fists.guardBreakRecovery,0.16,가드 브레이크 후딜(초)
 Fists.guardBreakCooldown,0.35,가드 브레이크 재사용 대기(초)
 Fists.guardBreakStun,1.4,가드 브레이크에 맞은 적의 기절 시간(초)
 Fists.guardBreakPostureDamage,55,가드 브레이크 자세 피해
+Katana.heavyHold,0.3,카타나: 왼쪽 버튼을 이만큼(초) 누르고 있으면 강공격(내려베기). 그보다 빨리 떼면 약공격. 베기 수치는 Tables/Katana.csv
+Katana.queueSeconds,0.3,카타나: 손이 비기 이만큼(초) 전에 누른 공격은 기다렸다가 나간다. 더 일찍 누른 건 버린다
+Katana.drawSeconds,0.3,카타나: 3번 칸에서 뽑아 들고 이만큼(초) 지나야 벨 수 있다
+Katana.headshotMultiplier,1.5,카타나: 머리를 베면 피해 배율. 약공격 70 × 1.5 = 105라 좀비(체력 100)가 한 번에 죽는다
+Katana.hitStopScale,0.05,카타나: 베어 맞힌 순간 멈춤(Katana.csv hitStop) 동안의 시간 배율
+Katana.guardAngle,135,카타나 가드가 막는 정면 각도(도). TFA 블록의 135°. 주먹은 Fists.guardAngle
+Katana.guardLeak,0.1;0.4,카타나로 막은 공격에서 들어오는 피해 몫: 막 들었을 때;오래 들고 있을 때. TFA: 0.5초 동안 ×0.1 → 1초에 걸쳐 ×0.4. 패링은 다 막고 1 미만은 0
+Katana.guardLeakHold,0.5,카타나 가드를 든 뒤 이만큼(초)은 처음 몫 그대로
+Katana.guardLeakFade,1,그 뒤 이만큼(초)에 걸쳐 나중 몫까지 오른다
+KatanaView.bladeLength,0.7,카타나 칼날 길이(m). 코드로 만든 임시 모델에만 쓴다(넣은 모델은 제 길이)
+KatanaView.handleLength,0.27,카타나 손잡이 길이(m). 임시 모델과 손잡이 가운데 자리에 쓴다
+KatanaView.handleRadius,0.015,손잡이 굵기의 절반(m). 손가락이 이만큼 감싼다
+KatanaView.pivot,0;-0.3;0.05,휘두를 때 손이 도는 중심(눈 기준 m; 오른쪽;위;앞). 가슴께
+KatanaView.gripReach,0.36,그 중심에서 손잡이 가운데까지(m)
+KatanaView.handTurn,0.6,베는 호의 회전을 손이 따라가는 몫(0~1). 칼날은 다 돈다
+KatanaView.aimDistance,1.3,칼날이 이만큼(m) 앞의 판정 선을 가리킨다. 보이는 칼이 지나는 곳이 베이는 곳이 되게
+KatanaView.idleGrip,0.17;-0.3;0.32,평소: 손잡이 가운데 자리(눈 기준 m; 오른쪽;위;앞)
+KatanaView.idleBlade,-0.3;0.8;0.5,평소: 칼끝이 향하는 쪽
+KatanaView.idleEdge,0;0;1,평소: 날이 향하는 쪽
+KatanaView.guardGrip,0.12;-0.17;0.36,가드: 손잡이 가운데 자리
+KatanaView.guardBlade,-0.85;0.5;0.15,가드: 칼끝 쪽(얼굴 앞을 가로지른다)
+KatanaView.guardEdge,0;0.5;1,가드: 날 쪽
+KatanaView.runGrip,0.22;-0.48;0.16,달릴 때: 손잡이 가운데 자리(낮게 든다)
+KatanaView.runBlade,-0.15;-0.35;-1,달릴 때: 칼끝 쪽(뒤로 눕힌다)
+KatanaView.runEdge,0;-1;0,달릴 때: 날 쪽
+KatanaView.runSpeed,4.5,베는 중이 아닐 때 이 속도(m/s)보다 빠르면 낮게 들고 달린다
+KatanaView.rightHand,0.035,오른손이 코등이에서 손잡이 쪽으로 떨어진 거리(m)
+KatanaView.leftHand,0.2,왼손이 코등이에서 떨어진 거리(m). 손잡이 끝 쪽
+KatanaView.modelOffset,0;0;0,넣은 모델(Art/Models/Weapons/Katana)의 위치 보정(m). 원점은 칼날과 코등이가 만나는 곳
+KatanaView.modelTurn,0;0;0,넣은 모델의 회전 보정(도). 칼끝이 +Z·칼등이 +Y가 되게 맞춘다
+KatanaView.modelScale,1,넣은 모델의 크기 배율
 Defense.parryOpensCounter,false,패링이 반격 창을 연다. 반격 스킬이 생기기 전에는 끈다(완벽 회피의 반격은 그대로)
 Defense.postureBreakTimeScale,0.3,패링으로 체간을 무너뜨린 순간의 시간 배율
 Defense.postureBreakSlowSeconds,0.35,그 슬로모션 길이(실제 초). 처형을 시작하면 바로 끝난다. 0이면 끈다

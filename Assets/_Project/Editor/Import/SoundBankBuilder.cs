@@ -23,6 +23,10 @@ internal sealed class SoundBankBuilder : AssetPostprocessor
         ("UI", "Assets/_Project/Art/Audio/UI"),
         // Zombies' voices (ZombieVoice): Attack and Leap, with Male and Female folders under them.
         (ZombieVoice.BankId, "Assets/_Project/Art/Audio/Enemies/Zombie"),
+        // Melee weapons' sounds (KatanaAudio): Katana/Swing, Katana/HitFlesh, Katana/HitWorld, Katana/Draw.
+        (KatanaAudio.MeleeBank, "Assets/_Project/Art/Audio/Melee"),
+        // The metal parries and blocks kept for the katana (KatanaAudio): Parry, ReservedStrongParries, Block.
+        (KatanaAudio.DefenseBank, "Assets/_Project/Art/Audio/Combat/Defense"),
     };
     private static bool queued;
 

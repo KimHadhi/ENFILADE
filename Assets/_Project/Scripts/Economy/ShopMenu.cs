@@ -22,15 +22,17 @@ using UnityEngine.UI;
 /// nothing and paid for ammo three times): the till rings (KitSound), the money box flashes while its number runs down
 /// with what was paid falling away under it, the card reads 구매 완료, and the kill feed keeps a line. A refusal buzzes.
 /// Ammo is only sold while a held gun is short of it (탄약 가득 on the card otherwise): it used to take the money
-/// whether or not anything was filled.
+/// whether or not anything was filled. A melee weapon (Melee rows: the katana, MeleeWeapons) comes after the guns, under
+/// one 무기 heading then (a heading of its own would push the long list off a 1080p screen), and goes into the melee
+/// slot (3), drawn at once unless the hands are full.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class ShopMenu : MonoBehaviour
 {
     public const string TableName = "Shop";
     // Syringe: a Détente's syringe filled back up (DetenteKit), refused to any other class. Knives: the throwing knives
-    // filled back up to the most carried (PlayerKnives).
-    private enum Kind { Gun, Ammo, Heal, Shield, Syringe, Knives }
+    // filled back up to the most carried (PlayerKnives). Melee: a melee weapon for slot 3.
+    private enum Kind { Gun, Ammo, Heal, Shield, Syringe, Knives, Melee }
 
     private sealed class Item
     {
@@ -83,6 +85,7 @@ public sealed class ShopMenu : MonoBehaviour
     private TextMeshProUGUI money, spent, message;
     // The guns' heading, which carries the load against Horde's weight limit (CarryWeight).
     private TextMeshProUGUI gunsHeading;
+    private bool meleeOnSale;
     private float messageLeft, spentAt = float.NegativeInfinity;
     // The money shown: counts up as the panel opens, runs down after a buy (won).
     private double moneyShown;
@@ -239,9 +242,17 @@ public sealed class ShopMenu : MonoBehaviour
                 if (Holds(slots, item.Weapon)) return Texts.Get("shop.refuse.owned");
                 if (player.CombatInputLocked) return Texts.Get("shop.refuse.now");
                 // Horde's weight limit: the load with this gun in place of the one it would replace (CarryWeight).
-                int slot = GunSlotFor(slots);
+                int slot = BuySlot(slots, item.Weapon);
                 if (!CarryWeight.Fits(slots, slot, item.Weapon))
                     return Texts.Format("shop.refuse.heavy", CarryWeight.Show(CarryWeight.With(slots, slot, item.Weapon)), CarryWeight.Show(CarryWeight.Limit));
+                return null;
+            case Kind.Melee:
+                if (item.Weapon == null || slots == null) return Texts.Get("shop.refuse.unsold");
+                if (Holds(slots, item.Weapon)) return Texts.Get("shop.refuse.owned_melee");
+                if (player.CombatInputLocked) return Texts.Get("shop.refuse.now");
+                if (!CarryWeight.Fits(slots, PlayerWeaponSlots.MeleeSlot, item.Weapon))
+                    return Texts.Format("shop.refuse.heavy", CarryWeight.Show(CarryWeight.With(slots, PlayerWeaponSlots.MeleeSlot, item.Weapon)),
+                        CarryWeight.Show(CarryWeight.Limit));
                 return null;
             case Kind.Ammo:
                 return slots == null || !HoldsAnyGun(slots) ? Texts.Get("shop.refuse.nogun") : !slots.NeedsAmmo() ? Texts.Get("shop.refuse.ammofull") : null;
@@ -265,10 +276,13 @@ public sealed class ShopMenu : MonoBehaviour
         switch (item.Kind)
         {
             case Kind.Gun:
-                int slot = PairSlot(slots, item.Weapon);
-                if (slot < 0) slot = GunSlotFor(slots);
+                int slot = BuySlot(slots, item.Weapon);
                 if (!slots.TrySetWeapon(slot, item.Weapon)) return false;
                 if (!slots.HandsFull) slots.SelectSlot(slot);
+                return true;
+            case Kind.Melee:
+                if (!slots.TrySetWeapon(PlayerWeaponSlots.MeleeSlot, item.Weapon)) return false;
+                if (!slots.HandsFull) slots.SelectSlot(PlayerWeaponSlots.MeleeSlot);
                 return true;
             case Kind.Ammo:
                 return slots.RefillAmmo() > 0;
@@ -298,6 +312,14 @@ public sealed class ShopMenu : MonoBehaviour
     }
 
     // A dual pistol goes where its single gun is held, as the second of it (AkimboGuns); -1 when none is held.
+    // Where a bought gun goes: a dual pistol into its single gun's slot (PairSlot), any other gun into GunSlotFor's. The
+    // weight check and the hand-over use the same slot.
+    private static int BuySlot(PlayerWeaponSlots slots, WeaponData gun)
+    {
+        int slot = PairSlot(slots, gun);
+        return slot >= 0 ? slot : GunSlotFor(slots);
+    }
+
     private static int PairSlot(PlayerWeaponSlots slots, WeaponData gun)
     {
         var single = AkimboGuns.SingleOf(gun);
@@ -342,6 +364,7 @@ public sealed class ShopMenu : MonoBehaviour
             if (!GameTables.TryGetRow(TableName, id, out var row) || !Enum.TryParse(Text(row, "kind"), true, out Kind kind)) continue;
             WeaponData weapon = null;
             if (kind == Kind.Gun && !guns.TryGetValue(Text(row, "weapon"), out weapon)) continue;
+            if (kind == Kind.Melee && (weapon = MeleeWeapons.Find(Text(row, "weapon"))) == null) continue;
             string name = Text(row, "name");
             float amount = Number(row, "amount", 0f);
             stock.Add(new Item
@@ -349,6 +372,7 @@ public sealed class ShopMenu : MonoBehaviour
                 Kind = kind, Weapon = weapon, Price = (long)Number(row, "price", 0f), Amount = amount,
                 Order = (int)Number(row, "order", 0f), Name = name.Length > 0 ? name : weapon != null ? weapon.DisplayName : id,
                 Detail = kind == Kind.Gun ? GunDetail(weapon)
+                    : kind == Kind.Melee ? Texts.Format("shop.detail.melee", CarryWeight.Show(CarryWeight.Of(weapon)))
                     : kind == Kind.Ammo ? Texts.Get("shop.detail.ammo")
                     : kind == Kind.Syringe ? Texts.Format("shop.detail.syringe", amount.ToString("0"))
                     : kind == Kind.Knives ? Texts.Format("shop.detail.knives", PlayerKnives.Local != null ? PlayerKnives.Local.Most : 0)
@@ -376,7 +400,8 @@ public sealed class ShopMenu : MonoBehaviour
 
     // Each kind's bar down a card's left side: guns white (the pink is the menus' one accent, and too near heal's red),
     // ammo cyan, heal red, shield green.
-    private static Color AccentOf(Kind kind) => kind == Kind.Gun ? KitStyle.Text : kind == Kind.Ammo || kind == Kind.Knives ? KitStyle.Cyan
+    private static Color AccentOf(Kind kind) => kind == Kind.Gun || kind == Kind.Melee ? KitStyle.Text
+        : kind == Kind.Ammo || kind == Kind.Knives ? KitStyle.Cyan
         : kind == Kind.Heal || kind == Kind.Syringe ? KitStyle.Red : KitStyle.Green;
 
     // ---- Screen ----
@@ -431,14 +456,19 @@ public sealed class ShopMenu : MonoBehaviour
         }
     }
 
-    // "총 · 무게 8 / 15": what the slots carry now and the most (Horde's weight limit, CarryWeight).
-    private static string GunsHeading(PlayerWeaponSlots slots)
-        => Texts.Format("shop.section.guns", CarryWeight.Show(CarryWeight.Carried(slots)), CarryWeight.Show(CarryWeight.Limit));
+    // "총 · 무게 8 / 15" ("무기 · …" when melee weapons are on sale too): what the slots carry now and the most (Horde's
+    // weight limit, CarryWeight).
+    private string GunsHeading(PlayerWeaponSlots slots)
+        => Texts.Format(meleeOnSale ? "shop.section.weapons" : "shop.section.guns", CarryWeight.Show(CarryWeight.Carried(slots)),
+            CarryWeight.Show(CarryWeight.Limit));
 
     private string Note(Item item, PlayerWeaponSlots slots)
     {
         if (item.Kind == Kind.Gun && slots != null && item.Weapon != null && Holds(slots, item.Weapon)) return Texts.Get("shop.note.owned");
-        if (item.Kind == Kind.Gun && slots != null && item.Weapon != null && !CarryWeight.Fits(slots, GunSlotFor(slots), item.Weapon))
+        if (item.Kind == Kind.Gun && slots != null && item.Weapon != null && !CarryWeight.Fits(slots, BuySlot(slots, item.Weapon), item.Weapon))
+            return Texts.Get("shop.note.heavy");
+        if (item.Kind == Kind.Melee && slots != null && item.Weapon != null && Holds(slots, item.Weapon)) return Texts.Get("shop.note.owned_melee");
+        if (item.Kind == Kind.Melee && slots != null && item.Weapon != null && !CarryWeight.Fits(slots, PlayerWeaponSlots.MeleeSlot, item.Weapon))
             return Texts.Get("shop.note.heavy");
         if (item.Kind == Kind.Ammo && slots != null && HoldsAnyGun(slots) && !slots.NeedsAmmo()) return Texts.Get("shop.note.ammofull");
         if (item.Kind == Kind.Heal && player.DamageReceiver.Health >= player.DamageReceiver.MaximumHealth - .5f) return Texts.Get("shop.note.healthfull");
@@ -470,7 +500,9 @@ public sealed class ShopMenu : MonoBehaviour
         scaler.referenceResolution = new Vector2(1920f, 1080f);
         scaler.matchWidthOrHeight = .5f;
 
-        int guns = stock.FindAll(item => item.Kind == Kind.Gun).Count, supplies = stock.Count - guns;
+        int melee = stock.FindAll(item => item.Kind == Kind.Melee).Count;
+        meleeOnSale = melee > 0;
+        int guns = stock.FindAll(item => item.Kind == Kind.Gun).Count + melee, supplies = stock.Count - guns;
         float height = HeaderHeight + (guns > 0 ? SectionHeight : 0f) + (supplies > 0 ? SectionHeight : 0f)
             + stock.Count * (CardHeight + CardGap) + FooterHeight;
         var panel = FeelUI.Rect("Panel", canvas.transform);
@@ -527,6 +559,7 @@ public sealed class ShopMenu : MonoBehaviour
 
         float y = HeaderHeight;
         int index = 0;
+        // The weapons (guns, then melee weapons), then supplies.
         for (int section = 0; section < 2; section++)
         {
             bool gunsHere = section == 0;
@@ -538,7 +571,7 @@ public sealed class ShopMenu : MonoBehaviour
             y += SectionHeight;
             foreach (var item in stock)
             {
-                if ((item.Kind == Kind.Gun) != gunsHere) continue;
+                if ((item.Kind == Kind.Gun || item.Kind == Kind.Melee) != gunsHere) continue;
                 rows.Add(BuildCard(panel, item, y, CardsFrom + index++ * CardStagger));
                 y += CardHeight + CardGap;
             }

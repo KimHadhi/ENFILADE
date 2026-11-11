@@ -118,9 +118,10 @@ public sealed class PlayerExecution : MonoBehaviour
         Candidate = interact != null && interact.enabled ? FindCandidate() : null;
         if (Candidate != null && interact.WasPressedThisFrame()) { TryBegin(Candidate); return; }
         // Before the fists read the same click (PlayerMeleeCombat runs after this): a broken enemy takes the deathblow
-        // instead of a punch. A counter, which reads it earlier still, has already claimed the click if it was open.
+        // instead of a punch, or of a katana's cut. A counter, which reads it earlier still, has already claimed the
+        // click if it was open.
         var fists = player != null ? player.MeleeCombat : null;
-        DeathblowCandidate = fists != null && fists.IsActive ? FindCandidate(deathblowReach) : null;
+        DeathblowCandidate = fists != null && (fists.IsActive || fists.HoldsBlade) ? FindCandidate(deathblowReach) : null;
         if (DeathblowCandidate != null && buttons != null && buttons.TryReadMeleeInput(out var frame) && frame.AttackPressed)
             TryBegin(DeathblowCandidate, deathblowReach);
     }

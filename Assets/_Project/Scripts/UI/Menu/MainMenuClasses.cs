@@ -196,6 +196,7 @@ public sealed class MainMenuClasses : MonoBehaviour
         detailRole.text = info.Role;
         string weapons = info.Weapons.Length > 0 ? string.Join(" · ", info.Weapons) : "-";
         string body = Texts.Format("classes.loadout", Name(info.Primary), Name(info.Secondary)) + "\n"
+            + Melee(info)
             + (info.GunBonus > 0f ? Texts.Format("classes.weapons", weapons, info.GunBonus.ToString("0")) + "\n" : "")
             + "\n<color=#" + ColorUtility.ToHtmlStringRGB(KitStyle.Accent) + ">" + Texts.Get("classes.ability") + "</color>\n" + Ability(info);
         if (!info.Ready) body += "\n\n<color=#" + ColorUtility.ToHtmlStringRGB(KitStyle.Soft) + ">" + Texts.Get("classes.later_note") + "</color>";
@@ -229,6 +230,14 @@ public sealed class MainMenuClasses : MonoBehaviour
 
     /// <summary>A class's icon's name in Resources/UI/Icons.</summary>
     public static string Icon(string id) => "Class_" + id;
+
+    // The melee weapon a class starts with in slot 3 (a Knight's katana, ClassKit), as a line of its own; or nothing.
+    private static string Melee(PlayerClass.Info info)
+    {
+        foreach (string weapon in info.Weapons)
+            if (MeleeWeapons.Find(weapon) is WeaponData blade) return Texts.Format("classes.melee", blade.DisplayName) + "\n";
+        return "";
+    }
 
     // A gun's name as the HUD has it.
     private static string Name(string weapon)

@@ -30,6 +30,8 @@ public sealed class PlayerWeaponSlots : MonoBehaviour
     private int holsterTo;
     private float holsterLeft;
     public int SelectedSlot => selectedSlot;
+    /// <summary>The melee slot, the third: a melee weapon (MeleeWeapons, the katana) goes here.</summary>
+    public const int MeleeSlot = 2;
     // The special slot, the fourth.
     private const int SpecialSlot = 3;
     /// <summary>

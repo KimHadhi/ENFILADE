@@ -56,6 +56,8 @@ public sealed class FistsView : MonoBehaviour
     }
     private void Punch(float charge)
     {
+        // With the katana out a counter is its cut (PlayerKatana), not a fist and the body's punch clip.
+        if (melee.HoldsBlade) return;
         bool right = nextRight;
         if (right) rightPunchTime = PunchDuration;
         else leftPunchTime = PunchDuration;
@@ -63,7 +65,7 @@ public sealed class FistsView : MonoBehaviour
         Thrown?.Invoke(right, charge);
     }
     // The fist on the attacker's side pulls back beside the chest, past the eyes, so the arm drives its elbow behind.
-    private void Elbow(int side) { elbowRight = side >= 0; elbowElapsed = 0f; leftPunchTime = rightPunchTime = 0f; }
+    private void Elbow(int side) { if (melee.HoldsBlade) return; elbowRight = side >= 0; elbowElapsed = 0f; leftPunchTime = rightPunchTime = 0f; }
     private float ElbowAmount()
     {
         if (elbowElapsed < 0f) return 0f;

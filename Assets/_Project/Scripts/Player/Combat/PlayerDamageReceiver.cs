@@ -94,9 +94,14 @@ public sealed class PlayerDamageReceiver : MonoBehaviour, IDamageReceiver, ITabl
             return DamageResult.Invulnerable;
         }
         var melee = movement != null ? movement.MeleeCombat : null;
-        if (melee != null && melee.TryDefend(hit, out DamageResult defense))
+        if (melee != null && melee.TryDefend(hit, out DamageResult defense, out float leak))
         {
+            // A katana's block lets a share of the blow through (TFA's block, PlayerKatana): it still counts as blocked.
+            bool broke = false;
+            bool through = defense == DamageResult.Blocked && leak > 0f && TakeThroughGuard(hit, leak, out broke);
             HitResolved?.Invoke(hit, defense);
+            if (through && broke) { ShieldBreaks++; ShieldBroken?.Invoke(hit); }
+            if (through && !IsAlive && (!TryGetComponent(out PlayerLife fallen) || !fallen.TryGoDown())) Die();
             return defense;
         }
         // A hold taking hold costs nothing: the bites that follow do (DamageHit.TakesHold).
@@ -119,6 +124,23 @@ public sealed class PlayerDamageReceiver : MonoBehaviour, IDamageReceiver, ITabl
         if ((movement == null || movement.IsLocal) && LastHealthTaken > 0f) CombatHitAudio.PlayPlayerHit(hit);
         if (!IsAlive && (hit.IsFatal || !TryGetComponent(out PlayerLife life) || !life.TryGoDown())) Die();
         return DamageResult.Damaged;
+    }
+
+    // What gets through a block (a share of the blow), shield first, as a hit would take it; under 1 the block took it all
+    // (TFA's full block). No hurt look or sound: the guard met it, and its own cue says so. False when nothing got through.
+    private bool TakeThroughGuard(DamageHit hit, float share, out bool shieldBroke)
+    {
+        shieldBroke = false;
+        float amount = hit.Amount * Mathf.Clamp01(share) * PlayerClass.TakenFactor(movement);
+        if (amount < 1f || float.IsNaN(amount)) return false;
+        float absorbed = Mathf.Min(Shield, amount);
+        shieldBroke = absorbed > 0f && absorbed >= Shield;
+        shield = shieldBroke ? 0f : Shield - absorbed;
+        float healthBefore = Health;
+        LoseHealth(amount - absorbed);
+        LastShieldTaken = absorbed;
+        LastHealthTaken = Mathf.Max(0f, healthBefore - Health);
+        return true;
     }
 
     private void LoseHealth(float amount)

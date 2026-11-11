@@ -74,6 +74,7 @@
 | 방어·밀치기 소리, 반격, 흐트러짐 표시, 피해 팝업·HP 손실 표시 | [Feedback.asset](../Resources/Combat/Feedback.asset) |
 | 시작 무기와 시작 슬롯 | 플레이어의 `PlayerWeaponSlots` → Slot 1~4 / Starting Slot |
 | 주먹·가드·패링·V 홀드 | [Player.csv](../Resources/Tables/Player.csv)의 `Fists` 행 |
+| 카타나의 베기 시간표·피해·사거리·휘두르는 호, 가드 각도·막아도 새는 피해, 칼의 자세·손 위치·넣은 모델 보정 | [Katana.csv](../Resources/Tables/Katana.csv)의 동작 행, `Player.csv`의 `Katana`·`KatanaView` 행 ([카타나 규칙](WeaponSystemDesign.md#카타나)) |
 | 밀치기·돌진 밀치기·슬라이딩 수치 | `Player.csv`의 `Ability` 행 |
 | 발차기·드롭킥·문 차기 수치 / 자세별 다리 클립 | `Player.csv`의 `Shove` 행 / `Body.kick`·`kickCrouch`·`kickDown`·`dropkick`·`dropkickStill` |
 | 적 체력·공격·체간·이동 속도 | [Enemies.csv](../Resources/Tables/Enemies.csv) |

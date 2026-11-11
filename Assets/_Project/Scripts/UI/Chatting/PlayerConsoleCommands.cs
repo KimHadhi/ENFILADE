@@ -50,7 +50,7 @@ public static class PlayerConsoleCommands
             }
             return count > 0 ? $"총기 {count}정의 탄창과 예비탄을 보충했습니다." : "탄약을 보충할 총기를 보유하고 있지 않습니다.";
         }));
-        router.Register("gun", "이름 — 들고 있는 총 칸(총이 아니면 1번 칸)을 그 총으로 바꾸고 꺼낸다. 비우면 목록", args => WithPlayer(resolvePlayer, p =>
+        router.Register("gun", "이름 — 들고 있는 총 칸(총이 아니면 1번 칸)을 그 총으로 바꾸고 꺼낸다. 근접 무기(katana)는 3번 칸. 비우면 목록", args => WithPlayer(resolvePlayer, p =>
         {
             var guns = new System.Collections.Generic.List<WeaponData>();
             var assets = FPSBodyAssets.Instance;
@@ -59,9 +59,19 @@ public static class PlayerConsoleCommands
                     if (entry.weapon != null && entry.weapon.Category == WeaponCategory.Ranged && !guns.Contains(entry.weapon)) guns.Add(entry.weapon);
             // 쌍권총 (Tables/Akimbo): /gun DualM1911
             foreach (var pair in AkimboGuns.All) if (!guns.Contains(pair)) guns.Add(pair);
-            string list = string.Join(", ", guns.ConvertAll(gun => gun.name));
+            string list = string.Join(", ", guns.ConvertAll(gun => gun.name)) + ", " + string.Join(", ", MeleeWeapons.All);
             string wanted = Plain(args);
             if (wanted.Length == 0) return $"사용법: /gun 이름 — 있는 총: {list}";
+            // A melee weapon goes in the melee slot (3) and comes out.
+            foreach (string name in MeleeWeapons.All)
+            {
+                if (Plain(name) != wanted) continue;
+                var blade = MeleeWeapons.Find(name);
+                var held = p.GetComponentInChildren<PlayerWeaponSlots>(true);
+                if (blade == null || held == null || !held.TrySetWeapon(PlayerWeaponSlots.MeleeSlot, blade)) return "지금은 무기를 바꿀 수 없습니다.";
+                held.SelectSlot(PlayerWeaponSlots.MeleeSlot);
+                return $"{PlayerWeaponSlots.MeleeSlot + 1}번 칸: {blade.DisplayName}";
+            }
             WeaponData found = guns.Find(gun => Plain(gun.name) == wanted || Plain(gun.DisplayName) == wanted)
                 ?? guns.Find(gun => Plain(gun.name).Contains(wanted) || Plain(gun.DisplayName).Contains(wanted));
             if (found == null) return $"'{args.Trim()}' 총이 없습니다. 있는 총: {list}";

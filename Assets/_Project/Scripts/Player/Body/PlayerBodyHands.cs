@@ -6,6 +6,7 @@ using MovementState = PlayerMovement.MovementState;
 /// - on the held gun: KINEMATION FPS Animation Framework has already put both hands on it (FPSBody), so that hold only
 ///   counts, and the other holds take the hands from it as they come in;
 /// - on the fist targets while fists are out (FistsView), except running forward or barging, where the clip swings them;
+/// - both on the katana's handle while it is out (KatanaView, PlayerBodyHands.Blade);
 /// - on the ledge edge, a hand either side, while hanging;
 /// - on real ladder rungs, keeping one hand planted while the other reaches above it;
 /// - round a swing bar, as the body swings with it (PlayerBodyHands.Bar);
@@ -40,8 +41,8 @@ public sealed partial class PlayerBodyHands : MonoBehaviour
     [SerializeField, Range(0f, 60f), Tooltip("How far each outer thumb joint bends toward the palm at ease (degrees).")]
     private float thumbBend = 20f;
 
-    private enum Hold { Gun, Fists, Ledge, Ladder, Bar, Zipline }
-    private const int HoldCount = 6;
+    private enum Hold { Gun, Fists, Ledge, Ladder, Bar, Zipline, Blade }
+    private const int HoldCount = 7;
     // How quickly a hand comes up onto a top, in arm lengths per second. Eased, since a top can appear under a wrist all at once.
     private const float RestLiftSpeed = 6f;
     // At least this share of the input (this PC) or of the speed along the facing (another PC's copy) is forward, running forward.
@@ -145,6 +146,7 @@ public sealed partial class PlayerBodyHands : MonoBehaviour
             fists = GetComponentInChildren<FistsView>();
             if (fists != null) fists.Thrown += body.ThrowPunch;
         }
+        if (blade == null) blade = GetComponentInChildren<KatanaView>();
 
         var state = player.CurrentState;
         bool alive = !body.IsDead, armed = alive && HoldsWeapons(state);
@@ -156,6 +158,7 @@ public sealed partial class PlayerBodyHands : MonoBehaviour
         stance = Mathf.MoveTowards(stance, alive && ShootingStance(state) ? 1f : 0f, dt / blendTime);
         Ease(Hold.Gun, gun && (armed || oneHanded || (alive && use == TraversalHandUse.Gun)), dt);
         Ease(Hold.Fists, armed && fists != null && fists.IsActive && FistsUp(dt), dt);
+        Ease(Hold.Blade, armed && HoldsBlade, dt);
         TrackEdgeHands(state);
         Ease(Hold.Ledge, alive && WantsEdge(state), dt);
         bool onLadder = alive && state == MovementState.Ladder && player.Abilities.Fixtures.Ladder != null
@@ -190,6 +193,8 @@ public sealed partial class PlayerBodyHands : MonoBehaviour
             CurlBarFingers(right);
             CurlZiplineFingers(left);
             CurlZiplineFingers(right);
+            CurlBladeFingers(left);
+            CurlBladeFingers(right);
             CurlGunFingers(left, true, dt);
             CurlGunFingers(right, false, dt);
             // Last: no finger bent past a hand's reach, whatever the clips or the grips asked for.
@@ -347,6 +352,8 @@ public sealed partial class PlayerBodyHands : MonoBehaviour
                 return BarTarget(arm, isLeft, out position, out rotation, out hint);
             case Hold.Zipline:
                 return ZiplineTarget(arm, isLeft, out position, out rotation, out hint);
+            case Hold.Blade:
+                return BladeTarget(arm, isLeft, out position, out rotation, out hint);
         }
         return false;
     }

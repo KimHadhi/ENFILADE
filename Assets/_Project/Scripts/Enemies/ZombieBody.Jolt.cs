@@ -39,11 +39,11 @@ public sealed partial class ZombieBody
         if (jolt == null || Model == null || animator == null || !animator.enabled || down || blendLeft > 0f) return;
         var hit = report.Hit;
         if (report.IsKillingBlow || hit.Kind != DamageKind.Attack) return;
-        // A player's blow: a bullet, a shove or a kick, a fist or a slide. A hit that is no bullet but comes with the
+        // A player's blow: a bullet, a shove or a kick, a fist or a slide (or a katana's cut). A hit that is no bullet but comes with the
         // place it started from is a blast or a fire (it goes down or burns instead) or another zombie's swing that
         // caught it, and a grab, a bite, a leap or a slam is only ever a zombie's. The method and the origin are sent
         // with the hit, so every PC makes the same choice (who landed it is not: a zombie reads as the host elsewhere).
-        bool blow = hit.Method == DamageMethod.Bullet || hit.Method == DamageMethod.Shove
+        bool blow = hit.Method == DamageMethod.Bullet || hit.Method == DamageMethod.Shove || hit.Method == DamageMethod.Slash
             || (hit.Method == DamageMethod.Other && !hit.Origin.HasValue);
         if (!blow) return;
         jolt.Hit(report, target != null && target.Steadfast, network != null ? network.Pace : 1f);

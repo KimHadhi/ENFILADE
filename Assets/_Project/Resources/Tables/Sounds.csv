@@ -229,6 +229,13 @@ Guns/Reverb/Smg/OutdoorsClose,1,1,1,기관단총·실외(미사용). Accurate Gu
 Movement/Dodge/Wind,0.25,0.95,1.05,스텝 회피의 바람. BOOM Violent Combat(구매) WHOOSH Dash의 6개 변형. 앞쪽에 부풀어 오르는 부분은 잘라서 0.14초 회피 안에 가장 커진다
 Movement/Dodge/Cloth,0.2,0.95,1.05,스텝 회피의 옷 스침. BOOM Violent Combat WHOOSH Kimono의 6개 변형. 바람처럼 앞쪽을 잘랐다
 Movement/Dodge/Perfect,0.35,0.95,1.05,완벽 회피 때 겹치는 바람(SoundCues DodgePerfect). BOOM Violent Combat WHOOSH Phantom Wind의 6개 변형. 11-06에 The End Is Low로 바꿨다가 사용자가 게임에서 들어 보고 되돌렸다
+Melee/Katana/Swing,0.6,0.95,1.05,카타나 휘두르는 바람(KatanaAudio). Art/Audio/Melee/Katana/Swing에 파일을 넣으면 쓴다. 강공격은 조금 크고 낮게. 비어 있으면 주먹 휘두르기 소리를 높여 쓴다
+Melee/Katana/HitFlesh,0.8,0.95,1.05,카타나가 살을 벨 때. Art/Audio/Melee/Katana/HitFlesh. 비어 있으면 Hitfullness의 살 터지는 소리
+Melee/Katana/HitWorld,0.7,0.95,1.05,카타나가 벽·바닥에 부딪힐 때(불꽃과 함께). Art/Audio/Melee/Katana/HitWorld. 비어 있으면 밀치기의 벽 소리를 높여 쓴다
+Melee/Katana/Draw,0.5,0.97,1.03,카타나를 뽑아 들 때. Art/Audio/Melee/Katana/Draw. 비어 있으면 소리 없음
+Defense/Parry,0.6,0.96,1.04,카타나로 패링할 때 주먹의 패링 소리 위에 겹치는 쇳소리(KatanaAudio). Art/Audio/Combat/Defense/Parry의 6개
+Defense/ReservedStrongParries,0.7,0.96,1.04,카타나 패링으로 체간을 무너뜨릴 때의 묵직한 쇳소리. Art/Audio/Combat/Defense/ReservedStrongParries의 4개
+Defense/Block,0.55,0.96,1.04,카타나 가드로 막을 때의 쇳소리. Art/Audio/Combat/Defense/Block의 4개
 Zombie/Attack,0.85,0.96,1.04,좀비가 공격을 시작할 때의 으르렁(ZombieVoice). 이름에 성별이 없는 몸이 쓰고 다른 몸도 가끔 쓴다. L4D2 워크숍 3675704366(RE6 Common Infected Sound) rageat의 rage_at_victim 5개. 앞뒤 무음을 자르고 크기를 맞췄다
 Zombie/Attack/Male,0.85,0.96,1.04,남자 좀비의 공격 으르렁. 같은 워크숍 rageat/male의 8개
 Zombie/Attack/Female,0.9,0.96,1.04,여자 좀비의 공격 으르렁. 같은 워크숍 rageat/female의 9개(원본이 22kHz라 조금 먹먹하다)

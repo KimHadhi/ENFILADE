@@ -113,7 +113,7 @@ public sealed class GunScoreAnchor : MonoBehaviour
             if (measured != gun.EquippedData) Measure();
             mount = gun.WeaponRoot.TransformPoint(rail);
         }
-        else if (hand != null && slots != null && slots.UsesFists) mount = hand.position;
+        else if (hand != null && slots != null && (slots.UsesFists || MeleeWeapons.IsKatana(slots.SelectedWeapon))) mount = hand.position;
         else return false;
         Transform eye = view.transform;
         viewport = view.WorldToViewportPoint(mount + eye.right * railOffset.x + eye.up * railOffset.y);

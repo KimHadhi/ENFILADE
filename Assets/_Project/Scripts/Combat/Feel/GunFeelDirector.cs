@@ -74,7 +74,8 @@ public static class GunFeelDirector
         if (hit.IsCounter) return Texts.Get("feed.weapon.counter");
         if (hit.Method == DamageMethod.Shove) return Texts.Get("feed.weapon.shove");
         if (hit.Method == DamageMethod.Thrown) return Texts.Get("feed.weapon.knife");
-        if (hit.Method == DamageMethod.Bullet && hit.Source != null)
+        // A gun's or a katana's own name (PlayerKatana's cut is DamageMethod.Slash).
+        if ((hit.Method == DamageMethod.Bullet || hit.Method == DamageMethod.Slash) && hit.Source != null)
         {
             var weapon = hit.Source.GetComponentInChildren<WeaponController>();
             if (weapon != null && weapon.EquippedData != null) return weapon.EquippedData.DisplayName;
