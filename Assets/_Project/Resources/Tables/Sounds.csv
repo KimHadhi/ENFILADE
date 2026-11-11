@@ -199,6 +199,8 @@ Guns/Rifle/MagOut,1,1,1,소총 탄창 빼기. Hi-Octane rifle_clip_out_1
 Guns/Rifle/MagIn,1,1,1,소총 탄창 넣기. Hi-Octane rifle_clip_in_1
 Guns/Rifle/SlideBack,1,1,1,소총 장전손잡이 당기기(SoundCues GunBolt/Rifle). Hi-Octane rifle_slideback_1
 Guns/Rifle/SlideForward,1,1,1,소총 장전손잡이 놓기(SoundCues GunBolt/Rifle). Hi-Octane rifle_slideforward_1
+Guns/Rifle/DrawBack,1,1,1,소총을 꺼낼 때 장전손잡이 당기기(SoundCues GunDraw/Rifle). L4D2 워크숍 2894462364(소음 기관단총 소리 모드) smg_slideback_1을 2dB 줄여 Hi-Octane 장전손잡이 소리와 크기를 맞춤
+Guns/Rifle/DrawForward,1,1,1,소총을 꺼낼 때 장전손잡이 놓기(SoundCues GunDraw/Rifle). 2894462364 smg_slideforward_1을 2dB 줄임
 Guns/Heavy/Bolt,1,1,1,샷건 펌프(당기고 미는 소리가 한 파일). Hi-Octane shotgun_pump_1
 Guns/Heavy/MagIn,1,0.97,1.03,샷건 탄 한 발 넣기. Hi-Octane shotgun_load_shell_2·4
 Guns/LowAmmoClick,1,1,1,잔탄 경고 딸깍(FeelAudio LowAmmoClick·SoundCues GunLowAmmoClick/<총>): 탄창이 3분의 1 아래로 남은 발마다 쏜 사람에게만 모든 총이 같이 낸다. CS2 sounds/weapons/lowammo_01(Default.NearlyEmpty) 원본. L4D2 애드온 Low Ammo Sound Cue의 click.mp3는 이 소리를 +10dB 키워 찌그러뜨린 것이라 원본으로 바꿨다

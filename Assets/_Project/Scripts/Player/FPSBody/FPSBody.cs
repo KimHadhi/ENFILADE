@@ -644,7 +644,12 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
         float drawing = held.PlayDraw(playables, bodyCamera);
         if (drawing > 0f) drawSettle = drawing;
         linked = true;
+        // And its sound as it comes into the hands (WeaponFeedback, the gun's own or 3D on a friend's copy).
+        if (feedback == null && controller != null) feedback = controller.GetComponent<WeaponFeedback>();
+        if (feedback != null && held.Data != null) feedback.Drawn(held.Data.SoundProfile);
     }
+
+    private WeaponFeedback feedback;
 
     private void PutAway()
     {

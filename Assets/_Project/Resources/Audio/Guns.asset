@@ -105,6 +105,12 @@ MonoBehaviour:
   - key: Reverb/Smg/OutdoorsClose
     clips:
     - {fileID: 8300000, guid: e5cbb88e629d42499598a8a51129aac2, type: 3}
+  - key: Rifle/DrawBack
+    clips:
+    - {fileID: 8300000, guid: 06c528ba07eaad44cbc18abee7903e6c, type: 3}
+  - key: Rifle/DrawForward
+    clips:
+    - {fileID: 8300000, guid: f4b2c24f0aca5784a8fd4bb76dd30d28, type: 3}
   - key: Rifle/LastRound
     clips:
     - {fileID: 8300000, guid: b334f704d9b548cf88cdd2dc45d4e0b4, type: 3}

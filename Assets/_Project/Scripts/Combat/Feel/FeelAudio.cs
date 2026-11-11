@@ -9,7 +9,7 @@ public enum GunSoundProfile { Rifle, Pistol, Heavy }
 // ShieldHit and ShieldBreak: a player's shield taking a hit and running out (backlog 321), until clips go in
 // Art/Audio/HitConfirm/ShieldHit and ShieldBreak.
 public enum FeelSound { RifleShot, PistolShot, HeavyShot, DryFire, LowAmmo, MagOut, MagIn, Bolt, HitMarker, Kill, HeadshotKill, BodyFall,
-    LowAmmoClick, LastRound, SlideBack, SlideForward, ShieldBreak, ShieldHit }
+    LowAmmoClick, LastRound, SlideBack, SlideForward, ShieldBreak, ShieldHit, Draw }
 
 /// <summary>
 /// Shot, mechanical and confirm sounds. A gun sound is, in order: the clips assigned to it (GunFeel / WeaponData),
@@ -220,7 +220,8 @@ public sealed class FeelAudio : MonoBehaviour
             case FeelSound.MagIn:
             case FeelSound.Bolt:
             case FeelSound.SlideBack:
-            case FeelSound.SlideForward: return sound.ToString();
+            case FeelSound.SlideForward:
+            case FeelSound.Draw: return sound.ToString();
             default: return null;
         }
     }

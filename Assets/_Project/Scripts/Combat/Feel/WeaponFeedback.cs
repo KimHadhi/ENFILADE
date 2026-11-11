@@ -104,6 +104,18 @@ public sealed class WeaponFeedback : MonoBehaviour
         if (effectsRoot != null) Destroy(effectsRoot.gameObject);
     }
 
+    /// <summary>
+    /// The gun came into the hands (FPSBody.Draw, as its draw plays): Tables/SoundCues "GunDraw/&lt;gun&gt;", a rifle's bolt
+    /// pulled and let go (user, 2026-11-10, from workshop 2894462364). A gun with no draw sound stays quiet (FeelAudio's
+    /// fallback for it is silence).
+    /// </summary>
+    internal void Drawn(GunSoundProfile gun)
+    {
+        var settings = GunFeelSettings.Instance;
+        if (settings != null && settings.gunSounds)
+            Sound(FeelSound.Draw, null, settings.mechanicalVolume, Random.Range(.98f, 1.02f), MechanicalReach, gun);
+    }
+
     private void OnShot(WeaponShot shot)
     {
         var data = weapon.EquippedData;
