@@ -89,11 +89,15 @@ public sealed class MovementInput
     // releases it before the jump runs, so a toggled crouch never turns into a tucked crouch-jump. A press in the air
     // tucks the body and stays latched, so the landing stays crouched instead of standing straight back up. A crawl
     // under a low roof keeps it, so leaving the passage comes back to the crouch; going prone with dive lets it go.
+    // A step dodge keeps it too (user, 2026-11-11: crouch on toggle exactly so as not to hold the key, and every dodge
+    // stood them up): one taken crouched comes back down to the crouch (MovementAbilities.ReturnToLocomotion), and a
+    // press during a dodge flips it for when the dodge ends.
     private void UpdateLatches(GameSettings settings)
     {
         bool sprintPressed = Pressed(sprintAction);
         bool crouchState = ctx.CurrentState == PlayerMovement.MovementState.Crouching || ctx.IsSliding
-            || ctx.IsAirCrouching || ctx.CurrentState == PlayerMovement.MovementState.Proning;
+            || ctx.IsAirCrouching || ctx.CurrentState == PlayerMovement.MovementState.Proning
+            || ctx.CurrentState == PlayerMovement.MovementState.StepDodge;
         if (!settings.crouchToggle || !crouchState || sprintPressed || Pressed(jumpAction) || Pressed(diveAction))
             crouchLatched = false;
         if (settings.crouchToggle && Pressed(crouchAction)) crouchLatched = !crouchLatched;

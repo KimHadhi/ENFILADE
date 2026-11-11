@@ -91,7 +91,10 @@ public sealed class MovementAbilities
         // A blocked crouch capsule may be a side wall or a shoved body, not a low tunnel.
         bool lowPassage = ctx.CurrentState != State.DashPush && ctx.HasVentCeilingAhead(ctx.transform.forward, 0f);
         bool ceiling = ctx.HasCeilingAbove(ctx.StandingColliderHeight);
-        ctx.ChangeState(ceiling ? (lowPassage ? State.Proning : State.Crouching) : State.Standing);
+        // A dodge with the crouch still wanted (held, or latched on toggle: MovementInput) comes straight back down to
+        // it, rather than standing for a frame and dropping again. Off a ledge the air's own tuck takes it (MovementPostureController).
+        bool crouch = ctx.CurrentState == State.StepDodge && ctx.IsGrounded && ctx.InputAvailable && ctx.Input.CrouchHeld;
+        ctx.ChangeState(ceiling ? (lowPassage ? State.Proning : State.Crouching) : crouch ? State.Crouching : State.Standing);
     }
     internal void Reset()
     {
