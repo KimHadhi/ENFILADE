@@ -590,7 +590,10 @@ def load_base(context, rig, path, settings):
     scene.frame_set(1)
     rig['enf_base_source'] = str(path)
     rig['enf_base_name'] = stem
+    rig['enf_load'] = json.dumps({'in_place': settings.in_place, 'mirror': settings.mirror, 'speed': settings.speed})
     settings.export_name = stem.removeprefix('enf_')
+    # A beginner forgets to press I and loses a pose on the next frame: turning a bone keys it (the touch-up layer).
+    _sync_auto_key(context)
     return len(numbers)
 
 
@@ -756,8 +759,10 @@ def randomize(settings):
 
 # ---- Export into the game ----------------------------------------------------------------------------------------
 
-def export_to_game(context, rig, settings):
-    if ROOT is None:
+def export_to_game(context, rig, settings, root=None):
+    """Exports the open clip into its slot folder (root: a stand-in project folder, for a dry run)."""
+    root = Path(root) if root else ROOT
+    if root is None:
         raise ValueError('ENFILADE 프로젝트 폴더를 찾지 못했습니다.')
     data = rig.animation_data
     if data is None or data.action is None:
@@ -768,7 +773,7 @@ def export_to_game(context, rig, settings):
     slot = settings.export_slot
     folder, suffix = ('CalmPose', '_getup') if slot == 'CalmPoseGetUp' else (slot, '')
     stem = 'enf_' + name + suffix
-    path = ROOT / GAME / folder / (stem + '.fbx')
+    path = root / GAME / folder / (stem + '.fbx')
     if path.exists() and not settings.overwrite:
         raise ValueError(f'{folder}/{stem}.fbx 가 이미 있습니다. 이름을 바꾸거나 "덮어쓰기"를 켜세요.')
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -783,6 +788,288 @@ def export_to_game(context, rig, settings):
     path.with_suffix('.clips.csv').write_text(
         CSV_HEADER + f'{stem},{int(SLOT_LOOPS[slot])},1,0,0,0,0,,\n', encoding='utf-8')
     return path
+
+
+# ---- Easy touch-ups: body parts by name, moves by direction --------------------------------------------------------
+
+# The picker's rows: a part by its Korean name and its bone. Synty calls the upper arm "Shoulder" and the forearm
+# "Elbow", which is exactly what trips a beginner, so the bone names never show.
+PARTS = (
+    (('머리', 'Head'), ('목', 'Neck'), ('가슴', 'Spine_03'), ('배', 'Spine_02'), ('허리', 'Spine_01'), ('골반', 'Hips')),
+    (('왼어깨', 'Clavicle_L'), ('왼위팔', 'Shoulder_L'), ('왼아래팔', 'Elbow_L'), ('왼손', 'Hand_L')),
+    (('오른어깨', 'Clavicle_R'), ('오른위팔', 'Shoulder_R'), ('오른아래팔', 'Elbow_R'), ('오른손', 'Hand_R')),
+    (('왼허벅지', 'UpperLeg_L'), ('왼정강이', 'LowerLeg_L'), ('왼발', 'Ankle_L')),
+    (('오른허벅지', 'UpperLeg_R'), ('오른정강이', 'LowerLeg_R'), ('오른발', 'Ankle_R')),
+)
+PART_LABELS = {bone: label for row in PARTS for label, bone in row}
+# Each part points at the next joint; that end is what a move carries.
+TOWARD = {'Hips': 'Spine_01', 'Spine_01': 'Spine_02', 'Spine_02': 'Spine_03', 'Spine_03': 'Neck', 'Neck': 'Head',
+          'Clavicle_L': 'Shoulder_L', 'Shoulder_L': 'Elbow_L', 'Elbow_L': 'Hand_L', 'Hand_L': 'Finger_01',
+          'Clavicle_R': 'Shoulder_R', 'Shoulder_R': 'Elbow_R', 'Elbow_R': 'Hand_R', 'Hand_R': 'Finger_01 1',
+          'UpperLeg_L': 'LowerLeg_L', 'LowerLeg_L': 'Ankle_L', 'Ankle_L': 'Ball_L',
+          'UpperLeg_R': 'LowerLeg_R', 'LowerLeg_R': 'Ankle_R', 'Ankle_R': 'Ball_R'}
+# Moves carry the part's far end toward a direction of the zombie's own body, or twist the part on its length.
+MOVES = (('forward', '앞으로'), ('back', '뒤로'), ('up', '위로'), ('down', '아래로'),
+         ('left', '왼쪽'), ('right', '오른쪽'), ('twist_left', '비틀기 ↺'), ('twist_right', '비틀기 ↻'))
+
+
+def _reflection(axis):
+    """The mirror across the plane square to axis."""
+    return Matrix.Identity(3) - 2 * Matrix([[axis.x * axis.x, axis.x * axis.y, axis.x * axis.z],
+                                            [axis.y * axis.x, axis.y * axis.y, axis.y * axis.z],
+                                            [axis.z * axis.x, axis.z * axis.y, axis.z * axis.z]])
+
+
+def _posed_axes(rig):
+    """The zombie's up, left and forward now: its rest axes turned with its hips, so "forward" follows a turn."""
+    up, left, forward = _body_axes(rig)
+    hips = rig.pose.bones['Hips']
+    turn = _rotation(hips.matrix) @ _rotation(hips.bone.matrix_local).inverted()
+    return turn @ up, turn @ left, turn @ forward
+
+
+def part_direction(rig, bone):
+    """Where a part points now, in armature space: toward its next joint (the head along the neck)."""
+    pose = rig.pose.bones
+    if bone == 'Head':
+        direction = pose['Head'].head - pose['Neck'].head
+    else:
+        child = TOWARD.get(bone)
+        if child is None or child not in pose:
+            return None
+        direction = pose[child].head - pose[bone].head
+    return direction.normalized() if direction.length > 1e-6 else None
+
+
+def _keyed_at(rig, bone, frame):
+    path = f'pose.bones["{bone}"].rotation_quaternion'
+    data = rig.animation_data
+    return any(curve.data_path == path and any(abs(p.co.x - frame) < .5 for p in curve.keyframe_points)
+               for curve in action_curves(data.action if data else None))
+
+
+def _key_shown(rig, bone, frame):
+    """Keys the pose on screen into the touch-up layer: Blender works out the touch-up that gives it over the layers."""
+    pb = rig.pose.bones[bone]
+    pb.keyframe_insert('rotation_quaternion', frame=frame, group=bone)
+    if bone == 'Hips':
+        pb.keyframe_insert('location', frame=frame, group=bone)
+
+
+def turn_part(context, rig, bone, reach, make_turn):
+    """Turns a part at the current frame by make_turn(its armature-space rotation now) and keys it there.
+
+    With reach > 0 the pose reach frames before and after is keyed as it is first, so the change swells and fades
+    around this frame instead of spreading to the whole clip: one click is one local, smooth change.
+    """
+    scene = context.scene
+    frame = scene.frame_current
+    for at in (frame - reach, frame + reach) if reach > 0 else ():
+        if scene.frame_start <= at <= scene.frame_end and not _keyed_at(rig, bone, at):
+            scene.frame_set(at)
+            _key_shown(rig, bone, at)
+    scene.frame_set(frame)
+    context.view_layer.update()
+    pb = rig.pose.bones[bone]
+    posed = _rotation(pb.matrix)
+    turn = make_turn(posed)
+    # The posed bone is K @ basis for a K its parents and rest set, so turning it by Q in armature space makes the
+    # basis basis @ (posed⁻¹ @ Q @ posed).
+    pb.rotation_quaternion = pb.rotation_quaternion.copy() @ (posed.inverted() @ turn @ posed)
+    _key_shown(rig, bone, frame)
+    context.view_layer.update()
+
+
+def nudge(context, rig, bone, move, degrees, reach):
+    """Moves a part's far end toward a body direction by some degrees (or twists it) at the current frame."""
+    context.view_layer.update()
+    up, left, forward = _posed_axes(rig)
+    direction = part_direction(rig, bone)
+    if direction is None:
+        raise ValueError('이 부위는 움직일 방향을 알 수 없습니다.')
+    if move in ('twist_left', 'twist_right'):
+        # ↺ turns the front of an upright part toward the zombie's left, as seen from above, hanging parts alike.
+        side = 1.0 if direction.dot(up) >= 0 else -1.0
+        axis, angle = direction, degrees * side * (1.0 if move == 'twist_left' else -1.0)
+    else:
+        target = {'forward': forward, 'back': -forward, 'up': up, 'down': -up, 'left': left, 'right': -left}[move]
+        axis = direction.cross(target)
+        if axis.length < 1e-3:
+            raise ValueError('이미 그쪽을 향하고 있습니다. 다른 방향을 눌러 보세요.')
+        angle = degrees
+    turn = Quaternion(axis.normalized(), math.radians(angle))
+    turn_part(context, rig, bone, reach, lambda _posed: turn)
+
+
+def mirror_part(context, rig, bone, reach):
+    """Gives the part on the other side this part's pose, as in a mirror, at the current frame."""
+    twin = _mirror_name(bone)
+    if twin == bone or twin not in rig.pose.bones:
+        raise ValueError('가운데 부위는 반대쪽이 없습니다.')
+    context.view_layer.update()
+    _up, left, _forward = _body_axes(rig)
+    reflect = _reflection(left)
+    rest = {n: _rotation(rig.data.bones[n].matrix_local) for n in (bone, twin)}
+    turn = (_rotation(rig.pose.bones[bone].matrix) @ rest[bone].inverted()).to_matrix()
+    wanted = (reflect @ turn @ reflect).to_quaternion() @ rest[twin]
+    turn_part(context, rig, twin, reach, lambda posed: wanted @ posed.inverted())
+
+
+def _curve_owners(action):
+    """(collection, F-curve) pairs of an action, legacy or layered, so a curve can be removed from its owner."""
+    if action is None:
+        return []
+    if getattr(action, 'is_action_legacy', True) and hasattr(action, 'fcurves'):
+        try:
+            return [(action.fcurves, curve) for curve in action.fcurves]
+        except (AttributeError, RuntimeError):
+            pass
+    pairs = []
+    for layer in getattr(action, 'layers', []):
+        for strip in layer.strips:
+            for bag in getattr(strip, 'channelbags', []):
+                pairs.extend((bag.fcurves, curve) for curve in bag.fcurves)
+    return pairs
+
+
+def refresh_animation(context, rig):
+    """After F-curves are changed directly (not by keying), Blender keeps evaluating its copy of the old action
+    until told otherwise: re-assigning the action makes it rebuild that copy."""
+    data = rig.animation_data
+    if data is not None and data.action is not None:
+        action, slot = data.action, getattr(data, 'action_slot', None)
+        action.update_tag()
+        data.action = None
+        data.action = action
+        if slot is not None and getattr(data, 'action_slot', None) != slot:
+            data.action_slot = slot
+    rig.update_tag(refresh={'OBJECT', 'DATA', 'TIME'})
+    context.view_layer.update()
+
+
+def clear_touch_ups(rig, frame, bones=None):
+    """Removes the touch-up keys at one frame (of some bones, or all); returns how many went."""
+    data = rig.animation_data
+    prefixes = tuple(f'pose.bones["{b}"]' for b in bones) if bones else None
+    removed = 0
+    for owner, curve in _curve_owners(data.action if data else None):
+        if prefixes and not curve.data_path.startswith(prefixes):
+            continue
+        for point in [p for p in curve.keyframe_points if abs(p.co.x - frame) < .5]:
+            curve.keyframe_points.remove(point, fast=True)
+            removed += 1
+        curve.update()
+        # A curve with no key left would read as 0 (a quaternion of 0 is no rotation at all): it goes too.
+        if len(curve.keyframe_points) == 0:
+            owner.remove(curve)
+    return removed
+
+
+# ---- Recipes: a clip as a small text file (base, options, variations, touch-ups, slot) ------------------------------
+# Claude reads and writes these, so the user can ask for a change in words ("head lower around frame 20, the right
+# arm hanging") and get the FBX in the game without opening Blender: make_clip.py builds them headless.
+
+RECIPES = 'ArtSource/Zombies/Recipes'
+VARY_KEYS = ('hunch', 'head_tilt', 'head_droop', 'reach', 'dead_arm_l', 'dead_arm_r', 'stiff_leg_l', 'stiff_leg_r',
+             'twitch', 'amplify', 'seed')
+INTERPOLATIONS = ('CONSTANT', 'LINEAR', 'BEZIER')
+
+
+def _project_path(path):
+    """A path inside the project as project-relative with forward slashes, others as they are."""
+    try:
+        return Path(path).resolve().relative_to(ROOT).as_posix()
+    except (ValueError, TypeError):
+        return str(path)
+
+
+def _from_project(path):
+    found = Path(path)
+    return found if found.is_absolute() else ROOT / found
+
+
+def recipe_from_scene(context, rig):
+    """The open clip as a recipe: its base and load options, the variation values and the touch-up keys as they are."""
+    settings = context.scene.enf_zombie
+    loaded = json.loads(rig.get('enf_load', '{}'))
+    data = rig.animation_data
+    keys = {}
+    for curve in action_curves(data.action if data else None):
+        keys.setdefault(curve.data_path, {})[str(curve.array_index)] = [
+            [round(p.co.x, 3), round(p.co.y, 6), p.interpolation] for p in curve.keyframe_points]
+    return {
+        'version': 1,
+        'base': _project_path(rig.get('enf_base_source', '')),
+        'in_place': loaded.get('in_place', settings.in_place),
+        'mirror': loaded.get('mirror', settings.mirror),
+        'speed': loaded.get('speed', settings.speed),
+        'vary': {key: round(getattr(settings, key), 3) for key in VARY_KEYS},
+        'touch': [],
+        'keys': keys,
+        'frames': [context.scene.frame_start, context.scene.frame_end],
+        'slot': settings.export_slot,
+        'name': settings.export_name,
+    }
+
+
+def _write_touch_keys(context, rig, keys):
+    """Puts saved touch-up curves back as they were (no remapping: they are the layer's own values)."""
+    data = rig.animation_data
+    action = data.action
+    for path, channels in keys.items():
+        group = re.search(r'pose\.bones\["(.+?)"\]', path)
+        for index, points in channels.items():
+            curve = _ensure_curve(action, rig, path, int(index), group.group(1) if group else '')
+            curve.keyframe_points.clear()
+            curve.keyframe_points.add(len(points))
+            for point, (frame, value, interpolation) in zip(curve.keyframe_points, points):
+                point.co = (frame, value)
+                point.interpolation = interpolation if interpolation in INTERPOLATIONS else 'BEZIER'
+                point.handle_left_type = point.handle_right_type = 'AUTO_CLAMPED'
+            curve.update()
+    refresh_animation(context, rig)
+
+
+def apply_recipe(context, rig, recipe):
+    """Builds a recipe's clip on the rig: load, variations, saved touch-ups, then the moves it lists in words."""
+    settings = context.scene.enf_zombie
+    settings.in_place = bool(recipe.get('in_place', True))
+    settings.mirror = bool(recipe.get('mirror', False))
+    settings.speed = float(recipe.get('speed', 1.0))
+    settings.export_slot = recipe.get('slot', settings.export_slot)
+    load_base(context, rig, _from_project(recipe['base']), settings)
+    for key, value in recipe.get('vary', {}).items():
+        if key in VARY_KEYS:
+            setattr(settings, key, value)
+    if any(abs(getattr(settings, key)) > 1e-6 for key in VARY_KEYS if key != 'seed'):
+        apply_variation(context, rig, settings)
+    if recipe.get('keys'):
+        _write_touch_keys(context, rig, recipe['keys'])
+    scene = context.scene
+    for move in recipe.get('touch', []):
+        scene.frame_set(int(move['frame']))
+        if move.get('mirror'):
+            mirror_part(context, rig, move['part'], int(move.get('reach', 6)))
+        else:
+            nudge(context, rig, move['part'], move['move'], float(move['degrees']), int(move.get('reach', 6)))
+    if recipe.get('frames'):
+        scene.frame_start, scene.frame_end = (int(v) for v in recipe['frames'])
+    settings.export_name = recipe.get('name') or settings.export_name
+    scene.frame_set(scene.frame_start)
+
+
+def recipe_items(_self, _context):
+    items = []
+    if ROOT is not None and (ROOT / RECIPES).is_dir():
+        for path in sorted((ROOT / RECIPES).glob('*.json')):
+            items.append((str(path), path.stem, str(path)))
+    if not items:
+        items.append(('NONE', '레시피가 없습니다', ''))
+    _recipe_cache[:] = items
+    return _recipe_cache
+
+
+_recipe_cache = []
 
 
 # ---- Settings, operators and the panel ---------------------------------------------------------------------------
@@ -807,6 +1094,15 @@ class ENFZombieSettings(bpy.types.PropertyGroup):
     export_slot: EnumProperty(name='슬롯', items=[(f, label, '') for f, label, _ in SLOTS], default='Walk')
     export_name: StringProperty(name='이름', default='', description='영문·숫자. 파일은 enf_이름.fbx 가 된다')
     overwrite: BoolProperty(name='덮어쓰기', default=False, description='같은 이름의 파일이 있으면 바꾼다')
+    step: FloatProperty(name='한 번에', default=5.0, min=1.0, max=45.0, description='방향 버튼 한 번에 돌리는 각도(도)')
+    reach_frames: IntProperty(name='섞는 길이', default=6, min=0, max=60,
+                              description='바꾼 프레임 앞뒤로 이만큼(프레임)에 걸쳐 부드럽게 섞는다. 0이면 이웃한 키까지 퍼진다')
+    auto_key: BoolProperty(name='자동 저장', default=True, update=lambda self, context: _sync_auto_key(context),
+                           description='뷰에서 뼈를 돌리면 그 프레임에 바로 손질 키가 저장된다 (I를 안 눌러도 된다)')
+
+
+def _sync_auto_key(context):
+    context.scene.tool_settings.use_keyframe_insert_auto = context.scene.enf_zombie.auto_key
 
 
 def _rig_or_report(op, context):
@@ -1023,6 +1319,170 @@ class ENFZOMBIE_OT_export(bpy.types.Operator):
         return {'FINISHED'}
 
 
+def _active_part(rig):
+    bone = rig.data.bones.active
+    return bone.name if bone is not None and bone.name in PART_LABELS else None
+
+
+class ENFZOMBIE_OT_pick(bpy.types.Operator):
+    bl_idname = 'enf_zombie.pick'
+    bl_label = '부위 고르기'
+    bl_description = '이 부위를 고른다. 아래 방향 버튼이 이 부위를 움직인다'
+    bl_options = {'REGISTER', 'UNDO'}
+    bone: StringProperty()
+
+    def execute(self, context):
+        rig = _rig_or_report(self, context)
+        if rig is None or self.bone not in rig.data.bones:
+            return {'CANCELLED'}
+        _back_to_pose(context, rig)
+        for bone in rig.data.bones:
+            bone.select = bone.select_head = bone.select_tail = False
+        chosen = rig.data.bones[self.bone]
+        chosen.select = True
+        rig.data.bones.active = chosen
+        return {'FINISHED'}
+
+
+class ENFZOMBIE_OT_nudge(bpy.types.Operator):
+    bl_idname = 'enf_zombie.nudge'
+    bl_label = '움직이기'
+    bl_description = '고른 부위의 끝을 이 방향으로 "한 번에" 각도만큼 움직이고 이 프레임에 저장한다(좀비 기준 왼쪽·오른쪽)'
+    bl_options = {'REGISTER', 'UNDO'}
+    move: EnumProperty(items=[(key, label, '') for key, label in MOVES])
+
+    def execute(self, context):
+        rig = _rig_or_report(self, context)
+        if rig is None:
+            return {'CANCELLED'}
+        part = _active_part(rig)
+        if part is None:
+            self.report({'WARNING'}, '먼저 위에서 부위를 고르세요')
+            return {'CANCELLED'}
+        settings = context.scene.enf_zombie
+        try:
+            nudge(context, rig, part, self.move, settings.step, settings.reach_frames)
+        except ValueError as error:
+            self.report({'WARNING'}, str(error))
+            return {'CANCELLED'}
+        return {'FINISHED'}
+
+
+class ENFZOMBIE_OT_mirror_part(bpy.types.Operator):
+    bl_idname = 'enf_zombie.mirror_part'
+    bl_label = '반대쪽에 똑같이'
+    bl_description = '고른 부위의 지금 자세를 반대쪽 부위에 거울처럼 준다 (이 프레임)'
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        rig = _rig_or_report(self, context)
+        part = _active_part(rig) if rig else None
+        if part is None:
+            self.report({'WARNING'}, '먼저 위에서 왼쪽이나 오른쪽 부위를 고르세요')
+            return {'CANCELLED'}
+        try:
+            mirror_part(context, rig, part, context.scene.enf_zombie.reach_frames)
+        except ValueError as error:
+            self.report({'WARNING'}, str(error))
+            return {'CANCELLED'}
+        return {'FINISHED'}
+
+
+class ENFZOMBIE_OT_clear_frame(bpy.types.Operator):
+    bl_idname = 'enf_zombie.clear_frame'
+    bl_label = '이 프레임 손질 지우기'
+    bl_description = '지금 프레임의 손질 키를 지운다 (고른 부위만, 또는 전부)'
+    bl_options = {'REGISTER', 'UNDO'}
+    every: BoolProperty(default=False, options={'SKIP_SAVE'})
+
+    def execute(self, context):
+        rig = _rig_or_report(self, context)
+        if rig is None:
+            return {'CANCELLED'}
+        part = None if self.every else _active_part(rig)
+        if not self.every and part is None:
+            self.report({'WARNING'}, '먼저 부위를 고르거나 "전부"를 누르세요')
+            return {'CANCELLED'}
+        frame = context.scene.frame_current
+        count = clear_touch_ups(rig, frame, [part] if part else None)
+        refresh_animation(context, rig)
+        self.report({'INFO'}, f'{frame}프레임에서 키 {count}개를 지웠습니다')
+        return {'FINISHED'}
+
+
+class ENFZOMBIE_OT_save_recipe(bpy.types.Operator):
+    bl_idname = 'enf_zombie.save_recipe'
+    bl_label = '레시피로 저장'
+    bl_description = '지금 클립(바탕·변형·손질·슬롯)을 ArtSource/Zombies/Recipes/이름.json 으로 남긴다. Claude가 읽고 고칠 수 있다'
+    bl_options = {'REGISTER'}
+
+    def execute(self, context):
+        rig = _rig_or_report(self, context)
+        if rig is None or not rig.get('enf_base_source'):
+            self.report({'ERROR'}, '먼저 클립을 불러오세요')
+            return {'CANCELLED'}
+        settings = context.scene.enf_zombie
+        name = re.sub(r'[^A-Za-z0-9_.-]', '_', settings.export_name.strip()).removeprefix('enf_')
+        if not name:
+            self.report({'ERROR'}, '4단계의 이름을 먼저 넣으세요 (영문·숫자)')
+            return {'CANCELLED'}
+        path = ROOT / RECIPES / (name + '.json')
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(recipe_from_scene(context, rig), ensure_ascii=False, indent=1), encoding='utf-8')
+        self.report({'INFO'}, f'저장했습니다: Recipes/{path.name}')
+        return {'FINISHED'}
+
+
+class ENFZOMBIE_OT_load_recipe(bpy.types.Operator):
+    bl_idname = 'enf_zombie.load_recipe'
+    bl_label = '레시피 불러오기'
+    bl_description = '레시피대로 클립을 다시 만든다 (Claude가 고친 레시피도)'
+    bl_options = {'REGISTER', 'UNDO'}
+    bl_property = 'recipe'
+    recipe: EnumProperty(name='레시피', items=recipe_items)
+
+    def invoke(self, context, event):
+        context.window_manager.invoke_search_popup(self)
+        return {'RUNNING_MODAL'}
+
+    def execute(self, context):
+        rig = _rig_or_report(self, context)
+        if rig is None or self.recipe == 'NONE':
+            return {'CANCELLED'}
+        try:
+            apply_recipe(context, rig, json.loads(Path(self.recipe).read_text(encoding='utf-8')))
+        except Exception as error:  # Reported to the user.
+            self.report({'ERROR'}, str(error))
+            return {'CANCELLED'}
+        finally:
+            _back_to_pose(context, rig)
+        self.report({'INFO'}, f'{Path(self.recipe).stem} 레시피대로 만들었습니다')
+        return {'FINISHED'}
+
+
+class ENFZOMBIE_OT_open_guide(bpy.types.Operator):
+    bl_idname = 'enf_zombie.open_guide'
+    bl_label = '처음이면 안내서'
+    bl_description = 'ArtSource/Zombies/START_HERE.md 를 연다'
+
+    def execute(self, context):
+        if ROOT is None:
+            return {'CANCELLED'}
+        bpy.ops.wm.path_open(filepath=str(ROOT / 'ArtSource' / 'Zombies' / 'START_HERE.md'))
+        return {'FINISHED'}
+
+
+class _ZombieSubPanel:
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = CATEGORY
+    bl_parent_id = 'ENFZOMBIE_PT_panel'
+
+    @classmethod
+    def poll(cls, context):
+        return zombie_rig(context) is not None
+
+
 class ENFZOMBIE_PT_panel(bpy.types.Panel):
     bl_label = 'ENFILADE 좀비 애니메이션'
     bl_idname = 'ENFZOMBIE_PT_panel'
@@ -1036,8 +1496,7 @@ class ENFZOMBIE_PT_panel(bpy.types.Panel):
         if rig is None:
             layout.label(text='ENFILADE_Zombie_Animation.blend 를 여세요')
             return
-        settings = context.scene.enf_zombie
-        data, base_track, vary_track = layer_stack(rig, create=False)
+        _data, base_track, _vary = layer_stack(rig, create=False)
         models = tools.preview_models(context, rig)
         if models:
             row = layout.row(align=True)
@@ -1045,22 +1504,38 @@ class ENFZOMBIE_PT_panel(bpy.types.Panel):
                 op = row.operator('truefps.preview_model', text=label,
                                   depress=not obj.hide_get(view_layer=context.view_layer))
                 op.model = label
-
-        box = layout.box()
-        box.label(text='1. 바탕 클립', icon='ARMATURE_DATA')
         source = rig.get('enf_base_source')
-        box.label(text='지금: ' + (Path(source).stem if source and base_track else '(없음)'))
-        box.operator('enf_zombie.load', icon='VIEWZOOM')
-        box.operator('enf_zombie.load_file', icon='FILEBROWSER')
-        row = box.row(align=True)
+        layout.label(text='지금 클립: ' + (Path(source).stem if source and base_track else '(없음)'), icon='ARMATURE_DATA')
+        row = layout.row(align=True)
+        row.label(text='Space 재생 · Ctrl+Z 되돌리기')
+        row.operator('enf_zombie.open_guide', text='', icon='HELP')
+
+
+class ENFZOMBIE_PT_base(_ZombieSubPanel, bpy.types.Panel):
+    bl_label = '1. 바탕 클립'
+    bl_idname = 'ENFZOMBIE_PT_base'
+
+    def draw(self, context):
+        layout = self.layout
+        settings = context.scene.enf_zombie
+        layout.operator('enf_zombie.load', icon='VIEWZOOM')
+        layout.operator('enf_zombie.load_file', icon='FILEBROWSER')
+        row = layout.row(align=True)
         row.prop(settings, 'in_place', toggle=True)
         row.prop(settings, 'mirror', toggle=True)
-        box.prop(settings, 'speed')
-        box.operator('enf_zombie.reload', icon='FILE_REFRESH')
+        layout.prop(settings, 'speed')
+        layout.operator('enf_zombie.reload', icon='FILE_REFRESH')
 
-        box = layout.box()
-        box.label(text='2. 변형 (값을 바꾸고 적용)', icon='MOD_WAVE')
-        col = box.column(align=True)
+
+class ENFZOMBIE_PT_vary(_ZombieSubPanel, bpy.types.Panel):
+    bl_label = '2. 변형 (값을 바꾸고 적용)'
+    bl_idname = 'ENFZOMBIE_PT_vary'
+
+    def draw(self, context):
+        layout = self.layout
+        settings = context.scene.enf_zombie
+        _data, _base, vary_track = layer_stack(zombie_rig(context), create=False)
+        col = layout.column(align=True)
         for prop in ('hunch', 'head_tilt', 'head_droop', 'reach'):
             col.prop(settings, prop, slider=True)
         row = col.row(align=True)
@@ -1071,48 +1546,102 @@ class ENFZOMBIE_PT_panel(bpy.types.Panel):
         row.prop(settings, 'stiff_leg_r', slider=True)
         col.prop(settings, 'twitch', slider=True)
         col.prop(settings, 'amplify', slider=True)
-        row = box.row(align=True)
+        row = layout.row(align=True)
         row.operator('enf_zombie.vary', icon='CHECKMARK')
         shuffle = row.operator('enf_zombie.vary', text='무작위', icon='MOD_NOISE')
         shuffle.shuffle = True
-        row = box.row(align=True)
+        row = layout.row(align=True)
         if vary_track is not None:
             toggle = row.operator('enf_zombie.toggle', text='변형 켜짐' if not vary_track.mute else '변형 꺼짐',
                                   depress=not vary_track.mute, icon='HIDE_OFF' if not vary_track.mute else 'HIDE_ON')
             toggle.layer = 'VARY'
         row.operator('enf_zombie.reset_vary', icon='LOOP_BACK')
 
+
+class ENFZOMBIE_PT_touch(_ZombieSubPanel, bpy.types.Panel):
+    bl_label = '3. 손질 (직접 고치기)'
+    bl_idname = 'ENFZOMBIE_PT_touch'
+
+    def draw(self, context):
+        layout = self.layout
+        rig = zombie_rig(context)
+        settings = context.scene.enf_zombie
+        data = rig.animation_data
+        part = _active_part(rig)
+        layout.label(text='① 고칠 프레임으로 가서 ② 부위를 고르고 ③ 방향을 누른다')
+        col = layout.column(align=True)
+        for parts in PARTS:
+            row = col.row(align=True)
+            for label, bone in parts:
+                op = row.operator('enf_zombie.pick', text=label, depress=part == bone)
+                op.bone = bone
         box = layout.box()
-        box.label(text='3. 손질 (직접 고치기)', icon='GREASEPENCIL')
-        box.label(text='오른쪽 뷰: 뼈 클릭 → R 로 돌리기 → I 로 저장')
-        box.label(text='한 프레임에 저장하면 앞뒤로 부드럽게 섞인다')
-        box.operator('enf_zombie.key_selected', icon='KEY_HLT')
+        box.label(text=(PART_LABELS[part] + ' 움직이기 (좀비 기준 왼쪽·오른쪽)') if part else '부위를 고르세요',
+                  icon='BONE_DATA')
+        grid = box.grid_flow(columns=2, align=True)
+        grid.enabled = part is not None
+        for key, label in MOVES:
+            grid.operator('enf_zombie.nudge', text=label).move = key
         row = box.row(align=True)
+        row.prop(settings, 'step')
+        row.prop(settings, 'reach_frames')
+        row = box.row(align=True)
+        row.enabled = part is not None
+        row.operator('enf_zombie.mirror_part', icon='MOD_MIRROR')
+        row.operator('enf_zombie.clear_frame', text='이 부위 지우기', icon='X').every = False
+        row = layout.row(align=True)
+        row.operator('enf_zombie.clear_frame', text='이 프레임 전부 지우기', icon='TRASH').every = True
+        row.operator('enf_zombie.clear_edit', text='손질 모두 지우기', icon='TRASH')
+        row = layout.row(align=True)
+        row.prop(settings, 'auto_key', toggle=True, icon='RECORD_ON' if settings.auto_key else 'RECORD_OFF')
         if data is not None and data.action is not None:
             on = data.action_influence > .5
             toggle = row.operator('enf_zombie.toggle', text='손질 켜짐' if on else '손질 꺼짐', depress=on,
                                   icon='HIDE_OFF' if on else 'HIDE_ON')
             toggle.layer = 'EDIT'
-        row.operator('enf_zombie.clear_edit', icon='TRASH')
-        row = box.row(align=True)
+        layout.label(text='익숙해지면: 오른쪽 뷰에서 뼈 클릭 → R(돌리기)', icon='INFO')
+        row = layout.row(align=True)
         row.operator('truefps.copy_loop_end', text='처음 자세를 끝에', icon='DUPLICATE')
         row.operator('truefps.check_loop', text='반복 이음새 확인', icon='CHECKMARK')
 
-        box = layout.box()
-        box.label(text='4. 게임에 보내기', icon='EXPORT')
-        box.prop(settings, 'export_slot', text='')
-        box.prop(settings, 'export_name')
-        box.prop(settings, 'overwrite')
-        box.operator('enf_zombie.export', icon='EXPORT')
+
+class ENFZOMBIE_PT_send(_ZombieSubPanel, bpy.types.Panel):
+    bl_label = '4. 게임에 보내기'
+    bl_idname = 'ENFZOMBIE_PT_send'
+
+    def draw(self, context):
+        layout = self.layout
+        settings = context.scene.enf_zombie
+        layout.prop(settings, 'export_slot', text='')
+        layout.prop(settings, 'export_name')
+        layout.prop(settings, 'overwrite')
+        layout.operator('enf_zombie.export', icon='EXPORT')
         folder = 'CalmPose' if settings.export_slot == 'CalmPoseGetUp' else settings.export_slot
         name = settings.export_name.strip() or '이름'
         suffix = '_getup' if settings.export_slot == 'CalmPoseGetUp' else ''
-        box.label(text=f'→ Zombies/{folder}/enf_{name}{suffix}.fbx')
+        layout.label(text=f'→ Zombies/{folder}/enf_{name}{suffix}.fbx')
+
+
+class ENFZOMBIE_PT_recipe(_ZombieSubPanel, bpy.types.Panel):
+    bl_label = '레시피 (Claude에게 맡기기)'
+    bl_idname = 'ENFZOMBIE_PT_recipe'
+    bl_options = {'DEFAULT_CLOSED'}
+
+    def draw(self, context):
+        layout = self.layout
+        layout.label(text='저장하고 파일 이름을 Claude에게 알려 주면')
+        layout.label(text='말로 고쳐 달라고 할 수 있다')
+        row = layout.row(align=True)
+        row.operator('enf_zombie.save_recipe', icon='FILE_TICK')
+        row.operator('enf_zombie.load_recipe', icon='FILE_FOLDER')
 
 
 CLASSES = (ENFZombieSettings, ENFZOMBIE_OT_load, ENFZOMBIE_OT_load_file, ENFZOMBIE_OT_reload, ENFZOMBIE_OT_vary,
            ENFZOMBIE_OT_reset_vary, ENFZOMBIE_OT_toggle, ENFZOMBIE_OT_clear_edit, ENFZOMBIE_OT_key_selected,
-           ENFZOMBIE_OT_export, ENFZOMBIE_PT_panel)
+           ENFZOMBIE_OT_export, ENFZOMBIE_OT_pick, ENFZOMBIE_OT_nudge, ENFZOMBIE_OT_mirror_part,
+           ENFZOMBIE_OT_clear_frame, ENFZOMBIE_OT_save_recipe, ENFZOMBIE_OT_load_recipe, ENFZOMBIE_OT_open_guide,
+           ENFZOMBIE_PT_panel, ENFZOMBIE_PT_base, ENFZOMBIE_PT_vary, ENFZOMBIE_PT_touch, ENFZOMBIE_PT_send,
+           ENFZOMBIE_PT_recipe)
 
 
 def _show_zombie_tab():

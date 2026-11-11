@@ -21,10 +21,28 @@ export (`export_active_clip`), and adds the Zombie sidebar tab:
    twitches, amplify) and stored as per-bone deltas in NLA track `2 Variation`, blend Combine.
 3. **Touch-ups**: the rig's active action, blend Combine, on top. Blender remaps inserted keys through
    the stack, so pressing `I` keys exactly the pose on screen.
+   Beginner controls (the "3. 손질" sub-panel): body parts picked by Korean name, buttons that carry a part's far
+   end toward a body direction (the zombie's own forward/back/up/down/left/right, the axes turned with its hips)
+   or twist it, each click keyed at the current frame after pinning the pose `reach_frames` before and after, so
+   one click is one local, smooth change; mirror a part's pose to the other side; clear one frame's touch-ups.
+   Auto-key is switched on at load, so a pose turned in the viewport is never lost. Curves changed directly
+   (recipes, clearing) need `refresh_animation`: Blender keeps evaluating its copy of the old action otherwise.
 4. **Export**: `export_active_clip` samples the evaluated stack onto an original-bones-only skeleton and
    writes `Assets/_Project/Art/Animations/Zombies/<Slot>/enf_<name>.fbx` and its `.clips.csv`
    (loop by slot, `inPlace` 1). Unity's `ZombieClipFolders` adds it to the slot's `ZombieLooks` list and
    `ModelImportRules` gives `enf_` files the Synty avatar.
+
+Recipes (`ArtSource/Zombies/Recipes/*.json`, format in its README): a clip as text, i.e. base clip, load
+options, variation values, touch-up keys saved verbatim (`keys`) and moves written in words (`touch`: frame, part,
+move, degrees, reach, or `mirror`), plus slot and name. `apply_recipe` rebuilds one (load → vary → keys → touch);
+`make_clip.py` builds recipes headless and exports them (`--out DIR` exports under a stand-in project folder):
+
+```powershell
+& 'F:\SteamLibrary\steamapps\common\Blender\blender.exe' --background .\ArtSource\Zombies\ENFILADE_Zombie_Animation.blend --python .\Tools\Blender\Zombies\make_clip.py -- .\ArtSource\Zombies\Recipes\<name>.json
+```
+
+This is the path for "change it in words": Claude edits or writes the recipe and runs that, the user only judges
+the result in the game. A saved recipe round-trips to the same pose (0.0 degrees, checked 2026-11-11).
 
 Facts the code relies on (checked headless 2026-11-11, Blender 4.5.16):
 

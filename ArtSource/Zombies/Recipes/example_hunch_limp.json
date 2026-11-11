@@ -1,0 +1,14 @@
+{
+ "version": 1,
+ "base": "Assets/ThirdParty/Nephilite Studios/Zombie Animation Set/Animations/In Place/zombie_walk_03.fbx",
+ "in_place": true,
+ "mirror": false,
+ "speed": 1.0,
+ "vary": {"hunch": 15, "head_droop": 8, "dead_arm_r": 0.8, "stiff_leg_l": 0.5, "twitch": 0.3, "seed": 7},
+ "touch": [
+  {"frame": 30, "part": "Head", "move": "left", "degrees": 15, "reach": 6},
+  {"frame": 90, "part": "Head", "move": "twist_right", "degrees": 20, "reach": 10}
+ ],
+ "slot": "Walk",
+ "name": "example_hunch_limp"
+}
