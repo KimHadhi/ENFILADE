@@ -240,8 +240,7 @@ public sealed class MainMenuWardrobe : MonoBehaviour
 
     private void BuildLeft(List<PlayerBodyProfile.Skin> skins, PlayerBodyProfile.Skin chosen)
     {
-        Title(content, edge, Texts.Get("menu.character.title"), 3f);
-        Note(content, new Vector2(edge + 4f, 108f), LeftWidth + 160f, Texts.Get("wardrobe.where"));
+        Title(content, edge, Texts.Get("menu.character.title"), 3f, Texts.Get("wardrobe.where"), new Vector2(edge + 4f, 108f), LeftWidth + 160f);
         if (chosen == null)
         {
             Note(content, new Vector2(edge, 150f), LeftWidth, Texts.Get("settings.character.none"));
@@ -356,8 +355,7 @@ public sealed class MainMenuWardrobe : MonoBehaviour
 
     private void BuildSlots(RectTransform right, PlayerBodyProfile.Skin skin)
     {
-        Title(right, 0f, Texts.Get("wardrobe.title"), -3f);
-        Note(right, new Vector2(4f, 108f), RightWidth, Texts.Get("wardrobe.slots.where"));
+        Title(right, 0f, Texts.Get("wardrobe.title"), -3f, Texts.Get("wardrobe.slots.where"), new Vector2(4f, 108f), RightWidth);
         var look = OutfitLook.Saved(skin.Id);
         float width = Mathf.Floor((RightWidth - TileGap) * .5f), y = 146f;
         foreach (string group in Groups)
@@ -844,12 +842,20 @@ public sealed class MainMenuWardrobe : MonoBehaviour
 
     // ---- The kit's pieces as this page uses them ----
 
-    private void Title(RectTransform parent, float x, string text, float tilt)
+    // A page's big title, and the line under it, which shows only once the title's pink has drained.
+    private void Title(RectTransform parent, float x, string text, float tilt, string under, Vector2 underAt, float underWidth)
     {
         var title = KitStyle.Flat(KitStyle.TopLeft("Title", parent, new Vector2(x, 26f), new Vector2(parent == content ? LeftWidth : RightWidth, 80f)),
             text, 64f, TextAlignmentOptions.MidlineLeft);
         title.rectTransform.localRotation = Quaternion.Euler(0f, 0f, tilt);
+        float at = growAt;
         Grow(title.rectTransform, 0f);
+        var line = Note(parent, underAt, underWidth, under);
+        if (reveal == null) return;
+        // Shown at once, the line lay under the title's tilted pink while it opened (the user, 2026-11-12: "분홍색
+        // 네모칸이랑 저 아래 글자랑 겹쳐서 … 딜레이 줘서"): it grows in from its left after, with no pink of its own.
+        var clear = KitStyle.Fill(KitStyle.Stretch("Flash", line.rectTransform), Color.clear);
+        reveal.Card(line.rectTransform, clear, at + KitReveal.GrowSeconds + KitReveal.FlashHold + KitReveal.DrainSeconds);
     }
 
     private static TextMeshProUGUI Note(RectTransform parent, Vector2 at, float width, string text, float size = 16f)

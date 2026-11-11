@@ -31,6 +31,8 @@ internal static class OutfitDresser
         public readonly HashSet<string> Models = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         /// <summary>Each item put on and the renderers it shows: the wardrobe's try-on and slot marks find it here.</summary>
         public readonly Dictionary<string, List<Renderer>> Pieces = new Dictionary<string, List<Renderer>>(StringComparer.OrdinalIgnoreCase);
+        /// <summary>The leaving slot's piece (Dress leaving), drawn over the body as it will be without it.</summary>
+        public readonly List<Renderer> Leaving = new List<Renderer>();
     }
 
     private readonly struct Worn
@@ -79,13 +81,24 @@ internal static class OutfitDresser
 
     /// <param name="model">A new, unposed instance of <paramref name="skin"/>'s model.</param>
     /// <param name="source">The model asset it was made from: the outfits' roots go where they stood against its root.</param>
-    internal static Dressing Dress(GameObject model, GameObject source, PlayerBodyProfile.Skin skin, OutfitLook look)
+    /// <param name="leaving">
+    /// A slot whose piece is on its way off (the wardrobe's 벗기 preview): it is put on and drawn as the look has it, but
+    /// the body is dressed as it will be once the piece is gone. Its skin comes back out, what it covered shows, and it
+    /// holds nothing (Dressing.Leaving lists it, to draw see-through over that body). The preview once drew the piece
+    /// see-through over the body as it was, its skin still drawn in, and the legs under Mayo's stockings showed hollow
+    /// (the user, 2026-11-12: "이런 문제가 발생한 게 벌써 두 번 째잖아"): now a preview and the real thing are dressed by
+    /// the same rule, here.
+    /// </param>
+    internal static Dressing Dress(GameObject model, GameObject source, PlayerBodyProfile.Skin skin, OutfitLook look, string leaving = null)
     {
         var dressing = new Dressing();
-        if (model == null || skin == null || look == null || look.IsEmpty) return dressing;
+        var going = string.IsNullOrEmpty(leaving) ? null : OutfitCatalog.Slot(leaving);
+        if (model == null || skin == null || look == null || (look.IsEmpty && going == null)) return dressing;
         // The character's own, before anything is added: outfits merge only onto its bones and switch off only its pieces,
         // and its shape keys as it was made are what the clothes follow.
         var own = model.GetComponentsInChildren<Renderer>(true);
+        // As it came, before anything changes: how covered its skin was meant to be (SkinCover).
+        var made = SkinCover.Read(own);
         // The player's body options (BodyShapes.csv) go on first: they are the body as its player shaped it, which the
         // clothes then follow like any key the body has, a key turned down to 0 too.
         var shaped = BodyShapes.Apply(own, skin.Id, look);
@@ -93,8 +106,10 @@ internal static class OutfitDresser
         var animator = model.GetComponentInChildren<Animator>();
         Skeleton skeleton = null;
         var picks = Picks(look, skin.Id);
+        // A leaving one-piece takes no other slot: once it is gone, they are as the look has them.
         var claimed = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var (_, item, _) in picks) claimed.UnionWith(item.AlsoSlots);
+        foreach (var (slot, item, _) in picks)
+            if (slot != going) claimed.UnionWith(item.AlsoSlots);
         var emptied = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var slot in OutfitCatalog.Slots)
             if (look.TryGet(slot.id, out var pick) && pick.IsOff && slot.removable) emptied.Add(slot.id);
@@ -122,10 +137,16 @@ internal static class OutfitDresser
                 continue;
             }
             SkinVariant.WearOn(renderers, copy.Entry.VariantOf(colour));
-            worn.Add(new Worn(slot, item, renderers));
-            dressing.Items.Add(item.id);
             dressing.Pieces[item.id] = renderers;
             emptied.Add(slot.id);
+            // The leaving item is only drawn: no fit keys, nothing it covers or takes, no sway, no first-person part.
+            if (slot == going)
+            {
+                dressing.Leaving.AddRange(renderers);
+                continue;
+            }
+            worn.Add(new Worn(slot, item, renderers));
+            dressing.Items.Add(item.id);
             emptied.UnionWith(item.AlsoSlots);
         }
         foreach (var copy in placed.Values) copy.HideRest();
@@ -133,6 +154,24 @@ internal static class OutfitDresser
         var covered = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var piece in worn) covered.UnionWith(piece.Item.HiddenSlots);
         emptied.UnionWith(covered);
+        // A leaving item under another (glasses under a full mask) was out of sight already: nothing to draw going.
+        if (going != null && covered.Contains(going.id))
+        {
+            foreach (var renderer in dressing.Leaving) renderer.enabled = false;
+            dressing.Leaving.Clear();
+        }
+        // The character's own piece in the leaving slot, if it shows until now: it comes off with its slot, so its skin
+        // and what it covered are as they will be, and is drawn again afterwards over that body.
+        var leavingOwn = new List<Renderer>();
+        if (going != null && !emptied.Contains(going.id))
+        {
+            var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var part in OutfitCatalog.PartsOf(skin.Id))
+                if (string.Equals(part.slot, going.id, StringComparison.OrdinalIgnoreCase)) names.UnionWith(OutfitCatalog.Split(part.parts));
+            foreach (var renderer in own)
+                if (names.Contains(renderer.name) && renderer.enabled && renderer.gameObject.activeInHierarchy) leavingOwn.Add(renderer);
+            emptied.Add(going.id);
+        }
         foreach (var piece in worn)
         {
             if (covered.Contains(piece.Slot.id))
@@ -145,12 +184,21 @@ internal static class OutfitDresser
             else if (view == OutfitSlot.View.Hide) dressing.FaceParts.AddRange(piece.Renderers);
         }
         var freed = TakeOff(own, skin.Id, emptied);
+        foreach (var renderer in leavingOwn) renderer.enabled = true;
+        dressing.Leaving.AddRange(leavingOwn);
         foreach (var piece in worn) Shape(model.GetComponentsInChildren<SkinnedMeshRenderer>(true), OutfitCatalog.FitOf(piece.Item.id, skin.Id)?.shapes);
         // The clothes follow the body as dressing left it: a key the stockings or shoes held and let go of (a heel) goes
         // down on the socks worn instead too.
         freed.UnionWith(bodyShapes.Keys);
         freed.UnionWith(shaped);
         Follow(ShapesNow(own, freed), worn);
+        // The last word on skin drawn in under clothes: wherever nothing solid covers it any more it comes back out, so no
+        // body is left hollow whatever CharacterParts.csv says or leaves out (SkinCover). The clothes take the change.
+        var items = new List<Renderer>();
+        foreach (var piece in worn)
+            if (!covered.Contains(piece.Slot.id)) items.AddRange(piece.Renderers);
+        var released = SkinCover.Release(model.transform, skin.Id, own, items, dressing.Leaving, made);
+        if (released.Count > 0) Follow(ShapesNow(own, released), worn);
         return dressing;
     }
 

@@ -99,6 +99,8 @@ public sealed class MainMenuPreview : MonoBehaviour
     public void Show()
     {
         double idleTime = idlePlayable.IsValid() ? idlePlayable.GetTime() : 0d;
+        var before = shownSkin;
+        bool framed = model != null;
         Clear();
         var profile = PlayerBodyProfile.Load();
         if (profile == null) return;
@@ -110,23 +112,28 @@ public sealed class MainMenuPreview : MonoBehaviour
             if (renderer is SkinnedMeshRenderer skinned) skinned.updateWhenOffscreen = true;
         // Measured before dressing, so putting on a helmet doesn't move the camera back and shrink the character.
         var bounds = CharacterFrame.Measure(model);
-        // A removal tried is shown on the saved outfit, the pieces that would go drawn see-through.
+        // A removal tried is dressed as the outfit is now with that slot leaving: the body as it will be, the piece that
+        // goes drawn over it see-through (OutfitDresser.Dress leaving, MarkTrial).
         var outfit = (!trialRemoves ? tried : null) ?? OutfitLook.Saved(shownSkin?.Id);
-        dressing = OutfitDresser.Dress(model, profile.Model, shownSkin, outfit);
+        dressing = OutfitDresser.Dress(model, profile.Model, shownSkin, outfit, trialRemoves ? trialSlot : null);
         // A try is never what is saved: whatever changes next stands the saved outfit again.
         shownOutfit = tried != null ? null : outfit.ToString();
         shown = bounds;
         MarkTrial(outfit);
         Mark();
-        Frame(bounds);
         Face(); // measured facing the camera, then turned as it was
-        // Made again for another outfit while the wardrobe looks at a part: the camera stays on it, no jump. Otherwise it
-        // stands framed for this character, and a move begun for the last one (the wardrobe asked for the whole
-        // character a moment before a new character was picked, with the old one's size) is dropped: kept, it carried
-        // the camera on to the old one's frame, too close or too far (user, 2026-11-12: "히로 -> 카즈사로 넘어갈 때").
-        cameraGoal = view.transform.position = focus != null ? FocusedCamera(focus) : view.transform.position;
-        cameraMoving = false;
-        refocus = focus != null;
+        // The same character made again (another outfit, a try, a body option undone) is framed already: the camera stays
+        // exactly where it is, mid-move or not. Measured again, from a model not yet posed and turned as the player left
+        // it, the spot jumped on every try (user, 2026-11-12: "캐릭터 돌린 다음에 미리 보기 들어가면 카메라가 갑자기 확
+        // 움직이는"). Another character stands framed for itself at once, and a move begun for the last one is dropped:
+        // kept, it carried the camera on to the old one's frame ("히로 -> 카즈사로 넘어갈 때").
+        if (!framed || before != shownSkin)
+        {
+            Frame(bounds);
+            cameraGoal = view.transform.position = focus != null ? FocusedCamera(focus) : view.transform.position;
+            cameraMoving = false;
+            refocus = focus != null;
+        }
         var animator = model.GetComponentInChildren<Animator>();
         var idle = profile.Find(IdleClip);
         if (animator == null || idle == null) return;
@@ -199,18 +206,18 @@ public sealed class MainMenuPreview : MonoBehaviour
         OutfitGhost.Show(PiecesOf(highlighted, tried ?? OutfitLook.Saved(shownSkin.Id)));
     }
 
-    // The tried slot's pieces: see-through when the try takes them off, else lit with the try's rim in their own colours.
+    // The tried slot's pieces lit with the try's rim in their own colours; for a removal, the pieces leaving drawn
+    // see-through over the body as it will be (dressing put them on as leaving).
     private void MarkTrial(OutfitLook outfit)
     {
         if (model == null || trialSlot == null || shownSkin == null) { OutfitGhost.Trial(null); return; }
-        var pieces = PiecesOf(trialSlot, outfit);
         if (!trialRemoves)
         {
-            OutfitGhost.Trial(pieces);
+            OutfitGhost.Trial(PiecesOf(trialSlot, outfit));
             return;
         }
         OutfitGhost.Trial(null);
-        OutfitGhost.Wear(pieces);
+        if (dressing != null) OutfitGhost.Wear(dressing.Leaving);
     }
 
     // A slot's pieces as this look has them: the item worn there, or the character's own (CharacterParts) as they show;
@@ -259,12 +266,19 @@ public sealed class MainMenuPreview : MonoBehaviour
         refocus = true;
     }
 
-    // Where the camera stands to frame that part of the character, measured from its bones as it stands now.
+    // Where the camera stands to frame that part of the character, measured from its bones as they stand now but as if
+    // it faced the camera: turned by a drag, a head or chest a little off its middle swings round, and the camera would
+    // follow it there and back with every turn.
     private Vector3 FocusedCamera(string group)
     {
         float height = Mathf.Max(.1f, shown.size.y);
         var animator = model != null ? model.GetComponentInChildren<Animator>() : null;
         Transform Bone(HumanBodyBones bone) => animator != null && animator.isHuman ? animator.GetBoneTransform(bone) : null;
+        var pivot = model != null ? model.transform.position : Vector3.zero;
+        var unturn = model != null
+            ? transform.rotation * Quaternion.Inverse(model.transform.localRotation) * Quaternion.Inverse(transform.rotation)
+            : Quaternion.identity;
+        Vector3 At(Transform bone) => pivot + unturn * (bone.position - pivot);
         var head = Bone(HumanBodyBones.Head);
         var neck = Bone(HumanBodyBones.Neck);
         var chest = Bone(HumanBodyBones.Chest);
@@ -276,42 +290,43 @@ public sealed class MainMenuPreview : MonoBehaviour
         switch (group)
         {
             case "head" when head != null:
-                center = head.position + Vector3.up * height * .05f;
+                center = At(head) + Vector3.up * height * .05f;
                 span = height * .3f;
                 break;
             // The body page's face and eye tabs: their keys are small (a pupil's heart, a lash), so the camera comes in
             // closer than for a hat.
             case "face" when head != null:
-                center = head.position + Vector3.up * height * FaceLift;
+                center = At(head) + Vector3.up * height * FaceLift;
                 span = height * FaceSpan;
                 break;
             case "eyes" when leftEye != null && rightEye != null:
-                center = (leftEye.position + rightEye.position) * .5f;
+                center = (At(leftEye) + At(rightEye)) * .5f;
                 span = height * EyesSpan;
                 break;
             case "eyes" when head != null:
-                center = head.position + Vector3.up * height * EyesLift;
+                center = At(head) + Vector3.up * height * EyesLift;
                 span = height * EyesSpan;
                 break;
             // Hair falls past the shoulders (twintails, long sides): the head and chest together.
             case "hair" when head != null && chest != null:
-                center = Vector3.Lerp(chest.position, head.position, .6f) + Vector3.up * height * .03f;
+                center = Vector3.Lerp(At(chest), At(head), .6f) + Vector3.up * height * .03f;
                 span = height * .5f;
                 break;
             case "neck" when neck != null:
-                center = neck.position;
+                center = At(neck);
                 span = height * .32f;
                 break;
             case "torso" when chest != null:
-                center = chest.position;
+                center = At(chest);
                 span = height * .45f;
                 break;
             case "arms" when chest != null && hips != null:
-                center = (chest.position + hips.position) * .5f;
+                center = (At(chest) + At(hips)) * .5f;
                 span = height * .55f;
                 break;
             case "legs" when hips != null:
-                center = new Vector3(hips.position.x, (hips.position.y + shown.min.y) * .5f, hips.position.z);
+                var middle = At(hips);
+                center = new Vector3(middle.x, (middle.y + shown.min.y) * .5f, middle.z);
                 span = height * .6f;
                 break;
         }
