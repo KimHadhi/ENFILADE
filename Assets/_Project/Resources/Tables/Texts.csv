@@ -808,3 +808,5 @@ results.mine.money,번 돈,,결과 마지막 장 > 내 기록(돈 아이콘과 �
 results.sheet.next,다음 작전  ·  {0},,결과 마지막 장 > 아래 줄. {0}=허브 지도 탁자에서 고른 장
 results.sheet.done,캠페인 완료  ·  은신처에서 처음부터,,결과 마지막 장 > 아래 줄(마지막 장을 마쳤을 때)
 results.sheet.key,Space  계속,,결과 마지막 장 > 오른쪽 아래
+wardrobe.own.named,기본 · {0},Own · {0},옷장 > 칸 타일: 캐릭터가 원래 입은 그 칸의 옷 이름(CharacterParts.csv name)
+wardrobe.try,올려 두면 비쳐 입어 본다,Rest on one to try it on,옷장 > 칸을 연 화면 > 제목 아래 설명 뒤: 판에 마우스를 올려 두면 캐릭터에 반투명하게 입혀 본다

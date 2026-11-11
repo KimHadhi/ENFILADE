@@ -41,6 +41,8 @@ public static class OutfitCatalog
         /// their stockings are whole again instead of keeping the hollows made to hide under them.
         /// </summary>
         public string needs = "";
+        /// <summary>What the piece is called on the wardrobe's tile ("스타킹 · 다리 리본"); empty reads its renderers' names.</summary>
+        public string name = "";
     }
 
     private static List<OutfitSlot> slots;
@@ -137,6 +139,38 @@ public static class OutfitCatalog
             if (string.Equals(part.slot, slotId, StringComparison.OrdinalIgnoreCase)
                 && (!string.IsNullOrEmpty(part.parts) || !string.IsNullOrEmpty(part.shapes))) return true;
         return false;
+    }
+
+    /// <summary>
+    /// What the character wears of its own in the slot, for the wardrobe's tile (the user, 2026-11-11: each slot should
+    /// say what is on it): its rows' names, or their renderers' names made readable (MAYO_Leg_Ribbon → Leg Ribbon).
+    /// Empty when it has nothing of its own there.
+    /// </summary>
+    public static string OwnName(string skinId, string slotId)
+    {
+        var names = new List<string>();
+        foreach (var part in PartsOf(skinId))
+        {
+            if (!string.Equals(part.slot, slotId, StringComparison.OrdinalIgnoreCase)) continue;
+            if (!string.IsNullOrWhiteSpace(part.name)) Add(names, part.name.Trim());
+            else foreach (string piece in Split(part.parts)) Add(names, Readable(piece, skinId));
+        }
+        return string.Join(" · ", names);
+    }
+
+    private static void Add(List<string> names, string name)
+    {
+        if (name.Length > 0 && !names.Contains(name)) names.Add(name);
+    }
+
+    // A renderer's name without its maker's prefix (the character's name, a short all-capitals tag like COS), spaced.
+    private static string Readable(string renderer, string skinId)
+    {
+        var words = new List<string>(renderer.Split('_'));
+        while (words.Count > 1 && (string.Equals(words[0], skinId, StringComparison.OrdinalIgnoreCase)
+            || (words[0].Length <= 4 && words[0] == words[0].ToUpperInvariant())))
+            words.RemoveAt(0);
+        return string.Join(" ", words).Trim();
     }
 
     /// <summary>The entries of a "a|b|c" cell, trimmed, empty ones skipped.</summary>

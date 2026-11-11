@@ -12,6 +12,10 @@ using UnityEngine.UI;
 /// character's own piece, taking it off, every item made for this character), the worn item's colour chips under it.
 /// Every pick is worn at once and saved. The user asked for an equipment window with slots by body part, the finer the
 /// better, and found the old list running into the bottom bar (2026-11-11); the page stays between the bars.
+/// Then (2026-11-11, "의상 슬롯 기능 부위 별로 장착한 옷 뭔지 보이게, 그리고 옷 선택 옵션에서도 투명하게 옷 미리
+/// 보기가 있게끔"): a tile names what is on the slot, the character's own pieces too ("기본 · 스타킹"), and the pointer on a
+/// tile marks those pieces on the body with a breathing pink rim; resting on a choice tries it on, the item see-through
+/// (MainMenuPreview.Try, OutfitGhost), until the pointer leaves or the choice is picked.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class MainMenuWardrobe : MonoBehaviour
@@ -27,6 +31,12 @@ public sealed class MainMenuWardrobe : MonoBehaviour
     private float edge, growAt;
     private string openSlot;
     private bool growNext;
+    // The choice the pointer rests on, waiting this long before it is tried on, so sweeping over the list doesn't stand
+    // the character up again for every plate it crosses (s).
+    private const float TryAfter = .12f;
+    private OutfitLook wanted;
+    private string wantedGhost, wantedText, triedText;
+    private float wantedAt;
 
     public bool IsOpen => root != null && root.gameObject.activeSelf;
     /// <summary>One slot's list is up: Esc goes back to all the slots first.</summary>
@@ -62,6 +72,7 @@ public sealed class MainMenuWardrobe : MonoBehaviour
         if (root == null) return;
         root.gameObject.SetActive(false);
         openSlot = null;
+        StopTrying();
         if (preview != null) preview.Focus(null);
     }
 
@@ -69,6 +80,7 @@ public sealed class MainMenuWardrobe : MonoBehaviour
     public void ShowSlots()
     {
         openSlot = null;
+        StopTrying();
         if (preview != null) preview.Focus(null);
         Build();
     }
@@ -76,6 +88,7 @@ public sealed class MainMenuWardrobe : MonoBehaviour
     private void OpenSlot(OutfitSlot slot)
     {
         openSlot = slot.id;
+        StopTrying();
         if (preview != null) preview.Focus(slot.group);
         KitSound.Play(KitSound.Cue.Ping, .35f);
         Build();
@@ -177,6 +190,7 @@ public sealed class MainMenuWardrobe : MonoBehaviour
         settings.characterVariant = first != null ? first.Id : "";
         // Another character may have nothing for the slot that was open.
         openSlot = null;
+        StopTrying();
         if (preview != null) preview.Focus(null);
         Commit();
     }
@@ -216,8 +230,12 @@ public sealed class MainMenuWardrobe : MonoBehaviour
         bool usable = items.Count > 0 || (own && slot.removable);
         look.TryGet(slot.id, out var pick);
         var item = items.FirstOrDefault(candidate => candidate.id == pick.Item);
+        // The character's own pieces by name, so every tile says what is on it.
+        string ownName = own ? OutfitCatalog.OwnName(skin.Id, slot.id) : "";
         string value = item != null ? item.DisplayName + ColourNote(skin, item, pick.Colour)
-            : pick.IsOff ? Texts.Get("wardrobe.off.worn") : Texts.Get(own ? "wardrobe.own" : "wardrobe.none");
+            : pick.IsOff ? Texts.Get("wardrobe.off.worn")
+            : own && ownName.Length > 0 ? Texts.Format("wardrobe.own.named", ownName)
+            : Texts.Get(own ? "wardrobe.own" : "wardrobe.none");
 
         var tile = KitStyle.TopLeft("Slot " + slot.id, right, at, new Vector2(width, TileHeight));
         var back = KitStyle.Fill(KitStyle.Stretch("Back", tile), item != null ? KitStyle.With(KitStyle.Night, .95f) : KitStyle.With(KitStyle.Ice, .07f));
@@ -231,6 +249,9 @@ public sealed class MainMenuWardrobe : MonoBehaviour
         shown.fontStyle = FontStyles.Normal;
         shown.overflowMode = CombatUIAssets.ClippedOverflow(shown);
         Grow(tile, Slant);
+        // The pointer on a tile marks its pieces on the body.
+        WardrobeHover.On(tile.gameObject, () => { if (preview != null) preview.Highlight(slot.id); },
+            () => { if (preview != null) preview.Highlight(null); });
         if (!usable)
         {
             tile.gameObject.AddComponent<CanvasGroup>().alpha = .35f;
@@ -252,7 +273,7 @@ public sealed class MainMenuWardrobe : MonoBehaviour
             TextAlignmentOptions.MidlineLeft);
         title.rectTransform.localRotation = Quaternion.Euler(0f, 0f, -2f);
         Grow(title.rectTransform, 0f);
-        Note(right, new Vector2(4f, 128f), RightWidth, Texts.Get("outfit.group." + slot.group));
+        Note(right, new Vector2(4f, 128f), RightWidth, Texts.Get("outfit.group." + slot.group) + "  ·  " + Texts.Get("wardrobe.try"));
 
         var items = OutfitCatalog.ItemsFor(skin.Id, slot.id);
         bool own = OutfitCatalog.HasOwnPiece(skin.Id, slot.id);
@@ -262,8 +283,12 @@ public sealed class MainMenuWardrobe : MonoBehaviour
         int row = 0;
         void Option(string id, string name, string note)
         {
-            Plate(right, new Vector2(row % 2 == 0 ? 0f : 10f, y), name, note, id == worn, (row % 2 == 0 ? 1f : -1f) * .6f,
+            var plate = Plate(right, new Vector2(row % 2 == 0 ? 0f : 10f, y), name, note, id == worn, (row % 2 == 0 ? 1f : -1f) * .6f,
                 id == worn ? null : (System.Action)(() => Wear(skin, slot, id)));
+            // Resting on a choice not worn tries it on: an item see-through, the own piece or bare as they are.
+            if (id != worn)
+                WardrobeHover.On(plate.gameObject, () => Want(With(skin, slot, id), id.Length > 0 && id != OutfitLook.Off ? id : null),
+                    () => Want(null, null));
             y += PlateHeight + PlateGap;
             row++;
         }
@@ -290,7 +315,7 @@ public sealed class MainMenuWardrobe : MonoBehaviour
     }
 
     // One choice of a slot as a slanted plate; the worn one dark with a pink edge and a 입음 chip.
-    private void Plate(RectTransform right, Vector2 at, string name, string note, bool worn, float tilt, System.Action picked)
+    private RectTransform Plate(RectTransform right, Vector2 at, string name, string note, bool worn, float tilt, System.Action picked)
     {
         var plate = KitStyle.TopLeft("Choice " + name, right, at, new Vector2(RightWidth - 10f, PlateHeight));
         plate.localRotation = Quaternion.Euler(0f, 0f, tilt);
@@ -310,17 +335,28 @@ public sealed class MainMenuWardrobe : MonoBehaviour
             KitStyle.Flat(mark, Texts.Get("wardrobe.worn"), 13f, TextAlignmentOptions.Center, KitStyle.Ink);
         }
         Grow(plate, Slant);
-        if (picked == null) return;
+        if (picked == null) return plate;
         var button = plate.gameObject.AddComponent<Button>();
         button.transition = Selectable.Transition.None;
         button.targetGraphic = back;
         button.onClick.AddListener(() => picked());
         plate.gameObject.AddComponent<KitHover>();
+        return plate;
     }
 
     // Puts the choice on: one thing per place, so a one-piece empties the bottom, and a bottom put on later takes the
     // one-piece off. A new piece starts in its first colour.
     private void Wear(PlayerBodyProfile.Skin skin, OutfitSlot slot, string item, string colour = "")
+    {
+        // What was being tried becomes the outfit: the preview lets go of the try and stands the saved one.
+        wanted = null;
+        wantedText = triedText = wantedGhost = null;
+        if (preview != null) preview.DropTry();
+        Save(skin, With(skin, slot, item, colour));
+    }
+
+    // The outfit as it would be with this choice in the slot, not saved.
+    private static OutfitLook With(PlayerBodyProfile.Skin skin, OutfitSlot slot, string item, string colour = "")
     {
         var look = OutfitLook.Saved(skin.Id);
         if (OutfitCatalog.Item(item) is OutfitItem picked)
@@ -330,7 +366,34 @@ public sealed class MainMenuWardrobe : MonoBehaviour
                 && onItem.AlsoSlots.Contains(slot.id, System.StringComparer.OrdinalIgnoreCase))
                 look.Set(other.id, null);
         look.Set(slot.id, item, colour);
-        Save(skin, look);
+        return look;
+    }
+
+    // ---- Trying on: the choice under the pointer, after a short rest ----
+
+    private void Want(OutfitLook look, string ghost)
+    {
+        wanted = look;
+        wantedGhost = ghost;
+        wantedText = look != null ? look + "|" + ghost : null;
+        wantedAt = Time.unscaledTime + TryAfter;
+    }
+
+    private void Update()
+    {
+        if (preview == null || wantedText == triedText || Time.unscaledTime < wantedAt) return;
+        triedText = wantedText;
+        preview.Try(wanted, wantedGhost);
+    }
+
+    // Back to the saved outfit with nothing marked: leaving a slot's list, the page, or the character.
+    private void StopTrying()
+    {
+        wanted = null;
+        wantedText = triedText = wantedGhost = null;
+        if (preview == null) return;
+        preview.Try(null, null);
+        preview.Highlight(null);
     }
 
     private void Save(PlayerBodyProfile.Skin skin, OutfitLook look)

@@ -29,6 +29,8 @@ internal static class OutfitDresser
         /// <summary>The ids of the items on and of their models: their rows in Cloth.csv swing their loose parts.</summary>
         public readonly HashSet<string> Items = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         public readonly HashSet<string> Models = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        /// <summary>Each item put on and the renderers it shows: the wardrobe's try-on and slot marks find it here.</summary>
+        public readonly Dictionary<string, List<Renderer>> Pieces = new Dictionary<string, List<Renderer>>(StringComparer.OrdinalIgnoreCase);
     }
 
     private readonly struct Worn
@@ -119,6 +121,7 @@ internal static class OutfitDresser
             SkinVariant.WearOn(renderers, copy.Entry.VariantOf(colour));
             worn.Add(new Worn(slot, item, renderers));
             dressing.Items.Add(item.id);
+            dressing.Pieces[item.id] = renderers;
             emptied.Add(slot.id);
             emptied.UnionWith(item.AlsoSlots);
         }

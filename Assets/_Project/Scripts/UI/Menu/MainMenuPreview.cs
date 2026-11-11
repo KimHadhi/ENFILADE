@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Animations;
 using UnityEngine.Playables;
@@ -7,6 +9,8 @@ using UnityEngine.Playables;
 /// saved skin and colour set: another colour set swaps materials on the same model. Dragging across the screen turns it
 /// (MainMenuDrag → Turn); let go and it keeps spinning a little, slows, and after a while eases back to face the camera.
 /// The menu's backdrop reads the camera and where the character stands (View, Feet, Head) to draw behind it.
+/// The wardrobe tries things on it (Try: the choice under the pointer worn see-through, OutfitGhost) and marks what a
+/// slot holds (Highlight); the idle carries on through each rebuild so a try never restarts the pose.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class MainMenuPreview : MonoBehaviour
@@ -30,6 +34,12 @@ public sealed class MainMenuPreview : MonoBehaviour
     // How quickly the camera moves to a part of the body and back (1/s).
     private const float FocusSpeed = 7f;
     private PlayableGraph graph;
+    private AnimationClipPlayable idlePlayable;
+    // A look tried on from the wardrobe instead of the saved one (null: the saved one), the item in it shown see-through,
+    // the slot whose pieces are marked, and what dressing put on, to find them by.
+    private OutfitLook tried;
+    private string triedText, ghostItem, highlighted;
+    private OutfitDresser.Dressing dressing;
     private Bounds shown;
     private float yaw, spin, sinceTurned = float.PositiveInfinity;
 
@@ -81,6 +91,7 @@ public sealed class MainMenuPreview : MonoBehaviour
     /// <summary>Stands the current skin in front of the camera, replacing the last one.</summary>
     public void Show()
     {
+        double idleTime = idlePlayable.IsValid() ? idlePlayable.GetTime() : 0d;
         Clear();
         var profile = PlayerBodyProfile.Load();
         if (profile == null) return;
@@ -95,9 +106,12 @@ public sealed class MainMenuPreview : MonoBehaviour
             if (renderer is SkinnedMeshRenderer skinned) skinned.updateWhenOffscreen = true;
         }
         // Measured before dressing, so putting on a helmet doesn't move the camera back and shrink the character.
-        var outfit = OutfitLook.Saved(shownSkin?.Id);
-        OutfitDresser.Dress(model, profile.Model, shownSkin, outfit);
-        shownOutfit = outfit.ToString();
+        var outfit = tried ?? OutfitLook.Saved(shownSkin?.Id);
+        dressing = OutfitDresser.Dress(model, profile.Model, shownSkin, outfit);
+        // A try is never what is saved: whatever changes next stands the saved outfit again.
+        shownOutfit = tried != null ? null : outfit.ToString();
+        if (ghostItem != null && dressing.Pieces.TryGetValue(ghostItem, out var trying)) OutfitGhost.Wear(trying);
+        Mark();
         shown = bounds;
         Frame(bounds);
         Face(); // measured facing the camera, then turned as it was
@@ -111,7 +125,59 @@ public sealed class MainMenuPreview : MonoBehaviour
         var idle = profile.Find(IdleClip);
         if (animator == null || idle == null) return;
         animator.applyRootMotion = false;
-        AnimationPlayableUtilities.PlayClip(animator, idle, out graph);
+        idlePlayable = AnimationPlayableUtilities.PlayClip(animator, idle, out graph);
+        idlePlayable.SetTime(idleTime);
+    }
+
+    /// <summary>
+    /// Wears <paramref name="look"/> instead of the saved outfit while the wardrobe's pointer rests on a choice, the item
+    /// <paramref name="ghost"/> see-through (OutfitGhost); null goes back to the saved outfit.
+    /// </summary>
+    public void Try(OutfitLook look, string ghost)
+    {
+        string text = look != null ? look.ToString() : null;
+        if (text == triedText && ghost == ghostItem) return;
+        tried = look;
+        triedText = text;
+        ghostItem = ghost;
+        if (model != null) Show();
+    }
+
+    /// <summary>The wardrobe is about to save a pick: the try is let go without a rebuild of its own, and the settings'
+    /// change that follows stands the saved outfit in its own colours.</summary>
+    public void DropTry()
+    {
+        tried = null;
+        triedText = ghostItem = null;
+        shownOutfit = null;
+    }
+
+    /// <summary>Marks on the body what the slot holds (the wardrobe's tile under the pointer); null takes the marks off.</summary>
+    public void Highlight(string slot)
+    {
+        slot = string.IsNullOrEmpty(slot) ? null : slot;
+        if (slot == highlighted) return;
+        highlighted = slot;
+        Mark();
+    }
+
+    // The slot's pieces: the item worn there, or the character's own (CharacterParts) as they show; nothing once it is off.
+    private void Mark()
+    {
+        if (model == null || highlighted == null || shownSkin == null) { OutfitGhost.Show(null); return; }
+        var found = new List<Renderer>();
+        var look = tried ?? OutfitLook.Saved(shownSkin.Id);
+        bool picked = look.TryGet(highlighted, out var pick) && pick.Item.Length > 0;
+        if (picked && !pick.IsOff && dressing != null && dressing.Pieces.TryGetValue(pick.Item, out var worn)) found.AddRange(worn);
+        else if (!picked)
+        {
+            var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var part in OutfitCatalog.PartsOf(shownSkin.Id))
+                if (string.Equals(part.slot, highlighted, StringComparison.OrdinalIgnoreCase)) names.UnionWith(OutfitCatalog.Split(part.parts));
+            foreach (var renderer in model.GetComponentsInChildren<Renderer>())
+                if (renderer.enabled && names.Contains(renderer.name)) found.Add(renderer);
+        }
+        OutfitGhost.Show(found);
     }
 
     /// <summary>Turns the character by a drag of <paramref name="pixels"/> across the screen (right turns it right).</summary>
@@ -182,6 +248,7 @@ public sealed class MainMenuPreview : MonoBehaviour
     {
         if (model == null) return;
         float dt = Time.unscaledDeltaTime;
+        if (highlighted != null) OutfitGhost.Breathe(Time.unscaledTime);
         if (cameraMoving && view != null)
         {
             view.transform.position = Vector3.Lerp(view.transform.position, cameraGoal, 1f - Mathf.Exp(-FocusSpeed * dt));
@@ -233,6 +300,9 @@ public sealed class MainMenuPreview : MonoBehaviour
 
     private void Clear()
     {
+        // Marks hold the renderers' own materials: let go of them before the model goes.
+        OutfitGhost.Show(null);
+        dressing = null;
         if (graph.IsValid()) graph.Destroy();
         if (model != null) Destroy(model);
         model = null;
