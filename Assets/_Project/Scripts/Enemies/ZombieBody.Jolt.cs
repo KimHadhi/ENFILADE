@@ -33,6 +33,8 @@ public sealed partial class ZombieBody
 
     private void Jolt(in CombatDamageReport report)
     {
+        // Hit, it is posed every frame a while however far it is (ZombieBody.PaceGraph), so the jolt plays out whole.
+        lodHold = Time.time + 1f;
         // Not while it eases out of the doll's pose either (the quarter second after it is stood up at once, EndDown):
         // that easing rewrites every bone from what it reads, so with the Animator off screen a jolt would be read back
         // in and pile up.

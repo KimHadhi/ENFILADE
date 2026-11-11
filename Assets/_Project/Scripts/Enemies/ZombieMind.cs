@@ -283,6 +283,7 @@ public sealed class ZombieMind : MonoBehaviour
         guns.Clear();
         Woke = null;
         LastNoticed = float.NegativeInfinity;
+        LastSeenAt = Vector3.zero;
     }
 
     private void Awake()
@@ -322,6 +323,8 @@ public sealed class ZombieMind : MonoBehaviour
 
     /// <summary>When an awake zombie last saw anyone (game time), horde or not: the campaign's lull waits on it.</summary>
     public static float LastNoticed { get; private set; } = float.NegativeInfinity;
+    /// <summary>Where that was (a player's feet then): the horde zombies that skip their own look take it as theirs.</summary>
+    public static Vector3 LastSeenAt { get; private set; }
 
     /// <summary>
     /// The chase dies down (CampaignRun's lull): every awake zombie on the host, horde ones included, loses its quarry and
@@ -536,17 +539,22 @@ public sealed class ZombieMind : MonoBehaviour
             }
         }
         if ((thinkLeft -= dt) > 0f) return;
-        thinkLeft += ThinkEvery;
+        // Far from every player it thinks less often (ZombieLod); what it sees adds up over the longer step all the same.
+        float step = ZombieLod.ThinkEvery(transform.position, ThinkEvery);
+        thinkLeft += step;
         // A horde zombie needs no senses to hunt (EnemyTargeting gives it the nearest), but whether any zombie still has
-        // someone in sight decides when the campaign lets the chase die down (LastNoticed, CampaignRun's lull).
+        // someone in sight decides when the campaign lets the chase die down (LastNoticed, CampaignRun's lull). Once one
+        // has seen someone very lately the others needn't cast their rays too (ZombieLod): they take that sighting.
         if (horde)
         {
-            if (Mood == ZombieMood.Awake && Look(out _, out _) is PlayerMovement seen) { LastNoticed = Time.time; lastKnown = seen.transform.position; }
+            if (Mood != ZombieMood.Awake) return;
+            if (!ZombieLod.HordeLooks(LastNoticed)) lastKnown = LastSeenAt;
+            else if (Look(out _, out _) is PlayerMovement seen) { LastNoticed = Time.time; LastSeenAt = lastKnown = seen.transform.position; }
             return;
         }
         // Down, stunned or held it notices nothing new; a blow has woken it anyway.
         if (melee != null && melee.IsStunned) return;
-        Think(ThinkEvery);
+        Think(step);
     }
 
     // Knocked down, it used to fight again the moment the get-up clip let it go, so one that had just risen grabbed a
@@ -575,7 +583,7 @@ public sealed class ZombieMind : MonoBehaviour
         if (IsAwake)
         {
             if (seen != null && (focus == null || seen == focus || !Alive(focus))) focus = seen;
-            if (focus != null && seen == focus) { lastSeen = Time.time; lastKnown = focus.transform.position; LastNoticed = Time.time; }
+            if (focus != null && seen == focus) { lastSeen = Time.time; LastSeenAt = lastKnown = focus.transform.position; LastNoticed = Time.time; }
             else if (Time.time - lastSeen > loseSeconds) { suspicion = alertAt; Search(lastKnown); }
             return;
         }

@@ -87,7 +87,8 @@ public sealed class EnemyChaseAI : MonoBehaviour
 
         if (updateTimer <= 0f)
         {
-            updateTimer = updateInterval;
+            // Far from every player a new path is looked for less often (ZombieLod).
+            updateTimer = ZombieLod.ChaseEvery(transform.position, updateInterval);
             agent.SetDestination(spotted ? spot : player.transform.position);
         }
         // Standing at its place it faces whom it fights: the agent turns it only while it walks.

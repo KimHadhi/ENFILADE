@@ -1,0 +1,90 @@
+using System.Globalization;
+using System.Collections.Generic;
+using UnityEngine;
+
+/// <summary>
+/// What a crowd costs when most of it is far from every player: the 2026-11-11 memo's item 40 ("최적화, 컬링"), the
+/// zombies' share (the scene and its drawing are the maps' own: CameraCulling). Done without measuring, so each part
+/// has its own number in Tables/ZombieLod and `enabled 0` puts everything back as it was.
+/// - Thinking (ZombieMind): one far from every player (beyond `far`) thinks every `thinkFar` seconds instead of every
+///   0.1; what it sees still adds up at the same rate a second, and sounds reach it the moment they are made.
+/// - Chasing (EnemyChaseAI): it looks for a new path every `chaseFar` seconds instead of every 0.15.
+/// - A horde's look round (ZombieMind): an awake horde zombie only looks for players to tell the campaign someone is
+///   still seen; once one has seen anyone in the last `hordeLookGap` seconds, the rest needn't cast their rays.
+/// - Its body (ZombieBody): on screen but beyond `animFar`, the pose is worked out every `animEvery` frames instead of
+///   every frame (its hitboxes, riding its bones, move as often); never while anything quick plays on it (a hit, a
+///   swing, a fall). Off screen the Animator already skips it (the pack's CullUpdateTransforms).
+/// How many corpses lie about is ZombieCorpse.csv's (mostCorpses, mostDolls).
+/// </summary>
+public static class ZombieLod
+{
+    public const string TableName = "ZombieLod", TableRow = "Default";
+
+    private static bool read, listening, on = true;
+    private static float far = 40f, thinkFar = .3f, chaseFar = .6f, animFar = 30f, hordeLookGap = .25f;
+    private static int animEvery = 3;
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void Clear() => read = listening = false;
+
+    private static void Forget() => read = false;
+
+    /// <summary>How far the nearest living player is (m); far beyond anything with none.</summary>
+    public static float Nearest(Vector3 at)
+    {
+        float best = float.MaxValue;
+        foreach (var player in PlayerRoster.All)
+        {
+            if (player == null || player.IsDead) continue;
+            best = Mathf.Min(best, (player.transform.position - at).sqrMagnitude);
+        }
+        return best < float.MaxValue ? Mathf.Sqrt(best) : float.MaxValue;
+    }
+
+    /// <summary>How often a zombie here thinks (s): its usual, or thinkFar when far from everyone.</summary>
+    public static float ThinkEvery(Vector3 at, float usual)
+    {
+        Read();
+        return on && thinkFar > usual && Nearest(at) > far ? thinkFar : usual;
+    }
+
+    /// <summary>How often a zombie here looks for a new path (s): its usual, or chaseFar when far from everyone.</summary>
+    public static float ChaseEvery(Vector3 at, float usual)
+    {
+        Read();
+        return on && chaseFar > usual && Nearest(at) > far ? chaseFar : usual;
+    }
+
+    /// <summary>Every how many frames a zombie body here on screen is posed: 1 near, animEvery far.</summary>
+    public static int AnimEvery(Vector3 at)
+    {
+        Read();
+        return on && animEvery > 1 && Nearest(at) > animFar ? animEvery : 1;
+    }
+
+    /// <summary>An awake horde zombie should look round itself now: nobody has seen a player very lately.</summary>
+    public static bool HordeLooks(float lastNoticed)
+    {
+        Read();
+        return !on || hordeLookGap <= 0f || Time.time - lastNoticed >= hordeLookGap;
+    }
+
+    private static void Read()
+    {
+        if (!listening) { listening = true; GameTables.Reloaded += Forget; }
+        if (read) return;
+        read = true;
+        if (!GameTables.TryGetRow(TableName, TableRow, out var row)) return;
+        on = Number(row, "enabled", 1f) > 0f;
+        far = Number(row, "far", far);
+        thinkFar = Number(row, "thinkFar", thinkFar);
+        chaseFar = Number(row, "chaseFar", chaseFar);
+        animFar = Number(row, "animFar", animFar);
+        animEvery = Mathf.Max(1, Mathf.RoundToInt(Number(row, "animEvery", animEvery)));
+        hordeLookGap = Number(row, "hordeLookGap", hordeLookGap);
+    }
+
+    private static float Number(IReadOnlyDictionary<string, string> row, string column, float fallback)
+        => row.TryGetValue(column, out string text) && float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out float value)
+            ? value : fallback;
+}

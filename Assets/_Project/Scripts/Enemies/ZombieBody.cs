@@ -465,8 +465,41 @@ public sealed partial class ZombieBody : MonoBehaviour
         CrawlTick(dt);
         TickRise(dt);
         Weigh();
+        PaceGraph(real);
         // From the frame after dressing, once the pack's spare meshes are gone, so a doll's copy of the body is light.
         if (Time.frameCount > dressedFrame) ZombieCorpse.Stock(animator);
+    }
+
+    // Far from every player and on screen, the pose is worked out only every few frames (ZombieLod animEvery): the graph
+    // goes to manual and is evaluated here. Never while anything quick plays on it (a hit, a swing, a flinch, a fall, a
+    // hold, a leap, a mood's one-off clip): then every frame as before. Off screen the Animator skips it anyway.
+    private int lodEvery = 1, lodFrame;
+    private float lodCheck, lodHold;
+    private bool lodManual;
+    private Renderer lodSkin;
+
+    private void PaceGraph(float real)
+    {
+        if ((lodCheck -= real) <= 0f)
+        {
+            lodCheck = .5f;
+            lodEvery = ZombieLod.AnimEvery(transform.position);
+        }
+        bool busy = Time.time < lodHold || down || riseWeight > 0f || blendLeft > 0f || attackWeight > 0f || flinchWeight > 0f
+            || staggerWeight > 0f || cueWeight > 0f || holdWeight > 0f || leapWeight + landWeight > 0f;
+        if (lodSkin == null && Model != null) lodSkin = Model.GetComponentInChildren<SkinnedMeshRenderer>();
+        bool slow = lodEvery > 1 && !busy && lodSkin != null && lodSkin.isVisible;
+        if (slow != lodManual)
+        {
+            lodManual = slow;
+            lodFrame = 0;
+            graph.SetTimeUpdateMode(slow ? DirectorUpdateMode.Manual : DirectorUpdateMode.GameTime);
+        }
+        if (lodManual && ++lodFrame >= lodEvery)
+        {
+            lodFrame = 0;
+            graph.Evaluate(0f);
+        }
     }
 
     /// <summary>Idle, walk and run by the body's real speed, the walk and run on one shared step so they blend.</summary>
