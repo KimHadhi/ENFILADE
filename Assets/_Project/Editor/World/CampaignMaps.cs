@@ -99,13 +99,18 @@ public static class CampaignMaps
         b.Box("B7 창고 북", 137f, 141f, 0f, 17f, 2.5f, 50f);
         b.Box("B7 셔터 위 벽", 137f, 141f, 4.5f, 17f, -2.5f, 2.5f);
         b.Gate("셔터 (버티는 동안 올라감, 경보)", 136.7f, 137f, 0f, 4.6f, -2.6f, 2.6f, "Ch1.06", new Vector3(0f, 4.4f, 0f), b.Metal, "Metal");
-        b.Box("셔터 버튼", 134f, 134.4f, 1f, 1.6f, -4f, -3.85f, b.Marker, solid: false);
+        b.Dress(b.Box("셔터 버튼", 134f, 134.4f, 1f, 1.6f, -4f, -3.85f, b.Marker, solid: false), "controlboxFit");
         b.Spot("Alley", new Vector3(110f, 0f, -1f));
         b.Spot("ShutterButton", new Vector3(134.2f, 0f, -3f));
         b.Spot("AlleyHold", new Vector3(124f, 0f, 0f));
         b.Box("골목 쓰레기통 1", 118f, 120f, 0f, 1.4f, -3.9f, -2.6f, b.Metal, "MetalBox");
         b.Box("골목 쓰레기통 2", 126f, 128f, 0f, 1.4f, 2.6f, 3.9f, b.Metal, "MetalBox");
         b.Box("골목 팔레트", 122f, 123.2f, 0f, .9f, -1f, .2f, b.Wood, "WoodPlank");
+        // Rubbish round the bins and boxes by the shutter (the Airport pack's bags, boxes and crates; seen only).
+        foreach (var (x, z) in new[] { (117.4f, -3.4f), (120.6f, -3.5f), (121.3f, -2.9f), (125.4f, 3.4f), (128.6f, 3.2f), (129.4f, 3.5f) })
+            b.Prop("garbage", new Vector3(x, 0f, z), x * 11f % 360f);
+        foreach (var (x, z) in new[] { (131f, -3.5f), (132.1f, -3.4f), (131.6f, -2.6f) }) b.Prop("box", new Vector3(x, 0f, z), x * 5f % 360f);
+        foreach (var (x, z) in new[] { (107f, 3.3f), (108.2f, 3.3f) }) b.Prop("crate", new Vector3(x, 0f, z), x * 7f % 360f);
         b.EnemySpawn("골목 서쪽 끝", new Vector3(106f, 0f, -2f));
         b.EnemySpawn("골목 서쪽 구석", new Vector3(105.5f, 0f, 2.5f));
         b.EnemySpawn("골목 트럭 옆", new Vector3(113f, 0f, -3.2f));
@@ -115,10 +120,14 @@ public static class CampaignMaps
         // 6. The corner shop over the street: the rest stop (doors 5D, shop stage 6).
         Room(b, "편의점", 145f, 157f, 10f, 20f, 0f, 4.5f, Side.South, 149f, 151.5f);
         b.Door("편의점 문", 149f, 151.5f, 0f, 2.4f, 10.05f, 10.25f, "RestStop", new Vector3(2.5f, 0f, 0f));
-        b.Box("편의점 계산대", 147f, 152f, 0f, 1f, 15f, 16f, b.Wood, "Wood");
+        b.Dress(b.Box("편의점 계산대", 147f, 152f, 0f, 1f, 15f, 16f, b.Wood, "Wood"), "shopcounter");
+        b.Prop("cashregister", new Vector3(148f, 1f, 15.5f), 180f);
         b.Shop(new Vector3(149.5f, 0f, 14.3f), new Vector3(149.5f, 2.2f, 16f));
         // Chest high (memo 48): a zombie's arm reaches a player standing on it, as it couldn't at 1.8 m.
-        b.Box("편의점 진열대", 153.5f, 154.3f, 0f, 1.4f, 12f, 18f, b.Metal, "Metal");
+        b.Dress(b.Box("편의점 진열대", 153.5f, 154.3f, 0f, 1.4f, 12f, 18f, b.Metal, "Metal"), "shopshelf");
+        b.PropSolid("fridge", new Vector3(156.1f, 0f, 15f), 270f);
+        b.PropSolid("vending", new Vector3(153.5f, 0f, 9.4f), 180f);
+        b.PropSolid("bin", new Vector3(147.5f, 0f, 9.3f));
         b.Spot("RestStop", new Vector3(151f, 0f, 15f));
         b.Box("길2 차 1", 144f, 148.5f, 0f, 1.5f, -8f, -6.2f, b.Metal, "Metal");
         b.Box("길2 차 2", 158f, 162.5f, 0f, 1.5f, -3f, -1.2f, b.Metal, "Metal");
@@ -149,7 +158,8 @@ public static class CampaignMaps
         b.Box("경사로 층계참 4 (지붕)", 183f, 186f, 13.7f, 14f, -13f, -9f);
         b.Box("헬기 착륙장 표시", 186f, 196f, 14f, 14.03f, -4f, 4f, b.Marker, solid: false);
         b.Spot("Helipad", new Vector3(191f, 14f, 0f));
-        b.Box("무전기", 187.6f, 188.4f, 14f, 15.1f, 4.6f, 5.2f, b.Marker);
+        b.Dress(b.Box("무전기", 187.6f, 188.4f, 14f, 15.1f, 4.6f, 5.2f, b.Marker), "controlboxFit");
+        foreach (var (x, z) in new[] { (175f, 9f), (176.2f, 8.6f), (184f, -10.5f) }) b.Prop("crate", new Vector3(x, 0f, z), x * 7f % 360f);
         b.Spot("Radio", new Vector3(188f, 14f, 4f));
         b.Box("크레인 기둥", 203f, 204.6f, 0f, 30f, -.8f, .8f, b.Metal, "MetalCrane");
         b.Box("크레인 팔", 176f, 212f, 30f, 31f, -.5f, .5f, b.Metal, solid: false);
@@ -256,8 +266,15 @@ public static class CampaignMaps
         b.Box("주유기 2", 150f, 151f, 0f, 1.5f, 13f, 14f, b.Metal, "Metal");
         Room(b, "주유소 가게", 158f, 168f, 12f, 22f, 0f, 4f, Side.South, 161f, 163.5f);
         b.Door("주유소 가게 문", 161f, 163.5f, 0f, 2.4f, 12.05f, 12.25f, "Station", new Vector3(2.5f, 0f, 0f));
-        b.Box("가게 계산대", 160f, 164f, 0f, 1f, 18.5f, 19.5f, b.Wood, "Wood");
+        b.Dress(b.Box("가게 계산대", 160f, 164f, 0f, 1f, 18.5f, 19.5f, b.Wood, "Wood"), "shopcounter");
+        b.Prop("cashregister", new Vector3(161f, 1f, 19f), 180f);
         b.Shop(new Vector3(162f, 0f, 17.8f), new Vector3(162f, 2.2f, 19.5f));
+        // The filling station's shop: a shelf, a fridge, a vending machine outside, bins by the pumps.
+        b.Dress(b.Box("가게 진열대", 165.6f, 166.4f, 0f, 1.4f, 13.5f, 18f, b.Metal, "Metal"), "shopshelf");
+        b.PropSolid("fridge", new Vector3(163.5f, 0f, 21.3f), 180f);
+        b.PropSolid("vending", new Vector3(157.2f, 0f, 15f), 270f);
+        b.PropSolid("bin", new Vector3(147.6f, 0f, 9.2f));
+        foreach (var (x, z) in new[] { (141f, 19f), (142.1f, 19.4f), (156f, 9f) }) b.Prop("garbage", new Vector3(x, 0f, z), x * 11f % 360f);
         b.Spot("Station", new Vector3(163f, 0f, 17f));
         b.EnemySpawn("아래 도로 1", new Vector3(110f, 0f, 12f));
         b.EnemySpawn("아래 도로 2", new Vector3(140f, 0f, -15f));
@@ -274,7 +291,9 @@ public static class CampaignMaps
         b.Box("군 컨테이너 1", 210f, 216f, 0f, 2.6f, -14f, -11.5f, b.Metal, "MetalBox");
         b.Box("군 컨테이너 2", 214f, 220f, 0f, 2.6f, 14f, 16.5f, b.Metal, "MetalBox");
         Room(b, "검문소 초소", 207f, 213f, 4f, 10f, 0f, 3f, Side.West, 6f, 8f);
-        b.Box("초소 무전기", 211.5f, 212.6f, 0f, 1.1f, 8.6f, 9.6f, b.Marker);
+        b.Dress(b.Box("초소 무전기", 211.5f, 212.6f, 0f, 1.1f, 8.6f, 9.6f, b.Marker), "controlboxFit");
+        // The army left in a hurry: crates by the sandbags.
+        foreach (var (x, z) in new[] { (206f, -5.5f), (207.2f, -5.9f), (206.3f, 5.6f) }) b.Prop("crate", new Vector3(x, 0f, z), x * 7f % 360f);
         b.Spot("CheckpointRadio", new Vector3(211f, 0f, 8f));
         b.Spot("TollHold", new Vector3(206f, 0f, 0f));
         Room(b, "지하철 입구", 225f, 233f, -4f, 4f, 0f, 3.5f, Side.West, -2f, 2f, 3f);
@@ -331,6 +350,12 @@ public static class CampaignMaps
         b.Box("개찰구 남", 15f, 15.4f, 0f, 1f, -11.7f, -1f, b.Metal, "Metal");
         b.Box("개찰구 북", 15f, 15.4f, 0f, 1f, 1f, 11.7f, b.Metal, "Metal");
         b.Box("매점", 5f, 8f, 0f, 2.4f, 7f, 11f);
+        // Vending machines, bins and rubbish on the concourse, its exit sign (the Airport pack's props).
+        b.PropSolid("vending", new Vector3(10f, 0f, -11.4f));
+        b.PropSolid("vending", new Vector3(12f, 0f, -11.4f));
+        foreach (var (x, z) in new[] { (3f, -10.8f), (20f, 10.8f) }) b.PropSolid("bin", new Vector3(x, 0f, z));
+        foreach (var (x, z) in new[] { (-7f, 10.6f), (-6f, 11.2f), (26f, -11f) }) b.Prop("garbage", new Vector3(x, 0f, z), x * 11f % 360f);
+        b.Hang("signExit", new Vector3(0f, 5f, 0f), 270f);
         b.PlayerStart(new Vector3(-5f, 0f, 0f), 90f);
         b.Spot("Start", new Vector3(-5f, 0f, 0f));
         b.Lamp(new Vector3(2f, 4.5f, 0f));
@@ -347,8 +372,10 @@ public static class CampaignMaps
         b.Box("멈춘 열차 1", 40f, 60f, 0f, 3.4f, -9f, -2.6f, b.Metal, "Metal");
         b.Box("멈춘 열차 2", 61.5f, 82f, 0f, 3.4f, -9f, -2.6f, b.Metal, "Metal");
         foreach (float x in new[] { 40f, 55f, 70f, 85f }) b.Box("승강장 기둥", x - .4f, x + .4f, 1.1f, 6f, 5.6f, 6.4f);
-        b.Box("벤치 1", 46f, 48f, 1.1f, 1.6f, 9.5f, 10.1f, b.Wood, "Wood");
-        b.Box("벤치 2", 76f, 78f, 1.1f, 1.6f, 9.5f, 10.1f, b.Wood, "Wood");
+        b.Dress(b.Box("벤치 1", 46f, 48f, 1.1f, 1.6f, 9.5f, 10.1f, b.Wood, "Wood"), "seatsShort");
+        b.Dress(b.Box("벤치 2", 76f, 78f, 1.1f, 1.6f, 9.5f, 10.1f, b.Wood, "Wood"), "seatsShort");
+        foreach (var (x, z) in new[] { (52f, 11f), (64f, 10.9f) }) b.PropSolid("bin", new Vector3(x, 1.1f, z));
+        foreach (var (x, z) in new[] { (58f, 4f), (71f, 8f) }) b.Prop("suitcase", new Vector3(x, 1.1f, z), x * 13f % 360f);
         b.Spot("Platform", new Vector3(75f, 1.1f, 6f));
         b.Lamp(new Vector3(45f, 5.5f, 4f));
         b.Lamp(new Vector3(65f, 5.5f, -6f));
@@ -396,6 +423,14 @@ public static class CampaignMaps
         b.Box("사무실 보급함", 179f, 181.5f, 0f, 1.4f, 16.6f, 17.6f, b.Metal, "MetalBox");
         b.Shop(new Vector3(180.2f, 0f, 15.9f), new Vector3(180.2f, 2.2f, 17.6f));
         b.Lamp(new Vector3(177f, 2.6f, 14f), 6f, 1.4f);
+        // The depot office's desk, and fuse boxes on the depot's walls.
+        b.PropSolid("table", new Vector3(173.8f, 0f, 16.6f), 90f);
+        b.Prop("screen", new Vector3(173.8f, .78f, 16.4f), 270f);
+        b.Prop("desk", new Vector3(173.7f, .78f, 17.4f), 270f);
+        b.Prop("officechair", new Vector3(174.9f, 0f, 16.6f), 270f);
+        foreach (var (x, z) in new[] { (170.5f, 8f), (170.5f, -12f), (217.5f, 10f) }) b.Prop("fusebox", new Vector3(x, 1.3f, z), x < 200f ? 90f : 270f);
+        foreach (var (x, z) in new[] { (183f, -13f), (184.2f, -12.6f), (199f, 13f), (215f, -18f) }) b.Prop("crate", new Vector3(x, 0f, z), x * 7f % 360f);
+        foreach (var (x, z) in new[] { (192f, -18.8f), (193.1f, -19f) }) b.Prop("box", new Vector3(x, 0f, z), x * 5f % 360f);
         b.Box("발전기", 205f, 209f, 0f, 2.5f, -6f, -2f, b.Metal, "Metal");
         b.Box("발전기 배기관", 206.8f, 207.2f, 2.5f, 8f, -4.2f, -3.8f, b.Metal, solid: false);
         b.Spot("Generator", new Vector3(203.4f, 0f, -4f));
@@ -442,7 +477,7 @@ public static class CampaignMaps
         b.Box("광장 서쪽 난간 남", 322f, 322.3f, Bank, Bank + 1.2f, -24f, -3.3f);
         b.Box("광장 서쪽 난간 북", 322f, 322.3f, Bank, Bank + 1.2f, 3.3f, 24f);
         b.Spot("Exit", new Vector3(326f, Bank, 0f));
-        b.Box("신호탄 상자", 331.6f, 332.4f, Bank, Bank + 1.1f, 2.6f, 3.4f, b.Marker);
+        b.Dress(b.Box("신호탄 상자", 331.6f, 332.4f, Bank, Bank + 1.1f, 2.6f, 3.4f, b.Marker), "crateFit");
         b.Spot("Flare", new Vector3(332f, Bank, 2f));
         b.Spot("Plaza", new Vector3(333f, Bank, 0f));
         Car(b, 330f, Bank, -10f);
@@ -533,14 +568,31 @@ public static class CampaignMaps
         b.Box("정면 벽 3", 60f, 60.3f, Floor, Roof, 10f, 40f);
         b.Box("정면 문 위 1", 60f, 60.3f, Floor + 3f, Roof, -10f, -6f);
         b.Box("정면 문 위 2", 60f, 60.3f, Floor + 3f, Roof, 6f, 10f);
-        b.Box("안내 데스크", 66f, 70f, Floor, Floor + 1.1f, -2f, 2f, b.Wood, "Wood");
+        // Dressed with the Airport Terminal Scene pack (GreyboxBuilder.Dress, Tables/MapArt): the boxes stay the collision.
+        b.Dress(b.Box("안내 데스크", 66f, 70f, Floor, Floor + 1.1f, -2f, 2f, b.Wood, "Wood"), "infodesk");
         foreach (float z in new[] { -26f, -12f, 2f })
         {
-            b.Box("체크인 카운터", 76f, 100f, Floor, Floor + 1.1f, z, z + 2.4f, b.Wood, "Wood");
-            b.Box("체크인 안내판", 76f, 100f, Floor + 3.4f, Floor + 4.4f, z + 1.1f, z + 1.3f, b.Marker, solid: false);
+            b.Dress(b.Box("체크인 카운터", 76f, 100f, Floor, Floor + 1.1f, z, z + 2.4f, b.Wood, "Wood"), "checkin");
+            for (float x = 80f; x <= 96f; x += 8f) b.Hang("signCheckin", new Vector3(x, Floor + 4.6f, z + 1.2f));
+            // The queue's posts on the hall side of each island.
+            for (float x = 78f; x <= 98f; x += 2.5f) b.Prop("linepost", new Vector3(x, Floor, z - 1.6f));
         }
         b.Box("포장기", 104f, 105.2f, Floor, Floor + 1.4f, -4f, -2.8f, b.Metal, "Metal");
-        foreach (float z in new[] { -36f, -32f }) b.Box("홀 의자 줄", 104f, 116f, Floor, Floor + .5f, z, z + .6f, b.Metal, "Metal");
+        foreach (float z in new[] { -36f, -32f }) b.Dress(b.Box("홀 의자 줄", 104f, 116f, Floor, Floor + .5f, z, z + .6f, b.Metal, "Metal"), "seats");
+        // Left behind when everyone ran: luggage, trolleys, bins and rubbish (seen only, walked through, but the trolleys,
+        // bins and plants block), vending machines and an ATM by the walls, and the hall's ceiling lamps.
+        foreach (var (x, z) in new[] { (73f, -20f), (74.5f, -19.2f), (83f, -15f), (92f, -15.5f), (78f, -1f), (95f, -2f), (101f, 6f), (86f, 8f),
+                     (110f, -10f), (65f, 12f), (71f, -30f), (104f, -20f) })
+            b.Prop("suitcase", new Vector3(x, Floor, z), x * 13f % 360f);
+        foreach (var (x, z) in new[] { (72f, -8f), (102f, -14f), (105f, 9f), (90f, 20f) }) b.PropSolid("trolley", new Vector3(x, Floor, z), x * 7f % 360f);
+        foreach (var (x, z) in new[] { (89.3f, -18f), (109.3f, -18f), (89.3f, 14f), (109.3f, 14f) }) b.PropSolid("bin", new Vector3(x, Floor, z));
+        foreach (var (x, z) in new[] { (61f, -38f), (62.2f, -37.2f), (118f, -38.5f), (61f, 38f), (118f, 26f), (116.8f, 26.8f) })
+            b.Prop("garbage", new Vector3(x, Floor, z), x * 11f % 360f);
+        foreach (var (x, z) in new[] { (64f, -38.5f), (115f, -37.5f), (116.2f, -36.2f) }) b.Prop("box", new Vector3(x, Floor, z), x * 5f % 360f);
+        b.PropSolid("vending", new Vector3(96f, Floor, -39.4f));
+        b.PropSolid("vending", new Vector3(98f, Floor, -39.4f));
+        b.PropSolid("atm", new Vector3(61f, Floor, -14f), 90f);
+        foreach (var (x, z) in new[] { (61.2f, -11.5f), (61.2f, 11.5f), (61.2f, -4.5f), (61.2f, 4.5f) }) b.PropSolid("plant", new Vector3(x, Floor, z));
         foreach (float x in new[] { 88f, 108f })
             foreach (float z in new[] { -18f, 14f })
                 b.Box("홀 기둥", x - .6f, x + .6f, Floor, Roof, z - .6f, z + .6f);
@@ -549,8 +601,13 @@ public static class CampaignMaps
         b.Box("2층 난간 1", 64f, 68.5f, Upper, Upper + 1f, 28f, 28.2f, b.Metal, "MetalPipe");
         b.Box("2층 난간 2", 71.5f, 116f, Upper, Upper + 1f, 28f, 28.2f, b.Metal, "MetalPipe");
         foreach (float x in new[] { 80f, 96f, 112f }) b.Box("2층 기둥", x - .4f, x + .4f, Floor, Upper - .4f, 28.2f, 29f);
-        b.Box("식당 계산대", 84f, 92f, Upper, Upper + 1.1f, 37f, 38.2f, b.Wood, "Wood");
-        foreach (float x in new[] { 76f, 82f, 98f, 104f }) b.Box("식탁", x, x + 1f, Upper, Upper + .75f, 32f, 33f, b.Wood, "Wood");
+        b.Dress(b.Box("식당 계산대", 84f, 92f, Upper, Upper + 1.1f, 37f, 38.2f, b.Wood, "Wood"), "glasscounter");
+        foreach (float x in new[] { 76f, 82f, 98f, 104f })
+        {
+            b.Dress(b.Box("식탁", x, x + 1f, Upper, Upper + .75f, 32f, 33f, b.Wood, "Wood"), "table");
+            b.Prop("chair", new Vector3(x + .5f, Upper, 31.4f), 0f);
+            b.Prop("chair", new Vector3(x + .5f, Upper, 33.6f), 180f);
+        }
         b.EnemySpawn("홀 서남", new Vector3(66f, Floor, -34f));
         b.EnemySpawn("홀 동남", new Vector3(112f, Floor, -26f));
         b.EnemySpawn("홀 동북", new Vector3(114f, Floor, 22f));
@@ -561,10 +618,11 @@ public static class CampaignMaps
             b.Box("검색대 칸막이", 120f, 120.3f, Floor, Floor + 4f, z0, z1);
         foreach (float lane in new[] { -12f, -4f, 4f, 12f })
         {
-            b.Box("엑스레이 검색기", 120.3f, 125.5f, Floor, Floor + 1.2f, lane - 2f, lane - 1f, b.Metal, "Metal");
-            b.Box("금속 탐지기 왼쪽", 126.5f, 126.8f, Floor, Floor + 2.2f, lane - .9f, lane - .7f, b.Metal, solid: false);
-            b.Box("금속 탐지기 오른쪽", 126.5f, 126.8f, Floor, Floor + 2.2f, lane + .7f, lane + .9f, b.Metal, solid: false);
-            b.Box("금속 탐지기 위", 126.5f, 126.8f, Floor + 2.2f, Floor + 2.4f, lane - .9f, lane + .9f, b.Metal, solid: false);
+            b.Dress(b.Box("엑스레이 검색기", 120.3f, 125.5f, Floor, Floor + 1.2f, lane - 2f, lane - 1f, b.Metal, "Metal"), "xray");
+            // The walk-through detector, seen only: everyone walks through it.
+            b.Prop("bodyscanner", new Vector3(126.65f, Floor, lane), 90f);
+            b.Prop("linepost", new Vector3(117.5f, Floor, lane - 1.2f));
+            b.Prop("linepost", new Vector3(117.5f, Floor, lane + 1.2f));
         }
         b.Spot("Security", new Vector3(129f, Floor, 0f));
 
@@ -572,19 +630,45 @@ public static class CampaignMaps
         // walkway, and the gate desk by the jet bridge's door.
         Room(b, "면세점", 140f, 154f, 26f, 40f, Floor, 4f, Side.South, 145f, 147.5f);
         b.Door("면세점 문", 145f, 147.5f, Floor, Floor + 2.4f, 26.05f, 26.25f, "DutyFree", new Vector3(2.5f, 0f, 0f));
-        b.Box("면세점 계산대", 148f, 152f, Floor, Floor + 1f, 35f, 36f, b.Wood, "Wood");
+        b.Dress(b.Box("면세점 계산대", 148f, 152f, Floor, Floor + 1f, 35f, 36f, b.Wood, "Wood"), "shopcounter");
+        b.Prop("cashregister", new Vector3(149f, Floor + 1f, 35.5f), 180f);
+        b.Prop("perfume", new Vector3(151f, Floor + 1f, 35.4f));
+        b.Prop("whiskey", new Vector3(151.6f, Floor + 1f, 35.6f));
         b.Shop(new Vector3(150f, Floor, 34.3f), new Vector3(150f, Floor + 2.2f, 36f));
-        b.Box("면세점 진열대", 141f, 141.8f, Floor, Floor + 1.4f, 29f, 37f, b.Metal, "Metal");
+        b.Dress(b.Box("면세점 진열대", 141f, 141.8f, Floor, Floor + 1.4f, 29f, 37f, b.Metal, "Metal"), "shopshelf");
+        b.PropSolid("glassshelf", new Vector3(152.6f, Floor, 29.5f), 270f);
+        b.PropSolid("glassshelf", new Vector3(152.6f, Floor, 31.5f), 270f);
+        b.Hang("banner", new Vector3(146.25f, Floor + 3.6f, 25.8f));
         b.Spot("DutyFree", new Vector3(147f, Floor, 32f));
         b.Lamp(new Vector3(147f, Floor + 3.5f, 33f), 9f, 1.6f);
-        b.Box("카페 계산대", 128f, 134f, Floor, Floor + 1.1f, -38f, -36.8f, b.Wood, "Wood");
+        b.Dress(b.Box("카페 계산대", 128f, 134f, Floor, Floor + 1.1f, -38f, -36.8f, b.Wood, "Wood"), "glasscounter");
+        foreach (float x in new[] { 130f, 134f })
+        {
+            b.PropSolid("table", new Vector3(x, Floor, -33.5f));
+            b.Prop("chair", new Vector3(x, Floor, -34.4f), 0f);
+            b.Prop("chair", new Vector3(x, Floor, -32.6f), 180f);
+        }
         b.Box("멈춘 무빙워크", 128f, 170f, Floor, Floor + .15f, -31f, -29.6f, b.Metal, "Metal");
         foreach (float z in new[] { -24f, -20f, -16f, 12f, 16f })
-            b.Box("탑승구 의자 줄", 158f, 176f, Floor, Floor + .5f, z, z + .6f, b.Metal, "Metal");
-        b.Box("탑승구 데스크", 172f, 175f, Floor, Floor + 1.1f, 5f, 6.2f, b.Wood, "Wood");
+            b.Dress(b.Box("탑승구 의자 줄", 158f, 176f, Floor, Floor + .5f, z, z + .6f, b.Metal, "Metal"), "seats");
+        b.Dress(b.Box("탑승구 데스크", 172f, 175f, Floor, Floor + 1.1f, 5f, 6.2f, b.Wood, "Wood"), "boardingdesk");
         b.Spot("Gate", new Vector3(177f, Floor, 0f));
+        b.Hang("signGates", new Vector3(150f, Floor + 4.2f, 0f), 90f);
+        b.Hang("signGates", new Vector3(175f, Floor + 3.4f, -3f), 90f);
+        b.Hang("signExit", new Vector3(63f, Floor + 3.4f, 0f), 270f);
+        foreach (var (x, z) in new[] { (160f, -22f), (163f, -21.6f), (167f, -18f), (171f, -14f), (161f, 14f), (169f, 18f), (174f, 10f), (139f, -6f) })
+            b.Prop("suitcase", new Vector3(x, Floor, z), x * 17f % 360f);
+        foreach (var (x, z) in new[] { (165f, -26f), (157f, 10f), (170f, 14.5f), (138f, 8f) }) b.Prop("bag", new Vector3(x, Floor, z), x * 9f % 360f);
+        foreach (var (x, z) in new[] { (156f, -12f), (156f, 20f), (137f, -20f) }) b.PropSolid("bin", new Vector3(x, Floor, z));
+        foreach (var (x, z) in new[] { (179f, -38f), (178f, -37f), (127f, 38f), (179f, 38f) }) b.Prop("garbage", new Vector3(x, Floor, z), x * 11f % 360f);
+        b.PropSolid("vending", new Vector3(160f, Floor, 39.4f), 180f);
+        b.PropSolid("vending", new Vector3(162f, Floor, 39.4f), 180f);
+        foreach (var (x, z) in new[] { (154.5f, -10f), (154.5f, 8f) }) b.PropSolid("plant", new Vector3(x, Floor, z));
         foreach (var (x, z) in new[] { (72f, -18f), (72f, 20f), (96f, -30f), (96f, -4f), (110f, 20f), (132f, -14f), (150f, 8f), (166f, -24f), (166f, 22f) })
+        {
             b.Lamp(new Vector3(x, Roof - 1f, z), 20f, 2.4f);
+            b.Hang("lamp", new Vector3(x, Roof, z));
+        }
         b.EnemySpawn("대합실 남", new Vector3(136f, Floor, -24f));
         b.EnemySpawn("대합실 동남", new Vector3(172f, Floor, -35f));
         b.EnemySpawn("대합실 북", new Vector3(166f, Floor, 34f));
@@ -623,8 +707,17 @@ public static class CampaignMaps
         Room(b, "관제탑 1층", 214f, 224f, -52f, -42f, 0f, 4f, Side.North, 217.5f, 220f);
         b.Box("관제탑 기둥", 217f, 221f, 4.3f, 26f, -49f, -45f);
         b.Box("관제탑 관제실", 214f, 224f, 26f, 30f, -52f, -42f, b.Metal, "Metal");
-        b.Box("관제탑 무전기", 221.5f, 223f, 0f, 1.1f, -51.2f, -50.2f, b.Marker);
+        b.Dress(b.Box("관제탑 무전기", 221.5f, 223f, 0f, 1.1f, -51.2f, -50.2f, b.Marker), "controlboxFit");
+        b.PropSolid("table", new Vector3(217.5f, 0f, -50.6f));
+        b.Prop("screen", new Vector3(217.5f, .78f, -50.8f), 180f);
+        b.Prop("desk", new Vector3(218.3f, .78f, -50.6f), 180f);
+        b.Prop("officechair", new Vector3(217.5f, 0f, -49.3f), 180f);
+        foreach (var (x, z) in new[] { (215f, -43f), (223f, -43.2f) }) b.Prop("fusebox", new Vector3(x, 1.2f, z), 180f);
         b.Spot("TowerRadio", new Vector3(222.2f, 0f, -49.5f));
+        // The apron's leftovers: crates and boxes by the catering truck and the carts.
+        foreach (var (x, z) in new[] { (204f, -27f), (205.2f, -26.4f), (213f, -27.5f), (200f, 17f), (201.3f, 17.6f) }) b.Prop("crate", new Vector3(x, 0f, z), x * 7f % 360f);
+        foreach (var (x, z) in new[] { (214f, -28f), (198f, 12f), (210f, 31f) }) b.Prop("box", new Vector3(x, 0f, z), x * 5f % 360f);
+        foreach (var (x, z) in new[] { (196f, 20f), (233f, 9f) }) b.Prop("suitcase", new Vector3(x, 0f, z), x * 13f % 360f);
         b.Lamp(new Vector3(219f, 3.4f, -47f), 8f, 1.4f);
         b.EnemySpawn("계류장 북", new Vector3(215f, 0f, 45f));
         b.EnemySpawn("계류장 북동", new Vector3(240f, 0f, 30f));
@@ -673,9 +766,10 @@ public static class CampaignMaps
         b.Box("수송기 바퀴 덮개 북", 328f, 340f, 0f, 1.5f, 3f, 4.2f, b.Metal, "Metal");
         b.Box("수송기 수직 꼬리", 340f, 346f, 5.8f, 12f, -.15f, .15f, b.Metal, solid: false);
         b.Box("수송기 수평 꼬리", 341f, 346f, 10.5f, 10.8f, -9f, 9f, b.Metal, solid: false);
-        b.Box("화물칸 짐 1", 326f, 328f, 1.2f, 2.4f, -2.2f, -.6f, b.Wood, "WoodPlank");
-        b.Box("화물칸 짐 2", 330f, 332.4f, 1.2f, 2.2f, .8f, 2.2f, b.Wood, "WoodPlank");
-        b.Box("출발 신호등", 350.6f, 351.4f, 0f, 1.3f, -5f, -4.2f, b.Marker);
+        b.Dress(b.Box("화물칸 짐 1", 326f, 328f, 1.2f, 2.4f, -2.2f, -.6f, b.Wood, "WoodPlank"), "crateFit");
+        b.Dress(b.Box("화물칸 짐 2", 330f, 332.4f, 1.2f, 2.2f, .8f, 2.2f, b.Wood, "WoodPlank"), "crateFit");
+        b.Prop("moneybag", new Vector3(329f, 1.2f, -1.9f), 30f);
+        b.Dress(b.Box("출발 신호등", 350.6f, 351.4f, 0f, 1.3f, -5f, -4.2f, b.Marker), "controlboxFit");
         b.Spot("Transport", new Vector3(353f, 0f, 0f));
         b.Spot("Signal", new Vector3(351f, 0f, -3.6f));
         b.Spot("Cargo", new Vector3(336f, 1.2f, 0f));

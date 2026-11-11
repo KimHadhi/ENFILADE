@@ -483,7 +483,8 @@ public sealed partial class GreyboxBuilder
              (stranded == 0 ? "좀비가 못 가는 소품은 없어요." : "좀비가 못 가는 소품이 " + stranded + "곳 남았어요(콘솔에 이름과 자리).") +
              "\n가림 굽기(오클루전 컬링): " + (culled ? "구웠어요. 벽과 건물 뒤의 좀비는 그리지 않아요." : "실패했어요(콘솔을 보세요). 맵은 그대로 쓸 수 있어요.") +
              "\n하늘·해·안개: " + (look == null ? "Tables/MapLook에 이 장의 줄이 없어 기본 하늘이에요."
-                 : look + (lit ? " (환경광·반사를 구웠어요)" : " (환경광을 굽지 못했어요. Window > Rendering > Lighting의 Generate Lighting을 눌러 주세요)")));
+                 : look + (lit ? " (환경광·반사를 구웠어요)" : " (환경광을 굽지 못했어요. Window > Rendering > Lighting의 Generate Lighting을 눌러 주세요)")) +
+             DressReport());
     }
 
     // ---- Culling (the user's memo 40: "최적화, 컬링") ----
@@ -499,6 +500,10 @@ public sealed partial class GreyboxBuilder
 
     private void MarkStatic()
     {
+        // Dressing (GreyboxBuilder.Dress): batched and hidden behind walls, but too small and too varied to hide much.
+        if (dressing != null)
+            foreach (var shape in dressing.GetComponentsInChildren<Renderer>())
+                GameObjectUtility.SetStaticEditorFlags(shape.gameObject, StaticEditorFlags.BatchingStatic | StaticEditorFlags.OccludeeStatic);
         foreach (var shape in terrain.GetComponentsInChildren<Renderer>())
         {
             var part = shape.gameObject;
@@ -506,7 +511,8 @@ public sealed partial class GreyboxBuilder
                 || part.GetComponentInParent<CampaignPushback>() != null)
                 continue;
             var flags = StaticEditorFlags.BatchingStatic | StaticEditorFlags.OccludeeStatic;
-            if (part.TryGetComponent(out Collider _)) flags |= StaticEditorFlags.OccluderStatic;
+            // A dressed box's grey look is hidden (GreyboxBuilder.Dress): its model may not fill it, so it hides nothing.
+            if (shape.enabled && part.TryGetComponent(out Collider _)) flags |= StaticEditorFlags.OccluderStatic;
             GameObjectUtility.SetStaticEditorFlags(part, flags);
         }
     }
