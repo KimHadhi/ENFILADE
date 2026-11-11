@@ -11,8 +11,8 @@ using UnityEngine;
 [DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.CombatHeadMotion)]
 public sealed class CombatHeadMotion : MonoBehaviour
 {
-    private struct Move { public Vector3 offset, angles; public float time, attack, hold, release; }
-    private readonly List<Move> moves = new List<Move>(4);
+    private struct HeadMove { public Vector3 offset, angles; public float time, attack, hold, release; }
+    private readonly List<HeadMove> moves = new List<HeadMove>(4);
     private float pendingYaw;
     private int pendingFrame = -1;
 
@@ -56,7 +56,7 @@ public sealed class CombatHeadMotion : MonoBehaviour
 
     private void Add(Vector3 offset, Vector3 angles, float attack, float hold, float release)
     {
-        moves.Add(new Move { offset = offset, angles = angles, attack = Mathf.Max(.01f, attack), hold = Mathf.Max(0f, hold), release = Mathf.Max(.01f, release) });
+        moves.Add(new HeadMove { offset = offset, angles = angles, attack = Mathf.Max(.01f, attack), hold = Mathf.Max(0f, hold), release = Mathf.Max(.01f, release) });
         Evaluate(0f);
     }
 

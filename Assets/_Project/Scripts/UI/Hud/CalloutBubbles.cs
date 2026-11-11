@@ -30,7 +30,7 @@ public sealed class CalloutBubbles : MonoBehaviour
         public bool Own;
     }
 
-    private sealed class Pin
+    private sealed class PinMark
     {
         public PlayerMovement By;
         public Vector3 Point;
@@ -42,7 +42,7 @@ public sealed class CalloutBubbles : MonoBehaviour
 
     private static CalloutBubbles instance;
     private readonly List<Bubble> bubbles = new List<Bubble>();
-    private readonly List<Pin> pins = new List<Pin>();
+    private readonly List<PinMark> pins = new List<PinMark>();
     private RectTransform canvas;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -138,7 +138,7 @@ public sealed class CalloutBubbles : MonoBehaviour
             if (pins[i].Root != null) Destroy(pins[i].Root.gameObject);
             pins.RemoveAt(i);
         }
-        var pin = new Pin { By = by, Point = point, Since = Time.unscaledTime };
+        var pin = new PinMark { By = by, Point = point, Since = Time.unscaledTime };
         pin.Root = FeelUI.Rect("Callout pin", canvas);
         pin.Root.anchorMin = pin.Root.anchorMax = Vector2.zero;
         pin.Root.pivot = new Vector2(.5f, 0f);
