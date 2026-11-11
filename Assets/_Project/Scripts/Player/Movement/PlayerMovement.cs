@@ -431,6 +431,8 @@ public sealed partial class PlayerMovement : MonoBehaviour
             // past the control lock: the pin keeps them in a locked heavy landing, where ShovePressed never comes true.
             if (pinned && InputAvailable && Input.ShoveKeyPressed && hold != null && hold.TryBurstShield()) { }
             else if (Input.ShovePressed && !fists && (!pinned || FightsPinned)) Abilities.Combat.TryShove();
+            // The kick key kicks a shambler off as a shove does, fists out or not.
+            else if (Input.KickPressed && (!pinned || FightsPinned)) Abilities.Combat.TryKick();
             if (pinned) StayPinned();
             Input.Sample(false);
             Actions.Momentum.Tick(dt, Vector2.zero);

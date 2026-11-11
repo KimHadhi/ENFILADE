@@ -33,7 +33,7 @@
 | 부서지는 문 (모든 PC에서 함께 부서짐, 서 있는 동안만 적의 길을 막음) | [BreakableDoor](World/BreakableDoor.cs), [DoorBreaks](World/DoorBreaks.cs), 길찾기 다시 굽기: Tools > World > 문 길찾기 다시 굽기 ([DoorNavMeshBaker](../Editor/Utilities/DoorNavMeshBaker.cs)) |
 | 슬라이딩의 적 접촉·저스트 판정 | [SlideCombat](Player/Combat/SlideCombat.cs) |
 | 적의 넘어짐·레그돌·복구 | [EnemyKnockdownPresentation](Combat/Damage/EnemyKnockdownPresentation.cs) |
-| 밀치기·돌진 밀치기 / 서서 도약 밀치기(ArcCW)·장전 중 발차기(Mighty Foot Engaged) / 밀치기 피로 | [PlayerCombatActions](Player/Combat/PlayerCombatActions.cs) / [ShoveMoves](Player/Combat/ShoveMoves.cs) / [ShoveFatigue](Player/Combat/ShoveFatigue.cs), [ShoveFatigueHUD](UI/ShoveFatigueHUD.cs) |
+| 밀치기·돌진 밀치기 / 서서 도약 밀치기(ArcCW)·발차기(Mighty Foot Engaged: 발차기 키 `Player/Kick`·장전 중 V, 공중 드롭킥, 휴게소 문 차서 열기·부서지는 문 떼어 내기, 자세별 다리 클립) / 밀치기 피로 | [PlayerCombatActions](Player/Combat/PlayerCombatActions.cs) / [ShoveMoves](Player/Combat/ShoveMoves.cs) (Player.csv `Shove`), [PlayerBody.Kick](Player/Body/PlayerBody.Kick.cs), 문 `CampaignRun.KickOpen`·`CampaignDoor.Slam` / [ShoveFatigue](Player/Combat/ShoveFatigue.cs), [ShoveFatigueHUD](UI/ShoveFatigueHUD.cs) |
 | 주먹·가드(드는 동안 느린 걸음)·세키로식 패링(성공 때 발 묶임)·가드 브레이크 | [PlayerMeleeCombat](Player/Combat/PlayerMeleeCombat.cs) (걷는 속도는 `LimitMoveSpeed`로 이동이 묻는다) |
 | 적 머리 위에 선 플레이어: 밟힌 적이 털어 떨어뜨리고 주변 적은 위로 친다 | [HeadStandShakeOff](Player/Combat/HeadStandShakeOff.cs), [EnemyHead](Enemies/EnemyHead.cs), Enemies.csv `reachAbove` |
 | 완벽 방어·달려들어 치는 반격 / 처형(F, 주먹 상태의 좌클릭 인살) / 달려들 때 재는 몸 사이 거리 | [PlayerPerfectDefense](Player/Combat/PlayerPerfectDefense.cs), [PlayerExecution](Player/Combat/PlayerExecution.cs) / [BodyGap](Player/Combat/BodyGap.cs) |

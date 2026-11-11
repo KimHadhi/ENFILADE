@@ -38,7 +38,7 @@ public sealed class CampaignRun : MonoBehaviour
 {
     public const string TableName = "Campaign", TableRow = "Default", DirectorRow = "Director", EndlessRow = "Endless", StartSpot = "Start";
     private const string StatusMessage = "ENFILADE.Campaign", PressMessage = "ENFILADE.CampaignPress", DoorMessage = "ENFILADE.CampaignDoor",
-        CanShotMessage = "ENFILADE.CanShot";
+        CanShotMessage = "ENFILADE.CanShot", DoorKickMessage = "ENFILADE.CampaignDoorKick";
     // How near the doorway someone must be to shut or open a rest stop's door, and a counter to shop (m).
     private const float DoorReach = 2.2f, ShopReach = 2f;
     // The run is told again this often even when nothing changed, so a guest who missed a message catches up (s).
@@ -302,6 +302,7 @@ public sealed class CampaignRun : MonoBehaviour
         messages.UnregisterNamedMessageHandler(network.IsServer ? PressMessage : StatusMessage);
         messages.UnregisterNamedMessageHandler(network.IsServer ? CampaignCans.AskMessage : CampaignCans.StateMessage);
         if (network.IsServer) { messages.UnregisterNamedMessageHandler(DoorMessage); messages.UnregisterNamedMessageHandler(CanShotMessage); }
+        messages.UnregisterNamedMessageHandler(DoorKickMessage);
     }
 
     private void Listen()
@@ -316,11 +317,14 @@ public sealed class CampaignRun : MonoBehaviour
             messages.RegisterNamedMessageHandler(CampaignCans.AskMessage, (sender, reader) => fuel.ReceiveAsk(sender, reader, MayPour));
             messages.RegisterNamedMessageHandler(DoorMessage, ReceiveDoor);
             messages.RegisterNamedMessageHandler(CanShotMessage, ReceiveCanShot);
+            // A kicked door: a guest's kick comes here; the host's word to fling it goes back to every guest (ReceiveDoorSlam).
+            messages.RegisterNamedMessageHandler(DoorKickMessage, ReceiveDoorKick);
         }
         else
         {
             messages.RegisterNamedMessageHandler(StatusMessage, ReceiveStatus);
             messages.RegisterNamedMessageHandler(CampaignCans.StateMessage, (sender, reader) => fuel.ReceiveState(reader));
+            messages.RegisterNamedMessageHandler(DoorKickMessage, ReceiveDoorSlam);
         }
     }
 
@@ -729,6 +733,53 @@ public sealed class CampaignRun : MonoBehaviour
     {
         reader.ReadValueSafe(out byte index);
         if (index < doors.Length && doors[index] != null) doors[index].Closed = !doors[index].Closed;
+    }
+
+    /// <summary>
+    /// A kick met this rest-stop door while it was shut (ShoveMoves, Mighty Foot's door kick): it bursts open here at once,
+    /// and the host opens it for everyone, as it decides [F] (a guest asks it). False when it is no door of this run's or
+    /// it already stands open.
+    /// </summary>
+    public static bool KickOpen(CampaignDoor door)
+    {
+        if (active == null || door == null || !door.Closed) return false;
+        int index = System.Array.IndexOf(active.doors, door);
+        if (index < 0 || index > byte.MaxValue) return false;
+        if (active.IsHost) { active.SlamOpen(index); return true; }
+        door.Slam();
+        var session = active.network;
+        if (session == null || !session.IsListening || session.CustomMessagingManager == null) return true;
+        using var writer = new FastBufferWriter(sizeof(byte), Allocator.Temp);
+        writer.WriteValueSafe((byte)index);
+        session.CustomMessagingManager.SendNamedMessage(DoorKickMessage, NetworkManager.ServerClientId, writer);
+        return true;
+    }
+
+    // On the host (or alone): the door is open for good, the status says so, and every guest flings its own the same way.
+    private void SlamOpen(int index)
+    {
+        doors[index].Closed = false;
+        doors[index].Slam();
+        if (network == null || !network.IsListening || network.CustomMessagingManager == null) return;
+        using var writer = new FastBufferWriter(sizeof(byte), Allocator.Temp);
+        writer.WriteValueSafe((byte)index);
+        network.CustomMessagingManager.SendNamedMessageToAll(DoorKickMessage, writer);
+    }
+
+    // A guest kicked a door it saw shut: the host opens it, if it still stands shut. The host's own word to the guests
+    // comes back here too, and is left alone.
+    private void ReceiveDoorKick(ulong sender, FastBufferReader reader)
+    {
+        reader.ReadValueSafe(out byte index);
+        if (sender == NetworkManager.ServerClientId) return;
+        if (index < doors.Length && doors[index] != null && doors[index].Closed) SlamOpen(index);
+    }
+
+    // The host says a door was kicked open: it bursts open here too, and the status keeps it open.
+    private void ReceiveDoorSlam(ulong sender, FastBufferReader reader)
+    {
+        reader.ReadValueSafe(out byte index);
+        if (sender == NetworkManager.ServerClientId && index < doors.Length && doors[index] != null) doors[index].Slam();
     }
 
     // Everyone sits in a rest stop with its doors shut: the one being reached now, or the last one reached.

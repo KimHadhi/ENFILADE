@@ -215,6 +215,9 @@ public sealed class SettingsMenuView
         // The class key (stage 7): the wheel click unless picked otherwise.
         rows.Key(Texts.Get("settings.controls.class_key"),
             UnityEngine.InputSystem.InputSystem.actions != null ? UnityEngine.InputSystem.InputSystem.actions.FindAction("Player/ClassAbility", false) : null);
+        // The kick key (porting bundle 9, Mighty Foot Engaged): the mouse's back side button unless picked otherwise.
+        rows.Key(Texts.Get("settings.controls.kick_key"),
+            UnityEngine.InputSystem.InputSystem.actions != null ? UnityEngine.InputSystem.InputSystem.actions.FindAction("Player/Kick", false) : null);
     }
 
     private static void ScreenTab(SettingsRows rows, GameSettings s)

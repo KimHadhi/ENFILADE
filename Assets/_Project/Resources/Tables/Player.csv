@@ -118,14 +118,22 @@ Shove.lungeRate,5,그 도약 속도 = 이 값 × 적까지 거리(1/s). ArcCW �
 Shove.airLungeRate,2.5,공중에서의 같은 값. ArcCW 2.5
 Shove.lungeFriction,8,도약이 줄어드는 빠르기(1/s). GMod 바닥 마찰 8이라 ArcCW처럼 거리의 5/8만큼 나아간다
 Shove.standingSpeed,0.5,이동 키를 안 누르고 이보다 느리면(m/s) 서 있는 것으로 본다. 움직이면 그냥 밀치기(레포데)
-Shove.kickSwingTime,0.2,장전 중 V는 장전을 끊지 않는 발차기다(Mighty Foot Engaged). 누른 뒤 휘두르는 소리와 화면 충격까지(초)
+Shove.kickSwingTime,0.2,발차기(Mighty Foot Engaged): 발차기 키(Player/Kick. 기본 마우스 뒤 옆버튼. 총·주먹·맨손 무엇을 들든)나 장전 중 V. 손과 장전은 그대로 둔다. 누른 뒤 휘두르는 소리와 화면 충격까지(초)
 Shove.kickHitTime,0.3,누른 뒤 발이 닿는 순간(초)
-Shove.kickInterval,1.25,발차기 재사용 대기(초). 원본의 0.75 + 0.5
-Shove.kickRangeShare,1,발이 닿는 거리 = 선 키 × 이 값. 몸 가운데에서 시선이 머무는 곳 쪽으로
-Shove.kickRadius,0.1,곧은 선이 빗나가면 이 반지름(m)으로 한 번 더 훑는다. 원본 4단위
-Shove.kickDamage,20;30,발차기 피해 - 최소;최대(무작위). 밀침·경직·자세 피해는 밀치기와 같다
+Shove.kickInterval,1.25,발차기 재사용 대기(초). 원본의 0.75 + 0.5. 발차기 키와 장전 중 V가 함께 쓴다
+Shove.kickRangeShare,1,발이 닿는 거리 = 선 키(1.75m) × 이 값. 앉아도 선 키로 잰다(원본도 선 몸 높이 72단위 = 1.8m). 몸 가운데에서 시선이 머무는 곳 쪽으로
+Shove.kickRadius,0.1,곧은 선이 빗나가면 반폭이 이만큼(m)인 상자로 한 번 더 훑는다. 원본 4단위
+Shove.kickDamage,20;30,발차기 피해 - 최소;최대(무작위). 원본 그대로: 좀비(체력 100)는 4~5번·러너(40)는 2번. 밀침·경직·자세 피해는 밀치기(Ability.shove*)와 같다
 Shove.kickPushback,2.5,맞히면 차는 사람이 뒤로 밀리는 속도(m/s). 공중이면 두 배. 원본 100단위/초
 Shove.kickViewPunch,-10;2,휘두를 때 화면 충격(도; 위아래;좌우 무작위 폭). 원본 -10;2
+Shove.kickDownAngle,40,땅에서 이보다 크게(도) 내려다보며 차면 내려차기 클립(Body.kickDown). 앉아 있으면 앉아 차기가 먼저다. 원본 40
+Shove.dropkickStillSpeed,2.5,공중에서 이보다 느리게(m/s) 움직이며 차면 제자리 공중 차기 클립(Body.dropkickStill). 둘 다 드롭킥이다. Beatrun 100단위/초
+Shove.dropkickDamageScale,2,공중에서 찬 발차기(드롭킥. 사다리·파쿠르 중에는 차지 않는다)의 피해·자세 피해 배수. 원본 mf_dropkickmult 2
+Shove.dropkickPushScale,2,드롭킥이 밀어내는 속도 배수(Ability.shovePushSpeed × 이 값). 원본은 피해가 두 배라 날리는 힘도 두 배다
+Shove.dropkickThrowTime,0.35,드롭킥에 맞은 좀비가 밀려 날아가다 멈추는 시간(초). 멈추면 넘어진다(돌진 밀치기와 같은 방식)
+Shove.dropkickKnockdown,1.2,드롭킥에 넘어진 좀비가 누워 있는 시간(초). 0이면 넘어지지 않고 더 세게 밀리기만 한다. 거구·큰 몸은 늘 밀리기만 한다
+Shove.doorBreakChance,0.2,발차기가 부서지는 문(BreakableDoor)을 떼어 낼 확률(0~1). 원본 mf_blowdoorchance 20%. 휴게소 문(CampaignDoor)은 부서지지 않고 닫혀 있으면 세게 열리기만 한다
+Shove.doorReach,1.2,차서 연 문이나 부순 문 바로 뒤 이 거리(m) 안의 좀비도 그 발차기에 맞아 문 반대쪽으로 밀려난다
 HeadStand.shakeDelay,0.35,적 머리 위에 이만큼(초) 서 있으면 그 적이 몸을 털어 떨어뜨린다. 밟힌 적은 위로 치지 않고 주변 적은 위로 손을 뻗는다(Enemies.csv reachAbove)
 HeadStand.throwDistance,1.1,떨어뜨릴 때 옆으로 밀려나는 거리(m)
 HeadStand.throwSeconds,0.25,그 밀림에 걸리는 시간(초)
@@ -524,7 +532,11 @@ Body.punchClipSpeed,1.6,주먹질 클립 재생 속도. 클립을 다 뻗는 프
 Body.punchBlendIn,0.04,주먹질 클립이 팔을 넘겨받는 시간(초)
 Body.punchBlendOut,0.12,주먹질 클립이 팔을 주먹 위치로 돌려주는 시간(초)
 Body.punchEyeSteady,0.5,주먹질로 머리가 앞으로 나갈 때 카메라를 눈에서 고정 위치 쪽으로 옮기는 비율(0~1). 0이면 머리를 그대로 따라간다
-Body.kick,kick,재장전 중 V로 차는 발차기(ShoveMoves)에 다리만 이 클립을 한 번 따른다. 엉덩이와 상체와 팔은 하던 대로 둔다
+Body.kick,kick,서서 차는 발차기(발차기 키·장전 중 V. ShoveMoves)에 다리만 이 클립을 한 번 따른다. 엉덩이와 상체와 팔은 하던 대로 둔다
+Body.kickCrouch,kick,앉아 차는 발차기의 다리 클립. 전용 클립이 없어 선 발차기와 같다. Beatrun meleeslide(미끄러지며 차기)를 넣어 볼 수 있다. 없는 이름이면 선 발차기
+Body.kickDown,kick,땅에서 내려다보며 차는 발차기(Shove.kickDownAngle)의 다리 클립. 내려찍기 클립이 아직 없어 선 발차기와 같다. 없는 이름이면 선 발차기
+Body.dropkick,meleeair,공중에서 움직이며 차는 드롭킥의 다리 클립(Beatrun의 드롭킥). 없는 이름이면 선 발차기
+Body.dropkickStill,meleeairstill,공중에서 거의 멈춘 채 차는 드롭킥의 다리 클립(Beatrun의 제자리 공중 차기). 없는 이름이면 Body.dropkick
 Body.kickClipSpeed,1,발차기 클립 재생 속도. 1이면 발이 가장 멀리 나가는 때(0.33초)가 발이 닿는 때(Shove.kickHitTime 0.3초)와 거의 맞는다
 Body.kickBlendIn,0.06,발차기 클립이 다리를 넘겨받는 시간(초)
 Body.kickBlendOut,0.2,발차기 클립이 다리를 돌려주는 시간(초). 클립이 끝나기 이만큼 전부터 돌려준다

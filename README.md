@@ -8,7 +8,7 @@
 2. 지정된 Unity 버전으로 열고 패키지 복원·임포트·컴파일을 기다린다.
 3. [CombatFoundation](Assets/_Project/Scenes/Development/CombatFoundation.unity)을 열고 Play한다. Game 창을 클릭해 마우스를 잠근 뒤 버튼을 놓았다 다시 누른다.
 4. **1**은 소총, **2**는 피스톨, **3/4**의 빈 슬롯은 주먹이다. 같은 슬롯 키를 다시 누르면 장비를 내린다. 시작 시에는 장비를 들고 있지 않다.
-5. WASD 이동, Shift 달리기, Space 점프, Ctrl 앉기·슬라이드, Z 다이브·포복, Alt 회피, Q/E 기울이기, V 밀치기(달리는 중이면 돌진 밀치기), F 처형. 좌클릭 공격, 우클릭 ADS·가드, R 장전, F5 뒤에서 몸 보기, **Esc 일시정지·설정**(볼륨·감도·상하 반전·앉기/기울이기 전환·시야각·화면 흔들림·내 머리카락 보기, [설정 안내](Assets/_Project/Docs/MaintenanceGuide.md#플레이어-설정-esc-메뉴)).
+5. WASD 이동, Shift 달리기, Space 점프, Ctrl 앉기·슬라이드, Z 다이브·포복, Alt 회피, Q/E 기울이기, V 밀치기(달리는 중이면 돌진 밀치기), 마우스 뒤 옆버튼 발차기(공중이면 드롭킥, 설정에서 키 변경), F 처형. 좌클릭 공격, 우클릭 ADS·가드, R 장전, F5 뒤에서 몸 보기, **Esc 일시정지·설정**(볼륨·감도·상하 반전·앉기/기울이기 전환·시야각·화면 흔들림·내 머리카락 보기, [설정 안내](Assets/_Project/Docs/MaintenanceGuide.md#플레이어-설정-esc-메뉴)).
 
 | 씬 | 용도 |
 | --- | --- |

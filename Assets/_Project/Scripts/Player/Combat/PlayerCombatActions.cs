@@ -9,8 +9,9 @@ using State = PlayerMovement.MovementState;
 /// twice the run for a moment, and the first enemy it meets is thrown along the ground (shoving whoever that one runs
 /// into) and knocked down. The dash stops there, and its own cooldown starts when it ends, hit or miss. Otherwise, with
 /// a gun out, V is the crowd shove (ShoveSweep), lunging at someone just out of reach when standing still, and while the
-/// gun reloads it is a kick that leaves the reload alone (ShoveMoves); the fists' V is PlayerMeleeCombat's. A counter
-/// (ShoveCounter) hands the shove straight back: RefreshShove.
+/// gun reloads it is a kick that leaves the reload alone (ShoveMoves); the fists' V is PlayerMeleeCombat's. The kick
+/// also has its own key, with anything in hand (TryKick). A counter (ShoveCounter) hands the shove straight back:
+/// RefreshShove.
 /// </summary>
 public sealed class PlayerCombatActions
 {
@@ -72,6 +73,13 @@ public sealed class PlayerCombatActions
         return true;
     }
     private static bool Reloading(WeaponController weapon) => weapon != null && weapon.Runtime != null && weapon.Runtime.IsReloading;
+
+    /// <summary>
+    /// The kick key (Player/Kick): Mighty Foot's kick with whatever is in hand, a dropkick in the air (ShoveMoves). It
+    /// leaves the gun, the reload and the fists alone, and waits only on the kick's own interval, which V's reload kick
+    /// shares; the shove's wait and fatigue are its own.
+    /// </summary>
+    internal bool TryKick() => !ctx.CombatInputLocked && ShoveMoves.For(ctx).TryKick();
 
     internal bool TryDashPush()
     {

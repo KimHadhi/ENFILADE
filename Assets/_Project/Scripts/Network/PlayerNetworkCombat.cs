@@ -3,7 +3,7 @@ using UnityEngine;
 
 /// <summary>
 /// What a player does with their hands, for the other PCs: the weapon out, aiming, reloading and guarding as a stance,
-/// and shots, punches, counter elbows, shoves, reload kicks and the start of an execution as they happen. Each PC plays these on its own copy, whose
+/// and shots, punches, counter elbows, shoves, kicks (the pose each left from) and the start of an execution as they happen. Each PC plays these on its own copy, whose
 /// gun and hands then work as they always do, and nothing here deals damage, except a teammate's blow passed on to its
 /// owner when friendly fire is on (FriendlyHit). Alone it never spawns and does nothing.
 /// </summary>
@@ -264,7 +264,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
     private void OnElbowed(int side) => ElbowRpc(side >= 0);
     private void OnFistSound(FistSound sound) => FistSoundRpc(sound);
     private void OnShoveSound(ShoveImpactKind impact) => ShoveSoundRpc(impact);
-    private void OnKicked() => KickRpc();
+    private void OnKicked(KickKind kind) => KickRpc(kind);
     private void OnThrown(Vector3 from, Vector3 velocity) => ThrowRpc(from, velocity);
     // A CHARGE's length and reach, a taunt's and a barricade's health go with them: the sender's class cards may raise them.
     private void OnCharged(Vector3 at) => ChargeRpc(at, kit.ChargeSeconds, kit.ChargeReach);
@@ -373,11 +373,13 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
     [Rpc(SendTo.NotMe)]
     private void ShoveSoundRpc(ShoveImpactKind impact) => shoves.Play(impact);
 
-    // The copy's legs play the kick (PlayerBody.Kick); the kicker's PC judged what it hit, and its sounds come as above.
+    // The copy's legs play the kick for the pose it left from (PlayerBody.Kick); the kicker's PC judged what it hit, and
+    // its sounds come as above (a door's too, ShoveImpactKind.Door). A door it opened or broke follows the doors' own
+    // word: CampaignRun for a rest stop's, DoorBreaks for a breakable one.
     [Rpc(SendTo.NotMe)]
-    private void KickRpc()
+    private void KickRpc(KickKind kind)
     {
-        if (kicks != null) kicks.ShowKick();
+        if (kicks != null) kicks.ShowKick(kind);
     }
 
     [Rpc(SendTo.NotMe)]

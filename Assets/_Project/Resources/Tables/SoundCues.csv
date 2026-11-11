@@ -43,6 +43,7 @@ Dive,Movement/Release/{surface}; Movement/Cloth/BodyRollSwish; Voice/StrainSoft,
 Dodge,Movement/Run/{surface}; Movement/Dodge/Wind; Movement/Dodge/Cloth; Voice/StrainSoft,8,스텝 회피: 발 + 바람(BOOM Dash) + 옷(BOOM Kimono) + 숨. 옷은 Beatrun SideStep에서 Kimono로 바꿨다
 DashPush,Movement/Run/{surface}; Movement/Cloth/SideStep; Voice/StrainMedium,12,돌진 밀치기 시작
 DashPushHit,Movement/PushHard *0.3; Movement/Cloth/FallShortMedium *0.6,16,돌진 밀치기가 적에 부딪힘 (BOOM Violent Combat)
+DoorKick,Movement/Door/Barge; Movement/PushHard *0.25,20,발차기가 문에 닿음: 닫힌 휴게소 문을 걷어차 열거나 부서지는 문을 참 (Beatrun Door.Barge). 모든 PC에서 차는 사람 몸에서 나고 좀비가 듣는다
 ProneDown,Movement/Prone/Down,4,엎드리기
 ProneUp,Movement/Prone/Up,4,엎드렸다 일어나기
 Crouch,Movement/Cloth/MovementSneak *0.5,2,웅크리기

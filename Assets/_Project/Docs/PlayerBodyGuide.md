@@ -159,6 +159,7 @@ UE4용 ZIP의 `Source/FBX`(Punches는 `Content/Boxing_01/Source/FBX`)에 클립�
 - 올라서기: 판정이 고른 동작에 따라 디뎌 오르기 `stepUp`, 올라타기 `mantleLow`, 높은 올라서기 `mantleMid`, 매달린 데서 올라가기 `ledgeClimbUp`. 바에서 올라설 때만 높이로 고른다(`mantleStepHeight`·`mantleLowHeight`·`mantleMidHeight`).
 - 난간: 잡는 순간(`ledgeCatch`)과 좌우 이동(`ledgeShimmyLeft/Right`). 벽에서 `Ability.ledgeJumpLookAngle`(42°)보다 크게 돌아보면 Beatrun `hangpose`의 좌우 4칸·위아래 3칸 자세를 섞어 몸이 시선을 따라 돈다([PlayerBody.Hang](../Scripts/Player/Body/PlayerBody.Hang.cs), [BeatrunHang](../Art/Animations/Beatrun/BeatrunHang.fbx)). 왼쪽을 보면 오른손, 오른쪽을 보면 왼손이 남는다. 돌아보는 동안 몸은 벽을 볼 때의 자리를 지키고, 남은 손은 팔을 뻗어 모서리를 잡는다. 벽에서 좌우 `Body.hangTurnLimit`(175°)까지만 돌아볼 수 있다. 매달린 동안과 올라가며 손을 짚은 동안에는 무릎·발목·발끝이 윗면보다 낮으면서 벽면을 넘으면 그 관절을 벽 밖으로 돌린다. 클립을 다른 체형에 입히면 다리가 벽을 뚫기 때문이다.
 - 벽: 벽 오르기 시작(`wallClimbStart`), 튀는 방향별 벽 차기(`wallKick`/`wallKickRight`).
+- 발차기(발차기 키·장전 중 V, [PlayerBody.Kick](../Scripts/Player/Body/PlayerBody.Kick.cs)): 차는 순간의 자세로 고른 클립을 두 다리만 쓰는 층에서 한 번 재생한다. 서서 `kick`, 앉아서 `kickCrouch`, 땅에서 40° 넘게 내려다보며 `kickDown`(둘 다 전용 클립이 없어 지금은 `kick`), 공중에서 움직이며 `dropkick`(Beatrun의 드롭킥 `meleeair`), 공중에서 거의 멈춰 `dropkickStill`(`meleeairstill`). 엉덩이·상체·팔은 하던 대로라 총·장전·주먹이 그대로이고 카메라도 흔들리지 않는다. 프로필에 없는 이름은 선 발차기 클립으로 찬다. 다른 PC에도 같은 클립이 나온다.
 - 총: `armedClips`를 켜면 소총·권총을 들었을 때 해당 클립의 총 든 버전(`rifleSuffix`·`pistolSuffix`)을 쓴다. 이 클립들은 Source가 손을 총에 고정해 주는 것을 전제로 만들었다. 지금은 손을 몸의 손 IK가 총에 놓으므로 켜 볼 수 있지만, 아직 확인하지 않아 꺼 두었다.
 
 ## 머리 맞추기와 누운 자세

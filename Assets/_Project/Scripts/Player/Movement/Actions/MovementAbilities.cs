@@ -69,6 +69,10 @@ public sealed class MovementAbilities
             return InputConsumed = true;
         if (IsOrdinaryAirborne && Traversal.TryStartAirAction())
             return InputConsumed = true;
+        // The kick key, with anything in hand, standing or crouched, on the ground or in the air, where it is a dropkick
+        // (ShoveMoves). It leaves the hands, the gun and the reload alone.
+        if ((CanUseGroundActions || IsOrdinaryAirborne) && ctx.Input.KickPressed && Combat.TryKick())
+            return InputConsumed = true;
         // Running, V is the dash push with a gun or fists. Otherwise the fists own V (shove, guard break), and with a
         // gun it is the crowd shove. PlayerMeleeCombat runs first and drops its pending shove once the dash is under way.
         bool fists = ctx.MeleeCombat != null && ctx.MeleeCombat.IsActive;

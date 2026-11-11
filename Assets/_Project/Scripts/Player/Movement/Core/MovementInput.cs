@@ -6,7 +6,7 @@ public sealed class MovementInput
 {
     private readonly PlayerMovement ctx;
     internal readonly InputAction moveAction, sprintAction, jumpAction, crouchAction, diveAction;
-    private readonly InputAction dodgeAction, leanLeftAction, leanRightAction, shoveAction, interactAction;
+    private readonly InputAction dodgeAction, leanLeftAction, leanRightAction, shoveAction, interactAction, kickAction;
     /// <summary>Interact (Player/Interact) was pressed this frame: also takes hold of a ladder from its top (backlog 141).</summary>
     public bool InteractPressed { get; private set; }
     private bool crouchLatched, weaponInputSought;
@@ -23,6 +23,8 @@ public sealed class MovementInput
     /// <summary>Dive / prone (Player/Dive) was pressed this frame.</summary>
     public bool DivePressed { get; private set; }
     public bool ShovePressed { get; private set; }
+    /// <summary>The kick key (Player/Kick, rebindable in Settings) was pressed this frame: a kick with anything in hand (ShoveMoves).</summary>
+    public bool KickPressed { get; private set; }
     public bool SprintHeld { get; private set; }
     public bool LeanPressed { get; private set; }
     public int LeanSide { get; private set; }
@@ -57,6 +59,7 @@ public sealed class MovementInput
         leanRightAction = actions.FindAction("Player/LeanRight", false);
         shoveAction = actions.FindAction("Player/Shove", false);
         interactAction = actions.FindAction("Player/Interact", false);
+        kickAction = actions.FindAction("Player/Kick", false);
     }
     /// <summary>
     /// moving false (getting up off the back) keeps the body's own moves (jump, crouch press, dodge, dive, sprint, lean)
@@ -76,6 +79,8 @@ public sealed class MovementInput
         DivePressed = move && Pressed(diveAction);
         InteractPressed = move && Pressed(interactAction);
         ShovePressed = available && Pressed(shoveAction);
+        // The legs kick, so not while getting up off the back.
+        KickPressed = move && Pressed(kickAction);
         if (!weaponInputSought) { weaponInput = ctx.GetComponentInChildren<PlayerWeaponInput>(); weaponInputSought = true; }
         AimHeld = available && weaponInput != null && weaponInput.GuardHeld;
         SprintHeld = move && SprintButtonHeld;

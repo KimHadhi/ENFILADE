@@ -8,11 +8,12 @@ using UnityEngine;
 ///   (anyone's: shoving a shambler off a teammate counts);
 /// - a grab or a leap lands on them within `grace` seconds of their shove, them facing it (the connection, or the shove
 ///   falling just short of a runner still in the air, can't rob them of it).
-/// The reload kick (ShoveMoves) counts as a shove for both, from the press until `grace` after its foot lands.
+/// A kick (ShoveMoves: the kick key, a dropkick, V while reloading) counts as a shove for both, from the press until
+/// `grace` after its foot lands.
 /// The return: a grabbing shambler's posture breaks (it reels, and the execution is there for the taking); a runner is
 /// slammed down out of the air for pounceKnockdown seconds, losing pounceDamageShare of its health. And the shove is
-/// handed straight back (user, 2026-11-10): no wait and no fatigue left, for the gun's shove, the fists' and the reload
-/// kick alike, so the next one of a pack can be met at once. The show: time catches
+/// handed straight back (user, 2026-11-10): no wait and no fatigue left, for the gun's shove, the fists' and the kick
+/// alike, so the next one of a pack can be met at once. The show: time catches
 /// and then crawls, the view takes a heavy knock, the screen burns red, the posture-break burst goes off where they met
 /// (ParryFeedback), the break cue rings out and COUNTER slams across the screen (CounterBanner). Other PCs see the burst
 /// and hear it there (EnemyNetwork.ShareParry). Numbers: Tables/Player.csv, row Counter.
