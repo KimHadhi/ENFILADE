@@ -31,6 +31,7 @@
 - **탄약 경고**: `RELOAD`는 재장전 권장, `NO RESERVE`는 다음 장전용 예비탄 없음, `OUT OF AMMO`는 장탄·예비탄 모두 없음이다.
 - **적 표시**: HP와 체간이 줄어들며, 체간이 바닥나면 흐트러짐 표시와 조건에 따른 `[F] 처형하기` 안내가 나타난다.
 - **패링**: 공격을 쳐내 적을 밀어내고 체간을 깎는다. 체간이 무너지면 잠깐 느려지며 처형으로 이어진다.
+- **리포스트**: 패링에 성공하고 0.5초(실제 시간) 안에 좌클릭하면 가드를 쥐고 있어도 바로 나간다. 패링의 멈춤과 발 묶임이 풀리고, 밀려난 적에게 한 걸음 붙어 튕겨 낸 손의 반대 손으로 스트레이트(최대 충전 주먹의 1.6배 피해, 2배 체간)를 꽂는다. 나이트의 퍼펙트 디펜스 반격이 열렸으면 그 반격이 먼저 나간다. 수치는 [Combos.csv](../Resources/Tables/Combos.csv)의 `Riposte`.
 - **완벽 방어**: 완벽 회피 후 `[LMB] 반격`이 뜬다. 이때 새 좌클릭은 일반 공격보다 반격을 먼저 실행한다. 패링의 반격은 `Defense.parryOpensCounter`를 켜야 열린다.
 - **처치 점수**: 처치하면 크로스헤어 오른쪽 아래에 XP와 처치 사유가 뜬다. 처형으로 처치하면 `처형` 줄에 전술 단검과 베기 자국 아이콘(빨간색), 반격으로 처치하면 `반격` 줄에 되돌아오는 화살표 아이콘(반격 색)이 붙는다. 일반 처치·헤드샷 줄은 기존 해골·폭발 아이콘 그대로다.
 - **시험용 적**: 채팅에 `/spawn`, 콘솔 채널에 `spawn`을 입력한다. 소환한 적은 웨이브 진행에 포함되지 않는다. 명령 목록은 `/help`로 확인한다.
@@ -73,6 +74,7 @@
 | 방어·밀치기 소리, 반격, 흐트러짐 표시, 피해 팝업·HP 손실 표시 | [Feedback.asset](../Resources/Combat/Feedback.asset) |
 | 시작 무기와 시작 슬롯 | 플레이어의 `PlayerWeaponSlots` → Slot 1~4 / Starting Slot |
 | 주먹·가드·패링·V 홀드 | [Player.csv](../Resources/Tables/Player.csv)의 `Fists` 행 |
+| 주먹 콤보(리포스트) | [Combos.csv](../Resources/Tables/Combos.csv) |
 | 밀치기·돌진 밀치기·슬라이딩 수치 | `Player.csv`의 `Ability` 행 |
 | 적 체력·공격·체간·이동 속도 | [Enemies.csv](../Resources/Tables/Enemies.csv) |
 | 적의 몸 크기·밀치기 연쇄 | [적 프리팹](../Resources/Enemies)의 `MeleeCombatTarget` |

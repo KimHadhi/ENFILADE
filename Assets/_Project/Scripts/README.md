@@ -35,6 +35,7 @@
 | 적의 넘어짐·레그돌·복구 | [EnemyKnockdownPresentation](Combat/Damage/EnemyKnockdownPresentation.cs) |
 | 밀치기·돌진 밀치기 / 서서 도약 밀치기(ArcCW)·장전 중 발차기(Mighty Foot Engaged) / 밀치기 피로 | [PlayerCombatActions](Player/Combat/PlayerCombatActions.cs) / [ShoveMoves](Player/Combat/ShoveMoves.cs) / [ShoveFatigue](Player/Combat/ShoveFatigue.cs), [ShoveFatigueHUD](UI/ShoveFatigueHUD.cs) |
 | 주먹·가드(드는 동안 느린 걸음)·세키로식 패링(성공 때 발 묶임)·가드 브레이크 | [PlayerMeleeCombat](Player/Combat/PlayerMeleeCombat.cs) (걷는 속도는 `LimitMoveSpeed`로 이동이 묻는다) |
+| 주먹 콤보: 패링 뒤 0.5초 안의 좌클릭 = 리포스트(가드를 쥔 채로도, 멈춤·발 묶임을 풀고 한 걸음 붙어 스트레이트) | [MeleeCombos](Player/Combat/MeleeCombos.cs) (`PlayerMeleeCombat.StrikeCombo`가 친다, 손 모양은 `FistsView`), [Combos.csv](../Resources/Tables/Combos.csv) |
 | 적 머리 위에 선 플레이어: 밟힌 적이 털어 떨어뜨리고 주변 적은 위로 친다 | [HeadStandShakeOff](Player/Combat/HeadStandShakeOff.cs), [EnemyHead](Enemies/EnemyHead.cs), Enemies.csv `reachAbove` |
 | 완벽 방어·달려들어 치는 반격 / 처형(F, 주먹 상태의 좌클릭 인살) / 달려들 때 재는 몸 사이 거리 | [PlayerPerfectDefense](Player/Combat/PlayerPerfectDefense.cs), [PlayerExecution](Player/Combat/PlayerExecution.cs) / [BodyGap](Player/Combat/BodyGap.cs) |
 | Q/E 회피가 성공했을 때의 슬립과 시선 고정(비켜 돌기) / 전투가 카메라에 요청하는 짧은 머리 움직임(숙이기, 돌아보기, 시선 회전) / 화면 가장자리 빛 | [MicroSlip](Player/Movement/Dodge/MicroSlip.cs), [MovementLean](Player/Movement/Dodge/MovementLean.cs) / [CombatHeadMotion](Player/Combat/CombatHeadMotion.cs) / [CombatEdgeGlint](Player/Combat/CombatEdgeGlint.cs) |

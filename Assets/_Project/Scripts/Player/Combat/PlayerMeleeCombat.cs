@@ -44,10 +44,12 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
     private PlayerWeaponSlots slots;
     private PlayerWeaponInput input;
     private PlayerFistAudio fistAudio;
+    private MeleeCombos combos;
     private Transform aim;
     private MeleeCombatTarget target;
     private Collider targetCollider;
-    private float chargeTime, shoveTime, cooldown, shoveRest, grabTime, grabRecoveryRemaining, lungeRemaining, punchCharge;
+    // strikeHold: a combo strike's active time, over which a guard still held doesn't come back up and cancel it.
+    private float chargeTime, shoveTime, cooldown, shoveRest, grabTime, grabRecoveryRemaining, lungeRemaining, punchCharge, strikeHold;
     private float parryRemaining, guardBufferRemaining, guardIdleTime, rootUntil = float.NegativeInfinity;
     private int spamCount;
     private ParryFeedback parryFeedback;
@@ -71,6 +73,8 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
     /// <summary>The feet are planted after a parry (real time): the legs give no speed, the hands are free.</summary>
     public bool IsRooted => IsActive && Time.unscaledTime < rootUntil;
     public event Action<float> Punched;
+    /// <summary>The combo move of the punch Punched is announcing, read during that event (FistsView); None otherwise.</summary>
+    public ComboStrike LastStrike { get; private set; }
 
     /// <summary>
     /// The speed the legs may go with the hands doing what they are doing (LocomotionState asks): nothing while rooted
@@ -95,6 +99,7 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
         fistAudio = GetComponent<PlayerFistAudio>();
         if (fistAudio == null && Application.isPlaying) fistAudio = gameObject.AddComponent<PlayerFistAudio>();
         if (fistAudio != null) fistAudio.Prepare();
+        combos = MeleeCombos.For(player);
         CancelAction();
     }
     /// <summary>On someone else's copy: their guard went up or down.</summary>
@@ -131,6 +136,7 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
         if (!IsActive || player.Execution?.IsExecuting == true) { CancelAction(); return; }
         cooldown = Mathf.Max(0f, cooldown - dt);
         shoveRest = Mathf.Max(0f, shoveRest - dt);
+        strikeHold = Mathf.Max(0f, strikeHold - dt);
         TickGuardInput(dt, frame);
         if (IsGuardBreaking)
         {
@@ -141,9 +147,18 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
         }
         if (MovementBlocksAttack)
         { SuspendActionsForMovement(); return; }
+        // A combo's dash in takes no other press; a guard press calls it off and guards (MeleeCombos).
+        if (combos != null && combos.IsDashing)
+        {
+            if (!frame.GuardPressed) return;
+            combos.CancelDash();
+        }
+        // A combo strike goes on the press itself, ahead of the guard and of any wait (MeleeCombos): the riposte after a
+        // parry, the guard still held or not.
+        else if (frame.AttackPressed && combos != null && combos.TryTake()) return;
         // Guard has priority over charge, punch/shove active frames and their recovery.
         if (guardBufferRemaining > 0f) BeginGuard(frame.GuardHeld);
-        else if (frame.GuardHeld && !IsGuarding)
+        else if (frame.GuardHeld && !IsGuarding && strikeHold <= 0f)
         {
             // A long hold through an uninterruptible action resumes block, never a fresh parry.
             CancelOffense(); IsGuarding = true; guardAttemptHeld = true; defenseConnected = false;
@@ -236,7 +251,25 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
     }
     private void ResetParrySpam() { spamCount = 0; pendingWhiff = false; }
     public void NotifyDamaged() { ResetParrySpam(); defenseConnected = true; }
-    private void Punch(float charge)
+    /// <summary>A riposte lets the feet go at once (MeleeCombos): the parry's planted feet would hold its step in.</summary>
+    internal void FreeFeet() => rootUntil = float.NegativeInfinity;
+    /// <summary>
+    /// A combo strike goes now (MeleeCombos): a punch at full charge times the move's own numbers, on the press, the guard
+    /// dropped for it. Aimed at someone, it lands on them when they are within the move's reach of the eyes with nothing
+    /// solid between; otherwise, or when that fails, it sweeps along the aim as any punch.
+    /// </summary>
+    internal void StrikeCombo(ComboStrike strike, MeleeCombatTarget at = null)
+    {
+        if (!IsActive || combos == null) return;
+        punchSweep.Cancel();
+        charging = shovePending = false; chargeTime = shoveTime = 0f;
+        IsGuarding = guardAttemptHeld = false; parryRemaining = guardBufferRemaining = 0f;
+        cooldown = 0f; strikeHold = attackActiveTime + .05f;
+        combos.Numbers(strike, out float damageFactor, out float postureFactor, out float strikeReach);
+        Punch(1f, strike, damageFactor, postureFactor, strikeReach, at);
+    }
+    private void Punch(float charge, ComboStrike strike = ComboStrike.None, float damageFactor = 1f, float postureFactor = 1f,
+        float strikeReach = 0f, MeleeCombatTarget at = null)
     {
         lungeDirection = Vector3.ProjectOnPlane(aim.forward, Vector3.up).normalized;
         lungeRemaining = player.IsGrounded ? 0.1f : 0f;
@@ -244,10 +277,31 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
         punchLanded = false; punchCharge = charge; fistAudio?.PlaySwing();
         // A Knight's fists hit harder, flesh and posture (PlayerClass).
         float fist = PlayerClass.FistFactor(player);
-        punchSweep.Begin(player, aim, Mathf.Lerp(damage.x, damage.y, charge) * fist,
-            Mathf.Lerp(postureDamage.x, postureDamage.y, charge) * fist, reach, .22f, attackActiveTime,
-            attackMaxTargets, hitLayers, OnPunchLanded, OnPunchWallHit);
+        float dealt = Mathf.Lerp(damage.x, damage.y, charge) * fist * damageFactor;
+        float posture = Mathf.Lerp(postureDamage.x, postureDamage.y, charge) * fist * postureFactor;
+        if (at == null || !StrikeTarget(at, dealt, posture, strikeReach))
+            punchSweep.Begin(player, aim, dealt, posture, reach, .22f, attackActiveTime, attackMaxTargets, hitLayers, OnPunchLanded, OnPunchWallHit);
+        LastStrike = strike;
         Punched?.Invoke(charge);
+        LastStrike = ComboStrike.None;
+    }
+    // The aimed combo strike: on that body when it is within reach of the eyes with nothing solid between, as the
+    // perfect-defense counter's punch lands (PlayerPerfectDefense.Strike).
+    private bool StrikeTarget(MeleeCombatTarget at, float dealt, float posture, float strikeReach)
+    {
+        var body = at.GetComponentInChildren<Collider>();
+        var victim = at.GetComponent<IDamageReceiver>();
+        if (body == null || victim == null || !at.IsAvailable) return false;
+        Vector3 point = body.ClosestPoint(aim.position), delta = point - aim.position;
+        if (delta.magnitude > Mathf.Max(reach, strikeReach) || !HasLineOfSight(body, point)) return false;
+        // This PC's own player's fists carry their perk, as the sweep's do (PlayerPerks).
+        if (player.IsLocal) dealt *= PlayerPerks.FistFactor;
+        var result = victim.ReceiveHit(new DamageHit(DamageHit.NewAttackId(), dealt, DamageKind.Attack, point,
+            delta.sqrMagnitude > .0001f ? delta.normalized : aim.forward, player.gameObject, true, posture));
+        if (result != DamageResult.Damaged) return false;
+        at.ApplyPostureDamage(posture);
+        OnPunchLanded();
+        return true;
     }
     private void OnPunchLanded()
     {
@@ -311,6 +365,8 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
             float stop = parryFeedback != null ? parryFeedback.HitStopFor(attacker != null && attacker.IsStaggered) : 0f;
             rootUntil = Time.unscaledTime + stop + parryRootSeconds;
             player.HorizontalVelocity = Vector3.zero;
+            // An attack press now goes straight back at them (MeleeCombos riposte).
+            combos?.OpenRiposte(attacker);
         }
         return true;
     }
@@ -388,6 +444,7 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
     public void CancelAction()
     {
         punchSweep.Cancel(); shoveSweep.Cancel();
+        combos?.CancelDash();
         if (target != null) target.Release(this);
         target = null; targetCollider = null;
         if (guardAttemptHeld && !defenseConnected) pendingWhiff = true;

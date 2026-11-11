@@ -12,11 +12,15 @@ public sealed class FistsView : MonoBehaviour
     private PlayerMovement player;
     private Transform root, left, right;
     private float leftPunchTime, rightPunchTime, guardPose;
+    // Each hand's punch under way: how long it takes and how far it reaches (a combo strike's are its own).
+    private float leftPunchLength = PunchDuration, rightPunchLength = PunchDuration, leftReach = PunchReach, rightReach = PunchReach;
     private float deflectElapsed, deflectSeconds, deflectAttack, deflectHold;
     private Vector3 deflectSweep;
     private bool nextRight = true, deflectLeftHand, elbowRight;
     private float elbowElapsed = -1f;
-    private const float PunchDuration = .18f;
+    private const float PunchDuration = .18f, PunchReach = .25f;
+    // The riposte's straight: quicker out and further, the shoulder behind it.
+    private const float StraightDuration = .16f, StraightReach = .33f;
     // The back elbow: driven back, held at the contact, brought round again (real seconds).
     private const float ElbowDrive = .07f, ElbowHold = .08f, ElbowBack = .17f;
     // The guard goes up at once; it comes down over this long.
@@ -56,10 +60,14 @@ public sealed class FistsView : MonoBehaviour
     }
     private void Punch(float charge)
     {
-        bool right = nextRight;
-        if (right) rightPunchTime = PunchDuration;
-        else leftPunchTime = PunchDuration;
-        nextRight = !nextRight;
+        var strike = melee != null ? melee.LastStrike : ComboStrike.None;
+        // A riposte goes from the hand that didn't sweep the blow aside; the other is still holding the deflect.
+        bool right = strike == ComboStrike.Riposte && IsDeflecting ? deflectLeftHand : nextRight;
+        bool straight = strike == ComboStrike.Riposte;
+        float length = straight ? StraightDuration : PunchDuration, reach = straight ? StraightReach : PunchReach;
+        if (right) { rightPunchTime = rightPunchLength = length; rightReach = reach; }
+        else { leftPunchTime = leftPunchLength = length; leftReach = reach; }
+        nextRight = !right;
         Thrown?.Invoke(right, charge);
     }
     // The fist on the attacker's side pulls back beside the chest, past the eyes, so the arm drives its elbow behind.
@@ -107,12 +115,12 @@ public sealed class FistsView : MonoBehaviour
         if (held < deflectHold) return Mathf.Lerp(DeflectOvershoot, 1f, held / deflectHold);
         return Mathf.Pow(1f - (held - deflectHold) / (deflectSeconds - deflectAttack - deflectHold), 2.4f);
     }
-    private static float PunchExtension(float remaining)
+    private static float PunchExtension(float remaining, float length)
     {
-        if (remaining <= 0f) return 0f;
-        float elapsed = PunchDuration - remaining;
-        return elapsed < .04f ? Mathf.SmoothStep(0f, 1f, elapsed / .04f)
-            : Mathf.SmoothStep(1f, 0f, (elapsed - .04f) / (PunchDuration - .04f));
+        if (remaining <= 0f || length <= 0f) return 0f;
+        float elapsed = length - remaining, snap = Mathf.Min(.04f, length * .3f);
+        return elapsed < snap ? Mathf.SmoothStep(0f, 1f, elapsed / snap)
+            : Mathf.SmoothStep(1f, 0f, (elapsed - snap) / (length - snap));
     }
     // Within arm's reach of the body's shoulders; a full punch straightens the arm.
     private void LateUpdate()
@@ -128,16 +136,16 @@ public sealed class FistsView : MonoBehaviour
         leftPunchTime = Mathf.Max(0f, leftPunchTime - dt);
         rightPunchTime = Mathf.Max(0f, rightPunchTime - dt);
         if (Time.timeScale > 0f) deflectElapsed = Mathf.Min(deflectElapsed + Time.unscaledDeltaTime, deflectSeconds);
-        float leftPunch = PunchExtension(leftPunchTime), rightPunch = PunchExtension(rightPunchTime);
+        float leftPunch = PunchExtension(leftPunchTime, leftPunchLength), rightPunch = PunchExtension(rightPunchTime, rightPunchLength);
         // Dashing in to counter, the next fist is drawn all the way back.
         float charge = Countering ? 1f : melee.ChargeRatio;
         float leftCharge = nextRight ? 0f : charge, rightCharge = nextRight ? charge : 0f;
         bool guarding = melee.IsGuarding || melee.IsParryActive || melee.IsGuardBreaking || IsDeflecting;
         guardPose = guarding ? 1f : Mathf.MoveTowards(guardPose, 0f, Time.unscaledDeltaTime / GuardLowerTime);
         left.localPosition = Vector3.Lerp(new Vector3(-.2f, -.2f, .32f - leftCharge * .1f), new Vector3(-.1f, -.06f, .26f), guardPose)
-            + new Vector3(leftPunch * .08f, leftPunch * .06f, leftPunch * .25f);
+            + new Vector3(leftPunch * .08f, leftPunch * .06f, leftPunch * leftReach);
         right.localPosition = Vector3.Lerp(new Vector3(.2f, -.2f, .32f - rightCharge * .1f), new Vector3(.1f, -.06f, .26f), guardPose)
-            + new Vector3(-rightPunch * .08f, rightPunch * .06f, rightPunch * .25f);
+            + new Vector3(-rightPunch * .08f, rightPunch * .06f, rightPunch * rightReach);
         right.localRotation = Quaternion.Euler(-rightCharge * 15f, -rightPunch * 20f, -10f);
         left.localRotation = Quaternion.Euler(-leftCharge * 15f, leftPunch * 20f, 10f);
         ApplyDeflect();
