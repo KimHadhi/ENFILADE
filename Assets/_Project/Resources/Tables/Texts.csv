@@ -305,6 +305,7 @@ class.schiesshund.ability,[F] 현상금 표식: 적을 찍으면 청록 테두�
 class.support.ability,바리케이드를 세우고 동료에게 탄약과 보급품을 나눠 준다.,,클래스 화면 > 서포트 능력 설명
 hud.chapter_end.word,탈출,,장 끝 연출: 분홍 띠 위 큰 글자
 hud.alert.brute,거구 등장,,거구(보스)가 나타날 때 화면 위 경고
+hud.danger,위험,,체력이 낮을 때 체력바 끝에 뜨는 빗금 표시 옆 글자
 #--- 쓰러짐·살리기·관전 ---,,,
 life.wipe,전멸,,모두 쓰러졌을 때 화면 가운데 큰 빨간 글씨
 life.downed.helped,쓰러졌습니다. 출혈이 멈췄습니다,,내가 쓰러졌고 동료가 살리는 중일 때

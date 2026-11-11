@@ -1,0 +1,3 @@
+﻿id,lowFraction,pieceSeconds,pieceGravity,pieceLift,pieceDrift,pieceSpin,hitFlashSeconds,rollSeconds,floatSeconds,floatRise,glintSeconds,stripePeriod,stripeScroll,beatsPerSecond
+#설명,체력이 최대의 이 비율 이하면 위험(칸에 어두운 빗금·숫자 분홍으로 뛰기·바 끝 위험 표시),맞아서 떨어져 나간 조각이 사라지기까지(초),조각이 떨어지는 중력(캔버스 단위/초²),조각이 처음 튀어 오르는 속도(캔버스 단위/초),조각이 오른쪽으로 나는 속도(캔버스 단위/초),조각이 도는 속도(도/초),맞은 순간 남은 칸이 하얗게 번쩍이는 시간(초),숫자가 이전 값에서 새 값으로 굴러 내려가는 시간(초),회복한 만큼 바 끝에 뜨는 +숫자가 사라지기까지(초),+숫자가 떠오르는 높이(캔버스 단위),회복하면 채움 끝이 빛나는 시간(초),위험 빗금 간격(캔버스 단위),위험 빗금이 흐르는 속도(캔버스 단위/초),위험일 때 숫자가 뛰는 빠르기(초당 박동)
+Bar,0.25,0.55,900,60,40,160,0.06,0.22,1,26,0.5,9,26,1.1

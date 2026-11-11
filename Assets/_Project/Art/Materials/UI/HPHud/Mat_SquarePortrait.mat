@@ -36,8 +36,8 @@ Material:
     - _Cut: 0.05
     - _EdgeWidth: 0.005
     - _GapWidth: 0.008
-    - _GlowBloomSpread: 0.005
-    - _GlowIntensity: 1
+    - _GlowBloomSpread: 0.003
+    - _GlowIntensity: 0.3
     - _Half: 0.27
     - _MatWidth: 0.024
     - _ShadowAngle: -3.5
@@ -57,7 +57,7 @@ Material:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _EdgeColor: {r: 1, g: 0.96, b: 0.97, a: 0.85}
     - _FrameColor: {r: 1, g: 0.96, b: 0.97, a: 0.18}
-    - _GlowColor: {r: 1, g: 0.31, b: 0.47, a: 1}
+    - _GlowColor: {r: 1, g: 0.96, b: 0.97, a: 1}
     - _MatColor: {r: 0.055, g: 0.055, b: 0.065, a: 0.96}
     - _ShadowColor: {r: 0.055, g: 0.055, b: 0.065, a: 0.9}
     - _ShadowOffset: {r: 0.024, g: -0.024, b: 0, a: 0}

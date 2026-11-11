@@ -126,7 +126,9 @@ C 메뉴에서 바꾼 조준경·총구·하단·손잡이, L 플래시, B 사�
 
 궁극기 스탯의 기본값은 **최대 보유량 120%, 1회 소비량 100%**다. 120%에서 사용하면 20%가 남고, 소비량을 70%로 바꾸면 50%가 남는다. 현재 충전량은 `UltimateCharge`, 최대 보유량과 소비량은 `PlayerStats`가 관리한다. 최대 보유량 변경은 현재 충전량을 유지하며, 최대치가 줄어들 때만 초과분을 잘라낸다. 소비량이 최대 보유량보다 크면 사용할 수 없다.
 
-`UltimateHUD`의 전체 바 길이는 최대 보유량에 비례한다. 기본 120%에서 배치한 폭을 유지하며 `Maximum Bar Width`(기본 480 Canvas 단위)를 넘으면 폭을 고정하고 충전량·사용 기준점을 비율로 표시한다. `UltReadyThresholdIcon`은 전체 바의 **소비량 ÷ 최대 보유량** 지점을 가리킨다. 소비량만 바꾸면 전체 바 길이는 유지된다. `/ultmax 200`은 최대 보유량을 200%로, `/ultcost 70`은 1회 소비량을 70%로 지정한다. `/ultmax 20`은 20%를 더하는 것이 아니라 최대 보유량을 20%로 설정한다. 이 명령은 Play 중 테스트 상태만 바꾼다.
+궁극기는 초상화 왼쪽 테두리의 탄창([UltimateMagazine](../Scripts/UI/HP/UltimateMagazine.cs), D 4차 시안 메모: B의 자리, C의 움직임, A의 탄창 교체)으로 보인다. 한 발은 1회 소비량의 10분의 1이라 열 발이면 준비이고, 최대 보유량까지 남는 칸은 분홍 선 위의 여분 칸이다(기본 120%면 12칸). 탄은 아래부터 쌓이고, 다음 탄은 충전되는 만큼 테두리가 그려지다 다 차면 왼쪽에서 밀려 들어온다. 열 발이 차면 탄창 위 약실 덮개가 분홍 판으로 닫히고, 능력 카드로 쓰면(`TryConsume`) 판이 열리며 쓴 탄이 위로 빠져 탄피가 왼쪽으로 튀고, 빈 탄창이 떨어진 뒤 남은 탄을 담은 새 탄창이 올라와 꽂힌다. [HudPortrait](../Scripts/UI/Hud/HudPortrait.cs)가 Play 시작 때 탄창을 만들어 사진 재질의 크기(`_Half`, `_MatWidth`)에 맞춰 붙이고, 수치는 [UltMagazine.csv](../Resources/Tables/UltMagazine.csv)에 있다. 예전 흰 궁극기 막대(`UltimateHUD`, `UltIcon`·`UltBar`·`UltReadyThresholdIcon`), 불꽃(`UltimateFireEffect`), 사진 테두리 발광(`UltimatePortraitGlow`)은 GameHUD에서 꺼 두었다. `/ultmax 200`은 최대 보유량을 200%로, `/ultcost 70`은 1회 소비량을 70%로 지정한다. `/ultmax 20`은 20%를 더하는 것이 아니라 최대 보유량을 20%로 설정한다. 이 명령은 Play 중 테스트 상태만 바꾼다.
+
+체력바는 D 4차 시안 A다([HealthBarFlair](../Scripts/UI/HP/HealthBarFlair.cs), 막대 그림은 [SlantedHealthGraphic](../Scripts/UI/HP/SlantedHealthGraphic.cs)). 맞으면 잃은 만큼이 칸에서 조각으로 떨어져 나가고 남은 칸이 잠깐 하얗게 번쩍이며 숫자가 새 값으로 굴러 내려간다. 실드는 체력 칸 위에 같은 양·같은 간격의 칸으로 나뉘고, 깨지지 않은 피격은 잃은 만큼 하늘색 조각이 떨어진다(다 깨질 때는 `ShieldShatter`). 체력이 최대의 25% 이하면 칸에 어두운 빗금이 흐르고 숫자가 분홍으로 뛰며 바 끝에 빗금 표시와 "위험"이 뜬다. 회복하면 채움 끝이 빛나고 바 끝에 +N이 뜬다(실드는 하늘색). 수치는 [HealthBar.csv](../Resources/Tables/HealthBar.csv)에 있다.
 
 ## 폴더 이름·저장 위치를 바꿨을 때
 

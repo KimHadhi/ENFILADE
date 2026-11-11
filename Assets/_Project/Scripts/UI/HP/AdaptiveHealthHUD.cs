@@ -80,6 +80,11 @@ public sealed class AdaptiveHealthHUD : MonoBehaviour
     // The band flashes white whenever the shield takes damage, as Apex Legends' shield bar does, fading over this long (s).
     private const float ShieldFlashSeconds = .18f;
     private float shieldFlash, shieldFill, shieldMax = 100f, shieldSlant;
+    // Round 4 draft A (the user's pick, 2026-11-11): pieces knocked off, low-health stripes and tag, heal glints and
+    // floats, the rolling number. Play only.
+    private HealthBarFlair flair;
+    private float lastHealth = float.NaN;
+    private bool flairDrawn, shieldGlinted, labelRolled;
     private Vector2 restingPosition;
     private double healthStep;
     private bool healthBlocks;
@@ -131,7 +136,12 @@ public sealed class AdaptiveHealthHUD : MonoBehaviour
         visualRoot = MakeRect("Adaptive Visuals (Runtime)", hpHealthBar);
         healthGraphic = MakeRect("Health", visualRoot).gameObject.AddComponent<SlantedHealthGraphic>();
         shieldGraphic = MakeRect("Shield", visualRoot).gameObject.AddComponent<SlantedHealthGraphic>();
-        if (Application.IsPlaying(gameObject)) shatter = new ShieldShatter(visualRoot);
+        if (Application.IsPlaying(gameObject))
+        {
+            shatter = new ShieldShatter(visualRoot);
+            flair = new HealthBarFlair(visualRoot, hpText);
+            GameTables.BindNested(HealthBarFlair.TableName, HealthBarFlair.Row, this, flair.Config);
+        }
         SetOriginalVisibility(false);
         Refresh();
     }
@@ -216,19 +226,42 @@ public sealed class AdaptiveHealthHUD : MonoBehaviour
     {
         if (visualRoot == null || healthGraphic == null) return;
         float shield = NonNegative(extraShield);
+        float maximum = NonNegative(maxHealth);
+        float health = Mathf.Min(NonNegative(currentHealth), maximum);
         float shieldLoss = float.IsNaN(lastShield) ? 0f : Mathf.Max(0f, lastShield - shield);
+        float shieldGain = float.IsNaN(lastShield) ? 0f : Mathf.Max(0f, shield - lastShield);
+        float healthLoss = float.IsNaN(lastHealth) ? 0f : Mathf.Max(0f, lastHealth - health);
+        // Coming back from nothing (a respawn) is not a heal to show.
+        float healthGain = float.IsNaN(lastHealth) || lastHealth <= 0f ? 0f : Mathf.Max(0f, health - lastHealth);
+        if (flair != null)
+        {
+            if (healthLoss > 0f) flair.Hit(healthGraphic, health, health + healthLoss, healthColor);
+            if (healthGain > 0f) flair.Healed(healthGain, false);
+            // A break shatters the whole band (ShieldShatter); a smaller hit chips off what it took.
+            if (shieldLoss > 0f && shield > 0f && shieldGraphic != null && shieldGraphic.gameObject.activeSelf)
+                flair.Chip(shieldGraphic, shield, shield + shieldLoss, shieldColor);
+            if (shieldGain > 0f) flair.Healed(shieldGain, true);
+            flair.Tick(dt, health, maximum);
+        }
         lastShield = shield;
+        lastHealth = health;
         if (shieldLoss > 0f) shieldFlash = 1f;
-        if (shieldFlash > 0f)
+        bool shieldGlint = flair != null && flair.ShieldGlint.a > 0f;
+        if (shieldFlash > 0f || shieldGlint || shieldGlinted)
         {
             shieldFlash = Mathf.Max(0f, shieldFlash - dt / ShieldFlashSeconds);
             ConfigureShieldGraphic();
         }
+        shieldGlinted = shieldGlint;
         bool wasAnimating = lossTrail.IsAnimating;
-        float maximum = NonNegative(maxHealth);
-        lossTrail.Tick(Mathf.Min(NonNegative(currentHealth), maximum), maximum, dt,
-            CombatFeedbackSettings.InstanceOrDefaults.playerShakeMax, shieldLoss);
-        if (!wasAnimating && !lossTrail.IsAnimating) return;
+        lossTrail.Tick(health, maximum, dt, CombatFeedbackSettings.InstanceOrDefaults.playerShakeMax, shieldLoss);
+        // The number rolls down to a hit's result, then settles on the real value.
+        if (flair != null && flair.Rolling) { ShowHealthLabel(flair.Shown); labelRolled = true; }
+        else if (labelRolled) { ShowHealthLabel(health); labelRolled = false; }
+        bool flairOn = flair != null && flair.TouchesBar;
+        bool redraw = wasAnimating || lossTrail.IsAnimating || flairOn || flairDrawn;
+        flairDrawn = flairOn;
+        if (!redraw) return;
         // Per-frame path: only the health mesh and bar offset, not the full layout/label refresh.
         ConfigureHealthGraphic();
         visualRoot.anchoredPosition = restingPosition + lossTrail.ShakeOffset;
@@ -244,14 +277,22 @@ public sealed class AdaptiveHealthHUD : MonoBehaviour
         healthGraphic.SetTrailDecoration(live && feedback.trailStripes, 10f, lossTrail.StripeScroll,
             lossTrail.StripeColor, live && feedback.trailEdgeLine ? new Color(1f, 1f, 1f, .95f) : Color.clear);
         healthGraphic.Configure(current, trailing, maximum, healthStep, healthBlocks, healthShear,
-            healthGap, healthColor, emptyColor, tickColor, live ? lossTrail.TrailColor : Color.clear);
+            healthGap, flair != null ? flair.Fill(healthColor) : healthColor, emptyColor, tickColor, live ? lossTrail.TrailColor : Color.clear);
+        healthGraphic.SetDanger(flair != null ? flair.DangerStripes : Color.clear, flair != null ? flair.StripePeriod : 9f,
+            flair != null ? flair.StripeOffset : 0f);
+        healthGraphic.SetGlint(flair != null ? flair.HealthGlint : Color.clear);
     }
 
     private void ConfigureShieldGraphic()
     {
         if (shieldGraphic == null) return;
         Color fill = Color.Lerp(shieldColor, Color.white, shieldFlash * shieldFlash);
-        shieldGraphic.Configure(shieldFill, shieldMax, shieldMax, false, shieldSlant, 0f, fill, Color.clear, Color.clear);
+        // Cells like the health's (round 4 draft A): the same amount a cell and the same gaps, so each shield cell sits
+        // over its health cell, with the empty ones faint. A compact bar (very high maximum) keeps one plain band.
+        Color cells = shieldColor; cells.a *= .14f;
+        shieldGraphic.Configure(shieldFill, shieldMax, healthBlocks ? healthStep : shieldMax, healthBlocks, shieldSlant,
+            healthBlocks ? healthGap : 0f, fill, healthBlocks ? cells : Color.clear, Color.clear);
+        shieldGraphic.SetGlint(flair != null ? flair.ShieldGlint : Color.clear);
     }
 
     public void BindPlayer(PlayerMovement target) { player = target; dirty = true; }
@@ -265,11 +306,13 @@ public sealed class AdaptiveHealthHUD : MonoBehaviour
         SetLabel(maxHPText, originalMaxLabel);
         SetLabel(shieldText, originalShieldLabel);
         if (shieldText != null) shieldText.gameObject.SetActive(originalShieldVisible);
+        flair?.Restore();
         if (Application.isPlaying) Destroy(visualRoot.gameObject);
         else DestroyImmediate(visualRoot.gameObject);
         visualRoot = null;
         healthGraphic = shieldGraphic = null;
         shatter = null; // its pieces went with visualRoot
+        flair = null;   // and so did the flair's
         originalBlocks.Clear(); originalActive.Clear();
         barLayouts.Clear(); layoutEnabled.Clear();
         capturedLayout = false;
@@ -339,12 +382,24 @@ public sealed class AdaptiveHealthHUD : MonoBehaviour
         shieldFill = Mathf.Min(shield, shieldScale); shieldMax = shieldScale; shieldSlant = shear * shieldH / height;
         ConfigureShieldGraphic();
         shieldGraphic.gameObject.SetActive(shield > 0f);
+        flair?.Place(width, height);
 
-        SetLabel(hpText, current.ToString("N0"));
+        SetLabel(hpText, (flair != null && flair.Rolling ? flair.Shown : current).ToString("N0"));
         SetLabel(maxHPText, maximum.ToString("N0"));
         SetLabel(shieldText, shield > shieldScale
             ? $"+{shield:N0} ({(double)shield / shieldScale * 100d:N0}%)" : $"+{shield:N0}");
         shieldText.gameObject.SetActive(shield > 0f);
+        FitLabels();
+    }
+
+    private void ShowHealthLabel(float value)
+    {
+        SetLabel(hpText, Mathf.Max(0f, value).ToString("N0"));
+        FitLabels();
+    }
+
+    private void FitLabels()
+    {
         if (hpText.transform.parent is RectTransform textRoot)
         {
             // The authored row positions children without controlling their widths.

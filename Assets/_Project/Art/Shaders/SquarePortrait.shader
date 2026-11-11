@@ -3,8 +3,9 @@
 //   a black mat around the picture;
 //   the picture (the player's profile picture, ProfilePicture) with two corners cut like the menus' cards (KitStyle.Cut),
 //   a thin near-white edge, a soft dark vignette and the pink bar along its foot, as on the lobby's profile chip;
-//   a faint frame line on the mat, with corner brackets on it that glow as the ultimate charges.
-// _GlowColor, _GlowIntensity and _GlowBloomSpread are driven by UltimatePortraitGlow, as on the old hexagon.
+//   a faint frame line on the mat, with faint corner brackets on it.
+// _GlowColor, _GlowIntensity and _GlowBloomSpread could be driven by UltimatePortraitGlow; since round 4 (2026-11-11) the
+// ultimate is the magazine beside the tile (UltimateMagazine), so that is off and the brackets stay a faint white.
 // Sizes are fractions of the quad's side (the quad is square). Output is premultiplied, so the glow adds light.
 Shader "UI/Custom/SquarePortrait"
 {

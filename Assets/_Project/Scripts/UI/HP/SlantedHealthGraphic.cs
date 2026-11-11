@@ -3,6 +3,7 @@ using UnityEngine.UI;
 
 // Draws slanted health segments without sprites or a custom shader.
 // Optional loss trail: drawn from the current value up to Trailing, under the fill.
+// Optional danger stripes over the fill and a glint at its head (round 4 draft A, 2026-11-11).
 [RequireComponent(typeof(CanvasRenderer))]
 public sealed class SlantedHealthGraphic : MaskableGraphic
 {
@@ -12,7 +13,65 @@ public sealed class SlantedHealthGraphic : MaskableGraphic
     private Color filled, empty, tickColor, trailColor, stripeColor, edgeColor;
     private bool stripesOn;
     private float stripePeriod = 10f, stripeOffset;
-    private const float EdgeWidth = 2f;
+    private const float EdgeWidth = 2f, GlintWidth = 4f;
+    private Color dangerColor = Color.clear, glintColor = Color.clear;
+    private float dangerPeriod = 9f, dangerOffset;
+
+    /// <summary>
+    /// Dark stripes running over the filled part, for low health; a clear colour turns them off. They share the bar's
+    /// slant so they read as the same plates, and scroll by offset.
+    /// </summary>
+    public void SetDanger(Color stripes, float period, float offset)
+    {
+        if (stripes == dangerColor && (stripes.a <= 0f || (period == dangerPeriod && offset == dangerOffset))) return;
+        dangerColor = stripes; dangerPeriod = Mathf.Max(2f, period); dangerOffset = offset;
+        SetVerticesDirty();
+    }
+
+    /// <summary>A bright sliver at the head of the fill (something was just healed); a clear colour turns it off.</summary>
+    public void SetGlint(Color tint)
+    {
+        if (tint == glintColor) return;
+        glintColor = tint;
+        SetVerticesDirty();
+    }
+
+    /// <summary>
+    /// Where the values between low and high are drawn, as runs along the bar in this graphic's own units from its
+    /// left edge (x: left end, y: right end), one per block they cross; shear is the band's slant. For the pieces a
+    /// hit knocks off (HealthBarFlair). Empty when nothing is drawn there.
+    /// </summary>
+    public void Span(float low, float high, System.Collections.Generic.List<Vector2> runs, out float shear)
+    {
+        runs.Clear();
+        Rect rect = GetPixelAdjustedRect();
+        shear = Mathf.Clamp(slant, 0f, rect.width * 0.25f);
+        if (maximum <= 0f || step <= 0d || rect.width <= 0f || high <= low) return;
+        float span = rect.width - shear;
+        low = Mathf.Max(0f, low); high = Mathf.Min(maximum, high);
+        if (high <= low) return;
+        if (!blocks) { runs.Add(new Vector2(span * low / maximum, span * high / maximum)); return; }
+        int count = Mathf.Max(1, Mathf.CeilToInt((float)(maximum / step)));
+        for (int i = 0; i < count; i++)
+        {
+            double start = i * step, end = System.Math.Min((i + 1) * step, maximum);
+            if (high <= start || low >= end) continue;
+            Block(i, count, start, end, span, out float a, out float b);
+            float from = Mathf.Lerp(a, b, Mathf.Clamp01((float)((low - start) / (end - start))));
+            float to = Mathf.Lerp(a, b, Mathf.Clamp01((float)((high - start) / (end - start))));
+            if (to > from) runs.Add(new Vector2(from, to));
+        }
+    }
+
+    // One block's drawn extent along the bar, inside its share of the gaps.
+    private void Block(int i, int count, double start, double end, float span, out float a, out float b)
+    {
+        float left = (float)(start / maximum * span);
+        float right = (float)(end / maximum * span);
+        float spacing = Mathf.Min(gap, (right - left) * 0.5f);
+        a = left + (i == 0 ? 0f : spacing * 0.5f);
+        b = right - (i == count - 1 ? 0f : spacing * 0.5f);
+    }
 
     /// <summary>Optional trail decoration: lighter stripes (scrolling by Offset) and an edge line at the current value.</summary>
     public void SetTrailDecoration(bool stripes, float period, float offset, Color stripeTint, Color edgeTint)
@@ -51,18 +110,16 @@ public sealed class SlantedHealthGraphic : MaskableGraphic
             {
                 double start = i * step;
                 double end = System.Math.Min((i + 1) * step, maximum);
-                float left = (float)(start / maximum * span);
-                float right = (float)(end / maximum * span);
-                float spacing = Mathf.Min(gap, (right - left) * 0.5f);
-                float a = left + (i == 0 ? 0f : spacing * 0.5f);
-                float b = right - (i == count - 1 ? 0f : spacing * 0.5f);
+                Block(i, count, start, end, span, out float a, out float b);
                 AddBand(mesh, rect, a, b, shear, empty);
                 float trailRight = Mathf.Lerp(a, b, Mathf.Clamp01((float)((trailing - start) / (end - start))));
                 float valueRight = Mathf.Lerp(a, b, Mathf.Clamp01((float)((value - start) / (end - start))));
                 AddBand(mesh, rect, a, trailRight, shear, trailColor);
                 AddStripes(mesh, rect, Mathf.Max(a, valueRight), trailRight, shear);
                 AddBand(mesh, rect, a, valueRight, shear, filled);
+                AddBands(mesh, rect, a, valueRight, shear, dangerColor, dangerPeriod, dangerOffset);
                 if (showEdge && value > start && value <= end) AddEdge(mesh, rect, valueRight, shear);
+                if (value > start && value <= end) AddGlint(mesh, rect, a, valueRight, shear);
             }
         }
         else
@@ -72,7 +129,9 @@ public sealed class SlantedHealthGraphic : MaskableGraphic
             AddBand(mesh, rect, 0f, trailRight, shear, trailColor);
             AddStripes(mesh, rect, valueRight, trailRight, shear);
             AddBand(mesh, rect, 0f, valueRight, shear, filled);
+            AddBands(mesh, rect, 0f, valueRight, shear, dangerColor, dangerPeriod, dangerOffset);
             if (showEdge && value > 0f) AddEdge(mesh, rect, valueRight, shear);
+            if (value > 0f) AddGlint(mesh, rect, 0f, valueRight, shear);
             const float fraction = 0.38f;
             for (int i = 1; i < 20 && i * step < maximum; i++)
             {
@@ -90,11 +149,23 @@ public sealed class SlantedHealthGraphic : MaskableGraphic
     // Stripes share the bar's slant, so they read as part of the same parallelogram style.
     private void AddStripes(VertexHelper mesh, Rect rect, float from, float to, float shear)
     {
-        if (!stripesOn || stripeColor.a <= 0f || trailColor.a <= 0f || to - from <= 0.01f) return;
-        float period = stripePeriod, half = period * 0.5f;
-        float phase = Mathf.Repeat(-stripeOffset, period); // growing offset slides stripes left, toward remaining health
+        if (!stripesOn || trailColor.a <= 0f) return;
+        AddBands(mesh, rect, from, to, shear, stripeColor, stripePeriod, stripeOffset);
+    }
+
+    private void AddBands(VertexHelper mesh, Rect rect, float from, float to, float shear, Color tint, float period, float offset)
+    {
+        if (tint.a <= 0f || to - from <= 0.01f) return;
+        float half = period * 0.5f;
+        float phase = Mathf.Repeat(-offset, period); // growing offset slides stripes left, toward remaining health
         for (float s = phase + Mathf.Floor((from - phase) / period) * period; s < to; s += period)
-            AddBand(mesh, rect, Mathf.Max(from, s), Mathf.Min(to, s + half), shear, stripeColor);
+            AddBand(mesh, rect, Mathf.Max(from, s), Mathf.Min(to, s + half), shear, tint);
+    }
+
+    private void AddGlint(VertexHelper mesh, Rect rect, float floor, float x, float shear)
+    {
+        if (glintColor.a <= 0f || x <= floor) return;
+        AddBand(mesh, rect, Mathf.Max(floor, x - GlintWidth), x, shear, glintColor);
     }
 
     private void AddEdge(VertexHelper mesh, Rect rect, float x, float shear)
