@@ -131,7 +131,8 @@ public sealed class PlayerDamageReceiver : MonoBehaviour, IDamageReceiver, ITabl
     private bool TakeThroughGuard(DamageHit hit, float share, out bool shieldBroke)
     {
         shieldBroke = false;
-        float amount = hit.Amount * Mathf.Clamp01(share) * PlayerClass.TakenFactor(movement);
+        // A share of the blow as it lands: an endless wave's zombie hits harder through a block too (bundle 3).
+        float amount = hit.Amount * Mathf.Clamp01(share) * PlayerClass.TakenFactor(movement) * EnemyHealth.DamageBoostOf(hit.Source);
         if (amount < 1f || float.IsNaN(amount)) return false;
         float absorbed = Mathf.Min(Shield, amount);
         shieldBroke = absorbed > 0f && absorbed >= Shield;
