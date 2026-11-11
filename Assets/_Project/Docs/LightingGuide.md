@@ -9,11 +9,14 @@
 | 위치 | 값 | 이유 |
 | --- | --- | --- |
 | [PC_RPAsset](../Settings/Rendering/PC_RPAsset.asset) | MSAA 4x | 물체 모서리의 계단 현상 |
-| | 그림자 150 m, 4단계, 4096 | 가까운 그림자를 선명하게 |
+| | 그림자 100 m, 4단계(10·30·70·100 m), 4096, 부드러운 그림자 Medium | 가까운 그림자를 선명하게. 2026-11-11 성능(메모 40, 측정 없이): 150 m → 100 m로 줄이면서 앞의 세 경계(10·30·70 m)는 그대로 두어 가까운 그림자는 같고, 마지막 단계만 70~100 m로 좁아져 더 선명하다. 100 m 밖의 물체는 그림자 지도에 그리지 않는다. 부드러운 그림자 High(7×7) → Medium은 경계를 거르는 비용을 줄이고 아래 천장 빛 샘(필터 번짐)도 줄인다. 되돌리려면 Shadow Distance 150, Cascade 4 Split 0.067·0.2·0.467, Soft Shadow Quality High |
 | | Light Probe System: Adaptive Probe Volumes | 구운 간접광을 캐릭터와 좀비가 서 있는 자리에서 받는다. lilToon과 Poiyomi가 지원한다 |
 | | Volume Profile: [GameLook](../Settings/Rendering/GameLook.asset) | 톤매핑 끔, Bloom 0.25(임계값 1), 비네트 0.2 |
 | [PC_Renderer](../Settings/Rendering/PC_Renderer.asset) | SSAO 세기 0.7, 반경 0.4, Method: Interleaved Gradient | 구석과 접촉면을 어둡게. 노이즈는 고정 패턴을 쓴다. Blue Noise는 매 프레임 바뀌는 노이즈라 TAA로 섞어야 하는데, 카메라가 SMAA라 가까운 벽(렛지에 매달릴 때)이 지글거렸다. TAA로 바꾸면 Blue Noise로 돌린다 |
+| | 데칼 Max Draw Distance 120 m | 2026-11-11 성능: 200 → 120 m. 120 m 밖의 총알 자국은 한 점도 안 된다 |
 | [Player](../Resources/Characters/Player.prefab) 카메라 | SMAA High, 디더링 | 머리카락과 반짝이는 부분의 계단, 하늘과 안개의 띠 줄무늬 |
+| [QualitySettings](../../../ProjectSettings/QualitySettings.asset) PC | Async Upload Time Slice 4 ms, Buffer 64 MB | 2026-11-11 성능: 2 ms·16 MB에서 늘렸다. 장을 불러올 때 큰 텍스처·메시를 GPU로 올리는 일을 덜 쪼개 로딩이 빨라지고 첫 사용 끊김이 줄기를 바란 것(측정 없음). 되돌리려면 2·16 |
+| 캠페인 맵 (회색 맵 빌더) | 정적 배칭·가림 컬링, 레이어 거리 컬링 | 맵을 지을 때 움직이지 않는 상자를 static으로 표시하고 가림 컬링을 굽는다(작은 가림체 4 m). 벽과 건물 뒤의 좀비는 그리지 않는다. 트인 곳은 [Culling.csv](../Resources/Tables/Culling.csv)의 레이어 거리(좀비 160 m)로 자른다. 조명은 그림자 없는 점 조명만 쓴다(Forward+라 개수 제한 없음) |
 
 - 톤매핑을 꺼서 밝기 1을 넘는 부분은 하얗게 날아간다. 빛을 받은 흰 벽이 날아가면 그 빛의 세기를 낮춘다.
 - 블룸은 밝기 1을 넘는 부분만 번진다. 빛나야 하는 것(전구, 형광등, 간판)은 재질의 발광 세기를 1보다 크게 준다.

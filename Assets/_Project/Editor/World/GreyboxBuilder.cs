@@ -89,7 +89,7 @@ public sealed class GreyboxBuilder
     public static void RebuildAll(string title, params (string name, System.Action build)[] chapters)
     {
         if (EditorApplication.isPlayingOrWillChangePlaymode) { EditorUtility.DisplayDialog(title, "Play를 멈춘 뒤에 실행해 주세요.", "확인"); return; }
-        if (!EditorUtility.DisplayDialog(title, "캠페인 " + chapters.Length + "개 장을 1장부터 차례로 다시 지어요(좀비 길찾기 굽기까지). " +
+        if (!EditorUtility.DisplayDialog(title, "캠페인 " + chapters.Length + "개 장을 1장부터 차례로 다시 지어요(좀비 길찾기와 가림 굽기까지). " +
                 "씬에서 손으로 고친 것은 모두 사라져요. 계속할까요?", "모두 다시 짓기", "취소"))
             return;
         if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
@@ -428,7 +428,8 @@ public sealed class GreyboxBuilder
         settings.ApplyModifiedPropertiesWithoutUndo();
     }
 
-    /// <summary>Adds the waves, bakes the walk mesh, saves the scene and puts it in the build.</summary>
+    /// <summary>Adds the waves, bakes the walk mesh, marks what never moves static, saves the scene, bakes its occlusion
+    /// culling and puts it in the build.</summary>
     public void Finish(string summary)
     {
         AddWaves();
@@ -453,8 +454,17 @@ public sealed class GreyboxBuilder
         if (AssetDatabase.LoadAssetAtPath<NavMeshData>(meshPath) != null) AssetDatabase.DeleteAsset(meshPath);
         if (surface.navMeshData != null) AssetDatabase.CreateAsset(surface.navMeshData, meshPath);
         int stranded = CheckProps();
+        MarkStatic();
         EditorSceneManager.MarkSceneDirty(scene);
         EditorSceneManager.SaveScene(scene, ScenePath);
+        // The occlusion data is kept beside the saved scene (Scenes/Campaign/<scene>/OcclusionCullingData), so it bakes
+        // after the first save, and the scene is saved again to keep hold of it.
+        bool culled = BakeOcclusion();
+        if (culled)
+        {
+            EditorSceneManager.MarkSceneDirty(scene);
+            EditorSceneManager.SaveScene(scene, ScenePath);
+        }
         var build = EditorBuildSettings.scenes.ToList();
         if (!build.Any(entry => entry.path == ScenePath))
         {
@@ -465,7 +475,43 @@ public sealed class GreyboxBuilder
         Tell(summary + "\n\n진행 자리 " + spots.Count + "곳, 적 나오는 곳 " + enemySpawns.Count +
              "곳. Play하면 미션이 바로 시작돼요(목표는 Resources/Tables/CampaignSteps.csv).\n" +
              "작은 소품: 좁은 꼭대기 " + slabs + "곳에 좀비 길을 깔았어요. " +
-             (stranded == 0 ? "좀비가 못 가는 소품은 없어요." : "좀비가 못 가는 소품이 " + stranded + "곳 남았어요(콘솔에 이름과 자리)."));
+             (stranded == 0 ? "좀비가 못 가는 소품은 없어요." : "좀비가 못 가는 소품이 " + stranded + "곳 남았어요(콘솔에 이름과 자리).") +
+             "\n가림 굽기(오클루전 컬링): " + (culled ? "구웠어요. 벽과 건물 뒤의 좀비는 그리지 않아요." : "실패했어요(콘솔을 보세요). 맵은 그대로 쓸 수 있어요."));
+    }
+
+    // ---- Culling (the user's memo 40: "최적화, 컬링") ----
+    // What of the layout never moves is static: batched into a few draws per material (Batching Static), hiding what is
+    // behind it from the camera (Occluder Static, solid boxes) and left undrawn while something hides it (Occludee
+    // Static). Gates, doors and pushback groups move, so they stay dynamic. The occlusion data is baked from these, and
+    // anything that moves (zombies, players, pickups, effects) is culled against it at run time as well, since every
+    // renderer allows dynamic occlusion unless it says otherwise: a horde behind a building or a tunnel wall costs no
+    // drawing. No Contribute GI: nothing is lightmapped, and it would make the editor start baking lights.
+    // Smaller occluders than this are not used to hide anything, and the gaps it may see through (m); larger values bake
+    // faster and coarser. The maps are big boxes, so a coarse bake is enough.
+    private const float SmallestOccluder = 4f, SmallestHole = .25f, BackfaceThreshold = 100f;
+
+    private void MarkStatic()
+    {
+        foreach (var shape in terrain.GetComponentsInChildren<Renderer>())
+        {
+            var part = shape.gameObject;
+            if (part.GetComponentInParent<CampaignGate>() != null || part.GetComponentInParent<CampaignDoor>() != null
+                || part.GetComponentInParent<CampaignPushback>() != null)
+                continue;
+            var flags = StaticEditorFlags.BatchingStatic | StaticEditorFlags.OccludeeStatic;
+            if (part.TryGetComponent(out Collider _)) flags |= StaticEditorFlags.OccluderStatic;
+            GameObjectUtility.SetStaticEditorFlags(part, flags);
+        }
+    }
+
+    private static bool BakeOcclusion()
+    {
+        StaticOcclusionCulling.smallestOccluder = SmallestOccluder;
+        StaticOcclusionCulling.smallestHole = SmallestHole;
+        StaticOcclusionCulling.backfaceThreshold = BackfaceThreshold;
+        bool done = StaticOcclusionCulling.Compute();
+        if (!done) Debug.LogWarning("[Greybox] occlusion culling did not bake; the scene still works, only without it.");
+        return done;
     }
 
     // ---- Small props (the user's memo 48: "좀비가 못 올라가는 작은 소품") ----
