@@ -2,9 +2,9 @@ using System;
 using UnityEngine;
 
 /// <summary>
-/// Where damage numbers stand, from Hud.csv's Damage row: beside the target's body at chest height, on the side away
-/// from the crosshair, never inside the small box around the crosshair. Colours, font and motion stay in
-/// Resources/Combat/Feedback (Damage popups).
+/// Where damage numbers stand, from Hud.csv's Damage row: pinned to the body part the newest hit landed on, a little
+/// off it on the side away from the crosshair, never inside the small box around the crosshair; a running total grows
+/// as it climbs. Colours, font and motion stay in Resources/Combat/Feedback (Damage popups).
 /// </summary>
 [Serializable]
 public sealed class DamageNumberLayout
@@ -12,10 +12,16 @@ public sealed class DamageNumberLayout
     [Tooltip("Half the width and height of the box around the crosshair that numbers stay out of (px at 1080p). " +
         "A number reaching into it moves out sideways on its own side. 0 turns it off.")]
     public Vector2 clear = new Vector2(46f, 30f);
-    [Tooltip("Room between the side of the target's body and the number (px).")]
-    [Min(0f)] public float gap = 10f;
-    [Tooltip("Where on the body's height the numbers stand: 0 the feet, 1 the top of the head.")]
+    [Tooltip("How far the number stands off the spot it was hit (px at full size): sideways away from the crosshair; up.")]
+    public Vector2 offset = new Vector2(22f, 10f);
+    [Tooltip("Seconds the number takes to glide over to where the newest hit landed on the same body.")]
+    [Min(0f)] public float glide = .1f;
+    [Tooltip("Where on the body's height a hit with no place (a fall) stands: 0 the feet, 1 the top of the head.")]
     [Range(0f, 1f)] public float height = .72f;
+    [Tooltip("How much larger a running total grows at its fullest (0.3 = 30%).")]
+    [Min(0f)] public float grow = .3f;
+    [Tooltip("The running total at which it has grown fully.")]
+    [Min(1f)] public float growDamage = 400f;
     [Tooltip("How far a new number slides out from the body as it appears (px).")]
     [Min(0f)] public float slide = 16f;
     [Tooltip("Seconds a running total takes to count up to its new value.")]

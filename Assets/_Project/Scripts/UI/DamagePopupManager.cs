@@ -5,10 +5,11 @@ using UnityEngine.UI;
 /// <summary>
 /// Damage numbers for enemies and practice targets. Created on the first hit during Play; no scene setup.
 /// The player picks the style in Settings (데미지 숫자): one running total per target (default), one number per hit, or
-/// none. Numbers stand beside the target's body on the side away from the crosshair and grow away from it
-/// (DamageNumberAnchor), so neither the aim point nor the target disappears under its own hits; a target's numbers
-/// stack upward in a short column. A finishing blow holds its number where the target stood, even if the target is
-/// destroyed. Look and motion: Resources/Combat/Feedback (Damage popups); placement: Hud.csv's Damage row.
+/// none. Numbers ride the body part the newest hit landed on, just off it on the side away from the crosshair, and grow
+/// away from it (DamageNumberAnchor), so they follow the enemy as Apex Legends' do while the aim point stays clear; a
+/// running total grows as it climbs, and per-hit numbers stack upward in a short column. A finishing blow holds its
+/// number where the target fell, even if the target is destroyed. Look and motion: Resources/Combat/Feedback (Damage
+/// popups); placement: Hud.csv's Damage row.
 /// </summary>
 // Runs after CameraViewPunch (10000) so numbers stay on their targets in the kicked view.
 [DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.DamagePopups)]
@@ -89,6 +90,7 @@ public sealed class DamagePopupManager : MonoBehaviour
 
         var group = Find(report.Target, environmental) ?? Open(report.Target, environmental);
         if (!kill) group.anchor.Thaw();
+        group.anchor.Hit(hit.Point, layout);
         var numbers = group.numbers;
         var newest = numbers.Count > 0 ? numbers[numbers.Count - 1] : null;
         // A running total takes every hit until it leaves; per-hit numbers still fold one shot's pellets together.
@@ -131,12 +133,11 @@ public sealed class DamagePopupManager : MonoBehaviour
         var numbers = group.numbers;
         float room = 0f;
         foreach (var number in numbers) room = Mathf.Max(room, number.Width(settings));
-        if (!group.anchor.Place(view, canvasRect, layout, room, out Vector2 spot, out float distance))
+        if (!group.anchor.Place(view, canvasRect, layout, settings, room, out Vector2 spot, out float far))
         {
             foreach (var number in numbers) number.Hide();
             return;
         }
-        float far = Mathf.Clamp(settings.popupFullSizeDistance / Mathf.Max(.01f, distance), settings.popupMinimumDistanceScale, 1f);
         float lift = 0f;
         for (int i = numbers.Count - 1; i >= 0; i--)
         {

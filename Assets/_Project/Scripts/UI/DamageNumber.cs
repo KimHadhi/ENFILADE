@@ -23,7 +23,7 @@ public sealed class DamageNumber
     private readonly RawImage mark, slash, cut;
     private readonly TextMeshProUGUI label, shade;
 
-    private float total, shown, rollFrom, rollAge, shotAmount;
+    private float total, shown, rollFrom, rollAge, shotAmount, grown = 1f;
     private float slideAge, popAge, popPeak, hold, leaveAge = -1f, markAge, cutAge, killAge, lift, liftTarget, width;
     private bool environmental, fadeMarks, punch, counterCut;
     private Mark markKind;
@@ -75,6 +75,7 @@ public sealed class DamageNumber
         this.environmental = environmental;
         this.fadeMarks = fadeMarks;
         total = shown = rollFrom = amount;
+        grown = 1f;
         rollAge = float.PositiveInfinity;
         slideAge = 0f; leaveAge = -1f; lift = liftTarget = 0f;
         Killed = counterCut = false;
@@ -122,6 +123,14 @@ public sealed class DamageNumber
         shown = layout.roll > 0f && rollAge < layout.roll
             ? Mathf.Lerp(rollFrom, total, 1f - Mathf.Pow(1f - rollAge / layout.roll, 3f))
             : total;
+        // A running total gets bigger as it climbs (Apex's stacked number), quickly at first: hits merging into one
+        // number should read as one growing blow, not a counter ticking in place.
+        if (fadeMarks && layout.grow > 0f)
+        {
+            float full = Mathf.Clamp01(shown / Mathf.Max(1f, layout.growDamage));
+            grown = 1f + layout.grow * (1f - (1f - full) * (1f - full));
+        }
+        else grown = 1f;
     }
 
     /// <summary>Puts the number's near edge on spot (the target's side; side +1 grows right, -1 left), raised by its place in the column.</summary>
@@ -249,11 +258,12 @@ public sealed class DamageNumber
         return pop;
     }
 
-    // A finishing blow settles clearly larger; when each hit shows its own, criticals and counters settle a little larger.
+    // A finishing blow settles clearly larger; when each hit shows its own, criticals and counters settle a little larger;
+    // a running total by what it has added up to.
     private float Settled(CombatFeedbackSettings settings)
     {
-        if (Killed && !environmental) return settings.deathBlowSettledScale;
-        return !fadeMarks && (markKind == Mark.Critical || markKind == Mark.Counter) ? settings.punchSettledScale : 1f;
+        if (Killed && !environmental) return settings.deathBlowSettledScale * grown;
+        return !fadeMarks && (markKind == Mark.Critical || markKind == Mark.Counter) ? settings.punchSettledScale : grown;
     }
 
     private static float FontSize(CombatFeedbackSettings settings) => Mathf.Max(8f, settings.damageFontSize);
