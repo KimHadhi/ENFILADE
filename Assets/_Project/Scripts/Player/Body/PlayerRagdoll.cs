@@ -45,6 +45,8 @@ public sealed class PlayerRagdoll : MonoBehaviour
     private CharacterController capsule;
     private RagdollCorpse corpse;
     private Animator preparedFor;
+    // The body preparedFor got no doll (its rig has no humanoid bones to hang one on).
+    private bool noDoll;
     private Transform view;
     private Vector3 eye, carried;
     private Quaternion gaze, viewHome;
@@ -133,14 +135,17 @@ public sealed class PlayerRagdoll : MonoBehaviour
     }
 
     // At the start of the map, and again when a skin swaps the body. A doll can't outlive the model it was made for.
+    // A body that can't have a doll (its humanoid finds no bones) is tried once, not every frame: each try copied the
+    // whole skeleton (the user, 2026-11-12: the game lagging under a stream of errors).
     private void Prepare()
     {
         var animator = Model;
-        if (animator == null || (animator == preparedFor && corpse != null)) return;
+        if (animator == null || (animator == preparedFor && (corpse != null || noDoll))) return;
         if (corpse != null) Destroy(corpse.gameObject);
         preparedFor = animator;
         solid = player.groundLayers & ~LayerMask.GetMask(Enemies);
         corpse = RagdollCorpse.Prepare(animator, gameObject.layer, solid);
+        noDoll = corpse == null;
         if (corpse != null) corpse.Struck += OnCorpseStruck;
     }
 

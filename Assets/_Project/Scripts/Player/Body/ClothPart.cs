@@ -77,6 +77,13 @@ public sealed class ClothPart
         }
     }
 
+    /// <summary>
+    /// The thinnest this part's cloth gets where it lies close to the body (metres): the presets' own, or its thickness
+    /// where that is thinner still (Apply).
+    /// </summary>
+    internal float Thinnest(ClothBones shape) =>
+        thickness > 0f ? Mathf.Min(ClothBones.LeastThickness, thickness * shape.Length) : ClothBones.LeastThickness;
+
     /// <summary>Starts the simulation on these bones. Living under the model, it goes when the body does.</summary>
     internal MagicaCloth Wear(Transform model, string id, List<Transform> bones, List<ColliderComponent> colliders, ClothBones shape)
     {

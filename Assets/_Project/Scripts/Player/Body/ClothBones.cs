@@ -75,6 +75,18 @@ internal sealed class ClothBones
     }
 
     /// <summary>
+    /// How near the part comes to something as it is made, given how far outside it a point is (below zero inside). The
+    /// bones it hangs from count too: Magica collides the line from a root to its first free bone, and a root stuck
+    /// inside would lever the chain off its shape.
+    /// </summary>
+    internal float Nearest(System.Func<Vector3, float> gap)
+    {
+        float least = float.PositiveInfinity;
+        for (int i = 0; i < bones.Length; i++) least = Mathf.Min(least, gap(bones[i].Transform.position));
+        return least;
+    }
+
+    /// <summary>
     /// How thick the cloth is down the part, for Magica's particle radius: what was wanted (metres), but at each depth no
     /// more than the room its bones had when the part was made, so the legs don't push it out of shape before anything has
     /// moved, and never thinner than the presets made it. The curve runs 0..1 of what was wanted. Null when nothing was.

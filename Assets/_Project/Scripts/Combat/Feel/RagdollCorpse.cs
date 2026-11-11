@@ -119,8 +119,16 @@ public sealed class RagdollCorpse : MonoBehaviour, IDamageReceiver
         corpse.passes = ~(solid | (1 << layer));
         // The neutral pose is measured on a copy of the skeleton, away from the real bones; it goes at the frame's end.
         var skeleton = Skeleton(live.transform);
-        corpse.Build(live, skeleton);
+        bool built = corpse.Build(live, skeleton);
         Destroy(skeleton.gameObject);
+        // A rig whose humanoid can't find its bones (an outfit's bone of the same name under one of the body's, before
+        // OutfitDresser renamed them) makes no doll, and what was made for it goes: it once threw here every frame,
+        // leaving a corpse and a skeleton behind each time, and the game crawled (the user, 2026-11-12).
+        if (!built)
+        {
+            Destroy(root);
+            return null;
+        }
         corpse.Stow();
         return corpse;
     }
@@ -492,7 +500,8 @@ public sealed class RagdollCorpse : MonoBehaviour, IDamageReceiver
     private static bool Overlap(Collider a, Collider b) => Physics.ComputePenetration(
         a, a.transform.position, a.transform.rotation, b, b.transform.position, b.transform.rotation, out _, out _);
 
-    private void Build(Animator live, Transform model)
+    // False, building nothing, when the humanoid lacks a bone the doll hangs on.
+    private bool Build(Animator live, Transform model)
     {
         measured = model.GetComponentsInChildren<Transform>(true);
         real = live.GetComponentsInChildren<Transform>(true);
@@ -515,6 +524,13 @@ public sealed class RagdollCorpse : MonoBehaviour, IDamageReceiver
         Transform leftKnee = Bone(HumanBodyBones.LeftLowerLeg), rightKnee = Bone(HumanBodyBones.RightLowerLeg);
         Transform leftArm = Bone(HumanBodyBones.LeftUpperArm), rightArm = Bone(HumanBodyBones.RightUpperArm);
         Transform leftElbow = Bone(HumanBodyBones.LeftLowerArm), rightElbow = Bone(HumanBodyBones.RightLowerArm);
+        if (hips == null || spine == null || head == null || leftLeg == null || rightLeg == null || leftKnee == null || rightKnee == null
+            || leftArm == null || rightArm == null || leftElbow == null || rightElbow == null)
+        {
+            measured = real = null;
+            humanIds = null;
+            return false;
+        }
 
         Vector3 up = (head.position - hips.position).normalized;
         Vector3 right = Vector3.ProjectOnPlane(rightArm.position - leftArm.position, up).normalized;
@@ -555,6 +571,7 @@ public sealed class RagdollCorpse : MonoBehaviour, IDamageReceiver
         lastTurns = new Quaternion[bones.Count];
         measured = real = null;
         humanIds = null;
+        return true;
 
         // A knee bends one way and turns a little; the hip is a ball centred on a thigh raised halfway, so it bends right
         // up in front but only a little behind, and the thigh turns about its length, so a bent knee falls to the side.

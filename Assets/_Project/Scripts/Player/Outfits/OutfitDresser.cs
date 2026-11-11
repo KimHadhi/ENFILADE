@@ -254,7 +254,7 @@ internal static class OutfitDresser
             Object.Destroy(instance);
             return null;
         }
-        if (Merge(instance.transform, skeleton) > 0) return copy;
+        if (Merge(instance.transform, skeleton, item.ModelId) > 0) return copy;
         // Nothing to follow bone by bone: a rigid piece, made standing on the character, follows its slot's bone.
         if (skinned) Warn($"{item.ModelId}: {entry.Model.name}의 뼈 이름이 캐릭터 뼈와 하나도 맞지 않아 {slot.bone}에 통째로 붙입니다.");
         var anchor = slot.Anchor(animator);
@@ -278,7 +278,13 @@ internal static class OutfitDresser
 
     // Each transform of the outfit that the character's skeleton has too goes under the character's, staying where it
     // is. Parents come before their children, so a bone under one already moved is still where it was made.
-    private static int Merge(Transform instance, Skeleton skeleton)
+    // Each one moved is renamed after its outfit ("Hips [white-board]"). Kept as it was, a "Hips" under the body's own
+    // "Hips" made the humanoid ambiguous ("Ambiguous Transform 'Armature/Hips' and 'Armature/Hips/Hips' found in
+    // hierarchy for human bone 'Hips'"), Unity let go of the whole avatar, and with no bones to find the body's cloth
+    // colliders and its ragdoll failed: skirts and coats went through the body, and the game lagged (the user,
+    // 2026-11-12, Mayo in White Board and Sailor Maiden). Nothing finds these by name: meshes hold their bones, and the
+    // sway rows name only an outfit's own bones.
+    private static int Merge(Transform instance, Skeleton skeleton, string mark)
     {
         int merged = 0;
         foreach (var part in instance.GetComponentsInChildren<Transform>(true))
@@ -287,6 +293,7 @@ internal static class OutfitDresser
             var twin = skeleton.Find(part.name);
             if (twin == null) continue;
             part.SetParent(twin, true);
+            part.name += " [" + mark + "]";
             merged++;
         }
         return merged;

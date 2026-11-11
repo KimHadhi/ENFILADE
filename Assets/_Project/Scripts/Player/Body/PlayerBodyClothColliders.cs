@@ -70,8 +70,15 @@ public sealed class PlayerBodyClothColliders : MonoBehaviour
     [SerializeField, Range(0f, 2f), Tooltip("Chest radius, as a share of the shoulder width.")]
     private float chest = .35f;
 
+    // A shape fitted to a part that hangs inside it keeps at least this share of its girth, or the part loses it.
+    private const float LeastGirth = .25f;
+
     private readonly Dictionary<string, List<ColliderComponent>> made =
         new Dictionary<string, List<ColliderComponent>>(StringComparer.OrdinalIgnoreCase);
+    // Smaller copies of the shapes above for parts that hang inside them, by the shape and how much smaller (mm). Null
+    // where the copy would be too thin to keep.
+    private readonly Dictionary<(ColliderComponent, int), ColliderComponent> fitted =
+        new Dictionary<(ColliderComponent, int), ColliderComponent>();
     private ArmBone[] arms;
     private CharacterController capsule;
     private PlayerMovement player;
@@ -122,21 +129,76 @@ public sealed class PlayerBodyClothColliders : MonoBehaviour
     internal float Room(Vector3 point, List<ColliderComponent> shapes)
     {
         float least = float.PositiveInfinity;
-        foreach (var shape in shapes)
-        {
-            if (shape == null || shape is MagicaPlaneCollider) continue;
-            float scale = Mathf.Abs(shape.GetScale());
-            Vector3 size = shape.GetSize() * scale, start = shape.transform.TransformPoint(shape.center);
-            if (shape is MagicaCapsuleCollider)
-            {
-                // As Capsule makes it: down the object's -Y, the length counting both ends' rounding.
-                Vector3 axis = -shape.transform.up * Mathf.Max(0f, size.z - size.x - size.y);
-                float along = axis.sqrMagnitude > 0f ? Mathf.Clamp01(Vector3.Dot(point - start, axis) / axis.sqrMagnitude) : 0f;
-                least = Mathf.Min(least, Vector3.Distance(point, start + axis * along) - Mathf.Lerp(size.x, size.y, along));
-            }
-            else least = Mathf.Min(least, Vector3.Distance(point, start) - size.x);
-        }
+        foreach (var shape in shapes) least = Mathf.Min(least, Gap(point, shape));
         return least;
+    }
+
+    /// <summary>
+    /// Fits a part's shapes (as For gave them) to its cloth as the body was made. These shapes are rough, and Magica
+    /// pushes cloth out of any it is in, so a piece its maker drew close against the body (a choker round the neck, a
+    /// necklace on the chest, ears rising from the head) would be shoved off what the maker drew before anything moved.
+    /// A shape the cloth comes nearer than clear to (the cloth's thinnest: as near as it can be without a push) is
+    /// swapped for a copy that much smaller, which every part needing the same shares; one that would keep less than a
+    /// quarter of its girth goes. The cloth still meets the body, just where its own shape says the body is.
+    /// </summary>
+    internal void Fit(List<ColliderComponent> shapes, ClothBones bones, float clear)
+    {
+        for (int i = shapes.Count - 1; i >= 0; i--)
+        {
+            var shape = shapes[i];
+            if (shape == null || shape is MagicaPlaneCollider) continue;
+            float shrink = clear - bones.Nearest(point => Gap(point, shape));
+            if (shrink <= 0f) continue;
+            var smaller = Smaller(shape, shrink);
+            if (smaller != null) shapes[i] = smaller;
+            else shapes.RemoveAt(i);
+        }
+    }
+
+    // A copy of a shape on the same bone, its rounding thinner by at least this much (whole millimetres, so near needs
+    // share one); a capsule keeps the line it runs along.
+    private ColliderComponent Smaller(ColliderComponent shape, float shrink)
+    {
+        int mm = Mathf.CeilToInt(shrink * 1000f);
+        if (fitted.TryGetValue((shape, mm), out var copy)) return copy;
+        float scale = Mathf.Abs(shape.GetScale()), by = mm / 1000f;
+        Vector3 size = shape.GetSize() * scale;
+        Transform at = shape.transform;
+        if (shape is MagicaCapsuleCollider capsule)
+        {
+            float start = size.x - by, end = size.y - by;
+            if (start < size.x * LeastGirth || end < size.y * LeastGirth) return fitted[(shape, mm)] = null;
+            var thinner = Shape<MagicaCapsuleCollider>(at.parent, at.position, at.rotation);
+            thinner.direction = capsule.direction;
+            thinner.alignedOnCenter = capsule.alignedOnCenter;
+            thinner.reverseDirection = capsule.reverseDirection;
+            thinner.SetSize(start / scale, end / scale, (size.z - 2f * by) / scale);
+            copy = thinner;
+        }
+        else
+        {
+            float radius = size.x - by;
+            if (radius < size.x * LeastGirth) return fitted[(shape, mm)] = null;
+            var thinner = Shape<MagicaSphereCollider>(at.parent, at.position, at.rotation);
+            thinner.SetSize(radius / scale);
+            copy = thinner;
+        }
+        copy.center = shape.center;
+        copy.name = "Cloth collider (fitted)";
+        return fitted[(shape, mm)] = copy;
+    }
+
+    /// <summary>How far a point is outside one collider (metres, below zero inside). Infinity for the floor.</summary>
+    internal static float Gap(Vector3 point, ColliderComponent shape)
+    {
+        if (shape == null || shape is MagicaPlaneCollider) return float.PositiveInfinity;
+        float scale = Mathf.Abs(shape.GetScale());
+        Vector3 size = shape.GetSize() * scale, start = shape.transform.TransformPoint(shape.center);
+        if (shape is not MagicaCapsuleCollider) return Vector3.Distance(point, start) - size.x;
+        // As Capsule makes it: down the object's -Y, the length counting both ends' rounding.
+        Vector3 axis = -shape.transform.up * Mathf.Max(0f, size.z - size.x - size.y);
+        float along = axis.sqrMagnitude > 0f ? Mathf.Clamp01(Vector3.Dot(point - start, axis) / axis.sqrMagnitude) : 0f;
+        return Vector3.Distance(point, start + axis * along) - Mathf.Lerp(size.x, size.y, along);
     }
 
     // Everything made is for one body: a new one starts over, the old one's colliders gone with it.
@@ -144,6 +206,7 @@ public sealed class PlayerBodyClothColliders : MonoBehaviour
     {
         if (animator == madeFor) return;
         made.Clear();
+        fitted.Clear();
         arms = null;
         madeFor = animator;
     }
@@ -157,10 +220,14 @@ public sealed class PlayerBodyClothColliders : MonoBehaviour
         return made[shape] = set;
     }
 
+    // A rig whose humanoid finds no bones (the avatar let go: an outfit's bone of the same name under one of the body's,
+    // before OutfitDresser renamed them) gets no colliders rather than an error that stops the whole cloth.
     private void MakeLegs(Animator animator, List<ColliderComponent> into)
     {
         Transform leftLeg = animator.GetBoneTransform(HumanBodyBones.LeftUpperLeg), rightLeg = animator.GetBoneTransform(HumanBodyBones.RightUpperLeg);
         Transform leftKnee = animator.GetBoneTransform(HumanBodyBones.LeftLowerLeg), rightKnee = animator.GetBoneTransform(HumanBodyBones.RightLowerLeg);
+        if (leftLeg == null || rightLeg == null || leftKnee == null || rightKnee == null || animator.GetBoneTransform(HumanBodyBones.Hips) == null
+            || animator.GetBoneTransform(HumanBodyBones.LeftFoot) == null || animator.GetBoneTransform(HumanBodyBones.RightFoot) == null) return;
         Ball(animator.GetBoneTransform(HumanBodyBones.Hips), (leftLeg.position + rightLeg.position) * .5f,
             Vector3.Distance(leftLeg.position, rightLeg.position) * pelvis, into);
         Limb(leftLeg, leftKnee, thighStart, thighEnd, into);
@@ -195,8 +262,9 @@ public sealed class PlayerBodyClothColliders : MonoBehaviour
     {
         Transform head = animator.GetBoneTransform(HumanBodyBones.Head), neck = animator.GetBoneTransform(HumanBodyBones.Neck) ?? head;
         Transform upperBody = animator.GetBoneTransform(HumanBodyBones.Chest) ?? animator.GetBoneTransform(HumanBodyBones.Spine);
-        float shoulders = Vector3.Distance(animator.GetBoneTransform(HumanBodyBones.LeftUpperArm).position,
-            animator.GetBoneTransform(HumanBodyBones.RightUpperArm).position);
+        Transform leftArm = animator.GetBoneTransform(HumanBodyBones.LeftUpperArm), rightArm = animator.GetBoneTransform(HumanBodyBones.RightUpperArm);
+        if (head == null || upperBody == null || leftArm == null || rightArm == null) return;
+        float shoulders = Vector3.Distance(leftArm.position, rightArm.position);
         Vector3 up = (head.position - neck.position).normalized;
         Ball(head, head.position + up * (shoulders * headLift), shoulders * headRadius, into);
         Capsule(upperBody, neck, shoulders * chest, shoulders * chest, into);

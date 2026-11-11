@@ -128,13 +128,17 @@ public sealed class PlayerBodyCloth : MonoBehaviour
         bool simulates = !player.IsNetworkDriven;
         SkinSample skin = null;
         BodySurface surface = null;
+        HashSet<Transform> armBones = null;
         foreach (var (id, part, roots) in found)
         {
             // Read before the simulation first moves them.
             var item = new Worn { Part = part, Bones = new ClothBones(roots, part.rootTurn) };
-            List<ColliderComponent> touching = simulates ? colliders.For(animator, part.shapes) : null;
+            string shapes = Touches(part, roots, animator, ref armBones);
+            List<ColliderComponent> touching = simulates ? colliders.For(animator, shapes) : null;
             if (simulates)
             {
+                // What BoothImport read from VRChat meets the body as its maker drew it; a row written by hand is as written.
+                if (part.vrc) colliders.Fit(touching, item.Bones, part.Thinnest(item.Bones));
                 item.Bones.MeasureRoom(point => colliders.Room(point, touching));
                 item.Cloth = part.Wear(animator.transform, id, roots, touching, item.Bones);
             }
@@ -148,7 +152,7 @@ public sealed class PlayerBodyCloth : MonoBehaviour
                 {
                     // Without the skin, the legs the cloth collides with are the next best thing. A copy makes them only
                     // to know where they are.
-                    touching ??= colliders.For(animator, part.shapes);
+                    touching ??= colliders.For(animator, shapes);
                     item.Room = point => colliders.Room(point, touching);
                 }
                 arms ??= colliders.ArmBones(animator);
@@ -167,6 +171,38 @@ public sealed class PlayerBodyCloth : MonoBehaviour
             armLengths[side] = whole ? Vector3.Distance(upper.position, lower.position) + Vector3.Distance(lower.position, hand.position) : 0f;
             swings[side] = 0f;
             swingAxes[side] = Vector3.zero;
+        }
+    }
+
+    // The body a row's cloth rests against: its shapes, or, for a row BoothImport made from a PhysBone with no colliders,
+    // all of it. VRChat authors leave colliders off many chains (Mayo's side hair, Ichigo's tail and cape, ribbons, an
+    // outfit's jacket tails and belts), and in VRChat those pass through the body; here they went through it too (the
+    // user, 2026-11-12: "옷이나 천이 바디와 상호작용을 안 함. 그냥 뚫고 들어감"). The head and chest and the hips and legs
+    // both, since a chain hung from the chest reaches the hips and long hair the back of the thighs; the shapes are then
+    // fitted to it (PlayerBodyClothColliders.Fit), so it keeps the shape its maker drew. A chain hung from an arm gets
+    // none, as the arm would drag it through the body wherever it goes, and a spring (a chest's or a bottom's own jiggle)
+    // stays inside the body it is part of. A row written by hand with no shapes touches nothing, as it says.
+    private static string Touches(ClothPart part, List<Transform> roots, Animator animator, ref HashSet<Transform> armBones)
+    {
+        if (!part.vrc || !string.IsNullOrWhiteSpace(part.shapes) || part.spring || roots.Count == 0) return part.shapes ?? "";
+        armBones ??= ArmTransforms(animator);
+        for (var at = roots[0].parent; at != null && at != animator.transform; at = at.parent)
+            if (armBones.Contains(at)) return "";
+        return "head|legs";
+    }
+
+    // Every humanoid bone of both arms, upper arms down to the fingers.
+    private static HashSet<Transform> ArmTransforms(Animator animator)
+    {
+        var found = new HashSet<Transform>();
+        for (var id = HumanBodyBones.LeftUpperArm; id <= HumanBodyBones.RightHand; id++) Add(id);
+        for (var id = HumanBodyBones.LeftThumbProximal; id <= HumanBodyBones.RightLittleDistal; id++) Add(id);
+        return found;
+
+        void Add(HumanBodyBones id)
+        {
+            var bone = animator.GetBoneTransform(id);
+            if (bone != null) found.Add(bone);
         }
     }
 
