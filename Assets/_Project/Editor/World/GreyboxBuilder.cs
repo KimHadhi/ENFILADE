@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using Unity.AI.Navigation;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -18,6 +19,9 @@ using UnityEngine.SceneManagement;
 /// beside it, and puts it in the build so the main menu offers it (Maps.csv names it). Running it again rebuilds the
 /// scene from scratch, so hand edits to a built scene are lost: change the layout in code instead.
 /// Boxes are given by their extents in metres, x0..x1, y0..y1, z0..z1. A chapter runs along +X.
+/// Small props (the user's memo 48): no prop a player can stand on may be out of every zombie's reach. The bake keeps
+/// small tops, lays a walk slab over narrow ones a zombie could climb to, and the build names in the console any prop
+/// still out of reach (see "Small props" below). Every chapter at once: RebuildAll.
 /// </summary>
 public sealed class GreyboxBuilder
 {
@@ -28,10 +32,23 @@ public sealed class GreyboxBuilder
     // Spawn points sit this far over what they stand on, so nothing starts inside the floor (m).
     private const float Lift = .05f;
 
+    // While every chapter is rebuilt in one go (RebuildAll): what each build said, told once at the end.
+    private static StringBuilder batch;
+
+    // A solid box of the layout, for the small props' walk slabs and their check: where it is, and whether it moves (a
+    // gate, a door), which keeps it out of both.
+    private sealed class Block
+    {
+        public GameObject Shape;
+        public Bounds Box;
+        public bool Moves;
+    }
+
     private readonly string sceneName, title;
     private readonly List<Transform> enemySpawns = new List<Transform>(), spots = new List<Transform>(), cans = new List<Transform>(),
         shops = new List<Transform>();
     private readonly List<CampaignDoor> doors = new List<CampaignDoor>();
+    private readonly List<Block> blocks = new List<Block>();
     private Scene scene;
     private Transform terrain, parkour, enemies, progress, systems, pickups, ambience;
     private int pickupCount;
@@ -50,17 +67,53 @@ public sealed class GreyboxBuilder
 
     public string ScenePath => Folder + "/" + sceneName + ".unity";
 
-    /// <summary>Asks before rebuilding a scene that exists, saves what is open, and starts the new scene. Null if called off.</summary>
+    /// <summary>Asks before rebuilding a scene that exists, saves what is open, and starts the new scene. Null if called off.
+    /// Within RebuildAll it asks nothing: that was asked once for every chapter.</summary>
     public static GreyboxBuilder Begin(string sceneName, string title)
     {
         var builder = new GreyboxBuilder(sceneName, title);
         if (EditorApplication.isPlayingOrWillChangePlaymode) { builder.Tell("Play를 멈춘 뒤에 실행해 주세요."); return null; }
-        if (File.Exists(builder.ScenePath) && !EditorUtility.DisplayDialog(title,
+        if (batch == null && File.Exists(builder.ScenePath) && !EditorUtility.DisplayDialog(title,
                 builder.ScenePath + " 가 이미 있어요. 다시 지으면 씬에서 손으로 고친 것이 사라져요. 다시 지을까요?", "다시 짓기", "취소"))
             return null;
-        if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return null;
+        if (batch == null && !EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return null;
         builder.Start();
         return builder;
+    }
+
+    /// <summary>
+    /// Rebuilds every chapter one after another (Tools > World > 캠페인 회색 맵 > 모든 장 다시 짓기): one question first,
+    /// then each chapter's build as if picked from its own menu item, and one window at the end with what each made and
+    /// what its small-prop check found. A chapter that fails is reported and the rest still build.
+    /// </summary>
+    public static void RebuildAll(string title, params (string name, System.Action build)[] chapters)
+    {
+        if (EditorApplication.isPlayingOrWillChangePlaymode) { EditorUtility.DisplayDialog(title, "Play를 멈춘 뒤에 실행해 주세요.", "확인"); return; }
+        if (!EditorUtility.DisplayDialog(title, "캠페인 " + chapters.Length + "개 장을 1장부터 차례로 다시 지어요(좀비 길찾기 굽기까지). " +
+                "씬에서 손으로 고친 것은 모두 사라져요. 계속할까요?", "모두 다시 짓기", "취소"))
+            return;
+        if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
+        batch = new StringBuilder();
+        try
+        {
+            for (int i = 0; i < chapters.Length; i++)
+            {
+                EditorUtility.DisplayProgressBar(title, chapters[i].name, (float)i / chapters.Length);
+                try { chapters[i].build(); }
+                catch (System.Exception error)
+                {
+                    Debug.LogException(error);
+                    batch.Append("■ ").Append(chapters[i].name).Append(": 짓다가 멈췄어요 (").Append(error.Message).Append(")\n\n");
+                }
+            }
+        }
+        finally
+        {
+            EditorUtility.ClearProgressBar();
+        }
+        string report = batch.ToString();
+        batch = null;
+        EditorUtility.DisplayDialog(title, report.Length > 0 ? report : "지은 장이 없어요.", "확인");
     }
 
     private void Start()
@@ -103,7 +156,14 @@ public sealed class GreyboxBuilder
         box.transform.localPosition = new Vector3((x0 + x1) * .5f, (y0 + y1) * .5f, (z0 + z1) * .5f);
         box.transform.localScale = new Vector3(Mathf.Abs(x1 - x0), Mathf.Abs(y1 - y0), Mathf.Abs(z1 - z0));
         Dress(box, material, surface, solid);
+        if (solid) blocks.Add(new Block { Shape = box, Box = new Bounds(box.transform.localPosition, box.transform.localScale) });
         return box;
+    }
+
+    // A gate or a door: it moves, so no walk slab goes on it and the small-prop check leaves it alone.
+    private void Moving(GameObject shape)
+    {
+        foreach (var block in blocks) if (block.Shape == shape) block.Moves = true;
     }
 
     /// <summary>A solid panel that a campaign step opens (CampaignGate), moving by <paramref name="openOffset"/>. It stays
@@ -112,6 +172,7 @@ public sealed class GreyboxBuilder
         Material material = null, string surface = null, bool alarm = true)
     {
         var gate = Box(name, x0, x1, y0, y1, z0, z1, material, surface);
+        Moving(gate);
         gate.AddComponent<NavMeshModifier>().ignoreFromBuild = true;
         var obstacle = gate.AddComponent<NavMeshObstacle>();
         obstacle.shape = NavMeshObstacleShape.Box;
@@ -134,6 +195,7 @@ public sealed class GreyboxBuilder
     public void Door(string name, float x0, float x1, float y0, float y1, float z0, float z1, string spot, Vector3 openOffset)
     {
         var door = Box(name, x0, x1, y0, y1, z0, z1, Wood, "WoodPanel");
+        Moving(door);
         door.AddComponent<NavMeshModifier>().ignoreFromBuild = true;
         var obstacle = door.AddComponent<NavMeshObstacle>();
         obstacle.shape = NavMeshObstacleShape.Box;
@@ -329,16 +391,20 @@ public sealed class GreyboxBuilder
         var surface = terrain.gameObject.AddComponent<NavMeshSurface>();
         surface.collectObjects = CollectObjects.Children;
         surface.useGeometry = NavMeshCollectGeometry.PhysicsColliders;
+        // Memo 48: small tops keep their walk mesh (Unity's default dropped every region under 2 m²), also when the
+        // surface is baked again from its own button.
+        surface.minRegionArea = TopRegionArea;
         // Friend feedback C5: zombies drop off ledges and hop small gaps to reach players (ZombieDrop walks the links),
         // so no ledge is a safe spot.
         AllowDrops();
         var links = new SerializedObject(surface);
         links.FindProperty("m_GenerateLinks").boolValue = true;
         links.ApplyModifiedPropertiesWithoutUndo();
-        surface.BuildNavMesh();
+        int slabs = BakeWalkMesh(surface);
         string meshPath = dataFolder + "/NavMesh.asset";
         if (AssetDatabase.LoadAssetAtPath<NavMeshData>(meshPath) != null) AssetDatabase.DeleteAsset(meshPath);
         if (surface.navMeshData != null) AssetDatabase.CreateAsset(surface.navMeshData, meshPath);
+        int stranded = CheckProps();
         EditorSceneManager.MarkSceneDirty(scene);
         EditorSceneManager.SaveScene(scene, ScenePath);
         var build = EditorBuildSettings.scenes.ToList();
@@ -349,8 +415,164 @@ public sealed class GreyboxBuilder
         }
         AssetDatabase.SaveAssets();
         Tell(summary + "\n\n진행 자리 " + spots.Count + "곳, 적 나오는 곳 " + enemySpawns.Count +
-             "곳. Play하면 미션이 바로 시작돼요(목표는 Resources/Tables/CampaignSteps.csv).");
+             "곳. Play하면 미션이 바로 시작돼요(목표는 Resources/Tables/CampaignSteps.csv).\n" +
+             "작은 소품: 좁은 꼭대기 " + slabs + "곳에 좀비 길을 깔았어요. " +
+             (stranded == 0 ? "좀비가 못 가는 소품은 없어요." : "좀비가 못 가는 소품이 " + stranded + "곳 남았어요(콘솔에 이름과 자리)."));
     }
+
+    // ---- Small props (the user's memo 48: "좀비가 못 올라가는 작은 소품") ----
+    // The zombies' walk mesh (agent type 0: radius .5 m, step .75 m) has nothing on a top narrower than about twice the
+    // radius, and Unity dropped every walk region under 2 m², so a 2×2 m box's top had none either. ZombieDrop climbs
+    // only onto walk mesh, so a player standing on such a prop was beyond every zombie. Now: small regions stay
+    // (TopRegionArea); a narrow top a zombie could climb to gets a thin walk slab in the bake only (no collider, so
+    // players and shots never meet it); a top low enough is within a zombie's arm from the floor anyway; and CheckProps
+    // names in the console whatever is still out of reach, so the layout can be changed (lower it to ArmHeight, or
+    // past AgentHeight so a slab can go on it).
+    private const float AgentRadius = .5f, AgentHeight = 2f, StepHeight = .75f, PlayerHeight = 1.8f;
+    // A zombie's arm reaches a player standing on a narrow top up to this high over the floor it stands on
+    // (EnemyCombatAI.attackRange 2 m, feet to feet, from the edge of its walk mesh); ZombieDrop climbs at most
+    // ClimbMost and only toward a player within ClimbNear across (m).
+    private const float ArmHeight = 1.5f, ClimbMost = 4.5f, ClimbNear = 2.6f;
+    // The smallest walk region kept (m²), the width of a narrow top's walk strip (m) and of its slab (m).
+    private const float TopRegionArea = .25f, NarrowStrip = .5f, SlabThickness = .05f;
+    // Tops larger than this are places (roofs, decks, floors) with their own ways up, not props (m²).
+    private const float PropArea = 60f;
+
+    // The walk mesh from the terrain's colliders as NavMeshSurface.BuildNavMesh makes it (the same modifiers, so gates
+    // and doors stay out of it, and drop links), plus the narrow props' slabs. Kept in the surface, so the scene loads it
+    // as before. Returns how many slabs went in.
+    private int BakeWalkMesh(NavMeshSurface surface)
+    {
+        var markups = new List<NavMeshBuildMarkup>();
+        foreach (var modifier in terrain.GetComponentsInChildren<NavMeshModifier>())
+        {
+            if (!modifier.isActiveAndEnabled || !modifier.AffectsAgentType(surface.agentTypeID)) continue;
+            markups.Add(new NavMeshBuildMarkup
+            {
+                root = modifier.transform, overrideArea = modifier.overrideArea, area = modifier.area,
+                ignoreFromBuild = modifier.ignoreFromBuild, applyToChildren = modifier.applyToChildren,
+                overrideGenerateLinks = modifier.overrideGenerateLinks, generateLinks = modifier.generateLinks
+            });
+        }
+        var sources = new List<NavMeshBuildSource>();
+        UnityEngine.AI.NavMeshBuilder.CollectSources(terrain, surface.layerMask, surface.useGeometry, surface.defaultArea, true,
+            markups, false, sources);
+        int slabs = AddNarrowTops(sources);
+        var bounds = new Bounds();
+        bool any = false;
+        foreach (var shape in terrain.GetComponentsInChildren<Renderer>())
+        {
+            if (any) bounds.Encapsulate(shape.bounds);
+            else { bounds = shape.bounds; any = true; }
+        }
+        bounds.Expand(4f);
+        var data = UnityEngine.AI.NavMeshBuilder.BuildNavMeshData(surface.GetBuildSettings(), sources, bounds, terrain.position, terrain.rotation);
+        surface.RemoveData();
+        surface.navMeshData = data;
+        if (data == null) return slabs;
+        data.name = terrain.name;
+        // Added now, so CheckProps can ask the walk mesh where a zombie can go.
+        surface.AddData();
+        return slabs;
+    }
+
+    // A walk slab over each narrow top a zombie could climb to: AgentHeight to ClimbMost over its floor (a slab lower
+    // than AgentHeight would also shut the floor beside the prop to the zombies, since its overhang is too low to
+    // stand under), room above it to stand, too narrow or too small for walk mesh of its own. The slab is wide enough
+    // that NarrowStrip is left after the bake trims the agent's radius off its edges, and drop links come off it.
+    private int AddNarrowTops(List<NavMeshBuildSource> sources)
+    {
+        int added = 0;
+        foreach (var prop in blocks)
+        {
+            if (prop.Moves || !IsProp(prop) || Headroom(prop) < AgentHeight) continue;
+            float height = prop.Box.max.y - FloorUnder(prop);
+            if (height < AgentHeight || height > ClimbMost || HasRoomToWalk(prop)) continue;
+            Vector3 size = prop.Box.size, top = prop.Box.center + Vector3.up * (size.y * .5f - SlabThickness * .5f);
+            float minimum = 2f * AgentRadius + NarrowStrip;
+            sources.Add(new NavMeshBuildSource
+            {
+                shape = NavMeshBuildSourceShape.Box,
+                size = new Vector3(Mathf.Max(size.x, minimum), SlabThickness, Mathf.Max(size.z, minimum)),
+                transform = Matrix4x4.TRS(top, Quaternion.identity, Vector3.one),
+                area = 0,
+                generateLinks = true
+            });
+            added++;
+        }
+        return added;
+    }
+
+    // After the bake: every prop a player can stand on and no zombie can get to, named in the console with the prop as
+    // its context (click the line to find it). Returns how many.
+    private int CheckProps()
+    {
+        int stranded = 0;
+        var wide = new List<string>();
+        foreach (var prop in blocks)
+        {
+            if (prop.Moves || !IsProp(prop) || Headroom(prop) < PlayerHeight) continue;
+            float floor = FloorUnder(prop), top = prop.Box.max.y, height = top - floor;
+            if (height <= ArmHeight || height > ClimbMost) continue;
+            Vector3 centre = new Vector3(prop.Box.center.x, top, prop.Box.center.z);
+            bool walk = NavMesh.SamplePosition(centre + Vector3.up * .1f, out NavMeshHit hit, .8f, NavMesh.AllAreas)
+                        && Mathf.Abs(hit.position.y - top) < .3f;
+            if (!walk)
+            {
+                stranded++;
+                string why = Headroom(prop) < AgentHeight ? "위가 2 m보다 낮게 막혀 좀비가 설 수 없어요"
+                    : height < AgentHeight ? "높이 1.5~2 m의 좁은 꼭대기: 1.5 m 이하로 낮추거나 2 m 넘게 높이세요"
+                    : "꼭대기에 좀비 길이 생기지 않았어요(옆의 더 높은 벽에 붙어 있으면 그래요)";
+                Debug.LogWarning("[Greybox] " + sceneName + ": 좀비가 못 가는 소품 '" + prop.Shape.name + "' (" + Format(centre) +
+                                 ", 바닥에서 " + height.ToString("0.0") + " m): " + why + ".", prop.Shape);
+                continue;
+            }
+            // A top so wide that a player in its middle stands farther than ClimbNear from any zombie at its foot.
+            if (Mathf.Min(prop.Box.size.x, prop.Box.size.z) * .5f + AgentRadius > ClimbNear) wide.Add(prop.Shape.name);
+        }
+        if (wide.Count > 0)
+            Debug.Log("[Greybox] " + sceneName + ": 가운데가 좀비 기어오르기 거리(ZombieDrop " + ClimbNear + " m) 밖인 넓은 꼭대기 " +
+                      wide.Count + "곳: " + string.Join(", ", wide) + ". 가장자리로 오면 좀비가 올라와요.");
+        return stranded;
+    }
+
+    private static string Format(Vector3 at) => at.x.ToString("0.#") + ", " + at.y.ToString("0.#") + ", " + at.z.ToString("0.#");
+
+    // Small enough to be a prop, and higher than a step over its floor.
+    private bool IsProp(Block prop)
+        => prop.Box.size.x * prop.Box.size.z <= PropArea && prop.Box.max.y - FloorUnder(prop) > StepHeight;
+
+    // Its top keeps walk mesh of its own: NarrowStrip both ways and more than the smallest region once the bake has
+    // trimmed the agent's radius off every edge.
+    private static bool HasRoomToWalk(Block prop)
+    {
+        float x = prop.Box.size.x - 2f * AgentRadius, z = prop.Box.size.z - 2f * AgentRadius;
+        return x >= NarrowStrip && z >= NarrowStrip && x * z >= 2f * TopRegionArea;
+    }
+
+    // The highest top of the layout under this block, at or below its bottom: what it stands on (0, the ground, if none).
+    private float FloorUnder(Block prop)
+    {
+        float floor = 0f;
+        foreach (var other in blocks)
+            if (other != prop && !other.Moves && other.Box.max.y <= prop.Box.min.y + .02f && Overlaps(prop.Box, other.Box))
+                floor = Mathf.Max(floor, other.Box.max.y);
+        return floor;
+    }
+
+    // How much room there is over its top before something else of the layout (m; very much if nothing).
+    private float Headroom(Block prop)
+    {
+        float top = prop.Box.max.y, room = 100f;
+        foreach (var other in blocks)
+            if (other != prop && other.Box.min.y >= top - .02f && Overlaps(prop.Box, other.Box))
+                room = Mathf.Min(room, other.Box.min.y - top);
+        return room;
+    }
+
+    // The two footprints share some floor, more than a touch along an edge.
+    private static bool Overlaps(Bounds a, Bounds b)
+        => a.min.x < b.max.x - .05f && a.max.x > b.min.x + .05f && a.min.z < b.max.z - .05f && a.max.z > b.min.z + .05f;
 
     private void AddWaves()
     {
@@ -431,5 +653,10 @@ public sealed class GreyboxBuilder
         return material;
     }
 
-    private void Tell(string message) => EditorUtility.DisplayDialog(title, message, "확인");
+    // A window now, or while RebuildAll runs, a paragraph of its closing window.
+    private void Tell(string message)
+    {
+        if (batch != null) batch.Append("■ ").Append(title).Append('\n').Append(message).Append("\n\n");
+        else EditorUtility.DisplayDialog(title, message, "확인");
+    }
 }

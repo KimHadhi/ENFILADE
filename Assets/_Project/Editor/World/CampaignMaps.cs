@@ -18,7 +18,12 @@ public static class CampaignMaps
     private const float Wall = .3f, ParapetHeight = .9f;
     private enum Side { West, East, South, North }
 
-    [MenuItem("Tools/World/캠페인 회색 맵/1장 옥상 탈출")]
+    /// <summary>Every chapter in a row after one question (memo 48: the small-prop fix needs each map rebuilt).</summary>
+    [MenuItem("Tools/World/캠페인 회색 맵/모든 장 다시 짓기", priority = 0)]
+    private static void RebuildAll() => GreyboxBuilder.RebuildAll("모든 장 다시 짓기",
+        ("1장 옥상 탈출", Rooftops), ("2장 막힌 고가도로", Overpass), ("3장 지하철", Subway));
+
+    [MenuItem("Tools/World/캠페인 회색 맵/1장 옥상 탈출", priority = 11)]
     private static void Rooftops()
     {
         var b = GreyboxBuilder.Begin("Ch1_Rooftops", "1장 옥상 탈출");
@@ -108,7 +113,8 @@ public static class CampaignMaps
         b.Door("편의점 문", 149f, 151.5f, 0f, 2.4f, 10.05f, 10.25f, "RestStop", new Vector3(2.5f, 0f, 0f));
         b.Box("편의점 계산대", 147f, 152f, 0f, 1f, 15f, 16f, b.Wood, "Wood");
         b.Shop(new Vector3(149.5f, 0f, 14.3f), new Vector3(149.5f, 2.2f, 16f));
-        b.Box("편의점 진열대", 153.5f, 154.3f, 0f, 1.8f, 12f, 18f, b.Metal, "Metal");
+        // Chest high (memo 48): a zombie's arm reaches a player standing on it, as it couldn't at 1.8 m.
+        b.Box("편의점 진열대", 153.5f, 154.3f, 0f, 1.4f, 12f, 18f, b.Metal, "Metal");
         b.Spot("RestStop", new Vector3(151f, 0f, 15f));
         b.Box("길2 차 1", 144f, 148.5f, 0f, 1.5f, -8f, -6.2f, b.Metal, "Metal");
         b.Box("길2 차 2", 158f, 162.5f, 0f, 1.5f, -3f, -1.2f, b.Metal, "Metal");
@@ -174,7 +180,7 @@ public static class CampaignMaps
                  "길: 안전가옥 → 옥상 틈 점프 → 엘리베이터실 벽 오르기 → 집라인 → 철봉 → 골목으로 내려가기 → 셔터 → 편의점 → 공사장 컨테이너·비계·사다리 → 헬기 착륙장.");
     }
 
-    [MenuItem("Tools/World/캠페인 회색 맵/2장 막힌 고가도로")]
+    [MenuItem("Tools/World/캠페인 회색 맵/2장 막힌 고가도로", priority = 12)]
     private static void Overpass()
     {
         var b = GreyboxBuilder.Begin("Ch2_Overpass", "2장 막힌 고가도로");
@@ -201,7 +207,8 @@ public static class CampaignMaps
 
         // The wreck they crawl out of.
         b.Box("헬기 동체", 2f, 9f, Deck, Deck + 2.2f, 1f, 4f, b.Metal, "Metal");
-        b.Box("헬기 꼬리", 9f, 16f, Deck + 1f, Deck + 1.6f, 2.2f, 2.8f, b.Metal, "Metal");
+        // The tail broke off and lies on the road (memo 48): hanging 1.6 m up it was a perch no zombie reached.
+        b.Box("헬기 꼬리 (부러짐)", 9f, 16f, Deck, Deck + .8f, 2.2f, 2.8f, b.Metal, "Metal");
         b.Box("헬기 날개", 0f, 12f, Deck + 2.3f, Deck + 2.4f, 2.3f, 2.7f, b.Metal, solid: false);
         b.PlayerStart(new Vector3(4f, Deck, -3f), 90f);
         b.Spot("Start", new Vector3(4f, Deck, -3f));
@@ -240,8 +247,9 @@ public static class CampaignMaps
         b.Box("주유소 지붕", 140f, 156f, 5f, 5.4f, 8f, 20f, b.Metal, "Metal");
         foreach (var (x, z) in new[] { (140f, 8f), (155.5f, 8f), (140f, 19.5f), (155.5f, 19.5f) })
             b.Box("주유소 기둥", x, x + .5f, 0f, 5f, z, z + .5f, b.Metal, "MetalPipe");
-        b.Box("주유기 1", 145f, 146f, 0f, 1.6f, 13f, 14f, b.Metal, "Metal");
-        b.Box("주유기 2", 150f, 151f, 0f, 1.6f, 13f, 14f, b.Metal, "Metal");
+        // Within a zombie's arm from the ground (memo 48).
+        b.Box("주유기 1", 145f, 146f, 0f, 1.5f, 13f, 14f, b.Metal, "Metal");
+        b.Box("주유기 2", 150f, 151f, 0f, 1.5f, 13f, 14f, b.Metal, "Metal");
         Room(b, "주유소 가게", 158f, 168f, 12f, 22f, 0f, 4f, Side.South, 161f, 163.5f);
         b.Door("주유소 가게 문", 161f, 163.5f, 0f, 2.4f, 12.05f, 12.25f, "Station", new Vector3(2.5f, 0f, 0f));
         b.Box("가게 계산대", 160f, 164f, 0f, 1f, 18.5f, 19.5f, b.Wood, "Wood");
@@ -297,7 +305,7 @@ public static class CampaignMaps
                  "길: 헬기 잔해 → 막힌 차들 → 뒤집힌 트럭 → 끊어진 끝에서 버스로 뛰어내리기(돌아갈 수 없음) → 주유소 → 톨게이트 → 초소 무전 → 버티기 → 지하철 입구.");
     }
 
-    [MenuItem("Tools/World/캠페인 회색 맵/3장 지하철")]
+    [MenuItem("Tools/World/캠페인 회색 맵/3장 지하철", priority = 13)]
     private static void Subway()
     {
         var b = GreyboxBuilder.Begin("Ch3_Subway", "3장 지하철");
@@ -314,7 +322,8 @@ public static class CampaignMaps
         b.Box("대합실 천장", -9f, 30f, 5f, 5.5f, -12.3f, 12.3f);
         b.Box("대합실 벽 남", -9f, 30f, 0f, 5f, -12.3f, -12f);
         b.Box("대합실 벽 북", -9f, 30f, 0f, 5f, 12f, 12.3f);
-        b.Box("들어온 셔터", -9f, -8.7f, 0f, 3.2f, -4f, 4f, b.Metal, "Metal");
+        // Up to the ceiling (memo 48): 3.2 m high against the map's end it was a ledge no zombie could get onto.
+        b.Box("들어온 셔터", -9f, -8.7f, 0f, 5f, -4f, 4f, b.Metal, "Metal");
         b.Box("개찰구 남", 15f, 15.4f, 0f, 1f, -11.7f, -1f, b.Metal, "Metal");
         b.Box("개찰구 북", 15f, 15.4f, 0f, 1f, 1f, 11.7f, b.Metal, "Metal");
         b.Box("매점", 5f, 8f, 0f, 2.4f, 7f, 11f);
@@ -379,7 +388,8 @@ public static class CampaignMaps
         Room(b, "정비창 사무실", 172f, 182f, 10f, 18f, 0f, 3f, Side.South, 175f, 177.5f);
         b.Door("사무실 문", 175f, 177.5f, 0f, 2.4f, 10.05f, 10.25f, "Office", new Vector3(2.5f, 0f, 0f));
         b.Spot("Office", new Vector3(177f, 0f, 14.5f));
-        b.Box("사무실 보급함", 179f, 181.5f, 0f, 1.8f, 16.6f, 17.6f, b.Metal, "MetalBox");
+        // Chest high (memo 48), within a zombie's arm.
+        b.Box("사무실 보급함", 179f, 181.5f, 0f, 1.4f, 16.6f, 17.6f, b.Metal, "MetalBox");
         b.Shop(new Vector3(180.2f, 0f, 15.9f), new Vector3(180.2f, 2.2f, 17.6f));
         b.Lamp(new Vector3(177f, 2.6f, 14f), 6f, 1.4f);
         b.Box("발전기", 205f, 209f, 0f, 2.5f, -6f, -2f, b.Metal, "Metal");
