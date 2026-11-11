@@ -42,8 +42,7 @@ public sealed class SettingsMenuView
         Texts.Get("settings.screen.window_mode.fullscreen"), Texts.Get("settings.screen.window_mode.borderless"),
         Texts.Get("settings.screen.window_mode.windowed"),
     };
-    private static string[] FrameLimitNames =>
-        GameSettings.FrameLimits.Select(limit => limit > 0 ? limit.ToString() : Texts.Get("settings.screen.frame_limit.none")).ToArray();
+    private static string FrameLimitName(int limit) => limit > 0 ? limit.ToString() : Texts.Get("settings.screen.frame_limit.none");
     private static int tab; // reopening shows the last tab
     private readonly RectTransform root;
     private const float ButtonWidth = 156f;
@@ -239,8 +238,9 @@ public sealed class SettingsMenuView
             s.vSync = i == 1;
             limitRow.gameObject.SetActive(!s.vSync); // vSync follows the monitor, so a cap means nothing
         });
-        limitRow = rows.Choice(Texts.Get("settings.screen.frame_limit"), FrameLimitNames, Array.IndexOf(GameSettings.FrameLimits, s.frameLimit),
-            i => s.frameLimit = GameSettings.FrameLimits[i]);
+        // The presets, or any cap typed in the row's box (0 for none).
+        limitRow = rows.NumberChoice(Texts.Get("settings.screen.frame_limit"), GameSettings.FrameLimits, FrameLimitName, s.frameLimit,
+            GameSettings.MinFrameLimit, GameSettings.MaxFrameLimit, limit => s.frameLimit = limit);
         limitRow.gameObject.SetActive(!s.vSync);
 
         rows.Header(Texts.Get("settings.screen.view"));
@@ -272,7 +272,7 @@ public sealed class SettingsMenuView
     {
         rows.Volume(Texts.Get("settings.hud.sway"), s.hudSway, v => s.hudSway = v);
         rows.Slider(Texts.Get("settings.hud.tilt"), 0f, GameSettings.MaxHudTilt, s.hudTilt, v => s.hudTilt = Mathf.Round(v * 20f) / 20f,
-            v => SettingsRows.Percent(Mathf.Round(v * 20f) / 20f));
+            v => SettingsRows.Percent(Mathf.Round(v * 20f) / 20f), shownScale: 100f);
         rows.Slider(Texts.Get("settings.hud.angle"), 0f, GameSettings.MaxHudAngle, s.hudAngle, v => s.hudAngle = Mathf.Round(v),
             v => Mathf.RoundToInt(v) + "°");
         rows.Choice(Texts.Get("settings.hud.follow_lean"), OffOn, s.hudFollowsLean ? 1 : 0, i => s.hudFollowsLean = i == 1);

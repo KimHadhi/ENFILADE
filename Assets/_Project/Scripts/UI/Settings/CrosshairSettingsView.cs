@@ -107,8 +107,9 @@ public sealed class CrosshairSettingsView
         switch (section)
         {
             case 1:
+                // Typed in the pixels it shows: the dot is drawn at twice its size.
                 rows.Slider(Texts.Get("crosshair.dot.size"), 0f, CrosshairSettings.MaxDotSize, s.dotSize, v => s.dotSize = Mathf.RoundToInt(v),
-                    v => v < .5f ? Texts.Get("settings.off") : Pixels(v * 2f), wholeNumbers: true);
+                    v => v < .5f ? Texts.Get("settings.off") : Pixels(v * 2f), wholeNumbers: true, shownScale: 2f);
                 rows.Choice(Texts.Get("crosshair.dot.shape"), SquareOrCircle, s.roundDot ? 1 : 0, i => s.roundDot = i == 1);
                 Slider outlineOpacity = null; // shown only while there is an outline, without rebuilding under the drag
                 rows.Slider(Texts.Get("crosshair.outline"), 0f, CrosshairSettings.MaxOutline, s.outline, v =>
@@ -117,7 +118,7 @@ public sealed class CrosshairSettingsView
                     outlineOpacity.transform.parent.gameObject.SetActive(v >= .5f);
                 }, v => v < .5f ? Texts.Get("settings.off") : Pixels(v), wholeNumbers: true);
                 outlineOpacity = rows.Slider(Texts.Get("crosshair.outline.opacity"), CrosshairSettings.MinOpacity, 1f, s.outlineOpacity,
-                    v => s.outlineOpacity = v, SettingsRows.Percent);
+                    v => s.outlineOpacity = v, SettingsRows.Percent, shownScale: 100f);
                 outlineOpacity.transform.parent.gameObject.SetActive(s.outline >= .5f);
                 break;
             case 2:
@@ -177,7 +178,8 @@ public sealed class CrosshairSettingsView
             Swatch(swatches, Pick);
             hex = HexInput(swatches, () => s.color, Pick);
         }
-        rows.Slider(Texts.Get("crosshair.color.opacity"), CrosshairSettings.MinOpacity, 1f, s.color.a, v => s.color.a = v, SettingsRows.Percent);
+        rows.Slider(Texts.Get("crosshair.color.opacity"), CrosshairSettings.MinOpacity, 1f, s.color.a, v => s.color.a = v, SettingsRows.Percent,
+            shownScale: 100f);
     }
 
     private static void Swatch(RectTransform row, Action<Color> picked)

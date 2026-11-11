@@ -33,24 +33,67 @@ public sealed class SettingsRows
     }
 
     public Slider Volume(string name, float value, Action<float> set) =>
-        Slider(name, 0f, 1f, value, set, Percent);
+        Slider(name, 0f, 1f, value, set, Percent, shownScale: 100f);
 
     public static string Percent(float value) => Mathf.RoundToInt(value * 100f) + "%";
 
+    /// <summary>
+    /// A slider with its value in a box at the end of the row (<see cref="SettingsWidgets.NumberBox"/>): drag the slider or
+    /// click the box and type the number. The box reads <paramref name="format"/> and is typed in the units it shows, the
+    /// slider's value times <paramref name="shownScale"/> (100 for a percentage, 2 for a dot drawn at twice its size).
+    /// A typed number is held to the slider's range and goes in as a drag would, through <paramref name="set"/>.
+    /// </summary>
     public Slider Slider(string name, float min, float max, float value, Action<float> set, Func<float, string> format,
-        bool wholeNumbers = false)
+        bool wholeNumbers = false, float shownScale = 1f)
     {
         var row = W.Row(parent, name);
-        TextMeshProUGUI readout = null;
-        var slider = W.Slider(row, min, max, value, v =>
+        TMP_InputField box = null;
+        Slider slider = null;
+        slider = W.Slider(row, min, max, value, v =>
         {
             set(v);
             Apply();
-            readout.text = format(v);
+            if (!box.isFocused) box.SetTextWithoutNotify(format(v));
         }, wholeNumbers);
-        readout = W.Label(row, format(value), 20f, W.Muted, TextAlignmentOptions.MidlineRight);
-        W.Size(readout, width: 96f);
+        float scale = Mathf.Approximately(shownScale, 0f) ? 1f : shownScale;
+        box = W.NumberBox(row, () => format(slider.value), () => W.Bare(slider.value * scale), typed =>
+        {
+            float v = Mathf.Clamp(typed / scale, min, max);
+            slider.value = wholeNumbers ? Mathf.Round(v) : v; // the slider's listener applies it and refreshes the box
+        });
         return slider;
+    }
+
+    /// <summary>
+    /// A row of preset numbers with a box at its end for any other (a frame cap of 75). The box shows
+    /// <paramref name="label"/> of the value ("무제한" for 0); a typed 0 picks <paramref name="presets"/>' 0 when it has one,
+    /// anything else is held to <paramref name="min"/>..<paramref name="max"/>. The option matching the value is lit, none
+    /// for a number between presets.
+    /// </summary>
+    public RectTransform NumberChoice(string name, int[] presets, Func<int, string> label, int value, int min, int max,
+        Action<int> set)
+    {
+        var row = W.Row(parent, name);
+        int current = value;
+        var options = new string[presets.Length];
+        for (int i = 0; i < presets.Length; i++) options[i] = label(presets[i]);
+        TMP_InputField box = null;
+        W.Choice(row, options, Array.IndexOf(presets, value), i =>
+        {
+            current = presets[i];
+            set(current);
+            Apply();
+            box.SetTextWithoutNotify(label(current));
+        }, out var show);
+        box = W.NumberBox(row, () => label(current), () => current.ToString(), typed =>
+        {
+            int number = Mathf.RoundToInt(typed);
+            current = number <= 0 && Array.IndexOf(presets, 0) >= 0 ? 0 : Mathf.Clamp(number, min, max);
+            show(Array.IndexOf(presets, current));
+            set(current);
+            Apply();
+        });
+        return row;
     }
 
     public RectTransform Choice(string name, string[] options, int selected, Action<int> set)

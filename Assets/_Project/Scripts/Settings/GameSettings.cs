@@ -91,6 +91,8 @@ public sealed class GameSettings
     public const float MaxHudTilt = 2f, MaxHudAngle = 40f;
     /// <summary>Frame caps offered in the menu; 0 is unlimited.</summary>
     public static readonly int[] FrameLimits = { 0, 30, 60, 120, 144, 165, 240 };
+    /// <summary>The least and most a cap typed into the frame limit's box can be (fps).</summary>
+    public const int MinFrameLimit = 20, MaxFrameLimit = 1000;
 
     /// <summary>The name this player goes by.</summary>
     public string DisplayName => string.IsNullOrWhiteSpace(nickname) ? Environment.UserName : nickname.Trim();
@@ -193,7 +195,7 @@ public sealed class GameSettings
         hudAngle = Mathf.Clamp(hudAngle, 0f, MaxHudAngle);
         if (damageNumbers < DamageNumberMode.Off || damageNumbers > DamageNumberMode.Each) damageNumbers = DamageNumberMode.Stacked;
         fieldOfView = Mathf.Clamp(fieldOfView, MinFieldOfView, MaxFieldOfView);
-        frameLimit = Mathf.Max(0, frameLimit);
+        frameLimit = frameLimit <= 0 ? 0 : Mathf.Clamp(frameLimit, MinFrameLimit, MaxFrameLimit);
         monitorName ??= "";
         keyBindings ??= "";
         outfits ??= new List<string>();

@@ -43,13 +43,26 @@ public sealed class SettingsMenu : MonoBehaviour
 
     private void Update()
     {
+        // Whether a box was being typed in when this ran last frame: the box may already have taken this frame's Esc.
+        bool wasTyping = typing;
+        typing = TypingInField();
         var keyboard = Keyboard.current;
         if (keyboard == null || !keyboard.escapeKey.wasPressedThisFrame) return;
+        // Esc in a box (a number, a colour, a share code) only leaves it with the old value; the next Esc closes the menu.
+        if (IsOpen && (typing || wasTyping)) return;
         // Esc closes the developer console, the shop, the gun's customize menu or the perk cards first.
         if (DevConsole.TakesKeyboard || ShopMenu.TakesKeyboard || GunCustomizeMenu.TakesKeyboard || PerkCardScreen.TakesKeyboard
             || MainMenuScreen.TakesEscape) return;
         if (IsOpen) Close();
         else if (!ChatTookEscape()) Open();
+    }
+
+    private bool typing;
+
+    private static bool TypingInField()
+    {
+        var selected = EventSystem.current != null ? EventSystem.current.currentSelectedGameObject : null;
+        return selected != null && selected.TryGetComponent(out TMPro.TMP_InputField field) && field.isFocused;
     }
 
     private bool ChatTookEscape()

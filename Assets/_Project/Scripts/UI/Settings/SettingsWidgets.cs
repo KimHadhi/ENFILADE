@@ -128,7 +128,14 @@ public static class SettingsWidgets
     }
 
     /// <summary>Side-by-side options; the chosen one is filled with the accent colour.</summary>
-    public static RectTransform Choice(Transform parent, string[] options, int selected, Action<int> changed)
+    public static RectTransform Choice(Transform parent, string[] options, int selected, Action<int> changed) =>
+        Choice(parent, options, selected, changed, out _);
+
+    /// <summary>
+    /// The same, handing back <paramref name="show"/>, which lights another option without calling
+    /// <paramref name="changed"/> (-1 lights none): a number typed in the row's box may match a preset or none.
+    /// </summary>
+    public static RectTransform Choice(Transform parent, string[] options, int selected, Action<int> changed, out Action<int> show)
     {
         var root = Rect("Choice", parent);
         Size(root, height: 34f, flexibleWidth: 1f, flexibleHeight: 0f);
@@ -161,6 +168,7 @@ public static class SettingsWidgets
             button.onClick.AddListener(() => { Select(index); changed(index); });
         }
         Select(selected);
+        show = Select;
         return root;
     }
 
@@ -331,9 +339,65 @@ public static class SettingsWidgets
         var input = root.gameObject.AddComponent<TMP_InputField>();
         input.textViewport = viewport; input.textComponent = text; input.targetGraphic = image;
         input.fontAsset = text.font; input.pointSize = text.fontSize;
+        // TMP's own caret is dark grey, which vanished on these dark fields.
+        input.customCaretColor = true; input.caretColor = Text; input.caretWidth = 2;
+        input.selectionColor = new Color(Accent.r, Accent.g, Accent.b, .45f);
         input.SetTextWithoutNotify(value);
         input.onValueChanged.AddListener(v => changed(v));
         return input;
+    }
+
+    /// <summary>
+    /// A setting's value at the end of its row, as a box to type in (user, 2026-11-11: "슬라이더 말고 직접 숫자 칸에
+    /// 입력"). It reads like the readout it replaces (<paramref name="shown"/>: "80%", "끔") until clicked, then holds the
+    /// bare number (<paramref name="editing"/>: "80") with all of it selected, so typing replaces it. Enter or clicking
+    /// away hands the number read to <paramref name="typed"/>, which clamps and applies it; Esc keeps the old value. Either
+    /// way the box reads <paramref name="shown"/> again after.
+    /// </summary>
+    public static TMP_InputField NumberBox(Transform parent, Func<string> shown, Func<string> editing, Action<float> typed)
+    {
+        var field = TextInput(parent, shown(), _ => { });
+        Size(field, width: 104f, height: 30f, flexibleWidth: 0f);
+        field.characterLimit = 12;
+        field.onFocusSelectAll = true;
+        var text = (TextMeshProUGUI)field.textComponent;
+        text.alignment = TextAlignmentOptions.MidlineRight;
+        text.fontSize = field.pointSize = 20f;
+        text.color = Muted;
+        // Before the field takes focus, so the bare number is what gets selected and what Esc goes back to.
+        field.onSelect.AddListener(_ =>
+        {
+            field.SetTextWithoutNotify(editing());
+            text.color = Text;
+        });
+        field.onEndEdit.AddListener(value =>
+        {
+            text.color = Muted;
+            if (TryReadNumber(value, out float number)) typed(number);
+            field.SetTextWithoutNotify(shown());
+        });
+        return field;
+    }
+
+    /// <summary>The bare number a box shows while it is typed in: up to three decimals, none when it is whole.</summary>
+    public static string Bare(float value) => value.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture);
+
+    /// <summary>
+    /// Reads a typed number leniently: units and words around it ("80%", "1.5x") are dropped, a comma counts as the decimal
+    /// point and full-width digits from an IME as plain ones. False when no number is left.
+    /// </summary>
+    public static bool TryReadNumber(string text, out float number)
+    {
+        number = 0f;
+        if (string.IsNullOrWhiteSpace(text)) return false;
+        var clean = new System.Text.StringBuilder();
+        foreach (char raw in text)
+        {
+            char c = raw >= '０' && raw <= '９' ? (char)('0' + (raw - '０')) : raw == '．' || raw == ',' ? '.' : raw;
+            if ((c >= '0' && c <= '9') || c == '.' || (c == '-' && clean.Length == 0)) clean.Append(c);
+        }
+        return float.TryParse(clean.ToString(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture,
+            out number) && !float.IsNaN(number) && !float.IsInfinity(number);
     }
 
     public static Button ActionButton(Transform parent, string text, bool primary, Action clicked)
