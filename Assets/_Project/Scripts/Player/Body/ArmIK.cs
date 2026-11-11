@@ -23,6 +23,8 @@ internal sealed class ArmIK
 
     /// <summary>The hand takes one of our gun-holding shapes (HandGrip.Wear), going to another as hold falls.</summary>
     public void WearShape(HandGrip.Shape on, HandGrip.Shape off, float hold, float weight) => grip.Wear(on, off, hold, weight);
+    /// <summary>As WearShape, with a gun's own shape (GunGrips) held instead of a shared one.</summary>
+    public void WearShape(GunGrips.Grip on, HandGrip.Shape off, float hold, float weight) => grip.WearCustom(on, off, hold, weight);
     public float Reach => Vector3.Distance(upper.position, lower.position) + Vector3.Distance(lower.position, hand.position);
 
     private ArmIK(Transform shoulder, Transform upper, Transform lower, Transform hand, Quaternion handFromFrame, float palmLength, HandGrip grip)

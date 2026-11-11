@@ -503,6 +503,13 @@ internal sealed class HandGrip
     };
 
     private readonly Quaternion[][] shapePoses = new Quaternion[ShapeAngles.Length][];
+    // A gun's own shape (GunGrips), worked out again whenever the tuner changes it.
+    private Quaternion[] customPose;
+    private GunGrips.Grip customFor;
+    private int customVersion;
+
+    /// <summary>A shared shape's angles (degrees; index, middle, ring, little, thumb; base, middle, tip): the Grip Tuner starts from them.</summary>
+    public static Vector3[] AnglesOf(Shape shape) => (Vector3[])ShapeAngles[(int)shape].Clone();
 
     /// <summary>
     /// Wears shape <paramref name="on"/>, going over to <paramref name="off"/> as <paramref name="hold"/> falls from 1 to 0,
@@ -511,8 +518,24 @@ internal sealed class HandGrip
     public void Wear(Shape on, Shape off, float hold, float weight)
     {
         if (weight <= 0f) return;
-        var held = PoseOf(on);
-        var away = PoseOf(off);
+        Blend(PoseOf(on), PoseOf(off), hold, weight);
+    }
+
+    /// <summary>As Wear, with a gun's own shape (GunGrips: the Grip Tuner's angles) held instead of a shared one.</summary>
+    public void WearCustom(GunGrips.Grip on, Shape off, float hold, float weight)
+    {
+        if (weight <= 0f || on == null) return;
+        if (customPose == null || customFor != on || customVersion != on.Version)
+        {
+            customPose = SolveShape(on.Bends, on.ThumbUnder);
+            customFor = on;
+            customVersion = on.Version;
+        }
+        Blend(customPose, PoseOf(off), hold, weight);
+    }
+
+    private void Blend(Quaternion[] held, Quaternion[] away, float hold, float weight)
+    {
         if (held == null || away == null) return;
         hold = Mathf.Clamp01(hold);
         for (int f = 0; f < fingers.Length; f++)
@@ -531,6 +554,14 @@ internal sealed class HandGrip
         int which = (int)shape;
         if (which < 0 || which >= shapePoses.Length) return null;
         if (shapePoses[which] != null) return shapePoses[which];
+        return shapePoses[which] = SolveShape(ShapeAngles[which], 0f);
+    }
+
+    // The joint turns for a set of angles on this hand: each finger straightened from the open hand along the way it points,
+    // then bent by its angles about the hand's own hinge; the thumb first turned thumbUnder degrees under the palm (about the
+    // line of the fingers, as PrepareThumb turns it), then bent from there. Null if the hand lacks a joint.
+    private Quaternion[] SolveShape(Vector3[] angles, float thumbUnder)
+    {
         var pose = new Quaternion[fingers.Length * 3];
         var saved = new Quaternion[fingers.Length * 3];
         foreach (var finger in fingers)
@@ -543,10 +574,10 @@ internal sealed class HandGrip
                 fingers[f].Bones[i].localRotation = fingers[f].Rest[i];
             }
         Vector3 palm = PalmFacing.normalized, forward = FingersForward.normalized;
-        var angles = ShapeAngles[which];
         for (int f = 0; f < fingers.Length; f++)
         {
             var finger = fingers[f];
+            if (finger.Thumb && Mathf.Abs(thumbUnder) > .01f) TurnThumbUnder(thumbUnder, forward, palm);
             // As Fit opens a finger: along the way it points from the palm; a thumb keeps its own turn and opposition.
             Vector3 open = finger.Thumb ? finger.Bones[0].TransformDirection(finger.Axes[0]).normalized
                 : Vector3.ProjectOnPlane(hand.TransformDirection(finger.OpenInHand), palm).normalized;
@@ -567,8 +598,20 @@ internal sealed class HandGrip
         }
         for (int f = 0; f < fingers.Length; f++)
             for (int i = 0; i < 3; i++) fingers[f].Bones[i].localRotation = saved[f * 3 + i];
-        shapePoses[which] = pose;
         return pose;
+    }
+
+    // Turns the thumb's base under the palm by degrees (negative: out), about the axis PrepareThumb uses: square to the
+    // thumb's sideways reach and the way the palm faces. Measured from this hand, so the same number fits any hand.
+    private void TurnThumbUnder(float degrees, Vector3 forward, Vector3 palm)
+    {
+        if (thumb == null) return;
+        Transform root = thumb.Bones[0];
+        Vector3 apart = Vector3.ProjectOnPlane(thumb.Bones[1].position - root.position, forward);
+        Vector3 side = Vector3.ProjectOnPlane(apart, palm);
+        if (side.sqrMagnitude < 1e-8f) return;
+        Vector3 axis = Vector3.Cross(side, palm).normalized;
+        root.rotation = Quaternion.AngleAxis(degrees, axis) * root.rotation;
     }
 
     private void SolvePose(Contact contact, Vector3 forward, Vector3 palm, float clearance, Quaternion[] pose)

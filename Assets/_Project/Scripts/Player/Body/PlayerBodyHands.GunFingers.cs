@@ -9,6 +9,8 @@ using UnityEngine;
 /// 2026-11-09: "손가락이 자꾸 문제가 생기는 거 보니 … 우리 식으로"). A palm FPSAF left inside the gun is still pushed back out
 /// along the way it faces until its skin rests on the gun's real surface (GunSurface). Each hand holds by how far it is on
 /// its grip (FPSBody.GripHold): a reload's hand goes over to the loose shape as it leaves and back as it returns.
+/// A gun may carry its own shape for either hand (GunGrips, set with the Grip Tuner): the shooting hand always, the support
+/// hand while it is on the gun's own body (a grip attachment keeps its shared shape).
 /// </summary>
 public sealed partial class PlayerBodyHands
 {
@@ -18,6 +20,21 @@ public sealed partial class PlayerBodyHands
     private readonly float[] gunWrap = new float[2];
     private readonly float[] gunHold = { 1f, 1f };
     private readonly HandGrip.Shape[] gunShape = { HandGrip.Shape.Cradle, HandGrip.Shape.Trigger };
+    // The gun's own shape per hand (GunGrips), or null for the shared one; kept like gunShape through the ease out.
+    private readonly GunGrips.Grip[] gunCustom = new GunGrips.Grip[2];
+    private WeaponData namedGun;
+    private string gunName;
+
+    // The held gun's table name, read once per gun (Object.name makes a new string on every call).
+    private string GunName(WeaponData gun)
+    {
+        if (gun != namedGun)
+        {
+            namedGun = gun;
+            gunName = gun != null ? gun.name : null;
+        }
+        return gunName;
+    }
 
     private void CurlGunFingers(ArmIK arm, bool isLeft, float dt)
     {
@@ -30,6 +47,9 @@ public sealed partial class PlayerBodyHands
         {
             gunHold[side] = isLeft ? Mathf.Max(gunBody.GripHold(true), OnAttachedGrip) : gunBody.GripHold(false);
             gunShape[side] = ShapeFor(gunBody, isLeft);
+            string gun = GunName(weapons != null ? weapons.EquippedData : null);
+            bool ownBody = !isLeft || gunBody.HeldGripKind == GunAttachments.Kind.None;
+            gunCustom[side] = gun != null && ownBody && GunGrips.TryGet(gun, isLeft, out var custom) ? custom : null;
         }
         gunWrap[side] = Mathf.MoveTowards(gunWrap[side], gunBody != null ? 1f : 0f, dt / blendTime);
         float weight = gunWrap[side] * weights[(int)Hold.Gun] * (isLeft ? 1f - leftOffGun : 1f) * gunFingerWrap;
@@ -37,7 +57,8 @@ public sealed partial class PlayerBodyHands
 
         var surface = gunBody != null ? gunBody.HeldSurface : null;
         if (surface != null && !surface.Empty) PalmOutOfGun(arm, surface, weight * gunHold[side]);
-        arm.WearShape(gunShape[side], HandGrip.Shape.Grab, gunHold[side], weight);
+        if (gunCustom[side] != null) arm.WearShape(gunCustom[side], HandGrip.Shape.Grab, gunHold[side], weight);
+        else arm.WearShape(gunShape[side], HandGrip.Shape.Grab, gunHold[side], weight);
     }
 
     // The shape a hand holds this gun with: the shooting hand always round the pistol grip; the support hand by what it
