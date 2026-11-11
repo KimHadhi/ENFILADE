@@ -163,23 +163,21 @@ public static class CombatUIAssets
     }
 
     /// <summary>
-    /// Ellipsis when TMP can find "…" for this text's font and style, otherwise Truncate. TMP would switch to Truncate
-    /// anyway, with a console warning per text: the Korean UI fonts have no ellipsis, and bold text in a font without a
-    /// bold typeface only searches fallbacks, never the regular glyphs. Call after setting the font and style.
+    /// Ellipsis when the text's own font has "…" for its style, otherwise Truncate. TMP would switch to Truncate anyway,
+    /// with a console warning per text: the Korean UI fonts (Pretendard ExtraBold, the score font) have no ellipsis.
+    /// This once also asked the fallbacks and TMP's default font, as TMP does, and still the console filled with
+    /// "The character used for Ellipsis is not available in font asset [PRETENDARD-8EXTRABOLD SDF]" in the main menu
+    /// (2026-11-12, the wardrobe's body page): TMP looks again when it draws, with what it has then, and found less. Now
+    /// only the font's own glyphs count, the first place TMP looks, so a text set to Ellipsis always finds it. Call after
+    /// setting the font and style.
     /// </summary>
     public static TextOverflowModes ClippedOverflow(TMP_Text text)
     {
         if (text == null || text.font == null) return TextOverflowModes.Truncate;
         FontStyles style = text.fontStyle;
         FontWeight weight = (style & FontStyles.Bold) == FontStyles.Bold ? FontWeight.Bold : text.fontWeight;
-        bool CanDraw(TMP_FontAsset font) => font != null
-            && TMP_FontAssetUtilities.GetCharacterFromFontAsset(0x2026, font, true, style, weight, out _) != null;
-        if (CanDraw(text.font) || CanDraw(TMP_Settings.defaultFontAsset)) return TextOverflowModes.Ellipsis;
-        var fallbacks = TMP_Settings.fallbackFontAssets;
-        if (fallbacks != null)
-            foreach (var font in fallbacks)
-                if (CanDraw(font)) return TextOverflowModes.Ellipsis;
-        return TextOverflowModes.Truncate;
+        return TMP_FontAssetUtilities.GetCharacterFromFontAsset(0x2026, text.font, false, style, weight, out _) != null
+            ? TextOverflowModes.Ellipsis : TextOverflowModes.Truncate;
     }
 
     public static TMP_FontAsset ResolveFont(TMP_FontAsset preferred)

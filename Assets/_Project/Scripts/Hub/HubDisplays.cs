@@ -58,7 +58,8 @@ public static class HubDisplays
         label.fontStyle = FontStyles.Bold;
         label.alignment = alignment;
         label.textWrappingMode = TextWrappingModes.NoWrap;
-        label.overflowMode = TextOverflowModes.Ellipsis;
+        // "…" only where the font has it: the score font has none, and TMP warned once per label (CombatUIAssets).
+        label.overflowMode = CombatUIAssets.ClippedOverflow(label);
         label.raycastTarget = false;
         return label;
     }
