@@ -74,7 +74,7 @@
 | 피해량, 발사 방식, RPM, 탄창·예비탄, 장전 시간, 탄퍼짐, ADS 배율, 몸의 손이 잡는 위치 | [Weapons.csv](../Resources/Tables/Weapons.csv)의 해당 무기 행 |
 | 조준 반동, 총 모델 추적·high-ready 반응, 무기 사운드·아이콘 | [무기 데이터 폴더](../Data/Combat/Weapons) → 해당 `WeaponData`의 Recoil Feel / Aim Tracking Feel / High-ready 항목 |
 | 무기별 총성, 화면 킥, 총구·탄피, 총알 체간 피해 | `WeaponData`의 Feel 및 Feel → Target Reaction 항목 |
-| 전체 타격감 켜기·끄기, 히트마커, 점수, 피격·처치 효과 | [GunFeel.asset](../Resources/Combat/GunFeel.asset) |
+| 전체 타격감 켜기·끄기, 히트마커, 점수, 피격·처치 효과 | [GunFeel.asset](../Resources/Combat/GunFeel.asset) (히트마커 '깔끔' 모양의 수치는 [HitMarkers.csv](../Resources/Tables/HitMarkers.csv), 모양 선택은 설정 → HUD → 히트 마커) |
 | 플레이어 피격 아크·혈흔·쉐이크·25% 빈사 박동 | [PlayerDamageFeedback.asset](../Resources/Combat/PlayerDamageFeedback.asset), [피격 효과 안내](PlayerDamageFeedbackGuide.md) |
 | 방어·밀치기 소리, 반격, 흐트러짐 표시, 피해 팝업·HP 손실 표시 | [Feedback.asset](../Resources/Combat/Feedback.asset) |
 | 시작 무기와 시작 슬롯 | 플레이어의 `PlayerWeaponSlots` → Slot 1~4 / Starting Slot |

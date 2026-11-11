@@ -6,6 +6,9 @@ using UnityEngine;
 /// <summary>How damage numbers show: none, one running total per target, or one number per hit.</summary>
 public enum DamageNumberMode { Off, Stacked, Each }
 
+/// <summary>How the hit marker looks (HitMarkerHUD): thin lines that pop and fade, or the earlier thick ticks that slide in.</summary>
+public enum HitMarkerStyle { Clean, Bold }
+
 /// <summary>How the game window covers the monitor (DisplaySettings).</summary>
 public enum WindowMode { Fullscreen, Borderless, Windowed }
 
@@ -59,6 +62,10 @@ public sealed class GameSettings
     public bool hudBoards;
     [Tooltip("Damage numbers: none, one running total per target (default), or one number per hit (DamagePopupManager).")]
     public DamageNumberMode damageNumbers = DamageNumberMode.Stacked;
+    [Tooltip("Hit marker look: Clean (four thin lines that pop out and fade, after PAYDAY 3, numbers in HitMarkers.csv) or " +
+        "Bold (the earlier thick outlined ticks that hold wide and slide in, numbers in GunFeel). The headshot's star, sparks " +
+        "and flare and the posture break's burst show with either.")]
+    public HitMarkerStyle hitMarkerStyle = HitMarkerStyle.Clean;
     [Tooltip("Horizontal field of view in degrees, measured at 16:9. Wider screens see more at the sides.")]
     public float fieldOfView = 90f;
     [Tooltip("Show the player's own hair and head in first person, cut only where the camera sits inside them.")]
@@ -171,7 +178,7 @@ public sealed class GameSettings
                 break;
             case SettingsGroup.Hud:
                 s.hudSway = d.hudSway; s.hudTilt = d.hudTilt; s.hudAngle = d.hudAngle; s.hudFollowsLean = d.hudFollowsLean;
-                s.hudBoards = d.hudBoards; s.damageNumbers = d.damageNumbers;
+                s.hudBoards = d.hudBoards; s.damageNumbers = d.damageNumbers; s.hitMarkerStyle = d.hitMarkerStyle;
                 break;
             case SettingsGroup.Crosshair:
                 s.steadyCrosshair = d.steadyCrosshair;
@@ -223,6 +230,7 @@ public sealed class GameSettings
         hudTilt = Mathf.Clamp(hudTilt, 0f, MaxHudTilt);
         hudAngle = Mathf.Clamp(hudAngle, 0f, MaxHudAngle);
         if (damageNumbers < DamageNumberMode.Off || damageNumbers > DamageNumberMode.Each) damageNumbers = DamageNumberMode.Stacked;
+        if (hitMarkerStyle < HitMarkerStyle.Clean || hitMarkerStyle > HitMarkerStyle.Bold) hitMarkerStyle = HitMarkerStyle.Clean;
         fieldOfView = Mathf.Clamp(fieldOfView, MinFieldOfView, MaxFieldOfView);
         frameLimit = frameLimit <= 0 ? 0 : Mathf.Clamp(frameLimit, MinFrameLimit, MaxFrameLimit);
         monitorName ??= "";

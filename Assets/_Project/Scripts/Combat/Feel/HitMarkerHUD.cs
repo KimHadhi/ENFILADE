@@ -4,7 +4,12 @@ using UnityEngine.UI;
 public enum HitMarkerKind { Body, Head, BodyKill, HeadKill, Blocked }
 
 /// <summary>
-/// Crosshair hit confirmation. Four diagonal ticks around the centre:
+/// Crosshair hit confirmation, in the look the player picks (Settings → HUD → 히트 마커, <see cref="HitMarkerStyle"/>).
+/// Clean, the default (the user's pick of PAYDAY 3's marker, 2026-11-12): four hair lines at 45° that start a little big,
+/// snap to rest, hold a moment and fade sliding a few pixels outward, in .2 s; white, a pale gold headshot, a red kill,
+/// a quiet grey for no effect, numbers in HitMarkers.csv (<see cref="CleanLook"/>, <see cref="LayoutClean"/>).
+/// Bold, the earlier look, described below, numbers in GunFeel. Both get the headshot's glint, burst and flare, the
+/// posture break's burst and the pierced tails. Bold: four diagonal ticks around the centre:
 /// body hit = white; headshot = gold, a little bolder and quicker, with a glowing eight-point glint, a bloom, a white and a gold ring and twelve sparks
 /// banging out at the aim point and gone within .2 s, and a lens's flare across it, thin: a streak of light, a shorter
 /// one up and down it and four ghosts along a slant (head kills keep
@@ -22,6 +27,59 @@ public enum HitMarkerKind { Body, Head, BodyKill, HeadKill, Blocked }
 [DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.HitMarkers)]
 public sealed class HitMarkerHUD : MonoBehaviour
 {
+    public const string TableName = "HitMarkers", CleanRow = "Clean";
+
+    /// <summary>
+    /// The clean marker's numbers: HitMarkers.csv, rows Clean.* (1920x1080 canvas units). Measured off the user's PAYDAY 3
+    /// screenshot (2026-11-12, a bullseye in the shooting range): four strokes at exactly 45°, the inner end about 13 px
+    /// and the outer about 34 px from the aim point at 1080p, about 2 px thick, a pale gold. The motion is not in a still,
+    /// so it follows the user's words for it ("간결하고 심플하며 애니메이션도 깔끔해. 시야를 너무 가리지도 않으면서 타격감도
+    /// 있고") and their rule that a hit bangs and is over (.2 s).
+    /// </summary>
+    [System.Serializable]
+    public sealed class CleanLook
+    {
+        [Tooltip("Distance from the aim point to each line's inner end at rest (px).")]
+        public float gap = 13f;
+        [Tooltip("Line length at rest (px), before the damage sizing and each kind's multiplier.")]
+        public float length = 21f;
+        [Tooltip("How thick each line looks (px).")]
+        public float thickness = 2f;
+        [Tooltip("A soft dark edge under each line, so a white line still reads on a bright wall or sky: its opacity at full " +
+            "strength (0 turns it off). It fades faster than the line, so a fading line doesn't turn grey.")]
+        public float edgeAlpha = .35f;
+        [Tooltip("How far the dark edge reaches past the line on each side and at the ends (px).")]
+        public float edgeWidth = 1f;
+        [Tooltip("A fresh marker starts this much bigger (.3 = 30%) and snaps back over Pop Seconds, so every hit of a burst " +
+            "lands on its own.")]
+        public float pop = .3f;
+        [Tooltip("Seconds the pop takes to settle.")]
+        public float popSeconds = .06f;
+        [Tooltip("Seconds the marker shows at full strength, the pop included, before it fades.")]
+        public float holdSeconds = .07f;
+        [Tooltip("Seconds it then takes to fade out.")]
+        public float fadeSeconds = .13f;
+        [Tooltip("How far the lines slide outward while they fade (px).")]
+        public float drift = 3f;
+        [Tooltip("Seconds a coloured marker (headshot, kill) takes to turn from white to its colour: a white-hot first frame " +
+            "or two. 0 turns it off.")]
+        public float flashSeconds = .03f;
+        [Tooltip("Body and head lines grow with the share of the target's health the hit took (GunFeel's Marker Full " +
+            "Damage): a graze at Small Scale, that share or more at Large Scale. Kills and no-effect hits keep their size.")]
+        public float smallScale = .9f, largeScale = 1.15f;
+        public Color bodyColor = Color.white;
+        [Tooltip("The pale gold PAYDAY 3 draws on a bullseye, softer than the Bold marker's gold.")]
+        public Color headColor = new Color(.96f, .86f, .43f);
+        public Color killColor = new Color(1f, .23f, .19f);
+        public Color blockedColor = new Color(.62f, .65f, .69f);
+        [Tooltip("A headshot's lines are this much longer, and start this much bigger in place of Pop.")]
+        public float headLength = 1.12f, headPop = .4f;
+        [Tooltip("A kill's lines: longer, thicker, a bigger pop, and a little more time to hold and fade so the kill reads.")]
+        public float killLength = 1.3f, killThickness = 1.25f, killPop = .45f, killHoldSeconds = .1f, killFadeSeconds = .18f;
+        [Tooltip("A hit that did nothing (guard, parry, invulnerable): shorter, thinner and quieter, with no pop.")]
+        public float blockedLength = .75f, blockedThickness = .8f, blockedAlpha = .8f;
+    }
+
     // Between a tick's outer end and its pierced tail (canvas units).
     private const float TailGap = 1.5f;
     private static HitMarkerHUD instance;
@@ -35,7 +93,13 @@ public sealed class HitMarkerHUD : MonoBehaviour
     private readonly Image[] ticks = new Image[4], tails = new Image[4], tailEnds = new Image[4], shards = new Image[4],
         sparks = new Image[SparkCount];
     private readonly Graphic[] ghosts = new Graphic[Ghosts.Length];
-    private RectTransform root, glintRoot, breakRoot, burstRoot, flareRoot;
+    // The clean marker's lines, the soft dark edges drawn under them, and their pierced tails.
+    private readonly RawImage[] cleanLines = new RawImage[4], cleanEdges = new RawImage[4], cleanTails = new RawImage[4],
+        cleanTailEnds = new RawImage[4];
+    private readonly CleanLook look = new CleanLook();
+    private RectTransform root, cleanRoot, glintRoot, breakRoot, burstRoot, flareRoot;
+    // The look the showing marker started in: a change in the settings takes effect from the next hit.
+    private HitMarkerStyle style;
     private RawImage ring, glintGlow, glintGlowCross, glint, glintCross, glintCore, breakRing, burstRing, burstFlashRing, burstBloom, flareStreak, flareRise;
     private HitMarkerKind kind;
     private bool pierced;
@@ -79,12 +143,24 @@ public sealed class HitMarkerHUD : MonoBehaviour
         if (instance != null && instance != this) { Destroy(gameObject); return; }
         instance = this;
         FeelUI.SetupOverlay(gameObject, 26);
+        GameTables.BindNested(TableName, CleanRow, this, look);
         root = FeelUI.Rect("Marker", transform);
         ring = FeelUI.Rect("Ring", root).gameObject.AddComponent<RawImage>();
         ring.texture = FeelAssets.Ring; ring.raycastTarget = false;
         for (int i = 0; i < 4; i++) ticks[i] = Tick("Tick " + i, root);
         for (int i = 0; i < 4; i++) { tails[i] = Tail("Pierced Tail " + i, root); tailEnds[i] = Tail("Pierced Tail End " + i, root); }
         root.gameObject.SetActive(false);
+
+        // The clean marker, in the same place under the headshot layers: the dark edges first so every line covers them.
+        cleanRoot = FeelUI.Rect("Clean Marker", transform);
+        for (int i = 0; i < 4; i++) cleanEdges[i] = HairLine("Edge " + i, cleanRoot);
+        for (int i = 0; i < 4; i++) cleanLines[i] = HairLine("Line " + i, cleanRoot);
+        for (int i = 0; i < 4; i++)
+        {
+            cleanTails[i] = HairLine("Pierced Tail " + i, cleanRoot);
+            cleanTailEnds[i] = HairLine("Pierced Tail End " + i, cleanRoot);
+        }
+        cleanRoot.gameObject.SetActive(false);
 
         // Its own root, so the glint can stay longer than the ticks: an empty turning frame, its layers stretched over it,
         // bottom to top: the glow, the star blurred and added onto the burst's light (the turned second star gets a smaller
@@ -155,6 +231,14 @@ public sealed class HitMarkerHUD : MonoBehaviour
         return image;
     }
 
+    // One of the clean marker's lines: a soft-edged texture rather than a plain quad, which steps at 45° and two pixels.
+    private static RawImage HairLine(string name, Transform parent)
+    {
+        var image = FeelUI.Rect(name, parent).gameObject.AddComponent<RawImage>();
+        image.texture = FeelAssets.HairLine; image.raycastTarget = false;
+        return image;
+    }
+
     // One layer of the glint, stretched over its root and turned and scaled within it. material null: alpha blended.
     private static RawImage GlintLayer(string name, Transform parent, Texture texture, float turn, float scale, Material material)
     {
@@ -187,14 +271,29 @@ public sealed class HitMarkerHUD : MonoBehaviour
         kind = next; age = 0f;
         pierced = throughSomething;
         var settings = GunFeelSettings.Instance;
-        scale = IsKill(next) || next == HitMarkerKind.Blocked ? 1f
-            : Mathf.Lerp(settings.markerSmallScale, settings.markerLargeScale, Mathf.Clamp01(share / settings.markerFullDamage));
-        // A headshot's ticks run through their frames faster, so the bang is short; kills keep their own time.
-        pace = next == HitMarkerKind.Head ? Mathf.Max(1f, settings.headMarkerPace) : 1f;
-        int frames = Mathf.Max(1, settings.markerHoldFrames + settings.markerShrinkFrames + settings.markerFadeFrames);
-        lifetime = frames / settings.markerFrameRate / pace;
-        root.gameObject.SetActive(true);
-        Layout(settings);
+        style = GameSettings.Current.hitMarkerStyle;
+        bool clean = style == HitMarkerStyle.Clean, sized = !IsKill(next) && next != HitMarkerKind.Blocked;
+        float hurt = Mathf.Clamp01(share / settings.markerFullDamage);
+        // Only one look shows at a time; the other may still be up from before the setting changed.
+        (clean ? root : cleanRoot).gameObject.SetActive(false);
+        if (clean)
+        {
+            scale = sized ? Mathf.Lerp(look.smallScale, look.largeScale, hurt) : 1f;
+            pace = 1f;
+            lifetime = Mathf.Max(.02f, CleanHold() + CleanFade());
+            cleanRoot.gameObject.SetActive(true);
+            LayoutClean(settings);
+        }
+        else
+        {
+            scale = sized ? Mathf.Lerp(settings.markerSmallScale, settings.markerLargeScale, hurt) : 1f;
+            // A headshot's ticks run through their frames faster, so the bang is short; kills keep their own time.
+            pace = next == HitMarkerKind.Head ? Mathf.Max(1f, settings.headMarkerPace) : 1f;
+            int frames = Mathf.Max(1, settings.markerHoldFrames + settings.markerShrinkFrames + settings.markerFadeFrames);
+            lifetime = frames / settings.markerFrameRate / pace;
+            root.gameObject.SetActive(true);
+            Layout(settings);
+        }
         bool head = next == HitMarkerKind.Head || next == HitMarkerKind.HeadKill;
         if (head && settings.headGlintSize > 0f)
         {
@@ -219,10 +318,13 @@ public sealed class HitMarkerHUD : MonoBehaviour
     private void LateUpdate()
     {
         var settings = GunFeelSettings.Instance;
-        if (root.gameObject.activeSelf)
+        bool clean = style == HitMarkerStyle.Clean;
+        var marker = clean ? cleanRoot : root;
+        if (marker.gameObject.activeSelf)
         {
             age += Time.unscaledDeltaTime;
-            if (age >= lifetime) root.gameObject.SetActive(false);
+            if (age >= lifetime) marker.gameObject.SetActive(false);
+            else if (clean) LayoutClean(settings);
             else Layout(settings);
         }
         if (glintRoot.gameObject.activeSelf)
@@ -312,6 +414,54 @@ public sealed class HitMarkerHUD : MonoBehaviour
             Color ringColor = settings.killColor;
             ringColor.a = .85f * (1f - wave);
             ring.color = ringColor;
+        }
+    }
+
+    private float CleanHold() => IsKill(kind) ? look.killHoldSeconds : look.holdSeconds;
+    private float CleanFade() => IsKill(kind) ? look.killFadeSeconds : look.fadeSeconds;
+
+    // The clean marker (PAYDAY 3's, the user's pick): four hair lines at 45° that start a little big and snap to rest,
+    // hold a moment at full strength, then fade while sliding a few pixels outward. No ring and no slide-in: the lines are
+    // thin and gone in .2 s, so they never hide the target, and the snap carries the hit. A new hit restarts the snap.
+    private void LayoutClean(GunFeelSettings settings)
+    {
+        bool kill = IsKill(kind), head = kind == HitMarkerKind.Head || kind == HitMarkerKind.HeadKill, blocked = kind == HitMarkerKind.Blocked;
+        cleanRoot.anchoredPosition = AimPoint();
+        float hold = CleanHold(), fadeTime = CleanFade();
+        float popBy = blocked ? 0f : kill ? look.killPop : head ? look.headPop : look.pop;
+        float settle = 1f - Mathf.Clamp01(age / Mathf.Max(.01f, look.popSeconds));
+        float pop = 1f + popBy * settle * settle * settle;
+        float fade = fadeTime > 0f ? Mathf.Clamp01((age - hold) / fadeTime) : age >= hold ? 1f : 0f;
+        float alpha = 1f - Smooth(fade), drift = look.drift * (1f - (1f - fade) * (1f - fade));
+        float length = look.length * (kill ? look.killLength : blocked ? look.blockedLength : head ? look.headLength : 1f) * scale * pop;
+        float thickness = look.thickness * (kill ? look.killThickness : blocked ? look.blockedThickness : 1f);
+        float gap = look.gap * pop + drift;
+        Color color = kill ? look.killColor : head ? look.headColor : blocked ? look.blockedColor : look.bodyColor;
+        if (!blocked && look.flashSeconds > 0f) color = Color.Lerp(Color.white, color, Mathf.Clamp01(age / look.flashSeconds));
+        color.a *= alpha * (blocked ? look.blockedAlpha : 1f);
+        // Squared, so the edge is gone before the line and a fading white line never turns grey over it.
+        float edgeWidth = look.edgeAlpha > 0f ? Mathf.Max(0f, look.edgeWidth) : 0f;
+        var edge = new Color(0f, 0f, 0f, look.edgeAlpha * color.a * color.a);
+
+        // Through or off something on the way: as the Bold ticks, each line trails a fainter tail outward.
+        float tail = length * settings.piercedTailLength * Mathf.Lerp(.6f, 1f, Smooth(Mathf.Clamp01(age / lifetime)));
+        float nearTail = tail * .55f, farTail = tail * .45f, tailStart = gap + length + TailGap, span = FeelAssets.HairLineSpan;
+        Color near = color, far = color;
+        near.a *= settings.piercedTailAlpha;
+        far.a *= settings.piercedTailAlpha * .42f;
+        for (int i = 0; i < 4; i++)
+        {
+            float angle = 45f + 90f * i;
+            Vector2 direction = new Vector2(Mathf.Cos(angle * Mathf.Deg2Rad), Mathf.Sin(angle * Mathf.Deg2Rad));
+            Vector2 middle = direction * (gap + length * .5f);
+            cleanEdges[i].enabled = edgeWidth > 0f;
+            if (edgeWidth > 0f)
+                Place(cleanEdges[i], middle, new Vector2(length + edgeWidth * 2f, (thickness + edgeWidth * 2f) * span), angle, edge);
+            Place(cleanLines[i], middle, new Vector2(length, thickness * span), angle, color);
+            cleanTails[i].enabled = cleanTailEnds[i].enabled = pierced;
+            if (!pierced) continue;
+            Place(cleanTails[i], direction * (tailStart + nearTail * .5f), new Vector2(nearTail, thickness * .7f * span), angle, near);
+            Place(cleanTailEnds[i], direction * (tailStart + nearTail + farTail * .5f), new Vector2(farTail, thickness * .5f * span), angle, far);
         }
     }
 
@@ -450,7 +600,7 @@ public sealed class HitMarkerHUD : MonoBehaviour
         }
     }
 
-    private static void Place(Image image, Vector2 position, Vector2 size, float angle, Color color)
+    private static void Place(Graphic image, Vector2 position, Vector2 size, float angle, Color color)
     {
         var rect = image.rectTransform;
         rect.anchoredPosition = position;

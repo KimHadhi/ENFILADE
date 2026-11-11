@@ -1,0 +1,29 @@
+﻿key,value,note
+#안내,,"히트 마커의 '깔끔' 모양(설정 → HUD → 히트 마커의 기본값). 사용자가 고른 페이데이 3 히트 마커(2026-11-12)를 스크린샷에서 재어 만든 것: 45° 선 넷. 크기는 1920x1080 화면 기준 px. '굵게'(예전 모양)의 수치는 GunFeel.asset의 Hit markers"
+Clean.gap,13,조준점에서 선 안쪽 끝까지의 거리(px). 스크린샷에서 잰 값
+Clean.length,21,선 길이(px). 바깥 끝은 조준점에서 약 34px
+Clean.thickness,2,선 두께(px)
+Clean.edgeAlpha,0.35,선 밑에 까는 흐린 검은 테두리의 진하기(0~1). 밝은 벽이나 하늘에서도 흰 선이 보이게 한다. 선보다 빨리 사라져서 흐려지는 선이 회색으로 바래지 않는다. 0이면 끈다
+Clean.edgeWidth,1,테두리가 선 양옆과 끝으로 삐져나오는 폭(px)
+Clean.pop,0.3,막 뜬 마커가 이만큼 크게 시작해 제자리로 튕겨 돌아온다(0.3 = 30%). 연사해도 한 발씩 따로 읽힌다
+Clean.popSeconds,0.06,튕겨 돌아오는 시간(초)
+Clean.holdSeconds,0.07,다 진하게 보이는 시간(초. 튕기는 시간 포함)
+Clean.fadeSeconds,0.13,그 뒤 사라지는 시간(초). 몸샷은 합쳐서 0.2초
+Clean.drift,3,사라지면서 바깥으로 밀려나는 거리(px)
+Clean.flashSeconds,0.03,헤드샷·처치 마커가 흰색에서 제 색으로 바뀌는 시간(초). 첫 한두 프레임이 하얗게 번쩍인다. 0이면 끈다
+Clean.smallScale,0.9,스친 명중의 선 길이 배율. 앗아 간 체력 비율이 GunFeel의 Marker Full Damage(0.5)에 가까울수록 largeScale로 길어진다. 처치와 피해 없음은 제 크기
+Clean.largeScale,1.15,큰 명중의 선 길이 배율
+Clean.bodyColor,#FFFFFF,몸샷 색
+Clean.headColor,#F5DB6E,헤드샷 색. 페이데이 3가 과녁 정중앙 명중에 그리는 연한 금색(굵게의 금색보다 옅다)
+Clean.killColor,#FF3B30,처치 색(몸샷·헤드샷 처치 모두)
+Clean.blockedColor,#9EA6B0,피해가 없는 명중(가드·패링·무적)의 색
+Clean.headLength,1.12,헤드샷 선 길이 배율. 헤드샷의 별빛·불똥·렌즈 플레어는 따로 그대로 뜬다(GunFeel)
+Clean.headPop,0.4,헤드샷이 튕기는 정도(pop 대신)
+Clean.killLength,1.3,처치 선 길이 배율
+Clean.killThickness,1.25,처치 선 두께 배율
+Clean.killPop,0.45,처치가 튕기는 정도
+Clean.killHoldSeconds,0.1,처치가 다 진하게 보이는 시간(초)
+Clean.killFadeSeconds,0.18,처치가 사라지는 시간(초). 합쳐서 0.28초
+Clean.blockedLength,0.75,피해 없음의 선 길이 배율
+Clean.blockedThickness,0.8,피해 없음의 선 두께 배율
+Clean.blockedAlpha,0.8,피해 없음의 진하기(0~1). 튕기지 않는다

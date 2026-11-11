@@ -8,7 +8,10 @@ using UnityEngine;
 /// </summary>
 public static class FeelAssets
 {
-    private static Texture2D softDot, flashStar, flashSpike, bloodSplat, ring, glint, glintGlow;
+    private static Texture2D softDot, flashStar, flashSpike, bloodSplat, ring, glint, glintGlow, hairLine;
+    /// <summary>How many times taller than the line it shows a <see cref="HairLine"/> quad is drawn: its fading outer
+    /// thirds add up to one more third, so the line shows two thirds of the quad's height.</summary>
+    public const float HairLineSpan = 1.5f;
     private static Mesh muzzleMesh, casingMesh, quad;
     private static Shader particleShader, overlayShader;
     private static Material uiAdditive;
@@ -156,6 +159,17 @@ public static class FeelAssets
     private static float GlowRay(float along, float across) =>
         Mathf.Pow(Mathf.Max(0f, 1f - Mathf.Abs(along)), 1.8f) * Mathf.Exp(-across * across / (2f * .065f * .065f));
 
+    /// <summary>
+    /// A thin line along U for the clean hit marker: solid through the middle third of its height, fading to nothing over
+    /// the outer thirds, with ends that soften over their last few percent. The HUD draws without anti-aliasing, so a
+    /// plain quad two pixels thick and turned 45° steps like a staircase; the fade inside the texture smooths its edges
+    /// instead, about a pixel wide on a two-pixel line. No mipmaps: drawn a few pixels tall, a mip would average the fade
+    /// away into a flat band with hard edges again. Draw the quad <see cref="HairLineSpan"/> times as tall as the line
+    /// should look.
+    /// </summary>
+    public static Texture2D HairLine => hairLine != null ? hairLine : hairLine = Generate("Feel Hair Line", 64, 32, (u, v) =>
+        Mathf.Clamp01((1f - Mathf.Abs(v)) * 1.5f) * Mathf.Clamp01((1f - Mathf.Abs(u)) / .08f), false);
+
     /// <summary>Unit quad in the XY plane facing -Z (double-sided material).</summary>
     public static Mesh Quad
     {
@@ -285,9 +299,9 @@ public static class FeelAssets
     private delegate float Coverage(float u, float v);
 
     /// <summary>White texture whose alpha is the coverage function over [-1, 1] x [-1, 1].</summary>
-    private static Texture2D Generate(string name, int width, int height, Coverage coverage)
+    private static Texture2D Generate(string name, int width, int height, Coverage coverage, bool mipmaps = true)
     {
-        var texture = new Texture2D(width, height, TextureFormat.RGBA32, true)
+        var texture = new Texture2D(width, height, TextureFormat.RGBA32, mipmaps)
         { name = name, wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Bilinear, hideFlags = HideFlags.HideAndDontSave };
         var pixels = new Color32[width * height];
         for (int y = 0; y < height; y++)
@@ -298,7 +312,7 @@ public static class FeelAssets
             pixels[y * width + x] = new Color32(255, 255, 255, alpha);
         }
         texture.SetPixels32(pixels);
-        texture.Apply(true, true);
+        texture.Apply(mipmaps, true);
         return texture;
     }
 }

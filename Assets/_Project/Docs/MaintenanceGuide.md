@@ -100,7 +100,7 @@ C 메뉴에서 바꾼 조준경·총구·하단·손잡이, L 플래시, B 사�
 | 무기 반동·조준 추적·화면 흔들림·사운드·아이콘 | [Data/Combat/Weapons](../Data/Combat/Weapons)의 해당 `WeaponData` | 그 데이터를 사용하는 모든 무기 |
 | 시작 무기·선택 슬롯 | 플레이어의 `PlayerWeaponSlots` | 해당 플레이어 |
 | 적 크기·밀치기 연쇄 | [적 프리팹](../Resources/Enemies)의 `MeleeCombatTarget` | 프리팹 인스턴스. 씬의 Override 확인 |
-| 총성·히트마커·피격·처치·점수 효과 | [GunFeel.asset](../Resources/Combat/GunFeel.asset), 무기별 `Feel` | 공통 효과 / 개별 무기 |
+| 총성·히트마커·피격·처치·점수 효과 | [GunFeel.asset](../Resources/Combat/GunFeel.asset), 무기별 `Feel`. 히트마커 '깔끔'(기본, 페이데이 3식 얇은 선) 모양은 [HitMarkers.csv](../Resources/Tables/HitMarkers.csv) | 공통 효과 / 개별 무기 |
 | 주먹·벽 타격음·방어·반격·처형·피해 팝업 | [Feedback.asset](../Resources/Combat/Feedback.asset) | 공통 전투 피드백 |
 | 총구 화염·궤적, 적 몸의 상처 자국 | Player의 `Gun/…/MuzzlePoint → MuzzleEffects`, `Enemy Blood Effect` | 해당 플레이어 |
 | 피 스플래시, 표면별 착탄, 총알 구멍(표면별 크기 `holeSize`, 크기 흔들림 `holeVary`, 비스듬히 맞았을 때 늘어나는 한도 `holeStretch`) | [ImpactEffects.csv](../Resources/Tables/ImpactEffects.csv), 구멍 유지 시간은 [GunFeel.asset](../Resources/Combat/GunFeel.asset)의 `Bullet Hole Seconds` | 공통 전투 피드백 |

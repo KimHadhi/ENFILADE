@@ -36,6 +36,11 @@ public sealed class SettingsMenuView
     {
         Texts.Get("settings.off"), Texts.Get("settings.hud.damage_numbers.total"), Texts.Get("settings.hud.damage_numbers.each"),
     };
+    // In HitMarkerStyle's order.
+    private static string[] HitMarkerStyleNames => new[]
+    {
+        Texts.Get("settings.hud.hit_markers.clean"), Texts.Get("settings.hud.hit_markers.bold"),
+    };
     // In WindowMode's order.
     private static string[] WindowModeNames => new[]
     {
@@ -314,5 +319,6 @@ public sealed class SettingsMenuView
         rows.Choice(Texts.Get("settings.hud.follow_lean"), OffOn, s.hudFollowsLean ? 1 : 0, i => s.hudFollowsLean = i == 1);
         rows.Choice(Texts.Get("settings.hud.boards"), OffOn, s.hudBoards ? 1 : 0, i => s.hudBoards = i == 1);
         rows.Choice(Texts.Get("settings.hud.damage_numbers"), DamageNumberNames, (int)s.damageNumbers, i => s.damageNumbers = (DamageNumberMode)i);
+        rows.Choice(Texts.Get("settings.hud.hit_markers"), HitMarkerStyleNames, (int)s.hitMarkerStyle, i => s.hitMarkerStyle = (HitMarkerStyle)i);
     }
 }

@@ -222,6 +222,9 @@ settings.hud.boards,HUD 그리드 배경,,설정 창 > HUD > 행
 settings.hud.damage_numbers,데미지 숫자,,설정 창 > HUD > 행
 settings.hud.damage_numbers.total,합산,,설정 창 > HUD > 데미지 숫자 선택지
 settings.hud.damage_numbers.each,낱개,,설정 창 > HUD > 데미지 숫자 선택지
+settings.hud.hit_markers,히트 마커,,설정 창 > HUD > 행
+settings.hud.hit_markers.clean,깔끔,,설정 창 > HUD > 히트 마커 선택지 (얇은 선이 톡 튀고 바로 사라지는 페이데이 3식. 기본)
+settings.hud.hit_markers.bold,굵게,,설정 창 > HUD > 히트 마커 선택지 (예전의 굵은 선이 안쪽으로 미끄러지는 모양)
 settings.character.none,고를 캐릭터가 없습니다.,,설정 창 캐릭터 탭과 메인 메뉴 캐릭터 화면 > 캐릭터가 하나도 없을 때
 settings.character.colors,색 ({0}),,설정 창 캐릭터 탭과 메인 메뉴 캐릭터 화면 > 색 소제목. {0}=색 가짓수
 settings.character.colors.one,색 (한 가지),,설정 창 캐릭터 탭과 메인 메뉴 캐릭터 화면 > 색 소제목(한 가지뿐일 때)
