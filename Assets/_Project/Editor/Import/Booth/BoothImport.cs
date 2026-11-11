@@ -10,21 +10,24 @@ using Object = UnityEngine.Object;
 
 /// <summary>
 /// Makes the BOOTH avatars and outfits under Assets/ThirdParty/BOOTH (unpacked by Tools/Booth/booth_extract.py, or
-/// imported as packages) into the game's characters and outfits, as BoothSources.csv lists them:
-/// - reads each prefab's VRChat PhysBones before anything else and adds their sway to Cloth.csv (VrcSway), keeping rows
-///   already there, so hand tuning survives;
-/// - takes VRChat's parts off the prefabs (scripts the game doesn't have: avatar descriptor, PhysBones, Modular Avatar,
-///   VRChat constraints), the AFK effects and nested prefabs that didn't come in, and the avatar's animator controller,
-///   so the game makes them without a missing-script warning each time;
-/// - registers each character in the PlayerBody profile with its colour sets, and each outfit model in the
+/// imported as packages) into the game's characters and outfits, as BoothSources.csv lists them. The package's prefabs
+/// stay as they came, VRChat's parts and all, so their PhysBones can always be read again; the game wears copies:
+/// - reads each prefab's VRChat PhysBones and writes their sway into Cloth.csv (VrcSway), replacing the rows it wrote
+///   before for that character or outfit (`vrc` true); rows without the mark are left alone, so hand tuning survives;
+/// - saves a copy of each prefab in Art/Models/Booth without what only VRChat runs (scripts the game doesn't have:
+///   avatar descriptor, PhysBones, Modular Avatar, VRChat constraints; the AFK animals; nested prefabs that didn't come
+///   in; the avatar's animator controller), so the game makes them without a missing-script warning;
+/// - registers each character's copy in the PlayerBody profile with its colour sets, and each outfit model's copy in the
 ///   OutfitLibrary, its colour sets read from the package's prefab of each colour (the materials that differ from the
 ///   base prefab's, renderer by renderer).
-/// Runs once an import under the BOOTH folder (or of BoothSources.csv) is over, and from Tools/Characters/BOOTH 다시
-/// 가져오기. Running again changes nothing that is already done.
+/// Runs once an import under the BOOTH folder (or of BoothSources.csv) is over, whenever the editor loads its scripts
+/// and something listed isn't registered yet, and from Tools/Characters/BOOTH 다시 가져오기. Running again gives the
+/// same result.
 /// </summary>
 internal sealed class BoothImport : AssetPostprocessor
 {
     internal const string Root = "Assets/ThirdParty/BOOTH/";
+    private const string CopiesFolder = "Assets/_Project/Art/Models/Booth";
     private const string SourcesPath = "Assets/_Project/Editor/Import/Booth/BoothSources.csv";
     private const string ProfilePath = "Assets/_Project/Resources/Characters/PlayerBody.asset";
     private const string ClothPath = "Assets/_Project/Resources/Tables/Cloth.csv";
@@ -67,7 +70,14 @@ internal sealed class BoothImport : AssetPostprocessor
             foreach (var bone in (hips != null ? hips : prefab.transform).GetComponentsInChildren<Transform>(true)) Bones.Add(bone.name);
         }
 
-        public string PartOf(string bone) => parts.TryGetValue(bone, out var part) ? part : null;
+        // The body part a collider stands on: its own bone, or the nearest humanoid bone above it (colliders often hang
+        // from bones of their own, "Collider_UpperLeg.L").
+        public string PartOf(Transform bone)
+        {
+            for (var at = bone; at != null; at = at.parent)
+                if (parts.TryGetValue(at.name, out var part)) return part;
+            return null;
+        }
 
         // Cloth.csv's shapes: legs are the hips, legs and feet; head is the head, neck, chest and spine.
         private static string BodyPart(string human) => human switch
@@ -110,7 +120,7 @@ internal sealed class BoothImport : AssetPostprocessor
         };
     }
 
-    // A character missing from the PlayerBody profile, or an outfit model missing from the library, whose files are here.
+    // A character or outfit model whose files are here but which isn't registered with its copy yet.
     private static bool Pending()
     {
         if (!File.Exists(SourcesPath)) return false;
@@ -119,11 +129,23 @@ internal sealed class BoothImport : AssetPostprocessor
         foreach (var source in ReadSources())
         {
             if (!File.Exists(Root + source.Path)) continue;
-            if (source.Kind == "character" && (profile == null || !profile.Skins.Any(skin => skin != null && skin.Id == source.Id))) return true;
-            if (source.Kind == "outfit" && (library == null || library.Find(source.Id, source.Skin) == null)) return true;
+            if (source.Kind == "character")
+            {
+                var skin = profile != null ? profile.Skins.FirstOrDefault(s => s != null && s.Id == source.Id) : null;
+                if (skin == null || AssetDatabase.GetAssetPath(skin.Model) != CopyOf(source)) return true;
+            }
+            else if (source.Kind == "outfit")
+            {
+                var entry = library != null ? library.Find(source.Id, source.Skin) : null;
+                if (entry == null || AssetDatabase.GetAssetPath(entry.Model) != CopyOf(source)) return true;
+            }
         }
         return false;
     }
+
+    // Where the game's copy of a source's prefab lives.
+    private static string CopyOf(Source source) =>
+        CopiesFolder + "/" + (source.Kind == "outfit" ? source.Id + "." + source.Skin : source.Id) + ".prefab";
 
     [MenuItem("Tools/Characters/BOOTH 다시 가져오기")]
     private static void Run()
@@ -132,10 +154,12 @@ internal sealed class BoothImport : AssetPostprocessor
         running = true;
         try
         {
+            if (!AssetDatabase.IsValidFolder(CopiesFolder)) AssetDatabase.CreateFolder(Path.GetDirectoryName(CopiesFolder).Replace('\\', '/'), Path.GetFileName(CopiesFolder));
             var sources = ReadSources();
             var profile = AssetDatabase.LoadAssetAtPath<PlayerBodyProfile>(ProfilePath);
             var library = OutfitLibraryBuilder.Library(true);
-            var cloth = new List<Dictionary<string, string>>();
+            // Each character's or outfit's sway rows, by Cloth.csv's skin column.
+            var sway = new Dictionary<string, List<Dictionary<string, string>>>(StringComparer.OrdinalIgnoreCase);
             var characters = new Dictionary<string, Character>(StringComparer.OrdinalIgnoreCase);
             foreach (var source in sources.Where(s => s.Kind == "character"))
             {
@@ -147,10 +171,9 @@ internal sealed class BoothImport : AssetPostprocessor
                 }
                 var character = new Character(prefab);
                 characters[source.Id] = character;
-                cloth.AddRange(VrcSway.Rows(VrcPrefab.Read(Root + source.Path), prefab, source.Id, character.Humanoid, character.PartOf));
-                Clean(Root + source.Path);
-                prefab = AssetDatabase.LoadAssetAtPath<GameObject>(Root + source.Path);
-                if (profile != null) profile.EditorPutSkin(source.Id, source.Name, prefab, CharacterColours(source.Id, sources));
+                Sway(sway, source.Id, Root + source.Path, prefab, character.Humanoid, character);
+                var copy = Copy(Root + source.Path, CopyOf(source));
+                if (profile != null && copy != null) profile.EditorPutSkin(source.Id, source.Name, copy, CharacterColours(source.Id, sources));
             }
             var entries = new List<OutfitLibrary.Entry>();
             foreach (var source in sources.Where(s => s.Kind == "outfit"))
@@ -162,23 +185,22 @@ internal sealed class BoothImport : AssetPostprocessor
                     Debug.LogWarning($"[BOOTH] {source.Id}: {path} 또는 캐릭터 '{source.Skin}'가 없습니다.");
                     continue;
                 }
-                cloth.AddRange(VrcSway.Rows(VrcPrefab.Read(path), prefab, source.Id, character.Bones, character.PartOf));
+                // Per character: the outfit made for each has bones of its own.
+                Sway(sway, source.Id + OutfitLook.Separator + source.Skin, path, prefab, character.Bones, character);
+                var copy = Copy(path, CopyOf(source));
+                if (copy == null) continue;
                 var colourPaths = string.IsNullOrEmpty(source.Colours) || !AssetDatabase.IsValidFolder(Root + source.Colours)
                     ? new List<string>()
                     : Directory.GetFiles(Root + source.Colours, "*.prefab").Select(p => p.Replace('\\', '/'))
                         .Where(p => !string.Equals(p, path, StringComparison.OrdinalIgnoreCase)).OrderBy(p => p, StringComparer.Ordinal).ToList();
-                Clean(path);
-                foreach (string colour in colourPaths) Clean(colour);
-                prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
-                entries.Add(new OutfitLibrary.Entry(source.Id, source.Skin, prefab, OutfitColours(prefab, colourPaths)));
+                entries.Add(new OutfitLibrary.Entry(source.Id, source.Skin, copy, OutfitColours(prefab, colourPaths)));
             }
-            library.EditorReplace(entry => entry.Model != null
-                && AssetDatabase.GetAssetPath(entry.Model).StartsWith(Root, StringComparison.OrdinalIgnoreCase), entries);
-            AddClothRows(cloth);
+            library.EditorReplace(entry => entry.Model == null || IsOurs(AssetDatabase.GetAssetPath(entry.Model)), entries);
+            ReplaceClothRows(sway);
             if (profile != null) EditorUtility.SetDirty(profile);
             EditorUtility.SetDirty(library);
             AssetDatabase.SaveAssets();
-            OutfitCatalogReload();
+            GameTables.Reload();
         }
         finally
         {
@@ -186,12 +208,24 @@ internal sealed class BoothImport : AssetPostprocessor
         }
     }
 
+    private static bool IsOurs(string path) =>
+        path.StartsWith(Root, StringComparison.OrdinalIgnoreCase) || path.StartsWith(CopiesFolder + "/", StringComparison.OrdinalIgnoreCase);
+
+    // The prefab's PhysBones as sway rows under this owner; nothing when it has none.
+    private static void Sway(Dictionary<string, List<Dictionary<string, string>>> sway, string owner, string path, GameObject prefab,
+        ISet<string> shared, Character character)
+    {
+        var read = VrcPrefab.Read(path);
+        if (read.PhysBones.Count == 0) return;
+        sway[owner] = VrcSway.Rows(read, prefab, owner, shared, character.PartOf);
+    }
+
     private static List<Source> ReadSources()
     {
         var sources = new List<Source>();
         var records = CsvTable.ReadRecords(File.ReadAllText(SourcesPath));
         if (records.Count == 0) return sources;
-        var header = records[0].Select(cell => cell.Trim()).ToList();
+        var header = records[0].Select(cell => cell.Trim().TrimStart('﻿')).ToList();
         string Cell(List<string> record, string column)
         {
             int at = header.IndexOf(column);
@@ -217,33 +251,30 @@ internal sealed class BoothImport : AssetPostprocessor
         return sources;
     }
 
-    // Takes off what only VRChat runs, so the game makes the prefab without warnings. Changes nothing the second time.
-    private static void Clean(string path)
+    // Saves the game's copy of a prefab without what only VRChat runs, and returns it.
+    private static GameObject Copy(string source, string target)
     {
-        var root = PrefabUtility.LoadPrefabContents(path);
-        bool changed = false;
+        var root = PrefabUtility.LoadPrefabContents(source);
         try
         {
             foreach (var part in root.GetComponentsInChildren<Transform>(true))
             {
                 if (part == null || part == root.transform) continue;
                 var go = part.gameObject;
-                bool missing = PrefabUtility.IsPrefabAssetMissing(go);
-                // VRChat's AFK effects ("_AFK_Neko") are a VRChat gimmick; a nested prefab that didn't come in is a placeholder.
-                if (!missing && go.name.IndexOf("AFK", StringComparison.Ordinal) < 0) continue;
+                // VRChat's AFK animals ("_AFK_Neko") are a VRChat gimmick; a nested prefab that didn't come in is a placeholder.
+                if (!PrefabUtility.IsPrefabAssetMissing(go) && go.name.IndexOf("AFK", StringComparison.Ordinal) < 0) continue;
                 if (PrefabUtility.IsPartOfPrefabInstance(go) && !PrefabUtility.IsOutermostPrefabInstanceRoot(go)) continue;
                 Object.DestroyImmediate(go);
-                changed = true;
             }
             foreach (var part in root.GetComponentsInChildren<Transform>(true))
-                changed |= GameObjectUtility.RemoveMonoBehavioursWithMissingScript(part.gameObject) > 0;
-            foreach (var animator in root.GetComponentsInChildren<Animator>(true))
-            {
-                if (animator.runtimeAnimatorController == null) continue;
-                animator.runtimeAnimatorController = null;
-                changed = true;
-            }
-            if (changed) PrefabUtility.SaveAsPrefabAsset(root, path);
+                GameObjectUtility.RemoveMonoBehavioursWithMissingScript(part.gameObject);
+            foreach (var animator in root.GetComponentsInChildren<Animator>(true)) animator.runtimeAnimatorController = null;
+            return PrefabUtility.SaveAsPrefabAsset(root, target);
+        }
+        catch (Exception problem)
+        {
+            Debug.LogWarning($"[BOOTH] {source}의 사본을 {target}에 만들지 못했습니다: {problem.Message}");
+            return null;
         }
         finally
         {
@@ -272,7 +303,8 @@ internal sealed class BoothImport : AssetPostprocessor
         return sets.Count > 1 ? sets.ToArray() : Array.Empty<SkinVariant>();
     }
 
-    // The base prefab's colour first, then every colour prefab whose materials differ from it.
+    // The base prefab's colour first, then every colour prefab whose materials differ from it, renderer by renderer
+    // (the copy keeps the base prefab's renderers and materials, so the swaps fit it).
     private static SkinVariant[] OutfitColours(GameObject model, List<string> colourPaths)
     {
         if (model == null || colourPaths.Count == 0) return Array.Empty<SkinVariant>();
@@ -310,35 +342,46 @@ internal sealed class BoothImport : AssetPostprocessor
         return Regex.Replace(text, @"\s+", " ").Trim();
     }
 
-    // New rows go at the end of Cloth.csv in its own column order; a row whose id is there already stays as it is.
-    private static void AddClothRows(List<Dictionary<string, string>> rows)
+    // Cloth.csv keeps its own column order. For each owner read now, the rows this wrote before (vrc) go and the new ones
+    // come in at the end; every other row stays as it is.
+    private static void ReplaceClothRows(Dictionary<string, List<Dictionary<string, string>>> sway)
     {
-        if (rows.Count == 0 || !File.Exists(ClothPath)) return;
+        if (sway.Count == 0 || !File.Exists(ClothPath)) return;
         string text = File.ReadAllText(ClothPath);
+        string newline = text.Contains("\r\n") ? "\r\n" : "\n";
         var records = CsvTable.ReadRecords(text);
         if (records.Count == 0) return;
         var header = records[0].Select(cell => cell.Trim().TrimStart('﻿')).ToList();
-        var ids = new HashSet<string>(records.Skip(1).Where(r => r.Count > 0).Select(r => r[0].Trim()), StringComparer.OrdinalIgnoreCase);
-        string newline = text.Contains("\r\n") ? "\r\n" : "\n";
-        var added = new StringBuilder();
-        var taken = new HashSet<string>(ids, StringComparer.OrdinalIgnoreCase);
-        foreach (var row in rows)
+        int skinColumn = header.IndexOf("skin"), vrcColumn = header.IndexOf("vrc");
+        var lines = text.Split(new[] { newline }, StringSplitOptions.None).ToList();
+        var kept = new StringBuilder();
+        var ids = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        // Line by line, as the file has them (rows of this table never break across lines).
+        for (int i = 0; i < lines.Count; i++)
         {
-            if (ids.Contains(row["id"])) continue;
-            string id = row["id"];
-            for (int n = 2; !taken.Add(id); n++) id = row["id"] + "-" + n;
-            row["id"] = id;
-            added.Append(string.Join(",", header.Select(column => Quote(row.TryGetValue(column, out var value) ? value : "")))).Append(newline);
+            string line = lines[i];
+            if (i == lines.Count - 1 && line.Length == 0) break;
+            var cells = i == 0 ? null : CsvTable.ReadRecords(line).FirstOrDefault();
+            bool ours = cells != null && skinColumn >= 0 && vrcColumn >= 0 && cells.Count > vrcColumn
+                && sway.ContainsKey(cells[skinColumn].Trim()) && cells[vrcColumn].Trim().Equals("true", StringComparison.OrdinalIgnoreCase);
+            if (ours) continue;
+            if (cells != null && cells.Count > 0) ids.Add(cells[0].Trim());
+            kept.Append(line).Append(newline);
         }
-        if (added.Length == 0) return;
-        if (!text.EndsWith("\n")) text += newline;
-        File.WriteAllText(ClothPath, text + added, new UTF8Encoding(true));
+        foreach (var rows in sway.Values)
+            foreach (var row in rows)
+            {
+                string id = row["id"];
+                for (int n = 2; !ids.Add(id); n++) id = row["id"] + "-" + n;
+                row["id"] = id;
+                kept.Append(string.Join(",", header.Select(column => Quote(row.TryGetValue(column, out var value) ? value : "")))).Append(newline);
+            }
+        string written = kept.ToString();
+        if (written == text) return;
+        File.WriteAllText(ClothPath, written, new UTF8Encoding(true));
         AssetDatabase.ImportAsset(ClothPath);
     }
 
     private static string Quote(string cell) =>
         cell.IndexOfAny(new[] { ',', '"', '\n', '\r' }) >= 0 ? "\"" + cell.Replace("\"", "\"\"") + "\"" : cell;
-
-    // The tables the game reads changed on disk while the editor runs.
-    private static void OutfitCatalogReload() => GameTables.Reload();
 }

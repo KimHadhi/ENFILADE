@@ -44,6 +44,8 @@ public sealed class ClothPart
     /// part doesn't swing at all, so the arms never push a skirt nobody sees. Empty swings always.
     /// </summary>
     public string parts = "";
+    /// <summary>Made by BoothImport from VRChat PhysBones: it is rewritten the next time the import reads them.</summary>
+    public bool vrc;
 
     /// <summary>The bones the part hangs from, in the table's order: a ring runs through them in turn.</summary>
     internal List<Transform> FindRoots(Dictionary<string, Transform> bones, string model)

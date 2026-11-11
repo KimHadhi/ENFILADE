@@ -106,6 +106,8 @@ internal static class OutfitDresser
                 if (copy == null) continue;
                 placed[item.ModelId] = copy;
                 dressing.Models.Add(item.ModelId);
+                // The sway BoothImport read from a BOOTH outfit is the version made for this character's (Cloth.csv "model@skin").
+                dressing.Models.Add(item.ModelId + OutfitLook.Separator + skin.Id);
             }
             var drop = new HashSet<string>(OutfitCatalog.Split(OutfitCatalog.FitOf(item.id, skin.Id)?.drop), StringComparer.OrdinalIgnoreCase);
             var renderers = copy.Take(item, drop);
