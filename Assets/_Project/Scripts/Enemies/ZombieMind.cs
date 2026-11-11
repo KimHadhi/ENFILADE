@@ -789,7 +789,9 @@ public sealed class ZombieMind : MonoBehaviour
     }
 
     // Walls and the world hide players (maps build them on Default); other zombies don't.
-    private static int Sight => ~LayerMask.GetMask(EnemyLayer);
+    private static int Sight => sightMask != 0 ? sightMask : sightMask = ~LayerMask.GetMask(EnemyLayer);
+    // Worked out once: GetMask allocates, and this was asked three times a player every think of every zombie.
+    private static int sightMask;
     // Sound goes round players, corpses and what lies on the floor (layer 31): only the world muffles it.
     private static int Hearing => Sight & ~(1 << 31);
 

@@ -20,6 +20,11 @@ public sealed class EnemyChaseAI : MonoBehaviour
     // Going to its place in the crowd (ZombieCrowd), it stops this close to it (m).
     private const float SpotStop = .15f;
     private float updateTimer, appliedPace = 1f;
+    private MeleeCombatTarget melee;
+    // Its place in the crowd as last worked out, and for whom.
+    private PlayerMovement spotFor;
+    private Vector3 spot;
+    private bool spotted;
 
     /// <summary>A memo elite's own part (ZombieElite sets it as it is put on): it may move the body itself.</summary>
     internal ZombieElite Elite { get; set; }
@@ -54,7 +59,8 @@ public sealed class EnemyChaseAI : MonoBehaviour
         if (charger == null) charger = GetComponent<ZombieCharger>();
         if (charger != null && charger.Driving) return;
         if (Elite != null && Elite.Driving) return;
-        if (PlayerExecution.Suppresses(this) || (enemyHealth != null && enemyHealth.WavePaused) || GetComponent<MeleeCombatTarget>()?.IsStunned == true)
+        if (melee == null) melee = GetComponent<MeleeCombatTarget>();
+        if (PlayerExecution.Suppresses(this) || (enemyHealth != null && enemyHealth.WavePaused) || (melee != null && melee.IsStunned))
         { agent.isStopped = true; return; }
         if (enemyHealth != null && !enemyHealth.IsAlive)
         {
@@ -80,15 +86,17 @@ public sealed class EnemyChaseAI : MonoBehaviour
         // Stage 4E: near enough, it goes to a place of its own round them, or waits further out (ZombieCrowd, added by
         // ZombieType, maybe after Awake).
         if (crowd == null) crowd = GetComponent<ZombieCrowd>();
-        Vector3 spot = default;
-        bool spotted = crowd != null && crowd.Spot(player, close, out spot, out _);
-        agent.stoppingDistance = spotted ? SpotStop : close;
         updateTimer -= Time.deltaTime;
 
-        if (updateTimer <= 0f)
+        // Its place round them is worked out as often as its path (it was every frame, a walk-mesh query each time, used
+        // only here; the memo's item 40), and at once for someone new.
+        if (updateTimer <= 0f || spotFor != player)
         {
             // Far from every player a new path is looked for less often (ZombieLod).
             updateTimer = ZombieLod.ChaseEvery(transform.position, updateInterval);
+            spotFor = player;
+            spotted = crowd != null && crowd.Spot(player, close, out spot, out _);
+            agent.stoppingDistance = spotted ? SpotStop : close;
             agent.SetDestination(spotted ? spot : player.transform.position);
         }
         // Standing at its place it faces whom it fights: the agent turns it only while it walks.

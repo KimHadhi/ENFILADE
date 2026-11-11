@@ -467,8 +467,15 @@ public sealed partial class ZombieBody : MonoBehaviour
         Weigh();
         PaceGraph(real);
         // From the frame after dressing, once the pack's spare meshes are gone, so a doll's copy of the body is light.
-        if (Time.frameCount > dressedFrame) ZombieCorpse.Stock(animator);
+        // Half a second apart for each zombie (it looked through the dolls every frame for every zombie): dolls are made
+        // one a frame at most anyway.
+        if (Time.frameCount > dressedFrame && (stockLeft -= real) <= 0f)
+        {
+            stockLeft = .5f;
+            ZombieCorpse.Stock(animator);
+        }
     }
+    private float stockLeft;
 
     // Far from every player and on screen, the pose is worked out only every few frames (ZombieLod animEvery): the graph
     // goes to manual and is evaluated here. Never while anything quick plays on it (a hit, a swing, a flinch, a fall, a

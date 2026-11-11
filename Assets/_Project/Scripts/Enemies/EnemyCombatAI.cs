@@ -644,14 +644,21 @@ public sealed class EnemyCombatAI : MonoBehaviour
         timer = 0f;
         pounceInside = 0f;
         comboIndex = 0;
-        GetComponent<CombatCueAudio>()?.Stop();
+        // Called every frame while it has nobody to fight: the cue's player found once it is there, no lookup a frame.
+        if (cueAudio == null) TryGetComponent(out cueAudio);
+        if (cueAudio != null) cueAudio.Stop();
         UpdateIndicator(false);
     }
+    private CombatCueAudio cueAudio;
+    // What the capsule's colour last showed (-1: not yet), so it is only set when that changes.
+    private int indicatorShown = -1;
 
     private void UpdateIndicator(bool isPreparing)
     {
-        if (indicator == null)
+        // A dressed zombie's capsule is hidden (ZombieBody): nothing to colour, and this ran every frame per zombie.
+        if (indicator == null || !indicator.enabled || indicatorShown == (isPreparing ? 1 : 0))
             return;
+        indicatorShown = isPreparing ? 1 : 0;
 
         // 평소에는 회색, 공격 준비 중에는 노란색
         Color tint = isPreparing

@@ -11,10 +11,28 @@ public static class EnemyHead
     // body's radius below the top still counts. Above it, a little air between feet and head (a landing frame).
     private const float BelowTopShare = .8f, AboveTop = .3f;
 
+    // Asked every frame by every zombie (its swing, its crowd, its shake-off): found without allocating, its capsule on
+    // the enemy itself first, and whether a player stands on any head worked out once a frame (the memo's item 40; it
+    // was a scan of every collider under the enemy each call, and every zombie over every zombie).
+    private static readonly System.Collections.Generic.Dictionary<PlayerMovement, int> onHeadFrame =
+        new System.Collections.Generic.Dictionary<PlayerMovement, int>();
+    private static readonly System.Collections.Generic.Dictionary<PlayerMovement, bool> onHead =
+        new System.Collections.Generic.Dictionary<PlayerMovement, bool>();
+    // Further than this across (m) from an enemy, nobody is on its head.
+    private const float FarAcross = 2.5f;
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void Clear()
+    {
+        onHeadFrame.Clear();
+        onHead.Clear();
+    }
+
     /// <summary>The body the feet would stand on: the enemy's first solid collider.</summary>
     public static Collider BodyOf(Component enemy)
     {
         if (enemy == null) return null;
+        if (enemy.TryGetComponent(out CapsuleCollider capsule) && capsule.enabled && !capsule.isTrigger) return capsule;
         foreach (var collider in enemy.GetComponentsInChildren<Collider>())
             if (collider.enabled && !collider.isTrigger) return collider;
         return null;
@@ -23,7 +41,9 @@ public static class EnemyHead
     /// <summary>The player's feet are on top of this enemy.</summary>
     public static bool Carries(Component enemy, PlayerMovement player)
     {
-        if (player == null || !player.IsInitialized) return false;
+        if (player == null || !player.IsInitialized || enemy == null) return false;
+        Vector3 apart = player.transform.position - enemy.transform.position;
+        if (apart.x * apart.x + apart.z * apart.z > FarAcross * FarAcross) return false;
         var body = BodyOf(enemy);
         if (body == null) return false;
         Bounds bounds = body.bounds;
@@ -38,9 +58,15 @@ public static class EnemyHead
     /// <summary>The player stands on some enemy's head.</summary>
     public static bool OnAnyHead(PlayerMovement player)
     {
+        if (player == null) return false;
+        if (onHeadFrame.TryGetValue(player, out int frame) && frame == Time.frameCount) return onHead[player];
+        bool found = false;
         foreach (var target in MeleeCombatTarget.Active)
-            if (target != null && target.IsAvailable && target.GetComponent<EnemyHealth>() != null && Carries(target, player)) return true;
-        return false;
+            if (target != null && Carries(target, player) && target.IsAvailable && target.GetComponent<EnemyHealth>() != null) { found = true; break; }
+        if (onHeadFrame.Count > 16) { onHeadFrame.Clear(); onHead.Clear(); }
+        onHeadFrame[player] = Time.frameCount;
+        onHead[player] = found;
+        return found;
     }
 
     private static float RiderRadius(PlayerMovement player)

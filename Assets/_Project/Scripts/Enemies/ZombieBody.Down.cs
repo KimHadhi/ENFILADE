@@ -179,12 +179,15 @@ public sealed partial class ZombieBody
     }
 
     private static readonly RaycastHit[] floorHits = new RaycastHit[16];
+    private static int floorMask;
 
     // The floor under a point: the world (maps build it on Default), not a body lying on it, a doll or a player.
     private static bool FloorBelow(Vector3 from, out float y)
     {
         y = from.y;
-        int count = Physics.RaycastNonAlloc(from, Vector3.down, floorHits, 3f, ~LayerMask.GetMask(EnemyLayer), QueryTriggerInteraction.Ignore);
+        // The mask worked out once (GetMask allocates; this runs every frame for each zombie lying down).
+        if (floorMask == 0) floorMask = ~LayerMask.GetMask(EnemyLayer);
+        int count = Physics.RaycastNonAlloc(from, Vector3.down, floorHits, 3f, floorMask, QueryTriggerInteraction.Ignore);
         float nearest = float.PositiveInfinity;
         for (int i = 0; i < count; i++)
         {
