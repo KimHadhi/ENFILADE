@@ -10,7 +10,9 @@ using UnityEngine.UI;
 /// that runs out while the gun put away reloads itself and a flash when it has; for a Ghost its Head Hunter stacks as
 /// the pips, the newest flashing white as it comes and all of them as they are lost, and "DEADEYE" over the plate while
 /// the gun in hand holds its first round since loading; for a Knight "[휠] 도발" while its taunt is ready, the wait in
-/// its place while not, and the draining bar while it lasts. Classes whose abilities come later show their name only.
+/// its place while not, and the draining bar while it lasts; for a Schießhund its Desperado's rounds as teal pips, the
+/// newest flashing as a bounty loads it, "DESPERADO" over the plate while it is in hand with a round in it, and Return
+/// Back's stacks on the draining bar. Classes whose abilities come later show their name only.
 /// Local player only (PlayerMovement). HUD look: black, white and pink.
 /// </summary>
 [DisallowMultipleComponent]
@@ -54,12 +56,17 @@ public sealed class ClassHUD : MonoBehaviour
         else if (PlayerClass.Is(PlayerClass.Point)) Guns();
         else if (PlayerClass.Is(PlayerClass.Ghost)) Hunter();
         else if (PlayerClass.Is(PlayerClass.Knight)) Taunt();
-        // The bar along the foot: a Knight's own taunt, or a friend's CHARGE, which reaches any class.
-        float taunt = kit.TauntShare, share = taunt > 0f ? taunt : kit.ChargeShare;
+        else if (PlayerClass.Is(PlayerClass.Schiesshund)) Hound();
+        // The bar along the foot: a Knight's own taunt, a Schießhund's Return Back, or a friend's CHARGE, which reaches
+        // any class.
+        float taunt = kit.TauntShare, back = kit.ReturnShare;
+        float share = taunt > 0f ? taunt : back > 0f ? back : kit.ChargeShare;
         chargeBar.gameObject.SetActive(share > 0f);
         if (share <= 0f) return;
         chargeFill.rectTransform.anchorMax = new Vector2(share, 1f);
-        string word = Texts.Get(taunt > 0f ? "class.hud.taunt" : "class.hud.charge");
+        chargeFill.color = taunt <= 0f && back > 0f ? PingMarks.BountyColor : KitStyle.Accent;
+        string word = taunt > 0f ? Texts.Get("class.hud.taunt") : back > 0f ? Texts.Format("class.hud.return", kit.ReturnStacks)
+            : Texts.Get("class.hud.charge");
         if (barWord.text != word) barWord.text = word;
     }
 
@@ -71,8 +78,9 @@ public sealed class ClassHUD : MonoBehaviour
         icon.texture = KitButtons.Icon(MainMenuClasses.Icon(id));
         icon.enabled = icon.texture != null;
         bool assault = PlayerClass.Is(PlayerClass.Assault), point = PlayerClass.Is(PlayerClass.Point);
-        bool ghost = PlayerClass.Is(PlayerClass.Ghost), knight = PlayerClass.Is(PlayerClass.Knight);
-        pipRow.gameObject.SetActive(assault || ghost);
+        bool ghost = PlayerClass.Is(PlayerClass.Ghost), knight = PlayerClass.Is(PlayerClass.Knight), hound = PlayerClass.Is(PlayerClass.Schiesshund);
+        pipRow.gameObject.SetActive(assault || ghost || hound);
+        deadeye.text = Texts.Get(hound ? "class.hud.desperado" : "class.hud.deadeye");
         slotRow.gameObject.SetActive(point);
         keyRect.gameObject.SetActive(false);
         deadeye.gameObject.SetActive(false);
@@ -118,6 +126,23 @@ public sealed class ClassHUD : MonoBehaviour
         bool ready = kit.DeadeyeReady;
         deadeye.gameObject.SetActive(ready);
         if (ready) deadeye.color = KitStyle.With(KitStyle.Accent, .78f + .22f * Mathf.Sin(Time.unscaledTime * 6f));
+    }
+
+    // A Schießhund's Desperado: a teal pip a round in its cylinder, the newest flashing white as a bounty loads it, and
+    // "DESPERADO" over the plate while it is in hand with a round in it (its next shot spends one).
+    private void Hound()
+    {
+        Pips(kit.RoundMax);
+        int count = shownPips, rounds = Mathf.Min(kit.Rounds, count);
+        float flash = Mathf.Clamp01(1f - kit.SinceBounty / .4f);
+        for (int i = 0; i < count; i++)
+        {
+            Color color = i < rounds ? PingMarks.BountyColor : KitStyle.With(KitStyle.Ice, .14f);
+            pips[i].color = flash > 0f && i == rounds - 1 ? Color.Lerp(color, KitStyle.Ice, flash) : color;
+        }
+        bool loaded = kit.DesperadoLoaded;
+        deadeye.gameObject.SetActive(loaded);
+        if (loaded) deadeye.color = KitStyle.With(PingMarks.BountyColor, .78f + .22f * Mathf.Sin(Time.unscaledTime * 6f));
     }
 
     // A Knight's taunt: the key's prompt while it is ready, the seconds left to wait in its place while it isn't.

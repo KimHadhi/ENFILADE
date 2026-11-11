@@ -46,7 +46,7 @@ public sealed class HoldFeedback : MonoBehaviour
     private Image bar, barBack;
     private float shown, beat, progress;
     private int holders = 1;
-    private bool pinned, eaten, fights, bursts, written;
+    private bool pinned, eaten, fights, bursts, kicks, written;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void Forget() => edgeTexture = null;
@@ -85,12 +85,14 @@ public sealed class HoldFeedback : MonoBehaviour
         if (held)
         {
             bool nowPinned = hold.IsPinned, nowEaten = hold.IsEaten, nowFights = hold.FightsPinned, nowBursts = hold.CanBurstShield;
+            bool nowKicks = hold.CanBreakFree;
             int nowHolders = Mathf.Max(1, hold.Holders);
             // A label made in code has no text at all until it is given some (null, not ""), so what was written is
             // remembered here and not read back from the label.
-            if (!written || nowPinned != pinned || nowEaten != eaten || nowFights != fights || nowHolders != holders || nowBursts != bursts)
+            if (!written || nowPinned != pinned || nowEaten != eaten || nowFights != fights || nowHolders != holders || nowBursts != bursts
+                || nowKicks != kicks)
             {
-                pinned = nowPinned; eaten = nowEaten; fights = nowFights; holders = nowHolders; bursts = nowBursts;
+                pinned = nowPinned; eaten = nowEaten; fights = nowFights; holders = nowHolders; bursts = nowBursts; kicks = nowKicks;
                 Write();
                 written = true;
             }
@@ -113,8 +115,10 @@ public sealed class HoldFeedback : MonoBehaviour
         if (pinned)
         {
             title.text = Texts.Get("hold.pinned");
-            // With shield left, V bursts it to throw the runner off (PlayerHold.TryBurstShield).
-            hint.text = bursts ? Texts.Get("hold.pinned.burst") : fights ? shove : Texts.Get("hold.pinned.alone");
+            // A Knight's kick, when ready, throws the runner off for free; else with shield left, V bursts it to
+            // (PlayerHold.TryBurstShield).
+            hint.text = kicks ? Texts.Get("hold.pinned.kick") : bursts ? Texts.Get("hold.pinned.burst") : fights ? shove
+                : Texts.Get("hold.pinned.alone");
         }
         else
         {

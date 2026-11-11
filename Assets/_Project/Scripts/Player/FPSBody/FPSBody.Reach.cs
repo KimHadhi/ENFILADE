@@ -11,4 +11,13 @@ public sealed partial class FPSBody
     {
         if (assets != null) Motion(assets.crouchingMotion);
     }
+
+    /// <summary>
+    /// An enemy was just pinged (PlayerPing): the gun gives a short nod, the stop's settle played once, so the press is
+    /// felt. The left hand really pointing at it (the user's ask) wants a clip of its own, as reaching does.
+    /// </summary>
+    internal void Point()
+    {
+        if (assets != null) Motion(assets.stopMotion);
+    }
 }

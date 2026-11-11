@@ -18,9 +18,10 @@ public static class KitSound
     /// this player's way; Spotted, one woke on them; Unseen, a stretch got through without being found.
     /// </summary>
     /// Charge: an Assault's CHARGE sounded (ClassKit). Taunt: a Knight's taunt went out (its own, or a friend's, softer
-    /// the further). Hunter: a Ghost's headshot added a Head Hunter stack; HunterLost: a hurt took them all.
+    /// the further). Hunter: a Ghost's headshot added a Head Hunter stack; HunterLost: a hurt took them all. Ping: F
+    /// marked an enemy for the team; Mark: a Schießhund's bounty mark went on; Bounty: its mark died at its hand.
     public enum Cue { Buy, Refuse, Alert, PickAmmo, PickHeal, PickShield, PickMoney, PickGun, Escape, Suspect, Spotted, Unseen, Charge,
-        Taunt, Hunter, HunterLost }
+        Taunt, Hunter, HunterLost, Ping, Mark, Bounty }
 
     private const string BankId = "UI";
     private const int Rate = 44100;
@@ -85,6 +86,9 @@ public static class KitSound
             Cue.Taunt => Clash(),
             Cue.Hunter => Notch(),
             Cue.HunterLost => Shatter(),
+            Cue.Ping => Spot(),
+            Cue.Mark => Brand(),
+            Cue.Bounty => Claim(),
             _ => Buzz()
         };
         var clip = AudioClip.Create("Kit " + cue, data.Length, 1, Rate, false);
@@ -351,6 +355,40 @@ public static class KitSound
         Note(data, .02f, 698f, .06f, .4f);
         Note(data, .1f, 523f, .14f, .45f);
         return Finish(data, .55f);
+    }
+
+    // A ping: two quick high notes a fifth apart, bright and short, a finger pointed.
+    private static float[] Spot()
+    {
+        var data = new float[(int)(Rate * .22f)];
+        Click(data, new System.Random(61), 0f, .002f, .3f);
+        Note(data, 0f, 1319f, .04f, .5f);
+        Note(data, .05f, 1976f, .08f, .5f);
+        return Finish(data, .45f);
+    }
+
+    // A bounty mark: a dry knock and a low bell under a high one, a coin pressed on a wanted poster.
+    private static float[] Brand()
+    {
+        var data = new float[(int)(Rate * .45f)];
+        Knock(data, 0f, 160f, .05f, .7f);
+        Click(data, new System.Random(73), 0f, .004f, .5f);
+        Bell(data, .01f, 784f, .18f, .4f);
+        Bell(data, .06f, 2349f, .16f, .3f);
+        return Finish(data, .55f);
+    }
+
+    // A bounty claimed: a revolver's hammer, a heavy knock, and a till's bell ringing three notes up, paid out.
+    private static float[] Claim()
+    {
+        var data = new float[(int)(Rate * .9f)];
+        var random = new System.Random(1878);
+        Click(data, random, 0f, .006f, .8f);
+        Knock(data, 0f, 95f, .12f, 1f);
+        Bell(data, .04f, 1047f, .12f, .4f);
+        Bell(data, .12f, 1319f, .14f, .4f);
+        Bell(data, .2f, 1568f, .4f, .5f);
+        return Finish(data, .8f);
     }
 
     // A horn note starting at <at> (s) for <length> (s): odd and even partials swelling in and dying away.

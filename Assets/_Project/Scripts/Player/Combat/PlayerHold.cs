@@ -16,7 +16,9 @@ using UnityEngine;
 /// come, off until then) lets them fight it themselves. The bites hurt a little (pinBiteDamage); what kills is the pin itself, at the end of pinSeconds, sooner
 /// the lower their health (pinLowHealthShare at none) and sooner for each runner that joins it (up to maxJoiners, each
 /// joinSpeedup faster). With shield left, though, the shove key bursts the whole shield and throws every runner on them
-/// off (TryBurstShield; the user's playtest of 2026-11-11): one shield, one escape. What all of it looks and sounds like
+/// off (TryBurstShield; the user's playtest of 2026-11-11): one shield, one escape. A Knight kicks them off the same way
+/// without the shield, once every BreakFreeEvery seconds (the user, 2026-11-11: "나이트는 혼자서 러너한테 덮쳐져도 빠져
+/// 나올 수 있게"); the shield is only spent while the kick is not ready. What all of it looks and sounds like
 /// on their own screen is HoldFeedback's; whatever holds anyone stands out through walls on every PC (HoldReveal).
 /// Numbers: Tables/Player.csv, row Hold.
 /// </summary>
@@ -94,7 +96,7 @@ public sealed class PlayerHold : MonoBehaviour
     private PlayerDamageReceiver receiver;
     private PlayerNetworkCombat network;
     private HoldFeedback feedback;
-    private float biteLeft, pinProgress, pinnedAt, burstGraceUntil = float.NegativeInfinity;
+    private float biteLeft, pinProgress, pinnedAt, burstGraceUntil = float.NegativeInfinity, breakFreeAt = float.NegativeInfinity;
 
     /// <summary>Some zombie holds them.</summary>
     public bool IsHeld => holders.Count > 0;
@@ -109,6 +111,13 @@ public sealed class PlayerHold : MonoBehaviour
     /// themselves. Off by default, as in Guts &amp; Blackpowder.
     /// </summary>
     public bool FightsPinned { get; set; }
+    /// <summary>
+    /// A Knight's (ClassKit sets it from Tables/ClassAbilities, Knight.breakFree): pinned, the shove key kicks every runner
+    /// on them off as the shield burst does, without spending the shield, once every this many seconds. Negative: never.
+    /// </summary>
+    public float BreakFreeEvery { get; set; } = -1f;
+    /// <summary>Pinned and a Knight whose kick is ready: the shove key would throw the runners off for free (HoldFeedback says so).</summary>
+    public bool CanBreakFree => BreakFreeEvery >= 0f && IsPinned && receiver != null && receiver.IsAlive && Time.time >= breakFreeAt;
     /// <summary>The most runners that pin one player (the host's runners don't leap at a full pin, ZombieRunner).</summary>
     public static int MostPinning => 1 + (local != null ? local.maxJoiners : 2);
     /// <summary>Pinned with shield left: the shove key would burst it and throw the runners off (HoldFeedback says so).</summary>
@@ -294,8 +303,8 @@ public sealed class PlayerHold : MonoBehaviour
         // it here as well as in PlayerMovement's held branch, read straight off the key whatever locks the controls, so
         // nothing in the movement's frame can swallow the press (the user pressed V again and again: 2026-11-11).
         bool pressed = player != null && player.Input != null && player.InputAvailable && player.Input.ShoveKeyPressed;
-        if (CanBurstShield && (pressed || shieldBurstAuto >= 0f && Time.time - pinnedAt >= Mathf.Max(shieldBurstFrom, shieldBurstAuto))
-            && TryBurstShield())
+        bool auto = shieldBurstAuto >= 0f && Time.time - pinnedAt >= Mathf.Max(shieldBurstFrom, shieldBurstAuto);
+        if ((CanBreakFree && pressed || CanBurstShield && (pressed || auto)) && TryBurstShield())
         {
             if (holders.Count == 0) return;
         }
@@ -313,19 +322,28 @@ public sealed class PlayerHold : MonoBehaviour
     /// </summary>
     internal bool TryBurstShield()
     {
+        // A Knight's kick, when it is ready, goes first: it costs nothing.
+        if (CanBreakFree && Time.time - pinnedAt >= shieldBurstFrom)
+        {
+            breakFreeAt = Time.time + Mathf.Max(0f, BreakFreeEvery);
+            ThrowOff(false);
+            GetComponent<PlayerFistAudio>()?.PlayHeavyHit();
+            return true;
+        }
         if (!CanBurstShield || Time.time - pinnedAt < shieldBurstFrom) return false;
-        BurstShield();
+        ThrowOff(true);
         return true;
     }
 
-    private void BurstShield()
+    // Everything on them thrown off at once: the shield burst (spent) or a Knight's kick (free).
+    private void ThrowOff(bool spendShield)
     {
         EnemyHealth first = null;
         foreach (var holder in holders) if (holder.Pinning && holder.Enemy != null) { first = holder.Enemy; break; }
         if (first == null) return;
         var cause = new DamageHit(DamageHit.NewAttackId(), 0f, DamageKind.Attack, transform.position + Vector3.up * .4f,
             transform.position - first.transform.position, first.gameObject, false, 0f, true);
-        if (!receiver.SpendShield(cause)) return;
+        if (spendShield && !receiver.SpendShield(cause)) return;
         // Everything on them lets go here at once, the runners pinning them and any zombie kneeling to eat them (a burst
         // that left an eater on them kept them down and bitten: the 2026-11-11 review). The host hears of it (ShareHold)
         // and of each knockdown (a copy's MeleeCombatTarget forwards it), so on every PC they go flying off. A brute

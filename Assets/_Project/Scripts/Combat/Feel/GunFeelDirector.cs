@@ -57,8 +57,12 @@ public static class GunFeelDirector
         // A takedown of one that never knew they were there pays a stealth bonus (암살). It is judged before the zombie
         // goes, so its mood is still the one it died in (the host's, shared to this PC).
         bool takedown = execution && report.Target.TryGetComponent(out ZombieMind mind) && mind.Unaware;
+        // A Schießhund's own mark pays its bounty on top (stage 3 of the classes): more for an elite.
+        int bounty = PlayerClass.Is(PlayerClass.Schiesshund) && PingMarks.IsBountyOf(report.Target, PlayerRoster.Local)
+            ? Mathf.RoundToInt(PlayerClass.Ability("Schiesshund", PlayerClass.IsElite(report.Target as EnemyHealth) ? "bountyElite" : "bountyMoney",
+                PlayerClass.IsElite(report.Target as EnemyHealth) ? 300f : 100f)) : 0;
         CombatFeedHUD.Kill(WeaponName(hit), CombatDamageEvents.DisplayNameOf(report.Target), critical && bullet, execution, hit.IsCounter, bullet, distance, !shared,
-            hit.Pierced, standout, takedown);
+            hit.Pierced, standout, takedown, bounty);
         if (pulse) KillConfirmEffect.Trigger(execution ? KillScreen.Execution : hit.IsCounter ? KillScreen.Counter : KillScreen.Ordinary,
             critical || execution);
     }

@@ -99,6 +99,18 @@ public sealed class HitFlashRenderer : MonoBehaviour
         if (holder > 0f) Attach();
     }
     private float holder;
+    /// <summary>
+    /// Holds a ping's outline at this strength in this colour, 0 lets it go (PingMarks: F on an enemy, stage 3 of the
+    /// classes; a Schießhund's bounty mark is teal). Under a holder's outline, over the executable mark's.
+    /// </summary>
+    public void SetPing(float amount, Color color)
+    {
+        ping = Mathf.Clamp01(amount);
+        pingColor = color;
+        if (ping > 0f) Attach();
+    }
+    private float ping;
+    private Color pingColor;
 
     private bool Near(Vector3 point)
     {
@@ -163,7 +175,7 @@ public sealed class HitFlashRenderer : MonoBehaviour
             spots[i].age += dt;
             if (spots[i].strength > 0f && spots[i].age < settings.hitGlowSeconds) glowing = true;
         }
-        if (tint <= .001f && white <= 0f && !glowing && mark <= 0f && holder <= 0f) { Detach(); enabled = false; return; }
+        if (tint <= .001f && white <= 0f && !glowing && mark <= 0f && holder <= 0f && ping <= 0f) { Detach(); enabled = false; return; }
 
         var feedback = CombatFeedbackSettings.InstanceOrDefaults;
         // The stronger tint shows, so a hit on a marked body still flashes.
@@ -171,8 +183,9 @@ public sealed class HitFlashRenderer : MonoBehaviour
         block.Clear();
         block.SetColor(TintColorId, marked ? feedback.executableBodyTint : settings.hitTintColor);
         block.SetFloat(TintId, marked ? mark : tint);
-        block.SetColor(OutlineColorId, holder > 0f ? feedback.holderOutlineColor : feedback.executableOutlineColor);
-        block.SetFloat(OutlineWidthId, holder > 0f ? feedback.holderOutlineWidth * holder : feedback.executableOutlineWidth * mark);
+        block.SetColor(OutlineColorId, holder > 0f ? feedback.holderOutlineColor : ping > 0f ? pingColor : feedback.executableOutlineColor);
+        block.SetFloat(OutlineWidthId, holder > 0f ? feedback.holderOutlineWidth * holder
+            : ping > 0f ? feedback.holderOutlineWidth * ping : feedback.executableOutlineWidth * mark);
         block.SetColor(RimColorId, settings.hitRimColor);
         block.SetFloat(RimId, Mathf.Clamp01(tint * 1.2f));
         block.SetColor(GlowColorId, settings.hitGlowColor);

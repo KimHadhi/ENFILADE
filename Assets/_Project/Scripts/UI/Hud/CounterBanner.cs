@@ -18,6 +18,8 @@ using UnityEngine.UI;
 /// grade 3 adds focus lines rushing in from the screen's edge, a pink frame round the plate with a diamond at each end
 /// and the whole of it slammed down from large, with a thin ring thrown out by the blow (draft C). ShoveCounter says
 /// which. Sizes are the drafts' own, doubled from their 960-wide canvas.
+/// Another word in another colour may borrow the whole of it: a Schießhund's Desperado claiming a bounty slams BOUNTY in
+/// its teal (ClassKit, stage 3 of the classes), the same moves, so the two read as kin.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class CounterBanner : MonoBehaviour
@@ -58,12 +60,20 @@ public sealed class CounterBanner : MonoBehaviour
     private Material invertMaterial, rim, plain;
     private float age = -1f, length = .85f;
     private int grade;
+    // The word and the colour that stands for the pink this time (COUNTER in the HUD's pink unless Play says otherwise).
+    private string word = "COUNTER";
+    private Color accent = KitStyle.Accent;
 
-    /// <summary>COUNTER now, for this long (real s), at this grade (0 the plain one; see the class's summary).</summary>
-    public void Play(float seconds, int grade = 0)
+    /// <summary>
+    /// COUNTER now, for this long (real s), at this grade (0 the plain one; see the class's summary); or another word,
+    /// in another colour where the pink would be.
+    /// </summary>
+    public void Play(float seconds, int grade = 0, string word = null, Color? accent = null)
     {
         Build();
         this.grade = Mathf.Clamp(grade, 0, Grades - 1);
+        this.word = string.IsNullOrEmpty(word) ? "COUNTER" : word;
+        this.accent = accent ?? KitStyle.Accent;
         length = Mathf.Max(.3f, seconds);
         age = 0f;
         Dress();
@@ -76,6 +86,15 @@ public sealed class CounterBanner : MonoBehaviour
     {
         bool plated = grade >= 1, doubled = grade >= 2, slammed = grade >= 3;
         var face = plated || rim == null ? plain : rim;
+        topText.text = bottomText.text = ghost.text = word;
+        // The pink of every part, or the colour asked for in its place (the wash keeps its own fading alpha).
+        var wash = accent;
+        wash.a = tint.color.a;
+        tint.color = wash;
+        focus.Accent = accent;
+        line.color = cutA.color = frame.color = underline.color = accent;
+        capLeft.color = capRight.color = accent;
+        shard.color = chip.color = accent;
         foreach (var text in new[] { topText, bottomText })
         {
             text.color = plated ? KitStyle.Ice : KitStyle.Ink;
@@ -168,7 +187,7 @@ public sealed class CounterBanner : MonoBehaviour
         cutB.rectTransform.sizeDelta = new Vector2(Reach * 2f * Out((t - .05f) / .07f, 3f), thin);
         // Up and to the right of the word, closing on it as it fades.
         ghost.rectTransform.anchoredPosition = Vector2.Lerp(new Vector2(60f, 28f), new Vector2(36f, 16f), Out((t - WordFrom) / .2f, 2f));
-        var afterimage = KitStyle.Accent;
+        var afterimage = accent;
         afterimage.a = shown ? .6f * (1f - Mathf.Clamp01((t - .12f) / .32f)) : 0f;
         ghost.color = afterimage;
         float u = Mathf.Clamp01((t - .03f) / .5f);
@@ -180,7 +199,7 @@ public sealed class CounterBanner : MonoBehaviour
             var rect = diamonds[i].rectTransform;
             rect.anchoredPosition = new Vector2(along, across);
             rect.sizeDelta = Vector2.one * Mathf.Lerp(44f, 14f, u);
-            var shade = i % 3 == 0 ? KitStyle.Accent : KitStyle.Ice;
+            var shade = i % 3 == 0 ? accent : KitStyle.Ice;
             shade.a = shown ? 1f - u : 0f;
             diamonds[i].color = shade;
         }

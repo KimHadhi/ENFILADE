@@ -262,7 +262,12 @@ public sealed class MainMenuClasses : MonoBehaviour
                 return Texts.Format(key, less.ToString("0", System.Globalization.CultureInfo.InvariantCulture),
                     Whole("Knight", "parryWindow", 50f), Whole("Knight", "parryPosture", 100f), Whole("Knight", "counter", 50f),
                     Whole("Knight", "fists", 50f), Whole("Knight", "tauntRadius", 12f), Whole("Knight", "tauntSeconds", 6f),
-                    Whole("Knight", "tauntCooldown", 25f), ClassKey());
+                    Whole("Knight", "tauntCooldown", 25f), ClassKey(), Whole("Knight", "breakFree", 6f));
+            case PlayerClass.Schiesshund:
+                return Texts.Format(key, Whole("Schiesshund", "markSeconds", 15f), Whole("Schiesshund", "markDamage", 25f),
+                    Whole("Schiesshund", "bountyMoney", 100f), Whole("Schiesshund", "bountyElite", 300f), Whole("Schiesshund", "returnDamage", 6f),
+                    Whole("Schiesshund", "returnSeconds", 8f), Whole("Schiesshund", "roundPoints", 2f), Whole("Schiesshund", "elitePoints", 2f),
+                    Whole("Schiesshund", "desperadoDamage", 100f));
             default:
                 return Texts.Has(key) ? Texts.Get(key) : "";
         }

@@ -71,6 +71,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
     private PlayerExecution execution;
     private PlayerThrow throws;
     private ClassKit kit;
+    private PlayerPing ping;
     private PlayerDamageReceiver receiver;
     private CombatTimeEffects time;
     private PlayerBody body;
@@ -143,11 +144,15 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
         // The class (ClassKit): an Assault's CHARGE reaches friends near it on their PCs.
         kit = GetComponent<ClassKit>();
         if (kit == null) kit = gameObject.AddComponent<ClassKit>();
+        // F on an enemy (PlayerPing): the whole team sees it marked.
+        ping = GetComponent<PlayerPing>();
+        if (ping == null) ping = gameObject.AddComponent<PlayerPing>();
         if (IsOwner)
         {
             throws.Thrown += OnThrown;
             kit.Charged += OnCharged;
             kit.Taunted += OnTaunted;
+            ping.Pinged += OnPinged;
             weapon.ShotFired += OnShot;
             melee.Punched += OnPunched;
             melee.Elbowed += OnElbowed;
@@ -173,6 +178,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
         if (execution != null) execution.Started -= OnExecutionStarted;
         if (throws != null) throws.Thrown -= OnThrown;
         if (kit != null) { kit.Charged -= OnCharged; kit.Taunted -= OnTaunted; }
+        if (ping != null) ping.Pinged -= OnPinged;
         if (receiver != null) receiver.HitResolved -= OnHit;
         stance.OnValueChanged -= OnStanceChanged;
     }
@@ -244,6 +250,19 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
     private void OnThrown(Vector3 from, Vector3 velocity) => ThrowRpc(from, velocity);
     private void OnCharged(Vector3 at) => ChargeRpc(at);
     private void OnTaunted(Vector3 at) => TauntRpc(at);
+
+    private void OnPinged(EnemyHealth enemy, bool bounty)
+    {
+        if (enemy != null && enemy.TryGetComponent(out NetworkObject marked) && marked.IsSpawned) PingRpc(marked.NetworkObjectId, bounty);
+    }
+
+    // This player pinged an enemy (a Schießhund's bounty mark if bounty): every other PC marks it too.
+    [Rpc(SendTo.NotMe)]
+    private void PingRpc(ulong enemy, bool bounty)
+    {
+        if (NetworkManager == null || !NetworkManager.SpawnManager.SpawnedObjects.TryGetValue(enemy, out var marked)) return;
+        if (marked.TryGetComponent(out EnemyHealth health)) PingMarks.Ping(health, mover != null ? mover : GetComponent<PlayerMovement>(), bounty);
+    }
 
     // An Assault sounded a CHARGE here: each other PC's player near it charges too.
     [Rpc(SendTo.NotMe)]

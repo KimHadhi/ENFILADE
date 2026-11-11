@@ -19,7 +19,7 @@ public static class PlayerClass
     public const string Knight = "knight", Assault = "assault", Ghost = "ghost", Point = "point", Detente = "detente",
         Schiesshund = "schiesshund", Support = "support";
     /// <summary>The rows of Tables/ClassAbilities ("Ghost.hunterMax").</summary>
-    internal const string KnightRow = "Knight", GhostRow = "Ghost";
+    internal const string KnightRow = "Knight", GhostRow = "Ghost", HoundRow = "Schiesshund";
 
     /// <summary>One class in the table.</summary>
     public sealed class Info
@@ -80,16 +80,36 @@ public static class PlayerClass
 
     /// <summary>
     /// The bullet's damage factor from this PC's player's class: its own guns' bonus, an Assault's adrenaline, a CHARGE
-    /// they are in, a Ghost's Head Hunter and Deadeye. AttackTrace multiplies it in with the perk cards' for this PC's
-    /// shots only.
+    /// they are in, a Ghost's Head Hunter and Deadeye, a Schießhund's Return Back and Desperado round, and on the
+    /// Schießhund's own mark (<paramref name="target"/>) its bounty's debuff. AttackTrace multiplies it in with the perk
+    /// cards' for this PC's shots only.
     /// </summary>
-    public static float GunFactor(bool headshot)
+    public static float GunFactor(bool headshot, Component target = null)
     {
         var kit = ClassKit.Local;
         if (kit == null) return 1f;
         var info = Current;
         float factor = OwnsWeapon(info, kit.HeldGun) ? 1f + info.GunBonus / 100f : 1f;
+        if (target != null && Is(Schiesshund) && PingMarks.IsBountyOf(target, kit.Movement))
+            factor *= 1f + Ability(HoundRow, "markDamage", 25f) / 100f;
         return factor * kit.DamageFactor;
+    }
+
+    /// <summary>
+    /// A Schießhund's Desperado round in the head of its own mark: whatever it is, it dies (the user: "엘리트 같은 애들이
+    /// 나와도 표식 찍고 리볼버로 헤드샷하면 한 방에"), but for a brute, the boss made for a whole team's fire, which loses
+    /// bossShare of its whole health, as an execution takes a share of it. AttackTrace asks for this PC's own bullets;
+    /// anything else keeps its amount.
+    /// </summary>
+    public static float Finish(float amount, bool headshot, IDamageReceiver receiver)
+    {
+        var kit = ClassKit.Local;
+        if (!headshot || kit == null || !kit.DesperadoLoaded || !(receiver is EnemyHealth enemy) || !enemy.IsAlive) return amount;
+        if (!PingMarks.IsBountyOf(enemy, kit.Movement)) return amount;
+        kit.Finishing(enemy);
+        // Its whole health, not what this PC has of it: the host's may stand higher than a copy's.
+        bool firm = enemy.TryGetComponent(out MeleeCombatTarget melee) && melee.Steadfast;
+        return Mathf.Max(amount, firm ? enemy.MaximumHealth * Mathf.Clamp01(Ability(HoundRow, "bossShare", .4f)) : enemy.MaximumHealth + 1f);
     }
 
     /// <summary>This PC's player's pace from their class now (adrenaline, a CHARGE): LocomotionState multiplies it in.</summary>

@@ -132,6 +132,11 @@ public sealed class CampaignRun : MonoBehaviour
 
     private bool IsHost => network == null || network.IsServer;
     private CampaignStep Current => step >= 0 && step < steps.Count ? steps[step] : null;
+    // Its [F] has something on offer this frame (a step's button, a can, a door, a shop counter).
+    private bool offering;
+
+    /// <summary>The chapter's [F] has something on offer now: F does that, never a ping (PlayerPing).</summary>
+    public static bool Offering => active != null && active.offering;
 
     /// <summary>Where the dead come back in a campaign chapter: the last rest stop reached, or the chapter's start.
     /// False outside a chapter, or when the chapter has no such spot.</summary>
@@ -585,6 +590,7 @@ public sealed class CampaignRun : MonoBehaviour
             if (pressed) ShopMenu.Open(mine, shop.position);
         }
         else if (able && fuel.Any) text = CanPrompt(mine, pressed);
+        offering = text != null;
         screen.Prompt(ShopMenu.IsOpen ? null : text);
     }
 

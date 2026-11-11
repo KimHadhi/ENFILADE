@@ -63,9 +63,10 @@ public sealed class CombatFeedHUD : MonoBehaviour
     /// <summary>distance: shooter to hit point, metres (0 when unknown); gun kills past Long Range Distance earn a bonus. feedRow is false when the host will send the row.
     /// pierced: the killing bullet went through or off something first (관통 사살). standout: the enemy was named or elite, so
     /// its row burns magenta (backlog 325). takedown: an execution of a zombie that never knew they were there (the
-    /// stealth round's 암살, Stealth.csv Score.takedown on top of the execution's).</summary>
+    /// stealth round's 암살, Stealth.csv Score.takedown on top of the execution's). bounty: points a Schießhund's own mark
+    /// pays on top (현상금, ClassAbilities Schiesshund.bountyMoney / bountyElite), 0 for none.</summary>
     public static void Kill(string weapon, string target, bool headshot, bool execution, bool counter, bool bullet, float distance, bool feedRow,
-        bool pierced = false, bool standout = false, bool takedown = false)
+        bool pierced = false, bool standout = false, bool takedown = false, int bounty = 0)
     {
         if (!Application.isPlaying) return;
         var settings = GunFeelSettings.Instance;
@@ -87,6 +88,7 @@ public sealed class CombatFeedHUD : MonoBehaviour
             if (bullet && pierced) { gained += settings.piercedBonus; self.AddLine(Texts.Get("feed.score.pierced"), LineIcon.None, false); }
             if (execution) { gained += settings.executionBonus; self.AddLine(Texts.Get("feed.score.execution"), LineIcon.Execution, true, KillRed); }
             if (takedown) { gained += StealthScore.Takedown; self.AddLine(Texts.Get("feed.score.takedown"), LineIcon.None, true, KitStyle.Accent); }
+            if (bounty > 0) { gained += bounty; self.AddLine(Texts.Get("feed.score.bounty"), LineIcon.None, true, PingMarks.BountyColor); }
             if (counter) { gained += settings.counterBonus; self.AddLine(Texts.Get("feed.score.counter"), LineIcon.Counter, true, CombatFeedbackSettings.InstanceOrDefaults.counterColor); }
             if (self.multiKill >= 2)
             {

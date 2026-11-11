@@ -23,13 +23,20 @@ using UnityEngine.InputSystem;
 ///   blow; its parries last longer, wear posture down harder and open the counter as a perfect dodge does; its counters
 ///   and fists hit harder; pinned under a runner it fights on; and the class key taunts: the zombies already fighting
 ///   near it go after it for a few seconds, elites too, while it takes less again (the host's zombies, as
-///   PlayerNetworkCombat tells the host), so the elites keep off the shooters.
+///   PlayerNetworkCombat tells the host), so the elites keep off the shooters;
+/// - Schießhund (stage 3; the user's design, with the Jagdfieber and Return Back of their old memo): its F ping is a
+///   teal bounty mark (PlayerPing, PingMarks), one at a time, which its bullets hit harder. A marked enemy it kills pays
+///   a bounty: money (CombatFeedHUD), a Return Back stack (quicker and harder-hitting a while), and points toward the
+///   Desperado's next round. The Desperado is its revolver (the class's own gun, the R08): held with a round in it, every
+///   shot spends one and hits double, and one in the head of its own mark kills it outright, elites too (a brute loses a
+///   share of its health), with BOUNTY slammed across the screen in teal.
 /// The other classes' abilities come in later stages (Classes.csv ready 0). Numbers: Tables/ClassAbilities.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class ClassKit : MonoBehaviour
 {
-    private const string AssaultRow = "Assault", PointRow = "Point", GhostRow = PlayerClass.GhostRow, KnightRow = PlayerClass.KnightRow;
+    private const string AssaultRow = "Assault", PointRow = "Point", GhostRow = PlayerClass.GhostRow, KnightRow = PlayerClass.KnightRow,
+        HoundRow = PlayerClass.HoundRow;
     // Elites remembered as lately staggered: past this many, those free again are forgotten.
     private const int StaggerMemory = 32;
 
@@ -63,6 +70,12 @@ public sealed class ClassKit : MonoBehaviour
     private readonly List<MeleeCombatTarget> forget = new List<MeleeCombatTarget>();
     // Knight: when the taunt under way ends and how long it lasts; when it may be used again and how long that wait is.
     private float tauntUntil, tauntTotal = 1f, tauntReadyAt, tauntWait = 1f;
+    // Schießhund: Desperado rounds and the points toward the next; Return Back's stacks and when they go; when the last
+    // bounty came; and the bounty a Desperado round was just put in the head of, for its BOUNTY.
+    private int rounds, bountyPoints, returnStacks;
+    private float returnUntil, returnTotal = 1f, bountyAt = -99f, finishAt = -99f;
+    private EnemyHealth finishing;
+    private bool pingMade;
 
     public PlayerMovement Movement => movement;
     public WeaponData HeldGun => weapon != null ? weapon.EquippedData : null;
@@ -110,6 +123,17 @@ public sealed class ClassKit : MonoBehaviour
     public float TauntWait => Mathf.Max(0f, tauntReadyAt - Time.time);
     public float TauntWaitShare => Mathf.Clamp01(TauntWait / tauntWait);
 
+    /// <summary>A Schießhund's Desperado rounds, and the most its cylinder holds.</summary>
+    public int Rounds => rounds;
+    public int RoundMax => Mathf.Clamp(Mathf.RoundToInt(PlayerClass.Ability(HoundRow, "desperadoMax", 6f)), 1, 12);
+    /// <summary>A Schießhund holding its Desperado with a round in it: the next shot spends one (and may claim the bounty).</summary>
+    public bool DesperadoLoaded => PlayerClass.Is(PlayerClass.Schiesshund) && rounds > 0 && PlayerClass.OwnsWeapon(PlayerClass.Current, HeldGun);
+    /// <summary>Return Back's stacks now (0 when they have gone), and seconds since the last bounty.</summary>
+    public int ReturnStacks => returnUntil > Time.time ? returnStacks : 0;
+    /// <summary>How much of Return Back is left, 0 to 1 (0: none).</summary>
+    public float ReturnShare => returnUntil > Time.time ? Mathf.Clamp01((returnUntil - Time.time) / returnTotal) : 0f;
+    public float SinceBounty => Time.time - bountyAt;
+
     /// <summary>The factor this player's class puts on their shots now (adrenaline, a CHARGE, Head Hunter, Deadeye).</summary>
     public float DamageFactor
     {
@@ -125,6 +149,12 @@ public sealed class ClassKit : MonoBehaviour
                 // Read while the shot is traced, before ShotFired spends it: every pellet of that first shot has it.
                 if (DeadeyeReady) factor *= 1f + PlayerClass.Ability(GhostRow, "deadeye", 100f) / 100f;
             }
+            if (PlayerClass.Is(PlayerClass.Schiesshund))
+            {
+                factor *= 1f + ReturnStacks * PlayerClass.Ability(HoundRow, "returnDamage", 6f) / 100f;
+                // A Desperado round, likewise read before the shot spends it.
+                if (DesperadoLoaded) factor *= 1f + PlayerClass.Ability(HoundRow, "desperadoDamage", 100f) / 100f;
+            }
             return factor;
         }
     }
@@ -137,6 +167,7 @@ public sealed class ClassKit : MonoBehaviour
             float factor = 1f;
             if (PlayerClass.Is(PlayerClass.Assault)) factor *= 1f + stacks * PlayerClass.Ability(AssaultRow, "speedPerStack", 1.5f) / 100f;
             if (chargeUntil > Time.time) factor *= 1f + PlayerClass.Ability(AssaultRow, "chargeSpeed", 25f) / 100f;
+            if (PlayerClass.Is(PlayerClass.Schiesshund)) factor *= 1f + ReturnStacks * PlayerClass.Ability(HoundRow, "returnSpeed", 6f) / 100f;
             return factor;
         }
     }
@@ -164,12 +195,20 @@ public sealed class ClassKit : MonoBehaviour
         if (movement == null || !movement.IsLocal) return;
         Local = this;
         if (!wired) Wire();
+        // F on an enemy pings it for the team, alone too (PlayerNetworkCombat makes it in a room).
+        if (!pingMade) { pingMade = true; if (GetComponent<PlayerPing>() == null) gameObject.AddComponent<PlayerPing>(); }
         if (!kitGiven) TryGiveKit();
         Ebb();
         if (PlayerClass.Is(PlayerClass.Point)) ReloadAside();
-        // A Knight fights on pinned under a runner with its fists and shoves (PlayerHold, PlayerMeleeCombat).
+        // A Knight fights on pinned under a runner with its fists and shoves, and kicks it off with the shove key every
+        // few seconds without the shield (PlayerHold, PlayerMeleeCombat; the user: alone under a runner it must get out).
         if (hold == null && receiver != null) hold = receiver.GetComponent<PlayerHold>();
-        if (hold != null) hold.FightsPinned = PlayerClass.Is(PlayerClass.Knight) && PlayerClass.Ability(KnightRow, "fightsPinned", 1f) > .5f;
+        if (hold != null)
+        {
+            bool knight = PlayerClass.Is(PlayerClass.Knight);
+            hold.FightsPinned = knight && PlayerClass.Ability(KnightRow, "fightsPinned", 1f) > .5f;
+            hold.BreakFreeEvery = knight ? PlayerClass.Ability(KnightRow, "breakFree", 6f) : -1f;
+        }
         if (ability == null && InputSystem.actions != null)
         {
             KeyBindings.EnsureRestored();
@@ -205,6 +244,8 @@ public sealed class ClassKit : MonoBehaviour
         kitGiven = true;
         // Out of the box both guns are loaded: their first rounds are a Ghost's Deadeye shots too.
         loaded[0] = loaded[1] = true;
+        // A Schießhund starts the chapter with a round or so in the Desperado, to show what it does.
+        rounds = Mathf.Clamp(Mathf.RoundToInt(PlayerClass.Ability(HoundRow, "startRounds", 1f)), 0, RoundMax);
         var info = PlayerClass.Current;
         if (info == null) return;
         Give(0, info.Primary);
@@ -264,8 +305,10 @@ public sealed class ClassKit : MonoBehaviour
 
     private void OnDamaged(CombatDamageReport report)
     {
-        if (movement == null || !movement.IsLocal || !report.IsKillingBlow || !(report.Target is EnemyHealth)) return;
-        if (!PlayerPerks.IsMine(report.Hit.Source) || !PlayerClass.Is(PlayerClass.Assault)) return;
+        if (movement == null || !movement.IsLocal || !report.IsKillingBlow || !(report.Target is EnemyHealth enemy)) return;
+        if (!PlayerPerks.IsMine(report.Hit.Source)) return;
+        if (PlayerClass.Is(PlayerClass.Schiesshund) && PingMarks.IsBountyOf(enemy, movement)) Bounty(enemy);
+        if (!PlayerClass.Is(PlayerClass.Assault)) return;
         stacks = Mathf.Min(StackMax, stacks + 1);
         lastKill = Time.time;
         nextEbb = lastKill + PlayerClass.Ability(AssaultRow, "stackHold", 6f);
@@ -315,7 +358,15 @@ public sealed class ClassKit : MonoBehaviour
     // its last pellet: a head among its pellets is a headshot, else a body is a body shot.
     private void OnShot(WeaponShot shot)
     {
-        if (movement == null || !movement.IsLocal || !PlayerClass.Is(PlayerClass.Ghost)) return;
+        if (movement == null || !movement.IsLocal) return;
+        // A Schießhund's Desperado spends a round on each shot (its last pellet: a revolver has one).
+        if (PlayerClass.Is(PlayerClass.Schiesshund))
+        {
+            var held = HeldGun;
+            if (DesperadoLoaded && shot.Pellet >= (held != null ? Mathf.Max(1, held.Pellets) : 1) - 1) rounds--;
+            return;
+        }
+        if (!PlayerClass.Is(PlayerClass.Ghost)) return;
         var data = HeldGun;
         var trace = shot.Trace;
         var enemy = trace.HasHit && trace.Damage == DamageResult.Damaged && trace.Hit.collider != null
@@ -382,6 +433,42 @@ public sealed class ClassKit : MonoBehaviour
         forget.Clear();
         foreach (var pair in staggerAgain) if (pair.Key == null || Time.time >= pair.Value) forget.Add(pair.Key);
         foreach (var key in forget) staggerAgain.Remove(key);
+    }
+
+    // ---- Schießhund: the bounty, Return Back, the Desperado ----
+
+    /// <summary>
+    /// A Desperado round is going into the head of this Schießhund's own mark (PlayerClass.Finish, as AttackTrace weighs
+    /// the hit): when it dies of it, BOUNTY.
+    /// </summary>
+    internal void Finishing(EnemyHealth enemy)
+    {
+        finishing = enemy;
+        finishAt = Time.time;
+    }
+
+    // Its own mark died at its hand: points toward the Desperado's next round (an elite's count more), a Return Back
+    // stack, and the bounty's look and sound (its money is CombatFeedHUD's, with the kill).
+    private void Bounty(EnemyHealth enemy)
+    {
+        bountyPoints += Mathf.Max(1, Mathf.RoundToInt(PlayerClass.IsElite(enemy) ? PlayerClass.Ability(HoundRow, "elitePoints", 2f) : 1f));
+        int need = Mathf.Max(1, Mathf.RoundToInt(PlayerClass.Ability(HoundRow, "roundPoints", 2f)));
+        while (bountyPoints >= need)
+        {
+            bountyPoints -= need;
+            rounds = Mathf.Min(RoundMax, rounds + 1);
+        }
+        returnStacks = Mathf.Min(Mathf.Max(1, Mathf.RoundToInt(PlayerClass.Ability(HoundRow, "returnMax", 5f))), ReturnStacks + 1);
+        returnTotal = Mathf.Max(.1f, PlayerClass.Ability(HoundRow, "returnSeconds", 8f));
+        returnUntil = Time.time + returnTotal;
+        bountyAt = Time.time;
+        bool claimed = finishing == enemy && Time.time - finishAt < 1f;
+        finishing = null;
+        KitSound.Play(KitSound.Cue.Bounty, claimed ? 1f : .7f);
+        if (!claimed) return;
+        // The Desperado's own kill: BOUNTY, the counter's banner at its most in the mark's teal.
+        if (!TryGetComponent(out CounterBanner banner)) banner = gameObject.AddComponent<CounterBanner>();
+        banner.Play(.95f, CounterBanner.Grades - 1, "BOUNTY", PingMarks.BountyColor);
     }
 
     // ---- Knight: the taunt ----
