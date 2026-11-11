@@ -180,6 +180,22 @@ public sealed class CampaignRun : MonoBehaviour
         return total > 0f ? Mathf.Clamp01(active.held / total) : 0f;
     }
 
+    /// <summary>
+    /// A chapter's assault is under way, a hold or a finale's escape: how far into it and how long it is (s), for the
+    /// objective bar's assault look (AssaultBar), which plays it like a song.
+    /// </summary>
+    public static bool TryAssault(out float elapsed, out float length)
+    {
+        elapsed = length = 0f;
+        if (active == null || active.finished) return false;
+        var now = active.Current;
+        if (now == null || (now.Kind != CampaignStepKind.Hold && now.Kind != CampaignStepKind.Escape)) return false;
+        length = active.TotalOf(now);
+        if (length <= 0f) return false;
+        elapsed = Mathf.Min(active.held, length);
+        return true;
+    }
+
     /// <summary>The run is at this step now.</summary>
     public static bool IsRunning(string stepId)
         => active != null && !active.finished && active.Current != null && active.IndexOf(stepId) == active.step;

@@ -69,6 +69,8 @@ public sealed class MissionBarLook : MonoBehaviour, ITableBound
         // The count's big number and small total are tags; the prefab's text had them switched off.
         counter.richText = true;
         Anchor();
+        // A chapter's assault turns the bar into its own tape (D-3, memo 25).
+        if (GetComponent<AssaultBar>() == null) gameObject.AddComponent<AssaultBar>();
         GameTables.Bind(HudCamera.TableName, "Mission", this);
     }
 
