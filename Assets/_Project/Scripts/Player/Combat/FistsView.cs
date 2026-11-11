@@ -21,6 +21,8 @@ public sealed class FistsView : MonoBehaviour
     private const float PunchDuration = .18f, PunchReach = .25f;
     // The riposte's straight: quicker out and further, the shoulder behind it.
     private const float StraightDuration = .16f, StraightReach = .33f;
+    // The beat chain's finisher: the whole arm and shoulder through it.
+    private const float FinisherDuration = .21f, FinisherReach = .38f;
     // The spinning backfist (a link or a chase): wound across the chest, whipped out past the shoulder knuckles first,
     // brought back. Game seconds, as a punch's; its parts are shares of the whole.
     private const float SpinSeconds = .26f, SpinWind = .22f, SpinWhip = .3f;
@@ -83,6 +85,13 @@ public sealed class FistsView : MonoBehaviour
         }
         bool straight = strike == ComboStrike.Riposte;
         float length = straight ? StraightDuration : PunchDuration, reach = straight ? StraightReach : PunchReach;
+        // Each punch on the beat goes out quicker and a little further than the last; the finisher is the longest straight.
+        if (strike == ComboStrike.Beat)
+        {
+            int step = melee.Combos != null ? melee.Combos.BeatStep : 1;
+            length = Mathf.Max(.11f, PunchDuration * (1f - .1f * step)); reach = PunchReach + .02f * step;
+        }
+        else if (strike == ComboStrike.Finisher) { length = FinisherDuration; reach = FinisherReach; }
         if (right) { rightPunchTime = rightPunchLength = length; rightReach = reach; }
         else { leftPunchTime = leftPunchLength = length; leftReach = reach; }
         nextRight = !right;

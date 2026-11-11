@@ -2,7 +2,7 @@ using System;
 using UnityEngine;
 
 /// <summary>Which combo move a strike is (MeleeCombos); None is an ordinary punch.</summary>
-public enum ComboStrike : byte { None, Riposte, Spin, Chase }
+public enum ComboStrike : byte { None, Riposte, Spin, Chase, Beat, Finisher }
 
 /// <summary>
 /// The fists' combos: moves that go on a press made in time, judged on this player's own PC. All of them are generous
@@ -20,8 +20,15 @@ public enum ComboStrike : byte { None, Riposte, Spin, Chase }
 /// - Chase (Sekiro's shuriken into Chasing Slice): for Chase.window seconds after a stone is thrown (T), an attack press
 ///   with someone under the crosshair within Chase.range dashes at them and lands the spinning backfist. With nobody
 ///   there the press is an ordinary punch and the chance stays open.
-/// Each move that goes rings a short tick, higher the rarer it is. The dash in is committed: no dodge starts until the
-/// strike, a guard press calls it off. Numbers: Tables/Combos.csv.
+/// - Beat (user, 2026-11-11 #31: For Honor's Peacekeeper and Centurion, presses in time carry the chain on; the rush of
+///   Limbus Company's harpooner Ahab-sang skill 2, "stab and stab"): a punch that lands sets the next beat Beat.intervals
+///   after it left. A press within Beat.early before to Beat.late after that beat goes at once, faster and harder than
+///   the last; the Beat.steps-th is the finisher, a heavy straight that throws whoever the crosshair is on back, stuns
+///   them and catches time for a moment. A press off the beat, or none, simply ends the chain: that press is an
+///   ordinary punch. Any punch that lands opens the first beat, a riposte or a backfist too; the finisher closes it.
+///   ComboBeatHUD shows the beat closing in round the crosshair and the chain's steps under it.
+/// Each move that goes rings a short tick, higher the rarer it is and climbing with the chain. The dash in is committed:
+/// no dodge starts until the strike, a guard press calls it off. Numbers: Tables/Combos.csv.
 /// </summary>
 [DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.MeleeCombat + 1)]
 public sealed class MeleeCombos : MonoBehaviour
@@ -87,9 +94,41 @@ public sealed class MeleeCombos : MonoBehaviour
         public float reach = 1.8f;
     }
 
+    [Serializable]
+    public sealed class BeatNumbers
+    {
+        [Min(1), Tooltip("On-beat presses in a chain; the last is the finisher.")]
+        public int steps = 3;
+        [Tooltip("When the next beat falls after the punch before it left (s), one per step; the last repeats.")]
+        public float[] intervals = { .32f, .29f, .26f };
+        [Min(0f), Tooltip("A press this much before the beat (s) is still on it.")]
+        public float early = .1f;
+        [Min(0f), Tooltip("And this much after it (s).")]
+        public float late = .14f;
+        [Min(0f), Tooltip("Each on-beat step adds this share of a full-charged punch's damage.")]
+        public float stepDamage = .2f;
+        [Min(0f), Tooltip("And this share of its posture damage.")]
+        public float stepPosture = .25f;
+        [Min(0f), Tooltip("The finisher's damage against a full-charged punch's.")]
+        public float finisherDamage = 2.4f;
+        [Min(0f), Tooltip("The finisher's posture damage against a full-charged punch's.")]
+        public float finisherPosture = 3f;
+        [Min(.3f), Tooltip("The finisher lands on whoever the crosshair is on this close to the eyes (m).")]
+        public float finisherReach = 2f;
+        [Min(0f), Tooltip("It throws them back this fast (m/s).")]
+        public float finisherPush = 5f;
+        [Min(0f), Tooltip("And stuns them this long (s).")]
+        public float finisherStun = .6f;
+        [Min(0f), Tooltip("Time catches this long as it lands (real s).")]
+        public float finisherStop = .07f;
+        [Range(.01f, 1f), Tooltip("How slow time runs meanwhile.")]
+        public float finisherStopScale = .05f;
+    }
+
     [SerializeField] private RiposteNumbers riposte = new RiposteNumbers();
     [SerializeField] private LinkNumbers link = new LinkNumbers();
     [SerializeField] private ChaseNumbers chase = new ChaseNumbers();
+    [SerializeField] private BeatNumbers beat = new BeatNumbers();
 
     // Dodges wait this long (real s) past the last frame of a dash in; the strike frees them at once.
     private const float DodgeHold = .1f;
@@ -108,7 +147,28 @@ public sealed class MeleeCombos : MonoBehaviour
     // clock: this player's own game time (its pace in a room), for the windows counted in game seconds.
     private float clock, riposteUntil = float.NegativeInfinity, linkUntil = float.NegativeInfinity, chaseUntil = float.NegativeInfinity;
     private float dashTime, dashTimeout, dashSpeed, dashStop, lastGap, lastStep;
-    private bool ticksLoaded;
+    // The beat: when the last punch left, when the next beat falls, when its wait began, the steps on beat so far.
+    private float lastThrow, beatTarget, beatOpenedAt;
+    private int beatStep;
+    private bool ticksLoaded, beatOpen, lastWasFinisher, landedNow;
+    private ComboBeatHUD hud;
+    private Camera view;
+
+    /// <summary>A press landed on the beat (step, and whether it was the finisher): ComboBeatHUD flashes.</summary>
+    public event Action<int, bool> BeatHit;
+    /// <summary>A chain under way ended without its finisher (off the beat, or no press): ComboBeatHUD lets go.</summary>
+    public event Action BeatLost;
+    /// <summary>A beat is waiting for its press.</summary>
+    public bool BeatOpen => beatOpen;
+    /// <summary>Game seconds until the beat falls (below 0 once it has).</summary>
+    public float BeatLead => beatTarget - clock;
+    /// <summary>Game seconds from the punch's landing to the beat: how long the closing ring takes.</summary>
+    public float BeatSpan => Mathf.Max(.01f, beatTarget - beatOpenedAt);
+    public float BeatEarly => beat.early;
+    public float BeatLate => beat.late;
+    /// <summary>On-beat presses so far in the chain, and how many make the finisher.</summary>
+    public int BeatStep => beatStep;
+    public int BeatSteps => Mathf.Max(1, beat.steps);
 
     public RiposteNumbers Riposte => riposte;
     /// <summary>Closing in for a combo strike: the fists take no other press meanwhile.</summary>
@@ -129,7 +189,42 @@ public sealed class MeleeCombos : MonoBehaviour
         GameTables.BindNested(TableName, "Riposte", combos, combos.riposte);
         GameTables.BindNested(TableName, "Link", combos, combos.link);
         GameTables.BindNested(TableName, "Chase", combos, combos.chase);
+        GameTables.BindNested(TableName, "Beat", combos, combos.beat);
         return combos;
+    }
+
+    /// <summary>A punch left, of whatever kind (PlayerMeleeCombat.Punch): the beat counts from here, and anything but a
+    /// beat's own strike starts the chain over.</summary>
+    internal void OnPunchThrown(ComboStrike strike)
+    {
+        if (!Mine) return;
+        lastThrow = clock;
+        lastWasFinisher = strike == ComboStrike.Finisher;
+        if (strike != ComboStrike.Beat && strike != ComboStrike.Finisher && (beatOpen || beatStep > 0)) LoseBeat();
+        beatOpen = false;
+    }
+
+    /// <summary>That punch landed on someone, once however many it hit: the next beat waits. The finisher closes the chain.</summary>
+    internal void OnPunchLanded()
+    {
+        if (!Mine) return;
+        landedNow = true;
+        if (lastWasFinisher) return;
+        var intervals = beat.intervals;
+        float interval = intervals != null && intervals.Length > 0 ? intervals[Mathf.Clamp(beatStep, 0, intervals.Length - 1)] : .3f;
+        beatTarget = lastThrow + Mathf.Max(.05f, interval);
+        // A landing as late as the beat's own end has nothing left to wait for.
+        if (beatTarget + beat.late <= clock) { if (beatStep > 0) LoseBeat(); return; }
+        beatOpenedAt = clock;
+        beatOpen = true;
+    }
+
+    // The chain ends without its finisher: nothing is lost but the chain.
+    private void LoseBeat()
+    {
+        bool under = beatOpen || beatStep > 0;
+        beatOpen = false; beatStep = 0;
+        if (under) BeatLost?.Invoke();
     }
 
     private void Awake() => player = GetComponent<PlayerMovement>();
@@ -172,7 +267,59 @@ public sealed class MeleeCombos : MonoBehaviour
             Melee.StrikeCombo(ComboStrike.Spin);
             return true;
         }
+        if (beatOpen)
+        {
+            float lead = beatTarget - clock;
+            // Off the beat: the chain ends and this press is an ordinary punch, nothing more.
+            if (lead > beat.early || lead < -beat.late) { LoseBeat(); return false; }
+            beatOpen = false;
+            beatStep++;
+            bool finisher = beatStep >= BeatSteps;
+            Tick(finisher ? 1.6f : 1f + .12f * beatStep);
+            BeatHit?.Invoke(beatStep, finisher);
+            if (finisher) Finish();
+            else Melee.StrikeCombo(ComboStrike.Beat);
+            return true;
+        }
         return false;
+    }
+
+    // The chain's last blow: a heavy straight at whoever the crosshair is on (a sweep along the aim with nobody there),
+    // throwing them back and stunning them while time catches on it.
+    private void Finish()
+    {
+        var target = Aimed(beat.finisherReach);
+        landedNow = false;
+        Melee.StrikeCombo(ComboStrike.Finisher, target);
+        beatStep = 0;
+        if (!landedNow || target == null || !target.IsAvailable) return;
+        Vector3 away = Vector3.ProjectOnPlane(target.transform.position - transform.position, Vector3.up);
+        away = away.sqrMagnitude > 1e-4f ? away.normalized : Vector3.ProjectOnPlane(transform.forward, Vector3.up).normalized;
+        if (beat.finisherPush > 0f) target.ReceiveShove(away * beat.finisherPush, target.transform.position + Vector3.up);
+        if (beat.finisherStun > 0f) target.Interrupt(beat.finisherStun);
+        if (beat.finisherStop > 0f && TryGetComponent(out CombatTimeEffects time))
+            time.RequestSlowdown(this, beat.finisherStopScale, beat.finisherStop, target);
+        if (view == null) view = GetComponentInChildren<Camera>();
+        CameraViewPunch.For(view)?.ImpactPunch(new Vector3(-2.5f, 0f, 0f), -4f, .15f);
+    }
+
+    // The nearest one the crosshair rests on within reach, nothing solid between.
+    private MeleeCombatTarget Aimed(float reach)
+    {
+        Transform eyes = PlayerView.EyesOf(player);
+        if (eyes == null) return null;
+        int count = Physics.SphereCastNonAlloc(eyes.position, .35f, eyes.forward, hits, reach, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
+        MeleeCombatTarget best = null;
+        float nearest = float.PositiveInfinity;
+        for (int i = 0; i < count; i++)
+        {
+            if (hits[i].collider.transform.IsChildOf(transform) || hits[i].distance >= nearest) continue;
+            var candidate = hits[i].collider.GetComponentInParent<MeleeCombatTarget>();
+            if (candidate == null || !candidate.IsAvailable || candidate.GetComponent<IDamageReceiver>() == null) continue;
+            if (!InSight(eyes.position, hits[i].collider, candidate)) continue;
+            nearest = hits[i].distance; best = candidate;
+        }
+        return best;
     }
 
     // Whoever the crosshair rests on within range, nothing solid between: the dash goes at them.
@@ -256,6 +403,8 @@ public sealed class MeleeCombos : MonoBehaviour
             case ComboStrike.Riposte: damage = riposte.damage; posture = riposte.posture; reach = riposte.reach; break;
             case ComboStrike.Spin: damage = link.damage; posture = link.posture; reach = link.reach; radius = link.radius; targets = link.targets; break;
             case ComboStrike.Chase: damage = chase.damage; posture = chase.posture; reach = chase.reach; radius = link.radius; targets = link.targets; break;
+            case ComboStrike.Beat: damage = 1f + beat.stepDamage * beatStep; posture = 1f + beat.stepPosture * beatStep; break;
+            case ComboStrike.Finisher: damage = beat.finisherDamage; posture = beat.finisherPosture; reach = beat.finisherReach; break;
         }
     }
 
@@ -285,6 +434,11 @@ public sealed class MeleeCombos : MonoBehaviour
         // The stone's hand is added with the body, maybe after this; listened to once found, on this player's own PC.
         if (thrower == null && Mine && TryGetComponent(out thrower)) thrower.Thrown += OnThrown;
         if (dashTarget != null) TickDash(player.DeltaTime);
+        // The beat went by with no press, the beat's own strike found nobody, or the fists were put away: the chain ends.
+        if (beatOpen ? BeatLead < -beat.late : beatStep > 0 && clock - lastThrow > .5f) LoseBeat();
+        else if ((beatOpen || beatStep > 0) && (Melee == null || !Melee.IsActive)) LoseBeat();
+        // The beat's ring is made the first time the fists come out, not in the first fight.
+        if (hud == null && Mine && Melee != null && Melee.IsActive) hud = GetComponent<ComboBeatHUD>() ?? gameObject.AddComponent<ComboBeatHUD>();
     }
 
     private void TickDash(float dt)
@@ -320,6 +474,7 @@ public sealed class MeleeCombos : MonoBehaviour
     {
         CancelDash();
         parried = null; riposteUntil = linkUntil = chaseUntil = float.NegativeInfinity;
+        beatOpen = false; beatStep = 0;
     }
 
     private void OnDestroy()

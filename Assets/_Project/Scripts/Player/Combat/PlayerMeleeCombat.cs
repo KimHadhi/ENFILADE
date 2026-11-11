@@ -77,6 +77,8 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
     public event Action<float> Punched;
     /// <summary>The combo move of the punch Punched is announcing, read during that event (FistsView); None otherwise.</summary>
     public ComboStrike LastStrike { get; private set; }
+    /// <summary>This player's combos (the beat's step, for FistsView); null on a copy made before play.</summary>
+    internal MeleeCombos Combos => combos;
 
     /// <summary>
     /// The speed the legs may go with the hands doing what they are doing (LocomotionState asks): nothing while rooted
@@ -280,6 +282,8 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
     {
         lungeDirection = Vector3.ProjectOnPlane(aim.forward, Vector3.up).normalized;
         lungeRemaining = player.IsGrounded ? 0.1f : 0f;
+        // The beat counts from the punch leaving, before the sweep can land on its first sample (MeleeCombos).
+        combos?.OnPunchThrown(strike);
         // Swing first: the sweep can land on its first sample inside Begin.
         punchLanded = false; punchCharge = charge; fistAudio?.PlaySwing();
         // A Knight's fists hit harder, flesh and posture (PlayerClass).
@@ -314,11 +318,12 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
     private void OnPunchLanded()
     {
         cooldown = 0f;
-        // One hit cue per punch, even when it lands on several targets.
+        // One hit cue per punch, even when it lands on several targets; and one beat waiting after it (MeleeCombos).
         if (!punchLanded)
         {
             if (punchCharge >= heavyPunchCharge) fistAudio?.PlayHeavyHit();
             else fistAudio?.PlayHit();
+            combos?.OnPunchLanded();
         }
         punchLanded = true;
     }
