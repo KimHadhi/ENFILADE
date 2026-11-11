@@ -314,8 +314,10 @@ public sealed class ZombieVoice : MonoBehaviour
         // Dead, it says nothing more of what it was saying.
         Hush(zombie.gameObject);
         if (!speak || ZombieGore.BurstsHead(hit)) return;
-        // Taken down from behind before it knew anyone was there (a stealth kill), it goes quietly.
-        if (hit.Kind == DamageKind.Execution && zombie.TryGetComponent(out ZombieMind mind) && mind.Unaware) return;
+        // Taken down from behind before it knew anyone was there (a stealth kill), it goes quietly; so does one a throwing
+        // knife ended unaware, which counts as the same takedown (GunFeelDirector, ThrownKnife).
+        if ((hit.Kind == DamageKind.Execution || hit.Method == DamageMethod.Thrown)
+            && zombie.TryGetComponent(out ZombieMind mind) && mind.Unaware) return;
         bool mine = ByMine(hit);
         if (mine ? Time.time < nextDeathMine : Time.time < nextDeath) return;
         if (!Voice(zombie, DeathKeys, Rank.Death, true, far, near)) return;
