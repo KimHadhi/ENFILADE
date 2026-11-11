@@ -10,7 +10,7 @@ using UnityEngine.UI;
 /// the name's first letter on pink, as every other profile square does. Replaced the hexagon with the drawn character on
 /// 2026-11-09 (the user: "design it your way"). The ultimate is the magazine on its left edge (UltimateMagazine, round 4,
 /// 2026-11-11), which this makes and fits to the picture; the brackets no longer glow with it, as the old glow lit the
-/// picture for no reason. Under the picture stands the class's rank on its way to the next insignia (RankStrip).
+/// picture for no reason.
 /// </summary>
 [DisallowMultipleComponent]
 [RequireComponent(typeof(RawImage))]
@@ -46,8 +46,6 @@ public sealed class HudPortrait : MonoBehaviour
         GameTables.Bind(UltimateMagazine.TableName, UltimateMagazine.Row, magazine);
         rect.sizeDelta = new Vector2(magazine.Width, 2f * (half + mat));
         rect.anchoredPosition = new Vector2(-(half + mat + magazine.Gap), 0f);
-        // The class's rank and its way to the next insignia, under the picture (2026-11-11; RankStrip).
-        if (Application.isPlaying) RankStrip.Make(tile, half + mat);
     }
 
     private void OnEnable()

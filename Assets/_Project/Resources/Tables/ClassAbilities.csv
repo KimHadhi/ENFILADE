@@ -81,3 +81,14 @@ Point.gunslingerSeconds,2.5,건슬링어 카드: 총을 바꿔 든 뒤 그 총�
 Ghost.tigerReach,6,화이트 타이거 카드: 헤드 헌터가 가득 찬 채 헤드샷으로 처치하면 그 자리 둘레 이 반경(m)의 적이 휘청인다
 Ghost.tigerStagger,1.2,화이트 타이거: 휘청이는 시간(초). 거구는 0.5초까지만
 Ghost.tigerRest,1.5,화이트 타이거: 발톱(휘청임과 이펙트)이 다시 나올 때까지(초). 헤드 헌터를 지켜 주는 시간은 그런 처치마다 다시 채운다
+Assault.dangerReach,6,데인저 클로즈 카드: 이 거리(m) 안의 적에게 내 총 피해가 세진다
+Assault.brokenHealth,30,브로큰 애로우 카드: 체력이 이 비율(%) 아래로 떨어지면 포격을 부른다(좀비에게 잡혀도)
+Assault.brokenDelay,1.5,브로큰 애로우: 부른 뒤 첫 포탄이 떨어지기까지(초)
+Assault.brokenCooldown,75,브로큰 애로우: 다시 부를 수 있을 때까지(초)
+Assault.brokenRadius,9,브로큰 애로우: 포탄이 떨어지는 반경(m). 이 안의 적에게 가까운 순서로 한 발씩. 적이 없으면 둘레 빈 땅
+Assault.brokenBlast,3,브로큰 애로우: 포탄 한 발의 폭발 반경(m). 나와 동료는 다치지 않는다
+Assault.brokenDamage,150,브로큰 애로우: 포탄 한 발의 피해(가운데. 가장자리는 절반). 맞은 좀비는 1.5초 쓰러진다(거구는 휘청)
+Assault.brokenEvery,.22,브로큰 애로우: 포탄과 포탄 사이(초)
+Assault.cavalryReach,24,유령 기병대 카드: CHARGE를 쓰면 기병이 바라보는 쪽으로 쓸고 나가는 거리(m)
+Assault.cavalryWidth,4.5,유령 기병대: 쓸고 나가는 폭(m)
+Assault.cavalryKnockdown,2,유령 기병대: 기병에 받힌 좀비가 내동댕이쳐진 뒤 쓰러져 있는 시간(초). 피해는 카드 값(Perks.csv)

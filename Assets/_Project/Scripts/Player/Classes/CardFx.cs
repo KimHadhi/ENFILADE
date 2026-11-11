@@ -27,10 +27,10 @@ public sealed class CardFx : MonoBehaviour
     public enum Kind : byte { Claws, Echo, Deflect, Flash, Blast, Shell, Cavalry, Shadow }
 
     private const int SampleRate = 44100, Riders = 5;
-    // Cavalry: how fast they ride (m/s), how long they fade in and out (s).
-    private const float CavalrySpeed = 26f, CavalryIn = .08f, CavalryOut = .3f;
-    // A Shell: how long its streak takes to come down (s).
-    private const float ShellFall = .3f;
+    /// <summary>Cavalry: how fast they ride (m/s), how long they fade in and out (s); ClassCards sweeps at the same pace.</summary>
+    public const float CavalrySpeed = 26f, CavalryIn = .08f, CavalryOut = .3f;
+    /// <summary>A Shell: how long its streak takes to come down (s); ClassCards lands its blast then.</summary>
+    public const float ShellFall = .3f;
     private static readonly Color Violet = new Color(.55f, .18f, 1f), Blue = new Color(.62f, .86f, 1f), Hot = new Color(1f, .78f, .42f);
     private static AudioClip boom;
 

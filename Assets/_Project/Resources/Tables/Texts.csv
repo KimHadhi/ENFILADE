@@ -309,6 +309,7 @@ class.hud.charge,CHARGE,,클래스 HUD: 어썰트 아드레날린이 다 찼을 
 class.hud.later,준비 중,,클래스 HUD: 능력이 아직 없는 클래스 이름 옆
 class.assault.charge.self,돌격! · 피해와 이동 증가,,어썰트가 CHARGE를 썼을 때 화면 위 알림(자기)
 class.assault.charge.friend,{0}의 돌격 · 피해와 이동 증가,,동료 어썰트의 CHARGE 반경 안에 있을 때 화면 위 알림. {0}=동료 이름
+class.assault.broken.self,브로큰 애로우! 포격 요청,,어썰트 브로큰 애로우 카드: 체력이 낮아지거나 잡혀서 포격을 불렀을 때 화면 위 알림(자기)
 class.knight.taunt.self,도발! 주변 좀비가 나를 노린다,,나이트가 도발을 썼을 때 화면 위 알림(자기)
 class.hud.taunt,도발,,클래스 HUD: 나이트 도발 키 옆 글자와 도발 시간 막대 글자
 class.hud.taunt_wait,도발 {0}초,,클래스 HUD: 나이트 도발을 다시 쓸 수 있을 때까지. {0}=남은 초
@@ -683,10 +684,3 @@ special.lastround,LAST ROUND,LAST ROUND,특수 처치: 탄창의 마지막 한 �
 special.lastround.note,탄창의 마지막 한 발로,With the magazine's last round,특수 처치 도장의 이유 줄
 special.savior,SAVIOR,SAVIOR,특수 처치: 동료를 붙잡은(잡기·먹기·깔기) 좀비를 처치했을 때
 special.savior.note,동료를 붙든 놈을,The one holding a teammate,특수 처치 도장의 이유 줄
-hud.rank.gain,+{0} XP,+{0} XP,초상화 아래 휘장 줄: 처치 때 막대 위에 잠깐 뜨는 경험치
-score.rank.game,이번 판 +{0} 경험치,This game +{0} XP,Tab 화면 휘장 막대 아래: 이번 판에 번 성장
-score.rank.split,(처치 +{0} · 남긴 돈 몫 +{1}),(kills +{0} · money kept +{1}),Tab 화면: 이번 판 성장의 내역. 판이 끝날 때 가진 돈의 절반도 성장이 된다
-score.rank.kill,처치 하나 +{0} 경험치 · 헤드샷 처치 +{1},A kill +{0} XP · a headshot kill +{1},Tab 화면: 처치 하나가 주는 경험치
-score.rank.next,다음 휘장까지 {0},{0} to the next insignia,Tab 화면 휘장 막대 위 오른쪽
-score.rank.top,마지막 휘장,The last insignia,Tab 화면: 더 오를 휘장이 없을 때
-score.rank.climb,판이 끝나면 휘장 {0}단계 오름,{0} insignia up when this game ends,Tab 화면: 이번 판 성장으로 오를 휘장 수(판이 끝날 때 오른다)

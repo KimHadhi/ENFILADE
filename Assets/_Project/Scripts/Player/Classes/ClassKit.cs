@@ -348,6 +348,8 @@ public sealed class ClassKit : MonoBehaviour
             Vector3 at = transform.position;
             ReceiveCharge(at, Texts.Get("class.assault.charge.self"));
             Charged?.Invoke(at);
+            // The phantom cavalry card rides out with it (ClassCards).
+            cards?.Charged(at);
             return;
         }
         if (PlayerClass.Is(PlayerClass.Knight)) { Taunt(); return; }

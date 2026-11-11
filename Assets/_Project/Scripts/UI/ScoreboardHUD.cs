@@ -11,9 +11,7 @@ using UnityEngine.UI;
 /// Held on Tab, in the manner of PAYDAY 2's: the world blurs and darkens behind the objectives at the top left, the map
 /// and wave at the top, a line for each player with their numbers, weapons and ping, and what this run has earned below.
 /// Built up front so opening it never hitches. Everyone's numbers come from PlayerTally, so it reads the same alone and
-/// in a room. Under the table, this player's class and its rank (RankProgress): the insignia this game's growth adds up
-/// to, the bar to the next (white what was held, pink this game's kills, pale pink the share of the money held), what
-/// this game has brought and what a kill is worth, so growth can be read while playing (the user, 2026-11-11).
+/// in a room.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class ScoreboardHUD : MonoBehaviour
@@ -50,11 +48,6 @@ public sealed class ScoreboardHUD : MonoBehaviour
     private CanvasGroup group;
     private RectTransform table, footer, perkRow;
     private TextMeshProUGUI wave, title, subtitle, earned, played, perkCaption;
-    // The class's rank block (RankProgress): its insignia, the bar's parts, the next insignia and the lines about it.
-    private const float RankY = -74f, RankBar = 520f, RankBarLeft = -276f, RankBadge = 64f, RankNext = 40f, RankDrop = 124f;
-    private RectTransform rankHeld, rankKills, rankKept;
-    private RawImage rankBadge, rankNext;
-    private TextMeshProUGUI rankTitle, rankLeft, rankRight, rankWorth;
     private bool perksDirty = true;
     private ObjectiveLogPanel objectives;
     private Volume blur;
@@ -101,16 +94,15 @@ public sealed class ScoreboardHUD : MonoBehaviour
         var lineFill = line.gameObject.AddComponent<Image>();
         lineFill.color = new Color(1f, 1f, 1f, .55f);
         lineFill.raycastTarget = false;
-        BuildRank();
-        earned = Text("Earned", footer, 36f, new Vector2(0f, -38f - RankDrop), 900f, TextAlignmentOptions.Center);
-        played = Text("Played", footer, 19f, new Vector2(0f, -74f - RankDrop), 900f, TextAlignmentOptions.Center);
+        earned = Text("Earned", footer, 36f, new Vector2(0f, -38f), 900f, TextAlignmentOptions.Center);
+        played = Text("Played", footer, 19f, new Vector2(0f, -74f), 900f, TextAlignmentOptions.Center);
         played.color = Soft;
         // This player's perk cards (stage 6C), so what they hold is a Tab away.
-        perkCaption = Text("Perks Caption", footer, 16f, new Vector2(0f, -110f - RankDrop), 900f, TextAlignmentOptions.Center);
+        perkCaption = Text("Perks Caption", footer, 16f, new Vector2(0f, -110f), 900f, TextAlignmentOptions.Center);
         perkCaption.color = Soft;
         perkCaption.text = Texts.Get("score.perks");
         perkRow = FeelUI.Rect("Perks", footer);
-        perkRow.anchoredPosition = new Vector2(0f, -148f - RankDrop);
+        perkRow.anchoredPosition = new Vector2(0f, -148f);
         PlayerPerks.Changed += MarkPerks;
 
         blur = host.AddComponent<Volume>();
@@ -127,76 +119,6 @@ public sealed class ScoreboardHUD : MonoBehaviour
         depth.highQualitySampling.Override(true);
         blur.sharedProfile = profile;
         host.SetActive(false);
-    }
-
-    // The rank block under the line: insignia, class, bar with its next insignia, and two small lines under the bar.
-    private void BuildRank()
-    {
-        rankBadge = RankImage("Rank Insignia", new Vector2(RankBarLeft - 14f - RankBadge * .5f, RankY), RankBadge, Color.white);
-        rankTitle = Text("Rank Class", footer, 22f, new Vector2(RankBarLeft + 200f, RankY + 22f), 400f, TextAlignmentOptions.Left);
-        RankBox("Rank Bar", RankBar, new Color(1f, 1f, 1f, .14f));
-        rankHeld = RankBox("Rank Held", 0f, new Color(1f, 1f, 1f, .72f));
-        rankKept = RankBox("Rank Kept", 0f, new Color(1f, .62f, .74f, .85f));
-        rankKills = RankBox("Rank This Game", 0f, KitStyle.Accent);
-        rankNext = RankImage("Rank Next", new Vector2(RankBarLeft + RankBar + 14f + RankNext * .5f, RankY), RankNext, new Color(1f, 1f, 1f, .35f));
-        rankRight = Text("Rank To Next", footer, 15f, new Vector2(RankBarLeft + RankBar - 160f, RankY + 22f), 320f, TextAlignmentOptions.Right);
-        rankRight.color = Soft;
-        rankLeft = Text("Rank Game", footer, 15f, new Vector2(RankBarLeft + 260f, RankY - 22f), 520f, TextAlignmentOptions.Left);
-        rankWorth = Text("Rank Worth", footer, 14f, new Vector2(RankBarLeft + 260f, RankY - 42f), 520f, TextAlignmentOptions.Left);
-        rankWorth.color = Soft;
-    }
-
-    private RawImage RankImage(string name, Vector2 at, float size, Color tint)
-    {
-        var rect = FeelUI.Rect(name, footer);
-        rect.anchoredPosition = at;
-        rect.sizeDelta = new Vector2(size, size);
-        var image = rect.gameObject.AddComponent<RawImage>();
-        image.color = tint;
-        image.raycastTarget = false;
-        return image;
-    }
-
-    private RectTransform RankBox(string name, float width, Color tint)
-    {
-        var rect = FeelUI.Rect(name, footer);
-        rect.pivot = new Vector2(0f, .5f);
-        rect.anchoredPosition = new Vector2(RankBarLeft, RankY);
-        rect.sizeDelta = new Vector2(width, 8f);
-        var image = rect.gameObject.AddComponent<Image>();
-        image.color = tint;
-        image.raycastTarget = false;
-        return rect;
-    }
-
-    private void RefreshRank()
-    {
-        var view = RankProgress.Now();
-        rankBadge.texture = ClassGrowth.Insignia(view.Rank);
-        rankBadge.enabled = rankBadge.texture != null;
-        rankNext.texture = view.Top ? null : ClassGrowth.Insignia(view.Rank + 1);
-        rankNext.enabled = rankNext.texture != null;
-        rankTitle.text = view.Title;
-        float held = view.StoredShare, total = view.Share;
-        float kills = view.Earned > 0 ? Mathf.Lerp(held, total, view.Kills / (float)view.Earned) : held;
-        RankSpan(rankHeld, 0f, held);
-        RankSpan(rankKills, held, kills);
-        RankSpan(rankKept, kills, total);
-        var settings = GunFeelSettings.Instance;
-        string game = view.Playing ? Texts.Format("score.rank.game", view.Earned.ToString("N0"))
-            + (view.Kept > 0 ? "  <color=#" + ColorUtility.ToHtmlStringRGB(Soft) + ">" + Texts.Format("score.rank.split", view.Kills.ToString("N0"), view.Kept.ToString("N0")) + "</color>" : "")
-            : "";
-        rankLeft.text = game;
-        rankWorth.text = Texts.Format("score.rank.kill", settings.killScore.ToString("N0"), (settings.killScore + settings.headshotBonus).ToString("N0"));
-        rankRight.text = view.Climb > 0 ? "<color=#" + ColorUtility.ToHtmlStringRGB(KitStyle.Accent) + ">" + Texts.Format("score.rank.climb", view.Climb) + "</color>  "
-            + (view.Top ? Texts.Get("score.rank.top") : Texts.Format("score.rank.next", view.ToNext.ToString("N0")))
-            : view.Top ? Texts.Get("score.rank.top") : Texts.Format("score.rank.next", view.ToNext.ToString("N0"));
-    }
-
-    private static void RankSpan(RectTransform part, float from, float to)
-    {
-        part.anchoredPosition = new Vector2(RankBarLeft + RankBar * from, RankY);
-        part.sizeDelta = new Vector2(Mathf.Max(0f, RankBar * (to - from)), 8f);
     }
 
     private static TextMeshProUGUI Text(string name, Transform parent, float size, Vector2 position, float width, TextAlignmentOptions alignment)
@@ -312,7 +234,6 @@ public sealed class ScoreboardHUD : MonoBehaviour
         }
         footer.anchoredPosition = table.anchoredPosition + new Vector2(0f, -HeaderY - 36f - shown.Count * (RowHeight + RowGap) + RowHeight * .5f - 8f);
         earned.text = Texts.Format("score.money", Wallet.Format(Wallet.Balance));
-        RefreshRank();
         int seconds = Mathf.FloorToInt(Time.timeSinceLevelLoad);
         played.text = Texts.Format("score.played", (seconds / 60).ToString("00"), (seconds % 60).ToString("00"));
         if (tracker == null) tracker = FindFirstObjectByType<MissionTracker>();

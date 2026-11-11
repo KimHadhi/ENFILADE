@@ -11,8 +11,11 @@ gauge_charge,충전기,,기타,Bolt,3,20,,,,,,8,게이지가 차는 속도 +{0}%
 heriot,사망세,,돈,Money,3,20,,,,,,8,처치할 때 받는 돈 +{0}%. 점수 팝업에 '사망세' 줄,Heriot: 중세 영주가 죽은 이의 재산에서 몫을 떼어 가던 세금. 쓰러뜨린 적에게서도 몫을 챙긴다
 momentum,기세,,기타,Bolt,3,6,,,,,,8,맞힐 때마다 {Cards.momentumSeconds}초 동안 총·주먹 피해 +{0}%. 계속 맞히면 끊기지 않는다,맞힌 손맛에 피가 끓는다. 식기 전에 또 맞히면 다시 끓어오른다
 knight_taunt,거듭된 도발,knight,나이트,Class_knight,2,-5,,-1,Knight.tauntCooldown,,,10,도발을 다시 쓰기까지 -{0}초,목청이 트여 숨 돌릴 틈 없이 다시 외친다
+assault_danger,데인저 클로즈,assault,어썰트,Class_assault,3,10,,,,,,12,{Assault.dangerReach}m 안의 적에게 총 피해 +{0}%,아군 코앞까지 포격을 부르는 무전 '데인저 클로즈'. 가까울수록 대담하게 쏜다
+assault_broken,브로큰 애로우,assault,어썰트,Bolt,2,6,,,,,,10,체력이 {Assault.brokenHealth}% 아래로 떨어지거나 좀비에게 잡히면 {Assault.brokenDelay}초 뒤 내 둘레의 적에게 포탄 {0}발이 떨어진다(나와 동료는 안 다친다). {Assault.brokenCooldown}초에 한 번,'브로큰 애로우'는 부대가 무너지기 직전 닿는 모든 화력을 부르는 무전 암호
 assault_adrenaline,깊은 숨,assault,어썰트,Class_assault,2,2,,,Assault.stackMax,,,10,아드레날린 최대 +{0}스택,숨이 턱까지 차도 멈추지 않는 법을 익혔다
 assault_rally,질긴 흥분,assault,어썰트,Class_assault,2,2,,,Assault.stackHold,,,8,마지막 처치 뒤 아드레날린이 줄기 시작하기까지 +{0}초,한번 오른 흥분이 쉬이 가라앉지 않는다
+assault_cavalry,유령 기병대,assault,궁극,Class_assault,1,80,,,,4,1,40,CHARGE를 쓰면 유령 기병 분대가 앞으로 {Assault.cavalryReach}m를 일직선으로 쓸고 나가며 닿는 적을 내동댕이친다(피해 {0}),돌격 나팔에 옛 기병대가 응답한다. 창끝이 지나간 자리엔 아무것도 서 있지 못한다
 ghost_pierce,과관통,ghost,고스트,Bullet,2,50,,,,,,12,총알 관통력 +{0}%: 몸을 뚫어도 힘이 덜 빠져 줄 선 적을 더 많이 꿰뚫는다,텅스텐 탄심은 살을 지나도 무뎌지지 않는다
 ghost_weakpoint,약점 사냥,ghost,고스트,Headshot,3,20,8,,,,,12,헤드샷 피해 +{0}% · 몸 피해 -{1}%,급소만 노리도록 탄두를 가볍게 깎았다. 그만큼 몸에는 덜 박힌다
 ghost_patience,긴 호흡,ghost,고스트,Class_ghost,2,2,,,Ghost.hunterMax,,,10,헤드 헌터 최대 +{0}스택,숨을 길게 참을수록 조준이 깊어진다
