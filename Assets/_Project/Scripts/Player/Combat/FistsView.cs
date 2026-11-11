@@ -21,6 +21,13 @@ public sealed class FistsView : MonoBehaviour
     private const float PunchDuration = .18f, PunchReach = .25f;
     // The riposte's straight: quicker out and further, the shoulder behind it.
     private const float StraightDuration = .16f, StraightReach = .33f;
+    // The spinning backfist (a link or a chase): wound across the chest, whipped out past the shoulder knuckles first,
+    // brought back. Game seconds, as a punch's; its parts are shares of the whole.
+    private const float SpinSeconds = .26f, SpinWind = .22f, SpinWhip = .3f;
+    // How far the view whips round with it (degrees: yaw against the swing, roll with it), out, held and back (real s).
+    private const float SpinYaw = 14f, SpinRoll = 5f, SpinOut = .05f, SpinHold = .03f, SpinBack = .16f;
+    private float spinElapsed = -1f;
+    private bool spinRight;
     // The back elbow: driven back, held at the contact, brought round again (real seconds).
     private const float ElbowDrive = .07f, ElbowHold = .08f, ElbowBack = .17f;
     // The guard goes up at once; it comes down over this long.
@@ -36,7 +43,7 @@ public sealed class FistsView : MonoBehaviour
     /// The body's hands come up for it at once, running or not (PlayerBodyHands): the elbow has no arm clip, so without
     /// them it would be posed here and never seen.
     /// </summary>
-    public bool IsPunching => leftPunchTime > 0f || rightPunchTime > 0f || elbowElapsed >= 0f || Countering;
+    public bool IsPunching => leftPunchTime > 0f || rightPunchTime > 0f || elbowElapsed >= 0f || spinElapsed >= 0f || Countering;
     private bool Countering => player != null && player.PerfectDefense != null && player.PerfectDefense.IsCountering;
     private bool IsDeflecting => deflectElapsed < deflectSeconds;
     /// <summary>A punch left: with the right hand or not, and how charged it was (0-1).</summary>
@@ -63,6 +70,17 @@ public sealed class FistsView : MonoBehaviour
         var strike = melee != null ? melee.LastStrike : ComboStrike.None;
         // A riposte goes from the hand that didn't sweep the blow aside; the other is still holding the deflect.
         bool right = strike == ComboStrike.Riposte && IsDeflecting ? deflectLeftHand : nextRight;
+        if (strike == ComboStrike.Spin || strike == ComboStrike.Chase)
+        {
+            spinRight = right; spinElapsed = 0f;
+            leftPunchTime = rightPunchTime = 0f;
+            nextRight = !right;
+            // The view whips round against the swing as the body turns into it, and settles.
+            float across = right ? 1f : -1f;
+            CombatHeadMotion.For(this)?.Move(Vector3.zero, new Vector3(0f, -across * SpinYaw, across * SpinRoll), SpinOut, SpinHold, SpinBack);
+            Thrown?.Invoke(right, charge);
+            return;
+        }
         bool straight = strike == ComboStrike.Riposte;
         float length = straight ? StraightDuration : PunchDuration, reach = straight ? StraightReach : PunchReach;
         if (right) { rightPunchTime = rightPunchLength = length; rightReach = reach; }
@@ -71,7 +89,27 @@ public sealed class FistsView : MonoBehaviour
         Thrown?.Invoke(right, charge);
     }
     // The fist on the attacker's side pulls back beside the chest, past the eyes, so the arm drives its elbow behind.
-    private void Elbow(int side) { elbowRight = side >= 0; elbowElapsed = 0f; leftPunchTime = rightPunchTime = 0f; }
+    private void Elbow(int side) { elbowRight = side >= 0; elbowElapsed = 0f; leftPunchTime = rightPunchTime = 0f; spinElapsed = -1f; }
+    // The backfist: wound across to the far side of the chest, back of the hand turned out; whipped out past its own
+    // shoulder, knuckles leading; then back to the guard. The other fist tucks in to the chin meanwhile.
+    private void ApplySpin()
+    {
+        if (spinElapsed < 0f) return;
+        float t = spinElapsed / SpinSeconds;
+        if (t >= 1f) { spinElapsed = -1f; return; }
+        float weight = t < SpinWind ? EaseOut(t / SpinWind) : t < SpinWind + SpinWhip ? 1f
+            : 1f - EaseInOut((t - SpinWind - SpinWhip) / (1f - SpinWind - SpinWhip));
+        float swing = t < SpinWind ? 0f : EaseOut(Mathf.Clamp01((t - SpinWind) / SpinWhip));
+        Transform hand = spinRight ? right : left, other = spinRight ? left : right;
+        float across = spinRight ? 1f : -1f;
+        Vector3 wound = new Vector3(-across * .12f, -.1f, .22f), whipped = new Vector3(across * .31f, -.03f, .36f);
+        hand.localPosition = Vector3.Lerp(hand.localPosition, Vector3.Lerp(wound, whipped, swing), weight);
+        Quaternion pose = Quaternion.Euler(0f, across * Mathf.Lerp(70f, -30f, swing), -across * 85f);
+        hand.localRotation = Quaternion.Slerp(hand.localRotation, pose, weight);
+        other.localPosition += new Vector3(across * .04f, .03f, -.05f) * weight;
+    }
+    private static float EaseOut(float x) { x = Mathf.Clamp01(x); return 1f - (1f - x) * (1f - x) * (1f - x); }
+    private static float EaseInOut(float x) { x = Mathf.Clamp01(x); return x < .5f ? 4f * x * x * x : 1f - Mathf.Pow(-2f * x + 2f, 3f) * .5f; }
     private float ElbowAmount()
     {
         if (elbowElapsed < 0f) return 0f;
@@ -126,7 +164,7 @@ public sealed class FistsView : MonoBehaviour
     private void LateUpdate()
     {
         if (root == null || melee == null) return;
-        if (!melee.IsActive) { leftPunchTime = rightPunchTime = guardPose = 0f; deflectElapsed = deflectSeconds; elbowElapsed = -1f; nextRight = true; return; }
+        if (!melee.IsActive) { leftPunchTime = rightPunchTime = guardPose = 0f; deflectElapsed = deflectSeconds; elbowElapsed = spinElapsed = -1f; nextRight = true; return; }
         if (elbowElapsed >= 0f && Time.timeScale > 0f)
         {
             elbowElapsed += Time.unscaledDeltaTime;
@@ -135,6 +173,7 @@ public sealed class FistsView : MonoBehaviour
         float dt = player != null ? player.DeltaTime : Time.deltaTime;
         leftPunchTime = Mathf.Max(0f, leftPunchTime - dt);
         rightPunchTime = Mathf.Max(0f, rightPunchTime - dt);
+        if (spinElapsed >= 0f) spinElapsed += dt;
         if (Time.timeScale > 0f) deflectElapsed = Mathf.Min(deflectElapsed + Time.unscaledDeltaTime, deflectSeconds);
         float leftPunch = PunchExtension(leftPunchTime, leftPunchLength), rightPunch = PunchExtension(rightPunchTime, rightPunchLength);
         // Dashing in to counter, the next fist is drawn all the way back.
@@ -150,6 +189,7 @@ public sealed class FistsView : MonoBehaviour
         left.localRotation = Quaternion.Euler(-leftCharge * 15f, leftPunch * 20f, 10f);
         ApplyDeflect();
         ApplyElbow();
+        ApplySpin();
     }
     // The sweeping hand crosses the view, knuckles leading; the other pulls back to balance it.
     private void ApplyDeflect()

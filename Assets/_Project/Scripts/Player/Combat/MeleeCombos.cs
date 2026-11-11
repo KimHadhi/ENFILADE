@@ -2,7 +2,7 @@ using System;
 using UnityEngine;
 
 /// <summary>Which combo move a strike is (MeleeCombos); None is an ordinary punch.</summary>
-public enum ComboStrike : byte { None, Riposte }
+public enum ComboStrike : byte { None, Riposte, Spin, Chase }
 
 /// <summary>
 /// The fists' combos: moves that go on a press made in time, judged on this player's own PC. All of them are generous
@@ -13,7 +13,15 @@ public enum ComboStrike : byte { None, Riposte }
 ///   a straight into the parried attacker, harder than a full charge. When the parry opened a Knight's perfect-defense
 ///   counter, that counter takes the click first (PlayerPerfectDefense reads it earlier in the frame), so the two never
 ///   both go.
-/// The dash in is committed: no dodge starts until the strike, a guard press calls it off. Numbers: Tables/Combos.csv.
+/// - Link (user, 2026-11-11 #10, League's auto-attack reset: "평타 Q 평타", the attack after the Q a special spinning
+///   move): a skill hands the punch straight back. The fists' shove, the guard break once it lands, a dash push that
+///   meets someone and the crouched sweep each leave Link.window seconds in which an attack press is a spinning backfist
+///   at once: wider, through up to Link.targets bodies, harder than a full charge. The shove keeps its own wait.
+/// - Chase (Sekiro's shuriken into Chasing Slice): for Chase.window seconds after a stone is thrown (T), an attack press
+///   with someone under the crosshair within Chase.range dashes at them and lands the spinning backfist. With nobody
+///   there the press is an ordinary punch and the chance stays open.
+/// Each move that goes rings a short tick, higher the rarer it is. The dash in is committed: no dodge starts until the
+/// strike, a guard press calls it off. Numbers: Tables/Combos.csv.
 /// </summary>
 [DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.MeleeCombat + 1)]
 public sealed class MeleeCombos : MonoBehaviour
@@ -39,24 +47,78 @@ public sealed class MeleeCombos : MonoBehaviour
         public float reach = 1.8f;
     }
 
+    [Serializable]
+    public sealed class LinkNumbers
+    {
+        [Min(0f), Tooltip("After a skill (fists' shove, guard break, dash push, crouched sweep), an attack press this soon (s) is the spinning backfist.")]
+        public float window = .6f;
+        [Min(0f), Tooltip("Its damage against a full-charged punch's.")]
+        public float damage = 1.3f;
+        [Min(0f), Tooltip("Its posture damage against a full-charged punch's.")]
+        public float posture = 1.5f;
+        [Min(0f), Tooltip("Reach beyond a punch's (m).")]
+        public float reach = .3f;
+        [Min(.05f), Tooltip("How wide it sweeps (m; a punch: 0.22).")]
+        public float radius = .45f;
+        [Min(1), Tooltip("Bodies it can go through.")]
+        public int targets = 3;
+    }
+
+    [Serializable]
+    public sealed class ChaseNumbers
+    {
+        [Min(0f), Tooltip("After a stone is thrown (T), an attack press this soon (s) dashes at whoever the crosshair is on.")]
+        public float window = .9f;
+        [Min(1f), Tooltip("How far away they may be (m).")]
+        public float range = 9f;
+        [Min(0f), Tooltip("How far off the crosshair they may stand (m, the radius of the look's sweep).")]
+        public float aimRadius = .5f;
+        [Min(1f), Tooltip("Speed of the dash (m/s).")]
+        public float dashSpeed = 18f;
+        [Min(0f), Tooltip("The backfist goes after this long (s) even if the dash hasn't closed in.")]
+        public float dashTimeout = .45f;
+        [Min(.1f), Tooltip("The dash stops this far from their body (m, from the middle of the player's capsule).")]
+        public float stopDistance = .6f;
+        [Min(0f), Tooltip("Its damage against a full-charged punch's.")]
+        public float damage = 1.4f;
+        [Min(0f), Tooltip("Its posture damage against a full-charged punch's.")]
+        public float posture = 1.5f;
+        [Min(.3f), Tooltip("The backfist lands on their body this close to the eyes (m), nothing solid between.")]
+        public float reach = 1.8f;
+    }
+
     [SerializeField] private RiposteNumbers riposte = new RiposteNumbers();
+    [SerializeField] private LinkNumbers link = new LinkNumbers();
+    [SerializeField] private ChaseNumbers chase = new ChaseNumbers();
 
     // Dodges wait this long (real s) past the last frame of a dash in; the strike frees them at once.
     private const float DodgeHold = .1f;
     // How fast the look turns onto the one dashed at (1/s: the share of the turn left taken each second).
     private const float LookRate = 25f;
+    // The tick each move rings (Sounds.csv HitConfirm/Body, the hit marker's dry tick), pitched by the move.
+    private const string TickBank = "HitConfirm", TickKey = "Body";
 
     private PlayerMovement player;
     private PlayerMeleeCombat melee;
+    private PlayerThrow thrower;
+    private SoundBank ticks;
     private MeleeCombatTarget parried, dashTarget;
     private ComboStrike dashStrike;
-    private float riposteUntil = float.NegativeInfinity, dashTime, dashTimeout, dashSpeed, dashStop, lastGap, lastStep;
+    private readonly RaycastHit[] hits = new RaycastHit[24], sightHits = new RaycastHit[16];
+    // clock: this player's own game time (its pace in a room), for the windows counted in game seconds.
+    private float clock, riposteUntil = float.NegativeInfinity, linkUntil = float.NegativeInfinity, chaseUntil = float.NegativeInfinity;
+    private float dashTime, dashTimeout, dashSpeed, dashStop, lastGap, lastStep;
+    private bool ticksLoaded;
 
     public RiposteNumbers Riposte => riposte;
     /// <summary>Closing in for a combo strike: the fists take no other press meanwhile.</summary>
     public bool IsDashing => dashTarget != null;
     /// <summary>A parry's riposte can still go (real time).</summary>
     public bool RiposteOpen => parried != null && Time.unscaledTime < riposteUntil;
+    /// <summary>A skill just went: the next press is the spinning backfist.</summary>
+    public bool LinkOpen => clock < linkUntil;
+    /// <summary>A stone just left the hand: the next press with someone under the crosshair dashes at them.</summary>
+    public bool ChaseOpen => clock < chaseUntil;
 
     /// <summary>The player's combos, made and bound to the table on first use.</summary>
     public static MeleeCombos For(PlayerMovement player)
@@ -65,10 +127,23 @@ public sealed class MeleeCombos : MonoBehaviour
         if (player.TryGetComponent(out MeleeCombos combos)) return combos;
         combos = player.gameObject.AddComponent<MeleeCombos>();
         GameTables.BindNested(TableName, "Riposte", combos, combos.riposte);
+        GameTables.BindNested(TableName, "Link", combos, combos.link);
+        GameTables.BindNested(TableName, "Chase", combos, combos.chase);
         return combos;
     }
 
     private void Awake() => player = GetComponent<PlayerMovement>();
+
+    /// <summary>
+    /// A skill just went (the fists' shove, a guard break that landed, a dash push that met someone, a crouched sweep):
+    /// the punch is handed straight back as the spinning backfist for a moment. With a gun out it simply runs out.
+    /// </summary>
+    internal void OpenLink()
+    {
+        if (Mine) linkUntil = clock + link.window;
+    }
+
+    private void OnThrown(Vector3 from, Vector3 velocity) => chaseUntil = clock + chase.window;
 
     private PlayerMeleeCombat Melee => melee != null ? melee : melee = player != null ? player.MeleeCombat : null;
     private bool Mine => player != null && player.IsLocal && !player.IsNetworkDriven;
@@ -89,7 +164,68 @@ public sealed class MeleeCombos : MonoBehaviour
     {
         if (!Mine || Melee == null || IsDashing) return false;
         if (RiposteOpen && TryRiposte()) return true;
+        if (ChaseOpen && TryChase()) return true;
+        if (LinkOpen)
+        {
+            linkUntil = float.NegativeInfinity;
+            Tick(1.2f);
+            Melee.StrikeCombo(ComboStrike.Spin);
+            return true;
+        }
         return false;
+    }
+
+    // Whoever the crosshair rests on within range, nothing solid between: the dash goes at them.
+    private bool TryChase()
+    {
+        Transform eyes = PlayerView.EyesOf(player);
+        if (eyes == null) return false;
+        int count = Physics.SphereCastNonAlloc(eyes.position, chase.aimRadius, eyes.forward, hits, chase.range,
+            Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
+        MeleeCombatTarget best = null;
+        float nearest = float.PositiveInfinity;
+        for (int i = 0; i < count; i++)
+        {
+            if (hits[i].collider.transform.IsChildOf(transform) || hits[i].distance >= nearest) continue;
+            var candidate = hits[i].collider.GetComponentInParent<MeleeCombatTarget>();
+            if (candidate == null || !candidate.IsAvailable || candidate.GetComponent<IDamageReceiver>() == null) continue;
+            if (!InSight(eyes.position, hits[i].collider, candidate)) continue;
+            nearest = hits[i].distance; best = candidate;
+        }
+        if (best == null) return false;
+        chaseUntil = float.NegativeInfinity;
+        Tick(1.35f);
+        BeginDash(best, ComboStrike.Chase, chase.dashSpeed, chase.dashTimeout, chase.stopDistance);
+        return true;
+    }
+
+    // Nothing solid between the eyes and the middle of that body but this player and the target themselves.
+    private bool InSight(Vector3 from, Collider body, MeleeCombatTarget target)
+    {
+        Vector3 delta = body.bounds.center - from;
+        float length = delta.magnitude;
+        if (length < .01f) return true;
+        int count = Physics.RaycastNonAlloc(from, delta / length, sightHits, length, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
+        for (int i = 0; i < count; i++)
+        {
+            Transform hit = sightHits[i].collider.transform;
+            // The stone just thrown may still be on its way there.
+            if (hit.IsChildOf(transform) || hit.IsChildOf(target.transform) || ThrownStone.IsStone(sightHits[i].collider)) continue;
+            // Another zombie in the way is someone to hit too, not a wall.
+            if (sightHits[i].collider.GetComponentInParent<MeleeCombatTarget>() != null) continue;
+            return false;
+        }
+        return true;
+    }
+
+    // The move's tick: the hit marker's dry tick, pitched up by how special the move is.
+    private void Tick(float pitch)
+    {
+        if (!ticksLoaded) { ticks = SoundBank.Load(TickBank); ticksLoaded = true; }
+        var clip = ticks != null ? ticks.Pick(TickKey) : null;
+        if (clip == null) return;
+        var tuning = ticks.SettingsOf(TickKey);
+        FeelAudio.PlayClip(clip, tuning.Volume, pitch);
     }
 
     private bool TryRiposte()
@@ -103,15 +239,24 @@ public sealed class MeleeCombos : MonoBehaviour
         // Time lets go of the parry's catch at once, so the step and the fist run at full speed.
         if (TryGetComponent(out CombatTimeEffects time) && TryGetComponent(out ParryFeedback feedback)) time.Release(feedback);
         Melee.FreeFeet();
+        Tick(1.1f);
         BeginDash(target, ComboStrike.Riposte, riposte.dashSpeed, riposte.dashTimeout, riposte.stopDistance);
         return true;
     }
 
-    /// <summary>Damage, posture and reach of a combo strike against a full-charged punch's (PlayerMeleeCombat).</summary>
-    internal void Numbers(ComboStrike strike, out float damage, out float posture, out float reach)
+    /// <summary>
+    /// A combo strike's numbers (PlayerMeleeCombat): damage and posture against a full-charged punch's, its reach (beyond
+    /// a punch's for a sweep, from the eyes for an aimed strike), how wide it sweeps (0: a punch's) and how many bodies.
+    /// </summary>
+    internal void Numbers(ComboStrike strike, out float damage, out float posture, out float reach, out float radius, out int targets)
     {
-        damage = posture = 1f; reach = 0f;
-        if (strike == ComboStrike.Riposte) { damage = riposte.damage; posture = riposte.posture; reach = riposte.reach; }
+        damage = posture = 1f; reach = radius = 0f; targets = 0;
+        switch (strike)
+        {
+            case ComboStrike.Riposte: damage = riposte.damage; posture = riposte.posture; reach = riposte.reach; break;
+            case ComboStrike.Spin: damage = link.damage; posture = link.posture; reach = link.reach; radius = link.radius; targets = link.targets; break;
+            case ComboStrike.Chase: damage = chase.damage; posture = chase.posture; reach = chase.reach; radius = link.radius; targets = link.targets; break;
+        }
     }
 
     // Steps in to the target, then strikes; already close, it strikes at once.
@@ -135,7 +280,11 @@ public sealed class MeleeCombos : MonoBehaviour
 
     private void Update()
     {
-        if (dashTarget != null && Time.timeScale > 0f) TickDash(player.DeltaTime);
+        if (player == null || Time.timeScale <= 0f) return;
+        clock += player.DeltaTime;
+        // The stone's hand is added with the body, maybe after this; listened to once found, on this player's own PC.
+        if (thrower == null && Mine && TryGetComponent(out thrower)) thrower.Thrown += OnThrown;
+        if (dashTarget != null) TickDash(player.DeltaTime);
     }
 
     private void TickDash(float dt)
@@ -170,6 +319,11 @@ public sealed class MeleeCombos : MonoBehaviour
     private void OnDisable()
     {
         CancelDash();
-        parried = null; riposteUntil = float.NegativeInfinity;
+        parried = null; riposteUntil = linkUntil = chaseUntil = float.NegativeInfinity;
+    }
+
+    private void OnDestroy()
+    {
+        if (thrower != null) thrower.Thrown -= OnThrown;
     }
 }

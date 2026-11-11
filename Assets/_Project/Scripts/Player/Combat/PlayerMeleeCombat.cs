@@ -49,7 +49,9 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
     private MeleeCombatTarget target;
     private Collider targetCollider;
     // strikeHold: a combo strike's active time, over which a guard still held doesn't come back up and cancel it.
-    private float chargeTime, shoveTime, cooldown, shoveRest, grabTime, grabRecoveryRemaining, lungeRemaining, punchCharge, strikeHold;
+    // shoveWait: V's own wait after a shove or a guard break. It no longer holds the punches (League's auto-attack reset,
+    // user 2026-11-11): a skill hands the punch straight back, as the spinning backfist (MeleeCombos link).
+    private float chargeTime, shoveTime, cooldown, shoveRest, shoveWait, grabTime, grabRecoveryRemaining, lungeRemaining, punchCharge, strikeHold;
     private float parryRemaining, guardBufferRemaining, guardIdleTime, rootUntil = float.NegativeInfinity;
     private int spamCount;
     private ParryFeedback parryFeedback;
@@ -129,13 +131,14 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
         punchSweep.Tick(0f); shoveSweep.Tick(0f);
     }
     /// <summary>A counter hands the shove straight back (ShoveCounter): the fists can shove or punch again at once.</summary>
-    internal void RefreshShove() { cooldown = shoveRest = 0f; }
+    internal void RefreshShove() { cooldown = shoveRest = shoveWait = 0f; }
     public void ProcessFrame(float dt, MeleeInputFrame frame)
     {
         if (dt <= 0f) return;
         if (!IsActive || player.Execution?.IsExecuting == true) { CancelAction(); return; }
         cooldown = Mathf.Max(0f, cooldown - dt);
         shoveRest = Mathf.Max(0f, shoveRest - dt);
+        shoveWait = Mathf.Max(0f, shoveWait - dt);
         strikeHold = Mathf.Max(0f, strikeHold - dt);
         TickGuardInput(dt, frame);
         if (IsGuardBreaking)
@@ -171,14 +174,14 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
             float slice = Mathf.Min(dt, lungeRemaining); lungeRemaining -= slice;
             player.Motor.AddDisplacement(lungeDirection * (lungeDistance * slice / 0.1f));
         }
-        if (frame.ShovePressed && cooldown <= 0f)
+        if (frame.ShovePressed && cooldown <= 0f && shoveWait <= 0f)
         { punchSweep.Cancel(); shoveSweep.Cancel(); shovePending = true; shoveTime = 0f; charging = false; IsGuarding = false; parryRemaining = 0f; }
         if (shovePending)
         {
             shoveTime += dt;
             if (frame.ShoveHeld && shoveTime >= holdThreshold)
             {
-                shovePending = false; cooldown = guardBreakCooldown;
+                shovePending = false; shoveWait = guardBreakCooldown;
                 TryStartGuardBreak(); // Holding never also emits the tap shove on release.
             }
             else if (frame.ShoveReleased)
@@ -188,16 +191,18 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
                 if (shoveRest <= 0f)
                 {
                     // The wait is set before the shove goes out: a counter on its first contact clears it again (RefreshShove).
-                    cooldown = 0.55f;
-                    shoveRest = player.Abilities.Combat.Fatigue.Spend(cooldown, player.AbilitySettings);
+                    shoveWait = 0.55f;
+                    shoveRest = player.Abilities.Combat.Fatigue.Spend(shoveWait, player.AbilitySettings);
                     Shove();
+                    combos?.OpenLink();
                 }
             }
             else if (!frame.ShoveHeld) shovePending = false;
             return;
         }
+        // The shove still under way finishes: a punch thrown right after it mustn't rob it of its contact.
         if (frame.AttackPressed && cooldown <= 0f)
-        { punchSweep.Cancel(); shoveSweep.Cancel(); parryRemaining = 0f; charging = true; chargeTime = 0f; }
+        { punchSweep.Cancel(); parryRemaining = 0f; charging = true; chargeTime = 0f; }
         if (!charging) return;
         if (frame.AttackHeld) chargeTime = Mathf.Min(fullChargeTime, chargeTime + dt);
         if (frame.AttackReleased)
@@ -265,11 +270,13 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
         charging = shovePending = false; chargeTime = shoveTime = 0f;
         IsGuarding = guardAttemptHeld = false; parryRemaining = guardBufferRemaining = 0f;
         cooldown = 0f; strikeHold = attackActiveTime + .05f;
-        combos.Numbers(strike, out float damageFactor, out float postureFactor, out float strikeReach);
-        Punch(1f, strike, damageFactor, postureFactor, strikeReach, at);
+        combos.Numbers(strike, out float damageFactor, out float postureFactor, out float strikeReach, out float radius, out int targets);
+        Punch(1f, strike, damageFactor, postureFactor, strikeReach, at, radius, targets);
     }
+    // strikeReach: an aimed strike's reach from the eyes, or how much further than a punch a sweep reaches. radius and
+    // targets: a combo's wider sweep (0: a punch's own).
     private void Punch(float charge, ComboStrike strike = ComboStrike.None, float damageFactor = 1f, float postureFactor = 1f,
-        float strikeReach = 0f, MeleeCombatTarget at = null)
+        float strikeReach = 0f, MeleeCombatTarget at = null, float radius = 0f, int targets = 0)
     {
         lungeDirection = Vector3.ProjectOnPlane(aim.forward, Vector3.up).normalized;
         lungeRemaining = player.IsGrounded ? 0.1f : 0f;
@@ -280,7 +287,8 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
         float dealt = Mathf.Lerp(damage.x, damage.y, charge) * fist * damageFactor;
         float posture = Mathf.Lerp(postureDamage.x, postureDamage.y, charge) * fist * postureFactor;
         if (at == null || !StrikeTarget(at, dealt, posture, strikeReach))
-            punchSweep.Begin(player, aim, dealt, posture, reach, .22f, attackActiveTime, attackMaxTargets, hitLayers, OnPunchLanded, OnPunchWallHit);
+            punchSweep.Begin(player, aim, dealt, posture, reach + (at == null ? strikeReach : 0f), radius > 0f ? radius : .22f,
+                attackActiveTime, targets > 0 ? targets : attackMaxTargets, hitLayers, OnPunchLanded, OnPunchWallHit);
         LastStrike = strike;
         Punched?.Invoke(charge);
         LastStrike = ComboStrike.None;
@@ -391,7 +399,8 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
         if (grabConnected)
         {
             grabRecoveryRemaining -= dt;
-            if (grabRecoveryRemaining <= 0f) { CancelAction(); cooldown = guardBreakCooldown; }
+            // Landed, it hands the punch straight back as the spinning backfist; V waits on its own.
+            if (grabRecoveryRemaining <= 0f) { CancelAction(); shoveWait = guardBreakCooldown; combos?.OpenLink(); }
             return;
         }
         Vector3 center = player.transform.position + Vector3.up * Mathf.Min(1f, player.ProneColliderHeight + 0.5f);

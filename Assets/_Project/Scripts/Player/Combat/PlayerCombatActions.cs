@@ -169,6 +169,8 @@ public sealed class PlayerCombatActions
         var timeEffects = ctx.GetComponent<CombatTimeEffects>() ?? ctx.gameObject.AddComponent<CombatTimeEffects>();
         timeEffects.RequestSlowdown(ctx, .1f, .08f);
         ctx.RaiseDashPushHit(point);
+        // With the fists out the punch comes straight back after it, as the spinning backfist (MeleeCombos link).
+        MeleeCombos.For(ctx)?.OpenLink();
     }
     internal void Reset() { CancelShove(); cooldown = dashCooldown = DashSpeed = 0f; attackId = 0; contacted.Clear(); Fatigue.Reset(); }
 }

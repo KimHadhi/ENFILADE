@@ -34,6 +34,11 @@ public sealed class CombatHeadMotion : MonoBehaviour
     public void Dip(float depth, float attack, float hold, float release) => Add(new Vector3(0f, -depth, 0f), Vector3.zero, attack, hold, release);
     /// <summary>The view turns yaw degrees (+ right) off the aim and back, as a look over the shoulder.</summary>
     public void Glance(float yaw, float attack, float hold, float release) => Add(Vector3.zero, new Vector3(0f, yaw, 0f), attack, hold, release);
+    /// <summary>
+    /// Any short head move: offset (m) and angles (degrees: pitch, yaw, roll) off the eyes, out, held and back (real s):
+    /// the spinning backfist whips the view round with it, the crouched sweep drops and rolls it (FistsView, ShoveMoves).
+    /// </summary>
+    public void Move(Vector3 offset, Vector3 angles, float attack, float hold, float release) => Add(offset, angles, attack, hold, release);
     /// <summary>Turns the look itself by yaw degrees (+ right), for the look to take this frame.</summary>
     public void Turn(float yaw)
     {
