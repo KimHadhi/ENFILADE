@@ -435,7 +435,11 @@ public sealed class FieldPickups : MonoBehaviour
         player.TryGetComponent(out PlayerWeaponSlots slots);
         switch (row.Kind)
         {
-            case Kind.Gun: return slots == null || player.CombatInputLocked ? Texts.Get("pickup.refuse.now") : null;
+            case Kind.Gun:
+                if (slots == null || player.CombatInputLocked) return Texts.Get("pickup.refuse.now");
+                // Horde's weight limit: the load with this gun where GiveGun would put it (one already held only refills).
+                return Heavy(slots, row.Weapon) ? Texts.Format("pickup.refuse.heavy",
+                    CarryWeight.Show(CarryWeight.With(slots, GunSlotFor(slots), row.Weapon)), CarryWeight.Show(CarryWeight.Limit)) : null;
             case Kind.Ammo:
                 if (slots == null || !HoldsAnyGun(slots)) return Texts.Get("pickup.refuse.nogun");
                 return RoomForAmmo(slots) ? null : Texts.Get("pickup.refuse.ammofull");
@@ -491,6 +495,13 @@ public sealed class FieldPickups : MonoBehaviour
             return;
         }
         int slot = GunSlotFor(slots);
+        // Asked for within the weight limit, but the load grew before the answer came: it goes back on the floor.
+        if (!CarryWeight.Fits(slots, slot, row.Weapon))
+        {
+            KitSound.Play(KitSound.Cue.Refuse, .5f);
+            Leave(RowOf(row.Weapon), player.transform.position + player.transform.forward * LeaveAhead);
+            return;
+        }
         var before = slots.GetWeapon(slot);
         if (!slots.TrySetWeapon(slot, row.Weapon)) return;
         if (!slots.HandsFull) slots.SelectSlot(slot);
@@ -541,6 +552,14 @@ public sealed class FieldPickups : MonoBehaviour
         return false;
     }
 
+    // A gun not held yet that would take the load past Horde's weight limit where it would go (CarryWeight).
+    private static bool Heavy(PlayerWeaponSlots slots, WeaponData gun)
+    {
+        if (gun == null) return false;
+        for (int i = 0; i < PlayerWeaponSlots.SlotCount; i++) if (slots.GetWeapon(i) == gun) return false;
+        return !CarryWeight.Fits(slots, GunSlotFor(slots), gun);
+    }
+
     // ---- The [F] prompt (the HUD's kit, beside the crosshair) and what a pickup shows ----
 
     private void ShowPrompt()
@@ -567,7 +586,7 @@ public sealed class FieldPickups : MonoBehaviour
 
     private static string AmountOf(Row row) => row.Kind switch
     {
-        Kind.Gun => Texts.Get("pickup.gives.gun"),
+        Kind.Gun => Texts.Format("pickup.gives.gun.weight", CarryWeight.Show(CarryWeight.Of(row.Weapon))),
         Kind.Ammo => Texts.Format("pickup.gives.ammo", Mathf.RoundToInt(row.Amount)),
         Kind.Heal => Texts.Format("pickup.gives.heal", Mathf.RoundToInt(row.Amount)),
         Kind.Shield => Texts.Format("pickup.gives.shield", Mathf.RoundToInt(row.Amount)),

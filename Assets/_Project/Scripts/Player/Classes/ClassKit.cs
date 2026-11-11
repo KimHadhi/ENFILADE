@@ -103,6 +103,12 @@ public sealed class ClassKit : MonoBehaviour
     public bool ChargeReady => PlayerClass.Is(PlayerClass.Assault) && stacks >= StackMax;
     /// <summary>How much of a CHARGE this player is in is left, 0 to 1 (0: none).</summary>
     public float ChargeShare => chargeUntil > Time.time ? Mathf.Clamp01((chargeUntil - Time.time) / chargeTotal) : 0f;
+    /// <summary>A CHARGE this player sounds: how long it lasts and how far it reaches, their class cards in (friends' PCs are sent them).</summary>
+    public float ChargeSeconds => Mathf.Max(.1f, PlayerClass.Ability(AssaultRow, "chargeSeconds", 7f));
+    public float ChargeReach => Mathf.Max(0f, PlayerClass.Ability(AssaultRow, "chargeRadius", 15f));
+    /// <summary>A taunt this Knight makes: how far it reaches and how long it holds, their class cards in (the host is sent them).</summary>
+    public float TauntReach => Mathf.Max(0f, PlayerClass.Ability(KnightRow, "tauntRadius", 12f));
+    public float TauntSeconds => Mathf.Max(.1f, PlayerClass.Ability(KnightRow, "tauntSeconds", 6f));
 
     /// <summary>Point: how far slot's gun put away is on its way to refilled (0 to 1), and seconds since it last refilled.</summary>
     public float AsideShare(int slot)
@@ -315,7 +321,7 @@ public sealed class ClassKit : MonoBehaviour
             if (stacks < StackMax) { KitSound.Play(KitSound.Cue.Refuse, .5f); return; }
             stacks = 0;
             Vector3 at = transform.position;
-            ReceiveCharge(at, Texts.Get("class.assault.charge.self"));
+            ReceiveCharge(at, Texts.Get("class.assault.charge.self"), ChargeSeconds, ChargeReach);
             Charged?.Invoke(at);
             return;
         }
@@ -328,15 +334,16 @@ public sealed class ClassKit : MonoBehaviour
 
     /// <summary>
     /// A CHARGE was sounded here (this PC's player's, or a friend's as their PC said it): this PC's player, alive and
-    /// within its reach, charges with it.
+    /// within its reach, charges with it. Its length and reach are the Assault's own (their class cards in), as their
+    /// PC sent them; below 0, the table's.
     /// </summary>
-    public static void ReceiveCharge(Vector3 at, string said)
+    public static void ReceiveCharge(Vector3 at, string said, float seconds = -1f, float reach = -1f)
     {
         var kit = Local;
         if (kit == null || kit.movement == null || kit.movement.IsDead) return;
-        float reach = PlayerClass.Ability(AssaultRow, "chargeRadius", 15f);
+        if (reach < 0f) reach = PlayerClass.TableAbility(AssaultRow, "chargeRadius", 15f);
         if ((kit.transform.position - at).sqrMagnitude > reach * reach) return;
-        kit.chargeTotal = Mathf.Max(.1f, PlayerClass.Ability(AssaultRow, "chargeSeconds", 7f));
+        kit.chargeTotal = Mathf.Max(.1f, seconds >= 0f ? seconds : PlayerClass.TableAbility(AssaultRow, "chargeSeconds", 7f));
         kit.chargeUntil = Time.time + kit.chargeTotal;
         KitSound.Play(KitSound.Cue.Charge, .9f);
         AlertHUD.Self(said);
@@ -521,12 +528,12 @@ public sealed class ClassKit : MonoBehaviour
     private void Taunt()
     {
         if (Time.time < tauntReadyAt) { KitSound.Play(KitSound.Cue.Refuse, .5f); return; }
-        tauntTotal = Mathf.Max(.1f, PlayerClass.Ability(KnightRow, "tauntSeconds", 6f));
+        tauntTotal = TauntSeconds;
         tauntWait = Mathf.Max(tauntTotal, PlayerClass.Ability(KnightRow, "tauntCooldown", 25f));
         tauntUntil = Time.time + tauntTotal;
         tauntReadyAt = Time.time + tauntWait;
         Vector3 at = transform.position;
-        ReceiveTaunt(movement, at, true);
+        ReceiveTaunt(movement, at, true, TauntReach, tauntTotal);
         AlertHUD.Self(Texts.Get("class.knight.taunt.self"));
         Taunted?.Invoke(at);
     }
@@ -534,12 +541,14 @@ public sealed class ClassKit : MonoBehaviour
     /// <summary>
     /// A Knight taunted at <paramref name="at"/> (this PC's own, or a friend's as their PC said it): the zombies this PC
     /// runs that are already fighting within reach go after them (real only on the host or alone; EnemyTargeting), and
-    /// every PC sees the ring go out and hears it, a friend's the softer the further off.
+    /// every PC sees the ring go out and hears it, a friend's the softer the further off. Its reach and length are the
+    /// Knight's own (their class cards in), as their PC sent them; below 0, the table's.
     /// </summary>
-    public static void ReceiveTaunt(PlayerMovement knight, Vector3 at, bool mine)
+    public static void ReceiveTaunt(PlayerMovement knight, Vector3 at, bool mine, float reach = -1f, float seconds = -1f)
     {
-        float reach = Mathf.Max(0f, PlayerClass.Ability(KnightRow, "tauntRadius", 12f));
-        EnemyTargeting.Taunt(knight, at, reach, PlayerClass.Ability(KnightRow, "tauntSeconds", 6f));
+        if (reach < 0f) reach = Mathf.Max(0f, PlayerClass.TableAbility(KnightRow, "tauntRadius", 12f));
+        if (seconds < 0f) seconds = PlayerClass.TableAbility(KnightRow, "tauntSeconds", 6f);
+        EnemyTargeting.Taunt(knight, at, reach, seconds);
         TauntRing.Show(at, reach);
         float volume = 1f;
         var local = Local != null ? Local.movement : null;

@@ -72,7 +72,9 @@ public sealed class WeaponController : MonoBehaviour
     public float AimBlend { get; private set; }
     public bool IsHighReady { get; private set; }
     public float CurrentSpread { get; private set; }
-    public float MovementMultiplier => EquippedData == null ? 1f : Mathf.Lerp(1f, EquippedData.AdsMoveMultiplier, AimBlend);
+    /// <summary>The pace's share with this gun: 1 from the hip, its aimed share (Ads Move Multiplier through its parts, GunStats) down the sights.</summary>
+    public float MovementMultiplier => EquippedData == null || AimBlend <= 0f ? 1f
+        : Mathf.Lerp(1f, Mathf.Clamp(Fitted(GunStats.Stat.MoveSpeed, EquippedData.AdsMoveMultiplier), .1f, 1f), AimBlend);
 
     public event Action<WeaponShot> ShotFired;
     /// <summary>Trigger pulled on an empty magazine (no shot, no automatic reload).</summary>
@@ -265,15 +267,15 @@ public sealed class WeaponController : MonoBehaviour
         if (presentation is FPSBody body && EquippedData != null) body.ShowLight(EquippedData, on);
     }
 
-    // The held gun's grip (GunAttachments).
-    private GunAttachments.Kind Grip => presentation is FPSBody body ? body.HeldGripKind : GunAttachments.Kind.None;
+    // One of the held gun's numbers through the parts it wears now (GunStats: ArcCW's Override, then Add, then Mult; an
+    // angled grip's quicker sight, a vertical grip's steadier climb, a suppressor's shorter reach for zombies' ears).
+    private float Fitted(GunStats.Stat stat, float own) => GunStats.Apply(stat, own, weaponData, GunStats.Of(HeldGun));
 
-    /// <summary>How long the sight takes to come up (s): the gun's Ads Transition Time, sooner with an angled grip on.</summary>
-    public float AdsTime => weaponData == null ? .16f
-        : weaponData.AdsTransitionTime * (Grip == GunAttachments.Kind.AngledGrip ? weaponData.GripAimTime : 1f);
+    /// <summary>How long the sight takes to come up (s): the gun's Ads Transition Time through its parts (GunStats).</summary>
+    public float AdsTime => weaponData == null ? .16f : Mathf.Max(.01f, Fitted(GunStats.Stat.AimTime, weaponData.AdsTransitionTime));
 
-    // How far zombies hear this gun's shot: a suppressor cuts it to the gun's share.
-    private float ShotNoise => weaponData.NoiseRadius * (Suppressed ? weaponData.SuppressedNoise : 1f);
+    // How far zombies hear this gun's shot: its Noise Radius through its parts (a suppressor cuts it to the gun's share).
+    private float ShotNoise => Mathf.Max(0f, Fitted(GunStats.Stat.Noise, weaponData.NoiseRadius));
     public Transform MuzzlePoint => muzzlePoint;
     public Transform AimOrigin => aimOrigin;
     /// <summary>The posed gun model root; the body's hands hold it at the weapon's grip points.</summary>
@@ -571,8 +573,8 @@ public sealed class WeaponController : MonoBehaviour
             // Siege's recoil is nearly the same down the sights as from the hip; aiming only steadies it a little.
             Vector2 recoil = weaponData.RecoilKick(recoilIndex++) * Mathf.Lerp(1f, .85f, AimBlend)
                 * (Crouched ? weaponData.CrouchRecoil : 1f);
-            // A vertical grip steadies the climb (Siege's).
-            if (Grip == GunAttachments.Kind.VerticalGrip) recoil.x *= weaponData.GripRecoil;
+            // The climb through the parts worn (GunStats): a vertical grip steadies it (Siege's).
+            recoil.x *= Mathf.Max(0f, GunStats.Share(GunStats.Stat.Recoil, weaponData.RecoilVertical, weaponData, GunStats.Of(HeldGun)));
 
             // A shotgun's pellets each fly their own way, each a bullet of its own (own attack, own hit); one shot of a
             // single-bullet gun is pellet 0 on its own. The pellets fill one circle evenly, middle to edge, every shot
@@ -725,7 +727,9 @@ public sealed class WeaponController : MonoBehaviour
         // Down the sights the shot goes where the sight is, as Rainbow Six Siege's does: walking and firing add nothing
         // there, the recoil climbing the view is the whole of a spray's difficulty. Only a jump still throws it off, at half.
         float loose = 1f - AimBlend;
-        CurrentSpread = (Mathf.Lerp(weaponData.HipSpread, weaponData.AdsSpread, AimBlend)
+        // The hip-fire cone through the parts worn (GunStats).
+        float hip = Mathf.Max(0f, Fitted(GunStats.Stat.Spread, weaponData.HipSpread));
+        CurrentSpread = (Mathf.Lerp(hip, weaponData.AdsSpread, AimBlend)
             + (bloom + moving * weaponData.MovingSpread) * loose + air * Mathf.Lerp(1f, .5f, AimBlend))
             * (Crouched ? weaponData.CrouchSpread : 1f);
     }

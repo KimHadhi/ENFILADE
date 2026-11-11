@@ -31,9 +31,15 @@ public static class PlayerClass
     }
 
     private static List<Info> catalog;
+    // The last class id RowOf was asked about and its row (asked for every bullet a class gun lands).
+    private static string rowId, rowName;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-    private static void ResetStatics() => catalog = null;
+    private static void ResetStatics()
+    {
+        catalog = null;
+        rowId = rowName = null;
+    }
 
     /// <summary>Every class, in the table's order.</summary>
     public static IReadOnlyList<Info> Catalog
@@ -89,7 +95,8 @@ public static class PlayerClass
         var kit = ClassKit.Local;
         if (kit == null) return 1f;
         var info = Current;
-        float factor = OwnsWeapon(info, kit.HeldGun) ? 1f + info.GunBonus / 100f : 1f;
+        // The class's own guns' bonus, and what its cards add to it ("Point.gunBonus").
+        float factor = OwnsWeapon(info, kit.HeldGun) ? 1f + (info.GunBonus + PlayerPerks.AbilityBonus(RowOf(info.Id), "gunBonus")) / 100f : 1f;
         if (target != null && Is(Schiesshund) && PingMarks.IsBountyOf(target, kit.Movement))
             factor *= 1f + Ability(HoundRow, "markDamage", 25f) / 100f;
         return factor * kit.DamageFactor;
@@ -167,9 +174,29 @@ public static class PlayerClass
         return player != null && kit != null && kit.Movement == player && Is(Knight);
     }
 
-    /// <summary>An ability's number (Tables/ClassAbilities, "Class.name").</summary>
+    /// <summary>
+    /// An ability's number (Tables/ClassAbilities, "Class.name") for this PC's own player: the table's, plus what their
+    /// class cards add to it (PlayerPerks, Tables/Perks ability). A number this PC uses for someone else's ability (a
+    /// friend's taunt or CHARGE, a barricade the host wears down, a ping's time) is TableAbility, or the number their PC sent.
+    /// </summary>
     public static float Ability(string classRow, string name, float fallback)
+        => TableAbility(classRow, name, fallback) + PlayerPerks.AbilityBonus(classRow, name);
+
+    /// <summary>An ability's number as the table has it, nobody's cards in it.</summary>
+    public static float TableAbility(string classRow, string name, float fallback)
         => GameTables.TryGetRow(AbilityTable, classRow, out var row) ? Number(row, name, fallback) : fallback;
+
+    /// <summary>A class's row in Tables/ClassAbilities: its id with a capital first letter ("ghost" → "Ghost").</summary>
+    public static string RowOf(string classId)
+    {
+        if (string.IsNullOrEmpty(classId)) return "";
+        if (classId != rowId)
+        {
+            rowName = char.ToUpperInvariant(classId[0]) + classId.Substring(1);
+            rowId = classId;
+        }
+        return rowName;
+    }
 
     private static string Cell(IReadOnlyDictionary<string, string> row, string key, string fallback)
         => row.TryGetValue(key, out string text) && !string.IsNullOrWhiteSpace(text) ? text.Trim() : fallback;

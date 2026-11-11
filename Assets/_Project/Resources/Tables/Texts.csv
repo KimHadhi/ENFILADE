@@ -397,6 +397,7 @@ perk.step.new,새 능력,,카드: 처음 고르는 능력
 perk.step,{0}단계,,카드: 다음 단계. {0}=단계
 perk.step.last,마지막 단계,,카드: 다음이 마지막 단계일 때
 perk.step.owned,보유 {0}단계  →  {1},,카드: 가진 능력. {0}=지금 단계 {1}=다음 단계(perk.step 또는 perk.step.last)
+perk.rival,둘 중 하나 · 고르면 {0} 카드는 더 안 나와요,,카드: 클래스 카드(Horde식 단계)에서 같은 단계의 다른 카드. 고르면 그 카드는 이번 캠페인에 더 안 나온다. {0}=다른 카드 이름
 #--- 총 커스터마이징(C) ---,,,
 gun.custom.caption,커스터마이징,,총 이름 아래 작은 제목
 gun.custom.hint,[C] · Esc 닫기   슬롯을 눌러 부품을 고르세요,,화면 왼쪽 아래 안내
@@ -424,19 +425,28 @@ gun.part.vertical_grip.tr15,수직 손잡이 (TR-15),,부품 이름
 gun.part.angled_grip,앵글 손잡이,,부품 이름
 gun.part.other,부품,,이름을 모르는 부품
 gun.pro.scope_zoom,조준하면 렌즈 안이 ×{0} 확대,,부품 설명(초록 +). {0}=배율
-gun.pro.suppressor_range,좀비가 듣는 거리 {0}m → {1}m,,부품 설명(초록 +). {0}=지금 {1}=소음기를 끼면
+gun.pro.suppressor_range,좀비가 듣는 거리 {0}m → {1}m,,부품 설명(초록 +): 총소리가 들리는 거리를 줄이는 부품(소음기). {0}=부품 없이 {1}=그 부품만 끼면
 gun.pro.suppressor_quiet,총소리가 작아짐,,부품 설명(초록 +)
 gun.pro.suppressor_flash,총구 불꽃과 섬광이 없어짐,,부품 설명(초록 +)
-gun.pro.vertical_grip_recoil,위로 튀는 반동 {0}% 감소,,부품 설명(초록 +). {0}=줄어드는 %
+gun.pro.vertical_grip_recoil,위로 튀는 반동 {0}% 감소,,부품 설명(초록 +): 반동을 줄이는 부품(수직 손잡이 등). {0}=줄어드는 %
 gun.pro.vertical_grip_hand,왼손이 손잡이를 쥠,,부품 설명(초록 +)
-gun.pro.angled_grip_aim,조준이 {0}% 빨라짐,,부품 설명(초록 +). {0}=빨라지는 %
+gun.pro.angled_grip_aim,조준이 {0}% 빨라짐,,부품 설명(초록 +): 조준 시간을 줄이는 부품(앵글 손잡이 등). {0}=빨라지는 %
 gun.pro.angled_grip_hand,왼손이 손잡이에 닿음,,부품 설명(초록 +)
 gun.pro.flashlight,[L]로 켜고 끄는 라이트,,부품 설명(초록 +)
+gun.pro.spread,지향사격 탄퍼짐 {0}° → {1}°,,부품 설명(초록 +): 지향사격 탄퍼짐을 줄이는 부품. {0}=부품 없이 {1}=그 부품만 끼면
+gun.pro.aim_move,조준 중 이동 {0}% 빨라짐,,부품 설명(초록 +). {0}=빨라지는 %
+gun.con.recoil,위로 튀는 반동 {0}% 증가,,부품 설명(빨강 −): 반동을 늘리는 부품(Attachments.csv). {0}=늘어나는 %
+gun.con.aim,조준이 {0}% 느려짐,,부품 설명(빨강 −): 조준 시간을 늘리는 부품(배율 조준경 등). {0}=느려지는 %
+gun.con.aim_move,조준 중 이동 {0}% 느려짐,,부품 설명(빨강 −): 조준한 채 걷는 속도를 줄이는 부품. {0}=느려지는 %
+gun.con.spread,지향사격 탄퍼짐 {0}° → {1}°,,부품 설명(빨강 −): 지향사격 탄퍼짐을 늘리는 부품. {0}=부품 없이 {1}=그 부품만 끼면
+gun.con.noise,좀비가 듣는 거리 {0}m → {1}m,,부품 설명(빨강 −): 총소리가 들리는 거리를 늘리는 부품. {0}=부품 없이 {1}=그 부품만 끼면
 gun.stats.title,능력치,,오른쪽 능력치 칸 제목
 gun.stat.damage,피해 (몸 / 머리),,능력치 칸 줄 이름
 gun.stat.rpm,연사 속도,,능력치 칸 줄 이름
 gun.stat.recoil,위로 튀는 반동,,능력치 칸 줄 이름
+gun.stat.spread,지향사격 탄퍼짐,,능력치 칸 줄 이름(조준하지 않고 쏠 때의 원뿔 반각)
 gun.stat.aim_time,조준 시간,,능력치 칸 줄 이름(값은 hud.seconds)
+gun.stat.aim_move,조준 중 이동,,능력치 칸 줄 이름(조준한 채 걷는 속도. 값은 %)
 gun.stat.noise,좀비가 듣는 거리,,능력치 칸 줄 이름
 gun.stat.magazine,탄창,,능력치 칸 줄 이름
 #--- 등급·실드 ---,,,
@@ -479,9 +489,9 @@ campaign.endless.guest,엔드리스는 방장만 바꿀 수 있어요. 지금: {
 #--- 상점 ---,,,
 shop.title,상점,,상점 창 > 맨 위 제목
 shop.subtitle,총  /  보급,,상점 창 > 제목 아래 작은 줄
-shop.section.guns,총,,상점 창 > 총 칸 머리
+shop.section.guns,총  ·  무게 {0} / {1},,상점 창 > 총 칸 머리. {0}=지금 들고 있는 무기 무게 합 {1}=들 수 있는 무게(Player.csv Carry.weightMax). 넘으면 빨간색
 shop.section.supplies,보급,,상점 창 > 보급 칸 머리
-shop.detail.gun,총,,상점 카드 > 총 이름 아래 설명
+shop.detail.gun,총 · 무게 {0},,상점 카드 > 총 이름 아래 설명. {0}=그 총의 무게(Weapons.csv weight)
 shop.detail.ammo,가진 총 모두,,상점 카드 > 탄약 이름 아래 설명
 shop.detail.heal,체력 {0} 회복,,상점 카드 > 구급상자 이름 아래 설명. {0}=회복량
 shop.detail.shield,실드 {0},,상점 카드 > 실드 이름 아래 설명. {0}=실드 양
@@ -490,6 +500,7 @@ shop.note.owned,가진 총,,상점 카드 가운데 > 이미 가진 총
 shop.note.ammofull,탄약 가득,,상점 카드 가운데 > 탄약이 가득할 때
 shop.note.healthfull,체력 가득,,상점 카드 가운데 > 체력이 가득할 때
 shop.note.shield,실드 있음,,상점 카드 가운데 > 실드가 이미 있을 때
+shop.note.heavy,무게 초과,,상점 카드 가운데 > 사면 들 수 있는 무게(Player.csv Carry.weightMax)를 넘는 총
 shop.hint.close,[F] 또는 Esc 닫기,,상점 창 맨 아래 줄 > 평소 안내
 shop.bought,{0} 샀어요   {1},,상점 창 맨 아래 줄 > 샀을 때. {0}=물건 이름 {1}=낸 돈(앞에 - 붙은 금액)
 shop.bought.feed,{0} 구매  {1},,처치 목록(킬 피드) > 상점에서 샀을 때. {0}=물건 이름 {1}=낸 돈
@@ -501,6 +512,7 @@ shop.refuse.nogun,채울 총이 없어요,,상점 창 맨 아래 줄 > 탄약을
 shop.refuse.ammofull,탄약이 이미 가득해요,,상점 창 맨 아래 줄 > 탄약을 못 살 때: 가득 참
 shop.refuse.healthfull,체력이 가득해요,,상점 창 맨 아래 줄 > 구급상자를 못 살 때
 shop.refuse.shield,실드가 이미 있어요,,상점 창 맨 아래 줄 > 실드를 못 살 때
+shop.refuse.heavy,너무 무거워요 (사면 무게 {0} / {1}),,상점 창 맨 아래 줄 > 총을 못 살 때: 무게 제한. {0}=사면 될 무게 합 {1}=들 수 있는 무게
 #--- 돈 떨구기 ---,,,
 money.drop.short,떨굴 돈이 모자라요 (돈 {0} 필요),,처치 목록(킬 피드) > G로 돈을 떨구려는데 모자랄 때. {0}=필요한 돈
 money.drop.feed,돈 {0} 떨굼,,처치 목록(킬 피드) > 누가 돈을 떨궜을 때. {0}=금액
@@ -511,7 +523,9 @@ pickup.refuse.nogun,채울 총이 없어요,,아이템 [F] 안내 > 탄약을 �
 pickup.refuse.ammofull,탄약이 가득해요,,아이템 [F] 안내 > 탄약이 가득할 때
 pickup.refuse.healthfull,체력이 가득해요,,아이템 [F] 안내 > 구급상자: 체력이 가득할 때
 pickup.refuse.shield,실드가 이미 있어요,,아이템 [F] 안내 > 실드 셀: 실드가 이미 있을 때
+pickup.refuse.heavy,너무 무거워요 (주우면 무게 {0} / {1}),,아이템 [F] 안내 > 총을 못 주울 때: 무게 제한. {0}=주우면 될 무게 합 {1}=들 수 있는 무게
 pickup.gives.gun,총,,아이템 [F] 안내와 주운 목록(화면 아래) > 총
+pickup.gives.gun.weight,총 · 무게 {0},,아이템 [F] 안내 > 총: 그 총의 무게. {0}=무게(Weapons.csv weight)
 pickup.gives.ammo,탄창 +{0},,아이템 [F] 안내와 주운 목록(화면 아래) > 탄약. {0}=탄창 수
 pickup.gives.heal,체력 +{0},,아이템 [F] 안내와 주운 목록(화면 아래) > 구급상자. {0}=회복량
 pickup.gives.shield,실드 +{0},,아이템 [F] 안내와 주운 목록(화면 아래) > 실드 셀. {0}=실드 양

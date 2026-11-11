@@ -1,5 +1,5 @@
-﻿id,name,tag,icon,levels,value,text,weight
-#설명 (능력 카드. 게이지가 차면 X로 세 장 중 하나를 고름. 캠페인 동안 유지되고 제목 화면에 가면 없어짐),카드 이름,갈래 (총 / 근접 / 생존 / 팀 / 기타),Resources/UI/Icons 아이콘 이름,최대 단계,단계마다 더하는 값,효과 설명 ({0} = 그 단계까지 모두 더한 값),뽑힐 비중 (클수록 자주)
+﻿id,name,tag,icon,levels,value,text,weight,class,tier,ability,shown
+#설명 (능력 카드. 게이지가 차면 X로 세 장 중 하나를 고름. 캠페인 동안 유지되고 제목 화면에 가면 없어짐),카드 이름,갈래 (총 / 근접 / 생존 / 팀 / 기타),Resources/UI/Icons 아이콘 이름,최대 단계,단계마다 더하는 값,효과 설명 ({0} = 그 단계까지 모두 더한 값),뽑힐 비중 (클수록 자주),"클래스 카드면 그 클래스 id(Classes.csv). 그 클래스에게만 나온다. 비우면 모든 클래스","클래스 카드의 단계(GMod Horde의 퍽 트리처럼 기본 퍽 = 클래스 능력 위의 갈래). 같은 클래스·같은 단계 카드는 하나만 가질 수 있고(하나를 고르면 다른 것은 더 안 나온다), 바로 아래 단계 카드를 가져야 다음 단계 카드가 나온다. 비우면 없음","이 카드가 키우는 ClassAbilities 수치(Ghost.hunterMax처럼 행.이름). 단계마다 value만큼 더한다. <클래스>.gunBonus는 Classes.csv의 클래스 총 피해 보너스(%)에 더한다. 다른 PC로 가는 수치 중 도발 반경·시간(Knight.tauntRadius·tauntSeconds), CHARGE 시간·반경(Assault.chargeSeconds·chargeRadius), 바리케이드 체력(Support.barricadeHealth)은 함께 보낸다. Ping.*·Schiesshund.markSeconds·Support.barricadeBlow·barricadePressure는 카드가 바꾸지 않는다","카드에 보이는 숫자 = 더한 값 × 이 값(비우면 1). .75 같은 배수를 깎는 카드는 -100으로 %p처럼 보이게"
 gun_head,머리 사냥꾼,총,Headshot,3,25,헤드샷 피해 +{0}%,10
 gun_body,철갑탄,총,Bullet,3,12,"머리 말고 맞힌 총 피해 +{0}%",10
 melee_power,쇠주먹,근접,Fist,3,20,주먹 피해 +{0}%,8
@@ -8,3 +8,23 @@ body_tough,단단한 몸,생존,Armor,3,15,최대 체력 +{0},10
 body_grit,끈질긴 숨,생존,Hourglass,2,35,쓰러져서 버티는 시간 +{0}%,6
 team_rescue,손 빠른 구조,팀,Rescue,3,20,동료를 일으키는 시간 -{0}%,6
 gauge_charge,충전기,기타,Bolt,3,20,게이지가 차는 속도 +{0}%,8
+ghost_hunter,끝없는 사냥,고스트,Class_ghost,3,1,헤드 헌터 최대 +{0}스택,8,ghost,1,Ghost.hunterMax,
+ghost_deadeye,데드아이,고스트,Class_ghost,3,25,장전 뒤 첫 발(데드아이) 피해 +{0}%p,8,ghost,1,Ghost.deadeye,
+ghost_breath,고요한 숨,고스트,Class_ghost,3,1,헤드 헌터 한 스택의 피해 +{0}%p,8,ghost,2,Ghost.hunterDamage,
+assault_hold,식지 않는 피,어썰트,Class_assault,3,2,아드레날린이 줄기 시작할 때까지 +{0}초,8,assault,1,Assault.stackHold,
+assault_fury,광분,어썰트,Class_assault,3,1,아드레날린 한 스택의 총 피해 +{0}%p,8,assault,1,Assault.damagePerStack,
+assault_charge,긴 돌격,어썰트,Class_assault,3,2,CHARGE 시간 +{0}초(함께 달리는 동료도),8,assault,2,Assault.chargeSeconds,
+knight_wall,철벽,나이트,Class_knight,3,-0.05,적에게 받는 피해 -{0}%p,8,knight,1,Knight.taken,-100
+knight_roar,우렁찬 도발,나이트,Class_knight,3,3,도발 반경 +{0}m,8,knight,1,Knight.tauntRadius,
+knight_riposte,흘리기,나이트,Class_knight,2,25,회피·패리 뒤 반격 피해 +{0}%p,8,knight,2,Knight.counter,
+point_hands,빠른 손,포인트,Class_point,3,-0.15,들지 않은 총이 장전되는 시간 -{0}%,8,point,1,Point.reloadShare,-100
+point_gunslinger,총잡이,포인트,Class_point,3,5,클래스 총 피해 +{0}%p,8,point,2,Point.gunBonus,
+detente_vial,큰 주사기,데탕트,Class_detente,3,25,주사기 용량 +{0}(늘어난 만큼 바로 찬다),8,detente,1,Detente.syringeMax,
+detente_dose,진한 약,데탕트,Class_detente,3,10,주사 한 번에 채우는 체력 +{0},8,detente,1,Detente.injectHeal,
+detente_golden,골든 아워,데탕트,Class_detente,3,4,골든 아워 이동 +{0}%p,8,detente,2,Detente.goldenSpeed,
+hound_fangs,사냥개의 이빨,시순트,Class_schiesshund,3,10,표식 대상에게 주는 피해 +{0}%p,8,schiesshund,1,Schiesshund.markDamage,
+hound_belt,데스페라도 탄띠,시순트,Class_schiesshund,2,1,데스페라도에 드는 탄 +{0}(R08 탄창 8까지),8,schiesshund,1,Schiesshund.desperadoMax,
+hound_return,리턴 백,시순트,Class_schiesshund,3,1,리턴 백 최대 +{0}스택,8,schiesshund,2,Schiesshund.returnMax,
+support_bag,큰 가방,서포트,Class_support,3,25,보급 가방 용량 +{0}(늘어난 만큼 바로 찬다),8,support,1,Support.supplyMax,
+support_planks,두꺼운 판자,서포트,Class_support,3,100,바리케이드 체력 +{0},8,support,1,Support.barricadeHealth,
+support_line,보급선,서포트,Class_support,3,0.5,보급 가방이 차는 양 +{0}/초,8,support,2,Support.supplyRegen,

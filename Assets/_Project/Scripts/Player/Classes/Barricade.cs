@@ -70,9 +70,10 @@ public sealed class Barricade : MonoBehaviour, IDamageReceiver
 
     /// <summary>
     /// Puts barricade <paramref name="id"/> up at <paramref name="at"/> (its feet), facing along <paramref name="yaw"/>, its
-    /// Support's. A second word of the same one is ignored.
+    /// Support's, with <paramref name="health"/> to wear down: their own number, class cards in, as their PC sent it (0 or
+    /// less: the table's). A second word of the same one is ignored.
     /// </summary>
-    public static Barricade Place(ushort id, Vector3 at, float yaw, PlayerMovement owner)
+    public static Barricade Place(ushort id, Vector3 at, float yaw, PlayerMovement owner, float health = -1f)
     {
         if (!Application.isPlaying) return null;
         if (standing.TryGetValue(id, out var already) && already != null) return already;
@@ -82,7 +83,7 @@ public sealed class Barricade : MonoBehaviour, IDamageReceiver
         barricade.id = id;
         barricade.Owner = owner;
         barricade.placedAt = Time.time;
-        barricade.most = barricade.health = Mathf.Max(1f, PlayerClass.Ability(Row, "barricadeHealth", 400f));
+        barricade.most = barricade.health = Mathf.Max(1f, health > 0f ? health : PlayerClass.TableAbility(Row, "barricadeHealth", 400f));
         barricade.Build();
         standing[id] = barricade;
         return barricade;
@@ -192,7 +193,8 @@ public sealed class Barricade : MonoBehaviour, IDamageReceiver
             pressing.Add(enemy);
         }
         if (pressing.Count == 0) return;
-        Wear(pressing.Count * Mathf.Max(0f, PlayerClass.Ability(Row, "barricadePressure", 4f)) * PressEvery);
+        // The table's, not anyone's class cards: the host wears every Support's barricades down alike.
+        Wear(pressing.Count * Mathf.Max(0f, PlayerClass.TableAbility(Row, "barricadePressure", 4f)) * PressEvery);
         if (Random.value < .5f) Shake();
     }
 
@@ -206,7 +208,7 @@ public sealed class Barricade : MonoBehaviour, IDamageReceiver
         bool zombie = hit.Source != null && hit.Source.GetComponentInParent<EnemyHealth>() != null;
         if (!zombie) return DamageResult.Ignored;
         if (!seen.Add(hit.Id)) return DamageResult.Duplicate;
-        float damage = hit.Amount * Mathf.Max(0f, PlayerClass.Ability(Row, "barricadeBlow", 1f));
+        float damage = hit.Amount * Mathf.Max(0f, PlayerClass.TableAbility(Row, "barricadeBlow", 1f));
         Shake();
         KitSound.Play(KitSound.Cue.Splinter, Near(.5f));
         if (Authority) Wear(damage);

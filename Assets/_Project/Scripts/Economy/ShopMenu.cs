@@ -80,6 +80,8 @@ public sealed class ShopMenu : MonoBehaviour
     private RectTransform moneyIcon, moneyBox, spentBox, closeBox;
     private Image closeFill, moneyFlash;
     private TextMeshProUGUI money, spent, message;
+    // The guns' heading, which carries the load against Horde's weight limit (CarryWeight).
+    private TextMeshProUGUI gunsHeading;
     private float messageLeft, spentAt = float.NegativeInfinity;
     // The money shown: counts up as the panel opens, runs down after a buy (won).
     private double moneyShown;
@@ -235,6 +237,10 @@ public sealed class ShopMenu : MonoBehaviour
                 if (item.Weapon == null || slots == null) return Texts.Get("shop.refuse.unsold");
                 if (Holds(slots, item.Weapon)) return Texts.Get("shop.refuse.owned");
                 if (player.CombatInputLocked) return Texts.Get("shop.refuse.now");
+                // Horde's weight limit: the load with this gun in place of the one it would replace (CarryWeight).
+                int slot = GunSlotFor(slots);
+                if (!CarryWeight.Fits(slots, slot, item.Weapon))
+                    return Texts.Format("shop.refuse.heavy", CarryWeight.Show(CarryWeight.With(slots, slot, item.Weapon)), CarryWeight.Show(CarryWeight.Limit));
                 return null;
             case Kind.Ammo:
                 return slots == null || !HoldsAnyGun(slots) ? Texts.Get("shop.refuse.nogun") : !slots.NeedsAmmo() ? Texts.Get("shop.refuse.ammofull") : null;
@@ -316,7 +322,8 @@ public sealed class ShopMenu : MonoBehaviour
             {
                 Kind = kind, Weapon = weapon, Price = (long)Number(row, "price", 0f), Amount = amount,
                 Order = (int)Number(row, "order", 0f), Name = name.Length > 0 ? name : weapon != null ? weapon.DisplayName : id,
-                Detail = kind == Kind.Gun ? Texts.Get("shop.detail.gun") : kind == Kind.Ammo ? Texts.Get("shop.detail.ammo")
+                Detail = kind == Kind.Gun ? Texts.Format("shop.detail.gun", CarryWeight.Show(CarryWeight.Of(weapon)))
+                    : kind == Kind.Ammo ? Texts.Get("shop.detail.ammo")
                     : kind == Kind.Syringe ? Texts.Format("shop.detail.syringe", amount.ToString("0"))
                     : kind == Kind.Heal ? Texts.Format("shop.detail.heal", amount.ToString("0")) : Texts.Format("shop.detail.shield", amount.ToString("0"))
             });
@@ -362,6 +369,12 @@ public sealed class ShopMenu : MonoBehaviour
         spent.color = KitStyle.With(KitStyle.Accent, 1f - falling * falling);
         spentBox.anchoredPosition = new Vector2(Width - Inner - CloseSize - 18f - spentBox.sizeDelta.x, -(18f + CloseSize + 1f + SpentFall * falling));
         var slots = player != null ? player.GetComponent<PlayerWeaponSlots>() : null;
+        if (gunsHeading != null)
+        {
+            string heading = GunsHeading(slots);
+            if (gunsHeading.text != heading) gunsHeading.text = heading;
+            gunsHeading.color = CarryWeight.Carried(slots) > CarryWeight.Limit + .001f ? KitStyle.Red : KitStyle.Accent;
+        }
         foreach (var row in rows)
         {
             // A card just bought from says so for a moment, then goes back to what it has to say (가진 총, 체력 가득 …).
@@ -380,9 +393,15 @@ public sealed class ShopMenu : MonoBehaviour
         }
     }
 
+    // "총 · 무게 8 / 15": what the slots carry now and the most (Horde's weight limit, CarryWeight).
+    private static string GunsHeading(PlayerWeaponSlots slots)
+        => Texts.Format("shop.section.guns", CarryWeight.Show(CarryWeight.Carried(slots)), CarryWeight.Show(CarryWeight.Limit));
+
     private string Note(Item item, PlayerWeaponSlots slots)
     {
         if (item.Kind == Kind.Gun && slots != null && item.Weapon != null && Holds(slots, item.Weapon)) return Texts.Get("shop.note.owned");
+        if (item.Kind == Kind.Gun && slots != null && item.Weapon != null && !CarryWeight.Fits(slots, GunSlotFor(slots), item.Weapon))
+            return Texts.Get("shop.note.heavy");
         if (item.Kind == Kind.Ammo && slots != null && HoldsAnyGun(slots) && !slots.NeedsAmmo()) return Texts.Get("shop.note.ammofull");
         if (item.Kind == Kind.Heal && player.DamageReceiver.Health >= player.DamageReceiver.MaximumHealth - .5f) return Texts.Get("shop.note.healthfull");
         if (item.Kind == Kind.Shield && player.DamageReceiver.Shield >= item.Amount - .5f) return Texts.Get("shop.note.shield");
@@ -474,7 +493,9 @@ public sealed class ShopMenu : MonoBehaviour
             bool gunsHere = section == 0;
             if ((gunsHere ? guns : supplies) == 0) continue;
             var header = KitStyle.TopLeft(gunsHere ? "Guns" : "Supplies", panel, new Vector2(Inner, y), new Vector2(Width - Inner * 2f, SectionHeight));
-            KitStyle.Label(header, gunsHere ? Texts.Get("shop.section.guns") : Texts.Get("shop.section.supplies"), 15f, TextAlignmentOptions.MidlineLeft, KitStyle.Accent);
+            var heading = KitStyle.Label(header, gunsHere ? GunsHeading(player != null ? player.GetComponent<PlayerWeaponSlots>() : null)
+                : Texts.Get("shop.section.supplies"), 15f, TextAlignmentOptions.MidlineLeft, KitStyle.Accent);
+            if (gunsHere) gunsHeading = heading;
             y += SectionHeight;
             foreach (var item in stock)
             {

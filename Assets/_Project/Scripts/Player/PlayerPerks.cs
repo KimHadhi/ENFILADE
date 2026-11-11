@@ -9,6 +9,10 @@ using UnityEngine;
 /// campaign, from chapter to chapter, until the title screen. The cards and their numbers are Tables/Perks. Only this
 /// player's own perks exist here; each one works where its effect is judged, which is always this PC (the shooter's
 /// hits, this player's health, getting a friend up). The effect lookups below are what the game's systems ask.
+/// Class cards (bundle 4, after GMod Horde's 2401598805 perk tree: a base perk, then tiers of two choices) are dealt to
+/// one class only and raise one of its numbers in Tables/ClassAbilities (PlayerClass.Ability adds them in). Within a
+/// class the cards of one tier are rivals: once one is taken the other is never dealt again, and a tier is dealt only
+/// once the tier below has its card.
 /// </summary>
 public static class PlayerPerks
 {
@@ -18,13 +22,20 @@ public static class PlayerPerks
     public sealed class Perk
     {
         public string Id, Name, Tag, Icon, Text;
+        /// <summary>A class card's class (Tables/Classes id), dealt to that class only; empty for every class.</summary>
+        public string Class = "";
+        /// <summary>Its tier in its class's tree (Horde's): one card per tier, the tier below first; 0 for none.</summary>
+        public int Tier;
+        /// <summary>The Tables/ClassAbilities number it raises by Value a level ("Ghost" and "hunterMax"); empty for none.</summary>
+        public string AbilityRow = "", AbilityName = "";
         public int Levels;
-        public float Value, Weight;
+        /// <summary>Shown: the card's number is what it adds times this (-100 shows a -.05 share as 5%).</summary>
+        public float Value, Weight, Shown = 1f;
 
         /// <summary>The effect line at <paramref name="level"/> ({0} = everything up to that level).</summary>
         public string Describe(int level)
         {
-            string total = (Value * Mathf.Max(0, level)).ToString("0.##", CultureInfo.InvariantCulture);
+            string total = (Value * Mathf.Max(0, level) * Shown).ToString("0.##", CultureInfo.InvariantCulture);
             return string.IsNullOrEmpty(Text) ? total : Text.Replace("{0}", total);
         }
     }
@@ -35,6 +46,10 @@ public static class PlayerPerks
 
     private static readonly Dictionary<string, int> levels = new Dictionary<string, int>();
     private static List<Perk> catalog;
+    // What the cards held add to each ClassAbilities number (row → name → sum), for the class they were summed for;
+    // null to sum again.
+    private static Dictionary<string, Dictionary<string, float>> bonuses;
+    private static string bonusClass;
 
     /// <summary>A perk went up a level, or all were cleared.</summary>
     public static event Action Changed;
@@ -44,7 +59,17 @@ public static class PlayerPerks
     {
         levels.Clear();
         catalog = null;
+        bonuses = null;
         Changed = null;
+        // A table saved during Play deals and counts by its new rows (class cards are tuned live).
+        GameTables.Reloaded -= Forget;
+        GameTables.Reloaded += Forget;
+    }
+
+    private static void Forget()
+    {
+        catalog = null;
+        bonuses = null;
     }
 
     /// <summary>Every perk in the table, in its order.</summary>
@@ -57,11 +82,17 @@ public static class PlayerPerks
             foreach (string id in GameTables.RowIds(TableName))
             {
                 if (!GameTables.TryGetRow(TableName, id, out var row)) continue;
+                string ability = Text(row, "ability", "");
+                int dot = ability.IndexOf('.');
                 catalog.Add(new Perk
                 {
                     Id = id, Name = Text(row, "name", id), Tag = Text(row, "tag", ""), Icon = Text(row, "icon", ""),
                     Text = Text(row, "text", ""), Levels = Mathf.Max(1, (int)Number(row, "levels", 1f)),
-                    Value = Number(row, "value", 0f), Weight = Mathf.Max(0f, Number(row, "weight", 1f))
+                    Value = Number(row, "value", 0f), Weight = Mathf.Max(0f, Number(row, "weight", 1f)),
+                    Class = Text(row, "class", ""), Tier = Mathf.Max(0, (int)Number(row, "tier", 0f)),
+                    AbilityRow = dot > 0 ? ability.Substring(0, dot).Trim() : "",
+                    AbilityName = dot > 0 ? ability.Substring(dot + 1).Trim() : "",
+                    Shown = Number(row, "shown", 1f)
                 });
             }
             return catalog;
@@ -93,11 +124,49 @@ public static class PlayerPerks
         }
     }
 
+    /// <summary>
+    /// Whether <paramref name="perk"/> may be dealt to this PC's player now: it has a weight and a level left, and a class
+    /// card besides needs this player's class, no rival of its tier taken (Horde's one of two) and, above the first tier,
+    /// a card of the tier below (Horde's tiers open in turn).
+    /// </summary>
+    public static bool Drawable(Perk perk)
+    {
+        if (perk == null || perk.Weight <= 0f || Level(perk.Id) >= perk.Levels || !ForClass(perk, PlayerClass.CurrentId)) return false;
+        if (perk.Tier <= 0) return true;
+        // The nearest tier below that has cards at all, and whether one of them is held.
+        int below = 0;
+        bool held = false;
+        foreach (var other in Catalog)
+        {
+            if (other == perk || other.Tier <= 0 || !SameClass(other, perk)) continue;
+            bool owned = Level(other.Id) > 0;
+            if (other.Tier == perk.Tier)
+            {
+                if (owned) return false;
+                continue;
+            }
+            if (other.Tier > perk.Tier) continue;
+            if (other.Tier > below) { below = other.Tier; held = owned; }
+            else if (other.Tier == below) held |= owned;
+        }
+        return below == 0 || held;
+    }
+
+    /// <summary>The names of the cards taking <paramref name="perk"/> would shut out (its tier's others), "" for none.</summary>
+    public static string Rivals(Perk perk)
+    {
+        if (perk == null || perk.Tier <= 0) return "";
+        string names = "";
+        foreach (var other in Catalog)
+            if (other != perk && other.Tier == perk.Tier && SameClass(other, perk)) names += (names.Length > 0 ? ", " : "") + other.Name;
+        return names;
+    }
+
     /// <summary>Up to <paramref name="count"/> different perks not yet at their top level, the heavier ones likelier.</summary>
     public static List<Perk> Draw(int count)
     {
         var pool = new List<Perk>();
-        foreach (var perk in Catalog) if (perk.Weight > 0f && Level(perk.Id) < perk.Levels) pool.Add(perk);
+        foreach (var perk in Catalog) if (Drawable(perk)) pool.Add(perk);
         var drawn = new List<Perk>();
         while (drawn.Count < count && pool.Count > 0)
         {
@@ -122,6 +191,7 @@ public static class PlayerPerks
         var perk = Find(id);
         if (perk == null) return;
         levels[id] = Mathf.Min(perk.Levels, Level(id) + 1);
+        bonuses = null;
         Changed?.Invoke();
     }
 
@@ -130,8 +200,42 @@ public static class PlayerPerks
     {
         if (levels.Count == 0) return;
         levels.Clear();
+        bonuses = null;
         Changed?.Invoke();
     }
+
+    /// <summary>
+    /// What this PC's player's cards add to Tables/ClassAbilities' <paramref name="row"/>.<paramref name="name"/>: each
+    /// card for their class (or for every class) that raises it, its value times its level. PlayerClass.Ability adds it in.
+    /// </summary>
+    public static float AbilityBonus(string row, string name)
+    {
+        if (levels.Count == 0 || string.IsNullOrEmpty(row) || string.IsNullOrEmpty(name)) return 0f;
+        string mine = PlayerClass.CurrentId;
+        if (bonuses == null || !string.Equals(bonusClass, mine, StringComparison.OrdinalIgnoreCase)) SumBonuses(mine);
+        return bonuses.TryGetValue(row, out var names) && names.TryGetValue(name, out float sum) ? sum : 0f;
+    }
+
+    private static void SumBonuses(string mine)
+    {
+        bonusClass = mine;
+        bonuses = new Dictionary<string, Dictionary<string, float>>(StringComparer.OrdinalIgnoreCase);
+        foreach (var perk in Catalog)
+        {
+            int level = Mathf.Min(Level(perk.Id), perk.Levels);
+            if (level <= 0 || perk.AbilityRow.Length == 0 || perk.AbilityName.Length == 0 || !ForClass(perk, mine)) continue;
+            if (!bonuses.TryGetValue(perk.AbilityRow, out var names))
+                bonuses[perk.AbilityRow] = names = new Dictionary<string, float>(StringComparer.OrdinalIgnoreCase);
+            names.TryGetValue(perk.AbilityName, out float sum);
+            names[perk.AbilityName] = sum + perk.Value * level;
+        }
+    }
+
+    // A card for every class, or for this one.
+    private static bool ForClass(Perk perk, string classId)
+        => string.IsNullOrEmpty(perk.Class) || string.Equals(perk.Class, classId, StringComparison.OrdinalIgnoreCase);
+
+    private static bool SameClass(Perk a, Perk b) => string.Equals(a.Class, b.Class, StringComparison.OrdinalIgnoreCase);
 
     // ---- What the game's systems ask ----
 

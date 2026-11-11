@@ -32,6 +32,9 @@ public sealed class WeaponData : ScriptableObject
     [SerializeField, Range(0f, 1f)] private float gripRecoil = .8f;
     [Tooltip("With an angled grip on, the share of Ads Transition Time the sight takes to come up (Siege's angled grip).")]
     [SerializeField, Range(.1f, 1f)] private float gripAimTime = .8f;
+    [Tooltip("How heavy it is to carry (CarryWeight: GMod Horde's carry limit, Player.csv Carry.weightMax). Below 0: its " +
+        "kind's weight from Player.csv (Carry.gun, Carry.melee, Carry.special).")]
+    [SerializeField] private float weight = -1f;
     [Tooltip("Pitch / yaw in degrees. Positive pitch kicks the view upward.")]
     [SerializeField] private Vector2 recoilPerShot = new Vector2(1.2f, 0.4f);
     [Header("Ammunition / fire mode")]
@@ -168,6 +171,8 @@ public sealed class WeaponData : ScriptableObject
     /// <summary>For the customize menu's stats: how far each shot climbs (degrees), before its random share.</summary>
     public float RecoilVertical => recoilVertical > 0f ? recoilVertical : recoilPerShot.x;
     public float GripAimTime => Mathf.Clamp(gripAimTime, .1f, 1f);
+    /// <summary>Its own carry weight (Weapons.csv weight); below 0 when it has none, and CarryWeight weighs it by its kind.</summary>
+    public float Weight => weight;
     public Vector2 RecoilPerShot => recoilPerShot;
     public float RecoilResponse => Mathf.Clamp(recoilResponse, 8f, 50f);
     public float RecoilRetention => Mathf.Clamp01(recoilRetention);

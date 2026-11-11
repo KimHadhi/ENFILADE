@@ -26,7 +26,8 @@ public sealed class DetenteKit : MonoBehaviour
     private PlayerDamageReceiver receiver;
     private InputAction interact;
     private WaveManager waves;
-    private float syringe = -1f, goldenUntil, goldenTotal = 1f, lastInject = -99f, nextSection;
+    // syringeShown: the most the syringe held when last looked at, so a bigger one (a class card) comes with what it added.
+    private float syringe = -1f, goldenUntil, goldenTotal = 1f, lastInject = -99f, nextSection, syringeShown;
     private int raisesLeft = 1, lastWave = -1;
     private Vector3 lastCheckpoint;
     private bool hadCheckpoint;
@@ -78,6 +79,9 @@ public sealed class DetenteKit : MonoBehaviour
         Local = this;
         if (receiver == null) receiver = movement.DamageReceiver;
         if (syringe < 0f) syringe = Mathf.Clamp(Number("syringeStart", 100f), 0f, SyringeMax);
+        float most = SyringeMax;
+        if (syringeShown > 0f && most > syringeShown) syringe = Mathf.Min(most, syringe + most - syringeShown);
+        syringeShown = most;
         Sections();
         if (interact == null && InputSystem.actions != null) interact = InputSystem.actions.FindAction("Player/Interact", false);
         bool able = interact != null && movement.InputAvailable && !movement.IsDead && !movement.IsDowned && !movement.IsHeld && HandsFree();

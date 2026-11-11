@@ -343,7 +343,9 @@ public sealed class PerkCardScreen : MonoBehaviour
         card.Owned.gameObject.SetActive(level > 0);
         string next = level + 1 >= perk.Levels ? Texts.Get("perk.step.last") : Texts.Format("perk.step", level + 1);
         card.Step.text = level == 0 ? Texts.Get("perk.step.new") : Texts.Format("perk.step.owned", level, next);
-        card.Text.text = perk.Describe(level + 1);
+        // A class card shuts the other card of its tier out once taken (Horde's one of two): said under it until then.
+        string rivals = level == 0 ? PlayerPerks.Rivals(perk) : "";
+        card.Text.text = perk.Describe(level + 1) + (rivals.Length > 0 ? "\n<size=70%>" + Texts.Format("perk.rival", rivals) + "</size>" : "");
         int shown = Mathf.Min(perk.Levels, MaxPips);
         float width = shown * 34f + (shown - 1) * 8f;
         for (int i = 0; i < MaxPips; i++)
@@ -481,7 +483,7 @@ public sealed class PerkCardScreen : MonoBehaviour
         return chat != null && chat.BlocksMissionInputThisFrame;
     }
 
-    private static bool AnyLeft() => PlayerPerks.Catalog.Any(perk => perk.Weight > 0f && PlayerPerks.Level(perk.Id) < perk.Levels);
+    private static bool AnyLeft() => PlayerPerks.Catalog.Any(perk => PlayerPerks.Drawable(perk));
 
     private void ShowPrompt(bool show)
     {

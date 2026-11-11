@@ -1,0 +1,10 @@
+﻿key,value,note
+"#부착물이 총의 능력치를 바꾸는 값. ArcCW(GMod 워크숍 2131057232)의 겹치기 규칙: 최종값 = (모든 부품의 Mult_ 곱) × ((Override_가 있으면 그 값, 없으면 총의 값) + 모든 부품의 Add_ 합). 순서는 늘 Override → Add → Mult. 두 부품이 같은 능력치를 Override하면 칸 순서(조준기 → 총구 → 손잡이 → 하단)에서 앞의 것",,
+"#키 = 부품.접두_능력치. 부품: Suppressor(소음기) VerticalGrip(수직 손잡이) AngledGrip(앵글 손잡이) Flashlight(플래시라이트) Iron(가늠쇠) RedDot(레드닷) Holo(홀로그램) Scope(배율 조준경). 접두: Mult_(곱) Add_(더함) Override_(그 값으로 바꿈). 능력치와 그 바탕이 되는 Weapons.csv 열: recoil(위로 튀는 반동 °, recoilVertical) spread(지향사격 탄퍼짐 °, hipSpread) aimTime(조준 시간 초, adsTransitionTime) moveSpeed(조준한 채 걷는 속도 배율, adsMoveMultiplier) noise(좀비가 듣는 거리 m, noiseRadius)",,
+"#총마다 다른 값 셋은 Weapons.csv에 있다: suppressedNoise = Suppressor.Mult_noise, gripRecoil = VerticalGrip.Mult_recoil, gripAimTime = AngledGrip.Mult_aimTime. 여기 같은 항목을 또 적으면 둘 다 곱한다. 아래 값은 ENFILADE의 시작값(얻는 것과 잃는 것을 함께 두는 ArcCW식)이고 줄을 지우면 그 효과가 없어진다. C 메뉴의 초록 +와 빨강 −가 이 표대로 나온다",,
+"#예: Scope.Override_spread를 0으로 두면 배율 조준경을 단 총의 지향사격 탄퍼짐이 0에서 시작하고 그 뒤에 Add_·Mult_가 붙는다",,
+VerticalGrip.Mult_spread,0.9,수직 손잡이: 지향사격 탄퍼짐 ×0.9(받치는 손이 총을 잡아 준다). 반동 ×0.8은 총마다 Weapons.csv gripRecoil
+VerticalGrip.Mult_aimTime,1.05,수직 손잡이의 대가: 조준 시간 ×1.05
+AngledGrip.Mult_spread,1.1,앵글 손잡이의 대가: 지향사격 탄퍼짐 ×1.1. 조준 시간 ×0.8은 총마다 Weapons.csv gripAimTime
+Scope.Mult_aimTime,1.15,배율 조준경(4배·8배)의 대가: 조준 시간 ×1.15
+Scope.Mult_moveSpeed,0.9,배율 조준경의 대가: 조준한 채 걷는 속도 ×0.9

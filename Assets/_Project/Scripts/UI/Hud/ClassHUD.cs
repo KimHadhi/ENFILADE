@@ -109,7 +109,9 @@ public sealed class ClassHUD : MonoBehaviour
     // Adrenaline: a pip a stack, all beating with the key's prompt once full.
     private void Adrenaline()
     {
-        int count = Mathf.Clamp(kit.StackMax, 1, MostPips), stacks = kit.Stacks;
+        // As many pips as its most, which a class card may raise.
+        Pips(kit.StackMax);
+        int count = shownPips, stacks = kit.Stacks;
         bool ready = kit.ChargeReady;
         float beat = ready ? .75f + .25f * Mathf.Sin(Time.unscaledTime * 9f) : 1f;
         for (int i = 0; i < count; i++)

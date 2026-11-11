@@ -266,15 +266,17 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
     private void OnShoveSound(ShoveImpactKind impact) => ShoveSoundRpc(impact);
     private void OnKicked() => KickRpc();
     private void OnThrown(Vector3 from, Vector3 velocity) => ThrowRpc(from, velocity);
-    private void OnCharged(Vector3 at) => ChargeRpc(at);
-    private void OnTaunted(Vector3 at) => TauntRpc(at);
+    // A CHARGE's length and reach, a taunt's and a barricade's health go with them: the sender's class cards may raise them.
+    private void OnCharged(Vector3 at) => ChargeRpc(at, kit.ChargeSeconds, kit.ChargeReach);
+    private void OnTaunted(Vector3 at) => TauntRpc(at, kit.TauntReach, kit.TauntSeconds);
     private void OnClaimed(Vector3 head, Vector3 from, Vector3 ground, bool grand) => BountyRpc(head, from, ground, grand);
-    private void OnBuilt(ushort id, Vector3 at, float yaw) => BarricadeRpc(id, at, yaw);
+    private void OnBuilt(ushort id, Vector3 at, float yaw) => BarricadeRpc(id, at, yaw, support.BarricadeHealth);
     private void OnTookDown(ushort id) => CollapseRpc(id);
 
-    // A Support put a barricade up here: every other PC puts its copy up.
+    // A Support put a barricade up here, this strong: every other PC puts its copy up.
     [Rpc(SendTo.NotMe)]
-    private void BarricadeRpc(ushort id, Vector3 at, float yaw) => Barricade.Place(id, at, yaw, mover != null ? mover : GetComponent<PlayerMovement>());
+    private void BarricadeRpc(ushort id, Vector3 at, float yaw, float health)
+        => Barricade.Place(id, at, yaw, mover != null ? mover : GetComponent<PlayerMovement>(), health);
 
     // A Support took one of its barricades down for a new one: every other PC takes its copy down.
     [Rpc(SendTo.NotMe)]
@@ -326,17 +328,19 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
         if (marked.TryGetComponent(out EnemyHealth health)) PingMarks.Ping(health, mover != null ? mover : GetComponent<PlayerMovement>(), bounty);
     }
 
-    // An Assault sounded a CHARGE here: each other PC's player near it charges too.
+    // An Assault sounded a CHARGE here, this long and this far: each other PC's player near it charges too.
     [Rpc(SendTo.NotMe)]
-    private void ChargeRpc(Vector3 at)
+    private void ChargeRpc(Vector3 at, float seconds, float reach)
     {
         string name = TryGetComponent(out PlayerTally tally) ? tally.DisplayName : gameObject.name;
-        ClassKit.ReceiveCharge(at, Texts.Format("class.assault.charge.friend", name));
+        ClassKit.ReceiveCharge(at, Texts.Format("class.assault.charge.friend", name), seconds, reach);
     }
 
-    // A Knight taunted here: the host's zombies already fighting near go after them, and every PC sees and hears it.
+    // A Knight taunted here, this far and this long: the host's zombies already fighting near go after them, and every PC
+    // sees and hears it.
     [Rpc(SendTo.NotMe)]
-    private void TauntRpc(Vector3 at) => ClassKit.ReceiveTaunt(mover != null ? mover : GetComponent<PlayerMovement>(), at, false);
+    private void TauntRpc(Vector3 at, float reach, float seconds)
+        => ClassKit.ReceiveTaunt(mover != null ? mover : GetComponent<PlayerMovement>(), at, false, reach, seconds);
 
     // A stone this player threw: every other PC throws its own copy, and the host's is the one its zombies hear.
     [Rpc(SendTo.NotMe)]

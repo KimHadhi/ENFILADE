@@ -43,7 +43,7 @@ public sealed class GunCustomizeMenu : MonoBehaviour
 
     private struct Stats
     {
-        public float Body, Head, Rpm, Recoil, AimTime, Noise;
+        public float Body, Head, Rpm, Recoil, Spread, AimTime, AimMove, Noise;
         public int Pellets, Magazine;
     }
 
@@ -213,16 +213,15 @@ public sealed class GunCustomizeMenu : MonoBehaviour
 
     // ---- The gun's numbers ----
 
-    // The held gun's stats with what it wears now, or with one slot's part swapped for another.
+    // The held gun's stats with what it wears now, or with one slot's part swapped for another. The slots' order is
+    // GunStats' (sight, muzzle, grip, underbarrel).
     private Stats StatsWith(SlotBox swapSlot = null, int swapIndex = -1)
+        => StatsOf(GunStats.Of(gun, swapSlot != null ? (int)swapSlot.Slot : -1, swapIndex));
+
+    // The gun's numbers with these parts on, by ArcCW's stacking rule as the gun fires (GunStats).
+    private Stats StatsOf(in GunStats.Fit fit)
     {
         var data = gun.Data;
-        var parts = gun.Attachments;
-        int muzzle = gun.MuzzleIndex, grip = gun.GripIndex;
-        if (swapSlot != null && swapSlot.Slot == Slot.Muzzle) muzzle = swapIndex;
-        if (swapSlot != null && swapSlot.Slot == Slot.Grip) grip = swapIndex;
-        var muzzleKind = parts != null && muzzle >= 0 && muzzle < parts.muzzle.Length ? parts.muzzle[muzzle].kind : GunAttachments.Kind.None;
-        var gripKind = parts != null && grip >= 0 && grip < parts.grips.Length ? parts.grips[grip].kind : GunAttachments.Kind.None;
         if (data == null) return default;
         return new Stats
         {
@@ -230,9 +229,11 @@ public sealed class GunCustomizeMenu : MonoBehaviour
             Head = data.Damage * data.HeadshotMultiplier,
             Pellets = data.Pellets,
             Rpm = 60f / Mathf.Max(.001f, data.ShotInterval),
-            Recoil = data.RecoilVertical * (gripKind == GunAttachments.Kind.VerticalGrip ? data.GripRecoil : 1f),
-            AimTime = data.AdsTransitionTime * (gripKind == GunAttachments.Kind.AngledGrip ? data.GripAimTime : 1f),
-            Noise = data.NoiseRadius * (muzzleKind == GunAttachments.Kind.Suppressor ? data.SuppressedNoise : 1f),
+            Recoil = Mathf.Max(0f, GunStats.Apply(GunStats.Stat.Recoil, data.RecoilVertical, data, fit)),
+            Spread = Mathf.Max(0f, GunStats.Apply(GunStats.Stat.Spread, data.HipSpread, data, fit)),
+            AimTime = Mathf.Max(.01f, GunStats.Apply(GunStats.Stat.AimTime, data.AdsTransitionTime, data, fit)),
+            AimMove = Mathf.Clamp(GunStats.Apply(GunStats.Stat.MoveSpeed, data.AdsMoveMultiplier, data, fit), .1f, 1f),
+            Noise = Mathf.Max(0f, GunStats.Apply(GunStats.Stat.Noise, data.NoiseRadius, data, fit)),
             Magazine = data.MagazineSize
         };
     }
@@ -261,31 +262,56 @@ public sealed class GunCustomizeMenu : MonoBehaviour
         _ => choice.part != null ? Clean(choice.part.name) : Texts.Get("gun.part.other"),
     };
 
-    // What a part gives (+) and costs (−), as ArcCW lists them.
-    private void Describe(Part part, GunAttachments.Kind kind, GunScope scope)
+    // What a part gives (+) and costs (−), as ArcCW lists them: what it does by itself to the gun's numbers (GunStats,
+    // Tables/Attachments and the gun's own suppressor and grip shares), then what else it does.
+    private void Describe(Part part, Slot slot, GunAttachments.Kind kind, GunScope scope)
     {
-        var data = gun.Data;
         if (scope != null) part.Pros.Add(Texts.Format("gun.pro.scope_zoom", scope.magnification.ToString("0.#")));
+        if (gun.Data != null)
+        {
+            Stats bare = StatsOf(default), fitted = StatsOf(GunStats.Alone(gun, (int)slot, part.Index));
+            Percent(part, bare.Recoil, fitted.Recoil, true, "gun.pro.vertical_grip_recoil", "gun.con.recoil");
+            Percent(part, bare.AimTime, fitted.AimTime, true, "gun.pro.angled_grip_aim", "gun.con.aim");
+            Percent(part, bare.AimMove, fitted.AimMove, false, "gun.pro.aim_move", "gun.con.aim_move");
+            Change(part, bare.Spread, fitted.Spread, "gun.pro.spread", "gun.con.spread", "0.##");
+            Change(part, bare.Noise, fitted.Noise, "gun.pro.suppressor_range", "gun.con.noise", "0");
+        }
         switch (kind)
         {
             case GunAttachments.Kind.Suppressor:
-                float noise = data != null ? data.NoiseRadius : 40f, share = data != null ? data.SuppressedNoise : .3f;
-                part.Pros.Add(Texts.Format("gun.pro.suppressor_range", noise.ToString("0"), (noise * share).ToString("0")));
                 part.Pros.Add(Texts.Get("gun.pro.suppressor_quiet"));
                 part.Pros.Add(Texts.Get("gun.pro.suppressor_flash"));
                 break;
             case GunAttachments.Kind.VerticalGrip:
-                part.Pros.Add(Texts.Format("gun.pro.vertical_grip_recoil", Mathf.RoundToInt((1f - (data != null ? data.GripRecoil : .8f)) * 100f)));
                 part.Pros.Add(Texts.Get("gun.pro.vertical_grip_hand"));
                 break;
             case GunAttachments.Kind.AngledGrip:
-                part.Pros.Add(Texts.Format("gun.pro.angled_grip_aim", Mathf.RoundToInt((1f - (data != null ? data.GripAimTime : .8f)) * 100f)));
                 part.Pros.Add(Texts.Get("gun.pro.angled_grip_hand"));
                 break;
             case GunAttachments.Kind.Flashlight:
                 part.Pros.Add(Texts.Get("gun.pro.flashlight"));
                 break;
         }
+    }
+
+    // A number as the share of the bare gun's it changes by, in whole per cents: a pro when it goes the good way (down
+    // where less is better: the climb, the time to aim; up for the pace aimed), a con the other.
+    private static void Percent(Part part, float before, float after, bool lessIsBetter, string pro, string con)
+    {
+        if (before <= .0001f) return;
+        int change = Mathf.RoundToInt((after / before - 1f) * 100f);
+        if (change == 0) return;
+        bool better = lessIsBetter ? change < 0 : change > 0;
+        (better ? part.Pros : part.Cons).Add(Texts.Format(better ? pro : con, Mathf.Abs(change)));
+    }
+
+    // A number where less is better, as "before → after".
+    private static void Change(Part part, float before, float after, string pro, string con, string format)
+    {
+        string a = before.ToString(format), b = after.ToString(format);
+        if (a == b) return;
+        if (after < before) part.Pros.Add(Texts.Format(pro, a, b));
+        else part.Cons.Add(Texts.Format(con, a, b));
     }
 
     // A pack part's own name without its prefix and underscores (A_Phantom_TAC → Phantom TAC).
@@ -399,7 +425,7 @@ public sealed class GunCustomizeMenu : MonoBehaviour
             for (int i = 0; i < sights.sights.Length; i++)
             {
                 var part = new Part { Index = i, Name = SightName(sights.sights[i]) };
-                Describe(part, GunAttachments.Kind.None, sights.sights[i].scope);
+                Describe(part, Slot.Sight, GunAttachments.Kind.None, sights.sights[i].scope);
                 box.Parts.Add(part);
             }
             slots.Add(box);
@@ -450,7 +476,7 @@ public sealed class GunCustomizeMenu : MonoBehaviour
             for (int i = 0; i < choices.Length; i++)
             {
                 var part = new Part { Index = i, Name = PartName(choices[i]) };
-                Describe(part, choices[i].kind, null);
+                Describe(part, slot, choices[i].kind, null);
                 box.Parts.Add(part);
             }
             slots.Add(box);
@@ -509,7 +535,7 @@ public sealed class GunCustomizeMenu : MonoBehaviour
         var panel = FeelUI.Rect("Stats", root);
         panel.anchorMin = panel.anchorMax = panel.pivot = new Vector2(1f, 1f);
         panel.anchoredPosition = new Vector2(-Margin, -Top);
-        panel.sizeDelta = new Vector2(StatsWidth, 56f + 6 * StatRow);
+        panel.sizeDelta = new Vector2(StatsWidth, 56f + 8 * StatRow);
         KitStyle.Fill(panel, KitStyle.Panel);
         var title = KitStyle.TopLeft("Title", panel, new Vector2(18f, 12f), new Vector2(StatsWidth - 36f, 24f));
         KitStyle.Label(title, Texts.Get("gun.stats.title"), 15f, TextAlignmentOptions.MidlineLeft, KitStyle.Accent);
@@ -517,7 +543,9 @@ public sealed class GunCustomizeMenu : MonoBehaviour
         Add(Texts.Get("gun.stat.damage"), s => (s.Pellets > 1 ? s.Body.ToString("0") + "×" + s.Pellets : s.Body.ToString("0")) + " / " + s.Head.ToString("0"), (a, b) => 0);
         Add(Texts.Get("gun.stat.rpm"), s => s.Rpm.ToString("0") + " RPM", (a, b) => 0);
         Add(Texts.Get("gun.stat.recoil"), s => s.Recoil.ToString("0.00") + "°", (a, b) => b.Recoil < a.Recoil ? 1 : b.Recoil > a.Recoil ? -1 : 0);
+        Add(Texts.Get("gun.stat.spread"), s => s.Spread.ToString("0.00") + "°", (a, b) => b.Spread < a.Spread ? 1 : b.Spread > a.Spread ? -1 : 0);
         Add(Texts.Get("gun.stat.aim_time"), s => Texts.Format("hud.seconds", s.AimTime.ToString("0.00")), (a, b) => b.AimTime < a.AimTime ? 1 : b.AimTime > a.AimTime ? -1 : 0);
+        Add(Texts.Get("gun.stat.aim_move"), s => Mathf.RoundToInt(s.AimMove * 100f) + "%", (a, b) => b.AimMove > a.AimMove ? 1 : b.AimMove < a.AimMove ? -1 : 0);
         Add(Texts.Get("gun.stat.noise"), s => s.Noise.ToString("0") + "m", (a, b) => b.Noise < a.Noise ? 1 : b.Noise > a.Noise ? -1 : 0);
         Add(Texts.Get("gun.stat.magazine"), s => s.Magazine.ToString(), (a, b) => 0);
 

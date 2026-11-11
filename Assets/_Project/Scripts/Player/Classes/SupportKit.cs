@@ -29,7 +29,8 @@ public sealed class SupportKit : MonoBehaviour
 
     private PlayerMovement movement;
     private InputAction interact;
-    private float supply = -1f, lastGive = -99f, lastBuild = -99f;
+    // bagShown: the most the bag held when last looked at, so a bigger bag (a class card) comes with what it added.
+    private float supply = -1f, lastGive = -99f, lastBuild = -99f, bagShown;
     private int made;
 
     /// <summary>The bag now and the most it holds; what a resupply and a barricade take from it.</summary>
@@ -38,6 +39,8 @@ public sealed class SupportKit : MonoBehaviour
     public float GiveCost => Mathf.Max(1f, Number("resupplyCost", 25f));
     public float BuildCost => Mathf.Max(1f, Number("barricadeCost", 50f));
     public bool CanBuild => Supply >= BuildCost - .001f;
+    /// <summary>The health its barricades go up with, class cards in (every other PC is sent it with the barricade).</summary>
+    public float BarricadeHealth => Mathf.Max(1f, Number("barricadeHealth", 400f));
     /// <summary>How many of its barricades stand now, and the most at once.</summary>
     public int Standing => movement != null ? Barricade.StandingOf(movement).Count : 0;
     public int MostStanding => Mathf.Max(1, Mathf.RoundToInt(Number("barricadeMax", 2f)));
@@ -65,7 +68,10 @@ public sealed class SupportKit : MonoBehaviour
         }
         Local = this;
         if (supply < 0f) supply = Mathf.Clamp(Number("supplyStart", 100f), 0f, SupplyMax);
-        supply = Mathf.Min(SupplyMax, supply + Mathf.Max(0f, Number("supplyRegen", 1.5f)) * Time.deltaTime);
+        float most = SupplyMax;
+        if (bagShown > 0f && most > bagShown) supply += most - bagShown;
+        bagShown = most;
+        supply = Mathf.Min(most, supply + Mathf.Max(0f, Number("supplyRegen", 1.5f)) * Time.deltaTime);
         Offered = movement.IsDead || movement.IsDowned || !HandsFree() ? null : Aimed();
         if (interact == null && InputSystem.actions != null) interact = InputSystem.actions.FindAction("Player/Interact", false);
         if (Offered != null && interact != null && interact.WasPressedThisFrame() && movement.InputAvailable) Give(Offered);
@@ -145,7 +151,7 @@ public sealed class SupportKit : MonoBehaviour
         supply -= BuildCost;
         lastBuild = Time.time;
         ushort id = NextId();
-        Barricade.Place(id, at, yaw, movement);
+        Barricade.Place(id, at, yaw, movement, BarricadeHealth);
         KitSound.Play(KitSound.Cue.Hammer, .9f);
         Built?.Invoke(id, at, yaw);
     }

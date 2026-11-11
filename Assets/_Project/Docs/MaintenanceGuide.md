@@ -13,7 +13,8 @@
 | [Sounds.csv](../Resources/Tables/Sounds.csv) | 소리 묶음 폴더별 볼륨·피치 | `<묶음>/<폴더>` (`Movement/Bar/Grab` …) |
 | [Reverb.csv](../Resources/Tables/Reverb.csv) | 총소리 잔향: 방을 재는 광선 길이, 실내·실외와 방 크기 기준, 동시에 나는 꼬리 수. 구역 리버브가 바뀌는 시간 | `Gun.필드`, `Area.필드` |
 | [Surfaces.csv](../Resources/Tables/Surfaces.csv) | 표면 종류의 부모와 찾을 키워드 | 표면 이름 (`Concrete` …) |
-| [Weapons.csv](../Resources/Tables/Weapons.csv) | 총 피해·RPM·장탄·예비탄·장전·자동 장전·탄퍼짐·앉아 쏘기·헤드샷·ADS·흔들림, 몸의 손이 잡는 위치 | `WeaponData` 에셋 이름 (`MX16A4` …) |
+| [Weapons.csv](../Resources/Tables/Weapons.csv) | 총 피해·RPM·장탄·예비탄·장전·자동 장전·탄퍼짐·앉아 쏘기·헤드샷·ADS·흔들림·무게, 몸의 손이 잡는 위치 | `WeaponData` 에셋 이름 (`MX16A4` …) |
+| [Attachments.csv](../Resources/Tables/Attachments.csv) | 부품(소음기·손잡이·조준경)이 총의 반동·탄퍼짐·조준 시간·조준 중 이동·소리 거리를 바꾸는 값 ([부착물 능력치](#부착물-능력치-attachmentscsv)) | `부품.Mult_능력치` (`VerticalGrip.Mult_spread` …) |
 | [FPSBody.csv](../Resources/Tables/FPSBody.csv) | 총을 드는 KINEMATION FPS Animation Framework: Q/E 때 몸이 기우는 각도, 질주 때 상체가 시선을 따르는 정도와 질주로 보는 지점, 끊긴 장전이 풀리는 시간, 총구를 재는 깊이, 총을 꺼내고 넣을 때 상체를 넘겨받는 시간 | `Rig` |
 | [Enemies.csv](../Resources/Tables/Enemies.csv) | 적 체력·공격·자세(체간)·이동 속도 | 적 프리팹 이름 (`Enemy_Test`) |
 | [Waves.csv](../Resources/Tables/Waves.csv) | 웨이브 적 수·증가량·대기·등장 간격 | `WaveManager`의 `Table Id` (기본 `Default`) |
@@ -49,7 +50,10 @@
 - F 핑(3단계, 모든 클래스): F에 처형·암살·줍기·부활·사다리·미션 버튼·문·상점이 걸려 있지 않으면 조준한 적을 찍는다(PlayerPing). 찍힌 적은 팀 모두에게 테두리(HitFlashRenderer.SetPing)와 벽 너머 실루엣, 머리 위 마름모와 거리로 보인다(PingMarks). 다른 PC에는 PlayerNetworkCombat.PingRpc로 간다. 왼손으로 가리키는 동작은 클립이 필요해 지금은 총이 살짝 끄덕인다(FPSBody.Point).
 - 시순트(3단계): F 핑이 청록 현상금 표식(한 번에 하나)이고 내 총알이 그 적에게 더 세다. 자기 표식 대상을 처치하면 현상금 돈(처치 점수 줄 '현상금'), 리턴 백(이동·피해 스택), 데스페라도 탄 점수를 받는다. 데스페라도는 시순트의 4번 칸 R08(2번 칸은 보통 권총 M1911): PlayerWeaponSlots.SpecialHoldsGun이 특수 칸에 총을 허락하고 KeepsOwnRounds로 탄약 줍기·리필·상점·처형 보상이 그 칸을 건너뛴다. 탄은 현상금으로만 찬다(WeaponRuntime.LoadOwnRounds·LoadRound, 예비탄 0이라 재장전도 없다). 탄 한 발은 피해 두 배이고, 표식 대상의 머리에 맞으면 엘리트도 즉사(PlayerClass.Finish, 거구는 bossShare만큼)하며 화면에는 청록 BOUNTY 배너(CounterBanner를 다른 글자와 색으로), 세계에는 모두에게 보이는 BountyBurst(총구에서 머리까지 청록 광선, 섬광과 불꽃, 쏟아지는 금화, 하늘로 솟는 빛기둥, 바닥 충격파 두 겹, 공중에 떠오르는 BOUNTY 글자; PlayerNetworkCombat.BountyRpc)가 터진다. 보통 표식 처치는 금화만 쏟아진다.
 - 서포트(4단계, SupportKit): 저절로 차는 보급 가방 하나로 두 일을 한다. F로 조준한 동료(서 있고 3.5m 안)에게 보급하면 그 동료의 PC에서 총마다 탄창 몇 개가 예비탄에 더해지고 처음 예비탄보다 25% 더까지 찬다(풀리 로디드, 줍기·상점은 처음 예비탄까지), 데탕트면 주사기도 찬다(PlayerNetworkCombat.ResupplyRpc). 휠 클릭은 앞 바닥에 허리 높이 판자 바리케이드를 세운다(Barricade: 최대 개수를 넘으면 가장 오래된 것이 무너진다). 바리케이드는 내비 메시를 깎아 좀비가 못 지나가고, 너머의 플레이어를 노린 좀비 공격을 대신 맞으며(IDamageReceiver, 아군의 총알·주먹은 피해 없음), 붙어서 밀어대는 좀비에게도 깎인다. 체력은 호스트가 정하고(클라이언트의 좀비 공격은 BarricadeHitRpc로 호스트에) 모두에게 알린다(BarricadeStateRpc). 세우기·치우기는 BarricadeRpc·CollapseRpc. 나중에 들어온 사람에게는 이미 선 바리케이드가 안 보인다.
-- 클래스 전용 퍼크 카드(헤드 헌터 최대 같은 수치를 키운다), 근접 무기·저격총 에셋, 핑의 왼손 가리키기 클립은 다음 단계다.
+- 클래스 카드(애드온 이식 묶음 4, GMod Horde 2401598805의 퍽 트리: 기본 퍽 위에 단계마다 두 갈래): [Perks.csv](../Resources/Tables/Perks.csv)에서 `class` 열이 있는 줄은 그 클래스에게만 나오는 능력 카드다. `ability`에 적은 ClassAbilities 수치(`Ghost.hunterMax`)에 단계마다 `value`를 더한다(`PlayerClass.Ability`). `<클래스>.gunBonus`는 Classes.csv의 클래스 총 피해 보너스에 더한다. `tier`가 Horde의 단계다. 같은 클래스·같은 단계 카드는 하나만 가질 수 있고(하나를 고르면 다른 것은 이번 캠페인에 더 안 나온다. 카드 설명 아래에 "둘 중 하나"로 적힌다), 바로 아래 단계 카드를 가져야 다음 단계 카드가 나온다. Horde는 웨이브 1·3·5·7에 단계가 열리지만 여기서는 카드를 고른 만큼 열린다. `shown`은 카드에 보이는 숫자의 배수다(받는 피해 배수 .75를 깎는 카드는 -100으로 %p처럼 보인다).
+  - 지금은 클래스마다 1단계 둘 중 하나와 2단계 하나(포인트는 1단계 하나와 2단계 하나), 모두 20장이다. 단계(한 번 고를 때)마다: 고스트 끝없는 사냥(헤드 헌터 최대 +1) / 데드아이(+25%p) → 고요한 숨(스택당 피해 +1%p). 어썰트 식지 않는 피(스택 유지 +2초) / 광분(스택당 피해 +1%p) → 긴 돌격(CHARGE +2초). 나이트 철벽(받는 피해 -5%p) / 우렁찬 도발(반경 +3m) → 흘리기(반격 피해 +25%p). 포인트 빠른 손(들지 않은 총 장전 시간 -15%) → 총잡이(클래스 총 +5%p). 데탕트 큰 주사기(용량 +25) / 진한 약(주사 회복 +10) → 골든 아워(이동 +4%p). 시순트 사냥개의 이빨(표식 피해 +10%p) / 데스페라도 탄띠(탄 +1, R08 탄창 8까지) → 리턴 백(최대 +1스택). 서포트 큰 가방(용량 +25) / 두꺼운 판자(바리케이드 체력 +100) → 보급선(초당 +0.5). 3·4단계와 2단계의 두 번째 갈래는 줄만 더하면 된다.
+  - 카드는 그 플레이어 PC가 쓰는 수치만 바꾼다. 다른 PC로 가는 CHARGE 시간·반경, 도발 반경·시간, 바리케이드 체력은 보낸 쪽 값이 RPC에 실려 간다(`ChargeRpc`·`TauntRpc`·`BarricadeRpc`). 호스트가 정하는 바리케이드가 깎이는 배수(`barricadeBlow`·`barricadePressure`)와 모든 PC가 그리는 핑·표식 시간(`Ping.*`·`markSeconds`)은 표 값만 쓴다(`PlayerClass.TableAbility`). 주사기·보급 가방 용량 카드는 늘어난 만큼 바로 채운다. 어썰트 아드레날린·고스트 헤드 헌터 칸은 최대가 늘면 늘어난다(HUD 칸은 12개까지).
+- 근접 무기·저격총 에셋, 핑의 왼손 가리키기 클립은 다음 단계다.
 
 ### 잠입 (Stealth.csv, ZombieSenses.csv)
 
@@ -77,6 +81,28 @@
 ### 총 꾸미기 저장 (gun_setups.json)
 
 C 메뉴에서 바꾼 조준경·총구·하단·손잡이, L 플래시, B 사격 모드는 바꾸는 즉시 이 PC의 `gun_setups.json`(`Application.persistentDataPath`, 보통 `%USERPROFILE%\AppData\LocalLow\<회사>\<제품>`)에 총 에셋 이름별로 적히고, 그 총을 꺼낼 때마다(다음 판 포함) 그대로 붙는다(2026-11-11 플레이 테스트: 판마다 다시 꾸며야 했음). 처음 상태로 돌리려면 게임을 끄고 그 파일을 지운다. 표에 없는 사격 모드가 적혀 있으면 그것만 무시한다.
+
+### 무게 제한 (Weapons.csv weight, Player.csv Carry)
+
+GMod Horde(2401598805)의 무게 제한을 옮겼다(최대 15, 칼 2·카타나 5). 1~4번 칸에 든 무기의 무게 합이 [Player.csv](../Resources/Tables/Player.csv)의 `Carry.weightMax`(15)를 넘게 되는 무기는 상점에서 못 사고 바닥에서 못 줍는다([CarryWeight](../Scripts/Player/Combat/Weapons/CarryWeight.cs)).
+
+- 무기마다의 무게는 [Weapons.csv](../Resources/Tables/Weapons.csv)의 `weight`다: M1911·R08 2, MKR9·WK-11 Viper 3, TR-15 5, MX16A4·AK-105·Herrington 11-87 6, SRM-12·Mk14 EBR 7, MX68 8. 비우면 종류별 `Carry.gun`(4), `Carry.melee`(3, Horde의 크로바), `Carry.special`(1)이라 새 무기도 무게가 0이 아니다.
+- 클래스 시작 장비는 모두 10 이하라 그대로 들어간다(가장 무거운 것은 서포트 MX68+M1911과 시순트 AK-105+M1911+데스페라도 R08, 둘 다 10). Horde의 카타나 5를 더해도 15다. 클래스 시작 장비, 친구 PC가 알려 준 총, 개발자 콘솔의 `/gun`은 무게를 보지 않는다.
+- 바꿔 드는 총은 빠지는 총의 무게를 뺀 합으로 본다(상점은 손에 든 총 칸, 아니면 빈 총 칸, 줍기는 빈 총 칸, 아니면 손에 든 총 칸에 넣는다). 표를 바꿔 이미 한도를 넘었어도 가벼워지는 교체는 된다.
+- 상점: 총 칸 머리에 "총 · 무게 8 / 15"(넘으면 빨강), 카드마다 "총 · 무게 6". 사면 넘는 총은 카드 가운데에 "무게 초과"로 흐려지고, 누르면 아래 줄에 "너무 무거워요 (사면 무게 17 / 15)"와 거절음. 바닥 총: 조준점 옆 [F] 안내에 "총 · 무게 6", 넘으면 그 자리에 "너무 무거워요 (주우면 무게 …)". 호스트가 답하기 전에 짐이 무거워졌으면 총은 다시 바닥에 놓인다.
+- C 메뉴는 무기 목록이 아니라 손에 든 총의 부품 메뉴라 무게를 넣지 않았다.
+
+### 부착물 능력치 (Attachments.csv)
+
+C 메뉴에서 끼는 부품이 총의 숫자를 바꾸는 방식은 ArcCW(GMod 워크숍 2131057232, `sh_attach.lua`의 GetBuff)의 겹치기 규칙이다([GunStats](../Scripts/Player/FPSBody/GunStats.cs)). 부품은 `Mult_`(곱), `Add_`(더함), `Override_`(그 값으로 바꿈) 항목만 적고, 능력치는 언제나 Override → Add → Mult 순서로 계산한다.
+
+최종값 = (모든 부품의 Mult_ 곱) × ((Override_가 있으면 그 값, 없으면 총의 값) + 모든 부품의 Add_ 합)
+
+- 두 부품이 같은 능력치를 Override하면 칸 순서(조준기 → 총구 → 손잡이 → 하단)에서 앞의 것이 이긴다(ArcCW도 우선순위가 같으면 먼저 찾은 것).
+- [Attachments.csv](../Resources/Tables/Attachments.csv)는 `key,value,note` 표다. 키는 `부품.접두_능력치`. 부품은 `Suppressor`, `VerticalGrip`, `AngledGrip`, `Flashlight`와 조준기 `Iron`, `RedDot`, `Holo`, `Scope`(4배·8배). 능력치와 그 바탕이 되는 총의 값은 `recoil`(위로 튀는 반동, Weapons.csv `recoilVertical`), `spread`(지향사격 탄퍼짐, `hipSpread`), `aimTime`(조준 시간, `adsTransitionTime`), `moveSpeed`(조준한 채 걷는 속도 배율, `adsMoveMultiplier`), `noise`(좀비가 듣는 거리, 무기 데이터의 `noiseRadius`)다. 대소문자는 가리지 않는다(`Mult_Recoil`도 된다). 잘못 적은 항목은 Console에 `[Tables]` 경고가 한 번 뜬다.
+- 원래 있던 셋은 총마다 다른 값이라 Weapons.csv에 그대로 두었고, 그 부품의 `Mult_`로 들어간다: `suppressedNoise`(소음기 `Mult_noise`), `gripRecoil`(수직 손잡이 `Mult_recoil`), `gripAimTime`(앵글 손잡이 `Mult_aimTime`). 그래서 예전과 같은 숫자가 나온다(MX16A4: 소리 40m → 12m, 반동 0.85° → 0.68°, 조준 0.16초 → 0.128초). 같은 항목을 Attachments.csv에도 적으면 둘 다 곱한다.
+- 표의 시작값(ENFILADE가 정했다. ArcCW 부품처럼 얻는 것과 잃는 것을 함께 둔다): 수직 손잡이 지향사격 탄퍼짐 ×0.9·조준 시간 ×1.05, 앵글 손잡이 지향사격 탄퍼짐 ×1.1, 배율 조준경 조준 시간 ×1.15·조준 중 이동 ×0.9. 줄을 지우면 그 효과가 없어진다.
+- 총을 쏘는 쪽(`WeaponController`의 조준 시간, 총소리 거리, 반동, 탄퍼짐, 조준 중 이동)과 C 메뉴가 같은 계산을 쓴다. C 메뉴 오른쪽 능력치 칸에 지향사격 탄퍼짐과 조준 중 이동 줄이 있고, 부품 설명의 초록 +·빨강 −는 그 부품 하나만 낀 총과 아무것도 안 낀 총을 비교해 표에서 계산한다. 친구 PC의 총 사본은 그 친구가 낀 부품으로 계산하므로 좀비가 듣는 거리가 같다.
 
 ### 기록 저장 (records.json)
 

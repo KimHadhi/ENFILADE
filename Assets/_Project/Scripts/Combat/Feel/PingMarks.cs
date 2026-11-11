@@ -119,7 +119,8 @@ public sealed class PingMarks : MonoBehaviour
             var old = marks[i];
             if ((old.By == by && old.Bounty == bounty) || old.Enemy == enemy) { Clear(old); marks.RemoveAt(i); }
         }
-        float seconds = bounty ? PlayerClass.Ability("Schiesshund", "markSeconds", 15f) : PlayerClass.Ability("Ping", "seconds", 8f);
+        // The table's: every PC keeps anyone's mark for as long (class cards don't reach these).
+        float seconds = bounty ? PlayerClass.TableAbility("Schiesshund", "markSeconds", 15f) : PlayerClass.TableAbility("Ping", "seconds", 8f);
         var mark = new Mark
         {
             Enemy = enemy, By = by, Bounty = bounty, Until = Time.time + Mathf.Max(.5f, seconds), Since = Time.unscaledTime,
