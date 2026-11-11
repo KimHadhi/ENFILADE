@@ -75,6 +75,15 @@ GMod 애드온(`F:\Addons`, 저장소 밖)의 이동·애니메이션·소리를
 | [CavalrySword](../Art/Models/Addons/Weapons/CavalrySword) | Heavy Cavalry Sword (L4D2 3661236204) | `Sword` 23,464 | 1.02m | 칼날·코등이·손잡이 1K, 노멀 2K까지 |
 | [KraitP68](../Art/Models/Addons/Weapons/KraitP68) | COD23:MW4 KRAIT P68 (L4D2 3803570564) | `Pistol` 53,010, `Suppressor` 5,717, `Light` 6,371, `Magazine` 5,760 | 0.32m(소음기 포함) | 2K까지 14장. 쌍권총은 같은 모델 두 자루로 쓴다(원본의 쌍권총 월드 모델도 같은 메시) |
 
+**좀비**: [addon_zombie_to_fbx.py](../../../Tools/Blender/addon_zombie_to_fbx.py)가 ValveBiped 뼈대의 감염자 MDL을 세운다(발→머리가 위, 발뒤꿈치→발끝이 앞, 발을 바닥에, 골반을 원점 위에, 0.025m 단위로 키 1.7~1.9m). 이름에 `_Male_`·`_Female_`을 넣어 [ZombieVoice](../Scripts/Enemies/ZombieVoice.cs)가 성별 목소리를 고른다. `.meta`가 휴머노이드(모델에서 만듦, 유니티가 ValveBiped 뼈를 스스로 맞춤)와 읽기 켬(ZombieBody가 메시로 히트박스를 맞추고 팔다리를 자른다)을 정한다. [ZombieLooks](../Resources/Enemies/ZombieLooks.asset)의 `Characters`에는 12종만 더했다(Synty 50종에 섞이는 비율을 낮게 두려고): 저폴리 경찰·CEDA 방호복·폭동 진압·광대, GMod 셤블러 셋(slow1·4·7)·러너 하나(fast1)·Zombie Panic! 넷(jessica·marcus·vanessa·paul). 나머지 61종은 폴더에 준비만 했으니 `Characters`에 끌어 넣으면 바로 섞인다. 모습이 어색하면 그 줄만 빼면 된다.
+
+| 묶음 | 워크숍 | 들인 것 | 크기 |
+| --- | --- | --- | --- |
+| [LowPolyCI_3386016169](../Art/Models/Addons/Zombies/LowPolyCI_3386016169) | Low Poly Common Infected (L4D2 3386016169) | 감염자 50종(500삼각형 안팎, 128px 텍스처라 점 필터). 2종(`ceda_l4d1`, `tshirt_cargos_swamp`)은 게임 본편의 메시를 빌려 쓰는 MDL이라 바꿀 것이 없었다 | 4MB |
+| [ZombieSNPCs_152529683](../Art/Models/Addons/Zombies/ZombieSNPCs_152529683) | Zombie SNPCs (GMod 152529683) | 23종: 셤블러 slow1~12, 러너 fast1·3, Zombie Panic! Source의 일곱(carrier, eugene, jessica, lea, marcus, paul, vanessa), gal_boss와 작은 판(0.4~2.6만 삼각형, 텍스처 1K JPG). 뼈대가 ValveBiped가 아닌 9종(burnzie, draggy, fast2·4, hulk, stalker, zombine 등)은 휴머노이드가 될 수 없어 뺐다 | 19MB |
+
+Walkers [XDR](3353266656)와 [xdR] nmrih zombies(3709350917)는 모델이 아니라 L4D2 감염자 뼈대용 걷기 애니메이션이라 이번에는 들이지 않았다. 좀비 걷기 클립으로 쓰려면 MDL의 시퀀스를 FBX로 구워 `Art/Animations/Zombies/<슬롯>`에 넣으면 된다(그 폴더는 넣는 즉시 좀비 목록에 섞인다).
+
 칼 소리는 `Art/Audio/Library`에 있다: 휘두르기 `MeatyMelee_3660295000/weapons/katana/katana_swing_miss1·2`, 살 타격 `melee_katana_01~03`, 벽 타격 `katana_impact_world1·2`, 꺼내기 `ZZZKatana_3802606110/weapons/katana/katana_deploy_01`·`katana_deploy_1`. 기병도는 `CavalrySword_3661236204/weapons/tonfa`, 권총은 `KraitP68_3803570564`(발사·탄창·슬라이드·쌍권총·빈 총 살펴보기).
 
 ## 이식표 묶음별 현황 (2026-11-10 재점검)
@@ -84,7 +93,7 @@ GMod 애드온(`F:\Addons`, 저장소 밖)의 이동·애니메이션·소리를
 | 묶음 | 지금 | 남은 것 |
 | --- | --- | --- |
 | 1. 좀비 감각과 상태 | 핵심은 끝남. 조용함→경계→수색→깸, 시야 광선 3점, 소음 듣기, 등 뒤 암살([ZombieMind](../Scripts/Enemies/ZombieMind.cs), [PlayerExecution](../Scripts/Player/Combat/PlayerExecution.cs)) | 빛·손전등 반영, 벽 재질별 소리 손실, 시체 발견 |
-| 2. 좀비 몸과 소리 | 몸·애니메이션·절단은 구매 팩과 자체 구현으로 대체(Synty, Nephilite, [ZombieGore](../Scripts/Enemies/Gore/ZombieGore.cs)). 2026-11-11에 맞을 때의 살 소리(Fleshy CI Hit Sounds), 처형·머리 터짐·팔다리 절단 소리(Meaty Melee SFX)가 들어왔다([BodyBreakSounds](../Scripts/Audio/BodyBreakSounds.cs)) | 좀비 목소리는 공격할 때의 음성 37개만 들어왔다(0.8.15, [ZombieVoice](../Scripts/Enemies/ZombieVoice.cs), `Art/Audio/Enemies/Zombie`). **평소 신음, 알아챘을 때, 맞을 때, 죽을 때 소리**(RE6 Zombie Sound의 나머지)는 아직이다 |
+| 2. 좀비 몸과 소리 | 몸·애니메이션·절단은 구매 팩과 자체 구현으로 대체(Synty, Nephilite, [ZombieGore](../Scripts/Enemies/Gore/ZombieGore.cs)). 2026-11-11에 맞을 때의 살 소리(Fleshy CI Hit Sounds), 처형·머리 터짐·팔다리 절단 소리(Meaty Melee SFX)가 들어왔다([BodyBreakSounds](../Scripts/Audio/BodyBreakSounds.cs)). 같은 날 워크숍 좀비 73종(Low Poly CI 50, GMod Zombie SNPCs 23)이 휴머노이드 FBX로 들어왔고 그중 12종이 ZombieLooks에 섞였다([워크숍 모델](#워크숍-모델-2026-11-11)) | 좀비 목소리는 공격할 때의 음성 37개만 들어왔다(0.8.15, [ZombieVoice](../Scripts/Enemies/ZombieVoice.cs), `Art/Audio/Enemies/Zombie`). **평소 신음, 알아챘을 때, 맞을 때, 죽을 때 소리**(RE6 Zombie Sound의 나머지)는 아직이다 |
 | 3. 맵 진행과 디렉터 | 뼈대는 L4D식으로 따로 만듦([CampaignDirector](../Scripts/Campaign/CampaignDirector.cs), [Campaign.csv](../Resources/Tables/Campaign.csv)). Horde의 숫자는 쓰지 않음 | 인원수에 비례하는 동시 상한, 엘리트·보스 편성, 엔드리스 |
 | 4. 클래스, 퍽, 상점 | 돈, 돈 떨구기, 상점, 능력 카드([Perks.csv](../Resources/Tables/Perks.csv))는 있음. 부착물 메뉴는 ArcCW 배치 | 클래스, 무게 제한, 퍽 트리, 부착물 능력치 겹치기 규칙 |
 | 5. 카타나 | 모델·소리만 준비됨(2026-11-11): 칼 세 자루(젠존제 칼, 야마토, 기병도)를 손잡이 원점·칼끝 +Z의 FBX로, 칼 소리는 보관 폴더에([워크숍 모델](#워크숍-모델-2026-11-11)). 근접 무기 로직은 없고 주먹뿐 | 칼 로직(나이트 근접 무기): 젠존제 칼의 `katana.txt` 타격 시간표, TFA의 근접 공격 표·막기 수치. 칼·삽 모델은 `Assets/ThirdParty/LowPolyWeaponBundlePackV`와 Synty에도 있다 |
