@@ -406,11 +406,13 @@ public sealed class MainMenuScreen : MonoBehaviour
     {
         if (launch == null || modes == null) return;
         string map = maps.Length > 0 ? MapTable.DisplayName(maps[mapIndex]) : Texts.Get("menu.map.empty");
+        // With the hub built, both start there with this map on its table (memo 46).
+        bool hub = HubFlow.IsBuilt;
         launch.Say(modes.Chosen switch
         {
-            MainMenuModes.Mode.Host => Texts.Format("menu.launch.host", map),
+            MainMenuModes.Mode.Host => Texts.Format(hub ? "menu.launch.host.hub" : "menu.launch.host", map),
             MainMenuModes.Mode.Browse => Texts.Get("menu.launch.browse"),
-            _ => Texts.Format("menu.launch.solo", map),
+            _ => Texts.Format(hub ? "menu.launch.solo.hub" : "menu.launch.solo", map),
         });
     }
 
@@ -468,11 +470,11 @@ public sealed class MainMenuScreen : MonoBehaviour
         if (topBar != null) ProfilePicture.Paint(topBar.Portrait, topBar.Initial, GameSettings.Current.DisplayName);
     }
 
+    // Alone into the hub, where the chosen map is already on the map table (memo 46); straight to the map without one.
     private void StartSolo()
     {
         if (maps.Length == 0 || GameSession.IsOnline) return;
-        GameSettings.Save();
-        SceneManager.LoadScene(GameSettings.Current.lastMap);
+        HubFlow.EnterSolo();
     }
 
     private void OpenCreateRoom()
@@ -480,9 +482,10 @@ public sealed class MainMenuScreen : MonoBehaviour
         if (maps.Length > 0 && !GameSession.IsOnline) createRoom.Show(GameSettings.Current.lastMap);
     }
 
+    // A room opens in the hub too: the party gathers, readies up and sets off together (HubLobby).
     private void StartHost(string title, int maxPlayers, bool internet)
     {
         GameSettings.Save();
-        GameSession.Host(GameSettings.Current.lastMap, title, maxPlayers, internet);
+        GameSession.Host(HubFlow.StartScene, title, maxPlayers, internet);
     }
 }

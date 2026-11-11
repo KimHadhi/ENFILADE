@@ -8,6 +8,7 @@ using UnityEngine.UI;
 /// old one shrinks away and the new one slams down oversized and settles with a shake, the screen flashes pink, and a
 /// slanted pink 등급 상승 plate sweeps in under it; a prestige says 프레스티지 instead and adds a pink diamond. No numbers
 /// (the user's rule: growth reads as the insignia only). Short and loud, then it fades with the card. Real time.
+/// With the hub built it plays on the results' closing sheet instead (ResultsSheet), which tells it where to stand.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class RankClimb : MonoBehaviour
@@ -15,6 +16,7 @@ public sealed class RankClimb : MonoBehaviour
     private static readonly Color Pink = new Color(1f, .31f, .6f), Ink = new Color(.05f, .05f, .06f), Pale = new Color(.95f, .95f, .95f);
     // Where it sits on the 1920x1080 card: right of the results.
     private static readonly Vector2 At = new Vector2(690f, -210f);
+    private Vector2 at = At;
     private const float Size = 250f, FadeIn = .35f, FadeOut = .5f, ClimbAt = .9f, Slam = .3f, Shake = .22f, FlashSeconds = .2f;
 
     private ClassGrowth.Climb climb;
@@ -25,16 +27,20 @@ public sealed class RankClimb : MonoBehaviour
     private RectTransform[] pips;
     private bool climbed;
 
-    /// <summary>The ending's insignia for this game's climb, shown this long (real s). Nothing for a null climb.</summary>
-    public static void Play(ClassGrowth.Climb climb, float seconds)
+    /// <summary>The ending's insignia for this game's climb, shown this long (real s), at <paramref name="where"/> (px from
+    /// the screen's middle on a 1080-high canvas; the closing card's right by default). Nothing for a null climb.</summary>
+    public static RankClimb Play(ClassGrowth.Climb climb, float seconds, Vector2? where = null)
     {
-        if (climb == null || !Application.isPlaying) return;
-        new GameObject("Rank climb").AddComponent<RankClimb>().Begin(climb, seconds);
+        if (climb == null || !Application.isPlaying) return null;
+        var shown = new GameObject("Rank climb").AddComponent<RankClimb>();
+        shown.Begin(climb, seconds, where ?? At);
+        return shown;
     }
 
-    private void Begin(ClassGrowth.Climb shown, float seconds)
+    private void Begin(ClassGrowth.Climb shown, float seconds, Vector2 where)
     {
         climb = shown;
+        at = where;
         length = Mathf.Max(FadeIn + FadeOut + 1f, seconds);
         Build();
         Pose(0f);
@@ -64,7 +70,7 @@ public sealed class RankClimb : MonoBehaviour
         after.localScale = Vector3.one * size;
         float shake = since < Slam + Shake && since > Slam * .5f ? (1f - (since - Slam * .5f) / (Slam * .5f + Shake)) * 12f : 0f;
         Vector2 jitter = shake > 0f ? new Vector2(Random.Range(-1f, 1f), Random.Range(-1f, 1f)) * shake : Vector2.zero;
-        root.anchoredPosition = At + jitter;
+        root.anchoredPosition = at + jitter;
         var color = flash.color;
         color.a = since < FlashSeconds + Slam * .5f && since > Slam * .5f ? .28f * (1f - (since - Slam * .5f) / FlashSeconds) : 0f;
         flash.color = color;
@@ -103,7 +109,7 @@ public sealed class RankClimb : MonoBehaviour
 
         root = new GameObject("Insignia", typeof(RectTransform)).GetComponent<RectTransform>();
         root.SetParent(layer.transform, false);
-        root.anchoredPosition = At;
+        root.anchoredPosition = at;
         root.localRotation = Quaternion.Euler(0f, 0f, -6f);
 
         // The class's name above, on a dark slab of its own tilt.

@@ -242,6 +242,9 @@ public sealed class ClassKit : MonoBehaviour
 
     private void Start() => TryGiveKit();
 
+    /// <summary>The class was changed in the hub (HubLobby): its guns now, to try on the range, as a chapter would start.</summary>
+    public void Rekit() { kitGiven = false; TryGiveKit(); }
+
     private void Update()
     {
         if (movement == null || !movement.IsLocal) return;

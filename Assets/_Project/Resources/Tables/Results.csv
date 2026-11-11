@@ -1,0 +1,13 @@
+﻿id,stat,order,least,unit
+#설명 (장 결과의 칭호. 한 줄이 칭호 하나: 그 숫자가 가장 큰 사람에게(같으면 모두에게). 글자는 Texts.csv results.award.<id>와 .line),어느 숫자로 정하나(kills·damage·headshots·revives·healing·farthest·streak·takedowns·executions·money·downs·deaths),칭호의 순서(작을수록 먼저). 줄 서기에는 각자 가장 앞선 칭호 하나(혼자면 셋)가 붙는다,이 값보다 작으면 아무도 받지 않는다,숫자 단위: 비우면 정수 m이면 미터 money면 돈 아이콘과 함께
+kills,kills,1,1,
+damage,damage,2,1,
+headshots,headshots,3,1,
+revives,revives,4,1,
+healing,healing,5,1,
+farthest,farthest,6,10,m
+streak,streak,7,3,
+takedowns,takedowns,8,1,
+executions,executions,9,1,
+money,money,10,1,money
+downs,downs,11,1,

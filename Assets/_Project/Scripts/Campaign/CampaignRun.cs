@@ -127,7 +127,7 @@ public sealed class CampaignRun : MonoBehaviour
     // The closing card waits for the escape's banner (ChapterEndBanner): when it comes up (real s; negative, none due),
     // and what the game did to the class, for the insignia beside it.
     private const float BannerSeconds = 2.8f, CardOverBanner = .5f;
-    private float cardAt = -1f;
+    private float cardAt = -1f, nextResults;
     private ClassGrowth.Climb climb;
 
     private bool IsHost => network == null || network.IsServer;
@@ -566,11 +566,14 @@ public sealed class CampaignRun : MonoBehaviour
         ShowObjective(true);
     }
 
-    // The next chapter, for everyone; after the last one, or with the next not built yet, the run just stays done.
+    // Back to the hub for everyone, the results with them and its map table offering the next chapter (memo 46,
+    // HubFlow). With no hub built, the next chapter as before; after the last one, or with the next not built yet, the
+    // run just stays done.
     private void MoveOn()
     {
         movedOn = true;
         string next = chapter != null ? chapter.Next : null;
+        if (HubFlow.Return(next)) return;
         if (string.IsNullOrEmpty(next) || !Application.CanStreamedLevelBeLoaded(next)) return;
         if (GameSession.IsOnline) GameSession.ChangeMap(next);
         else SceneManager.LoadScene(next);
@@ -877,6 +880,9 @@ public sealed class CampaignRun : MonoBehaviour
         PlayerRecords.ChapterEscaped(gameObject.scene.name);
         // The escape has its moment first; the card comes up as the banner lets go (ShowCardWhenDue).
         climb = ClassGrowth.Settle();
+        // Everyone's numbers go with this PC to the hub, where the results play over the players (memo 37, MatchResults).
+        MatchResults.Capture(gameObject.scene.name, chapter != null ? chapter.Title : "", chapter != null ? chapter.Next : "", climb,
+            someone => last == null || last.Kind != CampaignStepKind.Escape || TotalOf(last) <= 0f || Within(someone, last));
         ChapterEndBanner.Play(chapter != null ? chapter.Title : "", leftBehind.Length > 0 ? Texts.Format("campaign.escape.left", leftBehind)
             : GameSession.IsOnline ? Texts.Get("campaign.escape.all") : Texts.Get("campaign.escape.solo"), BannerSeconds);
         cardAt = Time.unscaledTime + BannerSeconds - CardOverBanner;
@@ -888,13 +894,17 @@ public sealed class CampaignRun : MonoBehaviour
     }
 
     // The closing card and, beside its results, the class's insignia, climbing if this chapter took it up a rank (6E).
+    // With the hub built the card is the story alone: the results and the insignia play in the hub (ResultsShow).
     private void ShowCardWhenDue()
     {
+        // The results keep up while the card is up: the last numbers on their way from the others (MatchResults).
+        if (finished && Time.unscaledTime >= nextResults) { nextResults = Time.unscaledTime + .5f; MatchResults.Refresh(); }
         if (cardAt < 0f || Time.unscaledTime < cardAt) return;
         cardAt = -1f;
         float seconds = Mathf.Max(4f, outroSeconds - (BannerSeconds - CardOverBanner));
-        if (chapter != null && screen != null) screen.ShowCard(chapter.Title, chapter.Outro, seconds, Results());
-        if (climb != null) RankClimb.Play(climb, seconds);
+        bool hub = HubFlow.IsBuilt;
+        if (chapter != null && screen != null) screen.ShowCard(chapter.Title, chapter.Outro, seconds, hub ? null : Results());
+        if (climb != null && !hub) RankClimb.Play(climb, seconds);
         climb = null;
     }
 

@@ -695,3 +695,90 @@ hud.alert.breadbag,브레드백 — 전기톱 시동 소리에 패링하면 튕�
 hud.hold.hooked,갈고리에 걸렸다 — 살을 파고들어 계속 아프다. V를 연타해 몸부림쳐라,Hooked: it tears at you all the while. Mash V to struggle free,캔디맨의 갈고리에 걸려 끌려갈 때 내 화면 위 알림 한 번
 feed.score.ninja_parry,닌자 튕겨내기,Ninja parried,점수 팝업의 줄: 닌자의 등 뒤 공격을 돌아서 패링했을 때(돈)
 feed.score.saw_parry,전기톱 튕겨내기,Chainsaw parried,점수 팝업의 줄: 브레드백의 전기톱을 패링했을 때(돈)
+menu.launch.solo.hub,혼자  ·  은신처에서 {0} 준비,,"메인 메뉴 > 출격 버튼 아래 줄(혼자 하기, 허브가 있을 때). {0}=맵 이름"
+menu.launch.host.hub,방 만들기  ·  은신처에서 {0} 준비,,"메인 메뉴 > 출격 버튼 아래 줄(방 만들기, 허브가 있을 때). {0}=맵 이름"
+hub.objective.title,출발 준비  ·  {0},,허브 > 임무 칸 제목. {0}=고른 장
+hub.objective.room,준비 버튼에서 [F]  ·  모두 준비하면 출발,,허브 > 임무 칸 설명(방). 숫자는 준비한 사람 / 모두
+hub.objective.solo,준비 버튼에서 [F]를 누르면 바로 출발,,허브 > 임무 칸 설명(혼자)
+hub.sign.ammo,탄약,,허브 > 탄약 상자 위 표
+hub.sign.ready,준비,,허브 > 준비 버튼 위 표
+hub.sign.ready.set,준비 완료,,허브 > 준비 버튼 위 표(내가 준비했을 때)
+hub.sign.next,다음 작전,,허브 > 지도 탁자 위 표지판의 작은 글자
+hub.sign.classes,클래스,,허브 > 클래스 벽 위 글자
+hub.sign.guns,총기,,허브 > 총 진열대 위 글자
+hub.sign.range,사격장,,허브 > 사격장 입구 위 글자
+hub.board.title,출발 준비  ·  {0},,허브 > 출발 문 위 판의 제목. {0}=고른 장
+hub.board.ready,준비,,허브 > 출발 문 위 판: 준비한 사람 이름 옆
+hub.panel.next,다음 작전,,허브 > 오른쪽 위 카드의 작은 글자
+hub.panel.hint.room,모두 준비하면 출발합니다,,허브 > 오른쪽 위 카드 아래 줄(방)
+hub.panel.hint.solo,준비 버튼을 누르면 바로 출발합니다,,허브 > 오른쪽 위 카드 아래 줄(혼자)
+hub.panel.going,출발합니다,,허브 > 오른쪽 위 카드 아래 줄(셋을 세는 동안)
+hub.prompt.chapter,[F] {0} 고르기,,허브 > 지도 탁자의 장 카드를 볼 때. {0}=장
+hub.prompt.chapter.chosen,{0}  ·  고른 장,,허브 > 이미 고른 장 카드를 볼 때
+hub.prompt.chapter.host,{0}  ·  장은 방장이 고릅니다,,허브 > 방에 들어온 사람이 장 카드를 볼 때
+hub.prompt.class,[F] {0} 고르기,,허브 > 클래스 벽의 사물함을 볼 때. {0}=클래스
+hub.prompt.class.chosen,{0}  ·  지금 클래스,,허브 > 지금 클래스의 사물함을 볼 때
+hub.prompt.gun,[F] {0} 들기,,허브 > 총 진열대의 총을 볼 때. {0}=총 이름
+hub.prompt.ammo,[F] 탄약 채우기,,허브 > 탄약 상자를 볼 때
+hub.prompt.ready,[F] 준비,,허브 > 준비 버튼을 볼 때
+hub.prompt.unready,[F] 준비 취소,,허브 > 준비한 뒤 준비 버튼을 볼 때
+hub.alert.class,클래스  ·  {0},,허브 > 클래스를 바꿨을 때 화면 위 알림. {0}=클래스
+hub.alert.cannot,그 장을 열 수 없어요 (빌드에 없음),,허브 > 출발하려는 장 씬이 빌드에 없을 때
+hub.range.dummy,좀비 더미,,허브 사격장 > 과녁 이름(좀비 체력)
+hub.range.plate,강철판,,허브 사격장 > 과녁 이름(강철판)
+hub.range.title,사격장,,허브 사격장 > 게시판 제목
+hub.range.last,마지막 명중,,허브 사격장 > 게시판 작은 글자
+hub.range.hint,과녁을 쏘면 여기 나옵니다,,허브 사격장 > 게시판(아직 아무것도 안 맞혔을 때)
+hub.range.head,머리,,허브 사격장 > 게시판: 머리에 맞았을 때
+hub.range.body,몸,,허브 사격장 > 게시판: 몸에 맞았을 때
+hub.range.detail,{0}  ·  {1} m,,허브 사격장 > 게시판: {0}=과녁 {1}=거리
+hub.range.dropped,{0}: {1}발에 쓰러뜨림 (좀비 한 마리 체력),,허브 사격장 > 게시판: 과녁이 넘어졌을 때. {1}=맞힌 수
+hub.range.farthest,가장 먼 헤드샷 {0} m,,허브 사격장 > 게시판 맨 아래
+results.caption,작전 결과,,결과 > 맨 위 작은 분홍 글자(줄 서기와 마지막 장)
+results.time,걸린 시간 {0}  ·  탈출 {1},,결과 > 장 이름 아래. {0}=시간 {1}=탄 사람 / 모두
+results.skip,Space  건너뛰기,,결과 > 줄 서기 오른쪽 아래
+results.left,놓침,,결과 > 이름표: 탈출 차량을 놓친 사람
+results.award.kills,최다 처치,,결과 칭호 > 처치가 가장 많은 사람
+results.award.kills.line,좀비 인구 조절 담당,,결과 칭호 > 최다 처치의 한 줄
+results.award.damage,최고 피해,,결과 칭호 > 입힌 피해가 가장 많은 사람
+results.award.damage.line,총알보다 아픈 사람,,결과 칭호 > 최고 피해의 한 줄
+results.award.headshots,헤드샷 명사수,,결과 칭호 > 헤드샷 처치가 가장 많은 사람
+results.award.headshots.line,머리만 보고 다님,,결과 칭호 > 헤드샷 명사수의 한 줄
+results.award.revives,구조왕,,결과 칭호 > 쓰러진 동료를 가장 많이 일으킨 사람
+results.award.revives.line,쓰러지면 이 사람을 부르세요,,결과 칭호 > 구조왕의 한 줄
+results.award.healing,최다 치료,,결과 칭호 > 동료를 가장 많이 치료한 사람
+results.award.healing.line,걸어 다니는 구급상자,,결과 칭호 > 최다 치료의 한 줄
+results.award.farthest,최장 헤드샷,,결과 칭호 > 가장 먼 헤드샷 처치
+results.award.farthest.line,저 멀리서도 다 보인다,,결과 칭호 > 최장 헤드샷의 한 줄
+results.award.streak,최장 연속 처치,,결과 칭호 > 가장 긴 연속 처치
+results.award.streak.line,멈출 생각이 없음,,결과 칭호 > 최장 연속 처치의 한 줄
+results.award.takedowns,암살자,,결과 칭호 > 몰래 처치(암살)가 가장 많은 사람
+results.award.takedowns.line,아무도 몰랐다,,결과 칭호 > 암살자의 한 줄
+results.award.executions,처형 집행자,,결과 칭호 > 처형이 가장 많은 사람
+results.award.executions.line,손맛 중독,,결과 칭호 > 처형 집행자의 한 줄
+results.award.money,최다 수입,,결과 칭호 > 이번 장에 돈을 가장 많이 번 사람
+results.award.money.line,돈 냄새를 맡는다,,결과 칭호 > 최다 수입의 한 줄
+results.award.downs,가장 많이 쓰러짐,,결과 칭호 > 가장 많이 쓰러진 사람(웃긴 칭호)
+results.award.downs.line,바닥이 편한 사람,,결과 칭호 > 가장 많이 쓰러짐의 한 줄
+results.award.none,끝까지 함께,,결과 칭호 > 칭호가 하나도 없는 사람
+results.award.none.line,있어 줘서 고마워,,결과 칭호 > 끝까지 함께의 한 줄
+results.high.streak,최장 연속 처치,,결과 줄 서기 > 아래 하이라이트
+results.high.farthest,최장 헤드샷,,결과 줄 서기 > 아래 하이라이트
+results.high.kills,처치,,결과 줄 서기 > 아래 하이라이트(혼자)
+results.high.kills.team,팀 처치,,결과 줄 서기 > 아래 하이라이트(방: 모두의 처치 합)
+results.high.money,번 돈,,결과 줄 서기 > 아래 하이라이트(이번 장에 내가 번 돈)
+results.sheet.awards,칭호,,결과 마지막 장 > 왼쪽 제목
+results.sheet.none,이번 장에는 칭호가 없어요,,결과 마지막 장 > 칭호가 하나도 없을 때
+results.sheet.mine,내 기록,,결과 마지막 장 > 오른쪽 제목
+results.mine.kills,처치,,결과 마지막 장 > 내 기록
+results.mine.headshots,헤드샷,,결과 마지막 장 > 내 기록(헤드샷 처치)
+results.mine.damage,입힌 피해,,결과 마지막 장 > 내 기록
+results.mine.healing,치료,,결과 마지막 장 > 내 기록(동료에게 채워 준 체력)
+results.mine.revives,구조,,결과 마지막 장 > 내 기록(일으키거나 되살린 동료)
+results.mine.streak,최장 연속 처치,,결과 마지막 장 > 내 기록
+results.mine.farthest,최장 헤드샷,,결과 마지막 장 > 내 기록
+results.mine.downs,쓰러짐,,결과 마지막 장 > 내 기록
+results.mine.money,번 돈,,결과 마지막 장 > 내 기록(돈 아이콘과 함께)
+results.sheet.next,다음 작전  ·  {0},,결과 마지막 장 > 아래 줄. {0}=허브 지도 탁자에서 고른 장
+results.sheet.done,캠페인 완료  ·  은신처에서 처음부터,,결과 마지막 장 > 아래 줄(마지막 장을 마쳤을 때)
+results.sheet.key,Space  계속,,결과 마지막 장 > 오른쪽 아래
