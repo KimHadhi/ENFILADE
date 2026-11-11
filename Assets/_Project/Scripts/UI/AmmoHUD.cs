@@ -99,7 +99,9 @@ public sealed class AmmoHUD : MonoBehaviour
         else
         {
             fill.sizeDelta = new Vector2(260f * rounds / runtime.Data.MagazineSize, 3f);
-            status.text = empty ? (runtime.ReserveAmmo > 0 ? "[R]  RELOAD" : "OUT OF AMMO")
+            // A cut-short reload with only its bolt left counts as empty: nothing is chambered (WeaponRuntime.ChamberDue).
+            status.text = runtime.ChamberDue ? "[R]  RELOAD"
+                : empty ? (runtime.ReserveAmmo > 0 ? "[R]  RELOAD" : "OUT OF AMMO")
                 : runtime.ReserveAmmo == 0 ? "NO RESERVE"
                 : low ? "[R]  RELOAD" : "";
         }

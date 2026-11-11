@@ -29,6 +29,9 @@ public sealed class GameSettings
     public bool invertY;
     [Tooltip("Crouch and lean keys latch on one press instead of acting while held.")]
     public bool crouchToggle, leanToggle;
+    [Tooltip("An empty magazine reloads by itself once the gun could fire again, and a reload cut short before its bolt finishes " +
+        "itself (WeaponController.AutoReloadDue). Off: only R reloads.")]
+    public bool autoReload = true;
     /// <summary>The keys the player picked (KeyBindings: the Input System's overrides as JSON); empty for every default.</summary>
     public string keyBindings = "";
     [Tooltip("Scales head bob, landing, impacts and movement tilt. Lean and weapon recoil are not affected.")]
@@ -131,6 +134,7 @@ public sealed class GameSettings
             case SettingsGroup.Controls:
                 s.mouseSensitivity = d.mouseSensitivity; s.invertY = d.invertY;
                 s.crouchToggle = d.crouchToggle; s.leanToggle = d.leanToggle;
+                s.autoReload = d.autoReload;
                 s.keyBindings = d.keyBindings;
                 KeyBindings.Apply(s.keyBindings);
                 break;

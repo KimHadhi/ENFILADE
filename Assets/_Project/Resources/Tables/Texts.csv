@@ -171,6 +171,7 @@ settings.controls.sensitivity,마우스 감도,,설정 창 > 조작 > 행
 settings.controls.invert_y,상하 반전,,설정 창 > 조작 > 행
 settings.controls.crouch,앉기,,설정 창 > 조작 > 행
 settings.controls.lean,기울이기,,설정 창 > 조작 > 행
+settings.controls.auto_reload,자동 장전,Auto reload,설정 창 > 조작 > 행(탄창이 비면 다시 쏠 수 있게 된 뒤 저절로 장전하고 끊긴 장전에 노리쇠만 남았으면 마저 한다. 끄면 R로만 장전)
 settings.controls.class_key,클래스 기술,,설정 창 > 조작 > 행(클래스 기술 키. 누르고 새 키를 누르면 바뀐다)
 settings.controls.press_key,키를 누르세요 (Esc 취소),,설정 창 > 조작 > 클래스 기술 키를 바꾸는 동안 버튼 글자
 settings.screen.display,디스플레이,,설정 창 > 화면 > 소제목

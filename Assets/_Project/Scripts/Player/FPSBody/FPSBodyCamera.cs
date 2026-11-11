@@ -65,13 +65,17 @@ public sealed class FPSBodyCamera : FPSCameraController
         hasMotion = true;
     }
 
-    /// <summary>A gun clip (a reload) moves the camera as its camera bone moves, at the clip's own rate.</summary>
-    internal void PlayGunMotion(AnimationClip clip, float rate)
+    /// <summary>
+    /// A gun clip (a reload) moves the camera as its camera bone moves, at the clip's own rate, from <paramref name="from"/>
+    /// of the way through (a reload going on from where a cut-short one got to).
+    /// </summary>
+    internal void PlayGunMotion(AnimationClip clip, float rate, float from = 0f)
     {
         if (clip == null || !BuildRig()) return;
         rate = Mathf.Max(.01f, rate);
-        Play(ref action, 1, clip, rate);
-        actionLeft = clip.length / rate;
+        from = Mathf.Clamp01(from);
+        Play(ref action, 1, clip, rate, from * clip.length);
+        actionLeft = clip.length * (1f - from) / rate;
     }
 
     /// <summary>The clip was cut short: the camera eases back to the gun's pose.</summary>
@@ -90,7 +94,7 @@ public sealed class FPSBodyCamera : FPSCameraController
         transform.rotation *= Quaternion.Slerp(Quaternion.identity, now * Quaternion.Inverse(rest), gunWeight);
     }
 
-    private void Play(ref AnimationClipPlayable playable, int input, AnimationClip clip, float rate)
+    private void Play(ref AnimationClipPlayable playable, int input, AnimationClip clip, float rate, float start = 0f)
     {
         if (playable.IsValid())
         {
@@ -99,7 +103,7 @@ public sealed class FPSBodyCamera : FPSCameraController
         }
         playable = AnimationClipPlayable.Create(motionGraph, clip);
         playable.SetApplyFootIK(false);
-        playable.SetTime(0);
+        playable.SetTime(start);
         playable.SetSpeed(rate);
         motionGraph.Connect(playable, 0, motionMixer, input);
     }

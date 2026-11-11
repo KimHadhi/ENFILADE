@@ -211,6 +211,7 @@ public sealed class SettingsMenuView
         rows.Choice(Texts.Get("settings.controls.invert_y"), OffOn, s.invertY ? 1 : 0, i => s.invertY = i == 1);
         rows.Choice(Texts.Get("settings.controls.crouch"), HoldToggle, s.crouchToggle ? 1 : 0, i => s.crouchToggle = i == 1);
         rows.Choice(Texts.Get("settings.controls.lean"), HoldToggle, s.leanToggle ? 1 : 0, i => s.leanToggle = i == 1);
+        rows.Choice(Texts.Get("settings.controls.auto_reload"), OffOn, s.autoReload ? 1 : 0, i => s.autoReload = i == 1);
         // The class key (stage 7): the wheel click unless picked otherwise.
         rows.Key(Texts.Get("settings.controls.class_key"),
             UnityEngine.InputSystem.InputSystem.actions != null ? UnityEngine.InputSystem.InputSystem.actions.FindAction("Player/ClassAbility", false) : null);

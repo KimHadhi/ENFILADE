@@ -1082,7 +1082,8 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
         if (!HoldsGun) return;
         StopFiring();
         CutDraw();
-        held.Reload(empty, playables, bodyCamera);
+        // A reload going on from where a cut-short one got to starts its clips there (WeaponRuntime.ReloadStartShare).
+        held.Reload(empty, playables, bodyCamera, controller.Runtime != null ? controller.Runtime.ReloadStartShare : 0f);
     }
 
     // The gun used (a shot, an aim, a reload) once it is ready but before its draw clip is over: the rest of the draw lets

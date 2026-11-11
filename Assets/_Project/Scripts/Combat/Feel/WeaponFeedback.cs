@@ -219,17 +219,28 @@ public sealed class WeaponFeedback : MonoBehaviour
             return;
         }
         trackingReload = true; magOutPlayed = magInPlayed = boltBackPlayed = boltPlayed = false; emptyReload = empty;
+        // A reload going on from where a cut-short one got to (WeaponRuntime.ReloadStartShare) made its earlier sounds then.
+        float from = weapon != null && weapon.Runtime != null ? weapon.Runtime.ReloadStartShare : 0f;
         timedReload = data != null && FPSBody.Holding(weapon) != null
             && ReloadMoments.TryGet(data, empty, out moments);
         if (timedReload)
         {
             magInLead = FeelAudio.PeakTime(FeelSound.MagIn, settings.magInSounds, data.SoundProfile);
             boltLead = FeelAudio.PeakTime(FeelSound.SlideForward, null, data.SoundProfile);
+            magOutPlayed = Before(moments.MagOut, from);
+            magInPlayed = Before(moments.MagIn, from);
+            boltBackPlayed = Before(moments.BoltBack, from);
+            boltPlayed = Before(moments.BoltForward, from);
             return;
         }
         magOutPlayed = true;
-        if (settings.gunSounds) Sound(FeelSound.MagOut, settings.magOutSounds, settings.mechanicalVolume, Random.Range(.97f, 1.03f), MechanicalReach, Gun);
+        magInPlayed = from >= (empty ? .5f : .62f);
+        if (from <= 0f && settings.gunSounds)
+            Sound(FeelSound.MagOut, settings.magOutSounds, settings.mechanicalVolume, Random.Range(.97f, 1.03f), MechanicalReach, Gun);
     }
+
+    // A timed sound at this share of the reload had its moment before the reload went on from <from>.
+    private static bool Before(float share, float from) => from > 0f && share >= 0f && share <= from + .001f;
 
     private void OnReloadCompleted() => trackingReload = false;
 

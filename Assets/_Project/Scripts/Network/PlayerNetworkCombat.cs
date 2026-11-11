@@ -41,6 +41,8 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
         public bool Light;
         /// <summary>The grip on that gun plus one, 0 for no choice; their support hand goes on it there too.</summary>
         public byte Grip;
+        /// <summary>How far into its clip their reload began, 0-255: theirs going on from a cut-short one (WeaponRuntime.ReloadStartShare).</summary>
+        public byte ReloadFrom;
     }
 
     // The gun's place in FPSBody's guns plus one (the same list on every PC of a build), or 0.
@@ -223,6 +225,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
             Light = weapon.LightOn, Grip = (byte)Mathf.Clamp(weapon.GripIndex + 1, 0, 255),
             Aiming = weapon.AimBlend > AimingShare, Guarding = melee.IsGuarding || melee.IsParryActive,
             Reloading = gun != null && gun.IsReloading, EmptyReload = gun != null && gun.IsReloading && gun.IsEmptyReload,
+            ReloadFrom = gun != null && gun.IsReloading ? (byte)Mathf.RoundToInt(gun.ReloadStartShare * 255f) : (byte)0,
             Downed = receiver.IsDowned, Slowed = time != null ? (byte)Mathf.RoundToInt((1f - time.Pace) * 100f) : (byte)0,
             Pinned = mover != null && mover.IsPinned, Held = mover != null && mover.IsHeld
         };
@@ -252,7 +255,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
         if (gun != null && now.Slot >= 0 && slots.GetWeapon(now.Slot) != gun) slots.TrySetWeapon(now.Slot, gun);
         slots.SelectSlot(now.Slot);
         weapon.ShowAiming(now.Aiming);
-        weapon.ShowReload(now.Reloading, now.EmptyReload);
+        weapon.ShowReload(now.Reloading, now.EmptyReload, now.ReloadFrom / 255f);
         melee.ShowGuard(now.Guarding);
         receiver.ShowDowned(now.Downed);
         if (mover != null) { mover.ShowPinned(now.Pinned); mover.ShowHeld(now.Held); }

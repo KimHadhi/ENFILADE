@@ -79,7 +79,10 @@ public sealed class WeaponController : MonoBehaviour
     public event Action DryFired;
     /// <summary>Reload began; the argument is true for an empty-magazine reload.</summary>
     public event Action<bool> ReloadStarted;
-    /// <summary>Reload finished and moved ammunition (not raised for a cancelled reload).</summary>
+    /// <summary>
+    /// Reload finished and left the gun loaded: in full, or cut short past its bolt (WeaponRuntime keeps what a cut-short
+    /// reload did). Not raised for one cut short before that.
+    /// </summary>
     public event Action ReloadCompleted;
     /// <summary>A shell reload moved on: the next shell goes in, or its end (WeaponRuntime.ReloadStep).</summary>
     public event Action<WeaponRuntime.ReloadStep> ReloadStepped;
@@ -312,6 +315,9 @@ public sealed class WeaponController : MonoBehaviour
     private float raisedHoldLeft, queuedFireLeft;
     // How long an empty magazine has waited with the gun ready to fire (s), for the automatic reload.
     private float emptyReady;
+    // The held gun's WeaponRuntime.Loads as last seen: a reload cut short past its bolt loads the gun outside a frame's
+    // tick (a swap, a climb), and its completion is told then.
+    private int loadsSeen;
     private float bloom, timeSinceShot, shoveRecovery, bareHandsLeft;
     private int recoilIndex, dodgeActivation;
     private bool survivalInterrupted, shownAiming;
@@ -391,6 +397,11 @@ public sealed class WeaponController : MonoBehaviour
     {
         bool bare = TraversalHands.For(movement) == TraversalHandUse.Bare;
         if (bare && bareHandsLeft <= 0f) Runtime?.Interrupt();
+        if (Runtime != null && Runtime.Loads != loadsSeen)
+        {
+            loadsSeen = Runtime.Loads;
+            ReloadCompleted?.Invoke();
+        }
         bareHandsLeft = bare ? BareHandsLinger : Mathf.Max(0f, bareHandsLeft - Time.deltaTime);
         presentation?.SetVisible(Runtime != null && Runtime.Data.Category != WeaponCategory.Melee && bareHandsLeft <= 0f);
         if (Runtime == null) { ResetPresentation(); return; }
@@ -413,12 +424,15 @@ public sealed class WeaponController : MonoBehaviour
     /// <summary>On someone else's copy: they raised or lowered their sights.</summary>
     internal void ShowAiming(bool aiming) => shownAiming = aiming;
 
-    /// <summary>On someone else's copy: their reload began, or stopped.</summary>
-    internal void ShowReload(bool reloading, bool empty)
+    /// <summary>
+    /// On someone else's copy: their reload began, or stopped; <paramref name="from"/> is how far into its clip it began
+    /// (theirs going on from a cut-short one, WeaponRuntime.ReloadStartShare).
+    /// </summary>
+    internal void ShowReload(bool reloading, bool empty, float from = 0f)
     {
         if (Runtime == null || reloading == Runtime.IsReloading) return;
         if (!reloading) { Runtime.Interrupt(); return; }
-        Runtime.ShowReload(empty);
+        Runtime.ShowReload(empty, from);
         ReloadStarted?.Invoke(empty);
     }
 
@@ -456,6 +470,7 @@ public sealed class WeaponController : MonoBehaviour
         savedAmmoData = weaponData;
         savedAmmo = weapon != null ? weapon.Ammo : -1;
         savedReserve = weapon != null ? weapon.ReserveAmmo : -1;
+        loadsSeen = weapon != null ? weapon.Loads : 0;
         setupDue = weapon != null && weapon.Data.Category != WeaponCategory.Melee;
 
         if (input is PlayerWeaponInput playerInput)
@@ -553,9 +568,9 @@ public sealed class WeaponController : MonoBehaviour
         int shots = Runtime.Tick(dt, frame);
 
         if (!wasReloading && Runtime.IsReloading) ReloadStarted?.Invoke(Runtime.IsEmptyReload);
-        else if (wasReloading && !Runtime.IsReloading) ReloadCompleted?.Invoke();
+        else if (wasReloading && !Runtime.IsReloading) { loadsSeen = Runtime.Loads; ReloadCompleted?.Invoke(); }
         else if (Runtime.IsReloading && Runtime.StepCount != stepsBefore) ReloadStepped?.Invoke(Runtime.Step);
-        if (shots == 0 && frame.FirePressed && Runtime.Ammo == 0 && !Runtime.IsReloading) DryFired?.Invoke();
+        if (shots == 0 && frame.FirePressed && (Runtime.Ammo == 0 || Runtime.ChamberDue) && !Runtime.IsReloading) DryFired?.Invoke();
 
         for (int i = 0; i < shots; i++)
         {
@@ -677,11 +692,13 @@ public sealed class WeaponController : MonoBehaviour
     }
 
     // ArcCW's automatic reload (arccw_automaticreload): an empty magazine with rounds in reserve reloads 0.2 s after the
-    // gun could fire again. Someone else's copy reloads when their PC says so.
+    // gun could fire again, and so does a gun whose cut-short reload left only its bolt to work (WeaponRuntime.ChamberDue;
+    // one left with its magazine out is empty). The player can switch it off (Settings → 조작 → 자동 장전; user, 2026-11-11:
+    // "총알 다 썼을 때 자동 장전 되는지 확인하고"). Someone else's copy reloads when their PC says so.
     private bool AutoReloadDue(float dt)
     {
-        bool waiting = weaponData.AutoReloadDelay >= 0f && (movement == null || !movement.IsNetworkDriven)
-            && Runtime.Ammo == 0 && Runtime.ReserveAmmo > 0 && !Runtime.IsReloading && Runtime.CooldownRemaining <= 0f;
+        bool waiting = weaponData.AutoReloadDelay >= 0f && GameSettings.Current.autoReload && (movement == null || !movement.IsNetworkDriven)
+            && ((Runtime.Ammo == 0 && Runtime.ReserveAmmo > 0) || Runtime.ChamberDue) && !Runtime.IsReloading && Runtime.CooldownRemaining <= 0f;
         emptyReady = waiting ? emptyReady + dt : 0f;
         return waiting && emptyReady > weaponData.AutoReloadDelay;
     }

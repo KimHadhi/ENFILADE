@@ -492,25 +492,37 @@ public sealed class FPSGun : MonoBehaviour
     internal void StopFire(RecoilAnimation recoil) => recoil?.Stop();
 
     /// <summary>
-    /// Our reload began (Weapon.OnReload): its clip on the body, its gun-part clip on the gun, its camera motion. Returns how
-    /// long the body's clip plays (s).
+    /// Our reload began (Weapon.OnReload): its clip on the body, its gun-part clip on the gun, its camera motion, all from
+    /// <paramref name="from"/> of the way through when it goes on from where a cut-short one got to (WeaponRuntime keeps
+    /// that). Returns how long the body's whole clip plays (s).
     /// </summary>
-    internal float Reload(bool empty, IPlayablesController playables, FPSBodyCamera camera)
+    internal float Reload(bool empty, IPlayablesController playables, FPSBodyCamera camera, float from = 0f)
     {
         reloadEmptyPlaying = empty;
         reloading = true;
+        from = Mathf.Clamp01(from);
         var clip = empty ? reloadEmpty : reloadTactical;
-        if (FPSAnimationAsset.IsValid(clip)) playables.PlayAnimation(clip, 0f);
+        if (FPSAnimationAsset.IsValid(clip)) playables.PlayAnimation(clip, from * clip.clip.length);
         if (camera != null)
-            camera.PlayGunMotion(empty ? entry.sourceReloadEmpty : entry.sourceReloadTactical, clip != null ? clip.blendTime.rateScale : 1f);
+            camera.PlayGunMotion(empty ? entry.sourceReloadEmpty : entry.sourceReloadTactical, clip != null ? clip.blendTime.rateScale : 1f, from);
         float length = clip != null && clip.clip != null ? clip.clip.length / Mathf.Max(.01f, clip.blendTime.rateScale) : 0f;
-        // The old magazine will fall out as the clip takes it away (GunMagazine).
-        if (magazine != null) magazine.Begin(empty, length);
+        // The old magazine will fall out as the clip takes it away (GunMagazine); going on past that, it is already out.
+        if (magazine != null) magazine.Begin(empty, length, from);
         if (Kinemation == null || partsPlayer == null) return length;
         var pair = empty ? Kinemation.reloadEmpty : Kinemation.reloadTactical;
         // The reload's own clip takes the slide from the last round's and lets it go forward.
-        if (pair.weapon != null && partsPlayer.PlayAnimation(pair.weapon)) slideHeld = false;
+        if (pair.weapon != null && partsPlayer.PlayAnimation(pair.weapon, PartsTime(pair, from))) slideHeld = false;
         return length;
+    }
+
+    // Where in the gun-part clip a reload <paramref name="share"/> of the way through is: the pair plays fitted to the
+    // character clip's length with the part clip at its own rate, as ReloadMoments measures it.
+    private static float PartsTime(FPSAnimationPair pair, float share)
+    {
+        if (share <= 0f || pair.weapon == null || pair.weapon.clip == null) return 0f;
+        var timing = pair.character != null ? pair.character : pair.weapon;
+        float span = timing.GetPlayLength() * (Mathf.Approximately(pair.weapon.playRate, 0f) ? 1f : pair.weapon.playRate);
+        return Mathf.Clamp(share * span, 0f, pair.weapon.clip.length);
     }
 
     /// <summary>
@@ -544,8 +556,9 @@ public sealed class FPSGun : MonoBehaviour
     {
         if (!reloading) return;
         reloading = false;
-        // Cut short, the gun has a magazine in it again (one already let go stays on the floor).
-        if (magazine != null) magazine.End();
+        // Cut short with the old magazine leaving, the hand lets it go and the gun stays without one until the next reload
+        // brings the new one (WeaponRuntime.MagazineOut); cut short before that, the gun keeps its magazine.
+        if (magazine != null) magazine.End(true);
         playables?.StopAnimation(blendOut);
         if (camera != null) camera.StopGunMotion();
         if (Kinemation == null) return;

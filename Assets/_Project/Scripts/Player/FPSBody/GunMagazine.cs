@@ -51,6 +51,7 @@ public sealed class GunMagazine : MonoBehaviour, ITableBound
     private ReloadMoments.Magazine moments;
     private float timer, span;
     private bool running, dropped, hidden, hasLast;
+    private Vector3 lastVelocity;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetStatics() => cuts.Clear();
@@ -87,8 +88,12 @@ public sealed class GunMagazine : MonoBehaviour, ITableBound
         if (part != null) Cut(out _, out _);
     }
 
-    /// <summary>A reload began (FPSGun.Reload); length is how long its clip plays, for when the gun's own timer can't be read.</summary>
-    internal void Begin(bool empty, float length)
+    /// <summary>
+    /// A reload began (FPSGun.Reload); length is how long its whole clip plays, for when the gun's own timer can't be read.
+    /// One going on from <paramref name="from"/> of the way (a cut-short reload's rest) past the old magazine leaving has
+    /// it on the floor already.
+    /// </summary>
+    internal void Begin(bool empty, float length, float from = 0f)
     {
         Restore();
         running = false;
@@ -102,16 +107,51 @@ public sealed class GunMagazine : MonoBehaviour, ITableBound
         }
         if (part == null) return;
         running = true;
-        dropped = hasLast = false;
-        timer = 0f;
+        hasLast = false;
         span = Mathf.Max(.05f, length);
+        timer = Mathf.Clamp01(from) * span;
+        dropped = from > moments.Out;
     }
 
-    /// <summary>The reload ended, done or cut short (FPSGun): the magazine is in the gun again.</summary>
-    internal void End()
+    /// <summary>
+    /// The reload ended, done or <paramref name="cut"/> short (FPSGun). Cut short with the old magazine leaving the gun, the
+    /// hand lets it go there and the gun stays without one while its runtime says so (WeaponRuntime.MagazineOut, KeepOut);
+    /// otherwise the magazine is in the gun again.
+    /// </summary>
+    internal void End(bool cut = false)
     {
+        // The runtime has already judged how far it got (WeaponRuntime.KeepWhatWasDone); the hand follows that.
+        if (cut && running && !dropped && part != null && MagazineOutNow)
+        {
+            dropped = true;
+            hidden = Drop(lastVelocity);
+        }
         running = false;
-        Restore();
+        if (!MagazineOutNow) Restore();
+    }
+
+    // This gun's runtime, while it is the one in hand, has had a reload cut short with its old magazine out.
+    private bool MagazineOutNow
+    {
+        get
+        {
+            if (controller == null) controller = GetComponentInParent<WeaponController>();
+            var runtime = controller != null ? controller.Runtime : null;
+            return runtime != null && gun != null && controller.EquippedData == gun.Data && runtime.MagazineOut;
+        }
+    }
+
+    // Between reloads: a gun whose cut-short reload left it without a magazine shows none (drawn again later too), and
+    // shows its magazine again once something filled it some other way.
+    private void KeepOut()
+    {
+        if (part == null) return;
+        if (MagazineOutNow)
+        {
+            part.localScale = Vector3.zero;
+            hidden = true;
+        }
+        else Restore();
     }
 
     // The part under the gun's animated model, by its path there (ReloadMoments measured it on the same model).
@@ -136,12 +176,14 @@ public sealed class GunMagazine : MonoBehaviour, ITableBound
     // After the clips and the gun framework have posed the gun this frame, before it is drawn.
     private void LateUpdate()
     {
-        if (!running || part == null) return;
+        if (!running) { KeepOut(); return; }
+        if (part == null) return;
         float dt = Time.deltaTime;
         timer += dt;
         float progress = Progress();
         Vector3 at = part.position;
         Vector3 velocity = hasLast && dt > 0f ? (at - lastPosition) / dt : Vector3.zero;
+        lastVelocity = velocity;
         lastPosition = at;
         hasLast = true;
         if (!dropped && progress >= Mathf.Lerp(moments.Out, moments.Far, dropShare))
