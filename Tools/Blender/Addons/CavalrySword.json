@@ -1,0 +1,14 @@
+{
+ "workshop": "L4D2 3661236204 Heavy Cavalry Sword (Tonfa)",
+ "name": "CavalrySword",
+ "mdl": "models/weapons/melee/w_tonfa.mdl",
+ "out": "Assets/_Project/Art/Models/Addons/Weapons/CavalrySword",
+ "note": "Straight single-edged sword along +Z from the grip; the basket guard sits on -Y, the fingers' (edge) side, so the spine is +Y.",
+ "meshes": {"w_heavycavalrysword": "Sword"},
+ "origin": {"point": [0, 0, 0.034]},
+ "tip": [0, 0, 1],
+ "up": [0, 1, 0],
+ "parts": {},
+ "markers": {"Guard": {"point": [0, 0, 0.094]}, "Tip": {"point": [0.01, -0.007, 0.954]}, "Pommel": {"point": [-0.002, -0.003, -0.069]}},
+ "max_texture": 2048
+}

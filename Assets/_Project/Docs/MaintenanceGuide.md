@@ -299,6 +299,7 @@ Art/Models/
 - 게임에 쓰는 오브젝트(충돌체·스크립트 포함)는 모델을 씬에 놓고 [Prefabs](../Prefabs) 아래 프리팹으로 만든다. 굴러다니는 물체는 아래 물리 프랍 도구를 쓴다.
 - 원본 `.blend`는 `Assets` 밖에 둔다. `Assets` 안에 두면 Unity가 Blender를 실행해 변환하려고 한다. `.blend1`은 Blender 백업이므로 넣지 않는다. `.fbx`·`.png`·`.blend`는 Git LFS로 저장된다.
 - Blender에서 내보낼 때 Apply Scalings `FBX All`, Forward `-Z`, Up `Y`, Apply Transform을 켜면 안쪽 자식의 회전·크기도 깔끔해진다.
+- 워크숍 애드온의 Source 무기(MDL)는 [addon_weapon_to_fbx.py](../../../Tools/Blender/addon_weapon_to_fbx.py)와 무기마다의 레시피([Tools/Blender/Addons](../../../Tools/Blender/Addons))로 `Art/Models/Addons/Weapons/<이름>`에 바꿔 넣는다(손잡이 원점, +Z 칼끝·총구, 실제 크기, 부품과 표식. [애드온 이식 기록](AddonPortNotes.md#워크숍-모델-2026-11-11)). `blender -b --factory-startup --python Tools/Blender/addon_weapon_to_fbx.py -- <레시피.json> <workshop.py로 푼 애드온 폴더> <프로젝트 폴더>`
 
 ### 충돌과 물리 (물리 프랍)
 

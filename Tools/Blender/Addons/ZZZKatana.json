@@ -1,0 +1,14 @@
+{
+ "workshop": "L4D2 3802606110 [绝区零] 讨骸刀·无尾(武士刀)",
+ "name": "ZZZKatana",
+ "mdl": "models/weapons/melee/w_katana.mdl",
+ "out": "Assets/_Project/Art/Models/Addons/Weapons/ZZZKatana",
+ "note": "The world model is the sword in its scabbard; the blade and handle are weighted to Point001a001 and Bn_katana_hilt2, the scabbard and its straps to Point004 and Bn_scabbard*. Handle axis from pommel to guard is +Z; the blade bows toward -Y in the middle (edge), so the spine is +Y.",
+ "meshes": {"dmx": "Katana"},
+ "origin": {"point": [-0.001, 0.005, -0.14]},
+ "tip": [0, 0, 1],
+ "up": [0, 1, 0],
+ "parts": {"Scabbard": {"from": "Katana", "bones": ["Point004", "Point005", "Bn_scabbardA_01", "Bn_scabbardA_02", "Bn_scabbardA_03", "Bn_scabbardB_01", "Bn_scabbardB_02", "Bn_scabbardB_03"]}},
+ "markers": {"Guard": {"point": [0, 0, 0]}, "Tip": {"point": [-0.001, 0.079, 0.733]}, "Pommel": {"point": [-0.001, 0.006, -0.274]}},
+ "max_texture": 2048
+}

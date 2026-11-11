@@ -1,0 +1,14 @@
+{
+ "workshop": "L4D2 3532432838 DMC5: Yamato (Katana)",
+ "name": "YamatoKatana",
+ "mdl": "models/weapons/melee/w_katana.mdl",
+ "out": "Assets/_Project/Art/Models/Addons/Weapons/YamatoKatana",
+ "note": "Two meshes: the katana (handle up, blade inside the sheath pointing down and a little sideways) and the sheath. Handle axis from pommel (0.138,0.062,1.334) to guard (0.089,0.088,1.137); the blade bows toward +X (edge), so the spine is the opposite way. 2048x4096 textures halved.",
+ "meshes": {"KF2Katana": "Katana", "Sheath": "Sheath"},
+ "origin": {"point": [0.1135, 0.075, 1.2355]},
+ "tip": [-0.049, 0.026, -0.197],
+ "up": [-0.0199, -0.0019, 0.0059],
+ "parts": {},
+ "markers": {"Guard": {"point": [0.089, 0.088, 1.137]}, "Tip": {"point": [-0.132, 0.178, 0.458]}, "Pommel": {"point": [0.138, 0.062, 1.334]}},
+ "max_texture": 2048
+}

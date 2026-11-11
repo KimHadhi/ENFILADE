@@ -1,0 +1,18 @@
+{
+ "workshop": "L4D2 3803570564 COD23:MW4 KRAIT P68",
+ "name": "KraitP68",
+ "mdl": "models/w_models/weapons/w_pistol_a.mdl",
+ "out": "Assets/_Project/Art/Models/Addons/Weapons/KraitP68",
+ "note": "The muzzle points -Y and the sights +Z; ValveBiped.weapon_bone (the hand's attachment) is the origin. The suppressor and the weapon light are their own materials and the magazine its own bone, so each is a part that can be hidden or dropped.",
+ "meshes": {"Hotel45": "Pistol"},
+ "origin": {"bone": "ValveBiped.weapon_bone"},
+ "tip": [0, -1, 0],
+ "up": [0, 0, 1],
+ "parts": {
+  "Suppressor": {"from": "Pistol", "materials": ["m_wpn_rex_pi_decho_supp_tac_v0"]},
+  "Light": {"from": "Pistol", "materials": ["material_26e861b8433743b1", "material_78ed96b739f3c462"]},
+  "Magazine": {"from": "Pistol", "bones": ["ValveBiped.weapon_bone_Clip", "ValveBiped.weapon_bone_Clip_Bullets"]}
+ },
+ "markers": {"Muzzle": {"bone": "ValveBiped.weapon_flash"}, "SuppressorMuzzle": {"point": [0, -0.338, 0.064]}, "LightPoint": {"bone": "ValveBiped.weapon_flashlight"}},
+ "max_texture": 2048
+}
