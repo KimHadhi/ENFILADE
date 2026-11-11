@@ -562,7 +562,12 @@ public sealed class FieldPickups : MonoBehaviour
     private static bool Heavy(PlayerWeaponSlots slots, WeaponData gun)
     {
         if (gun == null) return false;
-        for (int i = 0; i < PlayerWeaponSlots.SlotCount; i++) if (slots.GetWeapon(i) == gun) return false;
+        for (int i = 0; i < PlayerWeaponSlots.SlotCount; i++)
+        {
+            // Held, or held twice as a dual pistol (AkimboGuns): GiveGun only refills it, so it weighs nothing new.
+            var held = slots.GetWeapon(i);
+            if (held == gun || (held != null && AkimboGuns.SingleOf(held) == gun)) return false;
+        }
         return !CarryWeight.Fits(slots, GunSlotFor(slots), gun);
     }
 
