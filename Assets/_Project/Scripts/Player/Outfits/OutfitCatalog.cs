@@ -35,6 +35,12 @@ public static class OutfitCatalog
         public string under = "";
         /// <summary>Shape keys set when the slot is filled or emptied: avatars that hide a piece with a key ("Earring_x").</summary>
         public string shapes = "";
+        /// <summary>
+        /// The body's shape keys the piece holds on while it shows, "name|name": the skin drawn in under stockings
+        /// (Shrink_Knee_L), feet shaped for heels. Once no showing piece holds a key it goes back to 0, so legs bared of
+        /// their stockings are whole again instead of keeping the hollows made to hide under them.
+        /// </summary>
+        public string needs = "";
     }
 
     private static List<OutfitSlot> slots;

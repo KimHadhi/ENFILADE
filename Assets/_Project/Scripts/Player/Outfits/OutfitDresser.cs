@@ -138,9 +138,12 @@ internal static class OutfitDresser
             if (view == OutfitSlot.View.Head) dressing.HeadParts.AddRange(piece.Renderers);
             else if (view == OutfitSlot.View.Hide) dressing.FaceParts.AddRange(piece.Renderers);
         }
-        TakeOff(own, skin.Id, emptied);
+        var freed = TakeOff(own, skin.Id, emptied);
         foreach (var piece in worn) Shape(model.GetComponentsInChildren<SkinnedMeshRenderer>(true), OutfitCatalog.FitOf(piece.Item.id, skin.Id)?.shapes);
-        Follow(bodyShapes, worn);
+        // The clothes follow the body as dressing left it: a key the stockings or shoes held and let go of (a heel) goes
+        // down on the socks worn instead too.
+        freed.UnionWith(bodyShapes.Keys);
+        Follow(ShapesNow(own, freed), worn);
         return dressing;
     }
 
@@ -250,10 +253,12 @@ internal static class OutfitDresser
         : renderer.TryGetComponent(out MeshFilter filter) ? filter.sharedMesh : null;
 
     // The character's own pieces in these slots go (CharacterParts.csv): their renderers switch off and their hiding
-    // keys go on. A slot left with none of its pieces showing, whichever slot took them, shows what they covered.
-    private static void TakeOff(Renderer[] own, string skinId, HashSet<string> slots)
+    // keys go on. A slot left with none of its pieces showing, whichever slot took them, shows what they covered, and the
+    // body's keys only those pieces held go back to 0. Returns the keys let go.
+    private static HashSet<string> TakeOff(Renderer[] own, string skinId, HashSet<string> slots)
     {
-        if (slots.Count == 0) return;
+        var freed = new HashSet<string>(StringComparer.Ordinal);
+        if (slots.Count == 0) return freed;
         var rows = OutfitCatalog.PartsOf(skinId);
         var off = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var skins = new List<SkinnedMeshRenderer>();
@@ -265,7 +270,8 @@ internal static class OutfitDresser
             off.UnionWith(OutfitCatalog.Split(row.parts));
             Shape(skins, row.shapes);
         }
-        if (off.Count == 0) return;
+        Release(skins, rows, slots, off, freed);
+        if (off.Count == 0) return freed;
         foreach (var renderer in own)
             if (off.Contains(renderer.name)) renderer.enabled = false;
         foreach (var row in rows)
@@ -286,6 +292,37 @@ internal static class OutfitDresser
                 renderer.enabled = true;
             }
         }
+        return freed;
+    }
+
+    // BOOTH bodies come with the skin under their stockings and shoes drawn in (Shrink_Knee_L, Shrink_Foot_R) and the
+    // feet shaped for the heels, all set on in the prefab, because they never meant those pieces to come off. Taking the
+    // stockings off left Mayo's shins hollow (the user: "마요 스타킹 벗는 거 고장남", 2026-11-11), so each piece names
+    // the keys it holds (CharacterParts.csv needs) and a key nothing showing holds any more goes to 0. Keys two pieces
+    // share stay while either shows: the feet stay drawn in while the shoes are on, bare shins or not.
+    private static void Release(List<SkinnedMeshRenderer> skins, List<OutfitCatalog.Part> rows, HashSet<string> slots,
+        HashSet<string> off, HashSet<string> freed)
+    {
+        var held = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var row in rows)
+        {
+            if (string.IsNullOrEmpty(row.needs)) continue;
+            (Shows(row, slots, off) ? held : freed).UnionWith(OutfitCatalog.Split(row.needs));
+        }
+        freed.ExceptWith(held);
+        foreach (string name in freed) SetShape(skins, name, 0f);
+    }
+
+    // A piece shows while any of its renderers is still on; one made only of keys shows while its slot is kept.
+    private static bool Shows(OutfitCatalog.Part row, HashSet<string> slots, HashSet<string> off)
+    {
+        bool any = false;
+        foreach (string piece in OutfitCatalog.Split(row.parts))
+        {
+            any = true;
+            if (!off.Contains(piece)) return true;
+        }
+        return !any && !slots.Contains(row.slot);
     }
 
     // Shape keys "name=weight|name" on every mesh that has them: the body's shrink keys under clothes, a heel key on the
@@ -303,12 +340,37 @@ internal static class OutfitDresser
                 Warn($"셰이프키 '{pair}'의 값을 읽지 못했습니다.");
                 continue;
             }
-            foreach (var mesh in meshes)
+            SetShape(meshes, name, weight);
+        }
+    }
+
+    private static void SetShape(IEnumerable<SkinnedMeshRenderer> meshes, string name, float weight)
+    {
+        foreach (var mesh in meshes)
+        {
+            int index = mesh != null && mesh.sharedMesh != null ? mesh.sharedMesh.GetBlendShapeIndex(name) : -1;
+            if (index >= 0) mesh.SetBlendShapeWeight(index, Mathf.Clamp(weight, 0f, 100f));
+        }
+    }
+
+    // The body's keys as dressing left them, for these names: the first of its meshes with the key set, else 0. The same
+    // first-set rule as ShapesOf, so keys nothing touched follow exactly as before.
+    private static Dictionary<string, float> ShapesNow(Renderer[] own, HashSet<string> names)
+    {
+        var shapes = new Dictionary<string, float>(StringComparer.Ordinal);
+        foreach (var renderer in own)
+        {
+            if (renderer is not SkinnedMeshRenderer skinned || skinned.sharedMesh == null) continue;
+            var mesh = skinned.sharedMesh;
+            for (int i = 0; i < mesh.blendShapeCount; i++)
             {
-                int index = mesh != null && mesh.sharedMesh != null ? mesh.sharedMesh.GetBlendShapeIndex(name) : -1;
-                if (index >= 0) mesh.SetBlendShapeWeight(index, Mathf.Clamp(weight, 0f, 100f));
+                string name = mesh.GetBlendShapeName(i);
+                if (!names.Contains(name)) continue;
+                float weight = skinned.GetBlendShapeWeight(i);
+                if (!shapes.TryGetValue(name, out float found) || (found == 0f && weight != 0f)) shapes[name] = weight;
             }
         }
+        return shapes;
     }
 
     // The body's shape keys as its maker set them (a fuller chest, wider hips), by name.
