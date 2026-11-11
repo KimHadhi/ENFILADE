@@ -30,6 +30,7 @@ using UnityEngine.InputSystem;
 ///   Desperado's next round. The Desperado is its revolver (the class's own gun, the R08): held with a round in it, every
 ///   shot spends one and hits double, and one in the head of its own mark kills it outright, elites too (a brute loses a
 ///   share of its health), with BOUNTY slammed across the screen in teal.
+/// - Détente (the user's design): its syringe, Golden Hour and Resurrection are DetenteKit's; the class key injects.
 /// The other classes' abilities come in later stages (Classes.csv ready 0). Numbers: Tables/ClassAbilities.
 /// </summary>
 [DisallowMultipleComponent]
@@ -76,6 +77,7 @@ public sealed class ClassKit : MonoBehaviour
     private float returnUntil, returnTotal = 1f, bountyAt = -99f, finishAt = -99f;
     private EnemyHealth finishing;
     private bool pingMade;
+    private DetenteKit detente;
 
     public PlayerMovement Movement => movement;
     public WeaponData HeldGun => weapon != null ? weapon.EquippedData : null;
@@ -168,6 +170,8 @@ public sealed class ClassKit : MonoBehaviour
             if (PlayerClass.Is(PlayerClass.Assault)) factor *= 1f + stacks * PlayerClass.Ability(AssaultRow, "speedPerStack", 1.5f) / 100f;
             if (chargeUntil > Time.time) factor *= 1f + PlayerClass.Ability(AssaultRow, "chargeSpeed", 25f) / 100f;
             if (PlayerClass.Is(PlayerClass.Schiesshund)) factor *= 1f + ReturnStacks * PlayerClass.Ability(HoundRow, "returnSpeed", 6f) / 100f;
+            // A Détente's Golden Hour after a heal.
+            if (detente != null && PlayerClass.Is(PlayerClass.Detente)) factor *= detente.SpeedFactor;
             return factor;
         }
     }
@@ -197,6 +201,8 @@ public sealed class ClassKit : MonoBehaviour
         if (!wired) Wire();
         // F on an enemy pings it for the team, alone too (PlayerNetworkCombat makes it in a room).
         if (!pingMade) { pingMade = true; if (GetComponent<PlayerPing>() == null) gameObject.AddComponent<PlayerPing>(); }
+        // A Détente's syringe, treatment and Resurrection.
+        if (detente == null && (detente = GetComponent<DetenteKit>()) == null) detente = gameObject.AddComponent<DetenteKit>();
         if (!kitGiven) TryGiveKit();
         Ebb();
         if (PlayerClass.Is(PlayerClass.Point)) ReloadAside();
@@ -281,6 +287,7 @@ public sealed class ClassKit : MonoBehaviour
             return;
         }
         if (PlayerClass.Is(PlayerClass.Knight)) { Taunt(); return; }
+        if (PlayerClass.Is(PlayerClass.Detente) && detente != null) { detente.Inject(); return; }
         // No ability on the key for this class (a Point's and a Ghost's are always on), or not built yet.
         KitSound.Play(KitSound.Cue.Refuse, .35f);
     }

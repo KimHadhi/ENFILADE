@@ -61,6 +61,8 @@ public sealed class PlayerPing : MonoBehaviour
         if (FieldPickups.Targeting) return true;
         if (revive == null) revive = GetComponent<PlayerRevive>();
         if (revive != null && revive.Candidate != null) return true;
+        // A Détente treating a friend by hand, or bringing one back.
+        if (DetenteKit.Local != null && DetenteKit.Local.TakesInteract) return true;
         if (movement.Abilities != null && movement.Abilities.Fixtures.ClimbDownLadder != null) return true;
         return CampaignRun.Offering || ShopMenu.IsOpen;
     }

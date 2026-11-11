@@ -45,3 +45,19 @@ Schiesshund.returnMax,5,리턴 백: 표식 처치마다 1스택(최대)
 Schiesshund.returnSpeed,6,리턴 백 스택마다 이동 속도 +%
 Schiesshund.returnDamage,6,리턴 백 스택마다 총 피해 +%(옛 메모는 장전 속도. 장전 속도를 바꾸는 장치가 생기면 옮긴다)
 Schiesshund.returnSeconds,8,리턴 백이 가는 시간(초). 표식 처치마다 다시 채운다
+Detente.syringeMax,100,데탕트 주사기 용량. 장이 시작될 때 syringeStart만큼 차 있고 상점(주사기 보충)과 서포트가 채운다
+Detente.syringeStart,100,장이 시작될 때 주사기에 든 양
+Detente.injectCost,25,주사 한 번에 쓰는 양(100이면 네 번)
+Detente.injectHeal,40,주사 한 번이 즉시 채우는 체력
+Detente.injectReach,3.5,클래스 기술 키(휠 클릭)로 주사를 놓을 수 있는 동료까지 거리(m). 조준선 근처에 동료가 없으면 자기에게 놓는다(체력이 가득이면 안 놓음)
+Detente.injectAngle,14,조준선에서 이 각도(도) 안의 동료에게 놓는다
+Detente.injectCooldown,1,주사와 주사 사이(초)
+Detente.treatSeconds,6,주사기가 비었을 때 다친 동료 곁에서 F를 이만큼(초) 누르고 있으면 치료된다(G&B 의사처럼). 빈 주사기로는 자기를 치료할 수 없다
+Detente.treatHeal,50,그렇게 손으로 치료해 채우는 체력
+Detente.treatReach,2.2,손으로 치료할 수 있는 거리(m)
+Detente.goldenSpeed,8,골든 아워: 치료(주사·손 치료·부활)하면 이동 +%
+Detente.goldenSeconds,8,골든 아워 시간(초). 치료할 때마다 다시 처음부터
+Detente.resurrections,1,리저렉션: 웨이브마다(캠페인은 쉬는 곳에 닿을 때마다) 죽은 동료를 되살릴 수 있는 횟수
+Detente.resurrectSeconds,5,죽은 동료 곁에서 F를 이만큼(초) 누르면 그 자리에서 되살아난다
+Detente.resurrectHealth,50,되살아난 동료의 체력(최대 체력의 %)
+Detente.resurrectReach,2.2,되살릴 수 있는 거리(m)

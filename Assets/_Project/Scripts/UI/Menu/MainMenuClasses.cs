@@ -268,6 +268,10 @@ public sealed class MainMenuClasses : MonoBehaviour
                     Whole("Schiesshund", "bountyMoney", 100f), Whole("Schiesshund", "bountyElite", 300f), Whole("Schiesshund", "returnDamage", 6f),
                     Whole("Schiesshund", "returnSeconds", 8f), Whole("Schiesshund", "roundPoints", 2f), Whole("Schiesshund", "elitePoints", 2f),
                     Whole("Schiesshund", "desperadoDamage", 100f));
+            case PlayerClass.Detente:
+                return Texts.Format(key, Whole("Detente", "syringeMax", 100f), Whole("Detente", "injectHeal", 40f), Whole("Detente", "injectCost", 25f),
+                    ClassKey(), Whole("Detente", "treatSeconds", 6f), Whole("Detente", "treatHeal", 50f), Whole("Detente", "goldenSpeed", 8f),
+                    Whole("Detente", "goldenSeconds", 8f), Whole("Detente", "resurrectSeconds", 5f), Whole("Detente", "resurrectHealth", 50f));
             default:
                 return Texts.Has(key) ? Texts.Get(key) : "";
         }

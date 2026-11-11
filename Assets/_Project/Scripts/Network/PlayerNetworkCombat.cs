@@ -80,6 +80,10 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
 
     /// <summary>Someone on this PC finished getting this copy's player up: their own PC does it.</summary>
     public void Revive() => ReviveRpc();
+    /// <summary>A Détente's dose or treatment for this copy's player (DetenteKit): their own PC adds the health.</summary>
+    public void Heal(float amount) { if (IsSpawned) HealRpc(amount); }
+    /// <summary>A Détente's Resurrection for this copy's dead player, back with this share of their health.</summary>
+    public void Resurrect(float share) { if (IsSpawned) ResurrectRpc(share); }
     /// <summary>Whether this player is getting that client up right now, and how far along (0-1).</summary>
     public bool IsReviving(ulong client, out float progress)
     {
@@ -344,6 +348,20 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
             { hitter = someone.gameObject; break; }
         receiver.ReceiveHit(new DamageHit(id, amount, DamageKind.Attack, point, direction, hitter, canBeGuarded,
             method: method, origin: origin, isCritical: critical, pierced: pierced));
+    }
+
+    [Rpc(SendTo.Owner)]
+    private void HealRpc(float amount)
+    {
+        if (receiver == null || !receiver.IsAlive || receiver.IsDowned) return;
+        receiver.Heal(amount);
+        KitSound.Play(KitSound.Cue.PickHeal, .7f);
+    }
+
+    [Rpc(SendTo.Owner)]
+    private void ResurrectRpc(float share)
+    {
+        if (TryGetComponent(out PlayerLife life)) life.Resurrect(share);
     }
 
     [Rpc(SendTo.Owner)]

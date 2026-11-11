@@ -77,6 +77,19 @@ public sealed class PlayerLife : MonoBehaviour
         return false;
     }
 
+    /// <summary>
+    /// A Détente brought them back from the dead where they fell (DetenteKit's Resurrection), with this share of their
+    /// health, as a respawn does but in place.
+    /// </summary>
+    internal void Resurrect(float share)
+    {
+        if (receiver.IsAlive || IsWiped) return;
+        receiver.RestoreHealth();
+        receiver.GetUp(receiver.MaximumHealth * Mathf.Clamp(share, .05f, 1f));
+        if (TryGetComponent(out PlayerWeaponSlots slots)) slots.RefillAmmo();
+        AlertHUD.Self(Texts.Get("class.detente.raised_self"));
+    }
+
     /// <summary>Someone beside them finished getting them up.</summary>
     internal void Revived()
     {

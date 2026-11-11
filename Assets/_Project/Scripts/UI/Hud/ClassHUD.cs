@@ -12,7 +12,9 @@ using UnityEngine.UI;
 /// the gun in hand holds its first round since loading; for a Knight "[휠] 도발" while its taunt is ready, the wait in
 /// its place while not, and the draining bar while it lasts; for a Schießhund its Desperado's rounds as teal pips, the
 /// newest flashing as a bounty loads it, "DESPERADO" over the plate while it is in hand with a round in it, and Return
-/// Back's stacks on the draining bar. Classes whose abilities come later show their name only.
+/// Back's stacks on the draining bar; for a Détente its syringe as a pip a dose, red, "[휠] 주사" while a dose is in it,
+/// how many Resurrections are left beside them, and on the bar a treatment or a Resurrection under way, else Golden
+/// Hour. Classes whose abilities come later show their name only.
 /// Local player only (PlayerMovement). HUD look: black, white and pink.
 /// </summary>
 [DisallowMultipleComponent]
@@ -57,6 +59,7 @@ public sealed class ClassHUD : MonoBehaviour
         else if (PlayerClass.Is(PlayerClass.Ghost)) Hunter();
         else if (PlayerClass.Is(PlayerClass.Knight)) Taunt();
         else if (PlayerClass.Is(PlayerClass.Schiesshund)) Hound();
+        else if (PlayerClass.Is(PlayerClass.Detente) && Detente()) return;
         // The bar along the foot: a Knight's own taunt, a Schießhund's Return Back, or a friend's CHARGE, which reaches
         // any class.
         float taunt = kit.TauntShare, back = kit.ReturnShare;
@@ -79,13 +82,16 @@ public sealed class ClassHUD : MonoBehaviour
         icon.enabled = icon.texture != null;
         bool assault = PlayerClass.Is(PlayerClass.Assault), point = PlayerClass.Is(PlayerClass.Point);
         bool ghost = PlayerClass.Is(PlayerClass.Ghost), knight = PlayerClass.Is(PlayerClass.Knight), hound = PlayerClass.Is(PlayerClass.Schiesshund);
-        pipRow.gameObject.SetActive(assault || ghost || hound);
+        bool detente = PlayerClass.Is(PlayerClass.Detente);
+        pipRow.gameObject.SetActive(assault || ghost || hound || detente);
         deadeye.text = Texts.Get(hound ? "class.hud.desperado" : "class.hud.deadeye");
         slotRow.gameObject.SetActive(point);
         keyRect.gameObject.SetActive(false);
         deadeye.gameObject.SetActive(false);
-        keyWord.text = Texts.Get(knight ? "class.hud.taunt" : "class.hud.charge");
+        keyWord.text = Texts.Get(knight ? "class.hud.taunt" : detente ? "class.hud.inject" : "class.hud.charge");
         note.text = info != null && !info.Ready ? Texts.Get("class.hud.later") : "";
+        // A Détente moves the note past its pips; every other class has it back in its place.
+        ((RectTransform)note.rectTransform.parent).anchoredPosition = new Vector2(128f, 0f);
         shownPips = 0;
         if (assault) Pips(kit != null ? kit.StackMax : 8);
     }
@@ -143,6 +149,37 @@ public sealed class ClassHUD : MonoBehaviour
         bool loaded = kit.DesperadoLoaded;
         deadeye.gameObject.SetActive(loaded);
         if (loaded) deadeye.color = KitStyle.With(PingMarks.BountyColor, .78f + .22f * Mathf.Sin(Time.unscaledTime * 6f));
+    }
+
+    // A Détente: a red pip a dose left in the syringe (the newest flashing white as one goes in), "[휠] 주사" while there
+    // is one, how many Resurrections are left beside the pips, and the bar: a treatment by hand or a Resurrection under
+    // way, else Golden Hour. True when it drew the bar itself.
+    private bool Detente()
+    {
+        var detente = DetenteKit.Local;
+        if (detente == null) return false;
+        Pips(detente.MostDoses);
+        int count = shownPips, doses = Mathf.Min(detente.Doses, count);
+        float flash = Mathf.Clamp01(1f - detente.SinceInject / .35f);
+        for (int i = 0; i < count; i++)
+        {
+            Color color = i < doses ? KitStyle.Red : KitStyle.With(KitStyle.Ice, .14f);
+            pips[i].color = flash > 0f && i == doses ? Color.Lerp(color, KitStyle.Ice, flash) : color;
+        }
+        KeyPrompt(!detente.Empty);
+        string side = detente.Empty ? Texts.Get("class.hud.empty") : detente.RaisesLeft > 0 ? Texts.Format("class.hud.raises", detente.RaisesLeft) : "";
+        if (note.text != side) note.text = side;
+        note.rectTransform.parent.GetComponent<RectTransform>().anchoredPosition = new Vector2(128f + count * (PipWidth + PipGap) + 6f, 0f);
+        float hand = detente.Raising != null ? detente.RaiseProgress : detente.TreatProgress;
+        bool working = hand > 0f;
+        float share = working ? hand : detente.GoldenShare;
+        chargeBar.gameObject.SetActive(share > 0f);
+        if (share <= 0f) return true;
+        chargeFill.rectTransform.anchorMax = new Vector2(share, 1f);
+        chargeFill.color = working ? KitStyle.Red : new Color(1f, .82f, .35f);
+        string word = working ? Texts.Get(detente.Raising != null ? "class.hud.raise" : "class.hud.treat") : Texts.Get("class.hud.golden");
+        if (barWord.text != word) barWord.text = word;
+        return true;
     }
 
     // A Knight's taunt: the key's prompt while it is ready, the seconds left to wait in its place while it isn't.
