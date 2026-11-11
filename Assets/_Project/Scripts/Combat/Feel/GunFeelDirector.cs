@@ -55,8 +55,9 @@ public static class GunFeelDirector
             }
         }
         // A takedown of one that never knew they were there pays a stealth bonus (암살). It is judged before the zombie
-        // goes, so its mood is still the one it died in (the host's, shared to this PC).
-        bool takedown = execution && report.Target.TryGetComponent(out ZombieMind mind) && mind.Unaware;
+        // goes, so its mood is still the one it died in (the host's, shared to this PC). A throwing knife's silent kill
+        // of one counts the same (porting bundle 6).
+        bool takedown = (execution || hit.Method == DamageMethod.Thrown) && report.Target.TryGetComponent(out ZombieMind mind) && mind.Unaware;
         // A Schießhund's own mark pays its bounty on top (stage 3 of the classes): more for an elite.
         int bounty = PlayerClass.Is(PlayerClass.Schiesshund) && PingMarks.IsBountyOf(report.Target, PlayerRoster.Local)
             ? Mathf.RoundToInt(PlayerClass.Ability("Schiesshund", PlayerClass.IsElite(report.Target as EnemyHealth) ? "bountyElite" : "bountyMoney",
@@ -72,6 +73,7 @@ public static class GunFeelDirector
         if (hit.Kind == DamageKind.Execution) return Texts.Get("feed.weapon.execution");
         if (hit.IsCounter) return Texts.Get("feed.weapon.counter");
         if (hit.Method == DamageMethod.Shove) return Texts.Get("feed.weapon.shove");
+        if (hit.Method == DamageMethod.Thrown) return Texts.Get("feed.weapon.knife");
         if (hit.Method == DamageMethod.Bullet && hit.Source != null)
         {
             var weapon = hit.Source.GetComponentInChildren<WeaponController>();

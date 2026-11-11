@@ -16,6 +16,15 @@
                     "initialStateCheck": false
                 },
                 {
+                    "name": "ThrowKnife",
+                    "type": "Button",
+                    "id": "b2e2854f-047b-4bbe-a00b-182132a598dc",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
                     "name": "Move",
                     "type": "Value",
                     "id": "b06014ca-7270-4be4-80b3-9b41515de10a",
@@ -133,6 +142,17 @@
                     "processors": "",
                     "groups": "",
                     "action": "Interact",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "a5b7d23f-5bcf-4c96-89df-2beb8610015e",
+                    "path": "<Keyboard>/h",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "ThrowKnife",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },

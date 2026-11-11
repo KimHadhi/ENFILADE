@@ -163,6 +163,9 @@ public sealed class ZombieCorpse : MonoBehaviour
         corpse.Begin(doll, hit, simulated, id, runner, velocity, lying != null);
     }
 
+    /// <summary>The body of enemy <paramref name="id"/>'s corpse lying on this PC, or null: a throwing knife a friend put in it finds its bone (ThrowingKnives).</summary>
+    internal static Animator AnimatorOf(ulong id) => id != 0UL && byId.TryGetValue(id, out var corpse) && corpse != null ? corpse.animator : null;
+
     private void Awake() => GameTables.Bind(TableName, TableRow, this);
 
     private void Begin(RagdollCorpse taken, in DamageHit hit, bool simulated, ulong id, PlayerMovement killer, Vector3 velocity,

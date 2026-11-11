@@ -28,8 +28,9 @@ using UnityEngine.UI;
 public sealed class ShopMenu : MonoBehaviour
 {
     public const string TableName = "Shop";
-    // Syringe: a Détente's syringe filled back up (DetenteKit), refused to any other class.
-    private enum Kind { Gun, Ammo, Heal, Shield, Syringe }
+    // Syringe: a Détente's syringe filled back up (DetenteKit), refused to any other class. Knives: the throwing knives
+    // filled back up to the most carried (PlayerKnives).
+    private enum Kind { Gun, Ammo, Heal, Shield, Syringe, Knives }
 
     private sealed class Item
     {
@@ -250,6 +251,9 @@ public sealed class ShopMenu : MonoBehaviour
                 return receiver.Shield >= item.Amount - .5f ? Texts.Get("shop.refuse.shield") : null;
             case Kind.Syringe:
                 return DetenteKit.Local == null ? Texts.Get("shop.refuse.notdetente") : DetenteKit.Local.Full ? Texts.Get("shop.refuse.syringefull") : null;
+            case Kind.Knives:
+                var knives = PlayerKnives.Of(player);
+                return knives == null ? Texts.Get("shop.refuse.now") : knives.Full ? Texts.Get("shop.refuse.knivesfull") : null;
         }
         return null;
     }
@@ -276,6 +280,9 @@ public sealed class ShopMenu : MonoBehaviour
                 return true;
             case Kind.Syringe:
                 return DetenteKit.Local != null && DetenteKit.Local.Refill(item.Amount);
+            case Kind.Knives:
+                var knives = PlayerKnives.Of(player);
+                return knives != null && knives.Fill();
         }
         return false;
     }
@@ -344,6 +351,7 @@ public sealed class ShopMenu : MonoBehaviour
                 Detail = kind == Kind.Gun ? GunDetail(weapon)
                     : kind == Kind.Ammo ? Texts.Get("shop.detail.ammo")
                     : kind == Kind.Syringe ? Texts.Format("shop.detail.syringe", amount.ToString("0"))
+                    : kind == Kind.Knives ? Texts.Format("shop.detail.knives", PlayerKnives.Local != null ? PlayerKnives.Local.Most : 0)
                     : kind == Kind.Heal ? Texts.Format("shop.detail.heal", amount.ToString("0")) : Texts.Format("shop.detail.shield", amount.ToString("0"))
             });
         }
@@ -368,7 +376,7 @@ public sealed class ShopMenu : MonoBehaviour
 
     // Each kind's bar down a card's left side: guns white (the pink is the menus' one accent, and too near heal's red),
     // ammo cyan, heal red, shield green.
-    private static Color AccentOf(Kind kind) => kind == Kind.Gun ? KitStyle.Text : kind == Kind.Ammo ? KitStyle.Cyan
+    private static Color AccentOf(Kind kind) => kind == Kind.Gun ? KitStyle.Text : kind == Kind.Ammo || kind == Kind.Knives ? KitStyle.Cyan
         : kind == Kind.Heal || kind == Kind.Syringe ? KitStyle.Red : KitStyle.Green;
 
     // ---- Screen ----
@@ -436,6 +444,7 @@ public sealed class ShopMenu : MonoBehaviour
         if (item.Kind == Kind.Heal && player.DamageReceiver.Health >= player.DamageReceiver.MaximumHealth - .5f) return Texts.Get("shop.note.healthfull");
         if (item.Kind == Kind.Shield && player.DamageReceiver.Shield >= item.Amount - .5f) return Texts.Get("shop.note.shield");
         if (item.Kind == Kind.Syringe) return DetenteKit.Local == null ? Texts.Get("shop.note.notdetente") : DetenteKit.Local.Full ? Texts.Get("shop.note.syringefull") : "";
+        if (item.Kind == Kind.Knives && PlayerKnives.Of(player) is PlayerKnives knives && knives.Full) return Texts.Get("shop.note.knivesfull");
         return "";
     }
 

@@ -1,0 +1,46 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 52530f23a578a334a3adbf0725f3732b, type: 3}
+  m_Name: ThrowingKnife
+  m_EditorClassIdentifier: Assembly-CSharp::ThrowingKnifeLibrary
+  model: {fileID: 270110456292662179, guid: 852270847d089f647a0524e09bfbaa65, type: 3}
+  draw:
+  - {fileID: 8300000, guid: 992e74352ccc72347a87abeafdda2fb3, type: 3}
+  - {fileID: 8300000, guid: b5c7f4c941221fb428891fa34f9eb2af, type: 3}
+  - {fileID: 8300000, guid: cf68d527f5df17b4f9fdbb2420f99b63, type: 3}
+  drawCloth:
+  - {fileID: 8300000, guid: 7ec9ac6926bbeab45966e1c1f6895ae7, type: 3}
+  - {fileID: 8300000, guid: 7f11696c18853db478c9d2605e8c01d3, type: 3}
+  - {fileID: 8300000, guid: bc5e9f166f879a84ba4d1809d9852a05, type: 3}
+  swing:
+  - {fileID: 8300000, guid: 8bdd107530cd9094c93081c6307a1138, type: 3}
+  - {fileID: 8300000, guid: 9f74a6ffad919ec45b7a8c5ec0eff538, type: 3}
+  - {fileID: 8300000, guid: f212d8c1ffec7fe438e06f7656b5248c, type: 3}
+  swingCloth:
+  - {fileID: 8300000, guid: 5e86186c2201e5146b0d8c3bb95242c1, type: 3}
+  - {fileID: 8300000, guid: f4c96d95344366e4f9f674decd29f379, type: 3}
+  - {fileID: 8300000, guid: 6d9d5b30eed6cd9458da08dbf1166f92, type: 3}
+  hitFlesh:
+  - {fileID: 8300000, guid: 49be308beac6d4c4aa64a0696b926a62, type: 3}
+  - {fileID: 8300000, guid: bf275a327c65ace42a58a550465537a4, type: 3}
+  - {fileID: 8300000, guid: dc413b93b9737874eb91d944e636981e, type: 3}
+  - {fileID: 8300000, guid: 0379692d9d3b6a2488dded788bbb3923, type: 3}
+  - {fileID: 8300000, guid: c59ab558160f84e4bb61105885cbb7cc, type: 3}
+  - {fileID: 8300000, guid: e7c445de1c8e330429fb2dc3918d3aee, type: 3}
+  hitWorld:
+  - {fileID: 8300000, guid: d76df912d4d45d44f835aa69da37d325, type: 3}
+  - {fileID: 8300000, guid: 42bff7fb9dbacef459f36df5b4fc6345, type: 3}
+  - {fileID: 8300000, guid: f09f2094bd80c924291669a284785019, type: 3}
+  - {fileID: 8300000, guid: 64cdc965404fef3449edfd7bacdd12a7, type: 3}
+  - {fileID: 8300000, guid: a39c0c10b1b260c4cb934c97e9253d2a, type: 3}
+  pickup:
+  - {fileID: 8300000, guid: 3ff9a98b926c95d4ea288d9d21e1ac63, type: 3}

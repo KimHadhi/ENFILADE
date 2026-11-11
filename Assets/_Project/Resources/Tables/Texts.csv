@@ -171,6 +171,7 @@ settings.controls.sensitivity,마우스 감도,,설정 창 > 조작 > 행
 settings.controls.invert_y,상하 반전,,설정 창 > 조작 > 행
 settings.controls.crouch,앉기,,설정 창 > 조작 > 행
 settings.controls.lean,기울이기,,설정 창 > 조작 > 행
+settings.controls.knife_key,던지는 칼,,설정 창 > 조작 > 행(던지는 칼 키. 누르고 있으면 칼을 꺼내고 떼면 던진다. 누르고 새 키를 누르면 바뀐다)
 settings.controls.class_key,클래스 기술,,설정 창 > 조작 > 행(클래스 기술 키. 누르고 새 키를 누르면 바뀐다)
 settings.controls.kick_key,발차기,,설정 창 > 조작 > 행(발차기 키. 기본 마우스 뒤 옆버튼. 누르고 새 키를 누르면 바뀐다)
 settings.controls.alt_fire,쌍권총 왼손 사격,,설정 창 > 조작 > 행(쌍권총을 들었을 때 왼손 총만 쏘는 키. 기본 우클릭. 누르고 새 키를 누르면 바뀐다)
@@ -339,6 +340,7 @@ feed.multi.more,연속 처치 x{0},,처치 점수 팝업: 연속 처치 5 이상
 feed.money,돈,,화면 오른쪽 위 돈 숫자 위의 작은 제목
 feed.weapon.execution,처형,,킬 피드: 처형으로 잡았을 때 무기 자리
 feed.weapon.counter,반격,,킬 피드: 반격으로 잡았을 때 무기 자리
+feed.weapon.knife,던지는 칼,,킬 피드: 던지는 칼로 잡았을 때 무기 자리
 feed.weapon.shove,밀치기,,킬 피드: 밀치기로 잡았을 때 무기 자리
 feed.weapon.fist,주먹,,킬 피드: 맨손·그 밖의 처치 무기 자리
 feed.notice.dead,사망,,킬 피드(방에서): 플레이어가 죽었을 때
@@ -496,11 +498,13 @@ shop.section.supplies,보급,,상점 창 > 보급 칸 머리
 shop.detail.gun,총 · 무게 {0},,상점 카드 > 총 이름 아래 설명. {0}=그 총의 무게(Weapons.csv weight)
 shop.detail.akimbo,쌍권총 · {0} 왼손 · 무게 {1},,상점 카드 > 쌍권총 이름 아래 설명. {0}=왼손 총만 쏘는 키(설정 → 조작) {1}=무게(Weapons.csv weight)
 shop.detail.ammo,가진 총 모두,,상점 카드 > 탄약 이름 아래 설명
+shop.detail.knives,던지는 칼 {0}개까지 채우기,,상점 카드 > 던지는 칼 이름 아래 설명. {0}=가질 수 있는 최대 개수
 shop.detail.heal,체력 {0} 회복,,상점 카드 > 구급상자 이름 아래 설명. {0}=회복량
 shop.detail.shield,실드 {0},,상점 카드 > 실드 이름 아래 설명. {0}=실드 양
 shop.note.bought,구매 완료,,상점 카드 가운데 > 막 샀을 때 잠깐
 shop.note.owned,가진 총,,상점 카드 가운데 > 이미 가진 총
 shop.note.ammofull,탄약 가득,,상점 카드 가운데 > 탄약이 가득할 때
+shop.note.knivesfull,칼 가득,,상점 카드 가운데 > 던지는 칼이 가득할 때
 shop.note.healthfull,체력 가득,,상점 카드 가운데 > 체력이 가득할 때
 shop.note.shield,실드 있음,,상점 카드 가운데 > 실드가 이미 있을 때
 shop.note.heavy,무게 초과,,상점 카드 가운데 > 사면 들 수 있는 무게(Player.csv Carry.weightMax)를 넘는 총
@@ -513,6 +517,7 @@ shop.refuse.unsold,팔지 않는 총이에요,,상점 창 맨 아래 줄 > 못 �
 shop.refuse.owned,이미 가진 총이에요,,상점 창 맨 아래 줄 > 못 살 때: 이미 가진 총
 shop.refuse.nogun,채울 총이 없어요,,상점 창 맨 아래 줄 > 탄약을 못 살 때: 총이 없음
 shop.refuse.ammofull,탄약이 이미 가득해요,,상점 창 맨 아래 줄 > 탄약을 못 살 때: 가득 참
+shop.refuse.knivesfull,던지는 칼이 이미 가득해요,,상점 창 맨 아래 줄 > 던지는 칼을 못 살 때: 가득 참
 shop.refuse.healthfull,체력이 가득해요,,상점 창 맨 아래 줄 > 구급상자를 못 살 때
 shop.refuse.shield,실드가 이미 있어요,,상점 창 맨 아래 줄 > 실드를 못 살 때
 shop.refuse.heavy,너무 무거워요 (사면 무게 {0} / {1}),,상점 창 맨 아래 줄 > 총을 못 살 때: 무게 제한. {0}=사면 될 무게 합 {1}=들 수 있는 무게
@@ -524,15 +529,20 @@ money.pickup.feed,돈 {0} 주움,,처치 목록(킬 피드) > 누가 떨군 돈�
 pickup.refuse.now,지금은 못 주워요,,아이템 [F] 안내 > 총을 지금 못 주울 때
 pickup.refuse.nogun,채울 총이 없어요,,아이템 [F] 안내 > 탄약을 쓸 총이 없을 때
 pickup.refuse.ammofull,탄약이 가득해요,,아이템 [F] 안내 > 탄약이 가득할 때
+pickup.refuse.knivesfull,칼이 가득해요,,던지는 칼 [F] 안내 > 이미 최대로 가졌을 때
 pickup.refuse.healthfull,체력이 가득해요,,아이템 [F] 안내 > 구급상자: 체력이 가득할 때
 pickup.refuse.shield,실드가 이미 있어요,,아이템 [F] 안내 > 실드 셀: 실드가 이미 있을 때
 pickup.refuse.heavy,너무 무거워요 (주우면 무게 {0} / {1}),,아이템 [F] 안내 > 총을 못 주울 때: 무게 제한. {0}=주우면 될 무게 합 {1}=들 수 있는 무게
 pickup.gives.gun,총,,아이템 [F] 안내와 주운 목록(화면 아래) > 총
 pickup.gives.gun.weight,총 · 무게 {0},,아이템 [F] 안내 > 총: 그 총의 무게. {0}=무게(Weapons.csv weight)
 pickup.gives.ammo,탄창 +{0},,아이템 [F] 안내와 주운 목록(화면 아래) > 탄약. {0}=탄창 수
+pickup.gives.knife,칼 +{0},,던지는 칼 [F] 안내와 주운 목록(화면 아래) > 던지는 칼(탄약 더미에서 함께 받을 때도). {0}=개수
 pickup.gives.heal,체력 +{0},,아이템 [F] 안내와 주운 목록(화면 아래) > 구급상자. {0}=회복량
 pickup.gives.shield,실드 +{0},,아이템 [F] 안내와 주운 목록(화면 아래) > 실드 셀. {0}=실드 양
 pickup.gives.refill,탄약 가득,,주운 목록(화면 아래) > 이미 가진 총을 주워 탄약이 채워졌을 때
+knife.name,던지는 칼,,던지는 칼 [F] 안내와 주운 목록(화면 아래)의 이름
+knife.count,칼 {0}/{1},,조준점 왼쪽 아래 > 칼을 꺼냈을 때와 던지거나 주운 뒤 잠깐. {0}=가진 칼 {1}=최대
+knife.none,칼 없음,,조준점 왼쪽 아래 > 던지는 칼 키를 눌렀는데 칼이 없을 때
 #--- 방 접속 ---,,,
 net.joining,{0}에 접속하는 중입니다...,,메인 메뉴 상태 줄 > 접속 중. {0}=주소 또는 방 이름
 net.join.badaddress,주소 형식이 맞지 않습니다. 예: 192.168.0.5,,메인 메뉴 상태 줄 > 주소로 접속: 잘못 친 주소

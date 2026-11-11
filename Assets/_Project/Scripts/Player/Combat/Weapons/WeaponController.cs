@@ -106,6 +106,14 @@ public sealed class WeaponController : MonoBehaviour
     public bool IsSwitching => switchLeft > 0f;
     private float switchLeft, inspectLeft;
     private bool holstering, inspecting;
+    // A move with a hand off the gun is holding it back for this much longer (s): HoldBack.
+    private float heldBackLeft;
+
+    /// <summary>
+    /// A move has a hand off the gun for a moment (PlayerKnives' throwing knife): it can't fire, aim or reload for this
+    /// long (s), as while a move needs the hands. Asked again each frame the move lasts.
+    /// </summary>
+    public void HoldBack(float seconds) => heldBackLeft = Mathf.Max(heldBackLeft, seconds);
     // A gun just drawn still to get the parts and fire mode this PC's player last left on it (GunSetups).
     private bool setupDue;
 
@@ -522,11 +530,12 @@ public sealed class WeaponController : MonoBehaviour
         bool stepDodging = dodge != null && dodge.Kind == DodgeKind.Step && dodge.IsInvulnerable;
         shoveRecovery = Mathf.Max(0f, shoveRecovery - dt);
         switchLeft = Mathf.Max(0f, switchLeft - dt);
+        heldBackLeft = Mathf.Max(0f, heldBackLeft - dt);
         bloom = Mathf.MoveTowards(bloom, 0f, weaponData.BloomRecovery * dt);
         timeSinceShot += dt;
         if (timeSinceShot > .35f) recoilIndex = 0;
         // Coming out or going away holds the gun back like a move that needs the hands.
-        bool bodyAction = bareHandsLeft > 0f || switchLeft > 0f || (movement != null && (movement.IsParkour
+        bool bodyAction = bareHandsLeft > 0f || switchLeft > 0f || heldBackLeft > 0f || (movement != null && (movement.IsParkour
             || movement.CurrentState == PlayerMovement.MovementState.DashPush || movement.IsLandingRecovery));
         // A dual pistol's left trigger is a trigger press of its own from here on, so whatever holds a shot back holds it
         // back too; it is spent on the left gun below.

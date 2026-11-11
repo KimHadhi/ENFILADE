@@ -69,8 +69,10 @@ public sealed class FieldPickups : MonoBehaviour
 
     private static FieldPickups instance;
 
-    /// <summary>This PC's player is looking at a pickup within reach ([F] is the pickup's).</summary>
-    public static bool Targeting => instance != null && instance.targeted >= 0;
+    /// <summary>This PC's player is looking at a pickup within reach ([F] is the pickup's), a thrown knife's included (ThrowingKnives).</summary>
+    public static bool Targeting => OwnTarget || ThrowingKnives.Targeting;
+    /// <summary>A pickup of this list is looked at: a thrown knife waits its turn behind it.</summary>
+    internal static bool OwnTarget => instance != null && instance.targeted >= 0;
 
     private readonly List<Row> rows = new List<Row>();
     private readonly List<Item> items = new List<Item>();
@@ -442,7 +444,8 @@ public sealed class FieldPickups : MonoBehaviour
                     CarryWeight.Show(CarryWeight.With(slots, GunSlotFor(slots), row.Weapon)), CarryWeight.Show(CarryWeight.Limit)) : null;
             case Kind.Ammo:
                 if (slots == null || !HoldsAnyGun(slots)) return Texts.Get("pickup.refuse.nogun");
-                return RoomForAmmo(slots) ? null : Texts.Get("pickup.refuse.ammofull");
+                // Short of throwing knives, a pile is worth taking for them alone (PlayerKnives.FromAmmo).
+                return RoomForAmmo(slots) || PlayerKnives.Short(player) ? null : Texts.Get("pickup.refuse.ammofull");
             case Kind.Heal: return receiver.Health >= receiver.MaximumHealth - .5f ? Texts.Get("pickup.refuse.healthfull") : null;
             case Kind.Shield: return receiver.Shield >= row.Amount - .5f ? Texts.Get("pickup.refuse.shield") : null;
         }
@@ -466,6 +469,7 @@ public sealed class FieldPickups : MonoBehaviour
                 int magazines = Mathf.Max(1, Mathf.RoundToInt(row.Amount));
                 if (slots != null) AddMagazines(slots, magazines);
                 Pop(row.Kind, row.Name, Texts.Format("pickup.gives.ammo", magazines));
+                PlayerKnives.FromAmmo(player);
                 break;
             case Kind.Heal:
                 receiver.Heal(row.Amount);

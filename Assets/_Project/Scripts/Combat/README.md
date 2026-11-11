@@ -9,7 +9,7 @@
 | 위치 | 맡는 일 | 시작할 파일 |
 | --- | --- | --- |
 | `Damage/` | 공격 정보, 피해 수신 계약, 체간·기절·넘어짐, 피해 이벤트와 공통 피드백 | [DamageHit](Damage/DamageHit.cs), [MeleeCombatTarget](Damage/MeleeCombatTarget.cs), [CombatDamageEvents](Damage/CombatDamageEvents.cs) |
-| `HitDetection/` | 총기 레이·벽 차단, 벽을 무시하는 근접 스윕·부위 판정 | [AttackTrace](HitDetection/AttackTrace.cs), [MeleeAttackSweep](HitDetection/MeleeAttackSweep.cs), [ShoveSweep](HitDetection/ShoveSweep.cs) |
+| `HitDetection/` | 총기 레이·벽 차단, 벽을 무시하는 근접 스윕·부위 판정, 던진 물체가 한 프레임에 지나간 길(벽은 선, 몸은 구) | [AttackTrace](HitDetection/AttackTrace.cs), [MeleeAttackSweep](HitDetection/MeleeAttackSweep.cs), [ShoveSweep](HitDetection/ShoveSweep.cs), [ThrownSweep](HitDetection/ThrownSweep.cs) |
 | `Weapons/Data/` | 무기 설정의 형식. 숫자는 `Tables/Weapons.csv`가 덮어씀 | [WeaponData](Weapons/Data/WeaponData.cs) |
 | `Weapons/Core/` | 무기 한 자루의 탄약·발사·장전, 총구 조준 계산과 반동 스프링 | [WeaponRuntime](Weapons/Core/WeaponRuntime.cs), [WeaponAimSolver](Weapons/Core/WeaponAimSolver.cs), [RecoilSpring](Weapons/Core/RecoilSpring.cs) |
 | `Weapons/Effect/` | 총알 궤적(총구 오브젝트), 총구 화염(`MuzzleFlash`)과 조명(`MuzzleLight`, 둘 다 WeaponController가 붙임), 탄착·혈흔(Player의 `Weapon Impact Effects`). 각자 `ShotFired`를 구독 | [MuzzleEffects](Weapons/Effect/MuzzleEffects.cs), [WeaponImpactEffects](Weapons/Effect/WeaponImpactEffects.cs), [EnemyBloodEffect](Weapons/Effect/EnemyBloodEffect.cs) |

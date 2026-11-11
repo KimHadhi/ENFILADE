@@ -341,6 +341,8 @@ public sealed partial class PlayerMovement : MonoBehaviour
         if (Application.isPlaying && IsLocal && GetComponent<StealthMarkersHUD>() == null) gameObject.AddComponent<StealthMarkersHUD>();
         if (Application.isPlaying && IsLocal && GetComponent<StealthView>() == null) gameObject.AddComponent<StealthView>();
         if (Application.isPlaying && GetComponent<PlayerThrow>() == null) gameObject.AddComponent<PlayerThrow>();
+        // The throwing knife (porting bundle 6): the knife key, the knife in the off hand, the count; a friend's copy shows theirs.
+        if (Application.isPlaying && GetComponent<PlayerKnives>() == null) gameObject.AddComponent<PlayerKnives>();
         // The class at work (stage 7): starting guns, the class key, adrenaline, CHARGE, a Point's guns reloading aside.
         if (Application.isPlaying && GetComponent<ClassKit>() == null) gameObject.AddComponent<ClassKit>();
         if (Application.isPlaying && IsLocal && GetComponent<ClassHUD>() == null) gameObject.AddComponent<ClassHUD>();

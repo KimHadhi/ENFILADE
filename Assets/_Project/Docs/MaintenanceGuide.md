@@ -79,6 +79,20 @@
 - 체력·피해 배수는 좀비마다 붙어 다른 PC의 복사본에도 간다(`EnemyHealth.SetBoost`, `EnemyNetwork`). 피해 배수는 맞는 사람 PC가 그 좀비의 배수로 곱한다(`PlayerDamageReceiver`): 할퀴기·물기·돌진·자폭 모두. 바리케이드가 받는 피해에는 배수가 없다.
 - `/director`(방장)가 인원 배율·떼 크기·지금 편성·엔드리스 웨이브와 배수를 함께 알려 준다.
 
+### 던지는 칼 (ThrowingKnife.csv)
+
+2026-11-11 묶음 6 포팅([MW] Quick Throwing Knife 3650480912의 시간표와 피해, TFA Base 2840031720의 박힘과 남는 시간, ArcCW GSO 2257255110의 회수). 수치는 [ThrowingKnife.csv](../Resources/Tables/ThrowingKnife.csv)의 `Default` 행 하나에 있고, 칼 모델과 소리는 [ThrowingKnife.asset](../Resources/Combat/ThrowingKnife.asset)에 있다.
+
+- 개수: `carry`(최대), `start`(장을 시작할 때와 죽었다 돌아올 때), `ammoKnives`(탄약 더미 하나가 함께 주는 칼. 총 탄약이 가득해도 칼이 모자라면 더미를 줍는다). 상점은 Shop.csv의 `Knives` 줄이다(최대까지 채움).
+- 피해: `damage` × 머리면 `headFactor` × 들키지 않은 좀비(조용함·경계·수색)면 `unawareFactor`. 기본 80·2·1.5라 보통 좀비(체력 100)는 몸에 맞으면 안 죽고 머리(160)나 몰래(120)면 죽는다. 러너(40)와 자폭 좀비(70)는 어디든 죽는다. 몰래 던져 죽이면 처형 암살처럼 '암살' 점수(Stealth.csv `Score.takedown`)를 받는다. `postureDamage`·`stagger`는 박힌 좀비의 자세 피해와 휘청이는 시간이다. `minHitSpeed`(m/s)보다 느리게 닿으면 피해 없이 튕긴다.
+- 날기: `speed` 50m/s(원본 2000단위/초), `spin` 3000도/초, `gravity` 3m/s²(20m에서 약 0.24m 떨어짐). `hitRadius`는 몸에만 쓰는 굵기라 팔다리를 아깝게 비켜 가도 맞는다. 벽과 바닥은 가운데 선으로 잰다.
+- 벽에 박힘: `stickSpeed`(m/s)보다 빠르고, 벽 법선과 날아온 방향의 내적이 `-1 + 빠르기(m/s) × stickSlope`보다 작을 때만 박힌다(TFA 규칙을 m/s로 옮긴 것. 50m/s면 정면에서 약 66도까지). 아니면 `bounce`만큼 빠르기가 남아 튕겨 떨어진다. `wallDepth`·`fleshDepth`는 칼끝이 들어가는 깊이다.
+- 시간표: 키를 뗀 때부터 `swingTime`(휘두르는 소리와 화면 충격 `viewPunch`), `releaseTime`(칼이 손을 떠남), `recoverTime`(총을 다시 쏘고 조준하고 장전함). 칼을 꺼낸 동안에도 총은 막혀 있다.
+- 바닥에 남음: 떨어진 칼은 `looseLife`초, 벽이나 몸에 박힌 칼은 `stuckLife`초 뒤 작아지며 사라진다. 한 맵에 `mostLying`개를 넘으면 오래된 것부터 사라진다. F 회수는 눈에서 `reach`m 안, 화면 가운데에서 `lookAngle`도 안에 있는 칼이다. 살아 있는 좀비에 박힌 칼은 못 뽑고 시체가 되면 뽑는다.
+- 소리: `wallNoise`(벽에 박히는 소리를 좀비가 듣는 거리), `bounceNoise`(튕겨 떨어지는 소리). 던지는 소리와 몸에 박히는 소리는 좀비에게 들리지 않는다. `volume`은 칼 소리 전체의 크기다. 어떤 소리를 쓸지는 ThrowingKnife.asset의 배열(`draw`·`drawCloth`·`swing`·`swingCloth`·`hitFlesh`·`hitWorld`·`pickup`)에서 바꾼다. 배열 안에서는 직전 클립을 피해서 고른다.
+- 모양: `length`는 칼 길이(m)이고 모델을 이 길이에 맞춘다. 모델의 가장 긴 축을 칼 길이로, 가장 얇은 축을 날의 옆면으로 본다. 벽에 손잡이가 박혀 보이면 `flipModel`을 1로 한다. ThrowingKnife.asset의 `model`이 비면 상자 셋으로 만든 칼이 나온다.
+- 키는 입력 액션 `Player/ThrowKnife`(기본 H)이고 설정 → 조작의 "던지는 칼"에서 바꾼다.
+
 ### 총 꾸미기 저장 (gun_setups.json)
 
 C 메뉴에서 바꾼 조준경·총구·하단·손잡이, L 플래시, B 사격 모드는 바꾸는 즉시 이 PC의 `gun_setups.json`(`Application.persistentDataPath`, 보통 `%USERPROFILE%\AppData\LocalLow\<회사>\<제품>`)에 총 에셋 이름별로 적히고, 그 총을 꺼낼 때마다(다음 판 포함) 그대로 붙는다(2026-11-11 플레이 테스트: 판마다 다시 꾸며야 했음). 처음 상태로 돌리려면 게임을 끄고 그 파일을 지운다. 표에 없는 사격 모드가 적혀 있으면 그것만 무시한다.
@@ -270,7 +284,7 @@ C 메뉴에서 끼는 부품이 총의 숫자를 바꾸는 방식은 ArcCW(GMod 
 | [Art/Audio/Guns](../Art/Audio/Guns) | `Guns` | 총소리. `<총>/<소리>`이고 총은 무기 데이터의 Sound Profile(`Pistol`·`Rifle`·`Heavy`), 소리는 `Shot`·`MagOut`·`MagIn`·`SlideBack`·`SlideForward`·`Bolt`·`DryFire`·`LowAmmo`·`LastRound`·`DrawBack`·`DrawForward`다. 총 이름 없이 둔 `DryFire`는 그 소리가 없는 총이 같이 쓴다. 잔탄 경고는 세 겹이다. 탄창이 3분의 1 아래로 남은 발마다 그 총의 `LowAmmo`가 빌수록 커지며 나고, 탄창을 비우는 발에는 그 대신 `LastRound`가 난다(TFA Base 규칙, WeaponFeedback.AmmoCue). 모든 총이 같이 쓰는 딸깍 `LowAmmoClick`은 SoundCues.csv의 `GunLowAmmoClick/<총>` 행이 CS2처럼 총소리 0.05초 뒤에 클립의 2.5배로 낸다(표의 볼륨이 1을 넘으면 FeelAudio가 클립보다 크게 낸다. 최대 4). 장전 끝의 노리쇠는 SoundCues.csv의 `GunBolt/<총>` 행이 당기고 놓는 소리를 시간차로 낸다. 총을 꺼낼 때는 `GunDraw/<총>` 행이 같은 식으로 낸다(지금은 소총만: `DrawBack`, 0.3초 뒤 `DrawForward`. 행이 없는 권총·샷건은 꺼낼 때 소리가 없다. WeaponFeedback.Drawn). KINEMATION 총(FPSBody)을 들었을 때는 장전 소리를 그 장전 동작에서 잰 순간에 낸다. 탄창이 빠지기 시작할 때 `MagOut`, 끼워질 때 `MagIn`, 노리쇠나 슬라이드가 걸쇠에서 풀려 앞으로 갈 때 `SlideForward`다(당겼다 놓는 동작이면 `SlideBack`도 낸다). 부딪는 소리는 클립에서 가장 큰 순간이 동작의 순간에 오도록 일찍 시작한다([ReloadMoments](../Scripts/Audio/ReloadMoments.cs)). 무기 데이터나 GunFeel의 소리 칸에 클립을 넣으면 그쪽이 먼저고, 둘 다 비면 합성음이다([FeelAudio](../Scripts/Combat/Feel/FeelAudio.cs)). `Reverb/<총>/<방>`은 쏜 자리의 방에 맞춰 겹치는 잔향 꼬리다([GunReverb](../Scripts/Audio/GunReverb.cs), 수치는 Reverb.csv) |
 | [Art/Audio/UI](../Art/Audio/UI) | `UI` | 메뉴 소리([KitSound](../Scripts/UI/Kit/KitSound.cs)). `Buy`(상점에서 샀을 때), `Refuse`(살 수 없을 때), `Alert`(동료가 쓰러지거나 죽었다는 알림), 주울 때의 `PickAmmo`·`PickHeal`·`PickShield`·`PickMoney`·`PickGun`, 장을 탈출했을 때의 `Escape` 폴더에 파일을 넣으면 그 파일을 쓰고, 폴더가 없으면 코드로 만든 소리가 난다. 폴더 바로 아래에 둔 파일(`MissionObjective.wav`)은 묶음에 들어가지 않는다 |
 | [Art/Audio/Enemies/Zombie](../Art/Audio/Enemies/Zombie) | `Zombie` | 좀비 음성([ZombieVoice](../Scripts/Enemies/ZombieVoice.cs)). `Attack`(공격을 시작할 때의 으르렁), `Leap`(러너가 도약할 때의 비명), `Idle`(아무도 모르는 좀비가 가끔 내는 낮은 신음. 10m 안에서만 들린다), `Breathe`(앉거나 먹거나 웅크린 자세로 있거나 기어 다니는 조용한 좀비의 숨. 없어도 되고, 없으면 그 좀비는 조용하다), `Alert`(깨는 순간 한 번), `Hurt`(맞을 때. 큰 피해·자세 붕괴·넘어짐에는 늘, 작은 피해에는 가끔), `Death`(죽을 때. 머리가 터지거나 몰래 암살된 좀비는 조용하다). `Idle`·`Breathe`·`Alert`·`Hurt`·`Death`는 아직 파일이 없어 나지 않는다. 폴더를 만들어 파일을 넣으면 편집기가 묶음을 다시 만들어 코드 수정 없이 들린다(빈 폴더는 저장소에 남지 않으므로 파일과 함께 만든다). 그 아래 `Male`·`Female` 폴더는 이름에 그 말이 든 몸이 쓴다(Synty 좀비 프리팹 이름). 성별 폴더가 없으면 바로 아래 파일을, 그것도 없으면 있는 쪽을 쓴다. 얼마나 자주, 얼마나 멀리 나는지는 [ZombieVoice.csv](../Resources/Tables/ZombieVoice.csv) |
-| [Art/Audio/Library](../Art/Audio/Library) | 없음 | 아직 쓰지 않는 보관 소리(Beatrun 나머지, FEAR 손전등·문, 투척 칼, 잠입). 어디에서도 참조하지 않으므로 빌드 크기에 들어가지 않는다. 쓰려면 위 폴더로 옮긴다 |
+| [Art/Audio/Library](../Art/Audio/Library) | 없음 | 아직 쓰지 않는 보관 소리(Beatrun 나머지, FEAR 손전등·문, 투척 칼, 잠입). 어디에서도 참조하지 않으므로 빌드 크기에 들어가지 않는다. 쓰려면 위 폴더로 옮긴다. 예외로 `ThrowingKnife`의 24개는 던지는 칼이 [ThrowingKnife.asset](../Resources/Combat/ThrowingKnife.asset)에서 직접 부르므로 빌드에 들어간다(옮기지 않아도 된다) |
 
 - **볼륨·피치**: [Sounds.csv](../Resources/Tables/Sounds.csv)의 `<묶음>/<폴더>` 행(예: `Movement/Walk/Concrete`). Beatrun 원본 값으로 채워져 있다. 행이 없으면 볼륨 1, 피치 1이다.
 - **가져오기 설정**: 클립마다 Preload Audio Data와 Load In Background를 켠다. 맵을 불러올 때 [CombatWarmup](../Scripts/Combat/Feel/CombatWarmup.cs)이 묶음을 불러오면 그 데이터를 뒤에서 미리 읽어 둔다. 꺼 두면 처음 재생할 때 메인 스레드에서 읽느라 프레임이 7~89ms 멈췄다. 2026-11-06에 꺼져 있던 1,634개를 켰고, 메모리는 약 79MB 더 쓴다. 새 클립도 둘 다 켠다.

@@ -125,6 +125,8 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
     }
     /// <summary>A counter hands the shove straight back (ShoveCounter): the fists can shove or punch again at once.</summary>
     internal void RefreshShove() { cooldown = shoveRest = 0f; }
+    /// <summary>A throwing knife is in the off hand (PlayerKnives, which runs after this every frame): no punch or shove goes out; the guard is left alone.</summary>
+    internal void HoldOffense() => CancelOffense();
     public void ProcessFrame(float dt, MeleeInputFrame frame)
     {
         if (dt <= 0f) return;
