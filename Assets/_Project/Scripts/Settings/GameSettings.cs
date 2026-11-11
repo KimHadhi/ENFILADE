@@ -33,6 +33,14 @@ public sealed class GameSettings
     [Tooltip("An empty magazine reloads by itself once the gun could fire again, and a reload cut short before its bolt finishes " +
         "itself (WeaponController.AutoReloadDue). Off: only R reloads.")]
     public bool autoReload = true;
+    [Tooltip("Callouts (PlayerCallouts): letting go of the callout key says the line the pointer is on. Off: a left click " +
+        "says it, and letting go closes the wheel unsaid.")]
+    public bool calloutOnRelease = true;
+    [Tooltip("Teammates' callouts also show as their words over their heads (CalloutBubbles). Off leaves their voice and pins.")]
+    public bool calloutBubbles = true;
+    [Tooltip("The player shouts some callouts by themself: help when a zombie gets hold of them or they go down, the elite " +
+        "they first come near, and the CHARGE (the Assault's, and friends near it answering).")]
+    public bool calloutAuto = true;
     /// <summary>The keys the player picked (KeyBindings: the Input System's overrides as JSON); empty for every default.</summary>
     public string keyBindings = "";
     [Tooltip("Scales head bob, landing, impacts and movement tilt. Lean and weapon recoil are not affected.")]
@@ -146,6 +154,7 @@ public sealed class GameSettings
                 s.mouseSensitivity = d.mouseSensitivity; s.invertY = d.invertY;
                 s.crouchToggle = d.crouchToggle; s.leanToggle = d.leanToggle;
                 s.autoReload = d.autoReload;
+                s.calloutOnRelease = d.calloutOnRelease; s.calloutBubbles = d.calloutBubbles; s.calloutAuto = d.calloutAuto;
                 s.keyBindings = d.keyBindings;
                 KeyBindings.Apply(s.keyBindings);
                 break;

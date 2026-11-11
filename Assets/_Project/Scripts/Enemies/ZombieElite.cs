@@ -230,6 +230,8 @@ public abstract class ZombieElite : MonoBehaviour
         told.Add(Kind);
         AlertHUD.Danger(Texts.Get("hud.alert." + Kind.ToString().ToLowerInvariant()), transform, TellMark,
             () => health == null || !health.IsAlive);
+        // The player shouts its name for the team too (PlayerCallouts; Settings → 저절로 외치기).
+        PlayerCallouts.Spotted(health);
     }
 
     /// <summary>The clip, or the fallback when it is none (or a reference gone missing).</summary>

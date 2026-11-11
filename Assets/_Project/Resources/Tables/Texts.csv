@@ -817,3 +817,28 @@ results.sheet.done,캠페인 완료  ·  은신처에서 처음부터,,결과 �
 results.sheet.key,Space  계속,,결과 마지막 장 > 오른쪽 아래
 wardrobe.own.named,기본 · {0},Own · {0},옷장 > 칸 타일: 캐릭터가 원래 입은 그 칸의 옷 이름(CharacterParts.csv name)
 wardrobe.try,올려 두면 비쳐 입어 본다,Rest on one to try it on,옷장 > 칸을 연 화면 > 제목 아래 설명 뒤: 판에 마우스를 올려 두면 캐릭터에 반투명하게 입혀 본다
+callout.slot.zombie,좀비,Zombie,콜아웃 휠 칸(위): 조준점의 좀비(없으면 보이는 가장 위험한 좀비)를 외치고 팀에 핑. 칸 아래 작은 글씨는 지금 그 칸을 고르면 할 말
+callout.slot.move,이동,Move,콜아웃 휠 칸: 가자 · 바닥이나 벽을 보고 있으면 '이쪽으로!'와 그 자리에 핀
+callout.slot.request,요청,Request,콜아웃 휠 칸: 치료·탄약·엄호 부탁. 팀에 데탕트나 서포트가 있으면 그 클래스를 부른다
+callout.slot.class,클래스,Class,콜아웃 휠 칸: 내 클래스의 지금 상태(도발 준비·CHARGE 준비·주사기·보급 가방·현상금)
+callout.slot.talk,말,Talk,콜아웃 휠 칸(아래): 고르면 짧은 말 여덟 칸으로 넘어간다
+callout.slot.retreat,후퇴,Retreat,콜아웃 휠 칸: 좀비가 떼로 있으면 '흩어져!'
+callout.slot.help,도와줘,Help,콜아웃 휠 칸: 깔렸는지·끌려가는지·잡혔는지·쓰러졌는지·피가 모자란지에 맞춰
+callout.slot.thanks,고마워,Thanks,콜아웃 휠 칸: 방금 풀려났거나 일으켜졌거나 치료받았으면 그 일에 맞춰
+callout.slot.yes,좋아,Okay,콜아웃 휠 > 말
+callout.slot.follow,따라와,Follow me,콜아웃 휠 > 말
+callout.slot.nice,잘했어,Nice,콜아웃 휠 > 말
+callout.slot.hurry,서둘러,Hurry,콜아웃 휠 > 말
+callout.slot.no,안 돼,No,콜아웃 휠 > 말
+callout.slot.wait,기다려,Wait,콜아웃 휠 > 말
+callout.slot.sorry,미안,Sorry,콜아웃 휠 > 말
+callout.slot.quiet,조용히,Quiet,콜아웃 휠 > 말
+callout.hint.release,놓으면 말한다 · 우클릭 취소,Let go to say it · right click cancels,콜아웃 휠 가운데 아래 안내(놓으면 말하기 켬)
+callout.hint.click,클릭해서 말한다 · 우클릭 취소,Click to say it · right click cancels,콜아웃 휠 가운데 아래 안내(놓으면 말하기 끔)
+callout.hint.page,골라서 클릭 · 우클릭 취소,Pick one and click · right click cancels,콜아웃 휠 > 말 쪽 가운데 아래 안내
+callout.hint.none,말할 칸을 가리킨다,Point at a slice,콜아웃 휠 가운데: 포인터가 가운데에 있어 고른 칸이 없을 때
+callout.pin,이쪽,This way,'이쪽으로!' 콜아웃이 바라본 자리에 꽂는 핀의 글자(그 위에 외친 사람 이름)
+settings.controls.callout_key,콜아웃 키,Callout key,설정 > 조작 > 키 줄. 누르고 있으면 콜아웃 휠(Guts & Blackpowder처럼). 기본은 마우스 뒤로 버튼(엄지 쪽 옆 버튼)
+settings.controls.callout_release,콜아웃: 놓으면 말하기,Callout: say on release,설정 > 조작. 끄면 좌클릭으로 말하고 키를 놓으면 그냥 닫힌다
+settings.controls.callout_bubbles,동료 콜아웃 말풍선,Teammates' callout bubbles,설정 > 조작. 동료가 외친 말을 머리 위에 글로도 보여 준다(끄면 목소리와 핀만)
+settings.controls.callout_auto,저절로 외치기,Shout by myself,설정 > 조작. 잡히거나 쓰러질 때 도와달라고 · 엘리트를 처음 가까이 볼 때 그 이름을 · CHARGE 때 돌격을 저절로 외친다

@@ -90,6 +90,195 @@ MonoBehaviour:
     - {fileID: 8300000, guid: 5460b70f13d975a458f6ed89d46ce719, type: 3}
     - {fileID: 8300000, guid: 30ac958ef00d4ab4bbf6461d776754aa, type: 3}
     - {fileID: 8300000, guid: 71653430ddcfbb448838cc56e3a745fd, type: 3}
+  - key: Callout/auto.charge.join
+    clips:
+    - {fileID: 8300000, guid: 4d6359a4d26c5307a555707aa4155d45, type: 3}
+  - key: Callout/auto.charge.lead
+    clips:
+    - {fileID: 8300000, guid: 8fbe20b75e135ddfaa87a4d835a1c04c, type: 3}
+  - key: Callout/class.assault
+    clips:
+    - {fileID: 8300000, guid: 7eb2bbd98e3a5e6ea6970ab71fc5f27d, type: 3}
+  - key: Callout/class.assault.charge
+    clips:
+    - {fileID: 8300000, guid: 316e2e17e42f5764b53f841bb2db80d0, type: 3}
+  - key: Callout/class.detente.empty
+    clips:
+    - {fileID: 8300000, guid: ea4b518bde675d56aa5b3388fb2607fb, type: 3}
+  - key: Callout/class.detente.full
+    clips:
+    - {fileID: 8300000, guid: 43167b702967574e95f94bc78bdc4bd7, type: 3}
+  - key: Callout/class.ghost
+    clips:
+    - {fileID: 8300000, guid: fb0ea4896e88501e92c05dd55fa8c866, type: 3}
+  - key: Callout/class.ghost.elite
+    clips:
+    - {fileID: 8300000, guid: 6ed3ddaabed85f26b6bd9137d93bcb4d, type: 3}
+  - key: Callout/class.knight
+    clips:
+    - {fileID: 8300000, guid: 7755ecbfdfd256e9b597887b8f83970a, type: 3}
+  - key: Callout/class.knight.taunt
+    clips:
+    - {fileID: 8300000, guid: 6fba86c28a7e55a7ad12c0ef0c22905f, type: 3}
+  - key: Callout/class.none
+    clips:
+    - {fileID: 8300000, guid: 943751b938c75cdc920696ad7e1e3ee3, type: 3}
+  - key: Callout/class.point
+    clips:
+    - {fileID: 8300000, guid: c7320eff45c6537caa6492e94b7683b7, type: 3}
+  - key: Callout/class.schiesshund
+    clips:
+    - {fileID: 8300000, guid: 20e948cc1b2e5d45966f173baf5e45e4, type: 3}
+  - key: Callout/class.schiesshund.mark
+    clips:
+    - {fileID: 8300000, guid: 6ddf740350be5c6cb99a2e4f3f73d223, type: 3}
+  - key: Callout/class.support.empty
+    clips:
+    - {fileID: 8300000, guid: c9fadcda55d857d68a27f97d05570912, type: 3}
+  - key: Callout/class.support.full
+    clips:
+    - {fileID: 8300000, guid: f60cd4b41376529fa122d6b639892d7c, type: 3}
+  - key: Callout/follow.me
+    clips:
+    - {fileID: 8300000, guid: 825b76207c295645980c910e60391480, type: 3}
+  - key: Callout/help.downed
+    clips:
+    - {fileID: 8300000, guid: 840acad9b20b5c96b4e887b654e67d28, type: 3}
+  - key: Callout/help.eaten
+    clips:
+    - {fileID: 8300000, guid: b7c3ee7cc98a5821bafe75a9bde07f14, type: 3}
+  - key: Callout/help.grabbed
+    clips:
+    - {fileID: 8300000, guid: 95985e5a21d752218f10767a30bd281d, type: 3}
+  - key: Callout/help.hooked
+    clips:
+    - {fileID: 8300000, guid: c74903223dc5581da08f4d3f227ee717, type: 3}
+  - key: Callout/help.hurt
+    clips:
+    - {fileID: 8300000, guid: 8e775125306b5e31921da8e9386dc11e, type: 3}
+  - key: Callout/help.pinned
+    clips:
+    - {fileID: 8300000, guid: 921ad1637a805677a0423e43b1c8630d, type: 3}
+  - key: Callout/help.plain
+    clips:
+    - {fileID: 8300000, guid: fbe1f046a2c959eca1cd938765d3db3c, type: 3}
+  - key: Callout/help.surrounded
+    clips:
+    - {fileID: 8300000, guid: 62e788c495f857a9b8bb82aedfc0ee8f, type: 3}
+  - key: Callout/hurry.hurry
+    clips:
+    - {fileID: 8300000, guid: 605c39c6be7056fab53cef9c7f30ffce, type: 3}
+  - key: Callout/move.forward
+    clips:
+    - {fileID: 8300000, guid: efa05412635e50babfe721d9ba12e490, type: 3}
+  - key: Callout/move.go
+    clips:
+    - {fileID: 8300000, guid: 377ac996ad3352098f22169f4250eac5, type: 3}
+  - key: Callout/move.here
+    clips:
+    - {fileID: 8300000, guid: 1e90cbdba4ef5fec9bee05d0721a49b0, type: 3}
+  - key: Callout/move.objective
+    clips:
+    - {fileID: 8300000, guid: 8f48368a941e5c36a70f352931b42687, type: 3}
+  - key: Callout/nice.good
+    clips:
+    - {fileID: 8300000, guid: f69a8272b4095981bf442700b8f3bee6, type: 3}
+  - key: Callout/nice.shot
+    clips:
+    - {fileID: 8300000, guid: d4b6c59d4b4e55c59813687d93689843, type: 3}
+  - key: Callout/no.cant
+    clips:
+    - {fileID: 8300000, guid: 4bb88c93c76952b7a12563d6dff9560e, type: 3}
+  - key: Callout/no.no
+    clips:
+    - {fileID: 8300000, guid: 85341ead7bb356ff987ff2c7a5b62ac0, type: 3}
+  - key: Callout/quiet.shh
+    clips:
+    - {fileID: 8300000, guid: a18171f03f2e5c4dbd7c12ae800b6e32, type: 3}
+  - key: Callout/request.ammo
+    clips:
+    - {fileID: 8300000, guid: 323f8f11fa0c59e285577212ab54b115, type: 3}
+  - key: Callout/request.cover
+    clips:
+    - {fileID: 8300000, guid: 5eb057c8f8cc59a98f3d804ad2499318, type: 3}
+  - key: Callout/request.heal
+    clips:
+    - {fileID: 8300000, guid: 0df7623c31165b14aa0ada3f95ef2f29, type: 3}
+  - key: Callout/request.medic
+    clips:
+    - {fileID: 8300000, guid: 390eaf6872645eb6abe98b52f6fe87f1, type: 3}
+  - key: Callout/request.reload
+    clips:
+    - {fileID: 8300000, guid: 8aa81de0355153acbedc4d0e76f7ab91, type: 3}
+  - key: Callout/request.supply
+    clips:
+    - {fileID: 8300000, guid: 4e526dc2e09d5a12988ed96d59ea91dd, type: 3}
+  - key: Callout/retreat.away
+    clips:
+    - {fileID: 8300000, guid: 2022378c561c5d0e896ca3c7481bd23d, type: 3}
+  - key: Callout/retreat.back
+    clips:
+    - {fileID: 8300000, guid: 884ec3c8a9015eaa9f31a472b0fc6628, type: 3}
+  - key: Callout/retreat.scatter
+    clips:
+    - {fileID: 8300000, guid: dabc4c7e09265008aa66c661c418b12e, type: 3}
+  - key: Callout/sorry.oops
+    clips:
+    - {fileID: 8300000, guid: ea6efea08ae05ea9a244ddff23a74db4, type: 3}
+  - key: Callout/sorry.plain
+    clips:
+    - {fileID: 8300000, guid: 7a6479cbadf7584fbc88cb977ec26918, type: 3}
+  - key: Callout/thanks.freed
+    clips:
+    - {fileID: 8300000, guid: 337ed4d851975ccda59c8746d970ec50, type: 3}
+  - key: Callout/thanks.healed
+    clips:
+    - {fileID: 8300000, guid: 2cfafb0d27045902a3b4a47e1d31076e, type: 3}
+  - key: Callout/thanks.plain
+    clips:
+    - {fileID: 8300000, guid: 9fbb76dd562f5086af8e84ec03d55d24, type: 3}
+  - key: Callout/thanks.raised
+    clips:
+    - {fileID: 8300000, guid: 19aef717836a5c44b2d5b0f729b3a7b8, type: 3}
+  - key: Callout/wait.wait
+    clips:
+    - {fileID: 8300000, guid: 28183f25c097521495c505be06585ce7, type: 3}
+  - key: Callout/yes.ok
+    clips:
+    - {fileID: 8300000, guid: a634d73bfb9a52e8ba589a18ea2fcc85, type: 3}
+  - key: Callout/yes.roger
+    clips:
+    - {fileID: 8300000, guid: bea9202442f753458a6c573e79e1d88e, type: 3}
+  - key: Callout/zombie.breadbag
+    clips:
+    - {fileID: 8300000, guid: 1cfd42105a1e57f5afc95cd19ca4ceab, type: 3}
+  - key: Callout/zombie.brute
+    clips:
+    - {fileID: 8300000, guid: c864ab34d5dd51bda58d0a2049fa2936, type: 3}
+  - key: Callout/zombie.candyman
+    clips:
+    - {fileID: 8300000, guid: 2e25226a7a085576b3a733cfc36d0877, type: 3}
+  - key: Callout/zombie.charger
+    clips:
+    - {fileID: 8300000, guid: 12ebcebe623651afbc463a05a8c1ebcd, type: 3}
+  - key: Callout/zombie.exploder
+    clips:
+    - {fileID: 8300000, guid: e24c2eae2ae7570288f0bf32382ff898, type: 3}
+  - key: Callout/zombie.horde
+    clips:
+    - {fileID: 8300000, guid: 91f9e820620757a6aa62b791a1444d81, type: 3}
+  - key: Callout/zombie.ninja
+    clips:
+    - {fileID: 8300000, guid: 000a0f35c15e5e548738d3491f5fc6b2, type: 3}
+  - key: Callout/zombie.none
+    clips:
+    - {fileID: 8300000, guid: cef6d2491e1954eca70e17744676f19e, type: 3}
+  - key: Callout/zombie.runner
+    clips:
+    - {fileID: 8300000, guid: b5032051e9c256b5a9caa7ae350b21dd, type: 3}
+  - key: Callout/zombie.shambler
+    clips:
+    - {fileID: 8300000, guid: 7c4c1545a00453d8818b51eda5997f7e, type: 3}
   - key: Impact
     clips:
     - {fileID: 8300000, guid: 5d569e6cc0bf0284592e6c889523934d, type: 3}

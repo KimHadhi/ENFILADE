@@ -218,6 +218,12 @@ public sealed class SettingsMenuView
             UnityEngine.InputSystem.InputSystem.actions != null ? UnityEngine.InputSystem.InputSystem.actions.FindAction("Player/ClassAbility", false) : null);
         rows.Key(Texts.Get("settings.controls.knock_key"),
             UnityEngine.InputSystem.InputSystem.actions != null ? UnityEngine.InputSystem.InputSystem.actions.FindAction("Player/Knock", false) : null);
+        // Callouts (memo 4, G&B's wheel): the key held for the wheel, and how it says.
+        rows.Key(Texts.Get("settings.controls.callout_key"),
+            UnityEngine.InputSystem.InputSystem.actions != null ? UnityEngine.InputSystem.InputSystem.actions.FindAction("Player/Callout", false) : null);
+        rows.Choice(Texts.Get("settings.controls.callout_release"), OffOn, s.calloutOnRelease ? 1 : 0, i => s.calloutOnRelease = i == 1);
+        rows.Choice(Texts.Get("settings.controls.callout_bubbles"), OffOn, s.calloutBubbles ? 1 : 0, i => s.calloutBubbles = i == 1);
+        rows.Choice(Texts.Get("settings.controls.callout_auto"), OffOn, s.calloutAuto ? 1 : 0, i => s.calloutAuto = i == 1);
     }
 
     private static void ScreenTab(SettingsRows rows, GameSettings s)

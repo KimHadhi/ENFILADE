@@ -61,8 +61,9 @@ public sealed partial class PlayerMovement : MonoBehaviour
     public PlayerExecution Execution { get; private set; }
     public PlayerPerfectDefense PerfectDefense { get; private set; }
     public DodgeEnemyPassThrough DodgePassThrough { get; private set; }
+    // The callout wheel (CalloutWheel) holds the hands too while it is up: no shot, swing or turn of the view, as G&B's.
     public bool CombatInputLocked => (MeleeCombat != null && MeleeCombat.IsGuardBreaking) || (Execution != null && Execution.IsExecuting)
-        || (PerfectDefense != null && PerfectDefense.IsCountering);
+        || (PerfectDefense != null && PerfectDefense.IsCountering) || (IsLocal && CalloutWheel.HoldsHands);
     private WeaponController weapons;
     /// <summary>A reload has both hands on the gun, so a vault begun during one puts the gun away and stops it (ParkourTraversal).</summary>
     public bool HandsOnReload
@@ -344,6 +345,8 @@ public sealed partial class PlayerMovement : MonoBehaviour
         // The class at work (stage 7): starting guns, the class key, adrenaline, CHARGE, a Point's guns reloading aside.
         if (Application.isPlaying && GetComponent<ClassKit>() == null) gameObject.AddComponent<ClassKit>();
         if (Application.isPlaying && IsLocal && GetComponent<ClassHUD>() == null) gameObject.AddComponent<ClassHUD>();
+        // Callouts (memo 4, G&B's wheel): solo has no network, so it can't wait for PlayerNetworkCombat to add it.
+        if (Application.isPlaying && GetComponent<PlayerCallouts>() == null) gameObject.AddComponent<PlayerCallouts>();
         // The visible body (true first person) appears once Resources/Characters/PlayerBody names a character.
         if (Application.isPlaying && GetComponent<PlayerBody>() == null && PlayerBodyProfile.Load() != null)
         {

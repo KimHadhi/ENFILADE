@@ -376,6 +376,8 @@ public sealed class ClassKit : MonoBehaviour
         kit.chargeUntil = Time.time + kit.chargeTotal;
         KitSound.Play(KitSound.Cue.Charge, .9f);
         AlertHUD.Self(said);
+        // And they shout back, as G&B's line answers its officer's charge (PlayerCallouts, Settings → 저절로 외치기).
+        PlayerCallouts.JoinCharge();
     }
 
     // ---- Assault: adrenaline ----

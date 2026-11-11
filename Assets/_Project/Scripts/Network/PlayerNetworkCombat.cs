@@ -77,6 +77,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
     private PlayerKnock knocks;
     private ClassKit kit;
     private PlayerPing ping;
+    private PlayerCallouts callouts;
     private SupportKit support;
     private PlayerDamageReceiver receiver;
     private CombatTimeEffects time;
@@ -165,6 +166,8 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
         // F on an enemy (PlayerPing): the whole team sees it marked.
         ping = GetComponent<PlayerPing>();
         if (ping == null) ping = gameObject.AddComponent<PlayerPing>();
+        // Callouts (PlayerCallouts): the owner shouts, every other PC hears.
+        if (!TryGetComponent(out callouts)) callouts = gameObject.AddComponent<PlayerCallouts>();
         // A Support's barricades (SupportKit): every PC puts them up and takes them down.
         support = GetComponent<SupportKit>();
         if (support == null) support = gameObject.AddComponent<SupportKit>();
@@ -176,6 +179,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
             kit.Taunted += OnTaunted;
             kit.Claimed += OnClaimed;
             ping.Pinged += OnPinged;
+            callouts.Called += OnCalled;
             support.Built += OnBuilt;
             support.TookDown += OnTookDown;
             weapon.ShotFired += OnShot;
@@ -217,6 +221,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
         if (knocks != null) knocks.Knocked -= OnKnocked;
         if (kit != null) { kit.Charged -= OnCharged; kit.Taunted -= OnTaunted; kit.Claimed -= OnClaimed; }
         if (ping != null) ping.Pinged -= OnPinged;
+        if (callouts != null) callouts.Called -= OnCalled;
         if (support != null) { support.Built -= OnBuilt; support.TookDown -= OnTookDown; }
         if (receiver != null) receiver.HitResolved -= OnHit;
         stance.OnValueChanged -= OnStanceChanged;
@@ -361,6 +366,24 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
     {
         if (NetworkManager == null || !NetworkManager.SpawnManager.SpawnedObjects.TryGetValue(enemy, out var marked)) return;
         if (marked.TryGetComponent(out EnemyHealth health)) PingMarks.Ping(health, mover != null ? mover : GetComponent<PlayerMovement>(), bounty);
+    }
+
+    private void OnCalled(string line, EnemyHealth target, Vector3 point, bool pins)
+    {
+        ulong marked = target != null && target.TryGetComponent(out NetworkObject network) && network.IsSpawned ? network.NetworkObjectId : ulong.MaxValue;
+        CalloutRpc(new Unity.Collections.FixedString64Bytes(line), marked, point, pins);
+    }
+
+    // This player shouted a callout (PlayerCallouts): every other PC hears it from them, reads it over their head, and
+    // pings the zombie or pins the spot it was about. The line goes by its id, not a list index, so the table's order
+    // can never make two PCs read it differently.
+    [Rpc(SendTo.NotMe)]
+    private void CalloutRpc(Unity.Collections.FixedString64Bytes line, ulong target, Vector3 point, bool pins)
+    {
+        EnemyHealth enemy = null;
+        if (target != ulong.MaxValue && NetworkManager != null && NetworkManager.SpawnManager.SpawnedObjects.TryGetValue(target, out var marked))
+            marked.TryGetComponent(out enemy);
+        PlayerCallouts.Hear(mover != null ? mover : GetComponent<PlayerMovement>(), line.ToString(), enemy, point, pins);
     }
 
     // An Assault sounded a CHARGE here: each other PC's player near it charges too.
