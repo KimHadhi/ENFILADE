@@ -13,3 +13,4 @@ MonoBehaviour:
   m_Name: PickupLibrary
   m_EditorClassIdentifier:
   ammo: {fileID: 5711728203111614147, guid: 8a0cb1acb5c021c43b7e06760a824f92, type: 3}
+  money: {fileID: 8827191393796527380, guid: bec5401390dec6c4985cf03d80b8feec, type: 3}

@@ -3,9 +3,9 @@ using UnityEngine;
 
 /// <summary>
 /// The model a field pickup shows (PickupView), resting on its own floor: a gun wears its own KINEMATION model and an ammo
-/// pile the Low Poly Weapon Bundle's ammo case (PickupLibrary), both copied with their scripts, animators, colliders,
-/// lights and effects taken off and any skinned parts baked still; the medkit, shield cell and money bundle are built
-/// from boxes and cylinders. Each kind is made once as a hidden template and copied for every pickup, so a map full of
+/// pile the Low Poly Weapon Bundle's ammo case and money the Heist pack's stacked notes (PickupLibrary), all copied with
+/// their scripts, animators, colliders, lights and effects taken off and any skinned parts baked still; the medkit and
+/// shield cell are built from boxes and cylinders (and money too when the library has none). Each kind is made once as a hidden template and copied for every pickup, so a map full of
 /// them costs no hitch after the first.
 /// </summary>
 internal static class PickupProps
@@ -77,7 +77,10 @@ internal static class PickupProps
                 break;
             case FieldPickups.Kind.Heal: made = Medkit(); break;
             case FieldPickups.Kind.Shield: made = Cell(); break;
-            case FieldPickups.Kind.Money: made = Bundle(); break;
+            case FieldPickups.Kind.Money:
+                var notes = PickupLibrary.Instance;
+                made = notes != null && notes.money != null ? Strip(Object.Instantiate(notes.money, Shelf)) : Bundle();
+                break;
             default: made = null; break;
         }
         if (made != null) made.transform.SetParent(Shelf, false);

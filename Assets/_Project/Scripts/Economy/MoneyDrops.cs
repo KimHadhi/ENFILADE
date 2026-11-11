@@ -19,7 +19,6 @@ public sealed class MoneyDrops : MonoBehaviour
     // How far ahead it lands (m), how long its dropper waits to take it back, how often an unanswered touch asks again (s).
     private const float DropAhead = .9f, OwnPickupDelay = 2f, AskAgain = .5f, SpinSpeed = 120f, Bob = .05f;
     private const long MostAtOnce = 10_000_000_000L;
-    private static readonly Color Green = new Color(.25f, .85f, .38f);
 
     private struct Drop : INetworkSerializeByMemcpy
     {
@@ -54,7 +53,6 @@ public sealed class MoneyDrops : MonoBehaviour
     private readonly List<ushort> touched = new List<ushort>();
     private PlayerMovement player;
     private NetworkManager network;
-    private Material look;
     private ushort nextId;
     private bool listening;
 
@@ -185,13 +183,11 @@ public sealed class MoneyDrops : MonoBehaviour
     private void Show(ushort id, long amount, Vector3 at, ulong dropper)
     {
         if (lying.ContainsKey(id)) return;
-        var stack = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        stack.name = "돈 뭉치 " + Wallet.Format(amount);
-        Destroy(stack.GetComponent<Collider>());
-        stack.transform.position = at + Vector3.up * .08f;
-        stack.transform.localScale = new Vector3(.3f, .1f, .17f);
-        stack.GetComponent<Renderer>().sharedMaterial = Look();
-        lying[id] = new Lying { Amount = amount, Dropper = dropper, At = at, Since = Time.time, Look = stack.transform };
+        // The same stacked notes a money pickup wears (PickupLibrary.money, the Heist pack), resting on the drop's floor.
+        var stack = new GameObject("돈 뭉치 " + Wallet.Format(amount)).transform;
+        stack.position = at + Vector3.up * .08f;
+        PickupProps.Make(FieldPickups.Kind.Money, null, stack);
+        lying[id] = new Lying { Amount = amount, Dropper = dropper, At = at, Since = Time.time, Look = stack };
         var who = PlayerOf(dropper);
         if (who != null) CombatFeedHUD.Notice(who, Texts.Format("money.drop.feed", Wallet.Format(amount)), false);
     }
@@ -217,16 +213,6 @@ public sealed class MoneyDrops : MonoBehaviour
             bundle.Look.position = bundle.At + Vector3.up * (.12f + bob);
             bundle.Look.rotation = Quaternion.Euler(0f, Time.time * SpinSpeed, 0f);
         }
-    }
-
-    private Material Look()
-    {
-        if (look != null) return look;
-        var shader = Shader.Find("Universal Render Pipeline/Lit");
-        look = shader != null ? new Material(shader) : new Material(Shader.Find("Standard"));
-        look.color = Green;
-        if (look.HasProperty("_BaseColor")) look.SetColor("_BaseColor", Green);
-        return look;
     }
 
     private static PlayerMovement PlayerOf(ulong client)
