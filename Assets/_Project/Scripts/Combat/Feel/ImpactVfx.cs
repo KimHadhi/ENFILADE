@@ -229,6 +229,8 @@ public sealed class ImpactVfx : MonoBehaviour
         decals[slot].localScale = Vector3.one * size * Random.Range(.8f, 1.2f);
         decalAge[slot] = 0f;
         decalColor[slot] = Shade(GunFeelSettings.Instance.bloodColor, Random.Range(.6f, .85f));
+        // A different blot each time: the generated splat or a Cry of Fear decal (BloodSplatTextures).
+        decalRenderers[slot].sharedMaterial = BloodSplatTextures.Next();
         decals[slot].gameObject.SetActive(true);
         Tint(slot, 1f);
     }

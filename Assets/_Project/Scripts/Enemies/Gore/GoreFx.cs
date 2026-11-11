@@ -71,7 +71,7 @@ internal sealed class GoreFx
             var velocity = (direction + Random.insideUnitSphere * .55f).normalized * speed * Random.Range(.5f, 1.1f) + Vector3.up * Random.Range(.5f, 2.5f);
             owner.Gibs.Gut(at + Random.insideUnitSphere * .06f, velocity, Random.Range(.09f, .16f), nextGut++);
         }
-        if (Cast(at, direction, 4.5f, body, out var hit)) Splat(hit.point, hit.normal, owner.WallSplat, Random.Range(0, 4));
+        if (Cast(at, direction, 4.5f, body, out var hit)) Splat(hit.point, hit.normal, owner.WallSplat, Random.Range(0, int.MaxValue));
     }
 
     /// <summary>A stump on the body: a torn face of gut at the joint, a few beats of blood and a pool spreading under it.</summary>
@@ -163,10 +163,13 @@ internal sealed class GoreFx
         }
     }
 
-    /// <summary>A splat of blood projected onto the surface at `point` (its `normal`), `size` metres across.</summary>
+    /// <summary>
+    /// A splat of blood projected onto the surface at `point` (its `normal`), `size` metres across. A random pick is any
+    /// number: GoreLibrary.Splat wraps it over however many splat materials the library holds (RVFX's and Cry of Fear's).
+    /// </summary>
     public void Splat(Vector3 point, Vector3 normal, float size, int pick = -1)
     {
-        var decal = Take(pick < 0 ? Random.Range(0, 4) : pick);
+        var decal = Take(pick < 0 ? Random.Range(0, int.MaxValue) : pick);
         if (decal == null) return;
         Place(decal, point, normal, size, size, 0f);
     }
@@ -174,7 +177,7 @@ internal sealed class GoreFx
     // A pool that spreads under a stump.
     private void Pool(Vector3 point, Vector3 normal)
     {
-        var decal = Take(Random.Range(0, 4));
+        var decal = Take(Random.Range(0, int.MaxValue));
         if (decal == null) return;
         Place(decal, point, normal, owner.PoolSize * .15f, owner.PoolSize, PoolGrow);
     }
