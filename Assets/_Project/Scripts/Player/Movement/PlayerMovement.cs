@@ -392,6 +392,8 @@ public sealed partial class PlayerMovement : MonoBehaviour
             // Teammates side by side keep a body's width apart, not two capsules' (backlog 524).
             GameTables.Bind(TableName, "Teammate", gameObject.AddComponent<TeammateSpacing>());
             GameTables.Bind(TableName, "FallScreen", gameObject.AddComponent<PlayerFallScreen>());
+            // Rookie mode's view from behind through parkour, and the execution cinematic: this PC's screen only.
+            gameObject.AddComponent<ThirdPersonCamera>();
         }
         if (controller.height < Posture.standingColliderHeight - 0.02f)
             ChangeState(controller.height <= proneColliderHeight + 0.02f ? MovementState.Proning : MovementState.Crouching);

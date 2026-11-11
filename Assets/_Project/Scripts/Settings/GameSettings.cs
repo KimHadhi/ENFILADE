@@ -10,10 +10,10 @@ public enum DamageNumberMode { Off, Stacked, Each }
 public enum WindowMode { Fullscreen, Borderless, Windowed }
 
 /// <summary>The settings menu's tabs, each reset to the defaults on its own.</summary>
-public enum SettingsGroup { Sound, Controls, Screen, Hud, Crosshair, Character }
+public enum SettingsGroup { Sound, Controls, Screen, Camera, Hud, Crosshair, Character }
 
 /// <summary>
-/// Player preferences: volume, controls, screen, HUD, frame rate and crosshairs. Saved per user in settings.json under
+/// Player preferences: volume, controls, screen, camera, HUD, frame rate and crosshairs. Saved per user in settings.json under
 /// Application.persistentDataPath and changed in the Esc menu. A fresh player starts from the preset asset
 /// (Resources/Settings/DefaultSettings, <see cref="GameSettingsPreset"/>), which is also what each tab's reset returns to;
 /// the values written below are only the fallback when that asset is missing. Balance numbers stay in Resources/Tables.
@@ -54,6 +54,16 @@ public sealed class GameSettings
     public float fieldOfView = 90f;
     [Tooltip("Show the player's own hair and head in first person, cut only where the camera sits inside them.")]
     public bool showOwnHead = true;
+    [Tooltip("Rookie mode (애송이 모드): through the parkour moves ticked below the camera leaves the eyes for behind the head, " +
+        "so the whole body shows, and comes back after (ThirdPersonCamera). Off by default: the game is played through the eyes.")]
+    public bool rookieMode;
+    [Tooltip("Rookie mode's moves, each on its own: vaults and climbs, ladders, landing rolls, dodges, ziplines, slides and " +
+        "swing bars. All on, so switching rookie mode on starts with every one.")]
+    public bool rookieVault = true, rookieLadder = true, rookieLandingRoll = true, rookieDodge = true, rookieZipline = true,
+        rookieSlide = true, rookieBars = true;
+    [Tooltip("Executions and stealth kills are shown from outside the body at changing angles, then the view comes back to " +
+        "the eyes (ThirdPersonCamera). This PC's screen only.")]
+    public bool executionCinematic = true;
     [Tooltip("Frames per second cap, one of FrameLimits. 0 is unlimited. Ignored while vSync is on.")]
     public int frameLimit;
     [Tooltip("Wait for the monitor's refresh before showing a frame. Overrides frameLimit.")]
@@ -143,6 +153,11 @@ public sealed class GameSettings
                 s.resolutionWidth = d.resolutionWidth; s.resolutionHeight = d.resolutionHeight; s.windowMode = d.windowMode;
                 s.vSync = d.vSync; s.frameLimit = d.frameLimit;
                 s.fieldOfView = d.fieldOfView; s.screenShake = d.screenShake; s.showOwnHead = d.showOwnHead;
+                break;
+            case SettingsGroup.Camera:
+                s.rookieMode = d.rookieMode; s.rookieVault = d.rookieVault; s.rookieLadder = d.rookieLadder;
+                s.rookieLandingRoll = d.rookieLandingRoll; s.rookieDodge = d.rookieDodge; s.rookieZipline = d.rookieZipline;
+                s.rookieSlide = d.rookieSlide; s.rookieBars = d.rookieBars; s.executionCinematic = d.executionCinematic;
                 break;
             case SettingsGroup.Hud:
                 s.hudSway = d.hudSway; s.hudTilt = d.hudTilt; s.hudAngle = d.hudAngle; s.hudFollowsLean = d.hudFollowsLean;

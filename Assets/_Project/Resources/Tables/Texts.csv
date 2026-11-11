@@ -149,6 +149,7 @@ settings.hint.close,Esc  닫기,,설정 창 > 오른쪽 위 안내
 settings.tab.sound,소리,,설정 창 > 왼쪽 탭
 settings.tab.controls,조작,,설정 창 > 왼쪽 탭
 settings.tab.screen,화면,,설정 창 > 왼쪽 탭
+settings.tab.camera,카메라,,설정 창 > 왼쪽 탭
 settings.tab.hud,HUD,,설정 창 > 왼쪽 탭
 settings.tab.crosshair,크로스헤어,,설정 창 > 왼쪽 탭
 settings.tab.character,캐릭터,,설정 창 > 왼쪽 탭
@@ -196,6 +197,19 @@ settings.screen.view,시야,,설정 창 > 화면 > 소제목
 settings.screen.fov,시야각,,설정 창 > 화면 > 행
 settings.screen.shake,화면 흔들림,,설정 창 > 화면 > 행
 settings.screen.own_head,내 머리카락 보기,,설정 창 > 화면 > 행
+settings.camera.rookie_header,파쿠르 3인칭,,설정 창 > 카메라 > 소제목
+settings.camera.rookie,애송이 모드,,설정 창 > 카메라 > 행(켜면 아래 동작 줄들이 보인다)
+settings.camera.rookie_note,켜면 아래 동작을 하는 동안 카메라가 몸 뒤로 빠졌다가 끝나면 눈으로 돌아옵니다.,,설정 창 > 카메라 > 애송이 모드 아래 안내
+settings.camera.rookie.vault,넘기·오르기,,설정 창 > 카메라 > 애송이 모드 동작 행(넘기·기어오르기·벽 타기·턱 매달리기)
+settings.camera.rookie.ladder,사다리 오르내리기,,설정 창 > 카메라 > 애송이 모드 동작 행
+settings.camera.rookie.landing_roll,착지 구르기,,설정 창 > 카메라 > 애송이 모드 동작 행
+settings.camera.rookie.dodge,회피,,설정 창 > 카메라 > 애송이 모드 동작 행
+settings.camera.rookie.zipline,짚라인,,설정 창 > 카메라 > 애송이 모드 동작 행
+settings.camera.rookie.slide,슬라이딩,,설정 창 > 카메라 > 애송이 모드 동작 행
+settings.camera.rookie.bars,철봉 돌기,,설정 창 > 카메라 > 애송이 모드 동작 행
+settings.camera.cinematic_header,연출,,설정 창 > 카메라 > 소제목
+settings.camera.execution,처형 시네마틱,,설정 창 > 카메라 > 행
+settings.camera.execution_note,처형·암살 동안 카메라가 몸 밖에서 각도를 바꿔 보여 주고 돌아옵니다. 내 화면만.,,설정 창 > 카메라 > 처형 시네마틱 아래 안내
 settings.hud.sway,HUD 흔들림,,설정 창 > HUD > 행
 settings.hud.tilt,HUD 기울기,,설정 창 > HUD > 행
 settings.hud.angle,HUD 원근 각도,,설정 창 > HUD > 행

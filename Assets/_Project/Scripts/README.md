@@ -55,6 +55,7 @@
 | 실드 (에이펙스 레전드 참고: 실드만 맞으면 피 대신 맞은 쪽 화면 가장자리에서 찢김(어두운 띠 둘과 하늘색 칼날 선, 0.12초)과 떨어져 나가는 하늘색 조각·잃은 양 -N(D 3차의 C·B), 실드색 방향 표시·전기 튀는 소리·체력바 실드 띠 흰 번쩍, 친구 몸엔 실드색 불꽃 / 다 깨질 때 화면이 두 프레임 꺼지고 큰 하늘색 사선, 모든 가장자리에서 조각, 색이 잠깐 빠짐, 실드 띠 조각·깨지는 소리. 예전 벌집 빛과 유리판은 표에서 0으로 꺼 둠) | [ShieldFeedback](Player/Combat/ShieldFeedback.cs), [ShieldHexGraphic](UI/HP/ShieldHexGraphic.cs), [ShieldShatter](UI/HP/ShieldShatter.cs), [Player.csv](../Resources/Tables/Player.csv)의 `Shield.…` 행, 소리 [Art/Audio/HitConfirm](../Art/Audio/HitConfirm)의 ShieldHit·ShieldBreak (비면 합성음) |
 | 쓰러짐·부활·복귀·전멸 | [PlayerLife](Player/Combat/PlayerLife.cs), [PlayerRevive](Player/Combat/PlayerRevive.cs), [PlayerLifeHUD](UI/PlayerLifeHUD.cs), [Downed.csv](../Resources/Tables/Downed.csv) |
 | 죽은 뒤 관전 (722: 동료 뒤 3인칭·자유 시점, 좌/우클릭·Space) | [PlayerSpectate](Player/Camera/PlayerSpectate.cs), [PlayerLifeHUD](UI/PlayerLifeHUD.cs), [Spectate.csv](../Resources/Tables/Spectate.csv) |
+| 애송이 모드(Esc → 카메라: 넘기·오르기, 사다리, 착지 구르기, 회피, 짚라인, 슬라이딩, 철봉 동안 몸 뒤 3인칭, 동작마다 켜고 끔) / 처형·암살 시네마틱 카메라(낮은 옆 → 맞는 순간 가까이 → 어깨 너머로 돌아옴) | [ThirdPersonCamera](Player/Camera/ThirdPersonCamera.cs), [ThirdPerson.csv](../Resources/Tables/ThirdPerson.csv), [몸 안내](../Docs/PlayerBodyGuide.md) |
 | 아군 사격 (721: 방장이 `/ff`로 켜고 끔, 맞은 사람 PC가 판정) | [FriendlyFire](Network/FriendlyFire.cs), [PlayerNetworkCombat](Network/PlayerNetworkCombat.cs) `FriendlyHit`, [Network.csv](../Resources/Tables/Network.csv) `friendlyFire`·`friendlyFireShare` |
 | 킬 피드 (내 처치 먼저·최근 줄 빛 선, 연속 처치, 해골 줄 파란 불꽃 테두리, 네임드·엘리트 처치 자홍 불꽃 테두리와 짧은 슬로 모션) | [CombatFeedHUD](Combat/Feel/CombatFeedHUD.cs), [KillFeedRow](UI/KillFeedRow.cs), [StreakBadge](UI/StreakBadge.cs), [KillFeed.csv](../Resources/Tables/KillFeed.csv), [KillRowPlate](UI/KillRowPlate.cs), [FeedFlame](../Resources/Combat/Shaders/FeedFlame.shader), 적 등급은 [Enemies.csv](../Resources/Tables/Enemies.csv)의 `rank` (시험: `/spawn 1 elite`) |
 | 슬로 모션 (혼자: 세상 전체, 방: 본인과 상대만) / 연속 처치가 처음 해골이 될 때 방 전체 슬로 모션과 그동안의 화면(색, 가장자리, 모션 블러)과 소리(낮은 음, 먹먹함) / 느려져도 VFX Graph 이펙트가 매 프레임 움직이게 | [CombatTimeEffects](Player/Combat/CombatTimeEffects.cs), `EnemyNetwork.Pace` / [SkullSlowMotion](Combat/Feel/SkullSlowMotion.cs), [SlowMotionLook](Combat/Feel/SlowMotionLook.cs), [SlowMotionSound](Combat/Feel/SlowMotionSound.cs), [SkullSlowMotion.csv](../Resources/Tables/SkullSlowMotion.csv) / [VfxTimeStep](Combat/Feel/VfxTimeStep.cs) |
@@ -152,6 +153,7 @@
 | 200 | `PlayerCameraEffects` | 흔들림·기울이기와 카메라 기준 위치 |
 | 250 | `PlayerBody` | Update에서 클립 고르기. LateUpdate에서 시선 굽힘(`SpineLook`), 몸 위치, 발 IK, 눈 시점으로 카메라 최종 위치 확정(F5면 그 뒤 카메라만 뒤로). 이 안의 순서는 `PlayerBody.LateUpdate` 주석에 적혀 있다 |
 | 260 | `PlayerFootsteps` | IK가 끝난 발로 접지 판단 |
+| 270 | `ThirdPersonCamera` | 애송이 모드의 몸 밖 카메라와 처형 시네마틱. 몸이 눈에 붙인 카메라만 옮긴다. 총·조준은 그 뒤라 화면 가운데를 쏜다 |
 | 295 | `FPSBody` | Update에서 FPSAF 입력. LateUpdate에서 FPSAF가 놓은 총을 시야에 붙잡기 |
 | 300 | `WeaponController` | 확정된 눈 시점(`PlayerView`)으로 총 자세, 카메라 조준선으로 발사 방향 |
 | 320 | `PlayerBodyHands` | 확정된 총·주먹 위치로 손 놓기 |

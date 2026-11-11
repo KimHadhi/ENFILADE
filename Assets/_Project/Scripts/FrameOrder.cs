@@ -68,6 +68,11 @@ public static class FrameOrder
     public const int Footsteps = 260;
     public const int TestInteraction = 260;
     /// <summary>
+    /// The camera out of the body (ThirdPersonCamera: rookie mode's view from behind through parkour, the execution
+    /// cinematic), once the body has put it on the eyes and before the gun and the weapons, which aim along its ray.
+    /// </summary>
+    public const int ThirdPersonCamera = 270;
+    /// <summary>
     /// Update: FPS Animation Framework's inputs from the movement and the body (FPSBody). LateUpdate: the gun kept in view
     /// where FPSAF lets it go, after the camera is placed and before the weapon fires from its muzzle.
     /// </summary>

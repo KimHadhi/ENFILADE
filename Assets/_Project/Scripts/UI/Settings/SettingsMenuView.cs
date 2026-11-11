@@ -19,8 +19,8 @@ public sealed class SettingsMenuView
     // In SettingsGroup's order: the ids of the tabs' names in Texts.
     private static readonly string[] TabIds =
     {
-        "settings.tab.sound", "settings.tab.controls", "settings.tab.screen", "settings.tab.hud", "settings.tab.crosshair",
-        "settings.tab.character",
+        "settings.tab.sound", "settings.tab.controls", "settings.tab.screen", "settings.tab.camera", "settings.tab.hud",
+        "settings.tab.crosshair", "settings.tab.character",
     };
     // The panel (px at 1080p), its margins, the tab column and where the page starts.
     private const float PanelWidth = 1360f, PanelHeight = 860f, Margin = 48f, TabsTop = 132f, TabWidth = 270f, TabHeight = 54f,
@@ -190,6 +190,7 @@ public sealed class SettingsMenuView
         if (group == SettingsGroup.Sound) SoundTab(rows, s);
         else if (group == SettingsGroup.Controls) ControlsTab(rows, s);
         else if (group == SettingsGroup.Screen) ScreenTab(rows, s);
+        else if (group == SettingsGroup.Camera) CameraTab(rows, s);
         else HudTab(rows, s);
     }
 
@@ -269,6 +270,32 @@ public sealed class SettingsMenuView
             s.resolutionWidth = size.x;
             s.resolutionHeight = size.y;
         });
+    }
+
+    // Rookie mode's switch and, while it is on, a switch per move (ThirdPersonCamera); then the execution cinematic.
+    private static void CameraTab(SettingsRows rows, GameSettings s)
+    {
+        rows.Header(Texts.Get("settings.camera.rookie_header"));
+        var moves = new List<RectTransform>();
+        rows.Choice(Texts.Get("settings.camera.rookie"), OffOn, s.rookieMode ? 1 : 0, i =>
+        {
+            s.rookieMode = i == 1;
+            foreach (var move in moves) move.gameObject.SetActive(s.rookieMode); // the moves only count with it on
+        });
+        rows.Note(Texts.Get("settings.camera.rookie_note"));
+        moves.Add(rows.Choice(Texts.Get("settings.camera.rookie.vault"), OffOn, s.rookieVault ? 1 : 0, i => s.rookieVault = i == 1));
+        moves.Add(rows.Choice(Texts.Get("settings.camera.rookie.ladder"), OffOn, s.rookieLadder ? 1 : 0, i => s.rookieLadder = i == 1));
+        moves.Add(rows.Choice(Texts.Get("settings.camera.rookie.landing_roll"), OffOn, s.rookieLandingRoll ? 1 : 0,
+            i => s.rookieLandingRoll = i == 1));
+        moves.Add(rows.Choice(Texts.Get("settings.camera.rookie.dodge"), OffOn, s.rookieDodge ? 1 : 0, i => s.rookieDodge = i == 1));
+        moves.Add(rows.Choice(Texts.Get("settings.camera.rookie.zipline"), OffOn, s.rookieZipline ? 1 : 0, i => s.rookieZipline = i == 1));
+        moves.Add(rows.Choice(Texts.Get("settings.camera.rookie.slide"), OffOn, s.rookieSlide ? 1 : 0, i => s.rookieSlide = i == 1));
+        moves.Add(rows.Choice(Texts.Get("settings.camera.rookie.bars"), OffOn, s.rookieBars ? 1 : 0, i => s.rookieBars = i == 1));
+        foreach (var move in moves) move.gameObject.SetActive(s.rookieMode);
+
+        rows.Header(Texts.Get("settings.camera.cinematic_header"));
+        rows.Choice(Texts.Get("settings.camera.execution"), OffOn, s.executionCinematic ? 1 : 0, i => s.executionCinematic = i == 1);
+        rows.Note(Texts.Get("settings.camera.execution_note"));
     }
 
     private static void HudTab(SettingsRows rows, GameSettings s)

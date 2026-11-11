@@ -2,7 +2,7 @@
 
 [프로젝트 안내](../../../README.md) · [이동 안내](MovementGuide.md) · [설정·유지보수](MaintenanceGuide.md) · [검증 안내](ValidationGuide.md)
 
-플레이어는 보이는 몸을 가진다. 몸은 이동 상태에 맞는 애니메이션을 재생하고, 카메라는 몸의 눈을 따른다(Beatrun Eye View처럼, 아래 **눈 시점**). 사다리에서는 상하 전환 때 시점이 튀지 않도록 기준 눈높이를 유지한다. 회전·기울기·충격 흔들림은 코드가 더한다. 내려다보면 허리·목이 같이 굽어 몸통·다리가 보인다. 머리·머리카락은 Esc 설정 **내 머리카락 보기**를 켜면 보이고, 끄면 그림자만 남는다. **F5**는 뒤에서 몸을 보는 확인용 시점이다.
+플레이어는 보이는 몸을 가진다. 몸은 이동 상태에 맞는 애니메이션을 재생하고, 카메라는 몸의 눈을 따른다(Beatrun Eye View처럼, 아래 **눈 시점**). 사다리에서는 상하 전환 때 시점이 튀지 않도록 기준 눈높이를 유지한다. 회전·기울기·충격 흔들림은 코드가 더한다. 내려다보면 허리·목이 같이 굽어 몸통·다리가 보인다. 머리·머리카락은 Esc 설정 **내 머리카락 보기**를 켜면 보이고, 끄면 그림자만 남는다. **F5**는 뒤에서 몸을 보는 확인용 시점이다. Esc → **카메라** → **애송이 모드**를 켜면 고른 파쿠르 동작 동안만 카메라가 몸 뒤로 빠졌다가 돌아온다(아래 **몸 밖 카메라**).
 
 ## 구성
 
@@ -240,3 +240,10 @@ Beatrun의 `meslideendprone`·`jumpturnland`는 몸 전체를 앞으로 옮긴�
 ## 사다리·집라인의 몸
 
 클립은 [PlayerBody.Fixtures](../Scripts/Player/Body/PlayerBody.Fixtures.cs)가 고른다. 사다리에서는 [PlayerBody.Grip](../Scripts/Player/Body/PlayerBody.Grip.cs)이 어깨를 사다리 중앙의 등반 거리로 맞추고, [PlayerBodyHands.Ladder](../Scripts/Player/Body/PlayerBodyHands.Ladder.cs)가 양손을 각각 실제 가로대에 고정한다. 오르는 손은 `LadderLeftHand`와 실제 한 칸 이동 진행률(`LadderStepProgress`)을 따른다. 한 칸 오르기와 멈춤은 MoCap Online의 가로대 간격 400mm 클립(`Ability.ladderRungHeight` 0.39m와 맞다)이고, 잡기·꼭대기 넘기·미끄러져 내려오기는 게임의 짧은 시간에 맞는 Beatrun 클립이다. 원래 두 칸을 오르는 반복 클립을 `clips.csv`의 `to`로 절반만 쓰고, `Body.ladderClipSpeed`로 `Ability.ladderRungInterval`에 맞춘다. `ladderRungInterval`을 바꾸면 이 값도 함께 바꾼다. 클립 이름의 `LU`는 왼발이 위라는 뜻이라 손은 반대로 오른손이 위다. 집라인에서는 몸 전체를 옮겨 손을 줄에 맞추며 개별 손 IK는 아직 없다. 몸이 향할 수 있는 범위는 `Body.fixtureTurnLimit`이다.
+
+## 몸 밖 카메라 (애송이 모드·처형 시네마틱)
+
+[ThirdPersonCamera](../Scripts/Player/Camera/ThirdPersonCamera.cs)가 이 PC의 플레이어에게만 붙는다(다른 플레이어 화면에는 없다). 몸이 카메라를 눈에 붙인 뒤(FrameOrder 270), 총·무기보다 먼저 카메라만 옮긴다. 총·주먹·근접 판정은 F5 때처럼 눈 시점에 남고, 총알은 화면 가운데 조준점이 가리키는 곳으로 나간다. F5 시점이거나 죽었을 때는 물러난다. 수치는 [ThirdPerson.csv](../Resources/Tables/ThirdPerson.csv)의 `Rookie`·`Execution` 줄이다.
+
+- **애송이 모드**(Esc → 카메라, 기본 꺼짐): 켜면 동작별 스위치가 보인다(모두 켜진 채 시작). 넘기·오르기(넘기, 기어오르기, 벽 타기·벽 차기, 턱 매달리기·올라서기), 사다리 오르내리기(꼭대기에서 넘어가기 포함), 착지 구르기, 회피, 짚라인, 슬라이딩(엎드려·누워 미끄러지기 포함), 철봉 돌기. 그 동작이 시작되면 카메라가 `outTime`초에 걸쳐 머리 옆으로 먼저 비켜선 뒤 뒤로 빠진다(머리를 뚫고 지나가지 않게). 자리는 머리 뒤 `distance`, 위 `height`, 오른쪽 어깨 너머 `side`. 마우스 시점은 그대로라 카메라가 시선을 따라 머리 둘레를 돈다. 도는 중심은 캡슐의 눈높이에 머리 움직임을 `headShare`만큼 섞어 구르기에도 덜 출렁인다. 벽에 걸리면 바로 앞으로 당기고 벽이 비키면 `wallRelease` 빠르기로 다시 나간다. 짧은 동작도 `leastOut`초는 밖에 있고, 동작이 끝나도 `linger`초 머물러 이어지는 동작 사이에 들락날락하지 않는다. 끝나면 `backTime`초에 걸쳐 같은 길로 눈에 돌아온다. 정조준(`aimBack` 넘게)하면 그 절반 시간에 돌아온다. 카메라가 밖에 있는 동안은 머리·얼굴 부품이 보이고(`PlayerBody.ShowFromOutside`) 근거리 평면은 카메라 원래 값이다.
+- **처형 시네마틱**(기본 켜짐): `PlayerExecution`의 Started·Impact·Ended를 듣는다. 시작하면 카메라가 몸 밖으로 잘라 나가 두 사람 옆 낮은 곳(`sideDistance`, `lowHeight`)에서 올려다보며 플레이어 앞쪽으로 천천히 돈다(`orbitSpeed`). 암살(눈치 못 챈 좀비)은 좀비 앞(`frontDistance`, `frontSide`)에서 뒤로 다가오는 플레이어를 보여 준다. 벽이 더 비어 있는 쪽을 고르고, 양쪽이 비슷하면 번갈아 쓴다. 맞는 순간(처치 히트 스톱과 같은 순간) 반대쪽 좀비 윗몸 가까이(`closeDistance`)로 바뀌어 `closePush`만큼 다가간다. 끝나면 어깨 너머로 잘라 들어온 뒤 애송이 모드와 같은 길로 눈에 미끄러져 돌아온다. 좀비가 그 사이에 사라지거나 끝 소식이 `longest`초 안에 오지 않아도 돌아온다.
