@@ -22,6 +22,9 @@ from where the bones are, not from their axes: x from the wrist to the index knu
 little finger toward the index, z the back of the hand. Every humanoid's bones give that frame, so the game lays the
 same shape on any character (PointArm), whatever its bone axes or finger lengths. A finger's twist about its own length
 is not carried.
+The index's last joint always runs straight on from its middle one, as a pointing finger does to its tip (the user,
+2026-11-12: "손가락질 왜 손가락 가장 끝 마디가 굽어진 거임?"): the game holds it so whatever is drawn, so loading shows it
+so and saving writes it so.
 Handedness: Blender is right-handed, Unity left-handed, and the FBX between them mirrors the axes; the back of the hand
 is A x F here and Cross(F, A) in Unity, which is the same side of a real hand in both.
 """
@@ -42,6 +45,8 @@ FINGERS = ("Index", "Middle", "Ring", "Little", "Thumb")
 JOINTS = ("Proximal", "Intermediate", "Distal")
 # PointHand.csv's rows in the game's order, with Unity's humanoid names for their bones.
 ROWS = [(f"{finger}{j + 1}", f"Left {finger} {JOINTS[j]}") for finger in FINGERS for j in range(3)]
+# The index's tip row, laid along its middle joint's row (a pointing finger is straight to its tip).
+STRAIGHT_TIP, STRAIGHT_FROM = "Index3", "Index2"
 
 _metas = {}
 
@@ -246,8 +251,13 @@ class ENFILADE_OT_point_hand_save(bpy.types.Operator):
                 datetime.datetime.now().strftime("%Y-%m-%d %H:%M")]).replace(",", " "),
         ]
         saved = 0
+        ways = {}
         for i, (row, _) in enumerate(ROWS):
             way = _joint_way(pose, bones, i)
+            # The index's tip runs straight on from its middle joint, as the game holds it.
+            if row == STRAIGHT_TIP and ways.get(STRAIGHT_FROM) is not None:
+                way = ways[STRAIGHT_FROM]
+            ways[row] = way
             if way is None:
                 continue
             lines.append(f"{row},{way.dot(f):.4f},{way.dot(a):.4f},{way.dot(b):.4f},")
@@ -287,7 +297,7 @@ class ENFILADE_OT_point_hand_load(bpy.types.Operator):
         posed = 0
         # Knuckle first, then out, each joint after its parent has moved.
         for i, (row, human) in enumerate(ROWS):
-            want = table.get(row)
+            want = table.get(STRAIGHT_FROM) if row == STRAIGHT_TIP and STRAIGHT_FROM in table else table.get(row)
             name = bones.get(human)
             if want is None or not _has(pose, name):
                 continue

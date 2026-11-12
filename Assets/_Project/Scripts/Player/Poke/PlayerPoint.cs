@@ -32,33 +32,41 @@ public sealed class PlayerPoint : MonoBehaviour
     // /point holds while the hand is free (it rests through aiming, a reload, a throw and comes back after).
     private bool Pinned => pinned && HandFree;
 
-    // A ping's moment, while the hand stays free for it.
-    private bool Flashing => Time.time < flashUntil && HandFree;
+    // A ping's moment, while the hand stays free for it (aimed down the sights too: the off hand leaves the handguard
+    // for a tap while the right hand holds the gun where it is aimed).
+    private bool Flashing => Time.time < flashUntil && HandFreeFor(true);
 
-    private bool HandFree
+    private bool HandFree => HandFreeFor(false);
+
+    private bool HandFreeFor(bool whileAiming)
     {
-        get
-        {
-            if (weapon == null) weapon = GetComponent<WeaponController>();
-            return CanPoint(movement, weapon);
-        }
+        if (weapon == null) weapon = GetComponent<WeaponController>();
+        return CanPoint(movement, weapon, whileAiming);
     }
 
     /// <summary>
     /// An F tap's ping points at what it pinged for Poke.csv Ping.point seconds (the user, 2026-11-12: "적 핑 찍을 때
     /// 가리키는 애니메이션이 있었으면"): the same drawn hand as a held F, at <paramref name="point"/> on
-    /// <paramref name="at"/> as it moves; friends see it through the pose's point mark. False when the hand isn't free
-    /// (aiming, a reload, a throw, busy fists) or Ping.point is 0: then the gun's nod stands in, as before.
+    /// <paramref name="at"/> as it moves; friends see it through the pose's point mark. Aimed down the sights it is a
+    /// quick tap of the left hand alone, Ping.pointAimed seconds, and the gun stays on the aim (the user, 2026-11-12: "줌
+    /// 한 상태로 핑 찍으면 그 총 잠깐 애니메이션 나오는 게 너무 조준을 방해함. 짧게 만들거나 아니면 걍 왼손만 움직이게
+    /// 해"). False when the hand isn't free (a reload, a draw, a throw, busy fists) or the time is 0: then nothing gestures
+    /// and the mark and its sound say it alone; the gun's nod that stood in before is gone.
     /// </summary>
     internal bool Flash(Transform at, Vector3 point)
     {
-        float seconds = PokeTables.Number("Ping.point", .6f);
-        if (seconds <= 0f || !HandFree) return false;
+        if (weapon == null) weapon = GetComponent<WeaponController>();
+        bool aimed = weapon != null && weapon.AimBlend > AimedAt;
+        float seconds = aimed ? PokeTables.Number("Ping.pointAimed", .35f) : PokeTables.Number("Ping.point", .6f);
+        if (seconds <= 0f || !HandFreeFor(true)) return false;
         flashUntil = Time.time + seconds;
         flashAt = at;
         flashLocal = at != null ? at.InverseTransformPoint(point) : point;
         return true;
     }
+
+    /// <summary>A shot or a punch takes the hand back from a ping's moment at once (PlayerPing), as from a held point.</summary>
+    internal void StopFlash() => flashUntil = float.NegativeInfinity;
 
     /// <summary>
     /// Where a ping's point aims on this PC's player while it lasts and nothing else holds the point (a held F or /point
@@ -129,18 +137,22 @@ public sealed class PlayerPoint : MonoBehaviour
         point.mirroredNoPoke = noPoke;
     }
 
+    // How far into aiming down the sights the gun counts as aimed (WeaponController.AimBlend).
+    private const float AimedAt = .3f;
+
     /// <summary>
     /// This PC's player's hand is free to point: alive, up, standing or crouched (walking included), not held or busy
-    /// climbing, the gun not aimed, reloaded, drawn or looked over, the off hand not on a G throw, the fists not guarding
-    /// or winding up. A shot or a punch ends a point outright (PlayerPing), so the hand never has to choose.
+    /// climbing, the gun not aimed (unless <paramref name="whileAiming"/>, for a ping's quick tap), reloaded, drawn or
+    /// looked over, the off hand not on a G throw, the fists not guarding or winding up. A shot or a punch ends a point
+    /// outright (PlayerPing), so the hand never has to choose.
     /// </summary>
-    internal static bool CanPoint(PlayerMovement who, WeaponController weapon)
+    internal static bool CanPoint(PlayerMovement who, WeaponController weapon, bool whileAiming = false)
     {
         if (who == null || !who.IsInitialized || who.IsDead || who.IsDowned || who.IsHeld || who.IsParkour || who.CombatInputLocked)
             return false;
         var state = who.CurrentState;
         if (state != MovementState.Standing && state != MovementState.Crouching) return false;
-        if (weapon != null && (weapon.AimBlend > .3f || weapon.IsSwitching || weapon.IsInspecting
+        if (weapon != null && ((!whileAiming && weapon.AimBlend > AimedAt) || weapon.IsSwitching || weapon.IsInspecting
             || (weapon.Runtime != null && weapon.Runtime.IsReloading))) return false;
         // A G throw has the off hand first (the manager, 2026-11-12): it ends a point like a shot does.
         if (PlayerGrenades.HandBusy(who)) return false;

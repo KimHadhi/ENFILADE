@@ -17,9 +17,17 @@ using MovementState = PlayerMovement.MovementState;
 /// put the wrist where the fingertip lands. It runs after FPS Animation Framework, the hands, the gun and the callout
 /// gestures (GunFramework + 6) and before the cloth, so a sleeve and hair follow; the first-person camera was placed
 /// earlier, so the view never moves with the arm.
+/// The wrist stays in line at any look (the user, 2026-11-12: "손가락질하면서 위나 아래를 보면 손목이 기괴하게 꺾임"):
+/// a look up or down raises or lowers the arm from the shoulder and elbow, the wrist bends from straight by
+/// Point.wristLimit at most, measured from the wrist the body was modelled with (its skin's bind pose, so the same on any
+/// rig), and the forearm turns about its own length with the hand as a forearm does (Point.forearmTwist), so the wrist
+/// never wrings. Before, the hand's own roll was laid on a forearm still turned as the gun's hold had it, and the limit
+/// was checked before the arm's last bend, which could carry the wrist past it.
 /// The hand's shape is the one drawn in Blender (Tools/Blender/point_hand.py writes PointHand.csv: each finger joint's way
-/// in the hand's own frame, which fits any humanoid), the drawn index laid along the pointing way; without that table,
-/// Poke.csv's Point.* angles make it. An F tap's ping points the same hand at what it pinged for a moment (PlayerPoint.Flash).
+/// in the hand's own frame, which fits any humanoid), the drawn index laid along the pointing way, straight on to its
+/// tip whatever the drawing has (the user, 2026-11-12: "손가락질 왜 손가락 가장 끝 마디가 굽어진 거임?"); without that
+/// table, Poke.csv's Point.* angles make it. An F tap's ping points the same hand at what it pinged for a moment, aiming
+/// too (PlayerPoint.Flash).
 /// The hand leaves the gun through the one shared way for every off-hand use (the manager's decision, 2026-11-12):
 /// PlayerBodyHands.LendOffHand, so the left hand's gun contacts, grip and fingers let go over the hands' own blend time
 /// as the point comes in, and take the gun again as it goes; the pose eases by how far the hand is lent
@@ -52,6 +60,11 @@ public sealed class PointArm : MonoBehaviour
     // A joint's own length axis (the rig's convention, from the index's middle joint), for a last joint with no tip
     // bone; and the hand's own way out from the wrist, for a hand with no fingers.
     private Vector3 jointAxis, handAxis;
+    // The wrist as the body was modelled, straight and untwisted (its skin's bind pose): the hand's turn from the forearm
+    // then, and the forearm's way into the wrist in the hand's own frame (BindWrist).
+    private Quaternion wristBind = Quaternion.identity;
+    private Vector3 forearmInHand = Vector3.forward;
+    private bool hasWristBind;
     // own: the point's own ease (Point.in, Point.out); weight: what is posed, never ahead of the hand lent off the gun.
     private float own, weight, press, lostFor;
     // The arm's way, sprung after the aim's, and how fast it turns (SpringWay); the last place a touch put the fingertip
@@ -128,8 +141,48 @@ public sealed class PointArm : MonoBehaviour
             ? Quaternion.Inverse(middleJoint.rotation) * (lastJoint.position - middleJoint.position).normalized
             : Vector3.forward;
         handAxis = Quaternion.Inverse(hand.rotation) * (hand.position - lower.position).normalized;
+        BindWrist();
         bound = true;
         return true;
+    }
+
+    // The wrist as the body was modelled, from its skin's bind pose (the pose its mesh was weighted in, where a wrist looks
+    // straight and untwisted on any rig, whatever its bone axes): the hand's turn from the forearm then, and the
+    // forearm's way into the wrist in the hand's own frame. A body with no skin over the arm takes the forearm as running
+    // straight on toward its knuckles, and the forearm doesn't turn with the hand.
+    private void BindWrist()
+    {
+        hasWristBind = false;
+        foreach (var skin in animator.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+        {
+            var mesh = skin.sharedMesh;
+            if (mesh == null) continue;
+            var bones = skin.bones;
+            int lowerAt = System.Array.IndexOf(bones, lower), handAt = System.Array.IndexOf(bones, hand);
+            if (lowerAt < 0 || handAt < 0) continue;
+            var binds = mesh.bindposes;
+            if (lowerAt >= binds.Length || handAt >= binds.Length) continue;
+            // A bind pose is the bone's world-to-local matrix (times the mesh's own) as the mesh was weighted: its inverse
+            // is the bone in the mesh then.
+            Matrix4x4 lowerThen = binds[lowerAt].inverse, handThen = binds[handAt].inverse;
+            Vector3 forearm = handThen.MultiplyPoint3x4(Vector3.zero) - lowerThen.MultiplyPoint3x4(Vector3.zero);
+            if (forearm.sqrMagnitude < 1e-10f) continue;
+            Quaternion lowerTurn = TurnOf(lowerThen), handTurn = TurnOf(handThen);
+            wristBind = Quaternion.Inverse(lowerTurn) * handTurn;
+            forearmInHand = Quaternion.Inverse(handTurn) * forearm.normalized;
+            hasWristBind = true;
+            return;
+        }
+        var knuckle = fingers[Middle * 3] != null ? fingers[Middle * 3] : fingers[Index * 3];
+        Vector3 way = knuckle != null ? knuckle.position - hand.position : hand.position - lower.position;
+        forearmInHand = way.sqrMagnitude > 1e-10f ? Quaternion.Inverse(hand.rotation) * way.normalized : handAxis;
+    }
+
+    // The rotation part of a bone's matrix (its scale left out).
+    private static Quaternion TurnOf(Matrix4x4 matrix)
+    {
+        Vector3 forward = matrix.GetColumn(2), up = matrix.GetColumn(1);
+        return forward.sqrMagnitude > 1e-12f && up.sqrMagnitude > 1e-12f ? Quaternion.LookRotation(forward, up) : Quaternion.identity;
     }
 
     // The body can lift an arm: alive, up, standing or crouched (walking too); not held, climbing, sliding or diving.
@@ -179,7 +232,7 @@ public sealed class PointArm : MonoBehaviour
         Vector3 wantWay = aim - shoulder;
         wantWay = wantWay.sqrMagnitude > 1e-6f ? wantWay.normalized : look;
         SpringWay(wantWay, dt);
-        Vector3 pointGoal = shoulder + aimWay * (reach * PokeTables.Number("Point.extend", .92f));
+        Vector3 pointGoal = shoulder + aimWay * (reach * PokeTables.Number("Point.extend", .96f));
         // Touching, the fingertip goes onto the skin itself, pressing along the arm's way (where the crosshair is, so the
         // dent is there too), eased between the two over Point.touchIn.
         Vector3 pressWay = touches ? (hit.Point - shoulder).normalized : aimWay;
@@ -208,29 +261,31 @@ public sealed class PointArm : MonoBehaviour
         if (goalDistance > 1e-3f && FirstSolid(shoulder, toGoal / goalDistance, goalDistance + hover, out RaycastHit block))
             goal = shoulder + toGoal / goalDistance * Mathf.Max(.05f, block.distance - hover);
 
-        // The hand first along the arm's way, to learn where its fingertip sits; the arm then bends (the elbow a little,
-        // down and out) to put the fingertip there; then the wrist turns from the forearm's line toward the goal by
-        // Point.wristLimit at most, so the forearm does the aiming and the wrist never kinks (the user, 2026-11-12:
-        // "손가락질하는 거 꺾이는 게 자연스럽지 않아서 아쉽다"), and the arm settles once more for the hand's new tip.
+        // The hand first along the way it points (from the shoulder at the aim, or onto the friend), to learn where its
+        // fingertip sits; the arm bends (the elbow a little, down and out) to put the fingertip there; the hand then turns
+        // toward the forearm the arm has as far as it must to keep the wrist within Point.wristLimit of straight, and the
+        // arm settles again for the hand's new fingertip. The last word is always the wrist's, so no look, up or down,
+        // bends it past the limit; the pitch is the shoulder's and the elbow's (the user, 2026-11-12: "손가락질하면서 위나
+        // 아래를 보면 손목이 기괴하게 꺾임"). 0.8.253 checked the limit before the arm's last bend, so a big bend at a
+        // steep look carried the wrist past it.
         Vector3 hint = shoulder + (-Vector3.up * PokeTables.Number("Point.elbowDown", .8f) - viewRight * PokeTables.Number("Point.elbowOut", .55f)
             - viewAhead * PokeTables.Number("Point.elbowBack", .1f)) * reach;
-        Quaternion handGoal = PoseHand(goalDistance > 1e-3f ? toGoal / goalDistance : aimWay, viewRight, viewAhead);
-        Vector3 tipOffset = Fingertip() - hand.position;
-        tipLength = tipOffset.magnitude;
-        TwoBoneIK.Solve(upper, lower, hand, goal - tipOffset, hint);
-        hand.rotation = handGoal;
-        float wristLimit = Mathf.Max(0f, PokeTables.Number("Point.wristLimit", 20f)) * Mathf.Deg2Rad;
-        for (int settle = 0; settle < 2; settle++)
+        Quaternion aimed = PoseHand(goalDistance > 1e-3f ? toGoal / goalDistance : aimWay, viewRight, viewAhead, out Vector3 palm);
+        Quaternion handGoal = aimed;
+        tipLength = (Fingertip() - hand.position).magnitude;
+        float wristLimit = Mathf.Max(0f, PokeTables.Number("Point.wristLimit", 20f));
+        for (int settle = 0; settle < 3; settle++)
         {
-            Vector3 forearm = hand.position - lower.position;
-            Vector3 toTip = goal - hand.position;
-            if (forearm.sqrMagnitude < 1e-8f || toTip.sqrMagnitude < 1e-8f) break;
-            Vector3 handWay = Vector3.RotateTowards(forearm.normalized, toTip.normalized, wristLimit, 0f);
-            handGoal = PoseHand(handWay, viewRight, viewAhead);
-            tipOffset = Fingertip() - hand.position;
+            Vector3 tipOffset = Fingertip() - hand.position;
             TwoBoneIK.Solve(upper, lower, hand, goal - tipOffset, hint);
+            // Each time from the hand that points straight at the aim, as near it as this forearm lets the wrist go.
+            handGoal = InLine(aimed, palm, wristLimit);
             hand.rotation = handGoal;
         }
+        // The forearm turns about its own length with the hand, as a forearm does: the wrist keeps the turn it was
+        // modelled with and never wrings, however the gun's hold had the forearm turned.
+        if (hasWristBind) TwistForearm(handGoal);
+        hand.rotation = handGoal;
 
         if (weight < 1f)
             for (int i = 0; i < turnedCount; i++) turned[i].localRotation = Quaternion.Slerp(framed[i], turned[i].localRotation, weight);
@@ -267,30 +322,65 @@ public sealed class PointArm : MonoBehaviour
         aimSpin = Vector3.ProjectOnPlane(aimSpin, aimWay);
     }
 
-    // The hand turned so it points along <paramref name="handWay"/>, the palm down and turned in, bent at the wrist as
-    // Point.wristBend/wristSide say, its fingers the hand drawn in Blender (PointHand.csv) if there is one, else the
-    // index out and the rest in a fist by Point.*. Returns the hand's world rotation.
-    private Quaternion PoseHand(Vector3 handWay, Vector3 viewRight, Vector3 viewAhead)
+    // The hand turned so its index points along <paramref name="handWay"/>, the palm down and turned in (returned as
+    // <paramref name="palm"/>), its fingers the hand drawn in Blender (PointHand.csv) if there is one, else the index out
+    // and the rest in a fist by Point.*. Returns the hand's world rotation.
+    private Quaternion PoseHand(Vector3 handWay, Vector3 viewRight, Vector3 viewAhead, out Vector3 palm)
     {
-        Vector3 palm = WantedPalm(handWay, viewRight, viewAhead);
-        Vector3 bent = Wrist(handWay, palm);
-        Vector3 bentPalm = Vector3.ProjectOnPlane(palm, bent);
-        bentPalm = bentPalm.sqrMagnitude > 1e-8f ? bentPalm.normalized : palm;
+        palm = WantedPalm(handWay, viewRight, viewAhead);
         Quaternion handGoal;
         if (PokeTables.HandPose(out var drawn))
         {
-            var drawnTurn = DrawnFrame(drawn, bent, bentPalm);
+            var drawnTurn = DrawnFrame(drawn, handWay, palm);
             handGoal = HandAlong(drawnTurn * Vector3.right, -(drawnTurn * Vector3.forward));
             hand.rotation = handGoal;
             DrawnFingers(drawn, drawnTurn);
         }
         else
         {
-            handGoal = HandAlong(bent, bentPalm);
+            handGoal = HandAlong(handWay, palm);
             hand.rotation = handGoal;
-            Fingers(bent, bentPalm);
+            Fingers(handWay, palm);
         }
         return handGoal;
+    }
+
+    // The hand turned toward the forearm the arm has now as far as it must to keep the wrist within limit (degrees) of
+    // the wrist it rests at (Forearm): the fingers turn with it, so the finger points a little off the aim only when the
+    // arm can't bring the forearm round far enough itself.
+    private Quaternion InLine(Quaternion handGoal, Vector3 palm, float limit)
+    {
+        Vector3 forearm = hand.position - lower.position;
+        if (forearm.sqrMagnitude < 1e-10f) return handGoal;
+        forearm.Normalize();
+        Vector3 resting = Forearm(handGoal * forearmInHand, palm);
+        if (Vector3.Angle(forearm, resting) <= limit) return handGoal;
+        Vector3 allowed = Vector3.RotateTowards(forearm, resting, limit * Mathf.Deg2Rad, 0f);
+        return Quaternion.FromToRotation(resting, allowed) * handGoal;
+    }
+
+    // The forearm turned about its own length toward the turn the hand's forearm had as the body was modelled
+    // (Point.forearmTwist of the way, 1 all of it): a forearm turns with its hand, the wrist itself hardly at all. The
+    // wrist stays where it is (it is on that line), and the hand is set again after.
+    private void TwistForearm(Quaternion handGoal)
+    {
+        float share = Mathf.Clamp01(PokeTables.Number("Point.forearmTwist", 1f));
+        Vector3 axis = hand.position - lower.position;
+        if (share <= 0f || axis.sqrMagnitude < 1e-10f) return;
+        axis.Normalize();
+        Quaternion modelled = handGoal * Quaternion.Inverse(wristBind);
+        float twist = TwistAbout(modelled * Quaternion.Inverse(lower.rotation), axis);
+        lower.rotation = Quaternion.AngleAxis(twist * share, axis) * lower.rotation;
+    }
+
+    // How far (degrees, -180 to 180) a turn goes about an axis: its twist, the swing off the axis left out.
+    private static float TwistAbout(Quaternion turn, Vector3 axis)
+    {
+        float along = turn.x * axis.x + turn.y * axis.y + turn.z * axis.z;
+        float angle = 2f * Mathf.Atan2(along, turn.w) * Mathf.Rad2Deg;
+        if (angle > 180f) angle -= 360f;
+        else if (angle < -180f) angle += 360f;
+        return angle;
     }
 
     // The first solid thing a line meets that isn't a player (a wall, a crate, a zombie): players are met by their bodies'
@@ -342,18 +432,22 @@ public sealed class PointArm : MonoBehaviour
         return palm.sqrMagnitude > 1e-8f ? palm.normalized : Vector3.down;
     }
 
-    // The hand's way out of the wrist: the pointing way bent toward the palm by Point.wristBend (degrees, - back toward
-    // the back of the hand) and toward the thumb by Point.wristSide (- toward the little finger). The fingertip still
-    // goes where the point goes; only the hand's angle to it changes.
-    private static Vector3 Wrist(Vector3 way, Vector3 palm)
+    // The way the forearm runs into the wrist when the wrist rests: straight on from the hand as the body was modelled,
+    // turned so the hand bends toward its palm by Point.wristBend (degrees, - toward the back of the hand) and toward the
+    // thumb by Point.wristSide (- toward the little finger). The wrist bends within Point.wristLimit of this (InLine).
+    private static Vector3 Forearm(Vector3 straight, Vector3 palm)
     {
         float bend = PokeTables.Number("Point.wristBend", 0f) * Mathf.Deg2Rad, side = PokeTables.Number("Point.wristSide", 0f) * Mathf.Deg2Rad;
-        if (bend == 0f && side == 0f) return way;
+        if (bend == 0f && side == 0f) return straight;
+        Vector3 palmSide = Vector3.ProjectOnPlane(palm, straight);
+        if (palmSide.sqrMagnitude < 1e-8f) return straight;
+        palmSide.Normalize();
         // For a left hand this runs from the little finger's side to the thumb's.
-        Vector3 thumbSide = Vector3.Cross(way, palm).normalized;
-        Vector3 bent = way * Mathf.Cos(bend) + palm * Mathf.Sin(bend);
-        bent = bent * Mathf.Cos(side) + thumbSide * Mathf.Sin(side);
-        return bent.sqrMagnitude > 1e-8f ? bent.normalized : way;
+        Vector3 thumbSide = Vector3.Cross(straight, palmSide).normalized;
+        // A hand bent toward its palm is, seen from the hand, a forearm bent toward its back.
+        Vector3 way = straight * Mathf.Cos(bend) - palmSide * Mathf.Sin(bend);
+        way = way * Mathf.Cos(side) - thumbSide * Mathf.Sin(side);
+        return way.sqrMagnitude > 1e-8f ? way.normalized : straight;
     }
 
     // The turn from the drawn hand's own frame (x: wrist to the index knuckle, y: across to the index side, z: the back of
@@ -361,7 +455,7 @@ public sealed class PointArm : MonoBehaviour
     // of the hand away from the palm wanted. So the finger itself points at the target, however the hand was drawn.
     private static Quaternion DrawnFrame(Vector3[] drawn, Vector3 way, Vector3 palm)
     {
-        Vector3 index = drawn[0] + drawn[1] + drawn[2];
+        Vector3 index = DrawnWay(drawn, Index, 0) + DrawnWay(drawn, Index, 1) + DrawnWay(drawn, Index, 2);
         index = index.sqrMagnitude > 1e-6f ? index.normalized : Vector3.right;
         Vector3 back = Vector3.ProjectOnPlane(Vector3.forward, index);
         if (back.sqrMagnitude < 1e-6f) back = Vector3.ProjectOnPlane(Vector3.up, index);
@@ -378,10 +472,19 @@ public sealed class PointArm : MonoBehaviour
             {
                 var bone = fingers[finger * 3 + joint];
                 if (bone == null) break;
-                Vector3 want = drawn[finger * 3 + joint];
+                Vector3 want = DrawnWay(drawn, finger, joint);
                 if (want.sqrMagnitude < 1e-6f) continue;
                 Turn(bone, JointWay(finger, joint), drawnTurn * want, 1f);
             }
+    }
+
+    // A finger joint's way as drawn, but the index's last joint runs straight on from its middle one: a pointing finger
+    // is straight to its tip (the user, 2026-11-12: "손가락질 왜 손가락 가장 끝 마디가 굽어진 거임?"; the drawing's tip
+    // was tipped 9° toward the back of the hand).
+    private static Vector3 DrawnWay(Vector3[] drawn, int finger, int joint)
+    {
+        if (finger == Index && joint == 2 && drawn[Index * 3 + 1].sqrMagnitude > 1e-6f) return drawn[Index * 3 + 1];
+        return drawn[finger * 3 + joint];
     }
 
     // The hand's rotation that lays the wrist-to-index-knuckle line along the way and the palm facing as wanted.
@@ -411,9 +514,10 @@ public sealed class PointArm : MonoBehaviour
         return palm.sqrMagnitude > 1e-12f ? palm.normalized : Vector3.zero;
     }
 
-    // The index nearly straight along the way (Point.index1-3, degrees toward the palm at each joint), the middle, ring
-    // and little fingers closed into a fist (Point.curl1-3 a joint, each finger toward the little one Point.curlSpread
-    // more at its knuckle, all by Point.fist), the thumb tucked over them (its way from Point.thumbForward, thumbPalm and
+    // The index nearly straight along the way (Point.index1-2, degrees toward the palm at its first two joints; the last
+    // runs straight on, as a pointing finger does to its tip), the middle, ring and little fingers closed into a fist
+    // (Point.curl1-3 a joint, each finger toward the little one Point.curlSpread more at its knuckle, all by
+    // Point.fist), the thumb tucked over them (its way from Point.thumbForward, thumbPalm and
     // thumbAcross, its next joints bent by Point.thumbBend2 and thumbBend3, all by Point.thumb). Every number is read each
     // frame, so a saved Poke.csv shows at once (with /point the hand holds still to look at).
     private void Fingers(Vector3 way, Vector3 palm)
@@ -423,8 +527,7 @@ public sealed class PointArm : MonoBehaviour
         Vector3 curl = Vector3.Cross(way, palm);
         if (curl.sqrMagnitude < 1e-10f) return;
         curl.Normalize();
-        Finger(Index, way, curl, PokeTables.Number("Point.index1", 6f), PokeTables.Number("Point.index2", 6f),
-            PokeTables.Number("Point.index3", 6f), 1f);
+        Finger(Index, way, curl, PokeTables.Number("Point.index1", 6f), PokeTables.Number("Point.index2", 0f), 0f, 1f);
         float fist = Mathf.Clamp01(PokeTables.Number("Point.fist", 1f));
         float first = PokeTables.Number("Point.curl1", 80f), second = PokeTables.Number("Point.curl2", 95f), third = PokeTables.Number("Point.curl3", 55f);
         float spread = PokeTables.Number("Point.curlSpread", 2.5f);

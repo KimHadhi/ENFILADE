@@ -9,8 +9,8 @@ using UnityEngine.InputSystem;
 /// on, Back 4 Blood's way: the whole team sees it outlined, through walls too, with a diamond and its distance over it
 /// (PingMarks). A Schießhund's ping is its teal bounty mark, which its class hunts (ClassKit), unless the foe is a lesser
 /// quarry than the one it already hunts: that one is a plain ping (PlayerClass.Grade). The free hand points at it for a
-/// moment as it goes (PlayerPoint.Flash, the held point's drawn hand); the gun nods instead when the hand isn't free
-/// (FPSBody.Point). The other PCs hear of it
+/// moment as it goes (PlayerPoint.Flash, the held point's drawn hand), a quick tap of the left hand alone when aimed down
+/// the sights; with the hand busy (a reload, a draw, a throw) the mark and its sound say it alone. The other PCs hear of it
 /// from PlayerNetworkCombat. This PC's own player only. Numbers: Tables/ClassAbilities, Ping.*.
 /// Any foe can be pinged (ICombatFoe): a zombie, or a target on the hub's range, where a Schießhund tries its mark out
 /// (the user, 2026-11-12: "시순트 표적 찍기도 못 하네").
@@ -72,9 +72,12 @@ public sealed class PlayerPing : MonoBehaviour
     private void OnShot(WeaponShot shot) => EndPoint();
     private void OnPunched(float charge) => EndPoint();
 
+    // A held point ends until F is pressed again, and a ping's moment ends at once.
     private void EndPoint()
     {
-        if (point != null && point.Pointing) pointEnded = true;
+        if (point == null) return;
+        if (point.Pointing) pointEnded = true;
+        point.StopFlash();
     }
 
     private void Update()
@@ -138,13 +141,13 @@ public sealed class PlayerPing : MonoBehaviour
     }
 
     // The free hand points at what was pinged for a moment, the hand drawn for the held point (PlayerPoint.Flash; the
-    // user, 2026-11-12: "적 핑 찍을 때 가리키는 애니메이션이 있었으면"). When the hand isn't free (aiming, a reload, a
-    // throw) the gun gives its nod, as it did before.
+    // user, 2026-11-12: "적 핑 찍을 때 가리키는 애니메이션이 있었으면"), aimed down the sights too, as a quick tap of the
+    // left hand while the gun stays on the aim. The gun's nod (FPSBody.Point) no longer stands in for a busy hand: it
+    // threw the aim off (the user, 2026-11-12: "줌 한 상태로 핑 찍으면 그 총 잠깐 애니메이션 나오는 게 너무 조준을
+    // 방해함 … 걍 왼손만 움직이게 해"), and through a reload or a throw the mark and its sound say enough.
     private void Gesture(Component foe, Vector3 at)
     {
-        if (point != null && point.Flash(foe != null ? foe.transform : null, at)) return;
-        if (weapon == null) weapon = GetComponent<WeaponController>();
-        if (weapon != null) FPSBody.Holding(weapon)?.Point();
+        if (point != null) point.Flash(foe != null ? foe.transform : null, at);
     }
 
     // A foe's middle to point at: its first collider's centre, else a body's height over its feet.
