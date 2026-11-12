@@ -1,5 +1,5 @@
 ﻿id,slot,when,order,mark,ko,en,face,gesture,#설명
-#설명,휠 칸: zombie 좀비 · help 도와줘 · request 요청 · class 클래스 · move 이동 · retreat 후퇴 · thanks 고마워 · 말 칸 안의 yes·no·sorry·nice·wait·hurry·quiet·follow · auto는 휠에 없고 저절로 나오는 외침,"언제 이 줄을 말하나(코드가 판정). always = 늘. kind:종류 = 그 종류의 좀비 · crawl:종류 = 그 종류가 다리를 잃고 기는 중. 같은 칸에서 맞는 줄 가운데 order가 가장 큰 것, 같으면 그중 아무거나",클수록 먼저,target = 그 좀비에 핑 · point = 바라본 자리에 핀,"화면 말풍선과 목소리 대사. 목소리는 Art/Audio/Voice/Hiro/Callout/<id>/의 소리(지금은 Windows TTS 임시 목소리, Tools/Audio/callout_voices.py가 이 열로 만든다). 녹음을 그 폴더에 넣고 TTS 파일을 지우면 그 목소리가 된다",영어 자리(번역이 생기면),"말할 때 얼굴(Faces.csv 표정 id). 비우면 call.<칸>, 그것도 없으면 call. 입은 목소리에 맞춰 움직인다(PlayerFace)",말할 때 몸짓(CalloutGesture): nod 끄덕 · shake 도리도리 · tilt 갸웃 · jut 턱 들기 · point 가리키기(핑·핀 쪽) · wave 손 흔들기 · raise 손 들기 · beckon 손짓으로 부르기. 총을 들었거나 사다리·매달림·잡힘·쓰러짐이면 팔은 그대로 두고 머리만. 비우면 nod,
+#설명,휠 칸: zombie 좀비 · help 도와줘 · request 요청 · class 클래스 · move 이동 · retreat 후퇴 · thanks 고마워 · 말 칸 안의 yes·no·sorry·nice·wait·hurry·quiet·follow · auto는 휠에 없고 저절로 나오는 외침,"언제 이 줄을 말하나(코드가 판정). always = 늘. kind:종류 = 그 종류의 좀비 · crawl:종류 = 그 종류가 다리를 잃고 기는 중. 같은 칸에서 맞는 줄 가운데 order가 가장 큰 것, 같으면 그중 아무거나",클수록 먼저,target = 그 좀비에 핑 · point = 바라본 자리에 핀,"화면 말풍선과 목소리 대사. 목소리는 Art/Audio/Voice/Hiro/Callout/<id>/의 소리(지금은 Windows TTS 임시 목소리, Tools/Audio/callout_voices.py가 이 열로 만든다). 녹음을 그 폴더에 넣고 TTS 파일을 지우면 그 목소리가 된다",영어 자리(번역이 생기면),"말할 때 얼굴(Faces.csv 표정 id). 비우면 call.<칸>, 그것도 없으면 call. 입은 목소리에 맞춰 움직인다(PlayerFace)",말할 때 몸짓(CalloutGesture): nod 끄덕 · shake 도리도리 · tilt 갸웃 · jut 턱 들기 · point 가리키기(핑·핀 쪽) · wave 손 흔들기 · raise 손 들기 · beckon 손짓으로 부르기, hush 손을 입에 대고 쉿. 총을 들었거나 사다리·매달림·잡힘·쓰러짐이면 팔은 그대로 두고 머리만. 비우면 nod,
 zombie.ninja,zombie,kind:ninja,30,target,닌자다! 등 뒤 조심해!,Ninja! Watch your back!,call.alarm,point,보고 있는(없으면 가장 가까운) 좀비가 닌자
 zombie.candyman,zombie,kind:candyman,30,target,캔디맨이다! 끌려가지 마!,Candyman! Don't get hooked!,scared,point,
 zombie.breadbag,zombie,kind:breadbag,30,target,전기톱이다! 브레드백!,Chainsaw! Breadbag!,scared,point,
@@ -61,7 +61,7 @@ nice.shot,nice,always,0,,나이스!,Nice!,call.nice,raise,
 nice.good,nice,always,0,,잘했어!,Well done!,call.nice,raise,
 wait.wait,wait,always,0,,기다려!,Wait!,call.wait,raise,
 hurry.hurry,hurry,always,0,,서둘러!,Hurry up!,call.hurry,beckon,
-quiet.shh,quiet,always,0,,쉿. 조용히!,"Shh, quiet!",call.quiet,tilt,
+quiet.shh,quiet,always,0,,쉿. 조용히!,"Shh, quiet!",call.quiet,hush,
 follow.me,follow,always,0,,날 따라와!,Follow me!,call.lead,beckon,
 auto.charge.lead,auto,charge.lead,0,,돌격! 나를 따르라!,Charge! Follow me!,call.charge,raise,어썰트가 CHARGE를 쓸 때 저절로
 auto.charge.join,auto,charge.join,0,,우와아아! 돌격!,Hurrah! Charge!,call.charge,raise,CHARGE 반경 안의 동료가 0.2~0.6초 뒤 저절로 따라 외친다(G&B의 장교 돌격처럼)

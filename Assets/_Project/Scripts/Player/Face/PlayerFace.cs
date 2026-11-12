@@ -34,6 +34,8 @@ public sealed class PlayerFace : MonoBehaviour
     private const float FindEvery = .5f, FearEvery = .3f;
     // The frights remembered, so one brute frightens once (Mood.scareAgain).
     private const int FearMemory = 8;
+    // A voiceless line's syllables, counted to know how long it is said (Say).
+    private static readonly byte[] syllables = new byte[64];
     // Aiming counts from this share of the sight's blend; standing still under this speed (m/s).
     private const float AimingShare = .5f, StillSpeed = .3f;
 
@@ -96,14 +98,16 @@ public sealed class PlayerFace : MonoBehaviour
         idle = 0f;
         if (movement == null) TryGetComponent(out movement);
         var clip = voice != null ? voice.clip : null;
-        float spoken = clip != null ? clip.length / Mathf.Max(.1f, Mathf.Abs(voice.pitch)) : 1f;
+        // A line its voice pack hasn't got is said all the same, for as long as its words take (FaceVoice.Seconds).
+        float spoken = clip != null ? clip.length / Mathf.Max(.1f, Mathf.Abs(voice.pitch))
+            : FaceVoice.Seconds(FaceVoice.VowelsOf(line.Text, syllables));
         if (face != null)
         {
             string mood = line.Face;
             if (string.IsNullOrEmpty(mood) || FaceTables.Find(mood) == null) mood = CallMood + "." + line.Slot;
             if (FaceTables.Find(mood) == null) mood = CallMood;
             face.Pulse(mood, 1f, spoken + FaceTables.Number("Talk.tail", .5f));
-            if (voice != null) face.Speak(voice);
+            face.Speak(voice, line.Text, spoken);
         }
         // The body says it too, and the face comes up on the squad's comms feed.
         if (gesture == null) gesture = GetComponentInChildren<CalloutGesture>();

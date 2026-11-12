@@ -18,10 +18,10 @@ using MovementState = PlayerMovement.MovementState;
 [DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.GunFramework + 5)]
 public sealed class CalloutGesture : MonoBehaviour
 {
-    public enum Kind { None, Nod, Shake, Tilt, Jut, Point, Wave, Raise, Beckon }
+    public enum Kind { None, Nod, Shake, Tilt, Jut, Point, Wave, Raise, Beckon, Hush }
 
     // How long each kind plays (s), as long as the motion reads; the face holds as long as the voice.
-    private static readonly float[] Lengths = { 0f, .75f, .85f, .9f, .55f, 1.15f, 1.35f, 1.05f, 1.25f };
+    private static readonly float[] Lengths = { 0f, .75f, .85f, .9f, .55f, 1.15f, 1.35f, 1.05f, 1.25f, 1.3f };
     private const float In = .14f, Out = .22f;
     // Head turns at most this far toward what it points at (°), and how the neck shares a head motion.
     private const float TurnYaw = 40f, TurnPitch = 20f, NeckShare = .4f;
@@ -128,6 +128,18 @@ public sealed class CalloutGesture : MonoBehaviour
                     Arm((forward * .8f - right * .25f - up * .15f).normalized, lower, weight);
                 }
                 break;
+            case Kind.Hush:
+                // "Shh!": the head dips a little and the hand comes up to the lips, the elbow low (the user: the quiet
+                // face must read "쉿!" at a glance).
+                Turn(right, 5f * weight, false);
+                if (free && upperArm != null && lowerArm != null)
+                {
+                    Vector3 elbowWay = (-up * .7f + forward * .55f + right * .22f).normalized;
+                    Vector3 elbow = upperArm.position + elbowWay * Vector3.Distance(upperArm.position, lowerArm.position);
+                    Vector3 lips = head.position + forward * .09f - up * .07f;
+                    Arm(elbowWay, (lips - elbow).normalized, weight);
+                }
+                break;
         }
     }
 
@@ -137,6 +149,7 @@ public sealed class CalloutGesture : MonoBehaviour
         Kind.Wave => Kind.Jut,
         Kind.Raise => Kind.Jut,
         Kind.Beckon => Kind.Nod,
+        Kind.Hush => Kind.Tilt,
         _ => kind,
     };
 

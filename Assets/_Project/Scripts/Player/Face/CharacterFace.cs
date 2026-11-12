@@ -11,11 +11,13 @@ using UnityEngine;
 /// The one with the highest priority takes the face and the rest ease out under it, each at its own speed. On top of
 /// the mood the eyes blink and glance now and then, and the mouth makes the vowels of a voice while one plays (Speak,
 /// FaceVoice), as much as the mood lets them (Faces.csv blink, talk).
-/// The keys are the character's own (FaceKeys.csv), else the common VRChat/MMD names, so any humanoid a modder brings
-/// gets a face with nothing baked for it. It writes only its own keys, each on top of the weight the model had when the
-/// face was put on: the wardrobe's body options (BodyShapes.csv, a blush or a pupil the player picked) are never
-/// touched, a key in both is left out with a warning, and the shrink keys clothes set are no face key. Faces nobody can
-/// see, or too far off, keep their moods' clocks but write nothing (FaceLife.csv Watch.range).
+/// The keys are the character's own (FaceKeys.csv, mostly the creator's own expressions from FacePresets.csv), else the
+/// common VRChat/MMD names, so any humanoid a modder brings gets a face with nothing baked for it. It writes only its
+/// own keys, each on top of the weight the model has under it: a key the wardrobe's body options also set
+/// (BodyShapes.csv: Mayo's blush, Ichigo's cheeks, a catchlight) takes the player's choice as its floor and follows it
+/// when they change it, so a blushing mood blushes more and lets go back to exactly what they picked. The ears the
+/// creators' expressions move (an annoyed flick, droopy ears when crying) turn from their rest with the mood. Faces
+/// nobody can see, or too far off, keep their moods' clocks but write nothing (FaceLife.csv Watch.range).
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class CharacterFace : MonoBehaviour
@@ -29,8 +31,18 @@ public sealed class CharacterFace : MonoBehaviour
     {
         public SkinnedMeshRenderer[] Meshes;
         public int[] Indices;
-        /// <summary>The weight the model had for it when the face was put on; the face adds to it.</summary>
+        /// <summary>The weight the model has for it under the face; the face adds to it.</summary>
         public float Base, Target, Shown = -1f;
+        /// <summary>The wardrobe's body options set it too: what they set since the face last wrote it is the new Base.</summary>
+        public bool Shared;
+    }
+
+    // An ear (a bone a creator's expression turns): its rest as the model has it, the turn from the creator's rest to
+    // its rest pose, and where it is now on its way to the mood's pose.
+    private sealed class Ear
+    {
+        public Transform Bone;
+        public Quaternion Rest, FromRest, Now = Quaternion.identity;
     }
 
     private struct Set
@@ -44,13 +56,15 @@ public sealed class CharacterFace : MonoBehaviour
     {
         public FaceTables.Mood Mood;
         public Set Keys;
+        /// <summary>Each ear's turn from rest in this mood (null: the mood leaves the ears at rest).</summary>
+        public Quaternion[] Ears;
         public float Weight, Strength = 1f, Until = float.NegativeInfinity;
         public bool On;
     }
 
     // Each mesh's shape key names (trimmed: Mayo's "Other_Eyes_Heart " ends in a space), read once per mesh asset.
     private static readonly Dictionary<Mesh, Dictionary<string, int>> namesOf = new Dictionary<Mesh, Dictionary<string, int>>();
-    // The keys each character's wardrobe body options set (BodyShapes.csv), which a face never writes.
+    // The keys each character's wardrobe body options set (BodyShapes.csv): the face writes them on top of the choice.
     private static readonly Dictionary<string, HashSet<string>> wardrobeOf = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
     private static readonly HashSet<string> warned = new HashSet<string>();
     private static readonly List<int> foundChannels = new List<int>();
@@ -79,8 +93,13 @@ public sealed class CharacterFace : MonoBehaviour
     private AudioSource voice;
     private AudioClip voiceClip;
     private FaceVoice.Track track;
-    private float open, flap;
+    private float open, flap, flapRate, talkUntil = float.NegativeInfinity;
     private readonly float[] vowel = new float[5];
+    // The line's own vowels, syllable by syllable (FaceVoice.VowelsOf), for a mouth that flaps or follows a clip.
+    private readonly byte[] said = new byte[64];
+    private int saidCount;
+    private Ear[] ears = Array.Empty<Ear>();
+    private string[] earNames = Array.Empty<string>();
     private bool showing, refit;
 
     /// <summary>The character (PlayerBodyProfile skin id) whose keys it wears; "" for one without rows of its own.</summary>
@@ -156,11 +175,26 @@ public sealed class CharacterFace : MonoBehaviour
     }
 
     /// <summary>The mouth makes the vowels of what <paramref name="source"/> plays, as long as it plays.</summary>
-    public void Speak(AudioSource source)
+    public void Speak(AudioSource source) => Speak(source, null, 0f);
+
+    /// <summary>
+    /// The mouth says <paramref name="text"/>: following what <paramref name="source"/> plays for as long as it plays
+    /// (its loudness, and the line's own vowels syllable by syllable), or with no voice at all (no clip: a line a voice
+    /// pack hasn't got) moving through the line's vowels for <paramref name="seconds"/>, the way Skyrim's Fuz Ro D-oh
+    /// gives silent lines a talking mouth. A clip whose samples can't be read flaps through the vowels for its length.
+    /// </summary>
+    public void Speak(AudioSource source, string text, float seconds)
     {
-        voice = source;
+        bool sounds = source != null && source.clip != null;
+        voice = sounds ? source : null;
         voiceClip = null;
         track = null;
+        saidCount = FaceVoice.VowelsOf(text, said);
+        float length = sounds ? source.clip.length / Mathf.Max(.1f, Mathf.Abs(source.pitch)) : Mathf.Max(0f, seconds);
+        talkUntil = sounds ? float.NegativeInfinity : clock + length;
+        // The flapping paces the line's syllables over how long it is said; a line of unknown words at a talking pace.
+        flapRate = saidCount > 0 && length > .1f ? saidCount / length : FaceTables.Number("Talk.flap", 5.5f);
+        flap = 0f;
     }
 
     private void Fit(string skinId)
@@ -189,6 +223,8 @@ public sealed class CharacterFace : MonoBehaviour
         blink = KeysFor("blink", wardrobe);
         for (int i = 0; i < Vowels.Length; i++) talk[i] = KeysFor(Vowels[i], wardrobe);
         for (int i = 0; i < Looks.Length; i++) look[i] = KeysFor(Looks[i], wardrobe);
+        FitEars();
+        foreach (var slot in slots) slot.Ears = EarsFor(slot.Mood.Id);
         var seen = new List<Renderer>();
         foreach (var channel in channels)
         {
@@ -223,13 +259,11 @@ public sealed class CharacterFace : MonoBehaviour
             int found = -1;
             foreach (string name in key.Names)
             {
-                if (wardrobe.Contains(name))
-                {
-                    if (own) Warn($"FaceKeys.csv {Skin}: '{name}'는 옷장 체형 옵션의 키라(BodyShapes.csv) 표정이 쓰지 않습니다.");
-                    continue;
-                }
                 found = ChannelFor(name);
-                if (found >= 0) break;
+                if (found < 0) continue;
+                // A key the wardrobe sets too (a blush, a catchlight the player picked): their pick is its floor (Write).
+                if (wardrobe.Contains(name)) channels[found].Shared = true;
+                break;
             }
             if (found < 0)
             {
@@ -245,6 +279,62 @@ public sealed class CharacterFace : MonoBehaviour
             }
         }
         return new Set { Channels = foundChannels.ToArray(), Weights = foundWeights.ToArray() };
+    }
+
+    // The ears the creator's clips turn (FacePresets.csv preset rest), found on the model by name: their rest as the
+    // model has them, and the turn from the creator's rest to it, so a mood's pose turns them by the creator's amount.
+    private void FitEars()
+    {
+        var rest = FaceTables.Rest(Skin);
+        if (rest == null)
+        {
+            ears = Array.Empty<Ear>();
+            earNames = Array.Empty<string>();
+            return;
+        }
+        var found = new List<Ear>();
+        var names = new List<string>();
+        foreach (var bone in rest)
+        {
+            var at = FindBone(transform, bone.Name);
+            if (at == null) continue;
+            found.Add(new Ear { Bone = at, Rest = at.localRotation, FromRest = Quaternion.Inverse(Quaternion.Euler(bone.Euler)) });
+            names.Add(bone.Name);
+        }
+        ears = found.ToArray();
+        earNames = names.ToArray();
+    }
+
+    // Each ear's turn in the set (FaceKeys.csv bones, or its preset's), from the creator's rest to the creator's pose.
+    private Quaternion[] EarsFor(string set)
+    {
+        if (ears.Length == 0) return null;
+        var bones = FaceTables.Bones(Skin, set);
+        if (bones == null) return null;
+        var turns = new Quaternion[ears.Length];
+        bool any = false;
+        for (int i = 0; i < ears.Length; i++)
+        {
+            turns[i] = Quaternion.identity;
+            foreach (var bone in bones)
+            {
+                if (!string.Equals(bone.Name, earNames[i], StringComparison.Ordinal)) continue;
+                turns[i] = ears[i].FromRest * Quaternion.Euler(bone.Euler);
+                any = true;
+            }
+        }
+        return any ? turns : null;
+    }
+
+    private static Transform FindBone(Transform under, string name)
+    {
+        if (under.name == name) return under;
+        for (int i = 0; i < under.childCount; i++)
+        {
+            var found = FindBone(under.GetChild(i), name);
+            if (found != null) return found;
+        }
+        return null;
     }
 
     // The key on every mesh of the character that has it (the face, and a mask made to follow it), or -1.
@@ -328,6 +418,7 @@ public sealed class CharacterFace : MonoBehaviour
         if (!seen) return;
         Compose();
         Write();
+        Turn(dt);
     }
 
     // The mood with the highest priority that wants the face and has keys on this character takes it.
@@ -429,24 +520,54 @@ public sealed class CharacterFace : MonoBehaviour
             }
             if (track != null)
             {
-                track.Sample(voice.time, out float loud, out shape);
+                track.Sample(voice.time, out float loud, out shape, out int syllable);
+                // The line's own vowels over the clip's syllables, spread to fit when the counts differ.
+                if (saidCount > 0 && track.Syllables > 0) shape = said[Mathf.Min(saidCount - 1, syllable * saidCount / track.Syllables)];
                 float floor = Mathf.Clamp01(FaceTables.Number("Talk.floor", .08f));
                 want = Mathf.Clamp01((loud - floor) / Mathf.Max(.01f, 1f - floor) * FaceTables.Number("Talk.gain", 1.25f));
             }
-            else
-            {
-                // No samples to read: the mouth works at a talking pace instead.
-                flap += dt * FaceTables.Number("Talk.flap", 5.5f);
-                want = .35f + .45f * Mathf.Abs(Mathf.Sin(flap * Mathf.PI));
-                int beat = (int)flap % 3;
-                shape = beat == 0 ? 0 : beat == 1 ? 4 : 3;
-            }
+            // No samples to read: the mouth works through the line at a talking pace for as long as it plays.
+            else Flap(dt, out want, out shape);
         }
+        // A line with no voice at all: said all the same, for as long as its words take (Speak).
+        else if (seen && clock < talkUntil) Flap(dt, out want, out shape);
         float rise = Mathf.Max(.01f, FaceTables.Number("Talk.attack", .035f));
         float drop = Mathf.Max(.01f, FaceTables.Number("Talk.release", .08f));
         open = Mathf.MoveTowards(open, want, dt / (want > open ? rise : drop));
         float step = dt / Mathf.Max(.01f, FaceTables.Number("Talk.vowel", .07f));
         for (int i = 0; i < vowel.Length; i++) vowel[i] = Mathf.MoveTowards(vowel[i], i == shape ? 1f : 0f, step);
+    }
+
+    // A mouth with no samples to follow: it opens and shuts once a syllable, through the line's vowels when they are known.
+    private void Flap(float dt, out float want, out int shape)
+    {
+        flap += dt * flapRate;
+        want = .35f + .45f * Mathf.Abs(Mathf.Sin(flap * Mathf.PI));
+        int beat = (int)flap;
+        if (saidCount > 0)
+        {
+            shape = said[beat % saidCount];
+            return;
+        }
+        int turn = beat % 3;
+        shape = turn == 0 ? 0 : turn == 1 ? 4 : 3;
+    }
+
+    // The ears follow the mood that has the face (its pose, as far as it has come in), quickly, as ears flick.
+    private void Turn(float dt)
+    {
+        if (ears.Length == 0) return;
+        float share = 1f - Mathf.Exp(-dt / Mathf.Max(.01f, FaceTables.Number("Ear.time", .09f)));
+        var turns = winner != null ? winner.Ears : null;
+        float amount = winner != null ? winner.Weight : 0f;
+        for (int i = 0; i < ears.Length; i++)
+        {
+            var ear = ears[i];
+            if (ear.Bone == null) continue;
+            var want = turns != null ? Quaternion.Slerp(Quaternion.identity, turns[i], amount) : Quaternion.identity;
+            ear.Now = Quaternion.Slerp(ear.Now, want, share);
+            ear.Bone.localRotation = ear.Rest * ear.Now;
+        }
     }
 
     private bool Seen()
@@ -498,6 +619,13 @@ public sealed class CharacterFace : MonoBehaviour
     {
         foreach (var channel in channels)
         {
+            if (channel.Shared && channel.Meshes[0] != null)
+            {
+                // The wardrobe set the key itself since the face last wrote it (a chip or a slider of the body page, a
+                // body made again): the player's pick is the new floor, and the mood goes on top of it.
+                float now = channel.Meshes[0].GetBlendShapeWeight(channel.Indices[0]);
+                if (channel.Shown < 0f || Mathf.Abs(now - channel.Shown) > .01f) channel.Base = now;
+            }
             float weight = Mathf.Clamp(channel.Base + channel.Target, 0f, 100f);
             if (Mathf.Abs(weight - channel.Shown) < .05f) continue;
             channel.Shown = weight;
@@ -515,6 +643,11 @@ public sealed class CharacterFace : MonoBehaviour
                 for (int i = 0; i < channel.Meshes.Length; i++)
                     if (channel.Meshes[i] != null) channel.Meshes[i].SetBlendShapeWeight(channel.Indices[i], channel.Base);
             channel.Shown = -1f;
+        }
+        foreach (var ear in ears)
+        {
+            if (ear.Bone != null) ear.Bone.localRotation = ear.Rest;
+            ear.Now = Quaternion.identity;
         }
     }
 

@@ -23,14 +23,100 @@ internal static class FaceVoice
     {
         /// <summary>How open, 0-255, and which vowel (0 a, 1 i, 2 u, 3 e, 4 o), per Step.</summary>
         public byte[] Open, Vowel;
+        /// <summary>Which syllable of the clip each Step is in (0 before the first starts), and how many it has.</summary>
+        public ushort[] Syllable;
+        public int Syllables;
 
-        /// <summary>The mouth at <paramref name="time"/> seconds into the clip.</summary>
-        public void Sample(float time, out float open, out int vowel)
+        /// <summary>The mouth at <paramref name="time"/> seconds into the clip, and the syllable it is in.</summary>
+        public void Sample(float time, out float open, out int vowel, out int syllable)
         {
             int at = Mathf.Clamp((int)(time / Step), 0, Open.Length - 1);
             open = Open[at] / 255f;
             vowel = Vowel[at];
+            syllable = Syllable[at];
         }
+
+        public void Sample(float time, out float open, out int vowel) => Sample(time, out open, out vowel, out _);
+    }
+
+    // Each kana from ぁ (U+3041) to ゖ (U+3096), its vowel (a i u e o) or '-' for one that adds no syllable of its own
+    // (っ, ん); a small ゃゅょ (y) and ゎ (w) change the syllable before it instead. Katakana is the same 0x60 up.
+    private const string KanaVowels = "aaiiuueeooaaiiuueeooaaiiuueeooaaii-uueeooaiueoaaaiiiuuueeeoooaiueoyayuyoaiueowaieo-uae";
+    // Hangul's 21 vowels (medial jamo) in Unicode order, as the five mouth shapes: ㅏ a, ㅐ e, ㅑ a, ㅒ e, ㅓ o, ㅔ e,
+    // ㅕ o, ㅖ e, ㅗ o, ㅘ a, ㅙ e, ㅚ e, ㅛ o, ㅜ u, ㅝ o, ㅞ e, ㅟ i, ㅠ u, ㅡ u, ㅢ i, ㅣ i.
+    private const string HangulVowels = "aeaeoeoeoaeeouoeiuuii";
+
+    /// <summary>
+    /// The vowels of a line as it would be said, syllable by syllable (Korean by each syllable's vowel, Japanese kana by
+    /// their row, other letters by their vowel letters), into <paramref name="into"/>; returns how many. A modder's voice
+    /// pack, a line without a voice at all, or a clip whose samples can't be read still moves the mouth through the
+    /// line's own vowels (like Skyrim's Fuz Ro D-oh, which makes silent lines' mouths move by their text).
+    /// </summary>
+    internal static int VowelsOf(string text, byte[] into)
+    {
+        if (string.IsNullOrEmpty(text) || into == null) return 0;
+        int count = 0;
+        bool inWord = false;
+        foreach (char c in text)
+        {
+            if (count >= into.Length) break;
+            int vowel = -1;
+            if (c >= '가' && c <= '힣') vowel = Code(HangulVowels[(c - 0xAC00) / 28 % 21]);
+            else if ((c >= 'ぁ' && c <= 'ゖ') || (c >= 'ァ' && c <= 'ヶ'))
+            {
+                char v = KanaVowels[(c >= 'ァ' ? c - 0x60 : c) - 0x3041];
+                if (v == 'y' || v == 'w')
+                {
+                    // きゃ is one syllable, "kya": the small kana sets the vowel of the one before it.
+                    if (count > 0) into[count - 1] = Code(v == 'w' ? 'a' : SmallYa(c));
+                    continue;
+                }
+                if (v != '-') vowel = Code(v);
+            }
+            else if (c == 'ー' && count > 0) vowel = into[count - 1];
+            else
+            {
+                char lower = char.ToLowerInvariant(c);
+                bool letter = lower == 'a' || lower == 'e' || lower == 'i' || lower == 'o' || lower == 'u' || lower == 'y';
+                // A run of vowel letters ("ea", "ou") is one syllable.
+                if (letter && !inWord) vowel = Code(lower == 'y' ? 'i' : lower);
+                inWord = letter;
+                if (vowel < 0) continue;
+            }
+            if (vowel >= 0) into[count++] = (byte)vowel;
+        }
+        return count;
+    }
+
+    // The vowel a small ゃ/ゅ/ょ (or ャ/ュ/ョ) gives the syllable it joins.
+    private static char SmallYa(char c)
+    {
+        int at = (c >= 'ァ' ? c - 0x60 : c) - 0x3041;
+        // ゃ (0x3083) a, ゅ (0x3085) u, ょ (0x3087) o.
+        return at == 0x42 ? 'a' : at == 0x44 ? 'u' : 'o';
+    }
+
+    private static byte Code(char vowel)
+    {
+        switch (vowel)
+        {
+            case 'i': return 1;
+            case 'u': return 2;
+            case 'e': return 3;
+            case 'o': return 4;
+            default: return 0;
+        }
+    }
+
+    /// <summary>
+    /// How long a line without a voice is "said" (its mouth moves and its face stays): its syllables at a talking pace
+    /// (FaceLife.csv Talk.syllable seconds each, Talk.pad more), within Talk.shortest and Talk.longest.
+    /// </summary>
+    internal static float Seconds(int syllables)
+    {
+        float each = Mathf.Max(.02f, FaceTables.Number("Talk.syllable", .14f));
+        float said = syllables * each + FaceTables.Number("Talk.pad", .2f);
+        return Mathf.Clamp(said, FaceTables.Number("Talk.shortest", .6f), Mathf.Max(.6f, FaceTables.Number("Talk.longest", 4f)));
     }
 
     private static readonly Dictionary<AudioClip, Track> tracks = new Dictionary<AudioClip, Track>();
@@ -96,7 +182,7 @@ internal static class FaceVoice
         if (peak < 1e-4f) return null;
         // The loud part of speech, not its single loudest instant, opens the mouth wide.
         float full = peak * .75f;
-        var track = new Track { Open = new byte[count], Vowel = new byte[count] };
+        var track = new Track { Open = new byte[count], Vowel = new byte[count], Syllable = new ushort[count] };
         for (int i = 0; i < count; i++) track.Open[i] = (byte)Mathf.RoundToInt(Mathf.Clamp01(loud[i] / full) * 255f);
         // Syllable by syllable: one vowel for each, from how bright it sounds at its loudest.
         int syllable = -1, from = 0;
@@ -115,11 +201,19 @@ internal static class FaceVoice
                 for (int j = from; j < i; j++)
                     if (loud[j] > loud[loudest]) loudest = j;
                 vowel = VowelOf(bright[loudest], syllable);
-                for (int j = from; j < i; j++) track.Vowel[j] = vowel;
+                for (int j = from; j < i; j++)
+                {
+                    track.Vowel[j] = vowel;
+                    track.Syllable[j] = (ushort)Mathf.Min(syllable, ushort.MaxValue);
+                }
             }
             else
                 for (int j = 0; j < i && j < count; j++) track.Vowel[j] = 0;
-            if (i >= count) break;
+            if (i >= count)
+            {
+                track.Syllables = syllable + 1;
+                break;
+            }
             syllable++;
             from = i;
             quiet = false;
