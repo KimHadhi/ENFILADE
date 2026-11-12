@@ -26,6 +26,12 @@ using UnityEngine;
 /// The hold eases in as the gun comes into the hands; a clip eases in with it (contactBlend), eases back into the hold at its
 /// end as the clip does, and lets go as fast as a cut-short reload (reloadBlendOut). Only where FPSAF holds the upper body
 /// (standing, crouched); in the other moves the hands go onto the gun kept in view by the same hold (PlayerBodyHands.GunGrip).
+/// The plain hold wears the hands exactly as a reload's end does, so nothing changes as a reload hands over to it (the user,
+/// 2026-11-12: "재장전할 땐 정상이거든? 근데 재장전 끝나자마자 손을 이상하게 잡아"). KINEMATION's clips agree: every reload's last
+/// frame has the palms and fingers where the gun's pose clip has them (0.0 cm, 0 degrees, every gun, measured). What changed
+/// was ours on top, on only in the still hold: the fingers opened up to fingerOpenMost off the gun's surface, and, on bodies
+/// other than the bakes' (Mayo, Ichigo), our shapes' palm push, which counted a hand on its grip only once no reload was
+/// going (FPSBody.GripHold). Rig.stillHoldFixes brings both back, for comparing.
 /// Rig.holdContacts, Rig.reloadContacts and Rig.contactFingers in Tables/FPSBody.csv switch each part back to the old way.
 /// </summary>
 public sealed partial class FPSBody
@@ -42,10 +48,14 @@ public sealed partial class FPSBody
     private bool contactFingers = true;
     [SerializeField, Min(.01f), Tooltip("How quickly a clip's hold on the gun, or the plain hold's, comes in (s).")]
     private float contactBlend = .15f;
-    [SerializeField, Range(0f, 60f), Tooltip("Holding the gun still, the most a finger joint opens so a smaller hand's finger rests on the "
-        + "gun instead of sinking into it (degrees). 0: the clip's angles as they are.")]
+    [SerializeField, Tooltip("Off: the plain hold wears the hands exactly as a reload's end does. On (for comparing): the two passes the "
+        + "still hold alone had come back: the fingers open off the gun's surface (fingerOpenMost) and our shapes' palm push moves "
+        + "palms that are on the clips' contacts (PlayerBodyHands.GunFingers).")]
+    private bool stillHoldFixes;
+    [SerializeField, Range(0f, 60f), Tooltip("With stillHoldFixes, holding the gun still, the most a finger joint opens so a smaller "
+        + "hand's finger rests on the gun instead of sinking into it (degrees). 0: the clip's angles as they are.")]
     private float fingerOpenMost = 30f;
-    [SerializeField, Min(0f), Tooltip("How far off the gun's surface a finger's skin rests (m).")]
+    [SerializeField, Min(0f), Tooltip("With stillHoldFixes, how far off the gun's surface a finger's skin rests (m).")]
     private float fingerClearance = .002f;
 
     // A pose clip holds the gun in both hands when the support palm is this close to the weapon bone (m).
@@ -60,6 +70,8 @@ public sealed partial class FPSBody
     private readonly Vector3[] mixRightDigits = new Vector3[GunArms.DigitCount], mixLeftDigits = new Vector3[GunArms.DigitCount];
     private float contactWeight;
     private bool hasContact;
+    // The followed clip is easing back into the hold at its end (its blend out), not cut short.
+    private bool clipSettling;
     private FPSGun contactGun;
     // How far the plain hold's contacts hold the hands (0-1): in as a gun comes into the hands, out while a clip of its own
     // has them without being followed.
@@ -68,6 +80,12 @@ public sealed partial class FPSBody
     /// <summary>The most a finger joint opens off the gun (degrees) and the skin's rest off it (m), for HandGrip.WearDigits.</summary>
     internal float FingerOpenMost => fingerOpenMost;
     internal float FingerClearance => fingerClearance;
+    /// <summary>The still hold's own passes are on (Rig.stillHoldFixes, off unless comparing).</summary>
+    internal bool StillHoldFixes => stillHoldFixes;
+    /// <summary>A reload's own clip has both hands fully now, before it settles into the hold (for the hand-over report).</summary>
+    internal bool OnReloadClip => HoldsGun && hasContact && held.ContactIsReload && contactWeight >= .999f && Framework >= .999f;
+    /// <summary>A reload that played out is easing back into the hold now (not one cut short).</summary>
+    internal bool ReloadSettling => HoldsGun && hasContact && held.ContactIsReload && clipSettling;
 
     // After KeepGunInView, before RideGun and the hands (PlayerBodyHands, 320): the gun to where the playing clip has it, and
     // the plain hold's contacts made ready.
@@ -90,6 +108,7 @@ public sealed partial class FPSBody
             hasContact = true;
             playing = true;
         }
+        clipSettling = playing && settling;
         float target = playing && !settling ? 1f : 0f;
         float ease = target > contactWeight ? contactBlend : settling ? held.ContactSettle : reloadBlendOut;
         contactWeight = Mathf.MoveTowards(contactWeight, target, dt / Mathf.Max(.01f, ease));
@@ -164,9 +183,9 @@ public sealed partial class FPSBody
 
     /// <summary>
     /// The way each of a hand's finger joints points as KINEMATION's clips have it now (GunArms.Digits: the playing clip's
-    /// over the plain hold's), how much of the hand it takes (0-1, as HandContact), and whether the hand is held still on
-    /// the gun (the plain hold alone, fully on: HandGrip may rest the fingers on the gun's surface once and keep that). False
-    /// when the fingers aren't the clips' (Rig.contactFingers off, or no clip's hand could be read).
+    /// over the plain hold's), how much of the hand it takes (0-1, as HandContact), and whether HandGrip rests the fingers on
+    /// the gun's surface (only with Rig.stillHoldFixes, the plain hold alone and fully on). False when the fingers aren't the
+    /// clips' (Rig.contactFingers off, or no clip's hand could be read).
     /// </summary>
     internal bool HandDigits(bool isLeft, out Vector3[] digits, out float weight, out bool still)
     {
@@ -186,7 +205,9 @@ public sealed partial class FPSBody
             digits = isLeft ? mixLeftDigits : mixRightDigits;
             for (int i = 0; i < GunArms.DigitCount; i++) digits[i] = Vector3.Slerp(holdWays[i], clipWays[i], mix);
         }
-        still = mix <= .001f && hold >= .999f && Framework >= .999f;
+        // Through a reload the fingers wear the clip's ways as they are; the hold wears its own the same way, so they don't
+        // open off the gun the moment the reload ends.
+        still = stillHoldFixes && mix <= .001f && hold >= .999f && Framework >= .999f;
         return true;
     }
 

@@ -4,17 +4,19 @@ using UnityEngine;
 /// The hands' fingers on the gun. Wherever the palms follow KINEMATION's own clips (FPSBody.Contacts: the plain hold, a
 /// reload, a draw, a look over the gun), the fingers take that clip's grip too (FPSBody.HandDigits, HandGrip.WearDigits):
 /// each finger joint points as KINEMATION's hand's does in the hand's own frame, so the trigger finger lies along the
-/// trigger guard and the fingers wrap the grip as the pack's animators made them, on any humanoid's own fingers; held still,
-/// a finger a smaller hand would sink into the gun opens until it rests on the gun's real surface (GunSurface). Our shapes
+/// trigger guard and the fingers wrap the grip as the pack's animators made them, on any humanoid's own fingers, in the
+/// plain hold exactly as through a reload (with Rig.stillHoldFixes, held still, a finger a smaller hand would sink into
+/// the gun opens until it rests on the gun's real surface, GunSurface). Our shapes
 /// (HandGrip.Shape) wrapped every gun alike, about 20 degrees per joint off the clips' grip on average and up to 38 on a
 /// gun (the Mk14 EBR's support hand), measured 2026-11-12.
 /// The shapes stay underneath and wherever the clips' fingers don't reach: the shooting hand round the pistol grip with
 /// the index finger on the trigger, the support hand cradling the handguard or pump, round a vertical grip or against an
 /// angled grip the gun wears, or under a pistol's grip hand, and a hand off its grip mid-reload loosely closed. They are set
 /// angles inside a hand's reach on any humanoid's own fingers; the clips' finger curves through Unity's muscles broke some
-/// hands (user, 2026-11-09: "손가락이 자꾸 문제가 생기는 거 보니 … 우리 식으로"), the joints' own ways do not. A palm left
-/// inside the gun is still pushed back out along the way it faces until its skin rests on the gun's surface. Each hand
-/// holds a shape by how far it is on its grip (FPSBody.GripHold).
+/// hands (user, 2026-11-09: "손가락이 자꾸 문제가 생기는 거 보니 … 우리 식으로"), the joints' own ways do not. A palm on our
+/// shapes left inside the gun is still pushed back out along the way it faces until its skin rests on the gun's surface;
+/// a palm on the clips' contacts is where KINEMATION's palm is and stays there. Each hand holds a shape by how far it is
+/// on its grip (FPSBody.GripHold).
 /// A gun may carry its own shape for either hand (GunGrips, set with the Grip Tuner): it wins over the clips' fingers, for
 /// the shooting hand always, for the support hand while it is on the gun's own body (a grip attachment keeps its shape).
 /// </summary>
@@ -69,7 +71,11 @@ public sealed partial class PlayerBodyHands
         if (arm == null || weight <= 0f) return;
 
         var surface = gunBody != null ? gunBody.HeldSurface : null;
-        if (surface != null && !surface.Empty) PalmOutOfGun(arm, surface, weight * gunHold[side]);
+        // The push leaves the share of the hand the clips' contacts placed (HoldGunContacts) alone, as it did through a
+        // reload: a body other than the bakes' counted its hands on the grip only once no reload was going (GripHold), so the
+        // push came on just as a reload ended and moved the palms off KINEMATION's place (user, 2026-11-12).
+        float onClips = gunBody != null && !gunBody.StillHoldFixes ? contactShare[side] * (isLeft ? 1f - OnAttachedGrip : 1f) : 0f;
+        if (surface != null && !surface.Empty) PalmOutOfGun(arm, surface, weight * gunHold[side] * (1f - onClips));
         if (gunCustom[side] != null) arm.WearShape(gunCustom[side], HandGrip.Shape.Grab, gunHold[side], weight);
         else if (clipFingers < .999f) arm.WearShape(gunShape[side], HandGrip.Shape.Grab, gunHold[side], weight);
         if (clipFingers <= 0f || digits == null) return;
