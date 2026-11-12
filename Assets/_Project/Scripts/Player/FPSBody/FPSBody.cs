@@ -339,6 +339,9 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
         // FPS Animation Pack's own weapon scripts expect its own player.
         foreach (var leftover in instance.GetComponentsInChildren<FPSWeaponSound>(true)) DestroyImmediate(leftover);
         foreach (var leftover in instance.GetComponentsInChildren<FPSWeapon>(true)) DestroyImmediate(leftover);
+        // So does the PDW90's see-through magazine (its demo Pdw90Animation wants the pack's weapon script and an Animator graph
+        // our guns don't have, and threw at every frame): ours shows the rounds instead (PackMagazineRounds).
+        foreach (var demo in instance.GetComponentsInChildren<Pdw90Animation>(true)) PackMagazineRounds.Replace(demo, entry.weapon);
         if (kinemation != null) kinemation.enabled = false;
         SetLayer(instance.transform, weaponRoot.gameObject.layer);
         holder.SetActive(true);
