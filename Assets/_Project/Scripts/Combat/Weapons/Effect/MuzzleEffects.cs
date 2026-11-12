@@ -180,6 +180,9 @@ public sealed class MuzzleEffects : MonoBehaviour, ITableBound
 
     private void Play(WeaponShot shot)
     {
+        // A gun whose shots wear a bought pack's look flies the pack's round instead of this tracer, not both
+        // (PackShots: the Desperado's Realistic Gunslinger round drew over its own tracer, 2026-11-13).
+        if (weapon != null && PackShots.Covers(weapon.EquippedData)) return;
         bool pellet = weapon != null && weapon.EquippedData != null && weapon.EquippedData.Pellets > 1;
         Vector3 first = EndOf(shot.Trace);
         Launch(shot.Origin, first, pellet, 0f);

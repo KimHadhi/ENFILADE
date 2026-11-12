@@ -55,6 +55,9 @@ public sealed class MuzzleFlash : MonoBehaviour
         // One flame per shot, however many pellets it threw.
         if (shot.Pellet > 0) return;
         var data = weapon != null ? weapon.EquippedData : null;
+        // A gun whose shots wear a bought pack's look throws the pack's muzzle burst instead of this flame, not both
+        // (PackShots: the Desperado's Realistic Gunslinger muzzle, 2026-11-13).
+        if (PackShots.Covers(data)) return;
         Transform muzzle = weapon != null ? weapon.MuzzlePoint : null;
         // A suppressor throws no flame.
         if (flame == null || data == null || data.MuzzleFlashScale <= 0f || !GunFeelSettings.Instance.muzzleEffects
