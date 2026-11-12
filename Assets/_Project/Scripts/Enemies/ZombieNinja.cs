@@ -3,14 +3,18 @@ using UnityEngine.AI;
 
 /// <summary>
 /// The ninja, an elite from the user's memo of 2026-11-11 (item 23: "닌자처럼 등 뒤로 이동해서 공격하는 애. 패링하려면
-/// 재빠르게 뒤를 돌아서 상대의 공격을 튕겨내야 함"). A lean zombie with a blade and a violet light, quick on its feet. Up
-/// close it fights as any zombie does. Seeing someone between blinkNear and blinkRange, it vanishes into smoke with a
-/// whoosh, steps out of fresh smoke right behind them with the ring of a drawn blade (the warning), and strikes from there
+/// 재빠르게 뒤를 돌아서 상대의 공격을 튕겨내야 함"). A lean zombie with a blade and a violet light, quick on its feet. It
+/// never trades plain blows (HoldsSwing): it stalks, and every attack it makes comes out of its smoke. Seeing someone
+/// within blinkRange, however near, it vanishes into smoke with a whoosh, steps out of fresh smoke behind them (else at
+/// their side or a back corner, never in front) with the ring of a drawn blade (the warning), and strikes from there
 /// (AttackMove.Backstab, backstabWindup). That blow can only be parried by someone who has turned to face it (within
 /// parryAngle; dodging works as ever): turned round in time and parried, it is thrown off balance, open to an execution,
 /// and the parry pays parryReward (the user's rule: a hit is a plus, a miss is only what the blow does). On the host it
 /// thinks; the vanish shows on every PC through its mood (ZombieMind.Rouse: Rousing while hidden), so no new message is
-/// sent. Numbers: Tables/ZombieNinja; its kind's row in ZombieKinds.
+/// sent. Until 0.8.195 it fought up close as any zombie and vanished only from 3.5 m out, so once it was on someone (a
+/// /spawn puts it 3 m ahead) it never vanished again and a plain parry from the front beat it (user, 2026-11-12: "닌자가
+/// 공격할 때 내 등 뒤로 순간이동하지 않는데? 걍 정면에서 패링하면 끝남"). Numbers: Tables/ZombieNinja; its kind's row in
+/// ZombieKinds.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class ZombieNinja : ZombieElite
@@ -20,12 +24,14 @@ public sealed class ZombieNinja : ZombieElite
     private static AudioClip whoosh, ring;
 
     [Header("Blink")]
-    [SerializeField, Min(0f), Tooltip("It vanishes for someone it sees no farther than this (m).")]
+    [SerializeField, Min(0f), Tooltip("It vanishes for someone it sees no farther than this (m), however near: it has no other attack.")]
     private float blinkRange = 14f;
-    [SerializeField, Min(0f), Tooltip("And no nearer than this (m): closer, it simply fights.")]
-    private float blinkNear = 3.5f;
-    [SerializeField, Min(0f), Tooltip("From one blink to the next (s).")]
-    private float blinkCooldown = 7f;
+    [SerializeField, Min(0f), Tooltip("From one blow out of the smoke to the next vanish (s): meanwhile it only stalks.")]
+    private float blinkCooldown = 2.2f;
+    [SerializeField, Min(0f), Tooltip("From appearing to its first vanish (s).")]
+    private float blinkFirst = 1f;
+    [SerializeField, Min(.1f), Tooltip("Nowhere to come out near its quarry and too far to strike from where it stands: it tries again after this (s).")]
+    private float blinkRetry = .8f;
     [SerializeField, Min(.05f), Tooltip("How long it is gone in the smoke before it moves (s).")]
     private float vanishSeconds = .35f;
     [SerializeField, Min(0f), Tooltip("And how long after it moves before it shows again (s): the other PCs' copies catch up meanwhile.")]
@@ -36,7 +42,7 @@ public sealed class ZombieNinja : ZombieElite
     private float blinkHeight = 1.5f;
     [Header("The blow from behind")]
     [SerializeField, Min(.1f), Tooltip("From stepping out of the smoke to the blow (s): the time to turn and parry.")]
-    private float backstabWindup = .6f;
+    private float backstabWindup = .7f;
     [SerializeField, Range(10f, 90f), Tooltip("It is parried only by someone facing it within this angle (degrees either side).")]
     private float parryAngle = 55f;
     [SerializeField, Min(0f), Tooltip("Parried from behind, it loses this much posture: enough breaks it, open to an execution.")]
@@ -54,9 +60,17 @@ public sealed class ZombieNinja : ZombieElite
 
     private enum Phase { Chase, Vanish, Settle }
 
+    // The ways round its quarry it may come out (degrees off straight behind, the way they face turned round), each tried
+    // on both sides, the nearer side first: behind, the back corners, the sides, the front corners. Never in front.
+    private static readonly float[] Turns = { 0f, 30f, 60f, 90f, 120f };
+    // How far from them, off the table's `behind` (m): there first, then a little nearer, then a little farther.
+    private static readonly float[] Reaches = { 0f, -.4f, .6f };
+
     private Phase phase;
     private PlayerMovement quarry;
-    private float left, cooldownLeft = 2f;
+    private float left, cooldownLeft;
+    // It came out of its smoke near its quarry (Blink found a place); else where it went in.
+    private bool came;
     // Every PC: whether it shows hidden (its mood went from awake to rousing: a vanish, not a waking), and the body's
     // renderers it hid.
     private bool hidden;
@@ -65,6 +79,8 @@ public sealed class ZombieNinja : ZombieElite
 
     protected override ZombieKind Kind => ZombieKind.Ninja;
     public override bool Driving => phase != Phase.Chase;
+    // Its only attack is the one out of its smoke: a plain swing would be met by a plain parry from the front.
+    public override bool HoldsSwing => Mine;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void Forget() => whoosh = ring = null;
@@ -73,6 +89,7 @@ public sealed class ZombieNinja : ZombieElite
     {
         base.Awake();
         GameTables.Bind(TableName, TableRow, this);
+        cooldownLeft = blinkFirst;
     }
 
     internal override float WindupOf(AttackMove move) => move == AttackMove.Backstab ? backstabWindup : 0f;
@@ -95,7 +112,7 @@ public sealed class ZombieNinja : ZombieElite
             case Phase.Chase: Watch(dt); break;
             case Phase.Vanish:
                 if ((left -= dt) > 0f) break;
-                Blink();
+                came = Blink();
                 phase = Phase.Settle;
                 left = settleSeconds;
                 break;
@@ -103,14 +120,12 @@ public sealed class ZombieNinja : ZombieElite
                 // Out when its rouse is over too: the swing waits for that (EnemyCombatAI), and would cancel the blow.
                 if ((left -= dt) > 0f || !mind.Ready) break;
                 phase = Phase.Chase;
-                cooldownLeft = blinkCooldown;
-                if (quarry != null && !quarry.IsDead && (quarry.transform.position - transform.position).sqrMagnitude < 3.5f * 3.5f)
-                    combat.BeginSpecial(quarry, AttackMove.Backstab);
+                Strike();
                 break;
         }
     }
 
-    // Chasing: someone in sight, not too near nor too far, and the last blink long enough ago: into the smoke.
+    // Chasing: someone in sight within reach of a blink, however near, and the last blow long enough ago: into the smoke.
     private void Watch(float dt)
     {
         cooldownLeft -= dt;
@@ -118,36 +133,70 @@ public sealed class ZombieNinja : ZombieElite
         var player = targeting != null ? targeting.Player : null;
         if (player == null || player.IsDead || player.IsParkour) return;
         Vector3 to = Flat(player.transform.position - transform.position);
-        float distance = to.magnitude;
-        if (distance < blinkNear || distance > blinkRange || Mathf.Abs(player.transform.position.y - Feet.y) > blinkHeight || !Sees(player)) return;
+        if (to.magnitude > blinkRange || Mathf.Abs(player.transform.position.y - Feet.y) > blinkHeight || !Sees(player)) return;
         phase = Phase.Vanish;
         left = vanishSeconds;
         quarry = player;
+        came = false;
         Halt();
         // Hidden on every PC while it rouses (LateUpdate); it turns to them meanwhile and stands still.
         mind.Rouse(player, vanishSeconds + settleSeconds);
     }
 
-    // Out of the smoke behind them: straight behind the way they face, else a little to either side, on the walk mesh
-    // with nothing solid between them; nowhere fits, it comes out where it went in.
-    private void Blink()
+    /// <summary>
+    /// Out of the smoke near its quarry (the host): on its own walk mesh, reachable on foot straight from where they stand
+    /// (no wall, gap or other floor between), nothing solid between at chest height, and the agent really put there.
+    /// First straight behind the way they face, then turning out to the back corners, the sides and the front corners, the
+    /// nearer side first, each at `behind`, a little nearer and a little farther. False when nowhere fits: it is still
+    /// where it went in (Strike decides from there).
+    /// </summary>
+    private bool Blink()
     {
-        if (quarry == null || quarry.IsDead) return;
-        Vector3 back = -Flat(quarry.transform.forward).normalized;
-        if (back.sqrMagnitude < .01f) back = Flat(transform.position - quarry.transform.position).normalized;
-        Vector3 chest = quarry.transform.position + Vector3.up * 1.2f;
-        foreach (float turn in new[] { 0f, 35f, -35f, 70f, -70f })
+        if (quarry == null || quarry.IsDead || agent == null || !agent.isActiveAndEnabled) return false;
+        // The agent's own mesh: a spot on another agent type's mesh can't be warped to.
+        var filter = new NavMeshQueryFilter { agentTypeID = agent.agentTypeID, areaMask = agent.areaMask };
+        Vector3 feet = quarry.transform.position;
+        if (!NavMesh.SamplePosition(feet, out NavMeshHit them, 1f, filter)) return false;
+        Vector3 back = -Flat(quarry.transform.forward);
+        if (back.sqrMagnitude < .01f) back = Flat(transform.position - feet);
+        if (back.sqrMagnitude < .01f) back = Vector3.back;
+        back.Normalize();
+        // The side it was already on round them goes first.
+        float side = Vector3.Dot(Vector3.Cross(back, Flat(transform.position - feet)), Vector3.up) >= 0f ? 1f : -1f;
+        Vector3 chest = feet + Vector3.up * 1.2f;
+        for (int i = 0; i < Turns.Length * 2 - 1; i++)
         {
+            float turn = i == 0 ? 0f : Turns[(i + 1) / 2] * (i % 2 == 1 ? side : -side);
             Vector3 way = Quaternion.Euler(0f, turn, 0f) * back;
-            Vector3 spot = quarry.transform.position + way * behind;
-            if (!NavMesh.SamplePosition(spot, out NavMeshHit onMesh, .8f, NavMesh.AllAreas)) continue;
-            if (Mathf.Abs(onMesh.position.y - quarry.transform.position.y) > 1f) continue;
-            if (Physics.Linecast(chest, onMesh.position + Vector3.up * 1.2f, WorldMask, QueryTriggerInteraction.Ignore)) continue;
-            agent.Warp(onMesh.position);
-            Vector3 face = Flat(quarry.transform.position - transform.position);
-            if (face.sqrMagnitude > 1e-4f) transform.rotation = Quaternion.LookRotation(face);
-            return;
+            foreach (float reach in Reaches)
+            {
+                float distance = Mathf.Max(.9f, behind + reach);
+                if (!NavMesh.SamplePosition(them.position + way * distance, out NavMeshHit spot, .6f, filter)) continue;
+                if (Mathf.Abs(spot.position.y - them.position.y) > 1f || Flat(spot.position - them.position).magnitude < .8f) continue;
+                if (NavMesh.Raycast(them.position, spot.position, out _, filter)) continue;
+                if (Physics.Linecast(chest, spot.position + Vector3.up * 1.2f, WorldMask, QueryTriggerInteraction.Ignore)) continue;
+                if (!agent.Warp(spot.position)) continue;
+                Vector3 face = Flat(feet - spot.position);
+                if (face.sqrMagnitude > 1e-4f) transform.rotation = Quaternion.LookRotation(face);
+                return true;
+            }
         }
+        return false;
+    }
+
+    // Out of the smoke: the blow, from where it came out. Nowhere to come out (cornered on a ledge, say) and its quarry
+    // still within a step of where it stands, the same blow from there, its cue and all; farther, it stalks on and tries
+    // again soon. Never a plain swing in place of it (HoldsSwing).
+    private void Strike()
+    {
+        bool near = quarry != null && !quarry.IsDead
+            && (came || Flat(quarry.transform.position - transform.position).magnitude <= behind + .6f);
+        if (near)
+        {
+            combat.BeginSpecial(quarry, AttackMove.Backstab);
+            cooldownLeft = blinkCooldown;
+        }
+        else cooldownLeft = blinkRetry;
     }
 
     // ---- Every PC: hidden in smoke, coming out, its light ----

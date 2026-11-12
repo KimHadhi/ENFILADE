@@ -36,6 +36,11 @@ public abstract class ZombieElite : MonoBehaviour
     protected abstract ZombieKind Kind { get; }
     /// <summary>It moves its body itself just now: the chase waits (EnemyChaseAI) and so does the swing (EnemyCombatAI).</summary>
     public virtual bool Driving => false;
+    /// <summary>
+    /// It starts no attack of the usual kind, though it chases on (a ninja strikes only out of its smoke, ZombieNinja): the
+    /// swing waits (EnemyCombatAI) while the chase goes on. An attack it begins itself (BeginSpecial) still runs.
+    /// </summary>
+    public virtual bool HoldsSwing => false;
     /// <summary>It is this kind (and not crawling on a lost leg): otherwise it does nothing.</summary>
     protected bool Mine => type != null && type.Kind == Kind && !type.Crawls;
     /// <summary>This PC runs the zombie (the host, or alone); a copy only shows it.</summary>

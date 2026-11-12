@@ -226,6 +226,13 @@ public sealed class EnemyCombatAI : MonoBehaviour
 
         if (!preparing)
         {
+            // A ninja never trades plain blows: its only attack comes out of its smoke (ZombieElite.HoldsSwing).
+            if (Elite != null && Elite.HoldsSwing)
+            {
+                timer = 0f;
+                UpdateIndicator(false);
+                return;
+            }
             if (!InReach(player))
             {
                 timer = attackInterval;
