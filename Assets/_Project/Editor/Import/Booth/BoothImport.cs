@@ -38,14 +38,23 @@ internal sealed class BoothImport : AssetPostprocessor
     private const int WriteTries = 6;
     private const double RetrySeconds = .5;
 
-    // Colour words of BOOTH colour prefabs, for the colour cards.
+    // Colour words of BOOTH colour prefabs, for the colour cards: patterns, tried in this order on the name (_ as spaces).
     // White Board (Ene Collection, 2026-11-12) brought Basis, Burgundy, Gold, Lime and Sax (Japanese サックス, saxe blue).
+    // Sera Yura (LookVook, 2026-11-12) names every colour after the outfit (Sera_Yura_Black&Aqua, the base _Sera_Yura),
+    // which says nothing on a colour card, so the name goes first; its two-word colours (Sky Blue, Deep Blue) come before
+    // their single words, and Deep / Pastel read as 진 / 연 (Deep Gray 진회색, Pastel Pink 연분홍).
     private static readonly (string English, string Korean)[] ColourWords =
     {
+        ("^Sera Yura$", "기본"), ("^Sera Yura ", ""), ("Sky Blue", "하늘색"), ("Teal Blue", "청록"), ("Warm Pink", "웜핑크"),
+        ("Deep Blue", "진청"), ("Deep Black", "칠흑"),
         ("Basic", "기본"), ("Basis", "기본"), ("Beige", "베이지"), ("Black", "검정"), ("White", "흰색"), ("Yellow", "노랑"),
         ("Brown", "갈색"), ("Gray", "회색"), ("Grey", "회색"), ("Navy", "남색"), ("Pink", "분홍"), ("Purple", "보라"),
         ("Blue", "파랑"), ("Sky", "하늘"), ("Red", "빨강"), ("Green", "초록"), ("Mint", "민트"), ("Orange", "주황"),
         ("Transparent", "비침"), ("Burgundy", "버건디"), ("Gold", "금색"), ("Lime", "라임"), ("Sax", "색스"),
+        ("Deep ", "진"), ("Pastel ", "연"), ("3Line", "3줄"), ("Check", "체크"), ("Cow", "젖소"), ("Hologram", "홀로그램"),
+        ("Latex", "라텍스"), ("Mono", "모노"), ("Water", "물결"), ("Silver", "은색"), ("Aqua", "아쿠아"), ("Cherry", "체리"),
+        ("Grass", "풀색"), ("Wine", "와인"), ("Ivory", "아이보리"), ("Khaki", "카키"), ("Ash", "잿빛"), ("Lavender", "라벤더"),
+        ("Coral", "코랄"),
     };
 
     private sealed class Source
