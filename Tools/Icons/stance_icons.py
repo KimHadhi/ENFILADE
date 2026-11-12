@@ -4,7 +4,7 @@ user crouched without knowing it and wondered why the shamblers looked so big ("
 크지 싶었는데 걍 내가 계속 앉아 있는 상태였구연"), and asked for a figure standing with a gun, sitting, or lying prone
 as they are. White silhouettes on transparent, 128 px, every pose on one ground line and one scale, so a change of
 stance reads as the body going down or getting up. Drawn here from plain geometry (python stance_icons.py, standard
-library only), written to Assets/_Project/Resources/UI/Icons/Stance_<id>.png, which StanceFigure loads.
+library only), written to Assets/_Project/Art/Resources/UI/Icons/Stance_<id>.png, which StanceFigure loads.
 
 Each limb is a capsule between two joints, each its own layer (shapes overlapping in one layer would cancel, even-odd).
 """
@@ -16,7 +16,7 @@ import zlib
 
 SIZE = 128
 SUPER = 4
-OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "Assets", "_Project", "Resources", "UI", "Icons")
+OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "Assets", "_Project", "Art", "Resources", "UI", "Icons")
 GROUND = 122
 
 

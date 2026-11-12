@@ -9,7 +9,7 @@ using UnityEditor;
 internal sealed class GunMovesWatcher : AssetPostprocessor
 {
     // GunMoves.Folder under Resources; written out because the game's types are internal to its own assembly.
-    private const string FolderPath = "Assets/_Project/Resources/Combat/GunMoves/";
+    private const string FolderPath = ProjectFolders.DataByName + "Combat/GunMoves/";
 
     private static void OnPostprocessAllAssets(string[] imported, string[] deleted, string[] moved, string[] movedFrom)
     {

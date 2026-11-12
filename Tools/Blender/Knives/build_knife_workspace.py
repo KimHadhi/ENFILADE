@@ -45,7 +45,7 @@ spec.loader.exec_module(tools)
 PREVIEWS = {'forward': 'Assets/_Project/Art/Models/Addons/Knives/PrimalKnife/PrimalKnife.fbx',
             'reverse': 'Assets/_Project/Art/Models/Addons/Knives/Karambit/Karambit.fbx'}
 KNIFE_MODEL = 'Assets/_Project/Art/Models/Addons/Knives/{0}/{0}.fbx'
-TABLES_DIR = Path('Assets/_Project/Resources/Tables')
+TABLES_DIR = Path('Assets/_Project/Data/Resources/Tables')
 CLASS_KNIVES = 'ClassKnives'
 # ClassKnives' seat (hand axes: x away from the thumb, y out of the palm, z the fingers' way; positions in hand lengths).
 HELD = Vector((0.0, .3, .55))
@@ -105,7 +105,7 @@ DRAFTS = {
 
 def table_file(root, name, new_in='Melee'):
     """The game's table of this name under the project root. Since 0.9.0 the tables are filed in sub-folders of
-    Resources/Tables by subject and found by file name alone, as the game finds them (GameTables); a table that isn't
+    Data/Resources/Tables by subject and found by file name alone, as the game finds them (GameTables); a table that isn't
     there yet is made in new_in."""
     base = Path(root) / TABLES_DIR
     for found in sorted(base.rglob(name + '.csv')):

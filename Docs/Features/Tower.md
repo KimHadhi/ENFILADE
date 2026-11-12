@@ -16,11 +16,11 @@
 - **방탄 유리**: 레인 사이 벽 가운데(양 끝 2.5 m를 뺀 31 m를 기둥 둘로 나눈 세 장, 높이 2.6 m). 옆 레인 싸움이 보인다. 맞으면 유리처럼 금이 가지만 어떤 총알도 뚫지 못한다(Surfaces.csv `ArmorGlass`, 관통 100). 이웃 레인은 구경만 하고 도울 수 없다.
 - **휴게층**: 모든 레인이 끝나면(통과 또는 탈락) 다음 휴게층에서 모두 만난다. 가운데에 상점 카운터, 도착 문 쪽에 보급 두 자리, 소파 두 곳. 레인에서 죽은 사람도 여기서 돌아온다. 모두 모이면 다음 스캐너가 솟는다.
 - **10층**: 모든 레인이 강적(거구) 하나. 마지막 레인의 마지막 처치 순간이 타워의 끝이다. 먼저 끝낸 사람은 유리 너머로 지켜본다.
-- **ENFILADED!!** ([EnfiladedFinale](../../Assets/_Project/Scripts/Modes/Tower/EnfiladedFinale.cs)): 젠레스 존 제로가 마지막 일격을 한 색으로 물든 멈춘 화면으로 끝내듯, 각 PC가 그 순간 자기 플레이어가 보던 화면을 HUD 없이 붙잡아 HUD의 잉크·분홍·종이 세 색으로 바꾸고(망점, 가운데서 뻗는 빛줄기, 가장자리 어둡게, [EnfiladedFreeze.shader](../../Assets/_Project/Resources/Combat/Shaders/EnfiladedFreeze.shader)), 흰 섬광, 위아래 검은 띠, 기운 분홍 띠가 찢고 들어오며 ENFILADED!!가 내리꽂히고 흔들린다(잉크 그림자와 하늘색 잔상이 뒤에 붙음). 아래 판에 "엔필레이드 타워 정복"과 오늘 훈련·걸린 시간. 3.4초 뒤 끝 이야기 카드, 그 뒤 모두 허브로 가서 결과 연출(MatchResults). 소리는 새 UI 소리 `Enfiladed`(KitSound).
+- **ENFILADED!!** ([EnfiladedFinale](../../Assets/_Project/Scripts/Modes/Tower/EnfiladedFinale.cs)): 젠레스 존 제로가 마지막 일격을 한 색으로 물든 멈춘 화면으로 끝내듯, 각 PC가 그 순간 자기 플레이어가 보던 화면을 HUD 없이 붙잡아 HUD의 잉크·분홍·종이 세 색으로 바꾸고(망점, 가운데서 뻗는 빛줄기, 가장자리 어둡게, [EnfiladedFreeze.shader](../../Assets/_Project/Art/Resources/Combat/Shaders/EnfiladedFreeze.shader)), 흰 섬광, 위아래 검은 띠, 기운 분홍 띠가 찢고 들어오며 ENFILADED!!가 내리꽂히고 흔들린다(잉크 그림자와 하늘색 잔상이 뒤에 붙음). 아래 판에 "엔필레이드 타워 정복"과 오늘 훈련·걸린 시간. 3.4초 뒤 끝 이야기 카드, 그 뒤 모두 허브로 가서 결과 연출(MatchResults). 소리는 새 UI 소리 `Enfiladed`(KitSound).
 
 ## 날마다 바뀌는 방
 
-[TowerPlan](../../Assets/_Project/Scripts/Modes/Tower/TowerPlan.cs)이 날짜(20261112 같은 수)를 씨앗으로 방마다 무엇이 나올지 정한다. 방장이 정해 방에 알리고 모든 PC가 같은 계획을 만든다. [TowerFloors.csv](../../Assets/_Project/Resources/Tables/Modes/TowerFloors.csv) F1~F10:
+[TowerPlan](../../Assets/_Project/Scripts/Modes/Tower/TowerPlan.cs)이 날짜(20261112 같은 수)를 씨앗으로 방마다 무엇이 나올지 정한다. 방장이 정해 방에 알리고 모든 PC가 같은 계획을 만든다. [TowerFloors.csv](../../Assets/_Project/Data/Resources/Tables/Modes/TowerFloors.csv) F1~F10:
 
 - `mode` alt: 레인끼리 번갈아 떼와 강적(옆 레인과 늘 다른 싸움, 한 레인 안에서도 층마다 바뀜). 그날이 어느 레인부터 떼인지 정한다. champion/swarm은 모든 레인이 같다(10층은 champion).
 - 떼: `swarm`(한 사람 몫) 중 `runners` 비율이 러너, 나머지 섐블러, 그리고 `exploders`·`chargers`. 처음 나오는 놈은 늘 섐블러(문 열자마자 러너가 덮치지 않게).
@@ -49,10 +49,10 @@
 
 ## 표
 
-- [Tower.csv](../../Assets/_Project/Resources/Tables/Modes/Tower.csv): 카운트(10초)·모두 손을 댔을 때(3초)·입장(8초)·손 닿는 거리·방 들어서기·한꺼번에 나오는 수·나오는 간격·인원 배율·모이기 시간·카드 시간·ENFILADED!! 시간·보상·10층 노래(Music.csv `TowerFinale`).
-- [TowerFloors.csv](../../Assets/_Project/Resources/Tables/Modes/TowerFloors.csv): 층마다 위 내용.
+- [Tower.csv](../../Assets/_Project/Data/Resources/Tables/Modes/Tower.csv): 카운트(10초)·모두 손을 댔을 때(3초)·입장(8초)·손 닿는 거리·방 들어서기·한꺼번에 나오는 수·나오는 간격·인원 배율·모이기 시간·카드 시간·ENFILADED!! 시간·보상·10층 노래(Music.csv `TowerFinale`).
+- [TowerFloors.csv](../../Assets/_Project/Data/Resources/Tables/Modes/TowerFloors.csv): 층마다 위 내용.
 - Maps.csv `EnfiladeTower`, Surfaces.csv `ArmorGlass`, Ambience.csv `EnfiladeTower`·`Tower.Inside`·`Tower.Hall`, MapLook.csv `EnfiladeTower`, Texts.csv `tower.*`·`life.respawn.tower`.
-- 재질: 벽·바닥·테두리·강철은 [MapSurfaces.csv](../../Assets/_Project/Resources/Tables/Maps/MapSurfaces.csv)의 `EnfiladeTower.Wall`·`Floor`·`Trim`·`Steel` 줄(맵 꾸미기 4단계, 11-12): 어두운 슬레이트로 물들인 콘크리트(Concrete034), 어두운 테라초 바닥(Terrazzo013, 조금 매끈해서 네온이 비친다), 어두운 강철(Metal063). 문과 스캐너는 `.Moving` 재질이라 움직여도 무늬가 따라간다. 줄이 없으면 Art/Materials/Tower의 예전 단색. 분홍 네온·흰 조명판·문 등·방탄 유리는 Art/Materials/Tower 그대로.
+- 재질: 벽·바닥·테두리·강철은 [MapSurfaces.csv](../../Assets/_Project/Data/Resources/Tables/Maps/MapSurfaces.csv)의 `EnfiladeTower.Wall`·`Floor`·`Trim`·`Steel` 줄(맵 꾸미기 4단계, 11-12): 어두운 슬레이트로 물들인 콘크리트(Concrete034), 어두운 테라초 바닥(Terrazzo013, 조금 매끈해서 네온이 비친다), 어두운 강철(Metal063). 문과 스캐너는 `.Moving` 재질이라 움직여도 무늬가 따라간다. 줄이 없으면 Art/Materials/Tower의 예전 단색. 분홍 네온·흰 조명판·문 등·방탄 유리는 Art/Materials/Tower 그대로.
 - 구역마다 모습(맵 꾸미기 5단계, 11-13 사용자: "타워 진행"): 층 묶음마다 벽·바닥이 다르고 오를수록 어둡다. `RoomWall1`·`RoomFloor1`(1~3층: 맨 콘크리트 벽, 거친 콘크리트 바닥, 물 샌 자국·금), `RoomWall2`·`RoomFloor2`(4~6층: 올리브색 칠 벽, 칠한 콘크리트 바닥), `RoomWall3`·`RoomFloor3`(7~9층: 예전 슬레이트와 어두운 테라초), `RoomWall4`·`RoomFloor4`(10층: 어두운 강철 벽, 줄무늬 강판 바닥). 휴게층과 로비는 `HallWall`·`HallFloor`(중간 회색 칠 벽: 흰 홀 이름 글자가 읽히게, 밝은 테라초). 계단실은 모든 층에서 예전 `Wall`·`Floor`. 바닥 줄의 옆면(아래층 천장)은 모두 같은 콘크리트라 천장이 층마다 튀지 않는다. 바깥벽은 바깥 10 cm가 따로 된 껍질(`Shell`, 상자 이름 "외벽 겉")이라 셰이더가 그리는 창이 안쪽 벽에는 생기지 않는다: 좁고 높은 창(MapWindows `Slit`: 0.9 × 2.2 m, 층 6 m, 셋째 층부터라 입구 위 큰 이름판 뒤에는 없다), 밑동의 흙 튄 자국. 바깥 광장 둘레에 맵 밖 건물(MapSkyline `EnfiladeTower`: 2~7층의 낮은 동, 격납고). 킷 소품(Tables/MapArt hub*, 허브와 같은 Military Training 킷): 방마다 들어온 문에서 2 m 안의 출발선, 들어온 벽 구석 위의 카메라, 문 옆 소화기와 사격장 표지(네 가지 번갈아), 그 구석에 쌓은 탄약 상자나 종이 상자(막힘), 먼 벽의 층 숫자 아래 쓰고 남은 종이 표적 둘. 휴게층마다 스캐너 표시 앞 출발선, 레인 문마다 소화기와 LIVE FIRE 표지, 네 구석 카메라, 긴 벽의 스피커와 벽등, 남쪽 벽의 총 보관함과 탄약 상자, 소파 위 표지. 로비 입구 안팎에 검문선·소화기·표지·카메라. 모두 벽과 구석에 붙여 엄폐물·우리·챔피언 자리·문을 비켰다. 간접광(11-13 사용자: "APV 진행"): MapLook `probeSpacing` 1.5 m로 지을 때 APV를 굽는다. 닫힌 탑이라 하늘빛은 입구와 바깥에만 들고, 방과 휴게층은 천장 등의 반사광으로 밝다(등은 굽는 동안만 그림자를 켬). 반사(11-13 사용자: "반사 프로브 진행"): 방 40개·휴게층·입구홀마다 상자 투영 반사 프로브를 굽는다(Tables/MapReflections Tower.Room·Tower.Hall·Tower.Gate). 바닥에 하늘 대신 그 방의 천장 등과 분홍 네온이 비친다.
 
 ## 처음 해 볼 것

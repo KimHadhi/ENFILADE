@@ -6,11 +6,11 @@ using UnityEngine;
 
 /// <summary>
 /// Keeps each Resources/Audio/&lt;bank&gt; in step with its sound folder: every subfolder that holds clips becomes a key
-/// ("Run/Concrete"). Adding, moving or deleting a clip there rebuilds the bank. Art/Audio/Library is never read.
+/// ("Run/Concrete"). Adding, moving or deleting a clip there rebuilds the bank. The shelf of raw sounds is outside Unity (ArtSource/Library/Audio).
 /// </summary>
 internal sealed class SoundBankBuilder : AssetPostprocessor
 {
-    private const string OutputFolder = "Assets/_Project/Resources/" + SoundBank.ResourceFolder;
+    private const string OutputFolder = ProjectFolders.DataByName + SoundBank.ResourceFolder;
     // Bank id → its root folder. The voice bank points at the current character's voice folder.
     private static readonly (string Id, string Folder)[] Banks =
     {
@@ -70,7 +70,7 @@ internal sealed class SoundBankBuilder : AssetPostprocessor
         var bank = AssetDatabase.LoadAssetAtPath<SoundBank>(assetPath);
         if (bank == null)
         {
-            if (!AssetDatabase.IsValidFolder(OutputFolder)) AssetDatabase.CreateFolder("Assets/_Project/Resources", SoundBank.ResourceFolder);
+            if (!AssetDatabase.IsValidFolder(OutputFolder)) AssetDatabase.CreateFolder(ProjectFolders.Folder(ProjectFolders.DataByName), SoundBank.ResourceFolder);
             bank = ScriptableObject.CreateInstance<SoundBank>();
             bank.EditorRefresh(id, entries);
             AssetDatabase.CreateAsset(bank, assetPath);

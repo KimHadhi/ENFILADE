@@ -7,11 +7,6 @@ using UnityEngine.UI;
 public sealed class AmmoHUD : MonoBehaviour
 {
     [SerializeField] private PlayerWeaponSlots weaponSlots;
-    // Keep authored references so existing scenes migrate without missing fields.
-    [SerializeField, HideInInspector] private WeaponSlotSilhouette weaponIcon;
-    [SerializeField, HideInInspector] private TMP_Text ammoText;
-    [SerializeField, HideInInspector] private Image[] ammoMarks;
-    [SerializeField, HideInInspector] private Image reloadGauge, reloadGaugeBackground;
 
     [Header("Layout (1920 x 1080 canvas units)")]
     [SerializeField] private Vector2 screenMargin = new Vector2(40f, 40f);
@@ -164,11 +159,7 @@ public sealed class AmmoHUD : MonoBehaviour
         if (panel != null) return true;
         var canvas = GetComponentInParent<Canvas>();
         if (canvas == null || !(transform is RectTransform root)) return false;
-        // Replace the old bullet marks / reload ring inside the existing HUD, without another canvas.
-        foreach (Transform child in transform) child.gameObject.SetActive(false);
-        var oldBackground = GetComponent<Image>();
-        if (oldBackground != null) { oldBackground.enabled = false; oldBackground.raycastTarget = false; }
-        // The legacy RIGHT container has a fixed 100px size, so the display finds the screen's corner from the canvas's
+        // The RIGHT container has a fixed 100px size, so the display finds the screen's corner from the canvas's
         // own size (RefreshNow) and stays in RIGHT, standing on the HUD's right side (HudPlane, HudBoard) with the rest.
         canvasRect = (RectTransform)canvas.rootCanvas.transform;
         root.anchorMin = root.anchorMax = new Vector2(.5f, .5f);

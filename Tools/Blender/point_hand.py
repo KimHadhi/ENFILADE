@@ -2,7 +2,7 @@
 때 가리키는 애니메이션이 있었으면 하니까").
 
 The game's pointing hand (a held F, and the moment an F tap pings an enemy) takes its shape from
-Assets/_Project/Resources/Tables/Clips/PointHand.csv. This script reads that table onto a character's left hand in Blender and
+Assets/_Project/Data/Data/Resources/Tables/Clips/PointHand.csv. This script reads that table onto a character's left hand in Blender and
 writes the hand you pose back into it.
 
 How to use (Blender 4.x):
@@ -44,9 +44,9 @@ TABLE = "PointHand"
 
 def table_file(root, name, new_in="Clips"):
     """The game's table of this name under the project root. Since 0.9.0 the tables are filed in sub-folders of
-    Resources/Tables by subject and found by file name alone, as the game finds them (GameTables); a table that isn't
+    Data/Resources/Tables by subject and found by file name alone, as the game finds them (GameTables); a table that isn't
     there yet is made in new_in."""
-    base = os.path.join(root, "Assets", "_Project", "Resources", "Tables")
+    base = os.path.join(root, "Assets", "_Project", "Data", "Resources", "Tables")
     for folder, _, files in sorted(os.walk(base)):
         if name + ".csv" in files:
             return os.path.join(folder, name + ".csv")

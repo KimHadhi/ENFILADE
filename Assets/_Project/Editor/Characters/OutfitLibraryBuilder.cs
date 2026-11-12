@@ -16,7 +16,7 @@ using UnityEngine;
 internal sealed class OutfitLibraryBuilder : AssetPostprocessor
 {
     private const string OutfitsFolder = ModelImportRules.ModelsFolder + "Outfits";
-    internal const string LibraryPath = "Assets/_Project/Resources/Characters/Outfits.asset";
+    internal const string LibraryPath = ProjectFolders.DataByName + "Characters/Outfits.asset";
     private const string ColoursFolder = "Colors";
     // The file of a model made for anyone (OutfitLibrary.AnySkin), and where a colour set's name is looked up in Texts.csv.
     private const string AnyFile = "any", ColourText = "outfit.colour.";

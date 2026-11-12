@@ -21,7 +21,7 @@ public sealed class FPSBodyAssets : ScriptableObject
     [Serializable]
     public struct Gun
     {
-        [Tooltip("Our weapon (Data/Combat/Weapons).")]
+        [Tooltip("Our weapon (Data/Guns/Weapons).")]
         public WeaponData weapon;
         [Tooltip("The KINEMATION gun it shows (CharacterAnimationSystem/Integrations/FPSAnimationPack/Prefabs/Weapons): its model, sight, recoil, camera shake and gun-part clips.")]
         public GameObject prefab;

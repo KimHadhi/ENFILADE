@@ -10,7 +10,7 @@ using UnityEngine;
 using Debug = UnityEngine.Debug;
 
 /// <summary>
-/// Writes a balance table (Resources/Tables/*.csv) from an editor tool while the editor runs: BoothImport's sway rows in
+/// Writes a balance table (Data/Resources/Tables/*.csv) from an editor tool while the editor runs: BoothImport's sway rows in
 /// Cloth.csv and the Grip Tuner's GunGrips.csv. Build the new text on <see cref="Read"/> and hand it to
 /// <see cref="Write"/>. What lands is what File.WriteAllText wrote before (the text, UTF-8 with BOM); only how it gets
 /// into the file changed.

@@ -44,7 +44,7 @@ internal static class TextScan
     }
 
     private const string ScriptsFolder = "Assets/_Project/Scripts";
-    private static readonly string[] SceneFolders = { "Assets/_Project/Prefabs", "Assets/_Project/Scenes", "Assets/_Project/Resources" };
+    private static readonly string[] SceneFolders = { "Assets/_Project/Prefabs", "Assets/_Project/Scenes", "Assets/_Project/Data/Resources" };
 
     /// <summary>
     /// Code only developers read, by path (a folder ends with '/'), optionally one method and one literal of it. A line

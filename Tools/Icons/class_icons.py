@@ -1,7 +1,7 @@
 """
 The seven class icons for the title screen's 클래스 page and the class HUD (stage 7, 2026-11-11): white shapes on
 transparent, 256 px, drawn here from plain geometry so they can be changed and drawn again (python class_icons.py,
-standard library only). Written to Assets/_Project/Resources/UI/Icons/Class_<id>.png, which KitButtons.IconImage loads.
+standard library only). Written to Assets/_Project/Art/Resources/UI/Icons/Class_<id>.png, which KitButtons.IconImage loads.
 
 The user's brief: Knight a chess knight or something that reads melee; Assault a bullet, a gun or an officer; Ghost a
 sniper scope's reticle; Point after Killing Floor 2's gunslinger; Détente a dove or a white cross (the healer); Schießhund
@@ -15,7 +15,7 @@ import zlib
 
 SIZE = 256
 SUPER = 4  # samples per pixel along each axis
-OUT = os.path.join(os.path.dirname(__file__), "..", "..", "Assets", "_Project", "Resources", "UI", "Icons")
+OUT = os.path.join(os.path.dirname(__file__), "..", "..", "Assets", "_Project", "Art", "Resources", "UI", "Icons")
 
 
 # ---- shapes as closed polygons (lists of (x, y), y down) -------------------------------------------------------

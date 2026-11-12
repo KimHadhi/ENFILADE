@@ -10,7 +10,7 @@ using UnityEngine;
 /// </summary>
 internal sealed class PlayerBodyProfileBuilder : AssetPostprocessor
 {
-    private const string ProfileFolder = "Assets/_Project/Resources/Characters";
+    private const string ProfileFolder = ProjectFolders.DataByName + "Characters";
     private const string ProfilePath = ProfileFolder + "/PlayerBody.asset";
     private const string CharactersFolder = ModelImportRules.ModelsFolder + "Characters";
     private static bool queued;
@@ -55,7 +55,7 @@ internal sealed class PlayerBodyProfileBuilder : AssetPostprocessor
         if (profile == null)
         {
             if (model == null) return;
-            if (!AssetDatabase.IsValidFolder(ProfileFolder)) AssetDatabase.CreateFolder("Assets/_Project/Resources", "Characters");
+            if (!AssetDatabase.IsValidFolder(ProfileFolder)) AssetDatabase.CreateFolder(ProjectFolders.Folder(ProjectFolders.DataByName), "Characters");
             profile = ScriptableObject.CreateInstance<PlayerBodyProfile>();
             profile.EditorRefresh(model, clips);
             AssetDatabase.CreateAsset(profile, ProfilePath);

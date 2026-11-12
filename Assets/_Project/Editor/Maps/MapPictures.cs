@@ -13,7 +13,7 @@ using UnityEngine;
 public static class MapPictures
 {
     private const int Width = 1280, Height = 720;
-    private const string Folder = "Assets/_Project/Resources/UI/Maps", ShotName = "MapShot";
+    private const string Folder = ProjectFolders.ArtByName + "UI/Maps", ShotName = "MapShot";
 
     [MenuItem("ENFILADE/맵/맵 사진 찍기")]
     private static void TakeAll()

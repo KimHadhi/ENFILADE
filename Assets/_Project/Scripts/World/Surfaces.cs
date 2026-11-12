@@ -4,7 +4,7 @@ using UnityEngine;
 
 /// <summary>
 /// What a collider is made of, for footsteps and impacts. A <see cref="SurfaceType"/> on the object (or a parent)
-/// decides; otherwise Resources/Tables/Maps/Surfaces.csv matches keywords against the physics material, the render
+/// decides; otherwise Data/Resources/Tables/Maps/Surfaces.csv matches keywords against the physics material, the render
 /// material and the object name, and the longest matching keyword wins. Nothing matches → Concrete.
 /// Each surface may name a parent (Duct → Metal) that sound lookups fall back to.
 /// </summary>

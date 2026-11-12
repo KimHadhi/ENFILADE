@@ -3,7 +3,7 @@ using TMPro;
 using UnityEngine;
 
 /// <summary>
-/// The font faces the game draws with, by key, and the material presets made for them (Resources/UI/FontFaces.asset).
+/// The font faces the game draws with, by key, and the material presets made for them (Data/Resources/UI/FontFaces.asset).
 /// Fonts.csv names a face and a preset for each text role (FontRoles); this asset is the one place where those names
 /// meet files, so no script or table row holds a path. Everything listed here ships in a build, so a face goes in only
 /// when a role uses it or may use it with one cell's change (all nine Pretendard weights already ship: the

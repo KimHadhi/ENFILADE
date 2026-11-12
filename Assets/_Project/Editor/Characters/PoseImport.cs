@@ -20,7 +20,7 @@ using UnityEngine;
 /// </summary>
 internal static class PoseImport
 {
-    public const string Folder = "Assets/_Project/Resources/Poses/";
+    public const string Folder = ProjectFolders.ArtByName + "Poses/";
     public const string AvatarModel = "Assets/ThirdParty/BOOTH/Chocolate rice/0.MAYO/FBX/FBX_MAYO.fbx";
 
     public static bool IsPose(string path)

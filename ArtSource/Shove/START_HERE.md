@@ -60,9 +60,9 @@
 
 | 동작 | 가는 곳 | 게임에 들어가는 때 |
 | --- | --- | --- |
-| 총 휘두르기 두 가지 | `Assets/_Project/Resources/Combat/GunMoves/enf_bash_long.csv`, `enf_bash_pistol.csv` | Unity 창을 누르면 가져간다. Play 중이어도 다음 V부터 새 동작 |
+| 총 휘두르기 두 가지 | `Assets/_Project/Data/Resources/Combat/GunMoves/enf_bash_long.csv`, `enf_bash_pistol.csv` | Unity 창을 누르면 가져간다. Play 중이어도 다음 V부터 새 동작 |
 | 발차기 | `Assets/_Project/Art/Animations/Shove/enf_kick_front.fbx` | Unity 창을 누르면 카즈사 아바타로 가져간다. 다음 Play부터 |
-| 수리 두 가지 | `Assets/_Project/Resources/Tables/Clips/RepairHammer.csv`, `RepairTorch.csv` | Unity 창을 누르면 가져간다. Play 중이어도 다음 수리부터 새 동작. 어느 캐릭터 팔에도 맞춰 나온다 |
+| 수리 두 가지 | `Assets/_Project/Data/Resources/Tables/Clips/RepairHammer.csv`, `RepairTorch.csv` | Unity 창을 누르면 가져간다. Play 중이어도 다음 수리부터 새 동작. 어느 캐릭터 팔에도 맞춰 나온다 |
 
 - 패널 맨 아래에 지금 동작이 게임에 들어가 있는지, 고친 것이 있는지가 보인다.
 - 패널의 **게임에 보내기** 버튼은 `Ctrl+S`와 같다(바뀐 동작을 보내고 작업 파일을 저장한다). **저장하면 게임에 보내기**를 끄면 `Ctrl+S`는 저장만 하고, 보낼 때는 이 버튼을 누른다.

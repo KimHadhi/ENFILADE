@@ -4,7 +4,7 @@ using System.Globalization;
 using UnityEngine;
 
 /// <summary>
-/// What each action sounds like, from Resources/Tables/Audio/SoundCues.csv, so a vault or a landing is retuned in the table.
+/// What each action sounds like, from Data/Resources/Tables/Audio/SoundCues.csv, so a vault or a landing is retuned in the table.
 /// Code fires a cue by name (Vault, Land, StepRun…); its "sounds" cell lists what plays, separated by ';':
 ///   Movement/Cloth/VaultSwish          a sound bank and key (Tables/Sounds rows)
 ///   Movement/HandHard/{surface}        the key for the surface the code passes (falls back like SoundBank.Find)

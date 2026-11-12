@@ -135,7 +135,7 @@ public static class FontTools
         var faces = FontFaces.Instance;
         var texts = ScanTexts();
 
-        report.Section("역할 (Resources/Tables/Core/Fonts.csv)");
+        report.Section("역할 (Data/Resources/Tables/Core/Fonts.csv)");
         var roleFaces = new Dictionary<string, TMP_FontAsset>();
         var roles = FontRoles.Roles.ToList();
         if (faces == null) report.Problem($"Resources/{FontFaces.ResourcePath}.asset이 없습니다.");

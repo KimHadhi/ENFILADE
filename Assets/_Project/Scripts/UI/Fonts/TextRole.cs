@@ -10,6 +10,6 @@ using UnityEngine;
 [DisallowMultipleComponent]
 public sealed class TextRole : MonoBehaviour
 {
-    [Tooltip("A role of Resources/Tables/Core/Fonts.csv: Label, Prompt, Damage, Ammo, HudText, HudBold, Shield, Alarm, Chat or Body.")]
+    [Tooltip("A role of Data/Resources/Tables/Core/Fonts.csv: Label, Prompt, Damage, Ammo, HudText, HudBold, Shield, Alarm, Chat or Body.")]
     public string role = FontRoles.Body;
 }

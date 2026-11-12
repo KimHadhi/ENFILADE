@@ -32,10 +32,10 @@ using Object = UnityEngine.Object;
 internal static class TacticalGunSetup
 {
     private const string Pack = "Assets/ThirdParty/KINEMATION/TacticalShooterPack";
-    private const string Folder = "Assets/_Project/Data/Combat/TacticalGuns";
-    private const string WeaponsFolder = "Assets/_Project/Data/Combat/Weapons";
-    private const string FPSBodyFolder = "Assets/_Project/Data/Combat/FPSBody";
-    private const string AssetsPath = "Assets/_Project/Resources/" + FPSBodyAssets.ResourcePath + ".asset";
+    private const string Folder = ProjectFolders.Guns + "TacticalGuns";
+    private const string WeaponsFolder = ProjectFolders.Guns + "Weapons";
+    private const string FPSBodyFolder = ProjectFolders.Guns + "FPSBody";
+    private const string AssetsPath = ProjectFolders.DataByName + FPSBodyAssets.ResourcePath + ".asset";
     private const string Operator = Pack + "/Meshes/Character/Operator/SKM_Operator.fbx";
     private const string CameraRig = Pack + "/Prefabs/TacticalShooterCharacter.prefab";
     // The FPS Animation Pack guns whose settings and FPSAF assets the pack's guns start from: the rifle for the long guns,
@@ -533,8 +533,8 @@ internal static class TacticalGunSetup
     // KINEMATION's FPS Animation Pack has no parts of its own for its two guns, so they wear the Tactical Shooter Pack's
     // (user, 2026-11-09: "담 단계"), put on mounts measured off each gun's own mesh: the muzzle's front face, the top of the
     // rail over the receiver, the underside of the handguard where KINEMATION's support hand holds it, and ahead of that. A
-    // copy of the gun's CAS prefab carries them (Data/Combat/FPSPackGuns), and Resources/Combat/FPSBody points at it.
-    private const string PackGunsFolder = "Assets/_Project/Data/Combat/FPSPackGuns";
+    // copy of the gun's CAS prefab carries them (Data/Guns/FPSPackGuns), and Resources/Combat/FPSBody points at it.
+    private const string PackGunsFolder = ProjectFolders.Guns + "FPSPackGuns";
     private const string CasGuns = "Assets/ThirdParty/KINEMATION/CharacterAnimationSystem/Integrations/FPSAnimationPack/Prefabs/Weapons";
 
     private sealed class PackGun
@@ -620,7 +620,7 @@ internal static class TacticalGunSetup
     private static bool FitPackGuns(FPSBodyAssets assets, bool all)
     {
         bool changed = false;
-        var bakes = AssetDatabase.LoadAssetAtPath<GunBakes>("Assets/_Project/Resources/" + GunBakes.ResourcePath + ".asset");
+        var bakes = AssetDatabase.LoadAssetAtPath<GunBakes>(ProjectFolders.DataByName + GunBakes.ResourcePath + ".asset");
         foreach (var spec in PackGuns)
         {
             int index = Array.FindIndex(assets.guns, gun => gun.weapon != null && gun.weapon.name == spec.weapon);

@@ -10,7 +10,7 @@ It opens ready to work in, and saving sends the work to the game (the user, 2026
 - A pose is struck at frame 9 and held to 75 with a breath at 42 (make_victory_poses.py). Changing it at frame 9 is
   enough: leaving frame 9 (playing, or going to another frame) and saving key 42 and 75 from it, 42 keeping its breath.
 - Saving (Ctrl+S) sends every pose that changed since it was last sent (or never was) to
-  Assets/_Project/Resources/Poses/<name>.fbx, where Unity takes it onto Mayo's avatar (PoseImport).
+  Assets/_Project/Art/Resources/Poses/<name>.fbx, where Unity takes it onto Mayo's avatar (PoseImport).
 The recipes, the rig helpers and the export come from make_victory_poses.py beside it.
 """
 import importlib.util
@@ -426,7 +426,7 @@ class ENFPOSE_OT_key(bpy.types.Operator):
 class ENFPOSE_OT_send(bpy.types.Operator):
     bl_idname = "enf_pose.send"
     bl_label = "게임에 보내기"
-    bl_description = ("Ctrl+S와 같다: 바뀐 포즈를 모두 Assets/_Project/Resources/Poses/<이름>.fbx로 보내고 작업 파일을 저장한다"
+    bl_description = ("Ctrl+S와 같다: 바뀐 포즈를 모두 Assets/_Project/Art/Resources/Poses/<이름>.fbx로 보내고 작업 파일을 저장한다"
                       "(저장하면 보내기를 꺼 두어도 보낸다). Unity로 돌아가면 알아서 다시 읽는다")
     bl_options = {'REGISTER'}
 

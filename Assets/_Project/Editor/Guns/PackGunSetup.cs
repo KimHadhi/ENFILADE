@@ -10,11 +10,11 @@ using Object = UnityEngine.Object;
 /// <summary>
 /// Makes FPS Animation Ultimate's other guns into guns the body holds, the way its MX16A4 and M1911 are (user, 2026-11-13:
 /// "KINEMATION에서 무기들 좀 더 임포트하면 안 됨? 다 가져오고 싶은데, 총이 너무 적어 지금").
-/// - A WeaponData of its own (Data/Combat/Weapons), copied from the gun of ours most like it so it starts with that gun's
+/// - A WeaponData of its own (Data/Guns/Weapons), copied from the gun of ours most like it so it starts with that gun's
 ///   sound profile and feel; its numbers are its Weapons.csv row, its shots the pack's own recordings.
 /// - Its entry in Resources/Combat/FPSBody: the CAS integration's prefab of it, the rifle's or the pistol's FPSAF assets
 ///   without their clip-timed curves, and the pack's own pose and reload clips, which GunClipRetarget bakes for each skin.
-/// - Then TacticalGunSetup fits the Tactical Shooter Pack's parts on it as on the MX16A4 and M1911 (Data/Combat/FPSPackGuns).
+/// - Then TacticalGunSetup fits the Tactical Shooter Pack's parts on it as on the MX16A4 and M1911 (Data/Guns/FPSPackGuns).
 /// - The Kar98k and L96X (a bolt worked after every shot) and the KXG12 (a pump) also get the body's clip of that, which the
 ///   body plays after each shot (FPSBodyAssets.Gun.sourceFire, FPSGun.Cycle); the Kar98k and KXG12 load a round at a time
 ///   with the start, round and end pairs of KINEMATION's CasFPSManualWeapon, and their sounds are the ones KINEMATION's clips
@@ -29,9 +29,9 @@ internal static class PackGunSetup
 {
     private const string Pack = "Assets/ThirdParty/KINEMATION/FPSAnimationPack";
     private const string CasGuns = "Assets/ThirdParty/KINEMATION/CharacterAnimationSystem/Integrations/FPSAnimationPack/Prefabs/Weapons";
-    private const string WeaponsFolder = "Assets/_Project/Data/Combat/Weapons";
-    private const string FPSBodyFolder = "Assets/_Project/Data/Combat/FPSBody";
-    private const string AssetsPath = "Assets/_Project/Resources/" + FPSBodyAssets.ResourcePath + ".asset";
+    private const string WeaponsFolder = ProjectFolders.Guns + "Weapons";
+    private const string FPSBodyFolder = ProjectFolders.Guns + "FPSBody";
+    private const string AssetsPath = ProjectFolders.DataByName + FPSBodyAssets.ResourcePath + ".asset";
     // The pack's two guns already in FPSBody, whose profile and FPSAF assets the others start from.
     private const string RifleWeapon = "MX16A4", PistolWeapon = "M1911";
 

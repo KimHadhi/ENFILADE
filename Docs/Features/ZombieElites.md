@@ -2,9 +2,9 @@
 
 2026-11-11 사용자 메모 23·24·25를 좀비로 만든 기록(24는 2026-11-12에 사용자가 정한 그림 리퍼로). 수치는 표가 진실이고, 이 문서는 무엇을 왜 그렇게 했는지 적는다.
 
-- 종류와 나오는 비율·체력·크기·속도: [ZombieKinds.csv](../../Assets/_Project/Resources/Tables/Enemies/ZombieKinds.csv)의 `Ninja`·`Candyman`·`Breadbag` 행. `most`는 한꺼번에 있을 수 있는 최대 수(닌자 2, 나머지 1).
-- 저마다의 수치: [ZombieNinja.csv](../../Assets/_Project/Resources/Tables/Enemies/ZombieNinja.csv), [ZombieCandyman.csv](../../Assets/_Project/Resources/Tables/Enemies/ZombieCandyman.csv), [ZombieBreadbag.csv](../../Assets/_Project/Resources/Tables/Enemies/ZombieBreadbag.csv), [ZombieReaper.csv](../../Assets/_Project/Resources/Tables/Enemies/ZombieReaper.csv).
-- 모습 자리: [EliteLooks.asset](../../Assets/_Project/Resources/Enemies/EliteLooks.asset). 2026-11-12부터 거구·자폭·돌진·캔디맨·리퍼는 팩 좀비 가운데 정해진 몸 하나만 입는다(맨 아래 「엘리트 고정 외형」). 닌자와 브레드백은 전용 몸이 없어서 팩 좀비 몸을 조금 크거나 작게 쓰고, 머리 불빛 색과 손에 든 것(상자 몇 개로 만든 임시 소품)으로 구분한다. 행마다 `character`(몸), `handProp`(오른손, +Z가 날 방향, 손잡이가 원점), `headProp`(머리), `swing`(휘두르는 동작 클립)에 넣으면 임시 것이나 팩의 것 대신 그것을 쓴다. 자기 몸이 있는 엘리트에게는 머리 임시 소품(리퍼의 두건)을 씌우지 않는다. 소리 칸이 비어 있으면 코드가 만든 소리를 쓴다.
+- 종류와 나오는 비율·체력·크기·속도: [ZombieKinds.csv](../../Assets/_Project/Data/Resources/Tables/Enemies/ZombieKinds.csv)의 `Ninja`·`Candyman`·`Breadbag` 행. `most`는 한꺼번에 있을 수 있는 최대 수(닌자 2, 나머지 1).
+- 저마다의 수치: [ZombieNinja.csv](../../Assets/_Project/Data/Resources/Tables/Enemies/ZombieNinja.csv), [ZombieCandyman.csv](../../Assets/_Project/Data/Resources/Tables/Enemies/ZombieCandyman.csv), [ZombieBreadbag.csv](../../Assets/_Project/Data/Resources/Tables/Enemies/ZombieBreadbag.csv), [ZombieReaper.csv](../../Assets/_Project/Data/Resources/Tables/Enemies/ZombieReaper.csv).
+- 모습 자리: [EliteLooks.asset](../../Assets/_Project/Data/Resources/Enemies/EliteLooks.asset). 2026-11-12부터 거구·자폭·돌진·캔디맨·리퍼는 팩 좀비 가운데 정해진 몸 하나만 입는다(맨 아래 「엘리트 고정 외형」). 닌자와 브레드백은 전용 몸이 없어서 팩 좀비 몸을 조금 크거나 작게 쓰고, 머리 불빛 색과 손에 든 것(상자 몇 개로 만든 임시 소품)으로 구분한다. 행마다 `character`(몸), `handProp`(오른손, +Z가 날 방향, 손잡이가 원점), `headProp`(머리), `swing`(휘두르는 동작 클립)에 넣으면 임시 것이나 팩의 것 대신 그것을 쓴다. 자기 몸이 있는 엘리트에게는 머리 임시 소품(리퍼의 두건)을 씌우지 않는다. 소리 칸이 비어 있으면 코드가 만든 소리를 쓴다.
 - 시험: `/spawn ninja`, `/spawn candyman`, `/spawn breadbag`, `/spawn reaper` (여러 마리면 `/spawn 2 ninja`).
 - 처음 가까이(32m) 보면 화면 위 경고 띠에 이름과 할 일이 한 번 뜬다(Texts.csv `hud.alert.ninja` 등). 효과에는 납득할 설명이 붙는다는 규칙에 따라.
 
@@ -51,7 +51,7 @@
 - 피하는 법: **흰 원(1.9m) 안에서 낮은 자세**(앉기·엎드리기·눕기·슬라이딩·다이브·다운)면 자루 안쪽이라 날이 머리 위로 지나간다. 그러면 "도끼 밑으로 +60". 원 밖으로 바로 뛰어 나가도 피할 수 있지만, 원이 끝에서 빠르게 넓어져서 늦으면 잡힌다. 회피(Alt)의 무적도 통한다. 가드와 패링으로는 못 막는다(원 끝까지 크게 도는 도끼를 막을 수는 없다).
 - 맞히면 +: 한 바퀴를 다 돌면 1.4초 비틀거린다. 피한 사람도, 멀리서 쏘던 사람도 이때 친다.
 - 모든 PC가 호스트의 예고를 따라 원을 그리고, 끝나는 순간 자기 플레이어만 판정한다(브레드백 전기톱과 같은 방식). 비틀거림은 호스트가 걸고 다른 PC에 알린다.
-- 소리: [EliteLooks.asset](../../Assets/_Project/Resources/Enemies/EliteLooks.asset)의 `reaperCharge`(ZZZ 카타나 애드온의 칼 뽑는 소리), `reaperSwing`(기병도 애드온의 휘두르는 소리 둘)을 0.6~0.7배 낮게. 비우면 코드가 만든 휙 소리.
+- 소리: [EliteLooks.asset](../../Assets/_Project/Data/Resources/Enemies/EliteLooks.asset)의 `reaperCharge`(ZZZ 카타나 애드온의 칼 뽑는 소리), `reaperSwing`(기병도 애드온의 휘두르는 소리 둘)을 0.6~0.7배 낮게. 비우면 코드가 만든 휙 소리.
 - 콜아웃: 좀비 칸에서 "리퍼다! 품으로 붙어서 앉아!"(Callouts.csv `zombie.reaper`). 처음 가까이 보면 경고 띠에 이유와 함께 피하는 법(`hud.alert.reaper`).
 - 같은 판에 러너가 있으면 "멀어져라/붙어라"를 순간에 가려야 한다. 억울하면 Reaper 행의 `share`를 낮추거나 러너가 적은 장에만 나오게 바꾼다.
 
@@ -93,8 +93,8 @@
 | 캔디맨 | `SM_Chr_Zombie_Clown_Male_01` 광대 | 갈고리(임시 소품)는 그대로 |
 | 그림 리퍼 | `SM_Chr_Zombie_Firefighter_Male_01` 소방관 | 오른손에 도끼, 도끼 휘두르기, 두건 없음 |
 
-- **어떻게**: [EliteLooks.asset](../../Assets/_Project/Resources/Enemies/EliteLooks.asset)의 행(kind 2 거구, 3 자폭, 4 돌진, 6 캔디맨, 8 리퍼)에 몸을 넣었다. [ZombieBody](../../Assets/_Project/Scripts/Enemies/Body/ZombieBody.cs) `Pick`이 메모 엘리트만이 아니라 어느 종류든 EliteLooks에 몸이 있으면 그 몸을 입힌다. 종류는 몸을 입기 전에 정해지고 복제본도 태어날 때 받으므로 모든 PC에서 같은 몸이다(노래 절정의 거구, 타워, `/spawn`도 낸 그 프레임에 종류를 정한다).
-- **이 다섯 몸은 엘리트만**: [ZombieLooks.asset](../../Assets/_Project/Resources/Enemies/ZombieLooks.asset) `characters`에서 뺐다(50 → 45). 일반 좀비, 먹는 좀비 앞의 시체(ZombieMeal)는 이 목록에서만 고른다.
+- **어떻게**: [EliteLooks.asset](../../Assets/_Project/Data/Resources/Enemies/EliteLooks.asset)의 행(kind 2 거구, 3 자폭, 4 돌진, 6 캔디맨, 8 리퍼)에 몸을 넣었다. [ZombieBody](../../Assets/_Project/Scripts/Enemies/Body/ZombieBody.cs) `Pick`이 메모 엘리트만이 아니라 어느 종류든 EliteLooks에 몸이 있으면 그 몸을 입힌다. 종류는 몸을 입기 전에 정해지고 복제본도 태어날 때 받으므로 모든 PC에서 같은 몸이다(노래 절정의 거구, 타워, `/spawn`도 낸 그 프레임에 종류를 정한다).
+- **이 다섯 몸은 엘리트만**: [ZombieLooks.asset](../../Assets/_Project/Data/Resources/Enemies/ZombieLooks.asset) `characters`에서 뺐다(50 → 45). 일반 좀비, 먹는 좀비 앞의 시체(ZombieMeal)는 이 목록에서만 고른다.
 - **리퍼의 도끼**: [ReaperAxe.prefab](../../Assets/_Project/Prefabs/Props/ReaperAxe.prefab). 팩의 `SM_Chr_Attach_Axe_01`(길이 47cm 손도끼)을 1.8배(84cm)로 키워, 자루 끝에서 5cm 위가 손잡이(원점)이고 도끼머리가 +Z(앞), 날이 아래를 향하게 감쌌다. 팩의 원본 프리팹은 손대지 않았다.
 - **리퍼의 휘두르기**: EliteLooks의 `swing`에 Nephilite `zombie_swipe_attack_01`(제자리판). Blender로 손의 길을 재 보니 이 클립만 오른손 하나로 오른 어깨 뒤(골반 위 0.9m)까지 들어 올렸다가 앞을 가로질러 왼쪽 아래로 내려친다(다른 네 공격 클립은 두 손을 번갈아 휘젓는다). 스윙의 내려치는 순간이 차징 끝에 맞춰지므로(`SwingTime`) 2.4초 동안 도끼를 천천히 젖혔다가 원이 끝까지 넓어지는 순간 내려친다. 원, 붙어 앉아 피하기, 소리, 수치는 그대로다. 플레이어 문구의 낫은 도끼로 바꿨다(Texts.csv `hud.alert.reaper`·`feed.score.reap_dodge`, 설명 칸). 이름은 그대로 「그림 리퍼」. 팔 하나를 잃으면 전처럼 남은 팔에 맞는 팩의 휘두르기로 바뀐다.
 - **머리 임시 소품**: 자기 몸이 있는 엘리트에게는 씌우지 않는다([ZombieElite](../../Assets/_Project/Scripts/Enemies/Elites/ZombieElite.cs) `Dress`). 리퍼의 두건이 소방관 헬멧 위에 얹히지 않게. 손 소품은 그대로라 캔디맨은 광대 몸에 갈고리를 든다.

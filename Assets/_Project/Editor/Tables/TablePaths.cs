@@ -5,13 +5,13 @@ using UnityEditor;
 
 /// <summary>
 /// Where a table's file is, for the editor tools that read and write tables as files (TableFile). Tables are filed in
-/// sub-folders of Resources/Tables by subject and the game asks for them by name alone (GameTables), so a tool names a
+/// sub-folders of Data/Resources/Tables by subject and the game asks for them by name alone (GameTables), so a tool names a
 /// table the same way and never writes a folder down: moving a table to another sub-folder breaks nothing.
 /// </summary>
 internal static class TablePaths
 {
     /// <summary>The folder every table is under, as an asset path.</summary>
-    internal const string Folder = "Assets/_Project/Resources/" + GameTables.ResourcesFolder;
+    internal const string Folder = ProjectFolders.DataByName + GameTables.ResourcesFolder;
 
     private static Dictionary<string, string> paths;
 
@@ -19,7 +19,7 @@ internal static class TablePaths
     private static void Watch() => EditorApplication.projectChanged += () => paths = null;
 
     /// <summary>
-    /// The asset path of the table named so ("Cloth" gives Assets/_Project/Resources/Tables/Characters/Cloth.csv).
+    /// The asset path of the table named so ("Cloth" gives Assets/_Project/Data/Data/Resources/Tables/Characters/Cloth.csv).
     /// A table that doesn't exist yet gets a path right under the tables folder, for the tool about to make it.
     /// </summary>
     internal static string Of(string table)

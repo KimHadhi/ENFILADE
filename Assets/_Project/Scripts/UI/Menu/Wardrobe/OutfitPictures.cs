@@ -74,7 +74,7 @@ public static class OutfitPictures
     public const string Look = "v2";
     public const string RootFolder = "UI/OutfitPictures";
     public const string ResourcesFolder = RootFolder + "/" + Look;
-    public const string ProjectRoot = "Assets/_Project/Resources/" + RootFolder;
+    public const string ProjectRoot = ProjectFolders.ArtByName + RootFolder;
     public const string ProjectFolder = ProjectRoot + "/" + Look;
     public const string TableName = "OutfitPictures";
     private const string PersistentFolder = "OutfitPictures", PersistentFramings = "framings.json";

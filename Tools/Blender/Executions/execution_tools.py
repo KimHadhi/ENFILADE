@@ -11,7 +11,7 @@ then this, and the file is ready to work in: the user only poses and times (the 
   influence, keyed in the pair's action. Moving the hold point moves where that hand holds, for that pair.
 - Saving (Ctrl+S) sends every pair that changed since it was last sent to the game: both clips (enf_exe_<pair>_p for the
   player, _z for the zombie) to Assets/_Project/Art/Animations/Executions and the pair's row of
-  Assets/_Project/Resources/Tables/Melee/Executions.csv (its length, the kill moment, where the player stands and faces, where
+  Assets/_Project/Data/Data/Resources/Tables/Melee/Executions.csv (its length, the kill moment, where the player stands and faces, where
   the zombie lies at the start, the hands' holds). Unity takes the clips with the right avatars (ModelImportRules).
 Nothing here changes Blender's preferences.
 """
@@ -38,7 +38,7 @@ HERE_NAME = 'Tools/Blender/Executions'
 TRUEFPS = Path('Tools/Blender/TrueFPS/truefps_tools.py')
 ZOMBIES = Path('Tools/Blender/Zombies/zombie_tools.py')
 OUT_DIR = Path('Assets/_Project/Art/Animations/Executions')
-TABLES_DIR = Path('Assets/_Project/Resources/Tables')
+TABLES_DIR = Path('Assets/_Project/Data/Resources/Tables')
 TABLE_NAME = 'Executions'
 # Files built by 0.8.294-0.8.297 laid each draft locked on this NLA track under an empty touch-up action.
 OLD_TRACK = '1 시안 (잠금)'
@@ -510,7 +510,7 @@ def restore_draft(context, key):
 
 def table_file(root, name, new_in='Melee'):
     """The game's table of this name under the project root. Since 0.9.0 the tables are filed in sub-folders of
-    Resources/Tables by subject and found by file name alone, as the game finds them (GameTables); a table that isn't
+    Data/Resources/Tables by subject and found by file name alone, as the game finds them (GameTables); a table that isn't
     there yet is made in new_in."""
     base = Path(root) / TABLES_DIR
     for found in sorted(base.rglob(name + '.csv')):

@@ -58,11 +58,11 @@
 
 1. 비슷한 포즈를 고르고 **새 포즈로 복사** → 영어 이름(예: `heart`)을 넣는다. `enf_pose_heart`가 생긴다.
 2. 9프레임에서 고치고 `Ctrl+S`. 새 포즈는 아직 게임에 없으므로 저장할 때 들어가고, 결과 연출이 차례에 넣는다(`results heart`로 바로 본다).
-3. 빼려면 그 포즈를 고르고 **게임에서 빼기**를 누른다(`Assets/_Project/Resources/Poses/enf_pose_heart.fbx`가 지워진다). Unity에서 FBX만 지우면 다음 저장 때 다시 들어간다. 그 포즈를 다시 고치면 저장할 때 다시 들어간다.
+3. 빼려면 그 포즈를 고르고 **게임에서 빼기**를 누른다(`Assets/_Project/Art/Resources/Poses/enf_pose_heart.fbx`가 지워진다). Unity에서 FBX만 지우면 다음 저장 때 다시 들어간다. 그 포즈를 다시 고치면 저장할 때 다시 들어간다.
 
 ## 결과 연출의 카메라와 조명 숫자
 
-[Hub.csv](../../Assets/_Project/Resources/Tables/Modes/Hub.csv)에서 바꾼다(바꾼 뒤 `results`로 다시 본다).
+[Hub.csv](../../Assets/_Project/Data/Resources/Tables/Modes/Hub.csv)에서 바꾼다(바꾼 뒤 `results`로 다시 본다).
 
 | 열 | 지금 | 뜻 |
 | --- | --- | --- |

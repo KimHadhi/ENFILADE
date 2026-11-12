@@ -13,14 +13,14 @@ the file is ready to work in: the user only poses and times (the user, 2026-11-1
   the move shown at once):
   - 총 휘두르기 · 긴 총 (enf_bash_long) and 총 휘두르기 · 권총 (enf_bash_pistol): the empty GUN moves off GUN_hold, which
     sits where Kazusa's hands hold that gun under the head camera (GunBakes gunFromEyes). The hands follow it here as they
-    do in the game. Sent as Assets/_Project/Resources/Combat/GunMoves/<name>.csv: the gun's move and turn off its hold in
+    do in the game. Sent as Assets/_Project/Data/Resources/Combat/GunMoves/<name>.csv: the gun's move and turn off its hold in
     the gun's own frame, in game metres, which FPSBody.Bash plays on any character's gun (GunMoves).
   - 발차기 (enf_kick_front): Kazusa's right leg on the True FPS rig, baked from the original skeleton to
     Assets/_Project/Art/Animations/Shove/enf_kick_front.fbx (+ .clips.csv); Unity takes it with her avatar
     (ModelImportRules) into the body's clips, and the kick plays it on the legs (Player.csv Body.kick).
   - 수리 · 망치 (enf_repair_hammer) and 수리 · 토치 (enf_repair_torch): the Support's mending loops on Kazusa's free left
     arm (CTRL_hand.L, CTRL_elbow.L) while the right hand keeps the gun; the left hand's hold on the gun is let go while one
-    is shown. Sent as Assets/_Project/Resources/Tables/Clips/RepairHammer.csv or RepairTorch.csv: the wrist, the elbow and the
+    is shown. Sent as Assets/_Project/Data/Data/Resources/Tables/Clips/RepairHammer.csv or RepairTorch.csv: the wrist, the elbow and the
     hand's way from the eyes in the view's axes, which RepairArm plays on any character's left arm (GrenadeArmPath's
     columns). repair_moves.py adds them to an older workspace and keys their drafts.
 Every button keys at the current frame with auto-key on, holding the pose some frames either side, so a click is one
@@ -47,7 +47,7 @@ GAME_SCALE = 1.166
 # Where older files (and repair_moves.py's drafting) kept a draft locked under the touch-up layer.
 BASE_TRACK = '1 시안 (잠금)'
 GUN, GUN_HOLD = 'GUN', 'GUN_hold'
-GUN_MOVES_DIR = Path('Assets/_Project/Resources/Combat/GunMoves')
+GUN_MOVES_DIR = Path('Assets/_Project/Data/Resources/Combat/GunMoves')
 KICK_DIR = Path('Assets/_Project/Art/Animations/Shove')
 PLAYER_TABLE = 'Player'
 # Seconds per sample in a gun move file: two per frame at 30 fps, so the game's curve follows the polish closely.
@@ -91,7 +91,7 @@ HAND_TURNS = (('wrist_up', '손목 위로 젖히기'), ('wrist_down', '손목 �
               ('twist_left', '손목 왼쪽으로 비틀기'), ('twist_right', '손목 오른쪽으로 비틀기'))
 # The left hand handle follows the gun through this constraint (the shove workspace's hold); a mending move frees it.
 HOLD_CONSTRAINT = 'Hold the gun (shove workspace)'
-TABLES_DIR = Path('Assets/_Project/Resources/Tables')
+TABLES_DIR = Path('Assets/_Project/Data/Resources/Tables')
 # The left arm's bones on Kazusa's rig, for the path a mending move exports (RepairArm's terms).
 ARM_BONES = dict(shoulder='Left arm', elbow='Left elbow', wrist='Left wrist', index='IndexFinger1_L', middle='MiddleFinger1_L',
                  little='LittleFinger1_L')
@@ -473,7 +473,7 @@ _SWAP = Matrix(((1, 0, 0), (0, 0, 1), (0, 1, 0)))
 
 def table_file(root, name, new_in='Clips'):
     """The game's table of this name under the project root. Since 0.9.0 the tables are filed in sub-folders of
-    Resources/Tables by subject and found by file name alone, as the game finds them (GameTables); a table that isn't
+    Data/Resources/Tables by subject and found by file name alone, as the game finds them (GameTables); a table that isn't
     there yet is made in new_in."""
     base = Path(root) / TABLES_DIR
     for found in sorted(base.rglob(name + '.csv')):

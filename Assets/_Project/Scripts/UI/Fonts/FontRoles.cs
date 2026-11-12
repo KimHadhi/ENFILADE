@@ -5,7 +5,7 @@ using UnityEngine;
 
 /// <summary>
 /// Text roles: what a label is for, not which file draws it. Code asks for a role (Font, MaterialOf, Apply), a prefab or
-/// scene text carries a TextRole, and Resources/Tables/Core/Fonts.csv gives each role a face and an optional material preset
+/// scene text carries a TextRole, and Data/Resources/Tables/Core/Fonts.csv gives each role a face and an optional material preset
 /// by key (FontFaces holds the files). Changing every label of a role is one cell of that table.
 /// The roles were cut from what the game drew with before them (2026-11-12), so the look stayed: Label = the old GunFeel
 /// score font (Pretendard ExtraBold: menus, kit labels, kill feed), Prompt and Damage = the old Feedback prompt font

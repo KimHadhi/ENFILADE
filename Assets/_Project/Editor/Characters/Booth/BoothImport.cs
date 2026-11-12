@@ -35,7 +35,7 @@ internal sealed class BoothImport : AssetPostprocessor
     internal const string Root = "Assets/ThirdParty/BOOTH/";
     private const string CopiesFolder = "Assets/_Project/Art/Models/Booth";
     private const string SourcesPath = "Assets/_Project/Editor/Characters/Booth/BoothSources.csv";
-    private const string ProfilePath = "Assets/_Project/Resources/Characters/PlayerBody.asset";
+    private const string ProfilePath = ProjectFolders.DataByName + "Characters/PlayerBody.asset";
     private static string ClothPath => TablePaths.Of("Cloth");
     // The version (SwayWritten) this PC's Cloth.csv rows were last written with (FinishPending). A new name in 0.8.135: the
     // old key was noted even when the table write failed (Win32 IO 1224, 2026-11-12), so it could vouch for rows that

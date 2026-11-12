@@ -24,7 +24,7 @@ using UnityEngine.UI;
 public static class OutfitPictureLook
 {
     public const string TableName = "WardrobePictures";
-    /// <summary>The plates' pictures' shader (Resources/UI/OutfitPicture.shader, so it ships).</summary>
+    /// <summary>The plates' pictures' shader (Art/Resources/UI/OutfitPicture.shader, so it ships).</summary>
     public const string PictureShader = "UI/ENFILADE/OutfitPicture";
     private static readonly int EdgeWidthId = Shader.PropertyToID("_EdgeWidth"), EdgeColorId = Shader.PropertyToID("_EdgeColor"),
         ThinAlphaId = Shader.PropertyToID("_ThinAlpha"), ThinBroadId = Shader.PropertyToID("_ThinBroad");

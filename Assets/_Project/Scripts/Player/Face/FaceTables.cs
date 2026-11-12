@@ -4,7 +4,7 @@ using System.Globalization;
 using UnityEngine;
 
 /// <summary>
-/// The faces' tables (Resources/Tables), read on first use and again when the tables reload:
+/// The faces' tables (Data/Resources/Tables), read on first use and again when the tables reload:
 /// - Faces.csv: every mood a face can wear (pain, crying when downed, smug after a kill, a callout's own face…), which
 ///   wins when several want the face (priority), how fast it comes and goes, how long a moment of it stays, how much
 ///   blinking and talking it lets through, and how often it is picked as a pose when the character is being looked at

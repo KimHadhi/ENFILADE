@@ -24,14 +24,14 @@ using Object = UnityEngine.Object;
 internal static class DesperadoSetup
 {
     private const string Weapon = "Desperado", Template = "R08";
-    private const string WeaponPath = "Assets/_Project/Data/Combat/Weapons/" + Weapon + ".asset";
-    private const string PrefabPath = "Assets/_Project/Data/Combat/TacticalGuns/" + Weapon + ".prefab";
+    private const string WeaponPath = ProjectFolders.Guns + "Weapons/" + Weapon + ".asset";
+    private const string PrefabPath = ProjectFolders.Guns + "TacticalGuns/" + Weapon + ".prefab";
     private const string ModelFolder = "Assets/_Project/Art/Models/Addons/Weapons/Fatebringer";
     private const string ModelPath = ModelFolder + "/Fatebringer.fbx";
     private const string TexturesFolder = ModelFolder + "/Textures";
     private const string MaterialsFolder = ModelFolder + "/Materials";
     private const string SoundsFolder = "Assets/_Project/Art/Audio/Weapons/Fatebringer";
-    private const string AssetsPath = "Assets/_Project/Resources/" + FPSBodyAssets.ResourcePath + ".asset";
+    private const string AssetsPath = ProjectFolders.DataByName + FPSBodyAssets.ResourcePath + ".asset";
     // Kept in the prefab's import data: a gun made by an older setup is made again.
     private const string Made = "DesperadoSetup 2";
     // The R08 rig turns its cylinder a chamber of eight a shot; the Fatebringer's has six (ChamberTurn).
@@ -108,7 +108,7 @@ internal static class DesperadoSetup
                 importer.userData = Made;
                 importer.SaveAndReimport();
             }
-            Debug.Log("DesperadoSetup: the Desperado wears the Fatebringer (Data/Combat/TacticalGuns/Desperado.prefab); GunClipRetarget bakes its clips next.");
+            Debug.Log("DesperadoSetup: the Desperado wears the Fatebringer (Data/Guns/TacticalGuns/Desperado.prefab); GunClipRetarget bakes its clips next.");
         }
         catch (Exception error)
         {

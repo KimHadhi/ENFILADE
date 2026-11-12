@@ -22,15 +22,6 @@ using UnityEngine.UI;
 [DisallowMultipleComponent]
 public sealed class WeaponSlotsHUD : MonoBehaviour
 {
-    [Serializable] public sealed class SlotView
-    {
-        public RectTransform rect;
-        public Image background, accent, icon;
-        public Outline outline;
-        public WeaponSlotSilhouette silhouette;
-        public TMP_Text number, weaponName;
-    }
-
     public const string TableName = "WeaponSlots";
     private const int Count = PlayerWeaponSlots.SlotCount;
     private static readonly Color PlateDark = new Color(.055f, .055f, .067f, .8f), PlateHeld = new Color(.1f, .1f, .12f, .95f),
@@ -38,8 +29,6 @@ public sealed class WeaponSlotsHUD : MonoBehaviour
 
     [SerializeField] private PlayerWeaponSlots source;
     [SerializeField] private CanvasGroup group;
-    [Tooltip("The prefab's first slot views. They stay hidden: the slots are built in code in the look picked in Settings → HUD.")]
-    [SerializeField] private SlotView[] slots = new SlotView[Count];
     [SerializeField, Min(0)] private float visibleSeconds = 3f;
     [SerializeField, Min(0)] private float fadeSeconds = 1f;
     [Header("Long weapon names")]
@@ -297,9 +286,6 @@ public sealed class WeaponSlotsHUD : MonoBehaviour
         look = wanted;
         made = true;
         shape = Read(wanted);
-        if (slots != null)
-            foreach (var view in slots)
-                if (view != null && view.rect != null) view.rect.gameObject.SetActive(false);
         if (holder != null) Destroy(holder.gameObject);
         bool plates = wanted == WeaponSlotLook.Plates;
         holder = FeelUI.Rect(plates ? "Plates" : "Cards", transform);

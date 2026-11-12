@@ -6,7 +6,7 @@ using UnityEngine.UI;
 
 public sealed class WaveManager : MonoBehaviour
 {
-    /// <summary>Resources/Tables/Modes/Waves.csv: enemy counts and timing per wave set.</summary>
+    /// <summary>Data/Resources/Tables/Modes/Waves.csv: enemy counts and timing per wave set.</summary>
     public const string TableName = "Waves";
 
     [Tooltip("Waves.csv의 행 id. 맵마다 다른 웨이브 구성을 쓰려면 행을 추가하고 여기에 적는다.")]
@@ -20,18 +20,6 @@ public sealed class WaveManager : MonoBehaviour
     [SerializeField, Min(0)] private int extraEnemiesPerWave = 2;
     [SerializeField, Min(.1f)] private float timeBetweenWaves = 5f;
     [SerializeField, Min(0)] private float spawnInterval = .5f;
-    [Header("Objective UI")]
-    [SerializeField] private TMP_Text objectiveText;
-    [SerializeField] private TMP_Text enemyCountText;
-    [SerializeField] private Image progressBar;
-    [Header("Assault Status UI")]
-    [SerializeField] private TMP_Text assaultStatusText;
-    [SerializeField] private string activeMessage = "ASSAULT IN PROGRESS";
-    [SerializeField] private string preparingMessage = "NEXT ASSAULT IN";
-    [Header("Progress Bar Animation")]
-    [SerializeField, Min(.1f)] private float fillSpeed = 1.5f;
-    [Header("Objective")]
-    [SerializeField] private string objectiveMessage = "Eliminate the enemy";
     [Header("Last enemies")]
     [Tooltip("웨이브 중 남은 적이 이 수 이하가 되면 벽 너머로 보인다(EnemyReveal). 0이면 끈다.")]
     [SerializeField, Min(0)] private int revealRemaining = 5;
@@ -75,13 +63,13 @@ public sealed class WaveManager : MonoBehaviour
     public event System.Action WaveStarted;
     private readonly HashSet<EnemyHealth> aliveEnemies = new HashSet<EnemyHealth>();
     private int currentWave, totalEnemiesThisWave, defeatedEnemies, spawned;
-    private float targetFillAmount, remainingDelay;
+    private float remainingDelay;
 
     private void Awake() => GameTables.Bind(TableName, tableId, this);
 
     private void Start()
     {
-        if (!IsRunning) { UpdateObjectiveUI(); UpdateAssaultStatus("ASSAULT STANDBY"); }
+        if (!IsRunning) NotifyObjective();
         if (GameSession.IsOnline) gameObject.AddComponent<WaveSync>();
         gameObject.AddComponent<EnemyReveal>();
         if (autoStart) StartWaves();
@@ -94,9 +82,7 @@ public sealed class WaveManager : MonoBehaviour
         Phase = status.Phase; IsPaused = status.Paused; currentWave = status.Wave;
         if (newWave) WaveStarted?.Invoke();
         defeatedEnemies = status.Defeated; totalEnemiesThisWave = status.Total; remainingDelay = status.SecondsLeft;
-        UpdateObjectiveUI();
-        if (IsRunning) RefreshStatus();
-        else UpdateAssaultStatus("ASSAULT STANDBY");
+        NotifyObjective();
     }
 
     public bool StartWaves()
@@ -108,7 +94,7 @@ public sealed class WaveManager : MonoBehaviour
         { LastError = "Enemy Prefab과 Spawn Points 연결을 확인하세요."; return false; }
         currentWave = totalEnemiesThisWave = defeatedEnemies = spawned = 0;
         IsPaused = false;
-        BeginCountdown(); UpdateObjectiveUI();
+        BeginCountdown(); NotifyObjective();
         return true;
     }
 
@@ -117,7 +103,6 @@ public sealed class WaveManager : MonoBehaviour
         if (!IsRunning || IsPaused) return false;
         IsPaused = true;
         foreach (var enemy in aliveEnemies) if (enemy != null) enemy.SetWavePaused(true);
-        UpdateAssaultStatus("ASSAULT PAUSED");
         return true;
     }
 
@@ -126,7 +111,7 @@ public sealed class WaveManager : MonoBehaviour
         if (!IsRunning || !IsPaused) return false;
         IsPaused = false;
         foreach (var enemy in aliveEnemies) if (enemy != null) enemy.SetWavePaused(false);
-        RefreshStatus(); return true;
+        return true;
     }
 
     public void AbortWaves()
@@ -141,9 +126,7 @@ public sealed class WaveManager : MonoBehaviour
         }
         aliveEnemies.Clear();
         currentWave = totalEnemiesThisWave = defeatedEnemies = spawned = 0;
-        UpdateObjectiveUI();
-        if (progressBar != null) progressBar.fillAmount = 0;
-        UpdateAssaultStatus("ASSAULT STOPPED");
+        NotifyObjective();
     }
 
     // Preserve the existing public stop entry point as a complete stop.
@@ -159,15 +142,14 @@ public sealed class WaveManager : MonoBehaviour
     private void Update()
     {
         if (IsPaused) return;
-        if (progressBar != null) progressBar.fillAmount = Mathf.MoveTowards(progressBar.fillAmount,targetFillAmount,fillSpeed*Time.deltaTime);
         if (!IsRunning || Time.deltaTime <= 0 || GameSession.IsGuest) return;
         if (Phase == WavePhase.Countdown)
         {
-            remainingDelay = Mathf.Max(0,remainingDelay-Time.deltaTime); RefreshStatus();
+            remainingDelay = Mathf.Max(0,remainingDelay-Time.deltaTime);
             if (remainingDelay > 0) return;
             currentWave++; defeatedEnemies = spawned = 0;
             totalEnemiesThisWave = (int)System.Math.Min(10000L,System.Math.Max(1,initialEnemies)+(long)(currentWave-1)*System.Math.Max(0,extraEnemiesPerWave));
-            Phase = WavePhase.Spawning; remainingDelay = 0; UpdateObjectiveUI(); RefreshStatus();
+            Phase = WavePhase.Spawning; remainingDelay = 0; NotifyObjective();
             WaveStarted?.Invoke();
         }
         if (Phase == WavePhase.Spawning)
@@ -178,7 +160,7 @@ public sealed class WaveManager : MonoBehaviour
                 if (!SpawnEnemy())
                 {
                     AbortWaves(); LastError = "스폰 지점 주변 NavMesh를 찾지 못했습니다.";
-                    UpdateAssaultStatus("SPAWN FAILED"); Debug.LogWarning("[WaveManager] " + LastError,this); return;
+                    Debug.LogWarning("[WaveManager] " + LastError,this); return;
                 }
                 spawned++; remainingDelay = Mathf.Max(0,spawnInterval);
                 if (spawned >= totalEnemiesThisWave) Phase = WavePhase.Combat;
@@ -186,14 +168,12 @@ public sealed class WaveManager : MonoBehaviour
         }
         // External destruction must not leave a completed wave stuck forever.
         int removed = aliveEnemies.RemoveWhere(enemy => enemy == null);
-        if (removed > 0) { defeatedEnemies += removed; UpdateObjectiveUI(); }
+        if (removed > 0) { defeatedEnemies += removed; NotifyObjective(); }
         if (Phase == WavePhase.Combat && aliveEnemies.Count == 0) BeginCountdown();
     }
 
     private void BeginCountdown()
-    { Phase=WavePhase.Countdown; remainingDelay=Mathf.Max(0,timeBetweenWaves); RefreshStatus(); UpdateObjectiveUI(); }
-    private void RefreshStatus() => UpdateAssaultStatus(IsPaused ? "ASSAULT PAUSED" : Phase==WavePhase.Countdown
-        ? $"{preparingMessage} {Mathf.CeilToInt(remainingDelay)}..." : activeMessage);
+    { Phase=WavePhase.Countdown; remainingDelay=Mathf.Max(0,timeBetweenWaves); NotifyObjective(); }
     private bool SpawnEnemy()
     {
         int offset=Random.Range(0,spawnPoints.Length);
@@ -213,15 +193,9 @@ public sealed class WaveManager : MonoBehaviour
     private void OnEnemyDied(EnemyHealth enemy)
     {
         if(!aliveEnemies.Remove(enemy)) return;
-        enemy.Died-=OnEnemyDied; defeatedEnemies++; UpdateObjectiveUI();
+        enemy.Died-=OnEnemyDied; defeatedEnemies++; NotifyObjective();
     }
-    private void UpdateObjectiveUI()
-    {
-        if(objectiveText!=null) objectiveText.text=objectiveMessage;
-        if(enemyCountText!=null) enemyCountText.text=$"{defeatedEnemies} / {totalEnemiesThisWave}";
-        targetFillAmount=totalEnemiesThisWave>0 ? (float)defeatedEnemies/totalEnemiesThisWave : 0;
-        ObjectiveChanged?.Invoke();
-    }
-    private void UpdateAssaultStatus(string message) { if(assaultStatusText!=null) assaultStatusText.text=message; }
+    // The mission HUD (WaveMissionSource) and the other PCs (WaveSync) read the numbers from here when told.
+    private void NotifyObjective() => ObjectiveChanged?.Invoke();
     private void OnDisable() { if(Application.isPlaying) AbortWaves(); }
 }

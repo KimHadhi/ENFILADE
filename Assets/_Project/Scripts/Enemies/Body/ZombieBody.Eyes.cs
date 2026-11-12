@@ -4,7 +4,7 @@ using UnityEngine.Rendering;
 /// <summary>
 /// At the user's word (runners were deadly but couldn't be told apart): a runner's eyes glow red and leave an afterimage
 /// as it moves, on every PC (its kind is shared, ZombieType). Each eye is a small object on the head bone: a camera-facing
-/// glow (Resources/Enemies/RunnerEyes.shader), never smaller on screen than a few pixels so a runner far off still shows,
+/// glow (Art/Resources/Enemies/RunnerEyes.shader), never smaller on screen than a few pixels so a runner far off still shows,
 /// and a short TrailRenderer behind it. Where the eyes sit is measured on the head as the body is dressed: the rig's
 /// eye bones if it has them, else ahead of and above the head bone (ZombieRunner's eye numbers). They go out as it dies,
 /// before its body becomes the corpse.

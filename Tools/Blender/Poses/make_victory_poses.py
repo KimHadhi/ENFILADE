@@ -11,7 +11,7 @@ breath (the chest a hair up at 42). It saves the workspace to ArtSource/Poses/EN
 poses are touched up by hand (ArtSource/Poses/START_HERE.md, the Pose tab of pose_tools.py), and exports every action
 as its own FBX (armature only; Y up, -Z forward, bone axes Y and X, and the unit scale in the file with the armature at 1
 ("FBX All"): the way Mayo's own FBX was written, so her bones and their frames match hers exactly; Blender's own default
-scale put the armature at 100 in centimetres, and Unity read her legs as mismatched) to Assets/_Project/Resources/Poses,
+scale put the armature at 100 in centimetres, and Unity read her legs as mismatched) to Assets/_Project/Art/Resources/Poses,
 where the editor imports it as a
 humanoid clip on Mayo's avatar (Editor/Characters/PoseImport.cs) and the show finds it (ResultsMannequin).
 Once the workspace exists, a plain run never rebuilds it: touch-ups live there. It exports the workspace's poses as they
@@ -49,7 +49,7 @@ def project_root():
 
 ROOT = project_root() or os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 MAYO = os.path.join(ROOT, "Assets", "ThirdParty", "BOOTH", "Chocolate rice", "0.MAYO", "FBX", "FBX_MAYO.fbx")
-OUT = os.path.join(ROOT, "Assets", "_Project", "Resources", "Poses")
+OUT = os.path.join(ROOT, "Assets", "_Project", "Art", "Resources", "Poses")
 BLEND = os.path.join(ROOT, "ArtSource", "Poses", "ENFILADE_Poses_Mayo.blend")
 TOOLS = os.path.join(ROOT, "Tools", "Blender", "Poses", "pose_tools.py")
 TOOLS_TEXT = "START HERE - Pose tools.py"
@@ -384,7 +384,7 @@ def pose_actions():
 
 
 def export(r, action):
-    """This action as Assets/_Project/Resources/Poses/<its name>.fbx (armature only), for Unity."""
+    """This action as Assets/_Project/Art/Resources/Poses/<its name>.fbx (armature only), for Unity."""
     os.makedirs(OUT, exist_ok=True)
     set_fps()
     view_layer = bpy.context.view_layer

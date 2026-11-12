@@ -18,7 +18,7 @@ internal sealed class ZombieClipFolders : AssetPostprocessor
 {
     public const string Root = ModelImportRules.AnimationsFolder + "Zombies/";
     public const string GetUpSuffix = "_getup";
-    private const string LooksPath = "Assets/_Project/Resources/Enemies/ZombieLooks.asset";
+    private const string LooksPath = ProjectFolders.DataByName + "Enemies/ZombieLooks.asset";
     private const string PoseFolder = "CalmPose";
 
     /// <summary>Each slot folder, the ZombieLooks list it fills, and whether its clips loop.</summary>

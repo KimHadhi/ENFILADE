@@ -37,9 +37,9 @@ using Object = UnityEngine.Object;
 [InitializeOnLoad]
 internal static class GunClipRetarget
 {
-    private const string AssetsPath = "Assets/_Project/Resources/" + FPSBodyAssets.ResourcePath + ".asset";
-    private const string BakesPath = "Assets/_Project/Resources/" + GunBakes.ResourcePath + ".asset";
-    private const string Folder = "Assets/_Project/Data/Combat/GunBakes";
+    private const string AssetsPath = ProjectFolders.DataByName + FPSBodyAssets.ResourcePath + ".asset";
+    private const string BakesPath = ProjectFolders.DataByName + GunBakes.ResourcePath + ".asset";
+    private const string Folder = ProjectFolders.Guns + "GunBakes";
     // KINEMATION's names on its arms skeleton; the weapon bone is added to our bodies under the same name.
     private const string WeaponBone = "ik_hand_gun";
     // Raised when the way clips are made changes, so every bake is made again. 2: the target turned to the arms' facing.

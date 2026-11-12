@@ -101,7 +101,7 @@
 
 ## 4. 게임에 보내기
 
-슬롯과 이름(영문·숫자)을 정하고 **게임에 보내기**. 파일은 `Assets/_Project/Art/Animations/Zombies/<슬롯>/enf_<이름>.fbx`로 간다. Unity 창을 누르면 가져오면서 [ZombieLooks](../../Assets/_Project/Resources/Enemies/ZombieLooks.asset)의 그 슬롯 목록에 넣는다(콘솔에 `[ZombieClipFolders] ... added`).
+슬롯과 이름(영문·숫자)을 정하고 **게임에 보내기**. 파일은 `Assets/_Project/Art/Animations/Zombies/<슬롯>/enf_<이름>.fbx`로 간다. Unity 창을 누르면 가져오면서 [ZombieLooks](../../Assets/_Project/Data/Resources/Enemies/ZombieLooks.asset)의 그 슬롯 목록에 넣는다(콘솔에 `[ZombieClipFolders] ... added`).
 
 | 슬롯 | 게임에서 나오는 때 |
 | --- | --- |

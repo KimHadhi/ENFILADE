@@ -6,7 +6,7 @@ using UnityEngine;
 using UnityEngine.VFX;
 
 /// <summary>
-/// Pack effects played by name, one name per row of Resources/Tables/Weapons/ImpactEffects.csv. Every copy is built while the map
+/// Pack effects played by name, one name per row of Data/Resources/Tables/Weapons/ImpactEffects.csv. Every copy is built while the map
 /// loads and waits awake out of sight, so a fight never creates one: a preset hands out its copies in turn, which makes
 /// the next one the oldest, and a busy fight takes that one over. A graph's first draw stalls for about half a second,
 /// so each copy also plays once as the map comes up, far down the view: in frame, but too far away to see.

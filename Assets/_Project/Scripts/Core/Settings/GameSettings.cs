@@ -27,7 +27,7 @@ public enum SettingsGroup { Sound, Controls, Screen, Camera, Hud, Crosshair, Cha
 /// Application.persistentDataPath and changed in the Esc menu. A fresh player starts from the defaults
 /// (<see cref="GameSettingsPreset"/>: the values written below, then Resources/Settings/DefaultSettings if it was edited,
 /// then the table Tables/SettingsDefaults.csv), which are also what each tab's reset returns to. Balance numbers stay in
-/// Resources/Tables.
+/// Data/Resources/Tables.
 /// </summary>
 [Serializable]
 public sealed class GameSettings
@@ -135,7 +135,7 @@ public sealed class GameSettings
     public List<string> outfits = new List<string>();
     [Tooltip("The name other players see. Empty uses this PC's user name.")]
     public string nickname = "";
-    [Tooltip("Scene name of the map last chosen on the main menu (Resources/Tables/Maps/Maps.csv).")]
+    [Tooltip("Scene name of the map last chosen on the main menu (Data/Resources/Tables/Maps/Maps.csv).")]
     public string lastMap = "";
     [Tooltip("Address last typed on the main menu to join a room.")]
     public string lastAddress = GameSession.DefaultAddress;

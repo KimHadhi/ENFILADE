@@ -1,6 +1,6 @@
 # 사람처럼 걷고 달리기 (보폭 맞춤)
 
-2026-11-12 사용자: "달리는 거 모든 애니메이션이 되게 우스꽝스럽고 초보 같고 급하던데 … 너무 부자연스럽고 인간적이지 않은데." 0.8.260에서 고쳤다. 코드는 [PlayerBody.Locomotion](../../Assets/_Project/Scripts/Player/Body/PlayerBody.Locomotion.cs), [GaitClips](../../Assets/_Project/Scripts/Player/Body/Feet/GaitClips.cs), [FootPlanting](../../Assets/_Project/Scripts/Player/Body/Feet/FootPlanting.cs)의 `Stride`, 숫자는 [Player.csv](../../Assets/_Project/Resources/Tables/Player/Player.csv)의 `Body.gait*`·`hipTurn*`·`runCalm*`.
+2026-11-12 사용자: "달리는 거 모든 애니메이션이 되게 우스꽝스럽고 초보 같고 급하던데 … 너무 부자연스럽고 인간적이지 않은데." 0.8.260에서 고쳤다. 코드는 [PlayerBody.Locomotion](../../Assets/_Project/Scripts/Player/Body/PlayerBody.Locomotion.cs), [GaitClips](../../Assets/_Project/Scripts/Player/Body/Feet/GaitClips.cs), [FootPlanting](../../Assets/_Project/Scripts/Player/Body/Feet/FootPlanting.cs)의 `Stride`, 숫자는 [Player.csv](../../Assets/_Project/Data/Resources/Tables/Player/Player.csv)의 `Body.gait*`·`hipTurn*`·`runCalm*`.
 
 ## 원인 (잰 값)
 

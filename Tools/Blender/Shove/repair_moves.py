@@ -1,7 +1,7 @@
 """The Support's mending moves for the shove workspace (Blender 4.5): the hammer and the welding torch in the free left
 hand while the gun stays in the right (the user, 2026-11-12: "남는 손으로 망치 손으로 두들기는 거라고. 애니메이션은 네가 만들어서
 넣고 내가 블렌더로 세부 수정하면 되지"). Each is a loop on Kazusa's left arm: a locked draft under an empty touch-up layer, as
-the shove's moves are, and "게임에 보내기" writes its path table (Resources/Tables/Clips/RepairHammer.csv, RepairTorch.csv), which
+the shove's moves are, and "게임에 보내기" writes its path table (Data/Resources/Tables/Clips/RepairHammer.csv, RepairTorch.csv), which
 RepairArm plays on any character's left arm.
 
 Run on the workspace (it adds what is missing and keeps what is there, a polish included):

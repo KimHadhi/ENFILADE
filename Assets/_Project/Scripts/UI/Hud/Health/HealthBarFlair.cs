@@ -227,7 +227,7 @@ public sealed class HealthBarFlair
             if (!low && number != null) number.color = numberColor;
         }
         if (!danger) return;
-        float beat = UltimatePortraitGlow.Heartbeat(clock, Config.beatsPerSecond);
+        float beat = UltimateMagazine.Heartbeat(clock, Config.beatsPerSecond);
         if (number != null) number.color = Color.Lerp(KitStyle.Accent, Color.white, beat * .6f);
         float pulse = .65f + .35f * Mathf.Sin(clock * 9f);
         dangerGlyph.color = new Color(1f, 1f, 1f, pulse);

@@ -43,7 +43,7 @@
 | 프로젝트가 어떻게 짜여 있는지, 새 기능을 어디에 두는지 | [구조 안내](Docs/Architecture.md) |
 | 모드 만들기 (표만 고치는 모드, Unity로 만드는 모드) | [모드 만들기](Docs/Modding.md), [Mods 폴더](Mods/README.md) |
 | 수정할 코드 찾기 | [스크립트 길잡이](Assets/_Project/Scripts/README.md) (폴더마다 README가 있다) |
-| 체력·무기·적·이동 같은 숫자 바꾸기 (CSV 표, 컴파일 불필요) | [표 안내](Docs/Guides/MaintenanceGuide.md#밸런스-표-data-tables), [Resources/Tables](Assets/_Project/Resources/Tables) |
+| 체력·무기·적·이동 같은 숫자 바꾸기 (CSV 표, 컴파일 불필요) | [표 안내](Docs/Guides/MaintenanceGuide.md#밸런스-표-data-tables), [Data/Resources/Tables](Assets/_Project/Data/Resources/Tables) |
 | 화면 글자 고치기, 번역 | Unity의 ENFILADE → 글자 → 글자 편집기, [화면 문구](Docs/Guides/MaintenanceGuide.md#화면-문구-textscsv) |
 | 이동·파쿠르 조작과 수치 | [이동 안내](Docs/Guides/MovementGuide.md) |
 | 무기·적·전투 UI 만들기 | [전투 제작 안내](Docs/Guides/CombatFoundationGuide.md), [전투 규칙](Docs/Guides/WeaponSystemDesign.md) |
@@ -61,7 +61,7 @@
 | `Assets/_Project` | 게임 그 자체. 안의 구성은 [구조 안내](Docs/Architecture.md#assets_project-안) |
 | `Assets/_Project/Scripts` | 게임 코드, 기능별 폴더 16개 |
 | `Assets/_Project/Editor` | Unity 편집기 도구 (메뉴 막대의 **ENFILADE** 메뉴) |
-| `Assets/_Project/Resources/Tables` | 게임의 모든 숫자와 글자: 분야별 폴더의 CSV 표 |
+| `Assets/_Project/Data/Resources/Tables` | 게임의 모든 숫자와 글자: 분야별 폴더의 CSV 표 |
 | `Assets/ThirdParty` | 사거나 받은 에셋 팩 |
 | `Assets/_PoiyomiShaders`, `_LockedShaderCache`, `ProBuilder Data` | 도구가 자리를 정해 둔 폴더 (Poiyomi 셰이더, ProBuilder) |
 | `Mods` | 모드 폴더. 게임을 켤 때 읽는다 ([안내](Mods/README.md)) |

@@ -216,7 +216,7 @@ public static class HudOverlapSweep
         text.Append($"# {Title} — {DateTime.Now:yyyy-MM-dd HH:mm} · {Application.version}\n");
         text.Append($"{measuredCount}가지를 쟀고{(complete ? "" : " (Play가 멈춰 중간까지)")} 그중 {troubled}가지에 문제가 있습니다. 서로 다른 문제 {worst.Count}개.\n");
         if (!resized) text.Append("화면비를 바꾸지 못해(PlayModeWindow 없음) 지금 게임 화면 크기에서만 쟀습니다. 게임 화면 크기를 직접 바꿔 다시 돌려 주세요.\n");
-        text.Append("재는 법: HudOverlapCheck(그려진 삼각형과 글자 상자를 화면 px로). 조각 나누기: Resources/Tables/Hud/HudOverlap.csv. 수치: Hud.csv Overlap.\n\n");
+        text.Append("재는 법: HudOverlapCheck(그려진 삼각형과 글자 상자를 화면 px로). 조각 나누기: Data/Resources/Tables/Hud/HudOverlap.csv. 수치: Hud.csv Overlap.\n\n");
 
         var keys = new List<string>(worst.Keys);
         keys.Sort((a, b) => worst[b].Depth.CompareTo(worst[a].Depth));

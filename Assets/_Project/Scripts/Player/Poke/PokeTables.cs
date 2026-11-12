@@ -5,7 +5,7 @@ using System.Globalization;
 public enum PokeZone { None, Cheek, Belly, Arm, Shoulder, HeadTop }
 
 /// <summary>
-/// The numbers of pointing and poking (Resources/Tables/Player/Poke.csv, key,value; read on first use and again when the tables
+/// The numbers of pointing and poking (Data/Resources/Tables/Player/Poke.csv, key,value; read on first use and again when the tables
 /// reload): how long F is held before the hand points, how the arm comes up and reaches, where on a body each zone lies,
 /// and per zone how deep the skin gives under a fingertip, how wide and soft the dent is and how it springs back
 /// (PlayerPing, PlayerPoint, PointArm, PokeBody, SkinPoke). The chest, the bottom and the groin are no zone at all, so
@@ -30,7 +30,7 @@ public static class PokeTables
         public float Pitch;
     }
 
-    /// <summary>The pointing hand drawn in Blender (Resources/Tables/Clips/PointHand.csv, Tools/Blender/point_hand.py).</summary>
+    /// <summary>The pointing hand drawn in Blender (Data/Resources/Tables/Clips/PointHand.csv, Tools/Blender/point_hand.py).</summary>
     public const string HandTable = "PointHand";
     /// <summary>PointHand.csv's rows in PointArm's finger order: index, middle, ring, little, thumb, each knuckle out.</summary>
     public static readonly string[] HandRows =

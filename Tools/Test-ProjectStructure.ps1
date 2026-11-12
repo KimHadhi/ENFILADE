@@ -23,11 +23,35 @@ foreach ($doc in $docs) {
     }
 }
 
-# Tables are found by file name alone (GameTables), so a name may stand in one folder of Resources/Tables only.
+# Tables are found by file name alone (GameTables), so a name may stand in one folder of Data/Resources/Tables only.
 $tables = @{}
-foreach ($table in Get-ChildItem -LiteralPath (Join-Path $assetRoot '_Project\Resources\Tables') -Recurse -File -Filter '*.csv') {
+foreach ($table in Get-ChildItem -LiteralPath (Join-Path $assetRoot '_Project\Data\Resources\Tables') -Recurse -File -Filter '*.csv') {
     if ($tables.ContainsKey($table.BaseName)) { $problems.Add("Two tables named $($table.BaseName): $($table.FullName) and $($tables[$table.BaseName])") }
     else { $tables[$table.BaseName] = $table.FullName }
+}
+
+# What the game finds by name lies in the drawer of its kind (ProjectFolders.cs): pictures, sounds, shaders and clips
+# in Art/Resources, tables and lists in Data/Resources, prefabs in Prefabs/Resources. No other Resources folder, and
+# one name from the drawers means one file of a kind (Resources.Load takes the path without the extension).
+$drawers = @{
+    'Art\Resources' = @('.png', '.jpg', '.jpeg', '.tga', '.psd', '.hdr', '.exr', '.ogg', '.mp3', '.wav', '.fbx', '.shader', '.hlsl', '.mat', '.controller', '.anim', '.shadergraph')
+    'Data\Resources' = @('.asset', '.csv', '.json', '.txt')
+    'Prefabs\Resources' = @('.prefab')
+}
+$project = Join-Path $assetRoot '_Project'
+$byName = @{}
+foreach ($folder in Get-ChildItem -LiteralPath $project -Recurse -Directory -Filter 'Resources') {
+    $relative = $folder.FullName.Substring($project.Length + 1)
+    if (!$drawers.ContainsKey($relative)) { $problems.Add("A Resources folder outside the three drawers: $($folder.FullName)"); continue }
+    foreach ($file in Get-ChildItem -LiteralPath $folder.FullName -Recurse -File) {
+        if ($file.Extension -eq '.meta') { continue }
+        $extension = $file.Extension.ToLowerInvariant()
+        if ($drawers[$relative] -notcontains $extension) { $problems.Add("Wrong drawer for its kind ($relative): $($file.FullName)") }
+        $name = $file.FullName.Substring($folder.FullName.Length + 1)
+        $name = $name.Substring(0, $name.Length - $file.Extension.Length).ToLowerInvariant() + '|' + $extension
+        if ($byName.ContainsKey($name)) { $problems.Add("One name, two files: $($file.FullName) and $($byName[$name])") }
+        else { $byName[$name] = $file.FullName }
+    }
 }
 
 $guids = @{}

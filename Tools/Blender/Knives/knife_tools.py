@@ -18,7 +18,7 @@ build_knife_workspace.py keys them as drafts on Kazusa (가드, 꺼내기, 베�
 쉬브 and 프라이멀 나이프), the knife itself in her fist; ClassKnives.csv names each class's tables.
 It shares Tools/Blender/OneClick/one_click.py with the other workspaces: opening shows the clip last worked on, Kazusa in
 Pose mode with her right hand handle selected, auto-key on, the Dope Sheet; saving (Ctrl+S) sends every clip that changed
-to Assets/_Project/Resources/Tables/<table>.csv: per half frame, the wrist and the elbow from the eyes in game metres, the
+to Assets/_Project/Data/Resources/Tables/<table>.csv: per half frame, the wrist and the elbow from the eyes in game metres, the
 hand's run (wrist to middle knuckle) and its palm's facing in the head camera's axes as Unity's (x right, y up, z
 forward), the fingers' and the thumb's closing, whether the knife is in the fist and the 벰 moment (KnifeSwing reads it,
 ExecutionKnifeArm fits it to any character's right arm). Nothing here changes Blender's preferences.
@@ -41,7 +41,7 @@ CATEGORY = '칼'
 # Kazusa in the game is this many times her size in this file (eyes 1.37 here, 1.6 m in game: PlayerBody's fit).
 GAME_SCALE = 1.166
 CAMERA = 'FPS_Head_Camera'
-TABLES_DIR = Path('Assets/_Project/Resources/Tables')
+TABLES_DIR = Path('Assets/_Project/Data/Resources/Tables')
 ONE_CLICK = os.path.join('Tools', 'Blender', 'OneClick', 'one_click.py')
 # Two samples a frame at 30 fps, so the game's curve follows the polish closely.
 SAMPLES_PER_FRAME = 2
@@ -352,7 +352,7 @@ def fingerprint(action, key):
 
 def table_file(root, name, new_in='Clips'):
     """The game's table of this name under the project root. Since 0.9.0 the tables are filed in sub-folders of
-    Resources/Tables by subject and found by file name alone, as the game finds them (GameTables); a table that isn't
+    Data/Resources/Tables by subject and found by file name alone, as the game finds them (GameTables); a table that isn't
     there yet is made in new_in."""
     base = Path(root) / TABLES_DIR
     for found in sorted(base.rglob(name + '.csv')):

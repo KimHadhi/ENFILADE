@@ -29,11 +29,10 @@ ENFILADE/
 | --- | --- | --- |
 | `Scripts` | 게임 코드 | 기능별 폴더 16개. [스크립트 길잡이](../Assets/_Project/Scripts/README.md) |
 | `Editor` | Unity 편집기 도구 | 메뉴 막대의 **ENFILADE** 메뉴에 모인다. [편집기 도구](../Assets/_Project/Editor/README.md) |
-| `Resources` | 실행 중에 이름으로 읽는 것 | `Tables`(표), 소리 묶음, 캐릭터·총 설정 에셋, 게임 셰이더, UI 그림 |
-| `Resources/Tables` | 모든 숫자와 글자 | 분야별 폴더 14개. 파일 **이름**으로만 찾으므로 폴더는 자유롭게 옮겨도 된다 |
-| `Data` | 편집기 도구가 만들어 두는 에셋 | 무기 데이터, 총 프리팹, 캐릭터별로 구운 총 클립 |
-| `Art` | 우리가 만들거나 옮겨 온 그림·소리·모델 | `Animations`, `Audio`, `Models`, `Materials`, `Textures`, `Shaders`, `Sky`, `Sprites`, `Fonts` |
-| `Prefabs` | 프리팹 | `UI`(GameHUD 등), `Effects`, `Props` |
+| `Art` | 보고 듣는 것 전부 | `Animations`, `Audio`, `Models`, `Materials`, `Textures`, `Shaders`, `Sky`, `Sprites`, `Fonts`, 그리고 이름으로 부르는 것의 서랍 `Resources` |
+| `Data` | 숫자와 장부 | `Resources/Tables`(표), `Resources`의 목록 에셋·소리 묶음, `Guns`(무기 데이터, 총 프리팹, 캐릭터별로 구운 총 클립), `UI` |
+| `Data/Resources/Tables` | 모든 숫자와 글자 | 분야별 폴더 14개. 파일 **이름**으로만 찾으므로 폴더는 자유롭게 옮겨도 된다 |
+| `Prefabs` | 조립해 둔 물건 | `UI`(GameHUD 등), `Effects`, `Props`, 이름으로 꺼내는 것의 서랍 `Resources`(플레이어, 적, 클래스 소품) |
 | `Scenes` | 씬 | `MainMenu`, `Hub`, `Campaign`(1~4장, 타워), `Development`(테스팅 룸) |
 | `Input`, `Settings` | 입력 액션, 렌더링 설정 | |
 
@@ -68,7 +67,7 @@ ENFILADE/
 ## 숫자와 글자가 흐르는 길
 
 ```
-Resources/Tables/<분야>/<이름>.csv          게임의 표
+Data/Resources/Tables/<분야>/<이름>.csv          게임의 표
         +  Mods/<모드>/Tables/<이름>.csv      모드의 표 (있으면 줄 단위로 덧씌움)
         ↓  GameTables (이름으로 찾아 읽고 기억)
    Bind(표, 줄, 컴포넌트)    컴포넌트의 같은 이름 필드에 써 넣음
@@ -101,6 +100,17 @@ Resources/Tables/<분야>/<이름>.csv          게임의 표
 폴더는 늘 원점에 가만히 있어서 그 아래 오브젝트의 위치와 물리는 달라지지 않는다.
 
 ## 같이 하기
+
+### 무엇이 어디에 있나 (정의)
+
+예전에는 그림이 `Art`에도 `Resources`에도 있었다. 0.9.1부터는 아래 네 줄이 전부다.
+
+1. **종류가 폴더를 정한다.** 그림·소리·모델·셰이더는 `Art`에만, 숫자와 목록은 `Data`에만, 조립한 것은 `Prefabs`에만 있다.
+2. **`Resources`는 종류가 아니라 서랍이다.** Unity는 `Resources`라는 이름의 폴더 안의 것을 이름으로 불러올 수 있다. 게임이 이름으로 부르는 것만 서랍에 넣고, 서랍은 종류마다 하나씩 딱 셋이다: `Art/Resources`, `Data/Resources`, `Prefabs/Resources`. 게임이 부르는 이름은 서랍부터의 경로이고(`Resources.Load("UI/Icons/Fist")`), 어느 서랍에 있든 같다. 맨 위의 `Resources` 폴더는 없다.
+3. **서랍 밖의 것은 연결해서 쓴다.** 프리팹·에셋·씬이 직접 가리키거나, 편집기 도구가 폴더를 읽어 장부를 만든다(예: `Art/Audio/Guns`의 폴더들이 `Data/Resources/Audio/Guns` 소리 묶음이 된다).
+4. **게임이 쓰지 않는 것은 `Assets`에 두지 않는다.** 재료·후보·예전 것은 Unity 밖의 [ArtSource/Library](../ArtSource/Library/README.md)에 둔다. 쓰기로 하면 그때 `Art`의 맞는 폴더로 가져온다.
+
+편집기 도구가 서랍의 자리를 쓸 때는 [ProjectFolders](../Assets/_Project/Scripts/Core/ProjectFolders.cs)의 이름(`ArtByName`, `DataByName`, `PrefabsByName`, `Guns`)을 쓰고 폴더를 직접 적지 않는다. 규칙 2는 구조 검사가 본다(다른 곳의 `Resources` 폴더, 서랍에 안 맞는 종류, 한 이름에 두 파일). 규칙 4는 `python Tools/Find-UnusedAssets.py`가 아무도 쓰지 않는 에셋을 찾아 `Logs/unused-assets.txt`에 적어 준다.
 
 방은 `GameSession`이 연다(Netcode for GameObjects, 방장이 진행을 정한다). 플레이어의 자세·전투·시체는 `Network/Sync`의 부품이 다른 PC로 보낸다. 지키는 규칙은 하나다: **내가 보는 화면이 진실이다.** 내 화면에 보이는 월드의 효과는 친구 화면에도 같아야 하고, 남에게만 보이는 효과는 만들지 않는다.
 
@@ -156,7 +166,7 @@ Unity 없이 몇 초 만에 도는 구조 검사가 있다. 문서 링크가 끊
 
 | 예전 | 지금 |
 | --- | --- |
-| `Resources/Tables/<이름>.csv` | `Resources/Tables/<분야>/<이름>.csv` (Core, Audio, Player, Characters, Weapons, Melee, Grenades, Classes, Enemies, Maps, Modes, Economy, Hud, Clips) |
+| `Resources/Tables/<이름>.csv` | `Resources/Tables/<분야>/<이름>.csv` (0.9.1부터 `Data/Resources/Tables` 아래. Core, Audio, Player, Characters, Weapons, Melee, Grenades, Classes, Enemies, Maps, Modes, Economy, Hud, Clips) |
 | `Assets/_Project/Docs/*.md` | `Docs/Guides`, `Docs/Features`, `Docs/Records` |
 | `Assets/_Project/Scripts/README.md`의 긴 표 | 폴더마다의 `README.md` |
 | Tools → World | ENFILADE → 맵 (캠페인 회색 맵 → 캠페인) |
@@ -164,6 +174,19 @@ Unity 없이 몇 초 만에 도는 구조 검사가 있다. 문서 링크가 끊
 | Tools → ENFILADE → Combat, Tools → Guns | ENFILADE → 총 |
 | Tools → Data Tables | ENFILADE → 표 |
 | Tools → 글자, Fonts, HUD, Models, Zombies | ENFILADE → 글자, 글꼴, HUD, 모델, 좀비 |
+
+### 0.9.1: 에셋의 자리
+
+| 예전 | 지금 |
+| --- | --- |
+| `Assets/_Project/Resources/Tables` | `Assets/_Project/Data/Resources/Tables` |
+| `Resources`의 그림·소리·셰이더·재질·포즈 (`UI`, `Audio/Ambience`·`Music`, `Combat/Shaders`·`BloodSplats`·`GunSkins`, `Poses`, `World`) | `Art/Resources` 아래 같은 경로 |
+| `Resources`의 목록 에셋·소리 묶음·JSON (`Audio/*.asset`, `Characters`, `Cloth`, `Combat/*.asset`·`GunMoves`, `Enemies`, `Settings`, `UI/FontFaces`) | `Data/Resources` 아래 같은 경로 |
+| `Resources`의 프리팹 (`Characters/Player`, `ClassProps`, `Enemies/Enemy_Test`, `Combat/MuzzleFlame`) | `Prefabs/Resources` 아래 같은 경로 |
+| `Data/Combat` | `Data/Guns` |
+| `Art/Audio/Library` (아직 안 쓰는 보관 소리 895개) | `ArtSource/Library/Audio` (Unity 밖) |
+
+게임이 부르는 이름(`Resources.Load`의 경로)은 하나도 바뀌지 않았다. GameHUD 프리팹에서 코드가 숨기기만 하던 옛 조각(웨이브 배너, 궁극기 불꽃·옛 막대, 옛 탄약 표시, 옛 무기 칸 47개 오브젝트)과 그 조각만 쓰던 그림·재질·셰이더·스크립트를 지워서 `Art/Sprites`는 66개에서 13개가 됐다.
 
 ### 지운 것
 

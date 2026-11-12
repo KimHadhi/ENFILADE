@@ -11,11 +11,11 @@ public interface ITableBound
 }
 
 /// <summary>
-/// Balance numbers live in CSV files under Resources/Tables (see CsvTable for the layouts), so tuning needs no
+/// Balance numbers live in CSV files under Data/Resources/Tables (see CsvTable for the layouts), so tuning needs no
 /// recompile. Bind() overwrites an object's fields from one row: each column names a field, empty cells keep the
 /// inspector value, and a row that does not exist leaves the object untouched. In the editor, saving a table calls
 /// Reload(), which re-applies every live binding, during Play included.
-/// A table is asked for by its file name alone ("Weapons"): the files are filed in sub-folders of Resources/Tables by
+/// A table is asked for by its file name alone ("Weapons"): the files are filed in sub-folders of Data/Resources/Tables by
 /// subject, and where one stands is nobody's business but the folder's. A mod's table of the same name is laid over
 /// the game's (GameMods), row by row, before anyone reads it.
 /// </summary>
@@ -32,7 +32,7 @@ public static class GameTables
     }
 
     private static readonly Dictionary<string, CsvTable> loaded = new Dictionary<string, CsvTable>(StringComparer.OrdinalIgnoreCase);
-    // The game's own table files by name, wherever they are filed under Resources/Tables. Null until first asked.
+    // The game's own table files by name, wherever they are filed under Data/Resources/Tables. Null until first asked.
     private static Dictionary<string, TextAsset> sources;
     private static readonly List<Binding> bindings = new List<Binding>();
     private static readonly HashSet<string> reported = new HashSet<string>();
@@ -157,7 +157,7 @@ public static class GameTables
         return loaded[table] = parsed;
     }
 
-    // Every table file under Resources/Tables and its sub-folders, by name. Read once (and again after Reload).
+    // Every table file under Data/Resources/Tables and its sub-folders, by name. Read once (and again after Reload).
     private static Dictionary<string, TextAsset> Sources()
     {
         if (sources != null) return sources;

@@ -25,7 +25,7 @@ using UnityEngine;
 /// </summary>
 public static class TowerMap
 {
-    private const string Title = "엔필레이드 타워", EnemyPrefab = "Assets/_Project/Resources/Enemies/Enemy_Test.prefab";
+    private const string Title = "엔필레이드 타워", EnemyPrefab = ProjectFolders.PrefabsByName + "Enemies/Enemy_Test.prefab";
     private const float W = TowerLayout.Wall, H = TowerLayout.Height, S = TowerLayout.Slab;
     // The outer walls' outer skin (m): the look with the painted windows, so their inner faces keep the rooms' walls.
     private const float Skin = .1f;

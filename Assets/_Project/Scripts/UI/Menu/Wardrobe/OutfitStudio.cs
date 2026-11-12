@@ -48,7 +48,7 @@ public sealed class OutfitStudio : IDisposable
     // The title screen's character is lit for a camera looking back along -Z at a front facing +Z (MainMenuPreview); the
     // rig keeps those angles to whatever way the studio's lens looks.
     private static readonly Quaternion MenuView = Quaternion.LookRotation(Vector3.back);
-    // The exposure's shader (Resources/UI/OutfitExposure.shader, so it ships), the side of the small copy it is measured
+    // The exposure's shader (Art/Resources/UI/OutfitExposure.shader, so it ships), the side of the small copy it is measured
     // on (px), and how much of a pixel must be covered to count.
     private const string ExposureShader = "Hidden/ENFILADE/OutfitExposure";
     private const int MeterSide = 64;

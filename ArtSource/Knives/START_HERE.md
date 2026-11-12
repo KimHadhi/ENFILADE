@@ -19,7 +19,7 @@
 | --- | --- |
 | 오른손·팔꿈치를 잡아 G로 옮기고 R로 돌리기 | 움직이면 그 프레임에 키(자동 키) |
 | 타임라인의 **벰**·**쥐기** 표시를 G로 옮기기 | 표시를 클립마다 기억 |
-| `Ctrl+S` | 바뀐 클립만 게임에 보냄(Resources/Tables/KnifeMelee*.csv) |
+| `Ctrl+S` | 바뀐 클립만 게임에 보냄(Data/Resources/Tables/KnifeMelee*.csv) |
 
 ## 클립 (30fps)
 

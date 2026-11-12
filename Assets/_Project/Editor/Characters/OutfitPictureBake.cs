@@ -234,7 +234,7 @@ internal sealed class OutfitPictureBake : AssetPostprocessor
     // A picture taken again in the wardrobe while the editor plays: written and imported at once, so it ships.
     private static bool WritePicture(string resource, byte[] png)
     {
-        string asset = "Assets/_Project/Resources/" + resource + ".png";
+        string asset = ProjectFolders.ArtByName + resource + ".png";
         if (!Write(asset, png)) return false;
         AssetDatabase.ImportAsset(asset, ImportAssetOptions.ForceUpdate);
         return true;

@@ -233,7 +233,7 @@ public sealed class UltimateMagazine : MaskableGraphic, ITableBound
             Diamond(mesh, cx + shift, cy, 4f, With(Night, a), true);
             if (closed)
             {
-                float beat = UltimatePortraitGlow.Heartbeat(now - readyTime, beatsPerSecond);
+                float beat = Heartbeat(now - readyTime, beatsPerSecond);
                 PlateOutline(mesh, x0, y0, w, 3f, 2f, With(Pink, .5f * beat));
             }
         }
@@ -394,4 +394,13 @@ public sealed class UltimateMagazine : MaskableGraphic, ITableBound
     // Ease out past the end and back: the snap of something seating.
     private static float Kick(float t) { t = Mathf.Clamp01(t); float u = t - 1f; return 1f + 2.9f * u * u * u + 1.9f * u * u; }
     private static float Hash(int i) { float x = Mathf.Sin(i * 127.1f + 311.7f) * 43758.5453f; return x - Mathf.Floor(x); }
+
+    /// <summary>A heart's double beat, 0 to 1: the pulse of anything that waits ready (the full magazine, the last health).</summary>
+    internal static float Heartbeat(float time, float frequency)
+    {
+        float phase = Mathf.Repeat(time * Mathf.Max(0.1f, frequency), 1f);
+        float first = (phase - 0.12f) / 0.055f;
+        float second = (phase - 0.32f) / 0.075f;
+        return Mathf.Clamp01(Mathf.Exp(-first * first) + 0.6f * Mathf.Exp(-second * second));
+    }
 }

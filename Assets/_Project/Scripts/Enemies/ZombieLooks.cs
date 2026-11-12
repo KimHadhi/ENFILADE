@@ -11,7 +11,7 @@ public enum CalmPoseKind : byte { Rest, Eat, Doze }
 /// <summary>
 /// What a zombie can look like and the clips it moves with (multiplayer plan stage 4A): the bought Synty City Zombies
 /// characters, and the humanoid clips of Advanced Zombie AI Pro's demo set (only the clips; its AI scripts stay unused,
-/// ZombieBody plays them). Resources/Enemies/ZombieLooks.asset. Take a character out of the list to stop it spawning,
+/// ZombieBody plays them). Data/Resources/Enemies/ZombieLooks.asset. Take a character out of the list to stop it spawning,
 /// or drag another humanoid clip onto a slot to try it.
 /// Variety (2026-11-11, the user: "there are so few animations"): most slots also have a list of alternatives. Each
 /// zombie picks one per slot from the slot's clip and its list, from its network id, so a crowd no longer walks, idles

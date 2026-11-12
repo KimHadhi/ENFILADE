@@ -18,7 +18,7 @@ It opens ready to work in, and saving sends the work to the game (the user, 2026
   Call of Duty's quick throw in one motion.
 - 나이프 · 꺼내기 / 대기 (되풀이) / 던지기: the Knight's throwing knife, the MW2019 viewmodel of GMod's "[MW] Quick Throwing
   Knife" mirrored onto the left hand bone for bone (build_grenade_workspace.py), its hold MW's still idle with a breath.
-Sending writes Assets/_Project/Resources/Tables/<table>.csv: per half frame, the wrist and the elbow from the eyes
+Sending writes Assets/_Project/Data/Resources/Tables/<table>.csv: per half frame, the wrist and the elbow from the eyes
 in game metres, the hand's run and facing, each finger's curl and the thumb's, in the head camera's axes as Unity's (x
 right, y up, z forward), whether the throwable is in the hand (from 쥐기 to 놓기), and the 핀 and 놓기 moments. GrenadeArm
 plays them on any character's left arm (Tables/ThrowArms names which clip is which). Every button keys at the current
@@ -47,7 +47,7 @@ GAME_SCALE = 1.166
 # Where a draft is locked under its touch-up layer (the knife's every-frame clips; every clip in files from before).
 BASE_TRACK = '1 시안 (잠금)'
 CAMERA = 'FPS_Head_Camera'
-TABLES_DIR = Path('Assets/_Project/Resources/Tables')
+TABLES_DIR = Path('Assets/_Project/Data/Resources/Tables')
 # Two samples a frame at 30 fps, so the game's curve follows the polish closely.
 SAMPLES_PER_FRAME = 2
 ARM_HAND, ARM_ELBOW = 'CTRL_hand.L', 'CTRL_elbow.L'
@@ -575,7 +575,7 @@ def clip_rows(context, key):
 
 def table_file(root, name, new_in='Clips'):
     """The game's table of this name under the project root. Since 0.9.0 the tables are filed in sub-folders of
-    Resources/Tables by subject and found by file name alone, as the game finds them (GameTables); a table that isn't
+    Data/Resources/Tables by subject and found by file name alone, as the game finds them (GameTables); a table that isn't
     there yet is made in new_in."""
     base = Path(root) / TABLES_DIR
     for found in sorted(base.rglob(name + '.csv')):

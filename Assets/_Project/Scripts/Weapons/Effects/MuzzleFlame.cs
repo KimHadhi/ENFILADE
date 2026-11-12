@@ -11,7 +11,7 @@ using UnityEngine.Rendering;
 /// an arm's length (the F5 view, a teammate) it is drawn up to 1.6 times bigger with a thin wisp of smoke, as CS2's
 /// third-person flash outgrows its first-person one. Every shot rolls its own shape.
 /// One mesh of quads drawn by Hidden/ENFILADE/MuzzleFlame; MuzzleFlash fires it, times it and carries it on the muzzle.
-/// Lives in Resources/Combat/MuzzleFlame.prefab, where its look is tuned.
+/// Lives in Prefabs/Resources/Combat/MuzzleFlame.prefab, where its look is tuned.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class MuzzleFlame : MonoBehaviour

@@ -4,7 +4,7 @@ The objective guide's kind pictures (2026-11-11), drawn inside the HUD's pink di
 guide always a door ("무조건 문 모양이라서 헷갈리는데"), though the door told them at once to go there; the rest stop keeps
 the door. White shapes on transparent, 128 px, thick strokes so they still read at 20 px. Same drawing kit as
 stance_icons.py (python objective_icons.py, standard library only); written to
-Assets/_Project/Resources/UI/Icons/Objective_<kind>.png.
+Assets/_Project/Art/Resources/UI/Icons/Objective_<kind>.png.
 """
 import math
 import os

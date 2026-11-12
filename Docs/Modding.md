@@ -56,7 +56,7 @@ M1911,15,                                       Move.runSpeed,7.5
 
 ### 표 목록
 
-표는 프로젝트의 `Assets/_Project/Resources/Tables` 아래 분야별 폴더에 있다. 칸마다의 뜻은 각 표 둘째 줄의 `#설명`에 적혀 있다.
+표는 프로젝트의 `Assets/_Project/Data/Resources/Tables` 아래 분야별 폴더에 있다. 칸마다의 뜻은 각 표 둘째 줄의 `#설명`에 적혀 있다.
 
 | 폴더 | 표 | 무엇 |
 | --- | --- | --- |

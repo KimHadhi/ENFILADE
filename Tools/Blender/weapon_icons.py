@@ -3,17 +3,17 @@
 #   no keys: every icon. --preview also writes a contact sheet per style there (grey back, for looking them over).
 #   --out writes the PNGs somewhere else than the game's Resources (to try a change out).
 #
-# What it writes: Assets/_Project/Resources/UI/WeaponIcons/<Style>/<key>.png for the three looks the HUD can use
+# What it writes: Assets/_Project/Art/Resources/UI/WeaponIcons/<Style>/<key>.png for the three looks the HUD can use
 # (WeaponIcons.csv Look.style): Solid (filled, thin cuts between the parts), Outline (a stroke round the shape, the inside
 # faint) and Line (a technical drawing: thin outline and the parts' edges). White on transparent: the HUD tints them.
 # A .meta is written only for a new PNG, so import settings changed in Unity stay. It also writes
-# Assets/_Project/Resources/Tables/Weapons/WeaponIconSpans.csv: where each picture's drawing lies on its canvas (uv) and how much
+# Assets/_Project/Data/Data/Resources/Tables/Weapons/WeaponIconSpans.csv: where each picture's drawing lies on its canvas (uv) and how much
 # of a gun's length from the muzzle back is its barrel end (front), for the kill feed's flairs that burn only the barrel
 # (KillFlair.shader). A run of some keys only updates their rows.
 #
 # Why from the models (user, 2026-11-12: "무기 아이콘도 이제 좀 바꿀 수 있나? 그래야지 이제 킬로그나 무기 슬롯에 쓸 수
 # 있지"): every gun is drawn from its own FBX, side on, muzzle to the right, as kill feeds show them. The KINEMATION
-# guns are put together the way the game's prefabs (Data/Combat/TacticalGuns, FPSPackGuns) have them: each bone is
+# guns are put together the way the game's prefabs (Data/Guns/TacticalGuns, FPSPackGuns) have them: each bone is
 # posed where the prefab has it (a stock pulled in, a bolt back) and each magazine or iron sight sits where the prefab
 # hangs it. Unity and Blender read the same FBX into different axes; the bones of every gun show the one map between
 # them (Blender = (-x, -z, y) of Unity), so a part's place in the prefab can be carried over exactly. Optics, lights,
@@ -38,7 +38,7 @@ import mathutils
 import numpy as np
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-OUT = DEFAULT_OUT = os.path.join(ROOT, "Assets", "_Project", "Resources", "UI", "WeaponIcons")
+OUT = DEFAULT_OUT = os.path.join(ROOT, "Assets", "_Project", "Art", "Resources", "UI", "WeaponIcons")
 STYLES = ("Solid", "Outline", "Line")
 CANVAS = (512, 160)          # final pixels, every icon
 SUPER = 4                    # rendered at this many times the canvas, then averaged down (anti-aliasing)
@@ -63,7 +63,7 @@ LINE_LENGTH = 16.0           # Line: an edge shorter than this is left out
 
 TAC = "Assets/ThirdParty/KINEMATION/TacticalShooterPack/Meshes/Weapons/"
 FPS = "Assets/ThirdParty/KINEMATION/FPSAnimationPack/Animations/"
-GUNS_PREFABS = "Assets/_Project/Data/Combat/"
+GUNS_PREFABS = "Assets/_Project/Data/Guns/"
 ADDON = "Assets/_Project/Art/Models/Addons/Weapons/"
 GRENADES = "Assets/_Project/Art/Models/Addons/Grenades/"
 KNIVES = "Assets/_Project/Art/Models/Addons/Knives/"
@@ -635,7 +635,7 @@ SHAPES = {
 
 # Flat icons the game already has as pictures, put through the same looks.
 PICTURES = {
-    "fist": "Assets/_Project/Resources/UI/Icons/Fist.png",
+    "fist": "Assets/_Project/Art/Art/Resources/UI/Icons/Fist.png",
 }
 
 
@@ -824,9 +824,9 @@ TextureImporter:
 
 def table_file(root, name, new_in="Clips"):
     """The game's table of this name under the project root. Since 0.9.0 the tables are filed in sub-folders of
-    Resources/Tables by subject and found by file name alone, as the game finds them (GameTables); a table that isn't
+    Data/Resources/Tables by subject and found by file name alone, as the game finds them (GameTables); a table that isn't
     there yet is made in new_in."""
-    base = os.path.join(root, "Assets", "_Project", "Resources", "Tables")
+    base = os.path.join(root, "Assets", "_Project", "Data", "Resources", "Tables")
     for folder, _, files in sorted(os.walk(base)):
         if name + ".csv" in files:
             return os.path.join(folder, name + ".csv")

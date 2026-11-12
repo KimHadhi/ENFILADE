@@ -6,7 +6,7 @@ using UnityEngine;
 /// <summary>
 /// The kill feed's flairs (the user, 2026-11-12: "킬로그 무기 아이콘 쪽에 이펙트도 있었음 좋겠어 … 사람들이 킬로그 올라가는
 /// 것만 봐도 와 멋지다 간지난다 할 것 같아"): what a new row plays for how its kill happened. Each row of
-/// Resources/Tables/Hud/KillFlairs.csv names the conditions it needs (<see cref="KillMarks"/>, all of them; or a run of kills in a
+/// Data/Resources/Tables/Hud/KillFlairs.csv names the conditions it needs (<see cref="KillMarks"/>, all of them; or a run of kills in a
 /// row), how much it matters against the others, what plays on the weapon's icon and on the row, its colour, its words and
 /// its timing. A kill takes the icon's effect from the most important row that has one and the row's effects likewise, so
 /// at most two rows speak for one kill (a charged Schießhund's bounty: fire on the gun and the contract's stamp). A row
