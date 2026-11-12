@@ -1243,3 +1243,59 @@ body.earring_size,귀걸이 크기,Earring size,옷장 > 체형 > 옷 세부 탭
 body.earring_size.ends,작게|크게,smaller|bigger,옷장 > 체형 > 귀걸이 크기 슬라이더 양 끝의 작은 글자(왼쪽|오른쪽)
 body.arm_charm,팔 끈 장식,Arm strap charm,옷장 > 체형 > 옷 세부 탭의 줄 이름
 body.arm_charm.choices,보통|없음,as made|none,"옷장 > 체형 > 팔 끈 장식 줄의 고르기 칩(|로 나눔, 0번째가 모든 키를 끈 모습)"
+#--- 엔필레이드 타워 ---,,,
+tower.card.title,엔필레이드 타워,ENFILADE Tower,타워 시작·끝 이야기 카드 제목
+tower.card.intro,"옛 육군 훈련 동, 엔필레이드 타워. 층마다 훈련용으로 가둬 둔 놈들이 아직 우리 안에 있다.|입구의 스캐너에 손바닥을 대면 그 사람의 레인이 열린다. 레인 사이 벽은 방탄 유리, 서로의 싸움이 보인다.|10층까지 올라간다.",,타워 시작 이야기 카드(줄은 |로 나눔). 맨 아래 줄에 오늘 날짜가 붙는다
+tower.card.outro,"마지막 놈이 쓰러지자 탑의 경보가 꺼졌다.|훈련 기록판에 우리 이름이 새겨졌다.|내일이면 우리마다 다른 놈들이 갇혀 있을 것이다.",,타워 끝 이야기 카드(줄은 |로 나눔)
+tower.day,{0}월 {1}일 훈련,Training of {0}/{1},타워 시작 카드의 오늘 줄과 ENFILADED!! 아래 줄. {0}=월 {1}=일
+tower.trial.swarm,떼,Swarm,타워 방 구성: 약한 놈 여럿
+tower.sign.floor,{0}층,Floor {0},타워 레인 문 위 표지의 층(한 층만일 때)
+tower.sign.floors,{0}~{1}층,Floors {0}-{1},타워 레인 문 위 표지의 층들
+tower.prompt.palm,[F] 꾹 눌러 손바닥 대기,[F] Hold to scan your palm,타워 스캐너 앞
+tower.prompt.holding,손바닥 인식 중 · 놓지 마세요,Scanning · keep holding,타워 스캐너에 손을 대고 있을 때
+tower.prompt.taken,{0} 님이 손을 대고 있어요,{0} is on this one,타워 스캐너를 다른 사람이 쥐고 있을 때. {0}=이름
+tower.objective.gate,스캐너에 손바닥 대기,Scan your palm,타워 목표: 휴게층·로비에서 고르기
+tower.objective.gate_count,문이 곧 열려요,The doors are about to open,타워 목표: 스캐너 카운트가 도는 중
+tower.objective.gate_desc,"들어갈 문 옆 스캐너에서 [F]를 꾹 누르세요. 누가 처음 손을 대면 시간을 세고, 그때 손을 대고 있는 스캐너의 문이 열려요. 스캐너 하나에 한 사람이에요.",,타워 목표 설명
+tower.objective.board,열린 문으로 들어가기,Go through an open door,타워 목표: 문이 열려 있는 동안
+tower.objective.board_desc,"문이 닫히기 전에 들어가세요. 스캐너를 대지 않았어도 열린 레인에 같이 들어갈 수 있어요.",,타워 목표 설명
+tower.objective.climb_first,계단으로 올라가기,Up the stairs,타워 목표: 레인에 들어선 뒤
+tower.objective.climb,{0}층으로 올라가기,Up to floor {0},타워 목표. {0}=층
+tower.objective.climb_desc,방에 들어서면 문이 닫히고 놈들이 풀려나요.,The door shuts behind you and they come out.,타워 목표 설명
+tower.objective.fight,{0}층 · {1},Floor {0} · {1},타워 목표: 방 싸움. {0}=층 {1}=떼 또는 강적 이름
+tower.objective.fight_desc,"이 방의 놈들을 모두 쓰러뜨리면 다음 문이 열려요. 옆 레인의 싸움은 유리 너머로 보여요.",,타워 목표 설명
+tower.done.floor,{0}층 통과,Floor {0} cleared,타워 지난 목표 목록. {0}=층
+tower.objective.up,휴게층으로 올라가기,Up to the rest hall,타워 목표: 레인을 다 오른 뒤
+tower.objective.up_desc,모두 모이면 다음 스캐너가 올라와요.,The next scanners rise once everyone is here.,타워 목표 설명
+tower.objective.last,다른 레인 기다리기,Wait for the other lanes,타워 목표: 10층을 먼저 끝냈을 때
+tower.objective.last_desc,마지막 레인이 끝나는 순간이 타워의 끝이에요. 유리 너머로 지켜보세요.,The tower ends with the last lane's last kill.,타워 목표 설명
+tower.objective.wait_lanes,다른 레인 기다리기,Wait for the lanes,타워 목표: 레인에 들어가지 못했을 때
+tower.objective.wait_desc,레인에 들어가지 못했어요. 레인들이 끝나면 다음 휴게층으로 옮겨져요.,You will be brought to the next hall.,타워 목표 설명
+tower.objective.dead,다음 휴게층에서 합류,Rejoin at the next hall,타워 목표: 레인에서 죽었을 때
+tower.objective.dead_desc,레인들이 끝나면 다음 휴게층에서 돌아와요.,You come back once the lanes are through.,타워 목표 설명
+tower.objective.gather,휴게층에 모이기,Gather in the rest hall,타워 목표: 레인이 다 끝난 뒤
+tower.objective.done,엔필레이드 타워 정복,ENFILADE Tower cleared,타워 끝 목표
+tower.hud.count,문이 열릴 때까지,Doors open in,타워 카운트 위 글자(스캐너)
+tower.hud.board,문이 닫힐 때까지,Doors close in,타워 카운트 위 글자(입장)
+tower.hud.lane.free,{0},{0},타워 레인 칸: 아무도 손을 대지 않음. {0}=레인 글자
+tower.hud.lane.held,{0} · {1},{0} · {1},타워 레인 칸: 스캐너를 쥔 사람. {1}=이름
+tower.hud.lane.in,{0} · 입장,{0} · boarding,타워 레인 칸
+tower.hud.lane.climb,{0} · {1}층으로,{0} · to {1}F,타워 레인 칸. {1}=층
+tower.hud.lane.fight,{0} · {1}층 · {2},{0} · {1}F · {2},타워 레인 칸: 싸움 중. {1}=층 {2}=남은 적
+tower.hud.lane.done,{0} · 통과,{0} · through,타워 레인 칸
+tower.hud.lane.failed,{0} · 탈락,{0} · out,타워 레인 칸
+tower.hud.lane.none,{0} · —,{0} · —,타워 레인 칸: 열리지 않음
+tower.alert.scanners,스캐너가 올라왔어요,The scanners are up,타워 알림
+tower.alert.count,{0} 님이 스캐너에 손을 댔어요 · {1}초,{0} scanned in · {1}s,타워 알림. {0}=이름 {1}=초
+tower.alert.open,문이 열렸어요,Doors open,타워 알림
+tower.alert.cleared,{0} 레인 {1}층 통과,Lane {0} cleared floor {1},타워 알림: 다른 레인. {0}=레인 {1}=층
+tower.alert.failed,{0} 레인 탈락,Lane {0} is out,타워 알림
+tower.alert.gather,모든 레인이 끝났어요 · 휴게층으로,All lanes through · to the rest hall,타워 알림
+tower.alert.reset,다시 스캐너로,Back to the scanners,타워 알림: 전멸이나 모든 레인 탈락
+tower.feed.floor,{0}층 통과,Floor {0},타워 돈 줄. {0}=층
+tower.feed.clear,타워 정복,Tower cleared,타워 돈 줄
+tower.feed.today,오늘의 첫 정복,First clear today,타워 돈 줄: 그날 처음 정복
+tower.finale.word,ENFILADED!!,ENFILADED!!,타워 끝 연출의 큰 글자
+tower.finale.heading,엔필레이드 타워 정복,ENFILADE Tower cleared,타워 끝 연출의 판 위 줄
+tower.finale.under,{0} · {1},{0} · {1},타워 끝 연출의 판 아래 줄. {0}=오늘 훈련 {1}=걸린 시간
+life.respawn.tower,다음 휴게층에서 돌아옵니다,Back at the next rest hall,타워 레인에서 죽은 뒤

@@ -35,6 +35,8 @@ public sealed class EnemyNetwork : NetworkBehaviour
     private readonly NetworkVariable<Condition> condition = new NetworkVariable<Condition>();
     // A zombie's ZombieKind: its copies time their own swing by it.
     private readonly NetworkVariable<byte> kind = new NetworkVariable<byte>();
+    // Its health on top of its kind's (ZombieType.Toughness, the tower's floors): a copy's health bar fills to the same maximum.
+    private readonly NetworkVariable<float> toughness = new NetworkVariable<float>(1f);
     private ZombieType type;
     private ZombieGrip grip;
     private EnemyHealth enemy;
@@ -75,6 +77,7 @@ public sealed class EnemyNetwork : NetworkBehaviour
             health.Value = enemy.Health;
             condition.Value = ReadCondition();
             if (type != null) kind.Value = (byte)type.Kind;
+            if (type != null) toughness.Value = type.Toughness;
             motion = GetComponent<NetworkTransform>();
             if (motion != null)
             {
@@ -85,7 +88,9 @@ public sealed class EnemyNetwork : NetworkBehaviour
             return;
         }
         if (type != null) type.Show((ZombieKind)kind.Value);
+        if (type != null) type.ShowToughness(toughness.Value);
         kind.OnValueChanged += OnKindChanged;
+        toughness.OnValueChanged += OnToughnessChanged;
         if (TryGetComponent(out EnemyChaseAI chase)) chase.enabled = false;
         if (TryGetComponent(out NavMeshAgent agent)) agent.enabled = false;
         health.OnValueChanged += OnHealthChanged;
@@ -99,6 +104,7 @@ public sealed class EnemyNetwork : NetworkBehaviour
         health.OnValueChanged -= OnHealthChanged;
         condition.OnValueChanged -= OnConditionChanged;
         kind.OnValueChanged -= OnKindChanged;
+        toughness.OnValueChanged -= OnToughnessChanged;
     }
 
     private void OnKindChanged(byte previous, byte current)
@@ -106,10 +112,21 @@ public sealed class EnemyNetwork : NetworkBehaviour
         if (type != null) type.Show((ZombieKind)current);
     }
 
+    private void OnToughnessChanged(float previous, float current)
+    {
+        if (type != null) type.ShowToughness(current);
+    }
+
     /// <summary>The host made its zombie this kind after it appeared (/spawn n runner): its copies follow.</summary>
     internal void ShareKind(ZombieKind value)
     {
         if (IsSpawned && IsServer) kind.Value = (byte)value;
+    }
+
+    /// <summary>The host made its zombie tougher after it appeared (ZombieType.Toughen): its copies follow.</summary>
+    internal void ShareToughness(float value)
+    {
+        if (IsSpawned && IsServer) toughness.Value = value;
     }
 
     private void Update()

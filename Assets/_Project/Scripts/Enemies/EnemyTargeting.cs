@@ -30,10 +30,22 @@ public sealed class EnemyTargeting : MonoBehaviour
         taunter = null;
     }
 
+    /// <summary>
+    /// The players it may go after, or null for anyone. The ENFILADE tower pens each lane's zombies in with that lane's
+    /// players (TowerRun): someone behind the glass next door is never its quarry, nor is a taunt or a sound from there
+    /// turning it. Set on the PC that runs it (the host or a lone PC); a copy only follows its host.
+    /// </summary>
+    public System.Predicate<PlayerMovement> Pen { get; set; }
+
     public PlayerMovement Player
     {
         get
         {
+            if (Pen != null)
+            {
+                if (taunter != null && !Pen(taunter)) taunter = null;
+                if (player != null && !Pen(player)) player = null;
+            }
             // Taunted: the Knight, until it wears off or they go down. Called out in a duel, it first finishes the blow it
             // was already winding up on someone else, which then lands on nothing (HoundDuel): turning on the hound mid-swing
             // would cheapen the save (the user, 2026-11-12: "적이 공격하려고 내려찍으려 하고 있었어 근데 결투를 하면 갑자기
@@ -53,15 +65,29 @@ public sealed class EnemyTargeting : MonoBehaviour
             // A zombie that noticed someone goes after them, not whoever is nearest.
             if (mind == null) mind = GetComponent<ZombieMind>();
             var noticed = mind != null ? mind.Target : null;
-            if (noticed != null) return player = noticed;
+            if (noticed != null && (Pen == null || Pen(noticed))) return player = noticed;
             bool lost = player == null || !player.IsInitialized || !player.DamageReceiver.IsAlive;
             if (lost || Time.time >= nextLook)
             {
                 nextLook = Time.time + retargetInterval;
-                player = PlayerRoster.Nearest(transform.position);
+                player = Pen == null ? PlayerRoster.Nearest(transform.position) : NearestPenned();
             }
             return player;
         }
+    }
+
+    // The closest living player the pen allows, or null when none is.
+    private PlayerMovement NearestPenned()
+    {
+        PlayerMovement nearest = null;
+        float best = float.PositiveInfinity;
+        foreach (var someone in PlayerRoster.All)
+        {
+            if (someone == null || !someone.IsInitialized || !someone.DamageReceiver.IsAlive || !Pen(someone)) continue;
+            float distance = (someone.transform.position - transform.position).sqrMagnitude;
+            if (distance < best) { best = distance; nearest = someone; }
+        }
+        return nearest;
     }
 
     /// <summary>

@@ -52,7 +52,8 @@ public sealed class PlayerLifeHUD : MonoBehaviour
         if (receiver.IsDowned)
             return life.Rescuer != null ? Texts.Get("life.downed.helped") : Texts.Format("life.downed.waiting", Mathf.CeilToInt(life.BleedLeft));
         if (!receiver.IsAlive)
-            return life.WaitsForWave ? Texts.Get("life.respawn.next_wave") : Texts.Format("life.respawn.seconds", Mathf.Max(1, Mathf.CeilToInt(life.RespawnLeft)));
+            return TowerRun.KeepsDead ? Texts.Get("life.respawn.tower")
+                : life.WaitsForWave ? Texts.Get("life.respawn.next_wave") : Texts.Format("life.respawn.seconds", Mathf.Max(1, Mathf.CeilToInt(life.RespawnLeft)));
         return revive != null && revive.Candidate != null ? Texts.Get("life.revive.prompt") : null;
     }
 

@@ -104,7 +104,7 @@ public sealed class PlayerPing : MonoBehaviour
         if (Barricade.CrateFor(movement) != null) return true;
         if (movement.Abilities != null && movement.Abilities.Fixtures.ClimbDownLadder != null) return true;
         // The hub's stations (its map table, lockers, gun rack, ammo crate, ready button) take F when looked at.
-        return CampaignRun.Offering || ShopMenu.IsOpen || HubLobby.Offering;
+        return CampaignRun.Offering || TowerRun.Offering || ShopMenu.IsOpen || HubLobby.Offering;
     }
 
     // The living foe the crosshair is on (a zombie or a range target): the nearest thing along the look that isn't this

@@ -66,7 +66,8 @@ public sealed class PlayerLife : MonoBehaviour
     /// <summary>Health ran out: true if they go down, false if there is nobody left to get them up.</summary>
     internal bool TryGoDown()
     {
-        if (!GameSession.IsOnline || receiver.IsDowned) return false;
+        // Alone in an ENFILADE tower lane nobody can reach them through the glass: no ground, as when playing alone.
+        if (!GameSession.IsOnline || receiver.IsDowned || TowerRun.NoOneToHelp(player)) return false;
         foreach (var other in PlayerRoster.All)
             if (other != player && other.IsInitialized && Standing(other))
             {
@@ -116,10 +117,12 @@ public sealed class PlayerLife : MonoBehaviour
         }
         FindRescuer();
         if (receiver.IsDowned && Rescuer == null) receiver.Bleed(downedHealth / BleedSeconds * dt);
-        if (!receiver.IsAlive && !WaitsForWave)
+        // In the ENFILADE tower the dead wait while the lanes are climbed, and come back in the next hall as soon as
+        // they are through (TowerRun).
+        if (!receiver.IsAlive && !WaitsForWave && !TowerRun.KeepsDead)
         {
             respawnLeft -= dt;
-            if (GameSession.IsOnline && respawnLeft <= 0f) Respawn();
+            if (GameSession.IsOnline && (respawnLeft <= 0f || TowerRun.CallsDeadBack)) Respawn();
         }
         WatchForWipe();
     }
@@ -178,8 +181,9 @@ public sealed class PlayerLife : MonoBehaviour
     {
         var point = FindFirstObjectByType<PlayerSpawnPoint>();
         Vector2 scatter = GameSession.IsOnline ? Random.insideUnitCircle * SpawnScatter : Vector2.zero;
-        // A campaign chapter brings them back at the last rest stop reached, not the chapter's start (CampaignRun).
-        bool campaign = CampaignRun.TryCheckpoint(out Vector3 checkpoint);
+        // A campaign chapter brings them back at the last rest stop reached, not the chapter's start (CampaignRun), and the
+        // ENFILADE tower in its hall (TowerRun).
+        bool campaign = TowerRun.TryCheckpoint(out Vector3 checkpoint) || CampaignRun.TryCheckpoint(out checkpoint);
         if (campaign || point != null)
             player.MoveTo((campaign ? checkpoint : point.transform.position) + new Vector3(scatter.x, 0f, scatter.y));
         receiver.RestoreHealth();

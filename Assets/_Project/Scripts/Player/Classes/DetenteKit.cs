@@ -470,7 +470,7 @@ public sealed class DetenteKit : MonoBehaviour
         if (FieldPickups.Targeting) return false;
         if (TryGetComponent(out PlayerRevive revive) && revive.Candidate != null) return false;
         if (movement.Abilities != null && movement.Abilities.Fixtures.ClimbDownLadder != null) return false;
-        return !CampaignRun.Offering && !ShopMenu.IsOpen;
+        return !CampaignRun.Offering && !TowerRun.Offering && !ShopMenu.IsOpen;
     }
 
     private static string Name(PlayerMovement someone)

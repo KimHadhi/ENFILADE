@@ -50,6 +50,12 @@ public sealed partial class GreyboxBuilder
         shops = new List<Transform>();
     private readonly List<CampaignDoor> doors = new List<CampaignDoor>();
     private readonly List<Block> blocks = new List<Block>();
+    // Glass and the like: solid, but they hide nothing behind them from the camera (MarkStatic).
+    private readonly HashSet<GameObject> seeThrough = new HashSet<GameObject>();
+
+    /// <summary>The scene gets a campaign chapter's run of objectives (CampaignRun). Off for a map that brings its own
+    /// run, as the ENFILADE tower does (TowerMap, TowerRun).</summary>
+    public bool AddsCampaign { get; set; } = true;
     private Scene scene;
     private Transform terrain, parkour, enemies, progress, systems, pickups, ambience;
     private int pickupCount;
@@ -237,6 +243,49 @@ public sealed partial class GreyboxBuilder
         });
         return gate;
     }
+
+    /// <summary>
+    /// A panel that slides (the ENFILADE tower's doors, TowerMap): solid, out of the walk-mesh bake and carving the mesh
+    /// where it stands at run time, as a gate does, so it keeps zombies in while shut. What moves it is up to the caller.
+    /// </summary>
+    public GameObject SlidingPanel(string name, float x0, float x1, float y0, float y1, float z0, float z1, Material material = null,
+        string surface = null)
+    {
+        var panel = Box(name, x0, x1, y0, y1, z0, z1, material, surface);
+        Moving(panel);
+        panel.AddComponent<NavMeshModifier>().ignoreFromBuild = true;
+        var obstacle = panel.AddComponent<NavMeshObstacle>();
+        obstacle.shape = NavMeshObstacleShape.Box;
+        obstacle.center = Vector3.zero;
+        obstacle.size = Vector3.one;
+        obstacle.carving = true;
+        obstacle.carveOnlyStationary = false;
+        return panel;
+    }
+
+    /// <summary>A solid shape that hides nothing behind it: never an occluder in the culling bake (glass).</summary>
+    public GameObject SeeThrough(GameObject shape)
+    {
+        if (shape != null) seeThrough.Add(shape);
+        return shape;
+    }
+
+    /// <summary>A top-level group of the scene's hierarchy, for a map's own fixtures.</summary>
+    public Transform Group(string name) => Root(name);
+
+    /// <summary>An object under the scene's systems (a map's own run).</summary>
+    public GameObject AddSystem(string name)
+    {
+        var system = new GameObject(name);
+        system.transform.SetParent(systems, false);
+        return system;
+    }
+
+    /// <summary>A material by its path under Art/Materials.</summary>
+    public static Material MaterialAt(string path) => Load(path);
+
+    /// <summary>Sets serialized fields of a component made in code.</summary>
+    public static void Configure(Object target, System.Action<SerializedObject> change) => Set(target, change);
 
     /// <summary>A rest stop's sliding door in a doorway (CampaignDoor), shutting the Checkpoint step at
     /// <paramref name="spot"/>; it slides by <paramref name="openOffset"/> into the wall beside it. Like a gate, it stays
@@ -435,7 +484,7 @@ public sealed partial class GreyboxBuilder
         // Every box is laid now, so each ladder can be fitted to the floor it leads to.
         string ladders = LadderFit.FitAll(parkour);
         AddWaves();
-        AddCampaign();
+        if (AddsCampaign) AddCampaign();
         if (!AssetDatabase.IsValidFolder(Folder)) AssetDatabase.CreateFolder(Path.GetDirectoryName(Folder).Replace('\\', '/'), Path.GetFileName(Folder));
         string dataFolder = Folder + "/" + sceneName;
         if (!AssetDatabase.IsValidFolder(dataFolder)) AssetDatabase.CreateFolder(Folder, sceneName);
@@ -509,11 +558,12 @@ public sealed partial class GreyboxBuilder
         {
             var part = shape.gameObject;
             if (part.GetComponentInParent<CampaignGate>() != null || part.GetComponentInParent<CampaignDoor>() != null
-                || part.GetComponentInParent<CampaignPushback>() != null)
+                || part.GetComponentInParent<CampaignPushback>() != null || part.GetComponentInParent<TowerDoor>() != null)
                 continue;
             var flags = StaticEditorFlags.BatchingStatic | StaticEditorFlags.OccludeeStatic;
             // A dressed box's grey look is hidden (GreyboxBuilder.Dress): its model may not fill it, so it hides nothing.
-            if (shape.enabled && part.TryGetComponent(out Collider _)) flags |= StaticEditorFlags.OccluderStatic;
+            // Glass is seen through: as an occluder it would hide the room behind it (the tower's lanes).
+            if (shape.enabled && part.TryGetComponent(out Collider _) && !seeThrough.Contains(part)) flags |= StaticEditorFlags.OccluderStatic;
             GameObjectUtility.SetStaticEditorFlags(part, flags);
         }
     }

@@ -25,3 +25,6 @@ Ch4.DutyFree,Audio/Ambience/Indoor1,1,1.5
 Ch4.Bridge,Audio/Ambience/OpenIndoor1,1,1.5
 Ch4.Apron,Audio/Ambience/Machinery,1,2
 Ch4.Tower,Audio/Ambience/Indoor4,1,1.5
+EnfiladeTower,Audio/Ambience/Outdoor2,1,3
+Tower.Inside,Audio/Ambience/Machinery,1,2
+Tower.Hall,Audio/Ambience/Indoor2,1,1.5

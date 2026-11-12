@@ -198,6 +198,11 @@ public sealed class ZombieType : MonoBehaviour
     public bool WeakHead => Crawls && CrawlHead > 1f;
     /// <summary>A leg half gone: it limps, slower by its kind's limpPace (ZombieBody.Legs.cs, every PC alike).</summary>
     public bool Limping { get; private set; }
+    /// <summary>
+    /// Its health on top of its kind's share: the ENFILADE tower's higher floors hold tougher ones (TowerRun, Tables/
+    /// TowerFloors). 1 everywhere else. Every PC alike (EnemyNetwork), so a copy's health bar fills to the same maximum.
+    /// </summary>
+    public float Toughness { get; private set; } = 1f;
 
     /// <summary>A leg half gone: from now on it limps, slower, until the leg gives way and it crawls (every PC alike).</summary>
     internal void Limp()
@@ -296,6 +301,23 @@ public sealed class ZombieType : MonoBehaviour
         Apply();
     }
 
+    /// <summary>The host or the PC alone: its health times <paramref name="toughness"/> from now on (the tower's floors), told to the others.</summary>
+    public void Toughen(float toughness)
+    {
+        Toughness = Mathf.Clamp(toughness, .1f, 20f);
+        Apply();
+        if (network != null) network.ShareToughness(Toughness);
+    }
+
+    /// <summary>Another PC: how tough the host made its zombie.</summary>
+    internal void ShowToughness(float toughness)
+    {
+        float value = Mathf.Clamp(toughness <= 0f ? 1f : toughness, .1f, 20f);
+        if (Mathf.Approximately(value, Toughness)) return;
+        Toughness = value;
+        Apply();
+    }
+
     /// <summary>It lost a leg: from now on it crawls (every PC alike).</summary>
     internal void Crawl()
     {
@@ -325,7 +347,7 @@ public sealed class ZombieType : MonoBehaviour
             combat.SetPounce(numbers.pounces, numbers.pounceWindup, numbers.pounceRadius);
             combat.SetSlam(numbers.knock, numbers.knockUp);
         }
-        if (health != null && numbers.healthShare > 0f) health.SetHealthShare(numbers.healthShare);
+        if (health != null && numbers.healthShare > 0f) health.SetHealthShare(numbers.healthShare * Toughness);
         // Its kind's name, over its health bar and in the kill feed (Texts.csv zombie.*), every PC alike.
         if (health != null) health.SetDisplayName(Texts.Get(NameId(Kind)));
         if (mind != null) mind.SetChaseSpeed(numbers.speed * pace);

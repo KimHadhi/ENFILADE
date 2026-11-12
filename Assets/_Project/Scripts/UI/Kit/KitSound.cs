@@ -21,8 +21,12 @@ public static class KitSound
     /// the further). Hunter: a Ghost's headshot added a Head Hunter stack; HunterLost: a hurt took them all. Ping: F
     /// marked an enemy for the team; Mark: a Schießhund's bounty mark went on; Bounty: its mark died at its hand. Supply:
     /// a Support handed ammo over; Hammer: it put a barricade up; Splinter: a zombie's blow on one; Collapse: one broke.
+    /// The ENFILADE tower (TowerRun): TowerRise, a hall's scanners coming up out of the floor; TowerTick, a second of the
+    /// scanners' count; TowerScan, a palm read; TowerOpen, a lane's door unlocking; TowerClear, a floor got through;
+    /// Enfiladed, the tower's last kill and its banner (EnfiladedFinale).
     public enum Cue { Buy, Refuse, Alert, PickAmmo, PickHeal, PickShield, PickMoney, PickGun, Escape, Suspect, Spotted, Unseen, Charge,
-        Taunt, Hunter, HunterLost, Ping, Mark, Bounty, Supply, Hammer, Splinter, Collapse }
+        Taunt, Hunter, HunterLost, Ping, Mark, Bounty, Supply, Hammer, Splinter, Collapse,
+        TowerRise, TowerTick, TowerScan, TowerOpen, TowerClear, Enfiladed }
 
     private const string BankId = "UI";
     private const int Rate = 44100;
@@ -94,6 +98,12 @@ public static class KitSound
             Cue.Hammer => Nails(),
             Cue.Splinter => Crack(),
             Cue.Collapse => Timber(),
+            Cue.TowerRise => Rise(),
+            Cue.TowerTick => Tick(),
+            Cue.TowerScan => Scan(),
+            Cue.TowerOpen => Unlock(),
+            Cue.TowerClear => Through(),
+            Cue.Enfiladed => Raked(),
             _ => Buzz()
         };
         var clip = AudioClip.Create("Kit " + cue, data.Length, 1, Rate, false);
@@ -480,6 +490,95 @@ public static class KitSound
             turn += 2f * Mathf.PI * pitch * (1f + .18f * (1f - Mathf.Exp(-t / .03f))) / Rate;
             float wave = Mathf.Sin(turn) + .6f * Mathf.Sin(turn * 1.5f) + .45f * Mathf.Sin(turn * 2f) + .2f * Mathf.Sin(turn * 3.01f);
             data[i] += wave * Mathf.Exp(-t / decay) * Mathf.Min(1f, t / .0015f) * level;
+        }
+    }
+
+    // ---- The ENFILADE tower ----
+
+    // A hall's scanners coming up: a motor's hum climbing under a ratchet, a clack as they lock at the top.
+    private static float[] Rise()
+    {
+        var data = new float[(int)(Rate * 1.1f)];
+        var random = new System.Random(5281);
+        Sweep(data, 0f, 62f, 118f, .85f, .5f);
+        for (int i = 0; i < 9; i++) Click(data, random, .05f + i * .09f, .003f, .22f);
+        Knock(data, .86f, 96f, .09f, .8f);
+        Click(data, random, .86f, .006f, .6f);
+        return Finish(data, .55f);
+    }
+
+    // A second of the scanners' count: one clean blip, short enough to sit under the voices.
+    private static float[] Tick()
+    {
+        var data = new float[(int)(Rate * .16f)];
+        Note(data, 0f, 1318.5f, .045f, .7f);
+        return Finish(data, .45f);
+    }
+
+    // A palm read: three quick blips climbing, the reader's chirp.
+    private static float[] Scan()
+    {
+        var data = new float[(int)(Rate * .45f)];
+        Note(data, 0f, 880f, .05f, .5f);
+        Note(data, .07f, 1174.7f, .05f, .5f);
+        Note(data, .14f, 1568f, .12f, .55f);
+        return Finish(data, .5f);
+    }
+
+    // A lane's door unlocking: the bolt's clank, then three notes of a major chord going up, access granted.
+    private static float[] Unlock()
+    {
+        var data = new float[(int)(Rate * .9f)];
+        var random = new System.Random(6197);
+        Knock(data, 0f, 82f, .08f, .9f);
+        Click(data, random, 0f, .005f, .7f);
+        Clang(data, .02f, 392f, .18f, .3f);
+        Note(data, .1f, 523.3f, .2f, .4f);
+        Note(data, .19f, 659.3f, .2f, .4f);
+        Note(data, .28f, 784f, .45f, .5f);
+        return Finish(data, .65f);
+    }
+
+    // A floor got through: a bright stab with a bell ringing over it.
+    private static float[] Through()
+    {
+        var data = new float[(int)(Rate * 1.2f)];
+        Stab(data, 0f, 392f, .22f, .6f);
+        Stab(data, .12f, 587.3f, .3f, .5f);
+        Bell(data, .12f, 1568f, .35f, .35f);
+        return Finish(data, .65f);
+    }
+
+    // The tower's last kill (EnfiladedFinale): the frame stops on a boom, a crash of metal, and a brass chord swelling in
+    // under the banner's slam.
+    private static float[] Raked()
+    {
+        var data = new float[(int)(Rate * 2.6f)];
+        var random = new System.Random(7741);
+        Knock(data, 0f, 46f, .5f, 1f);
+        Click(data, random, 0f, .02f, .9f);
+        Clang(data, 0f, 311f, .6f, .45f);
+        Clang(data, .02f, 466f, .5f, .3f);
+        Stab(data, .1f, 261.6f, .9f, .45f);
+        Stab(data, .1f, 392f, .9f, .35f);
+        Horn(data, .14f, 65.4f, 2.2f, .35f);
+        Horn(data, .14f, 98f, 2.2f, .25f);
+        Bell(data, .16f, 2093f, .6f, .2f);
+        return Finish(data, .9f);
+    }
+
+    // A tone gliding from one pitch to another over <length> (s) starting at <at>, swelling in and out: a motor or a siren.
+    private static void Sweep(float[] data, float at, float from, float to, float length, float level)
+    {
+        int start = (int)(at * Rate), count = (int)(length * Rate);
+        float turn = 0f;
+        for (int i = 0; i < count && start + i < data.Length; i++)
+        {
+            float t = i / (float)Rate, share = t / length;
+            turn += 2f * Mathf.PI * Mathf.Lerp(from, to, share) / Rate;
+            float wave = Mathf.Sin(turn) + .5f * Mathf.Sin(turn * 2f) + .25f * Mathf.Sin(turn * 3f);
+            float swell = Mathf.Min(1f, t / .05f) * Mathf.Min(1f, (length - t) / .1f);
+            data[start + i] += wave * swell * level;
         }
     }
 
