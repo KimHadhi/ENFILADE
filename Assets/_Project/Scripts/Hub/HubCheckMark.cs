@@ -6,6 +6,7 @@ using UnityEngine.UI;
 /// a short stroke down to the elbow and a long one up to the top right, one thickness, the elbow closed. The hub's ready
 /// board puts it on a player's picture once they are ready (HubReadyBoard).
 /// </summary>
+[RequireComponent(typeof(CanvasRenderer))]
 public sealed class HubCheckMark : MaskableGraphic
 {
     [SerializeField, Range(.04f, .4f), Tooltip("Stroke thickness, a share of the rect's shorter side.")]

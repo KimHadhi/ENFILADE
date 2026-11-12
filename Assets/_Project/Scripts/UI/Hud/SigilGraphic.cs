@@ -7,6 +7,7 @@ using UnityEngine.UI;
 /// A ring can stamp out from it (<see cref="Ring"/> 0 to 1). It fills the smaller side of its rect with the sigil's
 /// 100-unit box. The ultimate's notice wears one (MomentHUD).
 /// </summary>
+[RequireComponent(typeof(CanvasRenderer))]
 public sealed class SigilGraphic : MaskableGraphic
 {
     private MomentLook.Sigil sigil;

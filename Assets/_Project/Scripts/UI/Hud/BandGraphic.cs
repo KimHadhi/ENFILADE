@@ -10,6 +10,7 @@ using UnityEngine.UI;
 /// - the emblem's square;
 /// - the HUD's pink shard past its tip, and a smaller one past that.
 /// </summary>
+[RequireComponent(typeof(CanvasRenderer))]
 public sealed class BandGraphic : MaskableGraphic
 {
     public enum Cap : byte { Blade, Ranks, Ticks, Twin, Pulse, Diamond, Hazard }

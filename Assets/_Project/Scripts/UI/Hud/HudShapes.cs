@@ -38,6 +38,7 @@ public static class HudShapes
 /// them along (px), so a caller that adds to it each frame makes them run. Slant leans the rect itself into a
 /// parallelogram as KitSkew does (the top edge that far right of the bottom), so it sits on a slanted plate.
 /// </summary>
+[RequireComponent(typeof(CanvasRenderer))]
 public sealed class HazardGraphic : MaskableGraphic
 {
     [SerializeField, Min(1f)] private float stripe = 8f;
@@ -87,6 +88,7 @@ public sealed class HazardGraphic : MaskableGraphic
 }
 
 /// <summary>A diamond's outline with a smaller filled diamond inside it, filling the rect.</summary>
+[RequireComponent(typeof(CanvasRenderer))]
 public sealed class DiamondGraphic : MaskableGraphic
 {
     [SerializeField, Range(0f, 1f)] private float core = .46f;
@@ -122,6 +124,7 @@ public sealed class DiamondGraphic : MaskableGraphic
 /// A row of rangefinder ticks along the rect's width, standing on its bottom edge: every `every`th one the rect's full
 /// height, the rest a share of it.
 /// </summary>
+[RequireComponent(typeof(CanvasRenderer))]
 public sealed class TickRowGraphic : MaskableGraphic
 {
     [SerializeField, Min(2)] private int count = 27;
@@ -156,6 +159,7 @@ public sealed class TickRowGraphic : MaskableGraphic
 /// lengths. Every `accentEvery`th one takes the accent colour. Inner is how near the middle they come, as a share of the
 /// rect's half-height; set it each frame to make them rush in.
 /// </summary>
+[RequireComponent(typeof(CanvasRenderer))]
 public sealed class FocusLinesGraphic : MaskableGraphic
 {
     [SerializeField, Min(4)] private int count = 44;

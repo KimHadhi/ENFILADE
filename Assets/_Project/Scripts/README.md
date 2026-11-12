@@ -200,6 +200,7 @@
 3. 한 공격의 여러 콜라이더는 같은 `DamageHit.Id`를 사용한다. 새 공격에는 새 ID를 발급한다.
 4. 비활성화·사망·상태 취소·스크립트 재로드에서 입력, 충돌 무시, 시간 효과, 임시 표시가 정리되는지 확인한다.
 5. 변경한 기능을 [검증 안내](../Docs/ValidationGuide.md)의 항목대로 실제 플레이로 확인한다.
+6. 코드로 메시를 짓는 UI 그림(`MaskableGraphic`·`Graphic`을 이어받은 클래스)에는 `[RequireComponent(typeof(CanvasRenderer))]`를 붙인다. 이 uGUI(2.0)의 Graphic은 CanvasRenderer를 스스로 요구하지 않아서, 없이 만들면 에디터에서 그려지지 않고 RectMask2D 아래에서는 MissingComponentException이 콘솔을 채운다([유지보수 안내](../Docs/MaintenanceGuide.md#코드로-그리는-ui-그림-graphic)).
 
 ## 성능을 살필 때
 

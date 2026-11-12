@@ -8,6 +8,7 @@ using UnityEngine.UI;
 /// the ring's size and grows with it. Used by the headshot's snapping gold ring (<see cref="HitMarkerHUD"/>).
 /// </summary>
 [DisallowMultipleComponent]
+[RequireComponent(typeof(CanvasRenderer))]
 public sealed class SoftRingGraphic : MaskableGraphic
 {
     // Enough that the outline stays round at the largest ring the headshot draws (a radius of about 60 px).

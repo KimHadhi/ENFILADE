@@ -307,6 +307,14 @@ HUD 조각은 저마다 제 코드가 자리를 잡아서 서로를 모른다. 1
   - Play 중 **Tools → HUD → 겹침 검사 (화면비·설정 모두)**는 화면비 넷(16:9, 16:10, 21:9, 4:3) × HUD 원근 각도 0/20/40° × HUD 기울기 0/1/2와, 플레이어 설정에서 Q/E 끝까지 양쪽을, 한 번은 게임 그대로 한 번은 지나가는 상태를 띄워서 88가지로 잰다. `Logs/HudOverlap/report.txt`에 문제마다 가장 깊은 값과 나온 경우들을, 문제가 있는 경우마다 그림(빨강 겹침, 주황 화면 밖)을 남긴다. 게임 화면 크기는 `PlayModeWindow`로 바꾸고 끝나면 HUD 설정·기울이기·게임 화면 크기가 돌아온다(아무것도 저장하지 않는다). Unity를 못 돌리는 세션은 이 보고서와 그림을 읽는다.
   - 지나가는 상태가 있는 조각은 `IHudPreview.Preview(bool)`를 구현하면 검사가 그 상태로 띄워 잰다([AssaultBar](../Scripts/UI/Hud/AssaultBar.cs): 1:30 노래의 0:37인 습격 테이프, [MissionHUD](../Scripts/UI/MissionHUD.cs): 지금 목표의 새 목표 알림을 열어 둔다). 콜아웃 통신 화면, 투척물 판, 무기 슬롯처럼 잠깐 보이는 조각도 이것을 구현하면 검사에 늘 들어간다.
 
+## 코드로 그리는 UI 그림 (Graphic)
+
+HUD 도형·옷장 사진처럼 메시를 코드로 짓는 UI 그림(`MaskableGraphic`이나 `Graphic`을 이어받은 클래스)에는 꼭 `[RequireComponent(typeof(CanvasRenderer))]`를 붙인다.
+
+- **까닭**: 이 프로젝트의 uGUI 2.0에서는 `Graphic` 자체가 CanvasRenderer를 요구하지 않는다(Image·RawImage·Text·TextMeshProUGUI는 저마다 요구한다). CanvasRenderer가 없으면 Graphic이 처음 쓸 때 붙이려 하지만, 에디터의 `GetComponent`는 없는 컴포넌트 대신 '가짜 null'을 돌려주어 붙이는 데까지 가지 않는다. 그래서 에디터에서는 그 그림이 그려지지 않고, 스크롤 목록처럼 RectMask2D 아래에 있으면 자를 때마다 `MissingComponentException: There is no 'CanvasRenderer' attached …`가 콘솔을 채운다. 빌드에서는 그때 붙어서 드러나지 않는다.
+- **붙이면**: `AddComponent`와 `new GameObject(이름, typeof(RectTransform), typeof(그림))`이 CanvasRenderer부터 붙인다. 씬·프리팹에 이미 저장된 오브젝트에는 거꾸로 붙지 않으니 그런 것은 CanvasRenderer가 있는지 따로 본다(11-12에는 GameHUD 프리팹의 목표 배지 하나뿐이고 있다).
+- **11-12**: 옷장 사진([OutfitPictureGraphic](../Scripts/UI/Menu/OutfitPictureGraphic.cs))이 이것으로 콘솔을 채워서(사용자: "지금 옷장 버그 남.") 이 속성이 없던 15개 클래스에 모두 붙였다. 그중 CanvasRenderer 없이 만들어지던 것, 곧 헤드샷 금색 고리, 궁극기 알림 띠와 문장, 알림 표식·길 안내의 방향 화살, COUNTER 배너의 분홍 조각, 랭크 띠의 오름 화살, 옷장 사진과 사진 다시 찍기의 자르는 선은 에디터에서 이제야 그려진다.
+
 ## 플레이어 설정 (Esc 메뉴)
 
 **Esc**를 누르면 게임이 멈추고 설정 메뉴가 열린다. Esc를 다시 누르거나 "돌아가기"를 누르면 이어서 하고, 이때 설정이 저장된다. 채팅이나 개발자 콘솔을 닫는 Esc로는 메뉴가 열리지 않는다. "이 탭 기본값"은 보고 있는 탭의 설정만 기본값으로 돌린다. 닉네임·마지막 맵·방 설정은 어느 탭에서도 돌리지 않는다.

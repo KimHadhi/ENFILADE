@@ -363,6 +363,7 @@ public sealed class StealthMarkersHUD : MonoBehaviour, ITableBound
 /// pointing up, each a dark plate in a bright rim, filled from the bottom to Level. Meshes, so they stay sharp at any
 /// size and need no sprite.
 /// </summary>
+[RequireComponent(typeof(CanvasRenderer))]
 public sealed class StealthGlyph : MaskableGraphic
 {
     private const float Rim = .17f;

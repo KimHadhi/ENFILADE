@@ -11,6 +11,7 @@ using UnityEngine.UI;
 /// Where the table says so (tiles: their words run on over the picture's left side) the left side fades in.
 /// </summary>
 [DisallowMultipleComponent]
+[RequireComponent(typeof(CanvasRenderer))]
 public sealed class OutfitPictureGraphic : MaskableGraphic
 {
     private static readonly List<Vector2> shape = new List<Vector2>(4);

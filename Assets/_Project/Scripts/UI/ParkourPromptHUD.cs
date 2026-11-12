@@ -150,6 +150,7 @@ public sealed class ParkourPromptHUD : MonoBehaviour
 /// A key cap for prompts (ParkourPromptHUD): a rounded rectangle's outline, with a faint dark fill so the key's name
 /// reads over anything. A mesh, so it stays sharp at any size and needs no sprite.
 /// </summary>
+[RequireComponent(typeof(CanvasRenderer))]
 public sealed class KeyCapGraphic : MaskableGraphic
 {
     private const int CornerSteps = 5;

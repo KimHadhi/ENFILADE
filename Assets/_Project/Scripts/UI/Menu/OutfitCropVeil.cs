@@ -10,6 +10,7 @@ using UnityEngine.UI;
 /// so a change of WardrobePictures.csv moves the line too.
 /// </summary>
 [DisallowMultipleComponent]
+[RequireComponent(typeof(CanvasRenderer))]
 public sealed class OutfitCropVeil : MaskableGraphic
 {
     // The edge's width in the window (px), drawn inside the kept part.

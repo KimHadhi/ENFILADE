@@ -261,6 +261,7 @@ public sealed class CalloutWheel : MonoBehaviour
 /// A slice of a ring (an annular sector) round the rect's middle: radii in px, from and to in degrees clockwise from the
 /// top. Inner 0 and a full turn make a disk. A mesh, so it stays sharp at any size and needs no sprite.
 /// </summary>
+[RequireComponent(typeof(CanvasRenderer))]
 public sealed class WheelSliceGraphic : MaskableGraphic
 {
     private float inner, outer = 100f, from, to = 360f;

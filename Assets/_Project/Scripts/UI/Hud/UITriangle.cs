@@ -5,6 +5,7 @@ using UnityEngine.UI;
 /// A filled triangle for the UI: its three corners given in its own rect, 0 to 1 across and up. The HUD's pink accent
 /// shards (CounterBanner) are these.
 /// </summary>
+[RequireComponent(typeof(CanvasRenderer))]
 public sealed class UITriangle : MaskableGraphic
 {
     [SerializeField] private Vector2 first = new Vector2(0f, 1f), second = new Vector2(1f, 1f), third = new Vector2(0f, 0f);
