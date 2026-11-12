@@ -182,6 +182,8 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
         controller.InspectStarted += OnInspectStarted;
         controller.InspectStopped += OnInspectStopped;
         if (movement != null) movement.Jumped += OnJumped;
+        // A shove with the gun out swings the gun (FPSBody.Bash).
+        BeginBash();
         // The guns carried but not held are worn on the body for everyone to see (HolsteredGuns).
         if (Application.isPlaying && GetComponent<HolsteredGuns>() == null) gameObject.AddComponent<HolsteredGuns>();
         if (assets == null || assets.inputConfig == null || assets.rig == null || assets.upperBody == null || assets.idleProfile == null)
@@ -201,6 +203,7 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
         }
         if (movement != null) movement.Jumped -= OnJumped;
         if (body != null) body.UpperBodyFromFramework = false;
+        EndBash();
         ReleaseContacts();
         ForgetMade();
     }
@@ -956,6 +959,8 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
         KeepGunInView();
         // Through a reload, the gun where KINEMATION's own clip has it (FPSBody.Contacts); the weapon root rides it after.
         FollowContacts();
+        // A shove's bash swings the gun on top of that (FPSBody.Bash).
+        FollowBash();
         RideGun();
         if (firing && Time.time - lastShot > shotInterval * TriggerReleaseIntervals) StopFiring();
         if (held.Reloading && (controller.Runtime == null || !controller.Runtime.IsReloading)) held.StopReload(playables, reloadBlendOut, bodyCamera);
@@ -1114,6 +1119,7 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
         if (!HoldsGun) return;
         StopFiring();
         CutDraw();
+        CutBash();
         // A reload going on from where a cut-short one got to starts its clips there (WeaponRuntime.ReloadStartShare).
         held.Reload(empty, playables, bodyCamera, controller.Runtime != null ? controller.Runtime.ReloadStartShare : 0f);
     }
@@ -1136,6 +1142,7 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
     {
         if (!HoldsGun) return;
         StopFiring();
+        CutBash();
         held.StopAction(playables, 0f, bodyCamera);
         held.StopReload(playables, 0f, bodyCamera);
         held.PlayHolster(playables, bodyCamera);
@@ -1264,6 +1271,8 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
     {
         if (!HoldsGun) return;
         CutDraw();
+        // A shot fired mid-bash (the shove landed, so the gun is free at once) goes straight: the gun comes back first.
+        CutBash();
         firing = true;
         lastShot = Time.time;
         shotInterval = data.ShotInterval;

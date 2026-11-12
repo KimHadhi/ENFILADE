@@ -223,7 +223,7 @@ Magica는 뼈를 잇는 선에서만 충돌한다. 보이는 치마는 그 선 �
 
 ## 애니메이션 추가하기
 
-휴머노이드 FBX를 `Art/Animations/<묶음>/`에 넣고 옆에 `<파일이름>.clips.csv`를 둔다. 클립 하나짜리 파일이 많은 폴더(Mixamo)는 폴더 이름의 표 하나(`Mixamo/Mixamo.clips.csv`)에 모은다. Mixamo는 모든 클립 이름이 `mixamo.com`이라 파일 이름이 클립 이름이 된다. 수정 후 반영되지 않으면 해당 FBX를 우클릭해 **Reimport**한다. 가져온 클립은 [PlayerBody](../Resources/Characters/PlayerBody.asset)의 클립 목록에 저절로 들어간다([PlayerBodyProfileBuilder](../Editor/Import/PlayerBodyProfileBuilder.cs)). `Art/Animations/Zombies`의 좀비 클립은 플레이어 몸이 쓰지 않으므로 넣지 않는다.
+휴머노이드 FBX를 `Art/Animations/<묶음>/`에 넣고 옆에 `<파일이름>.clips.csv`를 둔다. 클립 하나짜리 파일이 많은 폴더(Mixamo)는 폴더 이름의 표 하나(`Mixamo/Mixamo.clips.csv`)에 모은다. Mixamo는 모든 클립 이름이 `mixamo.com`이라 파일 이름이 클립 이름이 된다. 수정 후 반영되지 않으면 해당 FBX를 우클릭해 **Reimport**한다. 가져온 클립은 [PlayerBody](../Resources/Characters/PlayerBody.asset)의 클립 목록에 저절로 들어간다([PlayerBodyProfileBuilder](../Editor/Import/PlayerBodyProfileBuilder.cs)). `Art/Animations/Zombies`의 좀비 클립은 플레이어 몸이 쓰지 않으므로 넣지 않는다. `Art/Animations/Custom`(True FPS 작업실)과 `Art/Animations/Shove`(밀치기 작업실, 발차기 `enf_kick_front` = `Body.kick`)의 클립은 블렌더의 카즈사 뼈대에서 보낸 것이라 카즈사 아바타를 같이 쓴다([ModelImportRules](../Editor/Import/ModelImportRules.cs)).
 
 | 열 | 뜻 |
 | --- | --- |

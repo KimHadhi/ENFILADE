@@ -64,6 +64,8 @@ public sealed class PlayerCombatActions
             return true;
         }
         weapon?.InterruptForSurvival(true);
+        // The gun swings through its bash on every PC (ShoveMoves.Bashed → FPSBody.Bash, PlayerNetworkCombat).
+        ShoveMoves.For(ctx).Bash();
         cooldown = Fatigue.Spend(ctx.AbilitySettings.shoveCooldown, ctx.AbilitySettings);
         // From the eyes, which stay with the body in the F5 view.
         var eyes = PlayerView.EyesOf(ctx);

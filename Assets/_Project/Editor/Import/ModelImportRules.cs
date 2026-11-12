@@ -30,6 +30,11 @@ internal sealed class ModelImportRules : AssetPostprocessor
     public const string AnimationsFolder = "Assets/_Project/Art/Animations/";
     private const string ZombieAnimationsFolder = AnimationsFolder + "Zombies/";
     private const string ZombieAvatarModel = "Assets/ThirdParty/Synty/PolygonCityZombies/Models/Zombies.fbx";
+    // Clips the Blender True FPS workspaces export on KazusaBand's own skeleton (Tools/Blender/TrueFPS and Shove): they
+    // take her avatar as they are, so a polish exported from Blender plays with no step in Unity (the shove workspace's
+    // round trip; the TrueFPS guide had the user pick Copy From Other Avatar by hand).
+    private static readonly string[] TrueFpsAnimationFolders = { AnimationsFolder + "Shove/", AnimationsFolder + "Custom/" };
+    private const string TrueFpsAvatarModel = ModelsFolder + "Characters/KazusaBand/KazusaBand.fbx";
     private const string CharactersCategory = "Characters/";
     private static readonly string[] StaticCategories = { "Props/", "Environment/" };
     private static readonly string[] ImageExtensions = { ".png", ".tga", ".jpg", ".jpeg", ".psd", ".tif", ".tiff", ".exr" };
@@ -46,6 +51,9 @@ internal sealed class ModelImportRules : AssetPostprocessor
     /// <summary>Exported from the Blender zombie workspace (Tools/Blender/Zombies), which names every file "enf_…".</summary>
     public static bool IsZombieWorkspaceClip(string path)
         => IsZombieAnimation(path) && Path.GetFileName(path).StartsWith("enf_", StringComparison.OrdinalIgnoreCase);
+    /// <summary>Exported from a Blender True FPS workspace on KazusaBand's skeleton into Art/Animations/Shove or Custom.</summary>
+    public static bool IsTrueFpsWorkspaceClip(string path)
+        => TrueFpsAnimationFolders.Any(f => path.StartsWith(f, StringComparison.OrdinalIgnoreCase));
     private static bool IsImage(string path) => ImageExtensions.Contains(Path.GetExtension(path).ToLowerInvariant());
 
     private void OnPreprocessModel()
@@ -59,6 +67,7 @@ internal sealed class ModelImportRules : AssetPostprocessor
             model.bakeAxisConversion = false;
             ShareAvatar(model, ZombieAvatarModel);
         }
+        else if (IsTrueFpsWorkspaceClip(assetPath)) ShareAvatar((ModelImporter)assetImporter, TrueFpsAvatarModel);
         else if (IsAnimationFile(assetPath)) ShareTPose((ModelImporter)assetImporter);
     }
 

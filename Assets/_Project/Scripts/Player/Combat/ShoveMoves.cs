@@ -77,6 +77,11 @@ public sealed class ShoveMoves : MonoBehaviour
 
     /// <summary>A kick left, on this player's own PC or, shown, on another's copy: the body plays it.</summary>
     public event Action Kicked;
+    /// <summary>
+    /// A shove with a gun in the hands began (the crowd shove, not a kick, sweep or dash), on this player's own PC or,
+    /// shown, on another's copy: the gun swings through its bash (FPSBody.Bash). The shove's own PC judges what it hit.
+    /// </summary>
+    public event Action Bashed;
     /// <summary>A kick is under way on this player's own PC: from the press until the foot lands (kickHitTime). The leg
     /// clip plays on longer, on every PC (PlayerBody.Kick).</summary>
     public bool IsKicking => kickClock >= 0f;
@@ -130,6 +135,13 @@ public sealed class ShoveMoves : MonoBehaviour
         if (player != null && player.IsCrouching) BeginSweep(false);
         Kicked?.Invoke();
     }
+
+    /// <summary>A shove with a gun began on this player's own PC (PlayerCombatActions.TryShove): the gun bashes, here and
+    /// on every other PC (PlayerNetworkCombat sends it on).</summary>
+    internal void Bash() => Bashed?.Invoke();
+
+    /// <summary>On someone else's copy: their gun shove began. Their PC judged what it hit.</summary>
+    internal void ShowBash() => Bashed?.Invoke();
 
     /// <summary>
     /// Crouched V, gun or fists: the leg sweep. False while the last one is still in its interval. With the fists out the

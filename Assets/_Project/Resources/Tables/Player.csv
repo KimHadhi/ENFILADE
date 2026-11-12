@@ -564,7 +564,7 @@ Body.punchClipSpeed,1.6,주먹질 클립 재생 속도. 클립을 다 뻗는 프
 Body.punchBlendIn,0.04,주먹질 클립이 팔을 넘겨받는 시간(초)
 Body.punchBlendOut,0.12,주먹질 클립이 팔을 주먹 위치로 돌려주는 시간(초)
 Body.punchEyeSteady,0.7,주먹질로 머리가 앞으로 나갈 때 카메라를 눈에서 고정 위치 쪽으로 옮기는 비율(0~1). 머리도 몸을 굽혀 그 카메라로 오므로(HeadReach) 머리와 화면은 나머지만 움직인다. 0이면 머리를 그대로 따라간다. 이전 값 0.5
-Body.kick,kick,재장전 중 V로 차는 발차기(ShoveMoves)에 다리만 이 클립을 한 번 따른다. 엉덩이와 상체와 팔은 하던 대로 둔다
+Body.kick,enf_kick_front,재장전 중 V로 차는 발차기(ShoveMoves)에 다리만 이 클립을 한 번 따른다. 엉덩이와 상체와 팔은 하던 대로 둔다. enf_kick_front는 블렌더 밀치기 작업실(ArtSource/Shove)의 앞차기 시안이다: 10프레임(0.3초)에 발바닥이 가슴 높이로 나가서, 똑바로 볼 때 1인칭 화면 아래에 발끝이 보인다. 다시 다듬어 '게임에 보내기'하면 이 이름 그대로 바뀐다. 예전 Beatrun 클립은 kick
 Body.kickClipSpeed,1,발차기 클립 재생 속도. 1이면 발이 가장 멀리 나가는 때(0.33초)가 발이 닿는 때(Shove.kickHitTime 0.3초)와 거의 맞는다
 Body.kickBlendIn,0.06,발차기 클립이 다리를 넘겨받는 시간(초)
 Body.kickBlendOut,0.2,발차기 클립이 다리를 돌려주는 시간(초). 클립이 끝나기 이만큼 전부터 돌려준다

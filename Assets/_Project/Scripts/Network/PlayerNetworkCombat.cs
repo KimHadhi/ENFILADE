@@ -250,8 +250,9 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
             melee.Elbowed += OnElbowed;
             fists.Played += OnFistSound;
             shoves.Played += OnShoveSound;
-            // Only the owner sends: a copy's Kicked comes from KickRpc itself.
+            // Only the owner sends: a copy's Kicked comes from KickRpc itself, its Bashed from BashRpc.
             if (kicks != null) kicks.Kicked += OnKicked;
+            if (kicks != null) kicks.Bashed += OnBashed;
             if (dodgeLook != null) dodgeLook.Evaded += OnEvaded;
             execution.Started += OnExecutionStarted;
             receiver.HitResolved += OnHit;
@@ -280,6 +281,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
         if (fists != null) fists.Played -= OnFistSound;
         if (shoves != null) shoves.Played -= OnShoveSound;
         if (kicks != null) kicks.Kicked -= OnKicked;
+        if (kicks != null) kicks.Bashed -= OnBashed;
         if (dodgeLook != null) dodgeLook.Evaded -= OnEvaded;
         if (execution != null) execution.Started -= OnExecutionStarted;
         if (throws != null) throws.Thrown -= OnThrown;
@@ -380,6 +382,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
     private void OnFistSound(FistSound sound) => FistSoundRpc(sound);
     private void OnShoveSound(ShoveImpactKind impact) => ShoveSoundRpc(impact);
     private void OnKicked() => KickRpc();
+    private void OnBashed() => BashRpc();
     private void OnEvaded(int side) => EvadedRpc((sbyte)Mathf.Clamp(side, -1, 1));
     private void OnThrown(Vector3 from, Vector3 velocity) => ThrowRpc(from, velocity);
     private void OnGrenadeThrown(Throwable kind, ushort id, Vector3 from, Vector3 velocity, float fuse) => GrenadeRpc((byte)kind, id, from, velocity, fuse);
@@ -644,6 +647,14 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
     private void KickRpc()
     {
         if (kicks != null) kicks.ShowKick();
+    }
+
+    // The copy's gun swings through the shove's bash (FPSBody.Bash), as the shover sees their own; their PC judged what it
+    // hit (the user's rule: what one sees is what the others see).
+    [Rpc(SendTo.NotMe)]
+    private void BashRpc()
+    {
+        if (kicks != null) kicks.ShowBash();
     }
 
     // The dodger's PC judged the evade: every other PC's copy of them turns that dodge's streak red too (DodgeDash), as
