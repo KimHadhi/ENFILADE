@@ -9,6 +9,7 @@ using TMPro;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.TextCore;
 using UnityEngine.TextCore.LowLevel;
 using Object = UnityEngine.Object;
 
@@ -285,7 +286,11 @@ public static class FontTools
         }
         var source = font.sourceFontFile;
         if (source == null || FontEngine.LoadFontFace(source) != FontEngineError.Success) return covered;
-        foreach (uint c in characters) if (FontEngine.GetGlyphIndex(c) != 0) covered.Add(c);
+        // GetGlyphIndex is internal to TextCore (TMP reaches it as a friend assembly); this is the public way in. A
+        // character the file lacks has no glyph, or the .notdef glyph at index 0.
+        foreach (uint c in characters)
+            if (FontEngine.TryGetGlyphWithUnicodeValue(c, GlyphLoadFlags.LOAD_NO_BITMAP, out Glyph glyph) && glyph != null && glyph.index != 0)
+                covered.Add(c);
         return covered;
     }
 
