@@ -98,7 +98,8 @@ public abstract class ZombieElite : MonoBehaviour
     protected bool CanAct()
     {
         if (health == null || !health.IsAlive || health.WavePaused) return false;
-        if (mind != null && !mind.IsAwake) return false;
+        // Awake (rousing counts: a windup may rouse it) but not while its calm pose still shows: it gets up first.
+        if (mind != null && (!mind.IsAwake || mind.GettingUp)) return false;
         if (melee != null && (melee.IsStunned || melee.IsLying)) return false;
         if (PlayerExecution.Suppresses(this)) return false;
         return agent != null && agent.isActiveAndEnabled && agent.isOnNavMesh;

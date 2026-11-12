@@ -134,7 +134,8 @@ public sealed class ZombieCharger : MonoBehaviour
     private bool CanAct()
     {
         if (health == null || !health.IsAlive || health.WavePaused) return false;
-        if (mind != null && !mind.IsAwake) return false;
+        // Not while its calm pose still shows (ZombieMind.GettingUp): it gets up first.
+        if (mind != null && (!mind.IsAwake || mind.GettingUp)) return false;
         if (grip == null) grip = GetComponent<ZombieGrip>();
         if (grip != null && grip.IsHolding) return false;
         if (melee != null && (melee.IsStunned || melee.IsLying)) return false;

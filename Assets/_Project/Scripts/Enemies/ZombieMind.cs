@@ -210,10 +210,12 @@ public sealed class ZombieMind : MonoBehaviour
     /// </summary>
     public bool Ready => Mood == ZombieMood.Awake && !GettingUp;
     /// <summary>
-    /// Its body is still getting up out of a calm pose (sitting, eating, crouched, lying: ZombieBody.Moods, on every PC
-    /// alike): until it stands it isn't Ready and goes nowhere, whatever woke it. Shot awake it woke straight to Awake
-    /// (Struck) while its body took the get-up clip's whole length, so it slid at the player still sitting or lying (user,
-    /// 2026-11-12: "좀비가 앉은 채, 누운 채로 와. 모션이 굳은 채로 온다고").
+    /// Its body still shows some of its calm pose (sitting, eating, crouched, lying) or is getting up out of it, as the
+    /// body measures from its own weights every frame (ZombieBody.Moods, on every PC alike): until it stands it isn't
+    /// Ready and goes nowhere, whatever woke it, and every mover waits on it (Ready, or ZombieElite/ZombieCharger CanAct).
+    /// Shot awake it woke straight to Awake (Struck) while its body took the get-up clip's whole length, so it slid at the
+    /// player still sitting or lying (user, 2026-11-12: "좀비가 앉은 채, 누운 채로 와. 모션이 굳은 채로 온다고"); later the
+    /// same day, still: "calm한 좀비한테 들켰을 때 좀비가 여전히 원래 포즈 그대로 와".
     /// </summary>
     internal bool GettingUp { get; set; }
     // It was held by its getting up last frame: the frame it stands, a search it was sent on walks on.

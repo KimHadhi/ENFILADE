@@ -12,6 +12,11 @@ using UnityEngine.Playables;
 /// only from their first calm: a zombie calmed again after a search stands, as no clip sits it back down. A pose is busy
 /// with something (CalmPose kind, the 2026-11-11 memo's item 47): an eater kneels or lies over a body laid in front of it
 /// (ZombieMeal) and a dozer nods off, and while they hold it ZombieMind sees and hears less (PoseKind).
+/// A hard rule over all of it (user, 2026-11-12, twice: "calm한 좀비한테 들켰을 때 좀비가 여전히 원래 포즈 그대로 와. 누워서
+/// 오거나 앉은 채로 부동 자세로 나한테 와"): the pose's share of the body is worked out here every frame from the weights
+/// themselves, not from which mood woke it, and while any of it shows the zombie goes nowhere (ZombieMind.GettingUp, which
+/// every mover waits on). If it moves all the same (pushed, carried, or on another PC following its host's zombie that
+/// stood a moment sooner), the pose gives way within yieldTime instead of riding along.
 /// </summary>
 public sealed partial class ZombieBody
 {
@@ -22,11 +27,20 @@ public sealed partial class ZombieBody
     private const float PoseWait = 1.5f;
     // The getting up from a pose sits on its own top input, after the runner's leap and landing (18, 19).
     private const int GetUpInput = 20, TopInputs = 21;
+    // A share of the body below this no longer counts as its pose showing.
+    private const float PoseGone = .02f;
 
     [SerializeField, Range(0f, 1f), Tooltip("Share of zombies placed calm that sit, eat or crouch (ZombieLooks calmPoses) instead of standing.")]
     private float poseShare = .5f;
     [SerializeField, Min(.2f), Tooltip("Woken straight out of such a pose, the longest its getting up may take (s); a longer clip plays faster.")]
     private float getUpRoused = 1f;
+    [SerializeField, Min(.05f), Tooltip("A pose with no getting-up clip of its own eases into standing this fast, nothing on top (s).")]
+    private float quickStand = .35f;
+    [SerializeField, Min(.1f), Tooltip("Moving faster than this (m/s) while any of its pose shows (pushed, or on another PC following " +
+        "its host's zombie that stood sooner), the pose gives way at once rather than slide along.")]
+    private float yieldSpeed = .75f;
+    [SerializeField, Min(.05f), Tooltip("Giving way, what is left of its getting up is played within this (s).")]
+    private float yieldTime = .25f;
 
     private enum CueKind : byte { Notice, Rouse, GetUp }
     // A calm pose: None (this zombie has none), Pending (dressed, waiting for its first calm), Held, Done (got up).
@@ -45,6 +59,12 @@ public sealed partial class ZombieBody
     private CalmPoseKind poseKind;
     private float mealAhead;
     private ZombieMood shownMood = ZombieMood.Awake;
+
+    /// <summary>
+    /// Set right after it is made, before it dresses (ConsolePoseTest, /poses): it takes ZombieLooks.calmPoses[index]
+    /// rather than its seeded pick (-1). On this PC only: other PCs pick by the network id as ever.
+    /// </summary>
+    internal int ForcedPose { get; set; } = -1;
 
     /// <summary>The walking pace and step length now: the awake walk's, or the search walk's while searching.</summary>
     private float StepSpeed => Mathf.Lerp(walkSpeed, searchWalkSpeed, searchShare);
@@ -68,10 +88,13 @@ public sealed partial class ZombieBody
         var noticeClip = Or(Pick(looks.notice, looks.notices, NoticeSlot), rest);
         notice = Clip(noticeClip, top, 6, out noticeLength);
         rouse = Clip(Or(Pick(looks.rouse, looks.rouses, RouseSlot), rest), top, 7, out rouseLength);
-        if (ZombieLooks.PickPose(looks.calmPoses, clipSeed, PoseSlot, poseShare, out var chosen))
+        if (ChoosePose(looks, out var chosen))
         {
             poseLoop = Clip(chosen.loop, idles, 3, out poseLength);
-            getUp = Clip(Or(chosen.getUp, noticeClip), top, GetUpInput, out getUpLength);
+            // Without its own getting up it eases into standing (quickStand) with nothing on top: the notice clip used to
+            // stand in, which snapped a lying body upright in a tenth of a second (a modder's CalmPose X with no X_getup).
+            if (chosen.getUp != null) getUp = Clip(chosen.getUp, top, GetUpInput, out getUpLength);
+            else getUpLength = quickStand;
             pose = PoseState.Pending;
             poseTime = ZombieLooks.Fraction(clipSeed, PoseSlot + 2u) * poseLength;
             poseKind = chosen.kind;
@@ -81,6 +104,18 @@ public sealed partial class ZombieBody
         alertIdleTime = ZombieLooks.Fraction(clipSeed, AlertSlot) * alertIdleLength;
         idles.SetInputWeight(0, 1f);
         walks.SetInputWeight(0, 1f);
+    }
+
+    // Its pose: the one forced on it (ForcedPose), else its seeded pick (poseShare of calm zombies lie low).
+    private bool ChoosePose(ZombieLooks looks, out ZombieLooks.CalmPose chosen)
+    {
+        var poses = looks.calmPoses;
+        if (ForcedPose >= 0 && poses != null && ForcedPose < poses.Length && poses[ForcedPose].loop != null)
+        {
+            chosen = poses[ForcedPose];
+            return true;
+        }
+        return ZombieLooks.PickPose(poses, clipSeed, PoseSlot, poseShare, out chosen);
     }
 
     private void Moods(float dt)
@@ -108,14 +143,24 @@ public sealed partial class ZombieBody
         alertShare = Mathf.MoveTowards(alertShare, looking ? 1f : 0f, step);
         searchShare = Mathf.MoveTowards(searchShare, mood == ZombieMood.Searching ? 1f : 0f, step);
         float calm = calmShare * (1f - alertShare);
-        // Its calm share shows the pose until it has got up: the getting up covers the body meanwhile.
-        bool posed = pose == PoseState.Pending || pose == PoseState.Held || (cueing && cueKind == CueKind.GetUp);
+        bool holding = pose == PoseState.Pending || pose == PoseState.Held;
+        // Moving while its pose shows, it doesn't wait for a mood to say so: the pose gives way (speed is last frame's).
+        if (speed > yieldSpeed && !Pinned && (holding ? calm > PoseGone : cueing && cueKind == CueKind.GetUp))
+        {
+            Yield();
+            holding = false;
+        }
+        bool inGetUp = cueing && cueKind == CueKind.GetUp;
+        // The pose's share of the legs: the calm share while it holds the pose, falling to nothing as it gets up (the
+        // getting up covers the body meanwhile) and none once it stands, whatever its mood; the calm idle has the rest.
+        float progress = inGetUp ? Mathf.Clamp01(cueTime / Mathf.Max(.01f, getUpLength)) : 1f;
+        float poseWeight = holding ? calm : inGetUp ? calm * (1f - progress) : 0f;
         idles.SetInputWeight(0, Mathf.Max(0f, 1f - alertShare - calm));
-        idles.SetInputWeight(1, posed ? 0f : calm);
+        idles.SetInputWeight(1, Mathf.Max(0f, calm - poseWeight));
         idles.SetInputWeight(2, alertShare);
         if (pose != PoseState.None)
         {
-            idles.SetInputWeight(3, posed ? calm : 0f);
+            idles.SetInputWeight(3, poseWeight);
             poseTime = Mathf.Repeat(poseTime + dt, poseLength);
             poseLoop.SetTime(poseTime);
         }
@@ -126,23 +171,41 @@ public sealed partial class ZombieBody
         walks.SetInputWeight(0, 1f - searchShare);
         walks.SetInputWeight(1, searchShare);
 
-        if (!cueing) { HoldStill(false); return; }
+        bool posed = poseWeight > PoseGone;
+        if (!cueing) { HoldStill(posed); return; }
         cueTime += dt * cueRate;
         float length = cueKind == CueKind.GetUp ? getUpLength : cueKind == CueKind.Rouse ? rouseLength : noticeLength;
-        bool over = cueTime >= length - CueOut * cueRate;
-        cueWeight = Mathf.MoveTowards(cueWeight, over ? 0f : 1f, dt / (over ? CueOut : CueIn));
         var playing = cueKind == CueKind.GetUp ? getUp : cueKind == CueKind.Rouse ? rouse : notice;
-        playing.SetTime(Mathf.Min(cueTime, length));
+        // A pose with no getting up of its own (quickStand) has no clip here: nothing eases over the body, and it is over
+        // when its time is.
+        bool shows = playing.IsValid();
+        bool over = shows ? cueTime >= length - CueOut * cueRate : cueTime >= length;
+        cueWeight = Mathf.MoveTowards(cueWeight, over || !shows ? 0f : 1f, dt / (over || !shows ? CueOut : CueIn));
+        if (shows) playing.SetTime(Mathf.Min(cueTime, length));
         if (over && cueWeight <= 0f) cueing = false;
-        // Until its getting up is all but done (the legs take over as the clip eases out) it stays put. Never longer than
-        // the clip at the pace it began with and a second more, so nothing can hold it there for good.
-        HoldStill(cueKind == CueKind.GetUp && !over && Time.time - getUpSince < getUpLength / Mathf.Max(1f, cueRate) + 1f);
+        // It goes nowhere while any of its pose shows, nor till its getting up is all but done (the legs take over as the
+        // clip eases out). The getting up runs on the body's own clock, never slower than the game's, so it always ends:
+        // nothing holds it there for good. (A cap on wall-clock time from the get-up's start used to let a zombie that had
+        // stared a while go the moment it was hurried.)
+        HoldStill(posed || (cueKind == CueKind.GetUp && !over));
     }
 
     // The getting up's pace when it hurries (woken to chase, sent to search, shot awake): up within getUpRoused.
     private float HurriedGetUp => Mathf.Max(1f, getUpLength / Mathf.Max(.2f, getUpRoused));
 
-    // Tells the mind (the host's moves the body) whether it is still getting up; set on every PC alike.
+    // Down (its doll moves it), held (a takedown, a grab) or lying: what moves it then isn't a walk of its own.
+    private bool Pinned => down || (target != null && (target.IsHeld || target.IsLying));
+
+    // Its pose gives way within yieldTime: the getting up begun if it hadn't, and hurried through what is left of it.
+    private void Yield()
+    {
+        if (pose == PoseState.Pending || pose == PoseState.Held) pose = PoseState.Done;
+        if (!cueing || cueKind != CueKind.GetUp) Cue(CueKind.GetUp, false);
+        cueRate = Mathf.Max(cueRate, (getUpLength - cueTime) / yieldTime);
+    }
+
+    // Tells the mind (the host's moves the body) whether its pose still shows or it is still getting up; set on every
+    // PC alike, read where it thinks.
     private void HoldStill(bool on)
     {
         if (mind != null && mind.GettingUp != on) mind.GettingUp = on;
@@ -195,9 +258,7 @@ public sealed partial class ZombieBody
         cueTime = 0f;
         // Roused straight out of a pose it is up within getUpRoused seconds, so it isn't still sitting as it charges.
         cueRate = kind == CueKind.GetUp && hurried ? HurriedGetUp : 1f;
-        if (kind == CueKind.GetUp) getUpSince = Time.time;
     }
-    private float getUpSince;
 
     // The one-off clip's share of the body (ZombieBody.Weigh): notice, rouse or getting up out of a pose.
     private void WeighCue(float cue)

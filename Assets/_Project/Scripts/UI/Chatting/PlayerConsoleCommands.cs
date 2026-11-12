@@ -30,6 +30,23 @@ public static class PlayerConsoleCommands
             if (!p.DamageReceiver.IsAlive) return "사망 상태입니다. /revive를 먼저 사용하세요.";
             return ConsoleEnemySpawner.Spawn(p, count, rank, calm, kind);
         }));
+        router.Register("poses", "[sight/noise/shot [번호]/stone/stay] [runner 등 종류] 조용한 자세(앉기·먹기·웅크리기·엎드리기)마다 좀비를 하나씩 앞에 반원으로 소환하고, 자세가 잡히면(2.5초) 깨운다. sight: 플레이어를 보고 있다가 눈으로 알아챔 · noise: 큰 소리 두 번 · shot: 1 피해 총알(번호를 주면 그 하나만 쏘고 나머지는 그 부름에 깸) · stone: 뒤에 돌을 떨어뜨려 가장 가까운 하나가 수색하러 걸어감 · stay(기본): 깨우지 않음. 모두 제자리에서 일어선 다음에 움직여야 한다(자세는 호스트 화면만 정해짐)", args => WithPlayer(resolvePlayer, p =>
+        {
+            var wake = ConsolePoseTest.Wake.Stay;
+            int only = -1;
+            ZombieKind? kind = null;
+            const string usage = "사용법: /poses [sight/noise/shot [번호]/stone/stay] [runner 등 종류]";
+            foreach (string part in args.Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries))
+            {
+                // A number first: Enum.TryParse would take "3" as a wake too.
+                if (int.TryParse(part, NumberStyles.Integer, CultureInfo.InvariantCulture, out int index)) { if (index < 0) return usage; only = index; }
+                else if (Enum.TryParse(part, true, out ConsolePoseTest.Wake way)) wake = way;
+                else if (char.IsLetter(part[0]) && Enum.TryParse(part, true, out ZombieKind named)) kind = named;
+                else return usage;
+            }
+            if (!p.DamageReceiver.IsAlive) return "사망 상태입니다. /revive를 먼저 사용하세요.";
+            return ConsolePoseTest.Spawn(p, wake, only, kind);
+        }));
         router.Register("dummy", "[수량] 또는 clear — 멀티 구조 시험용 더미 플레이어 소환·제거", args => WithPlayer(resolvePlayer, p =>
         {
             string text = args.Trim();
