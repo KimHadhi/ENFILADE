@@ -27,7 +27,7 @@ public sealed partial class PlayerBodyHands
         var gunBody = FPSBody.Holding(weapons);
         holdMeasured = false;
         if (gunBody == null) return;
-        bool measure = Application.isEditor && gunBody.HoldSteady && weights[(int)Hold.Gun] >= .999f && leftOffGun <= 0f
+        bool measure = Application.isEditor && gunBody.HoldSteady && weights[(int)Hold.Gun] >= .999f && leftOffGun <= 0f && offHandLent <= 0f
             && weapons.EquippedData != null && !reportedHolds.Contains((SkinId ?? "?", weapons.EquippedData));
         Follow(right, false);
         Follow(left, true);
@@ -36,8 +36,8 @@ public sealed partial class PlayerBodyHands
         void Follow(ArmIK arm, bool isLeft)
         {
             if (arm == null || !gunBody.HandContact(isLeft, out Vector3 palm, out Vector3 fingers, out Vector3 facing, out float weight)) return;
-            // As far as the hand is on the gun at all: a one-handed vault takes the left off it.
-            weight *= weights[(int)Hold.Gun] * (isLeft ? 1f - leftOffGun : 1f);
+            // As far as the hand is on the gun at all: a one-handed vault takes the left off it, and so does lending it (OffHand).
+            weight *= weights[(int)Hold.Gun] * (isLeft ? (1f - leftOffGun) * OffHandKept : 1f);
             if (weight <= 0f) return;
             palm = GunHands.Palm(SkinId, isLeft, palm, fingers, facing);
             int side = isLeft ? 0 : 1;

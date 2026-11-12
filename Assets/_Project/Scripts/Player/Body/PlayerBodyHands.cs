@@ -153,6 +153,8 @@ public sealed partial class PlayerBodyHands : MonoBehaviour
         // A vault keeps the gun in the right hand while the left plants; a step up keeps both on it.
         bool oneHanded = alive && gun && use == TraversalHandUse.LeftHand;
         leftOffGun = Mathf.MoveTowards(leftOffGun, oneHanded ? 1f : 0f, dt / blendTime);
+        // A point or an off-hand throw may have the left hand lent away from the gun (OffHand).
+        EaseOffHand(dt);
         stance = Mathf.MoveTowards(stance, alive && ShootingStance(state) ? 1f : 0f, dt / blendTime);
         Ease(Hold.Gun, gun && (armed || oneHanded || (alive && use == TraversalHandUse.Gun)), dt);
         Ease(Hold.Fists, armed && fists != null && fists.IsActive && FistsUp(dt), dt);
@@ -180,7 +182,7 @@ public sealed partial class PlayerBodyHands : MonoBehaviour
         using (FingersMarker.Auto())
         {
             float open = 1f - Mathf.Max(weights[(int)Hold.Gun], weights[(int)Hold.Fists]);
-            left.RelaxThumb(1f - Mathf.Max(weights[(int)Hold.Gun] * (1f - leftOffGun), weights[(int)Hold.Fists]));
+            left.RelaxThumb(1f - Mathf.Max(weights[(int)Hold.Gun] * (1f - leftOffGun) * OffHandKept, weights[(int)Hold.Fists]));
             right.RelaxThumb(open);
             CurlLedgeFingers(left, true);
             CurlLedgeFingers(right, false);
@@ -281,8 +283,9 @@ public sealed partial class PlayerBodyHands : MonoBehaviour
             float weight = weights[i];
             if ((Hold)i == Hold.Ladder) weight *= LadderHandWeight(isLeft);
             if ((Hold)i == Hold.Fists) weight *= 1f - body.PunchArmShare(isLeft);
-            // In a one-handed vault the left hand leaves the gun for the edge, the right stays on it.
-            if ((Hold)i == Hold.Gun && isLeft) weight *= 1f - leftOffGun;
+            // In a one-handed vault the left hand leaves the gun for the edge, the right stays on it; a lent left hand
+            // (OffHand) leaves it for whatever borrowed it.
+            if ((Hold)i == Hold.Gun && isLeft) weight *= (1f - leftOffGun) * OffHandKept;
             if ((Hold)i == Hold.Ledge && !isLeft) weight *= 1f - leftOffGun;
             if ((Hold)i == Hold.Gun)
             {

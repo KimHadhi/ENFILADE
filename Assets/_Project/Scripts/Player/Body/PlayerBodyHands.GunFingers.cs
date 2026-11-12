@@ -65,7 +65,7 @@ public sealed partial class PlayerBodyHands
                 clipFingers = digitWeight * (isLeft ? 1f - OnAttachedGrip : 1f);
         }
         gunWrap[side] = Mathf.MoveTowards(gunWrap[side], gunBody != null ? 1f : 0f, dt / blendTime);
-        float weight = gunWrap[side] * weights[(int)Hold.Gun] * (isLeft ? 1f - leftOffGun : 1f) * gunFingerWrap;
+        float weight = gunWrap[side] * weights[(int)Hold.Gun] * (isLeft ? (1f - leftOffGun) * OffHandKept : 1f) * gunFingerWrap;
         if (arm == null || weight <= 0f) return;
 
         var surface = gunBody != null ? gunBody.HeldSurface : null;

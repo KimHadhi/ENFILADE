@@ -18,7 +18,7 @@ public sealed partial class PlayerBodyHands
         var gunBody = FPSBody.Holding(weapons);
         bool wanted = gunBody != null && !gunBody.ReloadingGun && gunBody.LeftGrip(out _, out _, out _);
         gripOn = Mathf.MoveTowards(gripOn, wanted ? 1f : 0f, dt / GripEase);
-        float weight = gripOn * weights[(int)Hold.Gun] * (1f - leftOffGun);
+        float weight = gripOn * weights[(int)Hold.Gun] * (1f - leftOffGun) * OffHandKept;
         if (arm == null || weight <= 0f || gunBody == null || !gunBody.LeftGrip(out Vector3 palm, out Vector3 fingers, out Vector3 facing)) return;
         Quaternion rotation = arm.HandRotation(fingers, facing);
         // The elbow stays on the side it bends to now.
