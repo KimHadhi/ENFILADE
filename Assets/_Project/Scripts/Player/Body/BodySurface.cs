@@ -7,7 +7,8 @@ using UnityEngine;
 /// middle line, how far out the skin lies in each direction and at each point along it. The maps ride their bones, so
 /// they follow the legs as they move, and the cloth the body wears doesn't count. Magica Cloth's colliders can only be
 /// round tubes, which a thigh isn't (wider toward the hip, flatter at the front), so they stay thin enough to keep the
-/// skirt from puffing out at rest; a pressed skirt stops against this instead (SkirtPress).
+/// skirt from puffing out at rest; a pressed skirt stops against this instead (SkirtPress). Asked for, it maps the back
+/// and chest as well and only what shows, for the guns worn on the body to sit outside it (HolsteredGuns).
 /// </summary>
 internal sealed class BodySurface
 {
@@ -29,6 +30,8 @@ internal sealed class BodySurface
         // The stretch of the middle line the map covers, as shares of its length, and whether it shrinks to the skin found.
         public float From, To;
         public bool FitsSkin;
+        // How far from the bone any of its skin lies (the bone's units): a point further out is beside some other part.
+        public float Reach;
         public readonly float[] Skin = new float[Angles * Sections];
         public readonly List<Vector3> Samples = new List<Vector3>();
 
@@ -52,13 +55,26 @@ internal sealed class BodySurface
     internal bool Measured => parts.Count > 0;
 
     /// <param name="cloth">The bones of everything the body wears that hangs free: their vertices aren't skin.</param>
-    internal BodySurface(Animator animator, SkinSample skin, HashSet<Transform> cloth)
+    /// <param name="torso">The back and chest mapped too (the spine's bones, up to the neck).</param>
+    /// <param name="shownOnly">Only the meshes shown: not a piece taken off, nor the character's own under an outfit.</param>
+    internal BodySurface(Animator animator, SkinSample skin, HashSet<Transform> cloth, bool torso = false, bool shownOnly = false)
     {
         Transform hips = animator.GetBoneTransform(HumanBodyBones.Hips);
         Transform leftLeg = animator.GetBoneTransform(HumanBodyBones.LeftUpperLeg), rightLeg = animator.GetBoneTransform(HumanBodyBones.RightUpperLeg);
         var made = new Dictionary<Transform, Part>();
         if (hips != null && leftLeg != null && rightLeg != null)
             Add(made, hips, (leftLeg.position + rightLeg.position) * .5f, -HipsReach, HipsReach).FitsSkin = true;
+        if (torso)
+        {
+            // Each spine bone up to the neck, as far as the skin it carries reaches.
+            Transform neck = animator.GetBoneTransform(HumanBodyBones.Neck);
+            var spine = new List<Transform>();
+            foreach (var bone in new[] { HumanBodyBones.Spine, HumanBodyBones.Chest, HumanBodyBones.UpperChest })
+                if (animator.GetBoneTransform(bone) is Transform found) spine.Add(found);
+            if (neck != null) spine.Add(neck);
+            for (int i = 0; i + 1 < spine.Count; i++)
+                if (spine[i] != neck) Add(made, spine[i], spine[i + 1].position, -HipsReach, HipsReach).FitsSkin = true;
+        }
         Add(made, leftLeg, animator.GetBoneTransform(HumanBodyBones.LeftLowerLeg), LegFrom, LegTo);
         Add(made, rightLeg, animator.GetBoneTransform(HumanBodyBones.RightLowerLeg), LegFrom, LegTo);
         Add(made, animator.GetBoneTransform(HumanBodyBones.LeftLowerLeg), animator.GetBoneTransform(HumanBodyBones.LeftFoot), LegFrom, LegTo);
@@ -75,6 +91,7 @@ internal sealed class BodySurface
         var owners = new Dictionary<Transform, Part>();
         foreach (var point in skin.Points)
         {
+            if (shownOnly && !skin.Shown(point)) continue;
             if (skin.CarriedBy(point, cloth)) continue;
             var part = Owner(skin.Main(point), made, human, animator.transform, owners);
             if (part == null) continue;
@@ -103,6 +120,28 @@ internal sealed class BodySurface
             Vector3 radial = local - part.Axis * along;
             float angle = Mathf.Atan2(Vector3.Dot(radial, part.Aside), Vector3.Dot(radial, part.Across));
             least = Mathf.Min(least, (radial.magnitude - part.Sample(along, angle)) * Mathf.Abs(part.Bone.lossyScale.x));
+        }
+        return least;
+    }
+
+    /// <summary>
+    /// As Distance, for a point that only matters within <paramref name="within"/> (metres) of the body: the parts whose
+    /// skin can't reach that near are passed over, so it costs little away from most of them. Infinity where no part is
+    /// that near.
+    /// </summary>
+    internal float Clearance(Vector3 point, float within)
+    {
+        float least = float.PositiveInfinity;
+        foreach (var part in parts)
+        {
+            float scale = Mathf.Abs(part.Bone.lossyScale.x), reach = part.Reach * scale + within;
+            if ((point - part.Bone.position).sqrMagnitude > reach * reach) continue;
+            Vector3 local = part.Bone.InverseTransformPoint(point);
+            float along = Vector3.Dot(local, part.Axis) / part.Axis.sqrMagnitude;
+            if (along < part.From || along > part.To) continue;
+            Vector3 radial = local - part.Axis * along;
+            float angle = Mathf.Atan2(Vector3.Dot(radial, part.Aside), Vector3.Dot(radial, part.Across));
+            least = Mathf.Min(least, (radial.magnitude - part.Sample(along, angle)) * scale);
         }
         return least;
     }
@@ -182,6 +221,9 @@ internal sealed class BodySurface
                 if (filled[other] && Mathf.Abs(other - s) < Mathf.Abs(nearest - s)) nearest = other;
             Array.Copy(part.Skin, nearest * Angles, part.Skin, s * Angles, Angles);
         }
+        float most = 0f;
+        foreach (float radius in part.Skin) if (!float.IsNaN(radius)) most = Mathf.Max(most, radius);
+        part.Reach = Mathf.Max(Mathf.Abs(part.From), Mathf.Abs(part.To)) * part.Axis.magnitude + most;
         return true;
     }
 

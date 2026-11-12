@@ -36,6 +36,12 @@ public sealed class HolsteredGuns : MonoBehaviour, ITableBound
     private Vector3 thigh2At = new Vector3(-.1f, .3f, 0f), thigh2Barrel = new Vector3(0f, -1f, .15f), thigh2Sight = new Vector3(0f, 0f, 1f);
     [SerializeField, Min(0f), Tooltip("This PC's own player: the camera within this of the eyes (m) is first person, where the worn guns cast only their shadows.")]
     private float firstPersonReach = .35f;
+    [SerializeField, Min(0f), Tooltip("Room left between a worn gun and the body it hangs on (m): its skin and the clothes tight on it, as measured (BodySurface), not the cloth that hangs free.")]
+    private float clearance = .015f;
+    [SerializeField, Min(0f), Tooltip("The furthest a worn gun is moved out of the body (m).")]
+    private float mostPush = .25f;
+    [SerializeField, Min(0f), Tooltip("How fast a gun moved out eases back in once the body leaves it room (1/s); out it goes at once.")]
+    private float easeBack = 6f;
 
     // Parts further than this off the sight line (m) wait parked away from the gun (the R08's speedloader): never worn.
     private const float ParkedFrom = .4f;
@@ -52,12 +58,21 @@ public sealed class HolsteredGuns : MonoBehaviour, ITableBound
         public Vector3 Center, Barrel, Up;
         public float Length;
         public bool Shown;
+        // In the copy's own space: points round its outside, kept clear of the body (Clear).
+        public Vector3[] Points;
+        // How far it is moved out of the body now (m), along its place's way out.
+        public float Push;
     }
 
     private FPSBody fpsBody;
     private PlayerWeaponSlots slots;
     private PlayerMovement movement;
     private PlayerBody body;
+    private PlayerBodyCloth cloth;
+    // The body's outside (its skin and the clothes tight on it, back and legs), read once a body: a new outfit, body option
+    // or character is a new body.
+    private BodySurface surface;
+    private Animator measuredFor;
     private Transform holder, eyes;
     private readonly Dictionary<WeaponData, Worn> worn = new();
     private readonly List<Worn> carried = new();
@@ -90,6 +105,7 @@ public sealed class HolsteredGuns : MonoBehaviour, ITableBound
         slots = GetComponent<PlayerWeaponSlots>();
         movement = GetComponentInParent<PlayerMovement>();
         body = movement != null ? movement.GetComponent<PlayerBody>() : GetComponentInParent<PlayerBody>();
+        cloth = movement != null ? movement.GetComponent<PlayerBodyCloth>() : GetComponentInParent<PlayerBodyCloth>();
     }
 
     private void OnDestroy()
@@ -115,13 +131,14 @@ public sealed class HolsteredGuns : MonoBehaviour, ITableBound
         if (slots.SelectedSlot != heldSlot) { heldSlot = slots.SelectedSlot; Refresh(); }
         Gather();
         bool firstPerson = FirstPerson();
+        var measured = SurfaceOf(animator);
         int longs = 0, shorts = 0;
         foreach (var gun in carried)
         {
             bool isLong = gun.Length * ScaleOf(gun) > longGun;
             if (isLong ? longs >= 2 : shorts >= 2) { Show(gun, false); continue; }
             var place = isLong ? (longs++ == 0 ? Place.Back : Place.Back2) : (shorts++ == 0 ? Place.Thigh : Place.Thigh2);
-            if (!Wear(gun, place, animator)) { Show(gun, false); continue; }
+            if (!Wear(gun, place, animator, measured)) { Show(gun, false); continue; }
             Show(gun, true);
             var mode = firstPerson ? ShadowCastingMode.ShadowsOnly : ShadowCastingMode.On;
             foreach (var renderer in gun.Renderers)
@@ -280,6 +297,13 @@ public sealed class HolsteredGuns : MonoBehaviour, ITableBound
         gun.Center = any ? bounds.center : line;
         Vector3 e = bounds.extents;
         gun.Length = any ? 2f * (Mathf.Abs(along.x) * e.x + Mathf.Abs(along.y) * e.y + Mathf.Abs(along.z) * e.z) : 0f;
+        // Points round its outside, the corners, edges and faces of its box, which Clear keeps out of the body.
+        var points = new List<Vector3>(27);
+        for (int x = -1; x <= 1; x++)
+            for (int y = -1; y <= 1; y++)
+                for (int z = -1; z <= 1; z++)
+                    points.Add(gun.Center + Vector3.Scale(any ? e : Vector3.zero, new Vector3(x, y, z)));
+        gun.Points = points.ToArray();
     }
 
     // The layer the body's own renderers are on, so the worn guns are seen and hidden as the body is.
@@ -299,7 +323,7 @@ public sealed class HolsteredGuns : MonoBehaviour, ITableBound
 
     // ---- Where it sits on the body ----
 
-    private bool Wear(Worn gun, Place place, Animator animator)
+    private bool Wear(Worn gun, Place place, Animator animator, BodySurface measured)
     {
         if (gun.Copy == null) return false;
         Vector3 at, barrel, sight;
@@ -333,7 +357,56 @@ public sealed class HolsteredGuns : MonoBehaviour, ITableBound
         var root = gun.Copy.transform;
         root.localScale = Vector3.one * scale;
         root.SetPositionAndRotation(spot - turn * (gun.Center * scale), turn);
+        // Out of the body, however big it is or however its player shaped it (user, 2026-11-13: "이치고 엉덩이가 커서 그런가
+        // 홀스터한 권총이 살 안에 파묻히는데 … 홀스터 되는 총들이 알아서 좀 캐릭터 몸에 들어가는지 판단해서 여유 공간을 두고"):
+        // the table's place is where a slim body wears it; a fuller hip, butt or back, a body option or a bigger character
+        // moves it out along the place's way out until all of it clears the body.
+        Clear(gun, root, Outward(place, right, forward, at), measured);
         return true;
+    }
+
+    // The place's way out of the body: behind the back, off the outside of the thigh.
+    private static Vector3 Outward(Place place, Vector3 right, Vector3 forward, Vector3 at)
+    {
+        bool back = place == Place.Back || place == Place.Back2;
+        float side = back ? at.z : at.x;
+        float sign = Mathf.Abs(side) > 1e-4f ? Mathf.Sign(side) : back || place == Place.Thigh2 ? -1f : 1f;
+        return (back ? forward : right) * sign;
+    }
+
+    // Moved out along its way out until none of its points is nearer the body than `clearance`: at once when the body
+    // reaches it, easing back in when the body leaves it room, so it neither sinks into a stride nor jumps every step.
+    private void Clear(Worn gun, Transform root, Vector3 outward, BodySurface measured)
+    {
+        float need = 0f;
+        if (measured != null && gun.Points != null && outward.sqrMagnitude > .5f)
+        {
+            Vector3 start = root.position;
+            for (int pass = 0; pass < 3 && need < mostPush; pass++)
+            {
+                float least = float.PositiveInfinity;
+                foreach (var point in gun.Points) least = Mathf.Min(least, measured.Clearance(root.TransformPoint(point), clearance));
+                if (least >= clearance) break;
+                need = Mathf.Min(mostPush, need + clearance - least);
+                root.position = start + outward * need;
+            }
+            root.position = start;
+        }
+        gun.Push = need >= gun.Push ? need : Mathf.Lerp(gun.Push, need, 1f - Mathf.Exp(-easeBack * Time.deltaTime));
+        if (gun.Push > 0f) root.position += outward * gun.Push;
+    }
+
+    // The body's outside, read once a body as soon as its cloth knows what of it hangs free. A body whose meshes can't be
+    // read wears the guns where the table puts them.
+    private BodySurface SurfaceOf(Animator animator)
+    {
+        if (animator == measuredFor) return surface;
+        if (cloth != null && cloth.BuiltFor != animator) return null;
+        measuredFor = animator;
+        var read = new BodySurface(animator, SkinSample.Read(animator), cloth != null ? cloth.Hanging : new HashSet<Transform>(),
+            torso: true, shownOnly: true);
+        surface = read.Measured ? read : null;
+        return surface;
     }
 
     // The gun in the hands is as big as the body it hangs in (PlayerBody fits the model to the camera height).

@@ -48,6 +48,9 @@ public sealed class PlayerBodyCloth : MonoBehaviour
     private PlayerBody body;
     private PlayerBodyHands hands;
     private Animator builtFor;
+    // The bones of what the body wears that hang free, as last built (Rows' hanging): the body is measured without them
+    // elsewhere too (HolsteredGuns keeps a worn gun out of the body, not out of a skirt's swing).
+    private readonly HashSet<Transform> hangingBones = new HashSet<Transform>();
     private PlayerBodyClothColliders.ArmBone[] arms;
     private SkirtPress.Contact[] contacts;
     // Per arm, left then right: its upper arm, how long the arm is, how far it is swung out now (degrees) and about which
@@ -57,6 +60,10 @@ public sealed class PlayerBodyCloth : MonoBehaviour
     private readonly Vector3[] swingAxes = new Vector3[2];
 
     internal float SendInterval => sendInterval;
+
+    /// <summary>The body the cloth was last built for, and the bones of what it wears that hang free (a skirt, coat tails).</summary>
+    internal Animator BuiltFor => builtFor;
+    internal HashSet<Transform> Hanging => hangingBones;
 
     /// <summary>
     /// Raised on the PC that simulates, right after the simulation and before the arms press the skirts: the cloth as it
@@ -102,6 +109,7 @@ public sealed class PlayerBodyCloth : MonoBehaviour
     private void Build(Animator animator)
     {
         builtFor = animator;
+        hangingBones.Clear();
         worn.Clear();
         arms = null;
         contacts = null;
@@ -111,6 +119,7 @@ public sealed class PlayerBodyCloth : MonoBehaviour
         var hanging = new HashSet<Transform>();
         var springs = new HashSet<Transform>();
         var found = Rows(animator, body.Skin.Id, body.Wears, Part, cloth, hanging, springs);
+        hangingBones.UnionWith(hanging);
         var colliders = GetComponent<PlayerBodyClothColliders>();
         bool simulates = !player.IsNetworkDriven;
         SkinSample skin = null;
