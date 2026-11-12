@@ -49,7 +49,8 @@ public sealed class RankClimb : MonoBehaviour
     private void Update()
     {
         if (climb == null) return;
-        age += Time.unscaledDeltaTime;
+        // A hitch pauses the climb rather than skipping it (ResultsShow.Step).
+        age += ResultsShow.Step();
         if (age >= length) { Destroy(gameObject); return; }
         Pose(age);
     }

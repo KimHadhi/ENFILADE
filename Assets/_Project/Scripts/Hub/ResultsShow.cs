@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.UI;
 
@@ -18,6 +19,16 @@ using UnityEngine.UI;
 /// Short and loud (the user's rule: no long slow shows): Space, Enter or a click skips the lineup, then closes the sheet.
 /// Each PC plays its own from the numbers it kept (MatchResults) and puts only its own player on the stage; the others
 /// are put there by their own PCs. The player's moving and fighting wait while it plays, and come back after.
+/// It waits behind a black curtain until the hub is really up on this PC, then plays from its beginning (the user,
+/// 2026-11-12: "그 게임 끝나고 뜨는 하이라이트 연출, 로딩하다가 다 끝나서 1초 보고 못 봄": the first frames back in the
+/// hub stalled 3.4 and 4 s on shader compiles, and the show's clock ran through them). Up means: the hub's lobby runs,
+/// this PC's player stands on its mark, every friend of the lineup who is in the room stands dressed on theirs (or has
+/// had showWaitOthers to get there: a slow PC, or someone who left), the results' camera has drawn them a few times
+/// (showFrames, which compiles what it sees behind the curtain), no frame has taken longer than showSettleFrame for
+/// showSettle, and nothing else holds it back (HoldBack: a loading screen or a first-use warm-up). After showWait it
+/// starts whatever is missing. Each PC starts its own show when it is ready; a fast PC waits for a slow friend's body
+/// only that short while, and no PC waits for another's show. Once it plays, a long frame counts only showMaxStep
+/// (Step), so a hitch pauses the lineup, the titles, the highlights, the sheet and the insignia instead of skipping them.
 /// Real time. Numbers: Tables/Hub (show*).
 /// </summary>
 // Before the look (FrameOrder.Look): the turn to the camera is asked of it the frame it is taken (CombatHeadMotion.Turn).
@@ -49,14 +60,33 @@ public sealed class ResultsShow : MonoBehaviour
     private PlayerMovement mine;
     private PlayerBody body;
     private ResultsSheet sheet;
-    private float age, waited, lastSlam, highlightsAt;
-    private bool placed, mapsHeld, playerMapWas, combatMapWas, started;
+    private TMP_Text waitCaption;
+    private float age, prevAge, lastSlam, highlightsAt;
+    // The wait behind the curtain (real s): when it began, when the seats were set, since when no frame has run long,
+    // and since when everyone of the lineup who is here has stood on their mark (negative: not yet).
+    private float createdAt, preparedAt, smoothSince, inPlaceAt = -1f;
+    // Frames the results' camera has drawn since everyone stood on their mark.
+    private int framesSeen;
+    private bool placed, mapsHeld, playerMapWas, combatMapWas, prepared, showing;
 
-    /// <summary>The results are on the screen (HubLobby keeps [F] and its prompts off meanwhile).</summary>
+    /// <summary>The results are on the screen, or waiting behind their curtain (HubLobby keeps [F] and its prompts off meanwhile).</summary>
     public static bool IsPlaying => instance != null;
 
+    /// <summary>
+    /// Something else that still needs the screen first, a loading screen or a first-use warm-up: true while it does, and
+    /// the results wait behind their curtain until it is false (null: nothing holds them).
+    /// </summary>
+    public static System.Func<bool> HoldBack;
+
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-    private static void ResetStatics() => instance = null;
+    private static void ResetStatics() { instance = null; HoldBack = null; }
+
+    /// <summary>
+    /// This frame's step for the results' clocks (this lineup, ResultsSheet, RankClimb): real time, but never more than
+    /// Tables/Hub showMaxStep, so a hitch (a scene still loading, a shader compiling) pauses the show rather than
+    /// carrying it past its steps.
+    /// </summary>
+    public static float Step() => Mathf.Min(Time.unscaledDeltaTime, Mathf.Max(.01f, HubLobby.Number("showMaxStep", .1f)));
 
     /// <summary>The console's /results: the last chapter's results again, here (a hub plays them on its stage, anywhere
     /// else the sheet alone).</summary>
@@ -80,11 +110,14 @@ public sealed class ResultsShow : MonoBehaviour
         instance = this;
         won = ResultsAwards.Evaluate(MatchResults.Entries);
         stage = FindFirstObjectByType<HubStage>();
+        createdAt = smoothSince = Time.realtimeSinceStartup;
         BuildCanvas();
+        RenderPipelineManager.endCameraRendering += Drawn;
     }
 
     private void OnDestroy()
     {
+        RenderPipelineManager.endCameraRendering -= Drawn;
         if (instance == this) instance = null;
         Release();
         if (view != null) Destroy(view.gameObject);
@@ -94,14 +127,9 @@ public sealed class ResultsShow : MonoBehaviour
 
     private void Update()
     {
-        float dt = Time.unscaledDeltaTime;
-        if (!started)
+        if (!showing)
         {
-            // Into the hub: wait (behind the curtain) for this PC's player to be made, then begin.
-            waited += dt;
-            mine = PlayerRoster.Local;
-            if ((mine == null || !mine.IsInitialized) && waited < HubLobby.Number("showWait", 4f)) return;
-            Begin();
+            Wait();
             return;
         }
         if (sheet != null)
@@ -110,7 +138,8 @@ public sealed class ResultsShow : MonoBehaviour
             if ((Skipped() && sheet.Age > .4f) || sheet.Done) { MatchResults.Clear(); Destroy(gameObject); }
             return;
         }
-        age += dt;
+        prevAge = age;
+        age += Step();
         Hold();
         Pose();
         if (Skipped() || age >= lastSlam + HubLobby.Number("showHold", 1.6f)) OpenSheet();
@@ -118,7 +147,7 @@ public sealed class ResultsShow : MonoBehaviour
 
     private void LateUpdate()
     {
-        if (!started || view == null || stage == null || sheet != null) return;
+        if (!showing || view == null || stage == null || sheet != null) return;
         // A slow push in toward the row while the titles land.
         float push = Mathf.Clamp01(age / Mathf.Max(1f, lastSlam + 1.5f));
         Vector3 from = stage.CameraPoint(seats.Count, view.aspect), to = stage.Focus;
@@ -126,11 +155,85 @@ public sealed class ResultsShow : MonoBehaviour
         view.transform.rotation = Quaternion.LookRotation(to - view.transform.position, Vector3.up);
     }
 
-    // ---- Beginning: the seats, the camera, the player on the stage ----
+    // ---- Waiting behind the curtain until the hub is really up on this PC; the seats, the camera, the player on the stage ----
 
-    private void Begin()
+    private void Wait()
     {
-        started = true;
+        float now = Time.realtimeSinceStartup;
+        // A long frame (a hitch while the hub loads, a shader compiling) starts the quiet stretch over.
+        if (Time.unscaledDeltaTime > HubLobby.Number("showSettleFrame", .1f)) smoothSince = now;
+        bool late = now - createdAt >= HubLobby.Number("showWait", 20f);
+        mine = PlayerRoster.Local;
+        if (!prepared && (mine != null && mine.IsInitialized || late)) Prepare();
+        Hold();
+        if (waitCaption != null) waitCaption.alpha = .4f + .25f * Mathf.Sin(now * 4f);
+        if (late || Ready(now)) StartShow();
+    }
+
+    private bool Ready(float now)
+    {
+        if (!prepared) return false;
+        // The hub's lobby is up (its scene active and its Start run); elsewhere (/results in a chapter) there is none to wait for.
+        if (HubFlow.InHub && !HubLobby.IsActive) return false;
+        if (HoldBack != null && HoldBack()) return false;
+        // Everyone of the lineup who is in the room on their mark, dressed; a friend who is slow or gone has a while only.
+        if (!OthersInPlace() && now - preparedAt < HubLobby.Number("showWaitOthers", 5f)) { inPlaceAt = -1f; return false; }
+        if (inPlaceAt < 0f) { inPlaceAt = now; framesSeen = 0; }
+        // The camera has drawn them all a few times, and no frame has run long since they were all there.
+        if (view != null && framesSeen < Mathf.Max(1, Mathf.RoundToInt(HubLobby.Number("showFrames", 3f)))) return false;
+        return now - Mathf.Max(smoothSince, inPlaceAt) >= HubLobby.Number("showSettle", .5f);
+    }
+
+    // Every friend of the lineup who is in the room stands dressed on their mark (their own PC puts them there). Alone,
+    // or without a stage, there is nobody to wait for.
+    private bool OthersInPlace()
+    {
+        if (stage == null) return true;
+        foreach (var seat in seats)
+        {
+            if (seat.Entry.IsLocal) continue;
+            PlayerMovement friend = null;
+            foreach (var someone in PlayerRoster.All)
+                if (someone != null && someone.IsNetworkDriven && MatchResults.SeatOf(someone) == seat.Entry.Client) { friend = someone; break; }
+            if (friend == null || !friend.TryGetComponent(out PlayerBody theirs) || theirs.BodyModel == null) return false;
+            Vector3 apart = friend.transform.position - seat.Feet;
+            apart.y = 0f;
+            if (apart.sqrMagnitude > .8f * .8f) return false;
+        }
+        return true;
+    }
+
+    // The results' camera has drawn a frame.
+    private void Drawn(ScriptableRenderContext context, Camera drawn)
+    {
+        if (drawn != null && drawn == view) framesSeen++;
+    }
+
+    // The hub is up: the show from its beginning, the curtain lifting off it.
+    private void StartShow()
+    {
+        if (!prepared) Prepare();
+        showing = true;
+        age = prevAge = 0f;
+        if (waitCaption != null) waitCaption.gameObject.SetActive(false);
+        if (stage == null || seats.Count == 0)
+        {
+            // No stage in this hub: straight to the sheet.
+            OpenSheet();
+            return;
+        }
+        BuildLineup();
+        // Over everything the lineup put up, so it lifts off all of it.
+        curtain.transform.SetAsLastSibling();
+        KitSound.Play(KitSound.Cue.Escape, .8f);
+    }
+
+    // Behind the curtain: the seats, the camera (drawing the stage from now on, so what it sees is compiled and uploaded
+    // before the curtain lifts) and this PC's player on its mark.
+    private void Prepare()
+    {
+        prepared = true;
+        preparedAt = Time.realtimeSinceStartup;
         var ranked = ResultsAwards.Ranked(MatchResults.Entries, won);
         int count = ranked.Count;
         // The best in the middle, then out to either side by turns.
@@ -149,17 +252,10 @@ public sealed class ResultsShow : MonoBehaviour
             taken[at] = true;
             seat.Index = at;
         }
-        if (stage == null)
-        {
-            // No stage in this hub: straight to the sheet.
-            OpenSheet();
-            return;
-        }
+        if (stage == null) return;
         foreach (var seat in seats) seat.Feet = stage.Slot(seat.Index, count);
         MakeCamera();
         PlaceMine();
-        BuildLineup();
-        KitSound.Play(KitSound.Cue.Escape, .8f);
     }
 
     private void MakeCamera()
@@ -270,8 +366,14 @@ public sealed class ResultsShow : MonoBehaviour
         scaler.matchWidthOrHeight = .5f;
         lineup = host.AddComponent<CanvasGroup>();
         lineup.blocksRaycasts = lineup.interactable = false;
-        // Black until the stage is set, then it lifts.
+        // Black until the hub is up, then it lifts.
         curtain = KitStyle.Fill(KitStyle.Stretch("Curtain", canvas), Color.black);
+        var wait = FeelUI.Rect("Waiting", canvas);
+        wait.anchorMin = wait.anchorMax = wait.pivot = new Vector2(1f, 0f);
+        wait.anchoredPosition = new Vector2(-56f, 48f);
+        wait.sizeDelta = new Vector2(520f, 30f);
+        waitCaption = KitStyle.Flat(wait, Texts.Get("results.wait"), 18f, TextAlignmentOptions.MidlineRight, KitStyle.Soft);
+        waitCaption.fontStyle = FontStyles.Normal;
     }
 
     private void BuildLineup()
@@ -440,7 +542,7 @@ public sealed class ResultsShow : MonoBehaviour
                 var slam = seat.Slams[i];
                 float since = age - seat.SlamAt[i];
                 if (since < 0f) { slam.localScale = Vector3.zero; continue; }
-                if (since < Time.unscaledDeltaTime + .001f) Slammed();
+                if (prevAge < seat.SlamAt[i]) Slammed();
                 // Down from nearly twice its size, a hair under, then home, with a shake as it lands.
                 float t = Mathf.Clamp01(since / .22f);
                 float size = t < .6f ? Mathf.Lerp(1.9f, .94f, t / .6f) : Mathf.Lerp(.94f, 1f, (t - .6f) / .4f);

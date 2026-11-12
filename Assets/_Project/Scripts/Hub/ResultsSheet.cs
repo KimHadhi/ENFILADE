@@ -46,7 +46,8 @@ public sealed class ResultsSheet : MonoBehaviour
 
     private void Update()
     {
-        age += Time.unscaledDeltaTime;
+        // A hitch pauses the sheet rather than eating its time (ResultsShow.Step).
+        age += ResultsShow.Step();
         group.alpha = Mathf.Clamp01(age / .2f);
         sheet.localScale = Vector3.one * Mathf.Lerp(.97f, 1f, Out(age / .25f));
         foreach (var (tile, at) in tiles)

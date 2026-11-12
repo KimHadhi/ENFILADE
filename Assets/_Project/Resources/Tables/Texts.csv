@@ -1327,3 +1327,4 @@ shop.refuse.nogrenade,이 클래스는 아직 투척물이 없어요,This class 
 shop.refuse.grenadefull,투척물이 가득해요,Throwables full,상점 > 투척물이 가득인데 보충을 살 때
 shop.note.nogrenade,투척물 없음,No throwable,상점 > 투척물이 없는 클래스일 때 보충 카드의 작은 글자
 shop.note.grenadefull,투척물 가득,Throwables full,상점 > 투척물이 가득일 때 보충 카드의 작은 글자
+results.wait,결과를 모으는 중,,결과 > 허브로 돌아와 결과 연출이 시작되기 전 검은 막 오른쪽 아래(허브가 다 준비될 때까지)
