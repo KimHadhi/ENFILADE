@@ -120,6 +120,19 @@ public sealed class KillFlairFx
         AccentColour = colour;
     }
 
+    /// <summary>
+    /// Makes every piece a flair can draw on this row, put away (KillFeedRow.Prewarm for CombatFeedHUD.Prewarm, behind the
+    /// loading screen): the icon's layer and its material, the stamp, seal, chip with its banknote, strike, brackets,
+    /// check, tag, veil, beam, the skull's ring, and the icon's afterimages, spark, ring, cut, strokes and crossing lines.
+    /// Each is made once and kept, so the first special kill builds nothing mid-fight; nothing playing is touched.
+    /// </summary>
+    public void Prewarm()
+    {
+        Layer();
+        MakeStamp(); MakeSeal(); MakeChip(); MakeStrike(); MakeFrame(); MakeTick(); MakeTag(); MakeVeil(); MakeBeam(); MakeMarkRing();
+        MakeEchoes(); MakeSpark(); MakeRing(); MakeSlash(); MakeRays(); MakeCrosses();
+    }
+
     /// <summary>Moves everything on by dt (real seconds).</summary>
     public void Tick(float dt)
     {
@@ -282,38 +295,28 @@ public sealed class KillFlairFx
         switch (kind)
         {
             case KillFlairs.Icon.Echo:
+                MakeEchoes();
                 for (int i = 0; i < echoes.Length; i++)
                 {
-                    if (echoes[i] == null)
-                    {
-                        echoes[i] = FeelUI.Rect("Flair Echo", weapon.rectTransform).gameObject.AddComponent<Image>();
-                        echoes[i].raycastTarget = false;
-                        echoes[i].preserveAspect = true;
-                        Stretch(echoes[i].rectTransform, 0f);
-                    }
                     echoes[i].sprite = weapon.sprite;
                     echoes[i].color = Clear(colour);
                     echoes[i].gameObject.SetActive(true);
                 }
                 break;
             case KillFlairs.Icon.Spark:
-                if (spark == null) spark = Raw("Flair Spark", weapon.rectTransform, CombatUIAssets.CriticalBurst);
+                MakeSpark();
                 spark.rectTransform.sizeDelta = Vector2.one * 34f;
                 spark.color = Color.white;
                 spark.gameObject.SetActive(true);
                 break;
             case KillFlairs.Icon.Ring:
-                if (ring == null) ring = SpriteImage("Flair Ring", weapon.rectTransform, CombatUIAssets.Ring);
+                MakeRing();
                 ring.rectTransform.sizeDelta = Vector2.one * 40f;
                 ring.color = colour;
                 ring.gameObject.SetActive(true);
                 break;
             case KillFlairs.Icon.Slash:
-                if (slash == null)
-                {
-                    slash = Raw("Flair Slash", weapon.rectTransform, CombatUIAssets.BladeSlash);
-                    slash.rectTransform.pivot = new Vector2(0f, .5f);
-                }
+                MakeSlash();
                 slash.rectTransform.sizeDelta = new Vector2(box.x * 1.25f, 10f);
                 slash.rectTransform.anchoredPosition = new Vector2(-box.x * .62f, 0f);
                 slash.rectTransform.localRotation = Quaternion.Euler(0f, 0f, -16f);
@@ -321,28 +324,18 @@ public sealed class KillFlairFx
                 slash.gameObject.SetActive(true);
                 break;
             case KillFlairs.Icon.Rays:
+                MakeRays();
                 for (int i = 0; i < rays.Length; i++)
                 {
-                    if (rays[i] == null)
-                    {
-                        rays[i] = FeelUI.Rect("Flair Ray", weapon.rectTransform).gameObject.AddComponent<Image>();
-                        rays[i].raycastTarget = false;
-                        rays[i].rectTransform.pivot = new Vector2(0f, .5f);
-                        rays[i].rectTransform.sizeDelta = new Vector2(12f, 2.5f);
-                    }
                     rays[i].rectTransform.localRotation = Quaternion.Euler(0f, 0f, 90f + (i - 2.5f) * 36f);
                     rays[i].color = colour;
                     rays[i].gameObject.SetActive(true);
                 }
                 break;
             case KillFlairs.Icon.Cross:
+                MakeCrosses();
                 for (int i = 0; i < crosses.Length; i++)
                 {
-                    if (crosses[i] == null)
-                    {
-                        crosses[i] = FeelUI.Rect("Flair Cross", weapon.rectTransform).gameObject.AddComponent<Image>();
-                        crosses[i].raycastTarget = false;
-                    }
                     crosses[i].rectTransform.sizeDelta = new Vector2(box.x * .72f, 2.5f);
                     crosses[i].rectTransform.localRotation = Quaternion.Euler(0f, 0f, i == 0 ? 24f : -24f);
                     crosses[i].color = colour;
@@ -458,21 +451,13 @@ public sealed class KillFlairFx
         layer.raycastTarget = false;
         layer.material = material;
         layer.gameObject.AddComponent<OwnedMaterial>().Own(material);
+        layer.gameObject.SetActive(false);
         return true;
     }
 
     private void PlaceStamp(string words, Color colour)
     {
-        if (stamp == null)
-        {
-            stamp = FeelUI.Rect("Flair Stamp", row);
-            stamp.anchorMin = stamp.anchorMax = new Vector2(1f, .5f);
-            stampGroup = Group(stamp);
-            stampEdge = Fill("Edge", stamp, 0f);
-            stampFill = Fill("Fill", stamp, 2.5f);
-            stampWords = FeelUI.ScoreLabel("Words", stamp, 15f, TextAlignmentOptions.Center);
-            Stretch(stampWords.rectTransform, 0f);
-        }
+        MakeStamp();
         stampWords.text = words;
         stampWords.color = colour;
         stampEdge.color = colour;
@@ -488,24 +473,7 @@ public sealed class KillFlairFx
 
     private void PlaceSeal(string words, Color colour)
     {
-        if (seal == null)
-        {
-            seal = FeelUI.Rect("Flair Seal", row);
-            seal.anchorMin = seal.anchorMax = new Vector2(1f, .5f);
-            sealGroup = Group(seal);
-            sealFill = SpriteImage("Fill", seal, CombatUIAssets.Disc);
-            Stretch(sealFill.rectTransform, 0f);
-            sealRing = SpriteImage("Ring", seal, CombatUIAssets.Ring);
-            Stretch(sealRing.rectTransform, 0f);
-            sealWords = FeelUI.ScoreLabel("Words", seal, 11f, TextAlignmentOptions.Center);
-            sealWords.lineSpacing = -18f;
-            Stretch(sealWords.rectTransform, 4f);
-            for (int i = 0; i < specks.Length; i++)
-            {
-                specks[i] = SpriteImage("Speck", seal, CombatUIAssets.Disc);
-                specks[i].rectTransform.sizeDelta = Vector2.one * 4f;
-            }
-        }
+        MakeSeal();
         // Two lines, broken at the space ("계약 완료" → 계약 / 완료).
         sealWords.text = words.Replace(' ', '\n');
         sealWords.color = colour;
@@ -527,18 +495,7 @@ public sealed class KillFlairFx
 
     private void PlaceChip(bool money, string words, Color colour, bool besideSeal)
     {
-        if (chip == null)
-        {
-            chip = FeelUI.Rect("Flair Chip", row);
-            chip.anchorMin = chip.anchorMax = new Vector2(1f, .5f);
-            chipGroup = Group(chip);
-            chipPlate = Fill("Plate", chip, 0f);
-            chipMoney = MoneyIcon.Make(chip, 16f);
-            chipMoney.rectTransform.anchorMin = chipMoney.rectTransform.anchorMax = new Vector2(0f, .5f);
-            chipWords = FeelUI.ScoreLabel("Words", chip, 13f, TextAlignmentOptions.MidlineLeft);
-            chipWords.rectTransform.anchorMin = chipWords.rectTransform.anchorMax = new Vector2(0f, .5f);
-            chipWords.rectTransform.pivot = new Vector2(0f, .5f);
-        }
+        MakeChip();
         chipMoney.gameObject.SetActive(money);
         chipWords.text = money ? paid.ToString() : words;
         chipWords.color = colour;
@@ -558,14 +515,7 @@ public sealed class KillFlairFx
 
     private void PlaceStrike(Vector2 at, float wide, Color colour)
     {
-        if (strike == null)
-        {
-            strike = FeelUI.Rect("Flair Strike", row).gameObject.AddComponent<Image>();
-            strike.raycastTarget = false;
-            var rect = strike.rectTransform;
-            rect.anchorMin = rect.anchorMax = new Vector2(1f, .5f);
-            rect.pivot = new Vector2(0f, .5f);
-        }
+        MakeStrike();
         strike.color = colour;
         strike.rectTransform.sizeDelta = new Vector2(wide + 2f, 2.5f);
         strike.rectTransform.anchoredPosition = new Vector2(at.x - wide * .5f - 1f, at.y);
@@ -576,17 +526,7 @@ public sealed class KillFlairFx
 
     private void PlaceFrame(Vector2 at, float wide, Color colour)
     {
-        if (frame == null)
-        {
-            frame = FeelUI.Rect("Flair Frame", row);
-            frame.anchorMin = frame.anchorMax = new Vector2(1f, .5f);
-            frameGroup = Group(frame);
-            for (int i = 0; i < corners.Length; i++)
-            {
-                corners[i] = FeelUI.Rect("Corner", frame).gameObject.AddComponent<Image>();
-                corners[i].raycastTarget = false;
-            }
-        }
+        MakeFrame();
         float w = wide + 14f, h = KillFeedRow.Height - 6f, arm = 8f, line = 2.5f;
         frame.sizeDelta = new Vector2(w, h);
         frame.anchoredPosition = at;
@@ -614,14 +554,7 @@ public sealed class KillFlairFx
 
     private void PlaceTick(Vector2 at, float wide, Color colour)
     {
-        if (tick == null)
-        {
-            tick = FeelUI.Rect("Flair Tick", row);
-            tick.anchorMin = tick.anchorMax = new Vector2(1f, .5f);
-            tickGroup = Group(tick);
-            tickShort = Stroke("Short", tick);
-            tickLong = Stroke("Long", tick);
-        }
+        MakeTick();
         // A check across the one killed: a short stroke down, then a long one up to the right.
         float span = Mathf.Max(24f, wide * .7f);
         tick.anchoredPosition = at;
@@ -639,16 +572,7 @@ public sealed class KillFlairFx
 
     private void PlaceTag(string words, Color colour)
     {
-        if (tag == null)
-        {
-            tag = FeelUI.ScoreLabel("Flair Tag", weapon.rectTransform, 11f, TextAlignmentOptions.Center);
-            var rect = tag.rectTransform;
-            rect.anchorMin = rect.anchorMax = new Vector2(.5f, 1f);
-            rect.sizeDelta = new Vector2(90f, 14f);
-            rect.anchoredPosition = new Vector2(0f, 6f);
-            tag.fontStyle = FontStyles.Italic;
-            tag.characterSpacing = 12f;
-        }
+        MakeTag();
         tag.text = words;
         tag.color = colour;
         tag.alpha = 0f;
@@ -657,13 +581,7 @@ public sealed class KillFlairFx
 
     private void PlaceVeil()
     {
-        if (veil == null)
-        {
-            veil = FeelUI.Rect("Flair Veil", row).gameObject.AddComponent<KillRowCover>();
-            veil.raycastTarget = false;
-            Stretch(veil.rectTransform, 0f);
-            veil.color = new Color(0f, 0f, 0f, .94f);
-        }
+        MakeVeil();
         veil.Cover(0f, 1f);
         veil.rectTransform.SetAsLastSibling();
         veil.gameObject.SetActive(true);
@@ -671,14 +589,7 @@ public sealed class KillFlairFx
 
     private void PlaceBeam(Color colour)
     {
-        if (beam == null)
-        {
-            beam = FeelUI.Rect("Flair Beam", row).gameObject.AddComponent<Image>();
-            beam.raycastTarget = false;
-            var rect = beam.rectTransform;
-            rect.anchorMin = rect.anchorMax = new Vector2(1f, .5f);
-            rect.pivot = new Vector2(0f, .5f);
-        }
+        MakeBeam();
         // From the muzzle (where the drawing ends on the icon's canvas, WeaponIconSpans.csv) through the one killed and
         // 10 px past the row's end.
         var box = weapon.rectTransform;
@@ -694,13 +605,199 @@ public sealed class KillFlairFx
 
     private void PlaceMarkRing(Color colour)
     {
-        if (markRing == null)
-        {
-            markRing = SpriteImage("Flair Mark Ring", mark.rectTransform, CombatUIAssets.Ring);
-            Stretch(markRing.rectTransform, -3f);
-        }
+        MakeMarkRing();
         markRing.color = colour;
         markRing.gameObject.SetActive(true);
+    }
+
+    // ---- making the pieces ----
+
+    // Each is made once, put away; its Place* sets it up and shows it. Prewarm makes them all ahead.
+
+    private void MakeStamp()
+    {
+        if (stamp != null) return;
+        stamp = FeelUI.Rect("Flair Stamp", row);
+        stamp.anchorMin = stamp.anchorMax = new Vector2(1f, .5f);
+        stampGroup = Group(stamp);
+        stampEdge = Fill("Edge", stamp, 0f);
+        stampFill = Fill("Fill", stamp, 2.5f);
+        stampWords = FeelUI.ScoreLabel("Words", stamp, 15f, TextAlignmentOptions.Center);
+        Stretch(stampWords.rectTransform, 0f);
+        stamp.gameObject.SetActive(false);
+    }
+
+    private void MakeSeal()
+    {
+        if (seal != null) return;
+        seal = FeelUI.Rect("Flair Seal", row);
+        seal.anchorMin = seal.anchorMax = new Vector2(1f, .5f);
+        sealGroup = Group(seal);
+        sealFill = SpriteImage("Fill", seal, CombatUIAssets.Disc);
+        Stretch(sealFill.rectTransform, 0f);
+        sealRing = SpriteImage("Ring", seal, CombatUIAssets.Ring);
+        Stretch(sealRing.rectTransform, 0f);
+        sealWords = FeelUI.ScoreLabel("Words", seal, 11f, TextAlignmentOptions.Center);
+        sealWords.lineSpacing = -18f;
+        Stretch(sealWords.rectTransform, 4f);
+        for (int i = 0; i < specks.Length; i++)
+        {
+            specks[i] = SpriteImage("Speck", seal, CombatUIAssets.Disc);
+            specks[i].rectTransform.sizeDelta = Vector2.one * 4f;
+        }
+        seal.gameObject.SetActive(false);
+    }
+
+    private void MakeChip()
+    {
+        if (chip != null) return;
+        chip = FeelUI.Rect("Flair Chip", row);
+        chip.anchorMin = chip.anchorMax = new Vector2(1f, .5f);
+        chipGroup = Group(chip);
+        chipPlate = Fill("Plate", chip, 0f);
+        chipMoney = MoneyIcon.Make(chip, 16f);
+        chipMoney.rectTransform.anchorMin = chipMoney.rectTransform.anchorMax = new Vector2(0f, .5f);
+        chipWords = FeelUI.ScoreLabel("Words", chip, 13f, TextAlignmentOptions.MidlineLeft);
+        chipWords.rectTransform.anchorMin = chipWords.rectTransform.anchorMax = new Vector2(0f, .5f);
+        chipWords.rectTransform.pivot = new Vector2(0f, .5f);
+        chip.gameObject.SetActive(false);
+    }
+
+    private void MakeStrike()
+    {
+        if (strike != null) return;
+        strike = FeelUI.Rect("Flair Strike", row).gameObject.AddComponent<Image>();
+        strike.raycastTarget = false;
+        var rect = strike.rectTransform;
+        rect.anchorMin = rect.anchorMax = new Vector2(1f, .5f);
+        rect.pivot = new Vector2(0f, .5f);
+        strike.gameObject.SetActive(false);
+    }
+
+    private void MakeFrame()
+    {
+        if (frame != null) return;
+        frame = FeelUI.Rect("Flair Frame", row);
+        frame.anchorMin = frame.anchorMax = new Vector2(1f, .5f);
+        frameGroup = Group(frame);
+        for (int i = 0; i < corners.Length; i++)
+        {
+            corners[i] = FeelUI.Rect("Corner", frame).gameObject.AddComponent<Image>();
+            corners[i].raycastTarget = false;
+        }
+        frame.gameObject.SetActive(false);
+    }
+
+    private void MakeTick()
+    {
+        if (tick != null) return;
+        tick = FeelUI.Rect("Flair Tick", row);
+        tick.anchorMin = tick.anchorMax = new Vector2(1f, .5f);
+        tickGroup = Group(tick);
+        tickShort = Stroke("Short", tick);
+        tickLong = Stroke("Long", tick);
+        tick.gameObject.SetActive(false);
+    }
+
+    private void MakeTag()
+    {
+        if (tag != null) return;
+        tag = FeelUI.ScoreLabel("Flair Tag", weapon.rectTransform, 11f, TextAlignmentOptions.Center);
+        var rect = tag.rectTransform;
+        rect.anchorMin = rect.anchorMax = new Vector2(.5f, 1f);
+        rect.sizeDelta = new Vector2(90f, 14f);
+        rect.anchoredPosition = new Vector2(0f, 6f);
+        tag.fontStyle = FontStyles.Italic;
+        tag.characterSpacing = 12f;
+        tag.gameObject.SetActive(false);
+    }
+
+    private void MakeVeil()
+    {
+        if (veil != null) return;
+        veil = FeelUI.Rect("Flair Veil", row).gameObject.AddComponent<KillRowCover>();
+        veil.raycastTarget = false;
+        Stretch(veil.rectTransform, 0f);
+        veil.color = new Color(0f, 0f, 0f, .94f);
+        veil.gameObject.SetActive(false);
+    }
+
+    private void MakeBeam()
+    {
+        if (beam != null) return;
+        beam = FeelUI.Rect("Flair Beam", row).gameObject.AddComponent<Image>();
+        beam.raycastTarget = false;
+        var rect = beam.rectTransform;
+        rect.anchorMin = rect.anchorMax = new Vector2(1f, .5f);
+        rect.pivot = new Vector2(0f, .5f);
+        beam.gameObject.SetActive(false);
+    }
+
+    private void MakeMarkRing()
+    {
+        if (markRing != null || mark == null) return;
+        markRing = SpriteImage("Flair Mark Ring", mark.rectTransform, CombatUIAssets.Ring);
+        Stretch(markRing.rectTransform, -3f);
+        markRing.gameObject.SetActive(false);
+    }
+
+    private void MakeEchoes()
+    {
+        for (int i = 0; i < echoes.Length; i++)
+        {
+            if (echoes[i] != null) continue;
+            echoes[i] = FeelUI.Rect("Flair Echo", weapon.rectTransform).gameObject.AddComponent<Image>();
+            echoes[i].raycastTarget = false;
+            echoes[i].preserveAspect = true;
+            Stretch(echoes[i].rectTransform, 0f);
+            echoes[i].gameObject.SetActive(false);
+        }
+    }
+
+    private void MakeSpark()
+    {
+        if (spark != null) return;
+        spark = Raw("Flair Spark", weapon.rectTransform, CombatUIAssets.CriticalBurst);
+        spark.gameObject.SetActive(false);
+    }
+
+    private void MakeRing()
+    {
+        if (ring != null) return;
+        ring = SpriteImage("Flair Ring", weapon.rectTransform, CombatUIAssets.Ring);
+        ring.gameObject.SetActive(false);
+    }
+
+    private void MakeSlash()
+    {
+        if (slash != null) return;
+        slash = Raw("Flair Slash", weapon.rectTransform, CombatUIAssets.BladeSlash);
+        slash.rectTransform.pivot = new Vector2(0f, .5f);
+        slash.gameObject.SetActive(false);
+    }
+
+    private void MakeRays()
+    {
+        for (int i = 0; i < rays.Length; i++)
+        {
+            if (rays[i] != null) continue;
+            rays[i] = FeelUI.Rect("Flair Ray", weapon.rectTransform).gameObject.AddComponent<Image>();
+            rays[i].raycastTarget = false;
+            rays[i].rectTransform.pivot = new Vector2(0f, .5f);
+            rays[i].rectTransform.sizeDelta = new Vector2(12f, 2.5f);
+            rays[i].gameObject.SetActive(false);
+        }
+    }
+
+    private void MakeCrosses()
+    {
+        for (int i = 0; i < crosses.Length; i++)
+        {
+            if (crosses[i] != null) continue;
+            crosses[i] = FeelUI.Rect("Flair Cross", weapon.rectTransform).gameObject.AddComponent<Image>();
+            crosses[i].raycastTarget = false;
+            crosses[i].gameObject.SetActive(false);
+        }
     }
 
     // ---- motion ----

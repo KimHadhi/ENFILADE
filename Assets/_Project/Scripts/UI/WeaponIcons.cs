@@ -33,6 +33,8 @@ public static class WeaponIcons
     public const string Headshot = "headshot";
     /// <summary>Where each game picture's drawing lies on its canvas, written by the icon tool (WeaponIconSpans.csv).</summary>
     public const string SpanTable = "WeaponIconSpans";
+    /// <summary>The weapons' table: its row ids are the weapons' asset names, their icon ids.</summary>
+    private const string WeaponTable = "Weapons";
     /// <summary>Every icon's canvas, width over height (512 x 160).</summary>
     public const float Aspect = 512f / 160f;
 
@@ -108,6 +110,23 @@ public static class WeaponIcons
         // A miss is kept too, so a weapon without a picture isn't looked for on disk every frame.
         found[id] = sprite;
         return sprite;
+    }
+
+    /// <summary>
+    /// Reads every picture ahead (CombatFeedHUD.Prewarm, behind the loading screen), so no slot, feed row or pickup reads a
+    /// file mid-fight: each game picture of the look in use (and of the default look where it differs, which stands in for
+    /// a missing one), each weapon of Weapons.csv (a modder's picture for it, if any) and the spans table. A picture already
+    /// read is kept, so calling it again costs only the lookups.
+    /// </summary>
+    public static void Prewarm()
+    {
+        foreach (var picture in Resources.LoadAll<Texture2D>(ResourcesFolder + "/" + Style))
+            if (picture != null) For(picture.name);
+        if (!string.Equals(Style, DefaultStyle, StringComparison.OrdinalIgnoreCase))
+            foreach (var picture in Resources.LoadAll<Texture2D>(ResourcesFolder + "/" + DefaultStyle))
+                if (picture != null) For(picture.name);
+        foreach (string id in GameTables.RowIds(WeaponTable)) For(id);
+        GameTables.RowIds(SpanTable);
     }
 
     /// <summary>

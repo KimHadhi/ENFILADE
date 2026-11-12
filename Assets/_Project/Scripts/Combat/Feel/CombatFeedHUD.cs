@@ -61,6 +61,40 @@ public sealed class CombatFeedHUD : MonoBehaviour
         return instance;
     }
 
+    /// <summary>
+    /// Makes ahead, out of sight, what the first kill would otherwise make mid-fight (SceneWarmup's pools step, behind the
+    /// loading screen): this HUD, its score lines and its kill feed rows up to the most it shows, each row with every piece
+    /// its flairs draw (KillFeedRow.Prewarm: the CHARGE fire layer and its material, the bounty's stamp and chip, the
+    /// skull's ring and the rest), the shapes the lines draw with, the tables the flairs read (KillFlairs.Prewarm) and every
+    /// weapon picture (WeaponIcons.Prewarm). What is made stays made: calling it again only tops the pools up, and rows on
+    /// screen are left alone.
+    /// </summary>
+    public static void Prewarm()
+    {
+        if (!Application.isPlaying) return;
+        Get().FillPools();
+        KillFlairs.Prewarm();
+        WeaponIcons.Prewarm();
+        // Drawn on first ask: a kill's skull, a headshot's burst, a counter's arrow, an execution's knife.
+        _ = CombatUIAssets.Skull;
+        _ = CombatUIAssets.CriticalBurst;
+        _ = CombatUIAssets.CounterArrow;
+        _ = CombatUIAssets.ExecutionKnife;
+    }
+
+    // Score lines and kill feed rows up to the most each shows, the spare rows with all their flair pieces made.
+    private void FillPools()
+    {
+        for (int i = lines.Count + spareLines.Count; i < MaxLines; i++)
+        {
+            var line = MakeLine();
+            line.root.gameObject.SetActive(false);
+            spareLines.Push(line);
+        }
+        for (int i = kills.Count + spareKills.Count; i < MaxKills; i++) spareKills.Push(new KillFeedRow(feedRoot));
+        foreach (var row in spareKills) row.Prewarm();
+    }
+
     /// <summary>distance: shooter to hit point, metres (0 when unknown); gun kills past Long Range Distance earn a bonus. feedRow is false when the host will send the row.
     /// pierced: the killing bullet went through or off something first (관통 사살). standout: the enemy was named or elite, so
     /// its row burns magenta (backlog 325). takedown: an execution of a zombie that never knew they were there (the
@@ -314,6 +348,23 @@ public sealed class CombatFeedHUD : MonoBehaviour
         }
     }
 
+    private Line MakeLine()
+    {
+        var line = new Line { root = FeelUI.Rect("Line", linesRoot) };
+        line.root.pivot = new Vector2(0f, .5f);
+        line.icon = FeelUI.Rect("Icon", line.root).gameObject.AddComponent<RawImage>();
+        line.icon.raycastTarget = false;
+        line.icon.rectTransform.sizeDelta = new Vector2(IconSize, IconSize);
+        // Tinted icons get a dark drop so the colour still reads over bright scenes (Linear washes thin colour out).
+        line.iconShadow = line.icon.gameObject.AddComponent<Shadow>();
+        line.iconShadow.effectColor = new Color(0f, 0f, 0f, .6f);
+        line.iconShadow.effectDistance = new Vector2(1.2f, -1.2f);
+        line.label = FeelUI.ScoreLabel("Label", line.root, 17f, TextAlignmentOptions.Left);
+        line.label.rectTransform.pivot = new Vector2(0f, .5f);
+        line.label.rectTransform.sizeDelta = new Vector2(240f, LineHeight);
+        return line;
+    }
+
     private void ClearLines()
     {
         foreach (var line in lines) { line.root.gameObject.SetActive(false); spareLines.Push(line); }
@@ -324,23 +375,7 @@ public sealed class CombatFeedHUD : MonoBehaviour
     private void AddLine(string text, LineIcon icon, bool accent, Color? tint = null)
     {
         if (lines.Count >= MaxLines) return;
-        Line line;
-        if (spareLines.Count > 0) line = spareLines.Pop();
-        else
-        {
-            line = new Line { root = FeelUI.Rect("Line", linesRoot) };
-            line.root.pivot = new Vector2(0f, .5f);
-            line.icon = FeelUI.Rect("Icon", line.root).gameObject.AddComponent<RawImage>();
-            line.icon.raycastTarget = false;
-            line.icon.rectTransform.sizeDelta = new Vector2(IconSize, IconSize);
-            // Tinted icons get a dark drop so the colour still reads over bright scenes (Linear washes thin colour out).
-            line.iconShadow = line.icon.gameObject.AddComponent<Shadow>();
-            line.iconShadow.effectColor = new Color(0f, 0f, 0f, .6f);
-            line.iconShadow.effectDistance = new Vector2(1.2f, -1.2f);
-            line.label = FeelUI.ScoreLabel("Label", line.root, 17f, TextAlignmentOptions.Left);
-            line.label.rectTransform.pivot = new Vector2(0f, .5f);
-            line.label.rectTransform.sizeDelta = new Vector2(240f, LineHeight);
-        }
+        var line = spareLines.Count > 0 ? spareLines.Pop() : MakeLine();
         bool hasIcon = icon != LineIcon.None;
         line.icon.gameObject.SetActive(hasIcon);
         var counterIcon = CombatFeedbackSettings.InstanceOrDefaults.counterIcon;

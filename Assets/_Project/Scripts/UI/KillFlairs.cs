@@ -14,7 +14,7 @@ using UnityEngine;
 /// </summary>
 public static class KillFlairs
 {
-    public const string TableName = "KillFlairs";
+    public const string TableName = "KillFlairs", ClassColourTable = "ClassColours";
 
     /// <summary>
     /// What plays on the weapon's icon (KillFlairFx). Drawn on the icon's own shape by KillFlair.shader: Fire (the muzzle
@@ -119,10 +119,17 @@ public static class KillFlairs
         return new Play(icon, row, marks, mine, picture, classColour);
     }
 
+    /// <summary>Reads the flair and class colour tables ahead (CombatFeedHUD.Prewarm), so the first kill parses neither.</summary>
+    public static void Prewarm()
+    {
+        All();
+        foreach (string id in GameTables.RowIds(ClassColourTable)) ClassColourOf(id);
+    }
+
     /// <summary>A class's colour for its flairs (ClassColours.csv), or clear for one it doesn't name.</summary>
     public static Color ClassColourOf(string classId)
     {
-        if (string.IsNullOrWhiteSpace(classId) || !GameTables.TryGetRow("ClassColours", classId.Trim(), out var cells)
+        if (string.IsNullOrWhiteSpace(classId) || !GameTables.TryGetRow(ClassColourTable, classId.Trim(), out var cells)
             || !cells.TryGetValue("colour", out string text) || !ColorUtility.TryParseHtmlString(text.Trim(), out var colour))
             return Color.clear;
         return colour;

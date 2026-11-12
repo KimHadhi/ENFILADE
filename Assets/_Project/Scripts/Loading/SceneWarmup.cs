@@ -216,6 +216,7 @@ public sealed class SceneWarmup : MonoBehaviour
         CombatWarmup.Prepare();
         BashImpact.Prepare();
         MuzzleFlame.Prepare();
+        CombatFeedHUD.Prewarm();
         yield return null;
         steps.Mark("pools");
         LoadingScreen.Report(Pooled, "loading.stage.looks");

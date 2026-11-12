@@ -163,6 +163,20 @@ public sealed class KillFeedRow
     }
 
     /// <summary>
+    /// For a row out of use (CombatFeedHUD.Prewarm, behind the loading screen): makes every piece its flairs can draw. The
+    /// row and its icons are live for that moment, so each piece wakes as it would on screen (its text set up, its graphic
+    /// registered), and put away again before anything draws.
+    /// </summary>
+    public void Prewarm()
+    {
+        root.gameObject.SetActive(true);
+        weapon.gameObject.SetActive(true);
+        icon.gameObject.SetActive(true);
+        flair.Prewarm();
+        Hide();
+    }
+
+    /// <summary>
     /// Ages the row, eases it toward its place in the list and fades it out at the end of its life. rank is 0 for the
     /// newest row, 1 for the one below it, and so on. The newest grows into its light card, leans a touch toward the
     /// player, stands a little off and keeps a wider end bar; it arrives leaning further and settles, and gives all that
