@@ -10,10 +10,16 @@ The shove's three moves are drafted and ready to polish. Each is a locked draft 
 - 발차기 (enf_kick_front): Kazusa's right leg on the True FPS rig. "게임에 보내기" bakes the original skeleton to
   Assets/_Project/Art/Animations/Shove/enf_kick_front.fbx (+ .clips.csv); Unity takes it with her avatar
   (ModelImportRules) into the body's clips, and the kick plays it on the legs (Player.csv Body.kick).
+- 수리 · 망치 (enf_repair_hammer) and 수리 · 토치 (enf_repair_torch): the Support's mending loops on Kazusa's free left
+  arm (CTRL_hand.L, CTRL_elbow.L) while the right hand keeps the gun; the left hand's hold on the gun is let go while one
+  is shown. "게임에 보내기" writes Assets/_Project/Resources/Tables/RepairHammer.csv or RepairTorch.csv: the wrist, the
+  elbow and the hand's way from the eyes in the view's axes, which RepairArm plays on any character's left arm
+  (GrenadeArmPath's columns). repair_moves.py adds them to an older workspace and keys their drafts.
 Every button keys at the current frame with auto-key on, holding the pose some frames either side, so a click is one
 local change. Nothing here changes Blender's preferences.
 """
 import importlib.util
+import json
 import math
 import sys
 from pathlib import Path
@@ -47,15 +53,33 @@ MOVES = {
     'bash_pistol': dict(label='총 휘두르기 · 권총', kind='gun', action='enf_bash_pistol', gun='GUN_R08', impact=3, end=13,
                         hold=(0.0668, -0.0659, -0.2415), hit=('Ability.shoveActiveTime', .2, 'by')),
     'kick': dict(label='발차기', kind='body', action='enf_kick_front', impact=10, end=20, hit=('Shove.kickHitTime', .3, 'at')),
+    # The Support's mending in the free left hand while the gun stays in the right (the user, 2026-11-12: "남는 손으로
+    # 망치 손으로 두들기는 거"): a loop each, played while F is held on a barricade (RepairArm), the left arm and hand only.
+    # 타격 is where the hammer meets the planks: the knock sounds there, on every PC. The torch strikes nothing (0).
+    # curl/thumb: how far the fingers and the thumb close round the tool (degrees), written into every key.
+    'repair_hammer': dict(label='수리 · 망치', kind='arm', action='enf_repair_hammer', table='RepairHammer', tool='TOOL_Hammer',
+                          impact=6, end=15, curl=88.0, thumb=62.0),
+    'repair_torch': dict(label='수리 · 토치', kind='arm', action='enf_repair_torch', table='RepairTorch', tool='TOOL_Torch',
+                         impact=0, end=31, curl=80.0, thumb=58.0),
 }
 
-# The parts a beginner moves, by their Korean names: the gun, or the kick's IK handles on the rig.
+# The parts a beginner moves, by their Korean names: the gun, or the kick's IK handles on the rig, or the left arm's.
 GUN_PARTS = (('총', GUN),)
 BODY_PARTS = (('오른발', 'CTRL_foot.R'), ('오른무릎 방향', 'CTRL_knee.R'), ('왼발', 'CTRL_foot.L'), ('골반', 'Hips'))
+ARM_HAND, ARM_ELBOW = 'CTRL_hand.L', 'CTRL_elbow.L'
+ARM_PARTS = (('왼손', ARM_HAND), ('왼팔꿈치 방향', ARM_ELBOW))
 MOVE_DIRS = (('forward', '앞으로'), ('back', '뒤로'), ('up', '위로'), ('down', '아래로'), ('left', '왼쪽'), ('right', '오른쪽'))
 TURNS = (('pitch_up', '총구 위로'), ('pitch_down', '총구 아래로'), ('yaw_left', '총구 왼쪽'), ('yaw_right', '총구 오른쪽'),
          ('roll_left', '왼쪽으로 기울이기'), ('roll_right', '오른쪽으로 기울이기'))
 FOOT_TURNS = (('toes_up', '발끝 위로'), ('toes_down', '발끝 아래로'))
+HAND_TURNS = (('wrist_up', '손목 위로 젖히기'), ('wrist_down', '손목 아래로 꺾기'), ('wrist_left', '손목 왼쪽'), ('wrist_right', '손목 오른쪽'),
+              ('twist_left', '손목 왼쪽으로 비틀기'), ('twist_right', '손목 오른쪽으로 비틀기'))
+# The left hand handle follows the gun through this constraint (the shove workspace's hold); a mending move frees it.
+HOLD_CONSTRAINT = 'Hold the gun (shove workspace)'
+TABLES_DIR = Path('Assets/_Project/Resources/Tables')
+# The left arm's bones on Kazusa's rig, for the path a mending move exports (RepairArm's terms).
+ARM_BONES = dict(shoulder='Left arm', elbow='Left elbow', wrist='Left wrist', index='IndexFinger1_L', middle='MiddleFinger1_L',
+                 little='LittleFinger1_L')
 
 
 # ---- Paths and the True FPS tools ------------------------------------------------------------------------------------
@@ -170,6 +194,9 @@ def select_move(context, key):
     rig = find_rig(scene)
     gun = bpy.data.objects.get(GUN)
     hold = bpy.data.objects.get(GUN_HOLD)
+    # A handle the last move animated keeps its last value once nothing animates it: back to the start pose first, so
+    # the left hand comes back onto the gun after a mending move and the legs down after the kick.
+    reset_rig(rig)
     if move['kind'] == 'gun':
         set_layers(gun, bpy.data.actions.get(move['action'] + '_draft'), touch_up(move['action']))
         if hold is not None:
@@ -183,12 +210,18 @@ def select_move(context, key):
         if hold is not None:
             hold.location = MOVES['bash_long']['hold']
         set_layers(rig, bpy.data.actions.get(move['action'] + '_draft'), touch_up(move['action']))
+    # A mending move has the left hand off the gun, doing it; every other move keeps it on the gun.
+    free_left_hand(rig, move['kind'] == 'arm')
     for other in MOVES.values():
         if other.get('gun') and other['gun'] in bpy.data.objects:
-            show = other['gun'] == move.get('gun') or (move['kind'] == 'body' and other['gun'] == MOVES['bash_long']['gun'])
+            show = other['gun'] == move.get('gun') or (move['kind'] in ('body', 'arm') and other['gun'] == MOVES['bash_long']['gun'])
             for obj in [bpy.data.objects[other['gun']]] + list(bpy.data.objects[other['gun']].children_recursive):
                 obj.hide_set(not show)
                 obj.hide_render = not show
+        if other.get('tool') and other['tool'] in bpy.data.objects:
+            for obj in [bpy.data.objects[other['tool']]] + list(bpy.data.objects[other['tool']].children_recursive):
+                obj.hide_set(other['tool'] != move.get('tool'))
+                obj.hide_render = other['tool'] != move.get('tool')
     scene.frame_start, scene.frame_end = 1, int(scene.get('enf_end_' + key, move['end']))
     marker = marker or scene.timeline_markers.new('타격', frame=move['impact'])
     marker.frame = int(scene.get('enf_impact_' + key, move['impact']))
@@ -200,6 +233,31 @@ def select_move(context, key):
 def current_move(scene):
     key = scene.get('enf_shove_move', 'bash_long')
     return key if key in MOVES else 'bash_long'
+
+
+def reset_rig(rig):
+    """The rig's handles at the start pose (True FPS's truefps_default_pose, the hands on the gun's grips)."""
+    if rig is None:
+        return
+    for name, pose in json.loads(rig.get('truefps_default_pose', '{}')).items():
+        pb = rig.pose.bones.get(name)
+        if pb is None:
+            continue
+        if 'location' in pose:
+            pb.location = pose['location']
+        if 'rotation_quaternion' in pose and pb.rotation_mode == 'QUATERNION':
+            pb.rotation_quaternion = pose['rotation_quaternion']
+        if 'scale' in pose:
+            pb.scale = pose['scale']
+
+
+def free_left_hand(rig, free):
+    """The left hand handle off the gun (a mending move keys it itself) or on it, as the gun moves have it."""
+    if rig is None or ARM_HAND not in rig.pose.bones:
+        return
+    for con in rig.pose.bones[ARM_HAND].constraints:
+        if con.name == HOLD_CONSTRAINT:
+            con.influence = 0.0 if free else 1.0
 
 
 # ---- Moving a part and keying it -----------------------------------------------------------------------------------
@@ -302,6 +360,35 @@ def nudge_body(context, bone, how, step_cm, step_deg, reach):
     change(context, rig, bone, reach, apply)
 
 
+def view_axes(rig):
+    """The head camera's right, up and forward in the armature's space (the first-person view), else the body's."""
+    cam = bpy.data.objects.get('FPS_Head_Camera')
+    if cam is None:
+        right, forward, up = body_axes(rig)
+        return right, up, forward
+    inverse = rig.matrix_world.to_3x3().inverted()
+    m = cam.matrix_world.to_3x3()
+    return (inverse @ m.col[0]).normalized(), (inverse @ m.col[1]).normalized(), (inverse @ -m.col[2]).normalized()
+
+
+def nudge_hand(context, how, step_deg, reach):
+    """Turns the left hand handle about the view's axes round its own place: the wrist cocked up or down, swung left
+    or right, twisted."""
+    rig = find_rig(context.scene)
+    pb = rig.pose.bones[ARM_HAND]
+    right, up, forward = view_axes(rig)
+    axes = {'wrist_up': (right, 1), 'wrist_down': (right, -1), 'wrist_left': (up, 1), 'wrist_right': (up, -1),
+            'twist_left': (forward, -1), 'twist_right': (forward, 1)}
+
+    def apply():
+        axis, sign = axes[how]
+        matrix = pb.matrix.copy()
+        head = matrix.translation.copy()
+        matrix = Matrix.Translation(head) @ Matrix.Rotation(math.radians(step_deg) * sign, 4, axis) @ Matrix.Translation(-head) @ matrix
+        pb.matrix = matrix
+    change(context, rig, ARM_HAND, reach, apply)
+
+
 def clear_touch_ups(context, frame):
     """Removes the touch-up keys at one frame of the move shown; returns how many went."""
     move = MOVES[current_move(context.scene)]
@@ -374,12 +461,69 @@ def export_kick(context, root):
     return path
 
 
+def arm_rows(context, key):
+    """The left arm over the move's frames as the game's arm paths have it (GrenadeArmPath, played by RepairArm): the
+    wrist and the elbow from the shoulder in arm lengths, the hand's run (wrist to middle knuckle) and its palm's facing,
+    in the head camera's axes as Unity's (x right, y up, z forward), and whether this sample is the strike (타격)."""
+    scene = context.scene
+    rig = find_rig(scene)
+    cam = bpy.data.objects['FPS_Head_Camera']
+    move = MOVES[key]
+    fps = scene.render.fps / scene.render.fps_base
+    start, end = scene.frame_start, scene.frame_end
+    marker = scene.timeline_markers.get('타격')
+    strike = marker.frame if marker is not None and move.get('impact', 0) > 0 and start <= marker.frame <= end else None
+    rows = []
+    for i in range((end - start) * SAMPLES_PER_FRAME + 1):
+        at = start + i / SAMPLES_PER_FRAME
+        frame = int(math.floor(at))
+        scene.frame_set(frame, subframe=at - frame)
+        context.view_layer.update()
+        cm = cam.matrix_world
+        origin = cm.translation
+        right, up, forward = cm.col[0].xyz.normalized(), cm.col[1].xyz.normalized(), -cm.col[2].xyz.normalized()
+
+        def view(name):
+            d = rig.matrix_world @ rig.pose.bones[ARM_BONES[name]].head - origin
+            return Vector((d.dot(right), d.dot(up), d.dot(forward)))
+        s, e, w = view('shoulder'), view('elbow'), view('wrist')
+        index, middle, little = view('index'), view('middle'), view('little')
+        length = (e - s).length + (w - e).length
+        along = (middle - w).normalized()
+        # The palm out of it, as GrenadeArm.PalmNow takes it: these axes are Unity's (left-handed), and its cross is the
+        # same sum as mathutils' here.
+        palm = -along.cross(index - little)
+        palm = (palm - along * palm.dot(along)).normalized()
+        rows.append(((at - start) / fps, (w - s) / length, (e - s) / length, along, palm,
+                     strike is not None and abs(at - strike) < 1e-6))
+    scene.frame_set(start)
+    return rows
+
+
+def export_arm(context, key, root):
+    move = MOVES[key]
+    path = root / TABLES_DIR / (move['table'] + '.csv')
+    path.parent.mkdir(parents=True, exist_ok=True)
+    note = ('#설명 (블렌더 밀치기 작업실 ArtSource/Shove의 ' + move['label'] + ' 동작을 게임에 보내기로 쓴 왼팔의 길. '
+            'GrenadeArm.csv와 같은 칸: 어깨에서 손목과 팔꿈치까지 팔 길이의 배수와 손의 방향을 시선 축(x 오른쪽 y 위 z 앞)으로. '
+            'strike 1인 줄이 망치가 판자에 닿는 순간(소리). 손으로 고치지 말고 블렌더에서 고쳐 다시 보낸다. RepairArm이 어느 캐릭터 팔에든 맞춰 되풀이한다)')
+    lines = ['﻿id,cycle,wristX,wristY,wristZ,elbowX,elbowY,elbowZ,alongX,alongY,alongZ,palmX,palmY,palmZ,curl,thumb,held,strike', note]
+    for n, (cycle, wrist, elbow, along, palm, strike) in enumerate(arm_rows(context, key)):
+        cells = [f'k{n:02d}', f'{cycle:.4f}'] + [f'{v:.4f}' for v in (*wrist, *elbow, *along, *palm)]
+        cells += [f'{move["curl"]:.1f}', f'{move["thumb"]:.1f}', '1', '1' if strike else '0']
+        lines.append(','.join(cells))
+    path.write_text('\n'.join(lines) + '\n', encoding='utf-8')
+    return path
+
+
 def export_move(context, key):
     root = project_root()
     if root is None:
         raise RuntimeError('ENFILADE 프로젝트를 찾지 못했습니다. ArtSource/Shove의 파일을 여세요.')
     if MOVES[key]['kind'] == 'gun':
         return export_gun(context, key, root)
+    if MOVES[key]['kind'] == 'arm':
+        return export_arm(context, key, root)
     return export_kick(context, root)
 
 
@@ -447,6 +591,8 @@ class ENFSHOVE_OT_nudge(bpy.types.Operator):
             if self.part == GUN:
                 _object_mode(context)
                 nudge_gun(context, self.how, settings.step_cm, settings.step_deg, settings.reach)
+            elif self.how in dict(HAND_TURNS):
+                nudge_hand(context, self.how, settings.step_deg, settings.reach)
             else:
                 nudge_body(context, self.part, self.how, settings.step_cm, settings.step_deg, settings.reach)
         except (KeyError, ValueError) as error:
@@ -521,12 +667,16 @@ class ENFSHOVE_PT_panel(bpy.types.Panel):
         if marker:
             at = (marker.frame - scene.frame_start) / fps
             box.label(text=f'타격: {marker.frame}프레임 ({at:.3f}초) · 끝 {scene.frame_end}프레임')
-            row, fallback, how = move['hit']
-            game = game_number(row, fallback)
-            if how == 'by' and at > game + 1e-3:
-                box.label(text=f'게임은 누른 뒤 {game:.2f}초 안에 맞힌다: 타격을 그 앞으로', icon='ERROR')
-            elif how == 'at' and abs(at - game) > .5 / fps:
-                box.label(text=f'게임의 발은 {game:.2f}초({round(game * fps) + scene.frame_start}프레임)에 닿는다', icon='ERROR')
+            if move.get('hit'):
+                row, fallback, how = move['hit']
+                game = game_number(row, fallback)
+                if how == 'by' and at > game + 1e-3:
+                    box.label(text=f'게임은 누른 뒤 {game:.2f}초 안에 맞힌다: 타격을 그 앞으로', icon='ERROR')
+                elif how == 'at' and abs(at - game) > .5 / fps:
+                    box.label(text=f'게임의 발은 {game:.2f}초({round(game * fps) + scene.frame_start}프레임)에 닿는다', icon='ERROR')
+            elif move['kind'] == 'arm':
+                box.label(text='되풀이: 끝 프레임이 처음과 같아야 이어진다' if move.get('impact', 0) > 0
+                          else '되풀이: 끝 프레임이 처음과 같아야 이어진다 · 토치는 타격 없음')
         box.operator('enf_shove.impact')
 
         box = layout.box()
@@ -535,7 +685,7 @@ class ENFSHOVE_PT_panel(bpy.types.Panel):
         box.prop(settings, 'step_cm')
         box.prop(settings, 'step_deg')
         box.prop(settings, 'reach')
-        parts = GUN_PARTS if move['kind'] == 'gun' else BODY_PARTS
+        parts = GUN_PARTS if move['kind'] == 'gun' else ARM_PARTS if move['kind'] == 'arm' else BODY_PARTS
         for label, part in parts:
             col = box.column(align=True)
             col.label(text=label)
@@ -543,7 +693,7 @@ class ENFSHOVE_PT_panel(bpy.types.Panel):
             for how, text in MOVE_DIRS:
                 op = grid.operator('enf_shove.nudge', text=text)
                 op.part, op.how = part, how
-            turns = TURNS if part == GUN else FOOT_TURNS if part.startswith('CTRL_foot') else ()
+            turns = TURNS if part == GUN else FOOT_TURNS if part.startswith('CTRL_foot') else HAND_TURNS if part == ARM_HAND else ()
             if turns:
                 grid = col.grid_flow(columns=2, align=True)
                 for how, text in turns:
@@ -556,7 +706,8 @@ class ENFSHOVE_PT_panel(bpy.types.Panel):
         box = layout.box()
         box.label(text='3. 게임에 보내기')
         box.operator('enf_shove.export', icon='EXPORT')
-        target = (GUN_MOVES_DIR / (move['action'] + '.csv')) if move['kind'] == 'gun' else (KICK_DIR / (move['action'] + '.fbx'))
+        target = (GUN_MOVES_DIR / (move['action'] + '.csv')) if move['kind'] == 'gun' else (TABLES_DIR / (move['table'] + '.csv')) \
+            if move['kind'] == 'arm' else (KICK_DIR / (move['action'] + '.fbx'))
         box.label(text=str(target).replace('\\', '/'))
 
 

@@ -2,25 +2,31 @@ using UnityEngine;
 
 /// <summary>
 /// A Support's mending tool in hand while F is held on a worn barricade (SupportKit; the user, 2026-11-12: "처음에는
-/// 망치로 고쳐. 망치로 뚝딱뚝딱 고치다가 나중에 카드 업그레이드하면 토치로 더 빠르게 고치는 거지"): a hammer going up and down,
-/// or with the welding torch card, a torch held to the planks with a hissing blue flame and a flickering light. Seen from
-/// inside, low in view in the camera's frame; anyone else sees it in the Support's right hand (PlayerNetworkCombat tells
-/// them when it changes). There are no models for these in the project, so they are made of simple parts; a model put
-/// at Resources/ClassProps/Hammer or Resources/ClassProps/Torch (a prefab, its handle along +y and its business end
-/// toward +z) is used instead. The knock of the hammer is SupportKit's, in time with its mending.
+/// 망치로 고쳐. 망치로 뚝딱뚝딱 고치다가 나중에 카드 업그레이드하면 토치로 더 빠르게 고치는 거지"): a hammer knocking at the planks,
+/// or with the welding torch card, a torch held to them with a hissing blue flame and a flickering light. It is in the
+/// Support's free left hand on their body, the gun staying in the right (RepairArm plays the stroke or the hold on the left
+/// arm and the tool rides in the palm), so their own first-person view, the F5 view and everyone else's show the same
+/// thing (PlayerNetworkCombat tells the others when the tool changes). It once sat in the camera's frame, so from outside
+/// it floated in the air (the user, 2026-11-12: "3인칭하면 카메라 기준이라 공중에 떠 잇잖아. 내가 원하는 건 남는 손으로 망치 손으로
+/// 두들기는 거라고"). The hammer knocks where its head meets the planks, at the stroke's strike, on every PC. There are no
+/// models for these in the project, so they are made of simple parts; a model put at Resources/ClassProps/Hammer or
+/// Resources/ClassProps/Torch (a prefab, its handle along +y and its business end toward +z) is used instead.
 /// </summary>
-[DisallowMultipleComponent]
+[DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.Cloth + 2)]
 public sealed class RepairLooks : MonoBehaviour
 {
     /// <summary>What is in hand.</summary>
     public enum Tool : byte { None, Hammer, Torch }
 
-    // The hammer's beat (strokes a second), the flame's length (m), the light's reach and strength.
-    private const float Strokes = 2.2f, FlameLength = .13f, LightRange = 2.2f, LightIntensity = 1.6f, HissVolume = .3f;
+    // The flame's length (m), the light's reach and strength, the hiss's and the knock's loudness and how far it carries (m).
+    private const float FlameLength = .13f, LightRange = 2.2f, LightIntensity = 1.6f, HissVolume = .3f, KnockVolume = .75f,
+        KnockNear = 1.5f, KnockFar = 25f;
+    // Where the hammer's head is on its model (its handle along +y, its face toward +z).
+    private static readonly Vector3 HammerHead = new Vector3(0f, .15f, .015f);
     private static readonly Color Wood = new Color(.45f, .3f, .18f), Steel = new Color(.62f, .64f, .68f), Can = new Color(.8f, .14f, .1f),
         Brass = new Color(.78f, .62f, .25f), Flame = new Color(.45f, .7f, 1f);
     private static Material wood, steel, can, brass;
-    private static AudioClip hissClip;
+    private static AudioClip hissClip, knockClip;
 
     private PlayerMovement who;
     private Tool tool, built;
@@ -28,6 +34,7 @@ public sealed class RepairLooks : MonoBehaviour
     private LineRenderer flame;
     private Light glow;
     private AudioSource hiss;
+    private RepairArm arm;
     private float age;
 
     /// <summary>This Support holds <paramref name="tool"/> now (None: puts it away).</summary>
@@ -50,7 +57,27 @@ public sealed class RepairLooks : MonoBehaviour
         if (tool != built) Build();
         if (tool == Tool.None) { enabled = false; return; }
         age += Time.deltaTime;
-        Place();
+        // The left arm takes the tool up and plays its stroke (RepairArm); it lets go once this stops asking.
+        if (arm == null)
+        {
+            arm = RepairArm.Of(who);
+            if (arm != null) arm.Struck += Knock;
+        }
+        if (arm == null) return;
+        arm.Drive(tool);
+        if (prop != null && prop.parent != arm.Holder) arm.Wear(prop);
+    }
+
+    // After the arm has put the hand where it is this frame: the flame from the nozzle as it now is.
+    private void LateUpdate()
+    {
+        if (flame == null || tip == null) return;
+        float flicker = .85f + .15f * Mathf.PerlinNoise(age * 23f, 0f);
+        flame.SetPosition(0, tip.position);
+        flame.SetPosition(1, tip.position + tip.forward * FlameLength * flicker);
+        flame.startColor = KitStyle.With(Color.white, .95f);
+        flame.endColor = KitStyle.With(Flame, .5f);
+        glow.intensity = LightIntensity * flicker;
     }
 
     private void OnDisable()
@@ -60,7 +87,15 @@ public sealed class RepairLooks : MonoBehaviour
 
     private void OnDestroy()
     {
+        if (arm != null) arm.Struck -= Knock;
         if (prop != null) Destroy(prop.gameObject);
+    }
+
+    // The hammer met the planks (the stroke's strike, RepairArm): a knock there, as the others hear it too.
+    private void Knock()
+    {
+        if (tool != Tool.Hammer || prop == null) return;
+        GameAudio.PlayAt(KnockClip(), prop.TransformPoint(HammerHead), AudioChannel.Combat, KnockVolume, KnockNear, KnockFar);
     }
 
     // The tool's parts (or the model at Resources/ClassProps/<tool>), made when it changes.
@@ -124,7 +159,9 @@ public sealed class RepairLooks : MonoBehaviour
             renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             renderer.receiveShadows = false;
         }
-        if (who == null || !who.IsLocal) prop.localScale = Vector3.one * 1.4f;
+        // Into the palm on the next Update (RepairArm.Wear); a body without a humanoid arm shows none rather than one in the air.
+        if (arm != null) arm.Wear(prop);
+        else prop.gameObject.SetActive(RepairArm.Of(who) != null);
     }
 
     private void Part(string name, PrimitiveType shape, Vector3 at, Vector3 size, Material material, Quaternion? turn = null)
@@ -151,50 +188,6 @@ public sealed class RepairLooks : MonoBehaviour
         return made;
     }
 
-    // From inside: low in view, the hammer rising and falling, the torch held to the work. From outside: at the right hand.
-    private void Place()
-    {
-        if (prop == null || who == null) return;
-        float stroke = tool == Tool.Hammer ? Mathf.Abs(Mathf.Sin(age * Mathf.PI * Strokes)) : 0f;
-        if (who.IsLocal)
-        {
-            var eye = Camera.main;
-            if (eye == null) return;
-            if (prop.parent != eye.transform) prop.SetParent(eye.transform, false);
-            prop.localPosition = tool == Tool.Hammer ? new Vector3(.17f, -.25f, .42f) : new Vector3(.13f, -.24f, .36f);
-            prop.localRotation = tool == Tool.Hammer ? Quaternion.Euler(-20f + 75f * stroke, -15f, 8f) : Quaternion.Euler(-35f, -10f, 0f);
-        }
-        else
-        {
-            if (prop.parent != transform) prop.SetParent(transform, false);
-            var hand = Hand(who);
-            prop.position = (hand != null ? hand.position : who.transform.position + Vector3.up * 1.1f + who.transform.right * .25f)
-                + who.transform.forward * .05f;
-            prop.rotation = Quaternion.LookRotation(who.transform.forward) * Quaternion.Euler(tool == Tool.Hammer ? -20f + 75f * stroke : -35f, 0f, 0f);
-        }
-        if (flame != null)
-        {
-            float flicker = .85f + .15f * Mathf.PerlinNoise(age * 23f, 0f);
-            flame.SetPosition(0, tip.position);
-            flame.SetPosition(1, tip.position + tip.forward * FlameLength * flicker);
-            flame.startColor = KitStyle.With(Color.white, .95f);
-            flame.endColor = KitStyle.With(Flame, .5f);
-            glow.intensity = LightIntensity * flicker;
-        }
-    }
-
-    // The Support's body's right hand (a humanoid's), or null.
-    private static Transform Hand(PlayerMovement who)
-    {
-        foreach (var animator in who.GetComponentsInChildren<Animator>())
-            if (animator != null && animator.isHuman && animator.avatar != null)
-            {
-                var hand = animator.GetBoneTransform(HumanBodyBones.RightHand);
-                if (hand != null) return hand;
-            }
-        return null;
-    }
-
     // The torch's hiss, made once: soft noise with a slow waver, looped.
     private static AudioClip Hiss()
     {
@@ -215,5 +208,25 @@ public sealed class RepairLooks : MonoBehaviour
         hissClip = AudioClip.Create("Torch Hiss", data.Length, 1, Rate, false);
         hissClip.SetData(data, 0);
         return hissClip;
+    }
+
+    // The hammer's knock, made once: the planks' dull thump, the head's short ring and the strike's click.
+    private static AudioClip KnockClip()
+    {
+        if (knockClip != null) return knockClip;
+        const int Rate = 44100;
+        var data = new float[Rate * 18 / 100];
+        var random = new System.Random(911);
+        for (int i = 0; i < data.Length; i++)
+        {
+            float t = (float)i / Rate;
+            float thump = Mathf.Sin(2f * Mathf.PI * 170f * t) * Mathf.Exp(-t * 38f);
+            float ring = Mathf.Sin(2f * Mathf.PI * 2350f * t) * Mathf.Exp(-t * 60f) * .35f;
+            float click = (float)(random.NextDouble() * 2.0 - 1.0) * Mathf.Exp(-t * 300f) * .6f;
+            data[i] = (thump * .8f + ring + click) * .8f;
+        }
+        knockClip = AudioClip.Create("Hammer Knock", data.Length, 1, Rate, false);
+        knockClip.SetData(data, 0);
+        return knockClip;
     }
 }

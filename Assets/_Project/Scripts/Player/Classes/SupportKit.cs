@@ -39,8 +39,8 @@ public sealed class SupportKit : MonoBehaviour
     // How long a client waits for the host's word on a barricade it asked for before it may ask for another (s), and how
     // long the preview stays red where one was turned down (s).
     private const float AnswerWait = 3f, RefusedShow = .35f;
-    // How often a client's hammer tells the host what it put in (s), and the beat of the hammer's knock (s).
-    private const float MendEvery = .2f, KnockEvery = .45f;
+    // How often a client's hammer tells the host what it put in (s).
+    private const float MendEvery = .2f;
 
     /// <summary>This PC's own player's, while they play a Support.</summary>
     public static SupportKit Local { get; private set; }
@@ -75,9 +75,8 @@ public sealed class SupportKit : MonoBehaviour
     private float heldYaw;
     private readonly List<ushort> taken = new List<ushort>();
     private int worldMask;
-    // A client's mending not yet told the host: how much, on which barricade, and when it may tell next; the hammer's
-    // next knock (or the empty bag's refusal).
-    private float mendOwed, nextMendSend, nextKnock;
+    // A client's mending not yet told the host: how much, on which barricade, and when it may tell next.
+    private float mendOwed, nextMendSend;
     private ushort mendId;
     // The welding torch's fuel (-1: full at the next look), and the tool shown in hand.
     private float torchFuel = -1f;
@@ -594,12 +593,8 @@ public sealed class SupportKit : MonoBehaviour
         if (amount <= 0f) return;
         // Keeping the team's wall up is the Support's fight too: it fills the gauge (UltimateCharge.AwardHelp).
         UltimateCharge.AwardHelp(UltimateCharge.Help.Repaired, amount);
-        // The hammer knocks in time with its strokes (the torch hisses by itself: RepairLooks).
-        if (!torch && Time.time >= nextKnock)
-        {
-            nextKnock = Time.time + KnockEvery;
-            KitSound.Play(KitSound.Cue.Hammer, .7f);
-        }
+        // The hammer knocks where its head meets the planks, at its stroke's strike on every PC (RepairLooks, RepairArm); the
+        // torch hisses by itself.
         if (Barricade.Authority)
         {
             Barricade.Mend(barricade.Id, amount);
