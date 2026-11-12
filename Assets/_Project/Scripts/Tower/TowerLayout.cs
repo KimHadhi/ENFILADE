@@ -9,7 +9,9 @@ using UnityEngine;
 /// fight next door. Every fourth level is a hall across all four lanes, the lobby at the bottom and a rest hall above
 /// every third floor, where everyone meets again: four scanners at its east wall open the lanes of the next stretch.
 /// Levels: 0 lobby; 1-3 floors 1-3; 4 hall; 5-7 floors 4-6; 8 hall; 9-11 floors 7-9; 12 hall; 13 floor 10, the last.
-/// A room is x 0..16 between its end walls. The stairs climbing from a level stand beyond one end wall in a 10 m zone:
+/// A room is x 0..36 between its end walls, four times as long as it is wide: at 16 m the user found the floors cramped
+/// (2026-11-12, "너무 좁아. 좀 길쭉했으면 좋겠어 층마다"), and a long room is what the tower's name says, fire down its length.
+/// The stairs climbing from a level stand beyond one end wall in a 10 m zone:
 /// east from even levels, west from odd ones, so the rooms are walked alternately east-west and west-east. A stairwell
 /// is two flights: the first leaves its level through the end wall on the lane's start half (the lower z half) and climbs
 /// away from the room to a landing, the second comes back on the end half and arrives at the next level's end wall. So a
@@ -22,13 +24,17 @@ public static class TowerLayout
     /// <summary>A lane's inside width, wall thickness, level height and slab thickness (m).</summary>
     public const float LaneWidth = 9f, Wall = .4f, Height = 6f, Slab = .4f;
     /// <summary>A room's length between its end walls, and a stair zone's length beyond one (m).</summary>
-    public const float RoomLength = 16f, StairLength = 10f;
+    public const float RoomLength = 36f, StairLength = 10f;
     /// <summary>A door's opening (m).</summary>
     public const float DoorWidth = 2.4f, DoorHeight = 3f;
     /// <summary>How far a flight runs along x for its half level of rise (m); the landing takes the rest of the zone.</summary>
     public const float FlightRun = 6.5f;
     /// <summary>The glass in a shared long wall: along x, and its sill and top over the floor (m).</summary>
-    public const float WindowFrom = 2.5f, WindowTo = 13.5f, SillHeight = .9f, WindowTop = 3.5f;
+    public const float WindowFrom = 2.5f, WindowTo = RoomLength - 2.5f, SillHeight = .9f, WindowTop = 3.5f;
+    /// <summary>The glass is this many panes with a pillar of this width between two (m): one pane down a 36 m room reads
+    /// as a missing wall, panes read as an observation window.</summary>
+    public const int Panes = 3;
+    public const float PillarWidth = .8f;
 
     /// <summary>Half the inside width of all four lanes and the walls between them (18.6 m).</summary>
     public static float InnerHalf => (Lanes * LaneWidth + (Lanes - 1) * Wall) * .5f;
@@ -146,6 +152,7 @@ public static class TowerLayout
     public static Vector3 ChampionAt(int level, int lane)
         => new Vector3(FarX(level) + (EntersFromEast(level) ? 2.6f : -2.6f), FloorY(level), LaneMid(lane));
 
-    /// <summary>A rest hall's shop counter: the stand in front of it.</summary>
-    public static Vector3 ShopAt(int segment) => new Vector3(7.5f, FloorY(HallLevel(segment)), -1.6f);
+    /// <summary>A rest hall's shop counter: the stand in front of it, in the hall's middle on the way from the arrivals to
+    /// the scanners.</summary>
+    public static Vector3 ShopAt(int segment) => new Vector3(RoomLength * .5f - .5f, FloorY(HallLevel(segment)), -1.6f);
 }

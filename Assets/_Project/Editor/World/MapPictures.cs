@@ -86,6 +86,10 @@ public static class MapPictures
             eye.fieldOfView = 55f;
             eye.nearClipPlane = .1f;
             eye.farClipPlane = 1500f;
+            // Everything in the frame, whatever the scene's occlusion bake says: from the ENFILADE tower's shot on its
+            // square the bake hid every static thing and the picture was sky with the floor numbers floating in it (11-12).
+            // A picture taken once costs nothing to draw in full.
+            eye.useOcclusionCulling = false;
             // The scene's own sky if it has one, else the menus' night.
             eye.clearFlags = RenderSettings.skybox != null ? CameraClearFlags.Skybox : CameraClearFlags.SolidColor;
             eye.backgroundColor = KitStyle.Night;

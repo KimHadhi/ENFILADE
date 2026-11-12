@@ -7,8 +7,9 @@ using UnityEngine;
 /// Builds the ENFILADE tower's scene (Tools > World > 엔필레이드 타워 짓기) from TowerLayout, with GreyboxBuilder: an old
 /// army training block on a fenced square. Inside, four lanes of killhouse rooms climb side by side, level after level,
 /// their shared walls glazed with armoured glass so each lane watches the next one's fight; between every three floors a
-/// hall across all four lanes. Each room has holding pens at its far end, where its zombies come out (TowerRun), a little
-/// cover and its floor number on the far wall. Each hall has its lanes' doors with a palm scanner beside each and a sign
+/// hall across all four lanes. Each room is a long one (TowerLayout.RoomLength) with holding pens at its far end, where its
+/// zombies come out (TowerRun), rows of cover down its length and its floor number on the far wall, lit by downlights that
+/// shine nothing up through the slab onto the level above. Each hall has its lanes' doors with a palm scanner beside each and a sign
 /// over it, a shop counter, supplies and somewhere to sit. Doors are steel panels that slide into the wall (TowerDoor),
 /// with a lamp over each. The look is the HUD's: dark slate, white light panels, pink neon (Art/Materials/Tower).
 /// Rebuilding wipes hand edits, so the layout lives here and in TowerLayout.
@@ -52,7 +53,9 @@ public static class TowerMap
         Square(b);
         Run(b);
         b.PlayerStart(TowerLayout.StartSpot, 90f);
-        b.Shot(new Vector3(-66f, 16f, -40f), new Vector3(8f, 36f, 0f));
+        // From the square's south-west, low, looking up at the tower's west face (its name, the way in) and along its
+        // south face. The second point is where the camera looks, not its angles.
+        b.Shot(new Vector3(-60f, 8f, -52f), new Vector3(12f, 32f, 0f));
         b.Finish("엔필레이드 타워를 지었어요(Scenes/Campaign/" + TowerRun.SceneName + ".unity).\n" +
                  "레인 4개 × 10층, 휴게층 3곳과 1층 로비, 문 " + doors + "개, 스캐너 " + TowerLayout.Segments * TowerLayout.Lanes + "개.\n" +
                  "허브의 지도 탁자나 메인 메뉴에서 '엔필레이드 타워'를 고르면 돼요. 오늘의 방 구성은 Tables/TowerFloors, 진행 수치는 Tables/Tower.");
@@ -217,40 +220,51 @@ public static class TowerMap
 
     // ---- Rooms ----
 
+    // Lights down a room's or a hall's length per lane, and rows of cover down a room's.
+    private const int RoomLights = 3, CoverRows = 3;
+
     // A fight level: for every lane its glass to the next lane, its lights, its holding pens, some cover and its number.
     private static void Room(GreyboxBuilder b, int level)
     {
-        float y = TowerLayout.FloorY(level), ceiling = TowerLayout.CeilingY(level);
+        float ceiling = TowerLayout.CeilingY(level), length = TowerLayout.RoomLength;
         int number = TowerLayout.FloorOf(level);
         for (int k = 0; k < TowerLayout.Lanes; k++)
         {
             float mid = TowerLayout.LaneMid(k);
             if (k < TowerLayout.Lanes - 1) GlassWall(b, level, k);
             foreach (float z in new[] { mid - 2.2f, mid + 2.2f })
-                b.Box("천장 등", 3f, 13f, ceiling - .06f, ceiling, z - .15f, z + .15f, panel, solid: false);
-            Light("방 등 " + Floor(level) + " " + TowerHUD.Letter(k), new Vector3(8f, ceiling - .7f, mid), 11f, 1.5f);
+                b.Box("천장 등", 3f, length - 3f, ceiling - .06f, ceiling, z - .15f, z + .15f, panel, solid: false);
+            for (int i = 0; i < RoomLights; i++)
+                Downlight("방 등 " + Floor(level) + " " + TowerHUD.Letter(k), new Vector3(length * (i + .5f) / RoomLights, ceiling - .5f, mid), 11f, 2.4f);
             Pens(b, level, k);
             Cover(b, level, k);
             FloorMark(level, k, number);
         }
     }
 
-    // The long wall a room shares with the next lane's: solid at its ends, over and under armoured glass in its middle,
-    // with a dark sill and a pink strip along the glass's top.
+    // The long wall a room shares with the next lane's: solid at its ends, over and under armoured glass along its
+    // middle, the glass in panes between pillars, with a dark frame round each pane and a pink strip along the top.
     private static void GlassWall(GreyboxBuilder b, int level, int k)
     {
         float z0 = TowerLayout.LaneMax(k), z1 = TowerLayout.LaneMin(k + 1), zc = (z0 + z1) * .5f;
         float y = TowerLayout.FloorY(level), ceiling = TowerLayout.CeilingY(level);
         float from = TowerLayout.WindowFrom, to = TowerLayout.WindowTo, sill = y + TowerLayout.SillHeight, top = y + TowerLayout.WindowTop;
+        const float Pillar = TowerLayout.PillarWidth;
         string name = Floor(level) + " " + TowerHUD.Letter(k) + "|" + TowerHUD.Letter(k + 1);
         b.Box("레인 벽 " + name, 0f, from, y, ceiling, z0, z1, wall);
         b.Box("레인 벽 " + name, to, TowerLayout.RoomLength, y, ceiling, z0, z1, wall);
         b.Box("레인 벽 아래 " + name, from, to, y, sill, z0, z1, wall);
         b.Box("레인 벽 위 " + name, from, to, top, ceiling, z0, z1, wall);
-        b.SeeThrough(b.Box("방탄 유리 " + name, from, to, sill, top, zc - .04f, zc + .04f, glass, "ArmorGlass"));
+        float pane = (to - from - (TowerLayout.Panes - 1) * Pillar) / TowerLayout.Panes;
+        for (int i = 0; i < TowerLayout.Panes; i++)
+        {
+            float p0 = from + i * (pane + Pillar), p1 = p0 + pane;
+            if (i > 0) b.Box("유리 기둥 " + name, p0 - Pillar, p0, sill, top, z0, z1, wall);
+            b.SeeThrough(b.Box("방탄 유리 " + name, p0, p1, sill, top, zc - .04f, zc + .04f, glass, "ArmorGlass"));
+            b.Box("유리 틀", p0 - .08f, p0, sill, top, z0 - .05f, z1 + .05f, trim, solid: false);
+            b.Box("유리 틀", p1, p1 + .08f, sill, top, z0 - .05f, z1 + .05f, trim, solid: false);
+        }
         b.Box("유리 틀", from - .08f, to + .08f, sill - .06f, sill, z0 - .05f, z1 + .05f, trim, solid: false);
-        b.Box("유리 틀", from - .08f, from, sill, top, z0 - .05f, z1 + .05f, trim, solid: false);
-        b.Box("유리 틀", to, to + .08f, sill, top, z0 - .05f, z1 + .05f, trim, solid: false);
         b.Box("유리 네온", from - .08f, to + .08f, top, top + .07f, z0 - .05f, z1 + .05f, neon, solid: false);
     }
 
@@ -270,40 +284,54 @@ public static class TowerMap
         }
     }
 
-    // A little cover in the room's middle, one of four layouts by the room, out of the way of the doors, the pens and
-    // the glass.
+    // Cover down the room: a row at each quarter of its length, each row one of four layouts and leaning to one side of
+    // the lane's middle, the side alternating row by row, so the long room is crossed from cover to cover. Out of the way
+    // of the doors (in the end walls), the pens and the champion's spot (within 5 m of the far wall) and the glass (kept
+    // 2 m off the long walls).
     private static void Cover(GreyboxBuilder b, int level, int k)
     {
         float y = TowerLayout.FloorY(level), mid = TowerLayout.LaneMid(k);
-        switch ((level * 3 + k) % 4)
+        for (int row = 0; row < CoverRows; row++)
         {
-            case 0:
-                b.Dress(b.Box("엄폐 방벽", 5f, 8.2f, y, y + .85f, mid - 2.5f, mid - 1.9f, wall), "jersey");
-                b.Dress(b.Box("엄폐 방벽", 8.6f, 11.8f, y, y + .85f, mid + 1.9f, mid + 2.5f, wall), "jersey");
-                break;
-            case 1:
-                b.PropSolid("woodcrate", new Vector3(6.5f, y, mid - 1.8f), 10f);
-                b.PropSolid("woodcrate", new Vector3(10f, y, mid + 2.1f), -15f);
-                b.PropSolid("woodcrate", new Vector3(10.9f, y, mid + 1.4f), 30f);
-                break;
-            case 2:
-                b.Dress(b.Box("엄폐 블록", 7.2f, 8.8f, y, y + 1.1f, mid - .8f, mid + .8f, wall), "concreteblock");
-                break;
-            default:
-                b.Dress(b.Box("엄폐 헤스코", 5.6f, 6.6f, y, y + 1.4f, mid + 1.5f, mid + 2.5f, wall), "hesco");
-                b.Dress(b.Box("엄폐 헤스코", 9.6f, 10.6f, y, y + 1.4f, mid - 2.5f, mid - 1.5f, wall), "hesco");
-                break;
+            float x = TowerLayout.RoomLength * (row + 1) / (CoverRows + 1), side = (level + k + row) % 2 == 0 ? 1f : -1f;
+            switch ((level * 3 + k + row) % 4)
+            {
+                case 0:
+                    b.Dress(Across(b, "엄폐 방벽", x - 3.4f, x - .2f, y, y + .85f, mid, side, 1.9f, 2.5f), "jersey");
+                    b.Dress(Across(b, "엄폐 방벽", x + .2f, x + 3.4f, y, y + .85f, mid, -side, 1.9f, 2.5f), "jersey");
+                    break;
+                case 1:
+                    b.PropSolid("woodcrate", new Vector3(x - 2f, y, mid + side * 1.8f), 10f);
+                    b.PropSolid("woodcrate", new Vector3(x + 1.5f, y, mid - side * 2.1f), -15f);
+                    b.PropSolid("woodcrate", new Vector3(x + 2.4f, y, mid - side * 1.4f), 30f);
+                    break;
+                case 2:
+                    b.Dress(Across(b, "엄폐 블록", x - .8f, x + .8f, y, y + 1.1f, mid, side, -.4f, 1.2f), "concreteblock");
+                    break;
+                default:
+                    b.Dress(Across(b, "엄폐 헤스코", x - 2.5f, x - 1.5f, y, y + 1.4f, mid, side, 1.5f, 2.5f), "hesco");
+                    b.Dress(Across(b, "엄폐 헤스코", x + 1.5f, x + 2.5f, y, y + 1.4f, mid, -side, 1.5f, 2.5f), "hesco");
+                    break;
+            }
         }
     }
 
-    // The floor's number large on the far wall, read from the way in.
+    // A cover box from x0 to x1 and y0 to y1, across from near to far metres off the lane's middle on one side of it
+    // (side +1 toward higher z, -1 toward lower; a negative near crosses the middle).
+    private static GameObject Across(GreyboxBuilder b, string name, float x0, float x1, float y0, float y1, float mid, float side, float near, float far)
+    {
+        float a = mid + side * near, c = mid + side * far;
+        return b.Box(name, x0, x1, y0, y1, Mathf.Min(a, c), Mathf.Max(a, c), wall);
+    }
+
+    // The floor's number large on the far wall, read from the way in, big enough to read from the far end of the room.
     private static void FloorMark(int level, int k, int number)
     {
         bool fromEast = TowerLayout.EntersFromEast(level);
         float wallX = fromEast ? 0f : TowerLayout.RoomLength, inward = fromEast ? 1f : -1f;
         var place = new Vector3(wallX + inward * .06f, TowerLayout.FloorY(level) + 3.9f, TowerLayout.LaneMid(k));
         Words3D("층 표시 " + number + "F " + TowerHUD.Letter(k), place, fromEast ? Vector3.left : Vector3.right,
-            "<b>" + number + "</b><size=45%>F</size>", 13f, Pink, new Vector2(4f, 2f));
+            "<b>" + number + "</b><size=45%>F</size>", 20f, Pink, new Vector2(6f, 3f));
     }
 
     // ---- Halls ----
@@ -312,15 +340,14 @@ public static class TowerMap
     private static void Hall(GreyboxBuilder b, int level)
     {
         int segment = level / 4;
-        float y = TowerLayout.FloorY(level), ceiling = TowerLayout.CeilingY(level), inner = TowerLayout.InnerHalf;
-        for (int i = 0; i < 4; i++)
+        float y = TowerLayout.FloorY(level), ceiling = TowerLayout.CeilingY(level), inner = TowerLayout.InnerHalf, length = TowerLayout.RoomLength;
+        for (int k = 0; k < TowerLayout.Lanes; k++)
         {
-            float z = -13.5f + i * 9f;
-            b.Box("홀 천장 등", 2f, 14f, ceiling - .06f, ceiling, z - .2f, z + .2f, panel, solid: false);
+            float z = TowerLayout.LaneMid(k);
+            b.Box("홀 천장 등", 2f, length - 2f, ceiling - .06f, ceiling, z - .2f, z + .2f, panel, solid: false);
+            for (int i = 0; i < RoomLights; i++)
+                Downlight("홀 등 " + Floor(level), new Vector3(length * (i + .5f) / RoomLights, ceiling - .5f, z), 12f, 2.2f);
         }
-        foreach (float x in new[] { 4f, 12f })
-            foreach (float z in new[] { -10f, 10f })
-                Light("홀 등 " + Floor(level), new Vector3(x, ceiling - .7f, z), 13f, 1.6f);
         // The way on: a pink band along the east wall over the doors, and a scanner, a sign and a spot to stand by each.
         b.Box("홀 네온", TowerLayout.RoomLength - .04f, TowerLayout.RoomLength, y + 4.9f, y + 5f, -inner, inner, neon, solid: false);
         for (int k = 0; k < TowerLayout.Lanes; k++)
@@ -338,20 +365,25 @@ public static class TowerMap
         b.Dress(b.Box("상점 카운터", shop.x + .7f, shop.x + 1.7f, y, y + 1.05f, shop.z - 1.6f, shop.z + 1.6f, trim), "shopcounter");
         b.Box("상점 네온", shop.x + 1.1f, shop.x + 1.3f, y + 2.7f, y + 3f, shop.z - 1.8f, shop.z + 1.8f, neon, solid: false);
         b.Prop("vending", new Vector3(shop.x + 1.4f, y, shop.z + 3f), 270f);
-        // Supplies by the walls, and somewhere to sit out of everyone's way.
+        // Supplies by the walls where people arrive, and somewhere to sit out of everyone's way: a corner by the arrivals
+        // and another past the shop.
         b.Pickup(new Vector3(2.4f, y, 13.5f));
         if (segment > 0) b.Pickup(new Vector3(2.4f, y, -13.5f));
         b.Dress(b.Box("소파", 5f, 7.4f, y, y + .85f, inner - 1f, inner, wall), "couch");
         b.Dress(b.Box("소파", 9f, 11.4f, y, y + .85f, -inner, -inner + 1f, wall), "couch");
-        b.Prop("plant", new Vector3(1f, y, 17.6f));
-        b.Prop("plant", new Vector3(15f, y, -17.6f));
-        b.Prop("locker", new Vector3(12.5f, y, 18.2f), 180f);
-        b.Prop("locker", new Vector3(13.2f, y, 18.2f), 180f);
+        b.Dress(b.Box("소파", length * .62f, length * .62f + 2.4f, y, y + .85f, inner - 1f, inner, wall), "couch");
+        b.Dress(b.Box("소파", length * .68f, length * .68f + 2.4f, y, y + .85f, -inner, -inner + 1f, wall), "couch");
+        b.Prop("plant", new Vector3(1f, y, inner - 1f));
+        b.Prop("plant", new Vector3(length - 1f, y, -inner + 1f));
+        b.Prop("plant", new Vector3(length * .5f, y, inner - .8f));
+        b.Prop("plant", new Vector3(length * .5f, y, -inner + .8f));
+        b.Prop("locker", new Vector3(length - 3.5f, y, inner - .4f), 180f);
+        b.Prop("locker", new Vector3(length - 2.8f, y, inner - .4f), 180f);
         b.Ambience("Tower.Hall", 0f, TowerLayout.RoomLength, y, ceiling, -inner, inner, 2);
         if (segment == 0) Lobby(b);
-        // The hall's name over its arrivals, read from its middle.
+        // The hall's name over its arrivals, read from its middle (18 m off: larger than at 16 m).
         string label = segment == 0 ? "LOBBY" : "REST · " + TowerLayout.FloorOf(level - 1) + "F";
-        Words3D("홀 이름 " + label, new Vector3(.2f, y + 4.2f, 0f), Vector3.left, "<b>" + label + "</b>", 6f, Color.white, new Vector2(12f, 1.2f));
+        Words3D("홀 이름 " + label, new Vector3(.2f, y + 4.2f, 0f), Vector3.left, "<b>" + label + "</b>", 9f, Color.white, new Vector2(16f, 1.8f));
     }
 
     // The lobby's entrance hall: a desk, benches and the tower's name over the way in.
@@ -361,7 +393,7 @@ public static class TowerMap
         b.Dress(b.Box("의자 줄", -9.6f, -5f, 0f, .9f, -17.8f, -17f, wall), "seats");
         b.Dress(b.Box("의자 줄", -9.6f, -5f, 0f, .9f, 17f, 17.8f, wall), "seats");
         b.Box("로비 천장 등", -9f, -1.5f, H - S - .06f, H - S, -.3f, .3f, panel, solid: false);
-        Light("로비 등", new Vector3(-5.5f, H - S - .8f, 0f), 12f, 1.4f);
+        Downlight("로비 등", new Vector3(-5.5f, H - S - .5f, 0f), 12f, 2.2f);
         Words3D("로비 이름", new Vector3(-.3f, 4.1f, 0f), Vector3.right, "<b>ENFILADE</b>  TOWER", 7f, Pink, new Vector2(14f, 1.4f));
     }
 
@@ -412,14 +444,16 @@ public static class TowerMap
     private static void Square(GreyboxBuilder b)
     {
         float x0 = TowerLayout.WestEnd - W, x1 = TowerLayout.EastEnd + W, outer = TowerLayout.OuterHalf, top = TowerLayout.FloorY(TowerLayout.Levels);
+        // The map's east edge keeps a strip of ground behind the tower however long it is.
+        float east = x1 + 14f;
         b.Box("땅 서", -80f, x0, -.5f, 0f, -60f, 60f, b.Road, "Asphalt");
-        b.Box("땅 동", x1, 60f, -.5f, 0f, -60f, 60f, b.Road, "Asphalt");
+        b.Box("땅 동", x1, east, -.5f, 0f, -60f, 60f, b.Road, "Asphalt");
         b.Box("땅 남", x0, x1, -.5f, 0f, -60f, -outer, b.Road, "Asphalt");
         b.Box("땅 북", x0, x1, -.5f, 0f, outer, 60f, b.Road, "Asphalt");
         b.Box("맵 끝 서", -81f, -80f, 0f, 5f, -60f, 60f);
-        b.Box("맵 끝 동", 60f, 61f, 0f, 5f, -60f, 60f);
-        b.Box("맵 끝 남", -80f, 60f, 0f, 5f, -61f, -60f);
-        b.Box("맵 끝 북", -80f, 60f, 0f, 5f, 60f, 61f);
+        b.Box("맵 끝 동", east, east + 1f, 0f, 5f, -60f, 60f);
+        b.Box("맵 끝 남", -80f, east, 0f, 5f, -61f, -60f);
+        b.Box("맵 끝 북", -80f, east, 0f, 5f, 60f, 61f);
         // Neon up the four corners and round the halls' levels.
         foreach (float x in new[] { x0 - .06f, x1 + .06f })
             foreach (float z in new[] { -outer - .06f, outer + .06f })
@@ -464,7 +498,7 @@ public static class TowerMap
     private static string Floor(int level) => TowerLayout.IsHall(level) ? (level == 0 ? "로비" : "휴게층" + level / 4) : TowerLayout.FloorOf(level) + "층";
 
     // A point light with no shadows, in the tower's cool white.
-    private static void Light(string name, Vector3 at, float range, float intensity)
+    private static Light Light(string name, Vector3 at, float range, float intensity)
     {
         var light = new GameObject(name, typeof(Light)).GetComponent<Light>();
         light.transform.SetParent(lights, false);
@@ -474,6 +508,19 @@ public static class TowerMap
         light.intensity = intensity;
         light.color = Cool;
         light.shadows = LightShadows.None;
+        return light;
+    }
+
+    // A wide spot under a ceiling shining down, with no shadows. Not a point light: without shadows a point light shines
+    // through the slab over it onto the walls of the level above, and the long floors need three times the lights; a cone
+    // pointing down lights nothing above its own height.
+    private static void Downlight(string name, Vector3 at, float range, float intensity)
+    {
+        var light = Light(name, at, range, intensity);
+        light.type = LightType.Spot;
+        light.spotAngle = 150f;
+        light.innerSpotAngle = 100f;
+        light.transform.rotation = Quaternion.LookRotation(Vector3.down, Vector3.forward);
     }
 
     // A cube outside the terrain (no walk mesh, not static): a fixture's part.
