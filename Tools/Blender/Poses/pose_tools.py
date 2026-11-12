@@ -254,10 +254,11 @@ def withhold(action):
     return removed
 
 
-def send_changed(context):
-    """Every pose that changed since it was last sent (or never was) to the game; the pose shown stays shown."""
+def send_changed(context, force=False):
+    """Every pose that changed since it was last sent (or never was) to the game; the pose shown stays shown. None with
+    the panel's switch off (force: sends anyway, the 게임에 보내기 button)."""
     scene = context.scene
-    if not scene.enf_pose.auto_send:
+    if not (force or scene.enf_pose.auto_send):
         return None
     arm = rig_object()
     if arm is None:
@@ -424,25 +425,24 @@ class ENFPOSE_OT_key(bpy.types.Operator):
 
 class ENFPOSE_OT_send(bpy.types.Operator):
     bl_idname = "enf_pose.send"
-    bl_label = "지금 게임에 보내기"
-    bl_description = "이 포즈를 Assets/_Project/Resources/Poses/<이름>.fbx로 지금 보내고 작업 파일도 저장한다. Unity로 돌아가면 알아서 다시 읽는다"
+    bl_label = "게임에 보내기"
+    bl_description = ("Ctrl+S와 같다: 바뀐 포즈를 모두 Assets/_Project/Resources/Poses/<이름>.fbx로 보내고 작업 파일을 저장한다"
+                      "(저장하면 보내기를 꺼 두어도 보낸다). Unity로 돌아가면 알아서 다시 읽는다")
     bl_options = {'REGISTER'}
 
     def execute(self, context):
-        arm = rig_object()
-        action = current_action(arm)
-        if action is None or not action.name.startswith(poses.PREFIX):
-            self.report({'ERROR'}, "enf_pose_로 시작하는 포즈를 고르세요.")
+        if rig_object() is None:
+            self.report({'ERROR'}, "마요 뼈대를 못 찾았어요.")
             return {'CANCELLED'}
-        try:
-            path = send(context, action)
-        except Exception as error:
-            self.report({'ERROR'}, str(error))
-            return {'CANCELLED'}
-        context.scene.frame_set(poses.STRIKE)
+        sent, failed = send_changed(context, force=True) or ([], ["마요 뼈대를 못 찾았어요"])
+        oc.send_report(context.scene, sent, failed)
         if bpy.data.filepath:
             bpy.ops.wm.save_mainfile()
-        self.report({'INFO'}, f"보냈어요: {os.path.relpath(path, ROOT)}. Unity로 돌아가면 다시 읽어요.")
+        if failed:
+            self.report({'ERROR'}, "못 보냈어요: " + "; ".join(failed))
+            return {'CANCELLED'}
+        self.report({'INFO'}, ("보냈어요: " + ", ".join(sent) + ". Unity로 돌아가면 다시 읽어요.") if sent
+                    else "바뀐 포즈가 없어 저장만 했어요.")
         return {'FINISHED'}
 
 

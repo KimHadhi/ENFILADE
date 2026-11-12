@@ -58,7 +58,7 @@ In a scratch copy of the project (the tools, the workspace `.blend`, the game fi
 | Opening, then an unchanged save: nothing sent, the game files keep their bytes | pass (5 moves made editable) | pass (5 made editable, the knife's draw and throw stay layered) | pass (9 cycles withheld: no files made) | pass (5 poses) |
 | Fingerprints the same after a save and reload | pass | pass | pass | pass |
 | Items changed and saved: only their files rewritten; saving again sends nothing | pass (권총 key moved) | pass (톡 던지기 key moved, 나이프 던지기 touch-up keyed) | pass (걷기 · 앞 trunk raised by the 상체 세우기 job) | pass (the V pose's head turned at frame 9) |
-| Switch off: a save sends nothing; 게임에 보내기 sends the changed item and saves | pass | pass | pass | — |
+| Switch off: a save sends nothing; 게임에 보내기 sends the changed item and saves | pass | pass | pass | pass |
 | Every item sent by the new tools against the old tools' export of the same file | CSV byte for byte; kick FBX keys 0.0 apart | CSV byte for byte | FBX keys at most 6.4e-7 apart (8 cycles) | — |
 | An old file's touch-up keyed by hand, made editable (`_bake`) | plays the same (0.0 apart, kick foot 5 cm up) | — | — | — |
 | The hold follows the strike on leaving frame 9 (75 = 9, 42 keeps its breath) | — | — | — | pass |
