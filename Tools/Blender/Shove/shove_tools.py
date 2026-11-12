@@ -1,20 +1,28 @@
 """ENFILADE shove moves workspace, Blender 4.5 LTS.
 
-START_SHOVE_ANIMATION.cmd opens ArtSource/Shove/ENFILADE_Shove_Animation.blend with truefps_tools.py and then this.
-The shove's three moves are drafted and ready to polish. Each is a locked draft layer under an empty touch-up layer
-(Combine), as in the zombie workspace:
-- 총 휘두르기 · 긴 총 (enf_bash_long) and 총 휘두르기 · 권총 (enf_bash_pistol): the empty GUN moves off GUN_hold, which
-  sits where Kazusa's hands hold that gun under the head camera (GunBakes gunFromEyes). The hands follow it here as they
-  do in the game. "게임에 보내기" writes Assets/_Project/Resources/Combat/GunMoves/<name>.csv: the gun's move and turn off
-  its hold in the gun's own frame, in game metres, which FPSBody.Bash plays on any character's gun (GunMoves).
-- 발차기 (enf_kick_front): Kazusa's right leg on the True FPS rig. "게임에 보내기" bakes the original skeleton to
-  Assets/_Project/Art/Animations/Shove/enf_kick_front.fbx (+ .clips.csv); Unity takes it with her avatar
-  (ModelImportRules) into the body's clips, and the kick plays it on the legs (Player.csv Body.kick).
-- 수리 · 망치 (enf_repair_hammer) and 수리 · 토치 (enf_repair_torch): the Support's mending loops on Kazusa's free left
-  arm (CTRL_hand.L, CTRL_elbow.L) while the right hand keeps the gun; the left hand's hold on the gun is let go while one
-  is shown. "게임에 보내기" writes Assets/_Project/Resources/Tables/RepairHammer.csv or RepairTorch.csv: the wrist, the
-  elbow and the hand's way from the eyes in the view's axes, which RepairArm plays on any character's left arm
-  (GrenadeArmPath's columns). repair_moves.py adds them to an older workspace and keys their drafts.
+START_SHOVE_ANIMATION.cmd opens ArtSource/Shove/ENFILADE_Shove_Animation.blend with truefps_tools.py and then this, and
+the file is ready to work in: the user only poses and times (the user, 2026-11-13: "내가 해야 하는 잡일을 최대한 줄여. 나는
+딱 오직 인간만이 할 수 있는 것만 해내면 되게끔"; the shared part is Tools/Blender/OneClick/one_click.py).
+- It opens on the last move worked on: a gun move in Object mode with the gun (GUN) selected, the kick and the mending
+  moves in Pose mode with the foot or the left hand selected; the Dope Sheet showing the move's keys (a row per bone,
+  the draft's key poses as columns), the 밀치기 tab.
+- Each move is one action the user keys into directly (auto-key on); its first draft is kept beside it (<name>_draft) for
+  이 동작을 시안으로 되돌리기. A file built before (each draft locked on the NLA track '1 시안 (잠금)' under an empty
+  touch-up action) is read as its drafts.
+- Saving (Ctrl+S) sends every move that changed since it was last sent to the game (the panel's 지금 게임에 보내기 sends
+  the move shown at once):
+  - 총 휘두르기 · 긴 총 (enf_bash_long) and 총 휘두르기 · 권총 (enf_bash_pistol): the empty GUN moves off GUN_hold, which
+    sits where Kazusa's hands hold that gun under the head camera (GunBakes gunFromEyes). The hands follow it here as they
+    do in the game. Sent as Assets/_Project/Resources/Combat/GunMoves/<name>.csv: the gun's move and turn off its hold in
+    the gun's own frame, in game metres, which FPSBody.Bash plays on any character's gun (GunMoves).
+  - 발차기 (enf_kick_front): Kazusa's right leg on the True FPS rig, baked from the original skeleton to
+    Assets/_Project/Art/Animations/Shove/enf_kick_front.fbx (+ .clips.csv); Unity takes it with her avatar
+    (ModelImportRules) into the body's clips, and the kick plays it on the legs (Player.csv Body.kick).
+  - 수리 · 망치 (enf_repair_hammer) and 수리 · 토치 (enf_repair_torch): the Support's mending loops on Kazusa's free left
+    arm (CTRL_hand.L, CTRL_elbow.L) while the right hand keeps the gun; the left hand's hold on the gun is let go while one
+    is shown. Sent as Assets/_Project/Resources/Tables/RepairHammer.csv or RepairTorch.csv: the wrist, the elbow and the
+    hand's way from the eyes in the view's axes, which RepairArm plays on any character's left arm (GrenadeArmPath's
+    columns). repair_moves.py adds them to an older workspace and keys their drafts.
 Every button keys at the current frame with auto-key on, holding the pose some frames either side, so a click is one
 local change. Nothing here changes Blender's preferences.
 """
@@ -25,15 +33,18 @@ import sys
 from pathlib import Path
 
 import bpy
-from bpy.props import EnumProperty, FloatProperty, IntProperty
+from bpy.props import BoolProperty, EnumProperty, FloatProperty, IntProperty
 from mathutils import Matrix, Quaternion, Vector
 
-bl_info = {'name': 'ENFILADE Shove Moves', 'author': 'ENFILADE', 'version': (1, 0, 0), 'blender': (4, 5, 0),
+bl_info = {'name': 'ENFILADE Shove Moves', 'author': 'ENFILADE', 'version': (2, 0, 0), 'blender': (4, 5, 0),
            'location': '3D View > Sidebar > 밀치기', 'category': 'Animation'}
 
 TRUEFPS = Path('Tools/Blender/TrueFPS/truefps_tools.py')
+ONE_CLICK = Path('Tools/Blender/OneClick/one_click.py')
+TAB = '밀치기'
 # Kazusa in the game is this many times her size in this file (eyes 1.37 here, 1.6 m in game: PlayerBody's fit).
 GAME_SCALE = 1.166
+# Where older files (and repair_moves.py's drafting) kept a draft locked under the touch-up layer.
 BASE_TRACK = '1 시안 (잠금)'
 GUN, GUN_HOLD = 'GUN', 'GUN_hold'
 GUN_MOVES_DIR = Path('Assets/_Project/Resources/Combat/GunMoves')
@@ -41,10 +52,11 @@ KICK_DIR = Path('Assets/_Project/Art/Animations/Shove')
 PLAYER_TABLE = Path('Assets/_Project/Resources/Tables/Player.csv')
 # Seconds per sample in a gun move file: two per frame at 30 fps, so the game's curve follows the polish closely.
 SAMPLES_PER_FRAME = 2
+STRIKE = '타격'
 
-# The moves: what moves (the gun or the body), the touch-up action that is exported, the gun shown, the frame the
-# strike lands on and the last frame. Where the hands hold each gun, from the eyes in this file's units: GunBakes
-# gunFromEyes / GAME_SCALE, the eyes' frame turned into the camera's (x right, y up, z back).
+# The moves: what moves (the gun or the body), the action that is exported, the gun shown, the frame the strike lands
+# on and the last frame, and the part selected when the move is opened. Where the hands hold each gun, from the eyes in
+# this file's units: GunBakes gunFromEyes / GAME_SCALE, the eyes' frame turned into the camera's (x right, y up, z back).
 # hit: when the game itself hits, which the strike should meet; the animation never moves it. A shove with a gun hits
 # from the press until Player.csv Ability.shoveActiveTime ('by'); the kick's foot lands at Shove.kickHitTime ('at').
 MOVES = {
@@ -52,17 +64,18 @@ MOVES = {
                       hold=(0.0620, -0.0748, -0.2599), hit=('Ability.shoveActiveTime', .2, 'by')),
     'bash_pistol': dict(label='총 휘두르기 · 권총', kind='gun', action='enf_bash_pistol', gun='GUN_R08', impact=3, end=13,
                         hold=(0.0668, -0.0659, -0.2415), hit=('Ability.shoveActiveTime', .2, 'by')),
-    'kick': dict(label='발차기', kind='body', action='enf_kick_front', impact=10, end=20, hit=('Shove.kickHitTime', .3, 'at')),
+    'kick': dict(label='발차기', kind='body', action='enf_kick_front', impact=10, end=20, hit=('Shove.kickHitTime', .3, 'at'),
+                 part='CTRL_foot.R'),
     # The Support's mending in the free left hand while the gun stays in the right (the user, 2026-11-12: "남는 손으로
     # 망치 손으로 두들기는 거"): a loop each, played while F is held on a barricade (RepairArm), the left arm and hand only.
     # 타격 is where the hammer meets the planks: the knock sounds there, on every PC. The torch strikes nothing (0).
     # curl/thumb: how far the fingers and the thumb close round the tool (degrees), written into every key.
     'repair_hammer': dict(label='수리 · 망치', kind='arm', action='enf_repair_hammer', table='RepairHammer', tool='TOOL_Hammer',
-                          impact=6, end=15, curl=88.0, thumb=62.0),
+                          impact=6, end=15, curl=88.0, thumb=62.0, part='CTRL_hand.L'),
     # The torch is the heist pack's gas torch: its canister (7.4 cm across) holds the fingers further open than the hammer's
     # handle does.
     'repair_torch': dict(label='수리 · 토치', kind='arm', action='enf_repair_torch', table='RepairTorch', tool='TOOL_Torch',
-                         impact=0, end=31, curl=70.0, thumb=45.0),
+                         impact=0, end=31, curl=70.0, thumb=45.0, part='CTRL_hand.L'),
 }
 
 # The parts a beginner moves, by their Korean names: the gun, or the kick's IK handles on the rig, or the left arm's.
@@ -84,7 +97,7 @@ ARM_BONES = dict(shoulder='Left arm', elbow='Left elbow', wrist='Left wrist', in
                  little='LittleFinger1_L')
 
 
-# ---- Paths and the True FPS tools ------------------------------------------------------------------------------------
+# ---- Paths and the shared tools ------------------------------------------------------------------------------------
 
 def project_root():
     """The ENFILADE checkout: from this file, else from the open .blend (ArtSource/Shove/...)."""
@@ -102,16 +115,16 @@ def project_root():
     return None
 
 
-def truefps():
-    """truefps_tools as a module (for its baking FBX export), loaded once without writing a __pycache__."""
-    if 'truefps_tools' in sys.modules:
-        return sys.modules['truefps_tools']
+def _module(name, rel):
+    """A project tool module, loaded once and without a __pycache__ beside it (one there is tracked by git)."""
+    if name in sys.modules:
+        return sys.modules[name]
     root = project_root()
     if root is None:
         raise RuntimeError('ENFILADE 프로젝트 안의 ArtSource/Shove에서 파일을 열어 주세요.')
-    spec = importlib.util.spec_from_file_location('truefps_tools', root / TRUEFPS)
+    spec = importlib.util.spec_from_file_location(name, root / rel)
     module = importlib.util.module_from_spec(spec)
-    sys.modules['truefps_tools'] = module
+    sys.modules[name] = module
     writes = sys.dont_write_bytecode
     sys.dont_write_bytecode = True
     try:
@@ -121,8 +134,22 @@ def truefps():
     return module
 
 
+def truefps():
+    """truefps_tools as a module (for its baking FBX export)."""
+    return _module('truefps_tools', TRUEFPS)
+
+
+def one_click():
+    """The shared one-click workspace module: items, fingerprints, sending on save, the screen on open."""
+    return _module('enf_one_click', ONE_CLICK)
+
+
 def find_rig(scene):
     return next((o for o in scene.objects if o.type == 'ARMATURE' and o.get('truefps_rig')), None)
+
+
+def is_shove_file(scene):
+    return find_rig(scene) is not None and GUN in bpy.data.objects and bpy.data.actions.get('enf_bash_long_draft') is not None
 
 
 _game_numbers = {}
@@ -146,72 +173,88 @@ def game_number(row, fallback):
     return _game_numbers[row]
 
 
-# ---- Layers: a locked draft strip under the touch-up action --------------------------------------------------------
+# ---- The move on show -------------------------------------------------------------------------------------------------
 
 def touch_up(name):
-    action = bpy.data.actions.get(name)
-    if action is None:
-        action = bpy.data.actions.new(name)
-    action.use_fake_user = True
-    action['enf_layer'] = 'touch-up'
-    return action
+    """The move's own action, made empty if it has none (the build scripts call this after drafting; showing the move
+    then makes it the editable copy of the draft)."""
+    return one_click().touch_up(name)
 
 
-def set_layers(obj, draft, edit, live=True):
-    """obj plays draft as its locked base and keys into edit on top (Combine); live False mutes both."""
-    data = obj.animation_data or obj.animation_data_create()
-    track = data.nla_tracks.get(BASE_TRACK)
-    if track is None:
-        track = data.nla_tracks.new()
-        track.name = BASE_TRACK
-    track.lock = False
-    while len(track.strips):
-        track.strips.remove(track.strips[0])
-    if draft is not None:
-        strip = track.strips.new(draft.name, int(draft.frame_range[0]), draft)
-        if hasattr(strip, 'action_slot') and strip.action_slot is None and len(getattr(draft, 'slots', [])):
-            strip.action_slot = draft.slots[0]
-        strip.blend_type = 'REPLACE'
-        strip.extrapolation = 'HOLD'
-    track.lock = True
-    track.mute = not live
-    data.action = edit
-    if edit is not None and hasattr(data, 'action_slot') and data.action_slot is None and len(getattr(edit, 'slots', [])):
-        data.action_slot = edit.slots[0]
-    data.action_blend_type = 'COMBINE'
-    data.action_extrapolation = 'HOLD'
-    data.action_influence = 1.0 if live else 0.0
+def current_move(scene):
+    key = scene.get('enf_shove_move', 'bash_long')
+    return key if key in MOVES else 'bash_long'
+
+
+def numbers(scene, key):
+    """A move's strike frame and last frame, as last left on the timeline."""
+    move = MOVES[key]
+    return int(scene.get('enf_impact_' + key, move['impact'])), int(scene.get('enf_end_' + key, move['end']))
+
+
+def remember(scene):
+    """The move shown keeps where its strike marker and last frame are, for when it is picked again and for its
+    fingerprint."""
+    key = scene.get('enf_shove_move')
+    if key not in MOVES:
+        return
+    marker = scene.timeline_markers.get(STRIKE)
+    if marker is not None and scene.get('enf_impact_' + key) != marker.frame:
+        scene['enf_impact_' + key] = marker.frame
+    if scene.get('enf_end_' + key) != scene.frame_end:
+        scene['enf_end_' + key] = scene.frame_end
+
+
+def owner_of(scene, key):
+    return bpy.data.objects.get(GUN) if MOVES[key]['kind'] == 'gun' else find_rig(scene)
+
+
+def item(context, key):
+    """The move's action (made ready from an older file's layers) and the draft locked under it (None: edited directly).
+    A move made ready untouched counts as sent: the builds sent the drafts."""
+    oc = one_click()
+    move = MOVES[key]
+    scene = context.scene
+    action, draft, fresh = oc.item_action(context, owner_of(scene, key), move['action'], numbers(scene, key)[1])
+    if fresh:
+        oc.mark_sent(action, fingerprint(key))
+    return action, draft
+
+
+def fingerprint(key):
+    """What a move is now: its keys and eases, its strike and its last frame."""
+    oc = one_click()
+    move = MOVES[key]
+    action = bpy.data.actions.get(move['action'])
+    draft = bpy.data.actions.get(move['action'] + oc.DRAFT) if action is not None and action.get(oc.LAYER) == 'touch-up' else None
+    return oc.fingerprint([action, draft], extra=[key, *numbers(bpy.context.scene, key)])
 
 
 def select_move(context, key):
-    """Shows one move: its layers live (the other object's muted), its gun, its frames and its strike marker."""
+    """Shows one move: its action on the gun or the rig (the other one still), its gun, its frames and its strike."""
+    oc = one_click()
     move = MOVES[key]
     scene = context.scene
-    # The move left keeps where its strike marker and last frame were put, for when it is picked again.
-    previous = scene.get('enf_shove_move')
-    marker = scene.timeline_markers.get('타격')
-    if previous in MOVES and marker is not None:
-        scene['enf_impact_' + previous] = marker.frame
-        scene['enf_end_' + previous] = scene.frame_end
+    remember(scene)
     rig = find_rig(scene)
     gun = bpy.data.objects.get(GUN)
     hold = bpy.data.objects.get(GUN_HOLD)
     # A handle the last move animated keeps its last value once nothing animates it: back to the start pose first, so
     # the left hand comes back onto the gun after a mending move and the legs down after the kick.
     reset_rig(rig)
+    action, draft = item(context, key)
     if move['kind'] == 'gun':
-        set_layers(gun, bpy.data.actions.get(move['action'] + '_draft'), touch_up(move['action']))
+        oc.play(gun, action, draft)
+        oc.play(rig, None)
         if hold is not None:
             hold.location = move['hold']
-        if rig is not None:
-            set_layers(rig, bpy.data.actions.get(MOVES['kick']['action'] + '_draft'), touch_up(MOVES['kick']['action']), live=False)
     else:
+        oc.play(rig, action, draft)
         if gun is not None:
-            set_layers(gun, bpy.data.actions.get(MOVES['bash_long']['action'] + '_draft'), touch_up(MOVES['bash_long']['action']), live=False)
+            oc.play(gun, None)
             gun.location, gun.rotation_quaternion = (0, 0, 0), (1, 0, 0, 0)
         if hold is not None:
             hold.location = MOVES['bash_long']['hold']
-        set_layers(rig, bpy.data.actions.get(move['action'] + '_draft'), touch_up(move['action']))
     # A mending move has the left hand off the gun, doing it; every other move keeps it on the gun.
     free_left_hand(rig, move['kind'] == 'arm')
     for other in MOVES.values():
@@ -224,17 +267,52 @@ def select_move(context, key):
             for obj in [bpy.data.objects[other['tool']]] + list(bpy.data.objects[other['tool']].children_recursive):
                 obj.hide_set(other['tool'] != move.get('tool'))
                 obj.hide_render = other['tool'] != move.get('tool')
-    scene.frame_start, scene.frame_end = 1, int(scene.get('enf_end_' + key, move['end']))
-    marker = marker or scene.timeline_markers.new('타격', frame=move['impact'])
-    marker.frame = int(scene.get('enf_impact_' + key, move['impact']))
+    impact, end = numbers(scene, key)
+    scene.frame_start, scene.frame_end = 1, end
+    marker = scene.timeline_markers.get(STRIKE) or scene.timeline_markers.new(STRIKE, frame=impact)
+    marker.frame = impact
     scene['enf_shove_move'] = key
     scene.frame_set(1)
-    scene.tool_settings.use_keyframe_insert_auto = True
+    oc.auto_key(scene)
 
 
-def current_move(scene):
-    key = scene.get('enf_shove_move', 'bash_long')
-    return key if key in MOVES else 'bash_long'
+def focus(context, window, area, key):
+    """What the move moves selected: the gun in Object mode, else the rig in Pose mode with the move's part."""
+    move = MOVES[key]
+    if move['kind'] == 'gun':
+        gun = bpy.data.objects.get(GUN)
+        one_click().select(context, window, area, [gun], gun, pose=False)
+    else:
+        rig = find_rig(context.scene)
+        one_click().select(context, window, area, [rig], rig, pose=True, bones=[move['part']])
+
+
+def prepare(context):
+    """Every move ready to work in (an older file's layers made into editable moves), the last one shown."""
+    for key in MOVES:
+        item(context, key)
+    select_move(context, current_move(context.scene))
+
+
+def arrange(context):
+    """The workspace as the work needs it: the move loaded, its part selected, its keys in the Dope Sheet, the tab open."""
+    scene = context.scene
+    if find_rig(scene) is None or GUN not in bpy.data.objects:
+        return True
+    # The moves first: they are ready even where the screen can't be (a window switches its workspace on the next tick).
+    prepare(context)
+    oc = one_click()
+    if not oc.open_workspace(context):
+        return False
+    key = current_move(scene)
+    for window in context.window_manager.windows:
+        main = oc.main_view(window)
+        oc.show_tab(main, TAB)
+        oc.dope_sheet(window)
+        if main is not None:
+            focus(context, window, main, key)
+    oc.tell(f'밀치기 「{MOVES[key]["label"]}」 · Space 재생 · 고치고 Ctrl+S 하면 게임에 들어갑니다')
+    return True
 
 
 def reset_rig(rig):
@@ -276,23 +354,11 @@ def _keyed_at(obj, path, frame):
 
 
 def _curves(action):
-    if action is None:
-        return []
-    if getattr(action, 'is_action_legacy', True) and hasattr(action, 'fcurves'):
-        try:
-            return list(action.fcurves)
-        except (AttributeError, RuntimeError):
-            pass
-    curves = []
-    for layer in getattr(action, 'layers', []):
-        for strip in layer.strips:
-            for bag in getattr(strip, 'channelbags', []):
-                curves.extend(bag.fcurves)
-    return curves
+    return one_click().curves(action)
 
 
 def _key(obj, bone, frame):
-    """Keys what is shown into the touch-up layer: Blender works out the touch-up that gives it over the draft."""
+    """Keys what is shown into the move's action."""
     if bone is None:
         obj.keyframe_insert('location', frame=frame, group=GUN)
         obj.keyframe_insert('rotation_quaternion', frame=frame, group=GUN)
@@ -391,24 +457,33 @@ def nudge_hand(context, how, step_deg, reach):
     change(context, rig, ARM_HAND, reach, apply)
 
 
-def clear_touch_ups(context, frame):
-    """Removes the touch-up keys at one frame of the move shown; returns how many went."""
-    move = MOVES[current_move(context.scene)]
-    obj = bpy.data.objects[GUN] if move['kind'] == 'gun' else find_rig(context.scene)
-    action = obj.animation_data.action if obj and obj.animation_data else None
-    removed = 0
-    for curve in _curves(action):
-        for point in [p for p in curve.keyframe_points if abs(p.co.x - frame) < .5]:
-            curve.keyframe_points.remove(point, fast=True)
-            removed += 1
-        curve.update()
-    return removed
+def clear_frame(context, frame):
+    """Removes the shown move's keys at one frame (it then eases from the key before to the key after); returns how many."""
+    scene = context.scene
+    owner = owner_of(scene, current_move(scene))
+    action = owner.animation_data.action if owner is not None and owner.animation_data else None
+    return one_click().clear_keys(action, frame)
 
 
 # ---- To the game ---------------------------------------------------------------------------------------------------
 
 # Blender (x right, y forward, z up, right-handed) to Unity (x right, y up, z forward, left-handed): y and z swap.
 _SWAP = Matrix(((1, 0, 0), (0, 0, 1), (0, 1, 0)))
+
+
+def target(key):
+    """Where a move goes in the game, from the project root."""
+    move = MOVES[key]
+    if move['kind'] == 'gun':
+        return GUN_MOVES_DIR / (move['action'] + '.csv')
+    if move['kind'] == 'arm':
+        return TABLES_DIR / (move['table'] + '.csv')
+    return KICK_DIR / (move['action'] + '.fbx')
+
+
+def in_game(key):
+    root = project_root()
+    return root is not None and (root / target(key)).exists()
 
 
 def gun_samples(context, key):
@@ -437,29 +512,32 @@ def gun_samples(context, key):
 
 def export_gun(context, key, root):
     scene = context.scene
-    path = root / GUN_MOVES_DIR / (MOVES[key]['action'] + '.csv')
-    path.parent.mkdir(parents=True, exist_ok=True)
+    oc = one_click()
+    path = root / target(key)
     fps = scene.render.fps / scene.render.fps_base
-    marker = scene.timeline_markers.get('타격')
+    marker = scene.timeline_markers.get(STRIKE)
     impact = ((marker.frame if marker else MOVES[key]['impact']) - scene.frame_start) / fps
     lines = ['time,x,y,z,qx,qy,qz,qw', f'#impact={impact:.4f}',
              f'#from=ArtSource/Shove/ENFILADE_Shove_Animation.blend {MOVES[key]["action"]}']
     for time, move, turn in gun_samples(context, key):
         lines.append(f'{time:.4f},{move.x:.5f},{move.y:.5f},{move.z:.5f},{turn.x:.5f},{turn.y:.5f},{turn.z:.5f},{turn.w:.5f}')
-    path.write_text('\n'.join(lines) + '\n', encoding='utf-8')
-    return path
+    path.parent.mkdir(parents=True, exist_ok=True)
+    oc.write_meta(path, oc.TEXT_META)
+    return oc.write_text(path, '\n'.join(lines) + '\n')
 
 
 def export_kick(context, root):
     scene = context.scene
+    oc = one_click()
     rig = find_rig(scene)
     name = MOVES['kick']['action']
     path = root / KICK_DIR / (name + '.fbx')
     path.parent.mkdir(parents=True, exist_ok=True)
-    truefps().export_active_clip(context, rig, str(path))
     clips = path.with_name(name + '.clips.csv')
-    clips.write_text('clip,loop,inPlace,inPlaceY,inPlaceYaw,yawOffset,cycleOffset,from,to\n'
-                     f'{name},0,0,0,0,0,0,,\n', encoding='utf-8')
+    oc.write_meta(clips, oc.TEXT_META)
+    oc.write_meta(path)
+    truefps().export_active_clip(context, rig, str(path))
+    oc.write_text(clips, 'clip,loop,inPlace,inPlaceY,inPlaceYaw,yawOffset,cycleOffset,from,to\n' f'{name},0,0,0,0,0,0,,\n')
     return path
 
 
@@ -473,7 +551,7 @@ def arm_rows(context, key):
     move = MOVES[key]
     fps = scene.render.fps / scene.render.fps_base
     start, end = scene.frame_start, scene.frame_end
-    marker = scene.timeline_markers.get('타격')
+    marker = scene.timeline_markers.get(STRIKE)
     strike = marker.frame if marker is not None and move.get('impact', 0) > 0 and start <= marker.frame <= end else None
     rows = []
     for i in range((end - start) * SAMPLES_PER_FRAME + 1):
@@ -504,8 +582,8 @@ def arm_rows(context, key):
 
 def export_arm(context, key, root):
     move = MOVES[key]
-    path = root / TABLES_DIR / (move['table'] + '.csv')
-    path.parent.mkdir(parents=True, exist_ok=True)
+    oc = one_click()
+    path = root / target(key)
     note = ('#설명 (블렌더 밀치기 작업실 ArtSource/Shove의 ' + move['label'] + ' 동작을 게임에 보내기로 쓴 왼팔의 길. '
             'GrenadeArm.csv와 같은 칸: 어깨에서 손목과 팔꿈치까지 팔 길이의 배수와 손의 방향을 시선 축(x 오른쪽 y 위 z 앞)으로. '
             'strike 1인 줄이 망치가 판자에 닿는 순간(소리). 손으로 고치지 말고 블렌더에서 고쳐 다시 보낸다. RepairArm이 어느 캐릭터 팔에든 맞춰 되풀이한다)')
@@ -514,24 +592,78 @@ def export_arm(context, key, root):
         cells = [f'k{n:02d}', f'{cycle:.4f}'] + [f'{v:.4f}' for v in (*wrist, *elbow, *along, *palm)]
         cells += [f'{move["curl"]:.1f}', f'{move["thumb"]:.1f}', '1', '1' if strike else '0']
         lines.append(','.join(cells))
-    path.write_text('\n'.join(lines) + '\n', encoding='utf-8')
-    return path
+    path.parent.mkdir(parents=True, exist_ok=True)
+    oc.write_meta(path, oc.TEXT_META)
+    return oc.write_text(path, '\n'.join(lines) + '\n')
 
 
 def export_move(context, key):
+    """One move to the game (shown first if it isn't), marked as sent; returns the path written."""
     root = project_root()
     if root is None:
         raise RuntimeError('ENFILADE 프로젝트를 찾지 못했습니다. ArtSource/Shove의 파일을 여세요.')
-    if MOVES[key]['kind'] == 'gun':
-        return export_gun(context, key, root)
-    if MOVES[key]['kind'] == 'arm':
-        return export_arm(context, key, root)
-    return export_kick(context, root)
+    if current_move(context.scene) != key or MOVES[key]['action'] != getattr(_shown_action(context, key), 'name', None):
+        select_move(context, key)
+    remember(context.scene)
+    kind = MOVES[key]['kind']
+    path = export_gun(context, key, root) if kind == 'gun' else export_arm(context, key, root) if kind == 'arm' \
+        else export_kick(context, root)
+    one_click().mark_sent(bpy.data.actions.get(MOVES[key]['action']), fingerprint(key))
+    return path
+
+
+def _shown_action(context, key):
+    owner = owner_of(context.scene, key)
+    return owner.animation_data.action if owner is not None and owner.animation_data else None
+
+
+def send_changed(context, force=False):
+    """Every move that changed since it was last sent (or whose game file is missing) to the game; the move shown stays
+    shown, on its frame. Returns (sent labels, failures), or None with the panel's switch off (force: sends anyway, the
+    게임에 보내기 button)."""
+    scene = context.scene
+    if not is_shove_file(scene) or not (force or scene.enf_shove.auto_send):
+        return None
+    oc = one_click()
+    shown, frame = current_move(scene), scene.frame_current
+    remember(scene)
+    sent, failed = [], []
+    for key, move in MOVES.items():
+        try:
+            action, _draft = item(context, key)
+            if not oc.needs_sending(action, fingerprint(key), in_game(key)):
+                continue
+            export_move(context, key)
+            sent.append(move['label'])
+        except Exception as error:
+            failed.append(f'{move["label"]}: {error}')
+    if current_move(scene) != shown:
+        select_move(context, shown)
+    if scene.frame_current != frame:
+        scene.frame_set(frame)
+    return sent, failed
+
+
+def revert(context, key):
+    """The move as its first draft again (its strike and last frame too)."""
+    move = MOVES[key]
+    one_click().revert(move['action'])
+    scene = context.scene
+    scene['enf_impact_' + key], scene['enf_end_' + key] = move['impact'], move['end']
+    if current_move(scene) == key:
+        # What select_move keeps for the move shown is what the timeline has: the draft's, then.
+        marker = scene.timeline_markers.get(STRIKE)
+        if marker is not None:
+            marker.frame = move['impact']
+        scene.frame_end = move['end']
+    select_move(context, key)
 
 
 # ---- Panel ---------------------------------------------------------------------------------------------------------
 
 class ENFShoveSettings(bpy.types.PropertyGroup):
+    auto_send: BoolProperty(name='저장하면 게임에 보내기', default=True,
+                            description='Ctrl+S로 저장할 때 바뀐 동작을 모두 게임에 보낸다')
     step_cm: FloatProperty(name='옮기는 거리 (cm)', default=2.0, min=.1, max=20.0)
     step_deg: FloatProperty(name='돌리는 각도 (도)', default=5.0, min=.5, max=45.0)
     reach: IntProperty(name='섞는 길이 (프레임)', default=2, min=0, max=10,
@@ -553,7 +685,7 @@ def _object_mode(context):
 class ENFSHOVE_OT_pick(bpy.types.Operator):
     bl_idname = 'enf_shove.pick'
     bl_label = '동작 고르기'
-    bl_description = '이 동작의 시안과 손질 층을 보여 준다'
+    bl_description = '이 동작을 불러오고 움직일 곳(총, 발, 왼손)을 골라 둔다'
     bl_options = {'REGISTER', 'UNDO'}
     move: EnumProperty(items=[(k, v['label'], '') for k, v in MOVES.items()])
 
@@ -562,6 +694,8 @@ class ENFSHOVE_OT_pick(bpy.types.Operator):
             return {'CANCELLED'}
         _object_mode(context)
         select_move(context, self.move)
+        if context.area is not None and context.area.type == 'VIEW_3D':
+            focus(context, context.window, context.area, self.move)
         return {'FINISHED'}
 
 
@@ -571,7 +705,7 @@ class ENFSHOVE_OT_impact(bpy.types.Operator):
     bl_description = '맞는 순간(타격 표시)으로 간다. 게임은 이 순간에 맞힌다'
 
     def execute(self, context):
-        marker = context.scene.timeline_markers.get('타격')
+        marker = context.scene.timeline_markers.get(STRIKE)
         if marker:
             context.scene.frame_set(marker.frame)
         return {'FINISHED'}
@@ -580,7 +714,7 @@ class ENFSHOVE_OT_impact(bpy.types.Operator):
 class ENFSHOVE_OT_nudge(bpy.types.Operator):
     bl_idname = 'enf_shove.nudge'
     bl_label = '움직이기'
-    bl_description = '지금 프레임에서 고른 곳을 조금 옮기거나 돌리고 손질 층에 키를 넣는다'
+    bl_description = '지금 프레임에서 고른 곳을 조금 옮기거나 돌리고 키를 넣는다'
     bl_options = {'REGISTER', 'UNDO'}
     part: bpy.props.StringProperty()
     how: bpy.props.StringProperty()
@@ -603,48 +737,55 @@ class ENFSHOVE_OT_nudge(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class ENFSHOVE_OT_toggle(bpy.types.Operator):
-    bl_idname = 'enf_shove.toggle'
-    bl_label = '손질 층 켜기/끄기'
-    bl_description = '손질을 끄고 시안만 보거나 다시 켠다(지우지 않는다)'
-
-    def execute(self, context):
-        move = MOVES[current_move(context.scene)]
-        obj = bpy.data.objects[GUN] if move['kind'] == 'gun' else find_rig(context.scene)
-        data = obj.animation_data
-        if data is not None:
-            data.action_influence = 0.0 if data.action_influence > .5 else 1.0
-            self.report({'INFO'}, '손질 층 ' + ('켜짐' if data.action_influence > .5 else '꺼짐 (시안만)'))
-        return {'FINISHED'}
-
-
 class ENFSHOVE_OT_clear(bpy.types.Operator):
     bl_idname = 'enf_shove.clear'
-    bl_label = '이 프레임 손질 지우기'
-    bl_description = '지금 프레임에 넣은 손질 키를 지운다(시안은 그대로)'
+    bl_label = '이 프레임 키 지우기'
+    bl_description = '지금 프레임에 있는 이 동작의 키를 지운다. 앞뒤 키 사이로 부드럽게 이어진다'
     bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, context):
-        removed = clear_touch_ups(context, context.scene.frame_current)
-        self.report({'INFO'}, f'손질 키 {removed}개를 지웠습니다')
+        removed = clear_frame(context, context.scene.frame_current)
+        self.report({'INFO'}, f'키 {removed}개를 지웠습니다')
+        return {'FINISHED'}
+
+
+class ENFSHOVE_OT_revert(bpy.types.Operator):
+    bl_idname = 'enf_shove.revert'
+    bl_label = '이 동작을 시안으로 되돌리기'
+    bl_description = '이 동작의 내 손질을 모두 지우고 처음 시안으로 돌아간다(타격·끝 프레임도). 저장하면 게임에도 시안이 들어간다'
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_confirm(self, event)
+
+    def execute(self, context):
+        if not _ok(self, context):
+            return {'CANCELLED'}
+        try:
+            revert(context, current_move(context.scene))
+        except ValueError as error:
+            self.report({'ERROR'}, str(error))
+            return {'CANCELLED'}
+        self.report({'INFO'}, '시안으로 되돌렸다. 저장하면 게임에도 시안이 들어간다')
         return {'FINISHED'}
 
 
 class ENFSHOVE_OT_export(bpy.types.Operator):
     bl_idname = 'enf_shove.export'
     bl_label = '게임에 보내기'
-    bl_description = '보고 있는 동작을 게임 폴더로 내보낸다. Unity가 알아서 가져가고, 다음 Play부터 그 동작이 나온다'
+    bl_description = 'Ctrl+S와 같다: 바뀐 동작을 모두 게임 폴더로 보내고 작업 파일을 저장한다(저장하면 보내기를 꺼 두어도 보낸다)'
 
     def execute(self, context):
         if not _ok(self, context):
             return {'CANCELLED'}
-        key = current_move(context.scene)
-        try:
-            path = export_move(context, key)
-        except (RuntimeError, ValueError) as error:
-            self.report({'ERROR'}, str(error))
+        sent, failed = send_changed(context, force=True) or ([], ['밀치기 작업 파일이 아닙니다'])
+        one_click().send_report(context.scene, sent, failed)
+        if bpy.data.filepath:
+            bpy.ops.wm.save_mainfile()
+        if failed:
+            self.report({'ERROR'}, '못 보냄: ' + '; '.join(failed))
             return {'CANCELLED'}
-        self.report({'INFO'}, f'보냈습니다: {path}')
+        self.report({'INFO'}, ('보냈습니다: ' + ', '.join(sent)) if sent else '바뀐 동작이 없어 저장만 했습니다')
         return {'FINISHED'}
 
 
@@ -653,7 +794,7 @@ class ENFSHOVE_PT_panel(bpy.types.Panel):
     bl_idname = 'ENFSHOVE_PT_panel'
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
-    bl_category = '밀치기'
+    bl_category = TAB
 
     def draw(self, context):
         scene = context.scene
@@ -664,7 +805,7 @@ class ENFSHOVE_PT_panel(bpy.types.Panel):
         box.label(text='1. 동작 고르기')
         for k, v in MOVES.items():
             box.operator('enf_shove.pick', text=v['label'], depress=k == key).move = k
-        marker = scene.timeline_markers.get('타격')
+        marker = scene.timeline_markers.get(STRIKE)
         fps = scene.render.fps / scene.render.fps_base
         if marker:
             at = (marker.frame - scene.frame_start) / fps
@@ -702,35 +843,28 @@ class ENFSHOVE_PT_panel(bpy.types.Panel):
                     op = grid.operator('enf_shove.nudge', text=text)
                     op.part, op.how = part, how
         row = box.row(align=True)
-        row.operator('enf_shove.toggle')
         row.operator('enf_shove.clear')
+        row.operator('enf_shove.revert', icon='LOOP_BACK')
 
         box = layout.box()
-        box.label(text='3. 게임에 보내기')
+        box.label(text='3. 저장(Ctrl+S)하면 게임에 들어간다')
+        box.prop(settings, 'auto_send')
+        oc = one_click()
+        action = bpy.data.actions.get(move['action'])
+        if not in_game(key):
+            box.label(text='아직 게임에 없음: 저장하면 들어간다')
+        elif action is not None and action.get(oc.SENT) != fingerprint(key):
+            box.label(text='고친 것이 있음: 저장하면 게임에 들어간다')
+        else:
+            box.label(text='게임이 지금 이 동작을 쓰는 중')
+        if scene.get(oc.NOTE):
+            box.label(text=str(scene[oc.NOTE])[:60])
         box.operator('enf_shove.export', icon='EXPORT')
-        target = (GUN_MOVES_DIR / (move['action'] + '.csv')) if move['kind'] == 'gun' else (TABLES_DIR / (move['table'] + '.csv')) \
-            if move['kind'] == 'arm' else (KICK_DIR / (move['action'] + '.fbx'))
-        box.label(text=str(target).replace('\\', '/'))
+        box.label(text=str(target(key)).replace('\\', '/'))
 
 
-CLASSES = (ENFShoveSettings, ENFSHOVE_OT_pick, ENFSHOVE_OT_impact, ENFSHOVE_OT_nudge, ENFSHOVE_OT_toggle,
-           ENFSHOVE_OT_clear, ENFSHOVE_OT_export, ENFSHOVE_PT_panel)
-
-
-def _show_panel():
-    for window in bpy.context.window_manager.windows:
-        for area in window.screen.areas:
-            if area.type == 'VIEW_3D' and area.spaces.active.region_3d.view_perspective != 'CAMERA':
-                area.spaces.active.show_region_ui = True
-                region = next((r for r in area.regions if r.type == 'UI'), None)
-                if region is not None:
-                    try:
-                        region.active_panel_category = '밀치기'
-                    except (TypeError, AttributeError):
-                        pass
-    if bpy.context.scene and GUN in bpy.data.objects:
-        bpy.context.scene.tool_settings.use_keyframe_insert_auto = True
-    return None
+CLASSES = (ENFShoveSettings, ENFSHOVE_OT_pick, ENFSHOVE_OT_impact, ENFSHOVE_OT_nudge, ENFSHOVE_OT_clear,
+           ENFSHOVE_OT_revert, ENFSHOVE_OT_export, ENFSHOVE_PT_panel)
 
 
 def register():
@@ -742,12 +876,11 @@ def register():
                 pass
         bpy.utils.register_class(cls)
     bpy.types.Scene.enf_shove = bpy.props.PointerProperty(type=ENFShoveSettings)
-    if not bpy.app.background:
-        # After True FPS's own start-up (0.2 s), which opens its own tab.
-        bpy.app.timers.register(_show_panel, first_interval=.6)
+    one_click().register_workspace(TAB, is_shove_file, arrange, send_changed)
 
 
 def unregister():
+    one_click().unregister_workspace(TAB)
     del bpy.types.Scene.enf_shove
     for cls in reversed(CLASSES):
         bpy.utils.unregister_class(cls)

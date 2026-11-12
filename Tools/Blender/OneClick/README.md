@@ -9,11 +9,15 @@ keeps its own copy ([execution_tools.py](../Executions/execution_tools.py)).
 
 | Workspace | Opens on | Items | Saving sends |
 | --- | --- | --- | --- |
+| [Shove](../../../ArtSource/Shove/START_HERE.md) (`밀치기` tab) | the last move: a gun move in Object mode with the gun selected, the kick and the mending moves in Pose mode with the right foot or the left hand selected | 5 moves, key poses: editable | `Resources/Combat/GunMoves/enf_bash_*.csv`, `Art/Animations/Shove/enf_kick_front.fbx`, `Resources/Tables/RepairHammer.csv`, `RepairTorch.csv` |
 | [Victory poses](../../../ArtSource/Poses/START_HERE.md) (`Pose` tab) | the last pose on its struck frame (9), Pose mode, auto-key on, the small view from the front | every `enf_pose_*` action (key poses at 1, 9, 42, 75; the hold follows frame 9) | `Resources/Poses/<name>.fbx` |
+
+Each panel's 게임에 보내기 button does what `Ctrl+S` does (sends what changed and saves the file), and still sends with
+the panel's 저장하면 게임에 보내기 switch off.
 
 Not here: the zombie workspace (a clip is loaded, varied and sent to a slot and name the user picks, so a save can't know
 where it goes), and the True FPS start file (a template for new clips; its practice actions are not the game's). The
-shove, throwables and run workspaces still send with their own buttons.
+throwables and run workspaces still send with their own buttons.
 
 ## What it does
 
@@ -48,15 +52,22 @@ shove, throwables and run workspaces still send with their own buttons.
 
 In a scratch copy of the project (the tools, the workspace `.blend`, the game files it writes), never the game's own:
 
-| Check | Victory poses |
-| --- | --- |
-| Opening, then an unchanged save: nothing sent, the game files keep their bytes | pass (5 poses) |
-| Fingerprints the same after a save and reload | pass |
-| One item changed and saved: only its file rewritten; saving again sends nothing | pass (the V pose's head turned at frame 9) |
-| The hold follows the strike on leaving frame 9 (75 = 9, 42 keeps its breath) | pass |
-| Withheld: its file deleted and not sent again until it changes, then sent | pass |
+| Check | Shove | Victory poses |
+| --- | --- | --- |
+| Opening, then an unchanged save: nothing sent, the game files keep their bytes | pass (5 moves made editable) | pass (5 poses) |
+| Fingerprints the same after a save and reload | pass | pass |
+| One item changed and saved: only its file rewritten; saving again sends nothing | pass (권총 key moved) | pass (the V pose's head turned at frame 9) |
+| Switch off: a save sends nothing; 게임에 보내기 sends the changed item and saves | pass | — |
+| Every item sent by the new tools against the old tools' export of the same file | CSV byte for byte; kick FBX keys 0.0 apart | — |
+| An old file's touch-up keyed by hand, made editable (`_bake`) | plays the same (0.0 apart, kick foot 5 cm up) | — |
+| The hold follows the strike on leaving frame 9 (75 = 9, 42 keeps its breath) | — | pass |
+| Withheld: its file deleted and not sent again until it changes, then sent | — | pass |
 
 Facts found:
 
 - In `--background`, the windows of a loaded file are there but `window.workspace = ...` never takes (no event loop):
   `arrange` readies the data before the screen, so the data side works headless too.
+- The tables the old buttons wrote with `Path.write_text` have CRLF line ends (Windows text mode); `write_text` keeps a
+  file's own line ends so an unchanged item writes the same bytes.
+- The committed workspaces were in step with the game: the original tools exported every shove move again byte for byte
+  equal to the game's files.
