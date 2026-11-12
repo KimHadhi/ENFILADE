@@ -74,6 +74,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
     private PlayerShoveAudio shoves;
     private ShoveMoves kicks;
     private DodgeDash dodgeLook;
+    private GuardPose guardPose;
     private PlayerExecution execution;
     private PlayerThrow throws;
     private PlayerGrenades grenades;
@@ -197,6 +198,8 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
         kicks = ShoveMoves.For(GetComponent<PlayerMovement>());
         // The dodge's look (DodgeDash, added by PlayerMovement): every PC draws a dodge from its state; an evade's red comes by EvadedRpc.
         dodgeLook = GetComponent<DodgeDash>();
+        // The guard's pose struck as a look (GuardPose, a Knight's cover): the owner strikes it, every PC's copy shows it.
+        guardPose = GuardPose.For(mover);
         // Stones (PlayerThrow): thrown by the owner, copied on every other PC.
         throws = GetComponent<PlayerThrow>();
         if (throws == null) throws = gameObject.AddComponent<PlayerThrow>();
@@ -254,6 +257,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
             if (kicks != null) kicks.Kicked += OnKicked;
             if (kicks != null) kicks.Bashed += OnBashed;
             if (dodgeLook != null) dodgeLook.Evaded += OnEvaded;
+            if (guardPose != null) guardPose.Posed += OnGuardPosed;
             execution.Started += OnExecutionStarted;
             receiver.HitResolved += OnHit;
             gunSkins.Value = GunSkins.LookText();
@@ -283,6 +287,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
         if (kicks != null) kicks.Kicked -= OnKicked;
         if (kicks != null) kicks.Bashed -= OnBashed;
         if (dodgeLook != null) dodgeLook.Evaded -= OnEvaded;
+        if (guardPose != null) guardPose.Posed -= OnGuardPosed;
         if (execution != null) execution.Started -= OnExecutionStarted;
         if (throws != null) throws.Thrown -= OnThrown;
         if (grenades != null)
@@ -384,6 +389,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
     private void OnKicked() => KickRpc();
     private void OnBashed() => BashRpc();
     private void OnEvaded(int side) => EvadedRpc((sbyte)Mathf.Clamp(side, -1, 1));
+    private void OnGuardPosed(Vector3 threat) => GuardPoseRpc(threat);
     private void OnThrown(Vector3 from, Vector3 velocity) => ThrowRpc(from, velocity);
     private void OnGrenadeThrown(Throwable kind, ushort id, Vector3 from, Vector3 velocity, float fuse) => GrenadeRpc((byte)kind, id, from, velocity, fuse);
     private void OnGrenadeBurst(Throwable kind, ushort id, Vector3 at) => GrenadeBurstRpc((byte)kind, id, at);
@@ -663,6 +669,14 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
     private void EvadedRpc(sbyte side)
     {
         if (dodgeLook != null) dodgeLook.ShowEvaded(side);
+    }
+
+    // The player struck the guard's parry pose (a Knight's cover turning a blow, GuardPose): every other PC's copy of them
+    // strikes it too, toward the same blow, as they see it themselves.
+    [Rpc(SendTo.NotMe)]
+    private void GuardPoseRpc(Vector3 threat)
+    {
+        if (guardPose != null) guardPose.Show(threat);
     }
 
     [Rpc(SendTo.NotMe)]

@@ -216,6 +216,7 @@ public sealed class KnightCover : MonoBehaviour
         Vector3 toward = Vector3.ProjectOnPlane(attacker - transform.position, Vector3.up);
         toward = toward.sqrMagnitude > 1e-4f ? toward.normalized : transform.forward;
         CardNet.Show(CardFx.Kind.CoverDeflect, transform.position + toward * .6f + Vector3.up * 1.3f, -toward, 0f);
+        GuardPose.Strike(movement, attacker); // the parry stance with it, on every PC (the user: "특유의 패링 자세와 함께")
         if (!TryGetComponent(out CounterBanner banner)) banner = gameObject.AddComponent<CounterBanner>();
         banner.Play(.85f, CounterBanner.Grades - 1, "COVER", Color.white);
         AlertHUD.Self(Texts.Format("class.knight.cover.done", NameOf(ally)));

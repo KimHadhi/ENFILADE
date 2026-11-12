@@ -41,11 +41,12 @@ public sealed class FistsView : MonoBehaviour
     public Transform RightFist => right;
     public bool IsActive => root != null && melee != null && melee.IsActive;
     /// <summary>
-    /// A strike is under way: a punch, the counter's dash-in with the next fist drawn all the way back, or its back elbow.
-    /// The body's hands come up for it at once, running or not (PlayerBodyHands): the elbow has no arm clip, so without
-    /// them it would be posed here and never seen.
+    /// A strike is under way: a punch, the counter's dash-in with the next fist drawn all the way back, or its back elbow;
+    /// or a parry's sweep, which a Knight's cover strikes with no guard held (GuardPose). The body's hands come up for it
+    /// at once, running or not (PlayerBodyHands): the elbow has no arm clip, so without them it would be posed here and
+    /// never seen.
     /// </summary>
-    public bool IsPunching => leftPunchTime > 0f || rightPunchTime > 0f || elbowElapsed >= 0f || spinElapsed >= 0f || Countering;
+    public bool IsPunching => leftPunchTime > 0f || rightPunchTime > 0f || elbowElapsed >= 0f || spinElapsed >= 0f || Countering || IsDeflecting;
     private bool Countering => player != null && player.PerfectDefense != null && player.PerfectDefense.IsCountering;
     private bool IsDeflecting => deflectElapsed < deflectSeconds;
     /// <summary>A punch left: with the right hand or not, and how charged it was (0-1).</summary>
