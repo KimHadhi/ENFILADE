@@ -81,12 +81,15 @@ public static class CampaignMaps
         b.EnemySpawn("B3 옥상 1", new Vector3(70f, 13f, -6f));
         b.EnemySpawn("B3 옥상 2", new Vector3(75f, 13f, 7f));
 
-        // 4. Down into the alley by steps that don't hurt: the roof (12), the annex (8), a lorry (3), the ground.
-        b.Box("B4", 87f, 104f, 0f, 12f, -10f, 10f);
+        // 4. Down through the block of flats (user, 2026-11-12: inside the flats instead of down the ladder, a fight
+        // indoors): the roof's stair hut, the top floor, a flat whose floor gave way, the east stairs to the ground floor
+        // and its back door into the alley (Apartment). The annex now stands above the roof, so the old way down outside
+        // (annex roof, lorry) is gone; jumping the 12 m into the alley hurts.
+        Apartment(b);
         Parapets(b, "B4", 87f, 104f, -10f, 10f, 12f);
-        b.Box("B4 별관", 104f, 112f, 0f, 8f, 4f, 50f);
+        b.Box("B4 난간 동", 103.7f, 104f, 12f, 12f + ParapetHeight, -10f, 4f);
+        b.Box("B4 별관", 104f, 112f, 0f, 13.5f, 4f, 50f);
         b.Dress(b.Box("골목 트럭", 108f, 114f, 0f, 3f, 0f, 3f, b.Metal, "MetalBox"), "van");
-        b.Ladder("B4 비상 사다리", new Vector3(104.15f, 0f, -2f), 90f);
         b.Spot("B4Roof", new Vector3(95f, 12f, 0f));
         b.EnemySpawn("B4 옥상 1", new Vector3(95f, 12f, -6f));
         b.EnemySpawn("B4 옥상 2", new Vector3(100f, 12f, 6f));
@@ -136,8 +139,8 @@ public static class CampaignMaps
 
         // 7. The building site, through the gate in its fence. Players climb two containers, a wall up to the scaffold
         // and its ladder to the roof (helipad, finale); enemies walk two-lane switchback ramps up the south side.
-        b.Box("공사장 펜스 남", 170f, 170.2f, 0f, 2.2f, -50f, -3f, b.Metal, "MetalPipe");
-        b.Box("공사장 펜스 북", 170f, 170.2f, 0f, 2.2f, 3f, 50f, b.Metal, "MetalPipe");
+        b.Dress(b.Box("공사장 펜스 남", 170f, 170.2f, 0f, 2.2f, -50f, -3f, b.Metal, "MetalPipe"), "constructionfence");
+        b.Dress(b.Box("공사장 펜스 북", 170f, 170.2f, 0f, 2.2f, 3f, 50f, b.Metal, "MetalPipe"), "constructionfence");
         b.Spot("SiteGate", new Vector3(172f, 0f, 0f));
         b.Dress(b.Box("컨테이너 1", 176f, 182f, 0f, 2.6f, 10f, 12.5f, b.Metal, "MetalBox"), "container");
         b.Box("컨테이너 2", 179f, 182f, 2.6f, 5.2f, 10f, 12.5f, b.Metal, "MetalBox");
@@ -190,8 +193,9 @@ public static class CampaignMaps
         b.Pickup(new Vector3(148f, 0f, 13f), PickupSpot.Roll.Gun);
         b.Pickup(new Vector3(172f, 0f, 2f));
         b.Pickup(new Vector3(191f, 14f, -2f));
+        DressRooftops(b);
         b.Finish("1장 옥상 탈출을 지었어요 (Scenes/Campaign/Ch1_Rooftops). 메인 메뉴의 맵 목록에도 나와요.\n" +
-                 "길: 안전가옥 → 옥상 틈 점프 → 엘리베이터실 벽 오르기 → 집라인 → 철봉 → 골목으로 내려가기 → 셔터 → 편의점 → 공사장 컨테이너·비계·사다리 → 헬기 착륙장.");
+                 "길: 안전가옥 → 옥상 틈 점프 → 엘리베이터실 벽 오르기 → 집라인 → 철봉 → 아파트 옥상 계단실 → 4층 → 꺼진 바닥 → 동쪽 계단 → 1층 뒷문으로 골목 → 셔터 → 편의점 → 공사장 컨테이너·비계·사다리 → 헬기 착륙장.");
     }
 
     [MenuItem("Tools/World/캠페인 회색 맵/2장 막힌 고가도로", priority = 12)]
@@ -324,6 +328,7 @@ public static class CampaignMaps
         b.Pickup(new Vector3(198f, 0f, 2f));
         b.Pickup(new Vector3(206f, 0f, 2f));
         b.Pickup(new Vector3(227f, 0f, 2f));
+        DressOverpass(b);
         b.Finish("2장 막힌 고가도로를 지었어요 (Scenes/Campaign/Ch2_Overpass).\n" +
                  "길: 헬기 잔해 → 막힌 차들 → 뒤집힌 트럭 → 끊어진 끝에서 버스로 뛰어내리기(돌아갈 수 없음) → 주유소 → 톨게이트 → 초소 무전 → 버티기 → 지하철 입구.");
     }
@@ -507,6 +512,7 @@ public static class CampaignMaps
         b.Pickup(new Vector3(200f, 0f, -2f));
         b.Pickup(new Vector3(300f, 0f, 1f));
         b.Pickup(new Vector3(333f, Bank, 2f));
+        DressSubway(b);
         b.Finish("3장 지하철을 지었어요 (Scenes/Campaign/Ch3_Subway).\n" +
                  "길: 대합실 → 승강장 → 어두운 터널 → 정비창 사무실(휴게소) → 연료통 4개를 발전기에 → 방수문 → 강 밑 터널 → 비상 계단 → 신호탄 → 버티기 → 보트.");
     }
@@ -537,8 +543,8 @@ public static class CampaignMaps
         b.Box("지게차", 10f, 12f, 0f, 2.2f, 4f, 7f, b.Metal, "Metal");
         b.Dress(b.Box("화물 팔레트 1", 2f, 3.2f, 0f, .9f, -4f, -2.8f, b.Wood, "WoodPlank"), "palletload");
         b.Dress(b.Box("화물 팔레트 2", 6f, 7.2f, 0f, .9f, 4.5f, 5.7f, b.Wood, "WoodPlank"), "palletload");
-        b.Box("화물장 펜스 남", 20f, 20.2f, 0f, 2.4f, -59f, -4f, b.Metal, "MetalPipe");
-        b.Box("화물장 펜스 북", 20f, 20.2f, 0f, 2.4f, 4f, 59f, b.Metal, "MetalPipe");
+        b.Dress(b.Box("화물장 펜스 남", 20f, 20.2f, 0f, 2.4f, -59f, -4f, b.Metal, "MetalPipe"), "constructionfence");
+        b.Dress(b.Box("화물장 펜스 북", 20f, 20.2f, 0f, 2.4f, 4f, 59f, b.Metal, "MetalPipe"), "constructionfence");
         b.Spot("CargoGate", new Vector3(23f, 0f, 0f));
         b.EnemySpawn("화물장 북", new Vector3(5f, 0f, 30f));
         b.EnemySpawn("화물장 남", new Vector3(8f, 0f, -35f));
@@ -804,9 +810,398 @@ public static class CampaignMaps
         b.Pickup(new Vector3(336f, 1.2f, 1.6f));
         b.Pickup(new Vector3(350f, 0f, 8f));
         b.Shot(new Vector3(-10f, 50f, -75f), new Vector3(170f, 0f, 0f));
+        DressAirport(b);
         b.Finish("4장 공항을 지었어요 (Scenes/Campaign/Ch4_Airport).\n" +
                  "길: 화물 부두 → 화물장 → 출발층 진입로 → 터미널 출발 홀(2층 식당가) → 보안 검색대 → 면세점(휴게소) → 탑승교와 정비 계단 → " +
                  "계류장 → 관제탑 무전 → 활주로를 막은 여객기를 견인차로 밀어내기(누가 견인차 옆에 있어야 움직임) → 수송기 → 출발 신호 → 버티기 → 탑승.");
+    }
+
+    // Chapter 1's block of flats B4, x 87-104, z -10..10: floors at 0, 3, 6 and 9 m under the roof (12), and on each a
+    // corridor along x (z -1.2..1.2) with flats north and south of it. The roof's stair hut (west stairs) reaches the top
+    // floor only. There the way on is the south-east flat, whose floor gave way: a 3 m drop (under
+    // Ability.safeFallDistance, so it doesn't hurt) into the same flat a floor down, then along the corridor to the east
+    // stairs, down to the ground floor and out of its back door into the alley. The second floor's door is boarded up.
+    // Rooms wear what the packs have (sofa, TV, lockers, a fridge, tables, boxes, rubbish); a few dim lamps; zombies
+    // wait on every floor, and the alley hold's horde can come out of the back door.
+    private static void Apartment(GreyboxBuilder b)
+    {
+        const float X0 = 87f, X1 = 104f, Z0 = -10f, Z1 = 10f, In0 = X0 + Wall, In1 = X1 - Wall, S0 = Z0 + Wall, N1 = Z1 - Wall;
+        // Stair cores north of the corridor: west (roof to the top floor), east (third floor to the ground floor). Each
+        // has a landing by the corridor, two flights side by side and a half landing at the far end.
+        const float CoreZ = 1.5f, Landing = 1.2f, Near = CoreZ + Landing, Far = N1 - Landing;
+        const float WestTo = 91.3f, EastFrom = 99.7f;
+        const float HoleX0 = 100f, HoleX1 = 102.4f, HoleZ0 = -7.5f, HoleZ1 = -5f;
+        const float Ceiling = 2.7f;
+
+        // Outer walls; the back door through the east wall on the ground floor.
+        b.Box("B4 서벽", X0, In0, 0f, 12f, Z0, Z1);
+        b.Box("B4 남벽", In0, In1, 0f, 12f, Z0, S0);
+        b.Box("B4 북벽", In0, In1, 0f, 12f, N1, Z1);
+        b.Box("B4 동벽 남", In1, X1, 0f, 12f, Z0, -1.1f);
+        b.Box("B4 동벽 북", In1, X1, 0f, 12f, 1.1f, Z1);
+        b.Box("B4 뒷문 위", In1, X1, 2.3f, 12f, -1.1f, 1.1f);
+
+        // Floors: the roof open over the west stairs, the top floor over the broken flat, the third and second floors over
+        // the east stairs.
+        Slab(b, "B4 지붕", 12f, In0, In1, S0, N1, In0, WestTo, Near, N1, null, null);
+        Slab(b, "B4 4층 바닥", 9f, In0, In1, S0, N1, HoleX0, HoleX1, HoleZ0, HoleZ1, b.Concrete, "Tile");
+        Slab(b, "B4 3층 바닥", 6f, In0, In1, S0, N1, EastFrom, In1, Near, N1, b.Concrete, "Tile");
+        Slab(b, "B4 2층 바닥", 3f, In0, In1, S0, N1, EastFrom, In1, Near, N1, b.Concrete, "Tile");
+
+        // West stairs under the roof's hut, roof to the top floor.
+        Room(b, "B4 옥상 계단실", X0, WestTo + Wall, CoreZ - Wall, Z1, 12f, 2.7f, Side.South, 87.6f, 89.1f);
+        b.Box("B4 서계단 동벽", WestTo, WestTo + Wall, 9f, 12f, CoreZ - Wall, N1);
+        WallAlongX(b, "B4 서계단 남벽", In0, WestTo + Wall, CoreZ - Wall, CoreZ, 9f, 9f + Ceiling, (89.5f, 91.1f));
+        Flights(b, "B4 서계단", In0, WestTo, Near, Far, N1, 12f, 9f);
+
+        // East stairs, third floor to the ground floor: doors onto the corridor on the third and ground floors.
+        b.Box("B4 동계단 서벽", EastFrom - Wall, EastFrom, 0f, 9f - Wall, CoreZ - Wall, N1);
+        WallAlongX(b, "B4 동계단 1층 남벽", EastFrom - Wall, In1, CoreZ - Wall, CoreZ, 0f, Ceiling, (101.9f, 103.5f));
+        b.Box("B4 동계단 2층 남벽 (판자로 막음)", EastFrom - Wall, In1, 3f, 3f + Ceiling, CoreZ - Wall, CoreZ);
+        WallAlongX(b, "B4 동계단 3층 남벽", EastFrom - Wall, In1, CoreZ - Wall, CoreZ, 6f, 6f + Ceiling, (99.9f, 101.5f));
+        Flights(b, "B4 동계단", EastFrom, In1, Near, Far, N1, 6f, 0f);
+
+        // Top floor (9): the corridor, two flats each side. The south-west flat's door is blocked by a sofa.
+        WallAlongX(b, "B4 4층 복도 북벽", WestTo + Wall, In1, CoreZ - Wall, CoreZ, 9f, 9f + Ceiling, (93f, 94.2f), (99f, 100.2f));
+        WallAlongX(b, "B4 4층 복도 남벽", In0, In1, -1.5f, -1.2f, 9f, 9f + Ceiling, (90f, 91.2f), (99f, 100.2f));
+        b.Box("B4 4층 남쪽 집 사이벽", 95.35f, 95.65f, 9f, 9f + Ceiling, S0, -1.5f);
+        b.Box("B4 4층 북쪽 집 사이벽", 97.45f, 97.75f, 9f, 9f + Ceiling, CoreZ, N1);
+        // Third floor (6): the north flat, the south-east flat the hole drops into.
+        WallAlongX(b, "B4 3층 복도 북벽", In0, EastFrom - Wall, CoreZ - Wall, CoreZ, 6f, 6f + Ceiling, (93f, 94.2f));
+        WallAlongX(b, "B4 3층 복도 남벽", In0, In1, -1.5f, -1.2f, 6f, 6f + Ceiling, (96.2f, 97.4f));
+        b.Box("B4 3층 남쪽 집 사이벽", 95.35f, 95.65f, 6f, 6f + Ceiling, S0, -1.5f);
+        // Ground floor (0): the corridor to the back door, the north flat, the south-east flat (the mail room).
+        WallAlongX(b, "B4 1층 복도 북벽", In0, EastFrom - Wall, CoreZ - Wall, CoreZ, 0f, Ceiling, (93f, 94.2f));
+        WallAlongX(b, "B4 1층 복도 남벽", In0, In1, -1.5f, -1.2f, 0f, Ceiling, (90f, 91.2f), (98f, 99.2f));
+        b.Box("B4 1층 남쪽 집 사이벽", 95.35f, 95.65f, 0f, Ceiling, S0, -1.5f);
+
+        b.Spot("B4Hole", new Vector3((HoleX0 + HoleX1) * .5f, 9f, (HoleZ0 + HoleZ1) * .5f));
+        b.Spot("B4Lobby", new Vector3(100.5f, 0f, 0f));
+
+        // Lamps, dim and warm (the building lost its mains; these are the survivors' work lights).
+        foreach (var at in new[]
+        {
+            new Vector3(95.5f, 11.3f, 0f), new Vector3(89.3f, 14.3f, 6f), new Vector3(94.5f, 11.3f, 5.5f), new Vector3(100.5f, 11.3f, 5.5f),
+            new Vector3(99.5f, 11.3f, -5.5f), new Vector3(92f, 8.3f, 0f), new Vector3(99.5f, 8.3f, -5.5f), new Vector3(101.7f, 8.3f, 5f),
+            new Vector3(100.2f, 3.6f, 6f), new Vector3(97f, 2.3f, 0f), new Vector3(99.5f, 2.3f, -5.5f), new Vector3(92f, 2.3f, 6f),
+        })
+            b.Lamp(at, 7f, 1.1f);
+
+        // Top floor: rubbish in the corridor, the sofa across the south-west door, a lived-in north-west flat, a kitchen
+        // and a survivor's stash north-east, debris round the hole.
+        foreach (var (x, z) in new[] { (89f, -.8f), (97.5f, .7f), (103f, -.6f) }) b.Prop("litter", new Vector3(x, 9f, z), x * 13f % 360f);
+        foreach (var (x, z) in new[] { (92.5f, -.85f), (102.8f, .65f) }) b.Prop("trashbag", new Vector3(x, 9f, z), x * 7f % 360f);
+        b.Prop("cardboard", new Vector3(101.5f, 9f, .85f), 20f);
+        b.PropSolid("couch", new Vector3(90.6f, 9f, -.65f), 0f);
+        b.Prop("couch", new Vector3(94.5f, 9f, 8.7f), 180f);
+        b.Prop("oldtv", new Vector3(94.5f, 9f, 3.3f), 0f);
+        b.PropSolid("worktable", new Vector3(95.6f, 9f, 5.6f), 90f);
+        foreach (var (x, z) in new[] { (95f, 4.4f), (96.4f, 6.6f) }) b.Prop("stool", new Vector3(x, 9f, z), x * 17f % 360f);
+        b.PropSolid("locker", new Vector3(92.1f, 9f, 8.9f), 90f);
+        b.Prop("cardboard", new Vector3(96.6f, 9f, 9.1f), 5f);
+        b.PropSolid("fridge", new Vector3(103.1f, 9f, 8.9f), 270f);
+        b.PropSolid("worktable", new Vector3(100.6f, 9f, 6.2f), 0f);
+        b.Prop("stool", new Vector3(100.4f, 9f, 4.9f), 40f);
+        b.Prop("plasticdrum", new Vector3(98.4f, 9f, 9.1f));
+        foreach (var (x, z) in new[] { (99.1f, 8.9f), (99.6f, 9.2f) }) b.Prop("jerrycan", new Vector3(x, 9f, z), x * 29f % 360f);
+        b.Prop("cardboardflat", new Vector3(101f, 9f, 3f), 15f);
+        foreach (var (x, z) in new[] { (99.4f, -6.2f), (103f, -6.6f), (101.3f, -8.3f) }) b.Prop("brickdebris", new Vector3(x, 9f, z), x * 19f % 360f);
+        b.Prop("planks", new Vector3(101.2f, 9f, -4.4f), 30f);
+        b.Prop("rubble", new Vector3(97.5f, 9f, -8.4f), 60f);
+        // Third floor: what fell through, a stripped north flat.
+        b.Prop("brickdebris", new Vector3(101.2f, 6f, -6.3f), 110f);
+        b.Prop("rubble", new Vector3(102.6f, 6f, -5f), 200f);
+        foreach (var (x, z) in new[] { (97f, -8.8f), (98.2f, -9f) }) b.Prop("plasticcrate", new Vector3(x, 6f, z), x * 11f % 360f);
+        b.Prop("trashbag", new Vector3(91f, 6f, .8f), 70f);
+        b.Prop("litter", new Vector3(98.5f, 6f, -.7f), 140f);
+        b.Prop("couch", new Vector3(91.5f, 6f, 8.7f), 180f);
+        b.Prop("oldtv", new Vector3(91.5f, 6f, 3.2f), 10f);
+        b.PropSolid("wireshelf", new Vector3(98.5f, 6f, 8.8f), 0f);
+        foreach (var (x, z) in new[] { (96.5f, 3.4f), (97.3f, 4.1f), (88.5f, 6.5f) }) b.Prop("cardboard", new Vector3(x, 6f, z), x * 23f % 360f);
+        // The boarded second-floor door, boxes on the landings.
+        b.Prop("planks", new Vector3(102.6f, 3f, 1.8f), 90f);
+        b.Prop("cardboard", new Vector3(100.4f, 3f, 1.9f), 30f);
+        // Ground floor: the mail room's boxes (electric boxes on the wall), rubbish to the back door.
+        foreach (var (x, z) in new[] { (100f, -9.35f), (102f, -9.35f) }) b.Prop("electricbox", new Vector3(x, 0f, z), 0f);
+        foreach (var (x, z) in new[] { (97f, -2.5f), (103f, -8f) }) b.Prop("cardboard", new Vector3(x, 0f, z), x * 31f % 360f);
+        b.Prop("trashcan", new Vector3(96f, 0f, -.9f), 0f);
+        b.Prop("cardboardflat", new Vector3(102.5f, 0f, .2f), 75f);
+        b.Prop("litter", new Vector3(99f, 0f, .7f), 20f);
+        b.Prop("trashbag", new Vector3(92f, 0f, 8.5f), 160f);
+
+        // Zombies on every floor, a few supplies, and the building's own sound.
+        b.EnemySpawn("B4 4층 복도", new Vector3(102.5f, 9f, 0f));
+        b.EnemySpawn("B4 4층 북서 집", new Vector3(94f, 9f, 6.5f));
+        b.EnemySpawn("B4 4층 북동 집", new Vector3(101f, 9f, 4f));
+        b.EnemySpawn("B4 4층 남동 집", new Vector3(97.5f, 9f, -4f));
+        b.EnemySpawn("B4 3층 남동 집", new Vector3(97.5f, 6f, -7.5f));
+        b.EnemySpawn("B4 3층 복도", new Vector3(90f, 6f, 0f));
+        b.EnemySpawn("B4 3층 북쪽 집", new Vector3(93f, 6f, 6f));
+        b.EnemySpawn("B4 동계단 2층", new Vector3(102.7f, 3f, 2.1f));
+        b.EnemySpawn("B4 1층 복도", new Vector3(95f, 0f, 0f));
+        b.EnemySpawn("B4 1층 우편함 방", new Vector3(101f, 0f, -6f));
+        b.EnemySpawn("B4 1층 북쪽 집", new Vector3(93f, 0f, 6f));
+        b.Pickup(new Vector3(101.5f, 9f, 7.6f));
+        b.Pickup(new Vector3(90.5f, 6f, 7.4f), PickupSpot.Roll.Gun);
+        b.Pickup(new Vector3(99f, 0f, -.5f));
+        b.Ambience("Ch1.Flats", In0, In1, 0f, 12f, S0, N1);
+    }
+
+    // Two flights per floor side by side, from a landing by the corridor (near) to a half landing at the far end and
+    // back, from top down to bottom (3 m a floor), with a wall between them.
+    private static void Flights(GreyboxBuilder b, string name, float x0, float x1, float near, float far, float end,
+        float top, float bottom)
+    {
+        float half = (x1 - x0) * .5f, a = x0 + half * .5f, c = x0 + half * 1.5f;
+        int floor = 0;
+        for (float y = top; y > bottom + .01f; y -= 3f, floor++)
+        {
+            float mid = y - 1.5f;
+            b.Ramp($"{name} {floor * 2 + 1}", new Vector3(a, mid, far), new Vector3(a, y, near), half - .1f, b.Concrete);
+            b.Box($"{name} 참 {floor + 1}", x0, x1, mid - Wall, mid, far, end, b.Concrete, "Concrete");
+            b.Ramp($"{name} {floor * 2 + 2}", new Vector3(c, y - 3f, near), new Vector3(c, mid, far), half - .1f, b.Concrete);
+        }
+        b.Box(name + " 가운데 벽", x0 + half - .05f, x0 + half + .05f, bottom, top + 1f, near, far);
+    }
+
+    // A floor slab with its top at y over x0..x1, z0..z1, open over the rectangle hx0..hx1, hz0..hz1.
+    private static void Slab(GreyboxBuilder b, string name, float y, float x0, float x1, float z0, float z1,
+        float hx0, float hx1, float hz0, float hz1, Material material, string surface)
+    {
+        float y0 = y - Wall;
+        if (hz0 > z0) b.Box(name + " 남", x0, x1, y0, y, z0, hz0, material, surface);
+        if (hz1 < z1) b.Box(name + " 북", x0, x1, y0, y, hz1, z1, material, surface);
+        if (hx0 > x0) b.Box(name + " 서", x0, hx0, y0, y, hz0, hz1, material, surface);
+        if (hx1 < x1) b.Box(name + " 동", hx1, x1, y0, y, hz0, hz1, material, surface);
+    }
+
+    // A wall along x (z0..z1 thick) from y0 to y1 with door openings 2.3 m high at the given spans (west to east).
+    private static void WallAlongX(GreyboxBuilder b, string name, float x0, float x1, float z0, float z1, float y0, float y1,
+        params (float from, float to)[] doors)
+    {
+        float x = x0;
+        int part = 0;
+        foreach (var (from, to) in doors)
+        {
+            if (from > x) b.Box($"{name} {++part}", x, from, y0, y1, z0, z1);
+            b.Box($"{name} 문 위 {part}", from, to, y0 + 2.3f, y1, z0, z1);
+            x = to;
+        }
+        if (x1 > x) b.Box($"{name} {++part}", x, x1, y0, y1, z0, z1);
+    }
+
+    // Chapter 1's streets, roofs, alley and building site in the packs' props (map dressing stage 3, 2026-11-12): a
+    // police car and barricaded street ends, poles and lamps, water tanks and air conditioners on the roofs, rubbish in
+    // the alley, the building site's materials and machines. Big things block (PropSolid) and stand clear of the
+    // routes and the spawns; small things are only seen.
+    private static void DressRooftops(GreyboxBuilder b)
+    {
+        // Roofs.
+        b.PropSolid("watertank", new Vector3(30.5f, 16f, -6.5f), 0f);
+        foreach (var x in new[] { 72f, 74.2f }) b.PropSolid("acunit", new Vector3(x, 13f, -8.4f), 0f);
+        b.PropSolid("watertank", new Vector3(101.5f, 12f, -7.3f), 30f);
+        // Street 1 under the zipline: barricaded ends, a police car, cones round the first car, rubbish.
+        foreach (var z in new[] { -21f, 22f })
+            foreach (var x in new[] { 51.5f, 55f, 58.5f }) b.Prop("jersey", new Vector3(x, 0f, z), 0f);
+        b.PropSolid("policecar", new Vector3(54f, 0f, 12f), 75f);
+        foreach (var (x, z) in new[] { (49.8f, -7f), (51f, -7.4f), (50.2f, -3.2f) }) b.Prop("cone", new Vector3(x, 0f, z), x * 37f % 360f);
+        b.Prop("trafficdrum", new Vector3(60.8f, 0f, 7f));
+        b.Prop("powerpole", new Vector3(48.4f, 0f, -16f), 90f);
+        b.Prop("powerpole", new Vector3(48.4f, 0f, 18f), 90f);
+        b.Prop("streetlamp", new Vector3(61.6f, 0f, -10f), 270f);
+        b.Prop("streetlamp", new Vector3(61.6f, 0f, 12f), 270f);
+        foreach (var (x, z) in new[] { (48f, 3f), (62f, -3f), (49f, 9.5f) }) b.Prop("trashbag", new Vector3(x, 0f, z), x * 13f % 360f);
+        foreach (var (x, z) in new[] { (53f, 1.5f), (57.5f, -8f), (56f, 16f) }) b.Prop("litter", new Vector3(x, 0f, z), x * 7f % 360f);
+        b.Prop("cardboard", new Vector3(62.2f, 0f, -14f), 15f);
+        // The alley.
+        b.Prop("trashcan", new Vector3(116f, 0f, 3.4f), 0f);
+        b.Prop("cardboard", new Vector3(133f, 0f, 3.2f), 40f);
+        b.Prop("planks", new Vector3(130.5f, 0f, -3.6f), 90f);
+        b.Prop("electricbox", new Vector3(135.5f, 0f, 3.65f), 180f);
+        foreach (var (x, z) in new[] { (112f, -1f), (126f, -.5f) }) b.Prop("litter", new Vector3(x, 0f, z), x * 11f % 360f);
+        // Street 2 and the building site's gate.
+        b.PropSolid("policecar", new Vector3(165f, 0f, -12f), 30f);
+        b.Prop("jersey", new Vector3(168.4f, 0f, -6f), 90f);
+        b.Prop("jersey", new Vector3(168.4f, 0f, 6f), 90f);
+        foreach (var (x, z) in new[] { (169f, -2.5f), (169f, 2.5f), (167.5f, .8f) }) b.Prop("cone", new Vector3(x, 0f, z), x * 23f % 360f);
+        b.Prop("warninglight", new Vector3(169.3f, 0f, -4.2f), 270f);
+        b.Prop("streetlamp", new Vector3(143f, 0f, -20f), 0f);
+        b.Prop("streetlamp", new Vector3(165f, 0f, 22f), 180f);
+        b.Prop("trashbag", new Vector3(144.5f, 0f, 9f), 60f);
+        b.Prop("litter", new Vector3(157.8f, 0f, 9.3f), 10f);
+        // The building site: bricks and bags by the gate, pipes, a mixer and a generator by the building, toilets and a
+        // water tank in the north corner, tarps, boards and drums.
+        b.PropSolid("bricks", new Vector3(173.5f, 0f, -6f), 0f);
+        b.PropSolid("bricks", new Vector3(176.5f, 0f, -14f), 90f);
+        foreach (var (x, z) in new[] { (175.5f, -6.8f), (176.4f, -7.3f) }) b.Prop("cementbags", new Vector3(x, 0f, z), x * 17f % 360f);
+        b.PropSolid("concretepipe", new Vector3(205f, 0f, 4f), 0f);
+        b.PropSolid("concretepipe", new Vector3(205f, 0f, 7f), 0f);
+        b.PropSolid("concretemixer", new Vector3(207f, 0f, -4f), 90f);
+        b.PropSolid("generator", new Vector3(208f, 0f, 11f), 180f);
+        b.PropSolid("portapotty", new Vector3(172.5f, 0f, 24f), 90f);
+        b.PropSolid("portapotty", new Vector3(174.5f, 0f, 24f), 90f);
+        b.PropSolid("watertankportable", new Vector3(179f, 0f, 24f), 0f);
+        b.Prop("tarp", new Vector3(178f, 0f, -22f), 20f);
+        b.Prop("plywood", new Vector3(202f, 0f, -18f), 70f);
+        b.Prop("woodpallet", new Vector3(203.5f, 0f, -20.5f), 10f);
+        foreach (var (x, z) in new[] { (209f, -12f), (209.7f, -12.6f) }) b.Prop("oilbarrel", new Vector3(x, 0f, z), x * 29f % 360f);
+        b.Prop("wheelbarrow", new Vector3(180f, 0f, -3.5f), 20f);
+        b.Prop("propane", new Vector3(209f, 0f, 13.5f), 0f);
+        foreach (var (x, z) in new[] { (201f, -10.5f), (201.5f, 10f) }) b.Prop("brickdebris", new Vector3(x, 0f, z), x * 19f % 360f);
+    }
+
+    // Chapter 2's jam on the deck, the road below, the filling station and the army checkpoint in the packs' props (map
+    // dressing stage 3): luggage left in the jam, cones by the wreck and the broken end, lamps along the road, a burned-
+    // out army lorry and police cars before the toll, an army lorry and guard towers at the checkpoint, barbed wire on its
+    // sandbags and HESCO walls to its sides.
+    private static void DressOverpass(GreyboxBuilder b)
+    {
+        const float Deck = 8f;
+        foreach (var (x, z) in new[] { (12.5f, -5.4f), (13.8f, -4.6f), (114.5f, 2f) }) b.Prop("cone", new Vector3(x, Deck, z), x * 31f % 360f);
+        b.Prop("warninglight", new Vector3(11.2f, Deck, -6.1f), 0f);
+        foreach (var (x, z, yaw) in new[] { (26f, 3.4f, 40f), (51.5f, -3.2f, 120f), (77.5f, 3.2f, 200f) }) b.Prop("suitcase", new Vector3(x, Deck, z), yaw);
+        b.Prop("bag", new Vector3(65.5f, Deck, 2.2f), 70f);
+        foreach (var (x, z) in new[] { (22f, .3f), (47f, 1.2f), (72f, -.4f), (103f, .9f) }) b.Prop("litter", new Vector3(x, Deck, z), x * 13f % 360f);
+        b.Prop("trashbag", new Vector3(33.5f, Deck, 6.1f), 30f);
+        foreach (var (x, z) in new[] { (28f, 6.2f), (52f, -6.2f), (90f, 5.8f) }) b.Prop("rubble", new Vector3(x, Deck, z), x * 11f % 360f);
+        // The broken end: barriers and a warning light before the drop.
+        b.Prop("jersey", new Vector3(115.5f, Deck, -4.5f), 90f);
+        b.Prop("jersey", new Vector3(115.5f, Deck, 4.2f), 90f);
+        b.Prop("sawhorse", new Vector3(114f, Deck, 0f), 90f);
+        b.Prop("warninglight", new Vector3(113.5f, Deck, -2.2f), 90f);
+        // The road below.
+        foreach (var (x, z, yaw) in new[] { (115f, -23.5f, 0f), (140f, 23.5f, 180f), (170f, -23.5f, 0f), (185f, 23.5f, 180f) })
+            b.Prop("streetlamp", new Vector3(x, 0f, z), yaw);
+        b.Prop("roadplate", new Vector3(130f, 0f, 6f), 10f);
+        b.Prop("roadplate", new Vector3(171f, 0f, -2f), 80f);
+        b.PropSolid("wrecktruck", new Vector3(184f, 0f, 15f), 30f);
+        b.PropSolid("policecar", new Vector3(199.5f, 0f, -11f), 95f);
+        b.PropSolid("policecar", new Vector3(200f, 0f, 11.5f), 85f);
+        foreach (var (x, z) in new[] { (196.5f, -4.5f), (196.5f, 4.5f), (197f, -13.5f), (197f, 13.5f) }) b.Prop("cone", new Vector3(x, 0f, z), x * 17f % 360f);
+        foreach (var z in new[] { -2.6f, 2.6f }) b.Prop("trafficdrum", new Vector3(195.5f, 0f, z));
+        // The filling station.
+        foreach (var (x, z) in new[] { (156.5f, 23f), (157.3f, 23.6f) }) b.Prop("drum", new Vector3(x, 0f, z), x * 7f % 360f);
+        b.Prop("gascylinder", new Vector3(155.5f, 0f, 23.2f));
+        b.Prop("tirestack", new Vector3(169.5f, 0f, 9.5f), 20f);
+        b.Prop("jersey", new Vector3(144f, 0f, 6.6f), 0f);
+        b.Prop("jersey", new Vector3(150f, 0f, 6.6f), 0f);
+        foreach (var (x, z) in new[] { (148f, 10.5f), (152f, 16f) }) b.Prop("litter", new Vector3(x, 0f, z), x * 19f % 360f);
+        b.Prop("trashbag", new Vector3(157.8f, 0f, 12.5f), 120f);
+        // The checkpoint: barbed wire along the sandbags' top, an army lorry, two guard towers, HESCO walls.
+        for (float z = -19f; z <= -4f; z += 1.7f) b.Prop("barbedwire", new Vector3(204.5f, 1f, z), 90f);
+        for (float z = 4f; z <= 19f; z += 1.7f) b.Prop("barbedwire", new Vector3(204.5f, 1f, z), 90f);
+        b.PropSolid("militarytruck", new Vector3(217f, 0f, -8f), 0f);
+        b.PropSolid("guardtower", new Vector3(226.5f, 0f, 19f), 180f);
+        b.PropSolid("guardtower", new Vector3(226.5f, 0f, -19f), 0f);
+        b.Dress(b.Box("HESCO 남", 220.5f, 222.4f, 0f, 2f, -24f, -17f, b.Wood, "Tarp"), "hesco");
+        b.Dress(b.Box("HESCO 북", 220.5f, 222.4f, 0f, 2f, 17f, 24f, b.Wood, "Tarp"), "hesco");
+    }
+
+    // Chapter 3's concourse, platform, tunnel, depot, river tunnel and far bank in the packs' props (map dressing
+    // stage 3): rubbish and boxes where people sheltered, debris on the tracks, the depot's shelves, lockers, drums and
+    // workbench, and on the far bank the army's evacuation point (barbed wire on the sandbags, a lorry, HESCO, barriers).
+    private static void DressSubway(GreyboxBuilder b)
+    {
+        const float Bank = 8f;
+        // Concourse.
+        foreach (var (x, z) in new[] { (-6.5f, -11.2f), (28.5f, 11.2f) }) b.Prop("trashbag", new Vector3(x, 0f, z), x * 13f % 360f);
+        foreach (var (x, z) in new[] { (5f, -3f), (19f, 4f), (24f, -2f) }) b.Prop("litter", new Vector3(x, 0f, z), x * 7f % 360f);
+        b.Prop("cardboard", new Vector3(6.5f, 0f, 6.2f), 25f);
+        b.Prop("plasticcrate", new Vector3(8.6f, 0f, 7.2f), 80f);
+        b.Prop("planks", new Vector3(-4f, 0f, 11.4f), 0f);
+        // Platform and tracks.
+        foreach (var (x, z) in new[] { (35f, -11f), (86f, -10f) }) b.Prop("brickdebris", new Vector3(x, 0f, z), x * 11f % 360f);
+        foreach (var (x, z) in new[] { (58f, -1f), (75f, -11f) }) b.Prop("litter", new Vector3(x, 0f, z), x * 17f % 360f);
+        b.Prop("cardboard", new Vector3(44f, 1.1f, 11.2f), 10f);
+        b.Prop("trashbag", new Vector3(66f, 1.1f, 11.3f), 140f);
+        b.Prop("plasticcrate", new Vector3(80f, 1.1f, 11.2f), 15f);
+        foreach (var (x, z) in new[] { (50f, 3f), (68f, 2.5f) }) b.Prop("litter", new Vector3(x, 1.1f, z), x * 19f % 360f);
+        b.Prop("bag", new Vector3(61f, 1.1f, 7.5f), 200f);
+        // Tunnel.
+        foreach (var (x, z) in new[] { (100f, -5.4f), (118f, 1.4f), (135f, -5.3f) }) b.Prop("rubble", new Vector3(x, 0f, z), x * 23f % 360f);
+        b.Prop("planks", new Vector3(122f, 0f, 1.3f), 0f);
+        b.Prop("corrugated", new Vector3(155f, 0f, 1.4f), 0f);
+        b.Prop("drum", new Vector3(165f, 0f, -5.4f), 40f);
+        // Depot.
+        b.PropSolid("palletload", new Vector3(201f, 0f, -18.5f), 0f);
+        foreach (var (x, z) in new[] { (212f, 17.5f), (212.8f, 18.2f), (211.4f, 18.4f) }) b.Prop("drum", new Vector3(x, 0f, z), x * 29f % 360f);
+        foreach (var (x, z) in new[] { (216.5f, -8f), (216.8f, -9.2f) }) b.Prop("gascylinder", new Vector3(x, 0f, z), x * 7f % 360f);
+        b.Prop("plasticcrate", new Vector3(171.5f, 0f, -18.5f), 0f);
+        foreach (var x in new[] { 176f, 179f }) b.PropSolid("wireshelf", new Vector3(x, 0f, -19.4f), 0f);
+        foreach (var z in new[] { 4.4f, 5f }) b.PropSolid("locker", new Vector3(171f, 0f, z), 90f);
+        b.PropSolid("worktable", new Vector3(198f, 0f, -12f), 0f);
+        b.Prop("stool", new Vector3(198.8f, 0f, -11f), 30f);
+        b.Prop("toolbox", new Vector3(199.5f, 0f, -12.9f), 10f);
+        b.Prop("handtruck", new Vector3(203f, 0f, 8f), 60f);
+        b.Prop("tire", new Vector3(215.5f, 0f, 6f), 0f);
+        b.Prop("tirestack", new Vector3(213f, 0f, 7.5f), 0f);
+        b.PropSolid("spool", new Vector3(208f, 0f, 18f), 0f);
+        // River tunnel.
+        b.Prop("electricbox", new Vector3(230f, 0f, 2.7f), 180f);
+        b.Prop("electricbox", new Vector3(270f, 0f, -2.7f), 0f);
+        foreach (var x in new[] { 246f, 292f }) b.Prop("litter", new Vector3(x, 0f, .5f), x * 11f % 360f);
+        // Far bank: the army's evacuation point.
+        for (float z = -15.2f; z <= -8.8f; z += 1.6f) b.Prop("barbedwire", new Vector3(326.5f, Bank + 1.1f, z), 90f);
+        b.PropSolid("militarytruck", new Vector3(338.5f, Bank, 16f), 90f);
+        b.Dress(b.Box("HESCO 광장", 336f, 337.9f, Bank, Bank + 2f, -24f, -14f, b.Wood, "Tarp"), "hesco");
+        b.Prop("jersey", new Vector3(336.5f, Bank, -6.5f), 0f);
+        b.Prop("jersey", new Vector3(336.5f, Bank, 6.5f), 0f);
+        b.Prop("warninglight", new Vector3(337.5f, Bank, -5.6f), 90f);
+        foreach (var (x, z) in new[] { (327.5f, -17.5f), (328.6f, -18f) }) b.Prop("woodcrate", new Vector3(x, Bank, z), x * 13f % 360f);
+        b.Prop("streetlamp", new Vector3(323f, Bank, 10f), 90f);
+        b.Prop("streetlamp", new Vector3(323f, Bank, -20f), 90f);
+    }
+
+    // Chapter 4's cargo yard, landside road, terminal, apron and the transport's evacuation point in the packs' props
+    // (map dressing stage 3). The runway's middle (x 245-315), where the airliner is pushed back, is left clear.
+    private static void DressAirport(GreyboxBuilder b)
+    {
+        const float Floor = 4f;
+        // Cargo yard.
+        foreach (var (x, z) in new[] { (14f, 9f), (14.7f, 9.6f), (13.6f, 10.2f) }) b.Prop("drum", new Vector3(x, 0f, z), x * 7f % 360f);
+        b.PropSolid("palletload", new Vector3(16f, 0f, -6f), 0f);
+        foreach (var (x, z) in new[] { (10f, 7.5f), (11.2f, 7.9f) }) b.Prop("woodcrate", new Vector3(x, 0f, z), x * 13f % 360f);
+        b.Prop("plasticcrate", new Vector3(2.5f, 0f, 8.6f), 30f);
+        b.Prop("tirestack", new Vector3(-4f, 0f, 18f), 0f);
+        foreach (var (x, z) in new[] { (15f, -10.5f), (15.6f, -11f) }) b.Prop("gascylinder", new Vector3(x, 0f, z), x * 11f % 360f);
+        b.Prop("streetlamp", new Vector3(18.5f, 0f, -20f), 270f);
+        b.Prop("streetlamp", new Vector3(18.5f, 0f, 20f), 270f);
+        // Landside road and the departures curb.
+        b.PropSolid("policecar", new Vector3(30f, 0f, 22f), 10f);
+        foreach (var z in new[] { -30f, -27f, -24f }) b.Prop("jersey", new Vector3(34f, 0f, z), 90f);
+        foreach (var (x, z) in new[] { (31f, -6f), (32f, 6f), (40f, -2f) }) b.Prop("cone", new Vector3(x, 0f, z), x * 17f % 360f);
+        b.Prop("trafficdrum", new Vector3(36f, 0f, 9f));
+        foreach (var z in new[] { -30f, -10f, 10f, 30f }) b.Prop("streetlamp", new Vector3(46f, 0f, z), 90f);
+        foreach (var (x, z) in new[] { (57f, 6f), (58.5f, -9f) }) b.Prop("suitcase", new Vector3(x, Floor, z), x * 31f % 360f);
+        b.Prop("trashbag", new Vector3(59.3f, Floor, 15f), 60f);
+        // Terminal: what people dropped.
+        foreach (var (x, z) in new[] { (70f, -5f), (84f, 12f), (101f, -18f), (118f, 5f), (150f, -8f), (165f, 14f) })
+            b.Prop("litter", new Vector3(x, Floor, z), x * 7f % 360f);
+        foreach (var (x, z) in new[] { (61f, 38.5f), (120f, -38.5f), (178f, 38.5f) }) b.Prop("trashbag", new Vector3(x, Floor, z), x * 11f % 360f);
+        foreach (var (x, z) in new[] { (77f, 25f), (133f, -14f) }) b.Prop("cardboard", new Vector3(x, Floor, z), x * 13f % 360f);
+        b.Prop("plasticbarrier", new Vector3(125f, Floor, -16f), 90f);
+        b.Prop("plasticbarrier", new Vector3(125f, Floor, 16f), 90f);
+        // Apron.
+        foreach (var (x, z) in new[] { (205f, -20f), (206.2f, -19.4f), (226f, 12f), (227f, 12.8f) }) b.Prop("cone", new Vector3(x, 0f, z), x * 19f % 360f);
+        foreach (var (x, z) in new[] { (196f, 30f), (196.8f, 30.6f) }) b.Prop("drum", new Vector3(x, 0f, z), x * 23f % 360f);
+        b.PropSolid("palletload", new Vector3(234f, 0f, -32f), 0f);
+        b.Prop("tirestack", new Vector3(238f, 0f, -48f), 0f);
+        b.PropSolid("militarytruck", new Vector3(228f, 0f, -30f), 90f);
+        b.Prop("streetlamp", new Vector3(208f, 0f, 38f), 180f);
+        b.Prop("streetlamp", new Vector3(236f, 0f, -38f), 0f);
+        // The transport's evacuation point: HESCO walls and sandbags round the hold, barbed wire, guard towers, lorries.
+        b.Dress(b.Box("HESCO 수송기 남", 318f, 334f, 0f, 2f, -30f, -28.1f, b.Wood, "Tarp"), "hesco");
+        b.Dress(b.Box("HESCO 수송기 북", 318f, 334f, 0f, 2f, 28.1f, 30f, b.Wood, "Tarp"), "hesco");
+        b.Dress(b.Box("모래주머니 수송기 남", 312f, 313f, 0f, 1.2f, -20f, -12f, b.Wood, "Tarp"), "sandbags");
+        b.Dress(b.Box("모래주머니 수송기 북", 312f, 313f, 0f, 1.2f, 12f, 20f, b.Wood, "Tarp"), "sandbags");
+        for (float x = 319f; x <= 333f; x += 1.7f) b.Prop("barbedwire", new Vector3(x, 0f, -27f), 0f);
+        for (float x = 319f; x <= 333f; x += 1.7f) b.Prop("barbedwire", new Vector3(x, 0f, 27f), 0f);
+        b.PropSolid("guardtower", new Vector3(316f, 0f, -34f), 0f);
+        b.PropSolid("guardtower", new Vector3(316f, 0f, 34f), 180f);
+        b.PropSolid("militarytruck", new Vector3(350f, 0f, -18f), 0f);
+        b.PropSolid("wrecktruck", new Vector3(352f, 0f, 20f), 200f);
+        b.Prop("streetlamp", new Vector3(312f, 0f, -26f), 90f);
+        b.Prop("streetlamp", new Vector3(312f, 0f, 26f), 270f);
     }
 
     // A stopped car, 4.5 m long across x, at <paramref name="y"/> (the road it stands on), dressed as one of
