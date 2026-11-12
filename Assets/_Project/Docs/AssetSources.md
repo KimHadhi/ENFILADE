@@ -129,6 +129,7 @@ Hiro 모델(`Art/Models/Characters/Hiro`)은 허락을 받은 캐릭터라 교�
 | `Art/Models/Props/TetoPear` | FBX 1개 | 물리 프롭 시험용. 커밋 0.6.3에 추가 |
 | `Art/Models/Addons/Grenades`, `Art/Audio/Grenades` | FBX 5개·PNG 5개, WAV 24개 | 2026-11-12 클래스 투척물. 모델과 소리 대부분은 GMod 애드온 ArcCW GSO(워크숍 2257255110)에 든 CS:GO 에셋(Valve), 나이프 던지는 소리 3개는 [MW] Quick Throwing Knife(3650480912). 다른 워크숍 이식과 같이 개인 프로젝트용. 공개 배포 전에 교체할 것 |
 | `Resources/Tables/GrenadeArm.csv` | 손 궤적 31줄(팔이 하는 일만: 어깨에서 손목·팔꿈치까지, 손이 향한 쪽, 손가락 굽힘) | 2026-11-12 G 투척의 왼팔 동작. GMod 애드온 VManip(워크숍 2155366756, c_vmanipgrenade.mdl의 thrownade)에서 Tools/Blender/vmanip_throw_path.py로 뽑았다. 모델·클립·소리는 넣지 않았다. 사용자가 함께 가져온 [VManip] Quick Grenades(2157021399)와 Quick Nade Timer HUD(3091371851)는 동작 순서(누르면 들고 핀, 떼면 0.2초 뒤 던짐)와 신관 링 모양의 참고만 했다. 개인 프로젝트용. 공개 배포 전에 교체할 것 |
+| `Resources/Tables/KnifeArm.csv`, `Art/Audio/Grenades/Knife*` | 손 궤적 45줄(같은 방식), WAV 20개 | 2026-11-12 나이트 투척 나이프의 왼팔 동작과 소리. GMod 애드온 [MW] Quick Throwing Knife(워크숍 3650480912)의 MW2019 투척 나이프 뷰모델(c_eq_knife.mdl)의 draw·throw를 Tools/Blender/hand_path.py로 좌우를 뒤집어 뽑았다(모델·클립은 넣지 않음). 소리는 그 애드온의 pull_out·throw_cloth와 Far Cry 4 knife_stab·knife_hit(이미 `Art/Audio/Library/ThrowingKnife`에 있던 것을 소리 묶음 폴더로 복사). 개인 프로젝트용. 공개 배포 전에 교체할 것 |
 
 ## 아직 들어오지 않은 후보
 

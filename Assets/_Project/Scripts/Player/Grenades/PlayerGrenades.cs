@@ -73,6 +73,8 @@ public sealed class PlayerGrenades : MonoBehaviour
     public int Count => count;
     public int Carry => Info != null ? Info.Carry : 0;
     private ThrowableInfo Info => Throwables.Of(kind);
+    // The hand motion of what the off hand has now (Tables/ThrowArms: the grenade's, or the knife's).
+    private GrenadeArmPath.Motion Motion => GrenadeArmPath.For(armKind);
 
     /// <summary>
     /// The player's off hand is on a throw (going for it, holding it, throwing it, putting it back): anything else that
@@ -213,9 +215,10 @@ public sealed class PlayerGrenades : MonoBehaviour
     // shove stops them.
     private void Begin(ThrowableInfo info)
     {
-        StartArm(kind, Throwables.Rule("holdDraw", 1.25f));
+        StartArm(kind, GrenadeArmPath.For(kind).HoldDraw);
         pressedAt = Time.time;
         holding = letGo = false;
+        if (kind == Throwable.Knife) KnifeOut(HandPoint());
         if (weapon == null) weapon = GetComponent<WeaponController>();
         if (weapon != null) weapon.InterruptForSurvival();
         Handed?.Invoke(kind, HandPhase.Draw);
@@ -226,7 +229,7 @@ public sealed class PlayerGrenades : MonoBehaviour
     private void LetGo(bool tap)
     {
         letGo = true;
-        if (tap) drawSpeed = Throwables.Rule("tapDraw", 1.6f);
+        if (tap) drawSpeed = Motion.TapDraw;
         Handed?.Invoke(armKind, tap ? HandPhase.TapThrow : HandPhase.Throw);
         if (arm == Arm.Hold) Release();
     }
@@ -248,7 +251,8 @@ public sealed class PlayerGrenades : MonoBehaviour
         cookLeft -= Time.deltaTime;
         if (info.ThrowsOut)
         {
-            float windup = (Throwables.Rule("release", .61f) - Throwables.Rule("hold", .4f)) / Mathf.Max(.1f, Throwables.Rule("throwSpeed", 1.3f));
+            var motion = Motion;
+            float windup = (motion.Release - motion.Hold) / Mathf.Max(.1f, motion.ThrowSpeed);
             if (arm == Arm.Hold && !letGo && cookLeft <= Throwables.Rule("reflexLead", .5f) + windup) LetGo(false);
             // On its way out of the hand it waits for the release (Throw keeps a little fuse for the flight).
             if (cookLeft < 0f) cookLeft = 0f;
@@ -285,7 +289,7 @@ public sealed class PlayerGrenades : MonoBehaviour
     private void StartThrow()
     {
         arm = Arm.Throw;
-        cycle = Mathf.Max(cycle, Throwables.Rule("hold", .4f));
+        cycle = Mathf.Max(cycle, Motion.Hold);
     }
 
     // Let go at the hold: thrown, or set down (a claymore: on this PC's player's own PC; a friend's copy waits to be told
@@ -412,12 +416,13 @@ public sealed class PlayerGrenades : MonoBehaviour
     private void Run(float dt, ThrowableInfo info)
     {
         if (arm == Arm.None) return;
-        float hold = Throwables.Rule("hold", .4f);
+        var motion = Motion;
+        float hold = motion.Hold;
         switch (arm)
         {
             case Arm.Draw:
                 cycle += dt * drawSpeed;
-                if (!pinned && cycle >= Throwables.Rule("pin", .3f)) Pin(info);
+                if (!pinned && motion.HasPin && cycle >= motion.Pin) Pin(info);
                 if (cycle >= hold)
                 {
                     cycle = hold;
@@ -426,13 +431,13 @@ public sealed class PlayerGrenades : MonoBehaviour
                 }
                 break;
             case Arm.Throw:
-                cycle += dt * Mathf.Max(.1f, Throwables.Rule("throwSpeed", 1.3f));
-                if (!released && cycle >= Throwables.Rule("release", .61f))
+                cycle += dt * Mathf.Max(.1f, motion.ThrowSpeed);
+                if (!released && cycle >= motion.Release)
                 {
                     released = true;
                     if (movement.IsLocal) Throw(info);
                 }
-                if (cycle >= Throwables.Rule("end", .97f)) arm = Arm.None;
+                if (cycle >= motion.End) arm = Arm.None;
                 break;
             case Arm.Lower:
                 if ((lowerLeft -= dt) <= 0f) arm = Arm.None;
@@ -440,7 +445,7 @@ public sealed class PlayerGrenades : MonoBehaviour
         }
         if (armBody == null) armBody = GrenadeArm.Of(movement);
         // On the throwable while going for it, holding it and throwing it, until the path's hand heads back to the gun.
-        bool on = arm == Arm.Draw || arm == Arm.Hold || (arm == Arm.Throw && cycle < Throwables.Rule("back", .85f));
+        bool on = arm == Arm.Draw || arm == Arm.Hold || (arm == Arm.Throw && cycle < motion.Back);
         if (armBody != null) armBody.Drive(armKind, cycle, on, !released);
     }
 
@@ -487,6 +492,7 @@ public sealed class PlayerGrenades : MonoBehaviour
             var knife = ThrownKnife.Throw(id, from, velocity, movement, true);
             if (knife != null) knives[id] = knife;
             Throwables.Play("KnifeThrow", from, .9f, 1.5f, 20f);
+            Throwables.Play("KnifeThrowCloth", from, .8f, 1.5f, 15f);
         }
         else
         {
@@ -539,13 +545,23 @@ public sealed class PlayerGrenades : MonoBehaviour
         return view.position + view.forward * .45f - view.right * .16f - view.up * .25f;
     }
 
-    // The throw felt: the gun nods as the left hand goes, and the view gives a small kick that way.
+    // The throw felt: the gun nods as the left hand goes, and the view gives a small kick that way; a knife's flick
+    // dips the view and rolls it a little, as GMod's [MW] Quick Throwing Knife does (ViewPunch 2 down, a short roll).
     private void Feel()
     {
         if (weapon == null) weapon = GetComponent<WeaponController>();
         if (weapon != null) FPSBody.Holding(weapon)?.Point();
         var eye = Camera.main;
-        if (eye != null) CameraViewPunch.For(eye)?.Punch(new Vector3(-1.2f, -.9f, 2f));
+        if (eye == null) return;
+        if (armKind == Throwable.Knife) CameraViewPunch.For(eye)?.Punch(new Vector3(2f, 0f, -1.5f));
+        else CameraViewPunch.For(eye)?.Punch(new Vector3(-1.2f, -.9f, 2f));
+    }
+
+    // A knife drawn for the throw: the blade and the sleeve's sounds together, as the addon's pull-out.
+    private static void KnifeOut(Vector3 at)
+    {
+        Throwables.Play("KnifeDraw", at, .8f, 1.2f, 12f);
+        Throwables.Play("KnifeDrawCloth", at, .7f, 1.2f, 10f);
     }
 
     // ---- Aiming ----
@@ -565,7 +581,8 @@ public sealed class PlayerGrenades : MonoBehaviour
         if (info.Radius <= 0f) { arc.HideRing(); return; }
         Color reach = KitStyle.With(info.Tint, .8f);
         // The fuse left when it leaves the hand: what is left now less the swing still to come.
-        float swing = (Throwables.Rule("release", .61f) - Mathf.Max(cycle, Throwables.Rule("hold", .4f))) / Mathf.Max(.1f, Throwables.Rule("throwSpeed", 1.3f));
+        var motion = Motion;
+        float swing = (motion.Release - Mathf.Max(cycle, motion.Hold)) / Mathf.Max(.1f, motion.ThrowSpeed);
         float left = cookLeft - Mathf.Max(0f, swing);
         if (cooking && left < arc.FlightSeconds)
         {
@@ -621,12 +638,13 @@ public sealed class PlayerGrenades : MonoBehaviour
         switch (phase)
         {
             case HandPhase.Draw:
-                StartArm(handKind, Throwables.Rule("holdDraw", 1.25f));
+                StartArm(handKind, GrenadeArmPath.For(handKind).HoldDraw);
                 letGo = false;
+                if (handKind == Throwable.Knife) KnifeOut(transform.position + Vector3.up * 1.3f);
                 break;
             case HandPhase.Throw:
             case HandPhase.TapThrow:
-                if (phase == HandPhase.TapThrow) drawSpeed = Throwables.Rule("tapDraw", 1.6f);
+                if (phase == HandPhase.TapThrow) drawSpeed = GrenadeArmPath.For(handKind).TapDraw;
                 // A claymore is set down, not thrown: the copy's hand lowers when it is told where it went (ShowMine).
                 if (Throwables.Of(handKind) is ThrowableInfo setDown && setDown.Places) { letGo = true; break; }
                 if (arm == Arm.None || arm == Arm.Lower)
@@ -634,7 +652,7 @@ public sealed class PlayerGrenades : MonoBehaviour
                     // Its draw never came: straight into the throw from the hold.
                     StartArm(handKind, drawSpeed);
                     arm = Arm.Hold;
-                    cycle = Throwables.Rule("hold", .4f);
+                    cycle = GrenadeArmPath.For(handKind).Hold;
                 }
                 letGo = true;
                 if (arm == Arm.Hold) StartThrow();
@@ -656,6 +674,7 @@ public sealed class PlayerGrenades : MonoBehaviour
             var knife = ThrownKnife.Throw(id, from, velocity, movement, false);
             if (knife != null) knives[id] = knife;
             Throwables.Play("KnifeThrow", from, .8f, 1.5f, 20f);
+            Throwables.Play("KnifeThrowCloth", from, .7f, 1.5f, 15f);
             return;
         }
         var grenade = ThrownGrenade.Throw(thrownKind, id, from, velocity, fuse, movement, false, null);

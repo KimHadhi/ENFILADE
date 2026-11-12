@@ -3,19 +3,21 @@ using System.Globalization;
 using UnityEngine;
 
 /// <summary>
-/// The left arm's way through a quick throw, as GMod's "[VManip] Quick Grenades" plays it (the user brought it as the
-/// reference, 2026-11-12): Tables/GrenadeArm, one row a key, sampled from VManip's own "thrownade" hand animation by
-/// Tools/Blender/vmanip_throw_path.py. The hand leaves the gun for the belt, comes up with the throwable, holds it out
-/// (VManip's hold point), swings out to the left and whips it forward, follows through and goes back to the gun.
+/// The left arm's way through a G throw, as a path table of keys (the user brought GMod's quick-throw addons as the
+/// reference, 2026-11-12). Tables/GrenadeArm is VManip's "thrownade" (Tools/Blender/vmanip_throw_path.py): the hand
+/// leaves the gun for the belt, comes up with the throwable, holds it out, swings out to the left and whips it
+/// forward, follows through and goes back to the gun. Tables/KnifeArm is the MW2019 throwing knife of "[MW] Quick
+/// Throwing Knife" (Tools/Blender/hand_path.py, HandPaths/KnifeArm.json), mirrored onto the left hand: drawn and held
+/// low, cocked back to the side and flicked forward. Which path a throwable uses, and the moments and speeds along it,
+/// are Tables/ThrowArms (Motion); Tables/Grenades arm picks the row.
 /// A key says what the arm does, not where a rig's bones are: the wrist and the elbow from the shoulder in arm lengths,
 /// which way the hand runs (wrist to middle knuckle) and faces (out of the palm), how far the fingers and the thumb are
-/// closed (degrees from straight) and whether the throwable is in the hand; all in the view's axes (x right, y up, z
-/// forward). GrenadeArm fits it to whatever arm a body has. The cycle runs 0 to 1 at VManip's one cycle a second;
-/// the moments in it (the grab, the pin, the hold, the release, the way back) are GrenadeRules'.
+/// closed (degrees from straight) and whether the thing is in the hand; all in the view's axes (x right, y up, z
+/// forward). GrenadeArm fits it to whatever arm a body has. A path's cycle is seconds at its clip's own speed.
 /// </summary>
 public static class GrenadeArmPath
 {
-    public const string TableName = "GrenadeArm";
+    public const string TableName = "GrenadeArm", MotionsTable = "ThrowArms", DefaultMotion = "grenade";
 
     /// <summary>One moment of the arm, in the view's axes.</summary>
     public struct Key
@@ -31,35 +33,66 @@ public static class GrenadeArmPath
         public bool Held;
     }
 
-    private static readonly List<Key> keys = new List<Key>();
-    private static bool loaded;
+    /// <summary>
+    /// A hand motion (a row of Tables/ThrowArms): its path table, how fast a tap's and a hold's draw and the throw go
+    /// (times its clip's own speed), and its moments along the path: the pin (below 0: none), the hold, the release,
+    /// the way back to the gun, the end.
+    /// </summary>
+    public sealed class Motion
+    {
+        public string Id = DefaultMotion, Table = TableName;
+        public float TapDraw = 1.6f, HoldDraw = 1.25f, ThrowSpeed = 1.3f, Pin = .3f, Hold = .4f, Release = .61f, Back = .85f, End = .97f;
+        public bool HasPin => Pin >= 0f;
+    }
+
+    private static readonly Dictionary<string, List<Key>> paths = new Dictionary<string, List<Key>>();
+    private static readonly Dictionary<string, Motion> motions = new Dictionary<string, Motion>();
+    private static readonly Motion fallback = new Motion();
+    private static bool motionsLoaded;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetStatics()
     {
-        keys.Clear();
-        loaded = false;
+        paths.Clear();
+        motions.Clear();
+        motionsLoaded = false;
         GameTables.Reloaded -= Forget;
         GameTables.Reloaded += Forget;
     }
 
     // A table saved while playing: read again at the next ask.
-    private static void Forget() => loaded = false;
-
-    /// <summary>Whether there is a path at all (the table has two keys or more).</summary>
-    public static bool Ready
+    private static void Forget()
     {
-        get
-        {
-            Load();
-            return keys.Count > 1;
-        }
+        paths.Clear();
+        motions.Clear();
+        motionsLoaded = false;
     }
 
-    /// <summary>The arm at this point of the cycle, between the two keys around it. False when there is no path.</summary>
-    public static bool Sample(float cycle, out Key key)
+    /// <summary>A throwable's hand motion: its row's arm (Tables/Grenades), else the grenade's.</summary>
+    public static Motion For(Throwable kind)
     {
-        Load();
+        var info = Throwables.Of(kind);
+        return Of(info != null && !string.IsNullOrEmpty(info.Arm) ? info.Arm : DefaultMotion);
+    }
+
+    /// <summary>A hand motion by its row id (Tables/ThrowArms); the grenade's for an unknown one.</summary>
+    public static Motion Of(string id)
+    {
+        LoadMotions();
+        if (!string.IsNullOrEmpty(id) && motions.TryGetValue(id, out var motion)) return motion;
+        return motions.TryGetValue(DefaultMotion, out var plain) ? plain : fallback;
+    }
+
+    /// <summary>Whether a path table has a path at all (two keys or more).</summary>
+    public static bool Ready(string table) => Keys(table).Count > 1;
+
+    /// <summary>The grenade's path at this point of its cycle (Tables/GrenadeArm).</summary>
+    public static bool Sample(float cycle, out Key key) => Sample(TableName, cycle, out key);
+
+    /// <summary>A path's arm at this point of its cycle, between the two keys around it. False when there is no path.</summary>
+    public static bool Sample(string table, float cycle, out Key key)
+    {
+        var keys = Keys(table);
         key = default;
         if (keys.Count < 2) return false;
         if (cycle <= keys[0].Cycle) { key = keys[0]; return true; }
@@ -83,14 +116,15 @@ public static class GrenadeArmPath
         return true;
     }
 
-    private static void Load()
+    private static List<Key> Keys(string table)
     {
-        if (loaded) return;
-        loaded = true;
-        keys.Clear();
-        foreach (string id in GameTables.RowIds(TableName))
+        if (string.IsNullOrEmpty(table)) table = TableName;
+        if (paths.TryGetValue(table, out var keys)) return keys;
+        keys = new List<Key>();
+        paths[table] = keys;
+        foreach (string id in GameTables.RowIds(table))
         {
-            if (!GameTables.TryGetRow(TableName, id, out var row)) continue;
+            if (!GameTables.TryGetRow(table, id, out var row)) continue;
             var key = new Key
             {
                 Cycle = Number(row, "cycle", -1f),
@@ -111,12 +145,35 @@ public static class GrenadeArmPath
             keys.Add(key);
         }
         keys.Sort((a, b) => a.Cycle.CompareTo(b.Cycle));
+        return keys;
+    }
+
+    private static void LoadMotions()
+    {
+        if (motionsLoaded) return;
+        motionsLoaded = true;
+        motions.Clear();
+        foreach (string id in GameTables.RowIds(MotionsTable))
+        {
+            if (!GameTables.TryGetRow(MotionsTable, id, out var row)) continue;
+            var motion = new Motion { Id = id.Trim() };
+            if (row.TryGetValue("table", out string table) && !string.IsNullOrWhiteSpace(table)) motion.Table = table.Trim();
+            motion.TapDraw = Mathf.Max(.05f, Number(row, "tapDraw", motion.TapDraw));
+            motion.HoldDraw = Mathf.Max(.05f, Number(row, "holdDraw", motion.HoldDraw));
+            motion.ThrowSpeed = Mathf.Max(.05f, Number(row, "throwSpeed", motion.ThrowSpeed));
+            motion.Pin = Number(row, "pin", motion.Pin);
+            motion.Hold = Mathf.Max(0f, Number(row, "hold", motion.Hold));
+            motion.Release = Mathf.Max(motion.Hold, Number(row, "release", motion.Release));
+            motion.Back = Mathf.Max(motion.Release, Number(row, "back", motion.Back));
+            motion.End = Mathf.Max(motion.Back, Number(row, "end", motion.End));
+            motions[motion.Id] = motion;
+        }
     }
 
     private static Vector3 Vector(IReadOnlyDictionary<string, string> row, string name)
         => new Vector3(Number(row, name + "X", 0f), Number(row, name + "Y", 0f), Number(row, name + "Z", 0f));
 
-    private static float Number(IReadOnlyDictionary<string, string> row, string key, float fallback)
+    private static float Number(IReadOnlyDictionary<string, string> row, string key, float fallbackValue)
         => row.TryGetValue(key, out string text) && float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out float value)
-            ? value : fallback;
+            ? value : fallbackValue;
 }

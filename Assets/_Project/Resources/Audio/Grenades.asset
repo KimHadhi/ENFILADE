@@ -28,24 +28,41 @@ MonoBehaviour:
     - {fileID: 8300000, guid: b09c14a09187428eb6efa92069a05fb2, type: 3}
     - {fileID: 8300000, guid: 714d7df0fedd404cb2a379da38fe8a8f, type: 3}
     - {fileID: 8300000, guid: 8694aa7249f04390b6d927ef188db206, type: 3}
+  - key: KnifeDraw
+    clips:
+    - {fileID: 8300000, guid: 646a98b9e31a4398a242cbf170e11a57, type: 3}
+    - {fileID: 8300000, guid: 89752eddb99342b2b6a48b7a2d17c855, type: 3}
+    - {fileID: 8300000, guid: 1971dcd20448484ba6535366f0e968a1, type: 3}
+  - key: KnifeDrawCloth
+    clips:
+    - {fileID: 8300000, guid: d996fef2931a466889e55bcff3e2985b, type: 3}
+    - {fileID: 8300000, guid: aba31defa82d439cb2d1adbd4ab3b4a9, type: 3}
+    - {fileID: 8300000, guid: 7975834682bd4a6db488ec39d9be26a3, type: 3}
   - key: KnifeFlesh
     clips:
-    - {fileID: 8300000, guid: 6d2aba8c468a4a98bee11f18652c300a, type: 3}
-    - {fileID: 8300000, guid: 00a677c99a294af2976f5b18d7e54af4, type: 3}
-    - {fileID: 8300000, guid: bf787924e4ec4f8fbc2e81f323f391df, type: 3}
-    - {fileID: 8300000, guid: 7723eeb49f8541b8aa8002c6e8613056, type: 3}
-    - {fileID: 8300000, guid: 61b6da6d929843868dd7767205ca123f, type: 3}
+    - {fileID: 8300000, guid: 0c2d28ecbb9d4b26a52054c8828bcd5d, type: 3}
+    - {fileID: 8300000, guid: d597c80fd8e241a0bbab447db1bd958a, type: 3}
+    - {fileID: 8300000, guid: c60b7fa8443943c1b7b967a0534aa0ff, type: 3}
+    - {fileID: 8300000, guid: abc7ddac46f24cd69c51d5eb5ecfcd6a, type: 3}
+    - {fileID: 8300000, guid: 01aa698c04104377955a2b8038ae8139, type: 3}
+    - {fileID: 8300000, guid: 3c610bfb4ede4858b8f0371f7d83584a, type: 3}
   - key: KnifeThrow
     clips:
     - {fileID: 8300000, guid: e0329e23c29e4d3d831b13264e918a22, type: 3}
     - {fileID: 8300000, guid: ccd1a2f131bb4fa2b2d1a710bc4242cd, type: 3}
     - {fileID: 8300000, guid: 0a194e356df34ea79aa950f922824ad7, type: 3}
+  - key: KnifeThrowCloth
+    clips:
+    - {fileID: 8300000, guid: 84678d3be3b04f61a71e09a9a7e5b9d7, type: 3}
+    - {fileID: 8300000, guid: 2dd7bb03b2244df99661a79953205320, type: 3}
+    - {fileID: 8300000, guid: 5bf34c70c8644bc9886a72f8c7ec55ac, type: 3}
   - key: KnifeWall
     clips:
-    - {fileID: 8300000, guid: c23a739a257d4f1ebe5c6d7ee4b36972, type: 3}
-    - {fileID: 8300000, guid: 340081a922d54d95a61ffc8e42d58d58, type: 3}
-    - {fileID: 8300000, guid: 3d40081b9ebf481b9e0e1d2184fdeab4, type: 3}
-    - {fileID: 8300000, guid: 248141ddce9b4806972a0ab0cfa98363, type: 3}
+    - {fileID: 8300000, guid: 4cff1ace423c4193945bb7b85d8cfeb7, type: 3}
+    - {fileID: 8300000, guid: d3d5762f1777462ab84b0138c606166d, type: 3}
+    - {fileID: 8300000, guid: 437d1a951e944f3b94357e058366b665, type: 3}
+    - {fileID: 8300000, guid: c6f44dafb61c4131ad0f38381a6e947b, type: 3}
+    - {fileID: 8300000, guid: 03f813c80fc24e67b95cb49581f39d88, type: 3}
   - key: Pin
     clips:
     - {fileID: 8300000, guid: 46c84429682549aa85328e0e4e4be8a2, type: 3}

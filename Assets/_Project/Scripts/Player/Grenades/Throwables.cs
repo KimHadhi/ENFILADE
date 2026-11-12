@@ -45,6 +45,8 @@ public sealed class ThrowableInfo
     /// Tables/Grenades places.
     /// </summary>
     public bool Places;
+    /// <summary>Its hand motion (GrenadeArmPath.Motion, a row of Tables/ThrowArms); empty is the grenade's.</summary>
+    public string Arm = "";
     public float Speed = 16f, Lift = 2.5f, Gravity = 1f, Bounce = .3f, Size = .08f;
     public float Radius = 5f, Damage, Edge, Head, Seconds, Posture, Knock, Heal, Push, PlayerDamage, PlayerEdge, Noise, Price;
     public Color Tint = Color.white;
@@ -146,6 +148,7 @@ public static class Throwables
             if (ColorUtility.TryParseHtmlString(Text(row, "tint"), out Color tint)) info.Tint = tint;
             info.ThrowsOut = string.Equals(Text(row, "cookOut"), "throw", StringComparison.OrdinalIgnoreCase);
             info.Places = Number(row, "places", 0f) > .5f;
+            info.Arm = Text(row, "arm");
             info.HeldAt = new Vector3(Number(row, "heldAcross", info.HeldAt.x), Number(row, "heldPalm", info.HeldAt.y),
                 Number(row, "heldAlong", info.HeldAt.z));
             info.HeldTurn = new Vector3(Number(row, "heldTurnX", info.HeldTurn.x), Number(row, "heldTurnY", info.HeldTurn.y),

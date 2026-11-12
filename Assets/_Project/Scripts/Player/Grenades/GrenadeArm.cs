@@ -80,7 +80,7 @@ public sealed class GrenadeArm : MonoBehaviour
     }
 
     /// <summary>
-    /// Where the throwable leaves the hand at the path's release (GrenadeRules release), from the eyes as they are now:
+    /// Where the throwable leaves the hand at its motion's release (Tables/ThrowArms), from the eyes as they are now:
     /// the throw starts there and the aiming arc is drawn from there, so the arc is the flight. False before the arm has
     /// found its body and eyes.
     /// </summary>
@@ -108,7 +108,7 @@ public sealed class GrenadeArm : MonoBehaviour
         float blend = on ? Throwables.Rule("armIn", .08f) : Throwables.Rule("armOut", .14f);
         own = Mathf.MoveTowards(own, on ? 1f : 0f, dt / Mathf.Max(.01f, blend));
         weight = hands != null ? Mathf.Min(own, hands.OffHandLent) : own;
-        if (weight <= 0f || !GrenadeArmPath.Sample(cycle, out var key))
+        if (weight <= 0f || !GrenadeArmPath.Sample(GrenadeArmPath.For(kind).Table, cycle, out var key))
         {
             ShowHeld(false);
             HeldPoint = hand.position;
@@ -170,7 +170,8 @@ public sealed class GrenadeArm : MonoBehaviour
     private void NoteRelease()
     {
         hasRelease = false;
-        if (!GrenadeArmPath.Sample(Throwables.Rule("release", .61f), out var key)) return;
+        var motion = GrenadeArmPath.For(kind);
+        if (!GrenadeArmPath.Sample(motion.Table, motion.Release, out var key)) return;
         Quaternion view = eyes.rotation;
         Vector3 wrist = upper.position + view * (key.Wrist * armLength);
         Vector3 point = wrist + Quaternion.LookRotation(view * key.Along, view * key.Palm) * (HeldAt() * handLength);

@@ -261,5 +261,8 @@ Grenades/Flash,0.95,0.98,1.03,포인트 섬광탄이 터질 때. CS:GO flashbang
 Grenades/Smoke,0.8,0.97,1.03,고스트 연막탄이 터질 때(데탕트 소독 안개는 이 소리를 높게). CS:GO sg_explode
 Grenades/SmokeHiss,0.5,0.98,1.02,연막이 피어오르는 동안 쉭 소리(14초). CS:GO smoke_emit
 Grenades/KnifeThrow,0.8,0.95,1.07,나이트 투척 나이프가 손을 떠날 때. MW Quick Throwing Knife(워크숍 3650480912) throw_blade_1~3
-Grenades/KnifeFlesh,0.9,0.95,1.06,투척 나이프가 좀비에 꽂힐 때. CS:GO knife_hit1~4·knife_stab
-Grenades/KnifeWall,0.75,0.95,1.06,투척 나이프가 벽에 꽂히거나 떨어질 때. CS:GO knife_hitwall1~4
+Grenades/KnifeThrowCloth,0.7,0.95,1.05,나이프를 던질 때 소매가 스치는 소리(throw_blade와 함께). 같은 애드온 throw_cloth_1~3
+Grenades/KnifeDraw,0.75,0.95,1.05,G를 눌러 나이프를 꺼낼 때. 같은 애드온 pull_out_blade_1~3
+Grenades/KnifeDrawCloth,0.65,0.95,1.05,나이프를 꺼낼 때 소매 소리(pull_out_blade와 함께). 같은 애드온 pull_out_cloth_1~3
+Grenades/KnifeFlesh,0.9,0.95,1.06,투척 나이프가 좀비에 꽂힐 때. 같은 애드온이 쓰는 Far Cry 4 knife_stab1~6(0.8.219 전에는 CS:GO)
+Grenades/KnifeWall,0.75,0.95,1.06,투척 나이프가 벽에 꽂히거나 떨어질 때. 같은 애드온이 쓰는 Far Cry 4 knife_hit_01~05(0.8.219 전에는 CS:GO)

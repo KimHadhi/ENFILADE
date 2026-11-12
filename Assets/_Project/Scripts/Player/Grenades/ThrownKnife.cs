@@ -14,9 +14,10 @@ using UnityEngine;
 [DisallowMultipleComponent]
 public sealed class ThrownKnife : MonoBehaviour
 {
-    // Turns a second (degrees), the longest flight (s), how deep its point goes in (m: its middle stops this far short of
-    // the hit, the point being 0.12 m ahead of its middle), how it lies on a floor, and its glint.
-    private const float Spin = 1400f, Flight = 3f, Bury = .06f, TipAhead = .12f, GlintSize = .16f, GlintEvery = 1.4f;
+    // The longest flight (s), how deep its point goes in (m: its middle stops this far short of the hit, the point being
+    // 0.12 m ahead of its middle), and its glint. How fast it turns and how long its streak is are GrenadeRules
+    // knifeSpin and knifeTrail (as GMod's [MW] Quick Throwing Knife: 3000 degrees a second, a white streak of 0.3 s).
+    private const float Flight = 3f, Bury = .06f, TipAhead = .12f, GlintSize = .16f, GlintEvery = 1.4f;
     private static readonly List<ThrownKnife> knives = new List<ThrownKnife>();
     private enum State { Flying, Stuck, Lying }
 
@@ -24,8 +25,9 @@ public sealed class ThrownKnife : MonoBehaviour
     private PlayerMovement thrower;
     private bool mine;
     private Vector3 velocity, origin;
-    private float gravityShare, damage, headShare, age, life, sinceLanded;
+    private float gravityShare, damage, headShare, age, life, sinceLanded, spin;
     private Transform look, glint;
+    private TrailRenderer streak;
     // Riding a zombie's bone: the bone, the zombie, and where on the bone.
     private Transform bone;
     private EnemyHealth stuckIn;
@@ -57,12 +59,39 @@ public sealed class ThrownKnife : MonoBehaviour
         knife.damage = info != null ? Mathf.Max(1f, info.Damage) : 80f;
         knife.headShare = info != null && info.Damage > 0f ? Mathf.Max(1f, info.Head / info.Damage) : 4f;
         knife.life = Mathf.Max(5f, Throwables.Rule("knifeLife", 150f));
+        knife.spin = Throwables.Rule("knifeSpin", 3000f);
         var spinner = new GameObject("Spin").transform;
         spinner.SetParent(host.transform, false);
         knife.look = spinner;
         Throwables.Dress(Throwable.Knife, spinner);
+        knife.Streak();
         knives.Add(knife);
         return knife;
+    }
+
+    // A thin white streak behind it in flight, fading as it goes (the addon's sprite trail), gone once it lands.
+    private void Streak()
+    {
+        float seconds = Throwables.Rule("knifeTrail", .3f);
+        if (seconds <= 0f) return;
+        streak = gameObject.AddComponent<TrailRenderer>();
+        streak.time = seconds;
+        streak.startWidth = .02f;
+        streak.endWidth = 0f;
+        streak.minVertexDistance = .05f;
+        streak.numCapVertices = 2;
+        streak.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        streak.receiveShadows = false;
+        streak.sharedMaterial = FeelAssets.Particle(Texture2D.whiteTexture, true);
+        var fade = new Gradient();
+        fade.SetKeys(new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(Color.white, 1f) },
+            new[] { new GradientAlphaKey(.55f, 0f), new GradientAlphaKey(0f, 1f) });
+        streak.colorGradient = fade;
+    }
+
+    private void StopStreak()
+    {
+        if (streak != null) streak.emitting = false;
     }
 
     private void Update()
@@ -110,7 +139,7 @@ public sealed class ThrownKnife : MonoBehaviour
         }
         velocity += gravity * dt;
         // End over end about its flat side, the point forward when it lands (Stick turns it so).
-        if (look != null) look.localRotation = Quaternion.Euler(age * Spin, 0f, 0f);
+        if (look != null) look.localRotation = Quaternion.Euler(age * spin, 0f, 0f);
         if (age >= Flight) Drop();
     }
 
@@ -119,6 +148,7 @@ public sealed class ThrownKnife : MonoBehaviour
     private void Stick(RaycastHit hit, Vector3 way, bool headshot)
     {
         state = State.Stuck;
+        StopStreak();
         if (look != null) look.localRotation = Quaternion.identity;
         transform.rotation = Quaternion.LookRotation(way);
         transform.position = hit.point - way * (TipAhead - Bury);
@@ -157,6 +187,7 @@ public sealed class ThrownKnife : MonoBehaviour
     private void Drop()
     {
         state = State.Lying;
+        StopStreak();
         bone = null;
         stuckIn = null;
         if (look != null) look.localRotation = Quaternion.identity;
