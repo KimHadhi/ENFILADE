@@ -353,18 +353,37 @@ public sealed class PlayerBodyCloth : MonoBehaviour
         }
     }
 
-    /// <summary>Everything this body's cloth is doing right now, for the other PCs.</summary>
-    internal void Capture(ref ClothPose pose)
+    /// <summary>How many bones this body's pose carries: every moving bone of every part it wears.</summary>
+    internal int PoseBones
     {
-        foreach (var item in worn) item.Bones.Write(ref pose);
+        get
+        {
+            int bones = 0;
+            foreach (var item in worn) bones += item.Bones.Moving;
+            return bones;
+        }
     }
 
-    /// <summary>What the real player's PC reported. It is ignored if this copy hasn't changed to their skin yet.</summary>
-    internal void Show(ref ClothPose pose)
+    /// <summary>
+    /// Everything this body's cloth is doing right now, for the other PCs: three numbers per bone, part after part. The
+    /// array grows to fit and is kept. Returns how many bones it holds.
+    /// </summary>
+    internal int Capture(ref sbyte[] pose)
     {
-        int count = 0, at = 0;
-        foreach (var item in worn) count += item.Bones.Moving;
-        if (count != pose.Count) return;
-        foreach (var item in worn) at = item.Bones.Read(ref pose, at);
+        int bones = PoseBones;
+        if (pose == null || pose.Length < bones * 3) pose = new sbyte[bones * 3];
+        int at = 0;
+        foreach (var item in worn) at = item.Bones.Write(pose, at);
+        return at;
+    }
+
+    /// <summary>
+    /// What the real player's PC reported, as this body's whole pose (PlayerNetworkCloth checks it fits this body's
+    /// bones); only its first <paramref name="carried"/> bones are taken.
+    /// </summary>
+    internal void Show(sbyte[] pose, int carried)
+    {
+        int at = 0;
+        foreach (var item in worn) at = item.Bones.Read(pose, at, carried);
     }
 }

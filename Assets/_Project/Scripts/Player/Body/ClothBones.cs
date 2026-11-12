@@ -313,23 +313,39 @@ internal sealed class ClothBones
 
     private Vector3 Place(int index, bool resting) => resting ? bones[index].Rest : bones[index].Now;
 
-    /// <summary>Adds where the moving bones are this moment, each as a share of its reach.</summary>
-    internal void Write(ref ClothPose pose)
+    /// <summary>
+    /// Writes where the moving bones are this moment into a body's whole pose, three numbers per bone (ClothPose.Pack)
+    /// from bone <paramref name="at"/> on, each a share of its reach. Returns where the next part starts.
+    /// </summary>
+    internal int Write(sbyte[] pose, int at)
     {
         for (int i = 0; i < bones.Length; i++)
         {
             ref var bone = ref bones[i];
-            if (bone.Moves) pose.Add((anchor.InverseTransformPoint(bone.Transform.position) - bone.Rest) / bone.Reach);
+            if (!bone.Moves) continue;
+            int k = at++ * 3;
+            if (k + 2 >= pose.Length) continue;
+            Vector3 share = (anchor.InverseTransformPoint(bone.Transform.position) - bone.Rest) / bone.Reach;
+            pose[k] = ClothPose.Pack(share.x);
+            pose[k + 1] = ClothPose.Pack(share.y);
+            pose[k + 2] = ClothPose.Pack(share.z);
         }
+        return at;
     }
 
-    /// <summary>Takes this part's bones from a pose, starting at that bone of it. Returns where the next part starts.</summary>
-    internal int Read(ref ClothPose pose, int at)
+    /// <summary>
+    /// Takes this part's bones from a body's whole pose, from bone <paramref name="at"/> on; those past the first
+    /// <paramref name="carried"/> of the pose keep heading where they were. Returns where the next part starts.
+    /// </summary>
+    internal int Read(sbyte[] pose, int at, int carried)
     {
         for (int i = 0; i < bones.Length; i++)
         {
             ref var bone = ref bones[i];
-            if (bone.Moves) bone.Wanted = bone.Rest + pose.Shift(at++) * bone.Reach;
+            if (!bone.Moves) continue;
+            int k = at * 3;
+            if (at++ < carried && k + 2 < pose.Length)
+                bone.Wanted = bone.Rest + new Vector3(ClothPose.Unpack(pose[k]), ClothPose.Unpack(pose[k + 1]), ClothPose.Unpack(pose[k + 2])) * bone.Reach;
         }
         return at;
     }
