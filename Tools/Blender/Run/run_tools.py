@@ -2,17 +2,23 @@
 
 START_RUN_ANIMATION.cmd opens ArtSource/Run/ENFILADE_Run_Animation.blend with truefps_tools.py and then this.
 The game's walk and run cycles (Player.csv Body.forwardMoves, rightMoves, backMoves, leftMoves) are on Kazusa's True FPS
-rig, each a locked draft layer (retargeted by build_run_workspace.py the way a humanoid avatar retargets) under an empty
-touch-up layer (Combine), as in the shove workspace:
+rig, each a locked draft layer (retargeted by build_run_workspace.py the way a humanoid avatar retargets, keyed every
+frame) under a touch-up layer (Combine), where one key bends the cycle smoothly instead of popping one frame.
+It opens ready to work in, and saving sends the work to the game (the user, 2026-11-13: "내가 해야 하는 잡일을 최대한
+줄여. 나는 딱 오직 인간만이 할 수 있는 것만 해내면 되게끔"; the shared part is Tools/Blender/OneClick/one_click.py):
+- On open: the last cycle, the rig in Pose mode, the Dope Sheet showing the touch-up keys with the summary row, the
+  달리기 tab.
 - 걸음 고르기 picks a cycle: its layers, its frames (the loop's last frame is its first again) and its source skeleton
   beside Kazusa (보기용, never exported).
 - 자세 다듬기 changes the whole cycle at once on the touch-up layer, every frame, so the loop stays whole: the trunk's lean,
   how far the arms swing, how high the knees come, how much the hips bob, how much the head nods.
 - Anything else is keyed by hand on the touch-up layer (auto-key is on); the IK/FK tools of the True FPS tab work too.
-- 게임에 보내기 bakes the original skeleton to Assets/_Project/Art/Animations/Run/enf_<cycle>.fbx (+ .clips.csv). Unity takes
-  it with Kazusa's avatar (ModelImportRules), and the body plays enf_<cycle> instead of <cycle> wherever the tables list
-  <cycle> (PlayerBody.Locomotion), measured on each character like any cycle, so its stride and pace fit by themselves.
-  원래 클립으로 되돌리기 deletes that file again.
+- Saving (Ctrl+S) sends every cycle changed since it was last sent: the original skeleton baked to
+  Assets/_Project/Art/Animations/Run/enf_<cycle>.fbx (+ .clips.csv). Unity takes it with Kazusa's avatar
+  (ModelImportRules), and the body plays enf_<cycle> instead of <cycle> wherever the tables list <cycle>
+  (PlayerBody.Locomotion), measured on each character like any cycle, so its stride and pace fit by themselves. A cycle
+  nobody changed stays out of the game (the original plays). 원래 클립으로 되돌리기 deletes the file and keeps the cycle
+  out until it changes again.
 Nothing here changes Blender's preferences.
 """
 import importlib.util
@@ -22,14 +28,17 @@ import sys
 from pathlib import Path
 
 import bpy
-from bpy.props import EnumProperty, FloatProperty
+from bpy.props import BoolProperty, EnumProperty, FloatProperty
 from mathutils import Quaternion, Vector
 
-bl_info = {'name': 'ENFILADE Run Cycles', 'author': 'ENFILADE', 'version': (1, 0, 0), 'blender': (4, 5, 0),
+bl_info = {'name': 'ENFILADE Run Cycles', 'author': 'ENFILADE', 'version': (2, 0, 0), 'blender': (4, 5, 0),
            'location': '3D View > Sidebar > 달리기', 'category': 'Animation'}
 
 TRUEFPS = Path('Tools/Blender/TrueFPS/truefps_tools.py')
+ONE_CLICK = Path('Tools/Blender/OneClick/one_click.py')
+TAB = '달리기'
 RUN_DIR = Path('Assets/_Project/Art/Animations/Run')
+CSV_HEADER = 'clip,loop,inPlace,inPlaceY,inPlaceYaw,yawOffset,cycleOffset,from,to\n'
 BASE_TRACK = '1 시안 (잠금)'
 PREFIX = 'enf_'
 SOURCE_COLLECTION = '원본 걸음 (보기용, 내보내지 않음)'
@@ -61,16 +70,16 @@ def project_root():
     return None
 
 
-def truefps():
-    """truefps_tools as a module (for its baking FBX export and loop check), loaded once without a __pycache__."""
-    if 'truefps_tools' in sys.modules:
-        return sys.modules['truefps_tools']
+def _module(name, rel):
+    """A project tool module, loaded once and without a __pycache__ beside it (one there is tracked by git)."""
+    if name in sys.modules:
+        return sys.modules[name]
     root = project_root()
     if root is None:
         raise RuntimeError('ENFILADE 프로젝트 안의 ArtSource/Run에서 파일을 열어 주세요.')
-    spec = importlib.util.spec_from_file_location('truefps_tools', root / TRUEFPS)
+    spec = importlib.util.spec_from_file_location(name, root / rel)
     module = importlib.util.module_from_spec(spec)
-    sys.modules['truefps_tools'] = module
+    sys.modules[name] = module
     writes = sys.dont_write_bytecode
     sys.dont_write_bytecode = True
     try:
@@ -80,8 +89,22 @@ def truefps():
     return module
 
 
+def truefps():
+    """truefps_tools as a module (for its baking FBX export and loop check)."""
+    return _module('truefps_tools', TRUEFPS)
+
+
+def one_click():
+    """The shared one-click workspace module: items, fingerprints, sending on save, the screen on open."""
+    return _module('enf_one_click', ONE_CLICK)
+
+
 def find_rig(scene):
     return next((o for o in scene.objects if o.type == 'ARMATURE' and o.get('truefps_rig')), None)
+
+
+def is_run_file(scene):
+    return find_rig(scene) is not None and any(bpy.data.actions.get(PREFIX + key + '_draft') for key, _ in CYCLES)
 
 
 def label_of(key):
@@ -91,38 +114,8 @@ def label_of(key):
 # ---- Layers: a locked draft strip under the touch-up action --------------------------------------------------------
 
 def touch_up(name):
-    action = bpy.data.actions.get(name)
-    if action is None:
-        action = bpy.data.actions.new(name)
-    action.use_fake_user = True
-    action['enf_layer'] = 'touch-up'
-    return action
-
-
-def set_layers(obj, draft, edit, live=True):
-    """obj plays draft as its locked base and keys into edit on top (Combine); live False mutes the touch-ups."""
-    data = obj.animation_data or obj.animation_data_create()
-    track = data.nla_tracks.get(BASE_TRACK)
-    if track is None:
-        track = data.nla_tracks.new()
-        track.name = BASE_TRACK
-    track.lock = False
-    while len(track.strips):
-        track.strips.remove(track.strips[0])
-    if draft is not None:
-        strip = track.strips.new(draft.name, int(draft.frame_range[0]), draft)
-        if hasattr(strip, 'action_slot') and strip.action_slot is None and len(getattr(draft, 'slots', [])):
-            strip.action_slot = draft.slots[0]
-        strip.blend_type = 'REPLACE'
-        strip.extrapolation = 'HOLD'
-    track.lock = True
-    track.mute = False
-    data.action = edit
-    if edit is not None and hasattr(data, 'action_slot') and data.action_slot is None and len(getattr(edit, 'slots', [])):
-        data.action_slot = edit.slots[0]
-    data.action_blend_type = 'COMBINE'
-    data.action_extrapolation = 'HOLD'
-    data.action_influence = 1.0 if live else 0.0
+    """The cycle's touch-up layer, made empty if it has none."""
+    return one_click().touch_up(name)
 
 
 def current_cycle(scene):
@@ -135,6 +128,33 @@ def frames_of(key):
     return int(draft.get('enf_frames', draft.frame_range[1])) if draft else 2
 
 
+def target(key):
+    """Where a cycle goes in the game, from the project root."""
+    return RUN_DIR / (PREFIX + key + '.fbx')
+
+
+def in_game(key):
+    root = project_root()
+    return root is not None and (root / target(key)).exists()
+
+
+def item(context, key):
+    """The cycle's touch-up layer and its locked draft. A cycle made ready untouched counts as what the game has: its
+    file if one was sent, else the original clip (withheld)."""
+    oc = one_click()
+    action, draft, fresh = oc.item_action(context, find_rig(context.scene), PREFIX + key, frames_of(key))
+    if fresh:
+        (oc.mark_sent if in_game(key) else oc.mark_withheld)(action, fingerprint(key))
+    return action, draft
+
+
+def fingerprint(key):
+    """What a cycle is now: its touch-ups and its draft (keys, eases), its length."""
+    name = PREFIX + key
+    return one_click().fingerprint([bpy.data.actions.get(name), bpy.data.actions.get(name + '_draft')],
+                                   extra=[key, frames_of(key)])
+
+
 def select_cycle(context, key):
     """Shows one cycle: its layers, its frames and its source skeleton beside Kazusa."""
     scene = context.scene
@@ -142,7 +162,10 @@ def select_cycle(context, key):
     draft = bpy.data.actions.get(PREFIX + key + '_draft')
     if rig is None or draft is None:
         raise ValueError('이 걸음의 시안이 없습니다. build_run_workspace.py로 작업 파일을 다시 만들어야 합니다.')
-    set_layers(rig, draft, touch_up(PREFIX + key), live=scene.get('enf_run_live', True))
+    action, draft = item(context, key)
+    one_click().play(rig, action, draft)
+    if not scene.get('enf_run_live', True):
+        rig.animation_data.action_influence = 0.0
     collection = bpy.data.collections.get(SOURCE_COLLECTION)
     if collection is not None:
         # The collection's own list, hidden per object: walking all_objects while hiding through the view layer crashed
@@ -151,9 +174,39 @@ def select_cycle(context, key):
             obj.hide_viewport = obj.get('enf_cycle') != key
             obj.hide_render = True
     scene.frame_start, scene.frame_end = 1, frames_of(key)
-    scene['enf_run_cycle'] = key
+    if scene.get('enf_run_cycle') != key:
+        scene['enf_run_cycle'] = key
     scene.frame_set(1)
-    scene.tool_settings.use_keyframe_insert_auto = True
+    one_click().auto_key(scene)
+
+
+def prepare(context):
+    """Every cycle ready (its touch-up layer, counted as the game has it), the last one shown."""
+    for key, _label in CYCLES:
+        if bpy.data.actions.get(PREFIX + key + '_draft'):
+            item(context, key)
+    select_cycle(context, current_cycle(context.scene))
+
+
+def arrange(context):
+    """The workspace as the work needs it: the cycle loaded, the rig in Pose mode, the touch-ups in the Dope Sheet."""
+    scene = context.scene
+    rig = find_rig(scene)
+    if rig is None:
+        return True
+    # The cycles first: they are ready even where the screen can't be (a window switches its workspace on the next tick).
+    prepare(context)
+    oc = one_click()
+    if not oc.open_workspace(context):
+        return False
+    for window in context.window_manager.windows:
+        main = oc.main_view(window)
+        oc.show_tab(main, TAB)
+        oc.dope_sheet(window)
+        if main is not None:
+            oc.select(context, window, main, [rig], rig, pose=True)
+    oc.tell(f'달리기 「{label_of(current_cycle(scene))}」 · Space 재생 · 고치고 Ctrl+S 하면 게임에 들어갑니다')
+    return True
 
 
 # ---- Whole-cycle posture: every frame of the touch-up layer, worked out from the pose as it stands now ---------------
@@ -329,10 +382,12 @@ def clear_touch_ups(context):
 
 def export_path(key):
     root = project_root()
-    return (root / RUN_DIR / (PREFIX + key + '.fbx')) if root else None
+    return (root / target(key)) if root else None
 
 
 def export_cycle(context, key):
+    """One cycle to the game with its touch-ups (even while 손질 층 켜기/끄기 has them off), marked as sent."""
+    oc = one_click()
     scene = context.scene
     rig = find_rig(scene)
     select_cycle(context, key)
@@ -340,16 +395,26 @@ def export_cycle(context, key):
     if path is None:
         raise RuntimeError('ENFILADE 프로젝트를 찾지 못했습니다.')
     path.parent.mkdir(parents=True, exist_ok=True)
-    truefps().export_active_clip(context, rig, str(path))
     name = PREFIX + key
+    clips = path.with_name(name + '.clips.csv')
+    oc.write_meta(clips, oc.TEXT_META)
+    oc.write_meta(path)
+    data = rig.animation_data
+    influence = data.action_influence
+    data.action_influence = 1.0
+    try:
+        truefps().export_active_clip(context, rig, str(path))
+    finally:
+        data.action_influence = influence
     # A loop whose hips keep their sway (as the Mixamo cycles do; the cycles are in place, so there is no travel to drop),
     # facing as Kazusa's rig faces in Unity (the shove workspace's kick: yawOffset 0).
-    path.with_name(name + '.clips.csv').write_text(
-        'clip,loop,inPlace,inPlaceY,inPlaceYaw,yawOffset,cycleOffset,from,to\n' f'{name},1,0,0,0,0,0,,\n', encoding='utf-8')
+    oc.write_text(clips, CSV_HEADER + f'{name},1,0,0,0,0,0,,\n')
+    oc.mark_sent(bpy.data.actions.get(name), fingerprint(key))
     return path
 
 
-def revert_cycle(key):
+def withhold(key):
+    """The cycle's file out of the game (the original clip plays again), kept out until the cycle changes."""
     path = export_path(key)
     removed = []
     if path is not None:
@@ -357,12 +422,49 @@ def revert_cycle(key):
             if p.exists():
                 p.unlink()
                 removed.append(p.name)
+    one_click().mark_withheld(bpy.data.actions.get(PREFIX + key), fingerprint(key))
     return removed
+
+
+def send_changed(context, force=False):
+    """Every cycle changed since it was last sent (or whose file went missing) to the game; the cycle shown stays shown,
+    on its frame. Returns (sent labels, failures), or None with the panel's switch off (force: sends anyway, the
+    게임에 보내기 button)."""
+    scene = context.scene
+    if not is_run_file(scene) or not (force or scene.enf_run.auto_send):
+        return None
+    oc = one_click()
+    shown, frame = current_cycle(scene), scene.frame_current
+    sent, failed = [], []
+    for key, label in CYCLES:
+        if not bpy.data.actions.get(PREFIX + key + '_draft'):
+            continue
+        try:
+            action, _draft = item(context, key)
+            if not oc.needs_sending(action, fingerprint(key), in_game(key)):
+                continue
+            export_cycle(context, key)
+            sent.append(label)
+        except Exception as error:
+            failed.append(f'{label}: {error}')
+    if current_cycle(scene) != shown or rig_action_name(scene) != PREFIX + shown:
+        select_cycle(context, shown)
+    if scene.frame_current != frame:
+        scene.frame_set(frame)
+    return sent, failed
+
+
+def rig_action_name(scene):
+    rig = find_rig(scene)
+    action = rig.animation_data.action if rig is not None and rig.animation_data else None
+    return action.name if action is not None else None
 
 
 # ---- UI -------------------------------------------------------------------------------------------------------------
 
 class ENFRunSettings(bpy.types.PropertyGroup):
+    auto_send: BoolProperty(name='저장하면 게임에 보내기', default=True,
+                            description='Ctrl+S로 저장할 때 고친 걸음을 모두 게임에 보낸다(Art/Animations/Run의 FBX)')
     lean_step: FloatProperty(name='세우는 각도', default=2.0, min=.5, max=10.0, description='한 번 누를 때 상체를 세우거나 숙이는 각도(도)')
     swing_step: FloatProperty(name='흔들기 배율', default=1.15, min=1.01, max=2.0, description='한 번 누를 때 흔들림을 키우거나 줄이는 배율')
 
@@ -463,30 +565,34 @@ class ENFRUN_OT_seam(bpy.types.Operator):
 class ENFRUN_OT_export(bpy.types.Operator):
     bl_idname = 'enf_run.export'
     bl_label = '게임에 보내기'
+    bl_description = 'Ctrl+S와 같다: 고친 걸음을 모두 게임에 보내고 작업 파일을 저장한다(저장하면 보내기를 꺼 두어도 보낸다)'
 
     def execute(self, context):
         if not _ok(self, context):
             return {'CANCELLED'}
-        key = current_cycle(context.scene)
-        try:
-            path = export_cycle(context, key)
-        except Exception as error:
-            self.report({'ERROR'}, str(error))
+        sent, failed = send_changed(context, force=True) or ([], ['달리기 작업 파일이 아닙니다'])
+        one_click().send_report(context.scene, sent, failed)
+        if bpy.data.filepath:
+            bpy.ops.wm.save_mainfile()
+        if failed:
+            self.report({'ERROR'}, '못 보냄: ' + '; '.join(failed))
             return {'CANCELLED'}
-        self.report({'INFO'}, f'보냄: {path.name} — Unity 창을 누르면 가져가고, 다음 Play부터 {key} 대신 쓰인다')
+        self.report({'INFO'}, ('보냄: ' + ', '.join(sent) + ' — Unity 창을 누르면 가져가고, 다음 Play부터 원래 클립 대신 쓰인다')
+                    if sent else '고친 걸음이 없어 저장만 했습니다')
         return {'FINISHED'}
 
 
 class ENFRUN_OT_revert(bpy.types.Operator):
     bl_idname = 'enf_run.revert'
     bl_label = '원래 클립으로 되돌리기'
+    bl_description = '보낸 파일을 지워 게임이 원래 클립을 다시 쓴다. 이 걸음을 다시 고치면 저장할 때 다시 들어간다'
 
     def invoke(self, context, event):
         return context.window_manager.invoke_confirm(self, event)
 
     def execute(self, context):
         key = current_cycle(context.scene)
-        removed = revert_cycle(key)
+        removed = withhold(key)
         self.report({'INFO'}, ('지움: ' + ', '.join(removed)) if removed else '보낸 파일이 없습니다')
         return {'FINISHED'}
 
@@ -496,7 +602,7 @@ class ENFRUN_PT_panel(bpy.types.Panel):
     bl_idname = 'ENFRUN_PT_panel'
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
-    bl_category = '달리기'
+    bl_category = TAB
 
     def draw(self, context):
         layout = self.layout
@@ -540,27 +646,28 @@ class ENFRUN_PT_panel(bpy.types.Panel):
         box.operator('enf_run.clear')
 
         box = layout.box()
-        box.label(text='4. 게임에 보내기')
+        box.label(text='4. 저장(Ctrl+S)하면 게임에 들어간다')
+        box.prop(settings, 'auto_send')
+        oc = one_click()
+        action = bpy.data.actions.get(PREFIX + key)
+        changed = action is not None and action.get(oc.SENT) != fingerprint(key)
+        if action is not None and action.get(oc.WITHHELD) and not changed:
+            box.label(text=f'게임은 원래 {key}를 쓰는 중: 고치면 저장할 때 들어간다')
+        elif not in_game(key):
+            box.label(text='아직 게임에 없음: 저장하면 들어간다')
+        elif changed:
+            box.label(text='고친 것이 있음: 저장하면 게임에 들어간다')
+        else:
+            box.label(text='게임이 지금 이것을 쓰는 중')
+        if scene.get(oc.NOTE):
+            box.label(text=str(scene[oc.NOTE])[:60])
         box.operator('enf_run.export', icon='EXPORT')
-        path = export_path(key)
-        if path is not None:
-            box.label(text=f'→ {RUN_DIR.as_posix()}/{path.name}')
-            box.label(text=('게임이 지금 이것을 쓰는 중' if path.exists() else f'아직 안 보냄: 게임은 {key}를 쓴다'))
+        box.label(text=f'→ {target(key).as_posix()}')
         box.operator('enf_run.revert')
 
 
 CLASSES = (ENFRunSettings, ENFRUN_OT_pick, ENFRUN_OT_reshape, ENFRUN_OT_toggle, ENFRUN_OT_clear, ENFRUN_OT_seam,
            ENFRUN_OT_export, ENFRUN_OT_revert, ENFRUN_PT_panel)
-
-
-def _show_panel():
-    for window in bpy.context.window_manager.windows:
-        for area in window.screen.areas:
-            if area.type == 'VIEW_3D':
-                for space in area.spaces:
-                    if space.type == 'VIEW_3D':
-                        space.show_region_ui = True
-    return None
 
 
 def register():
@@ -571,11 +678,11 @@ def register():
             bpy.utils.unregister_class(cls)
             bpy.utils.register_class(cls)
     bpy.types.Scene.enf_run = bpy.props.PointerProperty(type=ENFRunSettings)
-    if bpy.app.background is False:
-        bpy.app.timers.register(_show_panel, first_interval=.5)
+    one_click().register_workspace(TAB, is_run_file, arrange, send_changed)
 
 
 def unregister():
+    one_click().unregister_workspace(TAB)
     del bpy.types.Scene.enf_run
     for cls in reversed(CLASSES):
         bpy.utils.unregister_class(cls)
