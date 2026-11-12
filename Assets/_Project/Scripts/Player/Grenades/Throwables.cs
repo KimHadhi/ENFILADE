@@ -8,9 +8,10 @@ using Random = UnityEngine.Random;
 /// <summary>
 /// The class throwables, one per class, thrown with G (PlayerGrenades; the user, 2026-11-12: "클래스별로 수류탄이
 /// 달랐으면 좋겠고 gmod 호드 모드처럼 G키로 퀵 그레네이드 던질 수 있었음 좋겠어"). Which class carries which is the
-/// table's class column (Tables/Grenades); a class without a row has none yet.
+/// table's class column (Tables/Grenades); a class without a row has none yet. Dye (the Schießhund's bounty dye) and
+/// Claymore (the Support's improvised directional mine, placed rather than thrown) came from the user's picks of 11-12.
 /// </summary>
-public enum Throwable : byte { None, Knife, Frag, Smoke, Flash, Mist }
+public enum Throwable : byte { None, Knife, Frag, Smoke, Flash, Mist, Dye, Claymore }
 
 /// <summary>One throwable's numbers: a row of Tables/Grenades. Unused cells of a kind stay at their defaults.</summary>
 public sealed class ThrowableInfo
@@ -38,6 +39,12 @@ public sealed class ThrowableInfo
     /// finger's side, y out of the palm, z along to the fingers; and its turn there (degrees, in the same axes).
     /// </summary>
     public Vector3 HeldAt = new Vector3(.12f, .6f, .9f), HeldTurn = new Vector3(0f, 0f, 90f);
+    /// <summary>
+    /// Set down where the crosshair is rather than thrown (the Support's claymore; the user: "던지는 느낌보단 설치로 가도
+    /// 되긴 하겠다"): held, G shows where it would go and what it would guard; let go, the hand puts it there.
+    /// Tables/Grenades places.
+    /// </summary>
+    public bool Places;
     public float Speed = 16f, Lift = 2.5f, Gravity = 1f, Bounce = .3f, Size = .08f;
     public float Radius = 5f, Damage, Edge, Head, Seconds, Posture, Knock, Heal, Push, PlayerDamage, PlayerEdge, Noise, Price;
     public Color Tint = Color.white;
@@ -63,6 +70,7 @@ public static class Throwables
     private static readonly Dictionary<Color, Material> looks = new Dictionary<Color, Material>();
     private static bool loaded, libraryLooked, soundsLooked;
     private static GrenadeLibrary library;
+    private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor"), ColorId = Shader.PropertyToID("_Color");
     private static SoundBank sounds;
     private static int coverMask;
 
@@ -137,6 +145,7 @@ public static class Throwables
             };
             if (ColorUtility.TryParseHtmlString(Text(row, "tint"), out Color tint)) info.Tint = tint;
             info.ThrowsOut = string.Equals(Text(row, "cookOut"), "throw", StringComparison.OrdinalIgnoreCase);
+            info.Places = Number(row, "places", 0f) > .5f;
             info.HeldAt = new Vector3(Number(row, "heldAcross", info.HeldAt.x), Number(row, "heldPalm", info.HeldAt.y),
                 Number(row, "heldAlong", info.HeldAt.z));
             info.HeldTurn = new Vector3(Number(row, "heldTurnX", info.HeldTurn.x), Number(row, "heldTurnY", info.HeldTurn.y),
@@ -204,6 +213,8 @@ public static class Throwables
             case Throwable.Smoke: return "GrenadeSmoke";
             case Throwable.Flash: return "GrenadeFlash";
             case Throwable.Mist: return "GrenadeCanister";
+            case Throwable.Dye: return "GrenadeDye";
+            case Throwable.Claymore: return "Claymore";
         }
         return "";
     }
@@ -251,6 +262,9 @@ public static class Throwables
             case Throwable.Smoke: return library.smoke;
             case Throwable.Flash: return library.flash;
             case Throwable.Mist: return library.mist;
+            // The bounty dye is the smoke canister, dyed in its own colour (Dress).
+            case Throwable.Dye: return library.smoke;
+            case Throwable.Claymore: return library.claymore;
         }
         return null;
     }
@@ -285,6 +299,20 @@ public static class Throwables
         look.name = "Look";
         foreach (var renderer in look.GetComponentsInChildren<Renderer>(true))
             renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
+        // The bounty dye wears the smoke canister in the dye's own teal (its row's tint), laid over the canister's paint.
+        if (kind == Throwable.Dye && model != null)
+        {
+            var info = Of(kind);
+            Color dye = info != null ? info.Tint : new Color(.12f, .92f, .82f);
+            var block = new MaterialPropertyBlock();
+            foreach (var renderer in look.GetComponentsInChildren<Renderer>(true))
+            {
+                renderer.GetPropertyBlock(block);
+                block.SetColor(BaseColorId, dye);
+                block.SetColor(ColorId, dye);
+                renderer.SetPropertyBlock(block);
+            }
+        }
         return look;
     }
 
@@ -404,6 +432,23 @@ public static class Throwables
                 float cut = Mathf.Max(tube, -Mathf.Max(bands, Mathf.Abs(v + .02f) - .22f));
                 float fuse = Box(u, v - .36f, .06f, .05f);
                 return Mathf.Min(cut, fuse);
+            }
+            case Throwable.Dye:
+            {
+                // The canister with a drop of dye cut out of its side.
+                float can = Box(u, v + .03f, .19f, .3f) - .035f;
+                float cap = Box(u, v - .33f, .09f, .04f);
+                float drop = Mathf.Min(Circle(u, v + .07f, .085f), Box(u, v + .01f - .06f, .045f * Mathf.Clamp01((.13f - v) / .12f), .06f));
+                return Mathf.Max(Mathf.Min(can, cap), -drop);
+            }
+            case Throwable.Claymore:
+            {
+                // A wide charge bowed toward its front, standing on two splayed legs.
+                float bow = v - .1f + .09f * (u / .38f) * (u / .38f);
+                float body = Mathf.Max(Mathf.Abs(bow) - .12f, Mathf.Abs(u) - .38f);
+                float legLeft = Box((u + .22f) * .97f + (v + .28f) * .25f, v + .28f, .025f, .11f);
+                float legRight = Box((u - .22f) * .97f - (v + .28f) * .25f, v + .28f, .025f, .11f);
+                return Mathf.Min(body, Mathf.Min(legLeft, legRight));
             }
             case Throwable.Smoke:
             case Throwable.Mist:

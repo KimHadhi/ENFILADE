@@ -17,3 +17,4 @@ MonoBehaviour:
   smoke: {fileID: 919132149155446097, guid: 39071b236b06415a90d1f8d782aa396a, type: 3}
   flash: {fileID: 919132149155446097, guid: 10be8b1abc8a4fc1990d48dc6e5b0308, type: 3}
   mist: {fileID: 919132149155446097, guid: 64ee5bb2f5ad401594f175692c297096, type: 3}
+  claymore: {fileID: 919132149155446097, guid: 38eca092023b3ca4680d2e3ba201661c, type: 3}

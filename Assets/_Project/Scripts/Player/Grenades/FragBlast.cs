@@ -11,6 +11,8 @@ using UnityEngine;
 /// may lose a leg and crawl. Survivors near it are knocked down (not a brute), and the bodies are thrown. Players are hurt
 /// only with friendly fire on (FriendlyFire), the thrower too, at its share. The hits go as the thrower's (kills, money,
 /// the kill feed's frag, an Assault's adrenaline) through the zombies' own copies, as bullets do.
+/// The Support's claymore bursts the same way, but one way only (ClaymoreMine): what stands within its cone of the way it
+/// faces is hit (and what is right against it), its grit flies that way, and the bodies behind it stay where they lie.
 /// </summary>
 public static class FragBlast
 {
@@ -23,21 +25,43 @@ public static class FragBlast
     };
 
     /// <summary>A frag bursts here, on every PC; mine: this PC's player threw it, so its hits are this PC's to land.</summary>
-    public static void Play(Vector3 at, ThrowableInfo info, PlayerMovement thrower, bool mine)
+    public static void Play(Vector3 at, ThrowableInfo info, PlayerMovement thrower, bool mine) => Play(at, info, thrower, mine, Vector3.zero, 360f);
+
+    /// <summary>
+    /// A blast that goes one way (the Support's claymore): only within <paramref name="cone"/> degrees of
+    /// <paramref name="facing"/> (flat), and what is right against it (GrenadeRules claymoreClose); 360 is all round.
+    /// </summary>
+    public static void Play(Vector3 at, ThrowableInfo info, PlayerMovement thrower, bool mine, Vector3 facing, float cone)
     {
         if (info == null) return;
         float radius = Mathf.Max(.5f, info.Radius);
-        CanBlastEffect.Play(at, radius, 0f);
-        FragChunk.Throw(at, Mathf.RoundToInt(Throwables.Rule("fragChunks", 12f)));
+        Vector3 way = Vector3.ProjectOnPlane(facing, Vector3.up);
+        // Below -1 is all round; a directional blast keeps its half angle's cosine.
+        float spread = cone >= 360f || way.sqrMagnitude < 1e-4f ? -2f : Mathf.Cos(Mathf.Clamp(cone, 1f, 359f) * .5f * Mathf.Deg2Rad);
+        way = way.sqrMagnitude > 1e-4f ? way.normalized : Vector3.forward;
+        CanBlastEffect.Play(at, spread > -1f ? radius * .55f : radius, 0f);
+        FragChunk.Throw(at, Mathf.RoundToInt(Throwables.Rule("fragChunks", 12f)), way, spread);
         Throwables.Play("Frag", at + Vector3.up * .3f, 1f, 8f, 150f);
         Shake(at, radius);
         // The bang carries: calm zombies near come to look (the host's hear it).
         Noise.Make(at + Vector3.up * .5f, info.Noise > 0f ? info.Noise : 40f, thrower != null ? thrower.gameObject : null);
         if (!mine) return;
         var source = thrower != null ? thrower.gameObject : null;
-        Hurt(at, info, radius, source);
-        HurtPlayers(at, info, radius, thrower, source);
-        FragAftermath.Begin(at, radius, info.Damage, source);
+        Hurt(at, info, radius, source, way, spread);
+        HurtPlayers(at, info, radius, thrower, source, way, spread);
+        FragAftermath.Begin(at, radius, info.Damage, source, way, spread);
+    }
+
+    /// <summary>
+    /// In a blast's reach this way: all round (spread below -1), else within the cone whose half angle's cosine is
+    /// <paramref name="spread"/> round <paramref name="way"/> (flat), or right against it (GrenadeRules claymoreClose).
+    /// </summary>
+    internal static bool Reaches(Vector3 at, Vector3 point, Vector3 way, float spread)
+    {
+        if (spread < -1f) return true;
+        Vector3 flat = Vector3.ProjectOnPlane(point - at, Vector3.up);
+        if (flat.magnitude <= Mathf.Max(0f, Throwables.Rule("claymoreClose", 1f))) return true;
+        return Vector3.Dot(flat.normalized, way) >= spread;
     }
 
     // The view kicks back and shakes, the more the nearer; out past fragShake times its reach it isn't felt.
@@ -55,7 +79,7 @@ public static class FragBlast
         if (eye != null) CameraViewPunch.For(eye)?.Punch(new Vector3(-2f * share, 0f, 0f), 0f, .6f * share);
     }
 
-    private static void Hurt(Vector3 at, ThrowableInfo info, float radius, GameObject source)
+    private static void Hurt(Vector3 at, ThrowableInfo info, float radius, GameObject source, Vector3 way, float spread)
     {
         near.Clear();
         float most = radius * radius;
@@ -67,7 +91,7 @@ public static class FragBlast
         {
             if (enemy == null || !enemy.IsAlive) continue;
             Vector3 chest = enemy.transform.position + Vector3.up;
-            if (Throwables.Covered(heart, chest)) continue;
+            if (!Reaches(at, chest, way, spread) || Throwables.Covered(heart, chest)) continue;
             float distance = Vector3.Distance(at, enemy.transform.position);
             float share = 1f - Mathf.Clamp01(distance / radius);
             float amount = Mathf.Lerp(info.Edge, info.Damage, share);
@@ -119,7 +143,8 @@ public static class FragBlast
 
     // Friendly fire on: the players it reaches are hurt, the thrower too (at the rule's share) and thrown a little. A
     // friend's copy here passes the blow on to their own PC (PlayerDamageReceiver, FriendlyFire.PassOn).
-    private static void HurtPlayers(Vector3 at, ThrowableInfo info, float radius, PlayerMovement thrower, GameObject source)
+    private static void HurtPlayers(Vector3 at, ThrowableInfo info, float radius, PlayerMovement thrower, GameObject source,
+        Vector3 way, float spread)
     {
         if (!FriendlyFire.Enabled || info.PlayerDamage <= 0f) return;
         Vector3 heart = at + Vector3.up * .35f;
@@ -127,7 +152,8 @@ public static class FragBlast
         {
             if (player == null || !player.IsInitialized || player.IsDead || player.DamageReceiver == null) continue;
             float distance = Vector3.Distance(at, player.transform.position);
-            if (distance > radius || Throwables.Covered(heart, player.transform.position + Vector3.up)) continue;
+            if (distance > radius || !Reaches(at, player.transform.position + Vector3.up, way, spread)
+                || Throwables.Covered(heart, player.transform.position + Vector3.up)) continue;
             float share = 1f - Mathf.Clamp01(distance / radius);
             float amount = Mathf.Lerp(info.PlayerEdge, info.PlayerDamage, share);
             if (amount <= 0f) continue;
@@ -150,11 +176,11 @@ internal sealed class FragAftermath : MonoBehaviour
     private const float Delay = .05f;
     private static readonly Collider[] found = new Collider[128];
     private static readonly HashSet<RagdollCorpse> pushed = new HashSet<RagdollCorpse>();
-    private Vector3 at;
-    private float radius, damage, age;
+    private Vector3 at, way;
+    private float radius, damage, age, spread = -2f;
     private GameObject source;
 
-    internal static void Begin(Vector3 at, float radius, float damage, GameObject source)
+    internal static void Begin(Vector3 at, float radius, float damage, GameObject source, Vector3 way, float spread)
     {
         var host = new GameObject("Frag Aftermath");
         var after = host.AddComponent<FragAftermath>();
@@ -162,6 +188,8 @@ internal sealed class FragAftermath : MonoBehaviour
         after.radius = radius;
         after.damage = damage;
         after.source = source;
+        after.way = way;
+        after.spread = spread;
     }
 
     private void Update()
@@ -174,6 +202,7 @@ internal sealed class FragAftermath : MonoBehaviour
             var doll = found[i] != null ? found[i].GetComponentInParent<RagdollCorpse>() : null;
             if (doll == null || !pushed.Add(doll)) continue;
             Vector3 point = found[i].bounds.center;
+            if (!FragBlast.Reaches(at, point, way, spread)) continue;
             float share = 1f - Mathf.Clamp01(Vector3.Distance(at, point) / Mathf.Max(.5f, radius));
             Vector3 away = Vector3.ProjectOnPlane(point - at, Vector3.up);
             away = away.sqrMagnitude > 1e-4f ? away.normalized : Vector3.forward;
@@ -191,7 +220,8 @@ internal sealed class FragChunk : MonoBehaviour
     private float life, age;
     private Vector3 size;
 
-    internal static void Throw(Vector3 at, int count)
+    // All round, or (spread above -1) flung along the cone round way, as a claymore throws its load.
+    internal static void Throw(Vector3 at, int count, Vector3 way, float spread)
     {
         for (int i = 0; i < count; i++)
         {
@@ -210,6 +240,12 @@ internal sealed class FragChunk : MonoBehaviour
             body.mass = .05f;
             Vector2 flat = Random.insideUnitCircle.normalized * Random.Range(2.5f, 7f);
             body.linearVelocity = new Vector3(flat.x, Random.Range(4f, 10f), flat.y);
+            if (spread > -1f)
+            {
+                float half = Mathf.Acos(Mathf.Clamp(spread, -1f, 1f)) * Mathf.Rad2Deg;
+                Vector3 thrown = Quaternion.AngleAxis(Random.Range(-half, half), Vector3.up) * way;
+                body.linearVelocity = thrown * Random.Range(6f, 12f) + Vector3.up * Random.Range(1.5f, 4.5f);
+            }
             body.angularVelocity = Random.insideUnitSphere * 25f;
             var self = chunk.AddComponent<FragChunk>();
             self.life = Random.Range(1.1f, 1.9f);

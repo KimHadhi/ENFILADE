@@ -16,8 +16,11 @@ using MovementState = PlayerMovement.MovementState;
 /// One that cooks (the Assault's frag, the Point's flashbang) burns from the pin: its fuse runs down in a ring round the
 /// crosshair (GrenadeHUD.Ring), so it can be let go to burst in the air. Never a minus: a frag held to the end is thrown on
 /// reflex at the last moment (the Assault counts the fuse and the hand lets go by itself: GrenadeRules reflexLead), and a
-/// flashbang held to the end goes off in the hand, which only staggers the zombies round its holder. Knife, smoke and
-/// canister don't cook; holding them only aims.
+/// flashbang held to the end goes off in the hand, which only staggers the zombies round its holder. Knife, smoke,
+/// canister and dye don't cook; holding them only aims. The Support's claymore is set down, not thrown (the user: "던지는
+/// 느낌보단 설치로 가도 되긴 하겠다"): held, G shows the spot under the crosshair and the fan it will guard
+/// (ClaymorePreview); let go (or tapped), the hand puts it there (ClaymoreMine), and the oldest comes back off past
+/// GrenadeRules claymoreMost.
 /// A few are carried (the table's carry: a fresh kit holds them all, every chapter and every class pick); ammo piles, the
 /// shop and a Support give some back, and a Knight walks over its thrown knives to take them back. Horde's 0.35 s guard
 /// between throws stays (cooldown). On every player: this PC's own throws, and friends' throws and arm copied here
@@ -43,6 +46,8 @@ public sealed class PlayerGrenades : MonoBehaviour
     public event Action<ushort> KnifeTaken;
     /// <summary>This PC's player's off hand went for a throwable, threw it or put it back: friends' copies move their arm so.</summary>
     public event Action<Throwable, HandPhase> Handed;
+    /// <summary>This PC's player set a claymore down: its number, where, how it is turned, and whether on a wall.</summary>
+    public event Action<Throwable, ushort, Vector3, Quaternion, bool> Placed;
 
     private PlayerMovement movement;
     private WeaponController weapon;
@@ -59,6 +64,9 @@ public sealed class PlayerGrenades : MonoBehaviour
     private readonly Dictionary<ushort, ThrownGrenade> flying = new Dictionary<ushort, ThrownGrenade>();
     private readonly Dictionary<ushort, ThrownKnife> knives = new Dictionary<ushort, ThrownKnife>();
     private readonly List<ushort> gone = new List<ushort>();
+    // This player's claymores set down, oldest first (theirs on this PC, or the copies of a friend's).
+    private readonly List<ClaymoreMine> mines = new List<ClaymoreMine>();
+    private ClaymorePreview preview;
 
     /// <summary>What this player carries (their class's), and how many are left.</summary>
     public Throwable Kind => kind;
@@ -84,6 +92,11 @@ public sealed class PlayerGrenades : MonoBehaviour
         if (wired) PlayerClass.Picked -= OnPicked;
         if (Local == this) Local = null;
         if (arc != null) arc.Hide();
+        preview?.Hide();
+        // Their claymores go with them.
+        foreach (var claymore in mines)
+            if (claymore != null) Destroy(claymore.gameObject);
+        mines.Clear();
     }
 
     private void OnDisable()
@@ -91,6 +104,7 @@ public sealed class PlayerGrenades : MonoBehaviour
         holding = aiming = cooking = letGo = false;
         arm = Arm.None;
         if (arc != null) arc.Hide();
+        preview?.Hide();
         if (Local == this) GrenadeHUD.Ring(-1f);
     }
 
@@ -129,7 +143,12 @@ public sealed class PlayerGrenades : MonoBehaviour
         if (cooking) Cook(Throwables.Of(armKind));
         Run(dt, Throwables.Of(armKind));
         KeepHandFree();
-        if (holding && (arm == Arm.Draw || arm == Arm.Hold)) Aim(Throwables.Of(armKind));
+        var aimed = Throwables.Of(armKind);
+        if (holding && (arm == Arm.Draw || arm == Arm.Hold) && aimed != null)
+        {
+            if (aimed.Places) Preview();
+            else Aim(aimed);
+        }
         else StopAim();
         if ((pickLeft -= dt) <= 0f) { pickLeft = .1f; TakeKnivesBack(); }
         var held = Throwables.Of(armKind);
@@ -209,7 +228,7 @@ public sealed class PlayerGrenades : MonoBehaviour
         letGo = true;
         if (tap) drawSpeed = Throwables.Rule("tapDraw", 1.6f);
         Handed?.Invoke(armKind, tap ? HandPhase.TapThrow : HandPhase.Throw);
-        if (arm == Arm.Hold) StartThrow();
+        if (arm == Arm.Hold) Release();
     }
 
     // The guard key, or the hands taken: the pin goes back in and the hand puts it back on the belt.
@@ -269,6 +288,119 @@ public sealed class PlayerGrenades : MonoBehaviour
         cycle = Mathf.Max(cycle, Throwables.Rule("hold", .4f));
     }
 
+    // Let go at the hold: thrown, or set down (a claymore: on this PC's player's own PC; a friend's copy waits to be told
+    // where, ShowMine, and only lowers its hand).
+    private void Release()
+    {
+        var held = Throwables.Of(armKind);
+        if (held == null || !held.Places) { StartThrow(); return; }
+        if (movement.IsLocal) Put(held);
+        else Lower();
+    }
+
+    // ---- Setting a claymore down ----
+
+    // Where the claymore would go now: under the crosshair within GrenadeRules claymoreReach of the chest, on a floor
+    // (phone up, guarding the way the player looks) or a wall (its back to it, guarding the room); else on the floor a
+    // step ahead. False when there is nowhere.
+    private bool Spot(out Vector3 at, out Quaternion facing, out bool wall)
+    {
+        at = default;
+        facing = Quaternion.identity;
+        wall = false;
+        var eye = Camera.main;
+        if (eye == null) return false;
+        var view = eye.transform;
+        float reach = Mathf.Max(.5f, Throwables.Rule("claymoreReach", 3f));
+        Vector3 chest = transform.position + Vector3.up * 1.2f;
+        Vector3 look = Vector3.ProjectOnPlane(view.forward, Vector3.up);
+        if (look.sqrMagnitude < 1e-4f) look = Vector3.ProjectOnPlane(transform.forward, Vector3.up);
+        look = look.sqrMagnitude > 1e-4f ? look.normalized : Vector3.forward;
+        if (Physics.Raycast(view.position, view.forward, out RaycastHit hit, reach + 6f, Throwables.WorldMask, QueryTriggerInteraction.Ignore)
+            && Vector3.Distance(hit.point, chest) <= reach + .3f)
+        {
+            if (hit.normal.y >= .6f)
+            {
+                at = hit.point;
+                facing = Quaternion.LookRotation(Vector3.ProjectOnPlane(look, hit.normal).normalized, hit.normal);
+                return true;
+            }
+            if (Mathf.Abs(hit.normal.y) < .6f)
+            {
+                at = hit.point;
+                facing = Quaternion.LookRotation(hit.normal, Vector3.up);
+                wall = true;
+                return true;
+            }
+        }
+        // Nothing to set it on under the crosshair: on the floor a step ahead.
+        Vector3 ahead = transform.position + Vector3.up * 1f + look * Mathf.Min(1.2f, reach);
+        if (Physics.Raycast(ahead, Vector3.down, out RaycastHit ground, 2.5f, Throwables.WorldMask, QueryTriggerInteraction.Ignore)
+            && ground.normal.y >= .6f)
+        {
+            at = ground.point;
+            facing = Quaternion.LookRotation(Vector3.ProjectOnPlane(look, ground.normal).normalized, ground.normal);
+            return true;
+        }
+        return false;
+    }
+
+    // Held: the spot and the fan it would guard.
+    private void Preview()
+    {
+        aiming = true;
+        if (preview == null) preview = new ClaymorePreview(transform);
+        if (Spot(out Vector3 at, out Quaternion facing, out bool wall)) preview.Show(at, facing, wall);
+        else preview.Hide();
+    }
+
+    // The hand puts it down where Spot says; nowhere to put it, the hand comes back with it (nothing spent).
+    private void Put(ThrowableInfo info)
+    {
+        holding = letGo = false;
+        StopAim();
+        if (info == null || count <= 0 || !Spot(out Vector3 at, out Quaternion facing, out bool wall))
+        {
+            GrenadeHUD.Refused();
+            Lower();
+            Handed?.Invoke(armKind, HandPhase.Lower);
+            return;
+        }
+        count--;
+        readyAt = Time.time + Cooldown;
+        ushort id = NextId();
+        Keep(ClaymoreMine.Place(id, at, facing, wall, movement, true, OnMineFired));
+        Throwables.Play("Bounce", at, .8f, .7f, 15f);
+        Placed?.Invoke(armKind, id, at, facing, wall);
+        PlayerCallouts.Thrown(info.Callout);
+        released = true;
+        Lower();
+        Handed?.Invoke(armKind, HandPhase.Lower);
+    }
+
+    // A new claymore out; past GrenadeRules claymoreMost the oldest comes back off (every PC keeps the same order).
+    private void Keep(ClaymoreMine claymore)
+    {
+        mines.RemoveAll(m => m == null);
+        if (claymore == null) return;
+        mines.Add(claymore);
+        int most = Mathf.Max(1, Mathf.RoundToInt(Throwables.Rule("claymoreMost", 2f)));
+        while (mines.Count > most)
+        {
+            var oldest = mines[0];
+            mines.RemoveAt(0);
+            if (oldest != null) oldest.Retire();
+        }
+    }
+
+    // This PC's player's claymore fired: friends' copies fire where it did.
+    private void OnMineFired(ClaymoreMine claymore)
+    {
+        if (claymore == null) return;
+        mines.Remove(claymore);
+        Burst?.Invoke(Throwable.Claymore, claymore.Id, claymore.Heart);
+    }
+
     private void Lower()
     {
         if (arm == Arm.None) return;
@@ -290,7 +422,7 @@ public sealed class PlayerGrenades : MonoBehaviour
                 {
                     cycle = hold;
                     arm = Arm.Hold;
-                    if (letGo) StartThrow();
+                    if (letGo) Release();
                 }
                 break;
             case Arm.Throw:
@@ -316,7 +448,8 @@ public sealed class PlayerGrenades : MonoBehaviour
     private void Pin(ThrowableInfo info)
     {
         pinned = true;
-        if (armKind == Throwable.Knife) return;
+        // A knife has no pin, nor does a claymore (its phone comes on once it is down).
+        if (armKind == Throwable.Knife || (info != null && info.Places)) return;
         Vector3 at = armBody != null ? armBody.HeldPoint : HandPoint();
         Throwables.Play("Pin", at, movement.IsLocal ? .7f : .5f, 1f, 15f);
         if (!movement.IsLocal || info == null || !info.Cooks) return;
@@ -449,6 +582,7 @@ public sealed class PlayerGrenades : MonoBehaviour
     {
         aiming = false;
         arc?.Hide();
+        preview?.Hide();
     }
 
     // ---- Knives back ----
@@ -493,6 +627,8 @@ public sealed class PlayerGrenades : MonoBehaviour
             case HandPhase.Throw:
             case HandPhase.TapThrow:
                 if (phase == HandPhase.TapThrow) drawSpeed = Throwables.Rule("tapDraw", 1.6f);
+                // A claymore is set down, not thrown: the copy's hand lowers when it is told where it went (ShowMine).
+                if (Throwables.Of(handKind) is ThrowableInfo setDown && setDown.Places) { letGo = true; break; }
                 if (arm == Arm.None || arm == Arm.Lower)
                 {
                     // Its draw never came: straight into the throw from the hold.
@@ -527,10 +663,29 @@ public sealed class PlayerGrenades : MonoBehaviour
         Throwables.Play("Throw", from, .7f, 1.5f, 20f);
     }
 
+    /// <summary>A friend set a claymore down there: this PC sets its own copy down (their PC fires it, ShowBurst).</summary>
+    internal void ShowMine(ushort id, Vector3 at, Quaternion facing, bool wall)
+    {
+        Keep(ClaymoreMine.Place(id, at, facing, wall, movement, false, null));
+        Throwables.Play("Bounce", at, .6f, .7f, 15f);
+        if (arm == Arm.Draw || arm == Arm.Hold) Lower();
+    }
+
     /// <summary>A friend's throwable burst there: this PC's copy bursts in that spot (or, held too long, in their hand).</summary>
     internal void ShowBurst(Throwable thrownKind, ushort id, Vector3 at)
     {
         Throwables.NoteThrower(movement, thrownKind);
+        // Their claymore fired: its copy here fires the same way from where it lies.
+        if (thrownKind == Throwable.Claymore)
+        {
+            var claymore = mines.Find(m => m != null && m.Id == id);
+            if (claymore != null)
+            {
+                mines.Remove(claymore);
+                claymore.BurstAt(at);
+                return;
+            }
+        }
         if (flying.TryGetValue(id, out var grenade) && grenade != null)
         {
             flying.Remove(id);

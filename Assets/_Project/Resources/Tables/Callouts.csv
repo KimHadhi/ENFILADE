@@ -69,3 +69,5 @@ auto.grenade.frag,auto,grenade.frag,0,,수류탄!,Frag out!,call.alarm,jut,어�
 auto.grenade.flash,auto,grenade.flash,0,,섬광 간다!,Flashbang out!,call.alarm,jut,포인트가 G로 섬광탄을 던지거나 손에서 터뜨릴 때 저절로. 눈부심은 없고 좀비만 기절한다
 auto.grenade.smoke,auto,grenade.smoke,0,,연막 깐다!,Smoke out!,call.lead,point,고스트가 G로 연막탄을 던질 때 저절로
 auto.grenade.mist,auto,grenade.mist,0,,소독 안개! 이 안으로!,Mist down! Get in here!,call.lead,beckon,데탕트가 G로 소독 안개탄을 던질 때 저절로. 좀비는 안개 안으로 못 들어온다
+auto.grenade.dye,auto,grenade.dye,0,,염료 뿌린다! 사냥 시작이다!,Dye out! The hunt is on!,call.proud,jut,시순트가 G로 현상금 염료탄을 던질 때 저절로
+auto.grenade.claymore,auto,grenade.claymore,0,,지뢰 설치! 앞에 서지 마!,Claymore down! Stay out of its front!,call.lead,jut,서포트가 G로 급조 지향성 지뢰를 놓을 때 저절로(동료가 그 앞에 서지 않게)

@@ -21,4 +21,7 @@ public sealed class GrenadeLibrary : ScriptableObject
     public GameObject flash;
     [Tooltip("Détente: the antiseptic mist canister (the incendiary's body, repainted white with a red cross).")]
     public GameObject mist;
+    [Tooltip("Support: the improvised directional mine, two C4 bricks strapped to a phone detonator (Sierra Division's " +
+             "Heist Essentials Bomb_03). The Schießhund's dye grenade wears the smoke canister, dyed in code.")]
+    public GameObject claymore;
 }

@@ -73,9 +73,11 @@ public static class GunFeelDirector
         // goes, so its mood is still the one it died in (the host's, shared to this PC).
         bool takedown = execution && report.Target.TryGetComponent(out ZombieMind mind) && mind.Unaware;
         // A Schießhund's own mark pays its bounty on top (stage 3 of the classes): more for an elite.
+        // A zombie its bounty dye splashed pays a little bounty of its own (DyeMarks: GrenadeRules dyeMoney).
         int bounty = PlayerClass.Is(PlayerClass.Schiesshund) && PingMarks.IsBountyOf(report.Target, PlayerRoster.Local)
             ? Mathf.RoundToInt(PlayerClass.Ability("Schiesshund", PlayerClass.IsElite(report.Target as EnemyHealth) ? "bountyElite" : "bountyMoney",
-                PlayerClass.IsElite(report.Target as EnemyHealth) ? 300f : 100f)) : 0;
+                PlayerClass.IsElite(report.Target as EnemyHealth) ? 300f : 100f))
+            : PlayerClass.Is(PlayerClass.Schiesshund) ? DyeMarks.Money(report.Target, PlayerRoster.Local) : 0;
         CombatFeedHUD.Kill(WeaponName(hit), CombatDamageEvents.DisplayNameOf(report.Target), critical && bullet, execution, hit.IsCounter, bullet, distance, !shared,
             hit.Pierced, standout, takedown, bounty, WeaponIcon(hit), marks);
         // Kills done some way worth a name (MEATSHOT, RAILGUN, SKEET ...) stamp it and pay on top.

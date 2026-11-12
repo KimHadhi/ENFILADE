@@ -1326,6 +1326,8 @@ grenade.frag.name,세열 수류탄,Frag grenade,G 투척물 > 어썰트: HUD 투
 grenade.smoke.name,연막탄,Smoke grenade,G 투척물 > 고스트: HUD 투척물 판
 grenade.flash.name,섬광탄,Flashbang,G 투척물 > 포인트: HUD 투척물 판
 grenade.mist.name,소독 안개탄,Antiseptic mist,G 투척물 > 데탕트: HUD 투척물 판
+grenade.dye.name,현상금 염료탄,Bounty dye,G 투척물 > 시순트: HUD 투척물 판
+grenade.claymore.name,급조 지향성 지뢰,Improvised claymore,G 투척물 > 서포트(놓는다): HUD 투척물 판 · 킬 피드 무기 자리
 pickup.gives.grenade,· 투척물 +{0},· throwable +{0},주운 목록(화면 아래) > 탄약 더미가 투척물도 채웠을 때 탄창 뒤에 붙는다. {0}=투척물 수
 shop.detail.grenade,클래스 투척물 +{0},Class throwable +{0},상점 > 투척물 보충 카드 설명. {0}=개수
 shop.refuse.nogrenade,이 클래스는 아직 투척물이 없어요,This class has no throwable yet,상점 > 투척물이 없는 클래스가 보충을 살 때

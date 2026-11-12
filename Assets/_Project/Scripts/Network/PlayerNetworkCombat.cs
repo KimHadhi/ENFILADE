@@ -228,6 +228,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
             grenades.Burst += OnGrenadeBurst;
             grenades.KnifeTaken += OnKnifeTaken;
             grenades.Handed += OnGrenadeHanded;
+            grenades.Placed += OnMinePlaced;
             knocks.Knocked += OnKnocked;
             kit.Charged += OnCharged;
             kit.Taunted += OnTaunted;
@@ -286,6 +287,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
         {
             grenades.Thrown -= OnGrenadeThrown; grenades.Burst -= OnGrenadeBurst; grenades.KnifeTaken -= OnKnifeTaken;
             grenades.Handed -= OnGrenadeHanded;
+            grenades.Placed -= OnMinePlaced;
         }
         if (knocks != null) knocks.Knocked -= OnKnocked;
         if (kit != null) { kit.Charged -= OnCharged; kit.Taunted -= OnTaunted; kit.Claimed -= OnClaimed; kit.Dueled -= OnDueled; }
@@ -384,6 +386,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
     private void OnGrenadeBurst(Throwable kind, ushort id, Vector3 at) => GrenadeBurstRpc((byte)kind, id, at);
     private void OnKnifeTaken(ushort id) => KnifeTakenRpc(id);
     private void OnGrenadeHanded(Throwable kind, PlayerGrenades.HandPhase phase) => GrenadeHandRpc((byte)kind, (byte)phase);
+    private void OnMinePlaced(Throwable kind, ushort id, Vector3 at, Quaternion facing, bool wall) => MineRpc(id, at, facing, wall);
     private void OnKnocked(Vector3 at, Vector3 normal) => KnockRpc(at, normal);
     private void OnCharged(Vector3 at) => ChargeRpc(at);
     private void OnTaunted(Vector3 at) => TauntRpc(at);
@@ -595,6 +598,14 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
     private void GrenadeHandRpc(byte kind, byte phase)
     {
         if (grenades != null) grenades.ShowHand((Throwable)kind, (PlayerGrenades.HandPhase)phase);
+    }
+
+    // A Support set a claymore down (G): every other PC sets its copy down there; the Support's PC fires it and says
+    // where in GrenadeBurstRpc, so its copies fire with it.
+    [Rpc(SendTo.NotMe)]
+    private void MineRpc(ushort id, Vector3 at, Quaternion facing, bool wall)
+    {
+        if (grenades != null) grenades.ShowMine(id, at, facing, wall);
     }
 
     // A knock on a wall by this player: every other PC hears it there, and the host's zombies come to look.

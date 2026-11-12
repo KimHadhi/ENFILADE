@@ -96,6 +96,12 @@ MonoBehaviour:
   - key: Callout/auto.charge.lead
     clips:
     - {fileID: 8300000, guid: 8fbe20b75e135ddfaa87a4d835a1c04c, type: 3}
+  - key: Callout/auto.grenade.claymore
+    clips:
+    - {fileID: 8300000, guid: 62eddf8647635b6c935c886e28273077, type: 3}
+  - key: Callout/auto.grenade.dye
+    clips:
+    - {fileID: 8300000, guid: 0b29cb0169a8530aa2d76b17d98b4d62, type: 3}
   - key: Callout/auto.grenade.flash
     clips:
     - {fileID: 8300000, guid: c67edaec13635f2496f02972fe412e90, type: 3}

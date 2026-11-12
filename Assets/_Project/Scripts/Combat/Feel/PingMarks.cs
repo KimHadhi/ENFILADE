@@ -75,6 +75,18 @@ public sealed class PingMarks : MonoBehaviour
         return false;
     }
 
+    /// <summary>
+    /// Whether anyone's mark (a ping or a bounty) is on this foe now: its outline is the mark's, so a Schießhund's bounty
+    /// dye (DyeMarks), which outlines through the same channel, leaves it alone.
+    /// </summary>
+    public static bool IsMarked(Component enemy)
+    {
+        if (instance == null || enemy == null) return false;
+        foreach (var mark in instance.marks)
+            if (mark.Enemy != null && mark.Enemy.gameObject == enemy.gameObject && Time.time < mark.Until) return true;
+        return false;
+    }
+
     /// <summary>The foe carrying <paramref name="hunter"/>'s bounty mark now, or null (the HUD's).</summary>
     public static Component BountyOf(PlayerMovement hunter)
     {
