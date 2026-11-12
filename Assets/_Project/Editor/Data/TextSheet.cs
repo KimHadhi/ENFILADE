@@ -260,9 +260,11 @@ internal sealed class TextSheet
                 if (lost.Count > 0) problems.Add((true, $"{name}: 코드가 채우는 자리 {Join(lost)}가 빠졌어요. 그 값이 화면에 안 나와요."));
                 if (added.Count > 0 && before.Length > 0)
                     problems.Add((true, $"{name}: 새 자리 {Join(added)}는 코드가 채우지 않아요. 줄이 통째로 깨져 보일 수 있어요."));
+                // Only an option list needs its count: a body slider's two end words or a choice row's chips, one per
+                // option of the model. A story's lines are free (Enter makes as many as the words need, Texts.Lines).
                 int pipesBefore = before.Count(c => c == '|'), pipesNow = now.Count(c => c == '|');
-                if (pipesBefore != pipesNow && before.Length > 0)
-                    problems.Add((pipesBefore > 0, $"{name}: 나눔표 | 수가 {pipesBefore}개에서 {pipesNow}개가 됐어요. 이 줄을 |로 나눠 쓰는 화면(체형 고르기 칩, 이야기 카드 줄)은 칸 수가 맞아야 해요."));
+                if (OptionList(row.Id) && pipesBefore != pipesNow && before.Length > 0)
+                    problems.Add((true, $"{name}: | 로 나눈 고르기 칸이 {pipesBefore + 1}개에서 {pipesNow + 1}개가 됐어요. 이 줄은 모델의 고르기 수와 같아야 해요(왼쪽부터 차례로 짝지어요)."));
                 var keysBefore = KeyLabel.Matches(before).Cast<Match>().Select(m => m.Value).Distinct().ToList();
                 var keysGone = keysBefore.Where(k => now.IndexOf(k, StringComparison.Ordinal) < 0).ToList();
                 if (keysGone.Count > 0)
@@ -280,6 +282,10 @@ internal sealed class TextSheet
         }
         return problems;
     }
+
+    // Rows whose '|' splits a fixed list of options, matched by position (BodyShapes: a slider's ends, a choice's chips).
+    internal static bool OptionList(string id) => id.EndsWith(".choices", StringComparison.OrdinalIgnoreCase)
+                                                  || id.EndsWith(".ends", StringComparison.OrdinalIgnoreCase);
 
     internal IEnumerable<int> LanguageColumns()
     {

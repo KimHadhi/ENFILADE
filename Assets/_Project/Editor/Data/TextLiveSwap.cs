@@ -8,9 +8,9 @@ using UnityEngine;
 /// <summary>
 /// After the 글자 편집기 saves during Play, labels already up that show a changed line's old words take the new words at
 /// once: most screens write their words only when they open, so without this a rewrite would show the next time.
-/// Words with holes ({0}) are matched as a pattern, keeping what the code filled in; a line the code splits at '|' is
-/// matched piece by piece; a longer phrase is also replaced inside a label that strings several lines together (the
-/// title screen's ticker). Inactive labels count too (a menu page not open now).
+/// Words with holes ({0}) are matched as a pattern, keeping what the code filled in; words the code splits (a story's
+/// lines, an option list's '|' chips) are matched piece by piece; a longer phrase is also replaced inside a label that
+/// strings several lines together (the title screen's ticker, a story card). Inactive labels count too.
 /// </summary>
 internal static class TextLiveSwap
 {
@@ -34,8 +34,9 @@ internal static class TextLiveSwap
         {
             if (string.IsNullOrEmpty(before) || before == after) continue;
             Add(swaps, before, after ?? "");
-            var oldPieces = before.Split('|');
-            var newPieces = (after ?? "").Split('|');
+            // A story's lines (one per line break, Texts.Lines) and an option list's chips ('|') show as separate words.
+            var oldPieces = before.Split('|', '\n');
+            var newPieces = (after ?? "").Split('|', '\n');
             if (oldPieces.Length > 1 && oldPieces.Length == newPieces.Length)
                 for (int i = 0; i < oldPieces.Length; i++)
                     if (oldPieces[i].Trim().Length > 0 && oldPieces[i] != newPieces[i]) Add(swaps, oldPieces[i].Trim(), newPieces[i].Trim());

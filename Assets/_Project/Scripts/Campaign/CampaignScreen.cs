@@ -11,6 +11,9 @@ using UnityEngine.UI;
 public sealed class CampaignScreen : MonoBehaviour
 {
     private const float FadeIn = .8f, FadeOut = 1.2f, TitleSize = 64f, StorySize = 30f, PromptSize = 27f;
+    // The card's pieces stack from the top with these gaps (px at 1080p), the stack centred on the screen, inside Room:
+    // a long story gets smaller type (down to SmallestStory) rather than running off the card.
+    private const float TitleGap = 44f, ResultsGap = 56f, Room = 960f, SmallestStory = 18f;
     private static readonly Color Shade = new Color(0f, 0f, 0f, .82f), Pale = new Color(1f, .94f, .9f);
     private const float ResultsSize = 26f;
     private GameObject canvas;
@@ -28,13 +31,45 @@ public sealed class CampaignScreen : MonoBehaviour
         story.text = lines != null ? string.Join("\n\n", lines) : "";
         results.text = summary ?? "";
         results.gameObject.SetActive(withResults);
-        title.rectTransform.anchoredPosition = new Vector2(0f, withResults ? 400f : 170f);
-        story.rectTransform.anchoredPosition = new Vector2(0f, withResults ? 180f : -110f);
-        story.rectTransform.sizeDelta = new Vector2(1300f, withResults ? 300f : 520f);
         story.fontSize = withResults ? ResultsSize : StorySize;
+        Stack(withResults);
         shownAt = Time.unscaledTime;
         shownFor = Mathf.Max(FadeIn + FadeOut, seconds);
     }
+
+    // Each piece as tall as its words need, one under the other, the stack centred on the screen. The boxes used to be
+    // fixed: the story's box began 40 px inside the title's, so its first line ran through the chapter's name (the
+    // user, 2026-11-12: "글자가 1장이랑 아래 설명 텍스트랑 겹쳐서"), and a longer story or title would only overlap more.
+    private void Stack(bool withResults)
+    {
+        float titleHeight = Height(title), resultsHeight = withResults ? Height(results) : 0f;
+        float storyHeight = Height(story);
+        float others = titleHeight + TitleGap + (withResults ? ResultsGap + resultsHeight : 0f);
+        // Too much story for the screen: smaller type until it fits (the height goes about with the square of the size).
+        for (int i = 0; i < 3 && others + storyHeight > Room && story.fontSize > SmallestStory; i++)
+        {
+            float room = Mathf.Max(1f, Room - others);
+            story.fontSize = Mathf.Max(SmallestStory, story.fontSize * Mathf.Sqrt(room / storyHeight));
+            storyHeight = Height(story);
+        }
+        float top = (others + storyHeight) / 2f;
+        top = Place(title, top, titleHeight) - TitleGap;
+        top = Place(story, top, storyHeight) - ResultsGap;
+        if (withResults) Place(results, top, resultsHeight);
+    }
+
+    // Sets the label's box to this height with its top edge at y = top (px from the screen's middle); returns its bottom.
+    private static float Place(TMP_Text label, float top, float height)
+    {
+        var box = label.rectTransform;
+        box.sizeDelta = new Vector2(box.sizeDelta.x, height);
+        box.anchoredPosition = new Vector2(box.anchoredPosition.x, top - height / 2f);
+        return top - height;
+    }
+
+    // The height the label's words take at its width (px); at least one line, so an empty piece keeps its place.
+    private static float Height(TMP_Text label)
+        => Mathf.Ceil(Mathf.Max(label.GetPreferredValues(label.text, label.rectTransform.sizeDelta.x, 0f).y, label.fontSize));
 
     /// <summary>The prompt this frame, or null for none.</summary>
     public void Prompt(string text)

@@ -225,7 +225,8 @@ public sealed class TowerRun : MonoBehaviour
             plan = new TowerPlan(seed, this);
             BeginGate();
         }
-        var lines = new List<string>(Texts.Get("tower.card.intro").Split('|')) { DayText(IsHost ? seed : TodaySeed()) };
+        // A line of the story per line of tower.card.intro (Enter in the 글자 편집기), then the day.
+        var lines = new List<string>(Texts.Lines(Texts.Get("tower.card.intro"))) { DayText(IsHost ? seed : TodaySeed()) };
         screen.ShowCard(Texts.Get("tower.card.title"), lines.ToArray(), introSeconds);
     }
 
@@ -1035,7 +1036,7 @@ public sealed class TowerRun : MonoBehaviour
         cardAt = -1f;
         bool hub = HubFlow.IsBuilt;
         float seconds = Mathf.Max(4f, outroSeconds);
-        if (screen != null) screen.ShowCard(Texts.Get("tower.card.title"), Texts.Get("tower.card.outro").Split('|'), seconds, hub ? null : Results());
+        if (screen != null) screen.ShowCard(Texts.Get("tower.card.title"), Texts.Lines(Texts.Get("tower.card.outro")), seconds, hub ? null : Results());
         if (climb != null && !hub) RankClimb.Play(climb, seconds);
         climb = null;
     }

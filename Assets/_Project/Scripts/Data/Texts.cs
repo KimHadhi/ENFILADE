@@ -92,6 +92,23 @@ public static class Texts
     /// <summary>Whether a table cell names a row of this table, rather than holding words itself.</summary>
     public static bool IsId(string cell) => !string.IsNullOrWhiteSpace(cell) && IsIdCell(cell.Trim());
 
+    private static readonly char[] LineBreaks = { '\n', '|' };
+
+    /// <summary>
+    /// Words that show as several lines, one after another (a story card's): one entry per line as it was typed, Enter
+    /// in the 글자 편집기 (\n in the file), each trimmed, blank ones dropped. The user, 2026-11-12: "|로 글바꿈 하는 게
+    /// 슬퍼. 걍 직관적으로 쉬프트 엔터나 그냥 엔터로": so a line break is a line break, as many as the words need. A '|'
+    /// still splits too, as tables wrote story lines before, so older and modders' rows keep working.
+    /// </summary>
+    public static string[] Lines(string words)
+    {
+        if (string.IsNullOrWhiteSpace(words)) return Array.Empty<string>();
+        var lines = new System.Collections.Generic.List<string>();
+        foreach (string line in words.Replace("\r", "").Split(LineBreaks))
+            if (line.Trim().Length > 0) lines.Add(line.Trim());
+        return lines.ToArray();
+    }
+
     // An id never has a space, so a sentence costs no lookup and can't be taken for an id by chance.
     private static bool IsIdCell(string cell) => cell.IndexOf(' ') < 0 && Has(cell);
 

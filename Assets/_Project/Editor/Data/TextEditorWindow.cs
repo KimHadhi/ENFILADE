@@ -284,8 +284,9 @@ internal sealed class TextEditorWindow : EditorWindow
         detailScroll = EditorGUILayout.BeginScrollView(detailScroll, GUILayout.Height(detailHeight));
         if (row == null)
         {
-            EditorGUILayout.HelpBox("위 목록에서 id를 누르면 여기서 여러 줄로 고치고, 어디에 쓰이는지 볼 수 있어요.\n" +
-                                    "{0} {1}은 코드가 채우는 자리, \\n은 줄바꿈, | 는 칸 나눔(그대로 두기), [F] 같은 대괄호 키는 플레이어가 고른 키로 바뀌어 보여요.", MessageType.None);
+            EditorGUILayout.HelpBox("위 목록에서 id를 누르면 여기서 여러 줄로 고치고, 어디에 쓰이는지 볼 수 있어요. 줄은 Enter로 바꿔요(파일에는 \\n으로 들어가요). " +
+                                    "이야기 카드는 줄마다 한 줄씩 나오고 줄 수는 자유예요.\n" +
+                                    "{0} {1}은 코드가 채우는 자리. 체형의 고르기 칩·슬라이더 양 끝 글자만 | 로 칸을 나누고 그 수를 맞춰요. [F] 같은 대괄호 키는 플레이어가 고른 키로 보여요.", MessageType.None);
             EditorGUILayout.EndScrollView();
             return;
         }
@@ -320,7 +321,7 @@ internal sealed class TextEditorWindow : EditorWindow
     // Multi-line words: a line break here is \n in the file.
     private void Area(TextSheet.Row row, int column, string label)
     {
-        GUILayout.Label(label + (row.Changed(column) ? "  (고침 · 원래: " + Short(row.Saved[column]) + ")" : ""), EditorStyles.miniBoldLabel);
+        GUILayout.Label(label + "  · Enter로 줄바꿈" + (row.Changed(column) ? "  (고침 · 원래: " + Short(row.Saved[column]) + ")" : ""), EditorStyles.miniBoldLabel);
         string shownWords = (row.Words[column] ?? "").Replace("\\n", "\n");
         string typed = EditorGUILayout.TextArea(shownWords, GUILayout.MinHeight(38f));
         if (typed == shownWords) return;

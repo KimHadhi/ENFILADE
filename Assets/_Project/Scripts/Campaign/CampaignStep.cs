@@ -76,13 +76,13 @@ public sealed class CampaignStep
 
 /// <summary>
 /// A chapter's story and what comes after it (Tables/CampaignChapters, one row per scene): the card shown when it
-/// begins (intro) and ends (outro), lines split by '|', and the next chapter's scene (empty after the last). The title,
-/// intro and outro cells name Texts rows (chapter.&lt;scene&gt;.title …), where the words are written.
+/// begins (intro) and ends (outro), and the next chapter's scene (empty after the last). The title, intro and outro
+/// cells name Texts rows (chapter.&lt;scene&gt;.title …), where the words are written; each line of the story is a line
+/// there (Enter in the 글자 편집기), as many as it needs (Texts.Lines).
 /// </summary>
 public sealed class CampaignChapter
 {
     public const string TableName = "CampaignChapters";
-    private static readonly char[] LineBreak = { '|' };
 
     public string Title, Next;
     public string[] Intro, Outro;
@@ -93,14 +93,7 @@ public sealed class CampaignChapter
         return new CampaignChapter
         {
             Title = Texts.Cell(CampaignStep.Text(row, "title")), Next = CampaignStep.Text(row, "next"),
-            Intro = Lines(Texts.Cell(CampaignStep.Text(row, "intro"))), Outro = Lines(Texts.Cell(CampaignStep.Text(row, "outro")))
+            Intro = Texts.Lines(Texts.Cell(CampaignStep.Text(row, "intro"))), Outro = Texts.Lines(Texts.Cell(CampaignStep.Text(row, "outro")))
         };
-    }
-
-    private static string[] Lines(string text)
-    {
-        var lines = text.Split(LineBreak, StringSplitOptions.RemoveEmptyEntries);
-        for (int i = 0; i < lines.Length; i++) lines[i] = lines[i].Trim();
-        return lines;
     }
 }
