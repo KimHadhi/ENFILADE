@@ -74,12 +74,14 @@ public sealed class PlayerNetworkScore : NetworkBehaviour
     }
 
     /// <summary>On the host: this player really killed a shared enemy. Counted once here, so every PC shows the same streak.
-    /// standout: the enemy was named or elite (backlog 325).</summary>
-    internal void AnnounceKill(string weapon, string target, bool headshot, bool standout)
+    /// standout: the enemy was named or elite (backlog 325). icon: the killer's picture id for the feed (WeaponIcons), so every
+    /// PC draws the same weapon whatever its own language calls it.</summary>
+    internal void AnnounceKill(string weapon, string target, bool headshot, bool standout, string icon = null)
     {
         if (!IsSpawned || !IsServer) return;
         tally.CountStreak();
-        KillRpc(new FixedString64Bytes(Clip(weapon)), new FixedString64Bytes(Clip(target)), headshot, standout, tally.Streak);
+        KillRpc(new FixedString64Bytes(Clip(weapon)), new FixedString64Bytes(Clip(target)), headshot, standout, tally.Streak,
+            new FixedString32Bytes(ClipId(icon)));
     }
 
     /// <summary>The console set this player's streak: the host holds the count.</summary>
@@ -89,9 +91,9 @@ public sealed class PlayerNetworkScore : NetworkBehaviour
     }
 
     [Rpc(SendTo.Everyone)]
-    private void KillRpc(FixedString64Bytes weapon, FixedString64Bytes target, bool headshot, bool standout, int streak)
+    private void KillRpc(FixedString64Bytes weapon, FixedString64Bytes target, bool headshot, bool standout, int streak, FixedString32Bytes icon)
     {
-        CombatFeedHUD.PlayerKill(GetComponent<PlayerMovement>(), weapon.ToString(), target.ToString(), headshot, streak, standout);
+        CombatFeedHUD.PlayerKill(GetComponent<PlayerMovement>(), weapon.ToString(), target.ToString(), headshot, streak, standout, icon.ToString());
         // The host's count is the one: the killer's own PC keeps the best of it for the chapter's results.
         tally.NoteStreak(streak);
         // Every PC hears of this kill, so the first skull of a streak slows the whole room (item 18), and a named or
@@ -112,6 +114,9 @@ public sealed class PlayerNetworkScore : NetworkBehaviour
 
     // A long Korean name in UTF-8 could overrun the fixed string.
     private static string Clip(string name) => string.IsNullOrEmpty(name) ? "" : name.Length > 20 ? name.Substring(0, 20) : name;
+
+    // Icon ids are asset names in ASCII: a 32-byte fixed string holds 29 of them.
+    private static string ClipId(string id) => string.IsNullOrEmpty(id) ? "" : id.Length > 29 ? id.Substring(0, 29) : id;
 
     private static ushort Small(int value) => (ushort)Mathf.Clamp(value, 0, ushort.MaxValue);
 

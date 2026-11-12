@@ -84,7 +84,7 @@ public sealed class FieldPickups : MonoBehaviour
     private InputAction interact;
     private GameObject promptHost;
     private RectTransform promptRoot;
-    private Image keyBox, underline;
+    private Image keyBox, underline, gunPicture;
     private TMP_Text keyLabel, nameLabel, amountLabel;
     private Transform eye;
     private ushort nextId = 1;
@@ -487,14 +487,14 @@ public sealed class FieldPickups : MonoBehaviour
         {
             if (slots.GetWeapon(i) != row.Weapon) continue;
             slots.RefillAmmo();
-            Pop(row.Kind, row.Name, Texts.Get("pickup.gives.refill"));
+            Pop(row.Kind, row.Name, Texts.Get("pickup.gives.refill"), row.Weapon);
             return;
         }
         int slot = GunSlotFor(slots);
         var before = slots.GetWeapon(slot);
         if (!slots.TrySetWeapon(slot, row.Weapon)) return;
         if (!slots.HandsFull) slots.SelectSlot(slot);
-        Pop(row.Kind, row.Name, Texts.Get("pickup.gives.gun"));
+        Pop(row.Kind, row.Name, Texts.Get("pickup.gives.gun"), row.Weapon);
         if (before != null && before.Category == WeaponCategory.Ranged)
             Leave(RowOf(before), player.transform.position + player.transform.forward * LeaveAhead);
     }
@@ -558,6 +558,10 @@ public sealed class FieldPickups : MonoBehaviour
         SetText(keyLabel, KeyBindings.Name("Player/Interact"));
         SetText(nameLabel, row.Name);
         SetText(amountLabel, refusal ?? AmountOf(row));
+        // A gun shows its own picture beside the plate (WeaponIcons), so the one under the crosshair reads at a glance.
+        var picture = row.Kind == Kind.Gun ? WeaponIcons.For(row.Weapon) : null;
+        if (gunPicture.sprite != picture) gunPicture.sprite = picture;
+        if (gunPicture.gameObject.activeSelf != (picture != null)) gunPicture.gameObject.SetActive(picture != null);
         amountLabel.color = refusal != null ? KitStyle.Soft : tint;
         underline.color = refusal != null ? KitStyle.Faint : tint;
     }
@@ -580,10 +584,10 @@ public sealed class FieldPickups : MonoBehaviour
     // 화면 효과, 줍는 동작, 주울 때 뜨는 글자 다 부족"): a row in the list at the bottom of the screen, its kind's own
     // sound, a blink of the HUD part it went to, and the gun in hand dipping as the body goes for it. Money has no part
     // to blink: its number counts up by itself.
-    private static void Pop(Kind kind, string name, string amount)
+    private static void Pop(Kind kind, string name, string amount, WeaponData gun = null)
     {
         Color tint = ColorOf(kind);
-        PickupFeedHUD.Show(IconOf(kind), tint, name, amount);
+        PickupFeedHUD.Show(IconOf(kind), tint, name, amount, kind == Kind.Gun ? WeaponIcons.For(gun) : null);
         KitSound.Play(kind switch
         {
             Kind.Gun => KitSound.Cue.PickGun,
@@ -643,6 +647,13 @@ public sealed class FieldPickups : MonoBehaviour
         Fill(nameLabel.rectTransform, new Vector2(14f, 0f), new Vector2(-110f, 0f));
         amountLabel = FeelUI.ScoreLabel("Gives", plate.rectTransform, 20f, TextAlignmentOptions.Right);
         Fill(amountLabel.rectTransform, new Vector2(120f, 0f), new Vector2(-12f, 0f));
+        // Right of the plate, on its middle (the plate's top is 4 over the middle, its height 44), leaning with the prompt:
+        // a gun's picture (its canvas's shape, WeaponIcons).
+        float tall = WeaponIcons.Number("Prompt", "height", 30f), gap = WeaponIcons.Number("Prompt", "gap", 10f);
+        gunPicture = Panel("Gun", promptRoot, new Vector2(58f + 270f + gap, 18f - tall * .5f),
+            new Vector2(tall * WeaponIcons.Aspect, tall), Color.white);
+        gunPicture.preserveAspect = true;
+        gunPicture.gameObject.SetActive(false);
         promptRoot.gameObject.SetActive(false);
     }
 

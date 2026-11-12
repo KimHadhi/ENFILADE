@@ -27,7 +27,7 @@ public sealed class AmmoHUD : MonoBehaviour
     private RectTransform panel, fill, canvasRect;
     private CanvasGroup group;
     private TMP_Text magazine, capacity, reserve, status, mode;
-    private Image progress, edge, background;
+    private Image progress, edge, background, picture;
     private WeaponSlotSilhouette silhouette;
     private WeaponRuntime shown;
     private int lastAmmo;
@@ -111,6 +111,11 @@ public sealed class AmmoHUD : MonoBehaviour
         mode.text = runtime.FireMode == WeaponFireMode.Automatic ? "AUTO"
             : runtime.FireMode == WeaponFireMode.Burst ? "BURST" : runtime.FireMode == WeaponFireMode.Fanning ? "FAN" : "SEMI";
         silhouette.Kind = runtime.FireMode == WeaponFireMode.Automatic ? 1 : 2;
+        // The gun's own picture (WeaponIcons) where it has one; the vector outline otherwise.
+        var icon = WeaponIcons.For(runtime.Data);
+        if (picture.sprite != icon) picture.sprite = icon;
+        picture.enabled = icon != null;
+        silhouette.enabled = icon == null;
 
         if (runtime.IsReloading)
         {
@@ -171,6 +176,10 @@ public sealed class AmmoHUD : MonoBehaviour
         var icon = Rect("Weapon silhouette", panel, 218, 115, 62, 27);
         silhouette = icon.gameObject.AddComponent<WeaponSlotSilhouette>();
         silhouette.raycastTarget = false; silhouette.color = Muted;
+        // Over the outline's box: the icon canvas's shape inside it, the gun at its own size.
+        picture = Image("Weapon picture", panel, 218, 115, 62, 27, Muted);
+        picture.preserveAspect = true;
+        picture.enabled = false;
         magazine = Label("Magazine", 16, 49, 110, 70, 64, Color.white);
         magazine.fontStyle = FontStyles.Bold;
         magazine.overflowMode = CombatUIAssets.ClippedOverflow(magazine);

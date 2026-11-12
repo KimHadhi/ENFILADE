@@ -3,11 +3,13 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// One line of the kill feed. Your own kills glow gold from the killer's end and a sheen crosses them as they arrive, so
-/// they read as yours at a glance, and the far end stays free to say body shot or headshot. Everyone's kills carry the
-/// killer's streak at the left. The newest row is the feed's main course: a quarter bigger, a light card with dark ink
-/// and its icon in the kill's colour, a gap under it; it turns back into an ordinary row when a newer one arrives.
-/// Made once and reused.
+/// One line of the kill feed: the killer, the weapon's icon (WeaponIcons, muzzle toward the one it killed), a headshot's
+/// mark, the one killed (user, 2026-11-12: icons "그래야지 이제 킬로그나 무기 슬롯에 쓸 수 있지"). A weapon with no icon
+/// shows its name beside the killer's, with the skull or the headshot mark, as before. Your own kills glow gold from the
+/// killer's end and a sheen crosses them as they arrive, so they read as yours at a glance, and the far end stays free to
+/// say body shot or headshot. Everyone's kills carry the killer's streak at the left. The newest row is the feed's main
+/// course: a quarter bigger, a light card with dark ink and its icons in the kill's colour or dark, a gap under it; it
+/// turns back into an ordinary row when a newer one arrives. Made once and reused.
 /// </summary>
 public sealed class KillFeedRow
 {
@@ -23,6 +25,7 @@ public sealed class KillFeedRow
     private readonly Image accent;
     private readonly TextMeshProUGUI left, right;
     private readonly RawImage icon, border;
+    private readonly Image weapon;
     private readonly StreakBadge streak;
     private readonly float seed = Random.value * 40f;
     // Each new row tilts the other way from the last, so two quick kills read as two slips.
@@ -32,7 +35,7 @@ public sealed class KillFeedRow
     private Color warm;
     private KillFeedLook look;
     // The row's own colours and the newest row's, between which Paint blends.
-    private Color plateLeft, heroLeft, leftInk, iconInk, heroIcon;
+    private Color plateLeft, heroLeft, leftInk, iconInk, heroIcon, weaponInk;
 
     public float Age { get; private set; }
     /// <summary>This PC's own kill: the feed lists these first (backlog 332).</summary>
@@ -64,17 +67,23 @@ public sealed class KillFeedRow
         left = FeelUI.ScoreLabel("Weapon", root, 15f, TextAlignmentOptions.Center);
         icon = FeelUI.Rect("Icon", root).gameObject.AddComponent<RawImage>();
         icon.raycastTarget = false;
+        weapon = FeelUI.Rect("Weapon Icon", root).gameObject.AddComponent<Image>();
+        weapon.raycastTarget = false;
+        weapon.preserveAspect = true;
+        weapon.gameObject.SetActive(false);
         right = FeelUI.ScoreLabel("Target", root, 17f, TextAlignmentOptions.Center);
         right.color = Color.white;
-        foreach (var rect in new[] { left.rectTransform, icon.rectTransform, right.rectTransform })
+        foreach (var rect in new[] { left.rectTransform, icon.rectTransform, weapon.rectTransform, right.rectTransform })
             rect.anchorMin = rect.anchorMax = new Vector2(1f, .5f);
         streak = new StreakBadge(root);
     }
 
     /// <summary>emphatic: a headshot, a burning streak or a grave notice leans out a little further while newest. fire: the
-    /// border of fire round the row, a skull streak's blue or a named or elite kill's magenta (backlog 325).</summary>
+    /// border of fire round the row, a skull streak's blue or a named or elite kill's magenta (backlog 325). weaponIcon: the
+    /// killing weapon's picture, between the left text (then the killer alone) and the mark (iconTexture, then a headshot's
+    /// only); null keeps the row as text, mark, text.</summary>
     public void Show(string leftText, Texture iconTexture, Color iconColor, string rightText, Color accentColor, bool mine, int streakCount,
-        KillFeedLook look, bool emphatic, FeedBorder fire = FeedBorder.None)
+        KillFeedLook look, bool emphatic, FeedBorder fire = FeedBorder.None, Sprite weaponIcon = null)
     {
         this.look = look;
         weight = 1f + (emphatic || fire != FeedBorder.None || streakCount >= look.flameFrom ? look.leadEmphasis : 0f);
@@ -87,6 +96,9 @@ public sealed class KillFeedRow
         icon.gameObject.SetActive(iconTexture != null);
         icon.texture = iconTexture;
         iconInk = iconColor;
+        weapon.gameObject.SetActive(weaponIcon != null);
+        weapon.sprite = weaponIcon;
+        weaponInk = leftInk;
         // On the light card the icon takes the kill's colour, deep enough to read on it.
         heroIcon = new Color(accentColor.r * .78f, accentColor.g * .78f, accentColor.b * .78f, 1f);
         accent.color = accentColor;
@@ -101,10 +113,20 @@ public sealed class KillFeedRow
         sheening = mine;
         streak.Show(streakCount, look);
 
-        // Right-aligned: [left] [icon] [right] with the accent bar at the far right.
-        float iconWidth = iconTexture != null ? IconSize : 0f;
-        float rightWidth = right.GetPreferredValues(rightText).x, leftWidth = left.GetPreferredValues(leftText).x;
-        float rowWidth = Pad + leftWidth + Gap + iconWidth + Gap + rightWidth + Pad + AccentWidth;
+        // Right-aligned: [left] [weapon] [mark] [right] with the accent bar at the far right; whatever is missing takes no
+        // room and no gap. The weapon's box is its icon's canvas (WeaponIcons.Aspect), so every gun sits at its own size.
+        bool armed = weaponIcon != null;
+        float gap = armed ? WeaponIcons.Number("Feed", "gap", Gap) : Gap;
+        float iconWidth = iconTexture != null ? (armed ? WeaponIcons.Number("Feed", "mark", IconSize) : IconSize) : 0f;
+        float weaponHeight = armed ? WeaponIcons.Number("Feed", "height", 22f) : 0f, weaponWidth = weaponHeight * WeaponIcons.Aspect;
+        float rightWidth = right.GetPreferredValues(rightText).x;
+        float leftWidth = string.IsNullOrEmpty(leftText) ? 0f : left.GetPreferredValues(leftText).x;
+        float x = -AccentWidth - Pad;
+        Place(right.rectTransform, x - rightWidth * .5f, rightWidth + 4f, Height); x -= rightWidth;
+        if (iconWidth > 0f) { x -= gap; Place(icon.rectTransform, x - iconWidth * .5f, iconWidth, iconWidth); x -= iconWidth; }
+        if (armed) { x -= gap; Place(weapon.rectTransform, x - weaponWidth * .5f, weaponWidth, weaponHeight); x -= weaponWidth; }
+        if (leftWidth > 0f) { x -= gap; Place(left.rectTransform, x - leftWidth * .5f, leftWidth + 4f, Height); x -= leftWidth; }
+        float rowWidth = Pad - x;
         root.sizeDelta = new Vector2(rowWidth, Height);
         // The row's width travels in the uv's whole part, so the shader knows where the plate's outline runs.
         border.gameObject.SetActive(fire != FeedBorder.None);
@@ -115,10 +137,6 @@ public sealed class KillFeedRow
             border.color = tint;
             border.uvRect = new Rect(Mathf.Floor(seed), Mathf.Round(rowWidth), 1f, 1f);
         }
-        float x = -AccentWidth - Pad;
-        Place(right.rectTransform, x - rightWidth * .5f, rightWidth + 4f, Height); x -= rightWidth + Gap;
-        Place(icon.rectTransform, x - iconWidth * .5f, iconWidth, iconWidth); x -= iconWidth + Gap;
-        Place(left.rectTransform, x - leftWidth * .5f, leftWidth + 4f, Height);
         Age = 0f; y = 0f; shade = 1f;
         root.gameObject.SetActive(true);
     }
@@ -176,6 +194,8 @@ public sealed class KillFeedRow
         left.color = Color.Lerp(leftInk, look.heroInk, hero);
         right.color = Color.Lerp(Color.white, look.heroInk, hero);
         icon.color = Color.Lerp(iconInk, heroIcon, hero);
+        // The weapon reads as the names do: white (a little dimmer for others' kills) on the dark row, dark on the light card.
+        weapon.color = Color.Lerp(weaponInk, look.heroInk, hero);
     }
 
     private static void Place(RectTransform rect, float x, float width, float height)

@@ -356,9 +356,11 @@ public sealed class ScoreboardHUD : MonoBehaviour
         for (int i = 0; i < WeaponColumns; i++)
         {
             var data = slots != null ? slots.GetWeapon(i) : null;
-            bool image = data != null && data.HudIcon != null;
+            // Its picture (WeaponIcons), else its name.
+            var picture = WeaponIcons.For(data);
+            bool image = picture != null;
             row.weapons[i].icon.gameObject.SetActive(image);
-            if (image) row.weapons[i].icon.sprite = data.HudIcon;
+            if (image) row.weapons[i].icon.sprite = picture;
             row.weapons[i].label.text = image ? "" : data != null ? data.DisplayName : "-";
         }
     }

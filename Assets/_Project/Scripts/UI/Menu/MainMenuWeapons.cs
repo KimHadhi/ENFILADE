@@ -17,6 +17,8 @@ public sealed class MainMenuWeapons : MonoBehaviour
 {
     private const float LeftWidth = 500f, PlateHeight = 56f, PlateGap = 10f, Slant = 12f, RightWidth = 560f, ChipWidth = 176f,
         ChipHeight = 40f, ChipGap = 8f, ViewWidth = 700f, ViewHeight = 440f;
+    // A plate's gun picture: where its box starts (left of the kills) and how tall it is.
+    private const float IconAt = 252f, IconHeight = 34f;
     private static readonly float[] Tilts = { 1f, -.8f, .6f, -1f, .8f, -.6f, .9f };
     // Where the booth stands, far below anything a map or the title scene puts up, and its camera's field of view.
     private static readonly Vector3 BoothAt = new Vector3(0f, -600f, 0f);
@@ -133,9 +135,25 @@ public sealed class MainMenuWeapons : MonoBehaviour
         }
         KitSkew.On(KitStyle.Bar("Bar", plate, Vector2.zero, new Vector2(4f, PlateHeight), picked ? KitStyle.Accent : KitStyle.With(KitStyle.Ice, .35f)), Slant);
         int kills = GunKills.Kills(gun);
-        KitStyle.Flat(KitStyle.TopLeft("Name", plate, new Vector2(22f, 4f), new Vector2(LeftWidth - 150f, 30f)), gun.DisplayName, 24f,
+        // The gun's own picture (WeaponIcons) between the name and the kills, the gun at its size; the name then keeps to the
+        // room left of it and shrinks to fit there.
+        var picture = WeaponIcons.For(gun);
+        float named = picture != null ? IconAt - 30f : LeftWidth - 150f;
+        var title = KitStyle.Flat(KitStyle.TopLeft("Name", plate, new Vector2(22f, 4f), new Vector2(named, 30f)), gun.DisplayName, 24f,
             TextAlignmentOptions.MidlineLeft, picked ? KitStyle.Text : KitStyle.With(KitStyle.Text, .85f));
-        var rank = KitStyle.Flat(KitStyle.TopLeft("Rank", plate, new Vector2(24f, 32f), new Vector2(LeftWidth - 150f, 20f)),
+        if (picture != null)
+        {
+            title.enableAutoSizing = true;
+            title.fontSizeMin = 15f;
+            title.fontSizeMax = 24f;
+            var icon = KitStyle.TopLeft("Icon", plate, new Vector2(IconAt, (PlateHeight - IconHeight) * .5f),
+                new Vector2(IconHeight * WeaponIcons.Aspect, IconHeight)).gameObject.AddComponent<Image>();
+            icon.sprite = picture;
+            icon.preserveAspect = true;
+            icon.raycastTarget = false;
+            icon.color = picked ? KitStyle.Text : KitStyle.With(KitStyle.Text, .55f);
+        }
+        var rank = KitStyle.Flat(KitStyle.TopLeft("Rank", plate, new Vector2(24f, 32f), new Vector2(named, 20f)),
             GunKills.RankName(GunKills.RankOf(kills)), 13f, TextAlignmentOptions.MidlineLeft, KitStyle.With(KitStyle.Accent, .9f));
         rank.fontStyle = FontStyles.Normal;
         KitStyle.Flat(KitStyle.TopLeft("Kills", plate, new Vector2(LeftWidth - 130f, 0f), new Vector2(110f, PlateHeight)), kills.ToString("N0"), 22f,

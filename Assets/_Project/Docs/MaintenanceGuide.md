@@ -23,6 +23,7 @@
 | [Results.csv](../Resources/Tables/Results.csv) | 장 결과의 칭호: 어느 숫자로 주는지, 순서, 받을 최소값, 단위. 칭호 이름과 한 줄 농담은 Texts.csv `results.award.<id>` | 칭호 (`kills`, `downs` …) |
 | [Chat.csv](../Resources/Tables/Chat.csv) | 채팅: 자리(화면 왼쪽 아래 가장자리에서 잰 위치·너비·높이·위 한계·제 기울기), 줄(글자 크기·여백·프로필 칸·판과 막대 색·시스템 카드·콘솔 판), 들어올 때 튀기, 닫혀 있을 때 사라지기(남는 시간·최대 줄 수), 입력 칸(색·밑줄·커서·채널 탭) | `Place.필드`, `Line.필드`, `Pop.필드`, `Fade.필드`, `Open.필드` |
 | [OutfitPictures.csv](../Resources/Tables/OutfitPictures.csv) | 옷장 사진의 구도(옷마다 한 줄, 그 옷의 모든 색이 같이 씀): 옆·위아래 각도, 자동 구도보다 가까운 배율, 사진 안에서 옮긴 거리. 줄이 없으면 자동(옷 전체를 앞에서). 옷장의 **사진 다시 찍기**가 에디터 Play 중에 쓰고 지운다. 바꾸면 Tools → Characters → 옷장 사진 모두 굽기로 사진을 다시 굽는다([플레이어 몸](PlayerBodyGuide.md#옷-입히기부위별-칸)) | `item@캐릭터 Id@옷 Id`, `own@캐릭터 Id@칸` |
+| [WeaponIcons.csv](../Resources/Tables/WeaponIcons.csv) | 무기 아이콘의 모양(Solid 채움 · Outline 외곽선 · Line 선화), 킬 피드·획득 목록·줍기 안내의 아이콘 크기와 간격, 다른 무기의 그림을 쓰는 무기([무기 아이콘](#무기-아이콘-hud킬-피드)) | `Look.style`, `Feed.*`, `Pickup.*`, `Prompt.*`, `<무기 id>.icon` |
 
 - **열 이름 = 인스펙터 필드 이름**이다(인스펙터 표시 이름이 `Attack Range`면 열은 `attackRange`). 표에 열을 추가하면 그 필드도 표가 관리한다. 적 표의 `speed`처럼 `NavMeshAgent`의 공개 속성도 쓸 수 있다.
 - 표에 있는 칸이 인스펙터 값보다 우선한다. **빈칸이거나 열이 없으면 인스펙터 값**을 그대로 쓴다. 표에 행이 없는 오브젝트(테스트 표적 등)는 영향을 받지 않는다.
@@ -205,6 +206,18 @@ C 메뉴에서 바꾼 조준경·총구·하단·손잡이, L 플래시, B 사�
 - **git**: 동적 글꼴이 그린 글리프는 파일에 남기지 않는다. [DynamicFontSaveProcessor](../Editor/Utilities/DynamicFontSaveProcessor.cs)가 편집 중에 저장할 때는 글리프만 비우고 설정을 저장하며, Play 중에 저장할 때는 글꼴을 건너뛴다. `Tools → Fonts → 동적 글꼴 비우고 저장`은 모두 한꺼번에 비운다. 2026-11-12 전에는 저장할 때마다 동적 글꼴을 통째로 빼서, 대체 글꼴 같은 설정을 바꿔도 메뉴를 따로 누르지 않으면 저장되지 않았다.
 - **검사**: `Tools → Fonts → 글꼴 검사`가 표·프리팹·씬의 모든 글자가 사슬에 있는지, 역할 없는 글자, 역할과 다른 글꼴의 글자, 글꼴 필드를 둔 스크립트, 파일에 저장된 글리프, 멀티 아틀라스가 꺼진 글꼴, 쓰지 않는 글꼴, 이 PC에 있는 운영체제 글꼴을 보여 준다([FontTools](../Editor/Fonts/FontTools.cs)). 표에 새 기호를 넣었거나 글꼴·역할을 바꿨으면 한 번 누른다.
 - **정리 기록 (2026-11-12)**: `Art/Fonts/UI`의 복사본 9개(AlarmBarFont, ChatSettingFont·ChattingFont(Score5), ChattingFont(Score6), HealthFont·WaveFontStandard(PretendardBold), ShieldFont(Score6), WaveFontStylish(Sacheon), 기타용)를 지우고 글자들을 ThirdParty/KoreanFonts의 원본 글꼴로 옮겼다. 복사본들은 원본과 설정이 같았다(Health·Wave·Shield는 90pt로 그렸지만 HUD 글자가 36px 이하라 50pt로 충분하다). ShieldFont의 외곽선·그림자는 `shield` 프리셋으로(50pt에 맞게 외곽선 0.2→0.111, 그림자 거리 -1→-0.327, 퍼짐 0.7→0.229: 화면에서 같은 두께), ChattingFont(Score6)의 살짝 굵게(FaceDilate 0.05)는 에스코어 드림 6의 기본 재질로 옮겨 모양이 같다. 탄약 표시는 TMP 샘플 글꼴 LiberationSans 대신 Ammo 역할(Pretendard SemiBold)이 됐다. KINEMATION Roboto는 데모 메뉴(TacFPS_Menu)만 쓰며, 0.7.35에 글리프째 커밋돼 있던 것을 비웠다. ThirdParty/KoreanFonts의 다른 글꼴(Paperlogy, 사천항공, KOTRA, 에스코어 드림 1~4·7~9)은 어디에도 쓰이지 않아 빌드에 들어가지 않는다.
+
+## 무기 아이콘 (HUD·킬 피드)
+
+무기 슬롯·킬 피드·점수판·탄약 표시·획득 목록·[F] 줍기 안내·메뉴 무기 탭의 무기 그림은 [WeaponIcons](../Scripts/UI/WeaponIcons.cs)가 고른다(사용자 11-12: "무기 아이콘도 이제 좀 바꿀 수 있나? 그래야지 이제 킬로그나 무기 슬롯에 쓸 수 있지").
+
+- **그림**: [Resources/UI/WeaponIcons](../Resources/UI/WeaponIcons)/`<모양>`/`<id>`.png. 모양 셋(Solid 채움·부품 사이 가는 틈, Outline 외곽선·안은 옅게, Line 선화)이 다 들어 있고 [WeaponIcons.csv](../Resources/Tables/WeaponIcons.csv) `Look.style`로 고른다. 모두 흰색에 투명 배경이라 HUD가 판에 맞게 물들인다(어두운 판에는 흰색, 킬 피드의 밝은 새 줄에는 어둡게).
+- **id**: 무기 에셋 이름(Weapons.csv의 id: `MX16A4`, `M1911`, `Herrington1187`, `SRM12`, `AK105`, `TR15`, `Mk14EBR`, `MX68`, `MKR9`, `R08`, `WK11Viper`, 애드온 무기 `ZZZKatana`·`YamatoKatana`·`CavalrySword`·`KraitP68`)와 무기가 아닌 처치 수단: `fist`(주먹·발차기·카드의 일격), `shove`(밀치기·발로 밀기·돌진), `execution`(처형), `counter`(반격), `explosion`(연료통 폭발), `fall`(낙하).
+- **찾는 순서**: ① 무기 에셋의 HudIcon(넣었으면) ② 문서\ENFILADE\WeaponIcons\`<id>`.png ③ WeaponIcons.csv `<id>.icon`이 가리키는 다른 id ④ 게임의 그림. 어디에도 없으면 킬 피드는 무기 이름 글자를, 슬롯·탄약 표시·획득 목록은 예전 벡터 윤곽(WeaponSlotSilhouette)을 쓴다.
+- **크기 관계**: 모든 그림이 512x160 한 캔버스다. 총은 길이 순서를 지킨다: 그린 길이 = 캔버스 너비 × (총 길이 / 1.05 m)^0.5라 권총은 소총의 절반쯤이고, 캔버스보다 높으면 줄인다. 그래서 그 비율(3.2:1)의 칸에 그대로 넣으면 크기가 맞는다(킬 피드 70x22, 슬롯 156x49, 획득 목록 96x30).
+- **다시 그리기**: `blender -b --factory-startup --python Tools/Blender/weapon_icons.py` (전부, 약 3분) 또는 `… -- AK105 R08`(몇 개만), `--preview 폴더`는 모양마다 한 장에 모아 회색 바탕에 그린다. 총은 게임 프리팹(Data/Combat/TacticalGuns, FPSPackGuns)처럼 조립된다: 뼈는 프리팹의 자세로(당긴 개머리판 등), 탄창·가늠자는 프리팹이 다는 자리에. Unity와 Blender는 같은 FBX를 다른 축으로 읽는데, 모든 총의 뼈가 둘 사이의 한 변환(Blender = Unity의 (-x, -z, y))을 보여 줘서 부품 자리를 그대로 옮긴다. 조준경·라이트·손잡이·소음기는 빼서 플레이어의 장착과 상관없이 같은 그림이다. 새 총은 스크립트 위쪽 `GUNS`에 한 줄(프리팹, 몸 FBX, 부품)을 더한다. 무기가 아닌 아이콘은 `SHAPES`(도형)와 `PICTURES`(이미 있는 흰 그림, 지금은 주먹)에 있다. 선 굵기·짧은 선을 버리는 길이·크기 규칙은 스크립트 위쪽 상수다. 새 PNG에만 .meta를 쓰니 유니티에서 바꾼 가져오기 설정은 남는다.
+- **모드**: 새 총은 문서\ENFILADE\WeaponIcons\`<id>`.png(512x160 투명 PNG, 흰색, 소총이 너비를 거의 채우고 권총은 절반쯤)를 두면 아이콘이 생긴다. 게임은 그림을 한 번만 읽으니 바꾼 뒤에는 표를 저장하거나(Reload Tables) 게임을 다시 켠다.
+- **킬 피드 줄**: 처치자 · 무기 아이콘 · (헤드샷 표시) · 대상, 혼자 할 때도 처치자 이름이 나온다. 무엇으로 죽였는지는 GunFeelDirector.WeaponIcon이 맞은 기록에서 읽는다(처형·반격·밀치기·총·출처가 있는 폭발, 나머지는 맨손). 방에서는 방장이 처치를 알릴 때 아이콘 id도 보내서(PlayerNetworkScore.KillRpc) 모든 PC가 같은 그림을 그린다. 크기와 간격은 WeaponIcons.csv `Feed.*`.
 
 ## 플레이어 설정 (Esc 메뉴)
 

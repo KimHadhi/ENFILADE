@@ -38,7 +38,7 @@ public static class GunFeelDirector
         // A named or elite enemy's kill burns magenta in the feed and slows the game briefly (backlog 325).
         bool standout = kill && report.Target is EnemyHealth ranked && ranked.IsStandout;
         if (shared && hit.Source != null && hit.Source.GetComponentInParent<PlayerNetworkScore>() is PlayerNetworkScore score)
-            score.AnnounceKill(WeaponName(hit), CombatDamageEvents.DisplayNameOf(report.Target), critical && bullet, standout);
+            score.AnnounceKill(WeaponName(hit), CombatDamageEvents.DisplayNameOf(report.Target), critical && bullet, standout, WeaponIcon(hit));
         if (!byPlayer) return;
 
         HitConfirm.Landed(report);
@@ -73,10 +73,31 @@ public static class GunFeelDirector
             ? Mathf.RoundToInt(PlayerClass.Ability("Schiesshund", PlayerClass.IsElite(report.Target as EnemyHealth) ? "bountyElite" : "bountyMoney",
                 PlayerClass.IsElite(report.Target as EnemyHealth) ? 300f : 100f)) : 0;
         CombatFeedHUD.Kill(WeaponName(hit), CombatDamageEvents.DisplayNameOf(report.Target), critical && bullet, execution, hit.IsCounter, bullet, distance, !shared,
-            hit.Pierced, standout, takedown, bounty);
+            hit.Pierced, standout, takedown, bounty, WeaponIcon(hit));
         // Kills done some way worth a name (MEATSHOT, RAILGUN, SKEET ...) stamp it and pay on top.
         SpecialKills.Kill(report, bullet, critical && bullet, execution);
         if (pulse) KillConfirmEffect.Trigger(screen, critical || execution);
+    }
+
+    /// <summary>
+    /// The kill feed's picture of what killed (WeaponIcons): the gun's own, or the killer that isn't a weapon. Read from the
+    /// hit as WeaponName reads its words: an execution, a counter, a shove (a kick, a sweep and a dash push are shoves too),
+    /// a bullet's gun, and a blast, the one player hit other than a bullet that says where it came from (a can, CampaignCans);
+    /// the rest is bare hands.
+    /// </summary>
+    private static string WeaponIcon(DamageHit hit)
+    {
+        if (hit.Kind == DamageKind.Execution) return WeaponIcons.Execution;
+        if (hit.Kind == DamageKind.Fall) return WeaponIcons.Fall;
+        if (hit.IsCounter) return WeaponIcons.Counter;
+        if (hit.Method == DamageMethod.Shove) return WeaponIcons.Shove;
+        if (hit.Method == DamageMethod.Bullet && hit.Source != null)
+        {
+            var weapon = hit.Source.GetComponentInChildren<WeaponController>();
+            if (weapon != null && weapon.EquippedData != null) return WeaponIcons.IdOf(weapon.EquippedData);
+        }
+        if (hit.Method == DamageMethod.Other && hit.Origin.HasValue) return WeaponIcons.Explosion;
+        return WeaponIcons.Fist;
     }
 
     private static string WeaponName(DamageHit hit)

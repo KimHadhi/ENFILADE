@@ -99,8 +99,12 @@ public sealed class WeaponSlotsHUD : MonoBehaviour
             nameScrolls[i].Refresh(label, i == selected, deltaTime, nameScrollSpeed, nameScrollPause, restartNames, category);
             if (i == selected) readableSeconds = Mathf.Max(readableSeconds, nameScrolls[i].ReadDuration);
             view.number.text = (i + 1).ToString();
-            bool image = data != null && data.HudIcon != null;
-            view.icon.sprite = image ? data.HudIcon : null;
+            // The weapon's own picture (WeaponIcons: drawn from its model, or a modder's), kept to its canvas's shape so a
+            // pistol stays smaller than a rifle; the vector outline stands in for one without.
+            var picture = WeaponIcons.For(data);
+            bool image = picture != null;
+            view.icon.sprite = picture;
+            view.icon.preserveAspect = true;
             view.icon.enabled = image;
             view.icon.color = Color.Lerp(new Color(.72f,.79f,.83f,1),selectedColor,e);
             view.silhouette.enabled = !image;

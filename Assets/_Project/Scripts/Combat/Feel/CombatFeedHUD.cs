@@ -65,9 +65,11 @@ public sealed class CombatFeedHUD : MonoBehaviour
     /// pierced: the killing bullet went through or off something first (관통 사살). standout: the enemy was named or elite, so
     /// its row burns magenta (backlog 325). takedown: an execution of a zombie that never knew they were there (the
     /// stealth round's 암살, Stealth.csv Score.takedown on top of the execution's). bounty: points a Schießhund's own mark
-    /// pays on top (현상금, ClassAbilities Schiesshund.bountyMoney / bountyElite), 0 for none.</summary>
+    /// pays on top (현상금, ClassAbilities Schiesshund.bountyMoney / bountyElite), 0 for none. weaponIcon: the killer's id
+    /// for its picture in the feed (WeaponIcons: a weapon's asset name, or fist, shove, execution ...); none, or one with no
+    /// picture, shows the weapon's name instead.</summary>
     public static void Kill(string weapon, string target, bool headshot, bool execution, bool counter, bool bullet, float distance, bool feedRow,
-        bool pierced = false, bool standout = false, bool takedown = false, int bounty = 0)
+        bool pierced = false, bool standout = false, bool takedown = false, int bounty = 0, string weaponIcon = null)
     {
         if (!Application.isPlaying) return;
         var settings = GunFeelSettings.Instance;
@@ -106,7 +108,8 @@ public sealed class CombatFeedHUD : MonoBehaviour
             self.streakLabel.text = "<size=62%><color=#" + ColorUtility.ToHtmlStringRGB(settings.scoreColor) + ">+</color></size>"
                 + Wallet.FormatPoints(self.streakScore);
         }
-        if (feedRow && settings.killFeed) self.AddKill(Credit(PlayerRoster.Local, weapon), target, headshot, true, StreakOf(PlayerRoster.Local), standout);
+        if (feedRow && settings.killFeed)
+            self.AddKill(PlayerRoster.Local, weapon, weaponIcon, target, headshot, true, StreakOf(PlayerRoster.Local), standout);
     }
 
     /// <summary>
@@ -149,10 +152,13 @@ public sealed class CombatFeedHUD : MonoBehaviour
             + Wallet.FormatPoints(self.streakScore);
     }
 
-    /// <summary>A kill in a room, as the host counted it, in the feed only: the score is the killer's own.</summary>
-    public static void PlayerKill(PlayerMovement who, string weapon, string target, bool headshot, int streak, bool standout = false)
+    /// <summary>A kill in a room, as the host counted it, in the feed only: the score is the killer's own. weaponIcon as
+    /// Kill's.</summary>
+    public static void PlayerKill(PlayerMovement who, string weapon, string target, bool headshot, int streak, bool standout = false,
+        string weaponIcon = null)
     {
-        if (Application.isPlaying && GunFeelSettings.Instance.killFeed) Get().AddKill(Credit(who, weapon), target, headshot, who.IsLocal, streak, standout);
+        if (Application.isPlaying && GunFeelSettings.Instance.killFeed)
+            Get().AddKill(who, weapon, weaponIcon, target, headshot, who != null && who.IsLocal, streak, standout);
     }
 
     /// <summary>What just happened to a player, for the whole team to read.</summary>
@@ -349,23 +355,31 @@ public sealed class CombatFeedHUD : MonoBehaviour
     }
 
     // A named or elite kill burns magenta round its row; a streak past the last numeral (its skull) burns blue (backlog 325).
-    private void AddKill(string weapon, string target, bool headshot, bool mine, int streak, bool standout)
+    // With the weapon's picture the row reads killer, weapon, (headshot), victim, as kill feeds do, the killer's name even
+    // alone; a weapon without one keeps the old row: its name (after the killer's in a room), the skull or burst, victim.
+    private void AddKill(PlayerMovement who, string weapon, string weaponIcon, string target, bool headshot, bool mine, int streak, bool standout)
     {
         var settings = GunFeelSettings.Instance;
         var fire = standout ? FeedBorder.Standout : streak > look.mostNumeral ? FeedBorder.Skull : FeedBorder.None;
-        AddRow(weapon, headshot ? CombatUIAssets.CriticalBurst : CombatUIAssets.Skull, headshot ? settings.scoreColor : Color.white,
-            target, headshot ? settings.scoreColor : KillRed, mine, streak, headshot, fire);
+        Color mark = headshot ? settings.scoreColor : Color.white, accent = headshot ? settings.scoreColor : KillRed;
+        var picture = WeaponIcons.For(weaponIcon);
+        if (picture != null)
+            AddRow(who != null ? NameOf(who) : "", headshot ? CombatUIAssets.CriticalBurst : null, mark, target, accent, mine, streak, headshot,
+                fire, picture);
+        else
+            AddRow(Credit(who, weapon), headshot ? CombatUIAssets.CriticalBurst : CombatUIAssets.Skull, mark, target, accent, mine, streak,
+                headshot, fire);
     }
 
     private void AddRow(string left, Texture icon, Color iconColor, string right, Color accent, bool mine, int streak, bool emphatic,
-        FeedBorder fire = FeedBorder.None)
+        FeedBorder fire = FeedBorder.None, Sprite weapon = null)
     {
         if (kills.Count >= MaxKills)
         {
             kills[0].Hide(); spareKills.Push(kills[0]); kills.RemoveAt(0);
         }
         var row = spareKills.Count > 0 ? spareKills.Pop() : new KillFeedRow(feedRoot);
-        row.Show(left, icon, iconColor, right, accent, mine, streak, look, emphatic, fire);
+        row.Show(left, icon, iconColor, right, accent, mine, streak, look, emphatic, fire, weapon);
         kills.Add(row);
     }
 }

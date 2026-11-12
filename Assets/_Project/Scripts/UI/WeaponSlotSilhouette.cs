@@ -1,7 +1,9 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>Simple vector placeholders until WeaponData.HudIcon is assigned.</summary>
+/// <summary>Simple vector outlines (a rifle, a pistol, a fist) for a weapon with no picture anywhere (WeaponIcons: its
+/// HudIcon, a modder's PNG, the game's own drawn from its model): the slots, the ammo display and the pickup list fall
+/// back to these.</summary>
 [RequireComponent(typeof(CanvasRenderer))]
 public sealed class WeaponSlotSilhouette : MaskableGraphic
 {

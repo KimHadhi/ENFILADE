@@ -30,6 +30,7 @@ public sealed class PickupFeedHUD : MonoBehaviour
         public Image badge;
         public RawImage icon;
         public WeaponSlotSilhouette gun;
+        public Image picture;
         public TextMeshProUGUI name, amount;
         public float age, y;
     }
@@ -40,9 +41,9 @@ public sealed class PickupFeedHUD : MonoBehaviour
 
     /// <summary>
     /// One more thing taken: its kind's icon (null for a gun, which shows a gun's outline) and colour, its name and what
-    /// it gave.
+    /// it gave. gun: a gun's own picture (WeaponIcons): its colour square widens to hold it, the gun at its own size.
     /// </summary>
-    public static void Show(Texture icon, Color tint, string name, string amount)
+    public static void Show(Texture icon, Color tint, string name, string amount, Sprite gun = null)
     {
         if (!Application.isPlaying) return;
         if (instance == null)
@@ -50,7 +51,7 @@ public sealed class PickupFeedHUD : MonoBehaviour
             var host = new GameObject("Pickup Feed", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler));
             instance = host.AddComponent<PickupFeedHUD>();
         }
-        instance.Add(icon, tint, name, amount);
+        instance.Add(icon, tint, name, amount, gun);
     }
 
     private void Awake()
@@ -65,7 +66,7 @@ public sealed class PickupFeedHUD : MonoBehaviour
 
     private void OnDestroy() { if (instance == this) instance = null; }
 
-    private void Add(Texture icon, Color tint, string name, string amount)
+    private void Add(Texture icon, Color tint, string name, string amount, Sprite gun)
     {
         if (shown.Count >= Most) Retire(0);
         var row = spare.Count > 0 ? spare.Pop() : Build();
@@ -74,8 +75,18 @@ public sealed class PickupFeedHUD : MonoBehaviour
         row.y = 0f;
         row.badge.color = tint;
         row.icon.gameObject.SetActive(icon != null);
-        row.gun.gameObject.SetActive(icon == null);
+        row.gun.gameObject.SetActive(icon == null && gun == null);
         row.icon.texture = icon;
+        // A gun's picture is wide (WeaponIcons.Aspect): the square becomes a plate of its width and the name moves over.
+        float tall = WeaponIcons.Number("Pickup", "height", 30f), wide = gun != null ? tall * WeaponIcons.Aspect + 8f : Badge;
+        row.picture.gameObject.SetActive(icon == null && gun != null);
+        row.picture.sprite = gun;
+        row.picture.rectTransform.sizeDelta = new Vector2(tall * WeaponIcons.Aspect, tall);
+        row.badge.rectTransform.sizeDelta = new Vector2(wide, Badge);
+        row.badge.rectTransform.anchoredPosition = new Vector2(-Width * .5f + 14f + wide * .5f, 0f);
+        float left = -Width * .5f + 14f + wide + 14f;
+        row.name.rectTransform.anchoredPosition = new Vector2(left, 0f);
+        row.name.rectTransform.sizeDelta = new Vector2(Width * .5f - 18f - left - 120f, Height);
         row.name.text = name;
         row.amount.text = amount;
         row.root.gameObject.SetActive(true);
@@ -142,6 +153,11 @@ public sealed class PickupFeedHUD : MonoBehaviour
         row.gun = HudShapes.Make<WeaponSlotSilhouette>("Gun", row.badge.transform, KitStyle.Ink);
         row.gun.rectTransform.sizeDelta = Vector2.one * (Badge - 4f);
         row.gun.Kind = 1;
+        row.picture = FeelUI.Rect("Gun Picture", row.badge.transform).gameObject.AddComponent<Image>();
+        row.picture.raycastTarget = false;
+        row.picture.preserveAspect = true;
+        row.picture.color = KitStyle.Ink;
+        row.picture.gameObject.SetActive(false);
 
         float left = -Width * .5f + 14f + Badge + 14f, right = Width * .5f - 18f;
         row.name = Words("Name", row.root, NameSize, TextAlignmentOptions.MidlineLeft, KitStyle.Ice);
