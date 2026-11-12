@@ -10,8 +10,9 @@ using UnityEngine;
 /// (Magica's angle limit off), and Magica's damping takes speed off in the world, which is air drag: walking or running,
 /// it trailed 5.9 cm behind where it was drawn (Ichigo's 8.5 cm), a landing swung it 10.6 cm and a quick turn 11.9 cm,
 /// and it drifted back over half a second without one bounce.
-/// Flesh here turns about its root as a VRChat PhysBone does (the root never slides: Magica's spring off), within its
-/// maker's limit cone, with no air drag and no wind, so a steady run leaves it where it was drawn and only a change of
+/// Flesh here turns about its root as a VRChat PhysBone does (the root never slides: Magica's spring off), as one lump
+/// (the bones on the root swing, all below them keep to them: ClothPart.HoldStill), within its maker's limit cone,
+/// with no air drag and no wind, so a steady run leaves it where it was drawn and only a change of
 /// speed moves it: a damped spring of a given firmness (how many times a second it swings, Hz) and bounce (its damping
 /// ratio: .5 swings back once, .25 two or three times; a real breast is about 4 Hz and .2, finite element studies of
 /// free breast vibration). Measured the same way, Mayo then rings at 4.1 Hz, damping .27 (asked 4.36 and .27): a hard

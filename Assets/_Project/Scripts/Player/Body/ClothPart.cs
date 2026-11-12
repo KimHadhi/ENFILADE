@@ -64,8 +64,9 @@ public sealed class ClothPart
     public string angleCurve = "", stiffnessCurve = "", dampingCurve = "", thicknessCurve = "";
     /// <summary>
     /// For a spring: how firm the flesh is, as the times a second it swings back and forth (Hz). Above zero it springs
-    /// as flesh (FleshSpring): it turns about its still root within its angle limit, feels no air drag and no wind, and
-    /// its stiffness and damping are worked out from this and bounce. Zero keeps the preset's spring.
+    /// as flesh (FleshSpring): one lump turning about its still root within its angle limit (the bones on the root swing,
+    /// all below them keep to them as drawn), with no air drag and no wind; its stiffness and damping are worked out
+    /// from this and bounce. Zero keeps the preset's spring.
     /// </summary>
     public float firmness;
     /// <summary>How much of each swing that flesh loses: its damping ratio (.5 swings back once, .25 two or three times).</summary>
@@ -77,7 +78,7 @@ public sealed class ClothPart
     public float feltSpeed;
     /// <summary>
     /// Bones under the roots that don't swing but keep to their parent as drawn, each with all under it, "name|name": a
-    /// VRChat PhysBone's ignore list, which VRChat holds still the same way.
+    /// VRChat PhysBone's ignore list, which VRChat holds still the same way (HoldStill).
     /// </summary>
     public string still = "";
 
@@ -162,23 +163,35 @@ public sealed class ClothPart
         // Mayo's breast) is marked out of it, neither moved nor put back by this part, so only the outfit's rows move it.
         var foreign = new List<Transform>();
         foreach (var bone in bones) ClothBones.Collect(bone, null, foreign);
-        // Bones the row holds still are left out the same way, so they keep to their parent as drawn. Swung as particles
-        // of their own, the helper bones VRChat leaves out of Mayo's and Ichigo's breasts (hung from the tip back up)
-        // dragged the spring from 4.4 down to 3.2 swings a second and left it ringing.
-        if (!string.IsNullOrWhiteSpace(still))
-        {
-            var names = new HashSet<string>(System.StringComparer.Ordinal);
-            foreach (string name in still.Split(BoneSeparator))
-                if (name.Trim().Length > 0) names.Add(name.Trim());
-            foreach (var bone in bones)
-                foreach (var under in bone.GetComponentsInChildren<Transform>(true))
-                    if (under != bone && names.Contains(under.name)) foreign.AddRange(under.GetComponentsInChildren<Transform>(true));
-        }
+        HoldStill(bones, foreign);
         var attributes = cloth.GetSerializeData2().boneAttributeDict;
         foreach (var hung in foreign) attributes[hung] = VertexAttribute.Invalid;
         Apply(data, shape);
         cloth.BuildAndRun();
         return cloth;
+    }
+
+    // Bones that keep to their parent as drawn, left out of the part as an outfit's are: those the row names (still) and,
+    // for flesh, everything below the bones that swing on the roots, so a lump moves as one mass. Mayo's and Ichigo's
+    // breasts hang a helper bone from the tip back up (Breast.1_L.001, Breasts_R.002), and Mayo's PhysBone swings it with
+    // the rest; as a third particle under Magica's restoration it dragged her spring from 4.4 down to 3.1 swings a second
+    // and left it ringing (a landing settled in .61 s rather than .38, measured on a replica of Magica's step).
+    private void HoldStill(List<Transform> roots, List<Transform> held)
+    {
+        if (!string.IsNullOrWhiteSpace(still))
+        {
+            var names = new HashSet<string>(System.StringComparer.Ordinal);
+            foreach (string name in still.Split(BoneSeparator))
+                if (name.Trim().Length > 0) names.Add(name.Trim());
+            foreach (var root in roots)
+                foreach (var under in root.GetComponentsInChildren<Transform>(true))
+                    if (under != root && names.Contains(under.name)) held.AddRange(under.GetComponentsInChildren<Transform>(true));
+        }
+        if (!Flesh) return;
+        foreach (var root in roots)
+            foreach (Transform swinging in root)
+                foreach (Transform below in swinging)
+                    held.AddRange(below.GetComponentsInChildren<Transform>(true));
     }
 
     /// <summary>Writes the table's numbers over the preset's, keeping the curves that spread them along a bone chain.</summary>

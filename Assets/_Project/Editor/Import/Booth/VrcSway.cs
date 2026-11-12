@@ -307,10 +307,10 @@ internal static class VrcSway
     }
 
     // The bones a PhysBone leaves out (its ignore list) inside these chains. VRChat holds them, and all under them, still
-    // against their parent; so does the row (ClothPart.still), where Magica would swing them as particles of their own:
-    // Mayo's and Ichigo's breasts each hang a helper bone from the tip back up (Breast.1_L.001, Breasts_R.002), and swung
-    // it pulled the spring down from 4.4 to 3.2 times a second and left it ringing. Only springs for now: a chain that
-    // hangs is fitted and laid down bone by bone (ClothBones), which would have to leave them out as well.
+    // against their parent; so does the row (ClothPart.still), where Magica would swing them as particles of their own.
+    // Bones listed from outside the chains are none of the row's (Mayo's breasts list a switched-off small-breast setup
+    // beside the armature, Breast_PB_small). Only springs for now: a chain that hangs is fitted and laid down bone by bone
+    // (ClothBones), which would have to leave them out as well.
     private static IEnumerable<string> Still(VrcPrefab.PhysBone bone, List<Transform> chains) =>
         bone.Ignore.Where(ignored => ignored != null && chains.Any(chain => ignored != chain && ignored.IsChildOf(chain)))
             .Select(ignored => ignored.name).Distinct();
