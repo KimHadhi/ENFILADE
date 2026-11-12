@@ -240,9 +240,10 @@ class ENFILADE_OT_point_hand_save(bpy.types.Operator):
             "#설명,,,,\"블렌더로 그린 가리키는 왼손 (Tools/Blender/point_hand.py가 쓰고 읽는다). 손가락 마디마다 다음 마디(끝 마디는 "
             "손끝)로 가는 방향을 손 자신의 틀로: x 손목→검지 뿌리, y 새끼→검지 쪽 가로, z 손등. 어느 휴머노이드에나 같은 "
             "모양으로 맞춘다(PointArm). 이 줄들을 지우면 Poke.csv Point.* 각도로 만든다\"",
-            "#만든 곳,,,,{} / {} / {} / {}".format(
-                armature.name, os.path.basename(bpy.data.filepath) or "저장 안 한 blend", source,
-                datetime.datetime.now().strftime("%Y-%m-%d %H:%M")).replace(",", " "),
+            # Only the note's own commas go, so the row keeps its five cells.
+            "#만든 곳,,,," + " / ".join([
+                armature.name, os.path.basename(bpy.data.filepath) or "저장 안 한 blend", source or "",
+                datetime.datetime.now().strftime("%Y-%m-%d %H:%M")]).replace(",", " "),
         ]
         saved = 0
         for i, (row, _) in enumerate(ROWS):
