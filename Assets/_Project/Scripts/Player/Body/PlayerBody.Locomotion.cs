@@ -353,14 +353,15 @@ public sealed partial class PlayerBody
         }
         else if (a.Count == 0) share = 1f;
         else if (b.Count == 0) share = 0f;
-        Ladder(a, speed, weight * (1f - share), scale);
-        Ladder(b, speed, weight * share, scale);
+        MixLadder(a, speed, weight * (1f - share), scale);
+        MixLadder(b, speed, weight * share, scale);
 
         static float Cross(Vector2 p, Vector2 q) => p.x * q.y - p.y * q.x;
     }
 
     // The two cycles either side of the speed by their measured speeds; below the slowest or above the fastest, that one.
-    private void Ladder(List<Channel> cycles, float speed, float weight, float scale)
+    // Named MixLadder, not Ladder: inside PlayerBody a member called Ladder hides the Ladder fixture type (PlayerBody.LadderFeet).
+    private void MixLadder(List<Channel> cycles, float speed, float weight, float scale)
     {
         if (weight <= 0f || cycles.Count == 0) return;
         Bracket(cycles, speed, scale, out int low, out int high, out float t);
