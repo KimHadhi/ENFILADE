@@ -1,24 +1,27 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using UnityEngine;
+using Debug = UnityEngine.Debug;
 
 /// <summary>
 /// Pictures of what can be worn, for the wardrobe's tiles and choices (MainMenuWardrobe): each item in a colour set, or
-/// a character's own piece of a slot, stood alone in a studio far to the side of the menu's preview and photographed
-/// against nothing, so the wardrobe can lay it see-through over its plates. The user found the wardrobe all words
-/// (2026-11-12: "텍스트만 보고 입히려면 하나하나 다 봐야 하는데 무슨 의상인지 보이면 걍 원하는 거 바로 클릭할 수 있잖아").
-/// One picture every few frames, kept for the run; a picture taken while the editor compiled shaders (flat cyan) is
-/// thrown away and taken again, as the portrait cards' are (SkinPortraits). Pieces stand in the pose their file was made
-/// in, framed from their meshes as made, so a skinned piece is measured without waiting for a pose.
+/// a character's own piece of a slot, the whole of it seen from its front against nothing, so the wardrobe can lay it
+/// see-through over its plates. The user found the wardrobe all words (2026-11-12: "텍스트만 보고 입히려면 하나하나 다 봐야
+/// 하는데 무슨 의상인지 보이면 걍 원하는 거 바로 클릭할 수 있잖아").
+/// Then (2026-11-12: "상의 미리보기 저거 패널에 있는거 작게 전체가 아니라 좀 전체적으로 보이고 살짝 투명하게 ㅇㅇ 그리고 미리
+/// 구워 놓으면 로딩 속도 더 빨라 지려나"): a picture comes from a file when there is one (OutfitPictures: baked into the game
+/// by Tools → Characters → 옷장 사진 모두 굽기, or taken again in the wardrobe's 사진 다시 찍기), else it is taken here in the
+/// photo studio (OutfitStudio), one a frame, at once, framed whole from where the piece's vertices really are. Taking
+/// one stands the piece's whole model file (an outfit's file with every piece of it, or the whole character for its own
+/// pieces), which is what made a page full of new pictures stutter; in the editor and development builds the console
+/// says what a batch of them cost. A picture taken while the editor compiled shaders (flat cyan) is thrown away and
+/// taken again, as the portrait cards' are (SkinPortraits).
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class OutfitIcons : MonoBehaviour
 {
-    public const int Size = 160;
-    private const float FieldOfView = 24f, Fill = .86f, Lift = .02f;
-    // The menu's lights are directional and reach the studio; it only needs to be out of every camera's sight.
-    private static readonly Vector3 Studio = new Vector3(-600f, 0f, 0f);
-    private const int RendersPerPicture = 2;
+    public const int Size = OutfitPictures.Size;
 
     private readonly struct Ask
     {
@@ -37,16 +40,18 @@ public sealed class OutfitIcons : MonoBehaviour
         }
     }
 
-    private static readonly Dictionary<string, RenderTexture> taken = new Dictionary<string, RenderTexture>();
+    private static readonly Dictionary<string, Texture> taken = new Dictionary<string, Texture>();
+    // The pictures made here (taken, or read from the player's own files), destroyed when replaced; a baked one is an
+    // asset of the game and is left alone.
+    private static readonly HashSet<Texture> owned = new HashSet<Texture>();
     private static readonly HashSet<string> asked = new HashSet<string>();
     private static OutfitIcons current;
     private readonly Queue<Ask> waiting = new Queue<Ask>();
-    private Camera lens;
-    private RenderTexture film;
-    private GameObject sitter;
-    private Ask sitting;
-    private int shotFrame;
-    private bool spoiled;
+    private OutfitStudio studio;
+    // What taking pictures has cost since the queue last ran dry, for the console.
+    private int batchCount;
+    private double batchTotal, batchWorst;
+    private string batchWorstKey;
 
     /// <summary>Raised whenever a picture is ready, so the wardrobe can put it in.</summary>
     public static event Action Taken;
@@ -54,8 +59,8 @@ public sealed class OutfitIcons : MonoBehaviour
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetStatics()
     {
-        foreach (var picture in taken.Values)
-            if (picture != null) { picture.Release(); Destroy(picture); }
+        foreach (var picture in owned) Discard(picture);
+        owned.Clear();
         taken.Clear();
         asked.Clear();
         Taken = null;
@@ -66,7 +71,8 @@ public sealed class OutfitIcons : MonoBehaviour
     public static Texture OfItem(PlayerBodyProfile.Skin skin, OutfitItem item, string colour)
     {
         if (skin == null || item == null) return null;
-        string key = "item@" + skin.Id + "@" + item.id + "#" + (colour ?? "");
+        colour = FirstIsBlank(skin, item, colour);
+        string key = OutfitPictures.ItemKey(skin.Id, item.id, colour);
         return Get(key, () => new Ask(key, skin, item, colour, null));
     }
 
@@ -74,44 +80,115 @@ public sealed class OutfitIcons : MonoBehaviour
     public static Texture OfOwn(PlayerBodyProfile.Skin skin, string slot, SkinVariant variant)
     {
         if (skin == null || string.IsNullOrEmpty(slot) || !OutfitCatalog.HasOwnPiece(skin.Id, slot)) return null;
-        string key = "own@" + skin.Id + "@" + slot + "#" + (variant != null ? variant.Id : "");
-        return Get(key, () => new Ask(key, skin, null, variant != null ? variant.Id : "", slot));
+        string colour = variant != null ? variant.Id : "";
+        string key = OutfitPictures.OwnKey(skin.Id, slot, colour);
+        return Get(key, () => new Ask(key, skin, null, colour, slot));
+    }
+
+    // An item's first colour set is its picture with no colour written: the one baked into the game.
+    private static string FirstIsBlank(PlayerBodyProfile.Skin skin, OutfitItem item, string colour)
+    {
+        if (string.IsNullOrEmpty(colour)) return "";
+        var entry = OutfitCatalog.Model(item.id, skin.Id);
+        return entry == null || entry.Variants.Count == 0 || entry.VariantOf(colour) == entry.Variants[0] ? "" : colour;
     }
 
     private static Texture Get(string key, Func<Ask> ask)
     {
-        if (taken.TryGetValue(key, out var picture) && picture != null && picture.IsCreated()) return picture;
+        if (taken.TryGetValue(key, out var picture) && Usable(picture)) return picture;
+        // A picture baked into the game or the player's own first; one to take is asked for once.
+        if (!asked.Contains(key))
+        {
+            var file = OutfitPictures.Load(key, out bool made);
+            if (file != null)
+            {
+                Keep(key, file, made);
+                return file;
+            }
+        }
         if (!Application.isPlaying || !asked.Add(key)) return null;
         if (current == null) current = new GameObject("Outfit Icons").AddComponent<OutfitIcons>();
         current.waiting.Enqueue(ask());
         return null;
     }
 
-    private void Awake()
+    private static bool Usable(Texture picture) => picture != null && (!(picture is RenderTexture film) || film.IsCreated());
+
+    private static void Keep(string key, Texture picture, bool made)
     {
-        if (current == null) current = this;
-        lens = new GameObject("Outfit Icon Camera", typeof(Camera)).GetComponent<Camera>();
-        lens.transform.SetParent(transform, false);
-        lens.enabled = false;
-        lens.clearFlags = CameraClearFlags.SolidColor;
-        // Nothing behind the piece: the wardrobe lays the picture over its plates.
-        lens.backgroundColor = new Color(0f, 0f, 0f, 0f);
-        lens.allowHDR = false;
-        lens.fieldOfView = FieldOfView;
-        lens.nearClipPlane = .02f;
-        lens.farClipPlane = 20f;
+        if (taken.TryGetValue(key, out var old) && old != null && old != picture && owned.Remove(old)) Discard(old);
+        taken[key] = picture;
+        if (made) owned.Add(picture);
     }
+
+    private static void Discard(Texture picture)
+    {
+        if (picture == null) return;
+        if (picture is RenderTexture film) film.Release();
+        Destroy(picture);
+    }
+
+    // ---- Taking pictures, one a frame ----
 
     private void LateUpdate()
     {
-        if (sitter != null)
+        if (waiting.Count == 0)
         {
-            spoiled |= ShadersCompiling;
-            if (Time.frameCount - shotFrame >= RendersPerPicture) Develop();
+            Report();
+            return;
         }
-        while (sitter == null && waiting.Count > 0 && !ShadersCompiling)
-            if (Sit(waiting.Dequeue())) break;
-        if (sitter == null) lens.enabled = false;
+        if (ShadersCompiling) return;
+        var ask = waiting.Dequeue();
+        var watch = Stopwatch.StartNew();
+        var picture = Take(ask, out bool spoiled);
+        watch.Stop();
+        if (spoiled)
+        {
+            waiting.Enqueue(ask);
+            return;
+        }
+        batchCount++;
+        batchTotal += watch.Elapsed.TotalMilliseconds;
+        if (watch.Elapsed.TotalMilliseconds > batchWorst)
+        {
+            batchWorst = watch.Elapsed.TotalMilliseconds;
+            batchWorstKey = ask.Key;
+        }
+        // Nothing of it to photograph: it stays without a picture and isn't asked for again.
+        if (picture == null) return;
+        Keep(ask.Key, picture, true);
+        Taken?.Invoke();
+    }
+
+    // Stood, framed as its piece is (OutfitPictures.FramingOf) and photographed in the studio; spoiled when the editor
+    // was compiling shaders meanwhile.
+    private Texture Take(Ask ask, out bool spoiled)
+    {
+        spoiled = false;
+        if (studio == null) studio = new OutfitStudio();
+        if (!studio.Stand(ask.Skin, ask.Item, ask.Colour, ask.Slot)) return null;
+        studio.Frame(OutfitPictures.FramingOf(OutfitPictures.PieceOf(ask.Key)));
+        var picture = new RenderTexture(Size, Size, 0, RenderTextureFormat.ARGB32) { name = "Outfit Icon " + ask.Key };
+        picture.Create();
+        bool shot = studio.Shoot(picture);
+        studio.Clear();
+        if (shot && !ShadersCompiling) return picture;
+        spoiled = shot;
+        Discard(picture);
+        return null;
+    }
+
+    // Once the queue runs dry: what the batch cost, in the editor and development builds (the user asked whether baked
+    // pictures would load faster; this is the measure of what they save).
+    private void Report()
+    {
+        if (batchCount == 0) return;
+        if (Debug.isDebugBuild)
+            Debug.Log($"[OutfitIcons] 옷 사진 {batchCount}장을 그 자리에서 찍었어요: 모두 {batchTotal:0} ms, 한 장 평균 {batchTotal / batchCount:0.0} ms, "
+                + $"가장 오래 {batchWorst:0.0} ms ({batchWorstKey}). 구워 둔 사진이 있는 옷은 찍지 않고 바로 나와요(Tools → Characters → 옷장 사진 모두 굽기).");
+        batchCount = 0;
+        batchTotal = batchWorst = 0d;
+        batchWorstKey = null;
     }
 
     private static bool ShadersCompiling
@@ -126,140 +203,69 @@ public sealed class OutfitIcons : MonoBehaviour
         }
     }
 
-    // Stands the piece in the studio and points the lens at it; false when there is nothing to photograph.
-    private bool Sit(Ask ask)
+    // ---- Taking a piece's pictures again ----
+
+    /// <summary>
+    /// Takes a piece's pictures again framed as <paramref name="framing"/> says, and keeps them and the framing where they
+    /// are found first (OutfitPictures: the editor's are written into the project and ship, a build's stay on this PC):
+    /// an item in its first colour set, a character's own piece (no item, its <paramref name="slot"/>) in each of its
+    /// colour sets. The piece's pictures in other colours are taken again, framed the same, when next asked for. Returns
+    /// how many were kept.
+    /// </summary>
+    public static int Reshoot(PlayerBodyProfile.Skin skin, OutfitItem item, string slot, OutfitFraming framing)
     {
-        sitting = ask;
-        spoiled = false;
-        var shown = new List<Renderer>();
-        if (ask.Item != null)
-        {
-            var entry = OutfitCatalog.Model(ask.Item.id, ask.Skin.Id);
-            if (entry == null || entry.Model == null) return false;
-            sitter = Instantiate(entry.Model, Studio, Quaternion.identity, transform);
-            foreach (var animator in sitter.GetComponentsInChildren<Animator>(true)) animator.enabled = false;
-            var wanted = new HashSet<string>(ask.Item.PartNames, StringComparer.OrdinalIgnoreCase);
-            var drop = new HashSet<string>(OutfitCatalog.Split(OutfitCatalog.FitOf(ask.Item.id, ask.Skin.Id)?.drop), StringComparer.OrdinalIgnoreCase);
-            var character = ask.Skin.Model;
-            var body = character != null ? character.GetComponentsInChildren<Renderer>(true) : Array.Empty<Renderer>();
-            foreach (var renderer in sitter.GetComponentsInChildren<Renderer>(true))
-            {
-                // Its own meshes only: an outfit's file often carries the avatar's body it was fitted on, told from the
-                // piece by dressing's own rule (a mirrored copy of the character's mesh is a piece, not her body).
-                bool mine = wanted.Count > 0 ? wanted.Contains(renderer.name)
-                    : !drop.Contains(renderer.name) && (character == null || !OutfitDresser.CopiesOwn(renderer, sitter.transform, body, character.transform));
-                renderer.enabled = mine;
-                if (mine) shown.Add(renderer);
-            }
-            SkinVariant.WearOn(shown, entry.VariantOf(ask.Colour));
-        }
+        if (skin == null || (item == null && string.IsNullOrEmpty(slot))) return 0;
+        string piece = item != null ? OutfitPictures.ItemPiece(skin.Id, item.id) : OutfitPictures.OwnPiece(skin.Id, slot);
+        OutfitPictures.SetFraming(piece, framing);
+        Forget(piece);
+        var colours = new List<string>();
+        if (item != null || skin.Variants.Count == 0) colours.Add("");
         else
+            foreach (var variant in skin.Variants)
+                if (variant != null) colours.Add(variant.Id);
+        int kept = 0;
+        var studio = new OutfitStudio();
+        try
         {
-            sitter = Instantiate(ask.Skin.Model, Studio, Quaternion.identity, transform);
-            foreach (var animator in sitter.GetComponentsInChildren<Animator>(true)) animator.enabled = false;
-            SkinVariant.Wear(sitter, null, ask.Skin.VariantOf(ask.Colour));
-            var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            foreach (var part in OutfitCatalog.PartsOf(ask.Skin.Id))
-                if (string.Equals(part.slot, ask.Slot, StringComparison.OrdinalIgnoreCase)) names.UnionWith(OutfitCatalog.Split(part.parts));
-            foreach (var renderer in sitter.GetComponentsInChildren<Renderer>(true))
+            foreach (string colour in colours)
             {
-                bool mine = names.Contains(renderer.name);
-                renderer.enabled = mine;
-                if (mine)
-                {
-                    renderer.gameObject.SetActive(true);
-                    shown.Add(renderer);
-                }
+                if (!studio.Stand(skin, item, colour, slot)) continue;
+                studio.Frame(framing);
+                var picture = studio.Capture(Size);
+                studio.Clear();
+                if (picture == null) continue;
+                string key = item != null ? OutfitPictures.ItemKey(skin.Id, item.id, colour) : OutfitPictures.OwnKey(skin.Id, slot, colour);
+                if (OutfitPictures.Save(key, picture)) kept++;
+                Keep(key, picture, true);
             }
         }
-        if (shown.Count == 0)
+        finally
         {
-            Dismiss();
-            return false;
+            studio.Dispose();
         }
-        foreach (var renderer in shown)
-        {
-            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            if (renderer is SkinnedMeshRenderer skinned) skinned.updateWhenOffscreen = true;
-        }
-        var bounds = AsMade(shown);
-        // Faces +Z as the preview's character does, the lens in front looking back, the piece filling the square.
-        float span = Mathf.Max(.05f, Mathf.Max(bounds.size.y, bounds.size.x));
-        float distance = span * .5f / Mathf.Tan(FieldOfView * .5f * Mathf.Deg2Rad) / Fill + bounds.extents.z;
-        lens.transform.position = bounds.center + Vector3.forward * distance + Vector3.up * span * Lift;
-        lens.transform.rotation = Quaternion.LookRotation(Vector3.back);
-        if (film == null)
-        {
-            film = new RenderTexture(Size, Size, 24, RenderTextureFormat.ARGB32) { name = "Outfit Icon Film", antiAliasing = 4 };
-            film.Create();
-        }
-        lens.targetTexture = film;
-        lens.enabled = true;
-        shotFrame = Time.frameCount;
-        return true;
-    }
-
-    private static Mesh MeshOf(Renderer renderer) =>
-        renderer is SkinnedMeshRenderer skinned ? skinned.sharedMesh
-        : renderer.TryGetComponent(out MeshFilter filter) ? filter.sharedMesh : null;
-
-    // The pieces' box as their meshes were made, which is how a fresh copy stands (its bones in the file's pose).
-    private static Bounds AsMade(List<Renderer> renderers)
-    {
-        bool any = false;
-        var bounds = new Bounds();
-        foreach (var renderer in renderers)
-        {
-            var mesh = MeshOf(renderer);
-            Bounds piece;
-            if (mesh != null)
-            {
-                var local = mesh.bounds;
-                var corners = new Vector3[8];
-                for (int i = 0; i < 8; i++)
-                    corners[i] = renderer.transform.TransformPoint(local.center + Vector3.Scale(local.extents,
-                        new Vector3((i & 1) == 0 ? -1f : 1f, (i & 2) == 0 ? -1f : 1f, (i & 4) == 0 ? -1f : 1f)));
-                piece = new Bounds(corners[0], Vector3.zero);
-                for (int i = 1; i < 8; i++) piece.Encapsulate(corners[i]);
-            }
-            else piece = renderer.bounds;
-            if (!any) { bounds = piece; any = true; }
-            else bounds.Encapsulate(piece);
-        }
-        return bounds;
-    }
-
-    // The film is multisampled; each kept picture is a plain copy of it. A spoiled one goes back in the queue.
-    private void Develop()
-    {
-        if (spoiled)
-        {
-            waiting.Enqueue(sitting);
-            Dismiss();
-            return;
-        }
-        if (!taken.TryGetValue(sitting.Key, out var picture) || picture == null)
-        {
-            picture = new RenderTexture(Size, Size, 0, RenderTextureFormat.ARGB32) { name = "Outfit Icon " + sitting.Key };
-            taken[sitting.Key] = picture;
-        }
-        Graphics.Blit(film, picture);
-        Dismiss();
         Taken?.Invoke();
+        return kept;
     }
 
-    private void Dismiss()
+    // Every picture of a piece, in any colour, is let go: found or taken again when next asked for.
+    private static void Forget(string piece)
     {
-        if (sitter != null) Destroy(sitter);
-        sitter = null;
+        var gone = new List<string>();
+        foreach (string key in taken.Keys) if (OutfitPictures.PieceOf(key) == piece) gone.Add(key);
+        foreach (string key in asked) if (OutfitPictures.PieceOf(key) == piece && !gone.Contains(key)) gone.Add(key);
+        foreach (string key in gone)
+        {
+            if (taken.TryGetValue(key, out var picture) && picture != null && owned.Remove(picture)) Discard(picture);
+            taken.Remove(key);
+            asked.Remove(key);
+        }
     }
 
     private void OnDestroy()
     {
         if (current == this) current = null;
-        Dismiss();
-        if (lens != null) lens.targetTexture = null;
-        if (film != null) { film.Release(); Destroy(film); }
+        studio?.Dispose();
+        studio = null;
         // Asked-for pictures this copy never took are asked for again by whoever comes next.
         foreach (var ask in waiting) asked.Remove(ask.Key);
         waiting.Clear();

@@ -35,7 +35,7 @@ using UnityEngine.UI;
 public sealed class MainMenuWardrobe : MonoBehaviour
 {
     private const float LeftWidth = 520f, RightWidth = 560f, CardGap = 10f, ChipHeight = 30f, ChipGap = 8f, TileHeight = 50f,
-        TileGap = 6f, PlateHeight = 60f, PlateGap = 10f, Slant = 12f, ChipSlant = 7f;
+        TileGap = 6f, PlateHeight = 72f, PlateGap = 10f, Slant = 12f, ChipSlant = 7f;
     private const int CardColumns = 5, ChipColumns = 4;
     private static readonly string[] Groups = { "head", "neck", "torso", "arms", "legs" };
 
@@ -60,10 +60,16 @@ public sealed class MainMenuWardrobe : MonoBehaviour
     private string shownLine;
     // The viewfinder: how far inside the wings and the bars it stands, and its corner brackets (px).
     private const float FrameGap = 40f, FrameInset = 14f, BracketLength = 46f, BracketWidth = 4f;
+    private static readonly Vector2[] Corners = { new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0f, 0f), new Vector2(1f, 0f) };
     // Pictures (OutfitIcons) not taken yet when their plate or tile was made; they go in as they come.
     private readonly List<(RawImage image, System.Func<Texture> picture)> pictures = new List<(RawImage, System.Func<Texture>)>();
     // A picture's box: on a choice's plate and on a tile, at their right ends (px), and how see-through it lies.
-    private const float PlatePicture = 58f, TilePicture = 44f, PictureAlpha = .9f;
+    // Then (2026-11-12, "작게 전체가 아니라 좀 전체적으로 보이고 살짝 투명하게"): the whole piece in a box as tall as its
+    // plate or tile, a little more see-through.
+    private const float PlatePicture = 72f, TilePicture = 50f, PictureAlpha = .72f;
+    // 사진 다시 찍기: a choice pressed opens the shooting window for its piece instead of wearing it (OutfitShootView).
+    private bool shooting;
+    private OutfitShootView shoot;
 
     // The body page (BodyShapes) stands where a slot's list would, under this name in openSlot, on one of its tabs. A save
     // there rebuilds nothing (a slider may be held, the list scrolled): its marks, the 원래대로 chip and the plate's count
@@ -85,8 +91,8 @@ public sealed class MainMenuWardrobe : MonoBehaviour
     private float slotScroll;
 
     public bool IsOpen => root != null && root.gameObject.activeSelf;
-    /// <summary>One slot's list is up: Esc goes back to all the slots first.</summary>
-    public bool ShowsSlot => IsOpen && openSlot != null;
+    /// <summary>One slot's list, or the shooting window over it, is up: Esc goes back a step first.</summary>
+    public bool ShowsSlot => IsOpen && (openSlot != null || shoot != null);
 
     /// <param name="preview">The character the page dresses: the title screen's stand-in, or the hub's player at the mirror.</param>
     public static MainMenuWardrobe Make(RectTransform canvas, float edge, float top, float bottom, IWardrobeStage preview)
@@ -118,15 +124,23 @@ public sealed class MainMenuWardrobe : MonoBehaviour
     public void Close()
     {
         if (root == null) return;
+        CloseShoot();
+        shooting = false;
         root.gameObject.SetActive(false);
         openSlot = null;
         StopTrying();
         if (preview != null) preview.Focus(null);
     }
 
-    /// <summary>Back from one slot's list to all the slots.</summary>
+    /// <summary>Back from one slot's list to all the slots; with the shooting window up, Esc closes that first.</summary>
     public void ShowSlots()
     {
+        if (shoot != null)
+        {
+            CloseShoot();
+            return;
+        }
+        shooting = false;
         openSlot = null;
         slotListFor = null;
         StopTrying();
@@ -138,10 +152,39 @@ public sealed class MainMenuWardrobe : MonoBehaviour
     {
         openSlot = slot.id;
         slotListFor = null;
+        shooting = false;
         StopTrying();
         if (preview != null) preview.Focus(slot.group);
         KitSound.Play(KitSound.Cue.Ping, .35f);
         Build();
+    }
+
+    // 사진 다시 찍기 on or off. While on, a choice pressed opens the shooting window for its piece instead of wearing it,
+    // and nothing is tried on under the pointer (a try would stand the character up behind the window for nothing).
+    private void ToggleShoot()
+    {
+        shooting = !shooting;
+        StopTrying();
+        KitSound.Play(KitSound.Cue.Ping, .35f);
+        Build();
+    }
+
+    private void OpenShoot(PlayerBodyProfile.Skin skin, OutfitItem item, string slot, string colour, string name)
+    {
+        if (shoot != null || root == null) return;
+        StopTrying();
+        shoot = OutfitShootView.Open((RectTransform)root.parent, skin, item, slot, colour, name, retaken =>
+        {
+            shoot = null;
+            // The piece's pictures were let go and taken again: the page puts the new ones in.
+            if (retaken && IsOpen) Build();
+        });
+    }
+
+    private void CloseShoot()
+    {
+        if (shoot != null) shoot.Close(false);
+        shoot = null;
     }
 
     // The page as the settings are now. Opening, it grows in; after a pick it is simply there again, so clicking through
@@ -195,8 +238,7 @@ public sealed class MainMenuWardrobe : MonoBehaviour
         badge.offsetMax = new Vector2(-(edge + RightWidth + FrameGap), -FrameInset);
         badgeGroup = badge.gameObject.AddComponent<CanvasGroup>();
         badgeGroup.interactable = badgeGroup.blocksRaycasts = false;
-        foreach (var corner in new[] { new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0f, 0f), new Vector2(1f, 0f) })
-            Bracket(badge, corner);
+        foreach (var corner in Corners) Bracket(badge, corner);
         var plate = KitStyle.TopLeft("Plate", badge, new Vector2(18f, 16f), new Vector2(190f, 36f));
         KitSkew.On(KitStyle.Fill(plate, KitStyle.Accent), Slant);
         KitStyle.Flat(plate, Texts.Get("wardrobe.preview"), 22f, TextAlignmentOptions.Center, KitStyle.Ink);
@@ -208,14 +250,16 @@ public sealed class MainMenuWardrobe : MonoBehaviour
     }
 
     // One corner of the viewfinder: two pink bars meeting at it.
-    private static void Bracket(RectTransform frame, Vector2 corner)
+    private static void Bracket(RectTransform frame, Vector2 corner) => Bracket(frame, corner, BracketLength, BracketWidth);
+
+    private static void Bracket(RectTransform frame, Vector2 corner, float length, float width)
     {
         for (int i = 0; i < 2; i++)
         {
             var bar = FeelUI.Rect("Bracket", frame);
             bar.anchorMin = bar.anchorMax = bar.pivot = corner;
             bar.anchoredPosition = Vector2.zero;
-            bar.sizeDelta = i == 0 ? new Vector2(BracketLength, BracketWidth) : new Vector2(BracketWidth, BracketLength);
+            bar.sizeDelta = i == 0 ? new Vector2(length, width) : new Vector2(width, length);
             KitStyle.Fill(bar, KitStyle.Accent);
         }
     }
@@ -237,10 +281,11 @@ public sealed class MainMenuWardrobe : MonoBehaviour
         }
     }
 
-    // A picture laid see-through at the right of a plate or tile: shown at once when taken, else as soon as it is.
-    private void Picture(RectTransform parent, Vector2 at, float size, System.Func<Texture> picture)
+    // A picture laid see-through at the right of a plate or tile: shown at once when taken, else as soon as it is. Its
+    // box, or null with no picture to show.
+    private RectTransform Picture(RectTransform parent, Vector2 at, float size, System.Func<Texture> picture)
     {
-        if (picture == null) return;
+        if (picture == null) return null;
         var box = KitStyle.TopLeft("Picture", parent, at, new Vector2(size, size));
         var image = box.gameObject.AddComponent<RawImage>();
         image.raycastTarget = false;
@@ -249,6 +294,7 @@ public sealed class MainMenuWardrobe : MonoBehaviour
         image.texture = texture;
         image.enabled = texture != null;
         if (texture == null) pictures.Add((image, picture));
+        return box;
     }
 
     // ---- Left wing: who and which colours ----
@@ -454,8 +500,12 @@ public sealed class MainMenuWardrobe : MonoBehaviour
             TextAlignmentOptions.MidlineLeft);
         title.rectTransform.localRotation = Quaternion.Euler(0f, 0f, -2f);
         Grow(title.rectTransform, 0f);
-        bool tries = preview != null && preview.CanTry;
-        Note(right, new Vector2(4f, 128f), RightWidth, Texts.Get("outfit.group." + slot.group) + "  ·  " + Texts.Get(tries ? "wardrobe.try" : "wardrobe.click"));
+        // 사진 다시 찍기 (the user, 2026-11-12: "미리보기 사진 바꾸기 기능 넣어서 내가 직접 인게임에서 … 각도나 위치 조절해서
+        // 찍어서"): on, a choice's plate opens the shooting window for its piece (OutfitShootView).
+        Chip(right, new Vector2(RightWidth - 170f, 26f), 170f, Texts.Get("wardrobe.shoot"), shooting, ToggleShoot);
+        bool tries = preview != null && preview.CanTry && !shooting;
+        Note(right, new Vector2(4f, 128f), RightWidth, Texts.Get("outfit.group." + slot.group) + "  ·  "
+            + Texts.Get(shooting ? "wardrobe.shoot.on" : tries ? "wardrobe.try" : "wardrobe.click"));
 
         var items = OutfitCatalog.ItemsFor(skin.Id, slot.id);
         bool own = OutfitCatalog.HasOwnPiece(skin.Id, slot.id);
@@ -468,10 +518,14 @@ public sealed class MainMenuWardrobe : MonoBehaviour
         int row = 0;
         var variant = skin.VariantOf(GameSettings.Current.characterVariant);
         var saved = OutfitLook.Saved(skin.Id);
-        void Option(string id, string name, string note, System.Func<Texture> picture)
+        void Option(string id, string name, string note, System.Func<Texture> picture, OutfitItem piece = null, string colour = "")
         {
+            var pressed = id == worn ? null : (System.Action)(() => Wear(skin, slot, id));
+            // Taking pictures again, a choice with a picture opens the shooting window for its piece (the worn one too) in
+            // the colour its plate shows; one with none (벗기, nothing of its own) does nothing.
+            if (shooting) pressed = picture == null ? null : (System.Action)(() => OpenShoot(skin, piece, slot.id, colour, name));
             var plate = Plate(list, new Vector2(row % 2 == 0 ? 0f : 10f, y), name, note, id == worn, (row % 2 == 0 ? 1f : -1f) * .6f,
-                id == worn ? null : (System.Action)(() => Wear(skin, slot, id)), picture);
+                pressed, picture);
             // Resting on a choice not worn tries it on as it would really look. Taking off (벗기, or back to nothing of
             // its own) keeps what is on and shows it fading, so a try of taking off never reads as already off. A stage
             // that can't try (the hub's mirror) wears the choice on the click alone.
@@ -486,7 +540,7 @@ public sealed class MainMenuWardrobe : MonoBehaviour
             row++;
         }
         Option("", Texts.Get("wardrobe.own"), Texts.Get(own ? "wardrobe.own.note" : "wardrobe.none.note"),
-            own ? () => OutfitIcons.OfOwn(skin, slot.id, variant) : null);
+            own ? () => OutfitIcons.OfOwn(skin, slot.id, variant) : null, null, variant != null ? variant.Id : "");
         if (slot.removable && own) Option(OutfitLook.Off, Texts.Get("wardrobe.off"), Texts.Get("wardrobe.off.note"), null);
         foreach (var item in items)
         {
@@ -495,7 +549,8 @@ public sealed class MainMenuWardrobe : MonoBehaviour
             var sets = OutfitCatalog.ColoursOf(item, skin.Id);
             int count = sets.Count;
             string colour = item.id == worn ? pick.Colour : "";
-            Option(item.id, item.DisplayName, count > 1 ? Texts.Format("wardrobe.colours", count) : "", () => OutfitIcons.OfItem(skin, item, colour));
+            Option(item.id, item.DisplayName, count > 1 ? Texts.Format("wardrobe.colours", count) : "", () => OutfitIcons.OfItem(skin, item, colour),
+                item, colour);
             if (item.id != worn || count < 2) continue;
             // The worn piece's colours, right under it.
             float chipWidth = Mathf.Floor((RightWidth - 20f - ChipGap * (ChipColumns - 1)) / ChipColumns);
@@ -532,12 +587,15 @@ public sealed class MainMenuWardrobe : MonoBehaviour
         back.raycastTarget = true;
         if (worn) Rim(plate, Slant);
         KitSkew.On(KitStyle.Bar("Bar", plate, Vector2.zero, new Vector2(4f, PlateHeight), worn ? KitStyle.Accent : KitStyle.With(KitStyle.Ice, .35f)), Slant);
-        Picture(plate, new Vector2(width - PlatePicture - 14f, (PlateHeight - PlatePicture) * .5f), PlatePicture, picture);
+        var box = Picture(plate, new Vector2(width - PlatePicture - 14f, (PlateHeight - PlatePicture) * .5f), PlatePicture, picture);
+        // Taking pictures again, the picture a press would take again sits in the viewfinder's pink corners.
+        if (box != null && shooting && picked != null)
+            foreach (var corner in Corners) Bracket(box, corner, 14f, 2f);
         float room = width - PlatePicture - 150f;
-        var title = KitStyle.Flat(KitStyle.TopLeft("Name", plate, new Vector2(22f, 6f), new Vector2(room, 30f)), name, 22f,
+        var title = KitStyle.Flat(KitStyle.TopLeft("Name", plate, new Vector2(22f, 10f), new Vector2(room, 30f)), name, 22f,
             TextAlignmentOptions.MidlineLeft, worn ? KitStyle.Text : KitStyle.With(KitStyle.Text, .85f));
         title.overflowMode = CombatUIAssets.ClippedOverflow(title);
-        if (!string.IsNullOrEmpty(note)) Note(plate, new Vector2(24f, 36f), room, note, 13f);
+        if (!string.IsNullOrEmpty(note)) Note(plate, new Vector2(24f, 42f), room, note, 13f);
         if (worn)
         {
             var mark = KitStyle.TopLeft("Worn", plate, new Vector2(width - PlatePicture - 112f, (PlateHeight - 24f) * .5f), new Vector2(84f, 24f));

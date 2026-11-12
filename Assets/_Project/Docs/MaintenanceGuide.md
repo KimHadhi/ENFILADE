@@ -22,6 +22,7 @@
 | [RangeTargets.csv](../Resources/Tables/RangeTargets.csv) | 허브 사격장 강철 과녁([SteelTarget](../Scripts/Hub/SteelTarget.cs)): 몸통 판·머리 판·기둥의 크기와 자리, 페인트 색, 맞을 때 흔들림(경첩에서 앞뒤로·머리 판이 축에서, 총의 미는 힘 1마다), 일어설 때 흔들림, 납 자국 크기·남는 시간·사라지는 시간, 울림이 들리는 거리와 소리 빠르기(먼 판의 '팅'이 늦게 들림), 산탄을 한 울림으로 합치는 시간, 주먹·밀치기의 미는 힘 | `Zombie`(강철 과녁) `Plate`(두꺼운 강철판) |
 | [Results.csv](../Resources/Tables/Results.csv) | 장 결과의 칭호: 어느 숫자로 주는지, 순서, 받을 최소값, 단위. 칭호 이름과 한 줄 농담은 Texts.csv `results.award.<id>` | 칭호 (`kills`, `downs` …) |
 | [Chat.csv](../Resources/Tables/Chat.csv) | 채팅: 자리(화면 왼쪽 아래 가장자리에서 잰 위치·너비·높이·위 한계·제 기울기), 줄(글자 크기·여백·프로필 칸·판과 막대 색·시스템 카드·콘솔 판), 들어올 때 튀기, 닫혀 있을 때 사라지기(남는 시간·최대 줄 수), 입력 칸(색·밑줄·커서·채널 탭) | `Place.필드`, `Line.필드`, `Pop.필드`, `Fade.필드`, `Open.필드` |
+| [OutfitPictures.csv](../Resources/Tables/OutfitPictures.csv) | 옷장 사진의 구도(옷마다 한 줄, 그 옷의 모든 색이 같이 씀): 옆·위아래 각도, 자동 구도보다 가까운 배율, 사진 안에서 옮긴 거리. 줄이 없으면 자동(옷 전체를 앞에서). 옷장의 **사진 다시 찍기**가 에디터 Play 중에 쓰고 지운다. 바꾸면 Tools → Characters → 옷장 사진 모두 굽기로 사진을 다시 굽는다([플레이어 몸](PlayerBodyGuide.md#옷-입히기부위별-칸)) | `item@캐릭터 Id@옷 Id`, `own@캐릭터 Id@칸` |
 
 - **열 이름 = 인스펙터 필드 이름**이다(인스펙터 표시 이름이 `Attack Range`면 열은 `attackRange`). 표에 열을 추가하면 그 필드도 표가 관리한다. 적 표의 `speed`처럼 `NavMeshAgent`의 공개 속성도 쓸 수 있다.
 - 표에 있는 칸이 인스펙터 값보다 우선한다. **빈칸이거나 열이 없으면 인스펙터 값**을 그대로 쓴다. 표에 행이 없는 오브젝트(테스트 표적 등)는 영향을 받지 않는다.
