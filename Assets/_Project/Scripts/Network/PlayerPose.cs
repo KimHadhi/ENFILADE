@@ -13,7 +13,10 @@ public struct PlayerPose : INetworkSerializeByMemcpy
     public enum Marks : ushort
     {
         None = 0, Grounded = 1, AirCrouching = 2, BigFall = 4, LadderCaught = 8, LadderLeftHand = 16, LadderSliding = 32,
-        LadderBlocked = 64, LeavesLadder = 128, BareHanded = 256
+        LadderBlocked = 64, LeavesLadder = 128, BareHanded = 256,
+        // Holding F to point (PlayerPoint), and having switched friends' pokes off (GameSettings.letOthersPoke): the point
+        // rides the look this pose already carries, so it costs the network these two bits and nothing more.
+        Pointing = 512, NoPoke = 1024
     }
 
     public Vector3 Velocity;

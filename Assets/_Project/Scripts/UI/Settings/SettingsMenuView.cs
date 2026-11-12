@@ -240,6 +240,8 @@ public sealed class SettingsMenuView
         rows.Choice(Texts.Get("settings.controls.callout_bubbles"), OffOn, s.calloutBubbles ? 1 : 0, i => s.calloutBubbles = i == 1);
         rows.Choice(Texts.Get("settings.controls.callout_auto"), OffOn, s.calloutAuto ? 1 : 0, i => s.calloutAuto = i == 1);
         rows.Choice(Texts.Get("settings.controls.callout_feed"), OffOn, s.calloutFeed ? 1 : 0, i => s.calloutFeed = i == 1);
+        // Friends' pokes (a held F's fingertip, SkinPoke): off, theirs stop short of this character on every PC.
+        rows.Choice(Texts.Get("settings.controls.let_poke"), OffOn, s.letOthersPoke ? 1 : 0, i => s.letOthersPoke = i == 1);
     }
 
     private static void ScreenTab(SettingsRows rows, GameSettings s)

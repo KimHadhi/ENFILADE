@@ -51,6 +51,10 @@ public sealed class GameSettings
     [Tooltip("A callout brings up the caller's face, live from a camera in front of them, in a small comms window on the HUD " +
         "(CalloutFeedHUD), this player's own included. Off: no window and no extra camera.")]
     public bool calloutFeed = true;
+    [Tooltip("Friends pointing with a held F can poke this player's character (cheeks, belly, arms, shoulders, the top of " +
+        "the head): the skin gives under their fingertip on every PC (SkinPoke). Off: their fingertip stops short of this " +
+        "character everywhere, the others' screens included (PlayerPose carries it).")]
+    public bool letOthersPoke = true;
     /// <summary>
     /// The keys the player picked in the key window (KeyBindings: the Input System's overrides as JSON, by binding id);
     /// empty for every default. The default keys themselves are Input/Player.inputactions.
@@ -180,6 +184,7 @@ public sealed class GameSettings
                 s.autoReload = d.autoReload;
                 s.calloutOnRelease = d.calloutOnRelease; s.calloutBubbles = d.calloutBubbles; s.calloutAuto = d.calloutAuto;
                 s.calloutFeed = d.calloutFeed;
+                s.letOthersPoke = d.letOthersPoke;
                 // The keys are left alone: the key window has its own reset per line and for all (KeyBindingsView), so
                 // putting the mouse back to default doesn't throw away every key the player set.
                 break;

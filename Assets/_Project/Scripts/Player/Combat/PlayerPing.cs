@@ -13,6 +13,11 @@ using UnityEngine.InputSystem;
 /// from PlayerNetworkCombat. This PC's own player only. Numbers: Tables/ClassAbilities, Ping.*.
 /// Any foe can be pinged (ICombatFoe): a zombie, or a target on the hub's range, where a Schießhund tries its mark out
 /// (the user, 2026-11-12: "시순트 표적 찍기도 못 하네").
+/// Held, F points (GTA V's way; the user, 2026-11-12: "F 꾹 누르고 있으면 GTA5에서 무슨 키 누르고 있으면 계속
+/// 손가락질할 수 있잖아?"): a press that found F with nothing else to do, still held after Poke.csv Point.holdAfter, has the
+/// free hand point where the player looks for as long as it is held (PlayerPoint, PointArm), and a fingertip on a friend
+/// pokes them (SkinPoke). The tap's ping comes first as always. Anything F would do keeps it: an interaction coming
+/// under the crosshair ends the point, as do aiming, a reload, a draw, a shot or a punch, until F is pressed again.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class PlayerPing : MonoBehaviour
@@ -31,8 +36,12 @@ public sealed class PlayerPing : MonoBehaviour
     private PlayerExecution execution;
     private PlayerRevive revive;
     private WeaponController weapon;
+    private PlayerMeleeCombat melee;
+    private PlayerPoint point;
     private InputAction interact;
-    private float nextPing;
+    private float nextPing, pressedAt;
+    // The press held now began with F free (nothing on screen took it), and nothing has ended its point since.
+    private bool pressFree, pointEnded;
     private readonly RaycastHit[] hits = new RaycastHit[32];
 
     private void Awake()
@@ -41,13 +50,55 @@ public sealed class PlayerPing : MonoBehaviour
         execution = GetComponent<PlayerExecution>();
         revive = GetComponent<PlayerRevive>();
         weapon = GetComponent<WeaponController>();
+        point = GetComponent<PlayerPoint>();
+        if (point == null) point = gameObject.AddComponent<PlayerPoint>();
+    }
+
+    // A shot or a punch takes the hand back from a point (the other components are all on by now; the fists may come
+    // later, Update listens to them then).
+    private void Start()
+    {
+        if (weapon == null) weapon = GetComponent<WeaponController>();
+        if (weapon != null) weapon.ShotFired += OnShot;
+    }
+
+    private void OnDestroy()
+    {
+        if (weapon != null) weapon.ShotFired -= OnShot;
+        if (melee != null) melee.Punched -= OnPunched;
+    }
+
+    private void OnShot(WeaponShot shot) => EndPoint();
+    private void OnPunched(float charge) => EndPoint();
+
+    private void EndPoint()
+    {
+        if (point != null && point.Pointing) pointEnded = true;
     }
 
     private void Update()
     {
-        if (movement == null || !movement.IsLocal || !movement.InputAvailable || movement.IsDead || movement.IsDowned) return;
+        if (movement == null || !movement.IsLocal || !movement.InputAvailable || movement.IsDead || movement.IsDowned)
+        {
+            if (point != null) point.Hold(false);
+            return;
+        }
         if (interact == null && InputSystem.actions != null) interact = InputSystem.actions.FindAction("Player/Interact", false);
-        if (interact == null || !interact.WasPressedThisFrame() || Time.time < nextPing || Busy()) return;
+        if (interact == null) return;
+        if (melee == null && movement.MeleeCombat != null)
+        {
+            melee = movement.MeleeCombat;
+            melee.Punched += OnPunched;
+        }
+        bool pressed = interact.WasPressedThisFrame();
+        if (pressed)
+        {
+            pressedAt = Time.time;
+            pressFree = !Busy();
+            pointEnded = false;
+        }
+        Hold();
+        if (!pressed || Time.time < nextPing || !pressFree) return;
         var foe = Aimed();
         if (foe == null) return;
         nextPing = Time.time + Mathf.Max(0f, PlayerClass.Ability(Row, "gap", .4f));
@@ -85,6 +136,21 @@ public sealed class PlayerPing : MonoBehaviour
         if (weapon == null) weapon = GetComponent<WeaponController>();
         if (weapon != null) FPSBody.Holding(weapon)?.Point();
         Pinged?.Invoke(foe, bounty);
+    }
+
+    // Held past Point.holdAfter, a free press points for as long as F stays down and the hand is free (PlayerPoint.CanPoint);
+    // whatever F would do coming on screen, or the hand being wanted (aiming, a reload, a shot, a punch), ends the point
+    // until F is pressed again.
+    private void Hold()
+    {
+        if (point == null) return;
+        bool wants = pressFree && !pointEnded && interact.IsPressed() && Time.time - pressedAt >= PokeTables.HoldAfter;
+        if (wants && (!PlayerPoint.CanPoint(movement, weapon) || Busy()))
+        {
+            if (point.Pointing) pointEnded = true;
+            wants = false;
+        }
+        point.Hold(wants);
     }
 
     // F has a job here already: whatever offers it on screen goes first.

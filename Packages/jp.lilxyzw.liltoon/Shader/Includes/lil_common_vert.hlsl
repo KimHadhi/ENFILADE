@@ -25,12 +25,23 @@
     #define LIL_CUSTOM_VERT_COPY
 #endif
 
+// ENFILADE (not lilToon): a friend's fingertip dents the skin (SkinDent.hlsl, SkinPoke.cs). Put back after updating
+// lilToon, with the call in lilCustomVertexOS below (Assets/_Project/Docs/Poke.md).
+#include "Assets/_Project/Art/Shaders/SkinDent.hlsl"
+
 //------------------------------------------------------------------------------------------------------------------------------
 // Insert a process for a custom shader
 void lilCustomVertexOS(inout appdata input, inout float2 uvMain, inout float4 positionOS)
 {
     #if defined(LIL_CUSTOM_VERTEX_OS)
         LIL_CUSTOM_VERTEX_OS
+    #endif
+    // ENFILADE (not lilToon): the skin dent, see the include above.
+    #if defined(LIL_APP_NORMAL)
+        EnfiladeSkinDent(positionOS, input.normalOS, true);
+    #else
+        float3 enfiladeNoNormal = 0.0;
+        EnfiladeSkinDent(positionOS, enfiladeNoNormal, false);
     #endif
 }
 

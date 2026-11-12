@@ -3,6 +3,9 @@
 
 #include "lil_common.hlsl"
 #include "lil_common_appdata.hlsl"
+// ENFILADE (not lilToon): a friend's fingertip dents the skin, the fake shadow on it too (SkinDent.hlsl, SkinPoke.cs).
+// Put back after updating lilToon, with the call in vert below (Assets/_Project/Docs/Poke.md).
+#include "Assets/_Project/Art/Shaders/SkinDent.hlsl"
 
 //------------------------------------------------------------------------------------------------------------------------------
 // Structure
@@ -36,6 +39,9 @@ v2f vert(appdata input)
     LIL_TRANSFER_INSTANCE_ID(input, output);
     LIL_INITIALIZE_VERTEX_OUTPUT_STEREO(output);
 
+    // ENFILADE (not lilToon): the skin dent, see the include above.
+    float3 enfiladeNoNormal = 0.0;
+    EnfiladeSkinDent(input.positionOS, enfiladeNoNormal, false);
     LIL_VERTEX_POSITION_INPUTS(input.positionOS, vertexInput);
     #if defined(LIL_HDRP)
         LIL_VERTEX_NORMAL_INPUTS(input.normalOS, vertexNormalInput);
