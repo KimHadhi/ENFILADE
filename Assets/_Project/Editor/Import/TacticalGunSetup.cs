@@ -563,7 +563,44 @@ internal static class TacticalGunSetup
             sights = new[] { "A_MicroRedDot_Picatinny" }, muzzles = new[] { "A_MCS_Suppressor" },
             grips = Array.Empty<string>(), underbarrel = new[] { "A_LS3_Flashlight" },
         },
+        // FPS Animation Ultimate's other guns (2026-11-13, user: "KINEMATION에서 무기들 좀 더 임포트하면 안 됨? 다 가져오고
+        // 싶은데"), put in FPSBody by PackGunSetup. Each starts as KINEMATION made it; what fits it is a choice in the
+        // customize menu. No suppressor where the gun has its own (AS Val, PDW-90) or a muzzle device that would sit under
+        // one, no grip or light where nothing hangs under the barrel.
+        Ultimate("AKX200", "AK"), Ultimate("ASVal", "ASVal", muzzle: false), Ultimate("G3", "G3"),
+        Ultimate("SVD", "SVD", sights: new[] { "A_DMCO" }, grip: false, light: false),
+        Ultimate("MGX5", "MGX5", sights: new[] { "A_Holograph" }, muzzle: false, grip: false, light: false),
+        Ultimate("MPS5", "MPS5"), Ultimate("PDW90", "PDW90", muzzle: false, grip: false, light: false),
+        Ultimate("StrikerV", "Striker-V"), Ultimate("Drake12", "Drake-12", sights: new[] { "A_Holograph" }, muzzle: false, grip: false),
+        Ultimate("X18", "X18", pistol: true), Ultimate("DGL50", "DGL50", pistol: true, muzzle: false),
+        Ultimate("Kolibri", "Kolibri", pistol: true, sights: Array.Empty<string>(), muzzle: false, light: false),
+        Ultimate("Viper357", "Viper-357", pistol: true, sights: Array.Empty<string>(), muzzle: false, light: false),
     };
+
+    // One of FPS Animation Ultimate's guns in the Tactical Shooter Pack's parts: a long gun the MX16A4's sights, a pistol the
+    // M1911's red dot (unless given others), the MCS suppressor, the angled foregrip on a long gun, the LS3 light.
+    private static PackGun Ultimate(string weapon, string cas, bool pistol = false, string[] sights = null, bool muzzle = true,
+        bool grip = true, bool light = true) => new PackGun
+    {
+        weapon = weapon, source = CasGuns + "/CAS_FPSPack_" + cas + ".prefab", pistol = pistol,
+        sights = sights ?? (pistol ? new[] { "A_MicroRedDot_Picatinny" } : new[] { "A_Holograph", "A_DMCO" }),
+        muzzles = muzzle ? new[] { "A_MCS_Suppressor" } : Array.Empty<string>(),
+        grips = grip && !pistol ? new[] { "A_AngledForegrip" } : Array.Empty<string>(),
+        underbarrel = light ? new[] { "A_LS3_Flashlight" } : Array.Empty<string>(),
+    };
+
+    /// <summary>
+    /// The FPS Animation Pack's guns get their parts now (PackGunSetup, once it has put new ones in FPSBody, so they don't
+    /// wait for the next time scripts load).
+    /// </summary>
+    internal static void FitPackGunsNow()
+    {
+        if (EditorApplication.isPlayingOrWillChangePlaymode || EditorApplication.isCompiling || EditorApplication.isUpdating) return;
+        var assets = AssetDatabase.LoadAssetAtPath<FPSBodyAssets>(AssetsPath);
+        if (assets == null || assets.guns == null || !FitPackGuns(assets, false)) return;
+        EditorUtility.SetDirty(assets);
+        AssetDatabase.SaveAssets();
+    }
 
     // How far either side of a point along the gun its surface is looked at (m), and how near the gun's middle line.
     private const float MountWindow = .03f, MountSide = .02f;
