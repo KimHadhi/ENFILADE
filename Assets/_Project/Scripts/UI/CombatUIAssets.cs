@@ -163,21 +163,33 @@ public static class CombatUIAssets
     }
 
     /// <summary>
-    /// Ellipsis when the text's own font has "…" for its style, otherwise Truncate. TMP would switch to Truncate anyway,
-    /// with a console warning per text: the Korean UI fonts (Pretendard ExtraBold, the score font) have no ellipsis.
-    /// This once also asked the fallbacks and TMP's default font, as TMP does, and still the console filled with
-    /// "The character used for Ellipsis is not available in font asset [PRETENDARD-8EXTRABOLD SDF]" in the main menu
-    /// (2026-11-12, the wardrobe's body page): TMP looks again when it draws, with what it has then, and found less. Now
-    /// only the font's own glyphs count, the first place TMP looks, so a text set to Ellipsis always finds it. Call after
-    /// setting the font and style.
+    /// Ellipsis when TMP will find "…" for this text's font and style, otherwise Truncate (TMP would switch to Truncate
+    /// itself, with a console warning per text). It asks the places TMP's GetEllipsisSpecialCharacter asks, in its order
+    /// and with the text's style: the font, the font's fallbacks, TMP Settings' fallbacks, the default font. TMP looks
+    /// "…" up in a font's own glyphs only for upright regular text; bold, italic or any other weight goes to the font's
+    /// weight table alone and, unlike ordinary letters, gets no second try with the regular glyphs. Every Pretendard
+    /// weight has "…", but their weight tables stay empty on purpose (a filled Bold slot would swap all bold text from
+    /// synthesized bold to that typeface), so bold text finds it only in the global fallback "PRETENDARD Weights SDF",
+    /// whose table points at the real weights. Before that fallback (2026-11-12) this answered Truncate for every bold
+    /// label in the score font, and text that turned bold after this call warned when it drew. Call after setting the
+    /// font and style; a later style change is fine while that fallback is in TMP Settings.
     /// </summary>
     public static TextOverflowModes ClippedOverflow(TMP_Text text)
     {
         if (text == null || text.font == null) return TextOverflowModes.Truncate;
+        const uint ellipsis = 0x2026;
+        TMP_FontAsset font = text.font;
         FontStyles style = text.fontStyle;
         FontWeight weight = (style & FontStyles.Bold) == FontStyles.Bold ? FontWeight.Bold : text.fontWeight;
-        return TMP_FontAssetUtilities.GetCharacterFromFontAsset(0x2026, text.font, false, style, weight, out _) != null
-            ? TextOverflowModes.Ellipsis : TextOverflowModes.Truncate;
+        TMP_FontAsset fallbackDefault = TMP_Settings.defaultFontAsset;
+        bool found = TMP_FontAssetUtilities.GetCharacterFromFontAsset(ellipsis, font, false, style, weight, out _) != null
+            || FoundIn(font.fallbackFontAssetTable) || FoundIn(TMP_Settings.fallbackFontAssets)
+            || (fallbackDefault != null
+                && TMP_FontAssetUtilities.GetCharacterFromFontAsset(ellipsis, fallbackDefault, true, style, weight, out _) != null);
+        return found ? TextOverflowModes.Ellipsis : TextOverflowModes.Truncate;
+
+        bool FoundIn(List<TMP_FontAsset> fonts) => fonts != null && fonts.Count > 0
+            && TMP_FontAssetUtilities.GetCharacterFromFontAssets(ellipsis, font, fonts, true, style, weight, out _) != null;
     }
 
     public static TMP_FontAsset ResolveFont(TMP_FontAsset preferred)
