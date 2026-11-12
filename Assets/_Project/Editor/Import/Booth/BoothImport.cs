@@ -22,7 +22,8 @@ using Object = UnityEngine.Object;
 ///   base prefab's, renderer by renderer). A row "model@*" is an accessory sold for any avatar: registered once, for
 ///   anyone, it goes on every character whose spot for its slot is measured (OutfitSpots.csv);
 /// - puts the underwear that came with a character or an outfit into the underwear slots, where no row lists it yet
-///   (BoothUnderwear).
+///   (BoothUnderwear), then every other piece of an outfit no row names yet into the slot it is for, one item each
+///   (BoothPieces): a shirt that came with stockings and necklaces arrives as a shirt, stockings and necklaces.
 /// Runs once an import under the BOOTH folder (or of BoothSources.csv) is over, whenever the editor loads its scripts
 /// and something listed isn't registered yet, and from Tools/Characters/BOOTH 다시 가져오기. Running again gives the
 /// same result.
@@ -219,6 +220,8 @@ internal sealed class BoothImport : AssetPostprocessor
             var bodies = new Dictionary<string, GameObject>(StringComparer.OrdinalIgnoreCase);
             var bodyUnderwear = new List<BoothUnderwear.Source>();
             var outfitUnderwear = new List<BoothUnderwear.Source>();
+            // Every outfit model read, for its pieces (BoothPieces); an accessory for anyone has no character.
+            var outfitPieces = new List<BoothUnderwear.Source>();
             foreach (var source in sources.Where(s => s.Kind == "character"))
             {
                 var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(Root + source.Path);
@@ -230,7 +233,7 @@ internal sealed class BoothImport : AssetPostprocessor
                 var character = new Character(prefab);
                 characters[source.Id] = character;
                 bodies[source.Id] = prefab;
-                bodyUnderwear.Add(new BoothUnderwear.Source(source.Id, prefab, prefab));
+                bodyUnderwear.Add(new BoothUnderwear.Source(source.Id, prefab, prefab, source.Id));
                 Sway(sway, source.Id, Root + source.Path, prefab, character.Humanoid, character.PartOf);
                 var copy = Copy(Root + source.Path, CopyOf(source));
                 if (profile != null && copy != null) profile.EditorPutSkin(source.Id, source.Name, copy, CharacterColours(source.Id, sources));
@@ -269,7 +272,8 @@ internal sealed class BoothImport : AssetPostprocessor
                 var copy = Copy(path, CopyOf(source));
                 if (copy == null) continue;
                 // Underwear an outfit brings goes in the underwear slots; an accessory for anyone brings none.
-                if (!anyone) outfitUnderwear.Add(new BoothUnderwear.Source(source.Id, prefab, bodies[source.Skin]));
+                if (!anyone) outfitUnderwear.Add(new BoothUnderwear.Source(source.Id, prefab, bodies[source.Skin], source.Skin));
+                outfitPieces.Add(anyone ? new BoothUnderwear.Source(source.Id, prefab, null) : new BoothUnderwear.Source(source.Id, prefab, bodies[source.Skin], source.Skin));
                 var colourPaths = string.IsNullOrEmpty(source.Colours) || !AssetDatabase.IsValidFolder(Root + source.Colours)
                     ? new List<string>()
                     : Directory.GetFiles(Root + source.Colours, "*.prefab").Select(p => p.Replace('\\', '/'))
@@ -286,9 +290,11 @@ internal sealed class BoothImport : AssetPostprocessor
             // quit before they ever landed, that run writes them instead of their being lost.
             if (ReplaceClothRows(sway)) EditorPrefs.SetInt(SwayVersionKey, SwayWritten);
             else EditorPrefs.DeleteKey(SwayVersionKey);
-            // Underwear no row lists yet goes in the underwear slots (CharacterParts.csv, Outfits.csv). A write that waits
-            // for its file lands by itself; running the import again finds anything still missing.
+            // Underwear no row lists yet goes in the underwear slots (CharacterParts.csv, Outfits.csv), then each other
+            // new piece of an outfit in its own slot (Outfits.csv, its name in Texts.csv, OutfitFits.csv). A write that
+            // waits for its file lands by itself; running the import again finds anything still missing.
             BoothUnderwear.Write(bodyUnderwear, outfitUnderwear);
+            BoothPieces.Write(outfitPieces);
             GameTables.Reload();
         }
         finally

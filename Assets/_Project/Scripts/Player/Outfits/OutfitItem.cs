@@ -12,7 +12,7 @@ public sealed class OutfitItem
 {
     public const string TableName = "Outfits";
 
-    public string id = "", slot = "", also = "", hides = "", name = "", model = "", parts = "";
+    public string id = "", slot = "", also = "", hides = "", name = "", model = "", parts = "", was = "";
 
     /// <summary>Its name on the wardrobe: the name cell's words (a Texts id, outfit.&lt;id&gt;.name, or plain words), else the id.</summary>
     public string DisplayName => string.IsNullOrEmpty(name) ? id : Texts.Cell(name);
@@ -24,4 +24,11 @@ public sealed class OutfitItem
     public IEnumerable<string> AlsoSlots => OutfitCatalog.Split(also);
     /// <summary>Slots it covers: what is worn there, the character's own piece or an item, goes out of sight.</summary>
     public IEnumerable<string> HiddenSlots => OutfitCatalog.Split(hides);
+    /// <summary>
+    /// Items it was cut out of, ids gone from the table: a look saved wearing one of them wears this too, in its own slot
+    /// (OutfitLook.Settled). The Banshaku shirt brought its stocking, thigh belt, choker and necklaces into the top slot
+    /// until each became an item of its own (the user, 2026-11-12: "왜 셔츠인데 아래에 스타킹이나 가터 벨트까지 있어?"),
+    /// and a look saved with the shirt keeps all of them on.
+    /// </summary>
+    public IEnumerable<string> WasIds => OutfitCatalog.Split(was);
 }

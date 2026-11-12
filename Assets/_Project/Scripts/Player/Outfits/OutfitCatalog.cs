@@ -52,6 +52,9 @@ public static class OutfitCatalog
     private static List<OutfitSlot> slots;
     private static Dictionary<string, OutfitSlot> slotsById;
     private static Dictionary<string, OutfitItem> items;
+    // An id no longer in the table, to the items cut out of it (OutfitItem.was), in the table's order.
+    private static Dictionary<string, List<OutfitItem>> splits;
+    private static readonly List<OutfitItem> NoItems = new List<OutfitItem>();
     private static Dictionary<string, Fit> fits;
     private static List<Part> parts;
     private static OutfitLibrary library;
@@ -101,6 +104,16 @@ public static class OutfitCatalog
     {
         Ensure();
         return id != null && items.TryGetValue(id, out var item) ? item : null;
+    }
+
+    /// <summary>
+    /// The items cut out of an item the table no longer has (OutfitItem.was), in the table's order: what a look saved
+    /// wearing it wears now. Empty for an id the table still has, or one nothing came out of.
+    /// </summary>
+    public static IReadOnlyList<OutfitItem> SplitFrom(string retired)
+    {
+        Ensure();
+        return retired != null && !items.ContainsKey(retired) && splits.TryGetValue(retired, out var pieces) ? pieces : NoItems;
     }
 
     /// <summary>The item's model made for this character, or null when it was not made for them.</summary>
@@ -284,6 +297,7 @@ public static class OutfitCatalog
         slots = new List<OutfitSlot>();
         slotsById = new Dictionary<string, OutfitSlot>(StringComparer.OrdinalIgnoreCase);
         items = new Dictionary<string, OutfitItem>(StringComparer.OrdinalIgnoreCase);
+        splits = new Dictionary<string, List<OutfitItem>>(StringComparer.OrdinalIgnoreCase);
         fits = new Dictionary<string, Fit>(StringComparer.OrdinalIgnoreCase);
         parts = new List<Part>();
         foreach (string id in GameTables.RowIds(OutfitSlot.TableName))
@@ -292,7 +306,15 @@ public static class OutfitCatalog
             slots.Add(slot);
             slotsById[id] = slot;
         }
-        foreach (string id in GameTables.RowIds(OutfitItem.TableName)) items[id] = Fill(OutfitItem.TableName, id, new OutfitItem { id = id });
+        foreach (string id in GameTables.RowIds(OutfitItem.TableName))
+        {
+            var item = items[id] = Fill(OutfitItem.TableName, id, new OutfitItem { id = id });
+            foreach (string old in item.WasIds)
+            {
+                if (!splits.TryGetValue(old, out var pieces)) splits[old] = pieces = new List<OutfitItem>();
+                pieces.Add(item);
+            }
+        }
         foreach (string id in GameTables.RowIds(FitsTable)) fits[id] = Fill(FitsTable, id, new Fit());
         foreach (string id in GameTables.RowIds(PartsTable)) parts.Add(Fill(PartsTable, id, new Part()));
     }
@@ -302,6 +324,7 @@ public static class OutfitCatalog
         slots = null;
         slotsById = null;
         items = null;
+        splits = null;
         fits = null;
         parts = null;
         looks = null;

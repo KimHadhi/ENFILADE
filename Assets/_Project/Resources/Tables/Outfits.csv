@@ -1,11 +1,15 @@
-﻿id,slot,also,hides,name,model,parts
-#설명,들어가는 칸(OutfitSlots.csv의 id),같이 차지하는 칸. |로 여럿. 원피스는 slot이 top이고 also가 bottom. 바디슈트는 slot이 undertop이고 also가 underbottom,입으면 가려서 안 보이게 할 칸. |로 여럿. 얼굴을 다 덮는 마스크는 eyes처럼 그 칸의 원래 옷과 그 칸에 입힌 옷을 모두 숨긴다,화면에 나오는 이름,이 옷이 들어 있는 모델의 Id(OutfitLibrary). 빈칸이면 옷 Id와 같다. BOOTH 옷 한 벌은 모델 하나에 베레모·재킷·치마가 다 들어 있어서 여러 옷이 한 모델을 나눠 쓴다(BoothSources.csv의 outfit 줄),모델에서 이 옷이 보여 줄 렌더러 이름. |로 여럿. 빈칸이면 다른 옷이 가져가지 않은 렌더러 전부
+﻿id,slot,also,hides,name,model,parts,was
+#설명,들어가는 칸(OutfitSlots.csv의 id),같이 차지하는 칸. |로 여럿. 원피스는 slot이 top이고 also가 bottom. 바디슈트는 slot이 undertop이고 also가 underbottom,입으면 가려서 안 보이게 할 칸. |로 여럿. 얼굴을 다 덮는 마스크는 eyes처럼 그 칸의 원래 옷과 그 칸에 입힌 옷을 모두 숨긴다,화면에 나오는 이름,이 옷이 들어 있는 모델의 Id(OutfitLibrary). 빈칸이면 옷 Id와 같다. BOOTH 옷 한 벌은 모델 하나에 베레모·재킷·치마가 다 들어 있어서 여러 옷이 한 모델을 나눠 쓴다(BoothSources.csv의 outfit 줄),모델에서 이 옷이 보여 줄 렌더러 이름. |로 여럿. 빈칸이면 다른 옷이 가져가지 않은 렌더러 전부,"이 옷이 떨어져 나온 옛 옷 Id(이제 표에 없는 Id). |로 여럿. 그 옛 옷을 입은 채 저장된 모습은 이 옷도 입는다: 같은 옛 Id를 적은 옷들이 저마다 제 칸에 같은 색으로 들어간다(그 칸에 고른 옷이 있으면 그 옷이 남는다). 다시 저장하면 옛 Id가 없어져 한 번만 일어난다. 반샤쿠 셔츠가 셔츠·초커·목걸이·스타킹·허벅지 벨트로 나뉠 때(2026-11-12)"
 sm-beret,helmet,,,outfit.sm-beret.name,sailor-maiden,SM2_Beret
 sm-jacket,top,,,outfit.sm-jacket.name,sailor-maiden,SM1_Sailor_Jacket|SM1_Sleeve_Side_Ribbon_BowTip|SM1_Sleeve_Side_Ribbon_Cross|SM2_FrontTie_A|SM2_FrontTie_B|SM2_FrontTie_C
 sm-skirt,bottom,,,outfit.sm-skirt.name,sailor-maiden,SM2_leated_Skirt
 sm-socks,legs,,,outfit.sm-socks.name,sailor-maiden,SM2_Loose socks|SM2_Loose socks_Side_Ribbon
 sm-loafers,shoes,,,outfit.sm-loafers.name,sailor-maiden,SM2_Loafers
-banshaku-shirt,top,,,outfit.banshaku-shirt.name,banshaku-shirt,Banshaku Shirt_T-Shirts|Banshaku Shirt_Choker|Banshaku Shirt_Necklace1|Banshaku Shirt_Necklace2|Banshaku Shirt_Necklace3|Banshaku Shirt_Necklace4|Banshaku Shirt_Stocking|Banshaku Shirt_Thighbelt
+banshaku-tshirt,top,,,outfit.banshaku-tshirt.name,banshaku-shirt,Banshaku Shirt_T-Shirts,banshaku-shirt
+banshaku-choker,neck,,,outfit.banshaku-choker.name,banshaku-shirt,Banshaku Shirt_Choker,banshaku-shirt
+banshaku-necklace,necklace,,,outfit.banshaku-necklace.name,banshaku-shirt,Banshaku Shirt_Necklace1|Banshaku Shirt_Necklace2|Banshaku Shirt_Necklace3|Banshaku Shirt_Necklace4,banshaku-shirt
+banshaku-stocking,legs,,,outfit.banshaku-stocking.name,banshaku-shirt,Banshaku Shirt_Stocking,banshaku-shirt
+banshaku-thighbelt,thigh,,,outfit.banshaku-thighbelt.name,banshaku-shirt,Banshaku Shirt_Thighbelt,banshaku-shirt
 banshaku-bikini-top,undertop,,,outfit.banshaku-bikini-top.name,banshaku-shirt,Banshaku Shirt_Bikini top|Banshaku Shirt_Bikini top String
 banshaku-bikini-bottom,underbottom,,,outfit.banshaku-bikini-bottom.name,banshaku-shirt,Banshaku Shirt_Bikini panty|Banshaku Shirt_Bikini panty String
 ichigo-shirt,top,,,outfit.ichigo-shirt.name,ichigo-shirt,
@@ -16,9 +20,12 @@ wb-dress,top,,,outfit.wb-dress.name,white-board,White Board_Dress
 wb-chest,vest,,,outfit.wb-chest.name,white-board,White Board_Chest
 wb-belt,waist,,,outfit.wb-belt.name,white-board,White Board_Belt
 wb-shorts,bottom,,,outfit.wb-shorts.name,white-board,White Board_Shorts
-wb-legs,legs,,,outfit.wb-legs.name,white-board,White Board_Stocking|White Board_Socks|White Board_Knee pad|White Board_Leg belt
+wb-stocking-socks,legs,,,outfit.wb-stocking-socks.name,white-board,White Board_Stocking|White Board_Socks,wb-legs
 wb-stockings,legs,,,outfit.wb-stockings.name,white-board,White Board_Stocking
 wb-socks,legs,,,outfit.wb-socks.name,white-board,White Board_Socks
+wb-kneepads-legbelt,thigh,,,outfit.wb-kneepads-legbelt.name,white-board,White Board_Knee pad|White Board_Leg belt,wb-legs
+wb-kneepads,thigh,,,outfit.wb-kneepads.name,white-board,White Board_Knee pad
+wb-legbelt,thigh,,,outfit.wb-legbelt.name,white-board,White Board_Leg belt
 wb-boots,shoes,,,outfit.wb-boots.name,white-board,White Board_Shoes
 wb-gloves,gloves,,,outfit.wb-gloves.name,white-board,White Board_Gloves
 wb-glasses,eyes,,,outfit.wb-glasses.name,white-board,White Board_Glasses

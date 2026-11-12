@@ -4,7 +4,8 @@ mayo.hair,mayo,hair,MAYO_Hair_Front|MAYO_Hair_Back|MAYO_Hair_Side|MAYO_Hair_Side
 mayo.hairpin,mayo,hairpin,MAYO_Hair_Pin,,,part.mayo.hairpin.name
 mayo.top,mayo,top,MAYO_Dress|MAYO_Ribbon,,,part.mayo.top.name
 mayo.bottom,mayo,bottom,MAYO_Dress|MAYO_Ribbon|MAYO_Shorts,,,part.mayo.bottom.name
-mayo.legs,mayo,legs,MAYO_Stocking|MAYO_Leg_Ribbon|MAYO_Leg_Belt,,Stocking|Stocking_R|Stocking_L|Shrink_Knee_R|Shrink_Knee_L|Shrink_Lower_leg_1_R|Shrink_Lower_leg_1_L|Shrink_Lower_leg_2_R|Shrink_Lower_leg_2_L|Shrink_Ankle_R|Shrink_Ankle_L|Shrink_Foot_R|Shrink_Foot_L|Shrink_Toe_R|Shrink_Toe_L,part.mayo.legs.name
+mayo.legs,mayo,legs,MAYO_Stocking,,Stocking|Stocking_R|Stocking_L|Shrink_Knee_R|Shrink_Knee_L|Shrink_Lower_leg_1_R|Shrink_Lower_leg_1_L|Shrink_Lower_leg_2_R|Shrink_Lower_leg_2_L|Shrink_Ankle_R|Shrink_Ankle_L|Shrink_Foot_R|Shrink_Foot_L|Shrink_Toe_R|Shrink_Toe_L,part.mayo.legs.name
+mayo.thigh,mayo,thigh,MAYO_Leg_Ribbon|MAYO_Leg_Belt,,,part.mayo.thigh.name
 mayo.shoes,mayo,shoes,MAYO_Shoes_Normal|MAYO_Shoes_High,,Heeled_Feet_Normal|Heeled_Feet_Extreme|Shrink_Ankle_R|Shrink_Ankle_L|Shrink_Foot_R|Shrink_Foot_L|Shrink_Toe_R|Shrink_Toe_L,part.mayo.shoes.name
 mayo.wrist,mayo,wrist,MAYO_Arm_Belt,,,part.mayo.wrist.name
 mayo.tail,mayo,tail,MAYO_Kemoshippo,,,part.mayo.tail.name

@@ -15,18 +15,19 @@ using UnityEngine;
 /// lists is left as it is, and a row already in the slot gets the new meshes added. A character with no rows yet gets
 /// none: its clothes aren't told from its body until it has them, so nothing could say what its underwear is under
 /// (SkinCover, UnderwearFit). The user asked for it with the underwear slots (2026-11-12), so new avatars and outfits keep
-/// every combination open without anyone sorting their underwear by hand.
+/// every combination open without anyone sorting their underwear by hand. An outfit's underwear item is named through
+/// Texts.csv (outfit.&lt;id&gt;.name, the maker's words) like every other name on the screen, for the 글자 편집기. The rest
+/// of an outfit's pieces go in their slots right after (BoothPieces).
 /// </summary>
 internal static class BoothUnderwear
 {
     private const string PartsPath = "Assets/_Project/Resources/Tables/CharacterParts.csv";
     private const string ItemsPath = "Assets/_Project/Resources/Tables/Outfits.csv";
     private const string Top = "undertop", Bottom = "underbottom";
-    private const string Redo = "Tools → Characters → BOOTH 다시 가져오기를 눌러 주세요.";
 
     // Words of underwear in a mesh's name, whole words: MAYO_Underwear_Bra, "Bikini top String", Sera_Yura_Bikini_Panty.
     private static readonly HashSet<string> UnderWords = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-        { "bra", "bras", "brassiere", "bikini", "panty", "panties", "underwear", "lingerie", "swimsuit", "swimwear", "leotard", "thong" };
+        { "bra", "bras", "brassiere", "bikini", "panty", "panties", "underwear", "lingerie", "swimsuit", "swimwear", "leotard", "thong", "bodysuit" };
     // Japanese and Korean ones run on inside a longer name, so any part of it.
     private static readonly string[] UnderPieces = { "下着", "ブラ", "パンティ", "ショーツ", "ビキニ", "水着", "レオタード", "속옷", "브라", "팬티", "비키니", "수영복" };
     private static readonly HashSet<string> TopWords = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
@@ -41,16 +42,23 @@ internal static class BoothUnderwear
     {
         public readonly string Id;
         public readonly GameObject Prefab;
-        // The character it is (a character) or is made for (an outfit): where its hips and chest are.
+        // The character it is (a character) or is made for (an outfit): where its hips and chest are. None for an
+        // accessory sold for any avatar (BoothSources.csv "model@*").
         public readonly GameObject Character;
+        // That character's id (PlayerBody profile skin), for its rows of CharacterParts.csv and OutfitFits.csv.
+        public readonly string Skin;
 
-        public Source(string id, GameObject prefab, GameObject character)
+        public Source(string id, GameObject prefab, GameObject character, string skin = null)
         {
             Id = id;
             Prefab = prefab;
             Character = character;
+            Skin = skin ?? "";
         }
     }
+
+    /// <summary>Whether a mesh is named like underwear (bra, bikini, panty, 下着 …): the underwear slots take it.</summary>
+    internal static bool IsUnderwear(string name) => Named(name, UnderWords, UnderPieces);
 
     /// <summary>
     /// Writes the rows for the underwear found in <paramref name="characters"/> and <paramref name="outfits"/>. False while
@@ -66,7 +74,7 @@ internal static class BoothUnderwear
         }
         catch (Exception error) when (error is System.IO.IOException || error is UnauthorizedAccessException)
         {
-            Debug.LogWarning($"[BOOTH] 속옷 칸 줄을 쓰지 못했습니다({error.Message}). {Redo}");
+            Debug.LogWarning($"[BOOTH] 속옷 칸 줄을 쓰지 못했습니다({error.Message}). {BoothTable.Redo}");
             return false;
         }
         return landed;
@@ -76,7 +84,7 @@ internal static class BoothUnderwear
     private static bool WriteCharacters(List<Source> characters)
     {
         if (characters.Count == 0) return true;
-        var table = Table.Read(PartsPath);
+        var table = BoothTable.Read(PartsPath);
         if (table == null) return true;
         int skinColumn = table.Column("skin"), slotColumn = table.Column("slot"), partsColumn = table.Column("parts");
         if (skinColumn < 0 || slotColumn < 0 || partsColumn < 0) return true;
@@ -118,7 +126,7 @@ internal static class BoothUnderwear
     private static bool WriteOutfits(List<Source> outfits)
     {
         if (outfits.Count == 0) return true;
-        var table = Table.Read(ItemsPath);
+        var table = BoothTable.Read(ItemsPath);
         if (table == null) return true;
         int idColumn = table.Column("id"), slotColumn = table.Column("slot"), alsoColumn = table.Column("also"),
             modelColumn = table.Column("model"), partsColumn = table.Column("parts");
@@ -128,6 +136,7 @@ internal static class BoothUnderwear
             string model = table.Cell(row, modelColumn);
             return model.Length > 0 ? model : table.Cell(row, idColumn);
         }
+        var names = new List<(string Id, string Words, string Note)>();
         foreach (var source in outfits)
         {
             var named = new HashSet<string>(table.Rows.Where(row => ModelOf(row).Equals(source.Id, StringComparison.OrdinalIgnoreCase))
@@ -152,16 +161,30 @@ internal static class BoothUnderwear
                         ["id"] = id,
                         ["slot"] = slot,
                         ["also"] = both && alsoColumn >= 0 ? Bottom : "",
-                        ["name"] = Readable(renderer.name),
+                        ["name"] = NameId(id),
                         ["model"] = source.Id,
                         ["parts"] = renderer.name,
                     });
+                    names.Add((NameId(id), Title(source.Id) + " " + Readable(renderer.name), NameNote(id)));
                 }
                 Debug.Log($"[BOOTH] {source.Id}: '{renderer.name}'을 속옷 칸({slot}) 옷 '{id}'으로 넣었습니다.");
             }
         }
-        return table.Save(ItemsPath, "속옷 옷 줄");
+        // The names first: a row is never left pointing at an id Texts.csv lacks.
+        bool titled = BoothTable.AddTexts(names);
+        return table.Save(ItemsPath, "속옷 옷 줄") && titled;
     }
+
+    /// <summary>The Texts.csv id of an outfit item's name (outfit.&lt;id&gt;.name, as the table's other items have).</summary>
+    internal static string NameId(string item) => "outfit." + item + ".name";
+
+    /// <summary>Where the name shows, for the 글자 편집기's note column.</summary>
+    internal static string NameNote(string item) => "옷장 > 옷 고르기 칸 이름(" + item + "). BOOTH 가져오기가 제작사 이름으로 지음";
+
+    /// <summary>A model id as words: white-board → White Board.</summary>
+    internal static string Title(string model) =>
+        string.Join(" ", (model ?? "").Split(new[] { '-', '_', ' ' }, StringSplitOptions.RemoveEmptyEntries)
+            .Select(word => char.ToUpperInvariant(word[0]) + word.Substring(1)));
 
     // The prefab's meshes named like underwear.
     private static IEnumerable<Renderer> Underwear(GameObject prefab)
@@ -257,79 +280,5 @@ internal static class BoothUnderwear
             if (chestY <= hipsY) return null;
             return new Frame { Hips = hipsY, Chest = chestY, ToCharacter = prefab.transform.worldToLocalMatrix };
         }
-    }
-
-    // A table's lines as the file has them (rows of these tables never break across lines), changed in place.
-    private sealed class Table
-    {
-        private string newline;
-        private List<string> header;
-        private readonly List<string> lines = new List<string>();
-        private readonly List<List<string>> cells = new List<List<string>>();
-        private bool changed;
-        private string original;
-
-        // Data rows: indexes into the lines (not the header, not # notes).
-        public IEnumerable<int> Rows => Enumerable.Range(1, Math.Max(0, lines.Count - 1))
-            .Where(i => cells[i] != null && cells[i].Count > 0 && cells[i][0].Trim().Length > 0 && cells[i][0].Trim()[0] != '#');
-
-        public static Table Read(string path)
-        {
-            string text = TableFile.Read(path);
-            if (string.IsNullOrEmpty(text)) return null;
-            var table = new Table { original = text, newline = text.Contains("\r\n") ? "\r\n" : "\n" };
-            foreach (string line in text.Split(new[] { table.newline }, StringSplitOptions.None))
-            {
-                table.lines.Add(line);
-                table.cells.Add(line.Length == 0 ? null : CsvTable.ReadRecords(line).FirstOrDefault());
-            }
-            while (table.lines.Count > 1 && table.lines[table.lines.Count - 1].Length == 0)
-            {
-                table.lines.RemoveAt(table.lines.Count - 1);
-                table.cells.RemoveAt(table.cells.Count - 1);
-            }
-            if (table.cells[0] == null) return null;
-            table.header = table.cells[0].Select(cell => cell.Trim().TrimStart('﻿')).ToList();
-            return table;
-        }
-
-        public int Column(string name) => header.IndexOf(name);
-
-        public string Cell(int row, int column) =>
-            column >= 0 && cells[row] != null && column < cells[row].Count ? cells[row][column].Trim() : "";
-
-        // Adds a name to a row's list of renderers.
-        public void Append(int row, int column, string name)
-        {
-            var record = cells[row].ToList();
-            while (record.Count < header.Count) record.Add("");
-            string list = record[column].Trim();
-            record[column] = list.Length > 0 ? list + "|" + name : name;
-            cells[row] = record;
-            lines[row] = string.Join(",", record.Select(Quote));
-            changed = true;
-        }
-
-        // A new row at the end, its cells by column; returns its index.
-        public int Add(Dictionary<string, string> row)
-        {
-            var record = header.Select(column => row.TryGetValue(column, out var value) ? value ?? "" : "").ToList();
-            cells.Add(record);
-            lines.Add(string.Join(",", record.Select(Quote)));
-            changed = true;
-            return lines.Count - 1;
-        }
-
-        public bool Save(string path, string what)
-        {
-            if (!changed) return !TableFile.Waiting(path);
-            var text = new StringBuilder();
-            foreach (string line in lines) text.Append(line).Append(newline);
-            if (text.ToString() == original) return !TableFile.Waiting(path);
-            return TableFile.Write(path, text.ToString(), what, Redo);
-        }
-
-        private static string Quote(string cell) =>
-            cell.IndexOfAny(new[] { ',', '"', '\n', '\r' }) >= 0 ? "\"" + cell.Replace("\"", "\"\"") + "\"" : cell;
     }
 }

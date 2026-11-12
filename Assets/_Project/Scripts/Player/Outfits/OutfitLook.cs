@@ -79,23 +79,46 @@ public sealed class OutfitLook
     public static string Tidy(string text) => Parse(text).ToString();
 
     /// <summary>
-    /// The look with each item in the slot Outfits.csv puts it in now, so a look saved before an item moved finds it in its
-    /// new slot: the Sera Yura bikini and bodysuit went from the vest and waist to the underwear slots (2026-11-12). A pick
-    /// already in that slot stays and the moved one goes. Itself when nothing moved.
+    /// The look as Outfits.csv has its items now, so a look saved before an item moved or was cut up still wears the same:
+    /// - an item in another slot now goes there: the Sera Yura bikini and bodysuit went from the vest and waist to the
+    ///   underwear slots (2026-11-12). A pick already in that slot stays and the moved one goes;
+    /// - an item the table no longer has, cut into items of their own (OutfitItem.was), becomes them, each in its own slot
+    ///   in the same colour: the Banshaku shirt's stocking, thigh belt, choker and necklaces (2026-11-12). The old item
+    ///   showed them over whatever was there, so each goes where nothing is picked or the character's own piece is taken
+    ///   off (-), and an item picked there stays. The old id is gone once the look is saved again, so this happens once:
+    ///   a piece taken off afterwards stays off.
+    /// Itself when nothing changed.
     /// </summary>
     public OutfitLook Settled()
     {
         OutfitLook settled = null;
+        List<(OutfitItem Piece, string Colour)> pieces = null;
         foreach (var pair in picks)
         {
             if (pair.Value.IsOff || pair.Key.StartsWith(BodyShapes.Prefix, StringComparison.Ordinal)) continue;
             var item = OutfitCatalog.Item(pair.Value.Item);
-            if (item == null || string.Equals(item.slot, pair.Key, StringComparison.OrdinalIgnoreCase)
-                || OutfitCatalog.Slot(item.slot) is not OutfitSlot slot) continue;
+            if (item == null)
+            {
+                var split = OutfitCatalog.SplitFrom(pair.Value.Item);
+                if (split.Count == 0) continue;
+                settled ??= Parse(ToString());
+                settled.picks.Remove(pair.Key);
+                pieces ??= new List<(OutfitItem, string)>();
+                foreach (var piece in split) pieces.Add((piece, pair.Value.Colour));
+                continue;
+            }
+            if (string.Equals(item.slot, pair.Key, StringComparison.OrdinalIgnoreCase) || OutfitCatalog.Slot(item.slot) is not OutfitSlot slot) continue;
             settled ??= Parse(ToString());
             settled.picks.Remove(pair.Key);
             if (!settled.picks.ContainsKey(slot.id)) settled.picks[slot.id] = pair.Value;
         }
+        if (pieces != null)
+            foreach (var (piece, colour) in pieces)
+            {
+                if (OutfitCatalog.Slot(piece.slot) is not OutfitSlot slot) continue;
+                if (settled.picks.TryGetValue(slot.id, out var there) && !there.IsOff) continue;
+                settled.picks[slot.id] = new Pick(piece.id, colour);
+            }
         return settled ?? this;
     }
 
