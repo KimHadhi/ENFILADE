@@ -7,7 +7,8 @@ using UnityEngine.InputSystem;
 /// 거기서 바로 넘어가는데 그런 거 아니면 걍 적 찍게"). When F has nothing else to do here (no execution or takedown, no
 /// pickup, no friend to get up, no ladder top, no button, door, can or shop counter), it pings the enemy the crosshair is
 /// on, Back 4 Blood's way: the whole team sees it outlined, through walls too, with a diamond and its distance over it
-/// (PingMarks). A Schießhund's ping is its teal bounty mark, which its class hunts (ClassKit). The gun gives a nod as it
+/// (PingMarks). A Schießhund's ping is its teal bounty mark, which its class hunts (ClassKit), unless the foe is a lesser
+/// quarry than the one it already hunts: that one is a plain ping (PlayerClass.Grade). The gun gives a nod as it
 /// goes (FPSBody.Point; a real left hand pointing wants a clip of its own, the gun-hands stage's). The other PCs hear of it
 /// from PlayerNetworkCombat. This PC's own player only. Numbers: Tables/ClassAbilities, Ping.*.
 /// Any foe can be pinged (ICombatFoe): a zombie, or a target on the hub's range, where a Schießhund tries its mark out
@@ -51,6 +52,15 @@ public sealed class PlayerPing : MonoBehaviour
         if (foe == null) return;
         nextPing = Time.time + Mathf.Max(0f, PlayerClass.Ability(Row, "gap", .4f));
         bool bounty = PlayerClass.Is(PlayerClass.Schiesshund);
+        // A Schießhund's mark moves only onto a quarry as big or bigger than the one it hunts: F on a lesser foe meanwhile
+        // is a plain ping for the team and the hunt goes on (the user, 2026-11-12: "엘리트를 조준했는데 일반 좀비를 조준한다면
+        // 자기보다 급 낮은 애로 다시 조준하는 건 표식이 옮겨가진 않고 그냥 하이라이트 하는 걸로 바꾸자"). Before, every F
+        // moved it, so calling out a runner for the team cost the elite being hunted.
+        if (bounty)
+        {
+            var hunted = PingMarks.BountyOf(movement);
+            if (hunted != null && hunted != foe && PlayerClass.Grade(foe) < PlayerClass.Grade(hunted)) bounty = false;
+        }
         PingMarks.Ping(foe, movement, bounty);
         KitSound.Play(bounty ? KitSound.Cue.Mark : KitSound.Cue.Ping, .7f);
         if (weapon == null) weapon = GetComponent<WeaponController>();

@@ -68,6 +68,8 @@ public sealed class RangeTarget : MonoBehaviour, IDamageReceiver, ICombatVitals,
     public bool IsAlive => !IsDown && Health > 0f;
     /// <summary>Always practice: its kills are the classes' alone (ICombatFoe).</summary>
     public bool IsPractice => true;
+    /// <summary>The thick steel plate rather than the zombie dummy: an elite's grade to a Schießhund's mark (PlayerClass.Grade).</summary>
+    public bool IsPlate => !zombie;
     /// <summary>Where it stood as the hub began (a moving one's rail start), the same on every PC.</summary>
     public Vector3 Home { get; private set; }
 

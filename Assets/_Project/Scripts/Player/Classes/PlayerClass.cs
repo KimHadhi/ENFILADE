@@ -166,6 +166,22 @@ public static class PlayerClass
         return type.Kind == ZombieKind.Brute || type.Kind == ZombieKind.Exploder || type.Kind == ZombieKind.Charger;
     }
 
+    /// <summary>
+    /// How big a quarry a foe is to a Schießhund's bounty mark: 0 a common zombie (or the range's zombie dummy), 1 an elite
+    /// (or the range's steel plate, to try the rule out on), 2 a brute or a named one. F moves the mark only onto a quarry
+    /// as big or bigger than the one it hunts (PlayerPing).
+    /// </summary>
+    public static int Grade(Component foe)
+    {
+        if (foe is EnemyHealth enemy)
+        {
+            if (enemy.Rank == EnemyRank.Named) return 2;
+            if (enemy.TryGetComponent(out ZombieType type) && type.Kind == ZombieKind.Brute) return 2;
+            return IsElite(enemy) ? 1 : 0;
+        }
+        return foe is RangeTarget target && target.IsPlate ? 1 : 0;
+    }
+
     // ---- The Knight: what this PC's own player takes, and what their fists, parries and counters do ----
 
     /// <summary>
