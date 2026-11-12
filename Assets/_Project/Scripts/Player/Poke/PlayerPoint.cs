@@ -64,8 +64,8 @@ public sealed class PlayerPoint : MonoBehaviour
 
     /// <summary>
     /// This PC's player's hand is free to point: alive, up, standing or crouched (walking included), not held or busy
-    /// climbing, the gun not aimed, reloaded, drawn or looked over, the fists not guarding or winding up. A shot or a
-    /// punch ends a point outright (PlayerPing), so the hand never has to choose.
+    /// climbing, the gun not aimed, reloaded, drawn or looked over, the off hand not on a G throw, the fists not guarding
+    /// or winding up. A shot or a punch ends a point outright (PlayerPing), so the hand never has to choose.
     /// </summary>
     internal static bool CanPoint(PlayerMovement who, WeaponController weapon)
     {
@@ -75,6 +75,8 @@ public sealed class PlayerPoint : MonoBehaviour
         if (state != MovementState.Standing && state != MovementState.Crouching) return false;
         if (weapon != null && (weapon.AimBlend > .3f || weapon.IsSwitching || weapon.IsInspecting
             || (weapon.Runtime != null && weapon.Runtime.IsReloading))) return false;
+        // A G throw has the off hand first (the manager, 2026-11-12): it ends a point like a shot does.
+        if (PlayerGrenades.HandBusy(who)) return false;
         var melee = who.MeleeCombat;
         return melee == null || !melee.IsActive || !(melee.IsGuarding || melee.IsCharging || melee.IsGuardBreaking);
     }

@@ -16,7 +16,12 @@ using MovementState = PlayerMovement.MovementState;
 /// world space from where its next joint is (FromToRotation), and the arm bends by TwoBoneIK, the elbow down and out, to
 /// put the wrist where the fingertip lands. It runs after FPS Animation Framework, the hands, the gun and the callout
 /// gestures (GunFramework + 6) and before the cloth, so a sleeve and hair follow; the first-person camera was placed
-/// earlier, so the view never moves with the arm. It eases in over Point.in and back out over Point.out.
+/// earlier, so the view never moves with the arm.
+/// The hand leaves the gun through the one shared way for every off-hand use (the manager's decision, 2026-11-12):
+/// PlayerBodyHands.LendOffHand, so the left hand's gun contacts, grip and fingers let go over the hands' own blend time
+/// as the point comes in, and take the gun again as it goes; the pose eases by how far the hand is lent
+/// (OffHandLent), never ahead of it, and out over Point.out at most. A G throw has the off hand before a point
+/// (PlayerGrenades.HandBusy): while the throw holds it, nothing of the point is posed.
 /// </summary>
 [DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.GunFramework + 6)]
 public sealed class PointArm : MonoBehaviour
@@ -31,6 +36,7 @@ public sealed class PointArm : MonoBehaviour
 
     private PlayerMovement movement;
     private PlayerPoint point;
+    private PlayerBodyHands hands;
     private Animator animator;
     private Transform eyes, upper, lower, hand, indexTip;
     private readonly Transform[] fingers = new Transform[15];
@@ -41,7 +47,8 @@ public sealed class PointArm : MonoBehaviour
     // A joint's own length axis (the rig's convention, from the index's middle joint), for a last joint with no tip
     // bone; and the hand's own way out from the wrist, for a hand with no fingers.
     private Vector3 jointAxis, handAxis;
-    private float weight, press, lostFor;
+    // own: the point's own ease (Point.in, Point.out); weight: what is posed, never ahead of the hand lent off the gun.
+    private float own, weight, press, lostFor;
     private Vector3 reached, touchLocal;
     private bool bound, hasReached, hasTouch, touching;
     private PokeHit touch;
@@ -51,9 +58,15 @@ public sealed class PointArm : MonoBehaviour
         float dt = Time.deltaTime;
         if (dt <= 0f || GamePause.IsPaused) return;
         if (!bound && !Bind()) return;
-        bool on = point != null && point.Pointing && Free();
+        // A G throw has the off hand first: while it does, the point gives the hand up at once.
+        bool thrown = PlayerGrenades.HandBusy(movement);
+        bool on = point != null && point.Pointing && Free() && !thrown;
+        // The left hand off the gun through PlayerBodyHands, as every off-hand use takes it; the same share each frame
+        // costs nothing.
+        if (hands != null) hands.LendOffHand(this, on ? 1f : 0f);
         float blend = on ? PokeTables.Number("Point.in", .14f) : PokeTables.Number("Point.out", .2f);
-        weight = Mathf.MoveTowards(weight, on ? 1f : 0f, dt / Mathf.Max(.01f, blend));
+        own = Mathf.MoveTowards(own, on ? 1f : 0f, dt / Mathf.Max(.01f, blend));
+        weight = thrown ? 0f : hands != null ? Mathf.Min(own, hands.OffHandLent) : own;
         if (weight <= 0f)
         {
             Let();
@@ -64,7 +77,11 @@ public sealed class PointArm : MonoBehaviour
         Pose(dt, on);
     }
 
-    private void OnDisable() => Let();
+    private void OnDisable()
+    {
+        Let();
+        if (hands != null) hands.LendOffHand(this, 0f);
+    }
 
     // The fingertip leaves whoever it pressed.
     private void Let()
@@ -78,6 +95,7 @@ public sealed class PointArm : MonoBehaviour
     {
         movement = GetComponentInParent<PlayerMovement>();
         point = movement != null ? movement.GetComponent<PlayerPoint>() : null;
+        hands = movement != null ? movement.GetComponent<PlayerBodyHands>() : null;
         animator = GetComponent<Animator>();
         if (movement == null || point == null || animator == null || !animator.isHuman) return false;
         upper = animator.GetBoneTransform(HumanBodyBones.LeftUpperArm);
