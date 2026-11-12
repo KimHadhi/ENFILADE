@@ -54,10 +54,11 @@ public sealed class PointArm : MonoBehaviour
     private Vector3 jointAxis, handAxis;
     // own: the point's own ease (Point.in, Point.out); weight: what is posed, never ahead of the hand lent off the gun.
     private float own, weight, press, lostFor;
-    // Where the fingertip is going, eased, in the eyes' space; the fingertip's reach past the wrist, from the last pose.
-    private Vector3 reachedInView, touchLocal;
-    private float tipLength;
-    private bool bound, hasReached, hasTouch, touching;
+    // The arm's way, sprung after the aim's, and how fast it turns (SpringWay); the last place a touch put the fingertip
+    // and how far the arm has gone over to it (Point.touchIn); the fingertip's reach past the wrist, from the last pose.
+    private Vector3 aimWay, aimSpin, touchGoal, touchLocal;
+    private float tipLength, touchBlend;
+    private bool bound, hasAim, hasTouch, touching;
     private PokeHit touch;
 
     private void LateUpdate()
@@ -77,8 +78,8 @@ public sealed class PointArm : MonoBehaviour
         if (weight <= 0f)
         {
             Let();
-            hasReached = hasTouch = false;
-            press = 0f;
+            hasAim = hasTouch = false;
+            press = touchBlend = 0f;
             return;
         }
         Pose(dt, on);
@@ -150,7 +151,6 @@ public sealed class PointArm : MonoBehaviour
         // 가슴쪽으로 오는데? 이 일정하지가 않아서").
         Vector3 viewRight = Vector3.Cross(Vector3.up, look);
         viewRight = viewRight.sqrMagnitude > 1e-6f ? viewRight.normalized : animator.transform.right;
-        Vector3 viewUp = Vector3.Cross(look, viewRight);
         Vector3 viewAhead = Vector3.Cross(viewRight, Vector3.up);
         float armLength = Vector3.Distance(upper.position, lower.position) + Vector3.Distance(lower.position, hand.position);
         float reach = armLength + (tipLength > 0f ? tipLength : armLength * .35f);
@@ -168,47 +168,21 @@ public sealed class PointArm : MonoBehaviour
         PokeHit hit = default;
         bool found = on && Touch(origin, look, PokeTables.Number("Point.range", 1.3f), dt, out hit) && hit.Distance <= wallAt + .01f;
         bool touches = found && Vector3.Distance(shoulder, hit.Point) <= reach * PokeTables.Number("Point.reach", .97f);
-        // While it only points, the fingertip rests at a spot fixed in the view, low and left of the crosshair (Point.ahead,
-        // Point.left, Point.down): it stays put on the screen however the body walks, strafes or turns. A wall closer than
-        // that spot holds it just short of the wall (Point.hover), so a finger never goes into one.
-        Vector3 spot = origin + look * PokeTables.Number("Point.ahead", .55f) - viewRight * PokeTables.Number("Point.left", .13f)
-            - viewUp * PokeTables.Number("Point.down", .12f);
-        Vector3 toSpot = spot - origin;
-        float spotDistance = toSpot.magnitude;
-        if (spotDistance > 1e-3f && FirstSolid(origin, toSpot / spotDistance, spotDistance + hover, out RaycastHit near))
-            spot = origin + toSpot / spotDistance * Mathf.Max(.05f, near.distance - hover);
-        // From there the finger points at what the crosshair's line ends on, as a gun converges on it: a friend out of
-        // reach, what a tap's ping pinged, else the wall or the far end of the look.
+        // What the crosshair's line ends on: a friend, what a tap's ping pinged, else the wall or the far end of the look.
         Vector3 aim = found ? hit.Point : point.FlashTarget(out Vector3 pinged) ? pinged : origin + look * wallAt;
-        Vector3 way = touches ? hit.Point - shoulder : aim - spot;
-        way = way.sqrMagnitude > .0025f ? way.normalized : look;
 
-        // The hand along that way, the palm down and turned in, bent at the wrist as Point.wristBend/wristSide say: the
-        // hand drawn in Blender (PointHand.csv) if there is one, else the index out and the rest in a fist by Point.*.
-        Vector3 palm = WantedPalm(way, viewRight, viewAhead);
-        Vector3 handWay = Wrist(way, palm);
-        Vector3 handPalm = Vector3.ProjectOnPlane(palm, handWay);
-        handPalm = handPalm.sqrMagnitude > 1e-8f ? handPalm.normalized : palm;
-        Quaternion handGoal;
-        if (PokeTables.HandPose(out var drawn))
-        {
-            var drawnTurn = DrawnFrame(drawn, handWay, handPalm);
-            handGoal = HandAlong(drawnTurn * Vector3.right, -(drawnTurn * Vector3.forward));
-            hand.rotation = handGoal;
-            DrawnFingers(drawn, drawnTurn);
-        }
-        else
-        {
-            handGoal = HandAlong(handWay, handPalm);
-            hand.rotation = handGoal;
-            Fingers(handWay, handPalm);
-        }
-        Vector3 tipOffset = Fingertip() - hand.position;
-        tipLength = tipOffset.magnitude;
-
-        // Where the fingertip goes: into a zone that gives, eased in; just short of anything else it touches; or the
-        // spot in the view.
-        Vector3 goal;
+        // The arm reaches from the shoulder toward it, nearly straight (Point.extend of its length), so it rides whatever
+        // the body does, the walk's bob and the torso's turn (the user, 2026-11-12: "위치가 고정인 느낌이라 걸을 때
+        // 애니메이션도 굉장히 어색해. 얼마든지 팔과 손을 고정하지 않고 자유롭게 움직여도 되는데"; 0.8.232 held the hand
+        // to a spot on the screen). Its way springs after the aim's (Point.swayHz, Point.swayBounce): a quick turn leaves
+        // it a little behind, it swings in past and settles, and standing still the fingertip rests on the line to the aim.
+        Vector3 wantWay = aim - shoulder;
+        wantWay = wantWay.sqrMagnitude > 1e-6f ? wantWay.normalized : look;
+        SpringWay(wantWay, dt);
+        Vector3 pointGoal = shoulder + aimWay * (reach * PokeTables.Number("Point.extend", .92f));
+        // Touching, the fingertip goes onto the skin itself, pressing along the arm's way (where the crosshair is, so the
+        // dent is there too), eased between the two over Point.touchIn.
+        Vector3 pressWay = touches ? (hit.Point - shoulder).normalized : aimWay;
         bool presses = false;
         if (touches)
         {
@@ -216,44 +190,107 @@ public sealed class PointArm : MonoBehaviour
             {
                 var feel = PokeTables.Of(hit.Zone);
                 press = Mathf.MoveTowards(press, feel.Press, dt * feel.Press / Mathf.Max(.01f, feel.PressTime));
-                goal = hit.Point + way * press;
+                touchGoal = hit.Point + pressWay * press;
                 presses = true;
             }
             else
             {
                 press = 0f;
-                goal = hit.Point - way * PokeTables.Number("Point.hover", .015f);
+                touchGoal = hit.Point - pressWay * hover;
             }
         }
-        else
-        {
-            press = 0f;
-            goal = spot;
-        }
-        // Eased in the view's own space (Point.follow): walking, strafing or turning never drag the hand behind, as easing
-        // in the world did (running, a hand trailed 30 cm toward the chest); only a change of where it goes eases.
-        float follow = PokeTables.Number("Point.follow", .05f);
-        Vector3 goalInView = eyes.InverseTransformPoint(goal);
-        reachedInView = hasReached && follow > 0f ? Vector3.Lerp(reachedInView, goalInView, 1f - Mathf.Pow(.5f, dt / follow)) : goalInView;
-        hasReached = true;
-        Vector3 reached = eyes.TransformPoint(reachedInView);
+        else press = 0f;
+        touchBlend = Mathf.MoveTowards(touchBlend, touches ? 1f : 0f, dt / Mathf.Max(.01f, PokeTables.Number("Point.touchIn", .1f)));
+        Vector3 goal = touchBlend > 0f ? Vector3.Lerp(pointGoal, touchGoal, touchBlend) : pointGoal;
+        // Never into a wall: whatever stands between the shoulder and there holds the fingertip just short of it.
+        Vector3 toGoal = goal - shoulder;
+        float goalDistance = toGoal.magnitude;
+        if (goalDistance > 1e-3f && FirstSolid(shoulder, toGoal / goalDistance, goalDistance + hover, out RaycastHit block))
+            goal = shoulder + toGoal / goalDistance * Mathf.Max(.05f, block.distance - hover);
 
-        // The arm puts the wrist where the fingertip lands, the elbow down, out to the left and back from the view by
-        // Point.elbowDown/Out/Back.
+        // The hand first along the arm's way, to learn where its fingertip sits; the arm then bends (the elbow a little,
+        // down and out) to put the fingertip there; then the wrist turns from the forearm's line toward the goal by
+        // Point.wristLimit at most, so the forearm does the aiming and the wrist never kinks (the user, 2026-11-12:
+        // "손가락질하는 거 꺾이는 게 자연스럽지 않아서 아쉽다"), and the arm settles once more for the hand's new tip.
         Vector3 hint = shoulder + (-Vector3.up * PokeTables.Number("Point.elbowDown", .8f) - viewRight * PokeTables.Number("Point.elbowOut", .55f)
             - viewAhead * PokeTables.Number("Point.elbowBack", .1f)) * reach;
-        TwoBoneIK.Solve(upper, lower, hand, reached - tipOffset, hint);
+        Quaternion handGoal = PoseHand(goalDistance > 1e-3f ? toGoal / goalDistance : aimWay, viewRight, viewAhead);
+        Vector3 tipOffset = Fingertip() - hand.position;
+        tipLength = tipOffset.magnitude;
+        TwoBoneIK.Solve(upper, lower, hand, goal - tipOffset, hint);
         hand.rotation = handGoal;
+        float wristLimit = Mathf.Max(0f, PokeTables.Number("Point.wristLimit", 20f)) * Mathf.Deg2Rad;
+        for (int settle = 0; settle < 2; settle++)
+        {
+            Vector3 forearm = hand.position - lower.position;
+            Vector3 toTip = goal - hand.position;
+            if (forearm.sqrMagnitude < 1e-8f || toTip.sqrMagnitude < 1e-8f) break;
+            Vector3 handWay = Vector3.RotateTowards(forearm.normalized, toTip.normalized, wristLimit, 0f);
+            handGoal = PoseHand(handWay, viewRight, viewAhead);
+            tipOffset = Fingertip() - hand.position;
+            TwoBoneIK.Solve(upper, lower, hand, goal - tipOffset, hint);
+            hand.rotation = handGoal;
+        }
 
         if (weight < 1f)
             for (int i = 0; i < turnedCount; i++) turned[i].localRotation = Quaternion.Slerp(framed[i], turned[i].localRotation, weight);
 
-        if (presses && on && weight >= .99f)
+        if (presses && on && weight >= .99f && touchBlend >= .99f)
         {
             touching = true;
-            SkinPoke.Press(movement, hit, Fingertip(), way);
+            SkinPoke.Press(movement, hit, Fingertip(), pressWay);
         }
         else Let();
+    }
+
+    // The arm's way after the aim's, as a damped spring (Point.swayHz, Point.swayBounce) on its direction in the world:
+    // turning, it trails and swings in; walking or standing, the aim's way hardly moves and neither does it.
+    private void SpringWay(Vector3 want, float dt)
+    {
+        if (!hasAim)
+        {
+            aimWay = want;
+            aimSpin = Vector3.zero;
+            hasAim = true;
+            return;
+        }
+        float omega = 2f * Mathf.PI * Mathf.Max(.5f, PokeTables.Number("Point.swayHz", 4.5f));
+        float damping = 2f * Mathf.Max(.05f, PokeTables.Number("Point.swayBounce", .55f)) * omega;
+        int steps = Mathf.Clamp(Mathf.CeilToInt(dt / .01f), 1, 8);
+        float step = dt / steps;
+        for (int i = 0; i < steps; i++)
+        {
+            aimSpin += ((want - aimWay) * (omega * omega) - aimSpin * damping) * step;
+            aimWay += aimSpin * step;
+        }
+        aimWay = aimWay.sqrMagnitude > 1e-6f ? aimWay.normalized : want;
+        aimSpin = Vector3.ProjectOnPlane(aimSpin, aimWay);
+    }
+
+    // The hand turned so it points along <paramref name="handWay"/>, the palm down and turned in, bent at the wrist as
+    // Point.wristBend/wristSide say, its fingers the hand drawn in Blender (PointHand.csv) if there is one, else the
+    // index out and the rest in a fist by Point.*. Returns the hand's world rotation.
+    private Quaternion PoseHand(Vector3 handWay, Vector3 viewRight, Vector3 viewAhead)
+    {
+        Vector3 palm = WantedPalm(handWay, viewRight, viewAhead);
+        Vector3 bent = Wrist(handWay, palm);
+        Vector3 bentPalm = Vector3.ProjectOnPlane(palm, bent);
+        bentPalm = bentPalm.sqrMagnitude > 1e-8f ? bentPalm.normalized : palm;
+        Quaternion handGoal;
+        if (PokeTables.HandPose(out var drawn))
+        {
+            var drawnTurn = DrawnFrame(drawn, bent, bentPalm);
+            handGoal = HandAlong(drawnTurn * Vector3.right, -(drawnTurn * Vector3.forward));
+            hand.rotation = handGoal;
+            DrawnFingers(drawn, drawnTurn);
+        }
+        else
+        {
+            handGoal = HandAlong(bent, bentPalm);
+            hand.rotation = handGoal;
+            Fingers(bent, bentPalm);
+        }
+        return handGoal;
     }
 
     // The first solid thing a line meets that isn't a player (a wall, a crate, a zombie): players are met by their bodies'
