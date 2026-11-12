@@ -1570,6 +1570,28 @@ wardrobe.shoot.reset_all.confirm,한 번 더 누르면 모두,Press again,옷장
 wardrobe.shoot.reset_all.ask.editor,한 번 더 누르면 다시 찍은 옷 {0}개(모든 캐릭터)의 구도 줄을 지우고 사진을 자동 구도로 다시 찍어요. 3초 안에 눌러 주세요.,Press again within 3 s to drop the framing rows of all {0} retaken pieces (every character) and retake their pictures.,옷장 > 사진 다시 찍기 창: 에디터에서 모두 기본값으로를 한 번 눌렀을 때 저장 안내 자리에 뜨는 말. {0}은 다시 찍은 옷 수
 wardrobe.shoot.reset_all.ask.local,한 번 더 누르면 이 PC에 남긴 옷 {0}개의 구도와 사진을 모두 지우고 게임에 들어 있던 사진으로 돌아가요. 3초 안에 눌러 주세요.,Press again within 3 s to delete this PC's framings and pictures of all {0} pieces and go back to the game's own.,옷장 > 사진 다시 찍기 창: 빌드에서 모두 기본값으로를 한 번 눌렀을 때 저장 안내 자리에 뜨는 말. {0}은 다시 찍은 옷 수
 wardrobe.shoot.reset_all.none,다시 찍은 옷이 없어요.,Nothing retaken.,옷장 > 사진 다시 찍기 창: 다시 찍은 옷이 없을 때 모두 기본값으로를 눌렀을 때 구도 줄 자리에 뜨는 말
+wardrobe.presets,프리셋,Presets,옷장 왼쪽 > 체형 판 아래의 판 이름: 저장한 모습(프리셋) 페이지를 연다
+wardrobe.presets.count,저장한 모습 {0}개 · 누르면 그대로 입는다,{0} saved looks · click to wear,옷장 왼쪽 > 프리셋 판 아래 줄. {0}은 프리셋 수
+wardrobe.presets.none,아직 없음 · 지금 꾸민 모습을 이름 붙여 남긴다,None yet · keep the look you made under a name,옷장 왼쪽 > 프리셋 판 아래 줄(프리셋이 하나도 없을 때)
+wardrobe.presets.title,프리셋,Presets,옷장 > 프리셋 페이지의 큰 제목
+wardrobe.presets.where,"지금 모습(캐릭터·색·옷·속옷·장신구·체형)을 이름 붙여 남기고, 판을 누르면 그 캐릭터와 모습으로 바로 입는다","Keep the look as it is now (character, colours, clothes, underwear, accessories, body) under a name; click a plate to wear it",옷장 > 프리셋 페이지 제목 아래 설명
+wardrobe.presets.name,이름 (비우면 '마요 1'처럼),Name (empty: like 'Mayo 1'),옷장 > 프리셋 페이지 > 저장 칸이 비어 있을 때 흐린 안내
+wardrobe.presets.save,지금 모습 저장,Save this look,옷장 > 프리셋 페이지 > 분홍 버튼: 지금 모습을 새 프리셋으로 저장(이름 칸에서 Enter도 같다)
+wardrobe.presets.default,{0} {1},{0} {1},옷장 > 프리셋 이름 칸을 비우고 저장했을 때의 이름. {0}은 캐릭터 이름 {1}은 번호
+wardrobe.presets.empty,아직 저장한 모습이 없다. 꾸민 뒤 '지금 모습 저장'을 누른다,No saved looks yet. Dress up and press 'Save this look',옷장 > 프리셋 페이지 목록이 비었을 때
+wardrobe.presets.overwrite,덮어쓰기,Overwrite,옷장 > 프리셋 판의 버튼: 이 프리셋을 지금 모습으로 바꾼다(두 번 눌러야 한다)
+wardrobe.presets.rename,이름 바꾸기,Rename,옷장 > 프리셋 판의 버튼: 이름 칸이 열린다
+wardrobe.presets.delete,지우기,Delete,옷장 > 프리셋 판의 버튼: 이 프리셋을 지운다(두 번 눌러야 한다)
+wardrobe.presets.again,한 번 더,Again,옷장 > 프리셋 판: 덮어쓰기·지우기를 한 번 누른 뒤 3초 동안 그 버튼 글자
+wardrobe.presets.overwrite.ask,{0} · 한 번 더 누르면 지금 모습으로 덮어쓴다(3초 안에),{0} · press again within 3 s to overwrite it with this look,옷장 > 프리셋 페이지 설명 자리: 덮어쓰기를 한 번 눌렀을 때. {0}은 프리셋 이름
+wardrobe.presets.delete.ask,{0} · 한 번 더 누르면 지운다(3초 안에),{0} · press again within 3 s to delete it,옷장 > 프리셋 페이지 설명 자리: 지우기를 한 번 눌렀을 때. {0}은 프리셋 이름
+wardrobe.presets.rename.hint,새 이름 (Enter로 확정 · Esc는 그대로),New name (Enter keeps it · Esc leaves it),옷장 > 프리셋 판 > 이름 바꾸기 칸이 비어 있을 때 흐린 안내
+wardrobe.presets.saved,저장함 · {0},Saved · {0},옷장 > 프리셋 페이지 설명 자리: 새 프리셋을 저장했을 때. {0}은 프리셋 이름
+wardrobe.presets.overwritten,덮어씀 · {0},Overwritten · {0},옷장 > 프리셋 페이지 설명 자리: 덮어썼을 때
+wardrobe.presets.deleted,지움 · {0},Deleted · {0},옷장 > 프리셋 페이지 설명 자리: 지웠을 때
+wardrobe.presets.on,입음 · {0},Wearing · {0},옷장 > 프리셋 페이지 설명 자리: 프리셋을 입었을 때
+wardrobe.presets.emptied,입음 · {0} (없는 옷 {1}개는 그 칸을 비웠다),Wearing · {0} ({1} missing items: those slots left empty),"옷장 > 프리셋 페이지 설명 자리: 입었는데 게임에 없는 옷(지운 모드, 바뀐 이름)이 있을 때. {1}은 비운 칸 수"
+wardrobe.presets.gone,캐릭터가 없어서 입을 수 없다({0}),Its character is gone ({0}),옷장 > 프리셋 판·설명 자리: 프리셋의 캐릭터가 게임에 없을 때. {0}은 캐릭터 id
 body.title,체형,Body,옷장 > 체형 페이지 제목
 body.open,체형,Body,메인 메뉴 > 캐릭터 페이지 왼쪽 > 색 칩 아래 체형 판의 제목
 body.open.note,꾸미기 {0}가지 · 바꾼 것 {1},{0} options · {1} changed,"체형 판의 설명. {0}=그 캐릭터의 체형 옵션 수, {1}=원래와 다르게 바꾼 옵션 수"

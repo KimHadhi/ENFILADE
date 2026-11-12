@@ -336,7 +336,8 @@ public sealed class HubDressing : MonoBehaviour, IWardrobeStage
         }
         float dt = Time.unscaledDeltaTime;
         // Keys wait while the console or the chat has the keyboard (their Esc is theirs).
-        bool keys = !DevConsole.TakesKeyboard && !(chat != null && chat.BlocksMissionInputThisFrame) && !SettingsMenu.IsOpen;
+        bool keys = !DevConsole.TakesKeyboard && !(chat != null && chat.BlocksMissionInputThisFrame) && !SettingsMenu.IsOpen
+            && !(wardrobe != null && wardrobe.Typing); // a preset's name being typed (F, A, D are letters there)
         var keyboard = Keyboard.current;
         if (keys && Time.frameCount != openedFrame)
         {

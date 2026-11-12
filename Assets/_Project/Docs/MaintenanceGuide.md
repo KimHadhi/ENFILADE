@@ -116,6 +116,10 @@ C 메뉴에서 바꾼 조준경·총구·하단·손잡이, L 플래시, B 사�
 - 승리 포즈(11-12, "포즈 네가 블렌더나 그런 거 써서 직접 만들어 ... 세부 조정은 방법 알려 주면 내가 알아서"): 마요 뼈대로 블렌더에서 만든 FBX가 [Resources/Poses](../Resources/Poses)에 있고([make_victory_poses.py](../../../Tools/Blender/Poses/make_victory_poses.py)가 레시피로 처음 만들었다), Unity가 마요 아바타의 휴머노이드 클립으로 읽어서([PoseImport](../Editor/Import/PoseImport.cs), ModelImportRules가 부른다) 어느 캐릭터에도 맞는다. 고치는 법은 [ArtSource/Poses/START_HERE.md](../../../ArtSource/Poses/START_HERE.md): `START_POSES.cmd`로 열면 마요가 포즈 모드로 9프레임(포즈를 잡은 순간)에 서 있고 자동 키가 켜져 있다 → 사이드바 **Pose** 탭에서 포즈 고르기 → 부위 골라 `R`로 돌리기(손가락은 손 모양 버튼) → `Ctrl+S`(바뀐 포즈만 FBX로 보낸다. 42·75프레임은 9프레임대로 맞춰진다. 공용 부분은 [Tools/Blender/OneClick](../../../Tools/Blender/OneClick/README.md)). 게임에서는 콘솔에 `results vsign`처럼 치면 장을 끝내지 않아도 지금 있는 사람들로 결과 연출을 보여 주고 모두 그 포즈를 잡는다. 새 포즈(블렌더의 **새 포즈로 복사** 뒤 저장, 또는 그 폴더에 넣은 FBX)는 차례 끝에 들어간다(`enf_pose_fist`는 MVP). 내보내기는 마요 원본 FBX와 같은 방식이어야 한다(Y 위, -Z 앞, 뼈 축 Y·X, 스케일 'FBX All'): 블렌더 기본 스케일(아마추어 100배, cm)로 내보냈을 때 Unity가 다리 뼈가 마요와 어긋난다고 했다.
 - 결과가 시작되는 때(11-12, "로딩하다가 다 끝나서 1초 보고 못 봄"): 허브로 돌아오면 결과는 검은 막(오른쪽 아래 '결과를 모으는 중') 뒤에서 허브가 이 PC에서 정말 준비되기를 기다렸다가 처음부터 나온다. 준비란 허브 로비가 돌고, 내 캐릭터가 들어오고, 무대에 모두의 포즈 인형이 옷을 입고 서고(이 PC가 혼자 세우니 다른 PC를 기다리지 않는다), 결과 카메라가 모두를 `showFrames`번 그리고(막 뒤에서 셰이더를 미리 준비), `showSettleFrame`초보다 긴 프레임 없이 `showSettle`초가 지난 것이다. `showWait`초가 넘으면 덜 됐어도 시작한다. 각 PC는 자기 준비가 되면 따로 시작하고 다른 PC의 연출을 기다리지 않는다. 연출 중에는 한 프레임에 `showMaxStep`초까지만 흘러서, 렉이 와도 칭호·하이라이트·마지막 한 장·휘장이 건너뛰어지지 않고 잠깐 멈출 뿐이다. 로딩 화면이나 첫 사용 워밍업이 화면을 더 써야 하면 `ResultsShow.HoldBack`에 '아직'(true)을 돌려주는 검사를 걸면 결과가 그만큼 기다린다.
 
+### 옷장 프리셋 (OutfitPresets)
+
+옷장의 프리셋은 `Application.persistentDataPath/OutfitPresets/`(settings.json과 같은 폴더 아래)의 `presets.json`과 프리셋마다 초상 PNG(`<id>.png`)다([OutfitPresets](../Scripts/UI/Menu/OutfitPresets.cs)). 프리셋 하나는 이름, 캐릭터 id, 색 id, 옷 문자열(OutfitLook: `칸=옷#색;…`, 체형 `shape:…` 포함), 저장한 때다. 지우면 PNG도 지운다. 파일을 지우면 프리셋이 모두 사라진다(설정은 그대로).
+
 ### 기록 저장 (records.json)
 
 메인 메뉴 기록 탭의 숫자는 같은 폴더의 `records.json`([PlayerRecords](../Scripts/Player/PlayerRecords.cs))이다. 판이 끝나거나 게임을 끌 때 적힌다. 판 하나는 맵을 불러와서 떠날 때까지이고, 20초 안에 아무것도 안 하고 나간 것은 판으로 치지 않는다(시간만 더한다).

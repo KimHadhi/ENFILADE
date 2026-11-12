@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Animations;
+using UnityEngine.Playables;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.SceneManagement;
@@ -88,6 +90,8 @@ public sealed class OutfitStudio : IDisposable
     private Mesh baked;
     private RenderTexture film;
     private Texture2D meter;
+    // A dressed character's idle pose (StandDressed), held until it goes.
+    private PlayableGraph pose;
     private Vector3 front = Vector3.forward, middle;
     // How much the standing piece's pictures are lifted, measured on its first one (1: as rendered).
     private float gain = 1f;
@@ -202,6 +206,13 @@ public sealed class OutfitStudio : IDisposable
                 shown.Add(renderer);
             }
         }
+        return Ready();
+    }
+
+    // What every stood piece gets once its renderers are picked: all of it off but for the studio's own picture, the
+    // studio's own ambient on what is shown, and its points measured for the framing.
+    private bool Ready()
+    {
         // Every renderer of it stays off but for the studio's own picture.
         foreach (var renderer in sitter.GetComponentsInChildren<Renderer>(true)) renderer.enabled = false;
         if (shown.Count == 0)
@@ -226,6 +237,45 @@ public sealed class OutfitStudio : IDisposable
         }
         Measure();
         return true;
+    }
+
+    /// <summary>
+    /// Stands a character whole, in its colour set and dressed as <paramref name="look"/> says, in the title screen's idle
+    /// pose: a wardrobe preset's portrait (OutfitPresets; the user, 2026-11-13: "옷장 내가 지금까지 옷 입혀서 꾸민 커스텀 프리셋으로
+    /// 만들어서 저장할 수 있게 해 줘"). Dressed by the very rule the game dresses the body by (OutfitDresser), so what is
+    /// covered stays hidden; only what the dressing left drawn is photographed. Frame it with part -1 (all of it): a
+    /// character is one piece, but a wide pose must never be split. False when there is nothing of it to photograph.
+    /// </summary>
+    public bool StandDressed(PlayerBodyProfile.Skin skin, SkinVariant variant, OutfitLook look)
+    {
+        Clear();
+        if (skin == null || skin.Model == null) return false;
+        var profile = PlayerBodyProfile.Load();
+        var source = profile != null ? profile.ModelOf(skin) : skin.Model;
+        sitter = Object.Instantiate(source, root.position, Quaternion.identity, root);
+        front = FrontOf(sitter);
+        SkinVariant.Wear(sitter, null, variant);
+        try
+        {
+            OutfitDresser.Dress(sitter, source, skin, look ?? new OutfitLook());
+        }
+        catch (Exception problem)
+        {
+            Debug.LogWarning("[OutfitStudio] " + problem.Message);
+        }
+        // The idle pose, held: the animators stop once it is struck, so nothing moves it before the picture.
+        var animator = sitter.GetComponentInChildren<Animator>(true);
+        var idle = profile != null ? profile.Find(MainMenuPreview.IdleClip) : null;
+        if (animator != null && idle != null)
+        {
+            animator.applyRootMotion = false;
+            AnimationPlayableUtilities.PlayClip(animator, idle, out pose);
+            pose.Evaluate();
+        }
+        Still(sitter);
+        foreach (var renderer in sitter.GetComponentsInChildren<Renderer>(false))
+            if (renderer.enabled && !(renderer is ParticleSystemRenderer)) shown.Add(renderer);
+        return Ready();
     }
 
     // The way a character faces: across its upper arms (as the player's body measures it), else +Z.
@@ -628,16 +678,22 @@ public sealed class OutfitStudio : IDisposable
         QualitySettings.activeColorSpace == ColorSpace.Linear ? Mathf.GammaToLinearSpace(value / 255f) : value / 255f;
 
     /// <summary>The picture as a readable texture of <paramref name="size"/> pixels a side (to be saved); null when nothing stands.</summary>
-    public Texture2D Capture(int size)
+    public Texture2D Capture(int size) => Capture(size, size);
+
+    /// <summary>
+    /// The picture as a readable texture <paramref name="width"/> by <paramref name="height"/> pixels (frame it for that
+    /// aspect first); null when nothing stands.
+    /// </summary>
+    public Texture2D Capture(int width, int height)
     {
-        var plain = RenderTexture.GetTemporary(size, size, 0, RenderTextureFormat.ARGB32);
+        var plain = RenderTexture.GetTemporary(width, height, 0, RenderTextureFormat.ARGB32);
         var previous = RenderTexture.active;
         try
         {
             if (!Shoot(plain)) return null;
             RenderTexture.active = plain;
-            var picture = new Texture2D(size, size, TextureFormat.RGBA32, false) { name = "Outfit Picture", wrapMode = TextureWrapMode.Clamp };
-            picture.ReadPixels(new Rect(0f, 0f, size, size), 0, 0);
+            var picture = new Texture2D(width, height, TextureFormat.RGBA32, false) { name = "Outfit Picture", wrapMode = TextureWrapMode.Clamp };
+            picture.ReadPixels(new Rect(0f, 0f, width, height), 0, 0);
             picture.Apply();
             return picture;
         }
@@ -694,6 +750,7 @@ public sealed class OutfitStudio : IDisposable
     /// <summary>Takes the standing piece away.</summary>
     public void Clear()
     {
+        if (pose.IsValid()) pose.Destroy();
         if (sitter != null) Gone(sitter);
         sitter = null;
         shown.Clear();

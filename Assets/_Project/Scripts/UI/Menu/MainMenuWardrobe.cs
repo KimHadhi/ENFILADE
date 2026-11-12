@@ -37,7 +37,7 @@ using UnityEngine.UI;
 /// its picture's left side, which fades in under them.
 /// </summary>
 [DisallowMultipleComponent]
-public sealed class MainMenuWardrobe : MonoBehaviour
+public sealed partial class MainMenuWardrobe : MonoBehaviour
 {
     private const float LeftWidth = 520f, RightWidth = 560f, CardGap = 10f, ChipHeight = 30f, ChipGap = 8f, TileHeight = 50f,
         TileGap = 6f, PlateHeight = 72f, PlateGap = 10f, Slant = 12f, ChipSlant = 7f;
@@ -150,6 +150,7 @@ public sealed class MainMenuWardrobe : MonoBehaviour
             CloseShoot();
             return;
         }
+        if (LetGoOfPreset()) return;
         shooting = false;
         openSlot = null;
         slotListFor = null;
@@ -206,6 +207,7 @@ public sealed class MainMenuWardrobe : MonoBehaviour
     private void Build()
     {
         if (slotList != null) slotScroll = slotList.anchoredPosition.y;
+        KeepPresetScroll();
         slotList = null;
         if (slotsGrid != null) slotsOffset = slotsGrid.Offset;
         slotsGrid = null;
@@ -231,7 +233,8 @@ public sealed class MainMenuWardrobe : MonoBehaviour
             right.anchorMin = right.anchorMax = right.pivot = new Vector2(1f, 1f);
             right.anchoredPosition = new Vector2(-edge, 0f);
             right.sizeDelta = new Vector2(RightWidth, 0f);
-            if (openSlot == BodyPage) BuildBody(right, skin);
+            if (openSlot == PresetPage) BuildPresets(right, skin);
+            else if (openSlot == BodyPage) BuildBody(right, skin);
             else if (openSlot != null && OutfitCatalog.Slot(openSlot) is OutfitSlot slot) BuildSlot(right, skin, slot);
             else BuildSlots(right, skin);
         }
@@ -347,6 +350,10 @@ public sealed class MainMenuWardrobe : MonoBehaviour
             y += BodyPlateHeight + 18f;
         }
 
+        // Kept looks, every character's, worn again in a press (MainMenuWardrobe.Presets).
+        PresetPlate(new Vector2(edge, y));
+        y += BodyPlateHeight + 18f;
+
         // Every piece back to how the character came, in one press, when any is changed. The body options stay: the body
         // page has its own 원래대로.
         if (!BodyShapes.Clothes(OutfitLook.Saved(chosen.Id)).IsEmpty)
@@ -409,8 +416,8 @@ public sealed class MainMenuWardrobe : MonoBehaviour
         settings.characterSkin = skin.Id;
         var first = skin.Variants.FirstOrDefault(variant => variant != null);
         settings.characterVariant = first != null ? first.Id : "";
-        // Another character may have nothing for the slot that was open.
-        openSlot = null;
+        // Another character may have nothing for the slot that was open; the presets page stays.
+        openSlot = openSlot == PresetPage ? PresetPage : null;
         StopTrying();
         if (preview != null) preview.Focus(null);
         Commit();
@@ -909,6 +916,7 @@ public sealed class MainMenuWardrobe : MonoBehaviour
             triedText = wantedText;
             preview.Try(wanted, wantedSlot, wantedRemoves);
         }
+        TickPresets();
         ShowBadge();
     }
 

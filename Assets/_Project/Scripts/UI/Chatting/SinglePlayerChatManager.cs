@@ -140,10 +140,12 @@ public class SinglePlayerChatManager : MonoBehaviour
         if (Keyboard.current == null) return;
 
         // UI/OpenChat (Enter and the number pad's Enter unless the key window says otherwise). An open chat's own Enter
-        // sends from the input field, whatever this key is.
+        // sends from the input field, whatever this key is; another text box's Enter is that box's (OtherBoxTyping).
+        bool otherBox = OtherBoxTyping();
         if (KeyBindings.Pressed("UI/OpenChat"))
         {
-            if (!isChatOpen && Time.frameCount != lastClosedFrame && !GamePause.IsPaused && !DevConsole.TakesKeyboard && !KeyBindings.Busy) OpenChat();
+            if (!isChatOpen && Time.frameCount != lastClosedFrame && !GamePause.IsPaused && !DevConsole.TakesKeyboard && !KeyBindings.Busy
+                && !otherBox) OpenChat();
         }
 
         if (isChatOpen && Keyboard.current.upArrowKey.wasPressedThisFrame) RecallInput(-1);
@@ -176,6 +178,21 @@ public class SinglePlayerChatManager : MonoBehaviour
             // While closed, past the lines shown, the first line with nothing left to do has only gone ones above it.
             if (!moving && !isChatOpen && rank >= shownWhileClosed) break;
         }
+    }
+
+    // Another text box than the chat's own has the keyboard (a preset's name at the hub's mirror), or had it last frame:
+    // its Enter saves there and mustn't open the chat too. TMP lets go of the focus while it handles that Enter, which may
+    // come before or after this Update in the frame, so the frame it was last seen focused counts as well.
+    private int otherBoxFrame = -10;
+
+    private bool OtherBoxTyping()
+    {
+        var events = EventSystem.current;
+        var selected = events != null ? events.currentSelectedGameObject : null;
+        if (selected != null && (chatInput == null || !selected.transform.IsChildOf(chatInput.transform))
+            && selected.TryGetComponent(out TMP_InputField field) && field.isFocused)
+            otherBoxFrame = Time.frameCount;
+        return Time.frameCount - otherBoxFrame <= 1;
     }
 
     public void OpenChat()
