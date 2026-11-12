@@ -38,6 +38,14 @@ public sealed class OutfitSlot
     public string firstPerson = "show";
     /// <summary>Whether the character's own piece here can be taken off with nothing in its place. Hair can't.</summary>
     public bool removable = true;
+    /// <summary>
+    /// Worn on the skin, under what the other slots wear: the underwear slots (속옷 상의, 속옷 하의). What is in them is
+    /// always on, the character's own underwear unless an item is picked, and the rest of the outfit decides only how
+    /// much of it shows (UnderwearFit). Underwear used to hang off the top and bottom (CharacterParts.csv under): it came
+    /// on once they were off and some tops went only with the set that swapped it (the user, 2026-11-12: "커스터마이징은
+    /// 자유도에서 오는 건데 … 따로 칸을 만들어야겠다").
+    /// </summary>
+    public bool under;
 
     public string Name => Texts.Get("outfit.slot." + id);
 

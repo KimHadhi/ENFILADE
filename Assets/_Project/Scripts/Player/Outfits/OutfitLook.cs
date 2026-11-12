@@ -78,6 +78,35 @@ public sealed class OutfitLook
     /// <summary>The same look written the one way <see cref="ToString"/> writes it.</summary>
     public static string Tidy(string text) => Parse(text).ToString();
 
+    /// <summary>
+    /// The look with each item in the slot Outfits.csv puts it in now, so a look saved before an item moved finds it in its
+    /// new slot: the Sera Yura bikini and bodysuit went from the vest and waist to the underwear slots (2026-11-12). A pick
+    /// already in that slot stays and the moved one goes. Itself when nothing moved.
+    /// </summary>
+    public OutfitLook Settled()
+    {
+        OutfitLook settled = null;
+        foreach (var pair in picks)
+        {
+            if (pair.Value.IsOff || pair.Key.StartsWith(BodyShapes.Prefix, StringComparison.Ordinal)) continue;
+            var item = OutfitCatalog.Item(pair.Value.Item);
+            if (item == null || string.Equals(item.slot, pair.Key, StringComparison.OrdinalIgnoreCase)
+                || OutfitCatalog.Slot(item.slot) is not OutfitSlot slot) continue;
+            settled ??= Parse(ToString());
+            settled.picks.Remove(pair.Key);
+            if (!settled.picks.ContainsKey(slot.id)) settled.picks[slot.id] = pair.Value;
+        }
+        return settled ?? this;
+    }
+
+    // A saved look as it reads now (Settled), written as saved when nothing moved.
+    private static string Settle(string text)
+    {
+        var look = Parse(text);
+        var settled = look.Settled();
+        return settled == look ? text : settled.ToString();
+    }
+
     /// <summary>The outfit this PC last put on the character (settings.json).</summary>
     public static OutfitLook Saved(string skinId) => Parse(SavedText(skinId));
 
@@ -87,7 +116,7 @@ public sealed class OutfitLook
         if (saved == null || string.IsNullOrEmpty(skinId)) return "";
         string prefix = skinId + Separator;
         foreach (string entry in saved)
-            if (entry != null && entry.StartsWith(prefix, StringComparison.Ordinal)) return entry.Substring(prefix.Length);
+            if (entry != null && entry.StartsWith(prefix, StringComparison.Ordinal)) return Settle(entry.Substring(prefix.Length));
         return "";
     }
 

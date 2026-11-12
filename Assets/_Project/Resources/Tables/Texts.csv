@@ -729,6 +729,8 @@ outfit.slot.bottom,하의,,옷 칸 이름(바지·치마)
 outfit.slot.legs,양말·스타킹,,옷 칸 이름(레그워머 포함)
 outfit.slot.shoes,신발,,옷 칸 이름
 outfit.slot.tail,꼬리,,옷 칸 이름
+outfit.slot.undertop,속옷 상의,,옷 칸 이름(브라·비키니 상의·바디슈트)
+outfit.slot.underbottom,속옷 하의,,옷 칸 이름(팬티·비키니 하의)
 outfit.group.head,머리,,옷 칸 묶음 이름(장비창 화면)
 outfit.group.neck,목,,옷 칸 묶음 이름(장비창 화면)
 outfit.group.torso,몸통,,옷 칸 묶음 이름(장비창 화면)

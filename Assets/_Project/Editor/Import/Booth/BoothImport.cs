@@ -20,7 +20,9 @@ using Object = UnityEngine.Object;
 /// - registers each character's copy in the PlayerBody profile with its colour sets, and each outfit model's copy in the
 ///   OutfitLibrary, its colour sets read from the package's prefab of each colour (the materials that differ from the
 ///   base prefab's, renderer by renderer). A row "model@*" is an accessory sold for any avatar: registered once, for
-///   anyone, it goes on every character whose spot for its slot is measured (OutfitSpots.csv).
+///   anyone, it goes on every character whose spot for its slot is measured (OutfitSpots.csv);
+/// - puts the underwear that came with a character or an outfit into the underwear slots, where no row lists it yet
+///   (BoothUnderwear).
 /// Runs once an import under the BOOTH folder (or of BoothSources.csv) is over, whenever the editor loads its scripts
 /// and something listed isn't registered yet, and from Tools/Characters/BOOTH 다시 가져오기. Running again gives the
 /// same result.
@@ -213,6 +215,10 @@ internal sealed class BoothImport : AssetPostprocessor
             // Each character's or outfit's sway rows, by Cloth.csv's skin column.
             var sway = new Dictionary<string, List<Dictionary<string, string>>>(StringComparer.OrdinalIgnoreCase);
             var characters = new Dictionary<string, Character>(StringComparer.OrdinalIgnoreCase);
+            // The prefabs read, for the underwear in them (BoothUnderwear).
+            var bodies = new Dictionary<string, GameObject>(StringComparer.OrdinalIgnoreCase);
+            var bodyUnderwear = new List<BoothUnderwear.Source>();
+            var outfitUnderwear = new List<BoothUnderwear.Source>();
             foreach (var source in sources.Where(s => s.Kind == "character"))
             {
                 var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(Root + source.Path);
@@ -223,6 +229,8 @@ internal sealed class BoothImport : AssetPostprocessor
                 }
                 var character = new Character(prefab);
                 characters[source.Id] = character;
+                bodies[source.Id] = prefab;
+                bodyUnderwear.Add(new BoothUnderwear.Source(source.Id, prefab, prefab));
                 Sway(sway, source.Id, Root + source.Path, prefab, character.Humanoid, character.PartOf);
                 var copy = Copy(Root + source.Path, CopyOf(source));
                 if (profile != null && copy != null) profile.EditorPutSkin(source.Id, source.Name, copy, CharacterColours(source.Id, sources));
@@ -260,6 +268,8 @@ internal sealed class BoothImport : AssetPostprocessor
                 }
                 var copy = Copy(path, CopyOf(source));
                 if (copy == null) continue;
+                // Underwear an outfit brings goes in the underwear slots; an accessory for anyone brings none.
+                if (!anyone) outfitUnderwear.Add(new BoothUnderwear.Source(source.Id, prefab, bodies[source.Skin]));
                 var colourPaths = string.IsNullOrEmpty(source.Colours) || !AssetDatabase.IsValidFolder(Root + source.Colours)
                     ? new List<string>()
                     : Directory.GetFiles(Root + source.Colours, "*.prefab").Select(p => p.Replace('\\', '/'))
@@ -276,6 +286,9 @@ internal sealed class BoothImport : AssetPostprocessor
             // quit before they ever landed, that run writes them instead of their being lost.
             if (ReplaceClothRows(sway)) EditorPrefs.SetInt(SwayVersionKey, SwayWritten);
             else EditorPrefs.DeleteKey(SwayVersionKey);
+            // Underwear no row lists yet goes in the underwear slots (CharacterParts.csv, Outfits.csv). A write that waits
+            // for its file lands by itself; running the import again finds anything still missing.
+            BoothUnderwear.Write(bodyUnderwear, outfitUnderwear);
             GameTables.Reload();
         }
         finally

@@ -32,13 +32,11 @@ public static class OutfitCatalog
     public sealed class Part
     {
         public string skin = "", slot = "";
-        /// <summary>Its renderers, switched off when the slot is filled, emptied or covered.</summary>
-        public string parts = "";
         /// <summary>
-        /// Renderers it covers that switch on once all of <see cref="parts"/> are off, whichever slot took them: the
-        /// underwear a dress hid, so taking the dress off for a skirt leaves no bare chest.
+        /// Its renderers, switched off when the slot is filled, emptied or covered. In an underwear slot (OutfitSlot.under)
+        /// they are the character's own underwear, switched on while nothing else is picked there.
         /// </summary>
-        public string under = "";
+        public string parts = "";
         /// <summary>Shape keys set when the slot is filled or emptied: avatars that hide a piece with a key ("Earring_x").</summary>
         public string shapes = "";
         /// <summary>
@@ -170,6 +168,21 @@ public static class OutfitCatalog
         return looks[key] = (listed, shown);
     }
 
+    /// <summary>
+    /// The renderers the other pieces of the item's model name: a piece that names none takes every renderer of its model
+    /// but these (OutfitDresser), so underwear given its own item (a Banshaku bikini, BoothUnderwear's rows) stays out of
+    /// the shirt that came with it.
+    /// </summary>
+    public static HashSet<string> NamedByOthers(OutfitItem item)
+    {
+        Ensure();
+        var others = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        if (item == null) return others;
+        foreach (var other in items.Values)
+            if (other != item && string.Equals(other.ModelId, item.ModelId, StringComparison.OrdinalIgnoreCase)) others.UnionWith(other.PartNames);
+        return others;
+    }
+
     // The materials the item's renderers were made with in its model: those it names, or, naming none, every renderer
     // no other piece of the model names and its fit doesn't drop (as OutfitDresser hands them out).
     private static List<Material> MaterialsOf(OutfitItem item, OutfitLibrary.Entry entry, string skinId)
@@ -177,11 +190,8 @@ public static class OutfitCatalog
         var made = new List<Material>();
         if (entry.Model == null) return made;
         var named = new HashSet<string>(item.PartNames, StringComparer.OrdinalIgnoreCase);
-        var others = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var others = named.Count == 0 ? NamedByOthers(item) : new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var drop = new HashSet<string>(Split(FitOf(item.id, skinId)?.drop), StringComparer.OrdinalIgnoreCase);
-        if (named.Count == 0)
-            foreach (var other in items.Values)
-                if (other != item && string.Equals(other.ModelId, item.ModelId, StringComparison.OrdinalIgnoreCase)) others.UnionWith(other.PartNames);
         foreach (var renderer in entry.Model.GetComponentsInChildren<Renderer>(true))
         {
             bool mine = named.Count > 0 ? named.Contains(renderer.name) : !others.Contains(renderer.name) && !drop.Contains(renderer.name);

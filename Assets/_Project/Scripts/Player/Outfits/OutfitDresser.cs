@@ -15,9 +15,10 @@ using Object = UnityEngine.Object;
 /// pair of earrings) hangs on its slot's spots measured for each character (OutfitSpot) and follows the slot's bone.
 /// Pieces cut from one model (a BOOTH set's beret, jacket and skirt, Outfits.csv) share one copy of it, so its bones are
 /// there once, each piece showing its own meshes in its own colour. Then the character's own pieces in the filled slots
-/// switch off (and the underwear they covered on), or only the pieces an item names that it takes the place of (a
-/// mirrored side lock swaps one lock, not all the hair), the items' shape keys go on (OutfitFits.csv), and the clothes
-/// take the body's shape keys of the same names, as Modular Avatar's Blendshape Sync does.
+/// switch off, or only the pieces an item names that it takes the place of (a mirrored side lock swaps one lock, not all
+/// the hair), the items' shape keys go on (OutfitFits.csv), and the clothes take the body's shape keys of the same names,
+/// as Modular Avatar's Blendshape Sync does. Underwear has slots of its own (OutfitSlot.under) and is always on, the
+/// character's own unless an item is picked: the rest of the outfit decides only how much of it shows (UnderwearFit).
 /// The model must stand as it was made, before any clip plays, because the bones are matched in that pose.
 /// </summary>
 internal static class OutfitDresser
@@ -60,14 +61,17 @@ internal static class OutfitDresser
         public readonly List<Renderer> Renderers = new List<Renderer>();
         private readonly HashSet<Renderer> taken = new HashSet<Renderer>();
 
-        // A piece's renderers: those it names, or everything no other piece took (minus what it drops).
+        // A piece's renderers: those it names, or everything no other piece of the model names or took (minus what it
+        // drops). Named by another piece, a renderer stays out even while that piece isn't worn: the Banshaku shirt
+        // brings its bikini no more, the bikini is an underwear item of its own (2026-11-12).
         public List<Renderer> Take(OutfitItem item, ICollection<string> drop)
         {
             var wanted = new HashSet<string>(item.PartNames, StringComparer.OrdinalIgnoreCase);
+            var others = wanted.Count == 0 ? OutfitCatalog.NamedByOthers(item) : null;
             var found = new List<Renderer>();
             foreach (var renderer in Renderers)
             {
-                bool mine = wanted.Count > 0 ? wanted.Contains(renderer.name) : !drop.Contains(renderer.name);
+                bool mine = wanted.Count > 0 ? wanted.Contains(renderer.name) : !drop.Contains(renderer.name) && !others.Contains(renderer.name);
                 if (mine && taken.Add(renderer)) found.Add(renderer);
             }
             return found;
@@ -97,6 +101,8 @@ internal static class OutfitDresser
         var dressing = new Dressing();
         var going = string.IsNullOrEmpty(leaving) ? null : OutfitCatalog.Slot(leaving);
         if (model == null || skin == null || look == null || (look.IsEmpty && going == null)) return dressing;
+        // A look from before an item moved slot (the bikini from the vest to the underwear) finds it in its new one.
+        look = look.Settled();
         // The character's own, before anything is added: outfits merge only onto its bones and switch off only its pieces,
         // and its shape keys as it was made are what the clothes follow.
         var own = model.GetComponentsInChildren<Renderer>(true);
@@ -140,6 +146,9 @@ internal static class OutfitDresser
                 continue;
             }
             SkinVariant.WearOn(renderers, copy.Entry.VariantOf(colour));
+            // Underwear sold inside an outfit is often switched off in its file, a VRChat menu toggle (the Sera Yura
+            // bikini): picked for an underwear slot, it is meant to be on.
+            if (slot.under) SwitchOn(renderers, copy.Instance.transform);
             dressing.Pieces[item.id] = renderers;
             // A piece that names what of the character it takes the place of (OutfitFits.csv replaces) leaves the rest of
             // its slot's own pieces on (Replace, below): Chocolate rice's mirrored side lock swaps one of Mayo's two side
@@ -190,12 +199,8 @@ internal static class OutfitDresser
             if (view == OutfitSlot.View.Head) dressing.HeadParts.AddRange(piece.Renderers);
             else if (view == OutfitSlot.View.Hide) dressing.FaceParts.AddRange(piece.Renderers);
         }
-        // Pieces worn on the skin in place of the character's underwear (Outfits.csv under): those slots' underwear stays
-        // off. A covered piece is out of sight and takes nothing's place.
-        var inner = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var piece in worn)
-            if (!covered.Contains(piece.Slot.id)) inner.UnionWith(piece.Item.UnderSlots);
-        var freed = TakeOff(own, skin.Id, emptied, inner);
+        var freed = TakeOff(own, skin.Id, emptied);
+        WearUnderwear(model.transform, own, skin.Id, emptied);
         Replace(own, skin.Id, worn, covered);
         foreach (var renderer in leavingOwn) renderer.enabled = true;
         dressing.Leaving.AddRange(leavingOwn);
@@ -206,6 +211,10 @@ internal static class OutfitDresser
         freed.UnionWith(bodyShapes.Keys);
         freed.UnionWith(shaped);
         Follow(ShapesNow(own, freed), worn);
+        // Underwear on the skin, under everything else: out of sight where the rest covers it, its own fit keys on where
+        // they tuck it under (UnderwearFit). What of it shows covers skin too, so it goes before SkinCover.
+        var (under, over) = Layers(own, skin.Id, worn, covered, dressing.Leaving);
+        var showing = UnderwearFit.Fit(model.transform, skin.Id, own, under, over);
         // The last word on skin drawn in under clothes: wherever nothing solid covers it any more it comes back out, so no
         // body is left hollow whatever CharacterParts.csv says or leaves out (SkinCover). The clothes take the change.
         var items = new List<Renderer>();
@@ -213,8 +222,80 @@ internal static class OutfitDresser
             if (!covered.Contains(piece.Slot.id)) items.AddRange(piece.Renderers);
         var released = SkinCover.Release(model.transform, skin.Id, own, items, dressing.Leaving, made);
         if (released.Count > 0) Follow(ShapesNow(own, released), worn);
+        // Last, with every key where dressing leaves it: underwear still standing out through what is over it goes in under.
+        UnderwearFit.Press(model.transform, showing, over);
         return dressing;
     }
+
+    // The character's own underwear in the underwear slots nothing else took (CharacterParts.csv rows of those slots):
+    // on the skin whatever else is worn. Its maker kept it switched off under the clothes it came in (Mayo's bra and
+    // panties, Ichigo's), so it is switched on here, and the rest of the outfit decides how much of it shows
+    // (UnderwearFit). Before Replace: an item may name a piece of it that it takes the place of.
+    private static void WearUnderwear(Transform root, Renderer[] own, string skinId, HashSet<string> emptied)
+    {
+        foreach (var row in OutfitCatalog.PartsOf(skinId))
+        {
+            if (emptied.Contains(row.slot) || OutfitCatalog.Slot(row.slot) is not { under: true }) continue;
+            var names = new HashSet<string>(OutfitCatalog.Split(row.parts), StringComparer.OrdinalIgnoreCase);
+            var wearing = new List<Renderer>();
+            foreach (var renderer in own)
+                if (renderer != null && names.Contains(renderer.name)) wearing.Add(renderer);
+            SwitchOn(wearing, root);
+        }
+    }
+
+    // Renderers switched on with their objects, and those objects' parents up to (not including) <paramref name="top"/>.
+    private static void SwitchOn(List<Renderer> renderers, Transform top)
+    {
+        foreach (var renderer in renderers)
+        {
+            if (renderer == null) continue;
+            for (var part = renderer.transform; part != null && part != top; part = part.parent)
+            {
+                if (part.gameObject.activeSelf) continue;
+                part.gameObject.SetActive(true);
+            }
+            renderer.enabled = true;
+        }
+    }
+
+    // The underwear on the body, each piece's renderers together (an item, or the character's own in its slot), and what
+    // is worn over it: every other piece drawn solid but the bare ones (hair, a tail) and those on their way off. A
+    // character with no rows has only its items told apart; its own meshes are its body.
+    private static (List<List<Renderer>> Under, List<Renderer> Over) Layers(Renderer[] own, string skinId, List<Worn> worn,
+        HashSet<string> covered, List<Renderer> leaving)
+    {
+        var under = new List<List<Renderer>>();
+        var over = new List<Renderer>();
+        var seen = new HashSet<Renderer>();
+        var gone = new HashSet<Renderer>(leaving);
+        foreach (var row in OutfitCatalog.PartsOf(skinId))
+        {
+            var slot = OutfitCatalog.Slot(row.slot);
+            if (slot == null || SkinCover.IsBare(slot.id)) continue;
+            var names = new HashSet<string>(OutfitCatalog.Split(row.parts), StringComparer.OrdinalIgnoreCase);
+            var piece = new List<Renderer>();
+            foreach (var renderer in own)
+                if (renderer != null && names.Contains(renderer.name) && Drawn(renderer, gone) && seen.Add(renderer)) piece.Add(renderer);
+            if (piece.Count == 0) continue;
+            if (slot.under) under.Add(piece);
+            else over.AddRange(piece);
+        }
+        foreach (var picked in worn)
+        {
+            if (covered.Contains(picked.Slot.id) || SkinCover.IsBare(picked.Slot.id)) continue;
+            var piece = new List<Renderer>();
+            foreach (var renderer in picked.Renderers)
+                if (Drawn(renderer, gone) && seen.Add(renderer)) piece.Add(renderer);
+            if (piece.Count == 0) continue;
+            if (picked.Slot.under) under.Add(piece);
+            else over.AddRange(piece);
+        }
+        return (under, over);
+    }
+
+    private static bool Drawn(Renderer renderer, HashSet<Renderer> gone) =>
+        renderer != null && renderer.enabled && renderer.gameObject.activeInHierarchy && !gone.Contains(renderer);
 
     // The look's items that exist, sit in their own slot and were made for this character, in the slots' order. Anything
     // else (an item this PC doesn't have, or one for another character) leaves its slot as the character has it.
@@ -476,10 +557,9 @@ internal static class OutfitDresser
     }
 
     // The character's own pieces in these slots go (CharacterParts.csv): their renderers switch off and their hiding
-    // keys go on. A slot left with none of its pieces showing, whichever slot took them, shows what they covered, and the
-    // body's keys only those pieces held go back to 0. The underwear of the slots in <paramref name="inner"/> stays off:
-    // something worn on the skin took its place. Returns the keys let go.
-    private static HashSet<string> TakeOff(Renderer[] own, string skinId, HashSet<string> slots, HashSet<string> inner)
+    // keys go on, and the body's keys only those pieces held go back to 0. Underwear no longer comes on here once a dress
+    // is off: it has slots of its own and is always on (WearUnderwear). Returns the keys let go.
+    private static HashSet<string> TakeOff(Renderer[] own, string skinId, HashSet<string> slots)
     {
         var freed = new HashSet<string>(StringComparer.Ordinal);
         if (slots.Count == 0) return freed;
@@ -495,37 +575,9 @@ internal static class OutfitDresser
             Shape(skins, row.shapes);
         }
         Release(skins, rows, slots, off, freed);
-        // Underwear came on once its dress was off so the body wasn't bare, and a bodysuit or bikini put on for the dress
-        // left it standing out of the suit (Mayo's bra 29 mm, her panties 28 mm). Whatever shows the underwear came with,
-        // a piece worn in its place puts it out.
-        foreach (var row in rows)
-        {
-            if (string.IsNullOrEmpty(row.under) || !inner.Contains(row.slot)) continue;
-            var replaced = new HashSet<string>(OutfitCatalog.Split(row.under), StringComparer.OrdinalIgnoreCase);
-            foreach (var renderer in own)
-                if (replaced.Contains(renderer.name)) renderer.enabled = false;
-        }
         if (off.Count == 0) return freed;
         foreach (var renderer in own)
             if (off.Contains(renderer.name)) renderer.enabled = false;
-        foreach (var row in rows)
-        {
-            if (string.IsNullOrEmpty(row.under) || inner.Contains(row.slot)) continue;
-            bool bare = false;
-            foreach (string piece in OutfitCatalog.Split(row.parts))
-            {
-                bare = off.Contains(piece);
-                if (!bare) break;
-            }
-            if (!bare) continue;
-            var under = new HashSet<string>(OutfitCatalog.Split(row.under), StringComparer.OrdinalIgnoreCase);
-            foreach (var renderer in own)
-            {
-                if (!under.Contains(renderer.name)) continue;
-                renderer.gameObject.SetActive(true);
-                renderer.enabled = true;
-            }
-        }
         return freed;
     }
 

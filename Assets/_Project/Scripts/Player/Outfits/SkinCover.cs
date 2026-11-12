@@ -5,7 +5,8 @@ using System.Globalization;
 using UnityEngine;
 
 /// <summary>
-/// The last word on skin drawn in under clothes (OutfitDresser calls it after everything else). A BOOTH body comes with
+/// The last word on skin drawn in under clothes (OutfitDresser calls it after everything else but pressing underwear in
+/// under the clothes, UnderwearFit, which moves no skin). A BOOTH body comes with
 /// keys that pull its skin in where its clothes sit (Shrink_Knee_L under the stockings, Panty_Kuikomi under a band), set
 /// on in its prefab because its maker never meant those clothes to come off, and CharacterParts.csv names the keys each
 /// piece holds (needs). That list is written by hand, and twice a body was left hollow where it was wrong or never
@@ -32,6 +33,9 @@ internal static class SkinCover
     public const string TableName = "SkinCover";
     // Pieces in these slots lie on the body without covering skin (hair, its ornaments, a tail).
     private static readonly HashSet<string> Bare = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "hair", "hairpin", "tail" };
+
+    /// <summary>Whether pieces in the slot lie on the body without covering anything: hair over the chest hides no bra.</summary>
+    internal static bool IsBare(string slot) => slot != null && Bare.Contains(slot);
 
     private struct Values
     {
@@ -84,6 +88,8 @@ internal static class SkinCover
         new Dictionary<(string, string, int, int), Patch>();
     private static readonly Dictionary<(string skin, string renderer, int mesh), Cloth> cloths = new Dictionary<(string, string, int), Cloth>();
     private static readonly Dictionary<(Patch, Cloth), BitArray> touched = new Dictionary<(Patch, Cloth), BitArray>();
+    // Whole meshes as made, for how much of a piece (underwear) the rest covers.
+    private static readonly Dictionary<(string skin, string renderer, int mesh), Patch> wholes = new Dictionary<(string, string, int), Patch>();
     // How much of a key's skin the character's own clothes covered as it came.
     private static readonly Dictionary<Patch, float> asMade = new Dictionary<Patch, float>();
     private static readonly Dictionary<Mesh, Vector3[]> points = new Dictionary<Mesh, Vector3[]>();
@@ -98,6 +104,7 @@ internal static class SkinCover
         patches.Clear();
         cloths.Clear();
         touched.Clear();
+        wholes.Clear();
         asMade.Clear();
         points.Clear();
     }
@@ -116,30 +123,19 @@ internal static class SkinCover
     {
         var released = new HashSet<string>(StringComparer.Ordinal);
         if (root == null || own == null) return released;
-        if (!listening)
-        {
-            GameTables.Reloaded += Forget;
-            listening = true;
-        }
+        Listen();
         var settings = Settings();
         var gone = new HashSet<Renderer>(ghosts ?? Array.Empty<Renderer>());
-        // Which of its own meshes are its pieces, and which of them cover skin.
+        // Which of its own meshes are its pieces, and which of them cover skin (its underwear too, in its own slots).
         var rows = OutfitCatalog.PartsOf(skinId);
         var pieces = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var clothing = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var row in rows)
-        {
             foreach (string name in OutfitCatalog.Split(row.parts))
             {
                 pieces.Add(name);
                 if (!Bare.Contains(row.slot)) clothing.Add(name);
             }
-            foreach (string name in OutfitCatalog.Split(row.under))
-            {
-                pieces.Add(name);
-                clothing.Add(name);
-            }
-        }
         // A character without rows: any other mesh of its own may cover, as it came.
         bool mapped = rows.Count > 0;
         made ??= new Made();
@@ -184,6 +180,75 @@ internal static class SkinCover
 
     private static bool Solid(Renderer renderer, HashSet<Renderer> gone) =>
         renderer != null && renderer.enabled && renderer.gameObject.activeInHierarchy && !gone.Contains(renderer);
+
+    private static void Listen()
+    {
+        if (listening) return;
+        GameTables.Reloaded += Forget;
+        listening = true;
+    }
+
+    /// <summary>
+    /// How much of a piece, as made, the garments cover between them (0 to 1): the share of its vertices with one of
+    /// theirs within reach, the measure the skin keys get. Underwear asks it (UnderwearFit). -1 when its mesh can't be read.
+    /// </summary>
+    internal static float Covers(Transform root, string skinId, Renderer piece, IReadOnlyList<Renderer> garments)
+    {
+        if (root == null || piece == null) return -1f;
+        Listen();
+        var settings = Settings();
+        var toModel = root.worldToLocalMatrix;
+        var patch = WholeOf(piece, toModel, skinId);
+        return patch == null ? -1f : Covered(patch, piece, ClothsOf(garments, toModel, skinId, settings), settings);
+    }
+
+    /// <summary>
+    /// How much of what one of a piece's keys moves the garments cover (0 to 1); -1 when it can't be measured (an
+    /// unreadable mesh, a key moving nothing or much of its mesh).
+    /// </summary>
+    internal static float CoversKey(Transform root, string skinId, SkinnedMeshRenderer piece, int key, IReadOnlyList<Renderer> garments)
+    {
+        if (root == null || piece == null || piece.sharedMesh == null) return -1f;
+        Listen();
+        var settings = Settings();
+        var toModel = root.worldToLocalMatrix;
+        var patch = PatchOf(piece, key, toModel, skinId, settings);
+        return patch == null ? -1f : Covered(patch, piece, ClothsOf(garments, toModel, skinId, settings), settings);
+    }
+
+    private static List<(Renderer renderer, Cloth cloth)> ClothsOf(IReadOnlyList<Renderer> garments, Matrix4x4 toModel, string skinId, Values settings)
+    {
+        var list = new List<(Renderer, Cloth)>();
+        if (garments == null) return list;
+        foreach (var renderer in garments)
+            if (renderer != null) list.Add((renderer, ClothOf(renderer, toModel, skinId, settings)));
+        return list;
+    }
+
+    // Every vertex of the mesh, as made (kept for the run).
+    private static Patch WholeOf(Renderer renderer, Matrix4x4 toModel, string skinId)
+    {
+        var mesh = MeshOf(renderer);
+        if (mesh == null) return null;
+        var id = (skinId ?? "", renderer.name, mesh.GetInstanceID());
+        if (wholes.TryGetValue(id, out var patch)) return patch;
+        patch = null;
+        if (!mesh.isReadable) Warn($"{mesh.name}: 메시를 읽을 수 없어(Read/Write 꺼짐) 무엇에 가려졌는지 재지 못합니다.");
+        else
+        {
+            var made = PointsOf(mesh);
+            if (made.Length > 0)
+            {
+                var matrix = toModel * renderer.transform.localToWorldMatrix;
+                patch = new Patch { At = new Vector3[made.Length] };
+                for (int i = 0; i < made.Length; i++) patch.At[i] = matrix.MultiplyPoint3x4(made[i]);
+                patch.Box = new Bounds(patch.At[0], Vector3.zero);
+                foreach (var at in patch.At) patch.Box.Encapsulate(at);
+            }
+        }
+        wholes[id] = patch;
+        return patch;
+    }
 
     /// <summary>Whether a key draws skin in under clothes (named Shrink or Kuikomi) rather than shaping the body.</summary>
     internal static bool Hides(string key) =>
