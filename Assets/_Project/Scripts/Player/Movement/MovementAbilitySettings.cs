@@ -78,6 +78,26 @@ public sealed class MovementAbilitySettings
     [Range(1f, 89f)] public float ledgeJumpLookAngle = 42f;
     [Min(0f)] public float ledgeJumpSpeed = 8.5f;
     [Min(0f)] public float ledgeJumpUpSpeed = 6.5f;
+    [Tooltip("Catching a ledge, how long the hands take to reach its edge (s): shortest; longest. The capsule is carried to where "
+        + "the catch clip's hands touch the edge in as long as getting there at the speed it came in with takes, within these, as "
+        + "KINEMATION Motion Warping fits a phase's rate to its distance (LedgeHangState). The shortest is also how long it then "
+        + "takes the capsule on to its hanging place, the body already held by the hands.")]
+    public Vector2 ledgeCatchTimes = new Vector2(.18f, .35f);
+    [Tooltip("The slowest a catch counts as coming in (m/s), so catching at a near standstill doesn't stretch the reach.")]
+    [Min(.1f)] public float ledgeCatchLeastSpeed = 2f;
+    [Tooltip("Hand over hand along a ledge (PlayerBodyHands.Ledge): how long one hand takes to move to its next hold (s).")]
+    [Min(.05f)] public float ledgeHandStepTime = .22f;
+    [Tooltip("The trailing hand moves on once the body has left it this far behind its place at shoulder width (m). The leading "
+        + "hand reaches on as soon as the body moves off; one hand always holds while the other moves.")]
+    [Min(0f)] public float ledgeHandLag = .12f;
+    [Tooltip("A moving hand takes its next hold this far ahead of its place at shoulder width, where the body will be as it lands (m).")]
+    [Min(0f)] public float ledgeHandLead = .15f;
+    [Tooltip("A held hand left further behind than this slides along the edge with the body, so the arm never runs out (m).")]
+    [Min(.05f)] public float ledgeHandMostLag = .4f;
+    [Tooltip("How high a hand lifts over the edge on its way to its next hold, and reaching for the edge as it catches (m).")]
+    [Min(0f)] public float ledgeHandLift = .06f;
+    [Tooltip("This long after the body stops along the ledge (s), hands left apart come back to shoulder width, one at a time.")]
+    [Min(0f)] public float ledgeHandSettle = .2f;
 
     [Header("Wall Movement")]
     [Min(0.1f)] public float wallReach = 0.85f;

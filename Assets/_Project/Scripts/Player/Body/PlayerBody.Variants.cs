@@ -305,14 +305,19 @@ public sealed partial class PlayerBody
         inward = Vector3.ProjectOnPlane(inward, Vector3.up);
         if (inward.sqrMagnitude > .01f) targetYaw = Vector3.SignedAngle(transform.forward, inward, Vector3.up);
         float side = Vector3.Dot(player.ActualVelocity, Vector3.Cross(Vector3.up, inward.normalized));
-        if ((player.IsNetworkDriven || Mathf.Abs(player.CurrentInput.x) > .1f) && Mathf.Abs(side) > .1f)
+        // The catch's warp may swing the body along the wall before the hands hold; that is no shimmy.
+        float catchTime = player.Abilities.Traversal.LedgeCatchTime;
+        if (LedgeCatchShare >= 1f && (player.IsNetworkDriven || Mathf.Abs(player.CurrentInput.x) > .1f) && Mathf.Abs(side) > .1f)
         {
             string shimmy = side < 0f ? ledgeShimmyLeft : ledgeShimmyRight;
             Repeat(shimmy);
             Find(shimmy)?.Playable.SetSpeed(Mathf.Clamp(Mathf.Abs(side) / shimmyClipSpeed, .5f, 2.5f));
             FaceWall(Time.deltaTime);
         }
-        else if (Find(ledgeCatch) is Channel catching && stateTime < catching.Length - blendTime) Want(ledgeCatch);
+        // The catch clip starts on the frame its hands touch (Mixamo.clips.csv): held there while the warp brings them to the
+        // edge (PlayerBody.LedgeCatch), and played on from the moment they touch it.
+        else if (Find(ledgeCatch) is Channel catching && stateTime < catchTime + catching.Length - blendTime)
+            Drive(ledgeCatch, Mathf.Max(0f, stateTime - catchTime) / Mathf.Max(.01f, catching.Length));
         else HangLook(inward.normalized, Time.deltaTime);
     }
 

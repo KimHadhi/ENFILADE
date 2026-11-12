@@ -25,6 +25,12 @@ public sealed class ParkourTraversal
     /// when the clip runs by itself.
     /// </summary>
     public float ObstacleClipTime { get; internal set; } = -1f;
+    /// <summary>
+    /// Catching a ledge: how long after the hang began the hands reach its edge (s), the warp's time (LedgeHangState). The
+    /// body holds the catch clip on its first frame and brings the hands onto the edge by then, on every PC: the other PCs
+    /// get it with the pose (MovementMirror). Zero when nothing set it, and then the hands are on at once.
+    /// </summary>
+    public float LedgeCatchTime { get; internal set; }
     private float wallLock, barLock, ledgeLock;
     // The wall climbs of this time in the air, as Beatrun counts them: how many came one after another, when the last is
     // planned to end (on this clock), and which way its wall faces, since the same wall isn't climbed twice before the
@@ -435,6 +441,7 @@ public sealed class ParkourTraversal
         StopSurge();
         wallLock = barLock = ledgeLock = 0f; Bar = lastBar = null; Obstacle = default; Ledge = default; Wall = default;
         Angle = AngularSpeed = 0f; ReleaseVelocity = LedgeJumpVelocity = Vector3.zero;
+        LedgeCatchTime = 0f;
         traversedObstacles.Clear();
     }
 }

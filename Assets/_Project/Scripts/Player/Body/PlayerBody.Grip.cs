@@ -33,6 +33,9 @@ public sealed partial class PlayerBody
         bool holding = !dead && (state == MovementState.LedgeHang || state == MovementState.Ladder || state == MovementState.Zipline
             || HeavePressing || OnBar);
         gripWeight = Mathf.MoveTowards(gripWeight, holding ? 1f : 0f, dt / blendTime);
+        // Catching a ledge, the hands take the body only as they come onto its edge (PlayerBody.LedgeCatch), so it is there
+        // when they are, neither pulled ahead of them nor snapped in at the end.
+        if (state == MovementState.LedgeHang && !dead) gripWeight = Mathf.Min(gripWeight, LedgeCatchWeight);
         SideDive(dt);
         if (leftHand == null || rightHand == null) return;
         SwingWithBar(dt);

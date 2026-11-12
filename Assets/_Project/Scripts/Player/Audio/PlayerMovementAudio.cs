@@ -56,6 +56,9 @@ public sealed class PlayerMovementAudio : MonoBehaviour
     private string slideSurface, recentTraversal;
     private Vector3 lastPosition;
     private float traversalEndedAt, fallSpeed, repeatTimer, slideSurfaceTimer, slideLevel, lastBarAngle;
+    // A ledge catch sounds when its hands touch the edge (ParkourTraversal.LedgeCatchTime), as hard as the fall it caught.
+    private float catchFallSpeed;
+    private bool catchPending;
     private int leanSide;
     private bool wasGrounded;
 
@@ -100,8 +103,13 @@ public sealed class PlayerMovementAudio : MonoBehaviour
         switch (player.CurrentState)
         {
             case MovementState.LedgeHang:
-                // Pulling in to the hang moves the player too; only sidling along the ledge afterwards is shimmying.
-                bool shimmying = moved > ShimmyMinSpeed && player.CurrentStateDuration > player.AbilitySettings.ledgeCatchDuration;
+                if (catchPending && player.CurrentStateDuration >= traversal.LedgeCatchTime) CueCatch();
+                // Pulling in to the hang moves the player too, through the catch's warp and on to the hanging place
+                // (LedgeHangState); only sidling along the ledge afterwards is shimmying.
+                Vector2 catchTimes = player.AbilitySettings.ledgeCatchTimes;
+                float pulledIn = traversal.LedgeCatchTime > 0f ? traversal.LedgeCatchTime + Mathf.Min(catchTimes.x, catchTimes.y) : 0f;
+                bool shimmying = moved > ShimmyMinSpeed
+                    && player.CurrentStateDuration > Mathf.Max(player.AbilitySettings.ledgeCatchDuration, pulledIn);
                 Repeat(shimmying, shimmyInterval, "Shimmy", Surfaces.Of(traversal.Ledge.Surface), dt);
                 break;
             case MovementState.WallClimb:
@@ -144,6 +152,8 @@ public sealed class PlayerMovementAudio : MonoBehaviour
         }
         if (from == MovementState.LedgeHang && to != MovementState.Mantle && to != MovementState.LedgeJump)
             Cue("LedgeDrop", Surfaces.Of(traversal.Ledge.Surface), true);
+        // Let go before the hands got there: no catch to hear.
+        if (from == MovementState.LedgeHang) catchPending = false;
         repeatTimer = 0f;
         switch (to)
         {
@@ -170,7 +180,9 @@ public sealed class PlayerMovementAudio : MonoBehaviour
                     Surfaces.Of(traversal.Obstacle.Surface), true);
                 break;
             case MovementState.LedgeHang:
-                Cue(fallSpeed > ledgeCatchHardSpeed ? "LedgeCatchHard" : "LedgeCatch", Surfaces.Of(traversal.Ledge.Surface), true);
+                catchFallSpeed = fallSpeed;
+                catchPending = true;
+                if (traversal.LedgeCatchTime <= 0f) CueCatch();
                 break;
             case MovementState.LedgeJump: Cue("LedgeJump", Surfaces.Of(traversal.Ledge.Surface), true); break;
             case MovementState.WallClimb: Cue("WallClimb", Surfaces.Of(traversal.Wall.collider)); break;
@@ -180,6 +192,12 @@ public sealed class PlayerMovementAudio : MonoBehaviour
             // Jump releases a lache; crouch, a lost grip or a blocked swing just lets go.
             case MovementState.LacheRelease: Cue(player.Input.JumpPressed ? "BarRelease" : "BarLetGo", null, true); break;
         }
+    }
+
+    private void CueCatch()
+    {
+        catchPending = false;
+        Cue(catchFallSpeed > ledgeCatchHardSpeed ? "LedgeCatchHard" : "LedgeCatch", Surfaces.Of(player.Abilities.Traversal.Ledge.Surface), true);
     }
 
     private void OnLanded(float impact)

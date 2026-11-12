@@ -7,7 +7,8 @@ using State = PlayerMovement.MovementState;
 /// copy's body, hands and sounds read what they always read. The copy's states never run and nothing here moves it.
 /// A pose's Detail and Extent mean: the way the body faces, down after a heavy landing; whether a slide's body faces back
 /// along it (1) or along it (0); a vault or mantle's progress and height; a bar's angle and swing speed; the rung's
-/// progress on a ladder and, while getting on from its top, how long that takes; the ride's speed on a cable.
+/// progress on a ladder and, while getting on from its top, how long that takes; the ride's speed on a cable; how long a
+/// ledge catch's hands take to reach the edge (Extent).
 /// </summary>
 public sealed class MovementMirror
 {
@@ -85,7 +86,11 @@ public sealed class MovementMirror
                 if (traversal.Obstacle.BareHanded) marks |= Marks.BareHanded;
                 if (traversal.Obstacle.Kind != VaultKind.None) WriteLedge(ref pose, traversal.Ledge);
                 break;
-            case State.LedgeHang: WriteLedge(ref pose, traversal.Ledge); break;
+            case State.LedgeHang:
+                WriteLedge(ref pose, traversal.Ledge);
+                // How long the catch's hands take to reach the edge: every PC's body catches in that time (PlayerBody.LedgeCatch).
+                pose.Extent = traversal.LedgeCatchTime;
+                break;
             case State.BarGrab:
             case State.BarSwing:
                 if (traversal.Bar != null) pose.Anchor = traversal.Bar.transform.TransformPoint(traversal.LocalGrip);
@@ -180,7 +185,10 @@ public sealed class MovementMirror
                 traversal.Obstacle.BareHanded = Has(pose, Marks.BareHanded);
                 if (pose.Direction != Vector3.zero) MirrorLedge(pose);
                 break;
-            case State.LedgeHang: MirrorLedge(pose); break;
+            case State.LedgeHang:
+                MirrorLedge(pose);
+                traversal.LedgeCatchTime = pose.Extent;
+                break;
             case State.BarGrab:
             case State.BarSwing:
                 traversal.Angle = pose.Detail;

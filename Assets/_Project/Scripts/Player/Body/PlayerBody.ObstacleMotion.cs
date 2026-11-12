@@ -79,6 +79,8 @@ public sealed partial class PlayerBody : IObstacleMotionSource
             foreach (string variant in new[] { name, name + rifleSuffix, name + pistolSuffix })
                 if (!string.IsNullOrEmpty(variant) && byName.TryGetValue(variant, out var channel) && channel.Playable.IsValid())
                     ObstacleClipContacts.For(loadedModel, channel.Playable.GetAnimationClip(), animator, ContactRules);
+        // The ledge catch's hands on their first frame, warped onto the edge the same way (PlayerBody.LedgeCatch).
+        MeasureCatchWrists();
     }
 
     // The clip's hands on this body as it is posed now: the Animator's place, turn and fit scale.

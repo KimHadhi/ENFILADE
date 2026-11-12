@@ -118,7 +118,19 @@ public sealed partial class PlayerBodyHands
         var state = player.CurrentState;
         float wanted = edgeShares[hand], ease = edgeEase;
         bool reaching = false, overTop = false;
-        if (state == MovementState.LedgeHang) wanted = 1f - body.HangLetGo(isLeft);
+        if (state == MovementState.LedgeHang)
+        {
+            wanted = 1f - body.HangLetGo(isLeft);
+            // Catching, the hand comes onto the edge as the warp brings the body there (PlayerBody.LedgeCatchShare), eased in
+            // and out, and its fingers close on it as it lands rather than while it is still on its way.
+            float catching = body.LedgeCatchShare;
+            if (catching < 1f)
+            {
+                float reach = edgeShares[hand] = wanted * Mathf.SmoothStep(0f, 1f, catching);
+                edgeContacts[hand] = reach * Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(CatchCloses, 1f, catching));
+                return reach;
+            }
+        }
         else if (!Climbing(state) && PressesQuickly(player.Abilities.Traversal.Obstacle.Kind))
         {
             // After a quick move: whatever still has a share lets go (LetGoAfterQuickPress), on the same curve.

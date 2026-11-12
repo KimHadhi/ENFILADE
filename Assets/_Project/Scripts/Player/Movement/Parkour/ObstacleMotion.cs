@@ -33,4 +33,9 @@ public interface IObstacleMotionSource
     /// floor up there, or false when its hands put down on nothing or nothing could be measured.
     /// </summary>
     bool TryLadderExitMotion(bool leftHand, out IObstacleMotion motion);
+    /// <summary>
+    /// Catching the ledge in ParkourTraversal.Ledge: where the capsule's feet have to be for the catch clip's hands, on the
+    /// frame they touch, to rest on its edge (LedgeHangState warps the capsule there), or false when that can't be told.
+    /// </summary>
+    bool TryLedgeContact(out Vector3 feet);
 }

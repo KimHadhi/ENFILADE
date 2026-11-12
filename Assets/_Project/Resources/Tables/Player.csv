@@ -371,6 +371,14 @@ Ability.airTraversalMaxFallSpeed,8.75,이보다 빠르게 떨어지는 중에는
 Ability.ledgeJumpLookAngle,42,렛지에서 점프 방향을 시선으로 고를 때의 허용 각도(도)
 Ability.ledgeJumpSpeed,8.5,렛지 점프 수평 속도(m/s)
 Ability.ledgeJumpUpSpeed,6.5,렛지 점프 위쪽 속도(m/s)
+Ability.ledgeCatchTimes,0.18;0.35,난간을 잡을 때 손이 모서리에 닿기까지의 시간 범위(초): 가장 짧게;가장 길게. 잡는 클립의 손이 닿는 프레임에서 손이 난간 끝에 오는 캡슐 자리까지 들어오던 속도로 가는 시간에 맞추되 이 안에서만(Motion Warping). 가장 짧은 값은 손이 잡은 뒤 캡슐이 매달릴 자리로 옮겨 가는 시간이기도 하다(몸은 손에 매달려 있어 보이지 않는다)
+Ability.ledgeCatchLeastSpeed,2,잡을 때 들어오던 속도로 보는 가장 느린 속도(m/s). 거의 멈춰서 잡아도 손이 늦게 닿지 않게
+Ability.ledgeHandStepTime,0.22,매달려 옆으로 갈 때 손 하나를 다음 자리로 옮겨 잡는 시간(초). 한 손이 옮기는 동안 다른 손은 잡고 있다
+Ability.ledgeHandLag,0.12,옆으로 갈 때 뒷손이 어깨 너비 제자리보다 가는 쪽 뒤로 이만큼 처지면 따라 잡는다(m). 앞손은 몸이 움직이기 시작하면 바로 뻗는다
+Ability.ledgeHandLead,0.15,옮겨 잡는 손이 어깨 너비 제자리보다 가는 쪽으로 이만큼 앞을 잡는다(m). 손이 닿을 때 몸이 와 있을 자리로 셈한다
+Ability.ledgeHandMostLag,0.4,잡은 손이 제자리에서 이보다 더 처지면 팔이 다 펴지지 않게 난간을 따라 미끄러져 따라온다(m)
+Ability.ledgeHandLift,0.06,옮겨 잡는 손이 윗면 위로 드는 높이. 난간을 잡을 때도 손이 벽을 뚫지 않고 모서리 위로 이만큼 넘어와 잡는다(m)
+Ability.ledgeHandSettle,0.2,멈춘 뒤 이만큼 지나면 벌어진 손을 하나씩 다시 어깨 너비로 모은다(초)
 # 능력: 벽,,
 Ability.wallReach,0.85,벽을 찾는 거리(m)
 Ability.wallClimbTime,1.5,벽 오르기 한 번의 기본 시간(초). Beatrun 원본 1.5. 처음엔 키의 2.8배(초당 200단위) 속도로 오르다 남은 시간에 맞춰 느려져 한 번에 키의 약 2.1배(약 3.7m)를 오른다. 위로 뛰어오르는 중이면 최대 1.1배 길고 떨어지는 중(초당 75단위 이상)이면 시작하지 않는다. 끝나고 2초 안에 다시 오르면 세 번째부터 0.6배·0.25배
@@ -645,6 +653,10 @@ Body.vaultFeetAhead,0.2,빠른 넘기에서 발이 가로로 나아가는 길을
 Body.vaultHeightSmooth,0.06;0.15,빠른 넘기에서 몸 높이가 따라가는 부드러움(초): 올라갈 때;내려올 때. 발 규칙 때문에 몸이 튀어 오르내리던 버벅거림을 없앤다(2026-11-07)
 Body.fixtureTurnLimit,90,사다리·집라인에서 몸이 향한 쪽에서 좌우로 돌아볼 수 있는 각도(도)
 Body.hangTurnLimit,175,난간에 매달려 벽에서 좌우로 돌아볼 수 있는 각도(도). 180을 넘으면 돌아본 자세가 반대쪽으로 뒤집힌다
+Body.hangFootReach,0.35,매달렸을 때 발끝과 그 앞 실제 벽 사이가 이 거리 안이면 발끝으로 벽을 딛는다(m). 더 멀면(안으로 들어간 벽·오버행) 다리를 늘어뜨린다. 이 값의 절반부터 이 값까지 사이에서 서서히 바뀐다
+Body.hangWallGap,0.015,매달리거나 올라갈 때 발끝·무릎·발목을 실제 벽에서 띄우는 거리(m)
+Body.hangLegFront,0.12;0.1,무릎 앞면;발목 앞면이 관절보다 벽 쪽으로 나와 있는 거리. 정강이 길이에 곱하는 비율. 다리 두께만큼 피부도 벽 밖에 둔다
+Body.hangLegDangle,0.96;0.06,닿는 벽이 없을 때 늘어뜨린 다리: 발목이 엉덩이 관절에서 다리 길이의 이 비율만큼 아래;벽 쪽으로
 Body.ladderEnter,ladderenterbottom,땅에서 사다리에 오르기
 Body.ladderCatch,ladderclimbhangstart,공중에서 사다리 잡기
 Body.ladderLeft,LDR_I400_Ascd_LU_Loop_IP,왼손을 올리며 한 칸. 이전 값은 ladderclimbuplefthand
