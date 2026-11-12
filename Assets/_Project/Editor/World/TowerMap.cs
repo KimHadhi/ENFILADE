@@ -72,6 +72,8 @@ public static class TowerMap
         b.Box("외벽 서", x0, TowerLayout.WestEnd, -.5f, top, -inner, -GateHalf, wall);
         b.Box("외벽 서", x0, TowerLayout.WestEnd, -.5f, top, GateHalf, inner, wall);
         b.Box("입구 위", x0, TowerLayout.WestEnd, GateTop, top, -GateHalf, GateHalf, wall);
+        // The doorway's own floor, inside the wall's thickness, between the square and the lobby.
+        b.Box("입구 문턱", x0, TowerLayout.WestEnd, -.5f, 0f, -GateHalf, GateHalf, floor);
         b.Box("입구 틀 위", x0 - .1f, TowerLayout.WestEnd + .1f, GateTop - .12f, GateTop, -GateHalf - .1f, GateHalf + .1f, neon, solid: false);
     }
 
