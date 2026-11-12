@@ -640,7 +640,7 @@ public sealed partial class GreyboxBuilder
     // anything that moves (zombies, players, pickups, effects) is culled against it at run time as well, since every
     // renderer allows dynamic occlusion unless it says otherwise: a horde behind a building or a tunnel wall costs no
     // drawing. Contribute GI only for a map that bakes probes (GreyboxBuilder.Probes): its solid boxes and its models,
-    // taking their light from the probes, not lightmaps; the map's lighting never bakes by itself (autoGenerate off).
+    // taking their light from the probes, not lightmaps; Unity 6 never bakes lighting by itself, only the build does.
     // Smaller occluders than this are not used to hide anything, and the gaps it may see through (m); larger values bake
     // faster and coarser. The maps are big boxes, so a coarse bake is enough.
     private const float SmallestOccluder = 4f, SmallestHole = .25f, BackfaceThreshold = 100f;

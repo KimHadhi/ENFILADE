@@ -46,7 +46,8 @@ public sealed partial class GreyboxBuilder
     private bool BakesProbes => ProbeSpacing() > 0f;
 
     // The bake's settings in this map's lighting asset (ApplyLook makes it): baked GI for the probes, Baked Indirect for
-    // the mixed lights, no lightmaps to make, and never baking by itself while the map is edited.
+    // the mixed lights, no lightmaps to make. Unity 6 never bakes lighting by itself (LightingSettings.autoGenerate is
+    // obsolete and does nothing), so only the build's own Lightmapping.Bake bakes it.
     private void ProbeLighting(LightingSettings lighting)
     {
         if (!BakesProbes) return;
@@ -58,7 +59,6 @@ public sealed partial class GreyboxBuilder
         lighting.environmentSampleCount = ProbeEnvironmentSamples;
         lighting.maxBounces = ProbeBounces;
         lighting.directionalityMode = LightmapsMode.NonDirectional;
-        lighting.autoGenerate = false;
     }
 
     // Before the first save: the volume over the whole map (Global: it takes the size of everything that contributes).
