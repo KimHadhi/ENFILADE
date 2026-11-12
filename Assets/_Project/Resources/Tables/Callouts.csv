@@ -3,7 +3,7 @@
 zombie.ninja,zombie,kind:ninja,30,target,callout.line.zombie.ninja,,call.alarm,point,보고 있는(없으면 가장 가까운) 좀비가 닌자
 zombie.candyman,zombie,kind:candyman,30,target,callout.line.zombie.candyman,,scared,point,
 zombie.breadbag,zombie,kind:breadbag,30,target,callout.line.zombie.breadbag,,scared,point,
-zombie.reaper,zombie,kind:reaper,30,target,callout.line.zombie.reaper,,scared,point,그림 리퍼: 멀어지면 낫에 맞고 붙어 앉으면 피한다
+zombie.reaper,zombie,kind:reaper,30,target,callout.line.zombie.reaper,,scared,point,그림 리퍼: 멀어지면 도끼에 맞고 붙어 앉으면 피한다
 zombie.brute,zombie,kind:brute,25,target,callout.line.zombie.brute,,scared,point,거구는 무릎이 약해 다리를 쏘면 쓰러진다. 거구가 오면 가장 가까운 사람이 저절로 외친다
 zombie.brute.down,zombie,crawl:brute,26,target,callout.line.zombie.brute.down,,fierce,point,다리가 부러져 기는 거구(머리가 약점). 다리를 부러뜨린 사람이 저절로 외친다
 zombie.charger,zombie,kind:charger,20,target,callout.line.zombie.charger,,call.alarm,point,

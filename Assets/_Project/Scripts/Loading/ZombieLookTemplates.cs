@@ -34,13 +34,18 @@ public static class ZombieLookTemplates
         return template;
     }
 
-    /// <summary>Pares every zombie look ahead (ZombieLooks), each the first time only.</summary>
+    /// <summary>Pares every zombie look ahead (ZombieLooks, and the elites' own bodies in EliteLooks), each the first time only.</summary>
     public static void Prepare()
     {
         var looks = ZombieLooks.Instance;
-        if (looks == null || looks.characters == null) return;
-        foreach (var look in looks.characters)
-            if (look != null && !made.ContainsKey(look)) made[look] = Pare(look);
+        if (looks != null && looks.characters != null)
+            foreach (var look in looks.characters)
+                if (look != null && !made.ContainsKey(look)) made[look] = Pare(look);
+        // The brute, exploder, charger, candyman and reaper wear bodies the pack's list leaves out (EliteLooks).
+        var elites = EliteLooks.Instance;
+        if (elites != null && elites.looks != null)
+            foreach (var elite in elites.looks)
+                if (elite.character != null && !made.ContainsKey(elite.character)) made[elite.character] = Pare(elite.character);
     }
 
     private static GameObject Pare(GameObject look)

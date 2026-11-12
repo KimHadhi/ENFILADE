@@ -114,6 +114,17 @@ internal sealed class CombatRehearsal : MonoBehaviour
         var zombies = ZombieLooks.Instance;
         if (zombies != null && zombies.characters != null)
             foreach (var character in zombies.characters) steps.Add(() => Look(ZombieLookTemplates.Of(character), true));
+        // The elites' own bodies, which the list above leaves out (EliteLooks: the brute's riot cop, the reaper's
+        // firefighter and so on), and what they hold (the reaper's axe).
+        var elites = EliteLooks.Instance;
+        if (elites != null && elites.looks != null)
+            foreach (var elite in elites.looks)
+            {
+                var eliteBody = elite.character;
+                if (eliteBody != null) steps.Add(() => Look(ZombieLookTemplates.Of(eliteBody), true));
+                var eliteHand = elite.handProp;
+                if (eliteHand != null) steps.Add(() => Look(eliteHand, false));
+            }
 
         var throwables = Resources.Load<GrenadeLibrary>(GrenadeLibrary.ResourcePath);
         if (throwables != null)

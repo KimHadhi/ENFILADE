@@ -156,7 +156,8 @@ public abstract class ZombieElite : MonoBehaviour
         {
             var holder = Holder("Elite Head", head, head.position, facing);
             if (look.headProp != null) Instantiate(look.headProp, holder, false);
-            else BuildHead(holder);
+            // A body of its own is its look already (the reaper's firefighter): no box hood over its helmet.
+            else if (look.character == null) BuildHead(holder);
             Strip(holder.gameObject, model.layer);
         }
     }

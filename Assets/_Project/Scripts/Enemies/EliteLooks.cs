@@ -2,11 +2,15 @@ using System;
 using UnityEngine;
 
 /// <summary>
-/// What the memo's elites (2026-11-11: ninja, candyman, breadbag; 2026-11-12: reaper) look and sound like, at Resources/Enemies/EliteLooks.
-/// None has a model of its own yet: each wears one of the pack's bodies (ZombieBody) a little bigger or smaller, with a
-/// light of its own colour and something in its hands that a few boxes stand in for (ZombieElite builds them). Drop a
-/// humanoid body, a prop for the right hand or one for the head into its row and the placeholder gives way; sounds left
-/// empty are made in code.
+/// What the elites look and sound like, at Resources/Enemies/EliteLooks: the memo's (2026-11-11: ninja, candyman,
+/// breadbag; 2026-11-12: reaper) and the brute, exploder and charger. At the user's word of 2026-11-12 ("엘리트 좀비들은
+/// 눈에 띄게 특정 좀비 외형으로만 고정하자") a row's body is that kind's one fixed look, worn on every PC (ZombieBody.Pick),
+/// and ZombieLooks.characters leaves those bodies out so no plain zombie wears them: the brute a riot cop, the exploder
+/// the yellow hazmat suit, the charger a footballer, the candyman a clown, the reaper a firefighter with an axe and its
+/// own chop. A row without a body (ninja, breadbag) wears one of the pack's, a little bigger or smaller. Each memo elite
+/// has a light of its own colour and something in its hands that a few boxes stand in for (ZombieElite builds them);
+/// drop a prop for the right hand or one for the head into its row and the placeholder gives way. Sounds left empty are
+/// made in code.
 /// </summary>
 [CreateAssetMenu(menuName = "ENFILADE/Elite Looks", fileName = "EliteLooks")]
 public sealed class EliteLooks : ScriptableObject
@@ -23,8 +27,11 @@ public sealed class EliteLooks : ScriptableObject
         [Tooltip("Held in its right hand: the ninja's blade, the candyman's hook, the breadbag's chainsaw. Pointing along +Z, " +
                  "the grip at its origin. Empty: a placeholder made of boxes.")]
         public GameObject handProp;
-        [Tooltip("Worn on its head (the breadbag's bag). Centred on the head bone. Empty: a placeholder, or nothing.")]
+        [Tooltip("Worn on its head (the breadbag's bag). Centred on the head bone. Empty: a placeholder, or nothing (none " +
+                 "over a body of its own).")]
         public GameObject headProp;
+        [Tooltip("Its swing, in place of one of the pack's (ZombieLooks.attacks): the reaper's axe chop. Empty: the pack's.")]
+        public AnimationClip swing;
     }
 
     public Look[] looks = new Look[0];

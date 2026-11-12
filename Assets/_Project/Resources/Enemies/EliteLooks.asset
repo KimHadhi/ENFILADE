@@ -13,22 +13,41 @@ MonoBehaviour:
   m_Name: EliteLooks
   m_EditorClassIdentifier: Assembly-CSharp::EliteLooks
   looks:
+  - kind: 2
+    character: {fileID: 1069217425750644, guid: 83620e573d3f2254199cd946a8601720, type: 3}
+    handProp: {fileID: 0}
+    headProp: {fileID: 0}
+    swing: {fileID: 0}
+  - kind: 3
+    character: {fileID: 1379516714727752, guid: cecba8cbb65991c42a1e7219f8210b9a, type: 3}
+    handProp: {fileID: 0}
+    headProp: {fileID: 0}
+    swing: {fileID: 0}
+  - kind: 4
+    character: {fileID: 1916796579201672, guid: 5de68a7f859a40a47bf17802c25007c3, type: 3}
+    handProp: {fileID: 0}
+    headProp: {fileID: 0}
+    swing: {fileID: 0}
   - kind: 5
     character: {fileID: 0}
     handProp: {fileID: 0}
     headProp: {fileID: 0}
+    swing: {fileID: 0}
   - kind: 6
-    character: {fileID: 0}
+    character: {fileID: 1055470696967520, guid: bb116383f6f80bf4d90cb48aeca8e8bf, type: 3}
     handProp: {fileID: 0}
     headProp: {fileID: 0}
+    swing: {fileID: 0}
   - kind: 7
     character: {fileID: 0}
     handProp: {fileID: 0}
     headProp: {fileID: 0}
+    swing: {fileID: 0}
   - kind: 8
-    character: {fileID: 0}
-    handProp: {fileID: 0}
+    character: {fileID: 1616105819863738, guid: 7cb0205c5f7aeba45b91883f9425fcab, type: 3}
+    handProp: {fileID: 6913761791639620441, guid: 445b273e225e4355b1899599a388dfa4, type: 3}
     headProp: {fileID: 0}
+    swing: {fileID: -7104571153434317, guid: c20d967c14912e7489922ec5fb3e8b47, type: 3}
   ninjaVanish: []
   ninjaAppear: []
   chainsawIdle: {fileID: 0}

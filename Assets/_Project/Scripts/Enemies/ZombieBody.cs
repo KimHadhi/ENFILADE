@@ -114,8 +114,10 @@ public sealed partial class ZombieBody : MonoBehaviour
     {
         var own = OwnBody();
         if (own != null) return own;
-        // A memo elite with a body of its own in EliteLooks wears it (none have one yet: they wear the pack's).
-        if (TryGetComponent(out ZombieType kind) && kind.IsMemoElite)
+        // A kind with a body of its own in EliteLooks always wears it, so it is known at a glance (the user, 2026-11-12:
+        // the brute a riot cop, the exploder a hazmat suit, the charger a footballer, the candyman a clown, the reaper a
+        // firefighter). The pack's list leaves those bodies out; the other kinds wear one of the list's.
+        if (TryGetComponent(out ZombieType kind))
         {
             var elite = EliteLooks.For(kind.Kind).character;
             if (elite != null) return elite;
@@ -370,7 +372,9 @@ public sealed partial class ZombieBody : MonoBehaviour
         run = Clip(Or(runClip, Or(looks.walk, rest)), moves, 2, out runLength);
         top = AnimationMixerPlayable.Create(graph, TopInputs);
         graph.Connect(moves, 0, top, 0);
-        attackClip = Or(Pick(looks.attack, looks.attacks, AttackSlot), rest);
+        // A kind with a swing of its own in EliteLooks swings it (the reaper's axe chop); the rest pick one of the pack's.
+        attackClip = Or(TryGetComponent(out ZombieType ofKind) ? EliteLooks.For(ofKind.Kind).swing : null,
+            Or(Pick(looks.attack, looks.attacks, AttackSlot), rest));
         attack = Clip(attackClip, top, 1, out float attackLength);
         var flinchClip = Or(Pick(looks.flinch, looks.flinches, FlinchSlot), rest);
         flinch = Clip(flinchClip, top, 2, out flinchLength);
