@@ -37,10 +37,11 @@ public sealed class BandGraphic : MaskableGraphic
     public void Shape(float bandWidth, float bandHeight, float cut, Cap end, Color colour)
     {
         width = bandWidth; height = bandHeight; slant = cut; cap = end; tint = colour;
-        // Each its own lean, never one shared slant (the HUD's rule), small enough to keep clear of the chat above.
+        // Each its own lean, never one shared slant (the HUD's rule). MomentHUD turns the band clockwise only, its right
+        // end down: raised, the end would reach the chat's input above (stance-room's measure, 2026-11-12).
         Lean = MomentLook.Number("Notice", "lean." + end.ToString().ToLowerInvariant(), end switch
         {
-            Cap.Blade => 2.5f, Cap.Ranks => 4f, Cap.Ticks => 1.5f, Cap.Twin => 3f, Cap.Pulse => 2f, Cap.Diamond => 3.5f, _ => 1f,
+            Cap.Blade => 2f, Cap.Ranks => 3f, Cap.Ticks => 1f, Cap.Twin => 2.5f, Cap.Pulse => 1.5f, Cap.Diamond => 2.75f, _ => .5f,
         });
         SetVerticesDirty();
     }

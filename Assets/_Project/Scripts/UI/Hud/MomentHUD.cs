@@ -13,7 +13,10 @@ using UnityEngine.UI;
 /// drafts' sigils); the ultimate's name; who fired it, in their seat colour; the HUD's pink shard past its tip.
 /// Each class ends its band its own way, so two never read as one template: a blade's point, rank bars, a rangefinder's
 /// ticks, twin cuts, a heartbeat, a nested diamond, hazard stripes.
-/// It slides in, holds long enough to read and slides out; a new one takes the old one's place.</item>
+/// It wipes open from its left end, holds long enough to read and closes back into it, so it never passes over the
+/// cards beside it; a new one takes the old one's place. Its right end keeps clear of the pieces that follow the
+/// screen's middle (rescue panel, pickup feed, special-kill stamp), so a narrower screen draws it smaller, and it leans
+/// clockwise only, the chat's input being above its right end.</item>
 /// <item>The small tag over the class chip, on this player's own screen: CHARGE, DUEL, REVERSAL, GUN KATA. It is a
 /// hairline drawn out from the middle, the word, and a line under it in the class colour (the A drafts). The kata's tag
 /// stamps its own sigil beside the word.</item>
@@ -28,7 +31,7 @@ public sealed class MomentHUD : MonoBehaviour, IHudPreview
     private static MomentHUD instance;
 
     // The notice's pieces.
-    private RectTransform plane, band;
+    private RectTransform noticeCanvas, plane, band;
     private BandGraphic plate;
     private SigilGraphic emblem;
     private TextMeshProUGUI title, who;
@@ -106,6 +109,7 @@ public sealed class MomentHUD : MonoBehaviour, IHudPreview
         var noticeHost = new GameObject("Moment Notice HUD", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler));
         noticeHost.transform.SetParent(transform, false);
         FeelUI.SetupHud(noticeHost, 26);
+        noticeCanvas = (RectTransform)noticeHost.transform;
         plane = HudPlane.Create("Left Plane", noticeHost.transform, HudPlane.Side.Left);
         band = FeelUI.Rect("Moment Notice", plane);
         band.anchorMin = band.anchorMax = Vector2.zero;
@@ -188,7 +192,7 @@ public sealed class MomentHUD : MonoBehaviour, IHudPreview
     private void ShowNotice(string name, Color seatColour, string classId)
     {
         Color colour = MomentLook.ColorOf(classId);
-        float width = MomentLook.Number(NoticeRow, "width", 470f), height = MomentLook.Number(NoticeRow, "height", 52f);
+        float width = MomentLook.Number(NoticeRow, "width", 460f), height = MomentLook.Number(NoticeRow, "height", 52f);
         band.sizeDelta = new Vector2(width, height);
         plate.Shape(width, height, MomentLook.Number(NoticeRow, "slant", 18f), BandGraphic.CapOf(classId), colour);
         float block = height - 12f;
@@ -217,14 +221,19 @@ public sealed class MomentHUD : MonoBehaviour, IHudPreview
     private void PoseNotice()
     {
         float inSeconds = MomentLook.Number(NoticeRow, "in", .09f), outSeconds = MomentLook.Number(NoticeRow, "out", .14f);
-        float left = MomentLook.Number(NoticeRow, "left", 252f), bottom = MomentLook.Number(NoticeRow, "bottom", 292f);
-        float width = band.sizeDelta.x;
-        float slideIn = 1f - Mathf.Pow(1f - Mathf.Clamp01(noticeAge / inSeconds), 3f);
-        float slideOut = Mathf.Pow(Mathf.Clamp01((noticeAge - inSeconds - noticeHold) / outSeconds), 3f);
-        float hidden = -width - 90f;
-        band.anchoredPosition = new Vector2(Mathf.Lerp(hidden, left, slideIn) + (hidden - left) * slideOut, bottom);
+        float left = MomentLook.Number(NoticeRow, "left", 246f), bottom = MomentLook.Number(NoticeRow, "bottom", 292f);
+        // It wipes open from its left end and closes back into it, so it never passes over the teammates' cards beside it.
+        float open = 1f - Mathf.Pow(1f - Mathf.Clamp01(noticeAge / Mathf.Max(.01f, inSeconds)), 3f);
+        float close = Mathf.Pow(Mathf.Clamp01((noticeAge - inSeconds - noticeHold) / Mathf.Max(.01f, outSeconds)), 3f);
+        float fit = NoticeFit(left);
+        band.anchoredPosition = new Vector2(left, bottom);
+        band.localScale = new Vector3(fit * open * (1f - close), fit, 1f);
+        // Its own roll, clockwise only: raised, its right end would reach the chat's input above; lowered, it stops short
+        // of the HP block below (Notice.floor).
         float tilt = GameSettings.Current.hudTilt;
-        band.localRotation = Quaternion.Euler(0f, -MomentLook.Number(NoticeRow, "yaw", 8f) * tilt, plate.Lean * tilt);
+        float reach = band.sizeDelta.x * fit;
+        float most = reach > 1f ? Mathf.Asin(Mathf.Clamp01((bottom - MomentLook.Number(NoticeRow, "floor", 235f)) / reach)) * Mathf.Rad2Deg : 0f;
+        band.localRotation = Quaternion.Euler(0f, -MomentLook.Number(NoticeRow, "yaw", 8f) * tilt, -Mathf.Min(Mathf.Abs(plate.Lean) * tilt, most));
         plate.Flash = 1f - Mathf.Clamp01(noticeAge / .08f);
         // The sigil draws itself in the emblem, then is stamped.
         float drawFrom = .03f, drawFor = Mathf.Max(.05f, MomentLook.Number(NoticeRow, "draw", .22f));
@@ -234,6 +243,18 @@ public sealed class MomentHUD : MonoBehaviour, IHudPreview
         float scale = stamp >= 0f && stamp < .1f ? Mathf.Lerp(1.15f, 1f, stamp / .1f) : 1f;
         emblem.rectTransform.localScale = Vector3.one * scale;
         if (noticeAge > inSeconds + noticeHold + outSeconds && !previewing) { band.gameObject.SetActive(false); noticeAge = -1f; }
+    }
+
+    // The scale that keeps the band between the teammates' cards and the pieces that keep to the screen's middle (the
+    // rescue panel, the pickup feed, the special-kill stamp; stance-room's measure of 2026-11-12): its right end stops at
+    // Notice.right or Notice.middleGap short of the middle, whichever comes first. A narrower screen draws it smaller.
+    private float NoticeFit(float left)
+    {
+        float design = Mathf.Max(1f, band.sizeDelta.x);
+        float canvasWidth = noticeCanvas != null ? noticeCanvas.rect.width : 0f;
+        if (canvasWidth <= 1f) return 1f;
+        float right = Mathf.Min(MomentLook.Number(NoticeRow, "right", 706f), canvasWidth * .5f - MomentLook.Number(NoticeRow, "middleGap", 232f));
+        return Mathf.Clamp((right - left) / design, .4f, 1f);
     }
 
     // ---- The tag ----

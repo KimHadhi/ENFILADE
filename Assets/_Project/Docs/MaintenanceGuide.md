@@ -264,7 +264,7 @@ C 메뉴에서 바꾼 조준경·총구·하단·손잡이, L 플래시, B 사�
 
 | 순간 | 고른 것 | 모양 |
 | --- | --- | --- |
-| 궁극기 알림(모든 순간 공통) | B 컷인 띠 | 모든 PC의 왼쪽 아래(아군 카드 오른쪽)에 기운 검은 띠가 들어와 1.2초 머물고 나간다. 띠에는 클래스 색 윗줄, 문장이 그려지고 찍히는 칸, 궁극기 이름, 누가 썼는지(자리 색)와 끝의 분홍 조각이 있다. 클래스마다 띠 끝(칼끝·계급 막대·거리계 눈금·쌍 사선·심전도·겹 마름모·경고 빗금)과 기울기가 다르다 |
+| 궁극기 알림(모든 순간 공통) | B 컷인 띠 | 모든 PC의 왼쪽 아래, 아군 카드 오른쪽(왼쪽 끝 246px)에 검은 띠가 제자리에서 펼쳐져 1.2초 머물고 접힌다. 옆 아군 카드 위를 지나가지 않는다. 오른쪽 끝은 706px과 '화면 가운데 − 232px' 중 가까운 쪽까지라서, 16:10·4:3 같은 좁은 화면에서는 띠 전체가 그 비율로 줄어든다(구조 패널·주운 것 줄·특수 처치 도장과 10px 넘게, stance-room 계산). 기울기는 시계 방향으로만 준다: 위로 기울면 오른쪽 끝이 채팅 입력칸에 닿는다. 띠에는 클래스 색 윗줄, 문장이 그려지고 찍히는 칸, 궁극기 이름, 누가 썼는지(자리 색)와 끝의 분홍 조각이 있다. 클래스마다 띠 끝(칼끝·계급 막대·거리계 눈금·쌍 사선·심전도·겹 마름모·경고 빗금)과 기울기가 다르다 |
 | 나이트 궁극(그림자 분신) | C | 발밑에 방패와 검 문장. 분신은 내 캐릭터 그대로 보랏빛 검은색에 비쳐 보인다(사용자 메모). 왼쪽 앞에 서서 나를 따라 움직이고 같이 때린다([BodyDouble](../Scripts/Combat/Feel/BodyDouble.cs), 1초에 15번 자세를 굽는다). 카드 '그림자 분신'의 6초도 같다 |
 | 어썰트 궁극(유령 기병대) | B | 알림 띠 + 바닥으로 미끄러져 나가는 금빛 쐐기 판 다섯(기병이 지나가는 줄) + CHARGE 빛 |
 | 고스트 궁극(흰 호랑이) | C | 발밑에 조준경과 발톱 문장, 앞에 흰 호랑이 머리 외곽선(사용자 메모) |
@@ -287,7 +287,7 @@ C 메뉴에서 바꾼 조준경·총구·하단·손잡이, L 플래시, B 사�
 - **코드**: [MomentLook](../Scripts/Combat/Feel/MomentLook.cs)(색·문장·이름·표), [MomentFx](../Scripts/Combat/Feel/MomentFx.cs)(세계 쪽 모양, 궁극기 한 번의 모든 것 Ultimate), [FxShapes](../Scripts/Combat/Feel/FxShapes.cs)(납작한 도형·문장 메시), [MomentHUD](../Scripts/UI/Hud/MomentHUD.cs)·[BandGraphic](../Scripts/UI/Hud/BandGraphic.cs)·[SigilGraphic](../Scripts/UI/Hud/SigilGraphic.cs)(알림 띠와 이름표), [BodyBake](../Scripts/Combat/Feel/BodyBake.cs)(몸 굽기와 BodyShell 빛 껍질), [MomentSound](../Scripts/Combat/Feel/MomentSound.cs)(소리), 셰이더 [MomentGlow](../Resources/Combat/Shaders/MomentGlow.shader)·[GunHeat](../Resources/Combat/Shaders/GunHeat.shader).
 - **다른 PC로**: CardNet(ENFILADE.CardFx 이름 메시지)이 보낸 사람(From)을 실어 보낸다. 새 종류 CardFx.Kind Ultimate(값 = 클래스 번호 MomentLook.IndexOf)·Reversal·CoverDeflect·KataDraw가 늘었다. 현상금(BountyRpc)·결투(DuelRpc)·CHARGE(ChargeRpc)·원호 걸음(CoverStepRpc, 이제 나이트 몸을 넘겨 잔상)은 원래 길 그대로다.
 - **소리**: 클래스마다 1초 안쪽 합성음이다. 나이트는 낮은 종, 어썰트는 나팔 세 음, 고스트는 쇠 울림, 포인트는 실린더, 데탕트는 심장 두 번과 종, 시순트는 찰칵 여섯과 칭, 서포트는 무전과 상자 소리다. 순간 소리로 bounty·reversal·cover·kata·duel이 있다. `Resources/Audio/Moments/<키>`에 소리 파일을 넣으면 그 소리로 바뀐다(키: 클래스 id 또는 그 다섯). 친구 소리는 그 자리에서 거리만큼 작게 들린다.
-- **겹침**: 알림 띠(Moment Notice)와 이름표(Moment Tag)는 HudOverlap.csv에 조각으로 있고 IHudPreview를 구현했다. Tools → HUD → 겹침 검사가 띠를 세워 잰다(그 씬에서 한 번 뜬 뒤부터).
+- **겹침**: 알림 띠(Moment Notice)와 이름표(Moment Tag)는 HudOverlap.csv에 조각으로 있고 IHudPreview를 구현했다. Tools → HUD → 겹침 검사가 띠를 세워 잰다(그 씬에서 한 번 뜬 뒤부터). 자리는 stance-room이 코드로 잰 이웃에 맞췄다: 아군 카드 오른쪽 끝 228, 채팅 입력칸 412~448(HUD 기울기 2에서 오른쪽 끝이 9.8px 내려옴), HP 블록 위 끝 ~225(기울기 2), 화면 가운데를 따르는 구조 패널(±220)·주운 것 줄(±215)·특수 처치 도장(±170).
 - **그대로 둔 것**: 밀치기 반격 COUNTER는 사용자가 고른 D 그대로이고, 이제 그 배너를 COUNTER와 COVER만 쓴다. 킬로그의 현상금 돈은 킬 피드가 보여 준다.
 
 ## HUD 조각 자리와 겹침 검사 (HudOverlap.csv)

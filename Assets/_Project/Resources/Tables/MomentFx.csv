@@ -28,23 +28,26 @@ Ult.schiesshund.what,데스페라도 실린더 가득,
 Ult.support.title,RESTOCK,
 Ult.support.what,보급 가방 가득,
 Notice.on,1,"궁극기 알림 띠(모든 PC, 누가 썼는지)를 켤지(1/0)"
-Notice.left,252,"알림 띠 왼쪽 끝(px, 화면 왼쪽부터). 아군 카드(Hud.csv Team.left 74 + 폭 154) 오른쪽"
-Notice.bottom,292,"알림 띠 아래 끝(px, 화면 아래부터). 아군 카드 맨 아래 줄과 같은 높이, 채팅(Chat.csv Place.bottom 412) 아래"
-Notice.width,470,알림 띠 폭(px)
+Notice.left,246,"알림 띠 왼쪽 끝(px, 화면 왼쪽부터). 아군 카드 오른쪽 끝 228(Hud.csv Team.left 74 + 카드 폭 154)에서 18 띄움"
+Notice.bottom,292,"알림 띠 아래 끝(px, 화면 아래부터). 아군 카드 맨 아래 줄과 같은 높이, 채팅 입력칸(412~448) 아래"
+Notice.width,460,"알림 띠 폭(px). 오른쪽 끝이 Notice.right나 화면 가운데에서 Notice.middleGap 안쪽을 넘으면 띠 전체를 그 비율로 줄여 그린다(좁은 화면)"
+Notice.right,706,"띠 오른쪽 끝이 갈 수 있는 가장 먼 곳(px, 화면 왼쪽부터)"
+Notice.middleGap,232,"화면 가운데에서 띠 오른쪽 끝까지 비우는 거리(px). 가운데를 따르는 구조 패널(가운데±220), 주운 것 줄(±215), 특수 처치 도장(±170)과 10px 넘게 떨어진다(stance-room 계산: 16:9, 16:10, 21:9, 4:3)"
 Notice.height,52,알림 띠 높이(px)
 Notice.slant,18,띠 오른쪽 끝이 비스듬히 잘린 만큼(px)
 Notice.yaw,8,띠가 아군 카드처럼 오른쪽이 멀어지게 기우는 각도(°). 설정의 HUD 기울기가 곱해진다
-Notice.in,0.09,띠가 왼쪽에서 들어오는 시간(초)
+Notice.in,0.09,"띠가 왼쪽 끝에서 펼쳐지는 시간(초). 옆의 아군 카드 위를 지나가지 않는다"
 Notice.hold,1.2,띠가 머무는 시간(초). 팀원이 누가 썼는지 읽을 만큼
-Notice.out,0.14,띠가 왼쪽으로 빠지는 시간(초)
+Notice.out,0.14,띠가 왼쪽 끝으로 접히는 시간(초)
 Notice.draw,0.22,띠의 문장이 그려지는 시간(초). 다 그려지면 도장 고리가 한 번 퍼진다
-Notice.lean.blade,2.5,"나이트 띠가 기우는 각도(°, 반시계). 끝이 칼끝. 클래스마다 제 기울기: 같은 사선을 나누지 않는다. 4를 넘으면 채팅에 닿을 수 있다"
-Notice.lean.ranks,4,어썰트 띠(끝에 계급 막대 셋)
-Notice.lean.ticks,1.5,고스트 띠(위에 거리계 눈금)
-Notice.lean.twin,3,포인트 띠(끝에 쌍 사선)
-Notice.lean.pulse,2,데탕트 띠(위 줄에 심전도 한 박동)
-Notice.lean.diamond,3.5,시순트 띠(끝에 겹 마름모)
-Notice.lean.hazard,1,서포트 띠(끝에 경고 빗금)
+Notice.floor,235,"띠가 기울어도 오른쪽 끝이 이 높이(px, 화면 아래부터) 밑으로 내려가지 않는다. HP 블록 위 끝(HUD 기울기 2에서 ~225) + 10"
+Notice.lean.blade,2,"나이트 띠가 기우는 각도(°, 시계 방향: 오른쪽 끝이 내려간다. HUD 기울기가 곱해진다). 위로는 기울지 않는다: 올라가면 오른쪽 끝이 채팅 입력칸에 닿는다. 끝이 칼끝. 클래스마다 제 기울기: 같은 사선을 나누지 않는다"
+Notice.lean.ranks,3,어썰트 띠(끝에 계급 막대 셋)
+Notice.lean.ticks,1,고스트 띠(위에 거리계 눈금)
+Notice.lean.twin,2.5,포인트 띠(끝에 쌍 사선)
+Notice.lean.pulse,1.5,데탕트 띠(위 줄에 심전도 한 박동)
+Notice.lean.diamond,2.75,시순트 띠(끝에 겹 마름모)
+Notice.lean.hazard,0.5,서포트 띠(끝에 경고 빗금)
 Tag.on,1,내 화면 클래스 칸 위의 작은 이름표(CHARGE·DUEL·REVERSAL·GUN KATA)를 켤지(1/0)
 Tag.bottom,196,"이름표 아래 끝(px, 화면 아래부터). 클래스 칸(ClassHUD 112~156px)과 키 안내(~184px) 위"
 Tag.seconds,0.9,이름표가 보이는 시간(초)
