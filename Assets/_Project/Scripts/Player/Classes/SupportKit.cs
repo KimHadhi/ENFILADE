@@ -267,6 +267,9 @@ public sealed class SupportKit : MonoBehaviour
         }
         slots.NotifyAmmo();
         if (syringe > 0f && DetenteKit.Local != null) DetenteKit.Local.Refill(syringe);
+        // The class's throwables too (GrenadeRules resupply), as the walking shop hands out magazines; an ammo crate's
+        // take comes through here as well (ClassKit.Crate).
+        PlayerGrenades.Resupplied(player);
         KitSound.Play(KitSound.Cue.PickAmmo, .9f);
         AmmoHUD.Blink(KitStyle.Ice);
         AlertHUD.Self(Texts.Format("class.support.got", from));
