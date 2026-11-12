@@ -33,6 +33,9 @@ public sealed class OutfitStudio : IDisposable
     private const float FieldOfView = 24f, Reach = 60f;
     // At most this many vertices are kept for the framing: a dense piece is thinned out evenly.
     private const int MostPoints = 60000;
+    // Looking for the parts of a piece: the steps of the widest-gap search along a side, and how many times a part is
+    // split again at most.
+    private const int GapBins = 1024, MostSplits = 5;
     private static readonly Color Ambient = new Color(.42f, .45f, .55f);
     // The title screen's character is lit for a camera looking back along -Z at a front facing +Z (MainMenuPreview); the
     // rig keeps those angles to whatever way the studio's lens looks.
@@ -46,6 +49,26 @@ public sealed class OutfitStudio : IDisposable
     private readonly List<Vector3> points = new List<Vector3>();
     private readonly List<Vector3> scratch = new List<Vector3>();
     private readonly List<Light> switchedOff = new List<Light>();
+    // The piece's parts well apart (gloves on outstretched hands, a pair of earrings), left to right across its automatic
+    // picture, each a run of `order` (indices into points); the points the lens frames now and which part they are.
+    private readonly struct Part
+    {
+        public readonly int Start, Count;
+        public readonly float Across;
+
+        public Part(int start, int count, float across)
+        {
+            Start = start;
+            Count = count;
+            Across = across;
+        }
+    }
+    private readonly List<Part> parts = new List<Part>();
+    private readonly List<Vector3> framed = new List<Vector3>();
+    private readonly bool[] filled = new bool[GapBins];
+    private int[] order = Array.Empty<int>();
+    private float[] along = Array.Empty<float>();
+    private int autoPart, framedPart = int.MinValue;
     private MaterialPropertyBlock block;
     private GameObject sitter;
     private Mesh baked;
@@ -54,6 +77,12 @@ public sealed class OutfitStudio : IDisposable
 
     /// <summary>A piece stands, ready to be photographed.</summary>
     public bool HasPiece => sitter != null && shown.Count > 0;
+    /// <summary>How many parts well apart the standing piece is in (1: all of a piece).</summary>
+    public int Parts => Mathf.Max(1, parts.Count);
+    /// <summary>The part, 1 from the picture's left, the automatic framing holds; 0 when it holds the whole piece.</summary>
+    public int AutoPart => autoPart;
+    /// <summary>What a framing holds of the standing piece: 0 all of it, else the part so many from the picture's left.</summary>
+    public int PartOf(OutfitFraming framing) => Resolve(framing.part);
 
     /// <param name="scene">A scene of its own to stand in (the editor's preview scene), where nothing else is; none: the
     /// active scene, far to its side.</param>
@@ -199,7 +228,7 @@ public sealed class OutfitStudio : IDisposable
     }
 
     // Every vertex of the piece where it stands posed, a skinned one baked, for a framing that holds all of it; a mesh
-    // that can't be read (a build's) gives the corners of its box instead.
+    // that can't be read (a build's) gives the corners of its box instead. Then the piece's parts well apart, if it has.
     private void Measure()
     {
         points.Clear();
@@ -216,9 +245,8 @@ public sealed class OutfitStudio : IDisposable
             for (int i = 0; i < points.Count; i += step) points[kept++] = points[i];
             points.RemoveRange(kept, points.Count - kept);
         }
-        var box = new Bounds(points.Count > 0 ? points[0] : root.position, Vector3.zero);
-        foreach (var point in points) box.Encapsulate(point);
-        middle = box.center;
+        SplitParts();
+        framedPart = int.MinValue;
     }
 
     private static bool Readable(Mesh mesh) => mesh != null && (mesh.isReadable || Application.isEditor);
@@ -230,8 +258,12 @@ public sealed class OutfitStudio : IDisposable
         try { skinned.BakeMesh(baked, true); }
         catch (Exception) { return; }
         baked.GetVertices(scratch);
-        // Baked with the renderer's scale: only its place and turn are left to put on.
-        var place = Matrix4x4.TRS(skinned.transform.position, skinned.transform.rotation, Vector3.one);
+        // Baked with the renderer's scale taken out (useScale): the mesh in the renderer's own space, which its whole matrix
+        // takes to the world (as SkinSample and the zombie hitboxes read it). Put down with its place and turn alone, a
+        // piece whose renderer is scaled small was measured as many times too big as its scale is small: the Ene earrings'
+        // renderers are scaled 0.0067-0.07, so they were framed as if 14-149 times their size and came out a speck in
+        // their pictures (the user, 2026-11-12: "귀걸이는 너무 작아서 아예 안 보여").
+        var place = skinned.transform.localToWorldMatrix;
         foreach (var vertex in scratch) points.Add(place.MultiplyPoint3x4(vertex));
     }
 
@@ -253,16 +285,179 @@ public sealed class OutfitStudio : IDisposable
                 new Vector3((i & 1) == 0 ? -1f : 1f, (i & 2) == 0 ? -1f : 1f, (i & 4) == 0 ? -1f : 1f))));
     }
 
+    // ---- Parts well apart ----
+
+    // A piece made as parts far apart, a pair of gloves on outstretched hands (83 cm between them), fitted whole left each
+    // glove a sliver of its picture. The points are cut at the widest empty gap along the picture's across, up or depth
+    // wherever the gap is wide (WardrobePictures.csv Auto.splitGap, m) or wide next to the parts' own widths that way
+    // (Auto.splitRatio), again inside each side, and the sides are the parts; a side with almost none of the points
+    // (Auto.noise) is a stray, framed never. Shoes, socks and stockings (2-5 cm apart) stay a pair (the user's
+    // outfits measured 2026-11-12).
+    private void SplitParts()
+    {
+        parts.Clear();
+        autoPart = 0;
+        int count = points.Count;
+        if (count == 0) return;
+        if (order.Length < count) order = new int[count];
+        if (along.Length < count) along = new float[count];
+        for (int i = 0; i < count; i++) order[i] = i;
+        Vector3 across = Vector3.Cross(front, Vector3.up);
+        across = across.sqrMagnitude > 1e-6f ? across.normalized : Vector3.right;
+        Vector3[] sides = { across, Vector3.up, front };
+        float wide = OutfitPictureLook.AutoSplitGap, ratio = OutfitPictureLook.AutoSplitRatio;
+        var leaves = new List<(int start, int size)>();
+        var pending = new Stack<(int start, int size, int depth)>();
+        pending.Push((0, count, 0));
+        while (pending.Count > 0)
+        {
+            var (start, size, depth) = pending.Pop();
+            if (depth < MostSplits && size > 1 && WidestGap(start, size, sides, wide, ratio, out Vector3 side, out float cut))
+            {
+                int split = Partition(start, size, side, cut);
+                if (split > start && split < start + size)
+                {
+                    pending.Push((split, start + size - split, depth + 1));
+                    pending.Push((start, split - start, depth + 1));
+                    continue;
+                }
+            }
+            leaves.Add((start, size));
+        }
+        int least = Mathf.Max(1, Mathf.CeilToInt(count * OutfitPictureLook.AutoNoise));
+        int most = 0;
+        foreach (var (_, size) in leaves) most = Mathf.Max(most, size);
+        foreach (var (start, size) in leaves)
+        {
+            if (size < least && size < most) continue;
+            float sum = 0f;
+            for (int i = start; i < start + size; i++) sum += Vector3.Dot(points[order[i]], across);
+            parts.Add(new Part(start, size, sum / size));
+        }
+        parts.Sort((a, b) => a.Across.CompareTo(b.Across));
+        if (parts.Count < 2) return;
+        // Alone by default: the biggest part, or of parts alike (a pair) the one on the picture's right, where the plate
+        // shows it clear of its edge.
+        int biggest = 0;
+        foreach (var part in parts) biggest = Mathf.Max(biggest, part.Count);
+        for (int i = parts.Count - 1; i >= 0; i--)
+            if (parts[i].Count >= biggest * .85f)
+            {
+                autoPart = i + 1;
+                break;
+            }
+    }
+
+    // The widest empty gap of the points order[start..start+size) along one of the sides, where it is wide enough to part
+    // them: the side and where to cut. Of more than one, the widest next to the parts' own widths.
+    private bool WidestGap(int start, int size, Vector3[] sides, float wide, float ratio, out Vector3 side, out float cut)
+    {
+        side = Vector3.zero;
+        cut = 0f;
+        float best = 0f;
+        foreach (var direction in sides)
+        {
+            float low = float.MaxValue, high = float.MinValue;
+            for (int i = 0; i < size; i++)
+            {
+                float value = Vector3.Dot(points[order[start + i]], direction);
+                along[i] = value;
+                low = Mathf.Min(low, value);
+                high = Mathf.Max(high, value);
+            }
+            float span = high - low;
+            if (span < 1e-5f) continue;
+            Array.Clear(filled, 0, GapBins);
+            for (int i = 0; i < size; i++) filled[Mathf.Min(GapBins - 1, (int)((along[i] - low) / span * (GapBins - 1)))] = true;
+            int run = 0, runStart = 0, longest = 0, longestStart = 0;
+            for (int bin = 0; bin < GapBins; bin++)
+            {
+                if (!filled[bin])
+                {
+                    if (run == 0) runStart = bin;
+                    run++;
+                    continue;
+                }
+                if (run > longest)
+                {
+                    longest = run;
+                    longestStart = runStart;
+                }
+                run = 0;
+            }
+            if (longest == 0) continue;
+            float at = low + (longestStart + longest * .5f) / (GapBins - 1) * span;
+            float leftHigh = float.MinValue, rightLow = float.MaxValue;
+            for (int i = 0; i < size; i++)
+            {
+                if (along[i] < at) leftHigh = Mathf.Max(leftHigh, along[i]);
+                else rightLow = Mathf.Min(rightLow, along[i]);
+            }
+            if (leftHigh == float.MinValue || rightLow == float.MaxValue) continue;
+            float gap = rightLow - leftHigh, width = Mathf.Max(leftHigh - low, high - rightLow);
+            if (gap < wide && gap < ratio * width) continue;
+            float score = gap / Mathf.Max(1e-4f, width);
+            if (score <= best) continue;
+            best = score;
+            side = direction;
+            cut = at;
+        }
+        return best > 0f;
+    }
+
+    // Puts the points of order[start..start+size) below the cut along the side first; where the rest begins.
+    private int Partition(int start, int size, Vector3 side, float cut)
+    {
+        int low = start, high = start + size - 1;
+        while (low <= high)
+        {
+            if (Vector3.Dot(points[order[low]], side) < cut) low++;
+            else
+            {
+                (order[low], order[high]) = (order[high], order[low]);
+                high--;
+            }
+        }
+        return low;
+    }
+
+    // A framing's part as it stands: 0 the whole piece, else 1 from the picture's left.
+    private int Resolve(int part)
+    {
+        if (parts.Count < 2 || part < 0) return 0;
+        return part == 0 ? autoPart : Mathf.Min(part, parts.Count);
+    }
+
+    // The points the lens frames: one part, or all of them (strays left out), and their middle.
+    private void Select(int part)
+    {
+        framed.Clear();
+        if (part >= 1 && part <= parts.Count) Gather(parts[part - 1]);
+        else foreach (var each in parts) Gather(each);
+        if (framed.Count == 0) framed.AddRange(points);
+        var box = new Bounds(framed.Count > 0 ? framed[0] : root.position, Vector3.zero);
+        foreach (var point in framed) box.Encapsulate(point);
+        middle = box.center;
+        framedPart = part;
+    }
+
+    private void Gather(Part part)
+    {
+        for (int i = part.Start; i < part.Start + part.Count; i++) framed.Add(points[order[i]]);
+    }
+
     // ---- Framing ----
 
     /// <summary>
     /// Points the lens at the standing piece as <paramref name="framing"/> says: round it from its front, leaning in the
-    /// picture, the whole of it fitted in a picture of this <paramref name="aspect"/>, then the lens narrowed by the zoom
-    /// and the piece moved (along the picture's own sides).
+    /// picture, the whole of it (or of the part it holds, PartOf) fitted in a picture of this <paramref name="aspect"/>,
+    /// then the lens narrowed by the zoom and the piece moved (along the picture's own sides).
     /// </summary>
     public void Frame(OutfitFraming framing, float aspect = 1f)
     {
-        if (points.Count == 0) return;
+        int part = Resolve(framing.part);
+        if (part != framedPart) Select(part);
+        if (framed.Count == 0) return;
         aspect = Mathf.Max(.1f, aspect);
         float baseYaw = Mathf.Atan2(-front.x, -front.z) * Mathf.Rad2Deg;
         var upright = Quaternion.Euler(Mathf.Clamp(OutfitPictureLook.AutoPitch + framing.pitch, -85f, 85f), baseYaw + framing.yaw, 0f);
@@ -278,7 +473,7 @@ public sealed class OutfitStudio : IDisposable
         for (int pass = 0; pass < 2; pass++)
         {
             distance = .05f;
-            foreach (var point in points)
+            foreach (var point in framed)
             {
                 Vector3 seen = into * (point - middle);
                 float need = Mathf.Max(Mathf.Abs(seen.x - shift.x) / (tanH * fill), Mathf.Abs(seen.y - shift.y) / (tanV * fill)) - seen.z;
@@ -287,7 +482,7 @@ public sealed class OutfitStudio : IDisposable
             float left = float.MaxValue, right = float.MinValue, low = float.MaxValue, high = float.MinValue;
             nearest = float.MaxValue;
             farthest = float.MinValue;
-            foreach (var point in points)
+            foreach (var point in framed)
             {
                 Vector3 seen = into * (point - middle);
                 float depth = distance + seen.z;
@@ -406,6 +601,10 @@ public sealed class OutfitStudio : IDisposable
         sitter = null;
         shown.Clear();
         points.Clear();
+        parts.Clear();
+        framed.Clear();
+        autoPart = 0;
+        framedPart = int.MinValue;
     }
 
     public void Dispose()

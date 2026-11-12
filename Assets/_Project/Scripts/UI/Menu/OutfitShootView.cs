@@ -34,6 +34,8 @@ public sealed class OutfitShootView : MonoBehaviour, IBeginDragHandler, IDragHan
     private const float TurnPerPixel = .4f, ZoomStep = .1f, LeastZoom = .4f, MostZoom = 8f, MostPitch = 80f;
     // How far one press of ‹ 반시계 or 시계 › leans it (°), and those buttons' width (px).
     private const float TiltStep = 1f, TiltButton = 92f;
+    // At most this many parts get a choice of their own (the rest are reached through 모두).
+    private const int MostPartChoices = 4;
     // The plate and tile shown under the square: the gap between them and the room for their names above (px).
     private const float PreviewGap = 21f, PreviewName = 22f;
     // When the wardrobe doesn't say: its plates' and tiles' size and lean (px), as MainMenuWardrobe makes them.
@@ -46,6 +48,11 @@ public sealed class OutfitShootView : MonoBehaviour, IBeginDragHandler, IDragHan
     private TextMeshProUGUI state;
     private Slider tilt;
     private readonly List<OutfitPictureGraphic> previews = new List<OutfitPictureGraphic>();
+    // A piece in parts well apart (OutfitStudio.Parts: gloves, a pair of earrings): a row choosing which the picture
+    // holds, each part from the picture's left and then all of them (part 0 in the row = all).
+    private RectTransform partsRow;
+    private TextMeshProUGUI partsLabel;
+    private readonly List<(Image back, TextMeshProUGUI label, int part)> partButtons = new List<(Image, TextMeshProUGUI, int)>();
     private OutfitStudio studio;
     private RenderTexture live;
     private OutfitFraming framing;
@@ -119,16 +126,22 @@ public sealed class OutfitShootView : MonoBehaviour, IBeginDragHandler, IDragHan
         Button(panel, new Vector2(column, row), TiltButton, 34f, Texts.Get("wardrobe.shoot.ccw"), false, () => view.Lean(-TiltStep));
         Button(panel, new Vector2(column + columnWidth - TiltButton, row), TiltButton, 34f, Texts.Get("wardrobe.shoot.cw"), false, () => view.Lean(TiltStep));
 
-        view.state = Note(panel, new Vector2(column, ViewTop + 160f), columnWidth, "", 15f);
-        var where = Note(panel, new Vector2(column, ViewTop + 190f), columnWidth,
+        // Which part of a piece in parts well apart the picture holds (filled in once the piece stands: Begin).
+        view.partsLabel = Note(panel, new Vector2(column, ViewTop + 160f), columnWidth, Texts.Get("wardrobe.shoot.part"), 14f);
+        view.partsRow = KitStyle.TopLeft("Parts", panel, new Vector2(column, ViewTop + 182f), new Vector2(columnWidth, 34f));
+
+        view.state = Note(panel, new Vector2(column, ViewTop + 224f), columnWidth, "", 15f);
+        var where = Note(panel, new Vector2(column, ViewTop + 252f), columnWidth,
             Texts.Get(OutfitPictures.ProjectWriter != null ? "wardrobe.shoot.editor" : "wardrobe.shoot.local"), 14f);
         where.textWrappingMode = TextWrappingModes.Normal;
         where.rectTransform.sizeDelta = new Vector2(columnWidth, 76f);
         where.alignment = TextAlignmentOptions.TopLeft;
 
-        Button(panel, new Vector2(column, viewBottom - 158f), columnWidth, 46f, Texts.Get("wardrobe.shoot.auto"), false, view.Auto);
-        Button(panel, new Vector2(column, viewBottom - 102f), columnWidth, 46f, Texts.Get("wardrobe.shoot.cancel"), false, () => view.Close(false));
-        Button(panel, new Vector2(column, viewBottom - 46f), columnWidth, 46f, Texts.Get("wardrobe.shoot.save"), true, view.Save);
+        // 자동으로 · 취소 · 저장 side by side along the square's foot.
+        float third = (columnWidth - 16f) / 3f;
+        Button(panel, new Vector2(column, viewBottom - 46f), third, 46f, Texts.Get("wardrobe.shoot.auto"), false, view.Auto);
+        Button(panel, new Vector2(column + third + 8f, viewBottom - 46f), third, 46f, Texts.Get("wardrobe.shoot.cancel"), false, () => view.Close(false));
+        Button(panel, new Vector2(column + (third + 8f) * 2f, viewBottom - 46f), third, 46f, Texts.Get("wardrobe.shoot.save"), true, view.Save);
 
         // Under the square, a plate of the list and a tile of the slots showing the live picture as the wardrobe lays it.
         float tileAt = Margin + plate.x + PreviewGap;
@@ -154,6 +167,7 @@ public sealed class OutfitShootView : MonoBehaviour, IBeginDragHandler, IDragHan
         if (tilt != null) tilt.SetValueWithoutNotify(Tilt);
         studio = new OutfitStudio();
         standing = studio.Stand(skin, item, colour, slot);
+        BuildParts();
         live = new RenderTexture(LiveSize, LiveSize, 0, RenderTextureFormat.ARGB32) { name = "Outfit Shoot Live" };
         live.Create();
         picture.texture = live;
@@ -223,8 +237,58 @@ public sealed class OutfitShootView : MonoBehaviour, IBeginDragHandler, IDragHan
     {
         framing = OutfitFraming.Auto;
         if (tilt != null) tilt.SetValueWithoutNotify(Tilt);
+        RefreshParts();
         dirty = true;
         KitSound.Play(KitSound.Cue.Ping, .25f);
+    }
+
+    // ---- A piece in parts well apart ----
+
+    // One choice a part (왼쪽 · 오른쪽, 왼쪽 · 가운데 · 오른쪽, or numbered past three) and 모두; none for a piece in one.
+    private void BuildParts()
+    {
+        partButtons.Clear();
+        int count = standing ? studio.Parts : 1;
+        bool show = count > 1 && partsRow != null;
+        if (partsLabel != null) partsLabel.gameObject.SetActive(show);
+        if (partsRow != null) partsRow.gameObject.SetActive(show);
+        if (!show) return;
+        int shown = Mathf.Min(count, MostPartChoices);
+        float width = (partsRow.sizeDelta.x - 8f * shown) / (shown + 1);
+        for (int i = 0; i <= shown; i++)
+        {
+            int part = i < shown ? i + 1 : 0;
+            string text = part == 0 ? Texts.Get("wardrobe.shoot.part.all")
+                : shown == 2 ? Texts.Get(part == 1 ? "wardrobe.shoot.part.left" : "wardrobe.shoot.part.right")
+                : shown == 3 ? Texts.Get(part == 1 ? "wardrobe.shoot.part.left" : part == 2 ? "wardrobe.shoot.part.middle" : "wardrobe.shoot.part.right")
+                : part.ToString(CultureInfo.InvariantCulture);
+            var (back, label) = Choice(partsRow, new Vector2(i * (width + 8f), 0f), width, 34f, text, () => PickPart(part));
+            partButtons.Add((back, label, part));
+        }
+        RefreshParts();
+    }
+
+    // A part picked (0: all of them). The automatic framing's own choice stays automatic, so it is saved as such.
+    private void PickPart(int part)
+    {
+        if (done || !standing) return;
+        int automatic = studio.AutoPart;
+        framing.part = part == automatic ? 0 : part == 0 ? -1 : part;
+        RefreshParts();
+        dirty = true;
+        KitSound.Play(KitSound.Cue.Ping, .2f);
+    }
+
+    private void RefreshParts()
+    {
+        if (studio == null || !standing) return;
+        int holds = studio.PartOf(framing);
+        foreach (var (back, label, part) in partButtons)
+        {
+            bool on = part == holds;
+            if (back != null) back.color = on ? KitStyle.Accent : KitStyle.With(KitStyle.Ice, .09f);
+            if (label != null) label.color = on ? KitStyle.Ink : KitStyle.Text;
+        }
     }
 
     private void LateUpdate()
@@ -354,6 +418,24 @@ public sealed class OutfitShootView : MonoBehaviour, IBeginDragHandler, IDragHan
             bar.sizeDelta = i == 0 ? new Vector2(length, thickness) : new Vector2(thickness, length);
             KitStyle.Fill(bar, KitStyle.Accent);
         }
+    }
+
+    // A slanted choice whose back and words the caller lights (pink for the one taken).
+    private static (Image back, TextMeshProUGUI label) Choice(RectTransform parent, Vector2 at, float width, float height, string text,
+        Action pressed)
+    {
+        var plate = KitStyle.TopLeft("Choice " + text, parent, at, new Vector2(width, height));
+        var back = KitStyle.Fill(plate, KitStyle.With(KitStyle.Ice, .09f));
+        KitSkew.On(back, Slant);
+        back.raycastTarget = true;
+        var label = KitStyle.Flat(KitStyle.Stretch("Text", plate), text, 16f, TextAlignmentOptions.Center, KitStyle.Text);
+        label.overflowMode = CombatUIAssets.ClippedOverflow(label);
+        var button = plate.gameObject.AddComponent<UnityEngine.UI.Button>();
+        button.transition = Selectable.Transition.None;
+        button.targetGraphic = back;
+        button.onClick.AddListener(() => pressed());
+        plate.gameObject.AddComponent<KitHover>();
+        return (back, label);
     }
 
     // A slanted plate of a button: 저장 solid pink, the others faint.

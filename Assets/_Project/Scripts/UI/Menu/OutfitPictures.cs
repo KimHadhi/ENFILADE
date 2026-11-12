@@ -30,11 +30,16 @@ public struct OutfitFraming
     /// automatic view, so a framing kept before leaning came in (or left at zero) leans as every other picture does.
     /// </summary>
     public float roll;
+    /// <summary>
+    /// Of a piece in parts well apart (OutfitStudio.Parts: a pair of gloves, a pair of earrings), which the picture holds:
+    /// 0 as the automatic framing picks (one part), -1 all of them, 1 and on the part so many from the picture's left.
+    /// </summary>
+    public int part;
 
     public static OutfitFraming Auto => new OutfitFraming { zoom = 1f };
 
     public bool IsAuto => Mathf.Abs(yaw) < .01f && Mathf.Abs(pitch) < .01f && Mathf.Abs(zoom - 1f) < .001f
-        && Mathf.Abs(x) < .0005f && Mathf.Abs(y) < .0005f && Mathf.Abs(roll) < .01f;
+        && Mathf.Abs(x) < .0005f && Mathf.Abs(y) < .0005f && Mathf.Abs(roll) < .01f && part == 0;
 }
 
 /// <summary>
@@ -220,7 +225,8 @@ public static class OutfitPictures
         return new OutfitFraming
         {
             yaw = Number(row, "yaw", 0f), pitch = Number(row, "pitch", 0f), zoom = Mathf.Max(.05f, Number(row, "zoom", 1f)),
-            x = Number(row, "x", 0f), y = Number(row, "y", 0f), roll = Number(row, "roll", 0f)
+            x = Number(row, "x", 0f), y = Number(row, "y", 0f), roll = Number(row, "roll", 0f),
+            part = Mathf.RoundToInt(Number(row, "part", 0f))
         };
     }
 
@@ -274,10 +280,10 @@ public static class OutfitPictures
     private static float Number(IReadOnlyDictionary<string, string> row, string column, float fallback) =>
         row.TryGetValue(column, out string text) && float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out float value) ? value : fallback;
 
-    /// <summary>A piece's row of Tables/OutfitPictures.csv (id,yaw,pitch,zoom,x,y,roll), as the editor writes it.</summary>
+    /// <summary>A piece's row of Tables/OutfitPictures.csv (id,yaw,pitch,zoom,x,y,roll,part), as the editor writes it.</summary>
     public static string Row(string piece, OutfitFraming framing) =>
         string.Join(",", Quote(piece), Text(framing.yaw), Text(framing.pitch), Text(framing.zoom), Text(framing.x), Text(framing.y),
-            Text(framing.roll));
+            Text(framing.roll), framing.part.ToString(CultureInfo.InvariantCulture));
 
     private static string Text(float value) => Math.Round(value, 3).ToString("0.###", CultureInfo.InvariantCulture);
     private static string Quote(string text) => text.IndexOfAny(new[] { ',', '"' }) < 0 ? text : "\"" + text.Replace("\"", "\"\"") + "\"";

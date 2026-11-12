@@ -984,6 +984,11 @@ wardrobe.shoot.ccw,‹ 반시계,‹ CCW,옷장 > 사진 다시 찍기 창: 기�
 wardrobe.shoot.cw,시계 ›,CW ›,옷장 > 사진 다시 찍기 창: 기울기 막대 오른쪽 버튼(누를 때마다 시계 방향으로 1°)
 wardrobe.shoot.plate,목록 판에서,In the list,옷장 > 사진 다시 찍기 창: 아래 왼쪽 미리 보기(옷 고르는 판에 이렇게 보인다)
 wardrobe.shoot.tile,부위 칸에서,On its slot,옷장 > 사진 다시 찍기 창: 아래 오른쪽 미리 보기(옷장 첫 화면의 부위 칸에 이렇게 보인다)
+wardrobe.shoot.part,담을 쪽 (멀리 떨어진 두 짝),Part to frame (a pair far apart),옷장 > 사진 다시 찍기 창: 장갑·귀걸이처럼 멀리 떨어진 부분으로 된 옷일 때만 뜨는 줄의 이름. 기본은 한 쪽만 담는다
+wardrobe.shoot.part.left,왼쪽,Left,옷장 > 사진 다시 찍기 창 > 담을 쪽: 사진 왼쪽의 부분
+wardrobe.shoot.part.middle,가운데,Middle,옷장 > 사진 다시 찍기 창 > 담을 쪽: 세 부분일 때 가운데
+wardrobe.shoot.part.right,오른쪽,Right,옷장 > 사진 다시 찍기 창 > 담을 쪽: 사진 오른쪽의 부분
+wardrobe.shoot.part.all,모두,All,옷장 > 사진 다시 찍기 창 > 담을 쪽: 모든 부분을 한 사진에
 body.title,체형,Body,옷장 > 체형 페이지 제목
 body.open,체형,Body,메인 메뉴 > 캐릭터 페이지 왼쪽 > 색 칩 아래 체형 판의 제목
 body.open.note,꾸미기 {0}가지 · 바꾼 것 {1},{0} options · {1} changed,"체형 판의 설명. {0}=그 캐릭터의 체형 옵션 수, {1}=원래와 다르게 바꾼 옵션 수"

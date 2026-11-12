@@ -57,6 +57,15 @@ public static class OutfitPictureLook
     public static float AutoFill => Mathf.Clamp(Number("Auto", "fill", .9f), .05f, 4f);
     /// <summary>How far either way the shooting window's lean slider goes (°).</summary>
     public static float TiltRange => Mathf.Clamp(Number("Shoot", "tiltRange", 45f), 5f, 180f);
+    /// <summary>
+    /// Parts of a piece at least this far apart (m) are framed apart: a pair of gloves on outstretched hands (33-83 cm),
+    /// never a pair of shoes or socks (2-5 cm), measured on the wardrobe's own outfits (2026-11-12).
+    /// </summary>
+    public static float AutoSplitGap => Mathf.Max(.001f, Number("Auto", "splitGap", .15f));
+    /// <summary>Or at least this many times the larger part's own width that way apart (a pair of earrings: 2.7-4).</summary>
+    public static float AutoSplitRatio => Mathf.Max(.1f, Number("Auto", "splitRatio", 2f));
+    /// <summary>A part with less than this share of the piece's vertices, that far from the rest, is a stray and isn't framed.</summary>
+    public static float AutoNoise => Mathf.Clamp(Number("Auto", "noise", .01f), 0f, .5f);
 
     private static float Number(string row, string field, float fallback) =>
         GameTables.TryGetRow(TableName, row, out var cells) && cells.TryGetValue(field, out string text)
