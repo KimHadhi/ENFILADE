@@ -31,8 +31,8 @@ using UnityEngine;
 ///   Desperado's next round. The Desperado is its own revolver in slot 4 (the class's own gun, the R08; slot 2 holds a
 ///   plain pistol, so the two are never mixed up: the user's word), loaded by bounties alone and never reloaded: every
 ///   round hits double, and one in the head of its own mark kills it outright, elites too (a brute loses a share of its
-///   health), with BOUNTY slammed across the screen in teal and burst in the world for everyone to see (BountyBurst;
-///   a plain bounty spills its coins there too). Its class key calls a duel on the foe under the crosshair (HoundDuel; the
+///   health), with its claim burst in the world for everyone to see, the hunter too (BountyBurst;
+///   a plain bounty slams its small CLAIMED plate there). Its class key calls a duel on the foe under the crosshair (HoundDuel; the
 ///   user's, after Iso's Kill Contract): for some seconds the two can only hurt each other, its shots pass through every
 ///   other foe, the foe carries its bounty mark, and friends may help but never finish it (the Ace card lets them).
 /// - Détente (the user's design): its syringe, Golden Hour and Resurrection are DetenteKit's; the class key injects.
@@ -361,6 +361,8 @@ public sealed class ClassKit : MonoBehaviour
             {
                 var gun = slots.GetWeapon(drawnSlot) != null ? slots.GetRuntime(drawnSlot) : null;
                 if (gun != null) { gun.TopUp(); slots.NotifyAmmo(); }
+                // The draw seen: an orange arc whirls round the gun as it comes out (the special-moment pick C), for everyone.
+                CardNet.Show(CardFx.Kind.KataDraw, transform.position + Vector3.up * 1.3f + transform.forward * .5f, transform.forward, 0f);
             }
         }
         Ebb();
@@ -464,6 +466,7 @@ public sealed class ClassKit : MonoBehaviour
             ReceiveCharge(at, Texts.Get("class.assault.charge.self"));
             // Everyone it takes glows gold on this PC (the friends' PCs light them as they hear of it: ChargeRpc).
             ChargeGlow.Sounded(at);
+            MomentHUD.Charge(PlayerClass.Ability(AssaultRow, "chargeSeconds", 7f), PlayerClass.Ability(AssaultRow, "chargeRadius", 15f));
             Charged?.Invoke(at);
             // The phantom cavalry card rides out with it (ClassCards).
             cards?.Charged(at);
@@ -694,10 +697,7 @@ public sealed class ClassKit : MonoBehaviour
         Vector3 from = claimed ? finishFrom : transform.position + Vector3.up * 1.5f;
         BountyBurst.Play(head, from, ground, claimed);
         Claimed?.Invoke(head, from, ground, claimed);
-        if (!claimed) return;
-        // The Desperado's own kill on this screen too: BOUNTY, the counter's banner at its most in the mark's teal.
-        if (!TryGetComponent(out CounterBanner banner)) banner = gameObject.AddComponent<CounterBanner>();
-        banner.Play(.95f, CounterBanner.Grades - 1, "BOUNTY", PingMarks.BountyColor);
+        // The hunter sees the claim in the world as everyone does (the special-moment picks), no banner over the screen.
     }
 
     // A zombie its own bounty dye splashed died at its hand (DyeMarks; the user's pick, "현상금 염료탄"): points toward
@@ -739,6 +739,7 @@ public sealed class ClassKit : MonoBehaviour
         }
         KitSound.Play(KitSound.Cue.Charge, .7f);
         AlertHUD.Self(Texts.Get("class.point.kata.self"));
+        MomentHUD.Kata(kataTotal);
     }
 
     // ---- Schießhund: the duel ----
@@ -760,8 +761,8 @@ public sealed class ClassKit : MonoBehaviour
         HoundDuel.Begin(movement, foe, seconds, ace);
         Dueled?.Invoke(foe, seconds, ace);
         KitSound.Play(KitSound.Cue.Bounty, .8f);
-        if (!TryGetComponent(out CounterBanner banner)) banner = gameObject.AddComponent<CounterBanner>();
-        banner.Play(.8f, CounterBanner.Grades - 1, "DUEL", PingMarks.BountyColor);
+        // Its tag on this screen (the special-moment pick A); the line and the brackets are HoundDuel's, for everyone.
+        MomentHUD.Duel(seconds);
         AlertHUD.Self(Texts.Get(ace ? "class.schiesshund.duel.ace" : "class.schiesshund.duel.self"));
     }
 

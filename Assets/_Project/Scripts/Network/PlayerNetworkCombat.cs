@@ -723,7 +723,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
 
     // This Knight stepped in: the streak for everyone else.
     [Rpc(SendTo.NotMe)]
-    private void CoverStepRpc(Vector3 from, Vector3 to) => CoverStreak.Show(from, to);
+    private void CoverStepRpc(Vector3 from, Vector3 to) => CoverStreak.Show(from, to, gameObject);
 
     private void OnCoverOpened(PlayerMovement ally, float seconds)
     {

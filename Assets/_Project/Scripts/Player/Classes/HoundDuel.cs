@@ -20,20 +20,24 @@ using UnityEngine;
 ///   may finish it too.
 /// It ends when either falls or time runs out; another duel called by the same hound takes its place. Every PC keeps the
 /// same duels (PlayerNetworkCombat.DuelRpc), so each judges what it judges by one rule: the host its zombies' aim and
-/// health, each player's own PC their own hurt, and every PC the path of each shot. A line of the mark's teal joins the
-/// two while it lasts, for everyone to see who is whose. A practice duel on the hub's range is this PC's alone.
+/// health, each player's own PC their own hurt, and every PC the path of each shot. A practice duel on the hub's range is
+/// this PC's alone.
+/// The look is the user's pick A, made flashier ("좀 더 멋있고 화려하게"). A taut line of the mark's teal joins the two while
+/// it lasts, two hairlines with light running along them toward the foe, so everyone sees who is whose. Its start sends a
+/// bright head out to the foe, with a ring where it lands. Corner brackets slam shut round the foe and stay on it. On the
+/// hound's own PC the line starts a step out from their eyes, so it never thickens across their view.
+/// Numbers: Tables/MomentFx.csv, row Duel.
 /// </summary>
 public sealed class HoundDuel : MonoBehaviour
 {
     private static readonly List<HoundDuel> duels = new List<HoundDuel>();
-    private const int Points = 2;
 
     /// <summary>The hound who called it, the foe they called out, until when, and whether with the Ace card.</summary>
     public PlayerMovement Hound { get; private set; }
     public Component Foe { get; private set; }
     public bool Ace { get; private set; }
-    private float until, total = 1f;
-    private LineRenderer line;
+    private float until, total = 1f, since;
+    private FxShapes shapes;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetStatics() => duels.Clear();
@@ -56,7 +60,8 @@ public sealed class HoundDuel : MonoBehaviour
         duel.Ace = ace;
         duel.total = Mathf.Max(.1f, seconds);
         duel.until = Time.time + duel.total;
-        duel.Line();
+        duel.since = Time.time;
+        duel.shapes = new FxShapes(host.transform, "Duel line", true);
         duels.Add(duel);
         // The host's or a lone PC's zombie goes after the hound alone while it lasts (a copy follows its host).
         if (foe is EnemyHealth enemy) EnemyTargeting.Duel(enemy, hound, duel.total);
@@ -145,13 +150,58 @@ public sealed class HoundDuel : MonoBehaviour
             else Destroy(gameObject);
             return;
         }
-        // The line between them, the mark's teal, beating.
-        Vector3 from = Hound.transform.position + Vector3.up * 1.25f, to = CombatFoe.Top(Foe) - Vector3.up * .45f;
-        line.SetPosition(0, from);
-        line.SetPosition(1, to);
-        float beat = .55f + .25f * Mathf.Sin(Time.time * 8f);
-        Color color = KitStyle.With(PingMarks.BountyColor, beat * Mathf.Clamp01((until - Time.time) / .5f));
-        line.startColor = line.endColor = color;
+        Draw();
+    }
+
+    private void OnDestroy() => shapes?.Destroy();
+
+    // The line between them, the light running along it, the brackets on the foe.
+    private void Draw()
+    {
+        var eye = Camera.main;
+        if (shapes == null || !shapes.Begin(eye)) return;
+        float age = Time.time - since, last = Mathf.Clamp01((until - Time.time) / .5f);
+        Color teal = PingMarks.BountyColor;
+        Vector3 to = CombatFoe.Top(Foe) - Vector3.up * .45f, from = Hound.transform.position + Vector3.up * 1.25f;
+        // The hound's own eyes: the line starts a step out, where it is thin.
+        if (Hound.IsLocal && !Hound.IsNetworkDriven) from = Vector3.MoveTowards(from, to, MomentLook.Number("Duel", "ownStart", 1.3f));
+        Vector3 along = to - from;
+        float length = along.magnitude;
+        if (length > .05f)
+        {
+            Vector3 way = along / length, side = Vector3.Cross(shapes.Forward, way).normalized * MomentLook.Number("Duel", "apart", .028f);
+            float reach = Mathf.Clamp01(age / .14f), beat = .7f + .3f * Mathf.Sin(Time.time * 8f);
+            float strength = (age < .6f ? 1f : MomentLook.Number("Duel", "rest", .55f) * beat) * last;
+            Vector3 end = from + along * reach;
+            shapes.Glow(from + side, end + side, FxShapes.With(teal, strength), .008f, .03f);
+            shapes.Glow(from - side, end - side, FxShapes.With(teal, strength), .008f, .03f);
+            // Light running along it toward the foe.
+            float speed = MomentLook.Number("Duel", "flow", 9f), every = 1.6f, dash = .45f;
+            for (float d = Mathf.Repeat(Time.time * speed, every); d < length * reach; d += every)
+            {
+                Vector3 a = from + way * d, b = from + way * Mathf.Min(length, d + dash);
+                shapes.Glow(a, b, FxShapes.With(Color.Lerp(teal, Color.white, .5f), strength), .012f, .05f);
+            }
+            // The start: a bright head out to the foe, and a ring where it lands.
+            if (age < .14f) shapes.Glow(Vector3.Lerp(from, end, .7f), end, FxShapes.With(Color.white, 1f), .02f, .08f);
+            float ring = (age - .12f) / .3f;
+            if (ring > 0f && ring < 1f) shapes.Ring(to, shapes.Right, shapes.Up, Mathf.Lerp(.3f, 1.4f, 1f - (1f - ring) * (1f - ring)), .03f, FxShapes.With(teal, 1f - ring));
+        }
+        // Corner brackets round the foe, slammed shut from wide, then kept on it.
+        Vector3 feet = Foe.transform.position, top = CombatFoe.Top(Foe) + Vector3.up * .12f, middle = (feet + top) * .5f;
+        float high = Mathf.Max(.8f, (top - feet).magnitude), close = Mathf.Lerp(1.5f, 1f, 1f - Mathf.Pow(1f - Mathf.Clamp01(age / .12f), 3f));
+        float hh = high * .5f * close, hw = Mathf.Max(.35f, high * .3f) * close, arm = Mathf.Min(.32f, hh * .45f);
+        float lockStrength = (age < .6f ? 1f : MomentLook.Number("Duel", "rest", .55f)) * last;
+        Color mark = FxShapes.With(teal, lockStrength);
+        Vector3 r = shapes.Right, u = shapes.Up;
+        for (int corner = 0; corner < 4; corner++)
+        {
+            float sx = corner % 2 == 0 ? -1f : 1f, sy = corner < 2 ? 1f : -1f;
+            Vector3 c = middle + r * (hw * sx) + u * (hh * sy);
+            shapes.Glow(c, c - r * (arm * sx), mark, .012f, .04f);
+            shapes.Glow(c, c - u * (arm * sy), mark, .012f, .04f);
+        }
+        shapes.End();
     }
 
     private static void Close(int index)
@@ -159,19 +209,5 @@ public sealed class HoundDuel : MonoBehaviour
         var duel = duels[index];
         duels.RemoveAt(index);
         if (duel != null) Destroy(duel.gameObject);
-    }
-
-    private void Line()
-    {
-        line = gameObject.AddComponent<LineRenderer>();
-        line.useWorldSpace = true;
-        line.positionCount = Points;
-        line.widthMultiplier = .045f;
-        line.numCapVertices = 2;
-        line.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-        line.receiveShadows = false;
-        line.sharedMaterial = FeelAssets.Particle(Texture2D.whiteTexture, true);
-        line.SetPosition(0, Hound.transform.position);
-        line.SetPosition(1, Foe.transform.position);
     }
 }

@@ -51,3 +51,5 @@ Results Sheet,skip,결과 화면
 Results Lineup,skip,결과 줄 세우기
 Loading Screen,skip,불러오기 화면
 Backdrop,skip,메인 메뉴 배경
+Moment Notice,piece,궁극기 알림 띠(MomentHUD: 누가 궁극기를 썼는지 모든 PC에). 아군 카드 오른쪽 아래(MomentFx.csv Notice). 지나가는 조각이라 겹침 검사는 IHudPreview로 띠를 세워 잰다
+Moment Tag,piece,내 화면 클래스 칸 위 작은 이름표(CHARGE·DUEL·REVERSAL·GUN KATA. MomentFx.csv Tag)

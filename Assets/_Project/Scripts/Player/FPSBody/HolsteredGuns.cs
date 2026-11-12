@@ -65,6 +65,24 @@ public sealed class HolsteredGuns : MonoBehaviour, ITableBound
 
     public void OnTableApplied() { }
 
+    /// <summary>
+    /// The guns worn on the body now (the copies shown), for an effect that lights them: GunHeat heats a Point's guns on
+    /// the back for its ultimate. Each comes with its renderers, its muzzle and the way its barrel points (world space),
+    /// and its length (m).
+    /// </summary>
+    internal void WornGuns(List<(Renderer[] renderers, Vector3 muzzle, Vector3 barrel, float length)> into)
+    {
+        into.Clear();
+        foreach (var gun in carried)
+        {
+            if (gun == null || gun.Copy == null || !gun.Shown || gun.Renderers == null) continue;
+            var copy = gun.Copy.transform;
+            Vector3 barrel = copy.TransformDirection(gun.Barrel).normalized;
+            float length = gun.Length * copy.lossyScale.x;
+            into.Add((gun.Renderers, copy.TransformPoint(gun.Center) + barrel * (length * .5f), barrel, length));
+        }
+    }
+
     private void Awake()
     {
         GameTables.Bind(TableName, TableRow, this);

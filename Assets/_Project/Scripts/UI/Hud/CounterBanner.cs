@@ -18,8 +18,10 @@ using UnityEngine.UI;
 /// grade 3 adds focus lines rushing in from the screen's edge, a pink frame round the plate with a diamond at each end
 /// and the whole of it slammed down from large, with a thin ring thrown out by the blow (draft C). ShoveCounter says
 /// which. Sizes are the drafts' own, doubled from their 960-wide canvas.
-/// Another word in another colour may borrow the whole of it: a Schießhund's Desperado claiming a bounty slams BOUNTY in
-/// its teal (ClassKit, stage 3 of the classes), the same moves, so the two read as kin.
+/// Another word in another colour may borrow the whole of it. Since the special-moment picks of 2026-11-12 only one does:
+/// the Knight's COVER (KnightCover; the user kept it as it is). The ultimate, the bounty, the duel and the reversal left
+/// it for their own restrained looks (MomentHUD, MomentFx), the user having found one banner over every moment "다 똑같은
+/// 화면 가리고 눈 아픈 이펙트만 무지성으로 반복"; so COUNTER is its own again.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class CounterBanner : MonoBehaviour

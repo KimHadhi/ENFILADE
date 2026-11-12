@@ -212,6 +212,10 @@ public sealed class KnightCover : MonoBehaviour
         // With the shadow step the Knight is already beside them; it turns to the blow where it stands.
         if (!PlayerPerks.Has(PlayerPerks.KnightShadowstep) || (ally.transform.position - transform.position).sqrMagnitude > 9f) Step(ally, attacker);
         else Face(attacker);
+        // The blow turned aside before the friend, for everyone to see (the user: "공격을 튕겨내는 화려한 이펙트").
+        Vector3 toward = Vector3.ProjectOnPlane(attacker - transform.position, Vector3.up);
+        toward = toward.sqrMagnitude > 1e-4f ? toward.normalized : transform.forward;
+        CardNet.Show(CardFx.Kind.CoverDeflect, transform.position + toward * .6f + Vector3.up * 1.3f, -toward, 0f);
         if (!TryGetComponent(out CounterBanner banner)) banner = gameObject.AddComponent<CounterBanner>();
         banner.Play(.85f, CounterBanner.Grades - 1, "COVER", Color.white);
         AlertHUD.Self(Texts.Format("class.knight.cover.done", NameOf(ally)));
@@ -223,7 +227,7 @@ public sealed class KnightCover : MonoBehaviour
         Vector3 from = transform.position, to = Spot(ally, threat);
         movement.MoveTo(to);
         Face(threat);
-        CoverStreak.Show(from, to);
+        CoverStreak.Show(from, to, gameObject);
         Stepped?.Invoke(from, to);
         KitSound.Play(KitSound.Cue.Charge, .6f);
     }

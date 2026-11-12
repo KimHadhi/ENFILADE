@@ -34,8 +34,8 @@ public static class CardNet
     /// </summary>
     public static void Show(CardFx.Kind kind, Vector3 at, Vector3 direction, float value)
     {
-        CardFx.Play(kind, at, direction, value, true);
         var network = GameSession.Network;
+        CardFx.Play(kind, at, direction, value, true, network != null ? network.LocalClientId : 0ul);
         if (network == null || !network.IsListening || network.CustomMessagingManager == null) return;
         Listen();
         var packet = new Packet { Kind = (byte)kind, At = at, Direction = direction, Value = value, From = network.LocalClientId };
@@ -73,7 +73,8 @@ public static class CardNet
         // The host hands a guest's effect on to everyone but that guest, and draws it itself.
         if (network.IsServer && sender != NetworkManager.ServerClientId) HandOn(network, packet, sender);
         if (packet.From == network.LocalClientId) return;
-        CardFx.Play((CardFx.Kind)packet.Kind, packet.At, packet.Direction, packet.Value, false);
+        // Whose it was goes with it: an ultimate's notice names them, a shadow double stands beside them.
+        CardFx.Play((CardFx.Kind)packet.Kind, packet.At, packet.Direction, packet.Value, false, packet.From);
     }
 
     // On the host: to every client but the one it came from (and not to itself).

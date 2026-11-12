@@ -447,8 +447,9 @@ public sealed class ClassCards : MonoBehaviour
         Vector3 contact = transform.position + Vector3.up * 1.25f + away * .6f;
         GetComponent<ParryFeedback>()?.CounterBurst(contact, (away * .35f + Vector3.up * .5f).normalized, 1.2f);
         if (grabber.TryGetComponent(out EnemyNetwork network)) network.ShareParry(contact, away, true);
-        if (!TryGetComponent(out CounterBanner banner)) banner = gameObject.AddComponent<CounterBanner>();
-        banner.Play(.95f, Mathf.Min(2, CounterBanner.Grades - 1), "REVERSAL", KitStyle.Accent);
+        // The throw for everyone to see and its tag on this screen (the special-moment pick A), no banner over the screen.
+        CardNet.Show(CardFx.Kind.Reversal, contact, away, 0f);
+        MomentHUD.Reversal();
         GetComponent<PlayerFistAudio>()?.PlayHeavyHit();
         GetComponentInChildren<PlayerCameraEffects>()?.ApplyCameraImpulse(new Vector3(-5f, 0f, 6f), -6f);
     }
@@ -542,7 +543,8 @@ public sealed class ClassCards : MonoBehaviour
 
     /// <summary>
     /// The shadow double comes out (or stays out) for <paramref name="seconds"/> (the final card's, or the ultimate's
-    /// when every card is taken): violet wisps leap up round the Knight, at most once a second.
+    /// when every card is taken): the Knight's own character steps out beside them, violet-black and see-through, on every
+    /// PC (BodyDouble), told at most once a second.
     /// </summary>
     public void ShadowFor(float seconds)
     {
@@ -554,7 +556,7 @@ public sealed class ClassCards : MonoBehaviour
         }
         if (Time.time - shadowShown < 1f) return;
         shadowShown = Time.time;
-        CardNet.Show(CardFx.Kind.Shadow, transform.position, transform.forward, 0f);
+        CardNet.Show(CardFx.Kind.Shadow, transform.position, transform.forward, Mathf.Max(.1f, shadowUntil - Time.time));
     }
 
     // A punch or counter landed while the shadow is out: the shadow's own blow follows a beat later.
@@ -591,8 +593,8 @@ public sealed class ClassCards : MonoBehaviour
 
     /// <summary>
     /// Every card this player can be dealt is taken and the full gauge is spent on X (PerkCardScreen; classes-design's
-    /// open question, "what a full gauge does once the cards are all taken"): the class's ultimate at once, ULTIMATE
-    /// slammed across the screen. Knight: the shadow double; Assault: adrenaline full and the CHARGE, its phantom riders
+    /// open question, "what a full gauge does once the cards are all taken"): the class's ultimate at once, its notice on
+    /// every HUD and its look in the world (MomentFx.Ultimate). Knight: the shadow double; Assault: adrenaline full and the CHARGE, its phantom riders
     /// with it; Ghost: the Head Hunter full under the White Tiger's guard; Point: both guns loaded and the Gunslinger's
     /// moment; Détente: the syringe full and one more Resurrection; Schießhund: the Desperado's cylinder full; Support:
     /// the bag full. Numbers: ClassAbilities Cards.ultimateSeconds.
@@ -616,9 +618,9 @@ public sealed class ClassCards : MonoBehaviour
         else if (PlayerClass.Is(PlayerClass.Detente)) DetenteKit.Local?.Ultimate();
         else if (PlayerClass.Is(PlayerClass.Schiesshund)) kit?.LoadDesperado();
         else if (PlayerClass.Is(PlayerClass.Support)) SupportKit.Local?.Restock();
-        if (!TryGetComponent(out CounterBanner banner)) banner = gameObject.AddComponent<CounterBanner>();
-        banner.Play(1.05f, CounterBanner.Grades - 1, "ULTIMATE", KitStyle.Accent);
-        KitSound.Play(KitSound.Cue.Charge, 1f);
+        // Everyone's notice of who fired it, the class's stinger and its look in the world (the special-moment picks of
+        // 2026-11-12), no banner over the screen.
+        CardNet.Show(CardFx.Kind.Ultimate, transform.position, transform.forward, MomentLook.IndexOf(PlayerClass.CurrentId));
     }
 
     // ---- Ghost: White Tiger ----
