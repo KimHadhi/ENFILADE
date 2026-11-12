@@ -81,14 +81,15 @@ public sealed class ClassHUD : MonoBehaviour
             if (barWord.text != cardWord) barWord.text = cardWord;
             return;
         }
-        float taunt = kit.TauntShare, back = kit.ReturnShare;
-        float share = taunt > 0f ? taunt : back > 0f ? back : kit.ChargeShare;
+        // A Schießhund's duel under way comes before its Return Back.
+        float taunt = kit.TauntShare, duel = kit.DuelShare, back = kit.ReturnShare;
+        float share = taunt > 0f ? taunt : duel > 0f ? duel : back > 0f ? back : kit.ChargeShare;
         chargeBar.gameObject.SetActive(share > 0f);
         if (share <= 0f) return;
         chargeFill.rectTransform.anchorMax = new Vector2(share, 1f);
-        chargeFill.color = taunt <= 0f && back > 0f ? PingMarks.BountyColor : KitStyle.Accent;
-        string word = taunt > 0f ? Texts.Get("class.hud.taunt") : back > 0f ? Texts.Format("class.hud.return", kit.ReturnStacks)
-            : Texts.Get("class.hud.charge");
+        chargeFill.color = taunt <= 0f && (duel > 0f || back > 0f) ? PingMarks.BountyColor : KitStyle.Accent;
+        string word = taunt > 0f ? Texts.Get("class.hud.taunt") : duel > 0f ? Texts.Get("class.hud.duel")
+            : back > 0f ? Texts.Format("class.hud.return", kit.ReturnStacks) : Texts.Get("class.hud.charge");
         if (barWord.text != word) barWord.text = word;
     }
 
@@ -107,7 +108,8 @@ public sealed class ClassHUD : MonoBehaviour
         slotRow.gameObject.SetActive(point);
         keyRect.gameObject.SetActive(false);
         deadeye.gameObject.SetActive(false);
-        Word(Texts.Get(knight ? "class.hud.taunt" : detente ? "class.hud.inject" : support ? "class.hud.barricade" : "class.hud.charge"), KitStyle.Accent);
+        Word(Texts.Get(knight ? "class.hud.taunt" : detente ? "class.hud.inject" : support ? "class.hud.barricade" : hound ? "class.hud.duel"
+            : "class.hud.charge"), KitStyle.Accent);
         note.text = info != null && !info.Ready ? Texts.Get("class.hud.later") : "";
         // A Détente moves the note past its pips; every other class has it back in its place.
         ((RectTransform)note.rectTransform.parent).anchoredPosition = new Vector2(128f, 0f);
@@ -170,6 +172,12 @@ public sealed class ClassHUD : MonoBehaviour
         bool loaded = kit.DesperadoLoaded;
         deadeye.gameObject.SetActive(loaded);
         if (loaded) deadeye.color = KitStyle.With(PingMarks.BountyColor, .78f + .22f * Mathf.Sin(Time.unscaledTime * 6f));
+        // Its duel on the class key: the prompt while it may be called, the seconds left to wait past the pips while not.
+        bool ready = kit.DuelReady;
+        KeyPrompt(ready);
+        string wait = ready ? "" : Texts.Format("class.hud.duel_wait", Mathf.CeilToInt(kit.DuelWait));
+        if (note.text != wait) note.text = wait;
+        ((RectTransform)note.rectTransform.parent).anchoredPosition = new Vector2(128f + count * (PipWidth + PipGap) + 6f, 0f);
     }
 
     // A Détente: a red pip a dose left in the syringe (the newest flashing white as one goes in), "[휠] 주사" while there

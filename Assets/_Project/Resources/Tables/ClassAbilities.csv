@@ -45,6 +45,9 @@ Schiesshund.returnMax,5,리턴 백: 표식 처치마다 1스택(최대)
 Schiesshund.returnSpeed,6,리턴 백 스택마다 이동 속도 +%
 Schiesshund.returnDamage,6,리턴 백 스택마다 총 피해 +%(옛 메모는 장전 속도. 장전 속도를 바꾸는 장치가 생기면 옮긴다)
 Schiesshund.returnSeconds,8,리턴 백이 가는 시간(초). 표식 처치마다 다시 채운다
+Schiesshund.duelSeconds,12,결투(시순트 클래스 기술 키): 조준한 적과 1대1로 가는 시간(초). 그 적이나 시순트가 쓰러지면 먼저 끝난다. 그동안 그 적은 시순트만 노리고 시순트만 다치게 하며 시순트의 탄은 다른 적을 뚫고 지나간다. 동료는 그 적을 체력 1까지만 깎는다(에이스 카드면 마무리도)
+Schiesshund.duelCooldown,30,결투를 다시 걸 수 있을 때까지(초). 건 때부터 센다
+Schiesshund.duelDamage,25,결투 상대에게 시순트가 주는 총 피해 +%. 상대는 현상금 표식도 받으므로 markDamage와 곱해진다
 Detente.syringeMax,100,데탕트 주사기 용량. 장이 시작될 때 syringeStart만큼 차 있고 상점(주사기 보충)과 서포트가 채운다
 Detente.syringeStart,100,장이 시작될 때 주사기에 든 양
 Detente.injectCost,25,주사 한 번에 쓰는 양(100이면 네 번)

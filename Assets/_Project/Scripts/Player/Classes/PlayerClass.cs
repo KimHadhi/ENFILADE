@@ -117,6 +117,10 @@ public static class PlayerClass
         float factor = OwnsWeapon(info, kit.HeldGun) ? 1f + info.GunBonus / 100f : 1f;
         if (target != null && Is(Schiesshund) && PingMarks.IsBountyOf(target, kit.Movement))
             factor *= 1f + Ability(HoundRow, "markDamage", 25f) / 100f;
+        // A Schießhund's duel: the foe it called out takes more again from it (HoundDuel).
+        if (target != null && Is(Schiesshund) && HoundDuel.Of(kit.Movement) is HoundDuel duel && duel.Foe != null
+            && duel.Foe.gameObject == target.gameObject)
+            factor *= 1f + Ability(HoundRow, "duelDamage", 25f) / 100f;
         // An Assault's Danger Close card (데인저 클로즈, the call for fire right up against one's own lines): near
         // enemies take more.
         if (target != null && Is(Assault) && PlayerPerks.Has(PlayerPerks.AssaultDanger))

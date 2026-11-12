@@ -188,6 +188,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
             kit.Charged += OnCharged;
             kit.Taunted += OnTaunted;
             kit.Claimed += OnClaimed;
+            kit.Dueled += OnDueled;
             ping.Pinged += OnPinged;
             callouts.Called += OnCalled;
             support.Built += OnBuilt;
@@ -229,7 +230,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
         if (execution != null) execution.Started -= OnExecutionStarted;
         if (throws != null) throws.Thrown -= OnThrown;
         if (knocks != null) knocks.Knocked -= OnKnocked;
-        if (kit != null) { kit.Charged -= OnCharged; kit.Taunted -= OnTaunted; kit.Claimed -= OnClaimed; }
+        if (kit != null) { kit.Charged -= OnCharged; kit.Taunted -= OnTaunted; kit.Claimed -= OnClaimed; kit.Dueled -= OnDueled; }
         if (ping != null) ping.Pinged -= OnPinged;
         if (callouts != null) callouts.Called -= OnCalled;
         if (support != null) { support.Built -= OnBuilt; support.TookDown -= OnTookDown; }
@@ -425,6 +426,21 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
     {
         if (NetworkManager == null || !NetworkManager.SpawnManager.SpawnedObjects.TryGetValue(enemy, out var marked)) return;
         if (marked.TryGetComponent(out EnemyHealth health)) PingMarks.Ping(health, mover != null ? mover : GetComponent<PlayerMovement>(), bounty);
+    }
+
+    // A Schießhund's duel (HoundDuel): on a zombie, every other PC keeps it too. One on a range target is practice, this
+    // PC's alone.
+    private void OnDueled(Component foe, float seconds, bool ace)
+    {
+        if (foe is EnemyHealth && foe.TryGetComponent(out NetworkObject marked) && marked.IsSpawned) DuelRpc(marked.NetworkObjectId, seconds, ace);
+    }
+
+    // This player called a duel on that zombie: this PC keeps it as theirs does, and the host's zombie goes after them.
+    [Rpc(SendTo.NotMe)]
+    private void DuelRpc(ulong enemy, float seconds, bool ace)
+    {
+        if (NetworkManager == null || !NetworkManager.SpawnManager.SpawnedObjects.TryGetValue(enemy, out var marked)) return;
+        if (marked.TryGetComponent(out EnemyHealth health)) HoundDuel.Begin(mover != null ? mover : GetComponent<PlayerMovement>(), health, seconds, ace);
     }
 
     private void OnCalled(string line, EnemyHealth target, Vector3 point, bool pins)

@@ -60,7 +60,26 @@ public sealed class PlayerPing : MonoBehaviour
         {
             var hunted = PingMarks.BountyOf(movement);
             if (hunted != null && hunted != foe && PlayerClass.Grade(foe) < PlayerClass.Grade(hunted)) bounty = false;
+            // In a duel the mark stays on the foe called out (HoundDuel): F elsewhere is the team's plain ping.
+            if (HoundDuel.Of(movement) is HoundDuel duel && duel.Foe != null && duel.Foe.gameObject != foe.gameObject) bounty = false;
         }
+        PingMarks.Ping(foe, movement, bounty);
+        KitSound.Play(bounty ? KitSound.Cue.Mark : KitSound.Cue.Ping, .7f);
+        if (weapon == null) weapon = GetComponent<WeaponController>();
+        if (weapon != null) FPSBody.Holding(weapon)?.Point();
+        Pinged?.Invoke(foe, bounty);
+    }
+
+    /// <summary>The living foe under the crosshair now, as F would find it, or null: a Schießhund's duel is called on it (ClassKit).</summary>
+    public Component AimedFoe() => Aimed();
+
+    /// <summary>
+    /// Marks this foe as F would, its sound and the gun's nod with it, the other PCs told: a Schießhund's duel puts its
+    /// bounty mark on the foe it calls out (ClassKit), whatever the mark was on.
+    /// </summary>
+    public void Mark(Component foe, bool bounty)
+    {
+        if (foe == null || movement == null) return;
         PingMarks.Ping(foe, movement, bounty);
         KitSound.Play(bounty ? KitSound.Cue.Mark : KitSound.Cue.Ping, .7f);
         if (weapon == null) weapon = GetComponent<WeaponController>();

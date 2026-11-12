@@ -156,6 +156,8 @@ public static class AttackTrace
     private static bool Passes(RaycastHit hit, GameObject owner, System.Collections.Generic.HashSet<IDamageReceiver> passed)
     {
         if (ShouldSkip(hit, owner)) return true;
+        // A Schießhund in a duel shoots through every foe but the one called out (HoundDuel): every PC traces it so.
+        if (HoundDuel.PassesThrough(owner, hit.collider)) return true;
         if (passed == null || passed.Count == 0) return false;
         var receiver = hit.collider.GetComponentInParent<IDamageReceiver>();
         return receiver != null && passed.Contains(receiver);

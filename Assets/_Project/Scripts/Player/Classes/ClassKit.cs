@@ -30,7 +30,9 @@ using UnityEngine;
 ///   plain pistol, so the two are never mixed up: the user's word), loaded by bounties alone and never reloaded: every
 ///   round hits double, and one in the head of its own mark kills it outright, elites too (a brute loses a share of its
 ///   health), with BOUNTY slammed across the screen in teal and burst in the world for everyone to see (BountyBurst;
-///   a plain bounty spills its coins there too).
+///   a plain bounty spills its coins there too). Its class key calls a duel on the foe under the crosshair (HoundDuel; the
+///   user's, after Iso's Kill Contract): for some seconds the two can only hurt each other, its shots pass through every
+///   other foe, the foe carries its bounty mark, and friends may help but never finish it (the Ace card lets them).
 /// - Détente (the user's design): its syringe, Golden Hour and Resurrection are DetenteKit's; the class key injects.
 /// - Support (stage 4): its supply bag, resupplying a friend with F and its barricades are SupportKit's; the class key
 ///   is held there to see where a barricade would go up and let go to put it up, which SupportKit reads itself.
@@ -58,6 +60,8 @@ public sealed class ClassKit : MonoBehaviour
     public event Action<Vector3> Charged;
     /// <summary>This PC's Knight taunted here: the other PCs are told (PlayerNetworkCombat), and the host's zombies go after them.</summary>
     public event Action<Vector3> Taunted;
+    /// <summary>This PC's Schießhund called a duel on this foe, for so long, with the Ace or not: the other PCs are told.</summary>
+    public event Action<Component, float, bool> Dueled;
     /// <summary>
     /// This PC's Schießhund claimed a bounty: where the head was, where the shot came from, the ground under it, and
     /// whether the Desperado claimed it (the grand burst) or a plain kill (the coins). The other PCs are told (PlayerNetworkCombat).
@@ -85,6 +89,8 @@ public sealed class ClassKit : MonoBehaviour
     private readonly List<MeleeCombatTarget> forget = new List<MeleeCombatTarget>();
     // Knight: when the taunt under way ends and how long it lasts; when it may be used again and how long that wait is.
     private float tauntUntil, tauntTotal = 1f, tauntReadyAt, tauntWait = 1f;
+    // Schießhund: when its duel may be called again, and how long that wait is.
+    private float duelReadyAt, duelWait = 1f;
     // Schießhund: Desperado rounds and the points toward the next; Return Back's stacks and when they go; when the last
     // bounty came; and the bounty a Desperado round was just put in the head of, for its BOUNTY.
     private int bountyPoints, returnStacks;
@@ -149,6 +155,13 @@ public sealed class ClassKit : MonoBehaviour
     /// <summary>Seconds until a Knight's taunt may be used again (0: now), and how much of that wait is left, 0 to 1.</summary>
     public float TauntWait => Mathf.Max(0f, tauntReadyAt - Time.time);
     public float TauntWaitShare => Mathf.Clamp01(TauntWait / tauntWait);
+
+    /// <summary>A Schießhund whose duel may be called now; seconds until it may (0: now), and how much of that wait is left.</summary>
+    public bool DuelReady => PlayerClass.Is(PlayerClass.Schiesshund) && Time.time >= duelReadyAt;
+    public float DuelWait => Mathf.Max(0f, duelReadyAt - Time.time);
+    public float DuelWaitShare => Mathf.Clamp01(DuelWait / duelWait);
+    /// <summary>How much of this player's duel under way is left, 0 to 1 (0: none).</summary>
+    public float DuelShare => HoundDuel.Of(movement) is HoundDuel duel ? duel.Share : 0f;
 
     // A Schießhund's Desperado as it is (the gun in slot 4, its rounds its own), or null.
     private WeaponRuntime Desperado => PlayerClass.Is(PlayerClass.Schiesshund) && slots != null && slots.KeepsOwnRounds(DesperadoSlot)
@@ -285,6 +298,10 @@ public sealed class ClassKit : MonoBehaviour
         // Knight: its taunt ready now.
         tauntUntil = tauntReadyAt = 0f;
         tauntTotal = tauntWait = 1f;
+        // Schießhund: its duel ready now, the last one over.
+        duelReadyAt = 0f;
+        duelWait = 1f;
+        HoundDuel.End(movement);
         // Schießhund: no points toward a round, no Return Back, no Desperado shot on its way (its rounds come with its guns).
         bountyPoints = returnStacks = 0;
         returnUntil = 0f;
@@ -429,6 +446,7 @@ public sealed class ClassKit : MonoBehaviour
         }
         if (PlayerClass.Is(PlayerClass.Knight)) { Taunt(); return; }
         if (PlayerClass.Is(PlayerClass.Detente) && detente != null) { detente.Inject(); return; }
+        if (PlayerClass.Is(PlayerClass.Schiesshund)) { Duel(); return; }
         // No ability on the key for this class (a Point's and a Ghost's are always on; a Support's is SupportKit's), or not
         // built yet.
         KitSound.Play(KitSound.Cue.Refuse, .35f);
@@ -629,6 +647,30 @@ public sealed class ClassKit : MonoBehaviour
         // The Desperado's own kill on this screen too: BOUNTY, the counter's banner at its most in the mark's teal.
         if (!TryGetComponent(out CounterBanner banner)) banner = gameObject.AddComponent<CounterBanner>();
         banner.Play(.95f, CounterBanner.Grades - 1, "BOUNTY", PingMarks.BountyColor);
+    }
+
+    // ---- Schießhund: the duel ----
+
+    // The class key on a foe: a duel with it (HoundDuel). Refused while it waits, or with no foe under the crosshair.
+    private void Duel()
+    {
+        if (Time.time < duelReadyAt) { KitSound.Play(KitSound.Cue.Refuse, .5f); return; }
+        var ping = GetComponent<PlayerPing>();
+        var foe = ping != null ? ping.AimedFoe() : null;
+        if (foe == null) { KitSound.Play(KitSound.Cue.Refuse, .4f); return; }
+        float seconds = Mathf.Max(.5f, PlayerClass.Ability(HoundRow, "duelSeconds", 12f));
+        duelWait = Mathf.Max(seconds, PlayerClass.Ability(HoundRow, "duelCooldown", 30f));
+        duelReadyAt = Time.time + duelWait;
+        bool ace = PlayerPerks.Has(PlayerPerks.HoundAce);
+        // Its foe carries the bounty mark too, whatever it was on: the duel's kill is a bounty, and a Desperado round in
+        // its head ends it.
+        ping.Mark(foe, true);
+        HoundDuel.Begin(movement, foe, seconds, ace);
+        Dueled?.Invoke(foe, seconds, ace);
+        KitSound.Play(KitSound.Cue.Bounty, .8f);
+        if (!TryGetComponent(out CounterBanner banner)) banner = gameObject.AddComponent<CounterBanner>();
+        banner.Play(.8f, CounterBanner.Grades - 1, "DUEL", PingMarks.BountyColor);
+        AlertHUD.Self(Texts.Get(ace ? "class.schiesshund.duel.ace" : "class.schiesshund.duel.self"));
     }
 
     // ---- The ultimate (every card taken, a full gauge: ClassCards.Ultimate) ----

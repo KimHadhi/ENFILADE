@@ -30,5 +30,6 @@ detente_dose,진한 주사액,detente,데탕트,Class_detente,2,10,,,Detente.inj
 detente_golden,긴 골든 아워,detente,데탕트,Heart,2,4,,,Detente.goldenSeconds,,,10,골든 아워 +{0}초,다친 뒤 첫 한 시간이 생사를 가른다는 응급의학의 말처럼 치료한 뒤가 가장 바쁘다
 hound_price,몸값 인상,schiesshund,시순트,Class_schiesshund,2,15,,,Schiesshund.markDamage,,,10,내 표식 대상에게 주는 총 피해 +{0}%,현상금이 오를수록 사냥개의 이빨이 날카로워진다
 hound_cylinder,큰 실린더,schiesshund,시순트,Class_schiesshund,1,2,,,Schiesshund.desperadoMax,,,8,데스페라도 실린더 +{0}발,실린더를 바꿔 끼워 데스페라도에 두 발을 더 잰다
+hound_ace,에이스,schiesshund,궁극,Class_schiesshund,1,0,,,,3,1,40,결투 중에는 결투 상대 말고는 아무도 나를 다치게 못 하고 동료도 결투 상대를 마무리할 수 있다,결투를 건 사냥개의 살기에 다른 놈들은 감히 끼어들지 못한다. 동료의 총은 사냥개가 허락한 몫이다
 support_bag,큰 보급 가방,support,서포트,Class_support,2,50,,,Support.supplyMax,,,10,보급 가방 용량 +{0},가방 끈을 덧대 더 많이 담는다
 support_planks,판자 더미,support,서포트,Class_support,1,1,,,Support.barricadeMax,,,10,바리케이드를 한 번에 +{0}개 더 세워 둔다,판자와 못을 한 짐 더 짊어졌다

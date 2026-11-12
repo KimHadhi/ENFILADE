@@ -73,6 +73,20 @@ public sealed class EnemyTargeting : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// A Schießhund's duel (HoundDuel): this one enemy, if this PC runs it (the host's or a lone PC's; a copy follows its
+    /// host), goes after <paramref name="hound"/> alone for <paramref name="seconds"/>, whatever it was after, as a taunt
+    /// turns it, until the hound goes down.
+    /// </summary>
+    public static void Duel(EnemyHealth enemy, PlayerMovement hound, float seconds)
+    {
+        if (enemy == null || seconds <= 0f || !Standing(hound) || !enemy.TryGetComponent(out EnemyTargeting targeting)) return;
+        if (targeting.network == null) targeting.network = enemy.GetComponent<EnemyNetwork>();
+        if (targeting.network != null && targeting.network.IsCopy) return;
+        targeting.taunter = hound;
+        targeting.tauntUntil = Time.time + seconds;
+    }
+
     // Alive and not down: a Knight lying on the ground no longer holds anything's eye (they'd only be eaten).
     private static bool Standing(PlayerMovement who) => who != null && who.IsInitialized && who.DamageReceiver.IsAlive && !who.IsDowned;
 }

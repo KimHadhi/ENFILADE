@@ -142,6 +142,8 @@ public sealed class EnemyHealth : MonoBehaviour, IDamageReceiver, ICombatVitals,
             return DamageResult.Ignored;
         }
         if (Untouchable) return DamageResult.Invulnerable;
+        // A Schießhund in a duel hurts no foe but theirs (HoundDuel; their bullets pass the others by in the first place).
+        if (HoundDuel.Spares(this, hit)) return DamageResult.Ignored;
 
         if (!seen.Add(hit.Id)) return DamageResult.Duplicate;
         recent.Enqueue(hit.Id);
@@ -162,6 +164,9 @@ public sealed class EnemyHealth : MonoBehaviour, IDamageReceiver, ICombatVitals,
             scale = hit.Amount > 0f ? (before - Health) / hit.Amount : 1f;
         }
         else Health = Mathf.Max(0f, Health - amount);
+        // Called out in a Schießhund's duel, it keeps 1 health against anyone but its hound (HoundDuel.Floor: friends help,
+        // the hound finishes), unless the hound holds the Ace.
+        Health = Mathf.Max(Health, HoundDuel.Floor(this, hit, before));
         // The gauge fills by the health this hit took (an execution's share of a brute too), not by the hit.
         UltimateCharge.AwardEnemyHit(hit, before - Health);
         // A copy shows the hit now and leaves the rest to the host, whose enemy is the true one.

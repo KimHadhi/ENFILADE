@@ -60,7 +60,8 @@ public static class PlayerPerks
     // The class cards with code behind them (ClassCards, ClassKit, PlayerClass).
     public const string KnightDeflect = "knight_deflect", KnightReversal = "knight_reversal", KnightGauntlet = "knight_gauntlet",
         KnightShadow = "knight_shadow", AssaultDanger = "assault_danger", AssaultBroken = "assault_broken", AssaultCavalry = "assault_cavalry",
-        GhostPierce = "ghost_pierce", GhostWeakpoint = "ghost_weakpoint", GhostTiger = "ghost_whitetiger", PointGunslinger = "point_gunslinger";
+        GhostPierce = "ghost_pierce", GhostWeakpoint = "ghost_weakpoint", GhostTiger = "ghost_whitetiger", PointGunslinger = "point_gunslinger",
+        HoundAce = "hound_ace";
 
     private static readonly Dictionary<string, int> levels = new Dictionary<string, int>();
     private static List<Perk> catalog;
