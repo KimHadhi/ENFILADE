@@ -177,7 +177,8 @@ internal sealed class CampaignHorde
         ground = wanted;
         if (!NavMesh.SamplePosition(wanted, out NavMeshHit hit, PointSearch, NavMesh.AllAreas)) return false;
         ground = hit.position;
-        return Free(ground, players, near, apart) && Roomy(ground);
+        // A Support's searchlight keeps its ground safe: nothing comes up within its reach (Barricade.Shelters).
+        return Free(ground, players, near, apart) && Roomy(ground) && !Barricade.Shelters(ground);
     }
 
     private bool CalmOne(Vector3 at, float yaw, Transform container)
@@ -231,7 +232,7 @@ internal sealed class CampaignHorde
         foreach (var point in spawns)
         {
             if (point == null || !NavMesh.SamplePosition(point.position, out NavMeshHit ground, PointSearch, NavMesh.AllAreas)
-                || !Roomy(ground.position)) continue;
+                || !Roomy(ground.position) || Barricade.Shelters(ground.position)) continue;
             var target = Nearest(players, ground.position, out float distance);
             if (target == null || distance < near || distance > far) continue;
             if (!NavMesh.SamplePosition(target.transform.position, out NavMeshHit them, PlayerSearch, NavMesh.AllAreas)) continue;

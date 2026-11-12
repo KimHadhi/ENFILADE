@@ -201,6 +201,8 @@ public sealed class WaveManager : MonoBehaviour
         {
             var point=spawnPoints[(i+offset)%spawnPoints.Length];
             if(point==null || !NavMesh.SamplePosition(point.position,out NavMeshHit navHit,2f,NavMesh.AllAreas)) continue;
+            // A Support's searchlight keeps its ground safe: nothing comes up within its reach (Barricade.Shelters).
+            if(Barricade.Shelters(navHit.position)) continue;
             var container = RuntimeSceneHierarchy.GetGroup(gameObject.scene, "ENEMIES", "Waves");
             var enemy=Instantiate(enemyPrefab,navHit.position,point.rotation,container);
             EnemyNetwork.SpawnInRoom(enemy);

@@ -20,8 +20,10 @@ public sealed class BarricadeGhost : MonoBehaviour
     private static readonly int ColorId = Shader.PropertyToID("_Color"), BaseColorId = Shader.PropertyToID("_BaseColor");
     // How high its feet's outline is drawn over the ground (m), how thick (m), and how far out past its feet (m).
     private const float Lift = .03f, LineWidth = .035f, Margin = .06f;
-    // The same mesh for every preview, made from the barricade's look once.
-    private static Mesh mesh;
+    // A mesh a kind for every preview, made from its look once.
+    private static readonly Mesh[] meshes = new Mesh[4];
+    private MeshFilter filter;
+    private Barricade.Kind kind;
 
     private Material tint;
     private LineRenderer feet;
@@ -43,8 +45,14 @@ public sealed class BarricadeGhost : MonoBehaviour
     /// Draws it with its feet at <paramref name="at"/>, facing along <paramref name="yaw"/>, this way, its fill at about
     /// <paramref name="alpha"/> (Support.previewAlpha) and the outline of its feet stronger.
     /// </summary>
-    public void Show(Vector3 at, float yaw, Look look, float alpha)
+    public void Show(Vector3 at, float yaw, Look look, float alpha, Barricade.Kind of = Barricade.Kind.Planks)
     {
+        if (of != kind)
+        {
+            kind = of;
+            filter.sharedMesh = MeshOf(kind);
+            Outline();
+        }
         if (!gameObject.activeSelf)
         {
             gameObject.SetActive(true);
@@ -73,7 +81,8 @@ public sealed class BarricadeGhost : MonoBehaviour
     {
         var body = new GameObject("Body", typeof(MeshFilter), typeof(MeshRenderer));
         body.transform.SetParent(transform, false);
-        body.GetComponent<MeshFilter>().sharedMesh = Mesh;
+        filter = body.GetComponent<MeshFilter>();
+        filter.sharedMesh = MeshOf(kind);
         var renderer = body.GetComponent<MeshRenderer>();
         // Its own copy of the effects' see-through material, so its colour is its own.
         tint = new Material(FeelAssets.Particle(Texture2D.whiteTexture, false)) { name = "Barricade Preview (Runtime)", hideFlags = HideFlags.HideAndDontSave };
@@ -97,29 +106,33 @@ public sealed class BarricadeGhost : MonoBehaviour
         feet.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         feet.receiveShadows = false;
         feet.sharedMaterial = FeelAssets.Particle(Texture2D.whiteTexture, false);
-        // In the line's frame (turned 90° about x) a point (x, z, -lift) is (x, lift, z) in the barricade's.
-        float x = Barricade.Width * .5f + Margin, z = Barricade.Depth * .5f + Margin + .05f;
+        Outline();
+    }
+
+    // Its feet's outline for the kind shown. In the line's frame (turned 90° about x) a point (x, z, -lift) is (x, lift, z)
+    // in the barricade's.
+    private void Outline()
+    {
+        Vector3 size = Barricade.SizeOf(kind);
+        float x = size.x * .5f + Margin, z = size.z * .5f + Margin + .05f;
         feet.positionCount = 4;
         feet.SetPositions(new[] { new Vector3(-x, -z, -Lift), new Vector3(x, -z, -Lift), new Vector3(x, z, -Lift), new Vector3(-x, z, -Lift) });
     }
 
-    // Every box of the barricade's look, its faces shaded by the way they face (top brightest, underside darkest), in one mesh.
-    private static Mesh Mesh
+    // Every box of a kind's look, its faces shaded by the way they face (top brightest, underside darkest), in one mesh.
+    private static Mesh MeshOf(Barricade.Kind kind)
     {
-        get
-        {
-            if (mesh != null) return mesh;
-            var vertices = new List<Vector3>();
-            var colors = new List<Color32>();
-            var triangles = new List<int>();
-            foreach (var part in Barricade.Shape) Box(part, vertices, colors, triangles);
-            mesh = new Mesh { name = "Barricade Preview", hideFlags = HideFlags.HideAndDontSave };
-            mesh.SetVertices(vertices);
-            mesh.SetColors(colors);
-            mesh.SetTriangles(triangles, 0);
-            mesh.RecalculateBounds();
-            return mesh;
-        }
+        if (meshes[(int)kind] != null) return meshes[(int)kind];
+        var vertices = new List<Vector3>();
+        var colors = new List<Color32>();
+        var triangles = new List<int>();
+        foreach (var part in Barricade.ShapeOf(kind)) Box(part, vertices, colors, triangles);
+        var mesh = new Mesh { name = kind + " Preview", hideFlags = HideFlags.HideAndDontSave };
+        mesh.SetVertices(vertices);
+        mesh.SetColors(colors);
+        mesh.SetTriangles(triangles, 0);
+        mesh.RecalculateBounds();
+        return meshes[(int)kind] = mesh;
     }
 
     // One box: six faces of four corners each, a unit cube scaled, turned and placed as the barricade's own box is.

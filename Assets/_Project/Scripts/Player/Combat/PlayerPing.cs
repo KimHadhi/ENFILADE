@@ -99,7 +99,9 @@ public sealed class PlayerPing : MonoBehaviour
         if (DetenteKit.Local != null && DetenteKit.Local.TakesInteract) return true;
         if (DetenteKit.Answering) return true;
         // A Support with a friend in reach to resupply, or a worn barricade to mend.
-        if (SupportKit.Local != null && (SupportKit.Local.Offered != null || SupportKit.Local.Mendable != null)) return true;
+        if (SupportKit.Local != null && (SupportKit.Local.Offered != null || SupportKit.Local.Mendable != null || SupportKit.Local.Planning)) return true;
+        // An ammo crate under the crosshair: F takes from it (ClassKit).
+        if (Barricade.CrateFor(movement) != null) return true;
         if (movement.Abilities != null && movement.Abilities.Fixtures.ClimbDownLadder != null) return true;
         // The hub's stations (its map table, lockers, gun rack, ammo crate, ready button) take F when looked at.
         return CampaignRun.Offering || ShopMenu.IsOpen || HubLobby.Offering;

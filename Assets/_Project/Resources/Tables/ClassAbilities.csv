@@ -101,6 +101,22 @@ Support.torchRate,120,용접 토치 카드가 있으면 망치 대신 토치로 
 Support.torchFuel,100,용접 토치 연료 최대. 고치지 않는 동안 torchRegen씩 다시 찬다
 Support.torchRegen,8,용접 토치 연료가 다시 차는 양(초당)
 Support.torchCost,15,용접 토치로 바리케이드 체력 100을 고칠 때 드는 연료. 400을 다 고치면 60. 연료가 바닥나면 다 찰 때까지 망치로 고친다
+Support.wireCost,30,철조망(서포트 카드): 가방에서 나가는 양. 휠을 누른 채 F로 고른다
+Support.wireMax,2,철조망이 한 번에 서 있는 최대
+Support.wireHealth,300,철조망 체력. 좀비가 지나가며 깎는다(wireWear)
+Support.wireSlow,.4,철조망 안의 좀비 속도(원래의 몇 배). 좀비만 걸리고 아군은 그냥 지나간다
+Support.wireDamage,6,철조망 안의 좀비가 받는 피해(초당). 누구의 처치도 아니다(돈·게이지 없음)
+Support.wireWear,3,철조망 안의 좀비 한 마리가 철조망을 깎는 양(초당)
+Support.crateCost,50,탄약 상자(서포트 카드): 가방에서 나가는 양
+Support.crateMax,1,탄약 상자가 한 번에 서 있는 최대
+Support.crateStock,6,탄약 상자에서 꺼낼 수 있는 횟수. 다 꺼내면 사라진다
+Support.crateMagazines,2,탄약 상자에서 한 번 꺼낼 때 총마다 받는 탄창(보급처럼 resupplyOverfill까지)
+Support.crateEvery,20,한 사람이 같은 탄약 상자에서 다시 꺼낼 수 있을 때까지(초)
+Support.crateReach,2.5,F로 탄약 상자를 꺼낼 수 있는 거리(m)
+Support.lightCost,60,탐조등(서포트 카드): 가방에서 나가는 양
+Support.lightMax,1,탐조등이 한 번에 서 있는 최대
+Support.lightHealth,300,탐조등 체력. 붙어 밀어대는 좀비와 막힌 공격에 깎인다
+Support.lightRadius,25,탐조등 둘레 이만큼(m) 안에는 좀비가 새로 나오지 않는다(웨이브·캠페인 스폰). 바닥에 옅은 원으로 보인다
 Cards.momentumSeconds,3,기세 카드(공용): 맞힐 때마다 강화가 이어지는 시간(초). 맞히면 다시 처음부터. 빗나가도 깎이지 않는다
 Point.gunslingerSeconds,2.5,건슬링어 카드: 총을 바꿔 든 뒤 그 총이 세지는 시간(초)
 Ghost.tigerReach,6,화이트 타이거 카드: 헤드 헌터가 가득 찬 채 헤드샷으로 처치하면 그 자리 둘레 이 반경(m)의 적이 휘청인다

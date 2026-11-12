@@ -23,6 +23,9 @@ using UnityEngine.InputSystem;
 ///   user, 2026-11-12: "G&amp;B 공병처럼 수리하고 유지 보수할 수 있으면 재밌을 듯"); a resupply goes first. It costs the
 ///   bag nothing: a hammer does it, and the welding torch card does it faster on a fuel of its own that fills back
 ///   ("처음에는 망치로 고쳐 … 나중에 카드 업그레이드하면 토치로 더 빠르게"), the tool in hand as it works (RepairLooks).
+/// - Other structures (the user, 2026-11-12: "서포트 다른 건축물 아이디어 지어도 괜찮을 듯"), each from its card: barbed wire,
+///   an ammo crate and a searchlight (Barricade.Kind). While the class key is held, F goes through the ones held; each
+///   has its own cost and most at once.
 /// A class picked starts it afresh (Fresh, from ClassKit on PlayerClass.Picked): the bag as it starts, its barricades down.
 /// This PC's own player only. Numbers: Tables/ClassAbilities, row Support.
 /// </summary>
@@ -55,6 +58,8 @@ public sealed class SupportKit : MonoBehaviour
     // down for it. Both drawn by BarricadeGhost, made on first use.
     private BarricadeGhost ghost, doomed;
     private bool planning;
+    // The kind the key puts up (F goes through those held while it is down).
+    private Barricade.Kind planKind;
     private Barricade.Fit planFit = Barricade.Fit.Ok;
     private Vector3 planAt;
     private float planYaw;
@@ -81,11 +86,38 @@ public sealed class SupportKit : MonoBehaviour
     public float Supply => Mathf.Max(0f, supply);
     public float SupplyMax => Mathf.Max(1f, Number("supplyMax", 100f));
     public float GiveCost => Mathf.Max(1f, Number("resupplyCost", 25f));
-    public float BuildCost => Mathf.Max(1f, Number("barricadeCost", 50f));
+    public float BuildCost => CostOf(planKind);
     public bool CanBuild => Supply >= BuildCost - .001f;
-    /// <summary>How many of its barricades stand now, and the most at once.</summary>
-    public int Standing => movement != null ? Barricade.CountOf(movement) : 0;
-    public int MostStanding => Mathf.Max(1, Mathf.RoundToInt(Number("barricadeMax", 2f)));
+    /// <summary>How many of the chosen kind stand now, and the most at once.</summary>
+    public int Standing => movement != null ? Barricade.CountOf(movement, planKind) : 0;
+    public int MostStanding => MostOf(planKind);
+    /// <summary>The kind the key puts up now.</summary>
+    public Barricade.Kind PlanKind => planKind;
+
+    /// <summary>What a kind takes from the bag, and the most of it at once (Support.barricade*, wire*, crate*, light*).</summary>
+    public float CostOf(Barricade.Kind kind) => Mathf.Max(1f, kind switch
+    {
+        Barricade.Kind.Wire => Number("wireCost", 30f),
+        Barricade.Kind.Crate => Number("crateCost", 50f),
+        Barricade.Kind.Light => Number("lightCost", 60f),
+        _ => Number("barricadeCost", 50f),
+    });
+    public int MostOf(Barricade.Kind kind) => Mathf.Max(1, Mathf.RoundToInt(kind switch
+    {
+        Barricade.Kind.Wire => Number("wireMax", 2f),
+        Barricade.Kind.Crate => Number("crateMax", 1f),
+        Barricade.Kind.Light => Number("lightMax", 1f),
+        _ => Number("barricadeMax", 2f),
+    }));
+
+    // Whether this Support may put up this kind: the planks always, the rest with their cards.
+    private static bool Holds(Barricade.Kind kind) => kind switch
+    {
+        Barricade.Kind.Wire => PlayerPerks.Has(PlayerPerks.SupportWire),
+        Barricade.Kind.Crate => PlayerPerks.Has(PlayerPerks.SupportCrate),
+        Barricade.Kind.Light => PlayerPerks.Has(PlayerPerks.SupportLight),
+        _ => true,
+    };
     /// <summary>Seconds since it last handed ammo over, and since it last put a barricade up (the HUD's flash).</summary>
     public float SinceGive => Time.time - lastGive;
     /// <summary>The class key is held to place a barricade (the preview is up), and whether one may go where it stands now.</summary>
@@ -148,9 +180,10 @@ public sealed class SupportKit : MonoBehaviour
         supply = Mathf.Min(SupplyMax, supply + Mathf.Max(0f, Number("supplyRegen", 1.5f)) * Time.deltaTime);
         Offered = movement.IsDead || movement.IsDowned || !HandsFree() ? null : Aimed();
         if (interact == null && InputSystem.actions != null) interact = InputSystem.actions.FindAction("Player/Interact", false);
-        if (Offered != null && interact != null && interact.WasPressedThisFrame() && movement.InputAvailable) Give(Offered);
+        // While the class key is held F chooses what to put up (Plan), so it neither resupplies nor mends then.
+        if (!planning && Offered != null && interact != null && interact.WasPressedThisFrame() && movement.InputAvailable) Give(Offered);
         // No friend there: a worn barricade under the crosshair, mended while F is held.
-        Mendable = Offered == null && !movement.IsDead && !movement.IsDowned && HandsFree() ? AimedBarricade() : null;
+        Mendable = !planning && Offered == null && !movement.IsDead && !movement.IsDowned && HandsFree() ? AimedBarricade() : null;
         Mending = Mendable != null && interact != null && interact.IsPressed() && movement.InputAvailable && !movement.IsHeld;
         bool torching = Mending && Torching;
         if (Mending) Mend(Mendable);
@@ -254,7 +287,19 @@ public sealed class SupportKit : MonoBehaviour
             return;
         }
         if (KeyBindings.Pressed(key)) planning = true;
+        if (!Holds(planKind)) planKind = Barricade.Kind.Planks;
         if (!planning) return;
+        // F goes on to the next kind this Support holds.
+        if (interact != null && interact.WasPressedThisFrame())
+        {
+            var next = planKind;
+            for (int i = 0; i < 4; i++)
+            {
+                next = (Barricade.Kind)(((int)next + 1) % 4);
+                if (Holds(next)) break;
+            }
+            if (next != planKind) { planKind = next; KitSound.Play(KitSound.Cue.Ping, .4f); }
+        }
         // The guard key (right click unless the key window says otherwise): off, and letting go then puts nothing up.
         if (KeyBindings.Pressed("Combat/Guard"))
         {
@@ -285,7 +330,7 @@ public sealed class SupportKit : MonoBehaviour
         }
         supply -= BuildCost;
         lastBuild = Time.time;
-        ushort id = NextId();
+        ushort id = NextId(planKind);
         if (Barricade.Authority)
         {
             Raise(id, at, yaw);
@@ -369,12 +414,13 @@ public sealed class SupportKit : MonoBehaviour
         }
     }
 
-    // Its owner's client in the high byte, a count in the low one: no two PCs make the same.
-    private ushort NextId()
+    // Its owner's client in the high byte, its kind in the next two bits (Barricade.KindOf), a count in the rest: no two
+    // PCs make the same, and every PC builds the same kind from it.
+    private ushort NextId(Barricade.Kind kind)
     {
         ulong client = movement.TryGetComponent(out NetworkObject network) && network.IsSpawned ? network.OwnerClientId : 0UL;
         made++;
-        return (ushort)(((int)(client & 0xFF) << 8) | (made & 0xFF));
+        return (ushort)(((int)(client & 0xFF) << 8) | ((int)kind << 6) | (made & 0x3F));
     }
 
     /// <summary>
@@ -405,7 +451,7 @@ public sealed class SupportKit : MonoBehaviour
             && !seen.collider.transform.IsChildOf(movement.transform))
         {
             float there = Vector3.Dot(seen.point - feet, flat);
-            ahead = seen.normal.y >= .7f ? there : Mathf.Min(ahead, there - Barricade.Depth * .5f - .1f);
+            ahead = seen.normal.y >= .7f ? there : Mathf.Min(ahead, there - Barricade.SizeOf(planKind).z * .5f - .1f);
         }
         ahead = Mathf.Clamp(ahead, near, far);
         Vector3 above = feet + flat * ahead + Vector3.up * 1.2f;
@@ -415,7 +461,7 @@ public sealed class SupportKit : MonoBehaviour
             return Barricade.Fit.NoGround;
         }
         at = ground.point;
-        var fit = Barricade.Room(at, yaw, movement.transform);
+        var fit = Barricade.Room(at, yaw, movement.transform, planKind);
         if (fit != Barricade.Fit.Ok) return fit;
         // Through a wall it can't go up: the eyes must see its middle (a hit right at its foot is the ground it stands on;
         // a zombie or a friend between is no wall).
@@ -433,15 +479,15 @@ public sealed class SupportKit : MonoBehaviour
         if (planning)
         {
             bool fits = planFit == Barricade.Fit.Ok;
-            Ghost().Show(planAt, planYaw, fits ? BarricadeGhost.Look.Fits : BarricadeGhost.Look.Refused, alpha);
-            var oldest = fits && Standing >= MostStanding ? Barricade.OldestOf(movement) : null;
-            if (oldest != null) Doomed().Show(oldest.transform.position, oldest.transform.eulerAngles.y, BarricadeGhost.Look.Doomed, alpha);
+            Ghost().Show(planAt, planYaw, fits ? BarricadeGhost.Look.Fits : BarricadeGhost.Look.Refused, alpha, planKind);
+            var oldest = fits && Standing >= MostStanding ? Barricade.OldestOf(movement, planKind) : null;
+            if (oldest != null) Doomed().Show(oldest.transform.position, oldest.transform.eulerAngles.y, BarricadeGhost.Look.Doomed, alpha, planKind);
             else if (doomed != null) doomed.Hide();
             return;
         }
         if (doomed != null) doomed.Hide();
-        if (pendingId != 0 && Time.time - pendingAt < AnswerWait) Ghost().Show(heldSpot, heldYaw, BarricadeGhost.Look.Fits, alpha * 1.4f);
-        else if (Time.time - refusedAt < RefusedShow) Ghost().Show(heldSpot, heldYaw, BarricadeGhost.Look.Refused, alpha);
+        if (pendingId != 0 && Time.time - pendingAt < AnswerWait) Ghost().Show(heldSpot, heldYaw, BarricadeGhost.Look.Fits, alpha * 1.4f, Barricade.KindOf(pendingId));
+        else if (Time.time - refusedAt < RefusedShow) Ghost().Show(heldSpot, heldYaw, BarricadeGhost.Look.Refused, alpha, planKind);
         else if (ghost != null) ghost.Hide();
     }
 

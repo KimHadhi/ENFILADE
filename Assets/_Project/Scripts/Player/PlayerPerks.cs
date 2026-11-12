@@ -61,7 +61,8 @@ public static class PlayerPerks
     public const string KnightDeflect = "knight_deflect", KnightReversal = "knight_reversal", KnightGauntlet = "knight_gauntlet",
         KnightShadow = "knight_shadow", AssaultDanger = "assault_danger", AssaultBroken = "assault_broken", AssaultCavalry = "assault_cavalry",
         GhostPierce = "ghost_pierce", GhostWeakpoint = "ghost_weakpoint", GhostTiger = "ghost_whitetiger", PointGunslinger = "point_gunslinger",
-        HoundAce = "hound_ace", SupportTorch = "support_torch", KnightShadowstep = "knight_shadowstep";
+        HoundAce = "hound_ace", SupportTorch = "support_torch", KnightShadowstep = "knight_shadowstep",
+        SupportWire = "support_wire", SupportCrate = "support_crate", SupportLight = "support_light";
 
     private static readonly Dictionary<string, int> levels = new Dictionary<string, int>();
     private static List<Perk> catalog;

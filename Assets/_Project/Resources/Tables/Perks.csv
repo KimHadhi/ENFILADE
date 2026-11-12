@@ -35,3 +35,6 @@ hound_ace,에이스,schiesshund,궁극,Class_schiesshund,1,0,,,,3,1,40,결투 �
 support_bag,큰 보급 가방,support,서포트,Class_support,2,50,,,Support.supplyMax,,,10,보급 가방 용량 +{0},가방 끈을 덧대 더 많이 담는다
 support_planks,판자 더미,support,서포트,Class_support,1,1,,,Support.barricadeMax,,,10,바리케이드를 한 번에 +{0}개 더 세워 둔다,판자와 못을 한 짐 더 짊어졌다
 support_torch,용접 토치,support,서포트,Class_support,1,0,,,,,,10,망치 대신 용접 토치로 바리케이드를 초당 {Support.torchRate}씩 고친다. 연료 {Support.torchFuel}은 쉬는 동안 초당 {Support.torchRegen}씩 차고 바닥나면 망치로 돌아간다,판자 틈을 쇠띠로 녹여 붙이면 못질보다 빠르고 단단하다
+support_wire,철조망,support,서포트,Class_support,1,0,,,,,,10,휠을 누른 채 F로 철조망을 고를 수 있다: 지나가는 좀비가 {Support.wireSlow}배로 느려지고 초당 {Support.wireDamage}씩 다친다,가시철사 한 두름이면 떼도 발이 묶인다
+support_crate,탄약 상자,support,서포트,Class_support,1,0,,,,,,10,휠을 누른 채 F로 탄약 상자를 고를 수 있다: 누구든 F로 {Support.crateStock}번 꺼내 가는 보급,가방이 따라오지 못하는 동료를 위해 한 짐을 내려놓는다
+support_light,탐조등,support,서포트,Class_support,1,0,,,,,,10,휠을 누른 채 F로 탐조등을 고를 수 있다: 둘레 {Support.lightRadius}m 안에는 좀비가 새로 나오지 않는다,빛이 닿는 곳에는 놈들이 기어 나오지 못한다

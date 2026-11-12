@@ -243,8 +243,10 @@ public sealed class ClassHUD : MonoBehaviour
         {
             bool fits = support.PlanFit == Barricade.Fit.Ok;
             KeyPrompt(true);
-            Word(Texts.Get(fits ? "class.hud.place" : "class.hud.place.no"), fits ? KitStyle.Accent : KitStyle.Red);
-            side = fits ? Texts.Get("class.hud.place.cancel") : SupportKit.Why(support.PlanFit);
+            // What it puts up and for how much; F goes on to the next kind held.
+            string what = Texts.Get("class.hud.build." + support.PlanKind.ToString().ToLowerInvariant());
+            Word(Texts.Format(fits ? "class.hud.place.kind" : "class.hud.place.kind.no", what, Mathf.RoundToInt(support.BuildCost)), fits ? KitStyle.Accent : KitStyle.Red);
+            side = (fits ? Texts.Get("class.hud.place.cancel") : SupportKit.Why(support.PlanFit)) + " · " + Texts.Get("class.hud.build.switch");
         }
         else
         {
@@ -259,7 +261,8 @@ public sealed class ClassHUD : MonoBehaviour
                     Mathf.RoundToInt(worn.Health), Mathf.RoundToInt(worn.MostHealth), Mathf.FloorToInt(100f * support.TorchFuel / support.TorchFuelMax))
                 : worn != null ? Texts.Format(support.Mending ? "class.hud.repairing" : "class.hud.repair", Mathf.RoundToInt(worn.Health), Mathf.RoundToInt(worn.MostHealth))
                 : Texts.Format("class.hud.bag", Mathf.FloorToInt(support.Supply), Mathf.RoundToInt(support.SupplyMax)) + " · "
-                    + Texts.Format("class.hud.barricades", support.Standing, support.MostStanding);
+                    + Texts.Format("class.hud.barricades", support.Standing, support.MostStanding,
+                        Texts.Get("class.hud.build." + support.PlanKind.ToString().ToLowerInvariant()));
         }
         if (note.text != side) note.text = side;
         ((RectTransform)note.rectTransform.parent).anchoredPosition = new Vector2(128f + count * (PipWidth + PipGap) + 6f, 0f);

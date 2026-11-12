@@ -121,6 +121,8 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
     public void ShareBarricadeHealth(ushort id, float health) { if (IsSpawned) BarricadeStateRpc(id, health); }
     /// <summary>On a client: a zombie's blow landed on its copy of barricade id; the host's is the true one (Barricade).</summary>
     public void SendBarricadeHit(ushort id, float damage) { if (IsSpawned) BarricadeHitRpc(id, damage); }
+    /// <summary>On a client: this PC's player took from ammo crate id; the host's is the true one (its stock: Barricade.Take).</summary>
+    public void TakeCrate(ushort id) { if (IsSpawned) TakeCrateRpc(id); }
     /// <summary>On a client: this PC's Support's hammer mended barricade id by this much; the host's is the true one (SupportKit).</summary>
     public void SendBarricadeMend(ushort id, float amount) { if (IsSpawned) BarricadeMendRpc(id, amount); }
     /// <summary>
@@ -388,7 +390,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
     private void BuildBarricadeRpc(ushort id, Vector3 at, float yaw, byte most)
     {
         var owner = mover != null ? mover : GetComponent<PlayerMovement>();
-        var fit = Barricade.Judge(at, yaw, owner);
+        var fit = Barricade.Judge(at, yaw, owner, Barricade.KindOf(id));
         if (fit != Barricade.Fit.Ok)
         {
             BarricadeRefusedRpc(id, (byte)fit);
@@ -417,6 +419,10 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
     // A client's zombie blow on its copy of a barricade: the host's takes it.
     [Rpc(SendTo.Server)]
     private void BarricadeHitRpc(ushort id, float damage) => Barricade.Hurt(id, damage);
+
+    // A client's player took from an ammo crate: the host's loses a take, and tells everyone its stock as wear does.
+    [Rpc(SendTo.Server)]
+    private void TakeCrateRpc(ushort id) => Barricade.Take(id);
 
     // A client's Support mended a barricade: the host's takes it, and tells everyone its health as wear does.
     [Rpc(SendTo.Server)]
