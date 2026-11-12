@@ -272,7 +272,7 @@ public sealed class MainMenuClasses : MonoBehaviour
                 return Texts.Format(key, Whole("Support", "supplyMax", 100f), Whole("Support", "supplyRegen", 1.5f),
                     Whole("Support", "resupplyReach", 3.5f), Whole("Support", "resupplyCost", 25f), Whole("Support", "resupplyMagazines", 2f),
                     Whole("Support", "resupplyOverfill", 25f), ClassKey(), Whole("Support", "barricadeCost", 50f),
-                    Whole("Support", "barricadeHealth", 400f), Whole("Support", "barricadeMax", 2f));
+                    Whole("Support", "barricadeHealth", 400f), Whole("Support", "barricadeMax", 2f), Whole("Support", "repairRate", 40f));
             case PlayerClass.Detente:
                 return Texts.Format(key, Whole("Detente", "syringeMax", 100f), Whole("Detente", "injectHeal", 40f), Whole("Detente", "injectCost", 25f),
                     ClassKey(), Whole("Detente", "treatSeconds", 6f), Whole("Detente", "treatHeal", 50f), Whole("Detente", "goldenSpeed", 8f),

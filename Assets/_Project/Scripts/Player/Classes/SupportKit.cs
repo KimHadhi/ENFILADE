@@ -23,6 +23,9 @@ using UnityEngine.InputSystem;
 ///   user, 2026-11-12: "G&amp;B 공병처럼 수리하고 유지 보수할 수 있으면 재밌을 듯"); a resupply goes first. It costs the
 ///   bag nothing: a hammer does it, and the welding torch card does it faster on a fuel of its own that fills back
 ///   ("처음에는 망치로 고쳐 … 나중에 카드 업그레이드하면 토치로 더 빠르게"), the tool in hand as it works (RepairLooks).
+///   Any barricade under the crosshair, whole too, has its line at the foot of the screen (the tool, F held, its health)
+///   and F held on it takes the tool out, so the Support finds the hammer before anything is worn (the user, 2026-11-12:
+///   "서포트는 용접 토치나 망치 어디 있어? 어떻게 쓰는지 모르겠네").
 /// - Other structures (the user, 2026-11-12: "서포트 다른 건축물 아이디어 지어도 괜찮을 듯"), each from its card: barbed wire,
 ///   an ammo crate and a searchlight (Barricade.Kind). While the class key is held, F goes through the ones held; each
 ///   has its own cost and most at once.
@@ -81,6 +84,9 @@ public sealed class SupportKit : MonoBehaviour
     // Run dry: the hammer until the torch is full again (the user, 2026-11-12: "토치 바닥나면 완충되기 전까지 망치 쓰는 거 좋다").
     private bool torchDry;
     private RepairLooks.Tool shownTool;
+    // Whether this Support's barricade line is up at the foot of the screen; the look's hits (AimedBarricade).
+    private bool lineShown;
+    private static readonly RaycastHit[] aimHits = new RaycastHit[16];
 
     /// <summary>The bag now and the most it holds; what a resupply and a barricade take from it.</summary>
     public float Supply => Mathf.Max(0f, supply);
@@ -133,7 +139,12 @@ public sealed class SupportKit : MonoBehaviour
     public float SinceBuild => Time.time - lastBuild;
     /// <summary>The friend F would resupply now (standing, in reach, under the crosshair), or null.</summary>
     public PlayerMovement Offered { get; private set; }
-    /// <summary>The worn barricade F held would mend now (under the crosshair, in reach, anyone's), or null; and whether F is held on it.</summary>
+    /// <summary>
+    /// The barricade under the crosshair in reach, worn or whole, anyone's (not an ammo crate, whose F is its own): its line
+    /// shows at the foot of the screen, and F held there takes the tool out. Null when there is none.
+    /// </summary>
+    public Barricade AimedAt { get; private set; }
+    /// <summary>That barricade while it is worn (F held mends it), or null; and whether F is held on it now, mending.</summary>
     public Barricade Mendable { get; private set; }
     public bool Mending { get; private set; }
     /// <summary>The welding torch card held; its fuel now and the most; whether it does the mending now (else the hammer).</summary>
@@ -153,6 +164,8 @@ public sealed class SupportKit : MonoBehaviour
         if (Local == this) Local = null;
         planning = false;
         HidePreview();
+        AimedAt = null;
+        Line();
     }
 
     private void OnDestroy()
@@ -168,9 +181,10 @@ public sealed class SupportKit : MonoBehaviour
         {
             if (Local == this) Local = null;
             Offered = null;
-            Mendable = null;
+            AimedAt = Mendable = null;
             Mending = false;
             Show(RepairLooks.Tool.None);
+            Line();
             planning = false;
             HidePreview();
             return;
@@ -182,17 +196,22 @@ public sealed class SupportKit : MonoBehaviour
         if (interact == null && InputSystem.actions != null) interact = InputSystem.actions.FindAction("Player/Interact", false);
         // While the class key is held F chooses what to put up (Plan), so it neither resupplies nor mends then.
         if (!planning && Offered != null && interact != null && interact.WasPressedThisFrame() && movement.InputAvailable) Give(Offered);
-        // No friend there: a worn barricade under the crosshair, mended while F is held.
-        Mendable = !planning && Offered == null && !movement.IsDead && !movement.IsDowned && HandsFree() ? AimedBarricade() : null;
-        Mending = Mendable != null && interact != null && interact.IsPressed() && movement.InputAvailable && !movement.IsHeld;
-        bool torching = Mending && Torching;
+        // No friend there: a barricade under the crosshair, worn or whole. F held takes the tool out on either, so the
+        // Support finds what it mends with before anything is worn (the user, 2026-11-12: "서포트는 용접 토치나 망치 어디
+        // 있어? 어떻게 쓰는지 모르겠네"), and mends while it is worn.
+        AimedAt = !planning && Offered == null && !movement.IsDead && !movement.IsDowned && HandsFree() ? AimedBarricade() : null;
+        Mendable = AimedAt != null && AimedAt.Worn ? AimedAt : null;
+        bool held = AimedAt != null && interact != null && interact.IsPressed() && movement.InputAvailable && !movement.IsHeld;
+        Mending = held && Mendable != null;
+        bool torching = held && Torching;
         if (Mending) Mend(Mendable);
         if (!Mending || Time.time >= nextMendSend) FlushMend();
         // The torch's fuel fills back while it rests; the tool in hand is the one at work.
         if (torchFuel < 0f) torchFuel = TorchFuelMax;
         if (!torching) torchFuel = Mathf.Min(TorchFuelMax, TorchFuel + Mathf.Max(0f, Number("torchRegen", 8f)) * Time.deltaTime);
         if (torchDry && TorchFuel >= TorchFuelMax - .01f) torchDry = false;
-        Show(!Mending ? RepairLooks.Tool.None : torching ? RepairLooks.Tool.Torch : RepairLooks.Tool.Hammer);
+        Show(!held ? RepairLooks.Tool.None : torching ? RepairLooks.Tool.Torch : RepairLooks.Tool.Hammer);
+        Line();
         Plan();
         Preview();
     }
@@ -209,8 +228,9 @@ public sealed class SupportKit : MonoBehaviour
         if (pendingId != 0) dropped = pendingId;
         pendingId = 0;
         refusedAt = -99f;
-        Mendable = null;
+        AimedAt = Mendable = null;
         Mending = false;
+        Line();
         mendOwed = 0f;
         torchFuel = -1f;
         torchDry = false;
@@ -531,16 +551,28 @@ public sealed class SupportKit : MonoBehaviour
     // mission's button, a door, a shop).
     // ---- Mending (F held on a worn barricade) ----
 
-    // The worn barricade under the crosshair within reach, anyone's (a sapper mends whatever stands), or null.
+    // The barricade under the crosshair within reach, anyone's (a sapper mends whatever stands), worn or whole, or null.
+    // Barbed wire is a trigger (walked through), so the look takes triggers too, but only a barricade's: any other trigger
+    // (a zone, a pickup's reach) is looked through, and anything solid nearer hides what is behind it. An ammo crate is
+    // left to its own line (ClassKit.Crate).
     private Barricade AimedBarricade()
     {
         var eyes = PlayerView.EyesOf(movement);
         if (eyes == null) return null;
         float reach = Mathf.Max(.5f, Number("repairReach", 3.5f));
-        if (!Physics.Raycast(eyes.position, eyes.forward, out RaycastHit hit, reach, ~(1 << movement.gameObject.layer), QueryTriggerInteraction.Ignore))
-            return null;
-        var barricade = hit.collider.GetComponentInParent<Barricade>();
-        return barricade != null && barricade.Worn ? barricade : null;
+        int count = Physics.RaycastNonAlloc(eyes.position, eyes.forward, aimHits, reach, ~(1 << movement.gameObject.layer), QueryTriggerInteraction.Collide);
+        Barricade found = null;
+        float nearest = float.MaxValue;
+        for (int i = 0; i < count; i++)
+        {
+            var hit = aimHits[i];
+            if (hit.collider == null || hit.distance >= nearest) continue;
+            var barricade = hit.collider.GetComponentInParent<Barricade>();
+            if (hit.collider.isTrigger && barricade == null) continue;
+            nearest = hit.distance;
+            found = barricade;
+        }
+        return found != null && found.Type != Barricade.Kind.Crate && found.Health > 0f ? found : null;
     }
 
     // The tool at work: the hammer at its pace, or the torch faster while its fuel lasts (spent by the health put in;
@@ -584,6 +616,38 @@ public sealed class SupportKit : MonoBehaviour
         shownTool = tool;
         RepairLooks.Hold(movement, tool);
         ToolHeld?.Invoke((byte)tool);
+    }
+
+    // The barricade under the crosshair, at the foot of the screen on the line the ammo crate uses (DetenteLooks.Prompt),
+    // where the eyes are: the tool, F held, its health, and whether it is whole or under the tool. An offered treatment's
+    // answer goes first. With nothing aimed at the line is let go, unless another's has taken it (a crate's, an offer's).
+    private void Line()
+    {
+        string text = AimedAt != null && !DetenteKit.Answering ? LineFor(AimedAt) : null;
+        if (text != null)
+        {
+            lineShown = true;
+            DetenteLooks.Prompt(text);
+            return;
+        }
+        if (!lineShown) return;
+        lineShown = false;
+        if (!DetenteKit.Answering && Barricade.CrateFor(movement) == null) DetenteLooks.Prompt(null);
+    }
+
+    // What the line says: whole, worn, or under the tool; with the torch card its fuel, or how full it is again while
+    // the hammer stands in for it (Texts: class.hud.repair*).
+    private string LineFor(Barricade barricade)
+    {
+        int health = Mathf.RoundToInt(barricade.Health), most = Mathf.RoundToInt(barricade.MostHealth);
+        bool whole = !barricade.Worn;
+        if (Torching)
+            return Texts.Format(whole ? "class.hud.repair.full.torch" : Mending ? "class.hud.repairing.torch" : "class.hud.repair.torch",
+                health, most, Mathf.FloorToInt(TorchFuel));
+        if (TorchDry)
+            return Texts.Format(whole ? "class.hud.repair.full.dry" : Mending ? "class.hud.repairing.dry" : "class.hud.repair.dry",
+                health, most, Mathf.FloorToInt(100f * TorchFuel / TorchFuelMax));
+        return Texts.Format(whole ? "class.hud.repair.full" : Mending ? "class.hud.repairing" : "class.hud.repair", health, most);
     }
 
     // A client's mending so far, told the host.

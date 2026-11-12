@@ -180,8 +180,8 @@ public sealed class PlayerPing : MonoBehaviour
         // A Détente treating a friend by hand, or bringing one back; or a Détente's offer waiting for this player's F.
         if (DetenteKit.Local != null && DetenteKit.Local.TakesInteract) return true;
         if (DetenteKit.Answering) return true;
-        // A Support with a friend in reach to resupply, or a worn barricade to mend.
-        if (SupportKit.Local != null && (SupportKit.Local.Offered != null || SupportKit.Local.Mendable != null || SupportKit.Local.Planning)) return true;
+        // A Support with a friend in reach to resupply, or a barricade under the crosshair (F held takes the tool out).
+        if (SupportKit.Local != null && (SupportKit.Local.Offered != null || SupportKit.Local.AimedAt != null || SupportKit.Local.Planning)) return true;
         // An ammo crate under the crosshair: F takes from it (ClassKit).
         if (Barricade.CrateFor(movement) != null) return true;
         if (movement.Abilities != null && movement.Abilities.Fixtures.ClimbDownLadder != null) return true;
