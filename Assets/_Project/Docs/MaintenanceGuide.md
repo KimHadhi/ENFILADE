@@ -79,6 +79,7 @@
 - `Throw.*`: T 돌 던지기(누르고 있으면 궤적과 떨어질 곳의 소리 범위가 보이고 떼면 던진다)의 쿨다운, 던지는 빠르기, 소리가 닿는 거리(`noise`), 돌 크기와 남는 시간. 돌에 반응하는 방식은 ZombieSenses의 `lure*` 열(지켜보는 시간 `lureGlance`, 곁눈질 `lureFocus`, 다가가는 빠르기와 둘러보는 시간). 돌 소리는 [StealthSounds](../Resources/Stealth/StealthSounds.asset)의 `stoneHits`에서 고르고 비면 코드가 만든 소리를 쓴다.
 - `Score.takedown`(암살 추가 점수), `Score.unseen`(조용한 구간을 아무도 안 들키고 지나간 보상, 모두에게).
 - 더 쉽게 하려면: ZombieSenses의 `nearRate`를 낮추거나 `forget`을 올리고 `crouchShare`를 낮춘다. 덜 두리번거리게 하려면 `lookAroundEvery`를 늘리거나 0으로 끈다. 돌이 더 멀리 들리게 하려면 `Throw.noise`.
+- 조용한 좀비의 자세(앉기·먹기·웅크리기·엎드리기, [ZombieClips.csv](../Resources/Tables/ZombieClips.csv) `poseShare`): 깨면 그 자세의 일어나기 클립을 틀고, 다 일어설 때까지는 쫓지도 치지도 수색하러 걷지도 않는다(`ZombieMind.GettingUp`이 `Ready`를 막는다). 깨서 달려들 때·맞아서 깰 때·수색하러 갈 때는 `getUpRoused`초(1) 안에 일어나고, 알아채기만 할 때(경계)는 제 빠르기로 일어난다. 전에는 맞아서 바로 깨면 으르렁 없이 곧장 쫓아서, 앉은·엎드린 몸이 일어나는 클립 몇 초 동안 그대로 미끄러져 왔다.
 
 ### 클래스 투척물 (Grenades.csv, GrenadeRules.csv)
 

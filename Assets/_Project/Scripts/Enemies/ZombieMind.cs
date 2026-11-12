@@ -204,8 +204,20 @@ public sealed class ZombieMind : MonoBehaviour
     public ZombieMood Mood { get; private set; } = ZombieMood.Awake;
     /// <summary>It knows someone is there: rousing or awake.</summary>
     public bool IsAwake => Mood == ZombieMood.Awake || Mood == ZombieMood.Rousing || Mood == ZombieMood.Rising;
-    /// <summary>Awake and done rousing: it may chase and fight (EnemyChaseAI, EnemyCombatAI).</summary>
-    public bool Ready => Mood == ZombieMood.Awake;
+    /// <summary>
+    /// Awake, done rousing and on its feet: it may chase and fight (EnemyChaseAI, EnemyCombatAI, and every other mover:
+    /// a runner's charge, a charger's, a climb, an exploder's walk in).
+    /// </summary>
+    public bool Ready => Mood == ZombieMood.Awake && !GettingUp;
+    /// <summary>
+    /// Its body is still getting up out of a calm pose (sitting, eating, crouched, lying: ZombieBody.Moods, on every PC
+    /// alike): until it stands it isn't Ready and goes nowhere, whatever woke it. Shot awake it woke straight to Awake
+    /// (Struck) while its body took the get-up clip's whole length, so it slid at the player still sitting or lying (user,
+    /// 2026-11-12: "좀비가 앉은 채, 누운 채로 와. 모션이 굳은 채로 온다고").
+    /// </summary>
+    internal bool GettingUp { get; set; }
+    // It was held by its getting up last frame: the frame it stands, a search it was sent on walks on.
+    private bool heldUp;
     /// <summary>
     /// Not awake: calm, searching, or alert to something it hasn't made out. A takedown from behind ends it (EnemyHealth).
     /// Alert used to count as aware, so a zombie turned to look at a thrown stone could not be taken from behind.
@@ -420,8 +432,10 @@ public sealed class ZombieMind : MonoBehaviour
         if (focus != null) lastKnown = focus.transform.position;
         rouseUntil = Time.time + rouseSeconds;
         SetSpeed(1f);
+        // Woken out of a pose it gets up first, from this very frame (its body takes it over from its next update).
+        if (HoldsPose) GettingUp = true;
         // Rousing, it stands and faces its quarry; then EnemyChaseAI takes it.
-        if (Mood == ZombieMood.Rousing) Halt();
+        if (Mood == ZombieMood.Rousing || GettingUp) Halt();
         else if (agent != null && agent.isActiveAndEnabled && agent.isOnNavMesh) agent.isStopped = false;
         Woke?.Invoke(this, focus);
         if (!call) return;
@@ -476,7 +490,9 @@ public sealed class ZombieMind : MonoBehaviour
         arrived = false;
         SetSpeed(lure ? lureSpeedShare : searchSpeedShare);
         if (agent == null || !agent.isActiveAndEnabled || !agent.isOnNavMesh) return;
-        agent.isStopped = false;
+        // Sent off while still getting up out of a pose (or straight out of one), it walks once it stands (Update).
+        if (HoldsPose) GettingUp = true;
+        agent.isStopped = GettingUp;
         agent.SetDestination(at);
     }
 
@@ -553,6 +569,14 @@ public sealed class ZombieMind : MonoBehaviour
                 Mood = ZombieMood.Awake;
                 if (agent != null && agent.isActiveAndEnabled && agent.isOnNavMesh) agent.isStopped = false;
             }
+        }
+        // Getting up out of a pose it stays where it is, whatever it means to do next (a search sets off its walk at once,
+        // and nothing else stops it). The frame it stands, a search walks on; the chase takes it itself (Ready).
+        if (GettingUp) { Halt(); heldUp = true; }
+        else if (heldUp)
+        {
+            heldUp = false;
+            if (Mood == ZombieMood.Searching && agent != null && agent.isActiveAndEnabled && agent.isOnNavMesh) agent.isStopped = false;
         }
         if ((thinkLeft -= dt) > 0f) return;
         // Far from every player it thinks less often (ZombieLod); what it sees adds up over the longer step all the same.

@@ -90,8 +90,13 @@ public sealed partial class ZombieBody
         if (mood != shownMood)
         {
             bool roused = mood == ZombieMood.Rousing || mood == ZombieMood.Rising;
+            bool gettingUp = cueing && cueKind == CueKind.GetUp;
             // Out of a pose it gets up first, whatever woke it; knocked down out of it, the doll and its rise do instead.
-            if (leavesPose) { if (!down) Cue(CueKind.GetUp, roused); }
+            // Only an alert (it stands looking) takes the whole clip: woken to chase, sent to search or shot awake, it is
+            // up within getUpRoused, and it goes nowhere until it is (ZombieMind.GettingUp).
+            if (leavesPose) { if (!down) Cue(CueKind.GetUp, mood != ZombieMood.Alert); }
+            // Still getting up, it finishes that, quicker now, rather than snapping to its feet for a rouse.
+            else if (gettingUp) { if (mood != ZombieMood.Alert) cueRate = Mathf.Max(cueRate, HurriedGetUp); }
             else if (roused) Cue(CueKind.Rouse, false);
             else if (mood == ZombieMood.Alert && shownMood == ZombieMood.Calm) Cue(CueKind.Notice, false);
             shownMood = mood;
@@ -121,7 +126,7 @@ public sealed partial class ZombieBody
         walks.SetInputWeight(0, 1f - searchShare);
         walks.SetInputWeight(1, searchShare);
 
-        if (!cueing) return;
+        if (!cueing) { HoldStill(false); return; }
         cueTime += dt * cueRate;
         float length = cueKind == CueKind.GetUp ? getUpLength : cueKind == CueKind.Rouse ? rouseLength : noticeLength;
         bool over = cueTime >= length - CueOut * cueRate;
@@ -129,6 +134,18 @@ public sealed partial class ZombieBody
         var playing = cueKind == CueKind.GetUp ? getUp : cueKind == CueKind.Rouse ? rouse : notice;
         playing.SetTime(Mathf.Min(cueTime, length));
         if (over && cueWeight <= 0f) cueing = false;
+        // Until its getting up is all but done (the legs take over as the clip eases out) it stays put. Never longer than
+        // the clip at the pace it began with and a second more, so nothing can hold it there for good.
+        HoldStill(cueKind == CueKind.GetUp && !over && Time.time - getUpSince < getUpLength / Mathf.Max(1f, cueRate) + 1f);
+    }
+
+    // The getting up's pace when it hurries (woken to chase, sent to search, shot awake): up within getUpRoused.
+    private float HurriedGetUp => Mathf.Max(1f, getUpLength / Mathf.Max(.2f, getUpRoused));
+
+    // Tells the mind (the host's moves the body) whether it is still getting up; set on every PC alike.
+    private void HoldStill(bool on)
+    {
+        if (mind != null && mind.GettingUp != on) mind.GettingUp = on;
     }
 
     /// <summary>
@@ -177,8 +194,10 @@ public sealed partial class ZombieBody
         cueKind = kind;
         cueTime = 0f;
         // Roused straight out of a pose it is up within getUpRoused seconds, so it isn't still sitting as it charges.
-        cueRate = kind == CueKind.GetUp && hurried ? Mathf.Max(1f, getUpLength / Mathf.Max(.2f, getUpRoused)) : 1f;
+        cueRate = kind == CueKind.GetUp && hurried ? HurriedGetUp : 1f;
+        if (kind == CueKind.GetUp) getUpSince = Time.time;
     }
+    private float getUpSince;
 
     // The one-off clip's share of the body (ZombieBody.Weigh): notice, rouse or getting up out of a pose.
     private void WeighCue(float cue)
