@@ -25,8 +25,19 @@ public sealed class ThrowableInfo
     public int Refill = 1;
     /// <summary>Seconds from the throw to the burst (from the pin, for one that cooks). 0: none (the knife).</summary>
     public float Fuse = 1.5f;
-    /// <summary>Holding G runs its fuse (the Point's flashbang): let go when it should burst; held out, it bursts in hand.</summary>
+    /// <summary>Holding G runs its fuse from the pin (the Assault's frag, the Point's flashbang): let go when it should burst.</summary>
     public bool Cooks;
+    /// <summary>
+    /// One that cooks, held to the end of its fuse: true, the hand throws it on reflex at the last moment (the Assault
+    /// counts the fuse in their head and the hand lets go by itself, so a frag never goes off in it); false, it goes off in
+    /// the hand (the Point's flashbang, which only staggers the zombies round its holder). Tables/Grenades cookOut.
+    /// </summary>
+    public bool ThrowsOut;
+    /// <summary>
+    /// Where it sits in the left hand (GrenadeArm), in hand lengths (wrist to middle knuckle): x across to the little
+    /// finger's side, y out of the palm, z along to the fingers; and its turn there (degrees, in the same axes).
+    /// </summary>
+    public Vector3 HeldAt = new Vector3(.12f, .6f, .9f), HeldTurn = new Vector3(0f, 0f, 90f);
     public float Speed = 16f, Lift = 2.5f, Gravity = 1f, Bounce = .3f, Size = .08f;
     public float Radius = 5f, Damage, Edge, Head, Seconds, Posture, Knock, Heal, Push, PlayerDamage, PlayerEdge, Noise, Price;
     public Color Tint = Color.white;
@@ -125,6 +136,11 @@ public static class Throwables
                 Noise = Number(row, "noise", 0f), Price = Number(row, "price", 0f),
             };
             if (ColorUtility.TryParseHtmlString(Text(row, "tint"), out Color tint)) info.Tint = tint;
+            info.ThrowsOut = string.Equals(Text(row, "cookOut"), "throw", StringComparison.OrdinalIgnoreCase);
+            info.HeldAt = new Vector3(Number(row, "heldAcross", info.HeldAt.x), Number(row, "heldPalm", info.HeldAt.y),
+                Number(row, "heldAlong", info.HeldAt.z));
+            info.HeldTurn = new Vector3(Number(row, "heldTurnX", info.HeldTurn.x), Number(row, "heldTurnY", info.HeldTurn.y),
+                Number(row, "heldTurnZ", info.HeldTurn.z));
             info.Icon = Text(row, "icon");
             if (info.Icon.Length == 0) info.Icon = DefaultIcon(kind);
             kinds[kind] = info;

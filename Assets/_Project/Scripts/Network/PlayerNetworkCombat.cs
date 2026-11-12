@@ -224,6 +224,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
             grenades.Thrown += OnGrenadeThrown;
             grenades.Burst += OnGrenadeBurst;
             grenades.KnifeTaken += OnKnifeTaken;
+            grenades.Handed += OnGrenadeHanded;
             knocks.Knocked += OnKnocked;
             kit.Charged += OnCharged;
             kit.Taunted += OnTaunted;
@@ -276,7 +277,11 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
         if (kicks != null) kicks.Kicked -= OnKicked;
         if (execution != null) execution.Started -= OnExecutionStarted;
         if (throws != null) throws.Thrown -= OnThrown;
-        if (grenades != null) { grenades.Thrown -= OnGrenadeThrown; grenades.Burst -= OnGrenadeBurst; grenades.KnifeTaken -= OnKnifeTaken; }
+        if (grenades != null)
+        {
+            grenades.Thrown -= OnGrenadeThrown; grenades.Burst -= OnGrenadeBurst; grenades.KnifeTaken -= OnKnifeTaken;
+            grenades.Handed -= OnGrenadeHanded;
+        }
         if (knocks != null) knocks.Knocked -= OnKnocked;
         if (kit != null) { kit.Charged -= OnCharged; kit.Taunted -= OnTaunted; kit.Claimed -= OnClaimed; kit.Dueled -= OnDueled; }
         if (detente != null) { detente.Injected -= OnInjected; detente.TreatBegan -= OnTreatBegan; detente.TreatStopped -= OnTreatStopped; }
@@ -372,6 +377,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
     private void OnGrenadeThrown(Throwable kind, ushort id, Vector3 from, Vector3 velocity, float fuse) => GrenadeRpc((byte)kind, id, from, velocity, fuse);
     private void OnGrenadeBurst(Throwable kind, ushort id, Vector3 at) => GrenadeBurstRpc((byte)kind, id, at);
     private void OnKnifeTaken(ushort id) => KnifeTakenRpc(id);
+    private void OnGrenadeHanded(Throwable kind, PlayerGrenades.HandPhase phase) => GrenadeHandRpc((byte)kind, (byte)phase);
     private void OnKnocked(Vector3 at, Vector3 normal) => KnockRpc(at, normal);
     private void OnCharged(Vector3 at) => ChargeRpc(at);
     private void OnTaunted(Vector3 at) => TauntRpc(at);
@@ -575,6 +581,14 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
     private void KnifeTakenRpc(ushort id)
     {
         if (grenades != null) grenades.ShowKnifeTaken(id);
+    }
+
+    // This player's off hand went for their throwable, threw it or put it back (G): every other PC's copy of them moves
+    // its arm the same way (GrenadeArm), so the hold and the throw are seen. The throwable itself follows in GrenadeRpc.
+    [Rpc(SendTo.NotMe)]
+    private void GrenadeHandRpc(byte kind, byte phase)
+    {
+        if (grenades != null) grenades.ShowHand((Throwable)kind, (PlayerGrenades.HandPhase)phase);
     }
 
     // A knock on a wall by this player: every other PC hears it there, and the host's zombies come to look.

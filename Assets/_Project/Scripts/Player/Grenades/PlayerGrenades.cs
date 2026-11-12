@@ -1,23 +1,37 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using MovementState = PlayerMovement.MovementState;
 
 /// <summary>
 /// G: the class throwable (Throwables; the user, 2026-11-12: "클래스별로 수류탄이 달랐으면 좋겠고 gmod 호드 모드처럼
-/// G키로 퀵 그레네이드 던질 수 있었음 좋겠어"). As GMod Horde's quick grenade: the gun stays in hand and the throwable goes
-/// from the left hand toward the crosshair the moment G is tapped (Horde throws it on the press; here a tap shorter than
-/// GrenadeRules tapHold throws on its release, so holding can aim). Held longer, G aims as T aims the stone: the arc it
-/// will fly (ThrowArc) and, where it lands, the reach of its burst; let go, it is thrown. The guard key while holding puts
-/// the pin back: nothing is thrown, nothing spent. One that cooks (the Point's flashbang) starts its fuse at the press:
-/// let go late and it bursts in the air; hold it out and it bursts in the hand, round the Point. A few are carried (the
-/// table's carry: a fresh kit holds them all, every chapter and every class pick); ammo piles, the shop and a Support
-/// give some back, and a Knight walks over its thrown knives to take them back. Horde's 0.35 s guard between throws
-/// stays (GrenadeRules cooldown). On every player: this PC's own throws, and friends' throws copied here
+/// G키로 퀵 그레네이드 던질 수 있었음 좋겠어"), thrown by the off hand while the gun stays in the other (GrenadeArm, along
+/// the path of GMod's VManip quick grenade). The user again: "그냥 G 꾹 누르면 들고 있는 자세로 바뀌면서 쿠킹할 수 있고
+/// 걍 바로 누르면 콜오브듀티 퀵그레네이드처럼 바로 던지는 모션만 나오게".
+/// A tap (let go before GrenadeRules tapHold) is Call of Duty's quick throw: the hand takes it from the belt and throws it
+/// toward the crosshair in one quick motion (tapDraw, then throwSpeed), no arc, no stop. Held, the hand comes up and holds
+/// it out (VManip's hold), the pin pulled with its sound; the arc it will fly and the reach of its burst show (ThrowArc,
+/// from where the hand lets go, so the arc is the flight), and let go, it is thrown. The guard key while it is held puts
+/// the pin back: nothing thrown, nothing spent.
+/// One that cooks (the Assault's frag, the Point's flashbang) burns from the pin: its fuse runs down in a ring round the
+/// crosshair (GrenadeHUD.Ring), so it can be let go to burst in the air. Never a minus: a frag held to the end is thrown on
+/// reflex at the last moment (the Assault counts the fuse and the hand lets go by itself: GrenadeRules reflexLead), and a
+/// flashbang held to the end goes off in the hand, which only staggers the zombies round its holder. Knife, smoke and
+/// canister don't cook; holding them only aims.
+/// A few are carried (the table's carry: a fresh kit holds them all, every chapter and every class pick); ammo piles, the
+/// shop and a Support give some back, and a Knight walks over its thrown knives to take them back. Horde's 0.35 s guard
+/// between throws stays (cooldown). On every player: this PC's own throws, and friends' throws and arm copied here
 /// (PlayerNetworkCombat). The HUD shows the count beside the ammo (GrenadeHUD).
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class PlayerGrenades : MonoBehaviour
 {
+    /// <summary>What a throw's off hand does next, sent to friends' PCs so the copy's arm does it too.</summary>
+    public enum HandPhase : byte { None, Draw, Throw, TapThrow, Lower }
+
+    // Where the off hand is in a throw: going for it (the draw), holding it out, throwing it, or putting it back.
+    private enum Arm : byte { None, Draw, Hold, Throw, Lower }
+
     /// <summary>This PC's player's.</summary>
     public static PlayerGrenades Local { get; private set; }
 
@@ -27,14 +41,18 @@ public sealed class PlayerGrenades : MonoBehaviour
     public event Action<Throwable, ushort, Vector3> Burst;
     /// <summary>This PC's player took a thrown knife back: friends' copies of it go.</summary>
     public event Action<ushort> KnifeTaken;
+    /// <summary>This PC's player's off hand went for a throwable, threw it or put it back: friends' copies move their arm so.</summary>
+    public event Action<Throwable, HandPhase> Handed;
 
     private PlayerMovement movement;
     private WeaponController weapon;
     private ThrowArc arc;
-    private Throwable kind;
+    private GrenadeArm armBody;
+    private Throwable kind, armKind;
+    private Arm arm;
     private int count;
-    private bool pressed, aiming, cooking, wired;
-    private float pressedAt, cookLeft, readyAt, pickLeft;
+    private bool holding, aiming, cooking, wired, letGo, released, pinned;
+    private float pressedAt, cookLeft, readyAt, pickLeft, cycle, drawSpeed, lowerLeft;
     private ushort nextId = 1;
     private string classSeen;
     // This player's throwables in the world on this PC: their own, or the copies of a friend's.
@@ -47,6 +65,12 @@ public sealed class PlayerGrenades : MonoBehaviour
     public int Count => count;
     public int Carry => Info != null ? Info.Carry : 0;
     private ThrowableInfo Info => Throwables.Of(kind);
+
+    /// <summary>
+    /// The player's off hand is on a throw (going for it, holding it, throwing it, putting it back): anything else that
+    /// would use that hand (a held F's point) waits. On every PC, for the player and for friends' copies.
+    /// </summary>
+    public static bool HandBusy(PlayerMovement who) => who != null && who.TryGetComponent(out PlayerGrenades grenades) && grenades.arm != Arm.None;
 
     private void Awake()
     {
@@ -64,8 +88,10 @@ public sealed class PlayerGrenades : MonoBehaviour
 
     private void OnDisable()
     {
-        pressed = aiming = false;
+        holding = aiming = cooking = letGo = false;
+        arm = Arm.None;
         if (arc != null) arc.Hide();
+        if (Local == this) GrenadeHUD.Ring(-1f);
     }
 
     // A class picked is a fresh kit: its throwable, all of them.
@@ -75,13 +101,20 @@ public sealed class PlayerGrenades : MonoBehaviour
         classSeen = now;
         kind = Throwables.ForClass(now);
         count = Carry;
-        pressed = aiming = cooking = false;
-        if (arc != null) arc.Hide();
+        if (arm == Arm.Draw || arm == Arm.Hold) PutBack();
+        cooking = false;
     }
 
     private void Update()
     {
-        if (movement == null || !movement.IsLocal) return;
+        if (movement == null) return;
+        float dt = Time.deltaTime;
+        if (!movement.IsLocal)
+        {
+            // A friend's copy: only its arm, from the phases their PC sends.
+            Run(dt, Throwables.Of(armKind));
+            return;
+        }
         Local = this;
         // The class's throwable, all of them, as the player first comes (a chapter's start) or the class changes.
         string id = PlayerClass.CurrentId;
@@ -93,10 +126,18 @@ public sealed class PlayerGrenades : MonoBehaviour
         }
         var info = Info;
         Hand(info);
-        if (cooking) Cook(info);
-        if ((pickLeft -= Time.deltaTime) <= 0f) { pickLeft = .1f; TakeKnivesBack(); }
+        if (cooking) Cook(Throwables.Of(armKind));
+        Run(dt, Throwables.Of(armKind));
+        KeepHandFree();
+        if (holding && (arm == Arm.Draw || arm == Arm.Hold)) Aim(Throwables.Of(armKind));
+        else StopAim();
+        if ((pickLeft -= dt) <= 0f) { pickLeft = .1f; TakeKnivesBack(); }
+        var held = Throwables.Of(armKind);
+        float fuse = cooking && held != null && held.Fuse > 0f ? cookLeft / held.Fuse : -1f;
         if (info == null || kind == Throwable.None) GrenadeHUD.Hide();
-        else GrenadeHUD.Show(kind, count, aiming, cooking && info.Fuse > 0f ? cookLeft / info.Fuse : -1f);
+        else GrenadeHUD.Show(kind, count, aiming, fuse);
+        // The fuse round the crosshair while one is held cooking (a tap's few tenths go by without it).
+        GrenadeHUD.Ring(fuse >= 0f && !released && (holding || arm == Arm.Hold) ? fuse : -1f);
     }
 
     // ---- The key ----
@@ -104,62 +145,191 @@ public sealed class PlayerGrenades : MonoBehaviour
     private void Hand(ThrowableInfo info)
     {
         var key = KeyBindings.Find("Player/Grenade");
-        bool able = info != null && key != null && movement.InputAvailable && TakesInput() && !movement.IsDead && !movement.IsHeld
-            && !movement.CombatInputLocked && !HandsFull();
+        bool able = info != null && key != null && movement.InputAvailable && TakesInput() && Able();
         if (!able)
         {
-            // A cooked flashbang keeps burning in the hand whatever takes the hands (a grab bursts it round its holder).
-            if (!cooking) { pressed = false; StopAim(); }
+            // Hands taken going for it or holding it: the pin goes back, nothing spent; but a flashbang already burning
+            // keeps burning in the hand (a grab bursts it round its holder: Cook).
+            var held = Throwables.Of(armKind);
+            if ((arm == Arm.Draw || arm == Arm.Hold) && !(cooking && held != null && !held.ThrowsOut)) PutBack();
             return;
         }
-        if (!pressed && KeyBindings.Pressed(key))
+        if (arm == Arm.None && KeyBindings.Pressed(key))
         {
             if (count <= 0) { GrenadeHUD.Refused(); return; }
             if (Time.time < readyAt) return;
-            pressed = true;
-            pressedAt = Time.time;
-            if (kind != Throwable.Knife) Throwables.Play("Pin", HandPoint(), .7f, 1f, 15f);
-            if (info.Cooks) { cooking = true; cookLeft = info.Fuse; }
+            Begin(info);
+            return;
         }
-        if (!pressed) return;
+        if ((arm != Arm.Draw && arm != Arm.Hold) || letGo) return;
         // The guard key puts the pin back: nothing thrown, nothing spent.
         if (KeyBindings.Pressed("Combat/Guard"))
         {
-            pressed = cooking = false;
-            StopAim();
+            PutBack();
             return;
         }
         if (KeyBindings.Held(key))
         {
-            if (Time.time - pressedAt >= Mathf.Max(0f, Throwables.Rule("tapHold", .16f))) Aim(info);
+            if (Time.time - pressedAt >= Mathf.Max(0f, Throwables.Rule("tapHold", .16f))) holding = true;
             return;
         }
-        pressed = false;
-        StopAim();
-        Throw(info);
+        LetGo(!holding);
     }
 
     private bool HandsFull() => TryGetComponent(out PlayerWeaponSlots slots) && slots.HandsFull;
 
     private static bool TakesInput() => Cursor.lockState == CursorLockMode.Locked && Application.isFocused && !DevConsole.TakesKeyboard;
 
-    // A cooking flashbang's fuse: out in the hand, it bursts there.
+    // The body can throw: alive and up, not held, not climbing, hanging or vaulting, the hands not full; standing or
+    // crouched (walking and in the air too) or sliding (GrenadeArm lifts the arm in the same states).
+    private bool Able()
+    {
+        if (movement.IsDead || movement.IsDowned || movement.IsHeld || movement.IsParkour || movement.CombatInputLocked || HandsFull())
+            return false;
+        var state = movement.CurrentState;
+        return state == MovementState.Standing || state == MovementState.Crouching || state == MovementState.Sliding;
+    }
+
+    // G pressed: the off hand goes for it. Whatever the gun was doing with that hand stops (a reload, the sights), as a
+    // shove stops them.
+    private void Begin(ThrowableInfo info)
+    {
+        StartArm(kind, Throwables.Rule("holdDraw", 1.25f));
+        pressedAt = Time.time;
+        holding = letGo = false;
+        if (weapon == null) weapon = GetComponent<WeaponController>();
+        if (weapon != null) weapon.InterruptForSurvival();
+        Handed?.Invoke(kind, HandPhase.Draw);
+    }
+
+    // G let go (or the reflex): thrown from the hold at once, or as soon as the draw gets there. A tap's draw runs faster
+    // and never stops at the hold.
+    private void LetGo(bool tap)
+    {
+        letGo = true;
+        if (tap) drawSpeed = Throwables.Rule("tapDraw", 1.6f);
+        Handed?.Invoke(armKind, tap ? HandPhase.TapThrow : HandPhase.Throw);
+        if (arm == Arm.Hold) StartThrow();
+    }
+
+    // The guard key, or the hands taken: the pin goes back in and the hand puts it back on the belt.
+    private void PutBack()
+    {
+        cooking = holding = letGo = false;
+        StopAim();
+        Lower();
+        Handed?.Invoke(armKind, HandPhase.Lower);
+    }
+
+    // The fuse from the pin. A frag near its end is thrown on reflex (cookOut throw); a flashbang that runs out goes off
+    // in the hand (cookOut burst).
     private void Cook(ThrowableInfo info)
     {
-        if (movement.IsDead) { cooking = pressed = false; StopAim(); return; }
+        if (info == null || movement.IsDead) { cooking = false; return; }
         cookLeft -= Time.deltaTime;
+        if (info.ThrowsOut)
+        {
+            float windup = (Throwables.Rule("release", .61f) - Throwables.Rule("hold", .4f)) / Mathf.Max(.1f, Throwables.Rule("throwSpeed", 1.3f));
+            if (arm == Arm.Hold && !letGo && cookLeft <= Throwables.Rule("reflexLead", .5f) + windup) LetGo(false);
+            // On its way out of the hand it waits for the release (Throw keeps a little fuse for the flight).
+            if (cookLeft < 0f) cookLeft = 0f;
+            return;
+        }
         if (cookLeft > 0f) return;
-        cooking = pressed = false;
+        cooking = holding = letGo = false;
         StopAim();
-        if (count <= 0 || info == null) return;
+        if (count <= 0) return;
         count--;
         readyAt = Time.time + Cooldown;
         ushort id = NextId();
-        Vector3 at = HandPoint();
-        Throwables.NoteThrower(movement, kind);
-        GrenadeBursts.Play(kind, at, movement, true);
-        Burst?.Invoke(kind, id, at);
+        Vector3 at = armBody != null && arm != Arm.None ? armBody.HeldPoint : HandPoint();
+        Throwables.NoteThrower(movement, armKind);
+        GrenadeBursts.Play(armKind, at, movement, true);
+        Burst?.Invoke(armKind, id, at);
         PlayerCallouts.Thrown(info.Callout);
+        released = true;
+        Lower();
+        Handed?.Invoke(armKind, HandPhase.Lower);
+    }
+
+    // ---- The arm: on this PC's player and on friends' copies ----
+
+    private void StartArm(Throwable throwable, float speed)
+    {
+        arm = Arm.Draw;
+        armKind = throwable;
+        cycle = 0f;
+        drawSpeed = speed;
+        released = pinned = false;
+    }
+
+    private void StartThrow()
+    {
+        arm = Arm.Throw;
+        cycle = Mathf.Max(cycle, Throwables.Rule("hold", .4f));
+    }
+
+    private void Lower()
+    {
+        if (arm == Arm.None) return;
+        arm = Arm.Lower;
+        lowerLeft = Mathf.Max(.01f, Throwables.Rule("armOut", .14f));
+    }
+
+    // Moves the arm along the path, pulls the pin and lets go at their moments, and tells the body's arm (GrenadeArm).
+    private void Run(float dt, ThrowableInfo info)
+    {
+        if (arm == Arm.None) return;
+        float hold = Throwables.Rule("hold", .4f);
+        switch (arm)
+        {
+            case Arm.Draw:
+                cycle += dt * drawSpeed;
+                if (!pinned && cycle >= Throwables.Rule("pin", .3f)) Pin(info);
+                if (cycle >= hold)
+                {
+                    cycle = hold;
+                    arm = Arm.Hold;
+                    if (letGo) StartThrow();
+                }
+                break;
+            case Arm.Throw:
+                cycle += dt * Mathf.Max(.1f, Throwables.Rule("throwSpeed", 1.3f));
+                if (!released && cycle >= Throwables.Rule("release", .61f))
+                {
+                    released = true;
+                    if (movement.IsLocal) Throw(info);
+                }
+                if (cycle >= Throwables.Rule("end", .97f)) arm = Arm.None;
+                break;
+            case Arm.Lower:
+                if ((lowerLeft -= dt) <= 0f) arm = Arm.None;
+                break;
+        }
+        if (armBody == null) armBody = GrenadeArm.Of(movement);
+        // On the throwable while going for it, holding it and throwing it, until the path's hand heads back to the gun.
+        bool on = arm == Arm.Draw || arm == Arm.Hold || (arm == Arm.Throw && cycle < Throwables.Rule("back", .85f));
+        if (armBody != null) armBody.Drive(armKind, cycle, on, !released);
+    }
+
+    // The pin comes out as the path's hand brings it up: its sound, and the fuse of one that cooks starts burning.
+    private void Pin(ThrowableInfo info)
+    {
+        pinned = true;
+        if (armKind == Throwable.Knife) return;
+        Vector3 at = armBody != null ? armBody.HeldPoint : HandPoint();
+        Throwables.Play("Pin", at, movement.IsLocal ? .7f : .5f, 1f, 15f);
+        if (!movement.IsLocal || info == null || !info.Cooks) return;
+        cooking = true;
+        cookLeft = info.Fuse;
+    }
+
+    // While the hand is on a throw the gun can't use it: a reload that starts stops, the sights stay down.
+    private void KeepHandFree()
+    {
+        if (arm != Arm.Draw && arm != Arm.Hold && !(arm == Arm.Throw && !released)) return;
+        if (weapon == null) weapon = GetComponent<WeaponController>();
+        if (weapon != null && (weapon.AimBlend > .01f || (weapon.Runtime != null && weapon.Runtime.IsReloading))) weapon.InterruptForSurvival();
     }
 
     // ---- The throw ----
@@ -172,10 +342,14 @@ public sealed class PlayerGrenades : MonoBehaviour
         count--;
         readyAt = Time.time + Cooldown;
         ushort id = NextId();
-        float fuse = info.Cooks ? Mathf.Max(0f, cookLeft) : info.Fuse;
-        cooking = false;
-        Throwables.NoteThrower(movement, kind);
-        if (kind == Throwable.Knife)
+        // A cooked one flies with what is left of its fuse; one thrown on reflex keeps at least half the reflex's lead, so
+        // even a stalled frame can't make it burst at the hand.
+        float fuse = !info.Cooks ? info.Fuse
+            : info.ThrowsOut ? Mathf.Max(cookLeft, Throwables.Rule("reflexLead", .5f) * .5f) : Mathf.Max(0f, cookLeft);
+        cooking = holding = letGo = false;
+        StopAim();
+        Throwables.NoteThrower(movement, armKind);
+        if (armKind == Throwable.Knife)
         {
             var knife = ThrownKnife.Throw(id, from, velocity, movement, true);
             if (knife != null) knives[id] = knife;
@@ -183,11 +357,11 @@ public sealed class PlayerGrenades : MonoBehaviour
         }
         else
         {
-            var grenade = ThrownGrenade.Throw(kind, id, from, velocity, fuse, movement, true, OnOwnBurst);
+            var grenade = ThrownGrenade.Throw(armKind, id, from, velocity, fuse, movement, true, OnOwnBurst);
             if (grenade != null) flying[id] = grenade;
             Throwables.Play("Throw", from, .8f, 1.5f, 20f);
         }
-        Thrown?.Invoke(kind, id, from, velocity, fuse);
+        Thrown?.Invoke(armKind, id, from, velocity, fuse);
         Feel();
         PlayerCallouts.Thrown(info.Callout);
     }
@@ -207,10 +381,13 @@ public sealed class PlayerGrenades : MonoBehaviour
         return nextId++;
     }
 
-    // Out of the left hand, toward what the crosshair is on, so it goes where the player looks; a knife nearly straight.
+    // From where the hand lets go (GrenadeArm: the path's release on this body), toward what the crosshair is on, so it goes
+    // where the player looks; a knife nearly straight. Without an arm (no humanoid body), from beside the eyes.
     private void Launch(Transform eye, ThrowableInfo info, out Vector3 from, out Vector3 velocity)
     {
-        from = eye.position + eye.forward * .35f - eye.right * .16f - eye.up * .12f;
+        if (armBody == null) armBody = GrenadeArm.Of(movement);
+        if (armBody == null || !armBody.TryReleasePoint(out from))
+            from = eye.position + eye.forward * .35f - eye.right * .16f - eye.up * .12f;
         if (Physics.Linecast(eye.position, from, out RaycastHit wall, Throwables.WorldMask, QueryTriggerInteraction.Ignore))
             from = wall.point - (from - eye.position).normalized * .08f;
         Vector3 target = Physics.Raycast(eye.position, eye.forward, out RaycastHit seen, 80f, Throwables.WorldMask, QueryTriggerInteraction.Ignore)
@@ -240,12 +417,12 @@ public sealed class PlayerGrenades : MonoBehaviour
 
     // ---- Aiming ----
 
-    // Held: the arc it will fly, and where it lands the reach of its burst; a cooking one also shows where its fuse runs
-    // out along the way, if that comes first (an air burst).
+    // Held: the arc it will fly from where the hand lets go, and where it lands the reach of its burst; a cooking one also
+    // shows where its fuse runs out along the way, if that comes first (an air burst).
     private void Aim(ThrowableInfo info)
     {
         var eye = Camera.main;
-        if (eye == null) return;
+        if (eye == null || info == null) return;
         aiming = true;
         Launch(eye.transform, info, out Vector3 from, out Vector3 velocity);
         if (arc == null) arc = new ThrowArc(transform);
@@ -254,9 +431,12 @@ public sealed class PlayerGrenades : MonoBehaviour
         arc.Draw(ready ? KitStyle.Ice : KitStyle.With(KitStyle.Ice, .35f), ready ? KitStyle.Accent : KitStyle.With(KitStyle.Ice, .35f), ready ? .85f : .4f);
         if (info.Radius <= 0f) { arc.HideRing(); return; }
         Color reach = KitStyle.With(info.Tint, .8f);
-        if (cooking && cookLeft < arc.FlightSeconds)
+        // The fuse left when it leaves the hand: what is left now less the swing still to come.
+        float swing = (Throwables.Rule("release", .61f) - Mathf.Max(cycle, Throwables.Rule("hold", .4f))) / Mathf.Max(.1f, Throwables.Rule("throwSpeed", 1.3f));
+        float left = cookLeft - Mathf.Max(0f, swing);
+        if (cooking && left < arc.FlightSeconds)
         {
-            float t = Mathf.Max(0f, cookLeft);
+            float t = Mathf.Max(0f, left);
             Vector3 air = from + velocity * t + .5f * t * t * Physics.gravity * info.Gravity;
             arc.Ring(air, Vector3.up, info.Radius, KitStyle.With(KitStyle.Accent, .85f));
             return;
@@ -298,10 +478,43 @@ public sealed class PlayerGrenades : MonoBehaviour
 
     // ---- Friends' throws, here ----
 
+    /// <summary>
+    /// A friend's off hand went for a throwable, threw it or put it back: this PC's copy of them moves its arm so (a tap's
+    /// draw runs at the tap's speed). The throwable itself comes with ShowThrow.
+    /// </summary>
+    internal void ShowHand(Throwable handKind, HandPhase phase)
+    {
+        switch (phase)
+        {
+            case HandPhase.Draw:
+                StartArm(handKind, Throwables.Rule("holdDraw", 1.25f));
+                letGo = false;
+                break;
+            case HandPhase.Throw:
+            case HandPhase.TapThrow:
+                if (phase == HandPhase.TapThrow) drawSpeed = Throwables.Rule("tapDraw", 1.6f);
+                if (arm == Arm.None || arm == Arm.Lower)
+                {
+                    // Its draw never came: straight into the throw from the hold.
+                    StartArm(handKind, drawSpeed);
+                    arm = Arm.Hold;
+                    cycle = Throwables.Rule("hold", .4f);
+                }
+                letGo = true;
+                if (arm == Arm.Hold) StartThrow();
+                break;
+            case HandPhase.Lower:
+                if (arm == Arm.Draw || arm == Arm.Hold) Lower();
+                break;
+        }
+    }
+
     /// <summary>A friend threw one: this PC throws its own copy (their PC's decides where it bursts).</summary>
     internal void ShowThrow(Throwable thrownKind, ushort id, Vector3 from, Vector3 velocity, float fuse)
     {
         Throwables.NoteThrower(movement, thrownKind);
+        // It has left their hand: the copy's hand lets go of it too, wherever its arm has got to.
+        released = true;
         if (thrownKind == Throwable.Knife)
         {
             var knife = ThrownKnife.Throw(id, from, velocity, movement, false);
@@ -323,6 +536,12 @@ public sealed class PlayerGrenades : MonoBehaviour
             flying.Remove(id);
             grenade.BurstAt(at);
             return;
+        }
+        // Gone off in their hand: the copy's hand has nothing left to hold.
+        if (arm == Arm.Draw || arm == Arm.Hold)
+        {
+            released = true;
+            Lower();
         }
         GrenadeBursts.Play(thrownKind, at, movement, false);
     }

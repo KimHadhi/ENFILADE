@@ -5,17 +5,22 @@ using UnityEngine.UI;
 /// <summary>
 /// The class throwable on the HUD: a small plate of its own just left of the ammo display (AmmoHUD), at the screen's
 /// corner where the ammo display isn't up (a Knight's fists): the throwable's silhouette (Throwables.Icon), how many are
-/// left, its key, and while a Point cooks a flashbang the fuse running out under it. It leans at its own angle (Persona
+/// left, its key, and while one cooks the fuse running out under it. It leans at its own angle (Persona
 /// style: GrenadeRules hudYaw/hudRoll), pops when the count changes and blinks when some come back. It sits apart from the
-/// weapon slots and touches none of them. PlayerGrenades (this PC's player) says what to show every frame.
+/// weapon slots and touches none of them. While a cooking one is held, its fuse also runs down in a ring round the
+/// crosshair (GrenadeCookRing), where the eyes are. PlayerGrenades (this PC's player) says what to show every frame.
 /// </summary>
 [DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.AmmoHud + 1)]
 public sealed class GrenadeHUD : MonoBehaviour
 {
-    private const float Width = 132f, Height = 58f, PopSeconds = .22f, ShakeSeconds = .3f;
+    private const float Width = 132f, Height = 58f, PopSeconds = .22f, ShakeSeconds = .3f, RingFade = 12f;
     private static readonly Color PanelColor = new Color(.025f, .045f, .065f, .85f), Muted = new Color(.59f, .67f, .71f);
     private static GrenadeHUD current;
     private static float lookForAmmoAt;
+
+    private GrenadeCookRing ring;
+    private Transform crosshair;
+    private float ringShare = -1f, ringShown, ringAlpha, lookForCrosshairAt;
 
     private RectTransform root, plate, fuseFill;
     private CanvasGroup group;
@@ -59,7 +64,19 @@ public sealed class GrenadeHUD : MonoBehaviour
     /// <summary>Nothing to show (no player, or a class that has no throwable yet).</summary>
     internal static void Hide()
     {
-        if (current != null) current.wanted = false;
+        if (current == null) return;
+        current.wanted = false;
+        current.ringShare = -1f;
+    }
+
+    /// <summary>
+    /// This frame's fuse ring round the crosshair: the share of the fuse left while a cooking throwable is held, below 0
+    /// for none (it fades out).
+    /// </summary>
+    internal static void Ring(float share)
+    {
+        var hud = Ensure();
+        if (hud != null) hud.ringShare = share;
     }
 
     /// <summary>Some came back (an ammo pile, the shop, a Support, a knife taken back): the plate blinks.</summary>
@@ -123,6 +140,7 @@ public sealed class GrenadeHUD : MonoBehaviour
     private void LateUpdate()
     {
         if (root == null) return;
+        DrawRing();
         var info = Throwables.Of(kind);
         bool visible = wanted && info != null && ammo != null;
         group.alpha = Mathf.MoveTowards(group.alpha, visible ? 1f : 0f, Time.unscaledDeltaTime * 8f);
@@ -148,8 +166,40 @@ public sealed class GrenadeHUD : MonoBehaviour
         if (cooking)
         {
             fuseFill.sizeDelta = new Vector2((Width - 16f) * Mathf.Clamp01(fuseShare), 3f);
-            fuseBar.color = fuseShare < .3f ? Color.Lerp(KitStyle.Red, Color.white, Mathf.PingPong(Time.unscaledTime * 8f, 1f)) : KitStyle.Accent;
+            // As the ring round the crosshair: white while there is time, pink for the last share.
+            fuseBar.color = fuseShare <= Throwables.Rule("ringPink", .2f)
+                ? Color.Lerp(KitStyle.Accent, Color.white, Mathf.PingPong(Time.unscaledTime * 8f, 1f)) : Color.white;
         }
+    }
+
+    // The fuse ring, made beside the HUD crosshair the first time a fuse is held and kept on its middle: white while
+    // there is time, the game's pink for the last share (GrenadeRules ringPink), with a small beat there.
+    private void DrawRing()
+    {
+        float dt = Time.unscaledDeltaTime;
+        bool on = ringShare >= 0f;
+        if (on) ringShown = ringShare;
+        ringAlpha = Mathf.MoveTowards(ringAlpha, on ? 1f : 0f, dt * RingFade);
+        if (ring == null)
+        {
+            if (!on || Time.unscaledTime < lookForCrosshairAt) return;
+            lookForCrosshairAt = Time.unscaledTime + 1f;
+            var view = DynamicCrosshairView.FindHud();
+            if (view == null || view.transform.parent == null) return;
+            crosshair = view.transform;
+            ring = GrenadeCookRing.Create(crosshair.parent);
+        }
+        bool shown = ringAlpha > 0f && crosshair != null;
+        if (ring.gameObject.activeSelf != shown) ring.gameObject.SetActive(shown);
+        if (!shown) return;
+        ring.rectTransform.position = crosshair.position;
+        ring.rectTransform.rotation = crosshair.rotation;
+        bool late = ringShown <= Throwables.Rule("ringPink", .2f);
+        float beat = late ? 1f + .3f * Mathf.Abs(Mathf.Sin(Time.unscaledTime * 14f)) : 1f;
+        Color arc = late ? KitStyle.Accent : Color.white;
+        arc.a *= ringAlpha;
+        ring.Set(ringShown, Throwables.Rule("ringRadius", 64f), Throwables.Rule("ringLine", 4f) * beat, Throwables.Rule("ringEdge", 2f),
+            arc, new Color(0f, 0f, 0f, .75f * ringAlpha));
     }
 
     // Just left of the ammo display, bottom edges level; where the ammo display isn't up, in its corner.
@@ -207,5 +257,6 @@ public sealed class GrenadeHUD : MonoBehaviour
     private void OnDestroy()
     {
         if (current == this) current = null;
+        if (ring != null) Destroy(ring.gameObject);
     }
 }
