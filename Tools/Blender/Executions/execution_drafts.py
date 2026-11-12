@@ -5,17 +5,20 @@ rig placed beside it, both at the game's size (this file is in the game's metres
 object scaled by GAME_SCALE, as PlayerBody fits her eyes to the 1.6 m camera). The game puts the zombie's root where the
 zombie stands and the player's root at the pair's offset from it (Tables/Executions.csv, written by the export).
 
-Drafts are dense keys, one per frame, in one action per rig:
+Drafts are key poses, the action the user edits (so the Dope Sheet shows the draft's own keys, a column per pose):
 - the zombie in FK, from the first frame of the clip it stands, sits, eats, crouches or lies in (the pack's own pose
-  clips, so the pair starts where the zombie already is), turned by body-axis deltas at key frames, eased between them,
-  with a shudder where it struggles;
+  clips, so the pair starts where the zombie already is), turned by body-axis deltas at its key frames, eased between
+  them as the choreography says, with a shudder where it struggles as noise on those bones (Graph Editor, modifiers);
 - Kazusa with both arms and legs on the True FPS rig's IK controls (ik_* = 1), the hips, spine, neck and head in FK, and
-  the fingers curled: the right fist round the knife, the left hand open or gripping.
-Contact is worked out from the zombie as it plays: where the left hand holds a head, its control follows that bone frame
-by frame from the grab (Hold), and the knife's tip is put on the zombie's neck or skull at the kill frame. After the
-zombie's layers change, `make_player` again re-fits Kazusa's draft to it (the 처형 tab's "손을 좀비에 다시 맞추기").
+  the fingers curled: the right fist round the knife, the left hand open or gripping; every part keyed at every key
+  frame of hers.
+Contact is a constraint, so it stays as the zombie is changed: while a hand holds a zombie bone (Hold) its control
+copies a hold point (an empty on that bone, where the hand took hold), the constraint's influence keyed 1 for the hold;
+the knife's tip is put on the zombie's neck or skull at the kill frame and held there the same way.
 """
+import json
 import math
+import re
 from pathlib import Path
 
 from mathutils import Matrix, Quaternion, Vector
@@ -33,6 +36,18 @@ K_CHAIN = ('Spine', 'Chest', 'Upper Chest', 'Neck', 'HeadBone')
 K_SPINE_SHARE = {'Spine': .3, 'Chest': .35, 'Upper Chest': .35}
 K_HEAD_SHARE = {'Neck': .4, 'HeadBone': .6}
 K_FINGERS = ('Index', 'Middle', 'Ring', 'Little')
+# Kazusa's channels in the Dope Sheet, the controls the user moves first, then the body top down, the fingers last.
+K_ORDER = ('CTRL_hand.L', 'CTRL_hand.R', 'CTRL_foot.L', 'CTRL_foot.R', 'Hips') + K_CHAIN + (
+    'CTRL_elbow.L', 'CTRL_elbow.R', 'CTRL_knee.L', 'CTRL_knee.R')
+
+# A hand's hold of the zombie: this constraint on its IK control copies the hold point (execution_tools.HOLD_POINTS).
+HOLD_CON = '잡기'
+HOLD_GROUP = '잡기 (손이 좀비에 붙음)'
+IK_GROUP = 'IK / FK mode'
+
+# How the way into a key eases, as Blender keys it: (interpolation, easing) by the kind of the key a stretch ends on.
+EASES = {'smooth': ('BEZIER', 'AUTO'), 'linear': ('LINEAR', 'AUTO'), 'in': ('QUAD', 'EASE_IN'),
+         'out': ('QUAD', 'EASE_OUT'), 'snap': ('CUBIC', 'EASE_OUT')}
 
 
 def zv(right, forward, up):
@@ -74,6 +89,84 @@ def _around(keys, frame):
     if after[0] == before[0]:
         return before, after, 0.0
     return before, after, ease((frame - before[0]) / (after[0] - before[0]), after[2])
+
+
+# ---- Keys as the user sees them -------------------------------------------------------------------------------------
+
+def curves(action):
+    """An action's F-curves, legacy or layered (Blender 4.4+)."""
+    if action is None:
+        return []
+    if getattr(action, 'is_action_legacy', True) and hasattr(action, 'fcurves'):
+        try:
+            return list(action.fcurves)
+        except (AttributeError, RuntimeError):
+            pass
+    out = []
+    for layer in getattr(action, 'layers', []):
+        for strip in layer.strips:
+            for bag in getattr(strip, 'channelbags', []):
+                out.extend(bag.fcurves)
+    return out
+
+
+def _channels(action):
+    """Where an action's channel groups live: its first channelbag (layered), or the action itself (legacy)."""
+    for layer in getattr(action, 'layers', []):
+        for strip in layer.strips:
+            for bag in getattr(strip, 'channelbags', []):
+                return bag
+    return action if hasattr(action, 'groups') else None
+
+
+def hold_path(side):
+    return f'pose.bones["CTRL_hand.{side}"].constraints["{HOLD_CON}"].influence'
+
+
+def apply_eases(action, kinds):
+    """Every key eases into the next one as the choreography's key there says (kinds: {frame: kind}; a key the
+    choreography doesn't name eases smoothly), with handles that never overshoot."""
+    for curve in curves(action):
+        points = curve.keyframe_points
+        for i, point in enumerate(points):
+            after = int(round(points[i + 1].co.x)) if i + 1 < len(points) else None
+            interpolation, easing = EASES.get(kinds.get(after, 'smooth'), EASES['smooth'])
+            point.interpolation = interpolation
+            point.easing = easing
+            point.handle_left_type = point.handle_right_type = 'AUTO_CLAMPED'
+        curve.update()
+
+
+def group_channels(action, order=()):
+    """One channel group per bone (closed, so the Dope Sheet shows a row per bone), in the given order, then the holds
+    and the IK/FK switches."""
+    bag = _channels(action)
+    if bag is None:
+        return
+    rank = {name: i for i, name in enumerate(order)}
+
+    def group_of(path):
+        if '.constraints[' in path:
+            return HOLD_GROUP
+        found = re.match(r'pose\.bones\["(.+?)"\]', path)
+        if found:
+            return found.group(1)
+        return IK_GROUP if path.startswith('["ik_') else 'Other'
+
+    every = curves(action)
+    names = sorted({group_of(c.data_path) for c in every},
+                   key=lambda n: (n in (HOLD_GROUP, IK_GROUP, 'Other'), rank.get(n, len(rank)), n))
+    groups = {g.name: g for g in bag.groups}
+    for name in names:
+        if name not in groups:
+            groups[name] = bag.groups.new(name)
+    for curve in every:
+        group = groups[group_of(curve.data_path)]
+        if curve.group != group:
+            curve.group = group
+    for group in bag.groups:
+        group.show_expanded = False
+        group.show_expanded_graph = True
 
 
 # ---- The zombie ---------------------------------------------------------------------------------------------------
@@ -126,51 +219,58 @@ class ZombieDraft:
         moved = self.base_hips + self.to_arm @ zv(*hips)
         return rotations, moved
 
-    def frames(self, count):
-        posed = {k[0]: self._pose(k[1], k[3]) for k in self.keys}
-        out = []
-        for frame in range(1, count + 1):
-            before, after, t = _around(self.keys, frame)
-            rot_a, hips_a = posed[before[0]]
-            rot_b, hips_b = posed[after[0]]
-            rotations = {}
-            for name, qa in rot_a.items():
-                qb = rot_b[name]
-                if qa.dot(qb) < 0:
-                    qb = -qb
-                rotations[name] = qa.slerp(qb, t)
-            hips = hips_a.lerp(hips_b, t)
-            for first, last, bones, degrees, hz, seed in self.shakes:
-                if not first <= frame <= last:
-                    continue
-                span = max(1, last - first)
-                envelope = math.sin(math.pi * (frame - first) / span)
-                time = frame / FPS
-                for i, name in enumerate(bones):
-                    phase = seed * 1.7 + i * 2.3
-                    turn = self._arm_turn(degrees * envelope * math.sin(math.tau * hz * time + phase),
-                                          degrees * .6 * envelope * math.sin(math.tau * hz * 1.3 * time + phase * 1.9),
-                                          degrees * .5 * envelope * math.sin(math.tau * hz * .8 * time + phase * .7))
-                    for below in self.below.get(name, ()):
-                        if below in rotations:
-                            rotations[below] = turn @ rotations[below]
-            out.append((rotations, hips))
-        return out
+    def pose_at(self, frame):
+        """The pose at a frame between the key poses, eased as the later one says (shudders not included)."""
+        before, after, t = _around(self.keys, frame)
+        rot_a, hips_a = self._pose(before[1], before[3])
+        rot_b, hips_b = self._pose(after[1], after[3])
+        rotations = {}
+        for name, qa in rot_a.items():
+            qb = rot_b[name]
+            if qa.dot(qb) < 0:
+                qb = -qb
+            rotations[name] = qa.slerp(qb, t)
+        return rotations, hips_a.lerp(hips_b, t)
 
     def write(self, action, count):
+        """The key poses as keys (every bone at each of the zombie's key frames), eased into one another as the
+        choreography says, and the shudders as noise on the bones that shake."""
         zt = self.zt
-        per_frame = [zt.solve_bases(self.rig, self.order, rotations, hips) for rotations, hips in self.frames(count)]
-        numbers = list(range(1, count + 1))
+        frames = sorted({k[0] for k in self.keys if 1 <= k[0] <= count} | {1, count})
+        per_frame = [zt.solve_bases(self.rig, self.order, *self.pose_at(frame)) for frame in frames]
         self.rig.animation_data_create()
-        zt.write_keys(self.rig, action, numbers, zt.bases_to_channels(self.order, per_frame))
+        zt.write_keys(self.rig, action, frames, zt.bases_to_channels(self.order, per_frame))
+        apply_eases(action, {k[0]: k[2] for k in self.keys})
+        self._shudders(action)
         # Every limb in FK, keyed, so picking this pair always plays the bones themselves.
         data = self.rig.animation_data or self.rig.animation_data_create()
         keep = data.action
         data.action = action
         for prop in [k for k in self.rig.keys() if k.startswith('ik_')]:
             self.rig[prop] = 0.0
-            self.rig.keyframe_insert(f'["{prop}"]', frame=1, group='IK / FK mode')
+            self.rig.keyframe_insert(f'["{prop}"]', frame=1, group=IK_GROUP)
         data.action = keep
+        group_channels(action, self.order)
+
+    def _shudders(self, action):
+        """Each shudder as noise on its bones' turns (a turn there carries everything below it), faded in and out over
+        its frames: the Graph Editor shows it as a modifier on those channels, to soften, move or delete."""
+        found = {(c.data_path, c.array_index): c for c in curves(action)}
+        for first, last, bones, degrees, hz, seed in self.shakes:
+            span = max(2, last - first)
+            for i, name in enumerate(bones):
+                for axis, share in ((1, 1.0), (2, .6), (3, .5)):
+                    curve = found.get((f'pose.bones["{name}"].rotation_quaternion', axis))
+                    if curve is None:
+                        continue
+                    noise = curve.modifiers.new('NOISE')
+                    # A quaternion's x, y, z hold half the angle: up to `degrees` either way.
+                    noise.strength = math.radians(degrees) * share
+                    noise.scale = max(1.0, FPS / max(.5, hz) * .5)
+                    noise.phase = seed * 1.7 + i * 2.3 + axis * 1.1
+                    noise.use_restricted_range = True
+                    noise.frame_start, noise.frame_end = float(first), float(last)
+                    noise.blend_in = noise.blend_out = span * .45
 
 
 # ---- Kazusa -------------------------------------------------------------------------------------------------------
@@ -377,39 +477,114 @@ class PlayerDraft:
         return out
 
     def write(self, action, count, zombie_frames):
-        rig, context = self.rig, self.context
+        """Every part keyed at each of her key frames (the poses the choreography gives, eased into one another as it
+        says) and each hand's hold as its 잡기 constraint's influence, 1 while the hand rides the zombie bone. Returns the
+        holds: {side: (bone, the hand control's matrix from that bone's frame at the grab)}, for the hold points."""
+        rig = self.rig
         data = rig.animation_data or rig.animation_data_create()
         data.action = action
+        self._last = {}
         for limb in ('arm_L', 'arm_R', 'leg_L', 'leg_R'):
             rig['ik_' + limb] = 1.0
-            rig.keyframe_insert(f'["ik_{limb}"]', frame=1, group='IK / FK mode')
-        left_axis, forward_axis, up_axis = self._axes()
+            rig.keyframe_insert(f'["ik_{limb}"]', frame=1, group=IK_GROUP)
         tracks = {side: self.hand_track(side, count, zombie_frames) for side in ('L', 'R')}
+        # Each part keyed where the choreography sets it, so it eases between its own keys as the choreography says (a
+        # key of another part in between would bend its way); a pole also where its limb's root moves.
+        def own(*parts):
+            return {k[0] for k in self.keys if 1 <= k[0] <= count and any(part in k[1] for part in parts)}
+        chain = own('hips', 'hipsTurn', 'spine', 'head') | {1}
+        sets = {'chain': chain, 'fingers.L': own('lcurl') | {1}, 'fingers.R': own('rcurl') | {1}}
+        for side, s in (('L', 'l'), ('R', 'r')):
+            sets['hand.' + side] = own(s + 'hand')
+            sets['elbow.' + side] = own(s + 'elbow') | chain
+            sets['foot.' + side] = own(s + 'foot')
+            sets['knee.' + side] = (own(s + 'knee', s + 'foot') | chain) if sets['foot.' + side] else set()
+        for frame in sorted(set().union(*sets.values())):
+            self._key_pose(frame, tracks, {name for name, frames in sets.items() if frame in frames})
+        holds = self._key_holds(count, tracks, zombie_frames)
+        apply_eases(action, {k[0]: k[2] for k in self.keys})
+        # A hand takes hold at its grab key, not before: the influence steps from its key before (where the hand is
+        # still its own, swinging in) to 1 at the grab, where the hand already is on the hold point.
+        for curve in curves(action):
+            if curve.data_path in (hold_path('L'), hold_path('R')):
+                points = curve.keyframe_points
+                for i, point in enumerate(points[:-1]):
+                    if point.co.y < .5 and points[i + 1].co.y >= .5:
+                        point.interpolation = 'CONSTANT'
+                curve.update()
+        group_channels(action, K_ORDER)
+        data.action = None
+        return holds
+
+    def _key_holds(self, count, tracks, zombie_frames):
+        """Each hand's 잡기 influence: 0 at its key before the grab, 1 from the grab to the hold's last key, 0 at its next
+        key (it lets go from where the hold has it); 0 throughout for a hand that holds nothing."""
+        out = {}
+        found = self.holds(count)
+        for side, part in (('L', 'lhand'), ('R', 'rhand')):
+            con = self.rig.pose.bones[f'CTRL_hand.{side}'].constraints.get(HOLD_CON)
+            if con is None:
+                continue
+            hold = found.get(side)
+            keys = []
+            if hold is None:
+                keys = [(1, 0.0)]
+            else:
+                bone, first, last = hold
+                own = sorted(k[0] for k in self.keys if part in k[1])
+                before = max((f for f in own if f < first), default=None)
+                after = min((f for f in own if f > last), default=None)
+                keys = ([(before, 0.0)] if before is not None else []) + [(first, 1.0), (last, 1.0)]
+                keys += [(after, 0.0)] if after is not None else []
+                # Where the hand took hold: its control then, from the bone's own frame then.
+                world = self.rig.matrix_world @ tracks[side][first - 1]
+                out[side] = (bone, zombie_frames[first - 1][bone].inverted() @ world)
+            for frame, value in keys:
+                con.influence = value
+                con.keyframe_insert('influence', frame=frame, group=HOLD_GROUP)
+            con.influence = 0.0
+        return out
+
+    def _key_quat(self, pb, quat, frame):
+        """A bone's turn keyed on the same side of the quaternion sphere as its key before, so the way between keys is
+        the short one."""
+        last = self._last.get(pb.name)
+        if last is not None and last.dot(quat) < 0:
+            quat = -quat
+        self._last[pb.name] = quat.copy()
+        pb.rotation_mode = 'QUATERNION'
+        pb.rotation_quaternion = quat
+        pb.keyframe_insert('rotation_quaternion', frame=frame, group=pb.name)
+
+    def _key_pose(self, frame, tracks, what):
+        """Her parts named in `what` keyed at one frame: the chain (hips, spine, neck and head in FK), each hand, elbow
+        pole, foot and knee pole on the IK controls, each hand's fingers."""
+        rig = self.rig
+        left_axis, forward_axis, up_axis = self._axes()
         pose = rig.pose.bones
-        center = self.rest['Center']
-        for frame in range(1, count + 1):
-            # Hips: a point in the zombie's frame and a turn about her own axes; the chain turns on top, parents first.
-            hips_at = self._to_arm(zv(*self._lerp('hips', frame, (0.0, 0.0, 1.12))))
-            hips_turn = self._lerp('hipsTurn', frame, (0.0, 0.0, 0.0))
-            spine = self._lerp('spine', frame, (0.0, 0.0, 0.0))
-            head = self._lerp('head', frame, (0.0, 0.0, 0.0))
-            arm_rot = _rotation(rig.matrix_world).inverted()
-            world_rot = _rotation(rig.matrix_world)
+        # Hips: a point in the zombie's frame and a turn about her own axes; the chain turns on top, parents first.
+        hips_at = self._to_arm(zv(*self._lerp('hips', frame, (0.0, 0.0, 1.12))))
+        hips_turn = self._lerp('hipsTurn', frame, (0.0, 0.0, 0.0))
+        spine = self._lerp('spine', frame, (0.0, 0.0, 0.0))
+        head = self._lerp('head', frame, (0.0, 0.0, 0.0))
+        arm_rot = _rotation(rig.matrix_world).inverted()
+        world_rot = _rotation(rig.matrix_world)
 
-            def arm_turn(p, y, r):
-                return arm_rot @ _turn(left_axis, forward_axis, up_axis, p, y, r) @ world_rot
+        def arm_turn(p, y, r):
+            return arm_rot @ _turn(left_axis, forward_axis, up_axis, p, y, r) @ world_rot
 
-            posed = {'Center': center.copy()}
-            turn_hips = arm_turn(*hips_turn)
-            posed['Hips'] = Matrix.Translation(hips_at) @ (turn_hips @ _rotation(self.rest['Hips'])).to_matrix().to_4x4()
-            cumulative = turn_hips
-            for name in K_CHAIN:
-                share = K_SPINE_SHARE.get(name)
-                amount = spine * share if share is not None else head * K_HEAD_SHARE[name]
-                cumulative = arm_turn(*amount) @ cumulative
-                parent = rig.data.bones[name].parent.name
-                head_at = posed[parent] @ (self.rest[parent].inverted() @ self.rest[name]).translation
-                posed[name] = Matrix.Translation(head_at) @ (cumulative @ _rotation(self.rest[name])).to_matrix().to_4x4()
+        posed = {'Center': self.rest['Center'].copy()}
+        turn_hips = arm_turn(*hips_turn)
+        posed['Hips'] = Matrix.Translation(hips_at) @ (turn_hips @ _rotation(self.rest['Hips'])).to_matrix().to_4x4()
+        cumulative = turn_hips
+        for name in K_CHAIN:
+            share = K_SPINE_SHARE.get(name)
+            amount = spine * share if share is not None else head * K_HEAD_SHARE[name]
+            cumulative = arm_turn(*amount) @ cumulative
+            parent = rig.data.bones[name].parent.name
+            head_at = posed[parent] @ (self.rest[parent].inverted() @ self.rest[name]).translation
+            posed[name] = Matrix.Translation(head_at) @ (cumulative @ _rotation(self.rest[name])).to_matrix().to_4x4()
+        if 'chain' in what:
             for name in ('Hips',) + K_CHAIN:
                 bone = rig.data.bones[name]
                 parent = bone.parent.name
@@ -417,35 +592,39 @@ class PlayerDraft:
                                                    parent_matrix_local=self.rest[parent], invert=True)
                 loc, quat, _ = basis.decompose()
                 pb = pose[name]
-                pb.rotation_mode = 'QUATERNION'
-                pb.rotation_quaternion = quat
-                pb.keyframe_insert('rotation_quaternion', frame=frame, group=name)
+                self._key_quat(pb, quat, frame)
                 if name == 'Hips':
                     pb.location = loc
                     pb.keyframe_insert('location', frame=frame, group=name)
-            for side in ('L', 'R'):
-                wrist = tracks[side][frame - 1]
-                if wrist is not None:
-                    self._control(f'CTRL_hand.{side}', wrist, frame)
+        for side in ('L', 'R'):
+            sign = 1.0 if side == 'L' else -1.0
+            wrist = tracks[side][frame - 1]
+            if wrist is not None and 'hand.' + side in what:
+                self._control(f'CTRL_hand.{side}', wrist, frame)
+            if 'elbow.' + side in what:
                 # The elbow's pole: behind, below and out from the shoulder, in her own frame.
                 out, back, down = self._lerp('lelbow' if side == 'L' else 'relbow', frame, (.25, .35, .3))
-                shoulder = posed['Upper Chest'] @ (self.rest['Upper Chest'].inverted() @ self.rest['Left arm' if side == 'L' else 'Right arm']).translation
-                sign = 1.0 if side == 'L' else -1.0
+                arm = 'Left arm' if side == 'L' else 'Right arm'
+                shoulder = posed['Upper Chest'] @ (self.rest['Upper Chest'].inverted() @ self.rest[arm]).translation
                 pole_world = (rig.matrix_world @ shoulder) + left_axis * out * sign - forward_axis * back - up_axis * down
-                self._control(f'CTRL_elbow.{side}', Matrix.Translation(self._to_arm(pole_world)) @ self.rest[f'CTRL_elbow.{side}'].to_3x3().to_4x4(), frame, location_only=True)
-                foot = self._lerp('lfoot' if side == 'L' else 'rfoot', frame, None)
-                if foot is not None:
-                    x, y, z, yaw, toes = foot
+                self._control(f'CTRL_elbow.{side}', Matrix.Translation(self._to_arm(pole_world))
+                              @ self.rest[f'CTRL_elbow.{side}'].to_3x3().to_4x4(), frame, location_only=True)
+            foot = self._lerp('lfoot' if side == 'L' else 'rfoot', frame, None)
+            if foot is not None:
+                x, y, z, yaw, toes = foot
+                if 'foot.' + side in what:
                     turn = arm_turn(0.0, yaw, 0.0) @ arm_turn(toes, 0.0, 0.0)
                     at = self._to_arm(zv(x, y, z))
                     rest = self.rest[f'CTRL_foot.{side}']
                     self._control(f'CTRL_foot.{side}', Matrix.Translation(at) @ (turn @ _rotation(rest)).to_matrix().to_4x4(), frame)
+                if 'knee.' + side in what:
                     fwd, sideways, up = self._lerp('lknee' if side == 'L' else 'rknee', frame, (.5, 0.0, 0.0))
                     knee = (rig.matrix_world @ posed['Hips'].translation).lerp(zv(x, y, z), .5)
                     pole_world = knee + forward_axis * fwd + left_axis * sideways * sign + up_axis * up
-                    self._control(f'CTRL_knee.{side}', Matrix.Translation(self._to_arm(pole_world)) @ self.rest[f'CTRL_knee.{side}'].to_3x3().to_4x4(), frame, location_only=True)
+                    self._control(f'CTRL_knee.{side}', Matrix.Translation(self._to_arm(pole_world))
+                                  @ self.rest[f'CTRL_knee.{side}'].to_3x3().to_4x4(), frame, location_only=True)
+            if 'fingers.' + side in what:
                 self._fingers(side, self._lerp('lcurl' if side == 'L' else 'rcurl', frame, .9 if side == 'R' else .2), frame)
-        data.action = None
 
     def _control(self, name, matrix, frame, location_only=False):
         rig = self.rig
@@ -459,8 +638,7 @@ class PlayerDraft:
         pb.location = loc
         pb.keyframe_insert('location', frame=frame, group=name)
         if not location_only:
-            pb.rotation_quaternion = quat
-            pb.keyframe_insert('rotation_quaternion', frame=frame, group=name)
+            self._key_quat(pb, quat, frame)
 
     def _fingers(self, side, curl, frame):
         """Each finger curled toward the palm by curl (0 open, 1 a fist), shared over its three joints, the thumb across."""
@@ -487,9 +665,7 @@ class PlayerDraft:
     def _turn_bone(self, name, axis, degrees, frame):
         pb = self.rig.pose.bones[name]
         rest = _rotation(pb.bone.matrix_local)
-        pb.rotation_mode = 'QUATERNION'
-        pb.rotation_quaternion = rest.inverted() @ Quaternion(axis, math.radians(degrees)) @ rest
-        pb.keyframe_insert('rotation_quaternion', frame=frame, group=name)
+        self._key_quat(pb, rest.inverted() @ Quaternion(axis, math.radians(degrees)) @ rest, frame)
 
 
 def zombie_bone_frames(context, rig, action, count, bones=('Head', 'Neck', 'Spine_03', 'Hips')):

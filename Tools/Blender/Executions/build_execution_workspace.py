@@ -1,12 +1,13 @@
 """Builds ArtSource/Executions/ENFILADE_Execution_Animation.blend from the True FPS start file: Kazusa's True FPS rig and
-the zombie workspace's Synty rig in one scene at the game's size, the knife in her right fist, and every pair's drafts
-(execution_pairs.py) as locked layers under empty touch-up layers (execution_tools.py). Run from the project root:
+the zombie workspace's Synty rig in one scene at the game's size, the knife in her right fist, the hold points the hands
+copy while they hold the zombie, and every pair's drafts (execution_pairs.py) as the key poses the user edits, each kept
+beside it as <name>_draft (execution_tools.py). Run from the project root:
 
   blender --background --factory-startup ArtSource/TrueFPS/ENFILADE_TrueFPS_Start.blend
           --python Tools/Blender/Executions/build_execution_workspace.py -- ArtSource/Executions/ENFILADE_Execution_Animation.blend
           [--export] [--force] [--only=back,front]
 
---export sends every pair to the game (the same button the user presses: FBX clips and Tables/Executions.csv rows).
+--export sends every pair to the game (what saving in Blender does: FBX clips and Tables/Executions.csv rows).
 It refuses to overwrite an existing workspace unless --force is given: the user's touch-ups live in it. The source
 .blend files (the True FPS start file and ArtSource/Zombies/ENFILADE_Zombie_Animation.blend) are only read.
 """
@@ -181,6 +182,7 @@ def main():
     context.view_layer.update()
     probe = exe.drafts().PlayerDraft(context, player, zombie, exe._seat(ROOT))
     bring_knife(context, player, probe.knife_matrix())
+    exe.ensure_holds(scene)
     p = exe.pairs()
     keys = [k for k in p.ORDER if not only or k in only]
     for key in keys:
@@ -188,11 +190,15 @@ def main():
         exe.make_pair(context, key)
     text = bpy.data.texts.get('START HERE - Execution tools.py') or bpy.data.texts.new('START HERE - Execution tools.py')
     text.from_string((HERE / 'execution_tools.py').read_text(encoding='utf-8'))
+    exe.select_pair(context, keys[0], keep=False)
     exported = []
     if export:
         for key in keys:
             exported += [str(path) for path in exe.export_pair(context, key)]
+            exe.mark_sent(key)
     exe.select_pair(context, keys[0], keep=False)
+    # This save is the build's own: sending to the game is --export's call, not the save handler's.
+    exe._drop_handlers()
     out.parent.mkdir(parents=True, exist_ok=True)
     bpy.ops.wm.save_as_mainfile(filepath=str(out), copy=False, compress=True)
     print('EXECUTION WORKSPACE', out, flush=True)

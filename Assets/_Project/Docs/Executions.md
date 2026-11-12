@@ -36,9 +36,9 @@
 
 ## 블렌더로 다듬기
 
-`ArtSource/Executions/START_EXECUTION_ANIMATION.cmd` → [START_HERE.md](../../../ArtSource/Executions/START_HERE.md). 한 장면에 카즈사 True FPS 리그와 Synty 좀비 리그가 게임 크기로 서 있고, 짝마다 두 리그의 시안이 잠긴 층, 그 위에 빈 손질 층이 있다. **게임에 보내기** 한 번이 두 FBX(`Art/Animations/Executions/enf_exe_<짝>_p`·`_z`)와 표 줄을 쓴다. 도구는 `Tools/Blender/Executions`([README](../../../Tools/Blender/Executions/README.md)). 임포트는 [ModelImportRules](../Editor/Import/ModelImportRules.cs)가 `_p`는 카즈사 아바타, `_z`는 Synty 좀비 아바타로 받는다(블렌더가 GUID만 든 .meta를 먼저 쓰므로 설정은 가져올 때마다 정한다. 규칙이 컴파일되기 전에 들어온 클립은 컴파일 뒤 한 번 다시 가져온다).
+`ArtSource/Executions/START_EXECUTION_ANIMATION.cmd` → [START_HERE.md](../../../ArtSource/Executions/START_HERE.md). 한 장면에 카즈사 True FPS 리그와 Synty 좀비 리그가 게임 크기로 서 있다. 열면 바로 일할 수 있게 준비된다(사용자: "내가 해야 하는 잡일을 최대한 줄여. 나는 딱 오직 인간만이 할 수 있는 것만"): 마지막에 고치던 짝, 두 리그 포즈 모드, 도프 시트에 두 몸의 키(뼈마다 한 줄, 시안의 키포즈가 세로줄), 처형 탭, 비스듬한 화면과 옆 화면. 짝마다 리그 하나에 액션 하나를 바로 고치고(처음 시안은 따로 보관), 손이 좀비를 잡는 동안은 좀비 뼈에 붙은 **잡는 자리**를 따라가서 좀비를 고쳐도 손이 붙어 있다. **저장(Ctrl+S)** 하면 바뀐 짝만 두 FBX(`Art/Animations/Executions/enf_exe_<짝>_p`·`_z`)와 표 줄을 쓴다. 도구는 `Tools/Blender/Executions`([README](../../../Tools/Blender/Executions/README.md)). 임포트는 [ModelImportRules](../Editor/Import/ModelImportRules.cs)가 `_p`는 카즈사 아바타, `_z`는 Synty 좀비 아바타로 받는다(블렌더가 GUID만 든 .meta를 먼저 쓰므로 설정은 가져올 때마다 정한다. 규칙이 컴파일되기 전에 들어온 클립은 컴파일 뒤 한 번 다시 가져온다).
 
-시안은 Claude가 블렌더에서 코드로 짰다(`execution_pairs.py`의 숫자): 좀비는 팩의 자세 클립 첫 프레임에서 시작해 몸축 기준으로 꺾고 떨게 했고, 카즈사는 IK로 손을 좀비 머리·목에 맞췄다. 카즈사 리그의 다리 IK는 무릎이 옆으로 꺾이는 극 각도라 이 작업 파일에서만 −90°로 바로잡았다(다른 작업실은 그대로).
+시안은 Claude가 블렌더에서 코드로 짰다(`execution_pairs.py`의 숫자): 좀비는 팩의 자세 클립 첫 프레임에서 시작해 몸축 기준으로 꺾었고(키포즈), 떨림은 그 뼈들의 Noise 모디파이어다. 카즈사는 IK로 손을 좀비 머리·목에 맞추고 부위마다 안무가 정한 프레임에 키를 넣었다. 카즈사 리그의 다리 IK는 무릎이 옆으로 꺾이는 극 각도라 이 작업 파일에서만 −90°로 바로잡았다(다른 작업실은 그대로).
 
 ## 표 [Executions.csv](../Resources/Tables/Executions.csv)
 
@@ -55,6 +55,7 @@
 7. 둘이서: 친구가 처형할 때 내 화면에서도 같은 짝이 같은 자리에서 나오는지, 피가 같은 데서 터지는지.
 8. 3인칭 시네마틱을 끄고(Esc → 카메라) 1인칭으로도 해 본다: 시점이 눈을 따라가고 손이 화면에 보여야 한다.
 9. 칼과 짝이 팔을 주고받는 순간: 달려들며 칼을 든 팔이 짝 클립 자세로 튀지 않고 넘어가는지, 짝 끝 무렵 손이 내려온 뒤 칼이 들어가고 짝이 끝날 때 총이 돌아오는지(그 전에 총이 나오지 않는지). 처형 중 채팅을 열어 끊으면(처형이 끊기는 경우) 팔이 칼 쪽으로 부드럽게 돌아오는지.
+10. 블렌더: `START_EXECUTION_ANIMATION.cmd`를 두 번 눌러 열자마자 짝이 불러와져 있고(포즈 모드, 도프 시트에 두 몸의 키, 처형 탭), 아무 키나 옮긴 뒤 Ctrl+S → 상태줄에 「게임에 보냄」 → Unity를 누르고 Play하면 바뀐 동작이 나오는지. 좀비 머리를 돌려도 잡은 손이 따라붙는지.
 
 ## 아직 모자란 것
 
