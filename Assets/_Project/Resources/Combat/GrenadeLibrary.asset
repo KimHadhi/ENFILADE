@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8d2b4f1e6c3a4b7d9e0f1a2b3c4d5e6f, type: 3}
   m_Name: GrenadeLibrary
   m_EditorClassIdentifier: Assembly-CSharp::GrenadeLibrary
-  knife: {fileID: 919132149155446097, guid: ad39b1100f1545f398e99fa0743c9c8d, type: 3}
+  knife: {fileID: 919132149155446097, guid: 35403f14fccf4443a214cc57371fc46a, type: 3}
   frag: {fileID: 919132149155446097, guid: 414f4c4918df4c0a84f51cf94d4a0caf, type: 3}
   smoke: {fileID: 919132149155446097, guid: 39071b236b06415a90d1f8d782aa396a, type: 3}
   flash: {fileID: 919132149155446097, guid: 10be8b1abc8a4fc1990d48dc6e5b0308, type: 3}

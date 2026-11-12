@@ -1,4 +1,7 @@
 # Blender (headless): a viewmodel hand animation in a Source MDL -> one arm's path as table rows, from a recipe.
+# Since 0.8.276 the game plays clips the Blender throw workspace sends (ArtSource/Grenades, Tools/Blender/Grenades):
+# its knife drafts are read from the MW viewmodel there, bone for bone. What this writes is still a valid clip table
+# (cycle in seconds) for another viewmodel's hand, without the pin and release marks, which the workspace adds.
 # usage: blender -b --factory-startup --python hand_path.py -- <recipe.json> <addon_folder> <out.csv>
 #   recipe.json: Tools/Blender/HandPaths/<Name>.json (which model, which view bone, which arm's bones, which clips in
 #   order, whether to mirror a right hand onto the left, which tag is the thing in the hand)

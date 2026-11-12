@@ -40,6 +40,12 @@ public sealed class ThrowableInfo
     /// </summary>
     public Vector3 HeldAt = new Vector3(.12f, .6f, .9f), HeldTurn = new Vector3(0f, 0f, 90f);
     /// <summary>
+    /// The model's own point the hand holds at HeldAt (m, in the model's axes; zero: its origin), so a small hand and a
+    /// big one close on the same place of it: the MW knife is held near its point, as the addon's viewmodel holds it, while
+    /// its origin stays the middle it spins about in flight. Tables/Grenades gripX/Y/Z.
+    /// </summary>
+    public Vector3 Grip;
+    /// <summary>
     /// Set down where the crosshair is rather than thrown (the Support's claymore; the user: "던지는 느낌보단 설치로 가도
     /// 되긴 하겠다"): held, G shows where it would go and what it would guard; let go, the hand puts it there.
     /// Tables/Grenades places.
@@ -153,6 +159,7 @@ public static class Throwables
                 Number(row, "heldAlong", info.HeldAt.z));
             info.HeldTurn = new Vector3(Number(row, "heldTurnX", info.HeldTurn.x), Number(row, "heldTurnY", info.HeldTurn.y),
                 Number(row, "heldTurnZ", info.HeldTurn.z));
+            info.Grip = new Vector3(Number(row, "gripX", 0f), Number(row, "gripY", 0f), Number(row, "gripZ", 0f));
             info.Icon = Text(row, "icon");
             if (info.Icon.Length == 0) info.Icon = DefaultIcon(kind);
             kinds[kind] = info;

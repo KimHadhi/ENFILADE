@@ -2,9 +2,12 @@ using UnityEngine;
 
 /// <summary>
 /// The class throwables' models (Resources/Combat/GrenadeLibrary): the CS:GO thrown world models of the ArcCW GSO GMod
-/// addon (2257255110), turned into FBX by Tools/Blender/addon_weapon_to_fbx.py with the recipes in Tools/Blender/Addons
-/// (GrenadeFrag, GrenadeFlash, GrenadeSmoke, GrenadeCanister, ThrowingKnife). Each sits at its own middle, real size; the
-/// knife's tip is +Z and its flat faces ±X. A missing one is drawn from plain shapes instead (Throwables.Model).
+/// addon (2257255110) and, for the Knight's knife, the MW2019 throwing knife of "[MW] Quick Throwing Knife" (3650480912;
+/// the user chose the addon's own model, 2026-11-12), turned into FBX by Tools/Blender/addon_weapon_to_fbx.py with the
+/// recipes in Tools/Blender/Addons (GrenadeFrag, GrenadeFlash, GrenadeSmoke, GrenadeCanister, MWThrowingKnife). Each sits
+/// at its own middle, real size. Art/Models' import lays a recipe's point along the model's -Z (a half turn about Y from
+/// the recipe's frame, measured on the Desperado): the knife's point is -Z, its broad side +Y and its flat faces ±X, and
+/// ThrownKnife turns it point first from its Tip marker. A missing one is drawn from plain shapes instead (Throwables.Model).
 /// </summary>
 [CreateAssetMenu(menuName = "ENFILADE/Grenade Library", fileName = "GrenadeLibrary")]
 public sealed class GrenadeLibrary : ScriptableObject

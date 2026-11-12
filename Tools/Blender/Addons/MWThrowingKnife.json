@@ -1,0 +1,40 @@
+{
+ "workshop": "[MW] Quick Throwing Knife (GMod 3650480912), the MW2019 throwing knife's world model (the same mesh as its viewmodel's knife)",
+ "name": "MWThrowingKnife",
+ "mdl": "models/weapons/eq_knife/w_eq_knife_thrown.mdl",
+ "out": "Assets/_Project/Art/Models/Addons/Grenades/MWThrowingKnife",
+ "note": "The Knight's throwing knife since the user chose the addon's own model (2026-11-12, '2번'). 21.1 cm at the project's weapon size: a 10.6 cm blade (0.3 cm thick) from +Z to its point and a 9.5 cm handle (1 cm thick); 2.3 cm across along Y. The origin is the middle of its length, where it spins end over end about Unity X; Tables/Grenades grip* is where the hand holds it.",
+ "meshes": {
+  "ref": "Knife"
+ },
+ "origin": {
+  "point": [
+   0.0,
+   0.0,
+   0.03185
+  ]
+ },
+ "tip": [
+  0,
+  0,
+  1
+ ],
+ "up": [
+  0,
+  1,
+  0
+ ],
+ "markers": {
+  "Tip": {
+   "point": [
+    0.0,
+    0.0,
+    0.1375
+   ]
+  },
+  "Grip": {
+   "bone": "weapon_hand_R"
+  }
+ },
+ "max_texture": 1024
+}

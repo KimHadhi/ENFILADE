@@ -3,16 +3,18 @@ using MovementState = PlayerMovement.MovementState;
 
 /// <summary>
 /// The left arm of a quick throw on G (the user, 2026-11-12: "그냥 G 꾹 누르면 들고 있는 자세로 바뀌면서 쿠킹할 수 있고
-/// 걍 바로 누르면 콜오브듀티 퀵그레네이드처럼 바로 던지는 모션만 나오게"): the hand leaves the gun for the belt, comes
-/// up with the throwable, holds it out, swings out and throws it, and goes back to the gun, along GrenadeArmPath (sampled
-/// from GMod's VManip quick grenade, the user's reference). PlayerGrenades says each frame where along that path the arm
-/// is (Drive); this fits the path to the body that wears it. The wrist goes where the path puts it from this body's own
-/// shoulder, in this arm's own lengths, the elbow toward where the path has it (TwoBoneIK); the hand turns to the path's
-/// run and facing (measured from its knuckles, as PointArm does), the fingers and the thumb close round the throwable as
-/// far as the path closes them, and the throwable's model rides in the palm at its kind's place (Tables/Grenades held*).
-/// Rig-agnostic: any humanoid a modder brings, with no clip or bake of its own.
-/// The same on every PC: the owner's first-person body and the copies everyone else sees run the same path from the
-/// phases PlayerGrenades sends, so friends see the hold and the throw.
+/// 걍 바로 누르면 콜오브듀티 퀵그레네이드처럼 바로 던지는 모션만 나오게"): the hand leaves the gun, draws the throwable,
+/// holds it out, throws it and goes back to the gun, playing the clips of its kind's hand motion (GrenadeArmPath: the
+/// draw, the hold, the throw and the tap, each a table the Blender throw workspace sends: the user, 2026-11-12: "드는
+/// 모션, 대기 모션, 던지는 모션 내가 블렌더로 수정할 수 있게 만들어서 적용해 봐"). PlayerGrenades says each frame which clip
+/// and where in it (Drive); one clip blends into the next over its motion's fade, from wherever the arm was. This fits
+/// the clip to the body that wears it: the wrist goes where the clip puts it from the eyes (or from this body's own
+/// shoulder in this arm's lengths, for a motion measured so), the elbow toward where the clip has it (TwoBoneIK); the hand
+/// turns to the clip's run and facing (measured from its knuckles, as PointArm does), each finger and the thumb close as
+/// far as the clip closes them, and the throwable's model rides in the palm at its kind's place (Tables/Grenades held*,
+/// its own grip point in the fist: grip*). Rig-agnostic: any humanoid a modder brings, with no clip or bake of its own.
+/// The same on every PC: the owner's first-person body and the copies everyone else sees run the same clips from the
+/// phases PlayerGrenades sends, so friends see the hold and the throw, in third person too.
 /// The hand leaves the gun through the one shared way for every off-hand use (the manager's decision, 2026-11-12):
 /// PlayerBodyHands.LendOffHand, so the left hand's gun contact, grip and fingers let go over the hands' own blend time
 /// and take the gun again after; the throw's pose eases by how far the hand is lent (OffHandLent), never ahead of it,
@@ -32,7 +34,7 @@ public sealed class GrenadeArm : MonoBehaviour
         HumanBodyBones.LeftLittleProximal, HumanBodyBones.LeftThumbProximal,
     };
     // A finger's whole curl shared out over its joints, knuckle first: a real finger closes most at the knuckle and the
-    // middle joint, and its last joint follows.
+    // middle joint, and its last joint follows (the Blender workspace bends its drafts the same way).
     private static readonly float[] CurlShare = { .4f, .35f, .25f };
 
     private PlayerMovement movement;
@@ -48,9 +50,12 @@ public sealed class GrenadeArm : MonoBehaviour
     // hand's own way out from the wrist, for a hand with no fingers.
     private Vector3 jointAxis, handAxis, releaseLocal;
     // own: the throw's own ease (armIn, armOut); weight: what is posed, never ahead of the hand lent off the gun.
-    private float armLength, handLength, own, weight, cycle;
+    private float armLength, handLength, own, weight, time, fade = 1f;
     private Throwable kind, heldKind;
-    private bool bound, wanted, holds, hasRelease;
+    private bool bound, wanted, holds, hasRelease, posedBefore;
+    private string clip = "", shownClip = "";
+    // The arm as last posed (the clip's moment after any blend), and the moment a new clip blends from.
+    private GrenadeArmPath.Key shown, from;
     private GameObject held;
 
     /// <summary>Where the throwable in the hand is now (world); the hand while there is none.</summary>
@@ -66,21 +71,23 @@ public sealed class GrenadeArm : MonoBehaviour
     }
 
     /// <summary>
-    /// This frame's throw (PlayerGrenades, every frame while a throw is under way): which throwable, where along the path
-    /// (GrenadeArmPath cycle), whether the arm should be on it (false eases it back to the gun) and whether the throwable
-    /// is still in the hand (false once it has left, though the path's hand is still closed).
+    /// This frame's throw (PlayerGrenades, every frame while a throw is under way): which throwable, which clip (a table
+    /// of GrenadeArmPath) and how far into it (s at the clip's own speed), whether the arm should be on it (false eases it
+    /// back to the gun) and whether the throwable is still in the hand (false once it has left, though the clip's hand is
+    /// still closed).
     /// </summary>
-    internal void Drive(Throwable throwable, float pathCycle, bool on, bool inHand)
+    internal void Drive(Throwable throwable, string clipTable, float clipTime, bool on, bool inHand)
     {
         kind = throwable;
-        cycle = pathCycle;
+        clip = clipTable ?? "";
+        time = clipTime;
         wanted = on;
         holds = inHand;
         drivenFrame = Time.frameCount;
     }
 
     /// <summary>
-    /// Where the throwable leaves the hand at its motion's release (Tables/ThrowArms), from the eyes as they are now:
+    /// Where the throwable leaves the hand at its throw's release (the clip's own moment), from the eyes as they are now:
     /// the throw starts there and the aiming arc is drawn from there, so the arc is the flight. False before the arm has
     /// found its body and eyes.
     /// </summary>
@@ -100,7 +107,8 @@ public sealed class GrenadeArm : MonoBehaviour
         if (eyes == null) eyes = PlayerView.EyesOf(movement);
         if (eyes == null) return;
         bool driven = drivenFrame >= Time.frameCount - 1;
-        if (driven) NoteRelease();
+        var motion = GrenadeArmPath.For(kind);
+        if (driven) NoteRelease(motion);
         bool on = driven && wanted && Free();
         // The left hand off the gun through PlayerBodyHands, as every off-hand use takes it; the same share each frame
         // costs nothing.
@@ -108,14 +116,35 @@ public sealed class GrenadeArm : MonoBehaviour
         float blend = on ? Throwables.Rule("armIn", .08f) : Throwables.Rule("armOut", .14f);
         own = Mathf.MoveTowards(own, on ? 1f : 0f, dt / Mathf.Max(.01f, blend));
         weight = hands != null ? Mathf.Min(own, hands.OffHandLent) : own;
-        var motion = GrenadeArmPath.For(kind);
-        if (weight <= 0f || !GrenadeArmPath.Sample(motion.Table, cycle, out var key))
+        if (weight <= 0f || !GrenadeArmPath.Sample(clip, time, out var key))
         {
+            posedBefore = false;
             ShowHeld(false);
             HeldPoint = hand.position;
             return;
         }
-        Pose(key, motion);
+        Pose(Faded(key, motion, dt), motion);
+    }
+
+    // A new clip takes over from wherever the arm was (the last clip's moment, or its blend), over the motion's fade.
+    private GrenadeArmPath.Key Faded(in GrenadeArmPath.Key key, GrenadeArmPath.Motion motion, float dt)
+    {
+        if (!posedBefore)
+        {
+            // Coming on from the gun: the arm's own ease brings it in, nothing to blend from.
+            posedBefore = true;
+            shownClip = clip;
+            fade = 1f;
+        }
+        else if (!string.Equals(clip, shownClip, System.StringComparison.Ordinal))
+        {
+            from = shown;
+            shownClip = clip;
+            fade = 0f;
+        }
+        fade = Mathf.Min(1f, fade + (motion.Fade > 1e-4f ? dt / motion.Fade : 1f));
+        shown = fade < 1f ? GrenadeArmPath.Blend(from, key, Mathf.SmoothStep(0f, 1f, fade)) : key;
+        return shown;
     }
 
     private void OnDisable()
@@ -167,12 +196,14 @@ public sealed class GrenadeArm : MonoBehaviour
         return state == MovementState.Standing || state == MovementState.Crouching || state == MovementState.Sliding;
     }
 
-    // Where the throwable will leave the hand, kept in the eyes' own space so the throw follows the look between frames.
-    private void NoteRelease()
+    // Where the throwable will leave the hand: at the release of the clip playing if it has one (a tap's, a throw's),
+    // else at the throw's; kept in the eyes' own space so the throw follows the look between frames.
+    private void NoteRelease(GrenadeArmPath.Motion motion)
     {
         hasRelease = false;
-        var motion = GrenadeArmPath.For(kind);
-        if (!GrenadeArmPath.Sample(motion.Table, motion.Release, out var key)) return;
+        var playing = GrenadeArmPath.ClipOf(clip);
+        var throwing = playing != null && playing.HasRelease ? playing : motion.ThrowClip;
+        if (throwing == null || !throwing.HasRelease || !GrenadeArmPath.Sample(throwing.Table, throwing.ReleaseAt, out var key)) return;
         Quaternion view = eyes.rotation;
         Vector3 wrist = Place(motion, key.Wrist);
         Vector3 point = wrist + Quaternion.LookRotation(view * key.Along, view * key.Palm) * (HeldAt() * handLength);
@@ -180,9 +211,9 @@ public sealed class GrenadeArm : MonoBehaviour
         hasRelease = true;
     }
 
-    // Where a key's wrist (or elbow) is now: from this shoulder in this arm's lengths, or for a motion measured from the
-    // eyes (the knife's viewmodel framing) from the eyes in metres, spread out as much as this player's view is wider
-    // than the clip's, so the hand sits where it sat on the clip's screen.
+    // Where a key's wrist (or elbow) is now: from the eyes in metres, spread out as much as this player's view is wider
+    // than the clips' (so the hand sits where it sat on the Blender camera's screen); or, for a motion measured from the
+    // shoulder, from this shoulder in this arm's lengths.
     private Vector3 Place(GrenadeArmPath.Motion motion, Vector3 local)
     {
         Quaternion view = eyes.rotation;
@@ -191,11 +222,11 @@ public sealed class GrenadeArm : MonoBehaviour
         return eyes.position + view * new Vector3(local.x * spread, local.y * spread, local.z);
     }
 
-    // The player's own camera on their own PC; a friend's copy, seen from outside, keeps the clip's framing.
+    // The player's own camera on their own PC; a friend's copy, seen from outside, keeps the clips' framing.
     private float Spread(GrenadeArmPath.Motion motion)
     {
         var camera = movement.IsLocal ? Camera.main : null;
-        if (camera == null) return 1f;
+        if (camera == null || motion.ViewFov <= 0f) return 1f;
         float ours = Mathf.Tan(camera.fieldOfView * .5f * Mathf.Deg2Rad), theirs = Mathf.Tan(motion.ViewFov * .5f * Mathf.Deg2Rad);
         return theirs > 1e-3f ? Mathf.Clamp(ours / theirs, .5f, 2f) : 1f;
     }
@@ -205,19 +236,18 @@ public sealed class GrenadeArm : MonoBehaviour
         for (int i = 0; i < turnedCount; i++) framed[i] = turned[i].localRotation;
         Quaternion view = eyes.rotation;
 
-        // The wrist where the path has it (from this shoulder, or from the eyes for a viewmodel's path); the elbow
-        // toward the path's elbow.
+        // The wrist where the clip has it, the elbow toward the clip's elbow.
         TwoBoneIK.Solve(upper, lower, hand, Place(motion, key.Wrist), Place(motion, key.Elbow));
         Vector3 along = view * key.Along, palm = view * key.Palm;
         TurnHand(along, palm);
-        Fingers(along, palm, key.Curl, key.Thumb);
+        Fingers(along, palm, key);
 
         if (weight < 1f)
             for (int i = 0; i < turnedCount; i++) turned[i].localRotation = Quaternion.Slerp(framed[i], turned[i].localRotation, weight);
         Hold(key.Held && holds);
     }
 
-    // The hand's rotation that lays its run (wrist to middle knuckle) along the path's and its palm facing as the path's.
+    // The hand's rotation that lays its run (wrist to middle knuckle) along the clip's and its palm facing as the clip's.
     private void TurnHand(Vector3 along, Vector3 palm)
     {
         Vector3 alongNow = AlongNow();
@@ -235,8 +265,8 @@ public sealed class GrenadeArm : MonoBehaviour
         return knuckle != null ? knuckle.position - hand.position : hand.rotation * handAxis;
     }
 
-    // The way the palm faces now, from the knuckles, as the path was measured (Tools/Blender/vmanip_throw_path.py): out of
-    // the palm, square to the hand's run. A hand with no fingers is taken as palm down.
+    // The way the palm faces now, from the knuckles, as the clips were measured (grenade_tools.hand_frame): out of the
+    // palm, square to the hand's run. A hand with no fingers is taken as palm down.
     private Vector3 PalmNow(Vector3 along)
     {
         var index = fingers[Index * 3];
@@ -247,10 +277,10 @@ public sealed class GrenadeArm : MonoBehaviour
         return palm.sqrMagnitude > 1e-12f ? palm.normalized : Vector3.zero;
     }
 
-    // The four fingers closed toward the palm by the path's curl (GrenadeRules gripCurl of it), shared over their joints;
-    // the thumb across the palm toward the little finger's side and on toward the fingertips, over the throwable, as far
-    // as the path closes it (GrenadeRules gripThumb of it).
-    private void Fingers(Vector3 along, Vector3 palm, float curl, float thumb)
+    // Each of the four fingers closed toward the palm by its own curl in the clip (GrenadeRules gripCurl of it), shared
+    // over its joints; the thumb across the palm toward the little finger's side and on toward the fingertips, over the
+    // throwable, as far as the clip closes it (GrenadeRules gripThumb of it).
+    private void Fingers(Vector3 along, Vector3 palm, in GrenadeArmPath.Key key)
     {
         // Turning about this brings a finger from the hand's run toward the palm; it points to the thumb's side.
         Vector3 axis = Vector3.Cross(along, palm);
@@ -259,7 +289,7 @@ public sealed class GrenadeArm : MonoBehaviour
         float fingersShare = Mathf.Max(0f, Throwables.Rule("gripCurl", 1f));
         for (int finger = Index; finger <= Little; finger++)
         {
-            float angle = 0f;
+            float curl = key.FingerCurl(finger), angle = 0f;
             for (int joint = 0; joint < 3; joint++)
             {
                 var bone = fingers[finger * 3 + joint];
@@ -268,7 +298,7 @@ public sealed class GrenadeArm : MonoBehaviour
                 Turn(bone, JointWay(finger, joint), Quaternion.AngleAxis(angle, axis) * along, 1f);
             }
         }
-        float close = Mathf.Clamp01(thumb / 90f) * Mathf.Clamp01(Throwables.Rule("gripThumb", 1f));
+        float close = Mathf.Clamp01(key.Thumb / 90f) * Mathf.Clamp01(Throwables.Rule("gripThumb", 1f));
         if (close <= 0f || fingers[Thumb * 3] == null) return;
         Vector3 over = (along * .5f + palm * .6f - axis * .45f).normalized;
         for (int joint = 0; joint < 3; joint++)
@@ -326,11 +356,12 @@ public sealed class GrenadeArm : MonoBehaviour
         float scale = transform.lossyScale.x;
         holder.localScale = Vector3.one / Mathf.Max(1e-4f, Mathf.Abs(scale));
         ShowHeld(true);
-        HeldPoint = holder.position;
+        HeldPoint = held.transform.position;
     }
 
     // The throwable's model under a holder of its own beside the body (so a scaled armature never scales it), drawn on
-    // the body's own layer so the first-person camera and everyone else's see it as they see the body.
+    // the body's own layer so the first-person camera and everyone else's see it as they see the body; moved back in the
+    // holder by its grip, so the fist (the holder) closes on that point of it.
     private void Dress()
     {
         if (holder == null)
@@ -341,6 +372,8 @@ public sealed class GrenadeArm : MonoBehaviour
         if (held != null) Destroy(held);
         held = Throwables.Dress(kind, holder);
         heldKind = kind;
+        var info = Throwables.Of(kind);
+        if (held != null && info != null) held.transform.localPosition = -info.Grip;
         var skin = GetComponentInChildren<SkinnedMeshRenderer>();
         int layer = skin != null ? skin.gameObject.layer : gameObject.layer;
         foreach (var part in holder.GetComponentsInChildren<Transform>(true)) part.gameObject.layer = layer;

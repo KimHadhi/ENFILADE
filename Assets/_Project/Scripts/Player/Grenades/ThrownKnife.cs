@@ -14,9 +14,10 @@ using UnityEngine;
 [DisallowMultipleComponent]
 public sealed class ThrownKnife : MonoBehaviour
 {
-    // The longest flight (s), how deep its point goes in (m: its middle stops this far short of the hit, the point being
-    // 0.12 m ahead of its middle), and its glint. How fast it turns and how long its streak is are GrenadeRules
-    // knifeSpin and knifeTrail (as GMod's [MW] Quick Throwing Knife: 3000 degrees a second, a white streak of 0.3 s).
+    // The longest flight (s), how deep its point goes in (m: its middle stops its point's reach short of the hit, less
+    // this), how far the point is ahead of the middle when the model has no Tip marker, and its glint. How fast it turns
+    // and how long its streak is are GrenadeRules knifeSpin and knifeTrail (as GMod's [MW] Quick Throwing Knife: 3000
+    // degrees a second, a white streak of 0.3 s).
     private const float Flight = 3f, Bury = .06f, TipAhead = .12f, GlintSize = .16f, GlintEvery = 1.4f;
     private static readonly List<ThrownKnife> knives = new List<ThrownKnife>();
     private enum State { Flying, Stuck, Lying }
@@ -25,7 +26,7 @@ public sealed class ThrownKnife : MonoBehaviour
     private PlayerMovement thrower;
     private bool mine;
     private Vector3 velocity, origin;
-    private float gravityShare, damage, headShare, age, life, sinceLanded, spin;
+    private float gravityShare, damage, headShare, age, life, sinceLanded, spin, tipAhead = TipAhead;
     private Transform look, glint;
     private TrailRenderer streak;
     // Riding a zombie's bone: the bone, the zombie, and where on the bone.
@@ -68,10 +69,35 @@ public sealed class ThrownKnife : MonoBehaviour
         var spinner = new GameObject("Spin").transform;
         spinner.SetParent(host.transform, false);
         knife.look = spinner;
-        Throwables.Dress(Throwable.Knife, spinner);
+        knife.tipAhead = PointFirst(Throwables.Dress(Throwable.Knife, spinner), spinner);
         knife.Streak();
         knives.Add(knife);
         return knife;
+    }
+
+    // The model turned under its spinner so its point leads the flight (+Z), its broad side kept up: found from the
+    // model's own Tip marker (Tools/Blender/addon_weapon_to_fbx.py writes one; Art/Models' import lays the recipes'
+    // points along -Z, so a knife dressed as it came would fly and stick handle first). Returns how far the point is
+    // ahead of the middle it spins about; a model without a marker is taken as pointing +Z, TipAhead out.
+    private static float PointFirst(GameObject model, Transform spinner)
+    {
+        var tip = model != null ? Find(model.transform, "Tip") : null;
+        if (tip == null) return TipAhead;
+        Vector3 local = spinner.InverseTransformPoint(tip.position);
+        if (local.sqrMagnitude < 1e-6f) return TipAhead;
+        model.transform.localRotation = Quaternion.Inverse(Quaternion.LookRotation(local.normalized, Vector3.up)) * model.transform.localRotation;
+        return local.magnitude;
+    }
+
+    private static Transform Find(Transform root, string name)
+    {
+        if (root.name == name) return root;
+        for (int i = 0; i < root.childCount; i++)
+        {
+            var found = Find(root.GetChild(i), name);
+            if (found != null) return found;
+        }
+        return null;
     }
 
     // A thin white streak behind it in flight, fading as it goes (the addon's sprite trail), gone once it lands.
@@ -156,7 +182,7 @@ public sealed class ThrownKnife : MonoBehaviour
         StopStreak();
         if (look != null) look.localRotation = Quaternion.identity;
         transform.rotation = Quaternion.LookRotation(way);
-        transform.position = hit.point - way * (TipAhead - Bury);
+        transform.position = hit.point - way * (tipAhead - Bury);
         var collider = hit.collider;
         var enemy = collider != null ? collider.GetComponentInParent<EnemyHealth>() : null;
         if (collider != null && collider.GetComponentInParent<PlayerMovement>() != null)

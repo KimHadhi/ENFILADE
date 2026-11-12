@@ -8,11 +8,14 @@ using MovementState = PlayerMovement.MovementState;
 /// G키로 퀵 그레네이드 던질 수 있었음 좋겠어"), thrown by the off hand while the gun stays in the other (GrenadeArm, along
 /// the path of GMod's VManip quick grenade). The user again: "그냥 G 꾹 누르면 들고 있는 자세로 바뀌면서 쿠킹할 수 있고
 /// 걍 바로 누르면 콜오브듀티 퀵그레네이드처럼 바로 던지는 모션만 나오게".
-/// A tap (let go before GrenadeRules tapHold) is Call of Duty's quick throw: the hand takes it from the belt and throws it
-/// toward the crosshair in one quick motion (tapDraw, then throwSpeed), no arc, no stop. Held, the hand comes up and holds
-/// it out (VManip's hold), the pin pulled with its sound; the arc it will fly and the reach of its burst show (ThrowArc,
-/// from where the hand lets go, so the arc is the flight), and let go, it is thrown. The guard key while it is held puts
-/// the pin back: nothing thrown, nothing spent.
+/// The hand plays its kind's clips (GrenadeArmPath; the user, 2026-11-12: "드는 모션, 대기 모션, 던지는 모션 내가 블렌더로
+/// 수정할 수 있게 만들어서 적용해 봐": each a table the Blender throw workspace ArtSource/Grenades sends). A tap (let go
+/// before GrenadeRules tapHold) is Call of Duty's quick throw: the tap clip, the hand taking it from the belt and throwing
+/// it toward the crosshair in one quick motion, no arc, no stop (the knife's tap is its throw, as the addon throws at once).
+/// Held, the draw brings it up, the pin pulled at the draw's pin moment with its sound, and the hold clip plays round; the
+/// arc it will fly and the reach of its burst show (ThrowArc, from where the hand lets go, so the arc is the flight), and
+/// let go, the throw clip lets it go at its release moment. The guard key while it is held puts the pin back: nothing
+/// thrown, nothing spent.
 /// One that cooks (the Assault's frag, the Point's flashbang) burns from the pin: its fuse runs down in a ring round the
 /// crosshair (GrenadeHUD.Ring), so it can be let go to burst in the air. Never a minus: a frag held to the end is thrown on
 /// reflex at the last moment (the Assault counts the fuse and the hand lets go by itself: GrenadeRules reflexLead), and a
@@ -33,7 +36,7 @@ public sealed class PlayerGrenades : MonoBehaviour
     public enum HandPhase : byte { None, Draw, Throw, TapThrow, Lower }
 
     // Where the off hand is in a throw: going for it (the draw), holding it out, throwing it, or putting it back.
-    private enum Arm : byte { None, Draw, Hold, Throw, Lower }
+    private enum Arm : byte { None, Draw, Hold, Throw, Tap, Lower }
 
     /// <summary>This PC's player's.</summary>
     public static PlayerGrenades Local { get; private set; }
@@ -57,7 +60,10 @@ public sealed class PlayerGrenades : MonoBehaviour
     private Arm arm;
     private int count;
     private bool holding, aiming, cooking, wired, letGo, released, pinned;
-    private float pressedAt, cookLeft, readyAt, pickLeft, cycle, drawSpeed, lowerLeft, knifeShakeAt;
+    // clip: the arm's clip playing (a table of GrenadeArmPath); clipTime: how far into it (s at its own speed); speed: how
+    // fast it plays (its motion's draw, tap or throw speed).
+    private float pressedAt, cookLeft, readyAt, pickLeft, clipTime, speed, lowerLeft, knifeShakeAt;
+    private string clip = "";
     private ushort nextId = 1;
     private string classSeen;
     // This player's throwables in the world on this PC: their own, or the copies of a friend's.
@@ -222,7 +228,7 @@ public sealed class PlayerGrenades : MonoBehaviour
     // shove stops them.
     private void Begin(ThrowableInfo info)
     {
-        StartArm(kind, GrenadeArmPath.For(kind).HoldDraw);
+        StartArm(kind);
         pressedAt = Time.time;
         holding = letGo = false;
         if (kind == Throwable.Knife) KnifeOut(HandPoint());
@@ -231,13 +237,14 @@ public sealed class PlayerGrenades : MonoBehaviour
         Handed?.Invoke(kind, HandPhase.Draw);
     }
 
-    // G let go (or the reflex): thrown from the hold at once, or as soon as the draw gets there. A tap's draw runs faster
-    // and never stops at the hold.
+    // G let go (or the reflex): thrown from the hold at once, or as soon as the draw gets there. A tap plays the tap clip;
+    // without one the draw runs at the tap's speed and never stops at the hold.
     private void LetGo(bool tap)
     {
         letGo = true;
-        if (tap) drawSpeed = Motion.TapDraw;
         Handed?.Invoke(armKind, tap ? HandPhase.TapThrow : HandPhase.Throw);
+        if (tap && StartTap()) return;
+        if (tap) speed = Motion.TapSpeed;
         if (arm == Arm.Hold) Release();
     }
 
@@ -258,9 +265,7 @@ public sealed class PlayerGrenades : MonoBehaviour
         cookLeft -= Time.deltaTime;
         if (info.ThrowsOut)
         {
-            var motion = Motion;
-            float windup = (motion.Release - motion.Hold) / Mathf.Max(.1f, motion.ThrowSpeed);
-            if (arm == Arm.Hold && !letGo && cookLeft <= Throwables.Rule("reflexLead", .5f) + windup) LetGo(false);
+            if (arm == Arm.Hold && !letGo && cookLeft <= Throwables.Rule("reflexLead", .5f) + SwingLeft()) LetGo(false);
             // On its way out of the hand it waits for the release (Throw keeps a little fuse for the flight).
             if (cookLeft < 0f) cookLeft = 0f;
             return;
@@ -284,19 +289,53 @@ public sealed class PlayerGrenades : MonoBehaviour
 
     // ---- The arm: on this PC's player and on friends' copies ----
 
-    private void StartArm(Throwable throwable, float speed)
+    // The draw from the gun, at its motion's draw speed.
+    private void StartArm(Throwable throwable)
     {
         arm = Arm.Draw;
         armKind = throwable;
-        cycle = 0f;
-        drawSpeed = speed;
+        var motion = Motion;
+        clip = motion.DrawTable;
+        clipTime = 0f;
+        speed = motion.DrawSpeed;
         released = pinned = false;
     }
 
+    // The throw clip from its start (it starts where the hold has the hand; the blend covers the rest).
     private void StartThrow()
     {
+        var motion = Motion;
         arm = Arm.Throw;
-        cycle = Mathf.Max(cycle, Motion.Hold);
+        clip = motion.ThrowTable;
+        clipTime = 0f;
+        speed = motion.ThrowSpeed;
+    }
+
+    // A tap's own clip, where its motion has one (a claymore is set down, never tapped out of the hand). A clip of its own
+    // starts as the draw does, from the gun, so it takes over where the draw had got; the throw used as the tap (the
+    // knife's) starts from its beginning, as the addon throws at once. False: no tap clip.
+    private bool StartTap()
+    {
+        var info = Throwables.Of(armKind);
+        var motion = Motion;
+        if (info == null || info.Places || motion.TapClip == null) return false;
+        float at = !motion.TapIsThrow && arm == Arm.Draw ? clipTime : 0f;
+        arm = Arm.Tap;
+        clip = motion.TapTable;
+        clipTime = at;
+        speed = motion.TapSpeed;
+        return true;
+    }
+
+    // Seconds from now until the hand lets go: the throw's lead to its release from the hold, or what is left of it (or
+    // of a tap's) once under way.
+    private float SwingLeft()
+    {
+        var motion = Motion;
+        var throwing = arm == Arm.Tap ? GrenadeArmPath.ClipOf(clip) : motion.ThrowClip;
+        if (throwing == null || !throwing.HasRelease) return 0f;
+        float at = arm == Arm.Throw || arm == Arm.Tap ? clipTime : 0f;
+        return Mathf.Max(0f, throwing.ReleaseAt - at) / Mathf.Max(.05f, arm == Arm.Tap ? speed : motion.ThrowSpeed);
     }
 
     // Let go at the hold: thrown, or set down (a claymore: on this PC's player's own PC; a friend's copy waits to be told
@@ -419,41 +458,59 @@ public sealed class PlayerGrenades : MonoBehaviour
         lowerLeft = Mathf.Max(.01f, Throwables.Rule("armOut", .14f));
     }
 
-    // Moves the arm along the path, pulls the pin and lets go at their moments, and tells the body's arm (GrenadeArm).
+    // Plays the arm's clips, pulls the pin and lets go at their moments, and tells the body's arm (GrenadeArm).
     private void Run(float dt, ThrowableInfo info)
     {
         if (arm == Arm.None) return;
         var motion = Motion;
-        float hold = motion.Hold;
+        var playing = GrenadeArmPath.ClipOf(clip);
+        float length = playing != null ? playing.Length : 0f;
         switch (arm)
         {
             case Arm.Draw:
-                cycle += dt * drawSpeed;
-                if (!pinned && motion.HasPin && cycle >= motion.Pin) Pin(info);
-                if (cycle >= hold)
+                clipTime += dt * speed;
+                if (!pinned && playing != null && playing.HasPin && clipTime >= playing.PinAt) Pin(info);
+                if (clipTime >= length)
                 {
-                    cycle = hold;
+                    // Up and held: a draw without a pin moment pulls it here, so a cooking one always cooks. The hold
+                    // loop plays from its start (the draw's last pose stays where a motion has none).
+                    if (!pinned) Pin(info);
                     arm = Arm.Hold;
+                    if (motion.HoldClip != null)
+                    {
+                        clip = motion.HoldTable;
+                        clipTime = 0f;
+                    }
+                    else clipTime = length;
                     if (letGo) Release();
                 }
                 break;
+            case Arm.Hold:
+                if (playing != null && length > 0f && string.Equals(clip, motion.HoldTable, StringComparison.OrdinalIgnoreCase))
+                    clipTime = Mathf.Repeat(clipTime + dt, length);
+                break;
             case Arm.Throw:
-                cycle += dt * Mathf.Max(.1f, motion.ThrowSpeed);
-                if (!released && cycle >= motion.Release)
+            case Arm.Tap:
+                clipTime += dt * speed;
+                if (arm == Arm.Tap && !pinned && playing != null && playing.HasPin && clipTime >= playing.PinAt) Pin(info);
+                float releaseAt = playing != null && playing.HasRelease ? playing.ReleaseAt : length * .4f;
+                if (!released && clipTime >= releaseAt)
                 {
+                    // Never out of the hand with its pin in (a clip whose pin moment was moved away).
+                    if (!pinned) Pin(info);
                     released = true;
                     if (movement.IsLocal) Throw(info);
                 }
-                if (cycle >= motion.End) arm = Arm.None;
+                // The clip ends with the hand back on the gun; the arm lets go of it over GrenadeRules armOut.
+                if (clipTime >= length) arm = Arm.None;
                 break;
             case Arm.Lower:
                 if ((lowerLeft -= dt) <= 0f) arm = Arm.None;
                 break;
         }
         if (armBody == null) armBody = GrenadeArm.Of(movement);
-        // On the throwable while going for it, holding it and throwing it, until the path's hand heads back to the gun.
-        bool on = arm == Arm.Draw || arm == Arm.Hold || (arm == Arm.Throw && cycle < motion.Back);
-        if (armBody != null) armBody.Drive(armKind, cycle, on, !released);
+        bool on = arm == Arm.Draw || arm == Arm.Hold || arm == Arm.Throw || arm == Arm.Tap;
+        if (armBody != null) armBody.Drive(armKind, clip, clipTime, on, !released);
     }
 
     // The pin comes out as the path's hand brings it up: its sound, and the fuse of one that cooks starts burning.
@@ -472,7 +529,7 @@ public sealed class PlayerGrenades : MonoBehaviour
     // While the hand is on a throw the gun can't use it: a reload that starts stops, the sights stay down.
     private void KeepHandFree()
     {
-        if (arm != Arm.Draw && arm != Arm.Hold && !(arm == Arm.Throw && !released)) return;
+        if (arm != Arm.Draw && arm != Arm.Hold && !((arm == Arm.Throw || arm == Arm.Tap) && !released)) return;
         if (weapon == null) weapon = GetComponent<WeaponController>();
         if (weapon != null && (weapon.AimBlend > .01f || (weapon.Runtime != null && weapon.Runtime.IsReloading))) weapon.InterruptForSurvival();
     }
@@ -594,9 +651,7 @@ public sealed class PlayerGrenades : MonoBehaviour
         if (info.Radius <= 0f) { arc.HideRing(); return; }
         Color reach = KitStyle.With(info.Tint, .8f);
         // The fuse left when it leaves the hand: what is left now less the swing still to come.
-        var motion = Motion;
-        float swing = (motion.Release - Mathf.Max(cycle, motion.Hold)) / Mathf.Max(.1f, motion.ThrowSpeed);
-        float left = cookLeft - Mathf.Max(0f, swing);
+        float left = cookLeft - SwingLeft();
         if (cooking && left < arc.FlightSeconds)
         {
             float t = Mathf.Max(0f, left);
@@ -643,31 +698,29 @@ public sealed class PlayerGrenades : MonoBehaviour
     // ---- Friends' throws, here ----
 
     /// <summary>
-    /// A friend's off hand went for a throwable, threw it or put it back: this PC's copy of them moves its arm so (a tap's
-    /// draw runs at the tap's speed). The throwable itself comes with ShowThrow.
+    /// A friend's off hand went for a throwable, threw it or put it back: this PC's copy of them plays the same clips (a
+    /// tap its tap clip, or the draw at the tap's speed). The throwable itself comes with ShowThrow.
     /// </summary>
     internal void ShowHand(Throwable handKind, HandPhase phase)
     {
         switch (phase)
         {
             case HandPhase.Draw:
-                StartArm(handKind, GrenadeArmPath.For(handKind).HoldDraw);
+                StartArm(handKind);
                 letGo = false;
                 if (handKind == Throwable.Knife) KnifeOut(transform.position + Vector3.up * 1.3f);
                 break;
             case HandPhase.Throw:
             case HandPhase.TapThrow:
-                if (phase == HandPhase.TapThrow) drawSpeed = GrenadeArmPath.For(handKind).TapDraw;
                 // A claymore is set down, not thrown: the copy's hand lowers when it is told where it went (ShowMine).
                 if (Throwables.Of(handKind) is ThrowableInfo setDown && setDown.Places) { letGo = true; break; }
-                if (arm == Arm.None || arm == Arm.Lower)
-                {
-                    // Its draw never came: straight into the throw from the hold.
-                    StartArm(handKind, drawSpeed);
-                    arm = Arm.Hold;
-                    cycle = GrenadeArmPath.For(handKind).Hold;
-                }
+                bool fresh = arm == Arm.None || arm == Arm.Lower;
+                // Its draw never came: a tap from the start of its clip, a throw straight from the hold.
+                if (fresh) StartArm(handKind);
                 letGo = true;
+                if (phase == HandPhase.TapThrow && StartTap()) break;
+                if (phase == HandPhase.TapThrow) speed = GrenadeArmPath.For(handKind).TapSpeed;
+                if (fresh) arm = Arm.Hold;
                 if (arm == Arm.Hold) StartThrow();
                 break;
             case HandPhase.Lower:

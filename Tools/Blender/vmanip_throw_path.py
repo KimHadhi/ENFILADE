@@ -1,4 +1,7 @@
 # Blender (headless): a VManip hand animation (GMod "[VManip] Quick Grenades") -> the left arm's path as table rows.
+# Since 0.8.276 the game plays clips the Blender throw workspace sends (ArtSource/Grenades, Tools/Blender/Grenades):
+# its knife drafts are read from the MW viewmodel there, bone for bone. What this writes is still a valid clip table
+# (cycle in seconds) for another viewmodel's hand, without the pin and release marks, which the workspace adds.
 # usage: blender -b --factory-startup --python vmanip_throw_path.py -- <c_vmanipgrenade.mdl> <out.csv> [step]
 #   The MDL comes out of the VManip base addon (workshop 2155366756, models/c_vmanipgrenade.mdl) unpacked with
 #   Tools/Extract-Gma.ps1 into a folder outside the repo; its one sequence "thrownade" is the off hand reaching to the
