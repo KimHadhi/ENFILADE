@@ -2,7 +2,7 @@ using UnityEngine;
 using MovementState = PlayerMovement.MovementState;
 
 /// <summary>
-/// Backlog 142 (hands, the cable part; Docs/AddonPortNotes "사다리·줄의 손 IK"): riding a zipline, PlayerBody.Grip only
+/// Backlog 142 (hands, the cable part; Docs/Records/AddonPortNotes "사다리·줄의 손 IK"): riding a zipline, PlayerBody.Grip only
 /// moved the body so the clip's two hands met the cable on average, so each hand hung near the cable, open, at whatever
 /// height its clip and the character's arms put it. Now each hand closes round the cable: it stays where the clip has it
 /// along the cable (the clip's lead and trail), but goes onto the cable itself, fingers over the top from its own side and

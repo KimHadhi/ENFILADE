@@ -65,4 +65,4 @@
 - 저장했는데 「보내지 못함 … Executions.csv」가 뜨면: 유니티가 표를 잡고 있는 것입니다. 잠깐 뒤 다시 저장하면 다시 보냅니다.
 - 게임에서 처형이 예전처럼(제자리 칼질) 나오면: 유니티 Console에 오류가 없는지, `Assets/_Project/Art/Animations/Executions`에 그 짝의 FBX 두 개가 있는지 봅니다.
 
-만든 도구: `Tools/Blender/Executions/` (`execution_tools.py` 탭·저장할 때 보내기·여는 화면, `execution_drafts.py` 시안 만드는 법, `execution_pairs.py` 짝별 동작 숫자, `build_execution_workspace.py` 이 파일 만들기). 게임 쪽 설명: `Assets/_Project/Docs/Executions.md`.
+만든 도구: `Tools/Blender/Executions/` (`execution_tools.py` 탭·저장할 때 보내기·여는 화면, `execution_drafts.py` 시안 만드는 법, `execution_pairs.py` 짝별 동작 숫자, `build_execution_workspace.py` 이 파일 만들기). 게임 쪽 설명: `Docs/Features/Executions.md`.

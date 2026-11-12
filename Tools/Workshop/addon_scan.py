@@ -1,4 +1,4 @@
-"""Read-only scan of workshop addons for the addon table (Docs/AddonPortNotes.md).
+"""Read-only scan of workshop addons for the addon table (Docs/Records/AddonPortNotes.md).
 
 Run with -I so nothing next to the archives can be imported:
   python -I addon_scan.py list <file.vpk|file.gma|legacy.bin|folder>

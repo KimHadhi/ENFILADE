@@ -124,3 +124,7 @@ __pycache__/
 
 # The game's own tables written out by the console's /mods export (a copy to make mods from)
 /Mods/_게임 원본/
+
+# Caches the Poiyomi/Thry shader editor rewrites by itself
+/Thry/preset_cache.txt
+/Thry/presets_known_materials.txt

@@ -1,60 +1,78 @@
 # ENFILADE
 
-이동·파쿠르와 원거리·근접 전투를 개발하는 Unity 1인칭 액션 프로젝트다. **Unity 6000.3.27f1**을 사용한다. 실제 버전은 [ProjectVersion.txt](ProjectSettings/ProjectVersion.txt), 패키지는 [manifest.json](Packages/manifest.json)과 [packages-lock.json](Packages/packages-lock.json)이 기준이다.
+1~4명이 함께 하는 1인칭 좀비 액션 게임이다. 발까지 보이는 진짜 1인칭 몸으로 달리고, 넘고, 미끄러지고, 총과 주먹과 칼로 싸운다. **Unity 6000.3.27f1**, URP를 쓴다. 정확한 버전은 [ProjectVersion.txt](ProjectSettings/ProjectVersion.txt), 패키지는 [manifest.json](Packages/manifest.json)이 기준이다.
+
+**0.9.0**은 프로젝트 구조를 처음부터 다시 정리한 판이다. 예전 자리에서 무엇이 어디로 갔는지는 [구조 안내의 표](Docs/Architecture.md#090에서-바뀐-자리)에 있다.
 
 ## 바로 실행하기
 
-1. Unity Hub에서 **이 README가 있는 폴더**를 프로젝트로 추가한다. 폴더 이름이나 저장 위치를 바꿨다면 새 경로로 다시 추가한다.
-2. 지정된 Unity 버전으로 열고 패키지 복원·임포트·컴파일을 기다린다.
-3. [CombatFoundation](Assets/_Project/Scenes/Development/CombatFoundation.unity)을 열고 Play한다. Game 창을 클릭해 마우스를 잠근 뒤 버튼을 놓았다 다시 누른다.
-4. **1**은 소총, **2**는 피스톨, **3/4**의 빈 슬롯은 주먹이다. 같은 슬롯 키를 다시 누르면 장비를 내린다. 시작 시에는 장비를 들고 있지 않다.
-5. WASD 이동, Shift 달리기, Space 점프, Ctrl 앉기·슬라이드, Z 다이브·포복, Alt 회피, Q/E 기울이기, V 밀치기(달리는 중이면 돌진 밀치기), F 처형. 좌클릭 공격, 우클릭 ADS·가드, R 장전, F5 뒤에서 몸 보기, **Esc 일시정지·설정**(볼륨·감도·상하 반전·앉기/기울이기 전환·시야각·화면 흔들림·내 머리카락 보기, [설정 안내](Assets/_Project/Docs/MaintenanceGuide.md#플레이어-설정-esc-메뉴)).
+1. Unity Hub에서 **이 README가 있는 폴더**를 프로젝트로 추가하고, 지정된 Unity 버전으로 연다.
+2. [MainMenu](Assets/_Project/Scenes/MainMenu.unity) 씬을 열고 Play한다. 빌드의 첫 씬도 메인 메뉴다.
+3. 메인 메뉴에서 혼자 하기나 방 만들기를 고르면 허브(은신처)로 간다. 허브의 지도 탁자에서 장을 고르고 준비 버튼을 눌러 출발한다.
 
 | 씬 | 용도 |
 | --- | --- |
-| [CombatFoundation](Assets/_Project/Scenes/Development/CombatFoundation.unity) | 무기·적·HUD 통합 개발 씬. 빌드의 첫 씬 |
-| [MovementAbilityPlayground](Assets/_Project/Scenes/Development/MovementAbilityPlayground.unity) | 이동·파쿠르 시험장. 표면별 발소리 판, 사다리, 집라인이 있다. 채팅의 `/map 씬이름`으로 두 씬을 오간다 |
+| [MainMenu](Assets/_Project/Scenes/MainMenu.unity) | 메인 메뉴: 플레이 방식, 클래스, 무기, 캐릭터와 옷장, 기록 |
+| [Hub](Assets/_Project/Scenes/Hub/Hub.unity) | 걸어 다니는 은신처: 장 고르기, 클래스 벽, 총 진열대, 사격장, 거울, 장 결과 연출 |
+| [Campaign](Assets/_Project/Scenes/Campaign) Ch1~Ch4 | 캠페인: 옥상 탈출, 막힌 고가도로, 지하철, 공항 |
+| [EnfiladeTower](Assets/_Project/Scenes/Campaign/EnfiladeTower.unity) | 엔필레이드 타워: 1~4명 시련의 탑 |
+| [Development](Assets/_Project/Scenes/Development) | 테스팅 룸(전투·이동 시험장). 메뉴에는 없고 콘솔 `/testroom`으로 간다 |
 
-메인 메뉴는 새 컨셉으로 다시 만들 예정이라 지금은 없다.
+허브와 캠페인·타워 씬은 코드로 짓는다. 맵을 고쳤으면 Unity의 **ENFILADE → 맵** 메뉴에서 다시 짓는다.
+
+## 기본 조작
+
+키는 게임의 **설정 → 조작 → 키 설정**에서 보고 바꾼다. 처음 값은 다음과 같다.
+
+| 하는 일 | 키 |
+| --- | --- |
+| 이동 · 달리기 · 점프 | WASD · Shift · Space |
+| 앉기·슬라이드 · 다이브·포복 · 회피 · 기울이기 | Ctrl · Z · Alt · Q/E |
+| 공격 · 조준/가드 · 장전 | 좌클릭 · 우클릭 · R |
+| 무기 칸 | 1~4 (같은 키를 다시 누르면 내린다) |
+| 밀치기(달리는 중이면 돌진) · 투척 · 돌 던지기 · 노크 | V · G · T · H |
+| 상호작용·처형 (길게 누르면 가리키기) | F |
+| 능력 카드 · 총 꾸미기 · 점수판 | X · C · Tab |
+| 콜아웃 휠 | 마우스 뒤로 버튼 |
+| 뒤에서 몸 보기 · 일시정지·설정 · 개발자 콘솔 | F5 · Esc · ` |
 
 ## 필요한 안내 찾기
 
 | 하려는 일 | 안내 |
 | --- | --- |
-| 이동·슬라이드·다이브·회피·파쿠르 조작, 착지 단계, 사다리·집라인 | [이동 안내](Assets/_Project/Docs/MovementGuide.md) |
-| 무기·적·전투 UI를 만들거나 수정 | [전투 제작 안내](Assets/_Project/Docs/CombatFoundationGuide.md) |
-| 현재 전투 규칙과 이후 기획 확인 | [전투 규칙과 확장 계획](Assets/_Project/Docs/WeaponSystemDesign.md) |
-| 체력·무기·적·웨이브·이동·몸·소리 숫자 변경 (CSV 표, 컴파일 불필요) | [밸런스 표](Assets/_Project/Docs/MaintenanceGuide.md#밸런스-표-data-tables), [Resources/Tables](Assets/_Project/Resources/Tables) |
-| 설정 수치 변경·저장, 폴더 이름 변경 후 복구 | [설정·유지보수 안내](Assets/_Project/Docs/MaintenanceGuide.md) |
-| 3D 모델·텍스처 추가 (폴더 규칙, 자동 임포트 설정) | [3D 모델 추가하기](Assets/_Project/Docs/MaintenanceGuide.md#3d-모델-추가하기) |
-| 맵의 하늘·해와 달·조명 기구·안개·반사·간접광 굽기, 공통 화면 설정 | [조명 안내](Assets/_Project/Docs/LightingGuide.md) |
-| 플레이어 몸(진짜 1인칭)·눈 시점·손발 IK·캐릭터 교체·애니메이션 추가 | [플레이어 몸](Assets/_Project/Docs/PlayerBodyGuide.md) |
-| 사운드 추가·교체, 전투·이동·목소리 소리의 폴더와 연결 위치 | [사운드 관리](Assets/_Project/Docs/MaintenanceGuide.md#사운드를-추가하거나-교체하기) |
-| GMod 애드온에서 옮긴 것과 남은 일 | [애드온 이식 기록](Assets/_Project/Docs/AddonPortNotes.md) |
-| 외부 에셋의 출처, 나중에 뺄 에셋 확인 | [외부 에셋 출처](Assets/_Project/Docs/AssetSources.md) |
-| 수정할 코드 찾기 | [스크립트 길잡이](Assets/_Project/Scripts/README.md) |
-| 전투 또는 이동 코드 확장 | [전투 코드 구조](Assets/_Project/Scripts/Combat/README.md), [이동 코드 구조](Assets/_Project/Scripts/Player/Movement/README.md) |
-| 변경 사항 검사 | [검증 안내](Assets/_Project/Docs/ValidationGuide.md) |
+| 프로젝트가 어떻게 짜여 있는지, 새 기능을 어디에 두는지 | [구조 안내](Docs/Architecture.md) |
+| 모드 만들기 (표만 고치는 모드, Unity로 만드는 모드) | [모드 만들기](Docs/Modding.md), [Mods 폴더](Mods/README.md) |
+| 수정할 코드 찾기 | [스크립트 길잡이](Assets/_Project/Scripts/README.md) (폴더마다 README가 있다) |
+| 체력·무기·적·이동 같은 숫자 바꾸기 (CSV 표, 컴파일 불필요) | [표 안내](Docs/Guides/MaintenanceGuide.md#밸런스-표-data-tables), [Resources/Tables](Assets/_Project/Resources/Tables) |
+| 화면 글자 고치기, 번역 | Unity의 ENFILADE → 글자 → 글자 편집기, [화면 문구](Docs/Guides/MaintenanceGuide.md#화면-문구-textscsv) |
+| 이동·파쿠르 조작과 수치 | [이동 안내](Docs/Guides/MovementGuide.md) |
+| 무기·적·전투 UI 만들기 | [전투 제작 안내](Docs/Guides/CombatFoundationGuide.md), [전투 규칙](Docs/Guides/WeaponSystemDesign.md) |
+| 플레이어 몸, 캐릭터와 옷, 애니메이션 | [플레이어 몸](Docs/Guides/PlayerBodyGuide.md) |
+| 맵의 하늘·조명·반사·간접광 | [조명 안내](Docs/Guides/LightingGuide.md) |
+| 소리·모델 추가, 설정, 글꼴, HUD 겹침 검사 | [설정·유지보수 안내](Docs/Guides/MaintenanceGuide.md) |
+| 기능별 설명 (클래스 카드, 타워, 처형, 투척물, 좀비 엘리트 등) | [Docs/Features](Docs/Features) |
+| 외부 에셋의 출처, 워크숍 애드온에서 옮긴 것 | [외부 에셋 출처](Docs/Records/AssetSources.md), [애드온 이식 기록](Docs/Records/AddonPortNotes.md) |
+| 모든 문서의 목록 | [문서 목차](Docs/README.md) |
 
 ## 폴더 구성
 
 | 위치 | 내용 |
 | --- | --- |
-| `Assets/_Project/Scripts` | 게임 로직·UI·디버그 코드 |
-| `Assets/_Project/Editor` | 편집 전용 도구: 표 다시 읽기, 모델 임포트 규칙·물리 프랍, 소리 묶음·몸 프로필 자동 생성, HUD 편집 미리보기, 폰트 저장 |
-| `Assets/_Project/Data` | 무기 ScriptableObject와 UI 프로필 |
-| `Assets/_Project/Resources` | 실행 중 키로 로드하는 설정·셰이더·소리 묶음·몸 프로필·볼륨 프로필, `Tables`의 CSV 표 |
-| `Assets/_Project/Scenes`, `Prefabs` | 씬·NavMesh / 적·UI·이펙트 프리팹 |
-| `Assets/_Project/Art`, `Input`, `Settings` | 프로젝트 3D 모델(`Art/Models`)·애니메이션(`Art/Animations`)·그래픽·오디오 / 입력 / 렌더링 설정 |
-| `Assets/_Project/Docs` | 조작·제작·구조·검증 문서 |
-| `Assets/ThirdParty` | 외부 소총 모델·폰트·TextMesh Pro 원본 |
-| `Assets/ProBuilder Data`, `Assets/ProjectSettings` | 도구가 관리하는 데이터 |
-| `Packages`, `ProjectSettings` | 패키지 버전·잠금 정보 / Unity 프로젝트 설정 |
-| `Tools` | Unity 없이 문서 링크·메타데이터 구조 확인, `Blender`의 Source 모델·애니메이션 변환 스크립트 |
+| `Assets/_Project` | 게임 그 자체. 안의 구성은 [구조 안내](Docs/Architecture.md#assets_project-안) |
+| `Assets/_Project/Scripts` | 게임 코드, 기능별 폴더 16개 |
+| `Assets/_Project/Editor` | Unity 편집기 도구 (메뉴 막대의 **ENFILADE** 메뉴) |
+| `Assets/_Project/Resources/Tables` | 게임의 모든 숫자와 글자: 분야별 폴더의 CSV 표 |
+| `Assets/ThirdParty` | 사거나 받은 에셋 팩 |
+| `Assets/_PoiyomiShaders`, `_LockedShaderCache`, `ProBuilder Data` | 도구가 자리를 정해 둔 폴더 (Poiyomi 셰이더, ProBuilder) |
+| `Mods` | 모드 폴더. 게임을 켤 때 읽는다 ([안내](Mods/README.md)) |
+| `Docs` | 문서 |
+| `ArtSource` | 블렌더 작업실 (애니메이션을 손보고 저장하면 게임에 들어간다) |
+| `Tools` | Unity 밖에서 쓰는 도구: 블렌더 스크립트, 아이콘·소리 만들기, 구조 검사 |
+| `Packages`, `ProjectSettings` | 패키지 목록, Unity 프로젝트 설정 |
 
 ## 변경 후 확인하기
 
-CombatFoundation을 Play해 바꾼 기능을 직접 조작한다. 확인 항목과 선택적인 Unity 메뉴 검사는 [검증 안내](Assets/_Project/Docs/ValidationGuide.md)에 있다. 에셋을 옮기거나 문서를 고쳤다면 프로젝트 루트에서 링크·메타데이터를 확인한다.
+바꾼 기능은 직접 플레이해서 확인한다([검증 안내](Docs/Guides/ValidationGuide.md)). 파일을 옮기거나 문서를 고쳤다면 프로젝트 맨 위에서 링크와 메타 파일을 검사한다. Unity 없이 몇 초면 끝난다.
 
 ```powershell
 & ./Tools/Test-ProjectStructure.ps1

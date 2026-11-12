@@ -1,5 +1,5 @@
 # Writes one ceiling fluorescent light as an FBX for Unity, from Poly Haven's "Mounted Fluorescent Lights" (CC0).
-# The download holds seven variants side by side (a-g); Docs/LightingGuide.md uses variant a only.
+# The download holds seven variants side by side (a-g); Docs/Guides/LightingGuide.md uses variant a only.
 # Usage: blender -b --factory-startup --disable-autoexec mounted_fluorescent_lights_2k.blend --python fluorescent_light_to_fbx.py -- <out.fbx> [variant]
 # The object's origin is its mounting face and the light hangs 3.5 cm below it, so it is placed at the ceiling's underside.
 import sys

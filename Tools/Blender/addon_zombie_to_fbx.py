@@ -7,7 +7,7 @@
 #   heels to the toes, then dropped onto z = 0 with the pelvis over the origin. Forward goes to Blender -Y, which the FBX
 #   export (forward -Z, up Y) turns into Unity +Z.
 # - metres at the project's Source scale: SourceIO reads 1 unit as 0.01905 m (Source's map scale); characters here use
-#   0.025 m (Docs/AddonPortNotes.md, unit), so a 72-unit infected stands 1.8 m tall.
+#   0.025 m (Docs/Records/AddonPortNotes.md, unit), so a 72-unit infected stands 1.8 m tall.
 # - a humanoid avatar: the ValveBiped bones are kept as they are; Unity maps them itself (the .meta asks for a humanoid
 #   made from the model, as Hiro's does).
 # - its name says its sex ("_Male_", "_Female_") for ZombieVoice.

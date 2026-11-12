@@ -3,7 +3,7 @@ using System.Text;
 using UnityEngine;
 
 /// <summary>
-/// The console's /card, for trying the class cards out (Docs/ClassCards.md): a final card waits until four levels of
+/// The console's /card, for trying the class cards out (Docs/Features/ClassCards.md): a final card waits until four levels of
 /// its class's cards are held, which takes a long campaign of full gauges to reach by hand. Registered beside the other
 /// console commands (GameCommands). It only raises this PC's own player's perks, as picking the card would.
 /// </summary>

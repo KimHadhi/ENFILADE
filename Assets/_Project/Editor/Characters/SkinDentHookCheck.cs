@@ -7,7 +7,7 @@ using UnityEngine;
 /// Shader/Includes (marked ENFILADE: lil_common_vert.hlsl for every pass, lil_pass_forward_fakeshadow.hlsl for the hair's
 /// fake shadow on a face). Updating lilToon puts its own files back and drops them, and then nothing says so: the
 /// fingertips press and the sounds play, but no skin gives. So each time the scripts load, the editor looks for them once
-/// and warns when they are gone (how to put them back: Assets/_Project/Docs/Poke.md).
+/// and warns when they are gone (how to put them back: Docs/Features/Poke.md).
 /// </summary>
 [InitializeOnLoad]
 public static class SkinDentHookCheck
@@ -28,7 +28,7 @@ public static class SkinDentHookCheck
             catch (IOException) { continue; }
             if (text.Contains("Art/Shaders/SkinDent.hlsl") && text.Contains("EnfiladeSkinDent(")) continue;
             Debug.LogWarning($"[SkinDent] lilToon's {file} has lost the ENFILADE lines (lilToon updated?): friends' pokes " +
-                "won't dent the skin. Put the marked blocks back (Assets/_Project/Docs/Poke.md).");
+                "won't dent the skin. Put the marked blocks back (Docs/Features/Poke.md).");
         }
     }
 }

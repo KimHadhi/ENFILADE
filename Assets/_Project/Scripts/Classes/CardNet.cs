@@ -4,7 +4,7 @@ using Unity.Netcode;
 using UnityEngine;
 
 /// <summary>
-/// The class cards' effects seen on every PC (Docs/ClassCards.md): what a card does is judged on its player's own PC
+/// The class cards' effects seen on every PC (Docs/Features/ClassCards.md): what a card does is judged on its player's own PC
 /// (ClassCards), and how it looks goes out to the others here, a named message (ENFILADE.CardFx) a guest sends the host
 /// and the host hands on to everyone else, as MoneyDrops does. The sender has already drawn it; the others draw it
 /// where it happened (CardFx). Alone nothing is sent. Hits and stuns travel the usual ways (EnemyNetwork); only the

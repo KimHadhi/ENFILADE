@@ -42,7 +42,7 @@ using UnityEngine;
 /// stack, buff and wait back to nothing, the class's guns full, and the Détente's and Support's kits as they start, the
 /// last pick's barricades down (OnPicked; the user, 2026-11-12: "클래스 선택할 때 초기화 하는 방식 어때?").
 /// The other classes' abilities come in later stages (Classes.csv ready 0). Numbers: Tables/ClassAbilities.
-/// The class cards with code behind them (Docs/ClassCards.md) are ClassCards', added here; a Point's Gunslinger card and
+/// The class cards with code behind them (Docs/Features/ClassCards.md) are ClassCards', added here; a Point's Gunslinger card and
 /// a Ghost's White Tiger guard are read here (DamageFactor, OnHurt).
 /// What a kill, a headshot or a mark does here takes any foe (ICombatFoe): a zombie, or a practice target on the hub's
 /// range, so every class can be tried out there before a run (its kills never reach the run's counts: GunFeelDirector).
@@ -348,7 +348,7 @@ public sealed class ClassKit : MonoBehaviour
         if (support == null && (support = GetComponent<SupportKit>()) == null) support = gameObject.AddComponent<SupportKit>();
         // A Knight's cover.
         if (cover == null && (cover = GetComponent<KnightCover>()) == null) cover = gameObject.AddComponent<KnightCover>();
-        // The class cards with code behind them (Docs/ClassCards.md).
+        // The class cards with code behind them (Docs/Features/ClassCards.md).
         if (cards == null && (cards = GetComponent<ClassCards>()) == null) cards = gameObject.AddComponent<ClassCards>();
         if (!kitGiven) TryGiveKit();
         // A gun drawn: a Point's Gunslinger card counts from now.

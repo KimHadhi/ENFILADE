@@ -7,6 +7,11 @@ $assetRoot = Join-Path $projectRoot 'Assets'
 $problems = [System.Collections.Generic.List[string]]::new()
 $docs = @(Get-Item -LiteralPath (Join-Path $projectRoot 'README.md'))
 $docs += @(Get-ChildItem -LiteralPath (Join-Path $assetRoot '_Project') -Recurse -File -Filter '*.md')
+# The documents outside Assets: the guides, the mods folder's guide, the tools' and the Blender workspaces' notes.
+foreach ($folder in 'Docs', 'Mods', 'Tools', 'ArtSource') {
+    $path = Join-Path $projectRoot $folder
+    if (Test-Path -LiteralPath $path) { $docs += @(Get-ChildItem -LiteralPath $path -Recurse -File -Filter '*.md') }
+}
 foreach ($doc in $docs) {
     $body = Get-Content -LiteralPath $doc.FullName -Raw -Encoding UTF8
     foreach ($match in [regex]::Matches($body, '\]\(([^)]+)\)')) {
@@ -16,6 +21,13 @@ foreach ($doc in $docs) {
         $target = Join-Path $doc.DirectoryName $relativePath
         if (!(Test-Path -LiteralPath $target)) { $problems.Add("Broken link: $($doc.FullName) -> $link") }
     }
+}
+
+# Tables are found by file name alone (GameTables), so a name may stand in one folder of Resources/Tables only.
+$tables = @{}
+foreach ($table in Get-ChildItem -LiteralPath (Join-Path $assetRoot '_Project\Resources\Tables') -Recurse -File -Filter '*.csv') {
+    if ($tables.ContainsKey($table.BaseName)) { $problems.Add("Two tables named $($table.BaseName): $($table.FullName) and $($tables[$table.BaseName])") }
+    else { $tables[$table.BaseName] = $table.FullName }
 }
 
 $guids = @{}
@@ -43,4 +55,4 @@ if ($problems.Count -gt 0) {
     $problems | Write-Output
     throw "Project structure checks failed: $($problems.Count) problem(s)."
 }
-Write-Output "PROJECT_STRUCTURE_CHECKS_PASSED: $($docs.Count) documents, $assetCount assets/folders, $($guids.Count) unique GUIDs."
+Write-Output "PROJECT_STRUCTURE_CHECKS_PASSED: $($docs.Count) documents, $($tables.Count) tables, $assetCount assets/folders, $($guids.Count) unique GUIDs."

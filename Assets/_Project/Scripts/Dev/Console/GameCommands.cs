@@ -10,7 +10,7 @@ public static class GameCommands
     public static void Register(ChatCommandRouter router, Func<SinglePlayerChatManager> findChat)
     {
         PlayerConsoleCommands.Register(router, () => PlayerRoster.Local);
-        CardCommands.Register(router); // /card: the class cards at once, for trying them (Docs/ClassCards.md)
+        CardCommands.Register(router); // /card: the class cards at once, for trying them (Docs/Features/ClassCards.md)
         CombatTestCommands.Register(router, findChat);
         router.Register("help", "명령어 목록", _ => router.Help());
         router.Register("mods", "불러온 모드 목록 · reload 모드와 표 다시 읽기 · export 게임의 원래 표를 Mods 폴더에 꺼내기", GameMods.Command);

@@ -12,7 +12,7 @@ using UnityEngine;
 ///   down at the same moment, whatever their length or where their file starts.
 /// The table's playback speeds before this were guesses and set to the movement's speeds (Body.runClipSpeed 4.9 for a
 /// run whose feet carry Mayo at 3.0 m/s), so the feet skated 30-60% of the speed (2026-11-12, measured in Blender: see
-/// Docs/PlayerBodyGuide.md). Nothing here is written for one clip or one character: any humanoid cycle on any humanoid
+/// Docs/Guides/PlayerBodyGuide.md). Nothing here is written for one clip or one character: any humanoid cycle on any humanoid
 /// measures itself, so a modder's character or clip runs at its own stride. One clip on one model is measured once and kept.
 /// </summary>
 internal static class GaitClips

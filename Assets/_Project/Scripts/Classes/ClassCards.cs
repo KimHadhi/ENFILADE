@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// The class cards that need more than a number (Docs/ClassCards.md; the numbers alone are PlayerPerks.AbilityBonus),
+/// The class cards that need more than a number (Docs/Features/ClassCards.md; the numbers alone are PlayerPerks.AbilityBonus),
 /// at work for this PC's own player (ClassKit adds it). What they do is judged here, where the player's own hits are;
 /// how they look goes to every PC (CardNet, CardFx).
 /// <list type="bullet">
@@ -22,7 +22,7 @@ using UnityEngine.UI;
 /// <item>Assault, the phantom cavalry (유령 기병대, its final card; the user's "돌진할 때 일직선으로 적들 쓸고 나가는"):
 /// a CHARGE sends five riders galloping out along where they look, and whatever stands in their line is hit and thrown
 /// aside, knocked down (a brute only reels).</item>
-/// <item>Knight, 비껴 흘리기 (the user's name, checked against the dictionary: Docs/ClassCards.md): a parried blow slides
+/// <item>Knight, 비껴 흘리기 (the user's name, checked against the dictionary: Docs/Features/ClassCards.md): a parried blow slides
 /// off sideways, the zombie stumbles and loses more posture, a white arc running off the parry.</item>
 /// <item>Knight, 되치기 (Dying Light's grab counter, at the user's word): grabbed, a ring closes on a mark round the
 /// crosshair; the shove key as it meets it throws the zombie, its posture broken for the execution, with REVERSAL slammed

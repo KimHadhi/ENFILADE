@@ -20,7 +20,7 @@ using UnityEngine.UI;
 /// the gauge is spent and the perk goes up a level (PlayerPerks). X or Esc puts the cards away and keeps the gauge.
 /// Alone the game stops while they are up; in a room it keeps running and only the combat keys wait (so 1, 2 and 3 pick
 /// instead of switching guns). Also applies the health perk to this player's body. Added to this PC's own player only.
-/// Since the class cards (2026-11-11, Docs/ClassCards.md) the three are drawn from everyone's cards and this player's
+/// Since the class cards (2026-11-11, Docs/Features/ClassCards.md) the three are drawn from everyone's cards and this player's
 /// class's own (PlayerPerks.Dealable); each card says under its name, small and slanted, why it works (the user's rule
 /// that an effect comes with a believable reason), and a class's final card (궁극) wears a pink frame from the start.
 /// Once every card this player can be dealt is taken, the prompt reads "궁극 준비" and X spends the full gauge on the
@@ -478,7 +478,7 @@ public sealed class PerkCardScreen : MonoBehaviour
         if (host == null) return;
         var keyboard = Keyboard.current;
         bool able = player.IsInitialized && receiver != null && receiver.IsAlive && !player.IsDowned;
-        // Every card taken, the full gauge buys the class's ultimate instead (Docs/ClassCards.md: ClassCards.Ultimate).
+        // Every card taken, the full gauge buys the class's ultimate instead (Docs/Features/ClassCards.md: ClassCards.Ultimate).
         bool cards = AnyLeft(), ultimate = !cards && ClassCards.Local != null && ClassCards.Local.HasUltimate;
         bool ready = able && player.Ultimate != null && player.Ultimate.IsReady && (cards || ultimate);
         if (open && !able && picked < 0) Close();

@@ -1,6 +1,6 @@
 # 이동 코드 구조
 
-[프로젝트 안내](../../../../../README.md) · [스크립트 길잡이](../../README.md) · [이동 조작·설정](../../../Docs/MovementGuide.md) · [플레이어 몸](../../../Docs/PlayerBodyGuide.md) · [검증 안내](../../../Docs/ValidationGuide.md)
+[프로젝트 안내](../../../../../README.md) · [스크립트 길잡이](../../README.md) · [이동 조작·설정](../../../../../Docs/Guides/MovementGuide.md) · [플레이어 몸](../../../../../Docs/Guides/PlayerBodyGuide.md) · [검증 안내](../../../../../Docs/Guides/ValidationGuide.md)
 
 이 문서는 이동 시스템을 수정할 때의 진입점과 유지해야 할 규칙을 설명합니다. 조작법과 기본 수치는 이동 안내에서 관리합니다.
 
@@ -136,4 +136,4 @@ Slide 내부의 자세 전환은 부모를 다시 진입하지 않으므로 같�
 
 ## 검증
 
-확인 항목은 [검증 안내](../../../Docs/ValidationGuide.md)를 따릅니다. 문서에 적힌 기본값만으로 실제 씬 설정을 대신하지 않으므로, 수치를 바꾼 뒤에는 실제 플레이로 확인합니다.
+확인 항목은 [검증 안내](../../../../../Docs/Guides/ValidationGuide.md)를 따릅니다. 문서에 적힌 기본값만으로 실제 씬 설정을 대신하지 않으므로, 수치를 바꾼 뒤에는 실제 플레이로 확인합니다.

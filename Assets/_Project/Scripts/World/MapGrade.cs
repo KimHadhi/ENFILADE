@@ -10,7 +10,7 @@ using UnityEngine.SceneManagement;
 /// scene's name): a global volume made when the scene loads, under every effect's own volume, so it needs no rebuild.
 /// It grades only with what no runtime effect writes. The kill screen (KillConfirmEffect), low health (LowHealthGrade),
 /// the death screen and the fall warp write exposure, contrast, saturation, colour filter, white balance, bloom,
-/// vignette, lens distortion and chromatic aberration as absolute values (Docs/MaintenanceGuide, 화면 후처리), so a map
+/// vignette, lens distortion and chromatic aberration as absolute values (Docs/Guides/MaintenanceGuide, 화면 후처리), so a map
 /// moving any of those would make every kill flatten or darken its screen. This uses split toning (a colour mixed into
 /// the shadows and one into the highlights, worked out in gamma: the midtones, the avatars' skin, take half of each and
 /// the two mostly cancel there) and Color Curves: the master curve as an S through linear 18% grey (contrast without

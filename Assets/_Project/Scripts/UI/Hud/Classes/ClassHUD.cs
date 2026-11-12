@@ -15,7 +15,7 @@ using UnityEngine.UI;
 /// Back's stacks on the draining bar; for a Détente its syringe as a pip a dose, red, "[휠] 주사" while a dose is in it,
 /// how many Resurrections are left beside them, and on the bar a treatment or a Resurrection under way, else Golden
 /// Hour. Classes whose abilities come later show their name only.
-/// The class cards (Docs/ClassCards.md): a thin pink line over the plate runs out while Momentum (기세) lasts and fills
+/// The class cards (Docs/Features/ClassCards.md): a thin pink line over the plate runs out while Momentum (기세) lasts and fills
 /// again with each hit; a card state under way takes the bar along the foot (ClassCards: a Ghost's White Tiger in
 /// white, its Head Hunter pips white with it; a Point's Gunslinger after a gun is drawn).
 /// Local player only (PlayerMovement). HUD look: black, white and pink.

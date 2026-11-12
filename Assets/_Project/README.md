@@ -1,14 +1,16 @@
-# ENFILADE 프로젝트 안내
+# ENFILADE 프로젝트 폴더
 
-시작 안내와 문서 목차는 프로젝트 루트의 **[README](../../README.md)**에서 관리한다.
+게임 그 자체가 이 폴더에 있다. 시작 안내는 프로젝트 맨 위의 **[README](../../README.md)**, 구조는 **[구조 안내](../../Docs/Architecture.md)**에 있다.
 
-- [이동 조작](Docs/MovementGuide.md)
-- [플레이어 몸](Docs/PlayerBodyGuide.md)
-- [전투 제작](Docs/CombatFoundationGuide.md)
-- [설정·유지보수](Docs/MaintenanceGuide.md)
-- [스크립트 길잡이](Scripts/README.md)
-- [검증 방법](Docs/ValidationGuide.md)
-- [애드온 이식 기록](Docs/AddonPortNotes.md)
-- [외부 에셋 출처](Docs/AssetSources.md)
+| 폴더 | 무엇 |
+| --- | --- |
+| [Scripts](Scripts/README.md) | 게임 코드 (기능별 폴더, 폴더마다 README) |
+| [Editor](Editor/README.md) | Unity 편집기 도구 (ENFILADE 메뉴) |
+| [Resources/Tables](Resources/Tables) | 게임의 모든 숫자와 글자 (분야별 CSV 표) |
+| Resources | 실행 중에 이름으로 읽는 에셋 |
+| Data | 편집기 도구가 만들어 두는 에셋 (무기 데이터, 총 프리팹, 구운 클립) |
+| Art | 그림, 소리, 모델, 애니메이션 |
+| Prefabs, Scenes | 프리팹, 씬 |
+| Input, Settings | 입력 액션, 렌더링 설정 |
 
-이 파일은 Unity Project 창에서 루트 안내를 찾기 위한 진입점이다.
+문서는 모두 [Docs](../../Docs/README.md)에, 모드는 [Mods](../../Mods/README.md)에 있다.

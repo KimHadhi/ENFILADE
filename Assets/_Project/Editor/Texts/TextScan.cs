@@ -8,7 +8,7 @@ using UnityEngine;
 
 /// <summary>
 /// The 하드코딩 검사 (ENFILADE → 글자 → 하드코딩 검사, the 글자 편집기's 검사 tab) and the editor's "쓰는 곳". Every word a
-/// player reads belongs in Texts.csv (Docs/MaintenanceGuide.md, 화면 문구), so this finds the ones that slipped past it:
+/// player reads belongs in Texts.csv (Docs/Guides/MaintenanceGuide.md, 화면 문구), so this finds the ones that slipped past it:
 /// Korean written straight into runtime code (sorted into words that may reach the screen and developer words: console
 /// answers, logs, inspector tips, object names), English words put on a label in code, prefab and scene texts in Korean
 /// with no TextKey, data table cells holding words instead of a Texts id, ids code or tables ask for that the table lacks

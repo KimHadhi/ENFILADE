@@ -3,7 +3,7 @@ using Unity.Netcode;
 using UnityEngine;
 
 /// <summary>
-/// The class cards' and special moments' looks in the world (Docs/ClassCards.md). Every PC draws them: the card's player
+/// The class cards' and special moments' looks in the world (Docs/Features/ClassCards.md). Every PC draws them: the card's player
 /// at once, the others as CardNet tells them, so the one who did it sees what the others see (the user, 2026-11-12:
 /// "내가 보는 화면이 진실이라서 남이 보는 세상과 … 똑같았으면"). Short and bright, nothing left lying.
 /// Since the special-moment picks of 2026-11-12, most of them are MomentFx's (the restrained language, MomentLook):

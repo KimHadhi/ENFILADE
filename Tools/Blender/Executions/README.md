@@ -1,7 +1,7 @@
 # ENFILADE paired executions tools
 
 User entry point: `ArtSource/Executions/START_EXECUTION_ANIMATION.cmd`.
-User guide (Korean): `ArtSource/Executions/START_HERE.md`. Game side: `Assets/_Project/Docs/Executions.md`.
+User guide (Korean): `ArtSource/Executions/START_HERE.md`. Game side: `Docs/Features/Executions.md`.
 
 The workspace opens ready to work in, and saving sends the work to the game, so the user only poses and times (the user,
 2026-11-13: "내가 해야 하는 잡일을 최대한 줄여. 나는 딱 오직 인간만이 할 수 있는 것만 해내면 되게끔").
