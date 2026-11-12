@@ -151,9 +151,14 @@ public sealed class ZombieCharger : MonoBehaviour
         if (agent != null && agent.isActiveAndEnabled && agent.isOnNavMesh) agent.velocity = Vector3.zero;
     }
 
+    private ZombieBreach breach;
+
     private void Chase(PlayerMovement player, float dt)
     {
         cooldownLeft -= dt;
+        // At a Support's barricade it breaks through first, rather than charge someone across it (ZombieBreach).
+        if (breach == null) TryGetComponent(out breach);
+        if (breach != null && breach.Driving) return;
         if (cooldownLeft > 0f || player == null || (mind != null && !mind.Ready)) return;
         Vector3 to = Flat(player.transform.position - transform.position);
         float distance = to.magnitude;

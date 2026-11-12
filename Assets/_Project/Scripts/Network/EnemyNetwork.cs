@@ -204,11 +204,13 @@ public sealed class EnemyNetwork : NetworkBehaviour
         foreach (var part in GetComponentsInChildren<Collider>()) part.enabled = false;
     }
 
-    /// <summary>The host's enemy began an attack on this player.</summary>
+    /// <summary>The host's enemy began an attack on this player (null: on nobody's, a Support's barricade: ZombieBreach).</summary>
     internal void AnnounceWindup(PlayerMovement victim, int combo, AttackMove move)
     {
         if (!IsSpawned) return;
-        ulong client = victim.TryGetComponent(out NetworkObject player) ? player.OwnerClientId : NetworkManager.ServerClientId;
+        // No client has this id, so every copy shows the windup and none judges a blow of it on its player.
+        ulong client = victim == null ? ulong.MaxValue
+            : victim.TryGetComponent(out NetworkObject player) ? player.OwnerClientId : NetworkManager.ServerClientId;
         WindupRpc(client, combo, (byte)move);
     }
 

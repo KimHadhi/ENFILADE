@@ -204,6 +204,10 @@ public sealed class EnemyCombatAI : MonoBehaviour
         // Nor a memo elite while it moves itself (a ninja in its smoke, a candyman dragging, a breadbag's cut running on).
         if (Elite != null && Elite.Driving) { if (preparing) CancelAttack(); timer = 0f; return; }
 
+        // Going at a Support's barricade, it swings at the planks, whatever its kind (ZombieBreach walks it there).
+        if (breach == null) TryGetComponent(out breach);
+        if (breach != null && breach.Driving) { TickBreach(dt); return; }
+
         // A runner doesn't swing: ZombieRunner starts its leap (Pounce), and here it lands.
         if (pounces)
         {
@@ -272,6 +276,37 @@ public sealed class EnemyCombatAI : MonoBehaviour
         return delta.y > 0f && delta.y <= agent.height + reachAbove && new Vector2(delta.x, delta.z).magnitude <= attackRange
             && !EnemyHead.Carries(this, target) && EnemyHead.OnAnyHead(target);
     }
+    // Its swing at the planks (ZombieBreach): the same swing, windup, cue and voice as at a player, its windup shown on
+    // every PC as nobody's to answer, the blow landing on the host (ZombieBreach.Hit) through the barricade's own damage
+    // path. One that doesn't swing at them (an exploder: its fuse lights at them, ZombieExploder) only walks up.
+    private void TickBreach(float dt)
+    {
+        if (!breach.Swinging || breach.Blow <= 0f)
+        {
+            if (preparing) CancelAttack();
+            timer = attackInterval * .5f;
+            return;
+        }
+        if (!preparing)
+        {
+            timer += dt;
+            if (timer < attackInterval) return;
+            preparing = true; timer = 0f; comboIndex = 0; move = AttackMove.Swing;
+            lockedAim = breach.Face;
+            UpdateIndicator(true);
+            Telegraph(false);
+            if (network != null) network.AnnounceWindup(null, 0, move);
+            return;
+        }
+        timer += dt;
+        if (timer < Windup) return;
+        preparing = false;
+        timer = 0f;
+        UpdateIndicator(false);
+        breach.Hit();
+    }
+    private ZombieBreach breach;
+
     private void BeginWindup()
     {
         preparing = true; timer = 0f;
@@ -305,7 +340,9 @@ public sealed class EnemyCombatAI : MonoBehaviour
         if (Elite != null) Elite.Struck(move);
 
         bool finisher = move == AttackMove.Pounce || comboIndex >= Mathf.Max(1, comboHits) - 1;
-        // Aimed at someone on another PC, the swing lands there. A parry comes back as a stun, which ends the combo.
+        // Aimed at someone on another PC, the swing lands there. A parry comes back as a stun, which ends the combo. Standing
+        // at planks, that blow lands on them, and is heard here too (their wear comes from that PC).
+        if (player.IsNetworkDriven && move == AttackMove.Swing) ZombieBreach.HeardOnCopy(transform);
         var result = player.IsNetworkDriven ? DamageResult.Ignored : Strike();
         if (!finisher && result != DamageResult.Parried && meleeTarget?.IsStunned != true)
         { comboIndex++; BeginWindup(); }
@@ -643,6 +680,9 @@ public sealed class EnemyCombatAI : MonoBehaviour
         if (Elite != null) Elite.Struck(move);
         // The host can't see a rider land in time; this PC can, and doesn't swing at its own rider either.
         if (aimedHere && !EnemyHead.Carries(this, PlayerRoster.Local)) Strike();
+        // Not this PC's to judge (at the planks, or at another PC's player across them): standing at planks, the blow is
+        // heard landing on them here too.
+        else if (!aimedHere && move == AttackMove.Swing) ZombieBreach.HeardOnCopy(transform);
     }
 
     public void CancelAttack()

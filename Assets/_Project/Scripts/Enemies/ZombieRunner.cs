@@ -180,12 +180,17 @@ public sealed class ZombieRunner : MonoBehaviour
         }
     }
 
+    private ZombieBreach breach;
+
     // A runner on its feet, awake, free and not holding anyone (a pin is ZombieGrip's).
     private bool CanAct()
     {
         if (type == null || type.Kind != ZombieKind.Runner || type.Crawls) return false;
         if (health == null || !health.IsAlive || health.WavePaused) return false;
         if (mind != null && !mind.Ready) return false;
+        // At a Support's barricade it breaks through first, rather than run at someone across it (ZombieBreach).
+        if (breach == null) TryGetComponent(out breach);
+        if (breach != null && breach.Driving) return false;
         if (grip == null) grip = GetComponent<ZombieGrip>();
         if (grip != null && grip.IsHolding) return false;
         if (melee != null && (melee.IsStunned || melee.IsLying)) return false;

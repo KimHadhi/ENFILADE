@@ -169,6 +169,8 @@ public sealed class Barricade : MonoBehaviour, IDamageReceiver
     public int Stock => Mathf.Max(0, Mathf.CeilToInt(health - .01f));
     /// <summary>Standing and short of its health: a Support's hammer can mend it (SupportKit).</summary>
     public bool Worn => !broken && health < most - .5f && Type != Kind.Crate;
+    /// <summary>Every one standing now, any kind: zombies go at the planks (ZombieBreach), an exploder's burst wears them.</summary>
+    public static Dictionary<ushort, Barricade>.ValueCollection Standing => standing.Values;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetStatics() => standing.Clear();

@@ -49,6 +49,10 @@ public sealed class ZombieExploder : MonoBehaviour
     private float zombieKnockdown = 2.2f;
     [SerializeField, Min(0f), Tooltip("A view within this of the burst shakes, harder nearer (m).")]
     private float shakeReach = 16f;
+    [SerializeField, Min(0f), Tooltip("What it does to a Support's barricade at its middle, before Support.barricadeBlow (it lights its fuse at the planks: ZombieBreach).")]
+    private float barricadeDamage = 450f;
+    [SerializeField, Min(0f), Tooltip("And at its edge.")]
+    private float barricadeEdgeDamage = 150f;
     [Header("The light in its chest")]
     [SerializeField, Min(.05f), Tooltip("How big the light is (m).")]
     private float glowSize = .7f;
@@ -148,6 +152,9 @@ public sealed class ZombieExploder : MonoBehaviour
             foreach (var player in PlayerRoster.All)
                 if (player != null && player.IsInitialized && !player.IsDead
                     && (player.transform.position - transform.position).sqrMagnitude <= fuseRange * fuseRange) { close = true; break; }
+        // At a Support's barricade it lights it too, on every PC alike from where the planks stand (ZombieBreach walks it
+        // there and it doesn't swing): its burst is how it breaks them.
+        if (standing && !close && ZombieBreach.PlanksNear(transform.position, fuseRange)) close = true;
         fuse = Mathf.Clamp(fuse + (close ? dt : -dt * .5f), 0f, fuseSeconds);
         if (close && Time.time >= nextFlash)
         {
@@ -232,6 +239,7 @@ public sealed class ZombieExploder : MonoBehaviour
             if (view != null) view.ApplyCameraImpulse(new Vector3(-8f * shake, 0f, (Random.value < .5f ? -4f : 4f) * shake), 4.5f * shake);
         }
         if (!Runs) return;
+        WearBarricades(at);
         // A copy of the list: the burst kills, and the killed leave it (another exploder among them bursts in its turn).
         near.Clear();
         foreach (var enemy in EnemyHealth.Living)
@@ -247,6 +255,31 @@ public sealed class ZombieExploder : MonoBehaviour
                 enemy.transform.position + Vector3.up, away, lastSource, false, 0f, true, origin: at));
             if (enemy != null && enemy.IsAlive && enemy.TryGetComponent(out MeleeCombatTarget target)) target.KnockDown(away, zombieKnockdown);
         }
+    }
+
+    private static readonly List<Barricade> nearPlanks = new List<Barricade>();
+
+    // The host: a Support's barricades within the burst wear by it through their own damage path (Barricade.ReceiveHit:
+    // the planks fly, it may break, every PC sees it; wire lets it through, a crate takes nothing). Listed first: one that
+    // breaks leaves the list it is read from.
+    private void WearBarricades(Vector3 at)
+    {
+        if (barricadeDamage <= 0f && barricadeEdgeDamage <= 0f) return;
+        nearPlanks.Clear();
+        foreach (var each in Barricade.Standing) if (each != null) nearPlanks.Add(each);
+        foreach (var each in nearPlanks)
+        {
+            if (each == null || Mathf.Abs(each.transform.position.y - at.y) > blastRadius) continue;
+            float gap = ZombieBreach.Gap(each, at, out _);
+            if (gap > blastRadius) continue;
+            float share = 1f - Mathf.Clamp01(gap / Mathf.Max(.01f, blastRadius));
+            Vector3 middle = each.transform.position + Vector3.up * (Barricade.Height * .5f);
+            Vector3 way = Vector3.ProjectOnPlane(middle - at, Vector3.up);
+            way = way.sqrMagnitude > 1e-4f ? way.normalized : Vector3.forward;
+            each.ReceiveHit(new DamageHit(DamageHit.NewAttackId(), Mathf.Lerp(barricadeEdgeDamage, barricadeDamage, share), DamageKind.Attack,
+                middle, way, gameObject, false, 0f, true, origin: at));
+        }
+        nearPlanks.Clear();
     }
 
     private static int coverMask;

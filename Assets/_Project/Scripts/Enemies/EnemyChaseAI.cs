@@ -39,7 +39,10 @@ public sealed class EnemyChaseAI : MonoBehaviour
         grip = GetComponent<ZombieGrip>();
         targeting = GetComponent<EnemyTargeting>();
         if (targeting == null) targeting = gameObject.AddComponent<EnemyTargeting>();
+        // It goes at a Support's barricade when one closes its way or draws it (ZombieBreach, on the host).
+        if (!TryGetComponent(out breach)) breach = gameObject.AddComponent<ZombieBreach>();
     }
+    private ZombieBreach breach;
 
     private void Update()
     {
@@ -59,6 +62,8 @@ public sealed class EnemyChaseAI : MonoBehaviour
         if (charger == null) charger = GetComponent<ZombieCharger>();
         if (charger != null && charger.Driving) return;
         if (Elite != null && Elite.Driving) return;
+        // So does one going at a Support's barricade: up to the planks, then standing at them (ZombieBreach).
+        if (breach != null && breach.Driving) return;
         if (melee == null) melee = GetComponent<MeleeCombatTarget>();
         if (PlayerExecution.Suppresses(this) || (enemyHealth != null && enemyHealth.WavePaused) || (melee != null && melee.IsStunned))
         { agent.isStopped = true; return; }
