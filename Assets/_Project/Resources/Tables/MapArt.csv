@@ -90,7 +90,7 @@ jersey,ThirdParty/Quixel/Roadside/ConcreteBarrier_ubitfhtfa/ConcreteBarrier_ubit
 ladder,ThirdParty/Quixel/Warehouse/StepLadder_vh2jfjes/StepLadder_vh2jfjes.fbx;ThirdParty/Dekogon/Construction_Package/Construction_Vol02/Prefabs/SM_Ladder_01a.prefab,native,0,1
 lampindustrial,ThirdParty/Quixel/Warehouse/IndustrialLamp_vgyide1aw/IndustrialLamp_vgyide1aw.fbx,native,0,1
 litter,ThirdParty/Fab/TrashProps/DrinkCan_1/DrinkCan_1.fbx;ThirdParty/Fab/TrashProps/DrinkCan_5/DrinkCan_5.fbx;ThirdParty/Fab/TrashProps/BeerBottle/BeerBottle.fbx;ThirdParty/Fab/TrashProps/Bottle_01/Bottle_01.fbx;ThirdParty/Fab/TrashProps/CoffeeCup01/CoffeeCup01.fbx;ThirdParty/Fab/TrashProps/SodaCup01/SodaCup01.fbx;ThirdParty/Fab/TrashProps/PizzaBox03/PizzaBox03.fbx;ThirdParty/Fab/TrashProps/PizzaBox01/PizzaBox01.fbx;ThirdParty/Fab/TrashProps/Cardboard_Open_2/Cardboard_Open_2.fbx;ThirdParty/Fab/TrashProps/Cardboard_Closed_2/Cardboard_Closed_2.fbx;ThirdParty/Fab/TrashProps/EdgeTrashDebris_01/EdgeTrashDebris_01.fbx,native,0,1
-locker,ThirdParty/Quixel/Warehouse/Locker_vjhledeaw/Locker_vjhledeaw.fbx,native,0,1
+locker,ThirdParty/Quixel/Warehouse/Locker_vjhledeaw/Locker_vjhledeaw.fbx,native,0,1,cap
 metalbarricade,ThirdParty/Quixel/Singles/MetalBarricade_vgledec/MetalBarricade_vgledec.fbx,tile,0,1
 militarytruck,ThirdParty/Vigilante/M923/SK_West_Truck_M923/SK_West_Truck_M923.fbx,fit,0,1
 oilbarrel,ThirdParty/Dekogon/Construction_Package/Construction_Vol01/Prefabs/SM_OilBarrel_01a.prefab;ThirdParty/Dekogon/Construction_Package/Construction_Vol01/Prefabs/SM_PlasticBarrel_01a.prefab,native,0,1

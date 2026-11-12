@@ -366,7 +366,8 @@ public static class TowerMap
         Vector3 shop = TowerLayout.ShopAt(segment);
         b.Dress(b.Box("상점 카운터", shop.x + .7f, shop.x + 1.7f, y, y + 1.05f, shop.z - 1.6f, shop.z + 1.6f, trim), "shopcounter");
         b.Box("상점 네온", shop.x + 1.1f, shop.x + 1.3f, y + 2.7f, y + 3f, shop.z - 1.8f, shop.z + 1.8f, neon, solid: false);
-        b.Prop("vending", new Vector3(shop.x + 1.4f, y, shop.z + 3f), 270f);
+        // Solid, with an unseen ridge over it (Tables/MapArt solid "cap"): walked through as a Prop before.
+        b.PropSolid("vending", new Vector3(shop.x + 1.4f, y, shop.z + 3f), 270f);
         // Supplies by the walls where people arrive, and somewhere to sit out of everyone's way: a corner by the arrivals
         // and another past the shop.
         b.Pickup(new Vector3(2.4f, y, 13.5f));
@@ -375,12 +376,13 @@ public static class TowerMap
         b.Dress(b.Box("소파", 9f, 11.4f, y, y + .85f, -inner, -inner + 1f, wall), "couch");
         b.Dress(b.Box("소파", length * .62f, length * .62f + 2.4f, y, y + .85f, inner - 1f, inner, wall), "couch");
         b.Dress(b.Box("소파", length * .68f, length * .68f + 2.4f, y, y + .85f, -inner, -inner + 1f, wall), "couch");
-        b.Prop("plant", new Vector3(1f, y, inner - 1f));
-        b.Prop("plant", new Vector3(length - 1f, y, -inner + 1f));
-        b.Prop("plant", new Vector3(length * .5f, y, inner - .8f));
-        b.Prop("plant", new Vector3(length * .5f, y, -inner + .8f));
-        b.Prop("locker", new Vector3(length - 3.5f, y, inner - .4f), 180f);
-        b.Prop("locker", new Vector3(length - 2.8f, y, inner - .4f), 180f);
+        // Pots and lockers block too (a pot only to its rim, lockers capped, Tables/MapArt solid).
+        b.PropSolid("plant", new Vector3(1f, y, inner - 1f));
+        b.PropSolid("plant", new Vector3(length - 1f, y, -inner + 1f));
+        b.PropSolid("plant", new Vector3(length * .5f, y, inner - .8f));
+        b.PropSolid("plant", new Vector3(length * .5f, y, -inner + .8f));
+        b.PropSolid("locker", new Vector3(length - 3.5f, y, inner - .4f), 180f);
+        b.PropSolid("locker", new Vector3(length - 2.8f, y, inner - .4f), 180f);
         b.Ambience("Tower.Hall", 0f, TowerLayout.RoomLength, y, ceiling, -inner, inner, 2);
         if (segment == 0) Lobby(b);
         // The hall's name over its arrivals, read from its middle (18 m off: larger than at 16 m).
