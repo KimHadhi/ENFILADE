@@ -36,13 +36,14 @@ public sealed class AmmoHUD : MonoBehaviour
     private PlayerDamageReceiver health;
 
     private static AmmoHUD current;
-    // The held gun's controller, for its look-over (Y) that shows its kill count (GunKills).
+    // The held gun's controller, for its look-over (Y), the only time its kill count shows (GunKills).
     private WeaponController weapon;
-    // A gun of this player's reached a new rank: its name shows on the status line for this long (s).
+    // A rank the gun reached since its last look-over shows on the status line for this long (s) as the next one begins.
     private const float RankUpHold = 2.5f;
     private static readonly Color RankColor = new Color(1f, .6f, .18f);
     private float rankUpLeft;
     private string rankUpText;
+    private WeaponData rankUpGun;
 
     /// <summary>The display blinks once: what it shows just changed by something taken (FieldPickups: ammo, a gun).</summary>
     public static void Blink(Color color)
@@ -53,22 +54,25 @@ public sealed class AmmoHUD : MonoBehaviour
     private void OnEnable()
     {
         current = this;
-        GunKills.Counted += OnKillCounted;
+        GunKills.RankUpAnnounced += OnRankUpAnnounced;
     }
     private void LateUpdate() => RefreshNow();
 
-    // A new rank: the status line says it for a moment and the panel blinks the counter's orange.
-    private void OnKillCounted(WeaponData gun, int kills, bool rankedUp)
+    // A rank the gun reached in the fight, announced as it is looked over: the status line says it for a moment and the
+    // panel blinks the counter's orange. Nothing shows when the rank comes (user, 2026-11-12: "킬스트릭 스탯은 무기 관찰할
+    // 때만 뜨게 할 것").
+    private void OnRankUpAnnounced(WeaponData gun)
     {
-        if (!rankedUp || gun == null) return;
+        if (gun == null) return;
         rankUpText = Texts.Format("gunkills.rankup", GunKills.Title(gun));
+        rankUpGun = gun;
         rankUpLeft = RankUpHold;
         Blink(RankColor);
     }
 
     private void OnDisable()
     {
-        GunKills.Counted -= OnKillCounted;
+        GunKills.RankUpAnnounced -= OnRankUpAnnounced;
         if (current == this) current = null;
         if (group != null) group.alpha = 0f;
         shown = null; shotPulse = 0f;
@@ -129,17 +133,17 @@ public sealed class AmmoHUD : MonoBehaviour
         }
         progress.color = edge.color = tint;
         status.color = runtime.ReserveAmmo == 0 && !empty && !runtime.IsReloading ? lowAmmo : tint;
-        // A new rank, then the look-over (Y): the gun's rank and kill count on the status line (GunKills).
-        rankUpLeft = Mathf.Max(0f, rankUpLeft - Time.unscaledDeltaTime);
+        // Only while the gun is looked over (Y): first a rank it reached since its last look-over (GunKills keeps it
+        // waiting), then its rank and kill count. A look-over cut short takes the rank-up notice with it.
         if (weapon == null && weaponSlots != null) weapon = weaponSlots.GetComponent<WeaponController>();
-        if (rankUpLeft > 0f && !string.IsNullOrEmpty(rankUpText))
+        bool lookedOver = weapon != null && weapon.IsInspecting && !runtime.IsReloading;
+        if (lookedOver) GunKills.AnnounceRankUp(runtime.Data);
+        else rankUpLeft = 0f;
+        rankUpLeft = Mathf.Max(0f, rankUpLeft - Time.unscaledDeltaTime);
+        if (lookedOver)
         {
-            status.text = rankUpText;
-            status.color = RankColor;
-        }
-        else if (weapon != null && weapon.IsInspecting && !runtime.IsReloading)
-        {
-            status.text = Texts.Format("gunkills.inspect", GunKills.Title(runtime.Data), GunKills.Kills(runtime.Data), GunKills.Headshots(runtime.Data));
+            status.text = rankUpLeft > 0f && rankUpGun == runtime.Data && !string.IsNullOrEmpty(rankUpText) ? rankUpText
+                : Texts.Format("gunkills.inspect", GunKills.Title(runtime.Data), GunKills.Kills(runtime.Data), GunKills.Headshots(runtime.Data));
             status.color = RankColor;
         }
         background.color = panelColor;

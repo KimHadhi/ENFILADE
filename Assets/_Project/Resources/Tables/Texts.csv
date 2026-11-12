@@ -488,7 +488,7 @@ gun.stat.magazine,탄창,,능력치 칸 줄 이름
 #--- 킬 카운트(총마다) ---,,,
 gunkills.title,{0} {1},{0} {1},등급이 붙은 총 이름(팀포2 이상한 무기처럼 등급이 앞에). {0}=등급 이름 {1}=총 이름
 gunkills.inspect,{0} · 처치 {1:N0} · 헤드샷 {2:N0},{0} · {1:N0} kills · {2:N0} headshots,총을 살펴볼 때(Y) 탄약 표시 아래 줄. {0}=등급이 붙은 총 이름 {1}=처치 {2}=헤드샷 처치
-gunkills.rankup,등급 상승 · {0},Rank up · {0},총이 새 등급에 오르면 탄약 표시 아래 줄에 2.5초. {0}=새 등급이 붙은 총 이름
+gunkills.rankup,등급 상승 · {0},Rank up · {0},싸우다 오른 새 등급을 그 총을 다음에 살펴볼 때(Y) 탄약 표시 아래 줄에 2.5초. {0}=새 등급이 붙은 총 이름
 gunrank.0,갓 뜯은,Fresh,총 등급 0번 이름(처치 수 문턱은 KillCounter.csv Ranks.kills)
 gunrank.1,손에 익은,Broken-In,총 등급 1번 이름(처치 수 문턱은 KillCounter.csv Ranks.kills)
 gunrank.2,쓸 만한,Serviceable,총 등급 2번 이름(처치 수 문턱은 KillCounter.csv Ranks.kills)

@@ -11,7 +11,9 @@ using UnityEngine.SceneManagement;
 /// every gun counts, no separate strange copies). A bullet of this PC's own player that kills an enemy counts for the gun
 /// in their hands, and its headshots too; at thresholds the count names a rank (Tables/KillCounter.csv Ranks.kills, the
 /// names Texts.csv gunrank.N), worn before the gun's name like a strange weapon's. Kept in gun_kills.json beside the other
-/// saves. Shown on the gun itself (GunKillPlate), when it is looked over (Y, AmmoHUD) and in the title screen's weapons tab.
+/// saves. In a game it shows only while the gun is looked over (Y): its counter on the gun (GunKillPlate) and its line
+/// under the ammo display (AmmoHUD); a rank reached in a fight waits and is announced at the gun's next look-over (user,
+/// 2026-11-12: "킬스트릭 스탯은 무기 관찰할 때만 뜨게 할 것"). The title screen's weapons tab shows it too.
 /// </summary>
 public static class GunKills
 {
@@ -25,6 +27,9 @@ public static class GunKills
     {
         public string gun;
         public int kills, headshots;
+        // The rank its look-over last announced, plus one; 0 in a save from before rank-ups waited for the look-over,
+        // whose ranks were all announced in the fight as they came (Load).
+        public int announced;
     }
 
     [Serializable]
@@ -41,6 +46,9 @@ public static class GunKills
     /// <summary>A kill counted for a gun: the gun, its kills now, and whether that took it to a new rank.</summary>
     public static event Action<WeaponData, int, bool> Counted;
 
+    /// <summary>A rank the gun reached is announced, as its look-over begins (AmmoHUD's line, GunKillPlate's flash).</summary>
+    public static event Action<WeaponData> RankUpAnnounced;
+
     public static string FilePath => Path.Combine(Application.persistentDataPath, FileName);
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -51,6 +59,7 @@ public static class GunKills
         dirty = false;
         savedAt = float.NegativeInfinity;
         Counted = null;
+        RankUpAnnounced = null;
     }
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
@@ -104,6 +113,21 @@ public static class GunKills
     public static string Title(WeaponData gun)
         => gun == null ? "" : Texts.Format("gunkills.title", RankName(RankOf(Kills(gun))), gun.DisplayName);
 
+    /// <summary>
+    /// The gun is being looked over: a rank it reached since the last look-over is announced now, once (RankUpAnnounced),
+    /// and kept as announced in the save, so a rank-up from the last fight of a game still waits for the next one.
+    /// </summary>
+    public static void AnnounceRankUp(WeaponData gun)
+    {
+        var entry = gun != null ? Find(gun.name) : null;
+        if (entry == null) return;
+        int now = RankOf(entry.kills) + 1;
+        if (now <= entry.announced) return;
+        entry.announced = now;
+        Save();
+        RankUpAnnounced?.Invoke(gun);
+    }
+
     // This PC's own player's bullet killed an enemy (as the records count it, PlayerRecords): the gun in their hands
     // made it.
     private static void OnDamaged(CombatDamageReport report)
@@ -122,7 +146,8 @@ public static class GunKills
     private static void Count(WeaponData gun, bool headshot)
     {
         var entry = Find(gun.name);
-        if (entry == null) Load().guns.Add(entry = new Entry { gun = gun.name });
+        // A new gun's first rank needs no announcing.
+        if (entry == null) Load().guns.Add(entry = new Entry { gun = gun.name, announced = 1 });
         int before = RankOf(entry.kills);
         entry.kills++;
         if (headshot) entry.headshots++;
@@ -152,6 +177,9 @@ public static class GunKills
         }
         if (data == null) data = new Data();
         if (data.guns == null) data.guns = new List<Entry>();
+        // Before rank-ups waited for the look-over, each was announced in the fight as it came: none of theirs waits.
+        foreach (var entry in data.guns)
+            if (entry != null && entry.announced <= 0) entry.announced = RankOf(entry.kills) + 1;
         return data;
     }
 

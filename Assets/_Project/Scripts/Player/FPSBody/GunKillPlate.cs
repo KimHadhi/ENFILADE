@@ -5,16 +5,17 @@ using UnityEngine.Rendering;
 /// <summary>
 /// A small kill counter on the left side of this PC's own player's guns, as a StatTrak module is (user, 2026-11-11, the
 /// plan: "할 수 있으면 총에 작은 숫자판"): the kills the gun has made on this PC (GunKills) in glowing figures, set into
-/// the receiver's side where the eyes see the gun, turning over as a kill counts and flashing white on a new rank. Its
-/// place is measured once from the gun's own shape (its left surface, part way back from the muzzle). Friends' copies
-/// have none: their counts are on their PCs. Numbers: Tables/KillCounter.csv, row Plate.
+/// the receiver's side where the eyes see the gun. It comes up only while the gun is looked over (Y; user, 2026-11-12:
+/// "킬스트릭 스탯은 무기 관찰할 때만 뜨게 할 것"), and flashes white there when the look-over announces a rank the gun
+/// reached in the fight. Its place is measured once from the gun's own shape (its left surface, part way back from the
+/// muzzle). Friends' copies have none: their counts are on their PCs. Numbers: Tables/KillCounter.csv, row Plate.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class GunKillPlate : MonoBehaviour, ITableBound
 {
     public const string TableRow = "Plate";
 
-    [SerializeField, Tooltip("Show the counter on the guns at all.")]
+    [SerializeField, Tooltip("Show the counter on the guns at all (while they are looked over).")]
     private bool show = true;
     [SerializeField, Min(1), Tooltip("Figures shown, zero-padded.")]
     private int digits = 6;
@@ -26,14 +27,17 @@ public sealed class GunKillPlate : MonoBehaviour, ITableBound
     private float rise = .55f;
     [SerializeField, Tooltip("The figures' colour (HDR above 1 glows).")]
     private Color color = new Color(1f, .6f, .18f);
-    [SerializeField, Min(0f), Tooltip("How long a new rank flashes the figures white (s).")]
+    [SerializeField, Min(0f), Tooltip("How long an announced rank flashes the figures white (s).")]
     private float flashSeconds = .35f;
+    [SerializeField, Min(0f), Tooltip("How long the figures take to come up as the look-over begins and to go as it ends (s).")]
+    private float fadeSeconds = .15f;
 
     private FPSGun gun;
     private PlayerMovement owner;
+    private WeaponController weapons;
     private TextMeshPro text;
     private int shownKills = -1;
-    private float flash;
+    private float flash, shown;
     private bool placed;
 
     // The counts are this PC's: only this PC's own player's guns show them (a body built before the network said whose
@@ -44,6 +48,16 @@ public sealed class GunKillPlate : MonoBehaviour, ITableBound
         {
             if (owner == null) owner = GetComponentInParent<PlayerMovement>();
             return owner == null || (owner.IsLocal && !owner.IsNetworkDriven);
+        }
+    }
+
+    // This gun, in the hands and being looked over (Y).
+    private bool LookedOver
+    {
+        get
+        {
+            if (weapons == null && owner != null) weapons = owner.GetComponentInChildren<WeaponController>();
+            return weapons != null && weapons.IsInspecting && weapons.EquippedData == gun.Data;
         }
     }
 
@@ -65,13 +79,18 @@ public sealed class GunKillPlate : MonoBehaviour, ITableBound
         placed = false;
     }
 
-    private void OnEnable() => GunKills.Counted += OnCounted;
-    private void OnDisable() => GunKills.Counted -= OnCounted;
-
-    private void OnCounted(WeaponData data, int kills, bool rankedUp)
+    private void OnEnable() => GunKills.RankUpAnnounced += OnRankUpAnnounced;
+    private void OnDisable()
     {
-        if (gun == null || data != gun.Data) return;
-        if (rankedUp) flash = flashSeconds;
+        GunKills.RankUpAnnounced -= OnRankUpAnnounced;
+        // Put away mid look-over, it is gone when the gun comes out again.
+        shown = 0f;
+        if (text != null) text.gameObject.SetActive(false);
+    }
+
+    private void OnRankUpAnnounced(WeaponData data)
+    {
+        if (gun != null && data == gun.Data) flash = flashSeconds;
     }
 
     // After the gun's clips and parts have posed it.
@@ -80,12 +99,20 @@ public sealed class GunKillPlate : MonoBehaviour, ITableBound
         if (gun == null || gun.Data == null) return;
         if (!show || !Mine)
         {
+            shown = 0f;
             if (text != null && text.gameObject.activeSelf) text.gameObject.SetActive(false);
             return;
         }
         if (text == null) Build();
-        if (!text.gameObject.activeSelf) text.gameObject.SetActive(true);
+        // Placed while the gun is at rest in the hands, hidden, so a look-over's turning parts don't measure into it.
         if (!placed) placed = Place();
+        bool lookedOver = LookedOver;
+        // A rank waiting since the fight is announced as the look-over begins, here too when no ammo display is up to.
+        if (lookedOver) GunKills.AnnounceRankUp(gun.Data);
+        shown = fadeSeconds > 0f ? Mathf.MoveTowards(shown, lookedOver ? 1f : 0f, Time.deltaTime / fadeSeconds) : lookedOver ? 1f : 0f;
+        bool visible = shown > 0f && placed;
+        if (text.gameObject.activeSelf != visible) text.gameObject.SetActive(visible);
+        if (!visible) { flash = 0f; return; }
         int kills = GunKills.Kills(gun.Data);
         if (kills != shownKills)
         {
@@ -93,7 +120,9 @@ public sealed class GunKillPlate : MonoBehaviour, ITableBound
             text.text = Mathf.Min(kills, (int)Mathf.Pow(10f, Mathf.Min(digits, 9)) - 1).ToString(new string('0', digits));
         }
         flash = Mathf.Max(0f, flash - Time.deltaTime);
-        text.color = Color.Lerp(color, Color.white * 2f, flashSeconds > 0f ? flash / flashSeconds : 0f);
+        var figures = Color.Lerp(color, Color.white * 2f, flashSeconds > 0f ? flash / flashSeconds : 0f);
+        figures.a = shown;
+        text.color = figures;
     }
 
     private void Build()
@@ -101,6 +130,7 @@ public sealed class GunKillPlate : MonoBehaviour, ITableBound
         text = new GameObject("Kill Counter", typeof(TextMeshPro)).GetComponent<TextMeshPro>();
         text.transform.SetParent(transform, false);
         text.gameObject.layer = gameObject.layer;
+        text.gameObject.SetActive(false);
         var font = CombatUIAssets.ResolveFont(null);
         if (font != null) text.font = font;
         text.fontStyle = FontStyles.Bold;
