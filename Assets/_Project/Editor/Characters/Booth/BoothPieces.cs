@@ -29,9 +29,9 @@ using UnityEngine;
 /// </summary>
 internal static class BoothPieces
 {
-    private const string ItemsPath = "Assets/_Project/Resources/Tables/Outfits.csv";
-    private const string FitsPath = "Assets/_Project/Resources/Tables/OutfitFits.csv";
-    private const string PartsPath = "Assets/_Project/Resources/Tables/CharacterParts.csv";
+    private static string ItemsPath => TablePaths.Of("Outfits");
+    private static string FitsPath => TablePaths.Of("OutfitFits");
+    private static string PartsPath => TablePaths.Of("CharacterParts");
     // Trim lies on the piece that has one of its vertices within Reach (m) of at least HostShare of the trim's.
     private const float Reach = .02f, HostShare = .5f;
     // A head piece whose middle stands this far (m) before the head bone is on the face: glasses 5.5-6.1 cm, Sera Yura's

@@ -7,7 +7,7 @@
 # (WeaponIcons.csv Look.style): Solid (filled, thin cuts between the parts), Outline (a stroke round the shape, the inside
 # faint) and Line (a technical drawing: thin outline and the parts' edges). White on transparent: the HUD tints them.
 # A .meta is written only for a new PNG, so import settings changed in Unity stay. It also writes
-# Assets/_Project/Resources/Tables/WeaponIconSpans.csv: where each picture's drawing lies on its canvas (uv) and how much
+# Assets/_Project/Resources/Tables/Weapons/WeaponIconSpans.csv: where each picture's drawing lies on its canvas (uv) and how much
 # of a gun's length from the muzzle back is its barrel end (front), for the kill feed's flairs that burn only the barrel
 # (KillFlair.shader). A run of some keys only updates their rows.
 #
@@ -822,7 +822,18 @@ TextureImporter:
 """
 
 
-SPANS = os.path.join(ROOT, "Assets", "_Project", "Resources", "Tables", "WeaponIconSpans.csv")
+def table_file(root, name, new_in="Clips"):
+    """The game's table of this name under the project root. Since 0.9.0 the tables are filed in sub-folders of
+    Resources/Tables by subject and found by file name alone, as the game finds them (GameTables); a table that isn't
+    there yet is made in new_in."""
+    base = os.path.join(root, "Assets", "_Project", "Resources", "Tables")
+    for folder, _, files in sorted(os.walk(base)):
+        if name + ".csv" in files:
+            return os.path.join(folder, name + ".csv")
+    return os.path.join(base, new_in, name + ".csv")
+
+
+SPANS = table_file(ROOT, "WeaponIconSpans", new_in="Weapons")
 SPANS_NOTE = ("#설명 (Tools/Blender/weapon_icons.py가 씀: 그림마다 그린 것이 캔버스(512x160)의 어디에 있는지 uv로(왼쪽 0 오른쪽 1, 아래 0 위 1) "
               "그리고 총구에서부터 몇 할이 총열 쪽인지(front). 킬 피드의 CHARGE 불꽃이 총구에서 총열까지만 태우는 데 쓴다(KillFlair.shader). "
               "모드의 그림은 줄이 없으면 캔버스 전체로 본다)")

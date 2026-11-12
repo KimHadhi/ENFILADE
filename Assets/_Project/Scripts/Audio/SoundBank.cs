@@ -6,7 +6,7 @@ using UnityEngine;
 /// <summary>
 /// Clips grouped by folder under one root: Art/Audio/Movement/Run/Concrete/*.wav becomes key "Run/Concrete" in the
 /// Movement bank. The editor rebuilds the asset (Resources/Audio/&lt;id&gt;) whenever a file in the root changes, so adding
-/// a sound is dropping it into the right folder. Volume and pitch per key live in Resources/Tables/Sounds.csv
+/// a sound is dropping it into the right folder. Volume and pitch per key live in Resources/Tables/Audio/Sounds.csv
 /// (row "&lt;id&gt;/&lt;key&gt;").
 /// </summary>
 public sealed class SoundBank : ScriptableObject

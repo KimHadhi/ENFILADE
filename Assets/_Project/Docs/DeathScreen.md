@@ -34,9 +34,9 @@
 
 ## 설정과 표
 
-- 설정 → HUD → 데스 스크린: 켬(Full) / 짧게(Short: 같은 연출을 1.4초만, 더 옅게, 피 없이) / 끔(Off: 예전 글자만). `GameSettings.deathScreen`, 새 플레이어 기본값은 [SettingsDefaults.csv](../Resources/Tables/SettingsDefaults.csv) `deathScreen`.
-- 수치: [DeathScreen.csv](../Resources/Tables/DeathScreen.csv) `Full`·`Short` 줄(머무는 시간, 미리 보기 시간, 색·대비·노출·비네트·흐림의 세기와 시간, 막·피의 세기와 시간, 먹먹함 Hz와 시간, 효과음 음량, 물러나는 시간, 걷히는 시간, 소리 끊기는 시간). `blood`를 0으로 하면 피가 없고, `blurRadius`를 0으로 하면 흐림이 없고, `muffle`을 0으로 하면 먹먹함이 없다.
-- 글자: [Texts.csv](../Resources/Tables/Texts.csv) `death.*`(제목·이유·어떻게·숫자 판·전멸 뒤 줄)와 `settings.hud.death_screen*`. 방에서의 다음 줄은 `life.respawn.*`를 같이 쓴다. 글자 편집기(Tools → 글자 → 글자 편집기)에서 고친다.
+- 설정 → HUD → 데스 스크린: 켬(Full) / 짧게(Short: 같은 연출을 1.4초만, 더 옅게, 피 없이) / 끔(Off: 예전 글자만). `GameSettings.deathScreen`, 새 플레이어 기본값은 [SettingsDefaults.csv](../Resources/Tables/Core/SettingsDefaults.csv) `deathScreen`.
+- 수치: [DeathScreen.csv](../Resources/Tables/Player/DeathScreen.csv) `Full`·`Short` 줄(머무는 시간, 미리 보기 시간, 색·대비·노출·비네트·흐림의 세기와 시간, 막·피의 세기와 시간, 먹먹함 Hz와 시간, 효과음 음량, 물러나는 시간, 걷히는 시간, 소리 끊기는 시간). `blood`를 0으로 하면 피가 없고, `blurRadius`를 0으로 하면 흐림이 없고, `muffle`을 0으로 하면 먹먹함이 없다.
+- 글자: [Texts.csv](../Resources/Tables/Core/Texts.csv) `death.*`(제목·이유·어떻게·숫자 판·전멸 뒤 줄)와 `settings.hud.death_screen*`. 방에서의 다음 줄은 `life.respawn.*`를 같이 쓴다. 글자 편집기(Tools → 글자 → 글자 편집기)에서 고친다.
 - 효과음을 바꾸려면: Art/Audio/UI/Death 폴더에 소리를 넣고 소리 묶음을 다시 만들면(UI 묶음의 `Death`) 만든 소리 대신 그것이 난다. 음량·음높이는 Sounds.csv `UI/Death` 줄.
 - 겹침 검사: HudOverlap.csv `Death Card`(조각 여섯이 저마다 잰다)·`Death Film`(배경이라 뺀다). 카드는 IHudPreview라 Tools → HUD → 겹침 검사가 견본 글자로 세워 잰다.
 

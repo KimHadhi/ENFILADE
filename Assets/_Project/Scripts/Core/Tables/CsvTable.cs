@@ -52,6 +52,21 @@ public sealed class CsvTable
         return table;
     }
 
+    /// <summary>
+    /// Lays another parse of the same table over this one, as a mod's table goes over the game's (GameMods): a row
+    /// with an id this table has takes the other's filled cells and keeps the rest, a new id adds a row after the
+    /// ones here. An empty cell never blanks a filled one (Set skips empty cells in both).
+    /// </summary>
+    public void Overlay(CsvTable other)
+    {
+        if (other == null) return;
+        foreach (var row in other.rows)
+        {
+            if (!rows.TryGetValue(row.Key, out var cells)) rows[row.Key] = cells = new Dictionary<string, string>(StringComparer.Ordinal);
+            foreach (var cell in row.Value) cells[cell.Key] = cell.Value;
+        }
+    }
+
     private void Set(string id, string field, string raw)
     {
         raw = raw.Trim();

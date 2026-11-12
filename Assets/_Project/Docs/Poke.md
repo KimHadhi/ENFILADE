@@ -36,7 +36,7 @@
 
 ## 손 모양 그리기 (블렌더)
 
-가리키는 손의 모양은 블렌더에서 그린다(0.8.217, 사용자: "블렌더로 만들어 줘. 왜냐하면 적 핑 찍을 때 가리키는 애니메이션이 있었으면 하니까"). 꾹 누른 손가락질과 F를 짧게 눌러 적을 핑할 때의 손가락질이 같은 손을 쓴다. 손 모양은 [PointHand.csv](../Resources/Tables/PointHand.csv)에 들어가고, [Tools/Blender/point_hand.py](../../../Tools/Blender/point_hand.py)가 그 표를 블렌더로 불러오고 다시 저장한다.
+가리키는 손의 모양은 블렌더에서 그린다(0.8.217, 사용자: "블렌더로 만들어 줘. 왜냐하면 적 핑 찍을 때 가리키는 애니메이션이 있었으면 하니까"). 꾹 누른 손가락질과 F를 짧게 눌러 적을 핑할 때의 손가락질이 같은 손을 쓴다. 손 모양은 [PointHand.csv](../Resources/Tables/Clips/PointHand.csv)에 들어가고, [Tools/Blender/point_hand.py](../../../Tools/Blender/point_hand.py)가 그 표를 블렌더로 불러오고 다시 저장한다.
 
 1. 블렌더(4.x)에서 캐릭터 하나를 가져온다. 예: File > Import > FBX로 `Assets/ThirdParty/BOOTH/Chocolate rice/0.MAYO/FBX/FBX_MAYO.fbx`. 프로젝트에 있는 휴머노이드면 다 된다. 뼈 이름은 그 FBX의 `.meta`(Unity 휴머노이드 매핑)에서 읽고, 없으면 흔한 이름(Hand.L, IndexProximal_L, LeftHandIndex1…)으로 찾는다.
 2. Scripting 탭 > Text > Open으로 `Tools/Blender/point_hand.py`를 열고 Run Script. 3D 뷰 사이드바(N)에 **ENFILADE** 탭이 생긴다.

@@ -621,7 +621,7 @@ public sealed partial class GreyboxBuilder
         AssetDatabase.SaveAssets();
         // A map with its own run (the ENFILADE tower) has no campaign steps or spawn spots to report.
         Tell(summary + "\n\n" + (AddsCampaign ? "진행 자리 " + spots.Count + "곳, 적 나오는 곳 " + enemySpawns.Count +
-             "곳. Play하면 미션이 바로 시작돼요(목표는 Resources/Tables/CampaignSteps.csv).\n" : "") +
+             "곳. Play하면 미션이 바로 시작돼요(목표는 Resources/Tables/Modes/CampaignSteps.csv).\n" : "") +
              "작은 소품: 좁은 꼭대기 " + slabs + "곳에 좀비 길을 깔았어요. " +
              (stranded == 0 ? "좀비가 못 가는 소품은 없어요." : "좀비가 못 가는 소품이 " + stranded + "곳 남았어요(콘솔에 이름과 자리).") +
              WideTopReport() +

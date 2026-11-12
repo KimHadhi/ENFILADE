@@ -6,7 +6,7 @@ using UnityEngine.UI;
 
 public sealed class WaveManager : MonoBehaviour
 {
-    /// <summary>Resources/Tables/Waves.csv: enemy counts and timing per wave set.</summary>
+    /// <summary>Resources/Tables/Modes/Waves.csv: enemy counts and timing per wave set.</summary>
     public const string TableName = "Waves";
 
     [Tooltip("Waves.csv의 행 id. 맵마다 다른 웨이브 구성을 쓰려면 행을 추가하고 여기에 적는다.")]

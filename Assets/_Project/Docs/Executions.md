@@ -40,7 +40,7 @@
 
 시안은 Claude가 블렌더에서 코드로 짰다(`execution_pairs.py`의 숫자): 좀비는 팩의 자세 클립 첫 프레임에서 시작해 몸축 기준으로 꺾었고(키포즈), 떨림은 그 뼈들의 Noise 모디파이어다. 카즈사는 IK로 손을 좀비 머리·목에 맞추고 부위마다 안무가 정한 프레임에 키를 넣었다. 카즈사 리그의 다리 IK는 무릎이 옆으로 꺾이는 극 각도라 이 작업 파일에서만 −90°로 바로잡았다(다른 작업실은 그대로).
 
-## 표 [Executions.csv](../Resources/Tables/Executions.csv)
+## 표 [Executions.csv](../Resources/Tables/Melee/Executions.csv)
 
 줄 하나가 짝 하나(id = 좀비 상태). 블렌더가 다시 쓰는 열: `kind` `playerClip` `zombieClip` `length` `kill` `right` `forward` `yaw` `zHips*` `zHeadYaw` `l*` `r*`. 손으로 고치는 열: `turn`(좀비가 돌아 맞추는 몫) `align`(플레이어가 미끄러져 들어가는 시간) `blendIn` `blendOut` `hitBone`(피가 나는 뼈) `fallRight`·`fallUp`·`fallForward`(시체를 미는 쪽). `Knife` 줄은 블렌더 미리보기 칼 자리만 정한다. 열마다 설명은 표의 `#설명` 줄.
 

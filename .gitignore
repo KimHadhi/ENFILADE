@@ -121,3 +121,6 @@ InitTestScene*.unity*
 # Python caches the tools leave behind
 __pycache__/
 *.pyc
+
+# The game's own tables written out by the console's /mods export (a copy to make mods from)
+/Mods/_게임 원본/

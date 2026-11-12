@@ -8,7 +8,7 @@ public enum WeaponFireMode { SemiAutomatic, Automatic, Burst, Fanning }
 public enum WeaponCategory { Ranged, Melee, Special }
 
 /// <summary>
-/// One weapon's numbers and presentation. Columns of Resources/Tables/Weapons.csv (row = this asset's name) overwrite
+/// One weapon's numbers and presentation. Columns of Resources/Tables/Weapons/Weapons.csv (row = this asset's name) overwrite
 /// the matching fields at runtime; the asset keeps references (icon, sounds) and anything the table leaves out.
 /// </summary>
 [CreateAssetMenu(fileName = "Weapon", menuName = "ENFILADE/Combat/Weapon Data")]

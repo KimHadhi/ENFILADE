@@ -17,7 +17,7 @@ using UnityEngine;
 /// </summary>
 internal sealed class GunGripTuner : EditorWindow
 {
-    private const string TablePath = "Assets/_Project/Resources/Tables/GunGrips.csv";
+    private static string TablePath => TablePaths.Of("GunGrips");
     private static readonly string[] FingerNames = { "검지", "중지", "약지", "새끼", "엄지" };
     private static readonly string[] JointNames = { "뿌리", "가운데", "끝" };
 

@@ -44,7 +44,6 @@ internal static class TextScan
     }
 
     private const string ScriptsFolder = "Assets/_Project/Scripts";
-    private const string TablesFolder = "Assets/_Project/Resources/Tables";
     private static readonly string[] SceneFolders = { "Assets/_Project/Prefabs", "Assets/_Project/Scenes", "Assets/_Project/Resources" };
 
     /// <summary>
@@ -276,7 +275,7 @@ internal static class TextScan
 
     private static void ScanTables(List<Finding> findings, HashSet<string> ids)
     {
-        foreach (string file in Directory.GetFiles(TablesFolder, "*.csv"))
+        foreach (string file in TablePaths.All())
         {
             string path = file.Replace('\\', '/');
             string name = Path.GetFileNameWithoutExtension(path);
@@ -416,7 +415,7 @@ internal static class TextScan
             foreach (var start in starts.Where(s => id.StartsWith(s.Key, StringComparison.OrdinalIgnoreCase)))
                 foreach (var (path, line) in start.Value)
                     Add(usage, id, (path, line, $"\"{start.Key}\" + … 로 만든 id"));
-        foreach (string file in Directory.GetFiles(TablesFolder, "*.csv"))
+        foreach (string file in TablePaths.All())
         {
             string path = file.Replace('\\', '/');
             string name = Path.GetFileNameWithoutExtension(path);

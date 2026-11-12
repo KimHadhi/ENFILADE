@@ -13,6 +13,7 @@ public static class GameCommands
         CardCommands.Register(router); // /card: the class cards at once, for trying them (Docs/ClassCards.md)
         CombatTestCommands.Register(router, findChat);
         router.Register("help", "명령어 목록", _ => router.Help());
+        router.Register("mods", "불러온 모드 목록 · reload 모드와 표 다시 읽기 · export 게임의 원래 표를 Mods 폴더에 꺼내기", GameMods.Command);
         router.Register("echo", "입력한 내용 출력", text => text);
         router.Register("map", "씬 이름 — 해당 씬으로 이동", SinglePlayerChatManager.SceneConsoleCommands.LoadMap);
         router.Register("net", "방의 실제 핑·전송량·프레임 측정 켜기, 다시 입력하면 끄고 결과 출력", _ => NetworkStatsHUD.Toggle());

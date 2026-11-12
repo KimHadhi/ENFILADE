@@ -350,11 +350,30 @@ def fingerprint(action, key):
     return oc.fingerprint([action], extra=[CLIPS[key]['end'], marks_of(action, key)])
 
 
+def table_file(root, name, new_in='Clips'):
+    """The game's table of this name under the project root. Since 0.9.0 the tables are filed in sub-folders of
+    Resources/Tables by subject and found by file name alone, as the game finds them (GameTables); a table that isn't
+    there yet is made in new_in."""
+    base = Path(root) / TABLES_DIR
+    for found in sorted(base.rglob(name + '.csv')):
+        return found
+    return base / new_in / (name + '.csv')
+
+
 def table_path(key):
     root = project_root()
     if root is None:
         raise RuntimeError('ENFILADE 프로젝트를 찾지 못했습니다. ArtSource/Knives의 파일을 여세요.')
-    return root / TABLES_DIR / (CLIPS[key]['table'] + '.csv')
+    return table_file(root, CLIPS[key]['table'])
+
+
+def table_label(key):
+    """The clip's table from the project root, for the panel (never raises)."""
+    name = CLIPS[key]['table']
+    root = project_root()
+    if root is None:
+        return str(TABLES_DIR / 'Clips' / (name + '.csv')).replace('\\', '/')
+    return str(table_file(root, name).relative_to(root)).replace('\\', '/')
 
 
 def clip_rows(context, key, marks):
@@ -595,7 +614,7 @@ class ENFKNIFE_PT_panel(bpy.types.Panel):
         note = scene.get(oc.NOTE)
         if note:
             box.label(text=str(note))
-        box.label(text=str(TABLES_DIR / (CLIPS[key]['table'] + '.csv')).replace('\\', '/'))
+        box.label(text=table_label(key))
 
 
 CLASSES = (ENFKNIFE_OT_pick, ENFKNIFE_OT_part, ENFKNIFE_OT_send, ENFKNIFE_OT_revert, ENFKNIFE_PT_panel)

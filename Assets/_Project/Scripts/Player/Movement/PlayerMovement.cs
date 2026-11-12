@@ -48,7 +48,7 @@ public sealed partial class PlayerMovement : MonoBehaviour
     internal MovementStateMachine StateMachine { get; private set; }
     internal MovementAbilities Abilities { get; private set; }
     internal MovementMirror Mirror { get; private set; }
-    /// <summary>Resources/Tables/Player.csv: rows Posture, Vitals, Stats, Ultimate, Fists, Execution and Body.</summary>
+    /// <summary>Resources/Tables/Player/Player.csv: rows Posture, Vitals, Stats, Ultimate, Fists, Execution and Body.</summary>
     public const string TableName = "Player";
     /// <summary>This PC plays this character. A remote one reads no input and puts nothing on this screen.</summary>
     public bool IsLocal { get; private set; } = true;
@@ -329,7 +329,7 @@ public sealed partial class PlayerMovement : MonoBehaviour
         Actions = new MovementActions(this);
         Abilities = new MovementAbilities(this);
         Mirror = new MovementMirror(this);
-        // Combat components are composed here at runtime; their balance numbers come from Resources/Tables/Player.csv.
+        // Combat components are composed here at runtime; their balance numbers come from Resources/Tables/Player/Player.csv.
         DamageReceiver = GetComponent<PlayerDamageReceiver>();
         if (DamageReceiver == null) DamageReceiver = gameObject.AddComponent<PlayerDamageReceiver>();
         GameTables.Bind(TableName, "Vitals", DamageReceiver);

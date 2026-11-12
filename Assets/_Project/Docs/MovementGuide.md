@@ -2,7 +2,7 @@
 
 [프로젝트 안내](../../../README.md) · [전투 안내](CombatFoundationGuide.md) · [플레이어 몸](PlayerBodyGuide.md) · [이동 코드 구조](../Scripts/Player/Movement/README.md)
 
-현재 조작은 [Player.inputactions](../Input/Player.inputactions)를 기준으로 합니다. 아래 수치는 [Player.csv](../Resources/Tables/Player.csv)의 기본값이며, 표를 고치면 바로 바뀝니다. 기능을 시험할 때는 [CombatFoundation](../Scenes/Development/CombatFoundation.unity) 또는 [MovementAbilityPlayground](../Scenes/Development/MovementAbilityPlayground.unity)를 사용합니다.
+현재 조작은 [Player.inputactions](../Input/Player.inputactions)를 기준으로 합니다. 아래 수치는 [Player.csv](../Resources/Tables/Player/Player.csv)의 기본값이며, 표를 고치면 바로 바뀝니다. 기능을 시험할 때는 [CombatFoundation](../Scenes/Development/CombatFoundation.unity) 또는 [MovementAbilityPlayground](../Scenes/Development/MovementAbilityPlayground.unity)를 사용합니다.
 
 ## 기본 조작
 
@@ -139,7 +139,7 @@ Ctrl을 유지한 공중 이동은 자동 파쿠르 진입을 막습니다. 벽 
 
 ## 이동 감각
 
-Beatrun의 손맛을 옮긴 부분입니다. 수치는 모두 [Player.csv](../Resources/Tables/Player.csv)에 있고 Play 중에도 바로 반영됩니다.
+Beatrun의 손맛을 옮긴 부분입니다. 수치는 모두 [Player.csv](../Resources/Tables/Player/Player.csv)에 있고 Play 중에도 바로 반영됩니다.
 
 ### 속도 쌓기
 
@@ -213,13 +213,13 @@ Esc 메뉴 **화면 흔들림**이 곱해집니다.
 
 낙하 꼭대기부터 아래 땅까지 `Ability.bigFallHeight`(8.5m)를 넘고 `bigFallMinSpeed`(9m/s)보다 빠르게 떨어지면 큰 낙하입니다. 땅이 멀면 떨어지기 시작하자마자 들어가고, 틈을 건너뛰는 점프는 해당되지 않습니다. 착지·난간 잡기·다이브에서 끝납니다. 마우스 조작은 막지 않습니다.
 
-- **소리**([PlayerFallAudio](../Scripts/Player/Audio/PlayerFallAudio.cs), `FallAudio` 행): 지지직 바람(`Fall/Static`)이 반복되고, 0.5초 뒤부터 심장이 뜁니다. 박동마다 조금씩 커지고 빨리 떨어질수록 빨라집니다. 박동 한 번은 [SoundCues.csv](../Resources/Tables/SoundCues.csv)의 `FallHeartbeat`입니다.
+- **소리**([PlayerFallAudio](../Scripts/Player/Audio/PlayerFallAudio.cs), `FallAudio` 행): 지지직 바람(`Fall/Static`)이 반복되고, 0.5초 뒤부터 심장이 뜁니다. 박동마다 조금씩 커지고 빨리 떨어질수록 빨라집니다. 박동 한 번은 [SoundCues.csv](../Resources/Tables/Audio/SoundCues.csv)의 `FallHeartbeat`입니다.
 - **화면**([PlayerFallScreen](../Scripts/Player/Camera/PlayerFallScreen.cs), `FallScreen` 행): 가장자리만 렌즈처럼 휘고(숨 쉬듯 줄었다 늘었다), 색이 번지고, 어두워집니다. 가운데는 그대로입니다. `rampTime`(2초)에 걸쳐 들어오고 착지하면 `clearTime`에 사라집니다.
 - **몸**: `Body.fallFlail`로 허우적거립니다. 큰 낙하 중 Ctrl은 착지 구르기만 준비합니다.
 
 ## 사다리·집라인
 
-Beatrun의 `br_ladder`·`br_zipline`을 옮긴 월드 오브젝트입니다. 조작은 위 [파쿠르와 낙하](#파쿠르와-낙하) 표에 있습니다. 수치는 `Player.csv`의 `Ability.ladder*`·`Ability.zipline*` 행, 클립은 `Body` 행, 소리는 `FixtureAudio` 행과 [SoundCues.csv](../Resources/Tables/SoundCues.csv)의 `Ladder*`·`Zipline*` 큐입니다. 시험장은 [MovementAbilityPlayground](../Scenes/Development/MovementAbilityPlayground.unity)의 `Ladder`(`Roll drop platform` 앞면), `Zipline`(그 플랫폼 위에서 점프)입니다.
+Beatrun의 `br_ladder`·`br_zipline`을 옮긴 월드 오브젝트입니다. 조작은 위 [파쿠르와 낙하](#파쿠르와-낙하) 표에 있습니다. 수치는 `Player.csv`의 `Ability.ladder*`·`Ability.zipline*` 행, 클립은 `Body` 행, 소리는 `FixtureAudio` 행과 [SoundCues.csv](../Resources/Tables/Audio/SoundCues.csv)의 `Ladder*`·`Zipline*` 큐입니다. 시험장은 [MovementAbilityPlayground](../Scenes/Development/MovementAbilityPlayground.unity)의 `Ladder`(`Roll drop platform` 앞면), `Zipline`(그 플랫폼 위에서 점프)입니다.
 
 사다리·집라인은 파쿠르 상태라 그동안 총과 주먹을 쓸 수 없습니다.
 
@@ -236,7 +236,7 @@ Beatrun의 `br_ladder`·`br_zipline`을 옮긴 월드 오브젝트입니다. 조
 
 | 바꿀 내용 | 위치 |
 | --- | --- |
-| 이동 속도·속도 쌓기·점프·중력·슬라이딩·다이브 | [Player.csv](../Resources/Tables/Player.csv)의 `Move` 행. 저장하면 Play 중에도 바로 적용된다. 선언: [PlayerMovement.Configuration.cs](../Scripts/Player/Movement/PlayerMovement.Configuration.cs) |
+| 이동 속도·속도 쌓기·점프·중력·슬라이딩·다이브 | [Player.csv](../Resources/Tables/Player/Player.csv)의 `Move` 행. 저장하면 Play 중에도 바로 적용된다. 선언: [PlayerMovement.Configuration.cs](../Scripts/Player/Movement/PlayerMovement.Configuration.cs) |
 | 캡슐 높이·눈높이·자세 전환 빠르기 | `Player.csv`의 `Posture` 행 |
 | 회피·기울이기·파쿠르·착지·저스트 슬라이드·밀치기·사다리·집라인 | `Player.csv`의 `Ability` 행. 선언: [MovementAbilitySettings.cs](../Scripts/Player/Movement/MovementAbilitySettings.cs) |
 | 시점 펀치 / 큰 낙하 화면 | `Player.csv`의 `Punch` / `FallScreen` 행 |

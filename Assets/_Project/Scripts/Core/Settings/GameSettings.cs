@@ -135,7 +135,7 @@ public sealed class GameSettings
     public List<string> outfits = new List<string>();
     [Tooltip("The name other players see. Empty uses this PC's user name.")]
     public string nickname = "";
-    [Tooltip("Scene name of the map last chosen on the main menu (Resources/Tables/Maps.csv).")]
+    [Tooltip("Scene name of the map last chosen on the main menu (Resources/Tables/Maps/Maps.csv).")]
     public string lastMap = "";
     [Tooltip("Address last typed on the main menu to join a room.")]
     public string lastAddress = GameSession.DefaultAddress;

@@ -54,7 +54,8 @@ HOLD_CONSTRAINT = 'Hold the gun (throw workspace)'
 PREVIEW = '06 Throwable preview - never exported'
 MODELS = {'grenade': 'Assets/_Project/Art/Models/Addons/Grenades/GrenadeFrag/GrenadeFrag.fbx',
           'knife': 'Assets/_Project/Art/Models/Addons/Grenades/MWThrowingKnife/MWThrowingKnife.fbx'}
-GRENADES_TABLE = 'Assets/_Project/Resources/Tables/Grenades.csv'
+TABLES_DIR = Path('Assets/_Project/Resources/Tables')
+GRENADES_TABLE = 'Grenades'
 # Which row of Tables/Grenades each preview is seated by.
 HELD_ROW = {'grenade': 'frag', 'knife': 'knife'}
 
@@ -572,9 +573,19 @@ def knife_held(idle):
 
 # ---- Previews in the left hand ----------------------------------------------------------------------------------------
 
+def table_file(root, name, new_in='Grenades'):
+    """The game's table of this name under the project root. Since 0.9.0 the tables are filed in sub-folders of
+    Resources/Tables by subject and found by file name alone, as the game finds them (GameTables); a table that isn't
+    there yet is made in new_in."""
+    base = Path(root) / TABLES_DIR
+    for found in sorted(base.rglob(name + '.csv')):
+        return found
+    return base / new_in / (name + '.csv')
+
+
 def held_numbers(root, row_id):
     import csv
-    with open(root / GRENADES_TABLE, encoding='utf-8-sig', newline='') as f:
+    with open(table_file(root, GRENADES_TABLE), encoding='utf-8-sig', newline='') as f:
         for row in csv.DictReader(f):
             if row.get('id') == row_id:
                 num = lambda k, d: float(row.get(k) or d)

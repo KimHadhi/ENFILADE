@@ -45,7 +45,8 @@ spec.loader.exec_module(tools)
 PREVIEWS = {'forward': 'Assets/_Project/Art/Models/Addons/Knives/PrimalKnife/PrimalKnife.fbx',
             'reverse': 'Assets/_Project/Art/Models/Addons/Knives/Karambit/Karambit.fbx'}
 KNIFE_MODEL = 'Assets/_Project/Art/Models/Addons/Knives/{0}/{0}.fbx'
-CLASS_KNIVES = 'Assets/_Project/Resources/Tables/ClassKnives.csv'
+TABLES_DIR = Path('Assets/_Project/Resources/Tables')
+CLASS_KNIVES = 'ClassKnives'
 # ClassKnives' seat (hand axes: x away from the thumb, y out of the palm, z the fingers' way; positions in hand lengths).
 HELD = Vector((0.0, .3, .55))
 BLADE = {'forward': Vector((-.8, 0.0, .6)), 'reverse': Vector((.93, 0.0, .36))}
@@ -102,11 +103,21 @@ DRAFTS = {
 }
 
 
+def table_file(root, name, new_in='Melee'):
+    """The game's table of this name under the project root. Since 0.9.0 the tables are filed in sub-folders of
+    Resources/Tables by subject and found by file name alone, as the game finds them (GameTables); a table that isn't
+    there yet is made in new_in."""
+    base = Path(root) / TABLES_DIR
+    for found in sorted(base.rglob(name + '.csv')):
+        return found
+    return base / new_in / (name + '.csv')
+
+
 def seats(root):
     """Each knife model's seat in the melee slot as ClassKnives.csv gives it (its first row naming that model): the handle's
     middle, the blade's and the edge's ways in the hand's axes; a row without its own seat takes its grip's."""
     out = {}
-    with open(root / CLASS_KNIVES, encoding='utf-8-sig', newline='') as f:
+    with open(table_file(root, CLASS_KNIVES), encoding='utf-8-sig', newline='') as f:
         for row in csv.DictReader(f):
             if (row.get('id') or '').startswith('#') or not row.get('model'):
                 continue

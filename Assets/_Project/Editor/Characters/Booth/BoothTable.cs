@@ -12,7 +12,7 @@ using System.Text;
 internal sealed class BoothTable
 {
     internal const string Redo = "Tools → Characters → BOOTH 다시 가져오기를 눌러 주세요.";
-    private const string TextsPath = "Assets/_Project/Resources/Tables/Texts.csv";
+    private static string TextsPath => TablePaths.Of(Texts.TableName);
 
     private string newline;
     private List<string> header;

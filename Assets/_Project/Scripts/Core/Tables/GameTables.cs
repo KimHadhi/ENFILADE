@@ -15,6 +15,9 @@ public interface ITableBound
 /// recompile. Bind() overwrites an object's fields from one row: each column names a field, empty cells keep the
 /// inspector value, and a row that does not exist leaves the object untouched. In the editor, saving a table calls
 /// Reload(), which re-applies every live binding, during Play included.
+/// A table is asked for by its file name alone ("Weapons"): the files are filed in sub-folders of Resources/Tables by
+/// subject, and where one stands is nobody's business but the folder's. A mod's table of the same name is laid over
+/// the game's (GameMods), row by row, before anyone reads it.
 /// </summary>
 public static class GameTables
 {
@@ -29,6 +32,8 @@ public static class GameTables
     }
 
     private static readonly Dictionary<string, CsvTable> loaded = new Dictionary<string, CsvTable>(StringComparer.OrdinalIgnoreCase);
+    // The game's own table files by name, wherever they are filed under Resources/Tables. Null until first asked.
+    private static Dictionary<string, TextAsset> sources;
     private static readonly List<Binding> bindings = new List<Binding>();
     private static readonly HashSet<string> reported = new HashSet<string>();
     private static int pruneAt = 64;
@@ -39,7 +44,7 @@ public static class GameTables
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetSession()
     {
-        loaded.Clear(); bindings.Clear(); reported.Clear(); pruneAt = 64;
+        loaded.Clear(); bindings.Clear(); reported.Clear(); pruneAt = 64; sources = null;
     }
 
     /// <summary>
@@ -84,10 +89,30 @@ public static class GameTables
         return data != null && data.TryGetRow(id ?? "", out row);
     }
 
-    /// <summary>Forget the cached tables and re-apply them to every bound object that still exists.</summary>
+    /// <summary>The game's own text of a table, with no mod laid over it, or null when there is no such table: for
+    /// tools that show a table as it is written (the surface picker, /mods export).</summary>
+    public static string SourceText(string table)
+    {
+        if (string.IsNullOrEmpty(table)) return null;
+        if (!Sources().TryGetValue(table, out var asset)) return null;
+        if (asset == null)
+        {
+            // Unloaded under us (a scene change sweeps unused assets): read the folder again.
+            sources = null;
+            if (!Sources().TryGetValue(table, out asset) || asset == null) return null;
+        }
+        return asset.text;
+    }
+
+    /// <summary>The names of the game's own tables.</summary>
+    public static IEnumerable<string> SourceNames => Sources().Keys;
+
+    /// <summary>Forget the cached tables (and which mods and table files there are) and re-apply them to every bound
+    /// object that still exists.</summary>
     public static void Reload()
     {
-        loaded.Clear(); reported.Clear();
+        loaded.Clear(); reported.Clear(); sources = null;
+        GameMods.Rescan();
         bindings.RemoveAll(b => !b.IsAlive);
         foreach (var binding in bindings.ToArray()) Apply(binding.Table, binding.Id, binding.Owner, binding.Targets);
         Reloaded?.Invoke();
@@ -119,9 +144,32 @@ public static class GameTables
     private static CsvTable Load(string table)
     {
         if (loaded.TryGetValue(table, out var cached)) return cached;
-        var asset = Resources.Load<TextAsset>(ResourcesFolder + "/" + table);
-        if (asset == null) Report($"Resources/{ResourcesFolder}/{table}.csv 파일이 없습니다.", null);
-        return loaded[table] = asset != null ? CsvTable.Parse(asset.text, table) : null;
+        string text = SourceText(table);
+        CsvTable parsed = text != null ? CsvTable.Parse(text, table) : null;
+        // Mods in load order, each over what came before; a table only a mod has is that mod's alone.
+        foreach (var layer in GameMods.TableTexts(table))
+        {
+            var over = CsvTable.Parse(layer.Value, table);
+            if (parsed == null) parsed = over;
+            else parsed.Overlay(over);
+        }
+        if (parsed == null) Report($"Resources/{ResourcesFolder} 아래에 {table}.csv 파일이 없습니다.", null);
+        return loaded[table] = parsed;
+    }
+
+    // Every table file under Resources/Tables and its sub-folders, by name. Read once (and again after Reload).
+    private static Dictionary<string, TextAsset> Sources()
+    {
+        if (sources != null) return sources;
+        sources = new Dictionary<string, TextAsset>(StringComparer.OrdinalIgnoreCase);
+        foreach (var asset in Resources.LoadAll<TextAsset>(ResourcesFolder))
+        {
+            if (asset == null) continue;
+            if (sources.ContainsKey(asset.name))
+                Report($"{asset.name}.csv가 Resources/{ResourcesFolder} 아래 두 곳에 있습니다. 하나만 남겨 주세요(먼저 찾은 것을 씁니다).", asset);
+            else sources[asset.name] = asset;
+        }
+        return sources;
     }
 
     private static string Describe(string table, string id) => id.Length > 0 ? $"{table}.csv [{id}]" : $"{table}.csv";

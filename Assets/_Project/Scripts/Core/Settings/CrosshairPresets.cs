@@ -3,7 +3,7 @@ using UnityEngine;
 
 /// <summary>
 /// Ready shapes to start drawing from, like CS2's styles or Overwatch's reticle types, read from
-/// Resources/Tables/CrosshairPresets.csv: one row per tile in file order, the name column is the tile's name (a Texts id,
+/// Resources/Tables/Weapons/CrosshairPresets.csv: one row per tile in file order, the name column is the tile's name (a Texts id,
 /// crosshair.preset.&lt;id&gt;, or plain words; without it the id is the name, as in older tables) and each other column
 /// names a <see cref="CrosshairSettings"/> field. A preset sets only the shape and its spin; colour, opacity and outline
 /// stay the player's. Nothing keeps a preset's id (the gallery finds the tile by its shape), so ids are free to change.

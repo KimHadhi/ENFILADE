@@ -3,10 +3,10 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
-/// <summary>Reloads GameTables whenever a CSV under Resources/Tables is saved, so balance edits reach a running game.</summary>
+/// <summary>Reloads GameTables whenever a CSV under Resources/Tables (any sub-folder) is saved, so balance edits reach a running game.</summary>
 internal sealed class GameTablesWatcher : AssetPostprocessor
 {
-    private const string FolderPath = "Assets/_Project/Resources/" + GameTables.ResourcesFolder;
+    private const string FolderPath = TablePaths.Folder;
 
     private static void OnPostprocessAllAssets(string[] imported, string[] deleted, string[] moved, string[] movedFrom)
     {
@@ -20,7 +20,7 @@ internal sealed class GameTablesWatcher : AssetPostprocessor
         && path.EndsWith(".csv", StringComparison.OrdinalIgnoreCase);
 
     [MenuItem("Tools/Data Tables/Open Tables Folder")]
-    private static void OpenFolder() => EditorUtility.RevealInFinder(FolderPath + "/Player.csv");
+    private static void OpenFolder() => EditorUtility.RevealInFinder(TablePaths.Of("Player"));
 
     [MenuItem("Tools/Data Tables/Reload Tables")]
     private static void ReloadNow()

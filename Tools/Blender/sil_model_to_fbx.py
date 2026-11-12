@@ -9,7 +9,7 @@ skeleton), and changes only what the game needs:
   PlayerBody profile hides from its own camera. Not "Head": that is this rig's head bone, and a humanoid bone's name
   has to be the only one of its kind in the model.
 - The skirt had no bones; every skirt vertex hung from Hips. A ring of chains (Skirt_<chain>_<joint>) now runs from the
-  waist to the hem and carries the skirt, so Magica Cloth can move it (Resources/Tables/Cloth.csv). Its weights blend
+  waist to the hem and carries the skirt, so Magica Cloth can move it (Resources/Tables/Characters/Cloth.csv). Its weights blend
   the two chains either side of a vertex and the two joints above and below it, and fade into the old ones at the
   waist.
 The .fbx.meta beside the export maps the two materials to the package's own and leaves the humanoid mapping to Unity.

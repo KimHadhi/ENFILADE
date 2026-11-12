@@ -55,10 +55,10 @@ public sealed class SurfaceNameDrawer : PropertyDrawer
         if (ids != null) return;
         var found = new List<string>();
         var shown = new List<GUIContent>();
-        var asset = Resources.Load<TextAsset>(GameTables.ResourcesFolder + "/" + Table);
-        if (asset != null)
+        string source = GameTables.SourceText(Table);
+        if (source != null)
         {
-            var records = CsvTable.ReadRecords(asset.text);
+            var records = CsvTable.ReadRecords(source);
             int note = records.Count > 0 ? records[0].FindIndex(cell => cell.Trim() == NoteColumn) : -1;
             for (int r = 1; r < records.Count; r++)
             {

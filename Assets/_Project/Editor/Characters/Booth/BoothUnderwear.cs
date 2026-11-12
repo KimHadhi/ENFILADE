@@ -21,8 +21,8 @@ using UnityEngine;
 /// </summary>
 internal static class BoothUnderwear
 {
-    private const string PartsPath = "Assets/_Project/Resources/Tables/CharacterParts.csv";
-    private const string ItemsPath = "Assets/_Project/Resources/Tables/Outfits.csv";
+    private static string PartsPath => TablePaths.Of("CharacterParts");
+    private static string ItemsPath => TablePaths.Of("Outfits");
     private const string Top = "undertop", Bottom = "underbottom";
 
     // Words of underwear in a mesh's name, whole words: MAYO_Underwear_Bra, "Bikini top String", Sera_Yura_Bikini_Panty.

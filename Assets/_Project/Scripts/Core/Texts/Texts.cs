@@ -3,7 +3,7 @@ using System.Globalization;
 using UnityEngine;
 
 /// <summary>
-/// Every word the game shows a player, by id, from Resources/Tables/Texts.csv: the user writes them there, and a
+/// Every word the game shows a player, by id, from Resources/Tables/Core/Texts.csv: the user writes them there, and a
 /// translation is one more column (the user's playtest of 2026-11-11: "나중에 번역판을 위해서 좀 데이터 테이블로 정리한
 /// 다음에 내가 손 봐야겠다"). The table's columns are the id, one per language (ko first; en waits empty) and #어디, a note
 /// on where the words appear that the game never reads. Code asks for an id (Get), or for an id whose words hold {0}, {1}

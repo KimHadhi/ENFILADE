@@ -29,8 +29,19 @@ import uuid
 import wave
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-TABLE = os.path.join(ROOT, 'Assets/_Project/Resources/Tables/Callouts.csv')
-TEXTS = os.path.join(ROOT, 'Assets/_Project/Resources/Tables/Texts.csv')
+def table_file(root, name, new_in="Clips"):
+    """The game's table of this name under the project root. Since 0.9.0 the tables are filed in sub-folders of
+    Resources/Tables by subject and found by file name alone, as the game finds them (GameTables); a table that isn't
+    there yet is made in new_in."""
+    base = os.path.join(root, "Assets", "_Project", "Resources", "Tables")
+    for folder, _, files in sorted(os.walk(base)):
+        if name + ".csv" in files:
+            return os.path.join(folder, name + ".csv")
+    return os.path.join(base, new_in, name + ".csv")
+
+
+TABLE = table_file(ROOT, 'Callouts', new_in='Player')
+TEXTS = table_file(ROOT, 'Texts', new_in='Core')
 SPOKEN = os.path.join(ROOT, 'Tools/Audio/callout_voices_spoken.csv')
 VOICE_ROOT = 'Assets/_Project/Art/Audio/Voice/Hiro'
 CALLOUT = VOICE_ROOT + '/Callout'

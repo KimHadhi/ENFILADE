@@ -62,7 +62,7 @@
 
 ## 결과 연출의 카메라와 조명 숫자
 
-[Hub.csv](../../Assets/_Project/Resources/Tables/Hub.csv)에서 바꾼다(바꾼 뒤 `results`로 다시 본다).
+[Hub.csv](../../Assets/_Project/Resources/Tables/Modes/Hub.csv)에서 바꾼다(바꾼 뒤 `results`로 다시 본다).
 
 | 열 | 지금 | 뜻 |
 | --- | --- | --- |

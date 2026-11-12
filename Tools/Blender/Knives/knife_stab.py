@@ -1,4 +1,4 @@
-"""The execution knife's stroke, drafted: writes Assets/_Project/Resources/Tables/KnifeStab.csv (KnifeStroke reads it,
+"""The execution knife's stroke, drafted: writes Assets/_Project/Resources/Tables/Clips/KnifeStab.csv (KnifeStroke reads it,
 ExecutionKnifeArm plays it on any character's arms, ExecutionKnife times it to the execution).
 
 Plain Python (Blender's own python runs it too):
@@ -24,7 +24,18 @@ import os
 import sys
 
 ROOT = os.path.abspath(sys.argv[1]) if len(sys.argv) > 1 else os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
-OUT = os.path.join(ROOT, "Assets", "_Project", "Resources", "Tables", "KnifeStab.csv")
+def table_file(root, name, new_in="Clips"):
+    """The game's table of this name under the project root. Since 0.9.0 the tables are filed in sub-folders of
+    Resources/Tables by subject and found by file name alone, as the game finds them (GameTables); a table that isn't
+    there yet is made in new_in."""
+    base = os.path.join(root, "Assets", "_Project", "Resources", "Tables")
+    for folder, _, files in sorted(os.walk(base)):
+        if name + ".csv" in files:
+            return os.path.join(folder, name + ".csv")
+    return os.path.join(base, new_in, name + ".csv")
+
+
+OUT = table_file(ROOT, "KnifeStab")
 FPS = 30
 TENSION = .3
 

@@ -20,7 +20,7 @@ the file is ready to work in: the user only poses and times (the user, 2026-11-1
     (ModelImportRules) into the body's clips, and the kick plays it on the legs (Player.csv Body.kick).
   - 수리 · 망치 (enf_repair_hammer) and 수리 · 토치 (enf_repair_torch): the Support's mending loops on Kazusa's free left
     arm (CTRL_hand.L, CTRL_elbow.L) while the right hand keeps the gun; the left hand's hold on the gun is let go while one
-    is shown. Sent as Assets/_Project/Resources/Tables/RepairHammer.csv or RepairTorch.csv: the wrist, the elbow and the
+    is shown. Sent as Assets/_Project/Resources/Tables/Clips/RepairHammer.csv or RepairTorch.csv: the wrist, the elbow and the
     hand's way from the eyes in the view's axes, which RepairArm plays on any character's left arm (GrenadeArmPath's
     columns). repair_moves.py adds them to an older workspace and keys their drafts.
 Every button keys at the current frame with auto-key on, holding the pose some frames either side, so a click is one
@@ -49,7 +49,7 @@ BASE_TRACK = '1 시안 (잠금)'
 GUN, GUN_HOLD = 'GUN', 'GUN_hold'
 GUN_MOVES_DIR = Path('Assets/_Project/Resources/Combat/GunMoves')
 KICK_DIR = Path('Assets/_Project/Art/Animations/Shove')
-PLAYER_TABLE = Path('Assets/_Project/Resources/Tables/Player.csv')
+PLAYER_TABLE = 'Player'
 # Seconds per sample in a gun move file: two per frame at 30 fps, so the game's curve follows the polish closely.
 SAMPLES_PER_FRAME = 2
 STRIKE = '타격'
@@ -162,7 +162,7 @@ def game_number(row, fallback):
         value = fallback
         root = project_root()
         try:
-            for line in (root / PLAYER_TABLE).read_text(encoding='utf-8-sig').splitlines():
+            for line in table_file(root, PLAYER_TABLE).read_text(encoding='utf-8-sig').splitlines():
                 cells = line.split(',')
                 if cells[0] == row:
                     value = float(cells[1])
@@ -471,13 +471,27 @@ def clear_frame(context, frame):
 _SWAP = Matrix(((1, 0, 0), (0, 0, 1), (0, 1, 0)))
 
 
+def table_file(root, name, new_in='Clips'):
+    """The game's table of this name under the project root. Since 0.9.0 the tables are filed in sub-folders of
+    Resources/Tables by subject and found by file name alone, as the game finds them (GameTables); a table that isn't
+    there yet is made in new_in."""
+    base = Path(root) / TABLES_DIR
+    for found in sorted(base.rglob(name + '.csv')):
+        return found
+    return base / new_in / (name + '.csv')
+
+
 def target(key):
-    """Where a move goes in the game, from the project root."""
+    """Where a move goes in the game, from the project root (an arm's table is found by its name; a new one goes to
+    Clips)."""
     move = MOVES[key]
     if move['kind'] == 'gun':
         return GUN_MOVES_DIR / (move['action'] + '.csv')
     if move['kind'] == 'arm':
-        return TABLES_DIR / (move['table'] + '.csv')
+        root = project_root()
+        if root is None:
+            return TABLES_DIR / 'Clips' / (move['table'] + '.csv')
+        return table_file(root, move['table']).relative_to(root)
     return KICK_DIR / (move['action'] + '.fbx')
 
 

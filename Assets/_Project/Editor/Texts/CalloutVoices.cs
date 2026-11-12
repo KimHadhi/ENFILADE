@@ -33,7 +33,7 @@ internal static class CalloutVoices
     private const string Script = "Tools/Audio/callout_voices.py";
     private const string Spoken = "Tools/Audio/callout_voices_spoken.csv";
     private const string Folder = "Assets/_Project/Art/Audio/Voice/Hiro/Callout";
-    private const string Table = "Assets/_Project/Resources/Tables/" + CalloutLines.TableName + ".csv";
+    private static string Table => TablePaths.Of(CalloutLines.TableName);
 
     private static Process running;
     private static readonly StringBuilder output = new StringBuilder();

@@ -2,8 +2,8 @@
 
 2026-11-11 사용자 메모 23·24·25를 좀비로 만든 기록(24는 2026-11-12에 사용자가 정한 그림 리퍼로). 수치는 표가 진실이고, 이 문서는 무엇을 왜 그렇게 했는지 적는다.
 
-- 종류와 나오는 비율·체력·크기·속도: [ZombieKinds.csv](../Resources/Tables/ZombieKinds.csv)의 `Ninja`·`Candyman`·`Breadbag` 행. `most`는 한꺼번에 있을 수 있는 최대 수(닌자 2, 나머지 1).
-- 저마다의 수치: [ZombieNinja.csv](../Resources/Tables/ZombieNinja.csv), [ZombieCandyman.csv](../Resources/Tables/ZombieCandyman.csv), [ZombieBreadbag.csv](../Resources/Tables/ZombieBreadbag.csv), [ZombieReaper.csv](../Resources/Tables/ZombieReaper.csv).
+- 종류와 나오는 비율·체력·크기·속도: [ZombieKinds.csv](../Resources/Tables/Enemies/ZombieKinds.csv)의 `Ninja`·`Candyman`·`Breadbag` 행. `most`는 한꺼번에 있을 수 있는 최대 수(닌자 2, 나머지 1).
+- 저마다의 수치: [ZombieNinja.csv](../Resources/Tables/Enemies/ZombieNinja.csv), [ZombieCandyman.csv](../Resources/Tables/Enemies/ZombieCandyman.csv), [ZombieBreadbag.csv](../Resources/Tables/Enemies/ZombieBreadbag.csv), [ZombieReaper.csv](../Resources/Tables/Enemies/ZombieReaper.csv).
 - 모습 자리: [EliteLooks.asset](../Resources/Enemies/EliteLooks.asset). 2026-11-12부터 거구·자폭·돌진·캔디맨·리퍼는 팩 좀비 가운데 정해진 몸 하나만 입는다(맨 아래 「엘리트 고정 외형」). 닌자와 브레드백은 전용 몸이 없어서 팩 좀비 몸을 조금 크거나 작게 쓰고, 머리 불빛 색과 손에 든 것(상자 몇 개로 만든 임시 소품)으로 구분한다. 행마다 `character`(몸), `handProp`(오른손, +Z가 날 방향, 손잡이가 원점), `headProp`(머리), `swing`(휘두르는 동작 클립)에 넣으면 임시 것이나 팩의 것 대신 그것을 쓴다. 자기 몸이 있는 엘리트에게는 머리 임시 소품(리퍼의 두건)을 씌우지 않는다. 소리 칸이 비어 있으면 코드가 만든 소리를 쓴다.
 - 시험: `/spawn ninja`, `/spawn candyman`, `/spawn breadbag`, `/spawn reaper` (여러 마리면 `/spawn 2 ninja`).
 - 처음 가까이(32m) 보면 화면 위 경고 띠에 이름과 할 일이 한 번 뜬다(Texts.csv `hud.alert.ninja` 등). 효과에는 납득할 설명이 붙는다는 규칙에 따라.

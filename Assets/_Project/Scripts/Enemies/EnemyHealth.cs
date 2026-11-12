@@ -10,7 +10,7 @@ public enum EnemyRank { Normal, Elite, Named }
 [DisallowMultipleComponent, RequireComponent(typeof(MeleeCombatTarget))]
 public sealed class EnemyHealth : MonoBehaviour, IDamageReceiver, ICombatVitals, ICombatDisplayName, ITableBound, ICombatFoe
 {
-    /// <summary>Resources/Tables/Enemies.csv. A row covers EnemyHealth, EnemyCombatAI, MeleeCombatTarget and NavMeshAgent.</summary>
+    /// <summary>Resources/Tables/Enemies/Enemies.csv. A row covers EnemyHealth, EnemyCombatAI, MeleeCombatTarget and NavMeshAgent.</summary>
     public const string TableName = "Enemies";
 
     [SerializeField, Min(1f)]

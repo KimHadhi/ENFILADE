@@ -24,7 +24,7 @@ using Debug = UnityEngine.Debug;
 /// </summary>
 internal sealed class OutfitPictureBake : AssetPostprocessor
 {
-    private const string TablePath = "Assets/_Project/Resources/Tables/" + OutfitPictures.TableName + ".csv";
+    private static string TablePath => TablePaths.Of(OutfitPictures.TableName);
     // The table's first two lines as this writes them. A table from before a column came in gets the new ones: its rows
     // read the missing cell as empty (the automatic value).
     private const string Header = "id,yaw,pitch,zoom,x,y,roll,part";

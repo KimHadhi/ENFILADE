@@ -11,7 +11,7 @@ then this, and the file is ready to work in: the user only poses and times (the 
   influence, keyed in the pair's action. Moving the hold point moves where that hand holds, for that pair.
 - Saving (Ctrl+S) sends every pair that changed since it was last sent to the game: both clips (enf_exe_<pair>_p for the
   player, _z for the zombie) to Assets/_Project/Art/Animations/Executions and the pair's row of
-  Assets/_Project/Resources/Tables/Executions.csv (its length, the kill moment, where the player stands and faces, where
+  Assets/_Project/Resources/Tables/Melee/Executions.csv (its length, the kill moment, where the player stands and faces, where
   the zombie lies at the start, the hands' holds). Unity takes the clips with the right avatars (ModelImportRules).
 Nothing here changes Blender's preferences.
 """
@@ -38,7 +38,8 @@ HERE_NAME = 'Tools/Blender/Executions'
 TRUEFPS = Path('Tools/Blender/TrueFPS/truefps_tools.py')
 ZOMBIES = Path('Tools/Blender/Zombies/zombie_tools.py')
 OUT_DIR = Path('Assets/_Project/Art/Animations/Executions')
-TABLE = Path('Assets/_Project/Resources/Tables/Executions.csv')
+TABLES_DIR = Path('Assets/_Project/Resources/Tables')
+TABLE_NAME = 'Executions'
 # Files built by 0.8.294-0.8.297 laid each draft locked on this NLA track under an empty touch-up action.
 OLD_TRACK = '1 시안 (잠금)'
 PREFIX = 'enf_exe_'
@@ -507,9 +508,19 @@ def restore_draft(context, key):
 
 # ---- The table ------------------------------------------------------------------------------------------------------
 
+def table_file(root, name, new_in='Melee'):
+    """The game's table of this name under the project root. Since 0.9.0 the tables are filed in sub-folders of
+    Resources/Tables by subject and found by file name alone, as the game finds them (GameTables); a table that isn't
+    there yet is made in new_in."""
+    base = Path(root) / TABLES_DIR
+    for found in sorted(base.rglob(name + '.csv')):
+        return found
+    return base / new_in / (name + '.csv')
+
+
 def read_table(root):
     """Executions.csv as {id: row}, the 설명 row left out."""
-    path = root / TABLE
+    path = table_file(root, TABLE_NAME)
     if not path.exists():
         return {}
     text = path.read_bytes().decode('utf-8-sig')
@@ -528,7 +539,7 @@ def read_table(root):
 def write_row(root, key, values):
     """Writes these columns of the pair's row (made if missing), keeping every other row, the 설명 row and the file's
     line ends. Written in place, retried: a file Unity has open can't be truncated by a plain write on this PC."""
-    path = root / TABLE
+    path = table_file(root, TABLE_NAME)
     raw = path.read_bytes()
     text = raw.decode('utf-8-sig')
     newline = '\r\n' if '\r\n' in text else '\n'

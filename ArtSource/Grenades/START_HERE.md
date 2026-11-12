@@ -58,10 +58,10 @@
 
 | 클립 | 가는 곳 |
 | --- | --- |
-| 수류탄 넷 | `Assets/_Project/Resources/Tables/GrenadeDraw.csv`, `GrenadeHold.csv`, `GrenadeThrow.csv`, `GrenadeTap.csv` |
-| 나이프 셋 | `Assets/_Project/Resources/Tables/KnifeDraw.csv`, `KnifeHold.csv`, `KnifeThrow.csv` |
+| 수류탄 넷 | `Assets/_Project/Resources/Tables/Clips/GrenadeDraw.csv`, `GrenadeHold.csv`, `GrenadeThrow.csv`, `GrenadeTap.csv` |
+| 나이프 셋 | `Assets/_Project/Resources/Tables/Clips/KnifeDraw.csv`, `KnifeHold.csv`, `KnifeThrow.csv` |
 
-Unity 창을 누르면 가져간다. Play 중이어도 다음 G부터 새 동작이 나온다. 수류탄 클립은 연막·섬광·회복 안개·염료·클레이모어도 같이 쓴다. 빠르기는 [ThrowArms.csv](../../Assets/_Project/Resources/Tables/ThrowArms.csv)에서 바꾼다(나이프 던지기 1.5배는 애드온의 재생 속도).
+Unity 창을 누르면 가져간다. Play 중이어도 다음 G부터 새 동작이 나온다. 수류탄 클립은 연막·섬광·회복 안개·염료·클레이모어도 같이 쓴다. 빠르기는 [ThrowArms.csv](../../Assets/_Project/Resources/Tables/Grenades/ThrowArms.csv)에서 바꾼다(나이프 던지기 1.5배는 애드온의 재생 속도).
 
 - 패널 맨 아래에 지금 클립이 게임에 들어가 있는지, 고친 것이 있는지가 보인다.
 - 패널의 **게임에 보내기** 버튼은 `Ctrl+S`와 같다(바뀐 클립을 보내고 작업 파일을 저장한다). **모든 클립 다시 보내기**는 바뀌지 않은 것까지 일곱 개를 모두 다시 보낸다. **저장하면 게임에 보내기**를 끄면 `Ctrl+S`는 저장만 하고, 보낼 때는 버튼을 누른다.
@@ -70,7 +70,7 @@ Unity 창을 누르면 가져간다. Play 중이어도 다음 G부터 새 동작
 
 - **화면이 이상해졌다**: `Ctrl+Z`. 그래도 이상하면 저장하지 말고 껐다가 다시 연다. 작업 파일은 git에 있다.
 - **팔이 쭉 펴져 덜컥거린다**: 팔 길이보다 멀리 보낸 것이다. 그 프레임에서 `왼손`을 `뒤로` 당긴다. 나이프 던지기의 처음(젖힌 자세)과 끝까지 뻗는 순간은 원본 팔이 카즈사보다 길어서 4~5cm 덜 간다.
-- **수류탄이 손에서 떠 보인다**: 손 안의 자리는 [Grenades.csv](../../Assets/_Project/Resources/Tables/Grenades.csv)의 `held*`(손 길이의 배수)·`heldTurn*`·`grip*`다. 고치고 작업실을 다시 만든다(아래).
+- **수류탄이 손에서 떠 보인다**: 손 안의 자리는 [Grenades.csv](../../Assets/_Project/Resources/Tables/Grenades/Grenades.csv)의 `held*`(손 길이의 배수)·`heldTurn*`·`grip*`다. 고치고 작업실을 다시 만든다(아래).
 - **되풀이가 이음매에서 튄다**: 끝 프레임을 1프레임과 같은 자세로 둔다.
 - **고친 게 게임에 안 나온다**: 저장했을 때 상태줄에 「게임에 보냄」이 떴는지, Unity 창을 한 번 눌렀는지 본다. 「보내지 못함 … Unity가 붙잡고 있음」이 뜨면 잠깐 뒤 다시 저장한다.
 

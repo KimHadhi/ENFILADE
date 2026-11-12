@@ -120,7 +120,7 @@ enf_reach,0,0,0,0,0,0,,
 ```
 
 5. FBX를 Reimport하고 Animation 탭의 이름·재생·반복 설정을 확인한다. 반복 동작은 `loop`를 `1`로 바꾼다.
-6. 클립은 몸 프로필에 자동 등록된다. 실제 상태에서 쓰려면 `Assets/_Project/Resources/Tables/Player.csv`의 해당 `Body.*` 행을 바꾼다. 예: 새 서기 동작을 만들었다면 `Body.idle`의 값 `mx_idle`을 `enf_idle`로 교체한다. 등록만으로 기존 동작이 바뀌지는 않는다.
+6. 클립은 몸 프로필에 자동 등록된다. 실제 상태에서 쓰려면 `Assets/_Project/Resources/Tables/Player/Player.csv`의 해당 `Body.*` 행을 바꾼다. 예: 새 서기 동작을 만들었다면 `Body.idle`의 값 `mx_idle`을 `enf_idle`로 교체한다. 등록만으로 기존 동작이 바뀌지는 않는다.
 7. 게임을 Play하고 1인칭과 **F5 전체 몸 보기**에서 확인한다. 다른 스킨에서도 사용할 동작이면 해당 스킨으로도 검사한다.
 
 게임의 실제 이동은 코드가 담당하며 Animator Root Motion은 꺼져 있다. CSV의 `inPlace / inPlaceY / inPlaceYaw`가 **0이면 작성한 이동·높이·회전을 몸 자세에 보존**한다. `1`이면 각각 수평 이동·높이 이동·회전을 제거하는 설정이다. 기본 0에서 시작하고, 캐릭터가 게임 이동에 더해 앞으로 밀리면 해당 동작의 수평 이동을 검토한다. `yawOffset`은 기본 0이며 다른 에셋의 180을 그대로 복사하지 않는다.

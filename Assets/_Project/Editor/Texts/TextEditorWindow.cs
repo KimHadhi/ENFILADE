@@ -7,7 +7,7 @@ using UnityEngine;
 using Object = UnityEngine.Object;
 
 /// <summary>
-/// Tools → 글자 → 글자 편집기: every word the game shows, from Resources/Tables/Texts.csv, to read and rewrite in one place
+/// Tools → 글자 → 글자 편집기: every word the game shows, from Resources/Tables/Core/Texts.csv, to read and rewrite in one place
 /// (the user, 2026-11-12: "네가 쓴 대사나 문구나 설정 같은 것들 너무 AI 같아서 내가 수정하려고 하는데 어디서 해? 모으면 다
 /// 수정할 수 있어?"). Search by id, words or note, filter by area, Korean and a second language side by side, where each
 /// line is used. Saving writes only the changed cells, in place (TextSheet), warns before a line loses a hole the code

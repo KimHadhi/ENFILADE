@@ -35,7 +35,7 @@ The workspace opens ready to work in, and saving sends the work to the game, so 
     differs from the one it was last sent with: both rigs baked with `truefps_tools.export_active_clip` (Kazusa at her own
     root and size) to `Assets/_Project/Art/Animations/Executions/enf_exe_<pair>_p.fbx` / `_z.fbx` with `.clips.csv` (one
     clip, not looped, root kept), a bare `.meta` (GUID only) before a new file, and the pair's row of
-    `Assets/_Project/Resources/Tables/Executions.csv` written in place (every other column kept). 게임에서 빼기 deletes a
+    `Assets/_Project/Resources/Tables/Melee/Executions.csv` written in place (every other column kept). 게임에서 빼기 deletes a
     pair's clips and keeps it out until the pair changes.
 - `execution_drafts.py` makes drafts as key poses: `ZombieDraft` (a start pose sampled from a pack clip with
   `zombie_tools.sample_clip`, key poses as body-axis turns of bone subtrees plus a hips move, every bone keyed at the

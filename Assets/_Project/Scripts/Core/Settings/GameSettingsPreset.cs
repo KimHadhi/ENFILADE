@@ -4,7 +4,7 @@ using UnityEngine;
 /// <summary>
 /// The settings a new player starts with and each settings tab's "이 탭 기본값" returns to. Three layers, each over the
 /// last: the defaults written in <see cref="GameSettings"/>, this asset at Resources/Settings/DefaultSettings when it has
-/// been edited in the inspector, and the table Resources/Tables/SettingsDefaults.csv, one column per setting, which is the
+/// been edited in the inspector, and the table Resources/Tables/Core/SettingsDefaults.csv, one column per setting, which is the
 /// place to change them (user, 2026-11-11: "설정 기본값이나 텍스트들 내 입맛대로 수정하기", edited in Excel like every other
 /// table). An empty cell keeps the layer below. The columns gunCrosshairCode and meleeCrosshairCode take a crosshair share
 /// code (ENF-…) for the drawn crosshair a new player starts with. The player's own choices stay in settings.json and win

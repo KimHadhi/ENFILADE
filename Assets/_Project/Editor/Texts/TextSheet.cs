@@ -13,7 +13,7 @@ using System.Text.RegularExpressions;
 /// </summary>
 internal sealed class TextSheet
 {
-    internal const string AssetPath = "Assets/_Project/Resources/Tables/" + Texts.TableName + ".csv";
+    internal static string AssetPath => TablePaths.Of(Texts.TableName);
     private const string NoteColumn = "#어디";
 
     internal sealed class Row

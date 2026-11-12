@@ -573,9 +573,23 @@ def clip_rows(context, key):
     return rows
 
 
+def table_file(root, name, new_in='Clips'):
+    """The game's table of this name under the project root. Since 0.9.0 the tables are filed in sub-folders of
+    Resources/Tables by subject and found by file name alone, as the game finds them (GameTables); a table that isn't
+    there yet is made in new_in."""
+    base = Path(root) / TABLES_DIR
+    for found in sorted(base.rglob(name + '.csv')):
+        return found
+    return base / new_in / (name + '.csv')
+
+
 def target(key):
-    """Where a clip goes in the game, from the project root."""
-    return TABLES_DIR / (MOVES[key]['table'] + '.csv')
+    """Where a clip goes in the game, from the project root (found by the table's name; a new one goes to Clips)."""
+    name = MOVES[key]['table']
+    root = project_root()
+    if root is None:
+        return TABLES_DIR / 'Clips' / (name + '.csv')
+    return table_file(root, name).relative_to(root)
 
 
 def in_game(key):

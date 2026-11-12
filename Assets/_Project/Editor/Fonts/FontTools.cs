@@ -27,7 +27,7 @@ using Object = UnityEngine.Object;
 public static class FontTools
 {
     private const string ProjectRoot = "Assets/_Project";
-    private const string TablesFolder = "Assets/_Project/Resources/Tables";
+    private const string TablesFolder = TablePaths.Folder;
     private const string ScriptsFolder = "Assets/_Project/Scripts";
     private const string RoleScriptsFolder = "Assets/_Project/Scripts/UI/Fonts";
 
@@ -135,7 +135,7 @@ public static class FontTools
         var faces = FontFaces.Instance;
         var texts = ScanTexts();
 
-        report.Section("역할 (Resources/Tables/Fonts.csv)");
+        report.Section("역할 (Resources/Tables/Core/Fonts.csv)");
         var roleFaces = new Dictionary<string, TMP_FontAsset>();
         var roles = FontRoles.Roles.ToList();
         if (faces == null) report.Problem($"Resources/{FontFaces.ResourcePath}.asset이 없습니다.");
