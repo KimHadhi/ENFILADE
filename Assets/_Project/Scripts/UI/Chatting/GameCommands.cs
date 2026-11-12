@@ -19,6 +19,7 @@ public static class GameCommands
         router.Register("ff", "1 아군 사격 켜기, 0 끄기, 비우면 바꾸기 (방장만, 방 전체에 적용)", FriendlyFire.Command);
         router.Register("director", "캠페인 좀비 디렉터: 지금 단계·긴장도·적 수·다음 떼까지", _ => CampaignRun.DirectorReport());
         router.Register("hub", "은신처(허브)로 가기 (혼자, 또는 방장이면 방 전체)", HubFlow.Command);
+        router.Register("testroom", "비우면 테스팅 룸 목록, combat · move · 씬 이름 — 메뉴에 안 나오는 전투·이동 시험장으로 가기 (방에서는 방장만, 방 전체가 같이)", TestRooms.Command);
         router.Register("results", "마지막으로 끝낸 장의 결과 연출을 다시 보기", ResultsShow.Command);
         router.Register("pso", "trace · save · (비우면 상태) — 빌드의 그래픽 상태 기록, 개발 빌드에서 (PsoWarmup)", PsoWarmup.Command);
         router.Register("sound", "<뱅크>/<키> · cue <큐> · list <뱅크> — 소리 미리 듣기 (예: /sound cue Execution/Behind)", SoundPreview.Command);

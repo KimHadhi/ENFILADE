@@ -86,8 +86,9 @@ public sealed partial class HubLobby : MonoBehaviour
     {
         active = this;
         string wanted = HubFlow.Chosen;
+        // A testing room picked before they left the menus (MapTable.IsTestingRoom) is no chapter to set off to.
         chapter = !string.IsNullOrEmpty(wanted) && wanted != HubFlow.SceneName && Application.CanStreamedLevelBeLoaded(wanted)
-            ? wanted : HubFlow.FirstChapter();
+            && !MapTable.IsTestingRoom(wanted) ? wanted : HubFlow.FirstChapter();
     }
 
     private void Start()

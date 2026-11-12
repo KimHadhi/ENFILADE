@@ -155,8 +155,8 @@ mission.ch4.13.title,수송기에 타기,,"목표 바 제목과 Tab 목표 목�
 mission.ch4.13.description,모두 화물칸 안으로 들어오세요. 노래가 끝나면 떠나요.,,"Tab 목표 목록의 설명: Ch4_Airport 13번째 단계(Escape, Ch4.13)"
 mission.ch4.13.done,탈출,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch4_Airport 13번째 단계(Escape, Ch4.13)"
 #--- 맵 이름 (Maps.csv) ---,,,
-map.combatfoundation.name,전투 시험장,,"맵 이름: 메인 메뉴·방 만들기·로딩 화면·허브 지도 탁자(CombatFoundation). ""N장 · 이름""이면 허브가 · 앞 숫자를 큰 장 번호로 쓴다"
-map.movementabilityplayground.name,이동 시험장,,"맵 이름: 메인 메뉴·방 만들기·로딩 화면·허브 지도 탁자(MovementAbilityPlayground). ""N장 · 이름""이면 허브가 · 앞 숫자를 큰 장 번호로 쓴다"
+map.combatfoundation.name,전투 시험장,,"맵 이름: 로딩 화면·콘솔 /testroom 목록(CombatFoundation). 메인 메뉴와 허브 지도 탁자에는 안 나오는 테스팅 룸이다(Maps.csv list 0)"
+map.movementabilityplayground.name,이동 시험장,,"맵 이름: 로딩 화면·콘솔 /testroom 목록(MovementAbilityPlayground). 메인 메뉴와 허브 지도 탁자에는 안 나오는 테스팅 룸이다(Maps.csv list 0)"
 map.ch1_rooftops.name,1장 · 옥상 탈출,,"맵 이름: 메인 메뉴·방 만들기·로딩 화면·허브 지도 탁자(Ch1_Rooftops). ""N장 · 이름""이면 허브가 · 앞 숫자를 큰 장 번호로 쓴다"
 map.ch2_overpass.name,2장 · 막힌 고가도로,,"맵 이름: 메인 메뉴·방 만들기·로딩 화면·허브 지도 탁자(Ch2_Overpass). ""N장 · 이름""이면 허브가 · 앞 숫자를 큰 장 번호로 쓴다"
 map.ch3_subway.name,3장 · 지하철,,"맵 이름: 메인 메뉴·방 만들기·로딩 화면·허브 지도 탁자(Ch3_Subway). ""N장 · 이름""이면 허브가 · 앞 숫자를 큰 장 번호로 쓴다"

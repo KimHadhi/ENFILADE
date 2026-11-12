@@ -1,10 +1,10 @@
-﻿id,displayName
-#설명 (id = 씬 이름),메인 메뉴에 보일 이름
-CombatFoundation,map.combatfoundation.name
-MovementAbilityPlayground,map.movementabilityplayground.name
-Ch1_Rooftops,map.ch1_rooftops.name
-Ch2_Overpass,map.ch2_overpass.name
-Ch3_Subway,map.ch3_subway.name
-Ch4_Airport,map.ch4_airport.name
-EnfiladeTower,map.enfiladetower.name
-Hub,map.hub.name
+﻿id,displayName,list
+#설명 (id = 씬 이름),메인 메뉴에 보일 이름,"고르는 화면(메인 메뉴 맵 카드·허브 지도 탁자)에 나오나: 1이나 빈칸 = 나온다(모드로 더한 맵도 그대로), 0 = 안 나오는 테스팅 룸(빌드에는 남고 콘솔 /testroom으로만 간다). Hub 줄은 어느 쪽이든 고르는 화면에 안 나온다"
+CombatFoundation,map.combatfoundation.name,0
+MovementAbilityPlayground,map.movementabilityplayground.name,0
+Ch1_Rooftops,map.ch1_rooftops.name,1
+Ch2_Overpass,map.ch2_overpass.name,1
+Ch3_Subway,map.ch3_subway.name,1
+Ch4_Airport,map.ch4_airport.name,1
+EnfiladeTower,map.enfiladetower.name,1
+Hub,map.hub.name,
