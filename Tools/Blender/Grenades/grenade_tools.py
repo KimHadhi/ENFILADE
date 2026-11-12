@@ -3,34 +3,48 @@
 START_GRENADE_ANIMATION.cmd opens ArtSource/Grenades/ENFILADE_Grenade_Animation.blend with truefps_tools.py and then
 this (the user, 2026-11-12: "수류탄 던지는 모션도 아쉬운데 드는 모션, 대기 모션, 던지는 모션 내가 블렌더로 수정할 수 있게 만들어서
 적용해 봐"). The off hand's clips for G are drafted on Kazusa's free left arm (CTRL_hand.L, CTRL_elbow.L and the left
-fingers) while the right hand keeps the gun: each is a locked draft layer under an empty touch-up layer (Combine), as in
-the shove workspace (ArtSource/Shove, whose tools this follows but does not share, so neither breaks the other):
+fingers) while the right hand keeps the gun.
+It opens ready to work in, and saving sends the work to the game (the user, 2026-11-13: "내가 해야 하는 잡일을 최대한
+줄여. 나는 딱 오직 인간만이 할 수 있는 것만 해내면 되게끔"; the shared part is Tools/Blender/OneClick/one_click.py):
+- On open: the last clip worked on, the rig in Pose mode with the left hand handle selected, the Dope Sheet showing the
+  clip's keys (a row per bone, the draft's key poses as columns), the 투척 tab.
+- A clip drafted at key poses (the grenade's four, the knife's hold) is one action the user keys into directly (auto-key
+  on), its first draft kept beside it (<name>_draft) for 이 클립을 시안으로 되돌리기. The knife's draw and throw are
+  MW2019's motion keyed every frame: their draft stays locked on the NLA track '1 시안 (잠금)' under a touch-up layer
+  (Combine), where one key bends the clip smoothly. A file built before (every draft under an empty touch-up) is read so.
+- Saving (Ctrl+S) sends every clip that changed since it was last sent (its keys, its marks or its last frame).
 - 수류탄 · 꺼내기 / 대기 (되풀이) / 던지기 / 톡 던지기: the grenade's (every throwable but the knife). The draw goes from the
   gun to the belt and up, the pin at 핀; the hold is the cooking loop; the throw winds up and lets go at 놓기; the tap is
   Call of Duty's quick throw in one motion.
 - 나이프 · 꺼내기 / 대기 (되풀이) / 던지기: the Knight's throwing knife, the MW2019 viewmodel of GMod's "[MW] Quick Throwing
   Knife" mirrored onto the left hand bone for bone (build_grenade_workspace.py), its hold MW's still idle with a breath.
-"게임에 보내기" writes Assets/_Project/Resources/Tables/<table>.csv: per half frame, the wrist and the elbow from the eyes
+Sending writes Assets/_Project/Resources/Tables/<table>.csv: per half frame, the wrist and the elbow from the eyes
 in game metres, the hand's run and facing, each finger's curl and the thumb's, in the head camera's axes as Unity's (x
 right, y up, z forward), whether the throwable is in the hand (from 쥐기 to 놓기), and the 핀 and 놓기 moments. GrenadeArm
 plays them on any character's left arm (Tables/ThrowArms names which clip is which). Every button keys at the current
 frame with auto-key on, holding the pose some frames either side, so a click is one local change. Nothing here changes
 Blender's preferences.
 """
+import importlib.util
 import json
 import math
+import sys
 from pathlib import Path
 
 import bpy
 from bpy.app.handlers import persistent
-from bpy.props import FloatProperty, IntProperty, StringProperty
+from bpy.props import BoolProperty, FloatProperty, IntProperty, StringProperty
 from mathutils import Matrix, Vector
 
-bl_info = {'name': 'ENFILADE Throwables', 'author': 'ENFILADE', 'version': (1, 0, 0), 'blender': (4, 5, 0),
+bl_info = {'name': 'ENFILADE Throwables', 'author': 'ENFILADE', 'version': (2, 0, 0), 'blender': (4, 5, 0),
            'location': '3D View > Sidebar > 투척', 'category': 'Animation'}
+
+ONE_CLICK = Path('Tools/Blender/OneClick/one_click.py')
+TAB = '투척'
 
 # Kazusa in the game is this many times her size in this file (eyes 1.37 here, 1.6 m in game: PlayerBody's fit).
 GAME_SCALE = 1.166
+# Where a draft is locked under its touch-up layer (the knife's every-frame clips; every clip in files from before).
 BASE_TRACK = '1 시안 (잠금)'
 CAMERA = 'FPS_Head_Camera'
 TABLES_DIR = Path('Assets/_Project/Resources/Tables')
@@ -104,8 +118,32 @@ def project_root():
     return None
 
 
+def one_click():
+    """The shared one-click workspace module (items, fingerprints, sending on save, the screen on open), loaded once and
+    without a __pycache__ beside it."""
+    if 'enf_one_click' in sys.modules:
+        return sys.modules['enf_one_click']
+    root = project_root()
+    if root is None:
+        raise RuntimeError('ENFILADE 프로젝트 안의 ArtSource/Grenades에서 파일을 열어 주세요.')
+    spec = importlib.util.spec_from_file_location('enf_one_click', root / ONE_CLICK)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules['enf_one_click'] = module
+    writes = sys.dont_write_bytecode
+    sys.dont_write_bytecode = True
+    try:
+        spec.loader.exec_module(module)
+    finally:
+        sys.dont_write_bytecode = writes
+    return module
+
+
 def find_rig(scene):
     return next((o for o in scene.objects if o.type == 'ARMATURE' and o.get('truefps_rig')), None)
+
+
+def is_throw_file(scene):
+    return find_rig(scene) is not None and bpy.data.actions.get('enf_grenade_throw_draft') is not None
 
 
 def view_basis():
@@ -195,41 +233,12 @@ def curls(rig):
     return out
 
 
-# ---- Layers: a locked draft strip under the touch-up action --------------------------------------------------------
+# ---- The clip on show: its action (editable, or a touch-up over its locked draft) ----------------------------------------
 
 def touch_up(name):
-    action = bpy.data.actions.get(name)
-    if action is None:
-        action = bpy.data.actions.new(name)
-    action.use_fake_user = True
-    action['enf_layer'] = 'touch-up'
-    return action
-
-
-def set_layers(obj, draft, edit):
-    """obj plays draft as its locked base and keys into edit on top (Combine)."""
-    data = obj.animation_data or obj.animation_data_create()
-    track = data.nla_tracks.get(BASE_TRACK)
-    if track is None:
-        track = data.nla_tracks.new()
-        track.name = BASE_TRACK
-    track.lock = False
-    while len(track.strips):
-        track.strips.remove(track.strips[0])
-    if draft is not None:
-        strip = track.strips.new(draft.name, int(draft.frame_range[0]), draft)
-        if hasattr(strip, 'action_slot') and strip.action_slot is None and len(getattr(draft, 'slots', [])):
-            strip.action_slot = draft.slots[0]
-        strip.blend_type = 'REPLACE'
-        strip.extrapolation = 'HOLD'
-    track.lock = True
-    track.mute = False
-    data.action = edit
-    if edit is not None and hasattr(data, 'action_slot') and data.action_slot is None and len(getattr(edit, 'slots', [])):
-        data.action_slot = edit.slots[0]
-    data.action_blend_type = 'COMBINE'
-    data.action_extrapolation = 'HOLD'
-    data.action_influence = 1.0
+    """The clip's own action, made empty if it has none (the build calls this after drafting; showing the clip then makes
+    a key-pose clip's into the editable copy of its draft)."""
+    return one_click().touch_up(name)
 
 
 def reset_rig(rig):
@@ -264,30 +273,98 @@ def marks_of(scene, key):
     return dict(MOVES[key]['marks'])
 
 
+def end_of(scene, key):
+    return int(scene.get('enf_end_' + key, MOVES[key]['end']))
+
+
 def keep_marks(scene, key):
-    scene['enf_marks_' + key] = json.dumps({m.name: m.frame for m in scene.timeline_markers if m.name in MARKS})
-    scene['enf_end_' + key] = scene.frame_end
+    """The clip's moments and last frame as the timeline has them now (written only when they moved)."""
+    marks = json.dumps({m.name: m.frame for m in scene.timeline_markers if m.name in MARKS})
+    if scene.get('enf_marks_' + key) != marks:
+        scene['enf_marks_' + key] = marks
+    if scene.get('enf_end_' + key) != scene.frame_end:
+        scene['enf_end_' + key] = scene.frame_end
+
+
+def remember(scene):
+    """The clip shown keeps its moments and last frame (for when it is picked again, and for its fingerprint)."""
+    key = scene.get('enf_throw_move')
+    if key in MOVES:
+        keep_marks(scene, key)
+
+
+def item(context, key):
+    """The clip's action (made ready from an older file's layers) and the draft locked under it (None: edited directly).
+    A clip made ready untouched counts as sent: the build sent the drafts."""
+    oc = one_click()
+    action, draft, fresh = oc.item_action(context, find_rig(context.scene), MOVES[key]['action'], end_of(context.scene, key))
+    if fresh:
+        oc.mark_sent(action, fingerprint(key))
+    return action, draft
+
+
+def fingerprint(key):
+    """What a clip is now: its keys and eases (and its draft's, under a touch-up), its moments and its last frame."""
+    oc = one_click()
+    scene = bpy.context.scene
+    name = MOVES[key]['action']
+    action = bpy.data.actions.get(name)
+    draft = bpy.data.actions.get(name + oc.DRAFT) if action is not None and action.get(oc.LAYER) == 'touch-up' else None
+    return oc.fingerprint([action, draft], extra=[key, marks_of(scene, key), end_of(scene, key)])
+
+
+def layered(key):
+    """True for a clip edited as a touch-up over its locked draft (motion keyed every frame)."""
+    action = bpy.data.actions.get(MOVES[key]['action'])
+    return action is not None and action.get(one_click().LAYER) == 'touch-up'
 
 
 def select_move(context, key):
-    """Shows one clip: its layers, its frames, its moments on the timeline and its throwable in the hand."""
+    """Shows one clip: its action, its frames, its moments on the timeline and its throwable in the hand."""
     scene = context.scene
-    previous = scene.get('enf_throw_move')
-    if previous in MOVES:
-        keep_marks(scene, previous)
-    move = MOVES[key]
+    remember(scene)
     rig = find_rig(scene)
     reset_rig(rig)
-    set_layers(rig, bpy.data.actions.get(move['action'] + '_draft'), touch_up(move['action']))
+    action, draft = item(context, key)
+    one_click().play(rig, action, draft)
     for marker in [m for m in scene.timeline_markers if m.name in MARKS]:
         scene.timeline_markers.remove(marker)
     for name, frame in marks_of(scene, key).items():
         scene.timeline_markers.new(name, frame=frame)
-    scene.frame_start, scene.frame_end = 1, int(scene.get('enf_end_' + key, move['end']))
+    scene.frame_start, scene.frame_end = 1, end_of(scene, key)
     scene['enf_throw_move'] = key
     scene.frame_set(1)
     show_held(scene)
-    scene.tool_settings.use_keyframe_insert_auto = True
+    one_click().auto_key(scene)
+
+
+def prepare(context):
+    """Every clip ready to work in (an older file's layers made into editable clips), the last one shown."""
+    for key in MOVES:
+        item(context, key)
+    select_move(context, current_move(context.scene))
+
+
+def arrange(context):
+    """The workspace as the work needs it: the clip loaded, the left hand selected in Pose mode, the clip's keys in the
+    Dope Sheet, the tab open."""
+    scene = context.scene
+    rig = find_rig(scene)
+    if rig is None:
+        return True
+    # The clips first: they are ready even where the screen can't be (a window switches its workspace on the next tick).
+    prepare(context)
+    oc = one_click()
+    if not oc.open_workspace(context):
+        return False
+    for window in context.window_manager.windows:
+        main = oc.main_view(window)
+        oc.show_tab(main, TAB)
+        oc.dope_sheet(window)
+        if main is not None:
+            oc.select(context, window, main, [rig], rig, pose=True, bones=[ARM_HAND])
+    oc.tell(f'투척 「{MOVES[current_move(scene)]["label"]}」 · Space 재생 · 고치고 Ctrl+S 하면 게임에 들어갑니다')
+    return True
 
 
 def held_window(scene, key):
@@ -325,19 +402,7 @@ def _frame_changed(scene, _depsgraph=None):
 # ---- Moving a part and keying it -----------------------------------------------------------------------------------
 
 def _curves(action):
-    if action is None:
-        return []
-    if getattr(action, 'is_action_legacy', True) and hasattr(action, 'fcurves'):
-        try:
-            return list(action.fcurves)
-        except (AttributeError, RuntimeError):
-            pass
-    found = []
-    for layer in getattr(action, 'layers', []):
-        for strip in layer.strips:
-            for bag in getattr(strip, 'channelbags', []):
-                found.extend(bag.fcurves)
-    return found
+    return one_click().curves(action)
 
 
 def _keyed_at(rig, path, frame):
@@ -442,16 +507,34 @@ def nudge_fingers(context, fingers, how, step_deg, reach):
 
 
 def clear_touch_ups(context, frame):
-    """Removes the touch-up keys at one frame of the clip shown; returns how many went."""
+    """Removes the shown clip's keys at one frame (its touch-ups, for a clip under a touch-up layer); returns how many."""
     rig = find_rig(context.scene)
     action = rig.animation_data.action if rig and rig.animation_data else None
-    removed = 0
-    for curve in _curves(action):
-        for point in [p for p in curve.keyframe_points if abs(p.co.x - frame) < .5]:
-            curve.keyframe_points.remove(point, fast=True)
-            removed += 1
-        curve.update()
-    return removed
+    return one_click().clear_keys(action, frame)
+
+
+def revert(context, key):
+    """The clip as its first draft again, its moments and last frame too (a touch-up layer emptied)."""
+    oc = one_click()
+    move = MOVES[key]
+    scene = context.scene
+    if layered(key):
+        action = bpy.data.actions.get(move['action'])
+        bag = oc.channelbag(action)
+        for curve in list(oc.curves(action)):
+            bag.fcurves.remove(curve)
+    else:
+        oc.revert(move['action'])
+    scene['enf_marks_' + key] = json.dumps(move['marks'])
+    scene['enf_end_' + key] = move['end']
+    if current_move(scene) == key:
+        # What select_move keeps for the clip shown is what the timeline has: the draft's, then.
+        for marker in [m for m in scene.timeline_markers if m.name in MARKS]:
+            scene.timeline_markers.remove(marker)
+        for name, frame in move['marks'].items():
+            scene.timeline_markers.new(name, frame=frame)
+        scene.frame_end = move['end']
+    select_move(context, key)
 
 
 # ---- To the game ---------------------------------------------------------------------------------------------------
@@ -490,15 +573,49 @@ def clip_rows(context, key):
     return rows
 
 
+def target(key):
+    """Where a clip goes in the game, from the project root."""
+    return TABLES_DIR / (MOVES[key]['table'] + '.csv')
+
+
+def in_game(key):
+    root = project_root()
+    return root is not None and (root / target(key)).exists()
+
+
 def export_clip(context, key):
+    """One clip to the game (shown first if it isn't, its touch-ups on), marked as sent; returns the path written."""
     root = project_root()
     if root is None:
         raise RuntimeError('ENFILADE 프로젝트를 찾지 못했습니다. ArtSource/Grenades의 파일을 여세요.')
+    oc = one_click()
     move = MOVES[key]
-    keep_marks(context.scene, key)
-    path = root / TABLES_DIR / (move['table'] + '.csv')
+    scene = context.scene
+    rig = find_rig(scene)
+    data = rig.animation_data
+    if current_move(scene) != key or data is None or data.action is None or data.action.name != move['action']:
+        select_move(context, key)
+        data = rig.animation_data
+    keep_marks(scene, key)
+    # The touch-ups count even while 손질 층 켜기/끄기 has them off.
+    influence = data.action_influence
+    data.action_influence = 1.0
+    try:
+        text = clip_text(context, key)
+    finally:
+        data.action_influence = influence
+    path = root / target(key)
     path.parent.mkdir(parents=True, exist_ok=True)
-    loop = '되풀이 클립: 끝 줄이 첫 줄과 같아야 이어진다. ' if move.get('loop') else ''
+    oc.write_meta(path, oc.TEXT_META)
+    oc.write_text(path, text)
+    oc.mark_sent(bpy.data.actions.get(move['action']), fingerprint(key))
+    return path
+
+
+def clip_text(context, key):
+    """The clip's table as the game reads it."""
+    move = MOVES[key]
+    loop ='되풀이 클립: 끝 줄이 첫 줄과 같아야 이어진다. ' if move.get('loop') else ''
     note = ('"#설명 (블렌더 투척 작업실 ArtSource/Grenades의 ' + move['label'] + ' 클립을 게임에 보내기로 쓴 왼팔. ' + loop +
             '손으로 고치지 말고 블렌더에서 고쳐 다시 보낸다. 어느 클립을 언제 쓰는지는 ThrowArms.csv. GrenadeArm이 어느 캐릭터 팔에든 맞춘다)"')
     cells = ['클립의 초(원본 빠르기. ThrowArms의 빠르기 배수가 곱해진다)',
@@ -519,13 +636,41 @@ def export_clip(context, key):
         values += [f'{mean:.1f}'] + [f'{c[f]:.1f}' for f in FOUR] + [f'{c["thumb"]:.1f}']
         values += ['1' if row['held'] else '0', '1' if row['pin'] else '0', '1' if row['release'] else '0']
         lines.append(','.join(values))
-    path.write_text('\n'.join(lines) + '\n', encoding='utf-8')
-    return path
+    return '\n'.join(lines) + '\n'
+
+
+def send_changed(context, force=False):
+    """Every clip that changed since it was last sent (or whose table is missing) to the game; the clip shown stays shown,
+    on its frame. Returns (sent labels, failures), or None with the panel's switch off (force: sends anyway, the
+    게임에 보내기 button)."""
+    scene = context.scene
+    if not is_throw_file(scene) or not (force or scene.enf_throw.auto_send):
+        return None
+    oc = one_click()
+    shown, frame = current_move(scene), scene.frame_current
+    remember(scene)
+    sent, failed = [], []
+    for key, move in MOVES.items():
+        try:
+            action, _draft = item(context, key)
+            if not oc.needs_sending(action, fingerprint(key), in_game(key)):
+                continue
+            export_clip(context, key)
+            sent.append(move['label'])
+        except Exception as error:
+            failed.append(f'{move["label"]}: {error}')
+    if current_move(scene) != shown:
+        select_move(context, shown)
+    if scene.frame_current != frame:
+        scene.frame_set(frame)
+    return sent, failed
 
 
 # ---- Panel ---------------------------------------------------------------------------------------------------------
 
 class ENFThrowSettings(bpy.types.PropertyGroup):
+    auto_send: BoolProperty(name='저장하면 게임에 보내기', default=True,
+                            description='Ctrl+S로 저장할 때 바뀐 클립을 모두 게임에 보낸다(Tables의 클립 표)')
     step_cm: FloatProperty(name='옮기는 거리 (cm)', default=2.0, min=.1, max=20.0)
     step_deg: FloatProperty(name='돌리는 각도 (도)', default=5.0, min=.5, max=45.0)
     reach: IntProperty(name='섞는 길이 (프레임)', default=2, min=0, max=10,
@@ -547,7 +692,7 @@ def _object_mode(context):
 class ENFTHROW_OT_pick(bpy.types.Operator):
     bl_idname = 'enf_throw.pick'
     bl_label = '클립 고르기'
-    bl_description = '이 클립의 시안과 손질 층을 보여 준다'
+    bl_description = '이 클립을 불러오고 왼손을 골라 둔다'
     bl_options = {'REGISTER', 'UNDO'}
     move: StringProperty()
 
@@ -556,6 +701,9 @@ class ENFTHROW_OT_pick(bpy.types.Operator):
             return {'CANCELLED'}
         _object_mode(context)
         select_move(context, self.move)
+        rig = find_rig(context.scene)
+        if context.area is not None and context.area.type == 'VIEW_3D':
+            one_click().select(context, context.window, context.area, [rig], rig, pose=True, bones=[ARM_HAND])
         return {'FINISHED'}
 
 
@@ -575,7 +723,7 @@ class ENFTHROW_OT_mark(bpy.types.Operator):
 class ENFTHROW_OT_nudge(bpy.types.Operator):
     bl_idname = 'enf_throw.nudge'
     bl_label = '움직이기'
-    bl_description = '지금 프레임에서 고른 곳을 조금 옮기거나 돌리고 손질 층에 키를 넣는다'
+    bl_description = '지금 프레임에서 고른 곳을 조금 옮기거나 돌리고 키를 넣는다'
     bl_options = {'REGISTER', 'UNDO'}
     part: StringProperty()
     how: StringProperty()
@@ -598,7 +746,7 @@ class ENFTHROW_OT_nudge(bpy.types.Operator):
 class ENFTHROW_OT_toggle(bpy.types.Operator):
     bl_idname = 'enf_throw.toggle'
     bl_label = '손질 층 켜기/끄기'
-    bl_description = '손질을 끄고 시안만 보거나 다시 켠다(지우지 않는다)'
+    bl_description = '프레임마다 키가 있는 클립(나이프 꺼내기·던지기)의 손질을 끄고 시안만 보거나 다시 켠다(지우지 않는다. 보낼 때는 늘 켜진 채로)'
 
     def execute(self, context):
         rig = find_rig(context.scene)
@@ -611,41 +759,73 @@ class ENFTHROW_OT_toggle(bpy.types.Operator):
 
 class ENFTHROW_OT_clear(bpy.types.Operator):
     bl_idname = 'enf_throw.clear'
-    bl_label = '이 프레임 손질 지우기'
-    bl_description = '지금 프레임에 넣은 손질 키를 지운다(시안은 그대로)'
+    bl_label = '이 프레임 키 지우기'
+    bl_description = '지금 프레임에 있는 이 클립의 키를 지운다(손질 층이 있는 클립은 손질 키만). 앞뒤 키 사이로 부드럽게 이어진다'
     bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, context):
         removed = clear_touch_ups(context, context.scene.frame_current)
-        self.report({'INFO'}, f'손질 키 {removed}개를 지웠습니다')
+        self.report({'INFO'}, f'키 {removed}개를 지웠습니다')
+        return {'FINISHED'}
+
+
+class ENFTHROW_OT_revert(bpy.types.Operator):
+    bl_idname = 'enf_throw.revert'
+    bl_label = '이 클립을 시안으로 되돌리기'
+    bl_description = '이 클립의 내 손질을 모두 지우고 처음 시안으로 돌아간다(쥐기·핀·놓기 표시와 끝 프레임도). 저장하면 게임에도 시안이 들어간다'
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_confirm(self, event)
+
+    def execute(self, context):
+        if not _ok(self, context):
+            return {'CANCELLED'}
+        try:
+            revert(context, current_move(context.scene))
+        except ValueError as error:
+            self.report({'ERROR'}, str(error))
+            return {'CANCELLED'}
+        self.report({'INFO'}, '시안으로 되돌렸다. 저장하면 게임에도 시안이 들어간다')
         return {'FINISHED'}
 
 
 class ENFTHROW_OT_export(bpy.types.Operator):
     bl_idname = 'enf_throw.export'
     bl_label = '게임에 보내기'
-    bl_description = '보고 있는 클립을 게임 폴더로 내보낸다. Unity가 알아서 가져가고, Play 중이어도 다음 G부터 그 동작이 나온다'
-    every: bpy.props.BoolProperty(default=False)
+    bl_description = ('Ctrl+S와 같다: 바뀐 클립을 모두 게임 폴더로 보내고 작업 파일을 저장한다(저장하면 보내기를 꺼 두어도 보낸다). '
+                      'Unity가 알아서 가져가고, Play 중이어도 다음 G부터 그 동작이 나온다')
+    every: bpy.props.BoolProperty(default=False, description='바뀌지 않은 클립까지 일곱 개 모두 다시 보낸다')
 
     def execute(self, context):
         if not _ok(self, context):
             return {'CANCELLED'}
         scene = context.scene
-        keys = list(MOVES) if self.every else [current_move(scene)]
-        shown = current_move(scene)
+        if not self.every:
+            sent, failed = send_changed(context, force=True) or ([], ['투척 작업 파일이 아닙니다'])
+            one_click().send_report(scene, sent, failed)
+            if bpy.data.filepath:
+                bpy.ops.wm.save_mainfile()
+            if failed:
+                self.report({'ERROR'}, '못 보냄: ' + '; '.join(failed))
+                return {'CANCELLED'}
+            self.report({'INFO'}, ('보냈습니다: ' + ', '.join(sent)) if sent else '바뀐 클립이 없어 저장만 했습니다')
+            return {'FINISHED'}
+        shown, frame = current_move(scene), scene.frame_current
         sent = []
         try:
-            for key in keys:
-                if key != current_move(scene):
-                    select_move(context, key)
-                sent.append(export_clip(context, key))
+            for key in MOVES:
+                export_clip(context, key)
+                sent.append(MOVES[key]['label'])
         except (RuntimeError, ValueError, OSError) as error:
             self.report({'ERROR'}, str(error))
             return {'CANCELLED'}
         finally:
             if current_move(scene) != shown:
                 select_move(context, shown)
-        self.report({'INFO'}, f'보냈습니다: {sent[0]}' if len(sent) == 1 else f'{len(sent)}개 클립을 보냈습니다')
+            scene.frame_set(frame)
+        one_click().send_report(scene, sent, [])
+        self.report({'INFO'}, f'{len(sent)}개 클립을 모두 다시 보냈습니다')
         return {'FINISHED'}
 
 
@@ -654,7 +834,7 @@ class ENFTHROW_PT_panel(bpy.types.Panel):
     bl_idname = 'ENFTHROW_PT_panel'
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
-    bl_category = '투척'
+    bl_category = TAB
 
     def draw(self, context):
         scene = context.scene
@@ -705,36 +885,32 @@ class ENFTHROW_PT_panel(bpy.types.Panel):
                 op = row.operator('enf_throw.nudge', text=text)
                 op.part, op.how = 'fingers:' + ','.join(fingers), how
         row = box.row(align=True)
-        row.operator('enf_throw.toggle')
+        if layered(key):
+            box.label(text='프레임마다 키가 있는 클립: 고친 것은 손질 층에 들어간다')
+            row.operator('enf_throw.toggle')
         row.operator('enf_throw.clear')
+        box.operator('enf_throw.revert', icon='LOOP_BACK')
 
         box = layout.box()
-        box.label(text='3. 게임에 보내기')
+        box.label(text='3. 저장(Ctrl+S)하면 게임에 들어간다')
+        box.prop(settings, 'auto_send')
+        oc = one_click()
+        action = bpy.data.actions.get(move['action'])
+        if not in_game(key):
+            box.label(text='아직 게임에 없음: 저장하면 들어간다')
+        elif action is not None and action.get(oc.SENT) != fingerprint(key):
+            box.label(text='고친 것이 있음: 저장하면 게임에 들어간다')
+        else:
+            box.label(text='게임이 지금 이 클립을 쓰는 중')
+        if scene.get(oc.NOTE):
+            box.label(text=str(scene[oc.NOTE])[:60])
         box.operator('enf_throw.export', icon='EXPORT').every = False
-        box.operator('enf_throw.export', text='모든 클립 보내기').every = True
-        box.label(text=str(TABLES_DIR / (move['table'] + '.csv')).replace('\\', '/'))
+        box.operator('enf_throw.export', text='모든 클립 다시 보내기').every = True
+        box.label(text=str(target(key)).replace('\\', '/'))
 
 
 CLASSES = (ENFThrowSettings, ENFTHROW_OT_pick, ENFTHROW_OT_mark, ENFTHROW_OT_nudge, ENFTHROW_OT_toggle, ENFTHROW_OT_clear,
-           ENFTHROW_OT_export, ENFTHROW_PT_panel)
-
-
-def _show_panel():
-    for window in bpy.context.window_manager.windows:
-        for area in window.screen.areas:
-            if area.type == 'VIEW_3D' and area.spaces.active.region_3d.view_perspective != 'CAMERA':
-                area.spaces.active.show_region_ui = True
-                region = next((r for r in area.regions if r.type == 'UI'), None)
-                if region is not None:
-                    try:
-                        region.active_panel_category = '투척'
-                    except (TypeError, AttributeError):
-                        pass
-    scene = bpy.context.scene
-    if scene and find_rig(scene) is not None and 'enf_throw_move' in scene:
-        scene.tool_settings.use_keyframe_insert_auto = True
-        show_held(scene)
-    return None
+           ENFTHROW_OT_revert, ENFTHROW_OT_export, ENFTHROW_PT_panel)
 
 
 def register():
@@ -750,12 +926,11 @@ def register():
     for fn in [h for h in handlers if getattr(h, '__name__', '') == '_frame_changed']:
         handlers.remove(fn)
     handlers.append(_frame_changed)
-    if not bpy.app.background:
-        # After True FPS's own start-up (0.2 s), which opens its own tab.
-        bpy.app.timers.register(_show_panel, first_interval=.6)
+    one_click().register_workspace(TAB, is_throw_file, arrange, send_changed)
 
 
 def unregister():
+    one_click().unregister_workspace(TAB)
     handlers = bpy.app.handlers.frame_change_post
     for fn in [h for h in handlers if getattr(h, '__name__', '') == '_frame_changed']:
         handlers.remove(fn)
