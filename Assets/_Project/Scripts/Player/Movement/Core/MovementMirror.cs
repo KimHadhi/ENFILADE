@@ -69,7 +69,11 @@ public sealed class MovementMirror
             // The way the dive flies: a dive on the back faces back along it.
             case State.Diving:
             case State.SupineDiving: pose.Direction = ctx.DiveBodyForward; break;
-            case State.StepDodge: pose.Direction = abilities.ActionDirection; break;
+            // A dodge from a crouch stays low (a crouched slide): the copies dodge low too, and their zombies hear it so.
+            case State.StepDodge:
+                pose.Direction = abilities.ActionDirection;
+                pose.Detail = abilities.ActionPosture == MovementPosture.Crouching ? 1f : 0f;
+                break;
             case State.HeavyLanding: pose.Detail = landing.HeavyYaw; break;
             case State.LandingRoll: pose.Detail = landing.LandsInPlace ? 1f : 0f; break;
             case State.Vault:
@@ -162,7 +166,10 @@ public sealed class MovementMirror
                 break;
             case State.Diving:
             case State.SupineDiving: ctx.DiveBodyForward = pose.Direction; break;
-            case State.StepDodge: abilities.ActionDirection = pose.Direction; break;
+            case State.StepDodge:
+                abilities.ActionDirection = pose.Direction;
+                abilities.ActionPosture = pose.Detail > .5f ? MovementPosture.Crouching : MovementPosture.Standing;
+                break;
             case State.LandingRoll: abilities.Landing.LandsInPlace = pose.Detail > .5f; break;
             case State.Vault:
             case State.Mantle:

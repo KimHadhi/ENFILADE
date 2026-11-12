@@ -62,27 +62,40 @@ Slip.glintColor,#E0EDF7,그 빛의 색
 Slip.lockAngle,40,슬립하면 시선이 공격한 적에게 붙는다(비켜 돌기). 그 적이 시선에서 이 각도(도) 안에 있을 때만. 슬립하는 동안 머리가 비켜 나갔다 돌아와도 적이 화면 가운데에 있고, 곧은 주먹 반격은 달려드는 동안에도 그 적을 본다. 0이면 끈다
 Slip.lockRate,20,시선이 그 적에게 도는 빠르기(1/초). 남은 각도 중 이 비율을 1초에 돈다
 Slip.lockLetGo,5,붙어 있는 동안 마우스로 이 각도(도)만큼 돌리면 놓는다. 다른 적을 반격할 때
-DodgeLook.ghostAlpha,0.5,스텝 회피의 잔상 하나(사용자가 보낸 대시 VFX 영상처럼 시작 자리에 내 캐릭터 그대로 비쳐 보이게 남음): 막 남은 잔상이 덮는 정도(0~1. 1이면 안 비침). 옷마다 제 텍스처·색으로 그린다
-DodgeLook.ghostSeconds,0.3,그 잔상이 사라지는 시간(실제 초)
+DodgeLook.ghostAlpha,0.5,스텝 회피의 잔상(사용자가 보낸 대시 VFX 영상 그대로이되 잔상은 내 캐릭터 그대로 비쳐 보임): 막 남은 잔상이 덮는 정도(0~1. 1이면 안 비침). 시작 자리에 하나와 도착하는 몸 바로 뒤에 잔영 하나. 옷마다 제 텍스처·색으로 그린다
+DodgeLook.ghostSeconds,0.32,시작 자리 잔상이 사라지는 시간(실제 초)
+DodgeLook.echoAt,0.1,도착하는 몸 바로 뒤에 남는 잔영을 대시 시작 몇 초에 남기는지(실제 초. 대시는 0.14초). 1인칭에서는 카메라가 그 몸 안이라 없다
+DodgeLook.echoSeconds,0.22,그 잔영이 사라지는 시간(실제 초)
 DodgeLook.ghostRise,0.04,내 잔상이 떠오르는 시간(실제 초). 구울 때 카메라가 아직 그 머리 안이라 빠져나간 뒤 보이게
 DodgeLook.ghostVertexBudget,150000,잔상 하나에 굽는 정점 수 상한. 무거운 옷은 이걸 넘는 메시를 뺀다
-DodgeLook.lineCount,3,줄기(번개처럼 두 번 꺾인 굵은 흰 선) 수. 시작 자리 조금 뒤에서 몸까지 발·무릎·허리 높이로 한꺼번에 나와 착지하면 같이 사라진다(사용자: 딱 굵게 한 번만)
-DodgeLook.lineHeights,0.2;0.55;0.9,줄기마다 바닥에서의 높이(m). 모자라면 마지막 값
-DodgeLook.lineWidth,0.06,줄기 굵기(m)
-DodgeLook.lineKink,0.12,꺾인 곳이 선에서 튀어나가는 거리(m)
-DodgeLook.lineTail,0.4,줄기가 시작 자리 뒤로 끌리는 길이(m)
-DodgeLook.lineSeconds,0.22,착지한 뒤 줄기가 가늘어지며 사라지는 시간(실제 초)
-DodgeLook.lineColor,#F2FAFF,줄기 색
-DodgeLook.lineGlow,3,줄기 밝기(1을 넘으면 번진다)
-DodgeLook.popSize,0.8,차고 나가는 발밑의 흰 폭발 크기(m)
-DodgeLook.smokePuffs,3,그 둘레에서 뒤로 흩어지는 연기 수
-DodgeLook.smokeSeconds,0.35,연기 하나가 남는 시간(실제 초)
-DodgeLook.successLine,#FF241F,회피 성공(공격을 흘려보냄) 때 줄기 색. 모든 PC에서(친구 화면에도 같게)
+DodgeLook.lineCount,4,번개처럼 두 번 꺾인 가는 흰 선 수. 시작 자리 조금 뒤에서 몸까지 정강이·무릎·엉덩이·허리 높이로(레퍼런스의 3~4가닥)
+DodgeLook.lineHeights,0.12;0.38;0.65;0.92,선마다 바닥에서의 높이(m). 모자라면 마지막 값
+DodgeLook.lineWidth,0.035,선 굵기(m)
+DodgeLook.lineKink,0.14,꺾인 곳이 선에서 튀어나가는 거리(m)
+DodgeLook.lineTail,0.5,선이 시작 자리 뒤로 끌리는 길이(m)
+DodgeLook.lineSeconds,0.26,착지한 뒤 선이 가늘어지며 사라지는 시간(실제 초)
+DodgeLook.lineColor,#F2FAFF,선·긴 줄기·바람의 색
+DodgeLook.lineGlow,2.6,그 밝기(1을 넘으면 번진다)
+DodgeLook.streakCount,2,어깨·머리 높이에서 몸 뒤로 시작 자리 너머까지 길게 뻗는 곧은 빛줄기 수(레퍼런스의 긴 줄기). 1인칭에서는 눈높이라 없다
+DodgeLook.streakHeights,1.25;1.5,그 줄기마다 몸 쪽 끝의 높이(m)
+DodgeLook.streakWidth,0.022,그 굵기(m)
+DodgeLook.streakLength,3.2,몸에서 뒤로 뻗는 길이(m)
+DodgeLook.streakRise,0.45,먼 끝이 올라가는 높이(m)
+DodgeLook.streakSeconds,0.14,착지한 뒤 사라지는 시간(실제 초)
+DodgeLook.popSize,0.75,차고 나가는 발밑의 밝은 흰 폭발 크기(m)
+DodgeLook.smokePuffs,6,그 둘레에서 뒤로 퍼지는 연기 수
+DodgeLook.smokeSeconds,0.45,연기 하나가 남는 시간(실제 초)
+DodgeLook.dustPuffs,2,착지할 때 지나온 길에 남는 작은 먼지 수
+DodgeLook.curls,3,착지할 때 몸을 양옆으로 감으며 올라가는 바람 수(레퍼런스의 몸을 감는 바람. 0이면 끈다). 1인칭에서는 안 나온다
+DodgeLook.curlHeights,0.75;1.1;1.45,바람마다 바닥에서의 높이(m)
+DodgeLook.curlSeconds,0.3,바람이 남는 시간(실제 초)
+DodgeLook.lowShare,0.6,앉은 채 하는 회피(앉아서 미끄러지는 회피)의 높이 비율: 선·줄기·바람이 이만큼 낮게
+DodgeLook.successLine,#FF241F,회피 성공(공격을 흘려보냄) 때 선·긴 줄기·바람 색. 모든 PC에서(친구 화면에도 같게). 잔상은 캐릭터 그대로
 DodgeLook.slipLength,0.9,Q/E로 흘려보낸 성공(대시가 없음)의 붉은 줄기 길이(m). 흘려보낸 쪽에서 몸으로 온다
-DodgeView.strokes,3,1인칭에서 옆·앞으로 피할 때 화면에 그리는 같은 줄기의 획 수(세계의 줄기가 화면 밖이라서). 뒤로 피하면 세계의 줄기가 앞에 보여 안 그린다
-DodgeView.strokeSeconds,0.22,그 획이 남는 시간(실제 초)
-DodgeView.strokeWidth,7,획 굵기(1080p 기준 px)
-DodgeView.strokeKink,26,획의 꺾인 곳이 튀어나가는 거리(1080p 기준 px)
+DodgeView.strokes,4,1인칭에서 옆·앞으로 피할 때 화면에 그리는 같은 선의 획 수(세계의 선이 화면 밖이라서). 뒤로 피하면 세계의 잔상과 선이 앞에 보여 안 그린다
+DodgeView.strokeSeconds,0.26,그 획이 남는 시간(실제 초)
+DodgeView.strokeWidth,4.5,획 굵기(1080p 기준 px)
+DodgeView.strokeKink,22,획의 꺾인 곳이 튀어나가는 거리(1080p 기준 px)
 DodgeView.strokeAlpha,0.9,획 진하기(0~1)
 Parry.handSweepSeconds,0.45,패링 때 손 동작 전체 시간: 뻗기+멈춤+돌아오기(실제 초)
 Parry.handSweepAttack,0.04,손이 화면을 가로질러 뻗는 시간(실제 초)

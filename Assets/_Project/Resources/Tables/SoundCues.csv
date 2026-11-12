@@ -41,6 +41,7 @@ BellySlideStart,Movement/Cloth/FallShortMedium; Movement/Slide/{surface} *0.5,12
 SlideEnd,Movement/Cloth/MovementSneak,4,슬라이드 끝
 Dive,Movement/Release/{surface}; Movement/Cloth/BodyRollSwish; Voice/StrainSoft,10,다이브
 Dodge,Movement/Run/{surface}; Movement/Dodge/Wind; Movement/Dodge/Cloth; Voice/StrainSoft,8,스텝 회피: 발 + 바람(BOOM Dash) + 옷(BOOM Kimono) + 숨. 옷은 Beatrun SideStep에서 Kimono로 바꿨다
+DodgeLow,Movement/Sneak/{surface}; Movement/Dodge/Wind *0.55; Movement/Dodge/Cloth *0.6; Movement/Cloth/MovementSneak,3,앉은 채 하는 스텝 회피(앉아서 미끄러지는 회피): 웅크린 발 + 작게 부는 바람(BOOM Dash) + 옷. 소리 반경 3m는 앉은 소리라 좀비가 듣지 못한다(ZombieMind sneakSilent 3. 사용자: 앉은 채로 빠르게 회피로 뒤로 접근한 다음에 암살)
 DashPush,Movement/Run/{surface}; Movement/Cloth/SideStep; Voice/StrainMedium,12,돌진 밀치기 시작
 DashPushHit,Movement/PushHard *0.3; Movement/Cloth/FallShortMedium *0.6,16,돌진 밀치기가 적에 부딪힘 (BOOM Violent Combat)
 ProneDown,Movement/Prone/Down,4,엎드리기

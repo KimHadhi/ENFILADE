@@ -114,7 +114,7 @@ public sealed class StealthMarkersHUD : MonoBehaviour, ITableBound
     private void LightMeter(float dt)
     {
         bool wanted = movement != null && movement.IsLocal && !movement.IsDead && StealthLight.Enabled
-            && (movement.IsCrouching || movement.IsProning);
+            && (movement.IsCrouchStance || movement.IsProning);
         lightAlpha = Mathf.MoveTowards(lightAlpha, wanted ? 1f : 0f, dt * 5f);
         if (lightRoot == null)
         {

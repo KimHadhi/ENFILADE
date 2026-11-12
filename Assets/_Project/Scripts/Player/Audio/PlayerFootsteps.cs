@@ -164,7 +164,8 @@ public sealed class PlayerFootsteps : MonoBehaviour
     {
         float speed = GroundSpeed();
         string surface = Surfaces.Of(reading.Surface);
-        string cue = player.CurrentState == MovementState.Crouching ? "StepSneak" : speed < runSpeed ? "StepWalk" : "StepRun";
+        // A dodge made from a crouch is a crouched step too (IsCrouchStance): its burst of speed is no run.
+        string cue = player.IsCrouchStance ? "StepSneak" : speed < runSpeed ? "StepWalk" : "StepRun";
         Vector3 point = reading.GroundPoint;
         LastSurface = surface;
         Sounds()?.Play(cue, point, surface);
@@ -173,7 +174,7 @@ public sealed class PlayerFootsteps : MonoBehaviour
 
     private void LiftOff(in PlayerBody.FootReading reading)
     {
-        if (player.CurrentState == MovementState.Crouching || GroundSpeed() < releaseSpeed) return;
+        if (player.IsCrouchStance || GroundSpeed() < releaseSpeed) return;
         Sounds()?.Play("StepRelease", reading.GroundPoint, Surfaces.Of(reading.Surface));
     }
 

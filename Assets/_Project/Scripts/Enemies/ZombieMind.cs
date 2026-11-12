@@ -816,9 +816,12 @@ public sealed class ZombieMind : MonoBehaviour
         if (player.IsProning || state == PlayerMovement.MovementState.Supine || state == PlayerMovement.MovementState.Sliding
             || state == PlayerMovement.MovementState.HeadFirstSliding || state == PlayerMovement.MovementState.SupineSliding)
             share = lyingShare;
-        else if (player.IsCrouching) share = crouchShare;
+        // A dodge made from a crouch stays low (IsCrouchStance): crouched, and no sprint for its burst of speed, so a quick
+        // crouched dodge in behind one is seen as sneaking (user, 2026-11-12).
+        bool low = player.IsCrouchStance;
+        if (low && share > crouchShare) share = crouchShare;
         float speed = new Vector2(player.ActualVelocity.x, player.ActualVelocity.z).magnitude;
-        float motion = speed >= sprintSpeed ? sprintShare : Mathf.Lerp(stillShare, 1f, Mathf.Clamp01(speed / 1.5f));
+        float motion = speed >= sprintSpeed && !low ? sprintShare : Mathf.Lerp(stillShare, 1f, Mathf.Clamp01(speed / 1.5f));
         return share * motion;
     }
 
@@ -876,8 +879,9 @@ public sealed class ZombieMind : MonoBehaviour
     {
         // A crouched player's small sounds (a sneaking step, crouching, a lean) don't carry to it: crouched steps alerted
         // a zombie a step behind it, which then turned, saw them that close and woke (user, 2026-11-11: "앉아서 가도 금방
-        // 눈치챈다"). Advanced Stealth silences crouched footsteps the same way.
-        if (source.IsCrouching && noise.Radius <= sneakSilent) return;
+        // 눈치챈다"). Advanced Stealth silences crouched footsteps the same way. A dodge made from a crouch is crouched too
+        // (IsCrouchStance), and its sound is a crouched one (SoundCues DodgeLow).
+        if (source.IsCrouchStance && noise.Radius <= sneakSilent) return;
         if (!Reaches(noise, out float distance, out float reach)) return;
         float loudness = 1f - distance / Mathf.Max(.01f, reach);
         if (IsAwake)
@@ -925,7 +929,7 @@ public sealed class ZombieMind : MonoBehaviour
         ZombieMind any = null;
         foreach (var mind in minds) if (mind != null) { any = mind; break; }
         if (any == null) return 0f;
-        if (!noise.Lure && source != null && source.IsCrouching && noise.Radius <= any.sneakSilent) return 0f;
+        if (!noise.Lure && source != null && source.IsCrouchStance && noise.Radius <= any.sneakSilent) return 0f;
         foreach (var mind in minds)
         {
             if (mind == null || mind.IsAwake || mind.health == null || !mind.health.IsAlive) continue;

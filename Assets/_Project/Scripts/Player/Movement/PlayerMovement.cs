@@ -180,6 +180,14 @@ public sealed partial class PlayerMovement : MonoBehaviour
     public bool IsJustSliding => Abilities != null && Abilities.Slide.IsJustSlide;
     public bool IsDiving => StateMachine != null && StateMachine.IsIn<DivingGroupState>();
     public bool IsCrouching => CurrentState == MovementState.Crouching;
+    /// <summary>
+    /// Crouched in stance, as stealth hears and sees it: crouching, or a step dodge made from a crouch, a low slide that
+    /// stays at crouch height (MovementAbilities.ActionPosture, mirrored to copies). IsCrouching is the Crouching state
+    /// alone, so a crouched dodge counted as a standing sprint and its 8 m dodge sound woke calm zombies (user,
+    /// 2026-11-12: "앉은 채로 빠르게 회피로 뒤로 접근한 다음에 암살할 수 있었는데 이젠 그게 안 돼서 아쉬움").
+    /// </summary>
+    public bool IsCrouchStance => CurrentState == MovementState.Crouching
+        || (CurrentState == MovementState.StepDodge && Abilities != null && Abilities.ActionPosture == MovementPosture.Crouching);
     public bool IsAirCrouching => Posture.airCrouching;
     /// <summary>How far an air crouch has drawn the capsule's bottom up above the feet (m).</summary>
     public float AirTuck => Posture.AirTuck;

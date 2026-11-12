@@ -60,6 +60,9 @@ public sealed partial class PlayerBody
     // From ChoosePose. With a gun the body stands as it does still and the legs dodge; otherwise the whole clip plays.
     private void DodgePose()
     {
+        // From a crouch: the crouch held low as the body slides along, a crouched slide (user, 2026-11-12: "앉아서 회피할
+        // 때는 앉아서 슬라이딩하는 회피 모션"); the standing clip hopped up out of the crouch and its feet ran.
+        if (player.IsCrouchStance) { Want(crouchIdle); return; }
         var legs = dodgeClip == dodgeLeft ? dodgeLeftLegs : dodgeRightLegs;
         if (HoldsGun && legs.IsValid())
         {

@@ -732,6 +732,8 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
                 break;
             case MovementState.StepDodge:
                 dodgeClip = Vector3.Dot(player.Abilities.ActionDirection, transform.right) < 0f ? dodgeLeft : dodgeRight;
+                // From a crouch the body stays low and slides along (DodgePose): no hop out of the crouch.
+                if (player.IsCrouchStance) break;
                 Restart(Find(dodgeClip));
                 StartDodgeLegs(dodgeClip == dodgeLeft);
                 break;

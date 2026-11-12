@@ -3,16 +3,16 @@ using UnityEngine.UI;
 
 /// <summary>
 /// The dodge's one beat as this PC's own player sees it from inside the body, the first-person half of DodgeDash (user,
-/// 2026-11-12, memo 9 and 16: the reference, a Roblox "NEW DASH VFX" short; then "회피가 레퍼런스 영상처럼 걍 딱 굵게 한
-/// 번만 나오면 될 것 같은데"; and their rule "내가 보는 화면이 진실": what the player sees is what friends see of them):
-/// - the world's beat (the kick-off puff, the one afterimage, the one streak: DodgeDash) is drawn for this PC too, and a
-///   step back sees all of it ahead, so the screen adds nothing;
-/// - a step aside or in leaves that streak beside, behind or under the camera, so the same streak is drawn on the screen
-///   instead: three bold white kinked strokes, all at once, across the low screen for a side step or out round the
-///   middle for a step in, gone with the world's;
-/// - an evade (a blow let through, step or Q/E) turns that one streak red: the world's on every PC (DodgeDash.Succeed),
-///   and on this screen the strokes under way, or for a Q/E slip red strokes across the way it slipped. The slowed
-///   counter window after it keeps its deep red rim (PerfectDefenseVignette).
+/// 2026-11-12, memo 9 and 16: the reference, a Roblox "NEW DASH VFX" short, "레퍼런스 그대로"; and their rule "내가 보는
+/// 화면이 진실": what the player sees is what friends see of them):
+/// - the world's dash (the kick-off puff and smoke, the afterimage, the kinked lines: DodgeDash) is drawn for this PC too,
+///   and a step back sees it all ahead, so the screen adds nothing;
+/// - a step aside or in leaves those lines beside, behind or under the camera, so the same lines are drawn on the screen
+///   instead: four thin glowing white kinked strokes, all at once, across the low screen for a side step or out round
+///   the middle for a step in, gone with the world's;
+/// - an evade (a blow let through, step or Q/E) turns them red: the world's on every PC (DodgeDash.Succeed), and on this
+///   screen the strokes under way, or for a Q/E slip red strokes across the way it slipped. The slowed counter window
+///   after it keeps its deep red rim (PerfectDefenseVignette).
 /// Seen from outside the body (third person) the world's beat is all in view and nothing is drawn here. Real time, so the
 /// evade's slow motion doesn't hold it. Made at spawn for this PC's own player (PlayerPerfectDefense.Initialize).
 /// Numbers: Tables/Player.csv, row DodgeView.
@@ -20,14 +20,14 @@ using UnityEngine.UI;
 [DisallowMultipleComponent]
 public sealed class DodgeFlash : MonoBehaviour
 {
-    [SerializeField, Min(0), Tooltip("Strokes of the streak on the screen (the world's streak has as many lines).")]
-    private int strokes = 3;
-    [SerializeField, Min(.05f), Tooltip("How long they last (real s): the world streak's time.")]
-    private float strokeSeconds = .22f;
+    [SerializeField, Min(0), Tooltip("Strokes of the lines on the screen (the world's dash has as many lines).")]
+    private int strokes = 4;
+    [SerializeField, Min(.05f), Tooltip("How long they last (real s): the world lines' time.")]
+    private float strokeSeconds = .26f;
     [SerializeField, Min(.5f), Tooltip("How thick (px at 1080p).")]
-    private float strokeWidth = 7f;
+    private float strokeWidth = 4.5f;
     [SerializeField, Min(0f), Tooltip("How far their kinks jump off the line (px at 1080p).")]
-    private float strokeKink = 26f;
+    private float strokeKink = 22f;
     [SerializeField, Range(0f, 1f), Tooltip("How solid.")]
     private float strokeAlpha = .9f;
 
@@ -90,7 +90,7 @@ public sealed class DodgeFlash : MonoBehaviour
     {
         // This very dodge's strokes, if its start was still waiting for the end of the frame.
         if (pendingStep) { pendingStep = false; StepAir(); }
-        // The one streak goes red: in the world, on every PC.
+        // The dash goes red: in the world, on every PC.
         if (TryGetComponent(out DodgeDash dash)) dash.Succeed(kind == DodgeKind.Micro ? side : 0);
         if (!InBody()) return;
         var red = KitStyle.With(Blood, strokeAlpha);
@@ -107,8 +107,8 @@ public sealed class DodgeFlash : MonoBehaviour
         lines.Advance(Mathf.Min(.05f, Time.unscaledDeltaTime));
     }
 
-    // The streak seen from inside: across the low screen for a side step, out round the middle for a step in. A step
-    // back shows none here: its afterimage and streak are in the world ahead, in view.
+    // The lines seen from inside: across the low screen for a side step, out round the middle for a step in. A step
+    // back shows none here: its afterimage and lines are in the world ahead, in view.
     private void StepAir()
     {
         if (strokes <= 0 || !InBody()) return;

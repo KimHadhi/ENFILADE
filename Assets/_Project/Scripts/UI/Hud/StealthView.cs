@@ -173,7 +173,7 @@ public sealed class StealthView : MonoBehaviour, ITableBound
         bool alive = !movement.IsDead;
         bool aiming = alive && Aiming;
         // Aiming a stone shows them too, whatever the posture: whom it would turn is the point.
-        bool wanted = alive && (coneMode == 2 || coneMode == 1 && (movement.IsCrouching || movement.IsProning) || aiming && coneMode > 0);
+        bool wanted = alive && (coneMode == 2 || coneMode == 1 && (movement.IsCrouchStance || movement.IsProning) || aiming && coneMode > 0);
         show = Mathf.MoveTowards(show, wanted ? 1f : 0f, dt / coneFade);
         if ((pickLeft -= dt) <= 0f) { pickLeft = .25f; Pick(); }
         if (show > 0f) CastSome();

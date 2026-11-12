@@ -120,9 +120,10 @@ public sealed class ZombieReaper : ZombieElite
         if (mine.DamageReceiver.ReceiveHit(hit) == DamageResult.Damaged) mine.KnockBack(direction * knock + Vector3.up * knockUp);
     }
 
-    // Down low enough for a blade at waist height to pass over: crouched, prone or on the back, sliding, diving, or down.
+    // Down low enough for a blade at waist height to pass over: crouched (a crouched dodge too), prone or on the back,
+    // sliding, diving, or down.
     private static bool Low(PlayerMovement player)
-        => player.IsCrouching || player.IsLyingDown || player.IsSliding || player.IsDiving || player.IsDowned;
+        => player.IsCrouchStance || player.IsLyingDown || player.IsSliding || player.IsDiving || player.IsDowned;
 
     private void Update()
     {
