@@ -175,8 +175,6 @@ LODGroup:
     fadeTransitionWidth: 0
     renderers:
     - renderer: {fileID: 6361137570013894811}
-    - renderer: {fileID: -2825188232949760476, guid: a70b2a804ec57534d85cd1f4d0f506bc,
-        type: 3}
   - screenRelativeHeight: 0.125
     fadeTransitionWidth: 0
     renderers:

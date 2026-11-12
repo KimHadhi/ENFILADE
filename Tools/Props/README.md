@@ -12,6 +12,7 @@ Fab·언리얼·블렌더에서 받은 소품을 유니티 URP 에셋으로 바�
 | `plan_props.py` | 파이썬 | 고른 소품 목록. 각 모델의 파일과 텍스처 역할(색·노멀·거칠기·광택·금속도·AO·투명도)을 찾아 `job.json`을 만든다. 언리얼 재질은 파라미터 → 부모 재질 → T3D에 적힌 텍스처 이름(`_BC`·`_N`·`_ORM`·`_RMA`·`_ARM`·`_AOMR`·`_OP`) 순으로 찾는다. |
 | `build_props.py` | 블렌더 | `job.json`대로 텍스처를 유니티 순서로 바꾸고(언리얼 노멀은 초록 뒤집기, 거칠기·광택 → 금속도+매끈함 한 장, AO 따로, 2048까지), URP Lit 재질과 모든 `.meta`(경로로 정한 GUID, 모델 속 재질은 이름으로 우리 재질에 연결)를 쓴다. `.blend` 물체는 FBX로, 언리얼 스켈레탈 메시는 정적 메시로 구워 내보낸다. |
 | `tga_to_png.py` | 블렌더 | TGA를 같은 픽셀의 PNG로 바꾸고 `.meta`를 옮겨 GUID를 지킨다(재질 연결은 그대로, 크기는 3~4분의 1). |
+| `fix_lod_renderers.py` | 파이썬 | 프리팹의 LODGroup에서 다른 에셋(원본 FBX) 안의 렌더러를 뺀다. Dekogon 프리팹은 FBX의 UCX_ 충돌 메시 렌더러를 LOD0에 넣어 두어서, 놓을 때마다 "registered with more than one LODGroup" 경고가 났다(11-12, 32개 고침). 인스턴스는 그 렌더러를 그리지 않으니 빼도 보이는 것은 같다. `import_unitypackage.py`도 들일 때 같은 일을 한다. |
 
 ## 돌리는 법
 
@@ -29,4 +30,4 @@ blender -b --factory-startup --disable-autoexec --python build_props.py -- skele
 blender -b <파일.blend> --factory-startup --disable-autoexec --python build_props.py -- blend <job.json> <프로젝트 폴더> <번호>
 ```
 
-유니티 패키지(Dekogon 등)는 고른 프리팹과 그것이 쓰는 것만 들이는 `import_unitypackage.py`(GUID·가져오기 설정 그대로, 텍스처 2048 제한)로 들인 뒤 `tga_to_png.py`로 줄인다.
+유니티 패키지(Dekogon 등)는 고른 프리팹과 그것이 쓰는 것만 들이는 `import_unitypackage.py`(GUID·가져오기 설정 그대로, 텍스처 2048 제한, LODGroup의 남의 렌더러 뺌)로 들인 뒤 `tga_to_png.py`로 줄인다.

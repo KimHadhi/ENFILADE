@@ -113,6 +113,19 @@ def cap_meta(data, path):
     return re.sub(rb"maxTextureSize: (\d+)", lambda m: b"maxTextureSize: " + str(min(int(m.group(1)), args.cap)).encode(), data)
 
 
+# A prefab's LODGroup entries for renderers in another asset (Dekogon lists the FBX's UCX_ collision renderer): never
+# drawn by an instance, but each placement warns "registered with more than one LODGroup". Same as fix_lod_renderers.py.
+FOREIGN_LOD = re.compile(rb"^    - renderer: \{fileID: -?\d+, guid: [0-9a-f]{32},(?:\r?\n[ \t]+| )type: \d+\}\r?\n", re.M)
+EMPTY_LOD = re.compile(rb"^(    renderers:)(\r?\n)(?!    - renderer:)", re.M)
+
+
+def clean_prefab(data, path):
+    if not path.lower().endswith(".prefab"):
+        return data
+    data, dropped = FOREIGN_LOD.subn(b"", data)
+    return EMPTY_LOD.sub(rb"\1 []\2", data) if dropped else data
+
+
 def write(package, only):
     written = 0
     pending = {}
@@ -132,6 +145,8 @@ def write(package, only):
             if leaf == "asset.meta":
                 dest += ".meta"
                 data = cap_meta(data, path)
+            else:
+                data = clean_prefab(data, path)
             os.makedirs(os.path.dirname(dest), exist_ok=True)
             with open(dest, "wb") as f:
                 f.write(data)
