@@ -56,6 +56,7 @@
 
 이 프로젝트의 클립은 가장 빠른 것이 마요를 5.6m/s로 나르는 Beatrun 전력질주다. 게임의 오래 달리기(7.9~8.9m/s)에서는 그 클립을 분당 260~290걸음까지 빨리 돌리고 보폭을 1.3배 늘려야 한다(사람은 8m/s에서 약 230걸음). 4.9m/s 순항은 맞춰지지만 그 속도로 찍은 달리기 클립도 없다. 사람처럼 보이려면 **5m/s 안팎의 달리기와 7~9m/s의 전력질주를 실제로 찍은 모캡**(맨손·총 든 것, 앞·옆·뒤, 제자리 또는 루트 모션)이 필요하다. 사면 `Art/Animations/<묶음>/`에 넣고 `clips.csv`를 둔 뒤 클립 이름을 `Body.forwardMoves` 등에 더하면 된다. 몸이 저절로 재서 맞춘다. 고를 때 볼 것: 속도별 루프(조깅·달리기·전력질주)가 따로 있는지, 휴머노이드인지, 상체가 달리기에서 10° 안팎만 숙여지는지.
 
-- Kubold **Movement Animset Pro**(맨손 걷기·조깅·달리기·전력질주, 8방향, 루트 모션)와 **Rifle Animset Pro**(소총 든 같은 세트): Unity 에셋 스토어. 이 둘이 이 게임에 가장 잘 맞는다.
+- Kubold **Movement Animset Pro**(맨손 걷기·달리기·출발·멈춤 모캡, 휴머노이드 FBX): Unity 에셋 스토어에 $65(2.0.0, 2024-02) 목록이 있지만, 만든 이가 Unity판 판매를 접고 언리얼 마켓에서만 판다고 한 적이 있어 지금 살 수 있는지 먼저 본다. 같은 회사의 **Rifle Animset Pro**는 쓴 사람이 "진짜 달리기라기보다 전술 조깅"이라고 해서 빠른 달리기 문제는 못 푼다.
+- Unity 에셋 스토어 **Female Rifle Animset - Run & Sprint**: 이름대로면 총 든 여자 캐릭터의 달리기·전력질주다(캐릭터가 모두 여자라 잘 맞을 수 있다). 클립 목록과 속도는 상점 페이지에서 확인한다.
 - MoCap Online **Run**·**Rifle** 묶음: 지금 쓰는 `W1_*`(조준 걸음)과 같은 회사·같은 뼈대라 같은 폴더(`Art/Animations/MocapOnline`)에 넣으면 바로 같은 T자 자세 아바타를 쓴다.
 - KINEMATION의 8방향 걷기·조깅·전력질주(`ThirdParty/KINEMATION/Shared/Character/Animations/Generic`)는 이미 있다. 모캡이고 MoCap Online과 같은 UE 마네킹 뼈대라 `Art/Animations/MocapOnline`에 복사하면 쓸 수 있다. 다만 전력질주가 4.4m/s(마요)이고 상체를 31° 숙여서 이번에는 넣지 않았다.
