@@ -6,15 +6,19 @@ using UnityEngine;
 /// What a Détente's healing looks like (the user, 2026-11-12: "데탕트 주사기 모델링이 없는데 휠 클릭하면 주사기 들게 할 수
 /// 있나?" and the Guts &amp; Blackpowder surgeon's offer they asked for). There are no models for these, so they are made
 /// here of simple parts, once:
-/// - Syringe: the class key's dose. Seen from inside, the syringe comes up from below into view, its plunger goes home
-///   and the red dose in its barrel empties, and it drops away again; anyone else sees it in the Détente's right hand.
+/// - Syringe: the class key's dose, a thick adrenaline syringe rather than a slim one (the user, 2026-11-12: "일반
+///   주사기가 아니라 좀 두꺼운 주사기였으면 좋겠는데 아드레날린 주사기처럼"), an orange band at its neck. Seen from inside,
+///   it comes up from below into view, its plunger goes home and the red dose in its barrel empties, and it drops away
+///   again; anyone else sees it in the Détente's right hand.
 /// - Bandage: the treatment by hand, as long as it lasts. Seen from inside, a roll of bandage winds round and round low in
 ///   view; anyone else sees it turning in the Détente's hand.
 /// - Asked: a friend who called for healing (Callouts request.heal or request.medic), seen by a Détente: a red glow
 ///   behind them and a red cross over their head while the call holds, so the Détente finds them, and an offer to them
 ///   needs no answer (DetenteKit).
 /// - The answer: the line at the foot of the screen of whoever is offered a treatment, "[F] … 치료 받기" (Prompt).
-/// Every PC draws its own: DetenteKit on the Détente's PC, PlayerNetworkCombat for what the others see.
+/// Every PC draws its own: DetenteKit on the Détente's PC, PlayerNetworkCombat for what the others see. A model put at
+/// Resources/ClassProps/Syringe or Resources/ClassProps/Bandage (a prefab, the needle or roll's axis along +z) is used
+/// in place of the made one, without the plunger's play.
 /// </summary>
 public sealed class DetenteLooks : MonoBehaviour
 {
@@ -25,9 +29,9 @@ public sealed class DetenteLooks : MonoBehaviour
     // The Asked look: the halo's size (m), the cross's arm and thickness (m), its height over the feet (m).
     private const float HaloWidth = 1.4f, HaloHeight = 2.2f, CrossArm = .2f, CrossThick = .065f, CrossHeight = 2.25f;
     private static readonly Color Dose = new Color(.95f, .16f, .2f, 1f), Plastic = new Color(.9f, .92f, .95f, 1f),
-        Steel = new Color(.75f, .77f, .8f, 1f), Gauze = new Color(.96f, .95f, .9f, 1f);
+        Steel = new Color(.75f, .77f, .8f, 1f), Gauze = new Color(.96f, .95f, .9f, 1f), Band = new Color(1f, .55f, .1f, 1f);
     private static readonly Dictionary<PlayerMovement, DetenteLooks> asked = new Dictionary<PlayerMovement, DetenteLooks>();
-    private static Material plastic, steel, dose, gauze;
+    private static Material plastic, steel, dose, gauze, band;
     private static Canvas promptCanvas;
     private static TextMeshProUGUI promptLabel;
 
@@ -46,7 +50,7 @@ public sealed class DetenteLooks : MonoBehaviour
     private static void ResetStatics()
     {
         asked.Clear();
-        plastic = steel = dose = gauze = null;
+        plastic = steel = dose = gauze = band = null;
         promptCanvas = null;
         promptLabel = null;
     }
@@ -158,18 +162,22 @@ public sealed class DetenteLooks : MonoBehaviour
     {
         prop = new GameObject(kind.ToString()).transform;
         prop.SetParent(transform, false);
-        if (kind == Kind.Syringe)
+        var model = Resources.Load<GameObject>("ClassProps/" + kind);
+        if (model != null) Instantiate(model, prop, false);
+        else if (kind == Kind.Syringe)
         {
-            // Along +z, the needle forward: barrel, the red dose in it, the plunger behind, the finger grips, the needle.
-            Part("Barrel", PrimitiveType.Cylinder, new Vector3(0f, 0f, 0f), new Vector3(.024f, .045f, .024f), Plastic, prop);
-            fluid = Part("Dose", PrimitiveType.Cylinder, new Vector3(0f, 0f, .006f), new Vector3(.0256f, .03f, .0256f), Dose, prop);
+            // Along +z, the needle forward: a thick barrel (3.4 cm across, 12 cm long), the red dose in it, an orange band
+            // at its neck, the plunger behind, the finger grips, the needle.
+            Part("Barrel", PrimitiveType.Cylinder, new Vector3(0f, 0f, 0f), new Vector3(.034f, .06f, .034f), Plastic, prop);
+            fluid = Part("Dose", PrimitiveType.Cylinder, new Vector3(0f, 0f, .008f), new Vector3(.0356f, .045f, .0356f), Dose, prop);
+            Part("Band", PrimitiveType.Cylinder, new Vector3(0f, 0f, .058f), new Vector3(.037f, .006f, .037f), Band, prop);
             plunger = new GameObject("Plunger").transform;
             plunger.SetParent(prop, false);
-            Part("Rod", PrimitiveType.Cylinder, new Vector3(0f, 0f, -.07f), new Vector3(.008f, .028f, .008f), Plastic, plunger);
-            Part("Thumb", PrimitiveType.Cylinder, new Vector3(0f, 0f, -.099f), new Vector3(.026f, .0025f, .026f), Plastic, plunger);
-            Part("Grips", PrimitiveType.Cube, new Vector3(0f, 0f, -.044f), new Vector3(.05f, .012f, .004f), Plastic, prop, false);
-            Part("Hub", PrimitiveType.Cylinder, new Vector3(0f, 0f, .05f), new Vector3(.01f, .006f, .01f), Steel, prop);
-            Part("Needle", PrimitiveType.Cylinder, new Vector3(0f, 0f, .074f), new Vector3(.0025f, .02f, .0025f), Steel, prop);
+            Part("Rod", PrimitiveType.Cylinder, new Vector3(0f, 0f, -.095f), new Vector3(.012f, .035f, .012f), Plastic, plunger);
+            Part("Thumb", PrimitiveType.Cylinder, new Vector3(0f, 0f, -.132f), new Vector3(.042f, .004f, .042f), Plastic, plunger);
+            Part("Grips", PrimitiveType.Cube, new Vector3(0f, 0f, -.062f), new Vector3(.085f, .016f, .006f), Plastic, prop, false);
+            Part("Hub", PrimitiveType.Cylinder, new Vector3(0f, 0f, .07f), new Vector3(.016f, .008f, .016f), Steel, prop);
+            Part("Needle", PrimitiveType.Cylinder, new Vector3(0f, 0f, .1f), new Vector3(.0035f, .025f, .0035f), Steel, prop);
         }
         else
         {
@@ -204,6 +212,7 @@ public sealed class DetenteLooks : MonoBehaviour
         if (color == Dose) made = ref dose;
         else if (color == Steel) made = ref steel;
         else if (color == Gauze) made = ref gauze;
+        else if (color == Band) made = ref band;
         if (made != null) return made;
         var shader = Shader.Find("Universal Render Pipeline/Lit");
         if (shader == null) shader = Shader.Find("Standard");
@@ -248,15 +257,16 @@ public sealed class DetenteLooks : MonoBehaviour
     {
         float up = Mathf.Clamp01(age / PlungeFrom), down = Mathf.Clamp01((age - PlungeTo) / (SyringeSeconds - PlungeTo));
         float raise = KitReveal.EaseOut(up) * (1f - down * down);
-        Vector3 low = new Vector3(.2f, -.34f, .3f), aim = new Vector3(.09f, -.13f, .4f);
+        Vector3 low = new Vector3(.22f, -.38f, .32f), aim = new Vector3(.1f, -.15f, .45f);
         prop.localPosition = Vector3.Lerp(low, aim, raise);
         prop.localRotation = Quaternion.Slerp(Quaternion.Euler(-25f, -30f, 10f), Quaternion.Euler(12f, -10f, -6f), raise);
         float push = Mathf.Clamp01((age - PlungeFrom) / (PlungeTo - PlungeFrom));
-        if (plunger != null) plunger.localPosition = new Vector3(0f, 0f, .034f * push);
+        if (plunger != null) plunger.localPosition = new Vector3(0f, 0f, .045f * push);
         if (fluid != null)
         {
-            fluid.localScale = new Vector3(.0256f, Mathf.Max(.002f, .03f * (1f - push)), .0256f);
-            fluid.localPosition = new Vector3(0f, 0f, .006f + .03f * push);
+            // Its front end stays at the neck while the plunger drives the back of it forward.
+            fluid.localScale = new Vector3(.0356f, Mathf.Max(.002f, .045f * (1f - push)), .0356f);
+            fluid.localPosition = new Vector3(0f, 0f, .008f + .045f * push);
         }
     }
 
