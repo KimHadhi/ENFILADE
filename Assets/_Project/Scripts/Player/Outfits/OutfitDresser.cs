@@ -10,7 +10,8 @@ using Object = UnityEngine.Object;
 /// has a bone of the same name, and the outfit's own extra bones (a skirt's, a coat's tails) go under the character's
 /// bone they hung from, so from then on they follow it (Merge). Nothing is baked per character in the editor, because the user means to let players
 /// bring their own characters: a model goes on any body whose bones carry the names it was made for. A model with no
-/// bones of its own (a rigid mask) follows its slot's bone.
+/// bones of its own (a rigid mask) follows its slot's bone. A model made for anyone (an accessory sold for any avatar, a
+/// pair of earrings) hangs on its slot's spots measured for each character (OutfitSpot) and follows the slot's bone.
 /// Pieces cut from one model (a BOOTH set's beret, jacket and skirt, Outfits.csv) share one copy of it, so its bones are
 /// there once, each piece showing its own meshes in its own colour. Then the character's own pieces in the filled slots
 /// switch off (and the underwear they covered on), the items' shape keys go on (OutfitFits.csv), and the clothes take the
@@ -258,6 +259,15 @@ internal static class OutfitDresser
             Warn($"{item.ModelId}: {entry.Model.name}에 입힐 메시가 없습니다.");
             Object.Destroy(instance);
             return null;
+        }
+        // A piece made for anyone (an accessory sold for any avatar) brings bones of its own, matched to none of the
+        // character's by name, and hangs on the slot's spots measured for this character: the Ene earrings on the lobes.
+        if (entry.ForAnyone)
+        {
+            var spot = OutfitSpot.Of(slot.id, skinId);
+            if (spot == null || !spot.Hang(instance.transform, root, slot.Anchor(animator)))
+                Warn($"{item.ModelId}: {skinId}의 {slot.id} 칸 자리(OutfitSpots.csv)나 뼈 '{slot.bone}'가 없어 몸을 따라가지 않습니다.");
+            return copy;
         }
         if (Merge(instance.transform, skeleton, item.ModelId) > 0) return copy;
         // Nothing to follow bone by bone: a rigid piece, made standing on the character, follows its slot's bone.

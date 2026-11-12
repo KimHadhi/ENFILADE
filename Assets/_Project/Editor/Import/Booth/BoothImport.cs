@@ -19,7 +19,8 @@ using Object = UnityEngine.Object;
 ///   in; the avatar's animator controller), so the game makes them without a missing-script warning;
 /// - registers each character's copy in the PlayerBody profile with its colour sets, and each outfit model's copy in the
 ///   OutfitLibrary, its colour sets read from the package's prefab of each colour (the materials that differ from the
-///   base prefab's, renderer by renderer).
+///   base prefab's, renderer by renderer). A row "model@*" is an accessory sold for any avatar: registered once, for
+///   anyone, it goes on every character whose spot for its slot is measured (OutfitSpots.csv).
 /// Runs once an import under the BOOTH folder (or of BoothSources.csv) is over, whenever the editor loads its scripts
 /// and something listed isn't registered yet, and from Tools/Characters/BOOTH 다시 가져오기. Running again gives the
 /// same result.
@@ -164,9 +165,15 @@ internal sealed class BoothImport : AssetPostprocessor
         return present && EditorPrefs.GetInt(SwayVersionKey, 0) != VrcSway.Version;
     }
 
-    // Where the game's copy of a source's prefab lives.
+    // Where the game's copy of a source's prefab lives. A model made for anyone is "<model>.any" ('*' is no file name).
     private static string CopyOf(Source source) =>
-        CopiesFolder + "/" + (source.Kind == "outfit" ? source.Id + "." + source.Skin : source.Id) + ".prefab";
+        CopiesFolder + "/" + (source.Kind == "outfit" ? source.Id + "." + (ForAnyone(source) ? "any" : source.Skin) : source.Id) + ".prefab";
+
+    // An outfit row "model@*": an accessory sold for any avatar (the Ene earrings), not fitted to one character's bones.
+    private static bool ForAnyone(Source source) => source.Kind == "outfit" && source.Skin == OutfitLibrary.AnySkin;
+
+    // The bones such a model shares with a character: none.
+    private static readonly HashSet<string> NoBones = new HashSet<string>(StringComparer.Ordinal);
 
     [MenuItem("Tools/Characters/BOOTH 다시 가져오기")]
     private static void Run()
@@ -192,7 +199,7 @@ internal sealed class BoothImport : AssetPostprocessor
                 }
                 var character = new Character(prefab);
                 characters[source.Id] = character;
-                Sway(sway, source.Id, Root + source.Path, prefab, character.Humanoid, character);
+                Sway(sway, source.Id, Root + source.Path, prefab, character.Humanoid, character.PartOf);
                 var copy = Copy(Root + source.Path, CopyOf(source));
                 if (profile != null && copy != null) profile.EditorPutSkin(source.Id, source.Name, copy, CharacterColours(source.Id, sources));
             }
@@ -201,13 +208,17 @@ internal sealed class BoothImport : AssetPostprocessor
             {
                 string path = Root + source.Path;
                 var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
-                if (prefab == null || !characters.TryGetValue(source.Skin, out var character))
+                bool anyone = ForAnyone(source);
+                Character character = null;
+                if (prefab == null || (!anyone && !characters.TryGetValue(source.Skin, out character)))
                 {
                     Debug.LogWarning($"[BOOTH] {source.Id}: {path} 또는 캐릭터 '{source.Skin}'가 없습니다.");
                     continue;
                 }
-                // Per character: the outfit made for each has bones of its own.
-                Sway(sway, source.Id + OutfitLook.Separator + source.Skin, path, prefab, character.Bones, character);
+                // Per character: the outfit made for each has bones of its own. A model made for anyone shares none with
+                // any character, so its rows are the model's own (skin = the model id) and swing on whoever wears it.
+                if (anyone) Sway(sway, source.Id, path, prefab, NoBones, _ => null);
+                else Sway(sway, source.Id + OutfitLook.Separator + source.Skin, path, prefab, character.Bones, character.PartOf);
                 var copy = Copy(path, CopyOf(source));
                 if (copy == null) continue;
                 var colourPaths = string.IsNullOrEmpty(source.Colours) || !AssetDatabase.IsValidFolder(Root + source.Colours)
@@ -236,11 +247,11 @@ internal sealed class BoothImport : AssetPostprocessor
 
     // The prefab's PhysBones as sway rows under this owner; nothing when it has none.
     private static void Sway(Dictionary<string, List<Dictionary<string, string>>> sway, string owner, string path, GameObject prefab,
-        ISet<string> shared, Character character)
+        ISet<string> shared, Func<Transform, string> partOf)
     {
         var read = VrcPrefab.Read(path);
         if (read.PhysBones.Count == 0) return;
-        sway[owner] = VrcSway.Rows(read, prefab, owner, shared, character.PartOf);
+        sway[owner] = VrcSway.Rows(read, prefab, owner, shared, partOf);
     }
 
     private static List<Source> ReadSources()

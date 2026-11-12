@@ -33,7 +33,12 @@ GUID = re.compile(r"guid: ([0-9a-f]{32})")
 def zip_name(info):
     if info.flag_bits & 0x800:
         return info.filename
-    raw = info.filename.encode("cp437")
+    try:
+        raw = info.filename.encode("cp437")
+    except UnicodeEncodeError:
+        # Newer Pythons already read an unflagged UTF-8 name as UTF-8 (エネ_Earring_ver1.2.zip, 2026-11-12), and such a
+        # name has no cp437 bytes to go back to.
+        return info.filename
     for encoding in ("utf-8", "cp932", "cp949"):
         try:
             return raw.decode(encoding)
