@@ -2,7 +2,11 @@
 Vitals.maximumHealth,100,최대 체력
 Stats.ultimateCapacityPercent,120,궁극기 최대 보유량(%). 120이면 1.2회분까지 모아 둔다
 Stats.ultimateCostPercent,100,궁극기 1회 사용량(%)
-Ultimate.chargePerEnemyHit,3,살아 있는 적에게 공격이 들어갈 때마다 충전(%)
+Ultimate.chargePerHundred,5,적의 체력을 100 깎을 때마다 충전(%). 넘친 피해는 치지 않아 어느 총이든 좀비 한 마리(100)가 5%다. 브루트(3000)를 혼자 잡으면 150%
+Ultimate.chargePerHundredHealed,5,동료에게 체력을 100 돌려줄 때마다 충전(%). 데탕트의 주사·손 치료
+Ultimate.chargePerResupply,4,동료에게 보급할 때마다 충전(%). 서포트
+Ultimate.chargePerParry,2,적의 공격을 패리할 때마다 충전(%). 클래스 상관없이
+Ultimate.chargePerRevive,10,쓰러진 동료를 일으키거나 죽은 동료를 되살릴 때마다 충전(%)
 Fists.reach,1.6,주먹 사거리(m)
 Fists.fullChargeTime,0.9,최대 충전까지 걸리는 시간(초)
 Fists.damage,10;28,피해 - 최소 충전;최대 충전

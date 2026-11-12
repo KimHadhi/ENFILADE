@@ -43,6 +43,8 @@ public sealed class PlayerRevive : MonoBehaviour
         if (!Candidate.TryGetComponent(out PlayerNetworkCombat network)) return;
         network.Revive();
         PlayerRecords.Revived();
+        // Getting a friend up fills the gauge, as fighting does (UltimateCharge.AwardHelp).
+        UltimateCharge.AwardHelp(UltimateCharge.Help.Revived);
     }
 
     private PlayerMovement FindDowned()

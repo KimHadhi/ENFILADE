@@ -161,6 +161,8 @@ public sealed class SupportKit : MonoBehaviour
         int magazines = Mathf.Max(1, Mathf.RoundToInt(Number("resupplyMagazines", 2f)));
         float overfill = Mathf.Max(0f, Number("resupplyOverfill", 25f)), syringe = Mathf.Max(0f, Number("resupplySyringe", 25f));
         if (friend.TryGetComponent(out PlayerNetworkCombat network) && network.IsSpawned) network.Resupply(magazines, overfill, syringe);
+        // Handing a friend ammo is the Support's fight: it fills the gauge (UltimateCharge.AwardHelp).
+        UltimateCharge.AwardHelp(UltimateCharge.Help.Resupplied);
         KitSound.Play(KitSound.Cue.Supply, .8f);
         AlertHUD.Self(Texts.Format("class.support.gave", NameOf(friend)));
     }

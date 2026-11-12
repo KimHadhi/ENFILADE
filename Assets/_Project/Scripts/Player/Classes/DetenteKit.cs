@@ -177,7 +177,15 @@ public sealed class DetenteKit : MonoBehaviour
     private void Heal(PlayerMovement patient, float amount)
     {
         if (patient == movement) receiver?.Heal(amount);
-        else if (patient.TryGetComponent(out PlayerNetworkCombat network)) network.Heal(amount);
+        else if (patient.TryGetComponent(out PlayerNetworkCombat network))
+        {
+            // A friend's heal fills the gauge by the health it gives back, as this PC sees their health (their own PC
+            // applies it): looking after the team is the healer's fight (UltimateCharge.AwardHelp).
+            var life = patient.DamageReceiver;
+            float given = life != null ? Mathf.Clamp(life.MaximumHealth - life.Health, 0f, amount) : amount;
+            UltimateCharge.AwardHelp(UltimateCharge.Help.Healed, given);
+            network.Heal(amount);
+        }
         KitSound.Play(KitSound.Cue.PickHeal, .8f);
         Golden();
     }
@@ -188,6 +196,7 @@ public sealed class DetenteKit : MonoBehaviour
         raisesLeft = Mathf.Max(0, raisesLeft - 1);
         if (friend.TryGetComponent(out PlayerNetworkCombat network))
             network.Resurrect(Mathf.Clamp01(Number("resurrectHealth", 50f) / 100f));
+        UltimateCharge.AwardHelp(UltimateCharge.Help.Revived);
         KitSound.Play(KitSound.Cue.Charge, .8f);
         AlertHUD.Self(Texts.Format("class.detente.raised", Name(friend)));
         Golden();

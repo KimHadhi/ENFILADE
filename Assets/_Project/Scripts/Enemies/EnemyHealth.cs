@@ -162,7 +162,8 @@ public sealed class EnemyHealth : MonoBehaviour, IDamageReceiver, ICombatVitals,
             scale = hit.Amount > 0f ? (before - Health) / hit.Amount : 1f;
         }
         else Health = Mathf.Max(0f, Health - amount);
-        UltimateCharge.AwardEnemyHit(hit);
+        // The gauge fills by the health this hit took (an execution's share of a brute too), not by the hit.
+        UltimateCharge.AwardEnemyHit(hit, before - Health);
         // A copy shows the hit now and leaves the rest to the host, whose enemy is the true one.
         bool copy = network != null && network.IsCopy;
         if (copy) network.SendHit(hit);

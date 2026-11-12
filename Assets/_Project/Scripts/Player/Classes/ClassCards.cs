@@ -374,6 +374,8 @@ public sealed class ClassCards : MonoBehaviour
     // A parry or a perfect dodge (a Knight's), and a grab taking hold.
     private void OnResolved(DamageHit hit, DamageResult result)
     {
+        // A parried blow fills the gauge whoever parried it (UltimateCharge.AwardHelp): a Knight's job above all.
+        if (result == DamageResult.Parried) UltimateCharge.AwardHelp(UltimateCharge.Help.Parried);
         if (!PlayerClass.Is(PlayerClass.Knight)) return;
         if (result == DamageResult.Parried)
         {

@@ -122,7 +122,7 @@ public sealed class RangeTarget : MonoBehaviour, IDamageReceiver, ICombatVitals,
         Health = Mathf.Max(0f, Health - hit.Amount);
         bool downed = Health <= 0f;
         // As an enemy's hit does (EnemyHealth): the ultimate charges, so its skills can be tried here.
-        UltimateCharge.AwardEnemyHit(hit);
+        UltimateCharge.AwardEnemyHit(hit, before - Health);
         // Its true health, down to zero on the shot that knocks it down: that is a killing blow, as on a zombie, and the
         // classes' kill hooks take it (ClassKit, ClassCards). Being practice (IsPractice) keeps it off the kill feed,
         // the money and the counts (GunFeelDirector).

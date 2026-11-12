@@ -15,15 +15,56 @@ public sealed class UltimateCharge : MonoBehaviour, ITableBound
         return player != null && player.Ultimate != null ? player.Ultimate : authored;
     }
     [SerializeField, Min(0)] private float currentCharge;
-    [SerializeField, Min(0), Tooltip("Charge granted per accepted hit on a living enemy, including lethal hits.")]
-    private float chargePerEnemyHit = 3f;
+    // What fills the gauge is what a player gives the fight, not how many times their gun went off (the user, 2026-11-12,
+    // on the old charge a hit: "굉장히 옛날에 만들어 둔 건데 개편해도 될 듯"). A hit counted 3% a pellet, so a shotgun's
+    // blast filled nine times a rifle's shot and the Ghost, the class that grows by its cards, drew them last, while a
+    // heal, a resupply or a parry filled nothing. Now an enemy's health taken counts, the same for any gun (overkill
+    // left out, so a headshot is worth the zombie it ends, not its damage number), and so does looking after the team.
+    [SerializeField, Min(0), Tooltip("Charge per 100 health an enemy loses to this player's hit (overkill not counted). A shambler has 100.")]
+    private float chargePerHundred = 5f;
+    [SerializeField, Min(0), Tooltip("Charge per 100 health this player gives back to friends (a Détente's dose or treatment).")]
+    private float chargePerHundredHealed = 5f;
+    [SerializeField, Min(0), Tooltip("Charge per resupply handed to a friend (a Support's).")]
+    private float chargePerResupply = 4f;
+    [SerializeField, Min(0), Tooltip("Charge per enemy blow parried.")]
+    private float chargePerParry = 2f;
+    [SerializeField, Min(0), Tooltip("Charge per friend got up from downed or brought back from the dead.")]
+    private float chargePerRevive = 10f;
 
-    public static void AwardEnemyHit(DamageHit hit)
+    /// <summary>A way this player looked after the team, which charges the gauge as fighting does (AwardHelp).</summary>
+    public enum Help { Healed, Resupplied, Parried, Revived }
+
+    /// <summary>
+    /// This PC's player's hit took <paramref name="taken"/> health from an enemy (a zombie or a range target, as its own
+    /// copy judged it, before the host's word): the gauge fills by it.
+    /// </summary>
+    public static void AwardEnemyHit(DamageHit hit, float taken)
     {
-        if (hit.Kind != DamageKind.Attack || hit.Source == null) return;
+        // An execution counts as the health it took (a fall never comes from a player).
+        if (hit.Kind == DamageKind.Fall || hit.Source == null || !(taken > 0f)) return;
         var player = hit.Source.GetComponentInParent<PlayerMovement>();
         if (player == null || !player.IsLocal || player.Ultimate == null || player.DamageReceiver == null || !player.DamageReceiver.IsAlive) return;
-        player.Ultimate.AddCharge(player.Ultimate.chargePerEnemyHit * PlayerPerks.ChargeFactor); // faster with the charge perk
+        var gauge = player.Ultimate;
+        gauge.AddCharge(taken / 100f * gauge.chargePerHundred * PlayerPerks.ChargeFactor); // faster with the charge perk
+    }
+
+    /// <summary>
+    /// This PC's player looked after the team: <paramref name="amount"/> is the health given back for a heal, and how many
+    /// for the rest (resupplies, parries, friends got up).
+    /// </summary>
+    public static void AwardHelp(Help help, float amount = 1f)
+    {
+        var player = PlayerRoster.Local;
+        if (!(amount > 0f) || player == null || !player.IsLocal || player.Ultimate == null) return;
+        var gauge = player.Ultimate;
+        float each = help switch
+        {
+            Help.Healed => gauge.chargePerHundredHealed / 100f,
+            Help.Resupplied => gauge.chargePerResupply,
+            Help.Parried => gauge.chargePerParry,
+            _ => gauge.chargePerRevive,
+        };
+        gauge.AddCharge(amount * each * PlayerPerks.ChargeFactor);
     }
 
     private PlayerStats stats;
