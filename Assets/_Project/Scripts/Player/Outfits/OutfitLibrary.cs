@@ -40,9 +40,11 @@ public sealed class OutfitLibrary : ScriptableObject
         /// <summary>
         /// Made for no one in particular (<see cref="AnySkin"/>): a BOOTH accessory sold for any avatar. Its bones are its
         /// own, so dressing never matches them to the character's by name, and it hangs on the slot's spots measured
-        /// for each character (OutfitSpot).
+        /// for each character (OutfitSpot), or is fitted to the face in a face slot (FaceFit). A hand-made one is the file
+        /// "any" in its folder ('*' is no file name: the welding mask), which the editor files under AnySkin; "any" itself
+        /// reads the same, should an older editor step have filed it so.
         /// </summary>
-        public bool ForAnyone => string.Equals(skin, AnySkin, StringComparison.Ordinal);
+        public bool ForAnyone => string.Equals(skin, AnySkin, StringComparison.Ordinal) || string.Equals(skin, "any", StringComparison.OrdinalIgnoreCase);
 
         /// <summary>The colour set with this id, else the first; null when there are none.</summary>
         public SkinVariant VariantOf(string variantId)

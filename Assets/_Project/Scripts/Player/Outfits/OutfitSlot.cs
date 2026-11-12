@@ -46,6 +46,16 @@ public sealed class OutfitSlot
     /// 자유도에서 오는 건데 … 따로 칸을 만들어야겠다").
     /// </summary>
     public bool under;
+    /// <summary>
+    /// How a rigid piece made for anyone (OutfitLibrary.AnySkin) is put on in this slot: empty hangs it on the spots
+    /// measured for each character (OutfitSpots.csv: the Ene earrings on the lobes), "face" fits it to the face measured
+    /// from the character's own meshes as it is worn (FaceFit: the welding mask, 2026-11-13), so it sits on any humanoid
+    /// with nothing set up per character.
+    /// </summary>
+    public string fit = "";
+
+    /// <summary>Whether rigid pieces made for anyone are fitted to the face here (<see cref="fit"/> "face").</summary>
+    public bool FitsFace => string.Equals(fit, "face", StringComparison.OrdinalIgnoreCase);
 
     public string Name => Texts.Get("outfit.slot." + id);
 

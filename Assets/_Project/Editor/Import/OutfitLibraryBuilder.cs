@@ -18,6 +18,8 @@ internal sealed class OutfitLibraryBuilder : AssetPostprocessor
     private const string OutfitsFolder = ModelImportRules.ModelsFolder + "Outfits";
     internal const string LibraryPath = "Assets/_Project/Resources/Characters/Outfits.asset";
     private const string ColoursFolder = "Colors";
+    // The file of a model made for anyone (OutfitLibrary.AnySkin), and where a colour set's name is looked up in Texts.csv.
+    private const string AnyFile = "any", ColourText = "outfit.colour.";
     private static readonly string[] ModelExtensions = { ".fbx", ".prefab" };
 
     private static void OnPostprocessAllAssets(string[] imported, string[] deleted, string[] moved, string[] movedFrom)
@@ -40,7 +42,10 @@ internal sealed class OutfitLibraryBuilder : AssetPostprocessor
                     if (!ModelExtensions.Contains(Path.GetExtension(path).ToLowerInvariant())) continue;
                     var model = AssetDatabase.LoadAssetAtPath<GameObject>(path);
                     if (model == null) continue;
-                    entries.Add(new OutfitLibrary.Entry(id, Path.GetFileNameWithoutExtension(path), model, Colours(modelFolder, model)));
+                    // "any" is a piece made for anyone ('*' is no file name): the welding mask, fitted to each face.
+                    string skin = Path.GetFileNameWithoutExtension(path);
+                    if (string.Equals(skin, AnyFile, StringComparison.OrdinalIgnoreCase)) skin = OutfitLibrary.AnySkin;
+                    entries.Add(new OutfitLibrary.Entry(id, skin, model, Colours(modelFolder, model)));
                 }
             }
         var library = Library(entries.Count > 0);
@@ -77,8 +82,11 @@ internal sealed class OutfitLibraryBuilder : AssetPostprocessor
                 var from = to != null ? worn.FirstOrDefault(m => string.Equals(m.name, to.name, StringComparison.OrdinalIgnoreCase)) : null;
                 if (from != null) swaps.Add(new SkinVariant.Swap { from = from, to = to });
             }
+            // The folder's name is the set's id; its name on the chip is outfit.colour.<id> in Texts.csv when there is one
+            // (painted → 도장, edited in the 글자 편집기), else the folder's name.
             string id = Path.GetFileName(setFolder);
-            if (swaps.Count > 0) sets.Add(new SkinVariant(id, id, swaps.ToArray()));
+            string name = Texts.Has(ColourText + id) ? ColourText + id : id;
+            if (swaps.Count > 0) sets.Add(new SkinVariant(id, name, swaps.ToArray()));
             else Debug.LogWarning($"[Outfits] {setFolder}: 모델의 재질과 이름이 같은 재질이 없어 색 세트로 쓰지 않습니다.");
         }
         return sets.Count > 1 ? sets.ToArray() : Array.Empty<SkinVariant>();

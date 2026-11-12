@@ -122,8 +122,8 @@ public static class OutfitCatalog
         var item = Item(itemId);
         var entry = item != null && Library != null ? Library.Find(item.ModelId, skinId) : null;
         // A piece made for anyone fits only a character whose spot for its slot is measured (OutfitSpots.csv): earrings
-        // need ears, and Sil has none.
-        return entry != null && entry.ForAnyone && !OutfitSpot.Has(item.slot, skinId) ? null : entry;
+        // need ears, and Sil has none. One fitted to the face (the welding mask) fits any face, measured as it is worn.
+        return entry != null && entry.ForAnyone && Slot(item.slot)?.FitsFace != true && !OutfitSpot.Has(item.slot, skinId) ? null : entry;
     }
 
     /// <summary>What the item needs on this character; null when its row is missing (worn as it comes).</summary>

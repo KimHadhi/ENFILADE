@@ -416,8 +416,8 @@ internal static class UnderwearFit
         return Vector3.Dot(ac, q) * inverse;
     }
 
-    // The mesh's vertices with its keys as they are now, in the model's space.
-    private static Vector3[] Posed(Renderer renderer, Mesh mesh, Matrix4x4 matrix)
+    // The mesh's vertices with its keys as they are now, in the model's space (FaceFit reads faces with it too).
+    internal static Vector3[] Posed(Renderer renderer, Mesh mesh, Matrix4x4 matrix)
     {
         var at = mesh.vertices;
         if (renderer is SkinnedMeshRenderer skinned)

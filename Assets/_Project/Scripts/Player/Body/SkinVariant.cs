@@ -39,7 +39,8 @@ public sealed class SkinVariant
     }
 
     public string Id => id;
-    public string DisplayName => string.IsNullOrEmpty(displayName) ? id : displayName;
+    /// <summary>Its name on a colour chip: the words of a Texts id (outfit.colour.painted), or the name as stored.</summary>
+    public string DisplayName => Texts.Cell(string.IsNullOrEmpty(displayName) ? id : displayName);
     /// <summary>The colour card's label: the display name up to its first space.</summary>
     public string ShortName
     {

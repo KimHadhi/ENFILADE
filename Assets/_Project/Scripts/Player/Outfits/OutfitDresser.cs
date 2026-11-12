@@ -224,7 +224,43 @@ internal static class OutfitDresser
         if (released.Count > 0) Follow(ShapesNow(own, released), worn);
         // Last, with every key where dressing leaves it: underwear still standing out through what is over it goes in under.
         UnderwearFit.Press(model.transform, showing, over);
+        // Hair, ears and head ornaments under a piece fitted to the face (the welding mask) likewise go in under it where
+        // they stand out through it; one it covers whole goes out of sight.
+        UnderFace(model.transform, skin.Id, animator, own, worn, covered);
         return dressing;
+    }
+
+    // What hangs from the head under the face pieces worn (OutfitSlot.FitsFace): the character's own head meshes (hair,
+    // ears, the face) and items worn in the head's slots. A piece the face piece covers whole (FaceFit.csv hide, as
+    // SkinCover measures it: a hairpin under the mask) goes out of sight; the rest is pressed in under it where it stands
+    // out through it (UnderwearFit.Press), on copies of its meshes. Measured on the FBX files (2026-11-13), a few hair
+    // vertices stood out through the welding mask on each character, nothing of a face.
+    private static void UnderFace(Transform root, string skinId, Animator animator, Renderer[] own, List<Worn> worn, HashSet<string> covered)
+    {
+        var onFace = new List<Renderer>();
+        foreach (var piece in worn)
+            if (piece.Slot.FitsFace && !covered.Contains(piece.Slot.id)) onFace.AddRange(piece.Renderers);
+        if (onFace.Count == 0) return;
+        var head = animator != null && animator.isHuman ? animator.GetBoneTransform(HumanBodyBones.Head) : null;
+        if (head == null) return;
+        var under = new List<Renderer>();
+        foreach (var renderer in own)
+            if (renderer is SkinnedMeshRenderer skinned && renderer.enabled && renderer.gameObject.activeInHierarchy && HeadMeshes.OnHead(skinned, head))
+                under.Add(renderer);
+        foreach (var piece in worn)
+        {
+            if (piece.Slot.FitsFace || covered.Contains(piece.Slot.id) || !string.Equals(piece.Slot.group, "head", StringComparison.OrdinalIgnoreCase)) continue;
+            foreach (var renderer in piece.Renderers)
+                if (renderer is SkinnedMeshRenderer && renderer.enabled) under.Add(renderer);
+        }
+        var showing = new List<Renderer>();
+        float hide = FaceFit.HideShare;
+        foreach (var renderer in under)
+        {
+            if (SkinCover.Covers(root, skinId, renderer, onFace) >= hide) renderer.enabled = false;
+            else showing.Add(renderer);
+        }
+        UnderwearFit.Press(root, showing, onFace);
     }
 
     // The character's own underwear in the underwear slots nothing else took (CharacterParts.csv rows of those slots):
@@ -353,6 +389,15 @@ internal static class OutfitDresser
         // character's by name, and hangs on the slot's spots measured for this character: the Ene earrings on the lobes.
         if (entry.ForAnyone)
         {
+            // A rigid piece for the face (the welding mask) goes onto this face as measured from its own meshes, then
+            // follows the head: no rows per character (FaceFit).
+            if (slot.FitsFace)
+            {
+                var face = FaceFit.Measure(root, animator, own);
+                if (face == null || !FaceFit.Put(instance.transform, root, face, slot.Anchor(animator)))
+                    Warn($"{item.ModelId}: {skinId}의 얼굴(머리 뼈와 읽을 수 있는 머리 메시)을 재지 못해 {slot.id} 칸에 맞추지 못했습니다.");
+                return copy;
+            }
             var spot = OutfitSpot.Of(slot.id, skinId);
             if (spot == null || !spot.Hang(instance.transform, root, slot.Anchor(animator)))
                 Warn($"{item.ModelId}: {skinId}의 {slot.id} 칸 자리(OutfitSpots.csv)나 뼈 '{slot.bone}'가 없어 몸을 따라가지 않습니다.");
