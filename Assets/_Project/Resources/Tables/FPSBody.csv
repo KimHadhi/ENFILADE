@@ -3,7 +3,11 @@ Rig.sprintLookWeight,0.3,달리는 동안 상체가 시선을 따라가는 정�
 Rig.sprintFrom,0.5,걷기와 질주 사이 이만큼 넘어가면 질주로 본다(PlayerMovement의 SprintProgress)
 Rig.reloadBlendOut,0.15,끊긴 장전 동작이 풀리는 시간(초)
 Rig.reloadContacts,true,장전 동안 총과 두 손을 KINEMATION 원본 클립이 둔 자리에 둔다(GunArms·FPSBody.Contacts). 원본을 숨은 팔에 같이 틀어 총이 움직이는 만큼과 손바닥이 총의 어디에 있는지를 읽고 손은 IK로 맞춘다. false면 예전처럼 다시 만든 클립만 따르고 총은 오른손에 붙어 다닌다
-Rig.contactBlend,0.15,장전이 시작될 때 총과 손이 원본 클립의 자리로 넘어가는 시간(초). 끝날 때는 클립의 블렌드 아웃(Rig.reloadSettle 이상)으로 돌아온다
+Rig.contactBlend,0.15,장전·꺼내기·넣기·살펴보기가 시작될 때 총과 손이 원본 클립의 자리로 넘어가는 시간과, 총을 들 때 그냥 쥐기의 손 자리가 들어오는 시간(초). 끝날 때는 클립의 블렌드 아웃(Rig.reloadSettle 이상)으로 돌아온다
+Rig.holdContacts,true,그냥 쥐기(서기·조준·걷기·질주·앉기)와 꺼내기·넣기·살펴보기 동안 두 손바닥을 KINEMATION 원본 클립이 총에 둔 자리에 둔다(그냥 쥐기는 원본 자세 클립의 자리 · 나머지는 그 순간의 자리). 장전과 같은 방식(GunArms·FPSBody.Contacts)이라 팔 길이·손 크기가 달라도 손바닥 가운데가 그 자리에 간다. false면 예전처럼 다시 만든 클립의 관절 각도대로 쥔다
+Rig.contactFingers,true,손바닥이 원본 클립을 따를 때 손가락도 그 클립의 손가락 모양을 따른다(마디마다 손 기준 방향을 그대로 옮김). false면 예전처럼 모든 총을 같은 손가락 모양(Trigger·Cradle·Cup)으로 쥔다. 총마다 손가락 표(GunGrips.csv)에 줄이 있으면 그 줄이 이긴다
+Rig.fingerOpenMost,30,총을 가만히 쥐고 있을 때 원본보다 작은 손의 손가락이 총 속으로 파고들면 그 마디를 이만큼까지 펴서 총 표면에 얹는다(도). 0이면 원본 각도 그대로
+Rig.fingerClearance,0.002,손가락 피부가 총 표면에서 떨어져 쉬는 거리(m)
 Rig.muzzleDepth,0.015,KINEMATION 총에는 총구 뼈가 없어서 총 모양의 앞면에서 총구를 잰다. 그 앞면으로 보는 두께(m)
 Rig.weightTime,0.15,앉기·질주 가중치가 몸을 따라가는 빠르기(초)
 Rig.holdBlendTime,0.2,총을 꺼낼 때 FPSAF가 상체를 넘겨받는 시간과, 넣을 때 몸의 클립으로 돌려주는 시간(초)

@@ -375,8 +375,9 @@ internal sealed class HandGrip
     public Vector3 PalmFacing => hand.TransformDirection(palmInHand);
 
     // How far a finger's joints bend, in degrees, from straight along the joint before (+ toward the palm): knuckle, middle,
-    // tip. Past this a hand is broken, not gripping.
-    private static readonly Vector2[] HumanBend = { new Vector2(-25f, 95f), new Vector2(-5f, 110f), new Vector2(-5f, 90f) };
+    // tip. Past this a hand is broken, not gripping. KINEMATION's own grips bend a knuckle up to 103 (the AK's ring finger
+    // round its grip) and press fingertips back up to 36 under a handguard (Mk14 EBR, MX68), measured 2026-11-12.
+    private static readonly Vector2[] HumanBend = { new Vector2(-25f, 105f), new Vector2(-5f, 110f), new Vector2(-40f, 90f) };
     // How far a joint swings sideways out of its bend (degrees): the knuckle spreads a little, the others hardly.
     private const float KnuckleSide = 25f, JointSide = 12f;
 
@@ -393,6 +394,13 @@ internal sealed class HandGrip
     /// thumb standing off it backwards (user's photo, 2026-11-09). The fingers are measured from the bones' own directions
     /// about the palm; the thumb, which opposes the palm instead, against its rest; no joint twists past MostTwist. So it
     /// holds on any humanoid, a mod's character included.
+    /// Each finger's joints bend about one hinge, across the way the open finger points and the way the palm faces, as a
+    /// finger's joints do and as the shapes bend them (SolveShape). The hinge was taken afresh at each joint from the segment
+    /// before it, and once a finger had curled past 90 degrees that hinge turned the other way: every bend after it read as
+    /// bent backwards and was "kept" straight. The shapes curl the trigger hand's middle, ring and little fingers about 170
+    /// degrees by the middle joint (Trigger) and the support hand's 110 (Cradle), so those fingertips were opened 25 to 50
+    /// degrees every frame (Trigger's from 55 to 5) and stood off the gun (worked through 2026-11-12; the user: "그냥 손
+    /// 잡는 손이 이상해").
     /// </summary>
     public void KeepHuman()
     {
@@ -404,24 +412,27 @@ internal sealed class HandGrip
             if (finger.Thumb) continue;
             for (int i = 0; i < 3; i++) KeepFromRest(finger, i, 180f);
             Vector3 incoming = hand.TransformDirection(finger.OpenInHand).normalized;
+            Vector3 hinge = Vector3.Cross(incoming, palm);
+            if (hinge.sqrMagnitude < 1e-6f) continue;
+            hinge.Normalize();
             for (int i = 0; i < 3; i++)
             {
                 var bone = finger.Bones[i];
                 if (bone == null) break;
                 Vector3 outgoing = bone.TransformDirection(finger.Axes[i]).normalized;
-                Vector3 hinge = Vector3.Cross(incoming, palm);
-                if (hinge.sqrMagnitude < 1e-6f || outgoing.sqrMagnitude < .5f) { incoming = outgoing; continue; }
-                hinge.Normalize();
-                // The bend about the hinge (toward the palm) and the swing out of that plane.
+                Vector3 from = Vector3.ProjectOnPlane(incoming, hinge);
+                if (outgoing.sqrMagnitude < .5f || from.sqrMagnitude < 1e-6f) { incoming = outgoing; continue; }
+                from.Normalize();
+                // The bend about the finger's hinge (toward the palm) and the swing out of its plane.
                 Vector3 inPlane = Vector3.ProjectOnPlane(outgoing, hinge);
-                float bend = Vector3.SignedAngle(incoming, inPlane, hinge);
+                float bend = Vector3.SignedAngle(from, inPlane, hinge);
                 float side = Mathf.Asin(Mathf.Clamp(Vector3.Dot(outgoing, hinge), -1f, 1f)) * Mathf.Rad2Deg;
                 float sideMost = i == 0 ? KnuckleSide : JointSide;
                 float keptBend = Mathf.Clamp(bend, HumanBend[i].x, HumanBend[i].y);
                 float keptSide = Mathf.Clamp(side, -sideMost, sideMost);
                 if (Mathf.Abs(bend - keptBend) > .5f || Mathf.Abs(side - keptSide) > .5f)
                 {
-                    Vector3 wanted = Quaternion.AngleAxis(keptBend, hinge) * incoming;
+                    Vector3 wanted = Quaternion.AngleAxis(keptBend, hinge) * from;
                     Vector3 tilt = Vector3.Cross(wanted, hinge);
                     if (tilt.sqrMagnitude > 1e-6f) wanted = Quaternion.AngleAxis(keptSide, tilt.normalized) * wanted;
                     bone.rotation = Quaternion.FromToRotation(outgoing, wanted) * bone.rotation;
@@ -532,6 +543,171 @@ internal sealed class HandGrip
             customVersion = on.Version;
         }
         Blend(customPose, PoseOf(off), hold, weight);
+    }
+
+    // ---- KINEMATION's own fingers on the gun (GunArms.Digits) ----
+
+    // The finger pose last worked out from a gun clip's fingers (fingers' order, three joints each), what it was worked out
+    // for (the clip's finger ways, the gun's surface, where this hand sat on the gun then), and the joints' turns as they
+    // were before working it out.
+    private Quaternion[] digitPose, digitSaved;
+    private readonly Vector3[] digitFor = new Vector3[GunArms.DigitCount];
+    private GunSurface digitSurface;
+    private Vector3 digitAt;
+    private Quaternion digitTurn;
+    private bool digitSteady;
+    // A hand still within this of where it sat on the gun keeps the pose worked out there (m, degrees).
+    private const float DigitMove = .003f, DigitTurn = 1.5f;
+    // How far a finger joint opens in one try, looking for the gun's surface (degrees).
+    private const float OpenStep = 3f;
+
+    /// <summary>
+    /// The fingers as KINEMATION's own hand has them on the gun (GunArms.Digits: each finger segment's way in the hand's own
+    /// frame), <paramref name="weight"/> of the way from what they have now. Each segment of this hand turns, from its open
+    /// rest, the least way to point where KINEMATION's does in this hand's frame, so the clip's own grip (the trigger finger,
+    /// the fingers round the grip, the support hand's fingertips on the handguard) holds on any humanoid hand, whatever its
+    /// bones' axes. With <paramref name="surface"/> (a gun held still in the hand: the same pose every frame), a segment that
+    /// a smaller hand would sink into the gun opens about its finger's hinge until it rests on the surface, at most
+    /// <paramref name="mostOpen"/> degrees, else keeps the clip's angle (a hand already in the gun can't open out of it); that
+    /// pose is worked out once and kept while the hand stays where it is on the gun.
+    /// </summary>
+    public void WearDigits(Vector3[] digits, float weight, GunSurface surface, float clearance, float mostOpen)
+    {
+        if (weight <= 0f || digits == null || digits.Length < GunArms.DigitCount) return;
+        if (surface != null && surface.Empty) surface = null;
+        if (surface == null || !SameDigits(digits, surface)) SolveDigits(digits, surface, clearance, mostOpen);
+        for (int f = 0; f < fingers.Length; f++)
+            for (int joint = 0; joint < 3; joint++)
+            {
+                var bone = fingers[f].Bones[joint];
+                if (bone != null) bone.localRotation = Quaternion.Slerp(bone.localRotation, digitPose[f * 3 + joint], weight);
+            }
+    }
+
+    private bool SameDigits(Vector3[] digits, GunSurface surface)
+    {
+        if (digitPose == null || !digitSteady || surface != digitSurface) return false;
+        for (int i = 0; i < GunArms.DigitCount; i++)
+            if ((digits[i] - digitFor[i]).sqrMagnitude > 1e-8f) return false;
+        Transform gun = surface.Gun;
+        Quaternion toGun = Quaternion.Inverse(gun.rotation);
+        return (toGun * (hand.position - gun.position) - digitAt).sqrMagnitude <= DigitMove * DigitMove
+            && Quaternion.Angle(toGun * hand.rotation, digitTurn) <= DigitTurn;
+    }
+
+    private void SolveDigits(Vector3[] digits, GunSurface surface, float clearance, float mostOpen)
+    {
+        if (digitPose == null)
+        {
+            digitPose = new Quaternion[fingers.Length * 3];
+            digitSaved = new Quaternion[fingers.Length * 3];
+        }
+        Vector3 x = FingersForward.normalized, y = Vector3.ProjectOnPlane(PalmFacing, x).normalized, z = Vector3.Cross(x, y);
+        for (int f = 0; f < fingers.Length; f++)
+        {
+            var finger = fingers[f];
+            for (int i = 0; i < 3; i++)
+            {
+                digitSaved[f * 3 + i] = finger.Bones[i].localRotation;
+                finger.Bones[i].localRotation = finger.Rest[i];
+            }
+            int digit = Mathf.Clamp(finger.Digit, 0, 4);
+            for (int i = 0; i < 3; i++)
+            {
+                Vector3 way = digits[digit * 3 + i];
+                Vector3 wanted = x * way.x + y * way.y + z * way.z;
+                if (wanted.sqrMagnitude < 1e-8f) continue;
+                var bone = finger.Bones[i];
+                bone.rotation = Quaternion.FromToRotation(bone.TransformDirection(finger.Axes[i]), wanted) * bone.rotation;
+            }
+            if (surface != null && !finger.Thumb) OpenOffGun(finger, surface, clearance, mostOpen, y);
+            for (int i = 0; i < 3; i++)
+            {
+                digitPose[f * 3 + i] = finger.Bones[i].localRotation;
+                finger.Bones[i].localRotation = digitSaved[f * 3 + i];
+            }
+        }
+        for (int i = 0; i < GunArms.DigitCount; i++) digitFor[i] = digits[i];
+        digitSurface = surface;
+        digitSteady = surface != null;
+        if (surface == null) return;
+        Transform gun = surface.Gun;
+        Quaternion toGun = Quaternion.Inverse(gun.rotation);
+        digitAt = toGun * (hand.position - gun.position);
+        digitTurn = toGun * hand.rotation;
+    }
+
+    // Each segment of a finger, base first, that would be in the gun opens about the finger's hinge (across its open line
+    // and the way the palm faces, SolveShape's) until it clears the surface by its own skin radius, at most mostOpen.
+    private void OpenOffGun(Finger finger, GunSurface surface, float clearance, float mostOpen, Vector3 palm)
+    {
+        Vector3 open = Vector3.ProjectOnPlane(hand.TransformDirection(finger.OpenInHand), palm);
+        if (open.sqrMagnitude < 1e-8f) return;
+        Vector3 hinge = Vector3.Cross(open.normalized, palm);
+        if (hinge.sqrMagnitude < 1e-8f) return;
+        hinge.Normalize();
+        for (int i = 0; i < 3; i++)
+        {
+            if (SegmentClear(finger, i, surface, clearance)) continue;
+            var bone = finger.Bones[i];
+            Quaternion kept = bone.localRotation;
+            Vector3 axis = bone.InverseTransformDirection(hinge);
+            bool cleared = false;
+            for (float back = OpenStep; back <= mostOpen + .01f; back += OpenStep)
+            {
+                bone.localRotation = kept * Quaternion.AngleAxis(-back, axis);
+                if (SegmentClear(finger, i, surface, clearance)) { cleared = true; break; }
+            }
+            if (!cleared) bone.localRotation = kept;
+        }
+    }
+
+    private static bool SegmentClear(Finger finger, int i, GunSurface surface, float clearance)
+    {
+        var bone = finger.Bones[i];
+        Vector3 start = bone.position;
+        return surface.Clear(start, start + bone.TransformDirection(finger.Axes[i]) * finger.Lengths[i], finger.Radii[i] + clearance);
+    }
+
+    /// <summary>
+    /// The way each finger segment points now in this hand's own frame (GunArms.Digits' terms: x the way the fingers point,
+    /// y the way the palm faces, z across; index, middle, ring, little, thumb; base, middle, tip). False if the hand lacks a
+    /// finger. For comparing a hand with a clip's fingers (the gun hold report).
+    /// </summary>
+    public bool Ways(Vector3[] into)
+    {
+        if (into == null || into.Length < GunArms.DigitCount) return false;
+        Vector3 x = FingersForward.normalized, y = Vector3.ProjectOnPlane(PalmFacing, x).normalized, z = Vector3.Cross(x, y);
+        int filled = 0;
+        foreach (var finger in fingers)
+        {
+            int digit = Mathf.Clamp(finger.Digit, 0, 4);
+            for (int i = 0; i < 3; i++)
+            {
+                Vector3 way = finger.Bones[i].TransformDirection(finger.Axes[i]).normalized;
+                into[digit * 3 + i] = new Vector3(Vector3.Dot(way, x), Vector3.Dot(way, y), Vector3.Dot(way, z));
+            }
+            filled++;
+        }
+        return filled == 5;
+    }
+
+    /// <summary>As Ways, for shape <paramref name="shape"/> (or a gun's own, <paramref name="custom"/>) as this hand wears it.</summary>
+    public bool ShapeWays(Shape shape, GunGrips.Grip custom, Vector3[] into)
+    {
+        var pose = custom != null ? SolveShape(custom.Bends, custom.ThumbUnder) : PoseOf(shape);
+        if (pose == null) return false;
+        var saved = new Quaternion[fingers.Length * 3];
+        for (int f = 0; f < fingers.Length; f++)
+            for (int i = 0; i < 3; i++)
+            {
+                saved[f * 3 + i] = fingers[f].Bones[i].localRotation;
+                fingers[f].Bones[i].localRotation = pose[f * 3 + i];
+            }
+        bool read = Ways(into);
+        for (int f = 0; f < fingers.Length; f++)
+            for (int i = 0; i < 3; i++) fingers[f].Bones[i].localRotation = saved[f * 3 + i];
+        return read;
     }
 
     private void Blend(Quaternion[] held, Quaternion[] away, float hold, float weight)

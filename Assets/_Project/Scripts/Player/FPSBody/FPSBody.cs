@@ -130,9 +130,10 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
     private float lastShot, shotInterval, lastAim, lastYaw, lastPitch, leanSign, crouchWeight, sprintWeight, cover, holdWeight;
     // When the gun was last drawn, and how long FPSAF's draw motion plays (s): the hip muzzle is learnt after it.
     private float drawnAt, drawSettle;
-    // How FPSAF last held the gun (KeepGunInView): from the eyes at the hip and fully aimed, both hands on it, their fingers.
-    private KTransform gunAtHip, gunAimed, rightHandInGun, leftHandInGun;
-    private bool hasGunInView, hasGunAimed;
+    // How FPSAF last held the gun (KeepGunInView): both hands on it and their fingers, once it has held the gun drawn now
+    // clean (its hold from the eyes is the gun's own, FPSGun.HoldFromEyes).
+    private KTransform rightHandInGun, leftHandInGun;
+    private bool hasGunInView;
     private readonly List<(Transform bone, bool left)> fingers = new();
     private readonly List<Quaternion> fingerGrip = new();
 
@@ -287,7 +288,7 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
         guns.Clear();
         held = null;
         shownData = null;
-        linked = aiming = firing = highReady = hasLook = hasGunInView = hasGunAimed = false;
+        linked = aiming = firing = highReady = hasLook = hasGunInView = false;
         fingers.Clear();
         fingerGrip.Clear();
         holdWeight = cover = 0f;
@@ -350,6 +351,10 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
             shells ? Copy(entry.reloadEmpty, bake.reloadEmpty) : Settled(Copy(entry.reloadEmpty, bake.reloadEmpty)), gunFrame,
             Copy(entry.reloadShell, bake.reloadShell), Settled(Copy(entry.reloadEnd, bake.reloadEnd)));
         gun.SetGrip(bake, exact);
+        // Until FPSAF has held it on this body, the gun is held where the bake put it from the eyes, so a draw that follows
+        // KINEMATION's own clip (FPSBody.Contacts) comes up into a hold even the first time. The IK weapon bone carries the
+        // gun's frame on KINEMATION's weapon bone.
+        if (bake.hasEyeFrame) gun.SeedHold(bake.gunFromEyes, bake.gunTurnFromEyes * gunFrame);
         // This PC's own player's guns carry their kill counters (GunKills) and the skins picked on the title screen; a
         // friend's copy wears what their PC sent (WearSkins).
         bool mine = movement == null || (movement.IsLocal && !movement.IsNetworkDriven);
@@ -973,16 +978,17 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
             // Mid-reload the hands are on the magazine and the bolt, not the grips.
             if (held.HandsBusy) return;
             var inView = new KTransform(eyes.InverseTransformPoint(gun.position), Quaternion.Inverse(eyes.rotation) * gun.rotation, Vector3.one);
-            if (aim <= .001f) { gunAtHip = inView; hasGunInView = true; }
-            else if (aim >= .999f) { gunAimed = inView; hasGunAimed = true; }
+            // Kept per gun (FPSGun.LearnHold): a draw followed on KINEMATION's clip comes up into this gun's own hold.
+            if (aim <= .001f) held.LearnHold(inView, false);
+            else if (aim >= .999f) held.LearnHold(inView, true);
+            hasGunInView = held.HasLearnedHold;
             rightHandInGun = new KTransform(gun.InverseTransformPoint(right.position), Quaternion.Inverse(gun.rotation) * right.rotation, Vector3.one);
             leftHandInGun = new KTransform(gun.InverseTransformPoint(left.position), Quaternion.Inverse(gun.rotation) * left.rotation, Vector3.one);
             LearnFingers();
             return;
         }
         float released = Released(false);
-        if (released <= 0f) return;
-        var kept = hasGunAimed ? KTransform.Lerp(gunAtHip, gunAimed, aim) : gunAtHip;
+        if (released <= 0f || !held.HoldFromEyes(aim, out KTransform kept)) return;
         gun.SetPositionAndRotation(Vector3.Lerp(gun.position, eyes.TransformPoint(kept.position), released),
             Quaternion.Slerp(gun.rotation, eyes.rotation * kept.rotation, released));
         float leftReleased = Released(true);

@@ -3,8 +3,9 @@ using System.Globalization;
 using UnityEngine;
 
 /// <summary>
-/// A character's own palms on a gun through a reload (FPSBody.Contacts): KINEMATION's clip puts the middle of each palm
-/// where its own hand had it, and a thicker or longer hand may want it a little back from the gun or along the fingers.
+/// A character's own palms on a gun (FPSBody.Contacts: the plain hold, a reload, a draw, a holster, a look over the gun):
+/// KINEMATION's clip puts the middle of each palm where its own hand had it, and a thicker or longer hand may want it a
+/// little back from the gun or along the fingers.
 /// This is the user's idea of a fine offset per character (2026-11-12: "세부 조정 오프셋"), kept as the last touch now
 /// that the contact points carry the clip itself.
 /// Rows: Tables/GunHands.csv, id = the character's skin id (PlayerBodyProfile.Skin.Id: kazusa-band, hiro, sil, mayo,

@@ -4,6 +4,7 @@ using KINEMATION.FPSAnimationFramework.Runtime.Camera;
 using KINEMATION.FPSAnimationFramework.Runtime.Core;
 using KINEMATION.FPSAnimationFramework.Runtime.Playables;
 using KINEMATION.ProceduralRecoilAnimationSystem.Runtime;
+using KINEMATION.Shared.KAnimationCore.Runtime.Core;
 using KINEMATION.Shared.KAnimationCore.Runtime.Input;
 using UnityEngine;
 
@@ -313,6 +314,9 @@ public sealed class FPSGun : MonoBehaviour
         if (partsPlayer != null && parts != null) partsPlayer.PlayAnimation(parts);
         float length = clip.clip.length / rate;
         actionUntil = Time.time + length;
+        // The gun and the hands follow KINEMATION's own clip, as a reload does (FPSBody.Contacts). A draw and a look over
+        // the gun settle back into the hold at their end; a holster ends with the gun put away.
+        FollowClip(source, clip, 0f, clip != holsterClip, false);
         return length;
     }
 
@@ -321,6 +325,8 @@ public sealed class FPSGun : MonoBehaviour
     {
         if (!Acting) return;
         actionUntil = 0f;
+        // The hands let go of its hold with it (a reload's own clip, if one has begun, is kept).
+        if (!contactIsReload) contactClip = null;
         playables?.StopAnimation(blendOut);
         if (camera != null) camera.StopGunMotion();
         if (partsPlayer != null && partsPlayer.enabled)
@@ -579,11 +585,64 @@ public sealed class FPSGun : MonoBehaviour
 
     // ---- The reload's own clip, which the hands follow on the gun (FPSBody.Contacts, GunArms) ----
 
-    // KINEMATION's clip of the reload playing (the one its camera motion plays too): from when, how far in (s), how fast,
-    // for how long (s), and whether it eases back into the hold at its end and over how long (s).
+    // KINEMATION's clip of the reload, draw, holster or inspect playing (the one its camera motion plays too): from when,
+    // how far in (s), how fast, for how long (s), whether it eases back into the hold at its end and over how long (s), and
+    // whether it is a reload (FPSBody's reloadContacts) or one of the others (holdContacts).
     private AnimationClip contactClip;
     private float contactStart, contactFrom, contactRate = 1f, contactLength, contactSettle = .15f;
-    private bool contactSettles;
+    private bool contactSettles, contactIsReload;
+
+    /// <summary>The clip followed now is a reload's (not a draw, holster or inspect).</summary>
+    internal bool ContactIsReload => contactIsReload;
+
+    // ---- Where this gun is held, from the eyes (FPSBody.KeepGunInView), and its hands on KINEMATION's arms ----
+
+    // The hold as FPSAF last held this gun clean (at the hip and fully aimed), from the eyes; until it has held it, the
+    // bake's place from the eyes (GunBakes gunFromEyes), so a first draw has a hold to come up into. Kept per gun: the
+    // body's last gun was another one's place mid-draw.
+    private KTransform holdAtHip, holdAimed;
+    private bool hasHold, hasHoldAimed;
+
+    /// <summary>FPSAF has held this gun clean at the hip at least once on this body.</summary>
+    internal bool HasLearnedHold { get; private set; }
+
+    /// <summary>Where the bake put this gun from the eyes, until FPSAF has held it (FPSBody.AddGun).</summary>
+    internal void SeedHold(Vector3 position, Quaternion rotation)
+    {
+        if (HasLearnedHold) return;
+        holdAtHip = new KTransform(position, rotation, Vector3.one);
+        hasHold = true;
+    }
+
+    /// <summary>How FPSAF holds this gun now from the eyes, at the hip or fully aimed (FPSBody.KeepGunInView).</summary>
+    internal void LearnHold(KTransform fromEyes, bool aimed)
+    {
+        if (aimed)
+        {
+            holdAimed = fromEyes;
+            hasHoldAimed = true;
+            return;
+        }
+        holdAtHip = fromEyes;
+        hasHold = HasLearnedHold = true;
+    }
+
+    /// <summary>The hold from the eyes, <paramref name="aim"/> of the way to the aimed one; false before any is known.</summary>
+    internal bool HoldFromEyes(float aim, out KTransform kept)
+    {
+        kept = holdAtHip;
+        if (!hasHold) return false;
+        if (hasHoldAimed) kept = KTransform.Lerp(holdAtHip, holdAimed, aim);
+        return true;
+    }
+
+    /// <summary>
+    /// Both hands as this gun's pose clip has them on KINEMATION's arms, in the gun's frame, with each hand's finger ways
+    /// (GunContact; FPSBody measures it once per gun), and the same with the gun's no-grip pose (FPSBodyAssets.Gun
+    /// sourcePoseNoGrip) where it has one. Fields, not properties: FPSBody fills them in place.
+    /// </summary>
+    internal GunContact HoldContact, HoldContactNoGrip;
+    internal bool HasHoldContact, HasHoldContactNoGrip, HoldContactTried;
 
     /// <summary>The gun's frame from KINEMATION's weapon bone (its rotationOffset), as the IK weapon bone carries it.</summary>
     internal Quaternion Frame => frame;
@@ -630,11 +689,13 @@ public sealed class FPSGun : MonoBehaviour
     /// <summary>The body's clip was cut short (the sights coming up): the hands let go of its hold.</summary>
     internal void StopContacts() => contactClip = null;
 
-    // A reload's clip begins: KINEMATION's own one runs alongside at the body clip's pace, from the same share of the way.
-    private void FollowClip(AnimationClip source, FPSAnimationAsset body, float from, bool settles)
+    // A reload's, draw's, holster's or inspect's clip begins: KINEMATION's own one runs alongside at the body clip's pace,
+    // from the same share of the way.
+    private void FollowClip(AnimationClip source, FPSAnimationAsset body, float from, bool settles, bool reload = true)
     {
         contactClip = source != null && FPSAnimationAsset.IsValid(body) ? source : null;
         if (contactClip == null) return;
+        contactIsReload = reload;
         contactRate = Mathf.Max(.01f, body.blendTime.rateScale);
         contactFrom = Mathf.Clamp01(from) * contactClip.length;
         contactStart = Time.time;

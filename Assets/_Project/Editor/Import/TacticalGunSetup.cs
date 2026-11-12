@@ -55,6 +55,9 @@ internal static class TacticalGunSetup
         // A suppressor that is part of the gun's own model (a bone of it), shown or hidden as the muzzle choice.
         public string builtInSuppressor;
         public string pose, reloadTactical, reloadEmpty, reloadShell, reloadEnd;
+        // The pose with no grip on the gun, where the pose holds one: the support hand's place on the handguard while the
+        // gun wears no grip (FPSBodyAssets.Gun.sourcePoseNoGrip, FPSBody.Contacts).
+        public string poseNoGrip;
         public string partsIdle, partsFire, partsFireOut, partsReloadTactical, partsReloadEmpty, partsReloadShell, partsReloadEnd;
     }
 
@@ -88,7 +91,7 @@ internal static class TacticalGunSetup
         new Spec
         {
             weapon = "TR15", clip = "TR15", prefab = "W_TR15", folder = "TR15",
-            pose = "TR15_Idle_Pose_Grip", reloadTactical = "TR15_Reload_Tactical", reloadEmpty = "TR15_Reload_Empty",
+            pose = "TR15_Idle_Pose_Grip", poseNoGrip = "TR15_Idle_Pose_Non_Grip", reloadTactical = "TR15_Reload_Tactical", reloadEmpty = "TR15_Reload_Empty",
             partsIdle = "TR15_Idle", partsFire = "TR15_Fire", partsFireOut = "TR15_Fire_Out",
             partsReloadTactical = "TR15_Reload_Tac", partsReloadEmpty = "TR15_Reload_Empty",
         },
@@ -235,6 +238,7 @@ internal static class TacticalGunSetup
             prefab = prefab,
             profile = rifle.profile,
             sourcePose = pose,
+            sourcePoseNoGrip = Body(spec.poseNoGrip),
             sourceReloadTactical = Body(spec.reloadTactical),
             sourceReloadEmpty = Body(spec.reloadEmpty),
             pose = BodyAsset(poseTemplate, $"{stem}_Anim_Pose.asset", .15f, .15f),

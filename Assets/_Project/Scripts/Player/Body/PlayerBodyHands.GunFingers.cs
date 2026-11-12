@@ -1,16 +1,22 @@
 using UnityEngine;
 
 /// <summary>
-/// The hands' fingers on the gun, ours (HandGrip.Shape): the shooting hand round the pistol grip with the index finger on
-/// the trigger, the support hand cradling the handguard or pump, round a vertical grip, against an angled grip, or under a
-/// pistol's grip hand, and a hand off its grip mid-reload (on the magazine or the bolt) loosely closed as if holding it.
-/// The shapes are set angles inside a hand's reach on any humanoid's own fingers, so no character's fingers can break; the
-/// clips' finger curves (KINEMATION's, made for other skeletons) are no longer worn while the gun is held (user,
-/// 2026-11-09: "손가락이 자꾸 문제가 생기는 거 보니 … 우리 식으로"). A palm FPSAF left inside the gun is still pushed back out
-/// along the way it faces until its skin rests on the gun's real surface (GunSurface). Each hand holds by how far it is on
-/// its grip (FPSBody.GripHold): a reload's hand goes over to the loose shape as it leaves and back as it returns.
-/// A gun may carry its own shape for either hand (GunGrips, set with the Grip Tuner): the shooting hand always, the support
-/// hand while it is on the gun's own body (a grip attachment keeps its shared shape).
+/// The hands' fingers on the gun. Wherever the palms follow KINEMATION's own clips (FPSBody.Contacts: the plain hold, a
+/// reload, a draw, a look over the gun), the fingers take that clip's grip too (FPSBody.HandDigits, HandGrip.WearDigits):
+/// each finger joint points as KINEMATION's hand's does in the hand's own frame, so the trigger finger lies along the
+/// trigger guard and the fingers wrap the grip as the pack's animators made them, on any humanoid's own fingers; held still,
+/// a finger a smaller hand would sink into the gun opens until it rests on the gun's real surface (GunSurface). Our shapes
+/// (HandGrip.Shape) wrapped every gun alike, about 20 degrees per joint off the clips' grip on average and up to 38 on a
+/// gun (the Mk14 EBR's support hand), measured 2026-11-12.
+/// The shapes stay underneath and wherever the clips' fingers don't reach: the shooting hand round the pistol grip with
+/// the index finger on the trigger, the support hand cradling the handguard or pump, round a vertical grip or against an
+/// angled grip the gun wears, or under a pistol's grip hand, and a hand off its grip mid-reload loosely closed. They are set
+/// angles inside a hand's reach on any humanoid's own fingers; the clips' finger curves through Unity's muscles broke some
+/// hands (user, 2026-11-09: "손가락이 자꾸 문제가 생기는 거 보니 … 우리 식으로"), the joints' own ways do not. A palm left
+/// inside the gun is still pushed back out along the way it faces until its skin rests on the gun's surface. Each hand
+/// holds a shape by how far it is on its grip (FPSBody.GripHold).
+/// A gun may carry its own shape for either hand (GunGrips, set with the Grip Tuner): it wins over the clips' fingers, for
+/// the shooting hand always, for the support hand while it is on the gun's own body (a grip attachment keeps its shape).
 /// </summary>
 public sealed partial class PlayerBodyHands
 {
@@ -43,6 +49,9 @@ public sealed partial class PlayerBodyHands
         // How far this hand is on its grip and the shape it holds it with, kept through the ease out once the gun is gone.
         // A support hand on a grip the gun wears is away from the bake's place on purpose, and holds on as far as it is
         // on that grip (GunGrip).
+        Vector3[] digits = null;
+        float clipFingers = 0f;
+        bool still = false;
         if (gunBody != null)
         {
             gunHold[side] = isLeft ? Mathf.Max(gunBody.GripHold(true), OnAttachedGrip) : gunBody.GripHold(false);
@@ -50,6 +59,10 @@ public sealed partial class PlayerBodyHands
             string gun = GunName(weapons != null ? weapons.EquippedData : null);
             bool ownBody = !isLeft || gunBody.HeldGripKind == GunAttachments.Kind.None;
             gunCustom[side] = gun != null && ownBody && GunGrips.TryGet(gun, isLeft, out var custom) ? custom : null;
+            // KINEMATION's own fingers from the clip the palms follow (FPSBody.HandDigits), unless the gun has a shape of
+            // its own for this hand (GunGrips, the Grip Tuner's) or the support hand is round a grip the gun wears.
+            if (gunCustom[side] == null && gunBody.HandDigits(isLeft, out digits, out float digitWeight, out still))
+                clipFingers = digitWeight * (isLeft ? 1f - OnAttachedGrip : 1f);
         }
         gunWrap[side] = Mathf.MoveTowards(gunWrap[side], gunBody != null ? 1f : 0f, dt / blendTime);
         float weight = gunWrap[side] * weights[(int)Hold.Gun] * (isLeft ? 1f - leftOffGun : 1f) * gunFingerWrap;
@@ -58,7 +71,11 @@ public sealed partial class PlayerBodyHands
         var surface = gunBody != null ? gunBody.HeldSurface : null;
         if (surface != null && !surface.Empty) PalmOutOfGun(arm, surface, weight * gunHold[side]);
         if (gunCustom[side] != null) arm.WearShape(gunCustom[side], HandGrip.Shape.Grab, gunHold[side], weight);
-        else arm.WearShape(gunShape[side], HandGrip.Shape.Grab, gunHold[side], weight);
+        else if (clipFingers < .999f) arm.WearShape(gunShape[side], HandGrip.Shape.Grab, gunHold[side], weight);
+        if (clipFingers <= 0f || digits == null) return;
+        // Held still, the fingers rest on the gun's surface rather than sink into it (a smaller hand than KINEMATION's
+        // closes its fingers inside the grip at the clip's angles); worked out once while the hand stays put.
+        arm.WearDigits(digits, weight * clipFingers, still ? surface : null, gunBody.FingerClearance, gunBody.FingerOpenMost);
     }
 
     // The shape a hand holds this gun with: the shooting hand always round the pistol grip; the support hand by what it

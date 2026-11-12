@@ -172,10 +172,10 @@ public sealed partial class PlayerBodyHands : MonoBehaviour
         {
             Place(right, false);
             Place(left, true);
-            // A grip on the gun takes the support hand (GunGrip).
-            HoldGunGrip(left, dt);
-            // Through a reload, both palms where KINEMATION's own clip has them on the gun (GunContact).
+            // Both palms where KINEMATION's own clips have them on the gun: its hold, a reload, a draw (GunContact).
             HoldGunContacts();
+            // A grip the gun wears takes the support hand from there (GunGrip).
+            HoldGunGrip(left, dt);
         }
         using (FingersMarker.Auto())
         {
@@ -195,6 +195,8 @@ public sealed partial class PlayerBodyHands : MonoBehaviour
             // Last: no finger bent past a hand's reach, whatever the clips or the grips asked for.
             left.KeepFingersHuman();
             right.KeepFingersHuman();
+            // The measured hold, once per character and gun (GunContact).
+            ReportGunHold();
         }
         using (RestMarker.Auto())
         {
@@ -309,13 +311,20 @@ public sealed partial class PlayerBodyHands : MonoBehaviour
         arm.Solve(position / total, rotation, hint / total, Mathf.Clamp01(total), 1f, shoulderReach);
     }
 
-    // A hand on the gun where FPSBody keeps it while the move's clip has the upper body: the grip as FPS Animation Framework
-    // last held it; the trigger elbow drops out to the side, the support elbow tucks under the gun (as before KINEMATION).
+    // A hand on the gun where FPSBody keeps it while the move's clip has the upper body: the palm where KINEMATION's own pose
+    // clip has it, as in the plain hold (FPSBody.HoldContact), else the grip as FPS Animation Framework last held it; the
+    // trigger elbow drops out to the side, the support elbow tucks under the gun (as before KINEMATION).
     private bool GunGrip(ArmIK arm, bool isLeft, out Vector3 position, out Quaternion rotation, out Vector3 hint)
     {
         Vector3 side = transform.right * (isLeft ? -1f : 1f), up = transform.up, forward = transform.forward;
         hint = arm.Upper.position + (isLeft ? side * .1f + forward * .15f - up * .4f : side * .25f - forward * .1f - up * .35f);
         var framework = FPSBody.Holding(weapons);
+        if (framework != null && framework.HoldContact(isLeft, out Vector3 palm, out Vector3 fingers, out Vector3 facing))
+        {
+            rotation = arm.HandRotation(fingers, facing);
+            position = arm.WristAtPalm(GunHands.Palm(SkinId, isLeft, palm, fingers, facing), rotation);
+            return true;
+        }
         if (framework != null && framework.HandOnGun(isLeft, out position, out rotation)) return true;
         position = Vector3.zero;
         rotation = Quaternion.identity;

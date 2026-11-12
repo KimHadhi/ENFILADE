@@ -29,6 +29,10 @@ public sealed class FPSBodyAssets : ScriptableObject
         public FPSAnimatorProfile profile;
         [Tooltip("KINEMATION's own clips with this gun, for its arms skeleton (Generic): Retarget Pro remakes them for our bodies.")]
         public AnimationClip sourcePose;
+        [Tooltip("KINEMATION's pose with no grip on the gun, where Source Pose holds one (the TR15's Idle_Pose_Grip and "
+            + "Idle_Pose_Non_Grip): the support hand takes its place on the handguard from it while the gun wears no grip "
+            + "(FPSBody.Contacts). Empty: Source Pose.")]
+        public AnimationClip sourcePoseNoGrip;
         public AnimationClip sourceReloadTactical;
         public AnimationClip sourceReloadEmpty;
         [Tooltip("FPSAF's animation assets: blend times and curves. Their clip is the one made for the body that plays them (GunBakes).")]

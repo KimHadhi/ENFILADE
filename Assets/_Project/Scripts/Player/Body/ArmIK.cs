@@ -25,6 +25,12 @@ internal sealed class ArmIK
     public void WearShape(HandGrip.Shape on, HandGrip.Shape off, float hold, float weight) => grip.Wear(on, off, hold, weight);
     /// <summary>As WearShape, with a gun's own shape (GunGrips) held instead of a shared one.</summary>
     public void WearShape(GunGrips.Grip on, HandGrip.Shape off, float hold, float weight) => grip.WearCustom(on, off, hold, weight);
+    /// <summary>The fingers as KINEMATION's clip has them on the gun (HandGrip.WearDigits).</summary>
+    public void WearDigits(Vector3[] digits, float weight, GunSurface surface, float clearance, float mostOpen)
+        => grip.WearDigits(digits, weight, surface, clearance, mostOpen);
+    /// <summary>The fingers' ways now, and as a shape has them, in the hand's own frame (HandGrip.Ways, ShapeWays).</summary>
+    public bool FingerWays(Vector3[] into) => grip.Ways(into);
+    public bool ShapeWays(HandGrip.Shape shape, GunGrips.Grip custom, Vector3[] into) => grip.ShapeWays(shape, custom, into);
     public float Reach => Vector3.Distance(upper.position, lower.position) + Vector3.Distance(lower.position, hand.position);
 
     private ArmIK(Transform shoulder, Transform upper, Transform lower, Transform hand, Quaternion handFromFrame, float palmLength, HandGrip grip)

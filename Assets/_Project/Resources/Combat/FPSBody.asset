@@ -159,6 +159,7 @@ MonoBehaviour:
     prefab: {fileID: 4593077729756686259, guid: 5d8335e9aa6a54f429c1074258877ed1, type: 3}
     profile: {fileID: 11400000, guid: df99762b7fc14aa0b6ae7d9abe1a51bd, type: 2}
     sourcePose: {fileID: 5557731450562195643, guid: aac0bcb6d7d92b84a86fbd7aa638f571, type: 3}
+    sourcePoseNoGrip: {fileID: -1763411491715319062, guid: 6fb6ec001e9aa0640b1c01a95f3c08c9, type: 3}
     sourceReloadTactical: {fileID: -6649661736384359929, guid: 036d981e4942cc74db3a3c022ddede68, type: 3}
     sourceReloadEmpty: {fileID: 3648266961149137393, guid: 9326eb26cbf9e6a47bc2b856778a3216, type: 3}
     pose: {fileID: 11400000, guid: d494be9bd1a096d439685883cc33b1fa, type: 2}

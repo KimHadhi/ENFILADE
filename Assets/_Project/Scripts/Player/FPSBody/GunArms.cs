@@ -3,22 +3,27 @@ using UnityEngine;
 /// <summary>
 /// One moment of a gun's own clip as KINEMATION's arms hold it, in the gun's frame (the gun model's, KINEMATION's weapon
 /// bone turned by the gun's rotationOffset): how far the clip has moved and turned the gun from where its pose clip holds
-/// it, and where each palm is on the gun, the way its fingers point and the way it faces (ArmIK's hand frame).
+/// it, and where each palm is on the gun, the way its fingers point and the way it faces (ArmIK's hand frame), and the way
+/// each finger joint points (GunArms.Digits), when they were read.
 /// </summary>
 internal struct GunContact
 {
     public Vector3 GunMove;
     public Quaternion GunTurn;
     public Vector3 RightPalm, RightFingers, RightFacing, LeftPalm, LeftFingers, LeftFacing;
+    // Each finger segment's way in its own hand's frame (GunArms.Digits): null when not read. The arrays belong to
+    // whoever filled them (FPSBody's buffers for a clip's moment, the gun's own for its hold).
+    public Vector3[] RightDigits, LeftDigits;
 }
 
 /// <summary>
 /// A hidden copy of the KINEMATION arms skeleton a gun's own clips are made for (the FPS Animation Pack's SK_Arms_Mono, the
-/// Tactical Shooter Pack's SKM_Operator). FPSBody samples the clip the body is playing (a reload) on it at the same moment
-/// and reads how the clip moves the gun and where each hand's palm is on it (GunContact), then holds its own gun and puts
-/// its own palms there by IK, whatever the body's build. The remade clips carry joint angles only: on a body with other arm
-/// lengths the hands were somewhere else at every moment, and the gun stayed in the right hand (the user, 2026-11-12, asking
-/// whether a hand offset per character would fix it; one offset fixes one moment).
+/// Tactical Shooter Pack's SKM_Operator). FPSBody samples the clip the body is playing (its hold, a reload, a draw, a look
+/// over the gun) on it at the same moment and reads how the clip moves the gun, where each hand's palm is on it and how
+/// each finger bends (GunContact), then holds its own gun and puts its own palms and fingers there, whatever the body's
+/// build. The remade clips carry joint angles only: on a body with other arm lengths the hands were somewhere else at every
+/// moment, and the gun stayed in the right hand (the user, 2026-11-12, asking whether a hand offset per character would fix
+/// it; one offset fixes one moment).
 /// Nothing of it is drawn, it never moves, and it has no Animator, so a clip's curves write its bones as they are.
 /// </summary>
 internal sealed class GunArms
@@ -27,11 +32,20 @@ internal sealed class GunArms
     private const string GunBone = "ik_hand_gun";
     // HandGrip's palm centre: from the wrist toward the four knuckles, this share of the way.
     private const float PalmShare = .55f;
+    /// <summary>Finger segments read per hand: index, middle, ring, little, thumb; base, middle, tip (HandGrip's order).</summary>
+    internal const int DigitCount = 15;
+    // KINEMATION's finger names in HandGrip's order (index, middle, ring, little, thumb).
+    private static readonly string[] FingerNames = { "index", "middle", "ring", "pinky", "thumb" };
 
     private sealed class Hand
     {
         public Transform Wrist, Index, Middle, Ring, Pinky;
+        // Each finger's three joints (FingerNames' order) and the way its tip joint points in its own axes: the middle
+        // joint's way to the tip joint, as KINEMATION's skeletons lay every finger bone along the same axis.
+        public readonly Transform[] Joints = new Transform[DigitCount];
+        public readonly Vector3[] TipAxes = new Vector3[5];
         public bool Valid => Wrist != null && Index != null && Middle != null && Pinky != null;
+        public bool HasDigits;
     }
 
     private readonly GameObject copy;
@@ -62,7 +76,7 @@ internal sealed class GunArms
         var arms = new GunArms(copy, Find(root, GunBone), HandOf(root, "r"), HandOf(root, "l"));
         if (arms.gun != null && arms.right.Valid && arms.left.Valid) return arms;
         Debug.LogWarning($"GunArms: {prefab.name} has no {GunBone} or no hand_r/hand_l with index, middle and pinky knuckles; "
-            + "its guns' reloads stay on the remade clips alone.", prefab);
+            + "its guns' clips stay on the remade clips alone.", prefab);
         arms.Release();
         return null;
     }
@@ -112,11 +126,37 @@ internal sealed class GunArms
         return true;
     }
 
+    /// <summary>
+    /// The way each finger segment of a hand points now, in that hand's own frame: x along the way the fingers point (wrist
+    /// to middle knuckle), y the way the palm faces (as Palm takes it), z across (x × y); index, middle, ring, little, thumb,
+    /// each base, middle and tip (HandGrip's order). Read from where the joints are, so it holds whatever the bones' axes;
+    /// any hand put in the same frame (HandGrip.WearDigits) takes the same finger shape. False when a joint is missing.
+    /// </summary>
+    internal bool Digits(bool isLeft, Vector3[] into)
+    {
+        var hand = isLeft ? left : right;
+        if (!hand.Valid || !hand.HasDigits || into == null || into.Length < DigitCount) return false;
+        Vector3 along = hand.Middle.position - hand.Wrist.position;
+        Vector3 faces = Vector3.Cross(along, hand.Index.position - hand.Pinky.position) * (isLeft ? -1f : 1f);
+        if (along.sqrMagnitude < 1e-8f || faces.sqrMagnitude < 1e-10f) return false;
+        Vector3 x = along.normalized, y = Vector3.ProjectOnPlane(faces, x).normalized, z = Vector3.Cross(x, y);
+        for (int f = 0; f < 5; f++)
+            for (int j = 0; j < 3; j++)
+            {
+                int i = f * 3 + j;
+                Vector3 way = j < 2 ? hand.Joints[i + 1].position - hand.Joints[i].position : hand.Joints[i].rotation * hand.TipAxes[f];
+                if (way.sqrMagnitude < 1e-10f) return false;
+                way.Normalize();
+                into[i] = new Vector3(Vector3.Dot(way, x), Vector3.Dot(way, y), Vector3.Dot(way, z));
+            }
+        return true;
+    }
+
     private static Hand HandOf(Transform root, string side)
     {
         var wrist = Find(root, "hand_" + side);
         if (wrist == null) return new Hand();
-        return new Hand
+        var hand = new Hand
         {
             Wrist = wrist,
             Index = Find(wrist, "index_01_" + side),
@@ -124,6 +164,24 @@ internal sealed class GunArms
             Ring = Find(wrist, "ring_01_" + side),
             Pinky = Find(wrist, "pinky_01_" + side)
         };
+        hand.HasDigits = true;
+        for (int f = 0; f < 5 && hand.HasDigits; f++)
+        {
+            for (int j = 0; j < 3; j++)
+            {
+                var joint = Find(wrist, $"{FingerNames[f]}_0{j + 1}_{side}");
+                if (joint == null) { hand.HasDigits = false; break; }
+                hand.Joints[f * 3 + j] = joint;
+            }
+            if (!hand.HasDigits) break;
+            // The tip joint has no joint past it: it points the way the middle joint points to it, in the middle joint's
+            // own axes (KINEMATION's finger bones all lie along one axis).
+            var middle = hand.Joints[f * 3 + 1];
+            Vector3 toTip = Quaternion.Inverse(middle.rotation) * (hand.Joints[f * 3 + 2].position - middle.position);
+            if (toTip.sqrMagnitude < 1e-10f) { hand.HasDigits = false; break; }
+            hand.TipAxes[f] = toTip.normalized;
+        }
+        return hand;
     }
 
     private static Transform Find(Transform root, string name)
