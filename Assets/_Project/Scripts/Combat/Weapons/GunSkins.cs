@@ -28,6 +28,8 @@ public static class GunSkins
         public Color[] Colors = Array.Empty<Color>();
         public Pattern Pattern;
         public float Scale = 3f;
+        /// <summary>A camo's texture side (px); 0 for the usual one (GunSkins.csv size).</summary>
+        public int Size;
         /// <summary>A pack skin's material (Resources path) and the material of the gun's it stands in for (by name).</summary>
         public string Material, Replaces;
         public string Name => Texts.Get("skin." + Id);
@@ -223,31 +225,46 @@ public static class GunSkins
 
     // ---- Camouflage, drawn once per skin from its colours ----
 
+    // The texture's side (px) when the table gives none (GunSkins.csv size).
     private const int CamoSize = 256;
+    // Sampled as well as the GPU can: every mip level blended, and kept sharp along surfaces seen edge-on.
+    private const int CamoAniso = 16;
 
     private static Texture2D Camo(Skin skin)
     {
         if (camos.TryGetValue(skin.Id, out var made) && made != null) return made;
         var colors = skin.Colors.Length > 0 ? skin.Colors : new[] { Color.gray, Color.black };
-        var pixels = new Color32[CamoSize * CamoSize];
+        int size = Mathf.Clamp(skin.Size > 0 ? skin.Size : CamoSize, 16, 2048);
+        var pixels = new Color32[size * size];
         float scale = Mathf.Max(.5f, skin.Scale);
         // A seed from the skin's id, so a pattern is the same in every game and on every PC.
         int hash = 17;
         foreach (char c in skin.Id) hash = unchecked(hash * 31 + c);
         float ox = (hash & 255) * 1.37f, oy = ((hash >> 8) & 255) * 2.11f;
-        for (int y = 0; y < CamoSize; y++)
-            for (int x = 0; x < CamoSize; x++)
+        // The digital pattern's squares, each the blobs' band at its corner: worked out once per square, not per pixel, as
+        // its texture is drawn large (size) to keep the squares' edges sharp under filtering.
+        float cells = 8f * scale;
+        int across = Mathf.CeilToInt(cells) + 1;
+        int[] squares = null;
+        if (skin.Pattern == Pattern.Digital)
+        {
+            squares = new int[across * across];
+            for (int j = 0; j < across; j++)
+                for (int i = 0; i < across; i++)
+                    squares[j * across + i] = Band(Noise(i / cells, j / cells, scale, ox, oy), colors.Length);
+        }
+        for (int y = 0; y < size; y++)
+            for (int x = 0; x < size; x++)
             {
-                float u = x / (float)CamoSize, v = y / (float)CamoSize;
+                float u = x / (float)size, v = y / (float)size;
                 int band;
                 switch (skin.Pattern)
                 {
                     case Pattern.Digital:
                     {
                         // Square pixels of the blobs' bands.
-                        float cell = 1f / (8f * scale);
-                        float qu = Mathf.Floor(u / cell) * cell, qv = Mathf.Floor(v / cell) * cell;
-                        band = Band(Noise(qu, qv, scale, ox, oy), colors.Length);
+                        int i = Mathf.Min(across - 1, Mathf.FloorToInt(u * cells)), j = Mathf.Min(across - 1, Mathf.FloorToInt(v * cells));
+                        band = squares[j * across + i];
                         break;
                     }
                     case Pattern.Tiger:
@@ -261,11 +278,20 @@ public static class GunSkins
                         band = Band(Noise(u, v, scale, ox, oy), colors.Length);
                         break;
                 }
-                pixels[y * CamoSize + x] = colors[Mathf.Clamp(band, 0, colors.Length - 1)];
+                pixels[y * size + x] = colors[Mathf.Clamp(band, 0, colors.Length - 1)];
             }
-        made = new Texture2D(CamoSize, CamoSize, TextureFormat.RGBA32, true) { name = "Camo " + skin.Id, hideFlags = HideFlags.DontSave };
+        made = new Texture2D(size, size, TextureFormat.RGBA32, true) { name = "Camo " + skin.Id, hideFlags = HideFlags.DontSave };
         made.wrapMode = TextureWrapMode.Repeat;
-        made.filterMode = skin.Pattern == Pattern.Digital ? FilterMode.Point : FilterMode.Bilinear;
+        // Never point-sampled (user, 2026-11-12: "M16X4 줌 했을 때 텍스쳐 지글 거리는 거"). The digital pattern was, to keep
+        // its squares sharp, and a point sampler takes the one nearest texel of the one nearest mip level with no
+        // anisotropic filtering. Where a gun's UVs crowd the pattern that is another texel for every pixel each time the
+        // gun moves: the MX16A4 has no textures of its own, so its UVs were never laid out (two thirds of its vertices sit
+        // at 0,0, and its skinny triangles smear the pattern into lines of up to 39 000 texels a metre at 256 px, up to 25
+        // texels to a pixel when aimed at 1080p), and aimed down its top the whole gun crawled. Trilinear and anisotropic
+        // sampling average those texels; the digital squares are drawn on a larger texture instead (GunSkins.csv size)
+        // so their edges stay sharp up close.
+        made.filterMode = FilterMode.Trilinear;
+        made.anisoLevel = CamoAniso;
         made.SetPixels32(pixels);
         made.Apply(true, true);
         camos[skin.Id] = made;
@@ -296,6 +322,8 @@ public static class GunSkins
                 if (row.TryGetValue("pattern", out string pattern)) Enum.TryParse(pattern, true, out skin.Pattern);
                 if (row.TryGetValue("scale", out string scale) && float.TryParse(scale, System.Globalization.NumberStyles.Float,
                         System.Globalization.CultureInfo.InvariantCulture, out float s)) skin.Scale = s;
+                if (row.TryGetValue("size", out string size) && int.TryParse(size, System.Globalization.NumberStyles.Integer,
+                        System.Globalization.CultureInfo.InvariantCulture, out int side)) skin.Size = side;
                 if (row.TryGetValue("material", out string material)) skin.Material = material.Trim();
                 if (row.TryGetValue("replaces", out string replaces)) skin.Replaces = replaces.Trim();
                 if (row.TryGetValue("colors", out string colors))
