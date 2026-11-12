@@ -9,8 +9,9 @@ using MovementState = PlayerMovement.MovementState;
 /// low on health they worry; a kill is smug, a headshot delighted; a punch, a kick or a shove fierce; a brute or an
 /// elite first come near frightens them; aiming they narrow their eyes, sprinting and climbing they strain, standing
 /// about they grow bored and then sleepy; a callout makes the face of its words (Callouts.csv face) while the mouth
-/// moves to the voice. In front of the hub's mirror, in its dressing room and on the results stage they are being
-/// looked at, and pose (CharacterFace.Showing).
+/// moves to the voice, the body nods or points (Callouts.csv gesture, CalloutGesture) and the caller's face comes up on
+/// every HUD's comms feed (CalloutFeedHUD). In front of the hub's mirror, in its dressing room and on the results stage
+/// they are being looked at, and pose (CharacterFace.Showing).
 /// Every PC works this out for its own copy of the player from what it already knows of them: health
 /// (PlayerNetworkPose), down, held or pinned, aiming and guarding (PlayerNetworkCombat's stance), shots, punches, kicks
 /// and shove impacts (their RPCs replay them on the copy, whose events fire here as on the owner), kills and headshots
@@ -51,6 +52,7 @@ public sealed class PlayerFace : MonoBehaviour
     private PlayerExecution execution;
     private PlayerDamageReceiver receiver;
     private CharacterFace face;
+    private CalloutGesture gesture;
     private bool special;
     private float findAt, fearAt, idle, lastHealth = -1f;
     private int kills = -1, headshots = -1;
@@ -64,9 +66,16 @@ public sealed class PlayerFace : MonoBehaviour
     /// A callout <paramref name="speaker"/> said, heard on this PC (PlayerCallouts.Hear): their face says it with them
     /// for as long as the voice lasts, the mouth moving to it.
     /// </summary>
-    public static void Said(PlayerMovement speaker, CalloutLines.Line line, AudioSource voice)
+    public static void Said(PlayerMovement speaker, CalloutLines.Line line, AudioSource voice) =>
+        Said(speaker, line, voice, Vector3.zero, false);
+
+    /// <summary>
+    /// As above, with what the callout is about (the zombie it pings, the spot it pins) for the body's point and the head's
+    /// turn (CalloutGesture); the caller's face comes up in the callout feed too (CalloutFeedHUD).
+    /// </summary>
+    public static void Said(PlayerMovement speaker, CalloutLines.Line line, AudioSource voice, Vector3 toward, bool aims)
     {
-        if (speaker != null && line != null && speaker.TryGetComponent(out PlayerFace face)) face.Say(line, voice);
+        if (speaker != null && line != null && speaker.TryGetComponent(out PlayerFace face)) face.Say(line, voice, toward, aims);
     }
 
     /// <summary>This PC's player spent the full gauge on their class's ultimate (PerkCardScreen): everyone sees the face.</summary>
@@ -82,18 +91,24 @@ public sealed class PlayerFace : MonoBehaviour
         Pulse(mood);
     }
 
-    private void Say(CalloutLines.Line line, AudioSource voice)
+    private void Say(CalloutLines.Line line, AudioSource voice, Vector3 toward, bool aims)
     {
         idle = 0f;
-        if (face == null) return;
-        string mood = line.Face;
-        if (string.IsNullOrEmpty(mood) || FaceTables.Find(mood) == null) mood = CallMood + "." + line.Slot;
-        if (FaceTables.Find(mood) == null) mood = CallMood;
+        if (movement == null) TryGetComponent(out movement);
         var clip = voice != null ? voice.clip : null;
-        float seconds = (clip != null ? clip.length / Mathf.Max(.1f, Mathf.Abs(voice.pitch)) : 1f)
-            + FaceTables.Number("Talk.tail", .5f);
-        face.Pulse(mood, 1f, seconds);
-        if (voice != null) face.Speak(voice);
+        float spoken = clip != null ? clip.length / Mathf.Max(.1f, Mathf.Abs(voice.pitch)) : 1f;
+        if (face != null)
+        {
+            string mood = line.Face;
+            if (string.IsNullOrEmpty(mood) || FaceTables.Find(mood) == null) mood = CallMood + "." + line.Slot;
+            if (FaceTables.Find(mood) == null) mood = CallMood;
+            face.Pulse(mood, 1f, spoken + FaceTables.Number("Talk.tail", .5f));
+            if (voice != null) face.Speak(voice);
+        }
+        // The body says it too, and the face comes up on the squad's comms feed.
+        if (gesture == null) gesture = GetComponentInChildren<CalloutGesture>();
+        if (gesture != null) gesture.Play(CalloutGesture.Parse(line.Gesture), toward, aims);
+        CalloutFeedHUD.Show(movement, spoken);
     }
 
     private void Share(string mood)

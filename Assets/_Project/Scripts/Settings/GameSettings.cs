@@ -44,6 +44,9 @@ public sealed class GameSettings
     [Tooltip("The player shouts some callouts by themself: help when a zombie gets hold of them or they go down, the elite " +
         "they first come near, and the CHARGE (the Assault's, and friends near it answering).")]
     public bool calloutAuto = true;
+    [Tooltip("A callout brings up the caller's face, live from a camera in front of them, in a small comms window on the HUD " +
+        "(CalloutFeedHUD), this player's own included. Off: no window and no extra camera.")]
+    public bool calloutFeed = true;
     /// <summary>
     /// The keys the player picked in the key window (KeyBindings: the Input System's overrides as JSON, by binding id);
     /// empty for every default. The default keys themselves are Input/Player.inputactions.
@@ -168,6 +171,7 @@ public sealed class GameSettings
                 s.crouchToggle = d.crouchToggle; s.leanToggle = d.leanToggle;
                 s.autoReload = d.autoReload;
                 s.calloutOnRelease = d.calloutOnRelease; s.calloutBubbles = d.calloutBubbles; s.calloutAuto = d.calloutAuto;
+                s.calloutFeed = d.calloutFeed;
                 // The keys are left alone: the key window has its own reset per line and for all (KeyBindingsView), so
                 // putting the mouse back to default doesn't throw away every key the player set.
                 break;

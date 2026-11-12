@@ -24,6 +24,8 @@ public static class CalloutLines
         /// call.&lt;slot&gt;, else call), so a thanks smiles and a no pouts (PlayerFace.Said).
         /// </summary>
         public string Face;
+        /// <summary>The body's motion saying it (CalloutGesture.Kind: nod, shake, tilt, jut, point, wave, raise, beckon).</summary>
+        public string Gesture;
         public int Order;
         /// <summary>Its clips in the Voice bank.</summary>
         public string VoiceKey => "Callout/" + Id;
@@ -102,7 +104,7 @@ public static class CalloutLines
             var line = new Line
             {
                 Id = id, Slot = Cell(row, "slot"), When = Cell(row, "when", "always"), Mark = Cell(row, "mark"),
-                Face = Cell(row, "face"), Text = Cell(row, Texts.Language, Cell(row, Texts.Korean, id)),
+                Face = Cell(row, "face"), Gesture = Cell(row, "gesture"), Text = Cell(row, Texts.Language, Cell(row, Texts.Korean, id)),
                 Order = int.TryParse(Cell(row, "order", "0"), out int order) ? order : 0
             };
             lines.Add(line);

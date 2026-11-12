@@ -234,6 +234,7 @@ public sealed class SettingsMenuView
         rows.Choice(Texts.Get("settings.controls.callout_release"), OffOn, s.calloutOnRelease ? 1 : 0, i => s.calloutOnRelease = i == 1);
         rows.Choice(Texts.Get("settings.controls.callout_bubbles"), OffOn, s.calloutBubbles ? 1 : 0, i => s.calloutBubbles = i == 1);
         rows.Choice(Texts.Get("settings.controls.callout_auto"), OffOn, s.calloutAuto ? 1 : 0, i => s.calloutAuto = i == 1);
+        rows.Choice(Texts.Get("settings.controls.callout_feed"), OffOn, s.calloutFeed ? 1 : 0, i => s.calloutFeed = i == 1);
     }
 
     private static void ScreenTab(SettingsRows rows, GameSettings s)

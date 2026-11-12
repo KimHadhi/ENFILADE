@@ -298,8 +298,10 @@ public sealed class PlayerCallouts : MonoBehaviour
         heard[line.Id] = Time.time;
         var mouth = Voice(speaker, line.VoiceKey);
         CalloutBubbles.Say(speaker, line.Text);
-        // Their face says it too (Callouts.csv face), the mouth moving to the voice (PlayerFace, CharacterFace).
-        PlayerFace.Said(speaker, line, mouth);
+        // Their face says it too (Callouts.csv face), the mouth moving to the voice (PlayerFace, CharacterFace), their body
+        // with a nod or a point at what it is about (Callouts.csv gesture), and their face on the comms feed (CalloutFeedHUD).
+        Vector3 toward = target != null ? target.transform.position + Vector3.up * 1.2f : point;
+        PlayerFace.Said(speaker, line, mouth, toward, target != null || pins);
         // A Schießhund's bounty mark stays theirs: a plain ping on its enemy would take it over (PingMarks.Add).
         if (target != null && target.IsAlive && !Bountied(target)) PingMarks.Ping(target, speaker, false);
         if (pins) CalloutBubbles.Pin(speaker, point);
