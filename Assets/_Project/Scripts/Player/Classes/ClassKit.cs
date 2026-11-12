@@ -740,6 +740,8 @@ public sealed class ClassKit : MonoBehaviour
         KitSound.Play(KitSound.Cue.Charge, .7f);
         AlertHUD.Self(Texts.Get("class.point.kata.self"));
         MomentHUD.Kata(kataTotal);
+        // Its aura for everyone: gold rounds turning round the Point while it lasts (MomentFx.KataAura).
+        CardNet.Show(CardFx.Kind.KataAura, transform.position, transform.forward, kataTotal);
     }
 
     // ---- Schießhund: the duel ----

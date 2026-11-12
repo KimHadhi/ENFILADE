@@ -18,6 +18,7 @@ using UnityEngine;
 /// for the shadow's seconds (BodyDouble).</item>
 /// <item>Ultimate: someone's ultimate, with its notice on every HUD and the class's look (MomentFx.Ultimate).</item>
 /// <item>Reversal, Cover deflect and Kata draw: the reversal's throw, a cover's turned blow, a Gun Kata draw.</item>
+/// <item>Kata aura: a Point's Gun Kata on, its gold rounds turning round them for its seconds (MomentFx.KataAura).</item>
 /// </list>
 /// Drawn here as ever:
 /// <list type="bullet">
@@ -29,7 +30,7 @@ using UnityEngine;
 /// </summary>
 public sealed class CardFx : MonoBehaviour
 {
-    public enum Kind : byte { Claws, Echo, Deflect, Flash, Blast, Shell, Cavalry, Shadow, Ultimate, Reversal, CoverDeflect, KataDraw }
+    public enum Kind : byte { Claws, Echo, Deflect, Flash, Blast, Shell, Cavalry, Shadow, Ultimate, Reversal, CoverDeflect, KataDraw, KataAura }
 
     private const int SampleRate = 44100;
     /// <summary>Cavalry: how fast they ride (m/s), how long they fade in and out (s); ClassCards sweeps at the same pace.</summary>
@@ -108,6 +109,12 @@ public sealed class CardFx : MonoBehaviour
                 MomentFx.Play(MomentFx.Kind.KataDraw, at, way, 0f, MomentLook.ColorOf(PlayerClass.Point));
                 MomentSound.Play("kata", mine ? (Vector3?)null : at, .55f);
                 return;
+            case Kind.KataAura:
+            {
+                var point = PlayerOf(from, mine);
+                if (point != null) MomentFx.KataAura(point, value, mine);
+                return;
+            }
         }
         var host = FeelAssets.CreateRuntimeRoot("Card " + kind);
         var fx = host.AddComponent<CardFx>();

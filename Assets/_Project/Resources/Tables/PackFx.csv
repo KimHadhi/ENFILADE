@@ -62,3 +62,24 @@ bruteSmash.stopAfter,0.05,
 bruteSmash.life,1.4,
 bruteSmash.near,5,
 bruteSmash.nearShare,0.45,
+bountyMark.prefab,Mark Debuff,"시순트 현상금 표식이 붙은 적의 머리 위에 작은 해골이 표식이 있는 동안 계속 뜬다(BountySkulls). 표식 다이아몬드(PingMarks) 바로 아래. 모든 PC가 같은 표식을 알아서 똑같이 보인다"
+bountyMark.scale,0.15,해골 2m → 0.3m
+bountyMark.over,-0.2,"뿌리가 머리 꼭대기에서 이만큼(m) 위(음수면 아래). 해골은 뿌리에서 2.58×scale 위에 뜬다: 지금은 머리 위 0.19m"
+bountyMark.life,0,0이면 표식이 끝날 때까지
+bountyMark.fade,0.4,표식이 끝나면 이만큼(초) 동안 사라진다
+bountyMark.drop,Burst|Loop/Flecks_Shiny_Additive|Loop/Clair_Smoke_01_M|Loop/Smoky_Glow_01_M|Loop/Corrupted_Trail_01_M|Loop/FuzzAlpha_Soft,"뺄 부분: 처음 터지는 묶음 전부와, 도는 연기·반짝이·리본·검은 퍼짐. 해골 둘(또렷한 것, 흐린 것)만 남는다"
+bountyMark.tint,#1FEBD1,표식의 청록(PingMarks.BountyColor)
+bountyMark.tintParts,Loop/guns_skull_debuff_defined_add_soft|Loop/guns_skull_debuff_blur_add_soft,물들일 부분
+brokenArrow.prefab,Cluster Granades,"브로큰 애로우(나이트 카드): 포탄이 떨어진 자리마다 집속탄처럼 터진다(MomentFx Shell, 모든 PC). 예전 캔 폭발은 팩이 없을 때만"
+brokenArrow.scale,0.3,"크기 배율. 팩 그대로면 바닥 그을음 13~15m, 섬광 7m. 0.3이면 그을음 4m, 불꽃 0.9m, 충격파 1.2m"
+brokenArrow.speed,1.2,
+brokenArrow.drop,Smoke_loop_flipbook_thingy_Clean_alpha_soft|Flare|FuzzAlpha|FuzzAlpha_Soft,"뺄 부분: 15m 연기, 13m 빛 번짐, 6m와 4m 검은 퍼짐(화면을 덮음)"
+brokenArrow.life,3.5,
+brokenArrow.near,6,카메라가 이보다(m) 가까우면 작게(나이트 둘레에 떨어질 때)
+brokenArrow.nearShare,0.45,
+kataAura.prefab,Bullet buff,"포인트의 건 카타 동안 금빛 탄 열 발이 몸 둘레를 돌고 바람 고리와 반짝임이 인다(MomentFx.KataAura, 모든 PC). 궁극기(총이 달아오름, 엇갈린 두 총 문장)와 다르게"
+kataAura.scale,0.45,"크기 배율. 탄이 도는 원 2.5m → 1.1m, 반짝임 고리 5.3m → 2.4m"
+kataAura.fade,0.8,카타가 끝나면 이만큼(초) 동안 사라진다(길이는 Point.kataSeconds)
+kataAura.drop,Loop/Smoke_loop_flipbook_thingy_Clean_alpha_soft|Loop/Clair_Smoke_01_M|Loop/FuzzAdd_Soft|Burst_1/Clair_Smoke_01_M|Burst_1/FuzzAlpha_Soft|Burst_1/Smoky_Glow_01_M,"뺄 부분: 4~5m 연기, 7m 밝은 퍼짐(화면을 덮음), 처음 터지는 큰 연기와 검은 퍼짐. 남는 것: 금빛 탄, 바닥 바람, 허리 높이 바람 원판, 반짝임"
+kataAura.selfDrop,,"내 화면에서만 더 뺄 부분. 비워 둠: 나도 남과 같은 기운을 본다"
+kataAura.life,0,0이면 카타 길이만큼(Hold)

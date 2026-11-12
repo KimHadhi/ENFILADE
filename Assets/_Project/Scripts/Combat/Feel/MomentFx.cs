@@ -99,6 +99,23 @@ public sealed class MomentFx : MonoBehaviour
         MomentSound.Play("duelwon", head);
     }
 
+    // ---- The Gun Kata's aura ----
+
+    /// <summary>
+    /// A Point's Gun Kata on: gold rounds turning round them with a wind ring and glints, for as long as it lasts
+    /// (<paramref name="seconds"/>), on every PC (the pack's Bullet buff, PackFx kataAura; the user approved the pack map,
+    /// 2026-11-13). The ultimate's look is the guns themselves heating and the crossed guns on the ground, so the two never
+    /// read as one ("아까 두 총 가득이랑 다른 게 뭐지?"). <paramref name="mine"/>: this PC's own Point, inside its aura.
+    /// </summary>
+    public static void KataAura(PlayerMovement who, float seconds, bool mine)
+    {
+        if (!Application.isPlaying || who == null) return;
+        var copy = PackFx.Play("kataAura", who.transform.position, Quaternion.Euler(0f, who.transform.eulerAngles.y, 0f), mine);
+        if (copy == null) return;
+        copy.transform.SetParent(who.transform, true);
+        if (copy.TryGetComponent(out PackFx aura)) aura.Hold(Mathf.Max(.5f, seconds), PackFx.Number("kataAura", "fade", .8f));
+    }
+
     // ---- Playing one ----
 
     /// <summary>
@@ -149,7 +166,9 @@ public sealed class MomentFx : MonoBehaviour
         if (kind == Kind.Shell && !landed && age >= CardFx.ShellFall)
         {
             landed = true;
-            CanBlastEffect.Play(at, Mathf.Max(1f, value), 0f);
+            // The shell goes off in the Realistic Gunslinger pack's cluster burst (PackFx brokenArrow); the old can blast
+            // only where the pack's look is missing.
+            if (PackFx.Play("brokenArrow", at, Quaternion.identity) == null) CanBlastEffect.Play(at, Mathf.Max(1f, value), 0f);
             GameAudio.PlayAt(CardFx.Boom(), at, AudioChannel.Combat, 1f, 5f, 90f);
         }
         if (age >= life) { Destroy(gameObject); return; }
