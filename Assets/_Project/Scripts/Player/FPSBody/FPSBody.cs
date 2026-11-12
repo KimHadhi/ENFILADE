@@ -182,6 +182,8 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
         controller.InspectStarted += OnInspectStarted;
         controller.InspectStopped += OnInspectStopped;
         if (movement != null) movement.Jumped += OnJumped;
+        // A pistol's close hold (FPSBody.CloseHold) takes its numbers from Tables/CloseHold.csv.
+        BindCloseHold();
         // A shove with the gun out swings the gun (FPSBody.Bash).
         BeginBash();
         // The guns carried but not held are worn on the body for everyone to see (HolsteredGuns).
@@ -296,6 +298,7 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
         fingerGrip.Clear();
         holdWeight = cover = 0f;
         ForgetContacts();
+        ForgetCloseHold();
         rig = null; input = null; playables = null; framework = null; recoil = null;
         if (body != null) body.UpperBodyFromFramework = false;
         if (bodyCamera != null) bodyCamera.SetGunWeight(0f);
@@ -965,6 +968,8 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
         KeepGunInView();
         // Through a reload, the gun where KINEMATION's own clip has it (FPSBody.Contacts); the weapon root rides it after.
         FollowContacts();
+        // A pistol held in close comes in to the chest, canted, still on the crosshair's point (FPSBody.CloseHold).
+        FollowCloseHold();
         // A shove's bash swings the gun on top of that (FPSBody.Bash).
         FollowBash();
         RideGun();
@@ -1035,14 +1040,15 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
 
     // Where the muzzle is when the gun is held clean at the hip, and fully down the sights, from the eyes (which stay put in
     // the F5 view), for the wall rule's probes (Prepare): learnt only with FPSAF holding the whole gun at rest, the draw's
-    // motion over, no wall holding it back and no reload, and only with the muzzle ahead of the eyes. Kept per gun across
-    // draws. The probes once read the gun's own muzzle until the first clean frame after a draw: a gun caught at the draw was
-    // raised and swung aside, and never learnt again while raised, so it stayed raised and couldn't fire (user, 2026-11-07).
+    // motion over, no wall holding it back, no reload and not held in close (FPSBody.CloseHold), and only with the muzzle
+    // ahead of the eyes. Kept per gun across draws. The probes once read the gun's own muzzle until the first clean frame
+    // after a draw: a gun caught at the draw was raised and swung aside, and never learnt again while raised, so it stayed
+    // raised and couldn't fire (user, 2026-11-07).
     private void LearnHipMuzzle()
     {
         float aim = controller.AimBlend;
-        if (eyes == null || highReady || cover > 0f || held.HandsBusy || Framework < .999f || (aim > .001f && aim < .999f)
-            || Time.time - drawnAt < drawSettle) return;
+        if (eyes == null || highReady || cover > 0f || closeWeight > 0f || held.HandsBusy || Framework < .999f
+            || (aim > .001f && aim < .999f) || Time.time - drawnAt < drawSettle) return;
         Vector3 fromEyes = muzzle.position - eyes.position;
         if (Vector3.Angle(eyes.forward, fromEyes) > HipMuzzleCone) return;
         Vector3 local = eyes.InverseTransformPoint(muzzle.position);
@@ -1280,6 +1286,7 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
         highReady = false;
         cover = 0f;
         if (input != null) input.SetValue(CoverProperty, 0f);
+        ForgetCloseHold();
         StopFiring();
     }
 

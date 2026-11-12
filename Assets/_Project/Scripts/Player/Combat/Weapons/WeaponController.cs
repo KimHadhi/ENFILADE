@@ -71,6 +71,11 @@ public sealed class WeaponController : MonoBehaviour
     public WeaponShot LastShot { get; private set; }
     public float AimBlend { get; private set; }
     public bool IsHighReady { get; private set; }
+    /// <summary>
+    /// The held pistol is in its close hold (FPSBody.CloseHold): pulled in to the chest and canted as John Wick fights, it
+    /// fires from the hip at what the crosshair is on however close an enemy is, and no enemy holds it back.
+    /// </summary>
+    public bool IsHeldClose { get; private set; }
     public float CurrentSpread { get; private set; }
     public float MovementMultiplier => EquippedData == null ? 1f : Mathf.Lerp(1f, EquippedData.AdsMoveMultiplier, AimBlend);
 
@@ -131,7 +136,7 @@ public sealed class WeaponController : MonoBehaviour
     public void Inspect()
     {
         if (Runtime == null || Runtime.Data.Category == WeaponCategory.Melee || !ShowsWeapon || inspecting || switchLeft > 0f
-            || Runtime.IsReloading || AimBlend > .01f || IsHighReady) return;
+            || Runtime.IsReloading || AimBlend > .01f || IsHighReady || IsHeldClose) return;
         inspecting = true;
         inspectLeft = 10f;
         InspectStarted?.Invoke();
@@ -317,6 +322,8 @@ public sealed class WeaponController : MonoBehaviour
     // press that brought it down isn't lost on a semi-automatic gun.
     private const float QueuedFireWindow = .3f;
     private float raisedHoldLeft, queuedFireLeft;
+    // How long a pistol's close hold stays after its reason went (s; FPSBody.CloseHold's linger).
+    private float closeLeft;
     // How long an empty magazine has waited with the gun ready to fire (s), for the automatic reload.
     private float emptyReady;
     // The held gun's WeaponRuntime.Loads as last seen: a reload cut short past its bolt loads the gun outside a frame's
@@ -531,13 +538,14 @@ public sealed class WeaponController : MonoBehaviour
         bool aiming = frame.AimHeld && !Runtime.IsReloading && !bodyAction && shoveRecovery <= 0f
             && !stepDodging && !frame.ReloadPressed;
         float nextAim = Mathf.MoveTowards(AimBlend, aiming ? 1f : 0f, dt / AdsTime);
-        Vector3 target = AimTarget(weaponData.Range);
+        Vector3 target = AimTarget(weaponData.Range, out Collider onCrosshair);
         AimPoint = target;
         HasAimPoint = true;
         // Probe the requested sight position even while high ready suppresses ADS. Otherwise
         // a clear hip pose and blocked ADS pose can alternate, causing zoom/ready flicker.
         Vector3 nominalMuzzle = presentation != null ? presentation.Prepare(PoseView, weaponData, aiming ? 1f : nextAim) : PoseView.position;
-        float margin = IsHighReady ? RaisedClearance : 0f;
+        // Held in close, the usual hold counts as clear again only with the same room a raised gun needs to come down.
+        float margin = IsHighReady || IsHeldClose ? RaisedClearance : 0f;
         bool blocked = WeaponAimSolver.IsObstructed(owner, PoseView, nominalMuzzle, target, hitLayers, margin);
         AimBlend = blocked || presentation?.IsHighReady == true ? 0f : nextAim;
         if (presentation != null)
@@ -549,6 +557,9 @@ public sealed class WeaponController : MonoBehaviour
             if (blocked && AimBlend > 0f)
             { AimBlend = 0f; presentation.Prepare(PoseView, weaponData, 0f); }
         }
+        // A pistol comes in to the chest instead of going up, sights down (FPSBody.CloseHold).
+        IsHeldClose = HoldClose(dt, ref blocked, target, IsHighReady ? RaisedClearance : 0f, WeaponAimSolver.IsFoe(onCrosshair));
+        if (IsHeldClose) AimBlend = 0f;
         bool readyToAct = !Runtime.IsReloading && !bodyAction && shoveRecovery <= 0f && !stepDodging;
         bool wantsGun = aiming || (readyToAct && (frame.FirePressed || frame.FireHeld));
         if (blocked) raisedHoldLeft = RaisedHold;
@@ -559,6 +570,7 @@ public sealed class WeaponController : MonoBehaviour
             else { raisedHoldLeft -= dt; blocked = true; }
         }
         bool quickLower = !blocked && wantsGun;
+        presentation?.HoldClose(IsHeldClose);
         IsHighReady = presentation != null ? presentation.Pose(owner, PoseView, target, blocked, Runtime, dt, hitLayers, quickLower) : blocked;
         if (IsHighReady) AimBlend = 0f;
         // Apex's Peacekeeper precision choke: held fully down the sights, a shotgun draws its pellets in over Choke Seconds;
@@ -596,8 +608,11 @@ public sealed class WeaponController : MonoBehaviour
         for (int i = 0; i < shots; i++)
         {
             Vector3 origin = muzzlePoint != null ? muzzlePoint.position : PoseView.position;
-            target = AimTarget(weaponData.Range);
-            if (WeaponAimSolver.IsObstructed(owner, PoseView, origin, target, hitLayers))
+            target = AimTarget(weaponData.Range, out Collider aimedNow);
+            // Held in close, no enemy holds the shot back, and one the gun is pressed into is struck from just short of it
+            // (a bullet starting inside its hitboxes would pass them).
+            if (IsHeldClose) origin = WeaponAimSolver.ShortOfFoe(owner, PoseView, origin, hitLayers);
+            if (WeaponAimSolver.IsObstructed(owner, PoseView, origin, target, hitLayers, 0f, IsHeldClose, IsHeldClose && WeaponAimSolver.IsFoe(aimedNow)))
             { Runtime.RefundUnfiredShots(shots - i); IsHighReady = true; AimBlend = 0f; break; }
             // From the muzzle to what the crosshair is on, which stays in the middle of the screen: the gun turns to point
             // there (FPSBody's GunConvergeLayer), as the gun did before KINEMATION (user, 2026-11-09: "총이 조준선을 옮기면
@@ -737,16 +752,50 @@ public sealed class WeaponController : MonoBehaviour
     }
 
     // The crosshair's ray. In the F5 view it starts level with the eyes, so nothing between the camera and the player
-    // catches it; in first person the eyes are the camera.
-    private Vector3 AimTarget(float range) => AimTarget(aimOrigin.forward, range);
+    // catches it; in first person the eyes are the camera. aimed: what it is on (null for nothing in range).
+    private Vector3 AimTarget(float range) => AimTarget(aimOrigin.forward, range, out _);
+    private Vector3 AimTarget(float range, out Collider aimed) => AimTarget(aimOrigin.forward, range, out aimed);
 
     // What the eyes see along `forward`: the same ray turned off the middle of the screen, for a pellet's place in the ring.
-    private Vector3 AimTarget(Vector3 forward, float range)
+    private Vector3 AimTarget(Vector3 forward, float range) => AimTarget(forward, range, out _);
+
+    private Vector3 AimTarget(Vector3 forward, float range, out Collider aimed)
     {
         Vector3 start = aimOrigin.position;
         if (eyes != null) start += forward * Mathf.Max(0f, Vector3.Dot(eyes.position - start, forward));
-        return AttackTrace.FirstExternalHit(owner, start, forward, range, hitLayers, out RaycastHit hit)
-            ? hit.point : start + forward * range;
+        if (AttackTrace.FirstExternalHit(owner, start, forward, range, hitLayers, out RaycastHit hit))
+        {
+            aimed = hit.collider;
+            return hit.point;
+        }
+        aimed = null;
+        return start + forward * range;
+    }
+
+    // A pistol's close hold (FPSBody.CloseHold; the user, 2026-11-13: "권총은 아무리 가까워도 … 가슴쪽에 가까이 대는 존 윅
+    // 자세 … 아무리 가까워도 총 쏠 수 있는 상태가 돼서 CQB하는 데 쓰이게"): wanted while an enemy is close before the eyes or the
+    // usual hold is blocked, and for its linger after; taken while the gun held in close is clear of whatever blocks it, which
+    // no enemy does, so it fires into one pressed against it. The usual hold's block then doesn't raise the gun; a wall that
+    // blocks even the hold in close raises it to high ready as before. Every PC runs it for its copy of the player.
+    private bool HoldClose(float dt, ref bool blocked, Vector3 target, float margin, bool foeAimed)
+    {
+        if (presentation == null || !presentation.CanHoldClose(PoseView, IsHeldClose, hitLayers, out Vector3 close, out bool foe, out float linger))
+        {
+            closeLeft = 0f;
+            return false;
+        }
+        bool reason = foe || blocked;
+        if (!reason && closeLeft <= 0f) return false;
+        if (WeaponAimSolver.IsObstructed(owner, PoseView, close, target, hitLayers, margin, true, foeAimed))
+        {
+            closeLeft = 0f;
+            return false;
+        }
+        closeLeft = reason ? linger : closeLeft - dt;
+        blocked = false;
+        // Coming down from high ready into the hold, the gun doesn't wait out the raised hold.
+        raisedHoldLeft = 0f;
+        return true;
     }
 
     public void InterruptForSurvival(bool shove = false)
@@ -790,8 +839,8 @@ public sealed class WeaponController : MonoBehaviour
     }
     private void ResetPresentation()
     {
-        AimBlend = bloom = shoveRecovery = CurrentSpread = raisedHoldLeft = queuedFireLeft = emptyReady = chokeCharge = chokePop = 0f;
-        recoilIndex = 0; IsHighReady = false;
+        AimBlend = bloom = shoveRecovery = CurrentSpread = raisedHoldLeft = queuedFireLeft = emptyReady = chokeCharge = chokePop = closeLeft = 0f;
+        recoilIndex = 0; IsHighReady = IsHeldClose = false;
         HasAimPoint = false;
         presentation?.Reset();
         // Unity's null check, not `?.`: a closing scene disables and destroys its objects one root at a time, so the HUD's

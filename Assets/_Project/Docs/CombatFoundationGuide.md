@@ -86,6 +86,7 @@
 | 주먹·가드·패링·V 홀드 | [Player.csv](../Resources/Tables/Player.csv)의 `Fists` 행 |
 | 주먹 콤보(리포스트·평캔 돌려 치기·던지고 돌진·박자 연타) | [Combos.csv](../Resources/Tables/Combos.csv) |
 | 밀치기·돌진 밀치기·슬라이딩 수치 | `Player.csv`의 `Ability` 행 |
+| 권총 근접 자세(존 윅 자세): 적이 가까이 오거나 총구가 막히면 권총을 가슴 쪽으로 당겨 눕혀 쥐고 그대로 쏘는 거리·각도·빠르기, 켜고 끄기, 뺄 권총 | [CloseHold.csv](../Resources/Tables/CloseHold.csv) |
 | 쏘아 넘기는 낮은 엄폐물(벽 규칙이 high ready로 들지 않음)인 맵 꾸미기 종류 | [ShootOverCover.csv](../Resources/Tables/ShootOverCover.csv)(바꾸면 장을 다시 짓기. 서포트 바리케이드는 코드가 직접 표시) |
 | 총 휘두르기·발차기 동작 | 블렌더 작업실 [ArtSource/Shove](../../../ArtSource/Shove/START_HERE.md)(`START_SHOVE_ANIMATION.cmd`)에서 손보고 '게임에 보내기' |
 | 적 체력·공격·체간·이동 속도 | [Enemies.csv](../Resources/Tables/Enemies.csv) |

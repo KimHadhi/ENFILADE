@@ -15,6 +15,7 @@
 | [Surfaces.csv](../Resources/Tables/Surfaces.csv) | 표면 종류의 부모와 찾을 키워드 | 표면 이름 (`Concrete` …) |
 | [Weapons.csv](../Resources/Tables/Weapons.csv) | 총 피해·RPM·장탄·예비탄·장전·자동 장전·탄퍼짐·앉아 쏘기·헤드샷·ADS·흔들림, 몸의 손이 잡는 위치 | `WeaponData` 에셋 이름 (`MX16A4` …) |
 | [FPSBody.csv](../Resources/Tables/FPSBody.csv) | 총을 드는 KINEMATION FPS Animation Framework: Q/E 때 몸이 기우는 각도, 질주 때 상체가 시선을 따르는 정도와 질주로 보는 지점, 끊긴 장전이 풀리는 시간, 총구를 재는 깊이, 총을 꺼내고 넣을 때 상체를 넘겨받는 시간 | `Rig` |
+| [CloseHold.csv](../Resources/Tables/CloseHold.csv) | 권총 근접 자세(존 윅 자세): 가까운 적을 세는 거리·시선 각도·놓는 거리, 더 쥐는 시간, 들어오고 나가는 빠르기, 총을 당기는 거리·눕히는 각도, 켜고 끄기, 뺄 권총 | `Pistol` |
 | [Enemies.csv](../Resources/Tables/Enemies.csv) | 적 체력·공격·자세(체간)·이동 속도 | 적 프리팹 이름 (`Enemy_Test`) |
 | [Waves.csv](../Resources/Tables/Waves.csv) | 웨이브 적 수·증가량·대기·등장 간격 | `WaveManager`의 `Table Id` (기본 `Default`) |
 | [Maps.csv](../Resources/Tables/Maps.csv) | 메인 메뉴에서 고를 맵과 보이는 이름(글자는 Texts.csv `map.<id>.name`). 빌드 설정에 등록된 씬만 나온다 | 씬 이름 (`CombatFoundation` …) |

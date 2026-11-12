@@ -190,7 +190,8 @@ public sealed partial class FPSBody
         if (holdWay.sqrMagnitude < .5f) return false;
         Quaternion rest = eyes != null && held.HoldFromEyes(controller.AimBlend, out KTransform kept)
             ? eyes.rotation * kept.rotation : rig.IkWeaponBone.rotation;
-        way = rest * Vector3.Slerp(holdWay, clipWay, mix).normalized;
+        // A pistol held in close rolls the elbows with it (FPSBody.CloseHold).
+        way = CloseElbow(rest * Vector3.Slerp(holdWay, clipWay, mix).normalized);
         return true;
     }
 

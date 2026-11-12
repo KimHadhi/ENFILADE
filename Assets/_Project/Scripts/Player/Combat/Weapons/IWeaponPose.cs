@@ -19,4 +19,12 @@ public interface IWeaponPose
     /// wants to fire or aim, so a raised gun comes down at its quickest.
     /// </summary>
     bool Pose(GameObject owner, Transform view, Vector3 target, bool obstructed, WeaponRuntime runtime, float dt, int layers, bool quickLower);
+    /// <summary>
+    /// The held gun has a close hold it can take now (a pistol pulled in to the chest, FPSBody.CloseHold). muzzle: where
+    /// its muzzle would be held in close, for the cover probes; foeClose: a living enemy is close before the eyes (a little
+    /// further while <paramref name="holding"/>); linger: how long the hold stays after its reason went (s).
+    /// </summary>
+    bool CanHoldClose(Transform view, bool holding, int layers, out Vector3 muzzle, out bool foeClose, out float linger);
+    /// <summary>Holds the gun in close this frame (true) or lets it out.</summary>
+    void HoldClose(bool close);
 }
