@@ -49,6 +49,7 @@ public sealed class MainMenuIntro : MonoBehaviour
     {
         // A script reload during Play forgets the shutter's parts: just take it away.
         if (top == null || bottom == null || line == null || lineImage == null) { Destroy(gameObject); return; }
+        if (LoadingScreen.Visible) { startAt = Time.unscaledTime; return; } // held shut under the loading screen (SceneWarmup), then played in full
         float t = Time.unscaledTime - startAt;
         line.localScale = new Vector3(KitReveal.EaseOut(Mathf.Clamp01(t / LineSeconds)), 1f, 1f);
         float fade = Mathf.Clamp01((t - LineSeconds) / LineFade);
