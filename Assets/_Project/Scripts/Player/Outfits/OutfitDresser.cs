@@ -183,7 +183,12 @@ internal static class OutfitDresser
             if (view == OutfitSlot.View.Head) dressing.HeadParts.AddRange(piece.Renderers);
             else if (view == OutfitSlot.View.Hide) dressing.FaceParts.AddRange(piece.Renderers);
         }
-        var freed = TakeOff(own, skin.Id, emptied);
+        // Pieces worn on the skin in place of the character's underwear (Outfits.csv under): those slots' underwear stays
+        // off. A covered piece is out of sight and takes nothing's place.
+        var inner = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var piece in worn)
+            if (!covered.Contains(piece.Slot.id)) inner.UnionWith(piece.Item.UnderSlots);
+        var freed = TakeOff(own, skin.Id, emptied, inner);
         foreach (var renderer in leavingOwn) renderer.enabled = true;
         dressing.Leaving.AddRange(leavingOwn);
         foreach (var piece in worn) Shape(model.GetComponentsInChildren<SkinnedMeshRenderer>(true), OutfitCatalog.FitOf(piece.Item.id, skin.Id)?.shapes);
@@ -315,7 +320,13 @@ internal static class OutfitDresser
         foreach (var pair in twins)
             foreach (Transform child in pair.Key)
                 if (!twins.ContainsKey(child)) hanging.Add((child, pair.Value));
-        foreach (var (part, under) in hanging) part.SetParent(under, true);
+        foreach (var (part, under) in hanging)
+        {
+            part.SetParent(under, true);
+            // The character's cloth rows leave it to the outfit's: under a breast or a skirt bone it would join that
+            // row's particles too (ClothBones.Collect).
+            if (!part.TryGetComponent<OutfitBone>(out _)) part.gameObject.AddComponent<OutfitBone>();
+        }
         foreach (var mesh in meshes) Bind(mesh, twins);
         foreach (var twin in twins.Keys) twin.name += " [" + mark + "]";
         return twins.Count;
@@ -392,8 +403,9 @@ internal static class OutfitDresser
 
     // The character's own pieces in these slots go (CharacterParts.csv): their renderers switch off and their hiding
     // keys go on. A slot left with none of its pieces showing, whichever slot took them, shows what they covered, and the
-    // body's keys only those pieces held go back to 0. Returns the keys let go.
-    private static HashSet<string> TakeOff(Renderer[] own, string skinId, HashSet<string> slots)
+    // body's keys only those pieces held go back to 0. The underwear of the slots in <paramref name="inner"/> stays off:
+    // something worn on the skin took its place. Returns the keys let go.
+    private static HashSet<string> TakeOff(Renderer[] own, string skinId, HashSet<string> slots, HashSet<string> inner)
     {
         var freed = new HashSet<string>(StringComparer.Ordinal);
         if (slots.Count == 0) return freed;
@@ -409,12 +421,22 @@ internal static class OutfitDresser
             Shape(skins, row.shapes);
         }
         Release(skins, rows, slots, off, freed);
+        // Underwear came on once its dress was off so the body wasn't bare, and a bodysuit or bikini put on for the dress
+        // left it standing out of the suit (Mayo's bra 29 mm, her panties 28 mm). Whatever shows the underwear came with,
+        // a piece worn in its place puts it out.
+        foreach (var row in rows)
+        {
+            if (string.IsNullOrEmpty(row.under) || !inner.Contains(row.slot)) continue;
+            var replaced = new HashSet<string>(OutfitCatalog.Split(row.under), StringComparer.OrdinalIgnoreCase);
+            foreach (var renderer in own)
+                if (replaced.Contains(renderer.name)) renderer.enabled = false;
+        }
         if (off.Count == 0) return freed;
         foreach (var renderer in own)
             if (off.Contains(renderer.name)) renderer.enabled = false;
         foreach (var row in rows)
         {
-            if (string.IsNullOrEmpty(row.under)) continue;
+            if (string.IsNullOrEmpty(row.under) || inner.Contains(row.slot)) continue;
             bool bare = false;
             foreach (string piece in OutfitCatalog.Split(row.parts))
             {

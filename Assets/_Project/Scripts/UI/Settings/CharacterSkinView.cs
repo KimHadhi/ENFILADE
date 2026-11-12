@@ -117,16 +117,15 @@ public sealed class CharacterSkinView
             var row = W.Row(column, slot.Name);
             var place = slot;
             W.Stepper(row, names.ToArray(), Mathf.Max(0, choices.IndexOf(worn.Item ?? "")), index => PickOutfit(skin, place, choices[index]));
-            // The colour sets of the piece worn here, each piece in its own (a black jacket over a pink skirt).
-            var colours = OutfitCatalog.Model(worn.Item, skin.Id)?.Variants;
-            if (colours != null && colours.Count > 1)
+            // The colour sets of the piece worn here, each piece in its own (a black jacket over a pink skirt): one per look
+            // the piece can take, since an outfit's sets recolour all of it and many look alike on one piece.
+            var wornItem = OutfitCatalog.Item(worn.Item);
+            var colours = OutfitCatalog.ColoursOf(wornItem, skin.Id);
+            if (colours.Count > 1)
             {
-                int at = 0;
-                for (int i = 0; i < colours.Count; i++)
-                    if (colours[i] != null && colours[i].Id == worn.Colour) at = i;
+                int at = Mathf.Max(0, colours.IndexOf(OutfitCatalog.ShownColour(wornItem, skin.Id, worn.Colour)));
                 string item = worn.Item;
-                W.Stepper(row, colours.Select(colour => colour != null ? colour.DisplayName : "").ToArray(), at,
-                    index => PickColour(skin, place, item, colours[index]?.Id ?? ""));
+                W.Stepper(row, colours.Select(colour => colour.DisplayName).ToArray(), at, index => PickColour(skin, place, item, colours[index].Id));
             }
             rows++;
         }

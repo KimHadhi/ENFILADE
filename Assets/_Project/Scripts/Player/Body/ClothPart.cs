@@ -125,6 +125,12 @@ public sealed class ClothPart
         data.colliderCollisionConstraint.colliderList.AddRange(colliders);
         // The backstop keeps each bone out of the way the part's own middle lies: "in" has to mean toward the body.
         if (backstop >= 0f) data.normalAlignmentSetting.alignmentMode = NormalAlignmentSettings.AlignmentMode.BoundingBoxCenter;
+        // Magica takes every transform under a root: what an outfit hung inside this part (the Sera Yura shirt's hem on
+        // Mayo's breast) is marked out of it, neither moved nor put back by this part, so only the outfit's rows move it.
+        var foreign = new List<Transform>();
+        foreach (var bone in bones) ClothBones.Collect(bone, null, foreign);
+        var attributes = cloth.GetSerializeData2().boneAttributeDict;
+        foreach (var hung in foreign) attributes[hung] = VertexAttribute.Invalid;
         Apply(data, shape);
         cloth.BuildAndRun();
         return cloth;

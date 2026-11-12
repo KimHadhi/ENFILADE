@@ -88,6 +88,12 @@ public sealed class SkinVariant
         if (changed) renderer.SetSharedMaterials(scratch);
     }
 
+    /// <summary>
+    /// The material this colour set puts where the model was made with <paramref name="made"/>: for telling which sets
+    /// look alike on one piece of an outfit (OutfitCatalog.ColoursOf).
+    /// </summary>
+    public Material On(Material made) => Dressed(this, made);
+
     private static Material Original(SkinVariant variant, Material material)
     {
         if (variant == null || material == null) return material;

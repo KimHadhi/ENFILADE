@@ -1,35 +1,35 @@
-﻿id,slot,also,hides,name,model,parts
-#설명,들어가는 칸(OutfitSlots.csv의 id),같이 차지하는 칸. |로 여럿. 원피스는 slot이 top이고 also가 bottom,입으면 가려서 안 보이게 할 칸. |로 여럿. 얼굴을 다 덮는 마스크는 eyes처럼 그 칸의 원래 옷과 그 칸에 입힌 옷을 모두 숨긴다,화면에 나오는 이름,이 옷이 들어 있는 모델의 Id(OutfitLibrary). 빈칸이면 옷 Id와 같다. BOOTH 옷 한 벌은 모델 하나에 베레모·재킷·치마가 다 들어 있어서 여러 옷이 한 모델을 나눠 쓴다(BoothSources.csv의 outfit 줄),모델에서 이 옷이 보여 줄 렌더러 이름. |로 여럿. 빈칸이면 다른 옷이 가져가지 않은 렌더러 전부
-sm-beret,helmet,,,세일러 메이든 베레모,sailor-maiden,SM2_Beret
-sm-jacket,top,,,세일러 메이든 재킷,sailor-maiden,SM1_Sailor_Jacket|SM1_Sleeve_Side_Ribbon_BowTip|SM1_Sleeve_Side_Ribbon_Cross|SM2_FrontTie_A|SM2_FrontTie_B|SM2_FrontTie_C
-sm-skirt,bottom,,,세일러 메이든 플리츠 치마,sailor-maiden,SM2_leated_Skirt
-sm-socks,legs,,,세일러 메이든 루즈삭스,sailor-maiden,SM2_Loose socks|SM2_Loose socks_Side_Ribbon
-sm-loafers,shoes,,,세일러 메이든 로퍼,sailor-maiden,SM2_Loafers
-banshaku-shirt,top,,,반샤쿠 셔츠,banshaku-shirt,
-ichigo-shirt,top,,,이치고 셔츠,ichigo-shirt,
-mayo-side-hair-1,hairpin,,,거울 옆머리 1,mayo-side-hair-1,
-mayo-side-hair-2,hairpin,,,거울 옆머리 2,mayo-side-hair-2,
-wb-jacket,outer,,,화이트 보드 재킷,white-board,White Board_Jacket|White Board_Name tag
-wb-dress,top,,,화이트 보드 원피스,white-board,White Board_Dress
-wb-chest,vest,,,화이트 보드 가슴 벨트,white-board,White Board_Chest
-wb-belt,waist,,,화이트 보드 벨트,white-board,White Board_Belt
-wb-shorts,bottom,,,화이트 보드 반바지,white-board,White Board_Shorts
-wb-legs,legs,,,화이트 보드 스타킹 세트,white-board,White Board_Stocking|White Board_Socks|White Board_Knee pad|White Board_Leg belt
-wb-stockings,legs,,,화이트 보드 스타킹,white-board,White Board_Stocking
-wb-socks,legs,,,화이트 보드 양말,white-board,White Board_Socks
-wb-boots,shoes,,,화이트 보드 부츠,white-board,White Board_Shoes
-wb-gloves,gloves,,,화이트 보드 장갑,white-board,White Board_Gloves
-wb-glasses,eyes,,,화이트 보드 안경,white-board,White Board_Glasses
-wb-earring,ears,,,화이트 보드 귀걸이,white-board,White Board_Earring
-sy-shirt,top,,,세라 유라 셔츠,sera-yura,Sera_Yura_Shirt
-sy-collar,outer,,,세라 유라 세일러 칼라,sera-yura,Sera_Yura_Collar|Sera_Yura_Knot
-sy-suit,vest,,,세라 유라 바디슈트,sera-yura,Sera_Yura_Suit
-sy-suit-top,vest,,,세라 유라 바디슈트 상의,sera-yura,Sera_Yura_Suit
-sy-bikini-top,vest,,,세라 유라 비키니 상의,sera-yura,Sera_Yura_Bikini_Bra
-sy-bikini-bottom,waist,,,세라 유라 비키니 하의,sera-yura,Sera_Yura_Bikini_Panty
-sy-skirt,bottom,,,세라 유라 플리츠 치마,sera-yura,Sera_Yura_Skirt
-sy-choker,neck,,,세라 유라 방울 초커,sera-yura,Sera_Yura_Choker
-sy-gloves,gloves,,,세라 유라 긴 장갑,sera-yura,Sera_Yura_Elbow_Glove
-sy-stockings,legs,,,세라 유라 스타킹,sera-yura,Sera_Yura_Stockings
-sy-shoes,shoes,,,세라 유라 메리제인 구두,sera-yura,Sera_Yura_Shoes
-sy-toast,mask,,,세라 유라 토스트,sera-yura,Sera_Yura_Toast|Sera_Yura_Toast_Jam_Mouth
+﻿id,slot,also,hides,name,model,parts,under
+#설명,들어가는 칸(OutfitSlots.csv의 id),같이 차지하는 칸. |로 여럿. 원피스는 slot이 top이고 also가 bottom,입으면 가려서 안 보이게 할 칸. |로 여럿. 얼굴을 다 덮는 마스크는 eyes처럼 그 칸의 원래 옷과 그 칸에 입힌 옷을 모두 숨긴다,화면에 나오는 이름,이 옷이 들어 있는 모델의 Id(OutfitLibrary). 빈칸이면 옷 Id와 같다. BOOTH 옷 한 벌은 모델 하나에 베레모·재킷·치마가 다 들어 있어서 여러 옷이 한 모델을 나눠 쓴다(BoothSources.csv의 outfit 줄),모델에서 이 옷이 보여 줄 렌더러 이름. |로 여럿. 빈칸이면 다른 옷이 가져가지 않은 렌더러 전부,"맨살에 입어 캐릭터의 속옷을 대신하는 칸(CharacterParts.csv 줄의 slot). |로 여럿. 입는 동안 그 칸 줄의 under 속옷이 켜지지 않고, 켜져 있었어도 꺼진다. 바디슈트는 top|bottom, 비키니 상의는 top, 비키니 하의는 bottom"
+sm-beret,helmet,,,세일러 메이든 베레모,sailor-maiden,SM2_Beret,
+sm-jacket,top,,,세일러 메이든 재킷,sailor-maiden,SM1_Sailor_Jacket|SM1_Sleeve_Side_Ribbon_BowTip|SM1_Sleeve_Side_Ribbon_Cross|SM2_FrontTie_A|SM2_FrontTie_B|SM2_FrontTie_C,
+sm-skirt,bottom,,,세일러 메이든 플리츠 치마,sailor-maiden,SM2_leated_Skirt,
+sm-socks,legs,,,세일러 메이든 루즈삭스,sailor-maiden,SM2_Loose socks|SM2_Loose socks_Side_Ribbon,
+sm-loafers,shoes,,,세일러 메이든 로퍼,sailor-maiden,SM2_Loafers,
+banshaku-shirt,top,,,반샤쿠 셔츠,banshaku-shirt,,
+ichigo-shirt,top,,,이치고 셔츠,ichigo-shirt,,
+mayo-side-hair-1,hairpin,,,거울 옆머리 1,mayo-side-hair-1,,
+mayo-side-hair-2,hairpin,,,거울 옆머리 2,mayo-side-hair-2,,
+wb-jacket,outer,,,화이트 보드 재킷,white-board,White Board_Jacket|White Board_Name tag,
+wb-dress,top,,,화이트 보드 원피스,white-board,White Board_Dress,
+wb-chest,vest,,,화이트 보드 가슴 벨트,white-board,White Board_Chest,
+wb-belt,waist,,,화이트 보드 벨트,white-board,White Board_Belt,
+wb-shorts,bottom,,,화이트 보드 반바지,white-board,White Board_Shorts,
+wb-legs,legs,,,화이트 보드 스타킹 세트,white-board,White Board_Stocking|White Board_Socks|White Board_Knee pad|White Board_Leg belt,
+wb-stockings,legs,,,화이트 보드 스타킹,white-board,White Board_Stocking,
+wb-socks,legs,,,화이트 보드 양말,white-board,White Board_Socks,
+wb-boots,shoes,,,화이트 보드 부츠,white-board,White Board_Shoes,
+wb-gloves,gloves,,,화이트 보드 장갑,white-board,White Board_Gloves,
+wb-glasses,eyes,,,화이트 보드 안경,white-board,White Board_Glasses,
+wb-earring,ears,,,화이트 보드 귀걸이,white-board,White Board_Earring,
+sy-shirt,top,,,세라 유라 셔츠,sera-yura,Sera_Yura_Shirt,
+sy-collar,outer,,,세라 유라 세일러 칼라,sera-yura,Sera_Yura_Collar|Sera_Yura_Knot,
+sy-suit,vest,,,세라 유라 바디슈트,sera-yura,Sera_Yura_Suit,top|bottom
+sy-suit-top,vest,,,세라 유라 바디슈트 상의,sera-yura,Sera_Yura_Suit,top
+sy-bikini-top,vest,,,세라 유라 비키니 상의,sera-yura,Sera_Yura_Bikini_Bra,top
+sy-bikini-bottom,waist,,,세라 유라 비키니 하의,sera-yura,Sera_Yura_Bikini_Panty,bottom
+sy-skirt,bottom,,,세라 유라 플리츠 치마,sera-yura,Sera_Yura_Skirt,
+sy-choker,neck,,,세라 유라 방울 초커,sera-yura,Sera_Yura_Choker,
+sy-gloves,gloves,,,세라 유라 긴 장갑,sera-yura,Sera_Yura_Elbow_Glove,
+sy-stockings,legs,,,세라 유라 스타킹,sera-yura,Sera_Yura_Stockings,
+sy-shoes,shoes,,,세라 유라 메리제인 구두,sera-yura,Sera_Yura_Shoes,
+sy-toast,mask,,,세라 유라 토스트,sera-yura,Sera_Yura_Toast|Sera_Yura_Toast_Jam_Mouth,

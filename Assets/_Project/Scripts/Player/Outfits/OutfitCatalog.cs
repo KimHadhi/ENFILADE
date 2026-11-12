@@ -52,6 +52,8 @@ public static class OutfitCatalog
     private static List<Part> parts;
     private static OutfitLibrary library;
     private static bool libraryLooked, listening;
+    // Per item and character: the colour sets that look different on it, and the listed one each set looks like.
+    private static Dictionary<(string item, string skin), (List<SkinVariant> Listed, Dictionary<SkinVariant, SkinVariant> Shown)> looks;
 
     // Without a domain reload between plays the cache would outlive an edit made while stopped.
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -109,6 +111,74 @@ public static class OutfitCatalog
     {
         Ensure();
         return fits.TryGetValue((itemId ?? "") + OutfitLook.Separator + (skinId ?? ""), out var fit) ? fit : null;
+    }
+
+    /// <summary>
+    /// The colour sets that look different on this item, the first of each look in the library's order. A BOOTH outfit's
+    /// colour sets each recolour the whole outfit, so on one piece many look alike: Sera Yura's sixty sets give its
+    /// gloves 29 looks and its toast 3, and the wardrobe showed sixty chips for each, fifteen rows (2026-11-12). Empty
+    /// when the item has no model for this character.
+    /// </summary>
+    public static List<SkinVariant> ColoursOf(OutfitItem item, string skinId) => item != null ? Looks(item, skinId).Listed : new List<SkinVariant>();
+
+    /// <summary>The listed colour set (ColoursOf) that looks like the one with this id on the item: the chip shown worn.</summary>
+    public static SkinVariant ShownColour(OutfitItem item, string skinId, string colourId)
+    {
+        if (item == null) return null;
+        var (listed, shown) = Looks(item, skinId);
+        var worn = Model(item.id, skinId)?.VariantOf(colourId);
+        return worn != null && shown.TryGetValue(worn, out var like) ? like : listed.Count > 0 ? listed[0] : null;
+    }
+
+    // Each colour set's look on the item: the materials it puts on the item's own renderers in its model, in order.
+    private static (List<SkinVariant> Listed, Dictionary<SkinVariant, SkinVariant> Shown) Looks(OutfitItem item, string skinId)
+    {
+        Ensure();
+        looks ??= new Dictionary<(string, string), (List<SkinVariant>, Dictionary<SkinVariant, SkinVariant>)>();
+        var key = (item.id ?? "", skinId ?? "");
+        if (looks.TryGetValue(key, out var found)) return found;
+        var listed = new List<SkinVariant>();
+        var shown = new Dictionary<SkinVariant, SkinVariant>();
+        var entry = Model(item.id, skinId);
+        if (entry != null)
+        {
+            var made = MaterialsOf(item, entry, skinId);
+            var first = new Dictionary<string, SkinVariant>(StringComparer.Ordinal);
+            var look = new System.Text.StringBuilder();
+            foreach (var variant in entry.Variants)
+            {
+                if (variant == null) continue;
+                look.Clear();
+                foreach (var material in made) look.Append(variant.On(material) is Material on ? on.GetInstanceID() : 0).Append(',');
+                if (!first.TryGetValue(look.ToString(), out var like))
+                {
+                    first[look.ToString()] = like = variant;
+                    listed.Add(variant);
+                }
+                shown[variant] = like;
+            }
+        }
+        return looks[key] = (listed, shown);
+    }
+
+    // The materials the item's renderers were made with in its model: those it names, or, naming none, every renderer
+    // no other piece of the model names and its fit doesn't drop (as OutfitDresser hands them out).
+    private static List<Material> MaterialsOf(OutfitItem item, OutfitLibrary.Entry entry, string skinId)
+    {
+        var made = new List<Material>();
+        if (entry.Model == null) return made;
+        var named = new HashSet<string>(item.PartNames, StringComparer.OrdinalIgnoreCase);
+        var others = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var drop = new HashSet<string>(Split(FitOf(item.id, skinId)?.drop), StringComparer.OrdinalIgnoreCase);
+        if (named.Count == 0)
+            foreach (var other in items.Values)
+                if (other != item && string.Equals(other.ModelId, item.ModelId, StringComparison.OrdinalIgnoreCase)) others.UnionWith(other.PartNames);
+        foreach (var renderer in entry.Model.GetComponentsInChildren<Renderer>(true))
+        {
+            bool mine = named.Count > 0 ? named.Contains(renderer.name) : !others.Contains(renderer.name) && !drop.Contains(renderer.name);
+            if (mine) made.AddRange(renderer.sharedMaterials);
+        }
+        return made;
     }
 
     /// <summary>The items of a slot that have a model for this character, in the table's order.</summary>
@@ -215,6 +285,7 @@ public static class OutfitCatalog
         items = null;
         fits = null;
         parts = null;
+        looks = null;
         // The editor's BOOTH import fills the library while the game may be stopped; look again next time.
         libraryLooked = false;
     }

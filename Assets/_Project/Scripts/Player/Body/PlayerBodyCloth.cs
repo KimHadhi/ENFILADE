@@ -188,7 +188,9 @@ public sealed class PlayerBodyCloth : MonoBehaviour
             found.Add((id, row, roots));
             foreach (var root in roots)
             {
-                var under = root.GetComponentsInChildren<Transform>(true);
+                // An outfit's bones hung inside this row are the outfit's rows' (ClothBones.Collect).
+                var under = new List<Transform>();
+                ClothBones.Collect(root, under, null);
                 cloth.UnionWith(under);
                 if (!row.spring) hanging.UnionWith(under);
                 else springs.Add(root);

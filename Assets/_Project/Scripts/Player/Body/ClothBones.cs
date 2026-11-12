@@ -131,6 +131,24 @@ internal sealed class ClothBones
         return new AnimationCurve(keys.ToArray());
     }
 
+    /// <summary>
+    /// A part's bones as its cloth takes them: the root and everything under it, but not what an outfit hung on a bone
+    /// below the root (OutfitBone), which goes to <paramref name="foreign"/> with all under it. Those are another row's:
+    /// the outfit's. Magica would take them for particles of this part as well (it takes every transform under a root),
+    /// so ClothPart.Wear marks them out of the part, and they aren't sent or measured as this part's either. A root
+    /// that is itself an outfit's bone is that outfit's row and keeps everything under it. Either list may be null.
+    /// </summary>
+    internal static void Collect(Transform root, ICollection<Transform> own, ICollection<Transform> foreign)
+    {
+        own?.Add(root);
+        foreach (Transform child in root)
+        {
+            if (!child.TryGetComponent<OutfitBone>(out _)) Collect(child, own, foreign);
+            else if (foreign != null)
+                foreach (var hung in child.GetComponentsInChildren<Transform>(true)) foreign.Add(hung);
+        }
+    }
+
     private void Add(Transform bone, int up, int root, List<Bone> list)
     {
         int index = list.Count;
@@ -143,6 +161,8 @@ internal sealed class ClothBones
         });
         foreach (Transform child in bone)
         {
+            // What an outfit hung here moves with the outfit's own rows (Collect).
+            if (child.TryGetComponent<OutfitBone>(out _)) continue;
             if (list[index].Down < 0)
             {
                 var self = list[index];

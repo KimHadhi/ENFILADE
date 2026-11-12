@@ -40,8 +40,9 @@ internal static class VrcSway
     /// Raised whenever the rows this writes change, so the rows an older one wrote are written again (BoothImport).
     /// 2: hanging chains carry their curves, hold their drawn shape, slide without friction and take half of immobile;
     /// switched-off PhysBones are skipped (2026-11-12).
+    /// 3: skirt chains that each hang from a bone of their own join one ring (Sera Yura's pleats, 2026-11-12).
     /// </summary>
-    internal const int Version = 2;
+    internal const int Version = 3;
     // Depths down a chain where its curves are read: root, quarters, far end.
     private const int Samples = 5;
     // How much of a PhysBone's immobile carries over to a chain that hangs. VRChat makers set it high to calm what a
@@ -71,9 +72,11 @@ internal static class VrcSway
         var rows = new List<Dictionary<string, string>>();
         var done = new HashSet<Transform>();
 
-        // Skirt chains hanging side by side from one bone: one ring.
+        // Skirt chains hanging side by side from one bone: one ring. A chain may hang from a bone of its own holding
+        // nothing else: Sera Yura hangs each of its twenty pleats from a Sera_Yura_Skirt_Dummy under Sera_Yura_Skirt_Root,
+        // and grouped by their parents they made twenty loose strands, not a skirt (2026-11-12).
         foreach (var hanging in bones.Where(bone => bone.Root.parent != null && Named(bone.Root, SkirtWords) && !shared.Contains(bone.Root.name))
-                     .GroupBy(bone => bone.Root.parent))
+                     .GroupBy(bone => HungFrom(bone.Root, shared)))
         {
             var chains = hanging.Select(bone => bone.Root).Distinct().ToList();
             if (chains.Count < 4) continue;
@@ -318,6 +321,15 @@ internal static class VrcSway
 
     private static bool Named(Transform bone, string[] words) =>
         words.Any(word => bone.name.IndexOf(word, StringComparison.OrdinalIgnoreCase) >= 0);
+
+    // The bone a chain hangs from beside its neighbours: its parent, or, past parents that hold nothing but it (a pleat's
+    // own dummy bone), the first one above that holds more. A bone the body shares ends the climb.
+    private static Transform HungFrom(Transform root, ISet<string> shared)
+    {
+        var at = root.parent;
+        while (at.childCount == 1 && at.parent != null && !shared.Contains(at.name)) at = at.parent;
+        return at;
+    }
 
     // A ring is joined in the order its roots are listed, so they go round the body.
     private static List<Transform> RoundTheBody(Transform middle, List<Transform> chains) =>

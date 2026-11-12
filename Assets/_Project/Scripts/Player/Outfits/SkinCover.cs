@@ -12,7 +12,7 @@ using UnityEngine;
 /// asked: Mayo's shins with the stockings taken off (2026-11-11), then the see-through stockings of the wardrobe's 벗기
 /// preview and her ankles left thin above her strap shoes, which the table said the shoes held (2026-11-12: "이거
 /// 근본적으로 고쳐 줄 수 있어? … 벌써 두 번 째잖아").
-/// So the meshes are measured, as made: for each such key still on (named Shrink or Kuikomi, or held by a piece), how
+/// So the meshes are measured, as made: for each such key still on (named Shrink or Kuikomi), how
 /// much of the skin it moves has a garment drawn solid within reach (SkinCover.csv). A key the character came with on
 /// keeps on while its skin is still about as covered as its maker had it (keep: Mayo's ankles were all under her
 /// stockings, and only 85% near her strap shoes, which is the bare ankle above them); a key something else put on (an
@@ -21,6 +21,11 @@ using UnityEngine;
 /// garment's key that the skin has on, which it follows. It only ever lets go, and the character as it came keeps every
 /// key: the worst a wrong measure does is a little clipping, never a hollow. Measures are kept for the run, per
 /// character. The numbers were checked on Mayo's and Ichigo's meshes before they went in (2026-11-12).
+/// A key that shapes the body for a piece instead of drawing skin in (a heel, a stocking's band), held by the piece
+/// (CharacterParts.csv needs) or put on by an item's fit (OutfitFits.csv), is the piece's: it holds while the piece
+/// shows and goes with it, and coverage can't judge it. A heel moves the foot centimetres into the shape its shoe was
+/// made around, so measured where the skin was made, the Sera Yura Mary-janes covered 55% of what Mayo's heel key moves
+/// and her foot went flat through them on bare legs (2026-11-12). Her own shoes, high at the ankle, covered 99%.
 /// </summary>
 internal static class SkinCover
 {
@@ -118,11 +123,10 @@ internal static class SkinCover
         }
         var settings = Settings();
         var gone = new HashSet<Renderer>(ghosts ?? Array.Empty<Renderer>());
-        // Which of its own meshes are its pieces, which of them cover skin, and the keys the table says they hold.
+        // Which of its own meshes are its pieces, and which of them cover skin.
         var rows = OutfitCatalog.PartsOf(skinId);
         var pieces = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var clothing = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var held = new HashSet<string>(StringComparer.Ordinal);
         foreach (var row in rows)
         {
             foreach (string name in OutfitCatalog.Split(row.parts))
@@ -135,7 +139,6 @@ internal static class SkinCover
                 pieces.Add(name);
                 clothing.Add(name);
             }
-            held.UnionWith(OutfitCatalog.Split(row.needs));
         }
         // A character without rows: any other mesh of its own may cover, as it came.
         bool mapped = rows.Count > 0;
@@ -162,7 +165,7 @@ internal static class SkinCover
         if (items != null)
             foreach (var renderer in items)
                 if (renderer is SkinnedMeshRenderer mesh && Solid(mesh, gone)) dressed.Add(mesh);
-        var cover = new Cover { Now = now, Then = then, Made = made, Held = held, ToModel = toModel, Skin = skinId, Settings = settings };
+        var cover = new Cover { Now = now, Then = then, Made = made, ToModel = toModel, Skin = skinId, Settings = settings };
         var skinOn = new HashSet<string>(StringComparer.Ordinal);
         foreach (var mesh in skin) Check(mesh, null, cover, released, skinOn);
         foreach (var mesh in dressed) Check(mesh, skinOn, cover, null, null);
@@ -174,7 +177,6 @@ internal static class SkinCover
     {
         public List<(Renderer renderer, Cloth cloth)> Now, Then;
         public Made Made;
-        public HashSet<string> Held;
         public Matrix4x4 ToModel;
         public string Skin;
         public Values Settings;
@@ -188,7 +190,8 @@ internal static class SkinCover
 
     // Every hide key on this mesh that is on: kept while garments other than this mesh cover its skin enough, else let go.
     // Enough is about as much as the character came with for a key it came with on, nearly all for one put on since. A
-    // key that can't be measured (an unreadable mesh, one moving nothing or much of its mesh) is kept as it is.
+    // key that can't be measured (an unreadable mesh, one moving nothing or much of its mesh) is kept as it is, and so is
+    // a key that shapes rather than hides (a heel): its piece holds it while it shows.
     private static void Check(SkinnedMeshRenderer mesh, HashSet<string> skip, Cover cover, HashSet<string> released, HashSet<string> stillOn)
     {
         var shared = mesh.sharedMesh;
@@ -197,7 +200,7 @@ internal static class SkinCover
         {
             if (mesh.GetBlendShapeWeight(key) <= 0f) continue;
             string name = shared.GetBlendShapeName(key);
-            if (!Hides(name) && !cover.Held.Contains(name)) continue;
+            if (!Hides(name)) continue;
             if (skip != null && skip.Contains(name)) continue;
             var patch = PatchOf(mesh, key, cover.ToModel, cover.Skin, cover.Settings);
             if (patch != null)

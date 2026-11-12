@@ -74,6 +74,11 @@ public sealed class MainMenuWardrobe : MonoBehaviour
     private const float BodyPlateHeight = 62f, TabHeight = 30f, TabGap = 6f, RowName = 176f, RowGap = 8f, OptionChip = 28f,
         ValueWidth = 46f, ListFoot = 16f, ScrollStep = 40f;
     private const int TabColumns = 4;
+    // The open slot's choices scroll. A pick builds the page again and the list comes back where it was scrolled to;
+    // opening a slot, or going back to all of them, starts it at the top.
+    private RectTransform slotList;
+    private string slotListFor;
+    private float slotScroll;
 
     public bool IsOpen => root != null && root.gameObject.activeSelf;
     /// <summary>One slot's list is up: Esc goes back to all the slots first.</summary>
@@ -98,6 +103,7 @@ public sealed class MainMenuWardrobe : MonoBehaviour
     public void Open()
     {
         openSlot = null;
+        slotListFor = null;
         growNext = true;
         root.gameObject.SetActive(true);
         if (preview != null) preview.Focus(null);
@@ -117,6 +123,7 @@ public sealed class MainMenuWardrobe : MonoBehaviour
     public void ShowSlots()
     {
         openSlot = null;
+        slotListFor = null;
         StopTrying();
         if (preview != null) preview.Focus(null);
         Build();
@@ -125,6 +132,7 @@ public sealed class MainMenuWardrobe : MonoBehaviour
     private void OpenSlot(OutfitSlot slot)
     {
         openSlot = slot.id;
+        slotListFor = null;
         StopTrying();
         if (preview != null) preview.Focus(slot.group);
         KitSound.Play(KitSound.Cue.Ping, .35f);
@@ -139,6 +147,8 @@ public sealed class MainMenuWardrobe : MonoBehaviour
 
     private void Build()
     {
+        if (slotList != null) slotScroll = slotList.anchoredPosition.y;
+        slotList = null;
         if (content != null) Destroy(content.gameObject);
         pictures.Clear();
         bodyMarks.Clear();
@@ -444,13 +454,16 @@ public sealed class MainMenuWardrobe : MonoBehaviour
         bool own = OutfitCatalog.HasOwnPiece(skin.Id, slot.id);
         OutfitLook.Saved(skin.Id).TryGet(slot.id, out var pick);
         string worn = pick.IsOff && slot.removable && own ? OutfitLook.Off : items.Any(i => i.id == pick.Item) ? pick.Item : "";
-        float y = 162f;
+        // The choices in a list the wheel scrolls, from under the note to the page's foot: one outfit brought sixty colour
+        // sets (Sera Yura, 2026-11-12), and the worn piece's chips ran fifteen rows off the page.
+        var list = ScrollView("Slot Choices", 162f);
+        float y = 4f;
         int row = 0;
         var variant = skin.VariantOf(GameSettings.Current.characterVariant);
         var saved = OutfitLook.Saved(skin.Id);
         void Option(string id, string name, string note, System.Func<Texture> picture)
         {
-            var plate = Plate(right, new Vector2(row % 2 == 0 ? 0f : 10f, y), name, note, id == worn, (row % 2 == 0 ? 1f : -1f) * .6f,
+            var plate = Plate(list, new Vector2(row % 2 == 0 ? 0f : 10f, y), name, note, id == worn, (row % 2 == 0 ? 1f : -1f) * .6f,
                 id == worn ? null : (System.Action)(() => Wear(skin, slot, id)), picture);
             // Resting on a choice not worn tries it on as it would really look. Taking off (벗기, or back to nothing of
             // its own) keeps what is on and shows it fading, so a try of taking off never reads as already off.
@@ -469,23 +482,33 @@ public sealed class MainMenuWardrobe : MonoBehaviour
         if (slot.removable && own) Option(OutfitLook.Off, Texts.Get("wardrobe.off"), Texts.Get("wardrobe.off.note"), null);
         foreach (var item in items)
         {
-            var colours = OutfitCatalog.Model(item.id, skin.Id)?.Variants;
-            int count = colours != null ? colours.Count(v => v != null) : 0;
+            // A chip per look the piece can take: an outfit's colour sets recolour all of it, so on one piece many look
+            // alike (OutfitCatalog.ColoursOf).
+            var sets = OutfitCatalog.ColoursOf(item, skin.Id);
+            int count = sets.Count;
             string colour = item.id == worn ? pick.Colour : "";
             Option(item.id, item.DisplayName, count > 1 ? Texts.Format("wardrobe.colours", count) : "", () => OutfitIcons.OfItem(skin, item, colour));
             if (item.id != worn || count < 2) continue;
             // The worn piece's colours, right under it.
             float chipWidth = Mathf.Floor((RightWidth - 20f - ChipGap * (ChipColumns - 1)) / ChipColumns);
-            var sets = colours.Where(v => v != null).ToList();
-            var current = OutfitCatalog.Model(item.id, skin.Id).VariantOf(pick.Colour);
+            var current = OutfitCatalog.ShownColour(item, skin.Id, pick.Colour);
             for (int i = 0; i < sets.Count; i++)
             {
                 var set = sets[i];
-                Chip(right, new Vector2(20f + i % ChipColumns * (chipWidth + ChipGap), y + i / ChipColumns * (ChipHeight + ChipGap)), chipWidth,
+                Chip(list, new Vector2(20f + i % ChipColumns * (chipWidth + ChipGap), y + i / ChipColumns * (ChipHeight + ChipGap)), chipWidth,
                     set.DisplayName, set == current, set == current ? null : (System.Action)(() => Wear(skin, slot, item.id, set.Id)));
             }
             y += Mathf.CeilToInt(sets.Count / (float)ChipColumns) * (ChipHeight + ChipGap) + 6f;
         }
+        Scroll(list, y);
+        // A pick rebuilds the page: the list comes back where it was scrolled to (Build).
+        if (slotListFor == slot.id)
+        {
+            float room = Mathf.Max(0f, y - ((RectTransform)list.parent).rect.height);
+            list.anchoredPosition = new Vector2(0f, Mathf.Clamp(slotScroll, 0f, room));
+        }
+        slotList = list;
+        slotListFor = slot.id;
     }
 
     // One choice of a slot as a slanted plate, a picture of the piece at its right end; the worn one dark with a pink
@@ -570,19 +593,32 @@ public sealed class MainMenuWardrobe : MonoBehaviour
         y += Mathf.CeilToInt(tabs.Count / (float)TabColumns) * (TabHeight + TabGap) + 8f;
 
         // The tab's rows in a list the wheel scrolls, from under the tabs to the page's foot: the eyes alone have two dozen.
-        var view = FeelUI.Rect("Body Options", content);
+        var list = ScrollView("Body Options", y);
+        float at = 4f;
+        foreach (var option in options)
+            if (option.Group == bodyTab) at += BodyRow(list, skin, option, saved, at) + RowGap;
+        Scroll(list, at);
+    }
+
+    // A list the wheel scrolls, in the right wing's place from <paramref name="top"/> under the page's top to its foot.
+    // Rows go into the list returned, top down from 0; Scroll then sizes it once they are in and lets the wheel move it.
+    private RectTransform ScrollView(string name, float top)
+    {
+        var view = FeelUI.Rect(name, content);
         view.anchorMin = new Vector2(1f, 0f);
         view.anchorMax = new Vector2(1f, 1f);
         view.pivot = new Vector2(1f, 1f);
         view.offsetMin = new Vector2(-(edge + RightWidth), ListFoot);
-        view.offsetMax = new Vector2(-edge, -y);
+        view.offsetMax = new Vector2(-edge, -top);
         KitStyle.Fill(view, Color.clear).raycastTarget = true; // the wheel scrolls between the rows too
         view.gameObject.AddComponent<RectMask2D>();
-        var list = KitStyle.TopLeft("List", view, Vector2.zero, new Vector2(RightWidth, 0f));
-        float at = 4f;
-        foreach (var option in options)
-            if (option.Group == bodyTab) at += BodyRow(list, skin, option, saved, at) + RowGap;
-        list.sizeDelta = new Vector2(RightWidth, at);
+        return KitStyle.TopLeft("List", view, Vector2.zero, new Vector2(RightWidth, 0f));
+    }
+
+    private static void Scroll(RectTransform list, float height)
+    {
+        list.sizeDelta = new Vector2(RightWidth, height);
+        var view = (RectTransform)list.parent;
         var scroll = view.gameObject.AddComponent<ScrollRect>();
         scroll.viewport = view;
         scroll.content = list;
