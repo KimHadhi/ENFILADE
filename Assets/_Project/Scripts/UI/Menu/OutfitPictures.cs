@@ -64,8 +64,18 @@ public static class OutfitPictures
     /// 1080p), so they are a little bigger than that, to stay sharp on bigger screens.
     /// </summary>
     public const int Size = 256;
-    public const string ResourcesFolder = "UI/OutfitPictures";
-    public const string ProjectFolder = "Assets/_Project/Resources/" + ResourcesFolder;
+    /// <summary>
+    /// The look the pictures are taken in, a folder of their own: bump it whenever the studio's pictures change (its
+    /// light, exposure or framing rules), so pictures baked or taken again before then are found no more and the wardrobe
+    /// takes new ones until the bake runs again. The user's bake was older than two such changes, so earrings stayed
+    /// specks on their plates (2026-11-12: "진짜 안 보이는데"). A full bake removes the older looks' files.
+    /// v2: exposure for dark pieces (OutfitStudio), the plate-filling lean, earrings framed at their real size.
+    /// </summary>
+    public const string Look = "v2";
+    public const string RootFolder = "UI/OutfitPictures";
+    public const string ResourcesFolder = RootFolder + "/" + Look;
+    public const string ProjectRoot = "Assets/_Project/Resources/" + RootFolder;
+    public const string ProjectFolder = ProjectRoot + "/" + Look;
     public const string TableName = "OutfitPictures";
     private const string PersistentFolder = "OutfitPictures", PersistentFramings = "framings.json";
 
@@ -153,8 +163,9 @@ public static class OutfitPictures
         return hash.ToString("x8", CultureInfo.InvariantCulture);
     }
 
+    // A build's own picture, under the look it was taken in (framings.json stays beside the looks: a framing outlives them).
     private static string PersistentPath(string file) =>
-        Path.Combine(Application.persistentDataPath, PersistentFolder, file.Replace('/', Path.DirectorySeparatorChar) + ".png");
+        Path.Combine(Application.persistentDataPath, PersistentFolder, Look, file.Replace('/', Path.DirectorySeparatorChar) + ".png");
 
     // ---- Pictures ----
 

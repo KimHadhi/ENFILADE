@@ -22,6 +22,12 @@ using Object = UnityEngine.Object;
 ///   the title screen, in the hub or in the editor looks the same. The scene's lights are switched off for the studio's
 ///   own render alone, and the piece and the studio's lights are switched on only for it: no other camera ever sees
 ///   them. In the editor's bake it stands in a preview scene of its own instead, where nothing else is.
+/// - Exposed for the piece (2026-11-12, dark earrings lost on the plates: "검어서 그런가? 진짜 안 보이는데"): its first
+///   picture after it stands is read back small and the mean brightness of what it covers measured; a dark piece's
+///   pictures are then lifted toward the table's Exposure.target (at most Exposure.most times, and no further than lets
+///   its brightest twentieth pass Exposure.ceiling), whatever passes Exposure.knee bent softly under white (the
+///   Hidden/ENFILADE/OutfitExposure shader). Lighting can't do it: the Ene earrings' shine is lilToon's matcap, which no
+///   light touches, over a base of .2 (silver) or .03 (black). A piece light enough is left as rendered.
 /// </summary>
 public sealed class OutfitStudio : IDisposable
 {
@@ -40,6 +46,14 @@ public sealed class OutfitStudio : IDisposable
     // The title screen's character is lit for a camera looking back along -Z at a front facing +Z (MainMenuPreview); the
     // rig keeps those angles to whatever way the studio's lens looks.
     private static readonly Quaternion MenuView = Quaternion.LookRotation(Vector3.back);
+    // The exposure's shader (Resources/UI/OutfitExposure.shader, so it ships), the side of the small copy it is measured
+    // on (px), and how much of a pixel must be covered to count.
+    private const string ExposureShader = "Hidden/ENFILADE/OutfitExposure";
+    private const int MeterSide = 64;
+    private const float MeterCover = .1f;
+    private static readonly int GainId = Shader.PropertyToID("_Gain"), KneeId = Shader.PropertyToID("_Knee");
+    private static Material lift;
+    private static bool liftTried;
 
     private readonly Transform root;
     private readonly Camera lens;
@@ -73,10 +87,16 @@ public sealed class OutfitStudio : IDisposable
     private GameObject sitter;
     private Mesh baked;
     private RenderTexture film;
+    private Texture2D meter;
     private Vector3 front = Vector3.forward, middle;
+    // How much the standing piece's pictures are lifted, measured on its first one (1: as rendered).
+    private float gain = 1f;
+    private bool metered;
 
     /// <summary>A piece stands, ready to be photographed.</summary>
     public bool HasPiece => sitter != null && shown.Count > 0;
+    /// <summary>How many times brighter the standing piece's pictures come out (1: as rendered), once one was taken.</summary>
+    public float Gain => gain;
     /// <summary>How many parts well apart the standing piece is in (1: all of a piece).</summary>
     public int Parts => Mathf.Max(1, parts.Count);
     /// <summary>The part, 1 from the picture's left, the automatic framing holds; 0 when it holds the whole piece.</summary>
@@ -526,9 +546,86 @@ public sealed class OutfitStudio : IDisposable
             film.Create();
         }
         if (!Render(film)) return false;
-        Graphics.Blit(film, target);
+        if (!metered) Meter();
+        var lifting = gain > 1.001f ? Lift : null;
+        if (lifting != null)
+        {
+            lifting.SetFloat(GainId, gain);
+            lifting.SetFloat(KneeId, OutfitPictureLook.ExposureKnee);
+            Graphics.Blit(film, target, lifting);
+        }
+        else Graphics.Blit(film, target);
         return true;
     }
+
+    // ---- Exposure ----
+
+    // The exposure's material; null when its shader isn't in the game (the pictures come out as rendered then).
+    private static Material Lift
+    {
+        get
+        {
+            if (lift == null && !liftTried)
+            {
+                liftTried = true;
+                var shader = Shader.Find(ExposureShader);
+                if (shader != null && shader.isSupported) lift = new Material(shader) { name = "Outfit Exposure", hideFlags = HideFlags.HideAndDontSave };
+                else Debug.LogWarning($"[OutfitStudio] {ExposureShader} 셰이더가 없어서 어두운 옷도 밝히지 않고 찍습니다.");
+            }
+            return lift;
+        }
+    }
+
+    // The standing piece's first picture (in the film) read back small: the mean brightness of what it covers, in linear
+    // light and as if uncovered (the film's colour is the piece's times its cover), weighted by cover, and the brightest
+    // twentieth. From those the gain: up to the target, within the most, short of the ceiling. A light piece keeps 1.
+    private void Meter()
+    {
+        metered = true;
+        gain = 1f;
+        var small = RenderTexture.GetTemporary(MeterSide, MeterSide, 0, RenderTextureFormat.ARGB32);
+        var previous = RenderTexture.active;
+        try
+        {
+            Graphics.Blit(film, small);
+            RenderTexture.active = small;
+            if (meter == null) meter = new Texture2D(MeterSide, MeterSide, TextureFormat.RGBA32, false) { name = "Outfit Studio Meter", hideFlags = HideFlags.HideAndDontSave };
+            meter.ReadPixels(new Rect(0f, 0f, MeterSide, MeterSide), 0, 0, false);
+            var pixels = meter.GetPixels32();
+            var bright = new List<float>(pixels.Length);
+            double weighted = 0d, weight = 0d;
+            foreach (var pixel in pixels)
+            {
+                float cover = pixel.a / 255f;
+                if (cover < MeterCover) continue;
+                float shine = (.2126f * Linear(pixel.r) + .7152f * Linear(pixel.g) + .0722f * Linear(pixel.b)) / cover;
+                bright.Add(shine);
+                weighted += shine * cover;
+                weight += cover;
+            }
+            if (bright.Count == 0 || weight <= 0d) return;
+            float mean = (float)(weighted / weight);
+            bright.Sort();
+            float brightest = bright[Mathf.Min(bright.Count - 1, Mathf.FloorToInt(bright.Count * .95f))];
+            float want = Mathf.Clamp(OutfitPictureLook.ExposureTarget / Mathf.Max(mean, 1e-4f), 1f, OutfitPictureLook.ExposureMost);
+            if (brightest > 0f) want = Mathf.Min(want, Mathf.Max(1f, OutfitPictureLook.ExposureCeiling / brightest));
+            gain = want;
+        }
+        catch (Exception problem)
+        {
+            Debug.LogWarning("[OutfitStudio] " + problem.Message);
+            gain = 1f;
+        }
+        finally
+        {
+            RenderTexture.active = previous;
+            RenderTexture.ReleaseTemporary(small);
+        }
+    }
+
+    // A stored 8-bit value (sRGB in a linear project) in linear light.
+    private static float Linear(byte value) =>
+        QualitySettings.activeColorSpace == ColorSpace.Linear ? Mathf.GammaToLinearSpace(value / 255f) : value / 255f;
 
     /// <summary>The picture as a readable texture of <paramref name="size"/> pixels a side (to be saved); null when nothing stands.</summary>
     public Texture2D Capture(int size)
@@ -605,6 +702,9 @@ public sealed class OutfitStudio : IDisposable
         framed.Clear();
         autoPart = 0;
         framedPart = int.MinValue;
+        // The next piece is measured afresh.
+        metered = false;
+        gain = 1f;
     }
 
     public void Dispose()
@@ -612,6 +712,8 @@ public sealed class OutfitStudio : IDisposable
         Clear();
         if (film != null) { film.Release(); Gone(film); }
         film = null;
+        if (meter != null) Gone(meter);
+        meter = null;
         if (baked != null) Gone(baked);
         baked = null;
         if (root != null) Gone(root.gameObject);

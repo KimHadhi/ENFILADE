@@ -9,6 +9,10 @@ using UnityEngine.UI;
 /// is the picture's square cut down to the plate's parallelogram, so it needs no mask (a stencil per plate would break
 /// the list's batching), still clips inside the scrolled list (RectMask2D), and follows a change of the table at once.
 /// Where the table says so (tiles: their words run on over the picture's left side) the left side fades in.
+/// It draws with OutfitPictureLook.PictureMaterial (2026-11-12, dark earrings lost on the dark plates: "진짜 안 보이는데"):
+/// a thin light outline round the piece and its thin bits kept nearly opaque; the see-through and the outline's strength
+/// go to the shader in each corner's uv0.z and uv0.w. Without that shader the picture is drawn plainly, see-through in
+/// its colour as before.
 /// </summary>
 [DisallowMultipleComponent]
 [RequireComponent(typeof(CanvasRenderer))]
@@ -42,6 +46,8 @@ public sealed class OutfitPictureGraphic : MaskableGraphic
     public static OutfitPictureGraphic Lay(RectTransform plate, OutfitPictureLook.Where where, float slant, Texture picture)
     {
         var image = KitStyle.Stretch("Picture", plate).gameObject.AddComponent<OutfitPictureGraphic>();
+        var drawn = OutfitPictureLook.PictureMaterial;
+        if (drawn != null) image.material = drawn;
         image.raycastTarget = false;
         image.where = where;
         image.slant = slant;
@@ -72,10 +78,14 @@ public sealed class OutfitPictureGraphic : MaskableGraphic
         var place = OutfitPictureLook.Of(where);
         var square = OutfitPictureLook.Square(plate, place);
         OutfitPictureLook.Shape(plate, slant, shape);
+        // With the outline's shader the see-through goes to it per corner (it keeps thin bits more opaque); without it, in
+        // the colour.
+        bool outlined = m_Material != null && m_Material == OutfitPictureLook.PictureMaterial;
         var tint = color;
-        tint.a *= place.Alpha;
+        if (!outlined) tint.a *= place.Alpha;
         OutfitPictureLook.Cut(square, shape, tint, polygon, scratch);
         if (polygon.Count < 3) return;
+        if (outlined) OutfitPictureLook.Carry(polygon, place);
         float fadeEnd = square.xMin + place.Fade * square.width;
         if (place.Fade <= 0f)
         {

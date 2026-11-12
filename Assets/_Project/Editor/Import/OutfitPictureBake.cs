@@ -13,8 +13,9 @@ using Debug = UnityEngine.Debug;
 /// The wardrobe's pictures baked into the game (the user, 2026-11-12: "미리 구워 놓으면 로딩 속도 더 빨라 지려나").
 /// Tools → Characters → 옷장 사진 모두 굽기 photographs every piece the wardrobe shows, for every character, framed as
 /// Tables/OutfitPictures.csv says (else whole, from its front, leaning as WardrobePictures.csv's Auto rows say: the
-/// plates lay the pictures as they are), into Resources/UI/OutfitPictures, where OutfitPictures
-/// finds them before OutfitIcons would have to take them in play. Baked: each item in its first colour set (its other
+/// plates lay the pictures as they are), into Resources/UI/OutfitPictures/&lt;look&gt; (OutfitPictures.Look), where OutfitPictures
+/// finds them before OutfitIcons would have to take them in play. A whole bake removes the older looks' pictures, which
+/// the wardrobe no longer reads, and says how many dark pieces the studio lifted (OutfitStudio's exposure). Baked: each item in its first colour set (its other
 /// colours are still taken in play when worn, framed the same) and each character's own pieces in every colour set of
 /// the character. A full bake also removes the pictures of pieces that are gone. Its dialog says what one picture cost,
 /// which is what each picture not baked costs in play.
@@ -89,6 +90,10 @@ internal sealed class OutfitPictureBake : AssetPostprocessor
         // baked), apart from writing the files.
         double photos = 0d, worst = 0d;
         string worstKey = null;
+        // The dark pieces the studio lifted, and by how much (the console lists them all).
+        var lifted = new List<string>();
+        float mostGain = 1f;
+        string mostGainKey = null;
         var watch = Stopwatch.StartNew();
         try
         {
@@ -111,6 +116,16 @@ internal sealed class OutfitPictureBake : AssetPostprocessor
                     }
                     studio.Frame(OutfitPictures.FramingOf(OutfitPictures.PieceOf(job.Key)));
                     picture = studio.Capture(OutfitPictures.Size);
+                    float gain = studio.Gain;
+                    if (picture != null && gain > 1.05f)
+                    {
+                        lifted.Add($"{job.Key} ×{gain:0.0}");
+                        if (gain > mostGain)
+                        {
+                            mostGain = gain;
+                            mostGainKey = job.Key;
+                        }
+                    }
                     studio.Clear();
                     one.Stop();
                     photos += one.Elapsed.TotalMilliseconds;
@@ -139,11 +154,15 @@ internal sealed class OutfitPictureBake : AssetPostprocessor
         watch.Stop();
 
         // A whole bake leaves only the pictures of pieces there are: an outfit taken out of the game takes its pictures.
-        int removed = 0;
+        int removed = 0, oldLook = 0;
         if (!cancelled && failed == 0)
+        {
             foreach (string stale in Existing().Where(path => !written.Contains(path)))
                 if (AssetDatabase.DeleteAsset(stale)) removed++;
+            oldLook = RemoveOldLooks();
+        }
         AssetDatabase.Refresh();
+        if (lifted.Count > 0) Debug.Log("[OutfitPictures] 어두워서 밝혀 찍은 옷: " + string.Join(", ", lifted));
 
         int taken = written.Count;
         double each = taken > 0 ? photos / taken : 0d;
@@ -151,6 +170,8 @@ internal sealed class OutfitPictureBake : AssetPostprocessor
             + (empty > 0 ? $" 찍을 것이 없는 옷 {empty}개는 사진 없이 둡니다." : "")
             + (failed > 0 ? $" {failed}장은 파일을 쓰지 못했습니다(콘솔 참고)." : "")
             + (removed > 0 ? $" 없어진 옷의 사진 {removed}장을 지웠습니다." : "")
+            + (lifted.Count > 0 ? $" 어두운 옷 {lifted.Count}장은 밝혀 찍었습니다(가장 많이 ×{mostGain:0.0}: {mostGainKey})." : "")
+            + (oldLook > 0 ? $" 예전 모양으로 구운 사진 {oldLook}장을 지웠습니다(옷장은 {OutfitPictures.Look} 폴더의 사진만 씁니다)." : "")
             + (cancelled ? " 중간에 멈췄습니다: 남은 옷은 Play 중에 그 자리에서 찍힙니다." : "")
             + " 구운 사진은 옷장에서 바로 나오고, 굽지 않은 사진은 Play 중에 한 장마다 위의 평균만큼 걸려 찍힙니다.";
         Debug.Log("[OutfitPictures] " + report);
@@ -189,6 +210,24 @@ internal sealed class OutfitPictureBake : AssetPostprocessor
     }
 
     private static string AssetOf(string file) => OutfitPictures.ProjectFolder + "/" + file + ".png";
+
+    // The pictures of older looks: every folder under the pictures' root but this look's, and loose pictures from before
+    // looks had folders. The wardrobe reads none of them. Returns how many pictures went.
+    private static int RemoveOldLooks()
+    {
+        if (!AssetDatabase.IsValidFolder(OutfitPictures.ProjectRoot)) return 0;
+        int removed = 0;
+        foreach (string folder in AssetDatabase.GetSubFolders(OutfitPictures.ProjectRoot))
+        {
+            string path = folder.Replace('\\', '/');
+            if (string.Equals(path, OutfitPictures.ProjectFolder, StringComparison.OrdinalIgnoreCase)) continue;
+            int pictures = Directory.Exists(path) ? Directory.GetFiles(path, "*.png", SearchOption.AllDirectories).Length : 0;
+            if (AssetDatabase.DeleteAsset(path)) removed += pictures;
+        }
+        foreach (string file in Directory.GetFiles(OutfitPictures.ProjectRoot, "*.png", SearchOption.TopDirectoryOnly))
+            if (AssetDatabase.DeleteAsset(file.Replace('\\', '/'))) removed++;
+        return removed;
+    }
 
     // ---- Writing into the project ----
 

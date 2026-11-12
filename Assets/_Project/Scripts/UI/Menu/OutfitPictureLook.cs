@@ -16,29 +16,41 @@ using UnityEngine.UI;
 /// cutting is plain polygon clipping (Sutherland–Hodgman) against the plate's parallelogram as KitSkew leans it, used by
 /// the pictures themselves (OutfitPictureGraphic) and by the shooting window's crop line (OutfitCropVeil), so the two
 /// can't disagree.
+/// Then (2026-11-12: "귀걸이 같은 건 … 검어서 그런가? 진짜 안 보이는데"): a dark piece's pictures are lifted in the studio
+/// (the Exposure rows, OutfitStudio), and on the plates every picture gets a thin light outline round its silhouette and
+/// its thin bits keep most of their opacity (the Edge and Thin rows, drawn by <see cref="PictureMaterial"/>'s shader
+/// UI/ENFILADE/OutfitPicture), so a small dark piece reads on a dark plate without being taken again by hand.
 /// </summary>
 public static class OutfitPictureLook
 {
     public const string TableName = "WardrobePictures";
+    /// <summary>The plates' pictures' shader (Resources/UI/OutfitPicture.shader, so it ships).</summary>
+    public const string PictureShader = "UI/ENFILADE/OutfitPicture";
+    private static readonly int EdgeWidthId = Shader.PropertyToID("_EdgeWidth"), EdgeColorId = Shader.PropertyToID("_EdgeColor"),
+        ThinAlphaId = Shader.PropertyToID("_ThinAlpha"), ThinBroadId = Shader.PropertyToID("_ThinBroad");
+    private static Material pictureMaterial;
+    private static bool pictureTried;
 
     /// <summary>Which of the wardrobe's pieces a picture lies over: a choice's plate, or a slot's tile.</summary>
     public enum Where { Plate, Tile }
 
     /// <summary>
     /// Where a picture lies over a plate or tile: its side, how far its middle is in from the right end and down from the
-    /// middle (all in the plate's heights), how opaque it is (0-1), and how much of its left side fades in (of its side).
+    /// middle (all in the plate's heights), how opaque it is (0-1), how much of its left side fades in (of its side), and
+    /// how strong its outline is (0-1, of the Edge row's).
     /// </summary>
     public readonly struct Place
     {
-        public readonly float Size, Right, Drop, Alpha, Fade;
+        public readonly float Size, Right, Drop, Alpha, Fade, Edge;
 
-        public Place(float size, float right, float drop, float alpha, float fade)
+        public Place(float size, float right, float drop, float alpha, float fade, float edge)
         {
             Size = size;
             Right = right;
             Drop = drop;
             Alpha = alpha;
             Fade = fade;
+            Edge = edge;
         }
     }
 
@@ -47,7 +59,8 @@ public static class OutfitPictureLook
 
     // The defaults are the table's own numbers, for a table that lacks a row.
     private static Place Read(string row, float fade) => new Place(Mathf.Clamp(Number(row, "size", 2.5f), .2f, 20f),
-        Number(row, "right", .7f), Number(row, "drop", .1f), Mathf.Clamp01(Number(row, "alpha", .72f)), Mathf.Clamp01(Number(row, "fade", fade)));
+        Number(row, "right", .7f), Number(row, "drop", .1f), Mathf.Clamp01(Number(row, "alpha", .72f)), Mathf.Clamp01(Number(row, "fade", fade)),
+        Mathf.Clamp01(Number(row, "edge", 1f)));
 
     /// <summary>How far every picture leans clockwise unless its piece is turned otherwise (°; OutfitFraming.roll adds to it).</summary>
     public static float AutoTilt => Number("Auto", "tilt", 7f);
@@ -67,9 +80,79 @@ public static class OutfitPictureLook
     /// <summary>A part with less than this share of the piece's vertices, that far from the rest, is a stray and isn't framed.</summary>
     public static float AutoNoise => Mathf.Clamp(Number("Auto", "noise", .01f), 0f, .5f);
 
+    // ---- Exposure (the studio's) ----
+
+    /// <summary>
+    /// The mean brightness, in linear light, a piece's pictures are lifted toward when they come out darker (.18 is a
+    /// middle grey); a piece already as light is left as it is.
+    /// </summary>
+    public static float ExposureTarget => Mathf.Clamp(Number("Exposure", "target", .18f), 0f, 1f);
+    /// <summary>At most this many times brighter.</summary>
+    public static float ExposureMost => Mathf.Clamp(Number("Exposure", "most", 5f), 1f, 16f);
+    /// <summary>Lifted light above this (0-1, linear) bends softly under white instead of burning out.</summary>
+    public static float ExposureKnee => Mathf.Clamp(Number("Exposure", "knee", .75f), .1f, .99f);
+    /// <summary>No more lift than takes the brightest twentieth of the piece past this (linear; the knee bends what passes 1).</summary>
+    public static float ExposureCeiling => Mathf.Clamp(Number("Exposure", "ceiling", 1.2f), .1f, 8f);
+
+    // ---- The plates' outline and thin bits ----
+
+    /// <summary>
+    /// The plates' pictures' material: see-through as the table says, with a thin light outline round the piece and its
+    /// thin bits kept nearly opaque. Null when its shader isn't in the game: the pictures are drawn plainly then.
+    /// </summary>
+    public static Material PictureMaterial
+    {
+        get
+        {
+            if (pictureMaterial == null && !pictureTried)
+            {
+                pictureTried = true;
+                var shader = Shader.Find(PictureShader);
+                if (shader != null && shader.isSupported)
+                {
+                    pictureMaterial = new Material(shader) { name = "Outfit Picture", hideFlags = HideFlags.HideAndDontSave };
+                    ApplyLook();
+                    GameTables.Reloaded += ApplyLook;
+                }
+                else Debug.LogWarning($"[OutfitPictures] {PictureShader} 셰이더가 없어서 옷장 사진을 테두리 없이 그립니다.");
+            }
+            return pictureMaterial;
+        }
+    }
+
+    // The Edge and Thin rows into the material (again whenever the table is saved while playing).
+    private static void ApplyLook()
+    {
+        if (pictureMaterial == null) return;
+        pictureMaterial.SetFloat(EdgeWidthId, Mathf.Clamp(Number("Edge", "width", 2f), 0f, 12f));
+        var edge = ColorUtility.TryParseHtmlString(Text("Edge", "colour", "#FFFFFF"), out var parsed) ? parsed : Color.white;
+        edge.a = Mathf.Clamp01(Number("Edge", "alpha", .8f));
+        pictureMaterial.SetColor(EdgeColorId, edge);
+        pictureMaterial.SetFloat(ThinAlphaId, Mathf.Clamp01(Number("Thin", "alpha", .95f)));
+        pictureMaterial.SetFloat(ThinBroadId, Mathf.Clamp(Number("Thin", "broad", .6f), .05f, 1f));
+    }
+
+    /// <summary>
+    /// What <see cref="PictureMaterial"/>'s shader reads off each corner of a picture: <paramref name="place"/>'s
+    /// opacity (uv0.z) and outline (uv0.w).
+    /// </summary>
+    public static void Carry(List<UIVertex> polygon, Place place)
+    {
+        for (int i = 0; i < polygon.Count; i++)
+        {
+            var vertex = polygon[i];
+            vertex.uv0 = new Vector4(vertex.uv0.x, vertex.uv0.y, place.Alpha, place.Edge);
+            polygon[i] = vertex;
+        }
+    }
+
     private static float Number(string row, string field, float fallback) =>
         GameTables.TryGetRow(TableName, row, out var cells) && cells.TryGetValue(field, out string text)
         && float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out float value) ? value : fallback;
+
+    private static string Text(string row, string field, string fallback) =>
+        GameTables.TryGetRow(TableName, row, out var cells) && cells.TryGetValue(field, out string text) && !string.IsNullOrWhiteSpace(text)
+            ? text.Trim() : fallback;
 
     // ---- Where it lies ----
 
