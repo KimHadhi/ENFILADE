@@ -15,7 +15,7 @@ Fab·언리얼·블렌더에서 받은 소품을 유니티 URP 에셋으로 바�
 | `plan_decals.py` | 파이썬 | 맵 데칼(맵 꾸미기 6단계)로 쓸 Megascans 데칼 세트 목록. 압축에서 색·투명도·노멀만 새 폴더에 풀고, `build_decals.py`의 `job.json`과 Tables/MapDecals 줄(`MapDecals.rows.csv`)을 쓴다. 세트마다 쓰임(group, 놓는 크기, 벽에서 자리, 그리는 거리, 진하기)과 가장자리 처리(누수는 좌우·아래를 흐리게, 낙엽은 불규칙한 둥근 더미로)를 적는다. 낱장 낙엽 모음표·네모가 보이는 얼룩·거의 투명한 것·투명도 맵이 없는 타이어 자국은 뺐다(목록 위 주석). |
 | `build_decals.py` | 블렌더 | `job.json`대로 데칼마다 색과 투명도를 한 장(`_Decal.png`, 알파가 투명도)에, 노멀(`_Normal.png`, Megascans는 OpenGL)을 따로, 가장자리에서 늘어나지 않게 Clamp로, 1024(2.4 m 넘는 것은 2048)까지 줄여 쓰고, URP의 `Shader Graphs/Decal`(총알 자국과 같은 셰이더라 새로 컴파일할 셰이더가 없음) 재질과 모든 `.meta`를 쓴다. |
 | `tga_to_png.py` | 블렌더 | TGA를 같은 픽셀의 PNG로 바꾸고 `.meta`를 옮겨 GUID를 지킨다(재질 연결은 그대로, 크기는 3~4분의 1). |
-| `fix_lod_renderers.py` | 파이썬 | 프리팹의 LODGroup에서 다른 에셋(원본 FBX) 안의 렌더러를 뺀다. Dekogon 프리팹은 FBX의 UCX_ 충돌 메시 렌더러를 LOD0에 넣어 두어서, 놓을 때마다 "registered with more than one LODGroup" 경고가 났다(11-12, 32개 고침). 인스턴스는 그 렌더러를 그리지 않으니 빼도 보이는 것은 같다. `import_unitypackage.py`도 들일 때 같은 일을 한다. |
+| `fix_lod_renderers.py` | 파이썬 | 프리팹의 LODGroup에서 다른 에셋(원본 FBX) 안의 렌더러를 뺀다. Dekogon 프리팹은 FBX의 UCX_ 충돌 메시 렌더러를 LOD0에 넣어 두어서, 놓을 때마다 "registered with more than one LODGroup" 경고가 났다(11-12, 32개 고침). 인스턴스는 그 렌더러를 그리지 않으니 빼도 보이는 것은 같다. `import_unitypackage.py`도 들일 때 같은 일을 한다. 팩의 LOD 단계는 손대지 않는다: 맵 빌더가 놓을 때 사라지는 마지막 단계만 Tables/MapLods 값으로 맞추고, LOD가 없는 모델에는 사라지기만 하는 한 단계 LODGroup을 단다(GreyboxBuilder.Lods, 11-13). |
 
 ## 돌리는 법
 

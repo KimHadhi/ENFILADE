@@ -269,7 +269,7 @@ public sealed partial class GreyboxBuilder
     }
 
     // One copy: its bounds' bottom (or top) centre on the point, turned, scaled over the prefab's own scale, stripped
-    // to a look, and static like the rest of the map.
+    // to a look, gone once it is small on screen (FitLods), and static like the rest of the map.
     private GameObject Place(GameObject prefab, Vector3 point, float yaw, Vector3 scale, bool hang)
     {
         dressing ??= Root("◤━━ 꾸밈 (Tables/MapArt, 보이기만 함)");
@@ -286,6 +286,7 @@ public sealed partial class GreyboxBuilder
         float y = hang ? point.y - c.y - e.y : point.y - c.y + e.y;
         copy.transform.SetPositionAndRotation(new Vector3(point.x - offset.x, y, point.z - offset.z), turn * own);
         copy.transform.localScale = scaled;
+        FitLods(copy);
         artPlaced++;
         LastPlaced = copy;
         return copy;
@@ -369,6 +370,6 @@ public sealed partial class GreyboxBuilder
         if (artPlaced == 0 && artMissing.Count == 0) return "";
         string text = "\n꾸밈: 모델 " + artPlaced + "개";
         if (artMissing.Count > 0) text += " (못 찾은 종류: " + string.Join(", ", artMissing) + ")";
-        return text;
+        return text + LodReport();
     }
 }
