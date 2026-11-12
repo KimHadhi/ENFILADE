@@ -10,13 +10,17 @@ Run on the workspace (it adds what is missing and keeps what is there, a polish 
           --python Tools/Blender/Shove/repair_moves.py -- [--export] [--redraft]
 
 --export sends both moves to the game; --redraft keys the drafts again (never the touch-up layers). The tools in the
-hand are previews only, placed by Tables/RepairArms.csv as the game places them.
+hand are previews only, placed by Tables/RepairArms.csv as the game places them: the torch is the heist pack's gas torch
+(the row's preview FBX, turned by its turnX/Y/Z and put at its atX/Y/Z as the game turns the model), the hammer simple
+parts. A preview made from other numbers or another model is made again.
 
 The drafts (30 fps):
 - 수리 · 망치 (15 frames, 0.467 s a stroke): 1 cocked back, head up behind the fist → 4 top of the swing → 6 (0.167 s)
   STRIKE, the handle up and the face on the planks at the crosshair → 8 small rebound → 11 rising → 15 = 1.
-- 수리 · 토치 (31 frames, 1 s): the torch held up to the planks, the nozzle forward at the crosshair, the wrist drawing a
-  small circle (about 4 degrees) and the hand drifting a few millimetres.
+- 수리 · 토치 (31 frames, 1 s): the heist pack's gas torch (52.8 cm) held by the top of its canister, tilted 27 degrees
+  forward so its nozzle (bent 58 degrees off the canister's axis) points at the planks: the mouth 50 cm ahead and 10 cm
+  under the eyes, its flame line on the crosshair about 1.5 m out, the canister below the view. The wrist draws a small
+  circle (about 4 degrees) and the hand drifts a few millimetres.
 """
 import csv
 import importlib.util
@@ -52,12 +56,14 @@ ARM_DRAFTS = {
         11: ((-.12, -.32, .24), (-.15, .90, -.40), (.97, .05, .2)),
         15: ((-.16, -.32, .20), (-.25, .75, -.61), (.97, .1, .2)),
     },
+    # The gas torch: its canister tilted 27 degrees toward the planks (the nozzle leaves 58 degrees off the canister's
+    # axis, so it points about 5 degrees above the view's forward), the hand at 74% of the arm's reach.
     'repair_torch': {
-        1: ((-.07, -.33, .27), (0, .99, .12), (1, 0, 0)),
-        9: ((-.065, -.325, .275), (.07, .99, .10), (1, 0, 0)),
-        17: ((-.07, -.335, .28), (0, .98, .18), (1, 0, 0)),
-        24: ((-.075, -.33, .27), (-.06, .99, .10), (1, 0, 0)),
-        31: ((-.07, -.33, .27), (0, .99, .12), (1, 0, 0)),
+        1: ((-.10, -.33, .24), (.08, .891, .454), (1, 0, 0)),
+        9: ((-.096, -.327, .243), (.15, .885, .45), (1, 0, 0)),
+        17: ((-.10, -.334, .246), (.08, .86, .51), (1, 0, 0)),
+        24: ((-.104, -.328, .242), (.01, .89, .455), (1, 0, 0)),
+        31: ((-.10, -.33, .24), (.08, .891, .454), (1, 0, 0)),
     },
 }
 ELBOW_POLE = {'repair_hammer': (-.35, -.50, .10), 'repair_torch': (-.35, -.52, .15)}
@@ -169,11 +175,76 @@ def key_arm(rig, context, key):
     return action
 
 
-def make_tool(name, collection):
-    """A preview of the game's tool, made of the same simple parts (file units)."""
+def look_of(row):
+    """What a preview is made from: the row's model and how it sits, or the simple parts."""
+    keys = ('preview', 'previewTexture', 'turnX', 'turnY', 'turnZ', 'atX', 'atY', 'atZ')
+    return '|'.join((row.get(k) or '').strip() for k in keys) if (row.get('preview') or '').strip() else 'parts'
+
+
+def unity_turn(x, y, z):
+    """Unity's Quaternion.Euler(x, y, z) as a matrix on Unity's coordinates (z first, then x, then y; the numbers of
+    each axis turn are the usual ones)."""
+    return Matrix.Rotation(math.radians(y), 4, 'Y') @ Matrix.Rotation(math.radians(x), 4, 'X') @ Matrix.Rotation(math.radians(z), 4, 'Z')
+
+
+def import_model(name, collection, holder, row):
+    """The row's FBX under the holder, as the game holds the model: Unity reads the file's own mesh space mirrored in x
+    (its right-handed y-up to Unity's left-handed), the prefab keeps the root at rest, the row turns and places it in the
+    tool's axes, and the holder's own axes are the tool's (-x, -z, y) in this file's units."""
+    root = shove.project_root()
+    path = root / row['preview'].strip()
+    before = set(bpy.data.objects)
+    # The FBX importer sets the scene's frame rate to the file's (24 here): the workspace's 30 fps is the moves' timing.
+    render = bpy.context.scene.render
+    fps, fps_base = render.fps, render.fps_base
+    bpy.ops.import_scene.fbx(filepath=str(path))
+    render.fps, render.fps_base = fps, fps_base
+    made = [o for o in bpy.data.objects if o not in before]
+    num = lambda k: float(row.get(k) or 0)
+    mirror = Matrix.Diagonal((-1, 1, 1, 1))
+    place = Matrix.Translation((num('atX'), num('atY'), num('atZ'))) @ unity_turn(num('turnX'), num('turnY'), num('turnZ'))
+    tool_axes = Matrix(((-1, 0, 0, 0), (0, 0, -1, 0), (0, 1, 0, 0), (0, 0, 0, 1)))
+    local = Matrix.Scale(1 / shove.GAME_SCALE, 4) @ tool_axes @ place @ mirror
+    material = None
+    texture = (row.get('previewTexture') or '').strip()
+    if texture and (root / texture).exists():
+        material = bpy.data.materials.new(f'{name} model')
+        material.use_nodes = True
+        material.diffuse_color = (.85, .66, .12, 1)
+        nodes = material.node_tree.nodes
+        image = nodes.new('ShaderNodeTexImage')
+        image.image = bpy.data.images.load(str(root / texture), check_existing=True)
+        image.image.filepath = bpy.path.relpath(str(root / texture))
+        bsdf = nodes.get('Principled BSDF')
+        if bsdf is not None:
+            material.node_tree.links.new(image.outputs['Color'], bsdf.inputs['Base Color'])
+    for obj in made:
+        if obj.type != 'MESH':
+            bpy.data.objects.remove(obj, do_unlink=True)
+            continue
+        for owner in list(obj.users_collection):
+            owner.objects.unlink(obj)
+        collection.objects.link(obj)
+        obj.name = f'{name} model'
+        obj.parent = holder
+        obj.matrix_parent_inverse = Matrix.Identity(4)
+        obj.matrix_basis = local
+        if material is not None:
+            obj.data.materials.clear()
+            obj.data.materials.append(material)
+        obj.hide_select = True
+
+
+def make_tool(name, collection, row=None):
+    """A preview of the game's tool: the row's model where it names one, else the same simple parts (file units)."""
+    row = row or {}
     holder = bpy.data.objects.new(name, None)
     holder.empty_display_size = .02
+    holder['enf_look'] = look_of(row)
     collection.objects.link(holder)
+    if holder['enf_look'] != 'parts':
+        import_model(name, collection, holder, row)
+        return holder
     for part, shape, size, at, turn, colour in TOOL_PARTS[name.split('_')[1].lower()]:
         # A unit cube, or a unit cylinder along its own z: the holder's z is the tool's handle (seat_tool).
         if shape == 'cube':
@@ -243,11 +314,19 @@ def upgrade(context, export=False, redraft=False):
         if 'enf_impact_' + key not in scene:
             scene['enf_impact_' + key] = move['impact']
         tool = move['tool']
-        holder = bpy.data.objects.get(tool) or make_tool(tool, collection or scene.collection)
+        row = rows.get(TOOL_OF[key], {})
+        holder = bpy.data.objects.get(tool)
+        # A preview made from other numbers or another model (the torch was simple parts before the heist pack's) goes.
+        if holder is not None and holder.get('enf_look', 'parts') != look_of(row):
+            for child in list(holder.children):
+                bpy.data.objects.remove(child, do_unlink=True)
+            bpy.data.objects.remove(holder, do_unlink=True)
+            holder = None
+        holder = holder or make_tool(tool, collection or scene.collection, row)
         shove.select_move(context, key)
         scene.frame_set(1)
         context.view_layer.update()
-        seat_tool(rig, holder, rows.get(TOOL_OF[key], {}))
+        seat_tool(rig, holder, row)
     text = bpy.data.texts.get('START HERE - Shove tools.py') or bpy.data.texts.new('START HERE - Shove tools.py')
     text.from_string((HERE / 'shove_tools.py').read_text(encoding='utf-8'))
     sent = []

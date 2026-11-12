@@ -52,6 +52,9 @@ public sealed class RepairArm : MonoBehaviour
     /// <summary>Where the tool rides in the palm: RepairLooks puts its model under it (Wear).</summary>
     public Transform Holder => holder;
 
+    /// <summary>The tool's row in Tables/RepairArms (its seat in the hand, its path table and its look).</summary>
+    internal static string RowId(RepairLooks.Tool tool) => tool == RepairLooks.Tool.Torch ? "torch" : "hammer";
+
     /// <summary>A player's mending arm, made on their body's model the first time it is wanted; null without a humanoid body.</summary>
     internal static RepairArm Of(PlayerMovement who)
     {
@@ -305,7 +308,7 @@ public sealed class RepairArm : MonoBehaviour
                 GameTables.Reloaded += loops.Clear;
             }
             if (loops.TryGetValue(tool, out var known)) return known;
-            var loop = Read(tool == RepairLooks.Tool.Torch ? "torch" : "hammer");
+            var loop = Read(RowId(tool));
             loops[tool] = loop;
             return loop;
         }

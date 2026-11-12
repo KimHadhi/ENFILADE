@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Globalization;
 using UnityEngine;
 
 /// <summary>
@@ -8,9 +10,12 @@ using UnityEngine;
 /// arm and the tool rides in the palm), so their own first-person view, the F5 view and everyone else's show the same
 /// thing (PlayerNetworkCombat tells the others when the tool changes). It once sat in the camera's frame, so from outside
 /// it floated in the air (the user, 2026-11-12: "3인칭하면 카메라 기준이라 공중에 떠 잇잖아. 내가 원하는 건 남는 손으로 망치 손으로
-/// 두들기는 거라고"). The hammer knocks where its head meets the planks, at the stroke's strike, on every PC. There are no
-/// models for these in the project, so they are made of simple parts; a model put at Resources/ClassProps/Hammer or
-/// Resources/ClassProps/Torch (a prefab, its handle along +y and its business end toward +z) is used instead.
+/// 두들기는 거라고"). The hammer knocks where its head meets the planks, at the stroke's strike, on every PC.
+/// The look is the tool's row of Tables/RepairArms: its model (a prefab under Resources) turned and placed into the tool's
+/// axes (x across, y the handle, z the working end), and for the torch the nozzle's mouth and way, where the flame leaves.
+/// The torch is the heist pack's gas torch (the user, 2026-11-12: "하이스트 팩에 이거 토치 아니야? 이걸로 바리케이드 수리할 수
+/// 있자너"). With no model in the row, one at Resources/ClassProps/Hammer or Torch is used (already in the tool's axes),
+/// and with none at all, simple parts; the hammer is still made of parts, the pack having none.
 /// </summary>
 [DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.Cloth + 2)]
 public sealed class RepairLooks : MonoBehaviour
@@ -23,6 +28,8 @@ public sealed class RepairLooks : MonoBehaviour
         KnockNear = 1.5f, KnockFar = 25f;
     // Where the hammer's head is on its model (its handle along +y, its face toward +z).
     private static readonly Vector3 HammerHead = new Vector3(0f, .15f, .015f);
+    // The simple torch's nozzle: its mouth and the way it points (a cylinder tilted 60 degrees from the handle toward +z).
+    private static readonly Vector3 PartsNozzleMouth = new Vector3(0f, .165f, .12f), PartsNozzleWay = new Vector3(0f, .5f, .866f);
     private static readonly Color Wood = new Color(.45f, .3f, .18f), Steel = new Color(.62f, .64f, .68f), Can = new Color(.8f, .14f, .1f),
         Brass = new Color(.78f, .62f, .25f), Flame = new Color(.45f, .7f, 1f);
     private static Material wood, steel, can, brass;
@@ -36,6 +43,8 @@ public sealed class RepairLooks : MonoBehaviour
     private AudioSource hiss;
     private RepairArm arm;
     private float age;
+    // A saved table reaches the tool in hand at once (its model, turn and nozzle).
+    private bool stale;
 
     /// <summary>This Support holds <paramref name="tool"/> now (None: puts it away).</summary>
     public static void Hold(PlayerMovement who, Tool tool)
@@ -52,9 +61,11 @@ public sealed class RepairLooks : MonoBehaviour
         looks.enabled = true;
     }
 
+    private void OnEnable() => GameTables.Reloaded += OnTablesReloaded;
+
     private void Update()
     {
-        if (tool != built) Build();
+        if (tool != built || stale) Build();
         if (tool == Tool.None) { enabled = false; return; }
         age += Time.deltaTime;
         // The left arm takes the tool up and plays its stroke (RepairArm); it lets go once this stops asking.
@@ -82,6 +93,7 @@ public sealed class RepairLooks : MonoBehaviour
 
     private void OnDisable()
     {
+        GameTables.Reloaded -= OnTablesReloaded;
         if (built != Tool.None) { tool = Tool.None; Build(); }
     }
 
@@ -91,6 +103,8 @@ public sealed class RepairLooks : MonoBehaviour
         if (prop != null) Destroy(prop.gameObject);
     }
 
+    private void OnTablesReloaded() => stale = true;
+
     // The hammer met the planks (the stroke's strike, RepairArm): a knock there, as the others hear it too.
     private void Knock()
     {
@@ -98,7 +112,7 @@ public sealed class RepairLooks : MonoBehaviour
         GameAudio.PlayAt(KnockClip(), prop.TransformPoint(HammerHead), AudioChannel.Combat, KnockVolume, KnockNear, KnockFar);
     }
 
-    // The tool's parts (or the model at Resources/ClassProps/<tool>), made when it changes.
+    // The tool's look, made when it changes (or its table does): the row's model, or Resources/ClassProps/<tool>, or parts.
     private void Build()
     {
         if (prop != null) Destroy(prop.gameObject);
@@ -108,10 +122,14 @@ public sealed class RepairLooks : MonoBehaviour
         glow = null;
         hiss = null;
         built = tool;
+        stale = false;
         if (tool == Tool.None) return;
         prop = new GameObject(tool.ToString()).transform;
-        var model = Resources.Load<GameObject>("ClassProps/" + tool);
-        if (model != null) Instantiate(model, prop, false);
+        GameTables.TryGetRow(RepairArm.Table, RepairArm.RowId(tool), out var row);
+        string path = Text(row, "model");
+        bool placed = path.Length > 0;
+        var model = Resources.Load<GameObject>(placed ? path : "ClassProps/" + tool);
+        if (model != null) Place(Instantiate(model, prop, false).transform, row, placed);
         else if (tool == Tool.Hammer)
         {
             Part("Handle", PrimitiveType.Cylinder, new Vector3(0f, 0f, 0f), new Vector3(.028f, .15f, .028f), Paint(Wood, ref wood));
@@ -128,8 +146,11 @@ public sealed class RepairLooks : MonoBehaviour
         {
             tip = new GameObject("Tip").transform;
             tip.SetParent(prop, false);
-            tip.localPosition = new Vector3(0f, .165f, .125f);
-            tip.localRotation = Quaternion.Euler(60f, 0f, 0f);
+            // The flame leaves the model's nozzle where the row says (its mouth and way in the tool's axes), else the parts'.
+            bool mouth = model != null && Has(row, "tipX");
+            tip.localPosition = mouth ? Vec(row, "tip", PartsNozzleMouth) : PartsNozzleMouth;
+            Vector3 way = mouth ? Vec(row, "tipDir", PartsNozzleWay) : PartsNozzleWay;
+            tip.localRotation = Quaternion.LookRotation(way.sqrMagnitude > 1e-8f ? way.normalized : Vector3.forward);
             flame = tip.gameObject.AddComponent<LineRenderer>();
             flame.useWorldSpace = true;
             flame.positionCount = 2;
@@ -163,6 +184,37 @@ public sealed class RepairLooks : MonoBehaviour
         if (arm != null) arm.Wear(prop);
         else prop.gameObject.SetActive(RepairArm.Of(who) != null);
     }
+
+    // A model in the tool's axes: the row turns its root by turnX/Y/Z (degrees) and puts it at atX/Y/Z (m) when the row
+    // names it; one found at Resources/ClassProps keeps its own place. Held in a hand, it bumps into nothing (no collider,
+    // no body) and keeps its full detail by the eyes (its first level of detail).
+    private static void Place(Transform model, IReadOnlyDictionary<string, string> row, bool byRow)
+    {
+        if (byRow)
+        {
+            Quaternion turn = Quaternion.Euler(Number(row, "turnX", 0f), Number(row, "turnY", 0f), Number(row, "turnZ", 0f));
+            model.localPosition = Vec(row, "at", Vector3.zero) + turn * model.localPosition;
+            model.localRotation = turn * model.localRotation;
+        }
+        foreach (var body in model.GetComponentsInChildren<Rigidbody>(true)) Destroy(body);
+        foreach (var collider in model.GetComponentsInChildren<Collider>(true))
+        {
+            collider.enabled = false;
+            Destroy(collider);
+        }
+        foreach (var levels in model.GetComponentsInChildren<LODGroup>(true)) levels.ForceLOD(0);
+    }
+
+    private static string Text(IReadOnlyDictionary<string, string> row, string key)
+        => row != null && row.TryGetValue(key, out string value) && value != null ? value.Trim() : "";
+
+    private static bool Has(IReadOnlyDictionary<string, string> row, string key) => Text(row, key).Length > 0;
+
+    private static float Number(IReadOnlyDictionary<string, string> row, string key, float fallback)
+        => float.TryParse(Text(row, key), NumberStyles.Float, CultureInfo.InvariantCulture, out float read) ? read : fallback;
+
+    private static Vector3 Vec(IReadOnlyDictionary<string, string> row, string name, Vector3 fallback)
+        => new Vector3(Number(row, name + "X", fallback.x), Number(row, name + "Y", fallback.y), Number(row, name + "Z", fallback.z));
 
     private void Part(string name, PrimitiveType shape, Vector3 at, Vector3 size, Material material, Quaternion? turn = null)
     {

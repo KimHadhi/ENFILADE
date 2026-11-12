@@ -59,8 +59,10 @@ MOVES = {
     # curl/thumb: how far the fingers and the thumb close round the tool (degrees), written into every key.
     'repair_hammer': dict(label='수리 · 망치', kind='arm', action='enf_repair_hammer', table='RepairHammer', tool='TOOL_Hammer',
                           impact=6, end=15, curl=88.0, thumb=62.0),
+    # The torch is the heist pack's gas torch: its canister (7.4 cm across) holds the fingers further open than the hammer's
+    # handle does.
     'repair_torch': dict(label='수리 · 토치', kind='arm', action='enf_repair_torch', table='RepairTorch', tool='TOOL_Torch',
-                         impact=0, end=31, curl=80.0, thumb=58.0),
+                         impact=0, end=31, curl=70.0, thumb=45.0),
 }
 
 # The parts a beginner moves, by their Korean names: the gun, or the kick's IK handles on the rig, or the left arm's.
