@@ -117,3 +117,7 @@ InitTestScene*.unity*
 # MagicaCloth2's sample scenes are not part of the game
 /[Aa]ssets/ThirdParty/MagicaCloth2/Example (Can be deleted)/
 /[Aa]ssets/ThirdParty/MagicaCloth2/Example (Can be deleted).meta
+
+# Python caches the tools leave behind
+__pycache__/
+*.pyc
