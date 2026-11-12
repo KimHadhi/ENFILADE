@@ -38,6 +38,92 @@ desperadoMiss.speed,1.2,
 desperadoMiss.drop,FuzzAdd_Soft|Smoke_Explotion_Mom_sat_add_Soft|LightFlash_Soft|DS_Aoe_Crystal_Warp_01,"벽·바닥에는 번쩍임과 일그러짐도 뺀다: 불티, 연기, 고리만"
 desperadoMiss.life,1,
 desperadoMiss.near,3,
+class.marksmanRange,120,"총 갈래(PackShots.ClassOf): 총 id로 된 줄(데스페라도처럼)이 없으면 갈래 줄의 모습을 쓴다. 산탄(pellets 2 이상)은 Shotgun, 단발이 기본이고 사거리가 이 m 이상이면 Marksman(저격·지정사수), 관통(penetration)이 아래 값 이하면 Light(권총·기관단총), 나머지는 Rifle(줄이 없어 총 제 불꽃과 궤적). 총 id.class 줄(예: G3.class,Rifle)로 바꾸고 총 id.on을 0으로 두면 그 총만 끈다. 새 총도 Weapons.csv 숫자로 저절로 갈래가 정해진다. 사용자(2026-11-12, 총관리자 전달): 저격·지정사수는 Piercing Shot, 권총·기관단총은 Light, 산탄총은 Shotgun. 덮인 총은 원래 불꽃(MuzzleFlash)과 궤적(MuzzleEffects)을 그리지 않는다"
+class.lightPenetration,14,"Light 갈래가 되는 관통(penetration) 상한. 권총·기관단총은 8~14, 소총은 20 이상"
+Marksman.muzzle,marksmanMuzzle,"저격·지정사수(Mk14·G3·SVD, 새 Kar98k·L96X)를 쏠 때 총구. 총의 원래 불꽃 대신이라 소음기를 달면 안 나온다"
+Marksman.round,marksmanRound,날아가는 탄: 원래 궤적 대신
+Marksman.hit,marksmanHit,적에게 맞은 자리(한 발에 적 하나당 한 번)
+Marksman.miss,marksmanMiss,적이 아닌 곳에 맞은 자리
+Marksman.speed,320,탄이 나는 빠르기(m/s). 100m를 0.3초에
+Marksman.selfAhead,3,내 총구에서 쏠 때 탄이 이만큼(m) 앞에서 나타난다. 눈앞에서 번쩍이지 않게
+marksmanMuzzle.prefab,Piercing Shot Muzzle,총구 섬광·고리 세 겹·불티·앞으로 뻗는 빛
+marksmanMuzzle.scale,0.4,남이 볼 때 크기
+marksmanMuzzle.selfScale,0.16,내 1인칭 총구(눈에서 0.5m)에서의 크기
+marksmanMuzzle.speed,1.2,
+marksmanMuzzle.drop,FuzzAlpha_Soft|Smoke_loop_flipbook_thingy_Clean_alpha_soft,"뺄 부분: 6~8m 검은 퍼짐(화면을 덮음), 5m 연기. 팩의 총구 섬광은 남긴다(총의 불꽃 대신)"
+marksmanMuzzle.life,1,
+marksmanMuzzle.pool,8,다시 쓸 복사본 수(PackFx): 쏠 때마다 만들고 지우지 않게
+marksmanRound.prefab,Piercing Shot,빛나는 탄두·원뿔 물결·고리 꼬리
+marksmanRound.scale,0.25,
+marksmanRound.selfScale,0.18,
+marksmanRound.drop,FuzzAlpha_Soft|Smoke_loop_flipbook_thingy_Clean_alpha_soft,뺄 부분: 탄 둘레 3m 검은 퍼짐과 연기
+marksmanRound.life,3,안전한 끝(초). 보통은 닿는 순간 사라진다
+marksmanRound.pool,8,
+marksmanHit.prefab,Piercing Hit,
+marksmanHit.scale,0.45,
+marksmanHit.speed,1.15,
+marksmanHit.drop,FuzzAdd_Soft|Smoke_Explotion_Mom_sat_add_Soft,"뺄 부분: 5m 밝은 퍼짐, 3m 불 폭발"
+marksmanHit.life,1.2,
+marksmanHit.near,4,
+marksmanHit.pool,6,
+marksmanMiss.prefab,Piercing Hit,
+marksmanMiss.scale,0.28,
+marksmanMiss.speed,1.2,
+marksmanMiss.drop,FuzzAdd_Soft|Smoke_Explotion_Mom_sat_add_Soft|LightFlash_Soft|DS_Aoe_Crystal_Warp_01,"벽·바닥에는 불티, 연기, 고리만"
+marksmanMiss.life,1,
+marksmanMiss.near,3,
+marksmanMiss.pool,6,
+Light.muzzle,lightMuzzle,"권총·기관단총(M1911·R08·DGL50·Kolibri·Viper357·X18·WK11·MKR9·MPS5·PDW90·StrikerV)을 쏠 때 총구. 원래 불꽃 대신"
+Light.round,lightRound,날아가는 탄: 원래 궤적 대신
+Light.hit,lightHit,적에게 맞은 자리(한 발에 적 하나당 한 번)
+Light.miss,lightMiss,적이 아닌 곳에 맞은 자리
+Light.speed,280,탄이 나는 빠르기(m/s)
+Light.selfAhead,2,
+lightMuzzle.prefab,Light Muzzle,짧은 섬광·불티
+lightMuzzle.scale,0.35,
+lightMuzzle.selfScale,0.15,
+lightMuzzle.drop,Smoke_loop_flipbook_thingy_Clean_alpha_soft|FuzzAdd_Soft,"뺄 부분: 1~2m 연기 16뭉치(연사하면 화면을 덮음), 1.8m 밝은 퍼짐"
+lightMuzzle.life,0.5,
+lightMuzzle.pool,16,
+lightRound.prefab,Light shot,빛나는 작은 탄과 꼬리
+lightRound.scale,0.35,
+lightRound.selfScale,0.25,
+lightRound.life,2,
+lightRound.pool,16,
+lightHit.prefab,Light hit,
+lightHit.scale,0.3,
+lightHit.drop,Smoke_loop_flipbook_thingy_Clean_alpha_soft|FuzzAdd_Soft,"뺄 부분: 3m 연기, 2.7m 밝은 퍼짐"
+lightHit.life,0.6,
+lightHit.near,3,
+lightHit.pool,16,
+lightMiss.prefab,Light hit,
+lightMiss.scale,0.2,
+lightMiss.drop,Smoke_loop_flipbook_thingy_Clean_alpha_soft|FuzzAdd_Soft|LightFlash_Soft|Flare,벽·바닥에는 불티와 바람 원뿔만
+lightMiss.life,0.5,
+lightMiss.near,3,
+lightMiss.pool,16,
+Shotgun.muzzle,shotgunMuzzle,"산탄총(Herrington·SRM12·Drake12, 새 KXG12)을 쏠 때 총구. 원래 불꽃 대신"
+Shotgun.shot,shotgunShot,한 발에 한 번 조준 쪽으로 뿌려지는 산탄 알갱이: 알마다의 궤적 대신. 날아가는 탄은 없다
+Shotgun.hit,shotgunHit,적에게 맞은 자리(한 발에 적 하나당 한 번). 벽에 맞은 알은 원래 탄흔만
+shotgunMuzzle.prefab,Shotgun Muzzle,섬광·알갱이·불티·고리
+shotgunMuzzle.scale,0.4,
+shotgunMuzzle.selfScale,0.16,
+shotgunMuzzle.drop,FuzzAlpha_Soft|Smoke_loop_flipbook_thingy_Clean_alpha_soft,"뺄 부분: 2m 검은 퍼짐, 3~5m 연기 33뭉치"
+shotgunMuzzle.life,1,
+shotgunMuzzle.pool,6,
+shotgunShot.prefab,Shotgun Shot,알갱이 100개·불티 80개
+shotgunShot.scale,0.5,
+shotgunShot.selfScale,0.3,
+shotgunShot.drop,Smoke_loop_flipbook_thingy_Clean_alpha_soft,뺄 부분: 3~4m 연기 25뭉치
+shotgunShot.life,1,
+shotgunShot.pool,6,
+shotgunHit.prefab,Shotgun Hit,
+shotgunHit.scale,0.3,
+shotgunHit.speed,1.1,
+shotgunHit.drop,Smoke_loop_flipbook_thingy_Clean_alpha_soft|FuzzAdd_Soft|DS_Aoe_Crystal_Warp_01,"뺄 부분: 3~5m 연기, 3.5m 밝은 퍼짐, 일그러짐"
+shotgunHit.life,1,
+shotgunHit.near,3,
+shotgunHit.pool,8,
 bountyGrand.prefab,Piercing Hit,"데스페라도 현상금: 탄이 들어간 머리에서 터진다(MomentFx BountyGrand의 문장과 함께). 사용자: ""죽었을 때 뭔가 터지는 듯이 주변에 이펙트 좀"""
 bountyGrand.scale,0.85,
 bountyGrand.drop,FuzzAdd_Soft,뺄 부분: 5m 밝은 퍼짐. 3m 불 폭발은 남긴다(터지는 느낌)

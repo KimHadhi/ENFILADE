@@ -461,7 +461,8 @@ public sealed class WeaponController : MonoBehaviour
         if (Runtime == null || weaponData == null) return;
         // The same path their PC drew, walls passed and ricochets included: the randomness comes from the shot itself.
         var look = new DamageHit(0, 0f, DamageKind.Attack, origin, direction, owner, method: DamageMethod.Bullet);
-        var trace = AttackTrace.Bullet(look, origin, direction, weaponData.Range, hitLayers, 1f, weaponData.Penetration, false, out BulletLeg[] later);
+        var trace = AttackTrace.Bullet(look, origin, direction, weaponData.Range, hitLayers, 1f, weaponData.Penetration, false, out BulletLeg[] later,
+            weaponData.BodyPierce);
         LastShot = new WeaponShot(DamageHit.NewAttackId(), muzzlePoint != null ? muzzlePoint.position : origin, direction, trace, Vector2.zero, Runtime.Ammo, later, pellet);
         // The host's zombies hear a friend's shot as it reaches this PC (ZombieMind), once per shot however many pellets.
         if (pellet == 0) Noise.Make(origin, ShotNoise, owner);
@@ -673,7 +674,8 @@ public sealed class WeaponController : MonoBehaviour
                     origin,
                     direction,
                     weaponData.Range,
-                    hitLayers, weaponData.HeadshotMultiplier / Mathf.Max(.01f, falloff), weaponData.Penetration, true, out BulletLeg[] later);
+                    hitLayers, weaponData.HeadshotMultiplier / Mathf.Max(.01f, falloff), weaponData.Penetration, true, out BulletLeg[] later,
+                    weaponData.BodyPierce);
 
                 var shot = new WeaponShot(
                     id,

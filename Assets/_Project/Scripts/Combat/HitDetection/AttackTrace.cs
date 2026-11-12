@@ -50,7 +50,8 @@ public static class AttackTrace
     /// A gun's bullet: Trace's first hit, then on through what it can get through or off what it glances off
     /// (BulletPenetration), each later hit taking the share of the damage the bullet still carries; anything it passes
     /// is hurt once. `hurts` false only finds the path, for a shot another PC already judged. `later` is null when the
-    /// bullet stopped at its first hit.
+    /// bullet stopped at its first hit. `pierce`: the gun's own rule for bodies (WeaponData.BodyPierce), which both the
+    /// shooter's PC and the PCs that draw the shot pass.
     /// </summary>
     // Transforms reach physics only when someone syncs them (the project's Auto Sync Transforms is off). A zombie's bone
     // hitboxes move with its animation after the frame's scripts, so a bullet fired before anything synced this frame
@@ -65,7 +66,7 @@ public static class AttackTrace
     }
 
     public static AttackTraceResult Bullet(DamageHit attack, Vector3 origin, Vector3 direction, float distance, int layers,
-        float headshotMultiplier, float penetration, bool hurts, out BulletLeg[] later)
+        float headshotMultiplier, float penetration, bool hurts, out BulletLeg[] later, BulletPierce pierce = default)
     {
         later = null;
         if (direction.sqrMagnitude < 0.000001f || distance <= 0f)
@@ -79,16 +80,30 @@ public static class AttackTrace
         if (hurts) penetration *= PlayerPerks.PierceFactor(attack);
         var first = Strike(attack, origin, direction, distance, layers, headshotMultiplier, hurts ? 1f : 0f, shooter, hurt, false);
         if (hurts) StepDodgeTrail.RecognizeAttackSegment(attack, origin, first.End);
-        if (!first.HasHit || penetration <= 0f) return first;
+        if (!first.HasHit || (penetration <= 0f && pierce.Bodies <= 0)) return first;
         legs.Clear();
         RaycastHit hit = first.Hit;
         Vector3 from = origin, dir = direction;
         float left = penetration, rest = distance - hit.distance;
-        while (legs.Count < MostLegs && BulletPenetration.Onward(hit, from, dir, left, random, layers, out BulletOnward onward))
+        // A gun's own rule for bodies (BulletPierce: the Desperado's piercing round, the user's "피어싱샷 느낌대로 피어싱하게
+        // 상향", 2026-11-12): up to its count of bodies are gone through whole, each keeping its share of the damage and none
+        // of the penetration, so a line of zombies drops; walls, and bodies past the count, go by the usual rules. A body
+        // draws no randomness either way, so every PC still draws the same path.
+        int bodies = 0;
+        float kept = 1f;
+        while (legs.Count < MostLegs)
         {
+            BulletOnward onward;
+            if (bodies < pierce.Bodies && BulletPenetration.IsBody(hit.collider))
+            {
+                onward = BulletPenetration.ThroughBody(hit, dir, left, layers);
+                bodies++;
+                kept *= pierce.Keep;
+            }
+            else if (!BulletPenetration.Onward(hit, from, dir, left, random, layers, out onward)) break;
             rest -= Vector3.Distance(hit.point, onward.From);
             if (rest <= 0f) break;
-            float share = onward.Left / penetration;
+            float share = (penetration > 0f ? onward.Left / penetration : 1f) * kept;
             // Through a wall or a body, or off a surface: the hit marker and the kill score show it (DamageHit.Pierced).
             var trace = Strike(attack, onward.From, onward.Direction, rest, layers, headshotMultiplier, hurts ? share : 0f, shooter, hurt, true);
             if (hurts) StepDodgeTrail.RecognizeAttackSegment(attack, onward.From, trace.End);

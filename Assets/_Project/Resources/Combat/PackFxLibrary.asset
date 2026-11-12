@@ -21,6 +21,20 @@ MonoBehaviour:
     prefab: {fileID: 6250645838170694263, guid: 04552554eb839984089d33883dce3856, type: 3}
   - name: Piercing Hit
     prefab: {fileID: 7341297119263965802, guid: 4c3c98f8ae7076848a10addcd210f1ed, type: 3}
+  - name: Light Muzzle
+    prefab: {fileID: 7475155541364605157, guid: d8c82c6990d163544bad0f08fb3f7abc, type: 3}
+  - name: Light shot
+    prefab: {fileID: 8840507690554029844, guid: a6344345a4caa3c42b89a52e86c09ee5, type: 3}
+  - name: Light hit
+    prefab: {fileID: 2974813863670940257, guid: b12c835da1656634c8734ccd646a8439, type: 3}
+  - name: Piercing Shot
+    prefab: {fileID: 4105874394614953654, guid: cec2f33437d0a8746b9d6aaea9794a66, type: 3}
+  - name: Shotgun Muzzle
+    prefab: {fileID: 1763977729195969599, guid: 1ade8fc3528a57c48946f0ac26a1b7d9, type: 3}
+  - name: Shotgun Shot
+    prefab: {fileID: 8573161183302573198, guid: a7f41a4d5cd510c4588a43262621f94a, type: 3}
+  - name: Shotgun Hit
+    prefab: {fileID: 2562182901450056287, guid: 59a786df1eb6ef041b6b479e403b92a7, type: 3}
   - name: Big Pointblank
     prefab: {fileID: 3091148677021280503, guid: 08faab7ca78b88941bd8407b12718d37, type: 3}
   - name: Bullet buff

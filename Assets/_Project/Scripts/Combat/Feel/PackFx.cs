@@ -21,8 +21,25 @@ public sealed class PackFx : MonoBehaviour
 {
     public const string TableName = "PackFx";
 
+    // Copies a use keeps to play again when it goes off often (its `pool`: a gun's every shot, PackShots), keyed by the use
+    // and whether it is at this PC's own eye (selfDrop leaves out more there). An SMG firing 15 a second would otherwise
+    // make and destroy 45 copies a second, each a handful of particle systems. A use with parts fired at once (pop) is
+    // never kept: those fire only as the copy is made.
+    private static readonly Dictionary<string, Stack<PackFx>> pools = new Dictionary<string, Stack<PackFx>>();
+    private static int lastPlay;
+
     private float stopAt = -1f, goneAt;
     private bool stopped;
+    private string keptAs;
+    private int keepMost, play;
+    private ParticleSystem[] systems;
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetStatics()
+    {
+        pools.Clear();
+        lastPlay = 0;
+    }
 
     /// <summary>
     /// Plays <paramref name="use"/> at <paramref name="at"/>, its forward along <paramref name="facing"/>.
@@ -44,11 +61,36 @@ public sealed class PackFx : MonoBehaviour
             float distance = Vector3.Distance(eye.transform.position, at);
             if (distance < near) scale *= Mathf.Lerp(Mathf.Clamp01(Number(use, "nearShare", .35f)), 1f, distance / near);
         }
-        var copy = Instantiate(prefab, at, facing);
-        copy.name = prefab.name + " (" + use + ")";
-        copy.transform.localScale = prefab.transform.localScale * scale;
-        Tone(copy, use, self);
-        var life = copy.AddComponent<PackFx>();
+        int keep = string.IsNullOrEmpty(Text(use, "pop")) ? Mathf.RoundToInt(Number(use, "pool", 0f)) : 0;
+        string key = self ? use + "#self" : use;
+        var life = keep > 0 ? Kept(key) : null;
+        GameObject copy;
+        if (life != null)
+        {
+            // A kept copy, toned already: placed, sized and run again from its start.
+            copy = life.gameObject;
+            copy.transform.SetPositionAndRotation(at, facing);
+            copy.transform.localScale = prefab.transform.localScale * scale;
+            copy.SetActive(true);
+            foreach (var system in life.systems)
+                if (system != null) { system.Clear(false); system.Play(false); }
+        }
+        else
+        {
+            copy = Instantiate(prefab, at, facing);
+            copy.name = prefab.name + " (" + use + ")";
+            copy.transform.localScale = prefab.transform.localScale * scale;
+            Tone(copy, use, self);
+            life = copy.AddComponent<PackFx>();
+            if (keep > 0)
+            {
+                life.keptAs = key;
+                life.keepMost = keep;
+                life.systems = copy.GetComponentsInChildren<ParticleSystem>();
+            }
+        }
+        life.play = ++lastPlay;
+        life.stopped = false;
         float now = Time.time, stopAfter = Number(use, "stopAfter", -1f), lasts = Number(use, "life", 2f);
         life.stopAt = stopAfter >= 0f ? now + stopAfter : -1f;
         // A life of 0 or less: it lasts until its caller ends it (a mark's skull, an aura held for a while).
@@ -69,6 +111,46 @@ public sealed class PackFx : MonoBehaviour
     {
         StopNow();
         goneAt = Mathf.Min(goneAt, Time.time + Mathf.Max(.05f, fade));
+    }
+
+    /// <summary>
+    /// Ends a copy now (a round that reached its mark): back to its use's keep when it has one, else destroyed.
+    /// </summary>
+    public static void Finish(GameObject copy)
+    {
+        if (copy == null) return;
+        if (copy.TryGetComponent(out PackFx life) && life.Keep()) return;
+        Destroy(copy);
+    }
+
+    /// <summary>
+    /// Which play a copy is on: a caller still holding a copy that may since have ended and been played again elsewhere
+    /// (a kept one) checks it is still its own. 0: ended, or no copy.
+    /// </summary>
+    public static int PlayOf(GameObject copy) => copy != null && copy.activeSelf && copy.TryGetComponent(out PackFx life) ? life.play : 0;
+
+    // A kept copy of the use to play again; one that went with its scene is passed over.
+    private static PackFx Kept(string key)
+    {
+        if (!pools.TryGetValue(key, out var kept)) return null;
+        while (kept.Count > 0)
+        {
+            var life = kept.Pop();
+            if (life != null) return life;
+        }
+        return null;
+    }
+
+    // Off and back to its use's keep, unless it isn't kept or the keep is full.
+    private bool Keep()
+    {
+        if (keptAs == null) return false;
+        if (!pools.TryGetValue(keptAs, out var kept)) pools[keptAs] = kept = new Stack<PackFx>();
+        if (kept.Count >= keepMost) return false;
+        play = 0;
+        gameObject.SetActive(false);
+        kept.Push(this);
+        return true;
     }
 
     /// <summary>Every prefab the library holds, for a warm-up that draws each once behind the loading screen.</summary>
@@ -92,7 +174,7 @@ public sealed class PackFx : MonoBehaviour
     {
         float now = Time.time;
         if (!stopped && stopAt >= 0f && now >= stopAt) StopNow();
-        if (now >= goneAt) Destroy(gameObject);
+        if (now >= goneAt && !Keep()) Destroy(gameObject);
     }
 
     // The row's changes to the copy: its speed, the parts left out (more at this PC's own eye), its tint, the parts fired

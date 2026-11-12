@@ -23,6 +23,23 @@ public readonly struct BulletOnward
 }
 
 /// <summary>
+/// A gun's own rule for bodies (WeaponData.BodyPierce): its round goes on whole through up to Bodies bodies, each passed
+/// keeping Keep of the damage, before the bodies' usual cost (Surfaces.csv's pierceCost) applies. Walls still take the
+/// gun's penetration as ever. Bodies 0: none of its own, as every gun but the Desperado.
+/// </summary>
+public readonly struct BulletPierce
+{
+    public readonly int Bodies;
+    public readonly float Keep;
+
+    public BulletPierce(int bodies, float keep)
+    {
+        Bodies = Mathf.Max(0, bodies);
+        Keep = Mathf.Clamp01(keep);
+    }
+}
+
+/// <summary>
 /// What a bullet does after it hits something, ported from ArcCW's DoPenetration and GetRicochetChance (the weapon base
 /// Horde's guns use). A glancing hit may ricochet: the flatter the angle and the more penetration the bullet has left, the
 /// likelier, up to 45 %; it bounces off like light off a mirror, a few degrees astray, keeping a random share of its
@@ -100,8 +117,7 @@ public static class BulletPenetration
         {
             left -= cost;
             if (left <= 0f) return false;
-            Thickness(hit, dir, BodyReach, layers, out bool exits, out RaycastHit far);
-            onward = new BulletOnward(hit.point + dir * Clear, dir, left, false, exits, far);
+            onward = ThroughBody(hit, dir, left, layers);
             return true;
         }
         float tough = Toughness(hit.collider);
@@ -203,7 +219,19 @@ public static class BulletPenetration
 
     private static bool IsLevel(Collider shape) => shape.attachedRigidbody == null && shape.GetComponentInParent<IDamageReceiver>() == null;
 
-    private static bool IsBody(Collider shape)
+    /// <summary>
+    /// On through the body `hit` struck, whole and straight, with `left` penetration still: it sets off again from where it
+    /// went in (AttackTrace passes the body it went through), the far side found for the exit wound.
+    /// </summary>
+    public static BulletOnward ThroughBody(in RaycastHit hit, Vector3 direction, float left, int layers)
+    {
+        Vector3 dir = direction.normalized;
+        Thickness(hit, dir, BodyReach, layers, out bool exits, out RaycastHit far);
+        return new BulletOnward(hit.point + dir * Clear, dir, left, false, exits, far);
+    }
+
+    /// <summary>An enemy, a player or a corpse: what a bullet goes through by a body's rules.</summary>
+    public static bool IsBody(Collider shape)
     {
         var receiver = shape.GetComponentInParent<IDamageReceiver>();
         return receiver is EnemyHealth || receiver is PlayerDamageReceiver || receiver is RagdollCorpse;

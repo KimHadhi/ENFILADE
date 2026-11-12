@@ -55,6 +55,11 @@ public sealed class WeaponData : ScriptableObject
     [Tooltip("How far a bullet pushes through what it hits, in ArcCW's millimetres (BulletPenetration): Horde's M4A1 is 10, " +
         "its G17 4. 0 stops at the first hit.")]
     [SerializeField, Min(0f)] private float penetration;
+    [Tooltip("Bodies its round goes on through whole by its own rule (BulletPierce), before the bodies' usual cost: the " +
+        "Desperado's piercing round. Walls still take Penetration. 0: none, as every other gun.")]
+    [SerializeField, Min(0)] private int pierceBodies;
+    [Tooltip("The share of the damage its round keeps for each body it went through by Pierce Bodies.")]
+    [SerializeField, Range(0f, 1f)] private float pierceKeep = 1f;
     [Tooltip("Crouched on the ground, the whole cone (hip or aimed, with moving, airborne and bloom) is multiplied by this, " +
         "as ArcCW's arccw_mult_crouchdisp does. 0.5 is TFA's CrouchAccuracyMultiplier; 1 turns it off.")]
     [SerializeField, Range(.05f, 1f)] private float crouchSpread = .5f;
@@ -208,6 +213,8 @@ public sealed class WeaponData : ScriptableObject
     public float BloomRecovery => Mathf.Max(0f, bloomRecovery);
     public float HeadshotMultiplier => Mathf.Max(1f, headshotMultiplier);
     public float Penetration => Mathf.Max(0f, penetration);
+    /// <summary>Its round's own rule for bodies (the Desperado's piercing round); none for most guns.</summary>
+    public BulletPierce BodyPierce => new BulletPierce(pierceBodies, pierceKeep);
     public float CrouchSpread => Mathf.Clamp(crouchSpread, .05f, 1f);
     public float CrouchRecoil => Mathf.Clamp(crouchRecoil, .05f, 1f);
     /// <summary>Seconds after the gun could fire again that an empty magazine reloads by itself; negative: never.</summary>
