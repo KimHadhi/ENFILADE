@@ -48,7 +48,7 @@ Schiesshund.elitePoints,2,엘리트 표식 처치 한 번의 현상금 점수
 Schiesshund.desperadoMax,6,데스페라도(시순트의 4번 칸 R08. 2번 칸은 보통 권총) 실린더에 드는 탄 최대. 현상금으로만 차고 재장전·탄약 줍기·상점·처형 보상으로는 안 찬다
 Schiesshund.startRounds,1,장이 시작될 때 데스페라도에 든 탄
 Schiesshund.desperadoDamage,100,데스페라도 탄의 피해 +%. 4번 칸을 들고 쏠 때마다 한 발씩 쓴다
-Schiesshund.bossShare,.4,데스페라도 탄이 자기 표식 대상의 머리에 맞으면 엘리트도 그대로 죽는다. 거구만은 전체 체력의 이 몫을 잃는다
+Schiesshund.bossShare,1,데스페라도 탄이 자기 표식 대상의 머리에 맞으면 엘리트도 거구도 그대로 죽는다(사용자 11-13: "데스페라도 정도면 거구도 즉사해라 좀"). 1보다 작게 하면 거구만은 전체 체력의 이 몫을 잃고 산다
 Schiesshund.returnMax,5,리턴 백: 표식 처치마다 1스택(최대)
 Schiesshund.returnSpeed,6,리턴 백 스택마다 이동 속도 +%
 Schiesshund.returnDamage,6,리턴 백 스택마다 총 피해 +%(옛 메모는 장전 속도. 장전 속도를 바꾸는 장치가 생기면 옮긴다)

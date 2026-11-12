@@ -143,9 +143,9 @@ public static class PlayerClass
 
     /// <summary>
     /// A Schießhund's Desperado round in the head of its own mark: whatever it is, it dies (the user: "엘리트 같은 애들이
-    /// 나와도 표식 찍고 리볼버로 헤드샷하면 한 방에"), but for a brute, the boss made for a whole team's fire, which loses
-    /// bossShare of its whole health, as an execution takes a share of it. AttackTrace asks for this PC's own bullets;
-    /// anything else keeps its amount.
+    /// 나와도 표식 찍고 리볼버로 헤드샷하면 한 방에"), the brute too (2026-11-13: "데스페라도 정도면 거구도 즉사해라 좀").
+    /// ClassAbilities Schiesshund.bossShare under 1 would leave a brute standing with only that share of its whole health
+    /// gone. AttackTrace asks for this PC's own bullets; anything else keeps its amount.
     /// </summary>
     public static float Finish(float amount, bool headshot, IDamageReceiver receiver, Vector3 point, Vector3 from)
     {
@@ -155,9 +155,11 @@ public static class PlayerClass
             return amount;
         if (!PingMarks.IsBountyOf(target, kit.Movement)) return amount;
         kit.Finishing(target, point, from);
-        // Its whole health, not what this PC has of it: the host's may stand higher than a copy's.
+        // Its whole health, not what this PC has of it: the host's may stand higher than a copy's. A brute's too, unless
+        // the table keeps a brute to a share (bossShare under 1).
         bool firm = target.TryGetComponent(out MeleeCombatTarget melee) && melee.Steadfast;
-        return Mathf.Max(amount, firm ? foe.MaximumHealth * Mathf.Clamp01(Ability(HoundRow, "bossShare", .4f)) : foe.MaximumHealth + 1f);
+        float share = firm ? Mathf.Clamp01(Ability(HoundRow, "bossShare", 1f)) : 1f;
+        return Mathf.Max(amount, share >= 1f ? foe.MaximumHealth + 1f : foe.MaximumHealth * share);
     }
 
     /// <summary>This PC's player's pace from their class now (adrenaline, a CHARGE): LocomotionState multiplies it in.</summary>

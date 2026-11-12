@@ -30,7 +30,7 @@ using UnityEngine;
 ///   a bounty: money (CombatFeedHUD), a Return Back stack (quicker and harder-hitting a while), and points toward the
 ///   Desperado's next round. The Desperado is its own revolver in slot 4 (the class's own gun, the R08; slot 2 holds a
 ///   plain pistol, so the two are never mixed up: the user's word), loaded by bounties alone and never reloaded: every
-///   round hits double, and one in the head of its own mark kills it outright, elites too (a brute loses a share of its
+///   round hits double, and one in the head of its own mark kills it outright, elites and brutes too (the user, 2026-11-13: "데스페라도 정도면 거구도 즉사해라 좀"; before, a brute lost a share of its
 ///   health), with its claim burst in the world for everyone to see, the hunter too (BountyBurst;
 ///   a plain bounty slams its small CLAIMED plate there). Its class key calls a duel on the foe under the crosshair (HoundDuel; the
 ///   user's, after Iso's Kill Contract): for some seconds the two can only hurt each other, its shots pass through every
