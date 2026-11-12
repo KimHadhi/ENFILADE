@@ -43,7 +43,8 @@ public sealed partial class PlayerBody
 
     private AnimationLayerMixerPlayable BuildLayers()
     {
-        layers = AnimationLayerMixerPlayable.Create(graph, DodgeLayer + 1);
+        // A paired execution's clip on top of all of them, the whole body (PlayerBody.Execution).
+        layers = AnimationLayerMixerPlayable.Create(graph, ExecutionLayer + 1);
         graph.Connect(mixer, 0, layers, MovesLayer);
         layers.SetInputWeight(MovesLayer, 1f);
 
@@ -62,6 +63,7 @@ public sealed partial class PlayerBody
         BuildKick();
         BuildTurn();
         BuildDodge();
+        BuildExecution();
         return layers;
     }
 
@@ -72,6 +74,7 @@ public sealed partial class PlayerBody
         punch = null;
         punchTimeLeft = punchWeight = leftArmShare = rightArmShare = 0f;
         TeardownDodge();
+        TeardownExecution();
         TeardownTurn();
         TeardownKick();
         if (fingerMask != null) Destroy(fingerMask);
@@ -135,6 +138,7 @@ public sealed partial class PlayerBody
         BlendTurn(dt);
         BlendKick(dt);
         BlendDodge(dt);
+        BlendExecution(dt);
         // A guard or a climb takes the arm back at once: the parry's sweep and the hold need the hand on its target.
         var melee = player.MeleeCombat;
         bool guarding = melee != null && (melee.IsGuarding || melee.IsParryActive);

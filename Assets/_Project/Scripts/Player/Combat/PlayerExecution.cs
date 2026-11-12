@@ -53,6 +53,11 @@ public sealed class PlayerExecution : MonoBehaviour
     public MeleeCombatTarget Victim => victim;
     /// <summary>How long after the execution proper begins (any dash in over) its blow lands (s): the knife's strike meets it (ExecutionKnife).</summary>
     public float ImpactTime => Mathf.Min(impactTime, duration);
+    // A paired execution's own timing and blow for this one (ExecutionPairPlayer, Tables/Executions.csv): its kill and
+    // length stand in for impactTime and duration until it ends, when the table's come back; its blow lands on the bone
+    // the knife meets and sends the body the pair's way.
+    private float tableImpact = -1f, tableDuration = -1f;
+    private Vector3? strikePoint, strikeAlong;
     private static readonly List<PlayerExecution> executing = new List<PlayerExecution>();
     public event Action<MeleeCombatTarget> Started;
     public event Action<MeleeCombatTarget> Impact;
@@ -78,6 +83,8 @@ public sealed class PlayerExecution : MonoBehaviour
         player = GetComponent<PlayerMovement>();
         var camera = GetComponentInChildren<Camera>(); aim = camera != null ? PlayerView.EyesOf(this) : transform;
         if (Application.isPlaying && player?.IsLocal != false && GetComponent<ExecutionHUD>() == null) gameObject.AddComponent<ExecutionHUD>();
+        // Paired executions for what the zombie is doing, on every PC's copy of the player too (ExecutionPairPlayer).
+        if (Application.isPlaying) ExecutionPairPlayer.For(gameObject);
         // The class's knife through every execution, on every PC's copy of the player too (ExecutionKnife).
         if (Application.isPlaying) ExecutionKnife.On(gameObject);
     }
@@ -217,7 +224,7 @@ public sealed class PlayerExecution : MonoBehaviour
             // A death callback may disable the enemy synchronously. Release its reservation first.
             victim.ReleaseExecution(this);
             var result = receiver.ReceiveHit(new DamageHit(DamageHit.NewAttackId(), vitals.Health, DamageKind.Execution,
-                victim.transform.position, aim.forward, gameObject));
+                strikePoint ?? victim.transform.position, strikeAlong ?? aim.forward, gameObject));
             if (result == DamageResult.Damaged && vitals.Health <= 0f) GrantRewards();
             Impact?.Invoke(victim);
         }
@@ -243,8 +250,34 @@ public sealed class PlayerExecution : MonoBehaviour
         if (TryGetComponent(out PlayerWeaponSlots slots) && slots.KeepsOwnRounds(slots.SelectedSlot)) return;
         weapon.AddReserve(Mathf.CeilToInt(weapon.Data.MagazineSize * Mathf.Clamp01(ammoRestoredFraction)));
     }
+    /// <summary>
+    /// A paired execution runs this one (ExecutionPairPlayer): its blow lands <paramref name="impact"/> after the
+    /// execution proper began and it ends at <paramref name="length"/>, instead of the table's impactTime and duration.
+    /// </summary>
+    internal void Retime(float impact, float length)
+    {
+        if (!IsExecuting) return;
+        if (tableImpact < 0f) { tableImpact = impactTime; tableDuration = duration; }
+        impactTime = Mathf.Max(0f, impact);
+        duration = Mathf.Max(.1f, length);
+    }
+    /// <summary>Where the pair's blow meets the victim this frame and which way it sends the body (ExecutionPairPlayer).</summary>
+    internal void Strike(Vector3 point, Vector3 along)
+    {
+        strikePoint = point;
+        strikeAlong = along.sqrMagnitude > 1e-6f ? along.normalized : (Vector3?)null;
+    }
+    private void ForgetPair()
+    {
+        strikePoint = strikeAlong = null;
+        if (tableImpact < 0f) return;
+        impactTime = tableImpact;
+        duration = tableDuration;
+        tableImpact = tableDuration = -1f;
+    }
     public void Cancel()
     {
+        ForgetPair();
         bool wasExecuting = IsExecuting; IsExecuting = approaching = false; Candidate = DeathblowCandidate = null;
         while (executing.Remove(this)) { }
         if (victim != null) victim.ReleaseExecution(this);

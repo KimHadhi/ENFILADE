@@ -62,7 +62,8 @@ public sealed partial class PlayerBody
     private void PlantFeet(float dt)
     {
         if (feet == null) return;
-        bool onFeet = !dead && !playingOut && !heaving && player.IsGrounded
+        // A paired execution's clip has the feet where it was made beside the zombie (PlayerBody.Execution).
+        bool onFeet = !dead && !playingOut && !heaving && !PlaysPaired && player.IsGrounded
             && (state == MovementState.Standing || state == MovementState.Crouching);
         // Running, the stride stretched to the ground the body covers (PlayerBody.Locomotion), so the feet don't skate.
         feet.Plant(onFeet, transform.position.y, player.groundLayers,

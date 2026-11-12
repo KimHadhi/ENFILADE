@@ -174,7 +174,8 @@ public sealed partial class PlayerBody
     }
 
     // In one of these moves the model stays on the capsule, as in GMod: easing the head back would pull the hands off.
-    private bool ClipCarriesBody => playingOut || heaving || (!dead && (state == MovementState.Vault || state == MovementState.Mantle)
+    // A paired execution's clip carries the body too (PlayerBody.Execution).
+    private bool ClipCarriesBody => playingOut || heaving || PlaysPaired || (!dead && (state == MovementState.Vault || state == MovementState.Mantle)
         && player.Abilities.Traversal.Obstacle.Kind != VaultKind.None) || ClimbsOffLadder;
 
     // Climbing off a ladder's top is warped on its clip's hands too (WarpedTraversal), so the model stays on the capsule.

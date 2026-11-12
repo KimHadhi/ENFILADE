@@ -25,8 +25,9 @@ public sealed partial class ZombieBody
     private const float MoodBlend = .3f, CueIn = .1f, CueOut = .2f;
     // A zombie not calm this long after dressing (s) is a horde one: it never takes its pose.
     private const float PoseWait = 1.5f;
-    // The getting up from a pose sits on its own top input, after the runner's leap and landing (18, 19).
-    private const int GetUpInput = 20, TopInputs = 21;
+    // The getting up from a pose sits on its own top input, after the runner's leap and landing (18, 19); a paired
+    // execution's clip on the one after it (ZombieBody.Executed, ExecutedInput 21).
+    private const int GetUpInput = 20, TopInputs = 22;
     // A share of the body below this no longer counts as its pose showing.
     private const float PoseGone = .02f;
 

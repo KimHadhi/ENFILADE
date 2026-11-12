@@ -132,7 +132,8 @@ public sealed partial class ZombieBody
     /// <summary>A copy: the host's zombie went down or started getting up.</summary>
     private void WatchDown()
     {
-        if (network == null || !network.IsCopy || target == null || Model == null) return;
+        // Taken off its doll by a paired execution, it stays off it while the host's word that it stood comes in.
+        if (network == null || !network.IsCopy || target == null || Model == null || IsExecuted) return;
         bool lying = target.IsLying;
         if (lying && !down) GoDown(false);
         else if (!lying && down && !rising) BeginRise(false, Vector3.zero, Quaternion.identity);
@@ -255,6 +256,8 @@ public sealed partial class ZombieBody
     internal void EndDown()
     {
         if (!down) return;
+        // Where it lay, should the stand be a paired execution's (ZombieBody.Executed lays the pair over it).
+        CaptureDown();
         if (doll != null)
         {
             Vector3 hips = human[(int)HumanBodyBones.Hips].position;

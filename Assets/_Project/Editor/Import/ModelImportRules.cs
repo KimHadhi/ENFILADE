@@ -24,6 +24,8 @@ using UnityEngine;
 /// a slot folder there (ZombieClipFolders) without a list loops by its folder, and its travel becomes root motion, which
 /// a zombie's body drops (ZombieBody moves by its agent).
 /// Resources/Poses (the results show's victory poses) take PoseImport's rules instead: humanoid clips on Mayo's avatar.
+/// Under Art/Animations/Executions the paired executions' clips from the Blender execution workspace are humanoid clips on
+/// KazusaBand's avatar ("_p", the player's) or the Synty zombie's ("_z"), set on every import (ExecutionClip).
 /// </summary>
 internal sealed class ModelImportRules : AssetPostprocessor
 {
@@ -38,6 +40,11 @@ internal sealed class ModelImportRules : AssetPostprocessor
     // plays instead of <cycle> (PlayerBody.Locomotion).
     private static readonly string[] TrueFpsAnimationFolders =
         { AnimationsFolder + "Shove/", AnimationsFolder + "Custom/", AnimationsFolder + "Run/" };
+    // Executions/ holds the paired executions from the Blender execution workspace (Tools/Blender/Executions): each pair's
+    // player clip on KazusaBand's skeleton (enf_exe_<pair>_p) and its zombie clip on the Synty zombie's (enf_exe_<pair>_z).
+    // The workspace writes a bare .meta (its GUID) with each new file, so these settings are made on every import rather
+    // than only when the import settings are missing.
+    private const string ExecutionAnimationsFolder = AnimationsFolder + "Executions/";
     private const string TrueFpsAvatarModel = ModelsFolder + "Characters/KazusaBand/KazusaBand.fbx";
     private const string CharactersCategory = "Characters/";
     private static readonly string[] StaticCategories = { "Props/", "Environment/" };
@@ -58,6 +65,8 @@ internal sealed class ModelImportRules : AssetPostprocessor
     /// <summary>Exported from a Blender True FPS workspace on KazusaBand's skeleton into Art/Animations/Shove or Custom.</summary>
     public static bool IsTrueFpsWorkspaceClip(string path)
         => TrueFpsAnimationFolders.Any(f => path.StartsWith(f, StringComparison.OrdinalIgnoreCase));
+    /// <summary>A paired execution's clip from the Blender execution workspace (Art/Animations/Executions).</summary>
+    public static bool IsExecutionClip(string path) => path.StartsWith(ExecutionAnimationsFolder, StringComparison.OrdinalIgnoreCase);
     private static bool IsImage(string path) => ImageExtensions.Contains(Path.GetExtension(path).ToLowerInvariant());
 
     private void OnPreprocessModel()
@@ -70,6 +79,11 @@ internal sealed class ModelImportRules : AssetPostprocessor
         }
         if ((IsProjectModel(assetPath) || IsAnimationFile(assetPath)) && assetImporter.importSettingsMissing)
             Apply((ModelImporter)assetImporter);
+        if (IsExecutionClip(assetPath))
+        {
+            ExecutionClip((ModelImporter)assetImporter);
+            return;
+        }
         if (IsZombieWorkspaceClip(assetPath))
         {
             var model = (ModelImporter)assetImporter;
@@ -86,6 +100,42 @@ internal sealed class ModelImportRules : AssetPostprocessor
             ShareAvatar(model, TrueFpsAvatarModel);
         }
         else if (IsAnimationFile(assetPath)) ShareTPose((ModelImporter)assetImporter);
+    }
+
+    // Execution clips Unity took in before this rule was compiled (the workspace's bare .meta made them Unity's default
+    // Legacy clips, with no avatar) are taken again after a compile, once: every one of them must be a humanoid clip.
+    [InitializeOnLoadMethod]
+    private static void RetakeExecutionClips()
+    {
+        if (EditorApplication.isPlayingOrWillChangePlaymode) return;
+        EditorApplication.delayCall += () =>
+        {
+            string folder = ExecutionAnimationsFolder.TrimEnd('/');
+            if (!AssetDatabase.IsValidFolder(folder)) return;
+            foreach (string guid in AssetDatabase.FindAssets("t:Model", new[] { folder }))
+            {
+                string path = AssetDatabase.GUIDToAssetPath(guid);
+                if (AssetImporter.GetAtPath(path) is ModelImporter model && model.animationType != ModelImporterAnimationType.Human)
+                    AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
+            }
+        };
+    }
+
+    // A paired execution's clip: a humanoid clip with no materials, on the avatar of the skeleton it was baked on. The
+    // zombie's is baked as the zombie workspace bakes (no axis conversion, Unity's Synty avatar copied), the player's as
+    // the shove and run workspaces bake Kazusa's (her rig node kept under the root).
+    private void ExecutionClip(ModelImporter model)
+    {
+        bool zombie = Path.GetFileNameWithoutExtension(assetPath).EndsWith("_z", StringComparison.OrdinalIgnoreCase);
+        model.importCameras = false;
+        model.importLights = false;
+        model.isReadable = false;
+        model.materialImportMode = ModelImporterMaterialImportMode.None;
+        model.animationType = ModelImporterAnimationType.Human;
+        model.importAnimation = true;
+        model.bakeAxisConversion = !zombie;
+        model.preserveHierarchy = !zombie;
+        ShareAvatar(model, zombie ? ZombieAvatarModel : TrueFpsAvatarModel);
     }
 
     private const string TPoseSuffix = ".tpose.fbx";

@@ -201,7 +201,8 @@ public sealed partial class PlayerBody
         spineLookRoll = bodyLean.SpineRoll(bendWeight);
         // FPS Animation Framework has the upper body while a gun is held; the look bend hands it over and takes it back
         // as smoothly.
-        float target = UpperBodyFromFramework || dead ? 0f : bendWeight;
+        // A paired execution's clip has the spine and head as it was made (PlayerBody.Execution).
+        float target = UpperBodyFromFramework || dead || PlaysPaired ? 0f : bendWeight;
         spineLookWeight = Mathf.MoveTowards(spineLookWeight, target, dt / blendTime);
     }
 

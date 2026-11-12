@@ -468,6 +468,8 @@ public sealed partial class ZombieBody : MonoBehaviour
         EyesTick();
         CrawlTick(dt);
         TickRise(dt);
+        // A paired execution's clip at the pair's own clock (ZombieBody.Executed).
+        ExecutedTick(real);
         Weigh();
         PaceGraph(real);
         // From the frame after dressing, once the pack's spare meshes are gone, so a doll's copy of the body is light.
@@ -496,7 +498,7 @@ public sealed partial class ZombieBody : MonoBehaviour
             lodCheck = .5f;
             lodEvery = ZombieLod.AnimEvery(transform.position);
         }
-        bool busy = Time.time < lodHold || down || riseWeight > 0f || blendLeft > 0f || attackWeight > 0f || flinchWeight > 0f
+        bool busy = Time.time < lodHold || down || riseWeight > 0f || blendLeft > 0f || attackWeight > 0f || flinchWeight > 0f || executedWeight > 0f
             || staggerWeight > 0f || cueWeight > 0f || holdWeight > 0f || leapWeight + landWeight > 0f;
         if (lodSkin == null && Model != null) lodSkin = Model.GetComponentInChildren<SkinnedMeshRenderer>();
         bool slow = lodEvery > 1 && !busy && lodSkin != null && lodSkin.isVisible;
@@ -643,5 +645,7 @@ public sealed partial class ZombieBody : MonoBehaviour
         top.SetInputWeight(4, !crawling && riseFaceDown ? rise : 0f);
         top.SetInputWeight(5, !crawling && !riseFaceDown ? rise : 0f);
         top.SetInputWeight(11, crawling ? rise : 0f);
+        // A paired execution's clip over all of it (ZombieBody.Executed).
+        WeighExecuted();
     }
 }

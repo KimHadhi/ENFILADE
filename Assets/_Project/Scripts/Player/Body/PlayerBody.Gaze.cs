@@ -48,7 +48,8 @@ public sealed partial class PlayerBody
         float weight = 0f;
         if (mixer.IsValid())
             foreach (var channel in animationViewChannels) weight += mixer.GetInputWeight(channel.Input);
-        return weight;
+        // A paired execution's clip leads it as a committed action does (PlayerBody.Execution).
+        return weight + pairedWeight;
     }
 
     private void TuneGaze() => bodyGaze.Tune(animationViewStrength, animationViewLimits, animationViewTime);

@@ -503,6 +503,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         }
         body.localRotation = Quaternion.Euler(0f, yaw, 0f);
         PlaceBody();
+        PlacePaired();
         AimLook(dt);
     }
 

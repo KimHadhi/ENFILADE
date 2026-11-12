@@ -76,6 +76,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
     private DodgeDash dodgeLook;
     private GuardPose guardPose;
     private PlayerExecution execution;
+    private ExecutionPairPlayer executionPairs;
     private ExecutionKnife executionKnife;
     private PlayerThrow throws;
     private PlayerGrenades grenades;
@@ -195,6 +196,8 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
         melee = GetComponent<PlayerMeleeCombat>();
         fists = GetComponent<PlayerFistAudio>();
         execution = GetComponent<PlayerExecution>();
+        // The paired execution the owner's PC chose (ExecutionPairPlayer): every other PC plays it there by PairBeganRpc.
+        executionPairs = ExecutionPairPlayer.For(gameObject);
         // The class knife of an execution (ExecutionKnife): the owner's stroke, copied on every other PC by ExecutionKnifeRpc.
         executionKnife = ExecutionKnife.On(gameObject);
         if (!TryGetComponent(out shoves)) shoves = gameObject.AddComponent<PlayerShoveAudio>();
@@ -262,6 +265,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
             if (dodgeLook != null) dodgeLook.Evaded += OnEvaded;
             if (guardPose != null) guardPose.Posed += OnGuardPosed;
             execution.Started += OnExecutionStarted;
+            if (executionPairs != null) { executionPairs.Began += OnPairBegan; executionPairs.Stopped += OnPairStopped; }
             if (executionKnife != null) executionKnife.Phased += OnExecutionKnife;
             receiver.HitResolved += OnHit;
             gunSkins.Value = GunSkins.LookText();
@@ -293,6 +297,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
         if (dodgeLook != null) dodgeLook.Evaded -= OnEvaded;
         if (guardPose != null) guardPose.Posed -= OnGuardPosed;
         if (execution != null) execution.Started -= OnExecutionStarted;
+        if (executionPairs != null) { executionPairs.Began -= OnPairBegan; executionPairs.Stopped -= OnPairStopped; }
         if (executionKnife != null) executionKnife.Phased -= OnExecutionKnife;
         if (throws != null) throws.Thrown -= OnThrown;
         if (grenades != null)
@@ -686,6 +691,30 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
 
     [Rpc(SendTo.NotMe)]
     private void ExecutionStartedRpc() => CombatCueAudio.Play(gameObject, CombatCue.Grab, 1f, true);
+
+    private void OnPairBegan(ExecutionPairPlayer.Shared shared)
+        => PairBeganRpc(shared.Pair, shared.Victim, shared.Anchor, shared.Yaw, shared.Clock);
+
+    private void OnPairStopped() => PairStoppedRpc();
+
+    // The owner's PC began a paired execution (Tables/Executions.csv) on that zombie, laid there: every other PC plays the
+    // same pair at the same place on its copies of the player and the zombie, caught up by the time the word took (the
+    // user's rule: what one sees is what the others see).
+    [Rpc(SendTo.NotMe)]
+    private void PairBeganRpc(byte pair, ulong victim, Vector3 anchor, float yaw, double clock)
+    {
+        if (executionPairs == null) return;
+        GameObject target = null;
+        if (victim != 0UL && NetworkManager.SpawnManager.SpawnedObjects.TryGetValue(victim, out NetworkObject found)) target = found.gameObject;
+        float late = clock > 0d ? Mathf.Max(0f, (float)(NetworkManager.ServerTime.Time - clock)) : 0f;
+        executionPairs.Show(pair, target, anchor, yaw, late);
+    }
+
+    [Rpc(SendTo.NotMe)]
+    private void PairStoppedRpc()
+    {
+        if (executionPairs != null) executionPairs.ShowStop();
+    }
 
     private void OnExecutionKnife(ExecutionKnife.Phase phase, Vector3 neck, Vector3 head) => ExecutionKnifeRpc((byte)phase, neck, head);
 

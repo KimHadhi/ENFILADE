@@ -412,6 +412,10 @@ Beatrun의 `meslideendprone`·`jumpturnland`는 몸 전체를 앞으로 옮긴�
 
 클립은 [PlayerBody.Fixtures](../Scripts/Player/Body/PlayerBody.Fixtures.cs)가 고른다. 사다리에서는 [PlayerBody.Grip](../Scripts/Player/Body/PlayerBody.Grip.cs)이 어깨를 캡슐 앞 등반 거리로 맞추고(사다리에 붙은 뒤엔 사다리 중앙이다. 붙는 동안에도 몸이 카메라를 싣고 가는 캡슐을 따라간다. 예전에는 사다리에서 재서 몸이 0.15초 만에 먼저 가 있었고, 카메라가 아래에서는 머리 뒤 0.3m, 위에서 F로 탈 때는 얼굴 앞 0.9m에 남았다), [PlayerBodyHands.Ladder](../Scripts/Player/Body/PlayerBodyHands.Ladder.cs)가 양손을 각각 실제 가로대에 고정한다. 오르는 손은 `LadderLeftHand`와 실제 한 칸 이동 진행률(`LadderStepProgress`)을 따른다. 한 칸 오르기와 멈춤은 MoCap Online의 가로대 간격 400mm 클립(`Ability.ladderRungHeight` 0.39m와 맞다)이고, 잡기·꼭대기 넘기·미끄러져 내려오기는 게임의 짧은 시간에 맞는 Beatrun 클립이다. 위에서 탈 때는 꼭대기 넘기 클립을 거꾸로, 이동 진행에 맞춰 튼다. 걸어 나가 타면 0.75초(`Ability.ladderTopWalkTime`), F로 타면 1.1초(`ladderTopEnterTime`)이고 손이 가로대를 잡는 시간도 같다. 다른 PC에도 같은 클립과 시간으로 보인다(포즈의 `Extent`). 원래 두 칸을 오르는 반복 클립을 `clips.csv`의 `to`로 절반만 쓰고, `Body.ladderClipSpeed`로 `Ability.ladderRungInterval`에 맞춘다. `ladderRungInterval`을 바꾸면 이 값도 함께 바꾼다. 클립 이름의 `LU`는 왼발이 위라는 뜻이라 손은 반대로 오른손이 위다. 집라인에서는 몸 전체를 옮겨 손을 줄에 맞추며 개별 손 IK는 아직 없다. 몸이 향할 수 있는 범위는 `Body.fixtureTurnLimit`이다.
 
+## 처형·암살 짝 클립
+
+처형과 암살은 좀비 상태별 짝 클립이 몸 전체를 맡는다([PlayerBody.Execution](../Scripts/Player/Body/PlayerBody.Execution.cs)). 클립은 층 섞개의 맨 위 층(6, 가림 없음: 골반·다리·팔·손가락 모두)에 얹히고, 몸 뿌리가 캡슐 밑에서 떠나 짝의 자리(좀비 발 자리에서 표의 `right`·`forward`·`yaw`)로 `align`초에 걸쳐 옮겨 간다. 도는 동안 머리 따라가기(FollowHead)·시선 굽히기·발 딛기는 쉬고, 시선은 클립의 머리를 동작 클립처럼 따른다(BodyGaze). 끝나면 몸이 선 자리·방향에서 그대로 평소 배치로 돌아와 튀지 않는다. 클립 시간은 짝의 시계가 정해 좀비 클립과 함께 간다. 클립은 `Art/Animations/Executions`(`enf_exe_<짝>_p`), 만들고 고치는 곳은 [ArtSource/Executions](../../../ArtSource/Executions/START_HERE.md), 게임 쪽 설명은 [Executions.md](Executions.md).
+
 ## 몸 밖 카메라 (애송이 모드·처형 시네마틱)
 
 [ThirdPersonCamera](../Scripts/Player/Camera/ThirdPersonCamera.cs)가 이 PC의 플레이어에게만 붙는다(다른 플레이어 화면에는 없다). 몸이 카메라를 눈에 붙인 뒤(FrameOrder 270), 총·무기보다 먼저 카메라만 옮긴다. 총·주먹·근접 판정은 F5 때처럼 눈 시점에 남고, 총알은 화면 가운데 조준점이 가리키는 곳으로 나간다. F5 시점이거나 죽었을 때는 물러난다. 수치는 [ThirdPerson.csv](../Resources/Tables/ThirdPerson.csv)의 `Rookie`·`Execution` 줄이다.
