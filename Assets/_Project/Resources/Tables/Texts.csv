@@ -260,6 +260,7 @@ settings.screen.frame_limit.none,무제한,,설정 창 > 화면 > 프레임 제�
 settings.screen.view,시야,,설정 창 > 화면 > 소제목
 settings.screen.fov,시야각,,설정 창 > 화면 > 행
 settings.screen.shake,화면 흔들림,,설정 창 > 화면 > 행
+settings.screen.body_sway,1인칭 몸 흔들림,,설정 창 > 화면 > 행 (화면이 몸의 움직임을 따라가는 비율. 낮추면 잔잔해지고 머리는 몸을 굽혀 화면으로 온다)
 settings.screen.own_head,내 머리카락 보기,,설정 창 > 화면 > 행
 settings.camera.rookie_header,파쿠르 3인칭,,설정 창 > 카메라 > 소제목
 settings.camera.rookie,애송이 모드,,설정 창 > 카메라 > 행(켜면 아래 동작 줄들이 보인다)

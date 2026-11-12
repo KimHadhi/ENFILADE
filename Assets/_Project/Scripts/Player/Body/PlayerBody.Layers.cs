@@ -27,8 +27,9 @@ public sealed partial class PlayerBody
     private float punchClipSpeed = 1.6f;
     [SerializeField, Min(.01f), Tooltip("Time for a punch clip to take over and to give back the arm (s).")]
     private float punchBlendIn = .04f, punchBlendOut = .12f;
-    [SerializeField, Range(0f, 1f), Tooltip("Share of the way the camera steadies off the eyes during a punch, because its chest carries the head forward.")]
-    private float punchEyeSteady = .5f;
+    [SerializeField, Range(0f, 1f), Tooltip("Share of the way the camera steadies off the eyes during a punch, because its chest "
+        + "carries the head forward; the head then bends to the camera (HeadReach), so head and view go only the rest of the way.")]
+    private float punchEyeSteady = .7f;
 
     private readonly List<Channel> punchChannels = new List<Channel>();
     private readonly Dictionary<string, Channel> punchByName = new Dictionary<string, Channel>(StringComparer.OrdinalIgnoreCase);

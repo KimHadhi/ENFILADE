@@ -7,7 +7,8 @@ using MovementState = PlayerMovement.MovementState;
 /// - On a ledge, only height and distance from the wall; sideways the body stays under the camera. Looking away, it keeps
 ///   the place it had facing the wall: a look clip's hand sits closer in, and fitting that would pull the body into the wall.
 ///   The arm reaches the ledge instead, and the body moves only for what it can't (PlayerBodyHands.EdgeHoldBack).
-/// - On a ladder, shoulders stay centred at climbing distance; PlayerBodyHands pins each hand to its rung.
+/// - On a ladder, shoulders stay centred at climbing distance, and the body goes up or down so the eyes sit at the
+///   camera's steady height (the camera stays at its place in the capsule there); PlayerBodyHands pins each hand to its rung.
 /// - On a zipline, onto the cable; the ride carries the body along it.
 /// - On a swing bar, onto the bar after PlayerBody.Bar has turned the body with the swing; PlayerBodyHands closes each hand
 ///   round it.
@@ -17,6 +18,9 @@ public sealed partial class PlayerBody
     [Header("Ledge grip")]
     [SerializeField, Tooltip("Where the wrists rest while hanging: above the ledge top, and in from its face (m).")]
     private Vector2 ledgeGrip = new Vector2(.05f, .05f);
+    [SerializeField, Min(0f), Tooltip("On a ladder, the most the body goes up or down to put its eyes at the camera's height (m). "
+        + "The hands' rungs are already picked for eyes at that height (PlayerBodyHands.Ladder).")]
+    private float ladderHeadShift = .2f;
 
     private Transform leftHand, rightHand;
     private Vector3 gripOffset, hangHips;
@@ -86,6 +90,13 @@ public sealed partial class PlayerBody
                 float shoulderDistance = Mathf.Max(player.AbilitySettings.ladderStandOff, player.runtimeBodyDefaults.w * .25f);
                 Vector3 stand = fixtures.Ladder.transform.position + fixtures.Ladder.Outward * shoulderDistance;
                 gripOffset = Vector3.ProjectOnPlane(stand - shoulders, Vector3.up);
+                // Up or down too, so the eyes sit at the camera's height: on a ladder the camera keeps to its place in the
+                // capsule (PlayerBody.Look), because the rung clips and the slide clip hold the head at different heights
+                // and tapping W and S would lurch a camera on the eyes. Measured from this frame's pose, so the body
+                // follows each clip as it blends in and the head stays where the camera is. Bending can't raise a head
+                // (HeadReach), so the whole body moves; the hands and feet then find their rungs from it.
+                if (head != null)
+                    gripOffset.y = Mathf.Clamp(bodyCamera.Anchor().y - head.TransformPoint(eyeLocal).y, -ladderHeadShift, ladderHeadShift);
                 break;
             case MovementState.Zipline:
                 gripOffset = Vector3.ProjectOnPlane(fixtures.ZiplineFrom - hands, fixtures.ZiplineDirection);

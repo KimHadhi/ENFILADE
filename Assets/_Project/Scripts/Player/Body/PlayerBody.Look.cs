@@ -14,6 +14,8 @@ using MovementState = PlayerMovement.MovementState;
 /// - The mouse leads the camera; selected action clips add a bounded rotation (BodyGaze).
 /// - The camera rides the eyes (BodyCamera): this hands it the eyes, the lean's carry and the gaze each frame, and how far
 ///   to ride them (off them toward the capsule on a ladder and through a punch).
+/// - Wherever the camera goes, the head goes with it (HeadReach): where it steadies off the eyes, the spine, chest and neck
+///   bend the head to it, so the camera never sits outside the head (the user, 2026-11-12).
 /// - The Esc menu's own-head option shows the head and hair; the near clip plane cuts what sits around the camera.
 /// </summary>
 public sealed partial class PlayerBody
@@ -46,6 +48,14 @@ public sealed partial class PlayerBody
         + "(degrees), as Beatrun holds its high climb (45). The camera rides the head, so looking back over the shoulder "
         + "would look through the own neck.")]
     private float mantleTurnLimit = 45f;
+    [SerializeField, Min(0f), Tooltip("Where the camera steadies off the eyes, the most the body bends the head to it (m, HeadReach). "
+        + "Past this the camera keeps the rest off the head, as before.")]
+    private float headReachMove = .08f;
+    [SerializeField, Tooltip("The most each spine bone (x) and the neck (y) turns to bring the head to the camera (degrees).")]
+    private Vector2 headReachLimits = new Vector2(6f, 12f);
+    [SerializeField, Min(0f), Tooltip("With less body sway (Settings → 화면 → 몸 흔들림), how slowly the camera's path through the "
+        + "eyes follows them (s).")]
+    private float bodySwayTime = .12f;
 
     // Turning to face a set way (onto the back from a front dive, along a swing bar), the body comes round this fast
     // (degrees per second).
@@ -70,6 +80,8 @@ public sealed partial class PlayerBody
 
     // The camera on the eyes (BodyCamera): it holds its own state, and Look hands it the pose each frame.
     private readonly BodyCamera bodyCamera = new BodyCamera();
+    // The head brought to wherever the camera went (HeadReach), last in the pose work.
+    private readonly HeadReach headReach = new HeadReach();
 
     private Transform lookPivot, leftUpperArm, rightUpperArm;
     private Vector3 restForward;
@@ -99,6 +111,7 @@ public sealed partial class PlayerBody
         lookPivot = view == null || view.parent == null ? null
             : view.parent.name == "CameraEffectsPivot" && view.parent.parent != null ? view.parent.parent : view.parent;
         spineLook.Bind(animator, SpineBendDown, SpineBendUp);
+        headReach.Bind(animator);
         bendWeight = spineLookWeight = spineLookPitch = spineLookRoll = 0f;
         slideLookPitch = slideLookTwist = 0f;
         slideBodyAnchored = false;
@@ -204,7 +217,15 @@ public sealed partial class PlayerBody
         // In the F5 view too: the eyes take this pose, then the camera moves behind (PlaceViewBehind). With nothing in hand
         // the body carries part of the Q/E peek and the camera makes up the rest, as up to 0.7.34; holding a gun or the
         // fists the body carries all of it and the camera stays on the eyes, where the guard and the sight are placed from.
-        bodyCamera.Place(eye, eyeBefore, carried, bodyLean.CameraMakesUp, bodyGaze.Rotation, bodyGaze.Input, CameraIgnores());
+        bodyCamera.Place(eye, eyeBefore, carried, bodyLean.CameraMakesUp, bodyGaze.Rotation, bodyGaze.Input, CameraIgnores(),
+            dt, bodySwayTime);
+        // Then the head goes where the camera went: off the eyes (a punch, a slip's dip, a peek's share, a wall, less body
+        // sway) the spine, chest and neck bend it there, so the view is never outside the head, seen from outside too (the
+        // user, 2026-11-12: "캐릭터의 머리와 카메라가 일치해서 True FPS의 몰입감은 있으면서 너무 멀미나거나 게임 플레이에
+        // 방해가 되지 않게"). With FPSAF holding a gun only the neck bends, so the hands stay on it. Most frames the camera is
+        // on the eyes and nothing moves.
+        if (!dead && bodyCamera.HasPlace)
+            headReach.Meet(eyeLocal, bodyCamera.Placed, headReachMove, headReachLimits, UpperBodyFromFramework);
     }
 
     // On the back in the air the body faces back the way it flies, as Beatrun's jump turn sets it, and the view turns within

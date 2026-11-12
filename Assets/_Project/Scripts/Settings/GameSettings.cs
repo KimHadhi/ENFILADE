@@ -51,6 +51,9 @@ public sealed class GameSettings
     public string keyBindings = "";
     [Tooltip("Scales head bob, landing, impacts and movement tilt. Lean and weapon recoil are not affected.")]
     public float screenShake = 1f;
+    [Tooltip("How much of the body's own sway the first-person view follows (1 rides the eyes as they move, 0 follows an "
+        + "eased path through them). The head bends to wherever the view is (HeadReach), so the two stay together.")]
+    public float bodySway = 1f;
     [Tooltip("How much the HUD trails the look when turning (HudCamera). 0 keeps it still.")]
     public float hudSway = .5f;
     [Tooltip("Scales each HUD element's own lean: the rows of HudTilt.csv, the teammate cards and the score popup. " +
@@ -172,7 +175,7 @@ public sealed class GameSettings
                 s.monitorName = d.monitorName; s.monitorIndex = d.monitorIndex;
                 s.resolutionWidth = d.resolutionWidth; s.resolutionHeight = d.resolutionHeight; s.windowMode = d.windowMode;
                 s.vSync = d.vSync; s.frameLimit = d.frameLimit;
-                s.fieldOfView = d.fieldOfView; s.screenShake = d.screenShake; s.showOwnHead = d.showOwnHead;
+                s.fieldOfView = d.fieldOfView; s.screenShake = d.screenShake; s.bodySway = d.bodySway; s.showOwnHead = d.showOwnHead;
                 break;
             case SettingsGroup.Camera:
                 s.rookieMode = d.rookieMode; s.rookieVault = d.rookieVault; s.rookieLadder = d.rookieLadder;
@@ -229,6 +232,7 @@ public sealed class GameSettings
         ambienceVolume = Mathf.Clamp01(ambienceVolume);
         mouseSensitivity = Mathf.Clamp(mouseSensitivity, MinSensitivity, MaxSensitivity);
         screenShake = Mathf.Clamp01(screenShake);
+        bodySway = Mathf.Clamp01(bodySway);
         hudSway = Mathf.Clamp01(hudSway);
         hudTilt = Mathf.Clamp(hudTilt, 0f, MaxHudTilt);
         hudAngle = Mathf.Clamp(hudAngle, 0f, MaxHudAngle);

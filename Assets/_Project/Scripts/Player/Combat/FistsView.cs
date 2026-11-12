@@ -80,6 +80,8 @@ public sealed class FistsView : MonoBehaviour
             // The view whips round against the swing as the body turns into it, and settles.
             float across = right ? 1f : -1f;
             CombatHeadMotion.For(this)?.Move(Vector3.zero, new Vector3(0f, -across * SpinYaw, across * SpinRoll), SpinOut, SpinHold, SpinBack);
+            // Its whip is the view's turn; the knock as it lands is still the punch's (PlayerMeleeCombat.FeelThrow).
+            melee.FeelThrow(right, true);
             Thrown?.Invoke(right, charge);
             return;
         }
@@ -95,6 +97,8 @@ public sealed class FistsView : MonoBehaviour
         if (right) { rightPunchTime = rightPunchLength = length; rightReach = reach; }
         else { leftPunchTime = leftPunchLength = length; leftReach = reach; }
         nextRight = !right;
+        // The view turns a little toward the fist (PlayerMeleeCombat.FeelThrow).
+        melee.FeelThrow(right, false);
         Thrown?.Invoke(right, charge);
     }
     // The fist on the attacker's side pulls back beside the chest, past the eyes, so the arm drives its elbow behind.

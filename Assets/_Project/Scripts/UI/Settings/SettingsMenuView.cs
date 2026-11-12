@@ -267,6 +267,8 @@ public sealed class SettingsMenuView
         rows.Slider(Texts.Get("settings.screen.fov"), GameSettings.MinFieldOfView, GameSettings.MaxFieldOfView, s.fieldOfView,
             v => s.fieldOfView = Mathf.Round(v), v => Mathf.RoundToInt(v) + "°");
         rows.Volume(Texts.Get("settings.screen.shake"), s.screenShake, v => s.screenShake = v);
+        // How much of the body's own sway the view follows; the head bends to the view either way (HeadReach).
+        rows.Volume(Texts.Get("settings.screen.body_sway"), s.bodySway, v => s.bodySway = v);
         rows.Choice(Texts.Get("settings.screen.own_head"), OffOn, s.showOwnHead ? 1 : 0, i => s.showOwnHead = i == 1);
     }
 

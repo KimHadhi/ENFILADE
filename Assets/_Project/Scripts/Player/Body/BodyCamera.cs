@@ -12,6 +12,9 @@ using UnityEngine;
 /// - a sweep from a steady point inside the movement capsule to the eyes keeps it out of walls (CameraClearance), the last
 ///   guard after the face has cleared them (PlayerBody.ClearFace);
 /// - F5 puts it behind the body (PlaceBehind); the Esc menu's own-head option sets the near clip plane (CutOwnHead).
+/// - Settings → 화면 → 몸 흔들림 (GameSettings.bodySway): below 1 it follows an eased path through the eyes instead of the
+///   eyes themselves. Wherever it ends up, the body then bends its head to it (HeadReach, from Placed), so the camera
+///   steadies without leaving the head.
 /// A plain class PlayerBody owns (stage 3 of the body restructure, 2026-11-09): it holds the camera's own state, and the
 /// body hands it the pose each frame (Place). The numbers stay PlayerBody's (Player.csv, row Body).
 /// </summary>
@@ -26,9 +29,18 @@ internal sealed class BodyCamera
     private Vector3 home;
     private Quaternion rotationHome = Quaternion.identity;
     private float baseNearClip, eyeWeight = 1f;
+    // The eyes' place against the camera's steady place in the capsule, in the capsule's own frame, and its eased path
+    // (bodySway). In the capsule's frame, so a turn or the capsule's own move never lags.
+    private Vector3 easedEyes;
+    private bool eased;
 
     /// <summary>The player's camera, or null if it has none.</summary>
     internal Transform View => view;
+
+    /// <summary>Where Place last put the first-person camera, walls and all (the F5 view moves it on after), and whether it
+    /// has put it anywhere since the body was made. The head bends to it (HeadReach).</summary>
+    internal Vector3 Placed { get; private set; }
+    internal bool HasPlace { get; private set; }
 
     /// <summary>Finds the player's camera and its resting place. Before the body is made.</summary>
     internal void Find(PlayerMovement player, Transform owner)
@@ -50,6 +62,7 @@ internal sealed class BodyCamera
         rotationHome = view != null ? view.localRotation : Quaternion.identity;
         capsule = owner != null ? owner.GetComponent<CharacterController>() : null;
         eyeWeight = 1f;
+        eased = HasPlace = false;
     }
 
     /// <summary>The body went: the camera goes back where it rests, with its own near clip plane.</summary>
@@ -58,11 +71,17 @@ internal sealed class BodyCamera
         if (camera != null) camera.nearClipPlane = baseNearClip;
         camera = null;
         if (view != null) { view.localPosition = home; view.localRotation = rotationHome; }
+        eased = HasPlace = false;
     }
 
     /// <summary>How far the camera rides the eyes (1) rather than its place in the capsule (0), eased over
     /// <paramref name="time"/> (s).</summary>
     internal void EaseOntoEyes(float target, float time, float dt) => eyeWeight = Mathf.MoveTowards(eyeWeight, target, dt / time);
+
+    /// <summary>The camera's steady place in the capsule this frame, where it goes when it doesn't ride the eyes.</summary>
+    internal Vector3 Anchor()
+        => effects != null ? effects.CameraAnchorPosition
+            : view != null && view.parent != null ? view.parent.TransformPoint(home) : owner.position + Vector3.up * player.runtimeBodyDefaults.w;
 
     /// <summary>
     /// A stable point inside the movement capsule stays on the same side of a wall as the player. In particular, the sweep's
@@ -102,23 +121,40 @@ internal sealed class BodyCamera
     /// where they were before the lean's hanging arm, the face's clearance and the head's turn to the gaze; a camera steadied
     /// off the eyes keeps that move. <paramref name="carried"/> and <paramref name="makesUp"/> are the lean's
     /// (BodyLean.Carry, BodyLean.CameraMakesUp). <paramref name="gaze"/> is where the view looks and <paramref name="input"/>
-    /// where the mouse alone has it. The sweep goes past <paramref name="ignored"/>.
+    /// where the mouse alone has it. The sweep goes past <paramref name="ignored"/>. <paramref name="dt"/> and
+    /// <paramref name="swayTime"/> (s) ease the path the camera follows with less body sway (GameSettings.bodySway).
     /// </summary>
-    internal void Place(Vector3 eye, Vector3 eyeBefore, Vector3 carried, float makesUp, Quaternion gaze, Quaternion input, Transform ignored)
+    internal void Place(Vector3 eye, Vector3 eyeBefore, Vector3 carried, float makesUp, Quaternion gaze, Quaternion input, Transform ignored,
+        float dt = 0f, float swayTime = 0f)
     {
         if (view == null) return;
-        Vector3 anchor = effects != null ? effects.CameraAnchorPosition
-            : view.parent != null ? view.parent.TransformPoint(home) : owner.position + Vector3.up * player.runtimeBodyDefaults.w;
+        Vector3 anchor = Anchor();
         Turn(gaze, input);
-        // Combat's head moves (a slip's dip) go on the eyes as they are, the body itself staying put (CombatHeadMotion).
+        // Combat's head moves (a slip's dip) go on the eyes as they are; the head then bends to the camera (HeadReach).
         Vector3 headMove = effects != null ? effects.HeadDisplacement : Vector3.zero;
         // The Q/E lean's whole peek (wall-limited by the camera effects), the share the camera makes up.
         Vector3 lean = (effects != null ? effects.LeanDisplacement : owner.right * player.LeanOffset) * makesUp;
-        Vector3 target = Vector3.Lerp(anchor + lean + eye - eyeBefore, eye + lean - carried * makesUp, eyeWeight) + headMove;
+        Vector3 riding = Sway(eye, anchor, dt, swayTime);
+        Vector3 target = Vector3.Lerp(anchor + lean + eye - eyeBefore, riding + lean - carried * makesUp, eyeWeight) + headMove;
         // The pose cleared the wall first; this stable capsule-to-eye sweep is the final guard for any remaining contact.
         clearance.Ignored = ignored;
         view.position = clearance.Resolve(SafeAnchor(), target, Radius(), Blockers, owner);
+        Placed = view.position;
+        HasPlace = true;
         PlayerView.Follow(eyes, view);
+    }
+
+    // Settings → 화면 → 몸 흔들림 (bodySway): the share of the eyes' own sway the camera follows; the rest of the way it
+    // keeps to their eased path, eased in the capsule's frame. The path is kept up at any setting, so changing it mid-game
+    // never jumps. Someone else's copy rides its eyes: their setting isn't known on this PC.
+    private Vector3 Sway(Vector3 eye, Vector3 anchor, float dt, float swayTime)
+    {
+        Vector3 offset = owner.InverseTransformVector(eye - anchor);
+        if (!eased || dt <= 0f || swayTime <= 0f) easedEyes = offset;
+        else easedEyes = Vector3.Lerp(easedEyes, offset, 1f - Mathf.Exp(-dt / swayTime));
+        eased = true;
+        float sway = player != null && player.IsLocal ? GameSettings.Current.bodySway : 1f;
+        return sway >= .999f ? eye : anchor + owner.TransformVector(Vector3.Lerp(easedEyes, offset, sway));
     }
 
     // Effects (lean, impact, recoil presentation) stay additive and are applied once, after the gaze. Weapons and hands run

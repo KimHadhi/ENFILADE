@@ -18,6 +18,16 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
     [SerializeField, Min(0f)] private float lungeDistance = 0.12f;
     [SerializeField, Range(0f, 1f), Tooltip("Punches charged at least this far land with the heavy hit sound.")]
     private float heavyPunchCharge = .6f;
+    [SerializeField, Tooltip("A punch going out turns the view a little and lets it straight back (degrees: up, toward the "
+        + "punching fist, roll toward it). Only the view: the aim stays (CameraViewPunch).")]
+    private Vector3 punchThrowKick = new Vector3(-.3f, .8f, .6f);
+    [SerializeField, Tooltip("A punch landing knocks the view (degrees: up, toward the fist, roll toward it), in real time so it "
+        + "shows inside a hit stop.")]
+    private Vector3 punchLandKick = new Vector3(-1f, .4f, .6f);
+    [SerializeField, Min(0f), Tooltip("A punch landing narrows the view this much for a moment (degrees of field of view).")]
+    private float punchLandZoom = 1.2f;
+    [SerializeField, Min(1f), Tooltip("A full charge's kicks are this many times a quick punch's.")]
+    private float punchChargedKick = 1.6f;
     [Header("Guard / Parry")]
     [Tooltip("Parry window per press, game seconds (Sekiro's deflect: 12 frames, then shorter each time the guard is let go and pressed again soon, down to 4 frames and then none). 0 means that press only guards.")]
     [SerializeField] private float[] parryWindowDurations = { .2f, .133f, .067f, 0f };
@@ -292,6 +302,7 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
         combos?.OnPunchThrown(strike);
         // Swing first: the sweep can land on its first sample inside Begin.
         punchLanded = false; punchCharge = charge; fistAudio?.PlaySwing();
+        throwFelt = landFeltLater = false;
         // A Knight's fists hit harder, flesh and posture (PlayerClass).
         float fist = PlayerClass.FistFactor(player);
         float dealt = Mathf.Lerp(damage.x, damage.y, charge) * fist * damageFactor;
@@ -330,8 +341,53 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
             if (punchCharge >= heavyPunchCharge) fistAudio?.PlayHeavyHit();
             else fistAudio?.PlayHit();
             combos?.OnPunchLanded();
+            // The knock needs the hand, which FistsView picks just after the sweep's first sample: a punch landing on it
+            // gets its knock from FeelThrow.
+            if (throwFelt) FeelLanding();
+            else landFeltLater = true;
         }
         punchLanded = true;
+    }
+
+    // The punch's feel on this PC's own view (the user, 2026-11-12, as the head stays steadier through a punch and the
+    // camera with it: "손맛은 회전으로"): a little turn toward the fist as it goes out, and a knock and a narrowing as it
+    // lands. Only the view kicks (CameraViewPunch); the aim and the next punch's sweep keep to the steady view.
+    private bool throwFelt, landFeltLater, punchFromRight = true;
+    private Camera ownView;
+
+    /// <summary>A punch went out from this hand (FistsView): the view turns toward the fist, unless the strike turns the
+    /// view itself (<paramref name="viewTurns"/>, the spinning backfist's whip).</summary>
+    internal void FeelThrow(bool right, bool viewTurns)
+    {
+        punchFromRight = right;
+        throwFelt = true;
+        if (!viewTurns && OwnViewPunch(out var punch)) punch.Punch(TowardFist(punchThrowKick) * ChargedKick);
+        if (!landFeltLater) return;
+        landFeltLater = false;
+        FeelLanding();
+    }
+
+    private void FeelLanding()
+    {
+        if (OwnViewPunch(out var punch)) punch.ImpactPunch(TowardFist(punchLandKick) * ChargedKick, -punchLandZoom * ChargedKick);
+    }
+
+    private float ChargedKick => Mathf.Lerp(1f, punchChargedKick, punchCharge);
+
+    // Up, toward the punching fist and rolled toward it: yaw is to the right and roll to the left for positive values.
+    private Vector3 TowardFist(Vector3 kick)
+    {
+        float side = punchFromRight ? 1f : -1f;
+        return new Vector3(kick.x, kick.y * side, -kick.z * side);
+    }
+
+    private bool OwnViewPunch(out CameraViewPunch punch)
+    {
+        punch = null;
+        if (player == null || !player.IsLocal || player.IsNetworkDriven) return false;
+        if (ownView == null) ownView = player.GetComponentInChildren<Camera>();
+        punch = CameraViewPunch.For(ownView);
+        return punch != null;
     }
     private void OnPunchWallHit()
     {

@@ -386,6 +386,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         loadedSkin = null;
         loadedVariant = null;
         animator = null;
+        headReach.Clear();
         bodyCamera.Release();
         // Without a body the camera rests at the capsule's own height again.
         eyeRise = 0f;
