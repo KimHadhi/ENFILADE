@@ -19,6 +19,7 @@ public sealed partial class ZombieBody
     // How long the alert's mark stays on it after it comes (real s): long enough to turn and find it.
     private const float MarkSeconds = 6f;
     private static AudioClip roar, sting;
+    internal static void WarmSounds() { Roar(); Sting(); } // made behind the loading screen (SceneWarmup), not on the first brute's frame
 
     // How much bigger than the pack's own size this body stands, and whether it wears a body of its own (never grown).
     private float grown = 1f;

@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using UnityEngine;
+using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 using Debug = UnityEngine.Debug;
 using Object = UnityEngine.Object;
@@ -18,12 +19,19 @@ using Object = UnityEngine.Object;
 /// Shader.EditorCompileVariant on the chapter's first frame and 3.6 s more coming back to the hub.
 /// Everything stands small on a grid that follows the camera, a few metres ahead, with colliders off; it is built within a
 /// time budget a frame and thrown away when the warm-up ends. The zombie looks also stock ragdoll dolls for their rig
-/// (ZombieCorpse.Stock), so the first death finds one ready.
+/// (ZombieCorpse.Stock), so the first death finds one ready. The looks are the pared ones zombies now wear
+/// (ZombieLookTemplates), so the grid no longer holds 40 copies of the whole Synty pack (6275 objects in the 22:13 run).
+/// The face lens (Face) does what the callout feed's camera does on the first callout of a run (the brute's leg shout):
+/// it draws this PC's own head, which first person keeps to shadows only, from the front into a small texture with the
+/// feed's camera settings, so the face's materials are compiled and their states made here.
 /// </summary>
 [DisallowMultipleComponent]
 internal sealed class CombatRehearsal : MonoBehaviour
 {
-    private const string ShaderFolder = "Combat/Shaders";
+    private const string ShaderFolder = "Combat/Shaders", FeedTileShader = "UI/Custom/SquarePortrait";
+    // The callout feed's picture and lens, as CalloutFeedHUD makes them (Faces.csv Feed.size 256, fov 34, near 0.05).
+    private const int FaceSize = 256;
+    private const float FaceFov = 34f, FaceNear = .05f, FaceFar = 40f, FaceDistance = .85f;
     // The grid's lowest row, counted from the middle of the view, so most of it stands where the view is widest.
     private const int LowestRow = -3;
 
@@ -33,6 +41,11 @@ internal sealed class CombatRehearsal : MonoBehaviour
     private readonly List<Animator> rigs = new List<Animator>();
     private readonly HashSet<Avatar> stood = new HashSet<Avatar>();
     private readonly List<Object> owned = new List<Object>();
+    private readonly List<Renderer> own = new List<Renderer>(), shownOwn = new List<Renderer>();
+    private Camera faceLens;
+    private Transform faceHead;
+    private PlayerMovement faceOf;
+    private RenderTexture faceTexture;
 
     /// <summary>How many things stand on the grid.</summary>
     public int Placed => placed;
@@ -81,6 +94,9 @@ internal sealed class CombatRehearsal : MonoBehaviour
             if (shader != null && shader.isSupported) steps.Add(() => Quad(Own(new Material(shader) { name = shader.name + " (Rehearsal)" })));
         // The grey of a frag's thrown grit, and of a throwable drawn from plain shapes.
         steps.Add(() => Quad(Throwables.Look(Color.gray)));
+        // The callout feed's picture tile (CalloutFeedHUD), a UI shader found by name.
+        var tile = Shader.Find(FeedTileShader);
+        if (tile != null && tile.isSupported) steps.Add(() => Quad(Own(new Material(tile) { name = FeedTileShader + " (Rehearsal)" })));
 
         var gore = GoreLibrary.Instance;
         if (gore != null)
@@ -97,7 +113,7 @@ internal sealed class CombatRehearsal : MonoBehaviour
 
         var zombies = ZombieLooks.Instance;
         if (zombies != null && zombies.characters != null)
-            foreach (var character in zombies.characters) steps.Add(() => Look(character, true));
+            foreach (var character in zombies.characters) steps.Add(() => Look(ZombieLookTemplates.Of(character), true));
 
         var throwables = Resources.Load<GrenadeLibrary>(GrenadeLibrary.ResourcePath);
         if (throwables != null)
@@ -240,7 +256,97 @@ internal sealed class CombatRehearsal : MonoBehaviour
         item.position += (pivot - bounds.center) * factor;
     }
 
-    private void LateUpdate() => Follow();
+    /// <summary>
+    /// Points a lens like the callout feed's at <paramref name="mine"/>'s face and keeps drawing it every frame the rehearsal
+    /// stands. False when there is no body with a head to draw.
+    /// </summary>
+    public bool Face(PlayerMovement mine)
+    {
+        if (faceLens != null || mine == null || !mine.TryGetComponent(out PlayerBody body) || body.BodyAnimator == null) return false;
+        faceHead = body.BodyAnimator.isHuman ? body.BodyAnimator.GetBoneTransform(HumanBodyBones.Head) : null;
+        if (faceHead == null) return false;
+        faceOf = mine;
+        faceTexture = new RenderTexture(FaceSize, FaceSize, 16, RenderTextureFormat.ARGB32)
+        {
+            name = "Face Rehearsal", antiAliasing = 1, useMipMap = false, hideFlags = HideFlags.HideAndDontSave
+        };
+        faceTexture.Create();
+        var host = new GameObject("Face Lens");
+        host.transform.SetParent(transform, false);
+        faceLens = host.AddComponent<Camera>();
+        faceLens.allowHDR = false;
+        faceLens.allowMSAA = false;
+        faceLens.useOcclusionCulling = true;
+        faceLens.fieldOfView = FaceFov;
+        faceLens.nearClipPlane = FaceNear;
+        faceLens.farClipPlane = FaceFar;
+        faceLens.targetTexture = faceTexture;
+        if (eye != null)
+        {
+            int ui = LayerMask.NameToLayer("UI");
+            faceLens.cullingMask = ui >= 0 ? eye.cullingMask & ~(1 << ui) : eye.cullingMask;
+            faceLens.clearFlags = eye.clearFlags;
+            faceLens.backgroundColor = eye.backgroundColor;
+            faceLens.depth = eye.depth - 2f;
+        }
+        var data = faceLens.GetUniversalAdditionalCameraData();
+        data.renderType = CameraRenderType.Base;
+        data.renderPostProcessing = false;
+        data.antialiasing = AntialiasingMode.None;
+        data.requiresColorOption = CameraOverrideOption.On;
+        data.requiresDepthOption = CameraOverrideOption.Off;
+        data.renderShadows = false;
+        data.stopNaN = false;
+        data.dithering = false;
+        own.Clear();
+        mine.GetComponentsInChildren(true, own);
+        RenderPipelineManager.beginCameraRendering += BeforeRender;
+        RenderPipelineManager.endCameraRendering += AfterRender;
+        AimFace();
+        return true;
+    }
+
+    // In front of the face, a little aside and above, looking at it: the feed's framing.
+    private void AimFace()
+    {
+        if (faceLens == null || faceHead == null || faceOf == null) return;
+        var root = faceOf.transform;
+        Vector3 face = faceHead.position, at = face + root.forward * FaceDistance + root.right * .12f + root.up * .04f;
+        faceLens.transform.SetPositionAndRotation(at, Quaternion.LookRotation(face - at, root.up));
+    }
+
+    // This PC's head and what is worn over the face are shadows only in first person; on for the face lens alone, as the
+    // feed does it.
+    private void BeforeRender(ScriptableRenderContext context, Camera camera)
+    {
+        if (camera == null || camera != faceLens) return;
+        shownOwn.Clear();
+        foreach (var renderer in own)
+        {
+            if (renderer == null || renderer.shadowCastingMode != ShadowCastingMode.ShadowsOnly) continue;
+            renderer.shadowCastingMode = ShadowCastingMode.On;
+            shownOwn.Add(renderer);
+        }
+    }
+
+    private void AfterRender(ScriptableRenderContext context, Camera camera)
+    {
+        if (camera == null || camera != faceLens) return;
+        HideOwnAgain();
+    }
+
+    private void HideOwnAgain()
+    {
+        foreach (var renderer in shownOwn)
+            if (renderer != null) renderer.shadowCastingMode = ShadowCastingMode.ShadowsOnly;
+        shownOwn.Clear();
+    }
+
+    private void LateUpdate()
+    {
+        Follow();
+        AimFace();
+    }
 
     // In front of the camera wherever it turns while the screen is up.
     private void Follow()
@@ -252,6 +358,15 @@ internal sealed class CombatRehearsal : MonoBehaviour
 
     private void OnDestroy()
     {
+        RenderPipelineManager.beginCameraRendering -= BeforeRender;
+        RenderPipelineManager.endCameraRendering -= AfterRender;
+        HideOwnAgain();
+        if (faceLens != null) faceLens.targetTexture = null;
+        if (faceTexture != null)
+        {
+            faceTexture.Release();
+            Destroy(faceTexture);
+        }
         foreach (var made in owned)
             if (made != null) Destroy(made);
         owned.Clear();

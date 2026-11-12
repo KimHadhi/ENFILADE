@@ -156,7 +156,7 @@ public sealed partial class ZombieBody : MonoBehaviour
         bool own = character.transform.parent == transform;
         wearsOwn = own;
         grown = own ? 1f : GrowthWanted;
-        Model = own ? character : Instantiate(character, transform);
+        Model = own ? character : Instantiate(ZombieLookTemplates.Of(character), transform);
         if (!own)
         {
             Model.name = character.name;

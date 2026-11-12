@@ -52,6 +52,8 @@ public sealed class SceneWarmup : MonoBehaviour
     public float psoWait = 20f;
     [Tooltip("Most seconds to wait for the fonts' glyphs (FontWarmup) in a game scene.")]
     public float fontWait = 10f;
+    [Tooltip("Sound banks (Resources/Audio, ';'-separated) loaded ahead and kept, besides CombatWarmup's own.")]
+    public string soundBanks = "Grenades;UI";
 
     [Header("Boot")]
     [Tooltip("The title screen at the start of a run waits behind the loading screen for glyphs, card pictures and shaders.")]
@@ -70,6 +72,8 @@ public sealed class SceneWarmup : MonoBehaviour
 
     private static SceneWarmup instance;
     private static readonly List<Action> waiting = new List<Action>();
+    // Loaded banks stay referenced for the run, so a scene change's unloading never drops their clips.
+    private static readonly List<SoundBank> keptBanks = new List<SoundBank>();
     private Coroutine running;
     private CombatRehearsal rehearsal;
     private NetworkSceneManager hooked;
@@ -101,6 +105,7 @@ public sealed class SceneWarmup : MonoBehaviour
     {
         instance = null;
         waiting.Clear();
+        keptBanks.Clear();
         Ready = null;
         IsReady = false;
     }
@@ -217,6 +222,12 @@ public sealed class SceneWarmup : MonoBehaviour
         BashImpact.Prepare();
         MuzzleFlame.Prepare();
         CombatFeedHUD.Prewarm();
+        // The zombie looks pared once (a zombie no longer copies the whole Synty pack), the brute's roar and boom made
+        // now rather than on its first arrival (Resources/Audio/Boss is empty, so they are synthesized), and the banks
+        // first asked for by a throw or a menu click.
+        ZombieLookTemplates.Prepare();
+        ZombieBody.WarmSounds();
+        LoadBanks();
         yield return null;
         steps.Mark("pools");
         LoadingScreen.Report(Pooled, "loading.stage.looks");
@@ -228,6 +239,8 @@ public sealed class SceneWarmup : MonoBehaviour
             {
                 yield return rehearsal.Build(budgetMs, share => LoadingScreen.Report(Mathf.Lerp(Pooled, Built, share)));
                 steps.Mark($"looks ({rehearsal.Placed})");
+                // The callout feed's lens on this PC's own face, drawn every frame from here until the rehearsal goes.
+                rehearsal.Face(PlayerRoster.Local);
                 // Every piece is drawn a few frames (shadows too); each frame stocks one more doll for the zombies' rigs.
                 int frames = Mathf.Max(1, Mathf.Max(renderFrames, dolls));
                 for (int frame = 0; frame < frames; frame++)
@@ -253,8 +266,13 @@ public sealed class SceneWarmup : MonoBehaviour
             }
             steps.Mark("pso");
         }
-        if (rehearsal != null) Destroy(rehearsal.gameObject);
-        rehearsal = null;
+        if (rehearsal != null)
+        {
+            Destroy(rehearsal.gameObject);
+            rehearsal = null;
+            // Its objects go at this frame's end, while the screen still covers everything.
+            yield return null;
+        }
 
         LoadingScreen.Report(Compiled, "loading.stage.fonts");
         for (float waited = 0f; !FontWarmup.Done && waited < fontWait; waited += Time.unscaledDeltaTime) yield return null;
@@ -309,6 +327,18 @@ public sealed class SceneWarmup : MonoBehaviour
         raisedFonts.budgetMs = raisedBudget;
         raisedFonts.chunk = raisedChunk;
         raisedFonts = null;
+    }
+
+    private void LoadBanks()
+    {
+        if (string.IsNullOrEmpty(soundBanks)) return;
+        foreach (string id in soundBanks.Split(';'))
+        {
+            string name = id.Trim();
+            if (name.Length == 0 || keptBanks.Exists(bank => bank != null && bank.name == name)) continue;
+            var bank = SoundBank.Load(name);
+            if (bank != null) keptBanks.Add(bank);
+        }
     }
 
     // Every skin and colour set of the character screen has its card picture.
