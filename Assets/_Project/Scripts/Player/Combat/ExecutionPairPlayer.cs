@@ -21,7 +21,8 @@ using UnityEngine;
 /// and the gun comes back as the pair ends.
 /// It runs right after the execution, so a dash's end begins the pair in the same frame and the pair's timing is in before
 /// the class knife's stab reads it (ExecutionKnife, Execution + 5), and before the movement, the body and the zombies; the
-/// hands' holds run after every arm pose (ExecutionPairHands).
+/// hands' holds run after the hands' IK and the gun's framework, just before the class knife seats the blade in the fist
+/// (ExecutionPairHands).
 /// </summary>
 [DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.Execution + 2)]
 public sealed class ExecutionPairPlayer : MonoBehaviour
@@ -319,9 +320,9 @@ public sealed class ExecutionPairPlayer : MonoBehaviour
         hitBone = leftBone = rightBone = null;
     }
 
-    // ---- The hands' holds, after everything else posed the arms (every PC) ------------------------------------------
+    // ---- The hands' holds, after the arms are posed and before the knife is seated (every PC) -----------------------
 
-    /// <summary>From ExecutionPairHands, after every arm pose of the frame: the hands kept on their holds.</summary>
+    /// <summary>From ExecutionPairHands, after the arms' poses and before the knife's seat: the hands kept on their holds.</summary>
     internal void KeepHands()
     {
         if (!playing || pair == null || body == null || Time.deltaTime <= 0f) return;
