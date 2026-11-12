@@ -238,7 +238,8 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
         // asset blends in at once), so the body never passes through its bind pose on the way.
         holdWeight = Mathf.MoveTowards(holdWeight, HoldsGun ? 1f : 0f, dt / Mathf.Max(.01f, holdBlendTime));
         playables.SetControllerWeight(holdWeight * Framework);
-        if (bodyCamera != null) bodyCamera.SetGunWeight(holdWeight * Framework);
+        // Down the sights a bolt or pump worked after a shot sways the view only as much as it moves the gun (FPSBody.Contacts).
+        if (bodyCamera != null) bodyCamera.SetGunWeight(holdWeight * Framework * CycleViewShare);
     }
 
     // ---- Setting FPSAF up on the body (the demo's FPSHumanoidPlayer, as FPSAF's wizard builds it) ----
@@ -377,6 +378,8 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
         // of the draw short (CutDraw). Put away in its Holster Duration, looked over at the clip's pace.
         gun.SetActions(Copy(entry.draw, bake.draw),
             Fitted(Copy(entry.holster, bake.holster), entry.weapon.HolsterDuration), Settled(Copy(entry.inspect, bake.inspect)));
+        // A gun worked by hand after every shot (a bolt, a pump) has that clip made for this body too (FPSGun.Cycle).
+        gun.SetCycle(Copy(entry.fire, bake.fire));
         // From this body's profile: a stand-in's share has gone to the bone below it.
         gun.LeanChain = LeanChainOf(profile);
         // This gun's own copies of the layers that move it about, turned down as it is aimed (FPSGun.Steady).
@@ -975,6 +978,15 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
         RideGun();
         if (firing && Time.time - lastShot > shotInterval * TriggerReleaseIntervals) StopFiring();
         if (held.Reloading && (controller.Runtime == null || !controller.Runtime.IsReloading)) held.StopReload(playables, reloadBlendOut, bodyCamera);
+        // KINEMATION's sounds of a bolt or pump worked after a shot, as their moments come (FPSGun.Cycle).
+        while (held.TakeCycleSound(out AudioClip worked)) Worked(worked);
+    }
+
+    // One of them, through the gun sounds' own player (WeaponFeedback), on every PC that shows the shot.
+    private void Worked(AudioClip sound)
+    {
+        if (feedback == null && controller != null) feedback = controller.GetComponent<WeaponFeedback>();
+        if (feedback != null) feedback.Worked(sound);
     }
 
     // While FPSAF holds the upper body, how it holds the gun is learnt: where the gun sits from the eyes (which the camera
@@ -1300,6 +1312,8 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
         lastShot = Time.time;
         shotInterval = data.ShotInterval;
         held.Fire(controller.LastShot.AmmoAfterShot == 0, recoil, bodyCamera, !kinemationShake || controller.AimBlend >= .5f);
+        // A gun worked by hand: the body works its bolt or pump now, done by the time the trigger may fire again (FPSGun.Cycle).
+        held.Cycle(playables, bodyCamera);
     }
 
     // The wall rule probes the gun as it is held clean, never the gun as it is (raised, swung aside or on its way in): while

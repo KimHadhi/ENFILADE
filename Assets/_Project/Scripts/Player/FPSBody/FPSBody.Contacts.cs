@@ -57,6 +57,10 @@ public sealed partial class FPSBody
     private float fingerOpenMost = 30f;
     [SerializeField, Min(0f), Tooltip("With stillHoldFixes, how far off the gun's surface a finger's skin rests (m).")]
     private float fingerClearance = .002f;
+    [SerializeField, Range(0f, 1f), Tooltip("Down the sights, the share of the gun's own motion that stays while its action is worked "
+        + "after a shot (a bolt, a pump: FPSGun.Cycle), and of the camera's sway with it: the sight stays before the eye on what "
+        + "was shot while the hand works the bolt, as Rainbow Six Siege's guns stay on the sight through their kick. 1: as at the hip.")]
+    private float aimedCycleMove = .25f;
 
     // A pose clip holds the gun in both hands when the support palm is this close to the weapon bone (m).
     private const float PoseReach = .8f;
@@ -100,8 +104,9 @@ public sealed partial class FPSBody
         }
         float dt = Time.deltaTime;
         bool playing = false, settling = false;
+        // The bolt or pump worked after a shot moves the gun out of the hold as a reload does, so the reload's switch has it.
         if (rig != null && eyes != null && held.ContactClip(out AnimationClip clip, out float clipTime, out settling)
-            && (held.ContactIsReload ? reloadContacts : holdContacts)
+            && (held.ContactIsReload || held.ContactIsCycle ? reloadContacts : holdContacts)
             && SampleContact(held, clip, clipTime, out GunContact now))
         {
             contact = now;
@@ -124,9 +129,25 @@ public sealed partial class FPSBody
         if (weight <= 0f || !held.HoldFromEyes(controller.AimBlend, out KTransform kept)) return;
         var gun = rig.IkWeaponBone;
         Quaternion hold = eyes.rotation * kept.rotation;
-        Vector3 at = eyes.TransformPoint(kept.position) + hold * contact.GunMove;
-        gun.SetPositionAndRotation(Vector3.Lerp(gun.position, at, weight), Quaternion.Slerp(gun.rotation, hold * contact.GunTurn, weight));
+        Vector3 move = contact.GunMove;
+        Quaternion turn = contact.GunTurn;
+        // Down the sights a bolt or pump worked after a shot moves the gun only aimedCycleMove of its way off the hold, so the
+        // sight stays before the eye while the hand works it (the hands keep their places on the gun, HandContact).
+        if (held.ContactIsCycle)
+        {
+            float keep = Mathf.Lerp(1f, aimedCycleMove, controller.AimBlend);
+            move *= keep;
+            turn = Quaternion.Slerp(Quaternion.identity, turn, keep);
+        }
+        Vector3 at = eyes.TransformPoint(kept.position) + hold * move;
+        gun.SetPositionAndRotation(Vector3.Lerp(gun.position, at, weight), Quaternion.Slerp(gun.rotation, hold * turn, weight));
     }
+
+    /// <summary>
+    /// Down the sights, the share of the camera's sway from a gun's action worked after a shot that stays (aimedCycleMove), as
+    /// the gun's own motion is eased (FollowContacts); 1 otherwise.
+    /// </summary>
+    private float CycleViewShare => HoldsGun && held.Cycling ? Mathf.Lerp(1f, aimedCycleMove, controller.AimBlend) : 1f;
 
     // How a hand's two contacts mix: the playing clip's (clip, its weight) over the plain hold's (hold). Put on one after
     // the other, they come to one target the mix of the way to the clip's, with this much of the hand.

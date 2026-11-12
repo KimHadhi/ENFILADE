@@ -27,6 +27,8 @@ public sealed class GunBakes : ScriptableObject
         public AnimationClip draw;
         public AnimationClip holster;
         public AnimationClip inspect;
+        [Tooltip("The action worked after every shot: a bolt, a pump (FPSBodyAssets.Gun.sourceFire).")]
+        public AnimationClip fire;
         [Tooltip("Where the gun (KINEMATION's ik_hand_gun) sits in the pose, in the model's own space.")]
         public Vector3 gunPosition;
         public Quaternion gunRotation;

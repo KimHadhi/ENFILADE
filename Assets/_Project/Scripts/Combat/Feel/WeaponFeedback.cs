@@ -121,6 +121,18 @@ public sealed class WeaponFeedback : MonoBehaviour
             Sound(FeelSound.Draw, Own(own, null), settings.mechanicalVolume, Random.Range(.98f, 1.02f), MechanicalReach, gun);
     }
 
+    /// <summary>
+    /// One of KINEMATION's own sounds of a gun's action worked by hand after a shot, as its moment in the gun's clip of the shot
+    /// comes (FPSBody, FPSGun.Cycle): the Kar98k's bolt opened and closed, the L96X's bolt, the KXG12's pump. As the reload's
+    /// sounds: flat for one's own gun, from where a friend stands for theirs.
+    /// </summary>
+    internal void Worked(AudioClip sound)
+    {
+        var settings = GunFeelSettings.Instance;
+        if (sound == null || settings == null || !settings.gunSounds) return;
+        Sound(FeelSound.Bolt, new[] { sound }, settings.mechanicalVolume, Random.Range(.98f, 1.02f), MechanicalReach, Gun);
+    }
+
     // A gun's own clips for a sound, else the shared ones (null: the gun profile's cue).
     private static AudioClip[] Own(AudioClip[] own, AudioClip[] shared) => own != null && own.Length > 0 ? own : shared;
 
@@ -225,9 +237,19 @@ public sealed class WeaponFeedback : MonoBehaviour
                     Random.Range(.98f, 1.02f), MechanicalReach, Gun);
             return;
         }
-        trackingReload = true; magOutPlayed = magInPlayed = boltBackPlayed = boltPlayed = false; emptyReload = empty;
         // A reload going on from where a cut-short one got to (WeaponRuntime.ReloadStartShare) made its earlier sounds then.
         float from = weapon != null && weapon.Runtime != null ? weapon.Runtime.ReloadStartShare : 0f;
+        // A gun with KINEMATION's recording of its whole reload (FPS Animation Ultimate's L96X: one per clip, made to start
+        // with it) plays that as a fresh reload starts, in place of the magazine's and bolt's moments. Going on from a cut-short
+        // reload, the moments below pick up where it got to.
+        var whole = data != null ? (empty ? data.ReloadStartEmptySounds : data.ReloadStartSounds) : null;
+        if (whole != null && whole.Length > 0 && from <= 0f)
+        {
+            trackingReload = false;
+            if (settings.gunSounds) Sound(FeelSound.MagOut, whole, settings.mechanicalVolume, Random.Range(.99f, 1.01f), MechanicalReach, Gun);
+            return;
+        }
+        trackingReload = true; magOutPlayed = magInPlayed = boltBackPlayed = boltPlayed = false; emptyReload = empty;
         timedReload = data != null && FPSBody.Holding(weapon) != null
             && ReloadMoments.TryGet(data, empty, out moments);
         if (timedReload)

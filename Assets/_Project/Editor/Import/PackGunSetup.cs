@@ -15,9 +15,12 @@ using Object = UnityEngine.Object;
 /// - Its entry in Resources/Combat/FPSBody: the CAS integration's prefab of it, the rifle's or the pistol's FPSAF assets
 ///   without their clip-timed curves, and the pack's own pose and reload clips, which GunClipRetarget bakes for each skin.
 /// - Then TacticalGunSetup fits the Tactical Shooter Pack's parts on it as on the MX16A4 and M1911 (Data/Combat/FPSPackGuns).
-/// Not made: the Kar98k and L96X (a bolt worked after every shot) and the KXG12 (a pump): FPSGun plays only the gun's own
-/// clip on a shot, so their hand would never move; the RPG (a rocket, not a bullet); the pack's Mk14 EBR (ours is the
-/// Tactical Shooter Pack's). Their files are in the project all the same.
+/// - The Kar98k and L96X (a bolt worked after every shot) and the KXG12 (a pump) also get the body's clip of that, which the
+///   body plays after each shot (FPSBodyAssets.Gun.sourceFire, FPSGun.Cycle); the Kar98k and KXG12 load a round at a time
+///   with the start, round and end pairs of KINEMATION's CasFPSManualWeapon, and their sounds are the ones KINEMATION's clips
+///   call for.
+/// Not made: the RPG (a rocket, not a bullet); the pack's Mk14 EBR (ours is the Tactical Shooter Pack's). Their files are in
+/// the project all the same.
 /// It runs by itself after scripts load for a gun not in FPSBody yet, and from Tools → ENFILADE → Combat → Make FPS
 /// Animation Pack Guns to make them all again.
 /// </summary>
@@ -35,11 +38,15 @@ internal static class PackGunSetup
     /// <summary>
     /// One gun. weapon: our asset name (the Weapons.csv row); like: our gun its WeaponData is copied from; cas: the name in
     /// CAS_FPSPack_&lt;cas&gt;; folder: its Animations folder; sfx: its SFX folder; clips name A_FP_&lt;clip&gt;.anim there.
+    /// fire: the body's clip of the action worked after every shot (a bolt, a pump), where the gun has one; reloadShell and
+    /// reloadEnd: a round-at-a-time reload's round and end (its two starts are reloadTactical and reloadEmpty);
+    /// emptyStartLoads: that reload's start from empty chambers a round (WeaponData.EmptyStartLoads).
     /// </summary>
     private sealed class Spec
     {
         public string weapon, like, cas, folder, sfx, pose, reloadTactical, reloadEmpty;
-        public bool pistol;
+        public string fire, reloadShell, reloadEnd;
+        public bool pistol, emptyStartLoads = true;
     }
 
     private static readonly Spec[] Guns =
@@ -58,6 +65,17 @@ internal static class PackGunSetup
         new Spec { weapon = "Kolibri", like = "M1911", cas = "Kolibri", folder = "Kolibri", sfx = "Colibri", pose = "Kolibri_Pose", reloadTactical = "Kolibri_Reload_Tac", reloadEmpty = "Kolibri_Reload_Empty", pistol = true },
         // The revolver has one reload, cylinder emptied and filled again, for both.
         new Spec { weapon = "Viper357", like = "R08", cas = "Viper-357", folder = "Viper-357", sfx = "Viper-357", pose = "Viper-357_Idle", reloadTactical = "Viper-357_Reload_Empty", reloadEmpty = "Viper-357_Reload_Empty", pistol = true },
+        // Worked by hand after every shot (FPSGun.Cycle): two bolt actions and a pump. The Kar98k and the KXG12 load a round at a
+        // time, as KINEMATION's own players do (CasFPSManualWeapon: the start, a round each, the end). The Kar98k's start only
+        // opens its bolt, from empty too; its stripper-clip reload, which no KINEMATION player plays, stays a file. The KXG12's
+        // start from empty chambers a shell through the port before the tube is filled.
+        new Spec { weapon = "Kar98k", like = "Mk14EBR", cas = "Kar98k", folder = "Kar98K", sfx = "Kar98K", pose = "Kar98K_Pose", fire = "Kar98K_Fire",
+            reloadTactical = "Kar98K_Reload_Start", reloadEmpty = "Kar98K_Reload_Start", reloadShell = "Kar98K_Reload_Loop", reloadEnd = "Kar98K_Reload_End",
+            emptyStartLoads = false },
+        new Spec { weapon = "L96X", like = "Mk14EBR", cas = "L96X", folder = "L96X", sfx = "L96X", pose = "L96X_Pose", fire = "L96X_Fire",
+            reloadTactical = "L96X_Reload_Tac", reloadEmpty = "L96X_Reload_Empty" },
+        new Spec { weapon = "KXG12", like = "Herrington1187", cas = "KXG12", folder = "KXG12", sfx = "KXG12", pose = "KXG12_Pose", fire = "KXG12_Pump",
+            reloadTactical = "KXG12_Reload_Start", reloadEmpty = "KXG12_Pump_Empty", reloadShell = "KXG12_Reload_Loop", reloadEnd = "KXG12_Reload_End" },
     };
 
     static PackGunSetup() => EditorApplication.delayCall += () => Run(false);
@@ -108,12 +126,18 @@ internal static class PackGunSetup
         var pose = Clip($"{clips}/A_FP_{spec.pose}.anim");
         var reloadTactical = Clip($"{clips}/A_FP_{spec.reloadTactical}.anim");
         var reloadEmpty = Clip($"{clips}/A_FP_{spec.reloadEmpty}.anim");
-        if (source == null || source.GetComponent<CasFPSWeapon>() == null || pose == null || reloadTactical == null || reloadEmpty == null)
+        // The bolt or pump worked after every shot, and a round-at-a-time reload's round and end, where the gun has them.
+        var fire = spec.fire != null ? Clip($"{clips}/A_FP_{spec.fire}.anim") : null;
+        var reloadShell = spec.reloadShell != null ? Clip($"{clips}/A_FP_{spec.reloadShell}.anim") : null;
+        var reloadEnd = spec.reloadEnd != null ? Clip($"{clips}/A_FP_{spec.reloadEnd}.anim") : null;
+        var cas = source != null ? source.GetComponent<CasFPSWeapon>() : null;
+        if (cas == null || pose == null || reloadTactical == null || reloadEmpty == null || (spec.fire != null && fire == null)
+            || (spec.reloadShell != null && (reloadShell == null || reloadEnd == null)))
         {
             Debug.LogWarning($"PackGunSetup: CAS_FPSPack_{spec.cas} or its clips in {clips} are not in the project.");
             return false;
         }
-        var weapon = Weapon(spec);
+        var weapon = Weapon(spec, cas);
         if (weapon == null) return false;
         int index = Array.FindIndex(assets.guns, gun => gun.weapon == weapon);
         // Made already: its prefab is ours (TacticalGunSetup fits the parts and points the entry at its copy).
@@ -122,6 +146,10 @@ internal static class PackGunSetup
         Directory.CreateDirectory(FPSBodyFolder);
         string stem = $"{FPSBodyFolder}/Anim_{spec.weapon}";
         var emptyTemplate = template.reloadEmpty != null ? template.reloadEmpty : template.reloadTactical;
+        bool shells = reloadShell != null;
+        // KINEMATION's player of a gun loaded a round at a time (CasFPSManualWeapon) plays every reload's start, rounds and end
+        // from three pairs of its own: its reloadTactical is a stand-in, and its reloadEmpty the Kar98k's stripper clip.
+        var manual = cas as CasFPSManualWeapon;
         var entry = new FPSBodyAssets.Gun
         {
             weapon = weapon,
@@ -132,21 +160,36 @@ internal static class PackGunSetup
             sourceReloadTactical = reloadTactical,
             sourceReloadEmpty = reloadEmpty,
             pose = BodyAsset(template.pose, $"{stem}_Pose.asset", .15f, .15f),
-            reloadTactical = BodyAsset(template.reloadTactical, $"{stem}_ReloadTactical.asset", .15f, .15f),
-            reloadEmpty = BodyAsset(emptyTemplate, $"{stem}_ReloadEmpty.asset", .15f, .15f),
+            // A round-at-a-time reload's starts hand straight over to its rounds, as TacticalGunSetup's Herrington's do;
+            // FPSBody eases its end into the hold.
+            reloadTactical = BodyAsset(template.reloadTactical, $"{stem}_ReloadTactical.asset", .15f, shells ? .1f : .15f),
+            reloadEmpty = BodyAsset(emptyTemplate, $"{stem}_ReloadEmpty.asset", .15f, shells ? .1f : .15f),
+            sourceReloadShell = reloadShell,
+            sourceReloadEnd = reloadEnd,
+            reloadShell = shells ? BodyAsset(template.reloadTactical, $"{stem}_ReloadShell.asset", .1f, .1f) : null,
+            reloadEnd = shells ? BodyAsset(template.reloadTactical, $"{stem}_ReloadEnd.asset", .1f, .15f) : null,
+            partsReloadShell = shells && manual != null ? manual.reloadLoop.weapon : null,
+            partsReloadEnd = shells && manual != null ? manual.reloadEnd.weapon : null,
+            partsReloadTactical = shells && manual != null ? manual.reloadStart.weapon : null,
+            // The Kar98k starts from empty as it does with rounds left; the KXG12's start from empty is its CAS reloadEmpty.
+            partsReloadEmpty = shells && manual != null && spec.reloadEmpty == spec.reloadTactical ? manual.reloadStart.weapon : null,
+            // In at once with the shot; eased into the hold over its last 0.2 s, while the trigger is already free (FPSGun.Cycle).
+            sourceFire = fire,
+            fire = fire != null ? BodyAsset(template.reloadTactical, $"{stem}_Fire.asset", .1f, .2f) : null,
         };
         var list = new List<FPSBodyAssets.Gun>(assets.guns);
         if (index >= 0) list[index] = entry;
         else list.Add(entry);
         assets.guns = list.ToArray();
-        Debug.Log($"PackGunSetup: {weapon.name} is made from FPS Animation Ultimate's {spec.cas}; GunClipRetarget bakes its clips next.", weapon);
+        Debug.Log($"PackGunSetup: {weapon.name} is made from FPS Animation Ultimate's {spec.cas}{(fire != null ? ", its action worked after every shot" : "")}"
+            + $"{(shells ? ", loaded a round at a time" : "")}; GunClipRetarget bakes its clips next.", weapon);
         return true;
     }
 
     // ---- Assets ----
 
     // Our WeaponData for the gun: made once, as a copy of the gun of ours most like it, with the pack's own shots.
-    private static WeaponData Weapon(Spec spec)
+    private static WeaponData Weapon(Spec spec, CasFPSWeapon cas = null)
     {
         string path = $"{WeaponsFolder}/{spec.weapon}.asset";
         var made = AssetDatabase.LoadAssetAtPath<WeaponData>(path);
@@ -162,10 +205,15 @@ internal static class PackGunSetup
         var write = new SerializedObject(made);
         var shown = write.FindProperty("displayName");
         if (shown != null) shown.stringValue = spec.weapon;
-        // The pack's recordings of its shots: every sound of the gun but its reloads and its draw.
+        // The pack's recordings of its shots: those its own settings fire with, else every sound of the gun but its reloads
+        // and its draw (the L96X's and KXG12's folders also hold the foley of the bolt and the pump, FPSGun.Cycle's).
+        var settings = cas != null ? cas.weaponSettings : null;
         var shots = new List<AudioClip>();
+        if (settings != null && settings.fireSounds != null)
+            foreach (var clip in settings.fireSounds)
+                if (clip != null) shots.Add(clip);
         string sfx = $"{Pack}/SFX/{spec.sfx}";
-        if (AssetDatabase.IsValidFolder(sfx))
+        if (shots.Count == 0 && AssetDatabase.IsValidFolder(sfx))
             foreach (string guid in AssetDatabase.FindAssets("t:AudioClip", new[] { sfx }))
             {
                 string file = AssetDatabase.GUIDToAssetPath(guid);
@@ -180,9 +228,51 @@ internal static class PackGunSetup
         Fill(write.FindProperty("magOutSounds"), SoundsNamed(sfx, "Mag_Out"));
         Fill(write.FindProperty("magInSounds"), SoundsNamed(sfx, "Mag_In"));
         Fill(write.FindProperty("boltForwardSounds"), SoundsNamed(sfx, "Slide"));
+        // A gun loaded a round at a time: KINEMATION's recordings of its start, each round and its end, as its gun-part clips
+        // call for them (CasFPSManualWeapon's pairs); a start from empty without one of its own takes the start's. A magazine
+        // gun: its recording of each whole reload where its clips call for one (the L96X), which WeaponFeedback plays as the
+        // reload starts.
+        bool shells = spec.reloadShell != null;
+        var manual = cas as CasFPSManualWeapon;
+        var start = StartSound(settings, shells && manual != null ? manual.reloadStart.weapon : cas != null ? cas.reloadTactical.weapon : null);
+        var startEmpty = shells && manual != null && spec.reloadEmpty == spec.reloadTactical ? start
+            : StartSound(settings, cas != null ? cas.reloadEmpty.weapon : null);
+        if (shells && startEmpty.Count == 0) startEmpty = start;
+        Fill(write.FindProperty("reloadStartSounds"), start);
+        Fill(write.FindProperty("reloadStartEmptySounds"), startEmpty);
+        if (shells && manual != null)
+        {
+            Fill(write.FindProperty("shellInsertSounds"), StartSound(settings, manual.reloadLoop.weapon));
+            Fill(write.FindProperty("reloadEndSounds"), StartSound(settings, manual.reloadEnd.weapon));
+        }
+        // The asset agrees with its Weapons.csv row from the start: FPSBody sets a gun up from it before any table is read
+        // for it (a shell reload's starts hand over to its rounds instead of easing into the hold).
+        var shellReload = write.FindProperty("shellReload");
+        if (shellReload != null) shellReload.boolValue = shells;
+        var emptyStartLoads = write.FindProperty("emptyStartLoads");
+        if (emptyStartLoads != null) emptyStartLoads.boolValue = spec.emptyStartLoads;
         write.ApplyModifiedPropertiesWithoutUndo();
         EditorUtility.SetDirty(made);
         return made;
+    }
+
+    // KINEMATION's recording a gun-part clip calls for as it starts, its first PlayWeaponSound event (an index into the gun's
+    // weaponEventSounds): FPS Animation Ultimate has one per clip, made to begin with it (a round-at-a-time reload's start,
+    // round and end; the L96X's whole reloads). Empty when the clip calls for none.
+    private static List<AudioClip> StartSound(KINEMATION.FPSAnimationPack.Scripts.Weapon.FPSWeaponSettings settings,
+        KINEMATION.CharacterAnimationSystem.Scripts.Runtime.Playables.AnimationAsset parts)
+    {
+        var found = new List<AudioClip>();
+        if (settings == null || settings.weaponEventSounds == null || parts == null || parts.clip == null) return found;
+        foreach (var moment in AnimationUtility.GetAnimationEvents(parts.clip))
+        {
+            if (moment.functionName != "PlayWeaponSound" || moment.intParameter < 0 || moment.intParameter >= settings.weaponEventSounds.Count)
+                continue;
+            var clip = settings.weaponEventSounds[moment.intParameter];
+            if (clip != null) found.Add(clip);
+            break;
+        }
+        return found;
     }
 
     // The gun's sounds whose names hold the word; empty when it has none (then the copied gun's stay).

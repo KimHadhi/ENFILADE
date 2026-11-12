@@ -24,6 +24,9 @@ ASVal,Gun,ASVal,2900,,21,
 G3,Gun,G3,3000,,22,
 MGX5,Gun,MGX5,3200,,23,
 SVD,Gun,SVD,3800,,24,
+KXG12,Gun,KXG12,2700,,25,
+Kar98k,Gun,Kar98k,3400,,26,
+L96X,Gun,L96X,4200,,27,
 Ammo,Ammo,,600,,30,shop.ammo.name
 Medkit,Heal,,1000,100,31,shop.medkit.name
 Shield,Shield,,1200,50,32,shop.shield.name

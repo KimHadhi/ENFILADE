@@ -575,6 +575,11 @@ internal static class TacticalGunSetup
         Ultimate("X18", "X18", pistol: true), Ultimate("DGL50", "DGL50", pistol: true, muzzle: false),
         Ultimate("Kolibri", "Kolibri", pistol: true, sights: Array.Empty<string>(), muzzle: false, light: false),
         Ultimate("Viper357", "Viper-357", pistol: true, sights: Array.Empty<string>(), muzzle: false, light: false),
+        // Worked by hand after every shot (PackGunSetup, FPSGun.Cycle). The bolt rifles may take the DMCO and a suppressor for
+        // the ghost's quiet shot, nothing under the barrel. The KXG12's pump is the support hand's, so nothing hangs under it.
+        Ultimate("Kar98k", "Kar98k", sights: new[] { "A_DMCO" }, grip: false, light: false),
+        Ultimate("L96X", "L96X", sights: new[] { "A_DMCO" }, grip: false, light: false),
+        Ultimate("KXG12", "KXG12", sights: new[] { "A_Holograph" }, muzzle: false, grip: false, light: false),
     };
 
     // One of FPS Animation Ultimate's guns in the Tactical Shooter Pack's parts: a long gun the MX16A4's sights, a pistol the

@@ -144,12 +144,14 @@ public sealed class WeaponRuntime
     }
 
     // A shell reload's step is over: the start from empty and each shell have put a shell in (KINEMATION's TacticalShotgun
-    // skips the first only on a tactical start, which loads none). Then the next shell, or the end once the gun is full,
+    // skips the first only on a tactical start, which loads none; a start from empty that only opens the action, as the
+    // Kar98k's bolt, loads none either: WeaponData.EmptyStartLoads). Then the next shell, or the end once the gun is full,
     // the reserve is out or the trigger asked for it. False when the end is over too.
     private bool NextShellStep()
     {
         if (Step == ReloadStep.End) return false;
-        if ((Step == ReloadStep.Shell || IsEmptyReload) && Ammo < Data.MagazineSize && ReserveAmmo > 0) { Ammo++; ReserveAmmo--; }
+        bool loads = Step == ReloadStep.Shell || (IsEmptyReload && Data.EmptyStartLoads);
+        if (loads && Ammo < Data.MagazineSize && ReserveAmmo > 0) { Ammo++; ReserveAmmo--; }
         bool another = Ammo < Data.MagazineSize && ReserveAmmo > 0 && !stopAfterShell;
         Step = another ? ReloadStep.Shell : ReloadStep.End;
         ReloadDuration = ReloadRemaining = another ? Data.ShellInsertDuration : Data.ShellEndDuration;

@@ -95,7 +95,13 @@ public sealed class WeaponData : ScriptableObject
     [SerializeField] private bool shellReload;
     [SerializeField, Min(.01f)] private float shellInsertDuration = .6f;
     [SerializeField, Min(0f)] private float shellEndDuration = .6f;
-    [Tooltip("A shell reload's sounds, each as its step starts: the start, the start from empty, every shell, the end.")]
+    [Tooltip("A shell reload's start from empty (Empty Reload Duration) puts a round in the chamber, so one shell less follows: " +
+        "a pump shotgun's. Off where that start only opens the action, so every round goes in with a shell of its own: FPS " +
+        "Animation Ultimate's Kar98k opens its bolt.")]
+    [SerializeField] private bool emptyStartLoads = true;
+    [Tooltip("A shell reload's sounds, each as its step starts: the start, the start from empty, every shell, the end. On a " +
+        "magazine reload the two start ones, when set, are the gun's own recording of its whole reload (FPS Animation Ultimate's " +
+        "L96X), played as a fresh reload starts in place of the magazine's and bolt's moments.")]
     [SerializeField] private AudioClip[] reloadStartSounds = new AudioClip[0], reloadStartEmptySounds = new AudioClip[0],
         shellInsertSounds = new AudioClip[0], reloadEndSounds = new AudioClip[0];
     [Tooltip("A magazine reload's own sounds at the moments its clip moves the parts (ReloadMoments): the magazine out and in, "
@@ -245,6 +251,7 @@ public sealed class WeaponData : ScriptableObject
     public bool ShellReload => shellReload;
     public float ShellInsertDuration => Mathf.Max(.01f, shellInsertDuration);
     public float ShellEndDuration => Mathf.Max(0f, shellEndDuration);
+    public bool EmptyStartLoads => emptyStartLoads;
     public AudioClip[] ReloadStartSounds => reloadStartSounds;
     public AudioClip[] ReloadStartEmptySounds => reloadStartEmptySounds;
     public AudioClip[] ShellInsertSounds => shellInsertSounds;

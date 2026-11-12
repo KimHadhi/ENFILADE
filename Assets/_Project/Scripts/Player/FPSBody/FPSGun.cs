@@ -34,8 +34,11 @@ public sealed class FPSGun : MonoBehaviour
     internal bool Reloading => reloading;
     /// <summary>A draw, holster or inspect clip is playing.</summary>
     internal bool Acting => Time.time < actionUntil;
-    /// <summary>A clip of the gun's own has the hands (a reload, a draw, a holster, an inspect), not the grips.</summary>
-    internal bool HandsBusy => reloading || Acting;
+    /// <summary>
+    /// A clip of the gun's own has the hands (a reload, a draw, a holster, an inspect, the bolt or pump worked after a shot),
+    /// not the grips.
+    /// </summary>
+    internal bool HandsBusy => reloading || Acting || Cycling;
     /// <summary>The gun has a draw clip of its own, so FPSAF's equip motion stays out.</summary>
     internal bool HasDraw => FPSAnimationAsset.IsValid(drawClip);
     // The muzzle as this gun sits held clean at the hip, from the eyes (FPSBody.LearnHipMuzzle), for the wall rule.
@@ -242,6 +245,7 @@ public sealed class FPSGun : MonoBehaviour
         FPSBodyCamera camera, float aimedTurn = 1f, float aimedLift = 1f)
     {
         reloading = false;
+        EndCycle();
         EnsureRestPose();
         if (recoil != null && Kinemation != null && Kinemation.weaponSettings != null)
             recoil.Init(AimedRecoil(Kinemation.weaponSettings.recoilAnimData, aimedTurn, aimedLift), roundsPerMinute, mode);
@@ -311,6 +315,7 @@ public sealed class FPSGun : MonoBehaviour
         KINEMATION.CharacterAnimationSystem.Scripts.Runtime.Playables.AnimationAsset parts, IPlayablesController playables, FPSBodyCamera camera)
     {
         if (!FPSAnimationAsset.IsValid(clip) || playables == null) return 0f;
+        EndCycle();
         float rate = Mathf.Max(.01f, clip.blendTime.rateScale);
         playables.PlayAnimation(clip, 0f);
         if (camera != null && source != null) camera.PlayGunMotion(source, rate);
@@ -457,6 +462,7 @@ public sealed class FPSGun : MonoBehaviour
     /// <summary>Put away (Weapon.OnUnEquip).</summary>
     internal void Unequip(FPSAnimator animator, RecoilAnimation recoil, FPSBodyAssets assets)
     {
+        EndCycle();
         recoil?.Stop();
         if (assets.unEquipMotion != null) animator.LinkAnimatorLayer(assets.unEquipMotion);
     }
@@ -481,8 +487,134 @@ public sealed class FPSGun : MonoBehaviour
         var settings = Kinemation.weaponSettings;
         bool lockBack = settings != null && settings.hasFireOut && lastRound;
         var pair = lockBack ? Kinemation.fireOut : Kinemation.fire;
+        // A gun worked by hand works its parts (the bolt, the pump) at the pace the body works them (Cycle).
+        var parts = !lockBack && HasCycle ? CycleParts(pair.weapon) : pair.weapon;
         // The last round's clip holds the slide back until a reload's clip takes over (it doesn't blend out by itself).
-        if (pair.weapon != null && partsPlayer.PlayAnimation(pair.weapon)) slideHeld = lockBack;
+        if (parts != null && partsPlayer.PlayAnimation(parts)) slideHeld = lockBack;
+    }
+
+    // ---- The action worked by hand after every shot (a bolt, a pump: FPSBodyAssets.Gun.sourceFire) ----
+
+    // The body's clip of it, made for this body (FPSBody, from GunBakes); null for a gun that needs none.
+    private FPSAnimationAsset cycleClip;
+    // Until when it plays (s), and the gun-part clip of the shot at the pace it plays at, made once per pace.
+    private float cycleUntil, partsCycleRate = 1f;
+    private KINEMATION.CharacterAnimationSystem.Scripts.Runtime.Playables.AnimationAsset partsCycle;
+    // KINEMATION's sounds of it at the moments the gun-part clip of the shot calls for them, in order, and the next one due.
+    private readonly System.Collections.Generic.List<(float at, AudioClip sound)> cycleSounds = new();
+    private int nextCycleSound;
+    // A sound whose moment passed longer ago than this (s) is dropped rather than played late (a long hitch).
+    private const float CycleSoundLate = .3f;
+
+    /// <summary>The gun is worked by hand after every shot: a bolt action's bolt, a pump gun's pump.</summary>
+    internal bool HasCycle => FPSAnimationAsset.IsValid(cycleClip);
+
+    /// <summary>The body is working the gun's action after a shot now: a hand is on the bolt or the pump.</summary>
+    internal bool Cycling => Time.time < cycleUntil;
+
+    /// <summary>The body's clip of the action worked after every shot, made for this body (FPSBody, from GunBakes).</summary>
+    internal void SetCycle(FPSAnimationAsset clip) => cycleClip = clip;
+
+    // How fast the action is worked: at its clip's own pace, or quicker so the hand is back on the grip, the clip easing into
+    // the hold (its blend out), by the time the gun may fire again (its shot interval, Weapons.csv), so the next shot never
+    // catches the hand on the bolt. Never slower: the trigger waits out the interval while the clip settles.
+    private float CycleRate
+    {
+        get
+        {
+            if (!HasCycle || Data == null) return 1f;
+            float length = cycleClip.clip.length, settle = Mathf.Clamp(cycleClip.blendTime.blendOutTime, 0f, length * .5f);
+            float interval = Data.ShotInterval;
+            return interval > .01f ? Mathf.Max(1f, (length - settle) / interval) : 1f;
+        }
+    }
+
+    /// <summary>
+    /// After a shot, a gun worked by hand has the body work its bolt or pump, as FPS Animation Ultimate's own players play the
+    /// shot's clip on the arms (useFireClip): the clip made for this body on the body, KINEMATION's own on the camera and,
+    /// through it, the gun and both hands where KINEMATION's arms have them on it (FPSBody.Contacts, as through a reload, at
+    /// the hip or down the sights), and KINEMATION's sounds of it as their moments come (TakeCycleSound). Its gun-part clip of
+    /// the shot plays at the same pace (Fire). Returns how long it plays (s); 0 for a gun with none.
+    /// </summary>
+    internal float Cycle(IPlayablesController playables, FPSBodyCamera camera)
+    {
+        if (!HasCycle || playables == null) return 0f;
+        float rate = CycleRate;
+        cycleClip.blendTime.rateScale = rate;
+        playables.PlayAnimation(cycleClip, 0f);
+        if (camera != null && entry.sourceFire != null) camera.PlayGunMotion(entry.sourceFire, rate);
+        float length = cycleClip.clip.length / rate;
+        cycleUntil = Time.time + length;
+        // The hands settle back into the hold at its end, as after a reload.
+        FollowClip(entry.sourceFire, cycleClip, 0f, true, false, true);
+        QueueCycleSounds(rate);
+        return length;
+    }
+
+    // The gun-part clip of the shot at the pace the action is worked (CycleRate).
+    private KINEMATION.CharacterAnimationSystem.Scripts.Runtime.Playables.AnimationAsset CycleParts(
+        KINEMATION.CharacterAnimationSystem.Scripts.Runtime.Playables.AnimationAsset parts)
+    {
+        float rate = CycleRate;
+        if (parts == null || Mathf.Approximately(rate, 1f)) return parts;
+        if (partsCycle == null || !Mathf.Approximately(partsCycleRate, rate))
+        {
+            if (partsCycle != null)
+            {
+                rated.Remove(partsCycle);
+                Destroy(partsCycle);
+            }
+            partsCycle = Instantiate(parts);
+            partsCycle.hideFlags = HideFlags.DontSave;
+            partsCycle.playRate = parts.playRate * rate;
+            partsCycleRate = rate;
+            rated.Add(partsCycle);
+        }
+        return partsCycle;
+    }
+
+    // KINEMATION's sounds of the action at the moments its gun-part clip of the shot calls for them (its PlayWeaponSound
+    // events, an index into the gun's weaponEventSounds): the Kar98k's bolt opened at the shot and closed a third of a second
+    // on, the L96X's whole bolt, the KXG12's pump. KINEMATION's own gun script would play them from those events, but it stays
+    // silent here (FPSBody.AddGun), so these go through WeaponFeedback like every other gun sound.
+    private void QueueCycleSounds(float rate)
+    {
+        cycleSounds.Clear();
+        nextCycleSound = 0;
+        var parts = Kinemation != null ? Kinemation.fire.weapon : null;
+        var sounds = Kinemation != null && Kinemation.weaponSettings != null ? Kinemation.weaponSettings.weaponEventSounds : null;
+        if (parts == null || parts.clip == null || sounds == null) return;
+        float pace = rate * (Mathf.Approximately(parts.playRate, 0f) ? 1f : parts.playRate);
+        foreach (var moment in parts.clip.events)
+        {
+            if (moment.functionName != "PlayWeaponSound" || moment.intParameter < 0 || moment.intParameter >= sounds.Count) continue;
+            var sound = sounds[moment.intParameter];
+            if (sound != null) cycleSounds.Add((Time.time + moment.time / pace, sound));
+        }
+        cycleSounds.Sort((a, b) => a.at.CompareTo(b.at));
+    }
+
+    /// <summary>The next of KINEMATION's sounds of the action worked after a shot whose moment has come (FPSBody plays it).</summary>
+    internal bool TakeCycleSound(out AudioClip sound)
+    {
+        sound = null;
+        while (nextCycleSound < cycleSounds.Count && Time.time >= cycleSounds[nextCycleSound].at)
+        {
+            var due = cycleSounds[nextCycleSound++];
+            if (Time.time - due.at > CycleSoundLate) continue;
+            sound = due.sound;
+            return true;
+        }
+        return false;
+    }
+
+    // Another of the gun's clips takes the hands (a reload, a draw, a holster, a look over it), or the gun is drawn or put
+    // away: the action's clip lets go, and its sounds still to come with it.
+    private void EndCycle()
+    {
+        cycleUntil = 0f;
+        cycleSounds.Clear();
+        nextCycleSound = 0;
     }
 
     /// <summary>
@@ -522,6 +654,7 @@ public sealed class FPSGun : MonoBehaviour
     /// </summary>
     internal float Reload(bool empty, IPlayablesController playables, FPSBodyCamera camera, float from = 0f)
     {
+        EndCycle();
         reloadEmptyPlaying = empty;
         reloading = true;
         from = Mathf.Clamp01(from);
@@ -537,8 +670,16 @@ public sealed class FPSGun : MonoBehaviour
         if (magazine != null) magazine.Begin(empty, length, from);
         if (Kinemation == null || partsPlayer == null) return length;
         var pair = empty ? Kinemation.reloadEmpty : Kinemation.reloadTactical;
+        // FPS Animation Ultimate's guns loaded a round at a time start every reload with a gun-part clip of their own
+        // (FPSBodyAssets.Gun partsReloadTactical, partsReloadEmpty): their CasFPSWeapon's are a stand-in, or the Kar98k's
+        // stripper clip, which its start isn't.
+        var own = empty ? entry.partsReloadEmpty : entry.partsReloadTactical;
         // The reload's own clip takes the slide from the last round's and lets it go forward.
-        if (pair.weapon != null && partsPlayer.PlayAnimation(pair.weapon, PartsTime(pair, from))) slideHeld = false;
+        if (own != null)
+        {
+            if (partsPlayer.PlayAnimation(own)) slideHeld = false;
+        }
+        else if (pair.weapon != null && partsPlayer.PlayAnimation(pair.weapon, PartsTime(pair, from))) slideHeld = false;
         return length;
     }
 
@@ -608,10 +749,12 @@ public sealed class FPSGun : MonoBehaviour
     // whether it is a reload (FPSBody's reloadContacts) or one of the others (holdContacts).
     private AnimationClip contactClip;
     private float contactStart, contactFrom, contactRate = 1f, contactLength, contactSettle = .15f;
-    private bool contactSettles, contactIsReload;
+    private bool contactSettles, contactIsReload, contactIsCycle;
 
     /// <summary>The clip followed now is a reload's (not a draw, holster or inspect).</summary>
     internal bool ContactIsReload => contactIsReload;
+    /// <summary>The clip followed now is the bolt or pump worked after a shot (Cycle).</summary>
+    internal bool ContactIsCycle => contactIsCycle;
 
     // ---- Where this gun is held, from the eyes (FPSBody.KeepGunInView), and its hands on KINEMATION's arms ----
 
@@ -651,6 +794,23 @@ public sealed class FPSGun : MonoBehaviour
         kept = holdAtHip;
         if (!hasHold) return false;
         if (hasHoldAimed) kept = KTransform.Lerp(holdAtHip, holdAimed, aim);
+        // Not yet held fully aimed on this body (a bolt worked after a shot fired on the way up, the first time): the sight on
+        // the eyes, where FPSAF's Ads brings it, so the gun doesn't drop back to the hip meanwhile.
+        else if (aim > 0f && AimedFromSight(out KTransform sighted)) kept = KTransform.Lerp(holdAtHip, sighted, aim);
+        return true;
+    }
+
+    // Where the gun sits fully aimed, from the eyes, by its sight alone: the aim point on the eyes, looking where they look, as
+    // FPSAF's Ads with no blend left holds it (FPSBody.ProfileFor). The gun hangs at rest under the IK weapon bone, so its
+    // own place is the bone's.
+    private bool AimedFromSight(out KTransform aimed)
+    {
+        aimed = default;
+        var aim = AimPoint;
+        if (aim == null || aim == transform) return false;
+        Quaternion toGun = Quaternion.Inverse(transform.rotation);
+        Quaternion turn = Quaternion.Inverse(toGun * aim.rotation);
+        aimed = new KTransform(-(turn * (toGun * (aim.position - transform.position))), turn, Vector3.one);
         return true;
     }
 
@@ -743,13 +903,14 @@ public sealed class FPSGun : MonoBehaviour
     /// <summary>The body's clip was cut short (the sights coming up): the hands let go of its hold.</summary>
     internal void StopContacts() => contactClip = null;
 
-    // A reload's, draw's, holster's or inspect's clip begins: KINEMATION's own one runs alongside at the body clip's pace,
-    // from the same share of the way.
-    private void FollowClip(AnimationClip source, FPSAnimationAsset body, float from, bool settles, bool reload = true)
+    // A reload's, draw's, holster's, inspect's or worked action's clip begins: KINEMATION's own one runs alongside at the body
+    // clip's pace, from the same share of the way.
+    private void FollowClip(AnimationClip source, FPSAnimationAsset body, float from, bool settles, bool reload = true, bool cycle = false)
     {
         contactClip = source != null && FPSAnimationAsset.IsValid(body) ? source : null;
         if (contactClip == null) return;
         contactIsReload = reload;
+        contactIsCycle = cycle;
         contactRate = Mathf.Max(.01f, body.blendTime.rateScale);
         contactFrom = Mathf.Clamp01(from) * contactClip.length;
         contactStart = Time.time;

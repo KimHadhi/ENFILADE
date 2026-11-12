@@ -28,8 +28,9 @@ using Object = UnityEngine.Object;
 ///   gun (ShootingStanceFeature);
 /// - the fingers are KINEMATION's own, read through Unity's humanoid muscles on KINEMATION's humanoid mannequin
 ///   (GunClipFingers), since Retarget Pro carried them across flat or spread past a hand's reach;
-/// - the pose and both reloads are baked as humanoid clips, and where the gun sits in the pose is kept for FPS Animation
-///   Framework's Pose Sampler (FPSBody).
+/// - the pose and both reloads are baked as humanoid clips (a shell reload's shell and end, the draw, holster and inspect, and
+///   a bolt or pump worked after every shot too, where the gun has them), and where the gun sits in the pose is kept for FPS
+///   Animation Framework's Pose Sampler (FPSBody).
 /// It runs by itself after scripts load when a skin or a clip has no bake yet or changed, and from
 /// Tools → ENFILADE → Combat → Retarget KINEMATION Gun Clips to make them all again.
 /// </summary>
@@ -165,6 +166,8 @@ internal static class GunClipRetarget
             source += $"|{Guid(gun.sourceReloadShell)}|{Guid(gun.sourceReloadEnd)}|{Guid(gun.sourceCameraRig)}";
         if (gun.sourceDraw != null || gun.sourceHolster != null || gun.sourceInspect != null)
             source += $"|{Guid(gun.sourceDraw)}|{Guid(gun.sourceHolster)}|{Guid(gun.sourceInspect)}";
+        // A gun worked by hand after every shot (a bolt, a pump) adds that clip, so the others keep their bakes.
+        if (gun.sourceFire != null) source += $"|fire {Guid(gun.sourceFire)}";
         return source;
     }
 
@@ -185,7 +188,8 @@ internal static class GunClipRetarget
                 || (gun.sourceReloadEnd != null && entry.reloadEnd == null)
                 || (gun.sourceDraw != null && entry.draw == null)
                 || (gun.sourceHolster != null && entry.holster == null)
-                || (gun.sourceInspect != null && entry.inspect == null)) return false;
+                || (gun.sourceInspect != null && entry.inspect == null)
+                || (gun.sourceFire != null && entry.fire == null)) return false;
         }
         return true;
     }
@@ -376,6 +380,8 @@ internal static class GunClipRetarget
                 entry.draw = fingers.Apply(gun.sourceDraw, BakeClip(baker, gun.sourceDraw, $"{dir}/{name}_Draw.anim"));
                 entry.holster = fingers.Apply(gun.sourceHolster, BakeClip(baker, gun.sourceHolster, $"{dir}/{name}_Holster.anim"));
                 entry.inspect = fingers.Apply(gun.sourceInspect, BakeClip(baker, gun.sourceInspect, $"{dir}/{name}_Inspect.anim"));
+                // The bolt or pump worked after every shot, as the reloads are (FPSGun.Cycle).
+                entry.fire = fingers.Apply(gun.sourceFire, BakeClip(baker, gun.sourceFire, $"{dir}/{name}_Fire.anim"));
                 if (entry.pose != null) made.Add(entry);
             }
             return made;

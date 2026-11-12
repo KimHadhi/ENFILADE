@@ -59,6 +59,11 @@ public sealed class FPSBodyAssets : ScriptableObject
         [Tooltip("The gun-part clips of the shell and the end (CasFPSWeapon has fields for the two starts only).")]
         public KINEMATION.CharacterAnimationSystem.Scripts.Runtime.Playables.AnimationAsset partsReloadShell;
         public KINEMATION.CharacterAnimationSystem.Scripts.Runtime.Playables.AnimationAsset partsReloadEnd;
+        [Tooltip("The gun-part clips of the two starts where the gun's CasFPSWeapon has none of its own for them: FPS Animation "
+            + "Ultimate's guns loaded a round at a time (CasFPSManualWeapon: the Kar98k, the KXG12) start every reload with their "
+            + "reloadStart. Empty: the CasFPSWeapon's own (its reloadTactical, reloadEmpty).")]
+        public KINEMATION.CharacterAnimationSystem.Scripts.Runtime.Playables.AnimationAsset partsReloadTactical;
+        public KINEMATION.CharacterAnimationSystem.Scripts.Runtime.Playables.AnimationAsset partsReloadEmpty;
 
         [Header("Draw, holster and inspect")]
         [Tooltip("KINEMATION's draw, holster and inspect clips with this gun (made for the same skeleton as its pose). The body plays "
@@ -73,6 +78,14 @@ public sealed class FPSBodyAssets : ScriptableObject
         public KINEMATION.CharacterAnimationSystem.Scripts.Runtime.Playables.AnimationAsset partsDraw;
         public KINEMATION.CharacterAnimationSystem.Scripts.Runtime.Playables.AnimationAsset partsHolster;
         public KINEMATION.CharacterAnimationSystem.Scripts.Runtime.Playables.AnimationAsset partsInspect;
+
+        [Header("The action worked after every shot")]
+        [Tooltip("KINEMATION's clip of the body working the gun's action after a shot, for the same skeleton as its pose: a bolt "
+            + "action's bolt (FPS Animation Ultimate's Kar98k, L96X), a pump gun's pump (its KXG12). The body plays it after every "
+            + "shot, the CasFPSWeapon's own clip of the shot on the gun's parts, and the gun fires again once the hand is back "
+            + "(FPSGun.Cycle). Empty: none, the shot moves the gun's parts alone.")]
+        public AnimationClip sourceFire;
+        public FPSAnimationAsset fire;
 
         /// <summary>KINEMATION's skeleton the gun's clips are made for.</summary>
         public GameObject ArmsOr(GameObject armsModel) => sourceArms != null ? sourceArms : armsModel;
