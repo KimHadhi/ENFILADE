@@ -171,7 +171,5 @@ public static class StealthLight
         every = Mathf.Max(.05f, Number(row, "every", every));
     }
 
-    private static float Number(IReadOnlyDictionary<string, string> row, string column, float fallback)
-        => row.TryGetValue(column, out string text) && float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out float value)
-            ? value : fallback;
+    private static float Number(IReadOnlyDictionary<string, string> row, string column, float fallback) => TableCells.Number(row, column, fallback);
 }

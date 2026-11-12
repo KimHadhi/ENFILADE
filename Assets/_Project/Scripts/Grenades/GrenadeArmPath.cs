@@ -237,13 +237,10 @@ public static class GrenadeArmPath
         }
     }
 
-    private static string Text(IReadOnlyDictionary<string, string> row, string name, string fallbackValue)
-        => row.TryGetValue(name, out string text) && !string.IsNullOrWhiteSpace(text) ? text.Trim() : fallbackValue;
+    private static string Text(IReadOnlyDictionary<string, string> row, string name, string fallbackValue) => TableCells.Text(row, name, fallbackValue);
 
     private static Vector3 Vector(IReadOnlyDictionary<string, string> row, string name)
         => new Vector3(Number(row, name + "X", 0f), Number(row, name + "Y", 0f), Number(row, name + "Z", 0f));
 
-    private static float Number(IReadOnlyDictionary<string, string> row, string key, float fallbackValue)
-        => row.TryGetValue(key, out string text) && float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out float value)
-            ? value : fallbackValue;
+    private static float Number(IReadOnlyDictionary<string, string> row, string key, float fallbackValue) => TableCells.Number(row, key, fallbackValue);
 }

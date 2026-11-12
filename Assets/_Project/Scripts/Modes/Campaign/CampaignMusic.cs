@@ -145,9 +145,7 @@ internal sealed class CampaignMusic
         return song;
     }
 
-    private static float Number(IReadOnlyDictionary<string, string> row, string key, float fallback)
-        => row.TryGetValue(key, out string text) && float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out float value)
-            ? value : fallback;
+    private static float Number(IReadOnlyDictionary<string, string> row, string key, float fallback) => TableCells.Number(row, key, fallback);
 
     // Live table edits and a new Play session read the songs again.
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]

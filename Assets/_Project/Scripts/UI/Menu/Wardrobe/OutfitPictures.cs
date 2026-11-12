@@ -391,8 +391,7 @@ public static class OutfitPictures
         return persistent;
     }
 
-    private static float Number(IReadOnlyDictionary<string, string> row, string column, float fallback) =>
-        row.TryGetValue(column, out string text) && float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out float value) ? value : fallback;
+    private static float Number(IReadOnlyDictionary<string, string> row, string column, float fallback) => TableCells.Number(row, column, fallback);
 
     /// <summary>A piece's row of Tables/OutfitPictures.csv (id,yaw,pitch,zoom,x,y,roll,part), as the editor writes it.</summary>
     public static string Row(string piece, OutfitFraming framing) =>

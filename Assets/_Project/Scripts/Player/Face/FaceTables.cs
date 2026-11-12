@@ -300,12 +300,9 @@ public static class FaceTables
         return bones.Count > 0 ? bones.ToArray() : null;
     }
 
-    private static float Float(IReadOnlyDictionary<string, string> row, string column, float fallback) =>
-        row.TryGetValue(column, out string cell) && float.TryParse(cell, NumberStyles.Float, CultureInfo.InvariantCulture, out float value)
-            ? value : fallback;
+    private static float Float(IReadOnlyDictionary<string, string> row, string column, float fallback) => TableCells.Number(row, column, fallback);
 
-    private static string Cell(IReadOnlyDictionary<string, string> row, string column) =>
-        row.TryGetValue(column, out string value) && value != null ? value.Trim() : "";
+    private static string Cell(IReadOnlyDictionary<string, string> row, string column) => TableCells.Text(row, column);
 
     private static string Lower(string text) => (text ?? "").Trim().ToLowerInvariant();
 }

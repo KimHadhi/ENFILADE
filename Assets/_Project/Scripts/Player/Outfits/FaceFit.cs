@@ -305,9 +305,7 @@ internal static class FaceFit
         return read;
     }
 
-    private static float Number(IReadOnlyDictionary<string, string> cells, string column, float fallback) =>
-        cells.TryGetValue(column, out string text) && float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out float value)
-            ? value : fallback;
+    private static float Number(IReadOnlyDictionary<string, string> cells, string column, float fallback) => TableCells.Number(cells, column, fallback);
 
     private static void Warn(string message)
     {

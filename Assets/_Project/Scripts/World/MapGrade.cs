@@ -128,9 +128,7 @@ public sealed class MapGrade : MonoBehaviour
         profile = null;
     }
 
-    private static float Number(IReadOnlyDictionary<string, string> row, string key, float fallback)
-        => row.TryGetValue(key, out string text) && float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out float value)
-            ? value : fallback;
+    private static float Number(IReadOnlyDictionary<string, string> row, string key, float fallback) => TableCells.Number(row, key, fallback);
 
     // A split toning colour as written (#808080, mid-grey, mixes nothing in).
     private static Color Colour(IReadOnlyDictionary<string, string> row, string key)

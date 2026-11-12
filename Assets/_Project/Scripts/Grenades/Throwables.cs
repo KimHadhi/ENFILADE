@@ -166,12 +166,9 @@ public static class Throwables
         }
     }
 
-    private static string Text(IReadOnlyDictionary<string, string> row, string key)
-        => row.TryGetValue(key, out string text) && text != null ? text.Trim() : "";
+    private static string Text(IReadOnlyDictionary<string, string> row, string key) => TableCells.Text(row, key);
 
-    private static float Number(IReadOnlyDictionary<string, string> row, string key, float fallback)
-        => row.TryGetValue(key, out string text) && float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out float value)
-            ? value : fallback;
+    private static float Number(IReadOnlyDictionary<string, string> row, string key, float fallback) => TableCells.Number(row, key, fallback);
 
     // ---- Who threw what ----
 

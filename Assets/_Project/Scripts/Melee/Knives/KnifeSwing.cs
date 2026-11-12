@@ -109,7 +109,5 @@ public sealed class KnifeSwing
     private static Vector3 Vector(IReadOnlyDictionary<string, string> row, string name, Vector3 fallback)
         => new Vector3(Number(row, name + "X", fallback.x), Number(row, name + "Y", fallback.y), Number(row, name + "Z", fallback.z));
 
-    private static float Number(IReadOnlyDictionary<string, string> row, string key, float fallback)
-        => row.TryGetValue(key, out string value) && float.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out float read)
-            ? read : fallback;
+    private static float Number(IReadOnlyDictionary<string, string> row, string key, float fallback) => TableCells.Number(row, key, fallback);
 }

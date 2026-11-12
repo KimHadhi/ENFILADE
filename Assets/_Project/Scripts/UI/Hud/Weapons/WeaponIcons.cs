@@ -144,8 +144,7 @@ public static class WeaponIcons
         return new Vector4(Cell(cells, "left", 0f), Cell(cells, "right", 1f), Cell(cells, "bottom", 0f), Cell(cells, "top", 1f));
     }
 
-    private static float Cell(IReadOnlyDictionary<string, string> cells, string field, float fallback)
-        => cells.TryGetValue(field, out string raw) && float.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out float value) ? value : fallback;
+    private static float Cell(IReadOnlyDictionary<string, string> cells, string field, float fallback) => TableCells.Number(cells, field, fallback);
 
     /// <summary>A number of WeaponIcons.csv (`Row.field`), for the HUD parts that show the icons.</summary>
     public static float Number(string row, string field, float fallback)

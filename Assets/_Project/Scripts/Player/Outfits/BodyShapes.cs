@@ -285,6 +285,5 @@ public static class BodyShapes
         }
     }
 
-    private static string Cell(IReadOnlyDictionary<string, string> cells, string column) =>
-        cells.TryGetValue(column, out string value) && value != null ? value.Trim() : "";
+    private static string Cell(IReadOnlyDictionary<string, string> cells, string column) => TableCells.Text(cells, column);
 }

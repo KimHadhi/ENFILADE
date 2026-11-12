@@ -144,6 +144,5 @@ public sealed class MapAmbience : MonoBehaviour
         foreach (var layer in sound.Layers) if (layer != null) layer.Stop();
     }
 
-    private static string Text(IReadOnlyDictionary<string, string> row, string key)
-        => row.TryGetValue(key, out string text) ? text.Trim() : "";
+    private static string Text(IReadOnlyDictionary<string, string> row, string key) => TableCells.Text(row, key);
 }

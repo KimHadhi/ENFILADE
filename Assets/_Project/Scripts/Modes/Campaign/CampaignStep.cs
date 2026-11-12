@@ -66,12 +66,9 @@ public sealed class CampaignStep
         return steps;
     }
 
-    internal static string Text(IReadOnlyDictionary<string, string> row, string key)
-        => row.TryGetValue(key, out string text) ? text.Trim() : "";
+    internal static string Text(IReadOnlyDictionary<string, string> row, string key) => TableCells.Text(row, key);
 
-    internal static float Number(IReadOnlyDictionary<string, string> row, string key, float fallback)
-        => row.TryGetValue(key, out string text) && float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out float value)
-            ? value : fallback;
+    internal static float Number(IReadOnlyDictionary<string, string> row, string key, float fallback) => TableCells.Number(row, key, fallback);
 }
 
 /// <summary>

@@ -157,10 +157,7 @@ public static class ClassKnives
         return way.sqrMagnitude > 1e-8f ? way.normalized : fallback;
     }
 
-    private static string Text(IReadOnlyDictionary<string, string> row, string key, string fallback)
-        => row.TryGetValue(key, out string value) && !string.IsNullOrWhiteSpace(value) ? value.Trim() : fallback;
+    private static string Text(IReadOnlyDictionary<string, string> row, string key, string fallback) => TableCells.Text(row, key, fallback);
 
-    private static float Number(IReadOnlyDictionary<string, string> row, string key, float fallback)
-        => row.TryGetValue(key, out string value) && float.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out float read)
-            ? read : fallback;
+    private static float Number(IReadOnlyDictionary<string, string> row, string key, float fallback) => TableCells.Number(row, key, fallback);
 }

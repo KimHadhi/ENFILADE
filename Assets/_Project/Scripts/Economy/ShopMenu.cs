@@ -537,10 +537,9 @@ public sealed class ShopMenu : MonoBehaviour
     // Ammo, health and the shield are what a fight runs out of: the big tiles.
     private static bool IsBig(Kind kind) => kind == Kind.Ammo || kind == Kind.Heal || kind == Kind.Shield;
 
-    private static string Text(IReadOnlyDictionary<string, string> row, string key) => row.TryGetValue(key, out string text) ? text.Trim() : "";
+    private static string Text(IReadOnlyDictionary<string, string> row, string key) => TableCells.Text(row, key);
 
-    private static float Number(IReadOnlyDictionary<string, string> row, string key, float fallback)
-        => row.TryGetValue(key, out string text) && float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out float value) ? value : fallback;
+    private static float Number(IReadOnlyDictionary<string, string> row, string key, float fallback) => TableCells.Number(row, key, fallback);
 
     // Each kind's bar down a card's left side: guns white (the pink is the menus' one accent, and too near heal's red),
     // ammo cyan, heal red, shield green.

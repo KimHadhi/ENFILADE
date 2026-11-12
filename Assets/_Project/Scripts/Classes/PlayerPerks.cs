@@ -403,10 +403,7 @@ public static class PlayerPerks
         return built.ToString();
     }
 
-    private static string Text(IReadOnlyDictionary<string, string> row, string key, string fallback)
-        => row.TryGetValue(key, out string text) && !string.IsNullOrWhiteSpace(text) ? text.Trim() : fallback;
+    private static string Text(IReadOnlyDictionary<string, string> row, string key, string fallback) => TableCells.Text(row, key, fallback);
 
-    private static float Number(IReadOnlyDictionary<string, string> row, string key, float fallback)
-        => row.TryGetValue(key, out string text) && float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out float value)
-            ? value : fallback;
+    private static float Number(IReadOnlyDictionary<string, string> row, string key, float fallback) => TableCells.Number(row, key, fallback);
 }
