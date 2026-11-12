@@ -52,7 +52,7 @@
 - [Tower.csv](../Resources/Tables/Tower.csv): 카운트(10초)·모두 손을 댔을 때(3초)·입장(8초)·손 닿는 거리·방 들어서기·한꺼번에 나오는 수·나오는 간격·인원 배율·모이기 시간·카드 시간·ENFILADED!! 시간·보상·10층 노래(Music.csv `TowerFinale`).
 - [TowerFloors.csv](../Resources/Tables/TowerFloors.csv): 층마다 위 내용.
 - Maps.csv `EnfiladeTower`, Surfaces.csv `ArmorGlass`, Ambience.csv `EnfiladeTower`·`Tower.Inside`·`Tower.Hall`, MapLook.csv `EnfiladeTower`, Texts.csv `tower.*`·`life.respawn.tower`.
-- 재질: Art/Materials/Tower (벽·바닥·테두리·강철·분홍 네온·흰 조명판·문 등·방탄 유리).
+- 재질: 벽·바닥·테두리·강철은 [MapSurfaces.csv](../Resources/Tables/MapSurfaces.csv)의 `EnfiladeTower.Wall`·`Floor`·`Trim`·`Steel` 줄(맵 꾸미기 4단계, 11-12): 어두운 슬레이트로 물들인 콘크리트(Concrete034), 어두운 테라초 바닥(Terrazzo013, 조금 매끈해서 네온이 비친다), 어두운 강철(Metal063). 문과 스캐너는 `.Moving` 재질이라 움직여도 무늬가 따라간다. 줄이 없으면 Art/Materials/Tower의 예전 단색. 분홍 네온·흰 조명판·문 등·방탄 유리는 Art/Materials/Tower 그대로.
 
 ## 처음 해 볼 것
 

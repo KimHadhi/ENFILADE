@@ -28,10 +28,12 @@ public static class TowerMap
         var b = GreyboxBuilder.Begin(TowerRun.SceneName, Title);
         if (b == null) return;
         b.AddsCampaign = false;
-        wall = GreyboxBuilder.MaterialAt("Tower/TowerWall.mat");
-        floor = GreyboxBuilder.MaterialAt("Tower/TowerFloor.mat");
-        trim = GreyboxBuilder.MaterialAt("Tower/TowerTrim.mat");
-        steel = GreyboxBuilder.MaterialAt("Tower/TowerSteel.mat");
+        // Real concrete, terrazzo and steel from Tables/MapSurfaces (map dressing stage 4), the flat HUD colours where it
+        // has no row; the neon, light panels, lamps and glass stay as they are.
+        wall = b.Surface("Wall", GreyboxBuilder.MaterialAt("Tower/TowerWall.mat"));
+        floor = b.Surface("Floor", GreyboxBuilder.MaterialAt("Tower/TowerFloor.mat"));
+        trim = b.Surface("Trim", GreyboxBuilder.MaterialAt("Tower/TowerTrim.mat"));
+        steel = b.Surface("Steel", GreyboxBuilder.MaterialAt("Tower/TowerSteel.mat"));
         neon = GreyboxBuilder.MaterialAt("Tower/TowerNeon.mat");
         panel = GreyboxBuilder.MaterialAt("Tower/TowerPanel.mat");
         lamp = GreyboxBuilder.MaterialAt("Tower/TowerLamp.mat");
@@ -403,12 +405,13 @@ public static class TowerMap
         var root = new GameObject("스캐너 " + segment + " " + TowerHUD.Letter(lane), typeof(TowerScanner));
         root.transform.SetParent(fixtures, false);
         root.transform.SetPositionAndRotation(TowerLayout.ScannerAt(segment, lane), Quaternion.LookRotation(Vector3.left, Vector3.up));
-        Child(root.transform, "기둥", new Vector3(0f, .5f, 0f), new Vector3(.34f, 1f, .34f), steel, true);
+        // It rises out of the floor: its surfaces mapped in its own space, so they rise with it.
+        Child(root.transform, "기둥", new Vector3(0f, .5f, 0f), new Vector3(.34f, 1f, .34f), GreyboxBuilder.MovingSurface(steel), true);
         var head = new GameObject("머리").transform;
         head.SetParent(root.transform, false);
         head.localPosition = new Vector3(0f, 1.04f, .03f);
         head.localRotation = Quaternion.Euler(35f, 0f, 0f);
-        Child(head, "받침", new Vector3(0f, -.03f, 0f), new Vector3(.44f, .04f, .36f), trim, false);
+        Child(head, "받침", new Vector3(0f, -.03f, 0f), new Vector3(.44f, .04f, .36f), GreyboxBuilder.MovingSurface(trim), false);
         var plate = Child(head, "손판", Vector3.zero, new Vector3(.4f, .035f, .32f), lamp, false);
         var line = Child(head, "인식선", new Vector3(0f, .022f, 0f), new Vector3(.36f, .012f, .025f), neon, false);
         var strip = Child(root.transform, "띠", new Vector3(0f, .5f, .175f), new Vector3(.07f, .78f, .02f), lamp, false);
