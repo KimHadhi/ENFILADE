@@ -40,8 +40,11 @@ K_FINGERS = ('Index', 'Middle', 'Ring', 'Little')
 K_ORDER = ('CTRL_hand.L', 'CTRL_hand.R', 'CTRL_foot.L', 'CTRL_foot.R', 'Hips') + K_CHAIN + (
     'CTRL_elbow.L', 'CTRL_elbow.R', 'CTRL_knee.L', 'CTRL_knee.R')
 
-# A hand's hold of the zombie: this constraint on its IK control copies the hold point (execution_tools.HOLD_POINTS).
-HOLD_CON = '잡기'
+# A hand's hold of the zombie: these constraints on its IK control copy the hold point's place and turn
+# (execution_tools.HOLD_POINTS), never its size: a copied size reached the wrist and Unity's humanoid import warned of
+# scale it discards (0.8.300's one Copy Transforms, OLD_HOLD_CON).
+HOLD_CONS = (('잡기 · 자리', 'COPY_LOCATION'), ('잡기 · 방향', 'COPY_ROTATION'))
+OLD_HOLD_CON = '잡기'
 HOLD_GROUP = '잡기 (손이 좀비에 붙음)'
 IK_GROUP = 'IK / FK mode'
 
@@ -119,8 +122,13 @@ def _channels(action):
     return action if hasattr(action, 'groups') else None
 
 
-def hold_path(side):
-    return f'pose.bones["CTRL_hand.{side}"].constraints["{HOLD_CON}"].influence'
+def hold_path(side, name=HOLD_CONS[0][0]):
+    """A hand's hold influence channel (its place constraint's: the turn's is keyed the same)."""
+    return f'pose.bones["CTRL_hand.{side}"].constraints["{name}"].influence'
+
+
+def hold_paths():
+    return {hold_path(side, name) for side in ('L', 'R') for name, _ in HOLD_CONS}
 
 
 def apply_eases(action, kinds):
@@ -506,7 +514,7 @@ class PlayerDraft:
         # A hand takes hold at its grab key, not before: the influence steps from its key before (where the hand is
         # still its own, swinging in) to 1 at the grab, where the hand already is on the hold point.
         for curve in curves(action):
-            if curve.data_path in (hold_path('L'), hold_path('R')):
+            if curve.data_path in hold_paths():
                 points = curve.keyframe_points
                 for i, point in enumerate(points[:-1]):
                     if point.co.y < .5 and points[i + 1].co.y >= .5:
@@ -522,8 +530,9 @@ class PlayerDraft:
         out = {}
         found = self.holds(count)
         for side, part in (('L', 'lhand'), ('R', 'rhand')):
-            con = self.rig.pose.bones[f'CTRL_hand.{side}'].constraints.get(HOLD_CON)
-            if con is None:
+            cons = [self.rig.pose.bones[f'CTRL_hand.{side}'].constraints.get(name) for name, _ in HOLD_CONS]
+            cons = [con for con in cons if con is not None]
+            if not cons:
                 continue
             hold = found.get(side)
             keys = []
@@ -539,10 +548,11 @@ class PlayerDraft:
                 # Where the hand took hold: its control then, from the bone's own frame then.
                 world = self.rig.matrix_world @ tracks[side][first - 1]
                 out[side] = (bone, zombie_frames[first - 1][bone].inverted() @ world)
-            for frame, value in keys:
-                con.influence = value
-                con.keyframe_insert('influence', frame=frame, group=HOLD_GROUP)
-            con.influence = 0.0
+            for con in cons:
+                for frame, value in keys:
+                    con.influence = value
+                    con.keyframe_insert('influence', frame=frame, group=HOLD_GROUP)
+                con.influence = 0.0
         return out
 
     def _key_quat(self, pb, quat, frame):

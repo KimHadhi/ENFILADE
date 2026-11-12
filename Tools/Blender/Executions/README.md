@@ -27,7 +27,8 @@ The workspace opens ready to work in, and saving sends the work to the game, so 
     `1 시안 (잠금)` under an empty touch-up action) is read as its draft.
   - **Holds**: an empty per hand (`잡는 자리 · 왼손`, `잡는 자리 · 오른손(칼)`) parented to the zombie bone the hand holds in
     the shown pair, at the grab's offset (kept on the pair's action as `enf_hold_L/R`: the bone and the offset from the
-    bone's frame, head and turn, no scale), and a Copy Transforms constraint `잡기` on each `CTRL_hand` copying it; the
+    bone's frame, head and turn, no scale), and on each `CTRL_hand` a Copy Location (`잡기 · 자리`) and a Copy Rotation
+    (`잡기 · 방향`) constraint copying it, never its size; the
     influence is keyed in the pair's action (1 while held). The export reads each hold's window from that influence.
   - **Saving sends**: a `save_pre` handler remembers the shown pair (Kazusa's rig object, the 처치 marker, the end frame, the
     hold points), then exports every pair whose fingerprint (keys, handles, interpolation, modifiers and those numbers)
@@ -59,6 +60,13 @@ Facts found while building (Blender 4.5.16, 2026-11-13):
   (`channelbag.groups.new`, `fcurve.group = ...`; assigning a curve to the group it is in prints an error, so it is
   checked first).
 - A save handler that sends runs on any save, the build's own included: the build drops the handlers before saving.
+- A hold copied with one Copy Transforms (0.8.300) also copied the hold point's size (Kazusa's 1.166 in the offset) into
+  the wrist: Unity's humanoid import warned "'Left wrist' has scale animation that will be discarded" for every player
+  clip. And the bake puts her rig at the origin at her own size while the hold points stayed on the zombie in the
+  scene, so held hands were baked up to 0.86 of her hips-to-head length off her body. Now the hands copy place and turn
+  only, and the zombie goes into her frame for her bake (its matrix times the inverse of her placement), so the
+  clips read back from the FBX match the workspace (0.000 off, wrist scale within 0.00005, the IK's own float noise).
+  A file built by 0.8.300 has its one constraint's influence keys moved onto the two on open.
 - A hold's influence that eases in from the hand's key before the grab pulls the swing in early (up to 25 cm off the
   first draft's path on the knife hand): it steps (constant) from that key to 1 at the grab, where the hand already is.
 - Checked against the first drafts as baked before (every frame keyed): the holds put the hands exactly on their points

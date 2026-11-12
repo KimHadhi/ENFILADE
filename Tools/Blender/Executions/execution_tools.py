@@ -221,7 +221,7 @@ def _hold(action, side):
 
 def ensure_holds(scene):
     """The hold points (an empty per hand, on the zombie's bone where that hand holds it) and each hand control's 잡기
-    constraint copying its point; the influence comes from each pair's action."""
+    constraints copying its point's place and turn (never its size); the influence comes from each pair's action."""
     player, zombie = player_rig(scene), zombie_rig(scene)
     if player is None or zombie is None:
         return
@@ -229,7 +229,7 @@ def ensure_holds(scene):
     if collection is None:
         collection = bpy.data.collections.new(HOLD_COLLECTION)
         scene.collection.children.link(collection)
-    hold_con = drafts().HOLD_CON
+    d = drafts()
     for side, name in HOLD_POINTS.items():
         point = bpy.data.objects.get(name)
         if point is None:
@@ -241,13 +241,47 @@ def ensure_holds(scene):
         point.show_in_front = True
         point.hide_render = True
         pb = player.pose.bones[f'CTRL_hand.{side}']
-        con = pb.constraints.get(hold_con)
-        if con is None:
-            con = pb.constraints.new('COPY_TRANSFORMS')
-            con.name = hold_con
-            con.influence = 0.0
-        con.target = point
-        con.target_space = con.owner_space = 'WORLD'
+        for con_name, kind in d.HOLD_CONS:
+            con = pb.constraints.get(con_name)
+            if con is None:
+                con = pb.constraints.new(kind)
+                con.name = con_name
+                con.influence = 0.0
+            con.target = point
+            con.target_space = con.owner_space = 'WORLD'
+        _from_one_hold(pb, side)
+
+
+def _from_one_hold(pb, side):
+    """A file of 0.8.300 held each hand with one Copy Transforms (잡기), which also copied the hold point's size into the
+    wrist: its influence keys go to the place and turn constraints in every action, and it goes."""
+    d = drafts()
+    old = pb.constraints.get(d.OLD_HOLD_CON)
+    if old is None or old.type != 'COPY_TRANSFORMS':
+        return
+    old_path = d.hold_path(side, d.OLD_HOLD_CON)
+    for action in bpy.data.actions:
+        bag = d._channels(action)
+        source = next((c for c in d.curves(action) if c.data_path == old_path), None)
+        if bag is None or source is None:
+            continue
+        points = [(p.co.copy(), p.interpolation, p.easing) for p in source.keyframe_points]
+        group = source.group
+        for con_name, _ in d.HOLD_CONS:
+            path = d.hold_path(side, con_name)
+            curve = next((c for c in d.curves(action) if c.data_path == path), None) or bag.fcurves.new(path, index=0)
+            curve.keyframe_points.clear()
+            curve.keyframe_points.add(len(points))
+            for point, (co, interpolation, easing) in zip(curve.keyframe_points, points):
+                point.co = co
+                point.interpolation = interpolation
+                point.easing = easing
+                point.handle_left_type = point.handle_right_type = 'AUTO_CLAMPED'
+            curve.update()
+            if group is not None and curve.group != group:
+                curve.group = group
+        bag.fcurves.remove(source)
+    pb.constraints.remove(old)
 
 
 def apply_holds(context, key):
@@ -319,6 +353,7 @@ def select_pair(context, key, keep=True):
         remember(scene, scene[SCENE_PAIR])
     for action in (p_action, z_action):
         _from_old_file(action)
+    ensure_holds(scene)
     set_action(player, p_action)
     set_action(zombie, z_action)
     place_player(player, key)
@@ -634,14 +669,19 @@ def export_pair(context, key):
             sidecar.write_text(CSV_HEADER + f'{name},0,0,0,0,0,0,,\n', encoding='utf-8')
             _meta(path, '')
             saved = rig.matrix_world.copy()
+            zombie_at = zombie.matrix_world.copy()
             try:
                 if rig is player:
-                    # Baked at her own root and size: the game puts her root at the pair's offset (the row below).
+                    # Baked at her own root and size: the game puts her root at the pair's offset (the row below). The
+                    # zombie goes with her into her frame, and with it the hold points her hands copy, so a held hand is
+                    # baked where it is on her (0.8.300 left the zombie in place: held hands came out far off her body).
+                    zombie.matrix_world = saved.inverted() @ zombie_at
                     rig.matrix_world = Matrix.Identity(4)
                     context.view_layer.update()
                 tools.export_active_clip(context, rig, str(path))
             finally:
                 rig.matrix_world = saved
+                zombie.matrix_world = zombie_at
                 context.view_layer.update()
             written += [path, sidecar]
         forward = rotation @ Vector((0.0, -1.0, 0.0))
