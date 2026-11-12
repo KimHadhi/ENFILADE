@@ -140,15 +140,46 @@ internal static class GaitClips
             gait.Speed = Mathf.Max(0f, back[back.Count / 2]);
         }
 
-        // The left foot's touchdowns: where it comes down after being up, closer ones taken as one landing.
+        // Where each stride starts: the left foot at its furthest along the travel, ahead of the hips, which is the moment
+        // just before it comes down in any gait (ahead running, behind backing up, out to the side strafing) and, unlike a
+        // height line, never missed by a foot that barely lifts (a slow back step). Closer peaks are one reach.
         var touchdowns = new List<int>();
         int gap = Mathf.Max(1, Mathf.RoundToInt(SameFootGap / step));
-        for (int i = 0; i < count; i++)
-            if (down[0][i] && !down[0][(i + count - 1) % count]
-                && (touchdowns.Count == 0 || i - touchdowns[touchdowns.Count - 1] >= gap))
+        if (gait.Moves)
+        {
+            var reach = new float[count];
+            float most = float.NegativeInfinity, least = float.PositiveInfinity;
+            for (int i = 0; i < count; i++)
+            {
+                Vector3 off = feet[0][i] - hip[i];
+                reach[i] = off.x * gait.Way.x + off.z * gait.Way.y;
+                most = Mathf.Max(most, reach[i]);
+                least = Mathf.Min(least, reach[i]);
+            }
+            // A peak counts if it reaches the upper fifth of the swing (a stumble's wobble mid-swing doesn't).
+            float line = most - (most - least) * .2f;
+            for (int i = 0; i < count; i++)
+            {
+                float here = reach[i];
+                if (here < line || here < reach[(i + count - 1) % count] || here <= reach[(i + 1) % count]) continue;
+                if (touchdowns.Count > 0 && i - touchdowns[touchdowns.Count - 1] < gap)
+                {
+                    if (here > reach[touchdowns[touchdowns.Count - 1]]) touchdowns[touchdowns.Count - 1] = i;
+                    continue;
+                }
                 touchdowns.Add(i);
-        if (touchdowns.Count > 1 && touchdowns[0] + count - touchdowns[touchdowns.Count - 1] < gap)
-            touchdowns.RemoveAt(touchdowns.Count - 1);
+            }
+            if (touchdowns.Count > 1 && touchdowns[0] + count - touchdowns[touchdowns.Count - 1] < gap)
+                touchdowns.RemoveAt(reach[touchdowns[0]] >= reach[touchdowns[touchdowns.Count - 1]] ? touchdowns.Count - 1 : 0);
+        }
+        else
+        {
+            // Standing cycles: where the left foot comes down after being up, if it ever does.
+            for (int i = 0; i < count; i++)
+                if (down[0][i] && !down[0][(i + count - 1) % count]
+                    && (touchdowns.Count == 0 || i - touchdowns[touchdowns.Count - 1] >= gap))
+                    touchdowns.Add(i);
+        }
         gait.Cycles = Mathf.Max(1, touchdowns.Count);
         gait.LeftDown = touchdowns.Count > 0 ? touchdowns[0] / (float)count : 0f;
         return gait;
