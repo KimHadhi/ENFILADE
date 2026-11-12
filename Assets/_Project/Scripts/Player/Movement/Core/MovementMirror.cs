@@ -5,8 +5,9 @@ using State = PlayerMovement.MovementState;
 /// <summary>
 /// Turns a character's movement into a PlayerPose on the PC that plays it, and back again on every other PC, so the
 /// copy's body, hands and sounds read what they always read. The copy's states never run and nothing here moves it.
-/// A pose's Detail and Extent mean: the way the body faces, down after a heavy landing; a vault or mantle's progress and
-/// height; a bar's angle and swing speed; the rung's progress on a ladder; the ride's speed on a cable.
+/// A pose's Detail and Extent mean: the way the body faces, down after a heavy landing; whether a slide's body faces back
+/// along it (1) or along it (0); a vault or mantle's progress and height; a bar's angle and swing speed; the rung's
+/// progress on a ladder; the ride's speed on a cable.
 /// </summary>
 public sealed class MovementMirror
 {
@@ -59,7 +60,10 @@ public sealed class MovementMirror
         {
             case State.Sliding:
             case State.HeadFirstSliding:
-            case State.SupineSliding: pose.Direction = ctx.SlideDirection; break;
+            case State.SupineSliding:
+                pose.Direction = ctx.SlideDirection;
+                pose.Detail = ctx.Actions.SlideFacesBack ? 1f : 0f;
+                break;
             // The way the dive flies: a dive on the back faces back along it.
             case State.Diving:
             case State.SupineDiving: pose.Direction = ctx.DiveBodyForward; break;
@@ -147,7 +151,11 @@ public sealed class MovementMirror
         {
             case State.Sliding:
             case State.HeadFirstSliding:
-            case State.SupineSliding: ctx.SlideDirection = pose.Direction; break;
+            case State.SupineSliding:
+                ctx.SlideDirection = pose.Direction;
+                // The facing goes as it was decided on the PC that plays the slide, not worked out again from here.
+                ctx.Actions.SlideFacesBack = pose.Detail > .5f;
+                break;
             case State.Diving:
             case State.SupineDiving: ctx.DiveBodyForward = pose.Direction; break;
             case State.StepDodge: abilities.ActionDirection = pose.Direction; break;

@@ -490,6 +490,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
             // stays over the capsule and takes the head's dips and quick sway.
             HoldHeadPlace();
             if (gripWeight <= 0f && !slideBodyAnchored && !ClipCarriesBody) FollowHead(Time.deltaTime);
+            else if (gripWeight <= 0f && slideBodyAnchored && !ClipCarriesBody) FollowHeadAlongSlide(Time.deltaTime);
             using (GripMarker.Auto()) Grip(Time.deltaTime);
             using (FeetMarker.Auto())
             {
@@ -593,6 +594,9 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
             case MovementState.SupineSliding:
                 if (slidesOnBack) Sequence(supineLand, supine);
                 else Sequence(supineSlideStart, supineSlide);
+                // Held in the slide's frame as the feet-first slide is: it used to face the view, so a look round turned
+                // the lying body round under the camera.
+                FaceSlide();
                 break;
             // Down from a side dive the body already lies in the slide's pose (SideDivePose): no landing clip to swing the arms.
             case MovementState.HeadFirstSliding:

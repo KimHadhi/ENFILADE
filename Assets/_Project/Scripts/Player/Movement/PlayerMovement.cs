@@ -90,6 +90,8 @@ public sealed partial class PlayerMovement : MonoBehaviour
     public Vector3 HorizontalVelocity { get => Motor.HorizontalVelocity; set => Motor.HorizontalVelocity = value; }
     public float VerticalVelocity { get => Motor.VerticalVelocity; set => Motor.VerticalVelocity = value; }
     public Vector3 SlideDirection { get => Actions.SlideDirection; set => Actions.SlideDirection = value; }
+    /// <summary>The way the sliding body faces, held for the slide whatever the view does (MovementActions.SlideFacesBack).</summary>
+    public float SlideFacingYaw => Actions.SlideFacingYaw;
     public float CurrentSlideSpeed { get => Actions.CurrentSlideSpeed; set => Actions.CurrentSlideSpeed = value; }
     public bool SlideBrakeArmed { get => Actions.SlideBrakeArmed; set => Actions.SlideBrakeArmed = value; }
     public Vector3 DiveBodyForward { get => Actions.DiveBodyForward; set => Actions.DiveBodyForward = value; }

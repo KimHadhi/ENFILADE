@@ -96,7 +96,7 @@ public sealed class PlayerLook : MonoBehaviour
         float limit = body != null ? body.SlideViewYawLimit : 120f;
         float now = transform.eulerAngles.y;
         // Where this push would take the view from the way the slide faces, and how far past the edge that is.
-        float wanted = Mathf.DeltaAngle(PlayerBody.SlideFacing(direction, now), now) + mouseX;
+        float wanted = Mathf.DeltaAngle(movement.SlideFacingYaw, now) + mouseX;
         float past = Mathf.Abs(wanted) - limit;
         // Only a push outward counts; one back toward the middle from outside the arc doesn't steer.
         if (past <= 0f || Mathf.Sign(mouseX) != Mathf.Sign(wanted)) return;
@@ -206,8 +206,20 @@ public sealed class PlayerLook : MonoBehaviour
             if (direction.sqrMagnitude < .0001f) return candidate;
             if (body == null) body = GetComponent<PlayerBody>();
             float limit = body != null ? body.SlideViewYawLimit : 120f;
-            // A slide carrying the player backwards (wall bounce, backward entry) keeps facing the view.
-            return WithinArc(PlayerBody.SlideFacing(direction, transform.eulerAngles.y), limit, candidate);
+            // Around the way the slide's body faces, which the slide holds: along it, or back along it after a backward
+            // entry or a bounce (MovementActions.SlideFacesBack). It was worked out from the view itself, so a look past 90°
+            // turned the arc round with the body and the view could go on round to the slide's front from behind.
+            return WithinArc(movement.SlideFacingYaw, limit, candidate);
+        }
+        if (movement != null && movement.CurrentState == PlayerMovement.MovementState.SupineSliding)
+        {
+            // Sliding on the back, the body keeps the heading it went down with (PlayerBody.FaceSlide) and the head turns as
+            // far as it does lying on the back. Nothing held either before: the view went right round and the lying body
+            // swung round under it.
+            Vector3 direction = Vector3.ProjectOnPlane(movement.SlideDirection, Vector3.up);
+            if (direction.sqrMagnitude < .0001f) return candidate;
+            if (body == null) body = GetComponent<PlayerBody>();
+            return WithinArc(movement.SlideFacingYaw, body != null ? body.LyingLookLimit : 110f, candidate);
         }
         if (movement != null && movement.CurrentState == PlayerMovement.MovementState.SupineDiving && !movement.IsGrounded)
         {

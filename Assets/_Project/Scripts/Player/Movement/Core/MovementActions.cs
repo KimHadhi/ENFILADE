@@ -5,7 +5,36 @@ using MovementState = PlayerMovement.MovementState;
 public sealed class MovementActions
 {
     private readonly PlayerMovement ctx;
-    public Vector3 SlideDirection;
+    private Vector3 slideDirection;
+    /// <summary>
+    /// The way a slide carries the player. Setting it keeps the sliding body's facing in the world: SlideFacesBack is
+    /// worked out again from the way the body faced just before, so a steer, a glance off a wall or a bounce turns the
+    /// body at most as far as the slide turned, and never round. A slide begins facing the way the player looks
+    /// (StartSlide, StartLandingSlide).
+    /// </summary>
+    public Vector3 SlideDirection
+    {
+        get => slideDirection;
+        set
+        {
+            float facing = SlideFacingYaw;
+            slideDirection = value;
+            FaceSlideFrom(facing);
+        }
+    }
+    /// <summary>
+    /// The sliding body faces back along SlideDirection rather than along it: a slide begun moving backwards, or bounced
+    /// back off a wall it slid into. It holds for the whole slide. It used to be worked out every frame from where the
+    /// player looked (more than 90° from the slide meant facing back), which a look round past 90° reached once the
+    /// slide's view was widened to 120° (friend feedback C11): the legs and the body swung round 180° under the camera,
+    /// and the view's arc went round with them (user, 2026-11-12: "슬라이딩하고 뒤 봤을 때 느낌 이상함").
+    /// </summary>
+    public bool SlideFacesBack;
+    /// <summary>The way the sliding body faces (world yaw, degrees): along the slide, or back along it.</summary>
+    public float SlideFacingYaw => Mathf.Atan2(slideDirection.x, slideDirection.z) * Mathf.Rad2Deg + (SlideFacesBack ? 180f : 0f);
+    /// <summary>Faces the sliding body along the slide, or back along it when that is nearer the way given (world yaw, degrees).</summary>
+    internal void FaceSlideFrom(float facingYaw)
+        => SlideFacesBack = Mathf.Abs(Mathf.DeltaAngle(Mathf.Atan2(slideDirection.x, slideDirection.z) * Mathf.Rad2Deg, facingYaw)) > 90f;
     public float CurrentSlideSpeed;
     public bool SlideBrakeArmed;
     public Vector3 DiveBodyForward = Vector3.forward;
@@ -30,7 +59,7 @@ public sealed class MovementActions
     {
         CurrentSlideSpeed = sprintProgress = 0f;
         coyoteTimer = jumpBufferTimer = slideCooldownTimer = riseTimer = 0f;
-        SlideBrakeArmed = false;
+        SlideBrakeArmed = SlideFacesBack = false;
         Dive.Reset();
         Momentum.Reset();
     }
@@ -43,6 +72,9 @@ public sealed class MovementActions
         Vector3 inputDir = (ctx.transform.right * input.x + ctx.transform.forward * input.y).normalized;
         Vector3 momentumDir = new Vector3(ctx.HorizontalVelocity.x, 0f, ctx.HorizontalVelocity.z).normalized;
         SlideDirection = momentumDir.sqrMagnitude > 0.01f ? momentumDir : (inputDir.sqrMagnitude > 0.01f ? inputDir : ctx.transform.forward);
+        // The body drops into the slide facing the way the player looks: along the slide, or back along it when the run
+        // carried them backwards. That holds for the slide; looking round in it doesn't turn it (SlideFacesBack).
+        FaceSlideFrom(ctx.transform.eulerAngles.y);
         CurrentSlideSpeed = applyBoost ? Mathf.Max(currentSpeed, ctx.sprintSpeed) + ctx.slideKickBoost : currentSpeed;
         SlideBrakeArmed = !ctx.Input.CrouchHeld;
         slideCooldownTimer = ctx.slideCooldown;
@@ -55,6 +87,9 @@ public sealed class MovementActions
         SlideBrakeArmed = !ctx.Input.CrouchHeld;
         Vector3 momentumDir = new Vector3(ctx.HorizontalVelocity.x, 0f, ctx.HorizontalVelocity.z).normalized;
         SlideDirection = momentumDir.sqrMagnitude > 0.01f ? momentumDir : fallbackDir;
+        // As StartSlide. Down from a dive on the back the view is round toward the back (PlayerLook holds it there), so
+        // the slide on the back faces back along the slide, feet trailing, as the dive did.
+        FaceSlideFrom(ctx.transform.eulerAngles.y);
         float boost = applyBoost ? ctx.diveSlideKickBoost : 0f;
         float baseTargetSpeed = currentSpeed + boost;
         CurrentSlideSpeed = (currentSpeed > ctx.maxLandingSlideSpeed) ? currentSpeed : Mathf.Min(baseTargetSpeed, ctx.maxLandingSlideSpeed);

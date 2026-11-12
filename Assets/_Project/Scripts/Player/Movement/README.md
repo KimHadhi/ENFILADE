@@ -17,7 +17,7 @@
 | [Core/MovementStateMachine.cs](Core/MovementStateMachine.cs) | 상태 등록, 활성 경로, 공통 조상 기준 전환 |
 | [Core/MovementMotor.cs](Core/MovementMotor.cs) | 속도·접지·경사·중력·CharacterController 이동 |
 | [Core/MovementPostureController.cs](Core/MovementPostureController.cs) | 몸·눈높이, 공중 웅크리기, 천장·통로 공간 검사 |
-| [Core/MovementActions.cs](Core/MovementActions.cs) | 슬라이드·다이브 시작, 달리기·점프 버퍼·코요테 타이머 |
+| [Core/MovementActions.cs](Core/MovementActions.cs) | 슬라이드·다이브 시작, 슬라이드 몸이 향하는 쪽(시작할 때 시선으로 정하고 튕기거나 꺾여도 끝까지 유지, `SlideFacesBack`), 달리기·점프 버퍼·코요테 타이머 |
 | [Actions/MovementAbilities.cs](Actions/MovementAbilities.cs) | 독점 행동의 입력 우선순위, 회피·파쿠르·전투 서비스 연결 |
 | [Actions/MovementDive.cs](Actions/MovementDive.cs) / [MovementLanding.cs](Actions/MovementLanding.cs) | 다이브 비행 / 착지 단계·구르기·낙하 피해·큰 낙하·넉백 |
 | [Actions/MovementMomentum.cs](Actions/MovementMomentum.cs) | 달리며 쌓이는 속도 |

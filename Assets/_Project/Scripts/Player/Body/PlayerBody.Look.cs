@@ -218,12 +218,15 @@ public sealed partial class PlayerBody
         turning = 0;
     }
 
-    // Keep the lower body in the slide's world frame. Clamping or smoothing a camera-relative yaw would let
-    // a quick look drag the legs around; the slide motor already smooths intentional steering.
+    // Keep the lower body in the slide's world frame, the feet-first slide and the slide on the back alike. Clamping or
+    // smoothing a camera-relative yaw would let a quick look drag the legs around; the slide motor already smooths
+    // intentional steering. The way it faces is the slide's own (PlayerMovement.SlideFacingYaw): worked out here from the
+    // view, a look past 90° swung the legs, the body's place and the camera on its eyes round 180°. The slide on the back
+    // had nothing holding it, so the lying body turned with every look (user, 2026-11-12).
     private void FaceSlide()
     {
         Vector3 direction = Vector3.ProjectOnPlane(player.SlideDirection, Vector3.up);
-        if (direction.sqrMagnitude > .0001f) legYaw = SlideFacing(direction, transform.eulerAngles.y);
+        if (direction.sqrMagnitude > .0001f) legYaw = player.SlideFacingYaw;
         Quaternion frame = Quaternion.Euler(0f, legYaw, 0f);
         if (!slideBodyAnchored)
         {
@@ -237,21 +240,27 @@ public sealed partial class PlayerBody
         turning = 0;
     }
 
-    /// <summary>
-    /// The way a slide faces (degrees): along its travel, or against it when the slide carries the player backwards
-    /// (a wall bounce, a backward entry), so neither the view nor the legs swing round; the body slides back instead.
-    /// </summary>
-    public static float SlideFacing(Vector3 slideDirection, float lookYaw)
+    // Sliding on the back, the clips keep the head far from where the slide began (lying back from the feet-first slide,
+    // landing from a dive on the back), so the body is eased until the head is just behind the camera's pivot, as
+    // FollowHead does in the other states; but in the slide's own frame, never the view's: FollowHead's offset turns with
+    // the view, so on a lying body every look round swung it round the capsule first. The feet-first slide keeps the
+    // place it began with.
+    private void FollowHeadAlongSlide(float dt)
     {
-        float heading = Mathf.Atan2(slideDirection.x, slideDirection.z) * Mathf.Rad2Deg;
-        return Mathf.Abs(Mathf.DeltaAngle(heading, lookYaw)) > 90f ? heading + 180f : heading;
+        if (dead || state != MovementState.SupineSliding || head == null || view == null || view.parent == null || dt <= 0f) return;
+        Quaternion frame = Quaternion.Euler(0f, legYaw, 0f);
+        Vector3 wanted = view.parent.position - frame * Vector3.forward * backOffset;
+        Vector3 error = wanted - (spineLook.ClipHeadPosition - bodyLean.ClipHeadOffset(dead, dt));
+        error.y = 0f;
+        slideBodyOffset += Quaternion.Inverse(frame) * error * (1f - Mathf.Exp(-dt / headFollowTime));
+        slideBodyOffset = Vector3.ClampMagnitude(slideBodyOffset, 1.5f);
     }
 
     private void PlaceBody()
     {
         if (slideBodyAnchored)
         {
-            if (!dead && state == MovementState.Sliding)
+            if (!dead && (state == MovementState.Sliding || state == MovementState.SupineSliding))
             {
                 body.position = transform.position + slideWorldOffset;
                 return;
