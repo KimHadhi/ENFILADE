@@ -28,10 +28,17 @@ public static class WeaponIcons
     /// <summary>Killers that are not a weapon: bare hands (punches, kicks, card blows), a shove (and a dash's or a
     /// kick's push), an execution, a counter, a blast, a fall.</summary>
     public const string Fist = "fist", Shove = "shove", Execution = "execution", Counter = "counter", Explosion = "explosion", Fall = "fall";
+    /// <summary>The headshot's mark after the weapon in the kill feed: a skull, Counter-Strike's way, in the canvas's middle
+    /// square (the user, 2026-11-12: "헤드샷은 Counter Strike처럼 두개골 모양이었으면 좋겠어 직관적이게").</summary>
+    public const string Headshot = "headshot";
+    /// <summary>Where each game picture's drawing lies on its canvas, written by the icon tool (WeaponIconSpans.csv).</summary>
+    public const string SpanTable = "WeaponIconSpans";
     /// <summary>Every icon's canvas, width over height (512 x 160).</summary>
     public const float Aspect = 512f / 160f;
 
     private static readonly Dictionary<string, Sprite> found = new Dictionary<string, Sprite>(StringComparer.OrdinalIgnoreCase);
+    // Pictures read from the player's folder: their drawing can lie anywhere, so the game's spans don't hold for them.
+    private static readonly HashSet<Sprite> theirs = new HashSet<Sprite>();
     // Pictures and sprites made here at run time (from files, or round a Resources picture), let go when the tables reload.
     private static readonly List<Object> made = new List<Object>();
     private static string style;
@@ -56,6 +63,7 @@ public static class WeaponIcons
         }
         made.Clear();
         found.Clear();
+        theirs.Clear();
         style = null;
     }
 
@@ -101,6 +109,24 @@ public static class WeaponIcons
         found[id] = sprite;
         return sprite;
     }
+
+    /// <summary>
+    /// Where an id's game picture is drawn on its canvas, in uv (x left, y right, z bottom, w top), and how much of its length
+    /// from the muzzle back is the barrel end (<paramref name="front"/>), for flairs that burn only the barrel (KillFlairFx).
+    /// A picture of the player's own, or one with no row: the whole canvas and half.
+    /// </summary>
+    public static Vector4 Span(string id, out float front)
+    {
+        front = .5f;
+        if (string.IsNullOrWhiteSpace(id) || (found.TryGetValue(id.Trim(), out var sprite) && sprite != null && theirs.Contains(sprite))
+            || !GameTables.TryGetRow(SpanTable, id.Trim(), out var cells))
+            return new Vector4(0f, 1f, 0f, 1f);
+        front = Cell(cells, "front", .5f);
+        return new Vector4(Cell(cells, "left", 0f), Cell(cells, "right", 1f), Cell(cells, "bottom", 0f), Cell(cells, "top", 1f));
+    }
+
+    private static float Cell(IReadOnlyDictionary<string, string> cells, string field, float fallback)
+        => cells.TryGetValue(field, out string raw) && float.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out float value) ? value : fallback;
 
     /// <summary>A number of WeaponIcons.csv (`Row.field`), for the HUD parts that show the icons.</summary>
     public static float Number(string row, string field, float fallback)
@@ -152,7 +178,9 @@ public static class WeaponIcons
                 return null;
             }
             made.Add(picture);
-            return Wrap(picture);
+            var sprite = Wrap(picture);
+            theirs.Add(sprite);
+            return sprite;
         }
         catch (Exception problem)
         {

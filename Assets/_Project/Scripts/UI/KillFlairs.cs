@@ -16,8 +16,14 @@ public static class KillFlairs
 {
     public const string TableName = "KillFlairs";
 
-    /// <summary>What plays on the weapon's icon (KillFlairFx): the shapes of KillFlair.shader, or pieces round the icon.</summary>
-    public enum Icon { None, Fire, Gild, Trail, Tint }
+    /// <summary>
+    /// What plays on the weapon's icon (KillFlairFx). Drawn on the icon's own shape by KillFlair.shader: Fire (the muzzle
+    /// catches and the barrel burns, the grip left clean: the CHARGE kill), Engulf (the whole gun covered from the muzzle
+    /// back: the first CHARGE draft, kept for other uses), Gild, Trail, Tint and Flash (one white-hot flash). Pieces round
+    /// it: Echo (two afterimages sliding in), Spark (a burst of light at its middle), Ring (a shock ring), Slash (a red cut
+    /// across it), Rays (short strokes thrown off it), Cross (two lines crossing it).
+    /// </summary>
+    public enum Icon { None, Fire, Gild, Trail, Tint, Engulf, Flash, Echo, Spark, Ring, Slash, Rays, Cross }
 
     /// <summary>What plays on the row round the icon, any of them together.</summary>
     [Flags]
@@ -36,6 +42,12 @@ public static class KillFlairs
         Kick = 1 << 9,    // the row jolts as the flair lands
         Tag = 1 << 10,    // the words, small, over the weapon's icon
         Name = 1 << 11,   // the one killed turns the flair's colour
+        Veil = 1 << 12,   // the row comes out from under black, its right end first
+        Beam = 1 << 13,   // a thin line of light from the muzzle through the one killed, past the row's end
+        Trace = 1 << 14,  // a light running once round the plate's own outline, its slanted end included
+        Mark = 1 << 15,   // the headshot's skull after the weapon pops and rings
+        Accent = 1 << 16, // the row's end bar takes the flair's colour
+        Flash = 1 << 17,  // the plate flashes the colour once, in its own shape
     }
 
     /// <summary>One row of the table.</summary>
@@ -48,17 +60,33 @@ public static class KillFlairs
         public Icon Icon;
         public Row Row;
         public Color Colour = Color.white;
+        /// <summary>colour = class: the killer's class colour (ClassColours.csv) instead.</summary>
+        public bool ClassColour;
         public string Text = "";
         public float Delay, Seconds = 1f;
+        /// <summary>Room (px) the feed keeps over and under the row while it plays, on top of what its pieces take.</summary>
+        public float Above, Below;
     }
 
-    /// <summary>What one kill's row plays: the icon's effect and the row's, each from its own table row (or none).</summary>
+    /// <summary>
+    /// What one kill's row plays: the icon's effect and the row's, each from its own table row (or none), and what the row
+    /// needs to know of the kill: its marks, whether it is this PC's own (the bounty's sum shows only to its hunter), the
+    /// weapon's picture id (where its barrel is) and the killer's class colour.
+    /// </summary>
     public readonly struct Play
     {
         public readonly Flair Icon, Row;
         public readonly KillMarks Marks;
-        public Play(Flair icon, Flair row, KillMarks marks) { Icon = icon; Row = row; Marks = marks; }
+        public readonly bool Mine;
+        public readonly string Picture;
+        public readonly Color ClassColour;
+        public Play(Flair icon, Flair row, KillMarks marks, bool mine = true, string picture = null, Color classColour = default)
+        {
+            Icon = icon; Row = row; Marks = marks; Mine = mine; Picture = picture; ClassColour = classColour;
+        }
         public bool Any => Icon != null || Row != null;
+        /// <summary>A flair row's colour for this kill: its own, or the killer's class colour.</summary>
+        public Color ColourOf(Flair flair) => flair == null ? Color.white : flair.ClassColour && ClassColour.a > 0f ? ClassColour : flair.Colour;
     }
 
     private static List<Flair> flairs;
@@ -77,7 +105,7 @@ public static class KillFlairs
     /// What a kill under <paramref name="marks"/> plays, <paramref name="run"/> being its place in the killer's run of quick
     /// kills (1 for a lone one, 2 for the second within the streak window).
     /// </summary>
-    public static Play Pick(KillMarks marks, int run)
+    public static Play Pick(KillMarks marks, int run, bool mine = true, string picture = null, Color classColour = default)
     {
         Flair icon = null, row = null;
         foreach (var flair in All())
@@ -88,7 +116,16 @@ public static class KillFlairs
             if (row == null && flair.Row != Row.None) row = flair;
             if (icon != null && row != null) break;
         }
-        return new Play(icon, row, marks);
+        return new Play(icon, row, marks, mine, picture, classColour);
+    }
+
+    /// <summary>A class's colour for its flairs (ClassColours.csv), or clear for one it doesn't name.</summary>
+    public static Color ClassColourOf(string classId)
+    {
+        if (string.IsNullOrWhiteSpace(classId) || !GameTables.TryGetRow("ClassColours", classId.Trim(), out var cells)
+            || !cells.TryGetValue("colour", out string text) || !ColorUtility.TryParseHtmlString(text.Trim(), out var colour))
+            return Color.clear;
+        return colour;
     }
 
     /// <summary>Every row, the most important first.</summary>
@@ -113,10 +150,16 @@ public static class KillFlairs
                 foreach (string part in rowText.Split(';', ',', ' ', '+'))
                     if (part.Length > 0 && Enum.TryParse(part.Trim(), true, out Row piece)) flair.Row |= piece;
                     else if (part.Trim().Length > 0) Debug.LogWarning($"[KillFlairs] {TableName}.csv [{id}] row: '{part}' is not one of {string.Join(", ", Enum.GetNames(typeof(Row)))}.");
-            if (cells.TryGetValue("colour", out string colour) && ColorUtility.TryParseHtmlString(colour.Trim(), out var parsed)) flair.Colour = parsed;
+            if (cells.TryGetValue("colour", out string colour))
+            {
+                if (string.Equals(colour.Trim(), "class", StringComparison.OrdinalIgnoreCase)) flair.ClassColour = true;
+                else if (ColorUtility.TryParseHtmlString(colour.Trim(), out var parsed)) flair.Colour = parsed;
+            }
             if (cells.TryGetValue("text", out string text)) flair.Text = text.Trim();
             flair.Delay = Number(cells, "delay", 0f);
             flair.Seconds = Mathf.Max(.1f, Number(cells, "seconds", 1f));
+            flair.Above = Mathf.Max(0f, Number(cells, "above", 0f));
+            flair.Below = Mathf.Max(0f, Number(cells, "below", 0f));
             flairs.Add(flair);
         }
         flairs.Sort((a, b) => b.Priority.CompareTo(a.Priority));

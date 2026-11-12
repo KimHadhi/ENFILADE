@@ -6,7 +6,10 @@
 # What it writes: Assets/_Project/Resources/UI/WeaponIcons/<Style>/<key>.png for the three looks the HUD can use
 # (WeaponIcons.csv Look.style): Solid (filled, thin cuts between the parts), Outline (a stroke round the shape, the inside
 # faint) and Line (a technical drawing: thin outline and the parts' edges). White on transparent: the HUD tints them.
-# A .meta is written only for a new PNG, so import settings changed in Unity stay.
+# A .meta is written only for a new PNG, so import settings changed in Unity stay. It also writes
+# Assets/_Project/Resources/Tables/WeaponIconSpans.csv: where each picture's drawing lies on its canvas (uv) and how much
+# of a gun's length from the muzzle back is its barrel end (front), for the kill feed's flairs that burn only the barrel
+# (KillFlair.shader). A run of some keys only updates their rows.
 #
 # Why from the models (user, 2026-11-12: "무기 아이콘도 이제 좀 바꿀 수 있나? 그래야지 이제 킬로그나 무기 슬롯에 쓸 수
 # 있지"): every gun is drawn from its own FBX, side on, muzzle to the right, as kill feeds show them. The KINEMATION
@@ -35,7 +38,7 @@ import mathutils
 import numpy as np
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-OUT = os.path.join(ROOT, "Assets", "_Project", "Resources", "UI", "WeaponIcons")
+OUT = DEFAULT_OUT = os.path.join(ROOT, "Assets", "_Project", "Resources", "UI", "WeaponIcons")
 STYLES = ("Solid", "Outline", "Line")
 CANVAS = (512, 160)          # final pixels, every icon
 SUPER = 4                    # rendered at this many times the canvas, then averaged down (anti-aliasing)
@@ -68,44 +71,44 @@ GRENADES = "Assets/_Project/Art/Models/Addons/Grenades/"
 # there). parts: (the part's FBX root in the prefab, its FBX). hide: mesh objects left out. drop: bones whose vertices
 # are left out (rounds and shells that the prefab keeps out of sight).
 GUNS = {
-    "MX16A4": dict(fbx=FPS + "MX16A4/Weapon/A_W_MX16A4_Pose.FBX"),
-    "M1911": dict(fbx=FPS + "M1911/Weapon/A_W_M1911_Idle.FBX"),
-    "AK105": dict(prefab="TacticalGuns/AK105.prefab", body=("AK105/SKM_AK105", TAC + "AK105/SKM_AK105.FBX"), parts=[
+    "MX16A4": dict(fbx=FPS + "MX16A4/Weapon/A_W_MX16A4_Pose.FBX", front=.42),
+    "M1911": dict(fbx=FPS + "M1911/Weapon/A_W_M1911_Idle.FBX", front=.6),
+    "AK105": dict(prefab="TacticalGuns/AK105.prefab", front=.45, body=("AK105/SKM_AK105", TAC + "AK105/SKM_AK105.FBX"), parts=[
         ("AK105/SKM_AK105/AK105_Skeleton/Body/Magazine_Parent/SKM_Mag_AK105", TAC + "AK105/SKM_Mag_AK105.FBX")]),
-    "Herrington1187": dict(prefab="TacticalGuns/Herrington1187.prefab",
+    "Herrington1187": dict(prefab="TacticalGuns/Herrington1187.prefab", front=.45,
                            body=("Herrington1187/SKM_Herrington_11-87_Police", TAC + "Herrington_11-87/SKM_Herrington_11-87_Police.FBX"),
                            drop=["Cartridge"]),
-    "MKR9": dict(prefab="TacticalGuns/MKR9.prefab", body=("MKR9/SKM_MKR9", TAC + "MKR9/SKM_MKR9.FBX"), parts=[
+    "MKR9": dict(prefab="TacticalGuns/MKR9.prefab", front=.5, body=("MKR9/SKM_MKR9", TAC + "MKR9/SKM_MKR9.FBX"), parts=[
         ("MKR9/SKM_MKR9/MKR-9_Rig/Body/Mag_Primary/SKM_MKR9_Mag", TAC + "MKR9/Magazine/SKM_MKR9_Mag.FBX"),
         ("MKR9/SKM_MKR9/MKR-9_Rig/Body/ScopeMount/A_MKR9_IronSights/SM_MKR9_IronSights(Clone)", TAC + "MKR9/SM_MKR9_IronSights.fbx")]),
-    "MX68": dict(prefab="TacticalGuns/MX68.prefab", body=("MX68/SKM_MX68", TAC + "MX68/SKM_MX68.FBX"), parts=[
+    "MX68": dict(prefab="TacticalGuns/MX68.prefab", front=.45, body=("MX68/SKM_MX68", TAC + "MX68/SKM_MX68.FBX"), parts=[
         ("MX68/SKM_MX68/MX68_Rig/Body/ScopeMount/A_MX68_IronSights/SM_IronSights_MX68(Clone)", TAC + "MX68/Attachments/SM_IronSights_MX68.FBX")]),
-    "Mk14EBR": dict(prefab="TacticalGuns/Mk14EBR.prefab", body=("Mk14EBR/SKM_Mk14EBR", TAC + "Mk14EBR/SKM_Mk14EBR.FBX"), parts=[
+    "Mk14EBR": dict(prefab="TacticalGuns/Mk14EBR.prefab", front=.45, body=("Mk14EBR/SKM_Mk14EBR", TAC + "Mk14EBR/SKM_Mk14EBR.FBX"), parts=[
         ("Mk14EBR/SKM_Mk14EBR/Mk14EBR_Body/Body/Mag/SKM_Mk14EBR_Mag", TAC + "Mk14EBR/SKM_Mk14EBR_Mag.FBX")]),
-    "R08": dict(prefab="TacticalGuns/R08.prefab", body=("R08/SKM_R08", TAC + "R08/SKM_R08.FBX"), drop=["Speedloader"]),
-    "SRM12": dict(prefab="TacticalGuns/SRM12.prefab", body=("SRM12/SKM_Oryx_SRM-12_Body", TAC + "SRM-12/SKM_Oryx_SRM-12_Body.FBX"), parts=[
+    "R08": dict(prefab="TacticalGuns/R08.prefab", front=.55, body=("R08/SKM_R08", TAC + "R08/SKM_R08.FBX"), drop=["Speedloader"]),
+    "SRM12": dict(prefab="TacticalGuns/SRM12.prefab", front=.42, body=("SRM12/SKM_Oryx_SRM-12_Body", TAC + "SRM-12/SKM_Oryx_SRM-12_Body.FBX"), parts=[
         ("SRM12/SKM_Oryx_SRM-12_Body/Body/Magazine/SKM_Mag_SRM-12", TAC + "SRM-12/Attachments/Magazine/SKM_Mag_SRM-12.FBX"),
         ("SRM12/SKM_Oryx_SRM-12_Body/Body/ScopeMount/A_Oryx_SRM-12_IronSights/SKM_TR15_RearSight(Clone)", TAC + "TR15/Attachments/Ironsights/SKM_TR15_RearSight.FBX"),
         ("SRM12/SKM_Oryx_SRM-12_Body/Body/ScopeMount/A_Oryx_SRM-12_IronSights/SKM_TR15_FrontSight(Clone)", TAC + "TR15/Attachments/Ironsights/SKM_TR15_FrontSight.FBX")]),
-    "TR15": dict(prefab="TacticalGuns/TR15.prefab", body=("TR15/SKM_TR15_Body", TAC + "TR15/SKM_TR15_Body.FBX"), parts=[
+    "TR15": dict(prefab="TacticalGuns/TR15.prefab", front=.45, body=("TR15/SKM_TR15_Body", TAC + "TR15/SKM_TR15_Body.FBX"), parts=[
         ("TR15/SKM_TR15_Body/Body/Magazine/SKM_Mag_TR15", TAC + "TR15/Attachments/Magazine/SKM_Mag_TR15.FBX"),
         ("TR15/SKM_TR15_Body/Body/ScopeMount/A_TR15_IronSights/SKM_TR15_RearSight", TAC + "TR15/Attachments/Ironsights/SKM_TR15_RearSight.FBX"),
         ("TR15/SKM_TR15_Body/Body/ScopeMount/A_TR15_IronSights/SKM_TR15_FrontSight", TAC + "TR15/Attachments/Ironsights/SKM_TR15_FrontSight.FBX")]),
-    "WK11Viper": dict(prefab="TacticalGuns/WK11Viper.prefab", body=("WK11Viper/SKM_WK-11_Viper_Body", TAC + "WK-11_Viper/SKM_WK-11_Viper_Body.FBX"), parts=[
+    "WK11Viper": dict(prefab="TacticalGuns/WK11Viper.prefab", front=.6, body=("WK11Viper/SKM_WK-11_Viper_Body", TAC + "WK-11_Viper/SKM_WK-11_Viper_Body.FBX"), parts=[
         ("WK11Viper/SKM_WK-11_Viper_Body/Body/Magazine/SKM_Mag_WK-11_Viper", TAC + "WK-11_Viper/Magazine/SKM_Mag_WK-11_Viper.FBX")]),
     # The workshop weapons (addon_weapon_to_fbx.py): already true size, tip along Unity +Z, top along Unity +Y.
-    "ZZZKatana": dict(fbx=ADDON + "ZZZKatana/ZZZKatana.fbx", hide=["Scabbard"]),
-    "YamatoKatana": dict(fbx=ADDON + "YamatoKatana/YamatoKatana.fbx", hide=["Sheath"]),
-    "CavalrySword": dict(fbx=ADDON + "CavalrySword/CavalrySword.fbx"),
-    "KraitP68": dict(fbx=ADDON + "KraitP68/KraitP68.fbx", hide=["Suppressor", "Light"]),
+    "ZZZKatana": dict(fbx=ADDON + "ZZZKatana/ZZZKatana.fbx", hide=["Scabbard"], front=.75),
+    "YamatoKatana": dict(fbx=ADDON + "YamatoKatana/YamatoKatana.fbx", hide=["Sheath"], front=.75),
+    "CavalrySword": dict(fbx=ADDON + "CavalrySword/CavalrySword.fbx", front=.75),
+    "KraitP68": dict(fbx=ADDON + "KraitP68/KraitP68.fbx", hide=["Suppressor", "Light"], front=.6),
     # The class throwables (Throwables; ArcCW GSO's CS:GO grenades): the knife lies flat with its point (its Tip) to the
     # right; the grenades stand upright and each fills the canvas height, since one scale for all made a frag 10 px tall in
     # the kill feed's 22 px box. The disinfectant canister's red cross is only paint, so its body gets a cross cut in.
-    "ThrowingKnife": dict(fbx=GRENADES + "ThrowingKnife/ThrowingKnife.fbx", point="Tip"),
-    "GrenadeFrag": dict(fbx=GRENADES + "GrenadeFrag/GrenadeFrag.fbx"),
-    "GrenadeSmoke": dict(fbx=GRENADES + "GrenadeSmoke/GrenadeSmoke.fbx"),
-    "GrenadeFlash": dict(fbx=GRENADES + "GrenadeFlash/GrenadeFlash.fbx"),
-    "GrenadeCanister": dict(fbx=GRENADES + "GrenadeCanister/GrenadeCanister.fbx", emblem="cross"),
+    "ThrowingKnife": dict(fbx=GRENADES + "ThrowingKnife/ThrowingKnife.fbx", point="Tip", front=.6),
+    "GrenadeFrag": dict(fbx=GRENADES + "GrenadeFrag/GrenadeFrag.fbx", front=1.0),
+    "GrenadeSmoke": dict(fbx=GRENADES + "GrenadeSmoke/GrenadeSmoke.fbx", front=1.0),
+    "GrenadeFlash": dict(fbx=GRENADES + "GrenadeFlash/GrenadeFlash.fbx", front=1.0),
+    "GrenadeCanister": dict(fbx=GRENADES + "GrenadeCanister/GrenadeCanister.fbx", emblem="cross", front=1.0),
 }
 
 # Unity -> Blender for these FBX files: x flips, Unity's z (forward) is Blender's -y, Unity's y (up) is Blender's z.
@@ -598,6 +601,20 @@ SHAPES = {
         ("little", capsule(70, 50, 72, 78, 6.2)),
         ("thumb", capsule(24, 30, 6, 52, 7)),
     ],
+    # A headshot, Counter-Strike's way (the user, 2026-11-12: "헤드샷은 Counter Strike처럼 두개골 모양이었으면 좋겠어 직관적이게"):
+    # a skull from the front, its dome, cheekbones and jaw; eyes, nose and the gaps between the teeth cut through (parts
+    # named hole...). The kill feed shows it after the weapon in a square (the canvas's middle), so it fits a square.
+    "headshot": [
+        ("skull", circle(50, 57, 35, 40, 180, 0) + [(85, 50), (81, 41), (74, 35), (72, 27), (69, 21), (67, 7), (33, 7), (31, 21),
+                                                         (28, 27), (26, 35), (19, 41), (15, 50)]),
+        ("hole eye left", circle(35.5, 45, 10.5, 24)),
+        ("hole eye right", circle(64.5, 45, 10.5, 24)),
+        ("hole nose", [(50, 37), (55.5, 26.5), (50, 28.5), (44.5, 26.5)]),
+        ("hole tooth 1", [(38.6, 8), (41.2, 8), (41.2, 18.5), (38.6, 18.5)]),
+        ("hole tooth 2", [(45.1, 7), (47.7, 7), (47.7, 19), (45.1, 19)]),
+        ("hole tooth 3", [(52.3, 7), (54.9, 7), (54.9, 19), (52.3, 19)]),
+        ("hole tooth 4", [(58.8, 8), (61.4, 8), (61.4, 18.5), (58.8, 18.5)]),
+    ],
     # A fall: an arrow straight down onto the ground.
     "fall": [
         ("arrow", [(40, 98), (60, 98), (60, 44), (76, 44), (50, 16), (24, 44), (40, 44)]),
@@ -636,6 +653,7 @@ def flat_shape(key):
     if key in PICTURES:
         return picture_shape(PICTURES[key], W, H)
     polys = [poly for _, poly in SHAPES[key]]
+    holes = [name.startswith("hole") for name, _ in SHAPES[key]]
     xs_all = [x for poly in polys for x, _ in poly]
     ys_all = [y for poly in polys for _, y in poly]
     x0, x1, y0, y1 = min(xs_all), max(xs_all), min(ys_all), max(ys_all)
@@ -655,7 +673,8 @@ def flat_shape(key):
             cross = ((yi > py) != (yj > py)) & (px < (xj - xi) * (py - yi) / ((yj - yi) if yj != yi else 1e-9) + xi)
             inside ^= cross
             j = i
-        parts[inside] = n + 1
+        # A hole cuts through what is under it; a part covers it.
+        parts[inside] = 0 if holes[n] else n + 1
     mask = parts > 0
     joins, _, _ = edges(mask, index=parts.astype(np.float32))
     none = np.zeros_like(mask)
@@ -793,6 +812,48 @@ TextureImporter:
 """
 
 
+SPANS = os.path.join(ROOT, "Assets", "_Project", "Resources", "Tables", "WeaponIconSpans.csv")
+SPANS_NOTE = ("#설명 (Tools/Blender/weapon_icons.py가 씀: 그림마다 그린 것이 캔버스(512x160)의 어디에 있는지 uv로(왼쪽 0 오른쪽 1, 아래 0 위 1) "
+              "그리고 총구에서부터 몇 할이 총열 쪽인지(front). 킬 피드의 CHARGE 불꽃이 총구에서 총열까지만 태우는 데 쓴다(KillFlair.shader). "
+              "모드의 그림은 줄이 없으면 캔버스 전체로 본다)")
+
+
+def span_of(mask, front):
+    """Where the drawing lies on its canvas, in uv (v up), and its barrel's share from the muzzle back."""
+    rows = np.where(mask.any(1))[0]
+    cols = np.where(mask.any(0))[0]
+    H, W = mask.shape
+    if len(rows) == 0:
+        return (0.0, 1.0, 0.0, 1.0, front)
+    return (cols[0] / W, (cols[-1] + 1) / W, 1.0 - (rows[-1] + 1) / H, 1.0 - rows[0] / H, front)
+
+
+def write_spans(spans, elsewhere):
+    """Updates the span table's rows for the icons just drawn (the game's, or one beside --out's pictures)."""
+    path = os.path.join(OUT, "WeaponIconSpans.csv") if elsewhere else SPANS
+    rows = {}
+    if os.path.exists(path):
+        with open(path, encoding="utf-8-sig") as f:
+            for line in f.read().splitlines()[1:]:
+                cells = line.split(",")
+                if len(cells) >= 6 and cells[0] and not cells[0].startswith("#") and not cells[0].startswith('"#'):
+                    rows[cells[0]] = cells[1:6]
+    for key, (left, right, bottom, top, front) in spans.items():
+        rows[key] = ["%.4f" % left, "%.4f" % right, "%.4f" % bottom, "%.4f" % top, "%.2f" % front]
+    text = "id,left,right,bottom,top,front\n" + '"' + SPANS_NOTE + '",,,,,\n'
+    text += "".join("%s,%s\n" % (key, ",".join(rows[key])) for key in sorted(rows, key=str.lower))
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8-sig", newline="\n") as f:
+        f.write(text)
+    meta = path + ".meta"
+    rel = project_path(path)
+    if rel and not os.path.exists(meta):
+        guid = hashlib.md5(("ENFILADE weapon icon " + rel).encode("utf-8")).hexdigest()
+        with open(meta, "w", encoding="utf-8", newline="\n") as f:
+            f.write("fileFormatVersion: 2\nguid: %s\nTextScriptImporter:\n  externalObjects: {}\n  userData: \n"
+                    "  assetBundleName: \n  assetBundleVariant: \n" % guid)
+
+
 def write_png(path, opacity):
     """White with the given opacity, top row first."""
     h, w = opacity.shape
@@ -870,6 +931,7 @@ def main():
     for style in STYLES:
         folder_meta(os.path.join(OUT, style))
     done = {style: [] for style in STYLES}
+    spans = {}
     for key in keys:
         if key in GUNS:
             meshes = build_gun(key)
@@ -887,7 +949,9 @@ def main():
             small = shrink(plane)
             write_png(os.path.join(OUT, style, key + ".png"), small)
             done[style].append((key, small))
+        spans[key] = span_of(mask, GUNS[key].get("front", .5) if key in GUNS else 1.0)
         print("[icons] %s done" % key)
+    write_spans(spans, OUT != DEFAULT_OUT)
     if preview:
         os.makedirs(preview, exist_ok=True)
         for style in STYLES:

@@ -28,6 +28,8 @@ public enum KillMarks : uint
     // The killer's own state, known on their PC.
     Charged = 1 << 16,
     Kata = 1 << 17,
+    // Within the ultimate's seconds after spending it (ClassAbilities Cards.ultimateSeconds).
+    Ultimate = 1 << 18,
     // A Schießhund's quarry: their own bounty mark, their duel foe.
     Bounty = 1 << 20,
     Duel = 1 << 21,

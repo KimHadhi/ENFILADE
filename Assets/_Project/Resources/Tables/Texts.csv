@@ -287,6 +287,10 @@ settings.hud.damage_numbers.each,낱개,,설정 창 > HUD > 데미지 숫자 선
 settings.hud.hit_markers,히트 마커,,설정 창 > HUD > 행
 settings.hud.hit_markers.clean,깔끔,,설정 창 > HUD > 히트 마커 선택지 (얇은 선이 톡 튀고 바로 사라지는 페이데이 3식. 기본)
 settings.hud.hit_markers.bold,굵게,,설정 창 > HUD > 히트 마커 선택지 (예전의 굵은 선이 안쪽으로 미끄러지는 모양)
+settings.hud.weapon_slots,무기 슬롯,,설정 창 > HUD > 행
+settings.hud.weapon_slots.plates,조각 판,,설정 창 > HUD > 무기 슬롯 선택지 (화면 오른쪽에 세로로 쌓인 기운 판. 든 판이 왼쪽으로 튀어나오며 커진다. 기본)
+settings.hud.weapon_slots.cards,카드 부채,,설정 창 > HUD > 무기 슬롯 선택지 (탄약 위에 가로로 놓인 작은 카드. 든 카드가 밝은 카드로 넓어진다)
+hud.weapon_slot.empty,비어 있음,Empty,HUD 무기 슬롯 > 무기가 없는 칸
 settings.character.none,고를 캐릭터가 없습니다.,,메인 메뉴 캐릭터 화면과 허브 거울 앞 꾸미기 > 캐릭터가 하나도 없을 때
 #--- 크로스헤어 설정 ---,,,
 crosshair.kind,대상,,설정 창 > 크로스헤어 > 행

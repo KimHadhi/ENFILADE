@@ -33,7 +33,7 @@ public sealed class KillFeedRow
     private static float nextRoll = 1f;
     private float y, lead, roll, weight = 1f, shade = 1f, painted = -1f;
     private bool sheening, mine;
-    private Color warm;
+    private Color warm, accentBase;
     private KillFeedLook look;
     // The row's own colours and the newest row's, between which Paint blends.
     private Color plateLeft, heroLeft, leftInk, iconInk, heroIcon, weaponInk;
@@ -83,8 +83,9 @@ public sealed class KillFeedRow
         foreach (var rect in new[] { left.rectTransform, icon.rectTransform, weapon.rectTransform, right.rectTransform })
             rect.anchorMin = rect.anchorMax = new Vector2(1f, .5f);
         streak = new StreakBadge(root);
-        // A kill's flair (KillFlairs): fire on the icon, the bounty's stamp ... on top of the row's own pieces.
-        flair = new KillFlairFx(root, weapon, right);
+        // A kill's flair (KillFlairs): fire on the icon, the bounty's stamp, a light round the plate ... on top of the row's
+        // own pieces.
+        flair = new KillFlairFx(root, plate, weapon, right, icon, accent);
     }
 
     /// <summary>emphatic: a headshot, a burning streak or a grave notice leans out a little further while newest. fire: the
@@ -104,13 +105,17 @@ public sealed class KillFeedRow
         right.text = rightText;
         icon.gameObject.SetActive(iconTexture != null);
         icon.texture = iconTexture;
+        // A mark drawn on the weapon icons' wide canvas (the headshot's skull, WeaponIcons.Headshot) shows its middle square.
+        icon.uvRect = iconTexture != null && iconTexture.width > iconTexture.height * 1.5f
+            ? new Rect(.5f - .5f * iconTexture.height / iconTexture.width, 0f, (float)iconTexture.height / iconTexture.width, 1f)
+            : new Rect(0f, 0f, 1f, 1f);
         iconInk = iconColor;
         weapon.gameObject.SetActive(weaponIcon != null);
         weapon.sprite = weaponIcon;
         weaponInk = leftInk;
         // On the light card the icon takes the kill's colour, deep enough to read on it.
         heroIcon = new Color(accentColor.r * .78f, accentColor.g * .78f, accentColor.b * .78f, 1f);
-        accent.color = accentColor;
+        accent.color = accentBase = accentColor;
         this.mine = mine;
         warm = GunFeelSettings.Instance.scoreColor;
         plate.Highlight(Color.clear, 0f);
@@ -201,6 +206,8 @@ public sealed class KillFeedRow
         // The accent bar flares wide on arrival and stays wider while the row is the newest.
         float flash = 1f - Mathf.Clamp01(Age / .25f);
         accent.rectTransform.localScale = new Vector3(1f + flash * 1.5f + (look != null ? look.leadAccent : 0f) * lead, 1f, 1f);
+        // A flair can take the end bar into its colour while it plays (an ultimate's class colour).
+        accent.color = flair.AccentTint > 0f ? Color.Lerp(accentBase, flair.AccentColour, flair.AccentTint) : accentBase;
         streak.Tick();
         if (sheening)
         {

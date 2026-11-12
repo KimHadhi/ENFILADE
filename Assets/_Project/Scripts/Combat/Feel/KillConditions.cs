@@ -18,6 +18,8 @@ public static class KillConditions
         // Under a CHARGE, the Assault's own or an Assault friend's (ClassKit.ReceiveCharge).
         if (kit.ChargeShare > 0f) marks |= KillMarks.Charged;
         if (kit.KataShare > 0f) marks |= KillMarks.Kata;
+        // In the ultimate's seconds after spending it, as long as its own effects last (ClassCards.Ultimate).
+        if (Time.time - DuelWatch.UltimateAt <= Mathf.Max(1f, PlayerClass.Ability("Cards", "ultimateSeconds", 10f))) marks |= KillMarks.Ultimate;
         return marks;
     }
 
@@ -72,16 +74,24 @@ public static class KillConditions
     /// <summary>
     /// Each player's duel foe as last seen while it lived. A duel ends the moment its foe falls (HoundDuel only answers
     /// for a live one), so the kill that ends it looks here: the foe of a duel seen in the last <see cref="Grace"/> s.
+    /// It also sees this PC's player spend their ultimate: the gauge emptying at once (UltimateCharge), since the ultimate
+    /// itself says nothing others can hear.
     /// </summary>
     private sealed class DuelWatch : MonoBehaviour
     {
         private const float Grace = .75f;
         private static readonly Dictionary<PlayerMovement, (GameObject foe, float at)> seen = new Dictionary<PlayerMovement, (GameObject, float)>();
         private static DuelWatch instance;
+        private static float lastCharge = -1f;
+
+        /// <summary>When this PC's player last spent their ultimate (Time.time), far back for never.</summary>
+        public static float UltimateAt { get; private set; } = -999f;
 
         public static void Begin()
         {
             seen.Clear();
+            lastCharge = -1f;
+            UltimateAt = -999f;
             if (instance != null) return;
             var host = new GameObject("Kill Duel Watch");
             DontDestroyOnLoad(host);
@@ -101,6 +111,12 @@ public static class KillConditions
                 var duel = HoundDuel.Of(player);
                 if (duel != null && duel.Foe != null) seen[player] = (duel.Foe.gameObject, Time.time);
             }
+            var gauge = PlayerRoster.Local != null ? PlayerRoster.Local.Ultimate : null;
+            if (gauge == null) { lastCharge = -1f; return; }
+            float now = gauge.CurrentCharge;
+            // Spent: most of the cost gone in one frame (a refill or a slow drain never drops like that).
+            if (lastCharge >= 0f && gauge.RequiredCharge > 0f && lastCharge - now >= gauge.RequiredCharge * .9f) UltimateAt = Time.time;
+            lastCharge = now;
         }
 
         private void OnDestroy() { if (instance == this) instance = null; }

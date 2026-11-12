@@ -9,6 +9,10 @@ public enum DamageNumberMode { Off, Stacked, Each }
 /// <summary>How the hit marker looks (HitMarkerHUD): thin lines that pop and fade, or the earlier thick ticks that slide in.</summary>
 public enum HitMarkerStyle { Clean, Bold }
 
+/// <summary>How the weapon slots look (WeaponSlotsHUD): a column of leaning plates at the HUD's right (A), or a row of cards
+/// over the ammo (C).</summary>
+public enum WeaponSlotLook { Plates, Cards }
+
 /// <summary>How the game window covers the monitor (DisplaySettings).</summary>
 public enum WindowMode { Fullscreen, Borderless, Windowed }
 
@@ -75,6 +79,10 @@ public sealed class GameSettings
         "Bold (the earlier thick outlined ticks that hold wide and slide in, numbers in GunFeel). The headshot's star, sparks " +
         "and flare and the posture break's burst show with either.")]
     public HitMarkerStyle hitMarkerStyle = HitMarkerStyle.Clean;
+    [Tooltip("Weapon slots: Plates (a column of dark plates with cut corners at the HUD's right; the one in hand kicks out, " +
+        "grows and shows its name; the default) or Cards (a row of small cards over the ammo; the one in hand turns into a " +
+        "wide light card). Numbers in WeaponSlots.csv.")]
+    public WeaponSlotLook weaponSlots = WeaponSlotLook.Plates;
     [Tooltip("Horizontal field of view in degrees, measured at 16:9. Wider screens see more at the sides.")]
     public float fieldOfView = 90f;
     [Tooltip("Show the player's own hair and head in first person, cut only where the camera sits inside them.")]
@@ -189,6 +197,7 @@ public sealed class GameSettings
             case SettingsGroup.Hud:
                 s.hudSway = d.hudSway; s.hudTilt = d.hudTilt; s.hudAngle = d.hudAngle; s.hudFollowsLean = d.hudFollowsLean;
                 s.hudBoards = d.hudBoards; s.damageNumbers = d.damageNumbers; s.hitMarkerStyle = d.hitMarkerStyle;
+                s.weaponSlots = d.weaponSlots;
                 break;
             case SettingsGroup.Crosshair:
                 s.steadyCrosshair = d.steadyCrosshair;
@@ -242,6 +251,7 @@ public sealed class GameSettings
         hudAngle = Mathf.Clamp(hudAngle, 0f, MaxHudAngle);
         if (damageNumbers < DamageNumberMode.Off || damageNumbers > DamageNumberMode.Each) damageNumbers = DamageNumberMode.Stacked;
         if (hitMarkerStyle < HitMarkerStyle.Clean || hitMarkerStyle > HitMarkerStyle.Bold) hitMarkerStyle = HitMarkerStyle.Clean;
+        if (weaponSlots < WeaponSlotLook.Plates || weaponSlots > WeaponSlotLook.Cards) weaponSlots = WeaponSlotLook.Plates;
         fieldOfView = Mathf.Clamp(fieldOfView, MinFieldOfView, MaxFieldOfView);
         frameLimit = frameLimit <= 0 ? 0 : Mathf.Clamp(frameLimit, MinFrameLimit, MaxFrameLimit);
         monitorName ??= "";

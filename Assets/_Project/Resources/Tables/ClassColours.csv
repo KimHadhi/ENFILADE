@@ -1,0 +1,9 @@
+﻿id,colour,note
+#설명 (클래스마다의 색. 킬로그에서 colour가 class인 효과(궁극기 처치의 빛)가 처치한 사람의 클래스 색으로 그려진다. id는 Classes.csv의 id. 모드 클래스는 줄을 더하면 되고 없는 클래스는 효과 줄의 색을 쓴다),색(#RRGGBB),어느 클래스인지
+knight,#8FB8FF,나이트 · 강철빛 파랑
+assault,#FFC23A,어썰트 · CHARGE의 금빛
+ghost,#C9F2FF,고스트 · 얼음빛
+point,#FF5AA0,포인트 · 분홍
+detente,#7CF0B0,데탕트 · 소독약 민트
+schiesshund,#1FEBD1,시순트 · 현상금의 청록
+support,#FF9A3C,서포트 · 주황

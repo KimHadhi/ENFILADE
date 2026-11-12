@@ -369,10 +369,16 @@ public sealed class CombatFeedHUD : MonoBehaviour
         var fire = standout ? FeedBorder.Standout : streak > look.mostNumeral ? FeedBorder.Skull : FeedBorder.None;
         Color mark = headshot ? settings.scoreColor : Color.white, accent = headshot ? settings.scoreColor : KillRed;
         var picture = WeaponIcons.For(weaponIcon);
-        var flairs = KillFlairs.Pick(marks, RunOf(who));
+        // The killer's class colour (ClassColours.csv) for the flairs drawn in it: an ultimate's light round the row.
+        Color classColour = KillFlairs.ClassColourOf(who != null && who.TryGetComponent(out PlayerTally tally) ? tally.ClassId : null);
+        var flairs = KillFlairs.Pick(marks, RunOf(who), mine, weaponIcon, classColour);
         if (picture != null)
-            AddRow(who != null ? NameOf(who) : "", headshot ? CombatUIAssets.CriticalBurst : null, mark, target, accent, mine, streak, headshot,
-                fire, picture, flairs);
+        {
+            // A headshot's mark after the weapon: the skull, Counter-Strike's way (WeaponIcons.Headshot), or the burst before it.
+            var skull = WeaponIcons.For(WeaponIcons.Headshot);
+            AddRow(who != null ? NameOf(who) : "", headshot ? (skull != null ? skull.texture : CombatUIAssets.CriticalBurst) : null, mark,
+                target, accent, mine, streak, headshot, fire, picture, flairs);
+        }
         else
             AddRow(Credit(who, weapon), headshot ? CombatUIAssets.CriticalBurst : CombatUIAssets.Skull, mark, target, accent, mine, streak,
                 headshot, fire, null, flairs);

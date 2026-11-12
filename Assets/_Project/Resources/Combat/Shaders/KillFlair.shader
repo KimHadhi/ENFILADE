@@ -1,9 +1,14 @@
 // A kill feed row's weapon icon catching a flair (KillFlairFx, KillFlairs.csv): drawn on an Image over the icon with the
 // icon's own sprite, so every effect takes the gun's own shape. _Mode picks it:
 //   0 Solid: the shape in _FlairColor (a flash, a tint), its strength _Heat.
-//   1 Fire: the user's CHARGE kill (2026-11-12: "총구 쪽에 노란 화염이 불타며 총구쪽부터 총열까지 불길이 덮는 느낌"): the shape
-//     glows from deep orange at the stock to white-gold at the muzzle, tongues of flame climb off its top edges, and all
-//     of it shows only where the fire has reached: from the right end (the muzzle) back by _Progress (0-1).
+//   1 Engulf: the first CHARGE draft (C1, kept for other uses: the user, "저거 좀 멋져서 나중에 다른 이펙트에 쓸 수 있을 것
+//     같다"): the whole shape glows from deep orange at the stock to white-gold at the muzzle, tongues of flame climb off
+//     its top edges, and all of it shows only where the fire has reached: from the right end (the muzzle) back by
+//     _Progress (0-1).
+//   4 Barrel: the CHARGE kill as the user drew it (2026-11-12: "딱 총구쪽에서 총열까지 정도만 불타오르게 감싸는 느낌"): fire
+//     catches at the muzzle and wraps only the front of the gun, _Front of its length (_Span: where the drawing lies on the
+//     canvas, uv; WeaponIconSpans.csv), in layers round the shape, red against the metal, orange, then yellow licking out
+//     and up, the grip left clean; the shape itself only warmed under it. _Progress carries it from the muzzle back.
 //   2 Gild: the shape turns gold from the muzzle back by _Progress with a white-hot band on the front, a thin lick of
 //     flame on its top.
 //   3 Trail: the shape burns at once and flames stream off it to the left, as if it charged forward.
@@ -20,6 +25,8 @@ Shader "Hidden/ENFILADE/KillFlair"
         _Heat ("Heat", Range(0, 1)) = 1
         _Lick ("Lick", Float) = .12
         _Seed ("Seed", Float) = 0
+        _Span ("Span", Vector) = (0, 1, 0, 1)
+        _Front ("Front", Float) = .5
 
         _StencilComp ("Stencil Comparison", Float) = 8
         _Stencil ("Stencil ID", Float) = 0
@@ -57,7 +64,8 @@ Shader "Hidden/ENFILADE/KillFlair"
 
             sampler2D _MainTex;
             float4 _FlairColor;
-            float _Mode, _Progress, _Heat, _Lick, _Seed;
+            float _Mode, _Progress, _Heat, _Lick, _Seed, _Front;
+            float4 _Span;
 
             struct appdata { float4 vertex : POSITION; float4 color : COLOR; float2 uv : TEXCOORD0; };
             struct v2f { float4 pos : SV_POSITION; float4 color : COLOR; float2 uv : TEXCOORD0; };
@@ -111,6 +119,38 @@ Shader "Hidden/ENFILADE/KillFlair"
                     col.rgb = body * a + flame * tongue;
                     col.a = a + tongue * .9;
                     col *= reached;
+                }
+                else if (_Mode > 3.5)
+                {
+                    // Barrel: the front _Front of the gun, from the muzzle (its right end) back; the fire's own edge is torn.
+                    float gunSpan = max(_Span.y - _Span.x, .001);
+                    float jag = (Noise(float2(uv.y * 24.0, t * 3.0)) - .5) * .07 * gunSpan;
+                    float back = _Span.y - _Front * gunSpan;
+                    float reach = _Span.y + .02 - _Progress * (_Span.y + .02 - back);
+                    float zone = smoothstep(reach - .015, reach + .01, uv.x + jag) * smoothstep(back - .025 * gunSpan, back + .02 * gunSpan, uv.x + jag);
+                    // The shape grown outward in pixels of the 512 x 160 canvas: 6 px and 13 px all round, and up to 24 px above it
+                    // where the flames climb.
+                    float nearRing = 0, farRing = 0, climb = 0;
+                    [unroll] for (int k = 0; k < 8; k++)
+                    {
+                        float angle = k * .785398;
+                        float2 way = float2(cos(angle) / 512.0, sin(angle) / 160.0);
+                        nearRing = max(nearRing, Shape(uv + way * 6.0));
+                        farRing = max(farRing, Shape(uv + way * 13.0));
+                    }
+                    [unroll] for (int j = 1; j <= 4; j++) climb = max(climb, Shape(uv - float2(0, j * 6.0 / 160.0)) * (1.0 - j / 5.0));
+                    float rise = (uv.y - t * .55) * 16.0;
+                    float tear = smoothstep(.32, .72, Noise(float2(uv.x * 58.0, rise)) + .18);
+                    float lick = smoothstep(.4, .8, Noise(float2(uv.x * 34.0 + 7.0, rise * .8)) + .1);
+                    float red = saturate(nearRing - a) * (.65 + .35 * tear);
+                    float orange = saturate(farRing - nearRing) * tear;
+                    float yellow = saturate(climb - farRing) * lick;
+                    float3 glow = float3(1, .3, .06) * red + float3(1, .58, .1) * orange + float3(1, .86, .3) * yellow;
+                    float cover = max(max(red * .95, orange * .9), yellow * .8);
+                    // The metal under it warms, the muzzle hottest, so the gun's own shape still reads through the fire.
+                    float warm = a * .55 * lerp(.6, 1.0, saturate((uv.x - back) / gunSpan));
+                    col.rgb = (glow + float3(1, .5, .16) * warm) * zone;
+                    col.a = max(cover, warm) * zone;
                 }
                 else if (_Mode < 2.5)
                 {
