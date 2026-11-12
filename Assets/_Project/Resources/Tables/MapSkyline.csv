@@ -1,3 +1,6 @@
 ﻿id,x0,x1,z0,z1,gap,rings,depth,street,widthMin,widthMax,floorsMin,floorsMax,looks,seed
 #설명 (맵 밖의 도시. 맵 꾸미기 5단계. 줄 id = 씬 이름. 맵 둘레 밖에 보이기만 하는 건물을 겹겹이 세운다(충돌·좀비 길 없음). 건물 크기와 높이는 그 모습의 창 칸과 층에 맞춰 반올림해서 창이 모서리와 지붕에 맞는다. 같은 seed면 늘 같은 도시),맵 서쪽 끝 x(m),맵 동쪽 끝 x(m),맵 남쪽 끝 z(m),맵 북쪽 끝 z(m),맵 끝에서 첫 건물까지(m),겹 수,한 겹의 건물 깊이(m),겹 사이와 가끔 건물 사이의 길 폭(m),건물 폭 최소(m),건물 폭 최대(m),층 수 최소,층 수 최대,모습(MapSurfaces 줄 id. ;로 나눔),무작위 씨앗
 Ch1_Rooftops,-30,240,-50,50,8,2,34,10,16,32,4,14,SkylineA;SkylineB;SkylineC;SkylineD;SkylineE,11
+Ch2_Overpass,-20,240,-40,40,10,2,32,12,16,36,3,16,SkylineA;SkylineB;SkylineC;SkylineD;SkylineE,22
+Ch3_Subway,-10,345,-25,25,30,2,32,12,16,32,4,18,SkylineA;SkylineB;SkylineC;SkylineD;SkylineE,33
+Ch4_Airport,-22,360,-60,60,50,1,40,20,24,60,3,8,Hangar;Hangar;SkylineC;SkylineB,44

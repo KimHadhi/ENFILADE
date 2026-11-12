@@ -213,7 +213,8 @@ public static class CampaignMaps
 
         // The overpass, 8 m up, broken off at x 120. Under its first stretch is a fenced pit: a fall from the deck lands
         // there, and a ladder up the deck's side brings the faller back.
-        b.Box("고가 상판", -19f, 120f, Deck - 1f, Deck, -7f, 7f, b.Concrete, "Asphalt");
+        // A road on top (this map's Road: concrete sides, a road's top), as the road below it.
+        b.Box("고가 상판", -19f, 120f, Deck - 1f, Deck, -7f, 7f, b.Road, "Asphalt");
         for (float x = 0f; x <= 100f; x += 20f) b.Box("고가 기둥 " + x, x - 1f, x + 1f, 0f, Deck - 1f, -1f, 1f);
         b.Box("고가 난간 북", -19f, 120f, Deck, Deck + 1f, 6.7f, 7f);
         b.Box("고가 난간 남 1", -19f, 79f, Deck, Deck + 1f, -7f, -6.7f);
@@ -341,6 +342,12 @@ public static class CampaignMaps
         const float Bank = 8f;
 
         b.Box("바닥", -10f, 345f, -.5f, 0f, -25f, 25f, b.Concrete, "Concrete");
+        // The floors that aren't the concourse's tiles (Tables/MapSurfaces by name), 1 cm over the map's floor: ballast
+        // under the tracks and through the dark tunnel, the depot's and the service tunnel's concrete.
+        b.Box("선로 바닥", 30f, 90.3f, -.5f, .01f, -12f, 0f, null, "Gravel");
+        b.Box("터널 바닥", 90.3f, 170f, -.5f, .01f, -6f, 2f, null, "Gravel");
+        b.Box("정비창 바닥", 170.3f, 217.7f, -.5f, .01f, -20f, 20f, null, "Concrete");
+        b.Box("강 밑 터널 바닥", 218f, 300f, -.5f, .01f, -3f, 3f, null, "Concrete");
         b.Box("맵 끝 서", -10f, -9f, 0f, 12f, -25f, 25f);
         b.Box("맵 끝 동 (강)", 344f, 345f, 0f, 10f, -25f, 25f);
         b.Box("맵 끝 남", -10f, 345f, 0f, 12f, -25f, -24f);
@@ -478,7 +485,8 @@ public static class CampaignMaps
         b.EnemySpawn("계단 아래", new Vector3(306f, 0f, 0f));
 
         // 6. The far bank, out in the open: the flare that calls the army's boat (finale) and the pier it comes to.
-        b.Box("강 건너 광장", 322f, 344f, 0f, Bank, -24f, 24f, b.Concrete, "Concrete");
+        // Paving on top, by name (Tables/MapSurfaces Ch3_Subway.Plaza), not the concourse's tiles.
+        b.Box("강 건너 광장", 322f, 344f, 0f, Bank, -24f, 24f, null, "Concrete");
         b.Box("광장 서쪽 난간 남", 322f, 322.3f, Bank, Bank + 1.2f, -24f, -3.3f);
         b.Box("광장 서쪽 난간 북", 322f, 322.3f, Bank, Bank + 1.2f, 3.3f, 24f);
         b.Spot("Exit", new Vector3(326f, Bank, 0f));
@@ -1148,6 +1156,24 @@ public static class CampaignMaps
         b.PropSolid("guardtower", new Vector3(226.5f, 0f, -19f), 0f);
         b.Dress(b.Box("HESCO 남", 220.5f, 222.4f, 0f, 2f, -24f, -17f, b.Wood, "Tarp"), "hesco");
         b.Dress(b.Box("HESCO 북", 220.5f, 222.4f, 0f, 2f, 17f, 24f, b.Wood, "Tarp"), "hesco");
+        DenseOverpass(b);
+    }
+
+    // Chapter 2's density (map dressing stage 5, the user 2026-11-13: "2~4장 진행"): litter along the deck's rails, clear
+    // of the wreck's cones, the ladder's gap and the broken end's barriers; rubbish along the sound barriers on the road
+    // below, before the toll gate; debris along the fenced pit's walls.
+    private static void DenseOverpass(GreyboxBuilder b)
+    {
+        const float Deck = 8f;
+        string[] deck = { "litter", "trashbag", "cardboard", "brickdebris", "tire", "plasticcrate" };
+        string[] road = { "trashbag", "cardboard", "litter", "tire", "rubblebag", "oilbarrel", "box" };
+        string[] pit = { "rubble", "brickdebris", "tire", "litter", "cinderblock" };
+        b.Clutter(new Vector3(18f, Deck, 6.2f), new Vector3(112f, Deck, 6.2f), 4.5f, deck);
+        b.Clutter(new Vector3(18f, Deck, -6.2f), new Vector3(77f, Deck, -6.2f), 4.5f, deck);
+        b.Clutter(new Vector3(83f, Deck, -6.2f), new Vector3(112f, Deck, -6.2f), 4.5f, deck);
+        foreach (float z in new[] { 24.4f, -24.4f }) b.Clutter(new Vector3(103f, 0f, z), new Vector3(186f, 0f, z), 4f, road);
+        b.Clutter(new Vector3(99.3f, 0f, -38f), new Vector3(99.3f, 0f, 38f), 4f, pit);
+        foreach (float z in new[] { 38.3f, -38.3f }) b.Clutter(new Vector3(-17f, 0f, z), new Vector3(98f, 0f, z), 4.5f, pit);
     }
 
     // Chapter 3's concourse, platform, tunnel, depot, river tunnel and far bank in the packs' props (map dressing
@@ -1203,6 +1229,33 @@ public static class CampaignMaps
         foreach (var (x, z) in new[] { (327.5f, -17.5f), (328.6f, -18f) }) b.Prop("woodcrate", new Vector3(x, Bank, z), x * 13f % 360f);
         b.Prop("streetlamp", new Vector3(323f, Bank, 10f), 90f);
         b.Prop("streetlamp", new Vector3(323f, Bank, -20f), 90f);
+        DenseSubway(b);
+    }
+
+    // Chapter 3's density (map dressing stage 5): rubbish along the concourse's walls (clear of the kiosk and the vending
+    // machines) and the platform's back wall, debris on the track bed and in the dark tunnel (clear of the fuel can near
+    // its end), along the depot's north wall past the office's can, in the service tunnel and round the far bank's square.
+    private static void DenseSubway(GreyboxBuilder b)
+    {
+        const float Bank = 8f, Top = .01f;
+        string[] hall = { "litter", "cardboard", "trashbag", "box", "plasticcrate" };
+        string[] track = { "brickdebris", "litter", "rubble", "trashbag" };
+        string[] tunnel = { "rubble", "brickdebris", "litter", "tire" };
+        string[] depot = { "oilbarrel", "plasticcrate", "cardboard", "tire", "pallet" };
+        string[] square = { "trashbag", "cardboard", "litter", "tire", "box" };
+        b.Clutter(new Vector3(-8f, 0f, -11.4f), new Vector3(8.5f, 0f, -11.4f), 3.5f, hall);
+        b.Clutter(new Vector3(13.5f, 0f, -11.4f), new Vector3(29f, 0f, -11.4f), 3.5f, hall);
+        b.Clutter(new Vector3(-8f, 0f, 11.4f), new Vector3(4f, 0f, 11.4f), 3.5f, hall);
+        b.Clutter(new Vector3(9f, 0f, 11.4f), new Vector3(29f, 0f, 11.4f), 3.5f, hall);
+        b.Clutter(new Vector3(31f, 1.1f, 11.4f), new Vector3(89f, 1.1f, 11.4f), 4f, hall);
+        b.Clutter(new Vector3(31f, Top, -11.4f), new Vector3(89f, Top, -11.4f), 5f, track);
+        b.Clutter(new Vector3(92f, Top, -5.5f), new Vector3(168f, Top, -5.5f), 5f, tunnel);
+        b.Clutter(new Vector3(92f, Top, 1.5f), new Vector3(156f, Top, 1.5f), 5f, tunnel);
+        b.Clutter(new Vector3(164f, Top, 1.5f), new Vector3(168f, Top, 1.5f), 5f, tunnel);
+        b.Clutter(new Vector3(183f, Top, 19.3f), new Vector3(216f, Top, 19.3f), 4f, depot);
+        foreach (float z in new[] { 2.5f, -2.5f })
+            b.Clutter(new Vector3(220f, Top, z), new Vector3(298f, Top, z), 6f, "litter", "cardboard", "brickdebris");
+        foreach (float z in new[] { 23.4f, -23.4f }) b.Clutter(new Vector3(323f, Bank, z), new Vector3(343f, Bank, z), 3.5f, square);
     }
 
     // Chapter 4's cargo yard, landside road, terminal, apron and the transport's evacuation point in the packs' props
@@ -1255,6 +1308,28 @@ public static class CampaignMaps
         b.PropSolid("wrecktruck", new Vector3(352f, 0f, 20f), 200f);
         b.Prop("streetlamp", new Vector3(312f, 0f, -26f), 90f);
         b.Prop("streetlamp", new Vector3(312f, 0f, 26f), 270f);
+        DenseAirport(b);
+    }
+
+    // Chapter 4's density (map dressing stage 5): what was dropped along the terminal's long walls (clear of the vending
+    // machines, the café and the duty-free shop), outside the landside walls, along the cargo yard's river edge (clear
+    // of the pier) and the airfield's walls by the apron.
+    private static void DenseAirport(GreyboxBuilder b)
+    {
+        const float Floor = 4f;
+        string[] hall = { "litter", "cardboard", "trashbag", "box" };
+        string[] yard = { "tire", "pallet", "oilbarrel", "plasticcrate", "cardboard" };
+        string[] apron = { "tire", "oilbarrel", "pallet", "cardboard", "trashbag" };
+        b.Clutter(new Vector3(62f, Floor, 39.4f), new Vector3(139f, Floor, 39.4f), 5f, hall);
+        b.Clutter(new Vector3(164f, Floor, 39.4f), new Vector3(179f, Floor, 39.4f), 5f, hall);
+        b.Clutter(new Vector3(62f, Floor, -39.4f), new Vector3(94f, Floor, -39.4f), 5f, hall);
+        b.Clutter(new Vector3(100f, Floor, -39.4f), new Vector3(126f, Floor, -39.4f), 5f, hall);
+        b.Clutter(new Vector3(136f, Floor, -39.4f), new Vector3(179f, Floor, -39.4f), 5f, hall);
+        foreach (float z in new[] { 50f, -50f })
+            b.Clutter(new Vector3(59.4f, 0f, z - 8f), new Vector3(59.4f, 0f, z + 8f), 4f, "trashbag", "litter", "cardboard", "tire");
+        b.Clutter(new Vector3(-20.3f, 0f, -56f), new Vector3(-20.3f, 0f, -9f), 5f, yard);
+        b.Clutter(new Vector3(-20.3f, 0f, 9f), new Vector3(-20.3f, 0f, 56f), 5f, yard);
+        foreach (float z in new[] { 58.3f, -58.3f }) b.Clutter(new Vector3(184f, 0f, z), new Vector3(356f, 0f, z), 6f, apron);
     }
 
     // A stopped car, 4.5 m long across x, at <paramref name="y"/> (the road it stands on), dressed as one of

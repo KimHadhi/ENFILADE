@@ -5,9 +5,34 @@ Road,Concrete034,Asphalt031,3,3,,,1,0,1,1,0.15,12,,,,oil*0.006;asphaltcrack*0.01
 Metal,Metal063,,2,,,,1,0.6,1,1,0.1,6,,,leak*0.04,
 Wood,Planks037A,,1.2,,,,1,0,1,1,0.1,6
 Ch2_Overpass.Road,Concrete034,Road012A,3,4,,,1,0,1,1,0.15,12,,,leak*0.04,oil*0.008;asphaltcrack*0.012;leaves*0.002;mud*0.002
+Ch2_Overpass.Bridge,Concrete034,Concrete047A,3,3,#c9c4b8,,1,0,1,1,0.14,10,고가 기둥;고가 난간;끊어진 끝;구덩이 벽,,leak*0.06;splash*0.05;wallcrack*0.03,
+Ch2_Overpass.Barrier,CorrugatedSteel007A,Metal063,2.5,2,,,1,0.3,1,1,0.1,8,방음벽,,leak*0.04;splash*0.06,
+Ch2_Overpass.Toll,PaintedPlaster017,Concrete047A,2.5,3,#eef0f2,,1,0,1,1,0.08,8,요금소,,splash*0.05,
+Ch2_Overpass.StationShop,PaintedPlaster017,Concrete047A,2.5,3,#f1f0ec,,1,0,1,1,0.1,8,주유소 가게,Flat,leak*0.04;splash*0.06,leaves*0.006;grime*0.004
+Ch2_Overpass.GuardPost,PaintedMetal006,Metal063,2,2,,,1,0.2,1,1,0.1,6,검문소 초소,,leak*0.04;splash*0.06,
+Ch2_Overpass.SubwayEntrance,Tiles040,Concrete047A,1,3,#e3ddd0,,1,0,1,1,0.1,7,지하철 입구,,leak*0.05;splash*0.06,leaves*0.006;grime*0.004
+Ch2_Overpass.Edge,Concrete034,Concrete047A,3,3,#b8b4aa,,1,0,1,1,0.15,12,맵 끝,,leak*0.06;splash*0.08;wallcrack*0.03,
 Ch3_Subway.Concrete,Tiles040,Tiles141,1,1.2,#f2efe8,,1,0,1,1,0.1,7,,,leak*0.04;splash*0.05;wallcrack*0.02,grime*0.008;concretecrack*0.005;mud*0.003
+Ch3_Subway.Platform,Tiles040,Tiles141,1,1.2,#cfdce2,,1,0,1,1,0.1,7,승강장 홀;홀 칸막이 위;홀 동벽;터널 입구 위,,leak*0.05;splash*0.05;wallcrack*0.02,grime*0.008;concretecrack*0.004
+Ch3_Subway.Pillar,Tiles040,Tiles141,1,1.2,#97aab4,,1,0,1,1,0.08,6,승강장 기둥,,splash*0.04,
+Ch3_Subway.Kiosk,PaintedMetal006,Metal063,2,2,,,1,0.2,1,1,0.08,6,매점,,splash*0.05,
+Ch3_Subway.Tunnel,Concrete034,Concrete047A,3,3,#8f8b85,,1,0,1,1,0.16,10,터널;강 밑 터널,,leak*0.1;splash*0.08;wallcrack*0.04,concretecrack*0.01;grime*0.006;mud*0.004
+Ch3_Subway.Ballast,Concrete034,Gravel043,3,1.5,#8f8b85,#9a958d,1,0,1,1,0.12,8,선로 바닥;터널 바닥,,,grime*0.004
+Ch3_Subway.Depot,Concrete034,Concrete047A,3,3,#a7aba1,,1,0,1,1,0.14,10,정비창;방수문 위 벽,,leak*0.07;splash*0.07;wallcrack*0.02,oil*0.008;concretecrack*0.01;grime*0.006
+Ch3_Subway.DepotRoof,CorrugatedSteel005,Concrete047A,2.5,3,#9a9ea3,,1,0.3,1,1,0.1,8,정비창 천장,,,
+Ch3_Subway.Office,Plaster007,Concrete047A,3,3,#d8d2c4,,1,0,1,1,0.1,8,정비창 사무실,Flat,wallcrack*0.03;splash*0.03,grime*0.01
+Ch3_Subway.Stair,PaintedPlaster017,Concrete047A,2.5,3,#c3cec3,,1,0,1,1,0.1,8,계단실,,leak*0.04;wallcrack*0.03,
+Ch3_Subway.Edge,Concrete034,Concrete047A,3,3,#9d9990,,1,0,1,1,0.15,12,맵 끝;광장 서쪽 난간,,leak*0.08;splash*0.06;wallcrack*0.03,
+Ch3_Subway.Plaza,Concrete034,PavingStones150,3,2,,,1,0,1,1,0.12,10,강 건너 광장,,leak*0.05;splash*0.05,leaves*0.006;grime*0.005;mud*0.004;concretecrack*0.004
 Ch4_Airport.Concrete,PaintedPlaster017,Marble012,3,2.5,,,1,0,1,1,0.08,9,,,splash*0.02;wallcrack*0.008,grime*0.003;concretecrack*0.002
 Ch4_Airport.Metal,Metal041B,,2.5,,,,1,0.4,1,1,0.1,8
+Ch4_Airport.Facade,PaintedPlaster017,Concrete047A,2.5,3,#e8eaed,,1,0,1,1,0.08,10,터미널 벽;정면 벽;정면 문 위;동쪽 벽;탑승구 문 위,Curtain,leak*0.03;splash*0.02,
+Ch4_Airport.TerminalRoof,PaintedPlaster017,CorrugatedSteel005,2.5,2.5,#efefec,,1,0,1,1,0.06,10,터미널 지붕,,,
+Ch4_Airport.Column,Metal041B,,2.5,,#d0d3d8,,1,0.5,1,1,0.06,6,홀 기둥;2층 기둥,,,
+Ch4_Airport.Security,PaintedPlaster017,Concrete047A,2.5,3,#cdd3da,,1,0,1,1,0.06,8,검색대 칸막이,,,
+Ch4_Airport.DutyFree,Marble012,Marble012,2.5,2.5,#efe9e0,,0.8,0,1,1,0.06,8,면세점,,,
+Ch4_Airport.Tower,Concrete034,Concrete047A,3,3,#d4d1ca,,1,0,1,1,0.12,10,관제탑 1층;관제탑 기둥,,leak*0.06;splash*0.05;wallcrack*0.02,
+Ch4_Airport.Wall,Concrete034,Concrete047A,3,3,#c2bfb6,,1,0,1,1,0.15,12,공항 담장;맵 끝,,leak*0.05;splash*0.08;wallcrack*0.03,
 EnfiladeTower.Wall,Concrete034,,3,,#474a52,,1,0,1,1,0.14,9,,,wallcrack*0.01,
 EnfiladeTower.Floor,Terrazzo013,,1.6,,#2a2b30,,0.85,0,1,1,0.08,9,,,,grime*0.003;concretecrack*0.003
 EnfiladeTower.Trim,Metal063,,2,,#2c2d31,,1,0.6,1,1,0.06,6
@@ -35,3 +60,4 @@ SkylineB,Plaster007,Concrete047A,3,3,#cfcbc2,,1,0,1,1,0.15,12,,Skyline
 SkylineC,Concrete034,Concrete047A,3,3,#bdbab3,,1,0,1,1,0.15,12,,Skyline
 SkylineD,Bricks105,Concrete047A,1.1,3,#b58c7a,,1,0,1,1,0.15,12,,Skyline
 SkylineE,PaintedPlaster017,Concrete047A,3,3,#a9b8c4,,1,0,1,1,0.15,12,,Skyline
+Hangar,CorrugatedSteel005,Metal063,2.5,2,#b9bdc2,,1,0.3,1,1,0.12,12,,,,
