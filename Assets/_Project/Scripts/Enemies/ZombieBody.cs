@@ -490,22 +490,29 @@ public sealed partial class ZombieBody : MonoBehaviour
     /// <summary>
     /// The graph always runs on the game's clock, and the Animator poses the body from it every frame it is seen. 0.8.93
     /// (ZombieLod animEvery) put a far zombie on screen on a manual clock, posed every third frame by Evaluate here, and
-    /// back on the game's clock once near or busy. That is the likeliest cause of the user's frozen zombies, reported three
-    /// times from 2026-11-12 ("앉은 채, 누운 채로 와 ... 모션이 굳은 채로", "부동 자세로 나한테 와", "좀비 애니메이션이 여전히
-    /// 안 나와"): calm ones are placed ahead and first seen from afar, which is just when that switch took them, and a body
-    /// whose pose stops being worked out keeps the last one it had, its sitting or lying pose, as it walks. The switch is
-    /// gone; should anything still stop the graph or take it off the game's clock, it is put back here at once and the
-    /// probe records it (HEAL in Logs/zombie-anim.txt).
+    /// back on the game's clock once near or busy. That froze them for good: Unity schedules a graph only when it is
+    /// played, and one taken off Manual while playing is not scheduled again, though IsPlaying() still says true (Unity
+    /// UUM-32824, closed Won't Fix: stop it before the clock changes, then play it). So every zombie first seen on screen
+    /// beyond 30 m kept its last pose from the moment it came within 30 m or did anything at all (woke, got up, noticed,
+    /// swung, flinched): calm ones came on sitting or lying, the rest slid in on one frame of their walk, and only far off
+    /// did they move. Those are the user's reports from 2026-11-12 ("앉은 채, 누운 채로 와 ... 모션이 굳은 채로", "부동
+    /// 자세로 나한테 와") and 11-13 ("좀비 애니메이션이 여전히 안 나와", all zombies: Chapter 1's are first seen from afar).
+    /// The switch is gone (0.8.317). Should anything still stop the graph or take it off the game's clock, it is put back
+    /// here at once, in the order Unity schedules it again, and the probe records it (HEAL in Logs/zombie-anim.txt).
     /// </summary>
     private void GuardGraph()
     {
         var clock = graph.GetTimeUpdateMode();
         if (clock != DirectorUpdateMode.GameTime)
         {
+            // Stopped first: only Play schedules a graph, and one switched off Manual while playing stays unscheduled
+            // (UUM-32824). Every clip here stands still and has its time set each frame, so stopping loses nothing.
+            graph.Stop();
             graph.SetTimeUpdateMode(DirectorUpdateMode.GameTime);
+            graph.Play();
             ProbeHeal("clock was " + clock);
         }
-        if (!graph.IsPlaying())
+        else if (!graph.IsPlaying())
         {
             graph.Play();
             ProbeHeal("graph was stopped");

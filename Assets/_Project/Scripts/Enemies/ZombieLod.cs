@@ -12,9 +12,10 @@ using UnityEngine;
 /// - A horde's look round (ZombieMind): an awake horde zombie only looks for players to tell the campaign someone is
 ///   still seen; once one has seen anyone in the last `hordeLookGap` seconds, the rest needn't cast their rays.
 /// - Its body: nothing here. 0.8.93 posed a far zombie on screen every third frame on a manual graph clock (animFar,
-///   animEvery), and that is the likeliest cause of the frozen zombies the user reported three times (ZombieBody.GuardGraph
-///   says why): taken out, the body is posed every frame it is seen. Off screen the Animator skips it as ever (the pack's
-///   CullUpdateTransforms).
+///   animEvery), and that froze every zombie that went on it for good once it came near or moved at all (Unity does not
+///   schedule a graph switched back off Manual, ZombieBody.GuardGraph says more): the frozen zombies the user reported
+///   three times. Taken out (0.8.317), the body is posed every frame it is seen. Off screen the Animator skips it as ever
+///   (the pack's CullUpdateTransforms). Never put a playing graph on a manual clock to save time.
 /// How many corpses lie about is ZombieCorpse.csv's (mostCorpses, mostDolls).
 /// </summary>
 public static class ZombieLod
