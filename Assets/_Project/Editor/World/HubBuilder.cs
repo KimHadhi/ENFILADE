@@ -17,7 +17,8 @@ using UnityEngine.SceneManagement;
 /// - The hideout, a warehouse 24 x 24 with a skylight: the start in its south half; the map table in the middle with the
 ///   next chapter's sign hanging over it; the class wall (lockers) on the west wall under a catwalk, reached by two crates
 ///   and a ladder, with a zipline from it across the hall; the stage on the east side (the results' lineup, HubStage)
-///   with lights on it; the way out in the north wall (a shutter that rises with the count, the board over it, the
+///   with lights on it and a full-length mirror on its back wall under the name (HubMirror, the dressing spot in front of
+///   it: HubDressing); the way out in the north wall (a shutter that rises with the count, the board over it, the
 ///   ready button beside it); the gun rack on the south wall by the range's opening; a low wall to vault.
 /// - The firing range through the south wall, open air, 14 wide and 108 long: a firing line counter, an ammo crate,
 ///   four lanes (a close crowd of three zombie dummies; one at 15 m and one moving across at 30 m; one at 25 m and a
@@ -160,6 +161,9 @@ public static class HubBuilder
         Box("무대 뒷벽", 11.75f, 11.95f, .5f, 5.2f, -6f, 6f, road, solid: false);
         Box("무대 띠", 11.7f, 11.75f, 4.2f, 4.35f, -6f, 6f, marker, solid: false);
         Label("ENFILADE", new Vector3(11.68f, 3.4f, 0f), Quaternion.Euler(0f, -90f, 0f), .9f, 9f, true);
+        // The mirror under the name, standing on the stage (user, 2026-11-12: "로비 무대 엔필레이드 쪽에 거울 넣어서 자기 볼 수
+        // 있게 만들고 여기서 자기 캐릭터 커스터마이징"): 3 m wide, 2.2 m tall, its top well under the name's letters.
+        Mirror(new Vector3(11.7f, .55f + 1.1f, 0f), 3f, 2.2f);
         var stage = new GameObject("결과 무대", typeof(HubStage));
         stage.transform.SetParent(stations, false);
         stage.transform.SetPositionAndRotation(new Vector3(9.4f, .5f, 0f), Quaternion.Euler(0f, -90f, 0f));
@@ -301,8 +305,31 @@ public static class HubBuilder
         return box;
     }
 
+    // The stage's mirror, its glass's middle at <paramref name="glass"/> on the back wall (x 11.75), facing the hall (-x):
+    // a metal frame standing a little proud of the glass with the stage band's pink along its top, and an unseen stop just
+    // in front of the glass, so nobody walks into it (the back wall has no collider: the hall's east wall behind it stops
+    // the player only past the glass). The glass is HubMirror's, made at play, with the station for [F].
+    private static void Mirror(Vector3 glass, float width, float height)
+    {
+        const float wall = 11.75f, rim = .06f, proud = .025f, floor = .5f;
+        float front = glass.x - proud, y0 = glass.y - height * .5f, y1 = glass.y + height * .5f;
+        float z0 = glass.z - width * .5f, z1 = glass.z + width * .5f;
+        Box("거울 틀 왼쪽", front, wall, floor, y1 + rim, z1, z1 + rim, metal, solid: false);
+        Box("거울 틀 오른쪽", front, wall, floor, y1 + rim, z0 - rim, z0, metal, solid: false);
+        Box("거울 틀 위", front, wall, y1, y1 + rim, z0, z1, metal, solid: false);
+        Box("거울 틀 아래", front, wall, floor, y0, z0, z1, metal, solid: false);
+        Box("거울 띠", front - .006f, front, y1 + rim - .022f, y1 + rim, z0 - rim, z1 + rim, marker, solid: false);
+        var stop = new GameObject("거울 막이", typeof(BoxCollider));
+        stop.transform.SetParent(terrain, false);
+        float stopFront = glass.x - .06f, stopTop = 5.2f;
+        stop.transform.localPosition = new Vector3((stopFront + wall) * .5f, (floor + stopTop) * .5f, glass.z);
+        stop.GetComponent<BoxCollider>().size = new Vector3(wall - stopFront, stopTop - floor, width + rim * 2f + .1f);
+        var station = Station("거울", HubStation.Kind.Mirror, glass, -90f, new Vector3(width, height, .1f));
+        station.AddComponent<HubMirror>();
+    }
+
     // A hub station (HubStation) facing <paramref name="yaw"/>; a solid one (the way out's shutter) is a box of its size.
-    private static void Station(string name, HubStation.Kind kind, Vector3 at, float yaw, Vector3 size, bool solidBox = false)
+    private static GameObject Station(string name, HubStation.Kind kind, Vector3 at, float yaw, Vector3 size, bool solidBox = false)
     {
         GameObject station;
         if (solidBox)
@@ -322,6 +349,7 @@ public static class HubBuilder
             // A scaled box carries its size in its scale already: its station's area is one unit of it.
             so.FindProperty("size").vector3Value = solidBox ? Vector3.one : size;
         });
+        return station;
     }
 
     private static void Label(string words, Vector3 at, Quaternion turn, float height, float width, bool accent)

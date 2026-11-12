@@ -7,12 +7,14 @@ using UnityEngine.UI;
 /// The hub's stations filled from the tables at play, and [F] on them (memo 46): the chapters' cards on the map table
 /// (Tables/Maps, the campaign's chapters first), a locker door per class on the class wall (Tables/Classes, with each
 /// class's rank insignia), every FPSBody gun on the rack, the ammo crate, the ready button, the board over the way out,
-/// the sign over the table and the range board. What [F] works is what the view points at within reach (Tables/Hub
-/// reach, aimAngle): the nearest to the middle of the view.
+/// the sign over the table, the range board, and the stage's mirror with the dressing spot's mark on the floor in front
+/// of it (2026-11-12, HubDressing). What [F] works is what the view points at within reach (Tables/Hub reach,
+/// aimAngle): the nearest to the middle of the view; the mirror, too big for that, wherever the view falls on its glass
+/// within dressReach.
 /// </summary>
 public sealed partial class HubLobby
 {
-    private enum Act { Chapter, Ready, Class, Gun, Ammo }
+    private enum Act { Chapter, Ready, Class, Gun, Ammo, Mirror }
 
     // One thing [F] can work, where it is, and how it shows being looked at or chosen.
     private sealed class Pick
@@ -25,10 +27,15 @@ public sealed partial class HubLobby
         public Transform Lift;
         public WeaponData Gun;
         public Color LabelColor = KitStyle.Text;
+        // A flat thing (the mirror's glass): its width and height on At's own axes, facing along At's forward. Aimed
+        // wherever the view falls on it within reach, not by the cone round At.
+        public Vector2 Area;
+        public HubMirror Mirror;
     }
 
     private readonly List<Pick> picks = new List<Pick>();
     private Pick aimed;
+    private GameObject dressingMark;
     private Transform door;
     private Vector3 doorShut;
     private float doorRise;
@@ -57,8 +64,43 @@ public sealed partial class HubLobby
                     doorRise = station.Size.y * station.transform.lossyScale.y;
                     break;
                 case HubStation.Kind.RangeBoard: RangeBoard.Make(station); break;
+                case HubStation.Kind.Mirror: BuildMirror(station); break;
             }
         }
+    }
+
+    // ---- The stage's mirror: [F] anywhere on the glass, and where to stand marked on the floor ----
+
+    private void BuildMirror(HubStation station)
+    {
+        var mirror = station.GetComponent<HubMirror>();
+        if (mirror == null) mirror = station.gameObject.AddComponent<HubMirror>();
+        picks.Add(new Pick { Act = Act.Mirror, At = station.transform, Area = new Vector2(station.Size.x, station.Size.y), Mirror = mirror });
+        BuildDressingMark(mirror);
+    }
+
+    // The dressing spot on the stage in front of the glass, as the wardrobe's viewfinder: four pink corners lying on the
+    // floor and the word under them, read from the hall. Hidden while the results play on the stage.
+    private void BuildDressingMark(HubMirror mirror)
+    {
+        Vector3 above = mirror.Center + mirror.Normal * Number("dressDistance", 1.2f);
+        if (!Physics.Raycast(above, Vector3.down, out RaycastHit floor, 4f, Physics.DefaultRaycastLayers & ~(1 << 31),
+                QueryTriggerInteraction.Ignore)) return;
+        var holder = new GameObject("Dressing Mark").transform;
+        holder.SetParent(mirror.transform, true);
+        holder.SetPositionAndRotation(floor.point + Vector3.up * .004f, Quaternion.identity);
+        // Lying face up, its top toward the glass: upright to someone walking up from the hall.
+        var mark = HubDisplays.Board(holder, "Mark", new Vector2(1.1f, .8f), Vector3.zero, Quaternion.LookRotation(Vector3.down, -mirror.Normal));
+        Vector2 px = mark.sizeDelta;
+        const float arm = 70f, bar = 10f;
+        foreach (var corner in new[] { Vector2.zero, new Vector2(1f, 0f), new Vector2(0f, 1f), Vector2.one })
+        {
+            float x = corner.x * (px.x - arm), y = corner.y * (px.y - arm);
+            HubDisplays.Block(mark, "Corner", new Vector2(x, corner.y * (px.y - bar)), new Vector2(arm, bar), KitStyle.Accent);
+            HubDisplays.Block(mark, "Corner", new Vector2(corner.x * (px.x - bar), y), new Vector2(bar, arm), KitStyle.Accent);
+        }
+        HubDisplays.Words(mark, Texts.Get("hub.sign.mirror"), 40f, KitStyle.Ice, TextAlignmentOptions.Center, new Vector2(0f, px.y - 74f), new Vector2(px.x, 52f));
+        dressingMark = holder.gameObject;
     }
 
     // ---- The map table: a card per chapter lying on its top ----
@@ -300,13 +342,22 @@ public sealed partial class HubLobby
     {
         var mine = PlayerRoster.Local;
         Pick found = null;
-        if (mine != null && mine.IsInitialized && !mine.IsDead && !mine.IsDowned && mine.TryGetComponent(out PlayerBody body) && body.View != null)
+        if (mine != null && mine.IsInitialized && !mine.IsDead && !mine.IsDowned && !HubDressing.IsOpen
+            && mine.TryGetComponent(out PlayerBody body) && body.View != null)
         {
             Vector3 eye = body.View.position, forward = body.View.forward;
             float reach = Number("reach", 2.6f), cone = Number("aimAngle", 14f), best = cone;
             foreach (var pick in picks)
             {
                 if (pick.At == null) continue;
+                if (pick.Area != Vector2.zero)
+                {
+                    // The view falling on it within reach is a dead-centre aim: nothing else beats it.
+                    if (!OnArea(pick, eye, forward, Number("dressReach", 3f))) continue;
+                    best = 0f;
+                    found = pick;
+                    continue;
+                }
                 Vector3 to = pick.At.position - eye;
                 if (to.sqrMagnitude > reach * reach) continue;
                 float angle = Vector3.Angle(forward, to);
@@ -323,8 +374,22 @@ public sealed partial class HubLobby
         }
         string text = aimed != null ? PromptFor(aimed) : null;
         screen.Prompt(ResultsShow.IsPlaying ? null : text);
+        if (dressingMark != null && dressingMark.activeSelf == ResultsShow.IsPlaying) dressingMark.SetActive(!ResultsShow.IsPlaying);
         if (aimed == null || interact == null || !interact.WasPressedThisFrame() || !TakesInput()) return;
         Work(aimed, mine);
+    }
+
+    // The view's ray meets the front of a flat pick within reach, inside its width and height.
+    private static bool OnArea(Pick pick, Vector3 eye, Vector3 forward, float reach)
+    {
+        Vector3 normal = pick.At.forward;
+        float facing = Vector3.Dot(forward, normal);
+        // From in front only, and not edge-on.
+        if (facing > -.05f) return false;
+        float along = Vector3.Dot(pick.At.position - eye, normal) / facing;
+        if (along < 0f || along > reach) return false;
+        Vector3 off = eye + forward * along - pick.At.position;
+        return Mathf.Abs(Vector3.Dot(off, pick.At.right)) <= pick.Area.x * .5f && Mathf.Abs(Vector3.Dot(off, pick.At.up)) <= pick.Area.y * .5f;
     }
 
     private string PromptFor(Pick pick)
@@ -346,6 +411,8 @@ public sealed partial class HubLobby
             case Act.Ready:
                 var mine = PlayerRoster.Local;
                 return mine != null && IsReady(mine) ? Texts.Get("hub.prompt.unready") : Texts.Get("hub.prompt.ready");
+            case Act.Mirror:
+                return Texts.Get("hub.prompt.mirror");
         }
         return null;
     }
@@ -381,6 +448,9 @@ public sealed partial class HubLobby
                 break;
             case Act.Ready:
                 ToggleReady();
+                break;
+            case Act.Mirror:
+                if (!HubDressing.Open(pick.Mirror, mine)) KitSound.Play(KitSound.Cue.Refuse, .4f);
                 break;
         }
     }

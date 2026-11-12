@@ -137,6 +137,8 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     /// loose parts.
     /// </summary>
     internal bool Wears(string id) => dressing != null && (dressing.Items.Contains(id ?? "") || dressing.Models.Contains(id ?? ""));
+    /// <summary>What dressing put on this body: the hub's mirror marks a wardrobe slot's pieces on it (HubDressing).</summary>
+    internal OutfitDresser.Dressing Dressing => dressing;
 
     /// <summary>
     /// Wears the skin, colour set and outfit the player of this copy chose on their own PC (PlayerBodyProfile.LookId,

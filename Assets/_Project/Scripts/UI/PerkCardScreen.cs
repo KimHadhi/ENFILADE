@@ -502,7 +502,8 @@ public sealed class PerkCardScreen : MonoBehaviour
     // Another menu, the chat or the console has the keyboard, or the Esc menu is up.
     private bool Blocked()
     {
-        if (DevConsole.TakesKeyboard || ShopMenu.TakesKeyboard || GunCustomizeMenu.TakesKeyboard || SettingsMenu.IsOpen || GamePause.IsPaused) return true;
+        if (DevConsole.TakesKeyboard || ShopMenu.TakesKeyboard || GunCustomizeMenu.TakesKeyboard || SettingsMenu.IsOpen || GamePause.IsPaused
+            || HubDressing.IsOpen) return true;
         if (chat == null) chat = FindAnyObjectByType<SinglePlayerChatManager>();
         return chat != null && chat.BlocksMissionInputThisFrame;
     }

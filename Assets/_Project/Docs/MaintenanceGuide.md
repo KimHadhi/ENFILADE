@@ -18,7 +18,7 @@
 | [Enemies.csv](../Resources/Tables/Enemies.csv) | 적 체력·공격·자세(체간)·이동 속도 | 적 프리팹 이름 (`Enemy_Test`) |
 | [Waves.csv](../Resources/Tables/Waves.csv) | 웨이브 적 수·증가량·대기·등장 간격 | `WaveManager`의 `Table Id` (기본 `Default`) |
 | [Maps.csv](../Resources/Tables/Maps.csv) | 메인 메뉴에서 고를 맵과 보이는 이름. 빌드 설정에 등록된 씬만 나온다 | 씬 이름 (`CombatFoundation` …) |
-| [Hub.csv](../Resources/Tables/Hub.csv) | 허브(은신처): [F]가 닿는 거리와 각도, 모두 준비한 뒤 출발까지 세는 시간(혼자면 따로), 사격장 좀비 더미·강철판의 체력, 넘어진 과녁이 일어나기까지, 움직이는 과녁 속도, 결과 연출의 칭호 간격·마지막 한 장이 닫히기까지. Maps.csv의 `Hub` 줄은 허브의 이름(메뉴의 맵 고르기·기록·클래스 성장에는 안 나온다) | `Default` |
+| [Hub.csv](../Resources/Tables/Hub.csv) | 허브(은신처): [F]가 닿는 거리와 각도, 모두 준비한 뒤 출발까지 세는 시간(혼자면 따로), 사격장 좀비 더미·강철판의 체력, 넘어진 과녁이 일어나기까지, 움직이는 과녁 속도, 결과 연출의 칭호 간격·마지막 한 장이 닫히기까지, 무대 거울(`mirror*`: 그리는 거리·해상도·MSAA·그림자·밝기)과 거울 앞 꾸미기(`dress*`: [F] 거리, 서는 자리, 카메라 시야각·채움·내려다보는 각도·유리에 가장 가까운 거리, 도는 빠르기). Maps.csv의 `Hub` 줄은 허브의 이름(메뉴의 맵 고르기·기록·클래스 성장에는 안 나온다) | `Default` |
 | [Results.csv](../Resources/Tables/Results.csv) | 장 결과의 칭호: 어느 숫자로 주는지, 순서, 받을 최소값, 단위. 칭호 이름과 한 줄 농담은 Texts.csv `results.award.<id>` | 칭호 (`kills`, `downs` …) |
 
 - **열 이름 = 인스펙터 필드 이름**이다(인스펙터 표시 이름이 `Attack Range`면 열은 `attackRange`). 표에 열을 추가하면 그 필드도 표가 관리한다. 적 표의 `speed`처럼 `NavMeshAgent`의 공개 속성도 쓸 수 있다.
@@ -79,6 +79,7 @@ C 메뉴에서 바꾼 조준경·총구·하단·손잡이, L 플래시, B 사�
 - 화면 위 가운데 준비 판([HubReadyBoard](../Scripts/Hub/HubReadyBoard.cs), TF2 MvM처럼): 방에 있는 사람마다 프로필 사진 한 칸(내 것은 메인 메뉴 프로필 사진, 친구 것은 그 PC가 보낸 작은 사진, 없으면 이름 첫 글자를 분홍 위에), 자리 순서(방장 먼저)라 모든 PC에서 같은 줄이다. 내 칸 밑 이름은 분홍 "나". 준비하면 그 칸 모서리에 흰 체크가 든 분홍 판이 크게 쾅 박히고 칸이 하얗게 번쩍인다(0.14초, 남지 않음). 준비 전에는 사진이 조금 어둡다. 오른쪽 끝 "준비 n/m"은 모두 준비하면 분홍이 되고 판이 한 번 번쩍인다. 혼자면 한 칸. 결과 연출 중에는 숨는다. 문구는 Texts `hub.ready.*`.
 - 사격장 과녁은 보통 좀비와 같은 체력(`dummyHealth`, Enemies.csv `Enemy_Test`와 맞출 것)이라 넘어질 때까지 맞힌 수가 그 총으로 좀비 하나를 잡는 데 드는 수다. 각 PC가 자기 사격만 판정한다.
 - 과녁은 연습용 적이다(`ICombatFoe.IsPractice`, [CombatFoe](../Scripts/Combat/Damage/CombatFoe.cs)): 넘어뜨린 한 발이 좀비와 똑같은 처치라 클래스가 처치로 하는 일이 모두 된다(어썰트 아드레날린과 CHARGE, 고스트 헤드 헌터·화이트 타이거, 시순트 현상금·리턴 백·데스페라도 탄·BOUNTY, 처치 표시와 소리). 맞힐 때마다 궁극기도 적처럼 찬다. F로 과녁을 찍을 수 있고 시순트면 청록 현상금 표식이 된다(방이면 다른 PC도 같은 자리의 자기 과녁에 표식, `RangeTarget.Home`). 대신 판에는 아무것도 남지 않는다: 킬 피드 줄·돈·점수·경험치·연속 처치·기록·결과·총 처치 수에 안 들어간다([GunFeelDirector](../Scripts/Combat/Feel/GunFeelDirector.cs)가 연습 처치를 건너뛰고, 기록·통계는 좀비만 센다). 능력 카드는 장 내내 남으므로 허브에서는 카드를 나눠 주지 않고, 가득 찬 게이지의 X는 바로 그 클래스의 궁극기다([PerkCardScreen](../Scripts/UI/PerkCardScreen.cs)). 허브에서 찬 게이지·스택은 장에 들어가면 플레이어가 새로 만들어지며 사라진다.
+- 무대 거울과 꾸미기(11-12, 설정 창의 캐릭터 탭 대신): 무대 뒷벽 ENFILADE 밑의 전신 거울([HubMirror](../Scripts/Hub/HubMirror.cs))에 누구나 자기 몸이 머리까지 다 비친다. 유리를 보고 [F]면 그 앞에 서서 메인 메뉴 옷장 페이지로 캐릭터·색·옷·체형을 바꾼다([HubDressing](../Scripts/Hub/HubDressing.cs)): 카메라가 거울 속 나를 보고, 고르면 바로 입고 저장되며 방에도 보인다. 끌기·A·D로 돌고 Esc·[F]로 닫는다. 결과 화면 동안 거울은 어두운 유리이고 바닥 표시는 숨는다. 거울 그림은 보이는 유리 부분만 그리며 숫자는 Hub.csv `mirror*`·`dress*`. 자세한 것은 [PlayerBodyGuide](PlayerBodyGuide.md) **허브 거울에서 꾸미기**. 거울은 허브를 다시 지어야 생긴다.
 - 결과: 장이 끝날 때 각 PC가 모두의 숫자(처치·입힌 피해·치료·헤드샷 처치·구조·최장 연속 처치·최장 헤드샷·암살·처형·쓰러짐·번 돈)를 저장해 허브로 가져가고([MatchResults](../Scripts/Hub/MatchResults.cs)), 허브의 무대에 선 플레이어들 위로 칭호가 하나씩 쾅 붙은 뒤(혼자면 셋) KF2 같은 한 장으로 끝난다. 클래스 등급이 올랐으면 그 장에서 휘장이 박힌다. Space·Enter·클릭으로 건너뛴다. 콘솔 `results`로 마지막 장의 결과를 다시 볼 수 있다.
 
 ### 기록 저장 (records.json)

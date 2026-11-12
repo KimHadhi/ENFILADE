@@ -13,10 +13,11 @@ using UnityEngine.Playables;
 /// piece a try would take off drawn fading, OutfitGhost) and marks what a slot holds (Highlight); the idle carries on
 /// through each rebuild so a try never restarts the pose. Every character is framed from its skeleton (CharacterFrame),
 /// so each stands the same size whatever its file's renderers reach. The wardrobe's body page shapes it live (Shape) and
-/// brings the camera close on the face or the eyes (Focus).
+/// brings the camera close on the face or the eyes (Focus). It is the title screen's stage for the wardrobe
+/// (IWardrobeStage); the hub's mirror is the other (HubDressing).
 /// </summary>
 [DisallowMultipleComponent]
-public sealed class MainMenuPreview : MonoBehaviour
+public sealed class MainMenuPreview : MonoBehaviour, IWardrobeStage
 {
     public const string IdleClip = "mx_idle";
     // Nearly in the middle, between the menu's left column and its right-hand briefing, against the night.
@@ -36,9 +37,6 @@ public sealed class MainMenuPreview : MonoBehaviour
     private bool cameraMoving, refocus;
     // How quickly the camera moves to a part of the body and back (1/s).
     private const float FocusSpeed = 7f;
-    // The body page's close-ups, as shares of the character's height: how far over the head bone the face's middle is
-    // and how much of the screen the face fills; the same for the eyes when the skeleton has no eye bones.
-    private const float FaceLift = .06f, FaceSpan = .2f, EyesLift = .07f, EyesSpan = .11f;
     private PlayableGraph graph;
     private AnimationClipPlayable idlePlayable;
     // A look tried on from the wardrobe instead of the saved one (null: the saved one), the slot it tries and whether the
@@ -61,6 +59,9 @@ public sealed class MainMenuPreview : MonoBehaviour
     public float Facing => Mathf.Repeat(yaw, 360f);
     /// <summary>How far the camera is from the character (m).</summary>
     public float Distance => view != null ? Vector3.Distance(view.transform.position, shown.center) : 0f;
+    /// <summary>A stand-in made again for every try, so a choice under the pointer can be worn for a look.</summary>
+    public bool CanTry => true;
+    public string WhereLine => Texts.Get("wardrobe.where");
 
     private void Awake()
     {
@@ -223,23 +224,8 @@ public sealed class MainMenuPreview : MonoBehaviour
     }
 
     // A slot's pieces as this look has them: the item worn there, or the character's own (CharacterParts) as they show;
-    // nothing once it is off.
-    private List<Renderer> PiecesOf(string slot, OutfitLook look)
-    {
-        var found = new List<Renderer>();
-        if (model == null || shownSkin == null || slot == null || look == null) return found;
-        bool picked = look.TryGet(slot, out var pick) && pick.Item.Length > 0;
-        if (picked && !pick.IsOff && dressing != null && dressing.Pieces.TryGetValue(pick.Item, out var worn)) found.AddRange(worn);
-        else if (!picked)
-        {
-            var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            foreach (var part in OutfitCatalog.PartsOf(shownSkin.Id))
-                if (string.Equals(part.slot, slot, StringComparison.OrdinalIgnoreCase)) names.UnionWith(OutfitCatalog.Split(part.parts));
-            foreach (var renderer in model.GetComponentsInChildren<Renderer>())
-                if (renderer.enabled && names.Contains(renderer.name)) found.Add(renderer);
-        }
-        return found;
-    }
+    // nothing once it is off. The hub's mirror finds them on the player's own body the same way (WardrobePieces).
+    private List<Renderer> PiecesOf(string slot, OutfitLook look) => WardrobePieces.Of(model, shownSkin?.Id, dressing, slot, look);
 
     /// <summary>Turns the character by a drag of <paramref name="pixels"/> across the screen (right turns it right).</summary>
     public void Turn(float pixels, float deltaTime)
@@ -270,68 +256,15 @@ public sealed class MainMenuPreview : MonoBehaviour
 
     // Where the camera stands to frame that part of the character, measured from its bones as they stand now but as if
     // it faced the camera: turned by a drag, a head or chest a little off its middle swings round, and the camera would
-    // follow it there and back with every turn.
+    // follow it there and back with every turn. The parts are the wardrobe's on either stage (WardrobeFraming).
     private Vector3 FocusedCamera(string group)
     {
-        float height = Mathf.Max(.1f, shown.size.y);
         var animator = model != null ? model.GetComponentInChildren<Animator>() : null;
-        Transform Bone(HumanBodyBones bone) => animator != null && animator.isHuman ? animator.GetBoneTransform(bone) : null;
         var pivot = model != null ? model.transform.position : Vector3.zero;
         var unturn = model != null
             ? transform.rotation * Quaternion.Inverse(model.transform.localRotation) * Quaternion.Inverse(transform.rotation)
             : Quaternion.identity;
-        Vector3 At(Transform bone) => pivot + unturn * (bone.position - pivot);
-        var head = Bone(HumanBodyBones.Head);
-        var neck = Bone(HumanBodyBones.Neck);
-        var chest = Bone(HumanBodyBones.Chest);
-        var hips = Bone(HumanBodyBones.Hips);
-        var leftEye = Bone(HumanBodyBones.LeftEye);
-        var rightEye = Bone(HumanBodyBones.RightEye);
-        Vector3 center = shown.center;
-        float span = height;
-        switch (group)
-        {
-            case "head" when head != null:
-                center = At(head) + Vector3.up * height * .05f;
-                span = height * .3f;
-                break;
-            // The body page's face and eye tabs: their keys are small (a pupil's heart, a lash), so the camera comes in
-            // closer than for a hat.
-            case "face" when head != null:
-                center = At(head) + Vector3.up * height * FaceLift;
-                span = height * FaceSpan;
-                break;
-            case "eyes" when leftEye != null && rightEye != null:
-                center = (At(leftEye) + At(rightEye)) * .5f;
-                span = height * EyesSpan;
-                break;
-            case "eyes" when head != null:
-                center = At(head) + Vector3.up * height * EyesLift;
-                span = height * EyesSpan;
-                break;
-            // Hair falls past the shoulders (twintails, long sides): the head and chest together.
-            case "hair" when head != null && chest != null:
-                center = Vector3.Lerp(At(chest), At(head), .6f) + Vector3.up * height * .03f;
-                span = height * .5f;
-                break;
-            case "neck" when neck != null:
-                center = At(neck);
-                span = height * .32f;
-                break;
-            case "torso" when chest != null:
-                center = At(chest);
-                span = height * .45f;
-                break;
-            case "arms" when chest != null && hips != null:
-                center = (At(chest) + At(hips)) * .5f;
-                span = height * .55f;
-                break;
-            case "legs" when hips != null:
-                var middle = At(hips);
-                center = new Vector3(middle.x, (middle.y + shown.min.y) * .5f, middle.z);
-                span = height * .6f;
-                break;
-        }
+        WardrobeFraming.Part(animator, shown, group, bone => pivot + unturn * (bone.position - pivot), out Vector3 center, out float span);
         return CameraFor(center, span);
     }
 

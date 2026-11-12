@@ -13,14 +13,17 @@ using W = SettingsWidgets;
 /// bottom ("이 탭 기본값" at the left, 돌아가기 in pink at the right). The tabs grow in together as it opens (one after
 /// another from the top read as slow; user, 2026-11-10). The tabs follow
 /// <see cref="SettingsGroup"/>'s order, so "이 탭 기본값" resets the group of the tab on show.
+/// There is no 캐릭터 tab (user, 2026-11-12: "설정에서 캐릭터 바꾸는 거 이제 없애도 될 듯"): the character, its colours,
+/// clothes and body are chosen in the title screen's wardrobe, and in the hub at the stage's mirror (HubDressing).
+/// SettingsGroup.Character stays as the reset group for those settings.
 /// </summary>
 public sealed class SettingsMenuView
 {
-    // In SettingsGroup's order: the ids of the tabs' names in Texts.
+    // In SettingsGroup's order: the ids of the tabs' names in Texts. SettingsGroup.Character, the last, has no tab.
     private static readonly string[] TabIds =
     {
         "settings.tab.sound", "settings.tab.controls", "settings.tab.screen", "settings.tab.camera", "settings.tab.hud",
-        "settings.tab.crosshair", "settings.tab.character",
+        "settings.tab.crosshair",
     };
     // The panel (px at 1080p), its margins, the tab column and where the page starts.
     private const float PanelWidth = 1360f, PanelHeight = 860f, Margin = 48f, TabsTop = 132f, TabWidth = 270f, TabHeight = 54f,
@@ -82,6 +85,8 @@ public sealed class SettingsMenuView
     {
         if (panel != null) UnityEngine.Object.Destroy(panel.gameObject);
         tabPlates.Clear();
+        // A tab remembered from before it went (the 캐릭터 tab) reopens on the first.
+        if (tab < 0 || tab >= TabIds.Length) tab = 0;
         panel = W.Rect("Panel", root);
         panel.anchorMin = panel.anchorMax = panel.pivot = new Vector2(.5f, .5f);
         panel.sizeDelta = new Vector2(PanelWidth, PanelHeight);
@@ -184,11 +189,6 @@ public sealed class SettingsMenuView
         if (group == SettingsGroup.Crosshair)
         {
             new CrosshairSettingsView(page);
-            return;
-        }
-        if (group == SettingsGroup.Character)
-        {
-            new CharacterSkinView(page, PageWidth, true);
             return;
         }
         var rows = new SettingsRows(W.ScrollArea(page));

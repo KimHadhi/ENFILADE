@@ -113,4 +113,7 @@ public static class FrameOrder
     /// <summary>The HUD's side planes after the HUD camera, and the score popup's anchor on the gun last.</summary>
     public const int HudPlanes = 10030;
     public const int GunScoreAnchor = 10040;
+    /// <summary>The hub's mirror (HubMirror) decides whether it draws this frame and how big, from the finished cameras
+    /// (the view punch on, the hub's dressing camera placed), so a mirror turned into view is never a frame late.</summary>
+    public const int HubMirror = 10050;
 }

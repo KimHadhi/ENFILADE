@@ -4,8 +4,9 @@ using UnityEngine;
 /// A place in the hub where something is laid out or done (memo 46). The builder (Editor/World/HubBuilder) stands one on
 /// each piece of furniture; at play HubLobby finds them and fills them from the tables, so a new chapter, class or gun
 /// shows up without rebuilding the scene: the chapters' cards on the map table, a locker door per class on the class
-/// wall, a gun per FPSBody gun on the rack. <see cref="Size"/> is the area to lay things out in, on the station's own
-/// axes: x across, y up, z out of the face (a table's top faces up its local y, a wall's face looks along its local z).
+/// wall, a gun per FPSBody gun on the rack, the mirror's glass and dressing spot. <see cref="Size"/> is the area to lay
+/// things out in, on the station's own axes: x across, y up, z out of the face (a table's top faces up its local y, a
+/// wall's face looks along its local z).
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class HubStation : MonoBehaviour
@@ -29,7 +30,10 @@ public sealed class HubStation : MonoBehaviour
         /// <summary>The sign over the map table: the chapter the party will go to.</summary>
         ChapterSign,
         /// <summary>The board over the firing line: the last hit on a range target, and how many it took to drop one.</summary>
-        RangeBoard
+        RangeBoard,
+        /// <summary>The stage's mirror (HubMirror on the same object, its size the glass's): [F] at it opens the dressing
+        /// spot in front of it (HubDressing).</summary>
+        Mirror
     }
 
     [SerializeField] private Kind kind;

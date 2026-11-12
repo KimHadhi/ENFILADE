@@ -156,7 +156,6 @@ settings.tab.screen,화면,,설정 창 > 왼쪽 탭
 settings.tab.camera,카메라,,설정 창 > 왼쪽 탭
 settings.tab.hud,HUD,,설정 창 > 왼쪽 탭
 settings.tab.crosshair,크로스헤어,,설정 창 > 왼쪽 탭
-settings.tab.character,캐릭터,,설정 창 > 왼쪽 탭
 settings.defaults,이 탭 기본값,,설정 창 > 아래 왼쪽 버튼
 settings.main_menu,메인 메뉴,,설정 창 > 아래 버튼(게임 안에서만)
 settings.quit,게임 종료,,설정 창 > 아래 버튼
@@ -286,10 +285,7 @@ settings.hud.damage_numbers.each,낱개,,설정 창 > HUD > 데미지 숫자 선
 settings.hud.hit_markers,히트 마커,,설정 창 > HUD > 행
 settings.hud.hit_markers.clean,깔끔,,설정 창 > HUD > 히트 마커 선택지 (얇은 선이 톡 튀고 바로 사라지는 페이데이 3식. 기본)
 settings.hud.hit_markers.bold,굵게,,설정 창 > HUD > 히트 마커 선택지 (예전의 굵은 선이 안쪽으로 미끄러지는 모양)
-settings.character.none,고를 캐릭터가 없습니다.,,설정 창 캐릭터 탭과 메인 메뉴 캐릭터 화면 > 캐릭터가 하나도 없을 때
-settings.character.colors,색 ({0}),,설정 창 캐릭터 탭과 메인 메뉴 캐릭터 화면 > 색 소제목. {0}=색 가짓수
-settings.character.colors.one,색 (한 가지),,설정 창 캐릭터 탭과 메인 메뉴 캐릭터 화면 > 색 소제목(한 가지뿐일 때)
-settings.character.color.default,기본,,설정 창 캐릭터 탭과 메인 메뉴 캐릭터 화면 > 색 카드(색 세트가 없을 때)
+settings.character.none,고를 캐릭터가 없습니다.,,메인 메뉴 캐릭터 화면과 허브 거울 앞 꾸미기 > 캐릭터가 하나도 없을 때
 #--- 크로스헤어 설정 ---,,,
 crosshair.kind,대상,,설정 창 > 크로스헤어 > 행
 crosshair.kind.gun,총,,설정 창 > 크로스헤어 > 대상 선택지
@@ -695,10 +691,6 @@ ff.guest,아군 사격은 방장만 바꿀 수 있어요. 지금: {0},,채팅 �
 ff.host.on,방장이 아군 사격을 켰습니다,,채팅 방송 > 참가자 화면: 방장이 켰을 때
 ff.host.off,방장이 아군 사격을 껐습니다,,채팅 방송 > 참가자 화면: 방장이 껐을 때
 #--- 옷 칸 ---,,,
-outfit.title,옷,,설정 창 캐릭터 탭과 메인 메뉴 캐릭터 화면 > 옷 칸 소제목
-outfit.none,입힐 옷이 아직 없습니다.,,설정 창 캐릭터 탭과 메인 메뉴 캐릭터 화면 > 고른 캐릭터에게 입힐 옷도 벗길 옷도 없을 때
-outfit.default,기본,,옷 칸 > 캐릭터가 원래 입은 옷(빈칸)
-outfit.off,벗기,,옷 칸 > 원래 옷을 벗고 아무것도 입지 않음
 outfit.slot.hair,헤어,,옷 칸 이름
 outfit.slot.helmet,모자·헬멧,,옷 칸 이름
 outfit.slot.hairpin,머리 장식,,옷 칸 이름(리본·핀·머리띠·동물 귀)
@@ -748,6 +740,7 @@ shop.note.notdetente,데탕트 전용,,상점 > 데탕트가 아닐 때 주사�
 shop.note.syringefull,주사기 가득,,상점 > 주사기가 가득일 때 주사기 보충 카드의 작은 글자
 #--- 옷장 ---,,,
 wardrobe.where,고르면 바로 입고 저장된다 · 가운데 캐릭터는 끌어서 돌린다,,메인 메뉴 > 캐릭터 페이지 제목 아래 작은 줄
+wardrobe.where.mirror,고르면 바로 입고 저장된다 · 거울 속 나는 끌거나 A·D로 돌린다,,허브 > 거울 앞 꾸미기 > 캐릭터 제목 아래 작은 줄
 wardrobe.colour,색,,메인 메뉴 > 캐릭터 페이지 > 캐릭터 카드 아래 소제목
 wardrobe.reset,원래 옷으로,,메인 메뉴 > 캐릭터 페이지 > 그 캐릭터의 옷을 모두 처음대로 되돌리는 버튼
 wardrobe.title,옷장,,메인 메뉴 > 캐릭터 페이지 오른쪽 제목
@@ -807,6 +800,7 @@ hub.sign.next,다음 작전,,허브 > 지도 탁자 위 표지판의 작은 글�
 hub.sign.classes,클래스,,허브 > 클래스 벽 위 글자
 hub.sign.guns,총기,,허브 > 총 진열대 위 글자
 hub.sign.range,사격장,,허브 > 사격장 입구 위 글자
+hub.sign.mirror,꾸미기,,허브 > 무대 거울 앞 바닥 표시(꾸미기 자리의 분홍 모서리 밑 글자)
 hub.board.title,출발 준비  ·  {0},,허브 > 출발 문 위 판의 제목. {0}=고른 장
 hub.board.ready,준비,,허브 > 출발 문 위 판: 준비한 사람 이름 옆
 hub.panel.next,다음 작전,,허브 > 오른쪽 위 카드의 작은 글자
@@ -822,8 +816,15 @@ hub.prompt.gun,[F] {0} 들기,,허브 > 총 진열대의 총을 볼 때. {0}=총
 hub.prompt.ammo,[F] 탄약 채우기,,허브 > 탄약 상자를 볼 때
 hub.prompt.ready,[F] 준비,,허브 > 준비 버튼을 볼 때
 hub.prompt.unready,[F] 준비 취소,,허브 > 준비한 뒤 준비 버튼을 볼 때
+hub.prompt.mirror,[F] 거울 앞에서 꾸미기,,허브 > 무대 거울 유리를 볼 때
 hub.alert.class,클래스  ·  {0},,허브 > 클래스를 바꿨을 때 화면 위 알림. {0}=클래스
 hub.alert.cannot,그 장을 열 수 없어요 (빌드에 없음),,허브 > 출발하려는 장 씬이 빌드에 없을 때
+hub.mirror.title,거울,,허브 > 거울 앞 꾸미기 화면 > 왼쪽 위 제목
+hub.mirror.where,고른 것은 바로 입고 방 사람들에게도 그대로 보인다,,허브 > 거울 앞 꾸미기 화면 > 제목 옆 작은 줄
+hub.mirror.close,닫기,,허브 > 거울 앞 꾸미기 화면 > 오른쪽 위 닫기 칩
+hub.mirror.hint.close,닫기,,허브 > 거울 앞 꾸미기 화면 > 아래 막대 키 안내(Esc 옆)
+hub.mirror.hint.turn.key,끌기 · A D,,허브 > 거울 앞 꾸미기 화면 > 아래 막대 키 안내의 키 칸
+hub.mirror.hint.turn,돌기,,허브 > 거울 앞 꾸미기 화면 > 아래 막대 키 안내(끌기 · A D 옆)
 hub.range.dummy,좀비 더미,,허브 사격장 > 과녁 이름(좀비 체력)
 hub.range.plate,강철판,,허브 사격장 > 과녁 이름(강철판)
 hub.range.title,사격장,,허브 사격장 > 게시판 제목
@@ -887,6 +888,7 @@ results.sheet.done,캠페인 완료  ·  은신처에서 처음부터,,결과 �
 results.sheet.key,Space  계속,,결과 마지막 장 > 오른쪽 아래
 wardrobe.own.named,기본 · {0},Own · {0},옷장 > 칸 타일: 캐릭터가 원래 입은 그 칸의 옷 이름(CharacterParts.csv name)
 wardrobe.try,올려 두면 입어 본다,Rest on one to try it on,옷장 > 칸을 연 화면 > 제목 아래 설명 뒤: 판에 마우스를 올려 두면 캐릭터에 그대로 입혀 보고(분홍 테두리) 캐릭터 위에 미리 보기 띠가 뜬다
+wardrobe.click,누르면 바로 입는다,Click to wear it,허브 거울 앞 옷장 > 칸을 연 화면 > 제목 아래 설명 뒤(거울 앞에서는 올려 두기 미리 보기 없이 누르면 바로 입는다)
 callout.slot.zombie,좀비,Zombie,콜아웃 휠 칸(위): 조준점의 좀비(없으면 보이는 가장 위험한 좀비)를 외치고 팀에 핑. 칸 아래 작은 글씨는 지금 그 칸을 고르면 할 말
 callout.slot.move,이동,Move,콜아웃 휠 칸: 가자 · 바닥이나 벽을 보고 있으면 '이쪽으로!'와 그 자리에 핀
 callout.slot.request,요청,Request,콜아웃 휠 칸: 치료·탄약·엄호 부탁. 팀에 데탕트나 서포트가 있으면 그 클래스를 부른다

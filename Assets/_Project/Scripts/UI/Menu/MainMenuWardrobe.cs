@@ -26,6 +26,10 @@ using UnityEngine.UI;
 /// body page in the right wing: every look the model offers, tab by tab (body, face, eyes, brows and lashes, ears, hair,
 /// animal ears and tail, outfit details), as sliders and chips that shape the character at once, the camera close on
 /// the face or eyes for their tabs (the user, 2026-11-12, asked for all of each character's own customization).
+/// The same pages open in the hub at the stage's mirror (HubDressing; user, 2026-11-12: the Esc menu's 캐릭터 tab went
+/// and the mirror took its place), where the character is the player's own body seen in the mirror. What differs
+/// between the two is the stage (IWardrobeStage): the hub's body is made again whole for every outfit, so there a click
+/// wears a choice at once and nothing is tried on under the pointer.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class MainMenuWardrobe : MonoBehaviour
@@ -36,7 +40,7 @@ public sealed class MainMenuWardrobe : MonoBehaviour
     private static readonly string[] Groups = { "head", "neck", "torso", "arms", "legs" };
 
     private RectTransform root, content;
-    private MainMenuPreview preview;
+    private IWardrobeStage preview;
     private KitReveal reveal;
     private float edge, growAt;
     private string openSlot;
@@ -84,7 +88,8 @@ public sealed class MainMenuWardrobe : MonoBehaviour
     /// <summary>One slot's list is up: Esc goes back to all the slots first.</summary>
     public bool ShowsSlot => IsOpen && openSlot != null;
 
-    public static MainMenuWardrobe Make(RectTransform canvas, float edge, float top, float bottom, MainMenuPreview preview)
+    /// <param name="preview">The character the page dresses: the title screen's stand-in, or the hub's player at the mirror.</param>
+    public static MainMenuWardrobe Make(RectTransform canvas, float edge, float top, float bottom, IWardrobeStage preview)
     {
         var root = FeelUI.Rect("Wardrobe", canvas);
         root.anchorMin = Vector2.zero;
@@ -250,7 +255,8 @@ public sealed class MainMenuWardrobe : MonoBehaviour
 
     private void BuildLeft(List<PlayerBodyProfile.Skin> skins, PlayerBodyProfile.Skin chosen)
     {
-        Title(content, edge, Texts.Get("menu.character.title"), 3f, Texts.Get("wardrobe.where"), new Vector2(edge + 4f, 108f), LeftWidth + 160f);
+        Title(content, edge, Texts.Get("menu.character.title"), 3f, preview != null ? preview.WhereLine : Texts.Get("wardrobe.where"),
+            new Vector2(edge + 4f, 108f), LeftWidth + 160f);
         if (chosen == null)
         {
             Note(content, new Vector2(edge, 150f), LeftWidth, Texts.Get("settings.character.none"));
@@ -448,7 +454,8 @@ public sealed class MainMenuWardrobe : MonoBehaviour
             TextAlignmentOptions.MidlineLeft);
         title.rectTransform.localRotation = Quaternion.Euler(0f, 0f, -2f);
         Grow(title.rectTransform, 0f);
-        Note(right, new Vector2(4f, 128f), RightWidth, Texts.Get("outfit.group." + slot.group) + "  ·  " + Texts.Get("wardrobe.try"));
+        bool tries = preview != null && preview.CanTry;
+        Note(right, new Vector2(4f, 128f), RightWidth, Texts.Get("outfit.group." + slot.group) + "  ·  " + Texts.Get(tries ? "wardrobe.try" : "wardrobe.click"));
 
         var items = OutfitCatalog.ItemsFor(skin.Id, slot.id);
         bool own = OutfitCatalog.HasOwnPiece(skin.Id, slot.id);
@@ -466,8 +473,9 @@ public sealed class MainMenuWardrobe : MonoBehaviour
             var plate = Plate(list, new Vector2(row % 2 == 0 ? 0f : 10f, y), name, note, id == worn, (row % 2 == 0 ? 1f : -1f) * .6f,
                 id == worn ? null : (System.Action)(() => Wear(skin, slot, id)), picture);
             // Resting on a choice not worn tries it on as it would really look. Taking off (벗기, or back to nothing of
-            // its own) keeps what is on and shows it fading, so a try of taking off never reads as already off.
-            if (id != worn)
+            // its own) keeps what is on and shows it fading, so a try of taking off never reads as already off. A stage
+            // that can't try (the hub's mirror) wears the choice on the click alone.
+            if (id != worn && tries)
             {
                 bool removes = id == OutfitLook.Off || (id.Length == 0 && !own);
                 string line = Texts.Get(removes ? "wardrobe.preview.off" : id.Length == 0 ? "wardrobe.preview.own" : "wardrobe.preview.wear");
@@ -817,7 +825,7 @@ public sealed class MainMenuWardrobe : MonoBehaviour
 
     private void Update()
     {
-        if (preview != null && wantedText != triedText && Time.unscaledTime >= wantedAt)
+        if (preview != null && preview.CanTry && wantedText != triedText && Time.unscaledTime >= wantedAt)
         {
             triedText = wantedText;
             preview.Try(wanted, wantedSlot, wantedRemoves);

@@ -164,6 +164,17 @@ public sealed class PlayerLook : MonoBehaviour
         ApplyLookPose();
     }
 
+    /// <summary>
+    /// Eases the view's pitch toward <paramref name="target"/> (degrees, down positive) by this share of the way, while the
+    /// hub's mirror stands the player for themself (HubDressing): the spine, neck and head bend with the pitch, so the
+    /// look down at the glass that opened it bowed the reflection's head. The mouse doesn't turn the view meanwhile.
+    /// </summary>
+    internal void EasePitch(float target, float share)
+    {
+        pitch = ClampLookPitch(Mathf.LerpAngle(pitch, target, Mathf.Clamp01(share)));
+        ApplyLookPose();
+    }
+
     public void ApplyRecoil(Vector2 kick, WeaponData data = null)
     {
         recoilResponse = data != null ? data.RecoilResponse : 24f;

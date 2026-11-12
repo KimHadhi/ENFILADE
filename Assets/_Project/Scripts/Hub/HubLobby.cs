@@ -15,6 +15,9 @@ using UnityEngine.InputSystem;
 ///   class stacks, a hit charges the ultimate and F marks one, a Schießhund's bounty too (2026-11-12), while nothing of
 ///   it reaches the run's feed, money or counts. Here a full gauge plays the class's ultimate at once and deals no
 ///   cards (PerkCardScreen), since cards last the campaign and the range must not hand them out.
+/// - [F] at the stage's mirror (HubMirror: everyone sees themself in it, head and all) opens the dressing spot in front
+///   of it (HubDressing, 2026-11-12): the title screen's wardrobe over a camera looking into the mirror, every pick worn
+///   at once, saved and seen by the room. The Esc menu's 캐릭터 tab went for it.
 /// - [F] at the ready button says this player is ready. Who is ready shows at the top middle of the HUD, everyone's
 ///   profile picture with a check on it once ready (HubReadyBoard, TF2's Mann vs. Machine way). Once everyone in the
 ///   room is ready, the count runs down
@@ -274,7 +277,7 @@ public sealed partial class HubLobby : MonoBehaviour
     }
 
     // As the mouse look: not while the cursor is free (chat, menus), the window is in the background, the console is
-    // open, or the results are playing.
+    // open, the results are playing, or the mirror's dressing spot is open (or was shut by this very [F]).
     private static bool TakesInput() => Cursor.lockState == CursorLockMode.Locked && Application.isFocused && !DevConsole.TakesKeyboard
-        && !ShopMenu.TakesKeyboard && !PerkCardScreen.TakesKeyboard && !ResultsShow.IsPlaying;
+        && !ShopMenu.TakesKeyboard && !PerkCardScreen.TakesKeyboard && !ResultsShow.IsPlaying && !HubDressing.TakesKeyboard;
 }
