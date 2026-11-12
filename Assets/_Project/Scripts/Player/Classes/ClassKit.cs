@@ -505,6 +505,7 @@ public sealed class ClassKit : MonoBehaviour
         if (movement == null || !movement.IsLocal || !report.IsKillingBlow || !(report.Target is ICombatFoe)) return;
         if (!PlayerPerks.IsMine(report.Hit.Source)) return;
         if (PlayerClass.Is(PlayerClass.Schiesshund) && PingMarks.IsBountyOf(report.Target, movement)) Bounty(report.Target);
+        else if (PlayerClass.Is(PlayerClass.Schiesshund) && DyeMarks.IsDyedBy(report.Target, movement)) DyedKill(report.Target);
         if (!PlayerClass.Is(PlayerClass.Assault)) return;
         stacks = Mathf.Min(StackMax, stacks + 1);
         lastKill = Time.time;
@@ -679,15 +680,7 @@ public sealed class ClassKit : MonoBehaviour
     private void Bounty(Component target)
     {
         var enemy = target as EnemyHealth;
-        bountyPoints += Mathf.Max(1, Mathf.RoundToInt(PlayerClass.IsElite(enemy) ? PlayerClass.Ability(HoundRow, "elitePoints", 2f) : 1f));
-        int need = Mathf.Max(1, Mathf.RoundToInt(PlayerClass.Ability(HoundRow, "roundPoints", 2f)));
-        var desperado = Desperado;
-        while (bountyPoints >= need)
-        {
-            bountyPoints -= need;
-            if (desperado != null && desperado.Ammo < RoundMax) desperado.LoadRound();
-        }
-        slots?.NotifyAmmo();
+        EarnRounds(Mathf.Max(1, Mathf.RoundToInt(PlayerClass.IsElite(enemy) ? PlayerClass.Ability(HoundRow, "elitePoints", 2f) : 1f)));
         returnStacks = Mathf.Min(Mathf.Max(1, Mathf.RoundToInt(PlayerClass.Ability(HoundRow, "returnMax", 5f))), ReturnStacks + 1);
         returnTotal = Mathf.Max(.1f, PlayerClass.Ability(HoundRow, "returnSeconds", 8f));
         returnUntil = Time.time + returnTotal;
@@ -705,6 +698,26 @@ public sealed class ClassKit : MonoBehaviour
         // The Desperado's own kill on this screen too: BOUNTY, the counter's banner at its most in the mark's teal.
         if (!TryGetComponent(out CounterBanner banner)) banner = gameObject.AddComponent<CounterBanner>();
         banner.Play(.95f, CounterBanner.Grades - 1, "BOUNTY", PingMarks.BountyColor);
+    }
+
+    // A zombie its own bounty dye splashed died at its hand (DyeMarks; the user's pick, "현상금 염료탄"): points toward
+    // the Desperado's next round, as a little bounty, without a bounty's look, sound or Return Back. A dyed elite that
+    // also carries the real mark counts as the mark's kill (OnDamaged asks for the mark first).
+    private void DyedKill(Component target) => EarnRounds(DyeMarks.KillPoints(target, movement));
+
+    // Points toward the Desperado's next round: every roundPoints of them load one, while the cylinder has room.
+    private void EarnRounds(int points)
+    {
+        if (points <= 0) return;
+        bountyPoints += points;
+        int need = Mathf.Max(1, Mathf.RoundToInt(PlayerClass.Ability(HoundRow, "roundPoints", 2f)));
+        var desperado = Desperado;
+        while (bountyPoints >= need)
+        {
+            bountyPoints -= need;
+            if (desperado != null && desperado.Ammo < RoundMax) desperado.LoadRound();
+        }
+        slots?.NotifyAmmo();
     }
 
     // ---- Point: the Gun Kata ----

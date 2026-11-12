@@ -106,8 +106,8 @@ public static class PlayerClass
     /// <summary>
     /// The bullet's damage factor from this PC's player's class: its own guns' bonus, an Assault's adrenaline, a CHARGE
     /// they are in, a Ghost's Head Hunter and Deadeye, a Schießhund's Return Back and Desperado round, and on the
-    /// Schießhund's own mark (<paramref name="target"/>) its bounty's debuff. AttackTrace multiplies it in with the perk
-    /// cards' for this PC's shots only.
+    /// Schießhund's own mark (<paramref name="target"/>) its bounty's debuff, and on a zombie its bounty dye
+    /// splashed the dye's. AttackTrace multiplies it in with the perk cards' for this PC's shots only.
     /// </summary>
     public static float GunFactor(bool headshot, Component target = null)
     {
@@ -117,6 +117,9 @@ public static class PlayerClass
         float factor = OwnsWeapon(info, kit.HeldGun) ? 1f + info.GunBonus / 100f : 1f;
         if (target != null && Is(Schiesshund) && PingMarks.IsBountyOf(target, kit.Movement))
             factor *= 1f + Ability(HoundRow, "markDamage", 25f) / 100f;
+        // A Schießhund's bounty dye (DyeMarks): the zombies its own dye splashed take more from its guns, the glowing dye
+        // showing the hound where to put its rounds (GrenadeRules dyeDamage). On its mark as well, it adds to the mark's.
+        if (target != null && Is(Schiesshund)) factor *= DyeMarks.GunFactor(target, kit.Movement);
         // A Schießhund's duel: the foe it called out takes more again from it (HoundDuel).
         if (target != null && Is(Schiesshund) && HoundDuel.Of(kit.Movement) is HoundDuel duel && duel.Foe != null
             && duel.Foe.gameObject == target.gameObject)
