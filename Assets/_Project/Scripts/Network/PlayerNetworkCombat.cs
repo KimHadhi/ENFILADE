@@ -73,6 +73,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
     private PlayerFistAudio fists;
     private PlayerShoveAudio shoves;
     private ShoveMoves kicks;
+    private DodgeDash dodgeLook;
     private PlayerExecution execution;
     private PlayerThrow throws;
     private PlayerGrenades grenades;
@@ -194,6 +195,8 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
         execution = GetComponent<PlayerExecution>();
         if (!TryGetComponent(out shoves)) shoves = gameObject.AddComponent<PlayerShoveAudio>();
         kicks = ShoveMoves.For(GetComponent<PlayerMovement>());
+        // The dodge's look (DodgeDash, added by PlayerMovement): every PC draws a dodge from its state; an evade's red comes by EvadedRpc.
+        dodgeLook = GetComponent<DodgeDash>();
         // Stones (PlayerThrow): thrown by the owner, copied on every other PC.
         throws = GetComponent<PlayerThrow>();
         if (throws == null) throws = gameObject.AddComponent<PlayerThrow>();
@@ -248,6 +251,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
             shoves.Played += OnShoveSound;
             // Only the owner sends: a copy's Kicked comes from KickRpc itself.
             if (kicks != null) kicks.Kicked += OnKicked;
+            if (dodgeLook != null) dodgeLook.Evaded += OnEvaded;
             execution.Started += OnExecutionStarted;
             receiver.HitResolved += OnHit;
             gunSkins.Value = GunSkins.LookText();
@@ -275,6 +279,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
         if (fists != null) fists.Played -= OnFistSound;
         if (shoves != null) shoves.Played -= OnShoveSound;
         if (kicks != null) kicks.Kicked -= OnKicked;
+        if (dodgeLook != null) dodgeLook.Evaded -= OnEvaded;
         if (execution != null) execution.Started -= OnExecutionStarted;
         if (throws != null) throws.Thrown -= OnThrown;
         if (grenades != null)
@@ -373,6 +378,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
     private void OnFistSound(FistSound sound) => FistSoundRpc(sound);
     private void OnShoveSound(ShoveImpactKind impact) => ShoveSoundRpc(impact);
     private void OnKicked() => KickRpc();
+    private void OnEvaded(int side) => EvadedRpc((sbyte)Mathf.Clamp(side, -1, 1));
     private void OnThrown(Vector3 from, Vector3 velocity) => ThrowRpc(from, velocity);
     private void OnGrenadeThrown(Throwable kind, ushort id, Vector3 from, Vector3 velocity, float fuse) => GrenadeRpc((byte)kind, id, from, velocity, fuse);
     private void OnGrenadeBurst(Throwable kind, ushort id, Vector3 at) => GrenadeBurstRpc((byte)kind, id, at);
@@ -627,6 +633,14 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
     private void KickRpc()
     {
         if (kicks != null) kicks.ShowKick();
+    }
+
+    // The dodger's PC judged the evade: every other PC's copy of them turns that dodge's streak red too (DodgeDash), as
+    // the dodger sees it (the user's rule: what one sees is what the others see). side: a Q/E slip's lean side, 0 for a step.
+    [Rpc(SendTo.NotMe)]
+    private void EvadedRpc(sbyte side)
+    {
+        if (dodgeLook != null) dodgeLook.ShowEvaded(side);
     }
 
     [Rpc(SendTo.NotMe)]

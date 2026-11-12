@@ -3,7 +3,7 @@ using UnityEngine.UI;
 
 /// <summary>
 /// The rim over the slowed counter window a perfect evade (or a Knight's parry) opens. Deep red-black since 2026-11-11
-/// (user: "a plain dodge white, a success red"; it was a dark navy): the success's red burst (DodgeFlash) settles into it.
+/// (user: "a plain dodge white, a success red"; it was a dark navy): the success's red streak (DodgeDash, DodgeFlash) settles into it.
 /// </summary>
 [RequireComponent(typeof(CanvasRenderer))]
 public sealed class PerfectDefenseVignette : MaskableGraphic

@@ -12,7 +12,6 @@ Shader "Hidden/ENFILADE/DodgeGhost"
         _Color ("Colour", Color) = (1, 1, 1, 1)
         _Cut ("Cut by the texture's alpha (1 cut-out or see-through, 0 opaque)", Float) = 0
         _Alpha ("See-through (0 gone, 1 solid)", Range(0, 1)) = 0.5
-        _Warm ("Tint (rgb) and its share (a)", Color) = (1, 1, 1, 0)
     }
     SubShader
     {
@@ -30,7 +29,6 @@ Shader "Hidden/ENFILADE/DodgeGhost"
             half4 _Color;
             half _Cut;
             half _Alpha;
-            half4 _Warm;
         CBUFFER_END
 
         struct Attributes { float4 positionOS : POSITION; float3 normalOS : NORMAL; float2 uv : TEXCOORD0; };
@@ -87,8 +85,7 @@ Shader "Hidden/ENFILADE/DodgeGhost"
                 // A soft half-light from the sun keeps the body's shape readable without the scene's full lighting.
                 Light sun = GetMainLight();
                 half shade = lerp(0.7, 1.0, saturate(dot(normalize(input.normalWS), sun.direction)));
-                half3 colour = lerp(surface.rgb * shade, _Warm.rgb, _Warm.a);
-                return half4(colour, _Alpha);
+                return half4(surface.rgb * shade, _Alpha);
             }
             ENDHLSL
         }

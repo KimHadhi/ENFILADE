@@ -2,30 +2,35 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// The dodge's look on this PC's own screen, the first-person half of DodgeDash (user's memo 9 and 16; 2026-11-12 the
-/// user sent the reference: a Roblox "NEW DASH VFX" short, "이대로 참 멋있는 듯"; a plain dodge white, a success red):
-/// - a step dodge (Alt) sends thin glowing white wind lines with sharp kinks, like the reference's bolts, streaming past
-///   the way the body goes: across the screen for a side step, in from the edges for a step back, out round the middle
-///   for a step in; a soft white pop of air blooms up from the bottom edge where the foot kicks off, and the rim lightens
-///   a touch. The world half (afterimages, the same lines along the floor, the pop and the smoke) is DodgeDash's, which
-///   friends see too, and which this PC sees most on a step back, its ghost left ahead;
-/// - a dodge that lets a blow go by (a perfect evade, step or Q/E) bursts red: red kinked lines flying out round the
-///   crosshair, the rim and both side edges flaring red, the picture drained to a red cast for a blink, and the dodge's
-///   own lines and smoke in the world turning red, its afterimages (the character itself) only warming a touch
-///   (DodgeDash.Succeed). The slowed counter window after it keeps a deep red rim (PerfectDefenseVignette).
-/// Short and bright, gone within a third of a second (the user's rule for hit effects). Real time, so the evade's slow
-/// motion doesn't hold it. Made at spawn for this PC's own player (PlayerPerfectDefense.Initialize).
+/// The dodge's one beat as this PC's own player sees it from inside the body, the first-person half of DodgeDash (user,
+/// 2026-11-12, memo 9 and 16: the reference, a Roblox "NEW DASH VFX" short; then "회피가 레퍼런스 영상처럼 걍 딱 굵게 한
+/// 번만 나오면 될 것 같은데"; and their rule "내가 보는 화면이 진실": what the player sees is what friends see of them):
+/// - the world's beat (the kick-off puff, the one afterimage, the one streak: DodgeDash) is drawn for this PC too, and a
+///   step back sees all of it ahead, so the screen adds nothing;
+/// - a step aside or in leaves that streak beside, behind or under the camera, so the same streak is drawn on the screen
+///   instead: three bold white kinked strokes, all at once, across the low screen for a side step or out round the
+///   middle for a step in, gone with the world's;
+/// - an evade (a blow let through, step or Q/E) turns that one streak red: the world's on every PC (DodgeDash.Succeed),
+///   and on this screen the strokes under way, or for a Q/E slip red strokes across the way it slipped. The slowed
+///   counter window after it keeps its deep red rim (PerfectDefenseVignette).
+/// Seen from outside the body (third person) the world's beat is all in view and nothing is drawn here. Real time, so the
+/// evade's slow motion doesn't hold it. Made at spawn for this PC's own player (PlayerPerfectDefense.Initialize).
+/// Numbers: Tables/Player.csv, row DodgeView.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class DodgeFlash : MonoBehaviour
 {
-    // The plain dodge's wind and the success's burst: how many lines, how long (real s), how bright, how thick and how
-    // far their kinks jump (px at 1080p).
-    private const int AirLines = 9, RedLines = 24;
-    private const float AirSeconds = .2f, RedSeconds = .28f, AirAlpha = .85f, RedAlpha = .95f;
-    private const float AirWidth = 2.2f, RedWidth = 3f, AirKink = 16f, RedKink = 22f;
-    // The rim's strength for each, how long it takes to go (real s), and the pop of air from the bottom edge.
-    private const float AirRim = .08f, RedRim = .38f, RimSeconds = .22f, PopAlpha = .32f, PopSeconds = .2f;
+    [SerializeField, Min(0), Tooltip("Strokes of the streak on the screen (the world's streak has as many lines).")]
+    private int strokes = 3;
+    [SerializeField, Min(.05f), Tooltip("How long they last (real s): the world streak's time.")]
+    private float strokeSeconds = .22f;
+    [SerializeField, Min(.5f), Tooltip("How thick (px at 1080p).")]
+    private float strokeWidth = 7f;
+    [SerializeField, Min(0f), Tooltip("How far their kinks jump off the line (px at 1080p).")]
+    private float strokeKink = 26f;
+    [SerializeField, Range(0f, 1f), Tooltip("How solid.")]
+    private float strokeAlpha = .9f;
+
     private static readonly Color Air = new Color(1f, 1f, 1f);
     private static readonly Color Blood = new Color(1f, .08f, .1f);
 
@@ -33,11 +38,7 @@ public sealed class DodgeFlash : MonoBehaviour
     private DodgeController dodge;
     private GameObject root;
     private SpeedLinesGraphic lines;
-    private RawImage rim, pop;
-    private Texture2D rimTexture, popTexture;
     private Camera view;
-    private float rimTime = 1f, rimStrength, popTime = 1f;
-    private Color rimColor;
     private bool pendingStep;
 
     /// <summary>The player's dodge look, made on first use.</summary>
@@ -50,6 +51,7 @@ public sealed class DodgeFlash : MonoBehaviour
     private void Awake()
     {
         player = GetComponent<PlayerMovement>();
+        GameTables.Bind(PlayerMovement.TableName, "DodgeView", this);
         root = new GameObject("Dodge flash", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler));
         root.transform.SetParent(transform, false);
         var canvas = root.GetComponent<Canvas>();
@@ -57,53 +59,16 @@ public sealed class DodgeFlash : MonoBehaviour
         var scaler = root.GetComponent<CanvasScaler>();
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         scaler.referenceResolution = new Vector2(1920f, 1080f); scaler.matchWidthOrHeight = 1f;
-        // Heavy at the edges and clear in the middle, so the crosshair and the fight stay readable through it.
-        rimTexture = Soft("Dodge rim", 64, 64, (u, v) => Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(.5f, 1.25f, Mathf.Sqrt(u * u + v * v))));
-        // A soft mound of air standing on the bottom edge.
-        popTexture = Soft("Dodge pop", 64, 32, (u, v) =>
-        {
-            float up = (v + 1f) * .5f, d = Mathf.Sqrt(u * u * .8f + up * up * 1.6f);
-            return Mathf.SmoothStep(0f, 1f, 1f - Mathf.Clamp01(d));
-        });
-        var additive = FeelAssets.UiAdditive;
-        rim = Image("Rim", rimTexture, additive);
-        Stretch(rim.rectTransform);
-        pop = Image("Pop", popTexture, additive);
-        var popRect = pop.rectTransform;
-        popRect.SetParent(root.transform, false);
-        popRect.anchorMin = popRect.anchorMax = popRect.pivot = new Vector2(.5f, 0f);
-        popRect.sizeDelta = new Vector2(980f, 360f); popRect.anchoredPosition = Vector2.zero;
         lines = new GameObject("Lines", typeof(RectTransform), typeof(CanvasRenderer), typeof(SpeedLinesGraphic)).GetComponent<SpeedLinesGraphic>();
-        Stretch(lines.rectTransform);
-        lines.raycastTarget = false;
-        if (additive != null) lines.material = additive;
-        // The bash's emitters too, at spawn rather than at the first shove that lands.
-        BashImpact.Prepare();
-    }
-
-    private static Texture2D Soft(string name, int width, int height, System.Func<float, float, float> alpha)
-    {
-        var texture = new Texture2D(width, height, TextureFormat.RGBA32, false) { name = name, wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Bilinear };
-        for (int y = 0; y < height; y++)
-        for (int x = 0; x < width; x++)
-            texture.SetPixel(x, y, new Color(1f, 1f, 1f, alpha(x / (width - 1f) * 2f - 1f, y / (height - 1f) * 2f - 1f)));
-        texture.Apply(false, true);
-        return texture;
-    }
-
-    private RawImage Image(string name, Texture texture, Material additive)
-    {
-        var image = new GameObject(name, typeof(RectTransform), typeof(RawImage)).GetComponent<RawImage>();
-        image.texture = texture; image.raycastTarget = false; image.enabled = false;
-        if (additive != null) image.material = additive;
-        return image;
-    }
-
-    private void Stretch(RectTransform rect)
-    {
+        var rect = lines.rectTransform;
         rect.SetParent(root.transform, false);
         rect.anchorMin = Vector2.zero; rect.anchorMax = Vector2.one;
         rect.offsetMin = rect.offsetMax = Vector2.zero;
+        lines.raycastTarget = false;
+        var additive = FeelAssets.UiAdditive;
+        if (additive != null) lines.material = additive;
+        // The bash's emitters too, at spawn rather than at the first shove that lands.
+        BashImpact.Prepare();
     }
 
     private void Update()
@@ -115,7 +80,7 @@ public sealed class DodgeFlash : MonoBehaviour
         dodge.Succeeded += OnSucceeded;
     }
 
-    // The way the body goes is set just after the dodge starts (MovementAbilities), so the wind is read at the end of the frame.
+    // The way the body goes is set just after the dodge starts (MovementAbilities), so the streak is read at the end of the frame.
     private void OnStarted(DodgeKind kind, int side)
     {
         if (kind == DodgeKind.Step) pendingStep = true;
@@ -123,80 +88,63 @@ public sealed class DodgeFlash : MonoBehaviour
 
     private void OnSucceeded(DodgeKind kind, int side)
     {
-        pendingStep = false;
-        lines.Burst(SpeedLinesGraphic.Flow.Out, Vector2.zero, RedLines, RedSeconds, KitStyle.With(Blood, RedAlpha), RedWidth, RedKink);
-        Rim(Blood, RedRim);
-        var glint = CombatEdgeGlint.For(this);
-        glint?.Show(-1, Blood, .8f, .3f);
-        glint?.Show(1, Blood, .8f, .3f);
-        // The dodge's own afterimages and wind lines in the world go red with it.
-        GetComponent<DodgeDash>()?.Succeed();
-        // A blink of red over the whole picture, gone with the lines.
-        KillConfirmEffect.Parry(new ParryScreenLook
-        {
-            Flash = .2f, Chromatic = .8f, Lens = -.18f, Saturation = -35f, Contrast = 18f, Bloom = 1.2f, Vignette = .4f,
-            Hold = .08f, Fade = .28f, Filter = new Color(1f, .8f, .8f), VignetteColor = new Color(.45f, .02f, .04f)
-        });
+        // This very dodge's strokes, if its start was still waiting for the end of the frame.
+        if (pendingStep) { pendingStep = false; StepAir(); }
+        // The one streak goes red: in the world, on every PC.
+        if (TryGetComponent(out DodgeDash dash)) dash.Succeed(kind == DodgeKind.Micro ? side : 0);
+        if (!InBody()) return;
+        var red = KitStyle.With(Blood, strokeAlpha);
+        // On the screen: the strokes under way, held long enough to be seen red; a Q/E slip has none, so red strokes go
+        // by the way it slipped. A step back's red streak is ahead, in the world.
+        if (lines.Showing) lines.Flare(red, strokeSeconds * .8f);
+        else if (kind == DodgeKind.Micro && side != 0) Strokes(SpeedLinesGraphic.Flow.Across, side > 0 ? -1f : 1f, red);
     }
 
     private void LateUpdate()
     {
         if (Time.timeScale <= 0f) return;
-        float dt = Mathf.Min(.05f, Time.unscaledDeltaTime);
         if (pendingStep) { pendingStep = false; StepAir(); }
-        lines.Advance(dt);
-        if (popTime < 1f)
-        {
-            popTime = Mathf.Min(1f, popTime + dt / PopSeconds);
-            // Up fast from the edge, then gone.
-            float swell = 1f - (1f - popTime) * (1f - popTime);
-            pop.rectTransform.localScale = new Vector3(1f, Mathf.Lerp(.55f, 1.15f, swell), 1f);
-            pop.color = KitStyle.With(Air, PopAlpha * (1f - popTime));
-            pop.enabled = popTime < 1f;
-        }
-        if (rimTime >= 1f) return;
-        rimTime = Mathf.Min(1f, rimTime + dt / RimSeconds);
-        float fade = 1f - rimTime;
-        rim.color = KitStyle.With(rimColor, rimStrength * fade * fade);
-        rim.enabled = rimTime < 1f;
+        lines.Advance(Mathf.Min(.05f, Time.unscaledDeltaTime));
     }
 
-    // The wind goes past the way the body goes: sideways for a side step, in from the edges for a step back.
+    // The streak seen from inside: across the low screen for a side step, out round the middle for a step in. A step
+    // back shows none here: its afterimage and streak are in the world ahead, in view.
     private void StepAir()
     {
+        if (strokes <= 0 || !InBody()) return;
         if (view == null) view = GetComponentInChildren<Camera>();
         Transform eyes = view != null ? view.transform : transform;
         Vector3 moving = player.Abilities.ActionDirection;
         float across = Vector3.Dot(moving, Vector3.ProjectOnPlane(eyes.right, Vector3.up).normalized);
         float ahead = Vector3.Dot(moving, Vector3.ProjectOnPlane(eyes.forward, Vector3.up).normalized);
-        var color = KitStyle.With(Air, AirAlpha);
-        if (Mathf.Abs(across) >= Mathf.Abs(ahead) * .7f)
-            lines.Burst(SpeedLinesGraphic.Flow.Across, new Vector2(across > 0f ? -1f : 1f, 0f), AirLines, AirSeconds, color, AirWidth, AirKink);
-        else lines.Burst(ahead < 0f ? SpeedLinesGraphic.Flow.In : SpeedLinesGraphic.Flow.Out, Vector2.zero, AirLines, AirSeconds, color, AirWidth, AirKink);
-        Rim(Air, AirRim);
-        popTime = 0f; pop.enabled = true;
+        var white = KitStyle.With(Air, strokeAlpha);
+        if (Mathf.Abs(across) >= Mathf.Abs(ahead) * .7f) Strokes(SpeedLinesGraphic.Flow.Across, across > 0f ? -1f : 1f, white);
+        else if (ahead > 0f) Strokes(SpeedLinesGraphic.Flow.Out, 1f, white);
     }
 
-    private void Rim(Color color, float strength)
+    // way: which way an Across flow goes (the world slides the other way past a side step).
+    private void Strokes(SpeedLinesGraphic.Flow flow, float way, Color color)
+        => lines.Burst(flow, new Vector2(way, 0f), strokes, strokeSeconds, color, strokeWidth, strokeKink, true);
+
+    // Seen from its own eyes. From outside the body (third person) the world's beat is all in view and the screen needs none.
+    private bool InBody()
     {
-        rimColor = color; rimStrength = strength; rimTime = 0f;
-        rim.enabled = true;
-        rim.color = KitStyle.With(color, strength);
+        var camera = Camera.main;
+        Transform eyes = PlayerView.EyesOf(player);
+        return camera == null || eyes == null || (camera.transform.position - eyes.position).sqrMagnitude < .36f;
     }
 
     private void OnDestroy()
     {
         if (dodge != null) { dodge.Started -= OnStarted; dodge.Succeeded -= OnSucceeded; }
         if (root != null) Destroy(root);
-        if (rimTexture != null) Destroy(rimTexture);
-        if (popTexture != null) Destroy(popTexture);
     }
 }
 
 /// <summary>
-/// Thin lines kinked twice like a bolt (the dodge reference's wind lines), fading in from their tails: across the screen
-/// at heights kept off its middle band, in from its edges, or out from round its middle. Each comes and goes on its own
-/// within the burst. Drawn by DodgeFlash.
+/// Lines kinked twice like a bolt (the dodge reference's streak), fading in from their tails: across the screen, in from
+/// its edges, or out from round its middle. Together (the dodge's one beat) they go as one stroke, evenly spread, across
+/// the low screen; otherwise each comes and goes on its own within the burst, off the screen's middle band. Drawn by DodgeFlash.
 /// </summary>
 [RequireComponent(typeof(CanvasRenderer))]
 public sealed class SpeedLinesGraphic : MaskableGraphic
@@ -210,11 +158,14 @@ public sealed class SpeedLinesGraphic : MaskableGraphic
     private Flow flow;
     private float across = 1f;
 
+    /// <summary>A burst is on the screen.</summary>
+    public bool Showing => time < 1f && count > 0;
+
     /// <summary>
     /// A burst of count lines over seconds (real), of this colour and thickness (px), kinks jumping up to kinkPx off the
-    /// line; direction.x is the way an Across flow goes.
+    /// line; direction.x is the way an Across flow goes. together: one stroke of evenly spread lines, all at once.
     /// </summary>
-    public void Burst(Flow flow, Vector2 direction, int count, float seconds, Color color, float thickness, float kinkPx)
+    public void Burst(Flow flow, Vector2 direction, int count, float seconds, Color color, float thickness, float kinkPx, bool together = false)
     {
         this.flow = flow;
         across = direction.x < 0f ? -1f : 1f;
@@ -224,16 +175,33 @@ public sealed class SpeedLinesGraphic : MaskableGraphic
         kink = Mathf.Max(0f, kinkPx);
         this.color = color;
         time = 0f;
+        float turn = Random.value * 360f;
         for (int i = 0; i < this.count; i++)
         {
-            float place = flow == Flow.Across ? OffMiddle() : Random.value * 360f;
+            float even = this.count > 1 ? i / (this.count - 1f) : .5f;
+            float place = together
+                ? flow == Flow.Across ? Mathf.Lerp(.1f, .36f, even) + Random.Range(-.02f, .02f) : turn + i * 360f / this.count + Random.Range(-14f, 14f)
+                : flow == Flow.Across ? OffMiddle() : Random.value * 360f;
             lines[i] = new Line
             {
-                place = place, length = Random.Range(.18f, .42f), width = Random.Range(.7f, 1.3f),
-                delay = Random.Range(0f, .3f), speed = Random.Range(.85f, 1.3f),
+                place = place,
+                length = together ? Random.Range(.32f, .4f) : Random.Range(.18f, .42f),
+                width = together ? Random.Range(.9f, 1.1f) : Random.Range(.7f, 1.3f),
+                delay = together ? 0f : Random.Range(0f, .3f),
+                speed = together ? Random.Range(.96f, 1.04f) : Random.Range(.85f, 1.3f),
                 kinkA = Random.Range(-1f, 1f), kinkB = Random.Range(-1f, 1f)
             };
         }
+        SetVerticesDirty();
+    }
+
+    /// <summary>The burst under way turns this colour, its rest lasting at least atLeast real seconds so it is seen.</summary>
+    public void Flare(Color color, float atLeast)
+    {
+        if (!Showing) return;
+        this.color = color;
+        float rest = (1f - time) * seconds;
+        if (rest < atLeast) seconds = atLeast / Mathf.Max(.01f, 1f - time);
         SetVerticesDirty();
     }
 

@@ -4,85 +4,77 @@ using UnityEngine.Rendering;
 using MovementState = PlayerMovement.MovementState;
 
 /// <summary>
-/// The step dodge seen in the world, on every PC (user, 2026-11-12, memo 9: "이거 회피 VFX 레퍼런스. 이대로 참
-/// 멋있는 듯" — a Roblox "NEW DASH VFX" short; read frame by frame, it is these four parts, built here the same way):
-/// - a bright white pop at the foot that kicks off, and soft white smoke left on the floor there and where they land;
-/// - afterimages: the character itself, faintly see-through, in its own colours (user, 2026-11-12: "레퍼런스 영상처럼 내
-///   캐릭터가 잔상으로 보여야지 이건 뭐 사스케 스사노오냐?" — the first, pale cyan glowing ghost read as an aura): one
-///   where the dodge began, one halfway and one over the body as it arrives, each fading out in about a third of a second;
-/// - wind lines: thin glowing white lines with sharp kinks, like lightning, running from where it began to where the
-///   body is, at the feet, knees, waist and chest, trailing a little behind the start, thinning away once it lands;
-/// - two curls of air round the shoulders on arrival.
-/// An evade during the dodge (a blow let through, PlayerPerfectDefense) turns the dodge's lines and smoke red on this
-/// PC's own screen, the ghosts warming only a little so they still read as the character, and one more ghost is left
-/// where the blow went by (DodgeFlash calls Succeed, and paints the screen red). Friends see their own white.
-/// The ghosts are the body's skinned meshes baked at that moment and drawn with one shared shader (DodgeGhost) that is
-/// handed each renderer's own main texture and colour per draw, so any outfit or modded character needs nothing of its
-/// own. This PC's own player's start ghost fades in over a few hundredths of a second so the camera, still in its head
-/// when it is baked, never sees it from inside, and the lines at head height are left out in first person.
-/// Real time throughout. Numbers: Tables/Player.csv, row DodgeLook.
+/// The step dodge seen in the world, on every PC, as one bold beat (user, 2026-11-12, memo 9: the reference, a Roblox
+/// "NEW DASH VFX" short, "이대로 참 멋있는 듯"; then "회피가 레퍼런스 영상처럼 걍 딱 굵게 한 번만 나오면 될 것 같은데.
+/// 레퍼런스대로 해 달라니까..."). Read frame by frame, each dash in it is one burst that comes all at once and is gone in
+/// about a third of a second, and this draws the same three things, once, at the kick-off:
+/// - a bright white puff where the foot kicks off;
+/// - one afterimage left where the dash began: the character itself, faintly see-through ("내 캐릭터가 잔상으로");
+/// - one streak: three bold glowing white lines with sharp kinks, like lightning, from just behind where it began to the
+///   body, at the feet, knees and waist, thinning away together once it lands.
+/// Nothing follows it (no ghost halfway or over the arrived body, no smoke on landing, no curls of air): the dash itself
+/// lasts 0.14 s, so the streak's heads riding on the body that long still land as one stroke.
+/// An evade (a blow let through, PlayerPerfectDefense) turns the streak red on every PC: Succeed here on the evader's PC,
+/// ShowEvaded on the others' copies of them (PlayerNetworkCombat), so friends see what the evader sees (the user's rule,
+/// "내가 보는 화면이 진실"). A Q/E slip has no dash: it gets a short red streak to the body from the side it slipped from.
+/// The afterimage is the body's skinned meshes baked at that moment and drawn with one shared shader (DodgeGhost) handed
+/// each renderer's own main texture and colour per draw, so any outfit or modded character needs nothing of its own.
+/// This PC's own afterimage fades in over a few hundredths of a second so the camera, still in its head when it is baked,
+/// never sees it from inside, and in first person the streak keeps below the eyes. The first-person view of the same beat
+/// is DodgeFlash's. Real time throughout. Numbers: Tables/Player.csv, row DodgeLook.
 /// </summary>
 [DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.Cloth + 1)]
 public sealed class DodgeDash : MonoBehaviour, ITableBound
 {
-    [Header("Afterimages")]
-    [SerializeField, Range(0f, 1f), Tooltip("How solid a fresh afterimage is (the character itself, see-through; 1 would be solid).")]
+    [Header("The afterimage")]
+    [SerializeField, Range(0f, 1f), Tooltip("How solid it is when fresh (the character itself, see-through; 1 would be solid).")]
     private float ghostAlpha = .5f;
-    [SerializeField, Min(.05f), Tooltip("How long the start and halfway ghosts take to go (real s).")]
-    private float ghostSeconds = .32f;
-    [SerializeField, Min(.05f), Tooltip("How long the ghost over the arriving body takes to go (real s).")]
-    private float arrivalSeconds = .2f;
-    [SerializeField, Min(0f), Tooltip("A ghost rises over this long (real s), so this PC's own camera is out of it first.")]
+    [SerializeField, Min(.05f), Tooltip("How long it takes to go (real s).")]
+    private float ghostSeconds = .3f;
+    [SerializeField, Min(0f), Tooltip("This PC's own rises over this long (real s), so its camera is out of it first.")]
     private float ghostRise = .04f;
-    [SerializeField, Min(1000), Tooltip("Most vertices baked into one ghost: the biggest meshes of a heavy outfit are left out past it.")]
+    [SerializeField, Min(1000), Tooltip("Most vertices baked into it: the biggest meshes of a heavy outfit are left out past it.")]
     private int ghostVertexBudget = 150000;
-    [Header("Wind lines")]
-    [SerializeField, Min(0), Tooltip("Lines per dodge, from the feet up (the ones at head height are left out in first person).")]
-    private int lineCount = 5;
+    [Header("The streak")]
+    [SerializeField, Min(0), Tooltip("Its lines, from the feet up (one at the eyes would be left out in first person).")]
+    private int lineCount = 3;
     [SerializeField, Tooltip("Their heights off the floor (m), one per line; the last repeats.")]
-    private float[] lineHeights = { .1f, .45f, .8f, 1.15f, 1.5f };
+    private float[] lineHeights = { .2f, .55f, .9f };
     [SerializeField, Min(.001f), Tooltip("How thick (m).")]
-    private float lineWidth = .028f;
+    private float lineWidth = .06f;
     [SerializeField, Min(0f), Tooltip("How far the kinks jump off the line (m).")]
-    private float lineKink = .14f;
-    [SerializeField, Min(0f), Tooltip("How far a line trails behind where the dodge began (m).")]
-    private float lineTail = .55f;
-    [SerializeField, Min(.05f), Tooltip("How long they take to thin away once the body lands (real s).")]
-    private float lineSeconds = .24f;
-    [SerializeField, Tooltip("Their colour.")]
+    private float lineKink = .12f;
+    [SerializeField, Min(0f), Tooltip("How far it trails behind where the dodge began (m).")]
+    private float lineTail = .4f;
+    [SerializeField, Min(.05f), Tooltip("How long it takes to thin away once the body lands (real s).")]
+    private float lineSeconds = .22f;
+    [SerializeField, Tooltip("Its colour.")]
     private Color lineColor = new Color(.95f, .98f, 1f, 1f);
-    [SerializeField, Min(0f), Tooltip("How bright the lines and the pop burn (above 1 glows).")]
-    private float lineGlow = 2.3f;
-    [Header("Kick-off and smoke")]
-    [SerializeField, Min(0f), Tooltip("The white pop at the foot (m across).")]
-    private float popSize = .5f;
-    [SerializeField, Min(0), Tooltip("Smoke puffs where it kicks off; half as many where it lands.")]
-    private int smokePuffs = 6;
+    [SerializeField, Min(0f), Tooltip("How bright it burns (above 1 glows).")]
+    private float lineGlow = 3f;
+    [Header("The kick-off puff")]
+    [SerializeField, Min(0f), Tooltip("Its bright core (m across).")]
+    private float popSize = .8f;
+    [SerializeField, Min(0), Tooltip("Soft puffs of smoke thrown back round it.")]
+    private int smokePuffs = 3;
     [SerializeField, Min(.05f), Tooltip("How long a puff lasts (real s).")]
-    private float smokeSeconds = .5f;
-    [Header("Air round the shoulders on arrival")]
-    [SerializeField, Min(0), Tooltip("Curls of air round the body as it lands (0 turns them off).")]
-    private int curls = 2;
-    [SerializeField, Min(.05f), Tooltip("How long they last (real s).")]
-    private float curlSeconds = .22f;
-    [Header("A dodge that let a blow through (this PC's own)")]
-    [SerializeField, Tooltip("The lines and smoke go this colour.")]
+    private float smokeSeconds = .35f;
+    [Header("An evade (a blow let through)")]
+    [SerializeField, Tooltip("The streak goes this colour.")]
     private Color successLine = new Color(1f, .14f, .12f, 1f);
-    [SerializeField, Tooltip("The afterimages warm towards this colour, only a little: they stay the character.")]
-    private Color successWarm = new Color(1f, .35f, .3f, 1f);
-    [SerializeField, Range(0f, .5f), Tooltip("How far they warm (0: not at all).")]
-    private float successWarmShare = .12f;
+    [SerializeField, Min(.1f), Tooltip("A Q/E slip has no dash: its red streak runs this far (m) to the body from the side it slipped from.")]
+    private float slipLength = .9f;
 
     // The ghost shader's properties (Resources/Combat/Shaders/DodgeGhost), set per draw from each renderer's own look.
     private const string GhostShader = "Combat/Shaders/DodgeGhost";
     private static readonly int MainTexId = Shader.PropertyToID("_MainTex"), MainTexStId = Shader.PropertyToID("_MainTex_ST"),
-        ColorId = Shader.PropertyToID("_Color"), CutId = Shader.PropertyToID("_Cut"), AlphaId = Shader.PropertyToID("_Alpha"),
-        WarmId = Shader.PropertyToID("_Warm");
-    // The longest a dodge is followed before it is taken as over (real s), and when the halfway ghost is baked.
-    private const float MostDash = .5f, HalfwayAt = .07f;
+        ColorId = Shader.PropertyToID("_Color"), CutId = Shader.PropertyToID("_Cut"), AlphaId = Shader.PropertyToID("_Alpha");
+    // The longest a dodge is followed before it is taken as over (real s), and how long a copy holds word of an evade
+    // for a dash that hasn't begun on it yet.
+    private const float MostDash = .5f, RedWait = .35f;
     // First person, a line keeps at least this far below the eyes (m), or it would pass through the camera.
     private const float EyeClear = .4f;
-    private const int LinePoints = 5, CurlPoints = 9;
+    private const int LinePoints = 5;
 
     // One piece of a baked mesh's look: the texture, its tiling, the colour its own material draws it with, and 1 when
     // the texture's alpha cuts it (cut-out and see-through materials).
@@ -100,15 +92,17 @@ public sealed class DodgeDash : MonoBehaviour, ITableBound
         public readonly List<Look> looks = new List<Look>();
         public int used;
         public float age, seconds, rise;
-        public bool live, warm;
+        public bool live;
     }
 
+    // One line of a streak, from where it began (from, going way) to the head it is placed at.
     private sealed class Line
     {
         public LineRenderer renderer;
-        public Vector3[] points;
+        public readonly Vector3[] points = new Vector3[LinePoints];
+        public Vector3 from, way;
         public float height, side, kinkA, kinkB, tail, age, seconds;
-        public bool live, curl, following;
+        public bool live, following;
     }
 
     private static Material ghostMaterial;
@@ -119,17 +113,24 @@ public sealed class DodgeDash : MonoBehaviour, ITableBound
     private Material lineMaterial;
 
     private PlayerMovement player;
-    private readonly Ghost[] ghosts = { new Ghost(), new Ghost(), new Ghost(), new Ghost() };
+    // One afterimage a dodge; two, for a dodge chained on a confirmed one while the first's is still fading.
+    private readonly Ghost[] ghosts = { new Ghost(), new Ghost() };
     private readonly List<Line> lines = new List<Line>();
     private readonly List<SkinnedMeshRenderer> skins = new List<SkinnedMeshRenderer>();
     private readonly List<Material> materials = new List<Material>();
     // Made on the first draw: Unity refuses one made in a field initializer (the component's constructor).
     private MaterialPropertyBlock block;
     private Transform lineHolder;
-    private Vector3 start, direction;
-    private float dashAge;
+    private Vector3 direction;
+    private float dashAge, redUntil;
     private int lastActivation;
-    private bool wasDodging, dashing, halfwayBaked, red;
+    private bool wasDodging, dashing;
+
+    /// <summary>
+    /// This PC's own player let a blow through a dodge (side: the lean side of a Q/E slip, 0 for a step):
+    /// PlayerNetworkCombat tells the other PCs, whose copies show it (ShowEvaded).
+    /// </summary>
+    public event System.Action<int> Evaded;
 
     private bool Mine => player != null && player.IsLocal && !player.IsNetworkDriven;
 
@@ -142,27 +143,44 @@ public sealed class DodgeDash : MonoBehaviour, ITableBound
     void ITableBound.OnTableApplied() { if (lineHeights == null || lineHeights.Length == 0) lineHeights = new[] { .5f }; }
 
     /// <summary>
-    /// This PC's own player let a blow through a dodge (DodgeFlash): the dodge under way flares, its lines red and its
-    /// ghosts warming a touch; one more ghost, warmed, is left over the body (with none under way, a Q/E slip, red smoke).
+    /// This PC's own player let a blow through a dodge (DodgeFlash): the streak goes red here, and on every other PC
+    /// through Evaded. side: the lean side of a Q/E slip, 0 for a step.
     /// </summary>
-    public void Succeed()
+    public void Succeed(int side = 0)
     {
-        if (!Application.isPlaying || player == null) return;
-        red = true;
-        bool any = false;
-        foreach (var ghost in ghosts)
-        {
-            if (!ghost.live) continue;
-            ghost.warm = true;
-            ghost.age = Mathf.Min(ghost.age, ghost.rise); any = true;
-        }
-        foreach (var line in lines) if (line.live) Tint(line, successLine);
-        // One more afterimage where the blow went by; not with the camera inside that body.
-        if (!ViewInBody()) Bake(Free(), arrivalSeconds * 1.6f, 0f, true);
-        if (!any) Puffs(transform.position, smokePuffs / 2, new Color(successLine.r, successLine.g, successLine.b, .45f));
+        if (Flare(side) && Mine) Evaded?.Invoke(side);
     }
 
-    // This PC's own player seen from its own eyes (first person): a ghost over the body would be all round the camera.
+    /// <summary>Another PC's player let a blow through a dodge (EvadedRpc): their copy's streak goes red as it did there.</summary>
+    public void ShowEvaded(int side) => Flare(side);
+
+    // The streak under way goes red, the part already let go held a moment longer; with none (a Q/E slip, or word of it
+    // come after the streak is gone) a short red streak runs to the body from the side the blow went by.
+    private bool Flare(int side)
+    {
+        if (!Application.isPlaying || player == null) return false;
+        bool any = false;
+        foreach (var line in lines)
+        {
+            if (!line.live) continue;
+            Tint(line, successLine);
+            if (!line.following) line.age = 0f;
+            any = true;
+        }
+        if (any) return true;
+        // A copy can hear of a step's evade before its own dash has begun (the word and the movement come apart): that
+        // dash begins red.
+        if (side == 0 && !Mine) { redUntil = Time.unscaledTime + RedWait; return true; }
+        Vector3 way = side != 0 ? transform.right * side : direction.sqrMagnitude > .5f ? direction : -transform.forward;
+        way = Vector3.ProjectOnPlane(way, Vector3.up);
+        if (way.sqrMagnitude < 1e-4f) way = -Vector3.ProjectOnPlane(transform.forward, Vector3.up);
+        way.Normalize();
+        Vector3 at = transform.position;
+        Streak(at - way * slipLength, way, at, false, successLine);
+        return true;
+    }
+
+    // This PC's own player seen from its own eyes (first person): a line through the head would cross the camera.
     private bool ViewInBody()
     {
         if (!Mine) return false;
@@ -186,96 +204,72 @@ public sealed class DodgeDash : MonoBehaviour, ITableBound
         TickLines(dt);
     }
 
-    // The dodge kicks off: the pop and the smoke at the foot, the first ghost, the lines starting from here.
+    // The beat, all at once: the puff at the foot, the one afterimage where it began, the streak from there.
     private void Begin()
     {
         if (dashing) Land();
-        dashing = true; halfwayBaked = red = false; dashAge = 0f;
-        start = transform.position;
+        dashing = true; dashAge = 0f;
+        Vector3 start = transform.position;
         direction = player.Abilities != null ? Vector3.ProjectOnPlane(player.Abilities.ActionDirection, Vector3.up) : Vector3.zero;
         if (direction.sqrMagnitude < 1e-4f) direction = -Vector3.ProjectOnPlane(transform.forward, Vector3.up);
         direction.Normalize();
         Pop(start + Vector3.up * .08f);
         Puffs(start, smokePuffs, new Color(.95f, .97f, 1f, .5f));
-        Bake(Free(), ghostSeconds, Mine ? ghostRise : 0f, false);
-        Vector3 side = Vector3.Cross(Vector3.up, direction);
+        Bake(Free(), ghostSeconds, Mine ? ghostRise : 0f);
+        Streak(start, direction, start, true, Time.unscaledTime < redUntil ? successLine : lineColor);
+        redUntil = 0f;
+    }
+
+    // The dash lasts 0.14 s: the streak keeps its heads on the body as it goes, so it lands as one stroke.
+    private void Follow(float dt)
+    {
+        dashAge += dt;
+        Vector3 at = transform.position;
+        foreach (var line in lines) if (line.live && line.following) Place(line, at);
+    }
+
+    // Landed: the streak lets go of the body and thins away. Nothing new comes: one beat.
+    private void Land()
+    {
+        dashing = false;
+        foreach (var line in lines) if (line.live && line.following) { line.following = false; line.age = 0f; }
+    }
+
+    // One streak: lineCount kinked lines from just behind from to head, at their heights, all going together.
+    // following: their heads ride on the body until it lands.
+    private void Streak(Vector3 from, Vector3 way, Vector3 head, bool following, Color color)
+    {
         // In first person the lines keep below the eyes, crouched or standing, or they would run through the camera.
         Transform eyes = ViewInBody() ? PlayerView.EyesOf(player) : null;
-        float clear = eyes != null ? eyes.position.y - start.y - EyeClear : float.PositiveInfinity;
+        float clear = eyes != null ? eyes.position.y - from.y - EyeClear : float.PositiveInfinity;
         for (int i = 0; i < lineCount; i++)
         {
             float height = lineHeights[Mathf.Min(i, lineHeights.Length - 1)];
             if (height > clear) continue;
-            var line = Take(false);
-            line.height = height; line.side = Random.Range(-.22f, .22f);
+            var line = Take();
+            line.from = from; line.way = way;
+            line.height = height; line.side = Random.Range(-.16f, .16f);
             line.kinkA = Random.Range(-1f, 1f) * lineKink; line.kinkB = Random.Range(-1f, 1f) * lineKink;
-            line.tail = lineTail * Random.Range(.5f, 1f);
-            line.following = true; line.age = 0f; line.seconds = lineSeconds * Random.Range(.85f, 1.15f);
-            Tint(line, lineColor);
-            Place(line, start, side);
+            line.tail = lineTail * Random.Range(.6f, 1f);
+            line.following = following; line.age = 0f; line.seconds = lineSeconds;
+            Tint(line, color);
+            Place(line, head);
         }
     }
 
-    // On the way: the lines' heads keep up with the body, and halfway a second ghost is left.
-    private void Follow(float dt)
+    // A line from its tail behind where it began to the head, kinked twice on the way like a bolt.
+    private static void Place(Line line, Vector3 head)
     {
-        dashAge += dt;
-        Vector3 at = transform.position, side = Vector3.Cross(Vector3.up, direction);
-        foreach (var line in lines) if (line.live && line.following) Place(line, at, side);
-        // Baked round the moving body, so in first person it rises once the camera has gone on out of it.
-        if (!halfwayBaked && dashAge >= HalfwayAt)
-        {
-            halfwayBaked = true;
-            Bake(Free(), ghostSeconds * .85f, Mine ? ghostRise : 0f, red);
-        }
-    }
-
-    // Landed: the ghost over the arriving body, a little smoke, the curls of air, and the lines start to thin away.
-    private void Land()
-    {
-        dashing = false;
-        Vector3 at = transform.position;
-        foreach (var line in lines) if (line.live && line.following) { line.following = false; line.age = 0f; }
-        Puffs(at, smokePuffs / 2, new Color(.95f, .97f, 1f, .4f));
-        // Not in first person: the camera is right in the body they would wrap.
-        if (ViewInBody()) return;
-        Bake(Free(), arrivalSeconds, 0f, red);
-        for (int i = 0; i < curls; i++)
-        {
-            var curl = Take(true);
-            curl.height = i == 0 ? 1.05f : 1.35f; curl.side = Random.Range(0f, 360f);
-            curl.age = 0f; curl.seconds = curlSeconds; curl.following = false;
-            Tint(curl, red ? successLine : lineColor);
-            Curl(curl, at);
-        }
-    }
-
-    // A wind line from the tail behind the start to the body, kinked twice on the way like a bolt.
-    private void Place(Line line, Vector3 head, Vector3 side)
-    {
+        Vector3 side = Vector3.Cross(Vector3.up, line.way);
         Vector3 up = Vector3.up * line.height, across = side * line.side;
-        Vector3 from = start + up + across, to = head + up + across;
+        Vector3 from = line.from + up + across, to = head + up + across;
         var points = line.points;
-        points[0] = from - direction * line.tail;
+        points[0] = from - line.way * line.tail;
         points[1] = from;
         points[2] = Vector3.Lerp(from, to, .38f) + side * line.kinkA + Vector3.up * (line.kinkA * .4f);
         points[3] = Vector3.Lerp(from, to, .68f) - side * line.kinkB - Vector3.up * (line.kinkB * .4f);
         points[4] = to;
         line.renderer.SetPositions(points);
-    }
-
-    // A curl of air round the body: most of a circle at that height, wider at one end, starting at a random turn.
-    private void Curl(Line curl, Vector3 at)
-    {
-        var points = curl.points;
-        for (int i = 0; i < CurlPoints; i++)
-        {
-            float t = i / (CurlPoints - 1f);
-            float angle = (curl.side + t * 230f) * Mathf.Deg2Rad;
-            float radius = Mathf.Lerp(.32f, .5f, t);
-            points[i] = at + new Vector3(Mathf.Cos(angle) * radius, curl.height + t * .12f, Mathf.Sin(angle) * radius);
-        }
-        curl.renderer.SetPositions(points);
     }
 
     private void TickLines(float dt)
@@ -287,9 +281,8 @@ public sealed class DodgeDash : MonoBehaviour, ITableBound
             line.age += dt;
             float left = 1f - line.age / line.seconds;
             if (left <= 0f) { line.live = false; line.renderer.enabled = false; continue; }
-            // Thinning away, and a curl drifting up and out as it goes.
-            line.renderer.widthMultiplier = lineWidth * (line.curl ? 1.3f : 1f) * left;
-            if (line.curl) { Curl(line, transform.position + Vector3.up * (line.age * .5f)); line.side += dt * 220f; }
+            // Bold nearly to the end, then gone: the beat doesn't trail off.
+            line.renderer.widthMultiplier = lineWidth * Mathf.Sqrt(left);
         }
     }
 
@@ -305,12 +298,9 @@ public sealed class DodgeDash : MonoBehaviour, ITableBound
             float rise = ghost.rise > 0f ? Mathf.Clamp01(ghost.age / ghost.rise) : 1f;
             float left = 1f - Mathf.Max(0f, ghost.age - ghost.rise) / ghost.seconds;
             if (left <= 0f) { ghost.live = false; continue; }
-            float alpha = ghostAlpha * rise * left * left;
-            var warm = ghost.warm ? new Color(successWarm.r, successWarm.g, successWarm.b, successWarmShare) : new Color(1f, 1f, 1f, 0f);
             // One block for every draw: DrawMesh copies it as it is when called.
             block ??= new MaterialPropertyBlock();
-            block.SetFloat(AlphaId, alpha);
-            block.SetColor(WarmId, warm);
+            block.SetFloat(AlphaId, ghostAlpha * rise * left * left);
             for (int i = 0; i < ghost.used; i++)
             {
                 var mesh = ghost.meshes[i];
@@ -330,8 +320,8 @@ public sealed class DodgeDash : MonoBehaviour, ITableBound
     }
 
     // The body as it is this moment, every skinned mesh of it that shows, up to the vertex budget, with each of its
-    // sub-meshes' own texture, tiling and colour. warm: a dodge that let a blow through.
-    private void Bake(Ghost ghost, float seconds, float rise, bool warm)
+    // sub-meshes' own texture, tiling and colour.
+    private void Bake(Ghost ghost, float seconds, float rise)
     {
         if (ghost == null || GhostMaterial() == null) return;
         skins.Clear();
@@ -364,7 +354,7 @@ public sealed class DodgeDash : MonoBehaviour, ITableBound
                 ghost.looks.Add(LookOf(materials.Count > 0 ? materials[Mathf.Min(part, materials.Count - 1)] : null));
             ghost.used++;
         }
-        ghost.age = 0f; ghost.seconds = seconds; ghost.rise = rise; ghost.warm = warm;
+        ghost.age = 0f; ghost.seconds = seconds; ghost.rise = rise;
         ghost.live = ghost.used > 0;
     }
 
@@ -416,7 +406,7 @@ public sealed class DodgeDash : MonoBehaviour, ITableBound
         return main;
     }
 
-    // The oldest ghost if all are still showing.
+    // The older ghost if both are still showing.
     private Ghost Free()
     {
         Ghost oldest = ghosts[0];
@@ -428,17 +418,14 @@ public sealed class DodgeDash : MonoBehaviour, ITableBound
         return oldest;
     }
 
-    private Line Take(bool curl)
+    private Line Take()
     {
         Line line = null;
-        foreach (var free in lines) if (!free.live && free.curl == curl) { line = free; break; }
+        foreach (var free in lines) if (!free.live) { line = free; break; }
         if (line == null)
         {
-            if (lineHolder == null)
-            {
-                lineHolder = FeelAssets.CreateRuntimeRoot("Dodge lines " + name).transform;
-            }
-            var host = new GameObject(curl ? "Dodge air curl" : "Dodge wind line");
+            if (lineHolder == null) lineHolder = FeelAssets.CreateRuntimeRoot("Dodge lines " + name).transform;
+            var host = new GameObject("Dodge streak line");
             host.transform.SetParent(lineHolder, false);
             var renderer = host.AddComponent<LineRenderer>();
             renderer.useWorldSpace = true;
@@ -447,8 +434,8 @@ public sealed class DodgeDash : MonoBehaviour, ITableBound
             renderer.numCapVertices = 0; renderer.numCornerVertices = 0;
             renderer.shadowCastingMode = ShadowCastingMode.Off; renderer.receiveShadows = false;
             renderer.sharedMaterial = LineMaterial();
-            line = new Line { renderer = renderer, curl = curl, points = new Vector3[curl ? CurlPoints : LinePoints] };
-            renderer.positionCount = line.points.Length;
+            renderer.positionCount = LinePoints;
+            line = new Line { renderer = renderer };
             lines.Add(line);
         }
         line.live = true;
@@ -494,12 +481,12 @@ public sealed class DodgeDash : MonoBehaviour, ITableBound
         return lineMaterial;
     }
 
-    // The white pop at the foot, and the smoke: one pair of emitters for every player's dodges.
+    // The white puff at the foot and its smoke: one pair of emitters for every player's dodges.
     private static void Emitters()
     {
         if (pop != null && smoke != null) return;
         var root = FeelAssets.CreateRuntimeRoot("Dodge Dash VFX").transform;
-        // Its own copy of the additive dot, pushed past 1 so the pop blooms as the reference's does (particle colours are 8-bit).
+        // Its own copy of the additive dot, pushed past 1 so the puff blooms as the reference's does (particle colours are 8-bit).
         var hot = new Material(FeelAssets.Particle(FeelAssets.SoftDot, true)) { name = "Dodge Pop (Runtime)", hideFlags = HideFlags.HideAndDontSave };
         if (hot.HasProperty("_Color")) hot.SetColor("_Color", new Color(2.4f, 2.4f, 2.4f, 1f));
         pop = FeelAssets.CreateEmitter("Dodge pop", root, hot, 24, 0f);
@@ -519,7 +506,7 @@ public sealed class DodgeDash : MonoBehaviour, ITableBound
         Emitters();
         pop.Emit(new ParticleSystem.EmitParams
         {
-            position = at, velocity = Vector3.zero, startSize = popSize, startLifetime = .12f,
+            position = at, velocity = Vector3.zero, startSize = popSize, startLifetime = .14f,
             startColor = new Color(1f, 1f, 1f, .95f)
         }, 1);
     }
@@ -535,8 +522,8 @@ public sealed class DodgeDash : MonoBehaviour, ITableBound
             puff.position = at + new Vector3(flat.x * .2f, .06f + Random.value * .1f, flat.y * .2f);
             // Thrown back off the kick and spreading low over the floor.
             puff.velocity = -direction * Random.Range(.6f, 1.6f) + new Vector3(flat.x, Random.Range(.15f, .5f), flat.y) * .5f;
-            puff.startSize = Random.Range(.25f, .42f);
-            puff.startLifetime = smokeSeconds * Random.Range(.8f, 1.1f);
+            puff.startSize = Random.Range(.3f, .48f);
+            puff.startLifetime = smokeSeconds * Random.Range(.85f, 1.1f);
             puff.startColor = color;
             smoke.Emit(puff, 1);
         }
