@@ -13,8 +13,8 @@ using UnityEngine;
 /// them (rootTurn 1), which is the same motion. Where turning the root would be wrong (a bone the body shares, another
 /// PhysBone starting under it) the chains' first bones are listed instead. Skirt chains (named like one) hanging from
 /// one bone become one ring, ordered round the body, so the legs and arms push the skirt as a whole; makers often give
-/// each skirt chain a PhysBone of its own. Breasts, hips and thighs become springs. Chains with the same settings share
-/// a row. Bones an outfit shares with the character are left out: they follow the character's own bones, which sway
+/// each skirt chain a PhysBone of its own. Breasts, hips, bellies and thighs become springs of flesh (Flesh). Chains with
+/// the same settings share a row. Bones an outfit shares with the character are left out: they follow the character's own bones, which sway
 /// already. VRChat's gimmicks (the AFK animals, a grabbable tongue or cheeks, a runny nose) are left out.
 /// Each row names the meshes that really hang from its bones (by skin weight: BOOTH meshes list the whole skeleton), so
 /// it rests while none of them shows.
@@ -32,7 +32,11 @@ using UnityEngine;
 /// Magica's falloff is the whole body's lean, not each bone's, and gravity pulled Mayo's side locks off her chest and
 /// into it). PhysBones slide along what they touch, so there is no friction: Magica's static friction held a strand
 /// that slowly met the body where it was, and her hair looked painted on (the user, 2026-11-12: "마요는 머리카락이 안
-/// 움직여. 어쩐지 내려온 옆머리가 가슴 쪽을 뚫더라"). Rings and springs keep the presets they were tuned with.
+/// 움직여. 어쩐지 내려온 옆머리가 가슴 쪽을 뚫더라"). Rings keep the preset they were tuned with.
+/// A spring of the body's flesh springs firm and heavy rather than as cloth (ClothPart.Flesh, FleshSpring): its maker's
+/// pull and spring become how many times a second it swings and how much of each swing it keeps, its limit cone holds
+/// it, and the bones its PhysBone ignores stay still, as in VRChat (the user, 2026-11-12: "가슴 물리가 살덩이처럼 좀
+/// 탱탱하고 질량이 느껴졌으면 좋겠어. 머리처럼 너무 흩날리는 느낌").
 /// </summary>
 internal static class VrcSway
 {
@@ -41,8 +45,10 @@ internal static class VrcSway
     /// 2: hanging chains carry their curves, hold their drawn shape, slide without friction and take half of immobile;
     /// switched-off PhysBones are skipped (2026-11-12).
     /// 3: skirt chains that each hang from a bone of their own join one ring (Sera Yura's pleats, 2026-11-12).
+    /// 4: springs of flesh carry firmness, bounce and the speed they feel, their makers' limit cones with their curves, and
+    /// the bones their PhysBones ignore (2026-11-12).
     /// </summary>
-    internal const int Version = 3;
+    internal const int Version = 4;
     // Depths down a chain where its curves are read: root, quarters, far end.
     private const int Samples = 5;
     // How much of a PhysBone's immobile carries over to a chain that hangs. VRChat makers set it high to calm what a
@@ -52,6 +58,11 @@ internal static class VrcSway
     // for the body, 360°/s felt by the cloth). Half keeps a calm maker's hair calmer than a free one's: Ichigo's back
     // hair takes 0.57 of the body's moves, near the 0.7 Kazusa's hand-tuned hair swings with.
     private const float ImmobileShare = .5f;
+    // How much VRChat's advanced stiffness (a bone keeping its turn) firms flesh beside pull: the weight Stiffness() gives
+    // it against pull's (.3 to .35).
+    private const float AdvancedHold = .86f;
+    // The table holding how makers' numbers become flesh (FleshBands).
+    private const string FleshTable = "ClothFlesh", FleshRow = "Default";
     private static readonly string[] SkirtWords = { "skirt", "スカート", "frill", "hem", "すそ", "裾" };
     private static readonly string[] SpringWords = { "breast", "bust", "oppai", "胸", "おっぱい", "butt", "hip", "thigh", "belly", "stomach", "jiggle" };
     private static readonly string[] GimmickWords = { "tongue", "舌", "cheek", "nose", "afk" };
@@ -71,6 +82,7 @@ internal static class VrcSway
         var meshes = root.GetComponentsInChildren<SkinnedMeshRenderer>(true).Where(mesh => mesh.sharedMesh != null && !Gimmick(mesh.transform)).ToList();
         var rows = new List<Dictionary<string, string>>();
         var done = new HashSet<Transform>();
+        var bands = FleshBands.Read();
 
         // Skirt chains hanging side by side from one bone: one ring. A chain may hang from a bone of its own holding
         // nothing else: Sera Yura hangs each of its twenty pleats from a Sera_Yura_Skirt_Dummy under Sera_Yura_Skirt_Root,
@@ -81,7 +93,7 @@ internal static class VrcSway
             var chains = hanging.Select(bone => bone.Root).Distinct().ToList();
             if (chains.Count < 4) continue;
             chains = RoundTheBody(hanging.Key, chains);
-            var row = Settings(hanging.First(), true, false, chains.Max(Reach), chains.Any(chain => chain.childCount == 0));
+            var row = Settings(hanging.First(), true, false, chains.Max(Reach), chains.Any(chain => chain.childCount == 0), bands);
             row["shapes"] = "legs|arms";
             if (!Finish(row, owner, hanging.Key.name + "-skirt", chains, meshes)) continue;
             rows.Add(row);
@@ -110,17 +122,21 @@ internal static class VrcSway
                 chains = new List<Transform> { bone.Root };
             else chains = ring ? RoundTheBody(bone.Root, starts) : starts;
             if (chains.Count == 0) continue;
-            var row = Settings(bone, ring, spring, chains.Max(Reach), chains.Any(chain => chain.childCount == 0));
+            var row = Settings(bone, ring, spring, chains.Max(Reach), chains.Any(chain => chain.childCount == 0), bands);
             row["shapes"] = Shapes(bone, ring, skirt, partOf);
             string key = owner + "|" + string.Join(",", row.OrderBy(p => p.Key, StringComparer.Ordinal).Select(p => p.Key + "=" + p.Value));
+            // Named after their own side (Breast.1_L.001, Breast.1_R.001), so they join a shared row after the key.
+            string still = spring ? string.Join("|", Still(bone, chains)) : "";
             if (!ring && lines.TryGetValue(key, out var same))
             {
                 var moved = MeshesMovedBy(chains, meshes);
                 if (moved.Count == 0) continue;
                 same["roots"] += "|" + string.Join("|", chains.Select(chain => chain.name));
                 same["parts"] = string.Join("|", same["parts"].Split('|').Concat(moved).Distinct());
+                if (still.Length > 0) same["still"] = same.TryGetValue("still", out var held) && held.Length > 0 ? held + "|" + still : still;
                 continue;
             }
+            if (still.Length > 0) row["still"] = still;
             if (!Finish(row, owner, bone.Root.name, chains, meshes)) continue;
             rows.Add(row);
             if (!ring) lines[key] = row;
@@ -174,7 +190,8 @@ internal static class VrcSway
         return used;
     }
 
-    private static Dictionary<string, string> Settings(VrcPrefab.PhysBone bone, bool ring, bool spring, float length, bool tip)
+    private static Dictionary<string, string> Settings(VrcPrefab.PhysBone bone, bool ring, bool spring, float length, bool tip,
+        FleshBands bands)
     {
         float stiffness = Stiffness(bone, -1f);
         float angle = bone.LimitType == 0 ? 90f : bone.LimitType == 1 ? bone.MaxAngleX : Mathf.Max(bone.MaxAngleX, bone.MaxAngleZ);
@@ -186,7 +203,7 @@ internal static class VrcSway
             ["rootTurn"] = "1",
             ["gravity"] = Text(spring ? 0f : Mathf.Clamp(bone.Gravity * 10f, 0f, 10f)),
             ["gravityFalloff"] = Text(Mathf.Clamp01(bone.GravityFalloff)),
-            ["damping"] = Text(spring ? .3f : Mathf.Lerp(.25f, .03f, Mathf.Clamp01(bone.Spring))),
+            ["damping"] = Text(Mathf.Lerp(.25f, .03f, Mathf.Clamp01(bone.Spring))),
             ["worldInertia"] = Text(Mathf.Clamp01(1f - bone.Immobile)),
             ["localInertia"] = "1",
             ["speedLimit"] = "5",
@@ -194,13 +211,14 @@ internal static class VrcSway
             ["windPower"] = ring ? "0.2" : "0.5",
             ["movingWind"] = ring ? "0" : "1",
             ["windSync"] = ring ? "0.7" : "0",
-            ["stiffness"] = Text(spring ? Mathf.Max(stiffness, .3f) : stiffness),
-            ["angleLimit"] = Text(Mathf.Clamp(spring ? Mathf.Min(angle, 20f) : angle, 5f, 180f)),
+            ["stiffness"] = Text(stiffness),
+            ["angleLimit"] = Text(Mathf.Clamp(angle, 5f, 180f)),
             ["friction"] = "0.05",
             ["teleportDistance"] = "2",
         };
         if (!ring && !spring) Hanging(row, bone, length);
         else if (bone.Radius > 0f && length > 0f) row["thickness"] = Text(Mathf.Clamp(bone.Radius / length, 0f, .5f));
+        if (spring) Flesh(row, bone, bands);
         if (tip)
         {
             float parent = bone.Root.parent != null ? Vector3.Distance(bone.Root.position, bone.Root.parent.position) : 0f;
@@ -256,6 +274,72 @@ internal static class VrcSway
         row["gravity"] = Text(Mathf.Clamp(gravity * 10f, 0f, 10f));
         row["gravityFalloff"] = "1";
         row["friction"] = "0";
+    }
+
+    // A spring of the body's flesh (breasts, a bottom, a belly, thighs), firm and heavy rather than cloth (ClothPart.Flesh,
+    // FleshSpring). How hard its maker pulls it back (pull; in VRChat's advanced mode its stiffness too) sets how many
+    // times a second it swings, and how much it wobbles on the way (spring) how much of each swing it keeps, both read
+    // down the whole chain and spread over ClothFlesh.csv's bands: Mayo's breasts (pull .9 rising from half, spring .95)
+    // swing 4.4 times a second keeping .27, Ichigo's (pull .38 and spring .85, both falling to half) 3.6 and .34. Its
+    // maker's limit cone holds it, curves included: Magica's spring preset kept its limit off, and this capped it at 20°.
+    // Stiffness and damping are worked out from those (ClothPart.Apply), and it takes no wind: wind and Magica's damping,
+    // which is air drag, are what hair streams back in.
+    private static void Flesh(Dictionary<string, string> row, VrcPrefab.PhysBone bone, FleshBands bands)
+    {
+        float pull = 0f, wobble = 0f;
+        var limit = new float[Samples];
+        for (int i = 0; i < Samples; i++)
+        {
+            float depth = i / (Samples - 1f);
+            float hold = bone.Integration == 1 ? VrcPrefab.PhysBone.At(bone.Stiffness, bone.StiffnessCurve, depth) * AdvancedHold : 0f;
+            pull += Mathf.Clamp01(VrcPrefab.PhysBone.At(bone.Pull, bone.PullCurve, depth) + hold) / Samples;
+            wobble += Mathf.Clamp01(VrcPrefab.PhysBone.At(bone.Spring, bone.SpringCurve, depth)) / Samples;
+            limit[i] = Mathf.Clamp(Limit(bone, depth), 5f, 180f);
+        }
+        row["firmness"] = Text(Mathf.Lerp(bands.SoftHz, bands.FirmHz, pull));
+        row["bounce"] = Text(Mathf.Lerp(bands.DeadBounce, bands.LiveBounce, wobble));
+        row["feltSpeed"] = Text(bands.FeltSpeed);
+        Down(row, "angleLimit", "angleCurve", limit);
+        row["stiffness"] = "";
+        row["damping"] = "";
+        row["windPower"] = "0";
+        row["movingWind"] = "0";
+    }
+
+    // The bones a PhysBone leaves out (its ignore list) inside these chains. VRChat holds them, and all under them, still
+    // against their parent; so does the row (ClothPart.still), where Magica would swing them as particles of their own:
+    // Mayo's and Ichigo's breasts each hang a helper bone from the tip back up (Breast.1_L.001, Breasts_R.002), and swung
+    // it pulled the spring down from 4.4 to 3.2 times a second and left it ringing. Only springs for now: a chain that
+    // hangs is fitted and laid down bone by bone (ClothBones), which would have to leave them out as well.
+    private static IEnumerable<string> Still(VrcPrefab.PhysBone bone, List<Transform> chains) =>
+        bone.Ignore.Where(ignored => ignored != null && chains.Any(chain => ignored != chain && ignored.IsChildOf(chain)))
+            .Select(ignored => ignored.name).Distinct();
+
+    // How makers' numbers become flesh (Tables/ClothFlesh): pull 0..1 spread from softHz to firmHz, spring 0..1 from
+    // deadBounce to liveBounce, and the speed of the body flesh feels. The defaults are the table's, for a missing table.
+    private sealed class FleshBands
+    {
+        public float SoftHz = 3f, FirmHz = 5f, DeadBounce = .5f, LiveBounce = .25f, FeltSpeed = 2f;
+
+        public static FleshBands Read()
+        {
+            var bands = new FleshBands();
+            if (!GameTables.TryGetRow(FleshTable, FleshRow, out var row))
+            {
+                Debug.LogWarning($"[BOOTH] Resources/Tables/{FleshTable}.csv의 {FleshRow} 줄이 없어 살 출렁임을 기본값으로 씁니다.");
+                return bands;
+            }
+            bands.SoftHz = Number(row, "softHz", bands.SoftHz);
+            bands.FirmHz = Number(row, "firmHz", bands.FirmHz);
+            bands.DeadBounce = Number(row, "deadBounce", bands.DeadBounce);
+            bands.LiveBounce = Number(row, "liveBounce", bands.LiveBounce);
+            bands.FeltSpeed = Number(row, "feltSpeed", bands.FeltSpeed);
+            return bands;
+        }
+
+        private static float Number(IReadOnlyDictionary<string, string> row, string column, float fallback) =>
+            row.TryGetValue(column, out var text) && float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out float value)
+                ? value : fallback;
     }
 
     // Pull (and in VRChat's advanced mode stiffness) as Magica's angle restoration, at a depth; below zero, the values

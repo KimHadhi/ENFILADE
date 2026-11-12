@@ -62,6 +62,27 @@ public sealed class ClothPart
     /// own curve, which the rows written by hand were tuned with; BoothImport writes VRChat's.
     /// </summary>
     public string angleCurve = "", stiffnessCurve = "", dampingCurve = "", thicknessCurve = "";
+    /// <summary>
+    /// For a spring: how firm the flesh is, as the times a second it swings back and forth (Hz). Above zero it springs
+    /// as flesh (FleshSpring): it turns about its still root within its angle limit, feels no air drag and no wind, and
+    /// its stiffness and damping are worked out from this and bounce. Zero keeps the preset's spring.
+    /// </summary>
+    public float firmness;
+    /// <summary>How much of each swing that flesh loses: its damping ratio (.5 swings back once, .25 two or three times).</summary>
+    public float bounce = .3f;
+    /// <summary>
+    /// The fastest movement of the body this part feels (m/s, Magica's local movement speed limit): what the body moves
+    /// beyond it the part goes along with. Zero keeps the preset's.
+    /// </summary>
+    public float feltSpeed;
+    /// <summary>
+    /// Bones under the roots that don't swing but keep to their parent as drawn, each with all under it, "name|name": a
+    /// VRChat PhysBone's ignore list, which VRChat holds still the same way.
+    /// </summary>
+    public string still = "";
+
+    /// <summary>A spring of the body's own flesh, which springs firm and heavy rather than as cloth (FleshSpring).</summary>
+    internal bool Flesh => spring && firmness > 0f;
 
     /// <summary>The bones the part hangs from, in the table's order: a ring runs through them in turn.</summary>
     internal List<Transform> FindRoots(Dictionary<string, Transform> bones, string model)
@@ -141,6 +162,18 @@ public sealed class ClothPart
         // Mayo's breast) is marked out of it, neither moved nor put back by this part, so only the outfit's rows move it.
         var foreign = new List<Transform>();
         foreach (var bone in bones) ClothBones.Collect(bone, null, foreign);
+        // Bones the row holds still are left out the same way, so they keep to their parent as drawn. Swung as particles
+        // of their own, the helper bones VRChat leaves out of Mayo's and Ichigo's breasts (hung from the tip back up)
+        // dragged the spring from 4.4 down to 3.2 swings a second and left it ringing.
+        if (!string.IsNullOrWhiteSpace(still))
+        {
+            var names = new HashSet<string>(System.StringComparer.Ordinal);
+            foreach (string name in still.Split(BoneSeparator))
+                if (name.Trim().Length > 0) names.Add(name.Trim());
+            foreach (var bone in bones)
+                foreach (var under in bone.GetComponentsInChildren<Transform>(true))
+                    if (under != bone && names.Contains(under.name)) foreign.AddRange(under.GetComponentsInChildren<Transform>(true));
+        }
         var attributes = cloth.GetSerializeData2().boneAttributeDict;
         foreach (var hung in foreign) attributes[hung] = VertexAttribute.Invalid;
         Apply(data, shape);
@@ -175,6 +208,8 @@ public sealed class ClothPart
         data.motionConstraint.maxDistance.SetValue(reach * length);
         data.motionConstraint.useBackstop = backstop >= 0f;
         data.motionConstraint.backstopDistance.SetValue(Mathf.Max(0f, backstop) * length);
+        if (feltSpeed > 0f) data.inertiaConstraint.localMovementSpeedLimit.SetValue(true, feltSpeed);
+        if (Flesh) FleshSpring.Apply(data, firmness, bounce);
     }
 
     // A number down the part: as its curve column says, or under the preset's own curve where the column is empty.
