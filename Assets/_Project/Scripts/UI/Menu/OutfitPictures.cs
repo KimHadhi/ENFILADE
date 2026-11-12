@@ -52,6 +52,10 @@ public struct OutfitFraming
 /// own piece share it) is used wherever the piece is photographed: the bake, the studio's fallback and the shooting
 /// window. Taken again in the editor, the picture and the framing are written into the project (the editor sets
 /// <see cref="ProjectWriter"/> and <see cref="FramingWriter"/>), so they ship; in a build they stay on the PC.
+/// A piece taken again can be put back as it came (기본값으로 in the shooting window, the user 2026-11-12: "옷장 사진 찍은 거
+/// 기본값으로 되돌리기 기능 넣어 줘"): <see cref="IsChanged"/> says whether there is anything to undo, and a build's undo
+/// deletes the PC's own (<see cref="DropOwn"/>, <see cref="DropAllOwn"/>); the editor's takes it again framed automatically
+/// (OutfitIcons.Restore).
 /// </summary>
 public static class OutfitPictures
 {
@@ -239,10 +243,109 @@ public static class OutfitPictures
         var stored = Persistent();
         if (framing.IsAuto) stored.Remove(piece);
         else stored[piece] = framing;
+        return WritePersistent();
+    }
+
+    // ---- Back as it came ----
+
+    /// <summary>
+    /// Whether the piece was framed by hand here, so 기본값으로 has something to undo: in the editor a row of the table
+    /// (or one set this run), in a build this PC's own framing (a row the game came with is the default there).
+    /// </summary>
+    public static bool IsChanged(string piece)
+    {
+        if (string.IsNullOrEmpty(piece)) return false;
+        if (FramingWriter != null) return !FramingOf(piece).IsAuto;
+        return Persistent().ContainsKey(piece);
+    }
+
+    /// <summary>Every piece <see cref="IsChanged"/> says was framed by hand, of every character.</summary>
+    public static List<string> ChangedPieces()
+    {
+        var pieces = new HashSet<string>(StringComparer.Ordinal);
+        if (FramingWriter != null)
+        {
+            // The table's first rows are its description ("#…"), not pieces.
+            foreach (string id in GameTables.RowIds(TableName))
+                if (!string.IsNullOrEmpty(id) && id[0] != '#') pieces.Add(id);
+        }
+        else
+        {
+            foreach (string id in Persistent().Keys) pieces.Add(id);
+        }
+        // Set this run: the table's next read may lag behind its file.
+        foreach (string id in set.Keys) pieces.Add(id);
+        pieces.RemoveWhere(id => !IsChanged(id));
+        return new List<string>(pieces);
+    }
+
+    /// <summary>
+    /// A build's undo of a piece: this PC's framing of it goes, and its pictures under <paramref name="keys"/>, so the
+    /// game's own come back (its baked pictures, framed as the game's table says). Returns how many pictures went.
+    /// </summary>
+    public static int DropOwn(string piece, IEnumerable<string> keys)
+    {
+        if (string.IsNullOrEmpty(piece)) return 0;
+        set.Remove(piece);
+        if (Persistent().Remove(piece)) WritePersistent();
+        int gone = 0;
+        if (keys != null)
+            foreach (string key in keys)
+                if (DeleteOwn(key)) gone++;
+        return gone;
+    }
+
+    /// <summary>A build's undo of every piece: all of this PC's framings and pictures go. Returns how many pictures went.</summary>
+    public static int DropAllOwn()
+    {
+        set.Clear();
+        Persistent().Clear();
+        int gone = 0;
+        string folder = Path.Combine(Application.persistentDataPath, PersistentFolder);
+        try
+        {
+            if (Directory.Exists(folder))
+                foreach (string file in Directory.GetFiles(folder, "*.png", SearchOption.AllDirectories))
+                {
+                    File.Delete(file);
+                    gone++;
+                }
+            string framings = Path.Combine(folder, PersistentFramings);
+            if (File.Exists(framings)) File.Delete(framings);
+        }
+        catch (Exception problem)
+        {
+            Debug.LogWarning("[OutfitPictures] " + folder + ": " + problem.Message);
+        }
+        return gone;
+    }
+
+    // This PC's own picture of a key deleted (a build's); false when there was none or it couldn't be.
+    private static bool DeleteOwn(string key)
+    {
+        string file = FileOf(key);
+        if (file.Length == 0) return false;
+        string path = PersistentPath(file);
+        try
+        {
+            if (!File.Exists(path)) return false;
+            File.Delete(path);
+            return true;
+        }
+        catch (Exception problem)
+        {
+            Debug.LogWarning("[OutfitPictures] " + path + ": " + problem.Message);
+            return false;
+        }
+    }
+
+    // A build's framings written back to the PC.
+    private static bool WritePersistent()
+    {
         try
         {
             var data = new Stored();
-            foreach (var pair in stored)
+            foreach (var pair in Persistent())
             {
                 data.pieces.Add(pair.Key);
                 data.framings.Add(pair.Value);

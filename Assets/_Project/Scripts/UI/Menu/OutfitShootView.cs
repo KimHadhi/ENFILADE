@@ -22,6 +22,11 @@ using UnityEngine.UI;
 /// (OutfitFraming.roll); the square shows in pink the part a plate of the list keeps and dims what the plate cuts
 /// (OutfitCropVeil); under it a plate and a tile of the wardrobe's own size show the live picture laid just as the
 /// wardrobe lays it (OutfitPictureGraphic), words and all.
+/// Then (2026-11-12: "옷장 사진 찍은 거 기본값으로 되돌리기 기능 넣어 줘"): 기본값으로 puts this piece back as it came, and
+/// 모두 기본값으로 every piece framed by hand, of every character (OutfitIcons.Restore, RestoreAll: in the editor the
+/// table's rows go and the pictures are taken again framed automatically, over the project's; in a build this PC's own
+/// framings and pictures are deleted). Each asks once more before it throws anything away, as the key window's 모두
+/// 기본값 does, and is faint when there is nothing to undo.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class OutfitShootView : MonoBehaviour, IBeginDragHandler, IDragHandler, IScrollHandler
@@ -36,6 +41,8 @@ public sealed class OutfitShootView : MonoBehaviour, IBeginDragHandler, IDragHan
     private const float TiltStep = 1f, TiltButton = 92f;
     // At most this many parts get a choice of their own (the rest are reached through 모두).
     private const int MostPartChoices = 4;
+    // How long 기본값으로 and 모두 기본값으로 wait for their second press (s), and their row's height (px).
+    private const float ConfirmSeconds = 3f, ResetHeight = 34f;
     // The plate and tile shown under the square: the gap between them and the room for their names above (px).
     private const float PreviewGap = 21f, PreviewName = 22f;
     // When the wardrobe doesn't say: its plates' and tiles' size and lean (px), as MainMenuWardrobe makes them.
@@ -53,6 +60,14 @@ public sealed class OutfitShootView : MonoBehaviour, IBeginDragHandler, IDragHan
     private RectTransform partsRow;
     private TextMeshProUGUI partsLabel;
     private readonly List<(Image back, TextMeshProUGUI label, int part)> partButtons = new List<(Image, TextMeshProUGUI, int)>();
+    // 기본값으로 and 모두 기본값으로, each waiting a while for its second press, and what they would undo: whether this
+    // piece was framed by hand, how many pieces are. The question stands where the note on where pictures are kept is.
+    private (Image back, TextMeshProUGUI label) reset, resetAll;
+    private TextMeshProUGUI keepNote;
+    private string keepText, pieceKey;
+    private float resetUntil = -1f, resetAllUntil = -1f;
+    private bool canReset;
+    private int changed;
     private OutfitStudio studio;
     private RenderTexture live;
     private OutfitFraming framing;
@@ -136,6 +151,14 @@ public sealed class OutfitShootView : MonoBehaviour, IBeginDragHandler, IDragHan
         where.textWrappingMode = TextWrappingModes.Normal;
         where.rectTransform.sizeDelta = new Vector2(columnWidth, 76f);
         where.alignment = TextAlignmentOptions.TopLeft;
+        view.keepNote = where;
+        view.keepText = where.text;
+
+        // 기본값으로 · 모두 기본값으로 above them: each asks once more before it throws anything away.
+        float half = (columnWidth - 8f) / 2f, resetRow = viewBottom - 46f - 8f - ResetHeight;
+        view.reset = Button(panel, new Vector2(column, resetRow), half, ResetHeight, Texts.Get("wardrobe.shoot.reset"), false, view.RestorePiece);
+        view.resetAll = Button(panel, new Vector2(column + half + 8f, resetRow), half, ResetHeight, Texts.Get("wardrobe.shoot.reset_all"), false,
+            view.RestoreEvery);
 
         // 자동으로 · 취소 · 저장 side by side along the square's foot.
         float third = (columnWidth - 16f) / 3f;
@@ -164,6 +187,10 @@ public sealed class OutfitShootView : MonoBehaviour, IBeginDragHandler, IDragHan
         colour = set ?? "";
         string key = item != null ? OutfitPictures.ItemPiece(skin.Id, item.id) : OutfitPictures.OwnPiece(skin.Id, slot);
         framing = OutfitPictures.FramingOf(key);
+        pieceKey = key;
+        canReset = OutfitPictures.IsChanged(pieceKey);
+        changed = OutfitPictures.ChangedPieces().Count;
+        LabelResets();
         if (tilt != null) tilt.SetValueWithoutNotify(Tilt);
         studio = new OutfitStudio();
         standing = studio.Stand(skin, item, colour, slot);
@@ -293,7 +320,14 @@ public sealed class OutfitShootView : MonoBehaviour, IBeginDragHandler, IDragHan
 
     private void LateUpdate()
     {
-        if (done || !dirty) return;
+        if (done) return;
+        // A first press of 기본값으로 or 모두 기본값으로 not followed by a second in time: they go back to what they were.
+        if ((resetUntil > 0f || resetAllUntil > 0f) && Time.unscaledTime > Mathf.Max(resetUntil, resetAllUntil))
+        {
+            resetUntil = resetAllUntil = -1f;
+            LabelResets();
+        }
+        if (!dirty) return;
         dirty = false;
         if (standing)
         {
@@ -322,6 +356,99 @@ public sealed class OutfitShootView : MonoBehaviour, IBeginDragHandler, IDragHan
         // Kept or not (a file that couldn't be written says so in the console), the piece's old pictures were let go and
         // new ones taken: the wardrobe puts them in.
         Close(true);
+    }
+
+    // ---- Back as it came ----
+
+    // 기본값으로: this piece's own framing and pictures go and it is pictured as it came (OutfitIcons.Restore). Asked twice,
+    // since what was framed by hand is thrown away. (Not named Reset: Unity calls a MonoBehaviour's Reset in the editor.)
+    private void RestorePiece()
+    {
+        if (done) return;
+        if (!canReset)
+        {
+            Say(Texts.Get("wardrobe.shoot.reset.none"));
+            KitSound.Play(KitSound.Cue.Refuse, .4f);
+            return;
+        }
+        if (Time.unscaledTime > resetUntil)
+        {
+            resetUntil = Time.unscaledTime + ConfirmSeconds;
+            resetAllUntil = -1f;
+            Ask(Texts.Get(OutfitPictures.ProjectWriter != null ? "wardrobe.shoot.reset.ask.editor" : "wardrobe.shoot.reset.ask.local"));
+            return;
+        }
+        // The window's own studio goes first: the editor takes the pictures again in one of their own.
+        studio?.Clear();
+        OutfitIcons.Restore(skin, item, slot);
+        KitSound.Play(KitSound.Cue.Buy, .5f);
+        Close(true);
+    }
+
+    // 모두 기본값으로: every piece framed by hand, of every character, put back the same way. Asked twice.
+    private void RestoreEvery()
+    {
+        if (done) return;
+        if (changed == 0)
+        {
+            Say(Texts.Get("wardrobe.shoot.reset_all.none"));
+            KitSound.Play(KitSound.Cue.Refuse, .4f);
+            return;
+        }
+        if (Time.unscaledTime > resetAllUntil)
+        {
+            resetAllUntil = Time.unscaledTime + ConfirmSeconds;
+            resetUntil = -1f;
+            Ask(Texts.Format(OutfitPictures.ProjectWriter != null ? "wardrobe.shoot.reset_all.ask.editor" : "wardrobe.shoot.reset_all.ask.local",
+                changed));
+            return;
+        }
+        studio?.Clear();
+        OutfitIcons.RestoreAll();
+        KitSound.Play(KitSound.Cue.Buy, .5f);
+        Close(true);
+    }
+
+    // The question where the note on where pictures are kept stands, and the buttons relabelled for the second press.
+    private void Ask(string question)
+    {
+        if (keepNote != null)
+        {
+            keepNote.text = question;
+            keepNote.color = KitStyle.Accent;
+        }
+        LabelResets();
+        KitSound.Play(KitSound.Cue.Ping, .3f);
+    }
+
+    private void Say(string text)
+    {
+        if (state != null) state.text = text;
+    }
+
+    // The two as they stand: faint with nothing to undo, pink while one waits for its second press; the note comes back
+    // once neither waits.
+    private void LabelResets()
+    {
+        float now = Time.unscaledTime;
+        bool askingOne = now <= resetUntil, askingAll = now <= resetAllUntil;
+        Paint(reset, canReset, askingOne, askingOne ? "wardrobe.shoot.reset.confirm" : "wardrobe.shoot.reset");
+        Paint(resetAll, changed > 0, askingAll, askingAll ? "wardrobe.shoot.reset_all.confirm" : "wardrobe.shoot.reset_all");
+        if (keepNote != null && !askingOne && !askingAll)
+        {
+            keepNote.text = keepText;
+            keepNote.color = KitStyle.Soft;
+        }
+    }
+
+    private static void Paint((Image back, TextMeshProUGUI label) button, bool usable, bool asking, string text)
+    {
+        if (button.label != null)
+        {
+            button.label.text = Texts.Get(text);
+            button.label.color = asking ? KitStyle.Ink : usable ? KitStyle.Text : KitStyle.With(KitStyle.Text, .35f);
+        }
+        if (button.back != null) button.back.color = asking ? KitStyle.Accent : KitStyle.With(KitStyle.Ice, usable ? .09f : .04f);
     }
 
     /// <summary>Closes it; <paramref name="retaken"/> tells the wardrobe the piece's pictures were taken again.</summary>
@@ -438,18 +565,22 @@ public sealed class OutfitShootView : MonoBehaviour, IBeginDragHandler, IDragHan
         return (back, label);
     }
 
-    // A slanted plate of a button: 저장 solid pink, the others faint.
-    private static void Button(RectTransform parent, Vector2 at, float width, float height, string text, bool accent, Action pressed)
+    // A slanted plate of a button: 저장 solid pink, the others faint. Its back and words, for a caller that relights them.
+    private static (Image back, TextMeshProUGUI label) Button(RectTransform parent, Vector2 at, float width, float height, string text, bool accent,
+        Action pressed)
     {
         var plate = KitStyle.TopLeft("Button " + text, parent, at, new Vector2(width, height));
         var back = KitStyle.Fill(plate, accent ? KitStyle.Accent : KitStyle.With(KitStyle.Ice, .09f));
         KitSkew.On(back, Slant);
         back.raycastTarget = true;
-        KitStyle.Flat(KitStyle.Stretch("Text", plate), text, height < 40f ? 16f : 20f, TextAlignmentOptions.Center, accent ? KitStyle.Ink : KitStyle.Text);
+        var label = KitStyle.Flat(KitStyle.Stretch("Text", plate), text, height < 40f ? 16f : 20f, TextAlignmentOptions.Center,
+            accent ? KitStyle.Ink : KitStyle.Text);
+        label.overflowMode = CombatUIAssets.ClippedOverflow(label);
         var button = plate.gameObject.AddComponent<UnityEngine.UI.Button>();
         button.transition = Selectable.Transition.None;
         button.targetGraphic = back;
         button.onClick.AddListener(() => pressed());
         plate.gameObject.AddComponent<KitHover>();
+        return (back, label);
     }
 }

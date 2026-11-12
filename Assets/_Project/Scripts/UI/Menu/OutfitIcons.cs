@@ -219,11 +219,7 @@ public sealed class OutfitIcons : MonoBehaviour
         string piece = item != null ? OutfitPictures.ItemPiece(skin.Id, item.id) : OutfitPictures.OwnPiece(skin.Id, slot);
         OutfitPictures.SetFraming(piece, framing);
         Forget(piece);
-        var colours = new List<string>();
-        if (item != null || skin.Variants.Count == 0) colours.Add("");
-        else
-            foreach (var variant in skin.Variants)
-                if (variant != null) colours.Add(variant.Id);
+        var colours = ColoursOf(skin, item);
         int kept = 0;
         var studio = new OutfitStudio();
         try
@@ -260,6 +256,100 @@ public sealed class OutfitIcons : MonoBehaviour
             taken.Remove(key);
             asked.Remove(key);
         }
+    }
+
+    // Every picture let go, as Forget lets go one piece's.
+    private static void ForgetAll()
+    {
+        var pieces = new HashSet<string>(StringComparer.Ordinal);
+        foreach (string key in taken.Keys) pieces.Add(OutfitPictures.PieceOf(key));
+        foreach (string key in asked) pieces.Add(OutfitPictures.PieceOf(key));
+        foreach (string piece in pieces) Forget(piece);
+    }
+
+    // The colour sets a piece's pictures are kept in: an item's first, every one of a character's own piece.
+    private static List<string> ColoursOf(PlayerBodyProfile.Skin skin, OutfitItem item)
+    {
+        var colours = new List<string>();
+        if (item != null || skin.Variants.Count == 0) colours.Add("");
+        else
+            foreach (var variant in skin.Variants)
+                if (variant != null) colours.Add(variant.Id);
+        return colours;
+    }
+
+    // ---- Putting a piece back as it came ----
+
+    /// <summary>
+    /// Puts a piece's framing and pictures back as they came (기본값으로; the user, 2026-11-12: "옷장 사진 찍은 거 기본값으로
+    /// 되돌리기 기능 넣어 줘"). In the editor its row of Tables/OutfitPictures.csv goes and its pictures are taken again in
+    /// the automatic framing, written over the project's as a picture taken again is (they ship; no bake is needed); in a
+    /// build this PC's own framing and pictures of it are deleted, so the game's own come back. Returns how many pictures
+    /// were taken again (the editor) or deleted (a build).
+    /// </summary>
+    public static int Restore(PlayerBodyProfile.Skin skin, OutfitItem item, string slot)
+    {
+        if (skin == null || (item == null && string.IsNullOrEmpty(slot))) return 0;
+        if (OutfitPictures.ProjectWriter != null) return Reshoot(skin, item, slot, OutfitFraming.Auto);
+        string piece = item != null ? OutfitPictures.ItemPiece(skin.Id, item.id) : OutfitPictures.OwnPiece(skin.Id, slot);
+        var keys = new List<string>();
+        foreach (string colour in ColoursOf(skin, item))
+            keys.Add(item != null ? OutfitPictures.ItemKey(skin.Id, item.id, colour) : OutfitPictures.OwnKey(skin.Id, slot, colour));
+        int gone = OutfitPictures.DropOwn(piece, keys);
+        Forget(piece);
+        Taken?.Invoke();
+        return gone;
+    }
+
+    /// <summary>
+    /// Every piece framed by hand (OutfitPictures.ChangedPieces: every character's) put back as <see cref="Restore"/>
+    /// puts one (모두 기본값으로). Returns how many pieces were put back.
+    /// </summary>
+    public static int RestoreAll()
+    {
+        var pieces = OutfitPictures.ChangedPieces();
+        if (OutfitPictures.ProjectWriter == null)
+        {
+            OutfitPictures.DropAllOwn();
+            // Pictures read from this PC's files went with them: every picture is found or taken again when next asked for.
+            ForgetAll();
+            Taken?.Invoke();
+            return pieces.Count;
+        }
+        var profile = PlayerBodyProfile.Load();
+        foreach (string piece in pieces)
+        {
+            if (Resolve(profile, piece, out var skin, out var item, out string slot)) Reshoot(skin, item, slot, OutfitFraming.Auto);
+            // Nothing of it left to photograph (its character or item is gone): only its row goes.
+            else OutfitPictures.SetFraming(piece, OutfitFraming.Auto);
+        }
+        return pieces.Count;
+    }
+
+    // A piece's key back to what it names ("item@skin@item" or "own@skin@slot"); false when it is no longer there.
+    private static bool Resolve(PlayerBodyProfile profile, string piece, out PlayerBodyProfile.Skin skin, out OutfitItem item, out string slot)
+    {
+        skin = null;
+        item = null;
+        slot = null;
+        string[] parts = (piece ?? "").Split(new[] { '@' }, 3);
+        if (profile == null || parts.Length < 3 || parts[2].Length == 0) return false;
+        foreach (var each in profile.Skins)
+            if (each != null && string.Equals(each.Id, parts[1], StringComparison.Ordinal))
+            {
+                skin = each;
+                break;
+            }
+        if (skin == null) return false;
+        if (parts[0] == "own")
+        {
+            slot = parts[2];
+            return true;
+        }
+        if (parts[0] != "item") return false;
+        item = OutfitCatalog.Item(parts[2]);
+        slot = item?.slot;
+        return item != null;
     }
 
     private void OnDestroy()

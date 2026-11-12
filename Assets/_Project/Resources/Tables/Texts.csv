@@ -1518,6 +1518,16 @@ wardrobe.shoot.part.left,왼쪽,Left,옷장 > 사진 다시 찍기 창 > 담을 
 wardrobe.shoot.part.middle,가운데,Middle,옷장 > 사진 다시 찍기 창 > 담을 쪽: 세 부분일 때 가운데
 wardrobe.shoot.part.right,오른쪽,Right,옷장 > 사진 다시 찍기 창 > 담을 쪽: 사진 오른쪽의 부분
 wardrobe.shoot.part.all,모두,All,옷장 > 사진 다시 찍기 창 > 담을 쪽: 모든 부분을 한 사진에
+wardrobe.shoot.reset,기본값으로,Default,"옷장 > 사진 다시 찍기 창: 이 옷의 구도와 사진을 처음 기본값으로 되돌린다(두 번 눌러야 한다). 에디터에서는 OutfitPictures.csv 줄이 지워지고 사진을 자동 구도로 다시 찍어 프로젝트의 사진 위에 쓴다. 빌드에서는 이 PC에 남긴 구도와 사진을 지운다"
+wardrobe.shoot.reset.confirm,한 번 더 누르면 되돌림,Press again,옷장 > 사진 다시 찍기 창 > 기본값으로를 한 번 누른 뒤 3초 동안 버튼 글자
+wardrobe.shoot.reset.ask.editor,한 번 더 누르면 이 옷의 구도 줄(OutfitPictures.csv)을 지우고 사진을 자동 구도로 다시 찍어 프로젝트의 사진 위에 써요. 3초 안에 눌러 주세요.,Press again within 3 s to drop this piece's framing row and retake its pictures in the automatic framing over the project's.,옷장 > 사진 다시 찍기 창: 에디터에서 기본값으로를 한 번 눌렀을 때 저장 안내 자리에 뜨는 말
+wardrobe.shoot.reset.ask.local,한 번 더 누르면 이 PC에 남긴 이 옷의 구도와 사진을 지우고 게임에 들어 있던 사진으로 돌아가요. 3초 안에 눌러 주세요.,Press again within 3 s to delete this PC's framing and pictures of this piece and go back to the game's own.,옷장 > 사진 다시 찍기 창: 빌드에서 기본값으로를 한 번 눌렀을 때 저장 안내 자리에 뜨는 말
+wardrobe.shoot.reset.none,이 옷은 이미 기본값이에요.,Already at default.,옷장 > 사진 다시 찍기 창: 다시 찍은 적 없는 옷에서 기본값으로를 눌렀을 때 구도 줄 자리에 뜨는 말
+wardrobe.shoot.reset_all,모두 기본값으로,All to default,옷장 > 사진 다시 찍기 창: 다시 찍은 모든 옷(모든 캐릭터)의 구도와 사진을 기본값으로 되돌린다(두 번 눌러야 한다)
+wardrobe.shoot.reset_all.confirm,한 번 더 누르면 모두,Press again,옷장 > 사진 다시 찍기 창 > 모두 기본값으로를 한 번 누른 뒤 3초 동안 버튼 글자
+wardrobe.shoot.reset_all.ask.editor,한 번 더 누르면 다시 찍은 옷 {0}개(모든 캐릭터)의 구도 줄을 지우고 사진을 자동 구도로 다시 찍어요. 3초 안에 눌러 주세요.,Press again within 3 s to drop the framing rows of all {0} retaken pieces (every character) and retake their pictures.,옷장 > 사진 다시 찍기 창: 에디터에서 모두 기본값으로를 한 번 눌렀을 때 저장 안내 자리에 뜨는 말. {0}은 다시 찍은 옷 수
+wardrobe.shoot.reset_all.ask.local,한 번 더 누르면 이 PC에 남긴 옷 {0}개의 구도와 사진을 모두 지우고 게임에 들어 있던 사진으로 돌아가요. 3초 안에 눌러 주세요.,Press again within 3 s to delete this PC's framings and pictures of all {0} pieces and go back to the game's own.,옷장 > 사진 다시 찍기 창: 빌드에서 모두 기본값으로를 한 번 눌렀을 때 저장 안내 자리에 뜨는 말. {0}은 다시 찍은 옷 수
+wardrobe.shoot.reset_all.none,다시 찍은 옷이 없어요.,Nothing retaken.,옷장 > 사진 다시 찍기 창: 다시 찍은 옷이 없을 때 모두 기본값으로를 눌렀을 때 구도 줄 자리에 뜨는 말
 body.title,체형,Body,옷장 > 체형 페이지 제목
 body.open,체형,Body,메인 메뉴 > 캐릭터 페이지 왼쪽 > 색 칩 아래 체형 판의 제목
 body.open.note,꾸미기 {0}가지 · 바꾼 것 {1},{0} options · {1} changed,"체형 판의 설명. {0}=그 캐릭터의 체형 옵션 수, {1}=원래와 다르게 바꾼 옵션 수"
