@@ -97,6 +97,10 @@ public sealed class Barricade : MonoBehaviour, IDamageReceiver
     public PlayerMovement Owner { get; private set; }
     public float Health => health;
     public float MostHealth => most;
+    /// <summary>Its name on every PC (the network's word for it).</summary>
+    public ushort Id => id;
+    /// <summary>Standing and short of its health: a Support's hammer can mend it (SupportKit).</summary>
+    public bool Worn => !broken && health < most - .5f;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetStatics() => standing.Clear();
@@ -244,9 +248,25 @@ public sealed class Barricade : MonoBehaviour, IDamageReceiver
     {
         if (!standing.TryGetValue(id, out var barricade) || barricade == null || barricade.broken) return;
         if (health < barricade.health - .01f) barricade.Shake();
+        bool mended = health > barricade.health + .01f;
         barricade.health = Mathf.Clamp(health, 0f, barricade.most);
-        barricade.Planked();
+        if (mended) barricade.Replanked();
+        else barricade.Planked();
         if (barricade.health <= 0f) barricade.Break();
+    }
+
+    /// <summary>
+    /// A Support's hammer put <paramref name="amount"/> health back into barricade <paramref name="id"/> (SupportKit; the user,
+    /// 2026-11-12: "바리케이드가 설치만 하면 끝인 게 아니라 G&amp;B 공병처럼 수리하고 유지 보수할 수 있으면 재밌을 듯"): up to its
+    /// most, its planks nailed back on. The host's or a lone PC's is the true one and tells the others as wear does; a
+    /// client's Support's PC asks it (PlayerNetworkCombat) and sees the mend come back with the host's word.
+    /// </summary>
+    public static void Mend(ushort id, float amount)
+    {
+        if (!Authority || amount <= 0f || !standing.TryGetValue(id, out var barricade) || barricade == null || barricade.broken) return;
+        barricade.health = Mathf.Min(barricade.most, barricade.health + amount);
+        barricade.dirty = true;
+        barricade.Replanked();
     }
 
     private void Build()
@@ -369,6 +389,19 @@ public sealed class Barricade : MonoBehaviour, IDamageReceiver
             var plank = planks[i];
             if (plank == null || !plank.gameObject.activeSelf) continue;
             if (share <= (float)i / Planks) Throw(plank, .6f);
+        }
+    }
+
+    // Mended: the planks come back on from the bottom, the way they came off from the top (Planked), so the next wear
+    // takes them off again.
+    private void Replanked()
+    {
+        float share = most > 0f ? health / most : 0f;
+        shownShare = share;
+        for (int i = 0; i < planks.Count; i++)
+        {
+            var plank = planks[i];
+            if (plank != null && !plank.gameObject.activeSelf && share > (float)i / Planks) plank.gameObject.SetActive(true);
         }
     }
 

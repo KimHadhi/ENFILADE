@@ -80,6 +80,9 @@ Support.previewAlpha,.34,바리케이드 미리 보기(푸른·빨간 반투명 
 Support.barricadeHealth,400,바리케이드 체력. 허리 높이라 아군은 넘어 쏘고 뛰어넘고 좀비는 못 지나간다(내비 메시를 깎는다)
 Support.barricadeBlow,1,좀비의 공격이 바리케이드에 막혔을 때 그 피해의 몇 배를 바리케이드가 입는지. 아군의 총알과 주먹은 피해가 없다
 Support.barricadePressure,4,바리케이드에 붙어 밀어대는 좀비 한 마리가 주는 피해(초당)
+Support.repairRate,80,F를 누르고 있으면 조준한 닳은 바리케이드를 초당 이만큼 고친다(누구의 바리케이드든. G&B 공병처럼). 동료가 조준돼 있으면 보급이 먼저
+Support.repairCost,8,바리케이드 체력 100을 고칠 때마다 가방에서 나가는 양. 400을 다 고치면 32(새로 세우기는 50)
+Support.repairReach,3.5,F로 고칠 수 있는 바리케이드까지 거리(m)
 Cards.momentumSeconds,3,기세 카드(공용): 맞힐 때마다 강화가 이어지는 시간(초). 맞히면 다시 처음부터. 빗나가도 깎이지 않는다
 Point.gunslingerSeconds,2.5,건슬링어 카드: 총을 바꿔 든 뒤 그 총이 세지는 시간(초)
 Ghost.tigerReach,6,화이트 타이거 카드: 헤드 헌터가 가득 찬 채 헤드샷으로 처치하면 그 자리 둘레 이 반경(m)의 적이 휘청인다

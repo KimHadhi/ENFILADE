@@ -204,7 +204,10 @@ public sealed class ClassHUD : MonoBehaviour
     }
 
     // A Support's bag: a pip a resupply's worth (white when full, the next one filling), "[휠] 바리케이드" while one can go
-    // up, and beside the pips "[F] 보급 · name" while a friend is in reach, or how many of its barricades stand. While the
+    // up, and beside the pips "[F] 보급 · name" while a friend is in reach, a worn barricade's health while one is under the
+    // crosshair (mended while F is held), else the bag in numbers and how many of its barricades stand (the user,
+    // 2026-11-12: "배낭이 얼마나 찼는지 보이나? 나는 바리케이드 설치 가능 횟수만 보여서": the pips alone didn't read as the
+    // bag). While the
     // class key is held to place one (SupportKit's preview): "[휠] 놓으면 설치" and "[우클릭] 취소" where it may go up,
     // "[휠] 설치 불가" in red and why where it can't.
     private void Support()
@@ -233,8 +236,11 @@ public sealed class ClassHUD : MonoBehaviour
             KeyPrompt(support.CanBuild);
             Word(Texts.Get("class.hud.barricade"), KitStyle.Accent);
             var friend = support.Offered;
+            var worn = support.Mendable;
             side = friend != null ? Texts.Format("class.hud.resupply", friend.TryGetComponent(out PlayerTally tally) ? tally.DisplayName : friend.name)
-                : Texts.Format("class.hud.barricades", support.Standing, support.MostStanding);
+                : worn != null ? Texts.Format(support.Mending ? "class.hud.repairing" : "class.hud.repair", Mathf.RoundToInt(worn.Health), Mathf.RoundToInt(worn.MostHealth))
+                : Texts.Format("class.hud.bag", Mathf.FloorToInt(support.Supply), Mathf.RoundToInt(support.SupplyMax)) + " · "
+                    + Texts.Format("class.hud.barricades", support.Standing, support.MostStanding);
         }
         if (note.text != side) note.text = side;
         ((RectTransform)note.rectTransform.parent).anchoredPosition = new Vector2(128f + count * (PipWidth + PipGap) + 6f, 0f);

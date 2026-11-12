@@ -78,8 +78,8 @@ public sealed class PlayerPing : MonoBehaviour
         if (revive != null && revive.Candidate != null) return true;
         // A Détente treating a friend by hand, or bringing one back.
         if (DetenteKit.Local != null && DetenteKit.Local.TakesInteract) return true;
-        // A Support with a friend in reach to resupply.
-        if (SupportKit.Local != null && SupportKit.Local.Offered != null) return true;
+        // A Support with a friend in reach to resupply, or a worn barricade to mend.
+        if (SupportKit.Local != null && (SupportKit.Local.Offered != null || SupportKit.Local.Mendable != null)) return true;
         if (movement.Abilities != null && movement.Abilities.Fixtures.ClimbDownLadder != null) return true;
         // The hub's stations (its map table, lockers, gun rack, ammo crate, ready button) take F when looked at.
         return CampaignRun.Offering || ShopMenu.IsOpen || HubLobby.Offering;

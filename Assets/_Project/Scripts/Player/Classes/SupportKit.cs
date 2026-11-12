@@ -19,6 +19,8 @@ using UnityEngine.InputSystem;
 ///   across the look. At most a few stand at once; a new one past that takes the oldest down, which the preview shows
 ///   blinking amber. The host's or a lone PC's goes up at once; a client's PC asks the host, which checks the spot again
 ///   against its own world (Barricade.Judge) and puts it up for everyone, or says why not and the bag gets its share back.
+/// - Mending: F held on a worn barricade in reach, anyone's, hammers health back into it from the bag, its planks nailed
+///   back on (the user, 2026-11-12: "G&amp;B 공병처럼 수리하고 유지 보수할 수 있으면 재밌을 듯"); a resupply goes first.
 /// A class picked starts it afresh (Fresh, from ClassKit on PlayerClass.Picked): the bag as it starts, its barricades down.
 /// This PC's own player only. Numbers: Tables/ClassAbilities, row Support.
 /// </summary>
@@ -29,6 +31,8 @@ public sealed class SupportKit : MonoBehaviour
     // How long a client waits for the host's word on a barricade it asked for before it may ask for another (s), and how
     // long the preview stays red where one was turned down (s).
     private const float AnswerWait = 3f, RefusedShow = .35f;
+    // How often a client's hammer tells the host what it put in (s), and the beat of the hammer's knock (s).
+    private const float MendEvery = .2f, KnockEvery = .45f;
 
     /// <summary>This PC's own player's, while they play a Support.</summary>
     public static SupportKit Local { get; private set; }
@@ -61,6 +65,10 @@ public sealed class SupportKit : MonoBehaviour
     private float heldYaw;
     private readonly List<ushort> taken = new List<ushort>();
     private int worldMask;
+    // A client's mending not yet told the host: how much, on which barricade, and when it may tell next; the hammer's
+    // next knock (or the empty bag's refusal).
+    private float mendOwed, nextMendSend, nextKnock;
+    private ushort mendId;
 
     /// <summary>The bag now and the most it holds; what a resupply and a barricade take from it.</summary>
     public float Supply => Mathf.Max(0f, supply);
@@ -86,6 +94,9 @@ public sealed class SupportKit : MonoBehaviour
     public float SinceBuild => Time.time - lastBuild;
     /// <summary>The friend F would resupply now (standing, in reach, under the crosshair), or null.</summary>
     public PlayerMovement Offered { get; private set; }
+    /// <summary>The worn barricade F held would mend now (under the crosshair, in reach, anyone's), or null; and whether F is held on it.</summary>
+    public Barricade Mendable { get; private set; }
+    public bool Mending { get; private set; }
 
     private void Awake() => movement = GetComponent<PlayerMovement>();
 
@@ -109,6 +120,8 @@ public sealed class SupportKit : MonoBehaviour
         {
             if (Local == this) Local = null;
             Offered = null;
+            Mendable = null;
+            Mending = false;
             planning = false;
             HidePreview();
             return;
@@ -119,6 +132,11 @@ public sealed class SupportKit : MonoBehaviour
         Offered = movement.IsDead || movement.IsDowned || !HandsFree() ? null : Aimed();
         if (interact == null && InputSystem.actions != null) interact = InputSystem.actions.FindAction("Player/Interact", false);
         if (Offered != null && interact != null && interact.WasPressedThisFrame() && movement.InputAvailable) Give(Offered);
+        // No friend there: a worn barricade under the crosshair, mended while F is held.
+        Mendable = Offered == null && !movement.IsDead && !movement.IsDowned && HandsFree() ? AimedBarricade() : null;
+        Mending = Mendable != null && interact != null && interact.IsPressed() && movement.InputAvailable && !movement.IsHeld;
+        if (Mending) Mend(Mendable);
+        if (!Mending || Time.time >= nextMendSend) FlushMend();
         Plan();
         Preview();
     }
@@ -135,6 +153,9 @@ public sealed class SupportKit : MonoBehaviour
         if (pendingId != 0) dropped = pendingId;
         pendingId = 0;
         refusedAt = -99f;
+        Mendable = null;
+        Mending = false;
+        mendOwed = 0f;
         supply = -1f;
         lastGive = lastBuild = -99f;
         HidePreview();
@@ -433,6 +454,65 @@ public sealed class SupportKit : MonoBehaviour
 
     // Whatever else Interact would do here goes first (an execution, a pickup, getting a downed friend up, a ladder, a
     // mission's button, a door, a shop).
+    // ---- Mending (F held on a worn barricade) ----
+
+    // The worn barricade under the crosshair within reach, anyone's (a sapper mends whatever stands), or null.
+    private Barricade AimedBarricade()
+    {
+        var eyes = PlayerView.EyesOf(movement);
+        if (eyes == null) return null;
+        float reach = Mathf.Max(.5f, Number("repairReach", 3.5f));
+        if (!Physics.Raycast(eyes.position, eyes.forward, out RaycastHit hit, reach, ~(1 << movement.gameObject.layer), QueryTriggerInteraction.Ignore))
+            return null;
+        var barricade = hit.collider.GetComponentInParent<Barricade>();
+        return barricade != null && barricade.Worn ? barricade : null;
+    }
+
+    // The hammer at work: health back at its pace, paid from the bag by the health put in (a mend is cheaper than a new
+    // one, so keeping one standing pays). The host's or a lone PC's mends at once; a client's adds it up and tells the
+    // host every so often (FlushMend), whose word brings the planks back on this copy.
+    private void Mend(Barricade barricade)
+    {
+        float rate = Mathf.Max(0f, Number("repairRate", 80f)), cost = Mathf.Max(0f, Number("repairCost", 8f)) / 100f;
+        if (mendId != barricade.Id) FlushMend();
+        float amount = Mathf.Min(rate * Time.deltaTime, barricade.MostHealth - barricade.Health - mendOwed);
+        if (cost > 0f) amount = Mathf.Min(amount, Supply / cost);
+        if (amount <= 0f)
+        {
+            if (cost > 0f && Supply < cost && Time.time >= nextKnock)
+            {
+                nextKnock = Time.time + 1f;
+                KitSound.Play(KitSound.Cue.Refuse, .35f);
+                AlertHUD.Self(Texts.Get("class.support.low"));
+            }
+            return;
+        }
+        supply -= amount * cost;
+        // Keeping the team's wall up is the Support's fight too: it fills the gauge (UltimateCharge.AwardHelp).
+        UltimateCharge.AwardHelp(UltimateCharge.Help.Repaired, amount);
+        if (Time.time >= nextKnock)
+        {
+            nextKnock = Time.time + KnockEvery;
+            KitSound.Play(KitSound.Cue.Hammer, .7f);
+        }
+        if (Barricade.Authority)
+        {
+            Barricade.Mend(barricade.Id, amount);
+            return;
+        }
+        mendId = barricade.Id;
+        mendOwed += amount;
+    }
+
+    // A client's mending so far, told the host.
+    private void FlushMend()
+    {
+        if (mendOwed <= 0f) return;
+        if (movement.TryGetComponent(out PlayerNetworkCombat network) && network.IsSpawned) network.SendBarricadeMend(mendId, mendOwed);
+        mendOwed = 0f;
+        nextMendSend = Time.time + MendEvery;
+    }
+
     private bool HandsFree()
     {
         var execution = movement.Execution;

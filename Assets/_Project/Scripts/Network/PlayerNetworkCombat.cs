@@ -95,6 +95,8 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
     public void ShareBarricadeHealth(ushort id, float health) { if (IsSpawned) BarricadeStateRpc(id, health); }
     /// <summary>On a client: a zombie's blow landed on its copy of barricade id; the host's is the true one (Barricade).</summary>
     public void SendBarricadeHit(ushort id, float damage) { if (IsSpawned) BarricadeHitRpc(id, damage); }
+    /// <summary>On a client: this PC's Support's hammer mended barricade id by this much; the host's is the true one (SupportKit).</summary>
+    public void SendBarricadeMend(ushort id, float amount) { if (IsSpawned) BarricadeMendRpc(id, amount); }
     /// <summary>
     /// On a client: this PC's Support asks for barricade id here, facing this way, with the most of theirs that may stand
     /// (SupportKit). The host checks the spot against its own world and puts it up for everyone, or says why not.
@@ -372,6 +374,10 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
     // A client's zombie blow on its copy of a barricade: the host's takes it.
     [Rpc(SendTo.Server)]
     private void BarricadeHitRpc(ushort id, float damage) => Barricade.Hurt(id, damage);
+
+    // A client's Support mended a barricade: the host's takes it, and tells everyone its health as wear does.
+    [Rpc(SendTo.Server)]
+    private void BarricadeMendRpc(ushort id, float amount) => Barricade.Mend(id, amount);
 
     // A friend's Support resupplied this player: their own PC (this one) fills the guns.
     [Rpc(SendTo.Owner)]

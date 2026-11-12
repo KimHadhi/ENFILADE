@@ -7,6 +7,7 @@ Ultimate.chargePerHundredHealed,5,동료에게 체력을 100 돌려줄 때마다
 Ultimate.chargePerResupply,4,동료에게 보급할 때마다 충전(%). 서포트
 Ultimate.chargePerParry,2,적의 공격을 패리할 때마다 충전(%). 클래스 상관없이
 Ultimate.chargePerRevive,10,쓰러진 동료를 일으키거나 죽은 동료를 되살릴 때마다 충전(%)
+Ultimate.chargePerHundredRepaired,3,서포트가 바리케이드 체력을 100 고칠 때마다 충전(%)
 Fists.reach,1.6,주먹 사거리(m)
 Fists.fullChargeTime,0.9,최대 충전까지 걸리는 시간(초)
 Fists.damage,10;28,피해 - 최소 충전;최대 충전
