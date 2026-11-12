@@ -39,7 +39,10 @@ public static class FragBlast
         // Below -1 is all round; a directional blast keeps its half angle's cosine.
         float spread = cone >= 360f || way.sqrMagnitude < 1e-4f ? -2f : Mathf.Cos(Mathf.Clamp(cone, 1f, 359f) * .5f * Mathf.Deg2Rad);
         way = way.sqrMagnitude > 1e-4f ? way.normalized : Vector3.forward;
-        CanBlastEffect.Play(at, spread > -1f ? radius * .55f : radius, 0f);
+        // Its look: the Realistic Gunslinger pack's frag, or for the claymore its shrapnel burst, toned in
+        // Tables/PackFx.csv (fragBurst, claymoreBurst); the game's own drawn blast where the pack's is off or missing.
+        if (!GrenadePackFx.Play(spread > -1f ? "claymoreBurst" : "fragBurst", at, Quaternion.LookRotation(way)))
+            CanBlastEffect.Play(at, spread > -1f ? radius * .55f : radius, 0f);
         FragChunk.Throw(at, Mathf.RoundToInt(Throwables.Rule("fragChunks", 12f)), way, spread);
         Throwables.Play("Frag", at + Vector3.up * .3f, 1f, 8f, 150f);
         Shake(at, radius);

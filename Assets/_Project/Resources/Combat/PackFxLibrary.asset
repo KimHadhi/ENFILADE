@@ -29,3 +29,11 @@ MonoBehaviour:
     prefab: {fileID: 7055262822571672188, guid: b9f6d0c0f125d6848979d0182e456120, type: 3}
   - name: Big Explosion Sequence
     prefab: {fileID: 6981916951657413342, guid: 87e00a1250ab7574f8b80269546aee7e, type: 3}
+  - name: Frag Granade
+    prefab: {fileID: 421524640309231658, guid: 085b84e19aaccd848a4903bcf179b2aa, type: 3}
+  - name: Flashbang granade
+    prefab: {fileID: 4360327893163941809, guid: ca0824fcd38559a45a38d0dfbedde899, type: 3}
+  - name: Smoke Granade
+    prefab: {fileID: 840586683369707712, guid: 5848b0501befbeb4c8964195eec426be, type: 3}
+  - name: Bullet Granade
+    prefab: {fileID: 8442610605459072756, guid: 757286517d8cc4a4eac2112f078ff2e5, type: 3}

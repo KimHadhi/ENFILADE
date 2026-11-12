@@ -154,20 +154,25 @@ internal sealed class FlashLook : MonoBehaviour
         host.transform.position = at + Vector3.up * .25f;
         var look = host.AddComponent<FlashLook>();
         look.radius = radius;
-        look.Build();
+        // The burst itself in the Realistic Gunslinger pack's flashbang (Tables/PackFx.csv flashBurst); the drawn white
+        // star where the pack's is off or missing. The hard light, the ring to its reach and the screen's pop stay ours.
+        look.Build(!GrenadePackFx.Play("flashBurst", host.transform.position, Quaternion.identity));
         Pop(at);
     }
 
-    private void Build()
+    private void Build(bool drawnStar)
     {
-        var quad = new GameObject("Star");
-        quad.transform.SetParent(transform, false);
-        quad.AddComponent<MeshFilter>().sharedMesh = FeelAssets.Quad;
-        var renderer = quad.AddComponent<MeshRenderer>();
-        renderer.sharedMaterial = FeelAssets.Particle(FeelAssets.FlashStar, true);
-        renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-        renderer.receiveShadows = false;
-        star = quad.transform;
+        if (drawnStar)
+        {
+            var quad = new GameObject("Star");
+            quad.transform.SetParent(transform, false);
+            quad.AddComponent<MeshFilter>().sharedMesh = FeelAssets.Quad;
+            var renderer = quad.AddComponent<MeshRenderer>();
+            renderer.sharedMaterial = FeelAssets.Particle(FeelAssets.FlashStar, true);
+            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            renderer.receiveShadows = false;
+            star = quad.transform;
+        }
         glow = new GameObject("Light").AddComponent<Light>();
         glow.transform.SetParent(transform, false);
         glow.type = LightType.Point;
