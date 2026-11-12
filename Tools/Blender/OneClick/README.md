@@ -1,0 +1,62 @@
+# ENFILADE one-click animation workspaces
+
+The user, 2026-11-13: "야 근데 올인원 원클릭으로 세팅되는 거 없음? 걍 열기만 하면 블렌더 내에서 알아서 애니메이션 불러 올 수 있고
+도프 시트는 이미 짜여져 있고 그런 거 ㅇㅇ. 내가 해야 하는 잡일을 최대한 줄여. 나는 딱 오직 인간만이 할 수 있는 것만 해내면 되게끔 ㅇㅇ."
+
+[one_click.py](one_click.py) is what the Blender animation workspaces share so the user only poses and times: each opens
+ready from its `.cmd`, and `Ctrl+S` sends what changed to the game. The paired executions workspace did it first and
+keeps its own copy ([execution_tools.py](../Executions/execution_tools.py)).
+
+| Workspace | Opens on | Items | Saving sends |
+| --- | --- | --- | --- |
+| [Victory poses](../../../ArtSource/Poses/START_HERE.md) (`Pose` tab) | the last pose on its struck frame (9), Pose mode, auto-key on, the small view from the front | every `enf_pose_*` action (key poses at 1, 9, 42, 75; the hold follows frame 9) | `Resources/Poses/<name>.fbx` |
+
+Not here: the zombie workspace (a clip is loaded, varied and sent to a slot and name the user picks, so a save can't know
+where it goes), and the True FPS start file (a template for new clips; its practice actions are not the game's). The
+shove, throwables and run workspaces still send with their own buttons.
+
+## What it does
+
+- **Opening**: a workspace's tools call `register_workspace(name, matches, arrange, send)`. `arrange` runs on a timer
+  0.8 s after the tools start (after the True FPS tools' own start-up at 0.2 s) and after every file load: it readies the
+  data first (`item_action` on every item), then the screen (`open_workspace`, `main_view`, `show_tab`, `dope_sheet`,
+  `select`): the item last worked on, the rig in Pose mode with that item's part selected, every Dope Sheet (not the
+  timeline) in Dope Sheet mode showing every animated object's keys with the summary row and the markers, the sidebar
+  tab. A window switches its workspace on the next tick, so `arrange` returns False and runs again (up to six times).
+- **Items**: `item_action(context, owner, name, frames)` returns the action the user keys into.
+  - A draft keyed at key poses becomes an editable copy `<name>` (Replace), the draft kept as `<name>_draft`
+    (`revert` copies it back). Its channels are grouped per bone and closed (`group_channels`): a row per bone.
+  - A draft keyed on at least 80% of its frames (`DENSE`: retargeted mocap, a ported viewmodel) stays locked on the NLA
+    track `1 시안 (잠금)` under `<name>`, the touch-up layer (Combine): one key there bends the clip smoothly, where one key
+    on a frame of dense keys would pop that frame.
+  - Files built before (every draft locked under an empty touch-up) convert on open. A key-pose item whose touch-up the
+    user had keyed is baked (`_bake`): the draft's curves, with every property the touch-up moved keyed every frame as
+    the two played together, so nothing is lost.
+  - A build that makes a draft again (`--redraft`) is followed by an editable copy nobody touched (`enf_from`, the draft
+    fingerprint the copy was made from); a touched copy is kept.
+- **Saving sends**: `_save_pre` asks each matching workspace to send; the workspace compares each item's `fingerprint`
+  (keys, handles, interpolation, easing, extrapolation, mute, every F-curve modifier setting, plus the item's own numbers:
+  marks, end frame) with `enf_sent`, the one it was last sent with, and sends it when they differ or its game file is
+  missing (`needs_sending`). An item made ready untouched counts as sent as it is (the builds sent the drafts), or as
+  withheld where the game plays something else until the item is first sent (`mark_withheld`). A failed item is reported
+  in the status bar and tried again on the next save. A new game file gets a bare `.meta` (GUID only) first
+  (`write_meta`); text tables are written in place and retried while Unity holds them (`write_text`).
+- Headless saves never send (`SEND_IN_BACKGROUND` is False): the build scripts register the tools and save their
+  workspaces. The headless checks set it.
+
+## Checked (Blender 4.5.16, 2026-11-13)
+
+In a scratch copy of the project (the tools, the workspace `.blend`, the game files it writes), never the game's own:
+
+| Check | Victory poses |
+| --- | --- |
+| Opening, then an unchanged save: nothing sent, the game files keep their bytes | pass (5 poses) |
+| Fingerprints the same after a save and reload | pass |
+| One item changed and saved: only its file rewritten; saving again sends nothing | pass (the V pose's head turned at frame 9) |
+| The hold follows the strike on leaving frame 9 (75 = 9, 42 keeps its breath) | pass |
+| Withheld: its file deleted and not sent again until it changes, then sent | pass |
+
+Facts found:
+
+- In `--background`, the windows of a loaded file are there but `window.workspace = ...` never takes (no event loop):
+  `arrange` readies the data before the screen, so the data side works headless too.
