@@ -133,8 +133,109 @@ public sealed partial class GreyboxBuilder
         material.SetFloat("_Variation", Mathf.Clamp(Number(row, "variation", .12f), 0f, .5f));
         material.SetFloat("_VariationSize", Mathf.Max(.5f, Number(row, "variationSize", 9f)));
         material.SetFloat("_ObjectSpace", 0f);
+        SetWindows(material, Text(row, "windows"));
         EditorUtility.SetDirty(material);
         return material;
+    }
+
+    // ---- Looks by name and painted windows (map dressing stage 5: the user, 2026-11-12, "1장은 어딜 가든 벽 텍스쳐가
+    // 똑같아서 아쉽더라. 그리고 맵에 밀도가 없어") ----
+
+    private const string WindowTable = "MapWindows";
+    // This scene's name prefixes and the looks they give (Tables/MapSurfaces "boxes"), longest first; read once.
+    private List<(string prefix, string look)> nameLooks;
+    // The looks made this build, and the layout's solid boxes each covers (FitWindows).
+    private readonly Dictionary<string, Material> looks = new Dictionary<string, Material>();
+    private readonly Dictionary<string, List<Block>> lookBlocks = new Dictionary<string, List<Block>>();
+
+    /// <summary>
+    /// The scene's look named <paramref name="look"/>: the row "&lt;scene&gt;.&lt;look&gt;" or "&lt;look&gt;" of
+    /// Tables/MapSurfaces, written once per build; null without a row or its textures.
+    /// </summary>
+    public Material Look(string look)
+    {
+        if (looks.TryGetValue(look, out var known)) return known;
+        return looks[look] = Surface(look, null);
+    }
+
+    // The look a box of the layout takes by its name: a building's walls, parapets and rooms all start with its name, so
+    // each building wears its own wall without the layout naming a material. Null when no row of this scene claims it.
+    private string LookNameFor(string name)
+    {
+        if (nameLooks == null)
+        {
+            nameLooks = new List<(string, string)>();
+            string scenePrefix = sceneName + ".";
+            foreach (string id in GameTables.RowIds(SurfaceTable))
+            {
+                if (!id.StartsWith(scenePrefix, System.StringComparison.Ordinal) || !GameTables.TryGetRow(SurfaceTable, id, out var row)) continue;
+                foreach (string part in Text(row, "boxes").Split(';'))
+                {
+                    string start = part.Trim();
+                    if (start.Length > 0) nameLooks.Add((start, id.Substring(scenePrefix.Length)));
+                }
+            }
+            nameLooks.Sort((a, c) => c.prefix.Length.CompareTo(a.prefix.Length));
+        }
+        foreach (var (start, look) in nameLooks)
+            if (name.StartsWith(start, System.StringComparison.Ordinal)) return look;
+        return null;
+    }
+
+    // A box of the layout that took a look: kept so the look's windows fit the building.
+    private void CoveredBy(string look, Block block)
+    {
+        if (!lookBlocks.TryGetValue(look, out var list)) lookBlocks[look] = list = new List<Block>();
+        list.Add(block);
+    }
+
+    // A look's painted windows from its row's style in Tables/MapWindows, laid on a grid from the world's origin: right
+    // as it is for the city beyond the edge, whose blocks are built on that grid (Skyline), and fitted to its building
+    // by FitWindows for a look that covers boxes of the layout.
+    private static void SetWindows(Material material, string style)
+    {
+        if (style.Length == 0 || !GameTables.TryGetRow(WindowTable, style, out var row))
+        {
+            if (style.Length > 0) Debug.LogWarning("[Greybox] " + WindowTable + ": no window style '" + style + "' (" + material.name + " has no windows).");
+            material.SetFloat("_Windows", 0f);
+            return;
+        }
+        float spacing = Mathf.Max(.5f, Number(row, "spacing", 3f)), floor = Mathf.Max(1f, Number(row, "floor", 3f));
+        float sill = Number(row, "sill", .9f);
+        material.SetFloat("_Windows", 1f);
+        material.SetVector("_WindowSize", new Vector4(Number(row, "width", 1.2f), Number(row, "height", 1.5f), Number(row, "frame", .08f), 0f));
+        material.SetVector("_WindowGrid", new Vector4(spacing, 0f, spacing, 0f));
+        material.SetVector("_WindowRows", new Vector4(floor, sill, Number(row, "ground", sill), 9999f));
+        material.SetColor("_WindowColor", Colour(row, "glass", new Color(.16f, .19f, .22f)));
+        material.SetFloat("_WindowGloss", Mathf.Clamp01(Number(row, "gloss", .9f)));
+        material.SetFloat("_WindowVariety", Mathf.Clamp01(Number(row, "variety", .35f)));
+    }
+
+    // Each look with windows that covers boxes of the layout, its grid fitted to them once the layout stands: across,
+    // to the extent of all its boxes (a building's walls and parapets), a whole number of panes per side starting at its
+    // corner; up, floors counted down from the roof of its biggest box (the building, not its parapet or a roof room),
+    // so the top floor's panes end under the roof and nothing over it gets any.
+    private void FitWindows()
+    {
+        foreach (var pair in lookBlocks)
+        {
+            if (!looks.TryGetValue(pair.Key, out var material) || material == null || pair.Value.Count == 0) continue;
+            if (!material.HasProperty("_Windows") || material.GetFloat("_Windows") < .5f) continue;
+            Bounds all = pair.Value[0].Box;
+            Block main = pair.Value[0];
+            foreach (var block in pair.Value)
+            {
+                all.Encapsulate(block.Box);
+                if (block.Size.x * block.Size.y * block.Size.z > main.Size.x * main.Size.y * main.Size.z) main = block;
+            }
+            Vector4 grid = material.GetVector("_WindowGrid"), rows = material.GetVector("_WindowRows");
+            float spacing = Mathf.Max(.5f, grid.x), floor = Mathf.Max(1f, rows.x), sill = rows.y, ground = rows.z;
+            float acrossX = Mathf.Max(1f, Mathf.Round(all.size.x / spacing)), acrossZ = Mathf.Max(1f, Mathf.Round(all.size.z / spacing));
+            material.SetVector("_WindowGrid", new Vector4(all.size.x / acrossX, -all.min.x, all.size.z / acrossZ, -all.min.z));
+            float roof = main.Box.max.y;
+            material.SetVector("_WindowRows", new Vector4(floor, roof - floor + sill, main.Box.min.y + ground, roof));
+            EditorUtility.SetDirty(material);
+        }
     }
 
     // The surface shader, or null (and a warning) while it is missing or doesn't compile: then the maps keep their

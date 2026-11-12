@@ -175,13 +175,20 @@ public sealed partial class GreyboxBuilder
         box.transform.SetParent(group != null ? group : terrain, false);
         box.transform.localPosition = new Vector3((x0 + x1) * .5f, (y0 + y1) * .5f, (z0 + z1) * .5f);
         box.transform.localScale = new Vector3(Mathf.Abs(x1 - x0), Mathf.Abs(y1 - y0), Mathf.Abs(z1 - z0));
-        Dress(box, material, surface, solid);
+        // A box the layout gave no material wears the look its name claims (Tables/MapSurfaces boxes): its building's wall.
+        string look = material == null ? LookNameFor(name) : null;
+        var worn = look != null ? Look(look) : null;
+        Dress(box, material != null ? material : worn, surface, solid);
         if (solid)
-            blocks.Add(new Block
+        {
+            var block = new Block
             {
                 Shape = box, Box = new Bounds(box.transform.localPosition, box.transform.localScale), Moves = group != null,
                 Size = box.transform.localScale
-            });
+            };
+            blocks.Add(block);
+            if (worn != null) CoveredBy(look, block);
+        }
         return box;
     }
 
@@ -498,6 +505,9 @@ public sealed partial class GreyboxBuilder
     {
         // Every box is laid now, so each ladder can be fitted to the floor it leads to.
         EndStaging();
+        // Map dressing stage 5: the city beyond the edge, then every building's windows fitted to it.
+        Skyline();
+        FitWindows();
         string ladders = LadderFit.FitAll(parkour);
         AddWaves();
         if (AddsCampaign) AddCampaign();
@@ -642,6 +652,8 @@ public sealed partial class GreyboxBuilder
         bool any = false;
         foreach (var shape in terrain.GetComponentsInChildren<Renderer>())
         {
+            // Only what collides can carry walk mesh: the city beyond the edge (seen only) would just widen the bake.
+            if (!shape.TryGetComponent(out Collider _)) continue;
             if (any) bounds.Encapsulate(shape.bounds);
             else { bounds = shape.bounds; any = true; }
         }

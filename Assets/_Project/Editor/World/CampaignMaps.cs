@@ -1048,6 +1048,59 @@ public static class CampaignMaps
         b.Prop("wheelbarrow", new Vector3(180f, 0f, -3.5f), 20f);
         b.Prop("propane", new Vector3(209f, 0f, 13.5f), 0f);
         foreach (var (x, z) in new[] { (201f, -10.5f), (201.5f, 10f) }) b.Prop("brickdebris", new Vector3(x, 0f, z), x * 19f % 360f);
+        DenseRooftops(b);
+    }
+
+    // Map dressing stage 5 (the user, 2026-11-12: "맵에 밀도가 없어"): the chapter's floors filled, kept off its ways. On
+    // the roofs, clutter along the inside of the long parapets (the run across each roof keeps to its middle, |z| < 4);
+    // in the streets, rubbish and bins along both kerbs past the barricades and abandoned cars askew in the lanes; at the
+    // buildings' feet and in the gaps the jumps cross, rubbish seen from above. The city beyond the edge and the
+    // buildings' own walls and windows are tables' work (MapSkyline, MapSurfaces, MapWindows).
+    private static void DenseRooftops(GreyboxBuilder b)
+    {
+        const float In = 10f - Wall - .6f, Foot = 10.6f;
+        string[] roof = { "!acunit", "oilbarrel", "cardboard", "trashbag", "brickdebris", "plasticcrate", "tire", "pallet", "cinderblock", "gascylinder" };
+        string[] street = { "trashbag", "cardboard", "litter", "box", "tire", "plasticcrate", "trashcan", "!dumpster", "rubblebag", "oilbarrel" };
+        string[] rubbish = { "trashbag", "cardboard", "box", "litter", "brickdebris" };
+        // Roofs: B1 (18 m), B2 (16 m, past its water tank), B3 (13 m, clear of its AC units and dish), B4 (12 m, south side).
+        b.Clutter(new Vector3(1.2f, 18f, In), new Vector3(23f, 18f, In), 3f, roof);
+        b.Clutter(new Vector3(1.2f, 18f, -In), new Vector3(23f, 18f, -In), 3f, roof);
+        b.Clutter(new Vector3(28.2f, 16f, In), new Vector3(46f, 16f, In), 3f, roof);
+        b.Clutter(new Vector3(33f, 16f, -In), new Vector3(46f, 16f, -In), 3f, roof);
+        b.Clutter(new Vector3(64.2f, 13f, In), new Vector3(79f, 13f, In), 3f, roof);
+        b.Clutter(new Vector3(64.2f, 13f, -In), new Vector3(70.5f, 13f, -In), 3f, roof);
+        b.Clutter(new Vector3(88.5f, 12f, -In), new Vector3(99.5f, 12f, -In), 3f, roof);
+        // Street 1 (between B2 and B3): both kerbs past the barricades, cars left askew beyond them.
+        foreach (float x in new[] { 47.6f, 62.4f })
+        {
+            b.Clutter(new Vector3(x, 0f, -47f), new Vector3(x, 0f, -14f), 3f, street);
+            b.Clutter(new Vector3(x, 0f, 14f), new Vector3(x, 0f, 47f), 3f, street);
+        }
+        foreach (var (x, z, yaw) in new[] { (52.5f, -32f, 18f), (58f, -41f, 160f), (53.5f, 34f, 200f), (59f, 42f, 10f) })
+            b.PropSolid("car", new Vector3(x, 0f, z), yaw);
+        // Street 2 (between the warehouse and the building site's fence): both kerbs, cars.
+        b.Clutter(new Vector3(141.6f, 0f, -47f), new Vector3(141.6f, 0f, -5f), 3f, street);
+        b.Clutter(new Vector3(141.6f, 0f, 5f), new Vector3(141.6f, 0f, 47f), 3f, street);
+        b.Clutter(new Vector3(169.3f, 0f, -47f), new Vector3(169.3f, 0f, -8f), 3f, street);
+        b.Clutter(new Vector3(169.3f, 0f, 8f), new Vector3(169.3f, 0f, 47f), 3f, street);
+        foreach (var (x, z, yaw) in new[] { (150f, -30f, 75f), (157f, -42f, 120f), (152f, 33f, 260f), (160f, 41f, 15f) })
+            b.PropSolid("car", new Vector3(x, 0f, z), yaw);
+        // The buildings' feet (seen from the roofs) and the square west of B1 with two wrecks.
+        b.Clutter(new Vector3(-.6f, 0f, -9f), new Vector3(-.6f, 0f, 9f), 3f, street);
+        foreach (var (x0, x1) in new[] { (1f, 23f), (28f, 46f), (64f, 79f) })
+        {
+            b.Clutter(new Vector3(x0, 0f, Foot), new Vector3(x1, 0f, Foot), 3.5f, street);
+            b.Clutter(new Vector3(x0, 0f, -Foot), new Vector3(x1, 0f, -Foot), 3.5f, street);
+        }
+        b.PropSolid("car", new Vector3(-14f, 0f, 22f), 35f);
+        b.PropSolid("car", new Vector3(-19f, 0f, -27f), 110f);
+        // The gaps the jumps cross: B1 to B2, and under the swing bar (clear of its posts and the ladder back up).
+        b.Clutter(new Vector3(25.5f, 0f, -9f), new Vector3(25.5f, 0f, 9f), 2.5f, rubbish);
+        b.Clutter(new Vector3(83.5f, 0f, -9f), new Vector3(83.5f, 0f, -2.6f), 2.5f, rubbish);
+        // The alley, along its walls clear of the bins, the pallet and the shutter's boxes (small things only: the hold's
+        // horde comes through here).
+        b.Clutter(new Vector3(104.6f, 0f, -3.6f), new Vector3(116.5f, 0f, -3.6f), 2.5f, "litter", "cardboard", "trashbag");
+        b.Clutter(new Vector3(109.5f, 0f, 3.6f), new Vector3(115f, 0f, 3.6f), 2.5f, "litter", "cardboard", "trashbag");
     }
 
     // Chapter 2's jam on the deck, the road below, the filling station and the army checkpoint in the packs' props (map

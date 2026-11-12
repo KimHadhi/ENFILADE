@@ -23,6 +23,16 @@ half _Variation;
 float _VariationSize;
 half _ObjectSpace;
 half _Cutoff;
+// Painted windows (see WindowPane): on, the pane's width, height and frame (m); the grid along world x (spacing,
+// offset) and along world z (spacing, offset); the rows (floor height, a pane's bottom, the lowest bottom, the highest
+// top); the glass, its smoothness and how much the panes differ from one another.
+half _Windows;
+float4 _WindowSize;
+float4 _WindowGrid;
+float4 _WindowRows;
+half4 _WindowColor;
+half _WindowGloss;
+half _WindowVariety;
 CBUFFER_END
 
 // _BaseMap, _BumpMap and their samplers come from URP's SurfaceInput.hlsl. Every map is read with _BaseMap's sampler:
@@ -128,6 +138,43 @@ float SurfaceNoise(float3 x)
     return lerp(lerp(a, b, f.y), lerp(c, d, f.y), f.z);
 }
 
+// Windows painted on a wall (Tables/MapWindows; GreyboxBuilder.Surfaces sets them per look), so a building's facade
+// gets its windows with no more objects in the map. A grid of panes on the faces that look sideways: along world x on
+// faces looking along z, along world z on faces looking along x; rows a floor apart from one pane's bottom, kept
+// between the lowest bottom and the highest top. The builder fits the grid to the building, so the panes line up with
+// its corners and stop under its roof (its parapet and what stands on the roof get none). Out: how much of the pixel
+// is glass and how much frame, antialiased over the pixel's footprint from the position's own gradients (taken before
+// any branch), and the glass's colour, a little different pane to pane.
+void WindowPane(float3 p, float3 n, float3 dpdx, float3 dpdy, out half pane, out half rim, out half3 glass)
+{
+    pane = 0.0h;
+    rim = 0.0h;
+    glass = _WindowColor.rgb;
+    float3 a = abs(n);
+    if (a.y >= 0.5) return;
+    bool facesX = a.x >= a.z;
+    float along = facesX ? p.z : p.x;
+    float spacing = max(facesX ? _WindowGrid.z : _WindowGrid.x, 0.1);
+    float offset = facesX ? _WindowGrid.w : _WindowGrid.y;
+    float floorHeight = max(_WindowRows.x, 0.1);
+    float cu = (along + offset) / spacing;
+    float cv = (p.y - _WindowRows.y) / floorHeight;
+    float2 cell = floor(float2(cu, cv));
+    float bottom = _WindowRows.y + cell.y * floorHeight;
+    if (bottom < _WindowRows.z - 0.001 || bottom + _WindowSize.y > _WindowRows.w + 0.001) return;
+    float x = (cu - cell.x - 0.5) * spacing;
+    float y = (cv - cell.y) * floorHeight;
+    float d = max(abs(x) - _WindowSize.x * 0.5, max(-y, y - _WindowSize.y));
+    float alongDx = facesX ? dpdx.z : dpdx.x;
+    float alongDy = facesX ? dpdy.z : dpdy.x;
+    float aa = max(max(abs(alongDx) + abs(alongDy), abs(dpdx.y) + abs(dpdy.y)), 1e-4);
+    half opening = (half)(1.0 - smoothstep(-aa, aa, d));
+    pane = (half)(1.0 - smoothstep(-aa, aa, d + _WindowSize.z));
+    rim = saturate(opening - pane);
+    half pick = (half)SurfaceHash(float3(cell, facesX ? 3.1 : 7.7));
+    glass = saturate(_WindowColor.rgb * (1.0h + _WindowVariety * (pick * 1.6h - 0.8h)));
+}
+
 // The surface at a pixel, and its normal in the world with the set's normal map laid on along the projection. The
 // projection's directions are first made to lie in the face (Gram-Schmidt against the face's own normal): a ramp is
 // mapped from above, and without this its bumps would be lit as if it were flat.
@@ -178,14 +225,32 @@ void InitializeSurfaceData(float3 mapPosition, float3 mapNormal, float3 normalWS
     b = normalize(b - n * dot(n, b) - t * dot(t, b));
     perturbedNormalWS = normalize(t * normalTS.x + b * normalTS.y + n * normalTS.z);
 
+    half3 albedo = saturate(colour.rgb * tint.rgb * shade);
+    half smoothness = saturate(1.0h - rough * _RoughnessScale * (1.0h + 0.5h * _Variation * (patch * 2.0h - 1.0h)));
+    half metallic = _Metallic;
+    half ao = lerp(1.0h, occlusion, _OcclusionStrength);
+
+    if (_Windows > 0.5)
+    {
+        half pane, rim;
+        half3 glass;
+        WindowPane(mapPosition, mapNormal, dpdx, dpdy, pane, rim, glass);
+        // A dark frame round a smooth, flat pane of glass that shows the sky; the wall's own bumps stop at the frame.
+        albedo = lerp(albedo, glass, pane) * (1.0h - 0.55h * rim);
+        smoothness = lerp(smoothness, _WindowGloss, pane);
+        metallic = lerp(metallic, 0.0h, pane);
+        ao = lerp(ao, 1.0h, pane);
+        perturbedNormalWS = normalize(lerp(perturbedNormalWS, n, (float)saturate(pane + rim)));
+    }
+
     surfaceData = (SurfaceData)0;
-    surfaceData.albedo = saturate(colour.rgb * tint.rgb * shade);
+    surfaceData.albedo = albedo;
     surfaceData.specular = half3(0.0h, 0.0h, 0.0h);
-    surfaceData.metallic = _Metallic;
-    surfaceData.smoothness = saturate(1.0h - rough * _RoughnessScale * (1.0h + 0.5h * _Variation * (patch * 2.0h - 1.0h)));
+    surfaceData.metallic = metallic;
+    surfaceData.smoothness = smoothness;
     surfaceData.normalTS = half3(0.0h, 0.0h, 1.0h);
     surfaceData.emission = half3(0.0h, 0.0h, 0.0h);
-    surfaceData.occlusion = lerp(1.0h, occlusion, _OcclusionStrength);
+    surfaceData.occlusion = ao;
     surfaceData.alpha = 1.0h;
     surfaceData.clearCoatMask = 0.0h;
     surfaceData.clearCoatSmoothness = 0.0h;

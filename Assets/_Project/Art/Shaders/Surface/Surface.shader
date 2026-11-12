@@ -3,7 +3,8 @@
 // scaled cubes need no UVs and boxes side by side run one texture across their seams. Each material has a side set
 // (walls) and a top set (floors, roofs, the tops of things), each a colour, an OpenGL normal, a roughness and an
 // optional ambient occlusion map as ambientCG ships them (Art/Textures/Surfaces), read separately, so nobody packs
-// channels. A gentle patchiness over metres hides the repeat on long walls. Materials are written by the builder from
+// channels. A gentle patchiness over metres hides the repeat on long walls. A look can paint a grid of windows on its
+// walls (WindowPane), fitted by the builder to the building it covers. Materials are written by the builder from
 // Tables/MapSurfaces (GreyboxBuilder.Surfaces); the passes follow URP 17.3's Lit, with the lit pass forward-only so the
 // surfaces also draw under the deferred renderer.
 Shader "ENFILADE/Surface"
@@ -31,6 +32,15 @@ Shader "ENFILADE/Surface"
         _Variation("Large-scale variation", Range(0, 0.5)) = 0.12
         _VariationSize("Variation size (m)", Float) = 9
         [ToggleUI] _ObjectSpace("Map in the object's own space (moving parts)", Float) = 0
+
+        // Painted windows (Tables/MapWindows), set per look by the builder.
+        [ToggleUI] _Windows("Painted windows", Float) = 0
+        _WindowSize("Window: width, height, frame (m)", Vector) = (1.3, 1.5, 0.08, 0)
+        _WindowGrid("Window grid: x spacing, x offset, z spacing, z offset (m)", Vector) = (3, 0, 3, 0)
+        _WindowRows("Window rows: floor, a pane's bottom, lowest bottom, highest top (m)", Vector) = (3, 0.9, 0.9, 999)
+        _WindowColor("Window glass", Color) = (0.16, 0.19, 0.22, 1)
+        _WindowGloss("Window glass smoothness", Range(0, 1)) = 0.9
+        _WindowVariety("Window pane to pane", Range(0, 1)) = 0.35
 
         // For URP's shared shadow and depth passes, which read them only when alpha clipping is on (never here).
         [HideInInspector] _Cutoff("Alpha cutoff", Range(0, 1)) = 0.5
