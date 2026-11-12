@@ -94,7 +94,7 @@ Support.repairReach,3.5,F로 고칠 수 있는 바리케이드까지 거리(m)
 Support.torchRate,120,용접 토치 카드가 있으면 망치 대신 토치로 초당 이만큼 고친다(연료가 있는 동안)
 Support.torchFuel,100,용접 토치 연료 최대. 고치지 않는 동안 torchRegen씩 다시 찬다
 Support.torchRegen,8,용접 토치 연료가 다시 차는 양(초당)
-Support.torchCost,15,용접 토치로 바리케이드 체력 100을 고칠 때 드는 연료. 400을 다 고치면 60. 연료가 바닥나면 망치로 돌아간다
+Support.torchCost,15,용접 토치로 바리케이드 체력 100을 고칠 때 드는 연료. 400을 다 고치면 60. 연료가 바닥나면 다 찰 때까지 망치로 고친다
 Cards.momentumSeconds,3,기세 카드(공용): 맞힐 때마다 강화가 이어지는 시간(초). 맞히면 다시 처음부터. 빗나가도 깎이지 않는다
 Point.gunslingerSeconds,2.5,건슬링어 카드: 총을 바꿔 든 뒤 그 총이 세지는 시간(초)
 Ghost.tigerReach,6,화이트 타이거 카드: 헤드 헌터가 가득 찬 채 헤드샷으로 처치하면 그 자리 둘레 이 반경(m)의 적이 휘청인다

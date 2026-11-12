@@ -73,6 +73,8 @@ public sealed class SupportKit : MonoBehaviour
     private ushort mendId;
     // The welding torch's fuel (-1: full at the next look), and the tool shown in hand.
     private float torchFuel = -1f;
+    // Run dry: the hammer until the torch is full again (the user, 2026-11-12: "토치 바닥나면 완충되기 전까지 망치 쓰는 거 좋다").
+    private bool torchDry;
     private RepairLooks.Tool shownTool;
 
     /// <summary>The bag now and the most it holds; what a resupply and a barricade take from it.</summary>
@@ -106,7 +108,9 @@ public sealed class SupportKit : MonoBehaviour
     public bool HasTorch => PlayerPerks.Has(PlayerPerks.SupportTorch);
     public float TorchFuel => Mathf.Max(0f, torchFuel);
     public float TorchFuelMax => Mathf.Max(1f, Number("torchFuel", 100f));
-    public bool Torching => HasTorch && TorchFuel > .5f;
+    public bool Torching => HasTorch && !torchDry && TorchFuel > .5f;
+    /// <summary>The torch ran dry and is filling back to full, the hammer working meanwhile.</summary>
+    public bool TorchDry => HasTorch && torchDry;
     /// <summary>The tool in hand changed (0 none, 1 hammer, 2 torch): the others see it (PlayerNetworkCombat).</summary>
     public event Action<byte> ToolHeld;
 
@@ -154,6 +158,7 @@ public sealed class SupportKit : MonoBehaviour
         // The torch's fuel fills back while it rests; the tool in hand is the one at work.
         if (torchFuel < 0f) torchFuel = TorchFuelMax;
         if (!torching) torchFuel = Mathf.Min(TorchFuelMax, TorchFuel + Mathf.Max(0f, Number("torchRegen", 8f)) * Time.deltaTime);
+        if (torchDry && TorchFuel >= TorchFuelMax - .01f) torchDry = false;
         Show(!Mending ? RepairLooks.Tool.None : torching ? RepairLooks.Tool.Torch : RepairLooks.Tool.Hammer);
         Plan();
         Preview();
@@ -175,6 +180,7 @@ public sealed class SupportKit : MonoBehaviour
         Mending = false;
         mendOwed = 0f;
         torchFuel = -1f;
+        torchDry = false;
         Show(RepairLooks.Tool.None);
         supply = -1f;
         lastGive = lastBuild = -99f;
@@ -502,6 +508,7 @@ public sealed class SupportKit : MonoBehaviour
             float cost = Mathf.Max(0f, Number("torchCost", 15f)) / 100f;
             if (cost > 0f) amount = Mathf.Min(amount, TorchFuel / cost);
             torchFuel = Mathf.Max(0f, TorchFuel - Mathf.Max(0f, amount) * cost);
+            if (torchFuel <= .5f) torchDry = true;
         }
         if (amount <= 0f) return;
         // Keeping the team's wall up is the Support's fight too: it fills the gauge (UltimateCharge.AwardHelp).
