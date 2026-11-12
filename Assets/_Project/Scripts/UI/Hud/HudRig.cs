@@ -6,11 +6,12 @@ using UnityEngine;
 /// those sides (the new-objective alert in the top centre), and gives each element named in HudTilt.csv its own lean.
 /// Center (crosshair, prompts) stays flat. The groups were LEFT, MIDDLE and RIGHT, with ★ on Mission, Chat and Health,
 /// until the user asked for a tidy hierarchy (2026-11-11); the old wave indicator under Center is switched off.
+/// All three keep the margins to the screen's edges the prefab drew them with on any screen shape (HudFrame).
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class HudRig : MonoBehaviour
 {
-    private const string LeftName = "Left Panel", RightName = "Right Panel";
+    private const string LeftName = "Left Panel", RightName = "Right Panel", CenterName = "Center";
     // Children of a side that sit in the centre of the screen.
     private static readonly string[] FlatNames = { "ObjectiveAlert" };
 
@@ -28,8 +29,9 @@ public sealed class HudRig : MonoBehaviour
         }
         var left = Find(all, LeftName);
         var right = Find(all, RightName);
-        if (left != null) { HudPlane.Attach(left, HudPlane.Side.Left); HudBoard.Add(left, HudPlane.Side.Left); }
-        if (right != null) { HudPlane.Attach(right, HudPlane.Side.Right); HudBoard.Add(right, HudPlane.Side.Right); }
+        if (left != null) { HudFrame.Keep(left); HudPlane.Attach(left, HudPlane.Side.Left); HudBoard.Add(left, HudPlane.Side.Left); }
+        if (right != null) { HudFrame.Keep(right); HudPlane.Attach(right, HudPlane.Side.Right); HudBoard.Add(right, HudPlane.Side.Right); }
+        HudFrame.Keep(Find(all, CenterName));
         foreach (string id in GameTables.RowIds(HudTilt.TableName))
         {
             var element = Find(all, id);

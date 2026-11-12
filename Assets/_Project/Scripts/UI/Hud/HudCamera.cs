@@ -56,7 +56,12 @@ public sealed class HudCamera : MonoBehaviour
     /// <summary>Sideways (x) and vertical (y) sway in degrees, already scaled by the player's setting.</summary>
     public static Vector2 Sway => instance != null ? instance.sway : Vector2.zero;
     /// <summary>How far the HUD's sides turn within the screen for the local player's lean (°, anticlockwise positive).</summary>
-    public static float LeanRoll => instance != null ? instance.leanRoll : 0f;
+    public static float LeanRoll => !float.IsNaN(LeanHeld) ? LeanHeld : instance != null ? instance.leanRoll : 0f;
+    /// <summary>
+    /// A lean Tools → HUD → 겹침 검사 holds the HUD at while it measures (°, as LeanRoll); NaN, the rest of the time,
+    /// lets the player's own lean through. HudOverlapCheck clears it when Play starts.
+    /// </summary>
+    public static float LeanHeld = float.NaN;
     /// <summary>True while this camera draws, so StandbyCamera can tell it from a camera that shows the world.</summary>
     public static bool IsDrawing => instance != null && instance.view != null && instance.view.enabled;
 

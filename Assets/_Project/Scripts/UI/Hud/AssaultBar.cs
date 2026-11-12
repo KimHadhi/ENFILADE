@@ -11,14 +11,22 @@ using UnityEngine.UI;
 /// plays like a track: time gone at the left, the line with its pink head walking along, the whole length at the right.
 /// When it ends, a white edge cuts the tape away back to the left and the objective shows again. It sits on the bar
 /// itself (MissionBarLook adds it), so it leans and follows with the HUD. Real time.
+/// The time row is the bar's own row under it: MissionHUD's key cap and 목표·점수판 hint stood in the same place and the
+/// time lay over them (user, 2026-11-12: "아니 TAB이랑 목표 점수판 저거랑 겹치는데?"), so the row tells how far under the
+/// bar it reaches (Below) and what stands under the bar steps down out of its way while it is there.
 /// </summary>
 [DisallowMultipleComponent]
-public sealed class AssaultBar : MonoBehaviour
+public sealed class AssaultBar : MonoBehaviour, IHudPreview
 {
     // The ! tab's width as MissionBarLook lays it (Hud.csv Mission badgeSize.x), the caps', the rails', the slant.
     private const float TabWidth = 50f, CapWidth = 14f, RailHeight = 5f, Slant = 6f;
     private const float GrowSeconds = .32f, FlipSeconds = .22f, WipeSeconds = .34f, CutSeconds = .5f, RunSpeed = 86f, RailSpeed = 64f;
+    // The time row: its middle this far under the bar's foot, its time labels this tall and wide, where the line starts
+    // and the room before the whole length (px).
+    private const float RowDrop = 22f, RowHeight = 18f, StampWidth = 48f, LineLeft = 54f, WholeGap = 8f;
     private const string Words = "습격 중   ///   ";
+    // What Tools → HUD → 겹침 검사 shows while it holds the bar in its assault (s).
+    private const float PreviewElapsed = 37f, PreviewLength = 90f;
 
     private static Texture2D hatch;
     private RectTransform root, tape, track, head, wipe, cut, tab;
@@ -27,12 +35,22 @@ public sealed class AssaultBar : MonoBehaviour
     private TextMeshProUGUI run, gone, whole;
     private Image trackFill;
     private float age = -1f, ending = -1f, runOffset;
-    private bool on;
+    private bool on, previewing;
+
+    /// <summary>
+    /// How far under the bar's foot the time row reaches now (px), from the moment the tape starts to grow until the row
+    /// has faded away with it; 0 while the bar is plain. Whatever stands under the bar keeps clear of this.
+    /// </summary>
+    public float Below => root != null && root.gameObject.activeSelf ? RowDrop + RowHeight * .5f : 0f;
+
+    /// <summary>Tools → HUD → 겹침 검사: holds the bar in an assault (a 1:30 song at 0:37) while it measures.</summary>
+    public void Preview(bool show) => previewing = show;
 
     private void LateUpdate()
     {
         float dt = Time.unscaledDeltaTime;
         bool wanted = CampaignRun.TryAssault(out float elapsed, out float length);
+        if (previewing && !wanted) { wanted = true; elapsed = PreviewElapsed; length = PreviewLength; }
         if (wanted && !on) Begin();
         else if (!wanted && on) End();
         if (root == null || !root.gameObject.activeSelf) return;
@@ -89,14 +107,15 @@ public sealed class AssaultBar : MonoBehaviour
         cut.anchoredPosition = new Vector2(TabWidth + shown, 0f);
         // The song's line: time gone, the head walking along, the whole length.
         float share = length > 0f ? Mathf.Clamp01(elapsed / length) : 0f;
-        float trackWidth = Mathf.Max(40f, width - 108f);
+        // The whole length's box ends just past the strip's end, under the count box.
+        float trackWidth = Mathf.Max(40f, width - LineLeft - WholeGap - StampWidth + 2f);
         track.sizeDelta = new Vector2(trackWidth, 3f);
         trackFill.rectTransform.sizeDelta = new Vector2(trackWidth * share, 3f);
         head.anchoredPosition = new Vector2(trackWidth * share, 0f);
         gone.text = Clock(elapsed);
         whole.text = Clock(length);
         // The kit's label sits stretched in its own box: the box is what moves.
-        ((RectTransform)whole.rectTransform.parent).anchoredPosition = new Vector2(54f + trackWidth + 8f, 0f);
+        ((RectTransform)whole.rectTransform.parent).anchoredPosition = new Vector2(LineLeft + trackWidth + WholeGap, 0f);
         float lineShow = on ? Ease((age - .1f) / GrowSeconds) : left;
         track.parent.GetComponent<CanvasGroup>().alpha = lineShow;
     }
@@ -180,16 +199,17 @@ public sealed class AssaultBar : MonoBehaviour
         cut.sizeDelta = new Vector2(3f, height + 6f);
         KitSkew.On(KitStyle.Fill(cut, Color.white), Slant).GetComponent<Image>().raycastTarget = false;
 
-        // The track under the bar, played like a song.
-        var line = FeelUI.Rect("Track", root);
+        // The track under the bar, played like a song. Its own name, so the HUD overlap check (HudOverlap.csv) can tell
+        // the row from the bar it hangs on.
+        var line = FeelUI.Rect("Assault Time", root);
         line.anchorMin = line.anchorMax = line.pivot = Vector2.zero;
-        line.anchoredPosition = new Vector2(0f, -22f);
+        line.anchoredPosition = new Vector2(0f, -RowDrop);
         line.gameObject.AddComponent<CanvasGroup>().alpha = 0f;
         var font = GunFeelSettings.Instance != null ? GunFeelSettings.Instance.scoreFont : null;
         gone = Stamp("Gone", line, new Vector2(0f, 0f), TextAlignmentOptions.MidlineLeft, font);
         track = FeelUI.Rect("Line", line);
         track.anchorMin = track.anchorMax = track.pivot = new Vector2(0f, .5f);
-        track.anchoredPosition = new Vector2(54f, 0f);
+        track.anchoredPosition = new Vector2(LineLeft, 0f);
         KitStyle.Fill(track, KitStyle.With(KitStyle.Ice, .22f)).raycastTarget = false;
         var fill = FeelUI.Rect("Played", track);
         fill.anchorMin = fill.anchorMax = fill.pivot = new Vector2(0f, .5f);
@@ -200,7 +220,7 @@ public sealed class AssaultBar : MonoBehaviour
         head.sizeDelta = new Vector2(9f, 9f);
         head.localRotation = Quaternion.Euler(0f, 0f, 45f);
         KitStyle.Fill(head, KitStyle.Accent).raycastTarget = false;
-        whole = Stamp("Whole", line, new Vector2(54f, 0f), TextAlignmentOptions.MidlineLeft, font);
+        whole = Stamp("Whole", line, new Vector2(LineLeft, 0f), TextAlignmentOptions.MidlineLeft, font);
         whole.color = KitStyle.Soft;
         root.gameObject.SetActive(false);
     }
@@ -220,7 +240,7 @@ public sealed class AssaultBar : MonoBehaviour
         var rect = FeelUI.Rect(label, parent);
         rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(0f, .5f);
         rect.anchoredPosition = at;
-        rect.sizeDelta = new Vector2(48f, 18f);
+        rect.sizeDelta = new Vector2(StampWidth, RowHeight);
         var text = KitStyle.Flat(rect, "0:00", 14f, alignment, KitStyle.Ice);
         if (font != null) text.font = font;
         text.textWrappingMode = TextWrappingModes.NoWrap;

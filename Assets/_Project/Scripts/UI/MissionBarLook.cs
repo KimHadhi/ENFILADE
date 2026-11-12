@@ -41,10 +41,20 @@ public sealed class MissionBarLook : MonoBehaviour, ITableBound
     private TMP_Text title, counter, symbol;
     private GameObject counterRoot;
     private MissionLineGraphic line;
+    private AssaultBar assault;
     private string shownId;
     private int shownCurrent, segments;
     private float fill, targetFill, flash, punchClock = -1f, canvasWidth = 1920f;
     private bool numeric;
+
+    /// <summary>
+    /// How far under the bar's foot its own rows reach now (px): the progress line, or an assault's time row while one
+    /// runs. MissionHUD keeps the key cap and hint under the bar clear of it.
+    /// </summary>
+    public float Below => Mathf.Max(lineGap + lineHeight, assault != null ? assault.Below : 0f);
+
+    /// <summary>How far right of the bar's left edge it draws (px): the strip, the count box and the line's tail.</summary>
+    public float Reach { get; private set; }
 
     /// <summary>Takes over the bar's parts. MissionHUD calls it once, before anything is shown.</summary>
     public void Init(TMP_Text title, TMP_Text counter, GameObject counterRoot, Image oldProgress)
@@ -70,7 +80,7 @@ public sealed class MissionBarLook : MonoBehaviour, ITableBound
         counter.richText = true;
         Anchor();
         // A chapter's assault turns the bar into its own tape (D-3, memo 25).
-        if (GetComponent<AssaultBar>() == null) gameObject.AddComponent<AssaultBar>();
+        if (!TryGetComponent(out assault)) assault = gameObject.AddComponent<AssaultBar>();
         GameTables.Bind(HudCamera.TableName, "Mission", this);
     }
 
@@ -184,6 +194,7 @@ public sealed class MissionBarLook : MonoBehaviour, ITableBound
         lineRect.anchorMin = Vector2.zero; lineRect.anchorMax = Vector2.right; lineRect.pivot = Vector2.up;
         lineRect.offsetMin = new Vector2(0f, -lineGap - lineHeight);
         lineRect.offsetMax = new Vector2(counterWidth + Tail, -lineGap);
+        Reach = width + counterWidth + Tail;
         DrawLine();
     }
 
