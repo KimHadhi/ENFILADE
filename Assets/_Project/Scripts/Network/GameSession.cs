@@ -309,7 +309,7 @@ public sealed class GameSession : MonoBehaviour, INetworkPrefabInstanceHandler
         var retry = again;
         again = null;
         if (retry != null) JoinInternet(retry);
-        else if (SceneManager.GetActiveScene().name != MainMenuScreen.SceneName) SceneManager.LoadScene(MainMenuScreen.SceneName);
+        else if (SceneManager.GetActiveScene().name != MainMenuScreen.SceneName) SceneLoad.Go(MainMenuScreen.SceneName);
     }
 
     // Play mode stopped or the game quit without the room ending: the router's port and the sockets' threads must not

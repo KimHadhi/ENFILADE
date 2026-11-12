@@ -576,7 +576,7 @@ public sealed class CampaignRun : MonoBehaviour
         if (HubFlow.Return(next)) return;
         if (string.IsNullOrEmpty(next) || !Application.CanStreamedLevelBeLoaded(next)) return;
         if (GameSession.IsOnline) GameSession.ChangeMap(next);
-        else SceneManager.LoadScene(next);
+        else SceneLoad.Go(next);
     }
 
     private void Prompt()

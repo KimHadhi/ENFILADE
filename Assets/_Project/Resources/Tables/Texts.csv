@@ -1329,3 +1329,15 @@ shop.refuse.grenadefull,투척물이 가득해요,Throwables full,상점 > 투�
 shop.note.nogrenade,투척물 없음,No throwable,상점 > 투척물이 없는 클래스일 때 보충 카드의 작은 글자
 shop.note.grenadefull,투척물 가득,Throwables full,상점 > 투척물이 가득일 때 보충 카드의 작은 글자
 results.wait,결과를 모으는 중,,결과 > 허브로 돌아와 결과 연출이 시작되기 전 검은 막 오른쪽 아래(허브가 다 준비될 때까지)
+#--- 로딩 화면 ---,,,
+loading.tag,불러오는 중,LOADING,로딩 화면 > 왼쪽 아래 분홍 띠(LoadingScreen)
+loading.title.menu,ENFILADE,ENFILADE,로딩 화면 > 게임을 켤 때(타이틀 화면) 큰 제목. 맵에서는 Maps.csv의 맵 이름이 나온다
+loading.stage.scene,맵을 불러오는 중,Loading the map,로딩 화면 > 막대 아래: 씬 파일을 읽는 동안
+loading.stage.wake,맵을 깨우는 중,Waking the map,로딩 화면 > 막대 아래: 씬의 물체들이 깨어나는 긴 한 프레임
+loading.stage.player,캐릭터를 세우는 중,Getting you in,로딩 화면 > 막대 아래: 내 플레이어와 카메라를 기다리는 동안
+loading.stage.pools,효과를 준비하는 중,Preparing effects,로딩 화면 > 막대 아래: 탄흔·피·피격 표시·데미지 숫자·소리를 미리 만드는 동안(CombatWarmup)
+loading.stage.looks,좀비와 피를 미리 그리는 중,Drawing zombies and blood ahead,로딩 화면 > 막대 아래: 전투에서 처음 그릴 것을 카메라 앞에서 한 번씩 그리는 동안(CombatRehearsal)
+loading.stage.shaders,셰이더를 준비하는 중,Compiling shaders,로딩 화면 > 막대 아래: 에디터가 셰이더를 컴파일하는 동안
+loading.stage.pso,그래픽 상태를 준비하는 중,Preparing graphics states,로딩 화면 > 막대 아래: 빌드에 기록해 둔 그래픽 상태(PSO)를 만드는 동안(PsoWarmup)
+loading.stage.fonts,글자를 준비하는 중,Preparing text,로딩 화면 > 막대 아래: 글꼴에 글자를 미리 그리는 동안(FontWarmup)
+loading.stage.portraits,캐릭터 사진을 찍는 중,Taking character pictures,로딩 화면 > 막대 아래: 타이틀 화면이 캐릭터 카드 사진을 찍는 동안(SkinPortraits)

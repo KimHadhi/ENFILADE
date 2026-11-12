@@ -100,7 +100,7 @@ public sealed class SettingsMenu : MonoBehaviour
     {
         Close();
         if (GameSession.IsOnline) GameSession.Leave();
-        else SceneManager.LoadScene(MainMenuScreen.SceneName);
+        else SceneLoad.Go(MainMenuScreen.SceneName);
     }
 
     public static void QuitGame()

@@ -20,6 +20,7 @@ public static class GameCommands
         router.Register("director", "캠페인 좀비 디렉터: 지금 단계·긴장도·적 수·다음 떼까지", _ => CampaignRun.DirectorReport());
         router.Register("hub", "은신처(허브)로 가기 (혼자, 또는 방장이면 방 전체)", HubFlow.Command);
         router.Register("results", "마지막으로 끝낸 장의 결과 연출을 다시 보기", ResultsShow.Command);
+        router.Register("pso", "trace · save · (비우면 상태) — 빌드의 그래픽 상태 기록, 개발 빌드에서 (PsoWarmup)", PsoWarmup.Command);
         router.Register("sound", "<뱅크>/<키> · cue <큐> · list <뱅크> — 소리 미리 듣기 (예: /sound cue Execution/Behind)", SoundPreview.Command);
     }
 }

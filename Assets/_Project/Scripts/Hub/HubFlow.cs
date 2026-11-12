@@ -41,7 +41,7 @@ public static class HubFlow
         if (GameSession.IsOnline) return;
         GameSettings.Save();
         string scene = StartScene;
-        if (Application.CanStreamedLevelBeLoaded(scene)) SceneManager.LoadScene(scene);
+        if (Application.CanStreamedLevelBeLoaded(scene)) SceneLoad.Go(scene);
     }
 
     /// <summary>
@@ -54,7 +54,7 @@ public static class HubFlow
         if (!IsBuilt) return false;
         Chosen = !string.IsNullOrEmpty(next) && Application.CanStreamedLevelBeLoaded(next) ? next : FirstChapter();
         if (GameSession.IsOnline) return GameSession.IsGuest || GameSession.ChangeMap(SceneName);
-        SceneManager.LoadScene(SceneName);
+        SceneLoad.Go(SceneName);
         return true;
     }
 
@@ -64,7 +64,7 @@ public static class HubFlow
         if (string.IsNullOrEmpty(chapter) || !Application.CanStreamedLevelBeLoaded(chapter)) return false;
         Chosen = chapter;
         if (GameSession.IsOnline) return !GameSession.IsGuest && GameSession.ChangeMap(chapter);
-        SceneManager.LoadScene(chapter);
+        SceneLoad.Go(chapter);
         return true;
     }
 
@@ -75,7 +75,7 @@ public static class HubFlow
         if (InHub) return "이미 허브예요.";
         if (GameSession.IsGuest) return "방장만 방 전체를 허브로 데려갈 수 있어요.";
         if (GameSession.IsOnline) return GameSession.ChangeMap(SceneName) ? "방 전체가 허브로 가요." : "지금은 옮길 수 없어요.";
-        SceneManager.LoadScene(SceneName);
+        SceneLoad.Go(SceneName);
         return "허브로 가요.";
     }
 

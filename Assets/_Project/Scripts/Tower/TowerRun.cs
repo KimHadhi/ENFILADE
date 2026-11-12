@@ -564,7 +564,7 @@ public sealed class TowerRun : MonoBehaviour
         string scene = gameObject.scene.name;
         if (HubFlow.Return(scene)) return;
         if (GameSession.IsOnline) GameSession.ChangeMap(scene);
-        else SceneManager.LoadScene(scene);
+        else SceneLoad.Go(scene);
     }
 
     // ---- Palms ----
