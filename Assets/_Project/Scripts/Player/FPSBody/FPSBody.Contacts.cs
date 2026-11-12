@@ -166,6 +166,32 @@ public sealed partial class FPSBody
     }
 
     /// <summary>
+    /// The way a hand's elbow points off its shoulder-to-hand line as KINEMATION's arms have it now (the playing clip's over
+    /// the plain hold's, mixed as HandContact mixes the palms), in the world: their arms' frame laid on this gun's rest hold
+    /// from the eyes (FPSGun.HoldFromEyes), so it stays with the body and the view while a wall pulls the gun back or a shot
+    /// kicks it. The arm IK turns the elbow toward it (PlayerBodyHands.HoldGunContacts): bending to the side this frame's
+    /// pose happened to have, an arm folded up into the view or flipped as FPSAF's arms came in nearly straight or turned
+    /// over (user, 2026-11-12: "팔이 있을 위치를 못 잡아서 기괴하게 꺾이거나 … 확 튀는"). False where neither was read.
+    /// </summary>
+    internal bool ElbowWay(bool isLeft, out Vector3 way)
+    {
+        way = Vector3.zero;
+        if (!HoldsGun || rig == null) return false;
+        float clip = hasContact ? contactWeight : 0f;
+        float hold = HoldSide(isLeft, out GunContact steady) ? holdContactWeight : 0f;
+        if (MixOf(clip, hold, out float mix) <= 0f) return false;
+        Vector3 holdWay = isLeft ? steady.LeftElbow : steady.RightElbow, clipWay = isLeft ? contact.LeftElbow : contact.RightElbow;
+        // One alone, or one of them too straight to tell: the other.
+        if (mix >= 1f || holdWay.sqrMagnitude < .5f) holdWay = clipWay;
+        if (mix <= 0f || clipWay.sqrMagnitude < .5f) clipWay = holdWay;
+        if (holdWay.sqrMagnitude < .5f) return false;
+        Quaternion rest = eyes != null && held.HoldFromEyes(controller.AimBlend, out KTransform kept)
+            ? eyes.rotation * kept.rotation : rig.IkWeaponBone.rotation;
+        way = rest * Vector3.Slerp(holdWay, clipWay, mix).normalized;
+        return true;
+    }
+
+    /// <summary>
     /// The plain hold's palm on the gun as it sits now (the gun kept in view through a vault or a slide too): the palm's
     /// middle, the way the fingers point and the way the palm faces. False while it isn't on.
     /// </summary>
@@ -249,6 +275,8 @@ public sealed partial class FPSBody
         into.RightDigits ??= new Vector3[GunArms.DigitCount];
         into.LeftDigits ??= new Vector3[GunArms.DigitCount];
         if (!arms.Digits(false, into.RightDigits) || !arms.Digits(true, into.LeftDigits)) into.RightDigits = into.LeftDigits = null;
+        arms.ElbowWay(false, toGun, out into.RightElbow);
+        arms.ElbowWay(true, toGun, out into.LeftElbow);
         return true;
     }
 
@@ -284,6 +312,10 @@ public sealed partial class FPSBody
             || !arms.Palm(true, at, toGun, out sample.LeftPalm, out sample.LeftFingers, out sample.LeftFacing)) return false;
         sample.RightDigits = arms.Digits(false, clipRightDigits) ? clipRightDigits : null;
         sample.LeftDigits = arms.Digits(true, clipLeftDigits) ? clipLeftDigits : null;
+        // The elbows in the frame of the gun as the pose clip holds it, as the hold's are: KINEMATION's arms bend from their
+        // shoulders, which don't move with the gun.
+        arms.ElbowWay(false, fromPose, out sample.RightElbow);
+        arms.ElbowWay(true, fromPose, out sample.LeftElbow);
         return true;
     }
 

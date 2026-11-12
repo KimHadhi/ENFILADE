@@ -74,8 +74,33 @@ public sealed partial class PlayerBodyHands
             placed[side] = true;
             if (measure) Miss(arm, palm, fingers, facing, out palmMissBefore[side], out palmTurnBefore[side]);
             Quaternion rotation = arm.HandRotation(fingers, facing);
-            arm.Solve(arm.WristAtPalm(palm, rotation), rotation, arm.Elbow, weight, 1f, shoulderReach);
+            // The elbow turns toward the way KINEMATION's points at this moment (FPSBody.ElbowWay), not the side this
+            // frame's pose happens to bend to; without their way, that side as before.
+            Vector3 hint = arm.Elbow;
+            if (gunBody.ElbowWay(isLeft, out Vector3 elbowWay))
+            {
+                hint = arm.Upper.position + (palm - arm.Upper.position) * .5f + elbowWay * .3f;
+                if (Application.isEditor) NoteElbow(arm, isLeft, palm, elbowWay);
+            }
+            arm.Solve(arm.WristAtPalm(palm, rotation), rotation, hint, weight, 1f, shoulderReach);
         }
+    }
+
+    // Each character, gun and arm noted once per session the first time the pose this frame bent the elbow over a right
+    // angle off KINEMATION's side (the folds and flips the user saw, 2026-11-12), to Logs/gun-hold-report.txt.
+    private static readonly HashSet<(string skin, WeaponData gun, bool isLeft)> notedElbows = new();
+
+    private void NoteElbow(ArmIK arm, bool isLeft, Vector3 palm, Vector3 way)
+    {
+        var data = weapons != null ? weapons.EquippedData : null;
+        if (data == null) return;
+        Vector3 line = palm - arm.Upper.position;
+        Vector3 now = Vector3.ProjectOnPlane(arm.Elbow - arm.Upper.position, line), wanted = Vector3.ProjectOnPlane(way, line);
+        if (now.sqrMagnitude < 1e-6f || wanted.sqrMagnitude < 1e-6f) return;
+        float off = Vector3.Angle(now, wanted);
+        if (off < 90f || !notedElbows.Add((SkinId ?? "?", data, isLeft))) return;
+        Write($"{System.DateTime.Now:HH:mm:ss} {SkinId ?? "?"} {data.name}: {(isLeft ? "left" : "right")} elbow came in {off:0}° off "
+            + "KINEMATION's side (this frame's arm pose), turned to theirs\n");
     }
 
     // How far a palm is from its place on the gun (m), and the larger of how far its fingers' way and its facing are turned

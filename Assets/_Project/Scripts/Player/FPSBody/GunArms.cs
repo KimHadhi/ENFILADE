@@ -4,13 +4,15 @@ using UnityEngine;
 /// One moment of a gun's own clip as KINEMATION's arms hold it, in the gun's frame (the gun model's, KINEMATION's weapon
 /// bone turned by the gun's rotationOffset): how far the clip has moved and turned the gun from where its pose clip holds
 /// it, and where each palm is on the gun, the way its fingers point and the way it faces (ArmIK's hand frame), and the way
-/// each finger joint points (GunArms.Digits), when they were read.
+/// each finger joint points (GunArms.Digits), when they were read; and the way each elbow points off its shoulder-to-hand
+/// line, in the frame of the gun as the pose clip holds it (zero when the arm was too straight to tell).
 /// </summary>
 internal struct GunContact
 {
     public Vector3 GunMove;
     public Quaternion GunTurn;
     public Vector3 RightPalm, RightFingers, RightFacing, LeftPalm, LeftFingers, LeftFacing;
+    public Vector3 RightElbow, LeftElbow;
     // Each finger segment's way in its own hand's frame (GunArms.Digits): null when not read. The arrays belong to
     // whoever filled them (FPSBody's buffers for a clip's moment, the gun's own for its hold).
     public Vector3[] RightDigits, LeftDigits;
@@ -40,6 +42,8 @@ internal sealed class GunArms
     private sealed class Hand
     {
         public Transform Wrist, Index, Middle, Ring, Pinky;
+        // The arm's shoulder joint and elbow (upperarm_, lowerarm_), for the way the elbow points; null if missing.
+        public Transform Shoulder, Elbow;
         // Each finger's three joints (FingerNames' order) and the way its tip joint points in its own axes: the middle
         // joint's way to the tip joint, as KINEMATION's skeletons lay every finger bone along the same axis.
         public readonly Transform[] Joints = new Transform[DigitCount];
@@ -127,6 +131,24 @@ internal sealed class GunArms
     }
 
     /// <summary>
+    /// The way the elbow points now off the line from the shoulder joint to the wrist (unit), turned by
+    /// <paramref name="toFrame"/> into the frame wanted. False when the arm lacks the joints or is too straight to tell.
+    /// </summary>
+    internal bool ElbowWay(bool isLeft, Quaternion toFrame, out Vector3 way)
+    {
+        way = Vector3.zero;
+        var hand = isLeft ? left : right;
+        if (!hand.Valid || hand.Shoulder == null || hand.Elbow == null) return false;
+        Vector3 line = hand.Wrist.position - hand.Shoulder.position;
+        if (line.sqrMagnitude < 1e-8f) return false;
+        Vector3 off = Vector3.ProjectOnPlane(hand.Elbow.position - hand.Shoulder.position, line);
+        // Under a centimetre off the line on a 25 cm upper arm the side it bends to is noise.
+        if (off.sqrMagnitude < 1e-4f) return false;
+        way = toFrame * off.normalized;
+        return true;
+    }
+
+    /// <summary>
     /// The way each finger segment of a hand points now, in that hand's own frame: x along the way the fingers point (wrist
     /// to middle knuckle), y the way the palm faces (as Palm takes it), z across (x × y); index, middle, ring, little, thumb,
     /// each base, middle and tip (HandGrip's order). Read from where the joints are, so it holds whatever the bones' axes;
@@ -162,7 +184,9 @@ internal sealed class GunArms
             Index = Find(wrist, "index_01_" + side),
             Middle = Find(wrist, "middle_01_" + side),
             Ring = Find(wrist, "ring_01_" + side),
-            Pinky = Find(wrist, "pinky_01_" + side)
+            Pinky = Find(wrist, "pinky_01_" + side),
+            Shoulder = Find(root, "upperarm_" + side),
+            Elbow = Find(root, "lowerarm_" + side)
         };
         hand.HasDigits = true;
         for (int f = 0; f < 5 && hand.HasDigits; f++)
