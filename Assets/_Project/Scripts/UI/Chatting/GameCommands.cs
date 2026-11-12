@@ -22,5 +22,6 @@ public static class GameCommands
         router.Register("results", "마지막으로 끝낸 장의 결과 연출을 다시 보기", ResultsShow.Command);
         router.Register("pso", "trace · save · (비우면 상태) — 빌드의 그래픽 상태 기록, 개발 빌드에서 (PsoWarmup)", PsoWarmup.Command);
         router.Register("sound", "<뱅크>/<키> · cue <큐> · list <뱅크> — 소리 미리 듣기 (예: /sound cue Execution/Behind)", SoundPreview.Command);
+        router.Register("point", "F 없이 손가락질 고정·풀기 — 손 모양을 Poke.csv Point.* 로 고치며 보기 (F5로 몸 전체)", PlayerPoint.Command);
     }
 }

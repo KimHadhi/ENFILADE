@@ -14,11 +14,24 @@ public sealed class PlayerPoint : MonoBehaviour
 {
     private PlayerMovement movement;
     private PlayerBody body;
+    private WeaponController weapon;
     private Animator armed;
-    private bool held, mirroredPointing, mirroredNoPoke;
+    // pinned: the console's /point keeps this PC's player pointing without F, to look at the hand while tuning it.
+    private bool held, pinned, mirroredPointing, mirroredNoPoke;
 
-    /// <summary>This player points now: their held F on their own PC, their pose's mark on every other.</summary>
-    public bool Pointing => movement != null && (movement.IsNetworkDriven ? mirroredPointing : held);
+    /// <summary>This player points now: their held F on their own PC (or /point), their pose's mark on every other.</summary>
+    public bool Pointing => movement != null && (movement.IsNetworkDriven ? mirroredPointing : held || Pinned);
+
+    // /point holds while the hand is free (it rests through aiming, a reload, a throw and comes back after).
+    private bool Pinned
+    {
+        get
+        {
+            if (!pinned) return false;
+            if (weapon == null) weapon = GetComponent<WeaponController>();
+            return CanPoint(movement, weapon);
+        }
+    }
 
     /// <summary>They let friends poke them: their own setting on their PC, their pose's mark on every other.</summary>
     public bool Pokable => movement == null || (movement.IsNetworkDriven ? !mirroredNoPoke : GameSettings.Current.letOthersPoke);
@@ -40,11 +53,25 @@ public sealed class PlayerPoint : MonoBehaviour
     /// <summary>This PC's player starts or stops pointing (PlayerPing).</summary>
     internal void Hold(bool pointing) => held = pointing;
 
+    /// <summary>
+    /// The console's /point: this PC's player keeps pointing without F held (friends see it too), so the hand can be looked
+    /// at, from F5 as well, while Poke.csv's Point.* numbers are changed and saved: the running game reads them again at
+    /// once (GameTablesWatcher). Again lets go. Returns what the console prints.
+    /// </summary>
+    internal static string Command(string args)
+    {
+        var who = PlayerRoster.Local;
+        if (who == null) return Texts.Get("point.pinned.none");
+        if (!who.TryGetComponent(out PlayerPoint point)) point = who.gameObject.AddComponent<PlayerPoint>();
+        point.pinned = !point.pinned;
+        return Texts.Get(point.pinned ? "point.pinned.on" : "point.pinned.off");
+    }
+
     /// <summary>The marks this PC's player's pose carries for the point (MovementMirror.Capture).</summary>
     internal static PlayerPose.Marks MarksOf(PlayerMovement who)
     {
         var marks = PlayerPose.Marks.None;
-        if (who != null && who.TryGetComponent(out PlayerPoint point) && point.held) marks |= PlayerPose.Marks.Pointing;
+        if (who != null && who.TryGetComponent(out PlayerPoint point) && point.Pointing) marks |= PlayerPose.Marks.Pointing;
         if (!GameSettings.Current.letOthersPoke) marks |= PlayerPose.Marks.NoPoke;
         return marks;
     }

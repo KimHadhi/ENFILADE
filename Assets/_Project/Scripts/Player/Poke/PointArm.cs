@@ -147,11 +147,15 @@ public sealed class PointArm : MonoBehaviour
         Vector3 way = (found ? hit.Point : origin + look * 10f) - shoulder;
         way = way.sqrMagnitude > 1e-6f ? way.normalized : look;
 
-        // The hand along that way, the palm down and turned in, the index out and the rest in a fist.
+        // The hand along that way, the palm down and turned in, bent at the wrist as Point.wristBend/wristSide say, the
+        // index out and the rest in a fist.
         Vector3 palm = WantedPalm(way, frame);
-        Quaternion handGoal = HandAlong(way, palm);
+        Vector3 handWay = Wrist(way, palm);
+        Vector3 handPalm = Vector3.ProjectOnPlane(palm, handWay);
+        handPalm = handPalm.sqrMagnitude > 1e-8f ? handPalm.normalized : palm;
+        Quaternion handGoal = HandAlong(handWay, handPalm);
         hand.rotation = handGoal;
-        Fingers(way, palm);
+        Fingers(handWay, handPalm);
         Vector3 tipOffset = Fingertip() - hand.position;
         float reach = Vector3.Distance(upper.position, lower.position) + Vector3.Distance(lower.position, hand.position) + tipOffset.magnitude;
 
@@ -183,8 +187,10 @@ public sealed class PointArm : MonoBehaviour
         reached = hasReached && follow > 0f ? Vector3.Lerp(reached, goal, 1f - Mathf.Pow(.5f, dt / follow)) : goal;
         hasReached = true;
 
-        // The arm puts the wrist where the fingertip lands, the elbow down and out (the left arm's out is the body's left).
-        Vector3 hint = shoulder + (-frame.up * .8f - frame.right * .55f - frame.forward * .1f) * reach;
+        // The arm puts the wrist where the fingertip lands, the elbow down, out and back by Point.elbowDown/Out/Back (the
+        // left arm's out is the body's left).
+        Vector3 hint = shoulder + (-frame.up * PokeTables.Number("Point.elbowDown", .8f) - frame.right * PokeTables.Number("Point.elbowOut", .55f)
+            - frame.forward * PokeTables.Number("Point.elbowBack", .1f)) * reach;
         TwoBoneIK.Solve(upper, lower, hand, reached - tipOffset, hint);
         hand.rotation = handGoal;
 
@@ -229,6 +235,20 @@ public sealed class PointArm : MonoBehaviour
         return palm.sqrMagnitude > 1e-8f ? palm.normalized : Vector3.down;
     }
 
+    // The hand's way out of the wrist: the pointing way bent toward the palm by Point.wristBend (degrees, - back toward
+    // the back of the hand) and toward the thumb by Point.wristSide (- toward the little finger). The fingertip still
+    // goes where the point goes; only the hand's angle to it changes.
+    private static Vector3 Wrist(Vector3 way, Vector3 palm)
+    {
+        float bend = PokeTables.Number("Point.wristBend", 0f) * Mathf.Deg2Rad, side = PokeTables.Number("Point.wristSide", 0f) * Mathf.Deg2Rad;
+        if (bend == 0f && side == 0f) return way;
+        // For a left hand this runs from the little finger's side to the thumb's.
+        Vector3 thumbSide = Vector3.Cross(way, palm).normalized;
+        Vector3 bent = way * Mathf.Cos(bend) + palm * Mathf.Sin(bend);
+        bent = bent * Mathf.Cos(side) + thumbSide * Mathf.Sin(side);
+        return bent.sqrMagnitude > 1e-8f ? bent.normalized : way;
+    }
+
     // The hand's rotation that lays the wrist-to-index-knuckle line along the way and the palm facing as wanted.
     private Quaternion HandAlong(Vector3 way, Vector3 palm)
     {
@@ -256,8 +276,11 @@ public sealed class PointArm : MonoBehaviour
         return palm.sqrMagnitude > 1e-12f ? palm.normalized : Vector3.zero;
     }
 
-    // The index nearly straight along the way (Point.indexBend a joint), the middle, ring and little fingers closed into
-    // a fist (Point.fist), the thumb tucked over them (Point.thumb).
+    // The index nearly straight along the way (Point.index1-3, degrees toward the palm at each joint), the middle, ring
+    // and little fingers closed into a fist (Point.curl1-3 a joint, each finger toward the little one Point.curlSpread
+    // more at its knuckle, all by Point.fist), the thumb tucked over them (its way from Point.thumbForward, thumbPalm and
+    // thumbAcross, its next joints bent by Point.thumbBend2 and thumbBend3, all by Point.thumb). Every number is read each
+    // frame, so a saved Poke.csv shows at once (with /point the hand holds still to look at).
     private void Fingers(Vector3 way, Vector3 palm)
     {
         // Turning about this brings a finger from the way toward the palm; for a left hand it also runs from the little
@@ -265,22 +288,28 @@ public sealed class PointArm : MonoBehaviour
         Vector3 curl = Vector3.Cross(way, palm);
         if (curl.sqrMagnitude < 1e-10f) return;
         curl.Normalize();
-        float bend = PokeTables.Number("Point.indexBend", 6f);
+        Finger(Index, way, curl, PokeTables.Number("Point.index1", 6f), PokeTables.Number("Point.index2", 6f),
+            PokeTables.Number("Point.index3", 6f), 1f);
         float fist = Mathf.Clamp01(PokeTables.Number("Point.fist", 1f));
-        Finger(Index, way, curl, bend, bend, bend, 1f);
-        Finger(Middle, way, curl, 80f, 95f, 55f, fist);
-        Finger(Ring, way, curl, 82f, 95f, 55f, fist);
-        Finger(Little, way, curl, 85f, 95f, 55f, fist);
+        float first = PokeTables.Number("Point.curl1", 80f), second = PokeTables.Number("Point.curl2", 95f), third = PokeTables.Number("Point.curl3", 55f);
+        float spread = PokeTables.Number("Point.curlSpread", 2.5f);
+        Finger(Middle, way, curl, first, second, third, fist);
+        Finger(Ring, way, curl, first + spread, second, third, fist);
+        Finger(Little, way, curl, first + 2f * spread, second, third, fist);
         float thumb = Mathf.Clamp01(PokeTables.Number("Point.thumb", .8f));
         if (thumb <= 0f || fingers[Thumb * 3] == null) return;
         // Across the palm toward the little finger and a little forward, over the closed fingers.
-        Vector3 over = (way * .35f + palm * .55f - curl * .75f).normalized;
+        Vector3 over = way * PokeTables.Number("Point.thumbForward", .35f) + palm * PokeTables.Number("Point.thumbPalm", .55f)
+            - curl * PokeTables.Number("Point.thumbAcross", .75f);
+        if (over.sqrMagnitude < 1e-8f) return;
+        over.Normalize();
+        float bend2 = PokeTables.Number("Point.thumbBend2", 20f), bend3 = PokeTables.Number("Point.thumbBend3", 25f);
         for (int joint = 0; joint < 3; joint++)
         {
             var bone = fingers[Thumb * 3 + joint];
             if (bone == null) break;
             Vector3 bendAxis = Vector3.Cross(over, palm);
-            if (joint > 0 && bendAxis.sqrMagnitude > 1e-8f) over = Quaternion.AngleAxis(joint == 1 ? 20f : 25f, bendAxis.normalized) * over;
+            if (joint > 0 && bendAxis.sqrMagnitude > 1e-8f) over = Quaternion.AngleAxis(joint == 1 ? bend2 : bend3, bendAxis.normalized) * over;
             Turn(bone, JointWay(Thumb, joint), over, thumb);
         }
     }

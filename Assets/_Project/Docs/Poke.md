@@ -34,6 +34,30 @@
 
 설정 → 조작 → **친구가 내 캐릭터 찌르기**(기본 켬, `GameSettings.letOthersPoke`, `SettingsDefaults.csv` 열 `letOthersPoke`). 끄면 모두의 화면에서 친구 손끝이 내 캐릭터 앞에서 멈춘다.
 
+## 손 모양 고치기
+
+손가락질 손 모양은 모두 [Poke.csv](../Resources/Tables/Poke.csv)의 `Point.*` 숫자다. 게임을 켠 채로 고쳐도 저장하자마자 바뀌어서, 보면서 맞출 수 있다.
+
+1. Play를 누르고(혼자 플레이그라운드도 된다) 개발자 콘솔(` 키)에서 `point`를 친다. F를 누르지 않아도 손가락질이 계속 서 있다. 조준·장전·투척 중에는 쉬었다가 돌아온다.
+2. F5로 몸 전체를 본다. 1인칭에서도 한 번 본다.
+3. Poke.csv를 열어 아래 숫자를 고치고 저장한 뒤 Unity 창을 누른다. 콘솔에 `[Tables] Poke.csv 변경을 실행 중인 게임에 적용했습니다.`가 뜨고 손이 바로 바뀐다. 표는 파일이라 Play를 끝내도 고친 값이 남는다.
+4. 다 되면 콘솔에서 `point`를 한 번 더 쳐서 푼다.
+
+| 숫자 | 바꾸는 것 |
+| --- | --- |
+| `Point.palmIn` | 손바닥 방향: 0 아래, 1 몸 안쪽(엄지가 위) |
+| `Point.wristBend`, `Point.wristSide` | 손목 꺾기(°): 손바닥 쪽(+)·손등 쪽(-), 엄지 쪽(+)·새끼 쪽(-). 손끝이 닿는 곳은 그대로 |
+| `Point.index1`·`index2`·`index3` | 검지 마디마다 손바닥 쪽으로 굽힘(°). 0이면 일자 |
+| `Point.curl1`·`curl2`·`curl3`, `Point.curlSpread` | 중지·약지·새끼 주먹: 마디마다 쥐는 각도(°, 앞 마디에 더해짐), 약지·새끼가 더 쥐는 만큼 |
+| `Point.fist` | 위 주먹 전체를 얼마나(0 펴짐 ~ 1) |
+| `Point.thumbForward`·`thumbPalm`·`thumbAcross` | 엄지 방향: 앞으로, 손바닥 쪽으로, 손바닥을 가로질러 새끼 쪽으로(음수면 바깥으로 벌어짐) 섞는 정도 |
+| `Point.thumbBend2`·`thumbBend3` | 엄지 둘째·끝 마디를 더 굽힘(°) |
+| `Point.thumb` | 엄지를 위 방향으로 얼마나(0이면 총 잡던 그대로) |
+| `Point.elbowDown`·`elbowOut`·`elbowBack` | 팔꿈치가 향하는 쪽: 아래, 몸 바깥, 뒤 |
+| `Point.extend` | 아무것도 안 닿을 때 팔을 뻗는 정도 |
+
+모델마다 손가락 뼈가 조금씩 달라서, 한 캐릭터에 맞춘 값이 다른 캐릭터에서 어색하면 그 중간으로 맞춘다. 숫자로 안 되는 모양(예: 손가락 하나만 따로)은 말해 주면 숫자를 더 뺀다.
+
 ## 표정 연결 (face-moods)
 
 찔림은 각 PC에서 이벤트로 나온다. 표정 파일은 건드리지 않았다.
@@ -149,8 +173,8 @@ lilToon 머티리얼을 쓰는 캐릭터(마요·이치고·에네 옷·카즈�
   - `follow` 손끝 따라가기.
   - `range`·`reach`·`extend` 거리.
   - `hover` 못 찌르는 곳 앞에서 멈추는 거리.
-  - `palmIn` 손바닥 방향.
-  - `indexBend`·`fist`·`thumb` 손가락.
+  - `palmIn` 손바닥 방향, `wristBend`·`wristSide` 손목.
+  - `index1~3`·`curl1~3`·`curlSpread`·`fist`·`thumb*` 손가락, `elbowDown`·`elbowOut`·`elbowBack` 팔꿈치(위 **손 모양 고치기**).
 - `Touch.*`: 몸 표면 찾기. `width`, `grid`, `bakeVertices`, `lose`(시선이 잠깐 빗나가도 유지), `slide`.
 - `Sound.*`: 소리. `volume`, `lift`, `near`, `far`.
 - `Zone.*`: 부위 경계. 볼은 눈 사이 거리 단위, 배는 몸통 길이 비율, 어깨·손목은 팔 마디 비율.
