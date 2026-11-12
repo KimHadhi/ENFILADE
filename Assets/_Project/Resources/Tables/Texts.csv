@@ -1341,3 +1341,4 @@ loading.stage.shaders,셰이더를 준비하는 중,Compiling shaders,로딩 화
 loading.stage.pso,그래픽 상태를 준비하는 중,Preparing graphics states,로딩 화면 > 막대 아래: 빌드에 기록해 둔 그래픽 상태(PSO)를 만드는 동안(PsoWarmup)
 loading.stage.fonts,글자를 준비하는 중,Preparing text,로딩 화면 > 막대 아래: 글꼴에 글자를 미리 그리는 동안(FontWarmup)
 loading.stage.portraits,캐릭터 사진을 찍는 중,Taking character pictures,로딩 화면 > 막대 아래: 타이틀 화면이 캐릭터 카드 사진을 찍는 동안(SkinPortraits)
+results.mvp,MVP,,결과 > 한 사람씩 비출 때 가장 잘한 사람 이름 옆 분홍 칩

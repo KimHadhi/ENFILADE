@@ -9,11 +9,14 @@ using UnityEngine.UI;
 /// <summary>
 /// A chapter's results, played in the hub over the players themselves (memo 37: Overwatch's play of the game, the
 /// winners of CoD Warzone standing in a row, Weakest Link's titles, then KF2's one sheet).
-/// 1. The lineup: back in the hub everyone stands in a row on the stage (HubStage), in their own skin and clothes, the
-///    one with the most titles in the middle, and a camera of its own looks at them. Names come up under them; then the
-///    titles slam on under the names one by one, the best player's last (최다 처치, 구조왕, 가장 많이 쓰러짐 ...:
-///    ResultsAwards), each with its number and its joke; alone, the player's best three, stacked beside them. A row of the chapter's
-///    highlights counts up along the bottom (longest streak, farthest headshot, the team's kills, the money made).
+/// 1. The lineup, as CoD Warzone shows its winners (the user, 2026-11-12: "워존 우승 하이라이트 연출처럼 게임에 참여한
+///    사람들 멋있는 포즈 취하면서 한 번씩 싹 다 보여 주는 거야. 뭐 잘한 사람들은 왼쪽에다 칭호 같은 거 붙여 주고";
+///    no play of the game): back in the hub everyone stands in a row on the stage (HubStage) in their own skin and
+///    clothes, and a camera of its own cuts to each in turn, the last-ranked first and the best last: close and a little
+///    low, the player on the right third striking their pose, their titles slamming in down the left (최다 처치, 최다
+///    치료, 구조왕, 가장 많이 쓰러짐 ...: ResultsAwards, each with its number and its joke), their name, class and three
+///    numbers at the foot, MVP on the best. Then the whole row with everyone's name under them, and the chapter's
+///    highlights counting up along the bottom (longest streak, farthest headshot, the team's kills, the money made).
 /// 2. The sheet (ResultsSheet): every title and this player's own numbers on one page, with the class's insignia
 ///    climbing if the chapter took it up a rank (RankClimb, stage 6E).
 /// Short and loud (the user's rule: no long slow shows): Space, Enter or a click skips the lineup, then closes the sheet.
@@ -43,13 +46,25 @@ public sealed class ResultsShow : MonoBehaviour
         public MatchResults.Entry Entry;
         public int Index;
         public Vector3 Feet;
+        // The closing row's plate under them.
         public RectTransform Plate;
         public CanvasGroup PlateGroup;
+        // Their own shot: when, how long, its screen (titles down the left, name at the foot), and whether they are the best.
+        public float ShotAt, ShotLength;
+        public RectTransform Spot, Name;
+        public CanvasGroup SpotGroup;
+        public bool Best;
         public readonly List<RectTransform> Slams = new List<RectTransform>();
-        public readonly List<float> SlamAt = new List<float>();
     }
 
+    // The curtain's lift before the first shot (s), titles shown at most on a shot, and the gap between them down the left (px).
+    private const float IntroSeconds = .45f, TitleGap = 108f;
+    private const int MostTitles = 4;
+
     private readonly List<Seat> seats = new List<Seat>();
+    // The shots in the order they play.
+    private readonly List<Seat> shots = new List<Seat>();
+    private Image cut;
     private readonly List<(TMP_Text label, double value, ResultsAwards.Award award)> counters = new List<(TMP_Text, double, ResultsAwards.Award)>();
     private List<ResultsAwards.Won> won;
     private HubStage stage;
@@ -61,7 +76,7 @@ public sealed class ResultsShow : MonoBehaviour
     private PlayerBody body;
     private ResultsSheet sheet;
     private TMP_Text waitCaption;
-    private float age, prevAge, lastSlam, highlightsAt;
+    private float age, prevAge, groupAt, showEnd, highlightsAt;
     // The wait behind the curtain (real s): when it began, when the seats were set, since when no frame has run long,
     // and since when everyone of the lineup who is here has stood on their mark (negative: not yet).
     private float createdAt, preparedAt, smoothSince, inPlaceAt = -1f;
@@ -142,14 +157,30 @@ public sealed class ResultsShow : MonoBehaviour
         age += Step();
         Hold();
         Pose();
-        if (Skipped() || age >= lastSlam + HubLobby.Number("showHold", 1.6f)) OpenSheet();
+        if (Skipped() || age >= showEnd) OpenSheet();
     }
 
     private void LateUpdate()
     {
         if (!showing || view == null || stage == null || sheet != null) return;
-        // A slow push in toward the row while the titles land.
-        float push = Mathf.Clamp01(age / Mathf.Max(1f, lastSlam + 1.5f));
+        var now = ShotOn(age);
+        if (now != null)
+        {
+            // Close and a little low on the shot's player, who stands on the right third; it pushes in and drifts round them.
+            float t = Mathf.Clamp01((age - now.ShotAt) / now.ShotLength);
+            Vector3 facing = Vector3.ProjectOnPlane(stage.transform.forward, Vector3.up).normalized;
+            float swing = (now.Index % 2 == 0 ? 1f : -1f) * Mathf.Lerp(-4f, 4f, t);
+            Vector3 toCamera = Quaternion.Euler(0f, swing, 0f) * facing;
+            float distance = Mathf.Lerp(2.7f, 2.3f, 1f - (1f - t) * (1f - t));
+            Vector3 head = now.Feet + Vector3.up * 1.4f;
+            view.transform.position = now.Feet + toCamera * distance + Vector3.up * 1.15f;
+            Vector3 right = Vector3.Cross(Vector3.up, -toCamera).normalized;
+            Vector3 aim = head - right * .6f;
+            view.transform.rotation = Quaternion.LookRotation(aim - view.transform.position, Vector3.up);
+            return;
+        }
+        // The whole row, pushing in slowly.
+        float push = Mathf.Clamp01((age - groupAt) / Mathf.Max(.5f, showEnd - groupAt));
         Vector3 from = stage.CameraPoint(seats.Count, view.aspect), to = stage.Focus;
         view.transform.position = Vector3.Lerp(from, to, .08f * push);
         view.transform.rotation = Quaternion.LookRotation(to - view.transform.position, Vector3.up);
@@ -395,32 +426,29 @@ public sealed class ResultsShow : MonoBehaviour
         skip.sizeDelta = new Vector2(360f, 30f);
         KitStyle.Flat(skip, Texts.Get("results.skip"), 17f, TextAlignmentOptions.MidlineRight, KitStyle.Soft).fontStyle = FontStyles.Normal;
 
-        // The titles slam on from the last-ranked up to the best, the best last; alone, the player's best three.
-        float at = HubLobby.Number("showTitlesAt", .8f), every = HubLobby.Number("showTitleEvery", .42f);
-        int most = seats.Count == 1 ? 3 : 1;
-        var order = new List<Seat>(seats);
-        order.Reverse();
-        lastSlam = at;
-        foreach (var seat in seats) BuildPlate(seat);
-        foreach (var seat in order)
+        // Each player's shot in turn, the last-ranked first and the best last; alone, one longer shot.
+        float shot = Mathf.Max(.6f, HubLobby.Number("showShot", 1.8f)) * (seats.Count == 1 ? 1.4f : 1f);
+        float at = IntroSeconds;
+        for (int i = seats.Count - 1; i >= 0; i--)
         {
-            var titles = ResultsAwards.Of(won, seat.Entry);
-            if (titles.Count == 0)
-            {
-                seat.Slams.Add(BuildTitle(seat, null, 0));
-                seat.SlamAt.Add(lastSlam = at);
-                at += every;
-                continue;
-            }
-            for (int i = 0; i < Mathf.Min(most, titles.Count); i++)
-            {
-                seat.Slams.Add(BuildTitle(seat, titles[i], i));
-                seat.SlamAt.Add(lastSlam = at);
-                at += every;
-            }
+            var seat = seats[i];
+            seat.ShotAt = at;
+            seat.ShotLength = shot;
+            seat.Best = i == 0 && ResultsAwards.Of(won, seat.Entry).Count > 0;
+            BuildSpot(seat);
+            shots.Add(seat);
+            at += shot;
         }
-        highlightsAt = lastSlam + .25f;
+        // Then the whole row together, everyone's name under them and the chapter's highlights along the foot (not alone:
+        // the one shot was all of them, and its highlights ride it).
+        groupAt = at;
+        bool row = seats.Count > 1;
+        showEnd = row ? groupAt + Mathf.Max(.3f, HubLobby.Number("showHold", 1.6f)) : groupAt;
+        highlightsAt = row ? groupAt + .1f : seats[0].ShotAt + .6f;
+        foreach (var seat in seats) BuildPlate(seat);
         BuildHighlights();
+        // The white blink of a cut, over everything but the curtain.
+        cut = KitStyle.Fill(KitStyle.Stretch("Cut", canvas), Color.clear);
     }
 
     private void Bar(bool top)
@@ -434,7 +462,53 @@ public sealed class ResultsShow : MonoBehaviour
         rect.SetAsFirstSibling();
     }
 
-    // The name plate under a player: their colour, name and class.
+    // One player's shot on the screen: down the left their titles, at the foot their name, class and three numbers (the
+    // player stands on the right third, where the shot's camera puts them).
+    private void BuildSpot(Seat seat)
+    {
+        seat.Spot = KitStyle.Stretch("Spot " + seat.Entry.Name, canvas);
+        seat.SpotGroup = seat.Spot.gameObject.AddComponent<CanvasGroup>();
+        seat.SpotGroup.alpha = 0f;
+        var titles = ResultsAwards.Of(won, seat.Entry);
+        for (int i = 0; i < Mathf.Min(titles.Count, MostTitles); i++)
+            seat.Slams.Add(BuildTitle(seat.Spot, titles[i], i));
+
+        // The name block at the foot on the left, above the bottom bar.
+        var block = KitStyle.TopLeft("Name", seat.Spot, Vector2.zero, new Vector2(820f, 150f));
+        block.anchorMin = block.anchorMax = block.pivot = new Vector2(0f, 0f);
+        block.anchoredPosition = new Vector2(80f, 118f);
+        seat.Name = block;
+        KitStyle.Bar("Seat", block, new Vector2(0f, 14f), new Vector2(8f, 92f), seat.Entry.Color);
+        KitStyle.Flat(KitStyle.TopLeft("Player", block, new Vector2(24f, 0f), new Vector2(760f, 76f)), seat.Entry.Name, 66f,
+            TextAlignmentOptions.MidlineLeft, KitStyle.Ice);
+        string under = ClassGrowth.TitleOf(seat.Entry.ClassId) + (seat.Entry.Escaped ? "" : "  ·  " + Texts.Get("results.left"));
+        KitStyle.Flat(KitStyle.TopLeft("Class", block, new Vector2(28f, 74f), new Vector2(760f, 30f)), under, 22f,
+            TextAlignmentOptions.MidlineLeft, KitStyle.Soft).fontStyle = FontStyles.Normal;
+        KitStyle.Flat(KitStyle.TopLeft("Numbers", block, new Vector2(28f, 108f), new Vector2(780f, 34f)), Numbers(seat.Entry), 24f,
+            TextAlignmentOptions.MidlineLeft, KitStyle.Text);
+        if (!seat.Best) return;
+        // The best of the room: a pink MVP chip over the name.
+        var chip = KitStyle.TopLeft("MVP", block, new Vector2(30f, -34f), new Vector2(96f, 32f));
+        KitSkew.On(KitStyle.Fill(chip, KitStyle.Accent), 8f);
+        KitStyle.Flat(chip, Texts.Get("results.mvp"), 20f, TextAlignmentOptions.Center, KitStyle.Ink);
+    }
+
+    // A player's three numbers under their name: kills, then what they did most of the rest (damage, or healing for one who
+    // healed a lot), and headshots or revives.
+    private static string Numbers(MatchResults.Entry entry)
+    {
+        string Stat(string id, string value) => Texts.Get(id) + "  <b>" + value + "</b>";
+        var parts = new List<string> { Stat("results.mine.kills", entry.Kills.ToString("N0")) };
+        parts.Add(entry.Healing > entry.Damage * .5f
+            ? Stat("results.mine.healing", Mathf.RoundToInt(entry.Healing).ToString("N0"))
+            : Stat("results.mine.damage", Mathf.RoundToInt(entry.Damage).ToString("N0")));
+        parts.Add(entry.Revives > entry.Headshots
+            ? Stat("results.mine.revives", entry.Revives.ToString("N0"))
+            : Stat("results.mine.headshots", entry.Headshots.ToString("N0")));
+        return string.Join("   ·   ", parts);
+    }
+
+    // The name plate under a player in the closing row: their colour, name and class.
     private void BuildPlate(Seat seat)
     {
         seat.Plate = FeelUI.Rect("Plate " + seat.Entry.Name, canvas);
@@ -451,32 +525,28 @@ public sealed class ResultsShow : MonoBehaviour
             TextAlignmentOptions.MidlineLeft, KitStyle.Soft).fontStyle = FontStyles.Normal;
     }
 
-    // A title's slanted pink plate over a player: the title, its number, its joke. None won: a kind word instead.
-    private RectTransform BuildTitle(Seat seat, ResultsAwards.Won title, int stack)
+    // A title down the left of a player's shot: a slanted pink plate with the title and its number, its joke under it.
+    private RectTransform BuildTitle(RectTransform spot, ResultsAwards.Won title, int stack)
     {
-        var root = FeelUI.Rect("Title " + seat.Entry.Name + " " + stack, canvas);
-        root.sizeDelta = new Vector2(280f, 96f);
-        root.localRotation = Quaternion.Euler(0f, 0f, stack % 2 == 0 ? 4f : -3f);
-        var plate = KitStyle.Cut(KitStyle.TopLeft("Plate", root, Vector2.zero, new Vector2(280f, 58f)), title != null ? KitStyle.Accent : KitStyle.Ice);
+        var root = KitStyle.TopLeft("Title " + stack, spot, new Vector2(80f, 250f + stack * TitleGap), new Vector2(480f, 96f));
+        root.pivot = new Vector2(0f, .5f);
+        root.anchoredPosition += new Vector2(0f, -48f);
+        root.localRotation = Quaternion.Euler(0f, 0f, stack % 2 == 0 ? 3f : -2f);
+        var plate = KitStyle.Cut(KitStyle.TopLeft("Plate", root, Vector2.zero, new Vector2(480f, 62f)), KitStyle.Accent);
         KitSkew.On(plate, 16f);
-        string label = title != null ? title.Award.Label : Texts.Get("results.award.none");
-        string line = title != null ? title.Award.Line : Texts.Get("results.award.none.line");
-        KitStyle.Flat(KitStyle.TopLeft("Label", root, new Vector2(16f, 2f), new Vector2(170f, 54f)), label, 24f,
+        KitStyle.Flat(KitStyle.TopLeft("Label", root, new Vector2(20f, 2f), new Vector2(300f, 58f)), title.Award.Label, 30f,
             TextAlignmentOptions.MidlineLeft, KitStyle.Ink);
-        if (title != null)
+        var number = KitStyle.Flat(KitStyle.TopLeft("Number", root, new Vector2(280f, 2f), new Vector2(184f, 58f)), title.Shown, 32f,
+            TextAlignmentOptions.MidlineRight, KitStyle.Ink);
+        number.characterSpacing = -2f;
+        if (title.Award.IsMoney)
         {
-            var number = KitStyle.Flat(KitStyle.TopLeft("Number", root, new Vector2(150f, 2f), new Vector2(120f, 54f)), title.Shown, 26f,
-                TextAlignmentOptions.MidlineRight, KitStyle.Ink);
-            number.characterSpacing = -2f;
-            if (title.Award.IsMoney)
-            {
-                var icon = MoneyIcon.Make(root, 22f);
-                icon.color = KitStyle.Ink;
-                icon.rectTransform.anchorMin = icon.rectTransform.anchorMax = new Vector2(0f, 1f);
-                icon.rectTransform.anchoredPosition = new Vector2(270f - number.preferredWidth - 16f, -29f);
-            }
+            var icon = MoneyIcon.Make(root, 26f);
+            icon.color = KitStyle.Ink;
+            icon.rectTransform.anchorMin = icon.rectTransform.anchorMax = new Vector2(0f, 1f);
+            icon.rectTransform.anchoredPosition = new Vector2(464f - number.preferredWidth - 20f, -31f);
         }
-        var joke = KitStyle.Flat(KitStyle.TopLeft("Line", root, new Vector2(18f, 60f), new Vector2(260f, 26f)), line, 15f,
+        var joke = KitStyle.Flat(KitStyle.TopLeft("Line", root, new Vector2(22f, 64f), new Vector2(450f, 28f)), title.Award.Line, 17f,
             TextAlignmentOptions.MidlineLeft, KitStyle.Ice);
         joke.fontStyle = FontStyles.Italic;
         root.localScale = Vector3.zero;
@@ -521,43 +591,84 @@ public sealed class ResultsShow : MonoBehaviour
 
     // ---- Every frame of the lineup ----
 
+    // The shot playing at the lineup's time, or null once the whole row is up.
+    private Seat ShotOn(float time)
+    {
+        foreach (var seat in shots)
+            if (time >= seat.ShotAt && time < seat.ShotAt + seat.ShotLength) return seat;
+        return null;
+    }
+
     private void Pose()
     {
         curtain.color = new Color(0f, 0f, 0f, 1f - Mathf.Clamp01(age / .35f));
         float headerIn = Out((age - .1f) / .3f);
         header.anchoredPosition = new Vector2(80f - 160f * (1f - headerIn), -40f);
-        // A long row is small on the screen: its plates shrink to keep apart.
-        float apart = seats.Count > 1 ? Mathf.Abs(OnScreen(stage.Slot(1, seats.Count)).x - OnScreen(stage.Slot(0, seats.Count)).x) : 400f;
-        float fit = Mathf.Clamp(apart / 300f, .5f, 1f);
-        bool alone = seats.Count == 1;
-        foreach (var seat in seats)
+        var now = ShotOn(age);
+        // A cut: a white blink, and the player of the new shot strikes their pose.
+        float since = age - (now != null ? now.ShotAt : groupAt);
+        cut.color = new Color(1f, 1f, 1f, since >= 0f && since < .14f ? .5f * (1f - since / .14f) : 0f);
+        foreach (var seat in shots)
         {
-            Vector2 feet = OnScreen(seat.Feet), chest = OnScreen(seat.Feet + Vector3.up * 1.25f);
-            float plateIn = Out((age - .3f - seat.Index * .07f) / .25f);
-            seat.PlateGroup.alpha = plateIn;
-            seat.Plate.localScale = Vector3.one * fit;
-            seat.Plate.anchoredPosition = feet + new Vector2(0f, (-46f - 20f * (1f - plateIn)) * fit);
+            bool live = seat == now;
+            float local = age - seat.ShotAt;
+            if (live && prevAge < seat.ShotAt) StrikePose(seat);
+            seat.SpotGroup.alpha = live ? 1f : 0f;
+            if (!live) continue;
+            // The name slides in from the left; the titles slam on down the left one after another.
+            float nameIn = Out(local / .22f);
+            seat.Name.anchoredPosition = new Vector2(80f - 120f * (1f - nameIn), 118f);
             for (int i = 0; i < seat.Slams.Count; i++)
             {
                 var slam = seat.Slams[i];
-                float since = age - seat.SlamAt[i];
-                if (since < 0f) { slam.localScale = Vector3.zero; continue; }
-                if (prevAge < seat.SlamAt[i]) Slammed();
+                float slamAt = seat.ShotAt + HubLobby.Number("showTitlesAt", .3f) + i * HubLobby.Number("showTitleEvery", .16f);
+                float after = age - slamAt;
+                if (after < 0f) { slam.localScale = Vector3.zero; continue; }
+                if (prevAge < slamAt) Slammed();
                 // Down from nearly twice its size, a hair under, then home, with a shake as it lands.
-                float t = Mathf.Clamp01(since / .22f);
-                float size = t < .6f ? Mathf.Lerp(1.9f, .94f, t / .6f) : Mathf.Lerp(.94f, 1f, (t - .6f) / .4f);
-                slam.localScale = Vector3.one * size * fit;
-                float shake = since > .12f && since < .3f ? (1f - (since - .12f) / .18f) * 7f : 0f;
-                // Alone, the titles stack beside the player; in a row each sits under its player's name.
-                Vector2 home = alone ? chest + new Vector2(320f, 110f - i * 108f) : feet + new Vector2(0f, -150f * fit);
+                float t = Mathf.Clamp01(after / .2f);
+                float size = t < .6f ? Mathf.Lerp(1.8f, .95f, t / .6f) : Mathf.Lerp(.95f, 1f, (t - .6f) / .4f);
+                slam.localScale = Vector3.one * size;
+                float shake = after > .1f && after < .26f ? (1f - (after - .1f) / .16f) * 6f : 0f;
+                var home = new Vector2(80f, -(298f + i * TitleGap));
                 slam.anchoredPosition = home + (shake > 0f ? Random.insideUnitCircle * shake : Vector2.zero);
             }
+        }
+        // The closing row: everyone's name under them.
+        bool row = now == null && age >= groupAt && seats.Count > 1;
+        if (row && prevAge < groupAt) KitSound.Play(KitSound.Cue.Escape, .5f);
+        foreach (var seat in seats)
+        {
+            float plateIn = row ? Out((age - groupAt - seat.Index * .06f) / .2f) : 0f;
+            seat.PlateGroup.alpha = plateIn;
+            if (!row) continue;
+            Vector2 feet = OnScreen(seat.Feet);
+            seat.Plate.anchoredPosition = feet + new Vector2(0f, -46f - 20f * (1f - plateIn));
         }
         float high = Out((age - highlightsAt) / .25f);
         highlights.localScale = new Vector3(1f, high, 1f);
         float count = Mathf.Clamp01((age - highlightsAt) / .6f);
         foreach (var (label, value, award) in counters)
             label.text = ResultsAwards.Format(award, award.Unit == "m" ? value * count : System.Math.Round(value * count));
+    }
+
+    // The shot's player strikes their pose: chin up to the camera (CalloutGesture plays on every PC's copy of a body, so
+    // each PC poses whoever its own show is looking at; with a gun in hand only the head and chest move).
+    private void StrikePose(Seat seat)
+    {
+        var someone = PlayerOf(seat);
+        if (someone == null || view == null) return;
+        var gesture = someone.GetComponentInChildren<CalloutGesture>();
+        if (gesture != null) gesture.Play(CalloutGesture.Kind.Jut, view.transform.position, true);
+    }
+
+    // The player standing for a seat: this PC's own, or a friend's copy by their seat in the room.
+    private PlayerMovement PlayerOf(Seat seat)
+    {
+        if (seat.Entry.IsLocal) return mine;
+        foreach (var someone in PlayerRoster.All)
+            if (someone != null && someone.IsNetworkDriven && MatchResults.SeatOf(someone) == seat.Entry.Client) return someone;
+        return null;
     }
 
     private void Slammed() => CombatCueAudio.Play(gameObject, CombatCue.ParryBreak, Random.Range(1.1f, 1.3f));
