@@ -130,6 +130,37 @@ public sealed partial class GreyboxBuilder
         return Turned(BoundsOf(prefab).size, yaw) * scale;
     }
 
+    /// <summary>
+    /// Whole copies of <paramref name="kind"/> from <paramref name="from"/> to <paramref name="to"/> (floor points), turned to
+    /// <paramref name="yaw"/>, each stretched along the line only (its own x or z, whichever the line runs along) so the run
+    /// ends where it should: a row of wall panels, a beam across a hall, a floor stripe. <paramref name="shift"/> moves them
+    /// all off the line (a wall piece's depth, so its front sits on the wall's face). Seen only, like Prop.
+    /// </summary>
+    public void Line(string kind, Vector3 from, Vector3 to, float yaw, Vector3 shift = default)
+    {
+        Vector3 size = ArtSize(kind), line = to - from;
+        float length = line.magnitude;
+        if (size == Vector3.zero || length < .01f) return;
+        Vector3 dir = line / length;
+        bool alongX = Mathf.Abs(Vector3.Dot(Quaternion.Euler(0f, yaw, 0f) * Vector3.right, dir)) > .7f;
+        float own = Mathf.Max(.01f, alongX ? size.x : size.z);
+        int count = Mathf.Max(1, Mathf.RoundToInt(length / own));
+        float stretch = length / count / own;
+        var scale = alongX ? new Vector3(stretch, 1f, 1f) : new Vector3(1f, 1f, stretch);
+        for (int i = 0; i < count; i++)
+            PropScaled(kind, from + dir * ((i + .5f) * length / count) + shift, yaw, scale);
+    }
+
+    /// <summary>A model of <paramref name="kind"/> hung on a wall: its middle at <paramref name="middle"/>'s height, its back
+    /// on the wall's face there, its front (the kit's +Z) turned to <paramref name="face"/>. Seen only, like Prop.</summary>
+    public GameObject Mount(string kind, Vector3 middle, float face, float scale = 1f, int pick = -1)
+    {
+        Vector3 size = ArtSize(kind, Mathf.Max(0, pick)) * scale;
+        if (size == Vector3.zero) return null;
+        Vector3 front = Quaternion.Euler(0f, face, 0f) * Vector3.forward;
+        return Prop(kind, middle + front * (size.z * .5f + .005f) - Vector3.up * (size.y * .5f), face, pick, scale);
+    }
+
     /// <summary>A model of <paramref name="kind"/> hanging with its top at <paramref name="top"/> (a ceiling lamp, a sign).</summary>
     public GameObject Hang(string kind, Vector3 top, float yaw = 0f, int pick = -1, float scale = 1f)
     {

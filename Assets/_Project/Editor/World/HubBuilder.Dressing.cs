@@ -256,22 +256,9 @@ public static partial class HubBuilder
 
     // ---- Helpers ----
 
-    // Whole copies of a piece from a to b (floor points), turned to yaw, each stretched along the line only (its own x
-    // or z, whichever the line runs along) so the run ends where it should; shift moves them all off the line.
-    private static void Span(string kind, Vector3 a, Vector3 b, float yaw, Vector3 shift = default)
-    {
-        Vector3 size = dresser.ArtSize(kind), line = b - a;
-        float length = line.magnitude;
-        if (size == Vector3.zero || length < .01f) return;
-        Vector3 dir = line / length;
-        bool alongX = Mathf.Abs(Vector3.Dot(Quaternion.Euler(0f, yaw, 0f) * Vector3.right, dir)) > .7f;
-        float own = Mathf.Max(.01f, alongX ? size.x : size.z);
-        int count = Mathf.Max(1, Mathf.RoundToInt(length / own));
-        float stretch = length / count / own;
-        var scale = alongX ? new Vector3(stretch, 1f, 1f) : new Vector3(1f, 1f, stretch);
-        for (int i = 0; i < count; i++)
-            dresser.PropScaled(kind, a + dir * ((i + .5f) * length / count) + shift, yaw, scale);
-    }
+    // Whole copies of a piece from a to b (floor points), turned to yaw, each stretched along the line only so the run
+    // ends where it should; shift moves them all off the line (the dresser's Line, which the tower uses too).
+    private static void Span(string kind, Vector3 a, Vector3 b, float yaw, Vector3 shift = default) => dresser.Line(kind, a, b, yaw, shift);
 
     // A run of wall pieces along a wall's face from a to b, their fronts to face (their backs into the wall).
     private static void Row(string kind, Vector3 a, Vector3 b, float face)
@@ -287,12 +274,7 @@ public static partial class HubBuilder
 
     // A piece hung on a wall: its middle at the point's height, its back on the wall's face there, its front to face.
     private static GameObject Mount(string kind, Vector3 middle, float face, float scale = 1f, int pick = -1)
-    {
-        Vector3 size = dresser.ArtSize(kind, Mathf.Max(0, pick)) * scale;
-        if (size == Vector3.zero) return null;
-        Vector3 front = Quaternion.Euler(0f, face, 0f) * Vector3.forward;
-        return dresser.Prop(kind, middle + front * (size.z * .5f + .005f) - Vector3.up * (size.y * .5f), face, pick, scale);
-    }
+        => dresser.Mount(kind, middle, face, scale, pick);
 
     // A piece that blocks: the model on the floor point, stretched on its own axes, and an unseen box of its size turned
     // with it (what shots and feet meet, as surface).
