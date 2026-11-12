@@ -16,7 +16,6 @@ public sealed class AmmoHUD : MonoBehaviour
     [Header("Layout (1920 x 1080 canvas units)")]
     [SerializeField] private Vector2 screenMargin = new Vector2(40f, 40f);
     [SerializeField, Range(.65f, 1.5f)] private float hudScale = 1f;
-    [SerializeField] private TMP_FontAsset font;
     [Header("Colors")]
     [SerializeField] private Color accent = new Color(.58f, .95f, 1f);
     [SerializeField] private Color lowAmmo = new Color(1f, .73f, .35f);
@@ -154,7 +153,6 @@ public sealed class AmmoHUD : MonoBehaviour
         if (panel != null) return true;
         var canvas = GetComponentInParent<Canvas>();
         if (canvas == null || !(transform is RectTransform root)) return false;
-        if (font == null) font = ammoText != null ? ammoText.font : TMP_Settings.defaultFontAsset;
         // Replace the old bullet marks / reload ring inside the existing HUD, without another canvas.
         foreach (Transform child in transform) child.gameObject.SetActive(false);
         var oldBackground = GetComponent<Image>();
@@ -206,7 +204,10 @@ public sealed class AmmoHUD : MonoBehaviour
     private TMP_Text Label(string name, float x, float y, float w, float h, float size, Color color)
     {
         var text = Rect(name, panel, x, y, w, h).gameObject.AddComponent<TextMeshProUGUI>();
-        text.font = font; text.fontSize = size; text.color = color; text.raycastTarget = false;
+        // The Ammo text role (Fonts.csv). Until 2026-11-12 this borrowed the hidden prefab label's font, TMP's sample
+        // LiberationSans, so the status line's Korean came from the fallback in another face.
+        FontRoles.Apply(text, FontRoles.Ammo);
+        text.fontSize = size; text.color = color; text.raycastTarget = false;
         text.alignment = TextAlignmentOptions.MidlineLeft;
         text.textWrappingMode = TextWrappingModes.NoWrap;
         text.overflowMode = CombatUIAssets.ClippedOverflow(text);

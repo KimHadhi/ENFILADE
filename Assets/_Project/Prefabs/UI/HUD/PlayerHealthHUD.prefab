@@ -178,6 +178,7 @@ GameObject:
   - component: {fileID: 4654933888135712206}
   - component: {fileID: 6244595632868000020}
   - component: {fileID: 194826098259962728}
+  - component: {fileID: 4001752464941450972}
   m_Layer: 5
   m_Name: MaxHPText
   m_TagString: Untagged
@@ -236,8 +237,8 @@ MonoBehaviour:
 
 '
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 44216d4c0d14f324688b10029efb505b, type: 2}
-  m_sharedMaterial: {fileID: 6375640126203083506, guid: 44216d4c0d14f324688b10029efb505b, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 002fde01051511240ad2d66e02001260, type: 2}
+  m_sharedMaterial: {fileID: 6375640126203083506, guid: 002fde01051511240ad2d66e02001260, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -631,6 +632,7 @@ GameObject:
   - component: {fileID: 400476533179068594}
   - component: {fileID: 2470390420265721307}
   - component: {fileID: 5994425358456836590}
+  - component: {fileID: 4779315496298470469}
   m_Layer: 5
   m_Name: ShieldText
   m_TagString: Untagged
@@ -689,8 +691,8 @@ MonoBehaviour:
 
 '
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: ffcccce5b6ee4b84eba70b9d28bdbd03, type: 2}
-  m_sharedMaterial: {fileID: -1950245386386723763, guid: ffcccce5b6ee4b84eba70b9d28bdbd03, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: b2589f52e7d269446b38bf6d7a3647ea, type: 2}
+  m_sharedMaterial: {fileID: 2100000, guid: 532c6668aec34d52a9691854308bd110, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -950,6 +952,7 @@ GameObject:
   - component: {fileID: 3720194859706361720}
   - component: {fileID: 705138457729104461}
   - component: {fileID: 5706580052690797867}
+  - component: {fileID: 4184600684576749546}
   m_Layer: 5
   m_Name: HPText
   m_TagString: Untagged
@@ -1006,8 +1009,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: 100
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 44216d4c0d14f324688b10029efb505b, type: 2}
-  m_sharedMaterial: {fileID: 6375640126203083506, guid: 44216d4c0d14f324688b10029efb505b, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 002fde01051511240ad2d66e02001260, type: 2}
+  m_sharedMaterial: {fileID: 6375640126203083506, guid: 002fde01051511240ad2d66e02001260, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -2940,6 +2943,7 @@ GameObject:
   - component: {fileID: 465776247560623807}
   - component: {fileID: 7206426914734833330}
   - component: {fileID: 3529658115453774420}
+  - component: {fileID: 3490965554347286418}
   m_Layer: 5
   m_Name: HPSlashText
   m_TagString: Untagged
@@ -2996,8 +3000,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: /
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 44216d4c0d14f324688b10029efb505b, type: 2}
-  m_sharedMaterial: {fileID: 6375640126203083506, guid: 44216d4c0d14f324688b10029efb505b, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 002fde01051511240ad2d66e02001260, type: 2}
+  m_sharedMaterial: {fileID: 6375640126203083506, guid: 002fde01051511240ad2d66e02001260, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -3133,3 +3137,55 @@ MonoBehaviour:
   m_ChildScaleWidth: 1
   m_ChildScaleHeight: 1
   m_ReverseArrangement: 0
+--- !u!114 &4001752464941450972
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1206431558252463959}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ba8d41d7a2474e01821bc0f9599a96ec, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TextRole
+  role: HudBold
+--- !u!114 &4779315496298470469
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2111846082166941150}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ba8d41d7a2474e01821bc0f9599a96ec, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TextRole
+  role: Shield
+--- !u!114 &4184600684576749546
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4089232394850244568}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ba8d41d7a2474e01821bc0f9599a96ec, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TextRole
+  role: HudBold
+--- !u!114 &3490965554347286418
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8809957186425091829}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ba8d41d7a2474e01821bc0f9599a96ec, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TextRole
+  role: HudBold

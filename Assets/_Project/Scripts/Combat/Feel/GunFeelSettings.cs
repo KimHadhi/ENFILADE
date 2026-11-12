@@ -203,9 +203,13 @@ public sealed class GunFeelSettings : ScriptableObject
     [Range(0f, .2f), Tooltip("Hit-stop for executions and headshot kills.")]
     public float headshotKillHitStopSeconds = .06f;
 
+    /// <summary>
+    /// The score, event-list, kill-feed and menu font: the Label text role (Fonts.csv), no longer a field of this asset,
+    /// so every reader of this name (some in folders other sessions own) follows the role table.
+    /// </summary>
+    public TMPro.TMP_FontAsset scoreFont => FontRoles.Font(FontRoles.Label);
+
     [Header("Score (kills only, Call of Duty style)")]
-    [Tooltip("Score, event-list and kill-feed font. Empty uses the combat prompt font. Default: Pretendard ExtraBold.")]
-    public TMPro.TMP_FontAsset scoreFont;
     [Tooltip("The XP suffix, multi-kill and special-kill labels.")]
     public Color scoreColor = new Color(1f, .83f, .26f);
     [Tooltip("Kill score position relative to the crosshair, 1920x1080 canvas units (y up). The number ends here; events list to its right. " +

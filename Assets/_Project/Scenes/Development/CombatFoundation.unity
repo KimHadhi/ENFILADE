@@ -5716,6 +5716,7 @@ GameObject:
   - component: {fileID: 189589253}
   - component: {fileID: 189589255}
   - component: {fileID: 189589254}
+  - component: {fileID: 2738532478068427348}
   m_Layer: 0
   m_Name: Station label
   m_TagString: Untagged
@@ -5764,8 +5765,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: "[F]\n\uBC29\uC1A1 \uD14C\uC2A4\uD2B8"
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: d7baa71555d835446aee14d34815489c, type: 2}
-  m_sharedMaterial: {fileID: -7506497340435895763, guid: d7baa71555d835446aee14d34815489c, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 50e104079d1a65c4a93ee08562e96044, type: 2}
+  m_sharedMaterial: {fileID: -7506497340435895763, guid: 50e104079d1a65c4a93ee08562e96044, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -5862,7 +5863,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: -7506497340435895763, guid: d7baa71555d835446aee14d34815489c, type: 2}
+  - {fileID: -7506497340435895763, guid: 50e104079d1a65c4a93ee08562e96044, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -11021,6 +11022,7 @@ GameObject:
   - component: {fileID: 888089461}
   - component: {fileID: 888089463}
   - component: {fileID: 888089462}
+  - component: {fileID: 8418855536600291779}
   m_Layer: 0
   m_Name: Station label
   m_TagString: Untagged
@@ -11069,8 +11071,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: "[F]\n\uC804\uCCB4 \uD14C\uC2A4\uD2B8"
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: d7baa71555d835446aee14d34815489c, type: 2}
-  m_sharedMaterial: {fileID: -7506497340435895763, guid: d7baa71555d835446aee14d34815489c, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 50e104079d1a65c4a93ee08562e96044, type: 2}
+  m_sharedMaterial: {fileID: -7506497340435895763, guid: 50e104079d1a65c4a93ee08562e96044, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -11167,7 +11169,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: -7506497340435895763, guid: d7baa71555d835446aee14d34815489c, type: 2}
+  - {fileID: -7506497340435895763, guid: 50e104079d1a65c4a93ee08562e96044, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -17355,6 +17357,7 @@ GameObject:
   - component: {fileID: 1622407460}
   - component: {fileID: 1622407462}
   - component: {fileID: 1622407461}
+  - component: {fileID: 5412277068038566470}
   m_Layer: 0
   m_Name: Station label
   m_TagString: Untagged
@@ -17403,8 +17406,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: "[F]\n\uB300\uC0AC \uD14C\uC2A4\uD2B8"
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: d7baa71555d835446aee14d34815489c, type: 2}
-  m_sharedMaterial: {fileID: -7506497340435895763, guid: d7baa71555d835446aee14d34815489c, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 50e104079d1a65c4a93ee08562e96044, type: 2}
+  m_sharedMaterial: {fileID: -7506497340435895763, guid: 50e104079d1a65c4a93ee08562e96044, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -17501,7 +17504,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: -7506497340435895763, guid: d7baa71555d835446aee14d34815489c, type: 2}
+  - {fileID: -7506497340435895763, guid: 50e104079d1a65c4a93ee08562e96044, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -18105,6 +18108,7 @@ GameObject:
   - component: {fileID: 1757490782}
   - component: {fileID: 1757490784}
   - component: {fileID: 1757490783}
+  - component: {fileID: 8900765334291227372}
   m_Layer: 0
   m_Name: Station label
   m_TagString: Untagged
@@ -18153,8 +18157,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: "[F]\n\uD300 \uD14C\uC2A4\uD2B8"
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: d7baa71555d835446aee14d34815489c, type: 2}
-  m_sharedMaterial: {fileID: -7506497340435895763, guid: d7baa71555d835446aee14d34815489c, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 50e104079d1a65c4a93ee08562e96044, type: 2}
+  m_sharedMaterial: {fileID: -7506497340435895763, guid: 50e104079d1a65c4a93ee08562e96044, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -18251,7 +18255,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: -7506497340435895763, guid: d7baa71555d835446aee14d34815489c, type: 2}
+  - {fileID: -7506497340435895763, guid: 50e104079d1a65c4a93ee08562e96044, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -21352,3 +21356,55 @@ SceneRoots:
   - {fileID: 995962609}
   - {fileID: 1070401157}
   - {fileID: 394615091}
+--- !u!114 &2738532478068427348
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 189589252}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ba8d41d7a2474e01821bc0f9599a96ec, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TextRole
+  role: HudText
+--- !u!114 &8418855536600291779
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 888089460}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ba8d41d7a2474e01821bc0f9599a96ec, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TextRole
+  role: HudText
+--- !u!114 &5412277068038566470
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1622407459}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ba8d41d7a2474e01821bc0f9599a96ec, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TextRole
+  role: HudText
+--- !u!114 &8900765334291227372
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1757490781}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ba8d41d7a2474e01821bc0f9599a96ec, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TextRole
+  role: HudText

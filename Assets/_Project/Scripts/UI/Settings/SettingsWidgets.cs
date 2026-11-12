@@ -16,12 +16,8 @@ public static class SettingsWidgets
     // How far buttons and choices lean (px).
     private const float Slant = 10f;
 
-    /// <summary>The menus' font (the score font, as the lobby uses), or the prompt font without it.</summary>
-    public static TMP_FontAsset Font()
-    {
-        var score = GunFeelSettings.Instance != null ? GunFeelSettings.Instance.scoreFont : null;
-        return score != null ? score : CombatUIAssets.ResolveFont(null);
-    }
+    /// <summary>The menus' font: the Label text role (Fonts.csv), as the lobby's kit labels use.</summary>
+    public static TMP_FontAsset Font() => FontRoles.Font(FontRoles.Label);
 
     public static RectTransform Rect(string name, Transform parent)
     {

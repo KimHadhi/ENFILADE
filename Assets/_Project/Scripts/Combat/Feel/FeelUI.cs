@@ -34,21 +34,20 @@ public static class FeelUI
         HudCamera.Adopt(host.GetComponent<Canvas>());
     }
 
-    /// <summary>Bold outlined label in the project's Korean prompt font.</summary>
+    /// <summary>Bold outlined label in the Prompt text role (Fonts.csv).</summary>
     public static TextMeshProUGUI Label(string name, Transform parent, float size, TextAlignmentOptions alignment)
     {
-        var text = Create(name, parent, size, alignment, CombatUIAssets.ResolveFont(null));
+        var text = Create(name, parent, size, alignment, FontRoles.Font(FontRoles.Prompt));
         var outlined = CombatUIAssets.Outlined(text.font, DarkOutline, .22f);
         if (outlined != null) text.fontSharedMaterial = outlined;
         text.fontStyle = FontStyles.Bold;
         return text;
     }
 
-    /// <summary>Score/kill-feed label: GunFeel Score Font (heavy sans) with a soft drop shadow instead of an outline.</summary>
+    /// <summary>Score, kill-feed and kit label in the Label text role (Fonts.csv) with a soft drop shadow instead of an outline.</summary>
     public static TextMeshProUGUI ScoreLabel(string name, Transform parent, float size, TextAlignmentOptions alignment)
     {
-        var font = GunFeelSettings.Instance.scoreFont;
-        var text = Create(name, parent, size, alignment, font != null ? font : CombatUIAssets.ResolveFont(null));
+        var text = Create(name, parent, size, alignment, FontRoles.Font(FontRoles.Label));
         ShadowScore(text);
         return text;
     }

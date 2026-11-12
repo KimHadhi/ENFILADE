@@ -162,43 +162,11 @@ public static class CombatUIAssets
         return material;
     }
 
-    /// <summary>
-    /// Ellipsis when TMP will find "…" for this text's font and style, otherwise Truncate (TMP would switch to Truncate
-    /// itself, with a console warning per text). It asks the places TMP's GetEllipsisSpecialCharacter asks, in its order
-    /// and with the text's style: the font, the font's fallbacks, TMP Settings' fallbacks, the default font. TMP looks
-    /// "…" up in a font's own glyphs only for upright regular text; bold, italic or any other weight goes to the font's
-    /// weight table alone and, unlike ordinary letters, gets no second try with the regular glyphs. Every Pretendard
-    /// weight has "…", but their weight tables stay empty on purpose (a filled Bold slot would swap all bold text from
-    /// synthesized bold to that typeface), so bold text finds it only in the global fallback "PRETENDARD Weights SDF",
-    /// whose table points at the real weights. Before that fallback (2026-11-12) this answered Truncate for every bold
-    /// label in the score font, and text that turned bold after this call warned when it drew. Call after setting the
-    /// font and style; a later style change is fine while that fallback is in TMP Settings.
-    /// </summary>
-    public static TextOverflowModes ClippedOverflow(TMP_Text text)
-    {
-        if (text == null || text.font == null) return TextOverflowModes.Truncate;
-        const uint ellipsis = 0x2026;
-        TMP_FontAsset font = text.font;
-        FontStyles style = text.fontStyle;
-        FontWeight weight = (style & FontStyles.Bold) == FontStyles.Bold ? FontWeight.Bold : text.fontWeight;
-        TMP_FontAsset fallbackDefault = TMP_Settings.defaultFontAsset;
-        bool found = TMP_FontAssetUtilities.GetCharacterFromFontAsset(ellipsis, font, false, style, weight, out _) != null
-            || FoundIn(font.fallbackFontAssetTable) || FoundIn(TMP_Settings.fallbackFontAssets)
-            || (fallbackDefault != null
-                && TMP_FontAssetUtilities.GetCharacterFromFontAsset(ellipsis, fallbackDefault, true, style, weight, out _) != null);
-        return found ? TextOverflowModes.Ellipsis : TextOverflowModes.Truncate;
+    /// <summary>Ellipsis when TMP can draw "…" for this text's font and style, else Truncate (FontRoles.ClippedOverflow).</summary>
+    public static TextOverflowModes ClippedOverflow(TMP_Text text) => FontRoles.ClippedOverflow(text);
 
-        bool FoundIn(List<TMP_FontAsset> fonts) => fonts != null && fonts.Count > 0
-            && TMP_FontAssetUtilities.GetCharacterFromFontAssets(ellipsis, font, fonts, true, style, weight, out _) != null;
-    }
-
-    public static TMP_FontAsset ResolveFont(TMP_FontAsset preferred)
-    {
-        if (preferred != null) return preferred;
-        var settings = CombatFeedbackSettings.Instance;
-        if (settings != null && settings.promptFont != null) return settings.promptFont;
-        return TMP_Settings.defaultFontAsset;
-    }
+    /// <summary>The preferred font, else the Prompt text role's face (Fonts.csv).</summary>
+    public static TMP_FontAsset ResolveFont(TMP_FontAsset preferred) => preferred != null ? preferred : FontRoles.Font(FontRoles.Prompt);
 
     private delegate float Shape(Vector2 p);
 

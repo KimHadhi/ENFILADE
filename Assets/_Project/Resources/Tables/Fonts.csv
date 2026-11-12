@@ -1,0 +1,31 @@
+﻿key,value,note
+#안내,,"글자 역할(Role)마다 어느 글꼴(face)과 재질 프리셋(preset)으로 그리는지. 코드와 프리팹은 글꼴 파일이 아니라 역할을 고르고(FontRoles, TextRole), 이 표의 한 칸을 바꾸면 그 역할의 모든 글자가 바뀐다. face와 preset 이름은 Resources/UI/FontFaces 에셋에 있다: pretendard-1~9(Thin~Black), scoredream-5·6(에스코어 드림 Medium·Bold), liberation-sans. 프리팹 글자의 face를 바꾼 뒤에는 Tools → Fonts → 역할 맞추기를 한 번 누른다"
+#warm,,"warm은 게임을 켤 때 미리 그려 둘 글자: texts = 모든 표의 글자(한글 포함), digits = 숫자와 기호, latin = 영문, none = 안 그림. 같은 글꼴을 쓰는 역할들은 합쳐서 한 번 그린다(FontWarmup)"
+Label.face,pretendard-8,"메뉴·HUD 글자(KitStyle, SettingsWidgets, FeelUI.ScoreLabel, 킬 피드, 점수판, 허브 표시판). 예전 GunFeel의 점수 폰트(Pretendard ExtraBold)"
+Label.warm,texts,
+Prompt.face,scoredream-6,"안내·알림(FeelUI.Label, 처형·사다리·쓰러짐·등급 상승 안내, 적 이름). 예전 Feedback의 프롬프트 폰트(ChattingFont(Score6)). 이 글꼴의 기본 재질은 그때처럼 살짝 굵다(FaceDilate 0.05)"
+Prompt.warm,texts,
+Damage.face,scoredream-6,데미지 숫자. 예전에도 프롬프트 폰트였다
+Damage.warm,digits,
+Ammo.face,pretendard-6,탄약 표시(AmmoHUD). 예전에는 숨은 프리팹 글자의 TMP 샘플 폰트 LiberationSans를 빌려 써서 상태 줄의 한글만 다른 글꼴이었다
+Ammo.warm,texts,
+HudText.face,scoredream-5,"HUD 프리팹 글자(무기 이름, 칸 번호, 상호작용 안내, 채팅 채널, 음악 이름). 예전 ChatSettingFont(Score5)"
+HudText.warm,texts,
+HudBold.face,pretendard-7,"HUD 프리팹의 굵은 글자(체력 숫자, 목표 제목, TAB, ASSAULT). 예전 HealthFont·WaveFontStandard(Pretendard Bold 복사본)"
+HudBold.warm,texts,
+Shield.face,scoredream-6,실드 숫자. 예전 ShieldFont(Score6)
+Shield.preset,shield,"민트 외곽선과 초록 그림자. 예전 ShieldFont의 재질을 50pt 아틀라스에 맞게 옮긴 것(외곽선 0.2→0.111, 그림자 거리 -1→-0.327, 퍼짐 0.7→0.229: 화면에서 같은 두께)"
+Shield.warm,digits,
+Alarm.face,pretendard-5,목표 알림 띠. 예전 AlarmBarFont(Pretendard Medium 복사본)
+Alarm.warm,texts,
+Chat.face,scoredream-5,채팅 줄. 예전 ChattingFont(Score5)
+Chat.warm,texts,
+Chat.prefabs,Chatting/,"같은 글꼴을 쓰는 역할이 둘이면, 프리팹 경로에 이 말이 든 글자가 이 역할이다(Tools → Fonts가 역할을 고를 때)"
+Body.face,pretendard-6,글꼴을 고르지 않은 글자. TMP 기본 글꼴과 같아야 한다(역할 맞추기가 TMP Settings에 적는다)
+Body.warm,latin,
+Warmup.delay,0.5,게임을 켜고 첫 씬이 뜬 뒤 미리 그리기를 시작할 때까지(초)
+Warmup.budgetMs,2,한 프레임에 미리 그리기에 쓰는 시간(ms). 크게 하면 빨리 끝나지만 메뉴가 잠깐 끊길 수 있다
+Warmup.chunk,8,한 번에 그리는 글자 수
+Fallback.families,Malgun Gothic;Yu Gothic UI;Microsoft YaHei UI;Microsoft JhengHei UI;Segoe UI Symbol;Nirmala UI;Leelawadee UI;Ebrima;Segoe UI Historic;Apple SD Gothic Neo;PingFang SC;Noto Sans CJK KR,"플레이어가 친 글자(이름·채팅)가 게임 글꼴에 없을 때 마지막으로 찾는 운영체제 글꼴(;로 구분, 그 PC에 있는 것만 붙는다). 한자·여러 문자·기호"
+Fallback.emoji,Segoe UI Emoji;Apple Color Emoji;Noto Color Emoji,이모지 글꼴(운영체제). 글자 색 한 가지로 그려진다(TMP 기본 스프라이트의 컬러 이모지가 먼저)
+Fallback.pointSize,50,운영체제 글꼴을 그리는 크기(pt). 게임 글꼴과 같은 50

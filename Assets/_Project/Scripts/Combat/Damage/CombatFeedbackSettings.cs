@@ -10,7 +10,11 @@ public sealed class CombatFeedbackSettings : ScriptableObject
     public float staggerSoundVolume = .25f;
     [Min(40f), Tooltip("Stagger image width at 3 metres, in reference screen pixels before the opening pop. Closer grows up to 2x; farther shrinks with distance.")]
     public float staggerImageWidth = 260f;
-    public TMP_FontAsset promptFont;
+    /// <summary>
+    /// The prompt font: the Prompt text role (Fonts.csv), no longer a field of this asset, so every reader of this name
+    /// follows the role table.
+    /// </summary>
+    public TMP_FontAsset promptFont => FontRoles.Font(FontRoles.Prompt);
     [Header("Crosshair")]
     [Tooltip("Guns without a Crosshair Profile of their own. Its line sprite is the '기본 그림' line shape in the settings.")]
     public CrosshairProfile gunCrosshair;
@@ -121,9 +125,10 @@ public sealed class CombatFeedbackSettings : ScriptableObject
     [Min(0f)] public float counterPostureDamage = 60f;
     [Range(0f, 1f)] public float perfectVignetteStrength = .8f;
 
+    /// <summary>The damage-number font: the Damage text role (Fonts.csv), no longer a field of this asset.</summary>
+    public TMP_FontAsset damageFont => FontRoles.Font(FontRoles.Damage);
+
     [Header("Damage popups")]
-    [Tooltip("Optional. Empty uses Prompt Font.")]
-    public TMP_FontAsset damageFont;
     [Tooltip("Optional white icon shown left of a critical number. Empty uses the built-in burst.")]
     public Texture2D criticalIcon;
     [Tooltip("Optional white icon shown right of a death-blow number. Empty uses the built-in skull.")]

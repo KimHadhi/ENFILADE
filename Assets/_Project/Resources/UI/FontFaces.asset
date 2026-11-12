@@ -1,0 +1,43 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d88014a81ad04e4cb1ea5bb7cbdf20a1, type: 3}
+  m_Name: FontFaces
+  m_EditorClassIdentifier: Assembly-CSharp::FontFaces
+  faces:
+  - key: pretendard-1
+    font: {fileID: 11400000, guid: 7f429f62638e57f42997b4d0cfb47aaf, type: 2}
+  - key: pretendard-2
+    font: {fileID: 11400000, guid: 417a0705673180249aa8c2a13a1393f6, type: 2}
+  - key: pretendard-3
+    font: {fileID: 11400000, guid: 9affa7734249b2c48a5a8269dca1c253, type: 2}
+  - key: pretendard-4
+    font: {fileID: 11400000, guid: 8701bfbf24f4b5b48a9e58aa4a779f67, type: 2}
+  - key: pretendard-5
+    font: {fileID: 11400000, guid: 11b5df979eb11854b86df78c1641fc39, type: 2}
+  - key: pretendard-6
+    font: {fileID: 11400000, guid: 95f67aedbe2a5904e924124d49ea8d97, type: 2}
+  - key: pretendard-7
+    font: {fileID: 11400000, guid: 002fde01051511240ad2d66e02001260, type: 2}
+  - key: pretendard-8
+    font: {fileID: 11400000, guid: 0d0973292e9d2284b9c7c326c8ed2fa5, type: 2}
+  - key: pretendard-9
+    font: {fileID: 11400000, guid: 1e6d47679e64a144482aa752fb550ed3, type: 2}
+  - key: scoredream-5
+    font: {fileID: 11400000, guid: 50e104079d1a65c4a93ee08562e96044, type: 2}
+  - key: scoredream-6
+    font: {fileID: 11400000, guid: b2589f52e7d269446b38bf6d7a3647ea, type: 2}
+  - key: liberation-sans
+    font: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  presets:
+  - key: shield
+    material: {fileID: 2100000, guid: 532c6668aec34d52a9691854308bd110, type: 2}
+  runtimeFontShader: {fileID: 4800000, guid: fe393ace9b354375a9cb14cdbbc28be4, type: 3}

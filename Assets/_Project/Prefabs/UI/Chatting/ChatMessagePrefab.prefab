@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 212796018203417205}
   - component: {fileID: 5658011440569816425}
   - component: {fileID: 4159862303589869242}
+  - component: {fileID: 4773132488567226908}
   m_Layer: 0
   m_Name: ChatMessagePrefab
   m_TagString: Untagged
@@ -69,8 +70,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: sample text
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: a95ee17c65f522b408515399fbfeb1aa, type: 2}
-  m_sharedMaterial: {fileID: -7506497340435895763, guid: a95ee17c65f522b408515399fbfeb1aa, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 50e104079d1a65c4a93ee08562e96044, type: 2}
+  m_sharedMaterial: {fileID: -7506497340435895763, guid: 50e104079d1a65c4a93ee08562e96044, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -165,3 +166,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 434302313d23e8544a58d1fc0d27c6b6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChatMessageItem
+--- !u!114 &4773132488567226908
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7677512428282881753}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ba8d41d7a2474e01821bc0f9599a96ec, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TextRole
+  role: Chat
