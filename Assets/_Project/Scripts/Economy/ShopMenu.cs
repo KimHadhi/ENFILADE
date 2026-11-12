@@ -173,8 +173,9 @@ public sealed class ShopMenu : MonoBehaviour
             return;
         }
         var keyboard = Keyboard.current;
-        bool closing = keyboard != null && Time.frameCount != openedFrame
-            && (keyboard.escapeKey.wasPressedThisFrame || keyboard.fKey.wasPressedThisFrame);
+        // Esc, or the interact key that opened it (Player/Interact, read from its keys while the shop holds the map).
+        bool closing = Time.frameCount != openedFrame
+            && ((keyboard != null && keyboard.escapeKey.wasPressedThisFrame) || KeyBindings.Pressed("Player/Interact"));
         if (closing || player == null || !player.IsInitialized || player.IsDead || player.DamageReceiver.IsDowned
             || (player.transform.position - counter).sqrMagnitude > Reach * Reach)
         {

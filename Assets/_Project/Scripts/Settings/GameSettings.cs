@@ -44,7 +44,10 @@ public sealed class GameSettings
     [Tooltip("The player shouts some callouts by themself: help when a zombie gets hold of them or they go down, the elite " +
         "they first come near, and the CHARGE (the Assault's, and friends near it answering).")]
     public bool calloutAuto = true;
-    /// <summary>The keys the player picked (KeyBindings: the Input System's overrides as JSON); empty for every default.</summary>
+    /// <summary>
+    /// The keys the player picked in the key window (KeyBindings: the Input System's overrides as JSON, by binding id);
+    /// empty for every default. The default keys themselves are Input/Player.inputactions.
+    /// </summary>
     public string keyBindings = "";
     [Tooltip("Scales head bob, landing, impacts and movement tilt. Lean and weapon recoil are not affected.")]
     public float screenShake = 1f;
@@ -162,8 +165,8 @@ public sealed class GameSettings
                 s.crouchToggle = d.crouchToggle; s.leanToggle = d.leanToggle;
                 s.autoReload = d.autoReload;
                 s.calloutOnRelease = d.calloutOnRelease; s.calloutBubbles = d.calloutBubbles; s.calloutAuto = d.calloutAuto;
-                s.keyBindings = d.keyBindings;
-                KeyBindings.Apply(s.keyBindings);
+                // The keys are left alone: the key window has its own reset per line and for all (KeyBindingsView), so
+                // putting the mouse back to default doesn't throw away every key the player set.
                 break;
             case SettingsGroup.Screen:
                 s.monitorName = d.monitorName; s.monitorIndex = d.monitorIndex;

@@ -123,9 +123,11 @@ public class SinglePlayerChatManager : MonoBehaviour
             CycleInputChannel();
         if (Keyboard.current == null) return;
 
-        if (Keyboard.current.enterKey.wasPressedThisFrame || Keyboard.current.numpadEnterKey.wasPressedThisFrame)
+        // UI/OpenChat (Enter and the number pad's Enter unless the key window says otherwise). An open chat's own Enter
+        // sends from the input field, whatever this key is.
+        if (KeyBindings.Pressed("UI/OpenChat"))
         {
-            if (!isChatOpen && Time.frameCount != lastClosedFrame && !GamePause.IsPaused && !DevConsole.TakesKeyboard) OpenChat();
+            if (!isChatOpen && Time.frameCount != lastClosedFrame && !GamePause.IsPaused && !DevConsole.TakesKeyboard && !KeyBindings.Busy) OpenChat();
         }
 
         if (isChatOpen && Keyboard.current.upArrowKey.wasPressedThisFrame) RecallInput(-1);

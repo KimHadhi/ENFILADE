@@ -50,6 +50,8 @@ public sealed class SettingsMenu : MonoBehaviour
         if (keyboard == null || !keyboard.escapeKey.wasPressedThisFrame) return;
         // Esc in a box (a number, a colour, a share code) only leaves it with the old value; the next Esc closes the menu.
         if (IsOpen && (typing || wasTyping)) return;
+        // The key window goes first: its Esc stops listening for a key, or closes it, never the menu under it.
+        if (IsOpen && KeyBindingsView.TakeEscape()) return;
         // Esc closes the developer console, the shop, the gun's customize menu or the perk cards first.
         if (DevConsole.TakesKeyboard || ShopMenu.TakesKeyboard || GunCustomizeMenu.TakesKeyboard || PerkCardScreen.TakesKeyboard
             || MainMenuScreen.TakesEscape) return;

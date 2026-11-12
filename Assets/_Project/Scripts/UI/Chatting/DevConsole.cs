@@ -222,7 +222,8 @@ public sealed class DevConsole : MonoBehaviour
     {
         var keyboard = Keyboard.current;
         if (keyboard == null) return;
-        if (keyboard.backquoteKey.wasPressedThisFrame)
+        // UI/Console (` unless the key window says otherwise); not while the key window is taking a key.
+        if (KeyBindings.Pressed("UI/Console") && !KeyBindings.Busy)
         {
             if (IsOpen) Close();
             else if (!SomethingElseTyping()) Open();

@@ -88,8 +88,9 @@ public sealed class ParkourPromptHUD : MonoBehaviour
 
     private string KeyName()
     {
-        if (crouch == null && InputSystem.actions != null) crouch = InputSystem.actions.FindAction("Player/Crouch", false);
-        string name = crouch != null ? crouch.GetBindingDisplayString() : null;
+        if (crouch == null) crouch = KeyBindings.Find("Player/Crouch");
+        // KeyBindings.Name: the first key the player set, not every binding joined by " | " (the empty second slot too).
+        string name = crouch != null ? KeyBindings.Name(crouch) : null;
         return string.IsNullOrEmpty(name) ? "CTRL" : name.ToUpperInvariant();
     }
 

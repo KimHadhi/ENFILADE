@@ -250,6 +250,8 @@ public sealed class CrosshairSettingsView
         var field = W.TextInput(row, Hex(current()), _ => { });
         W.Size(field, width: 118f, height: 34f, flexibleWidth: 0f);
         field.characterLimit = 9;
+        // Plain to see while typed in, as the number boxes are.
+        TypingLook.On(field, row.childCount > 0 ? row.GetChild(0).GetComponent<TMP_Text>() : null);
         field.onEndEdit.AddListener(text =>
         {
             if (TryParseColour(text, out var color)) picked(color);

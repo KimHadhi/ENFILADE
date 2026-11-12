@@ -52,8 +52,8 @@ public sealed class LadderPromptHUD : MonoBehaviour
 
     private static string KeyName()
     {
-        var interact = InputSystem.actions != null ? InputSystem.actions.FindAction("Player/Interact", false) : null;
-        string key = interact != null ? interact.GetBindingDisplayString() : null;
+        // KeyBindings.Name: the first key the player set, not every binding joined by " | " (the empty second slot too).
+        string key = KeyBindings.Name("Player/Interact");
         return string.IsNullOrEmpty(key) ? "F" : key;
     }
 

@@ -119,28 +119,6 @@ public sealed class SettingsRows
         return row;
     }
 
-    /// <summary>
-    /// A row with a key on a button: pressed, it waits for the next key or mouse button and binds the action to it
-    /// (KeyBindings; Esc keeps the old one).
-    /// </summary>
-    public RectTransform Key(string name, UnityEngine.InputSystem.InputAction action)
-    {
-        var row = W.Row(parent, name);
-        TextMeshProUGUI shown = null;
-        var button = W.ActionButton(row, KeyBindings.Name(action), false, () =>
-        {
-            if (action == null || shown == null) return;
-            shown.text = Texts.Get("settings.controls.press_key");
-            KeyBindings.Rebind(action, keyName =>
-            {
-                if (shown != null) shown.text = keyName;
-                Apply();
-            });
-        });
-        shown = button.GetComponentInChildren<TextMeshProUGUI>();
-        return row;
-    }
-
     /// <summary>A muted line of explanation under the rows above it.</summary>
     public TextMeshProUGUI Note(string text)
     {

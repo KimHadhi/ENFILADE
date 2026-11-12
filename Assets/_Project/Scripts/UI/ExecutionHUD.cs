@@ -23,7 +23,9 @@ public sealed class ExecutionHUD : MonoBehaviour
         var far = execution != null ? execution.DeathblowCandidate : null;
         var target = near != null ? near : far;
         // Not broken but unaware with this player behind it: a stealth kill (ZombieMind).
-        SetKeys(near != null && far != null ? Texts.Get("execution.keys.both") : far != null ? Texts.Get("execution.keys.click") : "[F]", target != null && !target.CanExecute);
+        // The interact key as the player set it (KeyBindings); the click words follow it through Texts.
+        SetKeys(near != null && far != null ? Texts.Get("execution.keys.both") : far != null ? Texts.Get("execution.keys.click")
+            : KeyBindings.Bracketed("Player/Interact"), target != null && !target.CanExecute);
         Refresh(target, Time.unscaledDeltaTime);
     }
     private void SetKeys(string value, bool stealth)

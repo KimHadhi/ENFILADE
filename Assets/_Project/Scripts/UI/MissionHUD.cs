@@ -90,15 +90,26 @@ public sealed class MissionHUD : MonoBehaviour
     {
         FindParts();
         if (boardHint != null) boardHint.text = TabHint;
+        ShowBoardKey();
+        KeyBindings.Changed += ShowBoardKey;
         if (tracker != null) tracker.Changed += Refresh;
         HideAlert();
         Refresh(tracker != null ? tracker.Current : null, false);
     }
     private void OnDisable()
     {
+        KeyBindings.Changed -= ShowBoardKey;
         if (tracker != null) tracker.Changed -= Refresh;
         HideAlert();
         if (audioSource != null) audioSource.Stop();
+    }
+
+    // The chip beside the hint (the HUD prefab's TabKey/Label) names the scoreboard key as the player set it in the key
+    // window (TAB by default).
+    private void ShowBoardKey()
+    {
+        var chip = transform.Find("TabKey/Label");
+        if (chip != null && chip.TryGetComponent(out TMP_Text label)) label.text = KeyBindings.Name("UI/OpenObjectiveBoard");
     }
 
     private void Update()

@@ -718,7 +718,8 @@ public sealed class CampaignRun : MonoBehaviour
     {
         var mine = PlayerRoster.Local;
         if (mine == null || !mine.IsInitialized || mine.IsDead || mine.DamageReceiver.IsDowned || !TakesInput()) return;
-        if (UnityEngine.InputSystem.Mouse.current == null || !UnityEngine.InputSystem.Mouse.current.leftButton.wasPressedThisFrame) return;
+        // The fire key (Combat/Fire, the left button unless the key window says otherwise): the hands hold the can, not a gun.
+        if (!KeyBindings.Pressed("Combat/Fire")) return;
         int carried = fuel.CarriedBy(mine);
         if (carried < 0) return;
         var view = mine.TryGetComponent(out PlayerBody body) ? body.View : null;

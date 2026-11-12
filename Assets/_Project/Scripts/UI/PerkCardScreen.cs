@@ -80,7 +80,7 @@ public sealed class PerkCardScreen : MonoBehaviour
     private RectTransform layer, stage, fx, prompt, band, title, tray, landing;
     private CanvasGroup layerGroup, promptGroup, titleGroup, landingGroup;
     private Image veil, promptBar, bandImage;
-    private TMP_Text costLabel, emptyLabel, promptLabel;
+    private TMP_Text costLabel, emptyLabel, promptLabel, promptKey;
     // What the ready prompt says now: the cards, or, every card taken, the class's ultimate.
     private bool promptCards = true;
     private readonly List<Card> cards = new List<Card>();
@@ -221,7 +221,11 @@ public sealed class PerkCardScreen : MonoBehaviour
             TextAlignmentOptions.MidlineLeft);
         var key = KitStyle.TopLeft("Key", prompt, new Vector2(250f - 52f, 8f), new Vector2(32f, 32f));
         KitStyle.Fill(key, KitStyle.Ice);
-        KitStyle.Flat(key, "X", 18f, TextAlignmentOptions.Center, KitStyle.Ink);
+        // The key the player put on Player/PerkCards (X by default), read again each time the prompt shows.
+        promptKey = KitStyle.Flat(key, KeyBindings.Name("Player/PerkCards"), 18f, TextAlignmentOptions.Center, KitStyle.Ink);
+        promptKey.enableAutoSizing = true;
+        promptKey.fontSizeMin = 9f;
+        promptKey.fontSizeMax = 18f;
         prompt.gameObject.SetActive(false);
     }
 
@@ -475,7 +479,8 @@ public sealed class PerkCardScreen : MonoBehaviour
         if (!open)
         {
             ShowPrompt(ready && !Blocked(), cards);
-            if (ready && keyboard != null && keyboard.xKey.wasPressedThisFrame && !Blocked())
+            // Player/PerkCards (X unless the key window says otherwise).
+            if (ready && KeyBindings.Pressed("Player/PerkCards") && !Blocked())
             {
                 if (cards) Open();
                 else if (player.Ultimate.TryConsume()) ClassCards.Local.Ultimate();
@@ -485,7 +490,8 @@ public sealed class PerkCardScreen : MonoBehaviour
         ShowPrompt(false, true);
         if (keyboard != null && picked < 0 && !closing)
         {
-            if (keyboard.xKey.wasPressedThisFrame || keyboard.escapeKey.wasPressedThisFrame) Close();
+            // The same key closes the cards (read from its keys: alone, the cards hold the player's map).
+            if (KeyBindings.Pressed("Player/PerkCards") || keyboard.escapeKey.wasPressedThisFrame) Close();
             else
                 for (int i = 0; i < dealt; i++)
                     if (keyboard[DigitKeys[i]].wasPressedThisFrame || keyboard[PadKeys[i]].wasPressedThisFrame) { Pick(i); break; }
@@ -508,7 +514,11 @@ public sealed class PerkCardScreen : MonoBehaviour
 
     private void ShowPrompt(bool show, bool cards)
     {
-        if (prompt.gameObject.activeSelf != show) prompt.gameObject.SetActive(show);
+        if (prompt.gameObject.activeSelf != show)
+        {
+            prompt.gameObject.SetActive(show);
+            if (show) promptKey.text = KeyBindings.Name("Player/PerkCards");
+        }
         if (show && cards != promptCards)
         {
             promptCards = cards;

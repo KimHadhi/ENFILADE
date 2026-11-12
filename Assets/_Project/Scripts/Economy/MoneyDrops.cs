@@ -91,7 +91,8 @@ public sealed class MoneyDrops : MonoBehaviour
     {
         if (!listening || !network.IsListening || player == null || !player.IsInitialized) return;
         bool able = !player.IsDead && !player.DamageReceiver.IsDowned;
-        if (able && TakesInput() && Keyboard.current != null && Keyboard.current.gKey.wasPressedThisFrame) DropSome();
+        // Player/DropMoney (G unless the key window says otherwise).
+        if (able && TakesInput() && KeyBindings.Pressed("Player/DropMoney")) DropSome();
         if (able) TouchBundles();
         Animate();
     }

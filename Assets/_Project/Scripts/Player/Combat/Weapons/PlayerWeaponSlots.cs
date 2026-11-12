@@ -122,22 +122,22 @@ public sealed class PlayerWeaponSlots : MonoBehaviour
             if (holsterLeft <= 0f) SetSelection(holsterTo);
         }
         if (controller.EquippedData != SelectedWeapon) SetSelection(selectedSlot);
-        var keyboard = Keyboard.current;
         // The perk cards take 1-3 while they are up (in a room the game runs on, so these keys still reach here): a card
         // picked must not also swap the gun and cut its reload (friend feedback C13).
-        if (keyboard == null || !CanReadInput || PerkCardScreen.TakesKeyboard) return;
-        if (keyboard.digit1Key.wasPressedThisFrame || keyboard.numpad1Key.wasPressedThisFrame) HandleSlotInput(0);
-        else if (keyboard.digit2Key.wasPressedThisFrame || keyboard.numpad2Key.wasPressedThisFrame) HandleSlotInput(1);
-        else if (keyboard.digit3Key.wasPressedThisFrame || keyboard.numpad3Key.wasPressedThisFrame) HandleSlotInput(2);
-        else if (keyboard.digit4Key.wasPressedThisFrame || keyboard.numpad4Key.wasPressedThisFrame) HandleSlotInput(3);
+        if (!CanReadInput || PerkCardScreen.TakesKeyboard) return;
+        // Every key here is the key window's (KeyBindings): slots 1-4 with the number pad's as their second keys.
+        if (KeyBindings.Pressed("Combat/Slot1")) HandleSlotInput(0);
+        else if (KeyBindings.Pressed("Combat/Slot2")) HandleSlotInput(1);
+        else if (KeyBindings.Pressed("Combat/Slot3")) HandleSlotInput(2);
+        else if (KeyBindings.Pressed("Combat/Slot4")) HandleSlotInput(3);
         // B switches the held gun's fire mode (Rainbow Six Siege's select fire).
-        else if (keyboard.bKey.wasPressedThisFrame && !sidearmOnly) controller.CycleFireMode();
+        else if (KeyBindings.Pressed("Player/FireMode") && !sidearmOnly) controller.CycleFireMode();
         // C opens the gun's customize menu, one key for its sight, muzzle and underbarrel parts, as ArcCW's (user,
         // 2026-11-09: "키를 늘릴 바에 ArcCW처럼 커스터마이징 키를 하나 따로").
-        else if (keyboard.cKey.wasPressedThisFrame && !sidearmOnly && !GunCustomizeMenu.TakesKeyboard) GunCustomizeMenu.Open(player, controller);
+        else if (KeyBindings.Pressed("Player/Customize") && !sidearmOnly && !GunCustomizeMenu.TakesKeyboard) GunCustomizeMenu.Open(player, controller);
         // Y looks the gun over; L switches its flashlight.
-        else if (keyboard.yKey.wasPressedThisFrame) controller.Inspect();
-        else if (keyboard.lKey.wasPressedThisFrame) controller.ToggleLight();
+        else if (KeyBindings.Pressed("Player/Inspect")) controller.Inspect();
+        else if (KeyBindings.Pressed("Player/Flashlight")) controller.ToggleLight();
     }
     /// <summary>Someone downed holds only their pistol and can't change it. With no pistol, their hands stay empty. Afterwards they go back to what they held.</summary>
     internal void HoldSidearm(bool hold)

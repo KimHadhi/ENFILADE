@@ -79,9 +79,10 @@ public sealed class PlayerSpectate : MonoBehaviour
         fast = actions.FindAction("Player/Sprint", false);
         swap = actions.FindAction("Player/Jump", false);
         // Its own copy of the combat buttons, as PlayerWeaponInput keeps one. The dead don't fire, so nothing else takes them.
+        // KeyBindings.Copy keeps it on the player's keys, changed in the key window even while spectating.
         var map = actions.FindActionMap("Combat", false);
         if (map == null) return;
-        combat = map.Clone();
+        combat = KeyBindings.Copy(map);
         next = combat.FindAction("Fire", false);
         previous = combat.FindAction("Guard", false);
         combat.Enable();
@@ -91,6 +92,7 @@ public sealed class PlayerSpectate : MonoBehaviour
     {
         Stop();
         if (combat == null) return;
+        KeyBindings.Forget(combat);
         combat.Disable();
         combat.Dispose();
         combat = null;

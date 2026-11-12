@@ -177,8 +177,69 @@ settings.controls.invert_y,상하 반전,,설정 창 > 조작 > 행
 settings.controls.crouch,앉기,,설정 창 > 조작 > 행
 settings.controls.lean,기울이기,,설정 창 > 조작 > 행
 settings.controls.auto_reload,자동 장전,Auto reload,설정 창 > 조작 > 행(탄창이 비면 다시 쏠 수 있게 된 뒤 저절로 장전하고 끊긴 장전에 노리쇠만 남았으면 마저 한다. 끄면 R로만 장전)
-settings.controls.class_key,클래스 기술,,설정 창 > 조작 > 행(클래스 기술 키. 누르고 새 키를 누르면 바뀐다)
-settings.controls.press_key,키를 누르세요 (Esc 취소),,설정 창 > 조작 > 클래스 기술 키를 바꾸는 동안 버튼 글자
+settings.controls.keys,키 설정,Key bindings,설정 창 > 조작 > 맨 위 줄 이름. 오른쪽 버튼이 키 설정 창을 연다
+settings.controls.keys_open,모든 키 바꾸기,Change keys,설정 창 > 조작 > 키 설정 줄의 버튼(키 설정 창을 연다)
+settings.controls.keys_changed,바꾼 줄 {0}개,{0} changed,설정 창 > 조작 > 키 설정 줄 오른쪽(분홍). {0}=기본 키와 다른 줄 수
+settings.controls.keys_default,모두 기본 키,All default,설정 창 > 조작 > 키 설정 줄 오른쪽(바꾼 키가 없을 때)
+settings.keys.title,키 설정,Key bindings,키 설정 창 > 맨 위 제목
+settings.keys.hint,칸을 누르고 새 키 · 우클릭은 비우기 · Esc 닫기,"Click a slot, then a key · right click empties · Esc closes",키 설정 창 > 오른쪽 위 안내
+settings.keys.column.action,동작,Action,키 설정 창 > 열 제목
+settings.keys.column.first,주 키,Primary,키 설정 창 > 열 제목
+settings.keys.column.second,보조 키,Secondary,키 설정 창 > 열 제목(둘 중 어느 키로도 된다)
+settings.keys.section.move,이동 · 파쿠르,Movement,키 설정 창 > 구역 제목
+settings.keys.section.combat,전투,Combat,키 설정 창 > 구역 제목
+settings.keys.section.items,무기 칸 · 소지품,Slots and items,키 설정 창 > 구역 제목
+settings.keys.section.class,클래스 · 콜아웃,Class and callouts,키 설정 창 > 구역 제목
+settings.keys.section.screen,화면 · 채팅,Screen and chat,키 설정 창 > 구역 제목
+settings.keys.move_up,앞으로,Forward,키 설정 창 > 줄(Player/Move 위)
+settings.keys.move_down,뒤로,Back,키 설정 창 > 줄(Player/Move 아래)
+settings.keys.move_left,왼쪽으로,Left,키 설정 창 > 줄(Player/Move 왼쪽)
+settings.keys.move_right,오른쪽으로,Right,키 설정 창 > 줄(Player/Move 오른쪽)
+settings.keys.sprint,달리기,Sprint,키 설정 창 > 줄(Player/Sprint)
+settings.keys.jump,점프 · 넘기 · 오르기,Jump / vault / climb,키 설정 창 > 줄(Player/Jump)
+settings.keys.crouch,앉기 · 슬라이딩,Crouch / slide,키 설정 창 > 줄(Player/Crouch)
+settings.keys.dive,다이브 · 엎드리기,Dive / prone,키 설정 창 > 줄(Player/Dive)
+settings.keys.dodge,회피,Dodge,키 설정 창 > 줄(Player/Dodge. 기본 왼쪽 Alt와 오른쪽 Alt)
+settings.keys.lean_left,왼쪽 기울이기,Lean left,키 설정 창 > 줄(Player/LeanLeft)
+settings.keys.lean_right,오른쪽 기울이기,Lean right,키 설정 창 > 줄(Player/LeanRight)
+settings.keys.interact,상호작용 · 줍기 · 처형,Interact / pick up / execute,키 설정 창 > 줄(Player/Interact: 사다리·문·상점·부활·핑도 이 키)
+settings.keys.fire,사격 · 주먹,Fire / punch,키 설정 창 > 줄(Combat/Fire: 연료통 던지기·관전 다음도 이 키)
+settings.keys.guard,조준 · 막기,Aim / guard,키 설정 창 > 줄(Combat/Guard: 관전 이전도 이 키)
+settings.keys.reload,재장전,Reload,키 설정 창 > 줄(Combat/Reload)
+settings.keys.shove,밀치기 · 떨쳐내기,Shove / break free,키 설정 창 > 줄(Player/Shove)
+settings.keys.fire_mode,사격 모드,Fire mode,키 설정 창 > 줄(Player/FireMode)
+settings.keys.inspect,총 살펴보기,Inspect,키 설정 창 > 줄(Player/Inspect)
+settings.keys.flashlight,라이트,Flashlight,키 설정 창 > 줄(Player/Flashlight)
+settings.keys.customize,총 꾸미기,Customize gun,키 설정 창 > 줄(Player/Customize. 꾸미기 창을 닫는 키도 이것)
+settings.keys.throw,돌 던지기,Throw stone,키 설정 창 > 줄(Player/Throw. 누르고 있으면 겨누고 놓으면 던진다)
+settings.keys.knock,벽 두드리기,Knock on wall,키 설정 창 > 줄(Player/Knock)
+settings.keys.slot1,1번 칸 (주무기),Slot 1 (primary),키 설정 창 > 줄(Combat/Slot1. 보조 키 기본은 숫자패드 1)
+settings.keys.slot2,2번 칸 (보조 무기),Slot 2 (secondary),키 설정 창 > 줄(Combat/Slot2)
+settings.keys.slot3,3번 칸 (근접),Slot 3 (melee),키 설정 창 > 줄(Combat/Slot3)
+settings.keys.slot4,4번 칸 (특수),Slot 4 (special),키 설정 창 > 줄(Combat/Slot4)
+settings.keys.drop_money,돈 떨구기,Drop money,키 설정 창 > 줄(Player/DropMoney)
+settings.keys.class,클래스 기술,Class ability,키 설정 창 > 줄(Player/ClassAbility. 기본 휠 클릭)
+settings.keys.perk,능력 카드 · 궁극,Perk cards / ultimate,키 설정 창 > 줄(Player/PerkCards. 카드 창을 닫는 키도 이것)
+settings.keys.callout,콜아웃 휠,Callout wheel,키 설정 창 > 줄(Player/Callout. 누르고 있는 동안 휠)
+settings.keys.scoreboard,목표 · 점수판,Objectives / scoreboard,키 설정 창 > 줄(UI/OpenObjectiveBoard. 누르고 있는 동안)
+settings.keys.chat,채팅 열기,Open chat,키 설정 창 > 줄(UI/OpenChat. 보조 키 기본은 숫자패드 Enter)
+settings.keys.chat_channel,채팅 채널 바꾸기 (채팅 중),Chat channel (in chat),키 설정 창 > 줄(UI/CycleChatChannel. 채팅 칸에 쓰는 동안만 읽어서 다른 줄과 키가 겹쳐도 된다)
+settings.keys.third_person,3인칭 보기,Third person view,키 설정 창 > 줄(Player/ThirdPerson)
+settings.keys.console,개발자 콘솔,Developer console,키 설정 창 > 줄(UI/Console)
+settings.keys.press,키를 누르세요,Press a key,키 설정 창 > 새 키를 기다리는 칸의 글자(분홍)
+settings.keys.listening,{0}: 쓸 키나 마우스 버튼을 누르세요 · Esc는 그대로 둡니다,{0}: press a key or mouse button · Esc keeps it,키 설정 창 > 아래 줄(새 키를 기다리는 동안). {0}=줄 이름
+settings.keys.swapped,{0} 키는 {1}에 쓰던 키라 서로 바꿨어요 · {1} 키는 이제 {2},"{0} was on {1}, so they swapped · {1} is now {2}",키 설정 창 > 아래 줄(분홍): 겹친 키를 맞바꿨을 때. {0}=새 키 {1}=그 키를 쓰던 줄 {2}=그 줄이 받은 키
+settings.keys.taken,{0} 키를 {1}에서 가져왔어요 · {1}에는 이제 키가 없어요,"{0} was taken from {1}, which has no key now",키 설정 창 > 아래 줄(분홍): 빈 칸에 겹친 키를 넣어 다른 줄이 키를 잃었을 때. {0}=키 {1}=줄
+settings.keys.cleared,{0}: 칸을 비웠어요,{0}: slot emptied,키 설정 창 > 아래 줄: 우클릭으로 비웠을 때. {0}=줄 이름
+settings.keys.reset,기본,Reset,키 설정 창 > 줄 끝 버튼(그 줄만 기본 키로. 바꾼 줄에만 보인다)
+settings.keys.reset_done,{0}: 기본 키로 돌렸어요,{0}: back to default,키 설정 창 > 아래 줄. {0}=줄 이름
+settings.keys.reset_all,모두 기본값,Reset all,키 설정 창 > 아래 버튼
+settings.keys.reset_all.confirm,한 번 더 누르면 초기화,Press again,키 설정 창 > 모두 기본값 버튼을 한 번 누른 뒤 3초 동안 버튼 글자
+settings.keys.reset_all.ask,모든 키를 기본으로 돌립니다 · 3초 안에 한 번 더 누르세요,Every key goes back to default · press again within 3 s,키 설정 창 > 아래 줄(분홍): 모두 기본값을 한 번 눌렀을 때
+settings.keys.reset_all.done,모든 키를 기본으로 돌렸어요,Every key is back to default,키 설정 창 > 아래 줄
+settings.keys.close,닫기,Close,키 설정 창 > 아래 오른쪽 분홍 버튼
+settings.keys.status,바꾼 줄 {0}개 · 바꾸는 즉시 저장돼요,{0} changed · saved as you go,키 설정 창 > 아래 줄(평소). {0}=기본 키와 다른 줄 수
+settings.keys.fixed,"바꿀 수 없는 키: Esc(메뉴·닫기·키 받기 취소), 마우스 움직임(시점), 휠 굴리기(목록), 콜아웃 휠 안의 좌클릭(말하기)과 우클릭(닫기), 능력 카드 고르기 1·2·3, 메뉴의 Enter, 채팅·콘솔 안의 Enter와 위아래 화살표, 콘솔 자동 완성 Tab","Fixed keys: Esc (menu, close, cancel), mouse movement (look), wheel (lists), left/right click inside the callout wheel, perk card picks 1/2/3, Enter in menus, Enter and arrows in chat and console, Tab completion in the console",키 설정 창 > 목록 맨 아래 흐린 글. 코드가 직접 읽어 키 설정 창에 없는 키
 settings.screen.display,디스플레이,,설정 창 > 화면 > 소제목
 settings.screen.editor_note,"에디터에서는 저장만 되고, 빌드한 게임에서 적용돼요.",,설정 창 > 화면 > 에디터에서만 보이는 안내
 settings.screen.monitor,모니터,,설정 창 > 화면 > 모니터 행
@@ -332,6 +393,7 @@ key.mouse.left,좌클릭,,키 이름: 마우스 왼쪽 버튼
 key.mouse.right,우클릭,,키 이름: 마우스 오른쪽 버튼
 key.mouse.forward,앞 버튼,,키 이름: 마우스 앞 옆버튼
 key.mouse.back,뒤 버튼,,키 이름: 마우스 뒤 옆버튼
+key.none,없음,None,키 이름: 주 키와 보조 키를 모두 비운 동작(키 설정 창)
 classes.title,클래스,,클래스 화면 > 큰 제목
 classes.where,판을 시작하기 전에 고른다 · 판마다 바꿀 수 있고 같은 클래스가 겹쳐도 된다,,클래스 화면 > 제목 아래 줄
 classes.later,준비 중,,클래스 화면 > 능력이 아직 없는 클래스 판의 칩
@@ -700,7 +762,6 @@ wardrobe.off.note,아무것도 입지 않는다,,옷장 > 칸을 연 화면 > �
 wardrobe.off.worn,벗음,,옷장 > 칸 타일에 벗기를 고른 칸
 wardrobe.colours,색 {0}가지,,옷장 > 칸을 연 화면 > 옷 판의 설명. {0}=색 세트 수
 wardrobe.worn,입음,,옷장 > 칸을 연 화면 > 지금 입은 판의 분홍 칩
-settings.controls.knock_key,벽 두드리기 키,Wall knock key,설정 > 조작 > 키 줄. 바로 앞 벽을 두드려 근처 좀비를 그 자리로 불러온다
 hud.stealth.dark,어둠,Dark,잠입 > 앉았을 때 조준점 아래 밝기 표시: 어두워서 좀비가 잘 못 본다
 hud.stealth.dim,그늘,Dim,잠입 > 밝기 표시: 반쯤 어둡다
 hud.stealth.lit,밝음,Lit,잠입 > 밝기 표시: 밝아서 잘 보인다
@@ -847,7 +908,6 @@ callout.hint.click,클릭해서 말한다 · 우클릭 취소,Click to say it ·
 callout.hint.page,골라서 클릭 · 우클릭 취소,Pick one and click · right click cancels,콜아웃 휠 > 말 쪽 가운데 아래 안내
 callout.hint.none,말할 칸을 가리킨다,Point at a slice,콜아웃 휠 가운데: 포인터가 가운데에 있어 고른 칸이 없을 때
 callout.pin,이쪽,This way,'이쪽으로!' 콜아웃이 바라본 자리에 꽂는 핀의 글자(그 위에 외친 사람 이름)
-settings.controls.callout_key,콜아웃 키,Callout key,설정 > 조작 > 키 줄. 누르고 있으면 콜아웃 휠(Guts & Blackpowder처럼). 기본은 마우스 뒤로 버튼(엄지 쪽 옆 버튼)
 settings.controls.callout_release,콜아웃: 놓으면 말하기,Callout: say on release,설정 > 조작. 끄면 좌클릭으로 말하고 키를 놓으면 그냥 닫힌다
 settings.controls.callout_bubbles,동료 콜아웃 말풍선,Teammates' callout bubbles,설정 > 조작. 동료가 외친 말을 머리 위에 글로도 보여 준다(끄면 목소리와 핀만)
 settings.controls.callout_auto,저절로 외치기,Shout by myself,설정 > 조작. 잡히거나 쓰러질 때 도와달라고 · 엘리트를 처음 가까이 볼 때 그 이름을 · CHARGE 때 돌격을 저절로 외친다

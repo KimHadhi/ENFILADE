@@ -14,18 +14,17 @@ public sealed class PlayerWeaponInput : MonoBehaviour, IWeaponInput
 
     private void OnEnable()
     {
-        ownedMap?.Disable();
-        ownedMap?.Dispose();
-        ownedMap = null;
+        Release();
         fire = reload = null;
         var asset = inputActions != null ? inputActions : InputSystem.actions;
         var map = asset != null ? asset.FindActionMap("Combat", false) : null;
         if (map == null) { Debug.LogError("PlayerWeaponInput needs Combat/Fire and Combat/Reload in the input asset.", this); return; }
-        ownedMap = map.Clone(); fire = ownedMap.FindAction("Fire", false); reload = ownedMap.FindAction("Reload", false);
+        // Its own copy, which still takes every key the player changes later in the key window (KeyBindings.Copy).
+        ownedMap = KeyBindings.Copy(map); fire = ownedMap.FindAction("Fire", false); reload = ownedMap.FindAction("Reload", false);
         guard = ownedMap.FindAction("Guard", false);
         shove = asset.FindAction("Player/Shove", false);
         if (fire == null || reload == null)
-        { Debug.LogError("Combat input map is missing Fire or Reload.", this); ownedMap.Dispose(); ownedMap = null; return; }
+        { Debug.LogError("Combat input map is missing Fire or Reload.", this); Release(); return; }
         ownedMap.Enable(); releaseRequired = meleeReleaseRequired = true; acceptInputThisFrame = false;
     }
 
@@ -92,7 +91,16 @@ public sealed class PlayerWeaponInput : MonoBehaviour, IWeaponInput
     private void OnApplicationFocus(bool focused) { if (!focused) { acceptInputThisFrame = false; releaseRequired = meleeReleaseRequired = true; } }
     private void OnDisable()
     {
-        ownedMap?.Disable(); ownedMap?.Dispose(); ownedMap = null; fire = reload = null;
+        Release(); fire = reload = null;
         acceptInputThisFrame = false; releaseRequired = meleeReleaseRequired = true; guard = shove = null;
+    }
+
+    private void Release()
+    {
+        if (ownedMap == null) return;
+        KeyBindings.Forget(ownedMap);
+        ownedMap.Disable();
+        ownedMap.Dispose();
+        ownedMap = null;
     }
 }

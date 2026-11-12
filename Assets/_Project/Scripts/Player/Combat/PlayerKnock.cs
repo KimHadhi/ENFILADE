@@ -58,9 +58,8 @@ public sealed class PlayerKnock : MonoBehaviour, ITableBound
     {
         if (movement == null || !movement.IsLocal || !movement.InputAvailable || movement.IsDead || movement.IsHeld
             || movement.CombatInputLocked || !TakesInput()) return;
-        if (key == null && InputSystem.actions != null) key = InputSystem.actions.FindAction("Player/Knock", false);
-        bool pressed = key != null ? key.WasPressedThisFrame() : Keyboard.current != null && Keyboard.current.hKey.wasPressedThisFrame;
-        if (!pressed || Time.time < readyAt) return;
+        if (key == null) key = KeyBindings.Find("Player/Knock");
+        if (!KeyBindings.Pressed(key) || Time.time < readyAt) return;
         var eye = Camera.main;
         if (eye == null) return;
         // A wall (or a door, a pillar, a crate's side) straight ahead and near; the floor or a ceiling doesn't count.

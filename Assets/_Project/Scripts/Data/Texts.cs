@@ -43,8 +43,9 @@ public static class Texts
     {
         if (string.IsNullOrEmpty(id)) return string.Empty;
         if (!GameTables.TryGetRow(TableName, id, out var row)) return "[" + id + "]";
-        if (row.TryGetValue(language, out string words) && words.Length > 0) return Unescape(words);
-        if (language != Korean && row.TryGetValue(Korean, out words) && words.Length > 0) return Unescape(words);
+        // A default key in brackets ("[F] 문 열기") reads as the key the player chose in the key window (KeyBindings).
+        if (row.TryGetValue(language, out string words) && words.Length > 0) return KeyBindings.Relabel(Unescape(words));
+        if (language != Korean && row.TryGetValue(Korean, out words) && words.Length > 0) return KeyBindings.Relabel(Unescape(words));
         return "[" + id + "]";
     }
 

@@ -178,16 +178,18 @@ public sealed class PlayerCallouts : MonoBehaviour
 
     private void Wheel()
     {
-        if (key == null && InputSystem.actions != null) key = InputSystem.actions.FindAction("Player/Callout", false);
+        if (key == null) key = KeyBindings.Find("Player/Callout");
         bool open = CalloutWheel.IsOpen;
         if (movement.IsDead || !movement.InputAvailable || !TakesInput())
         {
             if (open) CalloutWheel.Close(false);
             return;
         }
+        // The wheel's own pointing stays on the mouse (move to aim at a slot, left click says, right click closes): it is
+        // a pointer menu, and only the key that holds it open is the player's to choose.
         var mouse = Mouse.current;
-        bool pressed = key != null ? key.WasPressedThisFrame() : mouse != null && mouse.backButton.wasPressedThisFrame;
-        bool released = key != null ? key.WasReleasedThisFrame() : mouse != null && mouse.backButton.wasReleasedThisFrame;
+        bool pressed = key != null && key.WasPressedThisFrame();
+        bool released = key != null && key.WasReleasedThisFrame();
         if (!open)
         {
             if (!pressed) return;

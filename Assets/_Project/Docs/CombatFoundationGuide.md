@@ -84,10 +84,10 @@
 | 적 체력·공격·체간·이동 속도 | [Enemies.csv](../Resources/Tables/Enemies.csv) |
 | 적의 몸 크기·밀치기 연쇄 | [적 프리팹](../Resources/Enemies)의 `MeleeCombatTarget` |
 | 사격·장전·가드 키 | [Player.inputactions](../Input/Player.inputactions)의 Combat 맵 |
-| 슬롯 숫자 키 | [PlayerWeaponSlots.Update](../Scripts/Player/Combat/Weapons/PlayerWeaponSlots.cs)의 직접 키보드 입력 |
+| 슬롯 숫자 키 | Player.inputactions의 Combat 맵 `Slot1`~`Slot4`(주 키 숫자열, 보조 키 숫자패드). 플레이어는 설정 → 조작 → 키 설정에서 바꾼다 |
 | 탄약 UI의 위치·크기·색 | 씬의 `AmmoHUD` → Screen Margin / Hud Scale / Colors |
 
-슬롯 키는 현재 Input Actions의 Slot 액션을 사용하지 않고 숫자열과 숫자패드 1~4를 직접 읽는다. Slot 액션 바인딩만 수정해서는 슬롯 키가 바뀌지 않는다.
+슬롯 키는 Input Actions의 `Slot1`~`Slot4` 액션이다. [PlayerWeaponSlots](../Scripts/Player/Combat/Weapons/PlayerWeaponSlots.cs)는 `KeyBindings.Pressed`로 읽으므로 에셋의 바인딩과 키 설정 창에서 바꾼 키가 그대로 먹힌다. 사격 모드(B)·총 꾸미기(C)·살펴보기(Y)·라이트(L)도 같다.
 
 ## 새 총 데이터 연결하기
 

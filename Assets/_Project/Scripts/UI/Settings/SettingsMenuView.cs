@@ -73,6 +73,7 @@ public sealed class SettingsMenuView
     public void Show(bool visible)
     {
         if (visible) Build();
+        else KeyBindingsView.CloseIfOpen();
         root.gameObject.SetActive(visible);
     }
 
@@ -210,22 +211,26 @@ public sealed class SettingsMenuView
         rows.Volume(Texts.Get("settings.sound.ambience"), s.ambienceVolume, v => s.ambienceVolume = v);
     }
 
-    private static void ControlsTab(SettingsRows rows, GameSettings s)
+    private void ControlsTab(SettingsRows rows, GameSettings s)
     {
+        // Every key the game reads, in a window of its own (KeyBindingsView; user, 2026-11-12: "키 설정 창을 아예 따로
+        // 만들었으면 좋겠음"). The class, knock and callout keys that had rows here are lines there.
+        var keys = W.Row(rows.Parent, Texts.Get("settings.controls.keys"));
+        W.Size(W.ActionButton(keys, Texts.Get("settings.controls.keys_open"), false, () =>
+        {
+            if (UnityEngine.EventSystems.EventSystem.current != null) UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(null);
+            KeyBindingsView.Open(root, BuildPage);
+        }), 250f, 40f);
+        int moved = KeyBindings.ChangedCount();
+        W.Size(W.Label(keys, moved > 0 ? Texts.Format("settings.controls.keys_changed", moved) : Texts.Get("settings.controls.keys_default"), 17f,
+            moved > 0 ? W.Accent : W.Muted), flexibleWidth: 1f);
         rows.Slider(Texts.Get("settings.controls.sensitivity"), GameSettings.MinSensitivity, GameSettings.MaxSensitivity, s.mouseSensitivity,
             v => s.mouseSensitivity = v, v => v.ToString("0.00") + "×");
         rows.Choice(Texts.Get("settings.controls.invert_y"), OffOn, s.invertY ? 1 : 0, i => s.invertY = i == 1);
         rows.Choice(Texts.Get("settings.controls.crouch"), HoldToggle, s.crouchToggle ? 1 : 0, i => s.crouchToggle = i == 1);
         rows.Choice(Texts.Get("settings.controls.lean"), HoldToggle, s.leanToggle ? 1 : 0, i => s.leanToggle = i == 1);
         rows.Choice(Texts.Get("settings.controls.auto_reload"), OffOn, s.autoReload ? 1 : 0, i => s.autoReload = i == 1);
-        // The class key (stage 7): the wheel click unless picked otherwise.
-        rows.Key(Texts.Get("settings.controls.class_key"),
-            UnityEngine.InputSystem.InputSystem.actions != null ? UnityEngine.InputSystem.InputSystem.actions.FindAction("Player/ClassAbility", false) : null);
-        rows.Key(Texts.Get("settings.controls.knock_key"),
-            UnityEngine.InputSystem.InputSystem.actions != null ? UnityEngine.InputSystem.InputSystem.actions.FindAction("Player/Knock", false) : null);
-        // Callouts (memo 4, G&B's wheel): the key held for the wheel, and how it says.
-        rows.Key(Texts.Get("settings.controls.callout_key"),
-            UnityEngine.InputSystem.InputSystem.actions != null ? UnityEngine.InputSystem.InputSystem.actions.FindAction("Player/Callout", false) : null);
+        // Callouts (memo 4, G&B's wheel): how the wheel's key says (the key itself is in the key window).
         rows.Choice(Texts.Get("settings.controls.callout_release"), OffOn, s.calloutOnRelease ? 1 : 0, i => s.calloutOnRelease = i == 1);
         rows.Choice(Texts.Get("settings.controls.callout_bubbles"), OffOn, s.calloutBubbles ? 1 : 0, i => s.calloutBubbles = i == 1);
         rows.Choice(Texts.Get("settings.controls.callout_auto"), OffOn, s.calloutAuto ? 1 : 0, i => s.calloutAuto = i == 1);

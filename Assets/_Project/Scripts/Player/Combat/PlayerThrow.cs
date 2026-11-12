@@ -57,14 +57,15 @@ public sealed class PlayerThrow : MonoBehaviour, ITableBound
 
     private void Update()
     {
-        var key = Keyboard.current != null ? Keyboard.current.tKey : null;
+        // Player/Throw (T unless the key window says otherwise).
+        var key = KeyBindings.Find("Player/Throw");
         bool able = movement != null && movement.InputAvailable && key != null && TakesInput() && !movement.IsDead && !movement.IsHeld
             && !movement.CombatInputLocked;
         var eye = Camera.main;
         if (!able || eye == null) { StopAim(); return; }
-        if (key.wasPressedThisFrame) aiming = true;
+        if (KeyBindings.Pressed(key)) aiming = true;
         if (!aiming) return;
-        if (key.isPressed) { Aim(eye.transform); return; }
+        if (KeyBindings.Held(key)) { Aim(eye.transform); return; }
         // Let go: thrown, if a stone is ready.
         StopAim();
         if (Time.time < readyAt) return;

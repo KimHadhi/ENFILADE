@@ -554,6 +554,8 @@ public sealed class FieldPickups : MonoBehaviour
         var tint = ColorOf(row.Kind);
         bool flash = Time.unscaledTime - pressedAt < KeyFlash;
         keyBox.color = refusal != null ? KitStyle.With(KitStyle.Ice, .45f) : flash ? KitStyle.Accent : KitStyle.Ice;
+        // The interact key as the player set it in the key window (F by default).
+        SetText(keyLabel, KeyBindings.Name("Player/Interact"));
         SetText(nameLabel, row.Name);
         SetText(amountLabel, refusal ?? AmountOf(row));
         amountLabel.color = refusal != null ? KitStyle.Soft : tint;
@@ -631,6 +633,10 @@ public sealed class FieldPickups : MonoBehaviour
         keyLabel.rectTransform.offsetMin = keyLabel.rectTransform.offsetMax = Vector2.zero;
         keyLabel.text = "F";
         keyLabel.color = KitStyle.Ink;
+        // A longer key name ("SPACE", "좌클릭") shrinks to the square instead of spilling out of it.
+        keyLabel.enableAutoSizing = true;
+        keyLabel.fontSizeMin = 12f;
+        keyLabel.fontSizeMax = 34f;
         var plate = Panel("Plate", promptRoot, new Vector2(58f, -4f), new Vector2(270f, 44f), KitStyle.With(KitStyle.Night, .82f));
         underline = Panel("Line", promptRoot, new Vector2(58f, -44f), new Vector2(270f, 4f), KitStyle.Ice);
         nameLabel = FeelUI.ScoreLabel("Name", plate.rectTransform, 24f, TextAlignmentOptions.Left);

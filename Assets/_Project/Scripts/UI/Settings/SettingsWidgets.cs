@@ -352,7 +352,9 @@ public static class SettingsWidgets
     /// 입력"). It reads like the readout it replaces (<paramref name="shown"/>: "80%", "끔") until clicked, then holds the
     /// bare number (<paramref name="editing"/>: "80") with all of it selected, so typing replaces it. Enter or clicking
     /// away hands the number read to <paramref name="typed"/>, which clamps and applies it; Esc keeps the old value. Either
-    /// way the box reads <paramref name="shown"/> again after.
+    /// way the box reads <paramref name="shown"/> again after. While it is typed in it looks it (<see cref="TypingLook"/>:
+    /// dark inside a pink frame, a pink caret, the row's name pink). The first child of <paramref name="parent"/> is taken
+    /// for the row's name when it is a label (a <see cref="Row"/>).
     /// </summary>
     public static TMP_InputField NumberBox(Transform parent, Func<string> shown, Func<string> editing, Action<float> typed)
     {
@@ -363,21 +365,22 @@ public static class SettingsWidgets
         var text = (TextMeshProUGUI)field.textComponent;
         text.alignment = TextAlignmentOptions.MidlineRight;
         text.fontSize = field.pointSize = 20f;
-        text.color = Muted;
+        // TMP draws the caret just past the last letter, and right-aligned text puts that on the viewport's edge, where
+        // the viewport's mask cut the caret away: this much room keeps it in sight.
+        text.rectTransform.offsetMax = new Vector2(-CaretRoom, 0f);
+        TypingLook.On(field, parent.childCount > 0 ? parent.GetChild(0).GetComponent<TMP_Text>() : null);
         // Before the field takes focus, so the bare number is what gets selected and what Esc goes back to.
-        field.onSelect.AddListener(_ =>
-        {
-            field.SetTextWithoutNotify(editing());
-            text.color = Text;
-        });
+        field.onSelect.AddListener(_ => field.SetTextWithoutNotify(editing()));
         field.onEndEdit.AddListener(value =>
         {
-            text.color = Muted;
             if (TryReadNumber(value, out float number)) typed(number);
             field.SetTextWithoutNotify(shown());
         });
         return field;
     }
+
+    // Room right of a right-aligned number for the caret, which TMP draws past the last letter (px).
+    private const float CaretRoom = 6f;
 
     /// <summary>The bare number a box shows while it is typed in: up to three decimals, none when it is whole.</summary>
     public static string Bare(float value) => value.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture);

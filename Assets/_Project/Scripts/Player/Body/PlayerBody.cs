@@ -440,8 +440,8 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         if (!graph.IsValid() || player == null) return;
         float dt = Time.deltaTime;
         if (HoldsForPause() || dt <= 0f) return;
-        var keyboard = Keyboard.current;
-        if (keyboard != null && player.IsLocal && keyboard.f5Key.wasPressedThisFrame)
+        // Player/ThirdPerson (F5 unless the key window says otherwise).
+        if (player.IsLocal && KeyBindings.Pressed("Player/ThirdPerson"))
         {
             thirdPerson = !thirdPerson;
             ApplyView();
