@@ -94,7 +94,7 @@ public static class KillConditions
             UltimateAt = -999f;
             if (instance != null) return;
             var host = new GameObject("Kill Duel Watch");
-            DontDestroyOnLoad(host);
+            RuntimeSceneHierarchy.Keep(host);
             instance = host.AddComponent<DuelWatch>();
         }
 

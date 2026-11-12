@@ -49,6 +49,7 @@ public sealed class MapAmbience : MonoBehaviour
         if (!hasRow && !hasAreas) return;
         var holder = new GameObject("Map Ambience");
         SceneManager.MoveGameObjectToScene(holder, scene);
+        RuntimeSceneHierarchy.Group(holder, RuntimeSceneHierarchy.Systems, "Audio");
         holder.AddComponent<MapAmbience>().Begin(scene);
     }
 

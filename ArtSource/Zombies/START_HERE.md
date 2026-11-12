@@ -165,4 +165,4 @@ git push
 
 - **사람 뼈대로 읽을 수 없는 파일**: 뼈 이름이 낯선 리그다. Mixamo나 Synty 뼈대 파일을 쓴다.
 - **불러왔는데 팔다리가 꼬였다**: Skin 없이 받은 Mixamo 파일이다. With Skin으로 다시 받거나 같은 폴더에 `폴더이름.tpose.fbx`를 둔다.
-- **게임에서 안 보인다**: 그 슬롯이 나오는 상황인지 본다(예: Notice는 조용한 좀비만). Unity 콘솔에 `[ZombieClipFolders]` 줄이 있는지 본다. 메뉴 `Tools → Zombies → Refresh Clip Folders`로 다시 채울 수 있다.
+- **게임에서 안 보인다**: 그 슬롯이 나오는 상황인지 본다(예: Notice는 조용한 좀비만). Unity 콘솔에 `[ZombieClipFolders]` 줄이 있는지 본다. 메뉴 `ENFILADE → 좀비 → 클립 폴더 다시 읽기`로 다시 채울 수 있다.

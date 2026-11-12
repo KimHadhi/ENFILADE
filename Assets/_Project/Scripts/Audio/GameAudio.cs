@@ -121,6 +121,7 @@ public static class GameAudio
     {
         if (clip == null) return;
         var source = new GameObject("One Shot (" + clip.name + ")").AddComponent<AudioSource>();
+        RuntimeSceneHierarchy.Group(source.gameObject, RuntimeSceneHierarchy.Effects, "Audio");
         source.transform.position = point;
         source.playOnAwake = false;
         source.spatialBlend = 1f;

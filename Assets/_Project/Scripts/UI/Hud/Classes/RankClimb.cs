@@ -33,6 +33,7 @@ public sealed class RankClimb : MonoBehaviour
     {
         if (climb == null || !Application.isPlaying) return null;
         var shown = new GameObject("Rank climb").AddComponent<RankClimb>();
+        RuntimeSceneHierarchy.Group(shown.gameObject, RuntimeSceneHierarchy.Ui, "Screens");
         shown.Begin(climb, seconds, where ?? At);
         return shown;
     }

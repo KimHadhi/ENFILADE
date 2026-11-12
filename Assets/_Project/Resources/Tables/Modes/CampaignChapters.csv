@@ -1,5 +1,5 @@
 ﻿id,title,intro,outro,next
-#설명 (id = 씬 이름),장 제목: Texts.csv id,시작할 때 이야기: Texts.csv id. 글자는 Tools → 글자 → 글자 편집기에서 고치고 줄은 Enter로 나눈다(줄 수 자유),"끝날 때 이야기: Texts.csv id. 글자는 글자 편집기에서, 줄은 Enter",다음 장 씬 이름 (비우면 캠페인 끝)
+#설명 (id = 씬 이름),장 제목: Texts.csv id,시작할 때 이야기: Texts.csv id. 글자는 ENFILADE → 글자 → 글자 편집기에서 고치고 줄은 Enter로 나눈다(줄 수 자유),"끝날 때 이야기: Texts.csv id. 글자는 글자 편집기에서, 줄은 Enter",다음 장 씬 이름 (비우면 캠페인 끝)
 Ch1_Rooftops,chapter.ch1_rooftops.title,chapter.ch1_rooftops.intro,chapter.ch1_rooftops.outro,Ch2_Overpass
 Ch2_Overpass,chapter.ch2_overpass.title,chapter.ch2_overpass.intro,chapter.ch2_overpass.outro,Ch3_Subway
 Ch3_Subway,chapter.ch3_subway.title,chapter.ch3_subway.intro,chapter.ch3_subway.outro,Ch4_Airport

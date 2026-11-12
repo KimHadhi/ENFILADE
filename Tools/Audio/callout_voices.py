@@ -1,7 +1,7 @@
 """Makes the callout voice lines (Tables/Callouts.csv) with Windows' own Korean voice.
 
 A line's words are the Korean of the Texts.csv row its ko cell names (callout.line.<id>, since 2026-11-12: every line
-the game shows is written in Texts.csv, Tools → 글자 → 글자 편집기); a cell holding plain words is spoken as written.
+the game shows is written in Texts.csv, ENFILADE → 글자 → 글자 편집기); a cell holding plain words is spoken as written.
 These are stand-ins until real recordings exist: each line's clip goes to
 Assets/_Project/Art/Audio/Voice/Hiro/Callout/<id>/<id>_tts.wav, where the Voice sound bank picks it up as the key
 "Callout/<id>" (SoundBankBuilder; this script also writes the bank's entries itself, so the project is complete

@@ -25,7 +25,7 @@ using Object = UnityEngine.Object;
 ///   makes for each skin from the pack's own (its Operator skeleton, framed from the pack's FPCamera).
 /// - The gun is added to Resources/Combat/FPSBody, which sets GunClipRetarget baking.
 /// Our numbers (damage, pellets, shells, reload times measured from the pack's clips) are Weapons.csv's.
-/// It runs by itself after scripts load for a gun not in FPSBody yet, and from Tools → ENFILADE → Combat → Make Tactical
+/// It runs by itself after scripts load for a gun not in FPSBody yet, and from ENFILADE → 총 → Make Tactical
 /// Shooter Pack Guns to make them all again.
 /// </summary>
 [InitializeOnLoad]
@@ -141,7 +141,7 @@ internal static class TacticalGunSetup
 
     static TacticalGunSetup() => EditorApplication.delayCall += () => Run(false);
 
-    [MenuItem("Tools/ENFILADE/Combat/Make Tactical Shooter Pack Guns")]
+    [MenuItem("ENFILADE/총/Tactical Shooter Pack 총 만들기")]
     private static void RunAll() => Run(true);
 
     private static void Run(bool all)

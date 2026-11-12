@@ -128,7 +128,7 @@ public sealed partial class GreyboxBuilder
     }
 
     /// <summary>
-    /// Rebuilds every chapter one after another (Tools > World > 캠페인 회색 맵 > 모든 장 다시 짓기): one question first,
+    /// Rebuilds every chapter one after another (ENFILADE > 맵 > 캠페인 > 모든 장 다시 짓기): one question first,
     /// then each chapter's build as if picked from its own menu item, and one window at the end with what each made and
     /// what its small-prop check found. A chapter that fails is reported and the rest still build.
     /// </summary>
@@ -258,7 +258,7 @@ public sealed partial class GreyboxBuilder
         obstacle.carvingMoveThreshold = .3f;
     }
 
-    /// <summary>Where Tools > World > 맵 사진 찍기 (MapPictures) takes the menu's map picture from, looking at
+    /// <summary>Where ENFILADE > 맵 > 맵 사진 찍기 (MapPictures) takes the menu's map picture from, looking at
     /// <paramref name="lookAt"/>.</summary>
     public void Shot(Vector3 position, Vector3 lookAt)
     {

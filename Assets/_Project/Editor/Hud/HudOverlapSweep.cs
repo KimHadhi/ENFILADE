@@ -7,7 +7,7 @@ using UnityEditor;
 using UnityEngine;
 
 /// <summary>
-/// Tools → HUD → 겹침 검사 (화면비·설정 모두): in Play, goes through every screen shape (16:9, 16:10, 21:9, 4:3), the
+/// ENFILADE → HUD → 겹침 검사 (화면비·설정 모두): in Play, goes through every screen shape (16:9, 16:10, 21:9, 4:3), the
 /// HUD's angle (0, 20, 40°) and tilt (0, 1, 2), and a full Q/E lean each way at the player's own angle and tilt; each once
 /// as the game is showing it and once with every piece that can show a passing state holding it (IHudPreview: an
 /// assault's time row, the new-objective alert). Each time it measures the HUD as drawn (HudOverlapCheck) and at the end
@@ -60,7 +60,7 @@ public static class HudOverlapSweep
     private static float angle, tilt;
     private static string pieces;
 
-    [MenuItem("Tools/HUD/겹침 검사 (화면비·설정 모두)")]
+    [MenuItem("ENFILADE/HUD/겹침 검사 (화면비·설정 모두)")]
     private static void Run()
     {
         if (!EditorApplication.isPlaying)

@@ -4,7 +4,7 @@ using UnityEngine;
 
 /// <summary>
 /// The campaign's chapters as grey blocks (multiplayer plan stage 5A), one item each under
-/// Tools > World > 캠페인 회색 맵. The story runs on from one chapter to the next:
+/// ENFILADE > 맵 > 캠페인. The story runs on from one chapter to the next:
 /// 1장 옥상 탈출: survivors in a downtown flat cross the rooftops to a building site whose roof the rescue helicopter
 ///   lands on. Alarm shutter in the alley (hold out), rest stop in a corner shop, finale on the helipad. The helicopter
 ///   takes them, but goes down over the ring road.
@@ -24,11 +24,11 @@ public static class CampaignMaps
     private enum Side { West, East, South, North }
 
     /// <summary>Every chapter in a row after one question (memo 48: the small-prop fix needs each map rebuilt).</summary>
-    [MenuItem("Tools/World/캠페인 회색 맵/모든 장 다시 짓기", priority = 0)]
+    [MenuItem("ENFILADE/맵/캠페인/모든 장 다시 짓기", priority = 0)]
     private static void RebuildAll() => GreyboxBuilder.RebuildAll("모든 장 다시 짓기",
         ("1장 옥상 탈출", Rooftops), ("2장 막힌 고가도로", Overpass), ("3장 지하철", Subway), ("4장 공항", Airport));
 
-    [MenuItem("Tools/World/캠페인 회색 맵/1장 옥상 탈출", priority = 11)]
+    [MenuItem("ENFILADE/맵/캠페인/1장 옥상 탈출", priority = 11)]
     private static void Rooftops()
     {
         var b = GreyboxBuilder.Begin("Ch1_Rooftops", "1장 옥상 탈출");
@@ -199,7 +199,7 @@ public static class CampaignMaps
                  "길: 안전가옥 → 옥상 틈 점프 → 엘리베이터실 벽 오르기 → 집라인 → 철봉 → 아파트 옥상 계단실 → 4층 → 꺼진 바닥 → 동쪽 계단 → 1층 뒷문으로 골목 → 셔터 → 편의점 → 공사장 컨테이너·비계·사다리 → 헬기 착륙장.");
     }
 
-    [MenuItem("Tools/World/캠페인 회색 맵/2장 막힌 고가도로", priority = 12)]
+    [MenuItem("ENFILADE/맵/캠페인/2장 막힌 고가도로", priority = 12)]
     private static void Overpass()
     {
         var b = GreyboxBuilder.Begin("Ch2_Overpass", "2장 막힌 고가도로");
@@ -338,7 +338,7 @@ public static class CampaignMaps
                  "길: 헬기 잔해 → 막힌 차들 → 뒤집힌 트럭 → 끊어진 끝에서 버스로 뛰어내리기(돌아갈 수 없음) → 주유소 → 톨게이트 → 초소 무전 → 버티기 → 지하철 입구.");
     }
 
-    [MenuItem("Tools/World/캠페인 회색 맵/3장 지하철", priority = 13)]
+    [MenuItem("ENFILADE/맵/캠페인/3장 지하철", priority = 13)]
     private static void Subway()
     {
         var b = GreyboxBuilder.Begin("Ch3_Subway", "3장 지하철");
@@ -534,7 +534,7 @@ public static class CampaignMaps
                  "길: 대합실 → 승강장 → 어두운 터널 → 정비창 사무실(휴게소) → 연료통 4개를 발전기에 → 방수문 → 강 밑 터널 → 비상 계단 → 신호탄 → 버티기 → 보트.");
     }
 
-    [MenuItem("Tools/World/캠페인 회색 맵/4장 공항", priority = 14)]
+    [MenuItem("ENFILADE/맵/캠페인/4장 공항", priority = 14)]
     private static void Airport()
     {
         var b = GreyboxBuilder.Begin("Ch4_Airport", "4장 공항");

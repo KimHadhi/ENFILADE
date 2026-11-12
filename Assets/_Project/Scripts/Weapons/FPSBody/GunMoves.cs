@@ -48,7 +48,7 @@ internal sealed class GunMove
 /// The gun moves the Blender shove workspace sends to the game (Tools/Blender/Shove, "게임에 보내기"):
 /// Resources/Combat/GunMoves/&lt;name&gt;.csv, a header "time,x,y,z,qx,qy,qz,qw" and a row per sample, a line "#impact=0.067"
 /// for the strike. Read on first use and again on GameTables.Reloaded, which the editor raises when Unity takes in a new
-/// export (GunMovesWatcher) or on Tools > Data Tables > Reload Tables, so a new export plays at the next shove even in a
+/// export (GunMovesWatcher) or on ENFILADE > 표 > 표 다시 읽기, so a new export plays at the next shove even in a
 /// running game. A move that can't be read is reported once and plays nothing.
 /// </summary>
 internal static class GunMoves

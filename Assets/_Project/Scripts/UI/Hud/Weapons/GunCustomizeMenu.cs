@@ -91,7 +91,11 @@ public sealed class GunCustomizeMenu : MonoBehaviour
         if (who == null || weapons == null || IsOpen || ShopMenu.IsOpen) return;
         var held = weapons.HeldGun;
         if (held == null) return;
-        if (instance == null) instance = new GameObject("Gun Customize Menu").AddComponent<GunCustomizeMenu>();
+        if (instance == null)
+        {
+            instance = new GameObject("Gun Customize Menu").AddComponent<GunCustomizeMenu>();
+            RuntimeSceneHierarchy.Group(instance.gameObject, RuntimeSceneHierarchy.Ui, "Screens");
+        }
         instance.Show(who, weapons, held);
     }
 

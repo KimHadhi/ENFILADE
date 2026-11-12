@@ -58,7 +58,7 @@ public sealed class HudCamera : MonoBehaviour
     /// <summary>How far the HUD's sides turn within the screen for the local player's lean (°, anticlockwise positive).</summary>
     public static float LeanRoll => !float.IsNaN(LeanHeld) ? LeanHeld : instance != null ? instance.leanRoll : 0f;
     /// <summary>
-    /// A lean Tools → HUD → 겹침 검사 holds the HUD at while it measures (°, as LeanRoll); NaN, the rest of the time,
+    /// A lean ENFILADE → HUD → 겹침 검사 holds the HUD at while it measures (°, as LeanRoll); NaN, the rest of the time,
     /// lets the player's own lean through. HudOverlapCheck clears it when Play starts.
     /// </summary>
     public static float LeanHeld = float.NaN;
@@ -70,7 +70,7 @@ public sealed class HudCamera : MonoBehaviour
         if (instance == null)
         {
             var host = new GameObject("HUD Camera");
-            DontDestroyOnLoad(host);
+            RuntimeSceneHierarchy.Keep(host, "UI");
             instance = host.AddComponent<HudCamera>();
         }
         return instance;

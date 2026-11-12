@@ -12,7 +12,7 @@ using UnityEngine;
 /// An id the table lacks shows as itself in brackets, so a gap is plain to see; a row with no words in the chosen
 /// language falls back to Korean. Editing the table and reloading the tables (GameTables.Reload, the console's table
 /// reload) brings the new words in; a label already on screen takes them the next time it is written (the editor's
-/// Tools → 글자 → 글자 편집기 also swaps the words on labels already up when it saves during Play).
+/// ENFILADE → 글자 → 글자 편집기 also swaps the words on labels already up when it saves during Play).
 /// Data tables point here too: their text cells hold an id of this table (<see cref="Cell"/>), so every line the game
 /// shows, a card's text, a mission step or a callout, is in this one file.
 /// </summary>

@@ -106,7 +106,7 @@ public sealed class MissionBarLook : MonoBehaviour, ITableBound
         LayOut();
     }
 
-    /// <summary>Editor (Tools > HUD): the bar with its sample texts and the count showing, the way Play draws it.</summary>
+    /// <summary>Editor (ENFILADE > HUD): the bar with its sample texts and the count showing, the way Play draws it.</summary>
     public void LayOutForEditor(float canvasWidth)
     {
         this.canvasWidth = canvasWidth;

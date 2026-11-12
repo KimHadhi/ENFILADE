@@ -45,7 +45,7 @@ public struct OutfitFraming
 /// <summary>
 /// The wardrobe's pictures as files, and how each piece is framed (OutfitIcons, OutfitShootView). A picture is found, in
 /// this order: one the player took on this PC in a build (persistentDataPath/OutfitPictures), one baked into the game
-/// (Resources/UI/OutfitPictures, Tools → Characters → 옷장 사진 모두 굽기, or a picture taken again in the editor), else
+/// (Resources/UI/OutfitPictures, ENFILADE → 캐릭터 → 옷장 사진 모두 굽기, or a picture taken again in the editor), else
 /// none: OutfitIcons takes it in its studio then. Taking a picture rendered a whole outfit model for every plate the
 /// wardrobe opened; a baked one is a small file (the user, 2026-11-12: "미리 구워 놓으면 로딩 속도 더 빨라 지려나").
 /// A piece's framing (Tables/OutfitPictures.csv, by piece: every colour of an item and every colour set of a character's

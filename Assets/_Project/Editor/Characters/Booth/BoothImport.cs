@@ -27,7 +27,7 @@ using Object = UnityEngine.Object;
 ///   (BoothUnderwear), then every other piece of an outfit no row names yet into the slot it is for, one item each
 ///   (BoothPieces): a shirt that came with stockings and necklaces arrives as a shirt, stockings and necklaces.
 /// Runs once an import under the BOOTH folder (or of BoothSources.csv) is over, whenever the editor loads its scripts
-/// and something listed isn't registered yet, and from Tools/Characters/BOOTH 다시 가져오기. Running again gives the
+/// and something listed isn't registered yet, and from ENFILADE/캐릭터/BOOTH 다시 가져오기. Running again gives the
 /// same result.
 /// </summary>
 internal sealed class BoothImport : AssetPostprocessor
@@ -208,7 +208,7 @@ internal sealed class BoothImport : AssetPostprocessor
     // The bones such a model shares with a character: none.
     private static readonly HashSet<string> NoBones = new HashSet<string>(StringComparer.Ordinal);
 
-    [MenuItem("Tools/Characters/BOOTH 다시 가져오기")]
+    [MenuItem("ENFILADE/캐릭터/BOOTH 다시 가져오기")]
     private static void Run()
     {
         if (running || !File.Exists(SourcesPath)) return;
@@ -541,7 +541,7 @@ internal sealed class BoothImport : AssetPostprocessor
         }
         catch (Exception error) when (error is IOException || error is UnauthorizedAccessException)
         {
-            Debug.LogWarning($"[BOOTH] {ClothPath}를 읽지 못해 흔들림 줄을 쓰지 않았습니다({error.Message}). 그 파일을 연 프로그램을 닫으면 편집기가 스크립트를 다시 불러올 때 다시 씁니다(Tools → Characters → BOOTH 다시 가져오기로 바로 해도 됩니다).");
+            Debug.LogWarning($"[BOOTH] {ClothPath}를 읽지 못해 흔들림 줄을 쓰지 않았습니다({error.Message}). 그 파일을 연 프로그램을 닫으면 편집기가 스크립트를 다시 불러올 때 다시 씁니다(ENFILADE → 캐릭터 → BOOTH 다시 가져오기로 바로 해도 됩니다).");
             return false;
         }
         string newline = text.Contains("\r\n") ? "\r\n" : "\n";
@@ -577,7 +577,7 @@ internal sealed class BoothImport : AssetPostprocessor
         // Through TableFile, which writes over the file in place: Windows refused File.WriteAllText's truncating write
         // while some program had Cloth.csv mapped (Win32 IO 1224, the user's console 2026-11-12, twice, even after
         // 0.8.114's handle release and six retries). A write that still meets a lock waits and lands by itself.
-        return TableFile.Write(ClothPath, written, "흔들림 줄", "Tools → Characters → BOOTH 다시 가져오기를 눌러 주세요.");
+        return TableFile.Write(ClothPath, written, "흔들림 줄", "ENFILADE → 캐릭터 → BOOTH 다시 가져오기를 눌러 주세요.");
     }
 
     private static string Quote(string cell) =>

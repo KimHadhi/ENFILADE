@@ -61,7 +61,11 @@ public sealed class PingMarks : MonoBehaviour
     public static void Ping(Component enemy, PlayerMovement by, bool bounty)
     {
         if (!Application.isPlaying || !CombatFoe.IsAlive(enemy)) return;
-        if (instance == null) instance = new GameObject("Ping Marks").AddComponent<PingMarks>();
+        if (instance == null)
+        {
+            instance = new GameObject("Ping Marks").AddComponent<PingMarks>();
+            RuntimeSceneHierarchy.Group(instance.gameObject, RuntimeSceneHierarchy.Systems, "Combat");
+        }
         instance.Add(enemy, (ICombatFoe)enemy, by, bounty);
     }
 

@@ -21,7 +21,7 @@ using UnityEngine.UI;
 /// any of their shapes do by more than Overlap.tolerance px (the distance one would have to move to clear the other).
 /// In the editor and development builds it watches in Play (Hud.csv Overlap.watch): every Overlap.interval seconds while
 /// no menu is open it looks, and the first time an overlap or a run-off lasts Overlap.persist looks on a screen size and
-/// HUD setting it logs it once, with both pieces, the depth in px and where. Tools → HUD → 겹침 검사 (HudOverlapSweep)
+/// HUD setting it logs it once, with both pieces, the depth in px and where. ENFILADE → HUD → 겹침 검사 (HudOverlapSweep)
 /// sweeps the screen shapes, the HUD's angle, tilt and lean and the pieces' passing states (IHudPreview) and writes
 /// Logs/HudOverlap/report.txt with a picture of every problem, for anyone who cannot run the game to read.
 /// </summary>
@@ -123,7 +123,7 @@ public sealed class HudOverlapCheck : MonoBehaviour
     private readonly List<Finding> found = new List<Finding>();
     private float nextLook;
 
-    /// <summary>Tools → HUD → 겹침 검사 holds the watch while it sweeps, so it does not log what the sweep sets up.</summary>
+    /// <summary>ENFILADE → HUD → 겹침 검사 holds the watch while it sweeps, so it does not log what the sweep sets up.</summary>
     public static bool Sweeping { get; set; }
 
     /// <summary>The check's numbers (Hud.csv Overlap), bound when the check's host is first made. Play only.</summary>
@@ -154,7 +154,7 @@ public sealed class HudOverlapCheck : MonoBehaviour
     {
         if (instance != null) return instance;
         var host = new GameObject("HUD Overlap Check");
-        DontDestroyOnLoad(host);
+        RuntimeSceneHierarchy.Keep(host, "Dev");
         instance = host.AddComponent<HudOverlapCheck>();
         return instance;
     }

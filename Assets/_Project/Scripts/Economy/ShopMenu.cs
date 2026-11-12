@@ -155,7 +155,11 @@ public sealed class ShopMenu : MonoBehaviour
     public static void Open(PlayerMovement who, Vector3 at)
     {
         if (who == null || IsOpen) return;
-        if (instance == null) instance = new GameObject("Shop Menu").AddComponent<ShopMenu>();
+        if (instance == null)
+        {
+            instance = new GameObject("Shop Menu").AddComponent<ShopMenu>();
+            RuntimeSceneHierarchy.Group(instance.gameObject, RuntimeSceneHierarchy.Ui, "Screens");
+        }
         instance.Show(who, at);
     }
 

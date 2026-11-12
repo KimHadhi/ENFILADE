@@ -204,7 +204,7 @@ internal sealed class TextSheet
             foreach (var edit in edits.OrderByDescending(e => e.Key.Cells[0].Start))
                 text = CsvSpans.SetCells(text, edit.Key, edit.Value);
             result.Waiting = !TableFile.Write(AssetPath, text, "글자 편집기의 고친 글자",
-                "Tools → 글자 → 글자 편집기를 열어 다시 저장해 주세요.");
+                "ENFILADE → 글자 → 글자 편집기를 열어 다시 저장해 주세요.");
         }
         foreach (var (row, column) in landed) row.Saved[column] = row.Words[column];
         result.Written = landed.Count;

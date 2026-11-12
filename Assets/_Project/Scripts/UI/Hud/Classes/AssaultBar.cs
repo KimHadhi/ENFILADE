@@ -27,7 +27,7 @@ public sealed class AssaultBar : MonoBehaviour, IHudPreview
     // The band's words (Texts.csv hud.assault.band) and the slashes between repeats: a cell's spaces at its ends are
     // trimmed on reading, so the gap stays here.
     private static string Words => Texts.Get("hud.assault.band") + "   ///   ";
-    // What Tools → HUD → 겹침 검사 shows while it holds the bar in its assault (s).
+    // What ENFILADE → HUD → 겹침 검사 shows while it holds the bar in its assault (s).
     private const float PreviewElapsed = 37f, PreviewLength = 90f;
 
     private static Texture2D hatch;
@@ -45,7 +45,7 @@ public sealed class AssaultBar : MonoBehaviour, IHudPreview
     /// </summary>
     public float Below => root != null && root.gameObject.activeSelf ? RowDrop + RowHeight * .5f : 0f;
 
-    /// <summary>Tools → HUD → 겹침 검사: holds the bar in an assault (a 1:30 song at 0:37) while it measures.</summary>
+    /// <summary>ENFILADE → HUD → 겹침 검사: holds the bar in an assault (a 1:30 song at 0:37) while it measures.</summary>
     public void Preview(bool show) => previewing = show;
 
     private void LateUpdate()

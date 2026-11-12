@@ -63,7 +63,7 @@ public sealed class MapGrade : MonoBehaviour
         if (!scene.IsValid() || !GameTables.TryGetRow(TableName, scene.name, out var row)) return;
         var host = new GameObject("Map Grade (Tables/MapGrade)");
         if (host.scene != scene) SceneManager.MoveGameObjectToScene(host, scene);
-        RuntimeSceneHierarchy.Group(host, "EFFECTS", "Screen");
+        RuntimeSceneHierarchy.Group(host, RuntimeSceneHierarchy.Effects, "Screen");
         host.AddComponent<MapGrade>().Build(row);
     }
 

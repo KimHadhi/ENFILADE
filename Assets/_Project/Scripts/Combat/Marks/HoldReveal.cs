@@ -43,6 +43,7 @@ public sealed class HoldReveal : MonoBehaviour
         if (instance == null)
         {
             instance = new GameObject("Hold Reveal").AddComponent<HoldReveal>();
+            RuntimeSceneHierarchy.Group(instance.gameObject, RuntimeSceneHierarchy.Systems, "Combat");
             GameTables.Bind(TableName, TableRow, instance);
         }
         if (!instance.watched.Contains(grip)) instance.watched.Add(grip);

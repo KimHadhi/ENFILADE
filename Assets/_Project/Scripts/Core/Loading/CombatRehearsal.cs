@@ -58,6 +58,7 @@ internal sealed class CombatRehearsal : MonoBehaviour
     {
         if (eye == null) return null;
         var rehearsal = new GameObject("Combat Rehearsal").AddComponent<CombatRehearsal>();
+        RuntimeSceneHierarchy.Group(rehearsal.gameObject, RuntimeSceneHierarchy.Systems, "Loading");
         rehearsal.eye = eye;
         rehearsal.distance = Mathf.Max(.5f, distance);
         rehearsal.cell = Mathf.Max(.05f, cell);

@@ -71,7 +71,7 @@ public sealed class PackShots : MonoBehaviour
     {
         if (instance != null) return;
         var host = new GameObject("Pack Shots");
-        DontDestroyOnLoad(host);
+        RuntimeSceneHierarchy.Keep(host);
         instance = host.AddComponent<PackShots>();
     }
 

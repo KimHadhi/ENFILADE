@@ -12,7 +12,7 @@ using Debug = UnityEngine.Debug;
 /// 클릭할 수 있잖아").
 /// Then (2026-11-12: "상의 미리보기 저거 패널에 있는거 작게 전체가 아니라 좀 전체적으로 보이고 살짝 투명하게 ㅇㅇ 그리고 미리
 /// 구워 놓으면 로딩 속도 더 빨라 지려나"): a picture comes from a file when there is one (OutfitPictures: baked into the game
-/// by Tools → Characters → 옷장 사진 모두 굽기, or taken again in the wardrobe's 사진 다시 찍기), else it is taken here in the
+/// by ENFILADE → 캐릭터 → 옷장 사진 모두 굽기, or taken again in the wardrobe's 사진 다시 찍기), else it is taken here in the
 /// photo studio (OutfitStudio), one a frame, at once, framed whole from where the piece's vertices really are. Taking
 /// one stands the piece's whole model file (an outfit's file with every piece of it, or the whole character for its own
 /// pieces), which is what made a page full of new pictures stutter; in the editor and development builds the console
@@ -108,7 +108,11 @@ public sealed class OutfitIcons : MonoBehaviour
             }
         }
         if (!Application.isPlaying || !asked.Add(key)) return null;
-        if (current == null) current = new GameObject("Outfit Icons").AddComponent<OutfitIcons>();
+        if (current == null)
+        {
+            current = new GameObject("Outfit Icons").AddComponent<OutfitIcons>();
+            RuntimeSceneHierarchy.Group(current.gameObject, RuntimeSceneHierarchy.Systems, "Menu");
+        }
         current.waiting.Enqueue(ask());
         return null;
     }
@@ -186,7 +190,7 @@ public sealed class OutfitIcons : MonoBehaviour
         if (batchCount == 0) return;
         if (Debug.isDebugBuild)
             Debug.Log($"[OutfitIcons] 옷 사진 {batchCount}장을 그 자리에서 찍었어요: 모두 {batchTotal:0} ms, 한 장 평균 {batchTotal / batchCount:0.0} ms, "
-                + $"가장 오래 {batchWorst:0.0} ms ({batchWorstKey}). 구워 둔 사진이 있는 옷은 찍지 않고 바로 나와요(Tools → Characters → 옷장 사진 모두 굽기).");
+                + $"가장 오래 {batchWorst:0.0} ms ({batchWorstKey}). 구워 둔 사진이 있는 옷은 찍지 않고 바로 나와요(ENFILADE → 캐릭터 → 옷장 사진 모두 굽기).");
         batchCount = 0;
         batchTotal = batchWorst = 0d;
         batchWorstKey = null;

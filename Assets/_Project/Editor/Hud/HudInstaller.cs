@@ -7,7 +7,7 @@ using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 /// <summary>
-/// Tools > HUD. One prefab, GameHUD, is the HUD of every play scene; everything else on screen (kill feed, score popup,
+/// ENFILADE > HUD. One prefab, GameHUD, is the HUD of every play scene; everything else on screen (kill feed, score popup,
 /// team panel, Tab screen, settings) builds itself in any scene. "현재 씬에 HUD 넣기·갱신" first lays the prefab's mission
 /// bar out from Hud.csv, so the editor shows what Play will, and gives any part saved without a CanvasRenderer its
 /// renderer (such a part vanishes in Play), then makes the open scene carry exactly that prefab: adds
@@ -20,7 +20,7 @@ public static class HudInstaller
     private const string InstanceName = "★HUD(Canvas)";
     private const string Title = "HUD";
 
-    [MenuItem("Tools/HUD/현재 씬에 HUD 넣기·갱신")]
+    [MenuItem("ENFILADE/HUD/현재 씬에 HUD 넣기·갱신")]
     private static void Install()
     {
         if (EditorApplication.isPlayingOrWillChangePlaymode) { Tell("Play를 멈춘 뒤에 실행해 주세요."); return; }
@@ -74,7 +74,7 @@ public static class HudInstaller
         Tell(string.Join("\n", report));
     }
 
-    [MenuItem("Tools/HUD/HUD 프리팹 열기")]
+    [MenuItem("ENFILADE/HUD/HUD 프리팹 열기")]
     private static void OpenPrefab()
     {
         var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath);

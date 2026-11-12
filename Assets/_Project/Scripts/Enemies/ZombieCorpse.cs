@@ -138,6 +138,7 @@ public sealed class ZombieCorpse : MonoBehaviour
         PlayerMovement runner, Vector3 velocity, RagdollCorpse lying = null)
     {
         body.transform.SetParent(null, true);
+        RuntimeSceneHierarchy.Group(body, RuntimeSceneHierarchy.World, "Bodies");
         var corpse = body.AddComponent<ZombieCorpse>();
         var doll = lying != null ? lying : TakeDoll(animator, human);
         // From here nothing but the doll moves the bones.

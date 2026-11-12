@@ -209,7 +209,7 @@ internal static class BoothPieces
             string left = (off > 0 ? $" 프리팹에서 꺼져 있던 조각 {off}개(VRChat 토글의 다른 쪽)는 넣지 않았습니다." : "")
                 + (unknown > 0 ? $" 칸을 알 수 없는 조각 {unknown}개는 넣지 않았습니다(Outfits.csv에 줄을 써 주세요)." : "")
                 + (copies > 0 ? $" 캐릭터 몸의 사본 {copies}개는 뺐습니다." : "");
-            Debug.Log($"[BOOTH] {source.Id}: 옷 조각을 Outfits.csv에 넣었습니다 — {string.Join(", ", written)}. 이름은 Tools → 글자 → 글자 편집기에서 고쳐요.{left}");
+            Debug.Log($"[BOOTH] {source.Id}: 옷 조각을 Outfits.csv에 넣었습니다 — {string.Join(", ", written)}. 이름은 ENFILADE → 글자 → 글자 편집기에서 고쳐요.{left}");
         }
         // The names first: a row is never left pointing at an id Texts.csv lacks.
         bool titled = BoothTable.AddTexts(names);

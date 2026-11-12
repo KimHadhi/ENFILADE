@@ -369,7 +369,7 @@ public sealed class ObjectiveGuideHUD : MonoBehaviour
             ringMaterial = Lamp(shader, FeelAssets.Ring, "Guide Ring");
         }
         beacon = new GameObject("Objective Beacon").transform;
-        RuntimeSceneHierarchy.Group(beacon.gameObject, "EFFECTS", "World", gameObject);
+        RuntimeSceneHierarchy.Group(beacon.gameObject, RuntimeSceneHierarchy.Effects, "World", gameObject);
         door = new GameObject("Shape").transform;
         door.SetParent(beacon, false);
         // Lines enough for any kind's shape, laid out by Lay: the line's texture is soft across its quad's width, so a

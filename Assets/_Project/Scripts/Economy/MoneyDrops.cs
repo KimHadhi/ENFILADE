@@ -185,6 +185,7 @@ public sealed class MoneyDrops : MonoBehaviour
         if (lying.ContainsKey(id)) return;
         // The same stacked notes a money pickup wears (PickupLibrary.money, the Heist pack), resting on the drop's floor.
         var stack = new GameObject("돈 뭉치 " + Wallet.Format(amount)).transform;
+        RuntimeSceneHierarchy.Group(stack.gameObject, RuntimeSceneHierarchy.World, "Pickups");
         stack.position = at + Vector3.up * .08f;
         PickupProps.Make(FieldPickups.Kind.Money, null, stack);
         lying[id] = new Lying { Amount = amount, Dropper = dropper, At = at, Since = Time.time, Look = stack };

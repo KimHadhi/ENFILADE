@@ -11,7 +11,7 @@ using UnityEngine;
 /// Rows: Tables/GunHands.csv, id = the character's skin id (PlayerBodyProfile.Skin.Id: kazusa-band, hiro, sil, mayo,
 /// ichigo), or "default" for any character without a row of its own (a mod's character adds a row with its id). Columns
 /// rightBack, rightAlong, leftBack, leftAlong in metres: back is against the way the palm faces (away from the gun),
-/// along is the way the fingers point. Edited in Play, Tools > Data Tables > Reload Tables applies it at once.
+/// along is the way the fingers point. Edited in Play, ENFILADE > 표 > 표 다시 읽기 applies it at once.
 /// </summary>
 public static class GunHands
 {

@@ -236,7 +236,7 @@ public sealed class SkinPoke : MonoBehaviour
     {
         if (driver != null) return;
         var host = new GameObject("Skin Poke");
-        DontDestroyOnLoad(host);
+        RuntimeSceneHierarchy.Keep(host);
         driver = host.AddComponent<SkinPoke>();
     }
 
@@ -340,6 +340,7 @@ public sealed class SkinPoke : MonoBehaviour
         float volume = PokeTables.Number("Sound.volume", .55f) * (began ? 1f : PokeTables.Number("Sound.lift", .6f));
         if (clip == null || volume <= 0f) return;
         var source = new GameObject("Poke Sound").AddComponent<AudioSource>();
+        RuntimeSceneHierarchy.Group(source.gameObject, RuntimeSceneHierarchy.Effects, "Audio");
         source.transform.position = slot.Surface;
         source.playOnAwake = false;
         source.spatialBlend = 1f;

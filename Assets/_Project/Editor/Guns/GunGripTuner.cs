@@ -7,7 +7,7 @@ using UnityEditor;
 using UnityEngine;
 
 /// <summary>
-/// Grip Tuner (Unity menu Tools → Guns → Grip Tuner), 2026-11-11: shape a gun's hands while looking at them, for the user's
+/// Grip Tuner (Unity menu ENFILADE → 총 → Grip Tuner), 2026-11-11: shape a gun's hands while looking at them, for the user's
 /// gun-hand fixes (g-seven grip shapes, g-fingers thumbs). In Play mode, with a gun in hand, each finger's three joints and
 /// the thumb's turn under the palm have a slider per hand, and the hand changes on the spot (GunGrips.SetLive) on whatever
 /// character is worn, in the real first-person view with the game's own IK and fitting. Save writes the gun's rows into
@@ -27,7 +27,7 @@ internal sealed class GunGripTuner : EditorWindow
     private readonly GunGrips.Grip[] editing = new GunGrips.Grip[2];
     private readonly bool[] touched = new bool[2];
 
-    [MenuItem("Tools/Guns/Grip Tuner")]
+    [MenuItem("ENFILADE/총/Grip Tuner")]
     private static void Open() => GetWindow<GunGripTuner>("총 손 모양");
 
     // Play mode moves on underneath: show the gun the player holds now.
@@ -172,7 +172,7 @@ internal sealed class GunGripTuner : EditorWindow
         output.Append(lines[0]).Append(newline).Append(lines[1]).Append(newline);
         foreach (string row in rows.Values) output.Append(row).Append(newline);
         // TableFile imports the table and reloads GameTables once it lands.
-        if (TableFile.Write(TablePath, output.ToString(), gun + " 손 모양", "Play 중에 Tools → Guns → Grip Tuner에서 다시 저장해 주세요."))
+        if (TableFile.Write(TablePath, output.ToString(), gun + " 손 모양", "Play 중에 ENFILADE → 총 → Grip Tuner에서 다시 저장해 주세요."))
             Debug.Log($"[GunGripTuner] {(remove ? "removed" : "saved")} {gun}'s grip in {TablePath}.");
         else if (TableFile.Waiting(TablePath))
             Debug.Log($"[GunGripTuner] 다른 프로그램이 {TablePath}를 잡고 있어서, {gun} 손 모양은 파일이 풀리는 대로 저절로 저장됩니다.");

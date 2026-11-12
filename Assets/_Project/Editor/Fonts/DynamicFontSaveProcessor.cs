@@ -55,7 +55,7 @@ public class DynamicFontSaveProcessor : UnityEditor.AssetModificationProcessor
     }
 
     /// <summary>Empty every dynamic font's atlas now and save the fonts (a save does this by itself; this is for all at once).</summary>
-    [MenuItem("Tools/Fonts/동적 글꼴 비우고 저장")]
+    [MenuItem("ENFILADE/글꼴/동적 글꼴 비우고 저장")]
     public static void CleanAndSaveDynamicFonts()
     {
         if (EditorApplication.isPlayingOrWillChangePlaymode)

@@ -20,7 +20,7 @@ public sealed class SettingsMenu : MonoBehaviour
     public static bool IsOpen { get; private set; }
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
-    private static void Create() => DontDestroyOnLoad(new GameObject("Settings Menu").AddComponent<SettingsMenu>().gameObject);
+    private static void Create() => RuntimeSceneHierarchy.Keep(new GameObject("Settings Menu").AddComponent<SettingsMenu>().gameObject, "UI");
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetStatics() => IsOpen = false;

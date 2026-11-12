@@ -46,7 +46,7 @@ public static class ZombieMeal
         if (!baked.TryGetValue(character, out var parts)) baked[character] = parts = Bake(character, looks.mealPose);
         if (parts == null || parts.Count == 0) return;
         var body = new GameObject("Zombie Meal (" + character.name + ")");
-        RuntimeSceneHierarchy.Group(body, "WORLD", "Bodies", null);
+        RuntimeSceneHierarchy.Group(body, RuntimeSceneHierarchy.World, "Bodies", null);
         body.transform.SetPositionAndRotation(chest, Quaternion.Euler(0f, yaw, 0f));
         foreach (var part in parts)
         {

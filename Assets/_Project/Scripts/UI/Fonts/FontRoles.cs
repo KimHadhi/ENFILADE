@@ -66,7 +66,7 @@ public static class FontRoles
     /// <summary>Which characters FontWarmup draws ahead for a role's face: texts, digits, latin or none.</summary>
     public static string WarmSet(string role) => Field(role, WarmField) ?? "none";
 
-    /// <summary>Path fragments of prefabs whose texts take this role when two roles share a face (Tools → Fonts).</summary>
+    /// <summary>Path fragments of prefabs whose texts take this role when two roles share a face (ENFILADE → 글꼴).</summary>
     public static string PrefabHint(string role) => Field(role, PrefabsField);
 
     /// <summary>The face a role draws with. A role or face the tables lack is reported once and draws in TMP's default font.</summary>

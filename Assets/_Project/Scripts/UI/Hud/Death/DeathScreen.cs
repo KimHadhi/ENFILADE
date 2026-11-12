@@ -204,7 +204,7 @@ public sealed class DeathScreen : MonoBehaviour, IHudPreview
         return screen.StartPreview(args);
     }
 
-    /// <summary>Tools → HUD → 겹침 검사 (IHudPreview): the card in its settled place with sample words, no film or sound.</summary>
+    /// <summary>ENFILADE → HUD → 겹침 검사 (IHudPreview): the card in its settled place with sample words, no film or sound.</summary>
     public void Preview(bool show)
     {
         if (show)

@@ -134,7 +134,7 @@ public sealed class ResultsShow : MonoBehaviour
     public static void Play()
     {
         if (instance != null || !MatchResults.Pending || MatchResults.Entries.Count == 0) return;
-        new GameObject("Results Show").AddComponent<ResultsShow>();
+        RuntimeSceneHierarchy.Group(new GameObject("Results Show").AddComponent<ResultsShow>().gameObject, RuntimeSceneHierarchy.Systems, "Hub");
     }
 
     private void Awake()

@@ -54,6 +54,7 @@ public sealed class ThrownKnife : MonoBehaviour
     {
         var info = Throwables.Of(Throwable.Knife);
         var host = new GameObject("Thrown Knife") { layer = GoreGibs.Layer };
+        RuntimeSceneHierarchy.Group(host, RuntimeSceneHierarchy.World, "Debris");
         host.transform.SetPositionAndRotation(from, Quaternion.LookRotation(velocity.sqrMagnitude > 1e-4f ? velocity : Vector3.forward));
         var knife = host.AddComponent<ThrownKnife>();
         knife.Id = id;

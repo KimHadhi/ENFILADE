@@ -291,7 +291,7 @@ public static class FeelAssets
 
     /// <summary>Group a newly created root under a scene category without adding an ancestor Canvas.</summary>
     public static void GroupRuntimeRoot(GameObject host, string groupName, GameObject owner = null)
-        => RuntimeSceneHierarchy.Group(host, "EFFECTS", groupName, owner);
+        => RuntimeSceneHierarchy.Group(host, RuntimeSceneHierarchy.Effects, groupName, owner);
 
     /// <summary>
     /// World-space system driven only by Emit(EmitParams); it keeps playing with emission off so emitted particles simulate.

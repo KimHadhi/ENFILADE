@@ -90,6 +90,7 @@ public sealed class SkullSlowMotion : MonoBehaviour
     {
         if (instance != null) return;
         var host = new GameObject("Skull Slow Motion");
+        RuntimeSceneHierarchy.Group(host, RuntimeSceneHierarchy.Systems, "Combat");
         instance = host.AddComponent<SkullSlowMotion>();
         GameTables.Bind(TableName, TableRow, instance, host.AddComponent<SlowMotionLook>(), host.AddComponent<SlowMotionSound>());
     }

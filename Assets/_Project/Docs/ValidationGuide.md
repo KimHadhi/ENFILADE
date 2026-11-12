@@ -30,7 +30,7 @@
 - **소리**: 시작 위치 뒤 `Surface pads`의 표면별 발소리, 발이 닿는 순간과 소리가 맞는지, 볼트·착지·슬라이드 소리, 숨소리와 힘쓰는 소리가 겹치지 않는지, 바람, Esc의 채널별 볼륨
 - **설정**: Esc 메뉴 값이 저장되고 다시 켜도 유지되는지, 일시정지 중 카메라가 튀지 않는지
 - **물리 프랍**: 걸어서·V·총·슬라이딩으로 밀기, 무거운 물체는 벽처럼 막히는지
-- **HUD**: 체력·궁극기·탄약·슬롯·목표판·채팅 입력 가독성. 조각끼리 겹치거나 화면 밖으로 나가는지는 Play 중 Tools → HUD → 겹침 검사 (화면비·설정 모두)가 화면비 넷·원근 각도·기울기·Q/E 기울이기·지나가는 상태를 돌려 가며 재고 `Logs/HudOverlap/report.txt`와 그림에 남긴다. Play 중에는 늘 지켜보다 콘솔에 `[HUD 겹침]`으로 남긴다([HudOverlapCheck](../Scripts/UI/Hud/HudOverlapCheck.cs), 조각 나누기 [HudOverlap.csv](../Resources/Tables/Hud/HudOverlap.csv), [설정·유지보수](MaintenanceGuide.md#hud-조각-자리와-겹침-검사-hudoverlapcsv))
+- **HUD**: 체력·궁극기·탄약·슬롯·목표판·채팅 입력 가독성. 조각끼리 겹치거나 화면 밖으로 나가는지는 Play 중 ENFILADE → HUD → 겹침 검사 (화면비·설정 모두)가 화면비 넷·원근 각도·기울기·Q/E 기울이기·지나가는 상태를 돌려 가며 재고 `Logs/HudOverlap/report.txt`와 그림에 남긴다. Play 중에는 늘 지켜보다 콘솔에 `[HUD 겹침]`으로 남긴다([HudOverlapCheck](../Scripts/UI/Hud/HudOverlapCheck.cs), 조각 나누기 [HudOverlap.csv](../Resources/Tables/Hud/HudOverlap.csv), [설정·유지보수](MaintenanceGuide.md#hud-조각-자리와-겹침-검사-hudoverlapcsv))
 - **밸런스 표**: Play 중 [Resources/Tables](../Resources/Tables)의 값을 저장했을 때 바로 반영되는지, Console에 `[Tables]` 경고가 없는지
 
 ## 문서·메타데이터 확인

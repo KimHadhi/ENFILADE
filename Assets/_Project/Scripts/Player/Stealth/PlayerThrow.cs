@@ -156,6 +156,7 @@ public sealed class ThrownStone : MonoBehaviour
     internal static ThrownStone Throw(Vector3 from, Vector3 velocity, GameObject thrower, float noise, float size, float life, float volume)
     {
         var host = new GameObject("Thrown Stone") { layer = GoreGibs.Layer };
+        RuntimeSceneHierarchy.Group(host, RuntimeSceneHierarchy.World, "Debris");
         host.transform.SetPositionAndRotation(from, Random.rotation);
         host.transform.localScale = new Vector3(size, size * .78f, size * .9f);
         host.AddComponent<MeshFilter>().sharedMesh = Shape();
@@ -265,6 +266,7 @@ public sealed class ThrownStone : MonoBehaviour
     {
         if (clip == null || level <= 0f) return;
         var host = new GameObject("Stone Sound");
+        RuntimeSceneHierarchy.Group(host, RuntimeSceneHierarchy.Effects, "Audio");
         host.transform.position = at;
         var source = host.AddComponent<AudioSource>();
         source.playOnAwake = false;

@@ -65,7 +65,7 @@ public sealed class DevConsole : MonoBehaviour
     }
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
-    private static void Create() => DontDestroyOnLoad(new GameObject("Developer Console").AddComponent<DevConsole>().gameObject);
+    private static void Create() => RuntimeSceneHierarchy.Keep(new GameObject("Developer Console").AddComponent<DevConsole>().gameObject, "UI");
 
     private static void Gather(string message, string stack, LogType type)
     {

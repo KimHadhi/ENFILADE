@@ -206,6 +206,7 @@ internal sealed class GoreGibs
         if (pieceNormals.Count != piecePositions.Count) mesh.RecalculateNormals();
 
         var host = new GameObject(name) { layer = Layer };
+        RuntimeSceneHierarchy.Group(host, RuntimeSceneHierarchy.World, "Debris");
         host.transform.SetPositionAndRotation(skin.transform.position + skin.transform.rotation * middle, skin.transform.rotation);
         host.AddComponent<MeshFilter>().sharedMesh = mesh;
         var renderer = host.AddComponent<MeshRenderer>();
@@ -242,6 +243,7 @@ internal sealed class GoreGibs
         var library = GoreLibrary.Instance;
         if (library == null || !library.Gut(pick, out var mesh, out var material)) return;
         var host = new GameObject("Gore Gut") { layer = Layer };
+        RuntimeSceneHierarchy.Group(host, RuntimeSceneHierarchy.World, "Debris");
         host.transform.SetPositionAndRotation(at, Random.rotation);
         float scale = size / Mathf.Max(.01f, mesh.bounds.size.magnitude);
         host.transform.localScale = Vector3.one * scale;

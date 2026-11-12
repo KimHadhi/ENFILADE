@@ -115,7 +115,7 @@ public sealed class SceneWarmup : MonoBehaviour
     {
         if (Application.isBatchMode || instance != null) return;
         var host = new GameObject("Scene Warmup");
-        DontDestroyOnLoad(host);
+        RuntimeSceneHierarchy.Keep(host);
         host.AddComponent<SceneWarmup>();
     }
 

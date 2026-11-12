@@ -11,7 +11,7 @@ using System.Text;
 /// </summary>
 internal sealed class BoothTable
 {
-    internal const string Redo = "Tools → Characters → BOOTH 다시 가져오기를 눌러 주세요.";
+    internal const string Redo = "ENFILADE → 캐릭터 → BOOTH 다시 가져오기를 눌러 주세요.";
     private static string TextsPath => TablePaths.Of(Texts.TableName);
 
     private string newline;

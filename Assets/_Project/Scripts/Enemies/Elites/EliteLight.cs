@@ -68,7 +68,7 @@ internal sealed class EliteLight
     private void Build()
     {
         glow = new GameObject("Elite Light");
-        RuntimeSceneHierarchy.Group(glow, "EFFECTS", "World", owner.gameObject);
+        RuntimeSceneHierarchy.Group(glow, RuntimeSceneHierarchy.Effects, "World", owner.gameObject);
         glow.AddComponent<MeshFilter>().sharedMesh = FeelAssets.Quad;
         var made = glow.AddComponent<MeshRenderer>();
         made.sharedMaterial = FeelAssets.Particle(FeelAssets.SoftDot, true);

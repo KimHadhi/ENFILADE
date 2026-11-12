@@ -3,7 +3,7 @@ using UnityEngine;
 
 /// <summary>
 /// The maps players can choose, from Resources/Tables/Maps/Maps.csv. Only scenes in the build are offered. Each map's
-/// picture for the title screen is Resources/UI/Maps/&lt;id&gt; (taken by Tools/World/맵 사진 찍기, or any image put
+/// picture for the title screen is Resources/UI/Maps/&lt;id&gt; (taken by ENFILADE/맵/맵 사진 찍기, or any image put
 /// there by hand); a "picture" column can name another image in that folder.
 /// The hub (HubFlow) has its row for its name and picture, but it is no map to choose and no game to count: Playable and
 /// All leave it out, so the title screen's picker, the records, class growth and field pickups never see it.

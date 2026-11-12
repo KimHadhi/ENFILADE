@@ -38,7 +38,7 @@ public static class ConsoleDummyPlayers
     private static void SpawnAt(PlayerMovement player, Vector3 spot)
     {
         Vector3 facing = Vector3.ProjectOnPlane(player.transform.position - spot, Vector3.up);
-        var group = RuntimeSceneHierarchy.GetGroup(player.gameObject.scene, "PLAYERS", "Dummies");
+        var group = RuntimeSceneHierarchy.GetGroup(player.gameObject.scene, RuntimeSceneHierarchy.Players, "Dummies");
         var dummy = PlayerFactory.CreateRemote(spot, Quaternion.LookRotation(facing.normalized), group, false);
         dummy.name = "Dummy Player " + (dummies.Count + 1);
         dummies.Add(dummy);

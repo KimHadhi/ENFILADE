@@ -133,7 +133,7 @@ public sealed class LoadingScreen : MonoBehaviour
         if (instance != null) return instance;
         var host = new GameObject("Loading Screen", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster),
             typeof(CanvasGroup));
-        DontDestroyOnLoad(host);
+        RuntimeSceneHierarchy.Keep(host, "UI");
         return host.AddComponent<LoadingScreen>();
     }
 

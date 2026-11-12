@@ -4,7 +4,7 @@ using UnityEditor;
 using UnityEngine;
 
 /// <summary>
-/// Builds the ENFILADE tower's scene (Tools > World > 엔필레이드 타워 짓기) from TowerLayout, with GreyboxBuilder: an old
+/// Builds the ENFILADE tower's scene (ENFILADE > 맵 > 엔필레이드 타워 짓기) from TowerLayout, with GreyboxBuilder: an old
 /// army training block on a fenced square. Inside, four lanes of killhouse rooms climb side by side, level after level,
 /// their shared walls glazed with armoured glass so each lane watches the next one's fight; between every three floors a
 /// hall across all four lanes. Each room is a long one (TowerLayout.RoomLength) with holding pens at its far end, where its
@@ -39,7 +39,7 @@ public static class TowerMap
     private static Material hallWall, hallFloor;
     private static Transform fixtures, lights;
 
-    [MenuItem("Tools/World/엔필레이드 타워 짓기", priority = 30)]
+    [MenuItem("ENFILADE/맵/엔필레이드 타워 짓기", priority = 30)]
     public static void Build()
     {
         var b = GreyboxBuilder.Begin(TowerRun.SceneName, Title);

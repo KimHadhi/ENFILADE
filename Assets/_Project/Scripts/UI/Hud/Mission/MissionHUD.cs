@@ -95,7 +95,7 @@ public sealed class MissionHUD : MonoBehaviour, ITableBound, IHudPreview
     }
 
     /// <summary>
-    /// Editor (Tools > HUD): lays the bar out from Hud.csv with its sample texts and the count showing, so the prefab
+    /// Editor (ENFILADE > HUD): lays the bar out from Hud.csv with its sample texts and the count showing, so the prefab
     /// looks in the editor the way it will in Play.
     /// </summary>
     public void LayOutForEditor()
@@ -103,7 +103,7 @@ public sealed class MissionHUD : MonoBehaviour, ITableBound, IHudPreview
         if (Look() != null) look.LayOutForEditor(CanvasWidth());
     }
 
-    /// <summary>Tools → HUD → 겹침 검사: holds the new-objective alert open on the bar's objective while it measures.</summary>
+    /// <summary>ENFILADE → HUD → 겹침 검사: holds the new-objective alert open on the bar's objective while it measures.</summary>
     public void Preview(bool show)
     {
         if (show == previewing) return;

@@ -51,7 +51,7 @@ public static class PostProcessLoan
     {
         if (neutral != null) return neutral;
         var host = new GameObject("Neutral Post (Runtime)");
-        Object.DontDestroyOnLoad(host);
+        RuntimeSceneHierarchy.Keep(host);
         neutral = host.AddComponent<Volume>();
         neutral.isGlobal = true;
         neutral.priority = NeutralPriority;

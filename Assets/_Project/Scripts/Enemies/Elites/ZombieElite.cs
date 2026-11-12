@@ -276,6 +276,7 @@ public abstract class ZombieElite : MonoBehaviour
     protected static void Puff(Vector3 at, Color color, float size, int count)
     {
         var host = new GameObject("Elite Smoke");
+        RuntimeSceneHierarchy.Group(host, RuntimeSceneHierarchy.Effects, "World");
         host.transform.position = at;
         var system = host.AddComponent<ParticleSystem>();
         system.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);

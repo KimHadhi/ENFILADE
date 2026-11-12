@@ -47,7 +47,7 @@ public sealed class KitHitView : MonoBehaviour
             return Texts.Get("dev.hits.off");
         }
         var host = new GameObject("Hit Shapes", typeof(RectTransform));
-        DontDestroyOnLoad(host);
+        RuntimeSceneHierarchy.Keep(host, "Dev");
         instance = host.AddComponent<KitHitView>();
         return Texts.Get("dev.hits.on");
     }

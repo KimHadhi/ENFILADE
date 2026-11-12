@@ -32,7 +32,7 @@ using Object = UnityEngine.Object;
 ///   a bolt or pump worked after every shot too, where the gun has them), and where the gun sits in the pose is kept for FPS
 ///   Animation Framework's Pose Sampler (FPSBody).
 /// It runs by itself after scripts load when a skin or a clip has no bake yet or changed, and from
-/// Tools → ENFILADE → Combat → Retarget KINEMATION Gun Clips to make them all again.
+/// ENFILADE → 총 → KINEMATION 총 클립 다시 굽기 to make them all again.
 /// </summary>
 [InitializeOnLoad]
 internal static class GunClipRetarget
@@ -81,7 +81,7 @@ internal static class GunClipRetarget
 
     static GunClipRetarget() => EditorApplication.delayCall += () => Run(false);
 
-    [MenuItem("Tools/ENFILADE/Combat/Retarget KINEMATION Gun Clips")]
+    [MenuItem("ENFILADE/총/KINEMATION 총 클립 다시 굽기")]
     private static void RunAll() => Run(true);
 
     // A new skin, a gun clip or the gun list arriving (a pull, an import) is baked once the import is over.
@@ -427,7 +427,7 @@ internal static class GunClipRetarget
                         entry = lastGood;
                     }
                     Debug.LogWarning($"GunClipRetarget: {gun.weapon.name}'s clips couldn't all be remade for {skin.name}; it is tried again when "
-                        + "its clips or the body change, or from Tools → ENFILADE → Combat → Retarget KINEMATION Gun Clips.", gun.weapon);
+                        + "its clips or the body change, or from ENFILADE → 총 → KINEMATION 총 클립 다시 굽기.", gun.weapon);
                 }
                 if (entry.pose != null || failed) made.Add(entry);
             }

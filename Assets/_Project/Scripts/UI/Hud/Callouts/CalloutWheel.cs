@@ -70,7 +70,11 @@ public sealed class CalloutWheel : MonoBehaviour
     public static void Open(string[] names, string[] lines, string hint, string title)
     {
         if (!Application.isPlaying) return;
-        if (instance == null) instance = new GameObject("Callout Wheel").AddComponent<CalloutWheel>();
+        if (instance == null)
+        {
+            instance = new GameObject("Callout Wheel").AddComponent<CalloutWheel>();
+            RuntimeSceneHierarchy.Group(instance.gameObject, RuntimeSceneHierarchy.Ui, "Screens");
+        }
         instance.Begin(title);
         instance.Fill(names, lines, hint);
     }

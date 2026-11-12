@@ -109,6 +109,7 @@ public sealed class FieldPickups : MonoBehaviour
         if (mode != LoadSceneMode.Single || Array.IndexOf(MapTable.All(), scene.name) < 0) return;
         var host = new GameObject("Field Pickups");
         SceneManager.MoveGameObjectToScene(host, scene);
+        RuntimeSceneHierarchy.Group(host, RuntimeSceneHierarchy.Systems, "Pickups");
         host.AddComponent<FieldPickups>();
     }
 

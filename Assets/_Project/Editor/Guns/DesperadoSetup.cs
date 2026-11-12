@@ -17,8 +17,8 @@ using Object = UnityEngine.Object;
 /// rounds: Ammo_01, which carries them out and back in a reload), turns its six-chamber cylinder a sixth a shot
 /// (ChamberTurn), sights it through its own iron sights at its IronAim marker, gives the gun data the Fatebringer's sounds,
 /// and adds it to Resources/Combat/FPSBody, whose clips GunClipRetarget then bakes. ClassKit hands slot 4 the class's
-/// first gun (Classes.csv: Desperado). Runs by itself once the model, textures and sounds are in, and from Tools →
-/// ENFILADE → Combat → Make Desperado; a higher Made makes it again.
+/// first gun (Classes.csv: Desperado). Runs by itself once the model, textures and sounds are in, and from
+/// ENFILADE → 총 → 데스페라도 만들기; a higher Made makes it again.
 /// </summary>
 [InitializeOnLoad]
 internal static class DesperadoSetup
@@ -45,7 +45,7 @@ internal static class DesperadoSetup
 
     static DesperadoSetup() => EditorApplication.delayCall += () => Run(false);
 
-    [MenuItem("Tools/ENFILADE/Combat/Make Desperado")]
+    [MenuItem("ENFILADE/총/데스페라도 만들기")]
     private static void RunAll() => Run(true);
 
     // The model, its textures or the sounds arriving (a pull, an import) make the gun once the import is over.

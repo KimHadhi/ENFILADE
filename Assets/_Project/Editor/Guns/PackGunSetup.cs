@@ -21,7 +21,7 @@ using Object = UnityEngine.Object;
 ///   call for.
 /// Not made: the RPG (a rocket, not a bullet); the pack's Mk14 EBR (ours is the Tactical Shooter Pack's). Their files are in
 /// the project all the same.
-/// It runs by itself after scripts load for a gun not in FPSBody yet, and from Tools → ENFILADE → Combat → Make FPS
+/// It runs by itself after scripts load for a gun not in FPSBody yet, and from ENFILADE → 총 → Make FPS
 /// Animation Pack Guns to make them all again.
 /// </summary>
 [InitializeOnLoad]
@@ -80,7 +80,7 @@ internal static class PackGunSetup
 
     static PackGunSetup() => EditorApplication.delayCall += () => Run(false);
 
-    [MenuItem("Tools/ENFILADE/Combat/Make FPS Animation Pack Guns")]
+    [MenuItem("ENFILADE/총/FPS Animation Pack 총 만들기")]
     private static void RunAll() => Run(true);
 
     private static void Run(bool all)

@@ -3,7 +3,7 @@ using UnityEngine.SceneManagement;
 
 /// <summary>
 /// The way through a run (memo 46): the title screen's 혼자 하기 or 방 만들기 opens on the hub, the walkable hideout
-/// (Scenes/Hub, built by Tools > World > 허브 로비 짓기); from its map table and ready button the party sets off to a
+/// (Scenes/Hub, built by ENFILADE > 맵 > 허브 로비 짓기); from its map table and ready button the party sets off to a
 /// chapter; when the chapter is escaped its results are kept (MatchResults) and everyone comes back to the hub, where
 /// the results play over the players themselves (ResultsShow) and the map table already offers the next chapter.
 /// In a room the host takes everyone along (GameSession.ChangeMap), so the party stays together. Until the hub's scene
@@ -71,7 +71,7 @@ public static class HubFlow
     /// <summary>The console's /hub: back to the hub now, the room with the host.</summary>
     public static string Command(string args)
     {
-        if (!IsBuilt) return "허브 씬이 아직 없어요. Tools > World > 허브 로비 짓기를 먼저 눌러 주세요.";
+        if (!IsBuilt) return "허브 씬이 아직 없어요. ENFILADE > 맵 > 허브 로비 짓기를 먼저 눌러 주세요.";
         if (InHub) return "이미 허브예요.";
         if (GameSession.IsGuest) return "방장만 방 전체를 허브로 데려갈 수 있어요.";
         if (GameSession.IsOnline) return GameSession.ChangeMap(SceneName) ? "방 전체가 허브로 가요." : "지금은 옮길 수 없어요.";

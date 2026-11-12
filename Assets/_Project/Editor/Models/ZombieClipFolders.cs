@@ -9,7 +9,7 @@ using UnityEngine;
 /// Fills ZombieLooks' lists from the slot folders under Art/Animations/Zombies (2026-11-11, the zombie animation
 /// pipeline): a clip in Walk/ joins walks, one in Attack/ joins attacks, and so on, and each zombie then picks one per
 /// slot (ZombieLooks.Pick). CalmPose/ holds poses as pairs, X.fbx held while calm and X_getup.fbx getting up from it.
-/// It runs whenever an FBX in those folders is imported, moved or deleted, and from Tools → Zombies → Refresh Clip
+/// It runs whenever an FBX in those folders is imported, moved or deleted, and from ENFILADE → 좀비 → 클립 폴더 다시 읽기
 /// Folders. Entries it didn't add (the bought packs' clips) are left alone; a deleted file's entry is dropped. The
 /// Blender zombie workspace (Tools/Blender/Zombies) exports straight into these folders, and a Mixamo download (with
 /// skin) can be dropped in as it is (ModelImportRules gives it a loop by its folder).
@@ -72,7 +72,7 @@ internal sealed class ZombieClipFolders : AssetPostprocessor
         if (gone.Count > 0 || imported.Concat(moved).Any(IsClipFile)) Refresh(gone, false);
     }
 
-    [MenuItem("Tools/Zombies/Refresh Clip Folders")]
+    [MenuItem("ENFILADE/좀비/클립 폴더 다시 읽기")]
     private static void RefreshFromMenu() => Refresh(new HashSet<string>(Slots.Select(s => s.folder)), true);
 
     // Adds every clip in the slot folders that its list lacks. Lists in `pruned` (folders a file just left) also lose

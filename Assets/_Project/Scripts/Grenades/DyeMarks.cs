@@ -34,7 +34,11 @@ public sealed class DyeMarks : MonoBehaviour
     public static void Dye(Component enemy, PlayerMovement by, float seconds)
     {
         if (!Application.isPlaying || enemy == null || !(enemy is ICombatFoe foe) || !foe.IsAlive || seconds <= 0f) return;
-        if (instance == null) instance = new GameObject("Dye Marks").AddComponent<DyeMarks>();
+        if (instance == null)
+        {
+            instance = new GameObject("Dye Marks").AddComponent<DyeMarks>();
+            RuntimeSceneHierarchy.Group(instance.gameObject, RuntimeSceneHierarchy.Systems, "Combat");
+        }
         instance.Add(enemy, foe, by, seconds);
     }
 

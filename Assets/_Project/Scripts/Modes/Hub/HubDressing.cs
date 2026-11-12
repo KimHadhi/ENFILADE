@@ -100,6 +100,7 @@ public sealed class HubDressing : MonoBehaviour, IWardrobeStage
             return false;
         if (!who.TryGetComponent(out PlayerBody whose) || whose.BodyAnimator == null) return false;
         instance = new GameObject("Hub Dressing").AddComponent<HubDressing>();
+        RuntimeSceneHierarchy.Group(instance.gameObject, RuntimeSceneHierarchy.Systems, "Hub");
         instance.Begin(at, who, whose);
         return true;
     }

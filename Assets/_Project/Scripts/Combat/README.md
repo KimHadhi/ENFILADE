@@ -69,6 +69,6 @@ PlayerWeaponInput → WeaponController
 | 무기 에셋(아이콘·사운드·반동 연출) | [Data/Combat/Weapons](../../Data/Combat/Weapons) |
 | 방어·반격·체간·피해 UI 설정 | [Resources/Combat/Feedback.asset](../../Resources/Combat/Feedback.asset) |
 | 총기 타격감·점수·피격 반응 설정 | [Resources/Combat/GunFeel.asset](../../Resources/Combat/GunFeel.asset) |
-| 물리 프랍 만들기 | [PhysicsPropBuilder](../../Editor/Models/PhysicsPropBuilder.cs) (`Tools → Models`) |
+| 물리 프랍 만들기 | [PhysicsPropBuilder](../../Editor/Models/PhysicsPropBuilder.cs) (`ENFILADE → 모델`) |
 
 설정 로딩 키는 `Combat/Feedback`, `Combat/GunFeel`, 표는 `Tables/<이름>`이다. 에셋 경로를 정리할 때도 `Resources` 기준 키를 유지한다. 바꾼 뒤 확인할 항목은 [검증 안내](../../Docs/ValidationGuide.md)를 따른다.

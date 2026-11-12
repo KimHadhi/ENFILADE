@@ -321,7 +321,7 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
         if (bakes == null || !bakes.TryGet(body.BodyModel, entry.weapon, out var bake, out bool exact))
         {
             Report($"No clips of KINEMATION's {entry.weapon.name} were made for the bodies yet: Unity's editor makes them with Retarget Pro "
-                + "(Tools → ENFILADE → Combat → Retarget KINEMATION Gun Clips).");
+                + "(ENFILADE → 총 → KINEMATION 총 클립 다시 굽기).");
             return;
         }
         // Any body but the reference plays the reference's humanoid clips, with the gun fitted to its own eyes (FittedGunPose).

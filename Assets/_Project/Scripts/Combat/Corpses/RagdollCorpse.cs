@@ -113,6 +113,7 @@ public sealed class RagdollCorpse : MonoBehaviour, IDamageReceiver
     {
         if (live == null || !live.isHuman) return null;
         var root = new GameObject("Corpse (" + live.name + ")");
+        RuntimeSceneHierarchy.Group(root, RuntimeSceneHierarchy.World, "Bodies");
         var corpse = root.AddComponent<RagdollCorpse>();
         corpse.Avatar = live.avatar;
         corpse.layer = layer;

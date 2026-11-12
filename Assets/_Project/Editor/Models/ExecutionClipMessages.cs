@@ -4,7 +4,7 @@ using UnityEditor;
 using UnityEngine;
 
 /// <summary>
-/// Tools → Models → 처형 클립 가져오기 메시지: the paired executions' clips' import messages (what each clip's Animation tab
+/// ENFILADE → 모델 → 처형 클립 가져오기 메시지: the paired executions' clips' import messages (what each clip's Animation tab
 /// shows under Import Messages: rig and animation errors and warnings, retargeting warnings) written to the Console and so
 /// to Editor.log, all the clips at once, so a warning's cause can be read without opening each clip (the manager,
 /// 2026-11-13: the player clips warned "has animation import warnings" and Editor.log never said what of).
@@ -20,7 +20,7 @@ internal static class ExecutionClipMessages
         "m_AnimationRetargetingWarnings",
     };
 
-    [MenuItem("Tools/Models/처형 클립 가져오기 메시지")]
+    [MenuItem("ENFILADE/모델/처형 클립 가져오기 메시지")]
     private static void Log()
     {
         if (!AssetDatabase.IsValidFolder(Folder))

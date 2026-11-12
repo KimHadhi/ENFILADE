@@ -72,7 +72,7 @@ public static class ConsoleEnemySpawner
             foreach (var obstruction in Physics.RaycastAll(eye, sight.normalized, sight.magnitude, ~0, QueryTriggerInteraction.Ignore))
                 if (!obstruction.transform.IsChildOf(player.transform)) { blocked = true; break; }
             if (blocked) continue;
-            var container = RuntimeSceneHierarchy.GetGroup(player.gameObject.scene, "ENEMIES", "Console");
+            var container = RuntimeSceneHierarchy.GetGroup(player.gameObject.scene, RuntimeSceneHierarchy.Enemies, "Console");
             Vector3 facing = Vector3.ProjectOnPlane(player.transform.position - hit.position, Vector3.up);
             enemy = Object.Instantiate(prefab, hit.position + Vector3.up * agent.baseOffset,
                 Quaternion.LookRotation(facing.normalized), container);

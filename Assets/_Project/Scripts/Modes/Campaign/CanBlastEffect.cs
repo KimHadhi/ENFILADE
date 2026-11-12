@@ -49,6 +49,7 @@ public sealed class CanBlastEffect : MonoBehaviour
     public static CanBlastEffect Play(Vector3 at, float blastRadius, float fireRadius)
     {
         var host = new GameObject("Can Blast");
+        RuntimeSceneHierarchy.Group(host, RuntimeSceneHierarchy.Effects, "World");
         host.transform.position = at;
         var effect = host.AddComponent<CanBlastEffect>();
         effect.blastReach = blastRadius;

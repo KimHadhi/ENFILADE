@@ -91,7 +91,7 @@ public sealed class PlayerFallScreen : MonoBehaviour, ITableBound
         var view = GetComponentInChildren<Camera>();
         int mask = view != null ? view.GetUniversalAdditionalCameraData().volumeLayerMask.value : 1;
         var host = new GameObject("Fall Warp");
-        RuntimeSceneHierarchy.Group(host, "EFFECTS", "Screen", gameObject);
+        RuntimeSceneHierarchy.Group(host, RuntimeSceneHierarchy.Effects, "Screen", gameObject);
         host.layer = LowestLayer(mask);
         volume = host.AddComponent<Volume>();
         volume.isGlobal = true;

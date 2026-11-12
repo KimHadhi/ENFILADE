@@ -68,7 +68,7 @@ public sealed class HitchProbe : MonoBehaviour
         Directory.CreateDirectory(Folder);
         File.WriteAllText(FilePath, $"Play started {System.DateTime.Now:HH:mm:ss}\n");
         var host = new GameObject("Hitch Probe");
-        DontDestroyOnLoad(host);
+        RuntimeSceneHierarchy.Keep(host, "Dev");
         host.AddComponent<HitchProbe>();
     }
 

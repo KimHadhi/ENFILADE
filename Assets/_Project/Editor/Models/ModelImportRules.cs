@@ -7,7 +7,7 @@ using UnityEditor.AssetImporters;
 using UnityEngine;
 
 /// <summary>
-/// Import rules for project models under Art/Models. On first import (or via Tools → Models → Reapply Import Rules):
+/// Import rules for project models under Art/Models. On first import (or via ENFILADE → 모델 → 임포트 규칙 다시 적용):
 /// an identity prefab root (Blender's -90°/×100 stays on the child), axis conversion baked, no cameras or lights, and
 /// no rig or animation for Props/Environment. Materials stay embedded as URP Lit; a texture next to the model (or in
 /// its Textures folder) named after the material or the model is assigned automatically — "tetopear.png",
@@ -367,7 +367,7 @@ internal sealed class ModelImportRules : AssetPostprocessor
             }
     }
 
-    [MenuItem("Tools/Models/Reapply Import Rules")]
+    [MenuItem("ENFILADE/모델/임포트 규칙 다시 적용")]
     private static void ReapplySelected()
     {
         var paths = Selection.assetGUIDs.Select(AssetDatabase.GUIDToAssetPath)
@@ -375,7 +375,7 @@ internal sealed class ModelImportRules : AssetPostprocessor
             .Where(p => IsProjectModel(p) || IsAnimationFile(p)).Distinct().ToArray();
         if (paths.Length == 0)
         {
-            EditorUtility.DisplayDialog("Reapply Import Rules", "Art/Models 또는 Art/Animations 아래의 모델이나 폴더를 선택하세요.", "OK");
+            EditorUtility.DisplayDialog("임포트 규칙 다시 적용", "Art/Models 또는 Art/Animations 아래의 모델이나 폴더를 선택하세요.", "OK");
             return;
         }
         foreach (string path in paths)

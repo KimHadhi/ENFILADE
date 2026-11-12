@@ -50,7 +50,7 @@ public static class KitSound
         if (source == null)
         {
             var host = new GameObject("Kit Sound");
-            UnityEngine.Object.DontDestroyOnLoad(host);
+            RuntimeSceneHierarchy.Keep(host);
             source = host.AddComponent<AudioSource>();
             source.playOnAwake = false;
             source.spatialBlend = 0f;

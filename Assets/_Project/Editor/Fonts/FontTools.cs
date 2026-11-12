@@ -14,7 +14,7 @@ using UnityEngine.TextCore.LowLevel;
 using Object = UnityEngine.Object;
 
 /// <summary>
-/// Tools → Fonts: the font setup's check and upkeep (MaintenanceGuide, 글꼴).
+/// ENFILADE → 글꼴: the font setup's check and upkeep (MaintenanceGuide, 글꼴).
 /// 글꼴 검사 reads every table, every prefab and scene under Assets/_Project, the scripts and the font assets, and lists
 /// what would draw a box or warn (a character no face of the chain has), what bypasses the roles (a text with no
 /// TextRole, a script with a font field of its own), what drifted (a TextRole text in another face, TMP's default font
@@ -31,10 +31,10 @@ public static class FontTools
     private const string ScriptsFolder = "Assets/_Project/Scripts";
     private const string RoleScriptsFolder = "Assets/_Project/Scripts/UI/Fonts";
 
-    [MenuItem("Tools/Fonts/글꼴 검사")]
+    [MenuItem("ENFILADE/글꼴/글꼴 검사")]
     public static void Check() => FontCheckWindow.Open(BuildReport());
 
-    [MenuItem("Tools/Fonts/역할 맞추기")]
+    [MenuItem("ENFILADE/글꼴/역할 맞추기")]
     public static void SyncRoles()
     {
         if (EditorApplication.isPlayingOrWillChangePlaymode)
@@ -162,7 +162,7 @@ public static class FontTools
         var bodyFace = roleFaces.TryGetValue(FontRoles.Body, out var b) ? b : null;
         var defaultFont = TMP_Settings.defaultFontAsset;
         if (bodyFace != null && defaultFont != bodyFace)
-            report.Problem($"기본 글꼴이 {Name(defaultFont)}인데 Body 역할은 {bodyFace.name}입니다. Tools → Fonts → 역할 맞추기를 누르세요.");
+            report.Problem($"기본 글꼴이 {Name(defaultFont)}인데 Body 역할은 {bodyFace.name}입니다. ENFILADE → 글꼴 → 역할 맞추기를 누르세요.");
         var fallbacks = TMP_Settings.fallbackFontAssets ?? new List<TMP_FontAsset>();
         if (!fallbacks.Any(f => f != null && f.fontWeightTable != null && f.fontWeightTable.Count(p => p.regularTypeface != null) >= 9))
             report.Problem("대체 글꼴에 굵기 표 글꼴(PRETENDARD Weights SDF)이 없습니다. 굵은 글자가 넘칠 때 '…'를 못 찾고 경고합니다.");
@@ -187,7 +187,7 @@ public static class FontTools
             var clear = new SerializedObject(font).FindProperty("m_ClearDynamicDataOnBuild");
             if (clear != null && !clear.boolValue) report.Problem($"{path}: Clear Dynamic Data On Build가 꺼져 있습니다.");
             if (File.Exists(path) && !File.ReadAllText(path).Contains("m_GlyphTable: []"))
-                report.Problem($"{path}: 파일에 그린 글리프가 저장돼 있어 git에 바뀐 것으로 보입니다. Tools → Fonts → 동적 글꼴 비우고 저장.");
+                report.Problem($"{path}: 파일에 그린 글리프가 저장돼 있어 git에 바뀐 것으로 보입니다. ENFILADE → 글꼴 → 동적 글꼴 비우고 저장.");
         }
 
         report.Section("글자 (모든 표와 프리팹·씬의 글자)");
@@ -221,7 +221,7 @@ public static class FontTools
             if (!roleFaces.TryGetValue(text.Role, out var face)) { report.Problem($"없는 역할 '{text.Role}': {text.Where}"); continue; }
             var material = FontRoles.MaterialOf(text.Role);
             if (text.Font != face || (material != null && text.Material != null && text.Material != material))
-                report.Problem($"역할과 다름: {text.Where}는 {text.Role}인데 {Name(text.Font)} / {Name(text.Material)}. Tools → Fonts → 역할 맞추기.");
+                report.Problem($"역할과 다름: {text.Where}는 {text.Role}인데 {Name(text.Font)} / {Name(text.Material)}. ENFILADE → 글꼴 → 역할 맞추기.");
         }
         report.Note($"TextMeshPro 글자 {texts.Count}개 중 {tagged}개에 역할이 있습니다. 코드로 만드는 글자는 FontRoles로 역할을 고릅니다.");
 

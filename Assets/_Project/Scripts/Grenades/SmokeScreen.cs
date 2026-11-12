@@ -46,6 +46,7 @@ public sealed class SmokeScreen : MonoBehaviour
     public static SmokeScreen Spawn(Vector3 at, ThrowableInfo info)
     {
         var host = new GameObject("Smoke Screen");
+        RuntimeSceneHierarchy.Group(host, RuntimeSceneHierarchy.Effects, "World");
         host.transform.position = at;
         var cloud = host.AddComponent<SmokeScreen>();
         cloud.ground = at;

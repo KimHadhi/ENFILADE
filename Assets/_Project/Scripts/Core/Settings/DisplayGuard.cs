@@ -19,7 +19,7 @@ public sealed class DisplayGuard : MonoBehaviour
     private static void Create()
     {
         if (!DisplaySettings.Applies) return;
-        DontDestroyOnLoad(new GameObject("Display Guard").AddComponent<DisplayGuard>().gameObject);
+        RuntimeSceneHierarchy.Keep(new GameObject("Display Guard").AddComponent<DisplayGuard>().gameObject);
     }
 
     private void OnApplicationFocus(bool focused)

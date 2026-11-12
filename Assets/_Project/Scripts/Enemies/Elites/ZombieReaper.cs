@@ -242,6 +242,7 @@ public sealed class ZombieReaper : ZombieElite
     {
         if (clip == null) return;
         var source = new GameObject("Reaper Sound").AddComponent<AudioSource>();
+        RuntimeSceneHierarchy.Group(source.gameObject, RuntimeSceneHierarchy.Effects, "Audio");
         source.transform.position = at;
         source.playOnAwake = false;
         source.spatialBlend = 1f;

@@ -60,7 +60,7 @@ public sealed class ConsolePoseTest : MonoBehaviour
         bool facing = wake == Wake.Sight;
         float radius = facing ? NearRadius : FarRadius;
         var run = new GameObject("Pose Test (Console)").AddComponent<ConsolePoseTest>();
-        run.transform.SetParent(RuntimeSceneHierarchy.GetGroup(player.gameObject.scene, "ENEMIES", "Console"), false);
+        run.transform.SetParent(RuntimeSceneHierarchy.GetGroup(player.gameObject.scene, RuntimeSceneHierarchy.Enemies, "Console"), false);
         run.player = player;
         run.wake = wake;
         run.only = only;
@@ -77,7 +77,7 @@ public sealed class ConsolePoseTest : MonoBehaviour
             Vector3 look = facing ? -way : way;
             float yaw = Mathf.Atan2(look.x, look.z) * Mathf.Rad2Deg;
             var enemy = Instantiate(prefab, at + Vector3.up * agent.baseOffset, Quaternion.Euler(0f, yaw, 0f),
-                RuntimeSceneHierarchy.GetGroup(player.gameObject.scene, "ENEMIES", "Console"));
+                RuntimeSceneHierarchy.GetGroup(player.gameObject.scene, RuntimeSceneHierarchy.Enemies, "Console"));
             enemy.name = prefab.name + " (Pose " + poses[n] + ")";
             // Before it dresses (its Start, next frame): the pose it takes, as the campaign's calm ones are calmed then.
             if (enemy.TryGetComponent(out ZombieBody body)) body.ForcedPose = poses[n];

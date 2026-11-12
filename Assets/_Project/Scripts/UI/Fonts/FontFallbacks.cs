@@ -8,7 +8,7 @@ using UnityEditor;
 
 /// <summary>
 /// The last links of the font chain: operating-system fonts, so whatever a player types (a name, a chat line) draws
-/// instead of a box. The game's own faces cover every character of the tables (Tools → Fonts → 글꼴 검사 proves it) and
+/// instead of a box. The game's own faces cover every character of the tables (ENFILADE → 글꼴 → 글꼴 검사 proves it) and
 /// all of Hangul, Latin, Greek, Cyrillic and kana, but not Chinese characters, emoji or rarer scripts, which names and
 /// chat can hold. Fonts.csv Fallback lists the families to try; the ones this machine has join behind TMP Settings' own
 /// fallbacks, each as a TMP DynamicOS asset (no file of ours, glyphs drawn on first use). Emoji families also join TMP's

@@ -314,6 +314,7 @@ public sealed class MuzzleEffects : MonoBehaviour, ITableBound
             return reused;
         }
         var line = new GameObject("Bullet Tracer", typeof(LineRenderer)).GetComponent<LineRenderer>();
+        RuntimeSceneHierarchy.Group(line.gameObject, RuntimeSceneHierarchy.Effects, "World");
         line.useWorldSpace = true;
         line.positionCount = 2;
         line.numCapVertices = 0;

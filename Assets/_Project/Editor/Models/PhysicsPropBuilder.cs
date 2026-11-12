@@ -11,8 +11,8 @@ using UnityEngine;
 internal static class PhysicsPropBuilder
 {
     private const string PrefabsFolder = "Assets/_Project/Prefabs";
-    private const string MenuPath = "Tools/Models/Create Physics Prop Prefab";
-    private const string ContextPath = "Assets/ENFILADE/Create Physics Prop Prefab";
+    private const string MenuPath = "ENFILADE/모델/물리 소품 프리팹 만들기";
+    private const string ContextPath = "Assets/ENFILADE/물리 소품 프리팹 만들기";
     private const float DefaultMass = 1f;
 
     [MenuItem(MenuPath, true)]

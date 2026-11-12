@@ -19,10 +19,10 @@ internal sealed class GameTablesWatcher : AssetPostprocessor
     private static bool IsTable(string path) => path.StartsWith(FolderPath + "/", StringComparison.OrdinalIgnoreCase)
         && path.EndsWith(".csv", StringComparison.OrdinalIgnoreCase);
 
-    [MenuItem("Tools/Data Tables/Open Tables Folder")]
+    [MenuItem("ENFILADE/표/표 폴더 열기")]
     private static void OpenFolder() => EditorUtility.RevealInFinder(TablePaths.Of("Player"));
 
-    [MenuItem("Tools/Data Tables/Reload Tables")]
+    [MenuItem("ENFILADE/표/표 다시 읽기")]
     private static void ReloadNow()
     {
         AssetDatabase.ImportAsset(FolderPath, ImportAssetOptions.ImportRecursive);

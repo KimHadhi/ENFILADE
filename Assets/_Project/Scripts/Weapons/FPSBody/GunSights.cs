@@ -146,7 +146,7 @@ public sealed class GunSights : MonoBehaviour
         if (number != total)
         {
             Debug.LogWarning($"[GunSights] {source.name} has {number} triangles, not the {total} its iron sights were picked from; "
-                             + "they stay on. Make the gun again (Tools → ENFILADE → Combat → Make Tactical Shooter Pack Guns).");
+                             + "they stay on. Make the gun again (ENFILADE → 총 → Tactical Shooter Pack 총 만들기).");
             Destroy(body);
             Destroy(irons);
             return default;

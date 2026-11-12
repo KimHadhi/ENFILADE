@@ -110,7 +110,7 @@ public sealed class PlayerDamageFeedback : MonoBehaviour
         if (overlay != null) return;
         overlay = new GameObject("Player Damage Feedback", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler));
         // Keep the overlay in its owner's scene, including additive scene loads.
-        RuntimeSceneHierarchy.Group(overlay, "EFFECTS", "Screen", gameObject);
+        RuntimeSceneHierarchy.Group(overlay, RuntimeSceneHierarchy.Effects, "Screen", gameObject);
         FeelUI.SetupOverlay(overlay, 24);
         var rect = FeelUI.Rect("Blood and Direction Arcs", overlay.transform);
         rect.anchorMin = Vector2.zero; rect.anchorMax = Vector2.one;

@@ -59,7 +59,7 @@ public sealed class ZombieAnimProbe : MonoBehaviour
     {
         if ((!Application.isEditor && !Debug.isDebugBuild) || instance != null) return;
         var host = new GameObject("Zombie Anim Probe");
-        DontDestroyOnLoad(host);
+        RuntimeSceneHierarchy.Keep(host, "Dev");
         instance = host.AddComponent<ZombieAnimProbe>();
     }
 

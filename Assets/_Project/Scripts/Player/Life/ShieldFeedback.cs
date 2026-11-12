@@ -125,7 +125,7 @@ public sealed class ShieldFeedback : MonoBehaviour
     private void Build()
     {
         overlay = new GameObject("Shield", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler));
-        RuntimeSceneHierarchy.Group(overlay, "EFFECTS", "Screen", gameObject);
+        RuntimeSceneHierarchy.Group(overlay, RuntimeSceneHierarchy.Effects, "Screen", gameObject);
         FeelUI.SetupOverlay(overlay, 25);
         var field = FeelUI.Rect("Honeycomb", overlay.transform);
         field.anchorMin = Vector2.zero; field.anchorMax = Vector2.one;

@@ -131,7 +131,7 @@ internal sealed class CampaignHorde
             calmWays.Add(wholeWay);
         }
         int made = 0;
-        var container = RuntimeSceneHierarchy.GetGroup(scene, "ENEMIES", "Campaign");
+        var container = RuntimeSceneHierarchy.GetGroup(scene, RuntimeSceneHierarchy.Enemies, "Campaign");
         while (made < count && calmPlaces.Count > 0)
         {
             int pick = Random.Range(0, calmPlaces.Count);
@@ -243,7 +243,7 @@ internal sealed class CampaignHorde
         }
         var from = choices.Count > 0 ? choices : inView;
         if (from.Count == 0) return null;
-        var container = RuntimeSceneHierarchy.GetGroup(scene, "ENEMIES", "Campaign");
+        var container = RuntimeSceneHierarchy.GetGroup(scene, RuntimeSceneHierarchy.Enemies, "Campaign");
         var enemy = Object.Instantiate(prefab, from[Random.Range(0, from.Count)], Quaternion.identity, container);
         setUp?.Invoke(enemy);
         EnemyNetwork.SpawnInRoom(enemy);

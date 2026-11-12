@@ -85,6 +85,7 @@ public sealed class PlayerKnock : MonoBehaviour, ITableBound
     {
         if (clip == null || level <= 0f) return;
         var host = new GameObject("Knock Sound");
+        RuntimeSceneHierarchy.Group(host, RuntimeSceneHierarchy.Effects, "Audio");
         host.transform.position = at;
         var source = host.AddComponent<AudioSource>();
         source.playOnAwake = false;

@@ -4,7 +4,7 @@ using UnityEditor.SceneManagement;
 using UnityEngine;
 
 /// <summary>
-/// Tools/World/맵 사진 찍기: opens every map in Tables/Maps that is a scene in the project, takes a 16:9 picture of it
+/// ENFILADE/맵/맵 사진 찍기: opens every map in Tables/Maps that is a scene in the project, takes a 16:9 picture of it
 /// and saves it as Resources/UI/Maps/&lt;id&gt;.png for the title screen's map card (MainMenuMapCard). The camera stands
 /// at an object named "MapShot" if the scene has one (place and aim it by hand for the best view); otherwise behind and
 /// above the player start, looking the way it faces; otherwise from a corner over everything. Scenes open one after
@@ -15,7 +15,7 @@ public static class MapPictures
     private const int Width = 1280, Height = 720;
     private const string Folder = "Assets/_Project/Resources/UI/Maps", ShotName = "MapShot";
 
-    [MenuItem("Tools/World/맵 사진 찍기")]
+    [MenuItem("ENFILADE/맵/맵 사진 찍기")]
     private static void TakeAll()
     {
         if (EditorApplication.isPlayingOrWillChangePlaymode)

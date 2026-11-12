@@ -21,7 +21,7 @@ public sealed class VfxTimeStep : MonoBehaviour
         VFXManager.fixedTimeStep = Step;
         // Kept across scenes but not hidden from them: leaving Play unloads it, so OnDestroy restores the step.
         var host = new GameObject("VFX Time Step");
-        DontDestroyOnLoad(host);
+        RuntimeSceneHierarchy.Keep(host);
         host.AddComponent<VfxTimeStep>();
     }
 

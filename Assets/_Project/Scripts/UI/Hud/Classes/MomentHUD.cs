@@ -54,6 +54,7 @@ public sealed class MomentHUD : MonoBehaviour, IHudPreview
         {
             if (instance != null) return instance;
             var host = new GameObject("Moment HUD");
+            RuntimeSceneHierarchy.Group(host, RuntimeSceneHierarchy.Ui, "Screens");
             instance = host.AddComponent<MomentHUD>();
             instance.Build();
             return instance;
@@ -315,7 +316,7 @@ public sealed class MomentHUD : MonoBehaviour, IHudPreview
         if (tagAge >= 0f && !previewing) { tagAge += dt; PoseTag(); }
     }
 
-    /// <summary>Tools → HUD → 겹침 검사: the notice and the tag held where they rest, with sample words.</summary>
+    /// <summary>ENFILADE → HUD → 겹침 검사: the notice and the tag held where they rest, with sample words.</summary>
     public void Preview(bool show)
     {
         previewing = show;

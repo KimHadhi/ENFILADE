@@ -4,7 +4,7 @@ using UnityEngine;
 /// A free physics object (fruit, crate, debris). Its Rigidbody mass alone decides how it reacts: walking leans on it
 /// with a force, V shove and bullets hit it with momentum (N·s), so a light prop flies and a heavy one barely
 /// moves. A push never makes it faster than what pushed it. Parkour ignores it, so the player never hangs from
-/// something that rolls away. Built from a model with Tools → Models → Create Physics Prop Prefab.
+/// something that rolls away. Built from a model with ENFILADE → 모델 → 물리 소품 프리팹 만들기.
 /// </summary>
 [DisallowMultipleComponent, RequireComponent(typeof(Rigidbody))]
 public sealed class PhysicsProp : MonoBehaviour

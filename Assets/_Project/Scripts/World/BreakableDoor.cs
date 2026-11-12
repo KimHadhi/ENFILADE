@@ -5,7 +5,7 @@ using UnityEngine.AI;
 /// <summary>
 /// A door a body breaks by running, sliding or diving into it fast enough. It breaks for every player: whoever breaks it
 /// tells the others (DoorBreaks). Standing, it is a carving NavMeshObstacle, which the walk mesh's bake leaves out, so the
-/// mesh runs through the doorway: enemies go round a closed door and through a broken one (Tools > World > 문 길찾기 다시
+/// mesh runs through the doorway: enemies go round a closed door and through a broken one (ENFILADE > 맵 > 문 길찾기 다시
 /// 굽기 bakes the scene that way).
 /// </summary>
 [RequireComponent(typeof(Collider))]

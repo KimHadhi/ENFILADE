@@ -17,7 +17,7 @@ public sealed class StandbyCamera : MonoBehaviour
     private static void Create()
     {
         var host = new GameObject("Standby Camera") { tag = "MainCamera" };
-        DontDestroyOnLoad(host);
+        RuntimeSceneHierarchy.Keep(host);
         host.AddComponent<StandbyCamera>();
     }
 

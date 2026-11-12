@@ -25,7 +25,7 @@ public sealed class BountySkulls : MonoBehaviour
     {
         if (instance != null) return;
         var host = new GameObject("Bounty Skulls");
-        DontDestroyOnLoad(host);
+        RuntimeSceneHierarchy.Keep(host);
         instance = host.AddComponent<BountySkulls>();
     }
 

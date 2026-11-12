@@ -349,6 +349,7 @@ public sealed class ZombieExploder : MonoBehaviour
     private void GasPuff(Vector3 at)
     {
         var host = new GameObject("Exploder Gas");
+        RuntimeSceneHierarchy.Group(host, RuntimeSceneHierarchy.Effects, "World");
         host.transform.position = at;
         var system = host.AddComponent<ParticleSystem>();
         system.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);

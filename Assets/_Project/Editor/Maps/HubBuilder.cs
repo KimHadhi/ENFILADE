@@ -12,7 +12,7 @@ using UnityEngine.SceneManagement;
 /// lobby) from code, as the chapters are built: the layout's boxes here, laid and dressed by the map dresser
 /// (GreyboxBuilder.Attach: Tables/MapSurfaces looks, the bought kit's models from Tables/MapArt; HubBuilder.Dressing has
 /// the dressing). It keeps its own saving because a chapter's builder saves under Scenes/Campaign and puts a chapter's
-/// run, walk mesh and culling in it. Tools > World > 허브 로비 짓기 makes Scenes/Hub/Hub.unity and puts it in the build;
+/// run, walk mesh and culling in it. ENFILADE > 맵 > 허브 로비 짓기 makes Scenes/Hub/Hub.unity and puts it in the build;
 /// running it again rebuilds it from scratch (hand edits are lost: change the layout here).
 /// The layout, +Z north, metres:
 /// - The hideout, a warehouse 24 x 24 with a skylight: the start in its south half; the map table in the middle with the
@@ -40,7 +40,7 @@ public static partial class HubBuilder
     private static Transform terrain, fixtures, stations, range, systems, lights;
     private static Material concrete, road, metal, wood, marker;
 
-    [MenuItem("Tools/World/허브 로비 짓기")]
+    [MenuItem("ENFILADE/맵/허브 로비 짓기")]
     private static void Build()
     {
         if (EditorApplication.isPlayingOrWillChangePlaymode) { Tell("Play를 멈춘 뒤에 실행해 주세요."); return; }

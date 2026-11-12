@@ -42,6 +42,7 @@ public sealed class ThrownGrenade : MonoBehaviour
         var info = Throwables.Of(kind);
         if (info == null) return null;
         var host = new GameObject("Thrown " + kind) { layer = GoreGibs.Layer };
+        RuntimeSceneHierarchy.Group(host, RuntimeSceneHierarchy.World, "Debris");
         host.transform.SetPositionAndRotation(from, velocity.sqrMagnitude > 1e-4f ? Quaternion.LookRotation(velocity) * Quaternion.Euler(80f, 0f, 0f) : UnityEngine.Random.rotation);
         Throwables.Dress(kind, host.transform);
         var ball = host.AddComponent<SphereCollider>();

@@ -11,7 +11,7 @@ using Debug = UnityEngine.Debug;
 
 /// <summary>
 /// The wardrobe's pictures baked into the game (the user, 2026-11-12: "미리 구워 놓으면 로딩 속도 더 빨라 지려나").
-/// Tools → Characters → 옷장 사진 모두 굽기 photographs every piece the wardrobe shows, for every character, framed as
+/// ENFILADE → 캐릭터 → 옷장 사진 모두 굽기 photographs every piece the wardrobe shows, for every character, framed as
 /// Tables/OutfitPictures.csv says (else whole, from its front, leaning as WardrobePictures.csv's Auto rows say: the
 /// plates lay the pictures as they are), into Resources/UI/OutfitPictures/&lt;look&gt; (OutfitPictures.Look), where OutfitPictures
 /// finds them before OutfitIcons would have to take them in play. A whole bake removes the older looks' pictures, which
@@ -35,7 +35,7 @@ internal sealed class OutfitPictureBake : AssetPostprocessor
         + "반 폭이 1, +는 오른쪽·위), roll은 자동 기울기보다 시계 방향으로 더 기울인 각도(°, -는 반시계 방향. 자동 기울기만큼 빼면 "
         + "곧게 선다. 빈 칸은 0), part는 장갑·귀걸이처럼 멀리 떨어진 부분으로 된 옷에서 담을 쪽(0 또는 빈 칸은 자동: 한 쪽, -1은 모두, "
         + "1부터는 사진 왼쪽에서 몇째). 옷장에서 '사진 다시 찍기'로 저장하면 이 줄이 써지고(에디터 Play 중), 자동으로 저장하거나 '기본값으로'를 두 번 누르면 지워진다('기본값으로'는 사진도 자동 구도로 다시 찍는다). "
-        + "바꾼 뒤 Tools → Characters → 옷장 사진 모두 굽기로 사진을 다시 굽는다)\",,,,,,,";
+        + "바꾼 뒤 ENFILADE → 캐릭터 → 옷장 사진 모두 굽기로 사진을 다시 굽는다)\",,,,,,,";
 
     [InitializeOnLoadMethod]
     private static void Hook()
@@ -63,7 +63,7 @@ internal sealed class OutfitPictureBake : AssetPostprocessor
         }
     }
 
-    [MenuItem("Tools/Characters/옷장 사진 모두 굽기")]
+    [MenuItem("ENFILADE/캐릭터/옷장 사진 모두 굽기")]
     private static void BakeAll()
     {
         if (EditorApplication.isPlayingOrWillChangePlaymode)
@@ -74,7 +74,7 @@ internal sealed class OutfitPictureBake : AssetPostprocessor
         var jobs = Jobs();
         if (jobs.Count == 0)
         {
-            EditorUtility.DisplayDialog("옷장 사진 굽기", "찍을 옷이 없습니다. 캐릭터 목록(PlayerBody)과 옷 목록(Tools → Characters → 옷 목록 다시 만들기)을 확인해 주세요.", "확인");
+            EditorUtility.DisplayDialog("옷장 사진 굽기", "찍을 옷이 없습니다. 캐릭터 목록(PlayerBody)과 옷 목록(ENFILADE → 캐릭터 → 옷 목록 다시 만들기)을 확인해 주세요.", "확인");
             return;
         }
 

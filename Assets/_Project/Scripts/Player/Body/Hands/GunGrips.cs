@@ -11,7 +11,7 @@ using UnityEngine;
 /// from the open hand, the thumb's from its rest, and how far the thumb first turns under the palm. So a row holds the same
 /// on any humanoid hand, a mod's character included, and KeepHuman still keeps every joint within a hand's reach.
 /// Rows: Tables/GunGrips.csv, id "&lt;WeaponData name&gt;/R" (shooting hand) or "/L" (support hand). The Grip Tuner (Unity
-/// menu Tools → Guns → Grip Tuner) changes them live in Play mode while you look at the hands, and saves them.
+/// menu ENFILADE → 총 → Grip Tuner) changes them live in Play mode while you look at the hands, and saves them.
 /// </summary>
 public static class GunGrips
 {

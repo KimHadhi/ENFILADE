@@ -151,6 +151,7 @@ internal sealed class FlashLook : MonoBehaviour
     internal static void Show(Vector3 at, float radius)
     {
         var host = new GameObject("Flash Burst");
+        RuntimeSceneHierarchy.Group(host, RuntimeSceneHierarchy.Effects, "World");
         host.transform.position = at + Vector3.up * .25f;
         var look = host.AddComponent<FlashLook>();
         look.radius = radius;
@@ -241,7 +242,7 @@ internal sealed class FlashLook : MonoBehaviour
     {
         if (pop != null) return;
         var host = new GameObject("Flash Pop", typeof(RectTransform));
-        DontDestroyOnLoad(host);
+        RuntimeSceneHierarchy.Keep(host, "UI");
         var canvas = host.AddComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
         canvas.sortingOrder = 30000;

@@ -2,7 +2,7 @@
 using UnityEditor;
 using UnityEngine;
 
-/// <summary>The window Tools → Fonts → 글꼴 검사 opens: the report, and buttons to check again, fix roles and copy it.</summary>
+/// <summary>The window ENFILADE → 글꼴 → 글꼴 검사 opens: the report, and buttons to check again, fix roles and copy it.</summary>
 public sealed class FontCheckWindow : EditorWindow
 {
     [SerializeField] private string report;
@@ -27,7 +27,7 @@ public sealed class FontCheckWindow : EditorWindow
         }
         style ??= new GUIStyle(EditorStyles.label) { wordWrap = true, richText = false };
         scroll = EditorGUILayout.BeginScrollView(scroll);
-        EditorGUILayout.SelectableLabel(report ?? "Tools → Fonts → 글꼴 검사를 누르세요.", style,
+        EditorGUILayout.SelectableLabel(report ?? "ENFILADE → 글꼴 → 글꼴 검사를 누르세요.", style,
             GUILayout.ExpandHeight(true), GUILayout.MinHeight(style.CalcHeight(new GUIContent(report ?? ""), position.width - 24f)));
         EditorGUILayout.EndScrollView();
     }

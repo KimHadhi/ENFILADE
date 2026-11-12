@@ -40,6 +40,7 @@ public sealed class MistField : MonoBehaviour
     public static MistField Spawn(Vector3 at, ThrowableInfo info)
     {
         var host = new GameObject("Antiseptic Mist");
+        RuntimeSceneHierarchy.Group(host, RuntimeSceneHierarchy.Effects, "World");
         host.transform.position = at;
         var field = host.AddComponent<MistField>();
         field.center = at;

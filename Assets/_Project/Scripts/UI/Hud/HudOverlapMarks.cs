@@ -5,7 +5,7 @@ using UnityEngine.UI;
 /// <summary>
 /// The outlines HudOverlapCheck draws over the screen around what it found: the two pieces' overlapping shapes in red,
 /// a piece's part past the screen's edge in orange. Its own overlay canvas over everything, in screen pixels, never
-/// measured itself (HudOverlap.csv skips it). Tools → HUD → 겹침 검사 draws them for its pictures; while watching in
+/// measured itself (HudOverlap.csv skips it). ENFILADE → HUD → 겹침 검사 draws them for its pictures; while watching in
 /// Play they show only when Hud.csv Overlap.draw is on.
 /// </summary>
 [RequireComponent(typeof(CanvasRenderer))]
@@ -47,7 +47,7 @@ public sealed class HudOverlapMarks : MaskableGraphic
     {
         if (instance != null) return instance;
         var host = new GameObject(HostName, typeof(RectTransform), typeof(Canvas));
-        DontDestroyOnLoad(host);
+        RuntimeSceneHierarchy.Keep(host, "Dev");
         var canvas = host.GetComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
         canvas.sortingOrder = 32760;

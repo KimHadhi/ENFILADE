@@ -498,7 +498,7 @@ public sealed class TowerRun : MonoBehaviour
         Vector3 wanted = lane.Champion ? TowerLayout.ChampionAt(level, k) : TowerLayout.PenAt(level, k, lane.Spot++ % 6);
         if (!NavMesh.SamplePosition(wanted + Vector3.up * .3f, out NavMeshHit ground, 2.5f, NavMesh.AllAreas)) return;
         var kind = lane.Due.Dequeue();
-        var container = RuntimeSceneHierarchy.GetGroup(gameObject.scene, "ENEMIES", "Tower");
+        var container = RuntimeSceneHierarchy.GetGroup(gameObject.scene, RuntimeSceneHierarchy.Enemies, "Tower");
         var facing = Quaternion.LookRotation(TowerLayout.EntersFromEast(level) ? Vector3.right : Vector3.left, Vector3.up);
         var enemy = Instantiate(enemyPrefab, ground.position, facing, container);
         // Set up before it goes out to the room, so its copies are born what it is.

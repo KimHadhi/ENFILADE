@@ -122,7 +122,7 @@ public sealed class DeathCard
         wordAt = now;
     }
 
-    /// <summary>Every piece in its settled place with these words, for Tools → HUD → 겹침 검사 (IHudPreview).</summary>
+    /// <summary>Every piece in its settled place with these words, for ENFILADE → HUD → 겹침 검사 (IHudPreview).</summary>
     public void Hold(in Facts said)
     {
         Build();

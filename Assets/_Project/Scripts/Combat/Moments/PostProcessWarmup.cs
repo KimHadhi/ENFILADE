@@ -36,7 +36,7 @@ public sealed class PostProcessWarmup : MonoBehaviour
     {
         if (done || !Application.isPlaying) return;
         done = true;
-        new GameObject("Post-processing Warmup").AddComponent<PostProcessWarmup>();
+        RuntimeSceneHierarchy.Group(new GameObject("Post-processing Warmup").AddComponent<PostProcessWarmup>().gameObject, RuntimeSceneHierarchy.Systems, "Loading");
     }
 
     private IEnumerator Start()

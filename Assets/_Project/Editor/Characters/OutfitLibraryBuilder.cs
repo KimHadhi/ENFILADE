@@ -11,7 +11,7 @@ using UnityEngine;
 /// (or .prefab) is that model for that character, and each folder under &lt;model&gt;/Colors is a colour set whose
 /// materials replace the model's materials of the same names. Entries whose model lives elsewhere (BOOTH packages,
 /// BoothImport) are left as they are. Runs whenever something there is imported, moved or deleted, and from
-/// Tools/Characters/옷 목록 다시 만들기.
+/// ENFILADE/캐릭터/옷 목록 다시 만들기.
 /// </summary>
 internal sealed class OutfitLibraryBuilder : AssetPostprocessor
 {
@@ -29,7 +29,7 @@ internal sealed class OutfitLibraryBuilder : AssetPostprocessor
 
     private static bool IsOutfitPath(string path) => path.StartsWith(OutfitsFolder + "/", StringComparison.OrdinalIgnoreCase);
 
-    [MenuItem("Tools/Characters/옷 목록 다시 만들기")]
+    [MenuItem("ENFILADE/캐릭터/옷 목록 다시 만들기")]
     private static void Rebuild()
     {
         var entries = new List<OutfitLibrary.Entry>();

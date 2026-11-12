@@ -41,6 +41,7 @@ public sealed class DroppedMagazine : MonoBehaviour
         Vector3 velocity, Vector3 spin, float mass, float lifeSeconds, float sinkSeconds, float clackVolume, int most)
     {
         var host = new GameObject("Dropped Magazine") { layer = GoreGibs.Layer };
+        RuntimeSceneHierarchy.Group(host, RuntimeSceneHierarchy.World, "Debris");
         host.transform.SetPositionAndRotation(position, rotation);
         host.transform.localScale = scale;
         host.AddComponent<MeshFilter>().sharedMesh = mesh;

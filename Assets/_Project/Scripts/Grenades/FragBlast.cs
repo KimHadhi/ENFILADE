@@ -186,6 +186,7 @@ internal sealed class FragAftermath : MonoBehaviour
     internal static void Begin(Vector3 at, float radius, float damage, GameObject source, Vector3 way, float spread)
     {
         var host = new GameObject("Frag Aftermath");
+        RuntimeSceneHierarchy.Group(host, RuntimeSceneHierarchy.Effects, "World");
         var after = host.AddComponent<FragAftermath>();
         after.at = at;
         after.radius = radius;
