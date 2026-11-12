@@ -135,11 +135,22 @@ internal sealed class GunGripTuner : EditorWindow
     }
 
     // Writes (or with remove, drops) the gun's rows; the file keeps its header, its description row, its other rows and
-    // its own line ending, UTF-8 with BOM as every table.
+    // its own line ending, UTF-8 with BOM as every table. Through TableFile, which writes over the file in place, since
+    // Windows refuses File.WriteAllText's truncating write while any program has the file mapped (Win32 IO 1224, met on
+    // Cloth.csv 2026-11-12), and makes a save the file is held against wait and land by itself.
     private static void Save(string gun, GunGrips.Grip left, GunGrips.Grip right, bool remove)
     {
-        string full = Path.GetFullPath(TablePath);
-        string text = File.Exists(full) ? File.ReadAllText(full) : "";
+        // Built on what TableFile will put there: a save still waiting, else the file without padding.
+        string text;
+        try
+        {
+            text = TableFile.Read(TablePath);
+        }
+        catch (System.Exception error) when (error is IOException || error is System.UnauthorizedAccessException)
+        {
+            Debug.LogWarning($"[GunGripTuner] {TablePath}를 읽지 못해 저장하지 않았습니다({error.Message}). 그 파일을 연 프로그램을 닫고 다시 저장해 주세요.");
+            return;
+        }
         string newline = text.Contains("\r\n") ? "\r\n" : "\n";
         var lines = text.Replace("\r\n", "\n").Split('\n').Where(l => l.Length > 0).ToList();
         if (lines.Count < 2) lines = new List<string> { Header(), "\"#설명\"" };
@@ -160,10 +171,11 @@ internal sealed class GunGripTuner : EditorWindow
         var output = new StringBuilder();
         output.Append(lines[0]).Append(newline).Append(lines[1]).Append(newline);
         foreach (string row in rows.Values) output.Append(row).Append(newline);
-        File.WriteAllText(full, output.ToString(), new UTF8Encoding(true));
-        AssetDatabase.ImportAsset(TablePath);
-        GameTables.Reload();
-        Debug.Log($"[GunGripTuner] {(remove ? "removed" : "saved")} {gun}'s grip in {TablePath}.");
+        // TableFile imports the table and reloads GameTables once it lands.
+        if (TableFile.Write(TablePath, output.ToString(), gun + " 손 모양", "Play 중에 Tools → Guns → Grip Tuner에서 다시 저장해 주세요."))
+            Debug.Log($"[GunGripTuner] {(remove ? "removed" : "saved")} {gun}'s grip in {TablePath}.");
+        else if (TableFile.Waiting(TablePath))
+            Debug.Log($"[GunGripTuner] 다른 프로그램이 {TablePath}를 잡고 있어서, {gun} 손 모양은 파일이 풀리는 대로 저절로 저장됩니다.");
     }
 
     private static string Header()

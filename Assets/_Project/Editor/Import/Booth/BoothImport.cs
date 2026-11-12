@@ -32,12 +32,11 @@ internal sealed class BoothImport : AssetPostprocessor
     private const string SourcesPath = "Assets/_Project/Editor/Import/Booth/BoothSources.csv";
     private const string ProfilePath = "Assets/_Project/Resources/Characters/PlayerBody.asset";
     private const string ClothPath = "Assets/_Project/Resources/Tables/Cloth.csv";
-    // The VrcSway.Version this PC's Cloth.csv rows were last written with (FinishPending).
-    private const string SwayVersionKey = "ENFILADE.BoothImport.SwayVersion";
+    // The VrcSway.Version this PC's Cloth.csv rows were last written with (FinishPending). A new name in 0.8.135: the
+    // old key was noted even when the table write failed (Win32 IO 1224, 2026-11-12), so it could vouch for rows that
+    // never reached the file (that day the Ene earrings and the Sera Yura skirt ring); every PC runs the import once more.
+    private const string SwayVersionKey = "ENFILADE.BoothImport.SwayWritten";
     private static bool queued, running;
-    // A table write that meets a lock: how many times it is tried and how long apart (s).
-    private const int WriteTries = 6;
-    private const double RetrySeconds = .5;
 
     // Colour words of BOOTH colour prefabs, for the colour cards: patterns, tried in this order on the name (_ as spaces).
     // White Board (Ene Collection, 2026-11-12) brought Basis, Burgundy, Gold, Lime and Sax (Japanese サックス, saxe blue).
@@ -162,7 +161,8 @@ internal sealed class BoothImport : AssetPostprocessor
                 if (entry == null || AssetDatabase.GetAssetPath(entry.Model) != CopyOf(source)) return true;
             }
         }
-        return present && EditorPrefs.GetInt(SwayVersionKey, 0) != VrcSway.Version;
+        // Not while the rows wait for Cloth.csv (TableFile): they are made already and land by themselves.
+        return present && EditorPrefs.GetInt(SwayVersionKey, 0) != VrcSway.Version && !TableFile.Waiting(ClothPath);
     }
 
     // Where the game's copy of a source's prefab lives. A model made for anyone is "<model>.any" ('*' is no file name).
@@ -232,8 +232,11 @@ internal sealed class BoothImport : AssetPostprocessor
             if (profile != null) EditorUtility.SetDirty(profile);
             EditorUtility.SetDirty(library);
             AssetDatabase.SaveAssets();
-            ReplaceClothRows(sway);
-            EditorPrefs.SetInt(SwayVersionKey, VrcSway.Version);
+            // The sway version is noted only once the rows are in the file. While they wait for it, it stays unnoted:
+            // the next script load after they land runs this again and finds them there (Pending), and if the editor
+            // quit before they ever landed, that run writes them instead of their being lost.
+            if (ReplaceClothRows(sway)) EditorPrefs.SetInt(SwayVersionKey, VrcSway.Version);
+            else EditorPrefs.DeleteKey(SwayVersionKey);
             GameTables.Reload();
         }
         finally
@@ -378,14 +381,25 @@ internal sealed class BoothImport : AssetPostprocessor
     }
 
     // Cloth.csv keeps its own column order. For each owner read now, the rows this wrote before (vrc) go and the new ones
-    // come in at the end; every other row stays as it is.
-    private static void ReplaceClothRows(Dictionary<string, List<Dictionary<string, string>>> sway)
+    // come in at the end; every other row stays as it is. True once the file holds them; false while they wait for the
+    // file (TableFile) or when it couldn't even be read.
+    private static bool ReplaceClothRows(Dictionary<string, List<Dictionary<string, string>>> sway)
     {
-        if (sway.Count == 0 || !File.Exists(ClothPath)) return;
-        string text = File.ReadAllText(ClothPath);
+        if (sway.Count == 0 || !File.Exists(ClothPath)) return true;
+        // Built on what TableFile will put there: a write still waiting, else the file without padding.
+        string text;
+        try
+        {
+            text = TableFile.Read(ClothPath);
+        }
+        catch (Exception error) when (error is IOException || error is UnauthorizedAccessException)
+        {
+            Debug.LogWarning($"[BOOTH] {ClothPath}를 읽지 못해 흔들림 줄을 쓰지 않았습니다({error.Message}). 그 파일을 연 프로그램을 닫으면 편집기가 스크립트를 다시 불러올 때 다시 씁니다(Tools → Characters → BOOTH 다시 가져오기로 바로 해도 됩니다).");
+            return false;
+        }
         string newline = text.Contains("\r\n") ? "\r\n" : "\n";
         var records = CsvTable.ReadRecords(text);
-        if (records.Count == 0) return;
+        if (records.Count == 0) return true;
         var header = records[0].Select(cell => cell.Trim().TrimStart('﻿')).ToList();
         int skinColumn = header.IndexOf("skin"), vrcColumn = header.IndexOf("vrc");
         var lines = text.Split(new[] { newline }, StringSplitOptions.None).ToList();
@@ -412,41 +426,11 @@ internal sealed class BoothImport : AssetPostprocessor
                 kept.Append(string.Join(",", header.Select(column => Quote(row.TryGetValue(column, out var value) ? value : "")))).Append(newline);
             }
         string written = kept.ToString();
-        if (written == text) return;
-        WriteTable(ClothPath, written, WriteTries);
-    }
-
-    // Writes a table the editor may hold open. Just after an import it keeps cached handles on the files it read, and
-    // Windows then refuses the truncating write (Win32 IO 1224, "user-mapped section", on Cloth.csv: the user's console,
-    // 2026-11-12, a second run of the White Board import, which threw and stopped there). The editor lets go of its
-    // handles first; a write that still meets a lock is tried again a moment later, a few times, instead of stopping the
-    // import, and the tables are read again once it lands.
-    private static void WriteTable(string path, string text, int tries)
-    {
-        AssetDatabase.ReleaseCachedFileHandles();
-        try
-        {
-            File.WriteAllText(path, text, new UTF8Encoding(true));
-        }
-        catch (IOException error)
-        {
-            if (tries <= 1)
-            {
-                Debug.LogError($"[BOOTH] {path}에 흔들림 줄을 쓰지 못했습니다({error.Message}). 그 파일을 연 다른 프로그램을 닫고 Tools → Characters → BOOTH 다시 가져오기를 눌러 주세요.");
-                return;
-            }
-            double at = EditorApplication.timeSinceStartup + RetrySeconds;
-            void Later()
-            {
-                if (EditorApplication.timeSinceStartup < at) return;
-                EditorApplication.update -= Later;
-                WriteTable(path, text, tries - 1);
-            }
-            EditorApplication.update += Later;
-            return;
-        }
-        AssetDatabase.ImportAsset(path);
-        GameTables.Reload();
+        if (written == text) return !TableFile.Waiting(ClothPath);
+        // Through TableFile, which writes over the file in place: Windows refused File.WriteAllText's truncating write
+        // while some program had Cloth.csv mapped (Win32 IO 1224, the user's console 2026-11-12, twice, even after
+        // 0.8.114's handle release and six retries). A write that still meets a lock waits and lands by itself.
+        return TableFile.Write(ClothPath, written, "흔들림 줄", "Tools → Characters → BOOTH 다시 가져오기를 눌러 주세요.");
     }
 
     private static string Quote(string cell) =>

@@ -7,7 +7,7 @@
 | 변경할 내용 | 시작할 파일·설정 |
 | --- | --- |
 | **체력·무기·주먹·처형·적·웨이브·이동·몸·소리 숫자** | [Resources/Tables](../Resources/Tables)의 CSV 표 (컴파일 불필요, [사용법](../Docs/MaintenanceGuide.md#밸런스-표-data-tables)) |
-| 표 읽기·적용 방식 | [GameTables](Data/GameTables.cs), [CsvTable](Data/CsvTable.cs), [TableFieldWriter](Data/TableFieldWriter.cs) |
+| 표 읽기·적용 방식 / 편집기 도구(BOOTH 가져오기·Grip Tuner)가 표 쓰기(파일을 자르지 않고 제자리에 덮어써서 다른 프로그램이 매핑해 둬도 써짐, 막히면 기다렸다가 저절로, 1분 넘게 막히면 잡고 있는 프로그램을 한 번 알림) | [GameTables](Data/GameTables.cs), [CsvTable](Data/CsvTable.cs), [TableFieldWriter](Data/TableFieldWriter.cs) / [TableFile](../Editor/Data/TableFile.cs) |
 | 화면 문구 (메뉴·설정·HUD·안내·알림·처치 목록·좀비 이름 등 플레이어가 읽는 글자는 모두 id로 표에서 읽는다. 열 하나가 언어 하나라 번역판은 `en` 열만 채우면 되고, 비어 있으면 한국어가 나온다. `{0}`·`{1}`은 코드가 채우는 자리, `\n`은 줄바꿈, 리치 텍스트 태그 사용 가능. 표에 없는 id는 `[id]`로 보인다. 개발자 콘솔(`/` 명령) 도움말·디버그 로그·/net 같은 개발용 글자는 코드에 남긴다. 2026-11-11 플레이 테스트 의견) | [Texts](Data/Texts.cs) (`Texts.Get`·`Texts.Format`), [Texts.csv](../Resources/Tables/Texts.csv) (id·ko·en·#어디) |
 | 걷기·달리기·점프·자세·슬라이드·다이브 수치 | [Player.csv](../Resources/Tables/Player.csv)의 `Move`·`Posture` 행, 필드 선언은 [Configuration](Player/Movement/PlayerMovement.Configuration.cs) |
 | 회피·파쿠르·착지·저스트 슬라이드·밀치기·사다리·집라인 수치 | `Player.csv`의 `Ability` 행, 필드 선언은 [MovementAbilitySettings](Player/Movement/MovementAbilitySettings.cs) |
