@@ -37,6 +37,8 @@ public sealed partial class GreyboxBuilder
         }
         var material = SurfaceMaterial(id, row);
         if (material == null) return fallback;
+        // Its row also says which decals its boxes wear (Decals).
+        surfaceRows[material] = id;
         string side = Text(row, "side"), top = Text(row, "top");
         surfaceNotes.Add(slot + " " + side + (top.Length > 0 && top != side ? "/" + top : ""));
         return material;

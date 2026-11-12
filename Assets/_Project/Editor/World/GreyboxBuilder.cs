@@ -108,8 +108,9 @@ public sealed partial class GreyboxBuilder
     {
         EndStaging();
         FitWindows();
+        Decals();
         MarkStatic();
-        return SurfaceReport() + DressReport();
+        return SurfaceReport() + DressReport() + DecalReport();
     }
 
     /// <summary>Asks before rebuilding a scene that exists, saves what is open, and starts the new scene. Null if called off.
@@ -534,9 +535,10 @@ public sealed partial class GreyboxBuilder
     {
         // Every box is laid now, so each ladder can be fitted to the floor it leads to.
         EndStaging();
-        // Map dressing stage 5: the city beyond the edge, then every building's windows fitted to it.
+        // Map dressing stage 5: the city beyond the edge, then every building's windows fitted to it; stage 6: the wear.
         Skyline();
         FitWindows();
+        Decals();
         string ladders = LadderFit.FitAll(parkour);
         AddWaves();
         if (AddsCampaign) AddCampaign();
@@ -591,7 +593,7 @@ public sealed partial class GreyboxBuilder
              "\n가림 굽기(오클루전 컬링): " + (culled ? "구웠어요. 벽과 건물 뒤의 좀비는 그리지 않아요." : "실패했어요(콘솔을 보세요). 맵은 그대로 쓸 수 있어요.") +
              "\n하늘·해·안개: " + (look == null ? "Tables/MapLook에 이 장의 줄이 없어 기본 하늘이에요."
                  : look + (lit ? " (환경광·반사를 구웠어요)" : " (환경광을 굽지 못했어요. Window > Rendering > Lighting의 Generate Lighting을 눌러 주세요)")) +
-             SurfaceReport() + DressReport());
+             SurfaceReport() + DressReport() + DecalReport());
     }
 
     // ---- Culling (the user's memo 40: "최적화, 컬링") ----

@@ -1,35 +1,35 @@
-﻿id,side,top,tile,topTile,tint,topTint,roughness,metallic,normal,ao,variation,variationSize,boxes,windows
-#설명 (맵의 벽·바닥 재질. 맵 꾸미기 4단계. 회색 맵 빌더의 상자에 실제 재질을 입힌다. id = 칸 이름(Concrete·Road·Metal·Wood / 타워는 Wall·Floor·Trim·Steel). '씬 이름.칸'이 있으면 그 맵은 그 줄을 쓰고 없으면 칸 이름 줄을 쓴다. 텍스처는 위로 보는 면(바닥·지붕)과 나머지 면(벽·천장)에 따로 m 단위로 입힌다. 줄이 없거나 텍스처가 없으면 그 칸은 예전 회색 그대로. 고친 뒤에는 맵을 다시 지어야 바뀐다),옆면(벽·천장) 텍스처: Art/Textures/Surfaces 안의 폴더 이름(ambientCG 세트: 색·NormalGL·거칠기는 꼭 있어야 하고 AO는 있으면 쓴다),윗면(바닥·지붕·물건 윗면) 텍스처 폴더. 비우면 옆면과 같다,옆면 텍스처 한 장이 덮는 길이(m). 실물 크기에 맞춘다(벽돌 한 장 7.5 cm 높이 × 14줄 ≈ 1.1 m),윗면 텍스처 한 장이 덮는 길이(m). 비우면 tile,옆면 색 곱하기(#rrggbb. 비우면 흰색 = 텍스처 그대로),윗면 색 곱하기. 비우면 흰색,거칠기 배수(1 = 텍스처 그대로. 작을수록 매끈하고 반사가 선명하다),금속성(0~1). 칠한 면·돌·나무는 0,노멀 세기(1 = 텍스처 그대로),AO 세기(0~1). AO 텍스처가 없는 세트는 상관없다,큰 얼룩(0~0.5): 몇 m 넓이로 밝기가 이만큼 오르내려 긴 벽에서 같은 무늬가 되풀이되는 티를 지운다,큰 얼룩 하나의 넓이(m),이 모습을 입을 상자 이름의 앞부분(;로 나눔. 이 맵의 줄만. 긴 것이 먼저. 재질을 따로 받지 않은 상자만. B4 서벽이면 B4 서벽 2로 시작하는 상자도),벽에 그리는 창(MapWindows 줄 id. 비우면 창 없음)
-Concrete,Concrete034,Concrete047A,3,3,,,1,0,1,1,0.12,9
-Road,Concrete034,Asphalt031,3,3,,,1,0,1,1,0.15,12
-Metal,Metal063,,2,,,,1,0.6,1,1,0.1,6
+﻿id,side,top,tile,topTile,tint,topTint,roughness,metallic,normal,ao,variation,variationSize,boxes,windows,wallDecals,topDecals
+#설명 (맵의 벽·바닥 재질. 맵 꾸미기 4단계. 회색 맵 빌더의 상자에 실제 재질을 입힌다. id = 칸 이름(Concrete·Road·Metal·Wood / 타워는 Wall·Floor·Trim·Steel). '씬 이름.칸'이 있으면 그 맵은 그 줄을 쓰고 없으면 칸 이름 줄을 쓴다. 텍스처는 위로 보는 면(바닥·지붕)과 나머지 면(벽·천장)에 따로 m 단위로 입힌다. 줄이 없거나 텍스처가 없으면 그 칸은 예전 회색 그대로. 고친 뒤에는 맵을 다시 지어야 바뀐다),옆면(벽·천장) 텍스처: Art/Textures/Surfaces 안의 폴더 이름(ambientCG 세트: 색·NormalGL·거칠기는 꼭 있어야 하고 AO는 있으면 쓴다),윗면(바닥·지붕·물건 윗면) 텍스처 폴더. 비우면 옆면과 같다,옆면 텍스처 한 장이 덮는 길이(m). 실물 크기에 맞춘다(벽돌 한 장 7.5 cm 높이 × 14줄 ≈ 1.1 m),윗면 텍스처 한 장이 덮는 길이(m). 비우면 tile,옆면 색 곱하기(#rrggbb. 비우면 흰색 = 텍스처 그대로),윗면 색 곱하기. 비우면 흰색,거칠기 배수(1 = 텍스처 그대로. 작을수록 매끈하고 반사가 선명하다),금속성(0~1). 칠한 면·돌·나무는 0,노멀 세기(1 = 텍스처 그대로),AO 세기(0~1). AO 텍스처가 없는 세트는 상관없다,큰 얼룩(0~0.5): 몇 m 넓이로 밝기가 이만큼 오르내려 긴 벽에서 같은 무늬가 되풀이되는 티를 지운다,큰 얼룩 하나의 넓이(m),이 모습을 입을 상자 이름의 앞부분(;로 나눔. 이 맵의 줄만. 긴 것이 먼저. 재질을 따로 받지 않은 상자만. B4 서벽이면 B4 서벽 2로 시작하는 상자도),벽에 그리는 창(MapWindows 줄 id. 비우면 창 없음),벽에 놓는 데칼(MapDecals group*벽 1 m당 수. ;로 나눔. 이 모습을 입은 상자의 옆면마다. 예 leak*0.08;splash*0.06),윗면에 놓는 데칼(MapDecals group*1㎡당 수. 지붕·길·바닥)
+Concrete,Concrete034,Concrete047A,3,3,,,1,0,1,1,0.12,9,,,leak*0.05;splash*0.06;wallcrack*0.025,concretecrack*0.01;grime*0.005;leaves*0.004;mud*0.003
+Road,Concrete034,Asphalt031,3,3,,,1,0,1,1,0.15,12,,,,oil*0.006;asphaltcrack*0.01;grime*0.002;leaves*0.003;mud*0.002
+Metal,Metal063,,2,,,,1,0.6,1,1,0.1,6,,,leak*0.04,
 Wood,Planks037A,,1.2,,,,1,0,1,1,0.1,6
-Ch2_Overpass.Road,Concrete034,Road012A,3,4,,,1,0,1,1,0.15,12
-Ch3_Subway.Concrete,Tiles040,Tiles141,1,1.2,#f2efe8,,1,0,1,1,0.1,7
-Ch4_Airport.Concrete,PaintedPlaster017,Marble012,3,2.5,,,1,0,1,1,0.08,9
+Ch2_Overpass.Road,Concrete034,Road012A,3,4,,,1,0,1,1,0.15,12,,,leak*0.04,oil*0.008;asphaltcrack*0.012;leaves*0.002;mud*0.002
+Ch3_Subway.Concrete,Tiles040,Tiles141,1,1.2,#f2efe8,,1,0,1,1,0.1,7,,,leak*0.04;splash*0.05;wallcrack*0.02,grime*0.008;concretecrack*0.005;mud*0.003
+Ch4_Airport.Concrete,PaintedPlaster017,Marble012,3,2.5,,,1,0,1,1,0.08,9,,,splash*0.02;wallcrack*0.008,grime*0.003;concretecrack*0.002
 Ch4_Airport.Metal,Metal041B,,2.5,,,,1,0.4,1,1,0.1,8
-EnfiladeTower.Wall,Concrete034,,3,,#474a52,,1,0,1,1,0.14,9
-EnfiladeTower.Floor,Terrazzo013,,1.6,,#2a2b30,,0.85,0,1,1,0.08,9
+EnfiladeTower.Wall,Concrete034,,3,,#474a52,,1,0,1,1,0.14,9,,,wallcrack*0.01,
+EnfiladeTower.Floor,Terrazzo013,,1.6,,#2a2b30,,0.85,0,1,1,0.08,9,,,,grime*0.003;concretecrack*0.003
 EnfiladeTower.Trim,Metal063,,2,,#2c2d31,,1,0.6,1,1,0.06,6
 EnfiladeTower.Steel,Metal063,,2,,#b0b4bc,,1,0.7,1,1,0.06,6
-Hub.HallWall,CorrugatedSteel005,Concrete047A,2.5,3,#b4b8bc,,1,0.3,1,1,0.1,8,서쪽 벽;동쪽 벽;북쪽 벽;남쪽 벽;사격장 입구 위;북쪽 문 위,
+Hub.HallWall,CorrugatedSteel005,Concrete047A,2.5,3,#b4b8bc,,1,0.3,1,1,0.1,8,서쪽 벽;동쪽 벽;북쪽 벽;남쪽 벽;사격장 입구 위;북쪽 문 위,,leak*0.06;splash*0.03;wallcrack*0.02,
 Hub.Roof,CorrugatedSteel005,Concrete047A,2.5,3,#9a9ea3,,1,0.3,1,1,0.1,8,지붕,
 Hub.Catwalk,Metal063,MetalWalkway013,2,1.5,#3a3d42,,1,0.6,1,1,0.06,6,캣워크,
 Hub.Shelter,CorrugatedSteel005,Concrete047A,2.5,3,#8f9398,,1,0.3,1,1,0.08,8,사대 지붕,
-Hub.RangeWall,Concrete034,Concrete047A,3,3,#bdb9b0,,1,0,1,1,0.14,9,사격장 서쪽 벽;사격장 동쪽 벽,
-Hub.RangeFloor,Gravel043,Gravel043,2,2,,,1,0,1,1,0.12,10,사격장 바닥,
+Hub.RangeWall,Concrete034,Concrete047A,3,3,#bdb9b0,,1,0,1,1,0.14,9,사격장 서쪽 벽;사격장 동쪽 벽,,leak*0.06;splash*0.08;wallcrack*0.02,
+Hub.RangeFloor,Gravel043,Gravel043,2,2,,,1,0,1,1,0.12,10,사격장 바닥,,,mud*0.003;leaves*0.002
 Hub.Berm,Ground110,Ground110,3,3,,,1,0,1,1,0.15,10,사격장 뒤 둔덕,
-Ch1_Rooftops.B1,PaintedPlaster017,Concrete047A,2.5,3,#e3d5b8,,1,0,1,1,0.12,9,B1;시작 안전가옥,Flat
-Ch1_Rooftops.B2,Bricks105,Concrete047A,1.1,3,,,1,0,1,1,0.14,9,B2,Flat
-Ch1_Rooftops.B3,PaintedPlaster017,Concrete047A,2.5,3,#b7c6d3,,1,0,1,1,0.12,9,B3,Flat
-Ch1_Rooftops.B4Wall,Bricks105,Concrete047A,1.1,3,#c98f7c,,1,0,1,1,0.14,9,B4 서벽;B4 남벽;B4 북벽;B4 동벽;B4 뒷문 위,Flat
-Ch1_Rooftops.B4,Plaster007,Concrete047A,3,3,,,1,0,1,1,0.1,9,B4,
-Ch1_Rooftops.Annex,Concrete034,Concrete047A,3,3,#d9d6cf,,1,0,1,1,0.12,9,B4 별관,Flat
-Ch1_Rooftops.B5,PaintedPlaster017,Concrete047A,2.5,3,#d8b5a0,,1,0,1,1,0.12,9,B5,Flat
-Ch1_Rooftops.B6,Bricks105,Concrete047A,1.1,3,#b9a48a,,1,0,1,1,0.14,9,B6,Flat
-Ch1_Rooftops.B7,CorrugatedSteel007A,Concrete047A,2.5,3,,,1,0.3,1,1,0.1,8,B7,
-Ch1_Rooftops.Shop,PaintedPlaster017,Tiles141,2.5,1.2,#efede6,,1,0,1,1,0.08,9,편의점,
-Ch1_Rooftops.Site,Concrete034,Concrete047A,3,3,#cfcac0,,1,0,1,1,0.16,8,공사 중 건물,
+Ch1_Rooftops.B1,PaintedPlaster017,Concrete047A,2.5,3,#e3d5b8,,1,0,1,1,0.12,9,B1;시작 안전가옥,Flat,leak*0.09;splash*0.08;wallcrack*0.03,leaves*0.006;concretecrack*0.008;mud*0.004;grime*0.003
+Ch1_Rooftops.B2,Bricks105,Concrete047A,1.1,3,,,1,0,1,1,0.14,9,B2,Flat,leak*0.08;splash*0.08;wallcrack*0.015,leaves*0.006;concretecrack*0.008;mud*0.004;grime*0.003
+Ch1_Rooftops.B3,PaintedPlaster017,Concrete047A,2.5,3,#b7c6d3,,1,0,1,1,0.12,9,B3,Flat,leak*0.09;splash*0.08;wallcrack*0.03,leaves*0.006;concretecrack*0.008;mud*0.004;grime*0.003
+Ch1_Rooftops.B4Wall,Bricks105,Concrete047A,1.1,3,#c98f7c,,1,0,1,1,0.14,9,B4 서벽;B4 남벽;B4 북벽;B4 동벽;B4 뒷문 위,Flat,leak*0.08;splash*0.07;wallcrack*0.015,leaves*0.006;concretecrack*0.008;mud*0.004;grime*0.003
+Ch1_Rooftops.B4,Plaster007,Concrete047A,3,3,,,1,0,1,1,0.1,9,B4,,leak*0.03;splash*0.03;wallcrack*0.03,grime*0.01;concretecrack*0.006;leaves*0.002
+Ch1_Rooftops.Annex,Concrete034,Concrete047A,3,3,#d9d6cf,,1,0,1,1,0.12,9,B4 별관,Flat,leak*0.08;splash*0.08;wallcrack*0.03,leaves*0.006;concretecrack*0.008;mud*0.004;grime*0.003
+Ch1_Rooftops.B5,PaintedPlaster017,Concrete047A,2.5,3,#d8b5a0,,1,0,1,1,0.12,9,B5,Flat,leak*0.09;splash*0.08;wallcrack*0.03,leaves*0.006;concretecrack*0.008;mud*0.004;grime*0.003
+Ch1_Rooftops.B6,Bricks105,Concrete047A,1.1,3,#b9a48a,,1,0,1,1,0.14,9,B6,Flat,leak*0.08;splash*0.08;wallcrack*0.015,leaves*0.006;concretecrack*0.008;mud*0.004;grime*0.003
+Ch1_Rooftops.B7,CorrugatedSteel007A,Concrete047A,2.5,3,,,1,0.3,1,1,0.1,8,B7,,leak*0.07;splash*0.06,leaves*0.006;concretecrack*0.008;mud*0.004;grime*0.003
+Ch1_Rooftops.Shop,PaintedPlaster017,Tiles141,2.5,1.2,#efede6,,1,0,1,1,0.08,9,편의점,,leak*0.03;splash*0.05,leaves*0.006;concretecrack*0.008;mud*0.004;grime*0.003
+Ch1_Rooftops.Site,Concrete034,Concrete047A,3,3,#cfcac0,,1,0,1,1,0.16,8,공사 중 건물,,leak*0.05;splash*0.1;wallcrack*0.04,mud*0.01;concretecrack*0.01;grime*0.004
 SkylineA,PaintedPlaster017,Concrete047A,3,3,#e0d3b6,,1,0,1,1,0.15,12,,Skyline
 SkylineB,Plaster007,Concrete047A,3,3,#cfcbc2,,1,0,1,1,0.15,12,,Skyline
 SkylineC,Concrete034,Concrete047A,3,3,#bdbab3,,1,0,1,1,0.15,12,,Skyline
