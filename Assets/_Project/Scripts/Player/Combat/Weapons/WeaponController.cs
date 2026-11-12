@@ -475,7 +475,8 @@ public sealed class WeaponController : MonoBehaviour
         // Coming out: no shot, aim or reload until it is up (Draw Duration, its draw clip on the body).
         StopInspecting();
         holstering = false;
-        switchLeft = weapon != null && weapon.Data.Category != WeaponCategory.Melee ? weapon.Data.DrawDuration : 0f;
+        // A Point's Gun Kata brings it out at once (PlayerClass.DrawFactor).
+        switchLeft = weapon != null && weapon.Data.Category != WeaponCategory.Melee ? weapon.Data.DrawDuration * PlayerClass.DrawFactor(movement) : 0f;
         savedAmmoData = weaponData;
         savedAmmo = weapon != null ? weapon.Ammo : -1;
         savedReserve = weapon != null ? weapon.ReserveAmmo : -1;
@@ -765,7 +766,7 @@ public sealed class WeaponController : MonoBehaviour
         // Fanning bucks the revolver off line with every slap of the palm.
         float fan = Runtime != null && Runtime.FireMode == WeaponFireMode.Fanning ? weaponData.FanSpread : 0f;
         CurrentSpread = (Mathf.Lerp(weaponData.HipSpread, weaponData.AdsSpread, AimBlend)
-            + (bloom + moving * weaponData.MovingSpread + fan) * loose + air * Mathf.Lerp(1f, .5f, AimBlend))
+            + (bloom + moving * weaponData.MovingSpread * PlayerClass.MovingSpreadFactor(movement) + fan) * loose + air * Mathf.Lerp(1f, .5f, AimBlend))
             * (Crouched ? weaponData.CrouchSpread : 1f);
     }
     private void UpdateCrosshair()

@@ -170,6 +170,18 @@ public static class PlayerClass
         return type.Kind == ZombieKind.Brute || type.Kind == ZombieKind.Exploder || type.Kind == ZombieKind.Charger;
     }
 
+    /// <summary>A factor on how long a gun takes to come out for <paramref name="who"/>: none at all in a Point's Gun Kata (ClassKit).</summary>
+    public static float DrawFactor(PlayerMovement who) => InKata(who) ? 0f : 1f;
+
+    /// <summary>A factor on the spread moving adds to <paramref name="who"/>'s shots: none in a Point's Gun Kata, shooting on the run.</summary>
+    public static float MovingSpreadFactor(PlayerMovement who) => InKata(who) ? 0f : 1f;
+
+    private static bool InKata(PlayerMovement who)
+    {
+        var kit = ClassKit.Local;
+        return who != null && kit != null && kit.Movement == who && kit.KataShare > 0f;
+    }
+
     /// <summary>
     /// How big a quarry a foe is to a Schießhund's bounty mark: 0 a common zombie (or the range's zombie dummy), 1 an elite
     /// (or the range's steel plate, to try the rule out on), 2 a brute or a named one. F moves the mark only onto a quarry

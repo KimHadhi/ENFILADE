@@ -300,6 +300,19 @@ public sealed class WeaponRuntime
         return true;
     }
 
+    /// <summary>
+    /// The magazine full at once without the reserve paying for it: a Point's Gun Kata, where the gun drawn comes out full
+    /// (ClassKit; the user, 2026-11-12: "장전처럼 탄약을 소모하는 게 아니라 그냥 꽉 찬 채로 나오는 게 어때? 그럼 총알 다 떨어질
+    /// 걱정 없이 시원시원하고 맛있게 쏠 수 있으니까"). Any reload under way stops.
+    /// </summary>
+    public void TopUp()
+    {
+        if (Ammo >= Data.MagazineSize) return;
+        Interrupt();
+        ForgetResume();
+        Ammo = Data.MagazineSize;
+    }
+
     /// <summary>Fill the magazine and restore at least the starting reserve, preserving bonus ammunition.</summary>
     public void RefillAmmo()
     {

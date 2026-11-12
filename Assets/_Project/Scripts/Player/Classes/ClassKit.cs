@@ -11,7 +11,9 @@ using UnityEngine;
 ///   charge: for some seconds it and every friend near hit harder and run faster (friends' PCs are told,
 ///   PlayerNetworkCombat, and each gives its own player the buff), and on every PC they glow gold while it lasts (ChargeGlow);
 /// - Point: a gun put away reloads itself in the time its own reload takes, from its reserve, so the SMG empties while
-///   the shotgun refills and back (Killing Floor 2's gunslinger feel, the user's "화력이 끊기지 않고");
+///   the shotgun refills and back (Killing Floor 2's gunslinger feel, the user's "화력이 끊기지 않고"). Its class key is
+///   the Gun Kata: for some seconds a gun comes out at once and full, its reserve untouched, and running doesn't spread
+///   its shots (the user's solo all-rounder who can run the gauntlet alone, 2026-11-12);
 /// - Ghost (stage 2; the user's design, with the Headhunter and Deadeye of their old class memo): a headshot adds a
 ///   Head Hunter stack, a shot into a body takes one away and any hurt taken loses them all, and every stack makes each
 ///   shot hit harder, compounding, so a steady hand grows into the elite killer of the late game whatever gun it holds.
@@ -91,6 +93,8 @@ public sealed class ClassKit : MonoBehaviour
     private float tauntUntil, tauntTotal = 1f, tauntReadyAt, tauntWait = 1f;
     // Schießhund: when its duel may be called again, and how long that wait is.
     private float duelReadyAt, duelWait = 1f;
+    // Point: when its Gun Kata under way ends and how long it lasts; when it may be used again and how long that wait is.
+    private float kataUntil, kataTotal = 1f, kataReadyAt, kataWait = 1f;
     // Schießhund: Desperado rounds and the points toward the next; Return Back's stacks and when they go; when the last
     // bounty came; and the bounty a Desperado round was just put in the head of, for its BOUNTY.
     private int bountyPoints, returnStacks;
@@ -160,6 +164,11 @@ public sealed class ClassKit : MonoBehaviour
     public bool DuelReady => PlayerClass.Is(PlayerClass.Schiesshund) && Time.time >= duelReadyAt;
     public float DuelWait => Mathf.Max(0f, duelReadyAt - Time.time);
     public float DuelWaitShare => Mathf.Clamp01(DuelWait / duelWait);
+    /// <summary>A Point whose Gun Kata may be used now; seconds until it may (0: now); how much of one under way is left (0: none).</summary>
+    public bool KataReady => PlayerClass.Is(PlayerClass.Point) && Time.time >= kataReadyAt;
+    public float KataWait => Mathf.Max(0f, kataReadyAt - Time.time);
+    public float KataShare => kataUntil > Time.time ? Mathf.Clamp01((kataUntil - Time.time) / kataTotal) : 0f;
+
     /// <summary>How much of this player's duel under way is left, 0 to 1 (0: none).</summary>
     public float DuelShare => HoundDuel.Of(movement) is HoundDuel duel ? duel.Share : 0f;
 
@@ -302,6 +311,9 @@ public sealed class ClassKit : MonoBehaviour
         duelReadyAt = 0f;
         duelWait = 1f;
         HoundDuel.End(movement);
+        // Point: its Gun Kata ready now, none under way.
+        kataUntil = kataReadyAt = 0f;
+        kataTotal = kataWait = 1f;
         // Schießhund: no points toward a round, no Return Back, no Desperado shot on its way (its rounds come with its guns).
         bountyPoints = returnStacks = 0;
         returnUntil = 0f;
@@ -339,6 +351,12 @@ public sealed class ClassKit : MonoBehaviour
         {
             drawnSlot = slots.SelectedSlot;
             drawnAt = Time.time;
+            // In a Point's Gun Kata the gun drawn comes out full, its reserve untouched.
+            if (KataShare > 0f && drawnSlot >= 0 && drawnSlot < 2)
+            {
+                var gun = slots.GetWeapon(drawnSlot) != null ? slots.GetRuntime(drawnSlot) : null;
+                if (gun != null) { gun.TopUp(); slots.NotifyAmmo(); }
+            }
         }
         Ebb();
         if (PlayerClass.Is(PlayerClass.Point)) ReloadAside();
@@ -447,6 +465,7 @@ public sealed class ClassKit : MonoBehaviour
         if (PlayerClass.Is(PlayerClass.Knight)) { Taunt(); return; }
         if (PlayerClass.Is(PlayerClass.Detente) && detente != null) { detente.Inject(); return; }
         if (PlayerClass.Is(PlayerClass.Schiesshund)) { Duel(); return; }
+        if (PlayerClass.Is(PlayerClass.Point)) { GunKata(); return; }
         // No ability on the key for this class (a Point's and a Ghost's are always on; a Support's is SupportKit's), or not
         // built yet.
         KitSound.Play(KitSound.Cue.Refuse, .35f);
@@ -647,6 +666,27 @@ public sealed class ClassKit : MonoBehaviour
         // The Desperado's own kill on this screen too: BOUNTY, the counter's banner at its most in the mark's teal.
         if (!TryGetComponent(out CounterBanner banner)) banner = gameObject.AddComponent<CounterBanner>();
         banner.Play(.95f, CounterBanner.Grades - 1, "BOUNTY", PingMarks.BountyColor);
+    }
+
+    // ---- Point: the Gun Kata ----
+
+    // The class key: for some seconds a gun comes out at once and full (its reserve untouched), and running doesn't
+    // spread its shots (WeaponController asks PlayerClass.DrawFactor and MovingSpreadFactor). Refused while it waits.
+    private void GunKata()
+    {
+        if (Time.time < kataReadyAt) { KitSound.Play(KitSound.Cue.Refuse, .5f); return; }
+        kataTotal = Mathf.Max(.5f, PlayerClass.Ability(PointRow, "kataSeconds", 8f));
+        kataWait = Mathf.Max(kataTotal, PlayerClass.Ability(PointRow, "kataCooldown", 35f));
+        kataUntil = Time.time + kataTotal;
+        kataReadyAt = Time.time + kataWait;
+        // The gun in hand comes up full too, as if just drawn.
+        if (slots != null && slots.SelectedSlot >= 0 && slots.SelectedSlot < 2)
+        {
+            var gun = slots.GetWeapon(slots.SelectedSlot) != null ? slots.GetRuntime(slots.SelectedSlot) : null;
+            if (gun != null) { gun.TopUp(); slots.NotifyAmmo(); }
+        }
+        KitSound.Play(KitSound.Cue.Charge, .7f);
+        AlertHUD.Self(Texts.Get("class.point.kata.self"));
     }
 
     // ---- Schießhund: the duel ----

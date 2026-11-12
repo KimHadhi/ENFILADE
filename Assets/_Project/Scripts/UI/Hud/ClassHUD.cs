@@ -82,13 +82,13 @@ public sealed class ClassHUD : MonoBehaviour
             return;
         }
         // A Schießhund's duel under way comes before its Return Back.
-        float taunt = kit.TauntShare, duel = kit.DuelShare, back = kit.ReturnShare;
-        float share = taunt > 0f ? taunt : duel > 0f ? duel : back > 0f ? back : kit.ChargeShare;
+        float taunt = kit.TauntShare, duel = kit.DuelShare, back = kit.ReturnShare, kata = kit.KataShare;
+        float share = taunt > 0f ? taunt : kata > 0f ? kata : duel > 0f ? duel : back > 0f ? back : kit.ChargeShare;
         chargeBar.gameObject.SetActive(share > 0f);
         if (share <= 0f) return;
         chargeFill.rectTransform.anchorMax = new Vector2(share, 1f);
         chargeFill.color = taunt <= 0f && (duel > 0f || back > 0f) ? PingMarks.BountyColor : KitStyle.Accent;
-        string word = taunt > 0f ? Texts.Get("class.hud.taunt") : duel > 0f ? Texts.Get("class.hud.duel")
+        string word = taunt > 0f ? Texts.Get("class.hud.taunt") : kata > 0f ? Texts.Get("class.hud.kata") : duel > 0f ? Texts.Get("class.hud.duel")
             : back > 0f ? Texts.Format("class.hud.return", kit.ReturnStacks) : Texts.Get("class.hud.charge");
         if (barWord.text != word) barWord.text = word;
     }
@@ -109,7 +109,7 @@ public sealed class ClassHUD : MonoBehaviour
         keyRect.gameObject.SetActive(false);
         deadeye.gameObject.SetActive(false);
         Word(Texts.Get(knight ? "class.hud.taunt" : detente ? "class.hud.inject" : support ? "class.hud.barricade" : hound ? "class.hud.duel"
-            : "class.hud.charge"), KitStyle.Accent);
+            : point ? "class.hud.kata" : "class.hud.charge"), KitStyle.Accent);
         note.text = info != null && !info.Ready ? Texts.Get("class.hud.later") : "";
         // A Détente moves the note past its pips; every other class has it back in its place.
         ((RectTransform)note.rectTransform.parent).anchoredPosition = new Vector2(128f, 0f);
@@ -306,6 +306,12 @@ public sealed class ClassHUD : MonoBehaviour
             float flash = Mathf.Clamp01(1f - since / .5f);
             slotBacks[slot].color = Color.Lerp(KitStyle.With(KitStyle.Ice, .12f), KitStyle.With(KitStyle.Accent, .85f), flash);
         }
+        // The Gun Kata on the class key: the prompt while it may be used, the seconds left to wait past the guns while not.
+        bool ready = kit.KataReady;
+        KeyPrompt(ready);
+        string wait = ready ? "" : Texts.Format("class.hud.kata_wait", Mathf.CeilToInt(kit.KataWait));
+        if (note.text != wait) note.text = wait;
+        ((RectTransform)note.rectTransform.parent).anchoredPosition = new Vector2(128f + 160f + 6f, 0f);
     }
 
     private string KeyName()
