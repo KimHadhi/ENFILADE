@@ -10,7 +10,7 @@
 # weapons; only characters use the project's 0.025). Art/Models imports bake the axis conversion (ModelImportRules),
 # which flips Z where Unity's own conversion flips X, so in Unity the tip lies along -Z: the model comes in a half turn
 # about Y from the game's frame (measured on the Desperado's prefab, 2026-11-12), and whatever places it turns it
-# back (Editor/Import/DesperadoSetup.cs).
+# back (Editor/Guns/DesperadoSetup.cs).
 # Textures come from the addon's VMT files, not from the importer's node trees: $basetexture -> <material>.png with
 # $color2 baked in (masked by the base alpha when $blendtintbybasealpha is set), $bumpmap -> <material>_normal.png with
 # green flipped (Source normal maps are DirectX-style, Unity's are OpenGL-style). Both are capped at max_texture.

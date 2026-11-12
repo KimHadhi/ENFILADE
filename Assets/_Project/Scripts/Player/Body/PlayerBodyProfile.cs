@@ -5,7 +5,7 @@ using UnityEngine;
 /// <summary>
 /// Which character the player is and which humanoid clips its body may play. Lives at
 /// Resources/Characters/PlayerBody and is filled automatically when models and animations are imported
-/// (Editor/Import/PlayerBodyProfileBuilder); swap the character by changing Model. PlayerBody picks clips by name.
+/// (Editor/Characters/PlayerBodyProfileBuilder); swap the character by changing Model. PlayerBody picks clips by name.
 /// </summary>
 [CreateAssetMenu(fileName = "PlayerBody", menuName = "ENFILADE/Player/Body Profile")]
 public sealed class PlayerBodyProfile : ScriptableObject

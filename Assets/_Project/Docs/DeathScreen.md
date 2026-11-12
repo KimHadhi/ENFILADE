@@ -47,10 +47,10 @@
 
 ## 파일
 
-- [DeathScreen](../Scripts/UI/Hud/DeathScreen.cs): 언제 뜨고 넘어가나, 무엇에 죽었나, 세상 색·흐림, 먹먹함, 효과음, 미리 보기와 `/death`, 로딩 화면 뒤 미리 만들기(`DeathScreen.Prepare`, SceneWarmup).
-- [DeathCard](../Scripts/UI/Hud/DeathCard.cs): 카드와 막의 캔버스, 조각 자리와 기울기, 들어오고 물러나는 움직임.
-- [DeathCardGraphic](../Scripts/UI/Hud/DeathCardGraphic.cs): 제목 판(사선·삼각·조각)·이유 띠·숫자 판 모양.
-- [DeathFilmGraphic](../Scripts/UI/Hud/DeathFilmGraphic.cs): 먹빛 가장자리와 얼룩, 피.
+- [DeathScreen](../Scripts/UI/Hud/Death/DeathScreen.cs): 언제 뜨고 넘어가나, 무엇에 죽었나, 세상 색·흐림, 먹먹함, 효과음, 미리 보기와 `/death`, 로딩 화면 뒤 미리 만들기(`DeathScreen.Prepare`, SceneWarmup).
+- [DeathCard](../Scripts/UI/Hud/Death/DeathCard.cs): 카드와 막의 캔버스, 조각 자리와 기울기, 들어오고 물러나는 움직임.
+- [DeathCardGraphic](../Scripts/UI/Hud/Death/DeathCardGraphic.cs): 제목 판(사선·삼각·조각)·이유 띠·숫자 판 모양.
+- [DeathFilmGraphic](../Scripts/UI/Hud/Death/DeathFilmGraphic.cs): 먹빛 가장자리와 얼룩, 피.
 - [DeathSting](../Scripts/Audio/DeathSting.cs): 효과음을 만드는 곳.
 - 걸어 둔 곳(한두 줄): PlayerMovement(붙이기), PlayerLifeHUD(가운데 글자 비키기), PlayerLife(`WipeLeft`), GameSettings·SettingsMenuView(설정), GameCommands(`/death`), SceneWarmup(미리 만들기), FrameOrder(`DeathScreen` 차례: 관전 카메라와 느린 화면 먹먹함 다음).
 

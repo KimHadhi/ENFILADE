@@ -105,7 +105,7 @@ public sealed class SoundBank : ScriptableObject
     private void OnDisable() => GameTables.Reloaded -= settings.Clear;
 
 #if UNITY_EDITOR
-    /// <summary>Editor import step (Editor/Import/SoundBankBuilder): replace the entries with the folders' clips.</summary>
+    /// <summary>Editor import step (Editor/Audio/SoundBankBuilder): replace the entries with the folders' clips.</summary>
     public bool EditorRefresh(string bankId, List<Entry> folders)
     {
         bool changed = id != bankId || entries.Count != folders.Count;

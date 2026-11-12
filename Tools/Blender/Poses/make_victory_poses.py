@@ -13,7 +13,7 @@ as its own FBX (armature only; Y up, -Z forward, bone axes Y and X, and the unit
 ("FBX All"): the way Mayo's own FBX was written, so her bones and their frames match hers exactly; Blender's own default
 scale put the armature at 100 in centimetres, and Unity read her legs as mismatched) to Assets/_Project/Resources/Poses,
 where the editor imports it as a
-humanoid clip on Mayo's avatar (Editor/Import/PoseImport.cs) and the show finds it (ResultsMannequin).
+humanoid clip on Mayo's avatar (Editor/Characters/PoseImport.cs) and the show finds it (ResultsMannequin).
 Once the workspace exists, a plain run never rebuilds it: touch-ups live there. It exports the workspace's poses as they
 are (unless --no-export); --fresh throws the touch-ups away and starts again from the recipes.
 pose_tools.py loads this file as a module for the recipes, the rig and the export.

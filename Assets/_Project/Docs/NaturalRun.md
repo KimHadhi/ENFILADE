@@ -1,6 +1,6 @@
 # 사람처럼 걷고 달리기 (보폭 맞춤)
 
-2026-11-12 사용자: "달리는 거 모든 애니메이션이 되게 우스꽝스럽고 초보 같고 급하던데 … 너무 부자연스럽고 인간적이지 않은데." 0.8.260에서 고쳤다. 코드는 [PlayerBody.Locomotion](../Scripts/Player/Body/PlayerBody.Locomotion.cs), [GaitClips](../Scripts/Player/Body/GaitClips.cs), [FootPlanting](../Scripts/Player/Body/FootPlanting.cs)의 `Stride`, 숫자는 [Player.csv](../Resources/Tables/Player.csv)의 `Body.gait*`·`hipTurn*`·`runCalm*`.
+2026-11-12 사용자: "달리는 거 모든 애니메이션이 되게 우스꽝스럽고 초보 같고 급하던데 … 너무 부자연스럽고 인간적이지 않은데." 0.8.260에서 고쳤다. 코드는 [PlayerBody.Locomotion](../Scripts/Player/Body/PlayerBody.Locomotion.cs), [GaitClips](../Scripts/Player/Body/Feet/GaitClips.cs), [FootPlanting](../Scripts/Player/Body/Feet/FootPlanting.cs)의 `Stride`, 숫자는 [Player.csv](../Resources/Tables/Player.csv)의 `Body.gait*`·`hipTurn*`·`runCalm*`.
 
 ## 원인 (잰 값)
 
@@ -26,7 +26,7 @@
 
 ## 지금 하는 것
 
-- **클립을 몸에서 잰다**([GaitClips](../Scripts/Player/Body/GaitClips.cs)): 몸이 생길 때 걸음 클립을 그 몸에 직접 재생해 보고 발이 몸을 나르는 속도·방향, 몇 걸음짜리인지, 왼발을 딛는 때를 잰다. 캐릭터마다·클립마다 숫자를 적지 않는다. 모드로 넣은 캐릭터나 새로 산 모캡도 저절로 맞는다. 한 모델의 한 클립은 한 번만 잰다.
+- **클립을 몸에서 잰다**([GaitClips](../Scripts/Player/Body/Feet/GaitClips.cs)): 몸이 생길 때 걸음 클립을 그 몸에 직접 재생해 보고 발이 몸을 나르는 속도·방향, 몇 걸음짜리인지, 왼발을 딛는 때를 잰다. 캐릭터마다·클립마다 숫자를 적지 않는다. 모드로 넣은 캐릭터나 새로 산 모캡도 저절로 맞는다. 한 모델의 한 클립은 한 번만 잰다.
 - **속도로 클립을 고른다**: `Body.forwardMoves`·`rightMoves`·`backMoves`·`leftMoves`의 클립을 잰 속도 순으로 늘어놓고 지금 속도 양옆 둘을 섞는다(예전 `walk`·`run`·`sprint` 단계를 대신한다). 대각선은 두 방향을, 섞인 발이 정확히 가는 쪽으로 밀리게 나눈다.
 - **한 박자**: 모든 걸음 클립이 같은 걸음을 공유한다. 걸음마다 왼발을 딛는 때가 0이고, 두 걸음 이상 든 클립은 그 걸음들을 차례로 돈다. 그래서 `cycleOffset`(손으로 맞춘 값)은 0이다.
 - **사람의 박자 + 보폭 늘리기**: 지금 속도에서 사람이 딛는 박자(`Body.gaitCadence`, 다리 길이 `gaitLeg`에 맞춰 짧은 다리는 더 자주)를 따라 클립을 `gaitRate`(0.85~1.2배) 안에서 빨리·느리게 돌리고, 남는 만큼 보폭을 `gaitStretch`(0.8~1.3배) 안에서 늘린다. 보폭은 발 IK가 늘린다: 발마다 엉덩이 앞뒤 거리를 가는 쪽으로 늘려 딛게 하고, 다리가 닿지 않으면 엉덩이를 조금(`gaitStretchDrop`, 다리의 8%까지) 내린다. 늘린 발 밑의 땅을 찾으므로 계단·경사에서도 같다. 그래서 디딘 발은 그 자리에 있다. 1.3배를 넘으면 무릎이 쭉 펴져 웅크려 달리는 것처럼 보여서 거기서 멈추고(블렌더로 잰 값: 1.3배에 엉덩이 3~7cm), 그래도 모자라면 박자가 메운다. 박자 한계까지 넘으면 남는 만큼만 미끄러진다.

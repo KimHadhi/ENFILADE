@@ -2,7 +2,7 @@
 
 [전투 제작 안내](CombatFoundationGuide.md) · [검증 안내](ValidationGuide.md)
 
-`PlayerMovement`가 초기화할 때 [PlayerDamageFeedback](../Scripts/Player/Combat/PlayerDamageFeedback.cs)을 자동 연결한다. 기존 씬과 플레이어 프리팹을 다시 설치할 필요 없이 실제 `PlayerDamageReceiver.ReceiveHit`의 `Damaged` 결과에 반응한다. 회피·가드·패링·무적·중복 공격에는 표시하지 않는다. 실드로 전부 흡수한 타격도 피격 효과가 나오며, 빈사 판정에는 HP만 사용한다.
+`PlayerMovement`가 초기화할 때 [PlayerDamageFeedback](../Scripts/Player/Life/PlayerDamageFeedback.cs)을 자동 연결한다. 기존 씬과 플레이어 프리팹을 다시 설치할 필요 없이 실제 `PlayerDamageReceiver.ReceiveHit`의 `Damaged` 결과에 반응한다. 회피·가드·패링·무적·중복 공격에는 표시하지 않는다. 실드로 전부 흡수한 타격도 피격 효과가 나오며, 빈사 판정에는 HP만 사용한다.
 
 ## 화면 동작
 

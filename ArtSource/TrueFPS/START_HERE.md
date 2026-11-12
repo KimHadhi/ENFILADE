@@ -111,7 +111,7 @@ Bone Collections의 `03 Arms`, `04 Legs`, `05 Fingers`가 보이는 조작 뼈�
 ## 6. Unity 게임에 넣기
 
 1. FBX와 함께 생성된 `.clips.csv`를 `Assets/_Project/Art/Animations/Custom/`에 복사한다.
-2. Unity가 알아서 Humanoid로, 기존 카즈사 모델의 **KazusaBandAvatar**를 복사해(Copy From Other Avatar) 계층을 유지한 채 가져간다(`Art/Animations/Custom`과 `Art/Animations/Shove`, [ModelImportRules](../../Assets/_Project/Editor/Import/ModelImportRules.cs)). 다른 폴더에 넣었다면 직접: FBX 선택 → **Model → Preserve Hierarchy** 켜기, **Rig → Animation Type: Humanoid → Avatar Definition: Copy From Other Avatar → Source: KazusaBandAvatar**(`Assets/_Project/Art/Models/Characters/KazusaBand/KazusaBand.fbx`) → Apply. Preserve Hierarchy가 꺼져 있으면 `Parent for 'Center' differs` 오류가 난다. 애니메이션의 첫 자세로 새 Avatar를 만들지 않는다.
+2. Unity가 알아서 Humanoid로, 기존 카즈사 모델의 **KazusaBandAvatar**를 복사해(Copy From Other Avatar) 계층을 유지한 채 가져간다(`Art/Animations/Custom`과 `Art/Animations/Shove`, [ModelImportRules](../../Assets/_Project/Editor/Models/ModelImportRules.cs)). 다른 폴더에 넣었다면 직접: FBX 선택 → **Model → Preserve Hierarchy** 켜기, **Rig → Animation Type: Humanoid → Avatar Definition: Copy From Other Avatar → Source: KazusaBandAvatar**(`Assets/_Project/Art/Models/Characters/KazusaBand/KazusaBand.fbx`) → Apply. Preserve Hierarchy가 꺼져 있으면 `Parent for 'Center' differs` 오류가 난다. 애니메이션의 첫 자세로 새 Avatar를 만들지 않는다.
 3. FBX 옆의 `enf_reach.clips.csv`를 확인한다. 없다면 다음 내용으로 만든다. `clip`은 파일 이름이 아니라 **Blender Action 이름**과 같아야 한다.
 
 ```csv

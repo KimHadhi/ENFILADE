@@ -69,7 +69,7 @@
 - **글 벽 없이 가르치기**: 나타날 때 경고 띠가 한 줄로 방법과 이유를 말하고(Texts.csv `hud.alert.brute`: 「거구 — 제 무게에 무릎이 약하다. 다리를 쏴 쓰러뜨리고 머리를 쏴라」), 1.2초 뒤 거구에 가장 가까운 플레이어가 「거구다! 다리를 쏴!」(Callouts.csv `zombie.brute`) 하고 외친다. 쓰러지면 위 경고 띠와 「머리를 쏴!」(`zombie.brute.down`, 조건 `crawl:brute`). 콜아웃 휠의 좀비 칸도 거구가 서 있으면 다리, 기면 머리를 말한다. 저절로 외치기는 설정 → 조작에서 끌 수 있다. 목소리는 Windows TTS 임시(`Tools/Audio/callout_voices.py zombie.brute zombie.brute.down`).
 - **멀티플레이**: 피해는 호스트가 정한다. 다리 마모와 자르기는 모든 PC가 같은 피격(CombatDamageEvents, 피격마다 PC마다 한 번)으로 똑같이 세므로(ZombieGore) 금 소리·절뚝임·쓰러짐 연출·약점 빛이 모든 PC에 보인다. 머리 배율은 쏜 PC의 예측과 호스트가 같은 기준(기는 중인지)으로 계산하고, 넘어지는 것은 예전처럼 호스트가 걸고 다른 PC가 따라간다. 느려짐은 호스트의 걸음만 의미가 있다. 늦게 들어온 PC는 이미 기는 거구를 기는 채로(약점 빛과 함께) 본다.
 - **시험**: `/spawn brute`. 다리만 쏴서 금 소리 → 절뚝임 → 쓰러짐을 보고, 기는 머리에 MX16A4로 몇 발이 드는지 센다. `/hitbox`로 머리(빨강)와 다리 피격 상자를 볼 수 있다.
-- **바꾸는 곳**: 피해 수치는 ZombieKinds.csv(`legBreak`·`limpPace`·`crawlHead`), 연출은 ZombieLegs.csv, 소리는 SoundCues.csv `Brute/*`, 문구는 Texts.csv `hud.alert.brute`·`hud.alert.brute.down`과 Callouts.csv. 코드: [ZombieBody.Legs](../Scripts/Enemies/ZombieBody.Legs.cs), [ZombieGore](../Scripts/Enemies/Gore/ZombieGore.cs) `LegWorn`, [EnemyHealth](../Scripts/Enemies/EnemyHealth.cs) `TakenScale`, [ZombieType](../Scripts/Enemies/ZombieType.cs) `Limp`·`WeakHead`. 다른 종류(돌진 좀비 등)도 같은 열을 채우면 같은 규칙을 따른다(쓰러질 때의 경고 띠 문구는 지금 거구의 것).
+- **바꾸는 곳**: 피해 수치는 ZombieKinds.csv(`legBreak`·`limpPace`·`crawlHead`), 연출은 ZombieLegs.csv, 소리는 SoundCues.csv `Brute/*`, 문구는 Texts.csv `hud.alert.brute`·`hud.alert.brute.down`과 Callouts.csv. 코드: [ZombieBody.Legs](../Scripts/Enemies/Body/ZombieBody.Legs.cs), [ZombieGore](../Scripts/Enemies/Gore/ZombieGore.cs) `LegWorn`, [EnemyHealth](../Scripts/Enemies/EnemyHealth.cs) `TakenScale`, [ZombieType](../Scripts/Enemies/ZombieType.cs) `Limp`·`WeakHead`. 다른 종류(돌진 좀비 등)도 같은 열을 채우면 같은 규칙을 따른다(쓰러질 때의 경고 띠 문구는 지금 거구의 것).
 
 ## 자폭 좀비: 암살·처형하면 터지지 않고 해체 (2026-11-12)
 
@@ -93,12 +93,12 @@
 | 캔디맨 | `SM_Chr_Zombie_Clown_Male_01` 광대 | 갈고리(임시 소품)는 그대로 |
 | 그림 리퍼 | `SM_Chr_Zombie_Firefighter_Male_01` 소방관 | 오른손에 도끼, 도끼 휘두르기, 두건 없음 |
 
-- **어떻게**: [EliteLooks.asset](../Resources/Enemies/EliteLooks.asset)의 행(kind 2 거구, 3 자폭, 4 돌진, 6 캔디맨, 8 리퍼)에 몸을 넣었다. [ZombieBody](../Scripts/Enemies/ZombieBody.cs) `Pick`이 메모 엘리트만이 아니라 어느 종류든 EliteLooks에 몸이 있으면 그 몸을 입힌다. 종류는 몸을 입기 전에 정해지고 복제본도 태어날 때 받으므로 모든 PC에서 같은 몸이다(노래 절정의 거구, 타워, `/spawn`도 낸 그 프레임에 종류를 정한다).
+- **어떻게**: [EliteLooks.asset](../Resources/Enemies/EliteLooks.asset)의 행(kind 2 거구, 3 자폭, 4 돌진, 6 캔디맨, 8 리퍼)에 몸을 넣었다. [ZombieBody](../Scripts/Enemies/Body/ZombieBody.cs) `Pick`이 메모 엘리트만이 아니라 어느 종류든 EliteLooks에 몸이 있으면 그 몸을 입힌다. 종류는 몸을 입기 전에 정해지고 복제본도 태어날 때 받으므로 모든 PC에서 같은 몸이다(노래 절정의 거구, 타워, `/spawn`도 낸 그 프레임에 종류를 정한다).
 - **이 다섯 몸은 엘리트만**: [ZombieLooks.asset](../Resources/Enemies/ZombieLooks.asset) `characters`에서 뺐다(50 → 45). 일반 좀비, 먹는 좀비 앞의 시체(ZombieMeal)는 이 목록에서만 고른다.
 - **리퍼의 도끼**: [ReaperAxe.prefab](../Prefabs/Props/ReaperAxe.prefab). 팩의 `SM_Chr_Attach_Axe_01`(길이 47cm 손도끼)을 1.8배(84cm)로 키워, 자루 끝에서 5cm 위가 손잡이(원점)이고 도끼머리가 +Z(앞), 날이 아래를 향하게 감쌌다. 팩의 원본 프리팹은 손대지 않았다.
 - **리퍼의 휘두르기**: EliteLooks의 `swing`에 Nephilite `zombie_swipe_attack_01`(제자리판). Blender로 손의 길을 재 보니 이 클립만 오른손 하나로 오른 어깨 뒤(골반 위 0.9m)까지 들어 올렸다가 앞을 가로질러 왼쪽 아래로 내려친다(다른 네 공격 클립은 두 손을 번갈아 휘젓는다). 스윙의 내려치는 순간이 차징 끝에 맞춰지므로(`SwingTime`) 2.4초 동안 도끼를 천천히 젖혔다가 원이 끝까지 넓어지는 순간 내려친다. 원, 붙어 앉아 피하기, 소리, 수치는 그대로다. 플레이어 문구의 낫은 도끼로 바꿨다(Texts.csv `hud.alert.reaper`·`feed.score.reap_dodge`, 설명 칸). 이름은 그대로 「그림 리퍼」. 팔 하나를 잃으면 전처럼 남은 팔에 맞는 팩의 휘두르기로 바뀐다.
-- **머리 임시 소품**: 자기 몸이 있는 엘리트에게는 씌우지 않는다([ZombieElite](../Scripts/Enemies/ZombieElite.cs) `Dress`). 리퍼의 두건이 소방관 헬멧 위에 얹히지 않게. 손 소품은 그대로라 캔디맨은 광대 몸에 갈고리를 든다.
-- **첫 등장 끊김**: 로딩 화면 뒤 미리 만들기가 엘리트 몸과 리퍼의 도끼도 만든다([ZombieLookTemplates](../Scripts/Loading/ZombieLookTemplates.cs) `Prepare`, [CombatRehearsal](../Scripts/Loading/CombatRehearsal.cs)).
+- **머리 임시 소품**: 자기 몸이 있는 엘리트에게는 씌우지 않는다([ZombieElite](../Scripts/Enemies/Elites/ZombieElite.cs) `Dress`). 리퍼의 두건이 소방관 헬멧 위에 얹히지 않게. 손 소품은 그대로라 캔디맨은 광대 몸에 갈고리를 든다.
+- **첫 등장 끊김**: 로딩 화면 뒤 미리 만들기가 엘리트 몸과 리퍼의 도끼도 만든다([ZombieLookTemplates](../Scripts/Core/Loading/ZombieLookTemplates.cs) `Prepare`, [CombatRehearsal](../Scripts/Core/Loading/CombatRehearsal.cs)).
 - **알려진 한계**: 호스트가 좀비를 낸 뒤 다른 프레임에 종류를 바꾸면 다른 PC는 크기만 따라가고(`ZombieBody.Regrow`) 몸은 바뀌지 않는다. 지금은 그런 길이 없다.
 - **시험**: `/spawn brute`, `/spawn exploder`, `/spawn charger`, `/spawn candyman`, `/spawn reaper`로 몸과 리퍼의 도끼·휘두르기를 보고, 일반 좀비 무리에 이 다섯 옷이 섞여 나오지 않는지 본다.
 - **바꾸는 곳**: EliteLooks.asset의 행. 다른 몸으로 바꾸면 그 몸은 ZombieLooks의 목록에서 빼고, 빠진 몸은 다시 넣어야 일반 좀비와 겹치지 않는다.

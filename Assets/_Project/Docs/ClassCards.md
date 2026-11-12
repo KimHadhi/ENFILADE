@@ -3,7 +3,7 @@
 2026-11-11 사용자 메모 12·19·20·21·22·29·30·34·35·36·38을 카드로 정리한 문서. 코드와 수치는 표가 진실이고, 이 문서는 무엇을 왜 그렇게 했는지 적는다.
 
 - 카드 목록과 수치: [Perks.csv](../Resources/Tables/Perks.csv) (카드), [ClassAbilities.csv](../Resources/Tables/ClassAbilities.csv) (카드가 쓰는 초·m 같은 수치, `Cards.*`와 각 클래스 줄)
-- 코드: [PlayerPerks](../Scripts/Player/PlayerPerks.cs) (고른 카드, 뽑기, 수치 더하기), [PerkCardScreen](../Scripts/UI/PerkCardScreen.cs) (카드 화면), [ClassCards](../Scripts/Player/Classes/ClassCards.cs) (코드가 필요한 클래스 카드), [CardFx](../Scripts/Player/Classes/CardFx.cs) (카드 이펙트), [CardNet](../Scripts/Player/Classes/CardNet.cs) (이펙트를 다른 PC에도)
+- 코드: [PlayerPerks](../Scripts/Classes/PlayerPerks.cs) (고른 카드, 뽑기, 수치 더하기), [PerkCardScreen](../Scripts/UI/Hud/Classes/PerkCardScreen.cs) (카드 화면), [ClassCards](../Scripts/Classes/ClassCards.cs) (코드가 필요한 클래스 카드), [CardFx](../Scripts/Classes/CardFx.cs) (카드 이펙트), [CardNet](../Scripts/Classes/CardNet.cs) (이펙트를 다른 PC에도)
 - 남의 파일에 건 훅: AttackTrace.Bullet 한 줄(과관통), CombatFeedHUD.Kill 두 줄(사망세 줄). 잡기(PlayerHold)와 주먹(PlayerMeleeCombat)은 이벤트(HitResolved, Punched, CombatDamageEvents)만 듣는다.
 - 만든 판: 0.8.69 틀과 수치 카드 · 0.8.72 돈 수급과 사망세 · 0.8.79 기세·고스트·포인트 · 0.8.84 어썰트 · 0.8.86 나이트 · 그다음 판 카드를 다 모은 뒤의 궁극. 모두 컴파일·플레이 전(8절 시험 목록)
 

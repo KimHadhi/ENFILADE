@@ -227,7 +227,7 @@ Beatrun의 `br_ladder`·`br_zipline`을 옮긴 월드 오브젝트입니다. 조
 
 | 넣을 것 | 방법 |
 | --- | --- |
-| 사다리 | 빈 오브젝트에 [Ladder](../Scripts/World/Ladder.cs)를 붙여 사다리 발치, 가로대 면에 놓는다. 로컬 Z는 오르는 사람 쪽(벽 바깥)이다. `height`는 오르는 바닥(지붕·발판)의 높이로, 난간 끝이 그 바닥과 같게 둔다(발은 꼭대기 1.875m 아래까지 오르고 넘어가기가 나머지를 올려 준다. 지붕 위로 솟은 난간은 필요 없다). 맵 빌더(CampaignMaps·HubBuilder)는 발치와 방향만 적고 높이는 지을 때 [LadderFit](../Editor/World/LadderFit.cs)이 잰다: 가로대 면에서 0.6m 안쪽(넘어가기가 디딜 바닥을 찾는 자리, `ladderExitReach - ladderStandOff`)에서 발치 위의 첫 바닥, 그 위에 설 자리가 있어야 한다. 가로대 면을 벽에서 0.15m쯤 띄운다. 콜라이더는 없어도 된다 |
+| 사다리 | 빈 오브젝트에 [Ladder](../Scripts/World/Ladder.cs)를 붙여 사다리 발치, 가로대 면에 놓는다. 로컬 Z는 오르는 사람 쪽(벽 바깥)이다. `height`는 오르는 바닥(지붕·발판)의 높이로, 난간 끝이 그 바닥과 같게 둔다(발은 꼭대기 1.875m 아래까지 오르고 넘어가기가 나머지를 올려 준다. 지붕 위로 솟은 난간은 필요 없다). 맵 빌더(CampaignMaps·HubBuilder)는 발치와 방향만 적고 높이는 지을 때 [LadderFit](../Editor/Maps/LadderFit.cs)이 잰다: 가로대 면에서 0.6m 안쪽(넘어가기가 디딜 바닥을 찾는 자리, `ladderExitReach - ladderStandOff`)에서 발치 위의 첫 바닥, 그 위에 설 자리가 있어야 한다. 가로대 면을 벽에서 0.15m쯤 띄운다. 콜라이더는 없어도 된다 |
 | 집라인 | 빈 오브젝트에 [Zipline](../Scripts/World/Zipline.cs)을 붙여 줄 시작점에 놓고 `end`에 끝점을 적는다. 발이 줄 1.875m 아래에 매달리므로 끝점은 땅에서 그보다 높게 둔다. 놓을 때 빠른 속도로 날아가니 끝점 앞에 공간을 둔다. 양방향은 `twoWay` |
 
 사다리와 집라인은 자식에 렌더러가 없으면 Play 때 `barMaterial`로 막대를 그립니다([FixtureBars](../Scripts/World/FixtureBars.cs)). 모델을 자식으로 넣으면 막대는 생기지 않습니다. 씬 뷰에서는 기즈모(사다리 노랑, 줄 하늘색)로 보입니다.
@@ -244,6 +244,6 @@ Beatrun의 `br_ladder`·`br_zipline`을 옮긴 월드 오브젝트입니다. 조
 | 이동 소리 | [소리 관리](MaintenanceGuide.md#이동목소리-소리-폴더가-곧-목록) |
 | 적 크기와 넘어짐 대상 | 적의 [MeleeCombatTarget](../Scripts/Combat/Damage/MeleeCombatTarget.cs) |
 | 키 배치 | [Player.inputactions](../Input/Player.inputactions)의 Player 맵 |
-| 카메라의 추가 흔들림·FOV·피치·롤 | [PlayerCameraEffects](../Scripts/Player/Camera/PlayerCameraEffects.cs). 전투가 요청하는 머리 움직임([CombatHeadMotion](../Scripts/Player/Combat/CombatHeadMotion.cs)의 눈 위치와 화면 회전)도 여기서 맨 마지막에 더하고 흔들림 설정을 곱하지 않는다. 슬립의 시선 고정(`TakeYaw`)은 [PlayerLook](../Scripts/Player/Camera/PlayerLook.cs)이 전투 중 마우스가 잠겨도 받는다 |
+| 카메라의 추가 흔들림·FOV·피치·롤 | [PlayerCameraEffects](../Scripts/Player/Camera/PlayerCameraEffects.cs). 전투가 요청하는 머리 움직임([CombatHeadMotion](../Scripts/Melee/CombatHeadMotion.cs)의 눈 위치와 화면 회전)도 여기서 맨 마지막에 더하고 흔들림 설정을 곱하지 않는다. 슬립의 시선 고정(`TakeYaw`)은 [PlayerLook](../Scripts/Player/Camera/PlayerLook.cs)이 전투 중 마우스가 잠겨도 받는다 |
 
 설정 변경 뒤에는 평지·경사·낮은 천장·벽 접촉을 함께 확인합니다. 저스트 슬라이드는 소형/중형/대형 각각에서 일반 접촉과 0.18초 안의 접촉을 비교하고, 벽 반응과 레그돌 기립도 확인합니다. 그 밖의 확인 항목은 [검증 안내](ValidationGuide.md)에 모았습니다.

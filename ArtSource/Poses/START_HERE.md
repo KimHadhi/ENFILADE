@@ -52,7 +52,7 @@
 | 경례 | `enf_pose_salute` | 셋째 | `call.proud` |
 | 허리에 손 | `enf_pose_hips` | 넷째 | `smug` |
 
-사람이 더 많으면 V부터 다시 돈다. 새로 만든 포즈는 그 뒤에 이름순으로 붙는다. 순서와 표정은 [ResultsMannequin.cs](../../Assets/_Project/Scripts/Hub/ResultsMannequin.cs)의 `turns`와 `moods`에 있다.
+사람이 더 많으면 V부터 다시 돈다. 새로 만든 포즈는 그 뒤에 이름순으로 붙는다. 순서와 표정은 [ResultsMannequin.cs](../../Assets/_Project/Scripts/Modes/Hub/Results/ResultsMannequin.cs)의 `turns`와 `moods`에 있다.
 
 ## 새 포즈 만들기
 
@@ -85,5 +85,5 @@ blender -b --python Tools/Blender/Poses/make_victory_poses.py -- --fresh
 ## 어떻게 게임에 들어가나
 
 - 블렌더가 마요 뼈대만 FBX로 내보낸다. 마요 원본 FBX와 같은 방식(Y 위, -Z 앞, 뼈 축 Y·X, 단위는 파일에 'FBX All')이라 뼈 방향과 길이가 원본과 똑같다.
-- Unity는 [PoseImport](../../Assets/_Project/Editor/Import/PoseImport.cs) 규칙(ModelImportRules가 부른다)으로 마요 아바타의 휴머노이드 클립으로 읽는다. 한 번 재생하고 마지막 프레임에서 멈추고, 제자리에 선다.
-- 결과 연출([ResultsShow](../../Assets/_Project/Scripts/Hub/ResultsShow.cs))이 무대에 각 사람의 포즈 인형([ResultsMannequin](../../Assets/_Project/Scripts/Hub/ResultsMannequin.cs): 그 사람 스킨·색·옷 그대로, 머리카락·치마가 흔들리고 표정이 산다)을 세우고, 그 사람의 컷이 시작될 때 포즈를 잡게 한다. 진짜 몸은 연출 동안 숨는다.
+- Unity는 [PoseImport](../../Assets/_Project/Editor/Characters/PoseImport.cs) 규칙(ModelImportRules가 부른다)으로 마요 아바타의 휴머노이드 클립으로 읽는다. 한 번 재생하고 마지막 프레임에서 멈추고, 제자리에 선다.
+- 결과 연출([ResultsShow](../../Assets/_Project/Scripts/Modes/Hub/Results/ResultsShow.cs))이 무대에 각 사람의 포즈 인형([ResultsMannequin](../../Assets/_Project/Scripts/Modes/Hub/Results/ResultsMannequin.cs): 그 사람 스킨·색·옷 그대로, 머리카락·치마가 흔들리고 표정이 산다)을 세우고, 그 사람의 컷이 시작될 때 포즈를 잡게 한다. 진짜 몸은 연출 동안 숨는다.
