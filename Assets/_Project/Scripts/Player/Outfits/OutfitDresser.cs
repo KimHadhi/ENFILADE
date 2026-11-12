@@ -199,7 +199,8 @@ internal static class OutfitDresser
         Replace(own, skin.Id, worn, covered);
         foreach (var renderer in leavingOwn) renderer.enabled = true;
         dressing.Leaving.AddRange(leavingOwn);
-        foreach (var piece in worn) Shape(model.GetComponentsInChildren<SkinnedMeshRenderer>(true), OutfitCatalog.FitOf(piece.Item.id, skin.Id)?.shapes);
+        var meshes = model.GetComponentsInChildren<SkinnedMeshRenderer>(true);
+        foreach (var piece in worn) Shape(meshes, OutfitCatalog.FitOf(piece.Item.id, skin.Id)?.shapes, true);
         // The clothes follow the body as dressing left it: a key the stockings or shoes held and let go of (a heel) goes
         // down on the socks worn instead too.
         freed.UnionWith(bodyShapes.Keys);
@@ -308,7 +309,11 @@ internal static class OutfitDresser
     private static readonly Dictionary<(Mesh, int), Mesh> rebound = new Dictionary<(Mesh, int), Mesh>();
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-    private static void ResetSession() => rebound.Clear();
+    private static void ResetSession()
+    {
+        rebound.Clear();
+        movedBy.Clear();
+    }
 
     // An outfit's file carries a copy of the character's skeleton (every BOOTH outfit does). Each bone of it the character
     // has too (its twin: her name, and her place unless it is a humanoid bone, OutfitSkeleton) is the character's own: the
@@ -555,8 +560,9 @@ internal static class OutfitDresser
     }
 
     // Shape keys "name=weight|name" on every mesh that has them: the body's shrink keys under clothes, a heel key on the
-    // feet, a shirt's own key to tuck under a coat.
-    private static void Shape(IEnumerable<SkinnedMeshRenderer> meshes, string shapes)
+    // feet, a shirt's own key to tuck under a coat. An item's fit (<paramref name="fit"/>) doesn't stack a draw-in key on
+    // skin another draws in already (Stacks).
+    private static void Shape(IEnumerable<SkinnedMeshRenderer> meshes, string shapes, bool fit = false)
     {
         if (string.IsNullOrEmpty(shapes)) return;
         foreach (string pair in OutfitCatalog.Split(shapes))
@@ -569,17 +575,66 @@ internal static class OutfitDresser
                 Warn($"셰이프키 '{pair}'의 값을 읽지 못했습니다.");
                 continue;
             }
-            SetShape(meshes, name, weight);
+            SetShape(meshes, name, weight, fit && weight > 0f && SkinCover.Hides(name));
         }
     }
 
-    private static void SetShape(IEnumerable<SkinnedMeshRenderer> meshes, string name, float weight)
+    private static void SetShape(IEnumerable<SkinnedMeshRenderer> meshes, string name, float weight, bool unstacked = false)
     {
         foreach (var mesh in meshes)
         {
             int index = mesh != null && mesh.sharedMesh != null ? mesh.sharedMesh.GetBlendShapeIndex(name) : -1;
-            if (index >= 0) mesh.SetBlendShapeWeight(index, Mathf.Clamp(weight, 0f, 100f));
+            if (index < 0 || (unstacked && Stacks(mesh, index))) continue;
+            mesh.SetBlendShapeWeight(index, Mathf.Clamp(weight, 0f, 100f));
         }
+    }
+
+    // A mesh's draw-in keys (SkinCover.Hides) are ways to hide one stretch of skin, not layers to pile up: the "both
+    // sides" key and the one-side keys, or a tights fit drawing the whole leg in (Ichigo's Shrink_Costume_Tights_Fit) and
+    // the foot keys under shoes. On together they move that skin twice as far, out through the other side: with her
+    // tights on, the Sera Yura shoes' fit put Shrink_Foot and Shrink_Toe on her body over the tights fit, and her heel
+    // stood out of the shoes by up to 19 mm at 314 of their vertices; left to the tights fit, 2 vertices, 10 mm (measured
+    // from the FBX files, 2026-11-12). So a fit's draw-in key doesn't go on where nearly all the skin it moves is moved by
+    // a draw-in key that is on already. Mayo's six foot keys share no skin, so hers all go on as before.
+    private const float StackShare = .9f;
+    private static readonly Dictionary<(Mesh, int), bool[]> movedBy = new Dictionary<(Mesh, int), bool[]>();
+    private static Vector3[] keyDeltas = Array.Empty<Vector3>();
+
+    private static bool Stacks(SkinnedMeshRenderer renderer, int key)
+    {
+        var mesh = renderer.sharedMesh;
+        if (renderer.GetBlendShapeWeight(key) > 0f || !(Moved(mesh, key) is bool[] mine)) return false;
+        List<bool[]> others = null;
+        for (int k = 0; k < mesh.blendShapeCount; k++)
+            if (k != key && renderer.GetBlendShapeWeight(k) > 0f && SkinCover.Hides(mesh.GetBlendShapeName(k)) && Moved(mesh, k) is bool[] other)
+                (others ??= new List<bool[]>()).Add(other);
+        if (others == null) return false;
+        int skin = 0, drawn = 0;
+        for (int i = 0; i < mine.Length; i++)
+        {
+            if (!mine[i]) continue;
+            skin++;
+            foreach (var other in others)
+                if (other[i])
+                {
+                    drawn++;
+                    break;
+                }
+        }
+        return skin > 0 && drawn >= skin * StackShare;
+    }
+
+    // Which of a mesh's vertices a key moves (over a millimetre), read once per mesh and key; null where it can't be read.
+    private static bool[] Moved(Mesh mesh, int key)
+    {
+        if (movedBy.TryGetValue((mesh, key), out var known)) return known;
+        int frames = mesh.isReadable ? mesh.GetBlendShapeFrameCount(key) : 0;
+        if (frames == 0) return movedBy[(mesh, key)] = null;
+        if (keyDeltas.Length != mesh.vertexCount) keyDeltas = new Vector3[mesh.vertexCount];
+        mesh.GetBlendShapeFrameVertices(key, frames - 1, keyDeltas, null, null);
+        var moved = new bool[keyDeltas.Length];
+        for (int i = 0; i < moved.Length; i++) moved[i] = keyDeltas[i].sqrMagnitude > 1e-6f;
+        return movedBy[(mesh, key)] = moved;
     }
 
     // The body's keys as dressing left them, for these names: the first of its meshes with the key set, else 0. The same

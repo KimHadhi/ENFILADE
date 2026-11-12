@@ -33,7 +33,7 @@ public sealed partial class PlayerBody
         if (rest != null) rest.Weight = rest.Target = 1f;
         transition = null;
         playingOut = false;
-        headAlignment = new Vector3(0f, 0f, -backOffset);
+        headAlignment = new Vector3(0f, -soleLift, -backOffset);
         if (animator != null) animator.enabled = true;
         // Before FPS Animation Framework notices the Animator is back (FPSAnimator rebuilds from its first output).
         ReattachGraph();

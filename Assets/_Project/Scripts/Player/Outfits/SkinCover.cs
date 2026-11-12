@@ -185,7 +185,8 @@ internal static class SkinCover
     private static bool Solid(Renderer renderer, HashSet<Renderer> gone) =>
         renderer != null && renderer.enabled && renderer.gameObject.activeInHierarchy && !gone.Contains(renderer);
 
-    private static bool Hides(string key) =>
+    /// <summary>Whether a key draws skin in under clothes (named Shrink or Kuikomi) rather than shaping the body.</summary>
+    internal static bool Hides(string key) =>
         key.IndexOf("shrink", StringComparison.OrdinalIgnoreCase) >= 0 || key.IndexOf("kuikomi", StringComparison.OrdinalIgnoreCase) >= 0;
 
     // Every hide key on this mesh that is on: kept while garments other than this mesh cover its skin enough, else let go.

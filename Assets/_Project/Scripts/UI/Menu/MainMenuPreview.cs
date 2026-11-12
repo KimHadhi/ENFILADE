@@ -46,6 +46,8 @@ public sealed class MainMenuPreview : MonoBehaviour, IWardrobeStage
     private bool trialRemoves;
     private OutfitDresser.Dressing dressing;
     private Bounds shown;
+    // The height its drawn soles stand at (world): the ground under it, once it stands on them (DrawnSole).
+    private float ground;
     private float yaw, spin, sinceTurned = float.PositiveInfinity;
 
     /// <summary>The camera the character is seen through.</summary>
@@ -53,7 +55,7 @@ public sealed class MainMenuPreview : MonoBehaviour, IWardrobeStage
     /// <summary>Whether a character is standing.</summary>
     public bool HasModel => model != null;
     /// <summary>The middle of the ground under the character, and the top of its head (world).</summary>
-    public Vector3 Feet => new Vector3(shown.center.x, shown.min.y, shown.center.z);
+    public Vector3 Feet => new Vector3(shown.center.x, ground, shown.center.z);
     public Vector3 Head => new Vector3(shown.center.x, shown.max.y, shown.center.z);
     /// <summary>Which way it faces, 0 to 360 degrees (0 is toward the camera).</summary>
     public float Facing => Mathf.Repeat(yaw, 360f);
@@ -117,6 +119,11 @@ public sealed class MainMenuPreview : MonoBehaviour, IWardrobeStage
         // goes drawn over it see-through (OutfitDresser.Dress leaving, MarkTrial).
         var outfit = (!trialRemoves ? tried : null) ?? OutfitLook.Saved(shownSkin?.Id);
         dressing = OutfitDresser.Dress(model, profile.Model, shownSkin, outfit, trialRemoves ? trialSlot : null);
+        // Stood on the soles it draws, as in the game (PlayerBody.StandOnSoles): its model's floor is where its own shoes'
+        // soles are, and other shoes or bare feet floated over the menu's ground or sank into it. Measured as it will be,
+        // without a piece on its way off.
+        ground = model.transform.position.y;
+        model.transform.localPosition += Vector3.down * (DrawnSole.Of(model.transform, dressing.Leaving) * model.transform.localScale.y);
         // A try is never what is saved: whatever changes next stands the saved outfit again.
         shownOutfit = tried != null ? null : outfit.ToString();
         shown = bounds;

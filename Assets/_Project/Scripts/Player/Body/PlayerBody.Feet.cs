@@ -56,7 +56,8 @@ public sealed partial class PlayerBody
         return reading;
     }
 
-    private void SetUpFeet() => feet = FootPlanting.Measure(animator, body, transform, restForward);
+    // The body stands on the soles it draws, its root soleLift under the capsule's floor (StandOnSoles).
+    private void SetUpFeet() => feet = FootPlanting.Measure(animator, body, transform, restForward, soleLift);
 
     private void PlantFeet(float dt)
     {

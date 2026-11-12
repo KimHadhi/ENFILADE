@@ -62,13 +62,16 @@ internal sealed class FootPlanting
     private static readonly RaycastHit[] Hits = new RaycastHit[8];
 
     private readonly Transform body, owner;
+    // How far over the body's root its drawn soles are (m): where the floor of the clips and of the ankles' heights is.
+    private readonly float sole;
     private float hipFloor, lastFloor;
     private bool settled;
 
-    private FootPlanting(Transform body, Transform owner, Leg left, Leg right)
+    private FootPlanting(Transform body, Transform owner, float sole, Leg left, Leg right)
     {
         this.body = body;
         this.owner = owner;
+        this.sole = sole;
         Left = left;
         Right = right;
         Vector3 hips = right.Upper.position - left.Upper.position;
@@ -79,18 +82,21 @@ internal sealed class FootPlanting
     /// <summary>
     /// Measures both legs of <paramref name="animator"/>'s humanoid in its rest pose, or returns null for a body without
     /// legs. <paramref name="forward"/> is the way the body faces at rest; <paramref name="owner"/> is the player, whose
-    /// own colliders are never ground.
+    /// own colliders are never ground. <paramref name="sole"/> is how far over the body's root the soles it draws are (m):
+    /// a body stood on its shoes' soles rather than its model's floor (PlayerBody.StandOnSoles) has its root that much
+    /// under the ground, and the ankles stand their height over those soles.
     /// </summary>
-    public static FootPlanting Measure(Animator animator, Transform body, Transform owner, Vector3 forward)
+    public static FootPlanting Measure(Animator animator, Transform body, Transform owner, Vector3 forward, float sole = 0f)
     {
         if (animator == null || !animator.isHuman) return null;
-        var left = MakeLeg(animator, body, forward, true);
-        var right = MakeLeg(animator, body, forward, false);
-        return left != null && right != null ? new FootPlanting(body, owner, left, right) : null;
+        var left = MakeLeg(animator, body, forward, true, sole);
+        var right = MakeLeg(animator, body, forward, false, sole);
+        return left != null && right != null ? new FootPlanting(body, owner, sole, left, right) : null;
     }
 
-    private static Leg MakeLeg(Animator animator, Transform body, Vector3 forward, bool left)
+    private static Leg MakeLeg(Animator animator, Transform body, Vector3 forward, bool left, float sole)
     {
+        float floorY = body.position.y + sole;
         Transform Bone(HumanBodyBones l, HumanBodyBones r) => animator.GetBoneTransform(left ? l : r);
         var upper = Bone(HumanBodyBones.LeftUpperLeg, HumanBodyBones.RightUpperLeg);
         var lower = Bone(HumanBodyBones.LeftLowerLeg, HumanBodyBones.RightLowerLeg);
@@ -100,7 +106,7 @@ internal sealed class FootPlanting
         var toes = Bone(HumanBodyBones.LeftToes, HumanBodyBones.RightToes);
         Vector3 ankle = foot.position;
         if (forward.sqrMagnitude < .5f) forward = body.forward;
-        Vector3 ball = toes != null ? toes.position : ankle + forward * 2f * Mathf.Max(.04f, ankle.y - body.position.y);
+        Vector3 ball = toes != null ? toes.position : ankle + forward * 2f * Mathf.Max(.04f, ankle.y - floorY);
         Vector3 along = Vector3.ProjectOnPlane(ball - ankle, Vector3.up);
         if (along.sqrMagnitude < 1e-4f) along = Vector3.ProjectOnPlane(forward, Vector3.up).normalized * .12f;
         // The toe tip reaches as far as the toe bones do (some rigs end in a toe-end bone), past the ball either way.
@@ -109,10 +115,10 @@ internal sealed class FootPlanting
             foreach (var bone in toes.GetComponentsInChildren<Transform>())
                 tipDistance = Mathf.Max(tipDistance, Vector3.Dot(bone.position - ankle, along / ballDistance));
         tipDistance = Mathf.Min(tipDistance, ballDistance * 2.5f);
-        Vector3 floor = Vector3.down * (ankle.y - body.position.y);
+        Vector3 floor = Vector3.down * (ankle.y - floorY);
         return new Leg
         {
-            Upper = upper, Lower = lower, Foot = foot, Sole = ankle.y - body.position.y,
+            Upper = upper, Lower = lower, Foot = foot, Sole = ankle.y - floorY,
             Heel = foot.InverseTransformPoint(ankle - along * .35f), Tip = foot.InverseTransformPoint(ankle + along * 1.4f),
             HeelSole = foot.InverseTransformPoint(ankle - along * .35f + floor),
             TipSole = foot.InverseTransformPoint(ankle + along / ballDistance * tipDistance + floor)
@@ -150,7 +156,8 @@ internal sealed class FootPlanting
     {
         OnGround = onFeet;
         Weight = Mathf.MoveTowards(Weight, onFeet ? 1f : 0f, dt / tuning.BlendTime);
-        float clipFloor = body.position.y;
+        // The floor the clip stands the soles on: the root, and the drawn soles over it (Measure).
+        float clipFloor = body.position.y + sole;
         if (Weight <= 0f)
         {
             settled = false;
