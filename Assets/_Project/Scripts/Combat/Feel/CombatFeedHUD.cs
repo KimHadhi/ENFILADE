@@ -41,6 +41,7 @@ public sealed class CombatFeedHUD : MonoBehaviour
     private readonly List<Line> lines = new List<Line>();
     private readonly Stack<Line> spareLines = new Stack<Line>();
     private readonly List<KillFeedRow> kills = new List<KillFeedRow>(), shown = new List<KillFeedRow>();
+    private readonly List<RectTransform> feedRoom = new List<RectTransform>();
     private readonly Stack<KillFeedRow> spareKills = new Stack<KillFeedRow>();
     private readonly KillFeedLook look = new KillFeedLook();
     private int streakScore, multiKill;
@@ -346,6 +347,20 @@ public sealed class CombatFeedHUD : MonoBehaviour
             shown[rank].Tick(dt, -top, KillLifetime, rank);
             below = top + shown[rank].Extent + 5f;
         }
+        TakeRoom();
+    }
+
+    // The room the feed's rows take on the right edge now, so a passing piece (a callout window) steps clear of a long
+    // feed rather than under it (HudRoom).
+    private void TakeRoom()
+    {
+        feedRoom.Clear();
+        foreach (Transform child in feedRoot)
+            if (child.gameObject.activeSelf && child is RectTransform rect
+                && (!child.TryGetComponent(out CanvasGroup shade) || shade.alpha > .02f)) feedRoom.Add(rect);
+        if (feedRoom.Count > 0 && HudRoom.Measure(feedRoom, out float near, out float far, out float top, out float bottom))
+            HudRoom.Take(this, near, far, top, bottom);
+        else HudRoom.Free(this);
     }
 
     private Line MakeLine()

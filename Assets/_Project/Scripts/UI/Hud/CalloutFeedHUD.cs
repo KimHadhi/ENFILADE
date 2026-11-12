@@ -43,6 +43,9 @@ public sealed class CalloutFeedHUD : MonoBehaviour
         public PlayerMovement speaker;
         public PlayerBody body;
         public float until, shown, lastDrawn = -99f, y, pop;
+        // How far in from the right edge the window stands now: Feed.right, or past whatever shows beside it (HudRoom).
+        // Below 0 until it is first placed.
+        public float dodge = -1f;
         public bool open, drawn;
     }
 
@@ -135,6 +138,7 @@ public sealed class CalloutFeedHUD : MonoBehaviour
             window.pop = 0f;
             window.drawn = false;
             window.lastDrawn = -99f;
+            window.dodge = -1f;
             window.shown = now;
             order.Add(window);
             window.y = Slot(order.Count - 1);
@@ -262,6 +266,9 @@ public sealed class CalloutFeedHUD : MonoBehaviour
         float fadeTime = Mathf.Max(.01f, FaceTables.Number("Feed.fade", .3f));
         float tilt = GameSettings.Current.hudTilt;
         float right = FaceTables.Number("Feed.right", 74f), side = Mathf.Max(64f, FaceTables.Number("Feed.tile", 196f));
+        // The name plate hangs under the tile: the picture's half, its mat and slab, the plate's 12 px drop and half its 22.
+        float half = Mathf.Clamp(FaceTables.Number("Feed.half", .38f), .2f, .44f), below = side * (half + .035f) + 23f;
+        float roomGap = HudRoom.Gap, follow = 1f - Mathf.Exp(-dt * Mathf.Max(.1f, HudRoom.Follow));
         for (int i = order.Count - 1; i >= 0; i--)
         {
             var window = order[i];
@@ -283,7 +290,13 @@ public sealed class CalloutFeedHUD : MonoBehaviour
             var window = order[i];
             window.y = Mathf.Lerp(window.y, Slot(i), 1f - Mathf.Exp(-dt * 14f));
             float slide = (1f - Smooth(window.pop)) * 60f;
-            window.root.anchoredPosition = new Vector2(-right - side * .5f + slide, -window.y);
+            // The right edge is shared: the weapon slots stand there while they show and a long kill feed reaches down past
+            // Feed.top (the overlap check measured a window 107.5 px over the slots in play, 2026-11-13). The window keeps
+            // the edge while it is free and steps in past whatever shows beside it, back out once that has gone.
+            float reach = HudRoom.Reach(window.y - side * .5f, window.y + below, this);
+            float stand = reach > 0f ? Mathf.Max(right, reach + roomGap) : right;
+            window.dodge = window.dodge < 0f ? stand : Mathf.Lerp(window.dodge, stand, follow);
+            window.root.anchoredPosition = new Vector2(-window.dodge - side * .5f + slide, -window.y);
             window.root.localRotation = Quaternion.Euler(0f, (FaceTables.Number("Feed.yaw", -8f) - i * FaceTables.Number("Feed.fan", 3f)) * tilt,
                 FaceTables.Number("Feed.roll", -1.2f) * tilt * (i % 2 == 0 ? 1f : -1f));
             // Shown only once it has a picture: the texture is black before its first draw.

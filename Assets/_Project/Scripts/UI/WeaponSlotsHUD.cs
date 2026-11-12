@@ -56,6 +56,7 @@ public sealed class WeaponSlotsHUD : MonoBehaviour
     private int shownSelected = -2;
     private AmmoHUD ammo;
     private float ammoLookedAt = -99f;
+    private readonly System.Collections.Generic.List<RectTransform> roomRects = new System.Collections.Generic.List<RectTransform>();
     private static Texture2D stripes;
 
     // One look's numbers (WeaponSlots.csv), read when the look is built.
@@ -78,7 +79,7 @@ public sealed class WeaponSlotsHUD : MonoBehaviour
     }
 
     private void OnEnable() => Bind();
-    private void OnDisable() { if (bound != null) bound.SlotActivity -= Reveal; bound = null; }
+    private void OnDisable() { if (bound != null) bound.SlotActivity -= Reveal; bound = null; HudRoom.Free(this); }
 
     private void Bind()
     {
@@ -118,6 +119,20 @@ public sealed class WeaponSlotsHUD : MonoBehaviour
         restartNames = false;
         float age = now - lastActivity;
         group.alpha = age <= readable ? 1f : fadeSeconds <= 0f ? 0f : 1f - Mathf.Clamp01((age - readable) / fadeSeconds);
+        TakeRoom();
+    }
+
+    // While the slots show, the room they take on the right edge, so a passing piece (a callout window) steps clear of
+    // them rather than over them (HudRoom; the overlap check measured a callout window 107.5 px over the plates in play).
+    private void TakeRoom()
+    {
+        roomRects.Clear();
+        if (group.alpha > .02f)
+            for (int i = 0; i < Count; i++)
+                if (built[i] != null && built[i].root != null) roomRects.Add(built[i].root);
+        if (roomRects.Count > 0 && HudRoom.Measure(roomRects, out float near, out float far, out float top, out float bottom))
+            HudRoom.Take(this, near, far, top, bottom);
+        else HudRoom.Free(this);
     }
 
     // ---- Plates (A) ----

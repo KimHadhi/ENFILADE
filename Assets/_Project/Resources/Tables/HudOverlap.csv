@@ -13,6 +13,7 @@ HPTextRoot,piece,체력 블록의 숫자 줄
 HPHealthBar,piece,체력바(실드 띠·위험 표시·회복 +N 포함)
 HPUltRoot,piece,궁극기 탄창
 Stance Figure,piece,체력바 옆 자세 그림
+Combo beat,piece,주먹 박자(조준점 둘레 고리와 박자 칸이 한 위젯. 박자 칸이 고리에 2px 닿는 것은 그 모양)
 FireEffect,skip,초상화를 감싸는 불꽃 효과(일부러 겹친다)
 Shield Shard*,skip,실드가 깨질 때 튀는 조각
 Shield Break Flash,skip,실드가 깨질 때 번쩍임

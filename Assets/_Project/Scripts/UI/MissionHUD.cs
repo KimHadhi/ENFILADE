@@ -78,6 +78,8 @@ public sealed class MissionHUD : MonoBehaviour, ITableBound, IHudPreview
     // The cap's width as drawn, the least room the prefab left between the bar's foot and what stands under it, and how
     // far those stand stepped down now (px).
     private float keyCapWidth = -1f, room = float.PositiveInfinity, step;
+    // How far the Tab screen has taken the bar's place (0-1, eased), which the alert makes way by too.
+    private float makeWay;
 
     private void Awake()
     {
@@ -231,6 +233,7 @@ public sealed class MissionHUD : MonoBehaviour, ITableBound, IHudPreview
     private void MakeWayForTabScreen(float dt)
     {
         float away = Mathf.SmoothStep(0f, 1f, ScoreboardHUD.Openness);
+        makeWay = away;
         var slide = new Vector2(-MakeWay * away, 0f);
         float wanted = look != null && !float.IsInfinity(room) ? Mathf.Max(0f, look.Below + rowGap - room) : 0f;
         step = Mathf.MoveTowards(step, wanted, stepSpeed * dt);
@@ -334,7 +337,10 @@ public sealed class MissionHUD : MonoBehaviour, ITableBound, IHudPreview
             alpha = Pulse(t, 2);
         }
         alert.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, Mathf.Max(2, alertWidth * fraction));
-        alertGroup.alpha = alpha;
+        // The Tab screen shows the objective in its list: the alert makes way with the bar. It was the one objective piece
+        // that did not, and kept blinking at full strength over the Tab screen's titles while Tab was held (user,
+        // 2026-11-13: "탭 누르고 있을 때 목표 하이라이트 돼").
+        alertGroup.alpha = alpha * (1f - makeWay);
     }
     private float Pulse(float t, int count) => Mathf.Repeat(t * count, 1) < .5f ? 1 : blinkLowAlpha;
     private void HideAlert()
