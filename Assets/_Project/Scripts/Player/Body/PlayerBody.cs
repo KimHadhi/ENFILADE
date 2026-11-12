@@ -224,6 +224,8 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         dressing = OutfitDresser.Dress(body.gameObject, loadedModel, loadedSkin, outfit);
         loadedOutfit = outfit.ToString();
         StandOnSoles(fit);
+        // The face once dressed, so a mask's keys that follow the face's move with it (PlayerBody.Face).
+        WearFace();
         headParts.AddRange(dressing.HeadParts);
         faceParts.AddRange(dressing.FaceParts);
         legYaw = transform.eulerAngles.y;
@@ -381,6 +383,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         transition = null;
         playingOut = false;
         if (body != null) Destroy(body.gameObject);
+        bodyFace = null;
         body = head = hips = leftHand = rightHand = null;
         loadedModel = null;
         loadedSkin = null;

@@ -6,7 +6,8 @@ using UnityEngine;
 /// The callouts' lines (Tables/Callouts.csv; memo 4, Guts &amp; Blackpowder's callout wheel). Each row is one thing a
 /// player can shout: the wheel slot it belongs to, when it fits (a word PlayerCallouts tests: the zombie's kind, being
 /// pinned, the class and its state…), which wins when several fit (the highest order; equals take turns at random),
-/// and whether it marks something (target pings the zombie, point pins the spot looked at). Its voice is the Voice
+/// whether it marks something (target pings the zombie, point pins the spot looked at), and the face its speaker makes
+/// saying it (face, a Tables/Faces.csv mood: PlayerFace). Its voice is the Voice
 /// bank's "Callout/&lt;id&gt;" (Art/Audio/Voice/Hiro/Callout/&lt;id&gt;), its words the language's column. Kept in the
 /// table so the lines, their order and their words can change without code; read on first use and again when the
 /// tables reload.
@@ -18,6 +19,11 @@ public static class CalloutLines
     public sealed class Line
     {
         public string Id, Slot, When, Mark, Text;
+        /// <summary>
+        /// The mood the speaker's face wears while it is said (Tables/Faces.csv id; empty takes the slot's own
+        /// call.&lt;slot&gt;, else call), so a thanks smiles and a no pouts (PlayerFace.Said).
+        /// </summary>
+        public string Face;
         public int Order;
         /// <summary>Its clips in the Voice bank.</summary>
         public string VoiceKey => "Callout/" + Id;
@@ -96,7 +102,7 @@ public static class CalloutLines
             var line = new Line
             {
                 Id = id, Slot = Cell(row, "slot"), When = Cell(row, "when", "always"), Mark = Cell(row, "mark"),
-                Text = Cell(row, Texts.Language, Cell(row, Texts.Korean, id)),
+                Face = Cell(row, "face"), Text = Cell(row, Texts.Language, Cell(row, Texts.Korean, id)),
                 Order = int.TryParse(Cell(row, "order", "0"), out int order) ? order : 0
             };
             lines.Add(line);

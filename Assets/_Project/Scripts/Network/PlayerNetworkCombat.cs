@@ -5,7 +5,8 @@ using UnityEngine;
 /// What a player does with their hands, for the other PCs: the weapon out, aiming, reloading and guarding as a stance,
 /// and shots, punches, counter elbows, shoves, reload kicks and the start of an execution as they happen. Each PC plays these on its own copy, whose
 /// gun and hands then work as they always do, and nothing here deals damage, except a teammate's blow passed on to its
-/// owner when friendly fire is on (FriendlyHit). Alone it never spawns and does nothing.
+/// owner when friendly fire is on (FriendlyHit). The few faces only their PC knows the reason for come too (FaceRpc;
+/// PlayerFace reads the rest on every PC). Alone it never spawns and does nothing.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class PlayerNetworkCombat : NetworkBehaviour
@@ -85,6 +86,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
     private PlayerBody body;
     private PlayerRevive revive;
     private PlayerMovement mover;
+    private PlayerFace face;
 
     /// <summary>Someone on this PC finished getting this copy's player up: their own PC does it.</summary>
     public void Revive() { PlayerTally.Raised(); ReviveRpc(); }
@@ -198,6 +200,8 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
         if (ping == null) ping = gameObject.AddComponent<PlayerPing>();
         // Callouts (PlayerCallouts): the owner shouts, every other PC hears.
         if (!TryGetComponent(out callouts)) callouts = gameObject.AddComponent<PlayerCallouts>();
+        // The face (PlayerFace): every PC reads its moods itself; the few only the owner knows come by FaceRpc.
+        if (!TryGetComponent(out face)) face = gameObject.AddComponent<PlayerFace>();
         // A Support's barricades (SupportKit): every PC puts them up and takes them down.
         support = GetComponent<SupportKit>();
         if (support == null) support = gameObject.AddComponent<SupportKit>();
@@ -214,6 +218,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
             detente.TreatStopped += OnTreatStopped;
             ping.Pinged += OnPinged;
             callouts.Called += OnCalled;
+            face.Shared += OnFaceShared;
             support.Built += OnBuilt;
             support.TookDown += OnTookDown;
             support.ToolHeld += OnToolHeld;
@@ -258,6 +263,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
         if (detente != null) { detente.Injected -= OnInjected; detente.TreatBegan -= OnTreatBegan; detente.TreatStopped -= OnTreatStopped; }
         if (ping != null) ping.Pinged -= OnPinged;
         if (callouts != null) callouts.Called -= OnCalled;
+        if (face != null) face.Shared -= OnFaceShared;
         if (support != null) { support.Built -= OnBuilt; support.TookDown -= OnTookDown; support.ToolHeld -= OnToolHeld; }
         if (receiver != null) receiver.HitResolved -= OnHit;
         stance.OnValueChanged -= OnStanceChanged;
@@ -487,6 +493,18 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
         PlayerCallouts.Hear(speaker, line.ToString(), enemy, point, pins);
         // A call for healing: a Détente here sees them marked, and its offer takes at once (DetenteKit).
         DetenteKit.Called(speaker, line.ToString());
+    }
+
+    // A moment of face only this player's PC knows the reason for (their ultimate, a parry, a perfect evade, a special
+    // kill, an execution: PlayerFace.Shared). Everything else their face shows, every PC reads from what it already has.
+    private void OnFaceShared(string mood) => FaceRpc(new Unity.Collections.FixedString32Bytes(mood));
+
+    // That moment of face on their copy here. By the mood's id, as callouts go by theirs.
+    [Rpc(SendTo.NotMe)]
+    private void FaceRpc(Unity.Collections.FixedString32Bytes mood)
+    {
+        if (face == null && !TryGetComponent(out face)) face = gameObject.AddComponent<PlayerFace>();
+        face.Show(mood.ToString());
     }
 
     // An Assault sounded a CHARGE here: each other PC's player near it charges too.

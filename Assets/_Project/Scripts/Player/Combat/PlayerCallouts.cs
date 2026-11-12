@@ -13,7 +13,8 @@ using UnityEngine.InputSystem;
 /// of eight short words. The lines, when each fits and which wins are rows of Tables/Callouts.csv (CalloutLines).
 ///
 /// Everyone hears the speaker's own voice from where they stand (a Voice bank clip, Windows TTS stand-ins until there
-/// are recordings) and reads the words over their head (CalloutBubbles). Some are shouted without the wheel
+/// are recordings), reads the words over their head (CalloutBubbles) and sees their face say it, the mouth moving to
+/// the voice (Callouts.csv face, PlayerFace). Some are shouted without the wheel
 /// (Settings → 조작 → 저절로 외치기): help a moment after something takes hold or on going down, the elite first come
 /// near, a brute's coming (the player nearest it: its legs) and its fall (whoever shot its leg out: its head; both by
 /// Spotted, from ZombieBody.Legs.cs), and the CHARGE, which friends near the Assault answer as G&amp;B's line answers its officer. Guards keep it from
@@ -295,19 +296,22 @@ public sealed class PlayerCallouts : MonoBehaviour
         var line = CalloutLines.Find(lineId);
         if (speaker == null || line == null) return;
         heard[line.Id] = Time.time;
-        Voice(speaker, line.VoiceKey);
+        var mouth = Voice(speaker, line.VoiceKey);
         CalloutBubbles.Say(speaker, line.Text);
+        // Their face says it too (Callouts.csv face), the mouth moving to the voice (PlayerFace, CharacterFace).
+        PlayerFace.Said(speaker, line, mouth);
         // A Schießhund's bounty mark stays theirs: a plain ping on its enemy would take it over (PingMarks.Add).
         if (target != null && target.IsAlive && !Bountied(target)) PingMarks.Ping(target, speaker, false);
         if (pins) CalloutBubbles.Pin(speaker, point);
     }
 
     // Its own mouth, apart from the grunts' (CharacterSounds), so a blow taken mid-shout doesn't cut the words off.
-    private static void Voice(PlayerMovement speaker, string key)
+    // Returns the source it plays on (the face's mouth follows it), null with no clip.
+    private static AudioSource Voice(PlayerMovement speaker, string key)
     {
         var bank = SoundBank.Load("Voice");
         var clip = bank != null ? bank.Pick(key) : null;
-        if (clip == null) return;
+        if (clip == null) return null;
         var mouth = speaker.transform.Find("Callout Voice");
         AudioSource source;
         if (mouth == null)
@@ -322,7 +326,7 @@ public sealed class PlayerCallouts : MonoBehaviour
             GameAudio.Bind(source, AudioChannel.Voice);
         }
         else source = mouth.GetComponent<AudioSource>();
-        if (source == null) return;
+        if (source == null) return null;
         // This player hears themself flat; anyone else from their mouth.
         source.spatialBlend = speaker.IsLocal ? 0f : 1f;
         var settings = bank.SettingsOf(key);
@@ -331,6 +335,7 @@ public sealed class PlayerCallouts : MonoBehaviour
         source.pitch = Mathf.Max(.1f, settings.RandomPitch());
         GameAudio.SetGain(source, Mathf.Clamp01(settings.Volume));
         source.Play();
+        return source;
     }
 
     private static bool Bountied(EnemyHealth enemy)

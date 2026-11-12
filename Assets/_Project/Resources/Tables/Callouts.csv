@@ -1,67 +1,67 @@
-﻿id,slot,when,order,mark,ko,en,#설명
-#설명,"휠 칸: zombie 좀비 · help 도와줘 · request 요청 · class 클래스 · move 이동 · retreat 후퇴 · thanks 고마워 · 말 칸 안의 yes·no·sorry·nice·wait·hurry·quiet·follow · auto는 휠에 없고 저절로 나오는 외침","언제 이 줄을 말하나(코드가 판정). always = 늘. kind:종류 = 그 종류의 좀비 · crawl:종류 = 그 종류가 다리를 잃고 기는 중. 같은 칸에서 맞는 줄 가운데 order가 가장 큰 것, 같으면 그중 아무거나","클수록 먼저",target = 그 좀비에 핑 · point = 바라본 자리에 핀,"화면 말풍선과 목소리 대사. 목소리는 Art/Audio/Voice/Hiro/Callout/<id>/의 소리(지금은 Windows TTS 임시 목소리, Tools/Audio/callout_voices.py가 이 열로 만든다). 녹음을 그 폴더에 넣고 TTS 파일을 지우면 그 목소리가 된다",영어 자리(번역이 생기면),
-zombie.ninja,zombie,kind:ninja,30,target,닌자다! 등 뒤 조심해!,Ninja! Watch your back!,보고 있는(없으면 가장 가까운) 좀비가 닌자
-zombie.candyman,zombie,kind:candyman,30,target,캔디맨이다! 끌려가지 마!,Candyman! Don't get hooked!,
-zombie.breadbag,zombie,kind:breadbag,30,target,전기톱이다! 브레드백!,Chainsaw! Breadbag!,
-zombie.reaper,zombie,kind:reaper,30,target,리퍼다! 품으로 붙어서 앉아!,Reaper! Hug it and get down!,그림 리퍼: 멀어지면 낫에 맞고 붙어 앉으면 피한다
-zombie.brute,zombie,kind:brute,25,target,거구다! 다리를 쏴!,Brute! Shoot its legs!,거구는 무릎이 약해 다리를 쏘면 쓰러진다. 거구가 오면 가장 가까운 사람이 저절로 외친다
-zombie.brute.down,zombie,crawl:brute,26,target,거구가 쓰러졌다! 머리를 쏴!,The brute is down! Shoot the head!,다리가 부러져 기는 거구(머리가 약점). 다리를 부러뜨린 사람이 저절로 외친다
-zombie.charger,zombie,kind:charger,20,target,차저! 돌진 온다!,Charger! It's coming through!,
-zombie.exploder,zombie,kind:exploder,15,target,자폭 좀비! 붙지 마!,Bomber! Keep away!,
-zombie.runner,zombie,kind:runner,10,target,러너다!,Runner!,
-zombie.horde,zombie,horde,5,target,떼로 몰려온다!,Here comes the horde!,20m 안에 깨어 있는 좀비가 8마리 넘을 때(그 무리에 보고 있는 놈이 셤블러뿐이면)
-zombie.shambler,zombie,kind:shambler,0,target,좀비 저기!,Zombie over there!,
-zombie.none,zombie,none,0,,조심해. 뭔가 있어!,"Careful, something's out there!",앞에 보이는 좀비가 없을 때
-help.pinned,help,pinned,30,,깔렸어! 떼어 줘!,I'm pinned! Get it off me!,러너에게 깔렸을 때
-help.hooked,help,hooked,30,,끌려간다! 갈고리 좀 끊어 줘!,It's dragging me! Cut me loose!,캔디맨 갈고리에 끌려갈 때
-help.eaten,help,eaten,30,,뜯어먹힌다! 살려 줘!,It's eating me! Help!,쓰러진 채 먹힐 때
-help.grabbed,help,grabbed,25,,잡혔어! 도와줘!,It's got me! Help!,셤블러에게 잡혔을 때
-help.downed,help,downed,20,,쓰러졌어! 일으켜 줘!,I'm down! Get me up!,
-help.surrounded,help,surrounded,15,,둘러싸였어!,I'm surrounded!,4m 안에 좀비가 4마리 넘을 때
-help.hurt,help,hurt,10,,피를 너무 흘렸어!,I'm bleeding out!,체력 35% 아래
-help.plain,help,always,0,,도와줘!,Help!,
-request.medic,request,heal.detente,20,,데탕트! 치료 좀 부탁해!,Détente! Patch me up!,체력 60% 아래이고 팀에 데탕트가 있을 때
-request.heal,request,heal,15,,치료가 필요해!,I need healing!,체력 60% 아래
-request.supply,request,ammo.support,20,,서포트! 탄약 좀 줘!,Support! I need ammo!,든 총의 예비탄이 탄창 하나 이하이고 팀에 서포트가 있을 때
-request.ammo,request,ammo,15,,탄약이 떨어져 간다!,I'm running low on ammo!,
-request.reload,request,reloading,10,,장전 중! 엄호해 줘!,Reloading! Cover me!,
-request.cover,request,always,0,,엄호해 줘!,Cover me!,
-class.knight.taunt,class,knight.taunt,20,,내가 끌어들인다! 다 나한테 와라!,I'll draw them! Come at me!,나이트이고 도발이 준비됐을 때
-class.knight,class,knight,10,,내 뒤로 붙어!,Get behind me!,
-class.assault.charge,class,assault.charge,20,,돌격 준비! 내 옆으로 모여!,Charge is ready! On me!,어썰트이고 CHARGE 게이지가 찼을 때
-class.assault,class,assault,10,,앞을 뚫는다!,Breaking through!,
-class.ghost.elite,class,ghost.elite,20,target,저 놈은 내가 맡는다!,That one's mine!,고스트가 엘리트를 보고 있을 때
-class.ghost,class,ghost,10,,여기서 엄호한다!,Covering from here!,
-class.point,class,point,10,,앞장선다. 따라와!,"Taking point, follow me!",
-class.detente.full,class,detente.full,20,,다친 사람 이리 와!,"Wounded, over here!",데탕트이고 주사기에 한 번 이상 남았을 때
-class.detente.empty,class,detente.empty,20,,주사기가 비었어!,My syringe is empty!,
-class.schiesshund.mark,class,schiesshund.mark,20,,현상금 붙었다! 내 사냥감이야!,Bounty's on! That one's mine!,시순트의 현상금 표시가 살아 있을 때
-class.schiesshund,class,schiesshund,10,,사냥감을 찾는다!,Looking for a bounty!,
-class.support.full,class,support.full,20,,탄약 받아 가!,Come get your ammo!,서포트이고 보급 가방이 한 번 줄 만큼 있을 때
-class.support.empty,class,support.empty,20,,보급품이 바닥났어!,I'm out of supplies!,
-class.none,class,always,0,,준비됐어!,Ready!,
-move.here,move,point,20,point,이쪽으로!,This way!,60m 안의 바닥이나 벽을 보고 있을 때. 그 자리에 핀이 꽂힌다
-move.objective,move,objective,10,,목표로 가자!,To the objective!,캠페인 목표가 있을 때
-move.go,move,always,0,,가자!,Let's go!,
-move.forward,move,always,0,,앞으로!,Move up!,
-retreat.scatter,retreat,horde,10,,흩어져! 각자 살아남아!,Scatter! Every man for himself!,
-retreat.back,retreat,always,0,,물러서!,Fall back!,
-retreat.away,retreat,always,0,,뒤로 빠져!,Get back!,
-thanks.freed,thanks,freed,20,,살았다. 고마워!,"Thanks, you saved me!",붙잡혔다 풀린 지 8초 안
-thanks.raised,thanks,revived,20,,일으켜 줘서 고마워!,Thanks for the hand!,쓰러졌다 일어난 지 8초 안
-thanks.healed,thanks,healed,15,,덕분에 살았어!,"Thanks, I needed that!",남이 체력을 채워 준 지 8초 안
-thanks.plain,thanks,always,0,,고마워!,Thanks!,
-yes.ok,yes,always,0,,좋아!,Okay!,
-yes.roger,yes,always,0,,알았어!,Got it!,
-no.no,no,always,0,,안 돼!,No!,
-no.cant,no,always,0,,무리야!,Can't do it!,
-sorry.plain,sorry,always,0,,미안!,Sorry!,
-sorry.oops,sorry,always,0,,아차. 미안!,"Oops, sorry!",
-nice.shot,nice,always,0,,나이스!,Nice!,
-nice.good,nice,always,0,,잘했어!,Well done!,
-wait.wait,wait,always,0,,기다려!,Wait!,
-hurry.hurry,hurry,always,0,,서둘러!,Hurry up!,
-quiet.shh,quiet,always,0,,쉿. 조용히!,"Shh, quiet!",
-follow.me,follow,always,0,,날 따라와!,Follow me!,
-auto.charge.lead,auto,charge.lead,0,,돌격! 나를 따르라!,Charge! Follow me!,어썰트가 CHARGE를 쓸 때 저절로
-auto.charge.join,auto,charge.join,0,,우와아아! 돌격!,Hurrah! Charge!,CHARGE 반경 안의 동료가 0.2~0.6초 뒤 저절로 따라 외친다(G&B의 장교 돌격처럼)
+﻿id,slot,when,order,mark,ko,en,face,#설명
+#설명,휠 칸: zombie 좀비 · help 도와줘 · request 요청 · class 클래스 · move 이동 · retreat 후퇴 · thanks 고마워 · 말 칸 안의 yes·no·sorry·nice·wait·hurry·quiet·follow · auto는 휠에 없고 저절로 나오는 외침,"언제 이 줄을 말하나(코드가 판정). always = 늘. kind:종류 = 그 종류의 좀비 · crawl:종류 = 그 종류가 다리를 잃고 기는 중. 같은 칸에서 맞는 줄 가운데 order가 가장 큰 것, 같으면 그중 아무거나",클수록 먼저,target = 그 좀비에 핑 · point = 바라본 자리에 핀,"화면 말풍선과 목소리 대사. 목소리는 Art/Audio/Voice/Hiro/Callout/<id>/의 소리(지금은 Windows TTS 임시 목소리, Tools/Audio/callout_voices.py가 이 열로 만든다). 녹음을 그 폴더에 넣고 TTS 파일을 지우면 그 목소리가 된다",영어 자리(번역이 생기면),"말할 때 얼굴(Faces.csv 표정 id). 비우면 call.<칸>, 그것도 없으면 call. 입은 목소리에 맞춰 움직인다(PlayerFace)",
+zombie.ninja,zombie,kind:ninja,30,target,닌자다! 등 뒤 조심해!,Ninja! Watch your back!,call.alarm,보고 있는(없으면 가장 가까운) 좀비가 닌자
+zombie.candyman,zombie,kind:candyman,30,target,캔디맨이다! 끌려가지 마!,Candyman! Don't get hooked!,scared,
+zombie.breadbag,zombie,kind:breadbag,30,target,전기톱이다! 브레드백!,Chainsaw! Breadbag!,scared,
+zombie.reaper,zombie,kind:reaper,30,target,리퍼다! 품으로 붙어서 앉아!,Reaper! Hug it and get down!,scared,그림 리퍼: 멀어지면 낫에 맞고 붙어 앉으면 피한다
+zombie.brute,zombie,kind:brute,25,target,거구다! 다리를 쏴!,Brute! Shoot its legs!,scared,거구는 무릎이 약해 다리를 쏘면 쓰러진다. 거구가 오면 가장 가까운 사람이 저절로 외친다
+zombie.brute.down,zombie,crawl:brute,26,target,거구가 쓰러졌다! 머리를 쏴!,The brute is down! Shoot the head!,fierce,다리가 부러져 기는 거구(머리가 약점). 다리를 부러뜨린 사람이 저절로 외친다
+zombie.charger,zombie,kind:charger,20,target,차저! 돌진 온다!,Charger! It's coming through!,call.alarm,
+zombie.exploder,zombie,kind:exploder,15,target,자폭 좀비! 붙지 마!,Bomber! Keep away!,scared,
+zombie.runner,zombie,kind:runner,10,target,러너다!,Runner!,call.alarm,
+zombie.horde,zombie,horde,5,target,떼로 몰려온다!,Here comes the horde!,scared,20m 안에 깨어 있는 좀비가 8마리 넘을 때(그 무리에 보고 있는 놈이 셤블러뿐이면)
+zombie.shambler,zombie,kind:shambler,0,target,좀비 저기!,Zombie over there!,call.alarm,
+zombie.none,zombie,none,0,,조심해. 뭔가 있어!,"Careful, something's out there!",worry,앞에 보이는 좀비가 없을 때
+help.pinned,help,pinned,30,,깔렸어! 떼어 줘!,I'm pinned! Get it off me!,held,러너에게 깔렸을 때
+help.hooked,help,hooked,30,,끌려간다! 갈고리 좀 끊어 줘!,It's dragging me! Cut me loose!,held,캔디맨 갈고리에 끌려갈 때
+help.eaten,help,eaten,30,,뜯어먹힌다! 살려 줘!,It's eating me! Help!,held,쓰러진 채 먹힐 때
+help.grabbed,help,grabbed,25,,잡혔어! 도와줘!,It's got me! Help!,held,셤블러에게 잡혔을 때
+help.downed,help,downed,20,,쓰러졌어! 일으켜 줘!,I'm down! Get me up!,downed,
+help.surrounded,help,surrounded,15,,둘러싸였어!,I'm surrounded!,scared,4m 안에 좀비가 4마리 넘을 때
+help.hurt,help,hurt,10,,피를 너무 흘렸어!,I'm bleeding out!,call.help,체력 35% 아래
+help.plain,help,always,0,,도와줘!,Help!,call.help,
+request.medic,request,heal.detente,20,,데탕트! 치료 좀 부탁해!,Détente! Patch me up!,call.ask,체력 60% 아래이고 팀에 데탕트가 있을 때
+request.heal,request,heal,15,,치료가 필요해!,I need healing!,call.ask,체력 60% 아래
+request.supply,request,ammo.support,20,,서포트! 탄약 좀 줘!,Support! I need ammo!,call.ask,든 총의 예비탄이 탄창 하나 이하이고 팀에 서포트가 있을 때
+request.ammo,request,ammo,15,,탄약이 떨어져 간다!,I'm running low on ammo!,call.ask,
+request.reload,request,reloading,10,,장전 중! 엄호해 줘!,Reloading! Cover me!,effort,
+request.cover,request,always,0,,엄호해 줘!,Cover me!,call.ask,
+class.knight.taunt,class,knight.taunt,20,,내가 끌어들인다! 다 나한테 와라!,I'll draw them! Come at me!,fierce,나이트이고 도발이 준비됐을 때
+class.knight,class,knight,10,,내 뒤로 붙어!,Get behind me!,call.proud,
+class.assault.charge,class,assault.charge,20,,돌격 준비! 내 옆으로 모여!,Charge is ready! On me!,call.proud,어썰트이고 CHARGE 게이지가 찼을 때
+class.assault,class,assault,10,,앞을 뚫는다!,Breaking through!,call.charge,
+class.ghost.elite,class,ghost.elite,20,target,저 놈은 내가 맡는다!,That one's mine!,focus,고스트가 엘리트를 보고 있을 때
+class.ghost,class,ghost,10,,여기서 엄호한다!,Covering from here!,call.proud,
+class.point,class,point,10,,앞장선다. 따라와!,"Taking point, follow me!",call.lead,
+class.detente.full,class,detente.full,20,,다친 사람 이리 와!,"Wounded, over here!",call.lead,데탕트이고 주사기에 한 번 이상 남았을 때
+class.detente.empty,class,detente.empty,20,,주사기가 비었어!,My syringe is empty!,worry,
+class.schiesshund.mark,class,schiesshund.mark,20,,현상금 붙었다! 내 사냥감이야!,Bounty's on! That one's mine!,smug,시순트의 현상금 표시가 살아 있을 때
+class.schiesshund,class,schiesshund,10,,사냥감을 찾는다!,Looking for a bounty!,call.proud,
+class.support.full,class,support.full,20,,탄약 받아 가!,Come get your ammo!,call.yes,서포트이고 보급 가방이 한 번 줄 만큼 있을 때
+class.support.empty,class,support.empty,20,,보급품이 바닥났어!,I'm out of supplies!,worry,
+class.none,class,always,0,,준비됐어!,Ready!,call.yes,
+move.here,move,point,20,point,이쪽으로!,This way!,call.lead,60m 안의 바닥이나 벽을 보고 있을 때. 그 자리에 핀이 꽂힌다
+move.objective,move,objective,10,,목표로 가자!,To the objective!,call.lead,캠페인 목표가 있을 때
+move.go,move,always,0,,가자!,Let's go!,call.lead,
+move.forward,move,always,0,,앞으로!,Move up!,call.lead,
+retreat.scatter,retreat,horde,10,,흩어져! 각자 살아남아!,Scatter! Every man for himself!,scared,
+retreat.back,retreat,always,0,,물러서!,Fall back!,call.alarm,
+retreat.away,retreat,always,0,,뒤로 빠져!,Get back!,call.alarm,
+thanks.freed,thanks,freed,20,,살았다. 고마워!,"Thanks, you saved me!",relief,붙잡혔다 풀린 지 8초 안
+thanks.raised,thanks,revived,20,,일으켜 줘서 고마워!,Thanks for the hand!,call.thanks,쓰러졌다 일어난 지 8초 안
+thanks.healed,thanks,healed,15,,덕분에 살았어!,"Thanks, I needed that!",call.thanks,남이 체력을 채워 준 지 8초 안
+thanks.plain,thanks,always,0,,고마워!,Thanks!,call.thanks,
+yes.ok,yes,always,0,,좋아!,Okay!,call.yes,
+yes.roger,yes,always,0,,알았어!,Got it!,call.yes,
+no.no,no,always,0,,안 돼!,No!,call.no,
+no.cant,no,always,0,,무리야!,Can't do it!,call.no,
+sorry.plain,sorry,always,0,,미안!,Sorry!,call.sorry,
+sorry.oops,sorry,always,0,,아차. 미안!,"Oops, sorry!",call.oops,
+nice.shot,nice,always,0,,나이스!,Nice!,call.nice,
+nice.good,nice,always,0,,잘했어!,Well done!,call.nice,
+wait.wait,wait,always,0,,기다려!,Wait!,call.wait,
+hurry.hurry,hurry,always,0,,서둘러!,Hurry up!,call.hurry,
+quiet.shh,quiet,always,0,,쉿. 조용히!,"Shh, quiet!",call.quiet,
+follow.me,follow,always,0,,날 따라와!,Follow me!,call.lead,
+auto.charge.lead,auto,charge.lead,0,,돌격! 나를 따르라!,Charge! Follow me!,call.charge,어썰트가 CHARGE를 쓸 때 저절로
+auto.charge.join,auto,charge.join,0,,우와아아! 돌격!,Hurrah! Charge!,call.charge,CHARGE 반경 안의 동료가 0.2~0.6초 뒤 저절로 따라 외친다(G&B의 장교 돌격처럼)

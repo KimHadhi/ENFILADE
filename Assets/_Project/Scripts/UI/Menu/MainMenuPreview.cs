@@ -5,7 +5,8 @@ using UnityEngine.Animations;
 using UnityEngine.Playables;
 
 /// <summary>
-/// The chosen character standing in the title menu in its idle pose, with the camera and light it needs. Follows the
+/// The chosen character standing in the title menu in its idle pose, with the camera and light it needs; it blinks,
+/// glances and makes a cute face now and then (CharacterFace, held calm while the wardrobe shapes its face). Follows the
 /// saved skin and colour set: another colour set swaps materials on the same model. Dragging across the screen turns it
 /// (MainMenuDrag → Turn); let go and it keeps spinning a little, slows, and after a while eases back to face the camera.
 /// The menu's backdrop reads the camera and where the character stands (View, Feet, Head) to draw behind it.
@@ -45,6 +46,8 @@ public sealed class MainMenuPreview : MonoBehaviour, IWardrobeStage
     private string triedText, trialSlot, highlighted;
     private bool trialRemoves;
     private OutfitDresser.Dressing dressing;
+    // Its face: blinking, glancing and posing now and then while it stands to be looked at (CharacterFace.Showing).
+    private CharacterFace face;
     private Bounds shown;
     // The height its drawn soles stand at (world): the ground under it, once it stands on them (DrawnSole).
     private float ground;
@@ -144,6 +147,13 @@ public sealed class MainMenuPreview : MonoBehaviour, IWardrobeStage
         }
         // Hair, tails and skirts hang free here as in the game, on the body as it stands, turned as it was.
         PreviewCloth.Wear(model, shownSkin?.Id, dressing, outfit + (trialRemoves ? "|-" + trialSlot : ""));
+        // A face that lives while it stands here, on real time like the menu; calm while the wardrobe works on the face.
+        face = CharacterFace.Wear(model, shownSkin?.Id);
+        if (face != null)
+        {
+            face.Unscaled = face.Watched = face.Showing = true;
+            face.Calm = WorksOnFace(focus);
+        }
         var animator = model.GetComponentInChildren<Animator>();
         var idle = profile.Find(IdleClip);
         if (animator == null || idle == null) return;
@@ -255,11 +265,16 @@ public sealed class MainMenuPreview : MonoBehaviour, IWardrobeStage
     public void Focus(string group)
     {
         focus = string.IsNullOrEmpty(group) ? null : group;
+        if (face != null) face.Calm = WorksOnFace(focus);
         if (model == null || view == null) return;
         cameraGoal = focus != null ? FocusedCamera(focus) : CameraFor(shown.center, shown.size.y);
         cameraMoving = true;
         refocus = true;
     }
+
+    // The body page's face, ear, eye and brow tabs bring the camera to the face ("face", "eyes": MainMenuWardrobe.FocusOf)
+    // to shape it: a mood over it would hide what is being changed.
+    private static bool WorksOnFace(string group) => group == "face" || group == "eyes";
 
     // Where the camera stands to frame that part of the character, measured from its bones as they stand now but as if
     // it faced the camera: turned by a drag, a head or chest a little off its middle swings round, and the camera would
@@ -345,6 +360,7 @@ public sealed class MainMenuPreview : MonoBehaviour, IWardrobeStage
         OutfitGhost.Show(null);
         OutfitGhost.Trial(null);
         dressing = null;
+        face = null;
         if (graph.IsValid()) graph.Destroy();
         if (model != null) Destroy(model);
         model = null;

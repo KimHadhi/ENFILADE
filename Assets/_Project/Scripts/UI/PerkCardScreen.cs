@@ -490,7 +490,12 @@ public sealed class PerkCardScreen : MonoBehaviour
             if (ready && KeyBindings.Pressed("Player/PerkCards") && !Blocked())
             {
                 if (cards) Open();
-                else if (player.Ultimate.TryConsume()) ClassCards.Local.Ultimate();
+                else if (player.Ultimate.TryConsume())
+                {
+                    ClassCards.Local.Ultimate();
+                    // Its face, for everyone (PlayerFace: only this PC knows the ultimate went off).
+                    PlayerFace.Ultimate(player);
+                }
             }
             return;
         }

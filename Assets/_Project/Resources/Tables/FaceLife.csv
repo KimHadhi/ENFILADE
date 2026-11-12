@@ -1,0 +1,33 @@
+﻿key,value,#설명
+#설명,,"얼굴의 숫자(CharacterFace·PlayerFace). 표정은 Faces.csv, 캐릭터별 키는 FaceKeys.csv"
+Blink.every,3.6,눈을 깜박이는 평균 간격(초)
+Blink.spread,2.2,그 간격이 위아래로 흔들리는 폭(초)
+Blink.close,.06,눈꺼풀이 내려오는 시간(초)
+Blink.shut,.04,감긴 채 있는 시간(초)
+Blink.open,.11,다시 뜨는 시간(초)
+Blink.twice,.15,곧바로 한 번 더 깜박일 확률(0~1)
+Blink.calm,2,옷장에서 얼굴·눈을 고치는 동안 깜박이는 간격에 곱하는 수
+Look.every,2.4,눈동자가 살짝 다른 데를 보는 평균 간격(초). 캐릭터에 FaceKeys look.* 키가 있을 때만
+Look.spread,1.6,그 간격이 흔들리는 폭(초)
+Look.reach,.35,눈동자가 그 키를 쓰는 최대 몫(0~1)
+Look.time,.07,눈동자가 옮겨 가는 시간(초)
+Talk.gain,1.25,목소리 크기에 대한 입 벌림 배율
+Talk.floor,.08,"이보다 작은 소리(0~1, 그 대사의 큰 부분이 1)에는 입을 다문다"
+Talk.attack,.035,입이 벌어지는 시간(초)
+Talk.release,.08,입이 닫히는 시간(초)
+Talk.vowel,.07,모음 모양(아·이·우·에·오)이 바뀌는 시간(초)
+Talk.flap,5.5,소리 파일의 소리를 읽을 수 없을 때 입을 여닫는 빠르기(1초에 몇 번)
+Talk.tail,.5,대사가 끝나고도 콜아웃 표정이 남는 시간(초)
+Watch.range,25,카메라에서 이보다 먼 얼굴은 키를 쓰지 않는다(m). 화면에 안 보이는 얼굴도. 내 캐릭터 얼굴은 늘 움직인다(거울·F5·결과 무대)
+Mood.lowHealth,.35,체력 비율이 이보다 낮으면 걱정하는 얼굴(0~1)
+Mood.bigHit,.25,"한 번에 최대 체력의 이 비율보다 많이 잃으면 크게 맞은 얼굴(hurt), 아니면 pain"
+Mood.painFrom,2,이만큼 이상 잃어야 아픈 얼굴(체력)
+Mood.reliefFrom,15,한 번에 이만큼 이상 차면 안도하는 얼굴(체력)
+Mood.idleBored,10,이만큼 가만히 서 있으면 지루한 얼굴(초)
+Mood.idleSleepy,25,이만큼 가만히 서 있으면 졸린 얼굴(초)
+Mood.scareReach,22,깨어 있는 거구·엘리트·네임드가 이 안에 처음 들어오면 놀란다(m)
+Mood.scareAgain,30,같은 적에게 다시 놀라기까지(초)
+Mood.mirrorReach,4.5,허브 거울 앞 이 거리 안에서 거울을 보면 보여 주는 얼굴(m)
+Mood.sprintSpeed,6.5,이보다 빠르게 달리면 힘쓰는 얼굴(m/s)
+Show.every,6,보여 줄 때(거울·옷장·결과·메뉴) 포즈 표정을 짓는 평균 간격(초)
+Show.spread,3,그 간격이 흔들리는 폭(초)
