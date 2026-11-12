@@ -21,6 +21,11 @@ public sealed class MainMenuClasses : MonoBehaviour
     private static readonly float[] Tilts = { 1.2f, -1f, .8f, -1.3f, 1f, -.8f, 1.3f }, Indents = { 0f, 24f, 8f, 30f, 14f, 4f, 26f };
 
     private RectTransform root, content;
+    // The plates scroll once they outgrow the page (KitScroll; a class more, or a short 21:9 screen) and keep their place
+    // across a pick; they run from under the heading to this far above the page's foot.
+    private KitScroll plates;
+    private float platesOffset;
+    private const float ListTop = 150f, PageFoot = 16f, ListRoom = 40f;
     private TextMeshProUGUI detailTitle, detailRole, detailBody;
     private RawImage detailIcon;
     private RectTransform detailPanel, detailRank;
@@ -51,6 +56,7 @@ public sealed class MainMenuClasses : MonoBehaviour
     // to read them doesn't replay the whole page.
     private void Build(string picked)
     {
+        if (plates != null) platesOffset = plates.Offset;
         if (content != null) Destroy(content.gameObject);
         root.gameObject.SetActive(true);
         content = KitStyle.Stretch("Content", root);
@@ -61,18 +67,25 @@ public sealed class MainMenuClasses : MonoBehaviour
         title.rectTransform.parent.localRotation = Quaternion.Euler(0f, 0f, 3f);
         KitStyle.Flat(KitStyle.TopLeft("Where", content, new Vector2(edge + 4f, 108f), new Vector2(LeftWidth + 200f, 22f)), Texts.Get("classes.where"), 16f,
             TextAlignmentOptions.MidlineLeft, KitStyle.Soft);
-        float y = 160f, lastX = 0f, lastTilt = 0f, at = .05f;
+        plates = KitScroll.Make("Plates", content, Vector2.zero, new Vector2(0f, 1f), new Vector2(edge, PageFoot),
+            new Vector2(edge + LeftWidth + ListRoom, -ListTop));
+        float y = 10f, lastX = 0f, lastTilt = 0f, at = .05f;
+        RectTransform played = null;
         var catalog = PlayerClass.Catalog;
         for (int i = 0; i < catalog.Count; i++)
         {
             float tilt = Tilts[i % Tilts.Length], x = Indents[i % Indents.Length];
             if (i > 0) y = KitStack.Below(lastX, y, LeftWidth, PlateHeight, lastTilt, x, LeftWidth, tilt, PlateGap);
             bool grows = picked == null || catalog[i].Id == picked;
-            Plate(catalog[i], new Vector2(edge + x, y), tilt, grows ? reveal : null, picked == null ? at : 0f);
+            var plate = Plate(plates.Rows, catalog[i], new Vector2(x, y), tilt, grows ? reveal : null, picked == null ? at : 0f);
+            if (PlayerClass.Is(catalog[i].Id)) played = plate;
             at += .05f;
             lastX = x;
             lastTilt = tilt;
         }
+        plates.Fit(catalog.Count > 0 ? y + PlateHeight : 0f);
+        plates.Offset = platesOffset;
+        plates.Show(played);
         BuildDetail(reveal, picked == null ? at : .05f);
         Show(PlayerClass.CurrentId);
         // Built again after a pick, the page stays shown: no fade of the whole page.
@@ -85,10 +98,10 @@ public sealed class MainMenuClasses : MonoBehaviour
     }
 
     // One class's plate; with a reveal it grows in under a pink lid at its time, without one it is simply there.
-    private void Plate(PlayerClass.Info info, Vector2 where, float tilt, KitReveal reveal, float at)
+    private RectTransform Plate(RectTransform rows, PlayerClass.Info info, Vector2 where, float tilt, KitReveal reveal, float at)
     {
         bool chosen = PlayerClass.Is(info.Id);
-        var plate = KitStyle.TopLeft("Class " + info.Id, content, where, new Vector2(LeftWidth, PlateHeight));
+        var plate = KitStyle.TopLeft("Class " + info.Id, rows, where, new Vector2(LeftWidth, PlateHeight));
         plate.localRotation = Quaternion.Euler(0f, 0f, tilt);
         var back = KitStyle.Fill(KitStyle.Stretch("Plate", plate), chosen ? KitStyle.With(KitStyle.Night, .95f) : KitStyle.With(KitStyle.Ice, .07f));
         KitSkew.On(back, Slant);
@@ -141,6 +154,7 @@ public sealed class MainMenuClasses : MonoBehaviour
         string id = info.Id;
         button.onClick.AddListener(() => Pick(id));
         plate.gameObject.AddComponent<KitHover>();
+        return plate;
     }
 
     // Plays this class from the next run: the page is built again to show it, the right side telling of it.
@@ -154,7 +168,10 @@ public sealed class MainMenuClasses : MonoBehaviour
 
     private void BuildDetail(KitReveal reveal, float at)
     {
-        var panel = KitStyle.TopLeft("Detail", content, new Vector2(RightX, 160f), new Vector2(RightWidth, 560f));
+        // Where it was laid out (x 860 of 1920), or moved left so its right edge stays on a narrower screen (4:3).
+        float width = root.rect.width > 0f ? root.rect.width : 1920f;
+        float x = Mathf.Max(edge + LeftWidth + ListRoom, Mathf.Min(RightX, width - edge - RightWidth));
+        var panel = KitStyle.TopLeft("Detail", content, new Vector2(x, 160f), new Vector2(RightWidth, 560f));
         KitStyle.Cut(panel, KitStyle.With(KitStyle.Ice, .05f));
         detailPanel = panel;
         detailRank = null;

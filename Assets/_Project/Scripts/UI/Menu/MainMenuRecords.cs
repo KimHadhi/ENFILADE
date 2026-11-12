@@ -28,7 +28,14 @@ public sealed class MainMenuRecords : MonoBehaviour, IPointerClickHandler
     // Where the right side starts, its tiles and game rows, the chapter picture's height, and the lowest anything reaches
     // (the page is 972 px high between the bars).
     private const float RightX = 820f, TileWidth = 246f, TileHeight = 118f, TileGap = 14f, GameHeight = 48f, GameGap = 8f,
-        BannerHeight = 232f, PageBottom = 940f;
+        BannerHeight = 232f, PageFoot = 32f, SideGap = 40f;
+    // The lowest anything reaches: the page's own height less PageFoot (940 of the 972 px a 16:9 screen gives it). A fixed
+    // 940 ran the games under the hint bar on a 21:9 screen, whose page is about 830 px high.
+    private float PageBottom => (root != null && root.rect.height > 0f ? root.rect.height : 972f) - PageFoot;
+    // The right side as laid out for 1920 px across, or moved left and made smaller (FitSide) where the screen is narrower
+    // (16:10, 4:3), its tiles and games then reaching down by its own scale.
+    private float sideScale = 1f;
+    private float SideBottom => PageBottom / sideScale;
     private const float RightWidth = TileWidth * 4f + TileGap * 3f, RowWidth = LeftWidth - RouteWidth;
     // How many games the totals list and a chapter's list show (PlayerRecords keeps more).
     private const int TotalsGames = 8, ChapterGames = 5;
@@ -311,6 +318,7 @@ public sealed class MainMenuRecords : MonoBehaviour, IPointerClickHandler
     {
         if (side != null) Destroy(side.gameObject);
         side = KitStyle.Stretch("Side", content);
+        FitSide();
         sheet = null;
         picture = null;
         var reveal = side.gameObject.AddComponent<KitReveal>();
@@ -323,6 +331,20 @@ public sealed class MainMenuRecords : MonoBehaviour, IPointerClickHandler
         }
         else BuildChapter(picked, records, reveal, ref at);
         reveal.Open();
+    }
+
+    // The right side was laid out for a 1920 px wide page (x 820 to 1846). Where the page is narrower it moves left, never
+    // onto the ledger, and grows smaller about its top left until its right edge is back on the screen: at 16:10 its right
+    // ran 25 px past the edge, at 4:3 nearly 200.
+    private void FitSide()
+    {
+        float width = root.rect.width > 0f ? root.rect.width : 1920f;
+        float from = edge + LeftWidth + SideGap, room = width - edge - from;
+        sideScale = Mathf.Clamp(room / RightWidth, .6f, 1f);
+        float x = Mathf.Max(from, Mathf.Min(RightX, width - edge - RightWidth * sideScale));
+        side.pivot = new Vector2(0f, 1f);
+        side.localScale = new Vector3(sideScale, sideScale, 1f);
+        side.anchoredPosition = new Vector2(x - RightX * sideScale, 0f);
     }
 
     // The totals as two rows of four tiles.
@@ -358,7 +380,7 @@ public sealed class MainMenuRecords : MonoBehaviour, IPointerClickHandler
         var line = PlayerRecords.ChapterOf(map);
         bool done = Escaped(line);
         // Presses inside the page are not on empty space (OnPointerClick).
-        sheet = KitStyle.TopLeft("Sheet", side, new Vector2(RightX, 30f), new Vector2(RightWidth, PageBottom - 30f));
+        sheet = KitStyle.TopLeft("Sheet", side, new Vector2(RightX, 30f), new Vector2(RightWidth, SideBottom - 30f));
         Caption(side, Texts.Get("records.chapter.caption"), new Vector2(RightX, 40f), RightWidth, Texts.Get("records.chapter.hint"), true);
         Banner(map, line, done, reveal, at);
         at += .06f;
@@ -485,7 +507,7 @@ public sealed class MainMenuRecords : MonoBehaviour, IPointerClickHandler
         foreach (var game in games)
         {
             if (game == null) continue;
-            if (y + GameHeight > PageBottom) break;
+            if (y + GameHeight > SideBottom) break;
             bool best = chapterPage && game.escaped && Escaped(line) && Mathf.Abs(game.seconds - line.best) < .05f;
             GameRow(game, y, chapterPage, best, reveal, at);
             at += .04f;

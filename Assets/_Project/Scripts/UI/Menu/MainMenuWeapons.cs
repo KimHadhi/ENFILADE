@@ -24,9 +24,16 @@ public sealed class MainMenuWeapons : MonoBehaviour
     private static readonly Vector3 BoothAt = new Vector3(0f, -600f, 0f);
     private const float BoothFov = 22f, SwayDegrees = 18f, SwaySpeed = .35f, DragTurn = .35f;
 
+    // The guns' list and the right side's detail start under the heading and end this far above the page's foot (the hint
+    // bar under it); the list's room for the plates' indent and hover; the picture's top, and its room from the two sides.
+    private const float ListTop = 150f, PageFoot = 16f, ListRoom = 34f, ViewTop = 160f, ViewGap = 30f, ViewAspect = 1.6f;
+
     private RectTransform root, content;
     private float edge;
     private WeaponData shown;
+    // The guns and the detail scroll when they outgrow the page (KitScroll), and keep their place when it is built again.
+    private KitScroll list, detail;
+    private float listOffset, detailOffset;
     private RawImage view;
     private RenderTexture target;
     private GameObject booth, model;
@@ -90,6 +97,8 @@ public sealed class MainMenuWeapons : MonoBehaviour
     // The page as it is now. Opening, it grows in; a gun or skin picked builds it again at once without the reveal.
     private void Build(bool grow)
     {
+        if (list != null) listOffset = list.Offset;
+        if (detail != null) detailOffset = detail.Offset;
         if (content != null) Destroy(content.gameObject);
         root.gameObject.SetActive(true);
         content = KitStyle.Stretch("Content", root);
@@ -100,28 +109,38 @@ public sealed class MainMenuWeapons : MonoBehaviour
         title.rectTransform.parent.localRotation = Quaternion.Euler(0f, 0f, 3f);
         KitStyle.Flat(KitStyle.TopLeft("Where", content, new Vector2(edge + 4f, 108f), new Vector2(1300f, 22f)), Texts.Get("weapons.where"), 16f,
             TextAlignmentOptions.MidlineLeft, KitStyle.Soft);
+        // The guns between the heading and the page's foot, scrolled once they outgrow it: with 28 guns the plates ran on
+        // down over the hint bar under the page (2026-11-13, "무기 쪽에 UI 이거 아래랑 겹치는데").
+        list = KitScroll.Make("Guns", content, Vector2.zero, new Vector2(0f, 1f), new Vector2(edge, PageFoot),
+            new Vector2(edge + LeftWidth + ListRoom, -ListTop));
         var guns = Guns();
-        float y = 150f, lastX = 0f, lastTilt = 0f, at = .05f;
+        float y = 0f, lastX = 0f, lastTilt = 0f, at = .05f;
+        RectTransform picked = null;
         for (int i = 0; i < guns.Count; i++)
         {
             float tilt = Tilts[i % Tilts.Length], x = (i % 3) * 10f;
             if (i > 0) y = KitStack.Below(lastX, y, LeftWidth, PlateHeight, lastTilt, x, LeftWidth, tilt, PlateGap);
-            Plate(guns[i], new Vector2(edge + x, y), tilt, grow ? reveal : null, at);
+            var plate = Plate(list.Rows, guns[i], new Vector2(x, y), tilt, grow ? reveal : null, at);
+            if (guns[i] == shown) picked = plate;
             at += .04f;
             lastX = x;
             lastTilt = tilt;
         }
+        list.Fit(guns.Count > 0 ? y + PlateHeight : 0f);
+        list.Offset = listOffset;
+        // The gun shown stays in sight: opening on a gun far down the list scrolls to it.
+        list.Show(picked);
         BuildView(reveal, grow ? at : 0f);
         BuildRight(reveal, grow ? at + .05f : 0f);
         ShowModel();
         reveal.Open(grow);
     }
 
-    // One gun's plate: its rank and name, its kills at the right; the one shown dark with a pink edge.
-    private void Plate(WeaponData gun, Vector2 where, float tilt, KitReveal reveal, float at)
+    // One gun's plate in the list's rows: its rank and name, its kills at the right; the one shown dark with a pink edge.
+    private RectTransform Plate(RectTransform rows, WeaponData gun, Vector2 where, float tilt, KitReveal reveal, float at)
     {
         bool picked = gun == shown;
-        var plate = KitStyle.TopLeft("Gun " + gun.name, content, where, new Vector2(LeftWidth, PlateHeight));
+        var plate = KitStyle.TopLeft("Gun " + gun.name, rows, where, new Vector2(LeftWidth, PlateHeight));
         plate.localRotation = Quaternion.Euler(0f, 0f, tilt);
         var back = KitStyle.Fill(KitStyle.Stretch("Plate", plate), picked ? KitStyle.With(KitStyle.Night, .95f) : KitStyle.With(KitStyle.Ice, .07f));
         KitSkew.On(back, Slant);
@@ -169,6 +188,7 @@ public sealed class MainMenuWeapons : MonoBehaviour
         button.targetGraphic = back;
         button.onClick.AddListener(() => Pick(gun));
         plate.gameObject.AddComponent<KitHover>();
+        return plate;
     }
 
     private void Pick(WeaponData gun)
@@ -176,21 +196,36 @@ public sealed class MainMenuWeapons : MonoBehaviour
         if (gun == shown) return;
         shown = gun;
         dragYaw = 0f;
+        // Another gun's detail starts at its top; the list stays where it was.
+        if (detail != null) detail.Offset = 0f;
         Build(false);
     }
 
     // The middle: the booth's picture, turned by a drag.
     private void BuildView(KitReveal reveal, float at)
     {
-        float x = edge + LeftWidth + 40f;
-        var frame = KitStyle.TopLeft("View", content, new Vector2(x, 160f), new Vector2(ViewWidth, ViewHeight));
+        // Across what the list and the detail leave of the screen's width, whatever its shape: a fixed x put the detail past
+        // the right edge of a 4:3 screen. The picture keeps the booth's own shape inside it.
+        var frame = FeelUI.Rect("View", content);
+        frame.anchorMin = new Vector2(0f, 1f);
+        frame.anchorMax = Vector2.one;
+        frame.pivot = new Vector2(.5f, 1f);
+        frame.offsetMin = new Vector2(edge + LeftWidth + ListRoom + ViewGap, -(ViewTop + ViewHeight));
+        frame.offsetMax = new Vector2(-(edge + RightWidth + ViewGap), -ViewTop);
         KitStyle.Fill(KitStyle.Stretch("Back", frame), KitStyle.With(KitStyle.Ice, .03f));
-        KitStyle.Bar("Floor", frame, new Vector2(0f, ViewHeight - 2f), new Vector2(ViewWidth, 1f), KitStyle.Faint);
+        var floor = KitStyle.Stretch("Floor", frame);
+        floor.anchorMax = new Vector2(1f, 0f);
+        floor.pivot = new Vector2(.5f, 0f);
+        floor.sizeDelta = new Vector2(0f, 1f);
+        KitStyle.Fill(floor, KitStyle.Faint);
         view = new GameObject("Gun", typeof(RectTransform), typeof(RawImage)).GetComponent<RawImage>();
         view.rectTransform.SetParent(frame, false);
         view.rectTransform.anchorMin = Vector2.zero;
         view.rectTransform.anchorMax = Vector2.one;
         view.rectTransform.offsetMin = view.rectTransform.offsetMax = Vector2.zero;
+        var fit = view.gameObject.AddComponent<AspectRatioFitter>();
+        fit.aspectMode = AspectRatioFitter.AspectMode.FitInParent;
+        fit.aspectRatio = ViewAspect;
         view.raycastTarget = true;
         var trigger = view.gameObject.AddComponent<EventTrigger>();
         var drag = new EventTrigger.Entry { eventID = EventTriggerType.Drag };
@@ -207,8 +242,11 @@ public sealed class MainMenuWeapons : MonoBehaviour
     private void BuildRight(KitReveal reveal, float at)
     {
         if (shown == null) return;
-        float x = 1920f - edge - RightWidth;
-        var panel = KitStyle.TopLeft("Detail", content, new Vector2(x, 150f), new Vector2(RightWidth, 760f));
+        // At the screen's right edge whatever its width, from under the heading to the page's foot, scrolled when a gun's
+        // skins outgrow a short screen (21:9).
+        detail = KitScroll.Make("Detail", content, new Vector2(1f, 0f), Vector2.one, new Vector2(-(edge + RightWidth), PageFoot),
+            new Vector2(-edge, -ListTop));
+        var panel = detail.Rows;
         int kills = GunKills.Kills(shown), rank = GunKills.RankOf(kills), next = GunKills.NextAt(rank);
         KitStyle.Flat(KitStyle.TopLeft("Name", panel, new Vector2(0f, 0f), new Vector2(RightWidth, 48f)), shown.DisplayName, 40f,
             TextAlignmentOptions.MidlineLeft);
@@ -243,6 +281,8 @@ public sealed class MainMenuWeapons : MonoBehaviour
             }
             y += ChipHeight + 18f;
         }
+        detail.Fit(y);
+        detail.Offset = detailOffset;
         if (reveal != null && at > 0f)
         {
             var lid = KitStyle.Fill(KitStyle.Stretch("Flash", panel), KitStyle.Flash);

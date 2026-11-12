@@ -94,6 +94,9 @@ public sealed class MainMenuWardrobe : MonoBehaviour
     // The open slot's choices scroll. A pick builds the page again and the list comes back where it was scrolled to;
     // opening a slot, or going back to all of them, starts it at the top.
     private RectTransform slotList;
+    // The slots' grid on the page of every slot (KitScroll), and where it was scrolled to when the page was built again.
+    private KitScroll slotsGrid;
+    private float slotsOffset;
     private string slotListFor;
     private float slotScroll;
 
@@ -204,6 +207,8 @@ public sealed class MainMenuWardrobe : MonoBehaviour
     {
         if (slotList != null) slotScroll = slotList.anchoredPosition.y;
         slotList = null;
+        if (slotsGrid != null) slotsOffset = slotsGrid.Offset;
+        slotsGrid = null;
         if (content != null) Destroy(content.gameObject);
         pictures.Clear();
         bodyMarks.Clear();
@@ -423,18 +428,25 @@ public sealed class MainMenuWardrobe : MonoBehaviour
     {
         Title(right, 0f, Texts.Get("wardrobe.title"), -3f, Texts.Get("wardrobe.slots.where"), new Vector2(4f, 108f), RightWidth);
         var look = OutfitLook.Saved(skin.Id);
-        float width = TileWidth, y = 146f;
+        // The slots under the heading, in a list that scrolls once they outgrow the page (KitScroll): the 23 slots ran
+        // past the page's foot on a short 21:9 screen (2026-11-13). It keeps its place while the page is built again.
+        slotsGrid = KitScroll.Make("Slots", content, new Vector2(1f, 0f), Vector2.one, new Vector2(-(edge + RightWidth), ListFoot),
+            new Vector2(-edge, -146f));
+        var grid = slotsGrid.Rows;
+        float width = TileWidth, y = 0f;
         foreach (string group in Groups)
         {
             var slots = OutfitCatalog.Slots.Where(slot => slot.group == group).ToList();
             if (slots.Count == 0) continue;
-            Note(right, new Vector2(0f, y), 120f, Texts.Get("outfit.group." + group), 14f);
-            KitStyle.Bar("Rule", right, new Vector2(64f, y + 11f), new Vector2(RightWidth - 64f, 1f), KitStyle.Faint);
+            Note(grid, new Vector2(0f, y), 120f, Texts.Get("outfit.group." + group), 14f);
+            KitStyle.Bar("Rule", grid, new Vector2(64f, y + 11f), new Vector2(RightWidth - 64f, 1f), KitStyle.Faint);
             y += 22f;
             for (int i = 0; i < slots.Count; i++)
-                Tile(right, skin, slots[i], look, new Vector2(i % 2 * (width + TileGap), y + i / 2 * (TileHeight + TileGap)), width);
+                Tile(grid, skin, slots[i], look, new Vector2(i % 2 * (width + TileGap), y + i / 2 * (TileHeight + TileGap)), width);
             y += Mathf.CeilToInt(slots.Count / 2f) * (TileHeight + TileGap) + 8f;
         }
+        slotsGrid.Fit(y);
+        slotsGrid.Offset = slotsOffset;
     }
 
     // One slot: its name, and what is worn there now (an item and its colour, the character's own piece, nothing).
