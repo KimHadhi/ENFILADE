@@ -23,6 +23,7 @@ MonoBehaviour:
     draw: {fileID: 0}
     holster: {fileID: 0}
     inspect: {fileID: 0}
+    fire: {fileID: 0}
     gunPosition: {x: 0.08176745, y: 1.2094855, z: 0.34760273}
     gunRotation: {x: -0.7071069, y: 0.000000009219625, z: 0.000000022390518, w: 0.70710677}
     rightGripPosition: {x: 0.00019986185, y: 0.20342892, z: -0.086453736}
@@ -31,7 +32,8 @@ MonoBehaviour:
     gunFromEyes: {x: 0.017249225, y: -0.104202576, z: 0.35096118}
     gunTurnFromEyes: {x: -0.7061427, y: -0.036913916, z: -0.03691391, w: 0.7061426}
     hasEyeFrame: 1
-    source: 16|b9d8df3d4910546409ab7425d2ffebc9|405129f43f2032e4bbed300529635549|78d5e57c5e6d5b1479f2831ae162c9af|af9f8c0e8cb05d74d80d1e5c61d822f7|6482cb9a3db8de94996fc3046ba6b006
+    source: 17|b9d8df3d4910546409ab7425d2ffebc9|405129f43f2032e4bbed300529635549|78d5e57c5e6d5b1479f2831ae162c9af|af9f8c0e8cb05d74d80d1e5c61d822f7|6482cb9a3db8de94996fc3046ba6b006
+    failedSource: 
   - skin: {fileID: 5848309325868017323, guid: b9d8df3d4910546409ab7425d2ffebc9, type: 3}
     weapon: {fileID: 11400000, guid: 60c6069bb5f5ec044a22a44dbd9829a9, type: 2}
     pose: {fileID: 7400000, guid: ed20078030cb1814d998e3c6a46ff739, type: 2}
@@ -42,6 +44,7 @@ MonoBehaviour:
     draw: {fileID: 0}
     holster: {fileID: 0}
     inspect: {fileID: 0}
+    fire: {fileID: 0}
     gunPosition: {x: 0.063853, y: 1.2347538, z: 0.26773977}
     gunRotation: {x: -0.7070463, y: -0.009262359, z: 0.009259567, w: 0.70704603}
     rightGripPosition: {x: 0.010176601, y: 0.12237999, z: -0.09806428}
@@ -50,7 +53,347 @@ MonoBehaviour:
     gunFromEyes: {x: 0.06308655, y: -0.07474616, z: 0.24214973}
     gunTurnFromEyes: {x: -0.70656556, y: -0.046160486, z: -0.027663829, w: 0.7055984}
     hasEyeFrame: 1
-    source: 16|b9d8df3d4910546409ab7425d2ffebc9|405129f43f2032e4bbed300529635549|240293a1bac37b34a98835cb25696d43|da33efa37a2809b478a7eb4835c56d5e|020029c1d578b5645b963d58dc823f5d
+    source: 17|b9d8df3d4910546409ab7425d2ffebc9|405129f43f2032e4bbed300529635549|240293a1bac37b34a98835cb25696d43|da33efa37a2809b478a7eb4835c56d5e|020029c1d578b5645b963d58dc823f5d
+    failedSource: 
+  - skin: {fileID: 5848309325868017323, guid: b9d8df3d4910546409ab7425d2ffebc9, type: 3}
+    weapon: {fileID: 11400000, guid: acdc885b530bd084ba8cb4167593e752, type: 2}
+    pose: {fileID: 7400000, guid: c957acef5b606da48befff98f47d1e55, type: 2}
+    reloadTactical: {fileID: 7400000, guid: 91a88dc10296d3b429a3ffba5dc7a989, type: 2}
+    reloadEmpty: {fileID: 7400000, guid: b4754b4fbf004d84d888c3a15cb78852, type: 2}
+    reloadShell: {fileID: 0}
+    reloadEnd: {fileID: 0}
+    draw: {fileID: 0}
+    holster: {fileID: 0}
+    inspect: {fileID: 0}
+    fire: {fileID: 0}
+    gunPosition: {x: 0.06383207, y: 1.2111827, z: 0.34733936}
+    gunRotation: {x: -0.70704615, y: -0.009262084, z: 0.009259584, w: 0.70704615}
+    rightGripPosition: {x: 0.013180837, y: 0.22385255, z: -0.10755354}
+    leftGripPosition: {x: -0.037529904, y: -0.046344083, z: -0.028098013}
+    hasGrip: 1
+    gunFromEyes: {x: 0.05338746, y: -0.10222369, z: 0.33443344}
+    gunTurnFromEyes: {x: -0.70656544, y: -0.046160217, z: -0.027663805, w: 0.70559853}
+    hasEyeFrame: 1
+    source: 17|b9d8df3d4910546409ab7425d2ffebc9|405129f43f2032e4bbed300529635549|29636f444b68218409489c8e9301c935|2193b6388df5e88408f9d27aee2ce70f|c5d51316e69be744093c8aca0d945b5b
+    failedSource: 
+  - skin: {fileID: 5848309325868017323, guid: b9d8df3d4910546409ab7425d2ffebc9, type: 3}
+    weapon: {fileID: 11400000, guid: d9507ffb958c46b49856e18cc4342663, type: 2}
+    pose: {fileID: 7400000, guid: b35430ac53768d4459039c5a189fe3a5, type: 2}
+    reloadTactical: {fileID: 7400000, guid: 571436b339c84b44fb342f758457756d, type: 2}
+    reloadEmpty: {fileID: 7400000, guid: b604ad8d78a7eb24a92bcb03db578b90, type: 2}
+    reloadShell: {fileID: 0}
+    reloadEnd: {fileID: 0}
+    draw: {fileID: 0}
+    holster: {fileID: 0}
+    inspect: {fileID: 0}
+    fire: {fileID: 0}
+    gunPosition: {x: 0.081911705, y: 1.2305722, z: 0.38934162}
+    gunRotation: {x: -0.7071069, y: 0.000000009219625, z: 0.000000022390518, w: 0.70710677}
+    rightGripPosition: {x: 0.017060218, y: 0.17054579, z: -0.10804291}
+    leftGripPosition: {x: -0.04879126, y: -0.051799968, z: -0.05163052}
+    hasGrip: 1
+    gunFromEyes: {x: 0.012343239, y: -0.07962099, z: 0.3993702}
+    gunTurnFromEyes: {x: -0.7061427, y: -0.036913916, z: -0.03691391, w: 0.7061426}
+    hasEyeFrame: 1
+    source: 17|b9d8df3d4910546409ab7425d2ffebc9|405129f43f2032e4bbed300529635549|28ad28f680737834a9d4e3cb146db030|a0354b2c44d410e4c888fd6454c52ffd|f2cb40245110bda4ea2c0fc1c622d3c3
+    failedSource: 
+  - skin: {fileID: 5848309325868017323, guid: b9d8df3d4910546409ab7425d2ffebc9, type: 3}
+    weapon: {fileID: 11400000, guid: 79bd712e1a4a3a64e94ecb035ca35c32, type: 2}
+    pose: {fileID: 7400000, guid: f7626171f843cf543a16c631ce690f8b, type: 2}
+    reloadTactical: {fileID: 7400000, guid: cdb2c48fdc2f7e64dba25a110a7474c1, type: 2}
+    reloadEmpty: {fileID: 7400000, guid: 8095e88e2d1c1044ca3ede85b86c31af, type: 2}
+    reloadShell: {fileID: 0}
+    reloadEnd: {fileID: 0}
+    draw: {fileID: 0}
+    holster: {fileID: 0}
+    inspect: {fileID: 0}
+    fire: {fileID: 0}
+    gunPosition: {x: 0.08442663, y: 1.1853784, z: 0.35529894}
+    gunRotation: {x: -0.7070463, y: -0.009262359, z: 0.009259567, w: 0.70704603}
+    rightGripPosition: {x: 0.013242804, y: 0.21608786, z: -0.103740044}
+    leftGripPosition: {x: -0.03408991, y: -0.09521193, z: -0.028259356}
+    hasGrip: 1
+    gunFromEyes: {x: 0.029158015, y: -0.13230503, z: 0.35488123}
+    gunTurnFromEyes: {x: -0.70656556, y: -0.046160486, z: -0.027663829, w: 0.7055984}
+    hasEyeFrame: 1
+    source: 17|b9d8df3d4910546409ab7425d2ffebc9|405129f43f2032e4bbed300529635549|2ad723c412fe85a43a1e5d633902a823|962fe467515a4ca4e91af3a1f38a18b4|f884c8968fb0e9e4a9aa4732cbf88431
+    failedSource: 
+  - skin: {fileID: 5848309325868017323, guid: b9d8df3d4910546409ab7425d2ffebc9, type: 3}
+    weapon: {fileID: 11400000, guid: 42c2cfdff3795b44da1b1039656583d9, type: 2}
+    pose: {fileID: 7400000, guid: 4d14c229cbe6a4844bcdd25f0cc7d03b, type: 2}
+    reloadTactical: {fileID: 7400000, guid: ac063f0565ee9b1449c64e6785425e8e, type: 2}
+    reloadEmpty: {fileID: 7400000, guid: 5c42211d9339e8640834995853982237, type: 2}
+    reloadShell: {fileID: 0}
+    reloadEnd: {fileID: 0}
+    draw: {fileID: 0}
+    holster: {fileID: 0}
+    inspect: {fileID: 0}
+    fire: {fileID: 0}
+    gunPosition: {x: 0.08049848, y: 1.2105496, z: 0.31962562}
+    gunRotation: {x: -0.7071069, y: 0.000000009219625, z: 0.000000022390518, w: 0.70710677}
+    rightGripPosition: {x: 0.029269943, y: 0.22609322, z: -0.066468045}
+    leftGripPosition: {x: -0.034585968, y: -0.11627841, z: -0.041411683}
+    hasGrip: 1
+    gunFromEyes: {x: 0.022357961, y: -0.10296229, z: 0.31646878}
+    gunTurnFromEyes: {x: -0.7061427, y: -0.036913916, z: -0.03691391, w: 0.7061426}
+    hasEyeFrame: 1
+    source: 17|b9d8df3d4910546409ab7425d2ffebc9|405129f43f2032e4bbed300529635549|cc77a702baa03504a9a4202634950c50|aac3ff72605d51b4b939f0fb6da11b55|1b5f16a2500d09848abb60f16cf81655
+    failedSource: 
+  - skin: {fileID: 5848309325868017323, guid: b9d8df3d4910546409ab7425d2ffebc9, type: 3}
+    weapon: {fileID: 11400000, guid: 1ffb45a7706880742b4772883fee0185, type: 2}
+    pose: {fileID: 7400000, guid: 6b7d0f9646e439943921d2b1392d5215, type: 2}
+    reloadTactical: {fileID: 7400000, guid: e843e71b22e182e4c9034f6871ecda9a, type: 2}
+    reloadEmpty: {fileID: 7400000, guid: 2bd50dc421ddac249ad66abffdc84b55, type: 2}
+    reloadShell: {fileID: 0}
+    reloadEnd: {fileID: 0}
+    draw: {fileID: 0}
+    holster: {fileID: 0}
+    inspect: {fileID: 0}
+    fire: {fileID: 0}
+    gunPosition: {x: 0.08294067, y: 1.1407256, z: 0.4048009}
+    gunRotation: {x: -0.7066687, y: -0.024893966, z: 0.024891097, w: 0.70666844}
+    rightGripPosition: {x: 0.012425824, y: 0.17814283, z: -0.13648064}
+    leftGripPosition: {x: -0.061451435, y: -0.026849, z: -0.06774151}
+    hasGrip: 1
+    gunFromEyes: {x: 0.011657307, y: -0.18435858, z: 0.4174184}
+    gunTurnFromEyes: {x: -0.7070045, y: -0.061751064, z: -0.0120339, w: 0.70440525}
+    hasEyeFrame: 1
+    source: 17|b9d8df3d4910546409ab7425d2ffebc9|405129f43f2032e4bbed300529635549|24a53b22c4c5a7b4a85bfb66263ab56c|a2f617e94dd94eb49bbfe2405bebc717|fc22e877fb858604981028ef7a0ce593
+    failedSource: 
+  - skin: {fileID: 5848309325868017323, guid: b9d8df3d4910546409ab7425d2ffebc9, type: 3}
+    weapon: {fileID: 11400000, guid: b6b459223f08760408b6a1d8a9df013d, type: 2}
+    pose: {fileID: 7400000, guid: 1ddd148146e813b45a5f2c8db890abb1, type: 2}
+    reloadTactical: {fileID: 7400000, guid: 739da4df2f2275e41a8a86bb7619a5b7, type: 2}
+    reloadEmpty: {fileID: 7400000, guid: 0adbbac2003309448bc62afc876b5fae, type: 2}
+    reloadShell: {fileID: 0}
+    reloadEnd: {fileID: 0}
+    draw: {fileID: 0}
+    holster: {fileID: 0}
+    inspect: {fileID: 0}
+    fire: {fileID: 0}
+    gunPosition: {x: 0.064512014, y: 1.2084383, z: 0.27718458}
+    gunRotation: {x: -0.7071069, y: 0.00000008824497, z: 0.00000005926901, w: 0.70710677}
+    rightGripPosition: {x: 0.034190416, y: 0.11486031, z: -0.100550026}
+    leftGripPosition: {x: -0.03977945, y: -0.10874858, z: -0.035706207}
+    hasGrip: 1
+    gunFromEyes: {x: 0.06270221, y: -0.10542354, z: 0.25318024}
+    gunTurnFromEyes: {x: -0.7061427, y: -0.03691384, z: -0.036913875, w: 0.7061426}
+    hasEyeFrame: 1
+    source: 17|b9d8df3d4910546409ab7425d2ffebc9|405129f43f2032e4bbed300529635549|52b4768714645d24a977c92ca4dac069|e474f134c8850ec41bde2b0644e74624|2d390789e42f8464da59e9d6489e087f
+    failedSource: 
+  - skin: {fileID: 5848309325868017323, guid: b9d8df3d4910546409ab7425d2ffebc9, type: 3}
+    weapon: {fileID: 11400000, guid: 6c13f7953bca1b241b6dd3e408efc778, type: 2}
+    pose: {fileID: 7400000, guid: f6cd200c75892774c8de5abce796d2e2, type: 2}
+    reloadTactical: {fileID: 7400000, guid: 6408a718bdcfae84b9442285e07bf4ac, type: 2}
+    reloadEmpty: {fileID: 7400000, guid: 70b85ed78b50b62429bfbcaa87712e32, type: 2}
+    reloadShell: {fileID: 0}
+    reloadEnd: {fileID: 0}
+    draw: {fileID: 0}
+    holster: {fileID: 0}
+    inspect: {fileID: 0}
+    fire: {fileID: 0}
+    gunPosition: {x: 0.06656015, y: 1.1692488, z: 0.23622453}
+    gunRotation: {x: -0.7070757, y: 0.006653925, z: -0.006653821, w: 0.7070753}
+    rightGripPosition: {x: 0.019968648, y: 0.058609415, z: -0.066647924}
+    leftGripPosition: {x: -0.042373773, y: -0.059597444, z: -0.07009446}
+    hasGrip: 1
+    gunFromEyes: {x: 0.070055634, y: -0.15110782, z: 0.20594051}
+    gunTurnFromEyes: {x: -0.70576423, y: -0.030267432, z: -0.043557055, w: 0.7064585}
+    hasEyeFrame: 1
+    source: 17|b9d8df3d4910546409ab7425d2ffebc9|405129f43f2032e4bbed300529635549|9bd0d16991774b740bc29e940a702da2|a5cb4c9bccb81244dbb38f1ba77f2f94|494c6e965cc5d96489e06a017a90d15b
+    failedSource: 
+  - skin: {fileID: 5848309325868017323, guid: b9d8df3d4910546409ab7425d2ffebc9, type: 3}
+    weapon: {fileID: 11400000, guid: e8f3c695e0ba3884cb26bc873188fb72, type: 2}
+    pose: {fileID: 7400000, guid: 920d9e4ef6dc3d34a94f2d379575d787, type: 2}
+    reloadTactical: {fileID: 7400000, guid: 392b61db566059448abada8f8712adf7, type: 2}
+    reloadEmpty: {fileID: 7400000, guid: a662315acf56d1d40ad9648b62a3273a, type: 2}
+    reloadShell: {fileID: 0}
+    reloadEnd: {fileID: 0}
+    draw: {fileID: 0}
+    holster: {fileID: 0}
+    inspect: {fileID: 0}
+    fire: {fileID: 0}
+    gunPosition: {x: 0.081997365, y: 1.1911505, z: 0.3592774}
+    gunRotation: {x: -0.71639997, y: -0.00000001580645, z: 0.000000005268819, w: 0.69768995}
+    rightGripPosition: {x: 0.013803671, y: 0.19536622, z: -0.048306536}
+    leftGripPosition: {x: -0.037307296, y: -0.04874671, z: -0.1050894}
+    hasGrip: 1
+    gunFromEyes: {x: 0.02253164, y: -0.12557639, z: 0.3608463}
+    gunTurnFromEyes: {x: -0.7154231, y: -0.036422346, z: -0.037399065, w: 0.6967386}
+    hasEyeFrame: 1
+    source: 17|b9d8df3d4910546409ab7425d2ffebc9|405129f43f2032e4bbed300529635549|466649d148991a447ae406205e7c7a72|8271251b4e2b2054f9756ee17f0b9c79|175b2ce2b1cd7724c8ae4caa3c0af9b3
+    failedSource: 
+  - skin: {fileID: 5848309325868017323, guid: b9d8df3d4910546409ab7425d2ffebc9, type: 3}
+    weapon: {fileID: 11400000, guid: f8af3f7a46d090041b55b5aa9b34d0bc, type: 2}
+    pose: {fileID: 7400000, guid: 5aaee8fedfb00bb4a8d46be505524aad, type: 2}
+    reloadTactical: {fileID: 7400000, guid: aeafd388378830149aafab3fd756bbec, type: 2}
+    reloadEmpty: {fileID: 7400000, guid: 5750ecae60abb45409d708a49c678f34, type: 2}
+    reloadShell: {fileID: 0}
+    reloadEnd: {fileID: 0}
+    draw: {fileID: 0}
+    holster: {fileID: 0}
+    inspect: {fileID: 0}
+    fire: {fileID: 0}
+    gunPosition: {x: 0.08186784, y: 1.1991072, z: 0.44868416}
+    gunRotation: {x: -0.7071068, y: 0, z: 0, w: 0.7071068}
+    rightGripPosition: {x: 0.022314943, y: 0.24777684, z: -0.02670655}
+    leftGripPosition: {x: -0.048318855, y: 0.007768579, z: -0.0550263}
+    hasGrip: 1
+    gunFromEyes: {x: 0.0050794734, y: -0.11630104, z: 0.46816576}
+    gunTurnFromEyes: {x: -0.70614266, y: -0.03691393, z: -0.03691393, w: 0.70614266}
+    hasEyeFrame: 1
+    source: 17|b9d8df3d4910546409ab7425d2ffebc9|405129f43f2032e4bbed300529635549|6769795516c868844809d550983a6686|14819d63b79011e46b91abb04cc2b86f|fc243c17db2ccd645b6e2b1aff290e0b
+    failedSource: 
+  - skin: {fileID: 5848309325868017323, guid: b9d8df3d4910546409ab7425d2ffebc9, type: 3}
+    weapon: {fileID: 11400000, guid: 3e10015c07e7ac240974370dd5f8f1c5, type: 2}
+    pose: {fileID: 7400000, guid: 4f507a664d5c535459211b4dbb61b1eb, type: 2}
+    reloadTactical: {fileID: 7400000, guid: 075c81786bce6dc4c808cfd38dfb4782, type: 2}
+    reloadEmpty: {fileID: 7400000, guid: 2ece2e94fdd111d4fb58bf10e0715370, type: 2}
+    reloadShell: {fileID: 0}
+    reloadEnd: {fileID: 0}
+    draw: {fileID: 0}
+    holster: {fileID: 0}
+    inspect: {fileID: 0}
+    fire: {fileID: 0}
+    gunPosition: {x: 0.063459806, y: 1.2370108, z: 0.26112723}
+    gunRotation: {x: -0.7070462, y: -0.009262413, z: 0.009259556, w: 0.7070461}
+    rightGripPosition: {x: 0.02094107, y: 0.12211012, z: -0.07781992}
+    leftGripPosition: {x: -0.028608706, y: 0.094360024, z: -0.08032815}
+    hasGrip: 1
+    gunFromEyes: {x: 0.06343424, y: -0.07211538, z: 0.23443565}
+    gunTurnFromEyes: {x: -0.7065655, y: -0.04616054, z: -0.027663834, w: 0.7055985}
+    hasEyeFrame: 1
+    source: 17|b9d8df3d4910546409ab7425d2ffebc9|405129f43f2032e4bbed300529635549|06a2228064b75b04b84fd12e36d0077f|20b95d2765461e64b83da921c28281d5|5d3415512becc674289071904181d3bc
+    failedSource: 
+  - skin: {fileID: 5848309325868017323, guid: b9d8df3d4910546409ab7425d2ffebc9, type: 3}
+    weapon: {fileID: 11400000, guid: 8db6ae804d3fe7041945eb5739cf1d62, type: 2}
+    pose: {fileID: 7400000, guid: 04951bb00ca1a964788a41fd539c5e09, type: 2}
+    reloadTactical: {fileID: 7400000, guid: bdb36b68dd4bca3409d8f309b3938aa0, type: 2}
+    reloadEmpty: {fileID: 7400000, guid: 82073f4af9155694baaaf3e89a5d8fd3, type: 2}
+    reloadShell: {fileID: 0}
+    reloadEnd: {fileID: 0}
+    draw: {fileID: 0}
+    holster: {fileID: 0}
+    inspect: {fileID: 0}
+    fire: {fileID: 0}
+    gunPosition: {x: 0.06693299, y: 1.232736, z: 0.23983395}
+    gunRotation: {x: -0.7071069, y: 0.000000009219625, z: 0.000000022390518, w: 0.70710677}
+    rightGripPosition: {x: 0.0049631405, y: 0.108545825, z: -0.09480807}
+    leftGripPosition: {x: -0.03163236, y: 0.07698577, z: -0.1112207}
+    hasGrip: 1
+    gunFromEyes: {x: 0.07004914, y: -0.077098735, z: 0.21017069}
+    gunTurnFromEyes: {x: -0.7061427, y: -0.036913916, z: -0.03691391, w: 0.7061426}
+    hasEyeFrame: 1
+    source: 17|b9d8df3d4910546409ab7425d2ffebc9|405129f43f2032e4bbed300529635549|5e4a62903d4fa854ebab5286be5111e4|6950b381d774aa343ac966edae7faabc|80464c2e0af6f3942ae39f9701007b42
+    failedSource: 
+  - skin: {fileID: 5848309325868017323, guid: b9d8df3d4910546409ab7425d2ffebc9, type: 3}
+    weapon: {fileID: 11400000, guid: a773ea1001f107441b9e006f1a9be720, type: 2}
+    pose: {fileID: 7400000, guid: 4d2bc91ed5517d744b07a7fd1bbdaf0c, type: 2}
+    reloadTactical: {fileID: 7400000, guid: 2d9e5c07e225e584d980a211ad04c092, type: 2}
+    reloadEmpty: {fileID: 7400000, guid: 75a58066860d7d84e923f1bddfc9bb79, type: 2}
+    reloadShell: {fileID: 0}
+    reloadEnd: {fileID: 0}
+    draw: {fileID: 0}
+    holster: {fileID: 0}
+    inspect: {fileID: 0}
+    fire: {fileID: 0}
+    gunPosition: {x: 0.116343856, y: 1.2396753, z: 0.24499212}
+    gunRotation: {x: -0.7071069, y: 0.000000009219625, z: 0.000000022390518, w: 0.70710677}
+    rightGripPosition: {x: 0.08605158, y: 0.087369695, z: -0.06292341}
+    leftGripPosition: {x: -0.2252425, y: 0.14919497, z: -0.32686207}
+    hasGrip: 1
+    gunFromEyes: {x: 0.12670842, y: -0.06900933, z: 0.22215673}
+    gunTurnFromEyes: {x: -0.7061427, y: -0.036913916, z: -0.03691391, w: 0.7061426}
+    hasEyeFrame: 1
+    source: 17|b9d8df3d4910546409ab7425d2ffebc9|405129f43f2032e4bbed300529635549|6a0776dea5a278d4aa566721614aa911|5547b4720d08b0441bc0bce38e5b445f|34bace114899e174ebde564d61931b83
+    failedSource: 
+  - skin: {fileID: 5848309325868017323, guid: b9d8df3d4910546409ab7425d2ffebc9, type: 3}
+    weapon: {fileID: 11400000, guid: d79c39080095a674490780630bafd965, type: 2}
+    pose: {fileID: 7400000, guid: c21cfe3a7876bde45b5698b158d49e60, type: 2}
+    reloadTactical: {fileID: 7400000, guid: 41683919dc232394c87c3f27b64ea7e6, type: 2}
+    reloadEmpty: {fileID: 7400000, guid: d4100ccdecc8993459c98b8c9847336e, type: 2}
+    reloadShell: {fileID: 0}
+    reloadEnd: {fileID: 0}
+    draw: {fileID: 0}
+    holster: {fileID: 0}
+    inspect: {fileID: 0}
+    fire: {fileID: 0}
+    gunPosition: {x: 0.0531261, y: 1.2324321, z: 0.24662991}
+    gunRotation: {x: -0.70710695, y: 0.000000009219627, z: 0.000000022390516, w: 0.70710665}
+    rightGripPosition: {x: 0.016562909, y: 0.13517784, z: -0.07867449}
+    leftGripPosition: {x: -0.021699905, y: 0.130077, z: -0.09692389}
+    hasGrip: 1
+    gunFromEyes: {x: 0.053215556, y: -0.07745282, z: 0.21637169}
+    gunTurnFromEyes: {x: -0.7061428, y: -0.036913913, z: -0.036913913, w: 0.7061425}
+    hasEyeFrame: 1
+    source: 17|b9d8df3d4910546409ab7425d2ffebc9|405129f43f2032e4bbed300529635549|e1615609a5701674abb5e084bca56d56|b333031b961b09546b1a74273443b7ec|b333031b961b09546b1a74273443b7ec
+    failedSource: 
+  - skin: {fileID: 5848309325868017323, guid: b9d8df3d4910546409ab7425d2ffebc9, type: 3}
+    weapon: {fileID: 11400000, guid: 064c2f5663dc0674b9ca24dbaa196e07, type: 2}
+    pose: {fileID: 7400000, guid: 6d6b7f8c43a64af4eb610153656081b3, type: 2}
+    reloadTactical: {fileID: 7400000, guid: 93c20cd105e0ca54398fcb262ead17bd, type: 2}
+    reloadEmpty: {fileID: 7400000, guid: fa7e16330710c9541b44e21331fb64e8, type: 2}
+    reloadShell: {fileID: 7400000, guid: 2bb9fae24ea11b2488fcf2c441829afb, type: 2}
+    reloadEnd: {fileID: 7400000, guid: 58ede3bdbd3c3fe4885a0ef0ab9efe88, type: 2}
+    draw: {fileID: 0}
+    holster: {fileID: 0}
+    inspect: {fileID: 0}
+    fire: {fileID: 7400000, guid: bbc87c275ed9e2341a7d8d041c2b6770, type: 2}
+    gunPosition: {x: 0.08206282, y: 1.2279038, z: 0.33329353}
+    gunRotation: {x: -0.7071069, y: 0.000000009219625, z: 0.000000022390518, w: 0.70710677}
+    rightGripPosition: {x: 0.025030376, y: 0.21281911, z: -0.04774754}
+    leftGripPosition: {x: -0.035434343, y: -0.10546901, z: -0.060018703}
+    hasGrip: 1
+    gunFromEyes: {x: 0.019330913, y: -0.08273162, z: 0.33440724}
+    gunTurnFromEyes: {x: -0.7061427, y: -0.036913916, z: -0.03691391, w: 0.7061426}
+    hasEyeFrame: 1
+    source: 17|b9d8df3d4910546409ab7425d2ffebc9|405129f43f2032e4bbed300529635549|89c867cb2c77def4ca07cdaa0d517ac9|6f44fae4f548c5d4d8ea98de829ac30a|6f44fae4f548c5d4d8ea98de829ac30a|7b9d063bce6527645a69617ae93fafd1|4414584b1005a564e85f31214c5d1fd0|-|fire
+      8e34516f2e54c3e4a80da5e2987fea18
+    failedSource: 
+  - skin: {fileID: 5848309325868017323, guid: b9d8df3d4910546409ab7425d2ffebc9, type: 3}
+    weapon: {fileID: 11400000, guid: 4ce67611ca9e87040bfb71703f7a76c8, type: 2}
+    pose: {fileID: 7400000, guid: f3d6affabe471d34e9e7dddb46d4e51a, type: 2}
+    reloadTactical: {fileID: 7400000, guid: 3a052eef83e966c4fb21591ef9869438, type: 2}
+    reloadEmpty: {fileID: 7400000, guid: 0b7f9b605c342164fafbcffc8f4745a2, type: 2}
+    reloadShell: {fileID: 0}
+    reloadEnd: {fileID: 0}
+    draw: {fileID: 0}
+    holster: {fileID: 0}
+    inspect: {fileID: 0}
+    fire: {fileID: 7400000, guid: 216178c5309327442bc535285dcaa355, type: 2}
+    gunPosition: {x: 0.08186775, y: 1.2483985, z: 0.39613247}
+    gunRotation: {x: -0.7071069, y: 0.000000009219625, z: 0.000000022390518, w: 0.70710677}
+    rightGripPosition: {x: 0.035238147, y: 0.20977765, z: -0.09205287}
+    leftGripPosition: {x: -0.05056779, y: -0.045537688, z: -0.076432966}
+    hasGrip: 1
+    gunFromEyes: {x: 0.011466868, y: -0.058840144, z: 0.40723807}
+    gunTurnFromEyes: {x: -0.7061427, y: -0.036913916, z: -0.03691391, w: 0.7061426}
+    hasEyeFrame: 1
+    source: 17|b9d8df3d4910546409ab7425d2ffebc9|405129f43f2032e4bbed300529635549|5396184a95d829444ae83ab910a9e518|a15ee33c9641a7a48852a68e9c8fb5ca|5ba631a8d6e332946ad316567be4a7b4|fire
+      2d1a9a61b2979dd4dbff29e35cabd603
+    failedSource: 
+  - skin: {fileID: 5848309325868017323, guid: b9d8df3d4910546409ab7425d2ffebc9, type: 3}
+    weapon: {fileID: 11400000, guid: 902e17de94408e248af312d37b8e4a7b, type: 2}
+    pose: {fileID: 7400000, guid: 69786760c5fe1ce4d9953228af50da37, type: 2}
+    reloadTactical: {fileID: 7400000, guid: d4b343c248375e2499088347f1082f96, type: 2}
+    reloadEmpty: {fileID: 7400000, guid: d83513e5d0a590a4f9d864d02544afd8, type: 2}
+    reloadShell: {fileID: 7400000, guid: b890b199979e55349af75d0956a5f746, type: 2}
+    reloadEnd: {fileID: 7400000, guid: 96bf39596962e004a90e7af6cd68daef, type: 2}
+    draw: {fileID: 0}
+    holster: {fileID: 0}
+    inspect: {fileID: 0}
+    fire: {fileID: 7400000, guid: ceb0875f8761c8f4bb459d79d07a0996, type: 2}
+    gunPosition: {x: 0.08241922, y: 1.1758054, z: 0.27843773}
+    gunRotation: {x: -0.7071069, y: 0.000000009219625, z: 0.000000022390518, w: 0.70710677}
+    rightGripPosition: {x: 0.0077106925, y: 0.14555936, z: -0.09699806}
+    leftGripPosition: {x: -0.033020865, y: -0.12458381, z: -0.114329755}
+    hasGrip: 1
+    gunFromEyes: {x: 0.032846544, y: -0.14346477, z: 0.26717326}
+    gunTurnFromEyes: {x: -0.7061427, y: -0.036913916, z: -0.03691391, w: 0.7061426}
+    hasEyeFrame: 1
+    source: 17|b9d8df3d4910546409ab7425d2ffebc9|405129f43f2032e4bbed300529635549|26c16d59c52fb654cbb1ced722145762|a71822a2aa08ee94983f5bf1b2b36b7a|ce7f364865d31d94691291c710f035a3|dd317974b8cfa4446b60fcac947f96e5|50b036d4a135a1441881d1aa13529b31|-|fire
+      6c932c9f2436cad4bb01586d1307669b
+    failedSource: 
   - skin: {fileID: 5848309325868017323, guid: b9d8df3d4910546409ab7425d2ffebc9, type: 3}
     weapon: {fileID: 11400000, guid: 660fd3a4f94a4443b81e3e79122b35dd, type: 2}
     pose: {fileID: 7400000, guid: 1d0519cf4b4d23f43bcfec6876bae196, type: 2}
@@ -61,15 +404,17 @@ MonoBehaviour:
     draw: {fileID: 7400000, guid: dbc1a3d1d0fe05f41a8053e68e90a9a5, type: 2}
     holster: {fileID: 7400000, guid: 2d474b5532a6807429ed0ac27f00d2c1, type: 2}
     inspect: {fileID: 7400000, guid: 2b2329b1d68be3f49a2e29f9a80b9391, type: 2}
-    gunPosition: {x: 0.0881857, y: 1.2604011, z: 0.2943563}
+    fire: {fileID: 0}
+    gunPosition: {x: 0.062056825, y: 1.2631176, z: 0.37747252}
     gunRotation: {x: -0.7070342, y: -0.010139415, z: 0.010139532, w: 0.707034}
-    rightGripPosition: {x: 0.039421555, y: 0.27221745, z: -0.031046547}
-    leftGripPosition: {x: -0.032497883, y: -0.061292574, z: -0.033686396}
+    rightGripPosition: {x: 0.039421648, y: 0.2722174, z: -0.03104643}
+    leftGripPosition: {x: -0.04196537, y: -0.0077969837, z: -0.042263273}
     hasGrip: 1
-    gunFromEyes: {x: 0.05722326, y: -0.03256038, z: 0.3311211}
+    gunFromEyes: {x: 0.026763642, y: -0.029393736, z: 0.42801288}
     gunTurnFromEyes: {x: -0.7070342, y: -0.010140001, z: 0.010138947, w: 0.707034}
     hasEyeFrame: 1
-    source: 16|b9d8df3d4910546409ab7425d2ffebc9|9713510aa4164a84e90ad27b9bca8f8b|8398072b90117ee4c98980aee4e6df68|cfcb173e9d295d54b810d9fb63f8d4ea|77f61c55a4067b642bcecbbb7a1140b6|bc4b400aee10ee24baab6ff6a70164c7|fce2d0f5b09763a4a885a16ef16876e9|b6d4ea9ea9d91294caf1c1199a4a4fc0|c5cb803ac8b20e94d8731eb22a270f85|01a22119adab32341b953dca6b676bbe|f015d28d8747c2b45bcacf2f93608d01
+    source: 17|b9d8df3d4910546409ab7425d2ffebc9|9713510aa4164a84e90ad27b9bca8f8b|8398072b90117ee4c98980aee4e6df68|cfcb173e9d295d54b810d9fb63f8d4ea|77f61c55a4067b642bcecbbb7a1140b6|bc4b400aee10ee24baab6ff6a70164c7|fce2d0f5b09763a4a885a16ef16876e9|b6d4ea9ea9d91294caf1c1199a4a4fc0|c5cb803ac8b20e94d8731eb22a270f85|01a22119adab32341b953dca6b676bbe|f015d28d8747c2b45bcacf2f93608d01
+    failedSource: 
   - skin: {fileID: 5848309325868017323, guid: b9d8df3d4910546409ab7425d2ffebc9, type: 3}
     weapon: {fileID: 11400000, guid: b5f06ecc57ba4591b7c03bda459e7655, type: 2}
     pose: {fileID: 7400000, guid: 059d50555fe26524b95e38514cfc51c0, type: 2}
@@ -80,6 +425,7 @@ MonoBehaviour:
     draw: {fileID: 7400000, guid: 5d244be7c48e9c442870bac0bd2f237c, type: 2}
     holster: {fileID: 7400000, guid: 200f74bdf80ad9d4c8757250768ae8b8, type: 2}
     inspect: {fileID: 7400000, guid: ca97c12277eaa3b4a910b9e220c02f5d, type: 2}
+    fire: {fileID: 0}
     gunPosition: {x: 0.08030259, y: 1.2073922, z: 0.24357294}
     gunRotation: {x: -0.7071068, y: 0.000000057601156, z: 0.000000057601167, w: 0.7071067}
     rightGripPosition: {x: 0.03654528, y: 0.10590993, z: -0.083249316}
@@ -88,7 +434,8 @@ MonoBehaviour:
     gunFromEyes: {x: 0.06723693, y: -0.11514845, z: 0.29707432}
     gunTurnFromEyes: {x: -0.7071068, y: -0.0000005281187, z: -0.00000052811873, w: 0.7071067}
     hasEyeFrame: 1
-    source: 16|b9d8df3d4910546409ab7425d2ffebc9|9713510aa4164a84e90ad27b9bca8f8b|b06ef0d696b00a04cbd0a122d27a491a|cdad6bcd11be592418b2ba01906b3a54|b94b4631007ba484b8b6cf6e65389d23|-|-|b6d4ea9ea9d91294caf1c1199a4a4fc0|d4d16a1c321264845b952c6c7607d07c|72e8ce59ee69a7b42904bb0220ba2795|19b054d530cf3b749b8c93b477bfe2c1
+    source: 17|b9d8df3d4910546409ab7425d2ffebc9|9713510aa4164a84e90ad27b9bca8f8b|b06ef0d696b00a04cbd0a122d27a491a|cdad6bcd11be592418b2ba01906b3a54|b94b4631007ba484b8b6cf6e65389d23|-|-|b6d4ea9ea9d91294caf1c1199a4a4fc0|d4d16a1c321264845b952c6c7607d07c|72e8ce59ee69a7b42904bb0220ba2795|19b054d530cf3b749b8c93b477bfe2c1
+    failedSource: 
   - skin: {fileID: 5848309325868017323, guid: b9d8df3d4910546409ab7425d2ffebc9, type: 3}
     weapon: {fileID: 11400000, guid: 21beab39131348eb8ab8323f3c2abc09, type: 2}
     pose: {fileID: 7400000, guid: a5b3cef0c385ed24fad3a80681838708, type: 2}
@@ -99,6 +446,7 @@ MonoBehaviour:
     draw: {fileID: 7400000, guid: f3152c16984ef034389143f8346e3a93, type: 2}
     holster: {fileID: 7400000, guid: 7fae68214b0be6049849215162d55bcf, type: 2}
     inspect: {fileID: 7400000, guid: eba43921483fcea40b2c8ac3514e0182, type: 2}
+    fire: {fileID: 0}
     gunPosition: {x: 0.067434505, y: 1.2289598, z: 0.24917555}
     gunRotation: {x: -0.7071068, y: 0.000000057601156, z: 0.000000057601167, w: 0.7071067}
     rightGripPosition: {x: 0.012968292, y: 0.17163777, z: -0.09741375}
@@ -107,7 +455,8 @@ MonoBehaviour:
     gunFromEyes: {x: 0.07229624, y: -0.08722526, z: 0.30301008}
     gunTurnFromEyes: {x: -0.7071068, y: -0.0000018459881, z: -0.0000018459884, w: 0.7071067}
     hasEyeFrame: 1
-    source: 16|b9d8df3d4910546409ab7425d2ffebc9|9713510aa4164a84e90ad27b9bca8f8b|b38c9df860f23164183f55905166e374|02ffd39b057bfbd41931a00f07f46cc3|99a2ff543c47ac84ea00be8c7cd90851|-|-|b6d4ea9ea9d91294caf1c1199a4a4fc0|195a5437749c38f49b76e3602af52a29|e3c27656e4343c4479a71519621e81ee|e0524d9db91f8c4418dd4be4ae429b11
+    source: 17|b9d8df3d4910546409ab7425d2ffebc9|9713510aa4164a84e90ad27b9bca8f8b|b38c9df860f23164183f55905166e374|02ffd39b057bfbd41931a00f07f46cc3|99a2ff543c47ac84ea00be8c7cd90851|-|-|b6d4ea9ea9d91294caf1c1199a4a4fc0|195a5437749c38f49b76e3602af52a29|e3c27656e4343c4479a71519621e81ee|e0524d9db91f8c4418dd4be4ae429b11
+    failedSource: 
   - skin: {fileID: 5848309325868017323, guid: b9d8df3d4910546409ab7425d2ffebc9, type: 3}
     weapon: {fileID: 11400000, guid: 72c4c25dc96146c6ae8c558810535ce6, type: 2}
     pose: {fileID: 7400000, guid: 6e6012bfa57e3434aab7bd5594aa25be, type: 2}
@@ -118,6 +467,7 @@ MonoBehaviour:
     draw: {fileID: 7400000, guid: b34bb5cd1ff4f3141b2dbce8a2878485, type: 2}
     holster: {fileID: 7400000, guid: 582f312e8fc019547ada5e39f7d6afb0, type: 2}
     inspect: {fileID: 7400000, guid: 17937b64a743dcd40a7756c02e6f836c, type: 2}
+    fire: {fileID: 0}
     gunPosition: {x: 0.066112645, y: 1.2054776, z: 0.20691614}
     gunRotation: {x: -0.7106248, y: 0.0035179113, z: 0.0035532592, w: 0.7035535}
     rightGripPosition: {x: 0.011249363, y: 0.16444647, z: -0.090303496}
@@ -126,7 +476,8 @@ MonoBehaviour:
     gunFromEyes: {x: 0.073619366, y: -0.11978105, z: 0.2572374}
     gunTurnFromEyes: {x: -0.7106248, y: 0.0035173285, z: 0.0035526706, w: 0.7035535}
     hasEyeFrame: 1
-    source: 16|b9d8df3d4910546409ab7425d2ffebc9|9713510aa4164a84e90ad27b9bca8f8b|aac0bcb6d7d92b84a86fbd7aa638f571|036d981e4942cc74db3a3c022ddede68|9326eb26cbf9e6a47bc2b856778a3216|-|-|b6d4ea9ea9d91294caf1c1199a4a4fc0|ba910123866488440a56d37475ca8e00|39deb4776b0583246b7f80b2b9b46ca4|bd9219cc80ba9fa418bc2a8301746f42
+    source: 17|b9d8df3d4910546409ab7425d2ffebc9|9713510aa4164a84e90ad27b9bca8f8b|aac0bcb6d7d92b84a86fbd7aa638f571|036d981e4942cc74db3a3c022ddede68|9326eb26cbf9e6a47bc2b856778a3216|-|-|b6d4ea9ea9d91294caf1c1199a4a4fc0|ba910123866488440a56d37475ca8e00|39deb4776b0583246b7f80b2b9b46ca4|bd9219cc80ba9fa418bc2a8301746f42
+    failedSource: 
   - skin: {fileID: 5848309325868017323, guid: b9d8df3d4910546409ab7425d2ffebc9, type: 3}
     weapon: {fileID: 11400000, guid: fdfbacb8512b40a7a578bbc806bbe957, type: 2}
     pose: {fileID: 7400000, guid: 60d846e6a5490ab4b92d74799d7a4b9e, type: 2}
@@ -137,6 +488,7 @@ MonoBehaviour:
     draw: {fileID: 7400000, guid: cb2a9d4b137c43d43a1b2e08bc932234, type: 2}
     holster: {fileID: 7400000, guid: 457f3f0fc655a314e992706c7d6c396e, type: 2}
     inspect: {fileID: 7400000, guid: ef9a16319a78fa54e92532f52a6dbd37, type: 2}
+    fire: {fileID: 0}
     gunPosition: {x: 0.07973787, y: 1.2242528, z: 0.20527428}
     gunRotation: {x: -0.7071068, y: 0.000000057601156, z: 0.000000057601167, w: 0.7071067}
     rightGripPosition: {x: -0.00069510663, y: 0.15398723, z: -0.085744}
@@ -145,7 +497,8 @@ MonoBehaviour:
     gunFromEyes: {x: 0.06880596, y: -0.08173009, z: 0.22559346}
     gunTurnFromEyes: {x: -0.7071068, y: -0.0000019924182, z: -0.0000019924184, w: 0.7071067}
     hasEyeFrame: 1
-    source: 16|b9d8df3d4910546409ab7425d2ffebc9|9713510aa4164a84e90ad27b9bca8f8b|6eaaa0fcd191d2447b2255dc0a1dc13e|671c46afc48c38e46a5cddba822118da|a2b491682ec29ba428194a18adb082d9|-|-|b6d4ea9ea9d91294caf1c1199a4a4fc0|0c1b6d0ab6e202a4ca959f3e12fc15f5|a9e6cfc02781ec941bbf56961d1dd302|216a8b4da0ecbfd4ab093cd72e6c2291
+    source: 17|b9d8df3d4910546409ab7425d2ffebc9|9713510aa4164a84e90ad27b9bca8f8b|6eaaa0fcd191d2447b2255dc0a1dc13e|671c46afc48c38e46a5cddba822118da|a2b491682ec29ba428194a18adb082d9|-|-|b6d4ea9ea9d91294caf1c1199a4a4fc0|0c1b6d0ab6e202a4ca959f3e12fc15f5|a9e6cfc02781ec941bbf56961d1dd302|216a8b4da0ecbfd4ab093cd72e6c2291
+    failedSource: 
   - skin: {fileID: 5848309325868017323, guid: b9d8df3d4910546409ab7425d2ffebc9, type: 3}
     weapon: {fileID: 11400000, guid: ddc74a27059547f2b4136bf2021671a0, type: 2}
     pose: {fileID: 7400000, guid: 03109a29f6ccf064c83411fd305996e5, type: 2}
@@ -156,6 +509,7 @@ MonoBehaviour:
     draw: {fileID: 7400000, guid: ad93bf394f4f2424d91dad6333942379, type: 2}
     holster: {fileID: 7400000, guid: 4dfc139be963f114287eadd8235ca96d, type: 2}
     inspect: {fileID: 7400000, guid: 960b4e66c1d187847b26f0951c9c19ca, type: 2}
+    fire: {fileID: 0}
     gunPosition: {x: 0.08109371, y: 1.1715536, z: 0.23786184}
     gunRotation: {x: -0.7071068, y: 0.000000057601156, z: 0.000000057601167, w: 0.7071067}
     rightGripPosition: {x: -0.0042437566, y: 0.120872706, z: -0.077335335}
@@ -164,7 +518,8 @@ MonoBehaviour:
     gunFromEyes: {x: 0.06781134, y: -0.15198594, z: 0.27675357}
     gunTurnFromEyes: {x: -0.7071068, y: -0.0000019924182, z: -0.0000019924184, w: 0.7071067}
     hasEyeFrame: 1
-    source: 16|b9d8df3d4910546409ab7425d2ffebc9|9713510aa4164a84e90ad27b9bca8f8b|7b75d364d2f027e4ea8751c80029c509|70c8039ecc3939145884a17ecb482c48|d3108c49d32e0cb42815e0a01cd42bfa|-|-|b6d4ea9ea9d91294caf1c1199a4a4fc0|a7fb9f1b4c8c3d8429656c22734f519d|8efbf81f7a3189f48a52072913dc4e6f|f3c244a2beb347f40b3783bc1647b417
+    source: 17|b9d8df3d4910546409ab7425d2ffebc9|9713510aa4164a84e90ad27b9bca8f8b|7b75d364d2f027e4ea8751c80029c509|70c8039ecc3939145884a17ecb482c48|d3108c49d32e0cb42815e0a01cd42bfa|-|-|b6d4ea9ea9d91294caf1c1199a4a4fc0|a7fb9f1b4c8c3d8429656c22734f519d|8efbf81f7a3189f48a52072913dc4e6f|f3c244a2beb347f40b3783bc1647b417
+    failedSource: 
   - skin: {fileID: 5848309325868017323, guid: b9d8df3d4910546409ab7425d2ffebc9, type: 3}
     weapon: {fileID: 11400000, guid: 00ac67f15e3a4b509ea19056ba1c0467, type: 2}
     pose: {fileID: 7400000, guid: 3d9e78d50748e1947aedc6289c0ae238, type: 2}
@@ -175,6 +530,7 @@ MonoBehaviour:
     draw: {fileID: 7400000, guid: e61148115f1f2dc48ad2815537495d80, type: 2}
     holster: {fileID: 7400000, guid: 6147b4efa295c5c4e8c8d9c30f0059a9, type: 2}
     inspect: {fileID: 7400000, guid: 8d35b9a466d8ec54294ca21a418d063c, type: 2}
+    fire: {fileID: 0}
     gunPosition: {x: 0.06829089, y: 1.1627274, z: 0.21456447}
     gunRotation: {x: -0.7071068, y: 0.000000057601156, z: 0.000000057601167, w: 0.7071067}
     rightGripPosition: {x: 0.008355371, y: 0.1318169, z: -0.091110565}
@@ -183,7 +539,8 @@ MonoBehaviour:
     gunFromEyes: {x: 0.07528843, y: -0.16427591, z: 0.26208198}
     gunTurnFromEyes: {x: -0.7071068, y: -0.0000005281187, z: -0.00000052811873, w: 0.7071067}
     hasEyeFrame: 1
-    source: 16|b9d8df3d4910546409ab7425d2ffebc9|9713510aa4164a84e90ad27b9bca8f8b|281d49a6a52a42c4ba754801bc1e13bf|e0aaa2b88fc404244b5b495411dbdac4|ba4c6a8bd53ad8642a786f8dd96df6b2|-|-|b6d4ea9ea9d91294caf1c1199a4a4fc0|afa7813b2b01f1842a4ae306491afb20|e9d73ea5a854d94468f923a73b5baa3b|585935ea0a1a0b4499f172f7c8cf6a95
+    source: 17|b9d8df3d4910546409ab7425d2ffebc9|9713510aa4164a84e90ad27b9bca8f8b|281d49a6a52a42c4ba754801bc1e13bf|e0aaa2b88fc404244b5b495411dbdac4|ba4c6a8bd53ad8642a786f8dd96df6b2|-|-|b6d4ea9ea9d91294caf1c1199a4a4fc0|afa7813b2b01f1842a4ae306491afb20|e9d73ea5a854d94468f923a73b5baa3b|585935ea0a1a0b4499f172f7c8cf6a95
+    failedSource: 
   - skin: {fileID: 5848309325868017323, guid: b9d8df3d4910546409ab7425d2ffebc9, type: 3}
     weapon: {fileID: 11400000, guid: c968ca0d31eb4e0ca953c37c6de2a0c0, type: 2}
     pose: {fileID: 7400000, guid: 078fcf50ca94ba24bba3bf614b681e0e, type: 2}
@@ -194,6 +551,7 @@ MonoBehaviour:
     draw: {fileID: 7400000, guid: fdb5e6be28213ed42a743c6dd0a7ee05, type: 2}
     holster: {fileID: 7400000, guid: 886fc5404e4d5ab4cb7e12a050844963, type: 2}
     inspect: {fileID: 7400000, guid: e4aba13fb69072747a71c99d7e9fe73e, type: 2}
+    fire: {fileID: 0}
     gunPosition: {x: 0.070123374, y: 1.2380083, z: 0.23034793}
     gunRotation: {x: -0.7071068, y: 0.000000057601156, z: 0.000000057601167, w: 0.7071067}
     rightGripPosition: {x: 0.010244904, y: 0.1232366, z: -0.08384917}
@@ -202,7 +560,8 @@ MonoBehaviour:
     gunFromEyes: {x: 0.07788946, y: -0.076789536, z: 0.28164294}
     gunTurnFromEyes: {x: -0.7071068, y: -0.0000005281187, z: -0.00000052811873, w: 0.7071067}
     hasEyeFrame: 1
-    source: 16|b9d8df3d4910546409ab7425d2ffebc9|9713510aa4164a84e90ad27b9bca8f8b|044ef7e57736ad741902cc2c672ce053|cac83bdf963c98d46bc75ca62f3b492f|cac83bdf963c98d46bc75ca62f3b492f|-|-|b6d4ea9ea9d91294caf1c1199a4a4fc0|5043c71a7453ed04b89af17e3a7a49f7|f6fd0947a4b9eb64b91973c0eceae530|c2d90d63ac18b1d46bf591322c138318
+    source: 17|b9d8df3d4910546409ab7425d2ffebc9|9713510aa4164a84e90ad27b9bca8f8b|044ef7e57736ad741902cc2c672ce053|cac83bdf963c98d46bc75ca62f3b492f|cac83bdf963c98d46bc75ca62f3b492f|-|-|b6d4ea9ea9d91294caf1c1199a4a4fc0|5043c71a7453ed04b89af17e3a7a49f7|f6fd0947a4b9eb64b91973c0eceae530|c2d90d63ac18b1d46bf591322c138318
+    failedSource: 
   - skin: {fileID: 5848309325868017323, guid: b9d8df3d4910546409ab7425d2ffebc9, type: 3}
     weapon: {fileID: 11400000, guid: 6024bef6d38f45a7b5d1501ae4e3d5ea, type: 2}
     pose: {fileID: 7400000, guid: 62780eb1891341742b372401c4a70191, type: 2}
@@ -213,6 +572,7 @@ MonoBehaviour:
     draw: {fileID: 7400000, guid: 3d5cbb40b1dc9ac479f7e770813f97c3, type: 2}
     holster: {fileID: 7400000, guid: a85729d8a65568943a071758511b4055, type: 2}
     inspect: {fileID: 7400000, guid: 28f1d5bf34d94174faf96fb7899e3693, type: 2}
+    fire: {fileID: 0}
     gunPosition: {x: 0.024650784, y: 1.2340133, z: 0.21853343}
     gunRotation: {x: -0.7071068, y: 0.000000057601156, z: 0.000000057601167, w: 0.7071067}
     rightGripPosition: {x: 0.011243402, y: 0.09452155, z: -0.0626273}
@@ -221,4 +581,26 @@ MonoBehaviour:
     gunFromEyes: {x: 0.028734338, y: -0.08334641, z: 0.2579246}
     gunTurnFromEyes: {x: -0.7071068, y: -0.0000005281187, z: -0.00000052811873, w: 0.7071067}
     hasEyeFrame: 1
-    source: 16|b9d8df3d4910546409ab7425d2ffebc9|9713510aa4164a84e90ad27b9bca8f8b|55039a586970075479e77cc9a9ea9061|0130785af03c5a8428c80d2c3b71b26f|9d81fd1edc3de204b801acbebd862f1a|-|-|b6d4ea9ea9d91294caf1c1199a4a4fc0|6c1f9c54695679a4fba5b00d168a614c|3dd6e428ac69cb14fb858397e027ef7f|b9f7f54b7dbe36d4f834ba68979e43ad
+    source: 17|b9d8df3d4910546409ab7425d2ffebc9|9713510aa4164a84e90ad27b9bca8f8b|55039a586970075479e77cc9a9ea9061|0130785af03c5a8428c80d2c3b71b26f|9d81fd1edc3de204b801acbebd862f1a|-|-|b6d4ea9ea9d91294caf1c1199a4a4fc0|6c1f9c54695679a4fba5b00d168a614c|3dd6e428ac69cb14fb858397e027ef7f|b9f7f54b7dbe36d4f834ba68979e43ad
+    failedSource: 
+  - skin: {fileID: 5848309325868017323, guid: b9d8df3d4910546409ab7425d2ffebc9, type: 3}
+    weapon: {fileID: 11400000, guid: 4cc2d90b3da715d47a90f7bf6c383e4c, type: 2}
+    pose: {fileID: 7400000, guid: e9955b70a3e07ef4b9cdf7c339416adb, type: 2}
+    reloadTactical: {fileID: 7400000, guid: b7b310a08c86d7d488a535099dec7a51, type: 2}
+    reloadEmpty: {fileID: 7400000, guid: bfc01819e52085e46832eb49e3dbecd1, type: 2}
+    reloadShell: {fileID: 0}
+    reloadEnd: {fileID: 0}
+    draw: {fileID: 7400000, guid: c7b47706bec788643954608686736f8c, type: 2}
+    holster: {fileID: 7400000, guid: 542706ead554b9648889d31f45765e0a, type: 2}
+    inspect: {fileID: 7400000, guid: 76a4c15df57ab1b44bf3d855e9a32034, type: 2}
+    fire: {fileID: 0}
+    gunPosition: {x: 0.070123374, y: 1.2380083, z: 0.23034783}
+    gunRotation: {x: -0.7071068, y: 0.000000057601156, z: 0.000000057601167, w: 0.7071067}
+    rightGripPosition: {x: 0.010244681, y: 0.12323649, z: -0.08384905}
+    leftGripPosition: {x: -0.039100133, y: 0.10247359, z: -0.10589574}
+    hasGrip: 1
+    gunFromEyes: {x: 0.07788946, y: -0.076789536, z: 0.28164282}
+    gunTurnFromEyes: {x: -0.7071068, y: -0.0000005281187, z: -0.00000052811873, w: 0.7071067}
+    hasEyeFrame: 1
+    source: 17|b9d8df3d4910546409ab7425d2ffebc9|9713510aa4164a84e90ad27b9bca8f8b|044ef7e57736ad741902cc2c672ce053|cac83bdf963c98d46bc75ca62f3b492f|cac83bdf963c98d46bc75ca62f3b492f|-|-|b6d4ea9ea9d91294caf1c1199a4a4fc0|5043c71a7453ed04b89af17e3a7a49f7|f6fd0947a4b9eb64b91973c0eceae530|c2d90d63ac18b1d46bf591322c138318
+    failedSource: 

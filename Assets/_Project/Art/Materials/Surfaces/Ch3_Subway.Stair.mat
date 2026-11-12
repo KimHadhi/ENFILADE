@@ -1,0 +1,81 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Ch3_Subway.Stair
+  m_Shader: {fileID: 4800000, guid: a153118a3c38c0f42af2e9d29e0b14e7, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _BaseMap:
+        m_Texture: {fileID: 2800000, guid: 6c40467b909c1dd44a503bd872caff0c, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _BumpMap:
+        m_Texture: {fileID: 2800000, guid: db8fbf900a8b2854e8a7161e4a445736, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _OcclusionMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _RoughnessMap:
+        m_Texture: {fileID: 2800000, guid: 0fc1f5df807b40147a3715ec7e3499a5, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _TopBumpMap:
+        m_Texture: {fileID: 2800000, guid: c9a9ae698665638449444c158575e295, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _TopMap:
+        m_Texture: {fileID: 2800000, guid: 043645e1e72ca4f4283b9f5c21485368, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _TopOcclusionMap:
+        m_Texture: {fileID: 2800000, guid: 54a03a76f0fda6446aaa91a96ca08460, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _TopRoughnessMap:
+        m_Texture: {fileID: 2800000, guid: 6b40470bdedac6f4bb8f35c4f3f6f77b, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _BumpScale: 1
+    - _Cutoff: 0.5
+    - _Metallic: 0
+    - _ObjectSpace: 0
+    - _OcclusionStrength: 1
+    - _RoughnessScale: 1
+    - _Tile: 2.5
+    - _TopTile: 3
+    - _Variation: 0.1
+    - _VariationSize: 8
+    - _WindowGloss: 0.9
+    - _WindowVariety: 0.35
+    - _Windows: 0
+    m_Colors:
+    - _BaseColor: {r: 0.7647059, g: 0.80784315, b: 0.7647059, a: 1}
+    - _TopColor: {r: 1, g: 1, b: 1, a: 1}
+    - _WindowColor: {r: 0.15999997, g: 0.18999997, b: 0.21999997, a: 1}
+    - _WindowGrid: {r: 3, g: 0, b: 3, a: 0}
+    - _WindowRows: {r: 3, g: 0.9, b: 0.9, a: 999}
+    - _WindowSize: {r: 1.3, g: 1.5, b: 0.08, a: 0}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1

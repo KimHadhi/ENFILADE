@@ -1,0 +1,101 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: faeb944eb3d42ea4fb476e0091f6f751, type: 3}
+  m_Name: PDW90
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponData
+  displayName: PDW90
+  hudIcon: {fileID: 0}
+  crosshairProfile: {fileID: 0}
+  category: 0
+  fireMode: 1
+  damage: 25
+  roundsPerMinute: 850
+  magazineSize: 35
+  reloadDuration: 3.583
+  range: 60
+  noiseRadius: 40
+  suppressedNoise: 0.3
+  gripRecoil: 0.8
+  gripAimTime: 0.8
+  recoilPerShot: {x: 1.2, y: 0.4}
+  initialReserveAmmo: 140
+  emptyReloadDuration: 4.017
+  burstCount: 3
+  burstPause: 0.22
+  hipSpread: 1.2
+  adsSpread: 0.12
+  movingSpread: 0.8
+  airborneSpread: 1.8
+  bloomPerShot: 0.18
+  maxBloom: 2.5
+  bloomRecovery: 2.2
+  headshotMultiplier: 5
+  penetration: 10
+  crouchSpread: 0.5
+  crouchRecoil: 0.65
+  autoReloadDelay: 0.2
+  pellets: 1
+  pelletSpread: 0
+  adsPelletSpread: 0
+  chokePelletSpread: 0
+  chokeSeconds: 0
+  fanRoundsPerMinute: 500
+  fanSpread: 3.5
+  shellReload: 0
+  shellInsertDuration: 0.6
+  shellEndDuration: 0.6
+  reloadStartSounds: []
+  reloadStartEmptySounds: []
+  shellInsertSounds: []
+  reloadEndSounds: []
+  magOutSounds: []
+  magInSounds: []
+  boltBackSounds: []
+  boltForwardSounds: []
+  drawSounds: []
+  recoilPattern: []
+  fireModes: 
+  drawDuration: 0
+  holsterDuration: 0
+  falloffStart: 1000
+  falloffEnd: 1000
+  falloffMinimum: 1
+  recoilVertical: 0.45
+  recoilHorizontal: 0.4
+  recoilDrift: 0
+  recoilFirstShot: 1.5
+  recoilSettleShots: 8
+  recoilResponse: 26
+  recoilRetention: 1
+  adsFov: 65
+  adsMoveMultiplier: 0.6
+  adsTransitionTime: 0.16
+  highReadyRaiseHalfLife: 0.07
+  highReadyLowerHalfLife: 0.09
+  leftGrip: {x: 0.26, y: -0.285, z: 0.7}
+  sideRail: {x: 0, y: 0, z: 0}
+  viewPunch: {x: 0.75, y: 0.3, z: 0.9}
+  viewPunchFov: 0.6
+  shakeTrauma: 0.07
+  muzzleFlashScale: 0.9
+  ejectShells: 1
+  soundProfile: 0
+  fireSounds:
+  - {fileID: 8300000, guid: 60a577d42b88b7b479897e762e01486f, type: 3}
+  - {fileID: 8300000, guid: c4cd0c5723a8dca4a9c03a13c059d8d0, type: 3}
+  - {fileID: 8300000, guid: 093c9177eeed68141a827a95fc803b0e, type: 3}
+  suppressedFireSounds:
+  - {fileID: 8300000, guid: 602e50cf2f574126875c88faf7321c6d, type: 3}
+  fireVolume: 1
+  postureDamage: 4
+  flinchMultiplier: 1
+  propImpulse: 3

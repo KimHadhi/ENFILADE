@@ -1,6 +1,72 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!114 &-7517787288678615946
+--- !u!114 &-8865338818317844688
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9c037f4882c5493a84c1732694149815, type: 3}
+  m_Name: IKRetargetFeature
+  m_EditorClassIdentifier: RetargetPro.Runtime::KINEMATION.RetargetPro.Runtime.Features.IKRetargeting.IKRetargetFeature
+  sourceRig: {fileID: -805393608983562154}
+  targetRig: {fileID: -3494360382233295389}
+  featureWeight: 1
+  featureWeightMode: 0
+  featureWeightCurve:
+    serializedVersion: 2
+    m_Curve: []
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  sourceChain:
+    chainName: rightArm
+    elementChain:
+    - name: clavicle_r
+      index: 66
+      depth: 8
+    - name: upperarm_r
+      index: 69
+      depth: 9
+    - name: lowerarm_r
+      index: 70
+      depth: 10
+    - name: hand_r
+      index: 71
+      depth: 11
+  targetChain:
+    chainName: rightArm
+    elementChain:
+    - name: Right shoulder
+      index: 342
+      depth: 7
+    - name: Right arm
+      index: 345
+      depth: 8
+    - name: Right elbow
+      index: 352
+      depth: 9
+    - name: Right wrist
+      index: 361
+      depth: 10
+  scaleWeight: 1
+  translationWeight: 0
+  offset: {x: 0, y: 0, z: 0}
+  ikWeight: 1
+  useChainIk: 0
+  effectorOffset: {x: 0, y: 0, z: 0}
+  effectorSpace: 2
+  jointBone:
+    name: Right elbow
+    index: 352
+    depth: 9
+  jointOffset: {x: -0, y: -0, z: -1}
+  poleWeight: 1
+  maxReachMultiplier: 0.98
+--- !u!114 &-8142583287926557906
 MonoBehaviour:
   m_ObjectHideFlags: 3
   m_CorrespondingSourceObject: {fileID: 0}
@@ -12,8 +78,51 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8a6e0cf430a4479280dbe53e7c58bd9c, type: 3}
   m_Name: BasicRetargetFeature
   m_EditorClassIdentifier: RetargetPro.Runtime::KINEMATION.RetargetPro.Runtime.Features.BasicRetargeting.BasicRetargetFeature
-  sourceRig: {fileID: -2688262157264638532}
-  targetRig: {fileID: 4133138665259210905}
+  sourceRig: {fileID: -805393608983562154}
+  targetRig: {fileID: -3494360382233295389}
+  featureWeight: 1
+  featureWeightMode: 0
+  featureWeightCurve:
+    serializedVersion: 2
+    m_Curve: []
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  sourceChain:
+    chainName: toes
+    elementChain:
+    - name: ball_l
+      index: 128
+      depth: 6
+    - name: ball_r
+      index: 151
+      depth: 6
+  targetChain:
+    chainName: toes
+    elementChain:
+    - name: Left toe
+      index: 25
+      depth: 7
+    - name: Right toe
+      index: 130
+      depth: 7
+  scaleWeight: 1
+  translationWeight: 0
+  offset: {x: 0, y: 0, z: 0}
+--- !u!114 &-6980731476015501754
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8a6e0cf430a4479280dbe53e7c58bd9c, type: 3}
+  m_Name: BasicRetargetFeature
+  m_EditorClassIdentifier: RetargetPro.Runtime::KINEMATION.RetargetPro.Runtime.Features.BasicRetargeting.BasicRetargetFeature
+  sourceRig: {fileID: -805393608983562154}
+  targetRig: {fileID: -3494360382233295389}
   featureWeight: 1
   featureWeightMode: 0
   featureWeightCurve:
@@ -67,7 +176,7 @@ MonoBehaviour:
   scaleWeight: 1
   translationWeight: 0
   offset: {x: 0, y: 0, z: 0}
---- !u!114 &-5604770068538805366
+--- !u!114 &-5396699649360046594
 MonoBehaviour:
   m_ObjectHideFlags: 3
   m_CorrespondingSourceObject: {fileID: 0}
@@ -76,11 +185,11 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8a6e0cf430a4479280dbe53e7c58bd9c, type: 3}
-  m_Name: BasicRetargetFeature
-  m_EditorClassIdentifier: RetargetPro.Runtime::KINEMATION.RetargetPro.Runtime.Features.BasicRetargeting.BasicRetargetFeature
-  sourceRig: {fileID: -2688262157264638532}
-  targetRig: {fileID: 4133138665259210905}
+  m_Script: {fileID: 11500000, guid: 047ec8cf93d297e498ed7eead64dde5c, type: 3}
+  m_Name: ShootingStanceFeature
+  m_EditorClassIdentifier: Assembly-CSharp-Editor::ShootingStanceFeature
+  sourceRig: {fileID: -805393608983562154}
+  targetRig: {fileID: -3494360382233295389}
   featureWeight: 1
   featureWeightMode: 0
   featureWeightCurve:
@@ -89,894 +198,8 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  sourceChain:
-    chainName: thumbFingers
-    elementChain:
-    - name: thumb_01_l
-      index: 40
-      depth: 12
-    - name: thumb_02_l
-      index: 41
-      depth: 13
-    - name: thumb_03_l
-      index: 42
-      depth: 14
-    - name: thumb_01_r
-      index: 88
-      depth: 12
-    - name: thumb_02_r
-      index: 89
-      depth: 13
-    - name: thumb_03_r
-      index: 90
-      depth: 14
-  targetChain:
-    chainName: thumbFingers
-    elementChain:
-    - name: Thumb0_L
-      index: 203
-      depth: 11
-    - name: Thumb1_L
-      index: 204
-      depth: 12
-    - name: Thumb2_L
-      index: 205
-      depth: 13
-    - name: Thumb0_R
-      index: 375
-      depth: 11
-    - name: Thumb1_R
-      index: 376
-      depth: 12
-    - name: Thumb2_R
-      index: 377
-      depth: 13
-  scaleWeight: 1
-  translationWeight: 0
-  offset: {x: 0, y: 0, z: 0}
---- !u!114 &-4530059421427476753
-MonoBehaviour:
-  m_ObjectHideFlags: 3
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8a6e0cf430a4479280dbe53e7c58bd9c, type: 3}
-  m_Name: BasicRetargetFeature
-  m_EditorClassIdentifier: RetargetPro.Runtime::KINEMATION.RetargetPro.Runtime.Features.BasicRetargeting.BasicRetargetFeature
-  sourceRig: {fileID: -2688262157264638532}
-  targetRig: {fileID: 4133138665259210905}
-  featureWeight: 1
-  featureWeightMode: 0
-  featureWeightCurve:
-    serializedVersion: 2
-    m_Curve: []
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  sourceChain:
-    chainName: toes
-    elementChain:
-    - name: ball_l
-      index: 128
-      depth: 6
-    - name: ball_r
-      index: 151
-      depth: 6
-  targetChain:
-    chainName: toes
-    elementChain:
-    - name: Left toe
-      index: 25
-      depth: 7
-    - name: Right toe
-      index: 130
-      depth: 7
-  scaleWeight: 1
-  translationWeight: 0
-  offset: {x: 0, y: 0, z: 0}
---- !u!114 &-3483511849220898663
-MonoBehaviour:
-  m_ObjectHideFlags: 3
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9c037f4882c5493a84c1732694149815, type: 3}
-  m_Name: IKRetargetFeature
-  m_EditorClassIdentifier: RetargetPro.Runtime::KINEMATION.RetargetPro.Runtime.Features.IKRetargeting.IKRetargetFeature
-  sourceRig: {fileID: -2688262157264638532}
-  targetRig: {fileID: 4133138665259210905}
-  featureWeight: 1
-  featureWeightMode: 0
-  featureWeightCurve:
-    serializedVersion: 2
-    m_Curve: []
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  sourceChain:
-    chainName: leftArm
-    elementChain:
-    - name: clavicle_l
-      index: 18
-      depth: 8
-    - name: upperarm_l
-      index: 21
-      depth: 9
-    - name: lowerarm_l
-      index: 22
-      depth: 10
-    - name: hand_l
-      index: 23
-      depth: 11
-  targetChain:
-    chainName: leftArm
-    elementChain:
-    - name: Left shoulder
-      index: 170
-      depth: 7
-    - name: Left arm
-      index: 173
-      depth: 8
-    - name: Left elbow
-      index: 180
-      depth: 9
-    - name: Left wrist
-      index: 189
-      depth: 10
-  scaleWeight: 1
-  translationWeight: 0
-  offset: {x: 0, y: 0, z: 0}
-  ikWeight: 1
-  useChainIk: 0
-  effectorOffset: {x: 0, y: 0, z: 0}
-  effectorSpace: 2
-  jointBone:
-    name: Left elbow
-    index: 180
-    depth: 9
-  jointOffset: {x: -0, y: -0, z: -1}
-  poleWeight: 1
-  maxReachMultiplier: 0.98
---- !u!114 &-2688262157264638532
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8c9c04639ae548bdb0a8e927492d029d, type: 3}
-  m_Name: SKM_Operator_Rig
-  m_EditorClassIdentifier: KAnimationCore.Runtime::KINEMATION.Shared.KAnimationCore.Runtime.Rig.KRig
-  targetAnimator: {fileID: 0}
-  rigHierarchy:
-  - name: SKM_Operator
-    index: 0
-    depth: 0
-  - name: Headset_Helmet_Fixed01.001
-    index: 1
-    depth: 1
-  - name: root
-    index: 2
-    depth: 1
-  - name: center_of_mass
-    index: 3
-    depth: 2
-  - name: ik_foot_root
-    index: 4
-    depth: 2
-  - name: ik_foot_l
-    index: 5
-    depth: 3
-  - name: ik_foot_r
-    index: 6
-    depth: 3
-  - name: ik_hand_root
-    index: 7
-    depth: 2
-  - name: ik_hand_gun
-    index: 8
-    depth: 3
-  - name: ik_hand_l
-    index: 9
-    depth: 4
-  - name: ik_hand_r
-    index: 10
-    depth: 4
-  - name: interaction
-    index: 11
-    depth: 2
-  - name: pelvis
-    index: 12
-    depth: 2
-  - name: spine_01
-    index: 13
-    depth: 3
-  - name: spine_02
-    index: 14
-    depth: 4
-  - name: spine_03
-    index: 15
-    depth: 5
-  - name: spine_04
-    index: 16
-    depth: 6
-  - name: spine_05
-    index: 17
-    depth: 7
-  - name: clavicle_l
-    index: 18
-    depth: 8
-  - name: clavicle_out_l
-    index: 19
-    depth: 9
-  - name: clavicle_scap_l
-    index: 20
-    depth: 9
-  - name: upperarm_l
-    index: 21
-    depth: 9
-  - name: lowerarm_l
-    index: 22
-    depth: 10
-  - name: hand_l
-    index: 23
-    depth: 11
-  - name: index_metacarpal_l
-    index: 24
-    depth: 12
-  - name: index_01_l
-    index: 25
-    depth: 13
-  - name: index_02_l
-    index: 26
-    depth: 14
-  - name: index_03_l
-    index: 27
-    depth: 15
-  - name: middle_metacarpal_l
-    index: 28
-    depth: 12
-  - name: middle_01_l
-    index: 29
-    depth: 13
-  - name: middle_02_l
-    index: 30
-    depth: 14
-  - name: middle_03_l
-    index: 31
-    depth: 15
-  - name: pinky_metacarpal_l
-    index: 32
-    depth: 12
-  - name: pinky_01_l
-    index: 33
-    depth: 13
-  - name: pinky_02_l
-    index: 34
-    depth: 14
-  - name: pinky_03_l
-    index: 35
-    depth: 15
-  - name: ring_metacarpal_l
-    index: 36
-    depth: 12
-  - name: ring_01_l
-    index: 37
-    depth: 13
-  - name: ring_02_l
-    index: 38
-    depth: 14
-  - name: ring_03_l
-    index: 39
-    depth: 15
-  - name: thumb_01_l
-    index: 40
-    depth: 12
-  - name: thumb_02_l
-    index: 41
-    depth: 13
-  - name: thumb_03_l
-    index: 42
-    depth: 14
-  - name: weapon_l
-    index: 43
-    depth: 12
-  - name: wrist_inner_l
-    index: 44
-    depth: 12
-  - name: wrist_outer_l
-    index: 45
-    depth: 12
-  - name: lowerarm_correctiveRoot_l
-    index: 46
-    depth: 11
-  - name: lowerarm_bck_l
-    index: 47
-    depth: 12
-  - name: lowerarm_fwd_l
-    index: 48
-    depth: 12
-  - name: lowerarm_in_l
-    index: 49
-    depth: 12
-  - name: lowerarm_out_l
-    index: 50
-    depth: 12
-  - name: lowerarm_twist_01_l
-    index: 51
-    depth: 11
-  - name: lowerarm_twist_02_l
-    index: 52
-    depth: 11
-  - name: upperarm_correctiveRoot_l
-    index: 53
-    depth: 10
-  - name: upperarm_bck_l
-    index: 54
-    depth: 11
-  - name: upperarm_fwd_l
-    index: 55
-    depth: 11
-  - name: upperarm_in_l
-    index: 56
-    depth: 11
-  - name: upperarm_out_l
-    index: 57
-    depth: 11
-  - name: upperarm_twist_01_l
-    index: 58
-    depth: 10
-  - name: upperarm_twistCor_01_l
-    index: 59
-    depth: 11
-  - name: upperarm_twist_02_l
-    index: 60
-    depth: 10
-  - name: upperarm_bicep_l
-    index: 61
-    depth: 11
-  - name: upperarm_tricep_l
-    index: 62
-    depth: 11
-  - name: upperarm_twistCor_02_l
-    index: 63
-    depth: 11
-  - name: clavicle_pec_l
-    index: 64
-    depth: 8
-  - name: clavicle_pec_r
-    index: 65
-    depth: 8
-  - name: clavicle_r
-    index: 66
-    depth: 8
-  - name: clavicle_out_r
-    index: 67
-    depth: 9
-  - name: clavicle_scap_r
-    index: 68
-    depth: 9
-  - name: upperarm_r
-    index: 69
-    depth: 9
-  - name: lowerarm_r
-    index: 70
-    depth: 10
-  - name: hand_r
-    index: 71
-    depth: 11
-  - name: index_metacarpal_r
-    index: 72
-    depth: 12
-  - name: index_01_r
-    index: 73
-    depth: 13
-  - name: index_02_r
-    index: 74
-    depth: 14
-  - name: index_03_r
-    index: 75
-    depth: 15
-  - name: middle_metacarpal_r
-    index: 76
-    depth: 12
-  - name: middle_01_r
-    index: 77
-    depth: 13
-  - name: middle_02_r
-    index: 78
-    depth: 14
-  - name: middle_03_r
-    index: 79
-    depth: 15
-  - name: pinky_metacarpal_r
-    index: 80
-    depth: 12
-  - name: pinky_01_r
-    index: 81
-    depth: 13
-  - name: pinky_02_r
-    index: 82
-    depth: 14
-  - name: pinky_03_r
-    index: 83
-    depth: 15
-  - name: ring_metacarpal_r
-    index: 84
-    depth: 12
-  - name: ring_01_r
-    index: 85
-    depth: 13
-  - name: ring_02_r
-    index: 86
-    depth: 14
-  - name: ring_03_r
-    index: 87
-    depth: 15
-  - name: thumb_01_r
-    index: 88
-    depth: 12
-  - name: thumb_02_r
-    index: 89
-    depth: 13
-  - name: thumb_03_r
-    index: 90
-    depth: 14
-  - name: weapon_r
-    index: 91
-    depth: 12
-  - name: wrist_inner_r
-    index: 92
-    depth: 12
-  - name: wrist_outer_r
-    index: 93
-    depth: 12
-  - name: lowerarm_correctiveRoot_r
-    index: 94
-    depth: 11
-  - name: lowerarm_bck_r
-    index: 95
-    depth: 12
-  - name: lowerarm_fwd_r
-    index: 96
-    depth: 12
-  - name: lowerarm_in_r
-    index: 97
-    depth: 12
-  - name: lowerarm_out_r
-    index: 98
-    depth: 12
-  - name: lowerarm_twist_01_r
-    index: 99
-    depth: 11
-  - name: lowerarm_twist_02_r
-    index: 100
-    depth: 11
-  - name: upperarm_correctiveRoot_r
-    index: 101
-    depth: 10
-  - name: upperarm_bck_r
-    index: 102
-    depth: 11
-  - name: upperarm_fwd_r
-    index: 103
-    depth: 11
-  - name: upperarm_in_r
-    index: 104
-    depth: 11
-  - name: upperarm_out_r
-    index: 105
-    depth: 11
-  - name: upperarm_twist_01_r
-    index: 106
-    depth: 10
-  - name: upperarm_twistCor_01_r
-    index: 107
-    depth: 11
-  - name: upperarm_twist_02_r
-    index: 108
-    depth: 10
-  - name: upperarm_bicep_r
-    index: 109
-    depth: 11
-  - name: upperarm_tricep_r
-    index: 110
-    depth: 11
-  - name: upperarm_twistCor_02_r
-    index: 111
-    depth: 11
-  - name: neck_01
-    index: 112
-    depth: 8
-  - name: neck_02
-    index: 113
-    depth: 9
-  - name: head
-    index: 114
-    depth: 10
-  - name: spine_04_latissimus_l
-    index: 115
-    depth: 8
-  - name: spine_04_latissimus_r
-    index: 116
-    depth: 8
-  - name: thigh_l
-    index: 117
-    depth: 3
-  - name: calf_l
-    index: 118
-    depth: 4
-  - name: calf_correctiveRoot_l
-    index: 119
-    depth: 5
-  - name: calf_knee_l
-    index: 120
-    depth: 6
-  - name: calf_kneeBack_l
-    index: 121
-    depth: 6
-  - name: calf_twist_01_l
-    index: 122
-    depth: 5
-  - name: calf_twist_02_l
-    index: 123
-    depth: 5
-  - name: calf_twistCor_02_l
-    index: 124
-    depth: 6
-  - name: foot_l
-    index: 125
-    depth: 5
-  - name: ankle_bck_l
-    index: 126
-    depth: 6
-  - name: ankle_fwd_l
-    index: 127
-    depth: 6
-  - name: ball_l
-    index: 128
-    depth: 6
-  - name: thigh_correctiveRoot_l
-    index: 129
-    depth: 4
-  - name: thigh_bck_l
-    index: 130
-    depth: 5
-  - name: thigh_bck_lwr_l
-    index: 131
-    depth: 5
-  - name: thigh_fwd_l
-    index: 132
-    depth: 5
-  - name: thigh_fwd_lwr_l
-    index: 133
-    depth: 5
-  - name: thigh_in_l
-    index: 134
-    depth: 5
-  - name: thigh_out_l
-    index: 135
-    depth: 5
-  - name: thigh_twist_01_l
-    index: 136
-    depth: 4
-  - name: thigh_twistCor_01_l
-    index: 137
-    depth: 5
-  - name: thigh_twist_02_l
-    index: 138
-    depth: 4
-  - name: thigh_twistCor_02_l
-    index: 139
-    depth: 5
-  - name: thigh_r
-    index: 140
-    depth: 3
-  - name: calf_r
-    index: 141
-    depth: 4
-  - name: calf_correctiveRoot_r
-    index: 142
-    depth: 5
-  - name: calf_knee_r
-    index: 143
-    depth: 6
-  - name: calf_kneeBack_r
-    index: 144
-    depth: 6
-  - name: calf_twist_01_r
-    index: 145
-    depth: 5
-  - name: calf_twist_02_r
-    index: 146
-    depth: 5
-  - name: calf_twistCor_02_r
-    index: 147
-    depth: 6
-  - name: foot_r
-    index: 148
-    depth: 5
-  - name: ankle_bck_r
-    index: 149
-    depth: 6
-  - name: ankle_fwd_r
-    index: 150
-    depth: 6
-  - name: ball_r
-    index: 151
-    depth: 6
-  - name: thigh_correctiveRoot_r
-    index: 152
-    depth: 4
-  - name: thigh_bck_lwr_r
-    index: 153
-    depth: 5
-  - name: thigh_bck_r
-    index: 154
-    depth: 5
-  - name: thigh_fwd_lwr_r
-    index: 155
-    depth: 5
-  - name: thigh_fwd_r
-    index: 156
-    depth: 5
-  - name: thigh_in_r
-    index: 157
-    depth: 5
-  - name: thigh_out_r
-    index: 158
-    depth: 5
-  - name: thigh_twist_01_r
-    index: 159
-    depth: 4
-  - name: thigh_twistCor_01_r
-    index: 160
-    depth: 5
-  - name: thigh_twist_02_r
-    index: 161
-    depth: 4
-  - name: thigh_twistCor_02_r
-    index: 162
-    depth: 5
-  - name: SK_Boot_01a.001
-    index: 163
-    depth: 1
-  - name: SK_Glove_01a.001
-    index: 164
-    depth: 1
-  - name: SK_Googles_01a.001
-    index: 165
-    depth: 1
-  - name: SK_Head_01a.001
-    index: 166
-    depth: 1
-  - name: SK_Helmet_01a.001
-    index: 167
-    depth: 1
-  - name: SK_Hips_Pouches_01a.001
-    index: 168
-    depth: 1
-  - name: SK_Mask_01a.001
-    index: 169
-    depth: 1
-  - name: SK_Pants_01a.001
-    index: 170
-    depth: 1
-  - name: SK_Shirt_01a.001
-    index: 171
-    depth: 1
-  - name: SK_Vest_01a.001
-    index: 172
-    depth: 1
-  rigElementChains:
-  - chainName: root
-    elementChain:
-    - name: root
-      index: 2
-      depth: 1
-  - chainName: pelvis
-    elementChain:
-    - name: pelvis
-      index: 12
-      depth: 2
-  - chainName: rightLeg
-    elementChain:
-    - name: thigh_r
-      index: 140
-      depth: 3
-    - name: calf_r
-      index: 141
-      depth: 4
-    - name: foot_r
-      index: 148
-      depth: 5
-  - chainName: leftLeg
-    elementChain:
-    - name: thigh_l
-      index: 117
-      depth: 3
-    - name: calf_l
-      index: 118
-      depth: 4
-    - name: foot_l
-      index: 125
-      depth: 5
-  - chainName: toes
-    elementChain:
-    - name: ball_l
-      index: 128
-      depth: 6
-    - name: ball_r
-      index: 151
-      depth: 6
-  - chainName: spine
-    elementChain:
-    - name: spine_01
-      index: 13
-      depth: 3
-    - name: spine_02
-      index: 14
-      depth: 4
-    - name: spine_03
-      index: 15
-      depth: 5
-    - name: spine_04
-      index: 16
-      depth: 6
-    - name: spine_05
-      index: 17
-      depth: 7
-  - chainName: neck
-    elementChain:
-    - name: neck_01
-      index: 112
-      depth: 8
-    - name: neck_02
-      index: 113
-      depth: 9
-    - name: head
-      index: 114
-      depth: 10
-  - chainName: rightArm
-    elementChain:
-    - name: clavicle_r
-      index: 66
-      depth: 8
-    - name: upperarm_r
-      index: 69
-      depth: 9
-    - name: lowerarm_r
-      index: 70
-      depth: 10
-    - name: hand_r
-      index: 71
-      depth: 11
-  - chainName: leftArm
-    elementChain:
-    - name: clavicle_l
-      index: 18
-      depth: 8
-    - name: upperarm_l
-      index: 21
-      depth: 9
-    - name: lowerarm_l
-      index: 22
-      depth: 10
-    - name: hand_l
-      index: 23
-      depth: 11
-  - chainName: indexFingers
-    elementChain:
-    - name: index_01_l
-      index: 25
-      depth: 13
-    - name: index_02_l
-      index: 26
-      depth: 14
-    - name: index_03_l
-      index: 27
-      depth: 15
-    - name: index_01_r
-      index: 73
-      depth: 13
-    - name: index_02_r
-      index: 74
-      depth: 14
-    - name: index_03_r
-      index: 75
-      depth: 15
-  - chainName: middleFingers
-    elementChain:
-    - name: middle_01_l
-      index: 29
-      depth: 13
-    - name: middle_02_l
-      index: 30
-      depth: 14
-    - name: middle_03_l
-      index: 31
-      depth: 15
-    - name: middle_01_r
-      index: 77
-      depth: 13
-    - name: middle_02_r
-      index: 78
-      depth: 14
-    - name: middle_03_r
-      index: 79
-      depth: 15
-  - chainName: ringFingers
-    elementChain:
-    - name: ring_01_l
-      index: 37
-      depth: 13
-    - name: ring_02_l
-      index: 38
-      depth: 14
-    - name: ring_03_l
-      index: 39
-      depth: 15
-    - name: ring_01_r
-      index: 85
-      depth: 13
-    - name: ring_02_r
-      index: 86
-      depth: 14
-    - name: ring_03_r
-      index: 87
-      depth: 15
-  - chainName: pinkyFingers
-    elementChain:
-    - name: pinky_01_l
-      index: 33
-      depth: 13
-    - name: pinky_02_l
-      index: 34
-      depth: 14
-    - name: pinky_03_l
-      index: 35
-      depth: 15
-    - name: pinky_01_r
-      index: 81
-      depth: 13
-    - name: pinky_02_r
-      index: 82
-      depth: 14
-    - name: pinky_03_r
-      index: 83
-      depth: 15
-  - chainName: thumbFingers
-    elementChain:
-    - name: thumb_01_l
-      index: 40
-      depth: 12
-    - name: thumb_02_l
-      index: 41
-      depth: 13
-    - name: thumb_03_l
-      index: 42
-      depth: 14
-    - name: thumb_01_r
-      index: 88
-      depth: 12
-    - name: thumb_02_r
-      index: 89
-      depth: 13
-    - name: thumb_03_r
-      index: 90
-      depth: 14
-  inputConfig: {fileID: 0}
-  rigCurves: []
-  rigDepths: 000000000100000001000000020000000200000003000000030000000200000003000000040000000400000002000000020000000300000004000000050000000600000007000000080000000900000009000000090000000a0000000b0000000c0000000d0000000e0000000f0000000c0000000d0000000e0000000f0000000c0000000d0000000e0000000f0000000c0000000d0000000e0000000f0000000c0000000d0000000e0000000c0000000c0000000c0000000b0000000c0000000c0000000c0000000c0000000b0000000b0000000a0000000b0000000b0000000b0000000b0000000a0000000b0000000a0000000b0000000b0000000b0000000800000008000000080000000900000009000000090000000a0000000b0000000c0000000d0000000e0000000f0000000c0000000d0000000e0000000f0000000c0000000d0000000e0000000f0000000c0000000d0000000e0000000f0000000c0000000d0000000e0000000c0000000c0000000c0000000b0000000c0000000c0000000c0000000c0000000b0000000b0000000a0000000b0000000b0000000b0000000b0000000a0000000b0000000a0000000b0000000b0000000b00000008000000090000000a00000008000000080000000300000004000000050000000600000006000000050000000500000006000000050000000600000006000000060000000400000005000000050000000500000005000000050000000500000004000000050000000400000005000000030000000400000005000000060000000600000005000000050000000600000005000000060000000600000006000000040000000500000005000000050000000500000005000000050000000400000005000000040000000500000001000000010000000100000001000000010000000100000001000000010000000100000001000000
---- !u!114 &-1120221846520756504
+  blade: 0
+--- !u!114 &-4679030167966705279
 MonoBehaviour:
   m_ObjectHideFlags: 3
   m_CorrespondingSourceObject: {fileID: 0}
@@ -988,8 +211,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e8ad39bf7ddc43509a659ce5df42358b, type: 3}
   m_Name: FPSRetargetFeature
   m_EditorClassIdentifier: RetargetPro.Runtime::KINEMATION.RetargetPro.Runtime.Features.FPSRetargeting.FPSRetargetFeature
-  sourceRig: {fileID: -2688262157264638532}
-  targetRig: {fileID: 4133138665259210905}
+  sourceRig: {fileID: -805393608983562154}
+  targetRig: {fileID: -3494360382233295389}
   featureWeight: 1
   featureWeightMode: 0
   featureWeightCurve:
@@ -1060,95 +283,10 @@ MonoBehaviour:
       depth: 1
   rightHandOffset: {x: 0, y: 0, z: 0}
   leftHandOffset: {x: 0, y: 0, z: 0}
-  weaponOffset: {x: -0.030022068, y: 0.008247614, z: -0.077760905}
+  weaponOffset: {x: 0, y: 0, z: 0}
   rightPoleOffset: {x: 0, y: 0, z: 0}
   leftPoleOffset: {x: 0, y: 0, z: 0}
---- !u!114 &-961310059665910022
-MonoBehaviour:
-  m_ObjectHideFlags: 3
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 692a86d3af6eef14a88ebfe8ed814739, type: 3}
-  m_Name: RootPelvisRetargetFeature
-  m_EditorClassIdentifier: RetargetPro.Runtime::KINEMATION.RetargetPro.Runtime.Features.RootPelvisRetargeting.RootPelvisRetargetFeature
-  sourceRig: {fileID: -2688262157264638532}
-  targetRig: {fileID: 4133138665259210905}
-  featureWeight: 1
-  featureWeightMode: 0
-  featureWeightCurve:
-    serializedVersion: 2
-    m_Curve: []
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  sourceChain:
-    chainName: root
-    elementChain:
-    - name: root
-      index: 2
-      depth: 1
-  targetChain:
-    chainName: root
-    elementChain: []
-  scaleWeight: 1
-  translationWeight: 1
-  offset: {x: 0, y: 0, z: 0}
---- !u!114 &11400000
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 12349bae48c61824bb8e519537ce28eb, type: 3}
-  m_Name: KazusaBand_SKM_Operator_RetargetTarget_Profile
-  m_EditorClassIdentifier: RetargetPro.Runtime::KINEMATION.RetargetPro.Runtime.RetargetProfile
-  sourceCharacter: {fileID: 919132149155446097, guid: 9713510aa4164a84e90ad27b9bca8f8b, type: 3}
-  targetCharacter: {fileID: 7636154776708215183, guid: 2b6a12925452f394182b9d02b3e94e13, type: 3}
-  sourcePose: {fileID: 0}
-  targetPose: {fileID: 0}
-  sourceRig: {fileID: -2688262157264638532}
-  targetRig: {fileID: 4133138665259210905}
-  rootMotionBone:
-    name: 
-    index: -1
-    depth: -1
-  clipItemModel: {fileID: 0}
-  clipItemAnimation: {fileID: 0}
-  clipItemBone:
-    name: 
-    index: 0
-    depth: 0
-  clipItemRotationOffset: {x: 0, y: 0, z: 0}
-  <cameraViewPose>k__BackingField:
-    position: {x: 0, y: 0, z: 0}
-    rotation: {x: 0, y: 0, z: 0, w: 1}
-    scale: {x: 1, y: 1, z: 1}
-  saveFolderPath: Assets/_Project/Data/Combat/GunBakes/KazusaBand
-  retargetFeatures:
-  - {fileID: -961310059665910022}
-  - {fileID: 1839176154980053514}
-  - {fileID: 5993960966723053449}
-  - {fileID: 1128183446514752366}
-  - {fileID: -4530059421427476753}
-  - {fileID: 6819730583222845541}
-  - {fileID: 2539764405283196757}
-  - {fileID: 1989968706245756052}
-  - {fileID: -3483511849220898663}
-  - {fileID: -7517787288678615946}
-  - {fileID: 7893367792277647103}
-  - {fileID: 332002871362689532}
-  - {fileID: 3319835026641771296}
-  - {fileID: -5604770068538805366}
-  - {fileID: 2866827326663163688}
-  - {fileID: -1120221846520756504}
---- !u!114 &332002871362689532
+--- !u!114 &-4260525124956785099
 MonoBehaviour:
   m_ObjectHideFlags: 3
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1160,307 +298,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8a6e0cf430a4479280dbe53e7c58bd9c, type: 3}
   m_Name: BasicRetargetFeature
   m_EditorClassIdentifier: RetargetPro.Runtime::KINEMATION.RetargetPro.Runtime.Features.BasicRetargeting.BasicRetargetFeature
-  sourceRig: {fileID: -2688262157264638532}
-  targetRig: {fileID: 4133138665259210905}
-  featureWeight: 1
-  featureWeightMode: 0
-  featureWeightCurve:
-    serializedVersion: 2
-    m_Curve: []
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  sourceChain:
-    chainName: ringFingers
-    elementChain:
-    - name: ring_01_l
-      index: 37
-      depth: 13
-    - name: ring_02_l
-      index: 38
-      depth: 14
-    - name: ring_03_l
-      index: 39
-      depth: 15
-    - name: ring_01_r
-      index: 85
-      depth: 13
-    - name: ring_02_r
-      index: 86
-      depth: 14
-    - name: ring_03_r
-      index: 87
-      depth: 15
-  targetChain:
-    chainName: ringFingers
-    elementChain:
-    - name: RingFinger1_L
-      index: 200
-      depth: 11
-    - name: RingFinger2_L
-      index: 201
-      depth: 12
-    - name: RingFinger3_L
-      index: 202
-      depth: 13
-    - name: RingFinger1_R
-      index: 372
-      depth: 11
-    - name: RingFinger2_R
-      index: 373
-      depth: 12
-    - name: RingFinger3_R
-      index: 374
-      depth: 13
-  scaleWeight: 1
-  translationWeight: 0
-  offset: {x: 0, y: 0, z: 0}
---- !u!114 &1128183446514752366
-MonoBehaviour:
-  m_ObjectHideFlags: 3
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9c037f4882c5493a84c1732694149815, type: 3}
-  m_Name: IKRetargetFeature
-  m_EditorClassIdentifier: RetargetPro.Runtime::KINEMATION.RetargetPro.Runtime.Features.IKRetargeting.IKRetargetFeature
-  sourceRig: {fileID: -2688262157264638532}
-  targetRig: {fileID: 4133138665259210905}
-  featureWeight: 1
-  featureWeightMode: 0
-  featureWeightCurve:
-    serializedVersion: 2
-    m_Curve: []
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  sourceChain:
-    chainName: leftLeg
-    elementChain:
-    - name: thigh_l
-      index: 117
-      depth: 3
-    - name: calf_l
-      index: 118
-      depth: 4
-    - name: foot_l
-      index: 125
-      depth: 5
-  targetChain:
-    chainName: leftLeg
-    elementChain:
-    - name: Left leg
-      index: 9
-      depth: 4
-    - name: Left knee
-      index: 16
-      depth: 5
-    - name: Left ankle
-      index: 24
-      depth: 6
-  scaleWeight: 1
-  translationWeight: 0
-  offset: {x: 0, y: 0, z: 0}
-  ikWeight: 1
-  useChainIk: 0
-  effectorOffset: {x: 0, y: 0, z: 0}
-  effectorSpace: 2
-  jointBone:
-    name: Left knee
-    index: 16
-    depth: 5
-  jointOffset: {x: 0, y: 0, z: 1}
-  poleWeight: 1
-  maxReachMultiplier: 0.98
---- !u!114 &1839176154980053514
-MonoBehaviour:
-  m_ObjectHideFlags: 3
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 692a86d3af6eef14a88ebfe8ed814739, type: 3}
-  m_Name: RootPelvisRetargetFeature
-  m_EditorClassIdentifier: RetargetPro.Runtime::KINEMATION.RetargetPro.Runtime.Features.RootPelvisRetargeting.RootPelvisRetargetFeature
-  sourceRig: {fileID: -2688262157264638532}
-  targetRig: {fileID: 4133138665259210905}
-  featureWeight: 1
-  featureWeightMode: 0
-  featureWeightCurve:
-    serializedVersion: 2
-    m_Curve: []
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  sourceChain:
-    chainName: pelvis
-    elementChain:
-    - name: pelvis
-      index: 12
-      depth: 2
-  targetChain:
-    chainName: pelvis
-    elementChain:
-    - name: Hips
-      index: 8
-      depth: 3
-  scaleWeight: 1
-  translationWeight: 1
-  offset: {x: 0, y: 0, z: 0}
---- !u!114 &1989968706245756052
-MonoBehaviour:
-  m_ObjectHideFlags: 3
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9c037f4882c5493a84c1732694149815, type: 3}
-  m_Name: IKRetargetFeature
-  m_EditorClassIdentifier: RetargetPro.Runtime::KINEMATION.RetargetPro.Runtime.Features.IKRetargeting.IKRetargetFeature
-  sourceRig: {fileID: -2688262157264638532}
-  targetRig: {fileID: 4133138665259210905}
-  featureWeight: 1
-  featureWeightMode: 0
-  featureWeightCurve:
-    serializedVersion: 2
-    m_Curve: []
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  sourceChain:
-    chainName: rightArm
-    elementChain:
-    - name: clavicle_r
-      index: 66
-      depth: 8
-    - name: upperarm_r
-      index: 69
-      depth: 9
-    - name: lowerarm_r
-      index: 70
-      depth: 10
-    - name: hand_r
-      index: 71
-      depth: 11
-  targetChain:
-    chainName: rightArm
-    elementChain:
-    - name: Right shoulder
-      index: 342
-      depth: 7
-    - name: Right arm
-      index: 345
-      depth: 8
-    - name: Right elbow
-      index: 352
-      depth: 9
-    - name: Right wrist
-      index: 361
-      depth: 10
-  scaleWeight: 1
-  translationWeight: 0
-  offset: {x: 0, y: 0, z: 0}
-  ikWeight: 1
-  useChainIk: 0
-  effectorOffset: {x: 0, y: 0, z: 0}
-  effectorSpace: 2
-  jointBone:
-    name: Right elbow
-    index: 352
-    depth: 9
-  jointOffset: {x: -0, y: -0, z: -1}
-  poleWeight: 1
-  maxReachMultiplier: 0.98
---- !u!114 &2539764405283196757
-MonoBehaviour:
-  m_ObjectHideFlags: 3
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8a6e0cf430a4479280dbe53e7c58bd9c, type: 3}
-  m_Name: BasicRetargetFeature
-  m_EditorClassIdentifier: RetargetPro.Runtime::KINEMATION.RetargetPro.Runtime.Features.BasicRetargeting.BasicRetargetFeature
-  sourceRig: {fileID: -2688262157264638532}
-  targetRig: {fileID: 4133138665259210905}
-  featureWeight: 1
-  featureWeightMode: 0
-  featureWeightCurve:
-    serializedVersion: 2
-    m_Curve: []
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  sourceChain:
-    chainName: neck
-    elementChain:
-    - name: neck_01
-      index: 112
-      depth: 8
-    - name: neck_02
-      index: 113
-      depth: 9
-    - name: head
-      index: 114
-      depth: 10
-  targetChain:
-    chainName: neck
-    elementChain:
-    - name: Neck
-      index: 206
-      depth: 7
-    - name: HeadBone
-      index: 208
-      depth: 8
-  scaleWeight: 1
-  translationWeight: 0
-  offset: {x: 0, y: 0, z: 0}
---- !u!114 &2866827326663163688
-MonoBehaviour:
-  m_ObjectHideFlags: 3
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 047ec8cf93d297e498ed7eead64dde5c, type: 3}
-  m_Name: ShootingStanceFeature
-  m_EditorClassIdentifier: Assembly-CSharp-Editor::ShootingStanceFeature
-  sourceRig: {fileID: -2688262157264638532}
-  targetRig: {fileID: 4133138665259210905}
-  featureWeight: 1
-  featureWeightMode: 0
-  featureWeightCurve:
-    serializedVersion: 2
-    m_Curve: []
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  blade: 0
---- !u!114 &3319835026641771296
-MonoBehaviour:
-  m_ObjectHideFlags: 3
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8a6e0cf430a4479280dbe53e7c58bd9c, type: 3}
-  m_Name: BasicRetargetFeature
-  m_EditorClassIdentifier: RetargetPro.Runtime::KINEMATION.RetargetPro.Runtime.Features.BasicRetargeting.BasicRetargetFeature
-  sourceRig: {fileID: -2688262157264638532}
-  targetRig: {fileID: 4133138665259210905}
+  sourceRig: {fileID: -805393608983562154}
+  targetRig: {fileID: -3494360382233295389}
   featureWeight: 1
   featureWeightMode: 0
   featureWeightCurve:
@@ -1514,7 +353,41 @@ MonoBehaviour:
   scaleWeight: 1
   translationWeight: 0
   offset: {x: 0, y: 0, z: 0}
---- !u!114 &4133138665259210905
+--- !u!114 &-4028360630618208001
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 692a86d3af6eef14a88ebfe8ed814739, type: 3}
+  m_Name: RootPelvisRetargetFeature
+  m_EditorClassIdentifier: RetargetPro.Runtime::KINEMATION.RetargetPro.Runtime.Features.RootPelvisRetargeting.RootPelvisRetargetFeature
+  sourceRig: {fileID: -805393608983562154}
+  targetRig: {fileID: -3494360382233295389}
+  featureWeight: 1
+  featureWeightMode: 0
+  featureWeightCurve:
+    serializedVersion: 2
+    m_Curve: []
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  sourceChain:
+    chainName: root
+    elementChain:
+    - name: root
+      index: 2
+      depth: 1
+  targetChain:
+    chainName: root
+    elementChain: []
+  scaleWeight: 1
+  translationWeight: 1
+  offset: {x: 0, y: 0, z: 0}
+--- !u!114 &-3494360382233295389
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -2862,7 +1735,950 @@ MonoBehaviour:
   inputConfig: {fileID: 0}
   rigCurves: []
   rigDepths: 000000000100000001000000010000000100000001000000010000000200000003000000040000000500000006000000050000000600000005000000060000000500000006000000060000000700000006000000070000000600000007000000060000000700000008000000080000000900000008000000090000000800000009000000080000000400000005000000060000000700000008000000090000000a0000000b000000060000000700000008000000090000000a0000000b0000000c000000060000000700000008000000090000000a0000000b0000000c000000060000000700000008000000090000000a0000000b0000000c000000060000000700000008000000090000000a0000000b0000000c000000060000000700000008000000090000000a0000000b0000000c000000060000000700000008000000090000000a0000000b0000000c000000060000000700000008000000090000000a0000000b0000000c00000005000000060000000700000008000000060000000700000006000000070000000800000009000000060000000700000008000000090000000600000007000000080000000900000008000000090000000700000007000000050000000400000005000000060000000500000006000000050000000600000005000000060000000600000007000000060000000700000006000000070000000600000007000000080000000800000009000000080000000900000008000000090000000800000004000000050000000500000006000000060000000700000008000000090000000a0000000b0000000c0000000d0000000e0000000f000000100000000f0000000d0000000b00000008000000090000000a0000000b0000000c0000000d0000000e0000000f000000100000000f0000000d0000000b0000000700000007000000080000000900000008000000090000000a000000090000000a000000090000000a000000090000000a0000000b0000000a0000000b0000000c0000000a0000000a0000000b0000000a0000000b0000000b0000000c0000000d0000000b0000000c0000000d0000000b0000000c0000000d0000000b0000000c0000000d0000000b0000000c0000000d000000070000000800000008000000090000000a0000000a0000000a0000000a0000000a0000000a0000000a0000000a0000000a0000000a000000090000000a0000000a0000000a0000000a0000000a0000000a0000000a0000000a0000000a0000000a000000090000000a0000000b0000000c0000000d0000000e0000000f0000000f0000000e0000000e0000000d0000000d0000000a0000000b0000000c0000000d0000000e0000000f0000001000000011000000110000001000000011000000110000001100000012000000100000000f000000100000001100000011000000120000001200000012000000120000000e0000000f000000100000001100000012000000130000001400000015000000150000001500000015000000150000001500000015000000150000001000000011000000120000001300000014000000150000001500000016000000170000001500000015000000150000001600000017000000150000001600000010000000110000001200000013000000140000001000000011000000120000001300000014000000100000001100000012000000130000001400000015000000160000001600000010000000110000001200000013000000140000000f00000010000000100000000f00000010000000100000000f0000001000000011000000120000001300000013000000110000001200000013000000130000000e0000000f00000010000000110000000f0000001000000007000000080000000900000008000000090000000a000000090000000a000000090000000a000000090000000a0000000b0000000a0000000b0000000c0000000a0000000a0000000b0000000a0000000b0000000b0000000c0000000d0000000b0000000c0000000d0000000b0000000c0000000d0000000b0000000c0000000d0000000b0000000c0000000d00000001000000010000000100000001000000
---- !u!114 &5993960966723053449
+--- !u!114 &-2073244920432249577
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8a6e0cf430a4479280dbe53e7c58bd9c, type: 3}
+  m_Name: BasicRetargetFeature
+  m_EditorClassIdentifier: RetargetPro.Runtime::KINEMATION.RetargetPro.Runtime.Features.BasicRetargeting.BasicRetargetFeature
+  sourceRig: {fileID: -805393608983562154}
+  targetRig: {fileID: -3494360382233295389}
+  featureWeight: 1
+  featureWeightMode: 0
+  featureWeightCurve:
+    serializedVersion: 2
+    m_Curve: []
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  sourceChain:
+    chainName: thumbFingers
+    elementChain:
+    - name: thumb_01_l
+      index: 40
+      depth: 12
+    - name: thumb_02_l
+      index: 41
+      depth: 13
+    - name: thumb_03_l
+      index: 42
+      depth: 14
+    - name: thumb_01_r
+      index: 88
+      depth: 12
+    - name: thumb_02_r
+      index: 89
+      depth: 13
+    - name: thumb_03_r
+      index: 90
+      depth: 14
+  targetChain:
+    chainName: thumbFingers
+    elementChain:
+    - name: Thumb0_L
+      index: 203
+      depth: 11
+    - name: Thumb1_L
+      index: 204
+      depth: 12
+    - name: Thumb2_L
+      index: 205
+      depth: 13
+    - name: Thumb0_R
+      index: 375
+      depth: 11
+    - name: Thumb1_R
+      index: 376
+      depth: 12
+    - name: Thumb2_R
+      index: 377
+      depth: 13
+  scaleWeight: 1
+  translationWeight: 0
+  offset: {x: 0, y: 0, z: 0}
+--- !u!114 &-1614860294894296350
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8a6e0cf430a4479280dbe53e7c58bd9c, type: 3}
+  m_Name: BasicRetargetFeature
+  m_EditorClassIdentifier: RetargetPro.Runtime::KINEMATION.RetargetPro.Runtime.Features.BasicRetargeting.BasicRetargetFeature
+  sourceRig: {fileID: -805393608983562154}
+  targetRig: {fileID: -3494360382233295389}
+  featureWeight: 1
+  featureWeightMode: 0
+  featureWeightCurve:
+    serializedVersion: 2
+    m_Curve: []
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  sourceChain:
+    chainName: spine
+    elementChain:
+    - name: spine_01
+      index: 13
+      depth: 3
+    - name: spine_02
+      index: 14
+      depth: 4
+    - name: spine_03
+      index: 15
+      depth: 5
+    - name: spine_04
+      index: 16
+      depth: 6
+    - name: spine_05
+      index: 17
+      depth: 7
+  targetChain:
+    chainName: spine
+    elementChain:
+    - name: Spine
+      index: 139
+      depth: 4
+    - name: Chest
+      index: 141
+      depth: 5
+    - name: Upper Chest
+      index: 143
+      depth: 6
+  scaleWeight: 1
+  translationWeight: 0
+  offset: {x: 0, y: 0, z: 0}
+--- !u!114 &-805393608983562154
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8c9c04639ae548bdb0a8e927492d029d, type: 3}
+  m_Name: SKM_Operator_Rig
+  m_EditorClassIdentifier: KAnimationCore.Runtime::KINEMATION.Shared.KAnimationCore.Runtime.Rig.KRig
+  targetAnimator: {fileID: 0}
+  rigHierarchy:
+  - name: SKM_Operator
+    index: 0
+    depth: 0
+  - name: Headset_Helmet_Fixed01.001
+    index: 1
+    depth: 1
+  - name: root
+    index: 2
+    depth: 1
+  - name: center_of_mass
+    index: 3
+    depth: 2
+  - name: ik_foot_root
+    index: 4
+    depth: 2
+  - name: ik_foot_l
+    index: 5
+    depth: 3
+  - name: ik_foot_r
+    index: 6
+    depth: 3
+  - name: ik_hand_root
+    index: 7
+    depth: 2
+  - name: ik_hand_gun
+    index: 8
+    depth: 3
+  - name: ik_hand_l
+    index: 9
+    depth: 4
+  - name: ik_hand_r
+    index: 10
+    depth: 4
+  - name: interaction
+    index: 11
+    depth: 2
+  - name: pelvis
+    index: 12
+    depth: 2
+  - name: spine_01
+    index: 13
+    depth: 3
+  - name: spine_02
+    index: 14
+    depth: 4
+  - name: spine_03
+    index: 15
+    depth: 5
+  - name: spine_04
+    index: 16
+    depth: 6
+  - name: spine_05
+    index: 17
+    depth: 7
+  - name: clavicle_l
+    index: 18
+    depth: 8
+  - name: clavicle_out_l
+    index: 19
+    depth: 9
+  - name: clavicle_scap_l
+    index: 20
+    depth: 9
+  - name: upperarm_l
+    index: 21
+    depth: 9
+  - name: lowerarm_l
+    index: 22
+    depth: 10
+  - name: hand_l
+    index: 23
+    depth: 11
+  - name: index_metacarpal_l
+    index: 24
+    depth: 12
+  - name: index_01_l
+    index: 25
+    depth: 13
+  - name: index_02_l
+    index: 26
+    depth: 14
+  - name: index_03_l
+    index: 27
+    depth: 15
+  - name: middle_metacarpal_l
+    index: 28
+    depth: 12
+  - name: middle_01_l
+    index: 29
+    depth: 13
+  - name: middle_02_l
+    index: 30
+    depth: 14
+  - name: middle_03_l
+    index: 31
+    depth: 15
+  - name: pinky_metacarpal_l
+    index: 32
+    depth: 12
+  - name: pinky_01_l
+    index: 33
+    depth: 13
+  - name: pinky_02_l
+    index: 34
+    depth: 14
+  - name: pinky_03_l
+    index: 35
+    depth: 15
+  - name: ring_metacarpal_l
+    index: 36
+    depth: 12
+  - name: ring_01_l
+    index: 37
+    depth: 13
+  - name: ring_02_l
+    index: 38
+    depth: 14
+  - name: ring_03_l
+    index: 39
+    depth: 15
+  - name: thumb_01_l
+    index: 40
+    depth: 12
+  - name: thumb_02_l
+    index: 41
+    depth: 13
+  - name: thumb_03_l
+    index: 42
+    depth: 14
+  - name: weapon_l
+    index: 43
+    depth: 12
+  - name: wrist_inner_l
+    index: 44
+    depth: 12
+  - name: wrist_outer_l
+    index: 45
+    depth: 12
+  - name: lowerarm_correctiveRoot_l
+    index: 46
+    depth: 11
+  - name: lowerarm_bck_l
+    index: 47
+    depth: 12
+  - name: lowerarm_fwd_l
+    index: 48
+    depth: 12
+  - name: lowerarm_in_l
+    index: 49
+    depth: 12
+  - name: lowerarm_out_l
+    index: 50
+    depth: 12
+  - name: lowerarm_twist_01_l
+    index: 51
+    depth: 11
+  - name: lowerarm_twist_02_l
+    index: 52
+    depth: 11
+  - name: upperarm_correctiveRoot_l
+    index: 53
+    depth: 10
+  - name: upperarm_bck_l
+    index: 54
+    depth: 11
+  - name: upperarm_fwd_l
+    index: 55
+    depth: 11
+  - name: upperarm_in_l
+    index: 56
+    depth: 11
+  - name: upperarm_out_l
+    index: 57
+    depth: 11
+  - name: upperarm_twist_01_l
+    index: 58
+    depth: 10
+  - name: upperarm_twistCor_01_l
+    index: 59
+    depth: 11
+  - name: upperarm_twist_02_l
+    index: 60
+    depth: 10
+  - name: upperarm_bicep_l
+    index: 61
+    depth: 11
+  - name: upperarm_tricep_l
+    index: 62
+    depth: 11
+  - name: upperarm_twistCor_02_l
+    index: 63
+    depth: 11
+  - name: clavicle_pec_l
+    index: 64
+    depth: 8
+  - name: clavicle_pec_r
+    index: 65
+    depth: 8
+  - name: clavicle_r
+    index: 66
+    depth: 8
+  - name: clavicle_out_r
+    index: 67
+    depth: 9
+  - name: clavicle_scap_r
+    index: 68
+    depth: 9
+  - name: upperarm_r
+    index: 69
+    depth: 9
+  - name: lowerarm_r
+    index: 70
+    depth: 10
+  - name: hand_r
+    index: 71
+    depth: 11
+  - name: index_metacarpal_r
+    index: 72
+    depth: 12
+  - name: index_01_r
+    index: 73
+    depth: 13
+  - name: index_02_r
+    index: 74
+    depth: 14
+  - name: index_03_r
+    index: 75
+    depth: 15
+  - name: middle_metacarpal_r
+    index: 76
+    depth: 12
+  - name: middle_01_r
+    index: 77
+    depth: 13
+  - name: middle_02_r
+    index: 78
+    depth: 14
+  - name: middle_03_r
+    index: 79
+    depth: 15
+  - name: pinky_metacarpal_r
+    index: 80
+    depth: 12
+  - name: pinky_01_r
+    index: 81
+    depth: 13
+  - name: pinky_02_r
+    index: 82
+    depth: 14
+  - name: pinky_03_r
+    index: 83
+    depth: 15
+  - name: ring_metacarpal_r
+    index: 84
+    depth: 12
+  - name: ring_01_r
+    index: 85
+    depth: 13
+  - name: ring_02_r
+    index: 86
+    depth: 14
+  - name: ring_03_r
+    index: 87
+    depth: 15
+  - name: thumb_01_r
+    index: 88
+    depth: 12
+  - name: thumb_02_r
+    index: 89
+    depth: 13
+  - name: thumb_03_r
+    index: 90
+    depth: 14
+  - name: weapon_r
+    index: 91
+    depth: 12
+  - name: wrist_inner_r
+    index: 92
+    depth: 12
+  - name: wrist_outer_r
+    index: 93
+    depth: 12
+  - name: lowerarm_correctiveRoot_r
+    index: 94
+    depth: 11
+  - name: lowerarm_bck_r
+    index: 95
+    depth: 12
+  - name: lowerarm_fwd_r
+    index: 96
+    depth: 12
+  - name: lowerarm_in_r
+    index: 97
+    depth: 12
+  - name: lowerarm_out_r
+    index: 98
+    depth: 12
+  - name: lowerarm_twist_01_r
+    index: 99
+    depth: 11
+  - name: lowerarm_twist_02_r
+    index: 100
+    depth: 11
+  - name: upperarm_correctiveRoot_r
+    index: 101
+    depth: 10
+  - name: upperarm_bck_r
+    index: 102
+    depth: 11
+  - name: upperarm_fwd_r
+    index: 103
+    depth: 11
+  - name: upperarm_in_r
+    index: 104
+    depth: 11
+  - name: upperarm_out_r
+    index: 105
+    depth: 11
+  - name: upperarm_twist_01_r
+    index: 106
+    depth: 10
+  - name: upperarm_twistCor_01_r
+    index: 107
+    depth: 11
+  - name: upperarm_twist_02_r
+    index: 108
+    depth: 10
+  - name: upperarm_bicep_r
+    index: 109
+    depth: 11
+  - name: upperarm_tricep_r
+    index: 110
+    depth: 11
+  - name: upperarm_twistCor_02_r
+    index: 111
+    depth: 11
+  - name: neck_01
+    index: 112
+    depth: 8
+  - name: neck_02
+    index: 113
+    depth: 9
+  - name: head
+    index: 114
+    depth: 10
+  - name: spine_04_latissimus_l
+    index: 115
+    depth: 8
+  - name: spine_04_latissimus_r
+    index: 116
+    depth: 8
+  - name: thigh_l
+    index: 117
+    depth: 3
+  - name: calf_l
+    index: 118
+    depth: 4
+  - name: calf_correctiveRoot_l
+    index: 119
+    depth: 5
+  - name: calf_knee_l
+    index: 120
+    depth: 6
+  - name: calf_kneeBack_l
+    index: 121
+    depth: 6
+  - name: calf_twist_01_l
+    index: 122
+    depth: 5
+  - name: calf_twist_02_l
+    index: 123
+    depth: 5
+  - name: calf_twistCor_02_l
+    index: 124
+    depth: 6
+  - name: foot_l
+    index: 125
+    depth: 5
+  - name: ankle_bck_l
+    index: 126
+    depth: 6
+  - name: ankle_fwd_l
+    index: 127
+    depth: 6
+  - name: ball_l
+    index: 128
+    depth: 6
+  - name: thigh_correctiveRoot_l
+    index: 129
+    depth: 4
+  - name: thigh_bck_l
+    index: 130
+    depth: 5
+  - name: thigh_bck_lwr_l
+    index: 131
+    depth: 5
+  - name: thigh_fwd_l
+    index: 132
+    depth: 5
+  - name: thigh_fwd_lwr_l
+    index: 133
+    depth: 5
+  - name: thigh_in_l
+    index: 134
+    depth: 5
+  - name: thigh_out_l
+    index: 135
+    depth: 5
+  - name: thigh_twist_01_l
+    index: 136
+    depth: 4
+  - name: thigh_twistCor_01_l
+    index: 137
+    depth: 5
+  - name: thigh_twist_02_l
+    index: 138
+    depth: 4
+  - name: thigh_twistCor_02_l
+    index: 139
+    depth: 5
+  - name: thigh_r
+    index: 140
+    depth: 3
+  - name: calf_r
+    index: 141
+    depth: 4
+  - name: calf_correctiveRoot_r
+    index: 142
+    depth: 5
+  - name: calf_knee_r
+    index: 143
+    depth: 6
+  - name: calf_kneeBack_r
+    index: 144
+    depth: 6
+  - name: calf_twist_01_r
+    index: 145
+    depth: 5
+  - name: calf_twist_02_r
+    index: 146
+    depth: 5
+  - name: calf_twistCor_02_r
+    index: 147
+    depth: 6
+  - name: foot_r
+    index: 148
+    depth: 5
+  - name: ankle_bck_r
+    index: 149
+    depth: 6
+  - name: ankle_fwd_r
+    index: 150
+    depth: 6
+  - name: ball_r
+    index: 151
+    depth: 6
+  - name: thigh_correctiveRoot_r
+    index: 152
+    depth: 4
+  - name: thigh_bck_lwr_r
+    index: 153
+    depth: 5
+  - name: thigh_bck_r
+    index: 154
+    depth: 5
+  - name: thigh_fwd_lwr_r
+    index: 155
+    depth: 5
+  - name: thigh_fwd_r
+    index: 156
+    depth: 5
+  - name: thigh_in_r
+    index: 157
+    depth: 5
+  - name: thigh_out_r
+    index: 158
+    depth: 5
+  - name: thigh_twist_01_r
+    index: 159
+    depth: 4
+  - name: thigh_twistCor_01_r
+    index: 160
+    depth: 5
+  - name: thigh_twist_02_r
+    index: 161
+    depth: 4
+  - name: thigh_twistCor_02_r
+    index: 162
+    depth: 5
+  - name: SK_Boot_01a.001
+    index: 163
+    depth: 1
+  - name: SK_Glove_01a.001
+    index: 164
+    depth: 1
+  - name: SK_Googles_01a.001
+    index: 165
+    depth: 1
+  - name: SK_Head_01a.001
+    index: 166
+    depth: 1
+  - name: SK_Helmet_01a.001
+    index: 167
+    depth: 1
+  - name: SK_Hips_Pouches_01a.001
+    index: 168
+    depth: 1
+  - name: SK_Mask_01a.001
+    index: 169
+    depth: 1
+  - name: SK_Pants_01a.001
+    index: 170
+    depth: 1
+  - name: SK_Shirt_01a.001
+    index: 171
+    depth: 1
+  - name: SK_Vest_01a.001
+    index: 172
+    depth: 1
+  rigElementChains:
+  - chainName: root
+    elementChain:
+    - name: root
+      index: 2
+      depth: 1
+  - chainName: pelvis
+    elementChain:
+    - name: pelvis
+      index: 12
+      depth: 2
+  - chainName: rightLeg
+    elementChain:
+    - name: thigh_r
+      index: 140
+      depth: 3
+    - name: calf_r
+      index: 141
+      depth: 4
+    - name: foot_r
+      index: 148
+      depth: 5
+  - chainName: leftLeg
+    elementChain:
+    - name: thigh_l
+      index: 117
+      depth: 3
+    - name: calf_l
+      index: 118
+      depth: 4
+    - name: foot_l
+      index: 125
+      depth: 5
+  - chainName: toes
+    elementChain:
+    - name: ball_l
+      index: 128
+      depth: 6
+    - name: ball_r
+      index: 151
+      depth: 6
+  - chainName: spine
+    elementChain:
+    - name: spine_01
+      index: 13
+      depth: 3
+    - name: spine_02
+      index: 14
+      depth: 4
+    - name: spine_03
+      index: 15
+      depth: 5
+    - name: spine_04
+      index: 16
+      depth: 6
+    - name: spine_05
+      index: 17
+      depth: 7
+  - chainName: neck
+    elementChain:
+    - name: neck_01
+      index: 112
+      depth: 8
+    - name: neck_02
+      index: 113
+      depth: 9
+    - name: head
+      index: 114
+      depth: 10
+  - chainName: rightArm
+    elementChain:
+    - name: clavicle_r
+      index: 66
+      depth: 8
+    - name: upperarm_r
+      index: 69
+      depth: 9
+    - name: lowerarm_r
+      index: 70
+      depth: 10
+    - name: hand_r
+      index: 71
+      depth: 11
+  - chainName: leftArm
+    elementChain:
+    - name: clavicle_l
+      index: 18
+      depth: 8
+    - name: upperarm_l
+      index: 21
+      depth: 9
+    - name: lowerarm_l
+      index: 22
+      depth: 10
+    - name: hand_l
+      index: 23
+      depth: 11
+  - chainName: indexFingers
+    elementChain:
+    - name: index_01_l
+      index: 25
+      depth: 13
+    - name: index_02_l
+      index: 26
+      depth: 14
+    - name: index_03_l
+      index: 27
+      depth: 15
+    - name: index_01_r
+      index: 73
+      depth: 13
+    - name: index_02_r
+      index: 74
+      depth: 14
+    - name: index_03_r
+      index: 75
+      depth: 15
+  - chainName: middleFingers
+    elementChain:
+    - name: middle_01_l
+      index: 29
+      depth: 13
+    - name: middle_02_l
+      index: 30
+      depth: 14
+    - name: middle_03_l
+      index: 31
+      depth: 15
+    - name: middle_01_r
+      index: 77
+      depth: 13
+    - name: middle_02_r
+      index: 78
+      depth: 14
+    - name: middle_03_r
+      index: 79
+      depth: 15
+  - chainName: ringFingers
+    elementChain:
+    - name: ring_01_l
+      index: 37
+      depth: 13
+    - name: ring_02_l
+      index: 38
+      depth: 14
+    - name: ring_03_l
+      index: 39
+      depth: 15
+    - name: ring_01_r
+      index: 85
+      depth: 13
+    - name: ring_02_r
+      index: 86
+      depth: 14
+    - name: ring_03_r
+      index: 87
+      depth: 15
+  - chainName: pinkyFingers
+    elementChain:
+    - name: pinky_01_l
+      index: 33
+      depth: 13
+    - name: pinky_02_l
+      index: 34
+      depth: 14
+    - name: pinky_03_l
+      index: 35
+      depth: 15
+    - name: pinky_01_r
+      index: 81
+      depth: 13
+    - name: pinky_02_r
+      index: 82
+      depth: 14
+    - name: pinky_03_r
+      index: 83
+      depth: 15
+  - chainName: thumbFingers
+    elementChain:
+    - name: thumb_01_l
+      index: 40
+      depth: 12
+    - name: thumb_02_l
+      index: 41
+      depth: 13
+    - name: thumb_03_l
+      index: 42
+      depth: 14
+    - name: thumb_01_r
+      index: 88
+      depth: 12
+    - name: thumb_02_r
+      index: 89
+      depth: 13
+    - name: thumb_03_r
+      index: 90
+      depth: 14
+  inputConfig: {fileID: 0}
+  rigCurves: []
+  rigDepths: 000000000100000001000000020000000200000003000000030000000200000003000000040000000400000002000000020000000300000004000000050000000600000007000000080000000900000009000000090000000a0000000b0000000c0000000d0000000e0000000f0000000c0000000d0000000e0000000f0000000c0000000d0000000e0000000f0000000c0000000d0000000e0000000f0000000c0000000d0000000e0000000c0000000c0000000c0000000b0000000c0000000c0000000c0000000c0000000b0000000b0000000a0000000b0000000b0000000b0000000b0000000a0000000b0000000a0000000b0000000b0000000b0000000800000008000000080000000900000009000000090000000a0000000b0000000c0000000d0000000e0000000f0000000c0000000d0000000e0000000f0000000c0000000d0000000e0000000f0000000c0000000d0000000e0000000f0000000c0000000d0000000e0000000c0000000c0000000c0000000b0000000c0000000c0000000c0000000c0000000b0000000b0000000a0000000b0000000b0000000b0000000b0000000a0000000b0000000a0000000b0000000b0000000b00000008000000090000000a00000008000000080000000300000004000000050000000600000006000000050000000500000006000000050000000600000006000000060000000400000005000000050000000500000005000000050000000500000004000000050000000400000005000000030000000400000005000000060000000600000005000000050000000600000005000000060000000600000006000000040000000500000005000000050000000500000005000000050000000400000005000000040000000500000001000000010000000100000001000000010000000100000001000000010000000100000001000000
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 12349bae48c61824bb8e519537ce28eb, type: 3}
+  m_Name: KazusaBand_SKM_Operator_RetargetTarget_Profile
+  m_EditorClassIdentifier: RetargetPro.Runtime::KINEMATION.RetargetPro.Runtime.RetargetProfile
+  sourceCharacter: {fileID: 919132149155446097, guid: 9713510aa4164a84e90ad27b9bca8f8b, type: 3}
+  targetCharacter: {fileID: 7636154776708215183, guid: 2b6a12925452f394182b9d02b3e94e13, type: 3}
+  sourcePose: {fileID: 0}
+  targetPose: {fileID: 0}
+  sourceRig: {fileID: -805393608983562154}
+  targetRig: {fileID: -3494360382233295389}
+  rootMotionBone:
+    name: 
+    index: -1
+    depth: -1
+  clipItemModel: {fileID: 0}
+  clipItemAnimation: {fileID: 0}
+  clipItemBone:
+    name: 
+    index: 0
+    depth: 0
+  clipItemRotationOffset: {x: 0, y: 0, z: 0}
+  <cameraViewPose>k__BackingField:
+    position: {x: 0, y: 0, z: 0}
+    rotation: {x: 0, y: 0, z: 0, w: 1}
+    scale: {x: 1, y: 1, z: 1}
+  saveFolderPath: Assets/_Project/Data/Combat/GunBakes/KazusaBand
+  retargetFeatures:
+  - {fileID: -4028360630618208001}
+  - {fileID: 1142579246703597033}
+  - {fileID: 4040472488642149130}
+  - {fileID: 5242778121038598838}
+  - {fileID: -8142583287926557906}
+  - {fileID: -1614860294894296350}
+  - {fileID: 6079257819888991021}
+  - {fileID: -8865338818317844688}
+  - {fileID: 3039849120070137794}
+  - {fileID: -6980731476015501754}
+  - {fileID: 6133242749078237743}
+  - {fileID: 8158103354908266494}
+  - {fileID: -4260525124956785099}
+  - {fileID: -2073244920432249577}
+  - {fileID: -5396699649360046594}
+  - {fileID: -4679030167966705279}
+--- !u!114 &1142579246703597033
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 692a86d3af6eef14a88ebfe8ed814739, type: 3}
+  m_Name: RootPelvisRetargetFeature
+  m_EditorClassIdentifier: RetargetPro.Runtime::KINEMATION.RetargetPro.Runtime.Features.RootPelvisRetargeting.RootPelvisRetargetFeature
+  sourceRig: {fileID: -805393608983562154}
+  targetRig: {fileID: -3494360382233295389}
+  featureWeight: 1
+  featureWeightMode: 0
+  featureWeightCurve:
+    serializedVersion: 2
+    m_Curve: []
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  sourceChain:
+    chainName: pelvis
+    elementChain:
+    - name: pelvis
+      index: 12
+      depth: 2
+  targetChain:
+    chainName: pelvis
+    elementChain:
+    - name: Hips
+      index: 8
+      depth: 3
+  scaleWeight: 1
+  translationWeight: 1
+  offset: {x: 0, y: 0, z: 0}
+--- !u!114 &3039849120070137794
 MonoBehaviour:
   m_ObjectHideFlags: 3
   m_CorrespondingSourceObject: {fileID: 0}
@@ -2874,8 +2690,74 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9c037f4882c5493a84c1732694149815, type: 3}
   m_Name: IKRetargetFeature
   m_EditorClassIdentifier: RetargetPro.Runtime::KINEMATION.RetargetPro.Runtime.Features.IKRetargeting.IKRetargetFeature
-  sourceRig: {fileID: -2688262157264638532}
-  targetRig: {fileID: 4133138665259210905}
+  sourceRig: {fileID: -805393608983562154}
+  targetRig: {fileID: -3494360382233295389}
+  featureWeight: 1
+  featureWeightMode: 0
+  featureWeightCurve:
+    serializedVersion: 2
+    m_Curve: []
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  sourceChain:
+    chainName: leftArm
+    elementChain:
+    - name: clavicle_l
+      index: 18
+      depth: 8
+    - name: upperarm_l
+      index: 21
+      depth: 9
+    - name: lowerarm_l
+      index: 22
+      depth: 10
+    - name: hand_l
+      index: 23
+      depth: 11
+  targetChain:
+    chainName: leftArm
+    elementChain:
+    - name: Left shoulder
+      index: 170
+      depth: 7
+    - name: Left arm
+      index: 173
+      depth: 8
+    - name: Left elbow
+      index: 180
+      depth: 9
+    - name: Left wrist
+      index: 189
+      depth: 10
+  scaleWeight: 1
+  translationWeight: 0
+  offset: {x: 0, y: 0, z: 0}
+  ikWeight: 1
+  useChainIk: 0
+  effectorOffset: {x: 0, y: 0, z: 0}
+  effectorSpace: 2
+  jointBone:
+    name: Left elbow
+    index: 180
+    depth: 9
+  jointOffset: {x: -0, y: -0, z: -1}
+  poleWeight: 1
+  maxReachMultiplier: 0.98
+--- !u!114 &4040472488642149130
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9c037f4882c5493a84c1732694149815, type: 3}
+  m_Name: IKRetargetFeature
+  m_EditorClassIdentifier: RetargetPro.Runtime::KINEMATION.RetargetPro.Runtime.Features.IKRetargeting.IKRetargetFeature
+  sourceRig: {fileID: -805393608983562154}
+  targetRig: {fileID: -3494360382233295389}
   featureWeight: 1
   featureWeightMode: 0
   featureWeightCurve:
@@ -2922,7 +2804,7 @@ MonoBehaviour:
   jointOffset: {x: 0, y: 0, z: 1}
   poleWeight: 1
   maxReachMultiplier: 0.98
---- !u!114 &6819730583222845541
+--- !u!114 &5242778121038598838
 MonoBehaviour:
   m_ObjectHideFlags: 3
   m_CorrespondingSourceObject: {fileID: 0}
@@ -2931,11 +2813,11 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8a6e0cf430a4479280dbe53e7c58bd9c, type: 3}
-  m_Name: BasicRetargetFeature
-  m_EditorClassIdentifier: RetargetPro.Runtime::KINEMATION.RetargetPro.Runtime.Features.BasicRetargeting.BasicRetargetFeature
-  sourceRig: {fileID: -2688262157264638532}
-  targetRig: {fileID: 4133138665259210905}
+  m_Script: {fileID: 11500000, guid: 9c037f4882c5493a84c1732694149815, type: 3}
+  m_Name: IKRetargetFeature
+  m_EditorClassIdentifier: RetargetPro.Runtime::KINEMATION.RetargetPro.Runtime.Features.IKRetargeting.IKRetargetFeature
+  sourceRig: {fileID: -805393608983562154}
+  targetRig: {fileID: -3494360382233295389}
   featureWeight: 1
   featureWeightMode: 0
   featureWeightCurve:
@@ -2945,39 +2827,44 @@ MonoBehaviour:
     m_PostInfinity: 2
     m_RotationOrder: 4
   sourceChain:
-    chainName: spine
+    chainName: leftLeg
     elementChain:
-    - name: spine_01
-      index: 13
+    - name: thigh_l
+      index: 117
       depth: 3
-    - name: spine_02
-      index: 14
+    - name: calf_l
+      index: 118
       depth: 4
-    - name: spine_03
-      index: 15
+    - name: foot_l
+      index: 125
       depth: 5
-    - name: spine_04
-      index: 16
-      depth: 6
-    - name: spine_05
-      index: 17
-      depth: 7
   targetChain:
-    chainName: spine
+    chainName: leftLeg
     elementChain:
-    - name: Spine
-      index: 139
+    - name: Left leg
+      index: 9
       depth: 4
-    - name: Chest
-      index: 141
+    - name: Left knee
+      index: 16
       depth: 5
-    - name: Upper Chest
-      index: 143
+    - name: Left ankle
+      index: 24
       depth: 6
   scaleWeight: 1
   translationWeight: 0
   offset: {x: 0, y: 0, z: 0}
---- !u!114 &7893367792277647103
+  ikWeight: 1
+  useChainIk: 0
+  effectorOffset: {x: 0, y: 0, z: 0}
+  effectorSpace: 2
+  jointBone:
+    name: Left knee
+    index: 16
+    depth: 5
+  jointOffset: {x: 0, y: 0, z: 1}
+  poleWeight: 1
+  maxReachMultiplier: 0.98
+--- !u!114 &6079257819888991021
 MonoBehaviour:
   m_ObjectHideFlags: 3
   m_CorrespondingSourceObject: {fileID: 0}
@@ -2989,8 +2876,54 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8a6e0cf430a4479280dbe53e7c58bd9c, type: 3}
   m_Name: BasicRetargetFeature
   m_EditorClassIdentifier: RetargetPro.Runtime::KINEMATION.RetargetPro.Runtime.Features.BasicRetargeting.BasicRetargetFeature
-  sourceRig: {fileID: -2688262157264638532}
-  targetRig: {fileID: 4133138665259210905}
+  sourceRig: {fileID: -805393608983562154}
+  targetRig: {fileID: -3494360382233295389}
+  featureWeight: 1
+  featureWeightMode: 0
+  featureWeightCurve:
+    serializedVersion: 2
+    m_Curve: []
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  sourceChain:
+    chainName: neck
+    elementChain:
+    - name: neck_01
+      index: 112
+      depth: 8
+    - name: neck_02
+      index: 113
+      depth: 9
+    - name: head
+      index: 114
+      depth: 10
+  targetChain:
+    chainName: neck
+    elementChain:
+    - name: Neck
+      index: 206
+      depth: 7
+    - name: HeadBone
+      index: 208
+      depth: 8
+  scaleWeight: 1
+  translationWeight: 0
+  offset: {x: 0, y: 0, z: 0}
+--- !u!114 &6133242749078237743
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8a6e0cf430a4479280dbe53e7c58bd9c, type: 3}
+  m_Name: BasicRetargetFeature
+  m_EditorClassIdentifier: RetargetPro.Runtime::KINEMATION.RetargetPro.Runtime.Features.BasicRetargeting.BasicRetargetFeature
+  sourceRig: {fileID: -805393608983562154}
+  targetRig: {fileID: -3494360382233295389}
   featureWeight: 1
   featureWeightMode: 0
   featureWeightCurve:
@@ -3040,6 +2973,73 @@ MonoBehaviour:
       depth: 12
     - name: MiddleFinger3_R
       index: 371
+      depth: 13
+  scaleWeight: 1
+  translationWeight: 0
+  offset: {x: 0, y: 0, z: 0}
+--- !u!114 &8158103354908266494
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8a6e0cf430a4479280dbe53e7c58bd9c, type: 3}
+  m_Name: BasicRetargetFeature
+  m_EditorClassIdentifier: RetargetPro.Runtime::KINEMATION.RetargetPro.Runtime.Features.BasicRetargeting.BasicRetargetFeature
+  sourceRig: {fileID: -805393608983562154}
+  targetRig: {fileID: -3494360382233295389}
+  featureWeight: 1
+  featureWeightMode: 0
+  featureWeightCurve:
+    serializedVersion: 2
+    m_Curve: []
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  sourceChain:
+    chainName: ringFingers
+    elementChain:
+    - name: ring_01_l
+      index: 37
+      depth: 13
+    - name: ring_02_l
+      index: 38
+      depth: 14
+    - name: ring_03_l
+      index: 39
+      depth: 15
+    - name: ring_01_r
+      index: 85
+      depth: 13
+    - name: ring_02_r
+      index: 86
+      depth: 14
+    - name: ring_03_r
+      index: 87
+      depth: 15
+  targetChain:
+    chainName: ringFingers
+    elementChain:
+    - name: RingFinger1_L
+      index: 200
+      depth: 11
+    - name: RingFinger2_L
+      index: 201
+      depth: 12
+    - name: RingFinger3_L
+      index: 202
+      depth: 13
+    - name: RingFinger1_R
+      index: 372
+      depth: 11
+    - name: RingFinger2_R
+      index: 373
+      depth: 12
+    - name: RingFinger3_R
+      index: 374
       depth: 13
   scaleWeight: 1
   translationWeight: 0

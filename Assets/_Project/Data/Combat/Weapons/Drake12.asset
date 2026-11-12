@@ -1,0 +1,102 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: faeb944eb3d42ea4fb476e0091f6f751, type: 3}
+  m_Name: Drake12
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponData
+  displayName: Drake12
+  hudIcon: {fileID: 0}
+  crosshairProfile: {fileID: 0}
+  category: 0
+  fireMode: 0
+  damage: 18
+  roundsPerMinute: 180
+  magazineSize: 6
+  reloadDuration: 3.083
+  range: 45
+  noiseRadius: 40
+  suppressedNoise: 0.3
+  gripRecoil: 0.8
+  gripAimTime: 0.8
+  recoilPerShot: {x: 3, y: 0.7}
+  initialReserveAmmo: 24
+  emptyReloadDuration: 5.25
+  burstCount: 1
+  burstPause: 0
+  hipSpread: 1
+  adsSpread: 0.3
+  movingSpread: 0.8
+  airborneSpread: 1.8
+  bloomPerShot: 0.45
+  maxBloom: 2
+  bloomRecovery: 3
+  headshotMultiplier: 2
+  penetration: 2
+  crouchSpread: 0.7
+  crouchRecoil: 0.65
+  autoReloadDelay: 0.2
+  pellets: 8
+  pelletSpread: 2.5
+  adsPelletSpread: 0
+  chokePelletSpread: 0
+  chokeSeconds: 0
+  fanRoundsPerMinute: 500
+  fanSpread: 3.5
+  shellReload: 0
+  shellInsertDuration: 0.6
+  shellEndDuration: 0.6
+  reloadStartSounds: []
+  reloadStartEmptySounds: []
+  shellInsertSounds: []
+  reloadEndSounds: []
+  magOutSounds: []
+  magInSounds: []
+  boltBackSounds: []
+  boltForwardSounds: []
+  drawSounds: []
+  recoilPattern: []
+  fireModes: 
+  drawDuration: 0
+  holsterDuration: 0
+  falloffStart: 1000
+  falloffEnd: 1000
+  falloffMinimum: 1
+  recoilVertical: 0
+  recoilHorizontal: 0
+  recoilDrift: 0
+  recoilFirstShot: 1
+  recoilSettleShots: 1
+  recoilResponse: 18
+  recoilRetention: 0.15
+  adsFov: 60
+  adsMoveMultiplier: 0.65
+  adsTransitionTime: 0.18
+  highReadyRaiseHalfLife: 0.07
+  highReadyLowerHalfLife: 0.09
+  leftGrip: {x: 0.26, y: -0.285, z: 0.7}
+  sideRail: {x: 0, y: 0, z: 0}
+  viewPunch: {x: 2.2, y: 0.7, z: 1.3}
+  viewPunchFov: 1.3
+  shakeTrauma: 0.18
+  muzzleFlashScale: 1.3
+  ejectShells: 1
+  soundProfile: 2
+  fireSounds:
+  - {fileID: 8300000, guid: 0f60fe0a069471c48b975d405f927458, type: 3}
+  - {fileID: 8300000, guid: f7de465dbb59cef4b8122f099ed1a2c5, type: 3}
+  - {fileID: 8300000, guid: 6ce40419b819d22429cb25aa978deaef, type: 3}
+  - {fileID: 8300000, guid: 798011d9271991544929220f213e411c, type: 3}
+  suppressedFireSounds:
+  - {fileID: 8300000, guid: 9227f59a27dd4e21931d387d9541a971, type: 3}
+  fireVolume: 1
+  postureDamage: 3
+  flinchMultiplier: 1.2
+  propImpulse: 2

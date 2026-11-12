@@ -23,6 +23,15 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/_Project/Scenes/Campaign/Ch3_Subway.unity
     guid: a4b1e7bac86ed5f4fa0ed654671f21b7
+  - enabled: 1
+    path: Assets/_Project/Scenes/Campaign/Ch4_Airport.unity
+    guid: 6617f6fe9e425d44bad0c8ef17e13e16
+  - enabled: 1
+    path: Assets/_Project/Scenes/Hub/Hub.unity
+    guid: 6fdc6371627ad524e91f96bd67ff6a61
+  - enabled: 1
+    path: Assets/_Project/Scenes/Campaign/EnfiladeTower.unity
+    guid: f7b3ef1ccf651e7489ceb07c5f751e6b
   m_configObjects:
     com.unity.input.settings: {fileID: 11400000, guid: 45acb0f4ab3d2614f949bebd71289806, type: 2}
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 70eaaf4cede1ca44ab8b9f4f6c6fe448, type: 3}

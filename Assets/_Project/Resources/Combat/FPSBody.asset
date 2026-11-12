@@ -43,6 +43,8 @@ MonoBehaviour:
     reloadEnd: {fileID: 0}
     partsReloadShell: {fileID: 0}
     partsReloadEnd: {fileID: 0}
+    partsReloadTactical: {fileID: 0}
+    partsReloadEmpty: {fileID: 0}
     sourceDraw: {fileID: 0}
     sourceHolster: {fileID: 0}
     sourceInspect: {fileID: 0}
@@ -52,6 +54,8 @@ MonoBehaviour:
     partsDraw: {fileID: 0}
     partsHolster: {fileID: 0}
     partsInspect: {fileID: 0}
+    sourceFire: {fileID: 0}
+    fire: {fileID: 0}
   - weapon: {fileID: 11400000, guid: 60c6069bb5f5ec044a22a44dbd9829a9, type: 2}
     prefab: {fileID: 2639480700390153425, guid: 5316adfc06baa114599e8bdeec3916be, type: 3}
     profile: {fileID: 11400000, guid: 845c4b2f5eef4657a01178a08e545621, type: 2}
@@ -70,6 +74,8 @@ MonoBehaviour:
     reloadEnd: {fileID: 0}
     partsReloadShell: {fileID: 0}
     partsReloadEnd: {fileID: 0}
+    partsReloadTactical: {fileID: 0}
+    partsReloadEmpty: {fileID: 0}
     sourceDraw: {fileID: 0}
     sourceHolster: {fileID: 0}
     sourceInspect: {fileID: 0}
@@ -79,6 +85,8 @@ MonoBehaviour:
     partsDraw: {fileID: 0}
     partsHolster: {fileID: 0}
     partsInspect: {fileID: 0}
+    sourceFire: {fileID: 0}
+    fire: {fileID: 0}
   - weapon: {fileID: 11400000, guid: 660fd3a4f94a4443b81e3e79122b35dd, type: 2}
     prefab: {fileID: 6844674917713189809, guid: f91a0c0a73240174da4394445bfa528b, type: 3}
     profile: {fileID: 11400000, guid: df99762b7fc14aa0b6ae7d9abe1a51bd, type: 2}
@@ -97,6 +105,8 @@ MonoBehaviour:
     reloadEnd: {fileID: 11400000, guid: 9d197383d476cc94d9948b34a412cf94, type: 2}
     partsReloadShell: {fileID: 11400000, guid: 79558e2bbdbae124aa7784e3d77c4e02, type: 2}
     partsReloadEnd: {fileID: 11400000, guid: 835f35204aa7a36478b0ff824fb27756, type: 2}
+    partsReloadTactical: {fileID: 0}
+    partsReloadEmpty: {fileID: 0}
     sourceDraw: {fileID: 5473443146350235915, guid: c5cb803ac8b20e94d8731eb22a270f85, type: 3}
     sourceHolster: {fileID: -4541930218052086911, guid: 01a22119adab32341b953dca6b676bbe, type: 3}
     sourceInspect: {fileID: -2633190323214603280, guid: f015d28d8747c2b45bcacf2f93608d01, type: 3}
@@ -106,6 +116,8 @@ MonoBehaviour:
     partsDraw: {fileID: 11400000, guid: 8db0a67d6f8025c4ea4646cca5032e0d, type: 2}
     partsHolster: {fileID: 11400000, guid: 9eb8459cfd84d8c43b55707e8b9b8434, type: 2}
     partsInspect: {fileID: 11400000, guid: f67ad432afbfa344ba7802d6a4bb76ee, type: 2}
+    sourceFire: {fileID: 0}
+    fire: {fileID: 0}
   - weapon: {fileID: 11400000, guid: b5f06ecc57ba4591b7c03bda459e7655, type: 2}
     prefab: {fileID: 22054996180656414, guid: 9705eff3ad5c47042af5eef5fb4bdda0, type: 3}
     profile: {fileID: 11400000, guid: df99762b7fc14aa0b6ae7d9abe1a51bd, type: 2}
@@ -124,6 +136,8 @@ MonoBehaviour:
     reloadEnd: {fileID: 0}
     partsReloadShell: {fileID: 0}
     partsReloadEnd: {fileID: 0}
+    partsReloadTactical: {fileID: 0}
+    partsReloadEmpty: {fileID: 0}
     sourceDraw: {fileID: 1559038255462271321, guid: d4d16a1c321264845b952c6c7607d07c, type: 3}
     sourceHolster: {fileID: 4998041979125948011, guid: 72e8ce59ee69a7b42904bb0220ba2795, type: 3}
     sourceInspect: {fileID: 1668024257015597961, guid: 19b054d530cf3b749b8c93b477bfe2c1, type: 3}
@@ -133,6 +147,8 @@ MonoBehaviour:
     partsDraw: {fileID: 11400000, guid: 32f05ab17d7738d42940da08cf1fb9d3, type: 2}
     partsHolster: {fileID: 11400000, guid: 3ec0ae2d46fab2f45837889d53802334, type: 2}
     partsInspect: {fileID: 11400000, guid: 5042100c38155724ab37636ba01858a5, type: 2}
+    sourceFire: {fileID: 0}
+    fire: {fileID: 0}
   - weapon: {fileID: 11400000, guid: 21beab39131348eb8ab8323f3c2abc09, type: 2}
     prefab: {fileID: 4050423792220679590, guid: 4012b611e940ee8488fe926a8a67fed5, type: 3}
     profile: {fileID: 11400000, guid: df99762b7fc14aa0b6ae7d9abe1a51bd, type: 2}
@@ -151,6 +167,8 @@ MonoBehaviour:
     reloadEnd: {fileID: 0}
     partsReloadShell: {fileID: 0}
     partsReloadEnd: {fileID: 0}
+    partsReloadTactical: {fileID: 0}
+    partsReloadEmpty: {fileID: 0}
     sourceDraw: {fileID: 8245366981205146572, guid: 195a5437749c38f49b76e3602af52a29, type: 3}
     sourceHolster: {fileID: -1965893180538190090, guid: e3c27656e4343c4479a71519621e81ee, type: 3}
     sourceInspect: {fileID: 7706394830424206928, guid: e0524d9db91f8c4418dd4be4ae429b11, type: 3}
@@ -160,6 +178,8 @@ MonoBehaviour:
     partsDraw: {fileID: 11400000, guid: f2fe20f0abf80e043a72442908fe4731, type: 2}
     partsHolster: {fileID: 11400000, guid: f1a1eea3537f0c045bb6801bf30fd8be, type: 2}
     partsInspect: {fileID: 11400000, guid: 926f6fe2fb25c0f4db897785125e7674, type: 2}
+    sourceFire: {fileID: 0}
+    fire: {fileID: 0}
   - weapon: {fileID: 11400000, guid: 72c4c25dc96146c6ae8c558810535ce6, type: 2}
     prefab: {fileID: 4593077729756686259, guid: 5d8335e9aa6a54f429c1074258877ed1, type: 3}
     profile: {fileID: 11400000, guid: df99762b7fc14aa0b6ae7d9abe1a51bd, type: 2}
@@ -178,6 +198,8 @@ MonoBehaviour:
     reloadEnd: {fileID: 0}
     partsReloadShell: {fileID: 0}
     partsReloadEnd: {fileID: 0}
+    partsReloadTactical: {fileID: 0}
+    partsReloadEmpty: {fileID: 0}
     sourceDraw: {fileID: -3914822958316831939, guid: ba910123866488440a56d37475ca8e00, type: 3}
     sourceHolster: {fileID: 1190825864115579575, guid: 39deb4776b0583246b7f80b2b9b46ca4, type: 3}
     sourceInspect: {fileID: -5862649266334896815, guid: bd9219cc80ba9fa418bc2a8301746f42, type: 3}
@@ -187,6 +209,8 @@ MonoBehaviour:
     partsDraw: {fileID: 11400000, guid: 46e562b76cf099f4daf8cdf4d55e0eca, type: 2}
     partsHolster: {fileID: 11400000, guid: 9f6fa6fdb8466e74a949290a1a611e4c, type: 2}
     partsInspect: {fileID: 11400000, guid: e63b0ba1ad3202a4e89dd11be998179e, type: 2}
+    sourceFire: {fileID: 0}
+    fire: {fileID: 0}
   - weapon: {fileID: 11400000, guid: fdfbacb8512b40a7a578bbc806bbe957, type: 2}
     prefab: {fileID: 4885848461696640077, guid: 5db6d864b153cd24a8d662f91c754705, type: 3}
     profile: {fileID: 11400000, guid: df99762b7fc14aa0b6ae7d9abe1a51bd, type: 2}
@@ -205,6 +229,8 @@ MonoBehaviour:
     reloadEnd: {fileID: 0}
     partsReloadShell: {fileID: 0}
     partsReloadEnd: {fileID: 0}
+    partsReloadTactical: {fileID: 0}
+    partsReloadEmpty: {fileID: 0}
     sourceDraw: {fileID: 8993902097722301239, guid: 0c1b6d0ab6e202a4ca959f3e12fc15f5, type: 3}
     sourceHolster: {fileID: 8993902097722301239, guid: a9e6cfc02781ec941bbf56961d1dd302, type: 3}
     sourceInspect: {fileID: 8993902097722301239, guid: 216a8b4da0ecbfd4ab093cd72e6c2291, type: 3}
@@ -214,6 +240,8 @@ MonoBehaviour:
     partsDraw: {fileID: 11400000, guid: befcd0fa91a71a748894358584381e06, type: 2}
     partsHolster: {fileID: 11400000, guid: d11161d8bdbc0ea4c8ddbfd1561f7ce6, type: 2}
     partsInspect: {fileID: 11400000, guid: 77c26e3a68faf3e45aa517d706c15afb, type: 2}
+    sourceFire: {fileID: 0}
+    fire: {fileID: 0}
   - weapon: {fileID: 11400000, guid: ddc74a27059547f2b4136bf2021671a0, type: 2}
     prefab: {fileID: 662289716331144086, guid: d8ceffb64ca6b0041bd1c813c24ca8e8, type: 3}
     profile: {fileID: 11400000, guid: df99762b7fc14aa0b6ae7d9abe1a51bd, type: 2}
@@ -232,6 +260,8 @@ MonoBehaviour:
     reloadEnd: {fileID: 0}
     partsReloadShell: {fileID: 0}
     partsReloadEnd: {fileID: 0}
+    partsReloadTactical: {fileID: 0}
+    partsReloadEmpty: {fileID: 0}
     sourceDraw: {fileID: 8993902097722301239, guid: a7fb9f1b4c8c3d8429656c22734f519d, type: 3}
     sourceHolster: {fileID: 8993902097722301239, guid: 8efbf81f7a3189f48a52072913dc4e6f, type: 3}
     sourceInspect: {fileID: 8993902097722301239, guid: f3c244a2beb347f40b3783bc1647b417, type: 3}
@@ -241,6 +271,8 @@ MonoBehaviour:
     partsDraw: {fileID: 11400000, guid: 2a2194d60c763d84ea8b7d917051eb7d, type: 2}
     partsHolster: {fileID: 11400000, guid: 32c154e091902af459ebbaec7a15ad77, type: 2}
     partsInspect: {fileID: 11400000, guid: 1c26a4493f0ac2c4f85469ca6040b386, type: 2}
+    sourceFire: {fileID: 0}
+    fire: {fileID: 0}
   - weapon: {fileID: 11400000, guid: 00ac67f15e3a4b509ea19056ba1c0467, type: 2}
     prefab: {fileID: 5404092903387181114, guid: 518cd6f05019a12428dda9c5ad8bc987, type: 3}
     profile: {fileID: 11400000, guid: df99762b7fc14aa0b6ae7d9abe1a51bd, type: 2}
@@ -259,6 +291,8 @@ MonoBehaviour:
     reloadEnd: {fileID: 0}
     partsReloadShell: {fileID: 0}
     partsReloadEnd: {fileID: 0}
+    partsReloadTactical: {fileID: 0}
+    partsReloadEmpty: {fileID: 0}
     sourceDraw: {fileID: 8993902097722301239, guid: afa7813b2b01f1842a4ae306491afb20, type: 3}
     sourceHolster: {fileID: 8993902097722301239, guid: e9d73ea5a854d94468f923a73b5baa3b, type: 3}
     sourceInspect: {fileID: 8993902097722301239, guid: 585935ea0a1a0b4499f172f7c8cf6a95, type: 3}
@@ -268,6 +302,8 @@ MonoBehaviour:
     partsDraw: {fileID: 11400000, guid: 02641254c4db26447a8d01b2d5c11ced, type: 2}
     partsHolster: {fileID: 11400000, guid: 2bb17b3f903817448be71fb3943563e0, type: 2}
     partsInspect: {fileID: 11400000, guid: 0cde778a038db8d4291724d102e48094, type: 2}
+    sourceFire: {fileID: 0}
+    fire: {fileID: 0}
   - weapon: {fileID: 11400000, guid: c968ca0d31eb4e0ca953c37c6de2a0c0, type: 2}
     prefab: {fileID: 3086939027016171692, guid: 00413fca8e89ed54cbb11639863806bc, type: 3}
     profile: {fileID: 11400000, guid: 845c4b2f5eef4657a01178a08e545621, type: 2}
@@ -286,6 +322,8 @@ MonoBehaviour:
     reloadEnd: {fileID: 0}
     partsReloadShell: {fileID: 0}
     partsReloadEnd: {fileID: 0}
+    partsReloadTactical: {fileID: 0}
+    partsReloadEmpty: {fileID: 0}
     sourceDraw: {fileID: 8993902097722301239, guid: 5043c71a7453ed04b89af17e3a7a49f7, type: 3}
     sourceHolster: {fileID: 8993902097722301239, guid: f6fd0947a4b9eb64b91973c0eceae530, type: 3}
     sourceInspect: {fileID: 8993902097722301239, guid: c2d90d63ac18b1d46bf591322c138318, type: 3}
@@ -295,6 +333,8 @@ MonoBehaviour:
     partsDraw: {fileID: 11400000, guid: b94d8a33aa0e8744490b8a840175003c, type: 2}
     partsHolster: {fileID: 11400000, guid: b6e2549432b2a8445a245193e6e67467, type: 2}
     partsInspect: {fileID: 11400000, guid: 3b01b041879363545b88afdd1efffc7d, type: 2}
+    sourceFire: {fileID: 0}
+    fire: {fileID: 0}
   - weapon: {fileID: 11400000, guid: 6024bef6d38f45a7b5d1501ae4e3d5ea, type: 2}
     prefab: {fileID: 3043289644250784, guid: 7b086385c6bad84448c3bc3fb01982dd, type: 3}
     profile: {fileID: 11400000, guid: 845c4b2f5eef4657a01178a08e545621, type: 2}
@@ -313,6 +353,8 @@ MonoBehaviour:
     reloadEnd: {fileID: 0}
     partsReloadShell: {fileID: 0}
     partsReloadEnd: {fileID: 0}
+    partsReloadTactical: {fileID: 0}
+    partsReloadEmpty: {fileID: 0}
     sourceDraw: {fileID: -2456580839508781353, guid: 6c1f9c54695679a4fba5b00d168a614c, type: 3}
     sourceHolster: {fileID: 6423378157496269987, guid: 3dd6e428ac69cb14fb858397e027ef7f, type: 3}
     sourceInspect: {fileID: 8994673256205699919, guid: b9f7f54b7dbe36d4f834ba68979e43ad, type: 3}
@@ -322,6 +364,8 @@ MonoBehaviour:
     partsDraw: {fileID: 11400000, guid: f6d894b6ac0eedf41bc85cab75da36d1, type: 2}
     partsHolster: {fileID: 11400000, guid: b471c739afda3584194270fa68c923c4, type: 2}
     partsInspect: {fileID: 0}
+    sourceFire: {fileID: 0}
+    fire: {fileID: 0}
   - weapon: {fileID: 11400000, guid: 4cc2d90b3da715d47a90f7bf6c383e4c, type: 2}
     prefab: {fileID: 6613909372806008369, guid: 0541c69a05ed0e74495cbfd11de3ee80, type: 3}
     profile: {fileID: 11400000, guid: 845c4b2f5eef4657a01178a08e545621, type: 2}
@@ -340,6 +384,8 @@ MonoBehaviour:
     reloadEnd: {fileID: 0}
     partsReloadShell: {fileID: 0}
     partsReloadEnd: {fileID: 0}
+    partsReloadTactical: {fileID: 0}
+    partsReloadEmpty: {fileID: 0}
     sourceDraw: {fileID: 8993902097722301239, guid: 5043c71a7453ed04b89af17e3a7a49f7, type: 3}
     sourceHolster: {fileID: 8993902097722301239, guid: f6fd0947a4b9eb64b91973c0eceae530, type: 3}
     sourceInspect: {fileID: 8993902097722301239, guid: c2d90d63ac18b1d46bf591322c138318, type: 3}
@@ -349,3 +395,501 @@ MonoBehaviour:
     partsDraw: {fileID: 11400000, guid: b94d8a33aa0e8744490b8a840175003c, type: 2}
     partsHolster: {fileID: 11400000, guid: b6e2549432b2a8445a245193e6e67467, type: 2}
     partsInspect: {fileID: 11400000, guid: 3b01b041879363545b88afdd1efffc7d, type: 2}
+    sourceFire: {fileID: 0}
+    fire: {fileID: 0}
+  - weapon: {fileID: 11400000, guid: acdc885b530bd084ba8cb4167593e752, type: 2}
+    prefab: {fileID: 9057145879435253948, guid: 678adfd8046c43a4fa1f002d5d4e54c5, type: 3}
+    profile: {fileID: 11400000, guid: df99762b7fc14aa0b6ae7d9abe1a51bd, type: 2}
+    sourcePose: {fileID: 7400000, guid: 29636f444b68218409489c8e9301c935, type: 2}
+    sourcePoseNoGrip: {fileID: 0}
+    sourceReloadTactical: {fileID: 7400000, guid: 2193b6388df5e88408f9d27aee2ce70f, type: 2}
+    sourceReloadEmpty: {fileID: 7400000, guid: c5d51316e69be744093c8aca0d945b5b, type: 2}
+    pose: {fileID: 11400000, guid: 6e9f93f2ff61309479291098ba895099, type: 2}
+    reloadTactical: {fileID: 11400000, guid: 4202af4d7d77925409bdcc670fb0b5bf, type: 2}
+    reloadEmpty: {fileID: 11400000, guid: 184900509a5c08f4f9503d293aef62f2, type: 2}
+    sourceArms: {fileID: 0}
+    sourceCameraRig: {fileID: 0}
+    sourceReloadShell: {fileID: 0}
+    sourceReloadEnd: {fileID: 0}
+    reloadShell: {fileID: 0}
+    reloadEnd: {fileID: 0}
+    partsReloadShell: {fileID: 0}
+    partsReloadEnd: {fileID: 0}
+    partsReloadTactical: {fileID: 0}
+    partsReloadEmpty: {fileID: 0}
+    sourceDraw: {fileID: 0}
+    sourceHolster: {fileID: 0}
+    sourceInspect: {fileID: 0}
+    draw: {fileID: 0}
+    holster: {fileID: 0}
+    inspect: {fileID: 0}
+    partsDraw: {fileID: 0}
+    partsHolster: {fileID: 0}
+    partsInspect: {fileID: 0}
+    sourceFire: {fileID: 0}
+    fire: {fileID: 0}
+  - weapon: {fileID: 11400000, guid: d9507ffb958c46b49856e18cc4342663, type: 2}
+    prefab: {fileID: 643540996374410021, guid: 71ef707c1d0a62e44b703c3cd8222435, type: 3}
+    profile: {fileID: 11400000, guid: df99762b7fc14aa0b6ae7d9abe1a51bd, type: 2}
+    sourcePose: {fileID: 7400000, guid: 28ad28f680737834a9d4e3cb146db030, type: 2}
+    sourcePoseNoGrip: {fileID: 0}
+    sourceReloadTactical: {fileID: 7400000, guid: a0354b2c44d410e4c888fd6454c52ffd, type: 2}
+    sourceReloadEmpty: {fileID: 7400000, guid: f2cb40245110bda4ea2c0fc1c622d3c3, type: 2}
+    pose: {fileID: 11400000, guid: fd51491ea7391da40b50666ade8f5cfa, type: 2}
+    reloadTactical: {fileID: 11400000, guid: 43504ee949d382646bfbed203de37aab, type: 2}
+    reloadEmpty: {fileID: 11400000, guid: 5e36c66af19678d44aa12f0cb128a01c, type: 2}
+    sourceArms: {fileID: 0}
+    sourceCameraRig: {fileID: 0}
+    sourceReloadShell: {fileID: 0}
+    sourceReloadEnd: {fileID: 0}
+    reloadShell: {fileID: 0}
+    reloadEnd: {fileID: 0}
+    partsReloadShell: {fileID: 0}
+    partsReloadEnd: {fileID: 0}
+    partsReloadTactical: {fileID: 0}
+    partsReloadEmpty: {fileID: 0}
+    sourceDraw: {fileID: 0}
+    sourceHolster: {fileID: 0}
+    sourceInspect: {fileID: 0}
+    draw: {fileID: 0}
+    holster: {fileID: 0}
+    inspect: {fileID: 0}
+    partsDraw: {fileID: 0}
+    partsHolster: {fileID: 0}
+    partsInspect: {fileID: 0}
+    sourceFire: {fileID: 0}
+    fire: {fileID: 0}
+  - weapon: {fileID: 11400000, guid: 79bd712e1a4a3a64e94ecb035ca35c32, type: 2}
+    prefab: {fileID: 2370456019677897454, guid: f41f35807e3c8244c82477eb9f5587c4, type: 3}
+    profile: {fileID: 11400000, guid: df99762b7fc14aa0b6ae7d9abe1a51bd, type: 2}
+    sourcePose: {fileID: 7400000, guid: 2ad723c412fe85a43a1e5d633902a823, type: 2}
+    sourcePoseNoGrip: {fileID: 0}
+    sourceReloadTactical: {fileID: 7400000, guid: 962fe467515a4ca4e91af3a1f38a18b4, type: 2}
+    sourceReloadEmpty: {fileID: 7400000, guid: f884c8968fb0e9e4a9aa4732cbf88431, type: 2}
+    pose: {fileID: 11400000, guid: 9215b30f4b04af6428a68842ce872703, type: 2}
+    reloadTactical: {fileID: 11400000, guid: 2615a9b1c2a84914bb8c8f92b1d79f34, type: 2}
+    reloadEmpty: {fileID: 11400000, guid: 8cbf86862301d174d824695482371a80, type: 2}
+    sourceArms: {fileID: 0}
+    sourceCameraRig: {fileID: 0}
+    sourceReloadShell: {fileID: 0}
+    sourceReloadEnd: {fileID: 0}
+    reloadShell: {fileID: 0}
+    reloadEnd: {fileID: 0}
+    partsReloadShell: {fileID: 0}
+    partsReloadEnd: {fileID: 0}
+    partsReloadTactical: {fileID: 0}
+    partsReloadEmpty: {fileID: 0}
+    sourceDraw: {fileID: 0}
+    sourceHolster: {fileID: 0}
+    sourceInspect: {fileID: 0}
+    draw: {fileID: 0}
+    holster: {fileID: 0}
+    inspect: {fileID: 0}
+    partsDraw: {fileID: 0}
+    partsHolster: {fileID: 0}
+    partsInspect: {fileID: 0}
+    sourceFire: {fileID: 0}
+    fire: {fileID: 0}
+  - weapon: {fileID: 11400000, guid: 42c2cfdff3795b44da1b1039656583d9, type: 2}
+    prefab: {fileID: 494141962983166301, guid: 0fdb0038e78797e468b8e3e37fc499f4, type: 3}
+    profile: {fileID: 11400000, guid: df99762b7fc14aa0b6ae7d9abe1a51bd, type: 2}
+    sourcePose: {fileID: 7400000, guid: cc77a702baa03504a9a4202634950c50, type: 2}
+    sourcePoseNoGrip: {fileID: 0}
+    sourceReloadTactical: {fileID: 7400000, guid: aac3ff72605d51b4b939f0fb6da11b55, type: 2}
+    sourceReloadEmpty: {fileID: 7400000, guid: 1b5f16a2500d09848abb60f16cf81655, type: 2}
+    pose: {fileID: 11400000, guid: b6c0ea86da2138d40b7a292c750e9574, type: 2}
+    reloadTactical: {fileID: 11400000, guid: 4577eea22eb9b9f49b3650ed87733f87, type: 2}
+    reloadEmpty: {fileID: 11400000, guid: 49017096684a9f0489ab80ac54ff33c1, type: 2}
+    sourceArms: {fileID: 0}
+    sourceCameraRig: {fileID: 0}
+    sourceReloadShell: {fileID: 0}
+    sourceReloadEnd: {fileID: 0}
+    reloadShell: {fileID: 0}
+    reloadEnd: {fileID: 0}
+    partsReloadShell: {fileID: 0}
+    partsReloadEnd: {fileID: 0}
+    partsReloadTactical: {fileID: 0}
+    partsReloadEmpty: {fileID: 0}
+    sourceDraw: {fileID: 0}
+    sourceHolster: {fileID: 0}
+    sourceInspect: {fileID: 0}
+    draw: {fileID: 0}
+    holster: {fileID: 0}
+    inspect: {fileID: 0}
+    partsDraw: {fileID: 0}
+    partsHolster: {fileID: 0}
+    partsInspect: {fileID: 0}
+    sourceFire: {fileID: 0}
+    fire: {fileID: 0}
+  - weapon: {fileID: 11400000, guid: 1ffb45a7706880742b4772883fee0185, type: 2}
+    prefab: {fileID: 7027675251776748559, guid: 9a32abf481ac6b241841ac4f4673c5f0, type: 3}
+    profile: {fileID: 11400000, guid: df99762b7fc14aa0b6ae7d9abe1a51bd, type: 2}
+    sourcePose: {fileID: 7400000, guid: 24a53b22c4c5a7b4a85bfb66263ab56c, type: 2}
+    sourcePoseNoGrip: {fileID: 0}
+    sourceReloadTactical: {fileID: 7400000, guid: a2f617e94dd94eb49bbfe2405bebc717, type: 2}
+    sourceReloadEmpty: {fileID: 7400000, guid: fc22e877fb858604981028ef7a0ce593, type: 2}
+    pose: {fileID: 11400000, guid: df72dd683a157794abb335c051b599fb, type: 2}
+    reloadTactical: {fileID: 11400000, guid: 76d367c3adecdc841a59d4841840edf3, type: 2}
+    reloadEmpty: {fileID: 11400000, guid: 501a0a6cb6a2f07439a545df91dbe725, type: 2}
+    sourceArms: {fileID: 0}
+    sourceCameraRig: {fileID: 0}
+    sourceReloadShell: {fileID: 0}
+    sourceReloadEnd: {fileID: 0}
+    reloadShell: {fileID: 0}
+    reloadEnd: {fileID: 0}
+    partsReloadShell: {fileID: 0}
+    partsReloadEnd: {fileID: 0}
+    partsReloadTactical: {fileID: 0}
+    partsReloadEmpty: {fileID: 0}
+    sourceDraw: {fileID: 0}
+    sourceHolster: {fileID: 0}
+    sourceInspect: {fileID: 0}
+    draw: {fileID: 0}
+    holster: {fileID: 0}
+    inspect: {fileID: 0}
+    partsDraw: {fileID: 0}
+    partsHolster: {fileID: 0}
+    partsInspect: {fileID: 0}
+    sourceFire: {fileID: 0}
+    fire: {fileID: 0}
+  - weapon: {fileID: 11400000, guid: b6b459223f08760408b6a1d8a9df013d, type: 2}
+    prefab: {fileID: 7938507134812687314, guid: a24e37a2ea3b7bb49b92a6840c130366, type: 3}
+    profile: {fileID: 11400000, guid: df99762b7fc14aa0b6ae7d9abe1a51bd, type: 2}
+    sourcePose: {fileID: 7400000, guid: 52b4768714645d24a977c92ca4dac069, type: 2}
+    sourcePoseNoGrip: {fileID: 0}
+    sourceReloadTactical: {fileID: 7400000, guid: e474f134c8850ec41bde2b0644e74624, type: 2}
+    sourceReloadEmpty: {fileID: 7400000, guid: 2d390789e42f8464da59e9d6489e087f, type: 2}
+    pose: {fileID: 11400000, guid: 9e9666309d2eb1345866cbf01b8b8651, type: 2}
+    reloadTactical: {fileID: 11400000, guid: 2c165ac758a631d4fa496857f1175072, type: 2}
+    reloadEmpty: {fileID: 11400000, guid: 85c41ae903ae1b440811cfb2fff0af1a, type: 2}
+    sourceArms: {fileID: 0}
+    sourceCameraRig: {fileID: 0}
+    sourceReloadShell: {fileID: 0}
+    sourceReloadEnd: {fileID: 0}
+    reloadShell: {fileID: 0}
+    reloadEnd: {fileID: 0}
+    partsReloadShell: {fileID: 0}
+    partsReloadEnd: {fileID: 0}
+    partsReloadTactical: {fileID: 0}
+    partsReloadEmpty: {fileID: 0}
+    sourceDraw: {fileID: 0}
+    sourceHolster: {fileID: 0}
+    sourceInspect: {fileID: 0}
+    draw: {fileID: 0}
+    holster: {fileID: 0}
+    inspect: {fileID: 0}
+    partsDraw: {fileID: 0}
+    partsHolster: {fileID: 0}
+    partsInspect: {fileID: 0}
+    sourceFire: {fileID: 0}
+    fire: {fileID: 0}
+  - weapon: {fileID: 11400000, guid: 6c13f7953bca1b241b6dd3e408efc778, type: 2}
+    prefab: {fileID: 7467145228187090878, guid: 5bfdcae32eaf45e4187ff89098738e38, type: 3}
+    profile: {fileID: 11400000, guid: df99762b7fc14aa0b6ae7d9abe1a51bd, type: 2}
+    sourcePose: {fileID: 7400000, guid: 9bd0d16991774b740bc29e940a702da2, type: 2}
+    sourcePoseNoGrip: {fileID: 0}
+    sourceReloadTactical: {fileID: 7400000, guid: a5cb4c9bccb81244dbb38f1ba77f2f94, type: 2}
+    sourceReloadEmpty: {fileID: 7400000, guid: 494c6e965cc5d96489e06a017a90d15b, type: 2}
+    pose: {fileID: 11400000, guid: fb8adde609131b4439352dbd3f3cc41f, type: 2}
+    reloadTactical: {fileID: 11400000, guid: 9a91307ff9e20d1479db6e461622bc85, type: 2}
+    reloadEmpty: {fileID: 11400000, guid: 23332b1d7c6727e4e846c15a0a6e350a, type: 2}
+    sourceArms: {fileID: 0}
+    sourceCameraRig: {fileID: 0}
+    sourceReloadShell: {fileID: 0}
+    sourceReloadEnd: {fileID: 0}
+    reloadShell: {fileID: 0}
+    reloadEnd: {fileID: 0}
+    partsReloadShell: {fileID: 0}
+    partsReloadEnd: {fileID: 0}
+    partsReloadTactical: {fileID: 0}
+    partsReloadEmpty: {fileID: 0}
+    sourceDraw: {fileID: 0}
+    sourceHolster: {fileID: 0}
+    sourceInspect: {fileID: 0}
+    draw: {fileID: 0}
+    holster: {fileID: 0}
+    inspect: {fileID: 0}
+    partsDraw: {fileID: 0}
+    partsHolster: {fileID: 0}
+    partsInspect: {fileID: 0}
+    sourceFire: {fileID: 0}
+    fire: {fileID: 0}
+  - weapon: {fileID: 11400000, guid: e8f3c695e0ba3884cb26bc873188fb72, type: 2}
+    prefab: {fileID: 6974018920761284101, guid: 0ffd8d56037da7845a522a48f94789cc, type: 3}
+    profile: {fileID: 11400000, guid: df99762b7fc14aa0b6ae7d9abe1a51bd, type: 2}
+    sourcePose: {fileID: 7400000, guid: 466649d148991a447ae406205e7c7a72, type: 2}
+    sourcePoseNoGrip: {fileID: 0}
+    sourceReloadTactical: {fileID: 7400000, guid: 8271251b4e2b2054f9756ee17f0b9c79, type: 2}
+    sourceReloadEmpty: {fileID: 7400000, guid: 175b2ce2b1cd7724c8ae4caa3c0af9b3, type: 2}
+    pose: {fileID: 11400000, guid: 3db8c2ddab95e52429aebee70d6b94b3, type: 2}
+    reloadTactical: {fileID: 11400000, guid: b262e2ac9e6376840899c4f37a998c3e, type: 2}
+    reloadEmpty: {fileID: 11400000, guid: daeb2ab86018d4944a4ef8050415724c, type: 2}
+    sourceArms: {fileID: 0}
+    sourceCameraRig: {fileID: 0}
+    sourceReloadShell: {fileID: 0}
+    sourceReloadEnd: {fileID: 0}
+    reloadShell: {fileID: 0}
+    reloadEnd: {fileID: 0}
+    partsReloadShell: {fileID: 0}
+    partsReloadEnd: {fileID: 0}
+    partsReloadTactical: {fileID: 0}
+    partsReloadEmpty: {fileID: 0}
+    sourceDraw: {fileID: 0}
+    sourceHolster: {fileID: 0}
+    sourceInspect: {fileID: 0}
+    draw: {fileID: 0}
+    holster: {fileID: 0}
+    inspect: {fileID: 0}
+    partsDraw: {fileID: 0}
+    partsHolster: {fileID: 0}
+    partsInspect: {fileID: 0}
+    sourceFire: {fileID: 0}
+    fire: {fileID: 0}
+  - weapon: {fileID: 11400000, guid: f8af3f7a46d090041b55b5aa9b34d0bc, type: 2}
+    prefab: {fileID: 5006436312598154242, guid: 78d6cc2d4fed4ac40896f6458a7411a9, type: 3}
+    profile: {fileID: 11400000, guid: df99762b7fc14aa0b6ae7d9abe1a51bd, type: 2}
+    sourcePose: {fileID: 7400000, guid: 6769795516c868844809d550983a6686, type: 2}
+    sourcePoseNoGrip: {fileID: 0}
+    sourceReloadTactical: {fileID: 7400000, guid: 14819d63b79011e46b91abb04cc2b86f, type: 2}
+    sourceReloadEmpty: {fileID: 7400000, guid: fc243c17db2ccd645b6e2b1aff290e0b, type: 2}
+    pose: {fileID: 11400000, guid: 882bfcd4e1baad14dbedf0ac4453236a, type: 2}
+    reloadTactical: {fileID: 11400000, guid: 909e105917ea9194a8f87f95b06458d6, type: 2}
+    reloadEmpty: {fileID: 11400000, guid: fcc428d080ad6894ba0b5e1834ff08e8, type: 2}
+    sourceArms: {fileID: 0}
+    sourceCameraRig: {fileID: 0}
+    sourceReloadShell: {fileID: 0}
+    sourceReloadEnd: {fileID: 0}
+    reloadShell: {fileID: 0}
+    reloadEnd: {fileID: 0}
+    partsReloadShell: {fileID: 0}
+    partsReloadEnd: {fileID: 0}
+    partsReloadTactical: {fileID: 0}
+    partsReloadEmpty: {fileID: 0}
+    sourceDraw: {fileID: 0}
+    sourceHolster: {fileID: 0}
+    sourceInspect: {fileID: 0}
+    draw: {fileID: 0}
+    holster: {fileID: 0}
+    inspect: {fileID: 0}
+    partsDraw: {fileID: 0}
+    partsHolster: {fileID: 0}
+    partsInspect: {fileID: 0}
+    sourceFire: {fileID: 0}
+    fire: {fileID: 0}
+  - weapon: {fileID: 11400000, guid: 3e10015c07e7ac240974370dd5f8f1c5, type: 2}
+    prefab: {fileID: 2586263060010106740, guid: ea9161d4c3067d14488635afd617d2bb, type: 3}
+    profile: {fileID: 11400000, guid: 845c4b2f5eef4657a01178a08e545621, type: 2}
+    sourcePose: {fileID: 7400000, guid: 06a2228064b75b04b84fd12e36d0077f, type: 2}
+    sourcePoseNoGrip: {fileID: 0}
+    sourceReloadTactical: {fileID: 7400000, guid: 20b95d2765461e64b83da921c28281d5, type: 2}
+    sourceReloadEmpty: {fileID: 7400000, guid: 5d3415512becc674289071904181d3bc, type: 2}
+    pose: {fileID: 11400000, guid: 420064593d8b26043baddd39562757df, type: 2}
+    reloadTactical: {fileID: 11400000, guid: c10d948652c066a49933bf7e4a8e56f2, type: 2}
+    reloadEmpty: {fileID: 11400000, guid: 0c6f9b92920083c43996e3378293c1e7, type: 2}
+    sourceArms: {fileID: 0}
+    sourceCameraRig: {fileID: 0}
+    sourceReloadShell: {fileID: 0}
+    sourceReloadEnd: {fileID: 0}
+    reloadShell: {fileID: 0}
+    reloadEnd: {fileID: 0}
+    partsReloadShell: {fileID: 0}
+    partsReloadEnd: {fileID: 0}
+    partsReloadTactical: {fileID: 0}
+    partsReloadEmpty: {fileID: 0}
+    sourceDraw: {fileID: 0}
+    sourceHolster: {fileID: 0}
+    sourceInspect: {fileID: 0}
+    draw: {fileID: 0}
+    holster: {fileID: 0}
+    inspect: {fileID: 0}
+    partsDraw: {fileID: 0}
+    partsHolster: {fileID: 0}
+    partsInspect: {fileID: 0}
+    sourceFire: {fileID: 0}
+    fire: {fileID: 0}
+  - weapon: {fileID: 11400000, guid: 8db6ae804d3fe7041945eb5739cf1d62, type: 2}
+    prefab: {fileID: 4185178149541909607, guid: caa051b3265f9114f9c69b0d445a9d9e, type: 3}
+    profile: {fileID: 11400000, guid: 845c4b2f5eef4657a01178a08e545621, type: 2}
+    sourcePose: {fileID: 7400000, guid: 5e4a62903d4fa854ebab5286be5111e4, type: 2}
+    sourcePoseNoGrip: {fileID: 0}
+    sourceReloadTactical: {fileID: 7400000, guid: 6950b381d774aa343ac966edae7faabc, type: 2}
+    sourceReloadEmpty: {fileID: 7400000, guid: 80464c2e0af6f3942ae39f9701007b42, type: 2}
+    pose: {fileID: 11400000, guid: 95b88c5bacd71394db66417cf8a304a0, type: 2}
+    reloadTactical: {fileID: 11400000, guid: 02e34b78b200a12419351dfea8ba5269, type: 2}
+    reloadEmpty: {fileID: 11400000, guid: 9b46e67b5a6298041b2c038e2538bbc2, type: 2}
+    sourceArms: {fileID: 0}
+    sourceCameraRig: {fileID: 0}
+    sourceReloadShell: {fileID: 0}
+    sourceReloadEnd: {fileID: 0}
+    reloadShell: {fileID: 0}
+    reloadEnd: {fileID: 0}
+    partsReloadShell: {fileID: 0}
+    partsReloadEnd: {fileID: 0}
+    partsReloadTactical: {fileID: 0}
+    partsReloadEmpty: {fileID: 0}
+    sourceDraw: {fileID: 0}
+    sourceHolster: {fileID: 0}
+    sourceInspect: {fileID: 0}
+    draw: {fileID: 0}
+    holster: {fileID: 0}
+    inspect: {fileID: 0}
+    partsDraw: {fileID: 0}
+    partsHolster: {fileID: 0}
+    partsInspect: {fileID: 0}
+    sourceFire: {fileID: 0}
+    fire: {fileID: 0}
+  - weapon: {fileID: 11400000, guid: a773ea1001f107441b9e006f1a9be720, type: 2}
+    prefab: {fileID: 6492465323487086428, guid: adf82092f45cb7c44947b2c9fefc2b2e, type: 3}
+    profile: {fileID: 11400000, guid: 845c4b2f5eef4657a01178a08e545621, type: 2}
+    sourcePose: {fileID: 7400000, guid: 6a0776dea5a278d4aa566721614aa911, type: 2}
+    sourcePoseNoGrip: {fileID: 0}
+    sourceReloadTactical: {fileID: 7400000, guid: 5547b4720d08b0441bc0bce38e5b445f, type: 2}
+    sourceReloadEmpty: {fileID: 7400000, guid: 34bace114899e174ebde564d61931b83, type: 2}
+    pose: {fileID: 11400000, guid: 4f88f395c5aa6bc48bcc88622b853224, type: 2}
+    reloadTactical: {fileID: 11400000, guid: c23aab856855f7d468645b04b9fd3c94, type: 2}
+    reloadEmpty: {fileID: 11400000, guid: ddb4f8c55688be043b1bafc3fb2ee916, type: 2}
+    sourceArms: {fileID: 0}
+    sourceCameraRig: {fileID: 0}
+    sourceReloadShell: {fileID: 0}
+    sourceReloadEnd: {fileID: 0}
+    reloadShell: {fileID: 0}
+    reloadEnd: {fileID: 0}
+    partsReloadShell: {fileID: 0}
+    partsReloadEnd: {fileID: 0}
+    partsReloadTactical: {fileID: 0}
+    partsReloadEmpty: {fileID: 0}
+    sourceDraw: {fileID: 0}
+    sourceHolster: {fileID: 0}
+    sourceInspect: {fileID: 0}
+    draw: {fileID: 0}
+    holster: {fileID: 0}
+    inspect: {fileID: 0}
+    partsDraw: {fileID: 0}
+    partsHolster: {fileID: 0}
+    partsInspect: {fileID: 0}
+    sourceFire: {fileID: 0}
+    fire: {fileID: 0}
+  - weapon: {fileID: 11400000, guid: d79c39080095a674490780630bafd965, type: 2}
+    prefab: {fileID: 5136117344419525054, guid: d9404ce4f5be73d4fbf346be1c4e5b41, type: 3}
+    profile: {fileID: 11400000, guid: 845c4b2f5eef4657a01178a08e545621, type: 2}
+    sourcePose: {fileID: 7400000, guid: e1615609a5701674abb5e084bca56d56, type: 2}
+    sourcePoseNoGrip: {fileID: 0}
+    sourceReloadTactical: {fileID: 7400000, guid: b333031b961b09546b1a74273443b7ec, type: 2}
+    sourceReloadEmpty: {fileID: 7400000, guid: b333031b961b09546b1a74273443b7ec, type: 2}
+    pose: {fileID: 11400000, guid: 411c16cfb11416b4da2c0c26bc9ce920, type: 2}
+    reloadTactical: {fileID: 11400000, guid: edc5c9cfdcf03f343a6e628011877c47, type: 2}
+    reloadEmpty: {fileID: 11400000, guid: d92bcbe4834152342963edb0b779978c, type: 2}
+    sourceArms: {fileID: 0}
+    sourceCameraRig: {fileID: 0}
+    sourceReloadShell: {fileID: 0}
+    sourceReloadEnd: {fileID: 0}
+    reloadShell: {fileID: 0}
+    reloadEnd: {fileID: 0}
+    partsReloadShell: {fileID: 0}
+    partsReloadEnd: {fileID: 0}
+    partsReloadTactical: {fileID: 0}
+    partsReloadEmpty: {fileID: 0}
+    sourceDraw: {fileID: 0}
+    sourceHolster: {fileID: 0}
+    sourceInspect: {fileID: 0}
+    draw: {fileID: 0}
+    holster: {fileID: 0}
+    inspect: {fileID: 0}
+    partsDraw: {fileID: 0}
+    partsHolster: {fileID: 0}
+    partsInspect: {fileID: 0}
+    sourceFire: {fileID: 0}
+    fire: {fileID: 0}
+  - weapon: {fileID: 11400000, guid: 064c2f5663dc0674b9ca24dbaa196e07, type: 2}
+    prefab: {fileID: 7672515805602363167, guid: b0dd72632d9522048906c82202ae6dd6, type: 3}
+    profile: {fileID: 11400000, guid: df99762b7fc14aa0b6ae7d9abe1a51bd, type: 2}
+    sourcePose: {fileID: 7400000, guid: 89c867cb2c77def4ca07cdaa0d517ac9, type: 2}
+    sourcePoseNoGrip: {fileID: 0}
+    sourceReloadTactical: {fileID: 7400000, guid: 6f44fae4f548c5d4d8ea98de829ac30a, type: 2}
+    sourceReloadEmpty: {fileID: 7400000, guid: 6f44fae4f548c5d4d8ea98de829ac30a, type: 2}
+    pose: {fileID: 11400000, guid: 7e5b96d59dc71b5419619e9f77081505, type: 2}
+    reloadTactical: {fileID: 11400000, guid: 6355b6283bbd40844acca943d8206469, type: 2}
+    reloadEmpty: {fileID: 11400000, guid: d5901692ebbcef646bfaadc844b4ac31, type: 2}
+    sourceArms: {fileID: 0}
+    sourceCameraRig: {fileID: 0}
+    sourceReloadShell: {fileID: 7400000, guid: 7b9d063bce6527645a69617ae93fafd1, type: 2}
+    sourceReloadEnd: {fileID: 7400000, guid: 4414584b1005a564e85f31214c5d1fd0, type: 2}
+    reloadShell: {fileID: 11400000, guid: 4d3c21c3d92c1284e8f71ce4590eb771, type: 2}
+    reloadEnd: {fileID: 11400000, guid: dd92df3afb14dbc4dbf5d385b00b10f0, type: 2}
+    partsReloadShell: {fileID: 11400000, guid: 6492d022c93a45dca3c23663a2cadda0, type: 2}
+    partsReloadEnd: {fileID: 11400000, guid: 50e659b963de4f44972aa1b0b29d38b4, type: 2}
+    partsReloadTactical: {fileID: 11400000, guid: dedb8a6f71aa410290847984938fd9a4, type: 2}
+    partsReloadEmpty: {fileID: 11400000, guid: dedb8a6f71aa410290847984938fd9a4, type: 2}
+    sourceDraw: {fileID: 0}
+    sourceHolster: {fileID: 0}
+    sourceInspect: {fileID: 0}
+    draw: {fileID: 0}
+    holster: {fileID: 0}
+    inspect: {fileID: 0}
+    partsDraw: {fileID: 0}
+    partsHolster: {fileID: 0}
+    partsInspect: {fileID: 0}
+    sourceFire: {fileID: 7400000, guid: 8e34516f2e54c3e4a80da5e2987fea18, type: 2}
+    fire: {fileID: 11400000, guid: 19ab19e12d68f1349b61238e3cc631f5, type: 2}
+  - weapon: {fileID: 11400000, guid: 4ce67611ca9e87040bfb71703f7a76c8, type: 2}
+    prefab: {fileID: 1789782604773391786, guid: f5aad6acfc8587741b1051761ec4fc16, type: 3}
+    profile: {fileID: 11400000, guid: df99762b7fc14aa0b6ae7d9abe1a51bd, type: 2}
+    sourcePose: {fileID: 7400000, guid: 5396184a95d829444ae83ab910a9e518, type: 2}
+    sourcePoseNoGrip: {fileID: 0}
+    sourceReloadTactical: {fileID: 7400000, guid: a15ee33c9641a7a48852a68e9c8fb5ca, type: 2}
+    sourceReloadEmpty: {fileID: 7400000, guid: 5ba631a8d6e332946ad316567be4a7b4, type: 2}
+    pose: {fileID: 11400000, guid: 6a27b22fb99a164478d7e1415c3b5a35, type: 2}
+    reloadTactical: {fileID: 11400000, guid: cad80260e82432d40a83f76cce01f143, type: 2}
+    reloadEmpty: {fileID: 11400000, guid: b8fedc1d4581ba74386fe542cc649d94, type: 2}
+    sourceArms: {fileID: 0}
+    sourceCameraRig: {fileID: 0}
+    sourceReloadShell: {fileID: 0}
+    sourceReloadEnd: {fileID: 0}
+    reloadShell: {fileID: 0}
+    reloadEnd: {fileID: 0}
+    partsReloadShell: {fileID: 0}
+    partsReloadEnd: {fileID: 0}
+    partsReloadTactical: {fileID: 0}
+    partsReloadEmpty: {fileID: 0}
+    sourceDraw: {fileID: 0}
+    sourceHolster: {fileID: 0}
+    sourceInspect: {fileID: 0}
+    draw: {fileID: 0}
+    holster: {fileID: 0}
+    inspect: {fileID: 0}
+    partsDraw: {fileID: 0}
+    partsHolster: {fileID: 0}
+    partsInspect: {fileID: 0}
+    sourceFire: {fileID: 7400000, guid: 2d1a9a61b2979dd4dbff29e35cabd603, type: 2}
+    fire: {fileID: 11400000, guid: 40256ddac8d6ea64ba730c69ff9bd51a, type: 2}
+  - weapon: {fileID: 11400000, guid: 902e17de94408e248af312d37b8e4a7b, type: 2}
+    prefab: {fileID: 5327520310426614412, guid: d4ddb1fd5dcbb1747b8ea2e7f3ad790d, type: 3}
+    profile: {fileID: 11400000, guid: df99762b7fc14aa0b6ae7d9abe1a51bd, type: 2}
+    sourcePose: {fileID: 7400000, guid: 26c16d59c52fb654cbb1ced722145762, type: 2}
+    sourcePoseNoGrip: {fileID: 0}
+    sourceReloadTactical: {fileID: 7400000, guid: a71822a2aa08ee94983f5bf1b2b36b7a, type: 2}
+    sourceReloadEmpty: {fileID: 7400000, guid: ce7f364865d31d94691291c710f035a3, type: 2}
+    pose: {fileID: 11400000, guid: 04083c33011e85a4f973a12b1658c3c9, type: 2}
+    reloadTactical: {fileID: 11400000, guid: 5615fec2f5853c1439cfe9cceb4b8723, type: 2}
+    reloadEmpty: {fileID: 11400000, guid: a9574b8dc5fa98641aae5db918cb2195, type: 2}
+    sourceArms: {fileID: 0}
+    sourceCameraRig: {fileID: 0}
+    sourceReloadShell: {fileID: 7400000, guid: dd317974b8cfa4446b60fcac947f96e5, type: 2}
+    sourceReloadEnd: {fileID: 7400000, guid: 50b036d4a135a1441881d1aa13529b31, type: 2}
+    reloadShell: {fileID: 11400000, guid: b518f966739ef5c45bec2a394b6d77fd, type: 2}
+    reloadEnd: {fileID: 11400000, guid: 40780767705cd7e498d90ac5ee403d80, type: 2}
+    partsReloadShell: {fileID: 11400000, guid: 09755f13a22c450ab88a71a40e3e4992, type: 2}
+    partsReloadEnd: {fileID: 11400000, guid: b4eab5ff9f73454fa95d262856094362, type: 2}
+    partsReloadTactical: {fileID: 11400000, guid: 5d6fe90677f94d8b8a6f54b3400ffd54, type: 2}
+    partsReloadEmpty: {fileID: 0}
+    sourceDraw: {fileID: 0}
+    sourceHolster: {fileID: 0}
+    sourceInspect: {fileID: 0}
+    draw: {fileID: 0}
+    holster: {fileID: 0}
+    inspect: {fileID: 0}
+    partsDraw: {fileID: 0}
+    partsHolster: {fileID: 0}
+    partsInspect: {fileID: 0}
+    sourceFire: {fileID: 7400000, guid: 6c932c9f2436cad4bb01586d1307669b, type: 2}
+    fire: {fileID: 11400000, guid: 0febdd4122282b542b4a35be8afdbf75, type: 2}

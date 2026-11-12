@@ -157,12 +157,12 @@ mission.ch4.13.done,탈출,,"끝낸 목표의 이름(Tab 목록·목표 바 완�
 #--- 맵 이름 (Maps.csv) ---,,,
 map.combatfoundation.name,전투 시험장,,"맵 이름: 로딩 화면·콘솔 /testroom 목록(CombatFoundation). 메인 메뉴와 허브 지도 탁자에는 안 나오는 테스팅 룸이다(Maps.csv list 0)"
 map.movementabilityplayground.name,이동 시험장,,"맵 이름: 로딩 화면·콘솔 /testroom 목록(MovementAbilityPlayground). 메인 메뉴와 허브 지도 탁자에는 안 나오는 테스팅 룸이다(Maps.csv list 0)"
-map.ch1_rooftops.name,1장 · 옥상 탈출,,"맵 이름: 메인 메뉴·방 만들기·로딩 화면·허브 지도 탁자(Ch1_Rooftops). ""N장 · 이름""이면 허브가 · 앞 숫자를 큰 장 번호로 쓴다"
-map.ch2_overpass.name,2장 · 막힌 고가도로,,"맵 이름: 메인 메뉴·방 만들기·로딩 화면·허브 지도 탁자(Ch2_Overpass). ""N장 · 이름""이면 허브가 · 앞 숫자를 큰 장 번호로 쓴다"
+map.ch1_rooftops.name,1장 · 옥상,,"맵 이름: 메인 메뉴·방 만들기·로딩 화면·허브 지도 탁자(Ch1_Rooftops). ""N장 · 이름""이면 허브가 · 앞 숫자를 큰 장 번호로 쓴다"
+map.ch2_overpass.name,2장 · 고가도로,,"맵 이름: 메인 메뉴·방 만들기·로딩 화면·허브 지도 탁자(Ch2_Overpass). ""N장 · 이름""이면 허브가 · 앞 숫자를 큰 장 번호로 쓴다"
 map.ch3_subway.name,3장 · 지하철,,"맵 이름: 메인 메뉴·방 만들기·로딩 화면·허브 지도 탁자(Ch3_Subway). ""N장 · 이름""이면 허브가 · 앞 숫자를 큰 장 번호로 쓴다"
 map.ch4_airport.name,4장 · 공항,,"맵 이름: 메인 메뉴·방 만들기·로딩 화면·허브 지도 탁자(Ch4_Airport). ""N장 · 이름""이면 허브가 · 앞 숫자를 큰 장 번호로 쓴다"
-map.enfiladetower.name,엔필레이드 타워,,"맵 이름: 메인 메뉴·방 만들기·로딩 화면·허브 지도 탁자(EnfiladeTower). ""N장 · 이름""이면 허브가 · 앞 숫자를 큰 장 번호로 쓴다"
-map.hub.name,은신처,,"맵 이름: 메인 메뉴·방 만들기·로딩 화면·허브 지도 탁자(Hub). ""N장 · 이름""이면 허브가 · 앞 숫자를 큰 장 번호로 쓴다"
+map.enfiladetower.name,엔필레이드,,"맵 이름: 메인 메뉴·방 만들기·로딩 화면·허브 지도 탁자(EnfiladeTower). ""N장 · 이름""이면 허브가 · 앞 숫자를 큰 장 번호로 쓴다"
+map.hub.name,허브,The HUB,"맵 이름: 메인 메뉴·방 만들기·로딩 화면·허브 지도 탁자(Hub). ""N장 · 이름""이면 허브가 · 앞 숫자를 큰 장 번호로 쓴다"
 #--- 메인 메뉴 소식 줄 (MenuTicker.csv) ---,,,
 menu.ticker.label.radio,무전,,메인 메뉴 맨 아래 흘러가는 소식 줄의 꼬리표(분홍 굵은 글자)
 menu.ticker.radio1.text,"여기는 구조대. 공사 중인 빌딩 옥상, 해 지기 전까지만 기다린다.",,메인 메뉴 맨 아래 흘러가는 소식 줄의 말(Radio1). 위에서부터 차례로 흐른다
@@ -565,20 +565,20 @@ menu.tab.records,기록,,메인 메뉴 > 위 막대 탭
 menu.tab.classes,클래스,,메인 메뉴 > 위 탭(클래스 고르기)
 menu.hint.settings,설정,,메인 메뉴 > 아래 막대 키 안내(Esc 옆)
 menu.hint.drag.key,끌기,,메인 메뉴 > 아래 막대 키 안내의 키 칸
-menu.hint.drag,캐릭터 돌리기,,메인 메뉴 > 아래 막대 키 안내(끌기 옆)
+menu.hint.drag,캐릭터 회전,,메인 메뉴 > 아래 막대 키 안내(끌기 옆)
 menu.ticker.empty,<color={0}>무전</color>   ...,,메인 메뉴 > 아래 막대 무전 줄(MenuTicker 표가 비었을 때). {0}=분홍 색 코드
-menu.mode.solo,혼자 하기,,메인 메뉴 > 왼쪽 플레이 방식 판 이름
-menu.mode.solo.note,"나 혼자, 지금 바로",,메인 메뉴 > 혼자 하기 판 아래 작은 줄
+menu.mode.solo,싱글 플레이,,메인 메뉴 > 왼쪽 플레이 방식 판 이름
+menu.mode.solo.note,인터넷 연결 없이 혼자서 플레이합니다.,,메인 메뉴 > 혼자 하기 판 아래 작은 줄
 menu.mode.host,방 만들기,,메인 메뉴 > 왼쪽 플레이 방식 판 이름
-menu.mode.host.note,"동료와 함께, 내가 방장",,메인 메뉴 > 방 만들기 판 아래 작은 줄
+menu.mode.host.note,멀티 플레이를 위한 서버를 생성합니다.,,메인 메뉴 > 방 만들기 판 아래 작은 줄
 menu.mode.browse,서버 찾기,,메인 메뉴 > 왼쪽 플레이 방식 판 이름
-menu.mode.browse.note,열린 방에 들어가기,,메인 메뉴 > 서버 찾기 판 아래 작은 줄
+menu.mode.browse.note,열린 방에 접속합니다.,,메인 메뉴 > 서버 찾기 판 아래 작은 줄
 menu.mode.solo.tag,오프라인,,메인 메뉴 > 혼자 하기 판 오른쪽 위 작은 칩(이 방식의 특징)
 menu.mode.host.tag,최대 10명,,메인 메뉴 > 방 만들기 판 오른쪽 위 작은 칩(이 방식의 특징)
 menu.mode.browse.tag,LAN · 인터넷,,메인 메뉴 > 서버 찾기 판 오른쪽 위 작은 칩(이 방식의 특징)
-menu.mode.again,다시 누르면 시작,,메인 메뉴 > 고른 플레이 방식 판의 오른쪽
-menu.launch.title,출격,,메인 메뉴 > 오른쪽 아래 큰 분홍 버튼
-menu.launch.solo,혼자  ·  {0},,메인 메뉴 > 출격 버튼 아래 줄(혼자 하기). {0}=맵 이름
+menu.mode.again,클릭 시 시작합니다.,,메인 메뉴 > 고른 플레이 방식 판의 오른쪽
+menu.launch.title,시작,,메인 메뉴 > 오른쪽 아래 큰 분홍 버튼
+menu.launch.solo,솔로  ·  {0},,메인 메뉴 > 출격 버튼 아래 줄(혼자 하기). {0}=맵 이름
 menu.launch.host,방 만들기  ·  {0},,메인 메뉴 > 출격 버튼 아래 줄(방 만들기). {0}=맵 이름
 menu.launch.browse,서버 찾기  ·  열린 방 보기,,메인 메뉴 > 출격 버튼 아래 줄(서버 찾기)
 menu.map.empty,맵이 없어요,,메인 메뉴 > 맵 카드 제목과 출격 버튼 아래 줄(플레이할 맵이 없을 때)
@@ -1428,7 +1428,7 @@ feed.score.ninja_parry,닌자 튕겨내기,Ninja parried,점수 팝업의 줄: �
 feed.score.saw_parry,전기톱 튕겨내기,Chainsaw parried,점수 팝업의 줄: 브레드백의 전기톱을 패링했을 때(돈)
 feed.score.reap_dodge,도끼 밑으로,Under the axe,점수 팝업의 줄: 그림 리퍼의 품에 붙어 앉아 도끼를 피했을 때(돈)
 feed.score.exploder_defuse,숨골 끊어 해체,Defused: brainstem cut first,점수 팝업의 줄: 자폭 좀비를 암살·처형해 터지기 전에 해체했을 때(돈. 칼끝이 가스주머니에 불이 붙기 전에 숨골을 끊는다)
-menu.launch.solo.hub,혼자  ·  은신처에서 {0} 준비,,"메인 메뉴 > 출격 버튼 아래 줄(혼자 하기, 허브가 있을 때). {0}=맵 이름"
+menu.launch.solo.hub,싱글 플레이  ·  은신처에서 {0} 준비,,"메인 메뉴 > 출격 버튼 아래 줄(혼자 하기, 허브가 있을 때). {0}=맵 이름"
 menu.launch.host.hub,방 만들기  ·  은신처에서 {0} 준비,,"메인 메뉴 > 출격 버튼 아래 줄(방 만들기, 허브가 있을 때). {0}=맵 이름"
 hub.objective.title,출발 준비  ·  {0},,허브 > 임무 칸 제목. {0}=고른 장
 hub.objective.room,준비 버튼에서 [F]  ·  모두 준비하면 출발,,허브 > 임무 칸 설명(방). 숫자는 준비한 사람 / 모두
@@ -1954,15 +1954,15 @@ results.wait,결과를 모으는 중,,결과 > 허브로 돌아와 결과 연출
 #--- 로딩 화면 ---,,,
 loading.tag,불러오는 중,LOADING,로딩 화면 > 왼쪽 아래 분홍 띠(LoadingScreen)
 loading.title.menu,ENFILADE,ENFILADE,로딩 화면 > 게임을 켤 때(타이틀 화면) 큰 제목. 맵에서는 Maps.csv의 맵 이름이 나온다
-loading.stage.scene,맵을 불러오는 중,Loading the map,로딩 화면 > 막대 아래: 씬 파일을 읽는 동안
-loading.stage.wake,맵을 깨우는 중,Waking the map,로딩 화면 > 막대 아래: 씬의 물체들이 깨어나는 긴 한 프레임
-loading.stage.player,캐릭터를 세우는 중,Getting you in,로딩 화면 > 막대 아래: 내 플레이어와 카메라를 기다리는 동안
-loading.stage.pools,효과를 준비하는 중,Preparing effects,로딩 화면 > 막대 아래: 탄흔·피·피격 표시·데미지 숫자·소리를 미리 만드는 동안(CombatWarmup)
-loading.stage.looks,좀비와 피를 미리 그리는 중,Drawing zombies and blood ahead,로딩 화면 > 막대 아래: 전투에서 처음 그릴 것을 카메라 앞에서 한 번씩 그리는 동안(CombatRehearsal)
-loading.stage.shaders,셰이더를 준비하는 중,Compiling shaders,로딩 화면 > 막대 아래: 에디터가 셰이더를 컴파일하는 동안
-loading.stage.pso,그래픽 상태를 준비하는 중,Preparing graphics states,로딩 화면 > 막대 아래: 빌드에 기록해 둔 그래픽 상태(PSO)를 만드는 동안(PsoWarmup)
-loading.stage.fonts,글자를 준비하는 중,Preparing text,로딩 화면 > 막대 아래: 글꼴에 글자를 미리 그리는 동안(FontWarmup)
-loading.stage.portraits,캐릭터 사진을 찍는 중,Taking character pictures,로딩 화면 > 막대 아래: 타이틀 화면이 캐릭터 카드 사진을 찍는 동안(SkinPortraits)
+loading.stage.scene,맵 불러오는 중,Loading the map,로딩 화면 > 막대 아래: 씬 파일을 읽는 동안
+loading.stage.wake,맵 초기화 중,Waking the map,로딩 화면 > 막대 아래: 씬의 물체들이 깨어나는 긴 한 프레임
+loading.stage.player,캐릭터 생성 중,Getting you in,로딩 화면 > 막대 아래: 내 플레이어와 카메라를 기다리는 동안
+loading.stage.pools,이펙트 로딩 중,Preparing effects,로딩 화면 > 막대 아래: 탄흔·피·피격 표시·데미지 숫자·소리를 미리 만드는 동안(CombatWarmup)
+loading.stage.looks,로딩 중,Drawing zombies and blood ahead,로딩 화면 > 막대 아래: 전투에서 처음 그릴 것을 카메라 앞에서 한 번씩 그리는 동안(CombatRehearsal)
+loading.stage.shaders,셰이더를 로딩 중,Compiling shaders,로딩 화면 > 막대 아래: 에디터가 셰이더를 컴파일하는 동안
+loading.stage.pso,그래픽 세팅 중,Preparing graphics states,로딩 화면 > 막대 아래: 빌드에 기록해 둔 그래픽 상태(PSO)를 만드는 동안(PsoWarmup)
+loading.stage.fonts,준비하세요,Preparing text,로딩 화면 > 막대 아래: 글꼴에 글자를 미리 그리는 동안(FontWarmup)
+loading.stage.portraits,곧 시작합니다.,Taking character pictures,로딩 화면 > 막대 아래: 타이틀 화면이 캐릭터 카드 사진을 찍는 동안(SkinPortraits)
 results.mvp,MVP,,결과 > 한 사람씩 비출 때 가장 잘한 사람 이름 옆 분홍 칩
 results.preview,포즈 미리 보기,,결과 > 장을 끝내기 전에 콘솔 /results를 쳤을 때 맨 위 장 이름 자리(지금 허브에 있는 사람들로 결과 연출과 포즈를 미리 본다)
 dev.hits.on,UI 클릭 판정 모양 보기를 켰습니다. 하늘색은 누를 수 있는 곳 · 분홍은 지금 커서가 고르는 것 · 노랑은 호버로 비킨 원래 자리 · 회색은 클릭을 가로막는 것. 다시 /hits 를 치면 꺼집니다.,,개발자 콘솔 > /hits 를 켰을 때의 대답(KitHitView)
