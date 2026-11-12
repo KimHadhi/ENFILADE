@@ -1,0 +1,14 @@
+{
+ "workshop": "GMod 3735980722 Fatebringer (a Destiny hand cannon for TFA, by Desginated Kitty 03-052)",
+ "name": "Fatebringer",
+ "mdl": "models/weapons/tfa_d2/w_fatebringer.mdl",
+ "out": "Assets/_Project/Art/Models/Addons/Weapons/Fatebringer",
+ "note": "The Schießhund's Desperado wears it on KINEMATION's R08 rig (Editor/Import/DesperadoSetup.cs), so it comes out in the R08 gun's own frame (origin on the R08 bore, +Z ahead, +Y up in the FBX; Unity brings it in a half turn about Y, as ModelImportRules bakes the axis conversion, and DesperadoSetup turns it back).Its cylinder's centre goes on the R08 cylinder bone's axis (0, -0.0151 m), 4 mm behind centring the two cylinders so its grip's back meets the R08's; with that, the crane meets the R08 crane and the grip the R08 grip within millimetres. The world model's four bodygroups are its parts: body (frame, sights and all), crane, cylinder and the six rounds. Its rear notch (0.0213 m) sits 4.8 mm over its front blade's top along a level barrel, so the model is lifted 1.46 degrees about the cylinder's centre to put them level: FPSAF's Ads lines a sight up only when its aim point keeps the gun's own turn. IronAim is the eye on that line, as far behind the rear sight as the R08's own iron aim point is behind the R08's (16.6 cm). The bump map is named normal.vtf and is the gun's own.",
+ "meshes": {"body": "Fatebringer_Frame", "crane": "Fatebringer_Crane", "cylender": "Fatebringer_Cylinder", "magazine": "Fatebringer_Rounds"},
+ "origin": {"point": [0.07868, 0.0, 0.1002]},
+ "tip": [0.999674, 0.0, -0.025534],
+ "up": [0.025534, 0.0, 0.999674],
+ "markers": {"Muzzle": {"point": [0.24765, 0.0, 0.07239]}, "IronAim": {"point": [-0.12608, 0.0, 0.12581]}},
+ "own_normal_names": true,
+ "max_texture": 2048
+}

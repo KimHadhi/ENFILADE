@@ -115,9 +115,14 @@ public sealed class WeaponFeedback : MonoBehaviour
     internal void Drawn(GunSoundProfile gun)
     {
         var settings = GunFeelSettings.Instance;
+        // A gun with a draw sound of its own plays it (the Desperado's Fatebringer); WeaponController has it equipped by now.
+        var own = weapon != null && weapon.EquippedData != null ? weapon.EquippedData.DrawSounds : null;
         if (settings != null && settings.gunSounds)
-            Sound(FeelSound.Draw, null, settings.mechanicalVolume, Random.Range(.98f, 1.02f), MechanicalReach, gun);
+            Sound(FeelSound.Draw, Own(own, null), settings.mechanicalVolume, Random.Range(.98f, 1.02f), MechanicalReach, gun);
     }
+
+    // A gun's own clips for a sound, else the shared ones (null: the gun profile's cue).
+    private static AudioClip[] Own(AudioClip[] own, AudioClip[] shared) => own != null && own.Length > 0 ? own : shared;
 
     private void OnShot(WeaponShot shot)
     {
@@ -227,8 +232,8 @@ public sealed class WeaponFeedback : MonoBehaviour
             && ReloadMoments.TryGet(data, empty, out moments);
         if (timedReload)
         {
-            magInLead = FeelAudio.PeakTime(FeelSound.MagIn, settings.magInSounds, data.SoundProfile);
-            boltLead = FeelAudio.PeakTime(FeelSound.SlideForward, null, data.SoundProfile);
+            magInLead = FeelAudio.PeakTime(FeelSound.MagIn, Own(data.MagInSounds, settings.magInSounds), data.SoundProfile);
+            boltLead = FeelAudio.PeakTime(FeelSound.SlideForward, Own(data.BoltForwardSounds, null), data.SoundProfile);
             magOutPlayed = Before(moments.MagOut, from);
             magInPlayed = Before(moments.MagIn, from);
             boltBackPlayed = Before(moments.BoltBack, from);
@@ -290,10 +295,13 @@ public sealed class WeaponFeedback : MonoBehaviour
         if (timedReload)
         {
             // Each sound when the clip moves its part: the magazine leaving and seating, the bolt or slide pulled and let go.
-            Due(ref magOutPlayed, moments.MagOut, 0f, progress, duration, FeelSound.MagOut, settings.magOutSounds, settings);
-            Due(ref magInPlayed, moments.MagIn, magInLead, progress, duration, FeelSound.MagIn, settings.magInSounds, settings);
-            Due(ref boltBackPlayed, moments.BoltBack, 0f, progress, duration, FeelSound.SlideBack, null, settings);
-            Due(ref boltPlayed, moments.BoltForward, boltLead, progress, duration, FeelSound.SlideForward, null, settings);
+            // A gun with sounds of its own plays those (the Desperado's: spent rounds out, new ones in, the crane open and shut).
+            var data = runtime.Data;
+            if (data == null) return;
+            Due(ref magOutPlayed, moments.MagOut, 0f, progress, duration, FeelSound.MagOut, Own(data.MagOutSounds, settings.magOutSounds), settings);
+            Due(ref magInPlayed, moments.MagIn, magInLead, progress, duration, FeelSound.MagIn, Own(data.MagInSounds, settings.magInSounds), settings);
+            Due(ref boltBackPlayed, moments.BoltBack, 0f, progress, duration, FeelSound.SlideBack, Own(data.BoltBackSounds, null), settings);
+            Due(ref boltPlayed, moments.BoltForward, boltLead, progress, duration, FeelSound.SlideForward, Own(data.BoltForwardSounds, null), settings);
             return;
         }
         if (!magInPlayed && progress >= (emptyReload ? .5f : .62f))

@@ -93,6 +93,13 @@ public sealed class WeaponData : ScriptableObject
     [Tooltip("A shell reload's sounds, each as its step starts: the start, the start from empty, every shell, the end.")]
     [SerializeField] private AudioClip[] reloadStartSounds = new AudioClip[0], reloadStartEmptySounds = new AudioClip[0],
         shellInsertSounds = new AudioClip[0], reloadEndSounds = new AudioClip[0];
+    [Tooltip("A magazine reload's own sounds at the moments its clip moves the parts (ReloadMoments): the magazine out and in, "
+        + "the bolt or slide back and forward (a revolver: its spent rounds out, the new ones in, the crane open and shut). "
+        + "Empty: the gun profile's (GunFeel, SoundCues). The Desperado wears the Fatebringer's.")]
+    [SerializeField] private AudioClip[] magOutSounds = new AudioClip[0], magInSounds = new AudioClip[0],
+        boltBackSounds = new AudioClip[0], boltForwardSounds = new AudioClip[0];
+    [Tooltip("As the gun comes into the hands. Empty: the gun profile's (SoundCues GunDraw).")]
+    [SerializeField] private AudioClip[] drawSounds = new AudioClip[0];
     [Tooltip("Repeats while firing; an empty array uses Recoil Per Shot. Only when Recoil Vertical is 0.")]
     [SerializeField] private Vector2[] recoilPattern = new Vector2[0];
     [Tooltip("The fire modes B switches between, as 'Automatic;Burst;SemiAutomatic'. The gun starts on Fire Mode. Empty: Fire " +
@@ -235,6 +242,11 @@ public sealed class WeaponData : ScriptableObject
     public AudioClip[] ReloadStartEmptySounds => reloadStartEmptySounds;
     public AudioClip[] ShellInsertSounds => shellInsertSounds;
     public AudioClip[] ReloadEndSounds => reloadEndSounds;
+    public AudioClip[] MagOutSounds => magOutSounds;
+    public AudioClip[] MagInSounds => magInSounds;
+    public AudioClip[] BoltBackSounds => boltBackSounds;
+    public AudioClip[] BoltForwardSounds => boltForwardSounds;
+    public AudioClip[] DrawSounds => drawSounds;
     public float AdsFov => Mathf.Clamp(adsFov, 20f, 100f);
     public float AdsMoveMultiplier => Mathf.Clamp(adsMoveMultiplier, .1f, 1f);
     public float AdsTransitionTime => Mathf.Max(.01f, adsTransitionTime);

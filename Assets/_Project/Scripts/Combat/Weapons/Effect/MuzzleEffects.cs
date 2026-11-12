@@ -92,6 +92,9 @@ public sealed class MuzzleEffects : MonoBehaviour, ITableBound
         public LineRenderer line;
         public Vector3 from, way;
         public float distance, flown, length, brightness;
+        // Its gun's own look (a Tracer.csv row named after the gun, else Default's): the glow's width, core and glow colours.
+        public float width;
+        public Vector4 core, glow;
         // Where its head is drawn now and where it was drawn the frame before (m along the way), and the frame it was
         // launched in.
         public float head, before;
@@ -105,7 +108,45 @@ public sealed class MuzzleEffects : MonoBehaviour, ITableBound
     private readonly List<Flying> flying = new();
     private readonly Stack<LineRenderer> spare = new();
 
-    public void OnTableApplied() => Paint();
+    public void OnTableApplied()
+    {
+        looks.Clear();
+        Paint();
+    }
+
+    // A gun with a row of its own in Tracer.csv (the row's id is the gun's id, as Desperado's) streaks in that row's length,
+    // width, colours and brightness; a blank cell keeps Default's. Read once per gun, again when the table is reloaded.
+    private sealed class GunLook
+    {
+        public float length, width;
+        public Vector4 core, glow;
+    }
+
+    private readonly Dictionary<WeaponData, GunLook> looks = new();
+
+    private GunLook LookOf(WeaponData gun)
+    {
+        if (gun == null) return null;
+        if (looks.TryGetValue(gun, out var look)) return look;
+        look = null;
+        if (GameTables.TryGetRow(TableName, gun.name, out var row))
+            look = new GunLook
+            {
+                length = Number(row, "length", length), width = Number(row, "width", width),
+                core = Hue(row, "coreColor", coreColor).linear * Number(row, "coreBrightness", coreBrightness),
+                glow = Hue(row, "glowColor", glowColor).linear * Number(row, "glowBrightness", glowBrightness),
+            };
+        looks[gun] = look;
+        return look;
+    }
+
+    private static float Number(IReadOnlyDictionary<string, string> row, string key, float fallback)
+        => row.TryGetValue(key, out string text) && float.TryParse(text, System.Globalization.NumberStyles.Float,
+            System.Globalization.CultureInfo.InvariantCulture, out float value) ? value : fallback;
+
+    private static Color Hue(IReadOnlyDictionary<string, string> row, string key, Color fallback)
+        => row.TryGetValue(key, out string text) && !string.IsNullOrWhiteSpace(text) && ColorUtility.TryParseHtmlString(text.Trim(), out var value)
+            ? value : fallback;
 
     private void OnEnable()
     {
@@ -167,11 +208,16 @@ public sealed class MuzzleEffects : MonoBehaviour, ITableBound
         if (material == null) return;
         if (flying.Count >= Mathf.Max(1, mostAtOnce)) Land(0);
         var line = Take();
+        var own = LookOf(weapon != null ? weapon.EquippedData : null);
         var tracer = new Flying
         {
             line = line, from = from, way = path / distance, distance = distance,
-            flown = delay > 0f ? -delay : Mathf.Min(startAhead, distance), length = length * (pellet ? pelletLength : 1f),
-            brightness = pellet ? pelletBrightness : 1f, launched = Time.frameCount
+            flown = delay > 0f ? -delay : Mathf.Min(startAhead, distance),
+            length = (own != null ? own.length : length) * (pellet ? pelletLength : 1f),
+            brightness = pellet ? pelletBrightness : 1f, launched = Time.frameCount,
+            width = own != null ? own.width : width,
+            core = own != null ? own.core : (Vector4)(coreColor.linear * coreBrightness),
+            glow = own != null ? own.glow : (Vector4)(glowColor.linear * glowBrightness),
         };
         flying.Add(tracer);
         Place(tracer, Camera.main);
@@ -221,13 +267,15 @@ public sealed class MuzzleEffects : MonoBehaviour, ITableBound
         line.SetPosition(0, tailPoint);
         line.SetPosition(1, headPoint);
         float pixel = PixelAngle(view);
-        line.startWidth = Wide(tailPoint, view, pixel);
-        line.endWidth = Wide(headPoint, view, pixel);
+        line.startWidth = Wide(tailPoint, view, pixel, tracer.width);
+        line.endWidth = Wide(headPoint, view, pixel, tracer.width);
         // The comet keeps its own length at the front, and what the frame flew beyond it its least brightness
         // (BulletTracer _Comet, _Step).
         float drawn = headAt - tailAt;
         perTracer ??= new MaterialPropertyBlock();
         perTracer.SetFloat(CometId, drawn > tracer.length ? tracer.length / drawn : 1f);
+        perTracer.SetVector(CoreColorId, tracer.core);
+        perTracer.SetVector(GlowColorId, tracer.glow);
         perTracer.SetFloat(StepId, drawn > 0f ? Mathf.Clamp01((headAt - tracer.before) / drawn) : 0f);
         line.SetPropertyBlock(perTracer);
         // Shrinking into the hit after the head got there, it dims with what is left of it.
@@ -245,7 +293,7 @@ public sealed class MuzzleEffects : MonoBehaviour, ITableBound
     // minAngle or minPixels however far. The line blends its two ends' widths, and the distance from the eye along a
     // straight line never rises above the blend of its ends' distances, so the floor holds all along. The cap holds along
     // a line heading away from the eye, as one's own shots do; one crossing right past it is wider in the middle.
-    private float Wide(Vector3 point, Camera view, float pixel)
+    private float Wide(Vector3 point, Camera view, float pixel, float width)
     {
         if (view == null) return width;
         float distance = Vector3.Distance(view.transform.position, point);

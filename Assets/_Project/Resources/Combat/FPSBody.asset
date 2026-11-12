@@ -29,6 +29,7 @@ MonoBehaviour:
     prefab: {fileID: 5523781235564577234, guid: e4eef436171688145a768373dfc5903f, type: 3}
     profile: {fileID: 11400000, guid: df99762b7fc14aa0b6ae7d9abe1a51bd, type: 2}
     sourcePose: {fileID: 7400000, guid: 78d5e57c5e6d5b1479f2831ae162c9af, type: 2}
+    sourcePoseNoGrip: {fileID: 0}
     sourceReloadTactical: {fileID: 7400000, guid: af9f8c0e8cb05d74d80d1e5c61d822f7, type: 2}
     sourceReloadEmpty: {fileID: 7400000, guid: 6482cb9a3db8de94996fc3046ba6b006, type: 2}
     pose: {fileID: 11400000, guid: 6ec74827a4ff4311a40cb2ae07fb47e1, type: 2}
@@ -55,6 +56,7 @@ MonoBehaviour:
     prefab: {fileID: 2639480700390153425, guid: 5316adfc06baa114599e8bdeec3916be, type: 3}
     profile: {fileID: 11400000, guid: 845c4b2f5eef4657a01178a08e545621, type: 2}
     sourcePose: {fileID: 7400000, guid: 240293a1bac37b34a98835cb25696d43, type: 2}
+    sourcePoseNoGrip: {fileID: 0}
     sourceReloadTactical: {fileID: 7400000, guid: da33efa37a2809b478a7eb4835c56d5e, type: 2}
     sourceReloadEmpty: {fileID: 7400000, guid: 020029c1d578b5645b963d58dc823f5d, type: 2}
     pose: {fileID: 11400000, guid: 085f949b853b412983870c4734a81b75, type: 2}
@@ -81,6 +83,7 @@ MonoBehaviour:
     prefab: {fileID: 6844674917713189809, guid: f91a0c0a73240174da4394445bfa528b, type: 3}
     profile: {fileID: 11400000, guid: df99762b7fc14aa0b6ae7d9abe1a51bd, type: 2}
     sourcePose: {fileID: 8484919483041116104, guid: 8398072b90117ee4c98980aee4e6df68, type: 3}
+    sourcePoseNoGrip: {fileID: 0}
     sourceReloadTactical: {fileID: -8020438537057573792, guid: cfcb173e9d295d54b810d9fb63f8d4ea, type: 3}
     sourceReloadEmpty: {fileID: 2054279449716927274, guid: 77f61c55a4067b642bcecbbb7a1140b6, type: 3}
     pose: {fileID: 11400000, guid: 9e5a4c3eea5bedc44be13487b1fc02f0, type: 2}
@@ -107,6 +110,7 @@ MonoBehaviour:
     prefab: {fileID: 22054996180656414, guid: 9705eff3ad5c47042af5eef5fb4bdda0, type: 3}
     profile: {fileID: 11400000, guid: df99762b7fc14aa0b6ae7d9abe1a51bd, type: 2}
     sourcePose: {fileID: 8859909775324925284, guid: b06ef0d696b00a04cbd0a122d27a491a, type: 3}
+    sourcePoseNoGrip: {fileID: 0}
     sourceReloadTactical: {fileID: 9187695597831910759, guid: cdad6bcd11be592418b2ba01906b3a54, type: 3}
     sourceReloadEmpty: {fileID: 4549054297913982398, guid: b94b4631007ba484b8b6cf6e65389d23, type: 3}
     pose: {fileID: 11400000, guid: 86ecd235da0ed6641a94b4fcf586b873, type: 2}
@@ -133,6 +137,7 @@ MonoBehaviour:
     prefab: {fileID: 4050423792220679590, guid: 4012b611e940ee8488fe926a8a67fed5, type: 3}
     profile: {fileID: 11400000, guid: df99762b7fc14aa0b6ae7d9abe1a51bd, type: 2}
     sourcePose: {fileID: 2267239165897186440, guid: b38c9df860f23164183f55905166e374, type: 3}
+    sourcePoseNoGrip: {fileID: 0}
     sourceReloadTactical: {fileID: 9147372933496329709, guid: 02ffd39b057bfbd41931a00f07f46cc3, type: 3}
     sourceReloadEmpty: {fileID: 5684394748597798249, guid: 99a2ff543c47ac84ea00be8c7cd90851, type: 3}
     pose: {fileID: 11400000, guid: c9d70f8d5deaf064db928f572cb1ac33, type: 2}
@@ -186,6 +191,7 @@ MonoBehaviour:
     prefab: {fileID: 4885848461696640077, guid: 5db6d864b153cd24a8d662f91c754705, type: 3}
     profile: {fileID: 11400000, guid: df99762b7fc14aa0b6ae7d9abe1a51bd, type: 2}
     sourcePose: {fileID: 8993902097722301239, guid: 6eaaa0fcd191d2447b2255dc0a1dc13e, type: 3}
+    sourcePoseNoGrip: {fileID: 0}
     sourceReloadTactical: {fileID: 8993902097722301239, guid: 671c46afc48c38e46a5cddba822118da, type: 3}
     sourceReloadEmpty: {fileID: 8993902097722301239, guid: a2b491682ec29ba428194a18adb082d9, type: 3}
     pose: {fileID: 11400000, guid: 81cbf4a862e917f4c9886410c1b1a59d, type: 2}
@@ -212,6 +218,7 @@ MonoBehaviour:
     prefab: {fileID: 662289716331144086, guid: d8ceffb64ca6b0041bd1c813c24ca8e8, type: 3}
     profile: {fileID: 11400000, guid: df99762b7fc14aa0b6ae7d9abe1a51bd, type: 2}
     sourcePose: {fileID: 8993902097722301239, guid: 7b75d364d2f027e4ea8751c80029c509, type: 3}
+    sourcePoseNoGrip: {fileID: 0}
     sourceReloadTactical: {fileID: 8993902097722301239, guid: 70c8039ecc3939145884a17ecb482c48, type: 3}
     sourceReloadEmpty: {fileID: 8993902097722301239, guid: d3108c49d32e0cb42815e0a01cd42bfa, type: 3}
     pose: {fileID: 11400000, guid: 107bc358f663de54a95e35b56736fd24, type: 2}
@@ -238,6 +245,7 @@ MonoBehaviour:
     prefab: {fileID: 5404092903387181114, guid: 518cd6f05019a12428dda9c5ad8bc987, type: 3}
     profile: {fileID: 11400000, guid: df99762b7fc14aa0b6ae7d9abe1a51bd, type: 2}
     sourcePose: {fileID: 8993902097722301239, guid: 281d49a6a52a42c4ba754801bc1e13bf, type: 3}
+    sourcePoseNoGrip: {fileID: 0}
     sourceReloadTactical: {fileID: 8993902097722301239, guid: e0aaa2b88fc404244b5b495411dbdac4, type: 3}
     sourceReloadEmpty: {fileID: 8993902097722301239, guid: ba4c6a8bd53ad8642a786f8dd96df6b2, type: 3}
     pose: {fileID: 11400000, guid: 513886a1204f4c6488b09b24d96c948f, type: 2}
@@ -264,6 +272,7 @@ MonoBehaviour:
     prefab: {fileID: 3086939027016171692, guid: 00413fca8e89ed54cbb11639863806bc, type: 3}
     profile: {fileID: 11400000, guid: 845c4b2f5eef4657a01178a08e545621, type: 2}
     sourcePose: {fileID: 8993902097722301239, guid: 044ef7e57736ad741902cc2c672ce053, type: 3}
+    sourcePoseNoGrip: {fileID: 0}
     sourceReloadTactical: {fileID: 8993902097722301239, guid: cac83bdf963c98d46bc75ca62f3b492f, type: 3}
     sourceReloadEmpty: {fileID: 8993902097722301239, guid: cac83bdf963c98d46bc75ca62f3b492f, type: 3}
     pose: {fileID: 11400000, guid: ebae451d73222df469c2f44cf2cacec1, type: 2}
@@ -290,6 +299,7 @@ MonoBehaviour:
     prefab: {fileID: 3043289644250784, guid: 7b086385c6bad84448c3bc3fb01982dd, type: 3}
     profile: {fileID: 11400000, guid: 845c4b2f5eef4657a01178a08e545621, type: 2}
     sourcePose: {fileID: -5557024905010450676, guid: 55039a586970075479e77cc9a9ea9061, type: 3}
+    sourcePoseNoGrip: {fileID: 0}
     sourceReloadTactical: {fileID: -6716952041329770, guid: 0130785af03c5a8428c80d2c3b71b26f, type: 3}
     sourceReloadEmpty: {fileID: -3993833420854629355, guid: 9d81fd1edc3de204b801acbebd862f1a, type: 3}
     pose: {fileID: 11400000, guid: f4a2c9d3e20bf03408dc6dd6e96f07d3, type: 2}
@@ -312,3 +322,30 @@ MonoBehaviour:
     partsDraw: {fileID: 11400000, guid: f6d894b6ac0eedf41bc85cab75da36d1, type: 2}
     partsHolster: {fileID: 11400000, guid: b471c739afda3584194270fa68c923c4, type: 2}
     partsInspect: {fileID: 0}
+  - weapon: {fileID: 11400000, guid: 4cc2d90b3da715d47a90f7bf6c383e4c, type: 2}
+    prefab: {fileID: 6613909372806008369, guid: 0541c69a05ed0e74495cbfd11de3ee80, type: 3}
+    profile: {fileID: 11400000, guid: 845c4b2f5eef4657a01178a08e545621, type: 2}
+    sourcePose: {fileID: 8993902097722301239, guid: 044ef7e57736ad741902cc2c672ce053, type: 3}
+    sourcePoseNoGrip: {fileID: 0}
+    sourceReloadTactical: {fileID: 8993902097722301239, guid: cac83bdf963c98d46bc75ca62f3b492f, type: 3}
+    sourceReloadEmpty: {fileID: 8993902097722301239, guid: cac83bdf963c98d46bc75ca62f3b492f, type: 3}
+    pose: {fileID: 11400000, guid: ebae451d73222df469c2f44cf2cacec1, type: 2}
+    reloadTactical: {fileID: 11400000, guid: b475505cb3eb98e40a59cb131cf53b40, type: 2}
+    reloadEmpty: {fileID: 11400000, guid: 005bf440900dd414b91662c419395dbe, type: 2}
+    sourceArms: {fileID: 919132149155446097, guid: 9713510aa4164a84e90ad27b9bca8f8b, type: 3}
+    sourceCameraRig: {fileID: 1455423802687713497, guid: b6d4ea9ea9d91294caf1c1199a4a4fc0, type: 3}
+    sourceReloadShell: {fileID: 0}
+    sourceReloadEnd: {fileID: 0}
+    reloadShell: {fileID: 0}
+    reloadEnd: {fileID: 0}
+    partsReloadShell: {fileID: 0}
+    partsReloadEnd: {fileID: 0}
+    sourceDraw: {fileID: 8993902097722301239, guid: 5043c71a7453ed04b89af17e3a7a49f7, type: 3}
+    sourceHolster: {fileID: 8993902097722301239, guid: f6fd0947a4b9eb64b91973c0eceae530, type: 3}
+    sourceInspect: {fileID: 8993902097722301239, guid: c2d90d63ac18b1d46bf591322c138318, type: 3}
+    draw: {fileID: 11400000, guid: 639428b963e6ad24e8cd00aa1e469fdb, type: 2}
+    holster: {fileID: 11400000, guid: 9541c2fbff440ec49a177834eabe8b45, type: 2}
+    inspect: {fileID: 11400000, guid: 2e94e3d1fc7308b4f82aa2dd1cc97408, type: 2}
+    partsDraw: {fileID: 11400000, guid: b94d8a33aa0e8744490b8a840175003c, type: 2}
+    partsHolster: {fileID: 11400000, guid: b6e2549432b2a8445a245193e6e67467, type: 2}
+    partsInspect: {fileID: 11400000, guid: 3b01b041879363545b88afdd1efffc7d, type: 2}

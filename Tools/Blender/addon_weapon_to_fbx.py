@@ -6,8 +6,11 @@
 # Why a recipe per weapon: the L4D2 world models put their origin and axes wherever the modder left them (the Yamato
 # hangs upside down from its guard, the KRAIT points along -Y), so each one says where its grip bone is, which way
 # the muzzle or blade tip points and which way is up, and the script turns every weapon into the same frame:
-# origin at the grip, tip along Unity +Z, top along Unity +Y, true size (SourceIO's 0.01905 m per unit is the real
-# size for weapons; only characters use the project's 0.025).
+# origin at the grip, tip along FBX +Z, top along +Y, true size (SourceIO's 0.01905 m per unit is the real size for
+# weapons; only characters use the project's 0.025). Art/Models imports bake the axis conversion (ModelImportRules),
+# which flips Z where Unity's own conversion flips X, so in Unity the tip lies along -Z: the model comes in a half turn
+# about Y from the game's frame (measured on the Desperado's prefab, 2026-11-12), and whatever places it turns it
+# back (Editor/Import/DesperadoSetup.cs).
 # Textures come from the addon's VMT files, not from the importer's node trees: $basetexture -> <material>.png with
 # $color2 baked in (masked by the base alpha when $blendtintbybasealpha is set), $bumpmap -> <material>_normal.png with
 # green flipped (Source normal maps are DirectX-style, Unity's are OpenGL-style). Both are capped at max_texture.
@@ -58,7 +61,7 @@ def point(spec):
     return bone_head(spec["bone"]) if "bone" in spec else mathutils.Vector(spec["point"])
 
 
-# Source frame -> game frame: tip to Blender -Y and up to +Z (Unity +Z and +Y after the FBX axis conversion).
+# Source frame -> game frame: tip to Blender -Y and up to +Z (FBX +Z and +Y; Unity -Z and +Y once imported, see the top).
 tip = mathutils.Vector(recipe["tip"]).normalized()
 up = mathutils.Vector(recipe["up"])
 up = (up - tip * up.dot(tip)).normalized()
@@ -178,7 +181,8 @@ def vmt_values(path):
     text = open(path, encoding="utf-8", errors="replace").read()
     text = re.sub(r"//[^\n]*", "", text)
     values = {}
-    for key, value in re.findall(r'"?(\$[A-Za-z0-9_]+)"?\s+("[^"]*"|\S+)', text):
+    # A key may carry a space inside its quotes ("$color2 " in the Fatebringer's VMT): the value is still the next token.
+    for key, value in re.findall(r'"?(\$[A-Za-z0-9_]+)\s*"?\s+("[^"]*"|\S+)', text):
         values[key.lower()] = value.strip('"')
     return values
 
@@ -233,12 +237,30 @@ for material in bpy.data.materials:
                 share = px[3::4] if values.get("$blendtintbybasealpha") == "1" else np.ones_like(px[3::4])
                 for c in range(3):
                     px[c::4] *= 1.0 + (tint[c] - 1.0) * share
-            if values.get("$alphatest") != "1" and values.get("$translucent") != "1":
+            # The alpha stays when it is cut-out or see-through, or when it is the reflection mask
+            # ($basemapalphaenvmapmask): URP Lit reads smoothness from it (Smoothness Source: Albedo Alpha).
+            if values.get("$alphatest") != "1" and values.get("$translucent") != "1" and values.get("$basemapalphaenvmapmask") != "1":
                 px[3::4] = 1.0
             save(image, px, os.path.join(tex_dir, material.name + ".png"))
             report.append(f"TEX {material.name}: base {os.path.basename(base)} {image.size[0]}x{image.size[1]} tint={tint}")
+            # $selfillummask: what glows, as the base colour where the mask is white -> <material>_emission.png (URP's
+            # emission map; Source lights it the same way, base times mask).
+            glow = vtf_of(values.get("$selfillummask", ""))
+            mask = decode(glow) if glow else None
+            if mask:
+                if tuple(mask.size) != tuple(image.size):
+                    mask.scale(image.size[0], image.size[1])
+                mk = np.empty(image.size[0] * image.size[1] * 4, np.float32)
+                mask.pixels.foreach_get(mk)
+                lit = px.copy()
+                for c in range(3):
+                    lit[c::4] *= mk[0::4]
+                lit[3::4] = 1.0
+                save(mask, lit, os.path.join(tex_dir, material.name + "_emission.png"))
+                report.append(f"TEX {material.name}: emission {os.path.basename(glow)} lit share {float(np.mean(mk[0::4] > .1)):.3f}")
     bump = vtf_of(values.get("$bumpmap", ""))
-    if bump and not os.path.basename(bump).lower().startswith("normal"):
+    # A bump map named "normal…" is skipped as a shared flat one, unless the recipe says its own is named so.
+    if bump and (recipe.get("own_normal_names") or not os.path.basename(bump).lower().startswith("normal")):
         image = decode(bump)
         if image and image.size[0] >= 64:
             px = np.empty(image.size[0] * image.size[1] * 4, np.float32)
