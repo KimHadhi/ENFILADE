@@ -12,6 +12,14 @@ using UnityEngine.AI;
 public enum ZombieMood : byte { Awake, Calm, Searching, Alert, Rousing, Rising }
 
 /// <summary>
+/// How aware a zombie is of the players, on every PC (ZombieMind.Awareness), for the stealth HUD and anything else that
+/// reads it (a Ghost's detection tool): Calm, nothing on its mind; Suspicious, something caught its eye or ear (its
+/// suspicion rising, stopped to look, or gone to search); Calling, it made someone out and is drawing breath to call the
+/// others (kill it now and nobody else is told); Alerted, awake and after someone (woken, called, struck, or a horde's).
+/// </summary>
+public enum ZombieAwareness : byte { Calm, Suspicious, Calling, Alerted }
+
+/// <summary>
 /// Multiplayer plan stage 4C: what a zombie knows. A horde zombie (a wave's, or a plain /spawn) is awake from the start
 /// and always knows where the nearest player is, as before. One that starts calm (placed in a map with startCalm, or
 /// /spawn n calm) has to notice them: it stands Calm and looks round now and then, grows Alert (stops and turns to what
@@ -119,8 +127,10 @@ public sealed class ZombieMind : MonoBehaviour
     private float searchSweep = 70f;
     [SerializeField, Range(.05f, 1f), Tooltip("Searching, it walks at this share of its chase speed.")]
     private float searchSpeedShare = .3f;
-    [SerializeField, Min(0f), Tooltip("Waking, it wakes the calm ones this near (m).")]
-    private float callRadius = 12f;
+    [SerializeField, Min(0f), Tooltip("Its call, a roar, carries this far (m): heard as any sound is (one calm hears calmHearShare of it, a wall halves it), and whoever hears it wakes.")]
+    private float callRadius = 20f;
+    [SerializeField, Min(0f), Tooltip("Woken on its own, it draws breath this long before it calls the others (s): killed, held, stunned or knocked down meanwhile, nobody else is told. 0: it calls at once.")]
+    private float callTell = 1.2f;
     [SerializeField, Min(0f), Tooltip("Alert, how fast it turns to what it noticed (degrees a second).")]
     private float turnSpeed = 240f;
     [SerializeField, Min(0f), Tooltip("Calm, about how often it turns to look elsewhere (s). 0: never.")]
@@ -171,9 +181,11 @@ public sealed class ZombieMind : MonoBehaviour
 
     /// <summary>
     /// On the host or alone: a zombie that had not noticed anyone has, and who it is after. A campaign's quiet stretch
-    /// ends on it (CampaignRun).
+    /// counts its alarm from it (CampaignRun: the horde comes only if the alarm lasts).
     /// </summary>
     public static event System.Action<ZombieMind, PlayerMovement> Woke;
+    /// <summary>On the host or alone: a zombie called the others (its roar went out), and whom it was after.</summary>
+    public static event System.Action<ZombieMind, PlayerMovement> Called;
 
     private EnemyHealth health;
     private EnemyNetwork network;
@@ -192,6 +204,9 @@ public sealed class ZombieMind : MonoBehaviour
     private bool lured;
     private Vector3 lureAt;
     private float distractedUntil;
+    // Drawing breath to call the others and when it calls (the host's); on a copy, the host's word and when it came.
+    private bool calling, shownCalling;
+    private float callAt, shownCallSince;
 
     // Its mind on a stone: it notices what is off to the side of it far more slowly (lureFocus).
     private bool Distracted => lured || Time.time < distractedUntil;
@@ -261,6 +276,36 @@ public sealed class ZombieMind : MonoBehaviour
     internal Vector3 EyePoint => Eye();
     /// <summary>Its body still lives (on this PC).</summary>
     internal bool Living => health != null && health.IsAlive;
+
+    // ---- What it knows, for anyone to read (the stealth HUD, a Ghost's detection tool) -----------------------------
+
+    /// <summary>It made someone out and is drawing breath to call the others (callTell), on every PC alike.</summary>
+    public bool Calling => DrawsBreath && Living;
+    /// <summary>How far into its tell it is, 0 to 1, on every PC: the call goes out at 1. 0 while it isn't calling.</summary>
+    public float CallShare => !Calling ? 0f : callTell <= 0f ? 1f
+        : Mathf.Clamp01(IsCopy ? (Time.time - shownCallSince) / callTell : 1f - (callAt - Time.time) / callTell);
+    /// <summary>How aware it is of the players (ZombieAwareness), on every PC alike.</summary>
+    public ZombieAwareness Awareness
+        => Calling ? ZombieAwareness.Calling
+            : IsAwake ? ZombieAwareness.Alerted
+            : Mood == ZombieMood.Alert || Mood == ZombieMood.Searching || ShownSuspicion > 0f ? ZombieAwareness.Suspicious
+            : ZombieAwareness.Calm;
+    /// <summary>
+    /// On the host or alone: some zombie that started calm is awake and after someone now (a local alarm, its own and
+    /// those its call woke; a horde's don't count). A campaign's quiet stretch survives it unless it lasts (CampaignRun).
+    /// </summary>
+    public static bool AlarmUp
+    {
+        get
+        {
+            foreach (var mind in minds) if (mind != null && !mind.horde && mind.Thinks && mind.IsAwake) return true;
+            return false;
+        }
+    }
+    // Drawing breath, alive or not: the blow that kills it during its tell still counts (Witnessed), as its copies are told.
+    private bool DrawsBreath => IsCopy ? shownCalling : calling;
+    /// <summary>The host's tell, for its copies (EnemyNetwork).</summary>
+    internal bool CallingShared => calling && Living;
     /// <summary>How far it sees now (m): its calm sight while calm, less again while eating or dozing.</summary>
     internal float ViewRange => (Mood == ZombieMood.Calm || lured ? calmSightRange : sightRange) * BusyRange;
     /// <summary>Its full view and the edge of its sight, side to side (degrees), narrower while eating or dozing.</summary>
@@ -296,6 +341,7 @@ public sealed class ZombieMind : MonoBehaviour
         minds.Clear();
         guns.Clear();
         Woke = null;
+        Called = null;
         LastNoticed = float.NegativeInfinity;
         LastSeenAt = Vector3.zero;
     }
@@ -313,13 +359,31 @@ public sealed class ZombieMind : MonoBehaviour
     private void OnEnable()
     {
         minds.Add(this);
-        if (minds.Count == 1) Noise.Made += Hear;
+        if (minds.Count != 1) return;
+        Noise.Made += Hear;
+        // Once, however many play sessions went before (statics may outlive one).
+        CombatDamageEvents.Damaged -= Witnessed;
+        CombatDamageEvents.Damaged += Witnessed;
     }
 
     private void OnDisable()
     {
         minds.Remove(this);
-        if (minds.Count == 0) Noise.Made -= Hear;
+        if (minds.Count != 0) return;
+        Noise.Made -= Hear;
+        CombatDamageEvents.Damaged -= Witnessed;
+    }
+
+    // A witness killed while it drew breath to call: nobody else was told, and the one whose blow it was is paid on their
+    // own PC, which saw it calling as every PC does (StealthScore.Witness; a hit gives a plus).
+    private static void Witnessed(CombatDamageReport report)
+    {
+        if (!report.IsKillingBlow || report.IsPractice || report.Target == null || !report.Target.TryGetComponent(out ZombieMind mind)
+            || !mind.DrawsBreath) return;
+        var mine = PlayerRoster.Local;
+        if (mine == null || report.Hit.Source == null || report.Hit.Source.GetComponentInParent<PlayerMovement>() != mine) return;
+        int points = StealthScore.Witness;
+        if (points > 0) CombatFeedHUD.Special(Texts.Get("feed.score.witness"), points, KitStyle.Accent);
     }
 
     private void Start()
@@ -440,10 +504,50 @@ public sealed class ZombieMind : MonoBehaviour
         if (Mood == ZombieMood.Rousing || GettingUp) Halt();
         else if (agent != null && agent.isActiveAndEnabled && agent.isOnNavMesh) agent.isStopped = false;
         Woke?.Invoke(this, focus);
+        // Woken on its own (not by another's call), it draws breath to call the others first (callTell), the same tell on
+        // every PC (EnemyNetwork shares it); killed, held, stunned or knocked down meanwhile, nobody else is told (Tell).
+        // It used to wake every calm one within callRadius that instant, walls or not, and a campaign's quiet ended with
+        // it: one sighting brought everyone (user, 2026-11-12: "한번 들켰다고 바로 모든 놈들이 나한테 오지 말고 들켜도
+        // 들킨 놈들 빠르게 싹 다 처치하면 조용히 넘어갈 수 있었으면 좋겠어").
         if (!call) return;
+        if (callTell <= 0f) { Call(); return; }
+        calling = true;
+        callAt = Time.time + callTell;
+        ZombieCall.Tell(Eye(), callTell);
+    }
+
+    // Drawing breath to call: held (a takedown, a grab), stunned or knocked down, or no longer awake, it loses it and
+    // nobody is told; its breath drawn, it roars (Call).
+    private void Tell()
+    {
+        if (!IsAwake || (melee != null && (melee.IsStunned || melee.IsLying || melee.IsHeld))) { calling = false; return; }
+        if (Time.time < callAt) return;
+        calling = false;
+        Call();
+    }
+
+    // The roar: every zombie not awake yet that hears it (Reaches: a sound callRadius loud, a wall halving it, through its
+    // own ears, dulled eating or dozing) wakes after the same quarry, and none calls in turn; the rest keep to themselves
+    // and may still notice on their own. Every PC hears the roar (ShowCall).
+    private void Call()
+    {
+        var roar = new NoiseEvent(Eye(), callRadius, gameObject);
         foreach (var other in minds)
-            if (other != this && !other.IsAwake && other.Thinks && (other.transform.position - transform.position).sqrMagnitude <= callRadius * callRadius)
+            if (other != this && other.Thinks && !other.horde && !other.IsAwake && other.Reaches(roar, out _, out _))
                 other.Wake(focus, true, false);
+        Called?.Invoke(this, focus);
+        ShowCall();
+        if (network != null) network.ShareCall();
+    }
+
+    /// <summary>Every PC: the call's roar from its mouth, and a word at the top of the screen for anyone near enough to hear it.</summary>
+    internal void ShowCall()
+    {
+        Vector3 mouth = Eye();
+        ZombieCall.Roar(mouth);
+        var mine = PlayerRoster.Local;
+        if (mine != null && (mine.transform.position - mouth).sqrMagnitude <= callRadius * callRadius)
+            AlertHUD.Danger(Texts.Get("stealth.call"), transform, 2f);
     }
 
     private void Alert(Vector3 at)
@@ -540,12 +644,19 @@ public sealed class ZombieMind : MonoBehaviour
     }
 
     /// <summary>On another PC: the mood the host's zombie is in, how sure it is (twentieths) and of whom (client id + 1).</summary>
-    internal void ShowMind(byte mood, byte step, ulong watch)
+    internal void ShowMind(byte mood, byte step, ulong watch, bool drawing = false)
     {
         if (!IsCopy) return;
         Mood = (ZombieMood)mood;
         shownStep = step;
         shownWatch = watch;
+        // The host's zombie began drawing breath to call: the same tell here, timed from now.
+        if (drawing && !shownCalling)
+        {
+            shownCallSince = Time.time;
+            if (Living) ZombieCall.Tell(Eye(), callTell);
+        }
+        shownCalling = drawing;
     }
 
     // ---- Thinking ----------------------------------------------------------------------------------------------
@@ -580,6 +691,7 @@ public sealed class ZombieMind : MonoBehaviour
             heldUp = false;
             if (Mood == ZombieMood.Searching && agent != null && agent.isActiveAndEnabled && agent.isOnNavMesh) agent.isStopped = false;
         }
+        if (calling) Tell();
         if ((thinkLeft -= dt) > 0f) return;
         // Far from every player it thinks less often (ZombieLod); what it sees adds up over the longer step all the same.
         float step = ZombieLod.ThinkEvery(transform.position, ThinkEvery);

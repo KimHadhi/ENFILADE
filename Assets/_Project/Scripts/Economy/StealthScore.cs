@@ -17,6 +17,11 @@ public static class StealthScore
     /// <summary>Points to every player for a quiet stretch got through unseen.</summary>
     public static int Unseen => Number("unseen", 300);
 
+    /// <summary>
+    /// Points for killing one that made someone out before it could call the others (ZombieMind's tell: kill the witness
+    /// and nobody else is told).</summary>
+    public static int Witness => Number("witness", 30);
+
     private static int Number(string column, int fallback)
         => GameTables.TryGetRow(TableName, TableRow, out var row) && row.TryGetValue(column, out string text)
             && float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out float value) ? Mathf.Max(0, Mathf.RoundToInt(value)) : fallback;

@@ -28,6 +28,8 @@ public sealed class EnemyNetwork : NetworkBehaviour
         /// </summary>
         public byte Suspicion;
         public ulong Watch;
+        /// <summary>A zombie draws breath to call the others (ZombieMind.Calling): every PC shows and hears the same tell.</summary>
+        public bool Calling;
     }
 
     private const float ConditionInterval = .1f;
@@ -170,7 +172,8 @@ public sealed class EnemyNetwork : NetworkBehaviour
         Holding = grip != null && grip.IsHolding,
         Feeding = grip != null && grip.Feeding,
         Suspicion = mind != null ? mind.SuspicionStep : (byte)0,
-        Watch = mind != null ? WatchOf(mind.Watching) : 0UL
+        Watch = mind != null ? WatchOf(mind.Watching) : 0UL,
+        Calling = mind != null && mind.CallingShared
     };
 
     // A player as their client id + 1 (0: nobody).
@@ -182,7 +185,7 @@ public sealed class EnemyNetwork : NetworkBehaviour
     private void Show(in Condition now)
     {
         target.ShowCondition(now.Posture, now.Staggered, now.Held, now.Down, now.Fall);
-        if (mind != null) mind.ShowMind(now.Mood, now.Suspicion, now.Watch);
+        if (mind != null) mind.ShowMind(now.Mood, now.Suspicion, now.Watch, now.Calling);
         if (grip != null) grip.ShowHolding(now.Holding, now.Feeding);
     }
 
@@ -212,6 +215,12 @@ public sealed class EnemyNetwork : NetworkBehaviour
         ulong client = victim == null ? ulong.MaxValue
             : victim.TryGetComponent(out NetworkObject player) ? player.OwnerClientId : NetworkManager.ServerClientId;
         WindupRpc(client, combo, (byte)move);
+    }
+
+    /// <summary>The host's zombie called the others: every PC hears its roar (ZombieMind.ShowCall).</summary>
+    internal void ShareCall()
+    {
+        if (IsSpawned && IsServer) CallRpc();
     }
 
     internal void AnnounceCancel()
@@ -260,6 +269,12 @@ public sealed class EnemyNetwork : NetworkBehaviour
 
     [Rpc(SendTo.NotServer)]
     private void CancelRpc() => combat.CancelAttack();
+
+    [Rpc(SendTo.NotServer)]
+    private void CallRpc()
+    {
+        if (mind != null) mind.ShowCall();
+    }
 
     [Rpc(SendTo.NotMe)]
     private void BlockRpc() => CombatCueAudio.Play(gameObject, CombatCue.Block, 1f, true);

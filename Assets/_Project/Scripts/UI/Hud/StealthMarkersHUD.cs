@@ -19,6 +19,8 @@ public sealed class StealthMarkersHUD : MonoBehaviour, ITableBound
     public const string TableName = "Stealth", TableRow = "Markers";
     // From this suspicion on, a zombie that stopped to look is unsure of the player: pink rim, and a tick.
     private const float SuspectFrom = .2f;
+    // A zombie drawing breath to call the others (ZombieMind.Calling): its mark turns this red and fills to the call.
+    private static readonly Color CallRed = new Color(1f, .16f, .2f);
 
     [SerializeField, Range(0f, 1f), Tooltip("Least suspicion that shows a mark.")]
     private float showFrom = .03f;
@@ -182,9 +184,12 @@ public sealed class StealthMarkersHUD : MonoBehaviour, ITableBound
             if (now - lastSpotted > .3f) { KitSound.Play(KitSound.Cue.Spotted, spottedVolume); lastSpotted = now; }
         }
         bool bursting = mark != null && mark.burst >= 0f && mark.burst < spottedSeconds;
+        // It made this player out and draws breath to call the others: its '!' stays, filling red to the call (kill it
+        // first and nobody else is told: ZombieMind's tell), the same on every PC.
+        bool calling = mine && mind.Calling && distance <= farthest;
         bool wanted = mine && asleep && distance <= farthest && (suspicion >= showFrom || looking);
         // Not wanted, it is left unused and fades out in LateUpdate.
-        if (!wanted && !bursting) return;
+        if (!wanted && !bursting && !calling) return;
         if (mark == null)
         {
             mark = Take();
@@ -202,8 +207,8 @@ public sealed class StealthMarkersHUD : MonoBehaviour, ITableBound
         mark.looked = looking;
         if (asleep && !bursting) mark.burst = -1f;
         if (mark.burst >= 0f) mark.burst += dt;
-        mark.fill = Mathf.MoveTowards(mark.fill, bursting ? 1f : suspicion, dt * 3f);
-        Draw(mark, mind, view, head, looking, bursting);
+        mark.fill = calling ? mind.CallShare : Mathf.MoveTowards(mark.fill, bursting ? 1f : suspicion, dt * 3f);
+        Draw(mark, mind, view, head, looking, bursting, calling);
     }
 
     // Forgets zombies that are gone.
@@ -218,19 +223,23 @@ public sealed class StealthMarkersHUD : MonoBehaviour, ITableBound
         foreach (var pair in keep) moods[pair.Key] = pair.Value;
     }
 
-    private void Draw(Mark mark, ZombieMind mind, Camera view, Vector3 head, bool looking, bool bursting)
+    private void Draw(Mark mark, ZombieMind mind, Camera view, Vector3 head, bool looking, bool bursting, bool calling)
     {
         float t = bursting ? mark.burst : 0f;
-        float fade = bursting ? 1f - Mathf.Clamp01((t - spottedSeconds * .55f) / (spottedSeconds * .45f)) : 1f;
+        // Calling, the '!' doesn't fade with the burst: it stays till the call goes out or the caller falls.
+        float fade = bursting && !calling ? 1f - Mathf.Clamp01((t - spottedSeconds * .55f) / (spottedSeconds * .45f)) : 1f;
         mark.alpha = Mathf.MoveTowards(mark.alpha, fade, Time.unscaledDeltaTime * 10f);
-        mark.group.alpha = bursting ? fade : mark.alpha;
+        mark.group.alpha = bursting || calling ? fade : mark.alpha;
         Color pink = KitStyle.Accent, ice = KitStyle.Ice;
+        // Drawing breath to call: red, beating faster as it fills.
+        float beat = calling ? .5f + .5f * Mathf.Sin(Time.unscaledTime * Mathf.Lerp(10f, 26f, mark.fill)) : 0f;
         // Pink is for being made out: one off to look at a stone (no suspicion of anyone) keeps a white rim and an empty
         // diamond under its '?'.
-        Color line = bursting ? Color.Lerp(Color.white, pink, Mathf.Clamp01(t / .12f)) : looking && mark.fill >= SuspectFrom ? pink : ice;
-        Color fill = bursting ? pink : Color.Lerp(ice, pink, Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(.25f, .8f, mark.fill)));
-        Color plate = bursting ? new Color(.16f, .02f, .06f, .92f) : KitStyle.With(KitStyle.Ink, .82f);
-        string sign = bursting ? "!" : looking ? "?" : "";
+        Color line = calling ? Color.Lerp(pink, Color.white, beat)
+            : bursting ? Color.Lerp(Color.white, pink, Mathf.Clamp01(t / .12f)) : looking && mark.fill >= SuspectFrom ? pink : ice;
+        Color fill = calling ? CallRed : bursting ? pink : Color.Lerp(ice, pink, Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(.25f, .8f, mark.fill)));
+        Color plate = bursting || calling ? new Color(.16f, .02f, .06f, .92f) : KitStyle.With(KitStyle.Ink, .82f);
+        string sign = bursting || calling ? "!" : looking ? "?" : "";
 
         Vector3 screen = view.WorldToScreenPoint(head);
         bool onScreen = screen.z > 0f && screen.x >= edgeMargin && screen.x <= Screen.width - edgeMargin
@@ -242,14 +251,14 @@ public sealed class StealthMarkersHUD : MonoBehaviour, ITableBound
         {
             RectTransformUtility.ScreenPointToLocalPointInRectangle(canvas, screen, null, out Vector2 local);
             // The '!' bursts out big and shakes a moment.
-            float pop = bursting ? Mathf.Lerp(1.75f, 1f, 1f - Mathf.Pow(1f - Mathf.Clamp01(t / .14f), 3f)) : 1f;
+            float pop = bursting ? Mathf.Lerp(1.75f, 1f, 1f - Mathf.Pow(1f - Mathf.Clamp01(t / .14f), 3f)) : 1f + .1f * beat;
             Vector2 shake = bursting && t < .28f ? new Vector2(Mathf.Sin(t * 90f), Mathf.Cos(t * 77f)) * 3f * (1f - t / .28f) : Vector2.zero;
             mark.root.anchoredPosition = local + shake;
             mark.root.localScale = Vector3.one * pop;
             mark.glyph.Paint(plate, line, fill, mark.fill);
             mark.sign.text = sign;
-            mark.sign.color = bursting ? Color.white : ice;
-            mark.sign.fontSize = bursting ? size * .9f : size * .62f;
+            mark.sign.color = bursting || calling ? Color.white : ice;
+            mark.sign.fontSize = bursting || calling ? size * .9f : size * .62f;
             return;
         }
         // Off the screen: a wedge on the ring, pointing the way it is from the camera, seen from above.

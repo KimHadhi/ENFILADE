@@ -21,8 +21,12 @@ using UnityEngine.SceneManagement;
 /// Stage C-15, stealth (user, 2026-11-10: no horde until woken, calm zombies in the maps): a chapter opens quiet, and
 /// so does every stretch after a rest stop. Quiet, the director sends no one; zombies stand calm along the way ahead
 /// instead (CampaignHorde.PlaceCalm, the steps' own numbers by calmShare), and can be slipped past or taken from
-/// behind. The quiet ends when one of them notices someone (ZombieMind.Woke: a sight, a sound, a blow), which every PC
-/// is told at the top of the screen, or when a hold or the escape begins; from then on the horde comes as before.
+/// behind. One of them noticing someone no longer ends it (user, 2026-11-12: "한번 들켰다고 바로 모든 놈들이 나한테 오지
+/// 말고 들켜도 들킨 놈들 빠르게 싹 다 처치하면 조용히 넘어갈 수 있었으면 좋겠어"): the alarm is the woken ones' own (ZombieMind:
+/// a witness draws breath before it calls, and its call wakes only those that hear it), and the quiet ends only when
+/// that alarm lasts alarmSeconds, which every PC is told at the top of the screen, or when a hold or the escape begins;
+/// from then on the horde comes as before. An alarm put out in time (the woken dead, or lost) leaves the stretch quiet,
+/// unseen bonus and all, and every PC hears "들키지 않음".
 /// Stage C-14, a finale as long as its song (the user's answer, 2026-11-10: the song plays whole, and its end is when
 /// the ride leaves; whoever misses it is left behind): under a finale's song (Music.board) the hold lasts the song
 /// less the board time, then the ride waits at the escape's spot for the board time and leaves as the song ends, with
@@ -53,8 +57,10 @@ public sealed class CampaignRun : MonoBehaviour
         public byte Quiet;
         /// <summary>How many quiet stretches the room got through unseen this chapter: each PC pays its player as it rises.</summary>
         public byte Unseen;
+        /// <summary>1 while a quiet stretch has a local alarm (zombies woken by stealth still after someone).</summary>
+        public byte Alarm;
         public bool Equals(Status other) => Step == other.Step && Finished == other.Finished && Checkpoint == other.Checkpoint
-            && Held == other.Held && Doors == other.Doors && Quiet == other.Quiet && Unseen == other.Unseen;
+            && Held == other.Held && Doors == other.Doors && Quiet == other.Quiet && Unseen == other.Unseen && Alarm == other.Alarm;
     }
 
     [SerializeField, Tooltip("What the hordes are made of.")]
@@ -88,6 +94,9 @@ public sealed class CampaignRun : MonoBehaviour
     [SerializeField, Min(0f), Tooltip("Found, then no zombie has seen anyone this long (s): the chase dies down. The director stops "
         + "and every zombie goes to look where it last knew them, then calms. 0: once found, found for good.")]
     private float lullSeconds = 20f;
+    [SerializeField, Min(0f), Tooltip("Quiet, zombies woken by stealth may be after someone this long (s) and the stretch stays quiet; past it, the horde "
+        + "comes. Kill the witnesses or lose them sooner and nobody else comes. 0: the first one woken brings the horde, as it used to.")]
+    private float alarmSeconds = 20f;
     [SerializeField, Min(0f), Tooltip("Zombies set calm along the way of a quiet stretch: each step's horde number times this.")]
     private float calmShare = 1f;
     [SerializeField, Min(0f), Tooltip("No calm zombie is set nearer than this to a player (m).")]
@@ -121,6 +130,10 @@ public sealed class CampaignRun : MonoBehaviour
     private int calmMade;
     private byte unseenCount;
     private float noticedAt = float.NegativeInfinity;
+    // A quiet stretch's local alarm (ZombieMind.AlarmUp): since when (the host's; -1 none), and up now and last seen so on
+    // this PC (the host's word, shared).
+    private float alarmSince = -1f;
+    private bool alarm, wasAlarm;
     // A hold with no song has sent its brutes; who the ride left behind, for the closing card.
     private bool songlessSent;
     private string leftBehind = "";
@@ -240,15 +253,38 @@ public sealed class CampaignRun : MonoBehaviour
         quiet = wasQuiet = calmDue = quietStart;
         lull = false;
         unseen = quietStart;
+        alarm = wasAlarm = false;
+        alarmSince = -1f;
         calmMade = 0;
     }
 
-    // One of them has noticed someone: the horde is on its way from here on.
+    // One of them has noticed someone. Quiet, the alarm is theirs and is watched from now (Alarm); with alarmSeconds 0 the
+    // horde is on its way at once, as it used to be.
     private void OnWoke(ZombieMind mind, PlayerMovement who)
     {
         if (!IsHost || finished) return;
+        if (quiet && alarmSeconds > 0f) { if (alarmSince < 0f) alarmSince = Time.time; return; }
         quiet = lull = unseen = false;
         noticedAt = Time.time;
+    }
+
+    // The host, quiet: a local alarm lasting alarmSeconds ends the quiet (the horde comes, the stretch is no longer unseen);
+    // one put out sooner (no zombie woken by stealth still after anyone: the witnesses dead, or lost and gone searching)
+    // leaves it quiet.
+    private void Alarm()
+    {
+        if (!quiet || alarmSeconds <= 0f) { alarm = false; alarmSince = -1f; return; }
+        bool up = ZombieMind.AlarmUp;
+        if (up && alarmSince < 0f) alarmSince = Time.time;
+        if (up && Time.time - alarmSince >= alarmSeconds)
+        {
+            quiet = lull = unseen = alarm = false;
+            alarmSince = -1f;
+            noticedAt = Time.time;
+            return;
+        }
+        if (!up) alarmSince = -1f;
+        alarm = up;
     }
 
     // The way ahead of a quiet stretch, up to the next hold, escape or rest stop: each step's share of calm zombies between
@@ -277,6 +313,15 @@ public sealed class CampaignRun : MonoBehaviour
         wasQuiet = quiet;
         if (noticed) AlertHUD.Danger(Texts.Get("campaign.alert.noticed"));
         else if (quiet && lull && !finished) AlertHUD.Self(Texts.Get("campaign.alert.lull"));
+    }
+
+    // Every PC: a quiet stretch's alarm put out in time, the witnesses dead or lost; the stretch stays quiet.
+    private void WatchAlarm()
+    {
+        if (alarm == wasAlarm) return;
+        bool cleared = wasAlarm && quiet && !finished;
+        wasAlarm = alarm;
+        if (cleared) AlertHUD.Self(Texts.Get("stealth.clear"));
     }
 
     private void OnDestroy()
@@ -325,6 +370,7 @@ public sealed class CampaignRun : MonoBehaviour
         WatchForWipe();
         if (IsHost) { fuel.Tick(dt); Run(dt); }
         WatchQuiet();
+        WatchAlarm();
         ShowCardWhenDue();
         PlayMusic();
         ThrowCan();
@@ -371,6 +417,7 @@ public sealed class CampaignRun : MonoBehaviour
         // A hold or the escape is a crescendo whatever was noticed. Quiet, nobody is sent, and the pacing starts afresh
         // when it ends, as after a rest stop.
         if (scripted) quiet = calmDue = lull = false;
+        Alarm();
         // The chase dies down: found once, but no zombie has had anyone in sight for lullSeconds (they shut themselves in a
         // rest stop, or slipped away), so the director stops and the zombies go looking, then calm (ZombieMind.LoseAll).
         // Found was found for good before (user, 2026-11-11 playtest).
@@ -797,7 +844,7 @@ public sealed class CampaignRun : MonoBehaviour
         {
             Step = (byte)Mathf.Clamp(step, 0, 255), Finished = (byte)(finished ? 1 : 0),
             Checkpoint = (byte)Mathf.Clamp(checkpoint + 1, 0, 255), Held = (ushort)Mathf.Clamp(Mathf.FloorToInt(held), 0, ushort.MaxValue),
-            Doors = DoorBits(), Quiet = (byte)(quiet ? lull ? 2 : 1 : 0), Unseen = unseenCount
+            Doors = DoorBits(), Quiet = (byte)(quiet ? lull ? 2 : 1 : 0), Unseen = unseenCount, Alarm = (byte)(alarm ? 1 : 0)
         };
         if (now.Equals(sent) && Time.unscaledTime < nextShare) return;
         sent = now;
@@ -820,6 +867,7 @@ public sealed class CampaignRun : MonoBehaviour
         held = status.Held;
         quiet = status.Quiet != 0;
         lull = status.Quiet == 2;
+        alarm = status.Alarm != 0;
         // The host's count of stretches got through unseen: each one more pays this player too. The first word only
         // sets the count, so joining late pays for nothing that came before.
         if (!unseenKnown) { unseenKnown = true; unseenCount = status.Unseen; }
