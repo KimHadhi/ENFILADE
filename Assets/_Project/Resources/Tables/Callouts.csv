@@ -65,3 +65,7 @@ quiet.shh,quiet,always,0,,쉿. 조용히!,"Shh, quiet!",call.quiet,tilt,
 follow.me,follow,always,0,,날 따라와!,Follow me!,call.lead,beckon,
 auto.charge.lead,auto,charge.lead,0,,돌격! 나를 따르라!,Charge! Follow me!,call.charge,raise,어썰트가 CHARGE를 쓸 때 저절로
 auto.charge.join,auto,charge.join,0,,우와아아! 돌격!,Hurrah! Charge!,call.charge,raise,CHARGE 반경 안의 동료가 0.2~0.6초 뒤 저절로 따라 외친다(G&B의 장교 돌격처럼)
+auto.grenade.frag,auto,grenade.frag,0,,수류탄!,Frag out!,call.alarm,jut,어썰트가 G로 세열 수류탄을 던질 때 저절로(동료가 엎드리거나 비키게)
+auto.grenade.flash,auto,grenade.flash,0,,섬광 간다!,Flashbang out!,call.alarm,jut,포인트가 G로 섬광탄을 던지거나 손에서 터뜨릴 때 저절로. 눈부심은 없고 좀비만 기절한다
+auto.grenade.smoke,auto,grenade.smoke,0,,연막 깐다!,Smoke out!,call.lead,point,고스트가 G로 연막탄을 던질 때 저절로
+auto.grenade.mist,auto,grenade.mist,0,,소독 안개! 이 안으로!,Mist down! Get in here!,call.lead,beckon,데탕트가 G로 소독 안개탄을 던질 때 저절로. 좀비는 안개 안으로 못 들어온다

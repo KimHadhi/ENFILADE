@@ -23,6 +23,8 @@ internal sealed class SoundBankBuilder : AssetPostprocessor
         ("UI", "Assets/_Project/Art/Audio/UI"),
         // Zombies' voices (ZombieVoice): Attack and Leap, with Male and Female folders under them.
         (ZombieVoice.BankId, "Assets/_Project/Art/Audio/Enemies/Zombie"),
+        // Throwables (Throwables.Sound): pins, throws, bounces, bursts and the thrown knife's hits.
+        ("Grenades", "Assets/_Project/Art/Audio/Grenades"),
     };
     private static bool queued;
 

@@ -1,5 +1,5 @@
 ﻿id,kind,weapon,price,amount,order,name
-#설명 (kind: Gun 총 / Ammo 가진 총 탄약 채우기 / Heal 체력 회복 / Shield 실드 / Syringe 데탕트 주사기 보충),종류,Gun일 때 무기 에셋 이름(Data/Combat/Weapons),가격(2026-11-11 두 배로: 혼자 보통 처치 40·헤드샷 처치 60),Heal·Shield의 양,목록 순서,목록에 보일 이름(비우면 무기 이름)
+#설명 (kind: Gun 총 / Ammo 가진 총 탄약 채우기 / Heal 체력 회복 / Shield 실드 / Syringe 데탕트 주사기 보충 / Grenade 클래스 투척물(G) 보충: amount개 · 그 클래스의 것),종류,Gun일 때 무기 에셋 이름(Data/Combat/Weapons),가격(2026-11-11 두 배로: 혼자 보통 처치 40·헤드샷 처치 60),Heal·Shield의 양,목록 순서,목록에 보일 이름(비우면 무기 이름)
 M1911,Gun,M1911,600,,1,
 R08,Gun,R08,1200,,2,
 MKR9,Gun,MKR9,1600,,3,
@@ -15,3 +15,4 @@ Ammo,Ammo,,600,,20,탄약 채우기
 Medkit,Heal,,1000,100,21,구급상자
 Shield,Shield,,1200,50,22,실드 50
 Syringe,Syringe,,800,50,23,주사기 보충
+Grenade,Grenade,,400,1,24,투척물 보충

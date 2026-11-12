@@ -70,7 +70,8 @@ public sealed class EnemyTargeting : MonoBehaviour
             if (lost || Time.time >= nextLook)
             {
                 nextLook = Time.time + retargetInterval;
-                player = Pen == null ? PlayerRoster.Nearest(transform.position) : NearestPenned();
+                // A Ghost's smoke hangs somewhere (SmokeScreen): the nearest it can see goes before a nearer one in it.
+                player = SmokeScreen.Count > 0 ? NearestSeen() : Pen == null ? PlayerRoster.Nearest(transform.position) : NearestPenned();
             }
             return player;
         }
@@ -88,6 +89,22 @@ public sealed class EnemyTargeting : MonoBehaviour
             if (distance < best) { best = distance; nearest = someone; }
         }
         return nearest;
+    }
+
+    // The closest living player (the pen allowing) that smoke doesn't hide from it; the closest of all when smoke hides
+    // everyone, whom it then loses there (SmokeScreen).
+    private PlayerMovement NearestSeen()
+    {
+        PlayerMovement seen = null, any = null;
+        float bestSeen = float.PositiveInfinity, bestAny = float.PositiveInfinity;
+        foreach (var someone in PlayerRoster.All)
+        {
+            if (someone == null || !someone.IsInitialized || !someone.DamageReceiver.IsAlive || (Pen != null && !Pen(someone))) continue;
+            float distance = (someone.transform.position - transform.position).sqrMagnitude;
+            if (distance < bestAny) { bestAny = distance; any = someone; }
+            if (distance < bestSeen && !SmokeScreen.HidesFrom(this, someone)) { bestSeen = distance; seen = someone; }
+        }
+        return seen != null ? seen : any;
     }
 
     /// <summary>

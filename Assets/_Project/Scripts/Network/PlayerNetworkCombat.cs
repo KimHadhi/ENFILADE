@@ -75,6 +75,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
     private ShoveMoves kicks;
     private PlayerExecution execution;
     private PlayerThrow throws;
+    private PlayerGrenades grenades;
     private PlayerKnock knocks;
     private ClassKit kit;
     private DetenteKit detente;
@@ -198,6 +199,8 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
         if (throws == null) throws = gameObject.AddComponent<PlayerThrow>();
         // Knocks on walls (PlayerKnock), likewise: the host's is the one its zombies hear.
         if (!TryGetComponent(out knocks)) knocks = gameObject.AddComponent<PlayerKnock>();
+        // The class throwable on G (PlayerGrenades): thrown by the owner, copied on every other PC, burst where its PC says.
+        if (!TryGetComponent(out grenades)) grenades = gameObject.AddComponent<PlayerGrenades>();
         // The class (ClassKit): an Assault's CHARGE reaches friends near it on their PCs.
         kit = GetComponent<ClassKit>();
         if (kit == null) kit = gameObject.AddComponent<ClassKit>();
@@ -218,6 +221,9 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
         if (IsOwner)
         {
             throws.Thrown += OnThrown;
+            grenades.Thrown += OnGrenadeThrown;
+            grenades.Burst += OnGrenadeBurst;
+            grenades.KnifeTaken += OnKnifeTaken;
             knocks.Knocked += OnKnocked;
             kit.Charged += OnCharged;
             kit.Taunted += OnTaunted;
@@ -270,6 +276,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
         if (kicks != null) kicks.Kicked -= OnKicked;
         if (execution != null) execution.Started -= OnExecutionStarted;
         if (throws != null) throws.Thrown -= OnThrown;
+        if (grenades != null) { grenades.Thrown -= OnGrenadeThrown; grenades.Burst -= OnGrenadeBurst; grenades.KnifeTaken -= OnKnifeTaken; }
         if (knocks != null) knocks.Knocked -= OnKnocked;
         if (kit != null) { kit.Charged -= OnCharged; kit.Taunted -= OnTaunted; kit.Claimed -= OnClaimed; kit.Dueled -= OnDueled; }
         if (detente != null) { detente.Injected -= OnInjected; detente.TreatBegan -= OnTreatBegan; detente.TreatStopped -= OnTreatStopped; }
@@ -362,6 +369,9 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
     private void OnShoveSound(ShoveImpactKind impact) => ShoveSoundRpc(impact);
     private void OnKicked() => KickRpc();
     private void OnThrown(Vector3 from, Vector3 velocity) => ThrowRpc(from, velocity);
+    private void OnGrenadeThrown(Throwable kind, ushort id, Vector3 from, Vector3 velocity, float fuse) => GrenadeRpc((byte)kind, id, from, velocity, fuse);
+    private void OnGrenadeBurst(Throwable kind, ushort id, Vector3 at) => GrenadeBurstRpc((byte)kind, id, at);
+    private void OnKnifeTaken(ushort id) => KnifeTakenRpc(id);
     private void OnKnocked(Vector3 at, Vector3 normal) => KnockRpc(at, normal);
     private void OnCharged(Vector3 at) => ChargeRpc(at);
     private void OnTaunted(Vector3 at) => TauntRpc(at);
@@ -543,6 +553,28 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
     private void ThrowRpc(Vector3 from, Vector3 velocity)
     {
         if (throws != null) throws.ShowThrow(from, velocity);
+    }
+
+    // This player threw their class throwable: every other PC throws its own copy of it.
+    [Rpc(SendTo.NotMe)]
+    private void GrenadeRpc(byte kind, ushort id, Vector3 from, Vector3 velocity, float fuse)
+    {
+        if (grenades != null) grenades.ShowThrow((Throwable)kind, id, from, velocity, fuse);
+    }
+
+    // Their throwable burst there (their PC's fuse decides): every other PC's copy bursts in that spot, so the frag, the
+    // flash, the smoke and the mist are in one place for everyone, and the host's zombies meet the host's.
+    [Rpc(SendTo.NotMe)]
+    private void GrenadeBurstRpc(byte kind, ushort id, Vector3 at)
+    {
+        if (grenades != null) grenades.ShowBurst((Throwable)kind, id, at);
+    }
+
+    // A Knight took a thrown knife back: every other PC's copy of it goes.
+    [Rpc(SendTo.NotMe)]
+    private void KnifeTakenRpc(ushort id)
+    {
+        if (grenades != null) grenades.ShowKnifeTaken(id);
     }
 
     // A knock on a wall by this player: every other PC hears it there, and the host's zombies come to look.

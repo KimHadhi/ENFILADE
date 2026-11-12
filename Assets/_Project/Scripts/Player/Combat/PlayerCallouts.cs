@@ -147,6 +147,17 @@ public sealed class PlayerCallouts : MonoBehaviour
 
     private void OnCharged(Vector3 at) => Shout(CalloutLines.Find("auto.charge.lead"));
 
+    /// <summary>
+    /// This PC's player threw their class throwable (PlayerGrenades): they shout its warning line by themselves ("수류탄!",
+    /// "섬광!"), as a soldier does so friends look away or take cover, when shouting by themselves is on.
+    /// </summary>
+    public static void Thrown(string lineId)
+    {
+        var mine = Local;
+        if (mine == null || string.IsNullOrEmpty(lineId)) return;
+        mine.Shout(CalloutLines.Find(lineId));
+    }
+
     // The edges the lines care about (freed, raised, healed), and help shouted when something takes hold or they go down.
     private void Track()
     {

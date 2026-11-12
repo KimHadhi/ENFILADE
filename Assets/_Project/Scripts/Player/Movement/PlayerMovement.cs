@@ -352,6 +352,8 @@ public sealed partial class PlayerMovement : MonoBehaviour
         if (Application.isPlaying && IsLocal && GetComponent<StealthMarkersHUD>() == null) gameObject.AddComponent<StealthMarkersHUD>();
         if (Application.isPlaying && IsLocal && GetComponent<StealthView>() == null) gameObject.AddComponent<StealthView>();
         if (Application.isPlaying && GetComponent<PlayerThrow>() == null) gameObject.AddComponent<PlayerThrow>();
+        // The class throwable on G (2026-11-12, GMod Horde's quick grenade); friends' copies throw theirs too.
+        if (Application.isPlaying && GetComponent<PlayerGrenades>() == null) gameObject.AddComponent<PlayerGrenades>();
         // The step dodge seen in the world (afterimages, wind lines, the pop and smoke), friends' copies included.
         if (Application.isPlaying && GetComponent<DodgeDash>() == null) gameObject.AddComponent<DodgeDash>();
         // The class at work (stage 7): starting guns, the class key, adrenaline, CHARGE, a Point's guns reloading aside.

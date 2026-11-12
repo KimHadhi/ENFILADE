@@ -19,8 +19,6 @@ using Random = UnityEngine.Random;
 public sealed class PlayerThrow : MonoBehaviour, ITableBound
 {
     public const string TableName = "Stealth", TableRow = "Throw";
-    // The aim's arc: a step of its flight (s), the longest flight drawn (s), and how thick the line is (m).
-    private const float ArcStep = 1f / 30f, ArcLongest = 3f, ArcWidth = .022f;
 
     [SerializeField, Min(0f), Tooltip("Seconds between two stones.")]
     private float cooldown = 2.5f;
@@ -42,8 +40,8 @@ public sealed class PlayerThrow : MonoBehaviour, ITableBound
 
     private PlayerMovement movement;
     private StealthView view;
-    private LineRenderer arc;
-    private readonly List<Vector3> path = new List<Vector3>(96);
+    // The aim's arc, shared with the class throwable's G (ThrowArc, PlayerGrenades).
+    private ThrowArc arc;
     private float readyAt;
     private bool aiming;
 
@@ -91,64 +89,20 @@ public sealed class PlayerThrow : MonoBehaviour, ITableBound
     private void Aim(Transform eye)
     {
         Launch(eye, out Vector3 at, out Vector3 velocity);
-        path.Clear();
-        path.Add(at);
-        Vector3 gravity = Physics.gravity;
-        bool landed = false;
-        float radius = size * .5f;
-        for (float t = 0f; t < ArcLongest; t += ArcStep)
-        {
-            Vector3 next = at + velocity * ArcStep + .5f * ArcStep * ArcStep * gravity;
-            Vector3 step = next - at;
-            float length = step.magnitude;
-            if (length > 1e-4f && Physics.SphereCast(at, radius, step / length, out RaycastHit hit, length, ThrownStone.WorldMask, QueryTriggerInteraction.Ignore))
-            {
-                at = hit.point;
-                path.Add(at);
-                landed = true;
-                break;
-            }
-            at = next;
-            velocity += gravity * ArcStep;
-            path.Add(at);
-        }
+        if (arc == null) arc = new ThrowArc(transform);
+        bool landed = arc.Trace(at, velocity, size * .5f);
         bool ready = Time.time >= readyAt;
-        Line(ready);
-        if (view == null) view = GetComponent<StealthView>();
-        if (view != null && landed) view.ShowAim(at, noise, ready);
-    }
-
-    private void Line(bool ready)
-    {
-        if (arc == null)
-        {
-            var host = new GameObject("Throw Arc") { hideFlags = HideFlags.DontSave };
-            host.transform.SetParent(transform, false);
-            arc = host.AddComponent<LineRenderer>();
-            arc.useWorldSpace = true;
-            arc.widthMultiplier = ArcWidth;
-            arc.numCapVertices = 2;
-            arc.numCornerVertices = 0;
-            arc.alignment = LineAlignment.View;
-            arc.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            arc.receiveShadows = false;
-            arc.sharedMaterial = FeelAssets.Particle(Texture2D.whiteTexture, false);
-        }
-        arc.enabled = true;
         // Faint near the hand, solid along the flight and pink where it lands; grey while no stone is ready.
         Color body = ready ? KitStyle.Ice : KitStyle.With(KitStyle.Ice, .35f), end = ready ? KitStyle.Accent : KitStyle.With(KitStyle.Ice, .35f);
-        var colors = new Gradient();
-        colors.SetKeys(new[] { new GradientColorKey(body, 0f), new GradientColorKey(body, .8f), new GradientColorKey(end, 1f) },
-            new[] { new GradientAlphaKey(0f, 0f), new GradientAlphaKey(ready ? .85f : .4f, .12f), new GradientAlphaKey(ready ? .85f : .4f, 1f) });
-        arc.colorGradient = colors;
-        arc.positionCount = path.Count;
-        for (int i = 0; i < path.Count; i++) arc.SetPosition(i, path[i]);
+        arc.Draw(body, end, ready ? .85f : .4f);
+        if (view == null) view = GetComponent<StealthView>();
+        if (view != null && landed) view.ShowAim(arc.Landing, noise, ready);
     }
 
     private void StopAim()
     {
         aiming = false;
-        if (arc != null && arc.enabled) arc.enabled = false;
+        arc?.Hide();
     }
 
     private void OnDisable() => StopAim();

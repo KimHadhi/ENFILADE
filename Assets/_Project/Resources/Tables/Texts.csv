@@ -211,6 +211,7 @@ settings.keys.inspect,총 살펴보기,Inspect,키 설정 창 > 줄(Player/Inspe
 settings.keys.flashlight,라이트,Flashlight,키 설정 창 > 줄(Player/Flashlight)
 settings.keys.customize,총 꾸미기,Customize gun,키 설정 창 > 줄(Player/Customize. 꾸미기 창을 닫는 키도 이것)
 settings.keys.throw,돌 던지기,Throw stone,키 설정 창 > 줄(Player/Throw. 누르고 있으면 겨누고 놓으면 던진다)
+settings.keys.grenade,클래스 투척물,Class throwable,키 설정 창 > 줄(Player/Grenade. 누르면 바로 던지고 누르고 있으면 겨눈다)
 settings.keys.knock,벽 두드리기,Knock on wall,키 설정 창 > 줄(Player/Knock)
 settings.keys.slot1,1번 칸 (주무기),Slot 1 (primary),키 설정 창 > 줄(Combat/Slot1. 보조 키 기본은 숫자패드 1)
 settings.keys.slot2,2번 칸 (보조 무기),Slot 2 (secondary),키 설정 창 > 줄(Combat/Slot2)
@@ -1299,3 +1300,14 @@ tower.finale.word,ENFILADED!!,ENFILADED!!,타워 끝 연출의 큰 글자
 tower.finale.heading,엔필레이드 타워 정복,ENFILADE Tower cleared,타워 끝 연출의 판 위 줄
 tower.finale.under,{0} · {1},{0} · {1},타워 끝 연출의 판 아래 줄. {0}=오늘 훈련 {1}=걸린 시간
 life.respawn.tower,다음 휴게층에서 돌아옵니다,Back at the next rest hall,타워 레인에서 죽은 뒤
+grenade.knife.name,투척 나이프,Throwing knife,G 투척물 > 나이트: HUD 투척물 판 · 킬 피드 무기 자리
+grenade.frag.name,세열 수류탄,Frag grenade,G 투척물 > 어썰트: HUD 투척물 판 · 킬 피드 무기 자리
+grenade.smoke.name,연막탄,Smoke grenade,G 투척물 > 고스트: HUD 투척물 판
+grenade.flash.name,섬광탄,Flashbang,G 투척물 > 포인트: HUD 투척물 판
+grenade.mist.name,소독 안개탄,Antiseptic mist,G 투척물 > 데탕트: HUD 투척물 판
+pickup.gives.grenade,· 투척물 +{0},· throwable +{0},주운 목록(화면 아래) > 탄약 더미가 투척물도 채웠을 때 탄창 뒤에 붙는다. {0}=투척물 수
+shop.detail.grenade,클래스 투척물 +{0},Class throwable +{0},상점 > 투척물 보충 카드 설명. {0}=개수
+shop.refuse.nogrenade,이 클래스는 아직 투척물이 없어요,This class has no throwable yet,상점 > 투척물이 없는 클래스가 보충을 살 때
+shop.refuse.grenadefull,투척물이 가득해요,Throwables full,상점 > 투척물이 가득인데 보충을 살 때
+shop.note.nogrenade,투척물 없음,No throwable,상점 > 투척물이 없는 클래스일 때 보충 카드의 작은 글자
+shop.note.grenadefull,투척물 가득,Throwables full,상점 > 투척물이 가득일 때 보충 카드의 작은 글자

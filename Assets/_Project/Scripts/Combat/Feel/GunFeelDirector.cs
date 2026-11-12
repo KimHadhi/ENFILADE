@@ -91,6 +91,8 @@ public static class GunFeelDirector
         if (hit.Kind == DamageKind.Fall) return WeaponIcons.Fall;
         if (hit.IsCounter) return WeaponIcons.Counter;
         if (hit.Method == DamageMethod.Shove) return WeaponIcons.Shove;
+        // A class throwable's own picture (Throwables: ThrowingKnife, GrenadeFrag, ...).
+        if (hit.Method == DamageMethod.Thrown || hit.Method == DamageMethod.Blast) return Throwables.FeedIcon(hit);
         if (hit.Method == DamageMethod.Bullet && hit.Source != null)
         {
             var weapon = hit.Source.GetComponentInChildren<WeaponController>();
@@ -105,6 +107,8 @@ public static class GunFeelDirector
         if (hit.Kind == DamageKind.Execution) return Texts.Get("feed.weapon.execution");
         if (hit.IsCounter) return Texts.Get("feed.weapon.counter");
         if (hit.Method == DamageMethod.Shove) return Texts.Get("feed.weapon.shove");
+        // A class throwable's: the knife that struck or the frag that burst, by the thrower's throwable (Throwables).
+        if (hit.Method == DamageMethod.Thrown || hit.Method == DamageMethod.Blast) return Throwables.FeedName(hit);
         if (hit.Method == DamageMethod.Bullet && hit.Source != null)
         {
             var weapon = hit.Source.GetComponentInChildren<WeaponController>();

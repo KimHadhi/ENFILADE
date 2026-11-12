@@ -75,6 +75,10 @@
 - `Score.takedown`(암살 추가 점수), `Score.unseen`(조용한 구간을 아무도 안 들키고 지나간 보상, 모두에게).
 - 더 쉽게 하려면: ZombieSenses의 `nearRate`를 낮추거나 `forget`을 올리고 `crouchShare`를 낮춘다. 덜 두리번거리게 하려면 `lookAroundEvery`를 늘리거나 0으로 끈다. 돌이 더 멀리 들리게 하려면 `Throw.noise`.
 
+### 클래스 투척물 (Grenades.csv, GrenadeRules.csv)
+
+2026-11-12 G로 던지는 클래스마다의 투척물([Grenades.md](Grenades.md)). [Grenades.csv](../Resources/Tables/Grenades.csv)는 종류마다 한 줄이다: 가진 클래스(`class`), 개수(`carry`, 챕터 시작·클래스 선택 때 가득), 탄약 더미가 주는 수(`refill`), 신관(`fuse`, `cooks` 1이면 누른 순간부터 탐), 던지는 빠르기·위로·중력·튐·크기, 범위(`radius`), 피해(`damage` 중심 · `edge` 끝 · `head` 나이프 헤드샷), 효과 시간(`seconds`), 섬광의 자세 무너뜨림(`posture`), 세열의 넘어뜨림(`knock`), 안개의 회복·밀어내기(`heal`·`push`), 아군 사격 때 플레이어 피해(`playerDamage`·`playerEdge`), 소리 거리(`noise`), 외침(`callout`), 킬 피드 아이콘 id(`icon`), 색(`tint`). [GrenadeRules.csv](../Resources/Tables/GrenadeRules.csv) `Default`는 공통이다: 탭 길이(`tapHold`), 간격(`cooldown`), 나이프 줍는 거리·남는 시간, 서포트 보급 수, HUD 판 자리와 각도, 연막(`smokeHide` 가리는 두께, `smokeLose` 놓치는 시간, `smokeSmell` 냄새 거리), 섬광(`flashClose`, `flashLook` 화면 번쩍임), 세열(`fragShake`, `fragGib`, `fragKnock`, `fragLimbHealth`, `fragChunks`). 소리 크기는 Sounds.csv `Grenades/*`. 상점 값은 Shop.csv `Grenade`.
+
 ### 총 꾸미기 저장 (gun_setups.json)
 
 C 메뉴에서 바꾼 조준경·총구·하단·손잡이, L 플래시, B 사격 모드는 바꾸는 즉시 이 PC의 `gun_setups.json`(`Application.persistentDataPath`, 보통 `%USERPROFILE%\AppData\LocalLow\<회사>\<제품>`)에 총 에셋 이름별로 적히고, 그 총을 꺼낼 때마다(다음 판 포함) 그대로 붙는다(2026-11-11 플레이 테스트: 판마다 다시 꾸며야 했음). 처음 상태로 돌리려면 게임을 끄고 그 파일을 지운다. 표에 없는 사격 모드가 적혀 있으면 그것만 무시한다.

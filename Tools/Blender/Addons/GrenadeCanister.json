@@ -1,0 +1,28 @@
+{
+ "workshop": "ArcCW GSO (GMod 2257255110), CS:GO thrown world models",
+ "name": "GrenadeCanister",
+ "mdl": "models/weapons/arccw_go/w_eq_incendiarygrenade_thrown.mdl",
+ "out": "Assets/_Project/Art/Models/Addons/Grenades/GrenadeCanister",
+ "note": "The incendiary canister's body, used for the Detente's antiseptic mist (its own tint in code). The origin is the middle of its bounds.",
+ "meshes": {
+  "w_eq_incendiarygrenade": "Grenade"
+ },
+ "origin": {
+  "point": [
+   0.0013,
+   0.0,
+   -0.0006
+  ]
+ },
+ "tip": [
+  1,
+  0,
+  0
+ ],
+ "up": [
+  0,
+  0,
+  1
+ ],
+ "max_texture": 1024
+}

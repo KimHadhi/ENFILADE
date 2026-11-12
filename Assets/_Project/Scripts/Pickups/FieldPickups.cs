@@ -437,6 +437,8 @@ public sealed class FieldPickups : MonoBehaviour
         {
             case Kind.Gun: return slots == null || player.CombatInputLocked ? Texts.Get("pickup.refuse.now") : null;
             case Kind.Ammo:
+                // Room for the class throwable alone is reason enough to take it (PlayerGrenades).
+                if (PlayerGrenades.HasRoom(player)) return null;
                 if (slots == null || !HoldsAnyGun(slots)) return Texts.Get("pickup.refuse.nogun");
                 return RoomForAmmo(slots) ? null : Texts.Get("pickup.refuse.ammofull");
             case Kind.Heal: return receiver.Health >= receiver.MaximumHealth - .5f ? Texts.Get("pickup.refuse.healthfull") : null;
@@ -461,7 +463,11 @@ public sealed class FieldPickups : MonoBehaviour
             case Kind.Ammo:
                 int magazines = Mathf.Max(1, Mathf.RoundToInt(row.Amount));
                 if (slots != null) AddMagazines(slots, magazines);
-                Pop(row.Kind, row.Name, Texts.Format("pickup.gives.ammo", magazines));
+                // The class throwable comes with it (Grenades.csv refill), as Horde's ammo boxes give grenades.
+                int thrown = PlayerGrenades.FromAmmoPile(player);
+                string gives = Texts.Format("pickup.gives.ammo", magazines);
+                if (thrown > 0) gives += "  " + Texts.Format("pickup.gives.grenade", thrown);
+                Pop(row.Kind, row.Name, gives);
                 break;
             case Kind.Heal:
                 receiver.Heal(row.Amount);

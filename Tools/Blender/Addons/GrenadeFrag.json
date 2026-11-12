@@ -1,0 +1,28 @@
+{
+ "workshop": "ArcCW GSO (GMod 2257255110), CS:GO thrown world models",
+ "name": "GrenadeFrag",
+ "mdl": "models/weapons/arccw_go/w_eq_fraggrenade_thrown.mdl",
+ "out": "Assets/_Project/Art/Models/Addons/Grenades/GrenadeFrag",
+ "note": "M67 frag (Assault). A static prop: no armature. The fuse and spoon are at +Z; the origin is the middle of its bounds, where it spins.",
+ "meshes": {
+  "w_eq_fraggrenade": "Grenade"
+ },
+ "origin": {
+  "point": [
+   0.0,
+   0.0,
+   0.0174
+  ]
+ },
+ "tip": [
+  1,
+  0,
+  0
+ ],
+ "up": [
+  0,
+  0,
+  1
+ ],
+ "max_texture": 1024
+}

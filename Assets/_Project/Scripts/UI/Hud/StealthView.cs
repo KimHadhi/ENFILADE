@@ -253,6 +253,8 @@ public sealed class StealthView : MonoBehaviour, ITableBound
             float angle = -edge + 2f * edge * i / (Reaches - 1), c = Mathf.Cos(angle), s = Mathf.Sin(angle);
             var way = new Vector3(forward.x * c - forward.y * s, 0f, forward.x * s + forward.y * c);
             cone.reaches[i] = Physics.Raycast(eye, way, out RaycastHit hit, range, WorldMask, QueryTriggerInteraction.Ignore) ? hit.distance : range;
+            // A Ghost's smoke ends its sight as a wall does (SmokeScreen).
+            if (SmokeScreen.Count > 0) cone.reaches[i] = Mathf.Min(cone.reaches[i], SmokeScreen.ClearFor(eye, way, range));
         }
         cone.block.SetFloatArray(ReachesId, cone.reaches);
         cone.cast = true;

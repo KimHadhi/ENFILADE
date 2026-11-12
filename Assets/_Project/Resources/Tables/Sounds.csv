@@ -253,3 +253,13 @@ Zombie/Gore/HeadBurst,0.55,0.97,1.03,머리가 터질 때 목에서 피가 뿜�
 Zombie/Gore/BloodSpray,0.6,0.95,1.05,산 좀비의 팔다리가 떨어질 때 피 뿜는 소리(Gore/LimbOff). Meaty Melee zombie_blood_spray_01~06을 0.55초로 자름
 HitConfirm/HeadAVA,0.6,1,1.06,헤드샷 확인음 후보(아직 쓰이지 않음). A.V.A Headshot hitsound(L4D2 워크숍 2981494447)의 body_medium_break2~4를 0.8초로 자름. 지금 헤드샷음(Head)과 바꾸려면 Art/Audio/HitConfirm의 두 폴더 이름을 맞바꾼다. /sound HitConfirm/HeadAVA로 들어 본다
 HitConfirm/HeadOld,0.6,1,1.06,예전 헤드샷음(2026-11-12까지). rubberduck 100 CC0 metal and wood SFX hammer_03·metal_hit_05. 되돌리려면 Art/Audio/HitConfirm의 Head와 HeadOld 폴더 이름을 맞바꾼다. /sound HitConfirm/HeadOld로 들어 본다
+Grenades/Pin,0.65,0.96,1.04,G를 누를 때 핀 뽑는 소리(나이프 빼고). CS:GO hegrenade pinpull(ArcCW GSO 워크숍 2257255110)
+Grenades/Throw,0.7,0.95,1.06,수류탄이 손을 떠날 때. CS:GO grenade_throw
+Grenades/Bounce,0.6,0.92,1.08,수류탄이 땅·벽에 튈 때(세게 부딪칠수록 크게). CS:GO he_bounce·grenade_hit1·inc_grenade_bounce
+Grenades/Frag,1,0.96,1.03,어썰트 세열 수류탄 폭발. CS:GO hegrenade_detonate_01~03
+Grenades/Flash,0.95,0.98,1.03,포인트 섬광탄이 터질 때. CS:GO flashbang_explode1·2
+Grenades/Smoke,0.8,0.97,1.03,고스트 연막탄이 터질 때(데탕트 소독 안개는 이 소리를 높게). CS:GO sg_explode
+Grenades/SmokeHiss,0.5,0.98,1.02,연막이 피어오르는 동안 쉭 소리(14초). CS:GO smoke_emit
+Grenades/KnifeThrow,0.8,0.95,1.07,나이트 투척 나이프가 손을 떠날 때. MW Quick Throwing Knife(워크숍 3650480912) throw_blade_1~3
+Grenades/KnifeFlesh,0.9,0.95,1.06,투척 나이프가 좀비에 꽂힐 때. CS:GO knife_hit1~4·knife_stab
+Grenades/KnifeWall,0.75,0.95,1.06,투척 나이프가 벽에 꽂히거나 떨어질 때. CS:GO knife_hitwall1~4

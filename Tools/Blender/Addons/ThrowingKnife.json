@@ -1,0 +1,40 @@
+{
+ "workshop": "ArcCW GSO (GMod 2257255110), CS:GO thrown world models",
+ "name": "ThrowingKnife",
+ "mdl": "models/weapons/arccw_go/w_eq_throwingknife_thrown.mdl",
+ "out": "Assets/_Project/Art/Models/Addons/Grenades/ThrowingKnife",
+ "note": "CS:GO throwing knife (Knight). The blade runs along +Z from the hand bone, its flat faces face +-Y (0.8 cm thick) and it is 4.5 cm wide along X; the origin is the middle of its 24 cm, where it spins end over end about Unity X.",
+ "meshes": {
+  "w_knife_skeleton": "Knife"
+ },
+ "origin": {
+  "point": [
+   0.0,
+   0.0,
+   0.042
+  ]
+ },
+ "tip": [
+  0,
+  0,
+  1
+ ],
+ "up": [
+  1,
+  0,
+  0
+ ],
+ "markers": {
+  "Tip": {
+   "point": [
+    0.0,
+    0.0,
+    0.1625
+   ]
+  },
+  "Grip": {
+   "bone": "weapon_hand_R"
+  }
+ },
+ "max_texture": 1024
+}

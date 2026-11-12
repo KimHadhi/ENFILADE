@@ -187,6 +187,15 @@
                     "initialStateCheck": false
                 },
                 {
+                    "name": "Grenade",
+                    "type": "Button",
+                    "id": "0492cb6a-b610-4c16-819e-a4cfbd62bab0",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
                     "name": "PerkCards",
                     "type": "Button",
                     "id": "a56ad684-8aa0-5a7f-8087-56fab403875c",
@@ -704,7 +713,7 @@
                 {
                     "name": "",
                     "id": "27597661-2958-5ecf-8bee-fdb575e60364",
-                    "path": "<Keyboard>/g",
+                    "path": "<Keyboard>/j",
                     "interactions": "",
                     "processors": "",
                     "groups": "",
@@ -720,6 +729,28 @@
                     "processors": "",
                     "groups": "",
                     "action": "DropMoney",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "eb70f9fb-c366-44a9-9b29-04d5ebcae5a9",
+                    "path": "<Keyboard>/g",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Grenade",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "6370c0fc-b513-49e3-9b3a-16e6e2075679",
+                    "path": "",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Grenade",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },

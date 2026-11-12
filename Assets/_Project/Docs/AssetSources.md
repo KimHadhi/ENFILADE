@@ -124,6 +124,7 @@ Hiro 모델(`Art/Models/Characters/Hiro`)은 허락을 받은 캐릭터라 교�
 | `Art/Sprites/Weapons` | 7개, 5MB | 피, 총구 섬광, 벽 착탄 텍스처. 커밋 0.5.0에 추가. 벽 착탄은 DAVFX로 바꾸어 지금은 연결하지 않았다 |
 | `Art/Sprites/UI/HUD` | 56개, 2MB | HUD 이미지. 직접 만든 것인지 기록이 없다 |
 | `Art/Models/Props/TetoPear` | FBX 1개 | 물리 프롭 시험용. 커밋 0.6.3에 추가 |
+| `Art/Models/Addons/Grenades`, `Art/Audio/Grenades` | FBX 5개·PNG 5개, WAV 24개 | 2026-11-12 클래스 투척물. 모델과 소리 대부분은 GMod 애드온 ArcCW GSO(워크숍 2257255110)에 든 CS:GO 에셋(Valve), 나이프 던지는 소리 3개는 [MW] Quick Throwing Knife(3650480912). 다른 워크숍 이식과 같이 개인 프로젝트용. 공개 배포 전에 교체할 것 |
 
 ## 아직 들어오지 않은 후보
 

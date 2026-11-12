@@ -64,6 +64,7 @@ public static class KeyBindings
         new Entry("combat", "flashlight", "Player/Flashlight"),
         new Entry("combat", "customize", "Player/Customize"),
         new Entry("combat", "throw", "Player/Throw"),
+        new Entry("combat", "grenade", "Player/Grenade"),
         new Entry("combat", "knock", "Player/Knock"),
         new Entry("items", "slot1", "Combat/Slot1"),
         new Entry("items", "slot2", "Combat/Slot2"),
@@ -538,7 +539,7 @@ public static class KeyBindings
     private static readonly (string label, string action)[] Labels =
     {
         ("F", "Player/Interact"), ("V", "Player/Shove"), ("C", "Player/Customize"), ("L", "Player/Flashlight"),
-        ("G", "Player/DropMoney"), ("T", "Player/Throw"), ("H", "Player/Knock"), ("X", "Player/PerkCards"),
+        ("G", "Player/Grenade"), ("J", "Player/DropMoney"), ("T", "Player/Throw"), ("H", "Player/Knock"), ("X", "Player/PerkCards"),
         ("B", "Player/FireMode"), ("Y", "Player/Inspect"), ("R", "Combat/Reload"), ("Q", "Player/LeanLeft"),
         ("E", "Player/LeanRight"), ("Z", "Player/Dive"), ("좌클릭", "Combat/Fire"), ("LMB", "Combat/Fire"),
         ("우클릭", "Combat/Guard"), ("RMB", "Combat/Guard"), ("Space", "Player/Jump"), ("Shift", "Player/Sprint"),

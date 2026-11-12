@@ -346,6 +346,22 @@ public sealed class ZombieMind : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// It lost its quarry in smoke (SmokeScreen, on the host): as the chase dying down does to all of them (LoseAll), this
+    /// one goes to look where it last knew them and must make them out again by sight or sound, horde zombie or not. A
+    /// Ghost's smoke is how they slip a crowd off their back (user, 2026-11-12: "잠입과 어그로를 피하기 위한 연막탄").
+    /// </summary>
+    internal void Lose(Vector3 lastAt)
+    {
+        if (!Thinks || !IsAwake) return;
+        if (TryGetComponent(out ZombieGrip grip) && grip.IsHolding) return;
+        horde = false;
+        focus = noticed = null;
+        suspicion = alertAt;
+        lastKnown = lastAt;
+        Search(lastAt);
+    }
+
     /// <summary>Calms it: it stands where it is and has to notice the players (a placed zombie, /spawn n calm).</summary>
     public void Calm()
     {
@@ -750,7 +766,7 @@ public sealed class ZombieMind : MonoBehaviour
         return gun;
     }
 
-    // How much of them it can see: the share of head, chest and hips no wall hides.
+    // How much of them it can see: the share of head, chest and hips no wall hides, nor a Ghost's smoke (SmokeScreen).
     private static float Shown(PlayerMovement player, Vector3 eye)
     {
         var capsule = player.GetComponent<CharacterController>();
@@ -761,8 +777,8 @@ public sealed class ZombieMind : MonoBehaviour
             Vector3 point = new Vector3(bounds.center.x, bounds.min.y + bounds.size.y * height, bounds.center.z);
             Vector3 path = point - eye;
             float length = path.magnitude;
-            if (length < .01f || !Physics.Raycast(eye, path / length, out RaycastHit hit, length, Sight, QueryTriggerInteraction.Ignore)
-                || hit.collider.GetComponentInParent<PlayerMovement>() == player)
+            if ((length < .01f || !Physics.Raycast(eye, path / length, out RaycastHit hit, length, Sight, QueryTriggerInteraction.Ignore)
+                || hit.collider.GetComponentInParent<PlayerMovement>() == player) && !SmokeScreen.Hides(eye, point))
                 seen++;
         }
         return seen / (float)LookHeights.Length;

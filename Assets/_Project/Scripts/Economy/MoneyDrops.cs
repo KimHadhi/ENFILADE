@@ -91,7 +91,7 @@ public sealed class MoneyDrops : MonoBehaviour
     {
         if (!listening || !network.IsListening || player == null || !player.IsInitialized) return;
         bool able = !player.IsDead && !player.DamageReceiver.IsDowned;
-        // Player/DropMoney (G unless the key window says otherwise).
+        // Player/DropMoney (J unless the key window says otherwise; G went to the quick grenade, PlayerGrenades).
         if (able && TakesInput() && KeyBindings.Pressed("Player/DropMoney")) DropSome();
         if (able) TouchBundles();
         Animate();

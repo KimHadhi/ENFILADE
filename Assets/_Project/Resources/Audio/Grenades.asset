@@ -1,0 +1,60 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0513b63a8f85441499f8c22cf0761180, type: 3}
+  m_Name: Grenades
+  m_EditorClassIdentifier: Assembly-CSharp::SoundBank
+  id: Grenades
+  entries:
+  - key: Bounce
+    clips:
+    - {fileID: 8300000, guid: 3dc799788dd046a7a25279de99dd908a, type: 3}
+    - {fileID: 8300000, guid: ecbb7ba396794ff69f38eee0dfe8f31c, type: 3}
+    - {fileID: 8300000, guid: 69f4c2e3ba4b4b4fb05122356c8b1d42, type: 3}
+  - key: Flash
+    clips:
+    - {fileID: 8300000, guid: e746bccbac094d9486eff997da1149b4, type: 3}
+    - {fileID: 8300000, guid: e9db7d08f46a46ee9d8d8b307bf1f151, type: 3}
+  - key: Frag
+    clips:
+    - {fileID: 8300000, guid: b09c14a09187428eb6efa92069a05fb2, type: 3}
+    - {fileID: 8300000, guid: 714d7df0fedd404cb2a379da38fe8a8f, type: 3}
+    - {fileID: 8300000, guid: 8694aa7249f04390b6d927ef188db206, type: 3}
+  - key: KnifeFlesh
+    clips:
+    - {fileID: 8300000, guid: 6d2aba8c468a4a98bee11f18652c300a, type: 3}
+    - {fileID: 8300000, guid: 00a677c99a294af2976f5b18d7e54af4, type: 3}
+    - {fileID: 8300000, guid: bf787924e4ec4f8fbc2e81f323f391df, type: 3}
+    - {fileID: 8300000, guid: 7723eeb49f8541b8aa8002c6e8613056, type: 3}
+    - {fileID: 8300000, guid: 61b6da6d929843868dd7767205ca123f, type: 3}
+  - key: KnifeThrow
+    clips:
+    - {fileID: 8300000, guid: e0329e23c29e4d3d831b13264e918a22, type: 3}
+    - {fileID: 8300000, guid: ccd1a2f131bb4fa2b2d1a710bc4242cd, type: 3}
+    - {fileID: 8300000, guid: 0a194e356df34ea79aa950f922824ad7, type: 3}
+  - key: KnifeWall
+    clips:
+    - {fileID: 8300000, guid: c23a739a257d4f1ebe5c6d7ee4b36972, type: 3}
+    - {fileID: 8300000, guid: 340081a922d54d95a61ffc8e42d58d58, type: 3}
+    - {fileID: 8300000, guid: 3d40081b9ebf481b9e0e1d2184fdeab4, type: 3}
+    - {fileID: 8300000, guid: 248141ddce9b4806972a0ab0cfa98363, type: 3}
+  - key: Pin
+    clips:
+    - {fileID: 8300000, guid: 46c84429682549aa85328e0e4e4be8a2, type: 3}
+  - key: Smoke
+    clips:
+    - {fileID: 8300000, guid: 6ec0235931b94e968a5408d39bc6ce90, type: 3}
+  - key: SmokeHiss
+    clips:
+    - {fileID: 8300000, guid: ddb3f7a1251244dc8de9df3ab28bdb0c, type: 3}
+  - key: Throw
+    clips:
+    - {fileID: 8300000, guid: 3af51592085c43409e692a3809f85454, type: 3}

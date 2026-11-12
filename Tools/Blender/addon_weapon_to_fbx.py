@@ -46,7 +46,8 @@ bpy.ops.sourceio.mdl(filepath=mdl, directory=os.path.dirname(mdl) + os.sep, file
 for ob in list(bpy.data.objects):
     if ob.type == "EMPTY":
         bpy.data.objects.remove(ob, do_unlink=True)
-arm = next(o for o in bpy.data.objects if o.type == "ARMATURE")
+# A static prop (a thrown grenade's world model) comes in without an armature: its recipe gives points, not bones.
+arm = next((o for o in bpy.data.objects if o.type == "ARMATURE"), None)
 
 
 def bone_head(bone_name):
@@ -84,7 +85,8 @@ for ob in meshes:
     for key, new in renames.items():
         if ob.name.lower().startswith(key.lower()):
             ob.name = new
-bpy.data.objects.remove(arm, do_unlink=True)
+if arm is not None:
+    bpy.data.objects.remove(arm, do_unlink=True)
 for ob in bpy.context.selected_objects:
     ob.select_set(False)
 for ob in meshes:
