@@ -422,6 +422,14 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
                 var mine = Instantiate(ads);
                 Keep(mine);
                 mine.aimingSpeed = 1f / weapon.AdsTransitionTime;
+                // Down the sights the sight line goes through the eyes exactly. KINEMATION's Ads keeps positionBlend and
+                // rotationBlend (0.21-0.25 in the pistol profile, 0.38-0.41 in the rifle's) of the gun's offset from the
+                // eyes as it was when the profile linked: the last frame of whatever was held before, the view's pitch and
+                // all, while Ads itself works before Look. So each draw left the sight line somewhere else, 1-5 cm off the
+                // eyes: drawn after the MKR9, the R08's ran 2.2 cm above them, and its micro dot shows the dot only with the
+                // eye within 1.5 cm of that line (user, 2026-11-12: "R08 리볼버 조준경 줌 했을 때 안 보임. 도트 사이트 고장난 듯").
+                mine.positionBlend = default;
+                mine.rotationBlend = default;
                 profile.settings.Add(mine);
                 // Then the barrel turns onto the crosshair's point, before sway and recoil go on top (GunConvergeLayer).
                 profile.settings.Add(ConvergeFor(ads));
