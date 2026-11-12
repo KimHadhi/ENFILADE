@@ -33,3 +33,4 @@ hound_cylinder,큰 실린더,schiesshund,시순트,Class_schiesshund,1,2,,,Schie
 hound_ace,에이스,schiesshund,궁극,Class_schiesshund,1,0,,,,3,1,40,결투 중에는 결투 상대 말고는 아무도 나를 다치게 못 하고 동료도 결투 상대를 마무리할 수 있다,결투를 건 사냥개의 살기에 다른 놈들은 감히 끼어들지 못한다. 동료의 총은 사냥개가 허락한 몫이다
 support_bag,큰 보급 가방,support,서포트,Class_support,2,50,,,Support.supplyMax,,,10,보급 가방 용량 +{0},가방 끈을 덧대 더 많이 담는다
 support_planks,판자 더미,support,서포트,Class_support,1,1,,,Support.barricadeMax,,,10,바리케이드를 한 번에 +{0}개 더 세워 둔다,판자와 못을 한 짐 더 짊어졌다
+support_torch,용접 토치,support,서포트,Class_support,1,0,,,,,,10,망치 대신 용접 토치로 바리케이드를 초당 {Support.torchRate}씩 고친다. 연료 {Support.torchFuel}은 쉬는 동안 초당 {Support.torchRegen}씩 차고 바닥나면 망치로 돌아간다,판자 틈을 쇠띠로 녹여 붙이면 못질보다 빠르고 단단하다

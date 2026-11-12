@@ -253,6 +253,8 @@ public sealed class ClassHUD : MonoBehaviour
             var friend = support.Offered;
             var worn = support.Mendable;
             side = friend != null ? Texts.Format("class.hud.resupply", friend.TryGetComponent(out PlayerTally tally) ? tally.DisplayName : friend.name)
+                : worn != null && support.Torching ? Texts.Format(support.Mending ? "class.hud.repairing.torch" : "class.hud.repair.torch",
+                    Mathf.RoundToInt(worn.Health), Mathf.RoundToInt(worn.MostHealth), Mathf.FloorToInt(support.TorchFuel))
                 : worn != null ? Texts.Format(support.Mending ? "class.hud.repairing" : "class.hud.repair", Mathf.RoundToInt(worn.Health), Mathf.RoundToInt(worn.MostHealth))
                 : Texts.Format("class.hud.bag", Mathf.FloorToInt(support.Supply), Mathf.RoundToInt(support.SupplyMax)) + " · "
                     + Texts.Format("class.hud.barricades", support.Standing, support.MostStanding);

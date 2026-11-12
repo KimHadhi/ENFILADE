@@ -216,6 +216,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
             callouts.Called += OnCalled;
             support.Built += OnBuilt;
             support.TookDown += OnTookDown;
+            support.ToolHeld += OnToolHeld;
             weapon.ShotFired += OnShot;
             melee.Punched += OnPunched;
             melee.Elbowed += OnElbowed;
@@ -257,7 +258,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
         if (detente != null) { detente.Injected -= OnInjected; detente.TreatBegan -= OnTreatBegan; detente.TreatStopped -= OnTreatStopped; }
         if (ping != null) ping.Pinged -= OnPinged;
         if (callouts != null) callouts.Called -= OnCalled;
-        if (support != null) { support.Built -= OnBuilt; support.TookDown -= OnTookDown; }
+        if (support != null) { support.Built -= OnBuilt; support.TookDown -= OnTookDown; support.ToolHeld -= OnToolHeld; }
         if (receiver != null) receiver.HitResolved -= OnHit;
         stance.OnValueChanged -= OnStanceChanged;
         gunSkins.OnValueChanged -= OnGunSkins;
@@ -626,6 +627,12 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
         else if (look == 1) DetenteLooks.Bandage(who, seconds);
         else DetenteLooks.StopBandage(who);
     }
+
+    // A Support's mending tool in hand (0 none, 1 hammer, 2 torch), for the others to see.
+    private void OnToolHeld(byte tool) => ToolRpc(tool);
+
+    [Rpc(SendTo.NotMe)]
+    private void ToolRpc(byte tool) => RepairLooks.Hold(mover != null ? mover : GetComponent<PlayerMovement>(), (RepairLooks.Tool)tool);
 
     private void OnInjected() => DetenteLookRpc(0, 0f);
     private void OnTreatBegan(float seconds) => DetenteLookRpc(1, seconds);

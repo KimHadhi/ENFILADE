@@ -19,8 +19,10 @@ using UnityEngine.InputSystem;
 ///   across the look. At most a few stand at once; a new one past that takes the oldest down, which the preview shows
 ///   blinking amber. The host's or a lone PC's goes up at once; a client's PC asks the host, which checks the spot again
 ///   against its own world (Barricade.Judge) and puts it up for everyone, or says why not and the bag gets its share back.
-/// - Mending: F held on a worn barricade in reach, anyone's, hammers health back into it from the bag, its planks nailed
-///   back on (the user, 2026-11-12: "G&amp;B 공병처럼 수리하고 유지 보수할 수 있으면 재밌을 듯"); a resupply goes first.
+/// - Mending: F held on a worn barricade in reach, anyone's, puts health back into it, its planks nailed back on (the
+///   user, 2026-11-12: "G&amp;B 공병처럼 수리하고 유지 보수할 수 있으면 재밌을 듯"); a resupply goes first. It costs the
+///   bag nothing: a hammer does it, and the welding torch card does it faster on a fuel of its own that fills back
+///   ("처음에는 망치로 고쳐 … 나중에 카드 업그레이드하면 토치로 더 빠르게"), the tool in hand as it works (RepairLooks).
 /// A class picked starts it afresh (Fresh, from ClassKit on PlayerClass.Picked): the bag as it starts, its barricades down.
 /// This PC's own player only. Numbers: Tables/ClassAbilities, row Support.
 /// </summary>
@@ -69,6 +71,9 @@ public sealed class SupportKit : MonoBehaviour
     // next knock (or the empty bag's refusal).
     private float mendOwed, nextMendSend, nextKnock;
     private ushort mendId;
+    // The welding torch's fuel (-1: full at the next look), and the tool shown in hand.
+    private float torchFuel = -1f;
+    private RepairLooks.Tool shownTool;
 
     /// <summary>The bag now and the most it holds; what a resupply and a barricade take from it.</summary>
     public float Supply => Mathf.Max(0f, supply);
@@ -97,6 +102,13 @@ public sealed class SupportKit : MonoBehaviour
     /// <summary>The worn barricade F held would mend now (under the crosshair, in reach, anyone's), or null; and whether F is held on it.</summary>
     public Barricade Mendable { get; private set; }
     public bool Mending { get; private set; }
+    /// <summary>The welding torch card held; its fuel now and the most; whether it does the mending now (else the hammer).</summary>
+    public bool HasTorch => PlayerPerks.Has(PlayerPerks.SupportTorch);
+    public float TorchFuel => Mathf.Max(0f, torchFuel);
+    public float TorchFuelMax => Mathf.Max(1f, Number("torchFuel", 100f));
+    public bool Torching => HasTorch && TorchFuel > .5f;
+    /// <summary>The tool in hand changed (0 none, 1 hammer, 2 torch): the others see it (PlayerNetworkCombat).</summary>
+    public event Action<byte> ToolHeld;
 
     private void Awake() => movement = GetComponent<PlayerMovement>();
 
@@ -122,6 +134,7 @@ public sealed class SupportKit : MonoBehaviour
             Offered = null;
             Mendable = null;
             Mending = false;
+            Show(RepairLooks.Tool.None);
             planning = false;
             HidePreview();
             return;
@@ -135,8 +148,13 @@ public sealed class SupportKit : MonoBehaviour
         // No friend there: a worn barricade under the crosshair, mended while F is held.
         Mendable = Offered == null && !movement.IsDead && !movement.IsDowned && HandsFree() ? AimedBarricade() : null;
         Mending = Mendable != null && interact != null && interact.IsPressed() && movement.InputAvailable && !movement.IsHeld;
+        bool torching = Mending && Torching;
         if (Mending) Mend(Mendable);
         if (!Mending || Time.time >= nextMendSend) FlushMend();
+        // The torch's fuel fills back while it rests; the tool in hand is the one at work.
+        if (torchFuel < 0f) torchFuel = TorchFuelMax;
+        if (!torching) torchFuel = Mathf.Min(TorchFuelMax, TorchFuel + Mathf.Max(0f, Number("torchRegen", 8f)) * Time.deltaTime);
+        Show(!Mending ? RepairLooks.Tool.None : torching ? RepairLooks.Tool.Torch : RepairLooks.Tool.Hammer);
         Plan();
         Preview();
     }
@@ -156,6 +174,8 @@ public sealed class SupportKit : MonoBehaviour
         Mendable = null;
         Mending = false;
         mendOwed = 0f;
+        torchFuel = -1f;
+        Show(RepairLooks.Tool.None);
         supply = -1f;
         lastGive = lastBuild = -99f;
         HidePreview();
@@ -468,29 +488,26 @@ public sealed class SupportKit : MonoBehaviour
         return barricade != null && barricade.Worn ? barricade : null;
     }
 
-    // The hammer at work: health back at its pace, paid from the bag by the health put in (a mend is cheaper than a new
-    // one, so keeping one standing pays). The host's or a lone PC's mends at once; a client's adds it up and tells the
-    // host every so often (FlushMend), whose word brings the planks back on this copy.
+    // The tool at work: the hammer at its pace, or the torch faster while its fuel lasts (spent by the health put in;
+    // empty, the hammer takes over). The bag pays nothing. The host's or a lone PC's mends at once; a client's adds it up
+    // and tells the host every so often (FlushMend), whose word brings the planks back on this copy.
     private void Mend(Barricade barricade)
     {
-        float rate = Mathf.Max(0f, Number("repairRate", 80f)), cost = Mathf.Max(0f, Number("repairCost", 8f)) / 100f;
+        bool torch = Torching;
+        float rate = Mathf.Max(0f, torch ? Number("torchRate", 120f) : Number("repairRate", 40f));
         if (mendId != barricade.Id) FlushMend();
         float amount = Mathf.Min(rate * Time.deltaTime, barricade.MostHealth - barricade.Health - mendOwed);
-        if (cost > 0f) amount = Mathf.Min(amount, Supply / cost);
-        if (amount <= 0f)
+        if (torch)
         {
-            if (cost > 0f && Supply < cost && Time.time >= nextKnock)
-            {
-                nextKnock = Time.time + 1f;
-                KitSound.Play(KitSound.Cue.Refuse, .35f);
-                AlertHUD.Self(Texts.Get("class.support.low"));
-            }
-            return;
+            float cost = Mathf.Max(0f, Number("torchCost", 15f)) / 100f;
+            if (cost > 0f) amount = Mathf.Min(amount, TorchFuel / cost);
+            torchFuel = Mathf.Max(0f, TorchFuel - Mathf.Max(0f, amount) * cost);
         }
-        supply -= amount * cost;
+        if (amount <= 0f) return;
         // Keeping the team's wall up is the Support's fight too: it fills the gauge (UltimateCharge.AwardHelp).
         UltimateCharge.AwardHelp(UltimateCharge.Help.Repaired, amount);
-        if (Time.time >= nextKnock)
+        // The hammer knocks in time with its strokes (the torch hisses by itself: RepairLooks).
+        if (!torch && Time.time >= nextKnock)
         {
             nextKnock = Time.time + KnockEvery;
             KitSound.Play(KitSound.Cue.Hammer, .7f);
@@ -502,6 +519,15 @@ public sealed class SupportKit : MonoBehaviour
         }
         mendId = barricade.Id;
         mendOwed += amount;
+    }
+
+    // The tool in hand, here and in the others' sight, when it changes.
+    private void Show(RepairLooks.Tool tool)
+    {
+        if (tool == shownTool) return;
+        shownTool = tool;
+        RepairLooks.Hold(movement, tool);
+        ToolHeld?.Invoke((byte)tool);
     }
 
     // A client's mending so far, told the host.
