@@ -354,6 +354,21 @@ public sealed class FPSGun : MonoBehaviour
     internal int GripIndex => Attachments != null ? Attachments.Grip : -1;
     internal GunAttachments.Kind GripKind => Attachments != null ? Attachments.GripKind : GunAttachments.Kind.None;
 
+    private bool gripsSeated;
+
+    /// <summary>
+    /// Once per gun: its grips go no further back than KINEMATION's support hand holds it (<paramref name="supportPalm"/>,
+    /// on <paramref name="weaponBone"/> as FPSBody's contacts keep a palm), GunAttachments.SeatGrips; the hands' surface is
+    /// measured again if any moved.
+    /// </summary>
+    internal void SeatGrips(Transform weaponBone, Vector3 supportPalm)
+    {
+        if (gripsSeated || Attachments == null || weaponBone == null) return;
+        gripsSeated = true;
+        Vector3 palm = weaponBone.position + weaponBone.rotation * supportPalm;
+        if (Attachments.SeatGrips(transform, palm, weaponBone.rotation * Vector3.forward) > 0f) Surface = GunSurface.Of(transform);
+    }
+
     /// <summary>
     /// The grip on now takes the support hand: where the middle of its palm goes and the ways its fingers point and its
     /// palm faces, in the world as the gun sits now. False without such a grip.

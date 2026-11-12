@@ -106,6 +106,37 @@ public sealed class GunAttachments : MonoBehaviour
 
     public void SelectMuzzle(int index) => Muzzle = Select(muzzle, index);
     public void SelectGrip(int index) => Grip = Select(grips, index);
+
+    /// <summary>
+    /// Slides every grip whose support palm sits behind <paramref name="palm"/> (world: where KINEMATION's own support
+    /// hand holds this gun's bare handguard, FPSBody) forward along <paramref name="barrel"/> until it is there, and the
+    /// underbarrel parts with them so they stay as far ahead; <paramref name="root"/> is the gun, whose space the hands'
+    /// places are kept in. A grip is held where KINEMATION's arms hold the gun, so the arm is theirs: the MX16A4's mount
+    /// was put at that hand's wrist (its bake's grip is the wrist), and its angled grip sat by the magazine with the arm
+    /// folded to it (user, 2026-11-12: "원래 M4 앵글 손잡이 달면 이렇게 내 몸 쪽에 가까이 달아서 이렇게 꺾이게 잡음?"). A
+    /// grip at or ahead of that hand (the Tactical Shooter Pack's own) stays. Returns how far the farthest one went (m).
+    /// </summary>
+    public float SeatGrips(Transform root, Vector3 palm, Vector3 barrel)
+    {
+        if (grips == null || root == null || barrel.sqrMagnitude < 1e-8f) return 0f;
+        barrel.Normalize();
+        float most = 0f;
+        for (int i = 0; i < grips.Length; i++)
+        {
+            if (!grips[i].hasHand || grips[i].part == null) continue;
+            Vector3 hand = root.TransformPoint(grips[i].handPalm);
+            float behind = Vector3.Dot(palm - hand, barrel);
+            // Under half a centimetre is where it is already.
+            if (behind <= .005f) continue;
+            grips[i].part.transform.position += barrel * behind;
+            grips[i].handPalm = root.InverseTransformPoint(hand + barrel * behind);
+            most = Mathf.Max(most, behind);
+        }
+        if (most > 0f && underbarrel != null)
+            foreach (var part in underbarrel)
+                if (part.part != null) part.part.transform.position += barrel * most;
+        return most;
+    }
     public void SelectUnderbarrel(int index)
     {
         Underbarrel = Select(underbarrel, index);

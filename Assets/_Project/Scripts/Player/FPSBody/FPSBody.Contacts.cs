@@ -260,6 +260,9 @@ public sealed partial class FPSBody
         gun.HasHoldContact = ReadHold(arms, gun.Entry.sourcePose, gun, ref gun.HoldContact);
         var noGrip = gun.Entry.sourcePoseNoGrip;
         if (gun.HasHoldContact && noGrip != null) gun.HasHoldContactNoGrip = ReadHold(arms, noGrip, gun, ref gun.HoldContactNoGrip);
+        // Its grips no further back than KINEMATION's support hand on the bare handguard (GunAttachments.SeatGrips).
+        if (gun.HasHoldContact)
+            gun.SeatGrips(rig.IkWeaponBone, gun.HasHoldContactNoGrip ? gun.HoldContactNoGrip.LeftPalm : gun.HoldContact.LeftPalm);
         return gun.HasHoldContact;
     }
 

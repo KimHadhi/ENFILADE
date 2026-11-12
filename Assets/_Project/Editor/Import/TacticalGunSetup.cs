@@ -578,7 +578,7 @@ internal static class TacticalGunSetup
             if (index < 0) continue;
             var current = assets.guns[index].prefab;
             if (!all && current != null && current.GetComponent<GunAttachments>() is GunAttachments made && !GripsWithoutHand(made)
-                && !IronsNotCut(spec, current)) continue;
+                && !IronsNotCut(spec, current) && !PartsNotPlayed(current)) continue;
             try
             {
                 var prefab = FitPackGun(spec, assets.guns[index].weapon, bakes);
@@ -610,6 +610,7 @@ internal static class TacticalGunSetup
             gun.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
             var cas = instance.GetComponent<CasFPSWeapon>();
             var aim = cas != null && cas.aimPoint != null ? cas.aimPoint : gun;
+            PlayPartsThroughCas(instance, source);
 
             // The gun's shape in its own frame: along the sight line (z), up (y) and across (x), its own parts only. Iron sights
             // modelled into the body are picked out first and left out of it, so the optics' mount finds the receiver.
@@ -771,6 +772,35 @@ internal static class TacticalGunSetup
         if (spec.ironsBelowSightLine <= 0f) return false;
         var sights = prefab.GetComponent<GunSights>();
         return sights == null || sights.ironsInMesh == null;
+    }
+
+    // Made without the gun-part player its CAS prefab carries (the MX16A4 since 0.8.1): made again once.
+    private static bool PartsNotPlayed(GameObject prefab)
+        => prefab.GetComponentInChildren<Animator>(true) != null && prefab.GetComponentInChildren<PartsPlayer>(true) == null;
+
+    /// <summary>
+    /// The gun-part clips (a reload's magazine out and in, the bolt) play through CAS's player on the gun's own Animator,
+    /// as on KINEMATION's CAS guns and our Tactical ones. KINEMATION's CAS_FPSPack_MX16A4 adds its player, and takes the
+    /// Animator's controller away, as overrides on an object of the model prefab it holds; unpacked, the MX16A4 came out
+    /// with neither, so its reload clip never moved the magazine and it stayed in the gun through every reload while the
+    /// hand went to the pouch (user, 2026-11-12: "M4는 왜 재장전할 때 탄창을 안 빼냐"). The rest pose is the source's
+    /// player's where it has one.
+    /// </summary>
+    private static void PlayPartsThroughCas(GameObject instance, GameObject source)
+    {
+        var animator = instance.GetComponentInChildren<Animator>(true);
+        if (animator == null) return;
+        animator.runtimeAnimatorController = null;
+        var player = animator.GetComponent<PartsPlayer>();
+        if (player == null) player = animator.gameObject.AddComponent<PartsPlayer>();
+        var write = new SerializedObject(player);
+        var own = write.FindProperty("useAnimator");
+        if (own != null) own.boolValue = false;
+        var rest = write.FindProperty("defaultClipPose");
+        var theirs = source != null ? source.GetComponentInChildren<PartsPlayer>(true) : null;
+        if (rest != null && rest.objectReferenceValue == null && theirs != null)
+            rest.objectReferenceValue = new SerializedObject(theirs).FindProperty("defaultClipPose")?.objectReferenceValue;
+        write.ApplyModifiedPropertiesWithoutUndo();
     }
 
     // The gun's body mesh (its biggest skinned one) and which of its vertices and triangles are iron sights modelled into
