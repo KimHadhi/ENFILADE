@@ -393,7 +393,12 @@ public sealed class CalloutFeedHUD : MonoBehaviour
         data.renderType = CameraRenderType.Base;
         data.renderPostProcessing = false;
         data.antialiasing = AntialiasingMode.None;
-        data.requiresColorOption = CameraOverrideOption.Off;
+        // On, though nothing here reads it. URP 17.3's screen-space decal pass takes its UV flip from the camera's
+        // intermediate colour target (RenderingUtils.SetScaleBiasRt). A camera that draws straight into a RenderTexture
+        // with no post-processing, no MSAA and no opaque texture gets no such target, so the pass threw a
+        // NullReferenceException on every feed picture. Asking for the opaque texture keeps that target, and the
+        // battlefield's blood decals still show behind the face.
+        data.requiresColorOption = CameraOverrideOption.On;
         data.requiresDepthOption = CameraOverrideOption.Off;
         data.renderShadows = false;
         data.stopNaN = false;

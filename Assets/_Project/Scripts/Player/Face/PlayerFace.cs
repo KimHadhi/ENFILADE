@@ -167,33 +167,33 @@ public sealed class PlayerFace : MonoBehaviour
     {
         findAt = Time.time + FindEvery;
         if (face == null) face = GetComponentInChildren<CharacterFace>();
-        if (weapon == null && TryGetComponent(out weapon)) weapon.ShotFired += OnShot;
-        if (melee == null && TryGetComponent(out melee)) melee.Punched += OnPunched;
-        if (shoves == null && TryGetComponent(out shoves)) shoves.Played += OnShove;
-        if (kicks == null && TryGetComponent(out kicks)) kicks.Kicked += OnKicked;
-        if (execution == null && TryGetComponent(out execution)) execution.Started += OnExecution;
+        if (weapon == null && TryGetComponent(out weapon)) weapon.ShotFired += WhenShot;
+        if (melee == null && TryGetComponent(out melee)) melee.Punched += WhenPunched;
+        if (shoves == null && TryGetComponent(out shoves)) shoves.Played += WhenShoved;
+        if (kicks == null && TryGetComponent(out kicks)) kicks.Kicked += WhenKicked;
+        if (execution == null && TryGetComponent(out execution)) execution.Started += WhenExecuting;
         if (receiver == null && movement.DamageReceiver != null)
         {
             receiver = movement.DamageReceiver;
-            receiver.HitResolved += OnHit;
+            receiver.HitResolved += WhenHit;
         }
         if (tally == null) TryGetComponent(out tally);
         if (!special)
         {
-            SpecialKills.Scored += OnSpecial;
+            SpecialKills.Scored += WhenSpecial;
             special = true;
         }
     }
 
     private void OnDestroy()
     {
-        if (weapon != null) weapon.ShotFired -= OnShot;
-        if (melee != null) melee.Punched -= OnPunched;
-        if (shoves != null) shoves.Played -= OnShove;
-        if (kicks != null) kicks.Kicked -= OnKicked;
-        if (execution != null) execution.Started -= OnExecution;
-        if (receiver != null) receiver.HitResolved -= OnHit;
-        if (special) SpecialKills.Scored -= OnSpecial;
+        if (weapon != null) weapon.ShotFired -= WhenShot;
+        if (melee != null) melee.Punched -= WhenPunched;
+        if (shoves != null) shoves.Played -= WhenShoved;
+        if (kicks != null) kicks.Kicked -= WhenKicked;
+        if (execution != null) execution.Started -= WhenExecuting;
+        if (receiver != null) receiver.HitResolved -= WhenHit;
+        if (special) SpecialKills.Scored -= WhenSpecial;
         special = false;
     }
 
@@ -322,26 +322,29 @@ public sealed class PlayerFace : MonoBehaviour
     }
 
     // ---- What happens to them, as their events say (fired on every PC: the copy's RPCs replay them) ----
+    // Named When..., never On...: the player's PlayerInput (Send Messages) sends every input action to each component on
+    // this object as SendMessage("On" + action name), so OnShove (the Shove action) got an InputValue and threw
+    // MissingMethodException on every shove.
 
-    private void OnShot(WeaponShot shot)
+    private void WhenShot(WeaponShot shot)
     {
         idle = 0f;
         Pulse(ShootMood);
     }
 
-    private void OnPunched(float charge)
+    private void WhenPunched(float charge)
     {
         idle = 0f;
         Pulse(FierceMood, .7f + .3f * Mathf.Clamp01(charge));
     }
 
-    private void OnShove(ShoveImpactKind impact)
+    private void WhenShoved(ShoveImpactKind impact)
     {
         idle = 0f;
         Pulse(FierceMood);
     }
 
-    private void OnKicked()
+    private void WhenKicked()
     {
         idle = 0f;
         Pulse(FierceMood);
@@ -349,21 +352,21 @@ public sealed class PlayerFace : MonoBehaviour
 
     // ---- Only this player's own PC knows these: shared ----
 
-    private void OnExecution(MeleeCombatTarget victim)
+    private void WhenExecuting(MeleeCombatTarget victim)
     {
         if (movement == null || !movement.IsLocal) return;
         idle = 0f;
         Share(FierceMood);
     }
 
-    private void OnHit(DamageHit hit, DamageResult result)
+    private void WhenHit(DamageHit hit, DamageResult result)
     {
         if (movement == null || !movement.IsLocal) return;
         if (result == DamageResult.Parried || result == DamageResult.Countered) Share(ParryMood);
         else if (result == DamageResult.Evaded) Share(SmugMood);
     }
 
-    private void OnSpecial(SpecialKills.Kind kind)
+    private void WhenSpecial(SpecialKills.Kind kind)
     {
         if (movement != null && movement.IsLocal && PlayerRoster.Local == movement) Share(DelightMood);
     }
