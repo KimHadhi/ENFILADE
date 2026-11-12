@@ -49,7 +49,9 @@ public static partial class HubBuilder
 
     private static void HallFloor()
     {
+        // Without the kit (not imported, its LFS files not pulled) the box's own concrete stays the floor.
         var floor = Box("은신처 바닥", -12f, 12f, -.5f, Floor, -10f, 14f, null, "Concrete");
+        if (dresser.ArtSize("hubfloor") == Vector3.zero) return;
         floor.GetComponent<Renderer>().enabled = false;
         // 4 m tiles, each turned a quarter by its place so the floor's wear doesn't run in rows.
         for (int i = 0; i < 6; i++)

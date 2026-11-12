@@ -201,7 +201,9 @@ public static partial class HubBuilder
 
         // The firing line: a waist-high counter with a way round at its east end (its box the kit's cabinets' size,
         // which are what is seen: DressRange), and the ammo crate (the kit's, its box its size).
-        Box("사대", -7f, 5.46f, 0f, 1.01f, CounterBack, -13.8f, wood, "WoodPanel").GetComponent<Renderer>().enabled = false;
+        // Without the kit the box's wood stays the counter, so it is never an unseen wall.
+        var counter = Box("사대", -7f, 5.46f, 0f, 1.01f, CounterBack, -13.8f, wood, "WoodPanel");
+        if (dresser.ArtSize("hubcounter") != Vector3.zero) counter.GetComponent<Renderer>().enabled = false;
         DressBox(Box("탄약 상자", -6.87f, -5.73f, 0f, .55f, -12.95f, -12.2f, wood, "Plastic"), "hubammocrate", 0);
         Station("탄약 상자 위", HubStation.Kind.Ammo, new Vector3(-6.3f, .275f, -12.575f), 0f, new Vector3(1.14f, .55f, .75f));
         Station("사격장 게시판", HubStation.Kind.RangeBoard, new Vector3(0f, 4.6f, -18f), 0f, new Vector3(5f, 1.8f, .1f));
