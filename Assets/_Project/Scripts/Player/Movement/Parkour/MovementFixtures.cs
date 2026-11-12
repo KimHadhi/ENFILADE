@@ -5,13 +5,16 @@ using State = PlayerMovement.MovementState;
 /// The world's ladders and ziplines, after Beatrun: takes hold of one when the player meets it, and
 /// keeps what the body and the sounds need to know while on it. LadderState and ZiplineState do the moving.
 /// - A ladder takes W, facing it, within reach, on the ground or in the air.
-/// - A zipline catches the player in the air, once the cable is within the hands' reach.
+/// - A zipline catches the player in the air they jumped into, or with jump held, once the cable is within the hands'
+///   reach (TrackJumpedIntoAir).
 /// Numbers come from Player.csv, row Ability.
 /// </summary>
 public sealed class MovementFixtures
 {
     private readonly PlayerMovement ctx;
     private float ladderLock, ziplineLock;
+    // Off the ground by the player's own jump: only then, or with jump held, do the hands go for a cable.
+    private bool jumpedIntoAir;
 
     public Ladder Ladder { get; private set; }
     /// <summary>The ladder was caught in the air rather than stepped onto from the ground.</summary>
@@ -33,7 +36,12 @@ public sealed class MovementFixtures
     public float ZiplineFraction { get; internal set; }
     public float ZiplineSpeed { get; internal set; }
 
-    internal MovementFixtures(PlayerMovement context) => ctx = context;
+    internal MovementFixtures(PlayerMovement context)
+    {
+        ctx = context;
+        // A jump off the ground and the spring off a vault's top both go through MovementActions.Jump.
+        ctx.Jumped += () => jumpedIntoAir = true;
+    }
 
     /// <summary>The way a horizontal direction points (world yaw, degrees).</summary>
     public static float YawOf(Vector3 direction) => Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg;
@@ -42,8 +50,30 @@ public sealed class MovementFixtures
     {
         ladderLock = Mathf.Max(0f, ladderLock - dt);
         ziplineLock = Mathf.Max(0f, ziplineLock - dt);
+        TrackJumpedIntoAir();
         TrackClimbDown();
     }
+
+    // A cable is taken only by a player who means it (the user, 2026-11-12: "사다리 올라가자마자 집라인이 타져서 사실
+    // 사다리를 통해 위로 올라갈 수가 없음"). The hands used to go for any cable in reach whenever the player was off the
+    // ground in an ordinary stance, whatever put them there. The climb off a ladder's top, like every climb onto a top,
+    // sets the feet down a little over the floor (TryLeaveLadderTop's end, 0.1 m), and the hub's zipline sets off half a
+    // metre beside its ladder's top: the few frames of that settle were enough to put the player on the cable instead of
+    // the catwalk. Now the air counts only when the player jumped into it: Space off the ground or the spring off a
+    // vault's top (Jumped), a ledge jump, a wall kick or a release off a bar (their launch states, a frame each). It
+    // lasts until the feet are down or another move takes over. Settling after a climb, walking off an edge, being
+    // knocked about and letting go of a ledge, a ladder, a bar or a cable never reach for one; holding jump does.
+    private void TrackJumpedIntoAir()
+    {
+        switch (ctx.CurrentState)
+        {
+            case State.LedgeJump: case State.WallKick: case State.LacheRelease: jumpedIntoAir = true; break;
+            case State.Standing: case State.Crouching: if (ctx.IsGrounded) jumpedIntoAir = false; break;
+            default: jumpedIntoAir = false; break;
+        }
+    }
+
+    private bool ReachesForCable => jumpedIntoAir || (ctx.InputAvailable && ctx.Input.JumpHeld);
 
     internal bool TryStart()
     {
@@ -227,7 +257,7 @@ public sealed class MovementFixtures
 
     private bool TryZipline()
     {
-        if (ziplineLock > 0f) return false;
+        if (ziplineLock > 0f || !ReachesForCable) return false;
         var settings = ctx.AbilitySettings;
         Vector3 feet = ctx.transform.position;
         Vector3 hands = feet + Vector3.up * (settings.ziplineReachHeight.x + settings.ziplineReachHeight.y) * .5f;
@@ -280,6 +310,7 @@ public sealed class MovementFixtures
     internal void Reset()
     {
         ladderLock = ziplineLock = 0f;
+        jumpedIntoAir = false;
         Ladder = null;
         LadderFromTop = false;
         Zipline = null;

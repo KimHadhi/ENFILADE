@@ -12,7 +12,9 @@ public sealed class Ladder : MonoBehaviour
     public const float RungSpacing = .39f, BarThickness = .05f;
     private static readonly HashSet<Ladder> active = new HashSet<Ladder>();
     public static IEnumerable<Ladder> Active => active;
-    [SerializeField, Min(.5f), Tooltip("From the foot to the top of the rails (m). Take it a little past the roof it leads to.")]
+    [SerializeField, Min(.5f), Tooltip("From the foot to the top of the rails (m): up to the floor it leads to, so the rails end flush "
+        + "with it (the map builders measure it: LadderFit). The feet stop Ability.ladderTopGap under the top and the climb off "
+        + "carries the body the rest of the way.")]
     private float height = 5.3f;
     [SerializeField, Min(.1f), Tooltip("Between the rails (m).")]
     private float width = .5f;

@@ -347,13 +347,11 @@ public sealed partial class GreyboxBuilder
         return ramp;
     }
 
-    /// <summary>A ladder from <paramref name="foot"/> up <paramref name="height"/> (past the roof it reaches), the climber
-    /// standing on the <paramref name="outwardYaw"/> side and stepping off the other way at the top.</summary>
-    public void Ladder(string name, Vector3 foot, float outwardYaw, float height)
-    {
-        var ladder = Fixture<Ladder>(name, foot, outwardYaw);
-        Set(ladder, so => so.FindProperty("height").floatValue = height);
-    }
+    /// <summary>A ladder from <paramref name="foot"/> (in the plane of its rungs, 0.15 m or so off the wall) up to the
+    /// floor it leads to, the climber standing on the <paramref name="outwardYaw"/> side and stepping off the other way at
+    /// the top. How high it goes is measured once the layout stands (Finish, LadderFit): its rails end flush with that
+    /// floor.</summary>
+    public void Ladder(string name, Vector3 foot, float outwardYaw) => Fixture<Ladder>(name, foot, outwardYaw);
 
     /// <summary>A cable from <paramref name="from"/> to <paramref name="to"/>, ridden that way only unless two-way.</summary>
     public void Zipline(string name, Vector3 from, Vector3 to, bool twoWay = false)
@@ -434,6 +432,8 @@ public sealed partial class GreyboxBuilder
     /// culling and puts it in the build.</summary>
     public void Finish(string summary)
     {
+        // Every box is laid now, so each ladder can be fitted to the floor it leads to.
+        string ladders = LadderFit.FitAll(parkour);
         AddWaves();
         AddCampaign();
         if (!AssetDatabase.IsValidFolder(Folder)) AssetDatabase.CreateFolder(Path.GetDirectoryName(Folder).Replace('\\', '/'), Path.GetFileName(Folder));
@@ -481,6 +481,7 @@ public sealed partial class GreyboxBuilder
              "곳. Play하면 미션이 바로 시작돼요(목표는 Resources/Tables/CampaignSteps.csv).\n" +
              "작은 소품: 좁은 꼭대기 " + slabs + "곳에 좀비 길을 깔았어요. " +
              (stranded == 0 ? "좀비가 못 가는 소품은 없어요." : "좀비가 못 가는 소품이 " + stranded + "곳 남았어요(콘솔에 이름과 자리).") +
+             (ladders.Length > 0 ? "\n" + ladders : "") +
              "\n가림 굽기(오클루전 컬링): " + (culled ? "구웠어요. 벽과 건물 뒤의 좀비는 그리지 않아요." : "실패했어요(콘솔을 보세요). 맵은 그대로 쓸 수 있어요.") +
              "\n하늘·해·안개: " + (look == null ? "Tables/MapLook에 이 장의 줄이 없어 기본 하늘이에요."
                  : look + (lit ? " (환경광·반사를 구웠어요)" : " (환경광을 굽지 못했어요. Window > Rendering > Lighting의 Generate Lighting을 눌러 주세요)")) +

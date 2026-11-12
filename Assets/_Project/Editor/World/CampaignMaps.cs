@@ -56,7 +56,7 @@ public static class CampaignMaps
         b.Box("B2", 27f, 47f, 0f, 16f, -10f, 10f);
         Parapets(b, "B2", 27f, 47f, -10f, 10f, 16f);
         b.Box("B2 엘리베이터실", 37f, 43f, 16f, 19.4f, -3f, 3f);
-        b.Ladder("B2 엘리베이터실 사다리", new Vector3(40f, 16f, -3.15f), 180f, 4.4f);
+        b.Ladder("B2 엘리베이터실 사다리", new Vector3(40f, 16f, -3.15f), 180f);
         b.Box("집라인 기둥 1", 42.6f, 42.8f, 19.4f, 22.2f, -.1f, .1f, b.Metal, solid: false);
         b.Zipline("길 건너는 집라인", new Vector3(42.5f, 21.7f, 0f), new Vector3(70f, 15.1f, 0f));
         b.Box("집라인 기둥 2", 70.2f, 70.4f, 13f, 15.8f, -.1f, .1f, b.Metal, solid: false);
@@ -77,7 +77,7 @@ public static class CampaignMaps
         b.Bar("틈 위 철봉", new Vector3(83.5f, 15.9f, 0f), 90f, 3f);
         b.Box("철봉 기둥 1", 83.4f, 83.6f, 0f, 16.1f, -1.9f, -1.7f, b.Metal, solid: false);
         b.Box("철봉 기둥 2", 83.4f, 83.6f, 0f, 16.1f, 1.7f, 1.9f, b.Metal, solid: false);
-        b.Ladder("틈에 떨어지면 올라오는 사다리", new Vector3(80.15f, 0f, 6f), 90f, 14f);
+        b.Ladder("틈에 떨어지면 올라오는 사다리", new Vector3(80.15f, 0f, 6f), 90f);
         b.EnemySpawn("B3 옥상 1", new Vector3(70f, 13f, -6f));
         b.EnemySpawn("B3 옥상 2", new Vector3(75f, 13f, 7f));
 
@@ -86,7 +86,7 @@ public static class CampaignMaps
         Parapets(b, "B4", 87f, 104f, -10f, 10f, 12f);
         b.Box("B4 별관", 104f, 112f, 0f, 8f, 4f, 50f);
         b.Box("골목 트럭", 108f, 114f, 0f, 3f, 0f, 3f, b.Metal, "MetalBox");
-        b.Ladder("B4 비상 사다리", new Vector3(104.15f, 0f, -2f), 90f, 13f);
+        b.Ladder("B4 비상 사다리", new Vector3(104.15f, 0f, -2f), 90f);
         b.Spot("B4Roof", new Vector3(95f, 12f, 0f));
         b.EnemySpawn("B4 옥상 1", new Vector3(95f, 12f, -6f));
         b.EnemySpawn("B4 옥상 2", new Vector3(100f, 12f, 6f));
@@ -145,8 +145,8 @@ public static class CampaignMaps
         b.Box("비계 벽", 182f, 182.3f, 5.2f, 8.7f, 9f, 12f, b.Wood, "WoodPanel");
         b.Box("비계 발판", 182.3f, 188f, 8.5f, 8.7f, 9f, 12f, b.Wood, "WoodPlank");
         b.Box("비계 기둥", 187.8f, 188f, 0f, 8.5f, 11.8f, 12f, b.Metal, solid: false);
-        b.Ladder("비계 사다리", new Vector3(185f, 8.7f, 9.15f), 0f, 6.3f);
-        b.Ladder("바닥에서 지붕 사다리", new Vector3(195f, 0f, 9.15f), 0f, 15f);
+        b.Ladder("비계 사다리", new Vector3(185f, 8.7f, 9.15f), 0f);
+        b.Ladder("바닥에서 지붕 사다리", new Vector3(195f, 0f, 9.15f), 0f);
         const float LaneA = -12f, LaneB = -10f, Lane = 2f;
         b.Ramp("적 경사로 1", new Vector3(186f, 0f, LaneA), new Vector3(195f, 3.5f, LaneA), Lane);
         b.Box("경사로 층계참 1", 195f, 198f, 3.2f, 3.5f, -13f, -9f);
@@ -215,7 +215,7 @@ public static class CampaignMaps
         b.Box("고가 난간 남 1", -19f, 79f, Deck, Deck + 1f, -7f, -6.7f);
         b.Box("고가 난간 남 2", 81f, 120f, Deck, Deck + 1f, -7f, -6.7f);
         b.Box("구덩이 벽", 100f, 101f, 0f, 6f, -39f, 39f);
-        b.Ladder("구덩이에서 고가로 올라가는 사다리", new Vector3(80f, 0f, -7.15f), 180f, Deck + 1f);
+        b.Ladder("구덩이에서 고가로 올라가는 사다리", new Vector3(80f, 0f, -7.15f), 180f);
         b.EnemySpawn("구덩이 1", new Vector3(40f, 0f, 12f));
         b.EnemySpawn("구덩이 2", new Vector3(90f, 0f, -12f));
 
@@ -439,7 +439,7 @@ public static class CampaignMaps
         b.Box("컨테이너 2", 186f, 190f, 2.6f, 5.2f, -18f, -15.5f, b.Metal, "MetalBox");
         b.Box("통로 발판", 195f, 215f, 4f, 4.2f, 16f, 19.7f, b.Metal, "Gantry");
         b.Box("통로 난간", 195f, 215f, 4.2f, 5.2f, 15.9f, 16f, b.Metal, solid: false);
-        b.Ladder("통로 사다리", new Vector3(200f, 0f, 15.85f), 180f, 5.2f);
+        b.Ladder("통로 사다리", new Vector3(200f, 0f, 15.85f), 180f);
         b.Can(new Vector3(192f, 0f, 8f));
         b.Can(new Vector3(188f, 5.2f, -16.7f));
         b.Can(new Vector3(210f, 4.2f, 18f));

@@ -134,7 +134,7 @@ public static class HubBuilder
         Box("캣워크 난간 2", -9.7f, -9.6f, 3.2f, 4.2f, 11.2f, 12f, metal, "MetalPipe");
         Box("캣워크 기둥 1", -9.85f, -9.65f, 0f, 3f, -7.9f, -7.7f, metal, "MetalPipe");
         Box("캣워크 기둥 2", -9.85f, -9.65f, 0f, 3f, 11.7f, 11.9f, metal, "MetalPipe");
-        Ladder("캣워크 사다리", new Vector3(-9.45f, 0f, 9.5f), 90f, 4.4f);
+        Ladder("캣워크 사다리", new Vector3(-9.45f, 0f, 9.5f), 90f);
         Box("집라인 기둥 1", -10.7f, -10.5f, 3.2f, 5.9f, 9.9f, 10.1f, metal, solid: false);
         Zipline("홀 건너는 집라인", new Vector3(-10.6f, 5.4f, 10f), new Vector3(6.4f, 2.1f, 10f));
         Box("집라인 기둥 2", 6.5f, 6.7f, 0f, 2.6f, 9.9f, 10.1f, metal, solid: false);
@@ -268,6 +268,8 @@ public static class HubBuilder
 
     private static void Finish()
     {
+        // Everything is laid now, so the catwalk's ladder can be fitted to the catwalk.
+        string ladders = LadderFit.FitAll(fixtures);
         if (!AssetDatabase.IsValidFolder(Folder)) AssetDatabase.CreateFolder("Assets/_Project/Scenes", "Hub");
         EditorSceneManager.MarkSceneDirty(scene);
         EditorSceneManager.SaveScene(scene, ScenePath);
@@ -279,7 +281,8 @@ public static class HubBuilder
         }
         AssetDatabase.SaveAssets();
         Tell("허브를 지었어요: " + ScenePath + "\n\n메인 메뉴의 혼자 하기·방 만들기가 이제 허브로 들어가요. 지도 탁자에서 장을 고르고, " +
-             "클래스 벽에서 클래스를, 총 진열대에서 총을 [F]로 고른 뒤 준비 버튼을 누르면 출발해요. 사격장은 남쪽 문 너머예요.");
+             "클래스 벽에서 클래스를, 총 진열대에서 총을 [F]로 고른 뒤 준비 버튼을 누르면 출발해요. 사격장은 남쪽 문 너머예요." +
+             (ladders.Length > 0 ? "\n\n" + ladders : ""));
     }
 
     // ---- Small helpers, in GreyboxBuilder's manner ----
@@ -335,12 +338,12 @@ public static class HubBuilder
         });
     }
 
-    private static void Ladder(string name, Vector3 foot, float outwardYaw, float height)
+    // Its height is measured once the hall stands (Finish, LadderFit): the rails end flush with the floor it leads to.
+    private static void Ladder(string name, Vector3 foot, float outwardYaw)
     {
         var ladder = new GameObject(name, typeof(Ladder));
         ladder.transform.SetParent(fixtures, false);
         ladder.transform.SetPositionAndRotation(foot, Quaternion.Euler(0f, outwardYaw, 0f));
-        Set(ladder.GetComponent<Ladder>(), so => so.FindProperty("height").floatValue = height);
     }
 
     private static void Zipline(string name, Vector3 from, Vector3 to)
