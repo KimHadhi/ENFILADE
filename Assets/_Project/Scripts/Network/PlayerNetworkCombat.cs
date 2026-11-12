@@ -451,6 +451,8 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
     {
         string name = TryGetComponent(out PlayerTally tally) ? tally.DisplayName : gameObject.name;
         ClassKit.ReceiveCharge(at, Texts.Format("class.assault.charge.friend", name));
+        // And everyone it took glows gold here too, as on the Assault's own PC.
+        ChargeGlow.Sounded(at);
     }
 
     // A Knight taunted here: the host's zombies already fighting near go after them, and every PC sees and hears it.

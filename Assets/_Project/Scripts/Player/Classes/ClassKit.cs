@@ -9,7 +9,7 @@ using UnityEngine;
 /// - Assault: every kill adds a stack of adrenaline (harder hits and a quicker pace a stack), which holds a few seconds
 ///   after the last kill and then ebbs; full, the class key spends it all on a CHARGE, Guts &amp; Blackpowder's officer's
 ///   charge: for some seconds it and every friend near hit harder and run faster (friends' PCs are told,
-///   PlayerNetworkCombat, and each gives its own player the buff);
+///   PlayerNetworkCombat, and each gives its own player the buff), and on every PC they glow gold while it lasts (ChargeGlow);
 /// - Point: a gun put away reloads itself in the time its own reload takes, from its reserve, so the SMG empties while
 ///   the shotgun refills and back (Killing Floor 2's gunslinger feel, the user's "화력이 끊기지 않고");
 /// - Ghost (stage 2; the user's design, with the Headhunter and Deadeye of their old class memo): a headshot adds a
@@ -420,6 +420,8 @@ public sealed class ClassKit : MonoBehaviour
             stacks = 0;
             Vector3 at = transform.position;
             ReceiveCharge(at, Texts.Get("class.assault.charge.self"));
+            // Everyone it takes glows gold on this PC (the friends' PCs light them as they hear of it: ChargeRpc).
+            ChargeGlow.Sounded(at);
             Charged?.Invoke(at);
             // The phantom cavalry card rides out with it (ClassCards).
             cards?.Charged(at);
