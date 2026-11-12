@@ -139,6 +139,12 @@ public sealed partial class ZombieBody
             Vector3 at = hips != null ? hips.position : transform.position;
             BodyBreakSounds.Play(FallCue, at, FallHeard);
             ShakeNear(at);
+            // The ground takes it: a shock and chips of the floor from Piloto's Big Pointblank, kept small and short
+            // (Tables/PackFx bruteFall; the user's go at moment-vfx's Realistic Gunslinger map, "ㅇㅇ 제안대로 써").
+            // Every PC lands it alike (LegBroke comes from the same hits everywhere).
+            Vector3 ground = at;
+            if (FloorBelow(at + Vector3.up * .5f, out float floor)) ground.y = floor;
+            PackFx.Play("bruteFall", ground, Quaternion.LookRotation(Vector3.up, Vector3.forward));
         }
         if (headShoutAt >= 0f && now >= headShoutAt)
         {

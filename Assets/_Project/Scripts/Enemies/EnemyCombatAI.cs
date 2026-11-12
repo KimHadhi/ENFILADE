@@ -304,6 +304,7 @@ public sealed class EnemyCombatAI : MonoBehaviour
         timer = 0f;
         UpdateIndicator(false);
         breach.Hit();
+        ZombieBreach.Smash(transform);
     }
     private ZombieBreach breach;
 
@@ -344,6 +345,8 @@ public sealed class EnemyCombatAI : MonoBehaviour
         // at planks, that blow lands on them, and is heard here too (their wear comes from that PC).
         if (player.IsNetworkDriven && move == AttackMove.Swing) ZombieBreach.HeardOnCopy(transform);
         var result = player.IsNetworkDriven ? DamageResult.Ignored : Strike();
+        // A brute's blow at planks smashes into them, seen on every PC alike (each at its own swing's end).
+        if (move == AttackMove.Swing) ZombieBreach.Smash(transform);
         if (!finisher && result != DamageResult.Parried && meleeTarget?.IsStunned != true)
         { comboIndex++; BeginWindup(); }
     }
@@ -683,6 +686,7 @@ public sealed class EnemyCombatAI : MonoBehaviour
         // Not this PC's to judge (at the planks, or at another PC's player across them): standing at planks, the blow is
         // heard landing on them here too.
         else if (!aimedHere && move == AttackMove.Swing) ZombieBreach.HeardOnCopy(transform);
+        if (move == AttackMove.Swing) ZombieBreach.Smash(transform);
     }
 
     public void CancelAttack()

@@ -149,6 +149,28 @@ public sealed class ZombieBreach : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Every PC, as a plain swing ends (EnemyCombatAI): a brute's blow at planks right before it smashes into them with a
+    /// burst from Piloto's Big Pointblank, toned down to a punchy chip-and-shock (Tables/PackFx bruteSmash; the user's go
+    /// at moment-vfx's Realistic Gunslinger map, "ㅇㅇ 제안대로 써"). Its wear is the host's, as ever.
+    /// </summary>
+    internal static void Smash(Transform zombie)
+    {
+        if (zombie == null || !zombie.TryGetComponent(out ZombieType type) || type.Kind != ZombieKind.Brute) return;
+        foreach (var each in Barricade.Standing)
+        {
+            if (each == null || each.Type != Barricade.Kind.Planks || Gap(each, zombie.position, out Vector3 local) > HeardGap
+                || Mathf.Abs(local.x) > Barricade.Width * .5f + .3f) continue;
+            float side = local.z >= 0f ? 1f : -1f;
+            var planks = each.transform;
+            Vector3 point = planks.TransformPoint(new Vector3(Mathf.Clamp(local.x, -Barricade.Width * .5f, Barricade.Width * .5f),
+                BlowHeight, side * Barricade.Depth * .5f));
+            // Into the planks, the way its blow goes.
+            PackFx.Play("bruteSmash", point, Quaternion.LookRotation(planks.forward * -side));
+            return;
+        }
+    }
+
     /// <summary>Whether some standing planks lie within <paramref name="range"/> of <paramref name="point"/> (m, along the ground).</summary>
     internal static bool PlanksNear(Vector3 point, float range)
     {

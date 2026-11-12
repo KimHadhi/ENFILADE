@@ -44,3 +44,21 @@ bountyGrand.drop,FuzzAdd_Soft,뺄 부분: 5m 밝은 퍼짐. 3m 불 폭발은 남
 bountyGrand.life,1.5,
 bountyGrand.near,5,
 bountyGrand.nearShare,0.4,
+bruteFall.prefab,Big Pointblank,"다리가 부러진 거구가 쓰러져 바닥에 닿을 때(ZombieBody.Legs 쿵·화면 흔들림과 함께) 바닥에서 터지는 충격. 모든 PC에서 같은 때와 자리(사용자가 moment-vfx의 Realistic Gunslinger 쓰임새 제안에 ""ㅇㅇ 제안대로 써"")"
+bruteFall.scale,0.22,크기 배율. 팩 그대로면 충격파 고리 15m. 0.22면 고리 약 3m와 돌 조각 몇 cm
+bruteFall.speed,1.3,빠르기 배율. 짧고 굵게
+bruteFall.drop,DefaultHDParticleMaterial|Mini anticipation|Burning_ground_Fire_2_fb_alpha_soft|Explotion_Disipation_clean_1_alpha_soft|Explotion_Disipation_clean_2_alpha_soft|Explotion_Disipation_clean_3_alpha_soft|Explotion_Disipation_clean_4_alpha_soft|FireSmoke_explosion_1_fb_alpha_soft|Fire_Nova_Decal_dark_Alpha|Fire_cone_Decal_dark_Alpha|FuzzAdd|FuzzAdd_Soft|Radialsuper_Flare_add_soft|Smoke_screen_cloud_sharp_fb_1_add_soft|Smoke_loop_flipbook_thingy_Clean_alpha_soft|Lightning_Explosion_cone_add_soft,"뺄 부분: 처음 1초 모이는 빛(DefaultHDParticleMaterial·Mini anticipation), 10~15m 폭발 연기, 25~35m 빛 번짐, 30~42m 검은 그을음 자국, 바닥 불, 연기 구름, 8m 번개 원뿔. 화면을 덮거나 오래 남는 것은 다 뺐다(vfx-restraint)"
+bruteFall.pop,Burst 0.15/Pointblank_cone_shockwave_add:1|Burst 0.15/Ice_shockwave_spawn_ant_add_soft:1|Burst 0.15/M_VFX_Cardgame_Missiles_Rock_Debris:12|Burst 0.15/RockPickbook:8|Burst 0.15/Flecks_Clipped_Alpha 1:6,"바로 터뜨릴 부분(경로:개수). 팩은 1초 기다렸다 터지지만 여기선 닿는 순간: 충격파 둘, 돌 조각, 불티"
+bruteFall.stopAfter,0.05,이만큼(초) 뒤 남은 반복을 멈춘다
+bruteFall.life,1.6,사라지는 때(초)
+bruteFall.near,5,카메라가 이보다(m) 가까우면 작게 그린다(nearShare까지)
+bruteFall.nearShare,0.45,가장 가까울 때의 크기 비율
+bruteSmash.prefab,Big Pointblank,"거구가 서포트 바리케이드 판자를 칠 때(ZombieBreach, 한 대마다) 판자에서 터지는 충격. 휘두름이 끝나는 때 모든 PC가 각자 그린다(판자가 닳는 것은 방장 PC)"
+bruteSmash.scale,0.16,판자에서는 더 작게: 고리 약 2m
+bruteSmash.speed,1.3,
+bruteSmash.drop,DefaultHDParticleMaterial|Mini anticipation|Burning_ground_Fire_2_fb_alpha_soft|Explotion_Disipation_clean_1_alpha_soft|Explotion_Disipation_clean_2_alpha_soft|Explotion_Disipation_clean_3_alpha_soft|Explotion_Disipation_clean_4_alpha_soft|FireSmoke_explosion_1_fb_alpha_soft|Fire_Nova_Decal_dark_Alpha|Fire_cone_Decal_dark_Alpha|FuzzAdd|FuzzAdd_Soft|Radialsuper_Flare_add_soft|Smoke_screen_cloud_sharp_fb_1_add_soft|Smoke_loop_flipbook_thingy_Clean_alpha_soft|Lightning_Explosion_cone_add_soft,뺄 부분: bruteFall과 같다
+bruteSmash.pop,Burst 0.15/Pointblank_cone_shockwave_add:1|Burst 0.15/M_VFX_Cardgame_Missiles_Rock_Debris:10|Burst 0.15/RockPickbook:6|Burst 0.15/Flecks_Clipped_Alpha 1:5,"바로 터뜨릴 부분: 판자를 뚫고 가는 충격 원뿔 하나, 조각, 불티(바닥 고리는 뺀다)"
+bruteSmash.stopAfter,0.05,
+bruteSmash.life,1.4,
+bruteSmash.near,5,
+bruteSmash.nearShare,0.45,
