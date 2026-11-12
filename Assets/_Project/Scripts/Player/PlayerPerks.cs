@@ -18,6 +18,11 @@ using UnityEngine;
 /// why it does what it does (the why line, the user's rule that an effect comes with a reason that makes it believable).
 /// What the code-backed class cards do is ClassCards' (Player/Classes).
 /// </para>
+/// <para>
+/// In the hub the picks are practice (BeginPractice, 2026-11-12): dealt by the same rule from the range's kills, working
+/// as cards do, and gone again when the hub is left or a class is picked there (EndPractice, RestartPractice), so the
+/// campaign's own cards are what a chapter gets.
+/// </para>
 /// </summary>
 public static class PlayerPerks
 {
@@ -71,6 +76,7 @@ public static class PlayerPerks
     private static void ResetStatics()
     {
         levels.Clear();
+        kept = null;
         catalog = null;
         bonuses = null;
         Changed = null;
@@ -210,8 +216,58 @@ public static class PlayerPerks
     public static void Clear()
     {
         momentumUntil = -99f;
+        // Practising, the campaign's own cards go too, so nothing comes back when practice ends, whichever comes first
+        // (the hub left for the title screen: its end and this Clear run in either order).
+        kept?.Clear();
         if (levels.Count == 0) return;
         levels.Clear();
+        bonuses = null;
+        Changed?.Invoke();
+    }
+
+    // ---- Practice (the hub, 2026-11-12) ----
+
+    // The cards held when practice began (the campaign's own so far), or null when not practising.
+    private static Dictionary<string, int> kept;
+
+    /// <summary>
+    /// Picks are practice now (the hub: the user, "궁극기가 좀 이상한 게. 카드를 뽑아야 하는 거 아니야?"): its range's kills
+    /// fill the gauge and deal cards by the mission's own rule, and they work as cards do, but they go again when practice
+    /// ends or starts over, so nothing picked in the hub reaches a chapter.
+    /// </summary>
+    public static bool IsPractising => kept != null;
+
+    /// <summary>From now on picks are practice; the cards held now (the campaign's) are what practice goes back to.</summary>
+    public static void BeginPractice()
+    {
+        kept = new Dictionary<string, int>(levels);
+        momentumUntil = -99f;
+    }
+
+    /// <summary>Practice starts over (a class picked in the hub): the practice cards go, the campaign's stay.</summary>
+    public static void RestartPractice()
+    {
+        if (kept != null) Restore();
+    }
+
+    /// <summary>Practice is over (the hub left): the practice cards go, and picks count for the campaign again.</summary>
+    public static void EndPractice()
+    {
+        if (kept == null) return;
+        Restore();
+        kept = null;
+    }
+
+    private static void Restore()
+    {
+        momentumUntil = -99f;
+        bool same = levels.Count == kept.Count;
+        if (same)
+            foreach (var pair in levels)
+                if (!kept.TryGetValue(pair.Key, out int level) || level != pair.Value) { same = false; break; }
+        if (same) return;
+        levels.Clear();
+        foreach (var pair in kept) levels[pair.Key] = pair.Value;
         bonuses = null;
         Changed?.Invoke();
     }

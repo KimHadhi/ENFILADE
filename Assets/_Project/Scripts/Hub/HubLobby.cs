@@ -11,10 +11,11 @@ using UnityEngine.InputSystem;
 /// - [F] at the map table's cards picks the chapter (the host, or the player alone; a guest sees the host's pick).
 /// - [F] at a locker of the class wall plays that class from now on, its guns in hand at once to try (ClassKit.Rekit).
 /// - [F] at the gun rack puts that gun in the hands, full; [F] at the ammo crate fills every gun. The firing range's
-///   targets (RangeTarget) show what each gun does to a zombie, and are practice foes: a kill there stacks what the
-///   class stacks, a hit charges the ultimate and F marks one, a Schießhund's bounty too (2026-11-12), while nothing of
-///   it reaches the run's feed, money or counts. Here a full gauge plays the class's ultimate at once and deals no
-///   cards (PerkCardScreen), since cards last the campaign and the range must not hand them out.
+///   targets (RangeTarget: steel, they ring and swing) show what each gun does to a zombie, and are practice foes: a
+///   kill there stacks what the class stacks, a hit charges the ultimate and F marks one, a Schießhund's bounty too
+///   (2026-11-12), while nothing of it reaches the run's feed, money or counts. A full gauge deals cards as in a
+///   mission, the ultimate after all of them (PerkCardScreen), but they are practice cards (PlayerPerks.BeginPractice):
+///   they and the gauge go when the hub is left or a class is picked here, so a chapter starts with the campaign's own.
 /// - [F] at the stage's mirror (HubMirror: everyone sees themself in it, head and all) opens the dressing spot in front
 ///   of it (HubDressing, 2026-11-12): the title screen's wardrobe over a camera looking into the mirror, every pick worn
 ///   at once, saved and seen by the room. The Esc menu's 캐릭터 tab went for it.
@@ -72,6 +73,15 @@ public sealed partial class HubLobby : MonoBehaviour
     /// <summary>This player is ready to set off (as this PC last heard).</summary>
     public static bool IsReady(PlayerMovement someone) => active != null && active.ready.Contains(MatchResults.SeatOf(someone));
 
+    // A class picked here (PlayerClass.Picked; its kit starts afresh in ClassKit) is tried from nothing, as a chapter
+    // starts it: the practice cards go and the gauge empties, so the old class's cards and charge can't be spent on it.
+    private static void OnClassPicked(string before, string now)
+    {
+        PlayerPerks.RestartPractice();
+        var mine = PlayerRoster.Local;
+        if (mine != null && mine.Ultimate != null) mine.Ultimate.SetCurrentCharge(0f);
+    }
+
     private void Awake()
     {
         active = this;
@@ -91,12 +101,19 @@ public sealed partial class HubLobby : MonoBehaviour
         BuildStations();
         // A campaign seen through to its end starts over bare: perks last a campaign (PerkCardScreen).
         if (MatchResults.Pending && MatchResults.CampaignDone) PlayerPerks.Clear();
+        // From here cards are practice: the range deals them as a mission would, and they go with the hub.
+        PlayerPerks.BeginPractice();
+        PlayerClass.Picked += OnClassPicked;
         if (MatchResults.Pending) ResultsShow.Play();
         ShowObjective();
     }
 
     private void OnDestroy()
     {
+        PlayerClass.Picked -= OnClassPicked;
+        // Leaving (for a chapter, or the title screen): the practice cards go, the campaign's are what the chapter gets.
+        // The new player there starts with an empty gauge of its own.
+        if (active == this) PlayerPerks.EndPractice();
         if (active == this) active = null;
         if (panel != null) Destroy(panel.gameObject);
         if (readyBoard != null) Destroy(readyBoard.gameObject);

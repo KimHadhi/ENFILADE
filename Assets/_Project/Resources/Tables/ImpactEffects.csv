@@ -19,6 +19,7 @@ Stone,,,,,MI_Rocks_Decal1; MI_Rocks_Decal2; MI_Rocks_Decal3; MI_Plank_Decal1; MI
 Marble,,,,,MI_Marble_Decal1; MI_Marble_Decal2; MI_Marble_Decal3; MI_DryWall_Decal1; MI_DryWall_Decal2; MI_DryWall_Decal3,0.1,0.2,2,,,탄흔만(Hivemind Marble + DryWall). 대리석
 Tile,,,,,MI_Tiles_Decal1; MI_Tiles_Decal2; MI_Tiles_Decal3,0.14,0.2,1,,,탄흔만(Hivemind Tiles). 타일. 금이 가는 모양이라 늘이지 않는다
 MetalCrane,,,,,MI_RustyMetal_Decal1; MI_RustyMetal_Decal2; MI_RustyMetal_Decal3,0.07,0.15,3,,,탄흔만(Hivemind RustyMetal). 크레인·철골: 녹슨 금속
+SteelTarget,,,,,none,,,,,,허브 사격장 강철 과녁. 불꽃은 부모(금속) 것. 구멍은 남기지 않는다: 경화 강철은 뚫리지 않고 판이 흔들리고 쓰러지므로 판에 붙어 함께 움직이다 사라지는 회색 납 자국을 SteelTarget이 찍는다
 WoodPanel,,,,,MI_Plank_Decal1; MI_Plank_Decal2; MI_Plank_Decal3; MI_Rocks_Decal1; MI_Rocks_Decal2; MI_Rocks_Decal3,0.08,0.2,2.5,,,탄흔만(Hivemind Plank + Rocks: 색과 잔무늬가 같고 모양만 다르다). 나무 판
 WoodPlank,,,,,MI_Plank_Decal1; MI_Plank_Decal2; MI_Plank_Decal3; MI_Rocks_Decal1; MI_Rocks_Decal2; MI_Rocks_Decal3,0.08,0.2,2.5,,,탄흔만(Hivemind Plank + Rocks). 나무 널빤지·마루
 Dirt,,,,,MI_Mud_Decal1; MI_Mud_Decal2; MI_Mud_Decal3,0.14,0.25,2,,,탄흔만(Hivemind Mud). 흙

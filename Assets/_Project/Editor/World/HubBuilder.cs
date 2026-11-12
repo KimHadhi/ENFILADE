@@ -21,10 +21,11 @@ using UnityEngine.SceneManagement;
 ///   it: HubDressing); the way out in the north wall (a shutter that rises with the count, the board over it, the
 ///   ready button beside it); the gun rack on the south wall by the range's opening; a low wall to vault.
 /// - The firing range through the south wall, open air, 14 wide and 108 long: a firing line counter, an ammo crate,
-///   four lanes (a close crowd of three zombie dummies; one at 15 m and one moving across at 30 m; one at 25 m and a
-///   steel plate at 50 m; one at 50 m and a plate at 100 m), distance marks on the floor and the wall, and the range
-///   board over the lanes. The stations are filled from the tables at play (HubLobby), so nothing here needs a rebuild
-///   when a chapter, class or gun is added.
+///   four lanes of steel targets with a zombie's health (a close crowd of three; one at 15 m and one moving across at
+///   30 m; one at 25 m and a thick plate at 50 m; one at 50 m and a thick plate at 100 m), distance marks on the floor
+///   and the wall, and the range board over the lanes. Only where each target stands is laid here: its steel body is
+///   built at play (RangeTarget, SteelTarget, Tables/RangeTargets). The stations are filled from the tables at play
+///   (HubLobby), so nothing here needs a rebuild when a chapter, class or gun is added.
 /// </summary>
 public static class HubBuilder
 {
@@ -218,30 +219,13 @@ public static class HubBuilder
         Plate("강철판 100 m", new Vector3(5.9f, 0f, -114f));
     }
 
-    // A zombie dummy: wooden, its head red, arms out the way a zombie reaches; facing the firing line. Its root is at its
-    // feet, so it tips over about them.
-    private static Transform Dummy(string name, Vector3 feet)
-    {
-        var root = TargetRoot(name, feet, true);
-        Part(root, "다리", PrimitiveType.Cube, new Vector3(0f, .43f, 0f), new Vector3(.4f, .86f, .22f), wood);
-        Part(root, "몸", PrimitiveType.Cube, new Vector3(0f, 1.18f, 0f), new Vector3(.5f, .64f, .28f), wood);
-        Part(root, "팔 1", PrimitiveType.Cube, new Vector3(-.2f, 1.38f, .28f), new Vector3(.12f, .12f, .55f), wood);
-        Part(root, "팔 2", PrimitiveType.Cube, new Vector3(.2f, 1.38f, .28f), new Vector3(.12f, .12f, .55f), wood);
-        var head = Part(root, "머리", PrimitiveType.Sphere, new Vector3(0f, 1.66f, 0f), Vector3.one * .3f, marker);
-        head.AddComponent<WeaponHitRegion>().Kind = WeaponHitRegion.Region.Head;
-        return root;
-    }
+    // A steel target with a zombie's health (Hub.csv dummyHealth), facing the firing line. Only the spot is laid here:
+    // RangeTarget builds its steel body at play (SteelTarget: a hinged base, a post, a silhouette torso plate and a round
+    // head plate, Tables/RangeTargets row Zombie), so its shape changes with the table and needs no rebuild.
+    private static Transform Dummy(string name, Vector3 feet) => TargetRoot(name, feet, true);
 
-    // A steel plate on a post, a round head plate over it.
-    private static void Plate(string name, Vector3 feet)
-    {
-        var root = TargetRoot(name, feet, false);
-        Part(root, "기둥", PrimitiveType.Cube, new Vector3(0f, .5f, 0f), new Vector3(.08f, 1f, .08f), metal);
-        Part(root, "판", PrimitiveType.Cube, new Vector3(0f, 1.45f, 0f), new Vector3(.6f, .9f, .05f), metal);
-        var head = Part(root, "머리 판", PrimitiveType.Cylinder, new Vector3(0f, 2.07f, 0f), new Vector3(.3f, .025f, .3f), marker);
-        head.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
-        head.AddComponent<WeaponHitRegion>().Kind = WeaponHitRegion.Region.Head;
-    }
+    // A thick steel plate (plateHealth), built the same way at play (row Plate).
+    private static void Plate(string name, Vector3 feet) => TargetRoot(name, feet, false);
 
     private static Transform TargetRoot(string name, Vector3 feet, bool zombie)
     {
@@ -255,17 +239,6 @@ public static class HubBuilder
             so.FindProperty("zombie").boolValue = zombie;
         });
         return root.transform;
-    }
-
-    private static GameObject Part(Transform root, string name, PrimitiveType shape, Vector3 at, Vector3 size, Material material)
-    {
-        var part = GameObject.CreatePrimitive(shape);
-        part.name = name;
-        part.transform.SetParent(root, false);
-        part.transform.localPosition = at;
-        part.transform.localScale = size;
-        part.GetComponent<Renderer>().sharedMaterial = material;
-        return part;
     }
 
     // ---- Saving ----

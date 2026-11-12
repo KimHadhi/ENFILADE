@@ -24,8 +24,10 @@ using UnityEngine.UI;
 /// class's own (PlayerPerks.Dealable); each card says under its name, small and slanted, why it works (the user's rule
 /// that an effect comes with a believable reason), and a class's final card (궁극) wears a pink frame from the start.
 /// Once every card this player can be dealt is taken, the prompt reads "궁극 준비" and X spends the full gauge on the
-/// class's ultimate at once (ClassCards.Ultimate) instead of opening the cards. In the hub it always does: its range
-/// charges the gauge for trying the classes out, and no card is dealt there (2026-11-12).
+/// class's ultimate at once (ClassCards.Ultimate) instead of opening the cards. The hub keeps the same rule with practice
+/// cards (2026-11-12, the user: "궁극기가 좀 이상한 게. 카드를 뽑아야 하는 거 아니야?"): its range's kills charge the gauge,
+/// X deals cards, the ultimate comes after all of them, and a pink line under the title says they go when the hub is left
+/// or a class is picked (PlayerPerks.IsPractising).
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class PerkCardScreen : MonoBehaviour
@@ -80,7 +82,7 @@ public sealed class PerkCardScreen : MonoBehaviour
     private RectTransform layer, stage, fx, prompt, band, title, tray, landing;
     private CanvasGroup layerGroup, promptGroup, titleGroup, landingGroup;
     private Image veil, promptBar, bandImage;
-    private TMP_Text costLabel, emptyLabel, promptLabel, promptKey;
+    private TMP_Text costLabel, emptyLabel, promptLabel, promptKey, practiceLabel;
     // What the ready prompt says now: the cards, or, every card taken, the class's ultimate.
     private bool promptCards = true;
     private readonly List<Card> cards = new List<Card>();
@@ -174,6 +176,10 @@ public sealed class PerkCardScreen : MonoBehaviour
         cost.localRotation = Quaternion.Euler(0f, 0f, -6f);
         KitStyle.Fill(cost, KitStyle.Accent);
         costLabel = KitStyle.Flat(cost, "", 17f, TextAlignmentOptions.Center, KitStyle.Ink);
+        // In the hub: these are practice cards, gone again when it is left (shown only then, Open).
+        practiceLabel = KitStyle.Flat(KitStyle.TopLeft("Practice", title, new Vector2(10f, 124f), new Vector2(640f, 28f)),
+            Texts.Get("perk.practice"), 18f, TextAlignmentOptions.MidlineLeft, KitStyle.Accent);
+        practiceLabel.gameObject.SetActive(false);
 
         var hint = FeelUI.Rect("Hint", stage);
         hint.anchorMin = hint.anchorMax = hint.pivot = Vector2.one;
@@ -335,6 +341,7 @@ public sealed class PerkCardScreen : MonoBehaviour
             card.Lift.localRotation = Quaternion.identity;
         }
         costLabel.text = Texts.Format("perk.cost", Mathf.RoundToInt(player.Ultimate.RequiredCharge));
+        practiceLabel.gameObject.SetActive(PlayerPerks.IsPractising);
         BuildTray(null);
         ClearEffects();
 
@@ -509,9 +516,9 @@ public sealed class PerkCardScreen : MonoBehaviour
     }
 
     // A card left to deal: this player's class's cards count, another class's don't (PlayerPerks.Dealable). The hub deals
-    // none: its range charges the gauge to try the classes out (RangeTarget), and cards last the whole campaign, so a full
-    // gauge there plays the class's ultimate instead of handing out a card before the run.
-    private static bool AnyLeft() => !HubLobby.IsActive && PlayerPerks.AnyLeft();
+    // by the same rule: its cards are practice ones (PlayerPerks.IsPractising) that go when it is left, so its range can
+    // be played through to the ultimate as a mission is.
+    private static bool AnyLeft() => PlayerPerks.AnyLeft();
 
     private void ShowPrompt(bool show, bool cards)
     {

@@ -10,5 +10,7 @@ public sealed class SurfaceType : MonoBehaviour
     [Tooltip("What this is made of. The list is Resources/Tables/Surfaces.csv: a row added there shows up here.")]
     [SerializeField, SurfaceName] private string surface = Surfaces.Default;
 
-    public string Surface => surface;
+    /// <summary>Set by code that builds things at play (the hub's steel targets, SteelTarget) before anything hits them:
+    /// Surfaces keeps what it read for a collider.</summary>
+    public string Surface { get => surface; set => surface = value; }
 }

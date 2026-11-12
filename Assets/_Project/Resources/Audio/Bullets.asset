@@ -21,3 +21,17 @@ MonoBehaviour:
     - {fileID: 8300000, guid: 5b41f9e1fa624cfcb62a70a53395891a, type: 3}
     - {fileID: 8300000, guid: f33ea8c3f27b466cbdd60151c4080265, type: 3}
     - {fileID: 8300000, guid: d15f351a602748a78d9e35b1ded2aab3, type: 3}
+  - key: Steel/Body
+    clips:
+    - {fileID: 8300000, guid: 3c57fb5c6e16438585ab026ee29b3147, type: 3}
+    - {fileID: 8300000, guid: 722dfa153f9742ad837d854d401225b8, type: 3}
+    - {fileID: 8300000, guid: 0ebc373307bb4d408f5a6235078e7bd0, type: 3}
+  - key: Steel/Down
+    clips:
+    - {fileID: 8300000, guid: 9492755c97d543bf821a162169d36afd, type: 3}
+    - {fileID: 8300000, guid: c96f0aee4b4449d1b97be9d41e65d1c8, type: 3}
+  - key: Steel/Head
+    clips:
+    - {fileID: 8300000, guid: f1813d9f65a1420985955759caf2820b, type: 3}
+    - {fileID: 8300000, guid: 4323e89f931b4a9f9ab0af12c1855708, type: 3}
+    - {fileID: 8300000, guid: 7bdf9064fffa46c9b8b88b6712ba6877, type: 3}

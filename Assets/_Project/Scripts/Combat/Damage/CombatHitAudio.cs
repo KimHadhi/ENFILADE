@@ -8,6 +8,7 @@ public enum HitFeedbackLevel { SoundAndEffects, EffectsOnly, Off }
 /// <summary>
 /// Layered hit and kill sounds. Each event stacks short clips at fixed delays, so a kill reads heavier than a hit.
 /// Hits dealt by the player (and hits on the player) play 2D; anything else plays 3D at the hit point.
+/// These are flesh sounds: a target that sounds its own hits (IOwnHitFeedback, the hub's steel targets) is left out.
 /// Created on the first hit during Play; no scene setup. Clips and tuning live in Resources/Combat/Feedback.
 /// </summary>
 [DisallowMultipleComponent]
@@ -52,6 +53,8 @@ public sealed class CombatHitAudio : MonoBehaviour
         var hit = report.Hit;
         var settings = CombatFeedbackSettings.Instance;
         if (!Application.isPlaying || report.Target == null || settings == null || hit.Kind == DamageKind.Fall) return;
+        // Steel isn't flesh: a target that sounds its own hits (the hub's steel targets ring) gets none of these layers.
+        if (report.Target is IOwnHitFeedback) return;
         bool kill = report.IsKillingBlow;
         HitSound sound; HitFeedbackLevel level;
         if (hit.Method == DamageMethod.Bullet)

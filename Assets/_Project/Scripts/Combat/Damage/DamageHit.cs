@@ -53,3 +53,9 @@ public interface ICombatVitals { float Health { get; } float MaximumHealth { get
 /// <summary>Optional name shown above an enemy's health bar. Without it the object name is used.</summary>
 public interface ICombatDisplayName { string DisplayName { get; } }
 public interface IShoveReceiver { void ReceiveShove(Vector3 impulse, Vector3 point); }
+/// <summary>
+/// A target that shows and sounds its own hits (the hub's steel targets ring, swing and take lead splashes, SteelTarget):
+/// the flesh hit and kill sounds (CombatHitAudio) and the red hit flash (GunFeelDirector) leave it out. The hit marker,
+/// its confirm sounds, the damage numbers and the kill screen stay.
+/// </summary>
+public interface IOwnHitFeedback { }

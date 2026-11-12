@@ -15,6 +15,7 @@ Duct,Metal,duct;vent,0.75,,환풍구·덕트
 Gantry,Metal,gantry;grate;grating;catwalk,1,,철망 발판·통로
 MetalCrane,Metal,crane;girder,,,크레인·철골
 MetalPipe,Metal,pipe;pole;railing,,,파이프·봉·난간
+SteelTarget,Metal,steeltarget,100,,허브 사격장 강철 과녁(SteelTarget이 판·받침대에 단다). 사격장용 경화 강철(AR500)이라 어떤 총알도 뚫지 못한다(관통 비용이 커서 멈춤). 착탄 불꽃은 금속 것이고 구멍은 남기지 않는다(ImpactEffects.csv)
 Wood,,wood;timber,0.5,,나무
 WoodPanel,Wood,woodpanel;plywood,,,나무 판
 WoodPlank,Wood,plank;woodfloor;deck,,,나무 널빤지·마루

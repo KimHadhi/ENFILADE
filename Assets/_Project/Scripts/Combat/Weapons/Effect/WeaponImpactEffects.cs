@@ -1,11 +1,20 @@
 using UnityEngine;
 
 /// <summary>
+/// Something that answers each bullet that strikes it, from any gun on this PC (its own player's, or a friend's copy
+/// replaying their shot), as the surface's impact plays (WeaponImpactEffects): the hub's steel targets ring, swing and
+/// take a lead splash (SteelTarget). `push` is the gun's prop push (Weapons.csv propImpulse) times the
+/// share of it the bullet still carried. Damage stays the receiver's (IDamageReceiver), judged on the shooter's PC.
+/// </summary>
+public interface IBulletStruck { void Struck(Collider part, Vector3 point, Vector3 normal, Vector3 incoming, float push); }
+
+/// <summary>
 /// The surface's impact effect and bullet hole where a shot from the parent WeaponController hits anything but a body.
 /// A bullet that went on (AttackTrace.Bullet) also bursts out of the far side of each wall it came through, bigger than
 /// where it went in and thrown along its way (ImpactPool.PlayExit), tears through it with the material's sound, makes an
 /// impact wherever it hit next, and plays ArcCW's ricochet sound where it glanced off. Each impact is told which way its
-/// bullet was going, so a hole shot at a slant comes out long (BulletHoles).
+/// bullet was going, so a hole shot at a slant comes out long (BulletHoles). What it hit hears of it too when it answers
+/// its own bullets (IBulletStruck: a steel target rings and swings, whoever fired).
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class WeaponImpactEffects : MonoBehaviour
@@ -50,7 +59,7 @@ public sealed class WeaponImpactEffects : MonoBehaviour
             if (onward.HasExit && onward.Exit.collider != null && !IsBody(onward.Exit.collider))
                 ImpactPool.PlayExit(onward.Exit.collider, onward.Exit.point, onward.Exit.normal, onward.Direction);
             // From here the bullet goes the way it left the last thing it met.
-            ShowSurface(leg.Trace, onward.Direction);
+            ShowSurface(leg.Trace, onward.Direction, leg.Share);
             entered = leg.Trace;
         }
     }
@@ -66,11 +75,17 @@ public sealed class WeaponImpactEffects : MonoBehaviour
         FeelAudio.PlayClipAt(bullets.Pick(key), point, sound.Volume, sound.RandomPitch(), RicochetReach);
     }
 
-    private void ShowSurface(in AttackTraceResult trace, Vector3 incoming)
+    private void ShowSurface(in AttackTraceResult trace, Vector3 incoming, float share = 1f)
     {
         if (!trace.HasHit || trace.Hit.collider == null || IsBody(trace.Hit.collider)) return;
         ImpactPool.PlaySurface(trace.Hit.collider, trace.Hit.point, trace.Hit.normal, incoming);
+        // Something that answers its own bullets hears of this one, pushed as hard as the gun pushes a prop.
+        if (trace.Hit.collider.GetComponentInParent<IBulletStruck>() is IBulletStruck struck)
+            struck.Struck(trace.Hit.collider, trace.Hit.point, trace.Hit.normal, incoming, Push * share);
     }
+
+    // The gun's push on what its bullet hits (Weapons.csv propImpulse), as WeaponController pushes a prop.
+    private float Push => weapon != null && weapon.EquippedData != null ? weapon.EquippedData.PropImpulse : 1f;
 
     // 적과 적의 부모는 제외. 시체도 벽이 아니라 몸이다
     private bool IsBody(Collider hitCollider)

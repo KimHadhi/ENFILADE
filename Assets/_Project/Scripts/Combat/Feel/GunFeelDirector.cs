@@ -27,9 +27,10 @@ public static class GunFeelDirector
         bool execution = hit.Kind == DamageKind.Execution;
 
         // World: every damaged target flashes, whoever hit it. Living enemies also bleed, except from a shove that doesn't
-        // kill, and are destroyed on death, so a corpse copy carries the kill; practice targets stay in place and just flash.
+        // kill, and are destroyed on death, so a corpse copy carries the kill. A target that shows its own hits (the hub's
+        // steel targets: sparks, a lead splash, a swing) doesn't flash red as a body does.
         bool enemy = report.Target is EnemyHealth;
-        if (!kill || !enemy) HitFlashRenderer.For(report.Target)?.Flash(hit.Point, critical);
+        if ((!kill || !enemy) && !(report.Target is IOwnHitFeedback)) HitFlashRenderer.For(report.Target)?.Flash(hit.Point, critical);
         if (enemy && hit.Kind != DamageKind.Fall && (hit.Method != DamageMethod.Shove || kill)) ImpactVfx.Blood(hit.Point, hit.Direction, critical, kill, bullet, report.Target);
         if (enemy && kill) CorpseTopple.Spawn(report.Target, hit, critical);
         // A shared enemy's death is the host's to call, so one count and one feed row reach every PC, whoever saw it first.
