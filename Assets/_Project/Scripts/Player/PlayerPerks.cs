@@ -12,7 +12,7 @@ using UnityEngine;
 /// hits, this player's health, getting a friend up). The effect lookups below are what the game's systems ask.
 /// <para>
 /// Class cards (2026-11-11, the user's "클래스별 스킬(카드)"): a card with a class in its row is dealt only to a player of
-/// that class, mixed in with the cards everyone can draw; a card with "after" waits until that many levels of its class's
+/// that class, and before the cards everyone can draw (Draw, 2026-11-12); a card with "after" waits until that many levels of its class's
 /// other cards are held, which is how a class's final card (궁극) comes late; and a card naming a ClassAbilities number
 /// ("ability") simply adds to it, so most class cards need no code (PlayerClass.Ability reads the sum). Every card says
 /// why it does what it does (the why line, the user's rule that an effect comes with a reason that makes it believable).
@@ -179,11 +179,19 @@ public static class PlayerPerks
     /// <summary>The class this card belongs to, as the class table names it (empty: everyone's).</summary>
     public static string ClassTitle(Perk perk) => perk == null || string.IsNullOrEmpty(perk.Class) ? "" : PlayerClass.Find(perk.Class)?.Title ?? perk.Class;
 
-    /// <summary>Up to <paramref name="count"/> different perks dealable now, the heavier ones likelier.</summary>
+    /// <summary>
+    /// Up to <paramref name="count"/> different perks dealable now, the heavier ones likelier: this player's class's own
+    /// cards first, and everyone's only once the class has none left to deal (the user, 2026-11-12: "처음에는 클래스 카드만
+    /// 나오다가 클래스 카드에서 뽑을 게 더 없으면 공통 카드가 나오다가 더 뽑을 카드가 없으면 그제서야 궁극기로"), so a class
+    /// grows into itself before anything else. A class hand of fewer than <paramref name="count"/> is dealt as it is, not
+    /// filled up with everyone's, which would let those be picked ahead of the class's own.
+    /// </summary>
     public static List<Perk> Draw(int count)
     {
         var pool = new List<Perk>();
-        foreach (var perk in Catalog) if (Dealable(perk)) pool.Add(perk);
+        // Dealable already keeps another class's cards out, so any card with a class here is this player's.
+        foreach (var perk in Catalog) if (!string.IsNullOrEmpty(perk.Class) && Dealable(perk)) pool.Add(perk);
+        if (pool.Count == 0) foreach (var perk in Catalog) if (Dealable(perk)) pool.Add(perk);
         var drawn = new List<Perk>();
         while (drawn.Count < count && pool.Count > 0)
         {
