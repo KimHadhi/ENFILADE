@@ -289,6 +289,8 @@ public static class TowerMap
             Cover(b, level, k);
             FloorMark(level, k, number);
             Fittings(b, level, k);
+            // The room's own reflections (Tables/MapReflections Tower.Room): its floor shines with its lights and neon.
+            b.Reflections("Tower.Room", 0f, length, TowerLayout.FloorY(level), ceiling, TowerLayout.LaneMin(k), TowerLayout.LaneMax(k));
         }
     }
 
@@ -529,6 +531,8 @@ public static class TowerMap
         Downlight("로비 등", new Vector3(-5.5f, H - S - .5f, 0f), 12f, 2.2f);
         Words3D("로비 이름", new Vector3(-.3f, 4.1f, 0f), Vector3.right, "<b>ENFILADE</b>  TOWER", 7f, Pink, new Vector2(14f, 1.4f));
         float gateWall = TowerLayout.WestEnd;
+        // The entrance hall has no sound zone of its own (the lobby's covers it): its reflections by name (Tower.Gate).
+        b.Reflections("Tower.Gate", gateWall, TowerLayout.WestFace, 0f, H - S, -TowerLayout.InnerHalf, TowerLayout.InnerHalf);
         b.Line("hubstripe", new Vector3(gateWall + 2.2f, StripeLift, -2.2f), new Vector3(gateWall + 2.2f, StripeLift, 2.2f), 90f);
         b.Mount("hubextinguisher", new Vector3(gateWall, 1.1f, -3.2f), 90f);
         b.Mount("hubsign_attention", new Vector3(gateWall, 1.7f, 3.6f), 90f, 1.2f);

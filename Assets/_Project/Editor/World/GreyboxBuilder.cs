@@ -446,6 +446,8 @@ public sealed partial class GreyboxBuilder
             so.FindProperty("sound").stringValue = sound;
             so.FindProperty("priority").intValue = priority;
         });
+        // An inside zone's reflections come with its box when Tables/MapReflections has a row for it (Reflections).
+        Reflections(sound, x0, x1, y0, y1, z0, z1);
     }
 
     /// <summary>A warm lamp with no shadows, for underground stretches the sun can't reach.</summary>
@@ -627,7 +629,7 @@ public sealed partial class GreyboxBuilder
              "\n가림 굽기(오클루전 컬링): " + (culled ? "구웠어요. 벽과 건물 뒤의 좀비는 그리지 않아요." : "실패했어요(콘솔을 보세요). 맵은 그대로 쓸 수 있어요.") +
              "\n하늘·해·안개: " + (look == null ? "Tables/MapLook에 이 장의 줄이 없어 기본 하늘이에요."
                  : look + (lit ? " (환경광·반사를 구웠어요)" : " (환경광을 굽지 못했어요. Window > Rendering > Lighting의 Generate Lighting을 눌러 주세요)")) +
-             (look != null ? ProbeReport(probesBaked) : "") +
+             (look != null ? ProbeReport(probesBaked) : "") + ReflectionReport(lit) +
              SurfaceReport() + DressReport() + DecalReport());
     }
 
@@ -646,10 +648,11 @@ public sealed partial class GreyboxBuilder
     private void MarkStatic()
     {
         // Dressing (GreyboxBuilder.Dress): batched and hidden behind walls, but too small and too varied to hide much.
+        // Everything that stays put is in the baked reflection probes' pictures (GreyboxBuilder.Reflections) too.
         if (dressing != null)
             foreach (var shape in dressing.GetComponentsInChildren<Renderer>())
             {
-                var flags = StaticEditorFlags.BatchingStatic | StaticEditorFlags.OccludeeStatic;
+                var flags = StaticEditorFlags.BatchingStatic | StaticEditorFlags.OccludeeStatic | StaticEditorFlags.ReflectionProbeStatic;
                 TakesPartInBake(shape, ref flags);
                 GameObjectUtility.SetStaticEditorFlags(shape.gameObject, flags);
             }
@@ -662,7 +665,7 @@ public sealed partial class GreyboxBuilder
                 shape.sharedMaterials = MovingMaterials(shape.sharedMaterials);
                 continue;
             }
-            var flags = StaticEditorFlags.BatchingStatic | StaticEditorFlags.OccludeeStatic;
+            var flags = StaticEditorFlags.BatchingStatic | StaticEditorFlags.OccludeeStatic | StaticEditorFlags.ReflectionProbeStatic;
             // A dressed box's grey look is hidden (GreyboxBuilder.Dress): its model may not fill it, so it hides nothing.
             // Glass is seen through: as an occluder it would hide the room behind it (the tower's lanes), and in the
             // probe bake it would shut the light out. The boxes with no collider (trims, neon, the city beyond the edge)
