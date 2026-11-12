@@ -19,7 +19,10 @@ using UnityEngine;
 /// carry, and the chest's rod without them: a rod round the ribs can't also reach the front of a bust, and Mayo's ran
 /// some 4 cm inside hers, as far as her side locks sank into it. The ball stays on the chest, where the bust rests:
 /// Magica puts a spring's bones back where they rest before it reads any collider, so a ball on them wouldn't follow the
-/// jiggle either, and an object under them would become part of the spring.
+/// jiggle either, and an object under them would become part of the spring. A lump is a dome lying against the ribs, not
+/// a round part, so its ball is the sphere that fits its points best (Dome), which lies on the dome itself.
+/// It also measures how far each hanging bone's own cloth reaches from the bone toward the body (Reach): how thick that
+/// cloth is where it would touch, which a particle of the simulation needs to be, no more.
 /// </summary>
 internal sealed class DressedBody
 {
@@ -39,6 +42,9 @@ internal sealed class DressedBody
     // Along the chest's rod (chest bone to neck): where the chest's own points count, for its lower end. The neck's
     // points make its upper end.
     private const float ChestFrom = -.25f, ChestTo = .75f;
+    // A lump's sphere is refused when it comes out larger than this many times the half-diagonal of its points' box: a
+    // nearly flat chest's patch fits a sphere metres across, which would stand out round the whole body like a wall.
+    private const float LargestDome = 1.5f;
 
     private struct Shape
     {
@@ -56,11 +62,13 @@ internal sealed class DressedBody
         public Shape Shape;
     }
 
-    // One look's measure: the parts in Part's order, and the lumps.
+    // One look's measure: the parts in Part's order, the lumps, and each hanging bone's cloth reach by the bone's name
+    // (in its own units).
     private sealed class Measures
     {
         public Shape[] Shapes;
         public ChestLump[] Lumps;
+        public Dictionary<string, float> Reach;
     }
 
     private static readonly Dictionary<string, Measures> remembered = new Dictionary<string, Measures>();
@@ -69,12 +77,14 @@ internal sealed class DressedBody
     private readonly Animator animator;
     private readonly Shape[] shapes;
     private readonly ChestLump[] lumps;
+    private readonly Dictionary<string, float> reach;
 
     private DressedBody(Animator animator, Measures measures)
     {
         this.animator = animator;
         shapes = measures.Shapes;
         lumps = measures.Lumps;
+        reach = measures.Reach;
     }
 
     /// <summary>How many soft lumps of the chest were measured (Lump).</summary>
@@ -93,16 +103,30 @@ internal sealed class DressedBody
     /// <param name="springs">The bones soft lumps hang from (Cloth.csv's springs): those on the chest are measured as lumps.</param>
     /// <param name="surface">The share of a direction's points that lie inside its outside.</param>
     /// <param name="size">Where, among a part's sizes all round, its size is taken (0.5: the middle one).</param>
+    /// <param name="clothShare">Where, among the reaches of a hanging bone's cloth toward the body, its reach is taken.</param>
     internal static DressedBody Measure(Animator animator, string key, Func<SkinSample> read, HashSet<Transform> hanging,
-        HashSet<Transform> springs, float surface, float size)
+        HashSet<Transform> springs, float surface, float size, float clothShare)
     {
-        if (key != null) key = key + "|" + surface + "|" + size;
+        if (key != null) key = key + "|" + surface + "|" + size + "|" + clothShare;
         if (key == null || !remembered.TryGetValue(key, out var measures))
         {
-            measures = Fit(animator, read(), hanging, springs, Mathf.Clamp01(surface), Mathf.Clamp01(size));
+            measures = Fit(animator, read(), hanging, springs, Mathf.Clamp01(surface), Mathf.Clamp01(size), Mathf.Clamp01(clothShare));
             if (key != null) Remember(key, measures);
         }
         return new DressedBody(animator, measures);
+    }
+
+    /// <summary>
+    /// How far the cloth a hanging bone carries reaches from the bone's line toward the body (metres): how thick a particle
+    /// on that bone must be for the cloth to meet what it rests on, not stop short of it. False where the bone carries
+    /// none of its cloth's vertices (the far end of a chain) or couldn't be measured.
+    /// </summary>
+    internal bool Reach(Transform bone, out float metres)
+    {
+        metres = 0f;
+        if (bone == null || reach == null || !reach.TryGetValue(bone.name, out float units)) return false;
+        metres = units * Mathf.Abs(bone.lossyScale.x);
+        return true;
     }
 
     /// <summary>A soft lump of the chest as a ball: the body bone it rests on, its middle (world) and its size (metres).</summary>
@@ -169,10 +193,10 @@ internal sealed class DressedBody
     }
 
     private static Measures Fit(Animator animator, SkinSample skin, HashSet<Transform> hanging, HashSet<Transform> springs,
-        float surface, float size)
+        float surface, float size, float clothShare)
     {
         var shapes = new Shape[PartCount];
-        var measures = new Measures { Shapes = shapes, Lumps = Array.Empty<ChestLump>() };
+        var measures = new Measures { Shapes = shapes, Lumps = Array.Empty<ChestLump>(), Reach = new Dictionary<string, float>() };
         if (animator == null || skin == null || skin.Points.Count == 0) return measures;
         // Each point belongs to the first body bone above the bone that carries most of it: a ribbon on the head is the
         // head's. A point a soft lump of the chest carries is that lump's instead.
@@ -192,9 +216,21 @@ internal sealed class DressedBody
         var marks = skin.Marks(hanging);
         var owners = new Dictionary<Transform, HumanBodyBones>();
         var points = new Dictionary<HumanBodyBones, List<Vector3>>();
+        // The hanging cloth's own vertices, by the bone that carries each most: how thick it is round that bone (Reach).
+        var cloth = new Dictionary<Transform, List<Vector3>>();
         foreach (var point in skin.Points)
         {
-            if (!skin.Shown(point) || SkinSample.CarriedBy(point, marks)) continue;
+            if (!skin.Shown(point)) continue;
+            if (SkinSample.CarriedBy(point, marks))
+            {
+                var carrier = skin.Main(point);
+                if (carrier != null && hanging.Contains(carrier))
+                {
+                    if (!cloth.TryGetValue(carrier, out var own)) cloth[carrier] = own = new List<Vector3>();
+                    own.Add(point.Position);
+                }
+                continue;
+            }
             var main = skin.Main(point);
             if (main == null) continue;
             if (lumpRoots.Count > 0)
@@ -217,7 +253,7 @@ internal sealed class DressedBody
             if (lumpPoints[i] == null) continue;
             var owner = Owner(lumpRoots[i], human, animator.transform);
             var lump = new ChestLump { Bone = owner };
-            Ball(ref lump.Shape, animator.GetBoneTransform(owner), lumpPoints[i], surface, size);
+            Dome(ref lump.Shape, animator.GetBoneTransform(owner), lumpPoints[i], surface, size);
             if (lump.Shape.Found) lumps.Add(lump);
         }
         measures.Lumps = lumps.ToArray();
@@ -236,8 +272,74 @@ internal sealed class DressedBody
             Gather(points, HumanBodyBones.LeftLowerLeg), surface, size);
         Limb(ref shapes[(int)Part.RightShin], Bone(animator, Part.RightShin), animator.GetBoneTransform(HumanBodyBones.RightFoot),
             Gather(points, HumanBodyBones.RightLowerLeg), surface, size);
+        ClothReach(animator, cloth, hanging, measures, clothShare);
         return measures;
     }
+
+    // How far each hanging bone's cloth reaches from the bone toward the body: the vertices that bone carries most, each
+    // measured square to the bone's two segments (to its parent and to its first hanging child), along the way from the
+    // bone to the nearest measured part; the share-th of those, so a stray vertex doesn't decide it. Where its cloth goes
+    // farther from the body than toward it (a strand over a coat), the reach is none: the particle can be as thin as can.
+    private static void ClothReach(Animator animator, Dictionary<Transform, List<Vector3>> cloth, HashSet<Transform> hanging,
+        Measures measures, float share)
+    {
+        if (cloth.Count == 0) return;
+        var body = new DressedBody(animator, measures);
+        var cores = new List<(Vector3 A, Vector3 B, float RadiusA, float RadiusB)>();
+        for (int i = 0; i < PartCount; i++)
+        {
+            var part = (Part)i;
+            if (part is Part.Head or Part.Pelvis)
+            {
+                if (body.Ball(part, out _, out var centre, out float radius)) cores.Add((centre, centre, radius, radius));
+            }
+            else if (body.Rod(part, out _, out var a, out var b, out float radiusA, out float radiusB)) cores.Add((a, b, radiusA, radiusB));
+        }
+        for (int i = 0; i < body.LumpCount; i++)
+            if (body.Lump(i, out _, out var centre, out float radius)) cores.Add((centre, centre, radius, radius));
+        if (cores.Count == 0) return;
+        var along = new List<float>();
+        foreach (var pair in cloth)
+        {
+            var bone = pair.Key;
+            Vector3 at = bone.position, toward = Vector3.zero;
+            float nearest = float.PositiveInfinity;
+            foreach (var (a, b, radiusA, radiusB) in cores)
+            {
+                Vector3 line = b - a;
+                float t = line.sqrMagnitude > 1e-12f ? Mathf.Clamp01(Vector3.Dot(at - a, line) / line.sqrMagnitude) : 0f;
+                Vector3 core = a + line * t;
+                float gap = Vector3.Distance(at, core) - Mathf.Lerp(radiusA, radiusB, t);
+                if (gap >= nearest) continue;
+                nearest = gap;
+                toward = core - at;
+            }
+            if (toward.sqrMagnitude < 1e-12f) continue;
+            toward.Normalize();
+            Vector3 up = bone.parent != null ? bone.parent.position - at : Vector3.zero, down = Vector3.zero;
+            foreach (Transform child in bone)
+                if (hanging.Contains(child))
+                {
+                    down = child.position - at;
+                    break;
+                }
+            along.Clear();
+            foreach (var point in pair.Value)
+            {
+                Vector3 offset = point - at;
+                Vector3 onUp = OnSegment(offset, up), onDown = OnSegment(offset, down);
+                offset -= (offset - onUp).sqrMagnitude <= (offset - onDown).sqrMagnitude ? onUp : onDown;
+                along.Add(Vector3.Dot(offset, toward));
+            }
+            along.Sort();
+            float extent = Mathf.Max(0f, along[Mathf.Clamp((int)(along.Count * share), 0, along.Count - 1)]);
+            measures.Reach[bone.name] = extent / Mathf.Max(Mathf.Abs(bone.lossyScale.x), 1e-6f);
+        }
+    }
+
+    // The point of the segment from the origin to end nearest a point.
+    private static Vector3 OnSegment(Vector3 point, Vector3 end) =>
+        end.sqrMagnitude > 1e-12f ? end * Mathf.Clamp01(Vector3.Dot(point, end) / end.sqrMagnitude) : Vector3.zero;
 
     private static HumanBodyBones Owner(Transform bone, Dictionary<Transform, HumanBodyBones> human, Transform top)
     {
@@ -272,6 +374,76 @@ internal sealed class DressedBody
         var local = ToLocal(bone, world);
         if (!FitBall(local, surface, size, out var centre, out float radius)) return;
         shape = new Shape { Found = true, Start = centre, End = centre, StartRadius = radius, EndRadius = radius };
+    }
+
+    // A soft lump of the chest: a dome of skin, with whatever is worn on it, lying against the ribs. The sphere that fits
+    // its points best by least squares lies on the dome, its middle behind it. Ball's measure, centred on the middle of
+    // the dome's outside and sized to reach its rim, stood out of Mayo's bust by 14 mm at the front and 9 at the top and
+    // the outer side (with her White Board jacket on or bare), and held hair and coats that far off her chest when they
+    // swung onto it; the fitted sphere's surface lies on her real one, its middle within a millimetre of it at the front,
+    // top, outer side and below, dressed or bare, and Ichigo's too (the user, 2026-11-12: "가슴에 비해 좀 충돌 판정이 여유가
+    // 꽤 돼서 머리랑 겉옷이 허공에 떠 있는 느낌").
+    // What isn't round enough to be measured as Ball does (a flat strap between Ichigo's breasts) stays no lump, as
+    // before; one too flat for its sphere (LargestDome) keeps Ball's measure.
+    private static void Dome(ref Shape shape, Transform bone, List<Vector3> world, float surface, float size)
+    {
+        if (bone == null || world.Count < LeastPoints) return;
+        var local = ToLocal(bone, world);
+        if (!FitBall(local, surface, size, out var centre, out float radius)) return;
+        if (FitSphere(local, out var fitted, out float fittedRadius)) (centre, radius) = (fitted, fittedRadius);
+        shape = new Shape { Found = true, Start = centre, End = centre, StartRadius = radius, EndRadius = radius };
+    }
+
+    // The least-squares sphere through these points, |p|² = 2 c·p + k with r² = k + |c|², solved round their mean for
+    // precision; refused when it comes out larger than LargestDome times their spread.
+    private static bool FitSphere(List<Vector3> points, out Vector3 centre, out float radius)
+    {
+        centre = Vector3.zero;
+        radius = 0f;
+        if (points.Count < LeastPoints) return false;
+        Vector3 mean = Vector3.zero;
+        foreach (var point in points) mean += point;
+        mean /= points.Count;
+        var box = new Bounds(points[0] - mean, Vector3.zero);
+        var normal = new double[4, 5];
+        var row = new double[4];
+        row[3] = 1.0;
+        foreach (var point in points)
+        {
+            Vector3 p = point - mean;
+            box.Encapsulate(p);
+            row[0] = 2.0 * p.x;
+            row[1] = 2.0 * p.y;
+            row[2] = 2.0 * p.z;
+            double w = (double)p.x * p.x + (double)p.y * p.y + (double)p.z * p.z;
+            for (int i = 0; i < 4; i++)
+            {
+                for (int j = 0; j < 4; j++) normal[i, j] += row[i] * row[j];
+                normal[i, 4] += row[i] * w;
+            }
+        }
+        // Gauss-Jordan with the largest pivot in each column.
+        for (int column = 0; column < 4; column++)
+        {
+            int pivot = column;
+            for (int r = column + 1; r < 4; r++)
+                if (Math.Abs(normal[r, column]) > Math.Abs(normal[pivot, column])) pivot = r;
+            if (Math.Abs(normal[pivot, column]) < 1e-18) return false;
+            for (int k = 0; k < 5; k++) (normal[column, k], normal[pivot, k]) = (normal[pivot, k], normal[column, k]);
+            for (int r = 0; r < 4; r++)
+            {
+                if (r == column) continue;
+                double factor = normal[r, column] / normal[column, column];
+                for (int k = column; k < 5; k++) normal[r, k] -= factor * normal[column, k];
+            }
+        }
+        double cx = normal[0, 4] / normal[0, 0], cy = normal[1, 4] / normal[1, 1], cz = normal[2, 4] / normal[2, 2];
+        double squared = normal[3, 4] / normal[3, 3] + cx * cx + cy * cy + cz * cz;
+        if (!(squared > 0.0) || double.IsInfinity(squared)) return false;
+        radius = (float)Math.Sqrt(squared);
+        if (radius > box.extents.magnitude * LargestDome) return false;
+        centre = mean + new Vector3((float)cx, (float)cy, (float)cz);
+        return true;
     }
 
     // A thigh or shin: its own points, the half nearer each joint making that end.

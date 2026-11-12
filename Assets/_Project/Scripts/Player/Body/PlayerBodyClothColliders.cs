@@ -80,6 +80,23 @@ public sealed class PlayerBodyClothColliders : MonoBehaviour
     [SerializeField, Range(0f, 1f), Tooltip("A shape made smaller for a cloth part lying inside it keeps at least this share of its girth, or the part meets the shape made from the bones instead.")]
     private float fitGirth = .25f;
 
+    [Header("Chains that hang, for what BoothImport made")]
+    [SerializeField, Range(.5f, 1f), Tooltip("A free bone's particle is as thick as its own cloth reaches toward the body: where this share of the cloth it carries lies nearer the bone's line.")]
+    private float clothReach = .95f;
+    [SerializeField, Range(0f, 2f), Tooltip("How much of the dip of a straight segment between two particles over a curve the particles add to their thickness, so the cloth between them doesn't cut into what it rests on. 0 adds none.")]
+    private float curveDip = 1f;
+    [SerializeField, Range(0f, 1f), Tooltip("How far a chain that hangs may turn down onto what is under it as it is made, as a share of its angle limit. 0 leaves it where its maker drew it.")]
+    private float settle = 1f;
+    [SerializeField, Range(0f, .2f), Tooltip("The farthest a bone may move as its chain settles onto what is under it (metres, at the model's size). What hangs farther off stays as drawn.")]
+    private float settleReach = .03f;
+
+    /// <summary>How much of a segment's dip over a curve the particles at its ends add (ClothBones.FitRadii).</summary>
+    internal float CurveDip => curveDip;
+    /// <summary>How far, as a share of the angle limit, a hanging chain may turn down onto the body (ClothBones.Settle).</summary>
+    internal float SettleShare => settle;
+    /// <summary>The farthest a bone may move as its chain settles (metres at the model's size).</summary>
+    internal float SettleReach => settleReach;
+
     // The sets made from the bones are kept by name, the ones measured from the meshes by name and this mark.
     private const string Measured = "+";
 
@@ -91,6 +108,9 @@ public sealed class PlayerBodyClothColliders : MonoBehaviour
         new Dictionary<(ColliderComponent, int), ColliderComponent>();
     // A measured shape's twin made from the bones, which a part that can't take the measured one meets instead.
     private readonly Dictionary<ColliderComponent, ColliderComponent> fromBones = new Dictionary<ColliderComponent, ColliderComponent>();
+    // The chest's soft lumps as balls, and the smaller copies made of them: the shapes that lie on the body's real surface,
+    // which a hanging chain may settle onto (ClothBones.Settle).
+    private readonly HashSet<ColliderComponent> lumps = new HashSet<ColliderComponent>();
     private ArmBone[] arms;
     private CharacterController capsule;
     private PlayerMovement player;
@@ -128,7 +148,7 @@ public sealed class PlayerBodyClothColliders : MonoBehaviour
     /// chest (<paramref name="springs"/>: a bust) measured as a ball of its own.
     /// </summary>
     internal DressedBody Measure(Animator animator, string look, Func<SkinSample> read, HashSet<Transform> hanging, HashSet<Transform> springs) =>
-        DressedBody.Measure(animator, look, read, hanging, springs, bodySurface, bodySize);
+        DressedBody.Measure(animator, look, read, hanging, springs, bodySurface, bodySize, clothReach);
 
     /// <summary>
     /// Gives this component ClothBody.csv's numbers where it has no player to bind them (the menu's preview), its own
@@ -161,6 +181,20 @@ public sealed class PlayerBodyClothColliders : MonoBehaviour
     {
         float least = float.PositiveInfinity;
         foreach (var shape in shapes) least = Mathf.Min(least, Gap(point, shape));
+        return least;
+    }
+
+    /// <summary>
+    /// Room, among these colliders, to the chest's soft lumps only (a bust): the shapes measured to lie on the body's real
+    /// surface (DressedBody.Dome). The rods and other balls are sized from the middle of their outside and run some
+    /// millimetres inside it here and there, so a chain laid on them would sink into the body (Mayo's leg ribbons 20 mm
+    /// into her thigh). Infinity when there are none.
+    /// </summary>
+    internal float RoomOnLumps(Vector3 point, List<ColliderComponent> shapes)
+    {
+        float least = float.PositiveInfinity;
+        foreach (var shape in shapes)
+            if (shape != null && lumps.Contains(shape)) least = Mathf.Min(least, Gap(point, shape));
         return least;
     }
 
@@ -202,6 +236,26 @@ public sealed class PlayerBodyClothColliders : MonoBehaviour
         return shrink <= 0f ? shape : Smaller(shape, shrink);
     }
 
+    /// <summary>
+    /// When the shape nearest a point among these is one of the chest's soft lumps (they lie on the body's real surface),
+    /// its rounding: the curve cloth lying there wraps round. Below zero when the nearest is another shape, whose middle
+    /// size runs some millimetres inside the body here and there: a particle there keeps its maker's thickness, which held
+    /// it off the body that much (thinner, Ichigo's small twin tails sank 12 mm deeper when pressed).
+    /// </summary>
+    internal float LumpRounding(Vector3 point, List<ColliderComponent> shapes)
+    {
+        ColliderComponent nearest = null;
+        float least = float.PositiveInfinity;
+        foreach (var shape in shapes)
+        {
+            float gap = Gap(point, shape);
+            if (gap >= least) continue;
+            least = gap;
+            nearest = shape;
+        }
+        return nearest != null && lumps.Contains(nearest) ? Mathf.Abs(nearest.GetScale()) * nearest.GetSize().x : -1f;
+    }
+
     // A copy of a shape on the same bone, its rounding thinner by at least this much (whole millimetres, so near needs
     // share one); a capsule keeps the line it runs along.
     private ColliderComponent Smaller(ColliderComponent shape, float shrink)
@@ -232,6 +286,7 @@ public sealed class PlayerBodyClothColliders : MonoBehaviour
         }
         copy.center = shape.center;
         copy.name = "Cloth collider (fitted)";
+        if (lumps.Contains(shape)) lumps.Add(copy);
         return fitted[(shape, mm)] = copy;
     }
 
@@ -255,6 +310,7 @@ public sealed class PlayerBodyClothColliders : MonoBehaviour
         made.Clear();
         fitted.Clear();
         fromBones.Clear();
+        lumps.Clear();
         arms = null;
         madeFor = animator;
     }
@@ -281,7 +337,11 @@ public sealed class PlayerBodyClothColliders : MonoBehaviour
         // a bust both, and on Mayo it ran some 4 cm inside her bust, as far as her side locks sank.
         if (string.Equals(shape, Head, StringComparison.OrdinalIgnoreCase))
             for (int i = 0; i < measured.LumpCount; i++)
-                if (measured.Lump(i, out var bone, out var centre, out float radius)) Ball(bone, centre, radius, set);
+                if (measured.Lump(i, out var bone, out var centre, out float radius))
+                {
+                    Ball(bone, centre, radius, set);
+                    lumps.Add(set[set.Count - 1]);
+                }
         return made[shape + Measured] = set;
     }
 

@@ -100,6 +100,18 @@ public sealed class ClothPart
     internal float Thinnest(ClothBones shape) =>
         thickness > 0f ? Mathf.Min(ClothBones.LeastThickness, thickness * shape.Length * Least(Curve(thicknessCurve))) : ClothBones.LeastThickness;
 
+    /// <summary>A chain BoothImport made that hangs (not a ring, not a spring): it is fitted bone by bone (ClothBones.FitRadii).</summary>
+    internal bool Hangs => vrc && !ring && !spring;
+
+    /// <summary>The thickest its particles may be (metres): its maker's radius (thickness) or, without one, the preset's.</summary>
+    internal float Thickest(ClothBones shape) => thickness > 0f ? thickness * shape.Length : ClothBones.LeastThickness;
+
+    /// <summary>How that thickness runs down the part (thicknessCurve), null for the same all the way.</summary>
+    internal AnimationCurve ThickestAlong => thickness > 0f ? Curve(thicknessCurve) : null;
+
+    /// <summary>The angle limit at a depth down the part (degrees): angleLimit along angleCurve.</summary>
+    internal float LimitAt(float depth) => angleLimit * (Curve(angleCurve) is AnimationCurve along ? Mathf.Max(0f, along.Evaluate(depth)) : 1f);
+
     /// <summary>Starts the simulation on these bones. Living under the model, it goes when the body does.</summary>
     internal MagicaCloth Wear(Transform model, string id, List<Transform> bones, List<ColliderComponent> colliders, ClothBones shape)
     {
@@ -140,8 +152,9 @@ public sealed class ClothPart
     internal void Apply(ClothSerializeData data, ClothBones shape)
     {
         float length = shape.Length;
-        var thick = shape.Thickness(thickness * length, Curve(thicknessCurve));
-        if (thick != null) data.radius.SetValue(thickness * length, thick);
+        // A chain fitted bone by bone has its particles from its own cloth (ClothBones.FitRadii).
+        if (shape.FittedRadius != null) data.radius.SetValue(shape.FittedScale, shape.FittedRadius);
+        else if (shape.Thickness(thickness * length, Curve(thicknessCurve)) is AnimationCurve thick) data.radius.SetValue(thickness * length, thick);
         data.rootRotation = rootTurn;
         data.gravity = gravity;
         if (gravityFalloff >= 0f) data.gravityFalloff = Mathf.Clamp01(gravityFalloff);

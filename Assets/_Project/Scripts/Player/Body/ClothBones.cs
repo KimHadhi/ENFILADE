@@ -18,6 +18,11 @@ internal sealed class ClothBones
     /// still looked right there.
     /// </summary>
     internal const float LeastThickness = .02f;
+    // The thinnest a particle measured from its own cloth gets (metres), so a flat ribbon still has some.
+    private const float LeastParticle = .001f;
+    // A settling chain looks for where its bone first touches in steps of this many degrees, then this many halvings.
+    private const float SettleStep = .5f;
+    private const int SettleSearch = 10;
 
     private struct Bone
     {
@@ -35,6 +40,8 @@ internal sealed class ClothBones
         public float Depth;
         /// <summary>How far it hung from what it rests against when the part was made (metres).</summary>
         public float Room;
+        /// <summary>Its particle's radius as the simulation will have it (metres), once FitRadii has set it; 0 before.</summary>
+        public float Radius;
     }
 
     private readonly Transform anchor;
@@ -45,6 +52,12 @@ internal sealed class ClothBones
     internal int Moving { get; }
     /// <summary>How far the part hangs at the longest, in metres.</summary>
     internal float Length { get; }
+    /// <summary>
+    /// The particles' radius down the part as FitRadii set it, as shares of FittedScale (metres); null when the part's
+    /// radius is the table's thickness (Thickness) or the preset's.
+    /// </summary>
+    internal AnimationCurve FittedRadius { get; private set; }
+    internal float FittedScale { get; private set; }
 
     internal ClothBones(List<Transform> roots, float rootTurn)
     {
@@ -116,6 +129,123 @@ internal sealed class ClothBones
         }
         // Straight lines between the depths, as the bones between them are.
         return Straight(keys);
+    }
+
+    /// <summary>
+    /// Each free bone's particle for a chain that meets the body as measured (DressedBody). Its maker's PhysBone radius
+    /// (<paramref name="scale"/> along <paramref name="along"/>), but never thicker than the room its bone has as drawn
+    /// (<paramref name="room"/>: how far a point is from what it rests against), so nothing starts pushed off where its
+    /// maker drew it: the shapes are fitted to the chain's thinnest particle, and a thicker one used to start inside its
+    /// shape and be shoved out at once (on Mayo her side locks 5 and 8 mm off her bust, her White Board jacket's front 3
+    /// and its belt 6, Ichigo's side hair 3 to 6). Where what it rests against lies on the body's real surface
+    /// (<paramref name="rounding"/>: the chest's soft lump nearest it, that lump's rounding; below zero elsewhere), it is
+    /// as thick as its own cloth reaches toward the body (<paramref name="reach"/>, below zero where that couldn't be
+    /// measured: the bone above's is taken), plus the dip of a straight segment between two particles lying on that curve
+    /// (its length squared over eight times the curve's radius, times <paramref name="dip"/>), so the cloth between them
+    /// meets the curve rather than cutting into it. A PhysBone's radius is sized for VRChat's colliders, which sit inside
+    /// the body: on Mayo's bust, measured to its real surface, it held her side locks 17 mm out where their cloth reaches 2
+    /// to 5 mm toward her. Elsewhere the shapes are rougher and the maker's thickness keeps holding the cloth off them.
+    /// Magica gives one radius to each depth, the least the bones there need, which is each bone's Radius after.
+    /// </summary>
+    internal void FitRadii(float scale, AnimationCurve along, System.Func<Transform, float> reach, System.Func<Vector3, float> room,
+        System.Func<Vector3, float> rounding, float dip)
+    {
+        var own = new float[bones.Length];
+        var least = new SortedDictionary<float, float>();
+        for (int i = 0; i < bones.Length; i++)
+        {
+            own[i] = -1f;
+            if (!bones[i].Moves) continue;
+            float cloth = reach(bones[i].Transform);
+            if (cloth < 0f) cloth = own[bones[i].Up];
+            own[i] = cloth;
+            Vector3 at = bones[i].Transform.position;
+            float maker = scale * (along != null ? Mathf.Max(0f, along.Evaluate(bones[i].Depth)) : 1f);
+            float wanted = Mathf.Min(maker, room(at));
+            float bend = cloth >= 0f ? rounding(at) : -1f;
+            if (bend >= 0f)
+            {
+                float span = Vector3.Distance(at, bones[bones[i].Up].Transform.position);
+                if (bones[i].Down >= 0) span = Mathf.Max(span, Vector3.Distance(at, bones[bones[i].Down].Transform.position));
+                float curve = bend + cloth;
+                float sag = curve > 0f ? dip * span * span / (8f * curve) : 0f;
+                wanted = Mathf.Min(wanted, cloth + sag);
+            }
+            wanted = Mathf.Max(LeastParticle, wanted);
+            float depth = Mathf.Round(bones[i].Depth * 100f) / 100f;
+            float share = scale > 0f ? wanted / scale : 0f;
+            least[depth] = least.TryGetValue(depth, out float before) ? Mathf.Min(before, share) : share;
+        }
+        if (least.Count == 0 || scale <= 0f) return;
+        var keys = new List<Keyframe>();
+        foreach (var pair in least)
+        {
+            if (keys.Count == 0 && pair.Key > 0f) keys.Add(new Keyframe(0f, pair.Value));
+            keys.Add(new Keyframe(pair.Key, pair.Value));
+        }
+        FittedRadius = Straight(keys);
+        FittedScale = scale;
+        for (int i = 0; i < bones.Length; i++)
+            if (bones[i].Moves) bones[i].Radius = scale * Mathf.Max(0f, FittedRadius.Evaluate(bones[i].Depth));
+    }
+
+    /// <summary>
+    /// Lays a chain that hangs onto what is under it, as gravity would: from the root down, a joint holding just one bone
+    /// turns it toward straight down (<paramref name="down"/>) until the bone's particle touches what it may rest on
+    /// (<paramref name="onto"/>: how far outside that a point is), within that depth's angle limit (<paramref name="limit"/>,
+    /// degrees), never past straight down and moving the bone no farther than <paramref name="reach"/> (metres). The bone
+    /// keeps its own turn, so what hangs below it keeps the shape its maker drew and only comes along. A bone that touches
+    /// nothing within that, or touches something else it meets first (<paramref name="gap"/>: all it meets), stays as
+    /// drawn: a strand drawn in the air, or standing out, keeps its shape, and none is laid on a shape that doesn't lie
+    /// on the body's real surface. VRChat makers draw hair a little off the body and hold it there with a limit cone
+    /// tilted outward; Magica's cones can't tilt, and the chain rests as drawn while the character stands (VrcSway), so
+    /// Mayo's side locks hung 15 to 22 mm in front of her bust. The turns are the pose the cloth rests in from then on:
+    /// Magica takes the bones' turns as it is built, so this runs just before, once the shapes are fitted. Radius must be
+    /// set (FitRadii).
+    /// </summary>
+    internal void Settle(System.Func<Vector3, float> gap, System.Func<Vector3, float> onto, Vector3 down, System.Func<float, float> limit,
+        float reach)
+    {
+        if (reach <= 0f || down.sqrMagnitude < 1e-12f) return;
+        for (int i = 0; i < bones.Length; i++)
+        {
+            if (!bones[i].Moves || bones[i].Radius <= 0f) continue;
+            Transform joint = bones[bones[i].Up].Transform, bone = bones[i].Transform;
+            // A joint holding more than this bone would carry the others along.
+            if (joint.childCount != 1) continue;
+            float radius = bones[i].Radius;
+            if (gap(bone.position) <= radius) continue;
+            Vector3 segment = bone.position - joint.position;
+            Vector3 axis = Vector3.Cross(segment, down);
+            float most = Mathf.Min(Vector3.Angle(segment, down), limit(bones[i].Depth));
+            // Turning by an angle moves the bone 2 sin(angle/2) of the segment: no farther than reach.
+            float length = segment.magnitude;
+            if (length > 1e-6f) most = Mathf.Min(most, 2f * Mathf.Asin(Mathf.Clamp01(reach / (2f * length))) * Mathf.Rad2Deg);
+            if (most < SettleStep || axis.sqrMagnitude < 1e-12f) continue;
+            axis.Normalize();
+            float touch = -1f;
+            for (float angle = SettleStep; ; angle = Mathf.Min(most, angle + SettleStep))
+            {
+                Vector3 there = joint.position + Quaternion.AngleAxis(angle, axis) * segment;
+                if (onto(there) <= radius)
+                {
+                    touch = angle;
+                    break;
+                }
+                if (gap(there) <= radius || angle >= most) break;
+            }
+            if (touch < 0f) continue;
+            float clear = Mathf.Max(0f, touch - SettleStep), touching = touch;
+            for (int k = 0; k < SettleSearch; k++)
+            {
+                float middle = (clear + touching) * .5f;
+                if (onto(joint.position + Quaternion.AngleAxis(middle, axis) * segment) <= radius) touching = middle;
+                else clear = middle;
+            }
+            Quaternion keep = bone.rotation;
+            joint.rotation = Quaternion.AngleAxis(clear, axis) * joint.rotation;
+            bone.rotation = keep;
+        }
     }
 
     /// <summary>A curve through these keys (in order of depth) with straight lines between them.</summary>

@@ -202,7 +202,10 @@ public sealed class PlayerBodyCloth : MonoBehaviour
     /// <summary>
     /// The shapes a row's cloth rests against. A row written by hand meets the shapes made from the bones it was tuned
     /// with; one BoothImport made meets the body as measured from its meshes (DressedBody), each shape fitted to the
-    /// cloth as its maker drew it (PlayerBodyClothColliders.Fit).
+    /// cloth as its maker drew it (PlayerBodyClothColliders.Fit). A chain of those that hangs gets its particles bone by
+    /// bone (ClothBones.FitRadii): never thicker than the room its bone has as drawn, and over the chest's soft lumps as
+    /// thick as its own cloth reaches toward the body; and, where its maker lets gravity pull it, it is laid down onto the
+    /// lumps it hovers over (ClothBones.Settle). Run before the cloth is built: this turns its bones.
     /// </summary>
     internal static List<ColliderComponent> Touching(PlayerBodyClothColliders colliders, Animator animator, ClothPart part,
         string shapes, ClothBones bones, DressedBody measured)
@@ -210,6 +213,13 @@ public sealed class PlayerBodyCloth : MonoBehaviour
         if (!part.vrc) return colliders.For(animator, shapes);
         var touching = colliders.For(animator, shapes, measured);
         colliders.Fit(touching, bones, part.Thinnest(bones), part.ring);
+        if (!part.Hangs || measured == null) return touching;
+        bones.FitRadii(part.Thickest(bones), part.ThickestAlong, bone => measured.Reach(bone, out float reach) ? reach : -1f,
+            point => colliders.Room(point, touching), point => colliders.LumpRounding(point, touching), colliders.CurveDip);
+        if (part.gravity > 0f && colliders.SettleShare > 0f)
+            bones.Settle(point => colliders.Room(point, touching), point => colliders.RoomOnLumps(point, touching),
+                -animator.transform.up, depth => part.LimitAt(depth) * colliders.SettleShare,
+                colliders.SettleReach * Mathf.Abs(animator.transform.lossyScale.y));
         return touching;
     }
 
