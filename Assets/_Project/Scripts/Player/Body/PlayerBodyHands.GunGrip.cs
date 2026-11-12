@@ -25,7 +25,7 @@ public sealed partial class PlayerBodyHands
         Quaternion rotation = arm.HandRotation(fingers, facing);
         // The elbow toward KINEMATION's way (FPSBody.ElbowWay), else the side it bends to now.
         Vector3 hint = gunBody.ElbowWay(true, out Vector3 way) ? arm.Upper.position + (palm - arm.Upper.position) * .5f + way * .3f : arm.Elbow;
-        arm.Solve(arm.WristAtPalm(palm, rotation), rotation, hint, weight, 1f, 0f);
+        arm.Solve(arm.WristAtPalm(palm, rotation), rotation, hint, weight, 1f, 0f, soft: true);
     }
 
     /// <summary>How far the support hand is on a grip the gun wears (0-1), for GunFingers to close it round.</summary>

@@ -24,6 +24,9 @@ public sealed partial class PlayerBodyHands : MonoBehaviour
     private float blendTime = .15f;
     [SerializeField, Range(0f, 30f), Tooltip("How far the shoulder turns toward a hold that is out of the arm's reach (degrees).")]
     private float shoulderReach = 15f;
+    [SerializeField, Range(.5f, .999f), Tooltip("From this share of the arm's length a hand's target eases in, so an arm at the end of its "
+        + "reach never snaps straight (soft IK, ArmIK.Soften).")]
+    private float softReachFrom = .93f;
     [SerializeField, Min(0f), Tooltip("Distance between the hands along a ledge, as a share of the character's shoulder width.")]
     private float ledgeHandSpacing = 1f;
     [SerializeField, Min(0f), Tooltip("Running forward faster than this, empty hands swing with the run clip instead of holding the fists up (m/s).")]
@@ -137,6 +140,7 @@ public sealed partial class PlayerBodyHands : MonoBehaviour
         if (animator != boundAnimator)
             BindAnimator(animator);
         if (left == null || right == null || body.IsLimp) return;
+        ArmIK.SoftReachFrom = softReachFrom;
         left.ClearLedgeSkin();
         right.ClearLedgeSkin();
         if (weapons == null) weapons = GetComponent<WeaponController>();

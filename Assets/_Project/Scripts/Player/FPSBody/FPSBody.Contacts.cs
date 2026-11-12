@@ -159,7 +159,10 @@ public sealed partial class FPSBody
         else if (mix <= 0f) { clipPalm = holdPalm; clipFingers = holdFingers; clipFacing = holdFacing; }
         var gun = rig.IkWeaponBone;
         Quaternion turn = gun.rotation;
-        palm = gun.position + turn * Vector3.Lerp(holdPalm, clipPalm, mix);
+        Vector3 onGun = Vector3.Lerp(holdPalm, clipPalm, mix);
+        // A short support arm holds a bare handguard further back (FitToReach); a reload's hand elsewhere keeps its place.
+        if (isLeft) onGun = held.SlideSupport(onGun);
+        palm = gun.position + turn * onGun;
         fingers = turn * Vector3.Slerp(holdFingers, clipFingers, mix);
         facing = turn * Vector3.Slerp(holdFacing, clipFacing, mix);
         return true;
@@ -201,7 +204,7 @@ public sealed partial class FPSBody
         if (!HoldsGun || rig == null || holdContactWeight <= 0f || !HoldSide(isLeft, out GunContact steady)) return false;
         var gun = rig.IkWeaponBone;
         Quaternion turn = gun.rotation;
-        palm = gun.position + turn * (isLeft ? steady.LeftPalm : steady.RightPalm);
+        palm = gun.position + turn * (isLeft ? held.SlideSupport(steady.LeftPalm) : steady.RightPalm);
         fingers = turn * (isLeft ? steady.LeftFingers : steady.RightFingers);
         facing = turn * (isLeft ? steady.LeftFacing : steady.RightFacing);
         return true;

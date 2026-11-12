@@ -675,6 +675,42 @@ public sealed class FPSGun : MonoBehaviour
     /// <summary>How long the reload's end eases back into the hold (s), its clip's blend out.</summary>
     internal float ContactSettle => contactSettle;
 
+    // ---- The support hand on a bare handguard, for a short arm (FPSBody.FitToReach) ----
+
+    // How far the support palm comes back along the gun (m, along the gun frame's -z), from where along the gun the plain
+    // hold has it (its z), and over how far behind that the slide fades out (m).
+    private float reachSlide, reachSlideAt, reachSlideFade = .1f;
+
+    /// <summary>How far the support palm comes back along a bare handguard on this body (m); 0 when its arm reaches.</summary>
+    internal float ReachSlide => reachSlide;
+
+    /// <summary>
+    /// The support palm comes <paramref name="slide"/> back along a bare handguard from the plain hold's place
+    /// (<paramref name="at"/>, its z in the gun's frame), fading out over <paramref name="fade"/> behind it (FPSBody.FitToReach).
+    /// </summary>
+    internal void SetReachSlide(float slide, float at, float fade)
+    {
+        reachSlide = Mathf.Max(0f, slide);
+        reachSlideAt = at;
+        // At least twice the slide, so a palm further back never passes one ahead of it (the steepest smoothstep is 1.5).
+        reachSlideFade = Mathf.Max(fade, 2f * reachSlide, .01f);
+    }
+
+    /// <summary>
+    /// A support palm's place in the gun's frame, moved back along the gun (its -z) by the reach slide: all of it at the
+    /// plain hold's place on the handguard and ahead of it, less and less behind, none from the fade's length back. So a
+    /// reload's hand on the magazine or the loading port stays where its clip has it, a reload's end comes into the slid
+    /// hold smoothly, and the hold is the same in every view. None while the gun wears a foregrip: the hand holds the grip
+    /// where it was seated (GunAttachments.SeatGrips).
+    /// </summary>
+    internal Vector3 SlideSupport(Vector3 palm)
+    {
+        if (reachSlide <= 0f || GripKind != GunAttachments.Kind.None) return palm;
+        float share = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(reachSlideAt - reachSlideFade, reachSlideAt, palm.z));
+        palm.z -= reachSlide * share;
+        return palm;
+    }
+
     internal void SetContactPose(Vector3 position, Quaternion rotation, bool holds)
     {
         ContactPosePosition = position;

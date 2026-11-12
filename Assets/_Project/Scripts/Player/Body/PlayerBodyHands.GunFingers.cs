@@ -116,6 +116,6 @@ public sealed partial class PlayerBodyHands
         if (depth <= 0f) return;
         depth = Mathf.Min(depth, arm.PalmLength * .5f);
         Transform hand = arm.Hand;
-        arm.Solve(hand.position - facing * depth, hand.rotation, arm.Elbow, weight, 1f, 0f);
+        arm.Solve(hand.position - facing * depth, hand.rotation, arm.Elbow, weight, 1f, 0f, soft: true);
     }
 }

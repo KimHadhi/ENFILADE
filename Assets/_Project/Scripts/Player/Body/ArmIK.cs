@@ -33,6 +33,29 @@ internal sealed class ArmIK
     public bool ShapeWays(HandGrip.Shape shape, GunGrips.Grip custom, Vector3[] into) => grip.ShapeWays(shape, custom, into);
     public float Reach => Vector3.Distance(upper.position, lower.position) + Vector3.Distance(lower.position, hand.position);
 
+    /// <summary>
+    /// From this share of an arm's length a target eases in (Soften): Player.csv Hands.softReachFrom, set by PlayerBodyHands.
+    /// </summary>
+    internal static float SoftReachFrom = .93f;
+
+    /// <summary>
+    /// A target nearly at an arm's full length, eased in so the arm never snaps straight (soft IK): near full reach the
+    /// elbow's angle runs away with the distance (1 mm short of straight bends it degrees), so a hand at the end of its reach
+    /// jumped with every small move of the gun (the user, 2026-11-12: "팔이 이미 최대로 스트레치된 상황이라 팔이 조금만 움직여도 굉장히
+    /// 들쑥날쑥"). Up to SoftReachFrom of <paramref name="length"/> from <paramref name="root"/> the target is as it is; past it
+    /// the distance closes on the full length without ever reaching it, as smoothly as it went before.
+    /// </summary>
+    internal static Vector3 Soften(Vector3 root, Vector3 target, float length)
+    {
+        float from = Mathf.Clamp(SoftReachFrom, .5f, .999f) * length;
+        Vector3 way = target - root;
+        float distance = way.magnitude;
+        if (distance <= from || distance < 1e-6f) return target;
+        float room = length - from;
+        float eased = from + room * (1f - Mathf.Exp(-(distance - from) / room));
+        return root + way * (eased / distance);
+    }
+
     private ArmIK(Transform shoulder, Transform upper, Transform lower, Transform hand, Quaternion handFromFrame, float palmLength, HandGrip grip)
     {
         this.shoulder = shoulder; this.upper = upper; this.lower = lower; this.hand = hand;
@@ -90,10 +113,11 @@ internal sealed class ArmIK
 
     /// <summary>
     /// Bends the arm toward the wrist target. Out of reach, the shoulder turns toward it by up to
-    /// <paramref name="shoulderAngle"/> degrees, then the arm straightens. The elbow comes round to the hint with the
-    /// weight, like everything else, so a hold fading in or out never flips it.
+    /// <paramref name="shoulderAngle"/> degrees, then the arm straightens; with <paramref name="soft"/> (the gun holds) it eases
+    /// toward straight instead (Soften). The elbow comes round to the hint with the weight, like everything else, so a hold
+    /// fading in or out never flips it.
     /// </summary>
-    public void Solve(Vector3 target, Quaternion rotation, Vector3 hint, float weight, float rotationWeight, float shoulderAngle)
+    public void Solve(Vector3 target, Quaternion rotation, Vector3 hint, float weight, float rotationWeight, float shoulderAngle, bool soft = false)
     {
         if (weight <= 0f) return;
         target = Vector3.Lerp(hand.position, target, weight);
@@ -110,7 +134,9 @@ internal sealed class ArmIK
             }
         }
 
-        TwoBoneIK.Solve(upper, lower, hand, target, hint, weight);
+        // Within reach the arm bends to the target; holding a gun, at the end of its reach it eases in rather than snapping
+        // straight (a ledge or a bar hold keeps its full reach).
+        TwoBoneIK.Solve(upper, lower, hand, soft ? Soften(upper.position, target, reach) : target, hint, weight);
         hand.rotation = Quaternion.Slerp(hand.rotation, rotation, weight * rotationWeight);
     }
 }

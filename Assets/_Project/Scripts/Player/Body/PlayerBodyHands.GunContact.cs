@@ -82,7 +82,7 @@ public sealed partial class PlayerBodyHands
                 hint = arm.Upper.position + (palm - arm.Upper.position) * .5f + elbowWay * .3f;
                 if (Application.isEditor) NoteElbow(arm, isLeft, palm, elbowWay);
             }
-            arm.Solve(arm.WristAtPalm(palm, rotation), rotation, hint, weight, 1f, shoulderReach);
+            arm.Solve(arm.WristAtPalm(palm, rotation), rotation, hint, weight, 1f, shoulderReach, soft: true);
         }
     }
 
@@ -191,8 +191,17 @@ public sealed partial class PlayerBodyHands
         }
         string Palm(int side, HandMeasure now)
             => $"{palmMissBefore[side] * 100f:0.0} cm {palmTurnBefore[side]:0}° off KINEMATION's place, now {now.Miss * 100f:0.0} cm {now.Turn:0}°";
+        // How straight each arm holds it now: shoulder joint to wrist over the arm's length (FPSBody.FitToReach fits it).
+        string Straight(ArmIK arm) => arm != null && arm.Reach > 1e-4f ? $"{Vector3.Distance(arm.Upper.position, arm.Hand.position) / arm.Reach:0.00}" : "-";
         return $"{System.DateTime.Now:HH:mm:ss} {SkinId ?? "?"} {data.name}: right palm {Palm(1, rightHold)}; left palm {Palm(0, leftHold)}; "
-            + $"right fingers {Fingers(right, false, rightHold)}; left fingers {Fingers(left, true, leftHold)} (per finger joint, thumbs aside)\n";
+            + $"right fingers {Fingers(right, false, rightHold)}; left fingers {Fingers(left, true, leftHold)} (per finger joint, thumbs aside); "
+            + $"arms straight right {Straight(right)} left {Straight(left)}\n";
+    }
+
+    /// <summary>A line of the gun hold's numbers to Logs/gun-hold-report.txt, in the editor (FPSBody.FitToReach's).</summary>
+    internal static void NoteGunHold(string line)
+    {
+        if (Application.isEditor) Write(line);
     }
 
     private static string Hand(HandMeasure hand)

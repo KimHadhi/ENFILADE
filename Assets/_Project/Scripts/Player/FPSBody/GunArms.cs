@@ -131,6 +131,21 @@ internal sealed class GunArms
     }
 
     /// <summary>
+    /// How straight an arm is now: its shoulder joint to its wrist over the arm's length (upper arm and forearm), 1 fully
+    /// straight. False when the arm lacks the joints.
+    /// </summary>
+    internal bool Extension(bool isLeft, out float extension)
+    {
+        extension = 0f;
+        var hand = isLeft ? left : right;
+        if (!hand.Valid || hand.Shoulder == null || hand.Elbow == null) return false;
+        float length = Vector3.Distance(hand.Shoulder.position, hand.Elbow.position) + Vector3.Distance(hand.Elbow.position, hand.Wrist.position);
+        if (length < 1e-4f) return false;
+        extension = Vector3.Distance(hand.Shoulder.position, hand.Wrist.position) / length;
+        return true;
+    }
+
+    /// <summary>
     /// The way the elbow points now off the line from the shoulder joint to the wrist (unit), turned by
     /// <paramref name="toFrame"/> into the frame wanted. False when the arm lacks the joints or is too straight to tell.
     /// </summary>

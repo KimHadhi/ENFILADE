@@ -346,7 +346,12 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
 
         var gun = instance.AddComponent<FPSGun>();
         Quaternion gunFrame = GunFrameOf(kinemation);
-        var profile = ProfileFor(entry.profile, entry.weapon, bake, gunFrame, exact);
+        // Where the Pose Sampler starts the gun: the bake's place (from its own eyes on any body but the reference), brought
+        // within this body's reach (FitToReach).
+        var start = exact || !bake.hasEyeFrame ? new KTransform(bake.gunPosition, bake.gunRotation, Vector3.one) : FittedGunPose(bake);
+        var reach = FitToReach(entry, bake, gunFrame, start);
+        start.position += reach.Move;
+        var profile = ProfileFor(entry.profile, entry.weapon, bake, gunFrame, start);
         // A shell reload's starts and shells hand over to its next step, so only its end settles back into the hold.
         bool shells = entry.weapon.ShellReload;
         gun.Set(entry, kinemation, muzzleDepth, profile,
@@ -354,10 +359,11 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
             shells ? Copy(entry.reloadEmpty, bake.reloadEmpty) : Settled(Copy(entry.reloadEmpty, bake.reloadEmpty)), gunFrame,
             Copy(entry.reloadShell, bake.reloadShell), Settled(Copy(entry.reloadEnd, bake.reloadEnd)));
         gun.SetGrip(bake, exact);
-        // Until FPSAF has held it on this body, the gun is held where the bake put it from the eyes, so a draw that follows
-        // KINEMATION's own clip (FPSBody.Contacts) comes up into a hold even the first time. The IK weapon bone carries the
-        // gun's frame on KINEMATION's weapon bone.
-        if (bake.hasEyeFrame) gun.SeedHold(bake.gunFromEyes, bake.gunTurnFromEyes * gunFrame);
+        gun.SetReachSlide(reach.Slide, reach.SlideAt, reachSlideFade);
+        // Until FPSAF has held it on this body, the gun is held where the bake put it from the eyes (within this body's
+        // reach), so a draw that follows KINEMATION's own clip (FPSBody.Contacts) comes up into a hold even the first time.
+        // The IK weapon bone carries the gun's frame on KINEMATION's weapon bone.
+        if (bake.hasEyeFrame) gun.SeedHold(bake.gunFromEyes + reach.MoveFromEyes, bake.gunTurnFromEyes * gunFrame);
         // This PC's own player's guns carry their kill counters (GunKills) and the skins picked on the title screen; a
         // friend's copy wears what their PC sent (WearSkins).
         bool mine = movement == null || (movement.IsLocal && !movement.IsNetworkDriven);
@@ -398,7 +404,7 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
     // FPSAF's Ads brings the sight up at our weapon's aim time: our rule (WeaponController.AimBlend) zooms the view and
     // tightens the spread over AdsTransitionTime, and the demo's aimingSpeed (1.8 a second, 0.56 s) left the gun 0.4 s
     // behind the zoom. Before KINEMATION the gun rose with the rule (user picked it back, 2026-11-07).
-    private FPSAnimatorProfile ProfileFor(FPSAnimatorProfile source, WeaponData weapon, GunBakes.Entry bake, Quaternion gunFrame, bool exact)
+    private FPSAnimatorProfile ProfileFor(FPSAnimatorProfile source, WeaponData weapon, GunBakes.Entry bake, Quaternion gunFrame, KTransform start)
     {
         var profile = Instantiate(source);
         Keep(profile);
@@ -415,8 +421,8 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
                 var mine = Instantiate(sampler);
                 Keep(mine);
                 mine.poseToSample = Copy(sampler.poseToSample, bake.pose);
-                mine.defaultWeaponPose = exact || !bake.hasEyeFrame
-                    ? new KTransform(bake.gunPosition, bake.gunRotation, Vector3.one) : FittedGunPose(bake);
+                // The bake's place, or its place from the eyes on another body, within this body's reach (AddGun, FitToReach).
+                mine.defaultWeaponPose = start;
                 mine.weaponBoneOffset = new KTransform(Vector3.zero, gunFrame, Vector3.one);
                 mine.overwriteWeaponBone = true;
                 profile.settings.Add(mine);
@@ -1072,6 +1078,8 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
         Quaternion turn = hand.rotation;
         Vector3 a = upper.position, b = lower.position, c = hand.position;
         float ab = (b - a).magnitude, bc = (c - b).magnitude;
+        // Near full reach the arm eases in rather than snapping straight (ArmIK.Soften).
+        target = ArmIK.Soften(a, target, ab + bc);
         float reach = Mathf.Clamp((target - a).magnitude, Mathf.Abs(ab - bc) + .001f, ab + bc - .001f);
         Vector3 axis = Vector3.Cross(a - b, c - b);
         if (axis.sqrMagnitude > 1e-8f)

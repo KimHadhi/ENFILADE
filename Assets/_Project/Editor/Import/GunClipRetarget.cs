@@ -57,7 +57,11 @@ internal static class GunClipRetarget
     // parts it parks away from itself (GunMuzzle.NearSightLine): the R08 went over the head, the Herrington off to the side.
     // 16: the hands' reach measured as their real miss from KINEMATION's hold, and a gun the hands can't reach shouldered
     // brought back toward the body until they do (the Herrington sat at arm's length in front of the face).
-    private const int Version = 16;
+    // 17: a stocked gun stays shouldered even where the hands can't reach it so: play fits the hold to each body's arms
+    // (FPSBody.FitToReach). Brought back toward KINEMATION's camera framing (16), the Herrington rode at the cheek, its gun
+    // 3 cm under the eyes where the other long guns sit 7 to 15, its trigger hand by the face (the user, 2026-11-12: "헤링턴은
+    // 여전히 높게 잡고 있어"): its pump is 0.6 m from its butt, out of the reference body's reach (0.49 m arm) shouldered.
+    private const int Version = 17;
 
     // The shooting stance: the chest turns in steps of this (degrees) up to the most, until the support hand comes within
     // the slack of KINEMATION's hold on the gun (m in game) with its arm no straighter than the share (shoulder to wrist
@@ -285,12 +289,9 @@ internal static class GunClipRetarget
                 // Whether the butt went to the shoulder: the gun reaches back past the wrist (ToShoulder), not only that
                 // its shape could be measured (hasStock), which a pistol's can too.
                 bool shouldered = false;
-                // How much of the way to the shoulder the gun went (1: all of it; less where the hands couldn't reach).
-                float toShoulder = 1f;
                 Placement Place(float blade, bool pullBack)
                 {
                     shouldered = false;
-                    toShoulder = 1f;
                     stance.blade = blade;
                     fps.weaponOffset = fps.rightHandOffset = fps.leftHandOffset = Vector3.zero;
                     baker.RetargetAtTime(gun.sourcePose, null, 0f);
@@ -303,7 +304,6 @@ internal static class GunClipRetarget
                         fps.weaponOffset += desired - body.InverseTransformPoint(bodyWeapon.position);
                         baker.RetargetAtTime(gun.sourcePose, null, 0f);
                     }
-                    Vector3 framedOffset = fps.weaponOffset;
                     for (int pass = 0; framed && hasStock && pass < 2; pass++)
                     {
                         if (!ToShoulder(body, bodyWeapon, stock, fit, facing, out Vector3 move, out _, out _)) break;
@@ -313,21 +313,11 @@ internal static class GunClipRetarget
                     }
                     // The hands stay where Retarget Pro puts them (V10); in play they rest on the gun's real surface
                     // (PlayerBodyHands.GunFingers). Moving them by the knuckles here put the support hand off the gun.
-                    var placement = Measure(body, bodyWeapon, source, sourceWeapon, fit);
-                    if (!pullBack || !shouldered || placement.Reaches) return placement;
-                    // Hands that can't reach the gun shouldered, even with the chest turned, bring it back toward where
-                    // KINEMATION's camera framed it until they do: a long gun on short arms (the Herrington's pump is
-                    // 0.75 m from its butt) went out to arm's length with both hands short of it (user, 2026-11-09).
-                    Vector3 shoulderedOffset = fps.weaponOffset;
-                    for (int step = 9; step >= 0; step--)
-                    {
-                        toShoulder = step / 10f;
-                        fps.weaponOffset = Vector3.Lerp(framedOffset, shoulderedOffset, toShoulder);
-                        baker.RetargetAtTime(gun.sourcePose, null, 0f);
-                        placement = Measure(body, bodyWeapon, source, sourceWeapon, fit);
-                        if (placement.Reaches) break;
-                    }
-                    return placement;
+                    // A gun the hands can't reach shouldered, even with the chest turned, stays shouldered (17): brought
+                    // back toward KINEMATION's camera framing it rode at the cheek. Play brings it within each body's own
+                    // reach, the gun toward the shoulders and the support hand further back on a bare handguard
+                    // (FPSBody.FitToReach), so the pullBack asked for here no longer moves it.
+                    return Measure(body, bodyWeapon, source, sourceWeapon, fit);
                 }
 
                 // Shouldered, the chest turns toward the gun side only as far as the hands need to reach their places on
@@ -355,7 +345,7 @@ internal static class GunClipRetarget
                         : $"no stock (back end {reach:0.000} m behind the wrist)";
                 shoulder += shouldered
                     ? $"; chest turned {bladed:0.#}°, hands {placed.miss:0.000} m off KINEMATION's hold, support arm {placed.extension:0.00} straight"
-                        + (toShoulder < 1f ? $", gun brought back to {toShoulder * 100f:0}% of the way to the shoulder" : "")
+                        + " (play fits the hold to each body's arms: FPSBody.FitToReach)"
                     : "; standing square";
                 var entry = new GunBakes.Entry
                 {
