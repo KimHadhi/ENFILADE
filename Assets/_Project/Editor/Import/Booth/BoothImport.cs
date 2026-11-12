@@ -32,10 +32,15 @@ internal sealed class BoothImport : AssetPostprocessor
     private const string SourcesPath = "Assets/_Project/Editor/Import/Booth/BoothSources.csv";
     private const string ProfilePath = "Assets/_Project/Resources/Characters/PlayerBody.asset";
     private const string ClothPath = "Assets/_Project/Resources/Tables/Cloth.csv";
-    // The VrcSway.Version this PC's Cloth.csv rows were last written with (FinishPending). A new name in 0.8.135: the
+    // The version (SwayWritten) this PC's Cloth.csv rows were last written with (FinishPending). A new name in 0.8.135: the
     // old key was noted even when the table write failed (Win32 IO 1224, 2026-11-12), so it could vouch for rows that
     // never reached the file (that day the Ene earrings and the Sera Yura skirt ring); every PC runs the import once more.
     private const string SwayVersionKey = "ENFILADE.BoothImport.SwayWritten";
+    // Which rows this import gives an outfit, besides how VrcSway writes each (VrcSway.Version): raised when that changes,
+    // so the rows already written are written again on the next script load (FinishPending), as a VrcSway change does.
+    // 1: an outfit's bone that only shares a name with the character's sways on the outfit's own row (2026-11-12).
+    private const int RowsVersion = 1;
+    private static int SwayWritten => VrcSway.Version * 100 + RowsVersion;
     private static bool queued, running;
 
     // Colour words of BOOTH colour prefabs, for the colour cards: patterns, tried in this order on the name (_ as spaces).
@@ -68,6 +73,8 @@ internal sealed class BoothImport : AssetPostprocessor
         public readonly HashSet<string> Humanoid = new HashSet<string>(StringComparer.Ordinal);
         public readonly HashSet<string> Bones = new HashSet<string>(StringComparer.Ordinal);
         private readonly Dictionary<string, string> parts = new Dictionary<string, string>(StringComparer.Ordinal);
+        // Its bones as an outfit's file is joined to them when worn (OutfitDresser.Merge reads them the same way).
+        private readonly OutfitSkeleton skeleton;
 
         public Character(GameObject prefab)
         {
@@ -82,8 +89,25 @@ internal sealed class BoothImport : AssetPostprocessor
                     string part = BodyPart(human.humanName);
                     if (part != null) parts[human.boneName] = part;
                 }
-            var hips = prefab.GetComponentsInChildren<Transform>(true).FirstOrDefault(t => t.name == hipsName);
+            var all = prefab.GetComponentsInChildren<Transform>(true);
+            var hips = all.FirstOrDefault(t => t.name == hipsName);
             foreach (var bone in (hips != null ? hips : prefab.transform).GetComponentsInChildren<Transform>(true)) Bones.Add(bone.name);
+            var drawn = new HashSet<Transform>(prefab.GetComponentsInChildren<Renderer>(true).Select(renderer => renderer.transform));
+            var humanoid = new HashSet<Transform>(all.Where(bone => Humanoid.Contains(bone.name)));
+            skeleton = new OutfitSkeleton(hips != null ? hips : prefab.transform, prefab.transform, drawn, humanoid);
+        }
+
+        /// <summary>
+        /// The names of an outfit's bones that only share a name with one of the character's, as dressing sorts them
+        /// (OutfitSkeleton): not a humanoid bone, standing elsewhere, and not hanging from her bone's parent as hers does.
+        /// Worn, such a bone stays the outfit's own and is renamed after the model, so its chain sways on the outfit's own
+        /// rows, under that name.
+        /// </summary>
+        public HashSet<string> Namesakes(GameObject outfit)
+        {
+            var namesakes = new List<Transform>();
+            skeleton.Sort(outfit.transform, new Dictionary<Transform, Transform>(), namesakes);
+            return new HashSet<string>(namesakes.Select(bone => bone.name), StringComparer.Ordinal);
         }
 
         // The body part a collider stands on: its own bone, or the nearest humanoid bone above it (colliders often hang
@@ -115,8 +139,8 @@ internal sealed class BoothImport : AssetPostprocessor
     // The files can come in while the project's scripts don't build (another change half done), and then this never
     // sees them arrive: the first time the editor loads it, it finishes whatever BoothSources.csv lists and isn't done.
     // On 2026-11-11 Mayo and Ichigo stayed off the character screen that way. It also runs once when VrcSway writes its
-    // rows differently than it did for this table (VrcSway.Version), so a fix to the sway reaches the rows already
-    // written without anyone running the import by hand.
+    // rows differently than it did for this table (VrcSway.Version), or this import gives outfits other rows
+    // (RowsVersion), so a fix to the sway reaches the rows already written without anyone running the import by hand.
     [InitializeOnLoadMethod]
     private static void FinishPending()
     {
@@ -162,7 +186,7 @@ internal sealed class BoothImport : AssetPostprocessor
             }
         }
         // Not while the rows wait for Cloth.csv (TableFile): they are made already and land by themselves.
-        return present && EditorPrefs.GetInt(SwayVersionKey, 0) != VrcSway.Version && !TableFile.Waiting(ClothPath);
+        return present && EditorPrefs.GetInt(SwayVersionKey, 0) != SwayWritten && !TableFile.Waiting(ClothPath);
     }
 
     // Where the game's copy of a source's prefab lives. A model made for anyone is "<model>.any" ('*' is no file name).
@@ -218,7 +242,22 @@ internal sealed class BoothImport : AssetPostprocessor
                 // Per character: the outfit made for each has bones of its own. A model made for anyone shares none with
                 // any character, so its rows are the model's own (skin = the model id) and swing on whoever wears it.
                 if (anyone) Sway(sway, source.Id, path, prefab, NoBones, _ => null);
-                else Sway(sway, source.Id + OutfitLook.Separator + source.Skin, path, prefab, character.Bones, character.PartOf);
+                else
+                {
+                    // The bones it shares with the character follow hers, which sway already. One that only shares a
+                    // name stands elsewhere and is the outfit's own (Character.Namesakes): Chocolate rice's mirrored side
+                    // locks hang from "R_Side" or "L_Side", the names of Mayo's other locks, and every bone of theirs
+                    // carried one of her names, so they got no rows and hung still (2026-11-12). Such a bone sways on the
+                    // outfit's row, written under the name the game gives it once worn ("R_Side [mayo-side-hair-1]").
+                    var namesakes = character.Namesakes(prefab);
+                    var shared = new HashSet<string>(character.Bones, StringComparer.Ordinal);
+                    shared.ExceptWith(namesakes);
+                    Sway(sway, source.Id + OutfitLook.Separator + source.Skin, path, prefab, shared, character.PartOf);
+                    if (namesakes.Count > 0 && sway.TryGetValue(source.Id + OutfitLook.Separator + source.Skin, out var rows))
+                        foreach (var row in rows)
+                            row["roots"] = string.Join("|", row["roots"].Split('|')
+                                .Select(name => namesakes.Contains(name) ? OutfitSkeleton.Mark(name, source.Id) : name));
+                }
                 var copy = Copy(path, CopyOf(source));
                 if (copy == null) continue;
                 var colourPaths = string.IsNullOrEmpty(source.Colours) || !AssetDatabase.IsValidFolder(Root + source.Colours)
@@ -235,7 +274,7 @@ internal sealed class BoothImport : AssetPostprocessor
             // The sway version is noted only once the rows are in the file. While they wait for it, it stays unnoted:
             // the next script load after they land runs this again and finds them there (Pending), and if the editor
             // quit before they ever landed, that run writes them instead of their being lost.
-            if (ReplaceClothRows(sway)) EditorPrefs.SetInt(SwayVersionKey, VrcSway.Version);
+            if (ReplaceClothRows(sway)) EditorPrefs.SetInt(SwayVersionKey, SwayWritten);
             else EditorPrefs.DeleteKey(SwayVersionKey);
             GameTables.Reload();
         }

@@ -140,11 +140,14 @@ public sealed class OutfitIcons : MonoBehaviour
             foreach (var animator in sitter.GetComponentsInChildren<Animator>(true)) animator.enabled = false;
             var wanted = new HashSet<string>(ask.Item.PartNames, StringComparer.OrdinalIgnoreCase);
             var drop = new HashSet<string>(OutfitCatalog.Split(OutfitCatalog.FitOf(ask.Item.id, ask.Skin.Id)?.drop), StringComparer.OrdinalIgnoreCase);
-            var body = OwnMeshes(ask.Skin);
+            var character = ask.Skin.Model;
+            var body = character != null ? character.GetComponentsInChildren<Renderer>(true) : Array.Empty<Renderer>();
             foreach (var renderer in sitter.GetComponentsInChildren<Renderer>(true))
             {
-                // Its own meshes only: an outfit's file often carries the avatar's body it was fitted on.
-                bool mine = wanted.Count > 0 ? wanted.Contains(renderer.name) : !drop.Contains(renderer.name) && !IsBody(renderer, body);
+                // Its own meshes only: an outfit's file often carries the avatar's body it was fitted on, told from the
+                // piece by dressing's own rule (a mirrored copy of the character's mesh is a piece, not her body).
+                bool mine = wanted.Count > 0 ? wanted.Contains(renderer.name)
+                    : !drop.Contains(renderer.name) && (character == null || !OutfitDresser.CopiesOwn(renderer, sitter.transform, body, character.transform));
                 renderer.enabled = mine;
                 if (mine) shown.Add(renderer);
             }
@@ -194,25 +197,6 @@ public sealed class OutfitIcons : MonoBehaviour
         lens.enabled = true;
         shotFrame = Time.frameCount;
         return true;
-    }
-
-    // The character's own meshes by name and vertex count, to know its body inside an outfit's file.
-    private static List<(string name, int vertices)> OwnMeshes(PlayerBodyProfile.Skin skin)
-    {
-        var found = new List<(string, int)>();
-        if (skin?.Model == null) return found;
-        foreach (var renderer in skin.Model.GetComponentsInChildren<Renderer>(true))
-            if (MeshOf(renderer) is Mesh mesh) found.Add((renderer.name, mesh.vertexCount));
-        return found;
-    }
-
-    private static bool IsBody(Renderer renderer, List<(string name, int vertices)> body)
-    {
-        var mesh = MeshOf(renderer);
-        if (mesh == null) return false;
-        foreach (var (name, vertices) in body)
-            if (vertices == mesh.vertexCount && string.Equals(name, renderer.name, StringComparison.OrdinalIgnoreCase)) return true;
-        return false;
     }
 
     private static Mesh MeshOf(Renderer renderer) =>

@@ -7,15 +7,17 @@ using Object = UnityEngine.Object;
 /// <summary>
 /// Dresses a freshly made model of a character in an outfit (<see cref="OutfitLook"/>), the way VRChat outfits go on with
 /// Modular Avatar's Merge Armature: the outfit's meshes are bound to the character's bones wherever the outfit's skeleton
-/// has a bone of the same name, and the outfit's own extra bones (a skirt's, a coat's tails) go under the character's
-/// bone they hung from, so from then on they follow it (Merge). Nothing is baked per character in the editor, because the user means to let players
+/// has the same bone (its name, and its place unless it is a humanoid bone: <see cref="OutfitSkeleton"/>), and the
+/// outfit's own extra bones (a skirt's, a coat's tails, a mirrored side lock's) go under the character's bone they hung
+/// from, so from then on they follow it (Merge). Nothing is baked per character in the editor, because the user means to let players
 /// bring their own characters: a model goes on any body whose bones carry the names it was made for. A model with no
 /// bones of its own (a rigid mask) follows its slot's bone. A model made for anyone (an accessory sold for any avatar, a
 /// pair of earrings) hangs on its slot's spots measured for each character (OutfitSpot) and follows the slot's bone.
 /// Pieces cut from one model (a BOOTH set's beret, jacket and skirt, Outfits.csv) share one copy of it, so its bones are
 /// there once, each piece showing its own meshes in its own colour. Then the character's own pieces in the filled slots
-/// switch off (and the underwear they covered on), the items' shape keys go on (OutfitFits.csv), and the clothes take the
-/// body's shape keys of the same names, as Modular Avatar's Blendshape Sync does.
+/// switch off (and the underwear they covered on), or only the pieces an item names that it takes the place of (a
+/// mirrored side lock swaps one lock, not all the hair), the items' shape keys go on (OutfitFits.csv), and the clothes
+/// take the body's shape keys of the same names, as Modular Avatar's Blendshape Sync does.
 /// The model must stand as it was made, before any clip plays, because the bones are matched in that pose.
 /// </summary>
 internal static class OutfitDresser
@@ -105,7 +107,7 @@ internal static class OutfitDresser
         var shaped = BodyShapes.Apply(own, skin.Id, look);
         var bodyShapes = ShapesOf(own);
         var animator = model.GetComponentInChildren<Animator>();
-        Skeleton skeleton = null;
+        OutfitSkeleton skeleton = null;
         var picks = Picks(look, skin.Id);
         // A leaving one-piece takes no other slot: once it is gone, they are as the look has them.
         var claimed = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -122,7 +124,7 @@ internal static class OutfitDresser
             if (claimed.Contains(slot.id)) continue;
             if (!placed.TryGetValue(item.ModelId, out var copy))
             {
-                skeleton ??= new Skeleton(animator, model.transform, own);
+                skeleton ??= SkeletonOf(animator, model.transform, own);
                 copy = Place(item, slot, model.transform, source, skeleton, animator, own, skin.Id);
                 if (copy == null) continue;
                 placed[item.ModelId] = copy;
@@ -139,7 +141,11 @@ internal static class OutfitDresser
             }
             SkinVariant.WearOn(renderers, copy.Entry.VariantOf(colour));
             dressing.Pieces[item.id] = renderers;
-            emptied.Add(slot.id);
+            // A piece that names what of the character it takes the place of (OutfitFits.csv replaces) leaves the rest of
+            // its slot's own pieces on (Replace, below): Chocolate rice's mirrored side lock swaps one of Mayo's two side
+            // locks and leaves the rest of her hair. Leaving, it empties its slot as any piece does: 벗기 takes the slot's
+            // own pieces off too.
+            if (slot == going || Replaces(item, skin.Id) == null) emptied.Add(slot.id);
             // The leaving item is only drawn: no fit keys, nothing it covers or takes, no sway, no first-person part.
             if (slot == going)
             {
@@ -190,6 +196,7 @@ internal static class OutfitDresser
         foreach (var piece in worn)
             if (!covered.Contains(piece.Slot.id)) inner.UnionWith(piece.Item.UnderSlots);
         var freed = TakeOff(own, skin.Id, emptied, inner);
+        Replace(own, skin.Id, worn, covered);
         foreach (var renderer in leavingOwn) renderer.enabled = true;
         dressing.Leaving.AddRange(leavingOwn);
         foreach (var piece in worn) Shape(model.GetComponentsInChildren<SkinnedMeshRenderer>(true), OutfitCatalog.FitOf(piece.Item.id, skin.Id)?.shapes);
@@ -225,7 +232,7 @@ internal static class OutfitDresser
     }
 
     // Makes the model on the character and joins it to the body.
-    private static Placed Place(OutfitItem item, OutfitSlot slot, Transform root, GameObject source, Skeleton skeleton,
+    private static Placed Place(OutfitItem item, OutfitSlot slot, Transform root, GameObject source, OutfitSkeleton skeleton,
         Animator animator, Renderer[] own, string skinId)
     {
         var entry = OutfitCatalog.Model(item.id, skinId);
@@ -242,7 +249,7 @@ internal static class OutfitDresser
         foreach (var renderer in instance.GetComponentsInChildren<Renderer>(true))
         {
             // Outfit files often carry the avatar's own body to fit the clothes on; the character has that already.
-            if (CopiesOwn(renderer, own))
+            if (CopiesOwn(renderer, root, own, root))
             {
                 renderer.enabled = false;
                 continue;
@@ -291,8 +298,9 @@ internal static class OutfitDresser
         instance.localScale = local.lossyScale;
     }
 
-    // How far an outfit's bone may stand from the character's of the same name and still be the same bone (metres,
-    // degrees, share of its size): the two files' skeletons, made from one avatar, agree to rounding.
+    // How far a twin may stand from the character's bone with no correction to the bind poses (metres, degrees, share of
+    // its size): the two files' skeletons, made from one avatar, agree to rounding. Further apart, Bind corrects them;
+    // whether it is her bone at all is OutfitSkeleton's call.
     private const float SameSpot = .0005f, SameTurn = .1f, SameSize = .001f;
 
     // Meshes whose bind poses took in where an outfit's bones stood apart from the character's, kept for every later
@@ -303,9 +311,10 @@ internal static class OutfitDresser
     private static void ResetSession() => rebound.Clear();
 
     // An outfit's file carries a copy of the character's skeleton (every BOOTH outfit does). Each bone of it the character
-    // has too (its twin, matched by name) is the character's own: the outfit's meshes are bound straight to the
-    // character's bone, as Modular Avatar binds them, and whatever of the outfit's own hangs from a twin (a coat's tails,
-    // a belt, a ribbon's chain) goes under the character's bone, staying where it is.
+    // has too (its twin: her name, and her place unless it is a humanoid bone, OutfitSkeleton) is the character's own: the
+    // outfit's meshes are bound straight to the character's bone, as Modular Avatar binds them, and whatever of the
+    // outfit's own hangs from a twin (a coat's tails, a belt, a ribbon's chain) goes under the character's bone, staying
+    // where it is.
     // The twins used to go under the character's bones themselves. Magica takes every transform under a cloth chain's
     // root for a particle of that chain, so a twin under Mayo's breast swung on its own inside her breast's spring and
     // the chest belt bound to it flapped apart from her (the user, 2026-11-12: "조끼랑 가슴이랑 서로 맞물리는 게 아니라
@@ -313,16 +322,19 @@ internal static class OutfitDresser
     // likewise. The twins stay behind in the outfit, unused, renamed after it ("Hips [white-board]"): a second "Hips"
     // anywhere under the model makes the humanoid ambiguous ("Ambiguous Transform 'Armature/Hips' and 'Armature/Hips/Hips'
     // found in hierarchy for human bone 'Hips'") and Unity lets go of the whole avatar (0.8.115). Nothing finds them by
-    // name: the sway rows name only an outfit's own bones. Returns how many twins there were; none is a rigid piece.
-    private static int Merge(Transform instance, Skeleton skeleton, string mark)
+    // name: the sway rows name only an outfit's own bones.
+    // A bone that only shares a name with one of hers is the outfit's own, like any she lacks. Chocolate rice's mirrored
+    // side locks hang from "Side_root" and "R_Side" (or "L_Side"), the names of Mayo's own lock bones, 1.3 to 6 cm from
+    // them: taken for hers by name alone, the mirrored lock rode the chain of the lock already on that side, shaped for
+    // another lock (2026-11-12). Such a namesake keeps its chain and sways on the outfit's own row, and is renamed after
+    // the model too (OutfitSkeleton.Mark; BoothImport names it so in that row): the cloth rows find bones by name on the
+    // dressed body and would find hers first. Returns how many twins there were; none is a rigid piece.
+    private static int Merge(Transform instance, OutfitSkeleton skeleton, string mark)
     {
         var twins = new Dictionary<Transform, Transform>();
-        foreach (var part in instance.GetComponentsInChildren<Transform>(true))
-        {
-            if (part == instance || part.GetComponent<Renderer>() != null) continue;
-            var twin = skeleton.Find(part.name);
-            if (twin != null) twins[part] = twin;
-        }
+        var namesakes = new List<Transform>();
+        skeleton.Sort(instance, twins, namesakes);
+        foreach (var namesake in namesakes) namesake.name = OutfitSkeleton.Mark(namesake.name, mark);
         if (twins.Count == 0) return 0;
         // Gathered before anything moves: a mesh's object may hang from a twin too.
         var meshes = instance.GetComponentsInChildren<SkinnedMeshRenderer>(true);
@@ -338,7 +350,7 @@ internal static class OutfitDresser
             if (!part.TryGetComponent<OutfitBone>(out _)) part.gameObject.AddComponent<OutfitBone>();
         }
         foreach (var mesh in meshes) Bind(mesh, twins);
-        foreach (var twin in twins.Keys) twin.name += " [" + mark + "]";
+        foreach (var twin in twins.Keys) twin.name = OutfitSkeleton.Mark(twin.name, mark);
         return twins.Count;
     }
 
@@ -396,20 +408,67 @@ internal static class OutfitDresser
         return rebound[(mesh, key)] = copy;
     }
 
-    // The character's own mesh shipped inside an outfit's file: the same name and the same vertex count.
-    private static bool CopiesOwn(Renderer renderer, Renderer[] own)
+    /// <summary>
+    /// Whether a renderer of an outfit's file is the character's own mesh shipped in it to fit the clothes on: one of
+    /// <paramref name="own"/> with its name and vertex count, as large and standing in the same place, each measured in
+    /// its model's frame (<paramref name="frame"/>, <paramref name="ownFrame"/>). Name and count alone took a mirrored
+    /// copy for the body: Chocolate rice's mirrored side locks are Mayo's own two side locks turned to her other side,
+    /// named and counted as hers (MAYO_Hair_Side_3, 737 vertices), so the wardrobe hid the only mesh the piece had and
+    /// dropped it ("mayo-side-hair-1에 입힐 메시가 없습니다", the user: "마요 거울 머리 1은 선택하면 뭐 안 바뀌고",
+    /// 2026-11-12). A copy's middle agrees to rounding; the mirrored locks' stand 9.5 and 14 cm from their originals. The
+    /// bounds are the mesh's own, kept with it, so this costs nothing per try, and a mesh stands where its object puts its
+    /// own space whether skinned (the bind poses start there) or not. The wardrobe's pictures ask it too (OutfitIcons).
+    /// </summary>
+    internal static bool CopiesOwn(Renderer renderer, Transform frame, Renderer[] own, Transform ownFrame)
     {
         var mesh = MeshOf(renderer);
         if (mesh == null) return false;
+        Vector3 middle = Middle(renderer, mesh, frame);
+        const float near = OutfitSkeleton.SamePlace * OutfitSkeleton.SamePlace;
         foreach (var mine in own)
-            if (string.Equals(mine.name, renderer.name, StringComparison.OrdinalIgnoreCase) && MeshOf(mine) is Mesh theirs
-                && theirs.vertexCount == mesh.vertexCount) return true;
+        {
+            if (mine == null || !string.Equals(mine.name, renderer.name, StringComparison.OrdinalIgnoreCase)
+                || MeshOf(mine) is not Mesh theirs || theirs.vertexCount != mesh.vertexCount) continue;
+            if ((theirs.bounds.size - mesh.bounds.size).sqrMagnitude <= near && (Middle(mine, theirs, ownFrame) - middle).sqrMagnitude <= near)
+                return true;
+        }
         return false;
     }
+
+    // Where the middle of a mesh stands as its file made it, in its model's frame.
+    private static Vector3 Middle(Renderer renderer, Mesh mesh, Transform frame) =>
+        frame.InverseTransformPoint(renderer.transform.TransformPoint(mesh.bounds.center));
 
     private static Mesh MeshOf(Renderer renderer) =>
         renderer is SkinnedMeshRenderer skinned ? skinned.sharedMesh
         : renderer.TryGetComponent(out MeshFilter filter) ? filter.sharedMesh : null;
+
+    // What of the character the item takes the place of on this character (OutfitFits.csv replaces), or null when it
+    // takes its whole slot as pieces do.
+    private static string Replaces(OutfitItem item, string skinId)
+    {
+        string names = OutfitCatalog.FitOf(item.id, skinId)?.replaces;
+        return string.IsNullOrWhiteSpace(names) ? null : names;
+    }
+
+    // The character's own renderers the worn pieces take the place of go off. Chocolate rice's mirrored side locks put
+    // one of Mayo's locks on her other side, right onto the lock already there: a short lock lies along the top fifth of
+    // the long one (93% of its vertices within 1 cm of it, measured from the FBX files), so worn beside it the two show
+    // through each other. The maker's piece is meant instead of that lock, as its bones say too: its chain carries the
+    // names of that lock's. A covered piece is out of sight and takes nothing's place.
+    private static void Replace(Renderer[] own, string skinId, List<Worn> worn, HashSet<string> covered)
+    {
+        HashSet<string> names = null;
+        foreach (var piece in worn)
+        {
+            if (covered.Contains(piece.Slot.id) || Replaces(piece.Item, skinId) is not string replaces) continue;
+            names ??= new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            names.UnionWith(OutfitCatalog.Split(replaces));
+        }
+        if (names == null) return;
+        foreach (var renderer in own)
+            if (names.Contains(renderer.name)) renderer.enabled = false;
+    }
 
     // The character's own pieces in these slots go (CharacterParts.csv): their renderers switch off and their hiding
     // keys go on. A slot left with none of its pieces showing, whichever slot took them, shows what they covered, and the
@@ -581,37 +640,23 @@ internal static class OutfitDresser
     }
 
     /// <summary>
-    /// The character's bones by name: the hips and everything under them, not the meshes. Names match exactly first, then
-    /// loosely, since "Upper_Leg.L" and "UpperLeg_L" are one bone to the people who name them by hand.
+    /// The character's bones as outfits join them (OutfitSkeleton): the hips and everything under them, not the objects of
+    /// its meshes, and which of them are humanoid bones.
     /// </summary>
-    private sealed class Skeleton
+    private static OutfitSkeleton SkeletonOf(Animator animator, Transform root, Renderer[] own)
     {
-        private readonly Dictionary<string, Transform> exact = new Dictionary<string, Transform>(StringComparer.Ordinal);
-        private readonly Dictionary<string, Transform> loose = new Dictionary<string, Transform>(StringComparer.Ordinal);
-
-        internal Skeleton(Animator animator, Transform root, Renderer[] own)
-        {
-            var hips = animator != null && animator.isHuman ? animator.GetBoneTransform(HumanBodyBones.Hips) : null;
-            var drawn = new HashSet<Transform>();
-            foreach (var renderer in own) drawn.Add(renderer.transform);
-            // Above the hips sit the root and its "Armature": an outfit's copies of those stay on the outfit.
-            foreach (var bone in (hips != null ? hips : root).GetComponentsInChildren<Transform>(true))
+        bool human = animator != null && animator.isHuman;
+        var hips = human ? animator.GetBoneTransform(HumanBodyBones.Hips) : null;
+        var drawn = new HashSet<Transform>();
+        foreach (var renderer in own) drawn.Add(renderer.transform);
+        var humanoid = new HashSet<Transform>();
+        if (human)
+            for (var id = HumanBodyBones.Hips; id < HumanBodyBones.LastBone; id++)
             {
-                if (bone == root || drawn.Contains(bone)) continue;
-                exact.TryAdd(bone.name, bone);
-                loose.TryAdd(Loose(bone.name), bone);
+                var bone = animator.GetBoneTransform(id);
+                if (bone != null) humanoid.Add(bone);
             }
-        }
-
-        internal Transform Find(string name) =>
-            exact.TryGetValue(name, out var bone) || loose.TryGetValue(Loose(name), out bone) ? bone : null;
-
-        private static string Loose(string name)
-        {
-            var key = new System.Text.StringBuilder(name.Length);
-            foreach (char c in name)
-                if (char.IsLetterOrDigit(c)) key.Append(char.ToLowerInvariant(c));
-            return key.ToString();
-        }
+        // Above the hips sit the root and its "Armature": an outfit's copies of those stay on the outfit.
+        return new OutfitSkeleton(hips != null ? hips : root, root, drawn, humanoid);
     }
 }

@@ -20,6 +20,12 @@ public static class OutfitCatalog
         public string shapes = "";
         /// <summary>Renderers of its model it leaves off, "name|name", when it takes the whole model.</summary>
         public string drop = "";
+        /// <summary>
+        /// The character's own renderers it takes the place of, "name|name". Naming any, it is worn beside the rest of its
+        /// slot's own pieces instead of taking the whole slot: a mirrored side lock swaps one of Mayo's two side locks and
+        /// leaves the rest of her hair (OutfitDresser.Replace).
+        /// </summary>
+        public string replaces = "";
     }
 
     /// <summary>A row of CharacterParts.csv: a character's own piece in one slot.</summary>
