@@ -19,8 +19,10 @@ using Object = UnityEngine.Object;
 ///   in; the avatar's animator controller), so the game makes them without a missing-script warning;
 /// - registers each character's copy in the PlayerBody profile with its colour sets, and each outfit model's copy in the
 ///   OutfitLibrary, its colour sets read from the package's prefab of each colour (the materials that differ from the
-///   base prefab's, renderer by renderer). A row "model@*" is an accessory sold for any avatar: registered once, for
-///   anyone, it goes on every character whose spot for its slot is measured (OutfitSpots.csv);
+///   base prefab's, renderer by renderer), or, where a colours folder holds no prefabs, from each material in it (a
+///   hair's colour pack: the one material the model is drawn with, swapped). A row "model@*" is an accessory sold for
+///   any avatar: registered once, for anyone, it goes on every character whose spot for its slot is measured
+///   (OutfitSpots.csv);
 /// - puts the underwear that came with a character or an outfit into the underwear slots, where no row lists it yet
 ///   (BoothUnderwear), then every other piece of an outfit no row names yet into the slot it is for, one item each
 ///   (BoothPieces): a shirt that came with stockings and necklaces arrives as a shirt, stockings and necklaces.
@@ -51,8 +53,12 @@ internal sealed class BoothImport : AssetPostprocessor
     // Sera Yura (LookVook, 2026-11-12) names every colour after the outfit (Sera_Yura_Black&Aqua, the base _Sera_Yura),
     // which says nothing on a colour card, so the name goes first; its two-word colours (Sky Blue, Deep Blue) come before
     // their single words, and Deep / Pastel read as 진 / 연 (Deep Gray 진회색, Pastel Pink 연분홍).
+    // MARIYURI's hair colour packs (ボサボサロングヘア, 2026-11-13) bring Kipfel, a light warm grey-brown (texture average
+    // RGB 188 171 149, what Korean salons sell as 밀크티), and the Plus pack's dye styles by folder: Gradation, Half (a
+    // split dye) and InOut (an inner colour).
     private static readonly (string English, string Korean)[] ColourWords =
     {
+        ("Kipfel", "밀크티"), ("Gradation", "그라데이션"), ("InOut", "이너컬러"), ("^Half$", "반반"),
         ("^Sera Yura$", "기본"), ("^Sera Yura ", ""), ("Sky Blue", "하늘색"), ("Teal Blue", "청록"), ("Warm Pink", "웜핑크"),
         ("Deep Blue", "진청"), ("Deep Black", "칠흑"),
         ("Basic", "기본"), ("Basis", "기본"), ("Beige", "베이지"), ("Black", "검정"), ("White", "흰색"), ("Yellow", "노랑"),
@@ -274,11 +280,7 @@ internal sealed class BoothImport : AssetPostprocessor
                 // Underwear an outfit brings goes in the underwear slots; an accessory for anyone brings none.
                 if (!anyone) outfitUnderwear.Add(new BoothUnderwear.Source(source.Id, prefab, bodies[source.Skin], source.Skin));
                 outfitPieces.Add(anyone ? new BoothUnderwear.Source(source.Id, prefab, null) : new BoothUnderwear.Source(source.Id, prefab, bodies[source.Skin], source.Skin));
-                var colourPaths = string.IsNullOrEmpty(source.Colours) || !AssetDatabase.IsValidFolder(Root + source.Colours)
-                    ? new List<string>()
-                    : Directory.GetFiles(Root + source.Colours, "*.prefab").Select(p => p.Replace('\\', '/'))
-                        .Where(p => !string.Equals(p, path, StringComparison.OrdinalIgnoreCase)).OrderBy(p => p, StringComparer.Ordinal).ToList();
-                entries.Add(new OutfitLibrary.Entry(source.Id, source.Skin, copy, OutfitColours(prefab, colourPaths)));
+                entries.Add(new OutfitLibrary.Entry(source.Id, source.Skin, copy, OutfitColours(prefab, ColourFiles(source, path))));
             }
             library.EditorReplace(entry => entry.Model == null || IsOurs(AssetDatabase.GetAssetPath(entry.Model)), entries);
             // Saved before the table is written: a write that fails must not take the characters and outfits with it.
@@ -398,33 +400,120 @@ internal sealed class BoothImport : AssetPostprocessor
         return sets.Count > 1 ? sets.ToArray() : Array.Empty<SkinVariant>();
     }
 
-    // The base prefab's colour first, then every colour prefab whose materials differ from it, renderer by renderer
-    // (the copy keeps the base prefab's renderers and materials, so the swaps fit it).
-    private static SkinVariant[] OutfitColours(GameObject model, List<string> colourPaths)
+    // A colour file of an outfit row: a prefab or a material, and the dye style it is filed under ("" in the folder itself).
+    private readonly struct ColourFile
     {
-        if (model == null || colourPaths.Count == 0) return Array.Empty<SkinVariant>();
-        string baseName = Path.GetFileNameWithoutExtension(AssetDatabase.GetAssetPath(model));
-        var sets = new List<SkinVariant> { new SkinVariant("base", Korean(baseName), Array.Empty<SkinVariant.Swap>()) };
+        public readonly string Path, Style;
+
+        public ColourFile(string path, string style)
+        {
+            Path = path;
+            Style = style;
+        }
+
+        public bool IsMaterial => Path.EndsWith(".mat", StringComparison.OrdinalIgnoreCase);
+    }
+
+    // The colour files under an outfit row's colours cell, folder by folder (|). A folder of colour prefabs gives its
+    // prefabs (Ene Collection, LookVook: each a whole outfit in one colour). A folder with none gives its materials, its
+    // own and then each sub folder's: MARIYURI sells a hair's colours as loose materials, one per colour, in packs bought
+    // apart from the hair (ボサボサロングヘア, 2026-11-13: 13 plain colours, and Gradation, Half and InOut folders of
+    // two-colour dyes), and the default colour of each avatar's hair in that avatar's package (Ichigo's Pink 3), so its
+    // row names two folders.
+    private static List<ColourFile> ColourFiles(Source source, string basePrefab)
+    {
+        var files = new List<ColourFile>();
+        foreach (string cell in (source.Colours ?? "").Split('|'))
+        {
+            string folder = Root + cell.Trim().Trim('/');
+            if (cell.Trim().Length == 0) continue;
+            if (!AssetDatabase.IsValidFolder(folder))
+            {
+                Debug.LogWarning($"[BOOTH] {source.Id}@{source.Skin}: 색 폴더 {folder}가 없습니다.");
+                continue;
+            }
+            var prefabs = Directory.GetFiles(folder, "*.prefab").Select(p => p.Replace('\\', '/'))
+                .Where(p => !string.Equals(p, basePrefab, StringComparison.OrdinalIgnoreCase)).OrderBy(p => p, StringComparer.Ordinal).ToList();
+            if (prefabs.Count > 0)
+            {
+                files.AddRange(prefabs.Select(p => new ColourFile(p, "")));
+                continue;
+            }
+            foreach (string material in Directory.GetFiles(folder, "*.mat", SearchOption.AllDirectories).Select(p => p.Replace('\\', '/'))
+                         .OrderBy(p => p.Count(c => c == '/')).ThenBy(p => p, StringComparer.Ordinal))
+            {
+                string parent = Path.GetDirectoryName(material).Replace('\\', '/');
+                files.Add(new ColourFile(material, string.Equals(parent, folder, StringComparison.OrdinalIgnoreCase) ? "" : Path.GetFileName(parent)));
+            }
+        }
+        return files;
+    }
+
+    // The base prefab's colour first, then every colour prefab whose materials differ from it, renderer by renderer
+    // (the copy keeps the base prefab's renderers and materials, so the swaps fit it), and every loose colour material
+    // in place of the one material the model is drawn with.
+    private static SkinVariant[] OutfitColours(GameObject model, List<ColourFile> colourFiles)
+    {
+        if (model == null || colourFiles.Count == 0) return Array.Empty<SkinVariant>();
         var original = new Dictionary<string, Material[]>(StringComparer.Ordinal);
         foreach (var renderer in model.GetComponentsInChildren<Renderer>(true))
             original[AnimationUtility.CalculateTransformPath(renderer.transform, model.transform)] = renderer.sharedMaterials;
-        foreach (string path in colourPaths)
+        // A loose material is a colour of a model drawn with one material, a hair: it takes that material's place. On a
+        // model of several (a hair with a ribbon of its own) nothing tells which of them it is a colour of.
+        var drawn = original.Values.SelectMany(materials => materials).Where(material => material != null).Distinct().ToList();
+        var only = drawn.Count == 1 ? drawn[0] : null;
+        bool loose = colourFiles.Any(file => file.IsMaterial);
+        if (loose && only == null)
+            Debug.LogWarning($"[BOOTH] {model.name}: 재질이 {drawn.Count}개인 모델이라 낱개 재질 색 세트를 만들지 않았습니다(재질 하나로 그린 머리카락 같은 모델만 됩니다).");
+        // The base colour is named after what it is: the hair's own material ("Beige 2" → 베이지 2), else the base prefab.
+        string baseName = loose && only != null ? only.name : Path.GetFileNameWithoutExtension(AssetDatabase.GetAssetPath(model));
+        var sets = new List<SkinVariant> { new SkinVariant("base", MaterialColourName(baseName, "", loose), Array.Empty<SkinVariant.Swap>()) };
+        var ids = new HashSet<string>(StringComparer.Ordinal) { "base" };
+        foreach (var file in colourFiles)
         {
-            var colour = AssetDatabase.LoadAssetAtPath<GameObject>(path);
-            if (colour == null) continue;
-            var swaps = new List<SkinVariant.Swap>();
-            foreach (var renderer in colour.GetComponentsInChildren<Renderer>(true))
+            string name = Path.GetFileNameWithoutExtension(file.Path);
+            if (file.IsMaterial)
             {
-                if (!original.TryGetValue(AnimationUtility.CalculateTransformPath(renderer.transform, colour.transform), out var mine)) continue;
+                var colour = AssetDatabase.LoadAssetAtPath<Material>(file.Path);
+                // The model's own material is the base set already (Mayo's hair comes in the pack's Beige 2).
+                if (colour == null || only == null || colour == only) continue;
+                string stem = VrcSway.Slug(file.Style.Length > 0 ? file.Style + " " + name : name), id = stem;
+                for (int n = 2; !ids.Add(id); n++) id = stem + "-" + n;
+                sets.Add(new SkinVariant(id, MaterialColourName(name, file.Style, true), new[] { new SkinVariant.Swap { from = only, to = colour } }));
+                continue;
+            }
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(file.Path);
+            if (prefab == null) continue;
+            var swaps = new List<SkinVariant.Swap>();
+            foreach (var renderer in prefab.GetComponentsInChildren<Renderer>(true))
+            {
+                if (!original.TryGetValue(AnimationUtility.CalculateTransformPath(renderer.transform, prefab.transform), out var mine)) continue;
                 var theirs = renderer.sharedMaterials;
                 for (int i = 0; i < mine.Length && i < theirs.Length; i++)
                     if (mine[i] != null && theirs[i] != null && mine[i] != theirs[i] && swaps.All(s => s.from != mine[i]))
                         swaps.Add(new SkinVariant.Swap { from = mine[i], to = theirs[i] });
             }
-            string name = Path.GetFileNameWithoutExtension(path);
-            if (swaps.Count > 0) sets.Add(new SkinVariant(VrcSway.Slug(name), Korean(name), swaps.ToArray()));
+            if (swaps.Count == 0) continue;
+            ids.Add(VrcSway.Slug(name));
+            sets.Add(new SkinVariant(VrcSway.Slug(name), Korean(name), swaps.ToArray()));
         }
         return sets.Count > 1 ? sets.ToArray() : Array.Empty<SkinVariant>();
+    }
+
+    // A loose material's colour name: its colour words, the words of a two-colour dye joined ("Pink Blue" → 분홍·파랑,
+    // "Beige Pink 1" → 베이지·분홍 1), then its dye style (분홍·파랑 그라데이션). Prefab colours keep Korean's spacing.
+    private static string MaterialColourName(string name, string style, bool loose)
+    {
+        string text = Korean(name);
+        if (!loose) return text;
+        var words = text.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+        var joined = new StringBuilder();
+        for (int i = 0; i < words.Length; i++)
+        {
+            if (i > 0) joined.Append(!words[i].Any(char.IsDigit) && !words[i - 1].Any(char.IsDigit) ? "·" : " ");
+            joined.Append(words[i]);
+        }
+        return style.Length > 0 ? joined + " " + Korean(style) : joined.ToString();
     }
 
     // "Black&White2" → "검정·흰색 2", "Pink 1_Transparent" → "분홍 1 비침", "_Basic" → "기본", "Black_and_Gold" → "검정·금색".

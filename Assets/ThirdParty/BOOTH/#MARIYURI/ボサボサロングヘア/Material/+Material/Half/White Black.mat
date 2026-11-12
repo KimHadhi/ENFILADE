@@ -1,0 +1,79 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: White Black
+  m_Shader: {fileID: 4800000, guid: 9294844b15dca184d914a632279b24e1, type: 3}
+  m_Parent: {fileID: 2100000, guid: 733ea75b25d5cc04da8991d72b5e3110, type: 2}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords:
+  - AUTO_KEY_VALUE
+  - GEOM_TYPE_LEAF
+  - UNITY_UI_CLIP_RECT
+  - _METALLICGLOSSMAP
+  - _NORMALMAP
+  - _REQUIRE_UV2
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap:
+    RenderType: TransparentCutout
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _BaseColorMap:
+        m_Texture: {fileID: 2800000, guid: 82ed2a398280dc840aba06a0a24f3ffd, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _BaseMap:
+        m_Texture: {fileID: 2800000, guid: 82ed2a398280dc840aba06a0a24f3ffd, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MainTex:
+        m_Texture: {fileID: 2800000, guid: 82ed2a398280dc840aba06a0a24f3ffd, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _RimBlur: 0.25
+    - _RimBorder: 0.24000001
+    - _RimDirRange: 0
+    - _RimFresnelPower: 3.2
+    - _RimIndirBlur: 0.35
+    - _RimIndirBorder: 0.5
+    - _RimIndirRange: 0.03
+    - _RimMainStrength: 0.3
+    - _RimShadeBorder: 0.35
+    - _RimShadeFresnelPower: 1
+    - _RimShadeNormalStrength: 1
+    - _Shadow2ndBlur: 0.1
+    - _Shadow2ndNormalStrength: 1
+    - _Shadow2ndReceive: 1
+    - _Shadow3rdBlur: 0.15
+    - _Shadow3rdBorder: 0.3
+    - _Shadow3rdNormalStrength: 1
+    - _Shadow3rdReceive: 1
+    - _ShadowBlur: 0.3
+    - _ShadowBorderRange: 0
+    - _ShadowEnvStrength: 0
+    - _ShadowMainStrength: 0
+    - _ShadowNormalStrength: 1
+    - _ShadowPostAO: 1
+    m_Colors:
+    - _RimColor: {r: 2.4849007, g: 2.1576004, b: 2.6082382, a: 0.45}
+    - _RimIndirColor: {r: 0.32865766, g: 0.32698467, b: 0.41509432, a: 1}
+    - _RimShadeColor: {r: 0.82151383, g: 0.7490196, b: 0.8784314, a: 1}
+    - _Shadow2ndColor: {r: 0.81053585, g: 0.7647059, b: 0.8784314, a: 1}
+    - _Shadow3rdColor: {r: 0, g: 0, b: 0, a: 0}
+    - _ShadowBorderColor: {r: 0, g: 0, b: 0, a: 1}
+    - _ShadowColor: {r: 0.69243574, g: 0.6784314, b: 0.81960785, a: 1}
+  m_BuildTextureStacks: []

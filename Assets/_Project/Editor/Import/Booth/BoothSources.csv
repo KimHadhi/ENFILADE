@@ -1,5 +1,5 @@
 ﻿id,kind,skin,source,colours,name
-#설명,character는 캐릭터·outfit은 옷 모델·colour는 캐릭터의 색 세트,colour 줄의 캐릭터 Id. outfit 줄은 id를 '모델 Id@캐릭터 Id'로 쓴다. 어느 아바타에게나 맞게 파는 장신구(에네 귀걸이)는 '모델 Id@*'로 한 번만 쓴다. OutfitSpots.csv에 그 칸의 자리를 잰 캐릭터가 모두 입는다,Assets/ThirdParty/BOOTH 아래 경로. character·outfit은 프리팹이고 colour는 '바꿀 재질>새 재질'을 |로 여럿,outfit의 색 프리팹이 모인 폴더. 그 안의 다른 프리팹이 저마다 색 세트가 된다(기준 프리팹과 재질이 다른 것만),캐릭터·색 세트의 화면 이름
+#설명,character는 캐릭터·outfit은 옷 모델·colour는 캐릭터의 색 세트,colour 줄의 캐릭터 Id. outfit 줄은 id를 '모델 Id@캐릭터 Id'로 쓴다. 어느 아바타에게나 맞게 파는 장신구(에네 귀걸이)는 '모델 Id@*'로 한 번만 쓴다. OutfitSpots.csv에 그 칸의 자리를 잰 캐릭터가 모두 입는다,Assets/ThirdParty/BOOTH 아래 경로. character·outfit은 프리팹이고 colour는 '바꿀 재질>새 재질'을 |로 여럿,outfit의 색 프리팹이 모인 폴더. 그 안의 다른 프리팹이 저마다 색 세트가 된다(기준 프리팹과 재질이 다른 것만). 프리팹이 없는 폴더면 그 안과 아래 폴더의 재질이 하나씩 색 세트가 된다: 재질 하나로 그린 모델(머리카락)의 그 재질을 바꿔 낀다(MARIYURI 머리의 색 팩). |로 여럿,캐릭터·색 세트의 화면 이름
 mayo,character,,Chocolate rice/0.MAYO/MAYO.prefab,,마요
 ichigo,character,,Hamini3Dbox/ICHIGO/ICHIGO_v1.05.prefab,,이치고
 abs,colour,mayo,Chocolate rice/0.MAYO/Material/Body/MAYO_Body.mat>Chocolate rice/0.MAYO/Material/Body/MAYO_Abs_Body.mat,,복근
@@ -16,3 +16,5 @@ ene-earring-1@*,outfit,,Ene_booth/Earring/Pair/Earring1 Pair.prefab,,
 ene-earring-2@*,outfit,,Ene_booth/Earring/Pair/Earring2 Pair.prefab,,
 ene-earring-3@*,outfit,,Ene_booth/Earring/Pair/Earring3 Pair.prefab,,
 ene-earring-4@*,outfit,,Ene_booth/Earring/Pair/Earring4 Pair.prefab,,
+bosa-long-hair@mayo,outfit,,#MARIYURI/V2_ボサボサロングヘア/Mayo/Mayo_V2_ボサボサロングヘア.prefab,#MARIYURI/ボサボサロングヘア/Material|#MARIYURI/V2_ボサボサロングヘア/-Material,
+bosa-long-hair@ichigo,outfit,,#MARIYURI/V2_ボサボサロングヘア/Ichigo/Ichigo_V2_ボサボサロングヘア.prefab,#MARIYURI/ボサボサロングヘア/Material|#MARIYURI/V2_ボサボサロングヘア/-Material,

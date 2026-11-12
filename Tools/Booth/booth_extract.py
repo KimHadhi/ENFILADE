@@ -132,13 +132,18 @@ def main(out_root, specs):
     for guid, entry in index.items():
         if entry["folder"] and "path" in entry:
             folders[entry["path"]] = entry.get("meta")
+    # One file per GUID, from the first package given that has it. A maker can ship one texture in two packages under two
+    # paths (MARIYURI's hair normal map in the Ichigo hair package and in the material pack, 2026-11-13); written twice,
+    # Unity keeps the GUID for one of the two files, gives the other a new one and rewrites its .meta.
+    done = set()
     for chain, _, entries in packages:
-        mine = {g for g in wanted if g in entries}
+        mine = {g for g in wanted if g in entries and g not in done}
         if not mine:
             continue
         for guid, entry in read_package(chain, mine).items():
             if guid not in mine or "asset" not in entry:
                 continue
+            done.add(guid)
             relative = entry["path"][len("Assets/"):] if entry["path"].startswith("Assets/") else entry["path"]
             target = os.path.join(out_root, relative)
             os.makedirs(os.path.dirname(target), exist_ok=True)

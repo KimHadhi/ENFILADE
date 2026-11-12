@@ -1,5 +1,5 @@
 ﻿id,skin,slot,parts,shapes,needs,name
-#설명,캐릭터 Id(PlayerBody 프로필의 스킨 Id),그 캐릭터가 원래 입은 옷이 들어 있는 칸(OutfitSlots.csv의 id),"그 칸의 원래 옷 렌더러 이름. |로 여럿. 칸에 다른 옷을 넣거나 '벗기'를 고르거나 입은 옷이 그 칸을 가리면 꺼진다. 한 메시가 두 칸에 걸치면(원피스) 두 줄 모두에 적는다. 속옷 칸(undertop·underbottom) 줄이면 캐릭터의 원래 속옷: 그 칸에 다른 것을 고르지 않는 동안 늘 켜지고, 위에 입은 옷이 다 덮으면 숨는다. 줄 id는 겹치지만 않으면 아무거나",그 칸을 채우거나 비울 때 몸에 거는 셰이프키. 이름=0~100을 |로 여럿. 렌더러가 따로 없고 셰이프키로 숨기는 장식(귀걸이 _x 키 같은)에 쓴다,"그 칸의 원래 옷이 보이는 동안 몸에 켜 두는 셰이프키. |로 여럿. BOOTH 몸은 스타킹·신발 밑 피부를 줄이는 Shrink 키와 굽 키가 프리팹에서 켜져 있어서, 옷이 빠지면 이 키들이 0이 되어야 다리가 온전하다. 다른 줄의 보이는 옷도 같은 키를 적었으면 그 옷이 빠질 때까지 그대로 둔다(신발을 신은 채 스타킹만 벗으면 발은 줄인 채)","옷장 칸 타일에 보이는 그 칸의 원래 옷 이름. 비어 있으면 렌더러 이름에서 만든다(MAYO_Leg_Ribbon → Leg Ribbon)"
+#설명,캐릭터 Id(PlayerBody 프로필의 스킨 Id),그 캐릭터가 원래 입은 옷이 들어 있는 칸(OutfitSlots.csv의 id),"그 칸의 원래 옷 렌더러 이름. |로 여럿. 칸에 다른 옷을 넣거나 '벗기'를 고르거나 입은 옷이 그 칸을 가리면 꺼진다. 한 메시가 두 칸에 걸치면(원피스) 두 줄 모두에 적는다. 그 머리에 묶은 리본처럼 원래 머리에 얹혀 있는 장식도 머리 줄에 함께 적는다: 다른 머리를 쓰면 허공에 뜨므로 같이 꺼진다(머리핀 칸에 그대로 두어 따로 벗길 수도 있다). 속옷 칸(undertop·underbottom) 줄이면 캐릭터의 원래 속옷: 그 칸에 다른 것을 고르지 않는 동안 늘 켜지고, 위에 입은 옷이 다 덮으면 숨는다. 줄 id는 겹치지만 않으면 아무거나",그 칸을 채우거나 비울 때 몸에 거는 셰이프키. 이름=0~100을 |로 여럿. 렌더러가 따로 없고 셰이프키로 숨기는 장식(귀걸이 _x 키 같은)에 쓴다,"그 칸의 원래 옷이 보이는 동안 몸에 켜 두는 셰이프키. |로 여럿. BOOTH 몸은 스타킹·신발 밑 피부를 줄이는 Shrink 키와 굽 키가 프리팹에서 켜져 있어서, 옷이 빠지면 이 키들이 0이 되어야 다리가 온전하다. 다른 줄의 보이는 옷도 같은 키를 적었으면 그 옷이 빠질 때까지 그대로 둔다(신발을 신은 채 스타킹만 벗으면 발은 줄인 채)","옷장 칸 타일에 보이는 그 칸의 원래 옷 이름. 비어 있으면 렌더러 이름에서 만든다(MAYO_Leg_Ribbon → Leg Ribbon)"
 mayo.hair,mayo,hair,MAYO_Hair_Front|MAYO_Hair_Back|MAYO_Hair_Side|MAYO_Hair_Side_2|MAYO_Hair_Side_3|MAYO_Hair_Ahoge|MAYO_Hair_Base,,,part.mayo.hair.name
 mayo.hairpin,mayo,hairpin,MAYO_Hair_Pin,,,part.mayo.hairpin.name
 mayo.top,mayo,top,MAYO_Dress|MAYO_Ribbon,,,part.mayo.top.name
@@ -11,7 +11,7 @@ mayo.wrist,mayo,wrist,MAYO_Arm_Belt,,,part.mayo.wrist.name
 mayo.tail,mayo,tail,MAYO_Kemoshippo,,,part.mayo.tail.name
 mayo.undertop,mayo,undertop,MAYO_Underwear_Bra,,,part.mayo.undertop.name
 mayo.underbottom,mayo,underbottom,MAYO_Underwear_Panty,,,part.mayo.underbottom.name
-ichigo.hair,ichigo,hair,Ichigo_Hair_BackHair|Ichigo_Hair_Base|Ichigo_Hair_LongSide|Ichigo_Hair_ShortSide|Ichigo_Hair_SmallTwin|Ichigo_Hair_Twintail,,,part.ichigo.hair.name
+ichigo.hair,ichigo,hair,Ichigo_Hair_BackHair|Ichigo_Hair_Base|Ichigo_Hair_LongSide|Ichigo_Hair_ShortSide|Ichigo_Hair_SmallTwin|Ichigo_Hair_Twintail|Ichigo_Hair_BackHairRibbon|Ichigo_Hair_Twintail_Ribbon|Ichigo_Hair_Twintail_Ribbon_Long,Hairpin_x=100,,part.ichigo.hair.name
 ichigo.hairpin,ichigo,hairpin,Ichigo_Hair_BackHairRibbon|Ichigo_Hair_Twintail_Ribbon|Ichigo_Hair_Twintail_Ribbon_Long,Hairpin_x=100,,part.ichigo.hairpin.name
 ichigo.helmet,ichigo,helmet,Ichigo_COS_Hat,,,part.ichigo.helmet.name
 ichigo.ears,ichigo,ears,,Earring_L_x=100|Earring_R_x=100,,part.ichigo.ears.name
