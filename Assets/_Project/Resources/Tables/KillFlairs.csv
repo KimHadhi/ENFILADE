@@ -3,10 +3,10 @@
 charge,Charged,0,80,1,Fire,Edge,#FFCC38,,0.05,1.1,"어썰트 CHARGE를 받고 처치 · C1 총구 점화(임시로 켬, 고르면 바뀜)"
 charge_gild,Charged,0,79,0,Gild,Edge,#FFCC38,,0.05,1.3,C2 금빛 물들임
 charge_trail,Charged,0,78,0,Trail,Sheen;Tag,#FFCC38,CHARGE,0,1.2,C3 돌격 꼬리
-bounty,Bounty,0,90,1,,Stamp;Strike;Money;Kick,#1FEBD1,계약 완료,0,1.5,슈어스훈트가 자기 현상금 표적을 처치 · B1 계약 완료 도장(임시로 켬)
+bounty,Bounty,0,90,1,,Stamp;Strike;Money;Kick,#1FEBD1,계약 완료,0,1.5,시순트가 자기 현상금 표적을 처치 · B1 계약 완료 도장(임시로 켬)
 bounty_wanted,Bounty,0,89,0,,Frame;Tick;Name;Money;Tag,#1FEBD1,청산,0,1.6,B2 수배 해제
 bounty_seal,Bounty,0,88,0,,Seal;Money;Kick,#1FEBD1,계약 완료,0,1.7,B3 인장
-duel,Duel,0,95,0,,Stamp;Kick,#1FEBD1,결투 승리,0.1,1.4,슈어스훈트 결투 상대를 처치(제안)
+duel,Duel,0,95,0,,Stamp;Kick,#1FEBD1,결투 승리,0.1,1.4,시순트 결투 상대를 처치(제안)
 kata,Kata,0,70,0,Tint,Tag,#FFC76B,KATA,0,0.9,포인트 건 카타 중 처치(제안. 고르면 잔상으로)
 counter,Counter,0,60,0,Tint,Kick,#6ED6FF,,0,0.25,반격·패리 반격(제안. 고르면 쇳불꽃으로)
 takedown,Takedown,0,65,0,,Chip,#FF4F78,암살,0.1,1.2,들키지 않은 좀비 처형(제안. 고르면 검은 막이 걷힘)
