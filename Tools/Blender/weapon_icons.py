@@ -62,6 +62,7 @@ TAC = "Assets/ThirdParty/KINEMATION/TacticalShooterPack/Meshes/Weapons/"
 FPS = "Assets/ThirdParty/KINEMATION/FPSAnimationPack/Animations/"
 GUNS_PREFABS = "Assets/_Project/Data/Combat/"
 ADDON = "Assets/_Project/Art/Models/Addons/Weapons/"
+GRENADES = "Assets/_Project/Art/Models/Addons/Grenades/"
 
 # key -> how to put it together. prefab/body: the game's prefab and the body FBX's root in it (its bones are posed as
 # there). parts: (the part's FBX root in the prefab, its FBX). hide: mesh objects left out. drop: bones whose vertices
@@ -97,6 +98,14 @@ GUNS = {
     "YamatoKatana": dict(fbx=ADDON + "YamatoKatana/YamatoKatana.fbx", hide=["Sheath"]),
     "CavalrySword": dict(fbx=ADDON + "CavalrySword/CavalrySword.fbx"),
     "KraitP68": dict(fbx=ADDON + "KraitP68/KraitP68.fbx", hide=["Suppressor", "Light"]),
+    # The class throwables (Throwables; ArcCW GSO's CS:GO grenades): the knife lies flat with its point (its Tip) to the
+    # right; the grenades stand upright and each fills the canvas height, since one scale for all made a frag 10 px tall in
+    # the kill feed's 22 px box. The disinfectant canister's red cross is only paint, so its body gets a cross cut in.
+    "ThrowingKnife": dict(fbx=GRENADES + "ThrowingKnife/ThrowingKnife.fbx", point="Tip"),
+    "GrenadeFrag": dict(fbx=GRENADES + "GrenadeFrag/GrenadeFrag.fbx"),
+    "GrenadeSmoke": dict(fbx=GRENADES + "GrenadeSmoke/GrenadeSmoke.fbx"),
+    "GrenadeFlash": dict(fbx=GRENADES + "GrenadeFlash/GrenadeFlash.fbx"),
+    "GrenadeCanister": dict(fbx=GRENADES + "GrenadeCanister/GrenadeCanister.fbx", emblem="cross"),
 }
 
 # Unity -> Blender for these FBX files: x flips, Unity's z (forward) is Blender's -y, Unity's y (up) is Blender's z.
@@ -295,6 +304,19 @@ def build_gun(key):
             objects.remove(ob)
     if recipe.get("drop"):
         drop_bones(objects, set(recipe["drop"]))
+    # Point the named empty's end to the right (the camera's right is -y): turned half round about z when it points the
+    # other way. turn: degrees more about z (to show a grenade's lever side on).
+    turn = recipe.get("turn", 0.0)
+    if recipe.get("point"):
+        tip = next((o for o in objects if o.name.split(".")[0] == recipe["point"]), None)
+        if tip is not None and tip.matrix_world.translation.y > 0:
+            turn += 180.0
+    if turn:
+        spin = mathutils.Matrix.Rotation(math.radians(turn), 4, 'Z')
+        for ob in objects:
+            if ob.parent is None:
+                ob.matrix_world = spin @ ob.matrix_world
+        bpy.context.view_layer.update()
     return [o for o in objects if o.type == 'MESH']
 
 
@@ -320,17 +342,23 @@ def mesh_bounds(meshes):
 
 # ---- rendering the passes -------------------------------------------------------------------------------------------
 
-def render_passes(meshes, tmp):
+def render_passes(meshes, tmp, tall=None):
     """Side view (looking along +x: the muzzle, -y, to the right; z up) at SUPER x the canvas. Returns alpha, normal,
-    depth and part index as arrays, top row first, and the metres one rendered pixel spans."""
+    depth and part index as arrays, top row first, and the metres one rendered pixel spans. tall: draw to the scale where
+    this many metres fill MOST_HEIGHT of the canvas (things that stand, as the throwables), instead of by length."""
     scene = bpy.context.scene
     lo, hi = mesh_bounds(meshes)
     length, height = hi[1] - lo[1], hi[2] - lo[2]
     W, H = CANVAS
-    share = min(FILL, FILL * (length / LONGEST) ** LENGTH_POWER)
-    per_m = share * W / length
-    if height * per_m > MOST_HEIGHT * H:
-        per_m = MOST_HEIGHT * H / height
+    if tall:
+        per_m = MOST_HEIGHT * H / max(tall, height)
+        if length * per_m > FILL * W:
+            per_m = FILL * W / length
+    else:
+        share = min(FILL, FILL * (length / LONGEST) ** LENGTH_POWER)
+        per_m = share * W / length
+        if height * per_m > MOST_HEIGHT * H:
+            per_m = MOST_HEIGHT * H / height
     cam = bpy.data.objects.new("Icon Camera", bpy.data.cameras.new("Icon Camera"))
     scene.collection.objects.link(cam)
     scene.camera = cam
@@ -584,6 +612,23 @@ PICTURES = {
 }
 
 
+def cross_in(mask):
+    """A plus sign cut into the middle of a shape's body (the canister's painted red cross): arms a third of the body's
+    width long and a ninth thick, centred a little below the middle of its height (under the cap)."""
+    rows = np.where(mask.any(1))[0]
+    cols = np.where(mask.any(0))[0]
+    out = np.zeros_like(mask)
+    if len(rows) == 0:
+        return out
+    top, bottom, left, right = rows[0], rows[-1], cols[0], cols[-1]
+    cy, cx = top + (bottom - top) * .58, (left + right) / 2
+    arm, half = (right - left) * .34, (right - left) * .11
+    ys, xs = np.mgrid[0:mask.shape[0], 0:mask.shape[1]]
+    out |= (np.abs(xs - cx) <= half) & (np.abs(ys - cy) <= arm)
+    out |= (np.abs(ys - cy) <= half) & (np.abs(xs - cx) <= arm)
+    return out & mask
+
+
 def flat_shape(key):
     """A flat killer icon as (mask, part joins, no depth edges, no folds) at the rendered size. Its own outline is fitted
     into SHAPE_HEIGHT of the canvas height and SHAPE_WIDTH of its width, centred."""
@@ -828,8 +873,10 @@ def main():
     for key in keys:
         if key in GUNS:
             meshes = build_gun(key)
-            alpha, normal, depth, index, pixel_m = render_passes(meshes, tmp)
+            alpha, normal, depth, index, pixel_m = render_passes(meshes, tmp, GUNS[key].get("tall"))
             mask = alpha > .5
+            if GUNS[key].get("emblem") == "cross":
+                mask &= ~cross_in(mask)
             parts, steps, folds = edges(mask, normal, depth, index, pixel_m)
         elif key in SHAPES or key in PICTURES:
             mask, parts, steps, folds = flat_shape(key)
