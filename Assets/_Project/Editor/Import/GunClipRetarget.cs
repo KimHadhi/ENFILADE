@@ -137,7 +137,7 @@ internal static class GunClipRetarget
                 EditorUtility.DisplayProgressBar("ENFILADE: KINEMATION guns", $"Retargeting gun clips for {skin.name}", i / (float)due.Count);
                 try
                 {
-                    var made = Bake(skin, assets, fingers, entries);
+                    var made = Bake(skin, assets, fingers, entries, all);
                     if (made == null) continue;
                     entries.RemoveAll(entry => entry.skin == skin);
                     entries.AddRange(made);
@@ -178,27 +178,41 @@ internal static class GunClipRetarget
         foreach (var gun in assets.guns)
         {
             if (gun.weapon == null || gun.sourcePose == null) continue;
-            int match = entries.FindIndex(entry => entry.skin == skin && entry.weapon == gun.weapon);
-            if (match < 0) return false;
-            var entry = entries[match];
-            if (entry.source != SourceOf(skin, assets, gun) || entry.pose == null
-                || (gun.sourceReloadTactical != null && entry.reloadTactical == null)
-                || (gun.sourceReloadEmpty != null && entry.reloadEmpty == null)
-                || (gun.sourceReloadShell != null && entry.reloadShell == null)
-                || (gun.sourceReloadEnd != null && entry.reloadEnd == null)
-                || (gun.sourceDraw != null && entry.draw == null)
-                || (gun.sourceHolster != null && entry.holster == null)
-                || (gun.sourceInspect != null && entry.inspect == null)
-                || (gun.sourceFire != null && entry.fire == null)) return false;
+            if (!GunUpToDate(entries, skin, assets, gun, out _)) return false;
         }
         return true;
+    }
+
+    // A gun's bake is current: made from its clips, arms and body as they are now, with every clip it has made. Or it was
+    // tried from them and failed (failedSource), and isn't tried again until one of them changes: a clip Retarget Pro can't
+    // make once it can't make at every script reload, and the whole skin was remade each time (the user's console filled with
+    // the PDW90 idle's failure, 2026-11-13).
+    private static bool GunUpToDate(List<GunBakes.Entry> entries, GameObject skin, FPSBodyAssets assets, FPSBodyAssets.Gun gun,
+        out GunBakes.Entry entry)
+    {
+        entry = default;
+        int match = entries.FindIndex(e => e.skin == skin && e.weapon == gun.weapon);
+        if (match < 0) return false;
+        entry = entries[match];
+        string source = SourceOf(skin, assets, gun);
+        if (!string.IsNullOrEmpty(entry.failedSource) && entry.failedSource == source) return true;
+        return entry.source == source && entry.pose != null
+            && !(gun.sourceReloadTactical != null && entry.reloadTactical == null)
+            && !(gun.sourceReloadEmpty != null && entry.reloadEmpty == null)
+            && !(gun.sourceReloadShell != null && entry.reloadShell == null)
+            && !(gun.sourceReloadEnd != null && entry.reloadEnd == null)
+            && !(gun.sourceDraw != null && entry.draw == null)
+            && !(gun.sourceHolster != null && entry.holster == null)
+            && !(gun.sourceInspect != null && entry.inspect == null)
+            && !(gun.sourceFire != null && entry.fire == null);
     }
 
     // ---- One skin ----
 
     // Each of KINEMATION's skeletons the guns' clips are made for (the FPS Animation Pack's arms, the Tactical Shooter Pack's
     // Operator) gets its own Retarget Pro profile onto the skin. A skeleton that can't be baked keeps its guns' older bakes.
-    private static List<GunBakes.Entry> Bake(GameObject skin, FPSBodyAssets assets, GunClipFingers fingers, List<GunBakes.Entry> previous)
+    private static List<GunBakes.Entry> Bake(GameObject skin, FPSBodyAssets assets, GunClipFingers fingers, List<GunBakes.Entry> previous,
+        bool all)
     {
         string dir = $"{Folder}/{FileName(skin.name)}";
         Directory.CreateDirectory(dir);
@@ -213,11 +227,18 @@ internal static class GunClipRetarget
         var made = new List<GunBakes.Entry>();
         foreach (var arms in sources)
         {
-            var group = BakeFrom(skin, arms, assets, fingers, dir);
+            var group = BakeFrom(skin, arms, assets, fingers, dir, previous, all);
             if (group != null) { made.AddRange(group); continue; }
+            // Its guns keep their older bakes, noted with the sources tried, so they wait for a change (GunUpToDate).
             foreach (var gun in assets.guns)
-                if (gun.ArmsOr(assets.armsModel) == arms)
-                    made.AddRange(previous.FindAll(entry => entry.skin == skin && entry.weapon == gun.weapon));
+                if (gun.weapon != null && gun.sourcePose != null && gun.ArmsOr(assets.armsModel) == arms)
+                {
+                    string tried = SourceOf(skin, assets, gun);
+                    int old = previous.FindIndex(entry => entry.skin == skin && entry.weapon == gun.weapon);
+                    var kept = old >= 0 ? previous[old] : new GunBakes.Entry { skin = skin, weapon = gun.weapon, source = tried };
+                    kept.failedSource = tried;
+                    made.Add(kept);
+                }
         }
         return made.Count > 0 ? made : null;
     }
@@ -230,7 +251,8 @@ internal static class GunClipRetarget
         return null;
     }
 
-    private static List<GunBakes.Entry> BakeFrom(GameObject skin, GameObject arms, FPSBodyAssets assets, GunClipFingers fingers, string dir)
+    private static List<GunBakes.Entry> BakeFrom(GameObject skin, GameObject arms, FPSBodyAssets assets, GunClipFingers fingers, string dir,
+        List<GunBakes.Entry> previous, bool all)
     {
         // The FPS Animation Pack's arms keep the file names the bakes always had.
         string targetName = arms == assets.armsModel ? FileName(skin.name) : $"{FileName(skin.name)}_{FileName(arms.name)}";
@@ -274,6 +296,9 @@ internal static class GunClipRetarget
             foreach (var gun in assets.guns)
             {
                 if (gun.weapon == null || gun.sourcePose == null || gun.ArmsOr(assets.armsModel) != arms) continue;
+                // Only a gun whose bake isn't current is made again (all: every one), so a new gun or a changed clip
+                // doesn't remake the rest.
+                if (!all && GunUpToDate(previous, skin, assets, gun, out var current)) { made.Add(current); continue; }
                 // Where the body faces: the way its hips face, as the camera looks. KINEMATION's Tactical Shooter Pack
                 // stands with the shoulders turned 14° to 47° off the hips (the Herrington most), and framed from the
                 // shoulders the guns sat turned that far to the left (user, 2026-11-09: the Herrington's arms off to
@@ -372,17 +397,39 @@ internal static class GunClipRetarget
 
                 // Each clip's fingers are KINEMATION's own, through Unity's humanoid muscles (GunClipFingers).
                 string name = FileName(gun.weapon.name);
-                entry.pose = fingers.Apply(gun.sourcePose, BakeClip(baker, gun.sourcePose, $"{dir}/{name}_Pose.anim"));
-                entry.reloadTactical = fingers.Apply(gun.sourceReloadTactical, BakeClip(baker, gun.sourceReloadTactical, $"{dir}/{name}_ReloadTactical.anim"));
-                entry.reloadEmpty = fingers.Apply(gun.sourceReloadEmpty, BakeClip(baker, gun.sourceReloadEmpty, $"{dir}/{name}_ReloadEmpty.anim"));
-                entry.reloadShell = fingers.Apply(gun.sourceReloadShell, BakeClip(baker, gun.sourceReloadShell, $"{dir}/{name}_ReloadShell.anim"));
-                entry.reloadEnd = fingers.Apply(gun.sourceReloadEnd, BakeClip(baker, gun.sourceReloadEnd, $"{dir}/{name}_ReloadEnd.anim"));
-                entry.draw = fingers.Apply(gun.sourceDraw, BakeClip(baker, gun.sourceDraw, $"{dir}/{name}_Draw.anim"));
-                entry.holster = fingers.Apply(gun.sourceHolster, BakeClip(baker, gun.sourceHolster, $"{dir}/{name}_Holster.anim"));
-                entry.inspect = fingers.Apply(gun.sourceInspect, BakeClip(baker, gun.sourceInspect, $"{dir}/{name}_Inspect.anim"));
+                bool failed = false;
+                AnimationClip Baked(AnimationClip sourceClip, string path)
+                {
+                    var clip = fingers.Apply(sourceClip, BakeClip(baker, sourceClip, path));
+                    if (sourceClip != null && clip == null) failed = true;
+                    return clip;
+                }
+                entry.pose = Baked(gun.sourcePose, $"{dir}/{name}_Pose.anim");
+                entry.reloadTactical = Baked(gun.sourceReloadTactical, $"{dir}/{name}_ReloadTactical.anim");
+                entry.reloadEmpty = Baked(gun.sourceReloadEmpty, $"{dir}/{name}_ReloadEmpty.anim");
+                entry.reloadShell = Baked(gun.sourceReloadShell, $"{dir}/{name}_ReloadShell.anim");
+                entry.reloadEnd = Baked(gun.sourceReloadEnd, $"{dir}/{name}_ReloadEnd.anim");
+                entry.draw = Baked(gun.sourceDraw, $"{dir}/{name}_Draw.anim");
+                entry.holster = Baked(gun.sourceHolster, $"{dir}/{name}_Holster.anim");
+                entry.inspect = Baked(gun.sourceInspect, $"{dir}/{name}_Inspect.anim");
                 // The bolt or pump worked after every shot, as the reloads are (FPSGun.Cycle).
-                entry.fire = fingers.Apply(gun.sourceFire, BakeClip(baker, gun.sourceFire, $"{dir}/{name}_Fire.anim"));
-                if (entry.pose != null) made.Add(entry);
+                entry.fire = Baked(gun.sourceFire, $"{dir}/{name}_Fire.anim");
+                // A clip that couldn't be made (BakeClip said which) is noted with the sources it was tried from, so it isn't
+                // tried again at every script reload (GunUpToDate); without its pose the gun keeps its last good bake, if any.
+                if (failed)
+                {
+                    entry.failedSource = entry.source;
+                    int old = previous.FindIndex(e => e.skin == skin && e.weapon == gun.weapon && e.pose != null);
+                    if (entry.pose == null && old >= 0)
+                    {
+                        var lastGood = previous[old];
+                        lastGood.failedSource = entry.source;
+                        entry = lastGood;
+                    }
+                    Debug.LogWarning($"GunClipRetarget: {gun.weapon.name}'s clips couldn't all be remade for {skin.name}; it is tried again when "
+                        + "its clips or the body change, or from Tools → ENFILADE → Combat → Retarget KINEMATION Gun Clips.", gun.weapon);
+                }
+                if (entry.pose != null || failed) made.Add(entry);
             }
             return made;
         }
@@ -476,7 +523,16 @@ internal static class GunClipRetarget
     private static AnimationClip BakeClip(RetargetAnimBaker baker, AnimationClip source, string path)
     {
         if (source == null) return null;
-        var baked = baker.BakeAnimation(source);
+        var lasting = Lasting(source);
+        AnimationClip baked;
+        try
+        {
+            baked = baker.BakeAnimation(lasting);
+        }
+        finally
+        {
+            if (lasting != source) Object.DestroyImmediate(lasting);
+        }
         if (baked == null)
         {
             Debug.LogWarning($"GunClipRetarget: Retarget Pro could not bake {source.name}.", source);
@@ -496,6 +552,35 @@ internal static class GunClipRetarget
         EditorUtility.SetDirty(existing);
         AssetDatabase.DeleteAsset(bakedPath);
         return existing;
+    }
+
+    // Retarget Pro bakes a clip over its length through a temporary FBX, so a clip of one pose (no length: the FPS Animation
+    // Pack's A_FP_PDW90_Idle keys every bone at 0 only, start and stop 0) made an FBX of no frames, which Unity can't import as
+    // humanoid: the PDW90 never baked (the user's console, 2026-11-13). Such a clip goes in as a copy holding the same pose
+    // from 0 to its first frame, any pack's: the same name, frame rate and curves, each at its value at 0.
+    private static AnimationClip Lasting(AnimationClip source)
+    {
+        float frame = 1f / Mathf.Max(1f, source.frameRate);
+        if (source.length >= frame * .5f) return source;
+        var copy = new AnimationClip { name = source.name, frameRate = source.frameRate, wrapMode = source.wrapMode };
+        foreach (var binding in AnimationUtility.GetCurveBindings(source))
+        {
+            var curve = AnimationUtility.GetEditorCurve(source, binding);
+            if (curve == null) continue;
+            float value = curve.Evaluate(0f);
+            AnimationUtility.SetEditorCurve(copy, binding, new AnimationCurve(new Keyframe(0f, value), new Keyframe(frame, value)));
+        }
+        foreach (var binding in AnimationUtility.GetObjectReferenceCurveBindings(source))
+        {
+            var keys = AnimationUtility.GetObjectReferenceCurve(source, binding);
+            if (keys == null || keys.Length == 0) continue;
+            AnimationUtility.SetObjectReferenceCurve(copy, binding, new[]
+            {
+                new ObjectReferenceKeyframe { time = 0f, value = keys[0].value },
+                new ObjectReferenceKeyframe { time = frame, value = keys[0].value },
+            });
+        }
+        return copy;
     }
 
     // ---- KINEMATION's camera ----

@@ -46,6 +46,10 @@ public sealed class GunBakes : ScriptableObject
         public bool hasEyeFrame;
         [Tooltip("What the clips were made from; a change makes the editor make them again.")]
         public string source;
+        [Tooltip("What a bake was last tried from and failed at (a clip Retarget Pro couldn't make): the editor doesn't try it again "
+            + "until the gun's clips or the body change, or Retarget KINEMATION Gun Clips makes them all. With no pose the entry is "
+            + "only that note, and the gun isn't held (TryGet skips it).")]
+        public string failedSource;
     }
 
     public Entry[] entries = Array.Empty<Entry>();
