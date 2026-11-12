@@ -85,8 +85,10 @@ public sealed class DodgeDash : MonoBehaviour, ITableBound
     {
         public readonly List<Mesh> meshes = new List<Mesh>();
         public readonly List<Matrix4x4> places = new List<Matrix4x4>();
-        // Each ghost its own block: several are drawn in one frame at different strengths.
-        public readonly MaterialPropertyBlock block = new MaterialPropertyBlock();
+        // Each ghost its own block: several are drawn in one frame at different strengths. Made on the first draw:
+        // a field initializer would make it in the component's constructor, which Unity refuses (and then every
+        // field after it is left unset).
+        public MaterialPropertyBlock block;
         public int used;
         public float age, seconds, rise;
         public Color tint, rim;
@@ -283,10 +285,11 @@ public sealed class DodgeDash : MonoBehaviour, ITableBound
     private void TickGhosts(float dt)
     {
         var material = GhostMaterial();
-        if (material == null) return;
+        if (material == null || ghosts == null) return;
         foreach (var ghost in ghosts)
         {
-            if (!ghost.live) continue;
+            if (ghost == null || !ghost.live) continue;
+            if (ghost.used > ghost.meshes.Count) { ghost.live = false; continue; }
             ghost.age += dt;
             float rise = ghost.rise > 0f ? Mathf.Clamp01(ghost.age / ghost.rise) : 1f;
             float left = 1f - Mathf.Max(0f, ghost.age - ghost.rise) / ghost.seconds;
@@ -294,7 +297,7 @@ public sealed class DodgeDash : MonoBehaviour, ITableBound
             float strength = rise * left * left;
             var rimLight = ghost.rim * ghostGlow;
             rimLight.a = 1f;
-            var block = ghost.block;
+            var block = ghost.block ??= new MaterialPropertyBlock();
             block.SetColor(TintColorId, ghost.tint); block.SetFloat(TintId, strength);
             block.SetColor(RimColorId, rimLight); block.SetFloat(RimId, strength);
             block.SetFloat(WhiteId, 0f); block.SetFloat(OutlineId, 0f);
