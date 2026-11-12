@@ -1,7 +1,7 @@
-﻿id,sky,skyExposure,skyRotation,sunPitch,sunYaw,sunColor,sunIntensity,shadowStrength,ambientIntensity,reflectionIntensity,fogColor,fogDensity
-#설명 (장마다 하늘·해·안개. id = 씬 이름. 맵을 다시 지을 때 들어가고 환경광을 함께 굽는다. 해 방향과 안개 색은 각 HDRI에서 잰 값이다),Art/Sky 안의 HDRI 파일 이름,하늘 밝기(톤매핑이 없어서 1을 넘는 곳은 하얗게 날아간다),하늘을 Y축으로 돌리는 각도(도),해 높이(도). HDRI에서 잰 해 높이에서 시작하고 너무 낮으면 올렸다,빛이 가는 방위(도) = HDRI에서 잰 해의 방위 + 180,해 색,해 세기,그림자 진하기(0~1). 흐린 하늘은 옅게,하늘에서 오는 환경광 세기,하늘 반사 세기,안개 색 = 하늘 지평선 색을 그 밝기에서 잰 값,안개 짙기(지수 안개). 0.006이면 200 m 앞은 70%가 안개
-Ch1_Rooftops,kloofendal_overcast_puresky_4k.hdr,0.75,0,45,304,#fff4e8,0.9,0.6,1,1,#c7cdd8,0.006
-Ch2_Overpass,overcast_soil_puresky_4k.hdr,0.6,0,40,266,#f6f2ec,0.75,0.5,1,1,#b4b0ac,0.008
-Ch3_Subway,kloofendal_misty_morning_puresky_4k.hdr,0.7,0,30,313,#eef0f5,0.55,0.4,0.6,0.6,#cbcbd0,0.004
-Ch4_Airport,qwantani_sunrise_puresky_4k.hdr,0.55,0,14,306,#ffcc99,1.4,0.85,1,1,#e1bba8,0.0035
-EnfiladeTower,qwantani_sunrise_puresky_4k.hdr,0.45,40,12,250,#ffb48a,1.1,0.8,0.8,0.8,#c9a49a,0.004
+﻿id,sky,skyExposure,skyRotation,sunPitch,sunYaw,sunColor,sunIntensity,shadowStrength,ambientIntensity,reflectionIntensity,fogColor,fogDensity,probeSpacing
+#설명 (장마다 하늘·해·안개. id = 씬 이름. 맵을 다시 지을 때 들어가고 환경광을 함께 굽는다. 해 방향과 안개 색은 각 HDRI에서 잰 값이다),Art/Sky 안의 HDRI 파일 이름,하늘 밝기(톤매핑이 없어서 1을 넘는 곳은 하얗게 날아간다),하늘을 Y축으로 돌리는 각도(도),해 높이(도). HDRI에서 잰 해 높이에서 시작하고 너무 낮으면 올렸다,빛이 가는 방위(도) = HDRI에서 잰 해의 방위 + 180,해 색,해 세기,그림자 진하기(0~1). 흐린 하늘은 옅게,하늘에서 오는 환경광 세기,하늘 반사 세기,안개 색 = 하늘 지평선 색을 그 밝기에서 잰 값,안개 짙기(지수 안개). 0.006이면 200 m 앞은 70%가 안개,간접광 프로브 간격(m. 맵 꾸미기 APV. 비우거나 0이면 굽지 않고 예전처럼 하늘의 고른 환경광만. 맵을 지을 때 맵 전체에 Adaptive Probe Volume을 두고 해·하늘·등의 반사광을 굽는다: 하늘은 보이는 곳만 밝히고 터널과 닫힌 방은 등빛이 돌아 들어온다. 클수록 빨리 굽고 데이터가 작으며 작을수록 얇은 벽 너머로 빛이 덜 샌다)
+Ch1_Rooftops,kloofendal_overcast_puresky_4k.hdr,0.75,0,45,304,#fff4e8,0.9,0.6,1,1,#c7cdd8,0.006,2
+Ch2_Overpass,overcast_soil_puresky_4k.hdr,0.6,0,40,266,#f6f2ec,0.75,0.5,1,1,#b4b0ac,0.008,3
+Ch3_Subway,kloofendal_misty_morning_puresky_4k.hdr,0.7,0,30,313,#eef0f5,0.55,0.4,0.6,0.6,#cbcbd0,0.004,2
+Ch4_Airport,qwantani_sunrise_puresky_4k.hdr,0.55,0,14,306,#ffcc99,1.4,0.85,1,1,#e1bba8,0.0035,3
+EnfiladeTower,qwantani_sunrise_puresky_4k.hdr,0.45,40,12,250,#ffb48a,1.1,0.8,0.8,0.8,#c9a49a,0.004,1.5

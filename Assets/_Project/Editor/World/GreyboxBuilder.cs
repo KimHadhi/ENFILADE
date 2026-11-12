@@ -575,6 +575,7 @@ public sealed partial class GreyboxBuilder
         string dataFolder = Folder + "/" + sceneName;
         if (!AssetDatabase.IsValidFolder(dataFolder)) AssetDatabase.CreateFolder(Folder, sceneName);
         string look = ApplyLook();
+        AddProbeVolume();
         var surface = terrain.gameObject.AddComponent<NavMeshSurface>();
         surface.collectObjects = CollectObjects.Children;
         surface.useGeometry = NavMeshCollectGeometry.PhysicsColliders;
@@ -598,9 +599,13 @@ public sealed partial class GreyboxBuilder
         // The occlusion data is kept beside the saved scene (Scenes/Campaign/<scene>/OcclusionCullingData), so it bakes
         // after the first save, and the scene is saved again to keep hold of it.
         bool culled = BakeOcclusion();
-        // The sky's ambient light and reflection are baked the same way, beside the saved scene (LightingData).
+        // The sky's ambient light and reflection are baked the same way, beside the saved scene (LightingData), and with
+        // them the probes where the map has them (its baking set needs the saved scene's GUID, so it is readied here).
+        bool probes = look != null && PrepareProbeBake();
         bool lit = look != null && BakeEnvironment();
-        if (culled || lit)
+        RestoreBakeShadows();
+        bool probesBaked = probes && lit && ProbesBaked();
+        if (culled || lit || probes)
         {
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene, ScenePath);
@@ -622,6 +627,7 @@ public sealed partial class GreyboxBuilder
              "\n가림 굽기(오클루전 컬링): " + (culled ? "구웠어요. 벽과 건물 뒤의 좀비는 그리지 않아요." : "실패했어요(콘솔을 보세요). 맵은 그대로 쓸 수 있어요.") +
              "\n하늘·해·안개: " + (look == null ? "Tables/MapLook에 이 장의 줄이 없어 기본 하늘이에요."
                  : look + (lit ? " (환경광·반사를 구웠어요)" : " (환경광을 굽지 못했어요. Window > Rendering > Lighting의 Generate Lighting을 눌러 주세요)")) +
+             (look != null ? ProbeReport(probesBaked) : "") +
              SurfaceReport() + DressReport() + DecalReport());
     }
 
@@ -631,7 +637,8 @@ public sealed partial class GreyboxBuilder
     // Static). Gates, doors and pushback groups move, so they stay dynamic. The occlusion data is baked from these, and
     // anything that moves (zombies, players, pickups, effects) is culled against it at run time as well, since every
     // renderer allows dynamic occlusion unless it says otherwise: a horde behind a building or a tunnel wall costs no
-    // drawing. No Contribute GI: nothing is lightmapped, and it would make the editor start baking lights.
+    // drawing. Contribute GI only for a map that bakes probes (GreyboxBuilder.Probes): its solid boxes and its models,
+    // taking their light from the probes, not lightmaps; the map's lighting never bakes by itself (autoGenerate off).
     // Smaller occluders than this are not used to hide anything, and the gaps it may see through (m); larger values bake
     // faster and coarser. The maps are big boxes, so a coarse bake is enough.
     private const float SmallestOccluder = 4f, SmallestHole = .25f, BackfaceThreshold = 100f;
@@ -641,12 +648,15 @@ public sealed partial class GreyboxBuilder
         // Dressing (GreyboxBuilder.Dress): batched and hidden behind walls, but too small and too varied to hide much.
         if (dressing != null)
             foreach (var shape in dressing.GetComponentsInChildren<Renderer>())
-                GameObjectUtility.SetStaticEditorFlags(shape.gameObject, StaticEditorFlags.BatchingStatic | StaticEditorFlags.OccludeeStatic);
+            {
+                var flags = StaticEditorFlags.BatchingStatic | StaticEditorFlags.OccludeeStatic;
+                TakesPartInBake(shape, ref flags);
+                GameObjectUtility.SetStaticEditorFlags(shape.gameObject, flags);
+            }
         foreach (var shape in terrain.GetComponentsInChildren<Renderer>())
         {
             var part = shape.gameObject;
-            if (part.GetComponentInParent<CampaignGate>() != null || part.GetComponentInParent<CampaignDoor>() != null
-                || part.GetComponentInParent<CampaignPushback>() != null || part.GetComponentInParent<TowerDoor>() != null)
+            if (MovesWithGroup(part))
             {
                 // It moves: its surface is mapped in its own space, or the texture would slide over it as it goes.
                 shape.sharedMaterials = MovingMaterials(shape.sharedMaterials);
@@ -654,8 +664,14 @@ public sealed partial class GreyboxBuilder
             }
             var flags = StaticEditorFlags.BatchingStatic | StaticEditorFlags.OccludeeStatic;
             // A dressed box's grey look is hidden (GreyboxBuilder.Dress): its model may not fill it, so it hides nothing.
-            // Glass is seen through: as an occluder it would hide the room behind it (the tower's lanes).
-            if (shape.enabled && part.TryGetComponent(out Collider _) && !seeThrough.Contains(part)) flags |= StaticEditorFlags.OccluderStatic;
+            // Glass is seen through: as an occluder it would hide the room behind it (the tower's lanes), and in the
+            // probe bake it would shut the light out. The boxes with no collider (trims, neon, the city beyond the edge)
+            // are left out of the bake too: the city would stretch the probe volume to its far side.
+            if (shape.enabled && part.TryGetComponent(out Collider _) && !seeThrough.Contains(part))
+            {
+                flags |= StaticEditorFlags.OccluderStatic;
+                TakesPartInBake(shape, ref flags);
+            }
             GameObjectUtility.SetStaticEditorFlags(part, flags);
         }
     }

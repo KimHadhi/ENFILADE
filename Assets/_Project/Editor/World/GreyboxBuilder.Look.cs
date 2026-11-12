@@ -42,8 +42,9 @@ public sealed partial class GreyboxBuilder
             sun.intensity = Number(row, "sunIntensity", 1f);
             sun.shadows = LightShadows.Soft;
             sun.shadowStrength = Mathf.Clamp01(Number(row, "shadowStrength", 1f));
-            // Realtime: nothing is lightmapped, and a mixed light would want baked shadows.
-            sun.lightmapBakeType = LightmapBakeType.Realtime;
+            // Nothing is lightmapped. With probes (GreyboxBuilder.Probes) the sun is Mixed with Baked Indirect: drawn
+            // and shadowed live as before, its bounce baked; without them it is plain realtime.
+            sun.lightmapBakeType = BakesProbes ? LightmapBakeType.Mixed : LightmapBakeType.Realtime;
             RenderSettings.sun = sun;
         }
         RenderSettings.ambientMode = AmbientMode.Skybox;
@@ -56,10 +57,12 @@ public sealed partial class GreyboxBuilder
         RenderSettings.fogMode = FogMode.Exponential;
         RenderSettings.fogDensity = density;
         RenderSettings.fogColor = Colour(row, "fogColor", RenderSettings.fogColor);
-        // Environment only: no lightmaps and no realtime GI, so the bake after saving is just the sky's light.
+        // No lightmaps and no realtime GI: the bake after saving is the sky's light, and with probes (the row's
+        // probeSpacing, GreyboxBuilder.Probes) the probe volume's baked indirect light.
         string lightingPath = Folder + "/" + sceneName + "/Lighting.lighting";
         if (AssetDatabase.LoadAssetAtPath<LightingSettings>(lightingPath) != null) AssetDatabase.DeleteAsset(lightingPath);
         var lighting = new LightingSettings { name = sceneName + " Lighting", bakedGI = false, realtimeGI = false };
+        ProbeLighting(lighting);
         AssetDatabase.CreateAsset(lighting, lightingPath);
         Lightmapping.lightingSettings = lighting;
         return skyFile + ", 해 " + Number(row, "sunPitch", 50f) + "°, 안개 " + density;
