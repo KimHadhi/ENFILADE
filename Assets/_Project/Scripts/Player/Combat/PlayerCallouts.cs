@@ -15,7 +15,8 @@ using UnityEngine.InputSystem;
 /// Everyone hears the speaker's own voice from where they stand (a Voice bank clip, Windows TTS stand-ins until there
 /// are recordings) and reads the words over their head (CalloutBubbles). Some are shouted without the wheel
 /// (Settings → 조작 → 저절로 외치기): help a moment after something takes hold or on going down, the elite first come
-/// near, and the CHARGE, which friends near the Assault answer as G&amp;B's line answers its officer. Guards keep it from
+/// near, a brute's coming (the player nearest it: its legs) and its fall (whoever shot its leg out: its head; both by
+/// Spotted, from ZombieBody.Legs.cs), and the CHARGE, which friends near the Assault answer as G&amp;B's line answers its officer. Guards keep it from
 /// spamming: a short gap between calls, a longer one before the same line, and a shout by itself keeps quiet when
 /// someone just said the same. This PC's player decides and says; PlayerNetworkCombat tells the other PCs.
 /// </summary>
@@ -347,6 +348,10 @@ public sealed class PlayerCallouts : MonoBehaviour
         if (string.IsNullOrEmpty(when) || when == "always") return true;
         if (when.StartsWith("kind:", StringComparison.OrdinalIgnoreCase))
             return target != null && string.Equals(KindOf(target), when.Substring(5), StringComparison.OrdinalIgnoreCase);
+        // That kind, down on its belly crawling (a brute whose leg was shot out: its head is the way now).
+        if (when.StartsWith("crawl:", StringComparison.OrdinalIgnoreCase))
+            return target != null && target.TryGetComponent(out ZombieType crawler) && crawler.Crawls
+                && string.Equals(KindOf(target), when.Substring(6), StringComparison.OrdinalIgnoreCase);
         switch (when)
         {
             case "none": return target == null;

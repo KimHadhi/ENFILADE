@@ -1,10 +1,11 @@
 ﻿id,slot,when,order,mark,ko,en,#설명
-#설명,"휠 칸: zombie 좀비 · help 도와줘 · request 요청 · class 클래스 · move 이동 · retreat 후퇴 · thanks 고마워 · 말 칸 안의 yes·no·sorry·nice·wait·hurry·quiet·follow · auto는 휠에 없고 저절로 나오는 외침","언제 이 줄을 말하나(코드가 판정). always = 늘. 같은 칸에서 맞는 줄 가운데 order가 가장 큰 것, 같으면 그중 아무거나","클수록 먼저",target = 그 좀비에 핑 · point = 바라본 자리에 핀,"화면 말풍선과 목소리 대사. 목소리는 Art/Audio/Voice/Hiro/Callout/<id>/의 소리(지금은 Windows TTS 임시 목소리, Tools/Audio/callout_voices.py가 이 열로 만든다). 녹음을 그 폴더에 넣고 TTS 파일을 지우면 그 목소리가 된다",영어 자리(번역이 생기면),
+#설명,"휠 칸: zombie 좀비 · help 도와줘 · request 요청 · class 클래스 · move 이동 · retreat 후퇴 · thanks 고마워 · 말 칸 안의 yes·no·sorry·nice·wait·hurry·quiet·follow · auto는 휠에 없고 저절로 나오는 외침","언제 이 줄을 말하나(코드가 판정). always = 늘. kind:종류 = 그 종류의 좀비 · crawl:종류 = 그 종류가 다리를 잃고 기는 중. 같은 칸에서 맞는 줄 가운데 order가 가장 큰 것, 같으면 그중 아무거나","클수록 먼저",target = 그 좀비에 핑 · point = 바라본 자리에 핀,"화면 말풍선과 목소리 대사. 목소리는 Art/Audio/Voice/Hiro/Callout/<id>/의 소리(지금은 Windows TTS 임시 목소리, Tools/Audio/callout_voices.py가 이 열로 만든다). 녹음을 그 폴더에 넣고 TTS 파일을 지우면 그 목소리가 된다",영어 자리(번역이 생기면),
 zombie.ninja,zombie,kind:ninja,30,target,닌자다! 등 뒤 조심해!,Ninja! Watch your back!,보고 있는(없으면 가장 가까운) 좀비가 닌자
 zombie.candyman,zombie,kind:candyman,30,target,캔디맨이다! 끌려가지 마!,Candyman! Don't get hooked!,
 zombie.breadbag,zombie,kind:breadbag,30,target,전기톱이다! 브레드백!,Chainsaw! Breadbag!,
 zombie.reaper,zombie,kind:reaper,30,target,리퍼다! 품으로 붙어서 앉아!,Reaper! Hug it and get down!,그림 리퍼: 멀어지면 낫에 맞고 붙어 앉으면 피한다
-zombie.brute,zombie,kind:brute,25,target,거구다! 다 같이 쏴!,Brute! Focus fire!,
+zombie.brute,zombie,kind:brute,25,target,거구다! 다리를 쏴!,Brute! Shoot its legs!,거구는 무릎이 약해 다리를 쏘면 쓰러진다. 거구가 오면 가장 가까운 사람이 저절로 외친다
+zombie.brute.down,zombie,crawl:brute,26,target,거구가 쓰러졌다! 머리를 쏴!,The brute is down! Shoot the head!,다리가 부러져 기는 거구(머리가 약점). 다리를 부러뜨린 사람이 저절로 외친다
 zombie.charger,zombie,kind:charger,20,target,차저! 돌진 온다!,Charger! It's coming through!,
 zombie.exploder,zombie,kind:exploder,15,target,자폭 좀비! 붙지 마!,Bomber! Keep away!,
 zombie.runner,zombie,kind:runner,10,target,러너다!,Runner!,

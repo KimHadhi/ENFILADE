@@ -7,7 +7,8 @@ using UnityEngine.AI;
 /// too, and its corpse gets a doll made for its size (ZombieCorpse.MarkGrown). Its coming is heard on every PC: a roar
 /// where it stands, a deep boom for everyone, a shake of the view by how near it is, and an alert that comes in from the
 /// side it is on and leaves a mark on it for a while (AlertHUD; it was a line in the feed). The sounds
-/// are Resources/Audio/Boss/BruteRoar and BruteSting when those files exist, otherwise made here.
+/// are Resources/Audio/Boss/BruteRoar and BruteSting when those files exist, otherwise made here. Its counter, shooting
+/// a leg out and then its head, is ZombieBody.Legs.cs.
 /// </summary>
 public sealed partial class ZombieBody
 {
@@ -58,7 +59,10 @@ public sealed partial class ZombieBody
         GameAudio.PlayAt(Roar(), transform.position + Vector3.up * 2f, AudioChannel.Combat, 1f, 6f, 120f);
         PlayFlat(Sting(), .8f);
         var health = GetComponent<EnemyHealth>();
+        // The band says how to beat it in a line (Texts hud.alert.brute: its knees, then its head), and a moment later
+        // the player nearest it shouts for its legs (ZombieBody.Legs.cs).
         AlertHUD.Danger(Texts.Get("hud.alert.brute"), transform, MarkSeconds, () => health == null || !health.IsAlive);
+        CallForLegs();
         var mine = PlayerRoster.Local;
         if (mine == null) return;
         float near = 1f - Mathf.InverseLerp(NearShake, FarShake, Vector3.Distance(mine.transform.position, transform.position));

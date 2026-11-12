@@ -204,7 +204,8 @@ public sealed partial class ZombieBody
     {
         if (Model == null) return;
         float turn = grabYaw * grab + holdYaw * hold + feedStartYaw * kneel + feedYaw * eat;
-        Model.transform.localRotation = Quaternion.Euler(0f, -turn, 0f) * modelTurn;
+        // A limp's lean onto its cracked leg (ZombieBody.Legs.cs) about its own forward line.
+        Model.transform.localRotation = Quaternion.Euler(0f, -turn, 0f) * Quaternion.Euler(0f, 0f, limpTilt) * modelTurn;
     }
 
     // Plays the clip through once on this body (top input 12 alone) and sees which hand reaches furthest forward of the

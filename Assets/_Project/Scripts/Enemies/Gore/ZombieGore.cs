@@ -10,7 +10,10 @@ using UnityEngine.SceneManagement;
 /// carries the part it met (DamageHit.Part, from the bone hitbox the bullet hit), so every PC makes the same cut from the
 /// same hits without any state of its own on the network.
 /// A limb comes off when one blow puts Blow Cut of the zombie's health into it (a shotgun's pellets in one limb count as
-/// one blow), when it has taken Wear Cut in all, or on the killing blow when that puts Kill Cut into it. The part is hidden
+/// one blow), when it has taken Wear Cut in all, or on the killing blow when that puts Kill Cut into it. A limb's two parts
+/// (thigh and shin, upper arm and forearm) count together. A kind with a leg number of its own (ZombieKinds legBreak, the
+/// brute) loses a leg at that much damage instead, whatever its health, and its leg hits are told as they wear it
+/// (LegWorn). The part is hidden
 /// on the skin only (GoreBody), cut from the character's own skin as a flying piece (GoreGibs), and bleeds (GoreFx).
 /// Until zombies can crawl (LegsCanCrawl, set by whatever moves them), a leg only comes off on the killing blow.
 /// It finds zombies by itself once dressed (ZombieBody.Model) and needs nothing from them. Numbers in Tables/Gore.csv.
@@ -30,10 +33,17 @@ public sealed class ZombieGore : MonoBehaviour
     public static bool LegsCanCrawl { get; set; }
     /// <summary>A part came off a living zombie, on every PC alike. Legs lost: it should crawl.</summary>
     public static event Action<EnemyHealth, BodyPart> Crippled;
+    /// <summary>
+    /// A leg of a living zombie still on both took a hit, on every PC alike, for a kind whose legs give way by their own
+    /// number (ZombieKinds legBreak, the brute): the hit, and how far that leg has gone toward giving way (0 to 1; 1 is
+    /// the hit that took it off, told after Crippled). Its hits crack, it limps from halfway, and its fall is a moment of
+    /// its own (ZombieBody.Legs.cs).
+    /// </summary>
+    public static event Action<EnemyHealth, DamageHit, float> LegWorn;
 
     [SerializeField, Range(0f, 2f), Tooltip("Share of the zombie's health one blow must put into a limb to take it off a living zombie.")]
     private float blowCut = .45f;
-    [SerializeField, Range(0f, 2f), Tooltip("Share of the zombie's health a limb can take in all before it comes off.")]
+    [SerializeField, Range(0f, 2f), Tooltip("Share of the zombie's health a limb (its two parts together) can take in all before it comes off.")]
     private float wearCut = .6f;
     [SerializeField, Range(0f, 2f), Tooltip("Share of the zombie's health the killing blow must put into a limb to take it off.")]
     private float killCut = .15f;
@@ -86,6 +96,7 @@ public sealed class ZombieGore : MonoBehaviour
         boneParts.Clear();
         LegsCanCrawl = false;
         Crippled = null;
+        LegWorn = null;
     }
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
@@ -198,12 +209,26 @@ public sealed class ZombieGore : MonoBehaviour
         if (!BodyParts.IsLimb(part) || !body.Has(part)) return;
         float health = Mathf.Max(1f, report.MaximumHealth);
         if (limbHealthMost > 0f) health = Mathf.Min(health, limbHealthMost);
+        // A kind whose legs give way at a number of their own (the brute): that much into one leg brings it down, so
+        // shooting a leg is the plain answer to it (user, 2026-11-12).
+        float legBreak = BodyParts.IsLeg(part) ? LegBreakOf(body.Enemy) : 0f;
+        bool told = !kill && legBreak > 0f && body.LegsLost == 0 && LegsCanCrawl;
         float blow = body.Blow(part, hit.Amount), worn = body.Wear(part, hit.Amount);
-        bool off = kill ? blow >= killCut * health : blow >= blowCut * health || worn >= wearCut * health;
-        if (!off || (!kill && BodyParts.IsLeg(part) && !LegsCanCrawl)) return;
+        bool off = kill ? blow >= killCut * health
+            : blow >= blowCut * health || worn >= (legBreak > 0f ? legBreak : wearCut * health);
+        if (!off || (!kill && BodyParts.IsLeg(part) && !LegsCanCrawl))
+        {
+            if (told) LegWorn?.Invoke(body.Enemy, hit, Mathf.Clamp01(worn / legBreak));
+            return;
+        }
         Cut(body, part, hit);
-        if (!kill) Crippled?.Invoke(body.Enemy, part);
+        if (kill) return;
+        Crippled?.Invoke(body.Enemy, part);
+        if (told) LegWorn?.Invoke(body.Enemy, hit, 1f);
     }
+
+    // Its kind's own leg number (ZombieKinds legBreak), 0 for the rule above.
+    private static float LegBreakOf(EnemyHealth enemy) => enemy != null && enemy.TryGetComponent(out ZombieType type) ? type.LegBreak : 0f;
 
     private static Vector3 Along(in DamageHit hit, GoreBody body)
     {

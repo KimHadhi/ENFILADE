@@ -57,12 +57,15 @@ public sealed partial class ZombieBody
         // A leg or an arm already lost (a copy made late).
         if (ZombieGore.Losses(enemyHealth, out int legs, out _) && legs > 0) StartCrawl(false);
         FindLostArms();
+        // A brute's legs: their cracks, its limp, its fall and the weak head it crawls with (ZombieBody.Legs.cs).
+        WatchLegs();
     }
 
     private void StopWatchingCrawl()
     {
         if (watchingCrawl) ZombieGore.Crippled -= OnCrippled;
         watchingCrawl = false;
+        StopWatchingLegs();
     }
 
     private void OnCrippled(EnemyHealth enemy, BodyPart part)

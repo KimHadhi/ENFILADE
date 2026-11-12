@@ -149,8 +149,9 @@ public sealed class EnemyHealth : MonoBehaviour, IDamageReceiver, ICombatVitals,
         recent.Enqueue(hit.Id);
         if (recent.Count > 256) seen.Remove(recent.Dequeue());
         float before = Health;
-        // Knocked down and lying there, it takes more (ZombieKnockdown lyingDamage, friend feedback C7).
-        float scale = LyingScale(), amount = hit.Amount * scale;
+        // Knocked down and lying there, it takes more (ZombieKnockdown lyingDamage, friend feedback C7), and a crawling
+        // brute's head far more (ZombieKinds crawlHead).
+        float scale = TakenScale(hit), amount = hit.Amount * scale;
         if (hit.Kind == DamageKind.Execution)
         {
             // An execution takes whatever is left, which on the host may be more than the copy it was judged on. Of one
@@ -204,7 +205,7 @@ public sealed class EnemyHealth : MonoBehaviour, IDamageReceiver, ICombatVitals,
     {
         // Read before the health is shown: a killing hit ends the lying it was scaled by. An execution's number is what
         // it took, which of a brute is a share.
-        float scale = hit.Kind == DamageKind.Execution && hit.Amount > 0f ? Mathf.Max(0f, before - after) / hit.Amount : LyingScale();
+        float scale = hit.Kind == DamageKind.Execution && hit.Amount > 0f ? Mathf.Max(0f, before - after) / hit.Amount : TakenScale(hit);
         ShowHealth(after, hit, true);
         CombatDamageEvents.Report(this, hit, before, after, MaximumHealth, scale);
     }
@@ -215,6 +216,19 @@ public sealed class EnemyHealth : MonoBehaviour, IDamageReceiver, ICombatVitals,
         if (melee == null) melee = GetComponent<MeleeCombatTarget>();
         return body != null && body.Wears && melee != null && melee.IsLying ? body.LyingDamage : 1f;
     }
+
+    // A crawling brute's head (ZombieKinds crawlHead) takes its kind's number in place of the lying share when that is
+    // more: the leg shot out, the head is the way to finish it (user, 2026-11-12: "누운 거구의 머리를 노려서 빠르게
+    // 녹이는"). Not on top of lying, so the fall itself doesn't end a boss in a burst. The host and the shooter's PC both
+    // know it crawls (ZombieGore cuts the leg on every PC from the same hits), so both take it alike.
+    private float TakenScale(in DamageHit hit)
+    {
+        float lying = LyingScale();
+        if (kind == null) TryGetComponent(out kind);
+        bool head = hit.Part == BodyPart.Head || (hit.IsCritical && hit.Method == DamageMethod.Bullet);
+        return head && kind != null && kind.WeakHead ? Mathf.Max(lying, kind.CrawlHead) : lying;
+    }
+    private ZombieType kind;
 
     // Someone else's kill, seen here: the body falls as their PC runs it (ZombieCorpse), and the enemy waits hidden for
     // the host to remove it. Known: the killing hit came with it, so this PC knows whose PC runs the fall.

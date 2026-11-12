@@ -86,6 +86,15 @@ public sealed class ZombieType : MonoBehaviour
         public bool runs;
         [Tooltip("The most of this kind about at once when picked by share (0: no limit), so one elite stays a moment.")]
         public int most;
+        [Tooltip("Damage one leg (thigh and shin together) takes before it gives way and the zombie falls and crawls, " +
+                 "whatever its health (ZombieGore); 0 keeps Gore.csv's rule. The brute's counter: its knees carry all that " +
+                 "weight, so a few rounds into one leg bring it down (user, 2026-11-12).")]
+        public float legBreak;
+        [Tooltip("Its speed while a leg is half gone (ZombieKinds legBreak) and it limps, as a share of its own; 0 or 1: no slowing.")]
+        public float limpPace;
+        [Tooltip("While it crawls, a hit on its head takes this many times the damage, on top of the gun's headshot " +
+                 "(EnemyHealth); 0 or 1: as any head. The brute's: blood rushes into the head it drags along.")]
+        public float crawlHead;
     }
 
     // Guts & Blackpowder's shambler, its 14 studs a second against a player's walking 16 put to our walk (4.9 m/s).
@@ -178,6 +187,25 @@ public sealed class ZombieType : MonoBehaviour
     public bool RunsWhenFast => Current.runs;
     /// <summary>Its height crawling (m), for its capsule (ZombieBody.Crawl.cs).</summary>
     public float CrawlHeight => crawler.height;
+    /// <summary>
+    /// Damage one of its legs (thigh and shin together) takes before it gives way (ZombieGore), 0 for Gore.csv's rule:
+    /// its kind's own number, crawling or not.
+    /// </summary>
+    public float LegBreak => Mathf.Max(0f, Of(Kind).legBreak);
+    /// <summary>What a hit on its head is multiplied by while it crawls (EnemyHealth): its kind's own, at least 1.</summary>
+    public float CrawlHead => Mathf.Max(1f, Of(Kind).crawlHead);
+    /// <summary>Its head is the weak spot now: it crawls, and its kind's head gives way crawling (the brute).</summary>
+    public bool WeakHead => Crawls && CrawlHead > 1f;
+    /// <summary>A leg half gone: it limps, slower by its kind's limpPace (ZombieBody.Legs.cs, every PC alike).</summary>
+    public bool Limping { get; private set; }
+
+    /// <summary>A leg half gone: from now on it limps, slower, until the leg gives way and it crawls (every PC alike).</summary>
+    internal void Limp()
+    {
+        if (Limping) return;
+        Limping = true;
+        Apply();
+    }
 
     // Added by EnemyHealth after the enemy's own table row, so these numbers go on top of it.
     private void Awake()
@@ -279,9 +307,11 @@ public sealed class ZombieType : MonoBehaviour
     private void Apply()
     {
         var numbers = Current;
+        // Limping on a cracked leg it is slower (ZombieKinds limpPace); crawling has its own pace.
+        float pace = Limping && !Crawls && numbers.limpPace > 0f ? Mathf.Min(1f, numbers.limpPace) : 1f;
         if (agent != null)
         {
-            agent.speed = numbers.speed;
+            agent.speed = numbers.speed * pace;
             agent.acceleration = numbers.acceleration;
             agent.angularSpeed = numbers.angularSpeed;
             if (numbers.height > 0f) agent.height = numbers.height;
@@ -298,7 +328,7 @@ public sealed class ZombieType : MonoBehaviour
         if (health != null && numbers.healthShare > 0f) health.SetHealthShare(numbers.healthShare);
         // Its kind's name, over its health bar and in the kill feed (Texts.csv zombie.*), every PC alike.
         if (health != null) health.SetDisplayName(Texts.Get(NameId(Kind)));
-        if (mind != null) mind.SetChaseSpeed(numbers.speed);
+        if (mind != null) mind.SetChaseSpeed(numbers.speed * pace);
         // A brute that loses a leg crawls but stays a brute: firm and big.
         var kept = Kind == ZombieKind.Brute ? brute : numbers;
         if (melee != null)

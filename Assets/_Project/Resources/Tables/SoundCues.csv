@@ -63,3 +63,8 @@ Execution/Survived,Zombie/Bone/ArmBreak; Zombie/Hit/Fist *0.7,0,처형을 버틴
 Gore/HeadBurst,Zombie/Gore/HeadBurst,0,머리가 터질 때(머리를 맞힌 처치나 총알 헤드샷 처치. ZombieGore와 같은 규칙): 목에서 피가 뿜는다. 헤드샷 처치음(CombatHitAudio)은 따로 난다
 Gore/LimbOff,Zombie/Gore/BloodSpray; Zombie/Bone/ArmBreak *0.6,0,살아 있는 좀비의 팔다리가 떨어질 때(ZombieGore.Crippled): 피가 뿜고 뼈가 꺾인다
 ZombieHit/Fist,Zombie/Hit/Fist,0,총알·밀치기가 아닌 플레이어의 근접 타격(주먹·카운터·발차기)이 2.5m 안의 좀비에 맞을 때 BOOM 타격음 밑에 깔리는 살 소리
+Brute/LegHit,Zombie/Hit/Fist *0.55; Zombie/Bone/ArmBreak *0.3,0,거구의 다리에 맞은 한 발(ZombieBody.Legs.cs. 다리가 부러지는 피해가 정해진 종류만): 둔탁한 살 소리와 작은 뼈 소리라 다리가 먹히는 게 들린다. 반 넘게 금이 가면 Brute/LegCrack
+Brute/LegCrack,Zombie/Bone/ArmBreak *0.75; Zombie/Hit/Fist *0.6,0,반 넘게 금이 간 다리에 맞은 한 발: 뼈가 크게 꺾인다. 이때부터 절뚝인다(ZombieLegs.csv limpFrom)
+Brute/LegBreak,Zombie/Bone/SkullBreak; Zombie/Bone/ArmBreak +0.05; Zombie/Hit/Fist *0.8,0,다리가 부러지는 한 발: 뼈가 부러지는 큰 소리(Gore/LimbOff의 피 뿜는 소리와 거구의 아픈 포효가 같이 난다)
+Brute/Fall,Movement/LandHeavy; Movement/Cloth/Fall *0.8; Zombie/Hit/Fist *0.7 +0.04,0,다리가 부러진 거구가 땅에 쓰러지는 쿵(부러지고 ZombieLegs.csv fallLands초 뒤). 가까운 사람의 화면이 흔들린다
+Brute/WeakHit,Zombie/Bone/SkullBreak *0.5,0,기는 거구의 머리(약점)에 맞은 한 발: 두개골이 깨지는 소리. 머리 위 약점 빛이 하얗게 번쩍인다

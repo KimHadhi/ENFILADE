@@ -151,6 +151,8 @@ public sealed partial class ZombieBody
     {
         if (down && doll != null) Lie(Time.deltaTime);
         else if (blendLeft > 0f) EaseFromDoll(Time.deltaTime);
+        // After the doll has placed the bones: a brute's limp, landing and weak head (ZombieBody.Legs.cs).
+        LegsLate();
     }
 
     private void Lie(float dt)

@@ -64,12 +64,13 @@ public sealed partial class ZombieBody
     private void Rise(bool pouncing)
     {
         if (Model == null) return;
-        float height = 0f;
+        // A limp's sink onto its cracked leg (ZombieBody.Legs.cs), under any leap.
+        float height = -limpDrop;
         if (pouncing)
         {
             if (runner == null) runner = GetComponent<ZombieRunner>();
             float share = Mathf.Clamp01(combat.WindupElapsed / Mathf.Max(.05f, combat.Windup));
-            height = Mathf.Sin(share * Mathf.PI) * (runner != null ? runner.LeapHeight : .45f);
+            height += Mathf.Sin(share * Mathf.PI) * (runner != null ? runner.LeapHeight : .45f);
         }
         var place = Model.transform.localPosition;
         if (Mathf.Approximately(place.y, modelFeet + height)) return;

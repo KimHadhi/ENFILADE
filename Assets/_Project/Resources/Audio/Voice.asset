@@ -255,6 +255,9 @@ MonoBehaviour:
   - key: Callout/zombie.brute
     clips:
     - {fileID: 8300000, guid: c864ab34d5dd51bda58d0a2049fa2936, type: 3}
+  - key: Callout/zombie.brute.down
+    clips:
+    - {fileID: 8300000, guid: 7d29d58d726c5c2bbe68279d428ebd6e, type: 3}
   - key: Callout/zombie.candyman
     clips:
     - {fileID: 8300000, guid: 2e25226a7a085576b3a733cfc36d0877, type: 3}

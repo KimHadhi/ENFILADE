@@ -73,16 +73,25 @@ internal sealed class GoreBody
     public int ArmsLost => Lost(BodyPart.LeftUpperArm, BodyPart.LeftLowerArm) + Lost(BodyPart.RightUpperArm, BodyPart.RightLowerArm);
     private int Lost(BodyPart upper, BodyPart lower) => cut[(int)upper] || cut[(int)lower] ? 1 : 0;
 
-    /// <summary>Damage on a part this frame so far: a shotgun's pellets in one limb land as one blow.</summary>
+    /// <summary>Damage on a part's limb this frame so far: a shotgun's pellets in one limb land as one blow.</summary>
     public float Blow(BodyPart part, float amount)
     {
-        int i = (int)part;
+        int i = Limb(part);
         if (blowFrame[i] != Time.frameCount) { blowFrame[i] = Time.frameCount; blow[i] = 0f; }
         return blow[i] += Mathf.Max(0f, amount);
     }
 
-    /// <summary>All the damage a part has taken.</summary>
-    public float Wear(BodyPart part, float amount) => worn[(int)part] += Mathf.Max(0f, amount);
+    /// <summary>All the damage a part's limb has taken, this hit's amount added.</summary>
+    public float Wear(BodyPart part, float amount) => worn[Limb(part)] += Mathf.Max(0f, amount);
+
+    // A limb's two parts (thigh and shin, upper arm and forearm) take their damage together: a player aims at the leg,
+    // not at one of its two hitboxes, and shots spread over both only added up part by part before (a brute's leg took
+    // 360 on the thigh alone or on the shin alone; user, 2026-11-12: "빠르게 다리를 쏴서 기게 만든 다음에").
+    private static int Limb(BodyPart part)
+    {
+        var upper = BodyParts.Upper(part);
+        return (int)(upper != BodyPart.None ? upper : part);
+    }
 
     /// <summary>
     /// Takes the part off the skin: its bones (and any stand-in of a part already cut below it) give way to a zero-size
