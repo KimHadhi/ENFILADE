@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
@@ -263,12 +264,15 @@ public static class CampaignMaps
         b.Box("방음벽 남", 101f, 239f, 0f, 5f, -25.3f, -25f);
         b.Box("방음벽 북", 101f, 239f, 0f, 5f, 25f, 25.3f);
         Car(b, 136f, 0f, -8f); Car(b, 152f, 0f, -14f); Car(b, 176f, 0f, 6f); Car(b, 181f, 0f, -10f);
-        b.Box("주유소 지붕", 140f, 156f, 5f, 5.4f, 8f, 20f, b.Metal, "Metal");
+        var station = new List<GameObject> { b.Box("주유소 지붕", 140f, 156f, 5f, 5.4f, 8f, 20f, b.Metal, "Metal") };
         foreach (var (x, z) in new[] { (140f, 8f), (155.5f, 8f), (140f, 19.5f), (155.5f, 19.5f) })
-            b.Box("주유소 기둥", x, x + .5f, 0f, 5f, z, z + .5f, b.Metal, "MetalPipe");
+            station.Add(b.Box("주유소 기둥", x, x + .5f, 0f, 5f, z, z + .5f, b.Metal, "MetalPipe"));
         // Within a zombie's arm from the ground (memo 48).
-        b.Box("주유기 1", 145f, 146f, 0f, 1.5f, 13f, 14f, b.Metal, "Metal");
-        b.Box("주유기 2", 150f, 151f, 0f, 1.5f, 13f, 14f, b.Metal, "Metal");
+        station.Add(b.Box("주유기 1", 145f, 146f, 0f, 1.5f, 13f, 14f, b.Metal, "Metal"));
+        station.Add(b.Box("주유기 2", 150f, 151f, 0f, 1.5f, 13f, 14f, b.Metal, "Metal"));
+        // The set piece (CampaignBlast, Tables/PackFx setPieceBlast): the pumps go up as the toll hold starts, 58 m behind
+        // it (the station, the rest stop, is behind everyone by then), and leave the canopy, its posts and the pumps charred.
+        b.Blast("주유소 폭발", new Vector3(148f, .5f, 14f), "Ch2.07", 1.2f, "setPieceBlast", station.ToArray());
         Room(b, "주유소 가게", 158f, 168f, 12f, 22f, 0f, 4f, Side.South, 161f, 163.5f);
         b.Door("주유소 가게 문", 161f, 163.5f, 0f, 2.4f, 12.05f, 12.25f, "Station", new Vector3(2.5f, 0f, 0f));
         b.Dress(b.Box("가게 계산대", 160f, 164f, 0f, 1f, 18.5f, 19.5f, b.Wood, "Wood"), "shopcounter");
@@ -714,7 +718,10 @@ public static class CampaignMaps
         b.Box("견인 트랙터", 207.5f, 210.5f, 0f, 1.4f, 13.7f, 15.7f, b.Metal, "Metal");
         foreach (float x in new[] { 200f, 202.2f, 204.4f, 206.6f })
             b.Box("항공 화물 컨테이너", x, x + 1.6f, 0f, 1.5f, 30f, 31.6f, b.Metal, "MetalBox");
-        b.Box("급유차", 226f, 235f, 0f, 3f, 10f, 12.6f, b.Metal, "Metal");
+        // The set piece (CampaignBlast, Tables/PackFx setPieceBlast): the fuel truck goes up as the tug's hold starts, 60 m
+        // from the tug (50 m when the airliner is pushed all the way), and is left charred.
+        var fuelTruck = b.Box("급유차", 226f, 235f, 0f, 3f, 10f, 12.6f, b.Metal, "Metal");
+        b.Blast("급유차 폭발", new Vector3(230.5f, 1f, 11.3f), "Ch4.09", 2.5f, "setPieceBlast", fuelTruck);
         b.Box("기내식 트럭", 205f, 212f, 0f, 3.8f, -32f, -29.5f, b.Metal, "MetalBox");
         b.Ramp("계단차 계단", new Vector3(238f, 0f, -21f), new Vector3(238f, 3.5f, -14.5f), 1.6f, b.Metal);
         b.Box("계단차 발판", 237.2f, 238.8f, 3.2f, 3.5f, -14.5f, -13f, b.Metal, "Gantry");

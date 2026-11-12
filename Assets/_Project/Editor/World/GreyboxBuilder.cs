@@ -273,6 +273,35 @@ public sealed partial class GreyboxBuilder
         foreach (var block in blocks) if (block.Shape == shape) block.Moves = true;
     }
 
+    // The set pieces' blasts (Blast), under one root.
+    private Transform blasts;
+
+    /// <summary>
+    /// A set piece's blast (CampaignBlast): the effect of Tables/PackFx row <paramref name="use"/> goes off at
+    /// <paramref name="at"/> <paramref name="delay"/> s after step <paramref name="step"/> starts, on every PC, with its
+    /// bang and a little shake, and the boxes in <paramref name="scorched"/> are left charred. It only shows. Put it where
+    /// nobody stands when that step starts.
+    /// </summary>
+    public void Blast(string name, Vector3 at, string step, float delay, string use, params GameObject[] scorched)
+    {
+        blasts ??= Root("◤━━ 연출 (CampaignBlast: 단계가 시작되면 터짐)");
+        var host = new GameObject(name, typeof(CampaignBlast));
+        host.transform.SetParent(blasts, false);
+        host.transform.position = at;
+        var seen = new List<Renderer>();
+        foreach (var box in scorched)
+            if (box != null && box.TryGetComponent(out Renderer look)) seen.Add(look);
+        Set(host.GetComponent<CampaignBlast>(), so =>
+        {
+            so.FindProperty("step").stringValue = step;
+            so.FindProperty("use").stringValue = use;
+            so.FindProperty("delay").floatValue = delay;
+            var list = so.FindProperty("scorched");
+            list.arraySize = seen.Count;
+            for (int i = 0; i < seen.Count; i++) list.GetArrayElementAtIndex(i).objectReferenceValue = seen[i];
+        });
+    }
+
     /// <summary>A solid panel that a campaign step opens (CampaignGate), moving by <paramref name="openOffset"/>. It stays
     /// out of the walk-mesh bake and carves the mesh where it stands at run time, so enemies pass once it opens.</summary>
     public GameObject Gate(string name, float x0, float x1, float y0, float y1, float z0, float z1, string step, Vector3 openOffset,

@@ -27,3 +27,5 @@ MonoBehaviour:
     prefab: {fileID: 8330377559685825677, guid: 2a30043a6f49f674a8f4974063210bfd, type: 3}
   - name: Cluster Granades
     prefab: {fileID: 7055262822571672188, guid: b9f6d0c0f125d6848979d0182e456120, type: 3}
+  - name: Big Explosion Sequence
+    prefab: {fileID: 6981916951657413342, guid: 87e00a1250ab7574f8b80269546aee7e, type: 3}

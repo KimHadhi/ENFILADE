@@ -83,3 +83,19 @@ kataAura.fade,0.8,카타가 끝나면 이만큼(초) 동안 사라진다(길이�
 kataAura.drop,Loop/Smoke_loop_flipbook_thingy_Clean_alpha_soft|Loop/Clair_Smoke_01_M|Loop/FuzzAdd_Soft|Burst_1/Clair_Smoke_01_M|Burst_1/FuzzAlpha_Soft|Burst_1/Smoky_Glow_01_M,"뺄 부분: 4~5m 연기, 7m 밝은 퍼짐(화면을 덮음), 처음 터지는 큰 연기와 검은 퍼짐. 남는 것: 금빛 탄, 바닥 바람, 허리 높이 바람 원판, 반짝임"
 kataAura.selfDrop,,"내 화면에서만 더 뺄 부분. 비워 둠: 나도 남과 같은 기운을 본다"
 kataAura.life,0,0이면 카타 길이만큼(Hold)
+setPieceBlast.prefab,Big Explosion Sequence,"장의 큰 폭발 연출(CampaignBlast): 단계가 시작되고 조금 뒤 그 자리에서 모든 PC가 같이 본다. 2장 주유소(톨게이트 버티기가 시작될 때, 58 m 뒤), 4장 급유차(견인 버티기가 시작될 때, 견인차에서 60 m). 다치게 하지는 않는다. 사용자가 moment-vfx의 Realistic Gunslinger 쓰임새 제안에 ""ㅇㅇ 제안대로 써"""
+setPieceBlast.scale,0.7,크기 배율. 팩 그대로면 불덩이 6~15 m. 0.7이면 4~10 m로 50~60 m 밖에서 시야의 10° 남짓
+setPieceBlast.speed,1,빠르기 배율. 팩의 빨아들임 → 폭발 → 0.5초 뒤 두 번째 폭발 그대로
+setPieceBlast.drop,Burst/Explotion .65|Burst/Lightning_Sword_thingy_dark_fres_alpha|FuzzAdd|FuzzAdd_Soft|FuzzAlpha|FuzzAlpha_Soft|Impact_Halo_add_soft|Radialsuper_Flare_add_soft|Flare_simple_add_soft|DiagonalFlare_ConalSpliff|Flare|LightFlash_Soft|DS_Aoe_Crystal_Warp_01|Fire_Nova_Decal_dark_Alpha|Flecks_Shiny_Additive,"뺄 부분. 팩의 세 번째·네 번째 폭발 묶음(1초·1.5초), 화면을 덮는 25~40 m 빛 번짐·검은 퍼짐·후광·렌즈 플레어·섬광, 열 일그러짐(비싸다), 땅의 10~30 m 검은 원, 반짝이 불티(입자 1만 개). 117개 입자 시스템 중 약 40개가 남는다: 불덩이, 불과 연기, 퍼지는 연기, 충격파 고리, 돌 조각, 조각 불티, 땅의 불"
+setPieceBlast.stopAfter,6,이만큼(초) 뒤 남은 반복(땅의 불·연기)을 멈춘다
+setPieceBlast.life,10,사라지는 때(초)
+setPieceBlast.near,30,"카메라가 이보다(m) 가까우면 작게 그린다(nearShare까지). 놓는 자리는 그 단계에 아무도 없는 곳이지만, 남은 사람이 있어도 화면을 덮지 않게"
+setPieceBlast.nearShare,0.35,가장 가까울 때의 크기 비율
+setPieceBlast.sound,Frag,터질 때 소리(Grenades 묶음 키). 수류탄 폭발음을 낮게
+setPieceBlast.loud,1,소리 크기
+setPieceBlast.hearFull,30,이 거리(m)까지는 다 크게 들린다
+setPieceBlast.hearFar,320,이 거리(m)까지 들린다
+setPieceBlast.pitch,0.7,높낮이 배율. 낮을수록 크고 무거운 소리
+setPieceBlast.shake,0.6,바로 곁에서의 화면 흔들림(0~1). 멀수록 제곱으로 줄어든다
+setPieceBlast.shakeReach,90,이 거리(m) 밖에서는 흔들리지 않는다. 60 m에서 0.6 × (1/3)² ≈ 0.07
+setPieceBlast.burnt,#2a2622,터진 뒤 그을린 상자의 색(CampaignBlast가 이름 받은 상자에 칠함)
