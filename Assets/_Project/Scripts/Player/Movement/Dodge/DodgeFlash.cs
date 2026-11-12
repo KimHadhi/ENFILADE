@@ -11,8 +11,8 @@ using UnityEngine.UI;
 ///   friends see too, and which this PC sees most on a step back, its ghost left ahead;
 /// - a dodge that lets a blow go by (a perfect evade, step or Q/E) bursts red: red kinked lines flying out round the
 ///   crosshair, the rim and both side edges flaring red, the picture drained to a red cast for a blink, and the dodge's
-///   own ghosts and lines in the world turning red (DodgeDash.Succeed). The slowed counter window after it keeps a deep
-///   red rim (PerfectDefenseVignette).
+///   own lines and smoke in the world turning red, its afterimages (the character itself) only warming a touch
+///   (DodgeDash.Succeed). The slowed counter window after it keeps a deep red rim (PerfectDefenseVignette).
 /// Short and bright, gone within a third of a second (the user's rule for hit effects). Real time, so the evade's slow
 /// motion doesn't hold it. Made at spawn for this PC's own player (PlayerPerfectDefense.Initialize).
 /// </summary>

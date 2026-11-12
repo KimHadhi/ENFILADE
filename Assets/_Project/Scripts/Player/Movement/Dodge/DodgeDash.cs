@@ -7,28 +7,27 @@ using MovementState = PlayerMovement.MovementState;
 /// The step dodge seen in the world, on every PC (user, 2026-11-12, memo 9: "이거 회피 VFX 레퍼런스. 이대로 참
 /// 멋있는 듯" — a Roblox "NEW DASH VFX" short; read frame by frame, it is these four parts, built here the same way):
 /// - a bright white pop at the foot that kicks off, and soft white smoke left on the floor there and where they land;
-/// - afterimages: see-through, pale cyan-white copies of the body with a bright rim, one where the dodge began, one
-///   halfway and one over the body as it arrives, each gone in about a third of a second;
+/// - afterimages: the character itself, faintly see-through, in its own colours (user, 2026-11-12: "레퍼런스 영상처럼 내
+///   캐릭터가 잔상으로 보여야지 이건 뭐 사스케 스사노오냐?" — the first, pale cyan glowing ghost read as an aura): one
+///   where the dodge began, one halfway and one over the body as it arrives, each fading out in about a third of a second;
 /// - wind lines: thin glowing white lines with sharp kinks, like lightning, running from where it began to where the
 ///   body is, at the feet, knees, waist and chest, trailing a little behind the start, thinning away once it lands;
 /// - two curls of air round the shoulders on arrival.
-/// An evade during the dodge (a blow let through, PlayerPerfectDefense) turns the dodge red on this PC's own screen:
-/// its ghosts and lines flare red and a red ghost is left (DodgeFlash calls Succeed). Friends see their own white.
-/// The ghosts are the body's skinned meshes baked at that moment and drawn with the hit-flash overlay shader (tint plus
-/// a fresnel rim); this PC's own player's start ghost fades in over a few hundredths of a second so the camera, still in
-/// its head when it is baked, never sees it from inside, and the lines at head height are left out in first person.
+/// An evade during the dodge (a blow let through, PlayerPerfectDefense) turns the dodge's lines and smoke red on this
+/// PC's own screen, the ghosts warming only a little so they still read as the character, and one more ghost is left
+/// where the blow went by (DodgeFlash calls Succeed, and paints the screen red). Friends see their own white.
+/// The ghosts are the body's skinned meshes baked at that moment and drawn with one shared shader (DodgeGhost) that is
+/// handed each renderer's own main texture and colour per draw, so any outfit or modded character needs nothing of its
+/// own. This PC's own player's start ghost fades in over a few hundredths of a second so the camera, still in its head
+/// when it is baked, never sees it from inside, and the lines at head height are left out in first person.
 /// Real time throughout. Numbers: Tables/Player.csv, row DodgeLook.
 /// </summary>
 [DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.Cloth + 1)]
 public sealed class DodgeDash : MonoBehaviour, ITableBound
 {
     [Header("Afterimages")]
-    [SerializeField, Tooltip("The ghost's see-through body colour; its alpha is how much it covers.")]
-    private Color ghostTint = new Color(.78f, .94f, 1f, .42f);
-    [SerializeField, Tooltip("The ghost's rim light.")]
-    private Color ghostRim = new Color(1f, 1f, 1f, 1f);
-    [SerializeField, Min(0f), Tooltip("How bright the rim burns (above 1 glows).")]
-    private float ghostGlow = 1.5f;
+    [SerializeField, Range(0f, 1f), Tooltip("How solid a fresh afterimage is (the character itself, see-through; 1 would be solid).")]
+    private float ghostAlpha = .5f;
     [SerializeField, Min(.05f), Tooltip("How long the start and halfway ghosts take to go (real s).")]
     private float ghostSeconds = .32f;
     [SerializeField, Min(.05f), Tooltip("How long the ghost over the arriving body takes to go (real s).")]
@@ -67,32 +66,41 @@ public sealed class DodgeDash : MonoBehaviour, ITableBound
     [SerializeField, Min(.05f), Tooltip("How long they last (real s).")]
     private float curlSeconds = .22f;
     [Header("A dodge that let a blow through (this PC's own)")]
-    [SerializeField] private Color successTint = new Color(1f, .1f, .12f, .5f);
-    [SerializeField] private Color successRim = new Color(1f, .3f, .22f, 1f);
-    [SerializeField] private Color successLine = new Color(1f, .14f, .12f, 1f);
+    [SerializeField, Tooltip("The lines and smoke go this colour.")]
+    private Color successLine = new Color(1f, .14f, .12f, 1f);
+    [SerializeField, Tooltip("The afterimages warm towards this colour, only a little: they stay the character.")]
+    private Color successWarm = new Color(1f, .35f, .3f, 1f);
+    [SerializeField, Range(0f, .5f), Tooltip("How far they warm (0: not at all).")]
+    private float successWarmShare = .12f;
 
-    // The overlay shader's properties (HitFlashOverlay): tint, rim, white flash and outline, set per ghost.
-    private static readonly int TintColorId = Shader.PropertyToID("_TintColor"), TintId = Shader.PropertyToID("_Tint"),
-        RimColorId = Shader.PropertyToID("_RimColor"), RimId = Shader.PropertyToID("_Rim"), WhiteId = Shader.PropertyToID("_White"),
-        OutlineId = Shader.PropertyToID("_OutlineWidth");
+    // The ghost shader's properties (Resources/Combat/Shaders/DodgeGhost), set per draw from each renderer's own look.
+    private const string GhostShader = "Combat/Shaders/DodgeGhost";
+    private static readonly int MainTexId = Shader.PropertyToID("_MainTex"), MainTexStId = Shader.PropertyToID("_MainTex_ST"),
+        ColorId = Shader.PropertyToID("_Color"), CutId = Shader.PropertyToID("_Cut"), AlphaId = Shader.PropertyToID("_Alpha"),
+        WarmId = Shader.PropertyToID("_Warm");
     // The longest a dodge is followed before it is taken as over (real s), and when the halfway ghost is baked.
     private const float MostDash = .5f, HalfwayAt = .07f;
     // First person, a line keeps at least this far below the eyes (m), or it would pass through the camera.
     private const float EyeClear = .4f;
     private const int LinePoints = 5, CurlPoints = 9;
 
+    // One piece of a baked mesh's look: the texture, its tiling, the colour its own material draws it with, and 1 when
+    // the texture's alpha cuts it (cut-out and see-through materials).
+    private struct Look { public Texture texture; public Vector4 st; public Color color; public float cut; }
+    // A shader's main texture and colour property ids (MainOf).
+    private struct Main { public int texture, color; public bool hasTexture, hasColor; }
+    private static readonly Dictionary<Shader, Main> mains = new Dictionary<Shader, Main>();
+
     private sealed class Ghost
     {
         public readonly List<Mesh> meshes = new List<Mesh>();
         public readonly List<Matrix4x4> places = new List<Matrix4x4>();
-        // Each ghost its own block: several are drawn in one frame at different strengths. Made on the first draw:
-        // a field initializer would make it in the component's constructor, which Unity refuses (and then every
-        // field after it is left unset).
-        public MaterialPropertyBlock block;
+        // Each mesh's sub-mesh looks start at its entry here in looks.
+        public readonly List<int> firstLook = new List<int>();
+        public readonly List<Look> looks = new List<Look>();
         public int used;
         public float age, seconds, rise;
-        public Color tint, rim;
-        public bool live;
+        public bool live, warm;
     }
 
     private sealed class Line
@@ -114,6 +122,9 @@ public sealed class DodgeDash : MonoBehaviour, ITableBound
     private readonly Ghost[] ghosts = { new Ghost(), new Ghost(), new Ghost(), new Ghost() };
     private readonly List<Line> lines = new List<Line>();
     private readonly List<SkinnedMeshRenderer> skins = new List<SkinnedMeshRenderer>();
+    private readonly List<Material> materials = new List<Material>();
+    // Made on the first draw: Unity refuses one made in a field initializer (the component's constructor).
+    private MaterialPropertyBlock block;
     private Transform lineHolder;
     private Vector3 start, direction;
     private float dashAge;
@@ -131,8 +142,8 @@ public sealed class DodgeDash : MonoBehaviour, ITableBound
     void ITableBound.OnTableApplied() { if (lineHeights == null || lineHeights.Length == 0) lineHeights = new[] { .5f }; }
 
     /// <summary>
-    /// This PC's own player let a blow through a dodge (DodgeFlash): the dodge under way flares red, its ghosts and lines
-    /// with it; with none under way (a Q/E slip) a red ghost is left over the body.
+    /// This PC's own player let a blow through a dodge (DodgeFlash): the dodge under way flares, its lines red and its
+    /// ghosts warming a touch; one more ghost, warmed, is left over the body (with none under way, a Q/E slip, red smoke).
     /// </summary>
     public void Succeed()
     {
@@ -142,12 +153,12 @@ public sealed class DodgeDash : MonoBehaviour, ITableBound
         foreach (var ghost in ghosts)
         {
             if (!ghost.live) continue;
-            ghost.tint = successTint; ghost.rim = successRim;
+            ghost.warm = true;
             ghost.age = Mathf.Min(ghost.age, ghost.rise); any = true;
         }
         foreach (var line in lines) if (line.live) Tint(line, successLine);
-        // Red over the body where it is now, the moment the blow went by; not with the camera inside that body.
-        if (!ViewInBody()) Bake(Free(), arrivalSeconds * 1.6f, 0f, successTint, successRim);
+        // One more afterimage where the blow went by; not with the camera inside that body.
+        if (!ViewInBody()) Bake(Free(), arrivalSeconds * 1.6f, 0f, true);
         if (!any) Puffs(transform.position, smokePuffs / 2, new Color(successLine.r, successLine.g, successLine.b, .45f));
     }
 
@@ -186,7 +197,7 @@ public sealed class DodgeDash : MonoBehaviour, ITableBound
         direction.Normalize();
         Pop(start + Vector3.up * .08f);
         Puffs(start, smokePuffs, new Color(.95f, .97f, 1f, .5f));
-        Bake(Free(), ghostSeconds, Mine ? ghostRise : 0f, ghostTint, ghostRim);
+        Bake(Free(), ghostSeconds, Mine ? ghostRise : 0f, false);
         Vector3 side = Vector3.Cross(Vector3.up, direction);
         // In first person the lines keep below the eyes, crouched or standing, or they would run through the camera.
         Transform eyes = ViewInBody() ? PlayerView.EyesOf(player) : null;
@@ -215,7 +226,7 @@ public sealed class DodgeDash : MonoBehaviour, ITableBound
         if (!halfwayBaked && dashAge >= HalfwayAt)
         {
             halfwayBaked = true;
-            Bake(Free(), ghostSeconds * .85f, Mine ? ghostRise : 0f, red ? successTint : ghostTint, red ? successRim : ghostRim);
+            Bake(Free(), ghostSeconds * .85f, Mine ? ghostRise : 0f, red);
         }
     }
 
@@ -228,7 +239,7 @@ public sealed class DodgeDash : MonoBehaviour, ITableBound
         Puffs(at, smokePuffs / 2, new Color(.95f, .97f, 1f, .4f));
         // Not in first person: the camera is right in the body they would wrap.
         if (ViewInBody()) return;
-        Bake(Free(), arrivalSeconds, 0f, red ? successTint : ghostTint, red ? successRim : ghostRim);
+        Bake(Free(), arrivalSeconds, 0f, red);
         for (int i = 0; i < curls; i++)
         {
             var curl = Take(true);
@@ -294,30 +305,40 @@ public sealed class DodgeDash : MonoBehaviour, ITableBound
             float rise = ghost.rise > 0f ? Mathf.Clamp01(ghost.age / ghost.rise) : 1f;
             float left = 1f - Mathf.Max(0f, ghost.age - ghost.rise) / ghost.seconds;
             if (left <= 0f) { ghost.live = false; continue; }
-            float strength = rise * left * left;
-            var rimLight = ghost.rim * ghostGlow;
-            rimLight.a = 1f;
-            var block = ghost.block ??= new MaterialPropertyBlock();
-            block.SetColor(TintColorId, ghost.tint); block.SetFloat(TintId, strength);
-            block.SetColor(RimColorId, rimLight); block.SetFloat(RimId, strength);
-            block.SetFloat(WhiteId, 0f); block.SetFloat(OutlineId, 0f);
+            float alpha = ghostAlpha * rise * left * left;
+            var warm = ghost.warm ? new Color(successWarm.r, successWarm.g, successWarm.b, successWarmShare) : new Color(1f, 1f, 1f, 0f);
+            // One block for every draw: DrawMesh copies it as it is when called.
+            block ??= new MaterialPropertyBlock();
+            block.SetFloat(AlphaId, alpha);
+            block.SetColor(WarmId, warm);
             for (int i = 0; i < ghost.used; i++)
             {
                 var mesh = ghost.meshes[i];
+                int first = i < ghost.firstLook.Count ? ghost.firstLook[i] : 0;
                 for (int part = 0; part < mesh.subMeshCount; part++)
+                {
+                    int at = Mathf.Min(first + part, ghost.looks.Count - 1);
+                    var look = at >= 0 ? ghost.looks[at] : new Look { st = new Vector4(1f, 1f, 0f, 0f), color = Color.white };
+                    block.SetTexture(MainTexId, look.texture != null ? look.texture : Texture2D.whiteTexture);
+                    block.SetVector(MainTexStId, look.st);
+                    block.SetColor(ColorId, look.color);
+                    block.SetFloat(CutId, look.cut);
                     Graphics.DrawMesh(mesh, ghost.places[i], material, 0, null, part, block, ShadowCastingMode.Off, false);
+                }
             }
         }
     }
 
-    // The body as it is this moment, every skinned mesh of it that shows, up to the vertex budget.
-    private void Bake(Ghost ghost, float seconds, float rise, Color tint, Color rim)
+    // The body as it is this moment, every skinned mesh of it that shows, up to the vertex budget, with each of its
+    // sub-meshes' own texture, tiling and colour. warm: a dodge that let a blow through.
+    private void Bake(Ghost ghost, float seconds, float rise, bool warm)
     {
         if (ghost == null || GhostMaterial() == null) return;
         skins.Clear();
         GetComponentsInChildren(false, skins);
         int budget = ghostVertexBudget;
         ghost.used = 0;
+        ghost.firstLook.Clear(); ghost.looks.Clear();
         foreach (var skin in skins)
         {
             var shared = skin.sharedMesh;
@@ -336,10 +357,63 @@ public sealed class DodgeDash : MonoBehaviour, ITableBound
             skin.BakeMesh(mesh, true);
             Transform place = skin.transform;
             ghost.places[ghost.used] = Matrix4x4.TRS(place.position, place.rotation, Vector3.one);
+            ghost.firstLook.Add(ghost.looks.Count);
+            materials.Clear();
+            skin.GetSharedMaterials(materials);
+            for (int part = 0; part < mesh.subMeshCount; part++)
+                ghost.looks.Add(LookOf(materials.Count > 0 ? materials[Mathf.Min(part, materials.Count - 1)] : null));
             ghost.used++;
         }
-        ghost.age = 0f; ghost.seconds = seconds; ghost.rise = rise; ghost.tint = tint; ghost.rim = rim;
+        ghost.age = 0f; ghost.seconds = seconds; ghost.rise = rise; ghost.warm = warm;
         ghost.live = ghost.used > 0;
+    }
+
+    // What a material draws as its own surface: its shader's main texture and colour (MainOf), the texture's tiling,
+    // and whether the texture's alpha cuts it. Only cut-out and see-through materials are cut: an opaque one ignores
+    // its texture's alpha, and many keep something else there. Anything without a main texture draws white.
+    private static Look LookOf(Material material)
+    {
+        var look = new Look { st = new Vector4(1f, 1f, 0f, 0f), color = Color.white };
+        var shader = material != null ? material.shader : null;
+        if (shader == null) return look;
+        var main = MainOf(shader);
+        if (main.hasTexture)
+        {
+            look.texture = material.GetTexture(main.texture);
+            Vector2 scale = material.GetTextureScale(main.texture), offset = material.GetTextureOffset(main.texture);
+            look.st = new Vector4(scale.x, scale.y, offset.x, offset.y);
+        }
+        if (main.hasColor) look.color = material.GetColor(main.color);
+        look.cut = material.renderQueue >= (int)RenderQueue.AlphaTest ? 1f : 0f;
+        return look;
+    }
+
+    // A shader's main texture and colour, found once per shader: the ones it marks [MainTexture] and [MainColor]
+    // (URP Lit: _BaseMap, _BaseColor; lilToon: _MainTex, _Color — lilToon also keeps a hidden, unused _BaseMap and
+    // _BaseColor for fallbacks, so going by the names alone would draw its outfits white), else the names Unity takes
+    // as main (_MainTex, _Color: MToon, Poiyomi, the built-in shaders), else URP's.
+    private static Main MainOf(Shader shader)
+    {
+        if (mains.TryGetValue(shader, out var main)) return main;
+        int texture = -1, color = -1;
+        for (int i = 0, count = shader.GetPropertyCount(); i < count; i++)
+        {
+            var flags = shader.GetPropertyFlags(i);
+            var type = shader.GetPropertyType(i);
+            if (texture < 0 && (flags & ShaderPropertyFlags.MainTexture) != 0 && type == ShaderPropertyType.Texture) texture = i;
+            if (color < 0 && (flags & ShaderPropertyFlags.MainColor) != 0 && type == ShaderPropertyType.Color) color = i;
+        }
+        if (texture < 0) texture = shader.FindPropertyIndex("_MainTex");
+        if (texture < 0) texture = shader.FindPropertyIndex("_BaseMap");
+        if (color < 0) color = shader.FindPropertyIndex("_Color");
+        if (color < 0) color = shader.FindPropertyIndex("_BaseColor");
+        main = new Main
+        {
+            hasTexture = texture >= 0, texture = texture >= 0 ? shader.GetPropertyNameId(texture) : 0,
+            hasColor = color >= 0, color = color >= 0 ? shader.GetPropertyNameId(color) : 0,
+        };
+        mains[shader] = main;
+        return main;
     }
 
     // The oldest ghost if all are still showing.
@@ -395,7 +469,7 @@ public sealed class DodgeDash : MonoBehaviour, ITableBound
     private static Material GhostMaterial()
     {
         if (ghostMaterial != null) return ghostMaterial;
-        var shader = FeelAssets.OverlayShader;
+        var shader = Resources.Load<Shader>(GhostShader);
         if (shader == null) return null;
         return ghostMaterial = new Material(shader) { name = "Dodge Ghost (Runtime)", hideFlags = HideFlags.HideAndDontSave };
     }

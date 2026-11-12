@@ -62,9 +62,7 @@ Slip.glintColor,#E0EDF7,그 빛의 색
 Slip.lockAngle,40,슬립하면 시선이 공격한 적에게 붙는다(비켜 돌기). 그 적이 시선에서 이 각도(도) 안에 있을 때만. 슬립하는 동안 머리가 비켜 나갔다 돌아와도 적이 화면 가운데에 있고, 곧은 주먹 반격은 달려드는 동안에도 그 적을 본다. 0이면 끈다
 Slip.lockRate,20,시선이 그 적에게 도는 빠르기(1/초). 남은 각도 중 이 비율을 1초에 돈다
 Slip.lockLetGo,5,붙어 있는 동안 마우스로 이 각도(도)만큼 돌리면 놓는다. 다른 적을 반격할 때
-DodgeLook.ghostTint,#C7F0FF6B,스텝 회피의 잔상(사용자가 보낸 대시 VFX 영상처럼): 비쳐 보이는 몸 색. 끝 두 자리(알파)가 덮는 정도. 시작 자리·중간·도착한 몸 위에 하나씩 남는다
-DodgeLook.ghostRim,#FFFFFF,잔상의 가장자리 빛 색
-DodgeLook.ghostGlow,1.5,잔상 가장자리 빛의 밝기(1을 넘으면 번진다)
+DodgeLook.ghostAlpha,0.5,스텝 회피의 잔상(사용자가 보낸 대시 VFX 영상처럼 내 캐릭터 그대로 비쳐 보임): 막 남은 잔상이 덮는 정도(0~1. 1이면 안 비침). 옷마다 제 텍스처·색으로 그리고 시작 자리·중간·도착한 몸 위에 하나씩 남아 사라진다
 DodgeLook.ghostSeconds,0.32,시작·중간 잔상이 사라지는 시간(실제 초)
 DodgeLook.arrivalSeconds,0.2,도착한 몸 위 잔상이 사라지는 시간(실제 초). 1인칭에서는 카메라가 그 몸 안이라 안 나온다
 DodgeLook.ghostRise,0.04,내 잔상이 떠오르는 시간(실제 초). 구울 때 카메라가 아직 그 머리 안이라 빠져나간 뒤 보이게
@@ -82,9 +80,9 @@ DodgeLook.smokePuffs,6,차고 나가는 자리의 바닥 연기 수. 착지 자�
 DodgeLook.smokeSeconds,0.5,연기 하나가 남는 시간(실제 초)
 DodgeLook.curls,2,착지할 때 어깨 둘레를 감는 바람 소용돌이 수(0이면 끈다). 1인칭에서는 안 나온다
 DodgeLook.curlSeconds,0.22,소용돌이가 남는 시간(실제 초)
-DodgeLook.successTint,#FF1A1F80,회피 성공(공격을 흘려보냄) 때 잔상 몸 색. 내 화면에서만
-DodgeLook.successRim,#FF4D38,회피 성공 때 잔상 가장자리 빛 색
-DodgeLook.successLine,#FF241F,회피 성공 때 줄기·소용돌이 색
+DodgeLook.successLine,#FF241F,회피 성공(공격을 흘려보냄) 때 줄기·소용돌이·연기 색. 내 화면에서만
+DodgeLook.successWarm,#FF594D,회피 성공 때 잔상이 살짝 물드는 색. 잔상은 캐릭터 그대로 보여야 해서 조금만
+DodgeLook.successWarmShare,0.12,그 물드는 정도(0이면 안 물듦. 0.5까지)
 Parry.handSweepSeconds,0.45,패링 때 손 동작 전체 시간: 뻗기+멈춤+돌아오기(실제 초)
 Parry.handSweepAttack,0.04,손이 화면을 가로질러 뻗는 시간(실제 초)
 Parry.handSweepHold,0.16,뻗은 자세로 멈추는 시간(실제 초). 히트스톱과 맞물린다
