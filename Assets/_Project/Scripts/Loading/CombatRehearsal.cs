@@ -12,7 +12,7 @@ using Object = UnityEngine.Object;
 /// What a fight draws for the first time, drawn once in front of the player's camera while the loading screen covers it
 /// (SceneWarmup): the shot and hit particles, every game shader (Resources/Combat/Shaders: tracer, muzzle flame, kill-feed
 /// flair, dodge ghost ...), gore's gut pieces and blood decals, every zombie look (skinned, as a zombie is), the class
-/// throwables and every gun's pickup model. Drawn through the real camera in the real scene, each is drawn with the
+/// throwables, the bought pack effects (PackFx) and every gun's pickup model. Drawn through the real camera in the real scene, each is drawn with the
 /// scene's own lights, fog, shadows and screen-space passes, so the shader variant the fight will need is the one compiled
 /// here (in the editor) and its pipeline state the one made here (in a build). Before (to 0.8.194) the first zombie, the
 /// first gore and the first pickup made theirs in the fight: the 18:53 run of 2026-11-12 spent 9.8 s in
@@ -131,6 +131,10 @@ internal sealed class CombatRehearsal : MonoBehaviour
             foreach (var model in new[] { throwables.knife, throwables.frag, throwables.smoke, throwables.flash, throwables.mist })
                 steps.Add(() => Look(model, false));
 
+        // The bought effects the game's moments play (PackFx: the Desperado's shots, a won duel's skull), whose ShaderGraph
+        // materials would otherwise compile on the first such shot.
+        foreach (var pack in PackFx.Prefabs()) steps.Add(() => Effect(pack));
+
         var arms = FPSBodyAssets.Instance;
         if (arms != null && arms.guns != null)
         {
@@ -232,6 +236,18 @@ internal sealed class CombatRehearsal : MonoBehaviour
         owned.Add(stand);
         var animator = stand.GetComponentInChildren<Animator>();
         if (animator != null) rigs.Add(animator);
+    }
+
+    // A pack effect drawn as a look, each of its particle systems made to show one particle at once: the pack's own start
+    // delays could outlast the few frames the rehearsal holds, and a system with nothing out draws nothing.
+    private void Effect(GameObject prefab)
+    {
+        if (prefab == null) return;
+        var item = Item(prefab.name);
+        var copy = Instantiate(prefab, item.transform, false);
+        Calm(copy);
+        foreach (var system in copy.GetComponentsInChildren<ParticleSystem>(true)) system.Emit(1);
+        Fit(item.transform);
     }
 
     private void Gun(WeaponData weapon)
