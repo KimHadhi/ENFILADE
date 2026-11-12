@@ -16,7 +16,9 @@ using UnityEngine;
 /// While a hand holds the zombie (the table's l*/r* windows) it is kept on that bone whatever bodies play the pair (a bigger
 /// brute, another character): a two-bone reach after everything else has posed the arms. A state with no pair, or whose
 /// clips are missing, keeps the old execution. The knife in hand, the gun put away and the knife's sounds are the class
-/// knife's (ExecutionKnife), which leaves the arms to a playing pair (ExecutionKnife.ArmsPosedElsewhere).
+/// knife's (ExecutionKnife), which leaves the arms to a playing pair (ExecutionKnife.ArmsPosedElsewhere, handed over eased
+/// both ways) and spreads the rest of its stroke after the kill over what is left of the pair, so the knife is put away
+/// and the gun comes back as the pair ends.
 /// It runs right after the execution, so a dash's end begins the pair in the same frame and the pair's timing is in before
 /// the class knife's stab reads it (ExecutionKnife, Execution + 5), and before the movement, the body and the zombies; the
 /// hands' holds run after every arm pose (ExecutionPairHands).
@@ -41,8 +43,6 @@ public sealed class ExecutionPairPlayer : MonoBehaviour
 
     // A hand eases onto its hold and off it over these (s).
     private const float HoldIn = .05f, HoldOut = .1f;
-    // A copy whose owner's word that it ended is lost stops this long past the pair's end (s).
-    private const float CopyGrace = .5f;
 
     /// <summary>On the player's own PC: a pair began (to send to the others).</summary>
     public event Action<Shared> Began;
@@ -79,9 +79,6 @@ public sealed class ExecutionPairPlayer : MonoBehaviour
         if (player == null) return null;
         return player.TryGetComponent(out ExecutionPairPlayer pairs) ? pairs : player.AddComponent<ExecutionPairPlayer>();
     }
-
-    /// <summary>A paired execution's clip has this player's whole body now, arms included.</summary>
-    public static bool PlaysPair(PlayerMovement who) => who != null && who.TryGetComponent(out ExecutionPairPlayer pairs) && pairs.playing;
 
     /// <summary>The pair playing on this PC's copy of the player, or null.</summary>
     public ExecutionPair Playing => playing ? pair : null;
@@ -149,7 +146,8 @@ public sealed class ExecutionPairPlayer : MonoBehaviour
             Aim();
             return;
         }
-        if (clock > pair.Length + CopyGrace) Stop();
+        // A copy ends on its own clock, caught up to the owner's, as the owner's ends; an early end comes by ShowStop.
+        if (clock >= pair.Length) Stop();
     }
 
     // ---- The owner's pair -------------------------------------------------------------------------------------------
@@ -296,7 +294,9 @@ public sealed class ExecutionPairPlayer : MonoBehaviour
         ZombieBody target = victim != null && victim.TryGetComponent(out ZombieBody found) && found.Wears ? found : null;
         if (!Begin(chosen, target, playerClip, zombieClip, at, yaw, late)) return;
         ownsPair = false;
-        if (execution != null) execution.Retime(chosen.Kill, chosen.Length);
+        // Timed from now, as the owner's knife stab that came with this word begins here now: its strike on the pair's
+        // kill and its end on the pair's end as this copy plays them (ExecutionKnife reads them).
+        if (execution != null) execution.Retime(chosen.Kill - late, chosen.Length - late);
     }
 
     /// <summary>On every other PC: the owner's pair ended early (the host said no, or it was cut short).</summary>
@@ -309,8 +309,11 @@ public sealed class ExecutionPairPlayer : MonoBehaviour
         playing = false;
         if (body != null) body.EndPaired();
         if (zombie != null && zombie.BodyRoot != null) zombie.EndExecuted();
-        // The class knife's arms again: its stroke puts the knife away from where the clip left the fist.
+        // The class knife's arms again, eased in from where the clip left them (ExecutionKnifeArm), should its stroke still
+        // be going (a pair cut short); a whole pair's end is the stroke's end too.
         if (TryGetComponent(out ExecutionKnife knife)) knife.ArmsPosedElsewhere = false;
+        // The execution's own timing again (a copy that runs none keeps the pair's until now).
+        if (execution != null) execution.ForgetPair();
         ownsPair = false;
         zombie = null;
         hitBone = leftBone = rightBone = null;

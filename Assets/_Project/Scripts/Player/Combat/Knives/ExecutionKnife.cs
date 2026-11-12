@@ -11,7 +11,10 @@ using UnityEngine;
 /// away) with the victim's neck and head as it measured them, PlayerNetworkCombat sends that to every other PC, and each
 /// copy plays the same stroke from it (Show); the arms are posed by ExecutionKnifeArm on each body. The draw, the stab and
 /// the sheath sound at the hand on every PC (the knife row's cues). Timing: the strike lands impactTime after the stab
-/// begins, as the execution's hit does, never slower than the stroke was drawn; after it, the stroke runs at its own pace.
+/// begins, as the execution's hit does, never slower than the stroke was drawn; after it, the stroke runs at its own pace,
+/// or, when a paired execution clip has the arms (ArmsPosedElsewhere as the stab begins), over what is left of the
+/// execution (PlayerExecution.Duration), so the knife is put away and the gun comes back as the pair ends, not while its
+/// clip is still getting the player up.
 /// </summary>
 [DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.Execution + 5)]
 public sealed class ExecutionKnife : MonoBehaviour
@@ -47,6 +50,8 @@ public sealed class ExecutionKnife : MonoBehaviour
     private Aim aim;
     private KnifeStroke.Key cutFrom, last;
     private float clock, sincePhase, sinceStab, stabFrom, rate = 1f, impact = .35f, held, cutLeft;
+    // The stroke's pace after the strike: its own (1), or what spreads the rest of it over a paired clip's rest.
+    private float afterRate = 1f;
     private bool playing, cutting, stabSounded, sheathSounded, hasLast;
     private int nextArmTry;
 
@@ -175,6 +180,7 @@ public sealed class ExecutionKnife : MonoBehaviour
         if (arm == null) arm = ExecutionKnifeArm.Of(movement);
         if (arm != null) arm.Wear(knife);
         impact = execution != null ? execution.ImpactTime : .35f;
+        afterRate = 1f;
         aim = at;
         playing = true;
         phase = Phase.Draw;
@@ -196,6 +202,10 @@ public sealed class ExecutionKnife : MonoBehaviour
             if (execution != null) impact = execution.ImpactTime;
             float lead = Mathf.Max(0f, stroke.Strike - stabFrom);
             rate = lead > impact ? lead / Mathf.Max(.01f, impact) : 1f;
+            // A paired clip has the arms (ExecutionPairPlayer): the pull out, the putting away and the gun's return
+            // fill what is left of the execution, which ends with the pair, so nothing ends before its clip does.
+            float after = ArmsPosedElsewhere && execution != null ? execution.Duration - impact : -1f;
+            afterRate = after > .05f ? Mathf.Clamp((stroke.Length - stroke.Strike) / after, .25f, 4f) : 1f;
         }
         else if (next == Phase.Away && clock < stroke.Out)
         {
@@ -228,7 +238,7 @@ public sealed class ExecutionKnife : MonoBehaviour
                 sinceStab += dt;
                 clock = sinceStab < impact
                     ? Mathf.Max(stabFrom, stroke.Strike - (impact - sinceStab) * rate)
-                    : stroke.Strike + (sinceStab - impact);
+                    : stroke.Strike + (sinceStab - impact) * afterRate;
                 break;
             default:
                 clock += dt;

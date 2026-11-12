@@ -53,6 +53,8 @@ public sealed class PlayerExecution : MonoBehaviour
     public MeleeCombatTarget Victim => victim;
     /// <summary>How long after the execution proper begins (any dash in over) its blow lands (s): the knife's strike meets it (ExecutionKnife).</summary>
     public float ImpactTime => Mathf.Min(impactTime, duration);
+    /// <summary>How long after the execution proper begins it ends (s): a paired clip's knife stroke ends with it (ExecutionKnife).</summary>
+    public float Duration => duration;
     // A paired execution's own timing and blow for this one (ExecutionPairPlayer, Tables/Executions.csv): its kill and
     // length stand in for impactTime and duration until it ends, when the table's come back; its blow lands on the bone
     // the knife meets and sends the body the pair's way.
@@ -253,10 +255,12 @@ public sealed class PlayerExecution : MonoBehaviour
     /// <summary>
     /// A paired execution runs this one (ExecutionPairPlayer): its blow lands <paramref name="impact"/> after the
     /// execution proper began and it ends at <paramref name="length"/>, instead of the table's impactTime and duration.
+    /// On every PC, until ForgetPair: where the execution runs it times the blow and the end; on a copy that runs none it
+    /// still times the class knife's stab, which reads ImpactTime and Duration (ExecutionKnife), so it strikes and puts the
+    /// knife away with the pair there too.
     /// </summary>
     internal void Retime(float impact, float length)
     {
-        if (!IsExecuting) return;
         if (tableImpact < 0f) { tableImpact = impactTime; tableDuration = duration; }
         impactTime = Mathf.Max(0f, impact);
         duration = Mathf.Max(.1f, length);
@@ -267,7 +271,8 @@ public sealed class PlayerExecution : MonoBehaviour
         strikePoint = point;
         strikeAlong = along.sqrMagnitude > 1e-6f ? along.normalized : (Vector3?)null;
     }
-    private void ForgetPair()
+    /// <summary>The table's timing and blow again (the execution's end, and a pair's end on a copy that runs none).</summary>
+    internal void ForgetPair()
     {
         strikePoint = strikeAlong = null;
         if (tableImpact < 0f) return;

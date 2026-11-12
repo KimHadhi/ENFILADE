@@ -28,9 +28,9 @@
    - 넘어져 누운 좀비: 처형이 몸을 인형에서 떼는 순간의 골반·머리 자리에, 클립 첫 프레임의 골반·머리 방향(`zHipsRight`·`zHipsForward`·`zHeadYaw`)이 겹치게 놓는다.
 2. **두 몸이 같은 시계로 튼다.** 플레이어 몸([PlayerBody.Execution](../Scripts/Player/Body/PlayerBody.Execution.cs))은 맨 위 층에 온몸 클립을 얹고, 몸 뿌리가 `align`초에 걸쳐 짝의 자리(`right`·`forward`·`yaw`)로 옮겨 간다. 캡슐도 같이 미끄러지고 그동안 희생자 캡슐과는 부딪치지 않는다. 그 동안 시선 굽히기·발 딛기·머리 따라가기는 쉬고, 시점은 클립의 머리를 따라 조금 움직인다(몸이 이끄는 동작처럼). 좀비 몸([ZombieBody.Executed](../Scripts/Enemies/ZombieBody.Executed.cs))은 맨 위 입력(21)에 좀비 클립을 얹어 다른 동작을 다 덮고, 뿌리를 짝의 뿌리에 둔다. 둘 다 `blendIn`초에 지금 자세에서 섞여 들어가고 `blendOut`초에 돌아온다.
 3. **처치 순간**(`kill`): 처형의 타격이 이때 온다(`PlayerExecution.Retime`이 표의 impactTime·duration 대신 짝의 처치·길이를 쓴다). 칼이 닿는 좀비 뼈(`hitBone`)에서 피가 터지고, 맞은 방향은 짝의 `fall*` 쪽이라 시체가 그쪽으로 무너진다. 죽은 좀비는 그 순간의 클립 자세에서 근육이 0.3초에 풀리며 래그돌이 된다(ZombieCorpse). 거구처럼 버티는 좀비는 좀비 클립의 나머지(제자리에서 접었다 폄)를 하고 원래 동작으로 돌아간다.
-4. **모든 PC에 같게**(사용자의 규칙 "내가 보는 화면이 진실"): 처형하는 PC가 짝 번호·좀비·뿌리 자리·방향·시작 시각을 보낸다([PlayerNetworkCombat](../Scripts/Network/PlayerNetworkCombat.cs) `PairBeganRpc`). 다른 PC는 그 사람의 몸과 그 좀비 몸에 같은 짝을 같은 자리에 틀고, 말이 오는 데 걸린 시간만큼 앞당겨 시작한다. 피는 PC마다 자기 시계의 처치 순간에 같은 뼈에서 터진다. 판정은 예전 그대로 방장이 한다(좀비를 잡아 주거나 거절, 피해는 방장이 받음). 거절되거나 끊기면 `PairStoppedRpc`로 모두 멈춘다.
+4. **모든 PC에 같게**(사용자의 규칙 "내가 보는 화면이 진실"): 처형하는 PC가 짝 번호·좀비·뿌리 자리·방향·시작 시각을 보낸다([PlayerNetworkCombat](../Scripts/Network/PlayerNetworkCombat.cs) `PairBeganRpc`). 다른 PC는 그 사람의 몸과 그 좀비 몸에 같은 짝을 같은 자리에 틀고, 말이 오는 데 걸린 시간만큼 앞당겨 시작한다. 피는 PC마다 자기 시계의 처치 순간에 같은 뼈에서 터지고, 짝은 그 시계로 짝 길이에서 끝난다. 그 PC의 처형 시간도 짝에 맞춰져서(`Retime`, 앞당긴 만큼 빼고) 그 사람의 클래스 칼도 같은 때 찌르고 넣는다. 판정은 예전 그대로 방장이 한다(좀비를 잡아 주거나 거절, 피해는 방장이 받음). 거절되거나 끊기면 `PairStoppedRpc`로 모두 멈춘다.
 5. **손 붙이기**: 왼손이 머리·멱살·가슴을 잡는 동안, 칼이 목·머리에 박혀 있는 동안(표의 `l*`·`r*`: 뼈, 시작·끝, 그 뼈에서 손목까지)은 팔의 모든 자세가 끝난 뒤([ExecutionPairHands](../Scripts/Player/Combat/ExecutionPairHands.cs)) 두 뼈 IK로 손을 그 뼈에 붙여 둔다. 클립을 만든 몸(카즈사와 Synty 좀비)에서는 거의 움직이지 않고, 다른 캐릭터나 덩치 큰 거구(`ZombieBody.Grown`, 자리도 그만큼 멀어짐)에서 손이 허공을 잡지 않게 한다.
-6. **칼·총**: 손의 칼, 총 치우기, 뽑기·박히기·넣기 소리는 클래스 칼([ExecutionKnife](../Scripts/Player/Combat/Knives/ExecutionKnife.cs))이 맡는다. 짝이 도는 동안은 `ExecutionKnife.ArmsPosedElsewhere`를 켜서 칼은 주먹에 따라가고 팔은 짝 클립이 움직인다. 칼의 찌르기 타격 시간은 찌르기가 시작될 때 처형에서 다시 읽어서(0.8.290) 짝의 처치에 맞는다. 짝이 끝나면 칼 쪽 팔이 칼을 칼집에 넣는다.
+6. **칼·총**: 손의 칼, 총 치우기, 뽑기·박히기·넣기 소리는 클래스 칼([ExecutionKnife](../Scripts/Player/Combat/Knives/ExecutionKnife.cs))이 맡는다. 짝이 도는 동안은 `ExecutionKnife.ArmsPosedElsewhere`를 켜서 칼은 주먹에 따라가고 팔은 짝 클립이 움직인다. 칼의 찌르기 타격 시간은 찌르기가 시작될 때 처형에서 다시 읽어서(0.8.290) 짝의 처치에 맞는다. 타격 뒤의 칼 빼기·칼집에 넣기·총 다시 들기는 짝의 남은 시간에 맞춰 늘어난다(`PlayerExecution.Duration`: 칼 찌르기의 타격 뒤 0.57초가 짝의 타격 뒤 0.73~1.1초로). 그래서 칼은 짝의 끝 무렵 손이 내려온 뒤에 들어가고 총은 짝이 끝날 때 돌아온다. 팔은 짝이 시작할 때 칼을 든 자세에서 클립 자세로 0.12초, 짝이 일찍 끊기면 클립에서 칼 쪽 팔로 0.25초에 걸쳐 넘어가서 튀지 않는다([ExecutionKnifeArm](../Scripts/Player/Combat/Knives/ExecutionKnifeArm.cs)).
 
 클립은 휴머노이드라 어떤 플레이어 캐릭터, 어떤 인간형 좀비 몸에도 맞는다(모더의 FBX 캐릭터 포함). 클립은 플레이어 몸 프로필(`Resources/Characters/PlayerBody`, PlayerBodyProfileBuilder가 Art/Animations를 모음)에서 이름으로 찾는다.
 
@@ -54,6 +54,7 @@
 6. 거구(`/spawn brute`)를 무너뜨려 처형 → 손이 머리에 붙고, 살아남으면 접었다 펴고 다시 싸운다.
 7. 둘이서: 친구가 처형할 때 내 화면에서도 같은 짝이 같은 자리에서 나오는지, 피가 같은 데서 터지는지.
 8. 3인칭 시네마틱을 끄고(Esc → 카메라) 1인칭으로도 해 본다: 시점이 눈을 따라가고 손이 화면에 보여야 한다.
+9. 칼과 짝이 팔을 주고받는 순간: 달려들며 칼을 든 팔이 짝 클립 자세로 튀지 않고 넘어가는지, 짝 끝 무렵 손이 내려온 뒤 칼이 들어가고 짝이 끝날 때 총이 돌아오는지(그 전에 총이 나오지 않는지). 처형 중 채팅을 열어 끊으면(처형이 끊기는 경우) 팔이 칼 쪽으로 부드럽게 돌아오는지.
 
 ## 아직 모자란 것
 

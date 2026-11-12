@@ -22,6 +22,10 @@ public sealed class ExecutionKnifeArm : MonoBehaviour
     // long blade goes in deep and a short one still meets it), the left hand on top of the head and a little toward the
     // player, as a hand grips a head to hold it.
     private const float NeckBack = .07f, FistOverNeck = .05f, ReachShareOverNeck = .3f, MostOverNeck = .23f, HeadAbove = .1f, HeadBack = .07f;
+    // The arms change hands with a paired execution clip (ExecutionKnife.ArmsPosedElsewhere) over these (s), as the clip
+    // blends in and out (Executions.csv blendIn, blendOut): from the drawn knife's pose into the clip's as the pair begins,
+    // and back to the stroke's should the pair end first (cut short), never a jump either way.
+    private const float ArmsToClip = .12f, ArmsFromClip = .25f;
 
     private sealed class Side
     {
@@ -45,6 +49,9 @@ public sealed class ExecutionKnifeArm : MonoBehaviour
     private string worn;
     private Vector3 modelBlade = Vector3.back, modelEdge = Vector3.down;
     private float reach = .2f;
+    // How much of the arms the stroke poses now (1) or leaves to a paired clip (0), and whether a stroke posed last frame.
+    private float armsShare = 1f;
+    private bool stroking;
 
     /// <summary>A player's knife arms, made on their body's model the first time; null without a humanoid body.</summary>
     internal static ExecutionKnifeArm Of(PlayerMovement who)
@@ -104,6 +111,7 @@ public sealed class ExecutionKnifeArm : MonoBehaviour
         if (eyes == null) eyes = PlayerView.EyesOf(movement);
         if (driver == null || eyes == null || !driver.Current(out var key, out var aim, out var knife))
         {
+            stroking = false;
             ShowKnife(false);
             return;
         }
@@ -114,17 +122,27 @@ public sealed class ExecutionKnifeArm : MonoBehaviour
         Vector3 neckAim = aim.Neck + toPlayer * NeckBack + Vector3.up * Mathf.Min(MostOverNeck, FistOverNeck + reach * ReachShareOverNeck);
         Vector3 headAim = aim.Head + toPlayer * HeadBack + Vector3.up * HeadAbove;
         // A paired execution clip may have the arms (ExecutionKnife.ArmsPosedElsewhere): then the knife only rides the fist.
-        if (!driver.ArmsPosedElsewhere)
+        // The arms change hands eased; a stroke begins as the switch has it.
+        float wantArms = driver.ArmsPosedElsewhere ? 0f : 1f;
+        armsShare = stroking
+            ? Mathf.MoveTowards(armsShare, wantArms, Time.deltaTime / (wantArms < armsShare ? ArmsToClip : ArmsFromClip))
+            : wantArms;
+        stroking = true;
+        if (armsShare > 0f)
         {
-            Pose(left, key.Left, view, aim.Has, headAim);
-            Pose(right, key.Right, view, aim.Has, neckAim);
+            Pose(left, key.Left, view, aim.Has, headAim, armsShare);
+            Pose(right, key.Right, view, aim.Has, neckAim, armsShare);
         }
         bool held = key.Held && model != null && key.Right.Weight > 0f;
         if (held) Seat(knife);
         ShowKnife(held);
     }
 
-    private void OnDisable() => ShowKnife(false);
+    private void OnDisable()
+    {
+        stroking = false;
+        ShowKnife(false);
+    }
 
     private void OnDestroy()
     {
@@ -175,10 +193,11 @@ public sealed class ExecutionKnifeArm : MonoBehaviour
 
     // The arm where the key has it: the wrist from this shoulder in this arm's lengths, drawn toward the aim by the key's
     // share, the elbow toward its pole; the hand turned to the key's run and facing, the fingers closed; all eased by the
-    // key's weight from the pose the frame had.
-    private static void Pose(Side side, in KnifeStroke.Arm key, Quaternion view, bool aimed, Vector3 aim)
+    // key's weight, times the stroke's share of the arms, from the pose the frame had.
+    private static void Pose(Side side, in KnifeStroke.Arm key, Quaternion view, bool aimed, Vector3 aim, float share)
     {
-        if (key.Weight <= 0f) return;
+        float weight = key.Weight * share;
+        if (weight <= 0f) return;
         for (int i = 0; i < side.TurnedCount; i++) side.Framed[i] = side.Turned[i].localRotation;
         Vector3 shoulder = side.Upper.position;
         Vector3 wrist = shoulder + view * (key.Wrist * side.ArmLength);
@@ -187,8 +206,8 @@ public sealed class ExecutionKnifeArm : MonoBehaviour
         Vector3 along = view * key.Along, palm = view * key.Palm;
         TurnHand(side, along, palm);
         Fingers(side, along, palm, key.Curl, key.Thumb);
-        if (key.Weight < 1f)
-            for (int i = 0; i < side.TurnedCount; i++) side.Turned[i].localRotation = Quaternion.Slerp(side.Framed[i], side.Turned[i].localRotation, key.Weight);
+        if (weight < 1f)
+            for (int i = 0; i < side.TurnedCount; i++) side.Turned[i].localRotation = Quaternion.Slerp(side.Framed[i], side.Turned[i].localRotation, weight);
     }
 
     // The knife in the right fist as the hand finally is this frame: its handle's middle at the row's place in the fist,
