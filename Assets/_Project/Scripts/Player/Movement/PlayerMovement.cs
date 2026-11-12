@@ -396,6 +396,7 @@ public sealed partial class PlayerMovement : MonoBehaviour
             gameObject.AddComponent<MoneyDrops>();
             gameObject.AddComponent<PerkCardScreen>(); // the perk cards a full gauge buys, and their health perk
             gameObject.AddComponent<PlayerLifeHUD>();
+            gameObject.AddComponent<DeathScreen>(); // dying: the world drained, blurred and muffled, the sting, the card (Settings → HUD)
             gameObject.AddComponent<TeammateMarkerHUD>();
             gameObject.AddComponent<ObjectiveGuideHUD>(); // where the campaign's step wants them: a mark at the screen's edge
             gameObject.AddComponent<TeamHealthPanel>();

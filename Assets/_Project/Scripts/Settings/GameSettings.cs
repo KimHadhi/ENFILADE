@@ -13,6 +13,9 @@ public enum HitMarkerStyle { Clean, Bold }
 /// over the ammo (C).</summary>
 public enum WeaponSlotLook { Plates, Cards }
 
+/// <summary>How dying looks (DeathScreen): all of it until spectating or coming back, a shorter one, or none at all.</summary>
+public enum DeathScreenMode { Full, Short, Off }
+
 /// <summary>How the game window covers the monitor (DisplaySettings).</summary>
 public enum WindowMode { Fullscreen, Borderless, Windowed }
 
@@ -87,6 +90,10 @@ public sealed class GameSettings
         "grows and shows its name; the default) or Cards (a row of small cards over the ammo; the one in hand turns into a " +
         "wide light card). Numbers in WeaponSlots.csv.")]
     public WeaponSlotLook weaponSlots = WeaponSlotLook.Plates;
+    [Tooltip("Death screen (DeathScreen): Full drains, blurs and muffles the world with the sting and the card of what killed " +
+        "the player, how long they lasted and what comes next, until spectating or coming back; Short is the same over a " +
+        "shorter time and lighter; Off shows only the plain lines (PlayerLifeHUD). Numbers in DeathScreen.csv.")]
+    public DeathScreenMode deathScreen = DeathScreenMode.Full;
     [Tooltip("Horizontal field of view in degrees, measured at 16:9. Wider screens see more at the sides.")]
     public float fieldOfView = 90f;
     [Tooltip("Show the player's own hair and head in first person, cut only where the camera sits inside them.")]
@@ -203,6 +210,7 @@ public sealed class GameSettings
                 s.hudSway = d.hudSway; s.hudTilt = d.hudTilt; s.hudAngle = d.hudAngle; s.hudFollowsLean = d.hudFollowsLean;
                 s.hudBoards = d.hudBoards; s.damageNumbers = d.damageNumbers; s.hitMarkerStyle = d.hitMarkerStyle;
                 s.weaponSlots = d.weaponSlots;
+                s.deathScreen = d.deathScreen;
                 break;
             case SettingsGroup.Crosshair:
                 s.steadyCrosshair = d.steadyCrosshair;
@@ -257,6 +265,7 @@ public sealed class GameSettings
         if (damageNumbers < DamageNumberMode.Off || damageNumbers > DamageNumberMode.Each) damageNumbers = DamageNumberMode.Stacked;
         if (hitMarkerStyle < HitMarkerStyle.Clean || hitMarkerStyle > HitMarkerStyle.Bold) hitMarkerStyle = HitMarkerStyle.Clean;
         if (weaponSlots < WeaponSlotLook.Plates || weaponSlots > WeaponSlotLook.Cards) weaponSlots = WeaponSlotLook.Plates;
+        if (deathScreen < DeathScreenMode.Full || deathScreen > DeathScreenMode.Off) deathScreen = DeathScreenMode.Full;
         fieldOfView = Mathf.Clamp(fieldOfView, MinFieldOfView, MaxFieldOfView);
         frameLimit = frameLimit <= 0 ? 0 : Mathf.Clamp(frameLimit, MinFrameLimit, MaxFrameLimit);
         monitorName ??= "";

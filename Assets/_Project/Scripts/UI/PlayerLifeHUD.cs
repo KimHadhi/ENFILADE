@@ -19,6 +19,7 @@ public sealed class PlayerLifeHUD : MonoBehaviour
     private PlayerRevive revive;
     private PlayerDamageReceiver receiver;
     private PlayerSpectate spectate;
+    private DeathScreen screen;
     private TextMeshProUGUI label, who, secondsLeft, watching, keys;
     private RectTransform panel, fill;
     private GameObject canvas;
@@ -37,6 +38,10 @@ public sealed class PlayerLifeHUD : MonoBehaviour
         if (canvas == null) Build();
         canvas.SetActive(text != null);
         if (text == null) return;
+        // While the death screen is up its card says this (DeathScreen): the middle line waits under it, the spectate keys
+        // at the bottom stay.
+        if (screen == null) TryGetComponent(out screen);
+        label.enabled = screen == null || !screen.Covers;
         label.text = text;
         label.fontSize = size;
         label.color = color;

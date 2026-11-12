@@ -222,6 +222,8 @@ public sealed class SceneWarmup : MonoBehaviour
         BashImpact.Prepare();
         MuzzleFlame.Prepare();
         CombatFeedHUD.Prewarm();
+        // The death screen's card, film and sting made, and its blur drawn once, rather than on the first death.
+        DeathScreen.Prepare();
         // The zombie looks pared once (a zombie no longer copies the whole Synty pack), the brute's roar and boom made
         // now rather than on its first arrival (Resources/Audio/Boss is empty, so they are synthesized), and the banks
         // first asked for by a throw or a menu click.

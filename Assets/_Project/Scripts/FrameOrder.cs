@@ -101,6 +101,9 @@ public static class FrameOrder
     public const int Spectate = 1010;
     /// <summary>The campaign's run (CampaignRun): a carried fuel can follows the finished camera and hands.</summary>
     public const int Campaign = 1020;
+    /// <summary>The death screen (DeathScreen): after the spectate camera has taken the view this frame, and after the
+    /// slow-motion look's muffling (SlowMotionSound, at 0) has set the listener's low-pass, so the lower cutoff holds.</summary>
+    public const int DeathScreen = 1030;
     /// <summary>The view punch goes on the finished camera; the frame's hits are confirmed once, at its end.</summary>
     public const int ViewPunch = 10000;
     public const int HitConfirm = 10000;

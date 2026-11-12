@@ -23,6 +23,7 @@ public static class GameCommands
         router.Register("pso", "trace · save · (비우면 상태) — 빌드의 그래픽 상태 기록, 개발 빌드에서 (PsoWarmup)", PsoWarmup.Command);
         router.Register("sound", "<뱅크>/<키> · cue <큐> · list <뱅크> — 소리 미리 듣기 (예: /sound cue Execution/Behind)", SoundPreview.Command);
         router.Register("point", "F 없이 손가락질 고정·풀기 — 손 모양을 Poke.csv Point.* 로 고치며 보기 (F5로 몸 전체)", PlayerPoint.Command);
+        router.Register("death", "[좀비 종류 / fall / bleed / friend] [wipe] [short / full] — 죽지 않고 데스 스크린만 미리 보기 (DeathScreen)", DeathScreen.Command);
         router.Register("hits", "UI 클릭 판정 모양 보기 켜기·끄기 — 하늘색 = 누를 수 있는 곳, 분홍 = 지금 커서가 고르는 것, 노랑 = 호버로 비킨 원래 자리 (KitHit)", KitHitView.Command);
     }
 }

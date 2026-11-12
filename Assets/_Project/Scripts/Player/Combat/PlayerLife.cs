@@ -33,6 +33,8 @@ public sealed class PlayerLife : MonoBehaviour
     private float wipeLeft, respawnLeft, nextWipeCheck;
 
     public bool IsWiped => wipeLeft > 0f;
+    /// <summary>Seconds until the wipe ends and everyone is back (0 when there is none): the death screen counts it down.</summary>
+    public float WipeLeft => Mathf.Max(0f, wipeLeft);
     /// <summary>Waves bring the dead back when they start; otherwise a timer does.</summary>
     public bool WaitsForWave => waves != null && waves.IsRunning;
     public float RespawnLeft => respawnLeft;

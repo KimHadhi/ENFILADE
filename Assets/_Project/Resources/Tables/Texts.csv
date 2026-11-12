@@ -967,6 +967,33 @@ life.spectate.follow_keys,[좌클릭] 다음    [우클릭] 이전    [Space] �
 life.spectate.free,자유 시점,,관전: 자유 시점일 때 화면 아래 글씨
 life.spectate.free_keys,[WASD] 이동    [Shift] 빠르게    [좌클릭] 동료 관전    [Space] 따라가기,,관전 키 안내(자유 시점)
 life.spectate.wait_keys,[좌클릭] 관전,,관전 키 안내(관전 시작 전)
+death.title.dead,사망,,데스 스크린: 죽었을 때 화면 위쪽 가운데 큰 글자(검은 판 위·분홍 사선)
+death.title.wipe,전멸,,"데스 스크린: 모두 쓰러졌을 때(혼자 하다 죽었을 때도) 큰 글자. 동료를 보던 중에 전멸하면 다시 뜬다"
+death.cause.by,{0}에게 당했다,,데스 스크린 이유 줄. {0}=죽인 좀비 이름(분홍. 좀비 이름은 zombie.* 줄)
+death.cause.elite,엘리트,,데스 스크린 이유 줄: 엘리트·이름 있는 좀비에게 죽었을 때 이름 뒤에 붙는 작은 분홍 표
+death.cause.fall,떨어져 죽었다,,데스 스크린 이유 줄: 높은 데서 떨어져서
+death.cause.bleed,피를 너무 흘렸다,,데스 스크린 이유 줄: 쓰러진 채 아무도 못 와서(무엇에 쓰러졌는지 모를 때)
+death.cause.bleed_by,{0}에게 쓰러진 뒤 피를 너무 흘렸다,,데스 스크린 이유 줄: 쓰러진 채 아무도 못 와서. {0}=쓰러뜨린 것(좀비는 분홍·동료는 그 색)
+death.cause.friend,아군 {0}에게 당했다,,데스 스크린 이유 줄: 아군 사격으로. {0}=그 동료 이름(색 포함)
+death.cause.self,내 폭발에 휘말렸다,,데스 스크린 이유 줄: 내 투척물 같은 내 공격에
+death.cause.wipe,모두 쓰러졌다,,데스 스크린 이유 줄: 쓰러져 있는 동안 전멸했을 때
+death.cause.unknown,숨이 멎었다,,데스 스크린 이유 줄: 무엇에 죽었는지 모를 때
+death.how.feed,뜯어먹힘,,데스 스크린 이유 줄 끝의 작은 글자(어떻게 죽었나): 붙잡혀 먹힘
+death.how.slam,내동댕이쳐짐,,데스 스크린 이유 줄 끝의 작은 글자: 거구 같은 놈에게 날려짐
+death.how.pounce,덮쳐짐,,데스 스크린 이유 줄 끝의 작은 글자: 러너가 덮침
+death.how.blast,폭발,,데스 스크린 이유 줄 끝의 작은 글자: 자폭 좀비나 폭발물
+death.how.bullet,총탄,,데스 스크린 이유 줄 끝의 작은 글자: 총에 맞음
+death.how.thrown,투척,,데스 스크린 이유 줄 끝의 작은 글자: 던진 것에 맞음
+death.how.bite,물어뜯김,,데스 스크린 이유 줄 끝의 작은 글자: 맞은 자리에서 바로 죽는 물기(러너의 목 물기·붙잡혀 먹힘)
+death.stat.lasted,버틴 시간,,데스 스크린 아래 숫자 판 위 작은 글자: 이번 목숨으로 버틴 시간(분:초)
+death.stat.kills,처치,,데스 스크린 아래 숫자 판 위 작은 글자: 이번 목숨의 처치 수
+death.stat.money,가진 돈,,데스 스크린 아래 숫자 판 위 작은 글자: 지금 가진 돈(지폐 그림과 숫자)
+death.next.wipe.campaign,{0}초 뒤 마지막 휴식처에서 다시,,데스 스크린 마지막 줄(전멸 뒤 캠페인). {0}=남은 초. 아직 휴식처를 지나지 않았으면 장 처음
+death.next.wipe.tower,{0}초 뒤 이 구간 스캐너부터 다시,,데스 스크린 마지막 줄(전멸 뒤 엔필레이드 타워). {0}=남은 초
+death.next.wipe.waves,{0}초 뒤 1웨이브부터 다시,,데스 스크린 마지막 줄(전멸 뒤 웨이브 맵). {0}=남은 초
+death.next.wipe.start,{0}초 뒤 처음 자리에서 다시,,데스 스크린 마지막 줄(전멸 뒤 그 밖의 맵). {0}=남은 초
+settings.hud.death_screen,데스 스크린,,설정 창 > HUD > 행 (죽었을 때 화면. 켬·짧게·끔)
+settings.hud.death_screen.short,짧게,,"설정 창 > HUD > 데스 스크린 선택지 (같은 연출을 짧고 옅게, 피 없이. 수치는 DeathScreen.csv Short 줄)"
 #--- 처치 점수·킬 피드 ---,,,
 feed.score.kill,처치,,처치 점수 팝업(총 오른쪽 위)의 줄
 feed.score.headshot,헤드샷,,처치 점수 팝업의 줄

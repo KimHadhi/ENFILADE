@@ -49,6 +49,11 @@ public sealed class SettingsMenuView
     {
         Texts.Get("settings.hud.weapon_slots.plates"), Texts.Get("settings.hud.weapon_slots.cards"),
     };
+    // In DeathScreenMode's order.
+    private static string[] DeathScreenNames => new[]
+    {
+        Texts.Get("settings.on"), Texts.Get("settings.hud.death_screen.short"), Texts.Get("settings.off"),
+    };
     // In WindowMode's order.
     private static string[] WindowModeNames => new[]
     {
@@ -339,5 +344,6 @@ public sealed class SettingsMenuView
         rows.Choice(Texts.Get("settings.hud.damage_numbers"), DamageNumberNames, (int)s.damageNumbers, i => s.damageNumbers = (DamageNumberMode)i);
         rows.Choice(Texts.Get("settings.hud.hit_markers"), HitMarkerStyleNames, (int)s.hitMarkerStyle, i => s.hitMarkerStyle = (HitMarkerStyle)i);
         rows.Choice(Texts.Get("settings.hud.weapon_slots"), WeaponSlotLookNames, (int)s.weaponSlots, i => s.weaponSlots = (WeaponSlotLook)i);
+        rows.Choice(Texts.Get("settings.hud.death_screen"), DeathScreenNames, (int)s.deathScreen, i => s.deathScreen = (DeathScreenMode)i);
     }
 }
