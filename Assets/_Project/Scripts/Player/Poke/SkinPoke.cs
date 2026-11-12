@@ -131,6 +131,9 @@ public sealed class SkinPoke : MonoBehaviour
             slot.Pressed = false;
             slot = null;
         }
+        // Poked again where it just let go (콕콕콕): the same dent, still springing back, is pressed again rather than a
+        // second one opened on top of it, which would push the skin in twice.
+        if (slot == null) slot = Springing(poker, hit, slide);
         if (slot == null) slot = Open(poker, hit);
         if (slot == null) return;
         push.Normalize();
@@ -155,6 +158,15 @@ public sealed class SkinPoke : MonoBehaviour
     {
         if (poker == null) return null;
         foreach (var slot in slots) if (slot.InUse && slot.Pressed && slot.Poker == poker) return slot;
+        return null;
+    }
+
+    // This finger's own dent springing back at the same place on the same body and zone, if there is one.
+    private static Slot Springing(PlayerMovement poker, in PokeHit hit, float slide)
+    {
+        foreach (var slot in slots)
+            if (slot.InUse && !slot.Pressed && slot.Poker == poker && slot.Body == hit.Body && slot.Zone == hit.Zone
+                && (slot.Surface - hit.Point).sqrMagnitude <= slide * slide) return slot;
         return null;
     }
 

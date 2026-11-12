@@ -69,8 +69,11 @@ public sealed class PokeBody : MonoBehaviour
         public float Cell;
     }
 
-    // A worn mesh's shapes beyond this many at once are left out of the surface (a face mid-expression, mostly).
-    private const int MostShapes = 64;
+    // The shapes a worn mesh wears most (a body option, a face) go on the surface read, at most this many and none under
+    // MinShape (of 100): each costs a copy of the whole mesh, and an avatar can wear hundreds of keys (Ichigo has 438).
+    private const int MostShapes = 12;
+    private const float MinShape = 10f;
+    private readonly List<(int shape, float weight)> worn = new List<(int, float)>();
 
     private readonly List<Patch> patches = new List<Patch>();
     private readonly Dictionary<Transform, Gathering> gathering = new Dictionary<Transform, Gathering>();
@@ -180,7 +183,7 @@ public sealed class PokeBody : MonoBehaviour
         if (baked) return true;
         if (steppedFrame == Time.frameCount) return false;
         steppedFrame = Time.frameCount;
-        int budget = Mathf.Max(1000, (int)PokeTables.Number("Touch.bakeVertices", 40000f));
+        int budget = Mathf.Max(1000, (int)PokeTables.Number("Touch.bakeVertices", 20000f));
         float grid = Mathf.Max(.001f, PokeTables.Number("Touch.grid", .006f));
         while (budget > 0)
         {
@@ -240,30 +243,31 @@ public sealed class PokeBody : MonoBehaviour
         return false;
     }
 
-    // The blend shapes the renderer wears now (a body option, a face), on the vertices just read: each shape's last frame
-    // at its share (most have one frame, at 100).
+    // The blend shapes the renderer wears most now (a body option, a face), on the vertices just read: each shape's last
+    // frame at its share (most have one frame, at 100).
     private void Shapes(SkinnedMeshRenderer skinned, Mesh mesh)
     {
-        int count = mesh.blendShapeCount, used = 0;
-        Vector3[] deltas = null, normals = null, tangents = null;
-        for (int shape = 0; shape < count && used < MostShapes; shape++)
+        worn.Clear();
+        for (int shape = 0, count = mesh.blendShapeCount; shape < count; shape++)
         {
             float weight = skinned.GetBlendShapeWeight(shape);
-            if (Mathf.Abs(weight) < 1f) continue;
+            if (Mathf.Abs(weight) >= MinShape) worn.Add((shape, weight));
+        }
+        if (worn.Count == 0) return;
+        worn.Sort((a, b) => Mathf.Abs(b.weight).CompareTo(Mathf.Abs(a.weight)));
+        var deltas = new Vector3[vertices.Length];
+        var normals = new Vector3[vertices.Length];
+        var tangents = new Vector3[vertices.Length];
+        for (int k = 0; k < worn.Count && k < MostShapes; k++)
+        {
+            var (shape, weight) = worn[k];
             int frames = mesh.GetBlendShapeFrameCount(shape);
             if (frames <= 0) continue;
             float full = mesh.GetBlendShapeFrameWeight(shape, frames - 1);
             if (Mathf.Abs(full) < 1e-3f) continue;
-            if (deltas == null)
-            {
-                deltas = new Vector3[vertices.Length];
-                normals = new Vector3[vertices.Length];
-                tangents = new Vector3[vertices.Length];
-            }
             mesh.GetBlendShapeFrameVertices(shape, frames - 1, deltas, normals, tangents);
             float share = weight / full;
             for (int i = 0; i < vertices.Length; i++) vertices[i] += deltas[i] * share;
-            used++;
         }
     }
 
