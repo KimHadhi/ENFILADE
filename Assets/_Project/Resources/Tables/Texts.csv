@@ -843,6 +843,7 @@ hud.hold.hooked,갈고리에 걸렸다 — 살을 파고들어 계속 아프다.
 feed.score.ninja_parry,닌자 튕겨내기,Ninja parried,점수 팝업의 줄: 닌자의 등 뒤 공격을 돌아서 패링했을 때(돈)
 feed.score.saw_parry,전기톱 튕겨내기,Chainsaw parried,점수 팝업의 줄: 브레드백의 전기톱을 패링했을 때(돈)
 feed.score.reap_dodge,낫 밑으로,Under the scythe,점수 팝업의 줄: 그림 리퍼의 품에 붙어 앉아 낫을 피했을 때(돈)
+feed.score.exploder_defuse,숨골 끊어 해체,Defused: brainstem cut first,점수 팝업의 줄: 자폭 좀비를 암살·처형해 터지기 전에 해체했을 때(돈. 칼끝이 가스주머니에 불이 붙기 전에 숨골을 끊는다)
 menu.launch.solo.hub,혼자  ·  은신처에서 {0} 준비,,"메인 메뉴 > 출격 버튼 아래 줄(혼자 하기, 허브가 있을 때). {0}=맵 이름"
 menu.launch.host.hub,방 만들기  ·  은신처에서 {0} 준비,,"메인 메뉴 > 출격 버튼 아래 줄(방 만들기, 허브가 있을 때). {0}=맵 이름"
 hub.objective.title,출발 준비  ·  {0},,허브 > 임무 칸 제목. {0}=고른 장

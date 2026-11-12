@@ -10,7 +10,12 @@ using UnityEngine;
 /// near they stand and knocked flat, the kills credited to whoever shot it), which is why it is worth picking out;
 /// next to a player it hurts and throws them. The host runs the fuse and ends it; every PC sees the death, plays the
 /// burst there (CanBlastEffect, with no fire left behind) and hurts and throws its own player, a player's health being
-/// their own PC's. On every zombie, as ZombieRunner is; it does nothing for other kinds. Numbers: Tables/ZombieExploder.
+/// their own PC's. A takedown or an execution defuses it instead (user, 2026-11-12: "자폭 좀비 암살할 땐 안 터지면 안
+/// 됨? 내가 암살하고 터져서 뒤로 자빠지네"): the blade finds the brainstem before the gas sac can light, so it only
+/// hisses and sags, harms nobody, and the one who did it is paid defuseReward. Every PC reads how it died from the
+/// killing blow itself (CombatDamageEvents, raised once per hit on every PC; DamageKind.Execution), so all agree: the
+/// death event (EnemyHealth.Died) only fires where the kill was judged, and the other players' PCs never burst it at all.
+/// On every zombie, as ZombieRunner is; it does nothing for other kinds. Numbers: Tables/ZombieExploder.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class ZombieExploder : MonoBehaviour
@@ -53,6 +58,13 @@ public sealed class ZombieExploder : MonoBehaviour
     private float glowBeat = 1.4f;
     [SerializeField, Min(0f), Tooltip("How often at the end of the fuse (a second).")]
     private float fuseBeat = 11f;
+    [Header("Defused (a takedown or an execution)")]
+    [SerializeField, Min(0), Tooltip("Money for the one whose takedown or execution defused it, on top of the kill's.")]
+    private int defuseReward = 40;
+    [SerializeField, Min(.1f), Tooltip("The puff of gas it lets out as it sags (m).")]
+    private float gasSize = .9f;
+    [SerializeField, Tooltip("The gas's colour (its alpha is how thick).")]
+    private Color gasColor = new Color(.66f, .72f, .35f, .75f);
 
     private EnemyHealth health;
     private EnemyNetwork network;
@@ -62,10 +74,11 @@ public sealed class ZombieExploder : MonoBehaviour
     private EliteLight marker;
     private GameObject lastSource;
     private float fuse, beat, nextFlash;
-    private bool watching;
+    private bool watching, ended;
+    private static AudioClip hiss;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-    private static void Forget() => boom = null;
+    private static void Forget() => boom = hiss = null;
 
     private bool IsExploder => type != null && type.Kind == ZombieKind.Exploder && !type.Crawls;
     private bool Runs => network == null || !network.IsCopy;
@@ -99,10 +112,16 @@ public sealed class ZombieExploder : MonoBehaviour
 
     private void OnDisable() => marker?.Hide();
 
-    // Who last hurt it: the pack its burst takes along is theirs.
+    // Who last hurt it: the pack its burst takes along is theirs. The blow that kills it ends it here, on every PC alike:
+    // a takedown's or an execution's defuses it, anything else sets it off.
     private void OnDamaged(CombatDamageReport report)
     {
-        if (report.Target == health && report.Hit.Source != null) lastSource = report.Hit.Source;
+        if (report.Target != health) return;
+        if (report.Hit.Source != null) lastSource = report.Hit.Source;
+        if (!report.IsKillingBlow || ended || !IsExploder) return;
+        ended = true;
+        if (report.Hit.Kind == DamageKind.Execution) Defuse(report.Hit);
+        else Burst();
     }
 
     private void LateUpdate()
@@ -153,10 +172,40 @@ public sealed class ZombieExploder : MonoBehaviour
         marker.Show(color, glowSize * Mathf.Lerp(.8f, 1.15f, pulse) * (1f + share * .5f));
     }
 
-    // Every PC, as it dies: the burst where it stood, this PC's own player hurt and thrown; on the host, the zombies round it.
+    // Its death where it was judged (the host, the killer's PC): already ended by its killing blow (OnDamaged), unless that
+    // went unheard here (it turned exploder that very frame), when it bursts as it always did.
     private void OnDied(EnemyHealth died)
     {
-        if (!IsExploder) return;
+        if (!IsExploder || ended) return;
+        ended = true;
+        Burst();
+    }
+
+    // A takedown or an execution: the blade reached the brainstem before the gas sac lit. It hisses and sags in a puff of
+    // gas, the light in its chest goes out, nobody is hurt or thrown and no zombie round it is touched (the host's burst
+    // never runs). Whoever landed it is paid for the nerve it took (this PC's own player only).
+    private void Defuse(in DamageHit hit)
+    {
+        marker?.Hide();
+        var chest = Chest();
+        Vector3 at = chest != null ? chest.position : transform.position + Vector3.up * 1.1f;
+        GasPuff(at);
+        GameAudio.PlayAt(Hiss(), at, AudioChannel.Combat, .9f, 2f, 25f);
+        bool mine = hit.Source != null && hit.Source.GetComponentInParent<PlayerMovement>() is PlayerMovement by && by.IsLocal;
+        if (mine && defuseReward > 0) CombatFeedHUD.Special(Texts.Get("feed.score.exploder_defuse"), defuseReward, gasColor);
+    }
+
+    private Transform Chest()
+    {
+        var animator = GetComponentInChildren<Animator>();
+        if (animator == null || !animator.isHuman) return null;
+        var chest = animator.GetBoneTransform(HumanBodyBones.Chest);
+        return chest != null ? chest : animator.GetBoneTransform(HumanBodyBones.Spine);
+    }
+
+    // Every PC, as it dies: the burst where it stood, this PC's own player hurt and thrown; on the host, the zombies round it.
+    private void Burst()
+    {
         Vector3 at = transform.position;
         marker?.Hide();
         CanBlastEffect.Play(at, blastRadius, 0f);
@@ -231,5 +280,81 @@ public sealed class ZombieExploder : MonoBehaviour
         boom.SetData(data, 0);
         boom.hideFlags = HideFlags.HideAndDontSave;
         return boom;
+    }
+
+    // A defused sac letting go: a soft thump, then a short hiss of gas that thins and drops as it empties. Under half a
+    // second, made here once.
+    private static AudioClip Hiss()
+    {
+        if (hiss != null) return hiss;
+        var data = new float[(int)(SampleRate * .45f)];
+        var random = new System.Random(4127);
+        float last = 0f, low = 0f, turn = 0f, top = 0f;
+        for (int i = 0; i < data.Length; i++)
+        {
+            float t = i / (float)SampleRate;
+            float noise = (float)random.NextDouble() * 2f - 1f;
+            // Air: noise with its lows taken out, getting duller as the pressure goes.
+            low += (noise - low) * Mathf.Lerp(.85f, .25f, t / .45f);
+            float air = low - last;
+            last = low;
+            turn += 2f * Mathf.PI * Mathf.Lerp(95f, 60f, Mathf.Clamp01(t / .08f)) / SampleRate;
+            float thump = Mathf.Sin(turn) * Mathf.Exp(-t / .035f);
+            data[i] = air * Mathf.Min(1f, t / .006f) * Mathf.Exp(-t / .16f) * 1.6f + thump * .7f;
+            top = Mathf.Max(top, Mathf.Abs(data[i]));
+        }
+        int fade = SampleRate / 40;
+        for (int i = 0; i < data.Length; i++)
+            data[i] = data[i] / Mathf.Max(.001f, top) * .8f * Mathf.Min(1f, (data.Length - 1 - i) / (float)fade);
+        hiss = AudioClip.Create("Exploder Defused", data.Length, 1, SampleRate, false);
+        hiss.SetData(data, 0);
+        hiss.hideFlags = HideFlags.HideAndDontSave;
+        return hiss;
+    }
+
+    // The gas it lets out as it sags: a few soft, sickly blobs swelling out and rising a little, gone within a second.
+    private void GasPuff(Vector3 at)
+    {
+        var host = new GameObject("Exploder Gas");
+        host.transform.position = at;
+        var system = host.AddComponent<ParticleSystem>();
+        system.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+        var main = system.main;
+        main.duration = .1f;
+        main.loop = false;
+        main.startLifetime = new ParticleSystem.MinMaxCurve(.45f, .85f);
+        main.startSpeed = new ParticleSystem.MinMaxCurve(.4f, 1.6f);
+        main.startSize = new ParticleSystem.MinMaxCurve(gasSize * .45f, gasSize);
+        main.startRotation = new ParticleSystem.MinMaxCurve(0f, Mathf.PI * 2f);
+        main.startColor = gasColor;
+        main.gravityModifier = -.06f;
+        main.simulationSpace = ParticleSystemSimulationSpace.World;
+        main.maxParticles = 14;
+        main.stopAction = ParticleSystemStopAction.Destroy;
+        var emission = system.emission;
+        emission.rateOverTime = 0f;
+        emission.SetBursts(new[] { new ParticleSystem.Burst(0f, (short)14) });
+        var shape = system.shape;
+        shape.shapeType = ParticleSystemShapeType.Sphere;
+        shape.radius = gasSize * .25f;
+        var growth = system.sizeOverLifetime;
+        growth.enabled = true;
+        growth.size = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.EaseInOut(0f, .5f, 1f, 1.5f));
+        var fade = system.colorOverLifetime;
+        fade.enabled = true;
+        var gradient = new Gradient();
+        gradient.SetKeys(new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(Color.white, 1f) },
+            new[] { new GradientAlphaKey(1f, 0f), new GradientAlphaKey(.6f, .3f), new GradientAlphaKey(0f, 1f) });
+        fade.color = gradient;
+        var slow = system.limitVelocityOverLifetime;
+        slow.enabled = true;
+        slow.dampen = .4f;
+        slow.limit = .2f;
+        var renderer = host.GetComponent<ParticleSystemRenderer>();
+        renderer.sharedMaterial = FeelAssets.Particle(FeelAssets.SoftDot, false);
+        renderer.renderMode = ParticleSystemRenderMode.Billboard;
+        renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        renderer.receiveShadows = false;
+        system.Play();
     }
 }

@@ -70,3 +70,13 @@
 - **멀티플레이**: 피해는 호스트가 정한다. 다리 마모와 자르기는 모든 PC가 같은 피격(CombatDamageEvents, 피격마다 PC마다 한 번)으로 똑같이 세므로(ZombieGore) 금 소리·절뚝임·쓰러짐 연출·약점 빛이 모든 PC에 보인다. 머리 배율은 쏜 PC의 예측과 호스트가 같은 기준(기는 중인지)으로 계산하고, 넘어지는 것은 예전처럼 호스트가 걸고 다른 PC가 따라간다. 느려짐은 호스트의 걸음만 의미가 있다. 늦게 들어온 PC는 이미 기는 거구를 기는 채로(약점 빛과 함께) 본다.
 - **시험**: `/spawn brute`. 다리만 쏴서 금 소리 → 절뚝임 → 쓰러짐을 보고, 기는 머리에 MX16A4로 몇 발이 드는지 센다. `/hitbox`로 머리(빨강)와 다리 피격 상자를 볼 수 있다.
 - **바꾸는 곳**: 피해 수치는 ZombieKinds.csv(`legBreak`·`limpPace`·`crawlHead`), 연출은 ZombieLegs.csv, 소리는 SoundCues.csv `Brute/*`, 문구는 Texts.csv `hud.alert.brute`·`hud.alert.brute.down`과 Callouts.csv. 코드: [ZombieBody.Legs](../Scripts/Enemies/ZombieBody.Legs.cs), [ZombieGore](../Scripts/Enemies/Gore/ZombieGore.cs) `LegWorn`, [EnemyHealth](../Scripts/Enemies/EnemyHealth.cs) `TakenScale`, [ZombieType](../Scripts/Enemies/ZombieType.cs) `Limp`·`WeakHead`. 다른 종류(돌진 좀비 등)도 같은 열을 채우면 같은 규칙을 따른다(쓰러질 때의 경고 띠 문구는 지금 거구의 것).
+
+## 자폭 좀비: 암살·처형하면 터지지 않고 해체 (2026-11-12)
+
+사용자: 「자폭 좀비 암살할 땐 안 터지면 안 됨? 내가 암살하고 터져서 뒤로 자빠지네.」 맞히면 +라는 규칙에 어긋났다: 몰래 다가가 잘 처리했는데 벌을 받았다.
+
+- **터지던 경로**: 처형·암살의 마지막 일격(`PlayerExecution`, `DamageKind.Execution`) → `EnemyHealth.ReceiveHit` → 체력 0 → `Die()` → `Died` → `ZombieExploder.OnDied`. 이 함수가 어떻게 죽었는지 보지 않고 늘 터졌다. 처형하는 사람은 1m 안에 서 있어서 거의 한가운데의 피해(45)와 8m/s 넉백을 받고 뒤로 넘어졌다. 처형 중에는 좀비가 붙잡혀 기절 상태라 도화선은 타지 않는다(죽음만이 문제였다).
+- **이제**: 암살이나 처형으로 죽이면 해체된다. 이유는 칼끝이 가스주머니에 불이 붙기 전에 숨골을 끊어서다. 폭발·피해·넉백·주변 좀비 피해가 모두 없고, 가슴 불빛이 꺼지며 쉬익 소리와 함께 누런 가스가 짧게 빠져나온다(0.5초 안팎). 처치한 사람은 처치 점수 위에 「숨골 끊어 해체」 +40을 더 받는다(ZombieExploder.csv `defuseReward`, 가스 크기·색 `gasSize`·`gasColor`).
+- **나머지는 그대로**: 총·주먹·발차기·폭발로 죽이거나 도화선이 다 타면 예전처럼 터진다. 무리 속에서 멀리서 쏴 같이 쓸어 버리는 것도 그대로다.
+- **모든 PC**: 터질지 해체될지를 죽은 사건(`Died`)이 아니라 죽인 한 방(CombatDamageEvents, 모든 PC가 피격마다 한 번씩 받는다)의 종류로 정한다. `Died`는 처치를 판정한 PC(호스트·처치자)에서만 불려서, 전에는 다른 참가자 화면에는 폭발이 아예 없었고 그 사람의 플레이어도 다치지 않았다. 이제는 모두가 같은 폭발이나 해체를 보고, 폭발은 각자 자기 플레이어를 다치게 한다(설계대로). 주변 좀비 피해는 여전히 호스트만 준다.
+- **시험**: `/spawn exploder calm`으로 조용한 자폭 좀비를 불러 뒤에서 암살 → 터지지 않고 해체되는지, +40이 붙는지. 깨어 있는 자폭 좀비는 섬광탄(포인트 G)으로 자세를 무너뜨려 처형해 본다. 총으로 쏘면 예전처럼 터져야 한다.
