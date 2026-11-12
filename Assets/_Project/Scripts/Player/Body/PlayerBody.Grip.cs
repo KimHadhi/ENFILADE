@@ -7,7 +7,8 @@ using MovementState = PlayerMovement.MovementState;
 /// - On a ledge, only height and distance from the wall; sideways the body stays under the camera. Looking away, it keeps
 ///   the place it had facing the wall: a look clip's hand sits closer in, and fitting that would pull the body into the wall.
 ///   The arm reaches the ledge instead, and the body moves only for what it can't (PlayerBodyHands.EdgeHoldBack).
-/// - On a ladder, shoulders stay centred at climbing distance, and the body goes up or down so the eyes sit at the
+/// - On a ladder, shoulders stay at climbing distance from the capsule (centred on the ladder once on it, along the way
+///   while getting on), and the body goes up or down so the eyes sit at the
 ///   camera's steady height (the camera stays at its place in the capsule there); PlayerBodyHands pins each hand to its rung.
 /// - On a zipline, onto the cable; the ride carries the body along it.
 /// - On a swing bar, onto the bar after PlayerBody.Bar has turned the body with the swing; PlayerBodyHands closes each hand
@@ -88,7 +89,12 @@ public sealed partial class PlayerBody
                 Vector3 shoulders = (leftArm.position + rightArm.position) * .5f;
                 // Leave room for bent arms and the eye camera in front of the shoulders.
                 float shoulderDistance = Mathf.Max(player.AbilitySettings.ladderStandOff, player.runtimeBodyDefaults.w * .25f);
-                Vector3 stand = fixtures.Ladder.transform.position + fixtures.Ladder.Outward * shoulderDistance;
+                // From the capsule, which carries the camera here. On the ladder it stands ladderStandOff out from the
+                // rungs at their middle, so this is the climbing place, as before. Getting on, it is still on its way there
+                // (from up to 0.9 m out below, from the floor up there over the edge and down): measured from the ladder,
+                // the body was there within the clip blend (0.15 s) while the camera was still on its way: getting on from
+                // 0.9 m out below, the camera was 0.3 m behind the head; from the top with Interact, 0.9 m in front of the face.
+                Vector3 stand = transform.position + fixtures.Ladder.Outward * (shoulderDistance - player.AbilitySettings.ladderStandOff);
                 gripOffset = Vector3.ProjectOnPlane(stand - shoulders, Vector3.up);
                 // Up or down too, so the eyes sit at the camera's height: on a ladder the camera keeps to its place in the
                 // capsule (PlayerBody.Look), because the rung clips and the slide clip hold the head at different heights

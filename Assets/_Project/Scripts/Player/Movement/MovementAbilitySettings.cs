@@ -132,6 +132,15 @@ public sealed class MovementAbilitySettings
     [Min(.1f)] public float ladderTopEnterTime = 1.1f;
     [Tooltip("Getting on from the top (Interact, looking out over it), how far back from the ladder on the floor up there it can be taken (m).")]
     [Min(0f)] public float ladderTopEnterReach = .9f;
+    [Tooltip("Walking off the top onto a ladder (Left 4 Dead 2): the body's front, its centre plus the capsule's radius, must be "
+        + "within this of the plane of the rungs (m).")]
+    [Min(0f)] public float ladderTopWalkReach = .05f;
+    [Tooltip("...its centre within this beyond the rails (m).")]
+    [Min(0f)] public float ladderTopWalkSideReach = .1f;
+    [Tooltip("...and the move keys within this of straight out over the edge, whichever way the view looks (degrees).")]
+    [Range(1f, 89f)] public float ladderTopWalkAngle = 45f;
+    [Tooltip("Seconds getting onto a ladder by walking off its top takes: out over the edge, then down onto the top rungs.")]
+    [Min(.1f)] public float ladderTopWalkTime = .75f;
     [Tooltip("Speed the player leaves a ladder with on letting go (m/s).")]
     [Min(0f)] public float ladderDropSpeed = 2f;
     [Tooltip("Seconds after letting go before a ladder can be taken hold of again.")]

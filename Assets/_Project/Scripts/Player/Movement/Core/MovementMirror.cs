@@ -7,7 +7,7 @@ using State = PlayerMovement.MovementState;
 /// copy's body, hands and sounds read what they always read. The copy's states never run and nothing here moves it.
 /// A pose's Detail and Extent mean: the way the body faces, down after a heavy landing; whether a slide's body faces back
 /// along it (1) or along it (0); a vault or mantle's progress and height; a bar's angle and swing speed; the rung's
-/// progress on a ladder; the ride's speed on a cable.
+/// progress on a ladder and, while getting on from its top, how long that takes; the ride's speed on a cable.
 /// </summary>
 public sealed class MovementMirror
 {
@@ -89,6 +89,7 @@ public sealed class MovementMirror
             case State.Ladder:
                 if (fixtures.Ladder != null) pose.Anchor = fixtures.Ladder.transform.position;
                 pose.Detail = fixtures.LadderStepProgress;
+                pose.Extent = fixtures.LadderFromTop ? fixtures.LadderTopEnterTime : 0f;
                 if (fixtures.LadderCaught) marks |= Marks.LadderCaught;
                 if (fixtures.LadderLeftHand) marks |= Marks.LadderLeftHand;
                 if (fixtures.LadderSliding) marks |= Marks.LadderSliding;
@@ -179,7 +180,7 @@ public sealed class MovementMirror
             case State.Ladder:
                 if (pose.LadderSteps != 0 && pose.LadderSteps != fixtures.LadderSteps) ctx.RaiseLadderStepped(Has(pose, Marks.LadderLeftHand));
                 fixtures.MirrorLadder(LadderAt(pose.Anchor), Has(pose, Marks.LadderCaught), Has(pose, Marks.LadderLeftHand),
-                    pose.LadderSteps, pose.Detail, Has(pose, Marks.LadderBlocked), Has(pose, Marks.LadderSliding));
+                    pose.LadderSteps, pose.Detail, Has(pose, Marks.LadderBlocked), Has(pose, Marks.LadderSliding), pose.Extent);
                 break;
             case State.Zipline: fixtures.MirrorZipline(pose.Anchor, pose.Direction, pose.Extent); break;
         }

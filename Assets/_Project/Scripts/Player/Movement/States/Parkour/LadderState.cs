@@ -8,7 +8,7 @@ public sealed class LadderState : MovementBaseState
 {
     private const float GroundReach = .25f;
     private Vector3 from, via, to;
-    private bool twoLegs;
+    private bool twoLegs, walkedOn;
     private float progress, moveTime, nextStep;
     // Getting on from the top: the share of the move spent going out over the edge before going down.
     private const float OverShare = .35f;
@@ -24,10 +24,12 @@ public sealed class LadderState : MovementBaseState
         twoLegs = fixtures.LadderFromTop;
         if (twoLegs)
         {
-            // From the top (backlog 141): out over the edge, then down onto the top rungs.
+            // From the top (backlog 141): out over the edge, then down onto the top rungs. Walked off onto, it takes
+            // ladderTopWalkTime rather than ladderTopEnterTime (MovementFixtures.LadderTopEnterTime).
             via = fixtures.LadderTopOver;
             to = fixtures.LadderTopHold;
-            moveTime = nextStep = settings.ladderTopEnterTime;
+            walkedOn = fixtures.LadderTopWalked;
+            moveTime = nextStep = fixtures.LadderTopEnterTime;
             return;
         }
         to = fixtures.LadderHold(from.y);
@@ -37,8 +39,12 @@ public sealed class LadderState : MovementBaseState
     private Vector3 Along(float share)
     {
         if (!twoLegs) return Vector3.Lerp(from, to, share);
-        return share < OverShare ? Vector3.Lerp(from, via, Mathf.SmoothStep(0f, 1f, share / OverShare))
-            : Vector3.Lerp(via, to, Mathf.SmoothStep(0f, 1f, (share - OverShare) / (1f - OverShare)));
+        if (share >= OverShare) return Vector3.Lerp(via, to, Mathf.SmoothStep(0f, 1f, (share - OverShare) / (1f - OverShare)));
+        float leg = share / OverShare;
+        // Walked off onto it, the player is already moving out: the leg starts at speed and eases to a stop over the edge
+        // (twice its length over its time: 0.6 m in 0.26 s is 4.7 m/s, about the walk's 4.9), where a stop to start from
+        // would hitch. Interact starts from standing, so that leg eases in as well.
+        return Vector3.Lerp(from, via, walkedOn ? 1f - (1f - leg) * (1f - leg) : Mathf.SmoothStep(0f, 1f, leg));
     }
     public override void Exit() => ctx.Abilities.Fixtures.LadderSliding = false;
     public override void UpdateLogic(float dt)

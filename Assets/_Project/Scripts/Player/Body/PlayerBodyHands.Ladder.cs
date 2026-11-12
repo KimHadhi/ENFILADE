@@ -59,7 +59,7 @@ public sealed partial class PlayerBodyHands
             Catch(rightLadderHand, right, false, fixtures.LadderLeftHand ? Mathf.Max(1, high - 1) : high);
             ladderCatchDuration = !fresh || fixtures.LadderSteps > 0 ? blendTime
                 : fixtures.LadderCaught ? player.AbilitySettings.ladderCatchTime
-                : fixtures.LadderFromTop ? player.AbilitySettings.ladderTopEnterTime : player.AbilitySettings.ladderEnterTime;
+                : fixtures.LadderFromTop ? fixtures.LadderTopEnterTime : player.AbilitySettings.ladderEnterTime;
         }
         if (startSlide)
         {

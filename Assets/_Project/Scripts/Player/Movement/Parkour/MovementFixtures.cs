@@ -5,6 +5,8 @@ using State = PlayerMovement.MovementState;
 /// The world's ladders and ziplines, after Beatrun: takes hold of one when the player meets it, and
 /// keeps what the body and the sounds need to know while on it. LadderState and ZiplineState do the moving.
 /// - A ladder takes W, facing it, within reach, on the ground or in the air.
+/// - From its top, walking off onto it takes it as Left 4 Dead 2 does: only once the body has reached it, moving out over
+///   the edge (FindLadderTop). Interact takes it from a little further back.
 /// - A zipline catches the player in the air they jumped into, or with jump held, once the cable is within the hands'
 ///   reach (TrackJumpedIntoAir).
 /// Numbers come from Player.csv, row Ability.
@@ -99,6 +101,10 @@ public sealed class MovementFixtures
     public bool LadderFromTop { get; private set; }
     internal Vector3 LadderTopOver { get; private set; }
     internal Vector3 LadderTopHold { get; private set; }
+    /// <summary>Got on from the top by walking off it rather than by Interact: the player was already moving out.</summary>
+    internal bool LadderTopWalked { get; private set; }
+    /// <summary>Seconds this getting on from the top takes, for the movement, the body and the hands alike.</summary>
+    public float LadderTopEnterTime { get; private set; }
 
     private bool TryLadder()
     {
@@ -119,7 +125,7 @@ public sealed class MovementFixtures
             Vector3 hold = LadderHold(candidate, feet.y);
             if (!ctx.Abilities.Traversal.Detector.ClearPath(feet, hold, ctx.StandingColliderHeight)) continue;
             Ladder = candidate;
-            LadderFromTop = false;
+            LadderFromTop = LadderTopWalked = false;
             LadderCaught = !ctx.IsGrounded;
             LadderLeftHand = !LadderCaught;
             LadderSteps = 0;
@@ -131,17 +137,24 @@ public sealed class MovementFixtures
         return false;
     }
 
-    // Backlog 141: standing on the floor the ladder leads up to, close to its top and looking out over it, Interact takes
-    // hold of it: out over the edge, then down until the hands are on the top rungs, at the height the climb up hands
-    // over to climbing off (ladderTopGap) less a rung. Only on the key: walking near the edge never takes the ladder
-    // (the user found that walking toward it took it whatever they meant).
+    // Backlog 141: from the floor the ladder leads up to, out over the edge, then down until the hands are on the top
+    // rungs, at the height the climb up hands over to climbing off (ladderTopGap) less a rung. Walking off onto it does it
+    // by itself, as in Left 4 Dead 2; Interact does it from a little further back (FindLadderTop).
     private bool TryLadderFromTop()
     {
-        if (!ctx.Input.InteractPressed || !FindLadderTop(out Ladder candidate, out Vector3 over, out Vector3 hold)) return false;
+        Ladder candidate;
+        Vector3 over, hold;
+        bool walked;
+        if (ctx.Input.InteractPressed && FindLadderTop(false, out candidate, out over, out hold)) walked = false;
+        else if (FindLadderTop(true, out candidate, out over, out hold)) walked = true;
+        else return false;
         Ladder = candidate;
         LadderFromTop = true;
         LadderTopOver = over;
         LadderTopHold = hold;
+        LadderTopWalked = walked;
+        // The player walking off it is on the move already, so it is quicker than getting on from standing with the key.
+        LadderTopEnterTime = walked ? ctx.AbilitySettings.ladderTopWalkTime : ctx.AbilitySettings.ladderTopEnterTime;
         LadderCaught = false;
         LadderLeftHand = true;
         LadderSteps = 0;
@@ -159,29 +172,55 @@ public sealed class MovementFixtures
     {
         bool free = ctx.IsLocal && ctx.Abilities.CanUseGroundActions && !ctx.ControlLocked && !ctx.IsGettingUp && !ctx.Input.CrouchHeld
             && ladderLock <= 0f && (ctx.CurrentState == State.Standing || ctx.CurrentState == State.Crouching);
-        ClimbDownLadder = free && FindLadderTop(out Ladder found, out _, out _) ? found : null;
+        ClimbDownLadder = free && FindLadderTop(false, out Ladder found, out _, out _) ? found : null;
     }
 
-    private bool FindLadderTop(out Ladder ladder, out Vector3 over, out Vector3 hold)
+    // Where the player could get on a ladder from its top, standing on the floor it leads up to.
+    // - With Interact (walking false): within ladderTopEnterReach of it, looking out over it.
+    // - Walking off onto it (walking true), as Left 4 Dead 2 does it (the user, 2026-11-12: "사다리는 걍 알아서 내려가는 게
+    //   좋은 듯. 근데 전에 내가 F 눌러서 내려가자 했던 이유가 너무 범위가 넓어서 걍 걸어가다 사다리쪽으로 납치됐어서 그럼.
+    //   딱 레포데만큼이 좋은 듯"). L4D2 takes a ladder when the body touches its thin volume, as wide as the ladder, while
+    //   moving into it. Here that is a body that has reached it: the capsule's front at the plane of the rungs
+    //   (ladderTopWalkReach), the centre inside the rails (ladderTopWalkSideReach), and the move keys pointing out over the
+    //   edge (ladderTopWalkAngle). The keys, not the view, so backing onto it works too. Walking along the edge, standing
+    //   at it, crossing past the top and jumping at the edge never take it; holding crouch never does (TryStart). The
+    //   reach the key had before (0.9 m back, any walk toward it) was what pulled people in.
+    private bool FindLadderTop(bool walking, out Ladder ladder, out Vector3 over, out Vector3 hold)
     {
         ladder = null; over = hold = Vector3.zero;
         if (!ctx.IsGrounded) return false;
         var settings = ctx.AbilitySettings;
-        Vector3 feet = ctx.transform.position;
-        Vector3 looking = Vector3.ProjectOnPlane(ctx.transform.forward, Vector3.up).normalized;
-        float minHeading = Mathf.Cos(settings.ladderFacingAngle * 1.5f * Mathf.Deg2Rad);
+        Vector3 feet = ctx.transform.position, heading;
+        float minHeading, back, sideReach;
+        if (walking)
+        {
+            // A jump pressed at the edge is a jump off it.
+            if (ctx.Input.JumpPressed || ctx.Actions.jumpBufferTimer > 0f) return false;
+            Vector2 keys = ctx.CurrentInput;
+            if (keys.sqrMagnitude < .04f) return false;
+            heading = Vector3.ProjectOnPlane(ctx.transform.right * keys.x + ctx.transform.forward * keys.y, Vector3.up).normalized;
+            minHeading = Mathf.Cos(settings.ladderTopWalkAngle * Mathf.Deg2Rad);
+            back = ctx.ControllerRadius + settings.ladderTopWalkReach;
+            sideReach = settings.ladderTopWalkSideReach;
+        }
+        else
+        {
+            heading = Vector3.ProjectOnPlane(ctx.transform.forward, Vector3.up).normalized;
+            minHeading = Mathf.Cos(settings.ladderFacingAngle * 1.5f * Mathf.Deg2Rad);
+            back = settings.ladderTopEnterReach;
+            sideReach = settings.ladderSideReach;
+        }
         foreach (var candidate in Ladder.Active)
         {
             if (candidate == null || !candidate.isActiveAndEnabled) continue;
-            if (Vector3.Dot(looking, candidate.Outward) < minHeading) continue;
+            if (Vector3.Dot(heading, candidate.Outward) < minHeading) continue;
             Vector3 offset = feet - candidate.transform.position;
             float away = Vector3.Dot(offset, candidate.Outward), side = Vector3.Dot(offset, candidate.transform.right);
             float top = candidate.Height;
             // On the floor up there: behind the plane of the rungs, at the height the climb up comes off onto.
-            if (away > .05f || away < -settings.ladderTopEnterReach || Mathf.Abs(side) > candidate.Width * .5f + settings.ladderSideReach
+            if (away > .05f || away < -back || Mathf.Abs(side) > candidate.Width * .5f + sideReach
                 || offset.y < top - settings.ladderTopGap || offset.y > top + .3f) continue;
-            float holdHeight = Mathf.Max(0f, top - settings.ladderTopGap - settings.ladderRungHeight);
-            Vector3 down = LadderHold(candidate, candidate.transform.position.y + holdHeight);
+            Vector3 down = LadderHold(candidate, candidate.transform.position.y + TopHoldHeight(candidate));
             Vector3 out_ = down;
             out_.y = feet.y;
             var detector = ctx.Abilities.Traversal.Detector;
@@ -192,6 +231,11 @@ public sealed class MovementFixtures
         }
         return false;
     }
+
+    // Getting on from the top ends with the feet this far over the ladder's foot: where climbing up hands over to climbing
+    // off (ladderTopGap), a rung lower.
+    private float TopHoldHeight(Ladder ladder)
+        => Mathf.Max(0f, ladder.Height - ctx.AbilitySettings.ladderTopGap - ctx.AbilitySettings.ladderRungHeight);
 
     private Vector3 LadderHold(Ladder ladder, float feetY)
     {
@@ -287,8 +331,10 @@ public sealed class MovementFixtures
 
     internal void LockZipline() => ziplineLock = ctx.AbilitySettings.ziplineRegrabDelay;
 
-    /// <summary>Shows the ladder this character is on, on another PC.</summary>
-    internal void MirrorLadder(Ladder ladder, bool caught, bool leftHand, int steps, float stepProgress, bool blocked, bool sliding)
+    /// <summary>Shows the ladder this character is on, on another PC. topEnterTime: how long getting on from its top takes,
+    /// while it does (0 otherwise).</summary>
+    internal void MirrorLadder(Ladder ladder, bool caught, bool leftHand, int steps, float stepProgress, bool blocked, bool sliding,
+        float topEnterTime = 0f)
     {
         Ladder = ladder;
         LadderCaught = caught;
@@ -297,6 +343,12 @@ public sealed class MovementFixtures
         LadderStepProgress = stepProgress;
         LadderStepBlocked = blocked;
         LadderSliding = sliding;
+        // The copy plays getting on from the top as the player's own PC does (the climb off played backwards), and its hands
+        // take the rungs for where the body ends up, which the ladder alone gives.
+        LadderFromTop = topEnterTime > 0f && ladder != null;
+        if (!LadderFromTop) return;
+        LadderTopEnterTime = topEnterTime;
+        LadderTopHold = LadderHold(ladder, ladder.transform.position.y + TopHoldHeight(ladder));
     }
 
     /// <summary>Shows the cable this character rides, on another PC.</summary>
@@ -312,7 +364,7 @@ public sealed class MovementFixtures
         ladderLock = ziplineLock = 0f;
         jumpedIntoAir = false;
         Ladder = null;
-        LadderFromTop = false;
+        LadderFromTop = LadderTopWalked = false;
         Zipline = null;
         LadderSteps = 0;
         LadderStepProgress = 0f;

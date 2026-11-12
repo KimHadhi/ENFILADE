@@ -22,7 +22,7 @@
 | [Actions/MovementDive.cs](Actions/MovementDive.cs) / [MovementLanding.cs](Actions/MovementLanding.cs) | 다이브 비행 / 착지 단계·구르기·낙하 피해·큰 낙하·넉백 |
 | [Actions/MovementMomentum.cs](Actions/MovementMomentum.cs) | 달리며 쌓이는 속도 |
 | [Dodge/](Dodge/) | 공통 회피 창, 경로 성공 판정, 기울이기, 적 통과 |
-| [Parkour/](Parkour/) | 장애물·벽·렛지·봉 탐지와 이동 경로, 사다리·집라인 잡기([MovementFixtures](Parkour/MovementFixtures.cs). 집라인은 뛰어오른 공중이나 Space를 누른 채일 때만) |
+| [Parkour/](Parkour/) | 장애물·벽·렛지·봉 탐지와 이동 경로, 사다리·집라인 잡기([MovementFixtures](Parkour/MovementFixtures.cs). 사다리 꼭대기는 걸어 나가 몸이 사다리에 닿으면 레포데처럼 저절로, 또는 F. 집라인은 뛰어오른 공중이나 Space를 누른 채일 때만) |
 | [States/](States/) | 자세·행동별 입력, 전환, 물리 정책 |
 | [../Combat/SlideCombat.cs](../Combat/SlideCombat.cs) | 슬라이딩의 적 접촉·가속·저스트 판정 |
 | [../Combat/PlayerCombatActions.cs](../Combat/PlayerCombatActions.cs) | 몸의 V: 돌진 밀치기(총·주먹)와 총을 든 군중 밀치기. 돌진의 몸 이동은 States/Abilities에서 처리 |
