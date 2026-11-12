@@ -67,7 +67,14 @@ internal sealed class ModelImportRules : AssetPostprocessor
             model.bakeAxisConversion = false;
             ShareAvatar(model, ZombieAvatarModel);
         }
-        else if (IsTrueFpsWorkspaceClip(assetPath)) ShareAvatar((ModelImporter)assetImporter, TrueFpsAvatarModel);
+        else if (IsTrueFpsWorkspaceClip(assetPath))
+        {
+            var model = (ModelImporter)assetImporter;
+            // KazusaBand.fbx keeps its rig node (KazusaBandRig) under the root. An export holds only that rig, which Unity
+            // folds into the root unless told not to, and her avatar then refuses the clip ("Parent for 'Center' differs").
+            model.preserveHierarchy = true;
+            ShareAvatar(model, TrueFpsAvatarModel);
+        }
         else if (IsAnimationFile(assetPath)) ShareTPose((ModelImporter)assetImporter);
     }
 
