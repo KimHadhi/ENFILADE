@@ -101,7 +101,8 @@ public sealed class KillFlairFx
         if ((pieces & KillFlairs.Row.Seal) != 0) PlaceSeal(words, colour);
         // The bounty's sum is the hunter's own business (the user, 2026-11-12: "현상금까진 걍 본인만 보면 될 것 같고"); a chip of
         // words is everyone's.
-        bool money = (pieces & KillFlairs.Row.Money) != 0 && what.Mine;
+        // Only for a kill that claimed a bounty (a duel's foe carries its mark too): never a sum that wasn't paid.
+        bool money = (pieces & KillFlairs.Row.Money) != 0 && what.Mine && (what.Marks & KillMarks.Bounty) != 0;
         if (money || (pieces & KillFlairs.Row.Chip) != 0)
         {
             bool elite = (what.Marks & KillMarks.Elite) != 0;
