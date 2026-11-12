@@ -8,8 +8,9 @@ using UnityEngine.InputSystem;
 /// pickup, no friend to get up, no ladder top, no button, door, can or shop counter), it pings the enemy the crosshair is
 /// on, Back 4 Blood's way: the whole team sees it outlined, through walls too, with a diamond and its distance over it
 /// (PingMarks). A Schießhund's ping is its teal bounty mark, which its class hunts (ClassKit), unless the foe is a lesser
-/// quarry than the one it already hunts: that one is a plain ping (PlayerClass.Grade). The gun gives a nod as it
-/// goes (FPSBody.Point; a real left hand pointing wants a clip of its own, the gun-hands stage's). The other PCs hear of it
+/// quarry than the one it already hunts: that one is a plain ping (PlayerClass.Grade). The free hand points at it for a
+/// moment as it goes (PlayerPoint.Flash, the held point's drawn hand); the gun nods instead when the hand isn't free
+/// (FPSBody.Point). The other PCs hear of it
 /// from PlayerNetworkCombat. This PC's own player only. Numbers: Tables/ClassAbilities, Ping.*.
 /// Any foe can be pinged (ICombatFoe): a zombie, or a target on the hub's range, where a Schießhund tries its mark out
 /// (the user, 2026-11-12: "시순트 표적 찍기도 못 하네").
@@ -99,7 +100,7 @@ public sealed class PlayerPing : MonoBehaviour
         }
         Hold();
         if (!pressed || Time.time < nextPing || !pressFree) return;
-        var foe = Aimed();
+        var foe = Aimed(out Vector3 pinged);
         if (foe == null) return;
         nextPing = Time.time + Mathf.Max(0f, PlayerClass.Ability(Row, "gap", .4f));
         bool bounty = PlayerClass.Is(PlayerClass.Schiesshund);
@@ -116,26 +117,41 @@ public sealed class PlayerPing : MonoBehaviour
         }
         PingMarks.Ping(foe, movement, bounty);
         KitSound.Play(bounty ? KitSound.Cue.Mark : KitSound.Cue.Ping, .7f);
-        if (weapon == null) weapon = GetComponent<WeaponController>();
-        if (weapon != null) FPSBody.Holding(weapon)?.Point();
+        Gesture(foe, pinged);
         Pinged?.Invoke(foe, bounty);
     }
 
     /// <summary>The living foe under the crosshair now, as F would find it, or null: a Schießhund's duel is called on it (ClassKit).</summary>
-    public Component AimedFoe() => Aimed();
+    public Component AimedFoe() => Aimed(out _);
 
     /// <summary>
-    /// Marks this foe as F would, its sound and the gun's nod with it, the other PCs told: a Schießhund's duel puts its
-    /// bounty mark on the foe it calls out (ClassKit), whatever the mark was on.
+    /// Marks this foe as F would, its sound and the hand's point (or the gun's nod) with it, the other PCs told: a
+    /// Schießhund's duel puts its bounty mark on the foe it calls out (ClassKit), whatever the mark was on.
     /// </summary>
     public void Mark(Component foe, bool bounty)
     {
         if (foe == null || movement == null) return;
         PingMarks.Ping(foe, movement, bounty);
         KitSound.Play(bounty ? KitSound.Cue.Mark : KitSound.Cue.Ping, .7f);
+        Gesture(foe, Middle(foe));
+        Pinged?.Invoke(foe, bounty);
+    }
+
+    // The free hand points at what was pinged for a moment, the hand drawn for the held point (PlayerPoint.Flash; the
+    // user, 2026-11-12: "적 핑 찍을 때 가리키는 애니메이션이 있었으면"). When the hand isn't free (aiming, a reload, a
+    // throw) the gun gives its nod, as it did before.
+    private void Gesture(Component foe, Vector3 at)
+    {
+        if (point != null && point.Flash(foe != null ? foe.transform : null, at)) return;
         if (weapon == null) weapon = GetComponent<WeaponController>();
         if (weapon != null) FPSBody.Holding(weapon)?.Point();
-        Pinged?.Invoke(foe, bounty);
+    }
+
+    // A foe's middle to point at: its first collider's centre, else a body's height over its feet.
+    private static Vector3 Middle(Component foe)
+    {
+        var body = foe.GetComponentInChildren<Collider>();
+        return body != null ? body.bounds.center : foe.transform.position + Vector3.up;
     }
 
     // Held past Point.holdAfter, a free press points for as long as F stays down and the hand is free (PlayerPoint.CanPoint);
@@ -174,9 +190,11 @@ public sealed class PlayerPing : MonoBehaviour
     }
 
     // The living foe the crosshair is on (a zombie or a range target): the nearest thing along the look that isn't this
-    // player, if it is one. A wall or the floor in front of it takes the ping instead (nothing happens).
-    private Component Aimed()
+    // player, if it is one, and where on the look it was met. A wall or the floor in front of it takes the ping instead
+    // (nothing happens).
+    private Component Aimed(out Vector3 at)
     {
+        at = default;
         var eyes = PlayerView.EyesOf(movement);
         if (eyes == null) return null;
         float reach = Mathf.Max(1f, PlayerClass.Ability(Row, "reach", 120f));
@@ -192,6 +210,8 @@ public sealed class PlayerPing : MonoBehaviour
             if (hit.distance < nearest) { nearest = hit.distance; first = hit.collider; }
         }
         var foe = CombatFoe.Of(first);
-        return CombatFoe.IsAlive(foe) ? foe : null;
+        if (!CombatFoe.IsAlive(foe)) return null;
+        at = nearest > 0f && !float.IsInfinity(nearest) ? eyes.position + eyes.forward * nearest : Middle(foe);
+        return foe;
     }
 }

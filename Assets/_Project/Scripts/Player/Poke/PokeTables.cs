@@ -30,9 +30,47 @@ public static class PokeTables
         public float Pitch;
     }
 
+    /// <summary>The pointing hand drawn in Blender (Resources/Tables/PointHand.csv, Tools/Blender/point_hand.py).</summary>
+    public const string HandTable = "PointHand";
+    /// <summary>PointHand.csv's rows in PointArm's finger order: index, middle, ring, little, thumb, each knuckle out.</summary>
+    public static readonly string[] HandRows =
+    {
+        "Index1", "Index2", "Index3", "Middle1", "Middle2", "Middle3", "Ring1", "Ring2", "Ring3",
+        "Little1", "Little2", "Little3", "Thumb1", "Thumb2", "Thumb3",
+    };
+
     private static readonly Dictionary<string, float> numbers = new Dictionary<string, float>();
     private static readonly Feel[] feels = new Feel[6];
-    private static bool listening;
+    private static readonly UnityEngine.Vector3[] hand = new UnityEngine.Vector3[15];
+    private static bool listening, handRead, handDrawn;
+
+    /// <summary>
+    /// The pointing hand as drawn in Blender, if PointHand.csv has it: each finger joint's way out (to its next joint, the
+    /// last to its tip) in the hand's own frame, which any humanoid's bones give alike: x from the wrist to the index
+    /// knuckle, y across the knuckles from the little finger to the index, z the back of the hand. A row missing is zero
+    /// (that joint keeps its pose). False without the index's rows: the hand is made from Poke.csv's Point.* angles then.
+    /// </summary>
+    public static bool HandPose(out UnityEngine.Vector3[] joints)
+    {
+        Listen();
+        joints = hand;
+        if (handRead) return handDrawn;
+        handRead = true;
+        handDrawn = false;
+        for (int i = 0; i < HandRows.Length; i++)
+        {
+            hand[i] = UnityEngine.Vector3.zero;
+            if (!GameTables.TryGetRow(HandTable, HandRows[i], out var row)) continue;
+            var way = new UnityEngine.Vector3(Cell(row, "x"), Cell(row, "y"), Cell(row, "z"));
+            if (way.sqrMagnitude < 1e-8f) continue;
+            hand[i] = way.normalized;
+            if (i < 3) handDrawn = true;
+        }
+        return handDrawn;
+    }
+
+    private static float Cell(IReadOnlyDictionary<string, string> row, string column)
+        => row.TryGetValue(column, out string text) && float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out float value) ? value : 0f;
 
     /// <summary>F held this long (s) turns into a point; a shorter press stays the ping it always was.</summary>
     public static float HoldAfter => Number("Point.holdAfter", .25f);
@@ -101,6 +139,7 @@ public static class PokeTables
     {
         numbers.Clear();
         for (int i = 0; i < feels.Length; i++) feels[i] = null;
+        handRead = false;
     }
 
     [UnityEngine.RuntimeInitializeOnLoadMethod(UnityEngine.RuntimeInitializeLoadType.SubsystemRegistration)]

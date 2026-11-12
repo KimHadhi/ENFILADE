@@ -6,7 +6,7 @@
 
 ## 조작
 
-- **F를 짧게**: 예전처럼 조준점의 적을 핑한다(`PlayerPing`).
+- **F를 짧게**: 예전처럼 조준점의 적을 핑하고, 왼손이 0.6초(`Poke.csv` `Ping.point`) 그 적을 가리킨다(0.8.217부터, 꾹 누를 때와 같은 손 모양, 적이 움직이면 따라감). 조준·장전·투척 중이라 손이 바쁘면 예전처럼 총만 끄덕인다. 친구 화면에서도 그만큼 가리킨다(포즈의 가리키기 표시).
 - **F를 꾹**(0.25초, `Poke.csv` `Point.holdAfter`): 누르고 있는 동안 왼손이 바라보는 곳을 가리킨다. 총은 오른손에 그대로 있고, 맨손이어도 왼손이다(콜아웃 몸짓과 같은 손). 검지는 펴고 나머지는 주먹, 엄지는 그 위로 접는다.
 - **상호작용이 먼저다**: F 누름이 줍기·부활·사다리·문·상점·수리 같은 상호작용 위에서 시작됐으면 가리키지 않는다. 가리키는 중에 그런 것이 조준점에 오면 끝난다.
 - **손이 필요하면 끝난다**: 조준(ADS)·장전·꺼내기·살펴보기·사격·주먹·가드·차지, 그리고 G 투척(투척이 왼손을 먼저 가진다, 0.8.208). 끝나면 F를 다시 눌러야 다시 가리킨다.
@@ -34,29 +34,29 @@
 
 설정 → 조작 → **친구가 내 캐릭터 찌르기**(기본 켬, `GameSettings.letOthersPoke`, `SettingsDefaults.csv` 열 `letOthersPoke`). 끄면 모두의 화면에서 친구 손끝이 내 캐릭터 앞에서 멈춘다.
 
-## 손 모양 고치기
+## 손 모양 그리기 (블렌더)
 
-손가락질 손 모양은 모두 [Poke.csv](../Resources/Tables/Poke.csv)의 `Point.*` 숫자다. 게임을 켠 채로 고쳐도 저장하자마자 바뀌어서, 보면서 맞출 수 있다.
+가리키는 손의 모양은 블렌더에서 그린다(0.8.217, 사용자: "블렌더로 만들어 줘. 왜냐하면 적 핑 찍을 때 가리키는 애니메이션이 있었으면 하니까"). 꾹 누른 손가락질과 F를 짧게 눌러 적을 핑할 때의 손가락질이 같은 손을 쓴다. 손 모양은 [PointHand.csv](../Resources/Tables/PointHand.csv)에 들어가고, [Tools/Blender/point_hand.py](../../../Tools/Blender/point_hand.py)가 그 표를 블렌더로 불러오고 다시 저장한다.
 
-1. Play를 누르고(혼자 플레이그라운드도 된다) 개발자 콘솔(` 키)에서 `point`를 친다. F를 누르지 않아도 손가락질이 계속 서 있다. 조준·장전·투척 중에는 쉬었다가 돌아온다.
-2. F5로 몸 전체를 본다. 1인칭에서도 한 번 본다.
-3. Poke.csv를 열어 아래 숫자를 고치고 저장한 뒤 Unity 창을 누른다. 콘솔에 `[Tables] Poke.csv 변경을 실행 중인 게임에 적용했습니다.`가 뜨고 손이 바로 바뀐다. 표는 파일이라 Play를 끝내도 고친 값이 남는다.
-4. 다 되면 콘솔에서 `point`를 한 번 더 쳐서 푼다.
+1. 블렌더(4.x)에서 캐릭터 하나를 가져온다. 예: File > Import > FBX로 `Assets/ThirdParty/BOOTH/Chocolate rice/0.MAYO/FBX/FBX_MAYO.fbx`. 프로젝트에 있는 휴머노이드면 다 된다. 뼈 이름은 그 FBX의 `.meta`(Unity 휴머노이드 매핑)에서 읽고, 없으면 흔한 이름(Hand.L, IndexProximal_L, LeftHandIndex1…)으로 찾는다.
+2. Scripting 탭 > Text > Open으로 `Tools/Blender/point_hand.py`를 열고 Run Script. 3D 뷰 사이드바(N)에 **ENFILADE** 탭이 생긴다.
+3. 아마추어를 고르고 **게임 손 불러오기**를 누른다. 왼손 손가락이 지금 게임의 모양이 된다(처음 표는 0.8.213의 각도 그대로).
+4. 포즈 모드에서 왼손 손가락 15마디(엄지·검지·중지·약지·새끼, 셋씩)를 원하는 모양으로 돌린다. 손목과 팔은 상관없다. 게임이 손을 돌려서 검지가 가리키는 곳을 향하게 한다.
+5. **게임에 저장**을 누르면 PointHand.csv가 써진다. Unity가 켜져 있으면 Unity 창을 누르는 순간 실행 중인 게임에 들어간다(콘솔에 `[Tables] PointHand.csv ...`).
+6. 게임에서는 개발자 콘솔(` 키)의 `point`로 F 없이 손가락질을 세워 두고 F5로 보면 편하다. 다시 `point`로 푼다.
+
+저장되는 것은 손가락 마디마다 다음 마디(끝 마디는 손끝)로 가는 방향을 손 자신의 틀로 잰 값이다: x 손목→검지 뿌리, y 새끼→검지 쪽 가로, z 손등. 뼈의 축이 아니라 뼈의 자리로만 재기 때문에 어느 휴머노이드에나 같은 모양이 나온다(모드 캐릭터도. 캐릭터마다 굽지 않는다). 손가락이 제 길이 축으로 비틀린 정도(손톱 방향)는 옮겨지지 않는다. PointHand.csv의 마디 줄을 지우면 아래 `Point.*` 각도로 만든다.
+
+블렌더에서 그리지 않는 것은 Poke.csv 숫자다. 게임을 켠 채 저장하면 바로 바뀐다.
 
 | 숫자 | 바꾸는 것 |
 | --- | --- |
 | `Point.palmIn` | 손바닥 방향: 0 아래, 1 몸 안쪽(엄지가 위) |
 | `Point.wristBend`, `Point.wristSide` | 손목 꺾기(°): 손바닥 쪽(+)·손등 쪽(-), 엄지 쪽(+)·새끼 쪽(-). 손끝이 닿는 곳은 그대로 |
-| `Point.index1`·`index2`·`index3` | 검지 마디마다 손바닥 쪽으로 굽힘(°). 0이면 일자 |
-| `Point.curl1`·`curl2`·`curl3`, `Point.curlSpread` | 중지·약지·새끼 주먹: 마디마다 쥐는 각도(°, 앞 마디에 더해짐), 약지·새끼가 더 쥐는 만큼 |
-| `Point.fist` | 위 주먹 전체를 얼마나(0 펴짐 ~ 1) |
-| `Point.thumbForward`·`thumbPalm`·`thumbAcross` | 엄지 방향: 앞으로, 손바닥 쪽으로, 손바닥을 가로질러 새끼 쪽으로(음수면 바깥으로 벌어짐) 섞는 정도 |
-| `Point.thumbBend2`·`thumbBend3` | 엄지 둘째·끝 마디를 더 굽힘(°) |
-| `Point.thumb` | 엄지를 위 방향으로 얼마나(0이면 총 잡던 그대로) |
 | `Point.elbowDown`·`elbowOut`·`elbowBack` | 팔꿈치가 향하는 쪽: 아래, 몸 바깥, 뒤 |
 | `Point.extend` | 아무것도 안 닿을 때 팔을 뻗는 정도 |
-
-모델마다 손가락 뼈가 조금씩 달라서, 한 캐릭터에 맞춘 값이 다른 캐릭터에서 어색하면 그 중간으로 맞춘다. 숫자로 안 되는 모양(예: 손가락 하나만 따로)은 말해 주면 숫자를 더 뺀다.
+| `Ping.point` | F를 짧게 눌러 핑할 때 가리키는 시간(초). 0이면 예전처럼 총만 끄덕 |
+| `Point.index*`·`curl*`·`fist`·`thumb*` | PointHand.csv가 없을 때만 쓰는 손가락 각도 |
 
 ## 표정 연결 (face-moods)
 
@@ -75,6 +75,8 @@ bool now = SkinPoke.IsPoked(poked, out PokeZone zone);
 ### 손 (PlayerPing → PlayerPoint → PointArm)
 
 - `PlayerPing`이 F를 길게 누른 것을 `PlayerPoint.Hold`로 알린다.
+- F를 짧게 눌러 적을 핑하면 `PlayerPing`이 `PlayerPoint.Flash`로 `Ping.point`초 동안 가리키게 한다. 내 PC에서는 핑한 자리(적이 움직이면 따라감)를, 친구 PC에서는 그 사람의 시선을 가리킨다(같은 포즈 표시). 손이 바쁘면(조준·장전·투척) 예전처럼 총만 끄덕인다(`FPSBody.Point`).
+- 손 모양은 블렌더로 그린 `PointHand.csv`(`PokeTables.HandPose`): 그린 검지(마디 방향의 평균)가 가리키는 쪽을 향하게 손 전체를 돌리고(`DrawnFrame`), 마디마다 그 방향으로 겨눈다. 표가 없으면 `Point.*` 각도로 만든다.
 - 왼손은 받치는 손 빌려주기로 총에서 뗀다(0.8.205의 공용 입구, 0.8.208부터). `PointArm`이 `PlayerBodyHands.LendOffHand(this, 1)`을 부르면 왼손의 총 접점·손잡이·총 손가락이 0.15초에 풀린다. 가리키는 자세는 `OffHandLent`(지금 풀린 정도)보다 앞서지 않게 섞여서 손이 총에서 떨어지는 속도와 같고, 끝나면 `(this, 0)`으로 돌려준다.
 - G 투척이 왼손을 쓰는 동안(`PlayerGrenades.HandBusy`)은 가리키지 않는다. 내 PC에서는 가리키기가 끝나고(F를 다시), 다른 PC의 복사본도 그동안 자세를 놓는다.
 - `PlayerPoint`(플레이어)는 가리키는 중인지와 찌르기를 허락하는지를 들고 있다. 다른 PC에는 `PlayerPose.Marks`의 두 비트(`Pointing`, `NoPoke`)로 간다(`MovementMirror`). 가리키는 방향은 포즈가 이미 보내는 시선 그대로라 가리키기만을 위한 전송은 없다.
@@ -174,7 +176,8 @@ lilToon 머티리얼을 쓰는 캐릭터(마요·이치고·에네 옷·카즈�
   - `range`·`reach`·`extend` 거리.
   - `hover` 못 찌르는 곳 앞에서 멈추는 거리.
   - `palmIn` 손바닥 방향, `wristBend`·`wristSide` 손목.
-  - `index1~3`·`curl1~3`·`curlSpread`·`fist`·`thumb*` 손가락, `elbowDown`·`elbowOut`·`elbowBack` 팔꿈치(위 **손 모양 고치기**).
+  - `index1~3`·`curl1~3`·`curlSpread`·`fist`·`thumb*` 손가락(PointHand.csv가 없을 때만), `elbowDown`·`elbowOut`·`elbowBack` 팔꿈치(위 **손 모양 그리기**).
+- `Ping.point`: F를 짧게 눌러 핑할 때 왼손이 가리키는 시간.
 - `Touch.*`: 몸 표면 찾기. `width`, `grid`, `bakeVertices`, `lose`(시선이 잠깐 빗나가도 유지), `slide`.
 - `Sound.*`: 소리. `volume`, `lift`, `near`, `far`.
 - `Zone.*`: 부위 경계. 볼은 눈 사이 거리 단위, 배는 몸통 길이 비율, 어깨·손목은 팔 마디 비율.

@@ -17,6 +17,9 @@ using MovementState = PlayerMovement.MovementState;
 /// put the wrist where the fingertip lands. It runs after FPS Animation Framework, the hands, the gun and the callout
 /// gestures (GunFramework + 6) and before the cloth, so a sleeve and hair follow; the first-person camera was placed
 /// earlier, so the view never moves with the arm.
+/// The hand's shape is the one drawn in Blender (Tools/Blender/point_hand.py writes PointHand.csv: each finger joint's way
+/// in the hand's own frame, which fits any humanoid), the drawn index laid along the pointing way; without that table,
+/// Poke.csv's Point.* angles make it. An F tap's ping points the same hand at what it pinged for a moment (PlayerPoint.Flash).
 /// The hand leaves the gun through the one shared way for every off-hand use (the manager's decision, 2026-11-12):
 /// PlayerBodyHands.LendOffHand, so the left hand's gun contacts, grip and fingers let go over the hands' own blend time
 /// as the point comes in, and take the gun again as it goes; the pose eases by how far the hand is lent
@@ -143,19 +146,32 @@ public sealed class PointArm : MonoBehaviour
         // What the finger is on: a friend's body along the look (held a moment through a flicker), else nothing.
         PokeHit hit = default;
         bool found = on && Touch(origin, look, PokeTables.Number("Point.range", 1.3f), dt, out hit);
-        // The way the finger goes from the shoulder: at what it is on, else where the look goes far off.
-        Vector3 way = (found ? hit.Point : origin + look * 10f) - shoulder;
+        // The way the finger goes from the shoulder: at what it is on, else at what a tap's ping pinged (PlayerPoint.Flash),
+        // else where the look goes far off.
+        Vector3 aim = found ? hit.Point : point.FlashTarget(out Vector3 pinged) ? pinged : origin + look * 10f;
+        Vector3 way = aim - shoulder;
         way = way.sqrMagnitude > 1e-6f ? way.normalized : look;
 
-        // The hand along that way, the palm down and turned in, bent at the wrist as Point.wristBend/wristSide say, the
-        // index out and the rest in a fist.
+        // The hand along that way, the palm down and turned in, bent at the wrist as Point.wristBend/wristSide say: the
+        // hand drawn in Blender (PointHand.csv) if there is one, else the index out and the rest in a fist by Point.*.
         Vector3 palm = WantedPalm(way, frame);
         Vector3 handWay = Wrist(way, palm);
         Vector3 handPalm = Vector3.ProjectOnPlane(palm, handWay);
         handPalm = handPalm.sqrMagnitude > 1e-8f ? handPalm.normalized : palm;
-        Quaternion handGoal = HandAlong(handWay, handPalm);
-        hand.rotation = handGoal;
-        Fingers(handWay, handPalm);
+        Quaternion handGoal;
+        if (PokeTables.HandPose(out var drawn))
+        {
+            var drawnTurn = DrawnFrame(drawn, handWay, handPalm);
+            handGoal = HandAlong(drawnTurn * Vector3.right, -(drawnTurn * Vector3.forward));
+            hand.rotation = handGoal;
+            DrawnFingers(drawn, drawnTurn);
+        }
+        else
+        {
+            handGoal = HandAlong(handWay, handPalm);
+            hand.rotation = handGoal;
+            Fingers(handWay, handPalm);
+        }
         Vector3 tipOffset = Fingertip() - hand.position;
         float reach = Vector3.Distance(upper.position, lower.position) + Vector3.Distance(lower.position, hand.position) + tipOffset.magnitude;
 
@@ -247,6 +263,34 @@ public sealed class PointArm : MonoBehaviour
         Vector3 bent = way * Mathf.Cos(bend) + palm * Mathf.Sin(bend);
         bent = bent * Mathf.Cos(side) + thumbSide * Mathf.Sin(side);
         return bent.sqrMagnitude > 1e-8f ? bent.normalized : way;
+    }
+
+    // The turn from the drawn hand's own frame (x: wrist to the index knuckle, y: across to the index side, z: the back of
+    // the hand; PokeTables.HandPose) to the world: the drawn index (its joints' mean way) along the pointing way, the back
+    // of the hand away from the palm wanted. So the finger itself points at the target, however the hand was drawn.
+    private static Quaternion DrawnFrame(Vector3[] drawn, Vector3 way, Vector3 palm)
+    {
+        Vector3 index = drawn[0] + drawn[1] + drawn[2];
+        index = index.sqrMagnitude > 1e-6f ? index.normalized : Vector3.right;
+        Vector3 back = Vector3.ProjectOnPlane(Vector3.forward, index);
+        if (back.sqrMagnitude < 1e-6f) back = Vector3.ProjectOnPlane(Vector3.up, index);
+        Vector3 worldBack = Vector3.ProjectOnPlane(-palm, way);
+        if (worldBack.sqrMagnitude < 1e-6f) worldBack = Vector3.ProjectOnPlane(Vector3.up, way);
+        return Quaternion.LookRotation(way, worldBack) * Quaternion.Inverse(Quaternion.LookRotation(index, back));
+    }
+
+    // Each finger joint aimed the way the drawn hand has it, knuckle out; a joint the table leaves out keeps its pose.
+    private void DrawnFingers(Vector3[] drawn, Quaternion drawnTurn)
+    {
+        for (int finger = 0; finger < 5; finger++)
+            for (int joint = 0; joint < 3; joint++)
+            {
+                var bone = fingers[finger * 3 + joint];
+                if (bone == null) break;
+                Vector3 want = drawn[finger * 3 + joint];
+                if (want.sqrMagnitude < 1e-6f) continue;
+                Turn(bone, JointWay(finger, joint), drawnTurn * want, 1f);
+            }
     }
 
     // The hand's rotation that lays the wrist-to-index-knuckle line along the way and the palm facing as wanted.

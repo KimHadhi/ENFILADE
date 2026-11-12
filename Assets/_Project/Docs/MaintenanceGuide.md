@@ -301,7 +301,7 @@ HUD 조각은 저마다 제 코드가 자리를 잡아서 서로를 모른다. 1
 - **허브와 결과**: `hub`는 허브로 간다(혼자, 또는 방장이면 방 전체). `results`는 마지막으로 마친 장의 결과 연출을 다시 보여 준다(허브에서는 무대에서, 다른 곳에서는 마지막 한 장만).
 - **그래픽 상태 기록**: `pso trace`는 개발 빌드에서 그리는 그래픽 상태(PSO) 기록을 시작하고, `pso save`가 저장한다(게임을 끄면 저장). `pso`만 치면 지금 빌드에 실린 기록과 데운 수를 알려 준다. 쓰는 법은 아래 [로딩 화면과 첫 사용 준비](#로딩-화면과-첫-사용-준비-loadingcsv).
 - **소리 미리 듣기**: `sound <묶음>/<키>`(예: `sound Zombie/Bone/NeckSnap`)는 그 폴더의 소리 하나를, `sound cue <큐>`(예: `sound cue Execution/Behind`)는 SoundCues.csv 한 줄을 시간차까지 그대로, `sound list <묶음>`은 묶음의 키 목록을 보여 준다. Sounds.csv의 볼륨·피치를 따른다([SoundPreview](../Scripts/Audio/SoundPreview.cs)). 처형·팔다리 절단처럼 상황을 만들기 어려운 소리를 넣거나 바꾼 뒤 바로 들어 본다.
-- **손가락질 고정**: `point`는 F 없이 손가락질을 세워 두고, 다시 치면 푼다. Poke.csv의 `Point.*` 손 모양 숫자를 고쳐 저장하면 바로 바뀌므로 보면서 맞춘다([Poke.md](Poke.md)의 손 모양 고치기).
+- **손가락질 고정**: `point`는 F 없이 손가락질을 세워 두고, 다시 치면 푼다. 블렌더에서 그린 손(Tools/Blender/point_hand.py → PointHand.csv)이나 Poke.csv의 `Point.*` 숫자를 저장하면 바로 바뀌므로 보면서 맞춘다([Poke.md](Poke.md)의 손 모양 그리기).
 
 ## 사운드를 추가하거나 교체하기
 
