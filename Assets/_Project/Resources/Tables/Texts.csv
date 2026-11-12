@@ -1220,6 +1220,21 @@ shop.refuse.nogun,채울 총이 없어요,,상점 창 맨 아래 줄 > 탄약을
 shop.refuse.ammofull,탄약이 이미 가득해요,,상점 창 맨 아래 줄 > 탄약을 못 살 때: 가득 참
 shop.refuse.healthfull,체력이 가득해요,,상점 창 맨 아래 줄 > 구급상자를 못 살 때
 shop.refuse.shield,실드가 이미 있어요,,상점 창 맨 아래 줄 > 실드를 못 살 때
+shop.cat.pistol,권총,Pistols,상점 첫 화면 > 총 분류 판 이름(Shop.csv Category Pistol)
+shop.cat.smg,기관단총,SMGs,상점 첫 화면 > 총 분류 판 이름(Shop.csv Category SMG)
+shop.cat.shotgun,산탄총,Shotguns,상점 첫 화면 > 총 분류 판 이름(Shop.csv Category Shotgun)
+shop.cat.rifle,돌격소총,Assault rifles,상점 첫 화면 > 총 분류 판 이름(Shop.csv Category Rifle)
+shop.cat.marksman,지정사수·저격,Marksman · Sniper,상점 첫 화면 > 총 분류 판 이름(Shop.csv Category Marksman)
+shop.cat.mg,기관총,Machine guns,상점 첫 화면 > 총 분류 판 이름(Shop.csv Category MG)
+shop.cat.count,{0}자루,{0} guns,상점 > 총 분류 판과 분류 페이지 머리 > 파는 총 수. {0}=수
+shop.cat.prices,{0} ~ {1},{0} ~ {1},상점 > 총 분류 판 > 가장 싼 총과 가장 비싼 총의 값. {0}·{1}=값
+shop.back,뒤로,Back,상점 > 분류 페이지 맨 위 > 첫 화면으로 돌아가는 판
+shop.key.back,Esc,Esc,상점 > 뒤로 판의 키 칸
+shop.hint.back,Esc 뒤로   ·   [F] 닫기,Esc back   ·   [F] close,상점 창 맨 아래 줄 > 분류 페이지의 평소 안내
+shop.gun.detail,피해 {0} · 탄창 {1},Damage {0} · Mag {1},상점 > 총 카드 > 이름 아래. {0}=한 발 피해 {1}=탄창
+shop.gun.pellets,{0}×{1},{0}×{1},상점 > 총 카드 > 산탄총의 한 발 피해: 알 하나 피해×알 수
+shop.note.short,{0} 부족,{0} short,상점 > 총 카드 > 돈이 모자랄 때 모자란 돈. {0}=금액
+shop.detail.grenade.named,{0} +{1},{0} +{1},상점 > 투척물 보충 칸 > 이름 아래. {0}=이 클래스의 투척물 이름 {1}=개수
 #--- 돈 떨구기 ---,,,
 money.drop.short,떨굴 돈이 모자라요 (돈 {0} 필요),,처치 목록(킬 피드) > G로 돈을 떨구려는데 모자랄 때. {0}=필요한 돈
 money.drop.feed,돈 {0} 떨굼,,처치 목록(킬 피드) > 누가 돈을 떨궜을 때. {0}=금액
