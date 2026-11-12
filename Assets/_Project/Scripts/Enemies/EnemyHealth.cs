@@ -8,7 +8,7 @@ using UnityEngine.AI;
 public enum EnemyRank { Normal, Elite, Named }
 
 [DisallowMultipleComponent, RequireComponent(typeof(MeleeCombatTarget))]
-public sealed class EnemyHealth : MonoBehaviour, IDamageReceiver, ICombatVitals, ICombatDisplayName, ITableBound
+public sealed class EnemyHealth : MonoBehaviour, IDamageReceiver, ICombatVitals, ICombatDisplayName, ITableBound, ICombatFoe
 {
     /// <summary>Resources/Tables/Enemies.csv. A row covers EnemyHealth, EnemyCombatAI, MeleeCombatTarget and NavMeshAgent.</summary>
     public const string TableName = "Enemies";
@@ -66,6 +66,8 @@ public sealed class EnemyHealth : MonoBehaviour, IDamageReceiver, ICombatVitals,
         appliedMaximum = MaximumHealth;
     }
     public bool IsAlive => Health > 0f;
+    /// <summary>A zombie is the real thing: its kills count for the run (ICombatFoe).</summary>
+    public bool IsPractice => false;
     public bool WavePaused { get; private set; }
     private readonly HashSet<long> seen = new HashSet<long>();
     private readonly Queue<long> recent = new Queue<long>();

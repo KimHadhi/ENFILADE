@@ -38,6 +38,8 @@ using UnityEngine.InputSystem;
 /// The other classes' abilities come in later stages (Classes.csv ready 0). Numbers: Tables/ClassAbilities.
 /// The class cards with code behind them (Docs/ClassCards.md) are ClassCards', added here; a Point's Gunslinger card and
 /// a Ghost's White Tiger guard are read here (DamageFactor, OnHurt).
+/// What a kill, a headshot or a mark does here takes any foe (ICombatFoe): a zombie, or a practice target on the hub's
+/// range, so every class can be tried out there before a run (its kills never reach the run's counts: GunFeelDirector).
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class ClassKit : MonoBehaviour
@@ -86,7 +88,8 @@ public sealed class ClassKit : MonoBehaviour
     // bounty came; and the bounty a Desperado round was just put in the head of, for its BOUNTY.
     private int bountyPoints, returnStacks;
     private float returnUntil, returnTotal = 1f, bountyAt = -99f, finishAt = -99f;
-    private EnemyHealth finishing;
+    // A zombie or a range target (ICombatFoe): the hunt is the same on either.
+    private Component finishing;
     // Where the Desperado's round went into its head and where it was fired from (for the burst).
     private Vector3 finishPoint, finishFrom;
     // The special slot, where a Schießhund's Desperado sits.
@@ -382,11 +385,13 @@ public sealed class ClassKit : MonoBehaviour
 
     // ---- Assault: adrenaline ----
 
+    // Any foe's kill by this player: a zombie's, or a practice target's on the hub's range, where the classes are tried
+    // out (the user, 2026-11-12); a practice kill stays out of the run's counts elsewhere (GunFeelDirector).
     private void OnDamaged(CombatDamageReport report)
     {
-        if (movement == null || !movement.IsLocal || !report.IsKillingBlow || !(report.Target is EnemyHealth enemy)) return;
+        if (movement == null || !movement.IsLocal || !report.IsKillingBlow || !(report.Target is ICombatFoe)) return;
         if (!PlayerPerks.IsMine(report.Hit.Source)) return;
-        if (PlayerClass.Is(PlayerClass.Schiesshund) && PingMarks.IsBountyOf(enemy, movement)) Bounty(enemy);
+        if (PlayerClass.Is(PlayerClass.Schiesshund) && PingMarks.IsBountyOf(report.Target, movement)) Bounty(report.Target);
         if (!PlayerClass.Is(PlayerClass.Assault)) return;
         stacks = Mathf.Min(StackMax, stacks + 1);
         lastKill = Time.time;
@@ -440,13 +445,14 @@ public sealed class ClassKit : MonoBehaviour
         if (movement == null || !movement.IsLocal || !PlayerClass.Is(PlayerClass.Ghost)) return;
         var data = HeldGun;
         var trace = shot.Trace;
-        var enemy = trace.HasHit && trace.Damage == DamageResult.Damaged && trace.Hit.collider != null
-            ? trace.Hit.collider.GetComponentInParent<EnemyHealth>() : null;
-        if (enemy != null)
+        // Any foe counts toward the stacks, a range target as a zombie does; only a zombie elite can be staggered.
+        var foe = trace.HasHit && trace.Damage == DamageResult.Damaged ? CombatFoe.Of(trace.Hit.collider) : null;
+        if (foe != null)
         {
             if (trace.IsHeadshot) shotHead = true;
             else shotBody = true;
-            if (PlayerClass.IsElite(enemy) && PlayerClass.OwnsWeapon(PlayerClass.Current, data)) Stagger(enemy, trace.IsHeadshot);
+            if (foe is EnemyHealth enemy && PlayerClass.IsElite(enemy) && PlayerClass.OwnsWeapon(PlayerClass.Current, data))
+                Stagger(enemy, trace.IsHeadshot);
         }
         if (shot.Pellet < (data != null ? Mathf.Max(1, data.Pellets) : 1) - 1) return;
         // The round loaded first is spent.
@@ -514,18 +520,20 @@ public sealed class ClassKit : MonoBehaviour
     /// A Desperado round is going into the head of this Schießhund's own mark (PlayerClass.Finish, as AttackTrace weighs
     /// the hit): when it dies of it, BOUNTY.
     /// </summary>
-    internal void Finishing(EnemyHealth enemy, Vector3 point, Vector3 from)
+    internal void Finishing(Component target, Vector3 point, Vector3 from)
     {
-        finishing = enemy;
+        finishing = target;
         finishAt = Time.time;
         finishPoint = point;
         finishFrom = from;
     }
 
-    // Its own mark died at its hand: points toward the Desperado's next round (an elite's count more), a Return Back
-    // stack, and the bounty's look and sound (its money is CombatFeedHUD's, with the kill).
-    private void Bounty(EnemyHealth enemy)
+    // Its own mark died at its hand (a zombie, or a range target in the hub): points toward the Desperado's next round
+    // (an elite's count more), a Return Back stack, and the bounty's look and sound (its money is CombatFeedHUD's, with
+    // the kill, which a practice kill never reaches).
+    private void Bounty(Component target)
     {
+        var enemy = target as EnemyHealth;
         bountyPoints += Mathf.Max(1, Mathf.RoundToInt(PlayerClass.IsElite(enemy) ? PlayerClass.Ability(HoundRow, "elitePoints", 2f) : 1f));
         int need = Mathf.Max(1, Mathf.RoundToInt(PlayerClass.Ability(HoundRow, "roundPoints", 2f)));
         var desperado = Desperado;
@@ -539,14 +547,12 @@ public sealed class ClassKit : MonoBehaviour
         returnTotal = Mathf.Max(.1f, PlayerClass.Ability(HoundRow, "returnSeconds", 8f));
         returnUntil = Time.time + returnTotal;
         bountyAt = Time.time;
-        bool claimed = finishing == enemy && Time.time - finishAt < 1f;
+        bool claimed = finishing == target && Time.time - finishAt < 1f;
         finishing = null;
         KitSound.Play(KitSound.Cue.Bounty, claimed ? 1f : .7f);
         // In the world, for everyone: the Desperado's grand burst where its round went in, or a plain bounty's coins.
-        var body = enemy.GetComponentInChildren<Collider>();
-        Vector3 ground = enemy.transform.position;
-        Vector3 head = claimed ? finishPoint : body != null ? new Vector3(body.bounds.center.x, body.bounds.max.y - .15f, body.bounds.center.z)
-            : ground + Vector3.up * 1.6f;
+        Vector3 ground = target.transform.position;
+        Vector3 head = claimed ? finishPoint : CombatFoe.Top(target) - Vector3.up * .15f;
         Vector3 from = claimed ? finishFrom : transform.position + Vector3.up * 1.5f;
         BountyBurst.Play(head, from, ground, claimed);
         Claimed?.Invoke(head, from, ground, claimed);

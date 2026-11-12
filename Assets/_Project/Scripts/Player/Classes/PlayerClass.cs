@@ -112,12 +112,14 @@ public static class PlayerClass
     public static float Finish(float amount, bool headshot, IDamageReceiver receiver, Vector3 point, Vector3 from)
     {
         var kit = ClassKit.Local;
-        if (!headshot || kit == null || !kit.DesperadoLoaded || !(receiver is EnemyHealth enemy) || !enemy.IsAlive) return amount;
-        if (!PingMarks.IsBountyOf(enemy, kit.Movement)) return amount;
-        kit.Finishing(enemy, point, from);
+        // Any foe: a zombie, or a marked target on the hub's range, where the Desperado is tried out (ICombatFoe).
+        if (!headshot || kit == null || !kit.DesperadoLoaded || !(receiver is ICombatFoe foe) || !foe.IsAlive || !(receiver is Component target))
+            return amount;
+        if (!PingMarks.IsBountyOf(target, kit.Movement)) return amount;
+        kit.Finishing(target, point, from);
         // Its whole health, not what this PC has of it: the host's may stand higher than a copy's.
-        bool firm = enemy.TryGetComponent(out MeleeCombatTarget melee) && melee.Steadfast;
-        return Mathf.Max(amount, firm ? enemy.MaximumHealth * Mathf.Clamp01(Ability(HoundRow, "bossShare", .4f)) : enemy.MaximumHealth + 1f);
+        bool firm = target.TryGetComponent(out MeleeCombatTarget melee) && melee.Steadfast;
+        return Mathf.Max(amount, firm ? foe.MaximumHealth * Mathf.Clamp01(Ability(HoundRow, "bossShare", .4f)) : foe.MaximumHealth + 1f);
     }
 
     /// <summary>This PC's player's pace from their class now (adrenaline, a CHARGE): LocomotionState multiplies it in.</summary>

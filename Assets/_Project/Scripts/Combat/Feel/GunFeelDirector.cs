@@ -4,6 +4,7 @@ using UnityEngine;
 /// Routes each accepted hit (CombatDamageEvents) to the hit-feedback layers, in this order:
 /// target flash / blood / corpse (world) → hit marker + confirm sounds (HitConfirm) → kill score and kill feed → kill screen
 /// (special look for executions and counters, a brightened, glowing look for every other kill).
+/// A practice target's kill (the hub's range) gets the marker, the sound and the kill screen, never the score or the feed.
 /// Presentation only; gameplay reactions are called directly by the receivers (EnemyHitReaction).
 /// </summary>
 public static class GunFeelDirector
@@ -43,6 +44,15 @@ public static class GunFeelDirector
         bool pulse = execution ? settings.killPulseOnExecution : hit.IsCounter ? settings.killPulseOnCounter
             : bullet ? settings.killPulseOnGunKill : settings.killPulseOnOtherKill;
         if (!kill) return;
+        var screen = execution ? KillScreen.Execution : hit.IsCounter ? KillScreen.Counter : KillScreen.Ordinary;
+        // A practice target's kill (the hub's range, RangeTarget) lands on screen as a kill and is the classes' to count
+        // (ClassKit, ClassCards), but nothing of the run's: no kill count, streak, feed line, money or named kill, so
+        // trying the classes out there leaves the run as it was.
+        if (report.IsPractice)
+        {
+            if (pulse) KillConfirmEffect.Trigger(screen, critical || execution);
+            return;
+        }
         float distance = hit.Point != Vector3.zero ? Vector3.Distance(hit.Source.transform.position, hit.Point) : 0f;
         if (PlayerRoster.Local != null && PlayerRoster.Local.TryGetComponent(out PlayerTally tally))
         {
@@ -65,8 +75,7 @@ public static class GunFeelDirector
             hit.Pierced, standout, takedown, bounty);
         // Kills done some way worth a name (MEATSHOT, RAILGUN, SKEET ...) stamp it and pay on top.
         SpecialKills.Kill(report, bullet, critical && bullet, execution);
-        if (pulse) KillConfirmEffect.Trigger(execution ? KillScreen.Execution : hit.IsCounter ? KillScreen.Counter : KillScreen.Ordinary,
-            critical || execution);
+        if (pulse) KillConfirmEffect.Trigger(screen, critical || execution);
     }
 
     private static string WeaponName(DamageHit hit)

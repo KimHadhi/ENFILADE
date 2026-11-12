@@ -24,7 +24,8 @@ using UnityEngine.UI;
 /// class's own (PlayerPerks.Dealable); each card says under its name, small and slanted, why it works (the user's rule
 /// that an effect comes with a believable reason), and a class's final card (궁극) wears a pink frame from the start.
 /// Once every card this player can be dealt is taken, the prompt reads "궁극 준비" and X spends the full gauge on the
-/// class's ultimate at once (ClassCards.Ultimate) instead of opening the cards.
+/// class's ultimate at once (ClassCards.Ultimate) instead of opening the cards. In the hub it always does: its range
+/// charges the gauge for trying the classes out, and no card is dealt there (2026-11-12).
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class PerkCardScreen : MonoBehaviour
@@ -500,8 +501,10 @@ public sealed class PerkCardScreen : MonoBehaviour
         return chat != null && chat.BlocksMissionInputThisFrame;
     }
 
-    // A card left to deal: this player's class's cards count, another class's don't (PlayerPerks.Dealable).
-    private static bool AnyLeft() => PlayerPerks.AnyLeft();
+    // A card left to deal: this player's class's cards count, another class's don't (PlayerPerks.Dealable). The hub deals
+    // none: its range charges the gauge to try the classes out (RangeTarget), and cards last the whole campaign, so a full
+    // gauge there plays the class's ultimate instead of handing out a card before the run.
+    private static bool AnyLeft() => !HubLobby.IsActive && PlayerPerks.AnyLeft();
 
     private void ShowPrompt(bool show, bool cards)
     {

@@ -10,6 +10,8 @@ using UnityEngine.InputSystem;
 /// (PingMarks). A Schießhund's ping is its teal bounty mark, which its class hunts (ClassKit). The gun gives a nod as it
 /// goes (FPSBody.Point; a real left hand pointing wants a clip of its own, the gun-hands stage's). The other PCs hear of it
 /// from PlayerNetworkCombat. This PC's own player only. Numbers: Tables/ClassAbilities, Ping.*.
+/// Any foe can be pinged (ICombatFoe): a zombie, or a target on the hub's range, where a Schießhund tries its mark out
+/// (the user, 2026-11-12: "시순트 표적 찍기도 못 하네").
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class PlayerPing : MonoBehaviour
@@ -18,8 +20,11 @@ public sealed class PlayerPing : MonoBehaviour
     // How fat the look's cast is (m): a ping needn't be dead on, as a shot must.
     private const float Radius = .3f;
 
-    /// <summary>This PC's player pinged this enemy; true for a Schießhund's bounty mark. PlayerNetworkCombat tells the others.</summary>
-    public event Action<EnemyHealth, bool> Pinged;
+    /// <summary>
+    /// This PC's player pinged this foe (a zombie or a range target); true for a Schießhund's bounty mark.
+    /// PlayerNetworkCombat tells the others.
+    /// </summary>
+    public event Action<Component, bool> Pinged;
 
     private PlayerMovement movement;
     private PlayerExecution execution;
@@ -42,15 +47,15 @@ public sealed class PlayerPing : MonoBehaviour
         if (movement == null || !movement.IsLocal || !movement.InputAvailable || movement.IsDead || movement.IsDowned) return;
         if (interact == null && InputSystem.actions != null) interact = InputSystem.actions.FindAction("Player/Interact", false);
         if (interact == null || !interact.WasPressedThisFrame() || Time.time < nextPing || Busy()) return;
-        var enemy = Aimed();
-        if (enemy == null) return;
+        var foe = Aimed();
+        if (foe == null) return;
         nextPing = Time.time + Mathf.Max(0f, PlayerClass.Ability(Row, "gap", .4f));
         bool bounty = PlayerClass.Is(PlayerClass.Schiesshund);
-        PingMarks.Ping(enemy, movement, bounty);
+        PingMarks.Ping(foe, movement, bounty);
         KitSound.Play(bounty ? KitSound.Cue.Mark : KitSound.Cue.Ping, .7f);
         if (weapon == null) weapon = GetComponent<WeaponController>();
         if (weapon != null) FPSBody.Holding(weapon)?.Point();
-        Pinged?.Invoke(enemy, bounty);
+        Pinged?.Invoke(foe, bounty);
     }
 
     // F has a job here already: whatever offers it on screen goes first.
@@ -66,12 +71,13 @@ public sealed class PlayerPing : MonoBehaviour
         // A Support with a friend in reach to resupply.
         if (SupportKit.Local != null && SupportKit.Local.Offered != null) return true;
         if (movement.Abilities != null && movement.Abilities.Fixtures.ClimbDownLadder != null) return true;
-        return CampaignRun.Offering || ShopMenu.IsOpen;
+        // The hub's stations (its map table, lockers, gun rack, ammo crate, ready button) take F when looked at.
+        return CampaignRun.Offering || ShopMenu.IsOpen || HubLobby.Offering;
     }
 
-    // The living enemy the crosshair is on: the nearest thing along the look that isn't this player, if it is one. A wall
-    // or the floor in front of it takes the ping instead (nothing happens).
-    private EnemyHealth Aimed()
+    // The living foe the crosshair is on (a zombie or a range target): the nearest thing along the look that isn't this
+    // player, if it is one. A wall or the floor in front of it takes the ping instead (nothing happens).
+    private Component Aimed()
     {
         var eyes = PlayerView.EyesOf(movement);
         if (eyes == null) return null;
@@ -83,11 +89,11 @@ public sealed class PlayerPing : MonoBehaviour
         {
             var hit = hits[i];
             if (hit.collider == null || hit.collider.transform.IsChildOf(transform)) continue;
-            // A cast that starts inside something reports it at no distance: only an enemy's body counts there.
-            if (hit.distance <= 0f && hit.collider.GetComponentInParent<EnemyHealth>() == null) continue;
+            // A cast that starts inside something reports it at no distance: only a foe's body counts there.
+            if (hit.distance <= 0f && CombatFoe.Of(hit.collider) == null) continue;
             if (hit.distance < nearest) { nearest = hit.distance; first = hit.collider; }
         }
-        var enemy = first != null ? first.GetComponentInParent<EnemyHealth>() : null;
-        return enemy != null && enemy.IsAlive ? enemy : null;
+        var foe = CombatFoe.Of(first);
+        return CombatFoe.IsAlive(foe) ? foe : null;
     }
 }

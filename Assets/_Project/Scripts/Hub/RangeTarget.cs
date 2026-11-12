@@ -7,12 +7,20 @@ using UnityEngine;
 /// gun's hit as a zombie would (the head, marked by a WeaponHitRegion, takes the gun's headshot multiplier; the same hit
 /// is never counted twice), so the damage numbers and markers show what that shot does to a zombie. Its health is a
 /// normal zombie's (Tables/Hub): when a run of shots would have killed one it tips over, says so on the range board
-/// (RangeBoard), and stands up again full a moment later. It is practice only: it never reports a killing blow, so it
-/// pays no money, counts no kill, charges no ultimate and stays out of the chapter's results. Every PC shows its own
-/// shots on it; a friend's shots show their marks but hurt nothing here, as on any copy.
+/// (RangeBoard), and stands up again full a moment later.
+/// <para>
+/// It is a practice foe (ICombatFoe; the user, 2026-11-12: "퍼크 별로 잡았을 때 스택 얻어서 스킬 써 보고 싶은데 어려워서. 아
+/// 시순트 표적 찍기도 못 하네"): the shot that tips it over is a real killing blow, so everything the classes do with a kill
+/// happens here as on a zombie (an Assault's adrenaline, a Ghost's Head Hunter and White Tiger, a Schießhund's bounty with
+/// its Desperado rounds and BOUNTY, the kill marker and sound), its hits charge the ultimate as an enemy's do, and F marks
+/// it, a Schießhund's bounty mark too. Being practice keeps it out of the run: no kill feed line, money, XP, streak,
+/// stats, records or results (GunFeelDirector and the counters skip practice kills). Every PC shows its own shots on it;
+/// a friend's shots are traced here without hurting it (AttackTrace, share 0), as on any copy, so a target is felled by
+/// this PC's own player alone. Another PC's mark on it finds this PC's copy by where it stood as the hub began (Home).
+/// </para>
 /// </summary>
 [DisallowMultipleComponent]
-public sealed class RangeTarget : MonoBehaviour, IDamageReceiver, ICombatVitals, ICombatDisplayName
+public sealed class RangeTarget : MonoBehaviour, IDamageReceiver, ICombatVitals, ICombatDisplayName, ICombatFoe
 {
     /// <summary>What one hit on a range target did, for the range board.</summary>
     public readonly struct Shot
@@ -44,16 +52,51 @@ public sealed class RangeTarget : MonoBehaviour, IDamageReceiver, ICombatVitals,
     public string DisplayName => Texts.Get(nameId);
     /// <summary>Lying over until it stands up again.</summary>
     public bool IsDown => downAt >= 0f;
+    /// <summary>Standing with health left: it can be hit down (ICombatFoe), and a mark on it holds.</summary>
+    public bool IsAlive => !IsDown && Health > 0f;
+    /// <summary>Always practice: its kills are the classes' alone (ICombatFoe).</summary>
+    public bool IsPractice => true;
+    /// <summary>Where it stood as the hub began (a moving one's rail start), the same on every PC.</summary>
+    public Vector3 Home { get; private set; }
+
+    // Every target in the hub, for finding the one another PC means (Nearest).
+    private static readonly List<RangeTarget> all = new List<RangeTarget>();
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-    private static void ResetStatics() => Struck = null;
+    private static void ResetStatics()
+    {
+        Struck = null;
+        all.Clear();
+    }
+
+    /// <summary>
+    /// This PC's copy of the target another PC's player means by <paramref name="home"/> (its Home there): the scene is
+    /// the same on every PC, so it is the one that stood there, within a step. Null if none did.
+    /// </summary>
+    public static RangeTarget Nearest(Vector3 home)
+    {
+        RangeTarget found = null;
+        float best = 1f;
+        foreach (var target in all)
+        {
+            if (target == null) continue;
+            float far = (target.Home - home).sqrMagnitude;
+            if (far < best) { best = far; found = target; }
+        }
+        return found;
+    }
 
     private void Awake()
     {
         standing = transform.localRotation;
+        // Read before any rail moves it (RangeMover moves from its first Update on).
+        Home = transform.position;
         maximum = HubLobby.Number(zombie ? "dummyHealth" : "plateHealth", zombie ? 100f : 300f);
         Health = MaximumHealth;
     }
+
+    private void OnEnable() => all.Add(this);
+    private void OnDisable() => all.Remove(this);
 
     public DamageResult ReceiveHit(DamageHit hit)
     {
@@ -64,9 +107,12 @@ public sealed class RangeTarget : MonoBehaviour, IDamageReceiver, ICombatVitals,
         float before = Health;
         Health = Mathf.Max(0f, Health - hit.Amount);
         bool downed = Health <= 0f;
-        // Never down to zero in the report: a practice target's "kill" must not count as one (GunFeelDirector pays and
-        // counts every killing blow a player lands).
-        CombatDamageEvents.Report(this, hit, before, Mathf.Max(.01f, Health), MaximumHealth);
+        // As an enemy's hit does (EnemyHealth): the ultimate charges, so its skills can be tried here.
+        UltimateCharge.AwardEnemyHit(hit);
+        // Its true health, down to zero on the shot that fells it: that is a killing blow, as on a zombie, and the
+        // classes' kill hooks take it (ClassKit, ClassCards). Being practice (IsPractice) keeps it off the kill feed,
+        // the money and the counts (GunFeelDirector).
+        CombatDamageEvents.Report(this, hit, before, Health, MaximumHealth);
         var shooter = hit.Source != null ? hit.Source.GetComponentInParent<PlayerMovement>() : null;
         if (shooter != null && shooter.IsLocal)
         {

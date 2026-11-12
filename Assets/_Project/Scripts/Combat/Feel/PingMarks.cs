@@ -12,7 +12,8 @@ using UnityEngine.UI;
 /// a diamond over its head with how far it is. A plain ping is the HUD's pink; a Schießhund's is its teal bounty mark,
 /// which its class hunts (ClassKit) and lasts longer. Each player has one of each at a time: a new one moves it. A mark
 /// ends with its time or its enemy's life. Made on first need and lives with the scene. Numbers: Tables/ClassAbilities,
-/// Ping.* and Schiesshund.markSeconds.
+/// Ping.* and Schiesshund.markSeconds. Any foe takes a mark (ICombatFoe): a zombie, or a target on the hub's range, whose
+/// mark ends as it tips over.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class PingMarks : MonoBehaviour
@@ -30,9 +31,10 @@ public sealed class PingMarks : MonoBehaviour
 
     private sealed class Mark
     {
-        public EnemyHealth Enemy;
+        // A zombie or a range target, and the same as the foe it is.
+        public Component Enemy;
+        public ICombatFoe Foe;
         public PlayerMovement By;
-        public Collider Body;
         public bool Bounty;
         public float Until, Since;
         public readonly List<GameObject> Copies = new List<GameObject>();
@@ -52,14 +54,15 @@ public sealed class PingMarks : MonoBehaviour
     private static void ResetStatics() => instance = null;
 
     /// <summary>
-    /// Marks this enemy as pinged by <paramref name="by"/>: a bounty if they play a Schießhund (PlayerPing decides on
-    /// their own PC and says so to the others). Their earlier mark of the same kind moves here.
+    /// Marks this foe (a zombie, or a range target in the hub) as pinged by <paramref name="by"/>: a bounty if they play
+    /// a Schießhund (PlayerPing decides on their own PC and says so to the others). Their earlier mark of the same kind
+    /// moves here.
     /// </summary>
-    public static void Ping(EnemyHealth enemy, PlayerMovement by, bool bounty)
+    public static void Ping(Component enemy, PlayerMovement by, bool bounty)
     {
-        if (!Application.isPlaying || enemy == null || !enemy.IsAlive) return;
+        if (!Application.isPlaying || !CombatFoe.IsAlive(enemy)) return;
         if (instance == null) instance = new GameObject("Ping Marks").AddComponent<PingMarks>();
-        instance.Add(enemy, by, bounty);
+        instance.Add(enemy, (ICombatFoe)enemy, by, bounty);
     }
 
     /// <summary>Whether this enemy carries <paramref name="hunter"/>'s bounty mark now (a Schießhund's hunt: ClassKit, AttackTrace).</summary>
@@ -72,12 +75,12 @@ public sealed class PingMarks : MonoBehaviour
         return false;
     }
 
-    /// <summary>The enemy carrying <paramref name="hunter"/>'s bounty mark now, or null (the HUD's).</summary>
-    public static EnemyHealth BountyOf(PlayerMovement hunter)
+    /// <summary>The foe carrying <paramref name="hunter"/>'s bounty mark now, or null (the HUD's).</summary>
+    public static Component BountyOf(PlayerMovement hunter)
     {
         if (instance == null || hunter == null) return null;
         foreach (var mark in instance.marks)
-            if (mark.Bounty && mark.By == hunter && mark.Enemy != null && mark.Enemy.IsAlive && Time.time < mark.Until) return mark.Enemy;
+            if (mark.Bounty && mark.By == hunter && mark.Enemy != null && mark.Foe.IsAlive && Time.time < mark.Until) return mark.Enemy;
         return null;
     }
 
@@ -111,7 +114,7 @@ public sealed class PingMarks : MonoBehaviour
         if (instance == this) instance = null;
     }
 
-    private void Add(EnemyHealth enemy, PlayerMovement by, bool bounty)
+    private void Add(Component enemy, ICombatFoe foe, PlayerMovement by, bool bounty)
     {
         // Their earlier mark of this kind goes; so does anyone's mark already on this enemy, which this one takes over.
         for (int i = marks.Count - 1; i >= 0; i--)
@@ -122,8 +125,7 @@ public sealed class PingMarks : MonoBehaviour
         float seconds = bounty ? PlayerClass.Ability("Schiesshund", "markSeconds", 15f) : PlayerClass.Ability("Ping", "seconds", 8f);
         var mark = new Mark
         {
-            Enemy = enemy, By = by, Bounty = bounty, Until = Time.time + Mathf.Max(.5f, seconds), Since = Time.unscaledTime,
-            Body = enemy.GetComponentInChildren<Collider>()
+            Enemy = enemy, Foe = foe, By = by, Bounty = bounty, Until = Time.time + Mathf.Max(.5f, seconds), Since = Time.unscaledTime
         };
         Reveal(mark);
         HitFlashRenderer.For(enemy)?.SetPing(1f, bounty ? BountyColor : PingColor);
@@ -155,7 +157,7 @@ public sealed class PingMarks : MonoBehaviour
         for (int i = marks.Count - 1; i >= 0; i--)
         {
             var mark = marks[i];
-            if (mark.Enemy == null || !mark.Enemy.IsAlive || Time.time >= mark.Until) { Clear(mark); marks.RemoveAt(i); continue; }
+            if (mark.Enemy == null || !mark.Foe.IsAlive || Time.time >= mark.Until) { Clear(mark); marks.RemoveAt(i); continue; }
             Place(mark, view, local);
         }
     }
@@ -171,9 +173,8 @@ public sealed class PingMarks : MonoBehaviour
     private void Place(Mark mark, Camera view, PlayerMovement local)
     {
         if (mark.Marker == null) return;
-        Vector3 head = mark.Body != null ? new Vector3(mark.Body.bounds.center.x, mark.Body.bounds.max.y, mark.Body.bounds.center.z)
-            : mark.Enemy.transform.position + Vector3.up * 1.9f;
-        head += Vector3.up * OverHead;
+        // Over its head: a zombie's capsule's top, a range target's head part (CombatFoe.Top).
+        Vector3 head = CombatFoe.Top(mark.Enemy) + Vector3.up * OverHead;
         Vector3 screen = view != null ? view.WorldToScreenPoint(head) : Vector3.zero;
         bool shown = view != null && screen.z > 0f;
         mark.Marker.gameObject.SetActive(shown);

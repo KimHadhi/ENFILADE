@@ -11,8 +11,13 @@ using UnityEngine.InputSystem;
 /// - [F] at the map table's cards picks the chapter (the host, or the player alone; a guest sees the host's pick).
 /// - [F] at a locker of the class wall plays that class from now on, its guns in hand at once to try (ClassKit.Rekit).
 /// - [F] at the gun rack puts that gun in the hands, full; [F] at the ammo crate fills every gun. The firing range's
-///   targets (RangeTarget) show what each gun does to a zombie.
-/// - [F] at the ready button says this player is ready. Once everyone in the room is ready, the count runs down
+///   targets (RangeTarget) show what each gun does to a zombie, and are practice foes: a kill there stacks what the
+///   class stacks, a hit charges the ultimate and F marks one, a Schießhund's bounty too (2026-11-12), while nothing of
+///   it reaches the run's feed, money or counts. Here a full gauge plays the class's ultimate at once and deals no
+///   cards (PerkCardScreen), since cards last the campaign and the range must not hand them out.
+/// - [F] at the ready button says this player is ready. Who is ready shows at the top middle of the HUD, everyone's
+///   profile picture with a check on it once ready (HubReadyBoard, TF2's Mann vs. Machine way). Once everyone in the
+///   room is ready, the count runs down
 ///   (Tables/Hub departSeconds) while the way out's shutter rises, and the host takes the room to the chapter; alone,
 ///   the button sets off at once (soloDepartSeconds). Anyone who stops being ready stops the count.
 /// - Back from a chapter, its results play first (ResultsShow over the stage, MatchResults).
@@ -37,6 +42,7 @@ public sealed partial class HubLobby : MonoBehaviour
     private CampaignScreen screen;
     private MissionTracker tracker;
     private HubPanel panel;
+    private HubReadyBoard readyBoard;
     private string chapter = "";
     // Seconds left before setting off; negative while not counting. The whole count it started from, for the shutter.
     private float countdown = -1f, countdownFrom = 1f, nextShare;
@@ -49,6 +55,8 @@ public sealed partial class HubLobby : MonoBehaviour
     public static string Chapter => active != null ? active.chapter : "";
     /// <summary>Seconds left before setting off, or negative while not counting.</summary>
     public static float Countdown => active != null ? active.countdown : -1f;
+    /// <summary>A station is looked at, so F works it: nothing else takes that F (PlayerPing, as CampaignRun.Offering).</summary>
+    public static bool Offering => active != null && active.aimed != null && !ResultsShow.IsPlaying;
 
     private bool IsHost => network == null || network.IsServer;
     private ulong MySeat => network != null && network.IsListening ? network.LocalClientId : 0UL;
@@ -75,6 +83,7 @@ public sealed partial class HubLobby : MonoBehaviour
         screen = gameObject.AddComponent<CampaignScreen>();
         tracker = FindFirstObjectByType<MissionTracker>();
         panel = HubPanel.Make();
+        readyBoard = HubReadyBoard.Make();
         Listen();
         BuildStations();
         // A campaign seen through to its end starts over bare: perks last a campaign (PerkCardScreen).
@@ -87,6 +96,7 @@ public sealed partial class HubLobby : MonoBehaviour
     {
         if (active == this) active = null;
         if (panel != null) Destroy(panel.gameObject);
+        if (readyBoard != null) Destroy(readyBoard.gameObject);
         if (!listening || network == null || network.CustomMessagingManager == null) return;
         network.CustomMessagingManager.UnregisterNamedMessageHandler(network.IsServer ? ReadyMessage : StateMessage);
     }

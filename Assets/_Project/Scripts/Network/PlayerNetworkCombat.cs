@@ -355,9 +355,19 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
         KitSound.Play(KitSound.Cue.Bounty, volume * (grand ? .9f : .5f));
     }
 
-    private void OnPinged(EnemyHealth enemy, bool bounty)
+    private void OnPinged(Component foe, bool bounty)
     {
-        if (enemy != null && enemy.TryGetComponent(out NetworkObject marked) && marked.IsSpawned) PingRpc(marked.NetworkObjectId, bounty);
+        if (foe != null && foe.TryGetComponent(out NetworkObject marked) && marked.IsSpawned) PingRpc(marked.NetworkObjectId, bounty);
+        // A target on the hub's range is no network object: every PC has its own from the scene, found by where it stood.
+        else if (foe is RangeTarget target) RangePingRpc(target.Home, bounty);
+    }
+
+    // This player pinged a target on the hub's range (a Schießhund trying its mark out): every other PC marks its own copy.
+    [Rpc(SendTo.NotMe)]
+    private void RangePingRpc(Vector3 home, bool bounty)
+    {
+        var target = RangeTarget.Nearest(home);
+        if (target != null) PingMarks.Ping(target, mover != null ? mover : GetComponent<PlayerMovement>(), bounty);
     }
 
     // This player pinged an enemy (a Schießhund's bounty mark if bounty): every other PC marks it too.

@@ -21,6 +21,11 @@ public readonly struct CombatDamageReport
     public bool IsKillingBlow => HealthBefore > 0f && HealthAfter <= 0f;
     /// <summary>Another player landed it. The world shows it here, but the markers and the score are theirs.</summary>
     public bool ByOtherPlayer => Hit.Source != null && Hit.Source.GetComponentInParent<PlayerMovement>() is PlayerMovement player && !player.IsLocal;
+    /// <summary>
+    /// It landed on a practice target (the hub's range, ICombatFoe.IsPractice): it counts for the classes alone, never
+    /// for the run's feed, money, stats or records.
+    /// </summary>
+    public bool IsPractice => Target is ICombatFoe foe && foe.IsPractice;
 }
 
 /// <summary>
