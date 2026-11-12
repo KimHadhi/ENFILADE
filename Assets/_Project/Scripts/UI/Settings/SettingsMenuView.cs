@@ -148,7 +148,10 @@ public sealed class SettingsMenuView
         string name = Texts.Get(TabIds[index]);
         var plate = KitStyle.TopLeft("Tab " + name, panel, new Vector2(Margin + (index % 2) * 8f, TabsTop + index * (TabHeight + TabGap)),
             new Vector2(TabWidth, TabHeight));
-        KitStyle.Fill(plate, Color.clear).raycastTarget = true;
+        // The see-through image that takes the tab's clicks leans as its plate does (KitSkew's hit shape, 2026-11-12).
+        var hit = KitStyle.Fill(plate, Color.clear);
+        hit.raycastTarget = true;
+        KitSkew.On(hit, TabSlant);
         var edgeRect = KitStyle.Stretch("Edge", plate);
         edgeRect.sizeDelta = new Vector2(2f, 2f);
         var edge = KitStyle.Fill(edgeRect, Color.clear);

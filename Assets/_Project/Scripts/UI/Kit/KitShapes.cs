@@ -8,9 +8,10 @@ using UnityEngine;
 /// </summary>
 public static class KitShapes
 {
-    // The cut-corner sprite: its size, the 9-slice border and how much of the corner is cut (px).
+    // The cut-corner sprite: its size and the 9-slice border (px).
     private const int ChamferSize = 32, ChamferBorder = 12;
-    private const float ChamferCut = 10f;
+    /// <summary>How much of each cut corner is cut, along both edges (sprite px): KitHit cuts clicks off the same corners.</summary>
+    public const float ChamferCut = 10f;
 
     private static Sprite chamfer;
     private static Texture2D ring, dashes, glow, beam, vignette, grain, dot, fade;

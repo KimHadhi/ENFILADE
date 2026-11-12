@@ -15,6 +15,9 @@ public static class SettingsWidgets
         Track = new Color(1f, 1f, 1f, .14f), Surface = new Color(1f, 1f, 1f, .07f);
     // How far buttons and choices lean (px).
     private const float Slant = 10f;
+    /// <summary>How far in from either end of a slider's row its track and the knob's range start (px). The wardrobe's
+    /// body sliders place the model's own value on the track by it.</summary>
+    public const float KnobRoom = 7f;
 
     /// <summary>The menus' font: the Label text role (Fonts.csv), as the lobby's kit labels use.</summary>
     public static TMP_FontAsset Font() => FontRoles.Font(FontRoles.Label);
@@ -93,6 +96,13 @@ public static class SettingsWidgets
         return row;
     }
 
+    /// <summary>
+    /// A thin slider with a slanted knob (KitSlider: the knob follows the pointer laid onto the track as drawn). The
+    /// track, its pink fill and the knob's range are one span, <see cref="KnobRoom"/> in from either end of the row, so the
+    /// knob's middle, the fill's end and the value's place on the track are the same point at every value; the track and
+    /// the fill used to run the whole row while the knob stopped 7 px short of either end, and that much apart they read
+    /// as the knob drifting off the cursor (user, 2026-11-12). The whole row height still takes the pointer.
+    /// </summary>
     public static Slider Slider(Transform parent, float min, float max, float value, Action<float> changed,
         bool wholeNumbers = false)
     {
@@ -100,19 +110,20 @@ public static class SettingsWidgets
         Size(root, height: 28f, flexibleWidth: 1f);
         Fill(root, Color.clear); // the whole row height takes clicks, not just the thin track
         var track = Rect("Track", root);
-        track.anchorMin = new Vector2(0f, .5f); track.anchorMax = new Vector2(1f, .5f); track.sizeDelta = new Vector2(0f, 4f);
+        track.anchorMin = new Vector2(0f, .5f); track.anchorMax = new Vector2(1f, .5f); track.sizeDelta = new Vector2(-KnobRoom * 2f, 4f);
         Fill(track, Track);
         var fillArea = Rect("Fill Area", root);
-        fillArea.anchorMin = new Vector2(0f, .5f); fillArea.anchorMax = new Vector2(1f, .5f); fillArea.sizeDelta = new Vector2(0f, 4f);
+        fillArea.anchorMin = new Vector2(0f, .5f); fillArea.anchorMax = new Vector2(1f, .5f);
+        fillArea.sizeDelta = new Vector2(-KnobRoom * 2f, 4f);
         var fill = Rect("Fill", fillArea);
         fill.sizeDelta = Vector2.zero;
         Fill(fill, Accent);
         var handleArea = Rect("Handle Area", root);
         Stretch(handleArea);
-        handleArea.offsetMin = new Vector2(7f, 0f); handleArea.offsetMax = new Vector2(-7f, 0f);
+        handleArea.offsetMin = new Vector2(KnobRoom, 0f); handleArea.offsetMax = new Vector2(-KnobRoom, 0f);
         var handle = Rect("Handle", handleArea);
         handle.sizeDelta = new Vector2(6f, -4f);
-        var slider = root.gameObject.AddComponent<Slider>();
+        var slider = root.gameObject.AddComponent<KitSlider>();
         var grip = Fill(handle, Text);
         KitSkew.On(grip, 6f);
         slider.fillRect = fill; slider.handleRect = handle; slider.targetGraphic = grip;

@@ -76,7 +76,11 @@ public sealed class MainMenuModes : MonoBehaviour
             if (i > 0) y = KitStack.Below(lastX, y, lastWidth, Height, lastTilt, x, width, tilt, Gap);
             var root = KitStyle.TopLeft("Mode " + items[i].title, Root, new Vector2(x, y), new Vector2(width, Height));
             root.localRotation = Quaternion.Euler(0f, 0f, tilt);
-            KitStyle.Fill(root, Color.clear).raycastTarget = true;
+            // The see-through image that takes the plate's clicks leans as the plate does (KitSkew's hit shape), so the
+            // pointer picks the plate it is drawn on, not the square round it (user, 2026-11-12).
+            var hit = KitStyle.Fill(root, Color.clear);
+            hit.raycastTarget = true;
+            KitSkew.On(hit, Slant);
             var body = KitStyle.Stretch("Body", root);
             // A thin pink edge round the chosen plate: a slightly larger plate behind it.
             var edgeRect = KitStyle.Stretch("Edge", body);

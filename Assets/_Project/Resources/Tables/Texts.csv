@@ -1877,3 +1877,6 @@ loading.stage.fonts,글자를 준비하는 중,Preparing text,로딩 화면 > �
 loading.stage.portraits,캐릭터 사진을 찍는 중,Taking character pictures,로딩 화면 > 막대 아래: 타이틀 화면이 캐릭터 카드 사진을 찍는 동안(SkinPortraits)
 results.mvp,MVP,,결과 > 한 사람씩 비출 때 가장 잘한 사람 이름 옆 분홍 칩
 results.preview,포즈 미리 보기,,결과 > 장을 끝내기 전에 콘솔 /results를 쳤을 때 맨 위 장 이름 자리(지금 허브에 있는 사람들로 결과 연출과 포즈를 미리 본다)
+dev.hits.on,UI 클릭 판정 모양 보기를 켰습니다. 하늘색은 누를 수 있는 곳 · 분홍은 지금 커서가 고르는 것 · 노랑은 호버로 비킨 원래 자리 · 회색은 클릭을 가로막는 것. 다시 /hits 를 치면 꺼집니다.,,개발자 콘솔 > /hits 를 켰을 때의 대답(KitHitView)
+dev.hits.off,UI 클릭 판정 모양 보기를 껐습니다.,,개발자 콘솔 > /hits 를 껐을 때의 대답(KitHitView)
+dev.hits.legend,판정 모양 보기 (/hits) — 하늘색: 누를 수 있는 곳 · 분홍: 지금 커서가 고르는 것 · 노랑: 호버로 비킨 원래 자리 · 회색: 클릭을 가로막는 것,,화면 왼쪽 위 > 콘솔 /hits 를 켠 동안 보이는 설명 줄(KitHitView)

@@ -737,9 +737,9 @@ public sealed class MainMenuWardrobe : MonoBehaviour
     private float SliderRow(RectTransform row, PlayerBodyProfile.Skin skin, BodyShapes.Option option, float own, float value)
     {
         float left = RowName, width = RightWidth - 8f - RowName - ValueWidth;
-        // The tick goes in first, under the slider's handle (the handle runs 7 px inside each end of the track).
-        float place = Mathf.InverseLerp(option.Min, option.Max, own);
-        KitStyle.Fill(KitStyle.TopLeft("Own", row, new Vector2(left + 7f + place * (width - 14f) - 1f, 8f), new Vector2(2f, 20f)),
+        // The tick goes in first, under the slider's handle, on the track as drawn (it starts KnobRoom in from either end).
+        float place = Mathf.InverseLerp(option.Min, option.Max, own), room = SettingsWidgets.KnobRoom;
+        KitStyle.Fill(KitStyle.TopLeft("Own", row, new Vector2(left + room + place * (width - room * 2f) - 1f, 8f), new Vector2(2f, 20f)),
             KitStyle.With(KitStyle.Ice, .6f));
         var number = KitStyle.Flat(KitStyle.TopLeft("Value", row, new Vector2(left + width + 6f, 4f), new Vector2(ValueWidth - 6f, 28f)),
             ValueText(option, value), 14f, TextAlignmentOptions.MidlineRight, KitStyle.Soft);

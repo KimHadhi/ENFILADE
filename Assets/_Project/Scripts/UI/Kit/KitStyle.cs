@@ -73,12 +73,16 @@ public static class KitStyle
         return image;
     }
 
-    /// <summary>Gives an image the cut-corner shape.</summary>
+    /// <summary>
+    /// Gives an image the cut-corner shape. As a raycast target it then takes the pointer only where it is drawn: its cut
+    /// corners took clicks like the square they were cut from (KitHitShape, 2026-11-12).
+    /// </summary>
     public static void Shape(Image image)
     {
         image.sprite = KitShapes.Chamfer;
         image.type = Image.Type.Sliced;
         image.pixelsPerUnitMultiplier = 1f;
+        if (!image.TryGetComponent(out KitHitShape _)) image.gameObject.AddComponent<KitHitShape>();
     }
 
     /// <summary>A label filling <paramref name="rect"/>, white and bold in the score font, with its soft shadow.</summary>

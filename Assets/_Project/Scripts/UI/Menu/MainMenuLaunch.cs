@@ -36,7 +36,10 @@ public sealed class MainMenuLaunch : MonoBehaviour
 
     private void Build(Action pressed)
     {
-        KitStyle.Fill(Root, Color.clear).raycastTarget = true;
+        // The see-through image that takes the clicks leans as the pink plate does (KitSkew's hit shape, 2026-11-12).
+        var hit = KitStyle.Fill(Root, Color.clear);
+        hit.raycastTarget = true;
+        KitSkew.On(hit, Slant);
         KitSkew.On(KitStyle.Fill(KitStyle.Stretch("Plate", Root), KitStyle.Accent), Slant);
         var title = KitStyle.Flat(KitStyle.TopLeft("Title", Root, new Vector2(36f, 4f), new Vector2(300f, 76f)), Texts.Get("menu.launch.title"), 58f,
             TextAlignmentOptions.MidlineLeft, KitStyle.Ink);
