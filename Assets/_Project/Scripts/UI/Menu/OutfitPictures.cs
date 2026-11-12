@@ -6,27 +6,35 @@ using System.Text;
 using UnityEngine;
 
 /// <summary>
-/// How a piece of the wardrobe is photographed, turned, near or moved from its automatic framing (the user, 2026-11-12:
-/// "미리보기 사진 바꾸기 기능 넣어서 내가 직접 인게임에서 화면에 담길 만큼 보이는 걸로 각도나 위치 조절해서 찍어서"). Zero turn,
-/// zoom 1 and no move is the automatic picture: the whole piece seen from its front, a little from above.
+/// How a piece of the wardrobe is photographed, turned, near, moved or leaning from its automatic framing (the user,
+/// 2026-11-12: "미리보기 사진 바꾸기 기능 넣어서 내가 직접 인게임에서 화면에 담길 만큼 보이는 걸로 각도나 위치 조절해서 찍어서",
+/// then "그 옷을 시계 방향, 반시계 방향으로 좀 turn해서 이렇게 스타일리쉬한 각도에서도 찍을 수 있게"). All zero and zoom 1 is
+/// the automatic picture: the whole piece seen from its front, a little from above, leaning a little clockwise
+/// (OutfitPictureLook's Auto numbers, Tables/WardrobePictures.csv).
 /// </summary>
 [Serializable]
 public struct OutfitFraming
 {
     /// <summary>
     /// Round the piece from its front (degrees; + takes the lens round to the piece's right, so its front faces the
-    /// picture's right), and from above (degrees, + looks down more).
+    /// picture's right), and from above (degrees, + looks down more than the automatic framing).
     /// </summary>
     public float yaw, pitch;
     /// <summary>How much nearer than the whole piece's fit (1 fits it, 2 is twice as near).</summary>
     public float zoom;
     /// <summary>How far the piece is moved in the picture, in halves of the picture (+ right, + up).</summary>
     public float x, y;
+    /// <summary>
+    /// How much more the piece leans clockwise in the picture than the automatic lean (degrees, - back the other way:
+    /// minus the automatic lean stands it straight). Counted from the automatic lean, as the turns are counted from the
+    /// automatic view, so a framing kept before leaning came in (or left at zero) leans as every other picture does.
+    /// </summary>
+    public float roll;
 
     public static OutfitFraming Auto => new OutfitFraming { zoom = 1f };
 
     public bool IsAuto => Mathf.Abs(yaw) < .01f && Mathf.Abs(pitch) < .01f && Mathf.Abs(zoom - 1f) < .001f
-        && Mathf.Abs(x) < .0005f && Mathf.Abs(y) < .0005f;
+        && Mathf.Abs(x) < .0005f && Mathf.Abs(y) < .0005f && Mathf.Abs(roll) < .01f;
 }
 
 /// <summary>
@@ -42,8 +50,11 @@ public struct OutfitFraming
 /// </summary>
 public static class OutfitPictures
 {
-    /// <summary>The pictures' side (px): about twice what a plate shows at 1080p, so they stay sharp on bigger screens.</summary>
-    public const int Size = 192;
+    /// <summary>
+    /// The pictures' side (px). A plate lays its picture bigger than itself (WardrobePictures.csv Plate.size: 180 px at
+    /// 1080p), so they are a little bigger than that, to stay sharp on bigger screens.
+    /// </summary>
+    public const int Size = 256;
     public const string ResourcesFolder = "UI/OutfitPictures";
     public const string ProjectFolder = "Assets/_Project/Resources/" + ResourcesFolder;
     public const string TableName = "OutfitPictures";
@@ -209,7 +220,7 @@ public static class OutfitPictures
         return new OutfitFraming
         {
             yaw = Number(row, "yaw", 0f), pitch = Number(row, "pitch", 0f), zoom = Mathf.Max(.05f, Number(row, "zoom", 1f)),
-            x = Number(row, "x", 0f), y = Number(row, "y", 0f)
+            x = Number(row, "x", 0f), y = Number(row, "y", 0f), roll = Number(row, "roll", 0f)
         };
     }
 
@@ -263,9 +274,10 @@ public static class OutfitPictures
     private static float Number(IReadOnlyDictionary<string, string> row, string column, float fallback) =>
         row.TryGetValue(column, out string text) && float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out float value) ? value : fallback;
 
-    /// <summary>A piece's row of Tables/OutfitPictures.csv, as the editor writes it.</summary>
+    /// <summary>A piece's row of Tables/OutfitPictures.csv (id,yaw,pitch,zoom,x,y,roll), as the editor writes it.</summary>
     public static string Row(string piece, OutfitFraming framing) =>
-        string.Join(",", Quote(piece), Text(framing.yaw), Text(framing.pitch), Text(framing.zoom), Text(framing.x), Text(framing.y));
+        string.Join(",", Quote(piece), Text(framing.yaw), Text(framing.pitch), Text(framing.zoom), Text(framing.x), Text(framing.y),
+            Text(framing.roll));
 
     private static string Text(float value) => Math.Round(value, 3).ToString("0.###", CultureInfo.InvariantCulture);
     private static string Quote(string text) => text.IndexOfAny(new[] { ',', '"' }) < 0 ? text : "\"" + text.Replace("\"", "\"\"") + "\"";

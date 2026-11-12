@@ -30,6 +30,11 @@ using UnityEngine.UI;
 /// and the mirror took its place), where the character is the player's own body seen in the mirror. What differs
 /// between the two is the stage (IWardrobeStage): the hub's body is made again whole for every outfit, so there a click
 /// wears a choice at once and nothing is tried on under the pointer.
+/// The pictures then (2026-11-12) went the way the user drew them ("이런 딱 스타일리쉬하게 살짝 기울어져 있으면서 전체적으로
+/// 패널이 꽉 차게끔"): each much bigger than its plate or tile, over its right part, the piece leaning a little clockwise,
+/// cut by the plate's own slanted shape (OutfitPictureGraphic; where and how big: OutfitPictureLook,
+/// WardrobePictures.csv). A plate's name, colour count and 입음 tag stay left of its picture; a tile's words run on over
+/// its picture's left side, which fades in under them.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class MainMenuWardrobe : MonoBehaviour
@@ -62,11 +67,13 @@ public sealed class MainMenuWardrobe : MonoBehaviour
     private const float FrameGap = 40f, FrameInset = 14f, BracketLength = 46f, BracketWidth = 4f;
     private static readonly Vector2[] Corners = { new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0f, 0f), new Vector2(1f, 0f) };
     // Pictures (OutfitIcons) not taken yet when their plate or tile was made; they go in as they come.
-    private readonly List<(RawImage image, System.Func<Texture> picture)> pictures = new List<(RawImage, System.Func<Texture>)>();
-    // A picture's box: on a choice's plate and on a tile, at their right ends (px), and how see-through it lies.
-    // Then (2026-11-12, "작게 전체가 아니라 좀 전체적으로 보이고 살짝 투명하게"): the whole piece in a box as tall as its
-    // plate or tile, a little more see-through.
-    private const float PlatePicture = 72f, TilePicture = 50f, PictureAlpha = .72f;
+    private readonly List<(OutfitPictureGraphic image, System.Func<Texture> picture)> pictures = new List<(OutfitPictureGraphic, System.Func<Texture>)>();
+    // A choice's plate and a slot's tile across (px; tall as PlateHeight and TileHeight): the shooting window shows its
+    // previews and crop line at the same size.
+    private static float PlateWidth => RightWidth - 10f;
+    private static float TileWidth => Mathf.Floor((RightWidth - TileGap) * .5f);
+    // The 입음 tag of the worn plate and its gap to the picture (px).
+    private const float WornTag = 84f, WornGap = 8f;
     // 사진 다시 찍기: a choice pressed opens the shooting window for its piece instead of wearing it (OutfitShootView).
     private bool shooting;
     private OutfitShootView shoot;
@@ -178,7 +185,7 @@ public sealed class MainMenuWardrobe : MonoBehaviour
             shoot = null;
             // The piece's pictures were let go and taken again: the page puts the new ones in.
             if (retaken && IsOpen) Build();
-        });
+        }, new Vector2(PlateWidth, PlateHeight), new Vector2(TileWidth, TileHeight), Slant);
     }
 
     private void CloseShoot()
@@ -274,27 +281,24 @@ public sealed class MainMenuWardrobe : MonoBehaviour
             if (image != null && texture == null) continue;
             if (image != null)
             {
-                image.texture = texture;
+                image.Picture = texture;
                 image.enabled = true;
             }
             pictures.RemoveAt(i);
         }
     }
 
-    // A picture laid see-through at the right of a plate or tile: shown at once when taken, else as soon as it is. Its
-    // box, or null with no picture to show.
-    private RectTransform Picture(RectTransform parent, Vector2 at, float size, System.Func<Texture> picture)
+    // A piece's picture laid over a plate or tile as the user drew it (big over its right part, cut by its lean): shown
+    // at once when taken, else as soon as it is. Add the plate's words after it, so they lie over it. Null with no
+    // picture to show.
+    private OutfitPictureGraphic Picture(RectTransform parent, OutfitPictureLook.Where where, System.Func<Texture> picture)
     {
         if (picture == null) return null;
-        var box = KitStyle.TopLeft("Picture", parent, at, new Vector2(size, size));
-        var image = box.gameObject.AddComponent<RawImage>();
-        image.raycastTarget = false;
-        image.color = KitStyle.With(Color.white, PictureAlpha);
         var texture = picture();
-        image.texture = texture;
+        var image = OutfitPictureGraphic.Lay(parent, where, Slant, texture);
         image.enabled = texture != null;
         if (texture == null) pictures.Add((image, picture));
-        return box;
+        return image;
     }
 
     // ---- Left wing: who and which colours ----
@@ -419,7 +423,7 @@ public sealed class MainMenuWardrobe : MonoBehaviour
     {
         Title(right, 0f, Texts.Get("wardrobe.title"), -3f, Texts.Get("wardrobe.slots.where"), new Vector2(4f, 108f), RightWidth);
         var look = OutfitLook.Saved(skin.Id);
-        float width = Mathf.Floor((RightWidth - TileGap) * .5f), y = 146f;
+        float width = TileWidth, y = 146f;
         foreach (string group in Groups)
         {
             var slots = OutfitCatalog.Slots.Where(slot => slot.group == group).ToList();
@@ -457,16 +461,15 @@ public sealed class MainMenuWardrobe : MonoBehaviour
         back.raycastTarget = true;
         if (changed) Rim(tile, Slant);
         KitSkew.On(KitStyle.Bar("Bar", tile, Vector2.zero, new Vector2(3f, TileHeight), changed ? KitStyle.Accent : KitStyle.With(KitStyle.Ice, .3f)), Slant);
-        // What is on the slot, as a picture at its right end: the item in its colour, or the character's own piece.
+        // What is on the slot, as its picture over the tile's right part: the item in its colour, or the character's own
+        // piece. The words keep the room they had: the picture's left side fades in under their end (Tile.fade).
         var variant = skin.VariantOf(GameSettings.Current.characterVariant);
-        if (item != null) Picture(tile, new Vector2(width - TilePicture - 8f, (TileHeight - TilePicture) * .5f), TilePicture,
-            () => OutfitIcons.OfItem(skin, item, pick.Colour));
-        else if (own && !pick.IsOff) Picture(tile, new Vector2(width - TilePicture - 8f, (TileHeight - TilePicture) * .5f), TilePicture,
-            () => OutfitIcons.OfOwn(skin, slot.id, variant));
-        float room = width - 26f - TilePicture - 8f;
+        if (item != null) Picture(tile, OutfitPictureLook.Where.Tile, () => OutfitIcons.OfItem(skin, item, pick.Colour));
+        else if (own && !pick.IsOff) Picture(tile, OutfitPictureLook.Where.Tile, () => OutfitIcons.OfOwn(skin, slot.id, variant));
+        float room = width - 84f;
         if (changed)
         {
-            var tag = KitStyle.TopLeft("Changed", tile, new Vector2(width - TilePicture - 62f, 5f), new Vector2(44f, 15f));
+            var tag = KitStyle.TopLeft("Changed", tile, new Vector2(width - 112f, 5f), new Vector2(44f, 15f));
             KitSkew.On(KitStyle.Fill(tag, KitStyle.Accent), 4f);
             KitStyle.Flat(tag, Texts.Get("wardrobe.changed"), 11f, TextAlignmentOptions.Center, KitStyle.Ink);
         }
@@ -574,12 +577,12 @@ public sealed class MainMenuWardrobe : MonoBehaviour
         slotListFor = slot.id;
     }
 
-    // One choice of a slot as a slanted plate, a picture of the piece at its right end; the worn one dark with a pink
-    // edge and a 입음 chip.
+    // One choice of a slot as a slanted plate, the piece's picture big over its right part (cut by the plate's lean); the
+    // worn one dark with a pink edge and a 입음 chip. The words and the chip keep left of the picture.
     private RectTransform Plate(RectTransform right, Vector2 at, string name, string note, bool worn, float tilt, System.Action picked,
         System.Func<Texture> picture)
     {
-        float width = RightWidth - 10f;
+        float width = PlateWidth;
         var plate = KitStyle.TopLeft("Choice " + name, right, at, new Vector2(width, PlateHeight));
         plate.localRotation = Quaternion.Euler(0f, 0f, tilt);
         var back = KitStyle.Fill(KitStyle.Stretch("Back", plate), worn ? KitStyle.With(KitStyle.Night, .95f) : KitStyle.With(KitStyle.Ice, .07f));
@@ -587,18 +590,24 @@ public sealed class MainMenuWardrobe : MonoBehaviour
         back.raycastTarget = true;
         if (worn) Rim(plate, Slant);
         KitSkew.On(KitStyle.Bar("Bar", plate, Vector2.zero, new Vector2(4f, PlateHeight), worn ? KitStyle.Accent : KitStyle.With(KitStyle.Ice, .35f)), Slant);
-        var box = Picture(plate, new Vector2(width - PlatePicture - 14f, (PlateHeight - PlatePicture) * .5f), PlatePicture, picture);
-        // Taking pictures again, the picture a press would take again sits in the viewfinder's pink corners.
-        if (box != null && shooting && picked != null)
-            foreach (var corner in Corners) Bracket(box, corner, 14f, 2f);
-        float room = width - PlatePicture - 150f;
+        var image = Picture(plate, OutfitPictureLook.Where.Plate, picture);
+        float clear = Mathf.Clamp(OutfitPictureLook.LeftOf(new Vector2(width, PlateHeight), OutfitPictureLook.Of(OutfitPictureLook.Where.Plate)),
+            200f, width - 20f);
+        // Taking pictures again, the part of the plate its picture shows sits in the viewfinder's pink corners: what a
+        // press would take again.
+        if (image != null && shooting && picked != null)
+        {
+            var window = KitStyle.TopLeft("Window", plate, new Vector2(clear + 4f, 4f), new Vector2(width - clear - 14f, PlateHeight - 8f));
+            foreach (var corner in Corners) Bracket(window, corner, 14f, 2f);
+        }
+        float tagAt = clear - WornGap - WornTag, room = (worn ? tagAt : clear) - 22f - 10f;
         var title = KitStyle.Flat(KitStyle.TopLeft("Name", plate, new Vector2(22f, 10f), new Vector2(room, 30f)), name, 22f,
             TextAlignmentOptions.MidlineLeft, worn ? KitStyle.Text : KitStyle.With(KitStyle.Text, .85f));
         title.overflowMode = CombatUIAssets.ClippedOverflow(title);
         if (!string.IsNullOrEmpty(note)) Note(plate, new Vector2(24f, 42f), room, note, 13f);
         if (worn)
         {
-            var mark = KitStyle.TopLeft("Worn", plate, new Vector2(width - PlatePicture - 112f, (PlateHeight - 24f) * .5f), new Vector2(84f, 24f));
+            var mark = KitStyle.TopLeft("Worn", plate, new Vector2(tagAt, (PlateHeight - 24f) * .5f), new Vector2(WornTag, 24f));
             KitSkew.On(KitStyle.Fill(mark, KitStyle.Accent), 6f);
             KitStyle.Flat(mark, Texts.Get("wardrobe.worn"), 13f, TextAlignmentOptions.Center, KitStyle.Ink);
         }

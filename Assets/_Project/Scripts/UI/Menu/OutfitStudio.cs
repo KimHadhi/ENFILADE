@@ -12,8 +12,11 @@ using Object = UnityEngine.Object;
 /// photographed against nothing, at once (Camera.Render, no waiting a frame), lit the same wherever it is taken.
 /// - Framed from where its vertices really are, posed (a skinned piece baked: BakeMesh), so nothing of it is cut off
 ///   (the user, 2026-11-12: "작게 전체가 아니라 좀 전체적으로 보이고"); from its front (a character's front from its arms:
-///   some avatars face -Z as made), a little from above. A framing (OutfitFraming) turns round it, zooms (the lens
-///   narrows: the camera never goes into the piece) and moves it in the picture.
+///   some avatars face -Z as made), a little from above, leaning a little clockwise: the lens turns about its own axis,
+///   so the lean is in the picture and the wardrobe lays the square straight (the user drew it so: "살짝 기울어져
+///   있으면서"). How far from above, how far it leans and how much of the picture it fills are the Auto numbers of
+///   WardrobePictures.csv (OutfitPictureLook). A framing (OutfitFraming) turns round it, zooms (the lens narrows: the
+///   camera never goes into the piece), moves it in the picture and leans it more or less.
 /// - Lit by its own lights only, the title screen's character's (a white key, an ice rim and a pink rim) turned with the
 ///   view, and a flat ambient given to the piece's own renderers (light probes they are handed), so a picture taken on
 ///   the title screen, in the hub or in the editor looks the same. The scene's lights are switched off for the studio's
@@ -24,9 +27,10 @@ public sealed class OutfitStudio : IDisposable
 {
     /// <summary>Far to the side of everything a menu or a level holds.</summary>
     public static readonly Vector3 Home = new Vector3(-600f, 0f, 0f);
-    // The lens's field (°), how much of the picture the whole piece fills, how far from above it is seen by default (°),
-    // and as far as the lens reaches (m).
-    private const float FieldOfView = 24f, Fill = .9f, DefaultPitch = 8f, Reach = 60f;
+    // The lens's field (°) and as far as it reaches (m). How much of the picture the piece fills, how far from above it
+    // is seen and how far it leans when nothing says otherwise are the table's (OutfitPictureLook.AutoFill, AutoPitch,
+    // AutoTilt).
+    private const float FieldOfView = 24f, Reach = 60f;
     // At most this many vertices are kept for the framing: a dense piece is thinned out evenly.
     private const int MostPoints = 60000;
     private static readonly Color Ambient = new Color(.42f, .45f, .55f);
@@ -252,16 +256,21 @@ public sealed class OutfitStudio : IDisposable
     // ---- Framing ----
 
     /// <summary>
-    /// Points the lens at the standing piece as <paramref name="framing"/> says: round it from its front, the whole of
-    /// it fitted in a picture of this <paramref name="aspect"/>, then the lens narrowed by the zoom and the piece moved.
+    /// Points the lens at the standing piece as <paramref name="framing"/> says: round it from its front, leaning in the
+    /// picture, the whole of it fitted in a picture of this <paramref name="aspect"/>, then the lens narrowed by the zoom
+    /// and the piece moved (along the picture's own sides).
     /// </summary>
     public void Frame(OutfitFraming framing, float aspect = 1f)
     {
         if (points.Count == 0) return;
         aspect = Mathf.Max(.1f, aspect);
         float baseYaw = Mathf.Atan2(-front.x, -front.z) * Mathf.Rad2Deg;
-        var view = Quaternion.Euler(Mathf.Clamp(DefaultPitch + framing.pitch, -85f, 85f), baseYaw + framing.yaw, 0f);
+        var upright = Quaternion.Euler(Mathf.Clamp(OutfitPictureLook.AutoPitch + framing.pitch, -85f, 85f), baseYaw + framing.yaw, 0f);
+        // The lens turned about its own axis: turned so (+ about its forward axis, its top towards its left) the piece
+        // leans clockwise in the picture. The fit below is in the turned view, so the leaning piece still fits whole.
+        var view = upright * Quaternion.Euler(0f, 0f, OutfitPictureLook.AutoTilt + framing.roll);
         var into = Quaternion.Inverse(view);
+        float fill = OutfitPictureLook.AutoFill;
         float tanV = Mathf.Tan(FieldOfView * .5f * Mathf.Deg2Rad), tanH = tanV * aspect;
         // Fitted round the box's middle, then once more round the middle of what that showed, so it sits centred.
         Vector2 shift = Vector2.zero;
@@ -272,7 +281,7 @@ public sealed class OutfitStudio : IDisposable
             foreach (var point in points)
             {
                 Vector3 seen = into * (point - middle);
-                float need = Mathf.Max(Mathf.Abs(seen.x - shift.x) / (tanH * Fill), Mathf.Abs(seen.y - shift.y) / (tanV * Fill)) - seen.z;
+                float need = Mathf.Max(Mathf.Abs(seen.x - shift.x) / (tanH * fill), Mathf.Abs(seen.y - shift.y) / (tanV * fill)) - seen.z;
                 if (need > distance) distance = need;
             }
             float left = float.MaxValue, right = float.MinValue, low = float.MaxValue, high = float.MinValue;
@@ -302,7 +311,8 @@ public sealed class OutfitStudio : IDisposable
         lens.transform.SetPositionAndRotation(aim - view * Vector3.forward * distance, view);
         lens.nearClipPlane = Mathf.Max(.005f, nearest * .5f);
         lens.farClipPlane = Mathf.Max(lens.nearClipPlane + .1f, farthest * 1.5f + .5f);
-        foreach (var (light, turn) in rig) light.transform.rotation = view * Quaternion.Inverse(MenuView) * turn;
+        // The lights keep to the upright view: the lean turns the photograph, not the light on the piece.
+        foreach (var (light, turn) in rig) light.transform.rotation = upright * Quaternion.Inverse(MenuView) * turn;
     }
 
     // ---- Taking the picture ----

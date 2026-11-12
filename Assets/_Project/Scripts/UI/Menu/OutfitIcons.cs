@@ -6,9 +6,10 @@ using Debug = UnityEngine.Debug;
 
 /// <summary>
 /// Pictures of what can be worn, for the wardrobe's tiles and choices (MainMenuWardrobe): each item in a colour set, or
-/// a character's own piece of a slot, the whole of it seen from its front against nothing, so the wardrobe can lay it
-/// see-through over its plates. The user found the wardrobe all words (2026-11-12: "텍스트만 보고 입히려면 하나하나 다 봐야
-/// 하는데 무슨 의상인지 보이면 걍 원하는 거 바로 클릭할 수 있잖아").
+/// a character's own piece of a slot, the whole of it seen from its front, leaning a little clockwise, against nothing,
+/// so the wardrobe can lay it see-through over its plates, big and cut by them (OutfitPictureGraphic). The user found the
+/// wardrobe all words (2026-11-12: "텍스트만 보고 입히려면 하나하나 다 봐야 하는데 무슨 의상인지 보이면 걍 원하는 거 바로
+/// 클릭할 수 있잖아").
 /// Then (2026-11-12: "상의 미리보기 저거 패널에 있는거 작게 전체가 아니라 좀 전체적으로 보이고 살짝 투명하게 ㅇㅇ 그리고 미리
 /// 구워 놓으면 로딩 속도 더 빨라 지려나"): a picture comes from a file when there is one (OutfitPictures: baked into the game
 /// by Tools → Characters → 옷장 사진 모두 굽기, or taken again in the wardrobe's 사진 다시 찍기), else it is taken here in the

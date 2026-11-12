@@ -12,7 +12,8 @@ using Debug = UnityEngine.Debug;
 /// <summary>
 /// The wardrobe's pictures baked into the game (the user, 2026-11-12: "미리 구워 놓으면 로딩 속도 더 빨라 지려나").
 /// Tools → Characters → 옷장 사진 모두 굽기 photographs every piece the wardrobe shows, for every character, framed as
-/// Tables/OutfitPictures.csv says (else whole, from its front), into Resources/UI/OutfitPictures, where OutfitPictures
+/// Tables/OutfitPictures.csv says (else whole, from its front, leaning as WardrobePictures.csv's Auto rows say: the
+/// plates lay the pictures as they are), into Resources/UI/OutfitPictures, where OutfitPictures
 /// finds them before OutfitIcons would have to take them in play. Baked: each item in its first colour set (its other
 /// colours are still taken in play when worn, framed the same) and each character's own pieces in every colour set of
 /// the character. A full bake also removes the pictures of pieces that are gone. Its dialog says what one picture cost,
@@ -23,13 +24,16 @@ using Debug = UnityEngine.Debug;
 internal sealed class OutfitPictureBake : AssetPostprocessor
 {
     private const string TablePath = "Assets/_Project/Resources/Tables/" + OutfitPictures.TableName + ".csv";
-    private const string Header = "id,yaw,pitch,zoom,x,y";
-    private const string Description = "\"#설명 (옷장 사진의 구도. 옷마다 한 줄, 그 옷의 모든 색이 같이 쓴다. 줄이 없는 옷은 자동 구도: 옷 전체가 "
-        + "사진의 90%를 채우게 앞에서 조금 위(8°)에서 찍는다. id는 item@캐릭터@옷 또는 own@캐릭터@슬롯(캐릭터 원래 옷). "
-        + "yaw는 옆으로 돌린 각도(°, +는 옷 앞이 사진 오른쪽을 보게), pitch는 위아래 각도(°, +는 더 위에서 내려다봄), zoom은 "
-        + "자동 구도보다 가까운 배율(2는 두 배 크게), x·y는 사진 안에서 옮긴 거리(사진 반 폭이 1, +는 오른쪽·위). 옷장에서 "
-        + "'사진 다시 찍기'로 저장하면 이 줄이 써지고(에디터 Play 중), 자동으로 저장하면 지워진다. 바꾼 뒤 Tools → Characters → "
-        + "옷장 사진 모두 굽기로 사진을 다시 굽는다)\",,,,,";
+    // The table's first two lines as this writes them. A table from before a column came in gets the new ones: its rows
+    // read the missing cell as empty (the automatic value).
+    private const string Header = "id,yaw,pitch,zoom,x,y,roll";
+    private const string Description = "\"#설명 (옷장 사진의 구도. 옷마다 한 줄, 그 옷의 모든 색이 같이 쓴다. 줄이 없는 옷은 자동 구도: 옷 전체를 "
+        + "앞에서 조금 위에서, 시계 방향으로 조금 기울여 찍는다(채우는 비율·위 각도·기울기는 WardrobePictures.csv의 Auto 줄). id는 "
+        + "item@캐릭터@옷 또는 own@캐릭터@슬롯(캐릭터 원래 옷). yaw는 옆으로 돌린 각도(°, +는 옷 앞이 사진 오른쪽을 보게), pitch는 "
+        + "자동보다 더 위에서 내려다본 각도(°), zoom은 자동 구도보다 가까운 배율(2는 두 배 크게), x·y는 사진 안에서 옮긴 거리(사진 "
+        + "반 폭이 1, +는 오른쪽·위), roll은 자동 기울기보다 시계 방향으로 더 기울인 각도(°, -는 반시계 방향. 자동 기울기만큼 빼면 "
+        + "곧게 선다. 빈 칸은 0). 옷장에서 '사진 다시 찍기'로 저장하면 이 줄이 써지고(에디터 Play 중), 자동으로 저장하면 지워진다. "
+        + "바꾼 뒤 Tools → Characters → 옷장 사진 모두 굽기로 사진을 다시 굽는다)\",,,,,,";
 
     [InitializeOnLoadMethod]
     private static void Hook()
@@ -251,7 +255,9 @@ internal sealed class OutfitPictureBake : AssetPostprocessor
         var lines = text.Replace("\r\n", "\n").Split('\n').Where(line => line.Trim().Length > 0).ToList();
         if (lines.Count > 0 && lines[0].Length > 0 && lines[0][0] == '﻿') lines[0] = lines[0].Substring(1);
         if (lines.Count == 0 || !lines[0].StartsWith("id,", StringComparison.Ordinal)) lines.Insert(0, Header);
+        else lines[0] = Header;
         if (lines.Count < 2 || !IdOf(lines[1]).StartsWith("#", StringComparison.Ordinal)) lines.Insert(1, Description);
+        else lines[1] = Description;
         int found = lines.FindIndex(2, line => IdOf(line) == piece);
         string row = framing.HasValue ? OutfitPictures.Row(piece, framing.Value) : null;
         if (found >= 0)
