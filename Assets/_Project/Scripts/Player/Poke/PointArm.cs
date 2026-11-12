@@ -31,6 +31,8 @@ public sealed class PointArm : MonoBehaviour
 {
     // The fingers in order (index, middle, ring, little, thumb), three joints each from the knuckle out.
     private const int Index = 0, Middle = 1, Ring = 2, Little = 3, Thumb = 4;
+    // The hits of one line, reused (FirstSolid).
+    private static readonly RaycastHit[] lineHits = new RaycastHit[24];
     private static readonly HumanBodyBones[] FirstJoints =
     {
         HumanBodyBones.LeftIndexProximal, HumanBodyBones.LeftMiddleProximal, HumanBodyBones.LeftRingProximal,
@@ -153,18 +155,33 @@ public sealed class PointArm : MonoBehaviour
         float armLength = Vector3.Distance(upper.position, lower.position) + Vector3.Distance(lower.position, hand.position);
         float reach = armLength + (tipLength > 0f ? tipLength : armLength * .35f);
 
-        // What the finger is on: a friend's body along the look (held a moment through a flicker) within the arm's reach.
+        // Where the crosshair's line really ends, as a gun's aim does (the user, 2026-11-12: "손찌검 하는 것도 총처럼
+        // 조준선이 닿는 곳으로 검지 손가락 끝 방향이 가게끔 … 벽 뚫는 것도 막으면서"): the first wall, crate or zombie on it
+        // (Point.aimRange at most). Players are met by their bodies' own surface (PokeBody), never by their movement
+        // capsules, which stand a hand's width off the skin.
+        float hover = PokeTables.Number("Point.hover", .015f);
+        float aimRange = Mathf.Max(1f, PokeTables.Number("Point.aimRange", 60f));
+        float wallAt = FirstSolid(origin, look, aimRange, out RaycastHit wall) ? wall.distance : aimRange;
+
+        // What the finger is on: a friend's body along the look (held a moment through a flicker), in front of any wall
+        // (none is poked or pointed at through one), within the arm's reach to touch.
         PokeHit hit = default;
-        bool found = on && Touch(origin, look, PokeTables.Number("Point.range", 1.3f), dt, out hit);
+        bool found = on && Touch(origin, look, PokeTables.Number("Point.range", 1.3f), dt, out hit) && hit.Distance <= wallAt + .01f;
         bool touches = found && Vector3.Distance(shoulder, hit.Point) <= reach * PokeTables.Number("Point.reach", .97f);
         // While it only points, the fingertip rests at a spot fixed in the view, low and left of the crosshair (Point.ahead,
-        // Point.left, Point.down): it stays put on the screen however the body walks, strafes or turns, and points from
-        // there at what it points at (a friend out of reach, what a tap's ping pinged, else where the look goes far off).
+        // Point.left, Point.down): it stays put on the screen however the body walks, strafes or turns. A wall closer than
+        // that spot holds it just short of the wall (Point.hover), so a finger never goes into one.
         Vector3 spot = origin + look * PokeTables.Number("Point.ahead", .55f) - viewRight * PokeTables.Number("Point.left", .13f)
             - viewUp * PokeTables.Number("Point.down", .12f);
-        Vector3 aim = found ? hit.Point : point.FlashTarget(out Vector3 pinged) ? pinged : origin + look * 10f;
+        Vector3 toSpot = spot - origin;
+        float spotDistance = toSpot.magnitude;
+        if (spotDistance > 1e-3f && FirstSolid(origin, toSpot / spotDistance, spotDistance + hover, out RaycastHit near))
+            spot = origin + toSpot / spotDistance * Mathf.Max(.05f, near.distance - hover);
+        // From there the finger points at what the crosshair's line ends on, as a gun converges on it: a friend out of
+        // reach, what a tap's ping pinged, else the wall or the far end of the look.
+        Vector3 aim = found ? hit.Point : point.FlashTarget(out Vector3 pinged) ? pinged : origin + look * wallAt;
         Vector3 way = touches ? hit.Point - shoulder : aim - spot;
-        way = way.sqrMagnitude > 1e-6f ? way.normalized : look;
+        way = way.sqrMagnitude > .0025f ? way.normalized : look;
 
         // The hand along that way, the palm down and turned in, bent at the wrist as Point.wristBend/wristSide say: the
         // hand drawn in Blender (PointHand.csv) if there is one, else the index out and the rest in a fist by Point.*.
@@ -237,6 +254,25 @@ public sealed class PointArm : MonoBehaviour
             SkinPoke.Press(movement, hit, Fingertip(), way);
         }
         else Let();
+    }
+
+    // The first solid thing a line meets that isn't a player (a wall, a crate, a zombie): players are met by their bodies'
+    // surfaces instead (PokeBody), not by the movement capsules round them, nor this player's own colliders.
+    private static bool FirstSolid(Vector3 from, Vector3 direction, float range, out RaycastHit first)
+    {
+        first = default;
+        int count = Physics.RaycastNonAlloc(from, direction, lineHits, range, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
+        float nearest = float.PositiveInfinity;
+        for (int i = 0; i < count; i++)
+        {
+            var candidate = lineHits[i];
+            lineHits[i] = default;
+            if (candidate.collider == null || candidate.distance <= 0f || candidate.distance >= nearest) continue;
+            if (candidate.collider.GetComponentInParent<PlayerMovement>() != null) continue;
+            nearest = candidate.distance;
+            first = candidate;
+        }
+        return nearest < float.PositiveInfinity;
     }
 
     // The friend the finger is on: found along the look this frame, else the last one for a moment (Touch.lose), so a
