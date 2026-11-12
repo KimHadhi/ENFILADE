@@ -57,7 +57,7 @@ public sealed class PlayerGrenades : MonoBehaviour
     private Arm arm;
     private int count;
     private bool holding, aiming, cooking, wired, letGo, released, pinned;
-    private float pressedAt, cookLeft, readyAt, pickLeft, cycle, drawSpeed, lowerLeft;
+    private float pressedAt, cookLeft, readyAt, pickLeft, cycle, drawSpeed, lowerLeft, knifeShakeAt;
     private ushort nextId = 1;
     private string classSeen;
     // This player's throwables in the world on this PC: their own, or the copies of a friend's.
@@ -145,6 +145,13 @@ public sealed class PlayerGrenades : MonoBehaviour
         if (cooking) Cook(Throwables.Of(armKind));
         Run(dt, Throwables.Of(armKind));
         KeepHandFree();
+        // The knife's roll comes back a moment after the throw, a short shake as the addon's (Feel).
+        if (knifeShakeAt > 0f && Time.time >= knifeShakeAt)
+        {
+            knifeShakeAt = 0f;
+            var view = Camera.main;
+            if (view != null) CameraViewPunch.For(view)?.Punch(new Vector3(0f, 0f, -.6f * Throwables.Rule("knifeRoll", 2f)));
+        }
         var aimed = Throwables.Of(armKind);
         if (holding && (arm == Arm.Draw || arm == Arm.Hold) && aimed != null)
         {
@@ -553,7 +560,13 @@ public sealed class PlayerGrenades : MonoBehaviour
         if (weapon != null) FPSBody.Holding(weapon)?.Point();
         var eye = Camera.main;
         if (eye == null) return;
-        if (armKind == Throwable.Knife) CameraViewPunch.For(eye)?.Punch(new Vector3(2f, 0f, -1.5f));
+        if (armKind == Throwable.Knife)
+        {
+            // GMod's [MW] Quick Throwing Knife: ViewPunch 2 down, the viewmodel camera's turn times 1.5, and a roll
+            // that shakes back over 0.15 s (GrenadeRules knifeKick, knifeRoll).
+            CameraViewPunch.For(eye)?.Punch(new Vector3(Throwables.Rule("knifeKick", 2.5f), -.8f, Throwables.Rule("knifeRoll", 2f)));
+            knifeShakeAt = Time.time + .08f;
+        }
         else CameraViewPunch.For(eye)?.Punch(new Vector3(-1.2f, -.9f, 2f));
     }
 
@@ -741,6 +754,9 @@ public sealed class PlayerGrenades : MonoBehaviour
         if (who.IsLocal) GrenadeHUD.Blink(KitStyle.Ice);
         return given;
     }
+
+    /// <summary>All of their throwable back (the hub's ammo crate): what is carried; returns how many it took.</summary>
+    public static int Fill(PlayerMovement who) => Refill(who, 999);
 
     /// <summary>Whether this player has room for more of their throwable (an ammo pile may go for it alone).</summary>
     public static bool HasRoom(PlayerMovement who)

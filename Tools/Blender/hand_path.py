@@ -107,7 +107,12 @@ for part in recipe["parts"]:
         thumb = curl(fingers["thumb"])
         held = 1 if released_from is None or fr < released_from else 0
         cycle = offset + fr / fps
-        rows.append([cycle, *((wrist - shoulder) / length), *((elbow - shoulder) / length), *along, *palm, fingers_curl, thumb, held])
+        if recipe.get("space") == "eye":
+            # Where the viewmodel puts the hand on screen: the wrist and the elbow from the view itself, in metres
+            # (ThrowArms space eye: GrenadeArm turns it to the player's own field of view from the clip's viewFov).
+            rows.append([cycle, *wrist, *elbow, *along, *palm, fingers_curl, thumb, held])
+        else:
+            rows.append([cycle, *((wrist - shoulder) / length), *((elbow - shoulder) / length), *along, *palm, fingers_curl, thumb, held])
         if wrist.z > best:
             best, best_frame = wrist.z, fr
         if "held" in recipe and fr == 0 and part is recipe["parts"][0]:

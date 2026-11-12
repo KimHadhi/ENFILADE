@@ -42,10 +42,11 @@ public sealed class EnemyHitReaction : MonoBehaviour, ITableBound
     public void OnHit(DamageHit hit, float applied, float maximumHealth)
     {
         var settings = GunFeelSettings.Instance;
-        if (!settings.enemyFlinch || hit.Method != DamageMethod.Bullet || applied <= 0f) return;
+        // A Knight's thrown knife jolts as a shot does (the user: "시원하고 빠르고 찰진(타격감 있는) 느낌").
+        if (!settings.enemyFlinch || (hit.Method != DamageMethod.Bullet && hit.Method != DamageMethod.Thrown) || applied <= 0f) return;
         // A brute (friend feedback C2) walks through gunfire.
         if (target != null && target.Steadfast) return;
-        float flinch = FlinchOf(hit);
+        float flinch = hit.Method == DamageMethod.Thrown ? ThrownKnife.Flinch : FlinchOf(hit);
         bool head = hit.IsCritical;
 
         if (target != null && hit.PostureDamage > 0f)

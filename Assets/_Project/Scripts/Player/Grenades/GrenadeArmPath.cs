@@ -36,12 +36,16 @@ public static class GrenadeArmPath
     /// <summary>
     /// A hand motion (a row of Tables/ThrowArms): its path table, how fast a tap's and a hold's draw and the throw go
     /// (times its clip's own speed), and its moments along the path: the pin (below 0: none), the hold, the release,
-    /// the way back to the gun, the end.
+    /// the way back to the gun, the end. EyeSpace: its wrists and elbows are measured from the eyes in metres (a
+    /// viewmodel's framing, the knife's) rather than from the shoulder in arm lengths, and ViewFov is the clip's own
+    /// vertical field of view, to put the hand where it sat on screen at the player's own (GrenadeArm).
     /// </summary>
     public sealed class Motion
     {
         public string Id = DefaultMotion, Table = TableName;
         public float TapDraw = 1.6f, HoldDraw = 1.25f, ThrowSpeed = 1.3f, Pin = .3f, Hold = .4f, Release = .61f, Back = .85f, End = .97f;
+        public bool EyeSpace;
+        public float ViewFov = 50f;
         public bool HasPin => Pin >= 0f;
     }
 
@@ -166,6 +170,8 @@ public static class GrenadeArmPath
             motion.Release = Mathf.Max(motion.Hold, Number(row, "release", motion.Release));
             motion.Back = Mathf.Max(motion.Release, Number(row, "back", motion.Back));
             motion.End = Mathf.Max(motion.Back, Number(row, "end", motion.End));
+            motion.EyeSpace = row.TryGetValue("space", out string space) && string.Equals(space.Trim(), "eye", System.StringComparison.OrdinalIgnoreCase);
+            motion.ViewFov = Mathf.Clamp(Number(row, "viewFov", motion.ViewFov), 10f, 150f);
             motions[motion.Id] = motion;
         }
     }

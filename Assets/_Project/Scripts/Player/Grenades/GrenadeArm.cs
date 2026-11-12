@@ -108,13 +108,14 @@ public sealed class GrenadeArm : MonoBehaviour
         float blend = on ? Throwables.Rule("armIn", .08f) : Throwables.Rule("armOut", .14f);
         own = Mathf.MoveTowards(own, on ? 1f : 0f, dt / Mathf.Max(.01f, blend));
         weight = hands != null ? Mathf.Min(own, hands.OffHandLent) : own;
-        if (weight <= 0f || !GrenadeArmPath.Sample(GrenadeArmPath.For(kind).Table, cycle, out var key))
+        var motion = GrenadeArmPath.For(kind);
+        if (weight <= 0f || !GrenadeArmPath.Sample(motion.Table, cycle, out var key))
         {
             ShowHeld(false);
             HeldPoint = hand.position;
             return;
         }
-        Pose(key);
+        Pose(key, motion);
     }
 
     private void OnDisable()
@@ -173,20 +174,40 @@ public sealed class GrenadeArm : MonoBehaviour
         var motion = GrenadeArmPath.For(kind);
         if (!GrenadeArmPath.Sample(motion.Table, motion.Release, out var key)) return;
         Quaternion view = eyes.rotation;
-        Vector3 wrist = upper.position + view * (key.Wrist * armLength);
+        Vector3 wrist = Place(motion, key.Wrist);
         Vector3 point = wrist + Quaternion.LookRotation(view * key.Along, view * key.Palm) * (HeldAt() * handLength);
         releaseLocal = Quaternion.Inverse(view) * (point - eyes.position);
         hasRelease = true;
     }
 
-    private void Pose(in GrenadeArmPath.Key key)
+    // Where a key's wrist (or elbow) is now: from this shoulder in this arm's lengths, or for a motion measured from the
+    // eyes (the knife's viewmodel framing) from the eyes in metres, spread out as much as this player's view is wider
+    // than the clip's, so the hand sits where it sat on the clip's screen.
+    private Vector3 Place(GrenadeArmPath.Motion motion, Vector3 local)
+    {
+        Quaternion view = eyes.rotation;
+        if (!motion.EyeSpace) return upper.position + view * (local * armLength);
+        float spread = Spread(motion);
+        return eyes.position + view * new Vector3(local.x * spread, local.y * spread, local.z);
+    }
+
+    // The player's own camera on their own PC; a friend's copy, seen from outside, keeps the clip's framing.
+    private float Spread(GrenadeArmPath.Motion motion)
+    {
+        var camera = movement.IsLocal ? Camera.main : null;
+        if (camera == null) return 1f;
+        float ours = Mathf.Tan(camera.fieldOfView * .5f * Mathf.Deg2Rad), theirs = Mathf.Tan(motion.ViewFov * .5f * Mathf.Deg2Rad);
+        return theirs > 1e-3f ? Mathf.Clamp(ours / theirs, .5f, 2f) : 1f;
+    }
+
+    private void Pose(in GrenadeArmPath.Key key, GrenadeArmPath.Motion motion)
     {
         for (int i = 0; i < turnedCount; i++) framed[i] = turned[i].localRotation;
         Quaternion view = eyes.rotation;
-        Vector3 shoulder = upper.position;
 
-        // The wrist where the path has it from this shoulder, in this arm's lengths; the elbow toward the path's elbow.
-        TwoBoneIK.Solve(upper, lower, hand, shoulder + view * (key.Wrist * armLength), shoulder + view * (key.Elbow * armLength));
+        // The wrist where the path has it (from this shoulder, or from the eyes for a viewmodel's path); the elbow
+        // toward the path's elbow.
+        TwoBoneIK.Solve(upper, lower, hand, Place(motion, key.Wrist), Place(motion, key.Elbow));
         Vector3 along = view * key.Along, palm = view * key.Palm;
         TurnHand(along, palm);
         Fingers(along, palm, key.Curl, key.Thumb);

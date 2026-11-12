@@ -24,6 +24,12 @@
 - 클립을 옮기지 않고 팔이 하는 일만 표로 뽑았다([GrenadeArm.csv](../Resources/Tables/GrenadeArm.csv), [vmanip_throw_path.py](../../../Tools/Blender/vmanip_throw_path.py)): 어깨에서 손목·팔꿈치까지(팔 길이의 배수), 손이 뻗은 쪽과 손바닥이 향한 쪽, 손가락·엄지가 굽은 정도, 손에 투척물이 있는지. 모두 시야 기준(x 오른쪽 · y 위 · z 앞). [GrenadeArm](../Scripts/Player/Grenades/GrenadeArm.cs)이 이것을 그 몸의 어깨·팔 길이로 옮겨(TwoBoneIK) 손을 돌리고 손가락을 감는다. 그래서 어떤 휴머노이드(모드 캐릭터 포함)도 굽기나 클립 없이 같은 동작을 한다.
 - 손에 쥔 투척물은 그 종류의 모델이 손바닥에 앉는다(Grenades.csv `heldAcross`·`heldPalm`·`heldAlong` 손 길이의 배수, `heldTurnX/Y/Z`). 수류탄은 신관 머리가 엄지 쪽, 나이프는 손잡이를 쥐고 날이 엄지 쪽으로 나온다.
 - **나이트의 투척 나이프는 제 손 동작이 따로 있다**(사용자: "throwing knife는 gmod에 있는 느낌대로 한 거 맞지?", 0.8.219): GMod 애드온 [MW] Quick Throwing Knife(워크숍 3650480912)의 MW2019 투척 나이프 뷰모델 `c_eq_knife.mdl`에서 꺼내기(draw)와 던지기(throw)를 [hand_path.py](../../../Tools/Blender/hand_path.py)와 레시피 [HandPaths/KnifeArm.json](../../../Tools/Blender/HandPaths/KnifeArm.json)으로 뽑아 [KnifeArm.csv](../Resources/Tables/KnifeArm.csv)에 넣었다. 원본은 오른손으로 던진다(총을 집어넣는다). 여기서는 좌우를 뒤집어 왼손이 던지고, 총은 오른손에 그대로 있다. 꾹 누르면 원본의 꺼내기 그대로 0.6초에 낮게 쥐고 대기하고(꺼내는 소리: 칼날 + 소매), 떼면 원본처럼 1.5배속으로 왼쪽 위로 젖혔다가 앞으로 채서 0.27초 뒤 손가락이 펴지며 날아간다. 톡 누르면 꺼내기를 거의 건너뛰어 0.42초에 나간다(원본은 떼고 약 0.4초). 던질 때 칼날·소매 소리, 시야가 2° 아래로 튀고 조금 기운다(원본 ViewPunch). 날아가는 나이프는 원본처럼 1초에 3000° 돌고 하얀 줄이 0.3초 남는다(`knifeSpin`·`knifeTrail`). 좀비에 꽂히는 소리와 벽 소리는 원본과 같은 Far Cry 4 `knife_stab`·`knife_hit`이다. 원본과 일부러 다르게 둔 것: 헤드샷 320(보통 좀비 한 방, 총 규칙과 같게, 원본은 어디든 80), 다시 줍기(원본은 5초 뒤 사라짐), 거의 곧은 비행(중력 0.2, 원본은 온 중력).
+- **2차(사용자: "나이트의 퀵그레네이드인 쓰로잉 나이프가 전혀 내가 Gmod에서 보던 쓰로잉 나이프 같지 않아. 그대로 시원하고 빠르고 찰진(타격감 있는) 느낌이면 좋겠는데.")**: 왜 달랐나와 무엇을 바꿨나.
+  - 보이지 않았다: 궤적을 어깨에서 팔 길이로 옮겨서 들고 있는 나이프가 화면 아래 약 35~40°(우리 세로 화각은 ±29°)에 있었다. 이제 KnifeArm은 눈에서 미터로 잰 뷰모델 자리 그대로다(ThrowArms `space` eye). 원본 뷰모델의 세로 화각(`viewFov` 50.2°, GMod ViewModelFOV 64)에서 이 게임 화각으로 늘려, 나이프가 GMod처럼 화면 아래쪽에 보인다.
+  - 느렸다: 톡 누른 뒤 0.42초 → 약 0.27초에 놓는다(ThrowArms knife `tapDraw` 10, `throwSpeed` 2). 꾹 누를 때 꺼내기 0.6초 → 0.375초(`holdDraw` 1.6). 다음 나이프까지 약 0.7초 → 0.5초. 날아가는 빠르기 36 → 50 m/s(애드온 2000유닛/초 ≈ 50.8 m/s).
+  - 찰지지 않았다: 좀비 움찔(EnemyHitReaction)이 총알만 받아서 나이프에 맞아도 움찔하지 않았다. 이제 나이프도 총알처럼 움찔시킨다(뒤로 밀림·느려짐·헤드샷이면 잠깐 멈춤, `knifeFlinch` 1.5). 피도 총알만큼(0.6배 근접 피 → 총알 피와 핏자국), 킬 피드 헤드샷 해골, 총 처치의 처치 연출(GunFeelDirector).
+  - 시야: 놓을 때 2.5° 아래로 튀고 2° 기울었다가 0.08초 뒤 되돌아오며 짧게 흔들린다(`knifeKick`·`knifeRoll`, 애드온 ViewPunch 2 + 뷰모델 카메라 ×1.5 + 0.15초 흔들림).
+  - 그대로인 것: 1초 3000° 회전, 0.3초 하얀 줄, FC4 꽂힘 소리, 꽂힌 데 남기, 다시 줍기(애드온은 5초 뒤 사라짐), 헤드샷 320, 거의 곧은 비행(중력 0.2배, 애드온은 GMod 중력 600유닛/초² ≈ 1.55배).
 - 손 동작마다 순간과 빠르기는 [ThrowArms.csv](../Resources/Tables/ThrowArms.csv)에 한 줄씩 있다(`grenade`: VManip, `knife`: MW). Grenades.csv `arm`이 줄을 고르고 비우면 `grenade`. 다른 손 애니메이션을 같은 도구로 뽑아 줄을 더하면 그 투척물이 그 동작으로 던진다.
 - 친구 화면에서도 보인다: 내 PC가 손의 단계(꺼내기·던지기·톡 던지기·도로 넣기)를 보내고(PlayerNetworkCombat.GrenadeHandRpc), 친구 PC의 내 사본이 같은 길을 같은 빠르기로 간다. 투척물 자체는 예전처럼 GrenadeRpc로 손이 놓는 자리에서 날아간다.
 - 왼손은 모든 왼손 동작이 쓰는 한 입구로 빌린다(총관리자 결정): `PlayerBodyHands.LendOffHand(this, 1)`을 던지는 동안 부르고 끝나면 0. 그러면 왼손의 총 접점·손잡이·총 손가락이 `Hands.blendTime`(0.15초)에 풀리고 끝나면 다시 총을 잡는다. 던지는 자세는 풀린 만큼(`OffHandLent`)을 넘지 않게 섞는다.
@@ -51,6 +57,7 @@
 - 필드의 탄약 더미: 표의 `refill`만큼(나이프 2, 나머지 1). 총 탄약이 가득해도 투척물 칸이 비어 있으면 탄약 더미를 집을 수 있다.
 - 상점: `투척물 보충` 400(Shop.csv `Grenade`, 한 개).
 - 서포트의 보급과 탄약 상자: `PlayerGrenades.Resupplied(player)`가 `resupply`(1)만큼 준다(SupportKit.Receive, 0.8.179).
+- 허브의 탄약 상자: [F] 한 번에 총의 탄약과 클래스 투척물이 모두 가득 찬다(HubLobby.Stations Act.Ammo → `PlayerGrenades.Fill`, 사용자: "로비에서 탄약 보충시켜 주는 그거 수류탄도 보충시켜주게 해 줘").
 - 지뢰: 놓은 것은 터지거나 밀려날 때까지 그 자리에 있다. 놓은 사람이 게임을 나가면 함께 사라진다.
 
 ## 네트워크

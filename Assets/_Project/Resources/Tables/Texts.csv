@@ -1400,7 +1400,7 @@ hub.prompt.chapter.host,{0}  ·  장은 방장이 고릅니다,,허브 > 방에 
 hub.prompt.class,[F] {0} 고르기,,허브 > 클래스 벽의 사물함을 볼 때. {0}=클래스
 hub.prompt.class.chosen,{0}  ·  지금 클래스,,허브 > 지금 클래스의 사물함을 볼 때
 hub.prompt.gun,[F] {0} 들기,,허브 > 총 진열대의 총을 볼 때. {0}=총 이름
-hub.prompt.ammo,[F] 탄약 채우기,,허브 > 탄약 상자를 볼 때
+hub.prompt.ammo,[F] 탄약·투척물 채우기,,허브 > 탄약 상자를 볼 때(총의 탄약과 클래스 투척물을 가득)
 hub.prompt.ready,[F] 준비,,허브 > 준비 버튼을 볼 때
 hub.prompt.unready,[F] 준비 취소,,허브 > 준비한 뒤 준비 버튼을 볼 때
 hub.prompt.mirror,[F] 거울 앞에서 꾸미기,,허브 > 무대 거울 유리를 볼 때

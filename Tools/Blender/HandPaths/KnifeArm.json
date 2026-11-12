@@ -1,20 +1,53 @@
 {
  "name": "KnifeArm",
- "source": "[MW] Quick Throwing Knife (GMod workshop 3650480912): the MW2019 throwing knife viewmodel's draw and throw. The addon plays the draw on +throwknife and the throw (fading in over 0.05 s) at 1.5x on -throwknife; the knife leaves 0.3 s into it. The right hand throws there (the gun is put away); mirrored, our left hand throws it while the gun stays in the right.",
+ "source": "[MW] Quick Throwing Knife (GMod workshop 3650480912): the MW2019 throwing knife viewmodel's draw and throw. The addon plays the draw on +throwknife and the throw (fading in over 0.05 s) at 1.5x on -throwknife; the knife leaves 0.3 s into it. The right hand throws there (the gun is put away); mirrored, our left hand throws it while the gun stays in the right. In first person the viewmodel frames the knife at the bottom of the screen, so the path keeps the hand where the viewmodel puts it from the view (space eye), not from the shoulder.",
  "mdl": "models/weapons/eq_knife/c_eq_knife.mdl",
  "view": "tag_camera",
  "mirror": true,
- "arm": {"shoulder": "j_shoulder_ri", "elbow": "j_elbow_ri", "wrist": "j_wrist_ri"},
+ "arm": {
+  "shoulder": "j_shoulder_ri",
+  "elbow": "j_elbow_ri",
+  "wrist": "j_wrist_ri"
+ },
  "fingers": {
-  "index": ["j_index_ri_1", "j_index_ri_2", "j_index_ri_3"],
-  "middle": ["j_mid_ri_1", "j_mid_ri_2", "j_mid_ri_3"],
-  "ring": ["j_ring_ri_1", "j_ring_ri_2", "j_ring_ri_3"],
-  "little": ["j_pinky_ri_1", "j_pinky_ri_2", "j_pinky_ri_3"],
-  "thumb": ["j_thumb_ri_1", "j_thumb_ri_2", "j_thumb_ri_3"]
+  "index": [
+   "j_index_ri_1",
+   "j_index_ri_2",
+   "j_index_ri_3"
+  ],
+  "middle": [
+   "j_mid_ri_1",
+   "j_mid_ri_2",
+   "j_mid_ri_3"
+  ],
+  "ring": [
+   "j_ring_ri_1",
+   "j_ring_ri_2",
+   "j_ring_ri_3"
+  ],
+  "little": [
+   "j_pinky_ri_1",
+   "j_pinky_ri_2",
+   "j_pinky_ri_3"
+  ],
+  "thumb": [
+   "j_thumb_ri_1",
+   "j_thumb_ri_2",
+   "j_thumb_ri_3"
+  ]
  },
  "held": "tag_knife_attach2",
  "parts": [
-  {"anim": "draw", "fps": 30},
-  {"anim": "throw", "fps": 30, "lead": 0.042, "released_from": 11}
- ]
+  {
+   "anim": "draw",
+   "fps": 30
+  },
+  {
+   "anim": "throw",
+   "fps": 30,
+   "lead": 0.042,
+   "released_from": 11
+  }
+ ],
+ "space": "eye"
 }

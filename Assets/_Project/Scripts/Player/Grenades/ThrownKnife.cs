@@ -36,6 +36,11 @@ public sealed class ThrownKnife : MonoBehaviour
 
     internal ushort Id { get; private set; }
     internal bool Mine => mine;
+    /// <summary>
+    /// How hard a knife's hit jolts its zombie, as a gun's flinch multiplier does a shot's (EnemyHitReaction: the shove
+    /// back, the slow, the stagger of a headshot): GrenadeRules knifeFlinch.
+    /// </summary>
+    internal static float Flinch => Mathf.Max(0f, Throwables.Rule("knifeFlinch", 1.5f));
     /// <summary>It has come to rest (in a body, a wall or on the floor) and can be taken back.</summary>
     internal bool Landed => state != State.Flying;
     internal static IReadOnlyList<ThrownKnife> All => knives;

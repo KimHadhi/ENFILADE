@@ -24,6 +24,9 @@ public static class GunFeelDirector
         var hit = report.Hit;
         bool byPlayer = hit.Kind != DamageKind.Fall && hit.Source != null && hit.Source.GetComponentInParent<PlayerMovement>() != null && !report.ByOtherPlayer;
         bool kill = report.IsKillingBlow, critical = report.IsCritical, bullet = hit.Method == DamageMethod.Bullet;
+        // A Knight's thrown knife lands as a shot does: its blood, its headshot and its kill pulse (the user wanted it
+        // "찰진(타격감 있는)").
+        bool shot = bullet || hit.Method == DamageMethod.Thrown;
         bool execution = hit.Kind == DamageKind.Execution;
 
         // World: every damaged target flashes, whoever hit it. Living enemies also bleed, except from a shove that doesn't
@@ -31,7 +34,7 @@ public static class GunFeelDirector
         // steel targets: sparks, a lead splash, a swing) doesn't flash red as a body does.
         bool enemy = report.Target is EnemyHealth;
         if ((!kill || !enemy) && !(report.Target is IOwnHitFeedback)) HitFlashRenderer.For(report.Target)?.Flash(hit.Point, critical);
-        if (enemy && hit.Kind != DamageKind.Fall && (hit.Method != DamageMethod.Shove || kill)) ImpactVfx.Blood(hit.Point, hit.Direction, critical, kill, bullet, report.Target);
+        if (enemy && hit.Kind != DamageKind.Fall && (hit.Method != DamageMethod.Shove || kill)) ImpactVfx.Blood(hit.Point, hit.Direction, critical, kill, shot, report.Target);
         if (enemy && kill) CorpseTopple.Spawn(report.Target, hit, critical);
         // A shared enemy's death is the host's to call, so one count and one feed row reach every PC, whoever saw it first.
         bool shared = kill && report.Target.TryGetComponent(out EnemyNetwork network) && network.IsSpawned;
@@ -42,12 +45,12 @@ public static class GunFeelDirector
         float reach = kill && hit.Point != Vector3.zero && hit.Source != null ? Vector3.Distance(hit.Source.transform.position, hit.Point) : 0f;
         var marks = kill ? KillConditions.Of(report, killer, reach) : KillMarks.None;
         if (shared && hit.Source != null && hit.Source.GetComponentInParent<PlayerNetworkScore>() is PlayerNetworkScore score)
-            score.AnnounceKill(WeaponName(hit), CombatDamageEvents.DisplayNameOf(report.Target), critical && bullet, standout, WeaponIcon(hit), marks);
+            score.AnnounceKill(WeaponName(hit), CombatDamageEvents.DisplayNameOf(report.Target), critical && shot, standout, WeaponIcon(hit), marks);
         if (!byPlayer) return;
 
         HitConfirm.Landed(report);
         bool pulse = execution ? settings.killPulseOnExecution : hit.IsCounter ? settings.killPulseOnCounter
-            : bullet ? settings.killPulseOnGunKill : settings.killPulseOnOtherKill;
+            : shot ? settings.killPulseOnGunKill : settings.killPulseOnOtherKill;
         if (!kill) return;
         var screen = execution ? KillScreen.Execution : hit.IsCounter ? KillScreen.Counter : KillScreen.Ordinary;
         // A practice target's kill (the hub's range, RangeTarget) lands on screen as a kill and is the classes' to count
@@ -78,7 +81,7 @@ public static class GunFeelDirector
             ? Mathf.RoundToInt(PlayerClass.Ability("Schiesshund", PlayerClass.IsElite(report.Target as EnemyHealth) ? "bountyElite" : "bountyMoney",
                 PlayerClass.IsElite(report.Target as EnemyHealth) ? 300f : 100f))
             : PlayerClass.Is(PlayerClass.Schiesshund) ? DyeMarks.Money(report.Target, PlayerRoster.Local) : 0;
-        CombatFeedHUD.Kill(WeaponName(hit), CombatDamageEvents.DisplayNameOf(report.Target), critical && bullet, execution, hit.IsCounter, bullet, distance, !shared,
+        CombatFeedHUD.Kill(WeaponName(hit), CombatDamageEvents.DisplayNameOf(report.Target), critical && shot, execution, hit.IsCounter, bullet, distance, !shared,
             hit.Pierced, standout, takedown, bounty, WeaponIcon(hit), marks);
         // Kills done some way worth a name (MEATSHOT, RAILGUN, SKEET ...) stamp it and pay on top.
         SpecialKills.Kill(report, bullet, critical && bullet, execution);
