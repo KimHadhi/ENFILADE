@@ -83,8 +83,10 @@ public sealed class AdaptiveHealthHUD : MonoBehaviour
     // Round 4 draft A (the user's pick, 2026-11-11): pieces knocked off, low-health stripes and tag, heal glints and
     // floats, the rolling number. Play only.
     private HealthBarFlair flair;
-    // The stance figure on the bar's right end (2026-11-11): standing, crouched, prone and so on. Play only.
+    // The stance figure beside the bar's right end (2026-11-11; its own slot since 2026-11-12): standing, crouched, prone
+    // and so on. Play only. The flair's marks past the bar's end start at flairEnd, past the figure.
     private StanceFigure stance;
+    private float flairEnd = float.NaN, flairHeight;
     private float lastHealth = float.NaN;
     private bool flairDrawn, shieldGlinted, labelRolled;
     private Vector2 restingPosition;
@@ -210,6 +212,17 @@ public sealed class AdaptiveHealthHUD : MonoBehaviour
         shatter?.Tick(Time.unscaledDeltaTime);
         AnimateDamage(Time.unscaledDeltaTime);
         stance?.Tick(player, Time.unscaledDeltaTime);
+        // The figure's slot moves when the lean setting changes (its turned corners reach further) or, should it ever,
+        // when it steps past the number row: the bar's marks past its end move with it.
+        if (stance != null && stance.End != flairEnd) PlaceFlair(flairEnd);
+    }
+
+    // The bar's own marks past its end (the "위험" tag, heal +N) start past the stance figure's slot, so they never land
+    // on the figure; without a figure, at the bar's end as before.
+    private void PlaceFlair(float barEnd)
+    {
+        flairEnd = stance != null ? stance.End : barEnd;
+        flair?.Place(flairEnd, flairHeight);
     }
 
     // The receiver counts its breaks; a new one shatters the band from where it was last drawn lit. A different player
@@ -319,6 +332,7 @@ public sealed class AdaptiveHealthHUD : MonoBehaviour
         shatter = null; // its pieces went with visualRoot
         flair = null;   // and so did the flair's
         stance = null;  // and the stance figure
+        flairEnd = float.NaN;
         originalBlocks.Clear(); originalActive.Clear();
         barLayouts.Clear(); layoutEnabled.Clear();
         capturedLayout = false;
@@ -388,8 +402,11 @@ public sealed class AdaptiveHealthHUD : MonoBehaviour
         shieldFill = Mathf.Min(shield, shieldScale); shieldMax = shieldScale; shieldSlant = shear * shieldH / height;
         ConfigureShieldGraphic();
         shieldGraphic.gameObject.SetActive(shield > 0f);
-        flair?.Place(width, height);
-        stance?.Place(width, height);
+        // The stance figure stands past whichever reaches further, the health cells or the shield band (wider than the
+        // cells below 100 max health), so a shield coming or going never moves it.
+        stance?.Place(Mathf.Max(width, shieldX + shieldWidth), height);
+        flairHeight = height;
+        PlaceFlair(width);
 
         SetLabel(hpText, (flair != null && flair.Rolling ? flair.Shown : current).ToString("N0"));
         SetLabel(maxHPText, maximum.ToString("N0"));
