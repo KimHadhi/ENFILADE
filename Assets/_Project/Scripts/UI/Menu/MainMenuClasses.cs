@@ -261,8 +261,8 @@ public sealed class MainMenuClasses : MonoBehaviour
                 float less = (1f - Mathf.Clamp01(PlayerClass.Ability("Knight", "taken", .75f))) * 100f;
                 return Texts.Format(key, less.ToString("0", System.Globalization.CultureInfo.InvariantCulture),
                     Whole("Knight", "parryWindow", 50f), Whole("Knight", "parryPosture", 100f), Whole("Knight", "counter", 50f),
-                    Whole("Knight", "fists", 50f), Whole("Knight", "tauntRadius", 12f), Whole("Knight", "tauntSeconds", 6f),
-                    Whole("Knight", "tauntCooldown", 25f), ClassKey(), Whole("Knight", "breakFree", 6f));
+                    Whole("Knight", "fists", 50f), Whole("Knight", "coverReach", 15f), Whole("Knight", "coverWindow", 1f),
+                    Whole("Knight", "coverCooldown", 12f), ClassKey(), Whole("Knight", "breakFree", 6f));
             case PlayerClass.Schiesshund:
                 return Texts.Format(key, Whole("Schiesshund", "markSeconds", 15f), Whole("Schiesshund", "markDamage", 25f),
                     Whole("Schiesshund", "bountyMoney", 100f), Whole("Schiesshund", "bountyElite", 300f), Whole("Schiesshund", "returnDamage", 6f),

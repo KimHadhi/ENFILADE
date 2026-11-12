@@ -200,6 +200,13 @@ public sealed class PlayerLook : MonoBehaviour
         if (lookPivot != null)
             lookPivot.localRotation = Quaternion.Euler(ClampLookPitch(pitch - recoil.Value.x), 0f, 0f);
     }
+    /// <summary>Turns the view to this heading at once (a Knight's cover lands it facing the blow it turned: KnightCover).</summary>
+    internal void FaceYaw(float heading)
+    {
+        yaw = ClampLookYaw(heading);
+        transform.rotation = Quaternion.Euler(0f, yaw, 0f);
+    }
+
     public void ClearRecoil()
     {
         // Keep the visible aim when holstering instead of snapping back or kicking the next weapon.

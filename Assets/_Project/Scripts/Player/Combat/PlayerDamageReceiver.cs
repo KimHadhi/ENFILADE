@@ -79,6 +79,16 @@ public sealed class PlayerDamageReceiver : MonoBehaviour, IDamageReceiver, ITabl
             HitResolved?.Invoke(hit, DamageResult.Invulnerable);
             return DamageResult.Invulnerable;
         }
+        // A Knight's cover on this player (KnightCover): the blow is parried on their behalf, as their own parry would take
+        // it (the enemy staggers: ParryFeedback), and the Knight's PC is told so it steps in beside them.
+        if (KnightCover.Covers(movement, hit, out PlayerMovement coverer))
+        {
+            Vector3 attacker = hit.Source.transform.position;
+            if (coverer.IsLocal) KnightCover.Local?.Covered(movement, attacker);
+            else if (coverer.TryGetComponent(out PlayerNetworkCombat knightNet)) knightNet.SendCovered(movement, attacker);
+            HitResolved?.Invoke(hit, DamageResult.Parried);
+            return DamageResult.Parried;
+        }
         if (movement != null && movement.Execution != null && movement.Execution.IsExecuting)
         {
             HitResolved?.Invoke(hit, DamageResult.Invulnerable);

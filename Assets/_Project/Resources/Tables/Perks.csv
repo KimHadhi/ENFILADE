@@ -13,7 +13,8 @@ momentum,기세,,기타,Bolt,3,6,,,,,,8,맞힐 때마다 {Cards.momentumSeconds}
 knight_deflect,비껴 흘리기,knight,나이트,Class_knight,2,25,,,,,,12,패리한 좀비가 {Knight.deflectStagger}초 휘청이고 자세를 {0} 더 잃는다. 2단계면 보통 좀비는 한 번에 무너진다,막지 않고 비스듬히 대어 공격을 옆으로 흘려 보낸다. 헛디딘 좀비는 옆구리를 드러낸다
 knight_reversal,되치기,knight,나이트,Fist,1,1,,,,,,12,좀비에게 잡혔을 때 줄어드는 고리가 흰 원에 닿는 순간 [V]: 메쳐서 그 좀비의 자세를 무너뜨린다(바로 처형할 수 있다),씨름의 되치기처럼 잡아 온 힘을 거꾸로 써서 메친다
 knight_gauntlet,폭렬 건틀렛,knight,나이트,Fist,2,60,,,,,,12,힘을 모은 주먹이나 반격이 맞으면 건틀렛이 번갈아 터진다: 섬광(앞 {Knight.gauntletReach}m 좀비 {Knight.gauntletStun}초 기절)과 산탄(앞쪽 부채꼴 피해 {0}),손등에 섬광탄 한 알과 산탄 약실을 단 쇠장갑. 세게 칠 때만 공이가 때린다
-knight_taunt,거듭된 도발,knight,나이트,Class_knight,2,-5,,-1,Knight.tauntCooldown,,,10,도발을 다시 쓰기까지 -{0}초,목청이 트여 숨 돌릴 틈 없이 다시 외친다
+knight_cover,원호 숙련,knight,나이트,Class_knight,2,-2,,-1,Knight.coverCooldown,,,10,원호 방어를 다시 쓰기까지 -{0}초,지켜 낸 횟수만큼 발이 먼저 나간다
+knight_shadowstep,그림자 걸음,knight,나이트,Class_knight,1,0,,,,,,10,원호 방어를 놓으면 막을 공격이 없어도 그 동료 곁으로 바로 순간이동한다(원호는 그 뒤에도 열려 있다),그림자를 디딘 기사는 부름을 기다리지 않는다
 knight_shadow,그림자 분신,knight,궁극,Class_knight,1,6,,,,4,1,40,퍼펙트 패리나 완벽한 회피를 하면 {0}초 동안 그림자 분신이 주먹과 반격을 한 박자 늦게 한 번 더 때린다,베어 넘긴 자리에 그림자가 남아 같은 주먹을 한 번 더 내지른다. 너무 세서 마지막에야 손에 익는다
 assault_danger,데인저 클로즈,assault,어썰트,Class_assault,3,10,,,,,,12,{Assault.dangerReach}m 안의 적에게 총 피해 +{0}%,아군 코앞까지 포격을 부르는 무전 '데인저 클로즈'. 가까울수록 대담하게 쏜다
 assault_broken,브로큰 애로우,assault,어썰트,Bolt,2,6,,,,,,10,체력이 {Assault.brokenHealth}% 아래로 떨어지거나 좀비에게 잡히면 {Assault.brokenDelay}초 뒤 내 둘레의 적에게 포탄 {0}발이 떨어진다(나와 동료는 안 다친다). {Assault.brokenCooldown}초에 한 번,'브로큰 애로우'는 부대가 무너지기 직전 닿는 모든 화력을 부르는 무전 암호

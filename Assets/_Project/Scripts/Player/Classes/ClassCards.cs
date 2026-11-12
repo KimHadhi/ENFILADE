@@ -375,7 +375,8 @@ public sealed class ClassCards : MonoBehaviour
     private void OnResolved(DamageHit hit, DamageResult result)
     {
         // A parried blow fills the gauge whoever parried it (UltimateCharge.AwardHelp): a Knight's job above all.
-        if (result == DamageResult.Parried) UltimateCharge.AwardHelp(UltimateCharge.Help.Parried);
+        // (A blow a Knight's cover turned on this player is the Knight's parry: its charge goes to them, KnightCover.Covered.)
+        if (result == DamageResult.Parried && hit.Id != KnightCover.CoveredHit) UltimateCharge.AwardHelp(UltimateCharge.Help.Parried);
         if (!PlayerClass.Is(PlayerClass.Knight)) return;
         if (result == DamageResult.Parried)
         {

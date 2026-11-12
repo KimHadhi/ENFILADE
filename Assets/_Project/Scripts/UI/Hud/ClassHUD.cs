@@ -108,7 +108,7 @@ public sealed class ClassHUD : MonoBehaviour
         slotRow.gameObject.SetActive(point);
         keyRect.gameObject.SetActive(false);
         deadeye.gameObject.SetActive(false);
-        Word(Texts.Get(knight ? "class.hud.taunt" : detente ? "class.hud.inject" : support ? "class.hud.barricade" : hound ? "class.hud.duel"
+        Word(Texts.Get(knight ? "class.hud.cover" : detente ? "class.hud.inject" : support ? "class.hud.barricade" : hound ? "class.hud.duel"
             : point ? "class.hud.kata" : "class.hud.charge"), KitStyle.Accent);
         note.text = info != null && !info.Ready ? Texts.Get("class.hud.later") : "";
         // A Détente moves the note past its pips; every other class has it back in its place.
@@ -265,13 +265,18 @@ public sealed class ClassHUD : MonoBehaviour
         ((RectTransform)note.rectTransform.parent).anchoredPosition = new Vector2(128f + count * (PipWidth + PipGap) + 6f, 0f);
     }
 
-    // A Knight's taunt: the key's prompt while it is ready, the seconds left to wait in its place while it isn't.
+    // A Knight's cover (KnightCover): the key's prompt while it is ready; while held, the friend under the crosshair (or
+    // "look at a friend"); the friend it watches over while a cover is open; else the seconds left to wait.
     private void Taunt()
     {
-        bool ready = kit.TauntReady;
+        var cover = KnightCover.Local;
+        bool ready = cover != null && cover.Ready;
         KeyPrompt(ready);
-        string wait = ready ? "" : Texts.Format("class.hud.taunt_wait", Mathf.CeilToInt(kit.TauntWait));
-        if (note.text != wait) note.text = wait;
+        string side = cover == null ? ""
+            : cover.Planning ? (cover.Aimed != null ? Texts.Format("class.hud.cover.aim", NameOf(cover.Aimed)) : Texts.Get("class.hud.cover.look"))
+            : cover.Watched != null ? Texts.Format("class.hud.cover.watch", NameOf(cover.Watched))
+            : ready ? "" : Texts.Format("class.hud.cover_wait", Mathf.CeilToInt(cover.Wait));
+        if (note.text != side) note.text = side;
     }
 
     // The word beside the key's cap, and its colour (a Support's turns red where its barricade can't go).

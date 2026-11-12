@@ -22,9 +22,9 @@ using UnityEngine;
 ///   job, before the cards make it strong);
 /// - Knight (stage 2; the user's design, with the memo's Perfect Parry and Deflect): it takes less from every enemy's
 ///   blow; its parries last longer, wear posture down harder and open the counter as a perfect dodge does; its counters
-///   and fists hit harder; pinned under a runner it fights on; and the class key taunts: the zombies already fighting
-///   near it go after it for a few seconds, elites too, while it takes less again (the host's zombies, as
-///   PlayerNetworkCombat tells the host), so the elites keep off the shooters;
+///   and fists hit harder; pinned under a runner it fights on; and its class key covers a friend (KnightCover, 2026-11-12,
+///   in the taunt's place): held, the reach and the friend it can cover show; let go, a parry opens on the friend's behalf,
+///   and a blow turned there brings the Knight to their side at once;
 /// - Schießhund (stage 3; the user's design, with the Jagdfieber and Return Back of their old memo): its F ping is a
 ///   teal bounty mark (PlayerPing, PingMarks), one at a time, which its bullets hit harder. A marked enemy it kills pays
 ///   a bounty: money (CombatFeedHUD), a Return Back stack (quicker and harder-hitting a while), and points toward the
@@ -108,6 +108,7 @@ public sealed class ClassKit : MonoBehaviour
     private bool pingMade;
     private DetenteKit detente;
     private SupportKit support;
+    private KnightCover cover;
     // The class cards with code behind them (ClassCards); and, for a Point's Gunslinger card, the gun slot last seen in
     // hand and when it was drawn.
     private ClassCards cards;
@@ -327,6 +328,8 @@ public sealed class ClassKit : MonoBehaviour
         if (detente != null) detente.Fresh();
         if (support == null) support = GetComponent<SupportKit>();
         if (support != null) support.Fresh();
+        if (cover == null) cover = GetComponent<KnightCover>();
+        if (cover != null) cover.Fresh();
         // The class's guns, full, as a chapter starts them.
         kitGiven = false;
         TryGiveKit(true);
@@ -343,6 +346,8 @@ public sealed class ClassKit : MonoBehaviour
         if (detente == null && (detente = GetComponent<DetenteKit>()) == null) detente = gameObject.AddComponent<DetenteKit>();
         // A Support's bag, resupply and barricades.
         if (support == null && (support = GetComponent<SupportKit>()) == null) support = gameObject.AddComponent<SupportKit>();
+        // A Knight's cover.
+        if (cover == null && (cover = GetComponent<KnightCover>()) == null) cover = gameObject.AddComponent<KnightCover>();
         // The class cards with code behind them (Docs/ClassCards.md).
         if (cards == null && (cards = GetComponent<ClassCards>()) == null) cards = gameObject.AddComponent<ClassCards>();
         if (!kitGiven) TryGiveKit();
@@ -370,9 +375,10 @@ public sealed class ClassKit : MonoBehaviour
             hold.BreakFreeEvery = knight ? PlayerClass.Ability(KnightRow, "breakFree", 6f) : -1f;
         }
         // The class key (the key window's Player/ClassAbility) acts as it goes down; a Support's is held to see where its
-        // barricade would go and let go to put it up, which SupportKit reads itself.
-        if (!PlayerClass.Is(PlayerClass.Support) && KeyBindings.Pressed("Player/ClassAbility") && movement.InputAvailable
-            && !movement.IsDead && !movement.IsHeld) Use();
+        // barricade would go and let go to put it up, which SupportKit reads itself, and a Knight's is held to choose the
+        // friend to cover, which KnightCover reads.
+        if (!PlayerClass.Is(PlayerClass.Support) && !PlayerClass.Is(PlayerClass.Knight) && KeyBindings.Pressed("Player/ClassAbility")
+            && movement.InputAvailable && !movement.IsDead && !movement.IsHeld) Use();
     }
 
     // This PC's own player's gun and hurt, once both are there (the gun and the health may be made after this kit).

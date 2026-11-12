@@ -78,6 +78,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
     private PlayerKnock knocks;
     private ClassKit kit;
     private DetenteKit detente;
+    private KnightCover cover;
     private PlayerPing ping;
     private PlayerCallouts callouts;
     private SupportKit support;
@@ -92,6 +93,11 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
     public void Revive() { PlayerTally.Raised(); ReviveRpc(); }
     /// <summary>A Détente's dose or treatment for this copy's player (DetenteKit): their own PC adds the health.</summary>
     public void Heal(float amount) { if (!IsSpawned) return; PlayerTally.Healed(this, amount); HealRpc(amount); }
+    /// <summary>On this Knight's copy: its cover turned a blow on that friend (their PC judged it); its own PC steps in.</summary>
+    public void SendCovered(PlayerMovement ally, Vector3 attacker)
+    {
+        if (IsSpawned && ally != null && ally.TryGetComponent(out NetworkObject friend)) CoveredRpc(friend.NetworkObjectId, attacker);
+    }
     /// <summary>A Détente offers this copy's player a treatment by hand (DetenteKit): their own PC asks them for F.</summary>
     public void OfferTreatment(PlayerMovement detente)
     {
@@ -195,6 +201,8 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
         if (kit == null) kit = gameObject.AddComponent<ClassKit>();
         // A Détente's healing (DetenteKit): its offers and treatments go between PCs, and its syringe shows on the others.
         if (!TryGetComponent(out detente)) detente = gameObject.AddComponent<DetenteKit>();
+        // A Knight's cover (KnightCover): the friend's PC judges the blows it turns.
+        if (!TryGetComponent(out cover)) cover = gameObject.AddComponent<KnightCover>();
         // F on an enemy (PlayerPing): the whole team sees it marked.
         ping = GetComponent<PlayerPing>();
         if (ping == null) ping = gameObject.AddComponent<PlayerPing>();
@@ -213,6 +221,8 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
             kit.Taunted += OnTaunted;
             kit.Claimed += OnClaimed;
             kit.Dueled += OnDueled;
+            cover.Opened += OnCoverOpened;
+            cover.Stepped += OnCoverStepped;
             detente.Injected += OnInjected;
             detente.TreatBegan += OnTreatBegan;
             detente.TreatStopped += OnTreatStopped;
@@ -261,6 +271,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
         if (knocks != null) knocks.Knocked -= OnKnocked;
         if (kit != null) { kit.Charged -= OnCharged; kit.Taunted -= OnTaunted; kit.Claimed -= OnClaimed; kit.Dueled -= OnDueled; }
         if (detente != null) { detente.Injected -= OnInjected; detente.TreatBegan -= OnTreatBegan; detente.TreatStopped -= OnTreatStopped; }
+        if (cover != null) { cover.Opened -= OnCoverOpened; cover.Stepped -= OnCoverStepped; }
         if (ping != null) ping.Pinged -= OnPinged;
         if (callouts != null) callouts.Called -= OnCalled;
         if (face != null) face.Shared -= OnFaceShared;
@@ -605,6 +616,33 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
         receiver.Heal(amount);
         KitSound.Play(KitSound.Cue.PickHeal, .7f);
     }
+
+    // This Knight's (whose PC this is) cover turned a blow on that friend: it steps in.
+    [Rpc(SendTo.Owner)]
+    private void CoveredRpc(ulong ally, Vector3 attacker)
+    {
+        var friend = PlayerOf(ally);
+        if (friend != null && TryGetComponent(out KnightCover cover)) cover.Covered(friend, attacker);
+    }
+
+    // This Knight opened a cover on that friend: every other PC keeps it, the friend's to judge their blows.
+    [Rpc(SendTo.NotMe)]
+    private void CoverRpc(ulong ally, float seconds)
+    {
+        var friend = PlayerOf(ally);
+        if (friend != null) KnightCover.Open(mover != null ? mover : GetComponent<PlayerMovement>(), friend, seconds);
+    }
+
+    // This Knight stepped in: the streak for everyone else.
+    [Rpc(SendTo.NotMe)]
+    private void CoverStepRpc(Vector3 from, Vector3 to) => CoverStreak.Show(from, to);
+
+    private void OnCoverOpened(PlayerMovement ally, float seconds)
+    {
+        if (ally != null && ally.TryGetComponent(out NetworkObject friend) && friend.IsSpawned) CoverRpc(friend.NetworkObjectId, seconds);
+    }
+
+    private void OnCoverStepped(Vector3 from, Vector3 to) => CoverStepRpc(from, to);
 
     // A Détente offered this player (whose PC this is) a treatment by hand.
     [Rpc(SendTo.Owner)]
