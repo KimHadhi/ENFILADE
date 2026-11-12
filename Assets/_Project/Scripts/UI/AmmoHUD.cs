@@ -73,6 +73,7 @@ public sealed class AmmoHUD : MonoBehaviour
     {
         GunKills.RankUpAnnounced -= OnRankUpAnnounced;
         if (current == this) current = null;
+        HudRoom.Free(this);
         if (group != null) group.alpha = 0f;
         shown = null; shotPulse = 0f;
     }
@@ -92,6 +93,10 @@ public sealed class AmmoHUD : MonoBehaviour
         bool visible = runtime != null && runtime.Data.Category != WeaponCategory.Melee
             && (health == null || health.IsAlive);
         group.alpha = visible ? 1f : 0f;
+        // While it shows, the display stays under the right edge's column of callout windows, so they keep above it: on
+        // a 21:9 screen (935 px of canvas) a second window came down onto it.
+        if (visible && HudRoom.Measure(panel, out float near, out float far, out float top, out float bottom))
+            HudRoom.Take(this, near, far, top, bottom, HudRoom.Way.Over);
         if (!visible) { shown = null; shotPulse = 0f; return; }
 
         if (runtime != shown) { shown = runtime; lastAmmo = runtime.Ammo; shotPulse = 0f; }

@@ -83,5 +83,11 @@ public sealed class HubPanel : MonoBehaviour
         // The count's number lands big and settles.
         if (count != null && count.rectTransform.localScale.x > 1f)
             count.rectTransform.localScale = Vector3.one * Mathf.MoveTowards(count.rectTransform.localScale.x, 1f, Time.unscaledDeltaTime * 2.5f);
+        // The card stays over the right edge's column of callout windows, so they stand under it: in play (2026-11-13)
+        // the HUD overlap check measured a callout window 12.4 px into it.
+        if (root != null && HudRoom.Measure(root, out float near, out float far, out float top, out float bottom))
+            HudRoom.Take(this, near, far, top, bottom, HudRoom.Way.Under);
     }
+
+    private void OnDisable() => HudRoom.Free(this);
 }

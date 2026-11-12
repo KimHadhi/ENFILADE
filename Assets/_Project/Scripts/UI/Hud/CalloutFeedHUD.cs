@@ -120,7 +120,7 @@ public sealed class CalloutFeedHUD : MonoBehaviour
             if (open.speaker == speaker) window = open;
         if (window == null)
         {
-            int most = Mathf.Clamp(Mathf.RoundToInt(FaceTables.Number("Feed.most", 2f)), 1, MostWindows);
+            int most = Mathf.Min(Mathf.Clamp(Mathf.RoundToInt(FaceTables.Number("Feed.most", 2f)), 1, MostWindows), Column(out _));
             if (order.Count >= most)
             {
                 // The oldest gives way at once.
@@ -141,7 +141,8 @@ public sealed class CalloutFeedHUD : MonoBehaviour
             window.dodge = -1f;
             window.shown = now;
             order.Add(window);
-            window.y = Slot(order.Count - 1);
+            Column(out float top);
+            window.y = Slot(order.Count - 1, top);
         }
         window.speaker = speaker;
         window.body = body;
@@ -250,12 +251,35 @@ public sealed class CalloutFeedHUD : MonoBehaviour
         return lines;
     }
 
-    // Down the right edge from Feed.top, a window's height and its plate apart (px at 1080p, from the top).
-    private static float Slot(int index)
+    // Down the right edge from the column's top, a window's height and its plate apart (px at 1080p, from the top).
+    private static float Slot(int index, float top)
     {
         float side = Mathf.Max(64f, FaceTables.Number("Feed.tile", 196f));
         float gap = Mathf.Max(0f, FaceTables.Number("Feed.gap", 18f));
-        return FaceTables.Number("Feed.top", 300f) + side * .5f + index * (side + 28f + gap);
+        return top + side * .5f + index * (side + 28f + gap);
+    }
+
+    // How far the name plate hangs under a window's middle: the picture's half, its mat and slab, the plate's 12 px drop
+    // and half its 22 (px at 1080p).
+    private static float Below(float side)
+    {
+        float half = Mathf.Clamp(FaceTables.Number("Feed.half", .38f), .2f, .44f);
+        return side * (half + .035f) + 23f;
+    }
+
+    // The column the windows stand in down the right edge: from Feed.top, or under whatever stays over it (the hub's
+    // card: in play, 2026-11-13, a window came 12.4 px into it), down to above whatever stays under it (the ammo display:
+    // on a 21:9 screen, 935 px of canvas, a second window came down onto it), each HudRoom.Gap clear. Gives the column's
+    // top (px from the top) and how many windows fit in it, at least one.
+    private int Column(out float top)
+    {
+        float side = Mathf.Max(64f, FaceTables.Number("Feed.tile", 196f)), right = FaceTables.Number("Feed.right", 74f);
+        float gap = HudRoom.Gap;
+        top = Mathf.Max(FaceTables.Number("Feed.top", 300f), HudRoom.Ceiling(right, right + side, this) + gap);
+        float floor = HudRoom.Floor(right, right + side, this) - gap, below = Below(side);
+        int fit = 1;
+        while (fit < MostWindows && Slot(fit, top) + below <= floor) fit++;
+        return fit;
     }
 
     private void LateUpdate()
@@ -266,13 +290,15 @@ public sealed class CalloutFeedHUD : MonoBehaviour
         float fadeTime = Mathf.Max(.01f, FaceTables.Number("Feed.fade", .3f));
         float tilt = GameSettings.Current.hudTilt;
         float right = FaceTables.Number("Feed.right", 74f), side = Mathf.Max(64f, FaceTables.Number("Feed.tile", 196f));
-        // The name plate hangs under the tile: the picture's half, its mat and slab, the plate's 12 px drop and half its 22.
-        float half = Mathf.Clamp(FaceTables.Number("Feed.half", .38f), .2f, .44f), below = side * (half + .035f) + 23f;
+        float below = Below(side);
         float roomGap = HudRoom.Gap, follow = 1f - Mathf.Exp(-dt * Mathf.Max(.1f, HudRoom.Follow));
+        int fit = Column(out float columnTop), kept = 0;
         for (int i = order.Count - 1; i >= 0; i--)
         {
             var window = order[i];
             if (window.speaker == null || window.body == null || hidden || now >= window.until) window.open = false;
+            // Fewer fit down the edge than are open (the hub's card over the column, a short screen): the oldest goes.
+            if (window.open && ++kept > fit) window.open = false;
             float target = window.open ? 1f : 0f;
             // Comes in quickly, goes out a little slower; gone, its slot is free.
             window.pop = Mathf.MoveTowards(window.pop, target, dt / (window.open ? popTime : fadeTime));
@@ -288,7 +314,7 @@ public sealed class CalloutFeedHUD : MonoBehaviour
         for (int i = 0; i < order.Count; i++)
         {
             var window = order[i];
-            window.y = Mathf.Lerp(window.y, Slot(i), 1f - Mathf.Exp(-dt * 14f));
+            window.y = Mathf.Lerp(window.y, Slot(i, columnTop), 1f - Mathf.Exp(-dt * 14f));
             float slide = (1f - Smooth(window.pop)) * 60f;
             // The right edge is shared: the weapon slots stand there while they show and a long kill feed reaches down past
             // Feed.top (the overlap check measured a window 107.5 px over the slots in play, 2026-11-13). The window keeps
