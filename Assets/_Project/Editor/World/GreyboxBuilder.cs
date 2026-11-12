@@ -83,6 +83,35 @@ public sealed partial class GreyboxBuilder
 
     public string ScenePath => Folder + "/" + sceneName + ".unity";
 
+    /// <summary>
+    /// The dresser for a scene another builder lays and saves (the hub, HubBuilder): this builder's surfaces (Tables/
+    /// MapSurfaces rows "&lt;scene&gt;.&lt;slot&gt;", a look by box name), models (Tables/MapArt: Dress, Prop, Hang,
+    /// PropSolid) and Clutter, on that scene, its boxes under <paramref name="terrain"/>. It makes no roots, HUD, walk
+    /// mesh or campaign of its own; EndDressing closes it.
+    /// </summary>
+    public static GreyboxBuilder Attach(Scene scene, string sceneName, string title, Transform terrain)
+    {
+        var builder = new GreyboxBuilder(sceneName, title) { AddsCampaign = false, scene = scene, terrain = terrain };
+        BeginSurfaces();
+        builder.Concrete = builder.Surface("Concrete", Load("MovementPlayground.mat"));
+        builder.Road = builder.Surface("Road", Load("SurfacePads/SurfacePad_ConcreteGrit.mat"));
+        builder.Metal = builder.Surface("Metal", Load("SurfacePads/SurfacePad_Metal.mat"));
+        builder.Wood = builder.Surface("Wood", Load("SurfacePads/SurfacePad_Wood.mat"));
+        builder.Marker = Load("TestRedMat.mat");
+        return builder;
+    }
+
+    /// <summary>Closes an Attach dresser once its scene is laid: the models' holder goes, every look's windows are
+    /// fitted, and what never moves is marked static (the models and the terrain's boxes: batched, culled behind walls).
+    /// Returns the lines for the build's report (the surfaces worn, the models laid and any kind not found).</summary>
+    public string EndDressing()
+    {
+        EndStaging();
+        FitWindows();
+        MarkStatic();
+        return SurfaceReport() + DressReport();
+    }
+
     /// <summary>Asks before rebuilding a scene that exists, saves what is open, and starts the new scene. Null if called off.
     /// Within RebuildAll it asks nothing: that was asked once for every chapter.</summary>
     public static GreyboxBuilder Begin(string sceneName, string title)

@@ -9,10 +9,11 @@ using UnityEngine.SceneManagement;
 
 /// <summary>
 /// Builds the hub (memo 46, the user's answer: a walkable 3D hideout where guns can be fired, working like a room
-/// lobby) as grey blocks from code, as the chapters are built (GreyboxBuilder; it keeps its own small helpers because a
-/// chapter's builder saves under Scenes/Campaign and puts a chapter's run in it). Tools > World > 허브 로비 짓기 makes
-/// Scenes/Hub/Hub.unity and puts it in the build; running it again rebuilds it from scratch (hand edits are lost: change
-/// the layout here).
+/// lobby) from code, as the chapters are built: the layout's boxes here, laid and dressed by the map dresser
+/// (GreyboxBuilder.Attach: Tables/MapSurfaces looks, the bought kit's models from Tables/MapArt; HubBuilder.Dressing has
+/// the dressing). It keeps its own saving because a chapter's builder saves under Scenes/Campaign and puts a chapter's
+/// run, walk mesh and culling in it. Tools > World > 허브 로비 짓기 makes Scenes/Hub/Hub.unity and puts it in the build;
+/// running it again rebuilds it from scratch (hand edits are lost: change the layout here).
 /// The layout, +Z north, metres:
 /// - The hideout, a warehouse 24 x 24 with a skylight: the start in its south half; the map table in the middle with the
 ///   next chapter's sign hanging over it; the class wall (lockers) on the west wall under a catwalk, reached by two crates
@@ -27,12 +28,11 @@ using UnityEngine.SceneManagement;
 ///   built at play (RangeTarget, SteelTarget, Tables/RangeTargets). The stations are filled from the tables at play
 ///   (HubLobby), so nothing here needs a rebuild when a chapter, class or gun is added.
 /// </summary>
-public static class HubBuilder
+public static partial class HubBuilder
 {
     private const string Folder = "Assets/_Project/Scenes/Hub";
     private const string ScenePath = Folder + "/Hub.unity";
     private const string HudPrefab = "Assets/_Project/Prefabs/UI/HUD/GameHUD.prefab";
-    private const string Materials = "Assets/_Project/Art/Materials/";
     private const string Title = "허브 로비";
     private const float Lift = .05f;
 
@@ -66,12 +66,14 @@ public static class HubBuilder
             sun.transform.rotation = Quaternion.Euler(50f, -35f, 0f);
             sun.shadows = LightShadows.Soft;
         }
-        concrete = Load("MovementPlayground.mat");
-        road = Load("SurfacePads/SurfacePad_ConcreteGrit.mat");
-        metal = Load("SurfacePads/SurfacePad_Metal.mat");
-        wood = Load("SurfacePads/SurfacePad_Wood.mat");
-        marker = Load("TestRedMat.mat");
         terrain = Root("◤━━ 은신처 (지형)");
+        // The map dresser on this scene: the real surfaces (Tables/MapSurfaces, rows Hub.* and the defaults) and the kit.
+        dresser = GreyboxBuilder.Attach(scene, "Hub", Title, terrain);
+        concrete = dresser.Concrete;
+        road = dresser.Road;
+        metal = dresser.Metal;
+        wood = dresser.Wood;
+        marker = dresser.Marker;
         fixtures = Root("◤━━ 사다리·집라인");
         stations = Root("◤━━ 허브 자리 (HubStation: 지도 탁자·클래스·총·준비)");
         range = Root("◤━━ 사격장 과녁 (RangeTarget)");
@@ -130,10 +132,17 @@ public static class HubBuilder
         // zipline from it across the hall to the stage's side.
         Box("나무 상자 1", -9.4f, -8.2f, 0f, .9f, -8f, -6.8f, wood, "WoodPlank");
         Box("나무 상자 2", -9.5f, -8.1f, 0f, 1.8f, -6.6f, -5.2f, wood, "WoodPlank");
-        Box("캣워크", -12f, -9.6f, 3f, 3.2f, -8f, 12f, metal, "Metal");
-        // The rail leaves a gap where the ladder comes up and the zipline sets off.
-        Box("캣워크 난간 1", -9.7f, -9.6f, 3.2f, 4.2f, 4f, 8.8f, metal, "MetalPipe");
-        Box("캣워크 난간 2", -9.7f, -9.6f, 3.2f, 4.2f, 11.2f, 12f, metal, "MetalPipe");
+        // The catwalk wears its look by name (Tables/MapSurfaces Hub.Catwalk: a steel grating on top).
+        Box("캣워크", -12f, -9.6f, 3f, 3.2f, -8f, 12f, null, "Gantry");
+        // The rail leaves a gap where the ladder comes up and the zipline sets off. Its boxes keep the collision; the
+        // kit's railing is what is seen.
+        foreach (var (n, z0, z1) in new[] { (1, 4f, 8.8f), (2, 11.2f, 12f) })
+        {
+            var rail = Box("캣워크 난간 " + n, -9.7f, -9.6f, 3.2f, 4.2f, z0, z1, metal, "MetalPipe");
+            if (dresser.ArtSize("hubrailing") == Vector3.zero) continue;
+            rail.GetComponent<Renderer>().enabled = false;
+            Span("hubrailing", new Vector3(-9.65f, 3.2f, z0), new Vector3(-9.65f, 3.2f, z1), 90f);
+        }
         Box("캣워크 기둥 1", -9.85f, -9.65f, 0f, 3f, -7.9f, -7.7f, metal, "MetalPipe");
         Box("캣워크 기둥 2", -9.85f, -9.65f, 0f, 3f, 11.7f, 11.9f, metal, "MetalPipe");
         Ladder("캣워크 사다리", new Vector3(-9.45f, 0f, 9.5f), 90f);
@@ -144,15 +153,19 @@ public static class HubBuilder
 
         // The way out: the shutter rises with the count (HubLobby), the board over it, the ready button beside it, and
         // a lorry waiting outside.
-        Station("출발 셔터", HubStation.Kind.DepartDoor, new Vector3(0f, 2.25f, 14.12f), 0f, new Vector3(5f, 4.5f, .25f), solidBox: true);
+        var shutter = Station("출발 셔터", HubStation.Kind.DepartDoor, new Vector3(0f, 2.25f, 14.12f), 0f, new Vector3(5f, 4.5f, .25f), solidBox: true);
+        // The kit's roller door filling the shutter, its coil box to the hall, riding up with it (HubLobby moves the
+        // station), so it leaves the static dressing.
+        if (DressBox(shutter, "hubshutter")) dresser.LastPlaced.transform.SetParent(shutter.transform, true);
         Station("출발 준비판", HubStation.Kind.ReadyBoard, new Vector3(0f, 5.75f, 13.85f), 180f, new Vector3(4.6f, 1.7f, .1f));
         Box("준비 버튼 받침", 3.6f, 4.4f, 0f, 1f, 12.6f, 13.4f, metal, "Metal");
         Box("준비 버튼", 3.8f, 4.2f, 1f, 1.12f, 12.8f, 13.2f, marker, solid: false);
         Station("준비 버튼 자리", HubStation.Kind.Ready, new Vector3(4f, 1.06f, 13f), 180f, new Vector3(.8f, .12f, .8f));
-        Box("밖에서 기다리는 트럭", -2f, 2f, 0f, 2.6f, 17f, 23f, metal, "MetalBox");
+        // The lorry is the M923 the chapters use (Tables/MapArt militarytruck), its box its size.
+        DressBox(Box("밖에서 기다리는 트럭", -1.5f, 1.5f, 0f, 3.05f, 16.5f, 24.7f, metal, "MetalBox"), "militarytruck");
 
-        // The gun rack on the south wall, by the range's opening.
-        Box("총 진열대 판", -11.8f, -7.4f, .6f, 2.6f, -10f, -9.88f, wood, "WoodPanel");
+        // The gun rack on the south wall, by the range's opening: a slatwall the guns hang before.
+        DressBox(Box("총 진열대 판", -11.8f, -7.4f, .6f, 2.6f, -10f, -9.88f, wood, "WoodPanel"), "hubslatwall");
         Station("총 진열대", HubStation.Kind.GunRack, new Vector3(-9.6f, 1.6f, -9.8f), 0f, new Vector3(4.4f, 1.8f, .3f));
         Label("hub.sign.guns", new Vector3(-9.6f, 2.95f, -9.85f), Quaternion.identity, .3f, 4f, false);
 
@@ -173,6 +186,7 @@ public static class HubBuilder
         Set(stage.GetComponent<HubStage>(), so => so.FindProperty("width").floatValue = 11f);
         for (int i = -1; i <= 1; i++)
             Spot(new Vector3(5.5f, 5.6f, i * 4f), new Vector3(9.4f, 1f, i * 4f));
+        DressHall();
     }
 
     // ---- The firing range ----
@@ -181,44 +195,47 @@ public static class HubBuilder
     {
         Box("사격장 서쪽 벽", -7.3f, -7f, 0f, 5f, -122f, -10f);
         Box("사격장 동쪽 벽", 7f, 7.3f, 0f, 5f, -122f, -10f);
-        Box("사격장 뒤 둔덕", -7.3f, 7.3f, 0f, 8f, -122.3f, -122f, road, "Asphalt");
+        // The berm wears dirt by name (Tables/MapSurfaces Hub.Berm); rock stands before it (DressRange).
+        Box("사격장 뒤 둔덕", -7.3f, 7.3f, 0f, 8f, -122.3f, -122f, null, "Dirt");
         Label("hub.sign.range", new Vector3(0f, 6f, -9.95f), Quaternion.identity, .5f, 6f, false);
 
-        // The firing line: a waist-high counter with a way round at its east end, and the ammo crate.
-        Box("사대", -7f, 5.8f, 0f, 1.05f, -14.4f, -13.8f, wood, "Wood");
-        Box("탄약 상자", -6.8f, -5.8f, 0f, .7f, -13f, -12.2f, wood, "WoodPlank");
-        Station("탄약 상자 위", HubStation.Kind.Ammo, new Vector3(-6.3f, .35f, -12.6f), 0f, new Vector3(1f, .7f, .8f));
+        // The firing line: a waist-high counter with a way round at its east end (its box the kit's cabinets' size,
+        // which are what is seen: DressRange), and the ammo crate (the kit's, its box its size).
+        Box("사대", -7f, 5.46f, 0f, 1.01f, CounterBack, -13.8f, wood, "WoodPanel").GetComponent<Renderer>().enabled = false;
+        DressBox(Box("탄약 상자", -6.87f, -5.73f, 0f, .55f, -12.95f, -12.2f, wood, "Plastic"), "hubammocrate", 0);
+        Station("탄약 상자 위", HubStation.Kind.Ammo, new Vector3(-6.3f, .275f, -12.575f), 0f, new Vector3(1.14f, .55f, .75f));
         Station("사격장 게시판", HubStation.Kind.RangeBoard, new Vector3(0f, 4.6f, -18f), 0f, new Vector3(5f, 1.8f, .1f));
 
-        // The lanes' lines, and how far each mark is from the firing line.
+        // The lanes' lines, and how far each mark is from the firing line, on the range's floor (its top at Floor).
         foreach (float x in new[] { -3.5f, 0f, 3.5f })
-            Box("레인 선", x - .03f, x + .03f, 0f, .015f, -121f, -14.4f, marker, solid: false);
+            Box("레인 선", x - .03f, x + .03f, Floor, Floor + .008f, -121f, CounterBack, marker, solid: false);
         foreach (int metres in new[] { 5, 10, 15, 25, 50, 75, 100 })
         {
             float z = -14f - metres;
-            Box(metres + " m 선", -7f, 7f, 0f, .012f, z - .05f, z + .05f, concrete, solid: false);
+            Box(metres + " m 선", -7f, 7f, Floor, Floor + .006f, z - .05f, z + .05f, concrete, solid: false);
             // Lying on the floor, the letters' tops away from the firing line.
-            Label(metres + " m", new Vector3(-5.2f, .02f, z - .5f), Quaternion.Euler(-90f, 0f, 0f), .55f, 3f, true);
+            Label(metres + " m", new Vector3(-5.2f, Floor + .02f, z - .5f), Quaternion.Euler(-90f, 0f, 0f), .55f, 3f, true);
             Label(metres + " m", new Vector3(-6.95f, 2.6f, z), Quaternion.Euler(0f, 90f, 0f), .6f, 3f, false);
         }
 
         // Lane 1: a close crowd for the shotguns. Lane 2: one at 15 m, one moving across at 30 m. Lane 3: one at 25 m,
         // a steel plate at 50 m off to the side. Lane 4: one at 50 m, a plate at 100 m.
-        Dummy("근거리 무리 1", new Vector3(-6.1f, 0f, -20f));
-        Dummy("근거리 무리 2", new Vector3(-5.2f, 0f, -20.7f));
-        Dummy("근거리 무리 3", new Vector3(-4.3f, 0f, -19.7f));
-        Dummy("15 m", new Vector3(-1.75f, 0f, -29f));
-        var mover = Dummy("움직이는 과녁 30 m", new Vector3(-3.3f, 0f, -44f));
+        Dummy("근거리 무리 1", new Vector3(-6.1f, Floor, -20f));
+        Dummy("근거리 무리 2", new Vector3(-5.2f, Floor, -20.7f));
+        Dummy("근거리 무리 3", new Vector3(-4.3f, Floor, -19.7f));
+        Dummy("15 m", new Vector3(-1.75f, Floor, -29f));
+        var mover = Dummy("움직이는 과녁 30 m", new Vector3(-3.3f, Floor, -44f));
         var carriage = new GameObject("움직이는 과녁 레일", typeof(RangeMover)).transform;
         carriage.SetParent(range, false);
         carriage.position = mover.position;
         mover.SetParent(carriage, true);
         Set(carriage.GetComponent<RangeMover>(), so => so.FindProperty("travel").vector3Value = new Vector3(3.2f, 0f, 0f));
-        Box("레일", -3.6f, .2f, 0f, .05f, -44.1f, -43.9f, metal, solid: false);
-        Dummy("25 m", new Vector3(1f, 0f, -39f));
-        Plate("강철판 50 m", new Vector3(2.6f, 0f, -64f));
-        Dummy("50 m", new Vector3(4.6f, 0f, -64f));
-        Plate("강철판 100 m", new Vector3(5.9f, 0f, -114f));
+        Box("레일", -3.6f, .2f, Floor, Floor + .05f, -44.1f, -43.9f, metal, solid: false);
+        Dummy("25 m", new Vector3(1f, Floor, -39f));
+        Plate("강철판 50 m", new Vector3(2.6f, Floor, -64f));
+        Dummy("50 m", new Vector3(4.6f, Floor, -64f));
+        Plate("강철판 100 m", new Vector3(5.9f, Floor, -114f));
+        DressRange();
     }
 
     // A steel target with a zombie's health (Hub.csv dummyHealth), facing the firing line. Only the spot is laid here:
@@ -249,6 +266,9 @@ public static class HubBuilder
     {
         // Everything is laid now, so the catwalk's ladder can be fitted to the catwalk.
         string ladders = LadderFit.FitAll(fixtures);
+        // The dresser's holder goes and what never moves turns static; its lines (surfaces, models) join the report.
+        string dressed = dresser.EndDressing();
+        dresser = null;
         if (!AssetDatabase.IsValidFolder(Folder)) AssetDatabase.CreateFolder("Assets/_Project/Scenes", "Hub");
         EditorSceneManager.MarkSceneDirty(scene);
         EditorSceneManager.SaveScene(scene, ScenePath);
@@ -261,24 +281,16 @@ public static class HubBuilder
         AssetDatabase.SaveAssets();
         Tell("허브를 지었어요: " + ScenePath + "\n\n메인 메뉴의 혼자 하기·방 만들기가 이제 허브로 들어가요. 지도 탁자에서 장을 고르고, " +
              "클래스 벽에서 클래스를, 총 진열대에서 총을 [F]로 고른 뒤 준비 버튼을 누르면 출발해요. 사격장은 남쪽 문 너머예요." +
-             (ladders.Length > 0 ? "\n\n" + ladders : ""));
+             (ladders.Length > 0 ? "\n\n" + ladders : "") + dressed);
     }
 
     // ---- Small helpers, in GreyboxBuilder's manner ----
 
+    // A box under the hall's terrain, through the dresser: with no material it wears the look its name claims
+    // (Tables/MapSurfaces Hub.* boxes), else the scene's concrete.
     private static GameObject Box(string name, float x0, float x1, float y0, float y1, float z0, float z1,
         Material material = null, string surface = null, bool solid = true)
-    {
-        var box = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        box.name = name;
-        box.transform.SetParent(terrain, false);
-        box.transform.localPosition = new Vector3((x0 + x1) * .5f, (y0 + y1) * .5f, (z0 + z1) * .5f);
-        box.transform.localScale = new Vector3(Mathf.Abs(x1 - x0), Mathf.Abs(y1 - y0), Mathf.Abs(z1 - z0));
-        box.GetComponent<Renderer>().sharedMaterial = material != null ? material : concrete;
-        if (!solid) Object.DestroyImmediate(box.GetComponent<Collider>());
-        if (!string.IsNullOrEmpty(surface)) Set(box.AddComponent<SurfaceType>(), so => so.FindProperty("surface").stringValue = surface);
-        return box;
-    }
+        => dresser.Box(name, x0, x1, y0, y1, z0, z1, material, surface, solid);
 
     // The stage's mirror, its glass's middle at <paramref name="glass"/> on the back wall (x 11.75), facing the hall (-x):
     // a metal frame standing a little proud of the glass with the stage band's pink along its top. The glass is
@@ -367,15 +379,15 @@ public static class HubBuilder
         });
     }
 
-    private static void Lamp(Vector3 at)
+    private static void Lamp(Vector3 at, float range = 15f, float intensity = 2.4f)
     {
         var lamp = new GameObject("등", typeof(Light));
         lamp.transform.SetParent(lights, false);
         lamp.transform.position = at;
         var light = lamp.GetComponent<Light>();
         light.type = LightType.Point;
-        light.range = 15f;
-        light.intensity = 2.4f;
+        light.range = range;
+        light.intensity = intensity;
         light.color = new Color(1f, .86f, .64f);
         light.shadows = LightShadows.None;
     }
@@ -407,13 +419,6 @@ public static class HubBuilder
         var root = new GameObject(name).transform;
         SceneManager.MoveGameObjectToScene(root.gameObject, scene);
         return root;
-    }
-
-    private static Material Load(string path)
-    {
-        var material = AssetDatabase.LoadAssetAtPath<Material>(Materials + path);
-        if (material == null) Debug.LogWarning("[Hub] material not found: " + Materials + path);
-        return material;
     }
 
     private static void Tell(string message) => EditorUtility.DisplayDialog(Title, message, "확인");

@@ -252,14 +252,13 @@ Material:
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords:{keywords}
   m_InvalidKeywords: []
-  m_LightmapFlags: 4
+  m_LightmapFlags: {flags}
   m_EnableInstancingVariants: 1
   m_DoubleSidedGI: {double}
   m_CustomRenderQueue: {queue}
   stringTagMap:
     RenderType: {render_type}
-  disabledShaderPasses:
-  - MOTIONVECTORS
+  disabledShaderPasses:{disabled}
   m_LockedProperties:
   m_SavedProperties:
     serializedVersion: 3
@@ -279,8 +278,8 @@ Material:
     - _Cutoff: 0.5
     - _DetailAlbedoMapScale: 1
     - _DetailNormalMapScale: 1
-    - _DstBlend: 0
-    - _DstBlendAlpha: 0
+    - _DstBlend: {dst}
+    - _DstBlendAlpha: {dst}
     - _EnvironmentReflections: 1
     - _GlossMapScale: 1
     - _Glossiness: 0.5
@@ -293,15 +292,15 @@ Material:
     - _Smoothness: {smoothness}
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
-    - _SrcBlend: 1
+    - _SrcBlend: {src}
     - _SrcBlendAlpha: 1
-    - _Surface: 0
+    - _Surface: {surface}
     - _WorkflowMode: 1
-    - _ZWrite: 1
+    - _ZWrite: {zwrite}
     m_Colors:
-    - _BaseColor: {{r: {grey}, g: {grey}, b: {grey}, a: 1}}
-    - _Color: {{r: {grey}, g: {grey}, b: {grey}, a: 1}}
-    - _EmissionColor: {{r: 0, g: 0, b: 0, a: 1}}
+    - _BaseColor: {{r: {r}, g: {g}, b: {b}, a: {a}}}
+    - _Color: {{r: {r}, g: {g}, b: {b}, a: {a}}}
+    - _EmissionColor: {{r: {glow}, g: {glow}, b: {glow}, a: 1}}
     - _SpecColor: {{r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
@@ -311,8 +310,9 @@ SLOTS = ["_BaseMap", "_BumpMap", "_DetailAlbedoMap", "_DetailMask", "_DetailNorm
          "unity_ShadowMasks"]
 
 
-def write_material(asset_path, name, maps, clip, two_sided):
-    """maps: slot -> texture asset path."""
+def write_material(asset_path, name, maps, clip, two_sided, glow=0.0, glass=None):
+    """maps: slot -> texture asset path. glow: the emission map's HDR strength (0 = none). glass: (r, g, b, a) for a
+    see-through surface (alpha blended, no depth write, no shadow)."""
     lines = []
     for slot in SLOTS:
         source = maps.get("_BaseMap") if slot == "_MainTex" else maps.get(slot)
@@ -328,11 +328,22 @@ def write_material(asset_path, name, maps, clip, two_sided):
         keywords.append("_OCCLUSIONMAP")
     if clip:
         keywords.append("_ALPHATEST_ON")
+    glow = glow if maps.get("_EmissionMap") else 0.0
+    if glow > 0:
+        keywords.append("_EMISSION")
+    if glass:
+        keywords.append("_SURFACE_TYPE_TRANSPARENT")
+    grey = 1 if maps.get("_BaseMap") else 0.5
+    r, g, b, a = glass if glass else (grey, grey, grey, 1)
+    disabled = ["MOTIONVECTORS"] + (["DepthOnly", "SHADOWCASTER"] if glass else [])
     text = MATERIAL.format(
         name=name, keywords="".join("\n  - " + k for k in sorted(keywords)) if keywords else " []",
-        double=1 if two_sided else 0, queue=2450 if clip else -1, render_type="TransparentCutout" if clip else "Opaque",
+        double=1 if two_sided else 0, queue=3000 if glass else 2450 if clip else -1,
+        render_type="Transparent" if glass else "TransparentCutout" if clip else "Opaque",
         textures="\n".join(lines), clip=1 if clip else 0, cull=0 if two_sided else 2,
-        smoothness=1 if maps.get("_MetallicGlossMap") else 0.35, grey=1 if maps.get("_BaseMap") else 0.5)
+        smoothness=0.92 if glass else 1 if maps.get("_MetallicGlossMap") else 0.35, r=r, g=g, b=b, a=a,
+        flags=2 if glow > 0 else 4, disabled="".join("\n  - " + p for p in disabled), src=5 if glass else 1,
+        dst=10 if glass else 0, surface=1 if glass else 0, zwrite=0 if glass else 1, glow=round(glow, 3))
     with open(full(asset_path), "w", encoding="utf-8", newline="\n") as f:
         f.write(text)
     with open(full(asset_path) + ".meta", "w", encoding="utf-8", newline="\n") as f:
@@ -341,6 +352,56 @@ def write_material(asset_path, name, maps, clip, two_sided):
 
 
 CHANNELS = {"ORM": (0, 1, 2), "ARM": (0, 1, 2), "RMA": (2, 0, 1), "OMR": (0, 2, 1)}  # (ao, rough, metal)
+# Unreal's emissive strength (texture x colour x intensity, often 5 to 750 in a lit kit) to the HDR multiplier of
+# URP's emission: the square root keeps a 5 lamp and a 750 LED strip in order without the strip blowing out the
+# bloom, and the clamp keeps every lit panel visibly on and none brighter than a light.
+GLOW_SCALE, GLOW_LEAST, GLOW_MOST = 0.7, 0.6, 4.0
+
+
+def to_linear(c):
+    return np.where(c <= 0.04045, c / 12.92, np.power((c + 0.055) / 1.055, 2.4))
+
+
+def to_srgb(c):
+    c = np.clip(c, 0, 1)
+    return np.where(c <= 0.0031308, c * 12.92, 1.055 * np.power(c, 1 / 2.4) - 0.055)
+
+
+def tinted(rgba, tint):
+    """Unreal's tint (the Dekogon masters' Albedo Color Tint and Tint By Mask), baked into the colour map: the base tint
+    over all, then either one masked tint (mask red) or three (mask red, green, blue), each a lerp in linear colour
+    from what is there to the albedo times that tint, as the master's graph does. rgba: stored (sRGB) values."""
+    lin = to_linear(rgba[..., :3])
+    out = lin * np.array(tint.get("base", (1, 1, 1)), dtype=np.float32)
+    mode = tint.get("mode")
+    if mode in ("mask", "multi") and tint.get("mask"):
+        mask = resize_to(read(tint["mask"]), rgba.shape[0], rgba.shape[1])
+        if mode == "multi":
+            for channel, key in ((0, "red"), (1, "green"), (2, "blue")):
+                a = mask[..., channel:channel + 1]
+                out = out * (1 - a) + lin * np.array(tint[key], dtype=np.float32) * a
+        else:
+            a = mask[..., 0:1]
+            out = out * (1 - a) + out * np.array(tint["maskTint"], dtype=np.float32) * a
+    rgba[..., :3] = to_srgb(out)
+    return rgba
+
+
+def glow_map(e, path):
+    """The emissive map as Unreal shades it (desaturated, times its colour, to its power), saved normalised to its
+    brightest pixel; returns the HDR strength for _EmissionColor."""
+    lin = to_linear(read(e["path"])[..., :3])
+    d = min(max(e.get("desat", 0), 0), 1)
+    lum = (lin * np.array((0.3, 0.59, 0.11), dtype=np.float32)).sum(-1, keepdims=True)
+    lin = (lin * (1 - d) + lum * d) * np.array(e.get("color", (1, 1, 1)), dtype=np.float32)
+    lin = np.power(np.clip(lin, 0, None), e.get("power", 1))
+    peak = float(lin.max())
+    if peak <= 1e-4:
+        return 0.0
+    out = np.ones(lin.shape[:2] + (4,), dtype=np.float32)
+    out[..., :3] = to_srgb(lin / peak)
+    save(out, path, "color")
+    return float(np.clip(np.sqrt(peak * e.get("intensity", 1)) * GLOW_SCALE, GLOW_LEAST, GLOW_MOST))
 
 
 def build_material(mat_id, m):
@@ -349,13 +410,21 @@ def build_material(mat_id, m):
     base = "%s/%s" % (m["dest"], safe(m["name"]))
     maps = {}
     color, opacity = m.get("color"), m.get("opacity")
+    tint, cut_by_alpha = m.get("tint"), m.get("opacityAlpha", False)
     if color is not None:
-        if opacity is not None:
+        if opacity is not None or cut_by_alpha:
+            # Cut out where the opacity map (or, in Unreal's "opacity in albedo alpha", the colour's own alpha) is low.
             rgb = read(color)
-            alpha = resize_to(read(opacity), rgb.shape[0], rgb.shape[1])
-            rgb[..., 3] = alpha[..., 0]
+            if opacity is not None:
+                alpha = resize_to(read(opacity), rgb.shape[0], rgb.shape[1])
+                rgb[..., 3] = alpha[..., 0]
+            if tint:
+                rgb = tinted(rgb, tint)
             path = base + "_BaseColor.png"
             save(rgb, path, "cutout")
+        elif tint:
+            path = base + "_BaseColor.jpg"
+            save(tinted(read(color), tint), path, "color")
         elif isinstance(color, str) and (size_of(color) or (99999, 0))[0] <= LARGEST and color.lower().endswith((".jpg", ".png")):
             path = base + "_BaseColor" + os.path.splitext(color)[1].lower()
             copy_texture(color, path, "color")
@@ -420,10 +489,17 @@ def build_material(mat_id, m):
         path = base + "_AO.png"
         save(a, path, "data")
         maps["_OcclusionMap"] = path
-    clip = opacity is not None
+    glow = 0.0
+    if m.get("emission") and m["emission"].get("path"):
+        path = base + "_Emission.png"
+        glow = glow_map(m["emission"], path)
+        if glow > 0:
+            maps["_EmissionMap"] = path
+    clip = opacity is not None or (cut_by_alpha and color is not None)
     material = base + ".mat"
-    write_material(material, safe(m["name"]), maps, clip, clip or m.get("twoSided", False))
-    note("material %s: %s" % (material, ", ".join(sorted(k.strip("_") for k in maps))))
+    write_material(material, safe(m["name"]), maps, clip, clip or m.get("twoSided", False), glow, m.get("glass"))
+    note("material %s: %s%s%s" % (material, ", ".join(sorted(k.strip("_") for k in maps)),
+                                  " glow %.2f" % glow if glow else "", " glass" if m.get("glass") else ""))
     return material
 
 

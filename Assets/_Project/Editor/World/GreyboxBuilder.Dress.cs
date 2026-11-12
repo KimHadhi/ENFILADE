@@ -35,6 +35,10 @@ public sealed partial class GreyboxBuilder
     private const float StackSettle = .08f;
 
     private Transform dressing;
+
+    /// <summary>The model Dress, Prop, Hang or PropSolid put down last (of a row Dress lays, its last copy), for a
+    /// builder that moves it on: the hub's shutter rides its door (HubBuilder), so it leaves the static dressing.</summary>
+    public GameObject LastPlaced { get; private set; }
     private readonly Dictionary<string, GameObject> artPrefabs = new Dictionary<string, GameObject>();
     private readonly Dictionary<GameObject, Bounds> artBounds = new Dictionary<GameObject, Bounds>();
     private readonly HashSet<string> artMissing = new HashSet<string>();
@@ -106,6 +110,24 @@ public sealed partial class GreyboxBuilder
     {
         if (!ArtRow(kind, pick, floor, out var prefab, out _, out float turn, out float own)) return null;
         return Place(prefab, floor, yaw + turn, Vector3.one * (own * scale), false);
+    }
+
+    /// <summary>A model of <paramref name="kind"/> standing on <paramref name="floor"/>, turned to <paramref name="yaw"/>,
+    /// scaled on each of its own axes (times the table's scale): a wall panel stretched to its bay's length keeps its
+    /// height, a pillar raised to the roof keeps its width. Seen only, like Prop.</summary>
+    public GameObject PropScaled(string kind, Vector3 floor, float yaw, Vector3 scale, int pick = -1)
+    {
+        if (!ArtRow(kind, pick, floor, out var prefab, out _, out float turn, out float own)) return null;
+        return Place(prefab, floor, yaw + turn, scale * own, false);
+    }
+
+    /// <summary>The size of a model of <paramref name="kind"/> (variant <paramref name="pick"/>) as it stands unturned,
+    /// times the table's scale: its own x, height and depth, for a builder fitting copies to a wall or a lane. Zero when
+    /// the kind has no row or model (named in the report like any missing kind).</summary>
+    public Vector3 ArtSize(string kind, int pick = 0)
+    {
+        if (!ArtRow(kind, Mathf.Max(0, pick), Vector3.zero, out var prefab, out _, out float yaw, out float scale)) return Vector3.zero;
+        return Turned(BoundsOf(prefab).size, yaw) * scale;
     }
 
     /// <summary>A model of <paramref name="kind"/> hanging with its top at <paramref name="top"/> (a ceiling lamp, a sign).</summary>
@@ -234,6 +256,7 @@ public sealed partial class GreyboxBuilder
         copy.transform.SetPositionAndRotation(new Vector3(point.x - offset.x, y, point.z - offset.z), turn * own);
         copy.transform.localScale = scaled;
         artPlaced++;
+        LastPlaced = copy;
         return copy;
     }
 
