@@ -339,9 +339,16 @@ public static class SettingsWidgets
         var input = root.gameObject.AddComponent<TMP_InputField>();
         input.textViewport = viewport; input.textComponent = text; input.targetGraphic = image;
         input.fontAsset = text.font; input.pointSize = text.fontSize;
+        // TMP_InputField makes the renderer that draws its caret and its selection in OnEnable, and only once it has its
+        // text component. AddComponent on a live object runs OnEnable before that is set, so no box built here ever showed
+        // a caret or a selection (user, 2026-11-12: "깜빡이는 | 바가 없어서 아직도 내가 칠 수 있는 상태인 건가?"). Waking it
+        // again now makes them; under a parent not yet active, OnEnable is still to come and finds the text set.
+        input.enabled = false;
+        input.enabled = true;
         // TMP's own caret is dark grey, which vanished on these dark fields.
         input.customCaretColor = true; input.caretColor = Text; input.caretWidth = 2;
         input.selectionColor = new Color(Accent.r, Accent.g, Accent.b, .45f);
+        CaretWhileSelected.On(input);
         input.SetTextWithoutNotify(value);
         input.onValueChanged.AddListener(v => changed(v));
         return input;
@@ -366,7 +373,7 @@ public static class SettingsWidgets
         text.alignment = TextAlignmentOptions.MidlineRight;
         text.fontSize = field.pointSize = 20f;
         // TMP draws the caret just past the last letter, and right-aligned text puts that on the viewport's edge, where
-        // the viewport's mask cut the caret away: this much room keeps it in sight.
+        // the viewport's mask would cut it away: this much room keeps it in sight.
         text.rectTransform.offsetMax = new Vector2(-CaretRoom, 0f);
         TypingLook.On(field, parent.childCount > 0 ? parent.GetChild(0).GetComponent<TMP_Text>() : null);
         // Before the field takes focus, so the bare number is what gets selected and what Esc goes back to.
