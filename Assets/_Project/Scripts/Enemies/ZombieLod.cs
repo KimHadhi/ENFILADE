@@ -11,9 +11,10 @@ using UnityEngine;
 /// - Chasing (EnemyChaseAI): it looks for a new path every `chaseFar` seconds instead of every 0.15.
 /// - A horde's look round (ZombieMind): an awake horde zombie only looks for players to tell the campaign someone is
 ///   still seen; once one has seen anyone in the last `hordeLookGap` seconds, the rest needn't cast their rays.
-/// - Its body (ZombieBody): on screen but beyond `animFar`, the pose is worked out every `animEvery` frames instead of
-///   every frame (its hitboxes, riding its bones, move as often); never while anything quick plays on it (a hit, a
-///   swing, a fall). Off screen the Animator already skips it (the pack's CullUpdateTransforms).
+/// - Its body: nothing here. 0.8.93 posed a far zombie on screen every third frame on a manual graph clock (animFar,
+///   animEvery), and that is the likeliest cause of the frozen zombies the user reported three times (ZombieBody.GuardGraph
+///   says why): taken out, the body is posed every frame it is seen. Off screen the Animator skips it as ever (the pack's
+///   CullUpdateTransforms).
 /// How many corpses lie about is ZombieCorpse.csv's (mostCorpses, mostDolls).
 /// </summary>
 public static class ZombieLod
@@ -21,8 +22,7 @@ public static class ZombieLod
     public const string TableName = "ZombieLod", TableRow = "Default";
 
     private static bool read, listening, on = true;
-    private static float far = 40f, thinkFar = .3f, chaseFar = .6f, animFar = 30f, hordeLookGap = .25f;
-    private static int animEvery = 3;
+    private static float far = 40f, thinkFar = .3f, chaseFar = .6f, hordeLookGap = .25f;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void Clear() => read = listening = false;
@@ -55,13 +55,6 @@ public static class ZombieLod
         return on && chaseFar > usual && Nearest(at) > far ? chaseFar : usual;
     }
 
-    /// <summary>Every how many frames a zombie body here on screen is posed: 1 near, animEvery far.</summary>
-    public static int AnimEvery(Vector3 at)
-    {
-        Read();
-        return on && animEvery > 1 && Nearest(at) > animFar ? animEvery : 1;
-    }
-
     /// <summary>An awake horde zombie should look round itself now: nobody has seen a player very lately.</summary>
     public static bool HordeLooks(float lastNoticed)
     {
@@ -79,8 +72,6 @@ public static class ZombieLod
         far = Number(row, "far", far);
         thinkFar = Number(row, "thinkFar", thinkFar);
         chaseFar = Number(row, "chaseFar", chaseFar);
-        animFar = Number(row, "animFar", animFar);
-        animEvery = Mathf.Max(1, Mathf.RoundToInt(Number(row, "animEvery", animEvery)));
         hordeLookGap = Number(row, "hordeLookGap", hordeLookGap);
     }
 

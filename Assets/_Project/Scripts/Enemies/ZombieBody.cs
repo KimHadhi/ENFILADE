@@ -92,10 +92,13 @@ public sealed partial class ZombieBody : MonoBehaviour
         if (target != null) target.Interrupted += OnInterrupted;
         WatchCrawl();
         Arrive();
+        // The animation probe looks at it from here (ZombieBody.Probe.cs, Logs/zombie-anim.txt).
+        if (graph.IsValid()) ProbeDressed();
     }
 
     private void OnDestroy()
     {
+        ProbeGone("removed");
         StopWatchingCrawl();
         PutOutEyes();
         GiveDollBack();
@@ -222,6 +225,7 @@ public sealed partial class ZombieBody : MonoBehaviour
     {
         if (Model == null || animator == null) return;
         if (target != null) target.Interrupted -= OnInterrupted;
+        ProbeGone("died");
         // The corpse takes the pose as it is, a jolt it was in included; nothing more goes onto its bones.
         StopJolt();
         // Down already, the corpse carries on with the doll it lies on.
@@ -471,7 +475,7 @@ public sealed partial class ZombieBody : MonoBehaviour
         // A paired execution's clip at the pair's own clock (ZombieBody.Executed).
         ExecutedTick(real);
         Weigh();
-        PaceGraph(real);
+        GuardGraph();
         // From the frame after dressing, once the pack's spare meshes are gone, so a doll's copy of the body is light.
         // Half a second apart for each zombie (it looked through the dolls every frame for every zombie): dolls are made
         // one a frame at most anyway.
@@ -483,35 +487,28 @@ public sealed partial class ZombieBody : MonoBehaviour
     }
     private float stockLeft;
 
-    // Far from every player and on screen, the pose is worked out only every few frames (ZombieLod animEvery): the graph
-    // goes to manual and is evaluated here. Never while anything quick plays on it (a hit, a swing, a flinch, a fall, a
-    // hold, a leap, a mood's one-off clip): then every frame as before. Off screen the Animator skips it anyway.
-    private int lodEvery = 1, lodFrame;
-    private float lodCheck, lodHold;
-    private bool lodManual;
-    private Renderer lodSkin;
-
-    private void PaceGraph(float real)
+    /// <summary>
+    /// The graph always runs on the game's clock, and the Animator poses the body from it every frame it is seen. 0.8.93
+    /// (ZombieLod animEvery) put a far zombie on screen on a manual clock, posed every third frame by Evaluate here, and
+    /// back on the game's clock once near or busy. That is the likeliest cause of the user's frozen zombies, reported three
+    /// times from 2026-11-12 ("앉은 채, 누운 채로 와 ... 모션이 굳은 채로", "부동 자세로 나한테 와", "좀비 애니메이션이 여전히
+    /// 안 나와"): calm ones are placed ahead and first seen from afar, which is just when that switch took them, and a body
+    /// whose pose stops being worked out keeps the last one it had, its sitting or lying pose, as it walks. The switch is
+    /// gone; should anything still stop the graph or take it off the game's clock, it is put back here at once and the
+    /// probe records it (HEAL in Logs/zombie-anim.txt).
+    /// </summary>
+    private void GuardGraph()
     {
-        if ((lodCheck -= real) <= 0f)
+        var clock = graph.GetTimeUpdateMode();
+        if (clock != DirectorUpdateMode.GameTime)
         {
-            lodCheck = .5f;
-            lodEvery = ZombieLod.AnimEvery(transform.position);
+            graph.SetTimeUpdateMode(DirectorUpdateMode.GameTime);
+            ProbeHeal("clock was " + clock);
         }
-        bool busy = Time.time < lodHold || down || riseWeight > 0f || blendLeft > 0f || attackWeight > 0f || flinchWeight > 0f || executedWeight > 0f
-            || staggerWeight > 0f || cueWeight > 0f || holdWeight > 0f || leapWeight + landWeight > 0f;
-        if (lodSkin == null && Model != null) lodSkin = Model.GetComponentInChildren<SkinnedMeshRenderer>();
-        bool slow = lodEvery > 1 && !busy && lodSkin != null && lodSkin.isVisible;
-        if (slow != lodManual)
+        if (!graph.IsPlaying())
         {
-            lodManual = slow;
-            lodFrame = 0;
-            graph.SetTimeUpdateMode(slow ? DirectorUpdateMode.Manual : DirectorUpdateMode.GameTime);
-        }
-        if (lodManual && ++lodFrame >= lodEvery)
-        {
-            lodFrame = 0;
-            graph.Evaluate(0f);
+            graph.Play();
+            ProbeHeal("graph was stopped");
         }
     }
 

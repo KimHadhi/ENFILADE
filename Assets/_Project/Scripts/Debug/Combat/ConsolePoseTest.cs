@@ -95,6 +95,9 @@ public sealed class ConsolePoseTest : MonoBehaviour
             return "앞쪽에 자세 좀비를 둘 빈 이동 공간이 없습니다. 트인 곳에서 다시 해 보세요."; // dev-text
         }
         run.StartCoroutine(run.Waking());
+        // What each one shows goes over its head and into Logs/zombie-anim.txt (ZombieAnimProbe), marked with this test.
+        ZombieAnimProbe.Show = true;
+        ZombieAnimProbe.Mark("/poses " + wake + (only >= 0 ? " " + only : "") + ", " + run.made.Count + " zombies");
         string how = wake switch
         {
             Wake.Sight => "보고 있다가 눈으로 알아챕니다. 가만히 보이는 곳에 서 계세요", // dev-text
