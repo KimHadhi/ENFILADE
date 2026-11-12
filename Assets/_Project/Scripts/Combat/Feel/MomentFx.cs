@@ -84,6 +84,21 @@ public sealed class MomentFx : MonoBehaviour
         }
     }
 
+    // ---- The duel won ----
+
+    /// <summary>
+    /// A Schießhund's duel won: its foe fell while it lasted (HoundDuel, on every PC as each sees it fall). The pack's
+    /// skull with the bullet hole rises from the corpse (PackFx duelWon; the user, 2026-11-13: "해골 머리에 구멍 뚫린 건
+    /// 결투 승리했을 때 상대 시체에서 나오는 이펙트로도 쓸 만하고"), with its own toll. <paramref name="ground"/>: under the
+    /// corpse; <paramref name="head"/>: where its head was.
+    /// </summary>
+    public static void DuelWon(Vector3 ground, Vector3 head)
+    {
+        if (!Application.isPlaying) return;
+        PackFx.Play("duelWon", ground, Quaternion.identity);
+        MomentSound.Play("duelwon", head);
+    }
+
     // ---- Playing one ----
 
     /// <summary>

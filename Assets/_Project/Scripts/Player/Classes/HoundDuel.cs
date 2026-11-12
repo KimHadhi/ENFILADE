@@ -141,10 +141,16 @@ public sealed class HoundDuel : MonoBehaviour
     private bool Live => Time.time < until && Hound != null && Foe != null && Foe is ICombatFoe foe && foe.IsAlive
         && !Hound.IsDead && !Hound.IsDowned;
 
+    // Won: the foe fell while time was left and the hound still stood.
+    private bool Won => Foe != null && Foe is ICombatFoe foe && !foe.IsAlive && Time.time < until + .1f
+        && Hound != null && !Hound.IsDead && !Hound.IsDowned;
+
     private void Update()
     {
         if (!Live)
         {
+            // Every PC sees the foe fall and plays the skull from its corpse (MomentFx.DuelWon).
+            if (Won) MomentFx.DuelWon(Foe.transform.position, CombatFoe.Top(Foe));
             int index = duels.IndexOf(this);
             if (index >= 0) Close(index);
             else Destroy(gameObject);

@@ -12,7 +12,7 @@ using UnityEngine;
 /// - Détente: two heartbeats and a clear chime;
 /// - Schießhund: six clicks and a till's ring;
 /// - Support: a radio's click and a crate set down.
-/// The moments' own: bounty, reversal, cover, kata and duel.
+/// The moments' own: bounty, reversal, cover, kata, duel, and duelwon (a ricochet and one low toll as a duel's foe falls).
 /// A file at Resources/Audio/Moments/&lt;key&gt; (a mod's or a recorded one) plays in a stinger's place. One's own plays at
 /// the ear; a friend's plays where they stand, softer with distance. Numbers: Tables/MomentFx.csv, row Sound.
 /// </summary>
@@ -133,6 +133,14 @@ public static class MomentSound
                 Tone(data, 0f, .12f, 660f, 660f, .14f, Wave.Square);
                 Tone(data, .12f, .3f, 990f, 990f, .12f, Wave.Square);
                 Tone(data, 0f, .6f, 110f, 104f, .35f, Wave.Sine);
+                break;
+            case "duelwon":
+                // A ricochet's whine falling away, then one low toll: the duel is over.
+                Noise(data, 0f, .05f, .3f, 3000f, 12000f);
+                Tone(data, 0f, .3f, 2600f, 900f, .08f, Wave.Sine);
+                Tone(data, .16f, 1.1f, 82f, 80f, .55f, Wave.Sine);
+                Tone(data, .16f, .9f, 164f, 162f, .2f, Wave.Sine);
+                Tone(data, .16f, .7f, 493f, 490f, .06f, Wave.Triangle);
                 break;
             default:
                 return null;

@@ -8,7 +8,8 @@ using UnityEngine;
 /// 이펙트 좀"):
 /// - the bounty's nested diamond draws itself round the head and turns to lock, then is stamped;
 /// - a seal of ticks runs out over the ground;
-/// - teal light bursts out round the body as it falls;
+/// - teal light bursts out round the body as it falls, and the head goes off where the round went in (the Realistic
+///   Gunslinger pack's Piercing Hit, PackFx bountyGrand, toned in Tables/PackFx.csv);
 /// - a hairline stands up into the sky, seen across the map, and a few gold glints fall.
 /// A plain bounty is pick B: a small CLAIMED plate slammed beside the head.
 /// The hunter sees exactly what the others see. Nothing covers the screen any more: the old pillar, coin shower and
@@ -27,6 +28,9 @@ public sealed class BountyBurst : MonoBehaviour
         if (grand)
         {
             MomentFx.Play(MomentFx.Kind.BountyGrand, head, head - from, 1f, teal, MomentLook.Sigil.Hound, ground);
+            // It goes off where the round went in: the Realistic Gunslinger pack's impact (PackFx bountyGrand).
+            Vector3 back = from - head;
+            PackFx.Play("bountyGrand", head, back.sqrMagnitude > 1e-4f ? Quaternion.LookRotation(back) : Quaternion.identity);
             MomentSound.Play("bounty", head);
         }
         else MomentFx.Play(MomentFx.Kind.BountyPlain, head, head - from, 1f, teal, MomentLook.Sigil.Hound, ground);

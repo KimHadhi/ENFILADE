@@ -1,0 +1,46 @@
+﻿key,value,note
+#설명,,"산 이펙트 팩의 프리팹을 게임 순간에 쓰는 표(PackFx, PackShots). 프리팹은 Resources/Combat/PackFxLibrary.asset에 이름으로 넣고, 여기서 쓰임마다 크기·빠르기·뺄 부분·바로 터뜨릴 부분·끝나는 때를 정한다. 프리팹 자체는 건드리지 않고 복사본만 바꾼다. 사용자 규칙: 절제되고 잘 읽히게, 화면을 덮지 않게, 짧게, 남이 보는 것과 내가 보는 것이 같게. 지금은 Realistic Gunslinger 팩(Assets/ThirdParty/Piloto Studio/Super Realistic FX Bundle 02). 2026-11-13 사용자: ""Realistic Gunslingers VFX에 시순트용 이펙트 꽤 있는데?"""
+duelWon.prefab,Mark Debuff,"결투 승리: 상대 시체에서 이마에 총알 구멍이 난 해골이 떠오른다(Mark Debuff). 모든 PC가 상대가 쓰러지는 것을 보고 저마다 튼다(HoundDuel). 사용자: ""해골 머리에 구멍 뚫린 건 결투 승리했을 때 상대 시체에서 나오는 이펙트로도 쓸 만하고"""
+duelWon.scale,0.6,"크기 배율. 팩 그대로면 2m 해골이 발밑에서 2.6m 위에 뜬다. 0.6이면 1.2m 해골이 머리 높이(1.5m)에"
+duelWon.speed,1.25,빠르기 배율. 해골이 1.6초 안에 지나간다
+duelWon.pop,Loop/guns_skull_debuff_defined_add_soft:1|Loop/guns_skull_debuff_blur_add_soft:2,"바로 터뜨릴 부분(경로:개수). 팩은 0.5초 기다렸다가 1초에 하나씩 해골을 계속 내지만, 여기선 시작하자마자 한 번만"
+duelWon.drop,Loop/Flecks_Shiny_Additive|Loop/Clair_Smoke_01_M|Loop/Smoky_Glow_01_M|Loop/Corrupted_Trail_01_M|Loop/FuzzAlpha_Soft|Burst/FuzzAlpha_Soft|Burst/Clair_Smoke_01_M|Burst/Smoky_Glow_01_M,"뺄 부분. 디버프라 계속 도는 연기·반짝이와, 화면을 덮는 5~6m 연기·검은 퍼짐. 남는 것: 해골, 피어오르는 리본 15줄, 반짝이 35개, 바닥에 퍼지는 물결"
+duelWon.stopAfter,0.1,이만큼(초) 뒤 남은 반복을 멈춘다
+duelWon.life,2.2,사라지는 때(초)
+duelWon.near,3,카메라가 이보다(m) 가까우면 작게 그린다(nearShare까지)
+duelWon.nearShare,0.5,가장 가까울 때의 크기 비율
+Desperado.muzzle,desperadoMuzzle,"데스페라도(총 id)를 쏠 때 총구에서 터지는 것(아래 줄 이름). 총 id로 된 줄이 있으면 PackShots가 쏠 때마다 총구·탄·맞은 자리를 모든 PC에 그린다. 사용자: ""총알 이펙트도 데스페라도용으로 멋진 거 쓸 만한데?"""
+Desperado.round,desperadoRound,날아가는 탄
+Desperado.hit,desperadoHit,적에게 맞은 자리
+Desperado.miss,desperadoMiss,"적이 아닌 곳(벽, 바닥)에 맞은 자리. 더 작게"
+Desperado.speed,220,탄이 나는 빠르기(m/s). 20m를 0.09초에
+Desperado.selfAhead,2.5,내 총구에서 쏠 때 탄이 이만큼(m) 앞에서 나타난다. 눈앞에서 번쩍이지 않게
+desperadoMuzzle.prefab,Piercing Shot Muzzle,총구의 고리 세 겹·불티·앞으로 뻗는 빛
+desperadoMuzzle.scale,0.45,"남이 볼 때 크기. 고리 1.3m → 0.6m"
+desperadoMuzzle.selfScale,0.18,"내 1인칭 총구에서의 크기. 눈에서 0.5m라 작게: 고리 0.23m"
+desperadoMuzzle.speed,1.2,
+desperadoMuzzle.drop,FuzzAlpha_Soft|guns_light_muzzle_fb_add_soft|Smoke_loop_flipbook_thingy_Clean_alpha_soft,"뺄 부분: 6~8m 검은 퍼짐(화면을 덮음), 팩의 총구 섬광(총에 제 불꽃이 있다, MuzzleFlash), 5m 연기"
+desperadoMuzzle.life,1,
+desperadoRound.prefab,Heavy Shot,빛나는 탄두와 뒤로 퍼지는 원뿔 물결
+desperadoRound.scale,0.3,"탄두 0.8m → 0.24m, 원뿔 2m → 0.6m"
+desperadoRound.selfScale,0.2,내 총에서 쏜 탄
+desperadoRound.drop,FuzzAlpha_Soft,뺄 부분: 탄 둘레 2m 검은 퍼짐
+desperadoRound.life,3,안전한 끝(초). 보통은 닿는 순간 사라진다
+desperadoHit.prefab,Piercing Hit,"맞은 자리: 짧은 번쩍임, 일그러지는 고리, 불티, 연기, 충격 원뿔"
+desperadoHit.scale,0.5,
+desperadoHit.speed,1.15,
+desperadoHit.drop,FuzzAdd_Soft|Smoke_Explotion_Mom_sat_add_Soft,"뺄 부분: 5m 밝은 퍼짐, 3m 불 폭발(총알 한 발에는 너무 크다)"
+desperadoHit.life,1.2,
+desperadoHit.near,4,
+desperadoMiss.prefab,Piercing Hit,
+desperadoMiss.scale,0.3,
+desperadoMiss.speed,1.2,
+desperadoMiss.drop,FuzzAdd_Soft|Smoke_Explotion_Mom_sat_add_Soft|LightFlash_Soft|DS_Aoe_Crystal_Warp_01,"벽·바닥에는 번쩍임과 일그러짐도 뺀다: 불티, 연기, 고리만"
+desperadoMiss.life,1,
+desperadoMiss.near,3,
+bountyGrand.prefab,Piercing Hit,"데스페라도 현상금: 탄이 들어간 머리에서 터진다(MomentFx BountyGrand의 문장과 함께). 사용자: ""죽었을 때 뭔가 터지는 듯이 주변에 이펙트 좀"""
+bountyGrand.scale,0.85,
+bountyGrand.drop,FuzzAdd_Soft,뺄 부분: 5m 밝은 퍼짐. 3m 불 폭발은 남긴다(터지는 느낌)
+bountyGrand.life,1.5,
+bountyGrand.near,5,
+bountyGrand.nearShare,0.4,

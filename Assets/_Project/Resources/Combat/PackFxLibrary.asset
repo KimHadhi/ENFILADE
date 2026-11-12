@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c764e515b9e54d019e7e2975244b4966, type: 3}
+  m_Name: PackFxLibrary
+  m_EditorClassIdentifier: Assembly-CSharp::PackFxLibrary
+  entries:
+  - name: Mark Debuff
+    prefab: {fileID: 956972359718934878, guid: fde6fa1df403d614dada52faf5aaf07b, type: 3}
+  - name: Piercing Shot Muzzle
+    prefab: {fileID: 6555417751319509762, guid: 01b52cb24590a5e4495683b21618dc21, type: 3}
+  - name: Heavy Shot
+    prefab: {fileID: 6250645838170694263, guid: 04552554eb839984089d33883dce3856, type: 3}
+  - name: Piercing Hit
+    prefab: {fileID: 7341297119263965802, guid: 4c3c98f8ae7076848a10addcd210f1ed, type: 3}

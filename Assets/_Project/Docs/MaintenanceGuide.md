@@ -279,10 +279,12 @@ C 메뉴에서 바꾼 조준경·총구·하단·손잡이, L 플래시, B 사�
 | 데탕트 궁극 | C | 원 안의 흰 십자 문장(사용자: "백십자 문양")이 바닥으로 6m까지 퍼진다 |
 | 시순트 궁극 | C | 발밑에 겹 마름모(눈) 문장 |
 | 서포트 궁극 | C | 발밑에 탄 셋이 든 상자 문장 |
-| 데스페라도 현상금 | C(더 화려하게) | 머리 둘레에 겹 마름모가 돌며 그려져 잠기고 도장 고리가 퍼진다. 발밑에 눈금 봉인 고리, 몸 둘레로 청록 빛줄기가 터지고(사용자: "죽었을 때 뭔가 터지는 듯이"), 하늘로 가는 22m 선과 금빛 반짝임 여덟. 화면 배너는 없다 |
+| 데스페라도 현상금 | C(더 화려하게) | 머리 둘레에 겹 마름모가 돌며 그려져 잠기고 도장 고리가 퍼진다. 발밑에 눈금 봉인 고리, 몸 둘레로 청록 빛줄기가 터지고(사용자: "죽었을 때 뭔가 터지는 듯이"), 하늘로 가는 22m 선과 금빛 반짝임 여덟. 화면 배너는 없다 탄이 들어간 머리에서는 팩의 명중 폭발(Piercing Hit, PackFx `bountyGrand`)이 터진다 |
 | 보통 현상금 | B | 머리 옆에 작은 CLAIMED 판이 쾅 찍혔다 떠오른다 |
 | CHARGE | A | 외친 자리에서 금빛 눈금 고리가 범위까지 퍼진다. 버프 받은 모두가 G&B처럼 노랗게 빛난다: 몸 가장자리에 모이는 금빛([BodyShell](../Scripts/Combat/Feel/BodyBake.cs) + 셰이더 MomentGlow), 내 몸(1인칭 팔)도. 화면 테두리 금빛은 없앴다. 외친 사람 화면에 작은 CHARGE 이름표 |
 | 결투 | A(더 화려하게) | 나와 상대 사이 두 겹 청록 줄을 따라 빛이 흐른다. 시작에 밝은 머리가 상대까지 달리고 고리가 퍼지며, 상대 몸에 괄호 넷이 쾅 잠겨 남는다. 내 눈에서는 줄이 1.3m 앞부터 그려져 굵어지지 않는다. 화면에 작은 DUEL 이름표 |
+| 결투 승리 | 팩(사용자 11-13) | 결투 상대가 쓰러지면 시체에서 이마에 총알 구멍이 난 해골이 떠오르고, 리본이 피어오르고 바닥에 물결이 퍼진다(Realistic Gunslinger의 Mark Debuff, PackFx `duelWon`). 모든 PC가 상대가 쓰러지는 것을 보고 저마다 튼다. 소리는 도탄 한 번과 낮은 종 |
+| 데스페라도 총알 | 팩(사용자 11-13) | 쏠 때마다 총구에 고리 세 겹과 불티가 나고, 빛나는 탄두가 맞은 자리까지 날아가며(220m/s), 적에게 맞으면 번쩍임·일그러지는 고리·불티가 터진다(벽·바닥엔 더 작게). Piercing Shot Muzzle·Heavy Shot·Piercing Hit, PackShots. 내 1인칭 총구에서는 작게, 탄은 2.5m 앞에서 나타난다 |
 | 원호 방어 | 지금 그대로 + 메모 | COVER 배너는 그대로. 순간이동 대신 회피처럼 내 캐릭터 잔상 넷이 지나간 길에 차례로 선다(CoverStreak, BodyBake). 막은 자리에는 흰·보라 초승달, 불꽃, 고리, 연 모양 방패가 번쩍인다(MomentFx CoverDeflect, 모든 PC) |
 | 되치기 | A(모두에게 화려하게) | 메친 길을 따라 굵다 가늘어지는 분홍 호, 바닥 고리, 조각(모든 PC). 내 화면에 작은 REVERSAL 이름표. 배너는 없다 |
 | 건 카타 | C(궁극기와 다르게) | 카타 문장(돌아가는 육각 실린더)이 이름표 옆에 찍힌다. 카타 동안 총을 꺼낼 때마다 그 총 둘레로 주황 호 둘이 돈다(모든 PC). 궁극기의 '달궈진 두 총'과 다른 모양이다 |
@@ -294,6 +296,7 @@ C 메뉴에서 바꾼 조준경·총구·하단·손잡이, L 플래시, B 사�
 - **코드**: [MomentLook](../Scripts/Combat/Feel/MomentLook.cs)(색·문장·이름·표), [MomentFx](../Scripts/Combat/Feel/MomentFx.cs)(세계 쪽 모양, 궁극기 한 번의 모든 것 Ultimate), [FxShapes](../Scripts/Combat/Feel/FxShapes.cs)(납작한 도형·문장 메시), [MomentHUD](../Scripts/UI/Hud/MomentHUD.cs)·[BandGraphic](../Scripts/UI/Hud/BandGraphic.cs)·[SigilGraphic](../Scripts/UI/Hud/SigilGraphic.cs)(알림 띠와 이름표), [BodyBake](../Scripts/Combat/Feel/BodyBake.cs)(몸 굽기와 BodyShell 빛 껍질), [MomentSound](../Scripts/Combat/Feel/MomentSound.cs)(소리), 셰이더 [MomentGlow](../Resources/Combat/Shaders/MomentGlow.shader)·[GunHeat](../Resources/Combat/Shaders/GunHeat.shader).
 - **다른 PC로**: CardNet(ENFILADE.CardFx 이름 메시지)이 보낸 사람(From)을 실어 보낸다. 새 종류 CardFx.Kind Ultimate(값 = 클래스 번호 MomentLook.IndexOf)·Reversal·CoverDeflect·KataDraw가 늘었다. 현상금(BountyRpc)·결투(DuelRpc)·CHARGE(ChargeRpc)·원호 걸음(CoverStepRpc, 이제 나이트 몸을 넘겨 잔상)은 원래 길 그대로다.
 - **소리**: 클래스마다 1초 안쪽 합성음이다. 나이트는 낮은 종, 어썰트는 나팔 세 음, 고스트는 쇠 울림, 포인트는 실린더, 데탕트는 심장 두 번과 종, 시순트는 찰칵 여섯과 칭, 서포트는 무전과 상자 소리다. 순간 소리로 bounty·reversal·cover·kata·duel이 있다. `Resources/Audio/Moments/<키>`에 소리 파일을 넣으면 그 소리로 바뀐다(키: 클래스 id 또는 그 다섯). 친구 소리는 그 자리에서 거리만큼 작게 들린다.
+- **산 팩 효과**: [PackFx](../Scripts/Combat/Feel/PackFx.cs)가 Resources/Combat/PackFxLibrary.asset에 이름으로 넣은 프리팹을 [PackFx.csv](../Resources/Tables/PackFx.csv)의 쓰임대로 줄여 튼다. 쓰임마다 크기(남이 볼 때 scale, 내 눈 selfScale, 카메라가 near보다 가까우면 더 작게), 빠르기, 뺄 부분(drop: 화면을 덮는 5~8m 검은 퍼짐과 큰 연기, 총에 제 불꽃이 있을 때 팩의 총구 섬광), 바로 터뜨릴 부분(pop: 팩이 기다리거나 되풀이하는 주인공을 시작하자마자 한 번), 반복을 멈추는 때와 사라지는 때를 정한다. 프리팹은 그대로 두고 복사본만 바꾼다. 총 id로 된 줄(Desperado)이 있으면 [PackShots](../Scripts/Combat/Feel/PackShots.cs)가 그 총을 쏠 때마다 총구·탄·맞은 자리를 그린다. WeaponController.ShotFired를 들으므로 친구 총(ShowShot)도 내 PC에서 똑같이 그린다. 총의 원래 궤적(MuzzleEffects, Tracer.csv)과 불꽃(MuzzleFlash)은 총 쪽 것이라 그대로 그려지고, `PackShots.Covers(gun)`가 팩 모양이 맡은 총을 알려 준다. 새 팩 효과를 쓰려면 라이브러리에 넣고 표에 줄을 더한다. 처음 쓸 때 셰이더가 늦게 만들어질 수 있어서, 로딩 예열(CombatRehearsal)에 `PackFx.Prefabs()`를 그리게 하는 것이 남았다(로딩 쪽 파일).
 - **겹침**: 알림 띠(Moment Notice)와 이름표(Moment Tag)는 HudOverlap.csv에 조각으로 있고 IHudPreview를 구현했다. Tools → HUD → 겹침 검사가 띠를 세워 잰다(그 씬에서 한 번 뜬 뒤부터). 자리는 stance-room이 코드로 잰 이웃에 맞췄다: 아군 카드 오른쪽 끝 228, 채팅 입력칸 412~448(HUD 기울기 2에서 오른쪽 끝이 9.8px 내려옴), HP 블록 위 끝 ~225(기울기 2), 화면 가운데를 따르는 구조 패널(±220)·주운 것 줄(±215)·특수 처치 도장(±170).
 - **그대로 둔 것**: 밀치기 반격 COUNTER는 사용자가 고른 D 그대로이고, 이제 그 배너를 COUNTER와 COVER만 쓴다. 킬로그의 현상금 돈은 킬 피드가 보여 준다.
 
