@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 /// <summary>
 /// A player's class at work (PlayerClass), on every player; the live part runs for this PC's own:
@@ -34,7 +33,10 @@ using UnityEngine.InputSystem;
 ///   a plain bounty spills its coins there too).
 /// - Détente (the user's design): its syringe, Golden Hour and Resurrection are DetenteKit's; the class key injects.
 /// - Support (stage 4): its supply bag, resupplying a friend with F and its barricades are SupportKit's; the class key
-///   puts a barricade up.
+///   is held there to see where a barricade would go up and let go to put it up, which SupportKit reads itself.
+/// A class picked (PlayerClass.Picked: the hub's class wall, the title screen) is a fresh start, as a chapter's: every
+/// stack, buff and wait back to nothing, the class's guns full, and the Détente's and Support's kits as they start, the
+/// last pick's barricades down (OnPicked; the user, 2026-11-12: "클래스 선택할 때 초기화 하는 방식 어때?").
 /// The other classes' abilities come in later stages (Classes.csv ready 0). Numbers: Tables/ClassAbilities.
 /// The class cards with code behind them (Docs/ClassCards.md) are ClassCards', added here; a Point's Gunslinger card and
 /// a Ghost's White Tiger guard are read here (DamageFactor, OnHurt).
@@ -67,7 +69,6 @@ public sealed class ClassKit : MonoBehaviour
     private WeaponController weapon;
     private PlayerDamageReceiver receiver;
     private PlayerHold hold;
-    private InputAction ability;
     private bool kitGiven, wired;
     private int stacks;
     private float lastKill = -99f, nextEbb, chargeUntil, chargeTotal = 1f;
@@ -234,19 +235,73 @@ public sealed class ClassKit : MonoBehaviour
         weapon = GetComponent<WeaponController>();
     }
 
-    private void OnEnable() => CombatDamageEvents.Damaged += OnDamaged;
+    private void OnEnable()
+    {
+        CombatDamageEvents.Damaged += OnDamaged;
+        PlayerClass.Picked += OnPicked;
+    }
 
     private void OnDisable()
     {
         CombatDamageEvents.Damaged -= OnDamaged;
+        PlayerClass.Picked -= OnPicked;
         Unwire();
         if (Local == this) Local = null;
     }
 
     private void Start() => TryGiveKit();
 
-    /// <summary>The class was changed in the hub (HubLobby): its guns now, to try on the range, as a chapter would start.</summary>
+    /// <summary>
+    /// The class was changed in the hub (HubLobby): its guns now, to try on the range, as a chapter would start. The pick
+    /// itself already handed the whole kit afresh (OnPicked), so this finds the guns in place.
+    /// </summary>
     public void Rekit() { kitGiven = false; TryGiveKit(); }
+
+    // A class picked (PlayerClass.Picked: only in the hub or on the title screen, never mid-run) starts the kit afresh,
+    // as a chapter does, so nothing of the last pick carries over and every ability is there to try again (the user,
+    // 2026-11-12: stacks built as an Assault ebbed away meanwhile; a Support back from another class could build again).
+    private void OnPicked(string before, string now)
+    {
+        if (movement == null || !movement.IsLocal) return;
+        // Assault: no adrenaline and no CHARGE (a friend's too) under way.
+        stacks = 0;
+        lastKill = -99f;
+        nextEbb = 0f;
+        chargeUntil = 0f;
+        chargeTotal = 1f;
+        // Point: no gun counting toward its reload put away; Ghost: both guns' first rounds Deadeye's, no Head Hunter,
+        // no elite waiting to be staggered again.
+        for (int slot = 0; slot < 2; slot++)
+        {
+            asideSince[slot] = -1f;
+            refilledAt[slot] = -99f;
+            loaded[slot] = true;
+        }
+        hunter = 0;
+        hunterChange = 0;
+        hunterChangedAt = -99f;
+        shotHead = shotBody = false;
+        staggerAgain.Clear();
+        // Knight: its taunt ready now.
+        tauntUntil = tauntReadyAt = 0f;
+        tauntTotal = tauntWait = 1f;
+        // Schießhund: no points toward a round, no Return Back, no Desperado shot on its way (its rounds come with its guns).
+        bountyPoints = returnStacks = 0;
+        returnUntil = 0f;
+        returnTotal = 1f;
+        bountyAt = finishAt = -99f;
+        finishing = null;
+        // A Point's Gunslinger card counts again from the next gun drawn.
+        drawnSlot = -2;
+        drawnAt = -99f;
+        if (detente == null) detente = GetComponent<DetenteKit>();
+        if (detente != null) detente.Fresh();
+        if (support == null) support = GetComponent<SupportKit>();
+        if (support != null) support.Fresh();
+        // The class's guns, full, as a chapter starts them.
+        kitGiven = false;
+        TryGiveKit(true);
+    }
 
     private void Update()
     {
@@ -279,12 +334,10 @@ public sealed class ClassKit : MonoBehaviour
             hold.FightsPinned = knight && PlayerClass.Ability(KnightRow, "fightsPinned", 1f) > .5f;
             hold.BreakFreeEvery = knight ? PlayerClass.Ability(KnightRow, "breakFree", 6f) : -1f;
         }
-        if (ability == null && InputSystem.actions != null)
-        {
-            KeyBindings.EnsureRestored();
-            ability = InputSystem.actions.FindAction("Player/ClassAbility", false);
-        }
-        if (ability != null && ability.WasPressedThisFrame() && movement.InputAvailable && !movement.IsDead && !movement.IsHeld) Use();
+        // The class key (the key window's Player/ClassAbility) acts as it goes down; a Support's is held to see where its
+        // barricade would go and let go to put it up, which SupportKit reads itself.
+        if (!PlayerClass.Is(PlayerClass.Support) && KeyBindings.Pressed("Player/ClassAbility") && movement.InputAvailable
+            && !movement.IsDead && !movement.IsHeld) Use();
     }
 
     // This PC's own player's gun and hurt, once both are there (the gun and the health may be made after this kit).
@@ -307,8 +360,9 @@ public sealed class ClassKit : MonoBehaviour
         if (receiver != null) receiver.HitResolved -= OnHurt;
     }
 
-    // The class's guns in slots 1 and 2 once this player is ready, every chapter (a run starts with them).
-    private void TryGiveKit()
+    // The class's guns in slots 1 and 2 once this player is ready, every chapter (a run starts with them); full, the same
+    // gun as before too, when a class was just picked.
+    private void TryGiveKit(bool full = false)
     {
         if (kitGiven || movement == null || !movement.IsLocal || slots == null || !slots.isActiveAndEnabled) return;
         kitGiven = true;
@@ -316,8 +370,14 @@ public sealed class ClassKit : MonoBehaviour
         loaded[0] = loaded[1] = true;
         var info = PlayerClass.Current;
         if (info == null) return;
-        Give(0, info.Primary);
-        Give(1, info.Secondary);
+        // No longer a Schießhund: its Desperado leaves the special slot with it (the hand on it goes to the first gun).
+        if (slots.SpecialHoldsGun && !PlayerClass.Is(PlayerClass.Schiesshund))
+        {
+            if (slots.SelectedSlot == DesperadoSlot) slots.SelectSlot(0);
+            slots.TrySetWeapon(DesperadoSlot, null);
+        }
+        Give(0, info.Primary, full);
+        Give(1, info.Secondary, full);
         // A Schießhund's Desperado in slot 4: its own gun (the class's first), with a round or so in it to show what it
         // does, and nothing in reserve.
         slots.SpecialHoldsGun = PlayerClass.Is(PlayerClass.Schiesshund);
@@ -328,10 +388,17 @@ public sealed class ClassKit : MonoBehaviour
         slots.NotifyAmmo();
     }
 
-    private void Give(int slot, string name)
+    private void Give(int slot, string name, bool full)
     {
         var gun = Gun(name);
-        if (gun != null && slots.GetWeapon(slot) != gun) slots.TrySetWeapon(slot, gun);
+        if (gun == null) return;
+        if (slots.GetWeapon(slot) != gun) slots.TrySetWeapon(slot, gun);
+        else if (full)
+        {
+            // The same gun kept from before: full, as a new one comes.
+            slots.GetRuntime(slot)?.RefillAmmo();
+            slots.NotifyAmmo();
+        }
     }
 
     private static WeaponData Gun(string name)
@@ -360,8 +427,8 @@ public sealed class ClassKit : MonoBehaviour
         }
         if (PlayerClass.Is(PlayerClass.Knight)) { Taunt(); return; }
         if (PlayerClass.Is(PlayerClass.Detente) && detente != null) { detente.Inject(); return; }
-        if (PlayerClass.Is(PlayerClass.Support) && support != null) { support.Build(); return; }
-        // No ability on the key for this class (a Point's and a Ghost's are always on), or not built yet.
+        // No ability on the key for this class (a Point's and a Ghost's are always on; a Support's is SupportKit's), or not
+        // built yet.
         KitSound.Play(KitSound.Cue.Refuse, .35f);
     }
 

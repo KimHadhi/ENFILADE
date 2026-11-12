@@ -107,7 +107,7 @@ public sealed class ClassHUD : MonoBehaviour
         slotRow.gameObject.SetActive(point);
         keyRect.gameObject.SetActive(false);
         deadeye.gameObject.SetActive(false);
-        keyWord.text = Texts.Get(knight ? "class.hud.taunt" : detente ? "class.hud.inject" : support ? "class.hud.barricade" : "class.hud.charge");
+        Word(Texts.Get(knight ? "class.hud.taunt" : detente ? "class.hud.inject" : support ? "class.hud.barricade" : "class.hud.charge"), KitStyle.Accent);
         note.text = info != null && !info.Ready ? Texts.Get("class.hud.later") : "";
         // A Détente moves the note past its pips; every other class has it back in its place.
         ((RectTransform)note.rectTransform.parent).anchoredPosition = new Vector2(128f, 0f);
@@ -204,7 +204,9 @@ public sealed class ClassHUD : MonoBehaviour
     }
 
     // A Support's bag: a pip a resupply's worth (white when full, the next one filling), "[휠] 바리케이드" while one can go
-    // up, and beside the pips "[F] 보급 · name" while a friend is in reach, or how many of its barricades stand.
+    // up, and beside the pips "[F] 보급 · name" while a friend is in reach, or how many of its barricades stand. While the
+    // class key is held to place one (SupportKit's preview): "[휠] 놓으면 설치" and "[우클릭] 취소" where it may go up,
+    // "[휠] 설치 불가" in red and why where it can't.
     private void Support()
     {
         var support = SupportKit.Local;
@@ -218,10 +220,22 @@ public sealed class ClassHUD : MonoBehaviour
             Color color = fill >= 1f ? KitStyle.Ice : KitStyle.With(KitStyle.Ice, .14f + .3f * fill);
             pips[i].color = flash > 0f && i == Mathf.FloorToInt(bags) ? Color.Lerp(color, KitStyle.Accent, flash) : color;
         }
-        KeyPrompt(support.CanBuild);
-        var friend = support.Offered;
-        string side = friend != null ? Texts.Format("class.hud.resupply", friend.TryGetComponent(out PlayerTally tally) ? tally.DisplayName : friend.name)
-            : Texts.Format("class.hud.barricades", support.Standing, support.MostStanding);
+        string side;
+        if (support.Planning)
+        {
+            bool fits = support.PlanFit == Barricade.Fit.Ok;
+            KeyPrompt(true);
+            Word(Texts.Get(fits ? "class.hud.place" : "class.hud.place.no"), fits ? KitStyle.Accent : KitStyle.Red);
+            side = fits ? Texts.Get("class.hud.place.cancel") : SupportKit.Why(support.PlanFit);
+        }
+        else
+        {
+            KeyPrompt(support.CanBuild);
+            Word(Texts.Get("class.hud.barricade"), KitStyle.Accent);
+            var friend = support.Offered;
+            side = friend != null ? Texts.Format("class.hud.resupply", friend.TryGetComponent(out PlayerTally tally) ? tally.DisplayName : friend.name)
+                : Texts.Format("class.hud.barricades", support.Standing, support.MostStanding);
+        }
         if (note.text != side) note.text = side;
         ((RectTransform)note.rectTransform.parent).anchoredPosition = new Vector2(128f + count * (PipWidth + PipGap) + 6f, 0f);
     }
@@ -233,6 +247,13 @@ public sealed class ClassHUD : MonoBehaviour
         KeyPrompt(ready);
         string wait = ready ? "" : Texts.Format("class.hud.taunt_wait", Mathf.CeilToInt(kit.TauntWait));
         if (note.text != wait) note.text = wait;
+    }
+
+    // The word beside the key's cap, and its colour (a Support's turns red where its barricade can't go).
+    private void Word(string text, Color color)
+    {
+        if (keyWord.text != text) keyWord.text = text;
+        if (keyWord.color != color) keyWord.color = color;
     }
 
     // "[휠] CHARGE" or "[휠] 도발" over the plate's right end, beating, while the class key has something to do.

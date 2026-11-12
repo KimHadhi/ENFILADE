@@ -159,6 +159,20 @@ public sealed class DetenteKit : MonoBehaviour
         raisesLeft++;
     }
 
+    /// <summary>
+    /// A class was picked (PlayerClass.Picked, by ClassKit): a fresh start, as a chapter's. The syringe as it starts,
+    /// every Resurrection back, no Golden Hour, nobody being treated or raised.
+    /// </summary>
+    internal void Fresh()
+    {
+        syringe = -1f;
+        raisesLeft = Mathf.Max(0, Mathf.RoundToInt(Number("resurrections", 1f)));
+        goldenUntil = 0f;
+        lastInject = -99f;
+        Treating = Raising = null;
+        TreatProgress = RaiseProgress = 0f;
+    }
+
     // A friend's health is theirs on their own PC; this player's is here.
     private void Heal(PlayerMovement patient, float amount)
     {

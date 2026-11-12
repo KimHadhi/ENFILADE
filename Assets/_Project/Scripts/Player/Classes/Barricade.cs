@@ -8,9 +8,12 @@ using UnityEngine.AI;
 /// 같은 건축물"): planks nailed across two posts, waist high, so the team shoots over it and vaults it while zombies can't
 /// pass (NavMeshObstacle, carving). A zombie's blow that meets it on its way to a player behind lands on the planks
 /// instead (it takes hits: IDamageReceiver), and zombies pressing against it wear it down too; planks come off as it
-/// weakens and it bursts apart when it breaks. Players' shots and blows stop on it and do nothing. On every PC: placed
-/// by its Support's PC (PlayerNetworkCombat tells the others), worn down and broken by the host's or a lone PC's, whose
-/// health every PC shows (a client's blow on its copy is sent there). Numbers: Tables/ClassAbilities Support.barricade*.
+/// weakens and it bursts apart when it breaks. Players' shots and blows stop on it and do nothing. On every PC: put up
+/// where the placement rule allows it (Room: ground, slope, nothing in the way), by its Support's own PC when that is the
+/// host or alone, else by the host when that PC asks (Judge checks the spot again against the host's world, the true
+/// one) and PlayerNetworkCombat tells the others; worn down and broken by the host's or a lone PC's, whose health every
+/// PC shows (a client's blow on its copy is sent there). Its look (Shape) is drawn see-through by BarricadeGhost while
+/// the Support's class key is held. Numbers: Tables/ClassAbilities Support.barricade*.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class Barricade : MonoBehaviour, IDamageReceiver
@@ -25,6 +28,60 @@ public sealed class Barricade : MonoBehaviour, IDamageReceiver
     private static readonly Dictionary<ushort, Barricade> standing = new Dictionary<ushort, Barricade>();
     private static Material wood;
     private static readonly Collider[] pressed = new Collider[32];
+    // What stands where one would go (Room); the builder's own body may take several of these.
+    private static readonly Collider[] overlaps = new Collider[32];
+
+    /// <summary>
+    /// Whether a barricade can stand at a spot (the placement rule: SupportKit's preview and build, and the host's check),
+    /// and if not, why: no ground under it, the ground too steep, a wall between the builder's eyes and it (their own PC
+    /// only), something in its way (a wall, a prop, a zombie, a player, another barricade), too far from the builder
+    /// (the host only, for a client's spot), or a supply bag too light for one (their own PC only).
+    /// </summary>
+    public enum Fit : byte { Ok, NoGround, Steep, Walled, Blocked, Far, Short }
+
+    /// <summary>One box of its look, in its own frame (its feet at the origin, facing along z).</summary>
+    internal readonly struct Part
+    {
+        public readonly string Name;
+        public readonly Vector3 At, Size;
+        public readonly Quaternion Turn;
+        public readonly bool Plank;
+
+        public Part(string name, Vector3 at, Vector3 size, Quaternion turn, bool plank)
+        {
+            Name = name;
+            At = at;
+            Size = size;
+            Turn = turn;
+            Plank = plank;
+        }
+    }
+
+    private static Part[] shape;
+
+    /// <summary>
+    /// Its look, box by box: two posts, the planks across them at their own small tilts (the lowest first, the last to
+    /// go), and a brace across their back, the sapper's quick work. The barricade and its preview (BarricadeGhost) alike.
+    /// </summary>
+    internal static IReadOnlyList<Part> Shape
+    {
+        get
+        {
+            if (shape != null) return shape;
+            var parts = new List<Part>();
+            for (int side = -1; side <= 1; side += 2)
+                parts.Add(new Part("Post", new Vector3(side * (Width * .5f - .12f), Height * .5f, 0f), new Vector3(.13f, Height, .13f),
+                    Quaternion.identity, false));
+            for (int i = 0; i < Planks; i++)
+            {
+                float tilt = (i % 2 == 0 ? 1f : -1f) * (2f + i * 1.3f);
+                parts.Add(new Part("Plank " + i, new Vector3(0f, .22f + i * (Height - .32f) / (Planks - 1), -.09f), new Vector3(Width, .2f, .05f),
+                    Quaternion.Euler(0f, 0f, tilt), true));
+            }
+            parts.Add(new Part("Brace", new Vector3(0f, Height * .5f, .06f), new Vector3(Width * 1.02f, .14f, .045f), Quaternion.Euler(0f, 0f, 24f), false));
+            return shape = parts.ToArray();
+        }
+    }
 
     private readonly List<Transform> planks = new List<Transform>();
     private readonly HashSet<long> seen = new HashSet<long>();
@@ -44,8 +101,9 @@ public sealed class Barricade : MonoBehaviour, IDamageReceiver
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetStatics() => standing.Clear();
 
-    // The host or a lone PC: its zombies are the real ones, so it wears the barricades down.
-    private static bool Authority => !GameSession.IsOnline || (NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer);
+    // The host or a lone PC: its zombies are the real ones, so it wears the barricades down, and says where they go up
+    // (SupportKit puts its own up straight away there; a client's PC asks it).
+    internal static bool Authority => !GameSession.IsOnline || (NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer);
 
     // This PC's own player's network part, through which the barricades' news goes.
     private static PlayerNetworkCombat Network
@@ -67,6 +125,87 @@ public sealed class Barricade : MonoBehaviour, IDamageReceiver
     }
 
     private float placedAt;
+
+    /// <summary>How many of this owner's stand now (StandingOf without its list: the HUD asks every frame).</summary>
+    public static int CountOf(PlayerMovement owner)
+    {
+        int count = 0;
+        foreach (var pair in standing) if (pair.Value != null && pair.Value.Owner == owner && !pair.Value.broken) count++;
+        return count;
+    }
+
+    /// <summary>This owner's oldest standing, the one a new one past their most takes down; or null.</summary>
+    public static Barricade OldestOf(PlayerMovement owner)
+    {
+        Barricade oldest = null;
+        foreach (var pair in standing)
+        {
+            var barricade = pair.Value;
+            if (barricade != null && barricade.Owner == owner && !barricade.broken && (oldest == null || barricade.placedAt < oldest.placedAt))
+                oldest = barricade;
+        }
+        return oldest;
+    }
+
+    /// <summary>
+    /// The placement rule's part about the spot itself, on any PC: walkable ground right under its middle (not a zombie,
+    /// a player or another barricade), no steeper than Support.barricadeSlope, and nothing where it would stand, facing
+    /// along <paramref name="yaw"/> with its feet at <paramref name="at"/>. The <paramref name="builder"/>'s own body
+    /// doesn't count (the nearest reach keeps it clear of them anyway).
+    /// </summary>
+    internal static Fit Room(Vector3 at, float yaw, Transform builder)
+    {
+        if (!Physics.Raycast(at + Vector3.up * .6f, Vector3.down, out RaycastHit ground, 1.2f, ~0, QueryTriggerInteraction.Ignore))
+            return Fit.NoGround;
+        float slope = Mathf.Clamp(PlayerClass.Ability(Row, "barricadeSlope", 25f), 0f, 89f);
+        if (ground.normal.y < Mathf.Cos(slope * Mathf.Deg2Rad)) return Fit.Steep;
+        var under = ground.collider;
+        if ((builder != null && under.transform.IsChildOf(builder)) || under.GetComponentInParent<EnemyHealth>() != null
+            || under.GetComponentInParent<PlayerMovement>() != null || under.GetComponentInParent<Barricade>() != null)
+            return Fit.Blocked;
+        Vector3 middle = at + Vector3.up * (Height * .5f + .1f);
+        var half = new Vector3(Width * .5f, Height * .5f - .05f, Depth * .5f);
+        int count = Physics.OverlapBoxNonAlloc(middle, half, overlaps, Quaternion.Euler(0f, yaw, 0f), ~0, QueryTriggerInteraction.Ignore);
+        for (int i = 0; i < count; i++)
+            if (overlaps[i] != null && (builder == null || !overlaps[i].transform.IsChildOf(builder))) return Fit.Blocked;
+        return Fit.Ok;
+    }
+
+    /// <summary>
+    /// On the host: a client's Support asks for a barricade here (PlayerNetworkCombat). The host's world is the true one
+    /// (its zombies stand where they really are), so the spot must hold one there too (Room), and lie within the
+    /// farthest reach of that player as the host sees them, with Support.barricadeLeeway more for their copy lagging
+    /// behind. The builder's own view (no wall between) and their bag are theirs to judge, on their own PC.
+    /// </summary>
+    internal static Fit Judge(Vector3 at, float yaw, PlayerMovement owner)
+    {
+        if (owner == null) return Fit.Blocked;
+        float reach = Mathf.Max(PlayerClass.Ability(Row, "barricadeAhead", 1.8f), PlayerClass.Ability(Row, "barricadeReach", 3.5f))
+            + Mathf.Max(0f, PlayerClass.Ability(Row, "barricadeLeeway", 2.5f));
+        Vector3 off = at - owner.transform.position;
+        if (Mathf.Abs(off.y) > 3f) return Fit.Far;
+        off.y = 0f;
+        if (off.sqrMagnitude > reach * reach) return Fit.Far;
+        return Room(at, yaw, owner.transform);
+    }
+
+    /// <summary>
+    /// On the host or a lone PC, once the spot is allowed: barricade <paramref name="id"/> goes up for its Support, after
+    /// their oldest come down past <paramref name="most"/> (their own count, which a card may raise on their own PC). The
+    /// ids taken down are added to <paramref name="takenDown"/>, for the others to be told.
+    /// </summary>
+    internal static Barricade Raise(ushort id, Vector3 at, float yaw, PlayerMovement owner, int most, List<ushort> takenDown)
+    {
+        var mine = StandingOf(owner);
+        while (mine.Count > 0 && mine.Count >= Mathf.Max(1, most))
+        {
+            ushort oldest = mine[0];
+            mine.RemoveAt(0);
+            Collapse(oldest);
+            takenDown?.Add(oldest);
+        }
+        return Place(id, at, yaw, owner);
+    }
 
     /// <summary>
     /// Puts barricade <paramref name="id"/> up at <paramref name="at"/> (its feet), facing along <paramref name="yaw"/>, its
@@ -115,18 +254,12 @@ public sealed class Barricade : MonoBehaviour, IDamageReceiver
         look = new GameObject("Planks").transform;
         look.SetParent(transform, false);
         var material = Wood;
-        // Two posts, and the planks across them at their own small tilts, the lowest last to go.
-        for (int side = -1; side <= 1; side += 2)
-            Box("Post", new Vector3(side * (Width * .5f - .12f), Height * .5f, 0f), new Vector3(.13f, Height, .13f), Quaternion.identity, material);
-        for (int i = 0; i < Planks; i++)
+        // Its look box by box (Shape, which its preview draws too); the planks come off one by one as it weakens.
+        foreach (var part in Shape)
         {
-            float tilt = (i % 2 == 0 ? 1f : -1f) * (2f + i * 1.3f);
-            var plank = Box("Plank " + i, new Vector3(0f, .22f + i * (Height - .32f) / (Planks - 1), -.09f),
-                new Vector3(Width, .2f, .05f), Quaternion.Euler(0f, 0f, tilt), material);
-            planks.Add(plank);
+            var box = Box(part.Name, part.At, part.Size, part.Turn, material);
+            if (part.Plank) planks.Add(box);
         }
-        // A brace across the planks' back, the sapper's quick work.
-        Box("Brace", new Vector3(0f, Height * .5f, .06f), new Vector3(Width * 1.02f, .14f, .045f), Quaternion.Euler(0f, 0f, 24f), material);
 
         body = gameObject.AddComponent<BoxCollider>();
         body.center = new Vector3(0f, Height * .5f, 0f);

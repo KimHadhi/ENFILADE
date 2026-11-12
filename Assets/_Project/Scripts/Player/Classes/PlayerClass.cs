@@ -7,8 +7,9 @@ using UnityEngine;
 /// Stage 7, the classes (the user's design, 2026-11-11: seven perks after Killing Floor 2 and GMod's Horde, "클래스나
 /// 퍼크나 용어 혼동할 수 있는데 걍 그러려니"): Knight (melee, the toughest), Assault (adrenaline, CHARGE), Ghost (sniper,
 /// head hunter), Point (SMG and shotgun, the gun put away reloads itself), Détente (healer), Schießhund (bounty marks,
-/// the Desperado), Support (barricades, resupply). One is picked before a run (the title screen's 클래스 tab; kept in
-/// ClassGrowth, each with its own rank) and may change between runs; a team may share one. This reads the table
+/// the Desperado), Support (barricades, resupply). One is picked before a run (the title screen's 클래스 tab, or the hub's
+/// class wall; kept in ClassGrowth, each with its own rank) and may change between runs but never in one (MayPick); each
+/// pick starts its kit afresh (Picked); a team may share one. This reads the table
 /// (Tables/Classes: names, starting guns, the class's own guns and their bonus, whether its abilities are built yet)
 /// and answers what this PC's player's class does to their shots and their pace (ClassKit keeps the live state).
 /// Numbers of the abilities: Tables/ClassAbilities.
@@ -32,8 +33,32 @@ public static class PlayerClass
 
     private static List<Info> catalog;
 
+    /// <summary>
+    /// This PC's player picked a class (ClassGrowth.Choose: the hub's class wall, the title screen's 클래스 tab), with the
+    /// class before and the class now. A pick is a fresh start (the user, 2026-11-12: "클래스 선택할 때 초기화 하는 방식"):
+    /// ClassKit hands the class's kit as a chapter would (every stack at 0, every charge and wait ready, its guns full,
+    /// the bag and syringe as they start, the last pick's barricades down), and whatever else a class keeps for the run
+    /// starts again on it too (the hub's practice cards and ultimate gauge). Raised only where a pick may happen
+    /// (MayPick), so never mid-run.
+    /// </summary>
+    public static event Action<string, string> Picked;
+
+    /// <summary>
+    /// Whether a class may be picked now: out of a run (the title screen) or in the hub. Never in a run (a chapter, a wave
+    /// map: ClassGrowth.InGame), dead or alive: a pick there would hand out a fresh kit, a full bag and every charge back,
+    /// for nothing.
+    /// </summary>
+    public static bool MayPick => !ClassGrowth.InGame || HubLobby.IsActive;
+
+    /// <summary>ClassGrowth.Choose took a pick: everyone listening hears it (Picked).</summary>
+    internal static void RaisePicked(string before, string now) => Picked?.Invoke(before, now);
+
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-    private static void ResetStatics() => catalog = null;
+    private static void ResetStatics()
+    {
+        catalog = null;
+        Picked = null;
+    }
 
     /// <summary>Every class, in the table's order.</summary>
     public static IReadOnlyList<Info> Catalog

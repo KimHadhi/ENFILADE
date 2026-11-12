@@ -102,6 +102,9 @@ public static class ClassGrowth
         baseline = Wallet.Experience;
     }
 
+    /// <summary>A map from Tables/Maps is being played (a run: a chapter or a wave map; not the hub), from its load until another scene's.</summary>
+    public static bool InGame => playing;
+
     /// <summary>
     /// The game is being left for the title screen (MainMenuScreen, just before it sets the score back to 0): what it
     /// earned counts now, while the score still holds it. Waiting for the scene's load, as before, read it after the
@@ -169,12 +172,23 @@ public static class ClassGrowth
         }
     }
 
-    /// <summary>Plays this class from now on (the class pick, stage 7).</summary>
+    /// <summary>
+    /// Plays this class from now on (the class pick, stage 7: the title screen's 클래스 tab, the hub's class wall). Every
+    /// pick goes through here, so here it is told (PlayerClass.Picked: a fresh kit) and refused mid-run
+    /// (PlayerClass.MayPick), where a fresh kit would be had for nothing.
+    /// </summary>
     public static void Choose(string id)
     {
         if (!Known(id)) return;
+        if (!PlayerClass.MayPick)
+        {
+            Debug.LogWarning("[클래스] 판 도중에는 클래스를 바꿀 수 없어요: " + id);
+            return;
+        }
+        string before = CurrentId;
         Current.current = id;
         Save();
+        PlayerClass.RaisePicked(before, id);
     }
 
     public static string TitleOf(string id)

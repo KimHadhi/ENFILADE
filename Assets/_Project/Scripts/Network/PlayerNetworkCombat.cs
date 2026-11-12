@@ -95,6 +95,14 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
     public void ShareBarricadeHealth(ushort id, float health) { if (IsSpawned) BarricadeStateRpc(id, health); }
     /// <summary>On a client: a zombie's blow landed on its copy of barricade id; the host's is the true one (Barricade).</summary>
     public void SendBarricadeHit(ushort id, float damage) { if (IsSpawned) BarricadeHitRpc(id, damage); }
+    /// <summary>
+    /// On a client: this PC's Support asks for barricade id here, facing this way, with the most of theirs that may stand
+    /// (SupportKit). The host checks the spot against its own world and puts it up for everyone, or says why not.
+    /// </summary>
+    public void AskBarricade(ushort id, Vector3 at, float yaw, int most)
+    {
+        if (IsSpawned) BuildBarricadeRpc(id, at, yaw, (byte)Mathf.Clamp(most, 1, 255));
+    }
     /// <summary>A Détente's Resurrection for this copy's dead player, back with this share of their health.</summary>
     public void Resurrect(float share) { if (!IsSpawned) return; PlayerTally.Raised(); ResurrectRpc(share); }
     /// <summary>Whether this player is getting that client up right now, and how far along (0-1).</summary>
@@ -314,13 +322,48 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
     private void OnBuilt(ushort id, Vector3 at, float yaw) => BarricadeRpc(id, at, yaw);
     private void OnTookDown(ushort id) => CollapseRpc(id);
 
-    // A Support put a barricade up here: every other PC puts its copy up.
+    // A Support's barricade went up here (on the host or alone, by its own PC; for a client, by the host as it asked):
+    // every other PC puts its copy up, and the Support's own PC, a client's, hears its hammer (SupportKit.Placed).
     [Rpc(SendTo.NotMe)]
-    private void BarricadeRpc(ushort id, Vector3 at, float yaw) => Barricade.Place(id, at, yaw, mover != null ? mover : GetComponent<PlayerMovement>());
+    private void BarricadeRpc(ushort id, Vector3 at, float yaw)
+    {
+        Barricade.Place(id, at, yaw, mover != null ? mover : GetComponent<PlayerMovement>());
+        if (IsOwner && support != null) support.Placed(id);
+    }
 
-    // A Support took one of its barricades down for a new one: every other PC takes its copy down.
+    // A Support's barricade came down (taken down by its PC for a new one or a class pick, or by the host for a client's
+    // new one past their most): every other PC takes its copy down.
     [Rpc(SendTo.NotMe)]
     private void CollapseRpc(ushort id) => Barricade.Collapse(id);
+
+    // On the host: a client's Support asks for a barricade (SupportKit, AskBarricade). The host's world is the true one,
+    // so the spot is checked again there (Barricade.Judge); allowed, the owner's oldest past their most come down and it
+    // goes up, here and on every other PC, the asker's too. Else the asker's PC is told why and gives the bag back.
+    [Rpc(SendTo.Server)]
+    private void BuildBarricadeRpc(ushort id, Vector3 at, float yaw, byte most)
+    {
+        var owner = mover != null ? mover : GetComponent<PlayerMovement>();
+        var fit = Barricade.Judge(at, yaw, owner);
+        if (fit != Barricade.Fit.Ok)
+        {
+            BarricadeRefusedRpc(id, (byte)fit);
+            return;
+        }
+        taken.Clear();
+        Barricade.Raise(id, at, yaw, owner, most, taken);
+        foreach (ushort old in taken) CollapseRpc(old);
+        BarricadeRpc(id, at, yaw);
+    }
+
+    // The host turned this player's barricade down: their own PC (this one) gives the bag back and says why.
+    [Rpc(SendTo.Owner)]
+    private void BarricadeRefusedRpc(ushort id, byte fit)
+    {
+        if (support != null) support.Refused(id, (Barricade.Fit)fit);
+    }
+
+    // The barricades a client's new one took down on the host, for the others to be told (BuildBarricadeRpc).
+    private readonly System.Collections.Generic.List<ushort> taken = new System.Collections.Generic.List<ushort>();
 
     // The host's barricade's health, for every client's copy.
     [Rpc(SendTo.NotServer)]
