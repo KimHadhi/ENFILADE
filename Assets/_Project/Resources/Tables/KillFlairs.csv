@@ -1,0 +1,20 @@
+﻿id,when,multi,priority,on,icon,row,colour,text,delay,seconds,note
+"#설명 (킬 피드 새 줄의 효과. 줄마다 하나. 처치가 그 조건을 모두 갖추면(when, KillMarks 이름을 ;로) 후보가 된다. multi는 같은 사람의 빠른 연속 처치 몇 번째부터(2 더블). 후보 중 priority가 큰 줄이 아이콘 효과(icon)를, 줄 효과(row)도 따로 priority가 큰 줄이 맡아 한 처치에 많아야 두 줄이 말한다. on 0이면 안 켬)",조건: Headshot Pierced LongRange Explosion Execution Takedown Counter Shove Melee Thrown Standout Elite Charged Kata Bounty Duel,연속 처치 몇 번째부터(0 상관없음),중요도(큰 것 먼저),1 켬 · 0 끔,아이콘: Fire(총구부터 불길) · Gild(금빛 물들임) · Trail(뒤로 끌리는 불길) · Tint(색 번쩍),줄: Edge(테두리 빛) Sheen(띠 지나감) Stamp(도장) Strike(대상 취소선) Money(현상금 지폐+숫자) Frame(대상 모서리 틀) Tick(체크) Seal(둥근 인장) Chip(아래 작은 판) Kick(흔들림) Tag(아이콘 위 글자) Name(대상 이름 색). ;로 여럿,효과 색(#RRGGBB),도장·인장·작은 판·태그의 글,줄이 뜬 뒤 효과가 시작할 때까지(초),효과가 머무는 시간(초). 끝나고 0.3초에 걸쳐 사라짐,시안 페이지(https://claude.ai/artifact/CsB35Mef1pr5K9LhubT7kx)의 어느 안인지
+charge,Charged,0,80,1,Fire,Edge,#FFCC38,,0.05,1.1,"어썰트 CHARGE를 받고 처치 · C1 총구 점화(임시로 켬, 고르면 바뀜)"
+charge_gild,Charged,0,79,0,Gild,Edge,#FFCC38,,0.05,1.3,C2 금빛 물들임
+charge_trail,Charged,0,78,0,Trail,Sheen;Tag,#FFCC38,CHARGE,0,1.2,C3 돌격 꼬리
+bounty,Bounty,0,90,1,,Stamp;Strike;Money;Kick,#1FEBD1,계약 완료,0,1.5,슈어스훈트가 자기 현상금 표적을 처치 · B1 계약 완료 도장(임시로 켬)
+bounty_wanted,Bounty,0,89,0,,Frame;Tick;Name;Money;Tag,#1FEBD1,청산,0,1.6,B2 수배 해제
+bounty_seal,Bounty,0,88,0,,Seal;Money;Kick,#1FEBD1,계약 완료,0,1.7,B3 인장
+duel,Duel,0,95,0,,Stamp;Kick,#1FEBD1,결투 승리,0.1,1.4,슈어스훈트 결투 상대를 처치(제안)
+kata,Kata,0,70,0,Tint,Tag,#FFC76B,KATA,0,0.9,포인트 건 카타 중 처치(제안. 고르면 잔상으로)
+counter,Counter,0,60,0,Tint,Kick,#6ED6FF,,0,0.25,반격·패리 반격(제안. 고르면 쇳불꽃으로)
+takedown,Takedown,0,65,0,,Chip,#FF4F78,암살,0.1,1.2,들키지 않은 좀비 처형(제안. 고르면 검은 막이 걷힘)
+execution,Execution,0,50,0,Tint,Kick,#FF3324,,0,0.4,처형(제안. 고르면 빨간 사선 베기)
+explosion,Explosion,0,45,0,Tint,Kick,#FFB04A,,0,0.35,폭발(제안. 고르면 충격파 고리)
+pierce,Pierced,0,40,0,,Chip,#FFE9A8,관통,0.08,1.1,관통 사살(제안. 고르면 빛줄기)
+headshot,Headshot,0,30,0,Tint,,#FFFFFF,,0,0.2,헤드샷(제안. 흰빛 한 번)
+fist,Melee,0,20,0,,Kick,#FFFFFF,,0,0.2,주먹·맨손(제안. 고르면 충격선)
+double,,2,35,0,,Chip,#FFF5F7,더블 킬,0.3,1.2,연속 처치 2(제안. 고르면 아이콘이 다시 찍힘)
+triple,,3,36,0,,Chip,#FFF5F7,트리플 킬,0.3,1.2,연속 처치 3
+multi,,4,37,0,,Chip,#FFF5F7,멀티 킬,0.3,1.2,연속 처치 4 이상

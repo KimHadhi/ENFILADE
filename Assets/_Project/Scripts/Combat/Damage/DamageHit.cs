@@ -43,13 +43,19 @@ public readonly struct DamageHit
     public readonly bool Pierced;
     /// <summary>The body part a bullet met (a zombie's bone hitbox), for gore. Presentation only.</summary>
     public readonly BodyPart Part;
+    /// <summary>
+    /// The attacker's own state as it landed, which only their PC knows (a CHARGE on them, a Gun Kata: KillConditions.Attacker),
+    /// carried to the host with the hit (EnemyHitMessage) so a kill's flair in the feed is the same on every PC (KillFlairs).
+    /// Presentation only.
+    /// </summary>
+    public readonly KillMarks Marks;
     public DamageHit(long id, float amount, DamageKind kind, Vector3 point, Vector3 direction, GameObject source = null,
         bool canBeGuarded = false, float postureDamage = 0f, bool isComboFinisher = true, bool isCritical = false, bool isCounter = false,
         DamageMethod method = DamageMethod.Other, Vector3? origin = null, bool isFatal = false, bool pierced = false,
-        BodyPart part = BodyPart.None)
+        BodyPart part = BodyPart.None, KillMarks marks = KillMarks.None)
     { Id = id; Amount = amount; Kind = kind; Point = point; Direction = direction; Source = source;
         CanBeGuarded = canBeGuarded; PostureDamage = postureDamage; IsComboFinisher = isComboFinisher; IsCritical = isCritical; IsCounter = isCounter;
-        Method = method; Origin = origin; IsFatal = isFatal; Pierced = pierced; Part = part; }
+        Method = method; Origin = origin; IsFatal = isFatal; Pierced = pierced; Part = part; Marks = marks; }
 }
 
 public interface IDamageReceiver { DamageResult ReceiveHit(DamageHit hit); }

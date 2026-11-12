@@ -75,13 +75,14 @@ public sealed class PlayerNetworkScore : NetworkBehaviour
 
     /// <summary>On the host: this player really killed a shared enemy. Counted once here, so every PC shows the same streak.
     /// standout: the enemy was named or elite (backlog 325). icon: the killer's picture id for the feed (WeaponIcons), so every
-    /// PC draws the same weapon whatever its own language calls it.</summary>
-    internal void AnnounceKill(string weapon, string target, bool headshot, bool standout, string icon = null)
+    /// PC draws the same weapon whatever its own language calls it. marks: what the kill happened under, as the host judged
+    /// it (KillConditions), so every PC plays the same flair on its row (KillFlairs).</summary>
+    internal void AnnounceKill(string weapon, string target, bool headshot, bool standout, string icon = null, KillMarks marks = KillMarks.None)
     {
         if (!IsSpawned || !IsServer) return;
         tally.CountStreak();
         KillRpc(new FixedString64Bytes(Clip(weapon)), new FixedString64Bytes(Clip(target)), headshot, standout, tally.Streak,
-            new FixedString32Bytes(ClipId(icon)));
+            new FixedString32Bytes(ClipId(icon)), (uint)marks);
     }
 
     /// <summary>The console set this player's streak: the host holds the count.</summary>
@@ -91,9 +92,11 @@ public sealed class PlayerNetworkScore : NetworkBehaviour
     }
 
     [Rpc(SendTo.Everyone)]
-    private void KillRpc(FixedString64Bytes weapon, FixedString64Bytes target, bool headshot, bool standout, int streak, FixedString32Bytes icon)
+    private void KillRpc(FixedString64Bytes weapon, FixedString64Bytes target, bool headshot, bool standout, int streak, FixedString32Bytes icon,
+        uint marks)
     {
-        CombatFeedHUD.PlayerKill(GetComponent<PlayerMovement>(), weapon.ToString(), target.ToString(), headshot, streak, standout, icon.ToString());
+        CombatFeedHUD.PlayerKill(GetComponent<PlayerMovement>(), weapon.ToString(), target.ToString(), headshot, streak, standout, icon.ToString(),
+            (KillMarks)marks);
         // The host's count is the one: the killer's own PC keeps the best of it for the chapter's results.
         tally.NoteStreak(streak);
         // Every PC hears of this kill, so the first skull of a streak slows the whole room (item 18), and a named or

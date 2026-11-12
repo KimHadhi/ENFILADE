@@ -37,8 +37,12 @@ public static class GunFeelDirector
         bool shared = kill && report.Target.TryGetComponent(out EnemyNetwork network) && network.IsSpawned;
         // A named or elite enemy's kill burns magenta in the feed and slows the game briefly (backlog 325).
         bool standout = kill && report.Target is EnemyHealth ranked && ranked.IsStandout;
+        // What the kill happened under, for its flair in the feed (KillFlairs): decided here, by the PC that calls the kill.
+        var killer = hit.Source != null ? hit.Source.GetComponentInParent<PlayerMovement>() : null;
+        float reach = kill && hit.Point != Vector3.zero && hit.Source != null ? Vector3.Distance(hit.Source.transform.position, hit.Point) : 0f;
+        var marks = kill ? KillConditions.Of(report, killer, reach) : KillMarks.None;
         if (shared && hit.Source != null && hit.Source.GetComponentInParent<PlayerNetworkScore>() is PlayerNetworkScore score)
-            score.AnnounceKill(WeaponName(hit), CombatDamageEvents.DisplayNameOf(report.Target), critical && bullet, standout, WeaponIcon(hit));
+            score.AnnounceKill(WeaponName(hit), CombatDamageEvents.DisplayNameOf(report.Target), critical && bullet, standout, WeaponIcon(hit), marks);
         if (!byPlayer) return;
 
         HitConfirm.Landed(report);
@@ -73,7 +77,7 @@ public static class GunFeelDirector
             ? Mathf.RoundToInt(PlayerClass.Ability("Schiesshund", PlayerClass.IsElite(report.Target as EnemyHealth) ? "bountyElite" : "bountyMoney",
                 PlayerClass.IsElite(report.Target as EnemyHealth) ? 300f : 100f)) : 0;
         CombatFeedHUD.Kill(WeaponName(hit), CombatDamageEvents.DisplayNameOf(report.Target), critical && bullet, execution, hit.IsCounter, bullet, distance, !shared,
-            hit.Pierced, standout, takedown, bounty, WeaponIcon(hit));
+            hit.Pierced, standout, takedown, bounty, WeaponIcon(hit), marks);
         // Kills done some way worth a name (MEATSHOT, RAILGUN, SKEET ...) stamp it and pay on top.
         SpecialKills.Kill(report, bullet, critical && bullet, execution);
         if (pulse) KillConfirmEffect.Trigger(screen, critical || execution);

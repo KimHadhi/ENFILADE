@@ -26,6 +26,7 @@ public sealed class KillFeedRow
     private readonly TextMeshProUGUI left, right;
     private readonly RawImage icon, border;
     private readonly Image weapon;
+    private readonly KillFlairFx flair;
     private readonly StreakBadge streak;
     private readonly float seed = Random.value * 40f;
     // Each new row tilts the other way from the last, so two quick kills read as two slips.
@@ -76,14 +77,16 @@ public sealed class KillFeedRow
         foreach (var rect in new[] { left.rectTransform, icon.rectTransform, weapon.rectTransform, right.rectTransform })
             rect.anchorMin = rect.anchorMax = new Vector2(1f, .5f);
         streak = new StreakBadge(root);
+        // A kill's flair (KillFlairs): fire on the icon, the bounty's stamp ... on top of the row's own pieces.
+        flair = new KillFlairFx(root, weapon, right);
     }
 
     /// <summary>emphatic: a headshot, a burning streak or a grave notice leans out a little further while newest. fire: the
     /// border of fire round the row, a skull streak's blue or a named or elite kill's magenta (backlog 325). weaponIcon: the
     /// killing weapon's picture, between the left text (then the killer alone) and the mark (iconTexture, then a headshot's
-    /// only); null keeps the row as text, mark, text.</summary>
+    /// only); null keeps the row as text, mark, text. flairs: what the kill's conditions play on the row (KillFlairs.Pick).</summary>
     public void Show(string leftText, Texture iconTexture, Color iconColor, string rightText, Color accentColor, bool mine, int streakCount,
-        KillFeedLook look, bool emphatic, FeedBorder fire = FeedBorder.None, Sprite weaponIcon = null)
+        KillFeedLook look, bool emphatic, FeedBorder fire = FeedBorder.None, Sprite weaponIcon = null, KillFlairs.Play flairs = default)
     {
         this.look = look;
         weight = 1f + (emphatic || fire != FeedBorder.None || streakCount >= look.flameFrom ? look.leadEmphasis : 0f);
@@ -139,9 +142,14 @@ public sealed class KillFeedRow
         }
         Age = 0f; y = 0f; shade = 1f;
         root.gameObject.SetActive(true);
+        flair.Play(flairs);
     }
 
-    public void Hide() => root.gameObject.SetActive(false);
+    public void Hide()
+    {
+        flair.Hide();
+        root.gameObject.SetActive(false);
+    }
 
     /// <summary>
     /// Ages the row, eases it toward its place in the list and fades it out at the end of its life. rank is 0 for the
@@ -152,6 +160,7 @@ public sealed class KillFeedRow
     public void Tick(float dt, float targetY, float lifetime, int rank)
     {
         Age += dt;
+        flair.Tick(dt);
         y = Mathf.Lerp(y, targetY, 1f - Mathf.Exp(-18f * dt));
         float enter = 1f - Mathf.Pow(1f - Mathf.Clamp01(Age / .18f), 3f);
         lead = Mathf.Lerp(lead, rank == 0 ? 1f : 0f, 1f - Mathf.Exp(-12f * dt));
@@ -161,7 +170,7 @@ public sealed class KillFeedRow
         float lift = look != null ? look.leadLift * weight * lead + 18f * settle : 0f;
         // The row pivots on its right end; turning its left end toward the player is a negative yaw.
         root.localRotation = Quaternion.Euler(0f, -yaw, roll * lead);
-        root.anchoredPosition3D = new Vector3((1f - enter) * 80f, y, -lift);
+        root.anchoredPosition3D = new Vector3((1f - enter) * 80f + flair.Kick.x, y + flair.Kick.y, -lift);
         root.localScale = Vector3.one * (1f + (look != null ? look.leadScale : 0f) * lead);
         // A recent row keeps full opacity and lit edges, gold for your own, fainter white for anyone else's; both ease off
         // over .4 s once it stops being recent (backlog 332).
@@ -172,17 +181,30 @@ public sealed class KillFeedRow
         {
             Color edge = mine ? warm : Color.white;
             edge.a = recent * (mine ? 1f : look.recentOthers);
-            plate.Highlight(edge, look.recentEdge);
+            // A flair's own edge lines (a CHARGE's gold) take over while they last.
+            if (flair.EdgeStrength > 0f)
+            {
+                edge = Color.Lerp(edge, flair.Edge, flair.EdgeStrength);
+                edge.a = Mathf.Max(edge.a, flair.EdgeStrength);
+            }
+            plate.Highlight(edge, Mathf.Max(look.recentEdge, flair.EdgeStrength > 0f ? 2f : 0f));
         }
+        if (flair.NameTint > 0f) right.color = Color.Lerp(Color.Lerp(Color.white, look != null ? look.heroInk : Color.black, Mathf.Max(0f, painted)),
+            flair.NameColour, flair.NameTint);
         group.alpha = enter * shade * Mathf.Clamp01((lifetime - Age) / .4f);
         // The accent bar flares wide on arrival and stays wider while the row is the newest.
         float flash = 1f - Mathf.Clamp01(Age / .25f);
         accent.rectTransform.localScale = new Vector3(1f + flash * 1.5f + (look != null ? look.leadAccent : 0f) * lead, 1f, 1f);
         streak.Tick();
-        if (!sheening) return;
-        float through = Age / SheenSeconds;
-        if (through >= 1f) { sheening = false; plate.Sheen(-1f, Color.clear); return; }
-        plate.Sheen(1.2f * through - .1f, Light);
+        if (sheening)
+        {
+            float through = Age / SheenSeconds;
+            if (through >= 1f) { sheening = false; plate.Sheen(-1f, Color.clear); }
+            else plate.Sheen(1.2f * through - .1f, Light);
+        }
+        // A flair's band of colour crosses the plate after (or over) the row's own.
+        if (flair.Sheening) plate.Sheen(flair.SheenAt, flair.SheenTint);
+        else if (flair.SheenEnded && !sheening) plate.Sheen(-1f, Color.clear);
     }
 
     // From the row's own colours (0) to the newest row's light card with dark ink (1).

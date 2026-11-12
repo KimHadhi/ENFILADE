@@ -24,6 +24,7 @@
 | [Chat.csv](../Resources/Tables/Chat.csv) | 채팅: 자리(화면 왼쪽 아래 가장자리에서 잰 위치·너비·높이·위 한계·제 기울기), 줄(글자 크기·여백·프로필 칸·판과 막대 색·시스템 카드·콘솔 판), 들어올 때 튀기, 닫혀 있을 때 사라지기(남는 시간·최대 줄 수), 입력 칸(색·밑줄·커서·채널 탭) | `Place.필드`, `Line.필드`, `Pop.필드`, `Fade.필드`, `Open.필드` |
 | [OutfitPictures.csv](../Resources/Tables/OutfitPictures.csv) | 옷장 사진의 구도(옷마다 한 줄, 그 옷의 모든 색이 같이 씀): 옆·위아래 각도, 자동 구도보다 가까운 배율, 사진 안에서 옮긴 거리. 줄이 없으면 자동(옷 전체를 앞에서). 옷장의 **사진 다시 찍기**가 에디터 Play 중에 쓰고 지운다. 바꾸면 Tools → Characters → 옷장 사진 모두 굽기로 사진을 다시 굽는다([플레이어 몸](PlayerBodyGuide.md#옷-입히기부위별-칸)) | `item@캐릭터 Id@옷 Id`, `own@캐릭터 Id@칸` |
 | [WeaponIcons.csv](../Resources/Tables/WeaponIcons.csv) | 무기 아이콘의 모양(Solid 채움 · Outline 외곽선 · Line 선화), 킬 피드·획득 목록·줍기 안내의 아이콘 크기와 간격, 다른 무기의 그림을 쓰는 무기([무기 아이콘](#무기-아이콘-hud킬-피드)) | `Look.style`, `Feed.*`, `Pickup.*`, `Prompt.*`, `<무기 id>.icon` |
+| [KillFlairs.csv](../Resources/Tables/KillFlairs.csv) | 킬 피드 새 줄의 효과: 조건(KillMarks 이름), 연속 처치 몇 번째부터, 중요도, 켬·끔, 아이콘 효과(Fire·Gild·Trail·Tint), 줄 효과(도장·인장·취소선·현상금·모서리 틀·체크·작은 판·태그·흔들림·테두리 빛·띠), 색, 글, 시작·머무는 시간([킬로그 효과](#킬로그-효과-killflairscsv)) | 효과 id (`charge`, `bounty` …) |
 
 - **열 이름 = 인스펙터 필드 이름**이다(인스펙터 표시 이름이 `Attack Range`면 열은 `attackRange`). 표에 열을 추가하면 그 필드도 표가 관리한다. 적 표의 `speed`처럼 `NavMeshAgent`의 공개 속성도 쓸 수 있다.
 - 표에 있는 칸이 인스펙터 값보다 우선한다. **빈칸이거나 열이 없으면 인스펙터 값**을 그대로 쓴다. 표에 행이 없는 오브젝트(테스트 표적 등)는 영향을 받지 않는다.
@@ -222,6 +223,17 @@ C 메뉴에서 바꾼 조준경·총구·하단·손잡이, L 플래시, B 사�
 - **다시 그리기**: `blender -b --factory-startup --python Tools/Blender/weapon_icons.py` (전부, 약 3분) 또는 `… -- AK105 R08`(몇 개만), `--preview 폴더`는 모양마다 한 장에 모아 회색 바탕에 그린다. 총은 게임 프리팹(Data/Combat/TacticalGuns, FPSPackGuns)처럼 조립된다: 뼈는 프리팹의 자세로(당긴 개머리판 등), 탄창·가늠자는 프리팹이 다는 자리에. Unity와 Blender는 같은 FBX를 다른 축으로 읽는데, 모든 총의 뼈가 둘 사이의 한 변환(Blender = Unity의 (-x, -z, y))을 보여 줘서 부품 자리를 그대로 옮긴다. 조준경·라이트·손잡이·소음기는 빼서 플레이어의 장착과 상관없이 같은 그림이다. 새 총은 스크립트 위쪽 `GUNS`에 한 줄(프리팹, 몸 FBX, 부품)을 더한다. 무기가 아닌 아이콘은 `SHAPES`(도형)와 `PICTURES`(이미 있는 흰 그림, 지금은 주먹)에 있다. 선 굵기·짧은 선을 버리는 길이·크기 규칙은 스크립트 위쪽 상수다. 새 PNG에만 .meta를 쓰니 유니티에서 바꾼 가져오기 설정은 남는다.
 - **모드**: 새 총은 문서\ENFILADE\WeaponIcons\`<id>`.png(512x160 투명 PNG, 흰색, 소총이 너비를 거의 채우고 권총은 절반쯤)를 두면 아이콘이 생긴다. 게임은 그림을 한 번만 읽으니 바꾼 뒤에는 표를 저장하거나(Reload Tables) 게임을 다시 켠다.
 - **킬 피드 줄**: 처치자 · 무기 아이콘 · (헤드샷 표시) · 대상, 혼자 할 때도 처치자 이름이 나온다. 무엇으로 죽였는지는 GunFeelDirector.WeaponIcon이 맞은 기록에서 읽는다(처형·반격·밀치기·총·출처가 있는 폭발, 나머지는 맨손). 방에서는 방장이 처치를 알릴 때 아이콘 id도 보내서(PlayerNetworkScore.KillRpc) 모든 PC가 같은 그림을 그린다. 크기와 간격은 WeaponIcons.csv `Feed.*`.
+
+### 킬로그 효과 (KillFlairs.csv)
+
+킬 피드의 새 줄은 처치한 방법에 따라 무기 아이콘과 줄에 짧은 효과를 낸다(사용자 11-12: "킬로그 무기 아이콘 쪽에 이펙트도 있었음 좋겠어 … 사람들이 킬로그 올라가는 것만 봐도 와 멋지다 간지난다 할 것 같아").
+
+- **조건**: 처치마다 [KillConditions](../Scripts/Combat/Feel/KillConditions.cs)가 [KillMarks](../Scripts/Combat/Feel/KillMarks.cs)를 정한다. 맞은 기록에서 Headshot·Pierced(관통)·LongRange(원거리)·Explosion(연료통·수류탄)·Execution·Takedown(들키지 않은 좀비 처형)·Counter·Shove·Melee(맨손·카드 일격)·Thrown(투척 나이프), 쓰러진 적에서 Standout(네임드·엘리트)·Elite, 처치자에게서 Charged(어썰트 CHARGE를 받는 중)·Kata(포인트 건 카타 중)·Bounty(자기 현상금 표식)·Duel(자기 결투 상대).
+- **방**: 공유 좀비의 처치는 방장이 조건을 정해 처치 알림과 함께 보낸다(PlayerNetworkScore.KillRpc). 처치자 PC만 아는 CHARGE·카타는 그 사람의 매 타격에 실려 방장에게 간다(DamageHit.Marks, EnemyHitMessage). 현상금 표식과 결투, CHARGE 빛은 모든 PC가 이미 알고 있다. 결투는 상대가 쓰러지는 순간 끝나므로 KillConditions가 매 프레임 결투 상대를 0.75초 기억해 둔다.
+- **표**: 줄마다 효과 하나. 처치가 그 줄의 조건(when, `;`로 여럿이면 모두)을 갖추고 연속 처치 수(multi, 같은 사람이 연속 처치 창 안에 잇달아 처치한 몇 번째)가 되면 후보다. 후보 중 priority가 가장 큰 줄이 아이콘 효과를, 줄 효과도 따로 가장 큰 줄이 맡는다(CHARGE를 받은 슈어스훈트의 현상금 처치: 총에 불, 줄에 도장). `on`이 0이면 끈다.
+- **아이콘 효과**(셰이더 [KillFlair](../Resources/Combat/Shaders/KillFlair.shader), 아이콘 그림의 모양을 그대로 씀): Fire(총구에서 불이 붙어 0.38초에 개머리판까지 번지고 불 혀가 위로), Gild(총구부터 금빛으로 물들고 흰 불선이 지나감), Trail(한 번에 불붙어 불길이 뒤로 끌림), Tint(그 색으로 한 번 번쩍).
+- **줄 효과**([KillFlairFx](../Scripts/UI/KillFlairFx.cs)): Stamp(줄 끝 위에 쾅 찍히는 도장), Seal(줄 끝의 둥근 인장과 튀는 잉크), Strike(대상 이름 취소선, 줄이 사라질 때까지), Frame·Tick(대상 이름의 모서리 틀과 체크), Money(현상금: 지폐 + 숫자, ClassAbilities Schiesshund.bountyMoney·bountyElite), Chip(아래 작은 판의 글), Tag(아이콘 위 작은 글), Name(대상 이름이 효과 색으로), Edge(줄 테두리 빛), Sheen(줄 위를 지나가는 띠), Kick(줄이 한 번 흔들림). 조각은 0.15초 안에 들어와 seconds만큼 머물고 0.3초에 사라진다.
+- **지금 켠 것**: `charge`(CHARGE: C1 총구 점화)와 `bounty`(현상금: B1 계약 완료 도장). 나머지 안(`charge_gild`·`charge_trail`·`bounty_wanted`·`bounty_seal`)과 제안(결투·카타·반격·암살·처형·폭발·관통·헤드샷·맨손·연속 처치)은 꺼 두었다. 시안 페이지(https://claude.ai/artifact/CsB35Mef1pr5K9LhubT7kx)에서 고른 것을 켜고, 제안 중 고른 것은 잔상·쇳불꽃·충격파 고리 같은 제 모양을 만들어 넣는다.
 
 ## 플레이어 설정 (Esc 메뉴)
 
