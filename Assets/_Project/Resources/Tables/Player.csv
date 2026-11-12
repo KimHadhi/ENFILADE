@@ -2,12 +2,12 @@
 Vitals.maximumHealth,100,최대 체력
 Stats.ultimateCapacityPercent,120,궁극기 최대 보유량(%). 120이면 1.2회분까지 모아 둔다
 Stats.ultimateCostPercent,100,궁극기 1회 사용량(%)
-Ultimate.chargePerHundred,5,적의 체력을 100 깎을 때마다 충전(%). 넘친 피해는 치지 않아 어느 총이든 좀비 한 마리(100)가 5%다. 브루트(3000)를 혼자 잡으면 150%
-Ultimate.chargePerHundredHealed,5,동료에게 체력을 100 돌려줄 때마다 충전(%). 데탕트의 주사·손 치료
-Ultimate.chargePerResupply,4,동료에게 보급할 때마다 충전(%). 서포트
-Ultimate.chargePerParry,2,적의 공격을 패리할 때마다 충전(%). 클래스 상관없이
-Ultimate.chargePerRevive,10,쓰러진 동료를 일으키거나 죽은 동료를 되살릴 때마다 충전(%)
-Ultimate.chargePerHundredRepaired,3,서포트가 바리케이드 체력을 100 고칠 때마다 충전(%)
+Ultimate.chargePerHundred,4,적의 체력을 100 깎을 때마다 충전(%). 넘친 피해는 치지 않아 어느 총이든 셤블러 한 마리(100)가 4%다. 처치를 독식해도 돌봄보다 빨리 차지 않게 낮췄다(11-12 사용자: "힐러가 치료 100하려면 주사기 2.5번 써야 하는데 남들은 그냥 일반좀비 헤드샷 딸깍하면 되잖아")
+Ultimate.chargePerHundredHealed,15,동료에게 체력을 100 돌려줄 때마다 충전(%). 주사 한 번(40)이 6%라 셤블러 1.5마리 값이다. 주사기는 넉 번이면 비고 상점·서포트로만 차는 귀한 것이라 더 쳐 준다
+Ultimate.chargePerResupply,6,동료에게 보급할 때마다 충전(%). 가방 25는 초당 1.5씩 17초에 차므로 셤블러 1.5마리 값
+Ultimate.chargePerParry,3,적의 공격을 패리할 때마다 충전(%). 클래스 상관없이
+Ultimate.chargePerRevive,15,쓰러진 동료를 일으키거나 죽은 동료를 되살릴 때마다 충전(%)
+Ultimate.chargePerHundredRepaired,5,서포트가 바리케이드 체력을 100 고칠 때마다 충전(%)
 Fists.reach,1.6,주먹 사거리(m)
 Fists.fullChargeTime,0.9,최대 충전까지 걸리는 시간(초)
 Fists.damage,10;28,피해 - 최소 충전;최대 충전

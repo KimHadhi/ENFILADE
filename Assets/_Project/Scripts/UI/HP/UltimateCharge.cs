@@ -19,19 +19,22 @@ public sealed class UltimateCharge : MonoBehaviour, ITableBound
     // on the old charge a hit: "굉장히 옛날에 만들어 둔 건데 개편해도 될 듯"). A hit counted 3% a pellet, so a shotgun's
     // blast filled nine times a rifle's shot and the Ghost, the class that grows by its cards, drew them last, while a
     // heal, a resupply or a parry filled nothing. Now an enemy's health taken counts, the same for any gun (overkill
-    // left out, so a headshot is worth the zombie it ends, not its damage number), and so does looking after the team.
+    // left out, so a headshot is worth the zombie it ends, not its damage number), and so does looking after the team,
+    // which counts for more: a dose is one of four in a syringe only a shop or a Support refills, while a shot costs
+    // nothing (the user, 2026-11-12: "힐러가 치료 100하려면 주사기 2.5번 써야 하는데 남들은 그냥 일반좀비 헤드샷 딸깍하면
+    // 되잖아"). Numbers: Player.csv Ultimate.*.
     [SerializeField, Min(0), Tooltip("Charge per 100 health an enemy loses to this player's hit (overkill not counted). A shambler has 100.")]
-    private float chargePerHundred = 5f;
+    private float chargePerHundred = 4f;
     [SerializeField, Min(0), Tooltip("Charge per 100 health this player gives back to friends (a Détente's dose or treatment).")]
-    private float chargePerHundredHealed = 5f;
+    private float chargePerHundredHealed = 15f;
     [SerializeField, Min(0), Tooltip("Charge per resupply handed to a friend (a Support's).")]
-    private float chargePerResupply = 4f;
+    private float chargePerResupply = 6f;
     [SerializeField, Min(0), Tooltip("Charge per enemy blow parried.")]
-    private float chargePerParry = 2f;
+    private float chargePerParry = 3f;
     [SerializeField, Min(0), Tooltip("Charge per friend got up from downed or brought back from the dead.")]
-    private float chargePerRevive = 10f;
+    private float chargePerRevive = 15f;
     [SerializeField, Min(0), Tooltip("Charge per 100 health a Support's hammer puts back into a barricade.")]
-    private float chargePerHundredRepaired = 3f;
+    private float chargePerHundredRepaired = 5f;
 
     /// <summary>A way this player looked after the team, which charges the gauge as fighting does (AwardHelp).</summary>
     public enum Help { Healed, Resupplied, Parried, Revived, Repaired }
