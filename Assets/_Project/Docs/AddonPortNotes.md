@@ -42,7 +42,7 @@ GMod 애드온(`F:\Addons`, 저장소 밖)의 이동·애니메이션·소리를
 
 ## 워크숍 에셋을 들여올 때
 
-1. 어떤 애드온을 쓸지는 [워크숍 애드온 이식표](https://claude.ai/artifact/TjkB8PvDvQ1dnhJr27FEbz)에서 고른다.
+1. 어떤 애드온을 쓸지는 [워크숍 애드온 이식표](https://claude.ai/artifact/TjkB8PvDvQ1dnhJr27FEbz)에서 고른다. 사용자가 줄마다 남긴 쓰기·안 쓰기·나중에 표시는 그 표의 DB `marks`에 있다(아래 [이식표 다시 짬](#이식표-다시-짬-2026-11-12)).
 2. [Tools/Workshop/workshop.py](../../../Tools/Workshop/workshop.py)의 `extract`로 애드온을 프로젝트 밖 `F:\GameProject\_WorkshopImport\<워크숍 번호>`에 푼다. 받은 파일의 실행 파일은 실행하지 않는다.
 3. 필요한 파일만 변환해서 아래 표의 위치에 넣는다. Source 모델과 애니메이션은 [Tools/Blender](../../../Tools/Blender)의 변환 스크립트를 쓴다.
 4. 같은 작업에서 [외부 에셋 출처](AssetSources.md)에 워크숍 번호와 함께 한 줄을 추가한다.
@@ -81,6 +81,15 @@ GMod 애드온(`F:\Addons`, 저장소 밖)의 이동·애니메이션·소리를
 Walkers [XDR](3353266656)와 [xdR] nmrih zombies(3709350917)는 모델이 아니라 L4D2 감염자 뼈대용 걷기 애니메이션이라 이번에는 들이지 않았다. 좀비 걷기 클립으로 쓰려면 MDL의 시퀀스를 FBX로 구워 `Art/Animations/Zombies/<슬롯>`에 넣으면 된다(그 폴더는 넣는 즉시 좀비 목록에 섞인다).
 
 칼 소리는 `Art/Audio/Library`에 있다: 휘두르기 `MeatyMelee_3660295000/weapons/katana/katana_swing_miss1·2`, 살 타격 `melee_katana_01~03`, 벽 타격 `katana_impact_world1·2`, 꺼내기 `ZZZKatana_3802606110/weapons/katana/katana_deploy_01`·`katana_deploy_1`. 기병도는 `CavalrySword_3661236204/weapons/tonfa`, 권총은 `KraitP68_3803570564`(발사·탄창·슬라이드·쌍권총·빈 총 살펴보기).
+
+## 이식표 다시 짬 (2026-11-12)
+
+사용자: 「F:\SteamLibrary\steamapps\workshop\content\4000랑 F:\SteamLibrary\steamapps\common\Left 4 Dead 2\left4dead2\addons\workshop에 새 애드온들 받아 놨으니까 애드온 수입표 다시 짜. 일단 새롭게 다운 받은 것들은 다 에셋으로 쓰라고 대기해 두고 있는 거야.」
+
+- **표**: [워크숍 애드온 이식표](https://claude.ai/artifact/TjkB8PvDvQ1dnhJr27FEbz) 5판이 두 폴더를 한 표로 묶는다. L4D2 113개와 GMod 68개, 모두 181개다. 11-11 표 뒤에 새로 받은 것은 60개(L4D2 43, GMod 17. 11-10에 23개, 11-12에 37개)이고 지워진 것은 없다. 분류는 좀비 12, 무기 77, 소리 21, 효과 16, 소품·맵 3, 애니메이션 14, 캐릭터 8, UI 8, 로직·기타 22다. 상태는 대기(쓸 것) 47, 확인 필요 13, 후보 14, 이식됨 30, 참고만 47, 안 씀 28, 뺌 2다. 11-11 평가는 줄마다 펼쳐 볼 수 있게 남겼다.
+- **만든 법**: [Tools/Workshop/addon_scan.py](../../../Tools/Workshop/addon_scan.py)가 애드온을 풀지 않고 목록과 파일 머리만 읽는다(단일 파일 VPK v1·v2, GMA, 예전 LZMA `_legacy.bin`, 풀린 폴더, `.vpk` 이름의 ZIP). 텍스처 크기는 `.vtf` 머리, 꼭짓점 수는 `.vvd` 머리(LOD 0), 뼈와 동작 수는 `.mdl` 머리에서 읽는다. `python -I Tools/Workshop/addon_scan.py list <파일>`은 애드온 하나의 파일 목록, `scan <L4D2 폴더> <GMod 폴더> <out.json>`은 전체 요약이다. 제목과 설명은 Steam 공개 GetPublishedFileDetails(애드온 번호만 보냄)에서 가져왔고, L4D2 줄의 그림은 폴더에 있는 미리보기를 144px로 줄인 것이다.
+- **표시**: 줄마다 쓰기·안 쓰기·나중에와 메모를 표의 DB `marks`에 저장한다. 문서 하나가 애드온 하나이고 id는 `<게임>-<워크숍 번호>`(예 `L4D2-3532432838`), 필드는 `choice`(yes·no·later), `note`, `title`, `game`, `at`이다. "애드온 표 봐 줘"는 `marks`를 읽고 그 표시대로 작업하라는 뜻이다. 표시가 없으면 아무것도 들이지 않는다.
+- **찾은 것**: 중복(M1014 넷, CS:GO Glock-18 두 판, CS2 USP-S 두 판, 이타카 M37 원본과 재업로드, REZI12 두 판), Fatebringer 폴더(3735980722)에 같은 gma의 사본, 3558049615는 `.vpk` 이름의 ZIP에 실행 파일(.exe·.dll)이 든 Left 4 Neko 런처(실행하지 않았다), 화풍이 다른 것(TLOU 블로터, 애니 그림 AWP 스킨, CS2 로딩 그림). 무기 모델 대부분은 상용 게임에서 추출한 것이라 배포 전에 바꿔야 한다(표의 '에셋 출처' 칸). 11-10에 받은 소음기 무기 묶음은 Millenia 등 커뮤니티가 만든 모델이라 상대적으로 낫다.
 
 ## 이식표 묶음별 현황 (2026-11-10 재점검)
 
