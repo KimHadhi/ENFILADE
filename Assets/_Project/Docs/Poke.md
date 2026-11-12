@@ -53,8 +53,8 @@
 | --- | --- |
 | `Point.palmIn` | 손바닥 방향: 0 아래, 1 몸 안쪽(엄지가 위) |
 | `Point.wristBend`, `Point.wristSide` | 손목 꺾기(°): 손바닥 쪽(+)·손등 쪽(-), 엄지 쪽(+)·새끼 쪽(-). 손끝이 닿는 곳은 그대로 |
-| `Point.elbowDown`·`elbowOut`·`elbowBack` | 팔꿈치가 향하는 쪽: 아래, 몸 바깥, 뒤 |
-| `Point.extend` | 아무것도 안 닿을 때 팔을 뻗는 정도 |
+| `Point.elbowDown`·`elbowOut`·`elbowBack` | 팔꿈치가 향하는 쪽: 아래, 시선의 왼쪽, 뒤 |
+| `Point.ahead`·`Point.left`·`Point.down` | 그냥 가리킬 때 손끝 자리: 눈에서 앞으로, 조준점에서 왼쪽·아래로(m). 시선에 붙어 있어서 걷거나 옆으로 걷거나 돌아도 화면에서 같은 자리에 있다(0.8.232, 예전엔 엉덩이 방향을 따라 옆으로 걸으면 팔이 가슴 앞으로 왔다) |
 | `Ping.point` | F를 짧게 눌러 핑할 때 가리키는 시간(초). 0이면 예전처럼 총만 끄덕 |
 | `Point.index*`·`curl*`·`fist`·`thumb*` | PointHand.csv가 없을 때만 쓰는 손가락 각도 |
 

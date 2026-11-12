@@ -52,7 +52,9 @@ public sealed class PointArm : MonoBehaviour
     private Vector3 jointAxis, handAxis;
     // own: the point's own ease (Point.in, Point.out); weight: what is posed, never ahead of the hand lent off the gun.
     private float own, weight, press, lostFor;
-    private Vector3 reached, touchLocal;
+    // Where the fingertip is going, eased, in the eyes' space; the fingertip's reach past the wrist, from the last pose.
+    private Vector3 reachedInView, touchLocal;
+    private float tipLength;
     private bool bound, hasReached, hasTouch, touching;
     private PokeHit touch;
 
@@ -140,21 +142,33 @@ public sealed class PointArm : MonoBehaviour
         if (eyes == null) eyes = PlayerView.EyesOf(movement);
         if (eyes == null) return;
         for (int i = 0; i < turnedCount; i++) framed[i] = turned[i].localRotation;
-        var frame = animator.transform;
         Vector3 shoulder = upper.position, origin = eyes.position, look = eyes.forward;
+        // The view's own frame, never the hips': strafing turns the hips toward the step, and an arm laid out from them
+        // swung its elbow forward and the hand across the chest (the user, 2026-11-12: "오른쪽으로 움직일 땐 팔이
+        // 가슴쪽으로 오는데? 이 일정하지가 않아서").
+        Vector3 viewRight = Vector3.Cross(Vector3.up, look);
+        viewRight = viewRight.sqrMagnitude > 1e-6f ? viewRight.normalized : animator.transform.right;
+        Vector3 viewUp = Vector3.Cross(look, viewRight);
+        Vector3 viewAhead = Vector3.Cross(viewRight, Vector3.up);
+        float armLength = Vector3.Distance(upper.position, lower.position) + Vector3.Distance(lower.position, hand.position);
+        float reach = armLength + (tipLength > 0f ? tipLength : armLength * .35f);
 
-        // What the finger is on: a friend's body along the look (held a moment through a flicker), else nothing.
+        // What the finger is on: a friend's body along the look (held a moment through a flicker) within the arm's reach.
         PokeHit hit = default;
         bool found = on && Touch(origin, look, PokeTables.Number("Point.range", 1.3f), dt, out hit);
-        // The way the finger goes from the shoulder: at what it is on, else at what a tap's ping pinged (PlayerPoint.Flash),
-        // else where the look goes far off.
+        bool touches = found && Vector3.Distance(shoulder, hit.Point) <= reach * PokeTables.Number("Point.reach", .97f);
+        // While it only points, the fingertip rests at a spot fixed in the view, low and left of the crosshair (Point.ahead,
+        // Point.left, Point.down): it stays put on the screen however the body walks, strafes or turns, and points from
+        // there at what it points at (a friend out of reach, what a tap's ping pinged, else where the look goes far off).
+        Vector3 spot = origin + look * PokeTables.Number("Point.ahead", .55f) - viewRight * PokeTables.Number("Point.left", .13f)
+            - viewUp * PokeTables.Number("Point.down", .12f);
         Vector3 aim = found ? hit.Point : point.FlashTarget(out Vector3 pinged) ? pinged : origin + look * 10f;
-        Vector3 way = aim - shoulder;
+        Vector3 way = touches ? hit.Point - shoulder : aim - spot;
         way = way.sqrMagnitude > 1e-6f ? way.normalized : look;
 
         // The hand along that way, the palm down and turned in, bent at the wrist as Point.wristBend/wristSide say: the
         // hand drawn in Blender (PointHand.csv) if there is one, else the index out and the rest in a fist by Point.*.
-        Vector3 palm = WantedPalm(way, frame);
+        Vector3 palm = WantedPalm(way, viewRight, viewAhead);
         Vector3 handWay = Wrist(way, palm);
         Vector3 handPalm = Vector3.ProjectOnPlane(palm, handWay);
         handPalm = handPalm.sqrMagnitude > 1e-8f ? handPalm.normalized : palm;
@@ -173,13 +187,13 @@ public sealed class PointArm : MonoBehaviour
             Fingers(handWay, handPalm);
         }
         Vector3 tipOffset = Fingertip() - hand.position;
-        float reach = Vector3.Distance(upper.position, lower.position) + Vector3.Distance(lower.position, hand.position) + tipOffset.magnitude;
+        tipLength = tipOffset.magnitude;
 
-        // Where the fingertip goes: into a zone that gives, eased in; just short of anything else it is on; or out along
-        // the way.
+        // Where the fingertip goes: into a zone that gives, eased in; just short of anything else it touches; or the
+        // spot in the view.
         Vector3 goal;
         bool presses = false;
-        if (found && Vector3.Distance(shoulder, hit.Point) <= reach * PokeTables.Number("Point.reach", .97f))
+        if (touches)
         {
             if (hit.Pokes)
             {
@@ -197,16 +211,20 @@ public sealed class PointArm : MonoBehaviour
         else
         {
             press = 0f;
-            goal = shoulder + way * (reach * PokeTables.Number("Point.extend", .9f));
+            goal = spot;
         }
+        // Eased in the view's own space (Point.follow): walking, strafing or turning never drag the hand behind, as easing
+        // in the world did (running, a hand trailed 30 cm toward the chest); only a change of where it goes eases.
         float follow = PokeTables.Number("Point.follow", .05f);
-        reached = hasReached && follow > 0f ? Vector3.Lerp(reached, goal, 1f - Mathf.Pow(.5f, dt / follow)) : goal;
+        Vector3 goalInView = eyes.InverseTransformPoint(goal);
+        reachedInView = hasReached && follow > 0f ? Vector3.Lerp(reachedInView, goalInView, 1f - Mathf.Pow(.5f, dt / follow)) : goalInView;
         hasReached = true;
+        Vector3 reached = eyes.TransformPoint(reachedInView);
 
-        // The arm puts the wrist where the fingertip lands, the elbow down, out and back by Point.elbowDown/Out/Back (the
-        // left arm's out is the body's left).
-        Vector3 hint = shoulder + (-frame.up * PokeTables.Number("Point.elbowDown", .8f) - frame.right * PokeTables.Number("Point.elbowOut", .55f)
-            - frame.forward * PokeTables.Number("Point.elbowBack", .1f)) * reach;
+        // The arm puts the wrist where the fingertip lands, the elbow down, out to the left and back from the view by
+        // Point.elbowDown/Out/Back.
+        Vector3 hint = shoulder + (-Vector3.up * PokeTables.Number("Point.elbowDown", .8f) - viewRight * PokeTables.Number("Point.elbowOut", .55f)
+            - viewAhead * PokeTables.Number("Point.elbowBack", .1f)) * reach;
         TwoBoneIK.Solve(upper, lower, hand, reached - tipOffset, hint);
         hand.rotation = handGoal;
 
@@ -243,11 +261,11 @@ public sealed class PointArm : MonoBehaviour
         return true;
     }
 
-    // The way the pointing palm faces: down, turned in toward the body's middle by Point.palmIn (1: the thumb on top).
-    private static Vector3 WantedPalm(Vector3 way, Transform frame)
+    // The way the pointing palm faces: down, turned in toward the middle of the view by Point.palmIn (1: the thumb on top).
+    private static Vector3 WantedPalm(Vector3 way, Vector3 viewRight, Vector3 viewAhead)
     {
-        Vector3 palm = Vector3.ProjectOnPlane(Vector3.Lerp(Vector3.down, frame.right, PokeTables.Number("Point.palmIn", .55f)), way);
-        if (palm.sqrMagnitude < 1e-4f) palm = Vector3.ProjectOnPlane(frame.forward, way);
+        Vector3 palm = Vector3.ProjectOnPlane(Vector3.Lerp(Vector3.down, viewRight, PokeTables.Number("Point.palmIn", .55f)), way);
+        if (palm.sqrMagnitude < 1e-4f) palm = Vector3.ProjectOnPlane(viewAhead, way);
         return palm.sqrMagnitude > 1e-8f ? palm.normalized : Vector3.down;
     }
 
