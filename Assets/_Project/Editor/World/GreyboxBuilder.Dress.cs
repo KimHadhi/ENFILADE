@@ -9,8 +9,9 @@ using UnityEngine;
 /// bake and the small-prop check, so dressing can never open a hole in a wall or a perch a zombie can't reach.
 /// Tables/MapArt names each kind's prefabs (under Assets/, ';' between variants) and how one is put on a box:
 /// "tile" repeats the model at about its own size along the box's long side (a row of seats, a check-in counter, a
-/// shelf), "fit" scales one copy evenly into the box (a scanner, a desk), "stretch" fills the box on every axis,
-/// "native" stands one copy at its own size on the box's floor. A dressed box hides its grey look. Props (Prop, Hang)
+/// shelf), "stack" does the same and piles rows up to the box's top (a sandbag wall), "fit" scales one copy evenly
+/// into the box (a scanner, a desk, a car), "stretch" fills the box on every axis, "native" stands one copy at its own
+/// size on the box's floor. A dressed box hides its grey look. Props (Prop, Hang)
 /// stand where the layout says with no box: walked through when small (a bag, a suitcase); PropSolid gives a bigger
 /// one (a vending machine, a trolley) an unseen box of its own size that blocks and goes into the bake. The model's
 /// long side is turned along the box's long side; the table's yaw turns a model whose front faces the wrong way. A
@@ -24,7 +25,9 @@ public sealed partial class GreyboxBuilder
     // memo 48) is raised past it.
     private const float SolidBandLow = 1.5f, SolidBandTop = 2.05f;
 
-    private enum ArtFit { Native, Fit, Stretch, Tile }
+    private enum ArtFit { Native, Fit, Stretch, Tile, Stack }
+    // Stacked rows sink into the row below by this share of their height, as filled bags do.
+    private const float StackSettle = .08f;
 
     private Transform dressing;
     private readonly Dictionary<string, GameObject> artPrefabs = new Dictionary<string, GameObject>();
@@ -47,16 +50,22 @@ public sealed partial class GreyboxBuilder
         switch (fit)
         {
             case ArtFit.Tile:
+            case ArtFit.Stack:
             {
                 float length = boxAlongX ? target.size.x : target.size.z, own = Mathf.Max(.01f, boxAlongX ? turned.x : turned.z);
                 int count = Mathf.Max(1, Mathf.RoundToInt(length / (own * scale)));
                 float s = length / count / own;
+                // A stack climbs in rows of the piece's settled height until the box's top; every other row is turned
+                // half round so the same piece doesn't line up into stripes.
+                float rise = Mathf.Max(.01f, turned.y * s * (1f - StackSettle));
+                int rows = fit == ArtFit.Stack ? Mathf.Max(1, Mathf.RoundToInt(target.size.y / rise)) : 1;
                 Vector3 along = boxAlongX ? Vector3.right : Vector3.forward;
-                for (int i = 0; i < count; i++)
-                {
-                    Vector3 at = center + along * ((i + .5f) * length / count - length * .5f);
-                    Place(prefab, new Vector3(at.x, floor, at.z), turn, Vector3.one * s, false);
-                }
+                for (int row = 0; row < rows; row++)
+                    for (int i = 0; i < count; i++)
+                    {
+                        Vector3 at = center + along * ((i + .5f) * length / count - length * .5f);
+                        Place(prefab, new Vector3(at.x, floor + row * rise, at.z), turn + row % 2 * 180f, Vector3.one * s, false);
+                    }
                 break;
             }
             case ArtFit.Fit:
@@ -129,6 +138,7 @@ public sealed partial class GreyboxBuilder
         switch (Text(row, "fit").ToLowerInvariant())
         {
             case "tile": fit = ArtFit.Tile; break;
+            case "stack": fit = ArtFit.Stack; break;
             case "fit": fit = ArtFit.Fit; break;
             case "stretch": fit = ArtFit.Stretch; break;
             default: fit = ArtFit.Native; break;

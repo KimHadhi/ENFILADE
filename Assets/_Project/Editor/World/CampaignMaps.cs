@@ -48,8 +48,8 @@ public static class CampaignMaps
         b.PlayerStart(new Vector3(5f, 18f, 0f), 90f);
         b.Spot("Start", new Vector3(5.5f, 18f, 0f));
         b.Box("B1 낮은 벽", 16.6f, 17f, 18f, 19f, -3f, 3f);
-        b.Box("B1 실외기 1", 13f, 15f, 18f, 19.1f, 4f, 6f, b.Metal, "Metal");
-        b.Box("B1 실외기 2", 13f, 15f, 18f, 19.1f, -6f, -4f, b.Metal, "Metal");
+        b.Dress(b.Box("B1 실외기 1", 13f, 15f, 18f, 19.1f, 4f, 6f, b.Metal, "Metal"), "acunit");
+        b.Dress(b.Box("B1 실외기 2", 13f, 15f, 18f, 19.1f, -6f, -4f, b.Metal, "Metal"), "acunit");
 
         // 2. Over a 3 m gap, 2 m down. The lift room is climbed (wall climb, or its ladder), and the cable from its top
         // crosses the street.
@@ -65,8 +65,8 @@ public static class CampaignMaps
         b.EnemySpawn("B2 옥상 1", new Vector3(32f, 16f, 6f));
         b.EnemySpawn("B2 옥상 2", new Vector3(45f, 16f, -7f));
 
-        b.Box("길1 차 1", 50f, 54.5f, 0f, 1.5f, -6f, -4.2f, b.Metal, "Metal");
-        b.Box("길1 차 2", 56f, 60.5f, 0f, 1.5f, 3f, 4.8f, b.Metal, "Metal");
+        b.Dress(b.Box("길1 차 1", 50f, 54.5f, 0f, 1.5f, -6f, -4.2f, b.Metal, "Metal"), "car");
+        b.Dress(b.Box("길1 차 2", 56f, 60.5f, 0f, 1.5f, 3f, 4.8f, b.Metal, "Metal"), "car");
         b.EnemySpawn("길1", new Vector3(55f, 0f, -1f));
         b.EnemySpawn("길1 남쪽", new Vector3(55f, 0f, -25f));
 
@@ -85,7 +85,7 @@ public static class CampaignMaps
         b.Box("B4", 87f, 104f, 0f, 12f, -10f, 10f);
         Parapets(b, "B4", 87f, 104f, -10f, 10f, 12f);
         b.Box("B4 별관", 104f, 112f, 0f, 8f, 4f, 50f);
-        b.Box("골목 트럭", 108f, 114f, 0f, 3f, 0f, 3f, b.Metal, "MetalBox");
+        b.Dress(b.Box("골목 트럭", 108f, 114f, 0f, 3f, 0f, 3f, b.Metal, "MetalBox"), "van");
         b.Ladder("B4 비상 사다리", new Vector3(104.15f, 0f, -2f), 90f);
         b.Spot("B4Roof", new Vector3(95f, 12f, 0f));
         b.EnemySpawn("B4 옥상 1", new Vector3(95f, 12f, -6f));
@@ -103,9 +103,9 @@ public static class CampaignMaps
         b.Spot("Alley", new Vector3(110f, 0f, -1f));
         b.Spot("ShutterButton", new Vector3(134.2f, 0f, -3f));
         b.Spot("AlleyHold", new Vector3(124f, 0f, 0f));
-        b.Box("골목 쓰레기통 1", 118f, 120f, 0f, 1.4f, -3.9f, -2.6f, b.Metal, "MetalBox");
-        b.Box("골목 쓰레기통 2", 126f, 128f, 0f, 1.4f, 2.6f, 3.9f, b.Metal, "MetalBox");
-        b.Box("골목 팔레트", 122f, 123.2f, 0f, .9f, -1f, .2f, b.Wood, "WoodPlank");
+        b.Dress(b.Box("골목 쓰레기통 1", 118f, 120f, 0f, 1.4f, -3.9f, -2.6f, b.Metal, "MetalBox"), "dumpster");
+        b.Dress(b.Box("골목 쓰레기통 2", 126f, 128f, 0f, 1.4f, 2.6f, 3.9f, b.Metal, "MetalBox"), "dumpster");
+        b.Dress(b.Box("골목 팔레트", 122f, 123.2f, 0f, .9f, -1f, .2f, b.Wood, "WoodPlank"), "palletload");
         // Rubbish round the bins and boxes by the shutter (the Airport pack's bags, boxes and crates; seen only).
         foreach (var (x, z) in new[] { (117.4f, -3.4f), (120.6f, -3.5f), (121.3f, -2.9f), (125.4f, 3.4f), (128.6f, 3.2f), (129.4f, 3.5f) })
             b.Prop("garbage", new Vector3(x, 0f, z), x * 11f % 360f);
@@ -129,8 +129,8 @@ public static class CampaignMaps
         b.PropSolid("vending", new Vector3(153.5f, 0f, 9.4f), 180f);
         b.PropSolid("bin", new Vector3(147.5f, 0f, 9.3f));
         b.Spot("RestStop", new Vector3(151f, 0f, 15f));
-        b.Box("길2 차 1", 144f, 148.5f, 0f, 1.5f, -8f, -6.2f, b.Metal, "Metal");
-        b.Box("길2 차 2", 158f, 162.5f, 0f, 1.5f, -3f, -1.2f, b.Metal, "Metal");
+        b.Dress(b.Box("길2 차 1", 144f, 148.5f, 0f, 1.5f, -8f, -6.2f, b.Metal, "Metal"), "car");
+        b.Dress(b.Box("길2 차 2", 158f, 162.5f, 0f, 1.5f, -3f, -1.2f, b.Metal, "Metal"), "car");
         b.EnemySpawn("길2", new Vector3(150f, 0f, -12f));
         b.EnemySpawn("길2 북쪽", new Vector3(162f, 0f, 8f));
 
@@ -139,7 +139,7 @@ public static class CampaignMaps
         b.Box("공사장 펜스 남", 170f, 170.2f, 0f, 2.2f, -50f, -3f, b.Metal, "MetalPipe");
         b.Box("공사장 펜스 북", 170f, 170.2f, 0f, 2.2f, 3f, 50f, b.Metal, "MetalPipe");
         b.Spot("SiteGate", new Vector3(172f, 0f, 0f));
-        b.Box("컨테이너 1", 176f, 182f, 0f, 2.6f, 10f, 12.5f, b.Metal, "MetalBox");
+        b.Dress(b.Box("컨테이너 1", 176f, 182f, 0f, 2.6f, 10f, 12.5f, b.Metal, "MetalBox"), "container");
         b.Box("컨테이너 2", 179f, 182f, 2.6f, 5.2f, 10f, 12.5f, b.Metal, "MetalBox");
         b.Box("공사 중 건물", 182f, 200f, 0f, 14f, -9f, 9f);
         b.Box("비계 벽", 182f, 182.3f, 5.2f, 8.7f, 9f, 12f, b.Wood, "WoodPanel");
@@ -286,10 +286,10 @@ public static class CampaignMaps
         b.Box("톨게이트 지붕", 188f, 198f, 6f, 6.5f, -24f, 24f, b.Concrete);
         for (float z = -18f; z <= 18f; z += 9f) b.Box("요금소 " + z, 191.5f, 194f, 0f, 2.8f, z - 1.25f, z + 1.25f);
         b.Spot("TollGate", new Vector3(198f, 0f, 0f));
-        b.Box("모래주머니 남", 204f, 205f, 0f, 1.2f, -20f, -3f, b.Wood, "Tarp");
-        b.Box("모래주머니 북", 204f, 205f, 0f, 1.2f, 3f, 20f, b.Wood, "Tarp");
-        b.Box("군 컨테이너 1", 210f, 216f, 0f, 2.6f, -14f, -11.5f, b.Metal, "MetalBox");
-        b.Box("군 컨테이너 2", 214f, 220f, 0f, 2.6f, 14f, 16.5f, b.Metal, "MetalBox");
+        b.Dress(b.Box("모래주머니 남", 204f, 205f, 0f, 1.2f, -20f, -3f, b.Wood, "Tarp"), "sandbags");
+        b.Dress(b.Box("모래주머니 북", 204f, 205f, 0f, 1.2f, 3f, 20f, b.Wood, "Tarp"), "sandbags");
+        b.Dress(b.Box("군 컨테이너 1", 210f, 216f, 0f, 2.6f, -14f, -11.5f, b.Metal, "MetalBox"), "container");
+        b.Dress(b.Box("군 컨테이너 2", 214f, 220f, 0f, 2.6f, 14f, 16.5f, b.Metal, "MetalBox"), "container");
         Room(b, "검문소 초소", 207f, 213f, 4f, 10f, 0f, 3f, Side.West, 6f, 8f);
         b.Dress(b.Box("초소 무전기", 211.5f, 212.6f, 0f, 1.1f, 8.6f, 9.6f, b.Marker), "controlboxFit");
         // The army left in a hurry: crates by the sandbags.
@@ -391,8 +391,8 @@ public static class CampaignMaps
         b.Box("터널 벽 남", 90.3f, 170f, 0f, 5.5f, -6.3f, -6f);
         b.Box("터널 벽 북", 90.3f, 170f, 0f, 5.5f, 2f, 2.3f);
         b.Box("터널 천장", 90.3f, 170f, 5.5f, 6f, -6.3f, 2.3f);
-        b.Box("잔해 1", 110f, 113f, 0f, 1.4f, -5.9f, -2f, b.Concrete, "ConcreteGrit");
-        b.Box("잔해 더미", 128f, 130f, 0f, 2.2f, -2f, 1.9f, b.Concrete, "ConcreteGrit");
+        b.Dress(b.Box("잔해 1", 110f, 113f, 0f, 1.4f, -5.9f, -2f, b.Concrete, "ConcreteGrit"), "rubblepile");
+        b.Dress(b.Box("잔해 더미", 128f, 130f, 0f, 2.2f, -2f, 1.9f, b.Concrete, "ConcreteGrit"), "rubblepile");
         b.Box("탈선한 객차", 140f, 152f, 0f, 3f, -5.7f, -2.2f, b.Metal, "Metal");
         b.Can(new Vector3(160f, 0f, 1f));
         b.Lamp(new Vector3(100f, 5f, -2f), 10f, 1.6f);
@@ -435,7 +435,7 @@ public static class CampaignMaps
         b.Box("발전기 배기관", 206.8f, 207.2f, 2.5f, 8f, -4.2f, -3.8f, b.Metal, solid: false);
         b.Spot("Generator", new Vector3(203.4f, 0f, -4f));
         b.Box("정비 차량", 178f, 196f, 0f, 3.2f, -8f, -4.4f, b.Metal, "Metal");
-        b.Box("컨테이너 1", 184f, 190f, 0f, 2.6f, -18f, -15.5f, b.Metal, "MetalBox");
+        b.Dress(b.Box("컨테이너 1", 184f, 190f, 0f, 2.6f, -18f, -15.5f, b.Metal, "MetalBox"), "container");
         b.Box("컨테이너 2", 186f, 190f, 2.6f, 5.2f, -18f, -15.5f, b.Metal, "MetalBox");
         b.Box("통로 발판", 195f, 215f, 4f, 4.2f, 16f, 19.7f, b.Metal, "Gantry");
         b.Box("통로 난간", 195f, 215f, 4.2f, 5.2f, 15.9f, 16f, b.Metal, solid: false);
@@ -482,7 +482,7 @@ public static class CampaignMaps
         b.Spot("Plaza", new Vector3(333f, Bank, 0f));
         Car(b, 330f, Bank, -10f);
         Car(b, 334f, Bank, 12f);
-        b.Box("모래주머니", 326f, 327f, Bank, Bank + 1.2f, -16f, -8f, b.Wood, "Tarp");
+        b.Dress(b.Box("모래주머니", 326f, 327f, Bank, Bank + 1.2f, -16f, -8f, b.Wood, "Tarp"), "sandbags");
         b.Box("부두", 338f, 344f, Bank, Bank + .3f, -5f, 5f, b.Wood, "WoodPlank");
         b.Box("군 보트", 339.5f, 343.5f, Bank + .3f, Bank + 1.8f, 6f, 9f, b.Metal, solid: false);
         b.Spot("Boat", new Vector3(341f, Bank + .3f, 0f));
@@ -531,12 +531,12 @@ public static class CampaignMaps
         b.Box("군 보트", -19.5f, -15.5f, 0f, 1.6f, 7f, 10f, b.Metal, solid: false);
         b.PlayerStart(new Vector3(-10f, .3f, 0f), 90f);
         b.Spot("Start", new Vector3(-10f, .3f, 0f));
-        b.Box("화물 컨테이너 1", 0f, 12f, 0f, 2.6f, 12f, 14.5f, b.Metal, "MetalBox");
-        b.Box("화물 컨테이너 2", 3f, 9f, 2.6f, 5.2f, 12f, 14.5f, b.Metal, "MetalBox");
-        b.Box("화물 컨테이너 3", 4f, 16f, 0f, 2.6f, -16f, -13.5f, b.Metal, "MetalBox");
+        b.Dress(b.Box("화물 컨테이너 1", 0f, 12f, 0f, 2.6f, 12f, 14.5f, b.Metal, "MetalBox"), "containerRow");
+        b.Dress(b.Box("화물 컨테이너 2", 3f, 9f, 2.6f, 5.2f, 12f, 14.5f, b.Metal, "MetalBox"), "container");
+        b.Dress(b.Box("화물 컨테이너 3", 4f, 16f, 0f, 2.6f, -16f, -13.5f, b.Metal, "MetalBox"), "containerRow");
         b.Box("지게차", 10f, 12f, 0f, 2.2f, 4f, 7f, b.Metal, "Metal");
-        b.Box("화물 팔레트 1", 2f, 3.2f, 0f, .9f, -4f, -2.8f, b.Wood, "WoodPlank");
-        b.Box("화물 팔레트 2", 6f, 7.2f, 0f, .9f, 4.5f, 5.7f, b.Wood, "WoodPlank");
+        b.Dress(b.Box("화물 팔레트 1", 2f, 3.2f, 0f, .9f, -4f, -2.8f, b.Wood, "WoodPlank"), "palletload");
+        b.Dress(b.Box("화물 팔레트 2", 6f, 7.2f, 0f, .9f, 4.5f, 5.7f, b.Wood, "WoodPlank"), "palletload");
         b.Box("화물장 펜스 남", 20f, 20.2f, 0f, 2.4f, -59f, -4f, b.Metal, "MetalPipe");
         b.Box("화물장 펜스 북", 20f, 20.2f, 0f, 2.4f, 4f, 59f, b.Metal, "MetalPipe");
         b.Spot("CargoGate", new Vector3(23f, 0f, 0f));
@@ -809,9 +809,10 @@ public static class CampaignMaps
                  "계류장 → 관제탑 무전 → 활주로를 막은 여객기를 견인차로 밀어내기(누가 견인차 옆에 있어야 움직임) → 수송기 → 출발 신호 → 버티기 → 탑승.");
     }
 
-    // A stopped car, 4.5 m long across x, at <paramref name="y"/> (the road it stands on).
+    // A stopped car, 4.5 m long across x, at <paramref name="y"/> (the road it stands on), dressed as one of
+    // the abandoned cars (Tables/MapArt car, picked by place).
     private static void Car(GreyboxBuilder b, float x, float y, float z)
-        => b.Box("차", x - 2.25f, x + 2.25f, y, y + 1.5f, z - .95f, z + .95f, b.Metal, "Metal");
+        => b.Dress(b.Box("차", x - 2.25f, x + 2.25f, y, y + 1.5f, z - .95f, z + .95f, b.Metal, "Metal"), "car");
 
     private static void Bus(GreyboxBuilder b, string name, float x0, float x1, float y, float z0, float z1)
         => b.Box(name, x0, x1, y, y + 3.2f, z0, z1, b.Metal, "Metal");
