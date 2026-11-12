@@ -50,6 +50,12 @@ public sealed class KillFlairFx
     public Vector2 Kick { get; private set; }
     public Color NameColour { get; private set; }
     public float NameTint { get; private set; }
+    /// <summary>
+    /// The room the flair's pieces take over the row (a stamp, a seal) and under it (the bounty paid, a chip) now, px before
+    /// the row's own scale: the feed stands the rows round it that much apart, so nothing of it covers another row.
+    /// </summary>
+    public float Above { get; private set; }
+    public float Below { get; private set; }
 
     public KillFlairFx(RectTransform row, Image weapon, TMP_Text victim)
     {
@@ -64,6 +70,7 @@ public sealed class KillFlairFx
         play = what;
         age = 0f;
         Edge = Color.clear; EdgeStrength = 0f; Sheening = SheenEnded = false; SheenAt = -1f; Kick = Vector2.zero; NameTint = 0f;
+        Above = Below = 0f;
         HideAll();
         if (!what.Any) return;
         var icon = what.Icon;
@@ -181,8 +188,14 @@ public sealed class KillFlairFx
             }
             Kick = (pieces & KillFlairs.Row.Kick) != 0 && t >= 0f && t <= KickSeconds
                 ? new Vector2(-KickSize, 2f) * Mathf.Sin(Mathf.PI * t / KickSeconds) : Vector2.zero;
+            // A stamp stands 20 px over the row's top (its tilt a few more), a seal 12; a chip 24 under its bottom.
+            float over = 0f;
+            if (stamp != null && stamp.gameObject.activeSelf) over = Mathf.Max(over, (stamp.sizeDelta.y - 6f + 6f) * show);
+            if (seal != null && seal.gameObject.activeSelf) over = Mathf.Max(over, 12f * show);
+            Above = over;
+            Below = chip != null && chip.gameObject.activeSelf ? 24f * show : 0f;
         }
-        if (!any) age = 99f;
+        if (!any) { age = 99f; Above = Below = 0f; }
     }
 
     /// <summary>The row goes away: nothing of its flair is left showing.</summary>
@@ -191,6 +204,7 @@ public sealed class KillFlairFx
         HideAll();
         age = 99f;
         EdgeStrength = 0f; NameTint = 0f; Kick = Vector2.zero; Sheening = false;
+        Above = Below = 0f;
     }
 
     // ---- pieces ----

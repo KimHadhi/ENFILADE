@@ -42,8 +42,14 @@ public sealed class KillFeedRow
     /// <summary>This PC's own kill: the feed lists these first (backlog 332).</summary>
     public bool Mine => mine;
 
-    /// <summary>The height the row takes in the list now: the newest row's growth and the gap under it included.</summary>
-    public float Extent => look == null ? Height : Height * (1f + look.leadScale * lead) + look.heroGap * lead;
+    /// <summary>The height the row takes in the list now: the newest row's growth, the gap under it and its flair's piece
+    /// under it (the bounty paid) included.</summary>
+    public float Extent => (look == null ? Height : Height * (1f + look.leadScale * lead) + look.heroGap * lead) + flair.Below * Scale;
+
+    /// <summary>The room its flair's piece over it takes now (a stamp), at the row's scale: the feed starts the row that much lower.</summary>
+    public float Above => flair.Above * Scale;
+
+    private float Scale => 1f + (look != null ? look.leadScale : 0f) * lead;
 
     public KillFeedRow(Transform feed)
     {

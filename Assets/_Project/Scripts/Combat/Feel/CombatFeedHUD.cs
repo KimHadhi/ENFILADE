@@ -307,8 +307,10 @@ public sealed class CombatFeedHUD : MonoBehaviour
         float below = 0f;
         for (int rank = 0; rank < shown.Count; rank++)
         {
-            shown[rank].Tick(dt, -below, KillLifetime, rank);
-            below += shown[rank].Extent + 5f;
+            // A flair's stamp over a row and its chip under it push the rows round it apart (KillFlairFx Above, Below).
+            float top = below + shown[rank].Above;
+            shown[rank].Tick(dt, -top, KillLifetime, rank);
+            below = top + shown[rank].Extent + 5f;
         }
     }
 
