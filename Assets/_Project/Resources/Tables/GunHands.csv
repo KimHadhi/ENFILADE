@@ -1,0 +1,9 @@
+﻿id,rightBack,rightAlong,leftBack,leftAlong
+#설명,장전 동안 오른손 손바닥을 총에서 이만큼 뒤로(손바닥이 향한 반대쪽 m). 손이 두꺼워 총을 파고들면 늘린다,오른손 손바닥을 손가락 쪽으로 이만큼(m). 손이 길어 손끝이 넘치면 줄인다,왼손 손바닥을 총에서 이만큼 뒤로(m),왼손 손바닥을 손가락 쪽으로 이만큼(m)
+#안내,"장전 때 손은 KINEMATION 원본 클립에서 손바닥이 총의 어디에 있었는지를 따라간다(FPSBody.Contacts). 손 크기 차이는 손바닥 가운데로 맞춰 저절로 맞고 여기는 마지막 다듬기다. id는 캐릭터 id(kazusa-band·hiro·sil·mayo·ichigo). 모드 캐릭터는 자기 id로 줄을 더한다. 줄이 없는 캐릭터는 default 줄을 쓴다. Play 중 고치고 Tools > Data Tables > Reload Tables",,,
+default,0,0,0,0
+kazusa-band,0,0,0,0
+hiro,0,0,0,0
+sil,0,0,0,0
+mayo,0,0,0,0
+ichigo,0,0,0,0

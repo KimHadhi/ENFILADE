@@ -200,6 +200,7 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
         }
         if (movement != null) movement.Jumped -= OnJumped;
         if (body != null) body.UpperBodyFromFramework = false;
+        ReleaseContacts();
         ForgetMade();
     }
 
@@ -290,6 +291,7 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
         fingers.Clear();
         fingerGrip.Clear();
         holdWeight = cover = 0f;
+        ForgetContacts();
         rig = null; input = null; playables = null; framework = null; recoil = null;
         if (body != null) body.UpperBodyFromFramework = false;
         if (bodyCamera != null) bodyCamera.SetGunWeight(0f);
@@ -923,7 +925,12 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
         CutDraw();
         if (!HoldsGun) return;
         Motion(StillMotion);
-        if (!held.HandsBusy && Time.time - reloadEndedAt < reloadSettle) playables.StopAnimation(SightsCut);
+        if (!held.HandsBusy && Time.time - reloadEndedAt < reloadSettle)
+        {
+            playables.StopAnimation(SightsCut);
+            // The hands let go of the clip's hold with it.
+            held.StopContacts();
+        }
     }
 
     // The body placed the camera this frame (PlayerBody.Look), so FPSAF's shake and gun motion go on a fresh pose.
@@ -934,6 +941,8 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
     {
         if (!HoldsGun) return;
         KeepGunInView();
+        // Through a reload, the gun where KINEMATION's own clip has it (FPSBody.Contacts); the weapon root rides it after.
+        FollowContacts();
         RideGun();
         if (firing && Time.time - lastShot > shotInterval * TriggerReleaseIntervals) StopFiring();
         if (held.Reloading && (controller.Runtime == null || !controller.Runtime.IsReloading)) held.StopReload(playables, reloadBlendOut, bodyCamera);

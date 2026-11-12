@@ -506,6 +506,9 @@ public sealed class FPSGun : MonoBehaviour
         if (camera != null)
             camera.PlayGunMotion(empty ? entry.sourceReloadEmpty : entry.sourceReloadTactical, clip != null ? clip.blendTime.rateScale : 1f, from);
         float length = clip != null && clip.clip != null ? clip.clip.length / Mathf.Max(.01f, clip.blendTime.rateScale) : 0f;
+        // The hands follow KINEMATION's own clip on the gun (FPSBody.Contacts). A shell reload's start hands over to its
+        // shells; any other reload settles back into the hold at its end.
+        FollowClip(empty ? entry.sourceReloadEmpty : entry.sourceReloadTactical, clip, from, entry.weapon == null || !entry.weapon.ShellReload);
         // The old magazine will fall out as the clip takes it away (GunMagazine); going on past that, it is already out.
         if (magazine != null) magazine.Begin(empty, length, from);
         if (Kinemation == null || partsPlayer == null) return length;
@@ -538,6 +541,7 @@ public sealed class FPSGun : MonoBehaviour
         if (FPSAnimationAsset.IsValid(clip)) playables.PlayAnimation(clip, 0f);
         if (camera != null)
             camera.PlayGunMotion(end ? entry.sourceReloadEnd : entry.sourceReloadShell, clip != null ? clip.blendTime.rateScale : 1f);
+        FollowClip(end ? entry.sourceReloadEnd : entry.sourceReloadShell, clip, 0f, end);
         var parts = end ? entry.partsReloadEnd : entry.partsReloadShell;
         if (partsPlayer != null && parts != null) partsPlayer.PlayAnimation(parts);
         return clip != null && clip.clip != null ? clip.clip.length / Mathf.Max(.01f, clip.blendTime.rateScale) : 0f;
@@ -554,6 +558,8 @@ public sealed class FPSGun : MonoBehaviour
     /// <summary>The reload was cut short (a dodge, a climb, death): its clips stop.</summary>
     internal void StopReload(IPlayablesController playables, float blendOut, FPSBodyCamera camera)
     {
+        // The hands let go of the clip's hold with it, whether or not the reload itself had finished.
+        contactClip = null;
         if (!reloading) return;
         reloading = false;
         // Cut short with the old magazine leaving, the hand lets it go and the gun stays without one until the next reload
@@ -569,6 +575,72 @@ public sealed class FPSGun : MonoBehaviour
             partsPlayer.enabled = false;
             partsPlayer.enabled = true;
         }
+    }
+
+    // ---- The reload's own clip, which the hands follow on the gun (FPSBody.Contacts, GunArms) ----
+
+    // KINEMATION's clip of the reload playing (the one its camera motion plays too): from when, how far in (s), how fast,
+    // for how long (s), and whether it eases back into the hold at its end and over how long (s).
+    private AnimationClip contactClip;
+    private float contactStart, contactFrom, contactRate = 1f, contactLength, contactSettle = .15f;
+    private bool contactSettles;
+
+    /// <summary>The gun's frame from KINEMATION's weapon bone (its rotationOffset), as the IK weapon bone carries it.</summary>
+    internal Quaternion Frame => frame;
+    /// <summary>The gun's entry in FPSBodyAssets: its own clips and the arms they are made for.</summary>
+    internal FPSBodyAssets.Gun Entry => entry;
+    /// <summary>Where the gun's pose clip holds it on KINEMATION's arms, in the gun's frame (FPSBody measures it once), and
+    /// whether that hold looked like one (both hands at the gun), so its reloads can be followed.</summary>
+    internal bool HasContactPose { get; private set; }
+    internal bool ContactPoseHolds { get; private set; }
+    internal Vector3 ContactPosePosition { get; private set; }
+    internal Quaternion ContactPoseRotation { get; private set; } = Quaternion.identity;
+    /// <summary>How long the reload's end eases back into the hold (s), its clip's blend out.</summary>
+    internal float ContactSettle => contactSettle;
+
+    internal void SetContactPose(Vector3 position, Quaternion rotation, bool holds)
+    {
+        ContactPosePosition = position;
+        ContactPoseRotation = rotation;
+        ContactPoseHolds = holds;
+        HasContactPose = true;
+    }
+
+    /// <summary>
+    /// KINEMATION's clip of the reload playing and how far into it it is now (s, at the body clip's pace), with
+    /// <paramref name="settling"/> once it is in the stretch where it eases back into the hold. False when none is playing.
+    /// </summary>
+    internal bool ContactClip(out AnimationClip clip, out float time, out bool settling)
+    {
+        clip = contactClip;
+        time = 0f;
+        settling = false;
+        if (clip == null) return false;
+        float played = Time.time - contactStart;
+        if (played >= contactLength)
+        {
+            contactClip = clip = null;
+            return false;
+        }
+        time = Mathf.Min(contactFrom + played * contactRate, clip.length);
+        settling = contactSettles && contactLength - played <= contactSettle;
+        return true;
+    }
+
+    /// <summary>The body's clip was cut short (the sights coming up): the hands let go of its hold.</summary>
+    internal void StopContacts() => contactClip = null;
+
+    // A reload's clip begins: KINEMATION's own one runs alongside at the body clip's pace, from the same share of the way.
+    private void FollowClip(AnimationClip source, FPSAnimationAsset body, float from, bool settles)
+    {
+        contactClip = source != null && FPSAnimationAsset.IsValid(body) ? source : null;
+        if (contactClip == null) return;
+        contactRate = Mathf.Max(.01f, body.blendTime.rateScale);
+        contactFrom = Mathf.Clamp01(from) * contactClip.length;
+        contactStart = Time.time;
+        contactLength = (contactClip.length - contactFrom) / contactRate;
+        contactSettles = settles;
+        contactSettle = Mathf.Max(.01f, body.blendTime.blendOutTime);
     }
 
     private void OnDestroy()

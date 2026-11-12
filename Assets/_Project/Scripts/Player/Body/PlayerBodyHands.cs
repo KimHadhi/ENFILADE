@@ -174,6 +174,8 @@ public sealed partial class PlayerBodyHands : MonoBehaviour
             Place(left, true);
             // A grip on the gun takes the support hand (GunGrip).
             HoldGunGrip(left, dt);
+            // Through a reload, both palms where KINEMATION's own clip has them on the gun (GunContact).
+            HoldGunContacts();
         }
         using (FingersMarker.Auto())
         {
