@@ -10,13 +10,21 @@ using UnityEngine;
 /// (Magica's angle limit off), and Magica's damping takes speed off in the world, which is air drag: walking or running,
 /// it trailed 5.9 cm behind where it was drawn (Ichigo's 8.5 cm), a landing swung it 10.6 cm and a quick turn 11.9 cm,
 /// and it drifted back over half a second without one bounce.
-/// Flesh here turns about its root as a VRChat PhysBone does (the root never slides: Magica's spring off), as one lump
+/// Flesh here turns about its root as a VRChat PhysBone does (the root stays put, Magica's spring off, unless it slides:
+/// below), as one lump
 /// (the bones on the root swing, all below them keep to them: ClothPart.HoldStill), within its maker's limit cone,
 /// with no air drag and no wind, so a steady run leaves it where it was drawn and only a change of
 /// speed moves it: a damped spring of a given firmness (how many times a second it swings, Hz) and bounce (its damping
 /// ratio: .5 swings back once, .25 two or three times; a real breast is about 4 Hz and .2, finite element studies of
 /// free breast vibration). Measured the same way, Mayo then rings at 4.1 Hz, damping .27 (asked 4.36 and .27): a hard
 /// landing drops it 3 cm, two bounces, still in .38 s; a quick turn 2.9 cm.
+/// That was firmer than flesh is (the user, 2026-11-12: "살이 이게 가슴이나 엉덩이나 너무 딱딱하게 굳은 것 같은데 더
+/// 출렁거려도 될 듯 ... 현실적으로"): walking moved Mayo's breast 0.8 cm and running 1.2 cm, where an unsupported breast
+/// moves about 4 cm against the trunk walking and 15 cm running, half of it up and down (treadmill studies of D cups).
+/// Now breasts spring at 2.2-3.6 Hz with damping .16-.27 (ClothFlesh.csv), feel the body's bob while running (feltSpeed
+/// 3.5), and a lump whose bone stands upright slides a little on its root (slide), since turning can't show a bounce
+/// along the bone: Mayo's breast 2.1 cm walking, 6.6 cm running, a landing 4.9 cm with four bounces in a second; her
+/// bottom (a bone 32° off upright) 0.9 cm running by turning alone, 3.2 cm with the slide.
 /// How Magica's angle restoration becomes that spring (AngleConstraint.SolverConstraint): each step it turns a bone
 /// toward its drawn direction in three passes (Define.System.AngleLimitIteration), each by stiffness × .2 of the angle
 /// (AngleConstraint's Convert scales it so), about a centre .1, .3 then .5 of the way out from the parent; the parent
@@ -42,15 +50,25 @@ internal static class FleshSpring
     private const int Halvings = 40;
 
     /// <summary>
-    /// Writes the flesh spring over a part's settings: still root, restoration and its attenuation from
-    /// <paramref name="hz"/> and <paramref name="bounce"/>, no damping or wind, the angle limit on.
+    /// Writes the flesh spring over a part's settings: restoration and its attenuation from <paramref name="hz"/> and
+    /// <paramref name="bounce"/>, no damping or wind, the angle limit on, and a root still or sliding up to
+    /// <paramref name="slide"/> metres.
     /// </summary>
-    internal static void Apply(ClothSerializeData data, float hz, float bounce)
+    internal static void Apply(ClothSerializeData data, float hz, float bounce, float slide = 0f)
     {
-        var (stiffness, attenuation) = Restoration(hz, bounce, StepsPerSecond());
+        int steps = StepsPerSecond();
+        var (stiffness, attenuation) = Restoration(hz, bounce, steps);
         // Magica's spring slides the root bone itself (BoneSpring); a PhysBone only turns it. Off, the root is a still
-        // point at its drawn place, as in VRChat, and no body shape pushes it either.
-        data.springConstraint.useSpring = false;
+        // point at its drawn place, as in VRChat, and no body shape pushes it either. On (slide), it swings as often as
+        // the lump turns, with no damping, which would be air drag here too.
+        data.springConstraint.useSpring = slide > 0f;
+        if (slide > 0f)
+        {
+            data.springConstraint.springPower = SlidePower(hz, bounce, steps);
+            data.springConstraint.limitDistance = slide;
+            data.springConstraint.normalLimitRatio = 1f;
+            data.springConstraint.springNoise = 0f;
+        }
         // Magica's damping takes speed off in the world: air drag. Hair streams back in it; flesh would sit behind
         // its drawn place for as long as the body moves.
         data.damping.SetValue(0f);
@@ -81,6 +99,21 @@ internal static class FleshSpring
         float attenuation = Mathf.Clamp01(1f - carried / given);
         float power = Mathf.Pow(Define.System.DefaultSimulationFrequency / (float)Mathf.Max(1, stepsPerSecond), StepPower);
         return (Mathf.Clamp01(TurnPerPass(given) / (RestorationScale * power)), attenuation);
+    }
+
+    /// <summary>
+    /// Magica's spring power for a root sliding as often as the lump swings. Its step (SimulationManagerNormal's
+    /// SpringBatchJob) is offset' = (1 - power)(offset + speed), whose roots per step meet r·e^(±iφ) for a spring of that
+    /// frequency and damping when 1 - power = 2r cos φ - r² (and the damping 1 - r² / (1 - power), left out: it is air drag).
+    /// </summary>
+    internal static float SlidePower(float hz, float bounce, int stepsPerSecond)
+    {
+        float omega = 2f * Mathf.PI * Mathf.Clamp(hz, LeastHz, MostHz);
+        float zeta = Mathf.Clamp(bounce, LeastBounce, MostBounce);
+        float step = 1f / Mathf.Max(1, stepsPerSecond);
+        float r = Mathf.Exp(-zeta * omega * step);
+        float phi = omega * Mathf.Sqrt(Mathf.Max(0f, 1f - zeta * zeta)) * step;
+        return Mathf.Clamp(1f - (2f * r * Mathf.Cos(phi) - r * r), .001f, 1f);
     }
 
     // The turn each pass makes (share of the angle) so that the passes of one step give back the share asked.

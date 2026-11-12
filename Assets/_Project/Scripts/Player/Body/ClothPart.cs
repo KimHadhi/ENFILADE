@@ -81,8 +81,13 @@ public sealed class ClothPart
     /// VRChat PhysBone's ignore list, which VRChat holds still the same way (HoldStill).
     /// </summary>
     public string still = "";
+    /// <summary>
+    /// For flesh: how far its root may slide on Magica's spring, as a share of the part's length. A lump whose bone stands
+    /// upright can't show its up-and-down bounce by turning (Mayo's bottom). Zero: the root stays put and the lump turns.
+    /// </summary>
+    public float slide;
 
-    /// <summary>A spring of the body's own flesh, which springs firm and heavy rather than as cloth (FleshSpring).</summary>
+    /// <summary>A spring of the body's own flesh, which springs as soft, heavy flesh rather than as cloth (FleshSpring).</summary>
     internal bool Flesh => spring && firmness > 0f;
 
     /// <summary>The bones the part hangs from, in the table's order: a ring runs through them in turn.</summary>
@@ -222,7 +227,7 @@ public sealed class ClothPart
         data.motionConstraint.useBackstop = backstop >= 0f;
         data.motionConstraint.backstopDistance.SetValue(Mathf.Max(0f, backstop) * length);
         if (feltSpeed > 0f) data.inertiaConstraint.localMovementSpeedLimit.SetValue(true, feltSpeed);
-        if (Flesh) FleshSpring.Apply(data, firmness, bounce);
+        if (Flesh) FleshSpring.Apply(data, firmness, bounce, Mathf.Max(0f, slide) * length);
     }
 
     // A number down the part: as its curve column says, or under the preset's own curve where the column is empty.
