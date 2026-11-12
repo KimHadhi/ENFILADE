@@ -86,6 +86,9 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     // How far the body's root stands under the capsule's floor (m; under zero, over it): the height of the soles it
     // draws over its model's floor, at its scale (StandOnSoles).
     private float soleLift;
+    // The soles of the look the model comes in, its own shoes (model units, measured before dressing), which set the
+    // body's size; and how far the worn shoes then put the eyes over the camera's height (m, PlayerMovement.EyeRise).
+    private float ownSole, eyeRise;
     private PlayableGraph graph;
     private AnimationMixerPlayable mixer;
     private Channel transition;
@@ -213,6 +216,8 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         }
         float fit = FitScale();
         body.localScale = Vector3.one * fit;
+        // Before dressing: the look the model comes in, standing on its own shoes, is the one sized to the camera.
+        ownSole = DrawnSole.Of(body);
         // Dressed after the fit, so a tall helmet never makes the body that wears it smaller, and before the feet, hands
         // and cloth read the model, so they find the items' bones on it.
         var outfit = OutfitLook.Parse(ChosenOutfit);
@@ -382,6 +387,9 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         loadedVariant = null;
         animator = null;
         bodyCamera.Release();
+        // Without a body the camera rests at the capsule's own height again.
+        eyeRise = 0f;
+        if (player != null) player.EyeRise = 0f;
         thirdPerson = false;
     }
 
@@ -389,19 +397,24 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
 
     // Stands the dressed body on the soles it draws (DrawnSole) instead of its model's floor, where the clips and the feet
     // on the ground put the soles. BOOTH avatars stand on their own shoes' heels, so other shoes or bare feet floated over
-    // the ground or sank into it, by up to 6 cm (the user, 2026-11-12: "하이힐 신었을 때랑 그런 거 없을 때랑 … 바닥에서 떠
-    // 있다든지 그런 문제 발생해?"). The body goes down by that much (or up), and is scaled so its eyes still meet the
-    // camera's height (FitScaleOf): the view, the aim and the capsule are the same in any shoes, and what changes is only
-    // the drawn body's size, by a few percent.
+    // the ground or sank into it, by up to 8 cm at the size the game draws them (the user, 2026-11-12: "하이힐 신었을 때랑
+    // 그런 거 없을 때랑 … 바닥에서 떠 있다든지 그런 문제 발생해?"). The body goes down by that much (or up). Its size is set
+    // once per character, by the look it comes in (ownSole) standing on its soles with its eyes at the camera's height, and
+    // no shoe changes it: heels make the body taller and bare feet shorter, the eyes and the camera with them (EyeRise), as
+    // the user asked ("몸 크기 그대로로 해서 힐 신으면 키 커졌으면"). 0.8.144 kept the eyes and rescaled the body instead.
+    // The capsule stays as it is.
     private void StandOnSoles(float fit)
     {
-        float sole = DrawnSole.Of(body);
         float camera = player.runtimeBodyDefaults.w;
         // The eyes' height over the model's floor that the fit was made from (model units).
         float eye = fit > 0f ? camera / fit : 0f;
-        if (animator.isHuman && eye - sole > .1f) fit = camera / (eye - sole);
+        bool sized = animator.isHuman && eye - ownSole > .1f;
+        if (sized) fit = camera / (eye - ownSole);
         body.localScale = Vector3.one * fit;
+        float sole = DrawnSole.Of(body);
         soleLift = sole * fit;
+        eyeRise = sized ? (ownSole - sole) * fit : 0f;
+        player.EyeRise = eyeRise;
     }
 
     /// <summary>

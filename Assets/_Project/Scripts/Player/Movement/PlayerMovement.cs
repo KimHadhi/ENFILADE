@@ -80,6 +80,13 @@ public sealed partial class PlayerMovement : MonoBehaviour
     // Keep the original dimensions across that reload rather than treating them as standing.
     [SerializeField, HideInInspector] private bool runtimeBodyCaptured;
     [SerializeField, HideInInspector] internal Vector4 runtimeBodyDefaults;
+    /// <summary>
+    /// How far the worn shoes put the body's eyes over (+) or under (-) the standing camera height, in metres. The body
+    /// keeps its size in any shoes, so heels make it taller and bare feet shorter (the user, 2026-11-12: "힐 신으면 키
+    /// 커졌으면"); the camera rides the eyes, and its resting place in the capsule (CrouchPivot) rises with them so a
+    /// ladder or a punch that steadies the camera there doesn't move the view. Set by PlayerBody.StandOnSoles.
+    /// </summary>
+    internal float EyeRise { get; set; }
     [SerializeField] private MovementAbilitySettings abilitySettings = new MovementAbilitySettings();
     public MovementAbilitySettings AbilitySettings => abilitySettings;
     public bool IsParkour => StateMachine != null && StateMachine.Current.ControlsTraversal;

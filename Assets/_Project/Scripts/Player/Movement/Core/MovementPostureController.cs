@@ -223,7 +223,7 @@ public sealed class MovementPostureController
             targetColliderHeight = Mathf.Lerp(diveEntryHeight, targetColliderHeight, progress);
             targetOffset = Mathf.Lerp(diveEntryOffset, targetOffset, progress);
             // The camera stays inside the changing body under low roofs, including supine dives.
-            targetOffset = Mathf.Min(targetOffset, targetColliderHeight - 0.03f - baseCameraY);
+            targetOffset = Mathf.Min(targetOffset, targetColliderHeight - 0.03f - baseCameraY - ctx.EyeRise);
         }
 
         float newHeight;
@@ -277,7 +277,8 @@ public sealed class MovementPostureController
             float t = ctx.IsDiving || dt <= 0f ? 1f : 1f - Mathf.Exp(-currentSharpness * dt);
             currentOffset = Mathf.Lerp(currentOffset, targetOffset, t);
             Vector3 pos = ctx.crouchPivot.localPosition;
-            ctx.crouchPivot.localPosition = new Vector3(pos.x, baseCameraY + currentOffset, pos.z);
+            // The shoes' rise moves the whole camera place, standing or crouched, as it moves the body's eyes.
+            ctx.crouchPivot.localPosition = new Vector3(pos.x, baseCameraY + ctx.EyeRise + currentOffset, pos.z);
         }
     }
 

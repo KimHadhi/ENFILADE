@@ -135,7 +135,8 @@ public sealed partial class PlayerBody
             if (apart > .015f && apart < player.runtimeBodyDefaults.w * .2f
                 && up > -.05f && up < .25f && ahead > .01f && ahead < .25f) return middle;
         }
-        return new Vector3(head.position.x, body.position.y + soleLift + player.runtimeBodyDefaults.w, head.position.z) + restForward * backOffset;
+        // The capsule's floor, the camera's height and what the shoes add to it (StandOnSoles).
+        return new Vector3(head.position.x, body.position.y + soleLift + player.runtimeBodyDefaults.w + eyeRise, head.position.z) + restForward * backOffset;
     }
 
     // In Update, once the body faces its way this frame: how far the look bends it (SpineLook, first in LateUpdate).

@@ -7,8 +7,8 @@ using UnityEngine;
 /// feet on the ground (FootPlanting) put the soles. BOOTH avatars are made standing on the heels their own shoes have, and
 /// other shoes or none don't reach that floor: Mayo's soles float 1 cm over it in her own pumps, 4.5 cm in the Sailor
 /// Maiden loafers, 4.1 cm in the White Board boots and 5.8 cm barefoot, while Ichigo's sink 7 mm into it in her own shoes
-/// and 13 mm in the Sera Yura ones (measured from the FBX files, 2026-11-12; the user asked whether heels make the body
-/// float or sink). The lowest point a look draws is measured from its meshes as the model stands before any clip, its
+/// and 13 mm in the Sera Yura ones (measured from the FBX files at their own size, 2026-11-12; the game draws Mayo 1.41
+/// and Ichigo 1.53 times as tall; the user asked whether heels make the body float or sink). The lowest point a look draws is measured from its meshes as the model stands before any clip, its
 /// keys as dressing left them, so the body can be stood on its real soles: any character in any shoes, a modder's too.
 /// </summary>
 internal static class DrawnSole
