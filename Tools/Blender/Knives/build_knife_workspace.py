@@ -20,7 +20,11 @@ behind her eyes and her arm 49 cm long:
 - 되베기 (10): 1 guard → 2 wound across to the left, palm in → 3 벰 → 5 through to the right → 8 → 10 guard.
 - 찌르기 (12): 1 cocked back by the ribs (a charge holds the knife here) → 3 벰 straight out → 5 in deep → 8 → 12 guard.
 - 역수 찌르기 (12): 1 raised beside the head, the blade hanging below the fist → 3 벰 driven down and ahead → 5 → 8 → 12 guard.
+Then each class knife's own clips, ported from its workshop addon (addon_clips.json, written by knife_addon_port.py): every
+frame keyed (the touch-up layer takes the polish), that knife in the fist where its ClassKnives.csv row seats it (the
+addon's own grip, measured by the port).
 """
+import csv
 import importlib.util
 import json
 import math
@@ -40,6 +44,8 @@ spec.loader.exec_module(tools)
 
 PREVIEWS = {'forward': 'Assets/_Project/Art/Models/Addons/Knives/PrimalKnife/PrimalKnife.fbx',
             'reverse': 'Assets/_Project/Art/Models/Addons/Knives/Karambit/Karambit.fbx'}
+KNIFE_MODEL = 'Assets/_Project/Art/Models/Addons/Knives/{0}/{0}.fbx'
+CLASS_KNIVES = 'Assets/_Project/Resources/Tables/ClassKnives.csv'
 # ClassKnives' seat (hand axes: x away from the thumb, y out of the palm, z the fingers' way; positions in hand lengths).
 HELD = Vector((0.0, .3, .55))
 BLADE = {'forward': Vector((-.8, 0.0, .6)), 'reverse': Vector((.93, 0.0, .36))}
@@ -94,6 +100,44 @@ DRAFTS = {
         12: GUARD,
     },
 }
+
+
+def seats(root):
+    """Each knife model's seat in the melee slot as ClassKnives.csv gives it (its first row naming that model): the handle's
+    middle, the blade's and the edge's ways in the hand's axes; a row without its own seat takes its grip's."""
+    out = {}
+    with open(root / CLASS_KNIVES, encoding='utf-8-sig', newline='') as f:
+        for row in csv.DictReader(f):
+            if (row.get('id') or '').startswith('#') or not row.get('model'):
+                continue
+            name = row['model'].strip().split('/')[-1]
+            if name in out:
+                continue
+            grip = 'reverse' if (row.get('meleeGrip') or '').strip().lower() == 'reverse' else 'forward'
+
+            def three(prefix, axes, fallback):
+                try:
+                    return Vector([float(row[prefix + a]) for a in axes])
+                except (KeyError, TypeError, ValueError):
+                    return fallback.copy()
+            out[name] = (three('meleeHeld', ('Side', 'Palm', 'Along'), HELD), three('meleeBlade', 'XYZ', BLADE[grip]).normalized(),
+                         three('meleeEdge', 'XYZ', EDGE).normalized())
+    return out
+
+
+def preview_of(root, look):
+    """A look's model and seat (handle middle, blade, edge in the hand's axes): the two drafts' knives in their grips, else
+    that knife as its ClassKnives.csv row seats it."""
+    if look in PREVIEWS:
+        return PREVIEWS[look], (HELD, BLADE[look], EDGE)
+    return KNIFE_MODEL.format(look), seats(root).get(look, (HELD, BLADE['forward'], EDGE))
+
+
+def ported_poses(key):
+    """A ported clip's keys by frame (1-based), as DRAFTS holds the drafts'."""
+    clip = tools.CLIPS[key]
+    frames = tools.ported()[clip['knife']]['clips'][key.split('.', 1)[1]]['frames']
+    return {i + 1: (tuple(w), tuple(a), tuple(p), tuple(e), tuple(c), t) for i, (w, a, p, e, c, t) in enumerate(frames)}
 
 
 def args():
@@ -197,7 +241,8 @@ def key_draft(rig, context, key):
     data.action_blend_type = 'REPLACE'
     data.action_influence = 1.0
     scene = context.scene
-    for frame, at in sorted(DRAFTS[key].items()):
+    poses = DRAFTS[key] if key in DRAFTS else ported_poses(key)
+    for frame, at in sorted(poses.items()):
         scene.frame_set(frame)
         pose(rig, context, at)
         key_pose(rig, frame)
@@ -227,7 +272,8 @@ def paint(root, model_rel, obj):
 
 def make_preview(root, rig, context, look, collection):
     """The game's knife in the right fist, seated as ClassKnives seats it, riding the wrist bone."""
-    objects = import_fbx(root, PREVIEWS[look])
+    model, (held, blade_axes, edge_axes) = preview_of(root, look)
+    objects = import_fbx(root, model)
     holder = bpy.data.objects.new(tools.LOOKS[look], None)
     holder.empty_display_type = 'PLAIN_AXES'
     holder.empty_display_size = .02
@@ -241,7 +287,7 @@ def make_preview(root, rig, context, look, collection):
             obj.matrix_parent_inverse = Matrix.Identity(4)
         obj.hide_select = True
         if obj.type == 'MESH':
-            paint(root, PREVIEWS[look], obj)
+            paint(root, model, obj)
     context.view_layer.update()
     marks = {o.name.split('.')[0]: o.matrix_world.translation.copy() for o in objects if o.type == 'EMPTY'}
     blade_model = -marks['Pommel'] if 'Pommel' in marks else Vector((0, -1, 0))
@@ -255,13 +301,13 @@ def make_preview(root, rig, context, look, collection):
     wrist, along, palm, length = tools.hand_frame(rig)
     x_axis = palm.cross(along).normalized()
     axes = Matrix((x_axis, palm, along)).transposed()
-    blade = (axes @ BLADE[look]).normalized()
-    edge = axes @ EDGE
+    blade = (axes @ blade_axes).normalized()
+    edge = axes @ edge_axes
     edge = (edge - blade * edge.dot(blade)).normalized()
     want = Matrix((blade, edge, blade.cross(edge))).transposed()
     have = Matrix((blade_model, edge_model, blade_model.cross(edge_model))).transposed()
     turn = want @ have.transposed()
-    place = wrist + axes @ (HELD * length)
+    place = wrist + axes @ (held * length)
     world = Matrix.Translation(place) @ turn.to_4x4() @ Matrix.Scale(1 / tools.GAME_SCALE, 4)
     holder.parent = rig
     holder.parent_type = 'BONE'
@@ -286,7 +332,7 @@ def main():
         raise SystemExit('The True FPS start file (Kazusa and FPS_Head_Camera) is not open')
     collection = bpy.data.collections.new(PREVIEW_COLLECTION)
     scene.collection.children.link(collection)
-    for look in PREVIEWS:
+    for look in tools.LOOKS:
         make_preview(root, rig, context, look, collection)
     for key in tools.CLIPS:
         key_draft(rig, context, key)

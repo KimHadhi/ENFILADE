@@ -12,6 +12,10 @@ for the reverse stab):
 - 찌르기: the charged attack, a riposte and a beat chain's finisher, from the cocked fist (its first frame is where a charge
   draws the knife back) straight out.
 - 역수 찌르기: a reverse-grip knife's (the Ghost's karambit, the Detente's shiv), driven down from above.
+Each class knife's own clips from its workshop addon follow, a set per knife (the user, 2026-11-13: "애드온 따오면서 그
+모션도 같이 있었을 거 아니야"): knife_addon_port.py reads the addons' viewmodels into addon_clips.json beside this file and
+build_knife_workspace.py keys them as drafts on Kazusa (가드, 꺼내기, 베기, 되베기, 찌르기 for the 흑상, 카람빗, 버터플라이, 가위
+쉬브 and 프라이멀 나이프), the knife itself in her fist; ClassKnives.csv names each class's tables.
 It shares Tools/Blender/OneClick/one_click.py with the other workspaces: opening shows the clip last worked on, Kazusa in
 Pose mode with her right hand handle selected, auto-key on, the Dope Sheet; saving (Ctrl+S) sends every clip that changed
 to Assets/_Project/Resources/Tables/<table>.csv: per half frame, the wrist and the elbow from the eyes in game metres, the
@@ -93,6 +97,39 @@ def project_root():
             if (parent / 'Assets' / '_Project').is_dir() and (parent / 'ProjectSettings').is_dir():
                 return parent
     return None
+
+
+# ---- The knives' own clips -------------------------------------------------------------------------------------------
+# Ported from each knife's workshop addon by knife_addon_port.py (addon_clips.json beside this file): a set per knife, played
+# by the classes whose ClassKnives.csv row names its tables, its preview in the fist that knife in its row's fighting grip.
+KNIVES = {'Heishang': '흑상', 'Karambit': '카람빗', 'Butterfly': '버터플라이', 'ScissorsShiv': '가위 쉬브', 'PrimalKnife': '프라이멀 나이프'}
+PORTED_CLIPS = {'guard': ('가드 (되풀이)', 'Guard'), 'draw': ('꺼내기', 'Draw'), 'slash': ('베기', 'Slash'),
+                'backslash': ('되베기', 'Backslash'), 'stab': ('찌르기', 'Stab')}
+PORTED_FILE = 'addon_clips.json'
+
+
+def ported():
+    """The ported clips (knife -> its addon's viewmodel and its clips' frames and marks), or none when the file is missing."""
+    root = project_root()
+    path = root / 'Tools' / 'Blender' / 'Knives' / PORTED_FILE if root is not None else None
+    try:
+        return json.loads(path.read_text(encoding='utf-8')) if path is not None else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def _add_ported():
+    for knife, entry in ported().items():
+        LOOKS[knife] = 'PREVIEW_Knife_' + knife
+        for clip, c in entry.get('clips', {}).items():
+            label, table = PORTED_CLIPS[clip]
+            CLIPS[f'{knife}.{clip}'] = dict(label=f'{KNIVES.get(knife, knife)} {label}', action=f'enf_knife_{knife.lower()}_{clip}',
+                                            table=f'KnifeMelee{knife}{table}', end=int(c['end']), marks=dict(c.get('marks', {})),
+                                            look=knife, loop=clip == 'guard', knife=knife,
+                                            source=f"{entry.get('source', '')} {c.get('source', '')}".strip())
+
+
+_add_ported()
 
 
 def _one_click():
@@ -348,7 +385,8 @@ def clip_rows(context, key, marks):
 def table_text(context, key, marks):
     clip = CLIPS[key]
     loop = '되풀이 클립: 끝 줄이 첫 줄과 같아야 이어진다. ' if clip.get('loop') else ''
-    note = ('"#설명 (블렌더 칼 작업실 ArtSource/Knives의 ' + clip['label'] + ' 클립을 저장(Ctrl+S)하면 쓰는 오른팔. ' + loop +
+    source = f"워크숍 애드온 {clip['source']}에서 옮긴 모션. " if clip.get('source') else ''
+    note = ('"#설명 (블렌더 칼 작업실 ArtSource/Knives의 ' + clip['label'] + ' 클립을 저장(Ctrl+S)하면 쓰는 오른팔. ' + source + loop +
             '손으로 고치지 말고 블렌더에서 고친다. 어느 칼이 어느 클립을 쓰는지는 ClassKnives.csv. MeleeKnife가 근접 칸의 칼로 틀고 '
             'ExecutionKnifeArm이 어느 캐릭터 오른팔에든 맞춘다)"')
     cells = ['클립의 초', '눈에서 손목까지 오른쪽(m)', '위(m)', '앞(m)', '눈에서 팔꿈치까지 오른쪽(m). 팔꿈치가 이쪽으로 굽는다', '위(m)', '앞(m)',
@@ -528,7 +566,13 @@ class ENFKNIFE_PT_panel(bpy.types.Panel):
         box = layout.box()
         box.label(text='1. 클립 고르기')
         col = box.column(align=True)
+        group = None
         for k, v in CLIPS.items():
+            if v.get('knife') != group:
+                # Each knife's own clips (ported from its addon) under its name.
+                group = v.get('knife')
+                col = box.column(align=True)
+                col.label(text=f'{KNIVES.get(group, group)} (애드온 모션)')
             col.operator('enf_knife.pick', text=v['label'], depress=k == key).clip = k
         box.label(text=f'끝: {scene.frame_end}프레임 ({(scene.frame_end - scene.frame_start) / fps:.3f}초)')
         for marker in sorted((m for m in scene.timeline_markers if m.name in MARKS), key=lambda m: m.frame):
