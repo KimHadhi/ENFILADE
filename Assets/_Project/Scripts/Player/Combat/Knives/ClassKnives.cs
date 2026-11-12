@@ -12,6 +12,10 @@ using UnityEngine;
 /// the wrist. The model's own ways come from its markers (Tip, Edge, Pommel, as the converter places them), so a model
 /// brought in any frame sits the same; without them its blade is taken along its -Z and its edge along -Y (the converter's
 /// frame as Unity imports it, a half turn about Y).
+/// The same knife is the melee slot's in place of the fists (MeleeKnife; the user, 2026-11-13: "클래스 별로 기본 근접 슬롯에
+/// 칼 들게 해 줘"): the row also names it (a Texts id) and its picture (WeaponIcons), how the fist holds it to fight (a
+/// forward or a reverse grip, and their seat), its swing clips (KnifeSwing tables, the Blender knife workspace's) and what
+/// it deals in place of the fists' numbers, with its head and back factors and its extra reach.
 /// </summary>
 public static class ClassKnives
 {
@@ -34,7 +38,32 @@ public static class ClassKnives
         public Vector3 Blade = new Vector3(.93f, 0f, .36f), Edge = Vector3.forward;
         public float Scale = 1f;
         public string DrawSound = "Knife/Draw", StabSound = "Knife/Stab", SheathSound = "Knife/Sheath";
+
+        // ---- In the melee slot, in place of the fists (MeleeKnife; the user, 2026-11-13: "클래스 별로 기본 근접 슬롯에 칼
+        // 들게 해 줘") ----
+
+        /// <summary>The knife's name (a Texts id, or the words themselves for a modder's row) and its picture (WeaponIcons id).</summary>
+        public string Name = "knife.default.name", Icon = "PrimalKnife";
+        /// <summary>Held in the fist for fighting: a forward grip (the blade out of the thumb's side) or a reverse one.</summary>
+        public bool MeleeReverse;
+        /// <summary>That grip's handle middle and blade and edge ways, in the hand axes above.</summary>
+        public Vector3 MeleeHeld = new Vector3(0f, .3f, .55f), MeleeBlade = ForwardBlade, MeleeEdge = Vector3.forward;
+        /// <summary>The swing clips (KnifeSwing tables): drawn from the hip, the guard held, the light slash and its backhand, the heavy stab.</summary>
+        public string DrawClip = "KnifeMeleeDraw", GuardClip = "KnifeMeleeGuard", SlashClip = "KnifeMeleeSlash", BackslashClip = "KnifeMeleeBackslash",
+            StabClip = "KnifeMeleeStab";
+        /// <summary>
+        /// What it deals in place of the fists' 10-28 (Player.csv Fists.damage): a light slash and a full-charge stab, with the
+        /// posture they break; on the head and in the back these times more (generous, as the user's guns are); and how much
+        /// further it reaches than a fist (m).
+        /// </summary>
+        public float Slash = 45f, Stab = 110f, SlashPosture = 18f, StabPosture = 40f, HeadFactor = 2f, BackFactor = 2f, Reach;
+        public string SwingSound = "Knife/Swing", HitSound = "Knife/Hit", HeavyHitSound = "Knife/HeavyHit", WallSound = "Knife/Wall";
     }
+
+    /// <summary>A forward grip's blade: out of the thumb's side, leaning the fingers' way, so a fist held thumb up points it ahead.</summary>
+    public static readonly Vector3 ForwardBlade = new Vector3(-.8f, 0f, .6f);
+    /// <summary>A reverse grip's blade: out of the little finger's side (the execution's grip).</summary>
+    public static readonly Vector3 ReverseBlade = new Vector3(.93f, 0f, .36f);
 
     private static readonly Dictionary<string, Knife> knives = new Dictionary<string, Knife>(System.StringComparer.OrdinalIgnoreCase);
     private static bool listening;
@@ -94,6 +123,31 @@ public static class ClassKnives
         knife.DrawSound = Text(row, "drawSound", knife.DrawSound);
         knife.StabSound = Text(row, "stabSound", knife.StabSound);
         knife.SheathSound = Text(row, "sheathSound", knife.SheathSound);
+        // In the melee slot: the grip picks the blade's default way and the stab clip; any column may override it.
+        knife.Name = Text(row, "name", knife.Name);
+        string file = knife.Model.Substring(knife.Model.LastIndexOf('/') + 1);
+        knife.Icon = Text(row, "icon", file.Length > 0 ? file : knife.Icon);
+        knife.MeleeReverse = string.Equals(Text(row, "meleeGrip", "forward"), "reverse", System.StringComparison.OrdinalIgnoreCase);
+        knife.MeleeHeld = new Vector3(Number(row, "meleeHeldSide", knife.Held.x), Number(row, "meleeHeldPalm", knife.Held.y),
+            Number(row, "meleeHeldAlong", knife.Held.z));
+        knife.MeleeBlade = Way(row, "meleeBlade", knife.MeleeReverse ? ReverseBlade : ForwardBlade);
+        knife.MeleeEdge = Way(row, "meleeEdge", Vector3.forward);
+        knife.DrawClip = Text(row, "drawClip", knife.DrawClip);
+        knife.GuardClip = Text(row, "guardClip", knife.GuardClip);
+        knife.SlashClip = Text(row, "slashClip", knife.SlashClip);
+        knife.BackslashClip = Text(row, "backslashClip", knife.BackslashClip);
+        knife.StabClip = Text(row, "stabClip", knife.MeleeReverse ? "KnifeMeleeStabReverse" : knife.StabClip);
+        knife.Slash = Mathf.Max(0f, Number(row, "slash", knife.Slash));
+        knife.Stab = Mathf.Max(0f, Number(row, "stab", knife.Stab));
+        knife.SlashPosture = Mathf.Max(0f, Number(row, "slashPosture", knife.SlashPosture));
+        knife.StabPosture = Mathf.Max(0f, Number(row, "stabPosture", knife.StabPosture));
+        knife.HeadFactor = Mathf.Max(0f, Number(row, "headFactor", knife.HeadFactor));
+        knife.BackFactor = Mathf.Max(0f, Number(row, "backFactor", knife.BackFactor));
+        knife.Reach = Number(row, "reach", knife.Reach);
+        knife.SwingSound = Text(row, "swingSound", knife.SwingSound);
+        knife.HitSound = Text(row, "hitSound", knife.HitSound);
+        knife.HeavyHitSound = Text(row, "heavyHitSound", knife.HeavyHitSound);
+        knife.WallSound = Text(row, "wallSound", knife.WallSound);
         return knife;
     }
 

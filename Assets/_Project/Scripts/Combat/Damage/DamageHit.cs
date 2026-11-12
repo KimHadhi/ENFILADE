@@ -9,7 +9,8 @@ public enum DamageResult { Ignored, Duplicate, Evaded, Damaged, Blocked, Parried
 /// (PlayerHold). Thrown: a class throwable that strikes as it flies (a Knight's thrown knife); Blast: one that bursts (an
 /// Assault's frag). The kill feed names the thrower's throwable for both (Throwables.FeedName).
 /// </summary>
-public enum DamageMethod { Other, Bullet, Shove, Grab, Feed, Pounce, Slam, Thrown, Blast }
+// Blade: a class knife in hand in place of the fists (MeleeKnife): the kill feed names the knife and its hits bleed as shots do.
+public enum DamageMethod { Other, Bullet, Shove, Grab, Feed, Pounce, Slam, Thrown, Blast, Blade }
 
 /// <summary>One ID per attack activation, shared by all of its hitboxes.</summary>
 public readonly struct DamageHit

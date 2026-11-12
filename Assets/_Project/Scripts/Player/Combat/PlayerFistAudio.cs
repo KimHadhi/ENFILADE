@@ -59,6 +59,9 @@ public sealed class PlayerFistAudio : MonoBehaviour
     private void Emit(FistSound sound, AudioClip clip, float volume)
     {
         LastSound = sound; LastClip = clip; PlayCount++;
+        // The class knife in the melee slot sounds as a blade instead (MeleeKnife); the fist sound still goes to the other
+        // PCs, whose copy plays the knife's the same way.
+        if (isActiveAndEnabled && Application.isPlaying && MeleeKnife.Sounds(this, sound)) { Played?.Invoke(sound); return; }
         if (clip == null || !isActiveAndEnabled || !Application.isPlaying) return;
         Played?.Invoke(sound);
         if (sound == FistSound.Swing)

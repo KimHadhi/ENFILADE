@@ -27,6 +27,9 @@ public static class GunFeelDirector
         // A Knight's thrown knife lands as a shot does: its blood, its headshot and its kill pulse (the user wanted it
         // "찰진(타격감 있는)").
         bool shot = bullet || hit.Method == DamageMethod.Thrown;
+        // The class knife in the melee slot bleeds, takes heads and pulses on a kill as a shot does too (MeleeKnife).
+        bool blade = hit.Method == DamageMethod.Blade;
+        shot |= blade;
         bool execution = hit.Kind == DamageKind.Execution;
 
         // World: every damaged target flashes, whoever hit it. Living enemies also bleed, except from a shove that doesn't
@@ -35,6 +38,8 @@ public static class GunFeelDirector
         bool enemy = report.Target is EnemyHealth;
         if ((!kill || !enemy) && !(report.Target is IOwnHitFeedback)) HitFlashRenderer.For(report.Target)?.Flash(hit.Point, critical);
         if (enemy && hit.Kind != DamageKind.Fall && (hit.Method != DamageMethod.Shove || kill)) ImpactVfx.Blood(hit.Point, hit.Direction, critical, kill, shot, report.Target);
+        // A knife's cut of light where it landed, short and bold, on every PC (KnifeHitFx).
+        if (blade && !(report.Target is IOwnHitFeedback)) KnifeHitFx.Play(hit.Point, hit.Direction, MeleeKnife.Heavy(hit), critical);
         if (enemy && kill) CorpseTopple.Spawn(report.Target, hit, critical);
         // A shared enemy's death is the host's to call, so one count and one feed row reach every PC, whoever saw it first.
         bool shared = kill && report.Target.TryGetComponent(out EnemyNetwork network) && network.IsSpawned;
@@ -102,6 +107,8 @@ public static class GunFeelDirector
         if (hit.Method == DamageMethod.Shove) return WeaponIcons.Shove;
         // A class throwable's own picture (Throwables: ThrowingKnife, GrenadeFrag, ...).
         if (hit.Method == DamageMethod.Thrown || hit.Method == DamageMethod.Blast) return Throwables.FeedIcon(hit);
+        // The class knife in the melee slot: the striker's class's knife (MeleeKnife).
+        if (hit.Method == DamageMethod.Blade) return MeleeKnife.FeedIcon(hit);
         if (hit.Method == DamageMethod.Bullet && hit.Source != null)
         {
             var weapon = hit.Source.GetComponentInChildren<WeaponController>();
@@ -118,6 +125,7 @@ public static class GunFeelDirector
         if (hit.Method == DamageMethod.Shove) return Texts.Get("feed.weapon.shove");
         // A class throwable's: the knife that struck or the frag that burst, by the thrower's throwable (Throwables).
         if (hit.Method == DamageMethod.Thrown || hit.Method == DamageMethod.Blast) return Throwables.FeedName(hit);
+        if (hit.Method == DamageMethod.Blade) return MeleeKnife.FeedName(hit);
         if (hit.Method == DamageMethod.Bullet && hit.Source != null)
         {
             var weapon = hit.Source.GetComponentInChildren<WeaponController>();

@@ -71,8 +71,9 @@ public sealed class FistsView : MonoBehaviour
     private void Punch(float charge)
     {
         var strike = melee != null ? melee.LastStrike : ComboStrike.None;
-        // A riposte goes from the hand that didn't sweep the blow aside; the other is still holding the deflect.
-        bool right = strike == ComboStrike.Riposte && IsDeflecting ? deflectLeftHand : nextRight;
+        // A riposte goes from the hand that didn't sweep the blow aside; the other is still holding the deflect. With the
+        // class knife out every strike is the knife hand's (MeleeKnife).
+        bool right = MeleeKnife.Out(player) || (strike == ComboStrike.Riposte && IsDeflecting ? deflectLeftHand : nextRight);
         if (strike == ComboStrike.Spin || strike == ComboStrike.Chase)
         {
             spinRight = right; spinElapsed = 0f;

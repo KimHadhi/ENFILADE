@@ -63,8 +63,10 @@ public sealed class MeleeAttackSweep
             contacted.Add(identity);
             // This PC's own player's fists carry their perk (PlayerPerks).
             float dealt = player.IsLocal ? damage * PlayerPerks.FistFactor : damage;
+            // The class knife in the melee slot cuts deeper on the head and in the back, and lands as a blade (MeleeKnife).
+            dealt = MeleeKnife.Hit(player, collider, contact.point, forward, dealt, out bool head);
             var result = receiver.ReceiveHit(new DamageHit(attackId, dealt, DamageKind.Attack,
-                contact.point, forward, player.gameObject, true, posture));
+                contact.point, forward, player.gameObject, true, posture, isCritical: head, method: MeleeKnife.MethodOf(player)));
             if (result == DamageResult.Blocked || result == DamageResult.Parried) { Cancel(); break; }
             if (result != DamageResult.Damaged) continue;
             collider.GetComponentInParent<MeleeCombatTarget>()?.ApplyPostureDamage(posture);

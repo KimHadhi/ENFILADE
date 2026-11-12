@@ -1015,6 +1015,14 @@ feed.multi.quad,쿼드 킬,,처치 점수 팝업: 연속 처치 4
 feed.multi.more,연속 처치 x{0},,처치 점수 팝업: 연속 처치 5 이상. {0}=연속 처치 수
 feed.money,돈,,화면 오른쪽 위 돈 숫자 위의 작은 제목
 feed.weapon.execution,처형,,킬 피드: 처형으로 잡았을 때 무기 자리
+knife.default.name,칼,Knife,클래스 칼 이름(ClassKnives.csv name): 줄이 없는 클래스의 칼. 근접 칸(무기 슬롯 3번)과 그 칼로 잡았을 때 킬 피드에 나온다
+knife.knight.name,흑상,Heishang,나이트의 칼 이름(근접 칸·킬 피드)
+knife.assault.name,M9 총검,M9 Bayonet,어썰트의 칼 이름(근접 칸·킬 피드)
+knife.ghost.name,카람빗,Karambit,고스트의 칼 이름(근접 칸·킬 피드)
+knife.point.name,버터플라이 나이프,Butterfly Knife,포인트의 칼 이름(근접 칸·킬 피드)
+knife.detente.name,가위 쉬브,Scissors Shiv,데탕트의 칼 이름(근접 칸·킬 피드)
+knife.schiesshund.name,프라이멀 나이프,Primal Knife,시순트의 칼 이름(근접 칸·킬 피드)
+knife.support.name,마체테,Machete,서포트의 칼 이름(근접 칸·킬 피드)
 feed.weapon.counter,반격,,킬 피드: 반격으로 잡았을 때 무기 자리
 feed.weapon.shove,밀치기,,킬 피드: 밀치기로 잡았을 때 무기 자리
 feed.weapon.fist,주먹,,킬 피드: 맨손·그 밖의 처치 무기 자리

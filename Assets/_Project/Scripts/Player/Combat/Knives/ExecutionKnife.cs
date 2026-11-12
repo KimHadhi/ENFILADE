@@ -79,6 +79,8 @@ public sealed class ExecutionKnife : MonoBehaviour
     {
         movement = GetComponent<PlayerMovement>();
         execution = GetComponent<PlayerExecution>();
+        // The same knife in the melee slot, in place of the fists (MeleeKnife), on every PC's copy of the player too.
+        if (Application.isPlaying) MeleeKnife.On(gameObject);
         if (execution == null) return;
         execution.Started -= OnStarted;
         execution.Started += OnStarted;

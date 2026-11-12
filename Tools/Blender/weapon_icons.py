@@ -66,6 +66,7 @@ FPS = "Assets/ThirdParty/KINEMATION/FPSAnimationPack/Animations/"
 GUNS_PREFABS = "Assets/_Project/Data/Combat/"
 ADDON = "Assets/_Project/Art/Models/Addons/Weapons/"
 GRENADES = "Assets/_Project/Art/Models/Addons/Grenades/"
+KNIVES = "Assets/_Project/Art/Models/Addons/Knives/"
 
 # key -> how to put it together. prefab/body: the game's prefab and the body FBX's root in it (its bones are posed as
 # there). parts: (the part's FBX root in the prefab, its FBX). hide: mesh objects left out. drop: bones whose vertices
@@ -109,6 +110,15 @@ GUNS = {
     "GrenadeSmoke": dict(fbx=GRENADES + "GrenadeSmoke/GrenadeSmoke.fbx", front=1.0),
     "GrenadeFlash": dict(fbx=GRENADES + "GrenadeFlash/GrenadeFlash.fbx", front=1.0),
     "GrenadeCanister": dict(fbx=GRENADES + "GrenadeCanister/GrenadeCanister.fbx", emblem="cross", front=1.0),
+    # The class knives in the melee slot (ClassKnives.csv icon, MeleeKnife): flat, the point (their Tip) to the right, as
+    # the throwing knife lies.
+    "Heishang": dict(fbx=KNIVES + "Heishang/Heishang.fbx", point="Tip", front=.6),
+    "M9Bayonet": dict(fbx=KNIVES + "M9Bayonet/M9Bayonet.fbx", point="Tip", front=.6),
+    "Machete": dict(fbx=KNIVES + "Machete/Machete.fbx", point="Tip", front=.6),
+    "Karambit": dict(fbx=KNIVES + "Karambit/Karambit.fbx", point="Tip", front=.6),
+    "Butterfly": dict(fbx=KNIVES + "Butterfly/Butterfly.fbx", point="Tip", front=.6),
+    "ScissorsShiv": dict(fbx=KNIVES + "ScissorsShiv/ScissorsShiv.fbx", point="Tip", front=.6),
+    "PrimalKnife": dict(fbx=KNIVES + "PrimalKnife/PrimalKnife.fbx", point="Tip", front=.6),
 }
 
 # Unity -> Blender for these FBX files: x flips, Unity's z (forward) is Blender's -y, Unity's y (up) is Blender's z.

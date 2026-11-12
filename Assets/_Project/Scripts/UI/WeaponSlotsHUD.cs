@@ -162,8 +162,8 @@ public sealed class WeaponSlotsHUD : MonoBehaviour
             var iconRect = slot.icon.rectTransform;
             iconRect.sizeDelta = new Vector2(shape.Icon, iconHeight);
             iconRect.anchoredPosition = new Vector2(-16f, height * .1f * on);
-            ShowWeapon(slot, data, KitStyle.With(KitStyle.Ice, Mathf.Lerp(shape.IconAlpha, 1f, on)));
-            slot.empty.gameObject.SetActive(data == null);
+            ShowWeapon(slot, data, KitStyle.With(KitStyle.Ice, Mathf.Lerp(shape.IconAlpha, 1f, on)), KnifeSlot(i, data) ? MeleeKnife.SlotIcon(Owner) : null);
+            slot.empty.gameObject.SetActive(data == null && !KnifeSlot(i, data));
             slot.empty.color = KitStyle.Soft;
             // Name and kind under the icon, from the tab's right to the plate's right end.
             Meta(slot, data, i, 26f, 9f, shape.Width - 26f - 16f, KitStyle.Ice, on, dt, i == selected, ref readable);
@@ -227,8 +227,8 @@ public sealed class WeaponSlotsHUD : MonoBehaviour
             iconRect.sizeDelta = new Vector2(iconWidth, iconWidth / WeaponIcons.Aspect);
             iconRect.anchoredPosition = new Vector2(0f, Mathf.Lerp(-.06f, .08f, on) * height);
             Color ink = Color.Lerp(KitStyle.With(Color.white, shape.IconAlpha), KitStyle.Night, on);
-            ShowWeapon(slot, data, ink);
-            slot.hatch.gameObject.SetActive(data == null);
+            ShowWeapon(slot, data, ink, KnifeSlot(i, data) ? MeleeKnife.SlotIcon(Owner) : null);
+            slot.hatch.gameObject.SetActive(data == null && !KnifeSlot(i, data));
             slot.hatch.color = Color.Lerp(Stripes, KitStyle.With(KitStyle.Night, .45f), on);
             slot.hatch.rectTransform.anchoredPosition = new Vector2(0f, -.08f * height);
             Meta(slot, data, i, 12f, 8f, width - 24f, KitStyle.Night, on, dt, i == selected, ref readable);
@@ -311,10 +311,15 @@ public sealed class WeaponSlotsHUD : MonoBehaviour
 
     private WeaponData Weapon(int index) => source != null ? source.GetWeapon(index) : null;
 
+    // The melee slot with no weapon in it holds the class knife (MeleeKnife): its picture and name stand where a weapon's do.
+    private const int MeleeSlot = 2;
+    private static bool KnifeSlot(int index, WeaponData data) => data == null && index == MeleeSlot;
+    private PlayerMovement Owner => source != null ? source.GetComponent<PlayerMovement>() : null;
+
     // The weapon's own picture, kept to its canvas's shape, or the vector outline where it has none; nothing for an empty slot.
-    private static void ShowWeapon(Slot slot, WeaponData data, Color ink)
+    private static void ShowWeapon(Slot slot, WeaponData data, Color ink, Sprite knife = null)
     {
-        var picture = WeaponIcons.For(data);
+        var picture = data != null ? WeaponIcons.For(data) : knife;
         slot.icon.sprite = picture;
         slot.icon.enabled = picture != null;
         slot.icon.color = ink;
@@ -353,7 +358,7 @@ public sealed class WeaponSlotsHUD : MonoBehaviour
     private void Meta(Slot slot, WeaponData data, int index, float left, float bottom, float room, Color ink, float on, float dt,
         bool held, ref float readable)
     {
-        bool shown = data != null && on > .01f;
+        bool shown = (data != null || KnifeSlot(index, data)) && on > .01f;
         slot.nameView.gameObject.SetActive(shown);
         slot.kind.gameObject.SetActive(shown);
         if (!shown) return;
@@ -363,7 +368,7 @@ public sealed class WeaponSlotsHUD : MonoBehaviour
             slot.shownKind = slot.kind.text = kind;
             slot.kindWidth = Mathf.Ceil(slot.kind.GetPreferredValues(kind).x) + 2f;
         }
-        string name = data.DisplayName ?? "";
+        string name = data != null ? data.DisplayName ?? "" : MeleeKnife.SlotName(Owner);
         if (name != slot.shownName)
         {
             slot.shownName = slot.name.text = name;

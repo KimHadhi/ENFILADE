@@ -63,6 +63,10 @@ Execution/Front,Zombie/Bone/SkullBreak,0,앞에서 한 처형의 마지막 일�
 Knife/Draw,Grenades/KnifeDraw; Grenades/KnifeDrawCloth *0.8,0,처형·암살에서 클래스 칼을 허리에서 뽑을 때(ExecutionKnife · ClassKnives.csv drawSound): 나이트 투척 나이프와 같은 MW 꺼내기 소리와 소매 소리. 칼마다 다른 소리를 쓰려면 새 줄을 만들어 ClassKnives.csv에서 가리킨다
 Knife/Stab,Grenades/KnifeFlesh,0,처형 칼이 목에 박힐 때(찌르기 표의 strike = 처형 타격): 투척 나이프가 꽂힐 때와 같은 Far Cry 4 knife_stab. 뼈 소리(Execution/Behind·Front)는 BodyBreakSounds가 따로 낸다
 Knife/Sheath,Grenades/KnifeDrawCloth *0.7,0,처형이 끝나고 칼을 칼집에 넣을 때(찌르기 표의 sheath): 소매·칼집 스치는 소리
+Knife/Swing,Grenades/KnifeThrow *0.8,0,근접 칸의 클래스 칼을 휘두를 때(MeleeKnife: 주먹 휘두르는 소리 대신. ClassKnives.csv swingSound). 투척 나이프의 MW 휘두르는 소리
+Knife/Hit,Grenades/KnifeFlesh *0.9,0,근접 칼이 좀비를 벨 때(주먹 타격음 대신. hitSound)
+Knife/HeavyHit,Grenades/KnifeFlesh; Zombie/Hit/Fist *0.6,0,힘을 모은 근접 칼 찌르기가 박힐 때: 찌르는 소리 밑에 살 소리(heavyHitSound)
+Knife/Wall,Grenades/KnifeWall *0.9,0,근접 칼이 벽에 닿을 때(wallSound)
 Execution/Survived,Zombie/Bone/ArmBreak; Zombie/Hit/Fist *0.7,0,처형을 버틴 적(거구는 최대 체력의 35%만 깎인다): 죽이지 못한 대신 팔을 부러뜨린다
 Gore/HeadBurst,Zombie/Gore/HeadBurst,0,머리가 터질 때(머리를 맞힌 처치나 총알 헤드샷 처치. ZombieGore와 같은 규칙): 목에서 피가 뿜는다. 헤드샷 처치음(CombatHitAudio)은 따로 난다
 Gore/LimbOff,Zombie/Gore/BloodSpray; Zombie/Bone/ArmBreak *0.6,0,살아 있는 좀비의 팔다리가 떨어질 때(ZombieGore.Crippled): 피가 뿜고 뼈가 꺾인다

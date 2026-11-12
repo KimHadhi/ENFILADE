@@ -10,6 +10,9 @@ using UnityEngine;
 /// ExecutionKnife.HoldsHands), so both arms are free. After the hands, the gun and FPS Animation Framework (GunFramework
 /// + 5), before the off-hand uses, which take the left arm when they run (none does while executing), and before the
 /// cloth, so a sleeve follows. Rig-agnostic: any humanoid a modder brings.
+/// With no execution under way the same knife may be out in the melee slot (MeleeKnife): then the right arm takes the
+/// knife's swing or guard clip from the eyes (KnifeSwing, the Blender knife workspace's) over the fists' pose, and the
+/// knife rides the fist in its fighting grip (forward or reverse, ClassKnives melee*). An execution comes first.
 /// </summary>
 [DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.GunFramework + 5)]
 public sealed class ExecutionKnifeArm : MonoBehaviour
@@ -41,6 +44,7 @@ public sealed class ExecutionKnifeArm : MonoBehaviour
 
     private PlayerMovement movement;
     private ExecutionKnife driver;
+    private MeleeKnife melee;
     private Animator animator;
     private Transform eyes, holder;
     private readonly Side right = new Side { Right = true }, left = new Side();
@@ -112,7 +116,8 @@ public sealed class ExecutionKnifeArm : MonoBehaviour
         if (driver == null || eyes == null || !driver.Current(out var key, out var aim, out var knife))
         {
             stroking = false;
-            ShowKnife(false);
+            // No execution: the knife may be out in the melee slot instead (MeleeKnife).
+            if (eyes == null || !HoldForMelee()) ShowKnife(false);
             return;
         }
         if (knife != null && worn != knife.Model) Wear(knife);
@@ -134,8 +139,37 @@ public sealed class ExecutionKnifeArm : MonoBehaviour
             Pose(right, key.Right, view, aim.Has, neckAim, armsShare);
         }
         bool held = key.Held && model != null && key.Right.Weight > 0f;
-        if (held) Seat(knife);
+        if (held) Seat(knife.Held, knife.Blade, knife.Edge);
         ShowKnife(held);
+    }
+
+    // The class knife out in the melee slot (MeleeKnife): the right arm takes its swing or its guard from the eyes, by how
+    // much of the arm the knife has (the fists' block and a run take it back), and the knife rides the fist in its
+    // fighting grip (ClassKnives melee*). False when it is not out.
+    private bool HoldForMelee()
+    {
+        if (melee == null) melee = movement.GetComponent<MeleeKnife>();
+        if (melee == null || !melee.Current(out var key, out float weight, out var knife) || knife == null) return false;
+        if (worn != knife.Model) Wear(knife);
+        if (weight > 0f) PoseFromEyes(right, key, eyes, weight);
+        bool held = key.Held && model != null;
+        if (held) Seat(knife.MeleeHeld, knife.MeleeBlade, knife.MeleeEdge);
+        ShowKnife(held);
+        return true;
+    }
+
+    // The arm where an eye-space key has it (KnifeSwing: the wrist and the elbow from the eyes in metres, the hand's ways in
+    // the view's axes), eased by weight from the pose the frame had.
+    private static void PoseFromEyes(Side side, in KnifeSwing.Key key, Transform eyes, float weight)
+    {
+        for (int i = 0; i < side.TurnedCount; i++) side.Framed[i] = side.Turned[i].localRotation;
+        Quaternion view = eyes.rotation;
+        TwoBoneIK.Solve(side.Upper, side.Lower, side.Hand, eyes.position + view * key.Wrist, eyes.position + view * key.Elbow);
+        Vector3 along = view * key.Along, palm = view * key.Palm;
+        TurnHand(side, along, palm);
+        Fingers(side, along, palm, key.Curl, key.Thumb);
+        if (weight < 1f)
+            for (int i = 0; i < side.TurnedCount; i++) side.Turned[i].localRotation = Quaternion.Slerp(side.Framed[i], side.Turned[i].localRotation, weight);
     }
 
     private void OnDisable()
@@ -210,24 +244,24 @@ public sealed class ExecutionKnifeArm : MonoBehaviour
             for (int i = 0; i < side.TurnedCount; i++) side.Turned[i].localRotation = Quaternion.Slerp(side.Framed[i], side.Turned[i].localRotation, weight);
     }
 
-    // The knife in the right fist as the hand finally is this frame: its handle's middle at the row's place in the fist,
-    // its blade and edge along the row's ways (ClassKnives' hand axes: x away from the thumb, which on a right hand is the
-    // frame's -x).
-    private void Seat(ClassKnives.Knife knife)
+    // The knife in the right fist as the hand finally is this frame: its handle's middle at the grip's place in the fist,
+    // its blade and edge along the grip's ways (ClassKnives' hand axes: x away from the thumb, which on a right hand is the
+    // frame's -x). An execution holds it in its reverse grip, the melee slot in the knife's fighting grip.
+    private void Seat(Vector3 heldAxes, Vector3 bladeAxes, Vector3 edgeAxes)
     {
-        if (holder == null || knife == null) return;
+        if (holder == null) return;
         Vector3 along = AlongNow(right);
         Vector3 palm = PalmNow(right, along);
         if (along.sqrMagnitude < 1e-10f || palm.sqrMagnitude < 1e-10f) return;
         Quaternion frame = Quaternion.LookRotation(along, palm);
-        Vector3 blade = frame * Mirror(knife.Blade);
-        Vector3 edge = Vector3.ProjectOnPlane(frame * Mirror(knife.Edge), blade);
+        Vector3 blade = frame * Mirror(bladeAxes);
+        Vector3 edge = Vector3.ProjectOnPlane(frame * Mirror(edgeAxes), blade);
         if (edge.sqrMagnitude < 1e-8f) edge = Vector3.ProjectOnPlane(palm, blade);
         if (blade.sqrMagnitude < 1e-8f || edge.sqrMagnitude < 1e-8f) return;
         // A body imported at another scale (an avatar's armature at 100) must not scale the knife with it.
         float scale = Mathf.Max(1e-4f, Mathf.Abs(transform.lossyScale.x));
         holder.localScale = Vector3.one / scale;
-        holder.SetPositionAndRotation(right.Hand.position + frame * Mirror(knife.Held * right.HandLength), Quaternion.LookRotation(blade, edge));
+        holder.SetPositionAndRotation(right.Hand.position + frame * Mirror(heldAxes * right.HandLength), Quaternion.LookRotation(blade, edge));
     }
 
     private static Vector3 Mirror(Vector3 handAxes) => new Vector3(-handAxes.x, handAxes.y, handAxes.z);

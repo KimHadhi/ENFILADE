@@ -305,10 +305,11 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
         throwFelt = landFeltLater = false;
         // A Knight's fists hit harder, flesh and posture (PlayerClass).
         float fist = PlayerClass.FistFactor(player);
-        float dealt = Mathf.Lerp(damage.x, damage.y, charge) * fist * damageFactor;
-        float posture = Mathf.Lerp(postureDamage.x, postureDamage.y, charge) * fist * postureFactor;
+        // The class knife in the melee slot deals its own numbers in place of the fists' and reaches its length further (MeleeKnife).
+        float dealt = MeleeKnife.Damage(player, charge, Mathf.Lerp(damage.x, damage.y, charge)) * fist * damageFactor;
+        float posture = MeleeKnife.Posture(player, charge, Mathf.Lerp(postureDamage.x, postureDamage.y, charge)) * fist * postureFactor;
         if (at == null || !StrikeTarget(at, dealt, posture, strikeReach))
-            punchSweep.Begin(player, aim, dealt, posture, reach + (at == null ? strikeReach : 0f), radius > 0f ? radius : .22f,
+            punchSweep.Begin(player, aim, dealt, posture, reach + MeleeKnife.ExtraReach(player) + (at == null ? strikeReach : 0f), radius > 0f ? radius : .22f,
                 attackActiveTime, targets > 0 ? targets : attackMaxTargets, hitLayers, OnPunchLanded, OnPunchWallHit);
         LastStrike = strike;
         Punched?.Invoke(charge);
@@ -326,7 +327,7 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
         // This PC's own player's fists carry their perk, as the sweep's do (PlayerPerks).
         if (player.IsLocal) dealt *= PlayerPerks.FistFactor;
         var result = victim.ReceiveHit(new DamageHit(DamageHit.NewAttackId(), dealt, DamageKind.Attack, point,
-            delta.sqrMagnitude > .0001f ? delta.normalized : aim.forward, player.gameObject, true, posture));
+            delta.sqrMagnitude > .0001f ? delta.normalized : aim.forward, player.gameObject, true, posture, method: MeleeKnife.MethodOf(player)));
         if (result != DamageResult.Damaged) return false;
         at.ApplyPostureDamage(posture);
         OnPunchLanded();
