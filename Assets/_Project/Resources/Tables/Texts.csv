@@ -670,17 +670,17 @@ net.host.failed,방을 만들지 못했습니다. 인터넷 연결을 확인하�
 net.host.portbusy,방을 만들지 못했습니다. 포트 {0}을 다른 프로그램이 쓰고 있는지 확인하세요.,,메인 메뉴 상태 줄 > LAN 방 만들기 실패. {0}=포트 번호
 net.rooms.failed,인터넷 방 목록을 불러오지 못했습니다. 연결을 확인하세요.,,서버 목록 상태 줄 > 인터넷 방 목록을 못 불러왔을 때
 #--- 채팅 ---,,,
-chat.system,시스템,,채팅 > 시스템 줄의 말한 이(명령 결과와 방송)
-chat.placeholder.chat,메시지 입력 · Tab 전환,,채팅 입력 칸 > 채팅 채널일 때 빈 칸 안내
-chat.placeholder.console,/help · 명령어 입력,,채팅 입력 칸 > 콘솔 채널일 때 빈 칸 안내
+chat.system,시스템,,채팅 기록에 남는 시스템 줄의 말한 이(명령 결과와 방송). 줄에는 이름 대신 콘솔 판이나 밝은 카드로 보인다
+chat.placeholder.chat,메시지 입력 · {0} 콘솔로,,채팅 입력 칸 > 채팅 채널일 때 빈 칸 안내. {0}=채널 바꾸는 키(키 설정 창의 채팅 채널. 기본 Tab)
+chat.placeholder.console,/help · 명령어 입력 · {0} 채팅으로,,채팅 입력 칸 > 콘솔 채널일 때 빈 칸 안내. {0}=채널 바꾸는 키(기본 Tab)
 chat.switched.chat,채팅 채널로 전환했습니다.,,채팅 > /chat 입력 결과
 chat.switched.console,콘솔 채널로 전환했습니다.,,채팅 > /console 입력 결과
-chat.channel.chat,채팅,,채팅 줄 앞 [ ] 채널 이름과 입력 칸 채널 표시 > 채팅
-chat.channel.console,콘솔,,채팅 줄 앞 [ ] 채널 이름과 입력 칸 채널 표시 > 콘솔
-chat.channel.dialogue,대사,,채팅 줄 앞 [ ] 채널 이름 > 대사
-chat.channel.broadcast,방송,,채팅 줄 앞 [ ] 채널 이름 > 방송(시스템 알림)
-chat.channel.team,팀,,채팅 줄 앞 [ ] 채널 이름 > 팀
-chat.channel.all,전체,,채팅 줄 앞 [ ] 채널 이름 > 전체
+chat.channel.chat,채팅,,입력 칸 왼쪽 분홍 채널 탭 > 채팅 (채팅 줄에는 채널 이름이 붙지 않는다)
+chat.channel.console,콘솔,,입력 칸 왼쪽 회색 채널 탭 > 콘솔
+chat.channel.dialogue,대사,,채팅 줄 이름 앞 작은 표시 > 대사
+chat.channel.broadcast,방송,,채널 이름 > 방송(시스템 알림). 줄에는 이름 대신 밝은 카드와 분홍 마름모로 나온다. 테스트 버튼 이름에도 쓴다
+chat.channel.team,팀,,채팅 줄 이름 앞 작은 표시 > 팀
+chat.channel.all,전체,,채팅 줄 이름 앞 작은 표시 > 전체
 #--- 아군 사격 ---,,,
 ff.state.on,켜짐,,아군 사격 상태 낱말 > 아래 /ff 결과의 {0}에 들어감
 ff.state.off,꺼짐,,아군 사격 상태 낱말 > 아래 /ff 결과의 {0}에 들어감

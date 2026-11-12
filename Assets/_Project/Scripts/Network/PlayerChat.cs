@@ -11,8 +11,12 @@ public sealed class PlayerChat : NetworkBehaviour
 {
     private const int LengthLimit = 500;
 
-    /// <summary>Someone else said something: their name, and what they said.</summary>
-    public static event Action<string, string> Heard;
+    /// <summary>
+    /// Someone else said something: their player's PlayerChat (the chat line takes their profile picture and seat colour
+    /// from that player), the name they go by, and what they said. The RPC runs on the speaker's own player object on
+    /// every other PC, so who said it costs nothing on the wire.
+    /// </summary>
+    public static event Action<PlayerChat, string, string> Heard;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetStatics() => Heard = null;
@@ -23,5 +27,5 @@ public sealed class PlayerChat : NetworkBehaviour
     }
 
     [Rpc(SendTo.NotMe)]
-    private void SayRpc(string speaker, string text) => Heard?.Invoke(speaker, text);
+    private void SayRpc(string speaker, string text) => Heard?.Invoke(this, speaker, text);
 }

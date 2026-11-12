@@ -1,0 +1,57 @@
+﻿key,value,note
+Place.left,70,채팅 왼쪽 끝 위치(px. 화면 왼쪽부터). 위의 미션 바와 줄을 맞춘다. 화면 가운데가 아니라 가장자리에서 재므로 16:10·4:3·반쪽 창에서도 화면 안에 있다
+Place.bottom,412,입력 칸 아래 끝 위치(px. 화면 아래부터). 아군 카드 세 장(Hud.csv Team.bottom 292부터 398까지) 바로 위
+Place.width,470,채팅 너비(px). 오른쪽 끝이 어느 화면 비율에서도 조준선에서 멀리 떨어진다
+Place.height,300,입력하는 동안 입력 칸 위에 보이는 지난 대화의 높이(px). 이 안에서 휠로 굴린다
+Place.ceiling,340,채팅 위 끝이 화면 가운데보다 올라갈 수 있는 최대 높이(px). 미션 바의 TAB 줄(+363~+388) 아래. 화면이 낮으면 지난 대화 높이부터 줄인다
+Place.inputHeight,36,입력 칸 높이(px)
+Place.gap,6,지난 대화와 입력 칸 사이(px)
+Place.yaw,4,채팅 덩어리가 HUD 면 위에서 제 각도로 더 도는 좌우 각도(°). +면 오른쪽이 멀어진다. 설정의 HUD 기울기가 곱해진다(아군 카드는 +8°)
+Place.roll,-0.6,채팅 덩어리가 화면 안에서 도는 각도(°). +면 오른쪽이 올라간다. 설정의 HUD 기울기가 곱해진다(아군 카드는 반대쪽 +1.5°)
+Line.textSize,18,플레이어 말·대사·시스템 알림 글자 크기
+Line.commandSize,16,내가 친 명령(/help 등) 글자 크기
+Line.resultSize,15,명령 결과 글자 크기. 사람 말보다 조용하게
+Line.padX,9,판 바깥 끝 안쪽 여백과 글 뒤 여백(px)
+Line.padY,5,글 위아래 여백(px)
+Line.gap,4,줄 사이 간격(px)
+Line.tile,22,말한 사람의 프로필 칸 한 변(px). 그 사람 사진이고 없으면 그 사람 색 위에 이름 첫 글자
+Line.tileGap,8,프로필 칸이나 표시와 글 사이(px)
+Line.glyph,13,시스템 알림의 마름모와 명령의 꺾쇠 크기(px)
+Line.bar,3,판 바깥 끝 세로 막대 굵기(px). 말한 사람 색
+Line.shear,10,판 안쪽 끝이 기우는 거리(px). HUD의 사선
+Line.plate,#0B0B0EAD,줄 뒤 판 색(#RRGGBBAA). 세상이 비치되 눈밭·하늘 위 흰 글자도 읽힐 만큼 어둡게
+Line.plateEnd,0.72,판 안쪽 끝에 남는 불투명도 몫. 화면 가운데 쪽으로 옅어진다
+Line.ink,#F4F5F8,말 글자 색
+Line.mine,#FF4F78,내 이름과 내 줄 막대 색(HUD의 분홍). 다른 사람은 킬 피드·점수판과 같은 자리 색
+Line.system,#FFF5F7EB,시스템 알림(방송: 아군 사격 켜고 끔 등) 카드 색. 밝은 카드라 어두운 줄들 사이에서 튄다
+Line.systemInk,#17171B,시스템 알림 글자 색(밝은 카드 위 어두운 글자)
+Line.systemMark,#FF4F78,시스템 알림의 마름모와 막대 색
+Line.console,#0B0B0ED9,명령과 그 결과 뒤 판 색. 더 어둡고 밋밋해서 콘솔 줄로 읽힌다
+Line.consoleInk,#B8C1CE,명령 결과 글자와 막대 색
+Pop.seconds,0.18,새 줄이 미끄러져 들어오며 제 크기로 돌아오는 시간(초)
+Pop.slide,28,새 줄이 제자리보다 왼쪽에서 출발하는 거리(px)
+Pop.scale,1.07,새 줄이 처음에 커져 있는 배율(바깥 끝은 제자리)
+Pop.flashSeconds,0.14,새 줄의 판이 말한 사람 색으로 번쩍였다가 돌아오는 시간(초)
+Pop.flash,0.85,그 번쩍임의 첫 프레임 세기(0~1)
+Pop.bar,3,새 줄의 끝 막대가 처음에 몇 배 굵은지
+Fade.hold,8,채팅이 닫혀 있을 때 줄이 들어온 뒤 남아 있는 시간(초. 실제 시간)
+Fade.seconds,0.5,그 뒤 사라지는 데 걸리는 시간(초)
+Fade.lines,5,채팅이 닫혀 있을 때 보이는 최대 줄 수. 넘으면 오래된 줄부터 바로 사라진다
+Fade.linger,1.5,채팅을 닫은 뒤 제 시간이 끝난 줄들이 더 남아 있는 시간(초)
+Fade.older,0.07,닫혀 있을 때 한 줄 위로 갈 때마다 옅어지는 정도
+Fade.floor,0.72,그렇게 옅어지는 최저 불투명도
+Fade.push,0.25,최대 줄 수를 넘어 밀려난 줄이 사라지는 시간이자 채팅을 열 때 줄들이 돌아오는 시간(초)
+Open.panel,#0B0B0E8C,입력하는 동안 지난 대화 뒤 판 색
+Open.edge,#FF4F78,판 위 모서리 표시·입력 칸 밑줄·스크롤 막대 손잡이 색
+Open.edgeLength,64,판 위 모서리 분홍 표시 길이(px)
+Open.input,#0B0B0EF0,입력 칸 색
+Open.underline,2,입력 칸 밑줄 굵기(px)
+Open.caret,#FF4F78,깜박이는 커서 색
+Open.caretWidth,2,커서 굵기(px. 정수)
+Open.selection,#FF4F7859,선택한 글자 뒤 색
+Open.placeholder,#FFFFFF73,빈 입력 칸 안내 글자 색
+Open.track,#FFFFFF14,스크롤 막대 길 색
+Open.scrollbar,4,스크롤 막대 굵기(px)
+Open.scroll,32,휠 한 칸에 굴러가는 거리(px)
+Open.tab,92,입력 칸 왼쪽 채널 탭 너비(px). 채널 바꾸는 키(기본 Tab)나 클릭으로 바꾼다
+Open.tabSize,15,채널 탭 글자 크기

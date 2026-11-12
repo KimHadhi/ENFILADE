@@ -8,6 +8,12 @@ using UnityEngine.InputSystem;
 using TMPro;
 using System;
 
+/// <summary>
+/// The chat on GameHUD's left plane: Enter opens it, Enter sends, Esc closes, Tab (the key window's 채팅 채널) swaps chat
+/// and console, up and down recall what was sent. Since the 2026-11-12 redesign each line is drawn on its own plate in
+/// code (ChatMessageItem; the prefab line now only lends its font), the box is placed and dressed by ChatFrame, and the
+/// numbers are Tables/Chat.csv (ChatLook).
+/// </summary>
 public class SinglePlayerChatManager : MonoBehaviour
 {
     [Header("Player Control")]
@@ -18,6 +24,7 @@ public class SinglePlayerChatManager : MonoBehaviour
     [SerializeField] private TMP_InputField chatInput;
     [SerializeField] private ScrollRect scrollRect;
     [SerializeField] private RectTransform messageContainer;
+    [Tooltip("The old one-text line. Lines are built in code now (ChatMessageItem); its font is the chat's font.")]
     [SerializeField] private GameObject messagePrefab;
 
     [Header("Input channel")]
@@ -28,12 +35,13 @@ public class SinglePlayerChatManager : MonoBehaviour
     [SerializeField] private Button channelButton;
 
     [Header("Settings")]
-    [SerializeField] private float messageDisplayTime = 3f;
-    [SerializeField] private float fadeDuration = 1f;
     [SerializeField, Min(1)] private int maxMessages = 300;
 
     private readonly List<ChatEntry> history = new List<ChatEntry>();
     private readonly ChatCommandRouter commands = new ChatCommandRouter();
+    private readonly ChatLook look = new ChatLook();
+    private ChatFrame frame;
+    private TMP_FontAsset lineFont;
     private bool commandsReady;
     private int lastClosedFrame = -1;
     private CursorLockMode previousCursorLock;
@@ -69,6 +77,7 @@ public class SinglePlayerChatManager : MonoBehaviour
     private void OnEnable()
     {
         PlayerChat.Heard += OnHeard;
+        GameTables.Reloaded += OnTablesReloaded;
         var actions = Controls != null ? Controls.actions : InputSystem.actions;
         cycleChannelAction = actions != null ? actions.FindAction("UI/CycleChatChannel", false) : null;
         ownsCycleChannelAction = cycleChannelAction != null && !cycleChannelAction.enabled;
@@ -78,6 +87,7 @@ public class SinglePlayerChatManager : MonoBehaviour
     private void OnDisable()
     {
         PlayerChat.Heard -= OnHeard;
+        GameTables.Reloaded -= OnTablesReloaded;
         if (isChatOpen) CloseChat(false);
         if (ownsCycleChannelAction) cycleChannelAction?.Disable();
         cycleChannelAction = null; ownsCycleChannelAction = false;
@@ -86,6 +96,8 @@ public class SinglePlayerChatManager : MonoBehaviour
     private void Awake()
     {
         EnsureCommands();
+        look.Bind(this);
+        lineFont = LineFont();
         if (scrollRect != null)
         {
             scrollRectImage = scrollRect.GetComponent<Image>();
@@ -100,6 +112,10 @@ public class SinglePlayerChatManager : MonoBehaviour
                 }
             }
         }
+        frame = new ChatFrame((RectTransform)transform, scrollRect, chatInput, channelButton);
+        frame.Dress(look);
+        // The tab is coloured whole now; the prefab's thin accent line on it is the old badge's.
+        if (channelAccent != null) channelAccent.enabled = false;
     }
 
     private void Start()
@@ -146,6 +162,22 @@ public class SinglePlayerChatManager : MonoBehaviour
         }
     }
 
+    // After the HUD's scripts moved this frame: the box's place for this screen, then every line's pop and fade.
+    private void LateUpdate()
+    {
+        frame?.Place(look);
+        float now = Time.unscaledTime, dt = Time.unscaledDeltaTime;
+        int shownWhileClosed = Mathf.Max(0, look.Fade.lines);
+        for (int i = messageList.Count - 1, rank = 0; i >= 0; i--, rank++)
+        {
+            var line = messageList[i];
+            if (line == null) continue;
+            bool moving = line.Tick(now, dt, rank, isChatOpen);
+            // While closed, past the lines shown, the first line with nothing left to do has only gone ones above it.
+            if (!moving && !isChatOpen && rank >= shownWhileClosed) break;
+        }
+    }
+
     public void OpenChat()
     {
         if (isChatOpen || chatInput == null) return;
@@ -177,6 +209,7 @@ public class SinglePlayerChatManager : MonoBehaviour
         {
             scrollRectImage.enabled = true;
         }
+        frame?.ShowBox(true);
 
         // 3. 스크롤바 보이기
         SetScrollbarVisible(true);
@@ -187,14 +220,7 @@ public class SinglePlayerChatManager : MonoBehaviour
         RefreshInputChannel();
         chatInput.ActivateInputField();
 
-        for (int i = 0; i < messageList.Count; i++)
-        {
-            if (messageList[i] != null)
-            {
-                messageList[i].SetActiveView(true);
-            }
-        }
-
+        // Every line comes back while typing (ChatMessageItem.Tick sees the chat open).
         RequestScrollToBottom();
     }
 
@@ -225,6 +251,7 @@ public class SinglePlayerChatManager : MonoBehaviour
         {
             scrollRectImage.enabled = false;
         }
+        frame?.ShowBox(false);
 
         // 3. 스크롤바 완전 투명화 및 클릭 차단
         SetScrollbarVisible(false);
@@ -241,13 +268,12 @@ public class SinglePlayerChatManager : MonoBehaviour
             chatInput.gameObject.SetActive(false);
         }
 
+        // The lines that were read stay a moment longer, then go as their time says; the newest are back at the bottom
+        // even if the history was scrolled up.
+        float now = Time.unscaledTime;
         for (int i = 0; i < messageList.Count; i++)
-        {
-            if (messageList[i] != null)
-            {
-                messageList[i].StartFadeCountdown(messageDisplayTime, fadeDuration);
-            }
-        }
+            if (messageList[i] != null) messageList[i].Linger(now);
+        RequestScrollToBottom();
     }
 
     private void SetScrollbarVisible(bool isVisible)
@@ -275,18 +301,22 @@ public class SinglePlayerChatManager : MonoBehaviour
         submittedInputs.Add(text);
         if (submittedInputs.Count > 50) submittedInputs.RemoveAt(0);
         string speaker = GameSettings.Current.DisplayName;
+        var me = PlayerRoster.Local;
         if (inputChannel == ChatChannel.Console || text.TrimStart().StartsWith("/"))
         {
-            AddMessage(ChatChannel.Console, speaker, text);
+            // What was typed is this player's (a pink chevron); the answer is the console's.
+            AddEntry(new ChatEntry(ChatChannel.Console, speaker, text, null, me));
             string result = Commands.Execute(text);
             if (!string.IsNullOrEmpty(result)) AddMessage(ChatChannel.Console, Texts.Get("chat.system"), result);
             return;
         }
-        AddMessage(ChatChannel.Note, speaker, text);
-        if (PlayerRoster.Local != null && PlayerRoster.Local.TryGetComponent(out PlayerChat chat)) chat.Say(text);
+        AddEntry(new ChatEntry(ChatChannel.Note, speaker, text, null, me));
+        if (me != null && me.TryGetComponent(out PlayerChat chat)) chat.Say(text);
     }
 
-    private void OnHeard(string speaker, string text) => AddMessage(ChatChannel.Note, speaker, text);
+    // A friend's words carry their player, so the line shows their picture and seat colour.
+    private void OnHeard(PlayerChat from, string speaker, string text)
+        => AddEntry(new ChatEntry(ChatChannel.Note, speaker, text, null, from != null ? from.GetComponent<PlayerMovement>() : null));
 
     public void AddDialogue(string speaker, string text) => AddMessage(ChatChannel.Dialogue, speaker, text);
     public void AddDialogue(string speaker, string text, Color speakerColor) => AddEntry(new ChatEntry(ChatChannel.Dialogue, speaker, text, speakerColor));
@@ -299,12 +329,11 @@ public class SinglePlayerChatManager : MonoBehaviour
         history.Add(entry);
         int capacity = Mathf.Max(1, maxMessages);
         if (history.Count > capacity) history.RemoveRange(0, history.Count - capacity);
-        if (messagePrefab != null && messageContainer != null)
+        if (messageContainer != null)
         {
             bool follow = !isChatOpen || scrollRect == null || scrollRect.verticalNormalizedPosition <= 0.03f;
-            var item = Instantiate(messagePrefab, messageContainer).GetComponent<ChatMessageItem>();
-            item.SetMessage(entry, messageDisplayTime, fadeDuration);
-            if (isChatOpen) item.SetActiveView(true);
+            var item = ChatMessageItem.Create(messageContainer, lineFont, look);
+            item.Show(entry, ChatFrame.LineWidth(look), Time.unscaledTime);
             messageList.Add(item);
             while (messageList.Count > capacity)
             {
@@ -344,11 +373,16 @@ public class SinglePlayerChatManager : MonoBehaviour
     public void RefreshInputChannel()
     {
         Color color = ChatStyle.ColorFor(inputChannel);
-        if (channelAccent != null) channelAccent.color = color;
-        if (channelLabel != null) { channelLabel.text = "[" + ChatStyle.Label(inputChannel) + "]"; channelLabel.color = color; }
-        if (channelIcon != null) { channelIcon.color = color; channelIcon.SetChannel(inputChannel); }
+        if (channelLabel != null) channelLabel.text = ChatStyle.Label(inputChannel);
+        if (channelIcon != null) channelIcon.SetChannel(inputChannel);
+        frame?.PaintTab(color, channelLabel, channelIcon);
         if (chatInput != null && chatInput.placeholder is TMP_Text placeholder)
-            placeholder.text = inputChannel == ChatChannel.Console ? Texts.Get("chat.placeholder.console") : Texts.Get("chat.placeholder.chat");
+        {
+            // The hint names the key the key window has on 채팅 채널, not a fixed Tab.
+            string key = KeyBindings.Name("UI/CycleChatChannel");
+            if (string.IsNullOrEmpty(key) || key == "?") key = "Tab";
+            placeholder.text = Texts.Format(inputChannel == ChatChannel.Console ? "chat.placeholder.console" : "chat.placeholder.chat", key);
+        }
     }
 
     private void RecallInput(int direction)
@@ -358,6 +392,21 @@ public class SinglePlayerChatManager : MonoBehaviour
         inputHistoryIndex = Mathf.Clamp(inputHistoryIndex + direction, 0, submittedInputs.Count);
         chatInput.text = inputHistoryIndex == submittedInputs.Count ? pendingDraft : submittedInputs[inputHistoryIndex];
         chatInput.caretPosition = chatInput.text.Length;
+    }
+
+    // Chat.csv was saved: the box takes the new numbers at once, lines from the next one on.
+    private void OnTablesReloaded()
+    {
+        frame?.Dress(look);
+        RefreshInputChannel();
+    }
+
+    // The chat's own font, the one its prefab line carried (ChattingFont): the lines are built in code now, in the same type.
+    private TMP_FontAsset LineFont()
+    {
+        if (messagePrefab != null && messagePrefab.TryGetComponent(out TMP_Text text) && text.font != null) return text.font;
+        if (chatInput != null && chatInput.textComponent != null && chatInput.textComponent.font != null) return chatInput.textComponent.font;
+        return CombatUIAssets.ResolveFont(null);
     }
 
     private void EnsureCommands()
