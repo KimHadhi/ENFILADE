@@ -352,6 +352,8 @@ public sealed partial class PlayerMovement : MonoBehaviour
         if (Application.isPlaying && IsLocal && GetComponent<StealthMarkersHUD>() == null) gameObject.AddComponent<StealthMarkersHUD>();
         if (Application.isPlaying && IsLocal && GetComponent<StealthView>() == null) gameObject.AddComponent<StealthView>();
         if (Application.isPlaying && GetComponent<PlayerThrow>() == null) gameObject.AddComponent<PlayerThrow>();
+        // The step dodge seen in the world (afterimages, wind lines, the pop and smoke), friends' copies included.
+        if (Application.isPlaying && GetComponent<DodgeDash>() == null) gameObject.AddComponent<DodgeDash>();
         // The class at work (stage 7): starting guns, the class key, adrenaline, CHARGE, a Point's guns reloading aside.
         if (Application.isPlaying && GetComponent<ClassKit>() == null) gameObject.AddComponent<ClassKit>();
         if (Application.isPlaying && IsLocal && GetComponent<ClassHUD>() == null) gameObject.AddComponent<ClassHUD>();
