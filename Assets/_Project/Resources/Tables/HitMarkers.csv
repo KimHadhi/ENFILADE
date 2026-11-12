@@ -17,8 +17,11 @@ Clean.bodyColor,#FFFFFF,몸샷 색
 Clean.headColor,#F5DB6E,헤드샷 색. 페이데이 3가 과녁 정중앙 명중에 그리는 연한 금색(굵게의 금색보다 옅다)
 Clean.killColor,#FF3B30,처치 색(몸샷·헤드샷 처치 모두)
 Clean.blockedColor,#9EA6B0,피해가 없는 명중(가드·패링·무적)의 색
-Clean.headLength,1.12,헤드샷 선 길이 배율. 헤드샷의 별빛·불똥·렌즈 플레어는 따로 그대로 뜬다(GunFeel)
-Clean.headPop,0.4,헤드샷이 튕기는 정도(pop 대신)
+Clean.headLength,1.25,헤드샷 선 길이 배율(2차 시안 E). 헤드샷의 별·고리·불똥·갈라진 플레어는 아래 Head.* 줄
+Clean.headPop,0.45,헤드샷이 튕기는 정도(pop 대신)
+Clean.headPopAgain,0.22,헤드샷 선이 한 번 더 튕기는 정도. 몸샷은 한 번 튕기고 헤드샷은 '빵-똮' 두 번 튕겨서 과녁 위에 아무것도 더 그리지 않고도 헤드샷인 줄 안다(2차 시안 E). 헤드샷 처치도 같다. 0이면 끈다
+Clean.headPopAgainAt,0.045,두 번째로 튕기는 때(첫 튕김에서 초)
+Clean.headThickness,1.3,헤드샷 선이 이만큼 굵게 시작해 흰 번쩍임이 끝난 뒤 popSeconds 동안 제 두께로 돌아온다. 1이면 끈다
 Clean.killLength,1.3,처치 선 길이 배율
 Clean.killThickness,1.25,처치 선 두께 배율
 Clean.killPop,0.45,처치가 튕기는 정도
@@ -27,3 +30,55 @@ Clean.killFadeSeconds,0.18,처치가 사라지는 시간(초). 합쳐서 0.28초
 Clean.blockedLength,0.75,피해 없음의 선 길이 배율
 Clean.blockedThickness,0.8,피해 없음의 선 두께 배율
 Clean.blockedAlpha,0.8,피해 없음의 진하기(0~1). 튕기지 않는다
+#헤드샷,,"헤드샷 터짐(깔끔·굵게 둘 다). 사용자가 고른 2차 시안(2026-11-12: B 금 고리, C 갈라진 플레어, F 덜어낸 지금 것, E는 위 Clean 줄)을 합친 것. 조준점 둘레 약 12px 안에는 아무것도 그리지 않아 맞힌 머리와 그 뒤 다음 머리가 보인다(시안 페이지에서 예전 것은 10m 좀비 머리를 0.15초 동안 다 가렸고 이것은 최대 5%). 모두 흰색으로 터졌다가 금색으로 바뀐다. 크기를 0으로 두면 그 부분을 끈다. 크기는 1920x1080 화면 기준 px, 시간은 초"
+Head.color,#FFD133,금색(별·고리·불똥·플레어·다이아몬드)
+Head.glowColor,#FFB329,별빛이 하얗게 식은 뒤의 색. 금색보다 짙은 불씨색
+Head.starSize,22,속 빈 별의 빛살 길이(px). 0이면 별을 끈다. 예전 별은 30에 가운데가 꽉 찼었다
+Head.starOpen,1.3,별이 첫 프레임에 이만큼 크게 터졌다가 제자리로 돌아온다
+Head.starSeconds,0.14,별이 보이는 시간
+Head.starTurn,30,별이 보이는 동안 도는 각도(°)
+Head.starHole,0.42,별 가운데를 비우는 몫(별 반지름에 대한 비율). 머리가 별 속으로 보인다
+Head.crossScale,0.62,45° 돌려 겹친 작은 별의 크기(큰 별에 대한 비율)
+Head.crossHole,0.62,작은 별 가운데를 비우는 몫(작은 별 반지름에 대한 비율)
+Head.glowScale,1.5,별 뒤 빛(더하기)의 크기(별에 대한 배율)
+Head.glowStrength,0.55,별 뒤 빛의 세기(0~1)
+Head.glowHole,0.3,별 뒤 빛 가운데를 비우는 몫
+Head.ringFrom,16,얇은 금 고리가 열리기 시작하는 반지름(px). 선 사이를 지나 바깥으로 퍼진다(2차 시안 B)
+Head.ringTo,46,고리가 다 열린 반지름(px). 0이면 고리와 그 밑 검은 테두리를 끈다
+Head.ringSeconds,0.14,고리가 보이는 시간. 이 시간의 86% 동안 열린다
+Head.ringHold,0.04,고리가 다 진하게 있는 시간. 그 뒤 사라진다
+Head.ringWidth,3.2,고리 두께(px). 처음
+Head.ringEndWidth,1,고리 두께(px). 끝
+Head.ringEdgeAlpha,0.3,고리 밑 흐린 검은 테두리의 진하기. 밝은 하늘에서도 보이게
+Head.echoDelay,0.03,옅은 두 번째 고리가 한 박자 늦게 나오는 시간
+Head.echoTo,60,두 번째 고리가 다 열린 반지름(px). 0이면 끈다
+Head.echoSeconds,0.11,두 번째 고리가 보이는 시간
+Head.echoWidth,1.6,두 번째 고리 두께(px). 처음
+Head.echoEndWidth,0.6,두 번째 고리 두께(px). 끝
+Head.echoAlpha,0.55,두 번째 고리 진하기
+Head.sparks,8,불똥 개수(HUD를 만들 때 읽는다). 선 방향 사이로 날아간다. 0이면 끈다(2차 시안 F)
+Head.sparkFrom,16,불똥이 출발하는 거리(px). 선보다 바깥
+Head.sparkTo,50,불똥이 날아가는 거리(px)
+Head.sparkLength,16,불똥 길이(px). 처음
+Head.sparkEndLength,3,불똥 길이(px). 끝
+Head.sparkWidth,2,불똥 두께(px). 처음
+Head.sparkEndWidth,1,불똥 두께(px). 끝
+Head.sparkSeconds,0.12,불똥이 보이는 시간
+Head.flareFrom,24,갈라진 렌즈 줄기가 출발하는 거리(px). 줄기 반쪽씩 좌우로 쏘아 나간다(2차 시안 C)
+Head.flareTo,210,줄기 바깥 끝이 닿는 거리(px). 0이면 줄기와 세로 줄기·다이아몬드를 끈다
+Head.flareDrift,70,줄기 안쪽 끝이 밖으로 밀려나는 거리(px). 가운데가 점점 더 비워진다
+Head.flareOpen,0.05,줄기가 다 뻗는 시간
+Head.flareSeconds,0.16,줄기가 보이는 시간
+Head.flareWidth,4,줄기 두께(px). 처음
+Head.flareEndWidth,1.5,줄기 두께(px). 끝
+Head.flareGlowWidth,3,줄기 밑 흐린 빛의 두께(줄기 두께의 배율)
+Head.flareGlowAlpha,0.35,줄기 밑 흐린 빛의 진하기
+Head.riseFrom,18,위아래로 갈라진 짧은 세로 줄기가 출발하는 거리(px)
+Head.riseTo,66,세로 줄기 바깥 끝(px). 0이면 끈다
+Head.riseDrift,40,세로 줄기 안쪽 끝이 밀려나는 거리(px)
+Head.riseOpen,0.04,세로 줄기가 다 뻗는 시간
+Head.riseSeconds,0.1,세로 줄기가 보이는 시간
+Head.riseWidth,3,세로 줄기 두께(px). 처음
+Head.riseEndWidth,1,세로 줄기 두께(px). 끝
+Head.riseAlpha,0.8,세로 줄기 진하기
+Head.diamonds,1,예전 렌즈 플레어의 다이아몬드 둘(사선 위 112·126px)의 밝기. 0이면 끈다

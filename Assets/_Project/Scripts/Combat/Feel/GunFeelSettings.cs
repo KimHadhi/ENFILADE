@@ -114,37 +114,8 @@ public sealed class GunFeelSettings : ScriptableObject
     [Range(.05f, 1f)] public float markerFullDamage = .5f;
     [Tooltip("Headshot ticks are this much thicker and longer than a body hit's, so the gold reads at a glance.")]
     public float headThickness = 1.5f, headLength = 1.15f;
-    [Min(0f), Tooltip("Ray length of the glint that flashes at the aim point on a headshot (px). Backlog 324 cut the first 22 " +
-        "to 14; the user then found it too small and asked for more show, so it stands bigger and brief; 26 was still a " +
-        "little short of enough (2026-11-10), so 30, with the lens flare below widening it further. 0 turns it off.")]
-    public float headGlintSize = 30f;
-    [Tooltip("Degrees the glint spins while it fades, so its rays sweep off the crosshair's lines.")]
-    public float headGlintTurn = 45f;
-    [Min(.1f), Tooltip("How long the glint shows: it bangs open white past full size, snaps back gold and is gone. The user " +
-        "found .45 lingering; a headshot should land and be over.")]
-    public float headGlintSeconds = .2f;
-    [Min(0f), Tooltip("The glint's glow: the star blurred and added onto the light behind it, so the star shines into the " +
-        "burst instead of sitting on it like a sticker (the user's pick of four, 2026-11-09, in place of a black outline). " +
-        "Its size as a multiple of the star's; the turned second star's glow is .6 of that.")]
-    public float headGlowScale = 1.8f;
-    [Range(0f, 1f), Tooltip("How bright the glow is at its peak. 0 turns it off.")]
-    public float headGlowStrength = .9f;
-    [Tooltip("The glow's colour once the star has settled from white: a deeper ember than the gold, for a warm edge.")]
-    public Color headGlowColor = new Color(1f, .7f, .16f);
-    [Range(0f, 1f), Tooltip("A white-hot copy of the star over its middle, this share of its size: white at the heart, gold " +
-        "at the tips. 0 turns it off.")]
-    public float headCoreScale = .5f;
-    [Min(0f), Tooltip("How far a headshot's sparks fly out from the aim point, and how wide its gold ring opens (px). 0 turns both off.")]
-    public float headBurstReach = 56f;
-    [Min(.05f), Tooltip("How long the sparks and the ring last (real seconds).")]
-    public float headBurstSeconds = .16f;
-    [Min(0f), Tooltip("A headshot's lens flare (the user's pick of the second drafts, 2026-11-10): how far its thin streak of " +
-        "light reaches either side of the aim point (px). A shorter streak stands up and down it and four ghosts lie along " +
-        "a slant inside it. All of it is a few pixels thick and added onto the picture, so it makes the hit bigger without " +
-        "covering the screen. 0 turns it off.")]
-    public float headFlareReach = 180f;
-    [Min(.05f), Tooltip("How long the flare lasts (real seconds): open in the first sixth, then thinning and fading.")]
-    public float headFlareSeconds = .24f;
+    // A headshot's burst (star, ring, sparks, split flare) is in HitMarkers.csv, rows Head.* (HitMarkerHUD.HeadLook), for
+    // both looks: the glint, bloom and lens flare that were here hid the head they marked (2026-11-12).
     [Min(1f), Tooltip("A headshot's ticks run their frames this much faster than a body hit's, so they snap in and out.")]
     public float headMarkerPace = 1.6f;
     [Range(0f, 1f), Tooltip("How much bigger a headshot's ticks start before popping back (a body hit uses Marker Pop).")]

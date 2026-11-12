@@ -1,7 +1,7 @@
 ﻿id,volume,pitchMin,pitchMax,#note
 HitConfirm/Body,0.45,0.96,1.04,명중마다 나는 마른 틱. Kenney Interface Sounds tick_002 (CC0)
 HitConfirm/Break,0.85,0.95,1.05,체간이 깨질 때 나는 뼈 부러지는 소리. Hitfullness bone_crack
-HitConfirm/Head,0.6,1,1.06,헤드샷 때 틱 위에 겹치는 금속음. rubberduck 100 CC0 metal and wood SFX hammer_03·metal_hit_05
+HitConfirm/Head,0.65,0.98,1.04,헤드샷 때 틱 위에 겹치는 소리. 시안 E의 소리가 기계 같다며 오버워치 헤드샷처럼 찰지고 시원하고 경쾌한 소리를 원해서(2026-11-12) 새로 합성한 '팅'이다: 1ms 노이즈의 딱 소리 · 쇠막대 배음(1·2·2.76·4.1·5.4배)이 4.5% 높게 시작해 제 음으로 떨어지는 맑은 울림 · 짧은 '똑'과 낮은 '퍽' · 작은 방 울림. 0.35초 안에 끝난다. 음이 반음씩 다른 3개(headshot_ping_01~03). 다시 만들거나 고치려면 Tools/Audio/headshot_ping.py
 HitConfirm/Kill,0.75,0.96,1,처치 타격음. 연속 처치마다 조금씩 높아진다(GunFeel). rubberduck bfh1_hit_08·wood_hit_08 (CC0)·qubodup Impact Stone (CC0)
 HitConfirm/ShieldHit,0.7,0.95,1.05,내 실드가 피해를 받을 때(깨질 때는 ShieldBreak). 폴더(Art/Audio/HitConfirm/ShieldHit)가 비어 있으면 합성한 전기 튀는 소리(FeelAudio)
 HitConfirm/ShieldBreak,0.8,0.97,1.03,내 실드가 다 깨질 때. 폴더(Art/Audio/HitConfirm/ShieldBreak)가 비어 있으면 합성한 유리 깨지는 소리(FeelAudio)
@@ -249,3 +249,4 @@ Zombie/Bone/ArmBreak,0.8,0.95,1.05,처형을 버틴 거구의 팔 부러지는 �
 Zombie/Gore/HeadBurst,0.55,0.97,1.03,머리가 터질 때 목에서 피가 뿜는 소리(Gore/HeadBurst). Meaty Melee headless_1~4를 1초로 자르고 끝 0.45초를 줄였다(원본 2~2.5초는 Art/Audio/Library/MeatyMelee_3660295000에 OGG로)
 Zombie/Gore/BloodSpray,0.6,0.95,1.05,산 좀비의 팔다리가 떨어질 때 피 뿜는 소리(Gore/LimbOff). Meaty Melee zombie_blood_spray_01~06을 0.55초로 자름
 HitConfirm/HeadAVA,0.6,1,1.06,헤드샷 확인음 후보(아직 쓰이지 않음). A.V.A Headshot hitsound(L4D2 워크숍 2981494447)의 body_medium_break2~4를 0.8초로 자름. 지금 헤드샷음(Head)과 바꾸려면 Art/Audio/HitConfirm의 두 폴더 이름을 맞바꾼다. /sound HitConfirm/HeadAVA로 들어 본다
+HitConfirm/HeadOld,0.6,1,1.06,예전 헤드샷음(2026-11-12까지). rubberduck 100 CC0 metal and wood SFX hammer_03·metal_hit_05. 되돌리려면 Art/Audio/HitConfirm의 Head와 HeadOld 폴더 이름을 맞바꾼다. /sound HitConfirm/HeadOld로 들어 본다

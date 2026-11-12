@@ -24,13 +24,18 @@ MonoBehaviour:
     - {fileID: 8300000, guid: d8f4c874b4e8851825d475a612b1b0bb, type: 3}
   - key: Head
     clips:
-    - {fileID: 8300000, guid: d7ef414e4a820c64cb0f11d69fb6f0cd, type: 3}
-    - {fileID: 8300000, guid: a395ee728116ddd439074e80c6598427, type: 3}
+    - {fileID: 8300000, guid: 81ee0f6948a247e695d18ceaa8050b34, type: 3}
+    - {fileID: 8300000, guid: 8b66b79a6fca43599218524c230e0122, type: 3}
+    - {fileID: 8300000, guid: 6fe43f2a218d48c9a891ac57666e24a5, type: 3}
   - key: HeadAVA
     clips:
     - {fileID: 8300000, guid: 6f7850867e294022a4b434a592b4a091, type: 3}
     - {fileID: 8300000, guid: 6edf3c9a1f544259bec741dd434b910a, type: 3}
     - {fileID: 8300000, guid: 03e12ee83f694aaf8ac3b2cc7d078782, type: 3}
+  - key: HeadOld
+    clips:
+    - {fileID: 8300000, guid: d7ef414e4a820c64cb0f11d69fb6f0cd, type: 3}
+    - {fileID: 8300000, guid: a395ee728116ddd439074e80c6598427, type: 3}
   - key: Kill
     clips:
     - {fileID: 8300000, guid: 8e6e4dbec5d5b48498204bc8da562db5, type: 3}

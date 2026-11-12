@@ -8,7 +8,8 @@ using UnityEngine;
 /// </summary>
 public static class FeelAssets
 {
-    private static Texture2D softDot, flashStar, flashSpike, bloodSplat, ring, glint, glintGlow, hairLine;
+    private static Texture2D softDot, flashStar, flashSpike, bloodSplat, ring, glint, glintGlow, hairLine, streakTaper;
+    private static readonly Dictionary<int, Texture2D> hollowGlints = new Dictionary<int, Texture2D>(), hollowGlows = new Dictionary<int, Texture2D>();
     /// <summary>How many times taller than the line it shows a <see cref="HairLine"/> quad is drawn: its fading outer
     /// thirds add up to one more third, so the line shows two thirds of the quad's height.</summary>
     public const float HairLineSpan = 1.5f;
@@ -138,11 +139,10 @@ public static class FeelAssets
     /// A four-point glint for a clean hit: a solid core disc and four sharp diamond rays to the edges. Crisp rather than
     /// soft, so it still reads drawn over a thick crosshair.
     /// </summary>
-    public static Texture2D Glint => glint != null ? glint : glint = Generate("Feel Glint", 128, 128, (u, v) =>
-    {
-        float core = Mathf.Clamp01((.2f - Mathf.Sqrt(u * u + v * v)) * 24f);
-        return Mathf.Max(core, Mathf.Max(GlintRay(u, v), GlintRay(v, u)));
-    });
+    public static Texture2D Glint => glint != null ? glint : glint = Generate("Feel Glint", 128, 128, GlintCoverage);
+
+    private static float GlintCoverage(float u, float v) =>
+        Mathf.Max(Mathf.Clamp01((.2f - Mathf.Sqrt(u * u + v * v)) * 24f), Mathf.Max(GlintRay(u, v), GlintRay(v, u)));
 
     private static float GlintRay(float along, float across) => Mathf.Clamp01((.14f * (1f - Mathf.Abs(along)) - Mathf.Abs(across)) * 32f);
 
@@ -150,14 +150,44 @@ public static class FeelAssets
     /// The glint blurred: a soft round core and four soft rays that thin and fade toward their tips. Added behind the crisp
     /// glint, it makes the headshot star give off light instead of sitting on it.
     /// </summary>
-    public static Texture2D GlintGlow => glintGlow != null ? glintGlow : glintGlow = Generate("Feel Glint Glow", 128, 128, (u, v) =>
-    {
-        float core = Mathf.Exp(-(u * u + v * v) / (2f * .2f * .2f));
-        return Mathf.Max(core, Mathf.Max(GlowRay(u, v), GlowRay(v, u)));
-    });
+    public static Texture2D GlintGlow => glintGlow != null ? glintGlow : glintGlow = Generate("Feel Glint Glow", 128, 128, GlowCoverage);
+
+    private static float GlowCoverage(float u, float v) =>
+        Mathf.Max(Mathf.Exp(-(u * u + v * v) / (2f * .2f * .2f)), Mathf.Max(GlowRay(u, v), GlowRay(v, u)));
 
     private static float GlowRay(float along, float across) =>
         Mathf.Pow(Mathf.Max(0f, 1f - Mathf.Abs(along)), 1.8f) * Mathf.Exp(-across * across / (2f * .065f * .065f));
+
+    /// <summary>
+    /// <see cref="Glint"/> with its middle cut away out to <paramref name="hole"/> of its half-size, over a soft edge a
+    /// tenth wide. A headshot's star then frames the head it hit instead of covering it (the user found the solid star
+    /// hid the target, 2026-11-12). One texture per hole size, to two decimals.
+    /// </summary>
+    public static Texture2D HollowGlint(float hole) => Hollow(hollowGlints, "Feel Hollow Glint ", hole, GlintCoverage, .1f);
+
+    /// <summary><see cref="GlintGlow"/> cut out the same way, over a softer edge, so the star's light leaves the middle too.</summary>
+    public static Texture2D HollowGlintGlow(float hole) => Hollow(hollowGlows, "Feel Hollow Glint Glow ", hole, GlowCoverage, .15f);
+
+    private static Texture2D Hollow(Dictionary<int, Texture2D> cache, string name, float hole, Coverage coverage, float edge)
+    {
+        int key = Mathf.RoundToInt(Mathf.Clamp01(hole) * 100f);
+        if (cache.TryGetValue(key, out var texture) && texture != null) return texture;
+        float cut = key / 100f;
+        texture = Generate(name + key, 128, 128, (u, v) => coverage(u, v) * Mathf.Clamp01((Mathf.Sqrt(u * u + v * v) - cut) / edge));
+        cache[key] = texture;
+        return texture;
+    }
+
+    /// <summary>
+    /// Half of a lens streak along U for the headshot's split flare: brightest at its inner end (U = -1), thinning to
+    /// nothing at the outer one, and soft across like <see cref="HairLine"/>. No mipmaps for the same reason as the hair
+    /// line: it is drawn a few pixels tall. Turn it 180° for the other half.
+    /// </summary>
+    public static Texture2D StreakTaper => streakTaper != null ? streakTaper : streakTaper = Generate("Feel Streak Taper", 128, 32, (u, v) =>
+    {
+        float along = (u + 1f) * .5f, across = Mathf.Clamp01((1f - Mathf.Abs(v)) * 1.5f);
+        return Mathf.Pow(1f - along, 1.4f) * Mathf.Clamp01(along / .05f) * across * across * (3f - 2f * across);
+    }, false);
 
     /// <summary>
     /// A thin line along U for the clean hit marker: solid through the middle third of its height, fading to nothing over
