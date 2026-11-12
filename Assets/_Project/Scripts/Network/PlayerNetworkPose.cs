@@ -19,6 +19,8 @@ public sealed class PlayerNetworkPose : NetworkBehaviour
     // the smaller sizes; it is only sent when it changes.
     private readonly NetworkVariable<FixedString4096Bytes> skin = new NetworkVariable<FixedString4096Bytes>(default,
         NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+    /// <summary>This player's look as the room knows it (empty before it is first sent): the results stand a copy of it.</summary>
+    internal string Look => skin.Value.ToString();
     // The maximum before the health, so a copy knows how much it can hold (a perk's 145, not the base 100: friend
     // feedback C14, where a teammate's card read 100 for 145).
     private readonly NetworkVariable<float> maximumHealth = new NetworkVariable<float>(default,

@@ -1348,3 +1348,4 @@ loading.stage.pso,그래픽 상태를 준비하는 중,Preparing graphics states
 loading.stage.fonts,글자를 준비하는 중,Preparing text,로딩 화면 > 막대 아래: 글꼴에 글자를 미리 그리는 동안(FontWarmup)
 loading.stage.portraits,캐릭터 사진을 찍는 중,Taking character pictures,로딩 화면 > 막대 아래: 타이틀 화면이 캐릭터 카드 사진을 찍는 동안(SkinPortraits)
 results.mvp,MVP,,결과 > 한 사람씩 비출 때 가장 잘한 사람 이름 옆 분홍 칩
+results.preview,포즈 미리 보기,,결과 > 장을 끝내기 전에 콘솔 /results를 쳤을 때 맨 위 장 이름 자리(지금 허브에 있는 사람들로 결과 연출과 포즈를 미리 본다)

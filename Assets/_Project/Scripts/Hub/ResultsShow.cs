@@ -7,35 +7,37 @@ using UnityEngine.Rendering.Universal;
 using UnityEngine.UI;
 
 /// <summary>
-/// A chapter's results, played in the hub over the players themselves (memo 37: Overwatch's play of the game, the
-/// winners of CoD Warzone standing in a row, Weakest Link's titles, then KF2's one sheet).
+/// A chapter's results, played in the hub (memo 37: Overwatch's play of the game, the winners of CoD Warzone standing in a
+/// row, Weakest Link's titles, then KF2's one sheet).
 /// 1. The lineup, as CoD Warzone shows its winners (the user, 2026-11-12: "워존 우승 하이라이트 연출처럼 게임에 참여한
 ///    사람들 멋있는 포즈 취하면서 한 번씩 싹 다 보여 주는 거야. 뭐 잘한 사람들은 왼쪽에다 칭호 같은 거 붙여 주고";
-///    no play of the game): back in the hub everyone stands in a row on the stage (HubStage) in their own skin and
-///    clothes, and a camera of its own cuts to each in turn, the last-ranked first and the best last: close and a little
-///    low, the player on the right third striking their pose, their titles slamming in down the left (최다 처치, 최다
-///    치료, 구조왕, 가장 많이 쓰러짐 ...: ResultsAwards, each with its number and its joke), their name, class and three
-///    numbers at the foot, MVP on the best. Then the whole row with everyone's name under them, and the chapter's
-///    highlights counting up along the bottom (longest streak, farthest headshot, the team's kills, the money made).
+///    no play of the game; then "이거 영상 36초부터 나오는 것처럼", the Warzone victory video): everyone of the chapter
+///    stands in a row on the stage (HubStage) as a posed copy of themselves (ResultsMannequin: their own skin, colours
+///    and clothes, whether or not they are still in the room; the players' own bodies are hidden while it plays), and a
+///    camera of its own cuts to each in turn, the last-ranked first and the best last. A shot opens very close on the hand
+///    the player strikes their pose with (the raised fist, the V, the pointing finger, the salute: victory poses made in
+///    Blender on Mayo, Tools/Blender/Poses), glides over the chest to the face, then pulls back, a little low, to the waist
+///    up with the player on the right third, while their titles slam in down the left (최다 처치, 최다 치료, 구조왕 ...:
+///    ResultsAwards, each with its number and its joke) and their name, class and three numbers stand at the foot, MVP
+///    on the best. A light rides with the camera and another rims the player from behind. Then the whole row in their
+///    poses, everyone's name under them, and the chapter's highlights counting up along the bottom.
 /// 2. The sheet (ResultsSheet): every title and this player's own numbers on one page, with the class's insignia
 ///    climbing if the chapter took it up a rank (RankClimb, stage 6E).
 /// Short and loud (the user's rule: no long slow shows): Space, Enter or a click skips the lineup, then closes the sheet.
-/// Each PC plays its own from the numbers it kept (MatchResults) and puts only its own player on the stage; the others
-/// are put there by their own PCs. The player's moving and fighting wait while it plays, and come back after.
+/// Each PC plays its own from the numbers and looks it kept (MatchResults), so no PC waits for another. The player's
+/// moving and fighting wait while it plays, and come back after.
 /// It waits behind a black curtain until the hub is really up on this PC, then plays from its beginning (the user,
 /// 2026-11-12: "그 게임 끝나고 뜨는 하이라이트 연출, 로딩하다가 다 끝나서 1초 보고 못 봄": the first frames back in the
 /// hub stalled 3.4 and 4 s on shader compiles, and the show's clock ran through them). Up means: the hub's lobby runs,
-/// this PC's player stands on its mark, every friend of the lineup who is in the room stands dressed on theirs (or has
-/// had showWaitOthers to get there: a slow PC, or someone who left), the results' camera has drawn them a few times
+/// this PC's player is in, the posed copies stand dressed and the results' camera has drawn them a few times
 /// (showFrames, which compiles what it sees behind the curtain), no frame has taken longer than showSettleFrame for
 /// showSettle, and nothing else holds it back (HoldBack: a loading screen or a first-use warm-up). After showWait it
-/// starts whatever is missing. Each PC starts its own show when it is ready; a fast PC waits for a slow friend's body
-/// only that short while, and no PC waits for another's show. Once it plays, a long frame counts only showMaxStep
-/// (Step), so a hitch pauses the lineup, the titles, the highlights, the sheet and the insignia instead of skipping them.
-/// Real time. Numbers: Tables/Hub (show*).
+/// starts whatever is missing. Once it plays, a long frame counts only showMaxStep (Step), so a hitch pauses the
+/// lineup, the poses, the titles, the highlights, the sheet and the insignia instead of skipping them.
+/// Real time. Numbers: Tables/Hub (show*). The console's /results replays it; /results vsign has everyone strike that
+/// pose, to see one after touching it up (ArtSource/Poses/START_HERE.md).
 /// </summary>
-// Before the look (FrameOrder.Look): the turn to the camera is asked of it the frame it is taken (CombatHeadMotion.Turn).
-[DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.Look - 1)]
+[DisallowMultipleComponent]
 public sealed class ResultsShow : MonoBehaviour
 {
     private const int Order = 86;
@@ -46,11 +48,14 @@ public sealed class ResultsShow : MonoBehaviour
         public MatchResults.Entry Entry;
         public int Index;
         public Vector3 Feet;
+        // Their posed copy on the stage.
+        public ResultsMannequin Pose;
         // The closing row's plate under them.
         public RectTransform Plate;
         public CanvasGroup PlateGroup;
-        // Their own shot: when, how long, its screen (titles down the left, name at the foot), and whether they are the best.
-        public float ShotAt, ShotLength;
+        // Their own shot: when, how long, which way round the camera goes (+1 or -1), its screen (titles down the left, name
+        // at the foot), and whether they are the best.
+        public float ShotAt, ShotLength, Side = 1f;
         public RectTransform Spot, Name;
         public CanvasGroup SpotGroup;
         public bool Best;
@@ -59,30 +64,37 @@ public sealed class ResultsShow : MonoBehaviour
 
     // The curtain's lift before the first shot (s), titles shown at most on a shot, and the gap between them down the left (px).
     private const float IntroSeconds = .45f, TitleGap = 108f;
+    // How long a shot's camera stays on the hand while the pose is struck (the fist comes up into it), before it glides (s).
+    private const float HandHold = .18f;
     private const int MostTitles = 4;
 
     private readonly List<Seat> seats = new List<Seat>();
     // The shots in the order they play.
     private readonly List<Seat> shots = new List<Seat>();
+    // The players' own renderers, hidden while the posed copies stand for them, each with how it was.
+    private readonly List<(Renderer part, bool wasOff)> hidden = new List<(Renderer, bool)>();
+    private readonly HashSet<Renderer> hiddenSet = new HashSet<Renderer>();
+    private readonly List<Renderer> found = new List<Renderer>();
     private Image cut;
     private readonly List<(TMP_Text label, double value, ResultsAwards.Award award)> counters = new List<(TMP_Text, double, ResultsAwards.Award)>();
     private List<ResultsAwards.Won> won;
     private HubStage stage;
     private Camera view;
+    private Light key, rim;
     private RectTransform canvas, header, highlights;
     private CanvasGroup lineup;
     private Image curtain;
     private PlayerMovement mine;
-    private PlayerBody body;
     private ResultsSheet sheet;
     private TMP_Text waitCaption;
     private float age, prevAge, groupAt, showEnd, highlightsAt;
-    // The wait behind the curtain (real s): when it began, when the seats were set, since when no frame has run long,
-    // and since when everyone of the lineup who is here has stood on their mark (negative: not yet).
-    private float createdAt, preparedAt, smoothSince, inPlaceAt = -1f;
-    // Frames the results' camera has drawn since everyone stood on their mark.
+    // The wait behind the curtain (real s): when it began, when the stage was set, and since when no frame has run long.
+    private float createdAt, preparedAt, smoothSince;
+    // Frames the results' camera has drawn since the stage was set.
     private int framesSeen;
-    private bool placed, mapsHeld, playerMapWas, combatMapWas, prepared, showing;
+    private bool mapsHeld, playerMapWas, combatMapWas, prepared, showing;
+    // The console's /results <pose>: the next show has everyone strike it.
+    private static string forcedPose;
 
     /// <summary>The results are on the screen, or waiting behind their curtain (HubLobby keeps [F] and its prompts off meanwhile).</summary>
     public static bool IsPlaying => instance != null;
@@ -94,23 +106,28 @@ public sealed class ResultsShow : MonoBehaviour
     public static System.Func<bool> HoldBack;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-    private static void ResetStatics() { instance = null; HoldBack = null; }
+    private static void ResetStatics() { instance = null; HoldBack = null; forcedPose = null; }
 
     /// <summary>
-    /// This frame's step for the results' clocks (this lineup, ResultsSheet, RankClimb): real time, but never more than
-    /// Tables/Hub showMaxStep, so a hitch (a scene still loading, a shader compiling) pauses the show rather than
+    /// This frame's step for the results' clocks (this lineup, the poses, ResultsSheet, RankClimb): real time, but never
+    /// more than Tables/Hub showMaxStep, so a hitch (a scene still loading, a shader compiling) pauses the show rather than
     /// carrying it past its steps.
     /// </summary>
     public static float Step() => Mathf.Min(Time.unscaledDeltaTime, Mathf.Max(.01f, HubLobby.Number("showMaxStep", .1f)));
 
     /// <summary>The console's /results: the last chapter's results again, here (a hub plays them on its stage, anywhere
-    /// else the sheet alone).</summary>
+    /// else the sheet alone). "/results vsign" has everyone strike that pose (any part of its name).</summary>
     public static string Command(string args)
     {
         if (instance != null) return "결과가 이미 나오고 있어요.";
-        if (!MatchResults.Replay()) return "아직 마친 장이 없어요. 장을 하나 끝내면 다시 볼 수 있어요.";
+        string wanted = (args ?? "").Trim();
+        var pose = wanted.Length > 0 ? ResultsMannequin.Named(wanted) : null;
+        if (wanted.Length > 0 && pose == null) return "그런 포즈가 없어요: " + wanted + ". 있는 포즈: " + ResultsMannequin.Names();
+        // Before any chapter has ended: everyone here as they are now, to see the show and its poses at once.
+        if (!MatchResults.Replay() && !MatchResults.Preview(Texts.Get("results.preview"))) return "결과를 보여 줄 사람이 없어요.";
+        forcedPose = pose != null ? pose.name : null;
         Play();
-        return "마지막 장의 결과를 다시 보여 줘요.";
+        return pose != null ? "마지막 장의 결과를 다시 보여 줘요. 모두 " + pose.name + " 포즈로." : "마지막 장의 결과를 다시 보여 줘요.";
     }
 
     /// <summary>Plays the kept results (MatchResults), if any are waiting.</summary>
@@ -154,9 +171,13 @@ public sealed class ResultsShow : MonoBehaviour
             return;
         }
         prevAge = age;
-        age += Step();
-        Hold();
+        float step = Step();
+        age += step;
+        // Anything a player put on since (a gun drawn, a friend's clothes arriving) stays out of the shot too.
+        HideBodies();
         Pose();
+        foreach (var seat in seats)
+            if (seat.Pose != null) seat.Pose.Tick(step);
         if (Skipped() || age >= showEnd) OpenSheet();
     }
 
@@ -164,29 +185,20 @@ public sealed class ResultsShow : MonoBehaviour
     {
         if (!showing || view == null || stage == null || sheet != null) return;
         var now = ShotOn(age);
-        if (now != null)
+        if (now != null && now.Pose != null)
         {
-            // Close and a little low on the shot's player, who stands on the right third; it pushes in and drifts round them.
-            float t = Mathf.Clamp01((age - now.ShotAt) / now.ShotLength);
-            Vector3 facing = Vector3.ProjectOnPlane(stage.transform.forward, Vector3.up).normalized;
-            float swing = (now.Index % 2 == 0 ? 1f : -1f) * Mathf.Lerp(-4f, 4f, t);
-            Vector3 toCamera = Quaternion.Euler(0f, swing, 0f) * facing;
-            float distance = Mathf.Lerp(2.7f, 2.3f, 1f - (1f - t) * (1f - t));
-            Vector3 head = now.Feet + Vector3.up * 1.4f;
-            view.transform.position = now.Feet + toCamera * distance + Vector3.up * 1.15f;
-            Vector3 right = Vector3.Cross(Vector3.up, -toCamera).normalized;
-            Vector3 aim = head - right * .6f;
-            view.transform.rotation = Quaternion.LookRotation(aim - view.transform.position, Vector3.up);
+            Shoot(now, age - now.ShotAt);
             return;
         }
-        // The whole row, pushing in slowly.
+        // The whole row in their poses, pushing in slowly.
         float push = Mathf.Clamp01((age - groupAt) / Mathf.Max(.5f, showEnd - groupAt));
         Vector3 from = stage.CameraPoint(seats.Count, view.aspect), to = stage.Focus;
         view.transform.position = Vector3.Lerp(from, to, .08f * push);
         view.transform.rotation = Quaternion.LookRotation(to - view.transform.position, Vector3.up);
+        LightUp(to + Vector3.up * .35f, true);
     }
 
-    // ---- Waiting behind the curtain until the hub is really up on this PC; the seats, the camera, the player on the stage ----
+    // ---- Waiting behind the curtain until the hub is really up on this PC; the seats, the camera, the posed copies ----
 
     private void Wait()
     {
@@ -196,7 +208,9 @@ public sealed class ResultsShow : MonoBehaviour
         bool late = now - createdAt >= HubLobby.Number("showWait", 20f);
         mine = PlayerRoster.Local;
         if (!prepared && (mine != null && mine.IsInitialized || late)) Prepare();
-        Hold();
+        if (prepared && stage != null) HideBodies();
+        foreach (var seat in seats)
+            if (seat.Pose != null) seat.Pose.Tick(0f);
         if (waitCaption != null) waitCaption.alpha = .4f + .25f * Mathf.Sin(now * 4f);
         if (late || Ready(now)) StartShow();
     }
@@ -207,31 +221,9 @@ public sealed class ResultsShow : MonoBehaviour
         // The hub's lobby is up (its scene active and its Start run); elsewhere (/results in a chapter) there is none to wait for.
         if (HubFlow.InHub && !HubLobby.IsActive) return false;
         if (HoldBack != null && HoldBack()) return false;
-        // Everyone of the lineup who is in the room on their mark, dressed; a friend who is slow or gone has a while only.
-        if (!OthersInPlace() && now - preparedAt < HubLobby.Number("showWaitOthers", 5f)) { inPlaceAt = -1f; return false; }
-        if (inPlaceAt < 0f) { inPlaceAt = now; framesSeen = 0; }
-        // The camera has drawn them all a few times, and no frame has run long since they were all there.
+        // The camera has drawn the posed copies a few times, and no frame has run long since they stood there.
         if (view != null && framesSeen < Mathf.Max(1, Mathf.RoundToInt(HubLobby.Number("showFrames", 3f)))) return false;
-        return now - Mathf.Max(smoothSince, inPlaceAt) >= HubLobby.Number("showSettle", .5f);
-    }
-
-    // Every friend of the lineup who is in the room stands dressed on their mark (their own PC puts them there). Alone,
-    // or without a stage, there is nobody to wait for.
-    private bool OthersInPlace()
-    {
-        if (stage == null) return true;
-        foreach (var seat in seats)
-        {
-            if (seat.Entry.IsLocal) continue;
-            PlayerMovement friend = null;
-            foreach (var someone in PlayerRoster.All)
-                if (someone != null && someone.IsNetworkDriven && MatchResults.SeatOf(someone) == seat.Entry.Client) { friend = someone; break; }
-            if (friend == null || !friend.TryGetComponent(out PlayerBody theirs) || theirs.BodyModel == null) return false;
-            Vector3 apart = friend.transform.position - seat.Feet;
-            apart.y = 0f;
-            if (apart.sqrMagnitude > .8f * .8f) return false;
-        }
-        return true;
+        return now - Mathf.Max(smoothSince, preparedAt) >= HubLobby.Number("showSettle", .5f);
     }
 
     // The results' camera has drawn a frame.
@@ -260,7 +252,7 @@ public sealed class ResultsShow : MonoBehaviour
     }
 
     // Behind the curtain: the seats, the camera (drawing the stage from now on, so what it sees is compiled and uploaded
-    // before the curtain lifts) and this PC's player on its mark.
+    // before the curtain lifts), the posed copies on their marks, and the players' own bodies out of sight.
     private void Prepare()
     {
         prepared = true;
@@ -286,7 +278,9 @@ public sealed class ResultsShow : MonoBehaviour
         if (stage == null) return;
         foreach (var seat in seats) seat.Feet = stage.Slot(seat.Index, count);
         MakeCamera();
-        PlaceMine();
+        MakePoses();
+        HideBodies();
+        HoldInput(true);
     }
 
     private void MakeCamera()
@@ -307,29 +301,46 @@ public sealed class ResultsShow : MonoBehaviour
         view.transform.rotation = Quaternion.LookRotation(stage.Focus - view.transform.position, Vector3.up);
     }
 
-    // This PC's player goes to their place on the stage and turns to the camera; the rest are put there by their own PCs.
-    private void PlaceMine()
+    // Each seat's posed copy on its mark, turned to the stage's camera: the fist for the best who won a title, the others
+    // by turns (or everyone the pose the console asked for).
+    private void MakePoses()
     {
-        if (mine == null || !mine.IsInitialized) return;
-        ulong seatId = MatchResults.SeatOf(mine);
-        foreach (var seat in seats)
+        var facing = Quaternion.Euler(0f, stage.Yaw, 0f);
+        var forced = ResultsMannequin.Named(forcedPose);
+        forcedPose = null;
+        int turn = 0;
+        for (int rank = 0; rank < seats.Count; rank++)
         {
-            if (!seat.Entry.IsLocal && seat.Entry.Client != seatId) continue;
-            mine.MoveTo(seat.Feet + Vector3.up * .05f);
-            placed = true;
-            break;
+            var seat = seats[rank];
+            bool best = rank == 0 && ResultsAwards.Of(won, seat.Entry).Count > 0;
+            var clip = forced != null ? forced : ResultsMannequin.PoseFor(best ? 0 : turn++, best);
+            seat.Pose = ResultsMannequin.Make(seat.Entry.Look, seat.Feet, facing, 1f, clip);
         }
-        body = mine.GetComponent<PlayerBody>();
-        if (body != null) body.ShowFromOutside(true);
-        HoldInput(true);
     }
 
-    // Standing still on the stage, turned to the camera.
-    private void Hold()
+    // The players' own bodies (and what they hold) stay out of sight while the posed copies stand for them.
+    private void HideBodies()
     {
-        if (!placed || mine == null || stage == null) return;
-        float off = Mathf.DeltaAngle(mine.transform.eulerAngles.y, stage.Yaw);
-        if (Mathf.Abs(off) > .5f) CombatHeadMotion.For(mine)?.Turn(off * Mathf.Min(1f, Time.unscaledDeltaTime * 12f));
+        foreach (var someone in PlayerRoster.All)
+        {
+            if (someone == null) continue;
+            someone.GetComponentsInChildren(true, found);
+            foreach (var part in found)
+            {
+                if (part == null || !hiddenSet.Add(part)) continue;
+                hidden.Add((part, part.forceRenderingOff));
+                part.forceRenderingOff = true;
+            }
+        }
+        found.Clear();
+    }
+
+    private void ShowBodies()
+    {
+        foreach (var (part, wasOff) in hidden)
+            if (part != null) part.forceRenderingOff = wasOff;
+        hidden.Clear();
+        hiddenSet.Clear();
     }
 
     private void HoldInput(bool hold)
@@ -358,9 +369,22 @@ public sealed class ResultsShow : MonoBehaviour
     private void Release()
     {
         HoldInput(false);
-        if (body != null) body.ShowFromOutside(false);
-        body = null;
+        ClearStage();
         if (view != null) view.enabled = false;
+    }
+
+    // The posed copies and the show's lights go, and the players' own bodies show again.
+    private void ClearStage()
+    {
+        foreach (var seat in seats)
+        {
+            if (seat.Pose != null) Destroy(seat.Pose.gameObject);
+            seat.Pose = null;
+        }
+        if (key != null) Destroy(key.gameObject);
+        if (rim != null) Destroy(rim.gameObject);
+        key = rim = null;
+        ShowBodies();
     }
 
     private static bool Skipped()
@@ -376,10 +400,90 @@ public sealed class ResultsShow : MonoBehaviour
         if (sheet != null) return;
         if (lineup != null) lineup.alpha = 0f;
         if (view != null) view.enabled = false;
-        if (body != null) { body.ShowFromOutside(false); body = null; }
+        ClearStage();
         // The controls stay held under the sheet; they come back when it closes (OnDestroy).
         sheet = ResultsSheet.Open(won);
         if (curtain != null) curtain.color = Color.clear;
+    }
+
+    // ---- The camera and its lights ----
+
+    // One player's shot (the Warzone victory video): very close on the hand they strike with, gliding over the chest to
+    // the face, then back and a little low to the waist up, with them on the right third and room for their titles on
+    // the left, drifting in until the cut.
+    private void Shoot(Seat seat, float time)
+    {
+        var pose = seat.Pose;
+        var root = pose.transform;
+        Vector3 hand = root.TransformPoint(pose.Hand), chest = root.TransformPoint(pose.Chest), eyes = root.TransformPoint(pose.Eyes);
+        float sweep = Mathf.Max(HandHold + .1f, HubLobby.Number("showSweep", .9f));
+        float pull = Mathf.Max(.1f, HubLobby.Number("showPull", .5f));
+        // Clear of a hand thrust at the camera (the pointing finger).
+        float close = Mathf.Max(.2f, HubLobby.Number("showClose", .55f)) + pose.Reach * .8f;
+        float far = Mathf.Max(close, HubLobby.Number("showFar", 1.7f));
+        // Hand to face, on a curve bent through the chest when the hand is below it.
+        float glide = Smooth((time - HandHold) / (sweep - HandHold));
+        Vector3 bend = hand.y < chest.y - .05f ? chest : (hand + eyes) * .5f;
+        Vector3 along = Bezier(hand, bend, eyes, glide);
+        float back = Smooth((time - sweep) / pull);
+        float settle = Mathf.Clamp01((time - sweep - pull) / Mathf.Max(.5f, seat.ShotLength - sweep - pull));
+        float distance = Mathf.Lerp(close, far, back) * (1f - .06f * settle);
+        // Round to one side and from a little below: wider while it glides, closing in as it settles.
+        float yaw = seat.Side * Mathf.Lerp(Mathf.Lerp(24f, 12f, glide), Mathf.Lerp(9f, 5f, settle), back);
+        float pitch = Mathf.Lerp(-10f, -7f, back) * Mathf.Deg2Rad;
+        Vector3 facing = Vector3.ProjectOnPlane(root.forward, Vector3.up).normalized;
+        Vector3 level = Quaternion.AngleAxis(yaw, Vector3.up) * facing;
+        Vector3 position = along + (level * Mathf.Cos(pitch) + Vector3.up * Mathf.Sin(pitch)) * distance;
+        // Centred on what it glides over; then the face on the right third and a little high.
+        float tanV = Mathf.Tan(view.fieldOfView * .5f * Mathf.Deg2Rad), tanH = tanV * view.aspect;
+        Vector3 right = Vector3.Cross(Vector3.up, -level).normalized;
+        Vector3 framed = eyes - right * (distance * tanH / 3f) - Vector3.up * (distance * tanV * .35f);
+        Vector3 look = Vector3.Lerp(along, framed, back);
+        view.transform.position = position;
+        view.transform.rotation = Quaternion.LookRotation(look - position, Vector3.up);
+        LightUp(Vector3.Lerp(chest, eyes, .6f), false);
+    }
+
+    // The show's two lights on whom it frames: a soft one riding with the camera, and one rimming them from behind and
+    // above (Hub.csv showLight, showRim; 0 turns one off).
+    private void LightUp(Vector3 subject, bool wide)
+    {
+        if (key == null) key = MakeLight("Results Key", new Color(1f, .96f, .9f));
+        if (rim == null) rim = MakeLight("Results Rim", new Color(.84f, .9f, 1f));
+        Vector3 facing = Quaternion.Euler(0f, stage.Yaw, 0f) * Vector3.forward;
+        key.transform.position = view.transform.position + Vector3.up * .25f;
+        key.transform.rotation = Quaternion.LookRotation(subject - key.transform.position, Vector3.up);
+        key.spotAngle = wide ? 70f : 46f;
+        key.intensity = Mathf.Max(0f, HubLobby.Number("showLight", 2f));
+        key.enabled = key.intensity > 0f;
+        rim.transform.position = subject - facing * (wide ? 2.4f : 1.4f) + Vector3.up * (wide ? 2.4f : 1.5f);
+        rim.transform.rotation = Quaternion.LookRotation(subject - rim.transform.position, Vector3.up);
+        rim.spotAngle = wide ? 100f : 60f;
+        rim.intensity = Mathf.Max(0f, HubLobby.Number("showRim", 3f));
+        rim.enabled = rim.intensity > 0f;
+    }
+
+    private static Light MakeLight(string name, Color color)
+    {
+        var light = new GameObject(name).AddComponent<Light>();
+        light.type = LightType.Spot;
+        light.color = color;
+        light.range = 10f;
+        light.innerSpotAngle = 20f;
+        light.shadows = LightShadows.None;
+        return light;
+    }
+
+    private static float Smooth(float x)
+    {
+        x = Mathf.Clamp01(x);
+        return x * x * (3f - 2f * x);
+    }
+
+    private static Vector3 Bezier(Vector3 from, Vector3 bend, Vector3 to, float t)
+    {
+        float u = 1f - t;
+        return u * u * from + 2f * u * t * bend + t * t * to;
     }
 
     // ---- The lineup's screen ----
@@ -427,24 +531,25 @@ public sealed class ResultsShow : MonoBehaviour
         KitStyle.Flat(skip, Texts.Get("results.skip"), 17f, TextAlignmentOptions.MidlineRight, KitStyle.Soft).fontStyle = FontStyles.Normal;
 
         // Each player's shot in turn, the last-ranked first and the best last; alone, one longer shot.
-        float shot = Mathf.Max(.6f, HubLobby.Number("showShot", 1.8f)) * (seats.Count == 1 ? 1.4f : 1f);
+        float shot = Mathf.Max(.6f, HubLobby.Number("showShot", 2.4f)) * (seats.Count == 1 ? 1.4f : 1f);
         float at = IntroSeconds;
         for (int i = seats.Count - 1; i >= 0; i--)
         {
             var seat = seats[i];
             seat.ShotAt = at;
             seat.ShotLength = shot;
+            seat.Side = shots.Count % 2 == 0 ? 1f : -1f;
             seat.Best = i == 0 && ResultsAwards.Of(won, seat.Entry).Count > 0;
             BuildSpot(seat);
             shots.Add(seat);
             at += shot;
         }
         // Then the whole row together, everyone's name under them and the chapter's highlights along the foot (not alone:
-        // the one shot was all of them, and its highlights ride it).
+        // the one shot was all of them, and its highlights ride it once its camera has settled).
         groupAt = at;
         bool row = seats.Count > 1;
         showEnd = row ? groupAt + Mathf.Max(.3f, HubLobby.Number("showHold", 1.6f)) : groupAt;
-        highlightsAt = row ? groupAt + .1f : seats[0].ShotAt + .6f;
+        highlightsAt = row ? groupAt + .1f : seats[0].ShotAt + HubLobby.Number("showTitlesAt", .9f) + .2f;
         foreach (var seat in seats) BuildPlate(seat);
         BuildHighlights();
         // The white blink of a cut, over everything but the curtain.
@@ -612,16 +717,16 @@ public sealed class ResultsShow : MonoBehaviour
         {
             bool live = seat == now;
             float local = age - seat.ShotAt;
-            if (live && prevAge < seat.ShotAt) StrikePose(seat);
+            if (live && prevAge < seat.ShotAt && seat.Pose != null) seat.Pose.Strike();
             seat.SpotGroup.alpha = live ? 1f : 0f;
             if (!live) continue;
-            // The name slides in from the left; the titles slam on down the left one after another.
+            // The name slides in from the left; the titles slam on down the left one after another, as the camera settles.
             float nameIn = Out(local / .22f);
             seat.Name.anchoredPosition = new Vector2(80f - 120f * (1f - nameIn), 118f);
             for (int i = 0; i < seat.Slams.Count; i++)
             {
                 var slam = seat.Slams[i];
-                float slamAt = seat.ShotAt + HubLobby.Number("showTitlesAt", .3f) + i * HubLobby.Number("showTitleEvery", .16f);
+                float slamAt = seat.ShotAt + HubLobby.Number("showTitlesAt", .9f) + i * HubLobby.Number("showTitleEvery", .16f);
                 float after = age - slamAt;
                 if (after < 0f) { slam.localScale = Vector3.zero; continue; }
                 if (prevAge < slamAt) Slammed();
@@ -650,25 +755,6 @@ public sealed class ResultsShow : MonoBehaviour
         float count = Mathf.Clamp01((age - highlightsAt) / .6f);
         foreach (var (label, value, award) in counters)
             label.text = ResultsAwards.Format(award, award.Unit == "m" ? value * count : System.Math.Round(value * count));
-    }
-
-    // The shot's player strikes their pose: chin up to the camera (CalloutGesture plays on every PC's copy of a body, so
-    // each PC poses whoever its own show is looking at; with a gun in hand only the head and chest move).
-    private void StrikePose(Seat seat)
-    {
-        var someone = PlayerOf(seat);
-        if (someone == null || view == null) return;
-        var gesture = someone.GetComponentInChildren<CalloutGesture>();
-        if (gesture != null) gesture.Play(CalloutGesture.Kind.Jut, view.transform.position, true);
-    }
-
-    // The player standing for a seat: this PC's own, or a friend's copy by their seat in the room.
-    private PlayerMovement PlayerOf(Seat seat)
-    {
-        if (seat.Entry.IsLocal) return mine;
-        foreach (var someone in PlayerRoster.All)
-            if (someone != null && someone.IsNetworkDriven && MatchResults.SeatOf(someone) == seat.Entry.Client) return someone;
-        return null;
     }
 
     private void Slammed() => CombatCueAudio.Play(gameObject, CombatCue.ParryBreak, Random.Range(1.1f, 1.3f));

@@ -24,6 +24,9 @@ public static class MatchResults
         public long Earned;
         /// <summary>On the ride when it left (or there was no ride to miss).</summary>
         public bool Escaped = true;
+        /// <summary>Their skin, colour set and outfit (OutfitLook.Join), so the results can stand a copy of them posing
+        /// whether or not they are still in the room (ResultsMannequin).</summary>
+        public string Look = "";
     }
 
     private static readonly List<Entry> entries = new List<Entry>();
@@ -89,6 +92,18 @@ public static class MatchResults
         }
     }
 
+    /// <summary>
+    /// The console's /results before any chapter has ended in this session: everyone here, with what they have done so
+    /// far, so the show (and a pose touched up in Blender, ArtSource/Poses) can be seen at once. It names the chosen
+    /// chapter as the next one, so the hub never takes it for the campaign's end (HubLobby clears the perks then).
+    /// </summary>
+    public static bool Preview(string title)
+    {
+        string next = HubFlow.Chosen;
+        Capture("", title, string.IsNullOrEmpty(next) ? "Preview" : next, null, null);
+        return entries.Count > 0;
+    }
+
     /// <summary>Shown (or no longer wanted): nothing waits for the hub any more.</summary>
     public static void Clear() => Pending = false;
 
@@ -113,5 +128,17 @@ public static class MatchResults
         entry.Headshots = tally.Headshots; entry.Revives = tally.Revives; entry.BestStreak = tally.BestStreak;
         entry.Takedowns = tally.Takedowns; entry.Damage = tally.Damage; entry.Healing = tally.Healing;
         entry.Farthest = tally.FarthestHeadshot; entry.Earned = tally.Earned;
+        string look = LookOf(tally);
+        if (look.Length > 0) entry.Look = look;
+    }
+
+    // What the room was told this player looks like; alone, built as PlayerNetworkPose would send it.
+    private static string LookOf(PlayerTally tally)
+    {
+        if (tally.TryGetComponent(out PlayerNetworkPose pose) && pose.IsSpawned && !string.IsNullOrEmpty(pose.Look)) return pose.Look;
+        if (!tally.TryGetComponent(out PlayerMovement someone) || !someone.IsLocal) return "";
+        var settings = GameSettings.Current;
+        string skinId = PlayerBodyProfile.Load()?.CurrentSkin?.Id ?? settings.characterSkin;
+        return OutfitLook.Join(PlayerBodyProfile.LookId(settings.characterSkin, settings.characterVariant), OutfitLook.SavedText(skinId));
     }
 }

@@ -23,6 +23,7 @@ using UnityEngine;
 /// Synty zombie model's avatar directly; other files there (a Mixamo download with skin) keep their own avatar. A file in
 /// a slot folder there (ZombieClipFolders) without a list loops by its folder, and its travel becomes root motion, which
 /// a zombie's body drops (ZombieBody moves by its agent).
+/// Resources/Poses (the results show's victory poses) take PoseImport's rules instead: humanoid clips on Mayo's avatar.
 /// </summary>
 internal sealed class ModelImportRules : AssetPostprocessor
 {
@@ -58,6 +59,12 @@ internal sealed class ModelImportRules : AssetPostprocessor
 
     private void OnPreprocessModel()
     {
+        // The results show's victory poses (Resources/Poses) follow their own rules (PoseImport).
+        if (PoseImport.IsPose(assetPath))
+        {
+            PoseImport.PreprocessModel((ModelImporter)assetImporter, context);
+            return;
+        }
         if ((IsProjectModel(assetPath) || IsAnimationFile(assetPath)) && assetImporter.importSettingsMissing)
             Apply((ModelImporter)assetImporter);
         if (IsZombieWorkspaceClip(assetPath))
@@ -153,6 +160,11 @@ internal sealed class ModelImportRules : AssetPostprocessor
     // folder's "<folder>.clips.csv" for a folder of one-clip files (Mixamo), on every import.
     private void OnPreprocessAnimation()
     {
+        if (PoseImport.IsPose(assetPath))
+        {
+            PoseImport.PreprocessAnimation((ModelImporter)assetImporter);
+            return;
+        }
         if (!IsAnimationFile(assetPath)) return;
         string listPath = Path.ChangeExtension(assetPath, null) + ".clips.csv";
         if (!File.Exists(listPath))
