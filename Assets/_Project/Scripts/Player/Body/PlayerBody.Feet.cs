@@ -64,8 +64,10 @@ public sealed partial class PlayerBody
         if (feet == null) return;
         bool onFeet = !dead && !playingOut && !heaving && player.IsGrounded
             && (state == MovementState.Standing || state == MovementState.Crouching);
+        // Running, the stride stretched to the ground the body covers (PlayerBody.Locomotion), so the feet don't skate.
         feet.Plant(onFeet, transform.position.y, player.groundLayers,
-            new FootPlanting.Tuning(maxHipDrop, footReach, footSettleTime, maxFootTilt, maxAnkleTurn, maxAnkleRoll, blendTime), dt);
+            new FootPlanting.Tuning(maxHipDrop, footReach, footSettleTime, maxFootTilt, maxAnkleTurn, maxAnkleRoll, blendTime), dt,
+            onFeet ? StrideNow : FootPlanting.Stride.None);
     }
 
     // Select the player in the Scene view: the line is the ground each foot found, the sphere where its ankle goes.

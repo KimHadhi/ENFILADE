@@ -23,8 +23,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
 {
     [Header("Clips (names in the PlayerBody profile)")]
     [SerializeField] private string idle = "mx_idle";
-    [SerializeField] private string walk = "mx_walk", walkBack = "mx_walk_back";
-    [SerializeField] private string run = "mx_run", runBack = "mx_run_back", sprint = "sprintfwd";
+    // The walk and run cycles are lists by way of travel (PlayerBody.Locomotion: forwardMoves, rightMoves, backMoves, leftMoves).
     [SerializeField] private string crouchIdle = "crouchstill", crouchWalk = "crouchfwd", crouchBack = "crouchbwd";
     [SerializeField] private string jump = "jumpfast", air = "jumpidle", fall = "mx_fall";
     [SerializeField] private string land = "mx_fall_land";
@@ -44,11 +43,9 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     [Header("Feel")]
     [SerializeField, Min(.01f), Tooltip("Crossfade between clips (s).")]
     private float blendTime = .15f;
-    [SerializeField, Min(.1f), Tooltip("Ground speed where each gait plays at its natural cadence (m/s); tune to the player's movement speeds.")]
-    private float walkClipSpeed = 1.7f, runClipSpeed = 5.2f, sprintClipSpeed = 8.4f, crouchClipSpeed = 3f;
-    [SerializeField, Range(0f, 90f), Tooltip("How far the hips turn toward the heading while sprinting (degrees). "
-        + "Walk, run and crouch have side and back clips and keep facing the camera.")]
-    private float maxStrafeYaw = 60f;
+    [SerializeField, Min(.1f), Tooltip("Faster than this the player counts as moving off (m/s): a landing or a slide's end stops "
+        + "playing out, and a landing from a tuck takes its running version. The cycles' own paces are measured (GaitClips).")]
+    private float walkClipSpeed = 1.7f;
     [SerializeField, Min(0f), Tooltip("The head sits this far behind the camera so looking down never shows the inside of the neck (m).")]
     private float backOffset = .12f;
     [SerializeField, Min(.01f), Tooltip("How quickly the body slides to keep its head under the camera (s). Slower than a stride, so running sway stays.")]
@@ -64,6 +61,8 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         public int Input;
         public float Length, AuthoredSpeed, Weight, Target;
         public bool Synced;
+        /// <summary>A walk or run cycle's measured gait on this body (GaitClips), or null.</summary>
+        public GaitClips.Gait Gait;
     }
 
     private readonly List<Channel> channels = new List<Channel>();
@@ -95,6 +94,8 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     private MovementState state;
     private string dodgeClip;
     private float transitionLeft, stateTime, airTime, phase, yaw, yawVelocity, targetYaw;
+    // Strides taken so far, for cycles holding more than one stride (GaitClips.Gait.ShareAt); phase is within the stride.
+    private int strideCount;
     private bool started, grounded, jumped, dead, thirdPerson, rebuild, playingOut, springing;
     private bool supineDiveAtOnce, slidesOnBack;
     private Vector3 lastHeadInBody;
@@ -802,7 +803,10 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         foreach (var channel in channels)
         {
             mixer.SetInputWeight(channel.Input, channel.Weight / total);
-            if (channel.Synced) channel.Playable.SetTime(phase * channel.Length);
+            // A measured cycle is put at the same moment of the step as every other (its own left foot down at phase 0,
+            // its strides in turn); an unmeasured one at the same share of its length.
+            if (channel.Synced)
+                channel.Playable.SetTime((channel.Gait != null ? channel.Gait.ShareAt(strideCount, phase) : phase) * channel.Length);
         }
     }
 

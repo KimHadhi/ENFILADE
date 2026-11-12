@@ -47,6 +47,8 @@ public static class PlayerConsoleCommands
             if (!p.DamageReceiver.IsAlive) return "사망 상태입니다. /revive를 먼저 사용하세요.";
             return ConsolePoseTest.Spawn(p, wake, only, kind);
         }));
+        router.Register("gait", "걸음 수치 보기 켜기, 다시 입력하면 끄고 속도별 평균 출력(복사됨) — 속도, 클립이 제 박자로 나르는 속도, 박자·보폭 배율, 분당 걸음, 남은 미끄러짐, 섞이는 클립 (PlayerBody.Locomotion)",
+            _ => WithPlayer(resolvePlayer, GaitReadoutView.Toggle));
         router.Register("dummy", "[수량] 또는 clear — 멀티 구조 시험용 더미 플레이어 소환·제거", args => WithPlayer(resolvePlayer, p =>
         {
             string text = args.Trim();

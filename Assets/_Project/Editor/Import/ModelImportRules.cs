@@ -34,7 +34,10 @@ internal sealed class ModelImportRules : AssetPostprocessor
     // Clips the Blender True FPS workspaces export on KazusaBand's own skeleton (Tools/Blender/TrueFPS and Shove): they
     // take her avatar as they are, so a polish exported from Blender plays with no step in Unity (the shove workspace's
     // round trip; the TrueFPS guide had the user pick Copy From Other Avatar by hand).
-    private static readonly string[] TrueFpsAnimationFolders = { AnimationsFolder + "Shove/", AnimationsFolder + "Custom/" };
+    // Run/ holds the walk and run cycles polished in the Blender run workspace (Tools/Blender/Run), enf_<cycle>, which the body
+    // plays instead of <cycle> (PlayerBody.Locomotion).
+    private static readonly string[] TrueFpsAnimationFolders =
+        { AnimationsFolder + "Shove/", AnimationsFolder + "Custom/", AnimationsFolder + "Run/" };
     private const string TrueFpsAvatarModel = ModelsFolder + "Characters/KazusaBand/KazusaBand.fbx";
     private const string CharactersCategory = "Characters/";
     private static readonly string[] StaticCategories = { "Props/", "Environment/" };

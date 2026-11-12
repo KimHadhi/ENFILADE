@@ -56,6 +56,16 @@ public sealed partial class PlayerBody
     [SerializeField, Min(0f), Tooltip("With less body sway (Settings → 화면 → 몸 흔들림), how slowly the camera's path through the "
         + "eyes follows them (s).")]
     private float bodySwayTime = .12f;
+    [SerializeField, Range(0f, 1f), Tooltip("Running on the ground, the share of the eyes' bob the first-person camera steadies: it keeps "
+        + "that much to the eyes' eased path (bodySwayTime), as a runner's eyes hold the view while the head bobs, and the head "
+        + "bends to it (HeadReach). 0 rides the eyes as before.")]
+    private float runCalm = .45f;
+    [SerializeField, Tooltip("The run's calm starts at x and is whole from y (m/s).")]
+    private Vector2 runCalmSpeeds = new Vector2(2f, 4f);
+
+    // How much of the run's calm is on (eased, so a landing or a stop never jolts the camera back onto the eyes).
+    private float runCalmWeight;
+    private const float RunCalmEase = .25f;
 
     // Turning to face a set way (onto the back from a front dive, along a swing bar), the body comes round this fast
     // (degrees per second).
@@ -217,8 +227,12 @@ public sealed partial class PlayerBody
         // In the F5 view too: the eyes take this pose, then the camera moves behind (PlaceViewBehind). With nothing in hand
         // the body carries part of the Q/E peek and the camera makes up the rest, as up to 0.7.34; holding a gun or the
         // fists the body carries all of it and the camera stays on the eyes, where the guard and the sight are placed from.
+        // Running on the ground, part of the eyes' bob is steadied (runCalm); off the cycles it eases back onto the eyes.
+        float calmTarget = dead || strideFrame != Time.frameCount ? 0f
+            : runCalmShare * Mathf.InverseLerp(runCalmSpeeds.x, Mathf.Max(runCalmSpeeds.x + .01f, runCalmSpeeds.y), gaitSpeed);
+        runCalmWeight = Mathf.MoveTowards(runCalmWeight, calmTarget, dt / RunCalmEase);
         bodyCamera.Place(eye, eyeBefore, carried, bodyLean.CameraMakesUp, bodyGaze.Rotation, bodyGaze.Input, CameraIgnores(),
-            dt, bodySwayTime);
+            dt, bodySwayTime, runCalm * runCalmWeight);
         // Then the head goes where the camera went: off the eyes (a punch, a slip's dip, a peek's share, a wall, less body
         // sway) the spine, chest and neck bend it there, so the view is never outside the head, seen from outside too (the
         // user, 2026-11-12: "캐릭터의 머리와 카메라가 일치해서 True FPS의 몰입감은 있으면서 너무 멀미나거나 게임 플레이에

@@ -15,6 +15,8 @@ using UnityEngine;
 /// - Settings → 화면 → 몸 흔들림 (GameSettings.bodySway): below 1 it follows an eased path through the eyes instead of the
 ///   eyes themselves. Wherever it ends up, the body then bends its head to it (HeadReach, from Placed), so the camera
 ///   steadies without leaving the head.
+/// - Running on the ground it also steadies part of the eyes' bob (Place's calm, PlayerBody.runCalm), as a runner's eyes hold
+///   the view still while the head bobs; the head bends to it the same way.
 /// A plain class PlayerBody owns (stage 3 of the body restructure, 2026-11-09): it holds the camera's own state, and the
 /// body hands it the pose each frame (Place). The numbers stay PlayerBody's (Player.csv, row Body).
 /// </summary>
@@ -123,9 +125,10 @@ internal sealed class BodyCamera
     /// (BodyLean.Carry, BodyLean.CameraMakesUp). <paramref name="gaze"/> is where the view looks and <paramref name="input"/>
     /// where the mouse alone has it. The sweep goes past <paramref name="ignored"/>. <paramref name="dt"/> and
     /// <paramref name="swayTime"/> (s) ease the path the camera follows with less body sway (GameSettings.bodySway).
+    /// <paramref name="calm"/> is the share of the eyes' sway it keeps to that path on top (running, PlayerBody.runCalm).
     /// </summary>
     internal void Place(Vector3 eye, Vector3 eyeBefore, Vector3 carried, float makesUp, Quaternion gaze, Quaternion input, Transform ignored,
-        float dt = 0f, float swayTime = 0f)
+        float dt = 0f, float swayTime = 0f, float calm = 0f)
     {
         if (view == null) return;
         Vector3 anchor = Anchor();
@@ -134,7 +137,7 @@ internal sealed class BodyCamera
         Vector3 headMove = effects != null ? effects.HeadDisplacement : Vector3.zero;
         // The Q/E lean's whole peek (wall-limited by the camera effects), the share the camera makes up.
         Vector3 lean = (effects != null ? effects.LeanDisplacement : owner.right * player.LeanOffset) * makesUp;
-        Vector3 riding = Sway(eye, anchor, dt, swayTime);
+        Vector3 riding = Sway(eye, anchor, dt, swayTime, calm);
         Vector3 target = Vector3.Lerp(anchor + lean + eye - eyeBefore, riding + lean - carried * makesUp, eyeWeight) + headMove;
         // The pose cleared the wall first; this stable capsule-to-eye sweep is the final guard for any remaining contact.
         clearance.Ignored = ignored;
@@ -147,13 +150,13 @@ internal sealed class BodyCamera
     // Settings → 화면 → 몸 흔들림 (bodySway): the share of the eyes' own sway the camera follows; the rest of the way it
     // keeps to their eased path, eased in the capsule's frame. The path is kept up at any setting, so changing it mid-game
     // never jumps. Someone else's copy rides its eyes: their setting isn't known on this PC.
-    private Vector3 Sway(Vector3 eye, Vector3 anchor, float dt, float swayTime)
+    private Vector3 Sway(Vector3 eye, Vector3 anchor, float dt, float swayTime, float calm)
     {
         Vector3 offset = owner.InverseTransformVector(eye - anchor);
         if (!eased || dt <= 0f || swayTime <= 0f) easedEyes = offset;
         else easedEyes = Vector3.Lerp(easedEyes, offset, 1f - Mathf.Exp(-dt / swayTime));
         eased = true;
-        float sway = player != null && player.IsLocal ? GameSettings.Current.bodySway : 1f;
+        float sway = (player != null && player.IsLocal ? GameSettings.Current.bodySway : 1f) * (1f - Mathf.Clamp01(calm));
         return sway >= .999f ? eye : anchor + owner.TransformVector(Vector3.Lerp(easedEyes, offset, sway));
     }
 
