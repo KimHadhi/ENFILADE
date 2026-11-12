@@ -44,6 +44,9 @@ public sealed partial class GreyboxBuilder
     public GameObject Dress(GameObject box, string kind, int pick = -1)
     {
         if (box == null) return null;
+        // Cover meant to be shot over (Tables/ShootOverCover: sandbags, HESCO, jersey barriers…): the gun's wall rule looks
+        // past its box while the player's eyes are over its top, model or no model.
+        if (ShootOverCover.IsKind(kind) && !box.TryGetComponent<ShootOverCover>(out _)) box.AddComponent<ShootOverCover>();
         var center = box.transform.position;
         if (!ArtRow(kind, pick, center, out var prefab, out var fit, out float yaw, out float scale)) return box;
         var target = new Bounds(center, box.transform.lossyScale);
@@ -137,6 +140,7 @@ public sealed partial class GreyboxBuilder
             height = height < SolidBandLow + SolidBandSink ? SolidBandLow : SolidBandTop;
         var box = Box(kind + " (충돌)", floor.x - half.x, floor.x + half.x, floor.y, floor.y + height, floor.z - half.z, floor.z + half.z);
         box.GetComponent<Renderer>().enabled = false;
+        if (ShootOverCover.IsKind(kind)) box.AddComponent<ShootOverCover>();
         TurnBlock(box, angle);
         if (cap) Cap(box, kind, new Vector3(floor.x, floor.y + height, floor.z), half, angle);
         return model;

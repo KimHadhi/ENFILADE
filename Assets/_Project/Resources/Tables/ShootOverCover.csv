@@ -1,0 +1,16 @@
+﻿id,cover,note
+#설명,,쏘아 넘기라고 둔 낮은 엄폐물인 맵 꾸미기 종류(Tables/MapArt의 id). 장을 지을 때 GreyboxBuilder.Dress가 이 종류의 회색 상자에 ShootOverCover를 붙인다. 총의 벽 규칙은 눈이 그 윗면보다 5cm 넘게 높을 때 그 상자를 건너뛰어 high ready로 들지 않고 그 위로 조준된다. 앉아서 눈이 윗면보다 낮으면 벽처럼 막는다. cover를 false로 하면 그 종류를 뺀다. 바꾸면 장을 다시 지어야 한다. 서포트 바리케이드(판자·철조망·탄약 상자)는 Barricade가 직접 붙인다
+sandbags,true,모래주머니 벽(1.2m)
+sandbag,true,모래주머니
+hesco,true,HESCO 방벽. 지금 맵의 것은 2m라 서서 보는 눈보다 높아서 막는다
+hescosand,true,모래 채운 HESCO
+jersey,true,저지 방호벽(콘크리트 중앙분리대)
+concreteblock,true,콘크리트 블록
+metalbarricade,true,철제 바리케이드
+plasticbarrier,true,플라스틱 방호벽
+roadblock,true,도로 차단물
+cementbags,true,시멘트 포대 더미
+brickwall,true,낮은 벽돌 담
+cinderblock,true,콘크리트 벽돌 더미
+sawhorse,true,목마형 바리케이드
+tirestack,true,쌓은 타이어

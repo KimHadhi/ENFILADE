@@ -401,6 +401,8 @@ public sealed class Barricade : MonoBehaviour, IDamageReceiver
         body = gameObject.AddComponent<BoxCollider>();
         body.center = new Vector3(0f, size.y * .5f, 0f);
         body.size = kind == Kind.Light ? new Vector3(.45f, size.y, .45f) : size;
+        // Low cover the team shoots over: the gun's wall rule looks past it (ShootOverCover); the searchlight stands tall.
+        if (kind != Kind.Light) gameObject.AddComponent<ShootOverCover>();
         // Wire is walked through (a zombie is tangled in it, a player steps over it); the rest stand in the way.
         if (kind == Kind.Wire)
         {

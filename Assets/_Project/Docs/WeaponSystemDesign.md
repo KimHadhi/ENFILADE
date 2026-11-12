@@ -29,6 +29,8 @@
 
 총을 올리고 내리는 자세는 부드럽게 전환하지만 엄폐와 발사 차단은 즉시 적용한다. 우클릭을 유지하고 장애물에서 벗어나면 총을 내린 뒤 ADS로 돌아간다. 연사 중에도 격발마다 총구 안전성을 다시 확인한다.
 
+벽 규칙([WeaponAimSolver](../Scripts/Combat/Weapons/Core/WeaponAimSolver.cs) `IsObstructed`)이 보는 것은 넷이다. 조준점이 총구 뒤나 옆 65° 밖에 있는지, 눈에서 총구까지 사이에 무언가 있는지, 총구가 무언가 속에 있는지(4.5cm 구), 총구 바로 앞 12cm에 무언가 있는지다. 총구는 지금 총이 있는 자리가 아니라 깨끗이 쥔 자리로 잰다([FPSBody](../Scripts/Player/FPSBody/FPSBody.cs) `Prepare`). 예전에는 조준 중에도 허리 높이로 쥔 총구로 쟀다. 그래서 허리 높이 바리케이드 뒤에서는 그 총구가 바리케이드 윗면 아래라 조준할 때마다 high ready로 들렸다(2026-11-12 사용자: "서포트 바리케이드 때문에 high ready돼서 조준하는데 불편하니까 이거 좀 개선해 줘"). 0.8.241부터 우클릭을 쥐었거나 조준 중이면 조준했을 때의 총구로 잰다(총마다 처음 끝까지 조준할 때 배움, 그 전에는 시선 위에 총 길이만큼). 그래서 시선이 넘어가는 것 때문에 조준이 막히지 않는다. 쏘아 넘기라고 둔 낮은 엄폐물은 [ShootOverCover](../Scripts/Combat/Weapons/Core/ShootOverCover.cs)로 표시하고, 눈이 그 윗면보다 5cm 넘게 높으면 벽 규칙이 그것을 건너뛴다. 서포트의 판자 바리케이드·철조망·탄약 상자(누구의 것이든)와 [ShootOverCover.csv](../Resources/Tables/ShootOverCover.csv)에 적은 맵 꾸미기 종류(모래주머니·HESCO·저지 방호벽 등, 장을 다시 지으면 붙음)다. 앉아서 눈이 윗면보다 낮으면 다른 벽처럼 막아 총이 그 속에 묻히지 않는다. 탐조등과 표시 없는 벽은 그대로 막으니, 벽에 바짝 서면 총은 전처럼 든다. 바리케이드 미리보기(BarricadeGhost)는 콜라이더가 없어 원래 막지 않는다. 총알은 여전히 엄폐물에 막힌다.
+
 - 총 모델의 자세(지향·정조준·벽에 막힌 자세·흔들림·반동 애니메이션)는 KINEMATION FPS Animation Framework가 몸에서 보여 준다([FPSBody](../Scripts/Player/FPSBody/FPSBody.cs)). WeaponController는 규칙만 정하고 `IWeaponPose`로 알린다.
 - `WeaponAimSolver`의 실제 명중·엄폐 판정은 그 시각 보간을 사용하지 않는다. 마우스 회전과 Q/E 입력에도 별도 지연을 넣지 않는다.
 - 새 모델의 총구는 로컬 +Z가 전방이어야 한다. 모델이 없는 시험용 컨트롤러는 카메라 위치를 발사 원점으로 사용한다.

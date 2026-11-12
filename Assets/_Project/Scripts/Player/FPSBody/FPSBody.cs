@@ -1027,18 +1027,26 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
         LearnHipMuzzle();
     }
 
-    // Where the muzzle is when the gun is held clean at the hip, from the eyes (which stay put in the F5 view), for the wall
-    // rule's probes (Prepare): learnt only with FPSAF holding the whole gun at rest, the draw's motion over, no wall holding
-    // it back and no reload, and only with the muzzle ahead of the eyes. Kept per gun across draws. The probes once read the
-    // gun's own muzzle until the first clean frame after a draw: a gun caught at the draw was raised and swung aside, and
-    // never learnt again while raised, so it stayed raised and couldn't fire (user, 2026-11-07).
+    // Where the muzzle is when the gun is held clean at the hip, and fully down the sights, from the eyes (which stay put in
+    // the F5 view), for the wall rule's probes (Prepare): learnt only with FPSAF holding the whole gun at rest, the draw's
+    // motion over, no wall holding it back and no reload, and only with the muzzle ahead of the eyes. Kept per gun across
+    // draws. The probes once read the gun's own muzzle until the first clean frame after a draw: a gun caught at the draw was
+    // raised and swung aside, and never learnt again while raised, so it stayed raised and couldn't fire (user, 2026-11-07).
     private void LearnHipMuzzle()
     {
-        if (eyes == null || highReady || cover > 0f || held.HandsBusy || Framework < .999f || controller.AimBlend > .001f
+        float aim = controller.AimBlend;
+        if (eyes == null || highReady || cover > 0f || held.HandsBusy || Framework < .999f || (aim > .001f && aim < .999f)
             || Time.time - drawnAt < drawSettle) return;
         Vector3 fromEyes = muzzle.position - eyes.position;
         if (Vector3.Angle(eyes.forward, fromEyes) > HipMuzzleCone) return;
-        held.HipMuzzle = eyes.InverseTransformPoint(muzzle.position);
+        Vector3 local = eyes.InverseTransformPoint(muzzle.position);
+        if (aim >= .999f)
+        {
+            held.AimedMuzzle = local;
+            held.HasAimedMuzzle = true;
+            return;
+        }
+        held.HipMuzzle = local;
         held.HasHipMuzzle = true;
     }
 
@@ -1279,13 +1287,18 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
         held.Fire(controller.LastShot.AmmoAfterShot == 0, recoil, bodyCamera, !kinemationShake || controller.AimBlend >= .5f);
     }
 
-    // The wall rule probes the gun as held at the hip, never the gun as it is (raised, swung aside or on its way in): the
-    // learnt hip muzzle, or before it is learnt one straight ahead of the eyes at the gun's own length (bone to muzzle).
+    // The wall rule probes the gun as it is held clean, never the gun as it is (raised, swung aside or on its way in): while
+    // aiming is asked for or under way (ads over 0) the muzzle as held down the sights, learnt, else one on the sight line
+    // at the gun's own length (bone to muzzle); at the hip the learnt hip muzzle, else the same. Aiming over cover the sight
+    // line clears never lifts the gun: the hip muzzle under a waist-high barricade's top did, every time the player aimed
+    // (the user, 2026-11-12: "서포트 바리케이드 때문에 high ready돼서 조준하는데 불편하니까 이거 좀 개선해 줘").
     public Vector3 Prepare(Transform probeView, WeaponData data, float ads)
     {
         if (!HoldsGun || eyes == null) return muzzle != null ? muzzle.position : probeView.position;
+        Vector3 onSight = eyes.position + eyes.forward * held.MuzzlePosition.magnitude;
+        if (ads > .001f) return held.HasAimedMuzzle ? eyes.TransformPoint(held.AimedMuzzle) : onSight;
         if (held.HasHipMuzzle) return eyes.TransformPoint(held.HipMuzzle);
-        return eyes.position + eyes.forward * held.MuzzlePosition.magnitude;
+        return onSight;
     }
 
     // Our wall rule says whether the gun may fire and how far it is held back, eased at the weapon's high-ready speeds;

@@ -542,7 +542,9 @@ public sealed class WeaponController : MonoBehaviour
         AimBlend = blocked || presentation?.IsHighReady == true ? 0f : nextAim;
         if (presentation != null)
         {
-            nominalMuzzle = presentation.Prepare(PoseView, weaponData, AimBlend);
+            // While aiming is held, still the sight position: high ready holds AimBlend at 0, and the hip pose under low
+            // cover would keep it raised for as long as the player aimed over that cover.
+            nominalMuzzle = presentation.Prepare(PoseView, weaponData, aiming ? 1f : AimBlend);
             blocked |= WeaponAimSolver.IsObstructed(owner, PoseView, nominalMuzzle, target, hitLayers, margin);
             if (blocked && AimBlend > 0f)
             { AimBlend = 0f; presentation.Prepare(PoseView, weaponData, 0f); }

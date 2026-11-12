@@ -41,6 +41,9 @@ public sealed class FPSGun : MonoBehaviour
     // The muzzle as this gun sits held clean at the hip, from the eyes (FPSBody.LearnHipMuzzle), for the wall rule.
     internal Vector3 HipMuzzle { get; set; }
     internal bool HasHipMuzzle { get; set; }
+    // The same held clean fully down the sights, for the wall rule while aiming.
+    internal Vector3 AimedMuzzle { get; set; }
+    internal bool HasAimedMuzzle { get; set; }
 
     // The gun's real surface for the hands to touch, built from its meshes as it is set up (at load, not in play).
     internal GunSurface Surface { get; private set; }
