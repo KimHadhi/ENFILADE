@@ -51,6 +51,9 @@ public sealed partial class PlayerBody
     private Vector2 gaitStretch = new Vector2(.8f, 1.3f);
     [SerializeField, Range(0f, .3f), Tooltip("The most the hips come down for a stretched stride's leg to reach, as a share of the leg.")]
     private float gaitStretchDrop = .08f;
+    [SerializeField, Range(0f, 1f), Tooltip("With a gun out and not aiming, how much the gun's aim cycles still take the legs, as far as "
+        + "they reach the speed (aiming they always do). 0: the plain run under the gun; 1: the gun's cycles, stride-matched.")]
+    private float gunHipMoves;
     [SerializeField, Tooltip("Running, the most the hips turn toward the way of travel (degrees): x heading ahead or to a side, y heading back.")]
     private Vector2 hipTurn = new Vector2(70f, 45f);
     [SerializeField, Tooltip("The hips start turning toward the way of travel at x and turn all the way from y (m/s).")]
@@ -318,7 +321,7 @@ public sealed partial class PlayerBody
     {
         Around(heading, out int from, out int to, out float toward);
         float top = Mathf.Lerp(Fastest(set.Ways[from]), Fastest(set.Ways[to]), toward / 90f) * scale * gaitRate.y * gaitStretch.y;
-        return AimBlend() * (1f - Mathf.InverseLerp(top * .85f, top * 1.1f, speed));
+        return Mathf.Max(AimBlend(), Mathf.Clamp01(gunHipMoves)) * (1f - Mathf.InverseLerp(top * .85f, top * 1.1f, speed));
 
         static float Fastest(List<Channel> cycles) => cycles.Count > 0 ? cycles[cycles.Count - 1].Gait.Speed : 1f;
     }

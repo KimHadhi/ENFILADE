@@ -45,6 +45,7 @@
 | 사람의 박자 | `Body.gaitCadence`(속도;걸음/초 짝), `gaitLeg` |
 | 박자·보폭 한계 | `Body.gaitRate`, `gaitStretch`, `gaitStretchDrop` |
 | 골반 돌림 | `Body.hipTurn`, `hipTurnSpeeds` |
+| 총을 들고 조준하지 않을 때의 다리 | `Body.gunHipMoves` (기본 0 = 맨손 달리기, 1 = 총 든 조준 걸음을 보폭 맞춰). 달릴 때 화면의 총이 너무 흔들리면 1로 |
 | 1인칭 흔들림 잡기 | `Body.runCalm`, `runCalmSpeeds` (설정 화면 → 1인칭 몸 흔들림과 곱해짐) |
 
 ## 블렌더로 다듬기
