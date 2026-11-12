@@ -142,8 +142,6 @@ public sealed class EnemyHealth : MonoBehaviour, IDamageReceiver, ICombatVitals,
             return DamageResult.Ignored;
         }
         if (Untouchable) return DamageResult.Invulnerable;
-        // A Schießhund in a duel hurts no foe but theirs (HoundDuel; their bullets pass the others by in the first place).
-        if (HoundDuel.Spares(this, hit)) return DamageResult.Ignored;
 
         if (!seen.Add(hit.Id)) return DamageResult.Duplicate;
         recent.Enqueue(hit.Id);

@@ -70,10 +70,12 @@ public sealed class PlayerDamageReceiver : MonoBehaviour, IDamageReceiver, ITabl
         if (!seen.Add(hit.Id)) return DamageResult.Duplicate;
         recent.Enqueue(hit.Id);
         if (recent.Count > 256) seen.Remove(recent.Dequeue());
-        // A Schießhund's duel (HoundDuel): a called-out foe's blow on anyone but its hound lands on nothing, and so does any
-        // other foe's on a hound holding the Ace card.
-        if (HoundDuel.Blocks(movement, hit))
+        // A Schießhund's duel (HoundDuel): a called-out foe's blow on anyone but its hound lands on nothing (and says whose
+        // duel it was), and so does any other foe's on a hound holding the Ace card.
+        var duel = HoundDuel.Blocking(movement, hit);
+        if (duel != null)
         {
+            duel.Shielded(movement);
             HitResolved?.Invoke(hit, DamageResult.Invulnerable);
             return DamageResult.Invulnerable;
         }

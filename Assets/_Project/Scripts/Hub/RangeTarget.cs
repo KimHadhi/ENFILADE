@@ -117,12 +117,11 @@ public sealed class RangeTarget : MonoBehaviour, IDamageReceiver, ICombatVitals,
     public DamageResult ReceiveHit(DamageHit hit)
     {
         if (hit.Id <= 0 || hit.Amount <= 0f || float.IsNaN(hit.Amount) || float.IsInfinity(hit.Amount) || IsDown) return DamageResult.Ignored;
-        // A practice duel holds here as on a zombie (HoundDuel): the hound hurts no other, friends never finish it.
-        if (HoundDuel.Spares(this, hit)) return DamageResult.Ignored;
         if (!seen.Add(hit.Id)) return DamageResult.Duplicate;
         recent.Enqueue(hit.Id);
         if (recent.Count > 256) seen.Remove(recent.Dequeue());
         float before = Health;
+        // A practice duel holds here as on a zombie (HoundDuel): friends never finish it.
         Health = Mathf.Max(HoundDuel.Floor(this, hit, before), Health - hit.Amount);
         bool downed = Health <= 0f;
         // As an enemy's hit does (EnemyHealth): the ultimate charges, so its skills can be tried here.

@@ -7,10 +7,12 @@ using UnityEngine;
 /// 있음). 이거를 팀을 공격하려던 상대한테 걸어서 세이브 용도로 쓸 수 있음. 아군이 상대를 공격하는 거는 가능함 … 근데
 /// 마무리는 못 함. 피가 1 미만으로 안 내려 감. 베이직: 위 내용대로 / 에이스: 나는 표식 상대를 제외한 공격을 받지 않게 되며,
 /// 아군이 마무리까지 가능하게 됨"). The class key on a foe calls it out (ClassKit) for some seconds:
-/// - the two can only hurt each other: the foe goes after the hound alone (EnemyTargeting.Duel) and its blows on anyone
-///   else land on nothing (Blocks, PlayerDamageReceiver), and the hound's bullets pass through every other foe on their
-///   way (PassesThrough, AttackTrace) and its blows hurt no other (Spares, EnemyHealth), so the duel can be fought
-///   through a crowd and a friend about to be torn up is saved by drawing the blow;
+/// - the foe goes after the hound alone (EnemyTargeting.Duel) and its blows on anyone else land on nothing (Blocking,
+///   PlayerDamageReceiver). A blow it was already winding up is finished first and lands on the friend it was meant for,
+///   and does nothing: the friend feels it land, wonders, and finds the hound's line on it (the user, 2026-11-12: "구해지는
+///   입장에선 공격을 맞았는데 맞는 느낌이 안 나는 거지. 그래서 오잉?했는데 알고 보니 시순트가 결투를 걸어 구해준 거였다라는
+///   느낌이 나는 게 더 뽕이 차"); their screen says whose duel it was (Shielded). The hound's own shots hit whatever they
+///   meet as ever, so it can clear the foes in its way ("앞에 길을 막는 적을 처치할 수 없는 거 아니야?");
 /// - the hound hits it harder (PlayerClass.GunFactor, duelDamage), and it carries the hound's bounty mark, so a
 ///   Desperado round in its head ends it as a bounty;
 /// - friends may shoot it to help, but never finish it: it can't drop below 1 health to anyone but the hound (Floor);
@@ -85,27 +87,6 @@ public sealed class HoundDuel : MonoBehaviour
     }
 
     /// <summary>
-    /// A bullet of <paramref name="owner"/>'s met <paramref name="collider"/>: true when the owner is a hound in a duel and
-    /// that is another foe, which the bullet passes through on its way (AttackTrace). Every PC traces it the same.
-    /// </summary>
-    public static bool PassesThrough(GameObject owner, Collider collider)
-    {
-        if (duels.Count == 0 || owner == null || collider == null) return false;
-        var duel = Of(owner.GetComponentInParent<PlayerMovement>());
-        if (duel == null) return false;
-        var foe = CombatFoe.Of(collider);
-        return foe != null && foe.gameObject != duel.Foe.gameObject;
-    }
-
-    /// <summary>A blow or shot on <paramref name="foe"/> that hurts nothing: its source is a hound in a duel with another foe.</summary>
-    public static bool Spares(Component foe, DamageHit hit)
-    {
-        if (duels.Count == 0 || foe == null || hit.Source == null) return false;
-        var duel = Of(hit.Source.GetComponentInParent<PlayerMovement>());
-        return duel != null && duel.Foe.gameObject != foe.gameObject;
-    }
-
-    /// <summary>
     /// The least health <paramref name="foe"/> keeps after this hit: 1 (or what it has, if less) while it is called out
     /// and the hit isn't its hound's, unless the hound holds the Ace; else 0.
     /// </summary>
@@ -118,20 +99,38 @@ public sealed class HoundDuel : MonoBehaviour
     }
 
     /// <summary>
-    /// Whether a blow on <paramref name="victim"/> lands on nothing: it comes from a foe called out by another hound, or
-    /// the victim is a hound holding the Ace in a duel and it comes from any foe but theirs. Their own PC asks
-    /// (PlayerDamageReceiver).
+    /// The duel a blow on <paramref name="victim"/> lands on nothing for, or null: it comes from a foe called out by
+    /// another hound, or the victim is a hound holding the Ace in a duel and it comes from any foe but theirs. Their own
+    /// PC asks (PlayerDamageReceiver).
     /// </summary>
-    public static bool Blocks(PlayerMovement victim, DamageHit hit)
+    public static HoundDuel Blocking(PlayerMovement victim, DamageHit hit)
     {
-        if (duels.Count == 0 || victim == null || hit.Source == null || hit.Kind == DamageKind.Fall) return false;
+        if (duels.Count == 0 || victim == null || hit.Source == null || hit.Kind == DamageKind.Fall) return null;
         var foe = hit.Source.GetComponentInParent<EnemyHealth>();
-        if (foe == null) return false;
+        if (foe == null) return null;
         var called = On(foe);
-        if (called != null && called.Hound != victim) return true;
+        if (called != null && called.Hound != victim) return called;
         var own = Of(victim);
-        return own != null && own.Ace && own.Foe.gameObject != foe.gameObject;
+        return own != null && own.Ace && own.Foe.gameObject != foe.gameObject ? own : null;
     }
+
+    // Friends whose blow this duel turned aside, told once each.
+    private readonly HashSet<PlayerMovement> told = new HashSet<PlayerMovement>();
+
+    /// <summary>
+    /// The duel turned a blow aside from <paramref name="victim"/> (this PC's player): the first time, their screen says
+    /// whose duel saved them, from the hound's side, in the mark's teal.
+    /// </summary>
+    public void Shielded(PlayerMovement victim)
+    {
+        if (victim == null || victim == Hound || !told.Add(victim)) return;
+        KitSound.Play(KitSound.Cue.Mark, .6f);
+        AlertHUD.Team(Texts.Format("class.schiesshund.duel.saved", NameOf(Hound)), Hound.transform, PingMarks.BountyColor);
+    }
+
+    private static string NameOf(PlayerMovement player)
+        => player != null && player.TryGetComponent(out PlayerTally tally) && !string.IsNullOrEmpty(tally.DisplayName) ? tally.DisplayName
+            : player != null ? player.name : "";
 
     // Still on: time left, both still standing.
     private bool Live => Time.time < until && Hound != null && Foe != null && Foe is ICombatFoe foe && foe.IsAlive

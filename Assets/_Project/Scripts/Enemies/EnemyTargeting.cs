@@ -14,7 +14,10 @@ public sealed class EnemyTargeting : MonoBehaviour
     private PlayerMovement player, taunter;
     private ZombieMind mind;
     private EnemyNetwork network;
+    private EnemyCombatAI combat;
     private float nextLook, tauntUntil;
+    // Called out in a Schießhund's duel: the blow it is winding up on someone else is finished first.
+    private bool finishFirst;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetStatics() => all.Clear();
@@ -31,11 +34,21 @@ public sealed class EnemyTargeting : MonoBehaviour
     {
         get
         {
-            // Taunted: the Knight, until it wears off or they go down.
+            // Taunted: the Knight, until it wears off or they go down. Called out in a duel, it first finishes the blow it
+            // was already winding up on someone else, which then lands on nothing (HoundDuel): turning on the hound mid-swing
+            // would cheapen the save (the user, 2026-11-12: "적이 공격하려고 내려찍으려 하고 있었어 근데 결투를 하면 갑자기
+            // 캔슬하고 시순트를 바라보면 구해지는 입장에서 짜칠 것 같아").
             if (taunter != null)
             {
-                if (Time.time < tauntUntil && Standing(taunter)) return player = taunter;
+                if (Time.time < tauntUntil && Standing(taunter))
+                {
+                    if (combat == null) combat = GetComponent<EnemyCombatAI>();
+                    if (finishFirst && player != null && player != taunter && combat != null && combat.IsPreparingAttack) return player;
+                    finishFirst = false;
+                    return player = taunter;
+                }
                 taunter = null;
+                finishFirst = false;
             }
             // A zombie that noticed someone goes after them, not whoever is nearest.
             if (mind == null) mind = GetComponent<ZombieMind>();
@@ -85,6 +98,7 @@ public sealed class EnemyTargeting : MonoBehaviour
         if (targeting.network != null && targeting.network.IsCopy) return;
         targeting.taunter = hound;
         targeting.tauntUntil = Time.time + seconds;
+        targeting.finishFirst = true;
     }
 
     // Alive and not down: a Knight lying on the ground no longer holds anything's eye (they'd only be eaten).
