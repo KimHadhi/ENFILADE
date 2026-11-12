@@ -196,7 +196,11 @@ public sealed class ClassHUD : MonoBehaviour
             pips[i].color = flash > 0f && i == doses ? Color.Lerp(color, KitStyle.Ice, flash) : color;
         }
         KeyPrompt(!detente.Empty);
-        string side = detente.Empty ? Texts.Get("class.hud.empty") : detente.RaisesLeft > 0 ? Texts.Format("class.hud.raises", detente.RaisesLeft) : "";
+        // By hand (the syringe empty): the offer to make, the answer awaited, else the syringe's state.
+        var friend = detente.Candidate;
+        string side = detente.Treating != null ? "" : detente.Offering != null ? Texts.Format("class.hud.treat.waiting", NameOf(detente.Offering))
+            : friend != null ? Texts.Format(DetenteKit.Asked(friend) ? "class.hud.treat.asked" : "class.hud.treat.offer", NameOf(friend))
+            : detente.Empty ? Texts.Get("class.hud.empty") : detente.RaisesLeft > 0 ? Texts.Format("class.hud.raises", detente.RaisesLeft) : "";
         if (note.text != side) note.text = side;
         note.rectTransform.parent.GetComponent<RectTransform>().anchoredPosition = new Vector2(128f + count * (PipWidth + PipGap) + 6f, 0f);
         float hand = detente.Raising != null ? detente.RaiseProgress : detente.TreatProgress;
@@ -210,6 +214,9 @@ public sealed class ClassHUD : MonoBehaviour
         if (barWord.text != word) barWord.text = word;
         return true;
     }
+
+    private static string NameOf(PlayerMovement player)
+        => player != null && player.TryGetComponent(out PlayerTally tally) && !string.IsNullOrEmpty(tally.DisplayName) ? tally.DisplayName : player != null ? player.name : "";
 
     // A Support's bag: a pip a resupply's worth (white when full, the next one filling), "[휠] 바리케이드" while one can go
     // up, and beside the pips "[F] 보급 · name" while a friend is in reach, a worn barricade's health while one is under the

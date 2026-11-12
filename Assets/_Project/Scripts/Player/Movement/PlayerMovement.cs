@@ -61,9 +61,10 @@ public sealed partial class PlayerMovement : MonoBehaviour
     public PlayerExecution Execution { get; private set; }
     public PlayerPerfectDefense PerfectDefense { get; private set; }
     public DodgeEnemyPassThrough DodgePassThrough { get; private set; }
-    // The callout wheel (CalloutWheel) holds the hands too while it is up: no shot, swing or turn of the view, as G&B's.
+    // The callout wheel (CalloutWheel) holds the hands too while it is up: no shot, swing or turn of the view, as G&B's;
+    // and so does a Détente's treatment by hand (DetenteKit), the surgeon's long work.
     public bool CombatInputLocked => (MeleeCombat != null && MeleeCombat.IsGuardBreaking) || (Execution != null && Execution.IsExecuting)
-        || (PerfectDefense != null && PerfectDefense.IsCountering) || (IsLocal && CalloutWheel.HoldsHands);
+        || (PerfectDefense != null && PerfectDefense.IsCountering) || (IsLocal && (CalloutWheel.HoldsHands || DetenteKit.HoldsHands));
     private WeaponController weapons;
     /// <summary>A reload has both hands on the gun, so a vault begun during one puts the gun away and stops it (ParkourTraversal).</summary>
     public bool HandsOnReload

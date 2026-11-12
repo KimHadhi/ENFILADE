@@ -55,9 +55,13 @@ Detente.injectHeal,40,주사 한 번이 즉시 채우는 체력
 Detente.injectReach,3.5,클래스 기술 키(휠 클릭)로 주사를 놓을 수 있는 동료까지 거리(m). 조준선 근처에 동료가 없으면 자기에게 놓는다(체력이 가득이면 안 놓음)
 Detente.injectAngle,14,조준선에서 이 각도(도) 안의 동료에게 놓는다
 Detente.injectCooldown,1,주사와 주사 사이(초)
-Detente.treatSeconds,6,주사기가 비었을 때 다친 동료 곁에서 F를 이만큼(초) 누르고 있으면 치료된다(G&B 의사처럼). 빈 주사기로는 자기를 치료할 수 없다
-Detente.treatHeal,50,그렇게 손으로 치료해 채우는 체력
-Detente.treatReach,2.2,손으로 치료할 수 있는 거리(m)
+Detente.treatSeconds,4,주사기가 비었을 때 손 치료의 동작 길이(초). 다친 동료 곁에서 F로 치료를 권하고 동료가 F로 받으면(치료를 요청한 동료는 바로) 붕대를 감는 동안 데탕트는 쏘거나 시선을 돌릴 수 없다(G&B 군의관)
+Detente.treatHeal,50,손 치료 동작 도중(treatAt)에 바로 채우는 체력
+Detente.treatReach,2.8,손 치료를 권할 수 있는 거리(m). 시작한 뒤에는 1m 더 멀어지면 끊긴다
+Detente.treatAt,.6,손 치료 동작의 어디(0~1)에서 treatHeal이 들어가는지
+Detente.treatRegenSeconds,8,손 치료 동작이 끝난 뒤 동료의 나머지 체력이 다 차기까지 걸리는 시간(초). 서서히 찬다
+Detente.offerSeconds,8,데탕트의 치료 제안이 동료의 F를 기다리는 시간(초)
+Detente.callSeconds,20,동료가 콜아웃으로 치료를 요청하면(request.heal·request.medic) 데탕트에게 붉은 표시가 뜨고 제안 없이 바로 치료가 시작되는 시간(초). 체력이 다 차면 먼저 끝난다
 Detente.goldenSpeed,8,골든 아워: 치료(주사·손 치료·부활)하면 이동 +%
 Detente.goldenSeconds,8,골든 아워 시간(초). 치료할 때마다 다시 처음부터
 Detente.resurrections,1,리저렉션: 웨이브마다(캠페인은 쉬는 곳에 닿을 때마다) 죽은 동료를 되살릴 수 있는 횟수

@@ -76,6 +76,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
     private PlayerThrow throws;
     private PlayerKnock knocks;
     private ClassKit kit;
+    private DetenteKit detente;
     private PlayerPing ping;
     private PlayerCallouts callouts;
     private SupportKit support;
@@ -89,6 +90,23 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
     public void Revive() { PlayerTally.Raised(); ReviveRpc(); }
     /// <summary>A Détente's dose or treatment for this copy's player (DetenteKit): their own PC adds the health.</summary>
     public void Heal(float amount) { if (!IsSpawned) return; PlayerTally.Healed(this, amount); HealRpc(amount); }
+    /// <summary>A Détente offers this copy's player a treatment by hand (DetenteKit): their own PC asks them for F.</summary>
+    public void OfferTreatment(PlayerMovement detente)
+    {
+        if (IsSpawned && detente != null && detente.TryGetComponent(out NetworkObject from)) OfferTreatmentRpc(from.NetworkObjectId);
+    }
+    /// <summary>On this Détente's copy: the patient took its offer (DetenteKit, on the patient's PC); its own PC begins.</summary>
+    public void AcceptTreatment(PlayerMovement patient)
+    {
+        if (IsSpawned && patient != null && patient.TryGetComponent(out NetworkObject from)) AcceptTreatmentRpc(from.NetworkObjectId);
+    }
+    /// <summary>A Détente began treating this copy's player: their own PC says so.</summary>
+    public void TreatmentBegun(PlayerMovement detente)
+    {
+        if (IsSpawned && detente != null && detente.TryGetComponent(out NetworkObject from)) TreatmentBegunRpc(from.NetworkObjectId);
+    }
+    /// <summary>A treatment's end: the rest of this copy's player's health comes back over seconds, on their own PC.</summary>
+    public void HealOverTime(float seconds) { if (IsSpawned) HealOverTimeRpc(seconds); }
     /// <summary>A Support's resupply for this copy's player (SupportKit): their own PC fills their guns.</summary>
     public void Resupply(int magazines, float overfill, float syringe) { if (IsSpawned) ResupplyRpc(magazines, overfill, syringe); }
     /// <summary>On the host: barricade id's health, for every client's copy of it (Barricade).</summary>
@@ -173,6 +191,8 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
         // The class (ClassKit): an Assault's CHARGE reaches friends near it on their PCs.
         kit = GetComponent<ClassKit>();
         if (kit == null) kit = gameObject.AddComponent<ClassKit>();
+        // A Détente's healing (DetenteKit): its offers and treatments go between PCs, and its syringe shows on the others.
+        if (!TryGetComponent(out detente)) detente = gameObject.AddComponent<DetenteKit>();
         // F on an enemy (PlayerPing): the whole team sees it marked.
         ping = GetComponent<PlayerPing>();
         if (ping == null) ping = gameObject.AddComponent<PlayerPing>();
@@ -189,6 +209,9 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
             kit.Taunted += OnTaunted;
             kit.Claimed += OnClaimed;
             kit.Dueled += OnDueled;
+            detente.Injected += OnInjected;
+            detente.TreatBegan += OnTreatBegan;
+            detente.TreatStopped += OnTreatStopped;
             ping.Pinged += OnPinged;
             callouts.Called += OnCalled;
             support.Built += OnBuilt;
@@ -231,6 +254,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
         if (throws != null) throws.Thrown -= OnThrown;
         if (knocks != null) knocks.Knocked -= OnKnocked;
         if (kit != null) { kit.Charged -= OnCharged; kit.Taunted -= OnTaunted; kit.Claimed -= OnClaimed; kit.Dueled -= OnDueled; }
+        if (detente != null) { detente.Injected -= OnInjected; detente.TreatBegan -= OnTreatBegan; detente.TreatStopped -= OnTreatStopped; }
         if (ping != null) ping.Pinged -= OnPinged;
         if (callouts != null) callouts.Called -= OnCalled;
         if (support != null) { support.Built -= OnBuilt; support.TookDown -= OnTookDown; }
@@ -458,7 +482,10 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
         EnemyHealth enemy = null;
         if (target != ulong.MaxValue && NetworkManager != null && NetworkManager.SpawnManager.SpawnedObjects.TryGetValue(target, out var marked))
             marked.TryGetComponent(out enemy);
-        PlayerCallouts.Hear(mover != null ? mover : GetComponent<PlayerMovement>(), line.ToString(), enemy, point, pins);
+        var speaker = mover != null ? mover : GetComponent<PlayerMovement>();
+        PlayerCallouts.Hear(speaker, line.ToString(), enemy, point, pins);
+        // A call for healing: a Détente here sees them marked, and its offer takes at once (DetenteKit).
+        DetenteKit.Called(speaker, line.ToString());
     }
 
     // An Assault sounded a CHARGE here: each other PC's player near it charges too.
@@ -559,6 +586,55 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
         receiver.Heal(amount);
         KitSound.Play(KitSound.Cue.PickHeal, .7f);
     }
+
+    // A Détente offered this player (whose PC this is) a treatment by hand.
+    [Rpc(SendTo.Owner)]
+    private void OfferTreatmentRpc(ulong detente)
+    {
+        var from = PlayerOf(detente);
+        if (from != null && TryGetComponent(out DetenteKit kit)) kit.Offered(from);
+    }
+
+    // The patient took this Détente's (whose PC this is) offer.
+    [Rpc(SendTo.Owner)]
+    private void AcceptTreatmentRpc(ulong patient)
+    {
+        var from = PlayerOf(patient);
+        if (from != null && TryGetComponent(out DetenteKit kit)) kit.Accepted(from);
+    }
+
+    [Rpc(SendTo.Owner)]
+    private void TreatmentBegunRpc(ulong detente)
+    {
+        var from = PlayerOf(detente);
+        if (from != null && TryGetComponent(out DetenteKit kit)) kit.Begun(from);
+    }
+
+    [Rpc(SendTo.Owner)]
+    private void HealOverTimeRpc(float seconds)
+    {
+        if (TryGetComponent(out DetenteKit kit)) kit.Regen(seconds);
+    }
+
+    // A Détente's syringe or bandage, for the others to see in their hand (0 a dose, 1 a treatment for so long, 2 one
+    // called off).
+    [Rpc(SendTo.NotMe)]
+    private void DetenteLookRpc(byte look, float seconds)
+    {
+        var who = mover != null ? mover : GetComponent<PlayerMovement>();
+        if (look == 0) DetenteLooks.Syringe(who);
+        else if (look == 1) DetenteLooks.Bandage(who, seconds);
+        else DetenteLooks.StopBandage(who);
+    }
+
+    private void OnInjected() => DetenteLookRpc(0, 0f);
+    private void OnTreatBegan(float seconds) => DetenteLookRpc(1, seconds);
+    private void OnTreatStopped() => DetenteLookRpc(2, 0f);
+
+    // A player in the room by their network object, or null.
+    private PlayerMovement PlayerOf(ulong id)
+        => NetworkManager != null && NetworkManager.SpawnManager.SpawnedObjects.TryGetValue(id, out var found) && found.TryGetComponent(out PlayerMovement player)
+            ? player : null;
 
     [Rpc(SendTo.Owner)]
     private void ResurrectRpc(float share)
