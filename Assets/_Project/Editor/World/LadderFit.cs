@@ -27,9 +27,9 @@ public static class LadderFit
     private const float StandingHeight = 1.8f, Radius = .3f, Gap = .05f, LeastUp = .7f;
 
     /// <summary>
-    /// Fits every ladder under <paramref name="root"/> and names them with their heights in the console. Returns a line
-    /// for the builder's closing window ("" when there are no ladders): how many were fitted, and any that found no
-    /// floor, which keep the height they had and are named in the console too.
+    /// Fits every ladder under <paramref name="root"/>. Returns a line for the builder's closing window ("" when there are
+    /// no ladders): how many were fitted with their heights, and any that found no floor, which keep the height they had
+    /// and are also named in the console as a warning.
     /// </summary>
     public static string FitAll(Transform root)
     {
@@ -59,8 +59,9 @@ public static class LadderFit
                 .Append(height.ToString("0.##", CultureInfo.InvariantCulture)).Append(" m");
             done++;
         }
-        if (fitted.Length > 0) Debug.Log("[LadderFit] " + fitted);
-        return "사다리 " + done + "개를 오르는 바닥 높이에 맞췄어요(난간 끝이 바닥과 같은 높이)."
+        // The heights go to the closing window only: a fitted ladder is nothing to act on, so the console stays quiet
+        // (a rebuild of every chapter printed a line of them per chapter, 11-12). A ladder with no floor still warns.
+        return "사다리 " + done + "개를 오르는 바닥 높이에 맞췄어요" + (fitted.Length > 0 ? "(" + fitted + ")" : "") + "."
             + (lost.Length > 0 ? " 바닥을 못 찾은 사다리: " + lost + " (높이 그대로, 콘솔을 보세요)" : "");
     }
 

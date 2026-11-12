@@ -41,8 +41,17 @@ public sealed partial class GreyboxBuilder
     private sealed class Block
     {
         public GameObject Shape;
+        // Its extent in the world, axis-aligned: what the overlap tests (FloorUnder, Headroom) use.
         public Bounds Box;
         public bool Moves;
+        // Its own size and its turn about Y. A solid prop's box is turned with its model (PropSolid); its axis-aligned
+        // Box grows with the turn (a car at 30° has a 4.2 × 5.3 m one), so the size tests (a prop, a narrow or wide top)
+        // and its walk slab use these.
+        public Vector3 Size;
+        public float Yaw;
+        // Nobody stands on its top: an unseen steep ridge covers it (Tables/MapArt solid "cap"), so it needs no walk
+        // slab and isn't a perch to check.
+        public bool NoStand;
     }
 
     private readonly string sceneName, title;
@@ -168,7 +177,11 @@ public sealed partial class GreyboxBuilder
         box.transform.localScale = new Vector3(Mathf.Abs(x1 - x0), Mathf.Abs(y1 - y0), Mathf.Abs(z1 - z0));
         Dress(box, material, surface, solid);
         if (solid)
-            blocks.Add(new Block { Shape = box, Box = new Bounds(box.transform.localPosition, box.transform.localScale), Moves = group != null });
+            blocks.Add(new Block
+            {
+                Shape = box, Box = new Bounds(box.transform.localPosition, box.transform.localScale), Moves = group != null,
+                Size = box.transform.localScale
+            });
         return box;
     }
 
@@ -484,6 +497,7 @@ public sealed partial class GreyboxBuilder
     public void Finish(string summary)
     {
         // Every box is laid now, so each ladder can be fitted to the floor it leads to.
+        EndStaging();
         string ladders = LadderFit.FitAll(parkour);
         AddWaves();
         if (AddsCampaign) AddCampaign();
@@ -533,6 +547,7 @@ public sealed partial class GreyboxBuilder
              "곳. Play하면 미션이 바로 시작돼요(목표는 Resources/Tables/CampaignSteps.csv).\n" : "") +
              "작은 소품: 좁은 꼭대기 " + slabs + "곳에 좀비 길을 깔았어요. " +
              (stranded == 0 ? "좀비가 못 가는 소품은 없어요." : "좀비가 못 가는 소품이 " + stranded + "곳 남았어요(콘솔에 이름과 자리).") +
+             WideTopReport() +
              (ladders.Length > 0 ? "\n" + ladders : "") +
              "\n가림 굽기(오클루전 컬링): " + (culled ? "구웠어요. 벽과 건물 뒤의 좀비는 그리지 않아요." : "실패했어요(콘솔을 보세요). 맵은 그대로 쓸 수 있어요.") +
              "\n하늘·해·안개: " + (look == null ? "Tables/MapLook에 이 장의 줄이 없어 기본 하늘이에요."
@@ -650,16 +665,17 @@ public sealed partial class GreyboxBuilder
         int added = 0;
         foreach (var prop in blocks)
         {
-            if (prop.Moves || !IsProp(prop) || Headroom(prop) < AgentHeight) continue;
+            if (prop.Moves || prop.NoStand || !IsProp(prop) || Headroom(prop) < AgentHeight) continue;
             float height = prop.Box.max.y - FloorUnder(prop);
             if (height < AgentHeight || height > ClimbMost || HasRoomToWalk(prop)) continue;
-            Vector3 size = prop.Box.size, top = prop.Box.center + Vector3.up * (size.y * .5f - SlabThickness * .5f);
+            Vector3 size = prop.Size, top = prop.Box.center + Vector3.up * (size.y * .5f - SlabThickness * .5f);
             float minimum = 2f * AgentRadius + NarrowStrip;
             sources.Add(new NavMeshBuildSource
             {
                 shape = NavMeshBuildSourceShape.Box,
                 size = new Vector3(Mathf.Max(size.x, minimum), SlabThickness, Mathf.Max(size.z, minimum)),
-                transform = Matrix4x4.TRS(top, Quaternion.identity, Vector3.one),
+                // Turned with the prop, so the slab lies along its top.
+                transform = Matrix4x4.TRS(top, Quaternion.Euler(0f, prop.Yaw, 0f), Vector3.one),
                 area = 0,
                 generateLinks = true
             });
@@ -673,10 +689,10 @@ public sealed partial class GreyboxBuilder
     private int CheckProps()
     {
         int stranded = 0;
-        var wide = new List<string>();
+        wideTops.Clear();
         foreach (var prop in blocks)
         {
-            if (prop.Moves || !IsProp(prop) || Headroom(prop) < PlayerHeight) continue;
+            if (prop.Moves || prop.NoStand || !IsProp(prop) || Headroom(prop) < PlayerHeight) continue;
             float floor = FloorUnder(prop), top = prop.Box.max.y, height = top - floor;
             if (height <= ArmHeight || height > ClimbMost) continue;
             Vector3 centre = new Vector3(prop.Box.center.x, top, prop.Box.center.z);
@@ -685,33 +701,40 @@ public sealed partial class GreyboxBuilder
             if (!walk)
             {
                 stranded++;
-                string why = Headroom(prop) < AgentHeight ? "위가 2 m보다 낮게 막혀 좀비가 설 수 없어요"
+                // Only a top the layout means to be stood on gets here (props nobody should stand on are capped, see
+                // PropSolid), so each of these is a perch to fix in the layout or the table.
+                string why = Headroom(prop) < AgentHeight ? "위가 2 m보다 낮게 막혀 좀비가 설 수 없어요(위를 비우거나, 올라설 것이 아니면 MapArt solid를 cap으로)"
                     : height < AgentHeight ? "높이 1.5~2 m의 좁은 꼭대기: 1.5 m 이하로 낮추거나 2 m 넘게 높이세요"
-                    : "꼭대기에 좀비 길이 생기지 않았어요(옆의 더 높은 벽에 붙어 있으면 그래요)";
+                    : "꼭대기에 좀비 길이 생기지 않았어요(옆의 더 높은 벽에 붙어 있으면 그래요: 벽에서 띄우거나, 올라설 것이 아니면 MapArt solid를 cap으로)";
                 Debug.LogWarning("[Greybox] " + sceneName + ": 좀비가 못 가는 소품 '" + prop.Shape.name + "' (" + Format(centre) +
                                  ", 바닥에서 " + height.ToString("0.0") + " m): " + why + ".", prop.Shape);
                 continue;
             }
-            // A top so wide that a player in its middle stands farther than ClimbNear from any zombie at its foot.
-            if (Mathf.Min(prop.Box.size.x, prop.Box.size.z) * .5f + AgentRadius > ClimbNear) wide.Add(prop.Shape.name);
+            // A top so wide that a player in its middle stands farther than ClimbNear from any zombie at its foot: not
+            // wrong (zombies come up at its edge), so the closing window names it and the console stays quiet.
+            if (Mathf.Min(prop.Size.x, prop.Size.z) * .5f + AgentRadius > ClimbNear) wideTops.Add(prop.Shape.name);
         }
-        if (wide.Count > 0)
-            Debug.Log("[Greybox] " + sceneName + ": 가운데가 좀비 기어오르기 거리(ZombieDrop " + ClimbNear + " m) 밖인 넓은 꼭대기 " +
-                      wide.Count + "곳: " + string.Join(", ", wide) + ". 가장자리로 오면 좀비가 올라와요.");
         return stranded;
     }
+
+    // The wide tops CheckProps found, for the closing window.
+    private readonly List<string> wideTops = new List<string>();
+
+    private string WideTopReport()
+        => wideTops.Count == 0 ? "" : "\n가운데로는 좀비가 기어오르지 않는 넓은 꼭대기(ZombieDrop " + ClimbNear + " m, 가장자리로는 올라와요): "
+                                       + string.Join(", ", wideTops);
 
     private static string Format(Vector3 at) => at.x.ToString("0.#") + ", " + at.y.ToString("0.#") + ", " + at.z.ToString("0.#");
 
     // Small enough to be a prop, and higher than a step over its floor.
     private bool IsProp(Block prop)
-        => prop.Box.size.x * prop.Box.size.z <= PropArea && prop.Box.max.y - FloorUnder(prop) > StepHeight;
+        => prop.Size.x * prop.Size.z <= PropArea && prop.Box.max.y - FloorUnder(prop) > StepHeight;
 
     // Its top keeps walk mesh of its own: NarrowStrip both ways and more than the smallest region once the bake has
     // trimmed the agent's radius off every edge.
     private static bool HasRoomToWalk(Block prop)
     {
-        float x = prop.Box.size.x - 2f * AgentRadius, z = prop.Box.size.z - 2f * AgentRadius;
+        float x = prop.Size.x - 2f * AgentRadius, z = prop.Size.z - 2f * AgentRadius;
         return x >= NarrowStrip && z >= NarrowStrip && x * z >= 2f * TopRegionArea;
     }
 

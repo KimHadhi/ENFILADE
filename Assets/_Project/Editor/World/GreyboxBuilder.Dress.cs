@@ -1,6 +1,8 @@
 using System.Collections.Generic;
+using System.Globalization;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 /// <summary>
 /// Map dressing, models (the user's World War Z look, 2026-11-12): the bought packs' models (Airport Terminal Scene,
@@ -22,8 +24,11 @@ public sealed partial class GreyboxBuilder
 {
     private const string ArtTable = "MapArt";
     // A collision box whose top would fall in the band a zombie's arm can't reach and no walk slab covers (small props,
-    // memo 48) is raised past it.
-    private const float SolidBandLow = 1.5f, SolidBandTop = 2.05f;
+    // memo 48) is raised past it, or brought down to its bottom when it is only this little over it (a car's roof:
+    // standing 0.45 m over it looked like floating, standing 0.1 m into it doesn't show).
+    private const float SolidBandLow = 1.5f, SolidBandTop = 2.05f, SolidBandSink = .15f;
+    // The ridge over a top nobody should stand on: steeper than the 45° anyone walks, and its slabs' thickness (m).
+    private const float CapSlope = 55f, CapThickness = .2f;
 
     private enum ArtFit { Native, Fit, Stretch, Tile, Stack }
     // Stacked rows sink into the row below by this share of their height, as filled bags do.
@@ -109,19 +114,77 @@ public sealed partial class GreyboxBuilder
 
     /// <summary>
     /// A bigger prop (a vending machine, a trolley) that blocks: the model, and under the terrain an unseen box of the
-    /// model's own footprint and height (raised past the band no zombie reaches, see SolidBandTop), which goes into the
-    /// walk-mesh bake like any box of the layout.
+    /// model's own size turned with it, which goes into the walk-mesh bake like any box of the layout. Its top stays out
+    /// of the band no zombie reaches (SolidBandLow to SolidBandTop): just over the band's bottom it comes down to it,
+    /// higher up it goes up past it. Tables/MapArt's solid column can say otherwise for a kind: "cap" for a prop nobody
+    /// should stand on (an unseen steep ridge over its top, see Cap), or a height in metres for one that only blocks
+    /// that far up (a plant's pot; its leaves are walked and shot through).
     /// </summary>
     public GameObject PropSolid(string kind, Vector3 floor, float yaw = 0f, int pick = -1, float scale = 1f)
     {
-        var model = Prop(kind, floor, yaw, pick, scale);
-        if (model == null) return null;
-        var bounds = WorldBounds(model);
-        float top = bounds.max.y - floor.y;
-        if (top > SolidBandLow && top < SolidBandTop) top = SolidBandTop;
-        var box = Box(kind + " (충돌)", bounds.min.x, bounds.max.x, floor.y, floor.y + top, bounds.min.z, bounds.max.z);
+        if (!ArtRow(kind, pick, floor, out var prefab, out _, out float turn, out float own)) return null;
+        float size = own * scale, angle = yaw + turn;
+        var model = Place(prefab, floor, angle, Vector3.one * size, false);
+        // The model's own box, measured unturned and turned with it: a car at 30° keeps a car-sized box, where its
+        // axis-aligned bounds stood past its corners as unseen walls with a roof in the air beside it.
+        Vector3 half = BoundsOf(prefab).extents * size;
+        float height = half.y * 2f;
+        string solid = ArtSolid(kind);
+        bool cap = solid == "cap";
+        if (!cap && float.TryParse(solid, NumberStyles.Float, CultureInfo.InvariantCulture, out float upTo) && upTo > 0f)
+            height = Mathf.Min(height, upTo);
+        else if (!cap && height > SolidBandLow && height < SolidBandTop)
+            height = height < SolidBandLow + SolidBandSink ? SolidBandLow : SolidBandTop;
+        var box = Box(kind + " (충돌)", floor.x - half.x, floor.x + half.x, floor.y, floor.y + height, floor.z - half.z, floor.z + half.z);
         box.GetComponent<Renderer>().enabled = false;
+        TurnBlock(box, angle);
+        if (cap) Cap(box, kind, new Vector3(floor.x, floor.y + height, floor.z), half, angle);
         return model;
+    }
+
+    // The table's solid column for a kind ("" when it has none).
+    private static string ArtSolid(string kind)
+        => GameTables.TryGetRow(ArtTable, kind, out var row) ? Text(row, "solid").ToLowerInvariant() : "";
+
+    // The layout's record of a box just made.
+    private Block BlockOf(GameObject shape)
+    {
+        for (int i = blocks.Count - 1; i >= 0; i--)
+            if (blocks[i].Shape == shape) return blocks[i];
+        return null;
+    }
+
+    // A box turned about Y on its centre, and its record: its own size stays, its world extent grows to the turned box's.
+    private void TurnBlock(GameObject box, float yaw)
+    {
+        float turned = Mathf.Repeat(yaw, 360f);
+        if (turned < .01f || turned > 359.99f) return;
+        box.transform.localRotation = Quaternion.Euler(0f, turned, 0f);
+        var block = BlockOf(box);
+        if (block == null) return;
+        block.Yaw = turned;
+        block.Box = new Bounds(block.Box.center, Turned(block.Size, turned));
+    }
+
+    // Nobody stands on it: an unseen ridge of two slopes, steeper than anyone walks, along the top's longer side and
+    // rising from both long edges to its middle. The player's climbs want a walkable top (ParkourDetector, the
+    // controller's 45° slope limit) and the zombies' walk mesh stops at 45° too, so neither finds one, and a body
+    // dropped on it slides off. A vending machine against a taller wall can't have walk mesh on its top (the bake trims
+    // the agent's radius off at the wall), so a player up there was out of every zombie's reach; now nobody gets up.
+    private void Cap(GameObject box, string kind, Vector3 top, Vector3 half, float yaw)
+    {
+        var turn = Quaternion.Euler(0f, yaw, 0f);
+        bool alongX = half.x >= half.z;
+        float span = alongX ? half.z : half.x, length = (alongX ? half.x : half.z) * 2f;
+        Vector3 across = turn * (alongX ? Vector3.forward : Vector3.right);
+        Vector3 ridge = top + Vector3.up * (span * Mathf.Tan(CapSlope * Mathf.Deg2Rad));
+        foreach (float side in new[] { -1f, 1f })
+        {
+            var slope = Ramp(kind + " (못 올라섬)", top + across * (span * side), ridge, length, null, CapThickness);
+            slope.GetComponent<Renderer>().enabled = false;
+        }
+        var block = BlockOf(box);
+        if (block != null) block.NoStand = true;
     }
 
     // The table's row for a kind and the variant for this place. False (and named once in the report) when missing.
@@ -154,7 +217,7 @@ public sealed partial class GreyboxBuilder
     {
         dressing ??= Root("◤━━ 꾸밈 (Tables/MapArt, 보이기만 함)");
         var bounds = BoundsOf(prefab);
-        var copy = (GameObject)PrefabUtility.InstantiatePrefab(prefab, scene);
+        var copy = Spawn(prefab);
         copy.transform.SetParent(dressing, true);
         var turn = Quaternion.Euler(0f, yaw, 0f);
         // The prefab's own rotation stays under the turn (models often stand on a -90° X from their exporter).
@@ -166,9 +229,35 @@ public sealed partial class GreyboxBuilder
         float y = hang ? point.y - c.y - e.y : point.y - c.y + e.y;
         copy.transform.SetPositionAndRotation(new Vector3(point.x - offset.x, y, point.z - offset.z), turn * own);
         copy.transform.localScale = scaled;
-        Strip(copy);
         artPlaced++;
         return copy;
+    }
+
+    // Models come in under this inactive holder and are stripped there (Strip), before anything of theirs wakes up: so
+    // Unity never cooks the convex hull of a collider that is thrown away anyway (the airport's baggage cart has one past
+    // the 256-polygon limit, which warned on every build, 11-12), and no prop script or light runs in the editor.
+    private Transform staging;
+
+    private GameObject Spawn(GameObject prefab)
+    {
+        if (staging == null)
+        {
+            var holder = new GameObject("◤━━ 들이는 중 (지을 때만)");
+            holder.SetActive(false);
+            SceneManager.MoveGameObjectToScene(holder, scene);
+            staging = holder.transform;
+        }
+        var copy = (GameObject)PrefabUtility.InstantiatePrefab(prefab, staging);
+        Strip(copy);
+        return copy;
+    }
+
+    // Before the scene is finished: the holder is empty by then (every copy went on to the dressing or was measured and
+    // destroyed), and it isn't part of the map.
+    private void EndStaging()
+    {
+        if (staging != null) Object.DestroyImmediate(staging.gameObject);
+        staging = null;
     }
 
     // What a model needs only to be seen: no colliders (the layout's boxes collide), lights (the map has its own),
@@ -188,7 +277,9 @@ public sealed partial class GreyboxBuilder
     private Bounds BoundsOf(GameObject prefab)
     {
         if (artBounds.TryGetValue(prefab, out var known)) return known;
-        var probe = (GameObject)PrefabUtility.InstantiatePrefab(prefab, scene);
+        var probe = Spawn(prefab);
+        // Out of the holder, awake now with nothing left but its renderers, so they have bounds.
+        probe.transform.SetParent(null, true);
         probe.transform.position = Vector3.zero;
         var bounds = WorldBounds(probe);
         Object.DestroyImmediate(probe);
