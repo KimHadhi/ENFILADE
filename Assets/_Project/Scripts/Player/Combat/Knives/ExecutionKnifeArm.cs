@@ -113,8 +113,12 @@ public sealed class ExecutionKnifeArm : MonoBehaviour
         toPlayer = toPlayer.sqrMagnitude > 1e-6f ? toPlayer.normalized : -(view * Vector3.forward);
         Vector3 neckAim = aim.Neck + toPlayer * NeckBack + Vector3.up * Mathf.Min(MostOverNeck, FistOverNeck + reach * ReachShareOverNeck);
         Vector3 headAim = aim.Head + toPlayer * HeadBack + Vector3.up * HeadAbove;
-        Pose(left, key.Left, view, aim.Has, headAim);
-        Pose(right, key.Right, view, aim.Has, neckAim);
+        // A paired execution clip may have the arms (ExecutionKnife.ArmsPosedElsewhere): then the knife only rides the fist.
+        if (!driver.ArmsPosedElsewhere)
+        {
+            Pose(left, key.Left, view, aim.Has, headAim);
+            Pose(right, key.Right, view, aim.Has, neckAim);
+        }
         bool held = key.Held && model != null && key.Right.Weight > 0f;
         if (held) Seat(knife);
         ShowKnife(held);

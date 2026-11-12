@@ -63,6 +63,13 @@ public sealed class ExecutionKnife : MonoBehaviour
     /// <summary>A stroke is playing on this PC's copy of the player.</summary>
     public bool IsOut => playing;
 
+    /// <summary>
+    /// Something else poses the arms through this execution (a paired execution clip on the body): the knife still rides in
+    /// the right fist as the stroke holds it, but ExecutionKnifeArm leaves the arms to that clip. Set it on every PC that
+    /// plays the clip, for as long as it plays; the stroke's end clears it.
+    /// </summary>
+    public bool ArmsPosedElsewhere { get; set; }
+
     private void OnEnable()
     {
         movement = GetComponent<PlayerMovement>();
@@ -185,6 +192,8 @@ public sealed class ExecutionKnife : MonoBehaviour
             // else as much faster as it needs; a short way first waits where it is.
             stabFrom = clock;
             sinceStab = 0f;
+            // Read now, not when the draw began: whatever times this execution (a paired clip) has had its say by now.
+            if (execution != null) impact = execution.ImpactTime;
             float lead = Mathf.Max(0f, stroke.Strike - stabFrom);
             rate = lead > impact ? lead / Mathf.Max(.01f, impact) : 1f;
         }
@@ -242,6 +251,7 @@ public sealed class ExecutionKnife : MonoBehaviour
     private void Stop()
     {
         playing = cutting = hasLast = false;
+        ArmsPosedElsewhere = false;
         phase = Phase.None;
         clock = 0f;
     }
