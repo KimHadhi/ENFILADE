@@ -70,33 +70,19 @@ public static class MomentLook
         _ => Sigil.Star,
     };
 
-    /// <summary>The ultimate's name in big type on the notice (Ult.&lt;id&gt;.title).</summary>
-    public static string UltTitle(string classId)
-        => Text("Ult", Id(classId) + ".title", Id(classId) switch
-        {
-            PlayerClass.Knight => "SHADOW DOUBLE",
-            PlayerClass.Assault => "CAVALRY CHARGE",
-            PlayerClass.Ghost => "WHITE TIGER",
-            PlayerClass.Point => "GUNSLINGER",
-            PlayerClass.Detente => "SECOND LIFE",
-            PlayerClass.Schiesshund => "FULL HOUSE",
-            PlayerClass.Support => "RESTOCK",
-            _ => "ULTIMATE",
-        });
+    /// <summary>The ultimate's name in big type on the notice (Ult.&lt;id&gt;.title, words in Texts.csv moment.ult.&lt;id&gt;.title).</summary>
+    public static string UltTitle(string classId) => Text("Ult", Id(classId) + ".title", UltId(classId, "title"));
 
-    /// <summary>What it does, in a few Korean words under the name (Ult.&lt;id&gt;.what).</summary>
-    public static string UltWhat(string classId)
-        => Text("Ult", Id(classId) + ".what", Id(classId) switch
-        {
-            PlayerClass.Knight => "그림자 분신",
-            PlayerClass.Assault => "유령 기병대 · CHARGE",
-            PlayerClass.Ghost => "흰 호랑이",
-            PlayerClass.Point => "두 총 가득 · 건슬링어",
-            PlayerClass.Detente => "주사기 가득 · 부활 +1",
-            PlayerClass.Schiesshund => "데스페라도 실린더 가득",
-            PlayerClass.Support => "보급 가방 가득",
-            _ => "궁극기",
-        });
+    /// <summary>What it does, in a few Korean words under the name (Ult.&lt;id&gt;.what, words in Texts.csv).</summary>
+    public static string UltWhat(string classId) => Text("Ult", Id(classId) + ".what", UltId(classId, "what"));
+
+    // The Texts row a class's ultimate words fall back to when MomentFx.csv has no key for them: the class's own row,
+    // else the plain ULTIMATE / 궁극기 one. The words live in Texts.csv only, never in code.
+    private static string UltId(string classId, string part)
+    {
+        string own = "moment.ult." + Id(classId) + "." + part;
+        return Texts.Has(own) ? own : "moment.ult.any." + part;
+    }
 
     private static string Id(string classId) => string.IsNullOrEmpty(classId) ? "" : classId.Trim().ToLowerInvariant();
 
@@ -120,7 +106,11 @@ public static class MomentLook
     public static Color Colour(string row, string key, Color fallback)
         => TryText(row, key, out string text) && ColorUtility.TryParseHtmlString(text, out Color read) ? read : fallback;
 
-    public static string Text(string row, string key, string fallback) => TryText(row, key, out string text) ? text : fallback;
+    /// <summary>
+    /// Words from Tables/MomentFx.csv: the cell names a Texts.csv row (moment.ult.knight.what …) where they are written,
+    /// or holds plain words; the fallback (a Texts id) when the table has no such key.
+    /// </summary>
+    public static string Text(string row, string key, string fallback) => Texts.Cell(TryText(row, key, out string text) ? text : fallback);
 
     /// <summary>Whether a moment's look is on (row.on, 1 by default).</summary>
     public static bool On(string row) => Number(row, "on", 1f) > .5f;

@@ -5,8 +5,11 @@ public sealed class WaveMissionSource : MonoBehaviour
 {
     [SerializeField] private WaveManager waves;
     [SerializeField] private MissionTracker tracker;
-    [SerializeField] private string combatTitle = "남은 적을 처치하세요";
-    [SerializeField, TextArea] private string combatDescription = "구역 내의 적을 모두 처치하세요. 추가로 투입되는 적까지 정리하면 현재 공세가 종료됩니다.";
+    // Texts.csv ids (plain words work too), so the words are rewritten in the one file with every other line.
+    [SerializeField, Tooltip("Texts.csv id of the objective's title during a wave (or plain words).")]
+    private string combatTitle = "wave.combat.title";
+    [SerializeField, Tooltip("Texts.csv id of the objective's description during a wave (or plain words).")]
+    private string combatDescription = "wave.combat.detail";
     private string ownedId;
 
     private void OnEnable()
@@ -37,7 +40,7 @@ public sealed class WaveMissionSource : MonoBehaviour
         }
         string id = "wave.combat." + waves.CurrentWave;
         if (ownedId == id) tracker.SetProgress(id, waves.DefeatedEnemies, waves.TotalEnemiesThisWave);
-        else Set(new MissionObjective(id, combatTitle, combatDescription, MissionProgressDisplay.Count,
+        else Set(new MissionObjective(id, Texts.Cell(combatTitle), Texts.Cell(combatDescription), MissionProgressDisplay.Count,
             waves.DefeatedEnemies, waves.TotalEnemiesThisWave, Texts.Format("wave.cleared", waves.CurrentWave)));
     }
     private void Set(MissionObjective objective)

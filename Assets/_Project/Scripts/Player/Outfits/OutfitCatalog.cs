@@ -232,8 +232,8 @@ public static class OutfitCatalog
 
     /// <summary>
     /// What the character wears of its own in the slot, for the wardrobe's tile (the user, 2026-11-11: each slot should
-    /// say what is on it): its rows' names, or their renderers' names made readable (MAYO_Leg_Ribbon → Leg Ribbon).
-    /// Empty when it has nothing of its own there.
+    /// say what is on it): its rows' names (a Texts id, part.&lt;id&gt;.name, or plain words), or their renderers' names
+    /// made readable (MAYO_Leg_Ribbon → Leg Ribbon). Empty when it has nothing of its own there.
     /// </summary>
     public static string OwnName(string skinId, string slotId)
     {
@@ -241,7 +241,7 @@ public static class OutfitCatalog
         foreach (var part in PartsOf(skinId))
         {
             if (!string.Equals(part.slot, slotId, StringComparison.OrdinalIgnoreCase)) continue;
-            if (!string.IsNullOrWhiteSpace(part.name)) Add(names, part.name.Trim());
+            if (!string.IsNullOrWhiteSpace(part.name)) Add(names, Texts.Cell(part.name));
             else foreach (string piece in Split(part.parts)) Add(names, Readable(piece, skinId));
         }
         return string.Join(" · ", names);

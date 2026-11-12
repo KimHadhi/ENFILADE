@@ -11,7 +11,7 @@ gun_srm12,Gun,SRM12,,3,0,
 gun_mk14,Gun,Mk14EBR,,2,0,
 gun_mx68,Gun,MX68,,2,0,
 gun_wk11,Gun,WK11Viper,,2,0,
-ammo,Ammo,,2,16,3,탄약 더미
-medkit,Heal,,40,10,3,구급상자
-shield,Shield,,25,8,2,실드 셀
-money,Money,,100,6,5,돈 뭉치
+ammo,Ammo,,2,16,3,pickup.ammo.name
+medkit,Heal,,40,10,3,pickup.medkit.name
+shield,Shield,,25,8,2,pickup.shield.name
+money,Money,,100,6,5,pickup.money.name

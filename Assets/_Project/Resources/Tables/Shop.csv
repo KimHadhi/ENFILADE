@@ -11,8 +11,8 @@ SRM12,Gun,SRM12,2600,,8,
 MX68,Gun,MX68,2800,,9,
 AK105,Gun,AK105,3000,,10,
 Mk14EBR,Gun,Mk14EBR,4000,,11,
-Ammo,Ammo,,600,,20,탄약 채우기
-Medkit,Heal,,1000,100,21,구급상자
-Shield,Shield,,1200,50,22,실드 50
-Syringe,Syringe,,800,50,23,주사기 보충
-Grenade,Grenade,,400,1,24,투척물 보충
+Ammo,Ammo,,600,,20,shop.ammo.name
+Medkit,Heal,,1000,100,21,shop.medkit.name
+Shield,Shield,,1200,50,22,shop.shield.name
+Syringe,Syringe,,800,50,23,shop.syringe.name
+Grenade,Grenade,,400,1,24,shop.grenade.name

@@ -84,22 +84,22 @@ public sealed class MomentHUD : MonoBehaviour, IHudPreview
 
     /// <summary>This player's CHARGE: its tag, with how long and how far (pick A).</summary>
     public static void Charge(float seconds, float reach)
-        => Tag(MomentLook.Text(TagRow, "charge.word", "CHARGE"),
-            string.Format(MomentLook.Text(TagRow, "charge.under", "돌격 · {0:0.0}s · 둘레 {1:0}m"), seconds, reach), MomentLook.ColorOf(PlayerClass.Assault));
+        => Tag(MomentLook.Text(TagRow, "charge.word", "moment.tag.charge.word"),
+            string.Format(MomentLook.Text(TagRow, "charge.under", "moment.tag.charge.under"), seconds, reach), MomentLook.ColorOf(PlayerClass.Assault));
 
     /// <summary>This player's duel called: its tag (pick A).</summary>
     public static void Duel(float seconds)
-        => Tag(MomentLook.Text(TagRow, "duel.word", "DUEL"),
-            string.Format(MomentLook.Text(TagRow, "duel.under", "결투 · {0:0.0}s · 1 : 1"), seconds), PingMarks.BountyColor);
+        => Tag(MomentLook.Text(TagRow, "duel.word", "moment.tag.duel.word"),
+            string.Format(MomentLook.Text(TagRow, "duel.under", "moment.tag.duel.under"), seconds), PingMarks.BountyColor);
 
     /// <summary>This player's reversal: its tag (pick A).</summary>
     public static void Reversal()
-        => Tag(MomentLook.Text(TagRow, "reversal.word", "REVERSAL"), MomentLook.Text(TagRow, "reversal.under", "되치기 · 자세 무너짐"), KitStyle.Accent);
+        => Tag(MomentLook.Text(TagRow, "reversal.word", "moment.tag.reversal.word"), MomentLook.Text(TagRow, "reversal.under", "moment.tag.reversal.under"), KitStyle.Accent);
 
     /// <summary>This player's Gun Kata: its tag with the kata's own sigil stamped beside it (pick C).</summary>
     public static void Kata(float seconds)
-        => Tag(MomentLook.Text(TagRow, "kata.word", "GUN KATA"),
-            string.Format(MomentLook.Text(TagRow, "kata.under", "건 카타 · {0:0.0}s · 꺼내면 가득"), seconds), MomentLook.ColorOf(PlayerClass.Point), MomentLook.Sigil.Kata);
+        => Tag(MomentLook.Text(TagRow, "kata.word", "moment.tag.kata.word"),
+            string.Format(MomentLook.Text(TagRow, "kata.under", "moment.tag.kata.under"), seconds), MomentLook.ColorOf(PlayerClass.Point), MomentLook.Sigil.Kata);
 
     // ---- Building ----
 
@@ -324,7 +324,9 @@ public sealed class MomentHUD : MonoBehaviour, IHudPreview
             ShowNotice("PLAYER", Color.white, PlayerClass.Knight);
             noticeAge = MomentLook.Number(NoticeRow, "in", .09f) + .3f;
             PoseNotice();
-            ShowTag("GUN KATA", "건 카타 · 8.0s · 꺼내면 가득", MomentLook.ColorOf(PlayerClass.Point), MomentLook.Sigil.Kata);
+            // The real Gun Kata words (Texts.csv), so the check measures what a player sees.
+            ShowTag(MomentLook.Text(TagRow, "kata.word", "moment.tag.kata.word"),
+                string.Format(MomentLook.Text(TagRow, "kata.under", "moment.tag.kata.under"), 8f), MomentLook.ColorOf(PlayerClass.Point), MomentLook.Sigil.Kata);
             tagAge = .45f;
             PoseTag();
         }

@@ -104,10 +104,13 @@ public static class PlayerPerks
             foreach (string id in GameTables.RowIds(TableName))
             {
                 if (!GameTables.TryGetRow(TableName, id, out var row)) continue;
+                // The name, tag, text and why cells name Texts rows (perk.<id>.name …, a tag the class's title or
+                // perk.tag.<kind>), where the words are written; a modder's plain words work as well.
                 catalog.Add(new Perk
                 {
-                    Id = id, Name = Text(row, "name", id), Class = Text(row, "class", ""), Tag = Text(row, "tag", ""),
-                    Icon = Text(row, "icon", ""), Text = Text(row, "text", ""), Why = Text(row, "why", ""), Ability = Text(row, "ability", ""),
+                    Id = id, Name = Texts.Cell(Text(row, "name", id)), Class = Text(row, "class", ""), Tag = Texts.Cell(Text(row, "tag", "")),
+                    Icon = Text(row, "icon", ""), Text = Texts.Cell(Text(row, "text", "")), Why = Texts.Cell(Text(row, "why", "")),
+                    Ability = Text(row, "ability", ""),
                     Levels = Mathf.Max(1, (int)Number(row, "levels", 1f)), After = Mathf.Max(0, (int)Number(row, "after", 0f)),
                     Value = Number(row, "value", 0f), Value2 = Number(row, "value2", 0f), Display = Number(row, "display", 1f),
                     Weight = Mathf.Max(0f, Number(row, "weight", 1f)), Final = Number(row, "final", 0f) > .5f

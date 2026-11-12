@@ -14,7 +14,8 @@ public sealed class OutfitItem
 
     public string id = "", slot = "", also = "", hides = "", name = "", model = "", parts = "";
 
-    public string DisplayName => string.IsNullOrEmpty(name) ? id : name;
+    /// <summary>Its name on the wardrobe: the name cell's words (a Texts id, outfit.&lt;id&gt;.name, or plain words), else the id.</summary>
+    public string DisplayName => string.IsNullOrEmpty(name) ? id : Texts.Cell(name);
     /// <summary>The model it is a piece of (OutfitLibrary); an item with no model column is its own model.</summary>
     public string ModelId => string.IsNullOrEmpty(model) ? id : model;
     /// <summary>The renderers of the model it shows; none listed takes every renderer no other piece took.</summary>

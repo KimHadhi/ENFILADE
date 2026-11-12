@@ -123,7 +123,7 @@ public sealed class MomentFx : MonoBehaviour
         };
         fx.shapes = new FxShapes(host.transform, "Light", true);
         if (kind == Kind.BountyPlain || kind == Kind.CoverDeflect) fx.matter = new FxShapes(host.transform, "Matter", false);
-        if (kind == Kind.BountyPlain) fx.Word(MomentLook.Text("Bounty", "plainWord", "CLAIMED"), Teal);
+        if (kind == Kind.BountyPlain) fx.Word(MomentLook.Text("Bounty", "plainWord", "moment.bounty.plainword"), Teal);
         fx.Draw();
         return fx;
     }

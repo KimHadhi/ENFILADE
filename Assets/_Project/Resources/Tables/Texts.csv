@@ -1,5 +1,521 @@
 ﻿id,ko,en,#어디
 #설명,"한국어 문구. {0} {1}은 코드가 채우는 자리. \n은 줄바꿈. <color>, <b> 같은 리치 텍스트 태그를 쓸 수 있다",영어 문구(번역판용). 비어 있으면 한국어가 나온다,어디에 나오는지(게임은 이 열을 읽지 않는다)
+"#--- 표에서 옮긴 글자 (2026-11-12): 표의 글자 칸은 아래 id를 담고, 글자는 여기서 고친다(Tools → 글자 → 글자 편집기) ---",,,
+#--- 이야기 카드·장 이름 (CampaignChapters.csv) ---,,,
+chapter.ch1_rooftops.title,1장 · 옥상 탈출,,"장 이름: 장 시작·끝 이야기 카드 제목, 장 끝 띠, 결과 맨 위 (Ch1_Rooftops)"
+chapter.ch1_rooftops.intro,감염 사흘째. 아파트 옥상 안전가옥에 숨어 있던 우리에게 무전이 잡혔다.|'공사 중인 빌딩 옥상으로 구조 헬기를 보낸다. 해 지기 전에 와라.'|아래 길은 놈들로 꽉 찼다. 옥상으로 건너간다.,,장 시작 이야기 카드. | 로 나눈 줄이 한 줄씩 나온다 (Ch1_Rooftops)
+chapter.ch1_rooftops.outro,헬기는 왔다. 하지만 놈들도 착륙장까지 기어올랐다.|매달린 놈들의 무게에 헬기가 휘청였다.|우리는 고가도로 위로 곤두박질쳤다.,,장 끝 이야기 카드. | 로 나눈 줄이 한 줄씩 나온다 (Ch1_Rooftops)
+chapter.ch2_overpass.title,2장 · 막힌 고가도로,,"장 이름: 장 시작·끝 이야기 카드 제목, 장 끝 띠, 결과 맨 위 (Ch2_Overpass)"
+chapter.ch2_overpass.intro,추락한 헬기에서 기어 나왔다. 조종사는 움직이지 않는다.|고가도로 끝 톨게이트에 군 검문소가 있다고 했다.|멈춘 차들 사이로 간다.,,장 시작 이야기 카드. | 로 나눈 줄이 한 줄씩 나온다 (Ch2_Overpass)
+chapter.ch2_overpass.outro,검문소는 이미 무너져 있었다.|살아남은 병사 하나가 강 밑 지하철 터널을 가리켰다.|강 건너편엔 아직 군이 있다.,,장 끝 이야기 카드. | 로 나눈 줄이 한 줄씩 나온다 (Ch2_Overpass)
+chapter.ch3_subway.title,3장 · 지하철,,"장 이름: 장 시작·끝 이야기 카드 제목, 장 끝 띠, 결과 맨 위 (Ch3_Subway)"
+chapter.ch3_subway.intro,지하철 입구. 불은 다 나갔다.|정비창 발전기를 돌리면 비상 차량이 움직인다.|어둠 속으로 내려간다.,,장 시작 이야기 카드. | 로 나눈 줄이 한 줄씩 나온다 (Ch3_Subway)
+chapter.ch3_subway.outro,강 건너편 출구 위로 해가 떠 있었다.|군 보트가 우리를 태우고 강을 내려갔다.|'공항에서 마지막 수송기가 뜬다. 거기까지만 버텨라.',,장 끝 이야기 카드. | 로 나눈 줄이 한 줄씩 나온다 (Ch3_Subway)
+chapter.ch4_airport.title,4장 · 공항,,"장 이름: 장 시작·끝 이야기 카드 제목, 장 끝 띠, 결과 맨 위 (Ch4_Airport)"
+chapter.ch4_airport.intro,보트는 공항 화물 부두에 우리를 내려놓고 돌아갔다.|활주로 끝에 마지막 수송기가 있다고 했다.|터미널을 가로질러 간다.,,장 시작 이야기 카드. | 로 나눈 줄이 한 줄씩 나온다 (Ch4_Airport)
+chapter.ch4_airport.outro,수송기 바퀴가 활주로를 떠났다.|창밖으로 불타는 도시가 작아졌다.|살아남았다.,,장 끝 이야기 카드. | 로 나눈 줄이 한 줄씩 나온다 (Ch4_Airport)
+#--- 캠페인 목표 (CampaignSteps.csv) ---,,,
+mission.ch1.01.title,옆 건물 엘리베이터실 위로,,"목표 바 제목과 Tab 목표 목록: Ch1_Rooftops 1번째 단계(Reach, Ch1.01)"
+mission.ch1.01.description,틈을 뛰어 건너 엘리베이터실 위로 올라가세요. 벽을 타거나 사다리를 쓰세요.,,"Tab 목표 목록의 설명: Ch1_Rooftops 1번째 단계(Reach, Ch1.01)"
+mission.ch1.01.done,옥상 건너기,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch1_Rooftops 1번째 단계(Reach, Ch1.01)"
+mission.ch1.02.title,집라인으로 길 건너기,,"목표 바 제목과 Tab 목표 목록: Ch1_Rooftops 2번째 단계(Reach, Ch1.02)"
+mission.ch1.02.description,엘리베이터실 위에서 줄을 잡고 길 건너 옥상으로 내려가세요.,,"Tab 목표 목록의 설명: Ch1_Rooftops 2번째 단계(Reach, Ch1.02)"
+mission.ch1.02.done,길 건너기,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch1_Rooftops 2번째 단계(Reach, Ch1.02)"
+mission.ch1.03.title,철봉 타고 건너편 옥상으로,,"목표 바 제목과 Tab 목표 목록: Ch1_Rooftops 3번째 단계(Reach, Ch1.03)"
+mission.ch1.03.description,뛰기엔 먼 틈이에요. 철봉을 잡고 흔들어 건너세요.,,"Tab 목표 목록의 설명: Ch1_Rooftops 3번째 단계(Reach, Ch1.03)"
+mission.ch1.03.done,철봉 건너기,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch1_Rooftops 3번째 단계(Reach, Ch1.03)"
+mission.ch1.04.title,아파트 안으로,,"목표 바 제목과 Tab 목표 목록: Ch1_Rooftops 4번째 단계(Reach, Ch1.04)"
+mission.ch1.04.description,옥상 계단실로 들어가 4층으로 내려가세요. 아래 계단은 무너졌어요. 남동쪽 집의 꺼진 바닥으로 아래층에 내려가세요.,,"Tab 목표 목록의 설명: Ch1_Rooftops 4번째 단계(Reach, Ch1.04)"
+mission.ch1.04.done,4층 통과,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch1_Rooftops 4번째 단계(Reach, Ch1.04)"
+mission.ch1.13.title,1층까지 내려가기,,"목표 바 제목과 Tab 목표 목록: Ch1_Rooftops 5번째 단계(Reach, Ch1.13)"
+mission.ch1.13.description,복도 동쪽 끝 계단으로 1층까지 내려가세요. 복도와 집 안에서 놈들이 튀어나와요.,,"Tab 목표 목록의 설명: Ch1_Rooftops 5번째 단계(Reach, Ch1.13)"
+mission.ch1.13.done,1층 도착,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch1_Rooftops 5번째 단계(Reach, Ch1.13)"
+mission.ch1.14.title,뒷문으로 골목에,,"목표 바 제목과 Tab 목표 목록: Ch1_Rooftops 6번째 단계(Reach, Ch1.14)"
+mission.ch1.14.description,1층 복도 끝 뒷문으로 골목에 나가세요.,,"Tab 목표 목록의 설명: Ch1_Rooftops 6번째 단계(Reach, Ch1.14)"
+mission.ch1.14.done,골목 도착,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch1_Rooftops 6번째 단계(Reach, Ch1.14)"
+mission.ch1.05.title,셔터 올리기,,"목표 바 제목과 Tab 목표 목록: Ch1_Rooftops 7번째 단계(Press, Ch1.05)"
+mission.ch1.05.description,버튼을 누르면 경보가 울려요. 각오하세요.,,"Tab 목표 목록의 설명: Ch1_Rooftops 7번째 단계(Press, Ch1.05)"
+mission.ch1.05.done,셔터 작동,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch1_Rooftops 7번째 단계(Press, Ch1.05)"
+mission.ch1.05.prompt,[F] 셔터 올리기,,"그 자리에서 누를 때 화면 아래 안내(대괄호 키는 고른 키로 보임): Ch1_Rooftops 7번째 단계(Press, Ch1.05)"
+mission.ch1.06.title,셔터가 올라갈 때까지 버티기,,"목표 바 제목과 Tab 목표 목록: Ch1_Rooftops 8번째 단계(Hold, Ch1.06)"
+mission.ch1.06.description,경보를 듣고 놈들이 몰려와요. 셔터가 다 올라갈 때까지 버티세요.,,"Tab 목표 목록의 설명: Ch1_Rooftops 8번째 단계(Hold, Ch1.06)"
+mission.ch1.06.done,골목에서 버팀,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch1_Rooftops 8번째 단계(Hold, Ch1.06)"
+mission.ch1.07.title,편의점으로 피하기,,"목표 바 제목과 Tab 목표 목록: Ch1_Rooftops 9번째 단계(Checkpoint, Ch1.07)"
+mission.ch1.07.description,모두 편의점 안으로 들어와 문을 닫으면 숨을 돌려요. 이제부터 죽은 사람은 여기서 돌아와요.,,"Tab 목표 목록의 설명: Ch1_Rooftops 9번째 단계(Checkpoint, Ch1.07)"
+mission.ch1.07.done,휴게소 도착,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch1_Rooftops 9번째 단계(Checkpoint, Ch1.07)"
+mission.ch1.08.title,공사장으로,,"목표 바 제목과 Tab 목표 목록: Ch1_Rooftops 10번째 단계(Reach, Ch1.08)"
+mission.ch1.08.description,길 건너 공사장 정문으로 가세요.,,"Tab 목표 목록의 설명: Ch1_Rooftops 10번째 단계(Reach, Ch1.08)"
+mission.ch1.08.done,공사장 진입,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch1_Rooftops 10번째 단계(Reach, Ch1.08)"
+mission.ch1.09.title,공사 중인 빌딩 옥상으로,,"목표 바 제목과 Tab 목표 목록: Ch1_Rooftops 11번째 단계(Reach, Ch1.09)"
+mission.ch1.09.description,컨테이너와 비계를 타고 옥상 착륙장까지 올라가세요.,,"Tab 목표 목록의 설명: Ch1_Rooftops 11번째 단계(Reach, Ch1.09)"
+mission.ch1.09.done,옥상 도착,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch1_Rooftops 11번째 단계(Reach, Ch1.09)"
+mission.ch1.10.title,무전으로 헬기 부르기,,"목표 바 제목과 Tab 목표 목록: Ch1_Rooftops 12번째 단계(Press, Ch1.10)"
+mission.ch1.10.description,착륙장의 무전기로 헬기를 부르세요. 소리를 듣고 놈들이 올 거예요.,,"Tab 목표 목록의 설명: Ch1_Rooftops 12번째 단계(Press, Ch1.10)"
+mission.ch1.10.done,헬기 호출,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch1_Rooftops 12번째 단계(Press, Ch1.10)"
+mission.ch1.10.prompt,[F] 무전기로 헬기 부르기,,"그 자리에서 누를 때 화면 아래 안내(대괄호 키는 고른 키로 보임): Ch1_Rooftops 12번째 단계(Press, Ch1.10)"
+mission.ch1.11.title,헬기가 올 때까지 버티기,,"목표 바 제목과 Tab 목표 목록: Ch1_Rooftops 13번째 단계(Hold, Ch1.11)"
+mission.ch1.11.description,놈들이 경사로로 올라와요. 착륙장을 지키세요.,,"Tab 목표 목록의 설명: Ch1_Rooftops 13번째 단계(Hold, Ch1.11)"
+mission.ch1.11.done,착륙장 사수,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch1_Rooftops 13번째 단계(Hold, Ch1.11)"
+mission.ch1.12.title,헬기에 타기,,"목표 바 제목과 Tab 목표 목록: Ch1_Rooftops 14번째 단계(Escape, Ch1.12)"
+mission.ch1.12.description,모두 착륙장으로 모이세요.,,"Tab 목표 목록의 설명: Ch1_Rooftops 14번째 단계(Escape, Ch1.12)"
+mission.ch1.12.done,탈출,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch1_Rooftops 14번째 단계(Escape, Ch1.12)"
+mission.ch2.01.title,고가도로를 따라가기,,"목표 바 제목과 Tab 목표 목록: Ch2_Overpass 1번째 단계(Reach, Ch2.01)"
+mission.ch2.01.description,멈춘 차들 사이로 고가도로를 따라가세요. 뒤집힌 트럭을 넘어야 해요.,,"Tab 목표 목록의 설명: Ch2_Overpass 1번째 단계(Reach, Ch2.01)"
+mission.ch2.01.done,고가도로 진입,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch2_Overpass 1번째 단계(Reach, Ch2.01)"
+mission.ch2.02.title,끊어진 끝에 모두 모이기,,"목표 바 제목과 Tab 목표 목록: Ch2_Overpass 2번째 단계(Gather, Ch2.02)"
+mission.ch2.02.description,다리가 끊겼어요. 아래 버스로 뛰어내리면 다시는 못 올라와요. 모두 모이세요.,,"Tab 목표 목록의 설명: Ch2_Overpass 2번째 단계(Gather, Ch2.02)"
+mission.ch2.02.done,모두 모임,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch2_Overpass 2번째 단계(Gather, Ch2.02)"
+mission.ch2.03.title,아래 도로로 뛰어내리기,,"목표 바 제목과 Tab 목표 목록: Ch2_Overpass 3번째 단계(Reach, Ch2.03)"
+mission.ch2.03.description,버스 지붕으로 뛰어내리세요. 돌아갈 수 없어요.,,"Tab 목표 목록의 설명: Ch2_Overpass 3번째 단계(Reach, Ch2.03)"
+mission.ch2.03.done,뛰어내림,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch2_Overpass 3번째 단계(Reach, Ch2.03)"
+mission.ch2.04.title,주유소로 피하기,,"목표 바 제목과 Tab 목표 목록: Ch2_Overpass 4번째 단계(Checkpoint, Ch2.04)"
+mission.ch2.04.description,모두 주유소 가게 안으로 들어와 문을 닫으면 숨을 돌려요. 이제부터 죽은 사람은 여기서 돌아와요.,,"Tab 목표 목록의 설명: Ch2_Overpass 4번째 단계(Checkpoint, Ch2.04)"
+mission.ch2.04.done,휴게소 도착,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch2_Overpass 4번째 단계(Checkpoint, Ch2.04)"
+mission.ch2.05.title,톨게이트로,,"목표 바 제목과 Tab 목표 목록: Ch2_Overpass 5번째 단계(Reach, Ch2.05)"
+mission.ch2.05.description,도로 끝 톨게이트로 가세요. 검문소가 그 너머에 있어요.,,"Tab 목표 목록의 설명: Ch2_Overpass 5번째 단계(Reach, Ch2.05)"
+mission.ch2.05.done,톨게이트 도착,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch2_Overpass 5번째 단계(Reach, Ch2.05)"
+mission.ch2.06.title,검문소 무전기 켜기,,"목표 바 제목과 Tab 목표 목록: Ch2_Overpass 6번째 단계(Press, Ch2.06)"
+mission.ch2.06.description,초소 안의 무전기로 군을 불러 보세요.,,"Tab 목표 목록의 설명: Ch2_Overpass 6번째 단계(Press, Ch2.06)"
+mission.ch2.06.done,무전 연결,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch2_Overpass 6번째 단계(Press, Ch2.06)"
+mission.ch2.06.prompt,[F] 무전기 켜기,,"그 자리에서 누를 때 화면 아래 안내(대괄호 키는 고른 키로 보임): Ch2_Overpass 6번째 단계(Press, Ch2.06)"
+mission.ch2.07.title,응답이 올 때까지 버티기,,"목표 바 제목과 Tab 목표 목록: Ch2_Overpass 7번째 단계(Hold, Ch2.07)"
+mission.ch2.07.description,무전 소리에 놈들이 몰려와요. 응답이 올 때까지 버티세요.,,"Tab 목표 목록의 설명: Ch2_Overpass 7번째 단계(Hold, Ch2.07)"
+mission.ch2.07.done,검문소 사수,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch2_Overpass 7번째 단계(Hold, Ch2.07)"
+mission.ch2.08.title,지하철 입구로,,"목표 바 제목과 Tab 목표 목록: Ch2_Overpass 8번째 단계(Escape, Ch2.08)"
+mission.ch2.08.description,강 밑 지하철 터널로 가래요. 모두 입구 안으로 들어가세요.,,"Tab 목표 목록의 설명: Ch2_Overpass 8번째 단계(Escape, Ch2.08)"
+mission.ch2.08.done,탈출,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch2_Overpass 8번째 단계(Escape, Ch2.08)"
+mission.ch3.01.title,승강장으로 내려가기,,"목표 바 제목과 Tab 목표 목록: Ch3_Subway 1번째 단계(Reach, Ch3.01)"
+mission.ch3.01.description,개찰구를 넘어 승강장으로 내려가세요.,,"Tab 목표 목록의 설명: Ch3_Subway 1번째 단계(Reach, Ch3.01)"
+mission.ch3.01.done,승강장 도착,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch3_Subway 1번째 단계(Reach, Ch3.01)"
+mission.ch3.02.title,터널을 지나 정비창으로,,"목표 바 제목과 Tab 목표 목록: Ch3_Subway 2번째 단계(Reach, Ch3.02)"
+mission.ch3.02.description,선로로 내려가 멈춘 열차 옆 어두운 터널을 따라가세요.,,"Tab 목표 목록의 설명: Ch3_Subway 2번째 단계(Reach, Ch3.02)"
+mission.ch3.02.done,터널 통과,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch3_Subway 2번째 단계(Reach, Ch3.02)"
+mission.ch3.03.title,정비창 사무실로 피하기,,"목표 바 제목과 Tab 목표 목록: Ch3_Subway 3번째 단계(Checkpoint, Ch3.03)"
+mission.ch3.03.description,모두 사무실 안으로 들어와 문을 닫으면 숨을 돌려요. 이제부터 죽은 사람은 여기서 돌아와요.,,"Tab 목표 목록의 설명: Ch3_Subway 3번째 단계(Checkpoint, Ch3.03)"
+mission.ch3.03.done,휴게소 도착,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch3_Subway 3번째 단계(Checkpoint, Ch3.03)"
+mission.ch3.04.title,발전기에 연료 채우기,,"목표 바 제목과 Tab 목표 목록: Ch3_Subway 4번째 단계(Collect, Ch3.04)"
+mission.ch3.04.description,정비창 곳곳의 연료통 4개를 찾아 발전기에 부으세요. 들고 있는 동안엔 총을 못 써요.,,"Tab 목표 목록의 설명: Ch3_Subway 4번째 단계(Collect, Ch3.04)"
+mission.ch3.04.done,발전기 가동,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch3_Subway 4번째 단계(Collect, Ch3.04)"
+mission.ch3.05.title,강 밑 터널 지나기,,"목표 바 제목과 Tab 목표 목록: Ch3_Subway 5번째 단계(Reach, Ch3.05)"
+mission.ch3.05.description,열린 방수문 너머 강 밑 터널을 따라가세요.,,"Tab 목표 목록의 설명: Ch3_Subway 5번째 단계(Reach, Ch3.05)"
+mission.ch3.05.done,강 밑 통과,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch3_Subway 5번째 단계(Reach, Ch3.05)"
+mission.ch3.06.title,비상계단으로 올라가기,,"목표 바 제목과 Tab 목표 목록: Ch3_Subway 6번째 단계(Reach, Ch3.06)"
+mission.ch3.06.description,계단 끝이 강 건너편이에요.,,"Tab 목표 목록의 설명: Ch3_Subway 6번째 단계(Reach, Ch3.06)"
+mission.ch3.06.done,지상 도착,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch3_Subway 6번째 단계(Reach, Ch3.06)"
+mission.ch3.07.title,신호탄 쏘기,,"목표 바 제목과 Tab 목표 목록: Ch3_Subway 7번째 단계(Press, Ch3.07)"
+mission.ch3.07.description,부두의 신호탄으로 군 보트를 부르세요.,,"Tab 목표 목록의 설명: Ch3_Subway 7번째 단계(Press, Ch3.07)"
+mission.ch3.07.done,신호탄 발사,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch3_Subway 7번째 단계(Press, Ch3.07)"
+mission.ch3.07.prompt,[F] 신호탄 쏘기,,"그 자리에서 누를 때 화면 아래 안내(대괄호 키는 고른 키로 보임): Ch3_Subway 7번째 단계(Press, Ch3.07)"
+mission.ch3.08.title,보트가 올 때까지 버티기,,"목표 바 제목과 Tab 목표 목록: Ch3_Subway 8번째 단계(Hold, Ch3.08)"
+mission.ch3.08.description,신호탄을 보고 놈들도 몰려와요. 보트가 올 때까지 부두를 지키세요.,,"Tab 목표 목록의 설명: Ch3_Subway 8번째 단계(Hold, Ch3.08)"
+mission.ch3.08.done,부두 사수,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch3_Subway 8번째 단계(Hold, Ch3.08)"
+mission.ch3.09.title,보트에 타기,,"목표 바 제목과 Tab 목표 목록: Ch3_Subway 9번째 단계(Escape, Ch3.09)"
+mission.ch3.09.description,모두 부두 끝 보트로 가세요.,,"Tab 목표 목록의 설명: Ch3_Subway 9번째 단계(Escape, Ch3.09)"
+mission.ch3.09.done,탈출,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch3_Subway 9번째 단계(Escape, Ch3.09)"
+mission.ch4.01.title,화물장 정문으로,,"목표 바 제목과 Tab 목표 목록: Ch4_Airport 1번째 단계(Reach, Ch4.01)"
+mission.ch4.01.description,컨테이너 사이를 지나 화물장 정문으로 가세요. 터미널이 그 너머에 있어요.,,"Tab 목표 목록의 설명: Ch4_Airport 1번째 단계(Reach, Ch4.01)"
+mission.ch4.01.done,화물장 통과,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch4_Airport 1번째 단계(Reach, Ch4.01)"
+mission.ch4.02.title,출발층으로,,"목표 바 제목과 Tab 목표 목록: Ch4_Airport 2번째 단계(Reach, Ch4.02)"
+mission.ch4.02.description,진입로를 올라 터미널 출발층 입구로 가세요.,,"Tab 목표 목록의 설명: Ch4_Airport 2번째 단계(Reach, Ch4.02)"
+mission.ch4.02.done,터미널 도착,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch4_Airport 2번째 단계(Reach, Ch4.02)"
+mission.ch4.03.title,보안 검색대 지나기,,"목표 바 제목과 Tab 목표 목록: Ch4_Airport 3번째 단계(Reach, Ch4.03)"
+mission.ch4.03.description,체크인 카운터 사이를 지나 검색대 너머로 가세요. 위층 식당가에서 내려다볼 수도 있어요.,,"Tab 목표 목록의 설명: Ch4_Airport 3번째 단계(Reach, Ch4.03)"
+mission.ch4.03.done,검색대 통과,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch4_Airport 3번째 단계(Reach, Ch4.03)"
+mission.ch4.04.title,면세점으로 피하기,,"목표 바 제목과 Tab 목표 목록: Ch4_Airport 4번째 단계(Checkpoint, Ch4.04)"
+mission.ch4.04.description,모두 면세점 안으로 들어와 문을 닫으면 숨을 돌려요. 이제부터 죽은 사람은 여기서 돌아와요.,,"Tab 목표 목록의 설명: Ch4_Airport 4번째 단계(Checkpoint, Ch4.04)"
+mission.ch4.04.done,휴게소 도착,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch4_Airport 4번째 단계(Checkpoint, Ch4.04)"
+mission.ch4.05.title,탑승구로,,"목표 바 제목과 Tab 목표 목록: Ch4_Airport 5번째 단계(Reach, Ch4.05)"
+mission.ch4.05.description,탑승교 입구로 가세요. 비행기는 이미 떠나고 다리만 남았어요.,,"Tab 목표 목록의 설명: Ch4_Airport 5번째 단계(Reach, Ch4.05)"
+mission.ch4.05.done,탑승구 도착,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch4_Airport 5번째 단계(Reach, Ch4.05)"
+mission.ch4.06.title,정비 계단으로 내려가기,,"목표 바 제목과 Tab 목표 목록: Ch4_Airport 6번째 단계(Reach, Ch4.06)"
+mission.ch4.06.description,탑승교 끝의 정비 계단으로 계류장에 내려가세요.,,"Tab 목표 목록의 설명: Ch4_Airport 6번째 단계(Reach, Ch4.06)"
+mission.ch4.06.done,계류장 도착,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch4_Airport 6번째 단계(Reach, Ch4.06)"
+mission.ch4.07.title,관제탑에서 수송기 부르기,,"목표 바 제목과 Tab 목표 목록: Ch4_Airport 7번째 단계(Press, Ch4.07)"
+mission.ch4.07.description,관제탑 1층 무전실에서 수송기 조종사와 연락하세요.,,"Tab 목표 목록의 설명: Ch4_Airport 7번째 단계(Press, Ch4.07)"
+mission.ch4.07.done,수송기 연락,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch4_Airport 7번째 단계(Press, Ch4.07)"
+mission.ch4.07.prompt,[F] 관제탑 무전기로 수송기 부르기,,"그 자리에서 누를 때 화면 아래 안내(대괄호 키는 고른 키로 보임): Ch4_Airport 7번째 단계(Press, Ch4.07)"
+mission.ch4.08.title,견인차 시동 걸기,,"목표 바 제목과 Tab 목표 목록: Ch4_Airport 8번째 단계(Press, Ch4.08)"
+mission.ch4.08.description,버려진 여객기가 활주로를 막아 수송기가 못 떠요. 여객기 앞바퀴에 물린 견인차에 시동을 거세요.,,"Tab 목표 목록의 설명: Ch4_Airport 8번째 단계(Press, Ch4.08)"
+mission.ch4.08.done,견인차 시동,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch4_Airport 8번째 단계(Press, Ch4.08)"
+mission.ch4.08.prompt,[F] 견인차 시동 걸기,,"그 자리에서 누를 때 화면 아래 안내(대괄호 키는 고른 키로 보임): Ch4_Airport 8번째 단계(Press, Ch4.08)"
+mission.ch4.09.title,여객기 밀어내기,,"목표 바 제목과 Tab 목표 목록: Ch4_Airport 9번째 단계(Hold, Ch4.09)"
+mission.ch4.09.description,누가 견인차 옆에 있어야 여객기가 밀려요. 아무도 없으면 멈춰요. 엔진 소리를 듣고 놈들이 몰려와요.,,"Tab 목표 목록의 설명: Ch4_Airport 9번째 단계(Hold, Ch4.09)"
+mission.ch4.09.done,활주로 비움,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch4_Airport 9번째 단계(Hold, Ch4.09)"
+mission.ch4.10.title,수송기로,,"목표 바 제목과 Tab 목표 목록: Ch4_Airport 10번째 단계(Reach, Ch4.10)"
+mission.ch4.10.description,활주로 끝 수송기의 뒤쪽 램프로 가세요.,,"Tab 목표 목록의 설명: Ch4_Airport 10번째 단계(Reach, Ch4.10)"
+mission.ch4.10.done,수송기 도착,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch4_Airport 10번째 단계(Reach, Ch4.10)"
+mission.ch4.11.title,출발 신호 보내기,,"목표 바 제목과 Tab 목표 목록: Ch4_Airport 11번째 단계(Press, Ch4.11)"
+mission.ch4.11.description,램프 옆 신호등으로 조종사에게 엔진을 켜라고 알리세요. 엔진이 데워지는 동안 버텨야 해요.,,"Tab 목표 목록의 설명: Ch4_Airport 11번째 단계(Press, Ch4.11)"
+mission.ch4.11.done,출발 신호,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch4_Airport 11번째 단계(Press, Ch4.11)"
+mission.ch4.11.prompt,[F] 조종사에게 출발 신호 보내기,,"그 자리에서 누를 때 화면 아래 안내(대괄호 키는 고른 키로 보임): Ch4_Airport 11번째 단계(Press, Ch4.11)"
+mission.ch4.12.title,이륙할 때까지 버티기,,"목표 바 제목과 Tab 목표 목록: Ch4_Airport 12번째 단계(Hold, Ch4.12)"
+mission.ch4.12.description,엔진 소리에 공항의 놈들이 다 몰려와요. 수송기 램프를 지키세요.,,"Tab 목표 목록의 설명: Ch4_Airport 12번째 단계(Hold, Ch4.12)"
+mission.ch4.12.done,활주로 사수,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch4_Airport 12번째 단계(Hold, Ch4.12)"
+mission.ch4.13.title,수송기에 타기,,"목표 바 제목과 Tab 목표 목록: Ch4_Airport 13번째 단계(Escape, Ch4.13)"
+mission.ch4.13.description,모두 화물칸 안으로 들어오세요. 노래가 끝나면 떠나요.,,"Tab 목표 목록의 설명: Ch4_Airport 13번째 단계(Escape, Ch4.13)"
+mission.ch4.13.done,탈출,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch4_Airport 13번째 단계(Escape, Ch4.13)"
+#--- 맵 이름 (Maps.csv) ---,,,
+map.combatfoundation.name,전투 시험장,,"맵 이름: 메인 메뉴·방 만들기·로딩 화면·허브 지도 탁자(CombatFoundation). ""N장 · 이름""이면 허브가 · 앞 숫자를 큰 장 번호로 쓴다"
+map.movementabilityplayground.name,이동 시험장,,"맵 이름: 메인 메뉴·방 만들기·로딩 화면·허브 지도 탁자(MovementAbilityPlayground). ""N장 · 이름""이면 허브가 · 앞 숫자를 큰 장 번호로 쓴다"
+map.ch1_rooftops.name,1장 · 옥상 탈출,,"맵 이름: 메인 메뉴·방 만들기·로딩 화면·허브 지도 탁자(Ch1_Rooftops). ""N장 · 이름""이면 허브가 · 앞 숫자를 큰 장 번호로 쓴다"
+map.ch2_overpass.name,2장 · 막힌 고가도로,,"맵 이름: 메인 메뉴·방 만들기·로딩 화면·허브 지도 탁자(Ch2_Overpass). ""N장 · 이름""이면 허브가 · 앞 숫자를 큰 장 번호로 쓴다"
+map.ch3_subway.name,3장 · 지하철,,"맵 이름: 메인 메뉴·방 만들기·로딩 화면·허브 지도 탁자(Ch3_Subway). ""N장 · 이름""이면 허브가 · 앞 숫자를 큰 장 번호로 쓴다"
+map.ch4_airport.name,4장 · 공항,,"맵 이름: 메인 메뉴·방 만들기·로딩 화면·허브 지도 탁자(Ch4_Airport). ""N장 · 이름""이면 허브가 · 앞 숫자를 큰 장 번호로 쓴다"
+map.enfiladetower.name,엔필레이드 타워,,"맵 이름: 메인 메뉴·방 만들기·로딩 화면·허브 지도 탁자(EnfiladeTower). ""N장 · 이름""이면 허브가 · 앞 숫자를 큰 장 번호로 쓴다"
+map.hub.name,은신처,,"맵 이름: 메인 메뉴·방 만들기·로딩 화면·허브 지도 탁자(Hub). ""N장 · 이름""이면 허브가 · 앞 숫자를 큰 장 번호로 쓴다"
+#--- 메인 메뉴 소식 줄 (MenuTicker.csv) ---,,,
+menu.ticker.label.radio,무전,,메인 메뉴 맨 아래 흘러가는 소식 줄의 꼬리표(분홍 굵은 글자)
+menu.ticker.radio1.text,"여기는 구조대. 공사 중인 빌딩 옥상, 해 지기 전까지만 기다린다.",,메인 메뉴 맨 아래 흘러가는 소식 줄의 말(Radio1). 위에서부터 차례로 흐른다
+menu.ticker.label.tip,팁,,메인 메뉴 맨 아래 흘러가는 소식 줄의 꼬리표(분홍 굵은 글자)
+menu.ticker.tip1.text,총은 머리를 노리세요. 어떤 총이든 머리 한 방이면 쓰러져요.,,메인 메뉴 맨 아래 흘러가는 소식 줄의 말(Tip1). 위에서부터 차례로 흐른다
+menu.ticker.radio2.text,"고가도로 톨게이트 검문소, 응답 바란다. 반복한다, 응답 바란다.",,메인 메뉴 맨 아래 흘러가는 소식 줄의 말(Radio2). 위에서부터 차례로 흐른다
+menu.ticker.tip2.text,휴게소는 모두 들어와 문을 닫아야 안전해요. 죽은 동료는 거기서 다시 살아나요.,,메인 메뉴 맨 아래 흘러가는 소식 줄의 말(Tip2). 위에서부터 차례로 흐른다
+menu.ticker.label.alert,경보,,메인 메뉴 맨 아래 흘러가는 소식 줄의 꼬리표(분홍 굵은 글자)
+menu.ticker.alert1.text,강 북쪽 전 구역 감염 확산. 민간인은 지하로 대피하지 마십시오.,,메인 메뉴 맨 아래 흘러가는 소식 줄의 말(Alert1). 위에서부터 차례로 흐른다
+menu.ticker.tip3.text,계산대에서 [F]를 누르면 상점이 열려요. 적을 쓰러뜨리면 100씩 벌어요.,,메인 메뉴 맨 아래 흘러가는 소식 줄의 말(Tip3). 위에서부터 차례로 흐른다
+menu.ticker.radio3.text,정비창 발전기만 돌리면 비상 차량은 움직인다. 연료가 문제다.,,메인 메뉴 맨 아래 흘러가는 소식 줄의 말(Radio3). 위에서부터 차례로 흐른다
+menu.ticker.tip4.text,[J]로 동료에게 돈 500을 떨궈 줄 수 있어요. [G]는 클래스마다 다른 수류탄을 바로 던져요.,,메인 메뉴 맨 아래 흘러가는 소식 줄의 말(Tip4). 위에서부터 차례로 흐른다
+menu.ticker.tip5.text,죽으면 동료의 눈으로 지켜볼 수 있어요. 좌클릭과 우클릭으로 사람을 바꿔요.,,메인 메뉴 맨 아래 흘러가는 소식 줄의 말(Tip5). 위에서부터 차례로 흐른다
+menu.ticker.radio4.text,강 건너편은 아직 우리가 지키고 있다. 보트는 동이 틀 때까지 기다린다.,,메인 메뉴 맨 아래 흘러가는 소식 줄의 말(Radio4). 위에서부터 차례로 흐른다
+#--- 클래스 이름·소개 (Classes.csv) ---,,,
+class.knight.title,나이트,,클래스 이름: 클래스 화면·허브 클래스 벽·결과·휘장 줄·능력 카드 꼬리표(knight)
+class.knight.role,패리하면 반격하고 도발로 엘리트를 끌어와 사수를 지킨다. 가장 단단하다,,클래스 한 줄 소개: 메인 메뉴 클래스 화면의 카드(knight)
+class.assault.title,어썰트,,클래스 이름: 클래스 화면·허브 클래스 벽·결과·휘장 줄·능력 카드 꼬리표(assault)
+class.assault.role,돌격 소총으로 처치할 때마다 아드레날린을 쌓고 다 차면 CHARGE로 팀과 함께 돌격한다,,클래스 한 줄 소개: 메인 메뉴 클래스 화면의 카드(assault)
+class.ghost.title,고스트,,클래스 이름: 클래스 화면·허브 클래스 벽·결과·휘장 줄·능력 카드 꼬리표(ghost)
+class.ghost.role,저격으로 엘리트를 휘청이게 하고 헤드샷으로 헤드 헌터를 쌓아 폭딜을 낸다,,클래스 한 줄 소개: 메인 메뉴 클래스 화면의 카드(ghost)
+class.point.title,포인트,,클래스 이름: 클래스 화면·허브 클래스 벽·결과·휘장 줄·능력 카드 꼬리표(point)
+class.point.role,SMG와 샷건을 번갈아 쏘는 동안 들지 않은 총이 저절로 장전된다. 혼자서도 화력이 끊기지 않는다,,클래스 한 줄 소개: 메인 메뉴 클래스 화면의 카드(point)
+class.detente.title,데탕트,,클래스 이름: 클래스 화면·허브 클래스 벽·결과·휘장 줄·능력 카드 꼬리표(detente)
+class.detente.role,주사기로 자신과 동료를 바로 치료하고 비면 곁에서 오래 붙어 치료한다. 치료하면 빨라지고 쓰러져 죽은 동료를 한 번 되살린다,,클래스 한 줄 소개: 메인 메뉴 클래스 화면의 카드(detente)
+class.schiesshund.title,시순트,,클래스 이름: 클래스 화면·허브 클래스 벽·결과·휘장 줄·능력 카드 꼬리표(schiesshund)
+class.schiesshund.role,위험한 적에 청록 현상금 표식을 찍어 사냥하고 데스페라도 리볼버로 엘리트를 한 방에 잡는다,,클래스 한 줄 소개: 메인 메뉴 클래스 화면의 카드(schiesshund)
+class.support.title,서포트,,클래스 이름: 클래스 화면·허브 클래스 벽·결과·휘장 줄·능력 카드 꼬리표(support)
+class.support.role,보급 가방으로 동료에게 탄약을 나눠 주고 바리케이드를 세우는 걸어다니는 간이 상점,,클래스 한 줄 소개: 메인 메뉴 클래스 화면의 카드(support)
+#--- 능력 카드 (Perks.csv) ---,,,
+perk.gun_head.name,머리 사냥꾼,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(gun_head)
+perk.tag.gun,총,,능력 카드 위 꼬리표: 총 카드
+perk.gun_head.text,헤드샷 피해 +{0}%,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(gun_head)
+perk.gun_head.why,눈과 눈 사이를 노리는 버릇이 손에 배었다,,능력 카드 아래 작은 이유 한 줄(gun_head)
+perk.gun_body.name,철갑탄,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(gun_body)
+perk.gun_body.text,머리 말고 맞힌 총 피해 +{0}%,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(gun_body)
+perk.gun_body.why,강철 심을 박은 탄이라 살과 뼈에 덜 무뎌진다,,능력 카드 아래 작은 이유 한 줄(gun_body)
+perk.melee_power.name,쇠주먹,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(melee_power)
+perk.tag.melee,근접,,능력 카드 위 꼬리표: 근접 카드
+perk.melee_power.text,주먹 피해 +{0}%,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(melee_power)
+perk.melee_power.why,손가락 마디에 쇳조각을 감아 묶었다,,능력 카드 아래 작은 이유 한 줄(melee_power)
+perk.melee_butcher.name,피의 처형,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(melee_butcher)
+perk.melee_butcher.text,처형하면 체력 +{0},,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(melee_butcher)
+perk.melee_butcher.why,처형의 흥분이 아픔을 잊게 한다,,능력 카드 아래 작은 이유 한 줄(melee_butcher)
+perk.body_tough.name,단단한 몸,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(body_tough)
+perk.tag.survival,생존,,능력 카드 위 꼬리표: 생존 카드
+perk.body_tough.text,최대 체력 +{0},,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(body_tough)
+perk.body_tough.why,옷 안에 철판을 한 겹 더 댔다,,능력 카드 아래 작은 이유 한 줄(body_tough)
+perk.body_grit.name,끈질긴 숨,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(body_grit)
+perk.body_grit.text,쓰러져서 버티는 시간 +{0}%,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(body_grit)
+perk.body_grit.why,쓰러져도 숨을 아껴 쉬는 법을 안다,,능력 카드 아래 작은 이유 한 줄(body_grit)
+perk.team_rescue.name,손 빠른 구조,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(team_rescue)
+perk.tag.team,팀,,능력 카드 위 꼬리표: 팀 카드
+perk.team_rescue.text,동료를 일으키는 시간 -{0}%,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(team_rescue)
+perk.team_rescue.why,동료를 끌어올리는 요령을 몸이 기억한다,,능력 카드 아래 작은 이유 한 줄(team_rescue)
+perk.gauge_charge.name,충전기,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(gauge_charge)
+perk.tag.other,기타,,능력 카드 위 꼬리표: 기타 카드
+perk.gauge_charge.text,게이지가 차는 속도 +{0}%,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(gauge_charge)
+perk.gauge_charge.why,싸움의 박자를 읽어 기운이 빨리 모인다,,능력 카드 아래 작은 이유 한 줄(gauge_charge)
+perk.heriot.name,사망세,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(heriot)
+perk.tag.money,돈,,능력 카드 위 꼬리표: 돈 카드
+perk.heriot.text,처치할 때 받는 돈 +{0}%. 점수 팝업에 '사망세' 줄,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(heriot)
+perk.heriot.why,Heriot: 중세 영주가 죽은 이의 재산에서 몫을 떼어 가던 세금. 쓰러뜨린 적에게서도 몫을 챙긴다,,능력 카드 아래 작은 이유 한 줄(heriot)
+perk.momentum.name,기세,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(momentum)
+perk.momentum.text,맞힐 때마다 {Cards.momentumSeconds}초 동안 총·주먹 피해 +{0}%. 계속 맞히면 끊기지 않는다,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(momentum)
+perk.momentum.why,맞힌 손맛에 피가 끓는다. 식기 전에 또 맞히면 다시 끓어오른다,,능력 카드 아래 작은 이유 한 줄(momentum)
+perk.knight_deflect.name,비껴 흘리기,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(knight_deflect · knight)
+perk.knight_deflect.text,패리한 좀비가 {Knight.deflectStagger}초 휘청이고 자세를 {0} 더 잃는다. 2단계면 보통 좀비는 한 번에 무너진다,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(knight_deflect)
+perk.knight_deflect.why,막지 않고 비스듬히 대어 공격을 옆으로 흘려 보낸다. 헛디딘 좀비는 옆구리를 드러낸다,,능력 카드 아래 작은 이유 한 줄(knight_deflect)
+perk.knight_reversal.name,되치기,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(knight_reversal · knight)
+perk.knight_reversal.text,좀비에게 잡혔을 때 줄어드는 고리가 흰 원에 닿는 순간 [V]: 메쳐서 그 좀비의 자세를 무너뜨린다(바로 처형할 수 있다),,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(knight_reversal)
+perk.knight_reversal.why,씨름의 되치기처럼 잡아 온 힘을 거꾸로 써서 메친다,,능력 카드 아래 작은 이유 한 줄(knight_reversal)
+perk.knight_gauntlet.name,폭렬 건틀렛,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(knight_gauntlet · knight)
+perk.knight_gauntlet.text,힘을 모은 주먹이나 반격이 맞으면 건틀렛이 번갈아 터진다: 섬광(앞 {Knight.gauntletReach}m 좀비 {Knight.gauntletStun}초 기절)과 산탄(앞쪽 부채꼴 피해 {0}),,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(knight_gauntlet)
+perk.knight_gauntlet.why,손등에 섬광탄 한 알과 산탄 약실을 단 쇠장갑. 세게 칠 때만 공이가 때린다,,능력 카드 아래 작은 이유 한 줄(knight_gauntlet)
+perk.knight_cover.name,원호 숙련,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(knight_cover · knight)
+perk.knight_cover.text,원호 방어를 다시 쓰기까지 -{0}초,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(knight_cover)
+perk.knight_cover.why,지켜 낸 횟수만큼 발이 먼저 나간다,,능력 카드 아래 작은 이유 한 줄(knight_cover)
+perk.knight_shadowstep.name,그림자 걸음,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(knight_shadowstep · knight)
+perk.knight_shadowstep.text,원호 방어를 놓으면 막을 공격이 없어도 그 동료 곁으로 바로 순간이동한다(원호는 그 뒤에도 열려 있다),,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(knight_shadowstep)
+perk.knight_shadowstep.why,그림자를 디딘 기사는 부름을 기다리지 않는다,,능력 카드 아래 작은 이유 한 줄(knight_shadowstep)
+perk.knight_shadow.name,그림자 분신,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(knight_shadow · knight)
+perk.tag.final,궁극,,능력 카드 위 꼬리표: 클래스의 궁극 카드
+perk.knight_shadow.text,퍼펙트 패리나 완벽한 회피를 하면 {0}초 동안 그림자 분신이 주먹과 반격을 한 박자 늦게 한 번 더 때린다,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(knight_shadow)
+perk.knight_shadow.why,베어 넘긴 자리에 그림자가 남아 같은 주먹을 한 번 더 내지른다. 너무 세서 마지막에야 손에 익는다,,능력 카드 아래 작은 이유 한 줄(knight_shadow)
+perk.assault_danger.name,데인저 클로즈,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(assault_danger · assault)
+perk.assault_danger.text,{Assault.dangerReach}m 안의 적에게 총 피해 +{0}%,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(assault_danger)
+perk.assault_danger.why,아군 코앞까지 포격을 부르는 무전 '데인저 클로즈'. 가까울수록 대담하게 쏜다,,능력 카드 아래 작은 이유 한 줄(assault_danger)
+perk.assault_broken.name,브로큰 애로우,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(assault_broken · assault)
+perk.assault_broken.text,체력이 {Assault.brokenHealth}% 아래로 떨어지거나 좀비에게 잡히면 {Assault.brokenDelay}초 뒤 내 둘레의 적에게 포탄 {0}발이 떨어진다(나와 동료는 안 다친다). {Assault.brokenCooldown}초에 한 번,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(assault_broken)
+perk.assault_broken.why,'브로큰 애로우'는 부대가 무너지기 직전 닿는 모든 화력을 부르는 무전 암호,,능력 카드 아래 작은 이유 한 줄(assault_broken)
+perk.assault_adrenaline.name,깊은 숨,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(assault_adrenaline · assault)
+perk.assault_adrenaline.text,아드레날린 최대 +{0}스택,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(assault_adrenaline)
+perk.assault_adrenaline.why,숨이 턱까지 차도 멈추지 않는 법을 익혔다,,능력 카드 아래 작은 이유 한 줄(assault_adrenaline)
+perk.assault_rally.name,질긴 흥분,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(assault_rally · assault)
+perk.assault_rally.text,마지막 처치 뒤 아드레날린이 줄기 시작하기까지 +{0}초,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(assault_rally)
+perk.assault_rally.why,한번 오른 흥분이 쉬이 가라앉지 않는다,,능력 카드 아래 작은 이유 한 줄(assault_rally)
+perk.assault_cavalry.name,유령 기병대,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(assault_cavalry · assault)
+perk.assault_cavalry.text,CHARGE를 쓰면 유령 기병 분대가 앞으로 {Assault.cavalryReach}m를 일직선으로 쓸고 나가며 닿는 적을 내동댕이친다(피해 {0}),,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(assault_cavalry)
+perk.assault_cavalry.why,돌격 나팔에 옛 기병대가 응답한다. 창끝이 지나간 자리엔 아무것도 서 있지 못한다,,능력 카드 아래 작은 이유 한 줄(assault_cavalry)
+perk.ghost_pierce.name,과관통,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(ghost_pierce · ghost)
+perk.ghost_pierce.text,총알 관통력 +{0}%: 몸을 뚫어도 힘이 덜 빠져 줄 선 적을 더 많이 꿰뚫는다,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(ghost_pierce)
+perk.ghost_pierce.why,텅스텐 탄심은 살을 지나도 무뎌지지 않는다,,능력 카드 아래 작은 이유 한 줄(ghost_pierce)
+perk.ghost_weakpoint.name,약점 사냥,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(ghost_weakpoint · ghost)
+perk.ghost_weakpoint.text,헤드샷 피해 +{0}% · 몸 피해 -{1}%,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(ghost_weakpoint)
+perk.ghost_weakpoint.why,급소만 노리도록 탄두를 가볍게 깎았다. 그만큼 몸에는 덜 박힌다,,능력 카드 아래 작은 이유 한 줄(ghost_weakpoint)
+perk.ghost_patience.name,긴 호흡,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(ghost_patience · ghost)
+perk.ghost_patience.text,헤드 헌터 최대 +{0}스택,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(ghost_patience)
+perk.ghost_patience.why,숨을 길게 참을수록 조준이 깊어진다,,능력 카드 아래 작은 이유 한 줄(ghost_patience)
+perk.ghost_whitetiger.name,화이트 타이거,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(ghost_whitetiger · ghost)
+perk.ghost_whitetiger.text,헤드 헌터가 가득 찬 채 헤드샷으로 처치하면 흰 호랑이가 할퀸다: 둘레 {Ghost.tigerReach}m 적이 {Ghost.tigerStagger}초 휘청이고 {0}초 동안 맞아도 헤드 헌터를 잃지 않는다,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(ghost_whitetiger)
+perk.ghost_whitetiger.why,'하얀 죽음' 해위해와 '흰 깃털' 해스콕처럼 전설이 된 저격수는 흰 이름을 얻는다,,능력 카드 아래 작은 이유 한 줄(ghost_whitetiger)
+perk.point_hands.name,빠른 손,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(point_hands · point)
+perk.point_hands.text,넣어 둔 총이 저절로 장전되는 시간 -{0}%,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(point_hands)
+perk.point_hands.why,총을 넣는 손길에 탄창을 갈아 끼우는 버릇이 붙었다,,능력 카드 아래 작은 이유 한 줄(point_hands)
+perk.point_gunslinger.name,건슬링어,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(point_gunslinger · point)
+perk.point_gunslinger.text,총을 바꿔 든 뒤 {Point.gunslingerSeconds}초 동안 그 총 피해 +{0}%,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(point_gunslinger)
+perk.point_gunslinger.why,뽑자마자 쏘는 서부의 총잡이처럼 꺼낸 총의 첫 몇 발이 가장 매섭다,,능력 카드 아래 작은 이유 한 줄(point_gunslinger)
+perk.detente_dose.name,진한 주사액,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(detente_dose · detente)
+perk.detente_dose.text,주사 한 번이 채우는 체력 +{0},,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(detente_dose)
+perk.detente_dose.why,약을 진하게 타서 한 번에 더 많이 낫게 한다,,능력 카드 아래 작은 이유 한 줄(detente_dose)
+perk.detente_golden.name,긴 골든 아워,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(detente_golden · detente)
+perk.detente_golden.text,골든 아워 +{0}초,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(detente_golden)
+perk.detente_golden.why,다친 뒤 첫 한 시간이 생사를 가른다는 응급의학의 말처럼 치료한 뒤가 가장 바쁘다,,능력 카드 아래 작은 이유 한 줄(detente_golden)
+perk.hound_price.name,몸값 인상,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(hound_price · schiesshund)
+perk.hound_price.text,내 표식 대상에게 주는 총 피해 +{0}%,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(hound_price)
+perk.hound_price.why,현상금이 오를수록 사냥개의 이빨이 날카로워진다,,능력 카드 아래 작은 이유 한 줄(hound_price)
+perk.hound_cylinder.name,큰 실린더,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(hound_cylinder · schiesshund)
+perk.hound_cylinder.text,데스페라도 실린더 +{0}발,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(hound_cylinder)
+perk.hound_cylinder.why,실린더를 바꿔 끼워 데스페라도에 두 발을 더 잰다,,능력 카드 아래 작은 이유 한 줄(hound_cylinder)
+perk.hound_ace.name,에이스,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(hound_ace · schiesshund)
+perk.hound_ace.text,결투 중에는 결투 상대 말고는 아무도 나를 다치게 못 하고 동료도 결투 상대를 마무리할 수 있다,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(hound_ace)
+perk.hound_ace.why,결투를 건 사냥개의 살기에 다른 놈들은 감히 끼어들지 못한다. 동료의 총은 사냥개가 허락한 몫이다,,능력 카드 아래 작은 이유 한 줄(hound_ace)
+perk.support_bag.name,큰 보급 가방,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(support_bag · support)
+perk.support_bag.text,보급 가방 용량 +{0},,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(support_bag)
+perk.support_bag.why,가방 끈을 덧대 더 많이 담는다,,능력 카드 아래 작은 이유 한 줄(support_bag)
+perk.support_planks.name,판자 더미,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(support_planks · support)
+perk.support_planks.text,바리케이드를 한 번에 +{0}개 더 세워 둔다,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(support_planks)
+perk.support_planks.why,판자와 못을 한 짐 더 짊어졌다,,능력 카드 아래 작은 이유 한 줄(support_planks)
+perk.support_torch.name,용접 토치,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(support_torch · support)
+perk.support_torch.text,망치 대신 용접 토치로 바리케이드를 초당 {Support.torchRate}씩 고친다. 연료 {Support.torchFuel}은 쉬는 동안 초당 {Support.torchRegen}씩 차고 바닥나면 망치로 돌아간다,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(support_torch)
+perk.support_torch.why,판자 틈을 쇠띠로 녹여 붙이면 못질보다 빠르고 단단하다,,능력 카드 아래 작은 이유 한 줄(support_torch)
+perk.support_wire.name,철조망,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(support_wire · support)
+perk.support_wire.text,휠을 누른 채 F로 철조망을 고를 수 있다: 지나가는 좀비가 {Support.wireSlow}배로 느려지고 초당 {Support.wireDamage}씩 다친다,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(support_wire)
+perk.support_wire.why,가시철사 한 두름이면 떼도 발이 묶인다,,능력 카드 아래 작은 이유 한 줄(support_wire)
+perk.support_crate.name,탄약 상자,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(support_crate · support)
+perk.support_crate.text,휠을 누른 채 F로 탄약 상자를 고를 수 있다: 누구든 F로 {Support.crateStock}번 꺼내 가는 보급,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(support_crate)
+perk.support_crate.why,가방이 따라오지 못하는 동료를 위해 한 짐을 내려놓는다,,능력 카드 아래 작은 이유 한 줄(support_crate)
+perk.support_light.name,탐조등,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(support_light · support)
+perk.support_light.text,휠을 누른 채 F로 탐조등을 고를 수 있다: 둘레 {Support.lightRadius}m 안에는 좀비가 새로 나오지 않는다,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(support_light)
+perk.support_light.why,빛이 닿는 곳에는 놈들이 기어 나오지 못한다,,능력 카드 아래 작은 이유 한 줄(support_light)
+#--- 킬 피드 도장 (KillFlairs.csv) ---,,,
+feed.flair.bounty,계약 완료,,킬 피드 줄의 도장 글자: 시순트가 자기 현상금 표적을 처치 (bounty)
+feed.flair.duel,결투 승리,,킬 피드 줄의 도장 글자: 시순트가 결투 상대를 처치 (duel)
+feed.flair.kata,KATA,,킬 피드 줄의 도장 글자: 포인트 건 카타 중 처치 (kata)
+feed.flair.takedown,암살,,킬 피드 줄의 도장 글자: 들키지 않은 좀비 처형 (takedown)
+feed.flair.pierce,관통,,킬 피드 줄의 도장 글자: 관통 사살 (pierce)
+#--- 필드 아이템 (Pickups.csv) ---,,,
+pickup.ammo.name,탄약 더미,,맵에 놓인 아이템 이름: 줍기 안내 판과 주웠을 때 알림(ammo)
+pickup.medkit.name,구급상자,,맵에 놓인 아이템 이름: 줍기 안내 판과 주웠을 때 알림(medkit)
+pickup.shield.name,실드 셀,,맵에 놓인 아이템 이름: 줍기 안내 판과 주웠을 때 알림(shield)
+pickup.money.name,돈 뭉치,,맵에 놓인 아이템 이름: 줍기 안내 판과 주웠을 때 알림(money)
+#--- 상점 물건 (Shop.csv) ---,,,
+shop.ammo.name,탄약 채우기,,상점 창 물건 이름과 산 뒤 알림(Ammo)
+shop.medkit.name,구급상자,,상점 창 물건 이름과 산 뒤 알림(Medkit)
+shop.shield.name,실드 50,,상점 창 물건 이름과 산 뒤 알림(Shield)
+shop.syringe.name,주사기 보충,,상점 창 물건 이름과 산 뒤 알림(Syringe)
+shop.grenade.name,투척물 보충,,상점 창 물건 이름과 산 뒤 알림(Grenade)
+#--- 옷 이름 (Outfits.csv) ---,,,
+outfit.sm-beret.name,세일러 메이든 베레모,,옷장 > 옷 고르기 칸 이름(sm-beret)
+outfit.sm-jacket.name,세일러 메이든 재킷,,옷장 > 옷 고르기 칸 이름(sm-jacket)
+outfit.sm-skirt.name,세일러 메이든 플리츠 치마,,옷장 > 옷 고르기 칸 이름(sm-skirt)
+outfit.sm-socks.name,세일러 메이든 루즈삭스,,옷장 > 옷 고르기 칸 이름(sm-socks)
+outfit.sm-loafers.name,세일러 메이든 로퍼,,옷장 > 옷 고르기 칸 이름(sm-loafers)
+outfit.banshaku-shirt.name,반샤쿠 셔츠,,옷장 > 옷 고르기 칸 이름(banshaku-shirt)
+outfit.banshaku-bikini-top.name,반샤쿠 비키니 상의,,옷장 > 옷 고르기 칸 이름(banshaku-bikini-top)
+outfit.banshaku-bikini-bottom.name,반샤쿠 비키니 하의,,옷장 > 옷 고르기 칸 이름(banshaku-bikini-bottom)
+outfit.ichigo-shirt.name,이치고 셔츠,,옷장 > 옷 고르기 칸 이름(ichigo-shirt)
+outfit.mayo-side-hair-1.name,거울 옆머리 1,,옷장 > 옷 고르기 칸 이름(mayo-side-hair-1)
+outfit.mayo-side-hair-2.name,거울 옆머리 2,,옷장 > 옷 고르기 칸 이름(mayo-side-hair-2)
+outfit.wb-jacket.name,화이트 보드 재킷,,옷장 > 옷 고르기 칸 이름(wb-jacket)
+outfit.wb-dress.name,화이트 보드 원피스,,옷장 > 옷 고르기 칸 이름(wb-dress)
+outfit.wb-chest.name,화이트 보드 가슴 벨트,,옷장 > 옷 고르기 칸 이름(wb-chest)
+outfit.wb-belt.name,화이트 보드 벨트,,옷장 > 옷 고르기 칸 이름(wb-belt)
+outfit.wb-shorts.name,화이트 보드 반바지,,옷장 > 옷 고르기 칸 이름(wb-shorts)
+outfit.wb-legs.name,화이트 보드 스타킹 세트,,옷장 > 옷 고르기 칸 이름(wb-legs)
+outfit.wb-stockings.name,화이트 보드 스타킹,,옷장 > 옷 고르기 칸 이름(wb-stockings)
+outfit.wb-socks.name,화이트 보드 양말,,옷장 > 옷 고르기 칸 이름(wb-socks)
+outfit.wb-boots.name,화이트 보드 부츠,,옷장 > 옷 고르기 칸 이름(wb-boots)
+outfit.wb-gloves.name,화이트 보드 장갑,,옷장 > 옷 고르기 칸 이름(wb-gloves)
+outfit.wb-glasses.name,화이트 보드 안경,,옷장 > 옷 고르기 칸 이름(wb-glasses)
+outfit.wb-earring.name,화이트 보드 귀걸이,,옷장 > 옷 고르기 칸 이름(wb-earring)
+outfit.sy-shirt.name,세라 유라 셔츠,,옷장 > 옷 고르기 칸 이름(sy-shirt)
+outfit.sy-collar.name,세라 유라 세일러 칼라,,옷장 > 옷 고르기 칸 이름(sy-collar)
+outfit.sy-suit.name,세라 유라 바디슈트,,옷장 > 옷 고르기 칸 이름(sy-suit)
+outfit.sy-suit-top.name,세라 유라 바디슈트 상의,,옷장 > 옷 고르기 칸 이름(sy-suit-top)
+outfit.sy-bikini-top.name,세라 유라 비키니 상의,,옷장 > 옷 고르기 칸 이름(sy-bikini-top)
+outfit.sy-bikini-bottom.name,세라 유라 비키니 하의,,옷장 > 옷 고르기 칸 이름(sy-bikini-bottom)
+outfit.sy-skirt.name,세라 유라 플리츠 치마,,옷장 > 옷 고르기 칸 이름(sy-skirt)
+outfit.sy-choker.name,세라 유라 방울 초커,,옷장 > 옷 고르기 칸 이름(sy-choker)
+outfit.sy-gloves.name,세라 유라 긴 장갑,,옷장 > 옷 고르기 칸 이름(sy-gloves)
+outfit.sy-stockings.name,세라 유라 스타킹,,옷장 > 옷 고르기 칸 이름(sy-stockings)
+outfit.sy-shoes.name,세라 유라 메리제인 구두,,옷장 > 옷 고르기 칸 이름(sy-shoes)
+outfit.sy-toast.name,세라 유라 토스트,,옷장 > 옷 고르기 칸 이름(sy-toast)
+outfit.ene-earring-1.name,에네 귀걸이 · 리본 체인,,옷장 > 옷 고르기 칸 이름(ene-earring-1)
+outfit.ene-earring-2.name,에네 귀걸이 · 링 체인,,옷장 > 옷 고르기 칸 이름(ene-earring-2)
+outfit.ene-earring-3.name,에네 귀걸이 · 십자가 링,,옷장 > 옷 고르기 칸 이름(ene-earring-3)
+outfit.ene-earring-4.name,에네 귀걸이 · 겹 마름모,,옷장 > 옷 고르기 칸 이름(ene-earring-4)
+#--- 캐릭터 제 옷 이름 (CharacterParts.csv) ---,,,
+part.mayo.hair.name,마요 머리,,옷장 > 칸에 캐릭터 제 옷이 있을 때 적히는 이름(mayo.hair)
+part.mayo.hairpin.name,머리핀,,옷장 > 칸에 캐릭터 제 옷이 있을 때 적히는 이름(mayo.hairpin)
+part.mayo.top.name,드레스 · 리본,,옷장 > 칸에 캐릭터 제 옷이 있을 때 적히는 이름(mayo.top)
+part.mayo.bottom.name,드레스 · 리본 · 반바지,,옷장 > 칸에 캐릭터 제 옷이 있을 때 적히는 이름(mayo.bottom)
+part.mayo.legs.name,스타킹 · 다리 리본 · 다리 벨트,,옷장 > 칸에 캐릭터 제 옷이 있을 때 적히는 이름(mayo.legs)
+part.mayo.shoes.name,구두,,옷장 > 칸에 캐릭터 제 옷이 있을 때 적히는 이름(mayo.shoes)
+part.mayo.wrist.name,팔 벨트,,옷장 > 칸에 캐릭터 제 옷이 있을 때 적히는 이름(mayo.wrist)
+part.mayo.tail.name,꼬리,,옷장 > 칸에 캐릭터 제 옷이 있을 때 적히는 이름(mayo.tail)
+part.mayo.undertop.name,브라,,옷장 > 칸에 캐릭터 제 옷이 있을 때 적히는 이름(mayo.undertop)
+part.mayo.underbottom.name,팬티,,옷장 > 칸에 캐릭터 제 옷이 있을 때 적히는 이름(mayo.underbottom)
+part.ichigo.hair.name,이치고 머리,,옷장 > 칸에 캐릭터 제 옷이 있을 때 적히는 이름(ichigo.hair)
+part.ichigo.hairpin.name,리본 머리 장식,,옷장 > 칸에 캐릭터 제 옷이 있을 때 적히는 이름(ichigo.hairpin)
+part.ichigo.helmet.name,모자,,옷장 > 칸에 캐릭터 제 옷이 있을 때 적히는 이름(ichigo.helmet)
+part.ichigo.ears.name,귀걸이,,옷장 > 칸에 캐릭터 제 옷이 있을 때 적히는 이름(ichigo.ears)
+part.ichigo.neck.name,목 장식,,옷장 > 칸에 캐릭터 제 옷이 있을 때 적히는 이름(ichigo.neck)
+part.ichigo.top.name,가슴 덮개 · 하이레그,,옷장 > 칸에 캐릭터 제 옷이 있을 때 적히는 이름(ichigo.top)
+part.ichigo.outer.name,겉옷 깃 · 소매,,옷장 > 칸에 캐릭터 제 옷이 있을 때 적히는 이름(ichigo.outer)
+part.ichigo.vest.name,하네스,,옷장 > 칸에 캐릭터 제 옷이 있을 때 적히는 이름(ichigo.vest)
+part.ichigo.wrist.name,팔 끈,,옷장 > 칸에 캐릭터 제 옷이 있을 때 적히는 이름(ichigo.wrist)
+part.ichigo.bottom.name,치마 · 하이레그,,옷장 > 칸에 캐릭터 제 옷이 있을 때 적히는 이름(ichigo.bottom)
+part.ichigo.legs.name,타이츠,,옷장 > 칸에 캐릭터 제 옷이 있을 때 적히는 이름(ichigo.legs)
+part.ichigo.shoes.name,신발,,옷장 > 칸에 캐릭터 제 옷이 있을 때 적히는 이름(ichigo.shoes)
+part.ichigo.tail.name,꼬리,,옷장 > 칸에 캐릭터 제 옷이 있을 때 적히는 이름(ichigo.tail)
+part.ichigo.undertop.name,브라,,옷장 > 칸에 캐릭터 제 옷이 있을 때 적히는 이름(ichigo.undertop)
+part.ichigo.underbottom.name,팬티,,옷장 > 칸에 캐릭터 제 옷이 있을 때 적히는 이름(ichigo.underbottom)
+#--- 크로스헤어 프리셋 (CrosshairPresets.csv) ---,,,
+crosshair.preset.cross_dot,십자+점,,설정 창 > 크로스헤어 > 프리셋 타일 이름(CrosshairPresets.csv cross_dot)
+crosshair.preset.cross,십자,,설정 창 > 크로스헤어 > 프리셋 타일 이름(CrosshairPresets.csv cross)
+crosshair.preset.cross_small,작은 십자,,설정 창 > 크로스헤어 > 프리셋 타일 이름(CrosshairPresets.csv cross_small)
+crosshair.preset.cross_tight,붙은 십자,,설정 창 > 크로스헤어 > 프리셋 타일 이름(CrosshairPresets.csv cross_tight)
+crosshair.preset.cross_wide,넓은 십자,,설정 창 > 크로스헤어 > 프리셋 타일 이름(CrosshairPresets.csv cross_wide)
+crosshair.preset.cross_thick,굵은 십자,,설정 창 > 크로스헤어 > 프리셋 타일 이름(CrosshairPresets.csv cross_thick)
+crosshair.preset.dot,점,,설정 창 > 크로스헤어 > 프리셋 타일 이름(CrosshairPresets.csv dot)
+crosshair.preset.dot_big,큰 점,,설정 창 > 크로스헤어 > 프리셋 타일 이름(CrosshairPresets.csv dot_big)
+crosshair.preset.x,X자,,설정 창 > 크로스헤어 > 프리셋 타일 이름(CrosshairPresets.csv x)
+crosshair.preset.tri,세 갈래,,설정 창 > 크로스헤어 > 프리셋 타일 이름(CrosshairPresets.csv tri)
+crosshair.preset.ring,고리,,설정 창 > 크로스헤어 > 프리셋 타일 이름(CrosshairPresets.csv ring)
+crosshair.preset.spin,빙글,,설정 창 > 크로스헤어 > 프리셋 타일 이름(CrosshairPresets.csv spin)
+#--- 콜아웃 대사 (Callouts.csv) ---,,,
+callout.line.zombie.ninja,닌자다! 등 뒤 조심해!,Ninja! Watch your back!,콜아웃 대사(머리 위 말풍선·목소리): zombie 칸 · kind:ninja. 보고 있는(없으면 가장 가까운) 좀비가 닌자 (zombie.ninja). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.zombie.candyman,캔디맨이다! 끌려가지 마!,Candyman! Don't get hooked!,콜아웃 대사(머리 위 말풍선·목소리): zombie 칸 · kind:candyman (zombie.candyman). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.zombie.breadbag,전기톱이다! 브레드백!,Chainsaw! Breadbag!,콜아웃 대사(머리 위 말풍선·목소리): zombie 칸 · kind:breadbag (zombie.breadbag). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.zombie.reaper,리퍼다! 품으로 붙어서 앉아!,Reaper! Hug it and get down!,콜아웃 대사(머리 위 말풍선·목소리): zombie 칸 · kind:reaper. 그림 리퍼: 멀어지면 낫에 맞고 붙어 앉으면 피한다 (zombie.reaper). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.zombie.brute,거구다! 다리를 쏴!,Brute! Shoot its legs!,콜아웃 대사(머리 위 말풍선·목소리): zombie 칸 · kind:brute. 거구는 무릎이 약해 다리를 쏘면 쓰러진다. 거구가 오면 가장 가까운 사람이 저절로 외친다 (zombie.brute). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.zombie.brute.down,거구가 쓰러졌다! 머리를 쏴!,The brute is down! Shoot the head!,콜아웃 대사(머리 위 말풍선·목소리): zombie 칸 · crawl:brute. 다리가 부러져 기는 거구(머리가 약점). 다리를 부러뜨린 사람이 저절로 외친다 (zombie.brute.down). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.zombie.charger,차저! 돌진 온다!,Charger! It's coming through!,콜아웃 대사(머리 위 말풍선·목소리): zombie 칸 · kind:charger (zombie.charger). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.zombie.exploder,자폭 좀비! 붙지 마!,Bomber! Keep away!,콜아웃 대사(머리 위 말풍선·목소리): zombie 칸 · kind:exploder (zombie.exploder). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.zombie.runner,러너다!,Runner!,콜아웃 대사(머리 위 말풍선·목소리): zombie 칸 · kind:runner (zombie.runner). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.zombie.horde,떼로 몰려온다!,Here comes the horde!,콜아웃 대사(머리 위 말풍선·목소리): zombie 칸 · horde. 20m 안에 깨어 있는 좀비가 8마리 넘을 때(그 무리에 보고 있는 놈이 셤블러뿐이면) (zombie.horde). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.zombie.shambler,좀비 저기!,Zombie over there!,콜아웃 대사(머리 위 말풍선·목소리): zombie 칸 · kind:shambler (zombie.shambler). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.zombie.none,조심해. 뭔가 있어!,"Careful, something's out there!",콜아웃 대사(머리 위 말풍선·목소리): zombie 칸 · none. 앞에 보이는 좀비가 없을 때 (zombie.none). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.help.pinned,깔렸어! 떼어 줘!,I'm pinned! Get it off me!,콜아웃 대사(머리 위 말풍선·목소리): help 칸 · pinned. 러너에게 깔렸을 때 (help.pinned). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.help.hooked,끌려간다! 갈고리 좀 끊어 줘!,It's dragging me! Cut me loose!,콜아웃 대사(머리 위 말풍선·목소리): help 칸 · hooked. 캔디맨 갈고리에 끌려갈 때 (help.hooked). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.help.eaten,뜯어먹힌다! 살려 줘!,It's eating me! Help!,콜아웃 대사(머리 위 말풍선·목소리): help 칸 · eaten. 쓰러진 채 먹힐 때 (help.eaten). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.help.grabbed,잡혔어! 도와줘!,It's got me! Help!,콜아웃 대사(머리 위 말풍선·목소리): help 칸 · grabbed. 셤블러에게 잡혔을 때 (help.grabbed). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.help.downed,쓰러졌어! 일으켜 줘!,I'm down! Get me up!,콜아웃 대사(머리 위 말풍선·목소리): help 칸 · downed (help.downed). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.help.surrounded,둘러싸였어!,I'm surrounded!,콜아웃 대사(머리 위 말풍선·목소리): help 칸 · surrounded. 4m 안에 좀비가 4마리 넘을 때 (help.surrounded). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.help.hurt,피를 너무 흘렸어!,I'm bleeding out!,콜아웃 대사(머리 위 말풍선·목소리): help 칸 · hurt. 체력 35% 아래 (help.hurt). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.help.plain,도와줘!,Help!,콜아웃 대사(머리 위 말풍선·목소리): help 칸 · always (help.plain). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.request.medic,데탕트! 치료 좀 부탁해!,Détente! Patch me up!,콜아웃 대사(머리 위 말풍선·목소리): request 칸 · heal.detente. 체력 60% 아래이고 팀에 데탕트가 있을 때 (request.medic). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.request.heal,치료가 필요해!,I need healing!,콜아웃 대사(머리 위 말풍선·목소리): request 칸 · heal. 체력 60% 아래 (request.heal). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.request.supply,서포트! 탄약 좀 줘!,Support! I need ammo!,콜아웃 대사(머리 위 말풍선·목소리): request 칸 · ammo.support. 든 총의 예비탄이 탄창 하나 이하이고 팀에 서포트가 있을 때 (request.supply). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.request.ammo,탄약이 떨어져 간다!,I'm running low on ammo!,콜아웃 대사(머리 위 말풍선·목소리): request 칸 · ammo (request.ammo). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.request.reload,장전 중! 엄호해 줘!,Reloading! Cover me!,콜아웃 대사(머리 위 말풍선·목소리): request 칸 · reloading (request.reload). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.request.cover,엄호해 줘!,Cover me!,콜아웃 대사(머리 위 말풍선·목소리): request 칸 · always (request.cover). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.class.knight.taunt,내가 끌어들인다! 다 나한테 와라!,I'll draw them! Come at me!,콜아웃 대사(머리 위 말풍선·목소리): class 칸 · knight.taunt. 나이트이고 도발이 준비됐을 때 (class.knight.taunt). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.class.knight,내 뒤로 붙어!,Get behind me!,콜아웃 대사(머리 위 말풍선·목소리): class 칸 · knight (class.knight). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.class.assault.charge,돌격 준비! 내 옆으로 모여!,Charge is ready! On me!,콜아웃 대사(머리 위 말풍선·목소리): class 칸 · assault.charge. 어썰트이고 CHARGE 게이지가 찼을 때 (class.assault.charge). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.class.assault,앞을 뚫는다!,Breaking through!,콜아웃 대사(머리 위 말풍선·목소리): class 칸 · assault (class.assault). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.class.ghost.elite,저 놈은 내가 맡는다!,That one's mine!,콜아웃 대사(머리 위 말풍선·목소리): class 칸 · ghost.elite. 고스트가 엘리트를 보고 있을 때 (class.ghost.elite). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.class.ghost,여기서 엄호한다!,Covering from here!,콜아웃 대사(머리 위 말풍선·목소리): class 칸 · ghost (class.ghost). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.class.point,앞장선다. 따라와!,"Taking point, follow me!",콜아웃 대사(머리 위 말풍선·목소리): class 칸 · point (class.point). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.class.detente.full,다친 사람 이리 와!,"Wounded, over here!",콜아웃 대사(머리 위 말풍선·목소리): class 칸 · detente.full. 데탕트이고 주사기에 한 번 이상 남았을 때 (class.detente.full). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.class.detente.empty,주사기가 비었어!,My syringe is empty!,콜아웃 대사(머리 위 말풍선·목소리): class 칸 · detente.empty (class.detente.empty). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.class.schiesshund.mark,현상금 붙었다! 내 사냥감이야!,Bounty's on! That one's mine!,콜아웃 대사(머리 위 말풍선·목소리): class 칸 · schiesshund.mark. 시순트의 현상금 표시가 살아 있을 때 (class.schiesshund.mark). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.class.schiesshund,사냥감을 찾는다!,Looking for a bounty!,콜아웃 대사(머리 위 말풍선·목소리): class 칸 · schiesshund (class.schiesshund). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.class.support.full,탄약 받아 가!,Come get your ammo!,콜아웃 대사(머리 위 말풍선·목소리): class 칸 · support.full. 서포트이고 보급 가방이 한 번 줄 만큼 있을 때 (class.support.full). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.class.support.empty,보급품이 바닥났어!,I'm out of supplies!,콜아웃 대사(머리 위 말풍선·목소리): class 칸 · support.empty (class.support.empty). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.class.none,준비됐어!,Ready!,콜아웃 대사(머리 위 말풍선·목소리): class 칸 · always (class.none). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.move.here,이쪽으로!,This way!,콜아웃 대사(머리 위 말풍선·목소리): move 칸 · point. 60m 안의 바닥이나 벽을 보고 있을 때. 그 자리에 핀이 꽂힌다 (move.here). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.move.objective,목표로 가자!,To the objective!,콜아웃 대사(머리 위 말풍선·목소리): move 칸 · objective. 캠페인 목표가 있을 때 (move.objective). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.move.go,가자!,Let's go!,콜아웃 대사(머리 위 말풍선·목소리): move 칸 · always (move.go). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.move.forward,앞으로!,Move up!,콜아웃 대사(머리 위 말풍선·목소리): move 칸 · always (move.forward). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.retreat.scatter,흩어져! 각자 살아남아!,Scatter! Every man for himself!,콜아웃 대사(머리 위 말풍선·목소리): retreat 칸 · horde (retreat.scatter). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.retreat.back,물러서!,Fall back!,콜아웃 대사(머리 위 말풍선·목소리): retreat 칸 · always (retreat.back). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.retreat.away,뒤로 빠져!,Get back!,콜아웃 대사(머리 위 말풍선·목소리): retreat 칸 · always (retreat.away). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.thanks.freed,살았다. 고마워!,"Thanks, you saved me!",콜아웃 대사(머리 위 말풍선·목소리): thanks 칸 · freed. 붙잡혔다 풀린 지 8초 안 (thanks.freed). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.thanks.raised,일으켜 줘서 고마워!,Thanks for the hand!,콜아웃 대사(머리 위 말풍선·목소리): thanks 칸 · revived. 쓰러졌다 일어난 지 8초 안 (thanks.raised). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.thanks.healed,덕분에 살았어!,"Thanks, I needed that!",콜아웃 대사(머리 위 말풍선·목소리): thanks 칸 · healed. 남이 체력을 채워 준 지 8초 안 (thanks.healed). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.thanks.plain,고마워!,Thanks!,콜아웃 대사(머리 위 말풍선·목소리): thanks 칸 · always (thanks.plain). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.yes.ok,좋아!,Okay!,콜아웃 대사(머리 위 말풍선·목소리): yes 칸 · always (yes.ok). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.yes.roger,알았어!,Got it!,콜아웃 대사(머리 위 말풍선·목소리): yes 칸 · always (yes.roger). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.no.no,안 돼!,No!,콜아웃 대사(머리 위 말풍선·목소리): no 칸 · always (no.no). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.no.cant,무리야!,Can't do it!,콜아웃 대사(머리 위 말풍선·목소리): no 칸 · always (no.cant). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.sorry.plain,미안!,Sorry!,콜아웃 대사(머리 위 말풍선·목소리): sorry 칸 · always (sorry.plain). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.sorry.oops,아차. 미안!,"Oops, sorry!",콜아웃 대사(머리 위 말풍선·목소리): sorry 칸 · always (sorry.oops). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.nice.shot,나이스!,Nice!,콜아웃 대사(머리 위 말풍선·목소리): nice 칸 · always (nice.shot). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.nice.good,잘했어!,Well done!,콜아웃 대사(머리 위 말풍선·목소리): nice 칸 · always (nice.good). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.wait.wait,기다려!,Wait!,콜아웃 대사(머리 위 말풍선·목소리): wait 칸 · always (wait.wait). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.hurry.hurry,서둘러!,Hurry up!,콜아웃 대사(머리 위 말풍선·목소리): hurry 칸 · always (hurry.hurry). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.quiet.shh,쉿. 조용히!,"Shh, quiet!",콜아웃 대사(머리 위 말풍선·목소리): quiet 칸 · always (quiet.shh). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.follow.me,날 따라와!,Follow me!,콜아웃 대사(머리 위 말풍선·목소리): follow 칸 · always (follow.me). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.auto.charge.lead,돌격! 나를 따르라!,Charge! Follow me!,콜아웃 대사(머리 위 말풍선·목소리): auto 칸 · charge.lead. 어썰트가 CHARGE를 쓸 때 저절로 (auto.charge.lead). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.auto.charge.join,우와아아! 돌격!,Hurrah! Charge!,콜아웃 대사(머리 위 말풍선·목소리): auto 칸 · charge.join. CHARGE 반경 안의 동료가 0.2~0.6초 뒤 저절로 따라 외친다(G&B의 장교 돌격처럼) (auto.charge.join). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.auto.grenade.frag,수류탄!,Frag out!,콜아웃 대사(머리 위 말풍선·목소리): auto 칸 · grenade.frag. 어썰트가 G로 세열 수류탄을 던질 때 저절로(동료가 엎드리거나 비키게) (auto.grenade.frag). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.auto.grenade.flash,섬광 간다!,Flashbang out!,콜아웃 대사(머리 위 말풍선·목소리): auto 칸 · grenade.flash. 포인트가 G로 섬광탄을 던지거나 손에서 터뜨릴 때 저절로. 눈부심은 없고 좀비만 기절한다 (auto.grenade.flash). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.auto.grenade.smoke,연막 깐다!,Smoke out!,콜아웃 대사(머리 위 말풍선·목소리): auto 칸 · grenade.smoke. 고스트가 G로 연막탄을 던질 때 저절로 (auto.grenade.smoke). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.auto.grenade.mist,소독 안개! 이 안으로!,Mist down! Get in here!,콜아웃 대사(머리 위 말풍선·목소리): auto 칸 · grenade.mist. 데탕트가 G로 소독 안개탄을 던질 때 저절로. 좀비는 안개 안으로 못 들어온다 (auto.grenade.mist). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.auto.grenade.dye,염료 뿌린다! 사냥 시작이다!,Dye out! The hunt is on!,콜아웃 대사(머리 위 말풍선·목소리): auto 칸 · grenade.dye. 시순트가 G로 현상금 염료탄을 던질 때 저절로 (auto.grenade.dye). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.auto.grenade.claymore,지뢰 설치! 앞에 서지 마!,Claymore down! Stay out of its front!,콜아웃 대사(머리 위 말풍선·목소리): auto 칸 · grenade.claymore. 서포트가 G로 급조 지향성 지뢰를 놓을 때 저절로(동료가 그 앞에 서지 않게) (auto.grenade.claymore). 목소리는 이 한국어로 만든 임시 TTS
+#--- 특수 순간 글자 (MomentFx.csv) ---,,,
+moment.ult.knight.title,SHADOW DOUBLE,,궁극기를 쓰면 왼쪽 아래 알림 띠의 큰 영어 이름. 알림 띠의 큰 글자 (MomentFx.csv Ult.knight.title)
+moment.ult.knight.what,그림자 분신,,궁극기 알림 띠의 작은 글자(누가 · 이것). 알림 띠의 작은 글자(누가 · 이것) (MomentFx.csv Ult.knight.what)
+moment.ult.assault.title,CAVALRY CHARGE,,궁극기를 쓰면 왼쪽 아래 알림 띠의 큰 영어 이름 (MomentFx.csv Ult.assault.title)
+moment.ult.assault.what,유령 기병대 · CHARGE,,궁극기 알림 띠의 작은 글자(누가 · 이것) (MomentFx.csv Ult.assault.what)
+moment.ult.ghost.title,WHITE TIGER,,궁극기를 쓰면 왼쪽 아래 알림 띠의 큰 영어 이름 (MomentFx.csv Ult.ghost.title)
+moment.ult.ghost.what,흰 호랑이,,궁극기 알림 띠의 작은 글자(누가 · 이것) (MomentFx.csv Ult.ghost.what)
+moment.ult.point.title,GUNSLINGER,,궁극기를 쓰면 왼쪽 아래 알림 띠의 큰 영어 이름 (MomentFx.csv Ult.point.title)
+moment.ult.point.what,두 총 가득 · 건슬링어,,궁극기 알림 띠의 작은 글자(누가 · 이것) (MomentFx.csv Ult.point.what)
+moment.ult.detente.title,SECOND LIFE,,궁극기를 쓰면 왼쪽 아래 알림 띠의 큰 영어 이름 (MomentFx.csv Ult.detente.title)
+moment.ult.detente.what,주사기 가득 · 부활 +1,,궁극기 알림 띠의 작은 글자(누가 · 이것) (MomentFx.csv Ult.detente.what)
+moment.ult.schiesshund.title,FULL HOUSE,,궁극기를 쓰면 왼쪽 아래 알림 띠의 큰 영어 이름 (MomentFx.csv Ult.schiesshund.title)
+moment.ult.schiesshund.what,데스페라도 실린더 가득,,궁극기 알림 띠의 작은 글자(누가 · 이것) (MomentFx.csv Ult.schiesshund.what)
+moment.ult.support.title,RESTOCK,,궁극기를 쓰면 왼쪽 아래 알림 띠의 큰 영어 이름 (MomentFx.csv Ult.support.title)
+moment.ult.support.what,보급 가방 가득,,궁극기 알림 띠의 작은 글자(누가 · 이것) (MomentFx.csv Ult.support.what)
+moment.tag.charge.word,CHARGE,,내 화면 클래스 칸 위 작은 이름표의 큰 글자 (MomentFx.csv Tag.charge.word)
+moment.tag.charge.under,돌격 · {0:0.0}s · 둘레 {1:0}m,,"내 화면 클래스 칸 위 작은 이름표의 아래 줄. {0} 초, {1} 반지름(ClassAbilities Assault.chargeSeconds·chargeRadius) (MomentFx.csv Tag.charge.under)"
+moment.tag.duel.word,DUEL,,내 화면 클래스 칸 위 작은 이름표의 큰 글자 (MomentFx.csv Tag.duel.word)
+moment.tag.duel.under,결투 · {0:0.0}s · 1 : 1,,내 화면 클래스 칸 위 작은 이름표의 아래 줄. {0} 초(Schiesshund.duelSeconds) (MomentFx.csv Tag.duel.under)
+moment.tag.reversal.word,REVERSAL,,내 화면 클래스 칸 위 작은 이름표의 큰 글자 (MomentFx.csv Tag.reversal.word)
+moment.tag.reversal.under,되치기 · 자세 무너짐,,내 화면 클래스 칸 위 작은 이름표의 아래 줄 (MomentFx.csv Tag.reversal.under)
+moment.tag.kata.word,GUN KATA,,내 화면 클래스 칸 위 작은 이름표의 큰 글자 (MomentFx.csv Tag.kata.word)
+moment.tag.kata.under,건 카타 · {0:0.0}s · 꺼내면 가득,,내 화면 클래스 칸 위 작은 이름표의 아래 줄. {0} 초(Point.kataSeconds). 이름표 옆에 카타 문장(육각 실린더)이 찍힌다 (MomentFx.csv Tag.kata.under)
+moment.bounty.plainword,CLAIMED,,보통 현상금 처치 때 뜨는 작은 판 글자. 보통 현상금의 작은 판 글자 (MomentFx.csv Bounty.plainWord)
+#--- 코드·프리팹에서 옮긴 글자 (2026-11-12) ---,,,
+wave.combat.title,남은 적을 처치하세요,,웨이브 공세 중의 목표 제목(목표 바와 Tab). GameHUD 프리팹 Mission의 WaveMissionSource가 이 id를 담는다
+wave.combat.detail,구역 내의 적을 모두 처치하세요. 추가로 투입되는 적까지 정리하면 현재 공세가 종료됩니다.,,웨이브 공세 중의 목표 설명(Tab 목표 목록)
+objective.alert.new,새로운 목표,,새 목표가 들어올 때 화면 위에 뜨는 알림의 작은 머리글(GameHUD 프리팹 ObjectiveAlert > Label의 TextKey)
+hud.assault.band,습격 중,,캠페인 습격 중 목표 바 아래로 흘러가는 띠의 글자. 사이의 /// 는 코드가 넣는다(AssaultBar)
+hud.ammo.reloading,RELOADING  /  {0:1}s,,"탄약 표시 > 장전 중 상태 줄. {0:1}=남은 초(소수 한 자리, TextMeshPro 형식이라 그대로 둔다)"
+hud.ammo.reserve,RESERVE,,탄약 표시 > 예비 탄약 숫자 위 작은 글자
+moment.ult.any.title,ULTIMATE,,궁극기 알림 띠의 큰 이름: 클래스 줄이 없는 궁극기(MomentLook)
+moment.ult.any.what,궁극기,,궁극기 알림 띠의 작은 글자: 클래스 줄이 없는 궁극기(MomentLook)
+hud.counter.word,COUNTER,,"반격 성공 때 화면을 가르는 COUNTER 띠의 큰 글자(CounterBanner, 다른 글자를 받지 않을 때)"
 #--- 좀비 이름 ---,,,
 zombie.shambler,셤블러,,좀비 이름: 체력 바 위와 처치 목록(킬 피드)
 zombie.runner,러너,,좀비 이름
@@ -424,8 +940,7 @@ class.ghost.ability,헤드 헌터: 헤드샷마다 1스택(최대 {0}) · 스택
 class.point.ability,들고 있지 않은 1·2번 총이 그 총 장전 시간의 {0}배가 지나면 저절로 장전된다. SMG와 샷건을 번갈아 쏘면 화력이 끊기지 않는다.\n[휠] 건 카타: 8초 동안 총 바꾸기가 즉시이고, 바꿔 든 총은 예비탄을 쓰지 않고 꽉 찬 채로 나오며, 달리면서 쏴도 퍼지지 않는다(대기 35초). 혼자서도 위험을 뚫고 다녀올 수 있다.,,클래스 화면 > 포인트 능력 설명. {0}=장전 시간 배수
 class.detente.ability,주사기(용량 {0}): [{3}]로 조준한 동료에게 꽂거나 아무도 없으면 자기에게 놓아 체력 {1}을 바로 채운다(한 번에 {2}). 상점에서 보충하고 서포트가 조금 채워 준다.\n주사기가 비면 자기는 치료할 수 없고, 다친 동료 곁에서 F로 치료를 권한다. 동료가 F로 받으면(치료를 요청한 동료는 바로) {4}초 동안 붕대를 감으며 도중에 체력 {5}을 채우고, 끝나면 나머지 체력이 서서히 찬다. 감는 동안 데탕트는 쏘거나 시선을 돌릴 수 없다.\n골든 아워: 치료하면 {7}초 동안 이동 +{6}%(치료할 때마다 갱신).\n리저렉션: 웨이브마다(캠페인은 쉬는 곳마다) 한 번 죽은 동료 곁에서 F를 {8}초 눌러 체력 {9}%로 되살린다.,,클래스 화면 > 데탕트 능력 설명. {0}=주사기 용량 {1}=주사 치료량 {2}=주사 한 번 양 {3}=클래스 기술 키 {4}=손 치료 초 {5}=손 치료량 {6}=골든 아워 이동 {7}=골든 아워 초 {8}=부활 초 {9}=부활 체력%
 class.schiesshund.ability,[휠] 결투: 조준한 적과 1대1. 그 적은 나만 노리고 다른 사람을 다치게 하지 못하며(하던 공격은 끝까지 하지만 들어가지 않는다), 내 피해가 더 크고 현상금 표식도 붙는다. 동료는 도울 수 있지만 마무리는 못 한다(체력 1에서 멈춤).\n[F] 현상금 표식: 적을 찍으면 청록 테두리가 {0}초 동안 팀 모두에게 보이고 내 총알이 그 적에게 +{1}%. 지금 쫓는 표식보다 급이 낮은 적(엘리트를 쫓는 중의 일반 좀비)을 찍으면 표식은 그대로 두고 일반 핑만 찍힌다.\n표식 대상을 처치하면 현상금 +{2}(엘리트 +{3})과 리턴 백(스택마다 이동·피해 +{4}% {5}초).\n현상금 {6}점(엘리트 {7}점)마다 4번 칸 데스페라도(R08)에 탄 한 발(재장전·탄약 줍기로는 안 찬다). 데스페라도 탄은 피해 +{8}%이고 표식 대상의 머리에 맞으면 엘리트도 한 방.,,클래스 화면 > 시순트 능력 설명. {0}=표식 초 {1}=표식 피해 {2}=현상금 {3}=엘리트 현상금 {4}=리턴 백 스택당 {5}=리턴 백 초 {6}=탄 한 발 점수 {7}=엘리트 점수 {8}=데스페라도 피해
-class.support.ability,보급 가방(용량 {0} · 초당 {1}씩 찬다).\n[F] 보급: 조준한 동료({2}m 안)에게 {3}을 써서 총마다 탄창 {4}개 · 처음 예비탄보다 {5}% 더까지(풀리 로디드) · 데탕트 주사기도 채운다.\n[{6}] 바리케이드: 꾹 누르면 세울 자리에 푸른 바리케이드가 미리 보이고(못 세우는 곳은 빨강) 놓으면 {7}을 써서 그 자리에 허리 높이 판자 벽을 세운다(체력 {8} · 최대 {9}개). 아군은 넘어 쏘고 좀비는 못 지나가며 부수려 든다.\n[F] 꾹: 닳은 바리케이드(누구의 것이든)를 조준하고 누르고 있으면 망치로 고친다(가방은 쓰지 않는다). 판자가 다시 박힌다. 카드 '용접 토치'를 받으면 연료로 더 빨리 고친다.
-카드를 받으면 휠을 누른 채 F로 다른 것도 세운다: 철조망(지나가는 좀비가 느려지고 다친다), 탄약 상자(누구든 F로 꺼내 가는 보급), 탐조등(둘레에 좀비가 새로 나오지 않는 안전 구역).,,클래스 화면 > 서포트 능력 설명. {0}=가방 용량 {1}=초당 충전 {2}=보급 거리 {3}=보급에 드는 양 {4}=탄창 수 {5}=풀리 로디드 % {6}=클래스 기술 키 {7}=바리케이드에 드는 양 {8}=바리케이드 체력 {9}=최대 개수
+class.support.ability,보급 가방(용량 {0} · 초당 {1}씩 찬다).\n[F] 보급: 조준한 동료({2}m 안)에게 {3}을 써서 총마다 탄창 {4}개 · 처음 예비탄보다 {5}% 더까지(풀리 로디드) · 데탕트 주사기도 채운다.\n[{6}] 바리케이드: 꾹 누르면 세울 자리에 푸른 바리케이드가 미리 보이고(못 세우는 곳은 빨강) 놓으면 {7}을 써서 그 자리에 허리 높이 판자 벽을 세운다(체력 {8} · 최대 {9}개). 아군은 넘어 쏘고 좀비는 못 지나가며 부수려 든다.\n[F] 꾹: 닳은 바리케이드(누구의 것이든)를 조준하고 누르고 있으면 망치로 고친다(가방은 쓰지 않는다). 판자가 다시 박힌다. 카드 '용접 토치'를 받으면 연료로 더 빨리 고친다.\n카드를 받으면 휠을 누른 채 F로 다른 것도 세운다: 철조망(지나가는 좀비가 느려지고 다친다), 탄약 상자(누구든 F로 꺼내 가는 보급), 탐조등(둘레에 좀비가 새로 나오지 않는 안전 구역).,,클래스 화면 > 서포트 능력 설명. {0}=가방 용량 {1}=초당 충전 {2}=보급 거리 {3}=보급에 드는 양 {4}=탄창 수 {5}=풀리 로디드 % {6}=클래스 기술 키 {7}=바리케이드에 드는 양 {8}=바리케이드 체력 {9}=최대 개수
 hud.chapter_end.word,탈출,,장 끝 연출: 분홍 띠 위 큰 글자
 hud.alert.brute,거구 — 제 무게에 무릎이 약하다. 다리를 쏴 쓰러뜨리고 머리를 쏴라,Brute: its knees buckle under its own weight. Shoot a leg to drop it and then the head,거구(보스)가 나타날 때 화면 위 경고 띠. 어떻게 이기는지(이유와 함께) 한 줄
 hud.alert.brute.down,거구가 쓰러졌다 — 몸을 끌며 피가 머리로 몰렸다. 머리를 쏴라,The brute is down: dragging itself pumps blood into its head. Shoot the head,거구의 다리가 부러져 쓰러질 때 화면 위 경고 띠(거구에 표시가 남는다). 기는 동안 머리가 약점인 이유

@@ -58,7 +58,12 @@ public static class PlayerClass
     {
         catalog = null;
         Picked = null;
+        // A table saved during play is read again, the class names and roles in Texts.csv included.
+        GameTables.Reloaded -= Forget;
+        GameTables.Reloaded += Forget;
     }
+
+    private static void Forget() => catalog = null;
 
     /// <summary>Every class, in the table's order.</summary>
     public static IReadOnlyList<Info> Catalog
@@ -72,7 +77,8 @@ public static class PlayerClass
                 if (!GameTables.TryGetRow(TableName, id, out var row)) continue;
                 catalog.Add(new Info
                 {
-                    Id = id, Title = Cell(row, "title", id), Role = Cell(row, "role", ""), Primary = Cell(row, "primary", ""),
+                    // The title and role cells name Texts rows (class.<id>.title, .role), or hold plain words.
+                    Id = id, Title = Texts.Cell(Cell(row, "title", id)), Role = Texts.Cell(Cell(row, "role", "")), Primary = Cell(row, "primary", ""),
                     Secondary = Cell(row, "secondary", ""),
                     Weapons = Cell(row, "classWeapons", "").Split(new[] { ';', ' ' }, StringSplitOptions.RemoveEmptyEntries),
                     GunBonus = Number(row, "gunBonus", 0f), Ready = Number(row, "ready", 0f) > .5f

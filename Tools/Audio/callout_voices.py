@@ -1,17 +1,23 @@
-"""Makes the callout voice lines (Tables/Callouts.csv, the ko column) with Windows' own Korean voice.
+"""Makes the callout voice lines (Tables/Callouts.csv) with Windows' own Korean voice.
 
+A line's words are the Korean of the Texts.csv row its ko cell names (callout.line.<id>, since 2026-11-12: every line
+the game shows is written in Texts.csv, Tools → 글자 → 글자 편집기); a cell holding plain words is spoken as written.
 These are stand-ins until real recordings exist: each line's clip goes to
 Assets/_Project/Art/Audio/Voice/Hiro/Callout/<id>/<id>_tts.wav, where the Voice sound bank picks it up as the key
 "Callout/<id>" (SoundBankBuilder; this script also writes the bank's entries itself, so the project is complete
 before Unity has seen the files). A folder that already holds a recording (any clip not ending in _tts.wav) is left
 alone, so recording a line is: put the file in its folder and delete the _tts one.
+What each clip says is kept in Tools/Audio/callout_voices_spoken.csv, so a line rewritten later is known to be stale:
+--changed speaks only those and the lines with no clip yet (the 글자 편집기's '바뀐 콜아웃 목소리 다시 만들기' runs it).
 
 Run from the project root:  python Tools/Audio/callout_voices.py            (every line)
+                            python Tools/Audio/callout_voices.py --changed  (only rewritten or new lines)
                             python Tools/Audio/callout_voices.py move.go    (only these ids)
 Needs Windows with the "Microsoft Heami Desktop" voice (ko-KR), which Windows 10/11 Korean installs have. No
 packages beyond Python itself.
 """
 import csv
+import io
 import json
 import math
 import os
@@ -24,6 +30,8 @@ import wave
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 TABLE = os.path.join(ROOT, 'Assets/_Project/Resources/Tables/Callouts.csv')
+TEXTS = os.path.join(ROOT, 'Assets/_Project/Resources/Tables/Texts.csv')
+SPOKEN = os.path.join(ROOT, 'Tools/Audio/callout_voices_spoken.csv')
 VOICE_ROOT = 'Assets/_Project/Art/Audio/Voice/Hiro'
 CALLOUT = VOICE_ROOT + '/Callout'
 BANK = os.path.join(ROOT, 'Assets/_Project/Resources/Audio/Voice.asset')
@@ -89,8 +97,23 @@ def guid_of(path):
 
 
 def write_text(path, text):
-    with open(path, 'w', encoding='utf-8', newline='\n') as f:
-        f.write(text)
+    """Writes over the file where it is, never cutting it to nothing first: while Unity has a file mapped (Voice.asset,
+    a table), Windows refuses to shrink it, and open(path, 'w') shrinks first (Errno 22 = Win32 1224). A shorter text is
+    padded with blank lines when the cut after it is refused too; every reader skips them."""
+    data = text.encode('utf-8')
+    if not os.path.exists(path):
+        with open(path, 'wb') as f:
+            f.write(data)
+        return
+    with open(path, 'r+b') as f:
+        size = f.seek(0, 2)
+        f.seek(0)
+        f.write(data + b'\n' * max(0, size - len(data)))
+        f.flush()
+        try:
+            f.truncate(len(data))
+        except OSError:
+            pass
 
 
 def ensure_folder(project_path):
@@ -101,18 +124,68 @@ def ensure_folder(project_path):
         write_text(meta, FOLDER_META.format(guid=guid_of(project_path)))
 
 
+def texts_korean():
+    """Texts.csv's Korean words by id (a later row with words wins, as the game reads it)."""
+    words = {}
+    if not os.path.exists(TEXTS):
+        return words
+    with open(TEXTS, encoding='utf-8-sig', newline='') as f:
+        reader = csv.reader(f)
+        header = [h.strip() for h in next(reader, [])]
+        ko = header.index('ko') if 'ko' in header else 1
+        for row in reader:
+            if not row or not row[0].strip() or row[0].strip().startswith('#') or len(row) <= ko:
+                continue
+            if row[ko].strip():
+                words[row[0].strip()] = row[ko].strip()
+    return words
+
+
+def looks_like_id(cell):
+    return ' ' not in cell and '.' in cell and cell.isascii()
+
+
 def read_lines(only):
+    texts = texts_korean()
     lines = []
     with open(TABLE, encoding='utf-8-sig', newline='') as f:
         for row in csv.DictReader(f):
             line_id = (row.get('id') or '').strip()
-            text = (row.get('ko') or '').strip()
-            if not line_id or line_id.startswith('#') or not text:
+            cell = (row.get('ko') or row.get('text') or '').strip()
+            if not line_id or line_id.startswith('#') or not cell:
                 continue
             if only and line_id not in only:
                 continue
-            lines.append((line_id, text))
+            if cell in texts:
+                text = texts[cell]
+            elif looks_like_id(cell):
+                print(f'  {line_id}: Texts.csv has no row {cell}, skipped')
+                continue
+            else:
+                text = cell
+            # \n is a line break on screen; spoken, a pause is enough.
+            lines.append((line_id, text.replace('\\n', ' ').strip()))
     return lines
+
+
+def read_spoken():
+    """What each clip says, by line id, as this script wrote it down."""
+    spoken = {}
+    if os.path.exists(SPOKEN):
+        with open(SPOKEN, encoding='utf-8-sig', newline='') as f:
+            for row in csv.reader(f):
+                if len(row) >= 2 and row[0].strip() and row[0].strip() != 'id':
+                    spoken[row[0].strip()] = row[1]
+    return spoken
+
+
+def write_spoken(spoken):
+    out = io.StringIO()
+    writer = csv.writer(out, lineterminator='\n')
+    writer.writerow(['id', 'words'])
+    for line_id in sorted(spoken):
+        writer.writerow([line_id, spoken[line_id]])
+    write_text(SPOKEN, '﻿' + out.getvalue())
 
 
 def recorded(folder):
@@ -234,8 +307,11 @@ def bank_clips():
 
 
 def main():
-    only = set(sys.argv[1:])
+    args = sys.argv[1:]
+    changed_only = '--changed' in args
+    only = {a for a in args if not a.startswith('--')}
     lines = read_lines(only)
+    spoken = read_spoken()
     ensure_folder(CALLOUT)
     jobs = []
     for line_id, text in lines:
@@ -243,18 +319,25 @@ def main():
         if recorded(folder):
             print(f'  {line_id}: has a recording, left alone')
             continue
+        path = os.path.join(ROOT, folder, f'{line_id}_tts.wav')
+        # --changed: a clip that already says the line as it is now stays.
+        if changed_only and os.path.exists(path) and spoken.get(line_id, '').strip() == text:
+            continue
         ensure_folder(folder)
-        jobs.append((os.path.join(ROOT, folder, f'{line_id}_tts.wav'), text))
+        jobs.append((path, text, line_id))
     if jobs:
-        synthesize(jobs)
-    for path, text in jobs:
+        synthesize([(path, text) for path, text, _ in jobs])
+    for path, text, line_id in jobs:
         samples, rate = read_wav(path)
         write_wav(path, shout(samples, rate), rate)
         project_path = os.path.relpath(path, ROOT).replace('\\', '/')
         meta = path + '.meta'
         if not os.path.exists(meta):
             write_text(meta, AUDIO_META.format(guid=guid_of(project_path)))
+        spoken[line_id] = text
         print(f'  {os.path.basename(path)}: {text} ({len(samples) / rate:.2f}s)')
+    if jobs:
+        write_spoken(spoken)
     update_bank(bank_clips())
     print(f'{len(jobs)} lines spoken; Voice.asset updated.')
 

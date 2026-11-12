@@ -8,9 +8,11 @@ using UnityEngine;
 /// pinned, the class and its state…), which wins when several fit (the highest order; equals take turns at random),
 /// whether it marks something (target pings the zombie, point pins the spot looked at), and the face its speaker makes
 /// saying it (face, a Tables/Faces.csv mood: PlayerFace). Its voice is the Voice
-/// bank's "Callout/&lt;id&gt;" (Art/Audio/Voice/Hiro/Callout/&lt;id&gt;), its words the language's column. Kept in the
-/// table so the lines, their order and their words can change without code; read on first use and again when the
-/// tables reload.
+/// bank's "Callout/&lt;id&gt;" (Art/Audio/Voice/Hiro/Callout/&lt;id&gt;), its words a Texts.csv row the ko cell names
+/// (callout.line.&lt;id&gt;, every language there), so they are rewritten with every other line in the 글자 편집기, which
+/// also marks and remakes a stand-in voice whose line changed. A row with plain words in ko/en (a modder's) still reads
+/// them. Kept in the table so the lines, their order and their words can change without code; read on first use and
+/// again when the tables reload.
 /// </summary>
 public static class CalloutLines
 {
@@ -104,7 +106,7 @@ public static class CalloutLines
             var line = new Line
             {
                 Id = id, Slot = Cell(row, "slot"), When = Cell(row, "when", "always"), Mark = Cell(row, "mark"),
-                Face = Cell(row, "face"), Gesture = Cell(row, "gesture"), Text = Cell(row, Texts.Language, Cell(row, Texts.Korean, id)),
+                Face = Cell(row, "face"), Gesture = Cell(row, "gesture"), Text = Words(row, id),
                 Order = int.TryParse(Cell(row, "order", "0"), out int order) ? order : 0
             };
             lines.Add(line);
@@ -116,4 +118,13 @@ public static class CalloutLines
 
     private static string Cell(IReadOnlyDictionary<string, string> row, string field, string fallback = "")
         => row.TryGetValue(field, out string value) && !string.IsNullOrWhiteSpace(value) ? value.Trim() : fallback;
+
+    // The words said: the Texts row the ko cell names, in the chosen language; else the row's own words, the language's
+    // column first, then ko, then the id.
+    private static string Words(IReadOnlyDictionary<string, string> row, string id)
+    {
+        string korean = Cell(row, Texts.Korean);
+        if (Texts.IsId(korean)) return Texts.Get(korean);
+        return Texts.Cell(Cell(row, Texts.Language, korean.Length > 0 ? korean : id));
+    }
 }

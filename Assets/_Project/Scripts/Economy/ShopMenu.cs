@@ -317,7 +317,8 @@ public sealed class ShopMenu : MonoBehaviour
             if (!GameTables.TryGetRow(TableName, id, out var row) || !Enum.TryParse(Text(row, "kind"), true, out Kind kind)) continue;
             WeaponData weapon = null;
             if (kind == Kind.Gun && !guns.TryGetValue(Text(row, "weapon"), out weapon)) continue;
-            string name = Text(row, "name");
+            // A Texts row the cell names (shop.<id>.name), or plain words; empty takes the gun's name.
+            string name = Texts.Cell(Text(row, "name"));
             float amount = Number(row, "amount", 0f);
             stock.Add(new Item
             {

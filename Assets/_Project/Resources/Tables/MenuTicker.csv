@@ -1,12 +1,12 @@
 ﻿id,label,text
 #설명 (메인 메뉴 맨 위에 흘러가는 줄. 위에서부터 차례로 돌아요),앞에 붙는 꼬리표 (무전 / 팁 / 경보 …),흘러갈 말
-Radio1,무전,"여기는 구조대. 공사 중인 빌딩 옥상, 해 지기 전까지만 기다린다."
-Tip1,팁,"총은 머리를 노리세요. 어떤 총이든 머리 한 방이면 쓰러져요."
-Radio2,무전,"고가도로 톨게이트 검문소, 응답 바란다. 반복한다, 응답 바란다."
-Tip2,팁,"휴게소는 모두 들어와 문을 닫아야 안전해요. 죽은 동료는 거기서 다시 살아나요."
-Alert1,경보,"강 북쪽 전 구역 감염 확산. 민간인은 지하로 대피하지 마십시오."
-Tip3,팁,"계산대에서 [F]를 누르면 상점이 열려요. 적을 쓰러뜨리면 100씩 벌어요."
-Radio3,무전,"정비창 발전기만 돌리면 비상 차량은 움직인다. 연료가 문제다."
-Tip4,팁,"[J]로 동료에게 돈 500을 떨궈 줄 수 있어요. [G]는 클래스마다 다른 수류탄을 바로 던져요."
-Tip5,팁,"죽으면 동료의 눈으로 지켜볼 수 있어요. 좌클릭과 우클릭으로 사람을 바꿔요."
-Radio4,무전,"강 건너편은 아직 우리가 지키고 있다. 보트는 동이 틀 때까지 기다린다."
+Radio1,menu.ticker.label.radio,menu.ticker.radio1.text
+Tip1,menu.ticker.label.tip,menu.ticker.tip1.text
+Radio2,menu.ticker.label.radio,menu.ticker.radio2.text
+Tip2,menu.ticker.label.tip,menu.ticker.tip2.text
+Alert1,menu.ticker.label.alert,menu.ticker.alert1.text
+Tip3,menu.ticker.label.tip,menu.ticker.tip3.text
+Radio3,menu.ticker.label.radio,menu.ticker.radio3.text
+Tip4,menu.ticker.label.tip,menu.ticker.tip4.text
+Tip5,menu.ticker.label.tip,menu.ticker.tip5.text
+Radio4,menu.ticker.label.radio,menu.ticker.radio4.text

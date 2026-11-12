@@ -99,7 +99,8 @@ public sealed class MainMenuTicker : MonoBehaviour
         x = 30f;
     }
 
-    // Every row of the table as "꼬리표  말", one after another, with a faint slash between.
+    // Every row of the table as "꼬리표  말", one after another, with a faint slash between. The cells name Texts rows
+    // (menu.ticker.<id>.text, menu.ticker.label.<kind>), so the words are written in Texts.csv; plain words work too.
     private static string Lines()
     {
         string accent = "#" + ColorUtility.ToHtmlStringRGB(KitStyle.Accent), ice = "#" + ColorUtility.ToHtmlStringRGB(KitStyle.Ice);
@@ -110,8 +111,8 @@ public sealed class MainMenuTicker : MonoBehaviour
                 continue;
             if (text.Length > 0) text.Append("        <color=").Append(ice).Append("55>/</color>        ");
             if (row.TryGetValue("label", out string label) && !string.IsNullOrWhiteSpace(label))
-                text.Append("<b><color=").Append(accent).Append('>').Append(label.Trim()).Append("</color></b>   ");
-            text.Append(line.Trim());
+                text.Append("<b><color=").Append(accent).Append('>').Append(Texts.Cell(label)).Append("</color></b>   ");
+            text.Append(Texts.Cell(line));
         }
         return text.Length > 0 ? text.ToString() : Texts.Format("menu.ticker.empty", accent);
     }

@@ -124,7 +124,8 @@ public sealed class AmmoHUD : MonoBehaviour
             float amount = runtime.ReloadDuration > 0f
                 ? Mathf.Clamp01(1f - runtime.ReloadRemaining / runtime.ReloadDuration) : 1f;
             fill.sizeDelta = new Vector2(260f * amount, 3f);
-            status.SetText("RELOADING  /  {0:1}s", runtime.ReloadRemaining);
+            // TextMeshPro's own format ({0:1} is one decimal), so the template goes to SetText as written in Texts.csv.
+            status.SetText(Texts.Get("hud.ammo.reloading"), runtime.ReloadRemaining);
         }
         else
         {
@@ -186,7 +187,7 @@ public sealed class AmmoHUD : MonoBehaviour
         magazine.enableAutoSizing = true; magazine.fontSizeMin = 32f; magazine.fontSizeMax = 64f;
         capacity = Label("Capacity", 126, 58, 65, 28, 19, Muted);
         Image("Divider", panel, 198, 58, 1, 48, new Color(.65f, .8f, .85f, .22f));
-        Label("Reserve label", 218, 95, 70, 17, 13, Muted).text = "RESERVE";
+        Label("Reserve label", 218, 95, 70, 17, 13, Muted).text = Texts.Get("hud.ammo.reserve");
         reserve = Label("Reserve count", 216, 57, 70, 38, 30, Color.white);
         reserve.enableAutoSizing = true; reserve.fontSizeMin = 10f; reserve.fontSizeMax = 30f;
         Image("Track", panel, 20, 40, 260, 3, new Color(1f, 1f, 1f, .12f));

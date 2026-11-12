@@ -17,8 +17,9 @@ public static class MapTable
     /// <summary>Every map in the table, playable or not (the editor's picture tool goes through these).</summary>
     public static string[] All() => GameTables.RowIds(Table).Where(id => id != HubFlow.SceneName).ToArray();
 
+    /// <summary>The map's name: its displayName cell's words (a Texts id, map.&lt;id&gt;.name, or plain words), else the id.</summary>
     public static string DisplayName(string id) =>
-        GameTables.TryGetRow(Table, id, out var row) && row.TryGetValue("displayName", out string name) ? name : id;
+        GameTables.TryGetRow(Table, id, out var row) && row.TryGetValue("displayName", out string name) ? Texts.Cell(name) : id;
 
     /// <summary>The map's picture, or null when it has none yet.</summary>
     public static Texture2D Picture(string id)

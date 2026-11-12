@@ -63,7 +63,8 @@ public sealed class CounterBanner : MonoBehaviour
     private float age = -1f, length = .85f;
     private int grade;
     // The word and the colour that stands for the pink this time (COUNTER in the HUD's pink unless Play says otherwise).
-    private string word = "COUNTER";
+    // Empty until Play: the words come from Texts.csv (hud.counter.word), which a field initializer can't ask for.
+    private string word = "";
     private Color accent = KitStyle.Accent;
 
     /// <summary>
@@ -74,7 +75,7 @@ public sealed class CounterBanner : MonoBehaviour
     {
         Build();
         this.grade = Mathf.Clamp(grade, 0, Grades - 1);
-        this.word = string.IsNullOrEmpty(word) ? "COUNTER" : word;
+        this.word = string.IsNullOrEmpty(word) ? Texts.Get("hud.counter.word") : word;
         this.accent = accent ?? KitStyle.Accent;
         length = Mathf.Max(.3f, seconds);
         age = 0f;
@@ -339,7 +340,7 @@ public sealed class CounterBanner : MonoBehaviour
         text.transform.SetParent(parent, false);
         text.raycastTarget = false;
         if (font != null) text.font = font;
-        text.text = "COUNTER";
+        text.text = Texts.Get("hud.counter.word");
         text.fontSize = WordSize;
         text.fontStyle = FontStyles.Bold | FontStyles.Italic;
         text.characterSpacing = -4f;

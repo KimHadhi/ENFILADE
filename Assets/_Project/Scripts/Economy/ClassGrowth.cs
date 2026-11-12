@@ -191,9 +191,10 @@ public static class ClassGrowth
         PlayerClass.RaisePicked(before, id);
     }
 
+    /// <summary>The class's name: its title cell's words (a Texts id, class.&lt;id&gt;.title, or plain words), else the id.</summary>
     public static string TitleOf(string id)
         => GameTables.TryGetRow(ClassTable, id, out var row) && row.TryGetValue("title", out string title) && title.Trim().Length > 0
-            ? title.Trim() : id;
+            ? Texts.Cell(title) : id;
 
     /// <summary>This class's rank now (1 is the first) and its prestige.</summary>
     public static int RankNow(string id) => RankOf(EntryOf(id).points);

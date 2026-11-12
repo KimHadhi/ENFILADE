@@ -1,73 +1,73 @@
 ﻿id,slot,when,order,mark,ko,en,face,gesture,#설명
-#설명,휠 칸: zombie 좀비 · help 도와줘 · request 요청 · class 클래스 · move 이동 · retreat 후퇴 · thanks 고마워 · 말 칸 안의 yes·no·sorry·nice·wait·hurry·quiet·follow · auto는 휠에 없고 저절로 나오는 외침,"언제 이 줄을 말하나(코드가 판정). always = 늘. kind:종류 = 그 종류의 좀비 · crawl:종류 = 그 종류가 다리를 잃고 기는 중. 같은 칸에서 맞는 줄 가운데 order가 가장 큰 것, 같으면 그중 아무거나",클수록 먼저,target = 그 좀비에 핑 · point = 바라본 자리에 핀,"화면 말풍선과 목소리 대사. 목소리는 Art/Audio/Voice/Hiro/Callout/<id>/의 소리(지금은 Windows TTS 임시 목소리, Tools/Audio/callout_voices.py가 이 열로 만든다). 녹음을 그 폴더에 넣고 TTS 파일을 지우면 그 목소리가 된다",영어 자리(번역이 생기면),"말할 때 얼굴(Faces.csv 표정 id). 비우면 call.<칸>, 그것도 없으면 call. 입은 목소리에 맞춰 움직인다(PlayerFace)",말할 때 몸짓(CalloutGesture): nod 끄덕 · shake 도리도리 · tilt 갸웃 · jut 턱 들기 · point 가리키기(핑·핀 쪽) · wave 손 흔들기 · raise 손 들기 · beckon 손짓으로 부르기, hush 손을 입에 대고 쉿. 총을 들었거나 사다리·매달림·잡힘·쓰러짐이면 팔은 그대로 두고 머리만. 비우면 nod,
-zombie.ninja,zombie,kind:ninja,30,target,닌자다! 등 뒤 조심해!,Ninja! Watch your back!,call.alarm,point,보고 있는(없으면 가장 가까운) 좀비가 닌자
-zombie.candyman,zombie,kind:candyman,30,target,캔디맨이다! 끌려가지 마!,Candyman! Don't get hooked!,scared,point,
-zombie.breadbag,zombie,kind:breadbag,30,target,전기톱이다! 브레드백!,Chainsaw! Breadbag!,scared,point,
-zombie.reaper,zombie,kind:reaper,30,target,리퍼다! 품으로 붙어서 앉아!,Reaper! Hug it and get down!,scared,point,그림 리퍼: 멀어지면 낫에 맞고 붙어 앉으면 피한다
-zombie.brute,zombie,kind:brute,25,target,거구다! 다리를 쏴!,Brute! Shoot its legs!,scared,point,거구는 무릎이 약해 다리를 쏘면 쓰러진다. 거구가 오면 가장 가까운 사람이 저절로 외친다
-zombie.brute.down,zombie,crawl:brute,26,target,거구가 쓰러졌다! 머리를 쏴!,The brute is down! Shoot the head!,fierce,point,다리가 부러져 기는 거구(머리가 약점). 다리를 부러뜨린 사람이 저절로 외친다
-zombie.charger,zombie,kind:charger,20,target,차저! 돌진 온다!,Charger! It's coming through!,call.alarm,point,
-zombie.exploder,zombie,kind:exploder,15,target,자폭 좀비! 붙지 마!,Bomber! Keep away!,scared,point,
-zombie.runner,zombie,kind:runner,10,target,러너다!,Runner!,call.alarm,point,
-zombie.horde,zombie,horde,5,target,떼로 몰려온다!,Here comes the horde!,scared,point,20m 안에 깨어 있는 좀비가 8마리 넘을 때(그 무리에 보고 있는 놈이 셤블러뿐이면)
-zombie.shambler,zombie,kind:shambler,0,target,좀비 저기!,Zombie over there!,call.alarm,point,
-zombie.none,zombie,none,0,,조심해. 뭔가 있어!,"Careful, something's out there!",worry,jut,앞에 보이는 좀비가 없을 때
-help.pinned,help,pinned,30,,깔렸어! 떼어 줘!,I'm pinned! Get it off me!,held,wave,러너에게 깔렸을 때
-help.hooked,help,hooked,30,,끌려간다! 갈고리 좀 끊어 줘!,It's dragging me! Cut me loose!,held,wave,캔디맨 갈고리에 끌려갈 때
-help.eaten,help,eaten,30,,뜯어먹힌다! 살려 줘!,It's eating me! Help!,held,wave,쓰러진 채 먹힐 때
-help.grabbed,help,grabbed,25,,잡혔어! 도와줘!,It's got me! Help!,held,wave,셤블러에게 잡혔을 때
-help.downed,help,downed,20,,쓰러졌어! 일으켜 줘!,I'm down! Get me up!,downed,wave,
-help.surrounded,help,surrounded,15,,둘러싸였어!,I'm surrounded!,scared,wave,4m 안에 좀비가 4마리 넘을 때
-help.hurt,help,hurt,10,,피를 너무 흘렸어!,I'm bleeding out!,call.help,wave,체력 35% 아래
-help.plain,help,always,0,,도와줘!,Help!,call.help,wave,
-request.medic,request,heal.detente,20,,데탕트! 치료 좀 부탁해!,Détente! Patch me up!,call.ask,raise,체력 60% 아래이고 팀에 데탕트가 있을 때
-request.heal,request,heal,15,,치료가 필요해!,I need healing!,call.ask,raise,체력 60% 아래
-request.supply,request,ammo.support,20,,서포트! 탄약 좀 줘!,Support! I need ammo!,call.ask,raise,든 총의 예비탄이 탄창 하나 이하이고 팀에 서포트가 있을 때
-request.ammo,request,ammo,15,,탄약이 떨어져 간다!,I'm running low on ammo!,call.ask,raise,
-request.reload,request,reloading,10,,장전 중! 엄호해 줘!,Reloading! Cover me!,effort,raise,
-request.cover,request,always,0,,엄호해 줘!,Cover me!,call.ask,raise,
-class.knight.taunt,class,knight.taunt,20,,내가 끌어들인다! 다 나한테 와라!,I'll draw them! Come at me!,fierce,raise,나이트이고 도발이 준비됐을 때
-class.knight,class,knight,10,,내 뒤로 붙어!,Get behind me!,call.proud,jut,
-class.assault.charge,class,assault.charge,20,,돌격 준비! 내 옆으로 모여!,Charge is ready! On me!,call.proud,raise,어썰트이고 CHARGE 게이지가 찼을 때
-class.assault,class,assault,10,,앞을 뚫는다!,Breaking through!,call.charge,jut,
-class.ghost.elite,class,ghost.elite,20,target,저 놈은 내가 맡는다!,That one's mine!,focus,point,고스트가 엘리트를 보고 있을 때
-class.ghost,class,ghost,10,,여기서 엄호한다!,Covering from here!,call.proud,jut,
-class.point,class,point,10,,앞장선다. 따라와!,"Taking point, follow me!",call.lead,beckon,
-class.detente.full,class,detente.full,20,,다친 사람 이리 와!,"Wounded, over here!",call.lead,beckon,데탕트이고 주사기에 한 번 이상 남았을 때
-class.detente.empty,class,detente.empty,20,,주사기가 비었어!,My syringe is empty!,worry,shake,
-class.schiesshund.mark,class,schiesshund.mark,20,,현상금 붙었다! 내 사냥감이야!,Bounty's on! That one's mine!,smug,point,시순트의 현상금 표시가 살아 있을 때
-class.schiesshund,class,schiesshund,10,,사냥감을 찾는다!,Looking for a bounty!,call.proud,jut,
-class.support.full,class,support.full,20,,탄약 받아 가!,Come get your ammo!,call.yes,beckon,서포트이고 보급 가방이 한 번 줄 만큼 있을 때
-class.support.empty,class,support.empty,20,,보급품이 바닥났어!,I'm out of supplies!,worry,shake,
-class.none,class,always,0,,준비됐어!,Ready!,call.yes,nod,
-move.here,move,point,20,point,이쪽으로!,This way!,call.lead,point,60m 안의 바닥이나 벽을 보고 있을 때. 그 자리에 핀이 꽂힌다
-move.objective,move,objective,10,,목표로 가자!,To the objective!,call.lead,point,캠페인 목표가 있을 때
-move.go,move,always,0,,가자!,Let's go!,call.lead,beckon,
-move.forward,move,always,0,,앞으로!,Move up!,call.lead,point,
-retreat.scatter,retreat,horde,10,,흩어져! 각자 살아남아!,Scatter! Every man for himself!,scared,wave,
-retreat.back,retreat,always,0,,물러서!,Fall back!,call.alarm,wave,
-retreat.away,retreat,always,0,,뒤로 빠져!,Get back!,call.alarm,wave,
-thanks.freed,thanks,freed,20,,살았다. 고마워!,"Thanks, you saved me!",relief,nod,붙잡혔다 풀린 지 8초 안
-thanks.raised,thanks,revived,20,,일으켜 줘서 고마워!,Thanks for the hand!,call.thanks,nod,쓰러졌다 일어난 지 8초 안
-thanks.healed,thanks,healed,15,,덕분에 살았어!,"Thanks, I needed that!",call.thanks,nod,남이 체력을 채워 준 지 8초 안
-thanks.plain,thanks,always,0,,고마워!,Thanks!,call.thanks,nod,
-yes.ok,yes,always,0,,좋아!,Okay!,call.yes,nod,
-yes.roger,yes,always,0,,알았어!,Got it!,call.yes,nod,
-no.no,no,always,0,,안 돼!,No!,call.no,shake,
-no.cant,no,always,0,,무리야!,Can't do it!,call.no,shake,
-sorry.plain,sorry,always,0,,미안!,Sorry!,call.sorry,tilt,
-sorry.oops,sorry,always,0,,아차. 미안!,"Oops, sorry!",call.oops,tilt,
-nice.shot,nice,always,0,,나이스!,Nice!,call.nice,raise,
-nice.good,nice,always,0,,잘했어!,Well done!,call.nice,raise,
-wait.wait,wait,always,0,,기다려!,Wait!,call.wait,raise,
-hurry.hurry,hurry,always,0,,서둘러!,Hurry up!,call.hurry,beckon,
-quiet.shh,quiet,always,0,,쉿. 조용히!,"Shh, quiet!",call.quiet,hush,
-follow.me,follow,always,0,,날 따라와!,Follow me!,call.lead,beckon,
-auto.charge.lead,auto,charge.lead,0,,돌격! 나를 따르라!,Charge! Follow me!,call.charge,raise,어썰트가 CHARGE를 쓸 때 저절로
-auto.charge.join,auto,charge.join,0,,우와아아! 돌격!,Hurrah! Charge!,call.charge,raise,CHARGE 반경 안의 동료가 0.2~0.6초 뒤 저절로 따라 외친다(G&B의 장교 돌격처럼)
-auto.grenade.frag,auto,grenade.frag,0,,수류탄!,Frag out!,call.alarm,jut,어썰트가 G로 세열 수류탄을 던질 때 저절로(동료가 엎드리거나 비키게)
-auto.grenade.flash,auto,grenade.flash,0,,섬광 간다!,Flashbang out!,call.alarm,jut,포인트가 G로 섬광탄을 던지거나 손에서 터뜨릴 때 저절로. 눈부심은 없고 좀비만 기절한다
-auto.grenade.smoke,auto,grenade.smoke,0,,연막 깐다!,Smoke out!,call.lead,point,고스트가 G로 연막탄을 던질 때 저절로
-auto.grenade.mist,auto,grenade.mist,0,,소독 안개! 이 안으로!,Mist down! Get in here!,call.lead,beckon,데탕트가 G로 소독 안개탄을 던질 때 저절로. 좀비는 안개 안으로 못 들어온다
-auto.grenade.dye,auto,grenade.dye,0,,염료 뿌린다! 사냥 시작이다!,Dye out! The hunt is on!,call.proud,jut,시순트가 G로 현상금 염료탄을 던질 때 저절로
-auto.grenade.claymore,auto,grenade.claymore,0,,지뢰 설치! 앞에 서지 마!,Claymore down! Stay out of its front!,call.lead,jut,서포트가 G로 급조 지향성 지뢰를 놓을 때 저절로(동료가 그 앞에 서지 않게)
+#설명,휠 칸: zombie 좀비 · help 도와줘 · request 요청 · class 클래스 · move 이동 · retreat 후퇴 · thanks 고마워 · 말 칸 안의 yes·no·sorry·nice·wait·hurry·quiet·follow · auto는 휠에 없고 저절로 나오는 외침,"언제 이 줄을 말하나(코드가 판정). always = 늘. kind:종류 = 그 종류의 좀비 · crawl:종류 = 그 종류가 다리를 잃고 기는 중. 같은 칸에서 맞는 줄 가운데 order가 가장 큰 것, 같으면 그중 아무거나",클수록 먼저,target = 그 좀비에 핑 · point = 바라본 자리에 핀,"Texts.csv id(callout.line.<id>). 대사 글자는 Texts.csv에서 고친다(Tools → 글자 → 글자 편집기). 목소리는 Art/Audio/Voice/Hiro/Callout/<id>/의 소리(지금은 Windows TTS 임시 목소리, Tools/Audio/callout_voices.py가 그 한국어로 만든다. 글자를 고친 줄은 글자 편집기의 '바뀐 콜아웃 목소리 다시 만들기'로 그 줄만 다시 만든다). 녹음을 그 폴더에 넣고 TTS 파일을 지우면 그 목소리가 된다. 이 칸에 id 대신 글자를 쓰면 그 글자가 그대로 나온다",비워 둔다: 영어는 Texts.csv의 en 열. id 대신 글자를 쓴 줄만 이 칸의 영어를 쓴다,"말할 때 얼굴(Faces.csv 표정 id). 비우면 call.<칸>, 그것도 없으면 call. 입은 목소리에 맞춰 움직인다(PlayerFace)",말할 때 몸짓(CalloutGesture): nod 끄덕 · shake 도리도리 · tilt 갸웃 · jut 턱 들기 · point 가리키기(핑·핀 쪽) · wave 손 흔들기 · raise 손 들기 · beckon 손짓으로 부르기, hush 손을 입에 대고 쉿. 총을 들었거나 사다리·매달림·잡힘·쓰러짐이면 팔은 그대로 두고 머리만. 비우면 nod,
+zombie.ninja,zombie,kind:ninja,30,target,callout.line.zombie.ninja,,call.alarm,point,보고 있는(없으면 가장 가까운) 좀비가 닌자
+zombie.candyman,zombie,kind:candyman,30,target,callout.line.zombie.candyman,,scared,point,
+zombie.breadbag,zombie,kind:breadbag,30,target,callout.line.zombie.breadbag,,scared,point,
+zombie.reaper,zombie,kind:reaper,30,target,callout.line.zombie.reaper,,scared,point,그림 리퍼: 멀어지면 낫에 맞고 붙어 앉으면 피한다
+zombie.brute,zombie,kind:brute,25,target,callout.line.zombie.brute,,scared,point,거구는 무릎이 약해 다리를 쏘면 쓰러진다. 거구가 오면 가장 가까운 사람이 저절로 외친다
+zombie.brute.down,zombie,crawl:brute,26,target,callout.line.zombie.brute.down,,fierce,point,다리가 부러져 기는 거구(머리가 약점). 다리를 부러뜨린 사람이 저절로 외친다
+zombie.charger,zombie,kind:charger,20,target,callout.line.zombie.charger,,call.alarm,point,
+zombie.exploder,zombie,kind:exploder,15,target,callout.line.zombie.exploder,,scared,point,
+zombie.runner,zombie,kind:runner,10,target,callout.line.zombie.runner,,call.alarm,point,
+zombie.horde,zombie,horde,5,target,callout.line.zombie.horde,,scared,point,20m 안에 깨어 있는 좀비가 8마리 넘을 때(그 무리에 보고 있는 놈이 셤블러뿐이면)
+zombie.shambler,zombie,kind:shambler,0,target,callout.line.zombie.shambler,,call.alarm,point,
+zombie.none,zombie,none,0,,callout.line.zombie.none,,worry,jut,앞에 보이는 좀비가 없을 때
+help.pinned,help,pinned,30,,callout.line.help.pinned,,held,wave,러너에게 깔렸을 때
+help.hooked,help,hooked,30,,callout.line.help.hooked,,held,wave,캔디맨 갈고리에 끌려갈 때
+help.eaten,help,eaten,30,,callout.line.help.eaten,,held,wave,쓰러진 채 먹힐 때
+help.grabbed,help,grabbed,25,,callout.line.help.grabbed,,held,wave,셤블러에게 잡혔을 때
+help.downed,help,downed,20,,callout.line.help.downed,,downed,wave,
+help.surrounded,help,surrounded,15,,callout.line.help.surrounded,,scared,wave,4m 안에 좀비가 4마리 넘을 때
+help.hurt,help,hurt,10,,callout.line.help.hurt,,call.help,wave,체력 35% 아래
+help.plain,help,always,0,,callout.line.help.plain,,call.help,wave,
+request.medic,request,heal.detente,20,,callout.line.request.medic,,call.ask,raise,체력 60% 아래이고 팀에 데탕트가 있을 때
+request.heal,request,heal,15,,callout.line.request.heal,,call.ask,raise,체력 60% 아래
+request.supply,request,ammo.support,20,,callout.line.request.supply,,call.ask,raise,든 총의 예비탄이 탄창 하나 이하이고 팀에 서포트가 있을 때
+request.ammo,request,ammo,15,,callout.line.request.ammo,,call.ask,raise,
+request.reload,request,reloading,10,,callout.line.request.reload,,effort,raise,
+request.cover,request,always,0,,callout.line.request.cover,,call.ask,raise,
+class.knight.taunt,class,knight.taunt,20,,callout.line.class.knight.taunt,,fierce,raise,나이트이고 도발이 준비됐을 때
+class.knight,class,knight,10,,callout.line.class.knight,,call.proud,jut,
+class.assault.charge,class,assault.charge,20,,callout.line.class.assault.charge,,call.proud,raise,어썰트이고 CHARGE 게이지가 찼을 때
+class.assault,class,assault,10,,callout.line.class.assault,,call.charge,jut,
+class.ghost.elite,class,ghost.elite,20,target,callout.line.class.ghost.elite,,focus,point,고스트가 엘리트를 보고 있을 때
+class.ghost,class,ghost,10,,callout.line.class.ghost,,call.proud,jut,
+class.point,class,point,10,,callout.line.class.point,,call.lead,beckon,
+class.detente.full,class,detente.full,20,,callout.line.class.detente.full,,call.lead,beckon,데탕트이고 주사기에 한 번 이상 남았을 때
+class.detente.empty,class,detente.empty,20,,callout.line.class.detente.empty,,worry,shake,
+class.schiesshund.mark,class,schiesshund.mark,20,,callout.line.class.schiesshund.mark,,smug,point,시순트의 현상금 표시가 살아 있을 때
+class.schiesshund,class,schiesshund,10,,callout.line.class.schiesshund,,call.proud,jut,
+class.support.full,class,support.full,20,,callout.line.class.support.full,,call.yes,beckon,서포트이고 보급 가방이 한 번 줄 만큼 있을 때
+class.support.empty,class,support.empty,20,,callout.line.class.support.empty,,worry,shake,
+class.none,class,always,0,,callout.line.class.none,,call.yes,nod,
+move.here,move,point,20,point,callout.line.move.here,,call.lead,point,60m 안의 바닥이나 벽을 보고 있을 때. 그 자리에 핀이 꽂힌다
+move.objective,move,objective,10,,callout.line.move.objective,,call.lead,point,캠페인 목표가 있을 때
+move.go,move,always,0,,callout.line.move.go,,call.lead,beckon,
+move.forward,move,always,0,,callout.line.move.forward,,call.lead,point,
+retreat.scatter,retreat,horde,10,,callout.line.retreat.scatter,,scared,wave,
+retreat.back,retreat,always,0,,callout.line.retreat.back,,call.alarm,wave,
+retreat.away,retreat,always,0,,callout.line.retreat.away,,call.alarm,wave,
+thanks.freed,thanks,freed,20,,callout.line.thanks.freed,,relief,nod,붙잡혔다 풀린 지 8초 안
+thanks.raised,thanks,revived,20,,callout.line.thanks.raised,,call.thanks,nod,쓰러졌다 일어난 지 8초 안
+thanks.healed,thanks,healed,15,,callout.line.thanks.healed,,call.thanks,nod,남이 체력을 채워 준 지 8초 안
+thanks.plain,thanks,always,0,,callout.line.thanks.plain,,call.thanks,nod,
+yes.ok,yes,always,0,,callout.line.yes.ok,,call.yes,nod,
+yes.roger,yes,always,0,,callout.line.yes.roger,,call.yes,nod,
+no.no,no,always,0,,callout.line.no.no,,call.no,shake,
+no.cant,no,always,0,,callout.line.no.cant,,call.no,shake,
+sorry.plain,sorry,always,0,,callout.line.sorry.plain,,call.sorry,tilt,
+sorry.oops,sorry,always,0,,callout.line.sorry.oops,,call.oops,tilt,
+nice.shot,nice,always,0,,callout.line.nice.shot,,call.nice,raise,
+nice.good,nice,always,0,,callout.line.nice.good,,call.nice,raise,
+wait.wait,wait,always,0,,callout.line.wait.wait,,call.wait,raise,
+hurry.hurry,hurry,always,0,,callout.line.hurry.hurry,,call.hurry,beckon,
+quiet.shh,quiet,always,0,,callout.line.quiet.shh,,call.quiet,hush,
+follow.me,follow,always,0,,callout.line.follow.me,,call.lead,beckon,
+auto.charge.lead,auto,charge.lead,0,,callout.line.auto.charge.lead,,call.charge,raise,어썰트가 CHARGE를 쓸 때 저절로
+auto.charge.join,auto,charge.join,0,,callout.line.auto.charge.join,,call.charge,raise,CHARGE 반경 안의 동료가 0.2~0.6초 뒤 저절로 따라 외친다(G&B의 장교 돌격처럼)
+auto.grenade.frag,auto,grenade.frag,0,,callout.line.auto.grenade.frag,,call.alarm,jut,어썰트가 G로 세열 수류탄을 던질 때 저절로(동료가 엎드리거나 비키게)
+auto.grenade.flash,auto,grenade.flash,0,,callout.line.auto.grenade.flash,,call.alarm,jut,포인트가 G로 섬광탄을 던지거나 손에서 터뜨릴 때 저절로. 눈부심은 없고 좀비만 기절한다
+auto.grenade.smoke,auto,grenade.smoke,0,,callout.line.auto.grenade.smoke,,call.lead,point,고스트가 G로 연막탄을 던질 때 저절로
+auto.grenade.mist,auto,grenade.mist,0,,callout.line.auto.grenade.mist,,call.lead,beckon,데탕트가 G로 소독 안개탄을 던질 때 저절로. 좀비는 안개 안으로 못 들어온다
+auto.grenade.dye,auto,grenade.dye,0,,callout.line.auto.grenade.dye,,call.proud,jut,시순트가 G로 현상금 염료탄을 던질 때 저절로
+auto.grenade.claymore,auto,grenade.claymore,0,,callout.line.auto.grenade.claymore,,call.lead,jut,서포트가 G로 급조 지향성 지뢰를 놓을 때 저절로(동료가 그 앞에 서지 않게)

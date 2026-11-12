@@ -11,7 +11,10 @@ using UnityEngine;
 /// In a cell, \n is a line break, and rich text tags (&lt;color&gt;, &lt;b&gt;) work as in any TextMeshPro label.
 /// An id the table lacks shows as itself in brackets, so a gap is plain to see; a row with no words in the chosen
 /// language falls back to Korean. Editing the table and reloading the tables (GameTables.Reload, the console's table
-/// reload) brings the new words in; a label already on screen takes them the next time it is written.
+/// reload) brings the new words in; a label already on screen takes them the next time it is written (the editor's
+/// Tools → 글자 → 글자 편집기 also swaps the words on labels already up when it saves during Play).
+/// Data tables point here too: their text cells hold an id of this table (<see cref="Cell"/>), so every line the game
+/// shows, a card's text, a mission step or a callout, is in this one file.
 /// </summary>
 public static class Texts
 {
@@ -61,6 +64,36 @@ public static class Texts
 
     /// <summary>Whether the table has this id at all (for words that are optional, such as a zombie look's name).</summary>
     public static bool Has(string id) => !string.IsNullOrEmpty(id) && GameTables.TryGetRow(TableName, id, out _);
+
+    /// <summary>
+    /// The words a data table's text cell stands for. The tables keep their words in this file too: Perks.csv's name
+    /// cell holds perk.gun_head.name, CampaignSteps.csv's title holds mission.ch1.01.title, and so on (the user, 2026-11-12:
+    /// "내가 수정하려고 하는데 어디서 해? 모으면 다 수정할 수 있어?": every line in one place to rewrite). A cell naming a row
+    /// of this table gives that row's words, as Get does. Any other cell is words in itself and shows as written, read
+    /// the way a row here is (\n a line break, a bracketed default key relabelled): a modder's table with plain words in
+    /// it keeps working. Blank gives "".
+    /// </summary>
+    public static string Cell(string cell)
+    {
+        if (string.IsNullOrWhiteSpace(cell)) return string.Empty;
+        cell = cell.Trim();
+        return IsIdCell(cell) ? Get(cell) : KeyBindings.Relabel(Unescape(cell));
+    }
+
+    /// <summary>A text cell's words (<see cref="Cell"/>) with {0}, {1} ... filled in.</summary>
+    public static string FormatCell(string cell, params object[] values)
+    {
+        string template = Cell(cell);
+        if (values == null || values.Length == 0) return template;
+        try { return string.Format(CultureInfo.CurrentCulture, template, values); }
+        catch (FormatException) { return template; }
+    }
+
+    /// <summary>Whether a table cell names a row of this table, rather than holding words itself.</summary>
+    public static bool IsId(string cell) => !string.IsNullOrWhiteSpace(cell) && IsIdCell(cell.Trim());
+
+    // An id never has a space, so a sentence costs no lookup and can't be taken for an id by chance.
+    private static bool IsIdCell(string cell) => cell.IndexOf(' ') < 0 && Has(cell);
 
     // A cell can't hold a line break the spreadsheet keeps tidily, so "\n" stands for one.
     private static string Unescape(string words) => words.IndexOf('\\') < 0 ? words : words.Replace("\\n", "\n");

@@ -162,7 +162,8 @@ public static class KillFlairs
                 if (string.Equals(colour.Trim(), "class", StringComparison.OrdinalIgnoreCase)) flair.ClassColour = true;
                 else if (ColorUtility.TryParseHtmlString(colour.Trim(), out var parsed)) flair.Colour = parsed;
             }
-            if (cells.TryGetValue("text", out string text)) flair.Text = text.Trim();
+            // The stamp's words: a Texts row (feed.flair.<id>) the cell names, or plain words.
+            if (cells.TryGetValue("text", out string text)) flair.Text = Texts.Cell(text);
             flair.Delay = Number(cells, "delay", 0f);
             flair.Seconds = Mathf.Max(.1f, Number(cells, "seconds", 1f));
             flair.Above = Mathf.Max(0f, Number(cells, "above", 0f));

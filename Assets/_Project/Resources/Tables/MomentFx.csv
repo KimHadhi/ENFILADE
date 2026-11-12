@@ -13,20 +13,20 @@ Ult.detenteReach,6,데탕트 궁극기의 흰 십자 문장이 바닥으로 퍼�
 Ult.tigerAhead,2.6,고스트 궁극기의 흰 호랑이 외곽선이 서는 곳: 고스트 앞 거리(m)
 Ult.tigerHigh,2.2,그 높이(m)
 Ult.tigerSize,2.2,그 크기(m)
-Ult.knight.title,SHADOW DOUBLE,알림 띠의 큰 글자
-Ult.knight.what,그림자 분신,알림 띠의 작은 글자(누가 · 이것)
-Ult.assault.title,CAVALRY CHARGE,
-Ult.assault.what,유령 기병대 · CHARGE,
-Ult.ghost.title,WHITE TIGER,
-Ult.ghost.what,흰 호랑이,
-Ult.point.title,GUNSLINGER,
-Ult.point.what,두 총 가득 · 건슬링어,
-Ult.detente.title,SECOND LIFE,
-Ult.detente.what,주사기 가득 · 부활 +1,
-Ult.schiesshund.title,FULL HOUSE,
-Ult.schiesshund.what,데스페라도 실린더 가득,
-Ult.support.title,RESTOCK,
-Ult.support.what,보급 가방 가득,
+Ult.knight.title,moment.ult.knight.title,알림 띠의 큰 글자
+Ult.knight.what,moment.ult.knight.what,알림 띠의 작은 글자(누가 · 이것)
+Ult.assault.title,moment.ult.assault.title,
+Ult.assault.what,moment.ult.assault.what,
+Ult.ghost.title,moment.ult.ghost.title,
+Ult.ghost.what,moment.ult.ghost.what,
+Ult.point.title,moment.ult.point.title,
+Ult.point.what,moment.ult.point.what,
+Ult.detente.title,moment.ult.detente.title,
+Ult.detente.what,moment.ult.detente.what,
+Ult.schiesshund.title,moment.ult.schiesshund.title,
+Ult.schiesshund.what,moment.ult.schiesshund.what,
+Ult.support.title,moment.ult.support.title,
+Ult.support.what,moment.ult.support.what,
 Notice.on,1,"궁극기 알림 띠(모든 PC, 누가 썼는지)를 켤지(1/0)"
 Notice.left,246,"알림 띠 왼쪽 끝(px, 화면 왼쪽부터). 아군 카드 오른쪽 끝 228(Hud.csv Team.left 74 + 카드 폭 154)에서 18 띄움"
 Notice.bottom,292,"알림 띠 아래 끝(px, 화면 아래부터). 아군 카드 맨 아래 줄과 같은 높이, 채팅 입력칸(412~448) 아래"
@@ -53,14 +53,14 @@ Tag.bottom,196,"이름표 아래 끝(px, 화면 아래부터). 클래스 칸(Cla
 Tag.seconds,0.9,이름표가 보이는 시간(초)
 Tag.line,176,이름표 밑줄의 반 길이(px)
 Tag.lean,2,"이름표가 기우는 각도(°, 반시계). HUD 기울기가 곱해진다"
-Tag.charge.word,CHARGE,
-Tag.charge.under,돌격 · {0:0.0}s · 둘레 {1:0}m,"{0} 초, {1} 반지름(ClassAbilities Assault.chargeSeconds·chargeRadius)"
-Tag.duel.word,DUEL,
-Tag.duel.under,결투 · {0:0.0}s · 1 : 1,{0} 초(Schiesshund.duelSeconds)
-Tag.reversal.word,REVERSAL,
-Tag.reversal.under,되치기 · 자세 무너짐,
-Tag.kata.word,GUN KATA,
-Tag.kata.under,건 카타 · {0:0.0}s · 꺼내면 가득,{0} 초(Point.kataSeconds). 이름표 옆에 카타 문장(육각 실린더)이 찍힌다
+Tag.charge.word,moment.tag.charge.word,
+Tag.charge.under,moment.tag.charge.under,"{0} 초, {1} 반지름(ClassAbilities Assault.chargeSeconds·chargeRadius)"
+Tag.duel.word,moment.tag.duel.word,
+Tag.duel.under,moment.tag.duel.under,{0} 초(Schiesshund.duelSeconds)
+Tag.reversal.word,moment.tag.reversal.word,
+Tag.reversal.under,moment.tag.reversal.under,
+Tag.kata.word,moment.tag.kata.word,
+Tag.kata.under,moment.tag.kata.under,{0} 초(Point.kataSeconds). 이름표 옆에 카타 문장(육각 실린더)이 찍힌다
 Double.on,1,"나이트 그림자 분신(내 캐릭터 그대로, 보랏빛 검은색, 투명)을 켤지(1/0)"
 Double.side,-0.95,"분신이 서는 곳: 나이트 오른쪽으로(m, -는 왼쪽). 1인칭에서도 화면 왼쪽 끝에 보이게"
 Double.ahead,1.1,나이트 앞으로(m)
@@ -85,7 +85,7 @@ Sound.far,60,친구 소리가 사라지는 거리(m)
 Bounty.diamond,1.1,데스페라도 현상금: 머리 둘레에 그려지는 겹 마름모 크기(m). 가운데가 비어 머리를 가리지 않는다
 Bounty.seal,3,발밑 눈금 고리가 퍼지는 반지름(m)
 Bounty.sky,22,몸에서 하늘로 솟는 가는 선 높이(m). 멀리서도 보인다
-Bounty.plainWord,CLAIMED,보통 현상금의 작은 판 글자
+Bounty.plainWord,moment.bounty.plainword,보통 현상금의 작은 판 글자
 Flash.star,0.5,폭렬 건틀렛 섬광: 맞은 자리 별 문장 크기(m). 화면은 하얘지지 않는다
 Flash.back,1,별에서 나이트 쪽으로 이만큼(m) 물러난 바닥이 부채꼴(범위)의 시작
 Claws.size,1,흰 호랑이 발톱 상처 세 줄의 길이(m)

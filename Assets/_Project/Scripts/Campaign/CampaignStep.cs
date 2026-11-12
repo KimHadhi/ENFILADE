@@ -51,10 +51,12 @@ public sealed class CampaignStep
             if (!GameTables.TryGetRow(TableName, id, out var row) || !string.Equals(Text(row, "chapter"), chapter, StringComparison.OrdinalIgnoreCase))
                 continue;
             if (!Enum.TryParse(Text(row, "kind"), true, out CampaignStepKind kind)) continue;
+            // The words are Texts rows (mission.<step>.title …) the cells name, or plain words in a modder's table.
             steps.Add(new CampaignStep
             {
-                Id = id, Kind = kind, Spot = Text(row, "spot"), Title = Text(row, "title"), Description = Text(row, "description"),
-                Done = Text(row, "done"), Prompt = Text(row, "prompt"), Order = (int)Number(row, "order", 0f),
+                Id = id, Kind = kind, Spot = Text(row, "spot"), Title = Texts.Cell(Text(row, "title")),
+                Description = Texts.Cell(Text(row, "description")), Done = Texts.Cell(Text(row, "done")),
+                Prompt = Texts.Cell(Text(row, "prompt")), Order = (int)Number(row, "order", 0f),
                 Radius = Number(row, "radius", 4f), Seconds = Number(row, "seconds", 0f),
                 Horde = (int)Number(row, "horde", 0f), Rate = Number(row, "rate", 0f), Count = (int)Number(row, "count", 1f),
                 Music = Text(row, "music"), PeakBosses = (int)Number(row, "peakBoss", 0f), Manned = Number(row, "manned", 0f) > 0f
@@ -74,7 +76,8 @@ public sealed class CampaignStep
 
 /// <summary>
 /// A chapter's story and what comes after it (Tables/CampaignChapters, one row per scene): the card shown when it
-/// begins (intro) and ends (outro), lines split by '|', and the next chapter's scene (empty after the last).
+/// begins (intro) and ends (outro), lines split by '|', and the next chapter's scene (empty after the last). The title,
+/// intro and outro cells name Texts rows (chapter.&lt;scene&gt;.title …), where the words are written.
 /// </summary>
 public sealed class CampaignChapter
 {
@@ -89,8 +92,8 @@ public sealed class CampaignChapter
         if (!GameTables.TryGetRow(TableName, scene, out var row)) return null;
         return new CampaignChapter
         {
-            Title = CampaignStep.Text(row, "title"), Next = CampaignStep.Text(row, "next"),
-            Intro = Lines(CampaignStep.Text(row, "intro")), Outro = Lines(CampaignStep.Text(row, "outro"))
+            Title = Texts.Cell(CampaignStep.Text(row, "title")), Next = CampaignStep.Text(row, "next"),
+            Intro = Lines(Texts.Cell(CampaignStep.Text(row, "intro"))), Outro = Lines(Texts.Cell(CampaignStep.Text(row, "outro")))
         };
     }
 

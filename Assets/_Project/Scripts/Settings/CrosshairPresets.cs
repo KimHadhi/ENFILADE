@@ -3,13 +3,15 @@ using UnityEngine;
 
 /// <summary>
 /// Ready shapes to start drawing from, like CS2's styles or Overwatch's reticle types, read from
-/// Resources/Tables/CrosshairPresets.csv: one row per tile in file order, the id is the tile's name and each column names a
-/// <see cref="CrosshairSettings"/> field. A preset sets only the shape and its spin; colour, opacity and outline stay the
-/// player's.
+/// Resources/Tables/CrosshairPresets.csv: one row per tile in file order, the name column is the tile's name (a Texts id,
+/// crosshair.preset.&lt;id&gt;, or plain words; without it the id is the name, as in older tables) and each other column
+/// names a <see cref="CrosshairSettings"/> field. A preset sets only the shape and its spin; colour, opacity and outline
+/// stay the player's. Nothing keeps a preset's id (the gallery finds the tile by its shape), so ids are free to change.
 /// </summary>
 public static class CrosshairPresets
 {
     public const string TableName = "CrosshairPresets";
+    private const string NameColumn = "name";
 
     public sealed class Preset
     {
@@ -70,11 +72,14 @@ public static class CrosshairPresets
             if (!GameTables.TryGetRow(TableName, id, out var cells)) continue;
             var shape = new CrosshairSettings();
             foreach (var cell in cells)
+            {
+                if (cell.Key == NameColumn) continue;
                 if (TableFieldWriter.TryWrite(shape, cell.Key, cell.Value, out string error) != TableWrite.Written)
                     Debug.LogWarning($"[Tables] {TableName}.csv [{id}] '{cell.Key}' = '{cell.Value}': " +
                         (error ?? "CrosshairSettings에 이 이름의 필드가 없습니다") + ".");
+            }
             shape.Clamp();
-            list.Add(new Preset(id, shape));
+            list.Add(new Preset(cells.TryGetValue(NameColumn, out string name) ? Texts.Cell(name) : id, shape));
         }
         return list;
     }

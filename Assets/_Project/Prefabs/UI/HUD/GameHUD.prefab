@@ -3014,6 +3014,7 @@ GameObject:
   - component: {fileID: 2245054963098981730}
   - component: {fileID: 810712565085570831}
   - component: {fileID: 2166900150465193588}
+  - component: {fileID: 7361925804417256113}
   m_Layer: 5
   m_Name: Label
   m_TagString: Untagged
@@ -9037,10 +9038,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::WaveMissionSource
   waves: {fileID: 0}
   tracker: {fileID: 5731131134664179417}
-  combatTitle: "\uB0A8\uC740 \uC801\uC744 \uCC98\uCE58\uD558\uC138\uC694"
-  combatDescription: "\uAD6C\uC5ED \uB0B4\uC758 \uC801\uC744 \uBAA8\uB450 \uCC98\uCE58\uD558\uC138\uC694.
-    \uCD94\uAC00\uB85C \uD22C\uC785\uB418\uB294 \uC801\uAE4C\uC9C0 \uC815\uB9AC\uD558\uBA74
-    \uD604\uC7AC \uACF5\uC138\uAC00 \uC885\uB8CC\uB429\uB2C8\uB2E4."
+  combatTitle: wave.combat.title
+  combatDescription: wave.combat.detail
 --- !u!114 &4531795192092637828
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12129,3 +12128,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TextRole
   role: HudBold
+--- !u!114 &7361925804417256113
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2460046393367398033}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f2887f38450a41cf85ba9b7563cdfa65, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TextKey
+  id: objective.alert.new

@@ -24,7 +24,9 @@ public sealed class AssaultBar : MonoBehaviour, IHudPreview
     // The time row: its middle this far under the bar's foot, its time labels this tall and wide, where the line starts
     // and the room before the whole length (px).
     private const float RowDrop = 22f, RowHeight = 18f, StampWidth = 48f, LineLeft = 54f, WholeGap = 8f;
-    private const string Words = "습격 중   ///   ";
+    // The band's words (Texts.csv hud.assault.band) and the slashes between repeats: a cell's spaces at its ends are
+    // trimmed on reading, so the gap stays here.
+    private static string Words => Texts.Get("hud.assault.band") + "   ///   ";
     // What Tools → HUD → 겹침 검사 shows while it holds the bar in its assault (s).
     private const float PreviewElapsed = 37f, PreviewLength = 90f;
 
