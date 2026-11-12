@@ -1,0 +1,19 @@
+{
+ "workshop": "L4D2 2560050233 RE8 Village Karambit (CS:S knife slot)",
+ "name": "Karambit",
+ "mdl": "models/w_models/weapons/w_knife_t.mdl",
+ "out": "Assets/_Project/Art/Models/Addons/Knives/Karambit",
+ "note": "The Ghost's execution knife (ClassKnives.csv). 17.4 cm: the finger ring at -Y, the handle along +Y, the claw curving toward +Z with its edge on the inside of the curve (+Z), so tip [0,1,0] (the handle's way to the blade) and up (the spine, the outside of the curve) [0,0,-1]. The origin is the middle of the handle. Markers: Tip (the claw's point), Edge (on the inner curve), Pommel (the ring).",
+ "meshes": {
+  "w_karambit": "Karambit"
+ },
+ "origin": {"point": [0.0, 0.018, -0.003]},
+ "tip": [0, 1, 0],
+ "up": [0, 0, -1],
+ "markers": {
+  "Tip": {"point": [0.0229, 0.1422, 0.0518]},
+  "Edge": {"point": [0.007, 0.111, 0.024]},
+  "Pommel": {"point": [0.008, -0.0316, 0.0226]}
+ },
+ "max_texture": 1024
+}

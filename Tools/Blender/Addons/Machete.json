@@ -1,0 +1,20 @@
+{
+ "workshop": "Battlefield 4 knives (GMod 864512618, models/auditor/bf4)",
+ "name": "Machete",
+ "mdl": "models/auditor/bf4/knife_machete.mdl",
+ "out": "Assets/_Project/Art/Models/Addons/Knives/Machete",
+ "note": "The Support's execution blade (ClassKnives.csv). Scaled 4/3 like the pack's bayonet (to the real M9's size): 38 cm. The blade runs to -Z; its straight sawback spine is +X and its curved belly (edge, 6.4 cm deep at the tip) -X, so tip [0,0,-1] and up [1,0,0]. The origin is the middle of the handle. Markers: Tip, Edge (mid-blade), Pommel.",
+ "meshes": {
+  "knife_machete_ref": "Machete"
+ },
+ "origin": {"point": [0.0, -0.0035, 0.08]},
+ "tip": [0, 0, -1],
+ "up": [1, 0, 0],
+ "scale": 1.3333,
+ "markers": {
+  "Tip": {"point": [-0.0088, -0.0035, -0.1571]},
+  "Edge": {"point": [-0.030, -0.0035, -0.085]},
+  "Pommel": {"point": [0.0, -0.0035, 0.1288]}
+ },
+ "max_texture": 1024
+}

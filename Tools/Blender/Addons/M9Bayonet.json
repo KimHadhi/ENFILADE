@@ -1,0 +1,20 @@
+{
+ "workshop": "Battlefield 4 knives (GMod 864512618, models/auditor/bf4)",
+ "name": "M9Bayonet",
+ "mdl": "models/auditor/bf4/knife_bayonet.mdl",
+ "out": "Assets/_Project/Art/Models/Addons/Knives/M9Bayonet",
+ "note": "The Assault's execution knife (ClassKnives.csv). The pack's models come in at three quarters of their size at the project's 0.01905 m a unit (this one 22.8 cm), so scale 4/3 makes it the real M9's 30.4 cm. The blade runs to -Z with its sawback (spine) on +X and its edge on -X, so tip [0,0,-1] and up [1,0,0]; the origin is the middle of the handle, behind the 6 cm crossguard. Markers: Tip, Edge (mid-blade), Pommel.",
+ "meshes": {
+  "knife_bayonet_ref": "M9Bayonet"
+ },
+ "origin": {"point": [0.0005, -0.0016, 0.062]},
+ "tip": [0, 0, -1],
+ "up": [1, 0, 0],
+ "scale": 1.3333,
+ "markers": {
+  "Tip": {"point": [0.0022, -0.0014, -0.1231]},
+  "Edge": {"point": [-0.0135, -0.0014, -0.066]},
+  "Pommel": {"point": [0.0, -0.0015, 0.1045]}
+ },
+ "max_texture": 1024
+}

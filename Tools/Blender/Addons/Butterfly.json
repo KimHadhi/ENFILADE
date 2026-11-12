@@ -1,0 +1,20 @@
+{
+ "workshop": "L4D2 3621862806 Corvus Butterfly Knife (Call of Duty: Modern Warfare's, CS:S knife slot)",
+ "name": "Butterfly",
+ "mdl": "models/w_models/weapons/w_knife_t.mdl",
+ "out": "Assets/_Project/Art/Models/Addons/Knives/Butterfly",
+ "note": "The Point's execution knife (ClassKnives.csv). Open, 25 cm: the two handles closed together along +Y, the blade to -Y with its edge (the bevel and belly) on +Z and its straight spine on -Z, so tip [0,-1,0] and up [0,0,-1]. A stray quad sits 1.6 m off along the blade; keep_box drops it. The origin is the middle of the handles. Markers: Tip, Edge (mid-blade), Pommel (the handles' end).",
+ "meshes": {
+  "w": "Butterfly"
+ },
+ "keep_box": [[-0.05, -0.16, -0.05], [0.05, 0.12, 0.05]],
+ "origin": {"point": [0.0034, 0.036, -0.003]},
+ "tip": [0, -1, 0],
+ "up": [0, 0, -1],
+ "markers": {
+  "Tip": {"point": [0.0034, -0.1441, 0.0075]},
+  "Edge": {"point": [0.0034, -0.09, 0.010]},
+  "Pommel": {"point": [0.0034, 0.1082, -0.0073]}
+ },
+ "max_texture": 1024
+}

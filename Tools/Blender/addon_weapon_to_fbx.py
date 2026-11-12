@@ -77,6 +77,31 @@ marker_points = {marker: point(spec) for marker, spec in recipe.get("markers", {
 
 layer = bpy.context.view_layer
 meshes = [o for o in bpy.data.objects if o.type == "MESH"]
+# keep_box [[min x, y, z], [max x, y, z]] in the model's own frame (as imported, before any of this): vertices outside go.
+# A world model may carry a stray piece far from the weapon (the butterfly knife has a quad 1.6 m off along its blade),
+# which would make the weapon's bounds, and so its culling and its icon framing, far too big.
+if "keep_box" in recipe:
+    box_lo, box_hi = (mathutils.Vector(c) for c in recipe["keep_box"])
+    for ob in meshes:
+        data = ob.data
+        out = [not all(box_lo[i] <= (ob.matrix_world @ v.co)[i] <= box_hi[i] for i in range(3)) for v in data.vertices]
+        if not any(out):
+            continue
+        for v in data.vertices:
+            v.select = out[v.index]
+        for e in data.edges:
+            e.select = out[e.vertices[0]] or out[e.vertices[1]]
+        for p in data.polygons:
+            p.select = any(out[i] for i in p.vertices)
+        for o2 in bpy.context.selected_objects:
+            o2.select_set(False)
+        layer.objects.active = ob
+        ob.select_set(True)
+        bpy.ops.object.mode_set(mode="EDIT")
+        bpy.ops.mesh.select_mode(use_extend=False, use_expand=False, type="VERT")
+        bpy.ops.mesh.delete(type="VERT")
+        bpy.ops.object.mode_set(mode="OBJECT")
+        print(f"TRIM {ob.name}: {sum(out)} vertices outside the keep box")
 renames = recipe.get("meshes", {})
 for ob in meshes:
     for mod in list(ob.modifiers):

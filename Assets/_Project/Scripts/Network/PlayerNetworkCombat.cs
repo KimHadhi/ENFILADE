@@ -76,6 +76,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
     private DodgeDash dodgeLook;
     private GuardPose guardPose;
     private PlayerExecution execution;
+    private ExecutionKnife executionKnife;
     private PlayerThrow throws;
     private PlayerGrenades grenades;
     private PlayerKnock knocks;
@@ -194,6 +195,8 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
         melee = GetComponent<PlayerMeleeCombat>();
         fists = GetComponent<PlayerFistAudio>();
         execution = GetComponent<PlayerExecution>();
+        // The class knife of an execution (ExecutionKnife): the owner's stroke, copied on every other PC by ExecutionKnifeRpc.
+        executionKnife = ExecutionKnife.On(gameObject);
         if (!TryGetComponent(out shoves)) shoves = gameObject.AddComponent<PlayerShoveAudio>();
         kicks = ShoveMoves.For(GetComponent<PlayerMovement>());
         // The dodge's look (DodgeDash, added by PlayerMovement): every PC draws a dodge from its state; an evade's red comes by EvadedRpc.
@@ -259,6 +262,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
             if (dodgeLook != null) dodgeLook.Evaded += OnEvaded;
             if (guardPose != null) guardPose.Posed += OnGuardPosed;
             execution.Started += OnExecutionStarted;
+            if (executionKnife != null) executionKnife.Phased += OnExecutionKnife;
             receiver.HitResolved += OnHit;
             gunSkins.Value = GunSkins.LookText();
             return;
@@ -289,6 +293,7 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
         if (dodgeLook != null) dodgeLook.Evaded -= OnEvaded;
         if (guardPose != null) guardPose.Posed -= OnGuardPosed;
         if (execution != null) execution.Started -= OnExecutionStarted;
+        if (executionKnife != null) executionKnife.Phased -= OnExecutionKnife;
         if (throws != null) throws.Thrown -= OnThrown;
         if (grenades != null)
         {
@@ -681,6 +686,17 @@ public sealed class PlayerNetworkCombat : NetworkBehaviour
 
     [Rpc(SendTo.NotMe)]
     private void ExecutionStartedRpc() => CombatCueAudio.Play(gameObject, CombatCue.Grab, 1f, true);
+
+    private void OnExecutionKnife(ExecutionKnife.Phase phase, Vector3 neck, Vector3 head) => ExecutionKnifeRpc((byte)phase, neck, head);
+
+    // The executing player's knife stroke went on a step (drawn, stabbing, put away), aimed at the victim's neck and head
+    // as their PC measured them: every other PC's copy of them plays the same stroke there (the user's rule: what one sees
+    // is what the others see).
+    [Rpc(SendTo.NotMe)]
+    private void ExecutionKnifeRpc(byte phase, Vector3 neck, Vector3 head)
+    {
+        if (executionKnife != null) executionKnife.Show((ExecutionKnife.Phase)phase, neck, head);
+    }
 
     // shielded: their shield took all of it, so others see its sparks and hear its crack, not blood (Apex Legends' shields).
     [Rpc(SendTo.NotMe)]

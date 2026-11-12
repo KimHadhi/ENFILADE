@@ -60,6 +60,9 @@ GunLowAmmoClick/Heavy,Guns/LowAmmoClick *5.56 +0.05,0,잔탄 경고 딸깍(샷�
 ShoveSwing,Movement/Shove/Swing,0,V 밀치기 헛스윙: 밀치기가 시작될 때 PlayerShoveAudio가 몸에서 낸다(맨손 V·총 V 모두). 무엇에 닿으면 BOOM 접촉음이 따로 겹친다. 헛스윙은 적이 듣지 않는다(noise 0: 틀려도 손해가 없게)
 Execution/Behind,Zombie/Bone/NeckSnap,0,처형의 마지막 일격을 등 뒤에서 했을 때(암살 포함): 목을 꺾는다(BodyBreakSounds). noise는 쓰지 않는다: 처형은 조용히 끝나야 해서 옆의 좀비를 깨우지 않는다
 Execution/Front,Zombie/Bone/SkullBreak,0,앞에서 한 처형의 마지막 일격: 두개골이 깨진다
+Knife/Draw,Grenades/KnifeDraw; Grenades/KnifeDrawCloth *0.8,0,처형·암살에서 클래스 칼을 허리에서 뽑을 때(ExecutionKnife · ClassKnives.csv drawSound): 나이트 투척 나이프와 같은 MW 꺼내기 소리와 소매 소리. 칼마다 다른 소리를 쓰려면 새 줄을 만들어 ClassKnives.csv에서 가리킨다
+Knife/Stab,Grenades/KnifeFlesh,0,처형 칼이 목에 박힐 때(찌르기 표의 strike = 처형 타격): 투척 나이프가 꽂힐 때와 같은 Far Cry 4 knife_stab. 뼈 소리(Execution/Behind·Front)는 BodyBreakSounds가 따로 낸다
+Knife/Sheath,Grenades/KnifeDrawCloth *0.7,0,처형이 끝나고 칼을 칼집에 넣을 때(찌르기 표의 sheath): 소매·칼집 스치는 소리
 Execution/Survived,Zombie/Bone/ArmBreak; Zombie/Hit/Fist *0.7,0,처형을 버틴 적(거구는 최대 체력의 35%만 깎인다): 죽이지 못한 대신 팔을 부러뜨린다
 Gore/HeadBurst,Zombie/Gore/HeadBurst,0,머리가 터질 때(머리를 맞힌 처치나 총알 헤드샷 처치. ZombieGore와 같은 규칙): 목에서 피가 뿜는다. 헤드샷 처치음(CombatHitAudio)은 따로 난다
 Gore/LimbOff,Zombie/Gore/BloodSpray; Zombie/Bone/ArmBreak *0.6,0,살아 있는 좀비의 팔다리가 떨어질 때(ZombieGore.Crippled): 피가 뿜고 뼈가 꺾인다

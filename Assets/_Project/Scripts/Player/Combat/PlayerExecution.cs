@@ -7,7 +7,8 @@ using UnityEngine.InputSystem;
 /// <summary>
 /// One player's deathblow transaction. F executes a broken enemy within reach; with the fists out the attack button
 /// does too, from further off, dashing in first, as Sekiro's deathblow sits on the attack button. A zombie that hasn't
-/// noticed anyone can be executed the same way from behind, unbroken: a stealth kill (ZombieMind, stage 4C-2).
+/// noticed anyone can be executed the same way from behind, unbroken: a stealth kill (ZombieMind, stage 4C-2). Either way
+/// the player closes in to dashStopDistance first, and their class's knife does the deed (ExecutionKnife).
 /// Animation can subscribe to Started/Impact/Ended.
 /// </summary>
 [DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.Execution)]
@@ -50,6 +51,8 @@ public sealed class PlayerExecution : MonoBehaviour
     /// <summary>Dashing in to the enemy before the execution proper starts.</summary>
     public bool IsDashing => IsExecuting && approaching;
     public MeleeCombatTarget Victim => victim;
+    /// <summary>How long after the execution proper begins (any dash in over) its blow lands (s): the knife's strike meets it (ExecutionKnife).</summary>
+    public float ImpactTime => Mathf.Min(impactTime, duration);
     private static readonly List<PlayerExecution> executing = new List<PlayerExecution>();
     public event Action<MeleeCombatTarget> Started;
     public event Action<MeleeCombatTarget> Impact;
@@ -75,6 +78,8 @@ public sealed class PlayerExecution : MonoBehaviour
         player = GetComponent<PlayerMovement>();
         var camera = GetComponentInChildren<Camera>(); aim = camera != null ? PlayerView.EyesOf(this) : transform;
         if (Application.isPlaying && player?.IsLocal != false && GetComponent<ExecutionHUD>() == null) gameObject.AddComponent<ExecutionHUD>();
+        // The class's knife through every execution, on every PC's copy of the player too (ExecutionKnife).
+        if (Application.isPlaying) ExecutionKnife.On(gameObject);
     }
     private void Start()
     {
@@ -165,7 +170,9 @@ public sealed class PlayerExecution : MonoBehaviour
     {
         if (!CanOffer || !Eligible(target, within, out _) || !target.TryReserveExecution(this)) return false;
         victim = target; elapsed = approachTime = 0f; impacted = false; IsExecuting = true; Candidate = DeathblowCandidate = null;
-        approaching = Gap(target, out _) > dashStopDistance && within > reach;
+        // F closes in too (2026-11-13): the class knife is stabbed in by hand (ExecutionKnife), and from F's 2.1 m reach the
+        // arm met nothing. The dash stops at dashStopDistance either way.
+        approaching = Gap(target, out _) > dashStopDistance;
         executing.Remove(this); executing.Add(this);
         player.PerfectDefense?.Cancel();
         // Pressed during the parry's hit stop: the deathblow goes now, not once time lets go.

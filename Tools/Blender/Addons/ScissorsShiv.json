@@ -1,0 +1,19 @@
+{
+ "workshop": "L4D2 3555641124 SCISSORS shiv (CS:S knife slot)",
+ "name": "ScissorsShiv",
+ "mdl": "models/w_models/weapons/w_knife_t.mdl",
+ "out": "Assets/_Project/Art/Models/Addons/Knives/ScissorsShiv",
+ "note": "The Detente's execution blade (ClassKnives.csv): one half of a pair of scissors taped into a 12 cm grip, the other half's finger loop sticking out on +Z near its lower end, the blade (10 cm) to +Y. Its sharpened side is +Z and its back -Z, so tip [0,1,0] and up [0,0,-1]. 25 cm. The origin is the middle of the taped grip. Markers: Tip, Edge (mid-blade), Pommel (the grip's end).",
+ "meshes": {
+  "w_scissors": "ScissorsShiv"
+ },
+ "origin": {"point": [0.0, 0.058, 0.0]},
+ "tip": [0, 1, 0],
+ "up": [0, 0, -1],
+ "markers": {
+  "Tip": {"point": [0.0046, 0.2237, -0.0078]},
+  "Edge": {"point": [0.0033, 0.165, 0.0005]},
+  "Pommel": {"point": [-0.003, -0.0278, 0.007]}
+ },
+ "max_texture": 1024
+}

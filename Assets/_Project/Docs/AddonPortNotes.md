@@ -82,6 +82,27 @@ Walkers [XDR](3353266656)와 [xdR] nmrih zombies(3709350917)는 모델이 아니
 
 칼 소리는 `Art/Audio/Library`에 있다: 휘두르기 `MeatyMelee_3660295000/weapons/katana/katana_swing_miss1·2`, 살 타격 `melee_katana_01~03`, 벽 타격 `katana_impact_world1·2`, 꺼내기 `ZZZKatana_3802606110/weapons/katana/katana_deploy_01`·`katana_deploy_1`. 기병도는 `CavalrySword_3661236204/weapons/tonfa`, 권총은 `KraitP68_3803570564`(발사·탄창·슬라이드·쌍권총·빈 총 살펴보기).
 
+## 클래스 칼 (2026-11-13)
+
+사용자: "일단 칼은 클래스별로 각자 전용 칼을 쓰게 하고 싶고". 이식표에서 고른 칼 일곱 자루를 처형·암살 칼로 들였다([ClassKnives.csv](../Resources/Tables/ClassKnives.csv), 동작은 [전투 기초](CombatFoundationGuide.md)의 처형 칼). 워크숍 파일은 저장소 밖에 풀어(GMod 3834087095은 289MB GMA에서 칼 모델·재질만, 864512618은 옛 LZMA `_legacy.bin`을 풀어서) [addon_weapon_to_fbx.py](../../../Tools/Blender/addon_weapon_to_fbx.py)로 바꿨다.
+
+- **틀**: 다른 칼과 같다. 원점 = 손잡이 가운데(주먹이 쥐는 자리), FBX +Z = 손잡이에서 칼날 쪽(휜 카람빗도 손잡이 축), +Y = 칼등. 유니티에서는 Y 둘레로 반 바퀴 돌아 들어오므로 게임은 축을 믿지 않고 표식으로 칼의 방향을 잰다: `Pommel`(손잡이 끝) → 원점이 칼날 쪽, `Edge`(날 가운데)가 날 쪽, `Tip`(칼끝)이 칼 길이.
+- **크기**: SourceIO 기본(1단위 0.01905m). BF4 묶음만 4/3배: 그대로면 M9 총검이 22.8cm라 실물 30.4cm에 맞췄다(마체테도 같은 비율). 흑상은 기본 크기에서 75cm 외날 단검(칼날 50cm)이다.
+- **새 레시피 키** `keep_box`: 상자 밖 꼭짓점을 지운다. 버터플라이 나이프 월드 모델에 칼날 방향으로 1.6m 떨어진 사각형 하나가 있어서(경계 상자·아이콘 틀이 커진다) 넣었다.
+- **불러오기**: 게임은 `Resources/ClassProps/Knives/<이름>.prefab`(FBX의 프리팹 변형, 토치와 같은 방식)을 이름으로 부른다. 모드 칼은 Resources 아래 아무 프리팹이나 ClassKnives.csv `model`에 적으면 된다.
+
+| 클래스 | 모델 | 워크숍 | 삼각형 | 길이 | 텍스처 |
+| --- | --- | --- | --- | --- | --- |
+| 나이트 | [Heishang](../Art/Models/Addons/Knives/Heishang) | Delta Force 黑伤 (GMod 3834087095, `rigid/w_heishang_open_lod0`) | 12,785 | 0.75m | 2K 색 + 2K 노멀 둘(칼날·손잡이) |
+| 어썰트 | [M9Bayonet](../Art/Models/Addons/Knives/M9Bayonet) | BF4 칼 14종 (GMod 864512618, `knife_bayonet`) | 1,460 | 0.30m | 512 색, 1K 노멀 |
+| 고스트 | [Karambit](../Art/Models/Addons/Knives/Karambit) | RE8 Village Karambit (L4D2 2560050233) | 7,816 | 0.17m | 1K(칼날·손잡이 같은 그림, 색조만 다름) |
+| 포인트 | [Butterfly](../Art/Models/Addons/Knives/Butterfly) | Corvus Butterfly Knife (L4D2 3621862806) | 8,526 | 0.25m | 1024×512 |
+| 데탕트 | [ScissorsShiv](../Art/Models/Addons/Knives/ScissorsShiv) | SCISSORS shiv (L4D2 3555641124) | 5,781 | 0.25m | 1K 넷(가위·손잡이·테이프 둘, 투명 테이프는 PNG) |
+| 시순트 | [PrimalKnife](../Art/Models/Addons/Knives/PrimalKnife) | RE4 Remake Primal Knife (L4D2 2980835519) | 6,066 | 0.27m | 1K |
+| 서포트 | [Machete](../Art/Models/Addons/Knives/Machete) | BF4 칼 14종 (GMod 864512618, `knife_machete`) | 1,386 | 0.38m | 512×1024 |
+
+안 쓴 것: 흑상의 칼집 모델(`w_heishang_closed`)과 뷰모델 동작 75개·소리 88개(소리 이름이 숫자뿐이라 Lua를 따라가야 어느 소리인지 안다), 카람빗·프라이멀·버터플라이·가위의 뷰모델(L4D2 CS:S 칼 자리의 휘두르기 동작). L4D2 칼 모드들의 소리는 서로 같은 CS:S 칼 소리라 넣지 않고, 뽑기·찌르기 소리는 나이트 투척 나이프의 것을 쓴다.
+
 ## 이식표 다시 짬 (2026-11-12)
 
 사용자: 「F:\SteamLibrary\steamapps\workshop\content\4000랑 F:\SteamLibrary\steamapps\common\Left 4 Dead 2\left4dead2\addons\workshop에 새 애드온들 받아 놨으니까 애드온 수입표 다시 짜. 일단 새롭게 다운 받은 것들은 다 에셋으로 쓰라고 대기해 두고 있는 거야.」

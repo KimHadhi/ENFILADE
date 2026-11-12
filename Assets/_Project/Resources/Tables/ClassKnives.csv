@@ -1,0 +1,10 @@
+﻿id,model,motion,heldSide,heldPalm,heldAlong,bladeX,bladeY,bladeZ,edgeX,edgeY,edgeZ,scale,drawSound,stabSound,sheathSound,note
+#설명 (처형·암살에서 클래스마다 쓰는 전용 칼. 사용자 2026-11-13: "일단 칼은 클래스별로 각자 전용 칼을 쓰게 하고 싶고". 줄 id = Classes.csv의 클래스 id. 줄이 없는 클래스(모드)는 default 줄. ExecutionKnife가 처형이 시작되면 총을 치우고 오른손에 이 칼을 쥐여 motion 표대로 찌르고 넣는다),칼 모델(Resources 안의 프리팹 경로. 이 칼들은 Resources/ClassProps/Knives에 있는 워크숍 칼의 FBX 프리팹 변형),찌르기 동작 표(KnifeStab.csv처럼 Tools/Blender/Knives/knife_stab.py가 쓰는 표),주먹 안에서 손잡이 가운데가 오는 자리: 손목에서 손 길이의 배수로 손의 옆(엄지 반대쪽+) · 손바닥 밖 · 손가락 쪽,,,손잡이에서 칼날로 가는 방향(같은 손 축. 역수 쥐기: 새끼손가락 쪽으로 나가 손가락 쪽으로 조금 기욺),,,칼날(날이 선 쪽)이 보는 방향(같은 손 축),,,모델 크기 배수,칼을 뽑을 때 소리(SoundCues id),칼이 목에 박힐 때 소리(SoundCues id),칼을 넣을 때 소리(SoundCues id),
+default,ClassProps/Knives/PrimalKnife,KnifeStab,0,0.3,0.55,0.93,0,0.36,0,0,1,1,Knife/Draw,Knife/Stab,Knife/Sheath,줄이 없는 클래스가 쓰는 칼
+knight,ClassProps/Knives/Heishang,KnifeStab,0,0.3,0.55,0.93,0,0.36,0,0,1,1,Knife/Draw,Knife/Stab,Knife/Sheath,흑상(델타포스 근접 무기 · GMod 3834087095): 75cm 외날 단검(붉은 칼날 50cm). 길어서 목 위에서 몸통까지 깊이 박힌다
+assault,ClassProps/Knives/M9Bayonet,KnifeStab,0,0.3,0.55,0.93,0,0.36,0,0,1,1,Knife/Draw,Knife/Stab,Knife/Sheath,M9 총검(BF4 칼 묶음 · GMod 864512618): 30cm 톱날 등
+ghost,ClassProps/Knives/Karambit,KnifeStab,0,0.3,0.55,0.93,0,0.36,0,0,1,1,Knife/Draw,Knife/Stab,Knife/Sheath,RE8 빌리지 카람빗(L4D2 2560050233): 17cm. 역수로 쥐면 고리가 엄지 쪽 위로 오고 휜 날이 앞을 본다
+point,ClassProps/Knives/Butterfly,KnifeStab,0,0.3,0.55,0.93,0,0.36,0,0,1,1,Knife/Draw,Knife/Stab,Knife/Sheath,버터플라이 나이프(CoD 모던 워페어 · L4D2 3621862806): 편 채로 25cm
+detente,ClassProps/Knives/ScissorsShiv,KnifeStab,0,0.3,0.55,0.93,0,0.36,0,0,1,1,Knife/Draw,Knife/Stab,Knife/Sheath,가위 쉬브(L4D2 3555641124): 가위 한쪽을 테이프로 감아 만든 즉석 칼 25cm
+schiesshund,ClassProps/Knives/PrimalKnife,KnifeStab,0,0.3,0.55,0.93,0,0.36,0,0,1,1,Knife/Draw,Knife/Stab,Knife/Sheath,RE4 리메이크 프라이멀 나이프(L4D2 2980835519): 레온의 칼 27cm
+support,ClassProps/Knives/Machete,KnifeStab,0,0.3,0.55,0.93,0,0.36,0,0,1,1,Knife/Draw,Knife/Stab,Knife/Sheath,마체테(BF4 칼 묶음 · GMod 864512618): 38cm 톱날 등

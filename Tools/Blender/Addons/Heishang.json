@@ -1,0 +1,19 @@
+{
+ "workshop": "Delta Force melee 黑伤 (GMod 3834087095, Knife_H5Z01): the unsheathed rigid world model",
+ "name": "Heishang",
+ "mdl": "models/deltaforce/heishang_dev/rigid/w_heishang_open_lod0.mdl",
+ "out": "Assets/_Project/Art/Models/Addons/Knives/Heishang",
+ "note": "The Knight's execution blade (ClassKnives.csv). A short single-edged sword, 75 cm at the project's weapon size: a 50 cm red blade (0.4 cm thick, 2.8 cm across) with a clipped point on its spine side, a 7.6 cm guard, a 14 cm handle and a crested pommel. The model's handle runs along its own Z with the blade at -Z and the edge on +Y, so tip [0,0,-1] and up (the spine) [0,-1,0]; the origin is the middle of the handle, where the fist closes. Markers: Tip (the point), Edge (mid-blade on the cutting edge), Pommel (the handle's end).",
+ "meshes": {
+  "open_lod0": "Heishang"
+ },
+ "origin": {"point": [0.0, 0.0, 0.005]},
+ "tip": [0, 0, -1],
+ "up": [0, -1, 0],
+ "markers": {
+  "Tip": {"point": [0.0, -0.014, -0.6325]},
+  "Edge": {"point": [0.0, 0.0135, -0.38]},
+  "Pommel": {"point": [0.0, 0.0, 0.1205]}
+ },
+ "max_texture": 2048
+}

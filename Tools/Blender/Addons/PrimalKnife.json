@@ -1,0 +1,19 @@
+{
+ "workshop": "L4D2 2980835519 RE4 Remake Primal Knife (CS:S knife slot)",
+ "name": "PrimalKnife",
+ "mdl": "models/w_models/weapons/w_knife_t.mdl",
+ "out": "Assets/_Project/Art/Models/Addons/Knives/PrimalKnife",
+ "note": "The Schiesshund's execution knife (ClassKnives.csv), Leon's from the Resident Evil 4 remake. 26.6 cm: the handle along +Y, a guard at 7-9 cm, the blade to +Y with its sawback spine on -Z and its curved edge on +Z, so tip [0,1,0] and up [0,0,-1]. The origin is the middle of the handle. Markers: Tip, Edge (mid-blade), Pommel.",
+ "meshes": {
+  "primal_knife": "PrimalKnife"
+ },
+ "origin": {"point": [0.002, 0.025, -0.001]},
+ "tip": [0, 1, 0],
+ "up": [0, 0, -1],
+ "markers": {
+  "Tip": {"point": [-0.0017, 0.2415, -0.0121]},
+  "Edge": {"point": [0.0, 0.175, 0.004]},
+  "Pommel": {"point": [0.003, -0.0244, 0.001]}
+ },
+ "max_texture": 1024
+}
