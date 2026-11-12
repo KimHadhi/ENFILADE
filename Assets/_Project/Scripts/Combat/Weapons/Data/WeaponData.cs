@@ -111,6 +111,10 @@ public sealed class WeaponData : ScriptableObject
         boltBackSounds = new AudioClip[0], boltForwardSounds = new AudioClip[0];
     [Tooltip("As the gun comes into the hands. Empty: the gun profile's (SoundCues GunDraw).")]
     [SerializeField] private AudioClip[] drawSounds = new AudioClip[0];
+    [Tooltip("A gun worked by hand after every shot (FPSBodyAssets.Gun.sourceFire): one recording of the whole action, played as " +
+        "it starts. Empty: the sounds KINEMATION's gun-part clip of the shot calls for, at their moments (the Kar98k's, the " +
+        "L96X's, the KXG12's).")]
+    [SerializeField] private AudioClip[] cycleSounds = new AudioClip[0];
     [Tooltip("Repeats while firing; an empty array uses Recoil Per Shot. Only when Recoil Vertical is 0.")]
     [SerializeField] private Vector2[] recoilPattern = new Vector2[0];
     [Tooltip("The fire modes B switches between, as 'Automatic;Burst;SemiAutomatic'. The gun starts on Fire Mode. Empty: Fire " +
@@ -261,6 +265,7 @@ public sealed class WeaponData : ScriptableObject
     public AudioClip[] BoltBackSounds => boltBackSounds;
     public AudioClip[] BoltForwardSounds => boltForwardSounds;
     public AudioClip[] DrawSounds => drawSounds;
+    public AudioClip[] CycleSounds => cycleSounds;
     public float AdsFov => Mathf.Clamp(adsFov, 20f, 100f);
     public float AdsMoveMultiplier => Mathf.Clamp(adsMoveMultiplier, .1f, 1f);
     public float AdsTransitionTime => Mathf.Max(.01f, adsTransitionTime);

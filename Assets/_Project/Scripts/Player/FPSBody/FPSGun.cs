@@ -488,59 +488,59 @@ public sealed class FPSGun : MonoBehaviour
         bool lockBack = settings != null && settings.hasFireOut && lastRound;
         var pair = lockBack ? Kinemation.fireOut : Kinemation.fire;
         // A gun worked by hand works its parts (the bolt, the pump) at the pace the body works them (Cycle).
-        var parts = !lockBack && HasCycle ? CycleParts(pair.weapon) : pair.weapon;
+        var parts = !lockBack && partsCycle != null ? partsCycle : pair.weapon;
         // The last round's clip holds the slide back until a reload's clip takes over (it doesn't blend out by itself).
         if (parts != null && partsPlayer.PlayAnimation(parts)) slideHeld = lockBack;
     }
 
-    // ---- The action worked by hand after every shot (a bolt, a pump: FPSBodyAssets.Gun.sourceFire) ----
+    // ---- The action worked by hand after every shot (a bolt, a pump, a lever: FPSBodyAssets.Gun.sourceFire) ----
 
-    // The body's clip of it, made for this body (FPSBody, from GunBakes); null for a gun that needs none.
+    // The body's clip of it, made for this body (FPSBody, from GunBakes); null for a gun that has none (most guns: a clip that
+    // only kicks the gun, as the X18's, is never set as one). The gun-part clip of the shot at the same pace.
     private FPSAnimationAsset cycleClip;
-    // Until when it plays (s), and the gun-part clip of the shot at the pace it plays at, made once per pace.
-    private float cycleUntil, partsCycleRate = 1f;
     private KINEMATION.CharacterAnimationSystem.Scripts.Runtime.Playables.AnimationAsset partsCycle;
+    // Until when it plays (s).
+    private float cycleUntil;
     // KINEMATION's sounds of it at the moments the gun-part clip of the shot calls for them, in order, and the next one due.
     private readonly System.Collections.Generic.List<(float at, AudioClip sound)> cycleSounds = new();
     private int nextCycleSound;
     // A sound whose moment passed longer ago than this (s) is dropped rather than played late (a long hitch).
     private const float CycleSoundLate = .3f;
 
-    /// <summary>The gun is worked by hand after every shot: a bolt action's bolt, a pump gun's pump.</summary>
+    /// <summary>The gun is worked by hand after every shot: a bolt action's bolt, a pump gun's pump, a lever.</summary>
     internal bool HasCycle => FPSAnimationAsset.IsValid(cycleClip);
 
     /// <summary>The body is working the gun's action after a shot now: a hand is on the bolt or the pump.</summary>
     internal bool Cycling => Time.time < cycleUntil;
 
-    /// <summary>The body's clip of the action worked after every shot, made for this body (FPSBody, from GunBakes).</summary>
-    internal void SetCycle(FPSAnimationAsset clip) => cycleClip = clip;
+    /// <summary>The pace the action plays at (its asset's rate, 1 as PackGunSetup makes it).</summary>
+    internal float CycleRate => HasCycle ? Mathf.Max(.01f, cycleClip.blendTime.rateScale) : 1f;
 
-    // How fast the action is worked: at its clip's own pace, or quicker so the hand is back on the grip, the clip easing into
-    // the hold (its blend out), by the time the gun may fire again (its shot interval, Weapons.csv), so the next shot never
-    // catches the hand on the bolt. Never slower: the trigger waits out the interval while the clip settles.
-    private float CycleRate
+    /// <summary>How long the action's clip takes to ease back into the hold at its end (s at its own pace): its blend out.</summary>
+    internal float CycleSettle => HasCycle ? Mathf.Clamp(cycleClip.blendTime.blendOutTime, 0f, cycleClip.clip.length * .5f) : 0f;
+
+    /// <summary>
+    /// The body's clip of the action worked after every shot, made for this body (FPSBody, from GunBakes), and with it the
+    /// gun-part clip of the shot at the same pace.
+    /// </summary>
+    internal void SetCycle(FPSAnimationAsset clip)
     {
-        get
-        {
-            if (!HasCycle || Data == null) return 1f;
-            float length = cycleClip.clip.length, settle = Mathf.Clamp(cycleClip.blendTime.blendOutTime, 0f, length * .5f);
-            float interval = Data.ShotInterval;
-            return interval > .01f ? Mathf.Max(1f, (length - settle) / interval) : 1f;
-        }
+        cycleClip = clip;
+        partsCycle = HasCycle && Kinemation != null ? RatedParts(Kinemation.fire.weapon, clip) : null;
     }
 
     /// <summary>
     /// After a shot, a gun worked by hand has the body work its bolt or pump, as FPS Animation Ultimate's own players play the
     /// shot's clip on the arms (useFireClip): the clip made for this body on the body, KINEMATION's own on the camera and,
     /// through it, the gun and both hands where KINEMATION's arms have them on it (FPSBody.Contacts, as through a reload, at
-    /// the hip or down the sights), and KINEMATION's sounds of it as their moments come (TakeCycleSound). Its gun-part clip of
-    /// the shot plays at the same pace (Fire). Returns how long it plays (s); 0 for a gun with none.
+    /// the hip or down the sights), and its sounds as their moments come (TakeCycleSound). Always at its own pace: the rules
+    /// hold the next shot until the hands are back (WeaponCycle), so it is never cut short or hurried. Returns how long it
+    /// plays (s); 0 for a gun with none.
     /// </summary>
     internal float Cycle(IPlayablesController playables, FPSBodyCamera camera)
     {
         if (!HasCycle || playables == null) return 0f;
         float rate = CycleRate;
-        cycleClip.blendTime.rateScale = rate;
         playables.PlayAnimation(cycleClip, 0f);
         if (camera != null && entry.sourceFire != null) camera.PlayGunMotion(entry.sourceFire, rate);
         float length = cycleClip.clip.length / rate;
@@ -551,36 +551,23 @@ public sealed class FPSGun : MonoBehaviour
         return length;
     }
 
-    // The gun-part clip of the shot at the pace the action is worked (CycleRate).
-    private KINEMATION.CharacterAnimationSystem.Scripts.Runtime.Playables.AnimationAsset CycleParts(
-        KINEMATION.CharacterAnimationSystem.Scripts.Runtime.Playables.AnimationAsset parts)
-    {
-        float rate = CycleRate;
-        if (parts == null || Mathf.Approximately(rate, 1f)) return parts;
-        if (partsCycle == null || !Mathf.Approximately(partsCycleRate, rate))
-        {
-            if (partsCycle != null)
-            {
-                rated.Remove(partsCycle);
-                Destroy(partsCycle);
-            }
-            partsCycle = Instantiate(parts);
-            partsCycle.hideFlags = HideFlags.DontSave;
-            partsCycle.playRate = parts.playRate * rate;
-            partsCycleRate = rate;
-            rated.Add(partsCycle);
-        }
-        return partsCycle;
-    }
-
-    // KINEMATION's sounds of the action at the moments its gun-part clip of the shot calls for them (its PlayWeaponSound
-    // events, an index into the gun's weaponEventSounds): the Kar98k's bolt opened at the shot and closed a third of a second
-    // on, the L96X's whole bolt, the KXG12's pump. KINEMATION's own gun script would play them from those events, but it stays
-    // silent here (FPSBody.AddGun), so these go through WeaponFeedback like every other gun sound.
+    // The action's sounds: the gun's own recording of the whole action as it starts (WeaponData.CycleSounds), else KINEMATION's
+    // sounds at the moments its gun-part clip of the shot calls for them (its PlayWeaponSound events, an index into the gun's
+    // weaponEventSounds): the Kar98k's bolt opened at the shot and closed a third of a second on, the L96X's whole bolt, the
+    // KXG12's pump. KINEMATION's own gun script would play them from those events, but it stays silent here (FPSBody.AddGun),
+    // so these go through WeaponFeedback like every other gun sound. A gun from another pack has no such list (TacticalGunSetup
+    // leaves it empty) and takes WeaponData's.
     private void QueueCycleSounds(float rate)
     {
         cycleSounds.Clear();
         nextCycleSound = 0;
+        var own = Data != null ? Data.CycleSounds : null;
+        if (own != null && own.Length > 0)
+        {
+            var whole = own[UnityEngine.Random.Range(0, own.Length)];
+            if (whole != null) cycleSounds.Add((Time.time, whole));
+            return;
+        }
         var parts = Kinemation != null ? Kinemation.fire.weapon : null;
         var sounds = Kinemation != null && Kinemation.weaponSettings != null ? Kinemation.weaponSettings.weaponEventSounds : null;
         if (parts == null || parts.clip == null || sounds == null) return;

@@ -347,6 +347,62 @@ public sealed partial class FPSBody
         return true;
     }
 
+    // ---- When a gun worked by hand can fire again (WeaponCycle) ----
+
+    // A hand is back on the gun once its palm is within this of where the gun's pose clip holds it (m); a clip that takes neither
+    // palm further than CycleAway from there works no action (a recoil clip, as FPS Animation Ultimate's X18_Fire) and holds
+    // nothing. Sampled every CycleStep (s).
+    private const float CycleBack = .015f, CycleAway = .04f, CycleStep = 1f / 60f;
+
+    /// <summary>
+    /// Once per gun worked by hand after every shot: the moment in KINEMATION's clip of the action from which both palms stay
+    /// where the gun's pose clip holds them, read on KINEMATION's own arms (GunArms, as the contacts are), so the rules hold the
+    /// next shot until the hands are back (WeaponCycle) and the clip is never cut short. The same clip on the same arms on every
+    /// PC gives every PC the same moment. FPSBodyAssets.Gun.fireReady sets it by hand instead; without the arms, the clip's end
+    /// as it eases into the hold. Measured Kar98k and L96X 1.27 s, KXG12 0.5 s (2026-11-13, from the clips' hand targets).
+    /// </summary>
+    private void MeasureCycle(FPSGun gun)
+    {
+        var clip = gun.Entry.sourceFire;
+        if (gun.Data == null || clip == null || !gun.HasCycle || WeaponCycle.Has(gun.Data)) return;
+        float rate = gun.CycleRate;
+        if (gun.Entry.fireReady > 0f)
+        {
+            WeaponCycle.Set(gun.Data, gun.Entry.fireReady / rate);
+            return;
+        }
+        float ready = Mathf.Max(0f, clip.length - gun.CycleSettle);
+        var arms = ArmsFor(gun);
+        if (arms != null && PoseHolds(gun, arms) && arms.Sample(gun.Entry.sourcePose, 0f))
+        {
+            arms.Gun(gun.Frame, out Vector3 poseAt, out Quaternion poseTurn);
+            Quaternion toPose = Quaternion.Inverse(poseTurn);
+            if (arms.Palm(false, poseAt, toPose, out Vector3 poseRight, out _, out _) && arms.Palm(true, poseAt, toPose, out Vector3 poseLeft, out _, out _))
+            {
+                float back = 0f, farthest = 0f;
+                bool read = true;
+                for (float time = 0f; time <= clip.length + 1e-4f; time += CycleStep)
+                {
+                    if (!arms.Sample(clip, Mathf.Min(time, clip.length))) { read = false; break; }
+                    arms.Gun(gun.Frame, out Vector3 at, out Quaternion turn);
+                    Quaternion toGun = Quaternion.Inverse(turn);
+                    if (!arms.Palm(false, at, toGun, out Vector3 right, out _, out _) || !arms.Palm(true, at, toGun, out Vector3 left, out _, out _))
+                    {
+                        read = false;
+                        break;
+                    }
+                    float away = Mathf.Max(Vector3.Distance(right, poseRight), Vector3.Distance(left, poseLeft));
+                    farthest = Mathf.Max(farthest, away);
+                    // The last moment a hand was still off the gun's hold: from the next sample on, both stay on it.
+                    if (away >= CycleBack) back = Mathf.Min(time + CycleStep, clip.length);
+                }
+                if (read) ready = farthest < CycleAway ? 0f : back;
+                else Report($"KINEMATION's arms couldn't play {gun.name}'s action ({clip.name}); its next shot waits for the clip's end.");
+            }
+        }
+        WeaponCycle.Set(gun.Data, ready / rate);
+    }
+
     private GunArms ArmsFor(FPSGun gun)
     {
         var prefab = assets != null ? gun.Entry.ArmsOr(assets.armsModel) : null;

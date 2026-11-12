@@ -230,7 +230,8 @@ public sealed class GunCustomizeMenu : MonoBehaviour
             Body = data.Damage,
             Head = data.Damage * data.HeadshotMultiplier,
             Pellets = data.Pellets,
-            Rpm = 60f / Mathf.Max(.001f, data.ShotInterval),
+            // A bolt or pump gun's rate is its action's when that is slower (WeaponCycle).
+            Rpm = 60f / Mathf.Max(.001f, WeaponCycle.IntervalOf(data)),
             Recoil = data.RecoilVertical * (gripKind == GunAttachments.Kind.VerticalGrip ? data.GripRecoil : 1f),
             AimTime = data.AdsTransitionTime * (gripKind == GunAttachments.Kind.AngledGrip ? data.GripAimTime : 1f),
             Noise = data.NoiseRadius * (muzzleKind == GunAttachments.Kind.Suppressor ? data.SuppressedNoise : 1f),

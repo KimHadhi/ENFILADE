@@ -58,6 +58,10 @@ internal static class TacticalGunSetup
         // The pose with no grip on the gun, where the pose holds one: the support hand's place on the handguard while the
         // gun wears no grip (FPSBodyAssets.Gun.sourcePoseNoGrip, FPSBody.Contacts).
         public string poseNoGrip;
+        // A gun worked by hand after every shot (a bolt, a pump, a lever): the body's clip of that, played after each shot and
+        // holding the next one until the hands are back (FPSBodyAssets.Gun.sourceFire, FPSGun.Cycle, WeaponCycle). Empty for
+        // every gun whose shot only kicks it.
+        public string fire;
         public string partsIdle, partsFire, partsFireOut, partsReloadTactical, partsReloadEmpty, partsReloadShell, partsReloadEnd;
     }
 
@@ -263,6 +267,9 @@ internal static class TacticalGunSetup
             partsDraw = PartsAsset(Parts($"{spec.clip}_Draw"), $"{stem}_Parts_Draw.asset"),
             partsHolster = PartsAsset(Parts($"{spec.clip}_Holster"), $"{stem}_Parts_Holster.asset"),
             partsInspect = PartsAsset(Parts($"{spec.clip}_Inspect"), $"{stem}_Parts_Inspect.asset"),
+            // In at once with the shot, eased into the hold over its last 0.2 s (as PackGunSetup's bolt and pump guns).
+            sourceFire = Body(spec.fire),
+            fire = spec.fire != null ? BodyAsset(reloadTemplate, $"{stem}_Anim_Fire.asset", .1f, .2f) : null,
         };
         var list = new List<FPSBodyAssets.Gun>(assets.guns);
         int index = list.FindIndex(gun => gun.weapon == weapon);

@@ -117,7 +117,8 @@ public sealed class WeaponRuntime
         bool fanning = FireMode == WeaponFireMode.Fanning && FanFromHip;
         bool automatic = FireMode == WeaponFireMode.Automatic || fanning;
         bool burst = FireMode == WeaponFireMode.Burst;
-        float interval = fanning ? Data.FanInterval : Data.ShotInterval;
+        // A gun worked by hand after every shot fires again only once its action is done (WeaponCycle), however fast its rate.
+        float interval = fanning ? Data.FanInterval : WeaponCycle.IntervalOf(Data);
         bool continuingBurst = burstRemaining > 0;
         if (burst && !continuingBurst && input.FirePressed && cooldown <= .000001f)
             burstRemaining = Data.BurstCount;

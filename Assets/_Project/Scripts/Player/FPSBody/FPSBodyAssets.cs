@@ -86,6 +86,10 @@ public sealed class FPSBodyAssets : ScriptableObject
             + "(FPSGun.Cycle). Empty: none, the shot moves the gun's parts alone.")]
         public AnimationClip sourceFire;
         public FPSAnimationAsset fire;
+        [Tooltip("When the gun may fire again, seconds into Source Fire at its own pace. 0: measured, the moment both palms are back "
+            + "where Source Pose holds them on KINEMATION's arms (WeaponCycle). A clip that takes no hand off the gun (a recoil "
+            + "clip such as the X18's A_FP_X18_Fire) holds nothing.")]
+        [Min(0f)] public float fireReady;
 
         /// <summary>KINEMATION's skeleton the gun's clips are made for.</summary>
         public GameObject ArmsOr(GameObject armsModel) => sourceArms != null ? sourceArms : armsModel;

@@ -378,8 +378,10 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
         // of the draw short (CutDraw). Put away in its Holster Duration, looked over at the clip's pace.
         gun.SetActions(Copy(entry.draw, bake.draw),
             Fitted(Copy(entry.holster, bake.holster), entry.weapon.HolsterDuration), Settled(Copy(entry.inspect, bake.inspect)));
-        // A gun worked by hand after every shot (a bolt, a pump) has that clip made for this body too (FPSGun.Cycle).
+        // A gun worked by hand after every shot (a bolt, a pump) has that clip made for this body too (FPSGun.Cycle), and the
+        // rules learn when in it the hands are back, to hold the next shot until then (FPSBody.MeasureCycle, WeaponCycle).
         gun.SetCycle(Copy(entry.fire, bake.fire));
+        MeasureCycle(gun);
         // From this body's profile: a stand-in's share has gone to the bone below it.
         gun.LeanChain = LeanChainOf(profile);
         // This gun's own copies of the layers that move it about, turned down as it is aimed (FPSGun.Steady).
@@ -1310,7 +1312,8 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
         CutBash();
         firing = true;
         lastShot = Time.time;
-        shotInterval = data.ShotInterval;
+        // A bolt or pump gun's shots come at its action's pace when that is slower (WeaponCycle).
+        shotInterval = WeaponCycle.IntervalOf(data);
         held.Fire(controller.LastShot.AmmoAfterShot == 0, recoil, bodyCamera, !kinemationShake || controller.AimBlend >= .5f);
         // A gun worked by hand: the body works its bolt or pump now, done by the time the trigger may fire again (FPSGun.Cycle).
         held.Cycle(playables, bodyCamera);
