@@ -25,6 +25,8 @@ public sealed class ImpactPool : MonoBehaviour
     {
         public List<Preset> Presets, ExitPresets;
         public float Scale, Lightness, HoleSize, HoleVary, HoleStretch = 1f, ExitScale = 1f;
+        // How long its holes stay before fading (s); 0 is GunFeel's bulletHoleSeconds.
+        public float HoleSeconds;
         // Hivemind's bullet holes: three to six per surface, one picked a hit, never the last one twice running.
         public Material[] Holes = new Material[0];
         // The table says `none`: nothing is left on this surface, and its parents aren't asked (water).
@@ -75,7 +77,8 @@ public sealed class ImpactPool : MonoBehaviour
         foreach (string id in chain)
             if (instance.Spawn(id, point, normal)) break;
         var holes = instance.HoleRow(chain);
-        if (holes != null) BulletHoles.Place(holes.PickHole(), holes.HoleSize, point, normal, incoming, holes.HoleVary, holes.HoleStretch);
+        if (holes != null)
+            BulletHoles.Place(holes.PickHole(), holes.HoleSize, point, normal, incoming, holes.HoleVary, holes.HoleStretch, holes.HoleSeconds);
     }
 
     private Row HoleRow(IReadOnlyList<string> chain)
@@ -112,7 +115,8 @@ public sealed class ImpactPool : MonoBehaviour
         }
         var holes = instance.HoleRow(chain);
         if (holes != null)
-            BulletHoles.Place(holes.PickHole(), holes.HoleSize * exitScale, point, normal, direction, holes.HoleVary, holes.HoleStretch);
+            BulletHoles.Place(holes.PickHole(), holes.HoleSize * exitScale, point, normal, direction, holes.HoleVary, holes.HoleStretch,
+                holes.HoleSeconds);
     }
 
     /// <summary>Plays the row's effect at point leaving along `up`, `scale` times its usual size. False when the row has none.</summary>
@@ -196,9 +200,10 @@ public sealed class ImpactPool : MonoBehaviour
             float.TryParse(Cell(cells, "holeVary"), NumberStyles.Float, CultureInfo.InvariantCulture, out float holeVary);
             float holeStretch = float.TryParse(Cell(cells, "holeStretch"), NumberStyles.Float, CultureInfo.InvariantCulture, out float stretch) ? stretch : 1f;
             float exitScale = float.TryParse(Cell(cells, "exitScale"), NumberStyles.Float, CultureInfo.InvariantCulture, out float exit) ? exit : 1f;
+            float.TryParse(Cell(cells, "holeSeconds"), NumberStyles.Float, CultureInfo.InvariantCulture, out float holeSeconds);
             var row = new Row { Presets = new List<Preset>(), ExitPresets = new List<Preset>(), Scale = scale, Lightness = lightness,
                 HoleSize = holeSize, HoleVary = Mathf.Max(0f, holeVary), HoleStretch = Mathf.Max(1f, holeStretch),
-                ExitScale = Mathf.Max(.1f, exitScale) };
+                ExitScale = Mathf.Max(.1f, exitScale), HoleSeconds = Mathf.Max(0f, holeSeconds) };
             var holes = new List<Material>();
             row.NoHoles = string.Equals(Cell(cells, "hole").Trim(), NoHole, StringComparison.OrdinalIgnoreCase);
             foreach (string name in Cell(cells, "hole").Split(';'))

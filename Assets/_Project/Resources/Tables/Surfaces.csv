@@ -10,6 +10,7 @@ Marble,,marble;polished;granite,0.75,,대리석·광택 바닥
 Tile,Marble,tile;ceramic,0.5,,타일 (착지는 FEAR 소리 / 나머지는 대리석)
 Glass,,glass;window,0.025,,유리
 ArmorGlass,Glass,armorglass,100,,엔필레이드 타워의 레인 사이 방탄 유리(TowerMap). 유리처럼 맞고 금이 가지만 어떤 총알도 뚫지 못한다(관통 비용이 커서 멈춤). 이웃 레인은 보기만 하고 도울 수는 없다
+Mirror,Glass,,100,,허브 무대 거울(HubBuilder가 유리 자리에 단다). 뒤가 벽이라 어떤 총알도 뚫고 나가지 않는다(관통 비용이 커서 멈춤). 착탄은 작은 유리 것이고 금은 몇 초 뒤 사라진다(ImpactEffects.csv Mirror)
 Metal,,metal;steel;iron;aluminium;aluminum,1.5,,금속
 MetalBox,Metal,container;metalbox,,,컨테이너·금속 상자
 Duct,Metal,duct;vent,0.75,,환풍구·덕트

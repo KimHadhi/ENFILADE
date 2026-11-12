@@ -21,6 +21,9 @@ public sealed class BulletHoles : MonoBehaviour
     private static BulletHoles instance;
     private readonly DecalProjector[] holes = new DecalProjector[Count];
     private readonly float[] ages = new float[Count];
+    // How long each one stays before it fades: its surface's own (ImpactEffects.csv holeSeconds: the hub mirror's cracks
+    // go in a few seconds), else 0 for GunFeel's.
+    private readonly float[] stays = new float[Count];
     private int next;
 
     public static void Prepare()
@@ -32,14 +35,14 @@ public sealed class BulletHoles : MonoBehaviour
     /// <summary>
     /// A hole `size` across (m) at point, give or take `vary` of it (0-1). `incoming` is the way the bullet was going as it
     /// hit, or as it left for an exit hole: at a slant the hole is up to `stretchMost` times as long along it. Zero, or
-    /// a stretchMost of 1, leaves it round.
+    /// a stretchMost of 1, leaves it round. It stays `seconds` before fading (0: GunFeel's bulletHoleSeconds).
     /// </summary>
     public static void Place(Material material, float size, Vector3 point, Vector3 normal, Vector3 incoming = default,
-        float vary = 0f, float stretchMost = 1f)
+        float vary = 0f, float stretchMost = 1f, float seconds = 0f)
     {
         if (!Application.isPlaying || material == null) return;
         Prepare();
-        instance.Stamp(material, size, point, normal, incoming, vary, stretchMost);
+        instance.Stamp(material, size, point, normal, incoming, vary, stretchMost, seconds);
     }
 
     private void Awake()
@@ -56,7 +59,8 @@ public sealed class BulletHoles : MonoBehaviour
 
     private void OnDestroy() { if (instance == this) instance = null; }
 
-    private void Stamp(Material material, float size, Vector3 point, Vector3 normal, Vector3 incoming, float vary, float stretchMost)
+    private void Stamp(Material material, float size, Vector3 point, Vector3 normal, Vector3 incoming, float vary, float stretchMost,
+        float seconds)
     {
         int slot = next;
         next = (next + 1) % Count;
@@ -86,6 +90,7 @@ public sealed class BulletHoles : MonoBehaviour
         hole.fadeFactor = 1f;
         hole.transform.SetPositionAndRotation(point, turn);
         ages[slot] = 0f;
+        stays[slot] = Mathf.Max(0f, seconds);
         hole.gameObject.SetActive(true);
     }
 
@@ -97,8 +102,9 @@ public sealed class BulletHoles : MonoBehaviour
             var hole = holes[i];
             if (!hole.gameObject.activeSelf) continue;
             ages[i] += Time.deltaTime;
-            if (ages[i] < seconds) continue;
-            float fade = 1f - (ages[i] - seconds) / FadeSeconds;
+            float stay = stays[i] > 0f ? stays[i] : seconds;
+            if (ages[i] < stay) continue;
+            float fade = 1f - (ages[i] - stay) / FadeSeconds;
             if (fade <= 0f) hole.gameObject.SetActive(false);
             else hole.fadeFactor = fade;
         }

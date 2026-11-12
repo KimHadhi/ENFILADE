@@ -159,7 +159,9 @@ public static class HubBuilder
         // The stage: the results' lineup stands on it facing the hall (HubStage), lit, the name behind it.
         Box("무대", 7.5f, 11.8f, 0f, .5f, -6f, 6f, wood, "Wood");
         Box("무대 계단", 6.9f, 7.5f, 0f, .25f, -2f, 2f, wood, "Wood");
-        Box("무대 뒷벽", 11.75f, 11.95f, .5f, 5.2f, -6f, 6f, road, solid: false);
+        // Solid (it had no collider): a shot at it lands on its face, not on the hall's wall hidden behind it, and nobody
+        // walks into it, so the mirror needs no unseen stop in front of it.
+        Box("무대 뒷벽", 11.75f, 11.95f, .5f, 5.2f, -6f, 6f, road, "Concrete");
         Box("무대 띠", 11.7f, 11.75f, 4.2f, 4.35f, -6f, 6f, marker, solid: false);
         Label("ENFILADE", new Vector3(11.68f, 3.4f, 0f), Quaternion.Euler(0f, -90f, 0f), .9f, 9f, true);
         // The mirror under the name, standing on the stage (user, 2026-11-12: "로비 무대 엔필레이드 쪽에 거울 넣어서 자기 볼 수
@@ -279,24 +281,30 @@ public static class HubBuilder
     }
 
     // The stage's mirror, its glass's middle at <paramref name="glass"/> on the back wall (x 11.75), facing the hall (-x):
-    // a metal frame standing a little proud of the glass with the stage band's pink along its top, and an unseen stop just
-    // in front of the glass, so nobody walks into it (the back wall has no collider: the hall's east wall behind it stops
-    // the player only past the glass). The glass is HubMirror's, made at play, with the station for [F].
+    // a metal frame standing a little proud of the glass with the stage band's pink along its top. The glass is
+    // HubMirror's, made at play, with the station for [F]; its collider is laid here, on the glass's own face.
+    // Shooting the mirror (the user, 2026-11-12, "원래 거울에 총 쏘면 이렇게 이펙트가 크고 과한가?") used to hit an unseen
+    // stop 6 cm in front of the glass, 4.7 m tall and plain (Concrete's dust and smoke), which played in the air before
+    // the glass, even a metre over the frame, and the mirror showed it a second time. The stop kept players off the glass
+    // while the back wall had no collider; the wall is solid now (Box above), so what stops a body and a bullet is what
+    // is there: the frame (Metal sparks), the glass (Mirror: a small glass burst and a small crack gone in seconds,
+    // ImpactEffects.csv) and the wall around (Concrete).
     private static void Mirror(Vector3 glass, float width, float height)
     {
         const float wall = 11.75f, rim = .06f, proud = .025f, floor = .5f;
         float front = glass.x - proud, y0 = glass.y - height * .5f, y1 = glass.y + height * .5f;
         float z0 = glass.z - width * .5f, z1 = glass.z + width * .5f;
-        Box("거울 틀 왼쪽", front, wall, floor, y1 + rim, z1, z1 + rim, metal, solid: false);
-        Box("거울 틀 오른쪽", front, wall, floor, y1 + rim, z0 - rim, z0, metal, solid: false);
-        Box("거울 틀 위", front, wall, y1, y1 + rim, z0, z1, metal, solid: false);
-        Box("거울 틀 아래", front, wall, floor, y0, z0, z1, metal, solid: false);
+        Box("거울 틀 왼쪽", front, wall, floor, y1 + rim, z1, z1 + rim, metal, "Metal");
+        Box("거울 틀 오른쪽", front, wall, floor, y1 + rim, z0 - rim, z0, metal, "Metal");
+        Box("거울 틀 위", front, wall, y1, y1 + rim, z0, z1, metal, "Metal");
+        Box("거울 틀 아래", front, wall, floor, y0, z0, z1, metal, "Metal");
         Box("거울 띠", front - .006f, front, y1 + rim - .022f, y1 + rim, z0 - rim, z1 + rim, marker, solid: false);
-        var stop = new GameObject("거울 막이", typeof(BoxCollider));
-        stop.transform.SetParent(terrain, false);
-        float stopFront = glass.x - .06f, stopTop = 5.2f;
-        stop.transform.localPosition = new Vector3((stopFront + wall) * .5f, (floor + stopTop) * .5f, glass.z);
-        stop.GetComponent<BoxCollider>().size = new Vector3(wall - stopFront, stopTop - floor, width + rim * 2f + .1f);
+        // The glass: unseen, from its face back to the wall.
+        var pane = new GameObject("거울 유리", typeof(BoxCollider));
+        pane.transform.SetParent(terrain, false);
+        pane.transform.localPosition = new Vector3((glass.x + wall) * .5f, glass.y, glass.z);
+        pane.GetComponent<BoxCollider>().size = new Vector3(wall - glass.x, height, width);
+        Set(pane.AddComponent<SurfaceType>(), so => so.FindProperty("surface").stringValue = "Mirror");
         var station = Station("거울", HubStation.Kind.Mirror, glass, -90f, new Vector3(width, height, .1f));
         station.AddComponent<HubMirror>();
     }
