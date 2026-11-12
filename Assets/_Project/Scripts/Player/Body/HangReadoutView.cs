@@ -89,7 +89,7 @@ internal sealed class HangReadoutView : MonoBehaviour
         lastState = state;
         if (catching && (state != MovementState.LedgeHang || Time.time - catchBegan >= catchTime + After)) EndCatch();
 
-        var lines = new StringBuilder("매달리기 측정 (/hang 다시 입력하면 끄고 요약)");
+        var lines = new StringBuilder("매달리기 측정 (/hang 다시 입력하면 끄고 요약) · ").Append(Switches());
         var ledge = player.Abilities.Traversal.Ledge;
         if (state == MovementState.LedgeHang && ledge.Surface != null)
         {
@@ -234,10 +234,18 @@ internal sealed class HangReadoutView : MonoBehaviour
         return true;
     }
 
+    // What was measured: the new ways on, or each one put back as before 0.8.318 in Player.csv to compare.
+    private string Switches()
+    {
+        var settings = player.AbilitySettings;
+        return "잡기 워핑 " + (settings.ledgeCatchWarp ? "켬" : "끔") + " · 한 손씩 옮겨 잡기 " + (settings.ledgeHandOverHand ? "켬" : "끔")
+            + " · 실제 벽 다리 " + (body.HangRealWall ? "켬" : "끔");
+    }
+
     private string Result()
     {
         if (catching) EndCatch();
-        var result = new StringBuilder("매달리기 측정 요약");
+        var result = new StringBuilder("매달리기 측정 요약(").Append(Switches()).Append(')');
         if (catches > 0)
             result.Append($": 잡기 {catches}번 · 눈 가속 최대 {worstEye:0} m/s²(평균 {sumEye / catches:0}) · 눈 튐 최대 {worstJump * 100f:0.0} cm");
         else result.Append(": 잡기 없음");

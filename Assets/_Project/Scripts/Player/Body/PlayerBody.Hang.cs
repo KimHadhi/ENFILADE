@@ -23,6 +23,12 @@ public sealed partial class PlayerBody
     [SerializeField, Tooltip("A leg hanging free, with no wall within reach: its ankle this share of the leg's length below the hip, "
         + "and this share in toward the wall.")]
     private Vector2 hangLegDangle = new Vector2(.96f, .06f);
+    [SerializeField, Tooltip("Hanging, the legs meet the real wall under the ledge (HangWall). Off, as before 0.8.318: the plane "
+        + "straight down from the edge, for comparing by the console's /hang.")]
+    private bool hangRealWall = true;
+
+    /// <summary>The legs meet the real wall under a ledge (Body.hangRealWall), for the /hang readout to say what it measured.</summary>
+    internal bool HangRealWall => hangRealWall;
 
     private static readonly float[] HangYawKeys = { -179f, -89.5f, 0f, 89.5f, 179f }, HangPitchKeys = { -90f, 0f, 90f };
     private static readonly string[] HangYawNames = { "l180", "l90", null, "r90", "r180" }, HangPitchNames = { "up", "mid", "down" };
@@ -82,6 +88,11 @@ public sealed partial class PlayerBody
         Vector3 inward = Vector3.ProjectOnPlane(-support.TransformDirection(ledge.LocalNormal), Vector3.up);
         if (inward.sqrMagnitude < 1e-6f) return;
         inward.Normalize();
+        if (!hangRealWall)
+        {
+            KeepLegsOffPlane(support.TransformPoint(ledge.LocalEdge), -inward);
+            return;
+        }
         // Over the ledge's top there is no wall under it to keep off.
         float top = support.TransformPoint(ledge.LocalEdge).y;
         int layers = HangWall.Layers(player.groundLayers);
@@ -133,6 +144,29 @@ public sealed partial class PlayerBody
             if (into <= 0f) return;
             Vector3 limb = end - joint.position;
             joint.rotation = Quaternion.FromToRotation(limb, limb - inward * into) * joint.rotation;
+        }
+    }
+
+    // As before 0.8.318 (Body.hangRealWall off, to compare by /hang): the wall taken to be the plane straight down from the
+    // edge, each joint from the hip down turned back out of it.
+    private void KeepLegsOffPlane(Vector3 edge, Vector3 outward)
+    {
+        OffPlane(leftLeg);
+        OffPlane(rightLeg);
+
+        void OffPlane(FootPlanting.Leg leg)
+        {
+            Out(leg.Upper, leg.Lower.position, leg.Sole);
+            Out(leg.Lower, leg.Foot.position, leg.Sole);
+            Out(leg.Foot, leg.Foot.TransformPoint(leg.Tip), 0f);
+        }
+
+        void Out(Transform joint, Vector3 end, float margin)
+        {
+            float into = (Vector3.Dot(edge - end, outward) + margin) * gripWeight;
+            if (into <= 0f || end.y > edge.y) return;
+            Vector3 limb = end - joint.position;
+            joint.rotation = Quaternion.FromToRotation(limb, limb + outward * into) * joint.rotation;
         }
     }
 

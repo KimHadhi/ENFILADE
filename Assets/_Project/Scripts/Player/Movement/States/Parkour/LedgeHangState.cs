@@ -42,7 +42,8 @@ public sealed class LedgeHangState : MovementBaseState
         catchTime = 0f;
         contact = catchStart;
         contactSurface = null;
-        if (WallDetector.CanUseSurface(traversal.Ledge.Surface))
+        // Without the warp (Ability.ledgeCatchWarp off, to compare by /hang) the catch goes as before 0.8.318 (Warp).
+        if (settings.ledgeCatchWarp && WallDetector.CanUseSurface(traversal.Ledge.Surface))
         {
             Transform support = traversal.Ledge.Surface.transform;
             Vector3 hang = support.TransformPoint(traversal.Ledge.LocalHang);
@@ -146,6 +147,9 @@ public sealed class LedgeHangState : MovementBaseState
     // where the hands touch, at rest there; settling, eased on from there to the hanging place; then the hanging place.
     private Vector3 Warp(Vector3 hang, float time)
     {
+        // No warp: as before 0.8.318, the speed already cut, pulled to the hanging place in ledgeCatchDuration.
+        if (catchTime <= 0f)
+            return Vector3.Lerp(catchStart, hang, Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(time / Mathf.Max(.01f, ctx.AbilitySettings.ledgeCatchDuration))));
         Vector3 touch = contactSurface != null ? contactSurface.transform.TransformPoint(localContact) : contact;
         if (time < catchTime)
         {

@@ -83,6 +83,12 @@ public sealed class MovementAbilitySettings
         + "KINEMATION Motion Warping fits a phase's rate to its distance (LedgeHangState). The shortest is also how long it then "
         + "takes the capsule on to its hanging place, the body already held by the hands.")]
     public Vector2 ledgeCatchTimes = new Vector2(.18f, .35f);
+    [Tooltip("Catching a ledge warps the capsule onto the catch clip's hands (LedgeHangState). Off, it goes as before 0.8.318: the "
+        + "speed cut at once and the capsule pulled to the hang in ledgeCatchDuration, for comparing by the console's /hang.")]
+    public bool ledgeCatchWarp = true;
+    [Tooltip("Hanging, each hand keeps its own hold and they go hand over hand (PlayerBodyHands.Ledge). Off, as before 0.8.318: "
+        + "both hands slide along the edge with the body, for comparing by the console's /hang.")]
+    public bool ledgeHandOverHand = true;
     [Tooltip("The slowest a catch counts as coming in (m/s), so catching at a near standstill doesn't stretch the reach.")]
     [Min(.1f)] public float ledgeCatchLeastSpeed = 2f;
     [Tooltip("Hand over hand along a ledge (PlayerBodyHands.Ledge): how long one hand takes to move to its next hold (s).")]

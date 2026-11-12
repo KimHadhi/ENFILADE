@@ -372,6 +372,8 @@ Ability.ledgeJumpLookAngle,42,렛지에서 점프 방향을 시선으로 고를 
 Ability.ledgeJumpSpeed,8.5,렛지 점프 수평 속도(m/s)
 Ability.ledgeJumpUpSpeed,6.5,렛지 점프 위쪽 속도(m/s)
 Ability.ledgeCatchTimes,0.18;0.35,난간을 잡을 때 손이 모서리에 닿기까지의 시간 범위(초): 가장 짧게;가장 길게. 잡는 클립의 손이 닿는 프레임에서 손이 난간 끝에 오는 캡슐 자리까지 들어오던 속도로 가는 시간에 맞추되 이 안에서만(Motion Warping). 가장 짧은 값은 손이 잡은 뒤 캡슐이 매달릴 자리로 옮겨 가는 시간이기도 하다(몸은 손에 매달려 있어 보이지 않는다)
+Ability.ledgeCatchWarp,1,난간을 잡을 때 잡는 클립의 손에 맞춰 캡슐을 옮긴다(Motion Warping). 0이면 0.8.318 전처럼 속도를 그 자리에서 끊고 ledgeCatchDuration 동안 매달릴 자리로 끌어온다. 콘솔 /hang으로 전후를 비교할 때 쓴다
+Ability.ledgeHandOverHand,1,매달린 손이 손마다 잡은 자리를 두고 한 손씩 옮겨 잡는다. 0이면 0.8.318 전처럼 두 손이 몸과 같이 난간을 미끄러진다. 콘솔 /hang으로 전후를 비교할 때 쓴다
 Ability.ledgeCatchLeastSpeed,2,잡을 때 들어오던 속도로 보는 가장 느린 속도(m/s). 거의 멈춰서 잡아도 손이 늦게 닿지 않게
 Ability.ledgeHandStepTime,0.22,매달려 옆으로 갈 때 손 하나를 다음 자리로 옮겨 잡는 시간(초). 한 손이 옮기는 동안 다른 손은 잡고 있다
 Ability.ledgeHandLag,0.12,옆으로 갈 때 뒷손이 어깨 너비 제자리보다 가는 쪽 뒤로 이만큼 처지면 따라 잡는다(m). 앞손은 몸이 움직이기 시작하면 바로 뻗는다
@@ -657,6 +659,7 @@ Body.hangFootReach,0.35,매달렸을 때 발끝과 그 앞 실제 벽 사이가 
 Body.hangWallGap,0.015,매달리거나 올라갈 때 발끝·무릎·발목을 실제 벽에서 띄우는 거리(m)
 Body.hangLegFront,0.12;0.1,무릎 앞면;발목 앞면이 관절보다 벽 쪽으로 나와 있는 거리. 정강이 길이에 곱하는 비율. 다리 두께만큼 피부도 벽 밖에 둔다
 Body.hangLegDangle,0.96;0.06,닿는 벽이 없을 때 늘어뜨린 다리: 발목이 엉덩이 관절에서 다리 길이의 이 비율만큼 아래;벽 쪽으로
+Body.hangRealWall,1,매달린 다리가 그 밑의 실제 벽을 재어 딛거나 늘어뜨린다. 0이면 0.8.318 전처럼 난간 끝에서 곧게 내린 평면을 벽으로 본다. 콘솔 /hang으로 전후를 비교할 때 쓴다
 Body.ladderEnter,ladderenterbottom,땅에서 사다리에 오르기
 Body.ladderCatch,ladderclimbhangstart,공중에서 사다리 잡기
 Body.ladderLeft,LDR_I400_Ascd_LU_Loop_IP,왼손을 올리며 한 칸. 이전 값은 ladderclimbuplefthand

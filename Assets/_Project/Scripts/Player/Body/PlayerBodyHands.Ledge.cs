@@ -151,7 +151,8 @@ public sealed partial class PlayerBodyHands
         float hungFor = hanging ? body.StateTime : 0f;
         if (hungFor < ledgeHungFor) ledgeHoldsSet = false;
         ledgeHungFor = hungFor;
-        if (left == null || right == null || body.IsDead || (!hanging && !(heaving && ledgeHoldsSet))
+        // Ability.ledgeHandOverHand off (to compare by /hang): no holds, the hands slide with the body as before 0.8.318.
+        if (left == null || right == null || body.IsDead || (!hanging && !(heaving && ledgeHoldsSet)) || !player.AbilitySettings.ledgeHandOverHand
             || !LedgeFrame(traversal.Ledge, out Vector3 edge, out Vector3 outward, out Vector3 along))
         {
             ledgeHoldsSet = false;
