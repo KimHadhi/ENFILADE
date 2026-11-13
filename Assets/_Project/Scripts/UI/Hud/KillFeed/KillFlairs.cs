@@ -125,11 +125,14 @@ public static class KillFlairs
         foreach (string id in GameTables.RowIds(ClassColourTable)) ClassColourOf(id);
     }
 
-    /// <summary>A class's colour for its flairs (ClassColours.csv), or clear for one it doesn't name.</summary>
+    /// <summary>A class's colour for its flairs (ClassColours.csv; a variant without a row of its own takes its base
+    /// class's), or clear for one it doesn't name.</summary>
     public static Color ClassColourOf(string classId)
     {
-        if (string.IsNullOrWhiteSpace(classId) || !GameTables.TryGetRow(ClassColourTable, classId.Trim(), out var cells)
-            || !cells.TryGetValue("colour", out string text) || !ColorUtility.TryParseHtmlString(text.Trim(), out var colour))
+        if (string.IsNullOrWhiteSpace(classId)) return Color.clear;
+        string id = classId.Trim();
+        if (!GameTables.TryGetRow(ClassColourTable, id, out var cells)) GameTables.TryGetRow(ClassColourTable, PlayerClass.KitOf(id), out cells);
+        if (cells == null || !cells.TryGetValue("colour", out string text) || !ColorUtility.TryParseHtmlString(text.Trim(), out var colour))
             return Color.clear;
         return colour;
     }

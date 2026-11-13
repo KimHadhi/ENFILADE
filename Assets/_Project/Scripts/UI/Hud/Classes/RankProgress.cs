@@ -82,13 +82,18 @@ public static class RankProgress
         lookedAt = float.NegativeInfinity;
     }
 
-    /// <summary>The class played now, as it stands.</summary>
-    public static View Now()
+    /// <summary>The class played now, as it stands, with this game's growth so far.</summary>
+    public static View Now() => Of(ClassGrowth.CurrentId, playing);
+
+    /// <summary>Any class as it stands on its ladder, from what is stored alone (the title screen's class page).</summary>
+    public static View Of(string id) => Of(id, false);
+
+    // A variant climbs its base class's ladder (ClassGrowth.GrowthOf).
+    private static View Of(string id, bool withGame)
     {
-        string id = ClassGrowth.CurrentId;
-        var view = new View { ClassId = id, Title = ClassGrowth.TitleOf(id), Playing = playing };
-        view.Stored = StoredOf(id, out view.PrestigeBefore);
-        if (playing)
+        var view = new View { ClassId = id, Title = ClassGrowth.TitleOf(id), Playing = withGame };
+        view.Stored = StoredOf(ClassGrowth.GrowthOf(id), out view.PrestigeBefore);
+        if (withGame)
         {
             view.Kills = Math.Max(0L, CombatFeedHUD.TotalScore - baseScore);
             view.Kept = Math.Max(0L, Wallet.Experience - baseExperience - view.Kills);

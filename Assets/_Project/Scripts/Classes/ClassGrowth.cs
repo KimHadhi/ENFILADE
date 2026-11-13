@@ -6,8 +6,10 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 
 /// <summary>
-/// Multiplayer plan stage 6E: each class's growth on this PC, shown only as a rank insignia (the user's pick: no
-/// experience or level numbers anywhere, the insignia climbing only when a run ends). A game is one map from loading it
+/// Multiplayer plan stage 6E: each class's growth on this PC, as a rank insignia climbing when a run ends; the HUD's rank
+/// strip and the title screen's class page show the experience toward the next one too (RankProgress; the user asked for
+/// it in play on 2026-11-11 and on the class page on 2026-11-13). A variant (Classes.csv base) climbs its base class's
+/// ladder (GrowthOf). A game is one map from loading it
 /// to leaving it, as PlayerRecords counts it; what it adds is the growth earned meanwhile (Wallet.Experience: every
 /// point, plus a share of the money kept). The chapter's ending settles it and shows the climb (RankClimb, from
 /// CampaignRun); a game left without one still adds it, unseen. Ranks are Tables/ClassRanks rows (24, the LAYERLAB Space
@@ -136,7 +138,7 @@ public static class ClassGrowth
     private static Climb Award(long amount)
     {
         string id = CurrentId;
-        var entry = EntryOf(id);
+        var entry = EntryOf(GrowthOf(id));
         var climb = new Climb
         {
             ClassId = id, ClassTitle = TitleOf(id), RankBefore = RankOf(entry.points), PrestigeBefore = entry.prestige
@@ -196,9 +198,15 @@ public static class ClassGrowth
         => GameTables.TryGetRow(ClassTable, id, out var row) && row.TryGetValue("title", out string title) && title.Trim().Length > 0
             ? Texts.Cell(title) : id;
 
-    /// <summary>This class's rank now (1 is the first) and its prestige.</summary>
-    public static int RankNow(string id) => RankOf(EntryOf(id).points);
-    public static int PrestigeNow(string id) => EntryOf(id).prestige;
+    /// <summary>This class's rank now (1 is the first) and its prestige; a variant's are its base's (GrowthOf).</summary>
+    public static int RankNow(string id) => RankOf(EntryOf(GrowthOf(id)).points);
+    public static int PrestigeNow(string id) => EntryOf(GrowthOf(id)).prestige;
+
+    /// <summary>
+    /// The class whose ladder a class climbs: a variant shares its base's growth and insignia (Classes.csv base), as one
+    /// class with another way to play it; any other class its own.
+    /// </summary>
+    public static string GrowthOf(string id) => PlayerClass.KitOf(id);
 
     /// <summary>How many ranks there are.</summary>
     public static int RankCount => Ranks().Count;

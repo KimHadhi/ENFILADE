@@ -89,8 +89,12 @@ public static class MomentLook
     private static readonly string[] Classes =
         { PlayerClass.Knight, PlayerClass.Assault, PlayerClass.Ghost, PlayerClass.Point, PlayerClass.Detente, PlayerClass.Schiesshund, PlayerClass.Support };
 
-    /// <summary>A class's number for sending (-1 for none).</summary>
-    public static int IndexOf(string classId) => System.Array.IndexOf(Classes, Id(classId));
+    /// <summary>A class's number for sending (-1 for none); a variant (Classes.csv base) goes as its base class.</summary>
+    public static int IndexOf(string classId)
+    {
+        int at = System.Array.IndexOf(Classes, Id(classId));
+        return at >= 0 ? at : System.Array.IndexOf(Classes, Id(PlayerClass.KitOf(classId)));
+    }
 
     /// <summary>The class sent as this number ("" for none).</summary>
     public static string ClassAt(int index) => index >= 0 && index < Classes.Length ? Classes[index] : "";

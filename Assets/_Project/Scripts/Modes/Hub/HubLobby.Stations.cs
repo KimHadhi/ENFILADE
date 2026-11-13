@@ -148,7 +148,9 @@ public sealed partial class HubLobby
 
     private void BuildClasses(HubStation wall)
     {
-        var classes = PlayerClass.Catalog;
+        // A door per class; its variants (Classes.csv base) are picked at its door, one after another (Work).
+        var classes = new List<PlayerClass.Info>();
+        foreach (var info in PlayerClass.Catalog) if (!info.IsVariant) classes.Add(info);
         if (classes.Count == 0) return;
         Vector3 size = wall.Size;
         float width = Mathf.Min(1.1f, size.x / classes.Count - .06f), height = Mathf.Min(2.1f, size.y);
@@ -182,8 +184,20 @@ public sealed partial class HubLobby
             if (!info.Ready)
                 HubDisplays.Words(door, Texts.Get("classes.later"), 28f, KitStyle.Soft, TextAlignmentOptions.Center, new Vector2(10f, px.y - 80f), new Vector2(px.x - 20f, 50f));
             picks.Add(new Pick { Act = Act.Class, Id = info.Id, At = at, Label = name, Frame = frame });
-            frame.enabled = string.Equals(info.Id, current, System.StringComparison.OrdinalIgnoreCase);
+            frame.enabled = string.Equals(info.Id, PlayerClass.KitOf(current), System.StringComparison.OrdinalIgnoreCase);
         }
+    }
+
+    // What a press at a class's door plays: the class itself when another is played; its next variant (Classes.csv base)
+    // when one of its own is played, round to the class; null when it is played and has no variant.
+    private static string NextAtDoor(string classId)
+    {
+        string current = ClassGrowth.CurrentId;
+        if (!string.Equals(PlayerClass.KitOf(current), classId, System.StringComparison.OrdinalIgnoreCase)) return classId;
+        var family = PlayerClass.FamilyOf(classId);
+        if (family.Count < 2) return null;
+        int at = family.FindIndex(info => string.Equals(info.Id, current, System.StringComparison.OrdinalIgnoreCase));
+        return family[(at + 1) % family.Count].Id;
     }
 
     // ---- The gun rack: every gun the body can hold, hung along it ----
@@ -401,9 +415,10 @@ public sealed partial class HubLobby
                 if (pick.Id == chapter) return Texts.Format("hub.prompt.chapter.chosen", name);
                 return IsHost ? Texts.Format("hub.prompt.chapter", name) : Texts.Format("hub.prompt.chapter.host", name);
             case Act.Class:
-                string title = ClassGrowth.TitleOf(pick.Id);
-                return string.Equals(pick.Id, ClassGrowth.CurrentId, System.StringComparison.OrdinalIgnoreCase)
-                    ? Texts.Format("hub.prompt.class.chosen", title) : Texts.Format("hub.prompt.class", title);
+                // The door of the class played: its next variant when it has any, else it says it is chosen.
+                string next = NextAtDoor(pick.Id);
+                if (next == null) return Texts.Format("hub.prompt.class.chosen", ClassGrowth.TitleOf(ClassGrowth.CurrentId));
+                return Texts.Format("hub.prompt.class", ClassGrowth.TitleOf(next));
             case Act.Gun:
                 return Texts.Format("hub.prompt.gun", pick.Gun != null ? pick.Gun.DisplayName : pick.Id);
             case Act.Ammo:
@@ -429,13 +444,14 @@ public sealed partial class HubLobby
                 KitSound.Play(KitSound.Cue.Ping, .8f);
                 break;
             case Act.Class:
-                if (string.Equals(pick.Id, ClassGrowth.CurrentId, System.StringComparison.OrdinalIgnoreCase)) return;
-                ClassGrowth.Choose(pick.Id);
+                string chosen = NextAtDoor(pick.Id);
+                if (chosen == null) return;
+                ClassGrowth.Choose(chosen);
                 ClassKit.Local.OrNull()?.Rekit();
                 foreach (var other in picks)
                     if (other.Act == Act.Class && other.Frame != null) other.Frame.enabled = other == pick;
                 KitSound.Play(KitSound.Cue.Buy, .8f);
-                AlertHUD.Self(Texts.Format("hub.alert.class", ClassGrowth.TitleOf(pick.Id)));
+                AlertHUD.Self(Texts.Format("hub.alert.class", ClassGrowth.TitleOf(chosen)));
                 break;
             case Act.Gun:
                 if (!TakeGun(mine, pick.Gun)) { KitSound.Play(KitSound.Cue.Refuse, .5f); return; }

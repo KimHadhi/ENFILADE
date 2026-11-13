@@ -25,9 +25,20 @@ public static class PlayerClass
     public sealed class Info
     {
         public string Id, Title, Role, Primary, Secondary;
+        /// <summary>
+        /// The class this row is a variant of (Classes.csv base), "" for a class of its own. A variant plays its base's
+        /// kit (Is answers yes for the base), shares its growth and insignia, and takes the base's guns, role and numbers
+        /// wherever its own cells are empty, the way GMod Horde's subclasses stand under their class (the user,
+        /// 2026-11-13: "같은 클래스여도 예를 들어 시순트는 변형으로 처형 집행인 같은 게 … 있을 예정").
+        /// </summary>
+        public string Base = "";
         public string[] Weapons = Array.Empty<string>();
         public float GunBonus;
         public bool Ready;
+
+        /// <summary>The class it plays as: its base for a variant, else itself.</summary>
+        public string Family => Base.Length > 0 ? Base : Id;
+        public bool IsVariant => Base.Length > 0;
     }
 
     private static List<Info> catalog;
@@ -64,27 +75,72 @@ public static class PlayerClass
 
     private static void Forget() => catalog = null;
 
-    /// <summary>Every class, in the table's order.</summary>
+    /// <summary>Every class and variant, in the table's order.</summary>
     public static IReadOnlyList<Info> Catalog
     {
         get
         {
             if (catalog != null) return catalog;
             catalog = new List<Info>();
+            var bonusSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (string id in GameTables.RowIds(TableName))
             {
                 if (!GameTables.TryGetRow(TableName, id, out var row)) continue;
+                if (row.Text("gunBonus", "").Trim().Length > 0) bonusSet.Add(id);
                 catalog.Add(new Info
                 {
                     // The title and role cells name Texts rows (class.<id>.title, .role), or hold plain words.
                     Id = id, Title = Texts.Cell(row.Text("title", id)), Role = Texts.Cell(row.Text("role", "")), Primary = row.Text("primary", ""),
-                    Secondary = row.Text("secondary", ""),
+                    Secondary = row.Text("secondary", ""), Base = row.Text("base", "").Trim(),
                     Weapons = row.Text("classWeapons", "").Split(new[] { ';', ' ' }, StringSplitOptions.RemoveEmptyEntries),
                     GunBonus = row.Number("gunBonus", 0f), Ready = row.Number("ready", 0f) > .5f
                 });
             }
+            // A variant takes its base's cells where its own are empty. A base that is no class of its own (missing, or
+            // itself a variant) leaves the row a class of its own, said once.
+            foreach (var info in catalog)
+            {
+                if (!info.IsVariant) continue;
+                var root = catalog.Find(other => string.Equals(other.Id, info.Base, StringComparison.OrdinalIgnoreCase));
+                if (root == null || root.IsVariant || root == info)
+                {
+                    Debug.LogWarning($"[Classes] {TableName}.csv {info.Id}: base '{info.Base}'는 따로 선 클래스가 아니어서 변형이 아닌 클래스로 둡니다.");
+                    info.Base = "";
+                    continue;
+                }
+                info.Base = root.Id;
+                if (info.Role.Length == 0) info.Role = root.Role;
+                if (info.Primary.Length == 0) info.Primary = root.Primary;
+                if (info.Secondary.Length == 0) info.Secondary = root.Secondary;
+                if (info.Weapons.Length == 0) info.Weapons = root.Weapons;
+                if (!bonusSet.Contains(info.Id)) info.GunBonus = root.GunBonus;
+            }
             return catalog;
         }
+    }
+
+    /// <summary>The class an id plays as: a variant's base (Classes.csv base), else the id itself.</summary>
+    public static string KitOf(string id)
+    {
+        var info = Find(id);
+        return info != null ? info.Family : id ?? "";
+    }
+
+    /// <summary>The class this PC's player plays as (KitOf CurrentId): what kits, HUDs, cards and per-class tables go by.</summary>
+    public static string KitId => KitOf(CurrentId);
+
+    /// <summary>A class and its variants, in the table's order, the class first; empty for an id the table hasn't.</summary>
+    public static List<Info> FamilyOf(string id)
+    {
+        var family = new List<Info>();
+        string root = KitOf(id);
+        foreach (var info in Catalog)
+            if (string.Equals(info.Family, root, StringComparison.OrdinalIgnoreCase))
+            {
+                if (info.IsVariant) family.Add(info);
+                else family.Insert(0, info);
+            }
+        return family;
     }
 
     /// <summary>The class this PC's player plays (their pick, kept with its rank in ClassGrowth).</summary>
@@ -98,7 +154,18 @@ public static class PlayerClass
         return null;
     }
 
-    public static bool Is(string id) => string.Equals(CurrentId, id, StringComparison.OrdinalIgnoreCase);
+    /// <summary>
+    /// Whether this PC's player plays this class: it, or a variant of it, which plays its base's kit unless code that
+    /// knows the variant asks Plays.
+    /// </summary>
+    public static bool Is(string id)
+    {
+        string current = CurrentId;
+        return string.Equals(current, id, StringComparison.OrdinalIgnoreCase) || string.Equals(KitOf(current), id, StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>Whether this PC's player plays exactly this row (a variant's base is not it here).</summary>
+    public static bool Plays(string id) => string.Equals(CurrentId, id, StringComparison.OrdinalIgnoreCase);
 
     /// <summary>Whether this gun is one of the class's own (it hits harder in their hands: gunBonus).</summary>
     public static bool OwnsWeapon(Info info, WeaponData gun)
@@ -247,9 +314,18 @@ public static class PlayerClass
     /// <summary>
     /// An ability's number (Tables/ClassAbilities, "Class.name"), with what this PC's player's perk cards add to it
     /// (a card naming it in Tables/Perks' ability column: PlayerPerks.AbilityBonus). Only a player of that class is ever
-    /// dealt its cards, so a class's numbers grow for its own player.
+    /// dealt its cards, so a class's numbers grow for its own player. Played as a variant, the variant's own row wins
+    /// where it has the number ("Executioner.markSeconds" over "Schiesshund.markSeconds": RowOf the variant's id).
     /// </summary>
     public static float Ability(string classRow, string name, float fallback)
-        => GameTables.Number(AbilityTable, classRow, name, fallback)
-            + PlayerPerks.AbilityBonus(classRow, name);
+    {
+        var info = Current;
+        float value = info != null && info.IsVariant && string.Equals(classRow, info.Base, StringComparison.OrdinalIgnoreCase)
+            ? GameTables.Number(AbilityTable, RowOf(info.Id), name, GameTables.Number(AbilityTable, classRow, name, fallback))
+            : GameTables.Number(AbilityTable, classRow, name, fallback);
+        return value + PlayerPerks.AbilityBonus(classRow, name);
+    }
+
+    /// <summary>A class's rows in Tables/ClassAbilities go by its id with a capital first letter (schiesshund → Schiesshund).</summary>
+    public static string RowOf(string id) => string.IsNullOrEmpty(id) ? "" : char.ToUpperInvariant(id[0]) + id.Substring(1);
 }

@@ -67,7 +67,7 @@ public static class ClassKnives
     private static readonly Dictionary<string, Knife> knives = new Dictionary<string, Knife>(System.StringComparer.OrdinalIgnoreCase);
     private static bool listening;
 
-    /// <summary>The knife of a class (its id in Tables/Classes), else the default row's, else the built-in one.</summary>
+    /// <summary>The knife of a class (its id in Tables/Classes), else its base class's for a variant, else the default row's, else the built-in one.</summary>
     public static Knife Of(string classId)
     {
         if (!listening)
@@ -77,7 +77,7 @@ public static class ClassKnives
         }
         string id = string.IsNullOrWhiteSpace(classId) ? DefaultRow : classId.Trim();
         if (knives.TryGetValue(id, out var known)) return known;
-        var knife = Read(id) ?? Read(DefaultRow) ?? new Knife();
+        var knife = Read(id) ?? Read(PlayerClass.KitOf(id)) ?? Read(DefaultRow) ?? new Knife();
         knives[id] = knife;
         return knife;
     }

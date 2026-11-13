@@ -119,7 +119,9 @@ public static class Throwables
         if (string.IsNullOrEmpty(classId)) return Throwable.None;
         foreach (var pair in kinds)
             if (string.Equals(pair.Value.Class, classId, StringComparison.OrdinalIgnoreCase)) return pair.Key;
-        return Throwable.None;
+        // A variant (Classes.csv base) throws its base class's unless a row names it.
+        string kit = PlayerClass.KitOf(classId);
+        return string.Equals(kit, classId, StringComparison.OrdinalIgnoreCase) ? Throwable.None : ForClass(kit);
     }
 
     /// <summary>A number of the rules row (Tables/GrenadeRules, row Default).</summary>
