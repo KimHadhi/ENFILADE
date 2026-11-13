@@ -281,13 +281,15 @@ public sealed class MainMenuClasses : MonoBehaviour
     private static float Words(RectTransform rows, float y, float width, string text, float size, Color colour, FontStyles style = FontStyles.Normal,
         float lineSpacing = 0f, float x = 0f)
     {
-        var label = KitStyle.Flat(KitStyle.TopLeft("Words", rows, new Vector2(x, y), new Vector2(width, size * 1.4f)), text ?? "", size,
-            TextAlignmentOptions.TopLeft, colour);
+        // The label stretches over its box (KitStyle.Label): the box takes the height. Sized itself, the stretched label
+        // grew by that much on every side of the box and its words ran off the panel's left and top (2026-11-14).
+        var box = KitStyle.TopLeft("Words", rows, new Vector2(x, y), new Vector2(width, size * 1.4f));
+        var label = KitStyle.Flat(box, text ?? "", size, TextAlignmentOptions.TopLeft, colour);
         label.fontStyle = style;
         label.textWrappingMode = TextWrappingModes.Normal;
         label.lineSpacing = lineSpacing;
         float height = Mathf.Ceil(label.GetPreferredValues(label.text, width, 0f).y) + 2f;
-        label.rectTransform.sizeDelta = new Vector2(width, height);
+        box.sizeDelta = new Vector2(width, height);
         return height;
     }
 
