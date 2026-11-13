@@ -55,6 +55,29 @@ public sealed class MainMenuPreview : MonoBehaviour, IWardrobeStage
     private float ground;
     private float yaw, spin, sinceTurned = float.PositiveInfinity;
 
+    // A character stood up for a look, put aside switched off when another takes its place, so coming back to a look of a
+    // moment ago costs nothing: the saved outfit as the pointer leaves a choice, a choice rested on again, the click that
+    // saves the choice tried. Each try stood the whole character up again (made, dressed and fitted, cloth hung, face put
+    // on), and the user felt it every time (2026-11-13: "옷장 미리보기 할 때마다 렉이 걸리는데"). The shelf keeps the
+    // last few; a look is told by its character, colour set, outfit and what a removal try takes off (KeyOf).
+    private sealed class Stand
+    {
+        public string Key;
+        public GameObject Model;
+        public OutfitDresser.Dressing Dressing;
+        public PlayerBodyProfile.Skin Skin;
+        public SkinVariant Variant;
+        public Bounds Shown;
+        public float Ground;
+        public CharacterFace Face;
+        public PlayableGraph Graph;
+        public AnimationClipPlayable Idle;
+    }
+
+    private const int ShelfSize = 4;
+    private readonly List<Stand> shelf = new List<Stand>();
+    private string standKey;
+
     /// <summary>The camera the character is seen through.</summary>
     public Camera View => view;
     /// <summary>Whether a character is standing.</summary>
@@ -109,29 +132,22 @@ public sealed class MainMenuPreview : MonoBehaviour, IWardrobeStage
         double idleTime = idlePlayable.IsValid() ? idlePlayable.GetTime() : 0d;
         var before = shownSkin;
         bool framed = model != null;
-        Clear();
         var profile = PlayerBodyProfile.Load();
-        if (profile == null) return;
-        shownSkin = profile.CurrentSkin;
-        model = Instantiate(profile.Model, transform);
-        wornVariant = profile.CurrentVariant;
-        SkinVariant.Wear(model, null, wornVariant);
-        foreach (var renderer in model.GetComponentsInChildren<Renderer>())
-            if (renderer is SkinnedMeshRenderer skinned) skinned.updateWhenOffscreen = true;
-        // Measured before dressing, so putting on a helmet doesn't move the camera back and shrink the character.
-        var bounds = CharacterFrame.Measure(model);
+        if (profile == null)
+        {
+            Clear();
+            return;
+        }
         // A removal tried is dressed as the outfit is now with that slot leaving: the body as it will be, the piece that
         // goes drawn over it see-through (OutfitDresser.Dress leaving, MarkTrial).
-        var outfit = (!trialRemoves ? tried : null) ?? OutfitLook.Saved(shownSkin?.Id);
-        dressing = OutfitDresser.Dress(model, profile.Model, shownSkin, outfit, trialRemoves ? trialSlot : null);
-        // Stood on the soles it draws, as in the game (PlayerBody.StandOnSoles): its model's floor is where its own shoes'
-        // soles are, and other shoes or bare feet floated over the menu's ground or sank into it. Measured as it will be,
-        // without a piece on its way off.
-        ground = model.transform.position.y;
-        model.transform.localPosition += Vector3.down * (DrawnSole.Of(model.transform, dressing.Leaving) * model.transform.localScale.y);
+        var outfit = (!trialRemoves ? tried : null) ?? OutfitLook.Saved(profile.CurrentSkin?.Id);
+        string key = KeyOf(profile.CurrentSkin, profile.CurrentVariant, outfit);
+        Shelve();
+        bool built = !Unshelve(key);
+        if (built) Build(profile, outfit, key);
         // A try is never what is saved: whatever changes next stands the saved outfit again.
         shownOutfit = tried != null ? null : outfit.ToString();
-        shown = bounds;
+        var bounds = shown;
         MarkTrial(outfit);
         Mark();
         Face(); // measured facing the camera, then turned as it was
@@ -147,15 +163,24 @@ public sealed class MainMenuPreview : MonoBehaviour, IWardrobeStage
             cameraMoving = false;
             refocus = focus != null;
         }
-        // Hair, tails and skirts hang free here as in the game, on the body as it stands, turned as it was.
-        PreviewCloth.Wear(model, shownSkin?.Id, dressing, outfit + (trialRemoves ? "|-" + trialSlot : ""));
-        // A face that lives while it stands here, on real time like the menu; calm while the wardrobe works on the face.
-        face = CharacterFace.Wear(model, shownSkin?.Id);
+        if (built)
+        {
+            // Hair, tails and skirts hang free here as in the game, on the body as it stands, turned as it was.
+            PreviewCloth.Wear(model, shownSkin?.Id, dressing, outfit + (trialRemoves ? "|-" + trialSlot : ""));
+            // A face that lives while it stands here, on real time like the menu.
+            face = CharacterFace.Wear(model, shownSkin?.Id);
+        }
+        // The face picked (or tried), calm while the wardrobe works on the face.
         if (face != null)
         {
             face.ShowFace = triedFace ?? CharacterFace.SavedShowFace(shownSkin?.Id);
             face.Unscaled = face.Watched = face.Showing = true;
             face.Calm = WorksOnFace(focus);
+        }
+        if (idlePlayable.IsValid())
+        {
+            idlePlayable.SetTime(idleTime);
+            return;
         }
         var animator = model.GetComponentInChildren<Animator>();
         var idle = profile.Find(IdleClip);
@@ -163,6 +188,81 @@ public sealed class MainMenuPreview : MonoBehaviour, IWardrobeStage
         animator.applyRootMotion = false;
         idlePlayable = AnimationPlayableUtilities.PlayClip(animator, idle, out graph);
         idlePlayable.SetTime(idleTime);
+    }
+
+    // The look's character made and dressed, stood on its soles, as nothing on the shelf had it.
+    private void Build(PlayerBodyProfile profile, OutfitLook outfit, string key)
+    {
+        shownSkin = profile.CurrentSkin;
+        model = Instantiate(profile.Model, transform);
+        wornVariant = profile.CurrentVariant;
+        standKey = key;
+        SkinVariant.Wear(model, null, wornVariant);
+        foreach (var renderer in model.GetComponentsInChildren<Renderer>())
+            if (renderer is SkinnedMeshRenderer skinned) skinned.updateWhenOffscreen = true;
+        // Measured before dressing, so putting on a helmet doesn't move the camera back and shrink the character.
+        shown = CharacterFrame.Measure(model);
+        dressing = OutfitDresser.Dress(model, profile.Model, shownSkin, outfit, trialRemoves ? trialSlot : null);
+        // Stood on the soles it draws, as in the game (PlayerBody.StandOnSoles): its model's floor is where its own shoes'
+        // soles are, and other shoes or bare feet floated over the menu's ground or sank into it. Measured as it will be,
+        // without a piece on its way off.
+        ground = model.transform.position.y;
+        model.transform.localPosition += Vector3.down * (DrawnSole.Of(model.transform, dressing.Leaving) * model.transform.localScale.y);
+    }
+
+    // What tells one stood-up look from another on the shelf.
+    private string KeyOf(PlayerBodyProfile.Skin skin, SkinVariant variant, OutfitLook outfit) =>
+        (skin != null ? skin.Id : "") + "#" + (variant != null ? variant.Id : "") + "@" + outfit + (trialRemoves ? "|-" + trialSlot : "");
+
+    // The character standing goes on the shelf switched off, its marks let go; the oldest past ShelfSize goes for good.
+    private void Shelve()
+    {
+        OutfitGhost.Show(null);
+        OutfitGhost.Trial(null);
+        if (model == null) return;
+        model.SetActive(false);
+        shelf.Insert(0, new Stand
+        {
+            Key = standKey, Model = model, Dressing = dressing, Skin = shownSkin, Variant = wornVariant, Shown = shown, Ground = ground,
+            Face = face, Graph = graph, Idle = idlePlayable
+        });
+        while (shelf.Count > ShelfSize)
+        {
+            Drop(shelf[shelf.Count - 1]);
+            shelf.RemoveAt(shelf.Count - 1);
+        }
+        model = null;
+        dressing = null;
+        face = null;
+        graph = default;
+        idlePlayable = default;
+    }
+
+    // The look stood up a moment ago taken off the shelf and switched on, if it is there.
+    private bool Unshelve(string key)
+    {
+        int at = shelf.FindIndex(stand => stand.Key == key && stand.Model != null);
+        if (at < 0) return false;
+        var stand = shelf[at];
+        shelf.RemoveAt(at);
+        model = stand.Model;
+        dressing = stand.Dressing;
+        shownSkin = stand.Skin;
+        wornVariant = stand.Variant;
+        shown = stand.Shown;
+        ground = stand.Ground;
+        face = stand.Face;
+        graph = stand.Graph;
+        idlePlayable = stand.Idle;
+        standKey = stand.Key;
+        model.SetActive(true);
+        return true;
+    }
+
+    private static void Drop(Stand stand)
+    {
+        if (stand.Graph.IsValid()) stand.Graph.Destroy();
+        if (stand.Model != null) Destroy(stand.Model);
     }
 
     /// <summary>
@@ -220,7 +320,12 @@ public sealed class MainMenuPreview : MonoBehaviour, IWardrobeStage
     /// <summary>The wardrobe saved the look the character already shows (its body options set live by Shape).</summary>
     public void Kept(OutfitLook look)
     {
-        if (tried == null && look != null && model != null) shownOutfit = look.ToString();
+        if (tried == null && look != null && model != null)
+        {
+            shownOutfit = look.ToString();
+            // Shaped live, it is that look now on the shelf too.
+            standKey = KeyOf(shownSkin, wornVariant, look);
+        }
     }
 
     /// <summary>Marks on the body what the slot holds (the wardrobe's tile under the pointer); null takes the marks off.</summary>
@@ -364,6 +469,8 @@ public sealed class MainMenuPreview : MonoBehaviour, IWardrobeStage
         if (profile.CurrentSkin != shownSkin || OutfitLook.Tidy(OutfitLook.SavedText(shownSkin?.Id)) != shownOutfit) { Show(); return; }
         var next = profile.CurrentVariant;
         SkinVariant.Wear(model, wornVariant, next);
+        // Recoloured in place, it no longer is the look it was shelved under: never found on the shelf again.
+        if (next != wornVariant) standKey = null;
         wornVariant = next;
         // A face picked on the face page is a setting too: the face takes it, the body stays.
         if (face != null && triedFace == null) face.ShowFace = CharacterFace.SavedShowFace(shownSkin?.Id);
@@ -379,9 +486,14 @@ public sealed class MainMenuPreview : MonoBehaviour, IWardrobeStage
         if (graph.IsValid()) graph.Destroy();
         if (model != null) Destroy(model);
         model = null;
+        graph = default;
+        idlePlayable = default;
         shownSkin = null;
         wornVariant = null;
         shownOutfit = null;
+        standKey = null;
+        foreach (var stand in shelf) Drop(stand);
+        shelf.Clear();
     }
 
     private void OnDestroy()
