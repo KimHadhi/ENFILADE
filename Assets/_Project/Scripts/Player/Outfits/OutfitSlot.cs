@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -53,6 +54,16 @@ public sealed class OutfitSlot
     /// with nothing set up per character.
     /// </summary>
     public string fit = "";
+    /// <summary>
+    /// Slots whose pieces this slot's pieces are worn over ('|' between them): where a piece there stands out through one
+    /// here, it is pressed in under it (UnderwearFit.Press, OutfitDresser.PressUnder). Shoes over the legs slot keep socks,
+    /// stockings and tights inside them, whichever two are worn together (the user, 2026-11-13: "양말이랑 신발 서로 호환
+    /// 안 되는 거 많던데 이거 근본적으로 해결하는 방법?").
+    /// </summary>
+    public string over = "";
+
+    /// <summary>The slots this one is worn over (<see cref="over"/>).</summary>
+    public IEnumerable<string> OverSlots => OutfitCatalog.Split(over);
 
     /// <summary>Whether rigid pieces made for anyone are fitted to the face here (<see cref="fit"/> "face").</summary>
     public bool FitsFace => string.Equals(fit, "face", StringComparison.OrdinalIgnoreCase);

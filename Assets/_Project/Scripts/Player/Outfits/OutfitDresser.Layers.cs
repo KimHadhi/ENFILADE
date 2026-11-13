@@ -38,6 +38,44 @@ internal static partial class OutfitDresser
         UnderwearFit.Press(root, showing, onFace);
     }
 
+    // Pieces worn over others by their slots (OutfitSlots.csv over: shoes over the legs slot): where a piece of the inner
+    // slot stands out through one of the outer slot, or lies less than UnderwearFit.csv margin under it, it is pressed in
+    // under it on a copy of its mesh, as underwear goes under clothes (UnderwearFit.Press), measured on the meshes of
+    // whatever two are worn, so no pair of socks and shoes needs rows of its own. Measured offline on 2026-11-12: Mayo's
+    // own stocking stood 17-20 mm out of the White Board boots, the Sera Yura shoes and the loafers, and no key of hers
+    // draws its foot in. The character's own pieces count in their slots (CharacterParts.csv) as items do.
+    private static void PressUnder(Transform root, string skinId, Renderer[] own, List<Worn> worn, HashSet<string> covered, List<Renderer> leaving)
+    {
+        var gone = new HashSet<Renderer>(leaving);
+        foreach (var slot in OutfitCatalog.Slots)
+        {
+            if (string.IsNullOrEmpty(slot.over) || covered.Contains(slot.id)) continue;
+            var outer = PiecesIn(slot.id, skinId, own, worn, gone);
+            if (outer.Count == 0) continue;
+            var inner = new List<Renderer>();
+            foreach (string under in slot.OverSlots)
+                if (!covered.Contains(under)) inner.AddRange(PiecesIn(under, skinId, own, worn, gone));
+            if (inner.Count > 0) UnderwearFit.Press(root, inner, outer);
+        }
+    }
+
+    // What shows in a slot: the item worn there, else the character's own pieces of it (CharacterParts.csv) still drawn.
+    private static List<Renderer> PiecesIn(string slot, string skinId, Renderer[] own, List<Worn> worn, HashSet<Renderer> gone)
+    {
+        var found = new List<Renderer>();
+        foreach (var piece in worn)
+            if (string.Equals(piece.Slot.id, slot, StringComparison.OrdinalIgnoreCase))
+                foreach (var renderer in piece.Renderers)
+                    if (Drawn(renderer, gone)) found.Add(renderer);
+        if (found.Count > 0) return found;
+        var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var part in OutfitCatalog.PartsOf(skinId))
+            if (string.Equals(part.slot, slot, StringComparison.OrdinalIgnoreCase)) names.UnionWith(OutfitCatalog.Split(part.parts));
+        foreach (var renderer in own)
+            if (renderer != null && names.Contains(renderer.name) && Drawn(renderer, gone)) found.Add(renderer);
+        return found;
+    }
+
     // The character's own underwear in the underwear slots nothing else took (CharacterParts.csv rows of those slots):
     // on the skin whatever else is worn. Its maker kept it switched off under the clothes it came in (Mayo's bra and
     // panties, Ichigo's), so it is switched on here, and the rest of the outfit decides how much of it shows

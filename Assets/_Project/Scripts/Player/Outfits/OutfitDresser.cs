@@ -220,8 +220,10 @@ internal static partial class OutfitDresser
             if (!covered.Contains(piece.Slot.id)) items.AddRange(piece.Renderers);
         var released = SkinCover.Release(model.transform, skin.Id, own, items, dressing.Leaving, made);
         if (released.Count > 0) Follow(ShapesNow(own, released), worn);
-        // Last, with every key where dressing leaves it: underwear still standing out through what is over it goes in under.
+        // Last, with every key where dressing leaves it: underwear still standing out through what is over it goes in under,
+        // and so do socks and stockings through shoes (slots worn over others, OutfitSlots.csv over).
         UnderwearFit.Press(model.transform, showing, over);
+        PressUnder(model.transform, skin.Id, own, worn, covered, dressing.Leaving);
         // Hair, ears and head ornaments under a piece fitted to the face (the welding mask) likewise go in under it where
         // they stand out through it; one it covers whole goes out of sight.
         UnderFace(model.transform, skin.Id, animator, own, worn, covered);
