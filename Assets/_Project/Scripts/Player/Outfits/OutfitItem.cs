@@ -12,7 +12,15 @@ public sealed class OutfitItem
 {
     public const string TableName = "Outfits";
 
-    public string id = "", slot = "", also = "", hides = "", name = "", model = "", parts = "", was = "";
+    public string id = "", slot = "", also = "", hides = "", name = "", model = "", parts = "", was = "", wear = "";
+
+    /// <summary>
+    /// A piece fitted to the face (OutfitSlot.fit "face") worn on the back of the head instead (Outfits.csv wear "back"):
+    /// the welding mask as it first went onto Kazusa's, Hiro's and Sil's heads by mistake, which the user liked as a look
+    /// of its own (2026-11-13: "뒤통수에 위치하니까 멋있긴 해서 옵션으로 넣어 주면 좋을 듯"). FaceFit measures the face
+    /// turned round.
+    /// </summary>
+    public bool WornBack => string.Equals(wear, "back", System.StringComparison.OrdinalIgnoreCase);
 
     /// <summary>Its name on the wardrobe: the name cell's words (a Texts id, outfit.&lt;id&gt;.name, or plain words), else the id.</summary>
     public string DisplayName => string.IsNullOrEmpty(name) ? id : Texts.Cell(name);

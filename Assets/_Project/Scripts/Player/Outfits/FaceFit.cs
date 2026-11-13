@@ -14,7 +14,16 @@ using UnityEngine;
 /// The piece's glass (its see-through part: a transparent material, or one named glass, lens or visor) then goes at eye
 /// height, turned the way the character faces, its inside `clearance` in front of that. Where the shell's back-most edge
 /// would stand in the body below the head (a short neck, a big chest), it tips forward at the bottom just enough to
-/// clear it, as a welder's helmet does. The piece keeps its maker's size, and follows the head bone.
+/// clear it, as a welder's helmet does. It follows the head bone.
+/// The way the character faces is read from its skeleton, across the eyes (else the shoulders or the hips), never from the
+/// model's own +Z: Kazusa's, Hiro's and Sil's models face the other way in their files' space, and the mask went onto the
+/// backs of their heads (the user, 2026-11-13: "왜 카즈사, 히로, 실은 뒤통수 쪽에 위치해? 근데 뒤통수에 위치하니까 멋있긴 해서
+/// 옵션으로"). That look is now an item of its own: worn back (OutfitItem.wear "back"), the same rule runs on the face turned
+/// round, the back of the head and hair standing for the face.
+/// The piece is sized to the face (the same day: "용접 마스크가 존나게 큰 듯 … 원본 사이즈가 걍 모두한테 너무 크면
+/// 어떡해"): its width across the face is the eye bones' spacing × widthPerEye (FaceFit.csv), within leastScale..mostScale of
+/// its maker's size, times scale. Measured on the FBX files: the mask is 19.4 cm wide and reaches 17.5 cm under its glass,
+/// Mayo's eyes are 5.8 cm apart and her chin 6.2 cm under them, so at its maker's size it stood two to three faces tall.
 /// Measured on the FBX files (2026-11-13): eyes to nose 1.9-5.5 cm, to the brow or bangs 2.2-7.3 cm, so the glass stands
 /// 3.5 (Hiro) to 8.6 cm (Mayo, for her bangs) in front of the eyes; no face then comes through the shell, and of the hair
 /// only a few vertices stand out through it (Mayo 9, Kazusa 9, Ichigo 44, Hiro 81), which OutfitDresser presses in under
@@ -26,7 +35,8 @@ internal static class FaceFit
 
     private struct Values
     {
-        public float Clearance, EyeLift, NoseWidth, NoseBelow, BrowWidth, BrowHeight, Front, ChestClear, MostTilt, Hide;
+        public float Clearance, EyeLift, NoseWidth, NoseBelow, BrowWidth, BrowHeight, Front, ChestClear, MostTilt, Hide,
+            WidthPerEye, LeastScale, MostScale, Scale;
     }
 
     // The body below the head that the shell's lower part may meet (metres from the eyes): under the chin, within reach
@@ -39,13 +49,20 @@ internal static class FaceFit
     private static bool listening;
     private static readonly HashSet<string> warned = new HashSet<string>();
 
-    /// <summary>A face as measured, in the model's space (x right, y up, z forward).</summary>
+    /// <summary>
+    /// A face as measured: the eyes in the model's space, and the face's own frame there (Frame: z out of the face, or out
+    /// of the back of the head when the piece is worn back; y up; x to the character's right, or left worn back). Front
+    /// and Chest are in that frame, from the eyes.
+    /// </summary>
     internal sealed class Face
     {
         public Vector3 Eyes;
-        /// <summary>How far in front of the eyes the face stands (nose, brow or bangs), metres.</summary>
+        public Quaternion Frame = Quaternion.identity;
+        /// <summary>How far in front of the eyes the face stands (nose, brow or bangs), metres; worn back, the back of the head.</summary>
         public float Front;
-        /// <summary>Points of the body below the head in front of the chest, for the shell's lower edge to clear.</summary>
+        /// <summary>Between the eye bones in the model's space, 0 without them: what the piece's size goes by.</summary>
+        public float EyeSpacing;
+        /// <summary>Points of the body below the head in front of the chest (worn back: behind the shoulders), for the shell's lower edge to clear.</summary>
         public readonly List<Vector3> Chest = new List<Vector3>();
     }
 
@@ -61,9 +78,9 @@ internal static class FaceFit
 
     /// <summary>
     /// The face of a fresh, unposed model, from its own meshes (<paramref name="own"/>) as they show now with their keys;
-    /// null without a head bone.
+    /// null without a head bone. <paramref name="back"/>: for a piece worn on the back of the head, the face turned round.
     /// </summary>
-    internal static Face Measure(Transform root, Animator animator, Renderer[] own)
+    internal static Face Measure(Transform root, Animator animator, Renderer[] own, bool back = false)
     {
         var head = animator != null && animator.isHuman ? animator.GetBoneTransform(HumanBodyBones.Head) : null;
         if (root == null || head == null || own == null) return null;
@@ -72,9 +89,15 @@ internal static class FaceFit
         var face = new Face();
         var leftEye = animator.GetBoneTransform(HumanBodyBones.LeftEye);
         var rightEye = animator.GetBoneTransform(HumanBodyBones.RightEye);
+        var headAt = toModel.MultiplyPoint3x4(head.position);
         face.Eyes = leftEye != null && rightEye != null
             ? toModel.MultiplyPoint3x4((leftEye.position + rightEye.position) * .5f)
-            : toModel.MultiplyPoint3x4(head.position) + Vector3.up * settings.EyeLift;
+            : headAt + Vector3.up * settings.EyeLift;
+        face.EyeSpacing = leftEye != null && rightEye != null
+            ? Vector3.Distance(toModel.MultiplyPoint3x4(leftEye.position), toModel.MultiplyPoint3x4(rightEye.position)) : 0f;
+        face.Frame = FrameOf(animator, toModel);
+        if (back) face.Frame *= Quaternion.Euler(0f, 180f, 0f);
+        var intoFace = Quaternion.Inverse(face.Frame);
         float nose = float.MinValue, brow = float.MinValue;
         foreach (var renderer in own)
         {
@@ -95,19 +118,38 @@ internal static class FaceFit
                 // A vertex's weights come strongest first.
                 int strongest = count > 0 && next < weights.Length ? weights[next].boneIndex : -1;
                 next += count;
-                var p = at[v] - face.Eyes;
+                var p = intoFace * (at[v] - face.Eyes);
                 bool onTheHead = strongest >= 0 && strongest < underHead.Length && underHead[strongest];
                 if (onTheHead)
                 {
                     if (Mathf.Abs(p.x) < settings.NoseWidth && p.y < -.005f && p.y > -settings.NoseBelow) nose = Mathf.Max(nose, p.z);
                     if (Mathf.Abs(p.x) < settings.BrowWidth && Mathf.Abs(p.y) < settings.BrowHeight) brow = Mathf.Max(brow, p.z);
                 }
-                else if (p.y < -ChestTop && p.y > -ChestBottom && Mathf.Abs(p.x) < ChestSide && p.z > -ChestBack) face.Chest.Add(at[v]);
+                else if (p.y < -ChestTop && p.y > -ChestBottom && Mathf.Abs(p.x) < ChestSide && p.z > -ChestBack) face.Chest.Add(p);
             }
         }
         face.Front = Mathf.Max(nose, brow);
         if (face.Front == float.MinValue) face.Front = settings.Front;
         return face;
+    }
+
+    // The face's frame in the model's space from the skeleton: x across the eyes from the left one to the right one (else
+    // the shoulders, else the hips; the humanoid's own left and right), y the model's up, z out of the face (x cross y).
+    // A skeleton with none of those keeps the model's own axes.
+    private static Quaternion FrameOf(Animator animator, Matrix4x4 toModel)
+    {
+        Vector3 Across(HumanBodyBones left, HumanBodyBones right)
+        {
+            var l = animator.GetBoneTransform(left);
+            var r = animator.GetBoneTransform(right);
+            return l != null && r != null ? toModel.MultiplyPoint3x4(r.position) - toModel.MultiplyPoint3x4(l.position) : Vector3.zero;
+        }
+        var side = Across(HumanBodyBones.LeftEye, HumanBodyBones.RightEye);
+        if (side.sqrMagnitude < 1e-8f) side = Across(HumanBodyBones.LeftUpperArm, HumanBodyBones.RightUpperArm);
+        if (side.sqrMagnitude < 1e-8f) side = Across(HumanBodyBones.LeftUpperLeg, HumanBodyBones.RightUpperLeg);
+        side -= Vector3.up * Vector3.Dot(side, Vector3.up);
+        if (side.sqrMagnitude < 1e-8f) return Quaternion.identity;
+        return Quaternion.LookRotation(Vector3.Cross(side.normalized, Vector3.up).normalized, Vector3.up);
     }
 
     /// <summary>
@@ -119,8 +161,9 @@ internal static class FaceFit
     {
         if (instance == null || root == null || face == null) return false;
         var settings = Settings();
-        var toModel = root.worldToLocalMatrix;
-        // The piece as it stands, and its glass, in the model's space.
+        // The piece as it stands, and its glass, in the face's frame (Face.Frame, from the eyes).
+        var intoFace = Quaternion.Inverse(face.Frame);
+        var toFace = Matrix4x4.Rotate(intoFace) * Matrix4x4.Translate(-face.Eyes) * root.worldToLocalMatrix;
         var shell = new List<Vector3>();
         var glass = new List<Vector3>();
         var triangles = new List<int>();
@@ -129,7 +172,7 @@ internal static class FaceFit
             var mesh = renderer is SkinnedMeshRenderer skinned ? skinned.sharedMesh
                 : renderer.TryGetComponent(out MeshFilter filter) ? filter.sharedMesh : null;
             if (mesh == null || !mesh.isReadable) continue;
-            var matrix = toModel * renderer.transform.localToWorldMatrix;
+            var matrix = toFace * renderer.transform.localToWorldMatrix;
             int first = shell.Count;
             foreach (var vertex in mesh.vertices) shell.Add(matrix.MultiplyPoint3x4(vertex));
             var materials = renderer.sharedMaterials;
@@ -166,35 +209,56 @@ internal static class FaceFit
         {
             // No glass: the piece's own front (+Z as made) faces out, its middle at the eyes.
             eyeOf = middle;
-            ahead = toModel.MultiplyVector(instance.forward).normalized;
+            ahead = toFace.MultiplyVector(instance.forward).normalized;
             Warn($"{instance.name}: 유리(투명 재질이나 이름에 glass·lens·visor)가 없어 모델의 앞(+Z)과 가운데로 얼굴에 맞춥니다.");
         }
-        var up = toModel.MultiplyVector(instance.up);
+        var up = toFace.MultiplyVector(instance.up);
         up -= ahead * Vector3.Dot(up, ahead);
         if (up.sqrMagnitude < 1e-8f) up = Vector3.up;
-        // Upright first: the glass turned to face forward, at eye height, its inside clear of the face.
+        // Upright first: the glass turned to face out of the face, sized to it, at eye height, its inside clear of it.
         var turn = Quaternion.Inverse(Quaternion.LookRotation(ahead, up.normalized));
-        var to = face.Eyes + Vector3.forward * (face.Front + settings.Clearance + thickness * .5f);
-        float tilt = Tilt(shell, eyeOf, turn, to, face, settings);
+        float size = SizeFor(shell, eyeOf, turn, face, settings);
+        var to = Vector3.forward * (face.Front + settings.Clearance + thickness * size * .5f);
+        float tilt = Tilt(shell, eyeOf, turn, to, size, face, settings);
         turn = Quaternion.AngleAxis(-tilt, Vector3.right) * turn;
-        var worldTurn = root.rotation * turn * Quaternion.Inverse(root.rotation);
-        var eyeWorld = root.TransformPoint(eyeOf);
-        var toWorld = root.TransformPoint(to);
-        instance.SetPositionAndRotation(toWorld + worldTurn * (instance.position - eyeWorld), worldTurn * instance.rotation);
+        // Back from the face's frame to the model's: the turn there, the spot the glass goes to, and its middle as it stands.
+        var modelTurn = face.Frame * turn * intoFace;
+        var worldTurn = root.rotation * modelTurn * Quaternion.Inverse(root.rotation);
+        var eyeWorld = root.TransformPoint(face.Eyes + face.Frame * eyeOf);
+        var toWorld = root.TransformPoint(face.Eyes + face.Frame * to);
+        instance.SetPositionAndRotation(toWorld + worldTurn * ((instance.position - eyeWorld) * size), worldTurn * instance.rotation);
+        instance.localScale *= size;
         if (anchor != null) instance.SetParent(anchor, true);
         return true;
+    }
+
+    // How big the piece is worn, a share of its maker's size: its width across the face (turned upright) made the eye
+    // bones' spacing × widthPerEye, within leastScale..mostScale, then × scale. Without eye bones, scale alone.
+    private static float SizeFor(List<Vector3> shell, Vector3 eyeOf, Quaternion turn, Face face, Values settings)
+    {
+        if (face.EyeSpacing <= 0f || settings.WidthPerEye <= 0f) return settings.Scale;
+        float left = float.MaxValue, right = float.MinValue;
+        foreach (var point in shell)
+        {
+            float x = (turn * (point - eyeOf)).x;
+            left = Mathf.Min(left, x);
+            right = Mathf.Max(right, x);
+        }
+        float width = right - left;
+        if (width <= 1e-4f) return settings.Scale;
+        return Mathf.Clamp(face.EyeSpacing * settings.WidthPerEye / width, settings.LeastScale, settings.MostScale) * settings.Scale;
     }
 
     // How far (degrees) to tip the shell's bottom forward, about its glass, so its back-most edge clears the body below
     // the head: per column of the shell, how far the body there stands in front of the shell's back-most point, over how
     // far below the glass it is. 0 when nothing meets it.
-    private static float Tilt(List<Vector3> shell, Vector3 eyeOf, Quaternion turn, Vector3 to, Face face, Values settings)
+    private static float Tilt(List<Vector3> shell, Vector3 eyeOf, Quaternion turn, Vector3 to, float size, Face face, Values settings)
     {
         if (face.Chest.Count == 0 || settings.MostTilt <= 0f) return 0f;
         var back = new Dictionary<Vector2Int, float>();
         foreach (var point in shell)
         {
-            var placed = to + turn * (point - eyeOf);
+            var placed = to + turn * ((point - eyeOf) * size);
             var key = new Vector2Int(Mathf.FloorToInt(placed.x / Column), Mathf.FloorToInt(placed.y / Column));
             if (!back.TryGetValue(key, out float z) || placed.z < z) back[key] = placed.z;
         }
@@ -285,7 +349,7 @@ internal static class FaceFit
         var read = new Values
         {
             Clearance = .01f, EyeLift = .035f, NoseWidth = .02f, NoseBelow = .06f, BrowWidth = .03f, BrowHeight = .015f,
-            Front = .05f, ChestClear = .01f, MostTilt = 15f, Hide = .9f,
+            Front = .05f, ChestClear = .01f, MostTilt = 15f, Hide = .9f, WidthPerEye = 2.3f, LeastScale = .4f, MostScale = 1.1f, Scale = 1f,
         };
         if (GameTables.TryGetRow(TableName, "Default", out var cells))
         {
@@ -299,6 +363,10 @@ internal static class FaceFit
             read.ChestClear = Mathf.Max(0f, cells.Number("chestClear", read.ChestClear));
             read.MostTilt = Mathf.Clamp(cells.Number("mostTilt", read.MostTilt), 0f, 60f);
             read.Hide = Mathf.Clamp01(cells.Number("hide", read.Hide));
+            read.WidthPerEye = Mathf.Max(0f, cells.Number("widthPerEye", read.WidthPerEye));
+            read.LeastScale = Mathf.Max(.05f, cells.Number("leastScale", read.LeastScale));
+            read.MostScale = Mathf.Max(read.LeastScale, cells.Number("mostScale", read.MostScale));
+            read.Scale = Mathf.Max(.05f, cells.Number("scale", read.Scale));
         }
         values = read;
         return read;

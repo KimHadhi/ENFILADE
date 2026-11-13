@@ -50,7 +50,7 @@ internal static partial class OutfitDresser
             // follows the head: no rows per character (FaceFit).
             if (slot.FitsFace)
             {
-                var face = FaceFit.Measure(root, animator, own);
+                var face = FaceFit.Measure(root, animator, own, item.WornBack);
                 if (face == null || !FaceFit.Put(instance.transform, root, face, slot.Anchor(animator)))
                     Warn($"{item.ModelId}: {skinId}의 얼굴(머리 뼈와 읽을 수 있는 머리 메시)을 재지 못해 {slot.id} 칸에 맞추지 못했습니다.");
                 return copy;
