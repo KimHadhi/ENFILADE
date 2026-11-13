@@ -53,7 +53,7 @@
 | 이징 곡선 | [Ease](Core/Common/Ease.cs): `Ease.Out`, `Ease.InOut`, `Ease.Smooth`, 프레임 수와 무관한 따라가기 `Ease.Share(rate, dt)` |
 | 트랜스폼을 이름으로 찾기, 경로 | [Hierarchy](Core/Common/Hierarchy.cs): `Hierarchy.Find(root, name)`, `Hierarchy.PathOf(part, root)` |
 | 메시·본 가중치 읽기 | [MeshTools](Core/Common/MeshTools.cs): `MeshOf(renderer)`, `BoxOf(bounds, matrix)`, `Strongest(weight)` |
-| 클립을 한 순간에 세워 재기(손 자리·팔 길이·카메라 뼈·걸음·재장전 순간…) | [ClipSampler](Core/Common/ClipSampler.cs): `Sample(clip, root, time)`. `AnimationClip.SampleAnimation`을 직접 부르지 않는다: 빌드에서는 Mecanim 클립을 쓰지 못해 모델이 그대로 남는다(0.9.17). 에디터는 SampleAnimation, 빌드는 PlayableGraph |
+| 클립을 한 순간에 세워 재기(손 자리·팔 길이·카메라 뼈·걸음·재장전 순간…) | [ClipSampler](Core/Common/ClipSampler.cs): `Sample(clip, root, time)`. `AnimationClip.SampleAnimation`을 직접 부르지 않는다: 빌드에서는 Mecanim 클립을 쓰지 못해 모델이 그대로 남는다(0.9.18). 에디터는 SampleAnimation, 빌드는 PlayableGraph |
 | 지금 키 입력을 게임이 받는가 | [InputFocus](UI/Shared/InputFocus.cs): `TakesInput()`, 메뉴까지 보는 `TakesPlayInput()`, `Pressed(action)` |
 | 코드로 UI 조각 만들기 | [FeelUI](Combat/Feedback/FeelUI.cs): `Rect`, `Panel`, `Label` / [KitStyle](UI/Kit/KitStyle.cs): `Stretch`, `Fill`, `Cut`, `With(color, alpha)` |
 | 플레이어 찾기·이름 | [PlayerRoster](Player/PlayerRoster.cs): `Local`, `All`, `IdOf`, `ById` / [PlayerTally](Player/Life/PlayerTally.cs): `NameOf`, `ColoredNameOf` |
