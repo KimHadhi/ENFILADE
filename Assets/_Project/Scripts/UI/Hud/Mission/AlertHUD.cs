@@ -86,7 +86,7 @@ public sealed class AlertHUD : MonoBehaviour
     /// </summary>
     public static void EnemyIntro(string what, Transform where, float markSeconds, Func<bool> gone)
     {
-        if (GameTables.Flag(HudCamera.TableName, "Alert.enemyIntro", "value", false)) Danger(what, where, markSeconds, gone);
+        if (GameTables.Flag(HudCamera.TableName, "Alert", "enemyIntro", false)) Danger(what, where, markSeconds, gone);
     }
 
     /// <summary>Something happened to a teammate; tint is theirs.</summary>

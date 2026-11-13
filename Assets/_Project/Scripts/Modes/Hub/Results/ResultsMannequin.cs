@@ -130,7 +130,12 @@ public sealed class ResultsMannequin : MonoBehaviour
         model.transform.localPosition += Vector3.down * (DrawnSole.Of(model.transform, dressing.Leaving) * model.transform.localScale.y);
         PreviewCloth.Wear(model, skin?.Id, dressing, outfit.ToString());
         var face = CharacterFace.Wear(model, skin?.Id);
-        if (face != null) face.Unscaled = face.Watched = face.Showing = true;
+        // On the results stage every character poses now and then, as it always did (CharacterFace.Random).
+        if (face != null)
+        {
+            face.ShowFace = CharacterFace.Random;
+            face.Unscaled = face.Watched = face.Showing = true;
+        }
         var mannequin = host.AddComponent<ResultsMannequin>();
         mannequin.face = face;
         mannequin.Bind(model, pose.OrNull() ?? profile.Find(MainMenuPreview.IdleClip));

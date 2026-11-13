@@ -46,8 +46,10 @@ public sealed class MainMenuPreview : MonoBehaviour, IWardrobeStage
     private string triedText, trialSlot, highlighted;
     private bool trialRemoves;
     private OutfitDresser.Dressing dressing;
-    // Its face: blinking, glancing and posing now and then while it stands to be looked at (CharacterFace.Showing).
+    // Its face: blinking and glancing while it stands to be looked at, holding the face picked for it in the wardrobe
+    // (CharacterFace.Showing, ShowFace), or the one tried on the face page (null: none tried).
     private CharacterFace face;
+    private string triedFace;
     private Bounds shown;
     // The height its drawn soles stand at (world): the ground under it, once it stands on them (DrawnSole).
     private float ground;
@@ -151,6 +153,7 @@ public sealed class MainMenuPreview : MonoBehaviour, IWardrobeStage
         face = CharacterFace.Wear(model, shownSkin?.Id);
         if (face != null)
         {
+            face.ShowFace = triedFace ?? CharacterFace.SavedShowFace(shownSkin?.Id);
             face.Unscaled = face.Watched = face.Showing = true;
             face.Calm = WorksOnFace(focus);
         }
@@ -180,6 +183,16 @@ public sealed class MainMenuPreview : MonoBehaviour, IWardrobeStage
         trialSlot = slot;
         trialRemoves = removes;
         if (model != null) Show();
+    }
+
+    /// <summary>
+    /// The face under the pointer on the wardrobe's face page, held at once (CharacterFace.ShowFace: only the face changes,
+    /// nothing is stood up again); null goes back to the face picked for the character.
+    /// </summary>
+    public void TryFace(string face)
+    {
+        triedFace = face;
+        if (this.face != null) this.face.ShowFace = face ?? CharacterFace.SavedShowFace(shownSkin?.Id);
     }
 
     /// <summary>The wardrobe is about to save a pick: the try is let go without a rebuild of its own, and the settings'
@@ -352,6 +365,8 @@ public sealed class MainMenuPreview : MonoBehaviour, IWardrobeStage
         var next = profile.CurrentVariant;
         SkinVariant.Wear(model, wornVariant, next);
         wornVariant = next;
+        // A face picked on the face page is a setting too: the face takes it, the body stays.
+        if (face != null && triedFace == null) face.ShowFace = CharacterFace.SavedShowFace(shownSkin?.Id);
     }
 
     private void Clear()

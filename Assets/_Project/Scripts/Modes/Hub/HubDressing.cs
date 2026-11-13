@@ -465,6 +465,15 @@ public sealed class HubDressing : MonoBehaviour, IWardrobeStage
 
     public void Try(OutfitLook look, string slot, bool removes) { }
 
+    /// <summary>The face under the pointer on the wardrobe's face page, on the body in the glass at once; null goes back
+    /// to the picked one (CharacterFace.ShowFace: changing it stands nothing up again, so the mirror tries faces too).</summary>
+    public void TryFace(string face)
+    {
+        var shown = body != null ? body.GetComponentInChildren<CharacterFace>() : null;
+        if (shown == null) return;
+        shown.ShowFace = face ?? CharacterFace.SavedShowFace(shown.Skin);
+    }
+
     public void DropTry() { }
 
     // A slider moves the body's own keys at once, the clothes on it with them; letting go saves it, and the body is made

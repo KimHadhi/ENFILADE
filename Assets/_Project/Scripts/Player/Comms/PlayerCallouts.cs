@@ -324,7 +324,7 @@ public sealed class PlayerCallouts : MonoBehaviour
     {
         var bank = SoundBank.Load("Voice");
         var clip = bank != null ? bank.Pick(key) : null;
-        if (clip == null || (IsStandIn(clip) && !GameTables.Flag(VoiceTable, StandInRow, "value", false))) return null;
+        if (clip == null || (IsStandIn(clip) && !GameTables.Flag(VoiceTable, StandInRow, StandInField, false))) return null;
         var mouth = speaker.transform.Find("Callout Voice");
         AudioSource source;
         if (mouth == null)
@@ -355,7 +355,8 @@ public sealed class PlayerCallouts : MonoBehaviour
     // turns them on (Player.csv Callout.ttsVoices; the user, 2026-11-13: "음성도 구글 TTS 쓰지 말고 일단 disable"): the line
     // is said voiceless then, its mouth moving through its words (CharacterFace.Speak), and a real recording dropped into
     // the same folder plays as before.
-    private const string VoiceTable = "Player", StandInRow = "Callout.ttsVoices";
+    // A key table reads "Row.field" keys as rows and fields (CsvTable): Callout.ttsVoices is row Callout, field ttsVoices.
+    private const string VoiceTable = "Player", StandInRow = "Callout", StandInField = "ttsVoices";
 
     private static bool IsStandIn(AudioClip clip) => clip.name.EndsWith("_tts", StringComparison.OrdinalIgnoreCase);
 

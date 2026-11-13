@@ -49,6 +49,7 @@ public sealed partial class MainMenuWardrobe
         wantedRemoves = false;
         if (preview == null) return;
         preview.Try(null, null, false);
+        preview.TryFace(null);
         preview.Highlight(null);
     }
 

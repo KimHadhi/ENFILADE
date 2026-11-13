@@ -148,6 +148,42 @@ public static class FaceTables
         return presetBones.TryGetValue((Lower(skin), RestPreset), out var bones) ? bones : null;
     }
 
+    /// <summary>One of the creator's expressions as it is (FacePresets.csv), or null when the character hasn't it.</summary>
+    public static Key[] Preset(string skin, string preset)
+    {
+        Load();
+        return presets.TryGetValue((Lower(skin), Lower(preset)), out var keys) ? keys : null;
+    }
+
+    /// <summary>The ear pose of one of the creator's expressions, or null when it leaves the ears at rest.</summary>
+    public static Bone[] PresetBones(string skin, string preset)
+    {
+        Load();
+        return presetBones.TryGetValue((Lower(skin), Lower(preset)), out var bones) ? bones : null;
+    }
+
+    /// <summary>
+    /// The creator's whole-face expressions of a character, in the table's order, for the wardrobe's face page: every
+    /// FacePresets.csv row of that skin with keys, but those of the groups FaceLife.csv Show.skipGroups names (the rest
+    /// pose, overlays like Ichigo's tears and cheeks, ear poses alone).
+    /// </summary>
+    public static List<string> Faces(string skin)
+    {
+        Load();
+        var skip = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (string group in GameTables.Text(LifeTable, "Show", "skipGroups", "rest|FaceEffect|Kemono_Ear").Split(EntrySeparator))
+            if (group.Trim().Length > 0) skip.Add(group.Trim());
+        var found = new List<string>();
+        foreach (string id in GameTables.RowIds(PresetTable))
+        {
+            if (!GameTables.TryGetRow(PresetTable, id, out var row) || Lower(row.Text("skin")) != Lower(skin)) continue;
+            string preset = row.Text("preset").Trim();
+            if (preset.Length == 0 || skip.Contains(row.Text("group").Trim()) || Preset(skin, preset) is not { Length: > 0 }) continue;
+            found.Add(preset);
+        }
+        return found;
+    }
+
     /// <summary>A FaceLife.csv number ("Blink.every"), or <paramref name="fallback"/> when the table hasn't it.</summary>
     public static float Number(string key, float fallback)
     {

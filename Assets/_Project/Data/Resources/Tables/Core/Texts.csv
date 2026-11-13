@@ -1620,6 +1620,23 @@ wardrobe.presets.gone,캐릭터가 없어서 입을 수 없다({0}),Its characte
 body.title,체형,Body,옷장 > 체형 페이지 제목
 body.open,체형,Body,메인 메뉴 > 캐릭터 페이지 왼쪽 > 색 칩 아래 체형 판의 제목
 body.open.note,꾸미기 {0}가지 · 바꾼 것 {1},{0} options · {1} changed,"체형 판의 설명. {0}=그 캐릭터의 체형 옵션 수, {1}=원래와 다르게 바꾼 옵션 수"
+wardrobe.face.open,표정,Face,"메인 메뉴 > 캐릭터 페이지 왼쪽 > 체형 판 아래 표정 판 이름(옷장의 표정 쪽을 연다)"
+wardrobe.face.open.note,보일 때 짓는 얼굴: {0},Face when shown: {0},"옷장 > 표정 판 아래 줄. {0}=고른 표정 이름"
+wardrobe.face.title,표정,Face,옷장 > 표정 쪽 큰 제목
+wardrobe.face.where,메인 메뉴와 허브 거울에서 캐릭터가 짓는 얼굴 · 올려 두면 미리 보고 누르면 고른다,"The face your character holds in the menu and the hub's mirror · rest on one to preview, press to pick",옷장 > 표정 쪽 제목 아래 줄
+wardrobe.face.game,게임 표정,Game faces,옷장 > 표정 쪽 > 게임이 정한 포즈 표정 묶음의 머리글
+wardrobe.face.creator,제작자 표정,Creator's faces,옷장 > 표정 쪽 > 캐릭터 제작자가 만든 표정 묶음의 머리글(이름은 제작자가 붙인 그대로)
+face.show.cute,기본,Default,"옷장 > 표정 > 고르지 않았을 때 짓는 귀여운 얼굴(Faces.csv cute)"
+face.show.cute.note,평소의 귀여운 얼굴,The usual cute face,옷장 > 표정 > 기본 판의 작은 줄
+face.show.random,랜덤,Random,"옷장 > 표정 > 예전 방식: 평소 얼굴에 가끔 아무 포즈 표정"
+face.show.random.note,평소 얼굴에 가끔 아무 포즈 표정,Now and then a random pose face,옷장 > 표정 > 랜덤 판의 작은 줄
+face.show.pose.smile,활짝 눈웃음,Big smile,옷장 > 표정 > 게임 표정(Faces.csv pose.smile)
+face.show.pose.wink,윙크,Wink,옷장 > 표정 > 게임 표정(Faces.csv pose.wink)
+face.show.pose.tongue,메롱,Tongue out,옷장 > 표정 > 게임 표정(Faces.csv pose.tongue)
+face.show.pose.smug,의기양양,Smug,옷장 > 표정 > 게임 표정(Faces.csv pose.smug)
+face.show.pose.pout,뾰로통,Pout,옷장 > 표정 > 게임 표정(Faces.csv pose.pout)
+face.show.pose.heart,하트 눈,Heart eyes,옷장 > 표정 > 게임 표정(Faces.csv pose.heart)
+face.show.pose.star,반짝이는 눈,Sparkling eyes,옷장 > 표정 > 게임 표정(Faces.csv pose.star)
 body.where,모델에 든 꾸미기를 모두 · 입은 옷도 따라간다 · 놓으면 저장,Everything the model offers · clothes follow · saved on release,옷장 > 체형 > 제목 아래 작은 줄
 body.reset,원래대로,As made,옷장 > 체형 > 그 캐릭터의 체형을 모두 처음대로 되돌리는 버튼
 body.own,원래,Own,옷장 > 체형 > 슬라이더의 원래 값 눈금과 원래 칩 밑줄 옆의 작은 글자

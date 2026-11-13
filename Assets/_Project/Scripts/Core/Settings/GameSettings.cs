@@ -133,6 +133,10 @@ public sealed class GameSettings
     [Tooltip("What each character wears in its outfit slots, one entry per character: \"skin@slot=item#colour;slot=item\" " +
         "(OutfitLook). A character without an entry wears its own clothes.")]
     public List<string> outfits = new List<string>();
+    [Tooltip("The face each character holds while it is looked at (the title menu, the hub's mirror), one entry per character: " +
+        "\"skin@face\" (CharacterFace.ShowFace: a mood id, preset:<creator's expression> or random). A character without an " +
+        "entry holds its cute face.")]
+    public List<string> showFaces = new List<string>();
     [Tooltip("The name other players see. Empty shows the game's word for a player without one (Texts.csv profile.nickname.unnamed), " +
         "never this PC's Windows user name, which is often a real name.")]
     public string nickname = "";
@@ -226,6 +230,7 @@ public sealed class GameSettings
             case SettingsGroup.Character:
                 s.characterSkin = d.characterSkin; s.characterVariant = d.characterVariant;
                 s.outfits = new List<string>(d.outfits ?? new List<string>());
+                s.showFaces = new List<string>(d.showFaces ?? new List<string>());
                 break;
         }
         Apply();
@@ -287,6 +292,7 @@ public sealed class GameSettings
         monitorName ??= "";
         keyBindings ??= "";
         outfits ??= new List<string>();
+        showFaces ??= new List<string>();
         monitorIndex = Mathf.Max(-1, monitorIndex);
         if (resolutionWidth <= 0 || resolutionHeight <= 0) resolutionWidth = resolutionHeight = 0;
         if (windowMode < WindowMode.Fullscreen || windowMode > WindowMode.Windowed) windowMode = WindowMode.Borderless;

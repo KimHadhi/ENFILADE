@@ -235,6 +235,7 @@ public sealed partial class MainMenuWardrobe : MonoBehaviour
             right.sizeDelta = new Vector2(RightWidth, 0f);
             if (openSlot == PresetPage) BuildPresets(right, skin);
             else if (openSlot == BodyPage) BuildBody(right, skin);
+            else if (openSlot == FacePage) BuildFaces(right, skin);
             else if (openSlot != null && OutfitCatalog.Slot(openSlot) is OutfitSlot slot) BuildSlot(right, skin, slot);
             else BuildSlots(right, skin);
         }

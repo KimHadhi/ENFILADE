@@ -22,8 +22,16 @@ using UnityEngine;
 [DisallowMultipleComponent]
 public sealed class CharacterFace : MonoBehaviour
 {
-    /// <summary>The mood held while the character is being looked at (Showing).</summary>
+    /// <summary>The mood held while the character is being looked at (Showing) when nothing else was picked.</summary>
     public const string Cute = "cute";
+    /// <summary>A shown face (ShowFace) that makes the old way: the cute face, and now and then a pose (Faces.csv pool).</summary>
+    public const string Random = "random";
+    /// <summary>A shown face (ShowFace) naming one of the creator's own expressions (FacePresets.csv) after this mark.</summary>
+    public const string PresetMark = "preset:";
+    // The creator's expression picked to be shown wins over the cute face as a pose does (Faces.csv pose.* 10, cute 8),
+    // and under every mood that means something; it comes and goes as a pose does, and lets a blink through.
+    private const int ShownPriority = 10;
+    private const float ShownIn = .15f, ShownOut = .4f, ShownBlink = .6f;
     private static readonly string[] Vowels = { "talk.a", "talk.i", "talk.u", "talk.e", "talk.o" };
     private static readonly string[] Looks = { "look.left", "look.right", "look.up", "look.down" };
 
@@ -101,22 +109,68 @@ public sealed class CharacterFace : MonoBehaviour
     private Ear[] ears = Array.Empty<Ear>();
     private string[] earNames = Array.Empty<string>();
     private bool showing, refit;
+    // The face held while being looked at (ShowFace), and the creator's expression it names as a slot of its own.
+    private string showFace = "";
+    private Slot shownPreset;
 
     /// <summary>The character (PlayerBodyProfile skin id) whose keys it wears; "" for one without rows of its own.</summary>
     public string Skin { get; private set; } = "";
 
     /// <summary>
-    /// Being looked at (the title menu, the hub's mirror, the dressing room, the results stage): the cute face is held
-    /// and now and then a pose (Faces.csv pool) comes over it.
+    /// Being looked at (the title menu, the hub's mirror, the dressing room, the results stage): the face picked for it is
+    /// held (ShowFace; the cute face when none).
     /// </summary>
     public bool Showing
     {
         get => showing;
         set
         {
+            if (showing == value) return;
             showing = value;
-            Hold(Cute, value);
+            HoldShown(value);
         }
+    }
+
+    /// <summary>
+    /// The face held while it is looked at: "" for the cute face, a mood's id (Faces.csv: pose.smile…), one of the
+    /// creator's expressions (PresetMark + its FacePresets.csv name), or Random, the old way: the cute face and now and then
+    /// a pose. The user (2026-11-13) found the title menu's character pulling random faces on its own, and wanted to pick
+    /// the face in the wardrobe after a preview instead ("차라리 내가 옷장에서 표정 미리보기로 설정할 수 있는 거였으면").
+    /// The player's pick per character is kept in GameSettings.showFaces (SavedShowFace).
+    /// </summary>
+    public string ShowFace
+    {
+        get => showFace;
+        set
+        {
+            string next = value ?? "";
+            if (next == showFace) return;
+            if (showing) HoldShown(false);
+            showFace = next;
+            FitShown();
+            if (showing) HoldShown(true);
+        }
+    }
+
+    /// <summary>The face this PC's player picked to show for the character (GameSettings.showFaces), "" for the cute face.</summary>
+    public static string SavedShowFace(string skinId)
+    {
+        var saved = GameSettings.Current.showFaces;
+        if (saved == null || string.IsNullOrEmpty(skinId)) return "";
+        string prefix = skinId + OutfitLook.Separator;
+        foreach (string entry in saved)
+            if (entry != null && entry.StartsWith(prefix, StringComparison.Ordinal)) return entry.Substring(prefix.Length);
+        return "";
+    }
+
+    /// <summary>Keeps <paramref name="face"/> as the character's shown face in the settings ("" for the cute face); the caller saves.</summary>
+    public static void SaveShowFace(string skinId, string face)
+    {
+        if (string.IsNullOrEmpty(skinId)) return;
+        var saved = GameSettings.Current.showFaces ??= new List<string>();
+        string prefix = skinId + OutfitLook.Separator;
+        saved.RemoveAll(entry => entry == null || entry.StartsWith(prefix, StringComparison.Ordinal));
+        if (!string.IsNullOrEmpty(face)) saved.Add(prefix + face);
     }
 
     /// <summary>No moods and slower blinks: the wardrobe is working on the face or the eyes themselves.</summary>
@@ -221,7 +275,9 @@ public sealed class CharacterFace : MonoBehaviour
         for (int i = 0; i < Vowels.Length; i++) talk[i] = KeysFor(Vowels[i], wardrobe);
         for (int i = 0; i < Looks.Length; i++) look[i] = KeysFor(Looks[i], wardrobe);
         FitEars();
-        foreach (var slot in slots) slot.Ears = EarsFor(slot.Mood.Id);
+        foreach (var slot in slots) slot.Ears = EarsOf(FaceTables.Bones(Skin, slot.Mood.Id));
+        shownPreset = null;
+        FitShown();
         var seen = new List<Renderer>();
         foreach (var channel in channels)
         {
@@ -233,7 +289,7 @@ public sealed class CharacterFace : MonoBehaviour
         var animator = GetComponentInChildren<Animator>();
         head = animator != null && animator.isHuman ? animator.GetBoneTransform(HumanBodyBones.Head) : null;
         if (head == null) head = transform;
-        if (showing) Hold(Cute, true);
+        if (showing) HoldShown(true);
         blinkWait = NextBlink();
         lookWait = Next("Look.every", "Look.spread", 2.4f, 1.6f);
         poseWait = Next("Show.every", "Show.spread", 6f, 3f) * .5f;
@@ -302,11 +358,49 @@ public sealed class CharacterFace : MonoBehaviour
         earNames = names.ToArray();
     }
 
-    // Each ear's turn in the set (FaceKeys.csv bones, or its preset's), from the creator's rest to the creator's pose.
-    private Quaternion[] EarsFor(string set)
+    // The shown face held on or let go: the creator's expression picked (its own slot), else the mood picked, else the
+    // cute face (Random holds the cute face too; poses come over it now and then, Pose).
+    private void HoldShown(bool on)
+    {
+        if (shownPreset != null)
+        {
+            shownPreset.On = on;
+            return;
+        }
+        Hold(showFace.Length > 0 && showFace != Random && slotOf.ContainsKey(showFace) ? showFace : Cute, on);
+    }
+
+    // The creator's expression picked to show (ShowFace "preset:<name>"), as a slot of its own after the table's moods,
+    // on this character's keys and with its ears; none for any other pick or one the character hasn't.
+    private void FitShown()
+    {
+        if (shownPreset != null)
+        {
+            slots = Array.FindAll(slots, slot => slot != shownPreset);
+            shownPreset = null;
+        }
+        if (!showFace.StartsWith(PresetMark, StringComparison.Ordinal)) return;
+        string name = showFace.Substring(PresetMark.Length);
+        int known = channels.Count;
+        var keys = Resolve(FaceTables.Preset(Skin, name), Wardrobe(Skin), true);
+        // Keys first met here start from the weight the model has, as Fit starts the rest.
+        for (int i = known; i < channels.Count; i++) channels[i].Base = channels[i].Meshes[0].GetBlendShapeWeight(channels[i].Indices[0]);
+        if (!keys.Any) return;
+        var mood = new FaceTables.Mood
+        {
+            Id = showFace, Priority = ShownPriority, In = ShownIn, Out = ShownOut, Hold = 0f, Blink = ShownBlink, Talk = 1f, Pool = 0f
+        };
+        shownPreset = new Slot { Mood = mood, Keys = keys, Ears = EarsOf(FaceTables.PresetBones(Skin, name)) };
+        var grown = new Slot[slots.Length + 1];
+        Array.Copy(slots, grown, slots.Length);
+        grown[slots.Length] = shownPreset;
+        slots = grown;
+    }
+
+    // Each ear's turn in a set's bones (FaceKeys.csv bones, or its preset's), from the creator's rest to the creator's pose.
+    private Quaternion[] EarsOf(FaceTables.Bone[] bones)
     {
         if (ears.Length == 0) return null;
-        var bones = FaceTables.Bones(Skin, set);
         if (bones == null) return null;
         var turns = new Quaternion[ears.Length];
         bool any = false;
@@ -475,10 +569,11 @@ public sealed class CharacterFace : MonoBehaviour
         lookY += (lookToY - lookY) * share;
     }
 
-    // Being looked at, a pose now and then over the cute face (never over a mood that means something).
+    // Being looked at with the shown face left to chance (Random), a pose now and then over the cute face (never over a
+    // mood that means something). Any other pick holds its face still.
     private void Pose(float dt)
     {
-        if (!showing || poses.Length == 0) return;
+        if (!showing || showFace != Random || poses.Length == 0) return;
         poseWait -= dt;
         if (poseWait > 0f) return;
         poseWait = Next("Show.every", "Show.spread", 6f, 3f);

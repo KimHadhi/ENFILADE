@@ -151,7 +151,12 @@ public sealed class PlayerFace : MonoBehaviour
             Fear();
         }
         Idle(dt, up && !guarding && !aiming);
-        face.Showing = up && Looked(local);
+        // Looked at, this PC's own character holds the face its player picked in the wardrobe (CharacterFace.SavedShowFace,
+        // read as the looking starts, so a face tried at the mirror's wardrobe isn't undone); another player's poses now
+        // and then, as before (their pick stays on their PC).
+        bool shown = up && Looked(local);
+        if (shown && !face.Showing) face.ShowFace = local ? CharacterFace.SavedShowFace(face.Skin) : CharacterFace.Random;
+        face.Showing = shown;
     }
 
     // The face (made again with every new body: PlayerBody.WearFace) and the parts whose events make faces, which may be
