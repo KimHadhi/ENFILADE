@@ -27,7 +27,9 @@ public sealed class ProfileView
     public void Show()
     {
         W.ClearContent(panel);
-        typed = GameSettings.Current.DisplayName;
+        // The box holds what the player typed, empty when nothing: saving the window without typing a name leaves them
+        // without one ("Unnamed"), where it used to write the Windows user name into the settings as if they had chosen it.
+        typed = GameSettings.Current.nickname ?? "";
 
         W.Size(W.Label(panel, Texts.Get("profile.title"), 36f, W.Text), height: 54f);
         var header = W.Rect("Header", panel);

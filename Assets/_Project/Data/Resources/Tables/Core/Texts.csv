@@ -668,7 +668,8 @@ servers.join.cancel,접속 취소,,서버 찾기 창 > 오른쪽 아래 분홍 �
 #--- 프로필 ---,,,
 profile.title,프로필,,프로필 창 제목
 profile.nickname,닉네임,,프로필 창 > 닉네임 칸 위
-profile.nickname.hint,비워 두면 PC 사용자 이름을 씁니다.,,프로필 창 > 닉네임 칸 아래 안내
+profile.nickname.hint,비워 두면 Unnamed로 표시됩니다.,,프로필 창 > 닉네임 칸 아래 안내
+profile.nickname.unnamed,Unnamed,,닉네임을 비워 둔 플레이어의 이름. 내 화면과 다른 플레이어의 화면에 이 이름으로 나온다
 profile.picture.choose,사진 고르기,,프로필 창 > 사진 버튼
 profile.picture.clear,사진 지우기,,프로필 창 > 사진 버튼
 profile.save,저장,,프로필 창 > 저장 버튼

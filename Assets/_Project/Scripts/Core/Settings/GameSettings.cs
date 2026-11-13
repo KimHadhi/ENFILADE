@@ -133,8 +133,11 @@ public sealed class GameSettings
     [Tooltip("What each character wears in its outfit slots, one entry per character: \"skin@slot=item#colour;slot=item\" " +
         "(OutfitLook). A character without an entry wears its own clothes.")]
     public List<string> outfits = new List<string>();
-    [Tooltip("The name other players see. Empty uses this PC's user name.")]
+    [Tooltip("The name other players see. Empty shows the game's word for a player without one (Texts.csv profile.nickname.unnamed), " +
+        "never this PC's Windows user name, which is often a real name.")]
     public string nickname = "";
+    [Tooltip("Set once the saved nickname and room title were checked for the Windows user name older versions put there (ForgetUserName).")]
+    public bool userNameChecked;
     [Tooltip("Scene name of the map last chosen on the main menu (Data/Resources/Tables/Maps/Maps.csv).")]
     public string lastMap = "";
     [Tooltip("Address last typed on the main menu to join a room.")]
@@ -151,8 +154,15 @@ public sealed class GameSettings
     /// <summary>The least and most a cap typed into the frame limit's box can be (fps).</summary>
     public const int MinFrameLimit = 20, MaxFrameLimit = 1000;
 
-    /// <summary>The name this player goes by.</summary>
-    public string DisplayName => string.IsNullOrWhiteSpace(nickname) ? Environment.UserName : nickname.Trim();
+    /// <summary>The Texts.csv row for a player who typed no nickname.</summary>
+    public const string UnnamedText = "profile.nickname.unnamed";
+
+    /// <summary>
+    /// The name this player goes by, on their own screen and on everyone else's: the nickname they typed, or the game's
+    /// word for a player without one ("Unnamed"). Until 0.9.6 an empty nickname showed the PC's Windows user name, often
+    /// a real name, to the whole room (the user, 2026-11-13: "실명 노출의 위험이 있으니까, 기본값을 Unnamed로 하자").
+    /// </summary>
+    public string DisplayName => string.IsNullOrWhiteSpace(nickname) ? Texts.Get(UnnamedText) : nickname.Trim();
     /// <summary>The camera's vertical field of view for <see cref="fieldOfView"/>.</summary>
     public float VerticalFieldOfView => Camera.HorizontalToVerticalFieldOfView(fieldOfView, 16f / 9f);
     private const string FileName = "settings.json";
@@ -234,8 +244,23 @@ public sealed class GameSettings
             JsonUtility.FromJsonOverwrite(text, read);
             return read;
         }) ?? GameSettingsPreset.Copy();
+        settings.ForgetUserName();
         settings.Clamp();
         return settings;
+    }
+
+    // Once per saved file: the Windows user name the game used to fill in by itself is taken back out. The profile window
+    // put it in the name box and saved it along with whatever else was changed there, and the first room made wrote it
+    // into the room's title. The name is only compared here, on this PC; it is shown and sent nowhere. A name typed
+    // after this is the player's own and is never touched again, even the same one.
+    private void ForgetUserName()
+    {
+        if (userNameChecked) return;
+        userNameChecked = true;
+        string windows = Environment.UserName;
+        if (string.IsNullOrWhiteSpace(windows)) return;
+        if (string.Equals((nickname ?? "").Trim(), windows, StringComparison.OrdinalIgnoreCase)) nickname = "";
+        if (string.Equals((roomTitle ?? "").Trim(), Texts.Format("room.create.default_title", windows), StringComparison.Ordinal)) roomTitle = "";
     }
 
     internal void Clamp()

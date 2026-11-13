@@ -254,8 +254,9 @@ public sealed class PlayerDamageReceiver : MonoBehaviour, IDamageReceiver, ITabl
         if (!isActiveAndEnabled || !IsAlive || hit.Amount <= 0f || hit.Id <= 0 || hit.Kind != DamageKind.Attack
             || movement == null || !movement.Abilities.StepTrail.IsActive) return DamageResult.Ignored;
         if (seen.Contains(hit.Id)) return DamageResult.Duplicate;
-        // Too late to evade (the trail outlasts the window): the blow is not used up, so it still lands if it reaches
-        // the body. Before 0.9.4 a blow that only brushed a stale trail was marked as dealt with and could no longer hurt.
+        // The trail only exists while the dodge's window is open (StepDodgeTrail.IsActive asks for it), so this evade does
+        // not fail as things stand. A blow is marked as dealt with only once it has been evaded, so if the trail is ever
+        // made to outlast the window, a blow that brushes it too late is still judged against the body.
         if (!movement.Abilities.Dodge.TryEvade()) return DamageResult.Ignored;
         Remember(hit.Id);
         HitResolved?.Invoke(hit, DamageResult.Evaded);
