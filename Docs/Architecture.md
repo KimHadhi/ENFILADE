@@ -139,6 +139,26 @@ Unity 없이 몇 초 만에 도는 구조 검사가 있다. 문서 링크가 끊
 & ./Tools/Test-ProjectStructure.ps1
 ```
 
+코드는 [코드 도구](../Tools/CodeTools/README.md)가 본다. Unity를 켜지 않고 컴파일러의 라이브러리로 스크립트를 메모리에서만 읽어서, 컴파일 오류(에디터 구성과 플레이어 빌드 구성 둘 다), 아무도 쓰지 않는 코드, 같은 메서드의 사본, 파일 크기를 몇 초 만에 알려 준다. 스크립트를 여럿 고친 뒤에 돌린다.
+
+```powershell
+& ./Tools/Check-Code.ps1          # 컴파일 검사
+& ./Tools/Check-Code.ps1 dead     # 죽은 코드 → Logs/CodeTools/dead.txt
+& ./Tools/Check-Code.ps1 dupes    # 사본 → Logs/CodeTools/dupes.txt
+```
+
+아무도 쓰지 않는 에셋은 `python Tools/Find-UnusedAssets.py`가 찾는다(`Logs/unused-assets.txt`).
+
+## 코드를 깔끔하게 두는 약속
+
+0.9.2~0.9.3에서 코드를 한 번 크게 치우면서 정한 것이다.
+
+- **쓰지 않는 코드는 두지 않는다.** "나중에 쓸지도 모르는" 메서드·프로퍼티·필드는 지운다(git에 남아 있다). `Check-Code.ps1 dead`가 0에 가깝게.
+- **같은 몇 줄을 복사하지 않는다.** 비슷한 것이 필요하면 [같이 쓰는 도우미](../Assets/_Project/Scripts/README.md#새로-만들기-전에-같이-쓰는-도우미) 표에서 찾고, 없으면 거기에 더한다. 전달만 하는 한 줄짜리 메서드도 만들지 않는다.
+- **표의 숫자는 코드가 읽는 것만.** 표에 있는데 아무 코드도 읽지 않는 칸은 연결하거나 지운다. 바꿔도 아무 일도 없는 숫자는 모드를 만드는 사람을 속인다.
+- **큰 클래스는 주제별 파일로.** 한 파일이 600줄을 넘어가면 `// ---- 주제 ----` 줄로 구획을 긋고 `클래스.주제.cs`(partial)로 나눈다(`Check-Code.ps1 split`). 본 파일 `클래스.cs`에는 필드와 수명 주기(Awake·Update)와 밖에서 부르는 것만 남는다. 지금 나뉘어 있는 것: FPSBody, FPSGun, WeaponController, HandGrip, ZombieMind, ShopMenu, TowerRun, CampaignRun, PlayerNetworkCombat, PlayerGrenades, ClassKit, OutfitDresser, OutfitStudio, MainMenuWardrobe, PerkCardScreen, ResultsShow, DeathScreen, KillFlairFx, FieldPickups와 편집기의 CampaignMaps(장별), GreyboxBuilder, TowerMap, TacticalGunSetup, GunClipRetarget.
+- **프리팹에 옛 조각을 남기지 않는다.** 코드가 새로 그리게 된 화면 조각은 프리팹에서도 지운다. 숨기기만 하면 그 조각이 붙잡은 그림과 스크립트가 계속 남는다.
+
 ## 0.9.0에서 바뀐 자리
 
 예전 문서나 기억에 남은 경로는 아래 표로 바꿔 읽는다. 파일 이름과 클래스 이름은 그대로다.
